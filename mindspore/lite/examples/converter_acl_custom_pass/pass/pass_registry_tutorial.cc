@@ -26,6 +26,7 @@
 #include "infer/cxx_api/add_fusion.h"
 #include "include/op_def/auto_generate/gen_lite_ops.h"
 #include "include/mindapi/ir/anf.h"
+#include "mindspore/ops/op_def/op_enum.h"
 
 namespace mindspore {
 namespace opt {
@@ -128,7 +129,9 @@ bool PassTutorial::CreateCustomOp(const api::FuncGraphPtr func_graph, const api:
   primc->AddAttr("num_heads", api::MakeValue(num_heads));
   primc->AddAttr("pre_tokens", api::MakeValue(pre_tokens));
   primc->AddAttr("next_tokens", api::MakeValue(next_tokens));
-  primc->AddAttr("input_layout", api::MakeValue("BNSD"));
+  primc->AddAttr(
+    "input_layout",
+    api::MakeValue(static_cast<mindspore::ops::FASInputLayoutMode>(mindspore::ops::FASInputLayoutMode::BNSD)));
   primc->AddAttr("num_key_value_heads", api::MakeValue(num_key_value_heads));
   primc->AddAttr("scale_value", api::MakeValue(scale_value));
   primc->AddAttr("sparse_mode", api::MakeValue(sparse_mode));

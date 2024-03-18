@@ -32,7 +32,7 @@ class PromptFlashAttention(nn.Cell):
 
     def construct(self, query, key, value, attn_mask, actual_seq_lengths, actual_seq_lengths_kv, pse_shift,
                   deq_scale1, quant_scale1, deq_scale2, quant_scale2, quant_offset2, num_heads, scale_value=1.0,
-                  pre_tokens=2147483547, next_tokens=0, input_layout='BSH', num_key_value_heads=0, sparse_mode=0,
+                  pre_tokens=2147483647, next_tokens=0, input_layout='BSH', num_key_value_heads=0, sparse_mode=0,
                   inner_precise=0):
         out = self.pfa(query, key, value, attn_mask, actual_seq_lengths, actual_seq_lengths_kv, pse_shift,
                        deq_scale1, quant_scale1, deq_scale2, quant_scale2, quant_offset2, num_heads=num_heads,
@@ -65,7 +65,7 @@ class IncreFlashAttentionFunc(nn.Cell):
 
 class FusedInferAttentionScoreFunc(nn.Cell):
     def __init__(self, num_heads, input_layout='BSH', scale_value=1.0, num_key_value_heads=0,
-                 pre_tokens=2147483547, next_tokens=0, sparse_mode=0, inner_precise=0):
+                 pre_tokens=2147483647, next_tokens=0, sparse_mode=0, inner_precise=0):
         super().__init__()
         self.num_heads = num_heads
         self.input_layout = input_layout

@@ -13,7 +13,6 @@
 # limitations under the License.
 # ============================================================================
 from tests.mark_utils import arg_mark
-import pytest
 import numpy as np
 import mindspore
 from mindspore import Tensor
@@ -29,7 +28,7 @@ class PromptFlashAttention(nn.Cell):
 
     def construct(self, query, key, value, attn_mask, actual_seq_lengths, actual_seq_lengths_kv, pse_shift,
                   deq_scale1, quant_scale1, deq_scale2, quant_scale2, quant_offset2, num_heads, scale_value=1.0,
-                  pre_tokens=2147483547, next_tokens=0, input_layout='BSH', num_key_value_heads=0, sparse_mode=0):
+                  pre_tokens=2147483647, next_tokens=0, input_layout='BSH', num_key_value_heads=0, sparse_mode=0):
         return self.pfa(query, key, value, attn_mask, actual_seq_lengths, actual_seq_lengths_kv, pse_shift,
                         deq_scale1, quant_scale1, deq_scale2, quant_scale2, quant_offset2, num_heads=num_heads,
                         scale_value=scale_value, pre_tokens=pre_tokens, next_tokens=next_tokens,

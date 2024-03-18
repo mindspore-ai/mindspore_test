@@ -32,6 +32,17 @@ static const std::map<std::string, std::vector<string>> kAttrMapNeedAdjust = {
      "axis",
      "output_type",
    }},
+  {"PromptFlashAttention",
+   {
+     "num_heads",
+     "scale_value",
+     "pre_tokens",
+     "next_tokens",
+     "input_layout",
+     "num_key_value_heads",
+     "sparse_mode",
+     "inner_precise",
+   }},
   {"BroadcastTo",
    {
      "shape",
@@ -280,8 +291,11 @@ static const std::map<std::string, std::vector<string>> kAttrMapNeedAdjust = {
 };
 
 constexpr size_t kMatMulInputSizeWithBias = 6;  // primitive, x1, x2, bias, transpose_a, transpose_b
+constexpr size_t kPFAOriginInputSize = 12;
 constexpr auto kMatMulOpName = "MatMul";
 constexpr auto kMatMulV2OpName = "MatMulV2";
+constexpr auto kCustomOpName = "Custom";
+constexpr auto kPromptFlashAttentionOpName = "PromptFlashAttention";
 
 void RearrangeBiasForMatMul(const FuncGraphManagerPtr &manager, const CNodePtr &cnode) {
   auto node_inputs = cnode->inputs();
@@ -290,12 +304,50 @@ void RearrangeBiasForMatMul(const FuncGraphManagerPtr &manager, const CNodePtr &
   cnode->set_inputs(node_inputs);
 }
 
+int AdjustInputsAndAttrsForPFA(const FuncGraphManagerPtr &manager, const CNodePtr &cnode,
+                               const mindspore::PrimitivePtr &origin_prim) {
+  auto node_inputs = cnode->inputs();
+  auto actual_input_num = node_inputs.size();
+  // First input of cnode is Primitive, so an extra none is padded.
+  auto pad_none_size = kPFAOriginInputSize - actual_input_num + 1;
+  auto none_input = NewValueNode(std::make_shared<None>());
+  none_input->set_abstract(std::make_shared<abstract::AbstractNone>());
+  node_inputs.insert(node_inputs.end(), pad_none_size, none_input);
+  cnode->set_inputs(node_inputs);
+
+  const auto &attrs_adjust_pfa = kAttrMapNeedAdjust.at(kPromptFlashAttentionOpName);
+  const auto &origin_attrs_custom = origin_prim->attrs();
+  // Create new primitive and inherit the origin attributes.
+  for (const auto &attr : attrs_adjust_pfa) {
+    if (origin_attrs_custom.count(attr) == 0) {
+      MS_LOG(ERROR) << "Origin primitive: Custom has no attribute : " << attr << ", pad none for PromptFlashAttention.";
+      auto none_attribute = NewValueNode(std::make_shared<None>());
+      none_attribute->set_abstract(std::make_shared<abstract::AbstractNone>());
+      manager->AddEdge(cnode, none_attribute);
+    } else {
+      // Convert the specific attr to input and erase the specific attr.
+      auto attr_value = origin_prim->GetAttr(attr);
+      MS_CHECK_TRUE_MSG(attr_value != nullptr, RET_ERROR, "attr_value is nullptr");
+      auto new_value_node = std::make_shared<ValueNode>(attr_value);
+      MS_CHECK_TRUE_MSG(new_value_node != nullptr, RET_ERROR, "new_value_node is nullptr");
+      new_value_node->set_abstract(attr_value->ToAbstract());
+      manager->AddEdge(cnode, new_value_node);
+    }
+  }
+  return RET_OK;
+}
+
 int ConvertAttrToArgsForNode(const AnfNodePtr &node, const FuncGraphManagerPtr &manager) {
   auto cnode = node->cast<CNodePtr>();
   MS_CHECK_TRUE_MSG(cnode != nullptr, RET_ERROR, "cnode is nullptr");
   const auto &origin_prim = GetCNodePrimitive(node);
   MS_CHECK_TRUE_MSG(origin_prim != nullptr, RET_ERROR, "origin_prim is nullptr");
   auto prim_name = origin_prim->name();
+  if ((prim_name == kCustomOpName &&
+       GetValue<std::string>(origin_prim->GetAttr("type")) == kPromptFlashAttentionOpName) ||
+      (prim_name == kPromptFlashAttentionOpName)) {
+    return AdjustInputsAndAttrsForPFA(manager, cnode, origin_prim);
+  }
   const auto &attrs_adjust = kAttrMapNeedAdjust.at(prim_name);
   const auto &origin_attrs = origin_prim->attrs();
 
@@ -346,10 +398,12 @@ bool AttrToArgsPass::Run(const FuncGraphPtr &func_graph) {
     auto cnode = node->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(cnode);
     auto prim = GetValueNode<PrimitivePtr>(cnode->input(0));
+    auto prim_name = prim->name();
     if (prim == nullptr) {
       continue;
     }
-    if (kAttrMapNeedAdjust.find(prim->name()) == kAttrMapNeedAdjust.end()) {
+    if (kAttrMapNeedAdjust.find(prim->name()) == kAttrMapNeedAdjust.end() &&
+        !(prim_name == kCustomOpName && GetValue<std::string>(prim->GetAttr("type")) == kPromptFlashAttentionOpName)) {
       continue;
     }
     if (ConvertAttrToArgsForNode(node, manager) != RET_OK) {

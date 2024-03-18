@@ -48,7 +48,17 @@ enum GridSamplerPaddingMode : int64_t { ZEROS = 0, BORDER = 1, REFLECTION = 2 };
 
 enum KVCacheAlignMode : int64_t { RIGHT = 0, LEFT = 1 };
 
-enum FASInputLayoutMode : int64_t { BSH = 0, BNSD = 1, SBH = 2, BSND = 3, TND = 4, TH = 5, NSD = 6, SH = 7 };
+enum FASInputLayoutMode : int64_t {
+  BSH = 0,
+  BNSD = 1,
+  SBH = 2,
+  BSND = 3,
+  TND = 4,
+  TH = 5,
+  NSD = 6,
+  SH = 7,
+  BNSD_BSND = 8
+};
 
 enum PagedAttentionKVCacheQuantMode : int64_t { DEFAULT = 0, PERTOKEN = 1 };
 

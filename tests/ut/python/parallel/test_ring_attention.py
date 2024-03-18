@@ -282,7 +282,7 @@ class Net(nn.Cell):
 
 
 class FiasNet(nn.Cell):
-    def __init__(self, num_heads, scale_value=1.0, pre_tokens=2147483547, next_tokens=0, input_layout='BSH',
+    def __init__(self, num_heads, scale_value=1.0, pre_tokens=2147483647, next_tokens=0, input_layout='BSH',
                  num_key_value_heads=0, strategy=None, sparse_mode=0, inner_precise=1, block_size=0,
                  antiquant_mode=0, softmax_lse_flag=False, set_atten_mask_as_constant=False,
                  enable_ring_attention=True):

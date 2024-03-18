@@ -19,9 +19,9 @@
 #include <string>
 #include <vector>
 #include "infer/custom.h"
-#include "infer/prompt_flash_attention.h"
 #include "nnacl/op_base.h"
-
+#include "mindspore/ops/op_def/op_enum.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
 namespace mindspore {
 namespace lite {
 namespace {
@@ -34,7 +34,8 @@ PrimitiveCPtr OnnxPromptFlashAttentionParser::Parse(const onnx::GraphProto &onnx
   auto prim_c = prim->GetPrim();
   MS_CHECK_TRUE_RET(prim_c != nullptr, nullptr);
   int64_t num_heads = 0;
-  prim_c->AddAttr("input_layout", MakeValue<std::string>("BNSD"));
+  int64_t input_layout = ops::StringToEnumImpl(prim->name(), "input_layout", "BNSD");
+  prim->set_input_layout(input_layout);
   for (const auto &onnx_node_attr : onnx_node.attribute()) {
     const auto &attribute_name = onnx_node_attr.name();
     if (attribute_name == "num_heads") {
