@@ -72,8 +72,6 @@ def test_ops_ifftn_normal(mode):
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3, atol=1e-5)
 
     dout = generate_random_input((2, 3, 4, 5), np.complex64)
-    x = np.arange(1, 17).reshape(2, 8)
-    dout = np.ones_like(x).astype(np.complex64)
     grad_net = IFFTNGradNet(net, ms.Tensor(dout))
     grad_net.set_train()
     grad = grad_net(ms.Tensor(x), s, dim)
