@@ -33,12 +33,12 @@ using TensorStorageInfoPtrList = std::vector<TensorStorageInfoPtr>;
 // unsupported will return {}
 using StridesCalcFunc = std::function<TensorStorageInfoPtrList(const PrimitivePtr &, const std::vector<ValuePtr> &)>;
 using StridesVecotr = std::vector<int64_t>;
-std::vector<int64_t> GetOriStrides(const std::vector<int64_t> &shape);
-bool IsContiguous(const ShapeVector &shape, const std::vector<int64_t> &strides);
-int64_t DynamicDimWrap(int64_t dim, int64_t dim_post_expr);
-bool IsDynamic(const std::vector<int64_t> &shape);
-bool HasZero(const std::vector<int64_t> &value);
-bool CheckInputsNull(const std::vector<ValuePtr> &inputs, const size_t &input_num);
+OPS_API std::vector<int64_t> GetOriStrides(const std::vector<int64_t> &shape);
+OPS_API bool IsContiguous(const ShapeVector &shape, const std::vector<int64_t> &strides);
+OPS_API int64_t DynamicDimWrap(int64_t dim, int64_t dim_post_expr);
+OPS_API bool IsDynamic(const std::vector<int64_t> &shape);
+OPS_API bool HasZero(const std::vector<int64_t> &value);
+OPS_API bool CheckInputsNull(const std::vector<ValuePtr> &inputs, const size_t &input_num);
 
 struct OldTensorInfo {
   OldTensorInfo(std::vector<int64_t> old_shape, std::vector<int64_t> old_strides, std::vector<int64_t> ori_shape,

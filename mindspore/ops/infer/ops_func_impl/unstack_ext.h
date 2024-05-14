@@ -31,6 +31,7 @@ class OPS_API UnstackExtFuncImpl : public OpFuncImpl {
   BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
   TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
 };
+class OPS_API UnstackExtViewFuncImpl : public UnstackExtFuncImpl {};
 }  // namespace ops
 }  // namespace mindspore
 

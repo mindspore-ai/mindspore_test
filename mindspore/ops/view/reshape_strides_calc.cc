@@ -56,10 +56,8 @@ ShapeVector ReshapeUpdateShape(const ShapeVector &input_shape, ShapeVector shape
   return shape;
 }
 
-TensorStorageInfoPtrList ReshapeCalcImpl(const PrimitivePtr &prim, const tensor::BaseTensorPtr &input_tensor,
+TensorStorageInfoPtrList ReshapeCalcImpl(const mindspore::ops::OldTensorInfoPtr &old_tensor_info,
                                          const std::vector<int64_t> &shape) {
-  MS_EXCEPTION_IF_NULL(input_tensor);
-  auto old_tensor_info = GetOldTensorInfo(input_tensor);
   const auto &old_shape = old_tensor_info->old_shape;
   auto storage_offset = old_tensor_info->old_offset;
   const auto &new_shape = ReshapeUpdateShape(old_shape, shape);
@@ -89,8 +87,9 @@ TensorStorageInfoPtrList ReshapeCalc(const PrimitivePtr &prim, const std::vector
     MS_EXCEPTION(ValueError) << "For primitive[" << prim->name()
                              << "], the component of shape can't be less than -1, but got " << shape;
   }
-
-  return ReshapeCalcImpl(prim, input_tensor, shape);
+  MS_EXCEPTION_IF_NULL(input_tensor);
+  auto old_tensor_info = GetOldTensorInfo(input_tensor);
+  return ReshapeCalcImpl(old_tensor_info, shape);
 }
 
 REG_VIEW_STRIDES_CALC_FUN(Reshape, ReshapeCalc);

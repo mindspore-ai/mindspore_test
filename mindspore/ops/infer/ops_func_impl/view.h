@@ -29,6 +29,7 @@ class OPS_API ViewFuncImpl : public OpFuncImpl {
   BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
   TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
 };
+class OPS_API ViewViewFuncImpl : public ViewFuncImpl {};
 }  // namespace ops
 }  // namespace mindspore
 

@@ -136,5 +136,30 @@ bool IsDisableAllocConfig(const std::string &alloc_config) {
   const auto &value = GetAllocConfigValue(alloc_config);
   return ((value == "False") || (value == "false"));
 }
+static std::set<std::string> view_ops_set;
+bool IsEnableAclnnViewOp(const std::string &op) {
+  std::string env_value = GetEnv(kAclnnViewOp);
+  if (env_value.empty()) {
+    return true;
+  }
+  auto existed = view_ops_set.count(op);
+  if (existed) {
+    return true;
+  }
+  std::ostringstream oss_buf;
+  oss_buf << "[" << kAclnnViewOp << "]Runtime config:";
+  std::stringstream ss(env_value);
+  std::string item;
+  while (std::getline(ss, item, ',')) {
+    oss_buf << "  " << item;
+    view_ops_set.insert(item);
+  }
+  std::cout << oss_buf.str() << std::endl;
+  existed = view_ops_set.count(op);
+  if (existed) {
+    return true;
+  }
+  return false;
+}
 }  // namespace common
 }  // namespace mindspore

@@ -32,6 +32,7 @@ class OPS_API SplitTensorFuncImpl : public OpFuncImpl {
 
   int32_t CheckValidation(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
 };
+class OPS_API SplitTensorViewFuncImpl : public SplitTensorFuncImpl {};
 }  // namespace ops
 }  // namespace mindspore
 

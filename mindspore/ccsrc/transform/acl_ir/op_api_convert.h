@@ -249,7 +249,7 @@ inline aclTensor *ConvertType(const mindspore::kernel::KernelTensor *tensor) {
 
   aclTensor *acl_tensor = nullptr;
   const auto &storage_info = tensor->tensor_storage_info();
-  if (storage_info == nullptr) {
+  if (storage_info == nullptr || (storage_info != nullptr && storage_info->is_contiguous)) {
     // Create strides.
     auto strides = shape;
     if (!strides.empty()) {
@@ -352,27 +352,37 @@ inline aclTensor *ConvertType(std::pair<mindspore::kernel::KernelTensor *, bool>
     default:
       format = ACL_FORMAT_ND;
   }
-
-  // Create strides.
-  auto strides = shape;
-  if (!strides.empty()) {
-    strides.erase(strides.begin());
-  }
-  strides.push_back(1);
-  for (int i = static_cast<int>(strides.size()) - 2; i >= 0; i--) {
-    strides[i] = strides[i] * strides[i + 1];
-  }
-  // Check if shape need transpose.
-  if (trans) {
-    if (shape.size() <= 1 || strides.size() <= 1) {
-      MS_LOG(INTERNAL_EXCEPTION) << "Size of shape and strides should be greater than 1 when need transpose, "
-                                 << "but got shape size " << shape.size() << ", strides size " << strides.size();
+  aclTensor *acl_tensor = nullptr;
+  const auto &storage_info = tensor->tensor_storage_info();
+  if (storage_info == nullptr || (storage_info != nullptr && storage_info->is_contiguous)) {
+    // Create strides.
+    auto strides = shape;
+    if (!strides.empty()) {
+      strides.erase(strides.begin());
     }
-    std::swap(shape[shape.size() - 1], shape[shape.size() - 2]);
-    std::swap(strides[strides.size() - 1], strides[strides.size() - 2]);
+    strides.push_back(1);
+    for (int i = static_cast<int>(strides.size()) - 2; i >= 0; i--) {
+      strides[i] = strides[i] * strides[i + 1];
+    }
+    // Check if shape need transpose.
+    if (trans) {
+      std::swap(shape[shape.size() - 1], shape[shape.size() - 2]);
+      std::swap(strides[strides.size() - 1], strides[strides.size() - 2]);
+    }
+    acl_tensor = aclCreateTensor(shape.data(), shape_size, acl_data_type, strides.data(), 0, format, shape.data(),
+                                 shape.size(), tensor->device_ptr());
+  } else {
+    auto &strides = storage_info->strides;
+    const auto &storage_shape = storage_info->ori_shape;
+    // Check if shape need transpose.
+    if (trans) {
+      std::swap(shape[shape.size() - 1], shape[shape.size() - 2]);
+      std::swap(strides[strides.size() - 1], strides[strides.size() - 2]);
+    }
+    acl_tensor =
+      aclCreateTensor(shape.data(), shape_size, acl_data_type, strides.data(), SizeToLong(storage_info->storage_offset),
+                      format, storage_shape.data(), storage_shape.size(), tensor->device_ptr());
   }
-  auto acl_tensor = aclCreateTensor(shape.data(), shape_size, acl_data_type, strides.data(), 0, format, shape.data(),
-                                    shape_size, tensor->device_ptr());
   return acl_tensor;
 }
 
@@ -590,11 +600,22 @@ inline std::vector<void *> GetAddr(const std::vector<KernelTensor *> tensor_list
 
 inline std::vector<void *> GetAddr(KernelTensor *tensor) {
   MS_EXCEPTION_IF_NULL(tensor);
+  if (tensor->tensor_storage_info() && tensor->tensor_storage_info()->is_contiguous) {
+    auto offset = tensor->tensor_storage_info()->storage_offset;
+    auto type_size = GetTypeByte(TypeIdToType(tensor->dtype_id()));
+    return {reinterpret_cast<void *>(reinterpret_cast<uint8_t *>(tensor->device_ptr()) + offset * type_size)};
+  }
   return {tensor->device_ptr()};
 }
 
 inline std::vector<void *> GetAddr(const std::pair<KernelTensor *, bool> &tensor_pair) {
   MS_EXCEPTION_IF_NULL(tensor_pair.first);
+  if (tensor_pair.first->tensor_storage_info() && tensor_pair.first->tensor_storage_info()->is_contiguous) {
+    auto offset = tensor_pair.first->tensor_storage_info()->storage_offset;
+    auto type_size = GetTypeByte(TypeIdToType(tensor_pair.first->dtype_id()));
+    return {
+      reinterpret_cast<void *>(reinterpret_cast<uint8_t *>(tensor_pair.first->device_ptr()) + offset * type_size)};
+  }
   return {tensor_pair.first->device_ptr()};
 }
 

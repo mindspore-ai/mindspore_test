@@ -33,6 +33,7 @@ class OPS_API ConcatFuncImpl : public OpFuncImpl {
   TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
   std::set<int64_t> GetValueDependArgIndices() const override { return {1}; }
 };
+class OPS_API ConcatViewFuncImpl : public ConcatFuncImpl {};
 
 using ConcatFuncImplPtr = std::shared_ptr<ConcatFuncImpl>;
 }  // namespace mindspore::ops

@@ -13,23 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_STRIDED_SLICE_H_
-#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_STRIDED_SLICE_H_
+#ifndef MINDSPORE_CCSRC_BACKEND_COMMON_PASS_GRAPH_VIEW_REPALCE_PASS_H_
+#define MINDSPORE_CCSRC_BACKEND_COMMON_PASS_GRAPH_VIEW_REPALCE_PASS_H_
 
+#include <string>
 #include <vector>
-#include "ops/ops_func_impl/op_func_impl.h"
+#include "include/backend/optimizer/pass.h"
+#include "include/backend/optimizer/optimizer.h"
 
 namespace mindspore {
-namespace ops {
-// begin\end\strides info
-class OPS_API StridedSliceFuncImpl : public OpFuncImpl {
+namespace opt {
+class BACKEND_EXPORT GraphViewReplacePass : public Pass {
  public:
-  BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
-  TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
+  explicit GraphViewReplacePass(const std::string &name = "graph_view_replace") : Pass(name) {}
+  ~GraphViewReplacePass() override = default;
+  bool Run(const FuncGraphPtr &func_graph) override;
+
+ private:
+  std::vector<std::string> out_kernels_;
 };
-
-class OPS_API StridedSliceViewFuncImpl : public StridedSliceFuncImpl {};
-
-}  // namespace ops
+}  // namespace opt
 }  // namespace mindspore
-#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_STRIDED_SLICE_H_
+#endif  // MINDSPORE_CCSRC_BACKEND_COMMON_PASS_GRAPH_VIEW_REPALCE_PASS_H_

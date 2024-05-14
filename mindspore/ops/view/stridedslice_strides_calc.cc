@@ -61,19 +61,19 @@ void VectorEmplace(std::vector<int64_t> *vec, size_t number, size_t dst_size) {
   }
 }
 
-void VectorEmplace(std::vector<int64_t> *vec, const std::vector<int64_t> &number_vec, size_t dst_size) {
+void VectorEmplace(std::vector<int64_t> *vec, std::vector<int64_t> *number_vec, size_t dst_size) {
   if ((*vec).size() >= dst_size) {
     return;
   }
 
-  if (number_vec.size() != dst_size) {
+  if (number_vec->size() != dst_size) {
     MS_LOG(EXCEPTION) << "dst_size is not equal to number_vec.size(), dst_size:" << dst_size
-                      << ",  number_vec.size():" << number_vec.size();
+                      << ",  number_vec.size():" << number_vec->size();
   }
 
   auto begin = vec->size();
   for (size_t i = begin; i < dst_size; ++i) {
-    (void)vec->emplace_back(number_vec[i]);
+    (void)vec->emplace_back(number_vec->at(i));
   }
 }
 
@@ -108,18 +108,46 @@ bool CheckStridedSliceInputs(const std::vector<ValuePtr> &inputs) {
   return CheckMaskIsZero(inputs);
 }
 
+TensorStorageInfoPtrList StridedSliceStridesCalc(const OldTensorInfoPtr old_tensor_info, size_t size,
+                                                 std::vector<int64_t> *shape, std::vector<int64_t> *begin,
+                                                 std::vector<int64_t> *end, std::vector<int64_t> *step) {
+  auto old_shape = old_tensor_info->old_shape;
+  auto old_strides = old_tensor_info->old_strides;
+  auto old_storage_offset = old_tensor_info->old_offset;
+
+  VectorEmplace(begin, size_t(0), size);
+  VectorEmplace(end, shape, size);
+  VectorEmplace(step, 1, size);
+  ConvertNegToPos(begin, end, old_shape);
+
+  for (size_t i = 0; i < begin->size(); ++i) {
+    old_storage_offset += LongToSize(begin->at(i) * old_strides[i]);
+  }
+  ShapeVector new_shape;
+  auto new_strides = old_strides;
+  for (size_t i = 0; i < size; ++i) {
+    auto dim = DynamicDimWrap(i, shape->size());
+    auto real_end = end->at(dim) > old_shape[dim] ? old_shape[dim] : end->at(dim);
+    auto len = real_end - begin->at(dim);
+    if (len <= 0) {
+      (void)new_shape.emplace_back(0);
+    } else {
+      auto shape_dim = (len + step->at(dim) - 1) / step->at(dim);
+      (void)new_shape.emplace_back(shape_dim);
+    }
+    new_strides[dim] *= step->at(dim);
+  }
+
+  auto new_storage_info =
+    std::make_shared<TensorStorageInfo>(new_shape, new_strides, old_storage_offset, old_tensor_info->ori_shape,
+                                        old_tensor_info->ori_strides, IsContiguous(new_shape, new_strides));
+  return {new_storage_info};
+}
+
 TensorStorageInfoPtrList StridedSliceCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs) {
   if (!CheckStridedSliceInputs(inputs)) {
     return {};
   }
-
-  auto input_tensor = inputs[kInputIndex0]->cast<tensor::BaseTensorPtr>();
-  MS_EXCEPTION_IF_NULL(input_tensor);
-  auto size = input_tensor->shape().size();
-  auto old_tensor_info = GetOldTensorInfo(input_tensor);
-  auto old_shape = old_tensor_info->old_shape;
-  auto old_strides = old_tensor_info->old_strides;
-  auto old_storage_offset = old_tensor_info->old_offset;
   if (inputs[kInputIndex1]->isa<tensor::BaseTensor>() || inputs[kInputIndex2]->isa<tensor::BaseTensor>() ||
       inputs[kInputIndex3]->isa<tensor::BaseTensor>()) {
     return {};
@@ -130,34 +158,12 @@ TensorStorageInfoPtrList StridedSliceCalc(const PrimitivePtr &prim, const std::v
   if (IsDynamic(step) || begin.size() != end.size() || begin.size() != step.size() || HasZero(step)) {
     return {};
   }
-
-  VectorEmplace(&begin, 0, size);
-  VectorEmplace(&end, input_tensor->shape(), size);
-  VectorEmplace(&step, 1, size);
-  ConvertNegToPos(&begin, &end, old_shape);
-
-  for (size_t i = 0; i < begin.size(); ++i) {
-    old_storage_offset += LongToSize(begin[i] * old_strides[i]);
-  }
-  ShapeVector new_shape;
-  auto new_strides = old_strides;
-  for (size_t i = 0; i < size; ++i) {
-    auto dim = DynamicDimWrap(i, input_tensor->shape().size());
-    auto real_end = end[dim] > old_shape[dim] ? old_shape[dim] : end[dim];
-    auto len = real_end - begin[dim];
-    if (len <= 0) {
-      (void)new_shape.emplace_back(0);
-    } else {
-      auto shape_dim = (len + step[dim] - 1) / step[dim];
-      (void)new_shape.emplace_back(shape_dim);
-    }
-    new_strides[dim] *= step[dim];
-  }
-
-  auto new_storage_info =
-    std::make_shared<TensorStorageInfo>(new_shape, new_strides, old_storage_offset, old_tensor_info->ori_shape,
-                                        old_tensor_info->ori_strides, IsContiguous(new_shape, new_strides));
-  return {new_storage_info};
+  auto input_tensor = inputs[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  MS_EXCEPTION_IF_NULL(input_tensor);
+  auto size = input_tensor->shape().size();
+  auto old_tensor_info = GetOldTensorInfo(input_tensor);
+  auto shape = input_tensor->shape();
+  return StridedSliceStridesCalc(old_tensor_info, size, &shape, &begin, &end, &step);
 }
 
 REG_VIEW_STRIDES_CALC_FUN(StridedSlice, StridedSliceCalc);

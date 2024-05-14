@@ -25,6 +25,7 @@ KernelModPtr AclnnOpBuild(const AnfNodePtr &anf_node);
 bool IsRegisteredAclnnOp(const std::string &op_name);
 bool IsEnabledAclnnDispatch(const std::string &op_name);
 bool IsViewOp(const std::string &op_name);
+bool IsAclnnViewOp(const std::string &op_name);
 }  // namespace kernel
 }  // namespace mindspore
 

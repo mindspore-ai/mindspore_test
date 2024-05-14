@@ -347,10 +347,11 @@ def generate_pyboost_outputs(op_proto):
     return op_outputs, call_outputs
 
 
-def generate_ops_header_files(work_path, yaml_data):
+def generate_ops_header_files(work_path, yaml_data, extra_ops=None):
     """
     :param work_path:
     :param yaml_data:
+    :prama extra_ops(default:None):
     :return: void
     """
     extern_str = ''
@@ -358,6 +359,8 @@ def generate_ops_header_files(work_path, yaml_data):
     for operator_name, operator_data in yaml_data.items():
         op_proto = OpProto.load_from_yaml(operator_name, operator_data)
         extern_str += extern_template.replace(op_name=op_proto.class_name)
+    for class_name in extra_ops:
+        extern_str += extern_template.replace(op_name=class_name)
     ops_header_file = template.GEN_OPS_DEF_HEADER_TEMPLATE.replace(extern_variable=extern_str)
     dir_path = os.path.join(work_path, K.MS_OP_DEF_AUTO_GENERATE_PATH)
     pathlib.Path(dir_path).mkdir(parents=True, exist_ok=True)
@@ -1028,14 +1031,14 @@ def gen_signature_same_type_table(args_map, operator_data):
     return type_num, signature_table
 
 
-def gen_pyboost_code(work_path, ops_yaml_data, doc_yaml_data):
+def gen_pyboost_code(work_path, ops_yaml_data, doc_yaml_data, extra_ops):
     """ gen_pyboost_code """
     # generate pyboost inner prim
     gen_pyboost_inner_prim(work_path, ops_yaml_data)
     # generate pyboost py func
     gen_pyboost_py_func(work_path, ops_yaml_data, doc_yaml_data)
     # generate ops header file
-    generate_ops_header_files(work_path, ops_yaml_data)
+    generate_ops_header_files(work_path, ops_yaml_data, extra_ops)
     # generate pyboost functions
     generate_pyboost_functions(work_path, ops_yaml_data)
     # generate pyboost grad functions

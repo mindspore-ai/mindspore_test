@@ -22,6 +22,7 @@
 #include "backend/common/pass/common_subexpression_elimination.h"
 #include "backend/common/pass/custom_defined_depend.h"
 #include "backend/common/pass/erase_visit_attr.h"
+#include "backend/common/pass/graph_view_replace_pass.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "include/common/debug/dump_proto.h"
 #include "include/backend/optimizer/optimizer.h"
@@ -270,7 +271,9 @@ void GEBackendOptimizeACLAfterKernelSelect(const KernelGraphPtr &kernel_graph) {
     opt_acl_after_kernel_select_pm->AddPass(std::make_shared<opt::ShapeReshapeFusion2>());
     opt_acl_after_kernel_select_pm->AddPass(std::make_shared<opt::ShapeReshapeDirectFusion>());
   }
-
+  if (!common::IsDisableRuntimeConfig(common::kRuntimeView)) {
+    opt_acl_after_kernel_select_pm->AddPass(std::make_shared<opt::GraphViewReplacePass>());
+  }
   optimizer->AddPassManager(opt_acl_after_kernel_select_pm);
   (void)optimizer->Optimize(kernel_graph);
   kernel_graph->SetExecOrderByDefault();

@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,20 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CORE_OPS_VIEW_TRANSPOSE_STRIDES_CALC_H
-#define MINDSPORE_CORE_OPS_VIEW_TRANSPOSE_STRIDES_CALC_H
-
+#ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_OPAPI_ACLNN_VIEW_UTILS_H_
+#define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_OPAPI_ACLNN_VIEW_UTILS_H_
 #include <vector>
-#include "view/view_strides_calculator.h"
+#include "kernel/kernel.h"
+#include "ops/base_operator.h"
+#include "ir/tensor_storage_info.h"
+#include "mindspore/ops/view/view_strides_calculator.h"
 
 namespace mindspore {
-namespace ops {
+namespace kernel {
+ops::OldTensorInfoPtr GetOldTensorInfo(const KernelTensor *tensor);
 
-OPS_API TensorStorageInfoPtrList TransposeCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs);
-OPS_API TensorStorageInfoPtrList TransposeStridesCalc(const OldTensorInfoPtr old_tensor_info,
-                                                      const std::vector<int64_t> &perms);
-
-}  // namespace ops
+}  // namespace kernel
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CORE_OPS_VIEW_TRANSPOSE_STRIDES_CALC_H
+#endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_OPAPI_ACLNN_VIEW_UTILS_H_

@@ -301,6 +301,19 @@ class ApiCachePool {
   }                                                                                                               \
   (aclnn_api, aclnn_api + "GetWorkspaceSize", hash_id, __VA_ARGS__)
 
+// Gen acltensor for view op
+#define GEN_EXECUTOR_FOR_VIEW(aclnn_api, ...)                                                     \
+  [](const std::string &workspace_api_name, const auto &... args) -> auto {                       \
+    uint64_t workspace_size = 0;                                                                  \
+    transform::aclOpExecutor *executor = nullptr;                                                 \
+    uint64_t *workspace_size_addr = &workspace_size;                                              \
+    transform::aclOpExecutor **executor_addr = &executor;                                         \
+    auto converted_params = transform::ConvertTypes(args..., workspace_size_addr, executor_addr); \
+    auto graph_cache = transform::GraphCache(executor, std::move(converted_params));              \
+    auto process_cache = transform::ProcessCache(graph_cache);                                    \
+    return std::make_tuple(workspace_size, executor, process_cache, 0);                           \
+  }
+
 // First stage for static graph.
 #define GEN_EXECUTOR_FOR_RESIZE(aclnn_api, ...)                                                                   \
   [](const std::string &workspace_api_name, const auto &... args) -> auto {                                       \
