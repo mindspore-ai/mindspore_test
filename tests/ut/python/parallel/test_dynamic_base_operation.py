@@ -239,10 +239,9 @@ def test_allsplit_static():
     context.reset_auto_parallel_context()
     assert validator.check_node_inputs_has('TupleGetItem-0', ['MakeTuple-0', 0])
     assert validator.check_node_inputs_has('ReLU-0', ['TupleGetItem-0'])
-    assert validator.check_node_inputs_has('Reshape-0', ['ReLU-0', '(768, 2, 2)'])
-    assert validator.check_node_inputs_has('StridedSlice-0', ['Reshape-0', '(384, 2, 2)'])
-    assert validator.check_node_inputs_has('Reshape-1', ['StridedSlice-0', '(1, 384, 2, 2)'])
-    assert validator.check_node_inputs_has('ReLU-1', ['Reshape-1'])
+    assert validator.check_node_inputs_has('Reshape-0', ['ReLU-0', '(2, 384, 2, 2)'])
+    assert validator.check_node_inputs_has('StridedSlice-0', ['Reshape-0', '(1, 384, 2, 2)'])
+    assert validator.check_node_inputs_has('ReLU-1', ['StridedSlice-0'])
 
 
 def test_allsplit_dyn():

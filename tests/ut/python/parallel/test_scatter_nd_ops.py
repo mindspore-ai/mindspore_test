@@ -256,7 +256,7 @@ def test_tensor_scatter_add():
     sub_graph = {
         'TensorScatterAdd-0': ['Reshape-1', 'Sub-0', 'Mul-2'],
         'Equal-0': ['Sub-1', 'Minimum-0'],
-        'AllGather-2': ['TensorScatterAdd-0']
+        'AllGather-1': ['TensorScatterAdd-0']
     }
     assert validator.check_graph_structure(sub_graph)
 
@@ -280,7 +280,7 @@ def test_tensor_scatter_mul():
     sub_graph = {
         'TensorScatterMul-0': ['Reshape-1', 'Sub-0', 'Add-0'],
         'Equal-0': ['Sub-1', 'Minimum-0'],
-        'AllGather-2': ['TensorScatterMul-0']
+        'AllGather-1': ['TensorScatterMul-0']
     }
     assert validator.check_graph_structure(sub_graph)
 

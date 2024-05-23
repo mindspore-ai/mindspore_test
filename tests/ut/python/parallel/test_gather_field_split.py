@@ -94,7 +94,7 @@ def test_field_split_dim_2x1():
     assert validator.check_parameter_layout('gather_param', gather_param_layout)
 
     # check inputs
-    sub_expect_inputs = ['Reshape', 'value=10']
+    sub_expect_inputs = ['AllGather', 'value=10']
     assert validator.check_node_inputs_fuzzy_match('Sub-0', sub_expect_inputs)
 
 
@@ -120,5 +120,5 @@ def test_field_split_dim_3x1():
     assert validator.check_parameter_layout('gather_param', gather_param_layout)
 
     # check inputs
-    sub_expect_inputs = ['Reshape', 'value=10']
+    sub_expect_inputs = ['AllGather', 'value=10']
     assert validator.check_node_inputs_fuzzy_match('Sub-0', sub_expect_inputs)

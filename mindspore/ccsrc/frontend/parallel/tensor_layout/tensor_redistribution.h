@@ -78,7 +78,7 @@ class TensorRedistribution {
   double forward_comm_cost() const { return forward_comm_cost_; }
   double backward_comm_cost() const { return backward_comm_cost_; }
   double memory_cost() const { return memory_cost_; }
-  Shape input_shape() const { return from_origin_.slice_shape().array(); }
+  Shape input_shape() const { return from_origin_.base_slice_shape().array(); }
   Status ResetLayoutTransfer() { return this->RollbackToDynamicShape(); }
   Status RollbackToDynamicShape();
   TensorLayout from_origin_layout() const { return this->from_origin_; }
@@ -92,6 +92,7 @@ class TensorRedistribution {
   void CreateAssembledDynamicMapping(const CNodePtr &cur_cnode, const AnfNodePtr &pre_cnode,
                                      const FuncGraphPtr &func_graph, int64_t redistribution_index);
   void SetVirtualRank(const int64_t virtual_rank) { virtual_rank_ = virtual_rank; }
+  std::vector<int64_t> GetVirtualRankList() { return virtual_rank_list_; }
 
  private:
   Status CalculateToTensorShapeUsingEnumeration(const Shape &from_tsr_shape, Shape *to_tsr_shape, const Array &factors);

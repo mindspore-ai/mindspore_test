@@ -452,7 +452,7 @@ def _get_needed_rank_transform_operator_map_by_layouts(from_tensor_layout, to_te
     result_map = {self_rank: transform_operators}
     for operators in transform_operators:
         op_name = operators[0]
-        if op_name == "AllGather":
+        if op_name == "AllConcat":
             groups = operators[1][:-1]
             stack.append((index, groups))
             index += 1
@@ -466,7 +466,7 @@ def _get_needed_rank_transform_operator_map_by_layouts(from_tensor_layout, to_te
                 index = 0
                 for operators in new_transform_operators:
                     op_name = operators[0]
-                    if op_name == "AllGather" and index < group_info[0]:
+                    if op_name == "AllConcat" and index < group_info[0]:
                         groups = operators[1][:-1]
                         stack.insert(0, (index, groups))
                         index += 1
@@ -491,7 +491,7 @@ def _generate_transform_operator_stack(transform_operators_map, self_rank):
         level = queue_front[1]
         current_operator = queue_front[2]
         if level >= 1:
-            if current_operator[0] == "AllGather":
+            if current_operator[0] == "AllConcat":
                 current_group = current_operator[1][:-1]
                 for rank_id in current_group:
                     handle_queue.append((rank_id, level - 1, transform_operators_map[rank_id][level - 1]))
@@ -523,7 +523,7 @@ def _apply_tensor_transform_operators(transform_operator_stack, tensor_dict, dev
                 if operator[0] != op_name:
                     raise ValueError("The operator in the same level should be equal in the transform tensor operator "
                                      "list, but the find {} and {} in level {}".format(op_name, operator[0], cur_level))
-                if operator[0] != "AllGather":
+                if operator[0] != "AllConcat":
                     tensor_dict[rank_id % device_num] = _apply_operator(operator[0])(tensor_dict[rank_id % device_num],
                                                                                      operator)
                     continue
@@ -532,7 +532,7 @@ def _apply_tensor_transform_operators(transform_operator_stack, tensor_dict, dev
                         raise ValueError("The checkpoint file of rank {} is missing.".format(rank % device_num))
                 allgather_list = [tensor_dict[rank % device_num] for rank in operator[1][:-1]]
                 tmp_tensor_dict[rank_id % device_num] = _apply_operator(operator[0])(allgather_list, operator)
-            if op_name == "AllGather":
+            if op_name == "AllConcat":
                 for rank, value in tmp_tensor_dict.items():
                     tensor_dict[rank % device_num] = value
             level_operators.clear()
@@ -621,7 +621,7 @@ def _apply_operator(operator_name):
         return numpy_data[slice_index]
 
     _apply_operator_map = {"Reshape": _apply_reshape_operator, "StridedSlice": _apply_slice_operator,
-                           "AllGather": _apply_allconcat_operator}
+                           "AllConcat": _apply_allconcat_operator}
     return _apply_operator_map.get(operator_name)
 
 

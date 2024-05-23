@@ -477,9 +477,10 @@ void InsertRedistributionForMicroInterleaved(const TensorRedistributionPtr &tens
 
   for (size_t i = 0; i < redistribution_oplist_ptr_vector.size(); ++i) {
     auto redistribution_oplist_ptr = redistribution_oplist_ptr_vector[i];
+    auto virtual_rank = tensor_redistribution->GetVirtualRankList().at(i);
     if (!tensor_redistribution->IsAssembledStaticShape()) {
       redistribution_oplist_ptr = TensorTransform::GetInstance()->OptimizeTensorRedistributionOperatorList(
-        redistribution_oplist_ptr, tensor_redistribution->input_shape());
+        redistribution_oplist_ptr, tensor_redistribution->input_shape(), virtual_rank);
     }
     // Get allgather group_ranks attr in redistribution_oplist_ptr
     std::vector<std::vector<int64_t>> ag_group_ranks_vector;

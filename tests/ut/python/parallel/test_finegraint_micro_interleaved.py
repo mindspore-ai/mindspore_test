@@ -337,6 +337,18 @@ class AddNet(nn.Cell):
         return out
 
 
+class NetTwoActivation(nn.Cell):
+    def __init__(self, in_layout1=None, in_layout2=None):
+        super().__init__()
+        self.relu = P.ReLU().shard(in_strategy=in_layout1)
+        self.gelu = P.GeLU().shard(in_strategy=in_layout2)
+
+    def construct(self, x):
+        x = self.relu(x)
+        x = self.gelu(x)
+        return x
+
+
 def test_interleaved_base():
     """
     Feature: test micro interleaved
@@ -605,3 +617,26 @@ def test_interleaved_with_add_interleave3():
     x = Tensor(np.ones([3 * 1024, 1024]), dtype=ms.float32)
     net = GradWrap(NetWithLoss(AddNet((1, 1024), add_layout)))
     _ = compile_net(net, x)
+
+
+def test_interleaved_with_redistribution_optimize():
+    """
+    Feature: test layout extend
+    Description: dev_num is 2.
+    Expectation: compile success
+    """
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", device_num=32, global_rank=0, full_batch=True)
+    layout = Layout((4, 8, 2), ("dp", "mp", "interleaved_parallel"))
+    layout1 = (layout(("dp", "interleaved_parallel", "mp"), "None"),)
+    layout2 = (layout(("dp", "mp"), "None"),)
+    net = NetTwoActivation(layout1, layout2)
+    input_x = Tensor(np.zeros((256, 12288)).astype(np.float32))
+    phase = compile_net(net, input_x)
+
+    validator = ParallelValidator(net, phase)
+    assert validator.check_node_inputs_has("AllGather-0", ["ReLU-0"])
+    assert validator.check_node_inputs_has("AllGather-1", ["ReLU-1"])
+    assert validator.check_node_inputs_has("MakeTuple-1", ["AllGather-0", "AllGather-1"])
+    assert validator.check_node_inputs_has("Concat-0", ["MakeTuple-1"])
+    assert validator.check_node_inputs_has("StridedSlice-2", ["Concat-0"])
+    assert validator.check_node_inputs_has("GeLU-0", ["StridedSlice-2"])

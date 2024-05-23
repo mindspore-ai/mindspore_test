@@ -30,6 +30,8 @@ namespace mindspore {
 namespace parallel {
 using TransformFunc = std::function<std::pair<std::string, std::vector<int64_t>>(const Operator &)>;
 using InferShapeFunc = std::function<Shape(const Shape &, const std::vector<int64_t> &)>;
+using ConstructOpFunc = std::function<Operator(const std::vector<int64_t> &)>;
+using RedisOpPair = std::pair<std::string, std::vector<int64_t>>;
 class TensorTransform {
  public:
   static std::shared_ptr<TensorTransform> GetInstance();
@@ -37,29 +39,53 @@ class TensorTransform {
   TensorTransform(const TensorTransform &) = delete;
   TensorTransform &operator=(const TensorTransform &) = delete;
   void InitTransforOperator();
-  std::vector<std::pair<std::string, std::vector<int64_t>>> TransformOperators(const Shapes &from, const Shapes &to,
-                                                                               const RankList &dev_list,
-                                                                               int64_t rank_id);
+  std::vector<RedisOpPair> TransformOperators(const Shapes &from, const Shapes &to, const RankList &dev_list,
+                                              int64_t rank_id);
   RedistributionOpListPtr OptimizeTensorRedistributionOperatorList(
-    const RedistributionOpListPtr &redistribution_op_list, const Shape &input_shape);
+    const RedistributionOpListPtr &redistribution_op_list, const Shape &input_shape, int64_t virtual_rank = -1);
 
  private:
   TensorTransform();
   std::unordered_map<string, TransformFunc> transform_operator_;
   std::unordered_map<string, InferShapeFunc> infer_shape_operator_;
+  std::unordered_map<string, ConstructOpFunc> construct_op_operator_;
   bool inited_function_ = false;
   std::pair<std::string, std::vector<int64_t>> ExtractReshapeOp(const Operator &reshape_op_pair) const;
   std::pair<std::string, std::vector<int64_t>> ExtractAllGatherOp(const Operator &allgather_op_pair) const;
   std::pair<std::string, std::vector<int64_t>> ExtractSplitOp(const Operator &split_op_pair) const;
   std::pair<std::string, std::vector<int64_t>> ExtractConcatOp(const Operator &concat_op_pair) const;
   std::pair<std::string, std::vector<int64_t>> ExtractStridedSliceOp(const Operator &slice_op_pair) const;
+
+  Operator ConstructReshapeOp(const std::vector<int64_t> &inputs);
+  Operator ConstructAllGatherOp(const std::vector<int64_t> &inputs);
+  Operator ConstructSplitOp(const std::vector<int64_t> &inputs);
+  Operator ConstructStrideSliceOp(const std::vector<int64_t> &inputs);
+  Operator ConstructConcatOp(const std::vector<int64_t> &inputs);
+
   Shape InferReshapeOp(const Shape &ori_shape, const std::vector<int64_t> &op) const;
   Shape InferAllGatherOp(const Shape &ori_shape, const std::vector<int64_t> &op) const;
+  Shape InferAllConcatOp(const Shape &ori_shape, const std::vector<int64_t> &op) const;
   Shape InferStridedSliceOp(const Shape &ori_shape, const std::vector<int64_t> &op) const;
-  std::vector<Shape> GetRedistributionOpShape(
-    const Shape &ori_shape, const std::vector<std::pair<std::string, std::vector<int64_t>>> &transform_op_list);
-  void OptimizeAllConcat(std::vector<std::pair<std::string, std::vector<int64_t>>> *transform_op_list);
+  Shape InferSliceOp(const Shape &ori_shape, const std::vector<int64_t> &op) const;
+
+  std::vector<Shape> GetRedistributionOpShape(const Shape &ori_shape,
+                                              const std::vector<RedisOpPair> &transform_op_list);
+  Status TransAllGatherToAllConcat(std::vector<RedisOpPair> *transform_op_list);
+  Status TransAllConcatToAllGather(std::vector<RedisOpPair> *transform_op_list);
+  Status TransStridedSliceToSlice(const Shape &input_shape, std::vector<RedisOpPair> *transform_op_list);
+  Status TransSliceToStridedSlice(const Shape &input_shape, std::vector<RedisOpPair> *transform_op_list);
+  Status ReorderAndMergeRedistributionOp(const Shape &input_shape, std::vector<RedisOpPair> *transform_op_list);
+  void ShowRedisOpList(const Shape &input_shape, const std::vector<RedisOpPair> &transform_op_list);
+  void EliminateRedundancyReshape(const Shape &input_shape, std::vector<RedisOpPair> *transform_op_list);
+  void OptimizeAllConcat(const Shape &input_shape, std::vector<RedisOpPair> *transform_op_list);
+  void OptimizeSlice(const Shape &input_shape, std::vector<RedisOpPair> *transform_op_list);
+  void MergeAllConcat(std::vector<RedisOpPair> *transform_op_list);
+  void MergeSlice(std::vector<RedisOpPair> *transform_op_list);
+  RedistributionOpList ConstructRedistributionOpListByRedisOpList(const std::vector<RedisOpPair> &transform_op_list);
   TensorRedistribution tensor_redistribution_;
+
+ private:
+  int64_t virtual_rank_ = -1;
 };
 }  // namespace parallel
 }  // namespace mindspore
