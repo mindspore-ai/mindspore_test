@@ -13,23 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "plugin/device/ascend/optimizer/ir_fusion/mc2_fusion.h"
+#include <set>
 #include <memory>
 #include <algorithm>
+#include "base/base.h"
 #include "plugin/device/ascend/optimizer/common/gllo_utils.h"
+#include "plugin/device/ascend/optimizer/ir_fusion/mc2_fusion.h"
+#include "plugin/device/ascend/hal/common/ascend_utils.h"
 #include "include/common/utils/anfalgo.h"
+#include "utils/log_adapter.h"
 #include "utils/ms_context.h"
-#include "mindspore/ops/op_def/math_ops.h"
-#include "mindspore/ops/op_def/other_ops.h"
+#include "op_def/math_ops.h"
+#include "op_def/other_ops.h"
+#include "op_def/lite_ops.h"
 
 namespace mindspore::opt {
 namespace {
-enum MC2FusionLevel {
-  kMC2NotFusion = 0,
-  kMC2FusionForward = 1,
-  kMC2FusionBackward = 2,
-  kMC2FusionFull,
-};
+enum MC2FusionLevel { kMC2NotFusion = 0, kMC2FusionForward = 1, kMC2FusionBackward = 2, kMC2FusionFull = 3 };
+
 bool IsForwardNode(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
   if (!node->isa<CNode>()) {
@@ -54,6 +55,24 @@ bool IsBpropNode(const AnfNodePtr &node) {
     return false;
   }
   return node->fullname_with_scope().find("Gradients") == 0;
+}
+
+bool IsKbkMode(const FuncGraphPtr &graph) {
+  MS_EXCEPTION_IF_NULL(graph);
+  auto kernel_graph = graph->cast<KernelGraphPtr>();
+  MS_EXCEPTION_IF_NULL(kernel_graph);
+  return !kernel_graph->is_graph_run_mode();
+}
+
+ShapeVector GetShape(const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
+  auto base_shape = node->abstract()->GetShape();
+  if (base_shape->isa<abstract::Shape>()) {
+    auto shape_ptr = base_shape->cast<abstract::ShapePtr>();
+    MS_EXCEPTION_IF_NULL(shape_ptr);
+    return shape_ptr->shape();
+  }
+  return {};
 }
 
 // Return true if rank_ids is a continuous 8p group.
@@ -114,14 +133,6 @@ const BaseRef MC2FusionBase::DefinePattern() const {
 
 const AnfNodePtr MC2FusionBase::Process(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
                                         const EquivPtr &equiv) const {
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto mc2_fusion_level = ms_context->get_param<int>(MS_CTX_COMPUTE_COMMUNICATE_FUSION_LEVEL);
-  if (mc2_fusion_level == kMC2NotFusion) {
-    MS_LOG(DEBUG) << "MC2 fusion level is 0, not enable fusion.";
-    return nullptr;
-  }
-
   MS_LOG(DEBUG) << "Do " << name() << " fusion.";
   if (func_graph == nullptr || node == nullptr || equiv == nullptr) {
     MS_LOG(DEBUG) << "Func graph, node and equiv should be not nullptr, but some of them are nullptr";
@@ -131,6 +142,15 @@ const AnfNodePtr MC2FusionBase::Process(const FuncGraphPtr &func_graph, const An
     MS_LOG(DEBUG) << "Node should be cnode, but it is not cnode.";
     return nullptr;
   }
+
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto mc2_fusion_level = ms_context->get_param<int>(MS_CTX_COMPUTE_COMMUNICATE_FUSION_LEVEL);
+  if (mc2_fusion_level == kMC2NotFusion) {
+    MS_LOG(DEBUG) << "MC2 fusion level is 0, not enable fusion.";
+    return nullptr;
+  }
+
   if (mc2_fusion_level == kMC2FusionForward && !IsForwardNode(node)) {
     MS_LOG(DEBUG) << "MC2 fusion level is " << kMC2FusionForward << ", only apply to forward node. Skip node "
                   << node->fullname_with_scope();
@@ -140,6 +160,14 @@ const AnfNodePtr MC2FusionBase::Process(const FuncGraphPtr &func_graph, const An
     MS_LOG(DEBUG) << "MC2 fusion level is " << kMC2FusionBackward << ", only apply to backward node. Skip node "
                   << node->fullname_with_scope();
     return nullptr;
+  }
+
+  if (IsKbkMode(func_graph)) {
+    if (mc2_fusion_level != kMC2NotFusion && mc2_fusion_level != kMC2FusionForward &&
+        mc2_fusion_level != kMC2FusionBackward && mc2_fusion_level != kMC2FusionFull) {
+      MS_LOG(DEBUG) << "In KBK mode MC2 fusion level is " << mc2_fusion_level << ", only support 0, 1, 2, 3.";
+      return nullptr;
+    }
   }
 
   auto fusion_node = CreateFusionCNode(func_graph, node, equiv);
@@ -197,16 +225,39 @@ CNodePtr MatmulReduceScatterFusion::CreateFusionCNode(const FuncGraphPtr &func_g
   auto matmul_reduce_scatter_prim = prim::kPrimMatmulReduceScatter->Clone();
   MS_CHECK_TRUE_RET(matmul_reduce_scatter_prim, {});
 
+  auto is_trans_a = GetInputValueFromCNode<bool>(matmul_cnode, kIndex3);
+  auto is_trans_b = GetInputValueFromCNode<bool>(matmul_cnode, kIndex4);
   // add attr
   auto reduce_scatter_prim = GetCNodePrimitive(reduce_scatter_cnode);
   auto rank_list_attr = reduce_scatter_prim->GetAttr(kAttrRankList);
-  MS_CHECK_TRUE_RET(rank_list_attr != nullptr, {});
-  auto rank_list = GetValue<std::vector<uint32_t>>(rank_list_attr);
-  // Only support 8p comm group currently.
-  MS_CHECK_TRUE_RET(IsSingleNodeCommGroup(rank_list), {});
+  if (!IsKbkMode(func_graph)) {
+    MS_CHECK_TRUE_RET(rank_list_attr != nullptr, {});
+    auto rank_list = GetValue<std::vector<uint32_t>>(rank_list_attr);
+    // Only support 8p comm group currently.
+    MS_CHECK_TRUE_RET(IsSingleNodeCommGroup(rank_list), {});
+  } else {
+    // X1, X2 only support two dimensions
+    auto input_x_shape = GetShape(input_x);
 
-  auto is_trans_a = GetInputValueFromCNode<bool>(matmul_cnode, kIndex3);
-  auto is_trans_b = GetInputValueFromCNode<bool>(matmul_cnode, kIndex4);
+    // Check if both inputs are 2-dimensional
+    MS_CHECK_TRUE_RET(input_x_shape.size() == kSizeTwo, {});
+    MS_CHECK_TRUE_RET(GetShape(input_w).size() == kSizeTwo, {});
+
+    // Define valid range for the second dimension [256, 65535)
+    constexpr int64_t kMaxValue = 65535;
+    constexpr int64_t kMinValue = 256;
+    int64_t input_x_dim1 = input_x_shape[kIndex1];
+    if (input_x_dim1 >= kMaxValue || input_x_dim1 < kMinValue) {
+      MS_LOG(WARNING) << "The second dimension of input_x is " << input_x_dim1
+                      << ", but aclnnMatmulReduceScatter required should be between " << kMinValue
+                      << " (inclusive) and " << kMaxValue << " (exclusive).";
+      return nullptr;
+    }
+
+    // Ensure is_trans_a is false
+    MS_CHECK_TRUE_RET(!is_trans_a, {});
+  }
+
   matmul_reduce_scatter_prim->AddAttr(kAttrGroup, reduce_scatter_prim->GetAttr(kAttrGroup));
   matmul_reduce_scatter_prim->AddAttr(kAttrRankSize, reduce_scatter_prim->GetAttr(kAttrRankSize));
   matmul_reduce_scatter_prim->AddAttr(kAttrReduceOp, reduce_scatter_prim->GetAttr(kAttrOp));
@@ -273,10 +324,30 @@ CNodePtr AllGatherMatmulFusion::CreateFusionCNode(const FuncGraphPtr &func_graph
   // add attr
   auto all_gather_prim = GetCNodePrimitive(all_gather_cnode);
   auto rank_list_attr = all_gather_prim->GetAttr(kAttrRankList);
-  MS_CHECK_TRUE_RET(rank_list_attr != nullptr, {});
-  auto rank_list = GetValue<std::vector<uint32_t>>(rank_list_attr);
+  if (!IsKbkMode(func_graph)) {
+    MS_CHECK_TRUE_RET(rank_list_attr != nullptr, {});
+    auto rank_list = GetValue<std::vector<uint32_t>>(rank_list_attr);
+    // Only support 8p comm group currently.
+    MS_CHECK_TRUE_RET(IsSingleNodeCommGroup(rank_list), {});
+  } else {
+    // X1, X2 only support two dimensions
+    auto input_x_shape = GetShape(input_x);
 
-  MS_CHECK_TRUE_RET(IsSingleNodeCommGroup(rank_list), {});  // Only support 8p comm group currently.
+    // Check if both inputs are 2-dimensional
+    MS_CHECK_TRUE_RET(input_x_shape.size() == kSizeTwo, {});
+    MS_CHECK_TRUE_RET(GetShape(input_w).size() == kSizeTwo, {});
+
+    // Define valid range for the second dimension [256, 65535)
+    constexpr int64_t kMaxValue = 65535;
+    constexpr int64_t kMinValue = 256;
+    int64_t input_x_dim1 = input_x_shape[kIndex1];
+    if (input_x_dim1 >= kMaxValue || input_x_dim1 < kMinValue) {
+      MS_LOG(WARNING) << "The second dimension of input_x is " << input_x_dim1
+                      << ", but aclnnAllGatherMatmul required should be between " << kMinValue << " (inclusive) and "
+                      << kMaxValue << " (exclusive).";
+      return nullptr;
+    }
+  }
 
   auto is_trans_a = GetInputValueFromCNode<bool>(matmul_cnode, kIndex3);
   auto is_trans_b = GetInputValueFromCNode<bool>(matmul_cnode, kIndex4);
