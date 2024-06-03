@@ -23,9 +23,9 @@
 #include "include/backend/optimizer/helper.h"
 #include "include/common/utils/anfalgo.h"
 #include "ir/graph_utils.h"
-#include "ops/array_op_name.h"
-#include "ops/framework_ops.h"
-#include "ops/sequence_ops.h"
+#include "op_def/array_op_name.h"
+#include "op_def/framework_ops.h"
+#include "op_def/sequence_ops.h"
 #include "ops/op_def.h"
 
 namespace mindspore {

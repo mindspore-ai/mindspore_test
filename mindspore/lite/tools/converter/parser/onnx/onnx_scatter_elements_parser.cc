@@ -16,7 +16,7 @@
 
 #include "tools/converter/parser/onnx/onnx_scatter_elements_parser.h"
 #include <memory>
-#include "ops/scatter_elements.h"
+#include "infer/scatter_elements.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

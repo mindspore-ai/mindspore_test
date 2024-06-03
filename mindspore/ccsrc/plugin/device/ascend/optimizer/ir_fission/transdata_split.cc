@@ -15,8 +15,8 @@
  */
 #include "plugin/device/ascend/optimizer/ir_fission/transdata_split.h"
 #include <set>
-#include "ops/array_ops.h"
-#include "ops/auto_generate/gen_ops_primitive.h"
+#include "op_def/array_ops.h"
+#include "op_def/auto_generate/gen_ops_primitive.h"
 #include "include/common/debug/anf_ir_dump.h"
 
 namespace mindspore {

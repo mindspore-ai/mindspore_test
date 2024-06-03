@@ -18,10 +18,10 @@
 #include <memory>
 #include <string>
 #include "kernel/kernel.h"
-#include "mindspore/core/ops/framework_ops.h"
-#include "mindspore/core/ops/sequence_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
 #ifdef ENABLE_AKG
-#include "plugin/device/gpu/kernel/akg/akg_gpu_kernel_build.h"
+#include "kernel/gpu/akg/akg_gpu_kernel_build.h"
 #endif
 #include "backend/common/session/kernel_build_client.h"
 #include "frontend/operator/ops.h"
@@ -29,7 +29,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "kernel/framework_utils.h"
 #include "plugin/device/gpu/hal/device/cuda_env_checker.h"
-#include "plugin/device/gpu/kernel/gpu_kernel_factory.h"
+#include "kernel/gpu/gpu_kernel_factory.h"
 namespace mindspore {
 namespace device {
 namespace gpu {

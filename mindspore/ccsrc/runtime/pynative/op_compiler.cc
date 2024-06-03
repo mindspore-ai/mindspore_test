@@ -20,10 +20,10 @@
 #include <algorithm>
 #include <vector>
 #include <unordered_set>
-#include "mindspore/core/ops/op_utils.h"
+#include "mindspore/core/utils/core_op_utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "ops/nn_op_name.h"
-#include "ops/conv_pool_op_name.h"
+#include "op_def/nn_op_name.h"
+#include "op_def/conv_pool_op_name.h"
 #include "runtime/pynative/op_executor.h"
 #include "runtime/pynative/op_runtime_info.h"
 #include "runtime/device/device_address_utils.h"
@@ -316,7 +316,7 @@ std::string GetGraphInfoForAscendSpecial(const pynative::BaseOpRunInfo &op_info,
 #endif
 
 inline std::set<int64_t> GetDependList(const pynative::BaseOpRunInfo &op_info, const PrimitivePtr &op_prim) {
-  auto depend_list = mindspore::ops::GetInputDependValueList(op_prim);
+  auto depend_list = ops::GetInputDependValueList(op_prim);
   if (!op_info.dyn_input_sizes.empty()) {
     auto list_tmp = depend_list;
     depend_list.clear();

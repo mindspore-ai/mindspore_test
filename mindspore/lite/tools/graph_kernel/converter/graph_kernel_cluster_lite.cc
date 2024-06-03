@@ -19,12 +19,12 @@
 #include <utility>
 #include <vector>
 
-#include "mindspore/core/ops/nn_optimizer_ops.h"
-#include "mindspore/core/ops/math_ops.h"
-#include "mindspore/core/ops/nn_ops.h"
-#include "mindspore/core/ops/comparison_ops.h"
-#include "mindspore/core/ops/array_ops.h"
-#include "mindspore/core/ops/lite_ops.h"
+#include "mindspore/ops/op_def/nn_optimizer_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
+#include "mindspore/ops/op_def/comparison_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
 #include "include/common/utils/anfalgo.h"
 #include "backend/common/graph_kernel/core/graph_kernel_callback.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"

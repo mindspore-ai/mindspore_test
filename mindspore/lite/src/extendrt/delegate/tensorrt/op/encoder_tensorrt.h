@@ -26,7 +26,7 @@
 #include "src/fastertransformer/layers/ms_layers/encoder.h"
 #include "src/fastertransformer/layers/ms_layers/ffn.h"
 #include "src/extendrt/delegate/tensorrt/op/vsl_compress_tensorrt.h"
-#include "ops/encoder_layer.h"
+#include "infer/encoder_layer.h"
 namespace mindspore::lite {
 class EncoderTensorRT : public TensorRTOp {
  public:

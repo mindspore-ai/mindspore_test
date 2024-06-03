@@ -15,7 +15,7 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/fp32/gru_fp32.h"
-#include "ops/gru.h"
+#include "infer/gru.h"
 using mindspore::ops::kBidirectional;
 using mindspore::ops::kNameGRU;
 using mindspore::schema::PrimitiveType_GRU;

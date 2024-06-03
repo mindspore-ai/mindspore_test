@@ -19,7 +19,7 @@
 #include <dlfcn.h>
 #include <memory>
 #include <NvInferRuntimeCommon.h>
-#include "plugin/device/gpu/kernel/trt/trt_utils.h"
+#include "kernel/gpu/trt/trt_utils.h"
 
 namespace mindspore {
 namespace device {

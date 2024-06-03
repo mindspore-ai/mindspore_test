@@ -16,8 +16,8 @@
 #include "tools/converter/parser/tflite/tflite_dequantize_parser.h"
 #include <vector>
 #include <memory>
-#include "ops/quant_dtype_cast.h"
-#include "ops/auto_generate/gen_lite_ops.h"
+#include "infer/quant_dtype_cast.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

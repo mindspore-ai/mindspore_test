@@ -15,7 +15,7 @@
  */
 #include "backend/common/graph_kernel/expander/base/ir_builder.h"
 #include "backend/common/graph_kernel/expander/base/utils.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 
 namespace mindspore::graphkernel::expander {
 REG_EXPANDER_FUNC("Identity").SetBody(BODYFUNC(ib) {
@@ -45,7 +45,7 @@ REG_EXPANDER_FUNC("ZerosLike").SetBody(BODYFUNC(ib) {
 REG_EXPANDER_FUNC("FillV2").SetBody(BODYFUNC(ib) {
   const auto &shape = ib->input(kIndex0);
   auto shape_value_ptr = shape->GetValue();
-  if (shape_value_ptr == nullptr || !ops::IsValueKnown(shape_value_ptr)) {
+  if (shape_value_ptr == nullptr || !IsValueKnown(shape_value_ptr)) {
     MS_LOG(DEBUG) << "shape is not const value";
     return {};
   }

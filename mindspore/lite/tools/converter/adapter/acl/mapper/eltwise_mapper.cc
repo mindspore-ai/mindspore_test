@@ -16,7 +16,7 @@
 
 #include "tools/converter/adapter/acl/mapper/eltwise_mapper.h"
 #include "tools/converter/adapter/acl/mapper/primitive_mapper_register.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace lite {

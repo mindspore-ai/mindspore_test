@@ -15,7 +15,7 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/fp32/embedding_lookup_fp32.h"
-#include "ops/embedding_lookup.h"
+#include "infer/embedding_lookup.h"
 using mindspore::ops::kMaxNorm;
 using mindspore::ops::kNameEmbeddingLookup;
 using mindspore::schema::PrimitiveType_EmbeddingLookupFusion;

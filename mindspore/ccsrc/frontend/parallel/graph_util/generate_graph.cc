@@ -34,7 +34,7 @@
 #include "utils/log_adapter.h"
 #include "utils/anf_utils.h"
 #include "ir/primitive.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 #include "ops/op_def.h"
 
 using mindspore::tensor::Tensor;

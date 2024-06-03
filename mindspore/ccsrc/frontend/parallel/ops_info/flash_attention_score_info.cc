@@ -30,9 +30,9 @@
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/graph_util/generate_graph.h"
 #include "frontend/parallel/graph_util/graph_utils.h"
-#include "mindspore/core/ops/nn_ops.h"
-#include "mindspore/core/ops/ops_func_impl/flash_attention_score.h"
-#include "ops/op_enum.h"
+#include "mindspore/ops/op_def/nn_ops.h"
+#include "mindspore/ops/infer/ops_func_impl/flash_attention_score.h"
+#include "mindspore/ops/op_def/op_enum.h"
 
 namespace mindspore {
 using mindspore::ops::FASInputLayoutMode;

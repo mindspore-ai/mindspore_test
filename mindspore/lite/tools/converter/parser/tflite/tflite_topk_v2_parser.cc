@@ -18,7 +18,7 @@
 #include "tools/converter/parser/tflite/tflite_topk_v2_parser.h"
 #include <vector>
 #include <memory>
-#include "ops/fusion/topk_fusion.h"
+#include "infer/cxx_api/topk_fusion.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

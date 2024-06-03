@@ -22,13 +22,13 @@
 #include <memory>
 
 #include "src/extendrt/utils/func_graph_utils.h"
-#include "mindspore/core/ops/sequence_ops.h"
-#include "mindspore/core/ops/array_ops.h"
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "include/common/utils/convert_utils.h"
 #include "mindspore/ccsrc/include/backend/optimizer/helper.h"
 
-#include "ops/op_name.h"
+#include "op_def/op_name.h"
 #include "tools/optimizer/format/to_nhwc_format.h"
 #include "tools/optimizer/graph/decrease_transpose_algo.h"
 

@@ -19,12 +19,12 @@
 #include <vector>
 
 #include "base/base.h"
-#include "mindspore/core/ops/array_ops.h"
-#include "mindspore/core/ops/lite_ops.h"
-#include "mindspore/core/ops/math_ops.h"
-#include "mindspore/core/ops/nn_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/core/ops/op_def.h"
-#include "mindspore/core/ops/sequence_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
 #include "ops/primitive_c.h"
 #include "utils/anf_utils.h"
 #include "utils/check_convert_utils.h"

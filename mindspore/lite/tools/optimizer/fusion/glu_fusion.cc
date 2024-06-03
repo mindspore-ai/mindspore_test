@@ -17,12 +17,12 @@
 #include "tools/optimizer/fusion/glu_fusion.h"
 #include <memory>
 #include <string>
-#include "mindspore/core/ops/sequence_ops.h"
-#include "mindspore/core/ops/lite_ops.h"
-#include "mindspore/core/ops/array_ops.h"
-#include "ops/glu.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "infer/glu.h"
 #include "include/common/utils/utils.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

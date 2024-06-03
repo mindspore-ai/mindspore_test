@@ -20,8 +20,8 @@
 #include <vector>
 #include <set>
 #include <algorithm>
-#include "mindspore/core/ops/sequence_ops.h"
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "ir/anf.h"
 #include "ir/func_graph.h"
 #include "ir/manager.h"

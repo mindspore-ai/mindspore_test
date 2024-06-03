@@ -18,7 +18,7 @@
 #define MINDSPORE_LITE_TOOLS_CONVERTER_ADAPTER_ACL_MAPPER_ARGMIN_FUSION_MAPPER_H_
 
 #include "tools/converter/adapter/acl/mapper/primitive_mapper.h"
-#include "ops/fusion/arg_min_fusion.h"
+#include "infer/cxx_api/arg_min_fusion.h"
 
 namespace mindspore {
 namespace lite {

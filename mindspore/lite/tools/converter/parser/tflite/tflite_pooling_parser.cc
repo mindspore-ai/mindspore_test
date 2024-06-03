@@ -18,8 +18,8 @@
 #include <vector>
 #include <memory>
 #include <string>
-#include "ops/fusion/avg_pool_fusion.h"
-#include "ops/fusion/max_pool_fusion.h"
+#include "infer/cxx_api/avg_pool_fusion.h"
+#include "infer/cxx_api/max_pool_fusion.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

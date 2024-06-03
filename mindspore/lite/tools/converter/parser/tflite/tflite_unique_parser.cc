@@ -18,7 +18,7 @@
 #include "tools/converter/parser/tflite/tflite_unique_parser.h"
 #include <vector>
 #include <memory>
-#include "ops/unique.h"
+#include "infer/unique.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

@@ -16,8 +16,8 @@
 
 #include "parser/caffe/caffe_pooling_parser.h"
 #include <memory>
-#include "ops/fusion/avg_pool_fusion.h"
-#include "ops/fusion/max_pool_fusion.h"
+#include "infer/cxx_api/avg_pool_fusion.h"
+#include "infer/cxx_api/max_pool_fusion.h"
 #include "common/op_enum.h"
 
 namespace mindspore {

@@ -21,7 +21,7 @@
 #include "utils/shape_utils.h"
 #include "utils/check_convert_utils.h"
 #include "mindapi/base/types.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace expander {
@@ -78,11 +78,11 @@ REG_FALLBACK_BUILDER("FFNExt").SetBody(BODYFUNC(ib) {
   auto antiquant_offset2 = ib->GetInput(kIndex13);
   auto activation = ib->GetInput(kIndex14);
   auto activation_ptr = activation->BuildValue();
-  auto activation_val = ops::GetValueWithCheck<int64_t>(activation_ptr);
+  auto activation_val = GetValueWithCheck<int64_t>(activation_ptr);
   auto activation_string = FFNExtConvertEnumToString(activation_val);
   auto inner_precise = ib->GetInput(kIndex15);
   auto inner_precise_ptr = inner_precise->BuildValue();
-  auto inner_precise_val = ops::GetValueWithCheck<int64_t>(inner_precise_ptr);
+  auto inner_precise_val = GetValueWithCheck<int64_t>(inner_precise_ptr);
   auto out = ib->Emit(
     "FFN",
     {x, weight1, weight2, expert_tokens, bias1, bias2, scale, offset, deq_scale1, deq_scale2, antiquant_scale1,
@@ -137,7 +137,7 @@ REG_FALLBACK_BUILDER("BinaryCrossEntropyWithLogitsBackward").SetBody(BODYFUNC(ib
   dx = ib->Mul(dx, weight);
 
   auto reduction_value = reduction->BuildValue();
-  auto reduction_int_value = ops::GetScalarValue<int64_t>(reduction_value);
+  auto reduction_int_value = GetScalarValue<int64_t>(reduction_value);
   if (reduction_int_value == Reduction::MEAN) {
     if (IsDynamic(ib->GetShape(dx))) {
       auto res = ib->DynSize(dx, ib->GetDtype(dx));

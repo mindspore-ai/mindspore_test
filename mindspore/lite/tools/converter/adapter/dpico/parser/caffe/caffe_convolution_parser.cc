@@ -18,7 +18,7 @@
 #include <memory>
 #include "common/check_base.h"
 #include "common/op_attr.h"
-#include "ops/fusion/conv2d_fusion.h"
+#include "infer/cxx_api/conv2d_fusion.h"
 
 namespace mindspore {
 namespace lite {

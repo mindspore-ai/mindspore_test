@@ -24,9 +24,9 @@
 #include <unordered_set>
 #include <utility>
 #include <atomic>
-#include "mindspore/core/ops/structure_ops.h"
-#include "mindspore/core/ops/sequence_ops.h"
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/structure_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "abstract/abstract_value.h"
 #include "pipeline/jit/ps/fallback.h"
 #include "pipeline/jit/ps/action.h"

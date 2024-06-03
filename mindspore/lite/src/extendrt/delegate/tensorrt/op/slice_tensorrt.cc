@@ -18,9 +18,9 @@
 #include <algorithm>
 #include <utility>
 #include "src/extendrt/delegate/tensorrt/tensorrt_utils.h"
-#include "ops/auto_generate/gen_lite_ops.h"
-#include "ops/fusion/slice_fusion.h"
-#include "ops/crop.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
+#include "infer/cxx_api/slice_fusion.h"
+#include "infer/crop.h"
 
 namespace mindspore::lite {
 namespace {

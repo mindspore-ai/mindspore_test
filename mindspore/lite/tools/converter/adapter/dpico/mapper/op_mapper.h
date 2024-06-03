@@ -31,7 +31,7 @@
 #include "op/recurrent_operator.h"
 #include "mindapi/base/logging.h"
 #include "mindapi/ir/tensor.h"
-#include "ops/op_name.h"
+#include "op_def/op_name.h"
 
 using mindspore::lite::RET_ERROR;
 using mindspore::lite::RET_OK;

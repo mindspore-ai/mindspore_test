@@ -16,7 +16,7 @@
 
 #include "tools/converter/parser/onnx/onnx_instance_norm_parser.h"
 #include <memory>
-#include "ops/instance_norm.h"
+#include "infer/instance_norm.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

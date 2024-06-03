@@ -15,8 +15,8 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/conv_parameter.h"
-#include "ops/adder.h"
-#include "ops/fusion/adder_fusion.h"
+#include "infer/adder.h"
+#include "infer/cxx_api/adder_fusion.h"
 using mindspore::ops::kActivationType;
 using mindspore::ops::kNameAdder;
 using mindspore::ops::kNameAdderFusion;

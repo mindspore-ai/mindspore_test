@@ -18,13 +18,13 @@
 #include <memory>
 #include <vector>
 #include <algorithm>
-#include "mindspore/core/ops/math_ops.h"
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "tools/converter/adapter/acl/mapper/primitive_mapper_register.h"
 #include "src/common/log_util.h"
-#include "ops/op_utils.h"
-#include "ops/standard_normal.h"
+#include "ops_utils/op_utils.h"
+#include "infer/standard_normal.h"
 
 namespace mindspore {
 namespace lite {

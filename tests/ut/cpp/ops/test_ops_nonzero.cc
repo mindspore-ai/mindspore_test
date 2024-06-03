@@ -20,7 +20,7 @@
 #include "common/common_test.h"
 #include "ir/dtype/type.h"
 #include "ir/primitive.h"
-#include "ops/ops_func_impl/non_zero.h"
+#include "infer/ops_func_impl/non_zero.h"
 #include "ops/ops_frontend_func_impl.h"
 #include "ops/test_ops.h"
 

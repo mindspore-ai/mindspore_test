@@ -316,7 +316,7 @@ class ValueDependToInputConverter : public AttrHelper<ValueDependToInputConverte
 
   void ConvertValue(const ValuePtr &value, const AttrDeclType<int64_t> &) {
     MS_EXCEPTION_IF_NULL(value);
-    auto ori_vec = ops::GetArrayValue<int64_t>(value).value().ToVector();
+    auto ori_vec = GetArrayValue<int64_t>(value).value().ToVector();
     data_.resize(ori_vec.size() * sizeof(int32_t));
     int32_t *data_ptr = reinterpret_cast<int32_t *>(data_.data());
     MS_EXCEPTION_IF_NULL(data_ptr);
@@ -327,7 +327,7 @@ class ValueDependToInputConverter : public AttrHelper<ValueDependToInputConverte
 
   void ConvertValue(const ValuePtr &value, const AttrDeclType<int32_t> &) {
     MS_EXCEPTION_IF_NULL(value);
-    auto ori_vec = ops::GetArrayValue<int32_t>(value).value().ToVector();
+    auto ori_vec = GetArrayValue<int32_t>(value).value().ToVector();
     data_.resize(ori_vec.size() * sizeof(int64_t));
     int64_t *data_ptr = reinterpret_cast<int64_t *>(data_.data());
     MS_EXCEPTION_IF_NULL(data_ptr);
@@ -338,7 +338,7 @@ class ValueDependToInputConverter : public AttrHelper<ValueDependToInputConverte
 
   void ConvertValue(const ValuePtr &value, const AttrDeclType<float> &) {
     MS_EXCEPTION_IF_NULL(value);
-    auto ori_vec = ops::GetArrayValue<float>(value).value().ToVector();
+    auto ori_vec = GetArrayValue<float>(value).value().ToVector();
     data_.resize(ori_vec.size() * sizeof(double));
     double *data_ptr = reinterpret_cast<double *>(data_.data());
     MS_EXCEPTION_IF_NULL(data_ptr);
@@ -349,7 +349,7 @@ class ValueDependToInputConverter : public AttrHelper<ValueDependToInputConverte
 
   void ConvertValue(const ValuePtr &value, const AttrDeclType<double> &) {
     MS_EXCEPTION_IF_NULL(value);
-    auto ori_vec = ops::GetArrayValue<double>(value).value().ToVector();
+    auto ori_vec = GetArrayValue<double>(value).value().ToVector();
     data_.resize(ori_vec.size() * sizeof(float));
     float *data_ptr = reinterpret_cast<float *>(data_.data());
     MS_EXCEPTION_IF_NULL(data_ptr);

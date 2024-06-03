@@ -36,9 +36,9 @@
 #include "ir/func_graph.h"
 #include "ir/kernel_info_dev.h"
 #include "ir/primitive.h"
-#include "ops/array_op_name.h"
-#include "ops/other_op_name.h"
-#include "ops/sequence_ops.h"
+#include "op_def/array_op_name.h"
+#include "op_def/other_op_name.h"
+#include "op_def/sequence_ops.h"
 #include "utils/anf_utils.h"
 
 namespace mindspore {

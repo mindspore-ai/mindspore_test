@@ -16,7 +16,7 @@
 #include "backend/common/pass/getitem_tuple.h"
 
 #include <memory>
-#include "mindspore/core/ops/sequence_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
 #include "include/common/utils/utils.h"
 
 namespace mindspore {

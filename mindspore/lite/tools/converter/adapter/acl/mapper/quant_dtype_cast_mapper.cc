@@ -16,13 +16,14 @@
 
 #include "tools/converter/adapter/acl/mapper/quant_dtype_cast_mapper.h"
 #include <memory>
+#include <vector>
 #include "tools/converter/adapter/acl/mapper/primitive_mapper_register.h"
 #include "tools/converter/adapter/acl/mapper/tbe_op_def.h"
 #include "tools/converter/quantizer/quantize_util.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "src/common/log_util.h"
-#include "ops/op_name.h"
-#include "ops/quant_dtype_cast.h"
+#include "op_def/op_name.h"
+#include "infer/quant_dtype_cast.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

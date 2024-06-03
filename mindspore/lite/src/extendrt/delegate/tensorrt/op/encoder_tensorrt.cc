@@ -22,10 +22,10 @@
 #include <functional>
 #include <unordered_map>
 #include <algorithm>
-#include "mindspore/core/ops/nn_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
 #include "src/extendrt/delegate/tensorrt/tensorrt_utils.h"
 #include "NvInferRuntimeCommon.h"
-#include "ops/encoder_layer.h"
+#include "infer/encoder_layer.h"
 #include "src/fastertransformer/kernels/unfused_attention_kernels.h"
 #include "src/fastertransformer/kernels/activation_kernels.h"
 #include "src/fastertransformer/utils/cuda_utils.h"
@@ -34,7 +34,7 @@
 #include "src/extendrt/delegate/tensorrt/op/tensorrt_op.h"
 #include "src/extendrt/delegate/tensorrt/distribution/distribution_base.h"
 #include "src/extendrt/delegate/tensorrt/distribution/distribution_collective.h"
-#include "mindspore/core/ops/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "src/fastertransformer/layers/ms_layers/encoder.h"
 #include "src/fastertransformer/layers/ms_layers/BaseLayer.h"
 #include "src/fastertransformer/layers/ms_layers/attention.h"

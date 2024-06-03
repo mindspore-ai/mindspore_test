@@ -17,7 +17,7 @@
 #include "tools/converter/parser/tflite/tflite_slice_parser.h"
 #include <vector>
 #include <memory>
-#include "ops/fusion/slice_fusion.h"
+#include "infer/cxx_api/slice_fusion.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

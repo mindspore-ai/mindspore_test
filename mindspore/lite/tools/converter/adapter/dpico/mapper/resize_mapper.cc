@@ -22,7 +22,7 @@
 #include "common/anf_util.h"
 #include "include/registry/converter_context.h"
 #include "common/op_enum.h"
-#include "ops/resize.h"
+#include "infer/resize.h"
 #include "op/resize_operator.h"
 
 namespace mindspore {

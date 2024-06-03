@@ -17,9 +17,9 @@
 #include "tools/converter/adapter/acl/mapper/xor_mapper.h"
 #include <memory>
 #include "src/common/log_util.h"
-#include "ops/op_utils.h"
-#include "ops/bitwisexor.h"
-#include "mindspore/core/ops/array_ops.h"
+#include "ops_utils/op_utils.h"
+#include "infer/bitwisexor.h"
+#include "mindspore/ops/op_def/array_ops.h"
 #include "tools/converter/adapter/acl/common/utils.h"
 #include "tools/converter/adapter/acl/mapper/tbe_op_def.h"
 #include "tools/converter/adapter/acl/mapper/primitive_mapper_register.h"

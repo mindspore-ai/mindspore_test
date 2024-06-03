@@ -25,7 +25,7 @@
 #include "ir/dtype/type_id.h"
 #include "ir/func_graph.h"
 #include "tools/converter/quantizer/quantize_util.h"
-#include "ops/dynamic_quant.h"
+#include "infer/dynamic_quant.h"
 #include "mindspore/ccsrc/frontend/parallel/strategy.h"
 
 namespace mindspore::lite::quant {

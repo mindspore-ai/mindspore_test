@@ -25,7 +25,7 @@
 #include "utils/hash_map.h"
 #include "include/api/status.h"
 #include "ir/primitive.h"
-#include "ops/op_name.h"
+#include "op_def/op_name.h"
 #include "ops/primitive_c.h"
 #include "src/common/file_utils.h"
 

@@ -24,7 +24,7 @@
 #include <vector>
 #include <map>
 #include <utility>
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "runtime/device/ms_device_shape_transfer.h"
 #include "include/common/utils/anfalgo.h"
@@ -34,7 +34,7 @@
 #include "ops/op_def.h"
 #include "utils/ms_context.h"
 #include "abstract/ops/primitive_infer_map.h"
-#include "mindspore/ccsrc/plugin/device/cpu/kernel/pyexecute/py_execute_cpu_kernel.h"
+#include "mindspore/ops/kernel/cpu/pyexecute/py_execute_cpu_kernel.h"
 #include "include/common/profiler.h"
 #include "ir/anf.h"
 #include "ir/functor.h"

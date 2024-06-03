@@ -19,7 +19,7 @@
 #include <vector>
 #include <utility>
 #include <memory>
-#include "mindspore/core/ops/sequence_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
 #include "utils/ms_context.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
@@ -29,7 +29,7 @@
 #include "backend/common/graph_kernel/convert_input_and_attr.h"
 #include "kernel/graph_kernel_info.h"
 #include "backend/common/pass/insert_type_transform_op.h"
-#include "mindspore/core/ops/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 
 namespace mindspore::graphkernel {
 namespace {

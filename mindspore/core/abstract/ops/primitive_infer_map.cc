@@ -25,20 +25,19 @@
 #include <iterator>
 
 #include "abstract/utils.h"
-#include "ops/sparse_ops.h"
-#include "ops/random_ops.h"
-#include "ops/conv_pool_ops.h"
-#include "ops/other_ops.h"
-#include "ops/nn_ops.h"
-#include "ops/math_ops.h"
-#include "ops/image_ops.h"
-#include "ops/array_ops.h"
-#include "ops/framework_ops.h"
+#include "op_def/sparse_ops.h"
+#include "op_def/random_ops.h"
+#include "op_def/conv_pool_ops.h"
+#include "op_def/other_ops.h"
+#include "op_def/nn_ops.h"
+#include "op_def/math_ops.h"
+#include "op_def/image_ops.h"
+#include "op_def/array_ops.h"
+#include "op_def/framework_ops.h"
 #include "ops/ops_frontend_func_impl.h"
 #include "ops/op_def.h"
-#include "ops/shape_calc.h"
-#include "ops/op_utils.h"
 #include "include/common/utils/utils.h"
+#include "utils/core_op_utils.h"
 #include "utils/ms_context.h"
 
 namespace mindspore {
@@ -161,7 +160,7 @@ std::set<int64_t> GetValueDependArgIndices(const CNodePtr &cnode, bool is_proto)
     if (op_infer != nullptr && ori.empty()) {
       ori = op_infer->GetValueDependArgIndices();
     }
-    if (prim_name == ops::kNameShapeCalc) {
+    if (prim_name == kShapeCalcOpName) {
       auto only_depend_shape = GetValue<std::vector<bool>>(primitive->GetAttr(kAttrOnlyDependShape));
       for (size_t i = 0; i < only_depend_shape.size(); i++) {
         if (!only_depend_shape[i]) {
@@ -201,7 +200,15 @@ PrimitiveEvalImplMap *GetPrimitiveInferMapPtr() {
   };
   return &prim_eval_implement_map;
 }
+
 const PrimitiveEvalImplMap &GetPrimitiveInferMap() { return *GetPrimitiveInferMapPtr(); }
+
+PrimitiveEvalImplMap *GetDeprecatedPrimitiveInferMapPtr() {
+  static PrimitiveEvalImplMap deprecated_infer_map;
+  return &deprecated_infer_map;
+}
+
+const PrimitiveEvalImplMap &GetDeprecatedPrimitiveInferMap() { return *GetDeprecatedPrimitiveInferMapPtr(); }
 
 std::optional<StandardPrimitiveImplReg> GetPrimitiveInferImpl(const PrimitivePtr &primitive) {
   auto iter = GetPrimitiveInferMap().find(primitive);

@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 #include "backend/common/pass/add_attr_to_node/add_attr_to_node_register.h"
-#include "ops/auto_generate/gen_ops_primitive.h"
-#include "ops/array_ops.h"
-#include "ops/conv_pool_ops.h"
-#include "ops/image_ops.h"
-#include "ops/math_ops.h"
-#include "ops/random_ops.h"
-#include "ops/sparse_ops.h"
-#include "ops/nn_ops.h"
+#include "op_def/auto_generate/gen_ops_primitive.h"
+#include "op_def/array_ops.h"
+#include "op_def/conv_pool_ops.h"
+#include "op_def/image_ops.h"
+#include "op_def/math_ops.h"
+#include "op_def/random_ops.h"
+#include "op_def/sparse_ops.h"
+#include "op_def/nn_ops.h"
 #include "utils/log_adapter.h"
 
 namespace mindspore {

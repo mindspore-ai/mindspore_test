@@ -17,7 +17,7 @@
 #include "tools/converter/parser/tflite/tflite_batch_matmul_parser.h"
 #include <vector>
 #include <memory>
-#include "ops/fusion/mat_mul_fusion.h"
+#include "infer/cxx_api/mat_mul_fusion.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

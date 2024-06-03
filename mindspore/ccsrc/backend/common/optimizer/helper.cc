@@ -25,10 +25,10 @@
 #include <deque>
 #include <vector>
 #include "kernel/kernel_build_info.h"
-#include "mindspore/core/ops/sequence_ops.h"
-#include "mindspore/core/ops/nn_ops.h"
-#include "mindspore/core/ops/array_ops.h"
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/hash_set.h"
 #include "include/common/utils/utils.h"
 #include "base/base_ref.h"
@@ -44,7 +44,7 @@
 #include "backend/operator/ops_backend_infer_function.h"
 #include "frontend/operator/ops_front_infer_function.h"
 #include "backend/common/optimizer/dynamic_shape/dynamic_shape_helper.h"
-#include "mindspore/ccsrc/plugin/device/cpu/kernel/pyexecute/py_execute_cpu_kernel.h"
+#include "mindspore/ops/kernel/cpu/pyexecute/py_execute_cpu_kernel.h"
 #include "include/common/profiler.h"
 #include "abstract/ops/primitive_infer_map.h"
 

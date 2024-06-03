@@ -34,9 +34,9 @@
 #include "tools/converter/parser/unify_format.h"
 #include "nnacl/op_base.h"
 #include "src/common/log_util.h"
-#include "ops/make_tuple.h"
-#include "ops/return.h"
-#include "ops/tuple_get_item.h"
+#include "infer/make_tuple.h"
+#include "infer/return.h"
+#include "infer/tuple_get_item.h"
 
 using mindspore::converter::kFmkTypeCaffe;
 namespace mindspore::lite {

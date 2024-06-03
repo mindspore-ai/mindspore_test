@@ -18,7 +18,7 @@
 #include "tools/converter/parser/tflite/tflite_space_to_depth_parser.h"
 #include <vector>
 #include <memory>
-#include "ops/space_to_depth.h"
+#include "infer/space_to_depth.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

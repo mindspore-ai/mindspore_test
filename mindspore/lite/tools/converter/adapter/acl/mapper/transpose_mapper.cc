@@ -17,11 +17,12 @@
 #define USE_DEPRECATED_API
 #include "tools/converter/adapter/acl/mapper/transpose_mapper.h"
 #include <algorithm>
+#include <memory>
 #include <vector>
 #include "tools/converter/adapter/acl/mapper/primitive_mapper_register.h"
 #include "tools/converter/adapter/acl/common/utils.h"
 #include "nnacl/op_base.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace lite {

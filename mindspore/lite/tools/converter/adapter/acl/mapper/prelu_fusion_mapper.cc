@@ -18,8 +18,8 @@
 #include "tools/converter/adapter/acl/mapper/prelu_fusion_mapper.h"
 #include <memory>
 #include "tools/converter/adapter/acl/mapper/primitive_mapper_register.h"
-#include "ops/auto_generate/gen_lite_ops.h"
-#include "ops/op_utils.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
+#include "ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace lite {

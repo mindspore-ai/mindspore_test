@@ -18,7 +18,7 @@
 #include "tools/optimizer/fusion/gelu_fusion.h"
 #include <memory>
 #include <string>
-#include "ops/fusion/activation.h"
+#include "infer/cxx_api/activation.h"
 #include "include/common/utils/utils.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "nnacl/op_base.h"

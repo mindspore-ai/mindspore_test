@@ -16,13 +16,13 @@
 
 #include "extendrt/delegate/ascend_ge/update_weight.h"
 #include <string>
-#include "ops/auto_generate/gen_lite_ops.h"
-#include "mindspore/core/ops/math_ops.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
 #include "tools/common/string_util.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "mindspore/core/ir/manager.h"
 #include "tools/common/tensor_util.h"
-#include "mindspore/core/ops/conv_pool_ops.h"
+#include "mindspore/ops/op_def/conv_pool_ops.h"
 namespace mindspore {
 namespace {
 constexpr float kNumMicrosecondToMillisecond = 1000.0;

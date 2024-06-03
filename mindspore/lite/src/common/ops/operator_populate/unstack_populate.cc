@@ -15,7 +15,7 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/unstack_parameter.h"
-#include "ops/unstack.h"
+#include "infer/unstack.h"
 using mindspore::ops::kAxis;
 using mindspore::ops::kNameUnstack;
 using mindspore::schema::PrimitiveType_Unstack;

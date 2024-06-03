@@ -16,9 +16,9 @@
 
 #include "transform/graph_ir/op_declare/random_ops_declare.h"
 
-#include "ops/math_op_name.h"
-#include "ops/nn_op_name.h"
-#include "ops/random_ops.h"
+#include "op_def/math_op_name.h"
+#include "op_def/nn_op_name.h"
+#include "op_def/random_ops.h"
 
 namespace mindspore::transform {
 // DropOutGenMask

@@ -19,9 +19,9 @@
 #include <set>
 #include <queue>
 #include <algorithm>
-#include "mindspore/core/ops/other_ops.h"
-#include "mindspore/core/ops/array_ops.h"
-#include "mindspore/core/ops/sequence_ops.h"
+#include "mindspore/ops/op_def/other_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
 #include "frontend/parallel/graph_util/pipeline_split_utils.h"
 #include "frontend/parallel/graph_util/grad_accumulation_utils.h"
 #include "frontend/parallel/parameter_manager.h"

@@ -17,7 +17,7 @@
 #include "src/litert/delegate/parameter_cache/gpu/gpu_cache_mem.h"
 #include <cuda_runtime.h>
 #include <string>
-#include "plugin/device/gpu/kernel/cuda_impl/cuda_ops/hash_impl.cuh"
+#include "kernel/gpu/cuda_impl/cuda_ops/hash_impl.cuh"
 #include "plugin/device/gpu/hal/device/cuda_driver.h"
 #include "src/common/log_adapter.h"
 #include "src/litert/delegate/parameter_cache/factory_mgr_base.h"

@@ -4,7 +4,7 @@ set(LITE_DIR ${TOP_DIR}/mindspore/lite)
 
 include_directories(${TOP_DIR})
 include_directories(${TEST_DIR})
-include_directories(${TOP_DIR}/mindspore/ccsrc/plugin/device/cpu/kernel)
+include_directories(${TOP_DIR}/mindspore/ops/kernel/cpu)
 
 include(${TOP_DIR}/cmake/external_libs/gtest.cmake)
 include(${TOP_DIR}/cmake/external_libs/mockcpp.cmake)
@@ -85,7 +85,7 @@ endif()
 if(MSLITE_GPU_BACKEND STREQUAL cuda)
     set(CUDA_PATH $ENV{CUDA_HOME})
     include_directories(${CUDA_PATH}/include)
-    include_directories(${CCSRC_DIR}/plugin/device/gpu/kernel)
+    include_directories(${OPS_DIR}/kernel/gpu)
     include_directories(${CUDA_PATH})
     file(GLOB_RECURSE TEST_GPU_UT_SRC
             ${TEST_DIR}/ut/src/extendrt/kernel/cuda/*.cc
@@ -242,6 +242,7 @@ if(MSLITE_ENABLE_CONVERTER AND (NOT MSLITE_ENABLE_RUNTIME_CONVERT))
                 mindspore::protobuf
                 mindspore::json
                 -Wl,--whole-archive mindspore_core -Wl,--no-whole-archive
+                mindspore_ops
                 mindspore::glog
                 mindspore::flatbuffers
                 preprocess_mid

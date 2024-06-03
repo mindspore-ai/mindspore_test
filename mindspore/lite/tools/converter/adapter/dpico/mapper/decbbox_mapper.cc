@@ -21,7 +21,7 @@
 #include "common/anf_util.h"
 #include "common/op_attr.h"
 #include "op/dec_bbox_operator.h"
-#include "ops/custom.h"
+#include "infer/custom.h"
 #include "parser/detection_output_param_helper.h"
 
 namespace mindspore {

@@ -17,14 +17,14 @@
 #include "tools/optimizer/fusion/flash_attention_antiquant_fusion.h"
 #include <vector>
 #include <memory>
-#include "mindspore/core/ops/array_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
 #include "ir/func_graph.h"
 #include "tools/optimizer/common/gllo_utils.h"
-#include "ops/op_name.h"
-#include "ops/other_ops.h"
+#include "op_def/op_name.h"
+#include "op_def/other_ops.h"
 #include "mindspore/lite/tools/optimizer/common/gllo_utils.h"
 #include "mindspore/lite/tools/converter/quantizer/quantize_util.h"
-#include "ops/incre_flash_attention.h"
+#include "infer/incre_flash_attention.h"
 
 namespace mindspore {
 namespace {

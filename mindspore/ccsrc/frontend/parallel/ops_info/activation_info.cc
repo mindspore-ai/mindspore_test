@@ -376,7 +376,7 @@ Status CumOpBase::GetAttrs() {
   std::string op_name = GetPrimNameFromInfoName(this->name_);
   if (input_value_.size() != ops::GetOpInputsNum(op_name)) {
     MS_LOG(ERROR) << name_ << ": Invalid inputs size " << input_value_.size()
-                  << ", GetOpInputsNum: " << ops::GetOpInputsNum(op_name);
+                  << ", ops::GetOpInputsNum: " << ops::GetOpInputsNum(op_name);
     return FAILED;
   }
 

@@ -15,8 +15,8 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/l2_norm_parameter.h"
-#include "ops/l2_normalize.h"
-#include "ops/fusion/l2_normalize_fusion.h"
+#include "infer/l2_normalize.h"
+#include "infer/cxx_api/l2_normalize_fusion.h"
 using mindspore::ops::kActivationType;
 using mindspore::ops::kAxis;
 using mindspore::ops::kEpsilon;

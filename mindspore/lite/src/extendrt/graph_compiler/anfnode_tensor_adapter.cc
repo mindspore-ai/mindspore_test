@@ -20,7 +20,7 @@
 #include "ir/anf.h"
 #include "ir/func_graph.h"
 #include "ir/primitive.h"
-#include "ops/sequence_ops.h"
+#include "op_def/sequence_ops.h"
 #include "utils/ms_utils_secure.h"
 
 using ShapePtr = mindspore::abstract::ShapePtr;

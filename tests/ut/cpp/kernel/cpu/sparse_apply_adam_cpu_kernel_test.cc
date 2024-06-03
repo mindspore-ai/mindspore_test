@@ -16,10 +16,10 @@
 
 #include <vector>
 #include "common/common_test.h"
-#include "ops/fused_sparse_adam.h"
+#include "infer/fused_sparse_adam.h"
 #define private public
 #define protected public
-#include "plugin/device/cpu/kernel/sparse_apply_adam_cpu_kernel.h"
+#include "sparse_apply_adam_cpu_kernel.h"
 #undef private
 #undef protected
 

@@ -20,15 +20,15 @@
 #include <unordered_map>
 #include <memory>
 #include <set>
-#include "mindspore/core/ops/array_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
 #include "plugin/device/ascend/kernel/hccl/hccl_kernel_metadata.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
 
 #ifndef ENABLE_SECURITY
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/backend/optimizer/helper.h"
-#include "mindspore/core/ops/framework_ops.h"
-#include "plugin/device/ascend/kernel/opapi/aclnn_kernel_build.h"
+#include "mindspore/ops/op_def/framework_ops.h"
+#include "kernel/ascend/opapi/aclnn_kernel_build.h"
 #include "plugin/device/ascend/kernel/acl/acl_kernel_build.h"
 #include "plugin/device/ascend/kernel/host/host_kernel_build.h"
 #include "plugin/device/ascend/kernel/host/host_kernel_metadata.h"

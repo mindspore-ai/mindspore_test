@@ -19,7 +19,7 @@
 #include <vector>
 #include <memory>
 #include "src/extendrt/delegate/tensorrt/op/tensorrt_op.h"
-#include "ops/fusion/conv2d_backprop_input_fusion.h"
+#include "infer/cxx_api/conv2d_backprop_input_fusion.h"
 
 namespace mindspore::lite {
 class Conv2dBackpropInputTensorRT : public TensorRTOp {

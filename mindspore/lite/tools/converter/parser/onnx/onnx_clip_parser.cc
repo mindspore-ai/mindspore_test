@@ -16,7 +16,7 @@
 
 #include "tools/converter/parser/onnx/onnx_clip_parser.h"
 #include <memory>
-#include "ops/clip.h"
+#include "infer/clip.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

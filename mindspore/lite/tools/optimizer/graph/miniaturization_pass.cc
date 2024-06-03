@@ -20,8 +20,8 @@
 #include <vector>
 #include <memory>
 #include "nnacl/op_base.h"
-#include "ops/op_utils.h"
-#include "ops/fill.h"
+#include "ops_utils/op_utils.h"
+#include "infer/fill.h"
 #include "src/common/utils.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "utils/check_convert_utils.h"

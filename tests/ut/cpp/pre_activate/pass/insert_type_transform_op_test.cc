@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 #include "common/backend_common_test.h"
-#include "mindspore/core/ops/sequence_ops.h"
-#include "mindspore/core/ops/arithmetic_ops.h"
+#include "op_def/sequence_ops.h"
+#include "op_def/arithmetic_ops.h"
 #include "ir/anf.h"
 #include "ir/tensor.h"
 #include "include/common/debug/anf_ir_dump.h"
@@ -26,7 +26,7 @@
 #include "include/common/utils/utils.h"
 #include "include/common/utils/anfalgo.h"
 #include "kernel/kernel_build_info.h"
-#include "ops/auto_generate/gen_ops_primitive.h"
+#include "op_def/auto_generate/gen_ops_primitive.h"
 
 #define private public
 #define protected public

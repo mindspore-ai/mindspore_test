@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include "test_view.h"
-#include "mindspore/core/ops/view/unstack_strides_calc.h"
+#include "mindspore/ops/view/unstack_strides_calc.h"
 
 namespace mindspore {
 namespace ops {

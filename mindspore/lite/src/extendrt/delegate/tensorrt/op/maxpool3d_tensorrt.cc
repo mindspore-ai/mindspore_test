@@ -16,7 +16,7 @@
 
 #include "src/extendrt/delegate/tensorrt/op/maxpool3d_tensorrt.h"
 #include "src/extendrt/delegate/tensorrt/tensorrt_utils.h"
-#include "ops/max_pool3d.h"
+#include "infer/max_pool3d.h"
 
 namespace mindspore::lite {
 int MaxPool3DTensorRT::IsSupport(const BaseOperatorPtr &base_operator, const std::vector<TensorInfo> &in_tensors,

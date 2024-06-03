@@ -16,8 +16,8 @@
 
 #include "parser/caffe/caffe_depthwise_conv_parser.h"
 #include <memory>
-#include "ops/fusion/conv2d_fusion.h"
-#include "ops/op_name.h"
+#include "infer/cxx_api/conv2d_fusion.h"
+#include "op_def/op_name.h"
 
 namespace mindspore {
 namespace lite {

@@ -19,7 +19,7 @@
 #include <vector>
 #include "src/extendrt/delegate/tensorrt/op/tensorrt_op.h"
 #include "src/extendrt/delegate/tensorrt/op/tensorrt_plugin.h"
-#include "plugin/device/gpu/kernel/cuda_impl/cuda_ops/tile_impl.cuh"
+#include "kernel/gpu/cuda_impl/cuda_ops/tile_impl.cuh"
 
 namespace mindspore::lite {
 class TileTensorRT : public TensorRTOp {

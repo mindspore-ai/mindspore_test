@@ -16,7 +16,7 @@
 #include <vector>
 #include <memory>
 #include "common/common_test.h"
-#include "ops/linear_sum_assignment.h"
+#include "infer/linear_sum_assignment.h"
 #include "ir/dtype/type.h"
 #include "abstract/dshape.h"
 #include "utils/tensor_construct_utils.h"
@@ -44,14 +44,12 @@ class TestLinearSumAssignment : public TestOps, public testing::WithParamInterfa
 
 TEST_P(TestLinearSumAssignment, linear_sum_assignment_dyn_shape) {
   const auto &param = GetParam();
-  auto cost_matrix = std::make_shared<abstract::AbstractTensor>(param.cost_matrix_type,
-                                                                param.cost_matrix_shape);
+  auto cost_matrix = std::make_shared<abstract::AbstractTensor>(param.cost_matrix_type, param.cost_matrix_shape);
   ASSERT_NE(cost_matrix, nullptr);
-  auto dimension_limit = std::make_shared<abstract::AbstractTensor>(param.dimension_limit_type,
-                                                                    param.dimension_limit_shape);
+  auto dimension_limit =
+    std::make_shared<abstract::AbstractTensor>(param.dimension_limit_type, param.dimension_limit_shape);
   ASSERT_NE(dimension_limit, nullptr);
-  auto maximize = std::make_shared<abstract::AbstractScalar>(param.maximize_value,
-                                                             param.maximize_type);
+  auto maximize = std::make_shared<abstract::AbstractScalar>(param.maximize_value, param.maximize_type);
   ASSERT_NE(maximize, nullptr);
   auto expect_row_ind = std::make_shared<abstract::AbstractTensor>(param.row_ind_type, param.row_ind_shape);
   ASSERT_NE(expect_row_ind, nullptr);
@@ -68,34 +66,22 @@ TEST_P(TestLinearSumAssignment, linear_sum_assignment_dyn_shape) {
   ASSERT_TRUE(*out_abstract == *expect);
 }
 
-INSTANTIATE_TEST_CASE_P(TestLinearSumAssignment, TestLinearSumAssignment,
-                        testing::Values(LinearSumAssignmentParams{{3, 3}, kFloat16, {}, kInt64, MakeValue(False), kBool,
-                                                                  {3}, kInt64, {3}, kInt64},
-                                        LinearSumAssignmentParams{{3, 3}, kFloat32, {}, kInt64, MakeValue(False), kBool,
-                                                                  {3}, kInt64, {3}, kInt64},
-                                        LinearSumAssignmentParams{{3, 3}, kFloat64, {}, kInt64, MakeValue(False), kBool,
-                                                                  {3}, kInt64, {3}, kInt64},
-                                        LinearSumAssignmentParams{{3, 3}, kBool, {}, kInt64, MakeValue(False), kBool,
-                                                                  {3}, kInt64, {3}, kInt64},
-                                        LinearSumAssignmentParams{{3, 3}, kInt16, {}, kInt64, MakeValue(False), kBool,
-                                                                  {3}, kInt64, {3}, kInt64},
-                                        LinearSumAssignmentParams{{3, 3}, kInt32, {}, kInt64, MakeValue(False), kBool,
-                                                                  {3}, kInt64, {3}, kInt64},
-                                        LinearSumAssignmentParams{{3, 3}, kInt64, {}, kInt64, MakeValue(False), kBool,
-                                                                  {3}, kInt64, {3}, kInt64},
-                                        LinearSumAssignmentParams{{3, 3}, kInt8, {}, kInt64, MakeValue(False), kBool,
-                                                                  {3}, kInt64, {3}, kInt64},
-                                        LinearSumAssignmentParams{{3, 3}, kUInt16, {}, kInt64, MakeValue(False), kBool,
-                                                                  {3}, kInt64, {3}, kInt64},
-                                        LinearSumAssignmentParams{{3, 3}, kUInt32, {}, kInt64, MakeValue(False), kBool,
-                                                                  {3}, kInt64, {3}, kInt64},
-                                        LinearSumAssignmentParams{{3, 3}, kUInt64, {}, kInt64, MakeValue(False), kBool,
-                                                                  {3}, kInt64, {3}, kInt64},
-                                        LinearSumAssignmentParams{{3, 3}, kUInt8, {}, kInt64, MakeValue(False), kBool,
-                                                                  {3}, kInt64, {3}, kInt64},
-                                        LinearSumAssignmentParams{{3, 4}, kFloat16, {}, kInt64, MakeValue(False), kBool,
-                                                                  {3}, kInt64, {3}, kInt64},
-                                        LinearSumAssignmentParams{{3, -1}, kFloat16, {}, kInt64, MakeValue(False),
-                                                                  kBool, {-1}, kInt64, {-1}, kInt64}));
+INSTANTIATE_TEST_CASE_P(
+  TestLinearSumAssignment, TestLinearSumAssignment,
+  testing::Values(
+    LinearSumAssignmentParams{{3, 3}, kFloat16, {}, kInt64, MakeValue(False), kBool, {3}, kInt64, {3}, kInt64},
+    LinearSumAssignmentParams{{3, 3}, kFloat32, {}, kInt64, MakeValue(False), kBool, {3}, kInt64, {3}, kInt64},
+    LinearSumAssignmentParams{{3, 3}, kFloat64, {}, kInt64, MakeValue(False), kBool, {3}, kInt64, {3}, kInt64},
+    LinearSumAssignmentParams{{3, 3}, kBool, {}, kInt64, MakeValue(False), kBool, {3}, kInt64, {3}, kInt64},
+    LinearSumAssignmentParams{{3, 3}, kInt16, {}, kInt64, MakeValue(False), kBool, {3}, kInt64, {3}, kInt64},
+    LinearSumAssignmentParams{{3, 3}, kInt32, {}, kInt64, MakeValue(False), kBool, {3}, kInt64, {3}, kInt64},
+    LinearSumAssignmentParams{{3, 3}, kInt64, {}, kInt64, MakeValue(False), kBool, {3}, kInt64, {3}, kInt64},
+    LinearSumAssignmentParams{{3, 3}, kInt8, {}, kInt64, MakeValue(False), kBool, {3}, kInt64, {3}, kInt64},
+    LinearSumAssignmentParams{{3, 3}, kUInt16, {}, kInt64, MakeValue(False), kBool, {3}, kInt64, {3}, kInt64},
+    LinearSumAssignmentParams{{3, 3}, kUInt32, {}, kInt64, MakeValue(False), kBool, {3}, kInt64, {3}, kInt64},
+    LinearSumAssignmentParams{{3, 3}, kUInt64, {}, kInt64, MakeValue(False), kBool, {3}, kInt64, {3}, kInt64},
+    LinearSumAssignmentParams{{3, 3}, kUInt8, {}, kInt64, MakeValue(False), kBool, {3}, kInt64, {3}, kInt64},
+    LinearSumAssignmentParams{{3, 4}, kFloat16, {}, kInt64, MakeValue(False), kBool, {3}, kInt64, {3}, kInt64},
+    LinearSumAssignmentParams{{3, -1}, kFloat16, {}, kInt64, MakeValue(False), kBool, {-1}, kInt64, {-1}, kInt64}));
 }  // namespace ops
 }  // namespace mindspore

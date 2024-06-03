@@ -16,14 +16,14 @@
 #include <vector>
 #include <memory>
 #include "common/common_test.h"
-#include "ops/ops_func_impl/scatter_nd.h"
+#include "infer/ops_func_impl/scatter_nd.h"
 #include "ir/dtype/type.h"
 #include "abstract/dshape.h"
 #include "utils/tensor_construct_utils.h"
 #include "ir/primitive.h"
 #include "abstract/abstract_value.h"
 #include "ops/test_ops.h"
-#include "ops/auto_generate/gen_ops_name.h"
+#include "op_def/auto_generate/gen_ops_name.h"
 #include "ops/test_ops_cmp_utils.h"
 
 namespace mindspore {
@@ -73,19 +73,19 @@ TEST_P(TestScatterNd, scatter_nd_dyn_shape) {
 INSTANTIATE_TEST_CASE_P(
   TestScatterNd, TestScatterNd,
   testing::Values(
-  TestScatterNdParams{{2, 1}, kInt32, {2, 3, 4}, kFloat32, {kUnknown, 3, 4}, false, {-1, 3, 4}, kFloat32},
-  TestScatterNdParams{
+    TestScatterNdParams{{2, 1}, kInt32, {2, 3, 4}, kFloat32, {kUnknown, 3, 4}, false, {-1, 3, 4}, kFloat32},
+    TestScatterNdParams{
       {2, 1}, kInt32, {2, 3, 4}, kFloat64, {kUnknown, kUnknown, kUnknown}, false, {-1, 3, 4}, kFloat64},
-  TestScatterNdParams{
+    TestScatterNdParams{
       {2, 3, 2}, kInt32, {2, 3, 4, 5}, kInt32, {kUnknown, kUnknown, kUnknown, kUnknown}, false, {-1, -1, 4, 5}, kInt32},
-  TestScatterNdParams{
+    TestScatterNdParams{
       {2, 1}, kInt64, {2, -1, -1}, kFloat32, {kUnknown, kUnknown, kUnknown}, false, {-1, -1, -1}, kFloat32},
-  TestScatterNdParams{{2, 1}, kInt32, {-2}, kFloat32, {}, true, {-2}, kFloat32},
-  TestScatterNdParams{{-1, -1}, kInt32, {2, 3, 4}, kFloat32, {5, kUnknown, kUnknown}, false, {5, -1, -1}, kFloat32},
-  TestScatterNdParams{{2, 2}, kInt32, {2, 3, 4}, kFloat32, {}, true, {-1, -1, 3, 4}, kFloat32},
-  TestScatterNdParams{{-1, 1}, kInt32, {2, 3, 4}, kFloat32, {5, kUnknown, kUnknown}, false, {5, 3, 4}, kFloat32},
-  TestScatterNdParams{
+    TestScatterNdParams{{2, 1}, kInt32, {-2}, kFloat32, {}, true, {-2}, kFloat32},
+    TestScatterNdParams{{-1, -1}, kInt32, {2, 3, 4}, kFloat32, {5, kUnknown, kUnknown}, false, {5, -1, -1}, kFloat32},
+    TestScatterNdParams{{2, 2}, kInt32, {2, 3, 4}, kFloat32, {}, true, {-1, -1, 3, 4}, kFloat32},
+    TestScatterNdParams{{-1, 1}, kInt32, {2, 3, 4}, kFloat32, {5, kUnknown, kUnknown}, false, {5, 3, 4}, kFloat32},
+    TestScatterNdParams{
       {-1, -1}, kInt32, {-1, -1, -1}, kFloat32, {kUnknown, kUnknown, kUnknown}, false, {-1, -1, -1}, kFloat32},
-  TestScatterNdParams{{-2}, kInt32, {-2}, kFloat32, {}, true, {-2}, kFloat32}));
+    TestScatterNdParams{{-2}, kInt32, {-2}, kFloat32, {}, true, {-2}, kFloat32}));
 }  // namespace ops
 }  // namespace mindspore

@@ -16,14 +16,14 @@
 #include "plugin/device/ascend/optimizer/ir_fusion/flash_attention_fusion.h"
 #include <memory>
 #include "plugin/device/ascend/optimizer/common/gllo_utils.h"
-#include "ops/op_utils.h"
-#include "ops/array_ops.h"
-#include "ops/nn_ops.h"
-#include "mindspore/core/ops/lite_ops.h"
-#include "ops/incre_flash_attention.h"
-#include "ops/prompt_flash_attention.h"
-#include "ops/fusion/pad_fusion.h"
-#include "ops/slice.h"
+#include "ops_utils/op_utils.h"
+#include "op_def/array_ops.h"
+#include "op_def/nn_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
+#include "infer/incre_flash_attention.h"
+#include "infer/prompt_flash_attention.h"
+#include "infer/cxx_api/pad_fusion.h"
+#include "infer/slice.h"
 
 namespace mindspore::opt {
 namespace {

@@ -18,8 +18,8 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "ops/custom.h"
-#include "ops/prompt_flash_attention.h"
+#include "infer/custom.h"
+#include "infer/prompt_flash_attention.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

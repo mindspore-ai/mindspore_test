@@ -27,7 +27,7 @@
 #include "include/registry/converter_context.h"
 #include "cxx_api/model/acl/acl_model_options.h"
 #include "tools/converter/adapter/acl/common/acl_types.h"
-#include "ops/custom.h"
+#include "infer/custom.h"
 #include "tools/converter/cxx_api/converter_para.h"
 
 namespace mindspore {

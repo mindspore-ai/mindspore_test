@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 #include "ops/test_ops_cmp_utils.h"
-#include "ops/ops_func_impl/acos.h"
-#include "ops/ops_func_impl/acosh.h"
-#include "ops/ops_func_impl/asin.h"
-#include "ops/ops_func_impl/asinh.h"
-#include "ops/ops_func_impl/atan.h"
-#include "ops/ops_func_impl/atanh.h"
+#include "infer/ops_func_impl/acos.h"
+#include "infer/ops_func_impl/acosh.h"
+#include "infer/ops_func_impl/asin.h"
+#include "infer/ops_func_impl/asinh.h"
+#include "infer/ops_func_impl/atan.h"
+#include "infer/ops_func_impl/atanh.h"
 
 namespace mindspore {
 namespace ops {

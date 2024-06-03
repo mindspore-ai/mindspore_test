@@ -16,7 +16,7 @@
 
 #include "runtime/graph_scheduler/actor/control_flow/switch_actor.h"
 #include "runtime/graph_scheduler/actor/control_flow/entrance_actor.h"
-#include "plugin/device/cpu/kernel/pyexecute/py_execute_cpu_kernel.h"
+#include "kernel/cpu/pyexecute/py_execute_cpu_kernel.h"
 #include "abstract/utils.h"
 #include "runtime/graph_scheduler/actor/output_actor.h"
 #include "utils/log_adapter.h"

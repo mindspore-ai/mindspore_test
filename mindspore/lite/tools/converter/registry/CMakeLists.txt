@@ -16,7 +16,7 @@ set(REG_SRC ${CONVERT_REG_SRC}
         ${KERNEL_REG_DIR}/../extendrt/delegate/plugin/tensorrt_executor_plugin.cc
         ${KERNEL_REG_DIR}/../extendrt/kernel/ascend/plugin/ascend_allocator_plugin.cc
         ${CONVERTER_DIR}/converter_context.cc
-        ${TOP_DIR}/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/tensor_c_utils.c
+        ${TOP_DIR}/mindspore/ops/kernel/cpu/nnacl/tensor_c_utils.c
         ${TOP_DIR}/mindspore/lite/src/common/file_utils.cc
         )
 set_property(SOURCE ${REG_SRC} PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_LITE)
@@ -26,7 +26,7 @@ add_dependencies(mslite_converter_plugin fbs_src)
 add_dependencies(mslite_converter_plugin fbs_inner_src)
 
 if(CMAKE_SYSTEM_NAME MATCHES "Windows" OR MSLITE_ENABLE_CLOUD_FUSION_INFERENCE OR MSLITE_ENABLE_CLOUD_INFERENCE)
-    target_link_libraries(mslite_converter_plugin mindspore_core)
+    target_link_libraries(mslite_converter_plugin mindspore_core mindspore_ops)
 endif()
 
 if("${CMAKE_BUILD_TYPE}" STREQUAL "Release" AND (NOT WIN32))

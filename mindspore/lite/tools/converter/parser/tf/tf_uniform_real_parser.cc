@@ -19,7 +19,7 @@
 #include <map>
 #include <vector>
 #include "tools/converter/parser/tf/tf_node_parser_registry.h"
-#include "ops/uniform_real.h"
+#include "infer/uniform_real.h"
 
 namespace mindspore {
 namespace lite {

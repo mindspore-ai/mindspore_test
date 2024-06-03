@@ -29,8 +29,8 @@
 #include "ir/dtype.h"
 #include "ops/op_def.h"
 #include "mindspore/core/utils/flags.h"
-#include "mindspore/core/ops/arithmetic_ops.h"
-#include "mindspore/core/ops/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/arithmetic_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 
 namespace mindspore {
 // namespace to support composite operators definition

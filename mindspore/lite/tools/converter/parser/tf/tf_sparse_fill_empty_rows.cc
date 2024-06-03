@@ -19,7 +19,7 @@
 #include <map>
 #include <vector>
 #include "tools/converter/parser/tf/tf_node_parser_registry.h"
-#include "ops/sparse_fill_empty_rows.h"
+#include "infer/sparse_fill_empty_rows.h"
 
 namespace mindspore {
 namespace lite {

@@ -15,7 +15,7 @@
  */
 
 #include "test_view.h"
-#include "mindspore/core/ops/view/broadcast_to_strides_calc.h"
+#include "mindspore/ops/view/broadcast_to_strides_calc.h"
 
 namespace mindspore {
 namespace ops {

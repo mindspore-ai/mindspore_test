@@ -17,8 +17,8 @@
 #include "plugin/device/ascend/optimizer/format_type/insert_transpose_for_dyanmic_gru_v2.h"
 #include <memory>
 #include <vector>
-#include "ops/array_ops.h"
-#include "ops/auto_generate/gen_ops_primitive.h"
+#include "op_def/array_ops.h"
+#include "op_def/auto_generate/gen_ops_primitive.h"
 #include "include/common/utils/utils.h"
 #include "plugin/device/ascend/optimizer/ascend_helper.h"
 #include "include/backend/anf_runtime_algorithm.h"

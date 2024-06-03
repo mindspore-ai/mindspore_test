@@ -19,13 +19,13 @@
 #include <vector>
 #include "tools/converter/parser/onnx/onnx_model_parser.h"
 #include "tools/converter/ops/ops_def.h"
-#include "mindspore/core/ops/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "nnacl/op_base.h"
-#include "ops/affine_grid.h"
-#include "ops/histogram.h"
-#include "ops/auto_generate/gen_lite_ops.h"
-#include "ops/xlogy.h"
-#include "ops/op_name.h"
+#include "infer/affine_grid.h"
+#include "infer/histogram.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
+#include "infer/xlogy.h"
+#include "op_def/op_name.h"
 
 namespace mindspore {
 namespace lite {

@@ -25,7 +25,7 @@
 #include "include/errorcode.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "tools/lite_exporter/fetch_content.h"
-#include "ops/fusion/conv2d_fusion.h"
+#include "infer/cxx_api/conv2d_fusion.h"
 #include "src/common/log_util.h"
 #include "tools/common/statistic_utils.h"
 #include "tools/converter/quantizer/quantize_util.h"

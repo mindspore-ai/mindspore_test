@@ -27,8 +27,8 @@
 #include "hccl/hccl_types.h"
 #include "utils/shape_utils.h"
 #include "kernel/kernel.h"
-#include "ops/framework_op_name.h"
-#include "ops/ascend_op_name.h"
+#include "op_def/framework_op_name.h"
+#include "op_def/ascend_op_name.h"
 
 namespace mindspore {
 using kernel::KernelTensor;

@@ -19,8 +19,8 @@
 #include "tools/converter/adapter/acl/common/utils.h"
 #include "tools/converter/adapter/acl/mapper/primitive_mapper_register.h"
 #include "tools/converter/adapter/acl/mapper/tbe_op_def.h"
-#include "plugin/device/cpu/kernel/nnacl/op_base.h"
-#include "ops/array_ops.h"
+#include "nnacl/op_base.h"
+#include "op_def/array_ops.h"
 
 namespace mindspore {
 namespace lite {

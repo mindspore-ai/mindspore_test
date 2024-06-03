@@ -23,7 +23,7 @@
 #include "common/anf_util.h"
 #include "common/op_enum.h"
 #include "common/check_base.h"
-#include "ops/auto_generate/gen_lite_ops.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
 #include "op/slice_operator.h"
 
 namespace mindspore {

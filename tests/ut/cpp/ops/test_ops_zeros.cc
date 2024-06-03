@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-#include "ops/ops_func_impl/zeros.h"
+#include "infer/ops_func_impl/zeros.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "ops/test_ops.h"
 #include "ops/test_value_utils.h"
-#include "ops/auto_generate/gen_ops_name.h"
-#include "ops/auto_generate/gen_ops_primitive.h"
+#include "op_def/auto_generate/gen_ops_name.h"
+#include "op_def/auto_generate/gen_ops_primitive.h"
 #include "ops/test_ops_cmp_utils.h"
 #include "utils/tensor_construct_utils.h"
 
@@ -53,12 +53,11 @@ TEST_P(TestZeros, zeros_dyn_shape) {
 }
 
 auto zeros_test_cases = testing::Values(
-    ZerosShapeParam{CreatePyIntTuple({2, 2, 3}), CreateScalar<int64_t>(kNumberTypeInt64), {2, 2, 3}, kInt64},
-    ZerosShapeParam{CreatePyIntTuple({3, 4}), CreateScalar<int64_t>(kNumberTypeFloat32), {3, 4}, kFloat32},
-    ZerosShapeParam{CreatePyIntTuple({kValueAny, 2, 3}), CreateScalar<int64_t>(kNumberTypeFloat64), {-1, 2, 3}, kFloat64},
-    ZerosShapeParam{CreatePyIntTuple({}), CreateScalar<int64_t>(kNumberTypeInt32), {-2}, kInt32});
+  ZerosShapeParam{CreatePyIntTuple({2, 2, 3}), CreateScalar<int64_t>(kNumberTypeInt64), {2, 2, 3}, kInt64},
+  ZerosShapeParam{CreatePyIntTuple({3, 4}), CreateScalar<int64_t>(kNumberTypeFloat32), {3, 4}, kFloat32},
+  ZerosShapeParam{CreatePyIntTuple({kValueAny, 2, 3}), CreateScalar<int64_t>(kNumberTypeFloat64), {-1, 2, 3}, kFloat64},
+  ZerosShapeParam{CreatePyIntTuple({}), CreateScalar<int64_t>(kNumberTypeInt32), {-2}, kInt32});
 INSTANTIATE_TEST_CASE_P(TestZeros, TestZeros, zeros_test_cases);
-
 
 // Test InferValue
 class TestZerosInferValue : public TestOps, public testing::WithParamInterface<ZerosShapeParam> {};
@@ -89,8 +88,8 @@ TEST_P(TestZerosInferValue, zeros_infer_value) {
 }
 
 auto zeros_infer_value_test_cases = testing::Values(
-    ZerosShapeParam{CreatePyIntTuple({2, 2, 3}), CreateScalar<int64_t>(kNumberTypeInt64), {2, 2, 3}, kInt64},
-    ZerosShapeParam{CreatePyIntTuple({3, 4}), CreateScalar<int64_t>(kNumberTypeFloat32), {3, 4}, kFloat32});
+  ZerosShapeParam{CreatePyIntTuple({2, 2, 3}), CreateScalar<int64_t>(kNumberTypeInt64), {2, 2, 3}, kInt64},
+  ZerosShapeParam{CreatePyIntTuple({3, 4}), CreateScalar<int64_t>(kNumberTypeFloat32), {3, 4}, kFloat32});
 INSTANTIATE_TEST_CASE_P(TestZerosInferValue, TestZerosInferValue, zeros_infer_value_test_cases);
 }  // namespace ops
 }  // namespace mindspore

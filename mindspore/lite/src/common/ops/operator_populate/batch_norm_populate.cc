@@ -15,7 +15,7 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/batchnorm_parameter.h"
-#include "ops/auto_generate/gen_lite_ops.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
 using mindspore::schema::PrimitiveType_BatchNorm;
 namespace mindspore {
 namespace lite {

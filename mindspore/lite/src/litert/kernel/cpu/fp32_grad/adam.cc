@@ -21,7 +21,7 @@
 #include "src/litert/kernel_registry.h"
 #include "include/errorcode.h"
 #include "nnacl/fp32/adam_fp32.h"
-#include "plugin/device/cpu/kernel/nnacl/op_base.h"
+#include "nnacl/op_base.h"
 
 using mindspore::kernel::KERNEL_ARCH;
 using mindspore::lite::KernelRegistrar;

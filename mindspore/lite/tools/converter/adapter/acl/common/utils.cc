@@ -16,7 +16,7 @@
 
 #include "tools/converter/adapter/acl/common/utils.h"
 #include <functional>
-#include "mindspore/core/ops/sequence_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "tools/common/node_util.h"
 #include "base/base_ref.h"

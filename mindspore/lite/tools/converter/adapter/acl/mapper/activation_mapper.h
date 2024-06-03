@@ -18,7 +18,7 @@
 #define MINDSPORE_LITE_TOOLS_CONVERTER_ADAPTER_ACL_MAPPER_ACTIVATION_MAPPER_H_
 
 #include "tools/converter/adapter/acl/mapper/primitive_mapper.h"
-#include "ops/fusion/activation.h"
+#include "infer/cxx_api/activation.h"
 
 using mindspore::ops::kNameActivation;
 

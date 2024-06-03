@@ -17,12 +17,12 @@
 #define USE_DEPRECATED_API
 #include "tools/optimizer/fusion/scale_base_fusion.h"
 #include <memory>
-#include "mindspore/core/ops/lite_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
 #include "tools/common/tensor_util.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "tools/converter/quantizer/quant_param_holder.h"
 #include "nnacl/op_base.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 
 namespace mindspore::opt {
 int ScaleBaseFusion::CalNewCnodeScale(const CNodePtr &curr_cnode,

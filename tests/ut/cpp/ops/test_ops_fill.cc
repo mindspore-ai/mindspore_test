@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-#include "ops/ops_func_impl/fill_scalar.h"
-#include "ops/ops_func_impl/fill_tensor.h"
+#include "infer/ops_func_impl/fill_scalar.h"
+#include "infer/ops_func_impl/fill_tensor.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "ops/test_ops.h"
 #include "ops/test_value_utils.h"
-#include "ops/auto_generate/gen_ops_name.h"
-#include "ops/auto_generate/gen_ops_primitive.h"
+#include "op_def/auto_generate/gen_ops_name.h"
+#include "op_def/auto_generate/gen_ops_primitive.h"
 #include "ops/test_ops_cmp_utils.h"
 #include "utils/tensor_construct_utils.h"
 
@@ -52,17 +52,23 @@ TEST_P(TestFillScalar, fill_scalar_dyn_shape) {
   auto expect_shape = std::make_shared<abstract::Shape>(param.output_shape);
   auto expect_type = std::make_shared<TensorType>(param.output_dtype);
 
-  DoFuncImplInferAndCompare<FillScalarFuncImpl>(kNameFillScalar, {in_shape, fill_value, dtype_value}, expect_shape, expect_type);
+  DoFuncImplInferAndCompare<FillScalarFuncImpl>(kNameFillScalar, {in_shape, fill_value, dtype_value}, expect_shape,
+                                                expect_type);
 }
 
 auto fill_scalar_test_cases = testing::Values(
-    FillOpParam{CreatePyIntTuple({2, 2, 3}), CreateScalar<int64_t>(1), CreateScalar<int64_t>(kNumberTypeInt64), {2, 2, 3}, kInt64},
-    FillOpParam{CreatePyIntTuple({3, 4}), CreateScalar<float>(2), CreateScalar<int64_t>(kNumberTypeFloat32), {3, 4}, kFloat32},
-    FillOpParam{CreatePyIntTuple({kValueAny, 2, 3}), CreateScalar<int64_t>(3), CreateScalar<int64_t>(kNumberTypeFloat64), {-1, 2, 3}, kFloat64},
-    FillOpParam{CreatePyIntTuple({}), CreateScalar<int>(4), CreateScalar<int64_t>(kNumberTypeInt32), {-2}, kInt32});
+  FillOpParam{
+    CreatePyIntTuple({2, 2, 3}), CreateScalar<int64_t>(1), CreateScalar<int64_t>(kNumberTypeInt64), {2, 2, 3}, kInt64},
+  FillOpParam{
+    CreatePyIntTuple({3, 4}), CreateScalar<float>(2), CreateScalar<int64_t>(kNumberTypeFloat32), {3, 4}, kFloat32},
+  FillOpParam{CreatePyIntTuple({kValueAny, 2, 3}),
+              CreateScalar<int64_t>(3),
+              CreateScalar<int64_t>(kNumberTypeFloat64),
+              {-1, 2, 3},
+              kFloat64},
+  FillOpParam{CreatePyIntTuple({}), CreateScalar<int>(4), CreateScalar<int64_t>(kNumberTypeInt32), {-2}, kInt32});
 
 INSTANTIATE_TEST_CASE_P(TestFillScalar, TestFillScalar, fill_scalar_test_cases);
-
 
 // Test FillTensor InferShape and InferType
 class TestFillTensor : public TestOps, public testing::WithParamInterface<FillOpParam> {};
@@ -82,7 +88,8 @@ TEST_P(TestFillTensor, fill_tensor_dyn_shape) {
   auto expect_shape = std::make_shared<abstract::Shape>(param.output_shape);
   auto expect_type = std::make_shared<TensorType>(param.output_dtype);
 
-  DoFuncImplInferAndCompare<FillTensorFuncImpl>(kNameFillTensor, {in_shape, fill_value, dtype_value}, expect_shape, expect_type);
+  DoFuncImplInferAndCompare<FillTensorFuncImpl>(kNameFillTensor, {in_shape, fill_value, dtype_value}, expect_shape,
+                                                expect_type);
 }
 
 tensor::TensorPtr CreateTensor(float value, TypePtr dtype) {
@@ -91,10 +98,16 @@ tensor::TensorPtr CreateTensor(float value, TypePtr dtype) {
 }
 
 auto fill_tensor_test_cases = testing::Values(
-    FillOpParam{CreatePyIntTuple({2, 2, 3}), CreateTensor(1, kInt64), CreateScalar<int64_t>(kNumberTypeInt64), {2, 2, 3}, kInt64},
-    FillOpParam{CreatePyIntTuple({3, 4}), CreateTensor(2, kFloat32), CreateScalar<int64_t>(kNumberTypeFloat32), {3, 4}, kFloat32},
-    FillOpParam{CreatePyIntTuple({kValueAny, 2, 3}), CreateTensor(3, kFloat64), CreateScalar<int64_t>(kNumberTypeFloat64), {-1, 2, 3}, kFloat64},
-    FillOpParam{CreatePyIntTuple({}), CreateTensor(4, kInt32), CreateScalar<int64_t>(kNumberTypeInt32), {-2}, kInt32});
+  FillOpParam{
+    CreatePyIntTuple({2, 2, 3}), CreateTensor(1, kInt64), CreateScalar<int64_t>(kNumberTypeInt64), {2, 2, 3}, kInt64},
+  FillOpParam{
+    CreatePyIntTuple({3, 4}), CreateTensor(2, kFloat32), CreateScalar<int64_t>(kNumberTypeFloat32), {3, 4}, kFloat32},
+  FillOpParam{CreatePyIntTuple({kValueAny, 2, 3}),
+              CreateTensor(3, kFloat64),
+              CreateScalar<int64_t>(kNumberTypeFloat64),
+              {-1, 2, 3},
+              kFloat64},
+  FillOpParam{CreatePyIntTuple({}), CreateTensor(4, kInt32), CreateScalar<int64_t>(kNumberTypeInt32), {-2}, kInt32});
 
 INSTANTIATE_TEST_CASE_P(TestFillTensor, TestFillTensor, fill_tensor_test_cases);
 }  // namespace ops

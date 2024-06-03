@@ -21,7 +21,7 @@
 #include <memory>
 #include "tools/optimizer/parallel/split_strategy.h"
 #include "tools/optimizer/parallel/conv2d_info.h"
-#include "ops/fusion/conv2d_fusion.h"
+#include "infer/cxx_api/conv2d_fusion.h"
 #include "include/errorcode.h"
 namespace mindspore {
 namespace opt {

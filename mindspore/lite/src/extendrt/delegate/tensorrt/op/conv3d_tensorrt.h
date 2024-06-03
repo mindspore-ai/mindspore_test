@@ -19,7 +19,7 @@
 #include <vector>
 #include <memory>
 #include "src/extendrt/delegate/tensorrt/op/tensorrt_op.h"
-#include "ops/conv3d.h"
+#include "infer/conv3d.h"
 
 namespace mindspore::lite {
 class Conv3DTensorRT : public TensorRTOp {

@@ -22,7 +22,7 @@
 #include "coder/opcoders/nnacl/int8/add_int8_coder.h"
 #include "coder/opcoders/serializers/serializer.h"
 #include "coder/utils/common.h"
-#include "mindspore/core/ops/array_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
 #include "nnacl/arithmetic_parameter.h"
 #include "nnacl/int8/quantize.h"
 

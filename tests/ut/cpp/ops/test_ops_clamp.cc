@@ -23,8 +23,8 @@
 #include "abstract/abstract_value.h"
 #include "include/backend/optimizer/helper.h"
 #include "ops/test_ops.h"
-#include "ops/ops_func_impl/clamp_scalar.h"
-#include "ops/ops_func_impl/clamp_tensor.h"
+#include "infer/ops_func_impl/clamp_scalar.h"
+#include "infer/ops_func_impl/clamp_tensor.h"
 #include "ops/test_value_utils.h"
 
 namespace mindspore {
@@ -46,7 +46,6 @@ TEST_P(TestClampTensor, clamp_dyn_shape) {
   auto min = std::make_shared<abstract::AbstractTensor>(param.min_type, param.min_shape);
   auto max = std::make_shared<abstract::AbstractTensor>(param.max_type, param.max_shape);
 
-
   auto expect_shape = std::make_shared<abstract::Shape>(param.x_shape);
   auto expect_type = std::make_shared<TensorType>(param.x_type);
 
@@ -59,15 +58,13 @@ TEST_P(TestClampTensor, clamp_dyn_shape) {
   ASSERT_TRUE(*out_shape == *expect_shape);
 }
 
-INSTANTIATE_TEST_CASE_P(
-  TestClampTensor, TestClampTensor,
-  testing::Values(ClampShapeParams{{3, 4, 5}, kFloat32, {3, 4, 1}, kFloat32, {3, 4, 1}, kFloat32},
-                  ClampShapeParams{{3, 4, 5}, kInt64, {}, kFloat32, {}, kFloat32},
-                  ClampShapeParams{{3, 4, 5}, kInt64, {}, kInt64, {}, kInt64},
-                  ClampShapeParams{{3, 4, 5}, kFloat16, {}, kFloat32, {}, kFloat32},
-                  ClampShapeParams{{-1, -1, -1}, kInt32, {}, kFloat32, {}, kFloat32},
-                  ClampShapeParams{{-2}, kFloat32, {}, kFloat32, {}, kFloat32}));
-
+INSTANTIATE_TEST_CASE_P(TestClampTensor, TestClampTensor,
+                        testing::Values(ClampShapeParams{{3, 4, 5}, kFloat32, {3, 4, 1}, kFloat32, {3, 4, 1}, kFloat32},
+                                        ClampShapeParams{{3, 4, 5}, kInt64, {}, kFloat32, {}, kFloat32},
+                                        ClampShapeParams{{3, 4, 5}, kInt64, {}, kInt64, {}, kInt64},
+                                        ClampShapeParams{{3, 4, 5}, kFloat16, {}, kFloat32, {}, kFloat32},
+                                        ClampShapeParams{{-1, -1, -1}, kInt32, {}, kFloat32, {}, kFloat32},
+                                        ClampShapeParams{{-2}, kFloat32, {}, kFloat32, {}, kFloat32}));
 
 class TestClampScalar : public TestOps, public testing::WithParamInterface<ClampShapeParams> {};
 
@@ -76,7 +73,6 @@ TEST_P(TestClampScalar, clamp_dyn_shape) {
   auto x = std::make_shared<abstract::AbstractTensor>(param.x_type, param.x_shape);
   auto min = std::make_shared<abstract::AbstractScalar>(kValueAny, param.min_type);
   auto max = std::make_shared<abstract::AbstractScalar>(kValueAny, param.max_type);
-
 
   auto expect_shape = std::make_shared<abstract::Shape>(param.x_shape);
   auto expect_type = std::make_shared<TensorType>(param.x_type);
@@ -90,13 +86,12 @@ TEST_P(TestClampScalar, clamp_dyn_shape) {
   ASSERT_TRUE(*out_shape == *expect_shape);
 }
 
-INSTANTIATE_TEST_CASE_P(
-  TestClampScalar, TestClampScalar,
-  testing::Values(ClampShapeParams{{3, 4, 5}, kFloat32, {}, kFloat32, {}, kFloat32},
-                  ClampShapeParams{{3, 4, 5}, kInt64, {}, kFloat32, {}, kFloat32},
-                  ClampShapeParams{{3, 4, 5}, kInt64, {}, kInt64, {}, kInt64},
-                  ClampShapeParams{{3, 4, 5}, kFloat16, {}, kFloat32, {}, kFloat32},
-                  ClampShapeParams{{-1, -1, -1}, kInt32, {}, kFloat32, {}, kFloat32},
-                  ClampShapeParams{{-2}, kFloat32, {}, kFloat32, {}, kFloat32}));
+INSTANTIATE_TEST_CASE_P(TestClampScalar, TestClampScalar,
+                        testing::Values(ClampShapeParams{{3, 4, 5}, kFloat32, {}, kFloat32, {}, kFloat32},
+                                        ClampShapeParams{{3, 4, 5}, kInt64, {}, kFloat32, {}, kFloat32},
+                                        ClampShapeParams{{3, 4, 5}, kInt64, {}, kInt64, {}, kInt64},
+                                        ClampShapeParams{{3, 4, 5}, kFloat16, {}, kFloat32, {}, kFloat32},
+                                        ClampShapeParams{{-1, -1, -1}, kInt32, {}, kFloat32, {}, kFloat32},
+                                        ClampShapeParams{{-2}, kFloat32, {}, kFloat32, {}, kFloat32}));
 }  // namespace ops
 }  // namespace mindspore

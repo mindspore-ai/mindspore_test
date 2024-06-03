@@ -25,8 +25,8 @@
 #include "include/common/utils/parallel_context.h"
 #include "include/common/utils/utils.h"
 #include "ir/graph_utils.h"
-#include "mindspore/core/ops/array_ops.h"
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 
 namespace mindspore {
 namespace opt {

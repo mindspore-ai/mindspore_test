@@ -16,7 +16,7 @@
 
 #include "tools/converter/parser/onnx/onnx_lstm_parser.h"
 #include <memory>
-#include "ops/lstm.h"
+#include "infer/lstm.h"
 #include "nnacl/op_base.h"
 #include "include/registry/converter_context.h"
 

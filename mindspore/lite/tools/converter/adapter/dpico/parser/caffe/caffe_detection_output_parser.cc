@@ -18,7 +18,7 @@
 #include <memory>
 #include <vector>
 #include "common/op_attr.h"
-#include "ops/custom.h"
+#include "infer/custom.h"
 #include "parser/detection_output_param_helper.h"
 
 namespace mindspore {

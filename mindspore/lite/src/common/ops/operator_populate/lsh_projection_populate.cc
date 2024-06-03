@@ -15,7 +15,7 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/lsh_projection_parameter.h"
-#include "ops/lsh_projection.h"
+#include "infer/lsh_projection.h"
 using mindspore::ops::kNameLshProjection;
 using mindspore::schema::PrimitiveType_LshProjection;
 namespace mindspore {

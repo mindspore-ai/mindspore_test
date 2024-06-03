@@ -16,7 +16,7 @@
 
 #include "src/extendrt/delegate/tensorrt/op/reduce_tensorrt.h"
 #include <valarray>
-#include "ops/fusion/reduce_fusion.h"
+#include "infer/cxx_api/reduce_fusion.h"
 
 namespace mindspore::lite {
 int ReduceTensorRT::IsSupport(const BaseOperatorPtr &base_operator, const std::vector<TensorInfo> &in_tensors,

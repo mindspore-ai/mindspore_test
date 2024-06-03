@@ -16,7 +16,7 @@
 
 #include "pipeline/pynative/forward/do_pyboost_cast.h"
 #include "pipeline/pynative/pynative_utils.h"
-#include "kernel/pyboost/auto_generate/cast.h"
+#include "kernel/common/pyboost/auto_generate/cast.h"
 #include "include/common/utils/stub_tensor.h"
 
 namespace mindspore {

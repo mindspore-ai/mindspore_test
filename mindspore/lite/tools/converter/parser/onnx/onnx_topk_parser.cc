@@ -16,7 +16,7 @@
 
 #include "tools/converter/parser/onnx/onnx_topk_parser.h"
 #include <memory>
-#include "ops/fusion/topk_fusion.h"
+#include "infer/cxx_api/topk_fusion.h"
 #include "nnacl/op_base.h"
 #include "src/common/log_util.h"
 

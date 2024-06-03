@@ -18,17 +18,17 @@
 #include <memory>
 #include <vector>
 #include <string>
-#include "mindspore/core/ops/math_ops.h"
-#include "mindspore/core/ops/array_ops.h"
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "tools/converter/adapter/acl/mapper/primitive_mapper_register.h"
 #include "tools/converter/adapter/acl/mapper/tbe_op_def.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "tools/converter/adapter/acl/common/utils.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 #include "src/common/log_util.h"
-#include "mindspore/core/ops/op_name.h"
-#include "plugin/device/cpu/kernel/nnacl/op_base.h"
+#include "mindspore/ops/op_def/op_name.h"
+#include "nnacl/op_base.h"
 
 namespace mindspore {
 namespace lite {

@@ -15,7 +15,7 @@
  */
 
 #include "ops/test_ops.h"
-#include "ops/ops_func_impl/eye.h"
+#include "infer/ops_func_impl/eye.h"
 #include "ops/test_value_utils.h"
 
 namespace mindspore {

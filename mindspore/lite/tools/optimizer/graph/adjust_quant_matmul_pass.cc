@@ -18,7 +18,7 @@
 #include "tools/optimizer/graph/adjust_quant_matmul_pass.h"
 #include <memory>
 #include <vector>
-#include "mindspore/core/ops/lite_ops.h"
+#include "op_def/lite_ops.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "tools/converter/quantizer/quant_param_holder.h"
 #include "tools/converter/quantizer/insert_quant_node_manager.h"

@@ -22,9 +22,9 @@
 #include <unordered_set>
 #include <algorithm>
 #include <utility>
-#include "ops/auto_generate/gen_lite_ops.h"
-#include "ops/return.h"
-#include "ops/depend.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
+#include "infer/return.h"
+#include "infer/depend.h"
 #include "common/format_utils.h"
 #include "common/anf_util.h"
 #include "common/string_util.h"

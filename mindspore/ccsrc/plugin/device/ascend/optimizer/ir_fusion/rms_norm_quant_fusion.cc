@@ -19,7 +19,7 @@
 #include <string>
 
 #include "mindspore/core/utils/ms_context.h"
-#include "mindspore/core/ops/nn_ops.h"
+#include "op_def/nn_ops.h"
 #include "include/common/utils/anfalgo.h"
 #include "ir/primitive.h"
 #include "include/common/utils/utils.h"

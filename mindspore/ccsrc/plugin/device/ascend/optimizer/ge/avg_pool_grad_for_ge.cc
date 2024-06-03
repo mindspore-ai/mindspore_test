@@ -20,8 +20,8 @@
 #include <vector>
 #include <algorithm>
 #include <memory>
-#include "ops/conv_pool_ops.h"
-#include "ops/array_ops.h"
+#include "op_def/conv_pool_ops.h"
+#include "op_def/array_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
 
 namespace mindspore {

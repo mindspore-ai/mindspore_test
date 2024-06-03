@@ -24,8 +24,8 @@
 #include "frontend/optimizer/optimizer.h"
 #include "frontend/parallel/step_parallel.h"
 #include "frontend/parallel/step_parallel_utils.h"
-#include "mindspore/core/ops/math_ops.h"
-#include "mindspore/core/ops/other_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/op_def/other_ops.h"
 
 namespace mindspore {
 namespace parallel {

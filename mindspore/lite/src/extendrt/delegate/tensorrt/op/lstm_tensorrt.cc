@@ -18,7 +18,7 @@
 #include "src/extendrt/delegate/tensorrt/op/lstm_tensorrt.h"
 #include "src/extendrt/delegate/tensorrt/op/lstm_plugin.h"
 #include "src/extendrt/delegate/tensorrt/tensorrt_runtime.h"
-#include "ops/lstm.h"
+#include "infer/lstm.h"
 
 namespace mindspore::lite {
 int LSTMTensorRT::IsSupport(const BaseOperatorPtr &base_operator, const std::vector<TensorInfo> &in_tensors,

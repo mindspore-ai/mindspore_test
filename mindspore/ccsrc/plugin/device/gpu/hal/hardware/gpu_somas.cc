@@ -19,7 +19,7 @@
 #include <vector>
 #include "include/backend/optimizer/helper.h"
 #include "utils/ms_context.h"
-#include "ops/framework_op_name.h"
+#include "op_def/framework_op_name.h"
 
 namespace mindspore {
 namespace device {

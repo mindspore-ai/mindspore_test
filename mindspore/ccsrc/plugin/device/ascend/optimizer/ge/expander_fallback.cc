@@ -21,7 +21,7 @@
 #include "backend/common/graph_kernel/value_graph_binder.h"
 #include "include/backend/device_type.h"
 #include "include/backend/kernel_graph.h"
-#include "plugin/device/ascend/kernel/opapi/aclnn_kernel_build.h"
+#include "kernel/ascend/opapi/aclnn_kernel_build.h"
 
 namespace mindspore {
 namespace opt {

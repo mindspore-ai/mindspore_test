@@ -17,8 +17,8 @@
 #define USE_DEPRECATED_API
 #include "tools/optimizer/fusion/tf_gelu_fusion.h"
 #include <unordered_map>
-#include "mindspore/core/ops/lite_ops.h"
-#include "ops/op_utils.h"
+#include "mindspore/ops/op_def/lite_ops.h"
+#include "ops_utils/op_utils.h"
 #include "nnacl/op_base.h"
 #include "mindapi/base/types.h"
 

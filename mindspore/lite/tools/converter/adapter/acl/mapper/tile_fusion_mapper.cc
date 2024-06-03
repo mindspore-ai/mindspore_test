@@ -20,8 +20,8 @@
 #include <algorithm>
 #include "tools/converter/adapter/acl/mapper/primitive_mapper_register.h"
 #include "tools/converter/adapter/acl/common/utils.h"
-#include "ops/auto_generate/gen_lite_ops.h"
-#include "ops/op_utils.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
+#include "ops_utils/op_utils.h"
 #include "nnacl/op_base.h"
 #include "tools/lite_exporter/fetch_content.h"
 

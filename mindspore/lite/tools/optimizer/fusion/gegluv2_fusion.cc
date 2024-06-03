@@ -17,14 +17,14 @@
 #include "tools/optimizer/fusion/gegluv2_fusion.h"
 #include <memory>
 #include <utility>
-#include "ops/op_utils.h"
-#include "ops/array_ops.h"
-#include "ops/nn_ops.h"
-#include "ops/fusion/gegluv2.h"
+#include "ops_utils/op_utils.h"
+#include "op_def/array_ops.h"
+#include "op_def/nn_ops.h"
+#include "infer/cxx_api/gegluv2.h"
 #include "tools/optimizer/common/gllo_utils.h"
-#include "mindspore/core/ops/lite_ops.h"
-#include "ops/slice.h"
-#include "ops/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
+#include "infer/slice.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
 
 namespace mindspore::opt {
 namespace {

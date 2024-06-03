@@ -17,7 +17,7 @@
 #include "tools/converter/parser/tflite/tflite_fill_parser.h"
 #include <vector>
 #include <memory>
-#include "ops/fill.h"
+#include "infer/fill.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

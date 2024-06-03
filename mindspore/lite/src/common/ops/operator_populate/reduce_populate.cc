@@ -15,9 +15,9 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/reduce_parameter.h"
-#include "ops/reduce.h"
-#include "ops/fusion/reduce_fusion.h"
-#include "ops/op_name.h"
+#include "infer/reduce.h"
+#include "infer/cxx_api/reduce_fusion.h"
+#include "op_def/op_name.h"
 using mindspore::ops::kNameReduce;
 using mindspore::ops::kNameReduceFusion;
 using mindspore::schema::PrimitiveType_ReduceFusion;

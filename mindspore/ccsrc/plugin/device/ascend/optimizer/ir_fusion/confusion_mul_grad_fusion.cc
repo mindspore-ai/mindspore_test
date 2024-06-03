@@ -19,10 +19,10 @@
 #include <vector>
 #include <algorithm>
 #include <string>
-#include "ops/ascend_op_name.h"
-#include "ops/math_ops.h"
-#include "ops/lite_ops.h"
-#include "ops/array_ops.h"
+#include "op_def/ascend_op_name.h"
+#include "op_def/math_ops.h"
+#include "op_def/lite_ops.h"
+#include "op_def/array_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "ir/primitive.h"

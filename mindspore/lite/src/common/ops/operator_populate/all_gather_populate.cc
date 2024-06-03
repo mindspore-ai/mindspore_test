@@ -15,7 +15,7 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/all_gather_parameter.h"
-#include "ops/all_gather.h"
+#include "infer/all_gather.h"
 using mindspore::ops::kNameAllGather;
 using mindspore::schema::PrimitiveType_AllGather;
 namespace mindspore {

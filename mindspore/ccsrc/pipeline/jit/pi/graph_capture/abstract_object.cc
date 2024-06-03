@@ -30,7 +30,7 @@
 #include "pipeline/jit/pi/graph_compiler/pi_ir/value.h"
 #include "pipeline/jit/ps/action.h"
 #include "pipeline/jit/ps/parse/data_converter.h"
-#include "mindspore/core/ops/math_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
 #include "include/common/utils/convert_utils_py.h"
 
 namespace mindspore {

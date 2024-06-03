@@ -16,8 +16,8 @@
 #include "plugin/device/ascend/optimizer/mindir/bn_grad_unify_mindir.h"
 #include <vector>
 #include <memory>
-#include "ops/nn_op_name.h"
-#include "ops/op_utils.h"
+#include "op_def/nn_op_name.h"
+#include "ops_utils/op_utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 
@@ -72,7 +72,7 @@ bool BatchNormGradUnifyMindIR::CheckMatchedDAG(const PatternMap &, const FuncGra
   auto is_training_input = cnode->input(kIsTraningIdx);
   MS_EXCEPTION_IF_NULL(is_training_input);
   auto value = is_training_input->abstract()->GetValue();
-  auto is_training = ops::GetValueWithCheck<bool>(value);
+  auto is_training = GetValueWithCheck<bool>(value);
   if (common::AnfAlgo::HasNodeAttr(kAttrUnifyIRPassed, cnode) ||
       (func_graph->has_flag(kAttrMutableKernel) && !is_training)) {
     return false;

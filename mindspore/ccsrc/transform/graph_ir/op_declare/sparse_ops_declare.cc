@@ -15,7 +15,7 @@
  */
 
 #include "transform/graph_ir/op_declare/sparse_ops_declare.h"
-#include "mindspore/core/ops/sparse_ops.h"
+#include "mindspore/ops/op_def/sparse_ops.h"
 
 namespace mindspore::transform {
 // CSRSparseMatrixToSparseTensor

@@ -21,8 +21,8 @@
 #include <algorithm>
 #include <vector>
 #include <string>
-#include "ops/auto_generate/gen_lite_ops.h"
-#include "ops/op_utils.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
+#include "ops_utils/op_utils.h"
 #include "include/registry/converter_context.h"
 #include "nnacl/op_base.h"
 

@@ -21,7 +21,7 @@
 #include "common/op_enum.h"
 #include "common/anf_util.h"
 #include "op/pad_operator.h"
-#include "ops/fusion/pad_fusion.h"
+#include "infer/cxx_api/pad_fusion.h"
 
 namespace mindspore {
 namespace dpico {

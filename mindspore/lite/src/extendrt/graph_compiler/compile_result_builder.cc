@@ -16,14 +16,14 @@
 
 #include "src/extendrt/graph_compiler/compile_result_builder.h"
 #include <algorithm>
-#include "mindspore/core/ops/structure_ops.h"
-#include "mindspore/core/ops/sequence_ops.h"
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/structure_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "src/extendrt/graph_compiler/anfnode_tensor_adapter.h"
 #include "ir/anf.h"
 #include "ir/func_graph.h"
 #include "ir/primitive.h"
-#include "ops/op_name.h"
+#include "op_def/op_name.h"
 #include "ops/primitive_c.h"
 #include "src/extendrt/utils/func_graph_utils.h"
 

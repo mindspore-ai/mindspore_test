@@ -15,7 +15,7 @@
  */
 #include "tools/optimizer/graph/remove_load_pass.h"
 #include "tools/optimizer/common/gllo_utils.h"
-#include "ops/nn_optimizer_ops.h"
+#include "op_def/nn_optimizer_ops.h"
 
 namespace mindspore::opt {
 bool RemoveLoadPass::Run(const mindspore::FuncGraphPtr &func_graph) {

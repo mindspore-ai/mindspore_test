@@ -17,7 +17,7 @@
 #include "tools/converter/parser/caffe/caffe_tile_parser.h"
 #include <memory>
 #include <vector>
-#include "ops/fusion/tile_fusion.h"
+#include "infer/cxx_api/tile_fusion.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

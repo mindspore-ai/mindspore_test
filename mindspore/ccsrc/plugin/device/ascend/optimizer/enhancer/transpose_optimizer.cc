@@ -17,8 +17,8 @@
 #include "plugin/device/ascend/optimizer/enhancer/transpose_optimizer.h"
 #include <vector>
 #include <algorithm>
-#include "mindspore/core/ops/array_ops.h"
-#include "mindspore/core/ops/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/debug/anf_ir_dump.h"

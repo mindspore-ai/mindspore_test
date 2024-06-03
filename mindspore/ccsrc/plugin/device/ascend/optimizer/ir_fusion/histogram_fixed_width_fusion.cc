@@ -18,7 +18,7 @@
 
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/convert_utils.h"
-#include "mindspore/core/ops/structure_ops.h"
+#include "mindspore/ops/op_def/structure_ops.h"
 
 namespace mindspore {
 namespace opt {

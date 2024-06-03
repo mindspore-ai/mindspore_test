@@ -17,12 +17,11 @@
 #include "ir/primitive.h"
 #include "abstract/abstract_value.h"
 #include "ops/test_ops.h"
-#include "ops/ops_func_impl/less_equal.h"
+#include "infer/ops_func_impl/less_equal.h"
 
 namespace mindspore {
 namespace ops {
-struct LessEqualOpParams
-{
+struct LessEqualOpParams {
   ShapeVector x_shape;
   TypePtr x_type;
   ShapeVector y_shape;
@@ -57,10 +56,10 @@ TEST_P(TestLessEqual, less_equal_dyn_shape) {
   ASSERT_TRUE(*infer_type == *expect_type);
 }
 
-INSTANTIATE_TEST_CASE_P(
-  TestLessEqualGroup, TestLessEqual,
-  testing::Values(LessEqualOpParams{{2, 3, 4}, kFloat32, {2, 1, 4}, kFloat32, {2, 3, 4}, kBool},
-                  LessEqualOpParams{{2, 3, 4}, kFloat32, {-1, -1, -1}, kFloat32, {2, 3, 4}, kBool},
-                  LessEqualOpParams{{2, 3, 4}, kFloat32, {1}, kFloat32, {2, 3, 4}, kBool}));
+INSTANTIATE_TEST_CASE_P(TestLessEqualGroup, TestLessEqual,
+                        testing::Values(LessEqualOpParams{{2, 3, 4}, kFloat32, {2, 1, 4}, kFloat32, {2, 3, 4}, kBool},
+                                        LessEqualOpParams{
+                                          {2, 3, 4}, kFloat32, {-1, -1, -1}, kFloat32, {2, 3, 4}, kBool},
+                                        LessEqualOpParams{{2, 3, 4}, kFloat32, {1}, kFloat32, {2, 3, 4}, kBool}));
 }  // namespace ops
 }  // namespace mindspore

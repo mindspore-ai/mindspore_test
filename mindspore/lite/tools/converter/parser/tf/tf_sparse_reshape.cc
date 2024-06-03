@@ -19,7 +19,7 @@
 #include <map>
 #include <vector>
 #include "tools/converter/parser/tf/tf_node_parser_registry.h"
-#include "ops/sparse_reshape.h"
+#include "infer/sparse_reshape.h"
 
 namespace mindspore {
 namespace lite {

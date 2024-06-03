@@ -22,7 +22,7 @@
 #include <utility>
 #include <vector>
 #include <unordered_map>
-#include "mindspore/core/ops/other_ops.h"
+#include "mindspore/ops/op_def/other_ops.h"
 #include "utils/hash_set.h"
 #include "ir/func_graph.h"
 #include "frontend/parallel/costmodel_context.h"

@@ -19,13 +19,13 @@
 #include <memory>
 #include <deque>
 #include <unordered_set>
-#include "mindspore/core/ops/sequence_ops.h"
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "include/errorcode.h"
 #include "tools/converter/ops/ops_def.h"
 #include "nnacl/op_base.h"
 #include "src/common/log_util.h"
-#include "ops/return.h"
+#include "infer/return.h"
 #include "tools/lite_exporter/fetch_content.h"
 
 namespace mindspore::opt {

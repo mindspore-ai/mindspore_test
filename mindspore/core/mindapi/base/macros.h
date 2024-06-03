@@ -36,6 +36,19 @@
 #define GVAR_DEF(type, name, value) MS_CORE_API inline const type name = value;
 #endif
 
+#if (defined(_WIN32) || defined(__WIN32__) || defined(WIN32) || defined(__CYGWIN__))
+#ifdef OPS_DLL
+#define OPS_API __declspec(dllexport)
+#define OPS_VAR_DEF(type, name, value) OPS_API inline const type name = value;
+#else
+#define OPS_API __declspec(dllimport)
+#define OPS_VAR_DEF(type, name, value) OPS_API extern const type name;
+#endif
+#else
+#define OPS_API __attribute__((visibility("default")))
+#define OPS_VAR_DEF(type, name, value) OPS_API inline const type name = value;
+#endif
+
 #ifdef _MSC_VER
 #define NO_RETURN
 #define ALWAYS_INLINE

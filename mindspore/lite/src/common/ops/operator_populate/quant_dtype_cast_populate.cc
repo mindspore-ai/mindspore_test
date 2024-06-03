@@ -15,7 +15,7 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/int8/quant_dtype_cast_int8.h"
-#include "ops/quant_dtype_cast.h"
+#include "infer/quant_dtype_cast.h"
 using mindspore::ops::kNameQuantDTypeCast;
 using mindspore::schema::PrimitiveType_QuantDTypeCast;
 

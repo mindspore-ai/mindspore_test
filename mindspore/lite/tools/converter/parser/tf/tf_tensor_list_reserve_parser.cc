@@ -19,7 +19,7 @@
 #include <map>
 #include <vector>
 #include "tools/converter/parser/tf/tf_node_parser_registry.h"
-#include "ops/tensor_list_reserve.h"
+#include "infer/tensor_list_reserve.h"
 
 namespace mindspore {
 namespace lite {

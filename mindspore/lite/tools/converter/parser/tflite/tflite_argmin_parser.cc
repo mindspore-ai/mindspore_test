@@ -18,7 +18,7 @@
 #include <memory>
 #include <vector>
 #include <map>
-#include "ops/fusion/arg_min_fusion.h"
+#include "infer/cxx_api/arg_min_fusion.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

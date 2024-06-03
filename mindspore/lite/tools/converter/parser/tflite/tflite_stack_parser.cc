@@ -17,7 +17,7 @@
 #include "tools/converter/parser/tflite/tflite_stack_parser.h"
 #include <vector>
 #include <memory>
-#include "ops/stack.h"
+#include "infer/stack.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

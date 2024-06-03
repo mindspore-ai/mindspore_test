@@ -16,7 +16,7 @@
 
 #include "tools/converter/parser/caffe/caffe_scale_parser.h"
 #include <memory>
-#include "ops/fusion/scale_fusion.h"
+#include "infer/cxx_api/scale_fusion.h"
 #include "nnacl/op_base.h"
 #include "src/common/log_util.h"
 

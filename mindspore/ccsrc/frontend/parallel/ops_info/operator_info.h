@@ -38,7 +38,7 @@
 #include "frontend/parallel/tensor_layout/tensor_info.h"
 #include "frontend/parallel/tensor_layout/tensor_redistribution.h"
 #include "utils/log_adapter.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace parallel {
@@ -557,7 +557,7 @@ std::optional<T> GetScalarValueFromInputs(const std::vector<ValuePtr> &input_val
   if (input_value.size() <= idx || input_value[idx] == nullptr) {
     return std::nullopt;
   }
-  return ops::GetScalarValue<T>(input_value[idx]);
+  return GetScalarValue<T>(input_value[idx]);
 }
 
 template <typename T>
@@ -609,7 +609,7 @@ std::optional<std::vector<T>> GetArrayValueFromInputs(const std::vector<ValuePtr
   if (input_value.size() <= idx || input_value[idx] == nullptr) {
     return std::nullopt;
   }
-  auto array_opt = ops::GetArrayValue<T>(input_value[idx]);
+  auto array_opt = GetArrayValue<T>(input_value[idx]);
   if (!array_opt.has_value() || array_opt.value().HasUnknownValue()) {
     return std::nullopt;
   }

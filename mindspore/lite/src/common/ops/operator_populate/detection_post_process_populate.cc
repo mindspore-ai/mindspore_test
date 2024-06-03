@@ -15,7 +15,7 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/detection_post_process_parameter.h"
-#include "ops/detection_post_process.h"
+#include "infer/detection_post_process.h"
 using mindspore::ops::kNameDetectionPostProcess;
 using mindspore::schema::PrimitiveType_DetectionPostProcess;
 namespace mindspore {

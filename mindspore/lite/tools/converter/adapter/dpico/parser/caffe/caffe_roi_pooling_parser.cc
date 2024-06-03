@@ -16,7 +16,7 @@
 
 #include "parser/caffe/caffe_roi_pooling_parser.h"
 #include <memory>
-#include "ops/roi_pooling.h"
+#include "infer/roi_pooling.h"
 
 namespace mindspore {
 namespace lite {

@@ -15,9 +15,9 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/tensor_array_parameter.h"
-#include "ops/tensor_array.h"
-#include "ops/tensor_array_read.h"
-#include "ops/tensor_array_write.h"
+#include "infer/tensor_array.h"
+#include "infer/tensor_array_read.h"
+#include "infer/tensor_array_write.h"
 using mindspore::ops::kNameTensorArray;
 using mindspore::ops::kNameTensorArrayRead;
 using mindspore::ops::kNameTensorArrayWrite;

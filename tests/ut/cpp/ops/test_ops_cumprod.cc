@@ -23,7 +23,7 @@
 #include "abstract/abstract_value.h"
 #include "include/backend/optimizer/helper.h"
 #include "ops/test_ops.h"
-#include "ops/ops_func_impl/cum_prod.h"
+#include "infer/ops_func_impl/cum_prod.h"
 #include "ops/test_value_utils.h"
 
 namespace mindspore {
@@ -61,11 +61,43 @@ TEST_P(TestCumProd, dyn_shape) {
 
 INSTANTIATE_TEST_CASE_P(
   TestCumProd, TestCumProd,
-  testing::Values(CumProdShapeParams{{3, 4, 5}, kFloat32, CreateScalar<int64_t>(2), CreateScalar<bool>(true), CreateScalar<bool>(true), {3, 4, 5}, kFloat32},
-                  CumProdShapeParams{{3, 4, 5}, kInt64, CreateScalar<int64_t>(0), CreateScalar<bool>(true), CreateScalar<bool>(false), {3, 4, 5}, kInt64},
-                  CumProdShapeParams{{3, 4, 5}, kInt64, CreateScalar<int64_t>(-3), CreateScalar<bool>(true), CreateScalar<bool>(true), {3, 4, 5}, kInt64},
-                  CumProdShapeParams{{2, 3, 4, 5}, kInt32, CreateScalar<int64_t>(-2), CreateScalar<bool>(true), CreateScalar<bool>(false), {2, 3, 4, 5}, kInt32},
-                  CumProdShapeParams{{-1, -1, -1}, kUInt64, CreateScalar<int64_t>(2), CreateScalar<bool>(false), CreateScalar<bool>(false), {-1, -1, -1}, kUInt64},
-                  CumProdShapeParams{{-2}, kFloat32, CreateScalar<int64_t>(2), CreateScalar<bool>(true), CreateScalar<bool>(true), {-2}, kFloat32}));
+  testing::Values(
+    CumProdShapeParams{{3, 4, 5},
+                       kFloat32,
+                       CreateScalar<int64_t>(2),
+                       CreateScalar<bool>(true),
+                       CreateScalar<bool>(true),
+                       {3, 4, 5},
+                       kFloat32},
+    CumProdShapeParams{{3, 4, 5},
+                       kInt64,
+                       CreateScalar<int64_t>(0),
+                       CreateScalar<bool>(true),
+                       CreateScalar<bool>(false),
+                       {3, 4, 5},
+                       kInt64},
+    CumProdShapeParams{{3, 4, 5},
+                       kInt64,
+                       CreateScalar<int64_t>(-3),
+                       CreateScalar<bool>(true),
+                       CreateScalar<bool>(true),
+                       {3, 4, 5},
+                       kInt64},
+    CumProdShapeParams{{2, 3, 4, 5},
+                       kInt32,
+                       CreateScalar<int64_t>(-2),
+                       CreateScalar<bool>(true),
+                       CreateScalar<bool>(false),
+                       {2, 3, 4, 5},
+                       kInt32},
+    CumProdShapeParams{{-1, -1, -1},
+                       kUInt64,
+                       CreateScalar<int64_t>(2),
+                       CreateScalar<bool>(false),
+                       CreateScalar<bool>(false),
+                       {-1, -1, -1},
+                       kUInt64},
+    CumProdShapeParams{
+      {-2}, kFloat32, CreateScalar<int64_t>(2), CreateScalar<bool>(true), CreateScalar<bool>(true), {-2}, kFloat32}));
 }  // namespace ops
 }  // namespace mindspore

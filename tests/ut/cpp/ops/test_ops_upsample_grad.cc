@@ -17,13 +17,13 @@
 #include <vector>
 #include <memory>
 #include "common/common_test.h"
-#include "ops/ops_func_impl/upsample_bilinear2d_grad.h"
-#include "ops/ops_func_impl/upsample_linear1d_grad.h"
-#include "ops/ops_func_impl/upsample_nearest1d_grad.h"
-#include "ops/ops_func_impl/upsample_nearest2d_grad.h"
-#include "ops/ops_func_impl/upsample_nearest3d_grad.h"
-#include "ops/ops_func_impl/upsample_trilinear3d_grad.h"
-#include "ops/auto_generate/gen_ops_name.h"
+#include "infer/ops_func_impl/upsample_bilinear2d_grad.h"
+#include "infer/ops_func_impl/upsample_linear1d_grad.h"
+#include "infer/ops_func_impl/upsample_nearest1d_grad.h"
+#include "infer/ops_func_impl/upsample_nearest2d_grad.h"
+#include "infer/ops_func_impl/upsample_nearest3d_grad.h"
+#include "infer/ops_func_impl/upsample_trilinear3d_grad.h"
+#include "op_def/auto_generate/gen_ops_name.h"
 #include "ir/dtype/type.h"
 #include "abstract/dshape.h"
 #include "utils/tensor_construct_utils.h"
@@ -37,9 +37,9 @@ namespace mindspore {
 namespace ops {
 struct UpsampleBackwardParams {
   ShapeVector dout_shape;
-  ValuePtr input_size;  // tuple[int]
-  ValuePtr output_size; // tuple[int]
-  ValuePtr scales;      // tuple[float]
+  ValuePtr input_size;   // tuple[int]
+  ValuePtr output_size;  // tuple[int]
+  ValuePtr scales;       // tuple[float]
   ShapeVector out_shape;
 };
 

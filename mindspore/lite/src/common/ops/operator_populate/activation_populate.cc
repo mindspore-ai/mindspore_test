@@ -15,11 +15,11 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/fp32/activation_fp32.h"
-#include "ops/auto_generate/gen_lite_ops.h"
-#include "ops/fusion/activation.h"
-#include "ops/leaky_relu.h"
-#include "ops/ops_func_impl/hswish.h"
-#include "ops/softplus.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
+#include "infer/cxx_api/activation.h"
+#include "infer/leaky_relu.h"
+#include "infer/ops_func_impl/hswish.h"
+#include "infer/softplus.h"
 using mindspore::ops::kActivationType;
 using mindspore::ops::kAlpha;
 using mindspore::ops::kApproximate;

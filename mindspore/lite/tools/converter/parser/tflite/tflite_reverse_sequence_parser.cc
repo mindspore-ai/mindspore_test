@@ -18,7 +18,7 @@
 #include "tools/converter/parser/tflite/tflite_reverse_sequence_parser.h"
 #include <vector>
 #include <memory>
-#include "ops/reverse_sequence.h"
+#include "infer/reverse_sequence.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

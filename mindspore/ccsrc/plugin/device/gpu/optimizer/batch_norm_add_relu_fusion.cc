@@ -19,12 +19,12 @@
 #include <vector>
 #include <string>
 
-#include "ops/sequence_ops.h"
-#include "ops/nn_optimizer_ops.h"
-#include "ops/nn_ops.h"
-#include "ops/math_ops.h"
-#include "ops/framework_ops.h"
-#include "ops/op_utils.h"
+#include "op_def/sequence_ops.h"
+#include "op_def/nn_optimizer_ops.h"
+#include "op_def/nn_ops.h"
+#include "op_def/math_ops.h"
+#include "op_def/framework_ops.h"
+#include "ops_utils/op_utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "ir/primitive.h"
@@ -105,11 +105,11 @@ const AnfNodePtr BatchNormAddReluFusion::Process(const FuncGraphPtr &graph, cons
   if (!utils::isa<ValueNodePtr>(is_train_input_node) || !utils::isa<ValueNodePtr>(format_input_node)) {
     return nullptr;
   }
-  auto is_train_v = ops::GetScalarValue<bool>(is_train_input_node->cast<ValueNodePtr>()->value());
+  auto is_train_v = GetScalarValue<bool>(is_train_input_node->cast<ValueNodePtr>()->value());
   if (!is_train_v.has_value() || !is_train_v.value()) {
     return nullptr;
   }
-  auto format_v = ops::GetScalarValue<int64_t>(format_input_node->cast<ValueNodePtr>()->value());
+  auto format_v = GetScalarValue<int64_t>(format_input_node->cast<ValueNodePtr>()->value());
   if (!format_v.has_value()) {
     return nullptr;
   }

@@ -42,6 +42,7 @@ class MS_CORE_API Operation : public Base {
   }
 
   virtual bool EqualsTo(const OpPtr &other);
+  virtual bool SupportCse() const { return false; }
 
   const SymbolPtrList &inputs() const { return inputs_; }
   const SymbolPtr &input(size_t i) const {
@@ -89,7 +90,7 @@ class MS_CORE_API Operation : public Base {
   std::string ToString() const override;
   std::string DumpText() const override;
 
-  class Emitter {
+  class MS_CORE_API Emitter {
    public:
     explicit Emitter(OpPtrList *op_list = nullptr) : ops_(op_list) {}
     ~Emitter() = default;

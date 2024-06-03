@@ -24,8 +24,8 @@
 #include <utility>
 #include <vector>
 
-#include "mindspore/core/ops/sequence_ops.h"
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/hash_map.h"
 #include "utils/ordered_map.h"
 #include "abstract/abstract_value.h"

@@ -16,13 +16,13 @@
 #include <vector>
 #include "ops/test_ops_cmp_utils.h"
 #include "ir/dtype/number.h"
-#include "ops/ops_func_impl/reflection_pad_1d.h"
-#include "ops/ops_func_impl/reflection_pad_2d.h"
-#include "ops/ops_func_impl/reflection_pad_3d.h"
-#include "ops/ops_func_impl/replication_pad_1d.h"
-#include "ops/ops_func_impl/replication_pad_2d.h"
-#include "ops/ops_func_impl/replication_pad_3d.h"
-#include "ops/auto_generate/gen_ops_name.h"
+#include "infer/ops_func_impl/reflection_pad_1d.h"
+#include "infer/ops_func_impl/reflection_pad_2d.h"
+#include "infer/ops_func_impl/reflection_pad_3d.h"
+#include "infer/ops_func_impl/replication_pad_1d.h"
+#include "infer/ops_func_impl/replication_pad_2d.h"
+#include "infer/ops_func_impl/replication_pad_3d.h"
+#include "op_def/auto_generate/gen_ops_name.h"
 #include "ops/test_value_utils.h"
 #include "abstract/dshape.h"
 
@@ -31,7 +31,7 @@ namespace ops {
 struct PadReflectAndReplicateParams {
   ShapeVector input_shape;
   TypePtr input_dtype;
-  ValuePtr    padding;
+  ValuePtr padding;
   ShapeVector output_shape;
   TypePtr output_dtype;
 };
@@ -43,7 +43,9 @@ static std::map<std::string, OpFuncImplPtr> pad_func_impl = {
   {kNameReplicationPad2D, std::make_shared<ReplicationPad2DFuncImpl>()},
   {kNameReplicationPad3D, std::make_shared<ReplicationPad3DFuncImpl>()},
 };
-class TestPadReflectAndReplicate : public TestOps, public testing::WithParamInterface<std::tuple<const char *, PadReflectAndReplicateParams>> {};
+class TestPadReflectAndReplicate
+    : public TestOps,
+      public testing::WithParamInterface<std::tuple<const char *, PadReflectAndReplicateParams>> {};
 
 TEST_P(TestPadReflectAndReplicate, dyn_shape) {
   const auto &pad_mode = std::get<0>(GetParam());
@@ -72,22 +74,19 @@ auto PadDynTestCase1D = testing::ValuesIn(
    PadReflectAndReplicateParams{{dyn_rank}, kFloat32, CreatePyIntTuple({1, 1}), {dyn_rank}, kFloat32},
    PadReflectAndReplicateParams{{2, 3, 4}, kFloat32, kValueAny, {2, 3, dyn_dim}, kFloat32}});
 auto PadDynTestCase2D = testing::ValuesIn(
-  {PadReflectAndReplicateParams{{2, 3, 4, 5}, kFloat32, CreatePyIntTuple({1, 1, 1, 1}),
-             {2, 3, 6, 7}, kFloat32},
-   PadReflectAndReplicateParams{{2, dyn_dim, 4, 5}, kFloat32, CreatePyIntTuple({1, 1, 1, 1}),
-             {2, dyn_dim, 6, 7}, kFloat32},
+  {PadReflectAndReplicateParams{{2, 3, 4, 5}, kFloat32, CreatePyIntTuple({1, 1, 1, 1}), {2, 3, 6, 7}, kFloat32},
+   PadReflectAndReplicateParams{
+     {2, dyn_dim, 4, 5}, kFloat32, CreatePyIntTuple({1, 1, 1, 1}), {2, dyn_dim, 6, 7}, kFloat32},
    PadReflectAndReplicateParams{{dyn_rank}, kFloat32, CreatePyIntTuple({1, 1, 1, 1}), {dyn_rank}, kFloat32},
-   PadReflectAndReplicateParams{{2, dyn_dim, 4, 5}, kFloat32, kValueAny,
-             {2, dyn_dim, dyn_dim, dyn_dim}, kFloat32}});
+   PadReflectAndReplicateParams{{2, dyn_dim, 4, 5}, kFloat32, kValueAny, {2, dyn_dim, dyn_dim, dyn_dim}, kFloat32}});
 auto PadDynTestCase3D = testing::ValuesIn(
-  {PadReflectAndReplicateParams{{2, 3, 4, 5}, kFloat32, CreatePyIntTuple({1, 1, 1, 1, 1, 1}),
-             {2, 5, 6, 7}, kFloat32},
-   PadReflectAndReplicateParams{{2, dyn_dim, 4, 5}, kFloat32, CreatePyIntTuple({1, 1, 1, 1, 1, 1}),
-             {2, dyn_dim, 6, 7}, kFloat32},
-   PadReflectAndReplicateParams{{dyn_rank}, kFloat32, CreatePyIntTuple({1, 1, 1, 1, 1, 1}),{dyn_rank}, kFloat32},
-   PadReflectAndReplicateParams{{2, dyn_dim, 4, 5}, kFloat32, CreatePyIntTuple({1, 1, 1, 1, 1, 1}),
-             {2, dyn_dim, 6, 7}, kFloat32}});
-}
+  {PadReflectAndReplicateParams{{2, 3, 4, 5}, kFloat32, CreatePyIntTuple({1, 1, 1, 1, 1, 1}), {2, 5, 6, 7}, kFloat32},
+   PadReflectAndReplicateParams{
+     {2, dyn_dim, 4, 5}, kFloat32, CreatePyIntTuple({1, 1, 1, 1, 1, 1}), {2, dyn_dim, 6, 7}, kFloat32},
+   PadReflectAndReplicateParams{{dyn_rank}, kFloat32, CreatePyIntTuple({1, 1, 1, 1, 1, 1}), {dyn_rank}, kFloat32},
+   PadReflectAndReplicateParams{
+     {2, dyn_dim, 4, 5}, kFloat32, CreatePyIntTuple({1, 1, 1, 1, 1, 1}), {2, dyn_dim, 6, 7}, kFloat32}});
+}  // namespace
 
 INSTANTIATE_TEST_CASE_P(TestReflectionPad1DGroup, TestPadReflectAndReplicate,
                         testing::Combine(testing::ValuesIn({kNameReflectionPad1D}), PadDynTestCase1D));

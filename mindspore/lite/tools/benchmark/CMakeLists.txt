@@ -61,7 +61,7 @@ if(MSLITE_EXPORT_COMPUTE_IR)
     set(BENCHMARK_LINK_LIB ${BENCHMARK_LINK_LIB} mindspore_lite_drawer)
 endif()
 
-include_directories(${CCSRC_DIR}/plugin/device/cpu/kernel)
+include_directories(${OPS_DIR}/kernel/cpu)
 set(COMMON_SRC
         ${CMAKE_CURRENT_SOURCE_DIR}/../common/flag_parser.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/../common/string_util.cc
@@ -69,7 +69,7 @@ set(COMMON_SRC
         ${CMAKE_CURRENT_SOURCE_DIR}/../../src/common/file_utils.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/../../src/common/utils.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/../../src/common/config_file.cc
-        ${CCSRC_DIR}/plugin/device/cpu/kernel/nnacl/nnacl_common.c
+        ${OPS_DIR}/kernel/cpu/nnacl/nnacl_common.c
         )
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../../lite)

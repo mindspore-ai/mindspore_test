@@ -19,9 +19,9 @@
 #include <vector>
 #include <memory>
 
-#include "mindspore/core/ops/image_ops.h"
-#include "mindspore/core/ops/array_ops.h"
-#include "mindspore/core/ops/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/image_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 

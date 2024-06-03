@@ -16,7 +16,7 @@
 
 #include "tools/converter/parser/pytorch/pytorch_pow_parser.h"
 #include <memory>
-#include "ops/fusion/pow_fusion.h"
+#include "infer/cxx_api/pow_fusion.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

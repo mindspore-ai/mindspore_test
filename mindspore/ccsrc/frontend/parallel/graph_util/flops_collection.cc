@@ -23,14 +23,14 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "frontend/parallel/ops_info/ops_utils.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "abstract/abstract_function.h"
 #include "ir/func_graph_cloner.h"
 #include "frontend/parallel/pass/pass_utils.h"
 #include "include/common/utils/anfalgo.h"
-#include "mindspore/core/ops/conv_pool_ops.h"
+#include "mindspore/ops/op_def/conv_pool_ops.h"
 #include "utils/check_convert_utils.h"
 
 namespace mindspore {

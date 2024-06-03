@@ -17,7 +17,7 @@
 #include "parser/caffe/caffe_matmul_parser.h"
 #include <memory>
 #include "common/op_attr.h"
-#include "ops/fusion/mat_mul_fusion.h"
+#include "infer/cxx_api/mat_mul_fusion.h"
 
 namespace mindspore {
 namespace lite {

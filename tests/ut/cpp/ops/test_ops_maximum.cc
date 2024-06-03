@@ -15,7 +15,7 @@
  */
 #include <memory>
 #include "common/common_test.h"
-#include "ops/ops_func_impl/maximum.h"
+#include "infer/ops_func_impl/maximum.h"
 #include "ops/test_ops.h"
 #include "ops/test_ops_cmp_utils.h"
 
@@ -24,19 +24,16 @@ namespace ops {
 OP_FUNC_IMPL_TEST_DECLARE(Maximum, MultiInputOpParams);
 
 OP_FUNC_IMPL_TEST_CASES(
-  Maximum,
-  testing::Values(
-    MultiInputOpParams{{{9}, {}}, {kFloat32, kFloat32}, {{9}}, {kFloat32}},
-    MultiInputOpParams{{{2, 3}, {3}}, {kFloat32, kFloat32}, {{2, 3}}, {kFloat32}},
-    MultiInputOpParams{{{2, 3}, {2, 1}}, {kFloat32, kFloat32}, {{2, 3}}, {kFloat32}},
-    MultiInputOpParams{{{2, -1}, {2, 1}}, {kFloat32, kFloat32}, {{2, -1}}, {kFloat32}},
-    MultiInputOpParams{{{2, 3}, {2, -1}}, {kFloat32, kFloat32}, {{2, 3}}, {kFloat32}},
-    MultiInputOpParams{{{2, -1}, {2, -1}}, {kFloat32, kFloat32}, {{2, -1}}, {kFloat32}},
-    MultiInputOpParams{{{2, 3}, {-1, 1}}, {kFloat32, kFloat32}, {{2, 3}}, {kFloat32}},
-    MultiInputOpParams{{{-1, 3}, {2, 1}}, {kFloat32, kFloat32}, {{2, 3}}, {kFloat32}},
-    MultiInputOpParams{{{2, 3}, {-2}}, {kFloat32, kFloat32}, {{-2}}, {kFloat32}},
-    MultiInputOpParams{{{-2}, {2, 1}}, {kFloat32, kFloat32}, {{-2}}, {kFloat32}},
-    MultiInputOpParams{{{-2}, {-2}}, {kFloat32, kFloat32}, {{-2}}, {kFloat32}}
-  ));
+  Maximum, testing::Values(MultiInputOpParams{{{9}, {}}, {kFloat32, kFloat32}, {{9}}, {kFloat32}},
+                           MultiInputOpParams{{{2, 3}, {3}}, {kFloat32, kFloat32}, {{2, 3}}, {kFloat32}},
+                           MultiInputOpParams{{{2, 3}, {2, 1}}, {kFloat32, kFloat32}, {{2, 3}}, {kFloat32}},
+                           MultiInputOpParams{{{2, -1}, {2, 1}}, {kFloat32, kFloat32}, {{2, -1}}, {kFloat32}},
+                           MultiInputOpParams{{{2, 3}, {2, -1}}, {kFloat32, kFloat32}, {{2, 3}}, {kFloat32}},
+                           MultiInputOpParams{{{2, -1}, {2, -1}}, {kFloat32, kFloat32}, {{2, -1}}, {kFloat32}},
+                           MultiInputOpParams{{{2, 3}, {-1, 1}}, {kFloat32, kFloat32}, {{2, 3}}, {kFloat32}},
+                           MultiInputOpParams{{{-1, 3}, {2, 1}}, {kFloat32, kFloat32}, {{2, 3}}, {kFloat32}},
+                           MultiInputOpParams{{{2, 3}, {-2}}, {kFloat32, kFloat32}, {{-2}}, {kFloat32}},
+                           MultiInputOpParams{{{-2}, {2, 1}}, {kFloat32, kFloat32}, {{-2}}, {kFloat32}},
+                           MultiInputOpParams{{{-2}, {-2}}, {kFloat32, kFloat32}, {{-2}}, {kFloat32}}));
 }  // namespace ops
 }  // namespace mindspore

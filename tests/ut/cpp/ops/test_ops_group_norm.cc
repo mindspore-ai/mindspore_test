@@ -19,7 +19,7 @@
 #include "ops/test_ops.h"
 #include "ops/test_ops_cmp_utils.h"
 #include "ops/test_value_utils.h"
-#include "ops/ops_func_impl/group_norm.h"
+#include "infer/ops_func_impl/group_norm.h"
 
 namespace mindspore {
 namespace ops {
@@ -57,8 +57,8 @@ TEST_P(TestGroupNorm, group_norm_dyn_shape) {
   ASSERT_NE(num_groups, nullptr);
   auto epsilon = param.epsilon->ToAbstract();
   ASSERT_NE(epsilon, nullptr);
-  std::vector<abstract::AbstractBasePtr> input_args{
-    std::move(input_x), std::move(num_groups), std::move(gamma), std::move(beta), std::move(epsilon)};
+  std::vector<abstract::AbstractBasePtr> input_args{std::move(input_x), std::move(num_groups), std::move(gamma),
+                                                    std::move(beta), std::move(epsilon)};
   auto infer_impl = std::make_shared<GroupNormFuncImpl>();
   ASSERT_NE(infer_impl, nullptr);
   auto infer_shapes_ptr = infer_impl->InferShape(primitive, input_args);

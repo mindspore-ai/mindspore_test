@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include "ops/test_ops_binary_op.h"
-#include "ops/ops_func_impl/div.h"
+#include "infer/ops_func_impl/div.h"
 
 namespace mindspore {
 namespace ops {

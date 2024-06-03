@@ -20,9 +20,9 @@
 #include "pipeline/jit/pi/graph_build/func_graph_builder.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "include/common/utils/convert_utils.h"
-#include "ops/arithmetic_ops.h"
-#include "ops/other_ops.h"
-#include "ops/auto_generate/gen_ops_primitive.h"
+#include "op_def/arithmetic_ops.h"
+#include "op_def/other_ops.h"
+#include "op_def/auto_generate/gen_ops_primitive.h"
 
 namespace mindspore {
 class TestFuncGraphBuilder : public UT::Common {

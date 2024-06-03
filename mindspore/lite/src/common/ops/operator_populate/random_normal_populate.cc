@@ -16,7 +16,7 @@
 
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/random_parameter.h"
-#include "ops/random_normal.h"
+#include "infer/random_normal.h"
 using mindspore::ops::kNameRandomNormal;
 using mindspore::schema::PrimitiveType_RandomNormal;
 

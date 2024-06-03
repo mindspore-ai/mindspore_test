@@ -17,7 +17,7 @@
 #include "tools/converter/parser/onnx/onnx_deform_conv2d_parser.h"
 #include <vector>
 #include <string>
-#include "ops/deformable_conv2d.h"
+#include "infer/deformable_conv2d.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore::lite {

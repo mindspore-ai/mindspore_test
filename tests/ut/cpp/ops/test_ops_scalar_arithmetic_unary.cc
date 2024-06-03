@@ -17,10 +17,10 @@
 #include <memory>
 #include <functional>
 #include "common/common_test.h"
-#include "ops/ops_func_impl/scalar_bool.h"
-#include "ops/ops_func_impl/scalar_log.h"
-#include "ops/ops_func_impl/scalar_uadd.h"
-#include "ops/ops_func_impl/scalar_usub.h"
+#include "infer/ops_func_impl/scalar_bool.h"
+#include "infer/ops_func_impl/scalar_log.h"
+#include "infer/ops_func_impl/scalar_uadd.h"
+#include "infer/ops_func_impl/scalar_usub.h"
 #include "ir/dtype/type.h"
 #include "abstract/dshape.h"
 #include "utils/tensor_construct_utils.h"
@@ -28,7 +28,7 @@
 #include "abstract/abstract_value.h"
 #include "ops/test_ops.h"
 #include "ops/test_ops_cmp_utils.h"
-#include "ops/auto_generate/gen_ops_name.h"
+#include "op_def/auto_generate/gen_ops_name.h"
 #include "ops/test_value_utils.h"
 
 namespace mindspore {
@@ -53,11 +53,10 @@ TEST_P(TestScalarArithmeticUnary, scalar_arithmetic_unary_dyn_shape) {
   DoFuncImplInferAndCompare<ScalarLogFuncImpl>(kNameScalarLog, {input_x}, abstract::kNoShape, log_expect_type);
 }
 
-INSTANTIATE_TEST_CASE_P(
-    TestScalarArithmeticUnaryGroup, TestScalarArithmeticUnary,
-    testing::Values(ScalarArithmeticUnaryParams{CreateScalar<int>(1), kInt32},
-                    ScalarArithmeticUnaryParams{CreateScalar(true), kBool},
-                    ScalarArithmeticUnaryParams{CreateScalar<float>(1), kFloat32},
-                    ScalarArithmeticUnaryParams{kValueAny, kFloat32}));
+INSTANTIATE_TEST_CASE_P(TestScalarArithmeticUnaryGroup, TestScalarArithmeticUnary,
+                        testing::Values(ScalarArithmeticUnaryParams{CreateScalar<int>(1), kInt32},
+                                        ScalarArithmeticUnaryParams{CreateScalar(true), kBool},
+                                        ScalarArithmeticUnaryParams{CreateScalar<float>(1), kFloat32},
+                                        ScalarArithmeticUnaryParams{kValueAny, kFloat32}));
 }  // namespace ops
 }  // namespace mindspore

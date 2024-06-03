@@ -20,9 +20,9 @@
 #include <map>
 #include <stack>
 #include <unordered_map>
-#include "ops/sequence_ops.h"
-#include "ops/nn_op_name.h"
-#include "ops/structure_op_name.h"
+#include "op_def/sequence_ops.h"
+#include "op_def/nn_op_name.h"
+#include "op_def/structure_op_name.h"
 #include "include/common/utils/parallel_context.h"
 #include "backend/graph_compiler/transform.h"
 #include "backend/common/session/session_factory.h"
@@ -44,7 +44,7 @@
 #include "runtime/graph_scheduler/graph_compiler.h"
 #include "runtime/pynative/op_runner.h"
 #include "runtime/pynative/graph_adapter.h"
-#include "kernel/pyboost/pyboost_utils.h"
+#include "kernel/common/pyboost/pyboost_utils.h"
 #include "runtime/pynative/op_function/pyboost_grad_functions.h"
 #include "include/backend/distributed/recovery/recovery_context.h"
 #include "pybind_api/gil_scoped_long_running.h"

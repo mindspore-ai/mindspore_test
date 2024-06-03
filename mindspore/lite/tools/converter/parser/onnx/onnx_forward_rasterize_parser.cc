@@ -20,7 +20,7 @@
 #include <utility>
 #include <string>
 #include <vector>
-#include "ops/custom.h"
+#include "infer/custom.h"
 
 namespace mindspore {
 namespace lite {

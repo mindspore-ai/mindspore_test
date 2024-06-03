@@ -20,8 +20,8 @@
 #include <memory>
 
 #include "frontend/optimizer/optimizer.h"
-#include "mindspore/core/ops/structure_ops.h"
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/structure_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "frontend/optimizer/opt.h"
 #include "frontend/optimizer/anf_visitor.h"
 

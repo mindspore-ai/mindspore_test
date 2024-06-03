@@ -19,8 +19,8 @@
 #include <memory>
 #include <vector>
 
-#include "mindspore/core/ops/framework_ops.h"
-#include "mindspore/core/ops/array_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
 #include "frontend/operator/ops.h"
 
 namespace mindspore::opt::irpass {

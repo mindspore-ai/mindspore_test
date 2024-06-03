@@ -21,9 +21,9 @@
 #include <set>
 #include <regex>
 #include <algorithm>
-#include "mindspore/core/ops/structure_ops.h"
-#include "mindspore/core/ops/sequence_ops.h"
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/structure_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/hash_map.h"
 #include "utils/compile_config.h"
 #include "ir/func_graph_cloner.h"

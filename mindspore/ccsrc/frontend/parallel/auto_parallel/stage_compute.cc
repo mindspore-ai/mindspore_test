@@ -23,7 +23,7 @@
 #include <map>
 #include <regex>
 
-#include "mindspore/core/ops/array_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
 #include "frontend/parallel/step_parallel.h"
 #include "utils/parallel_node_check.h"
 #include "ir/func_graph.h"

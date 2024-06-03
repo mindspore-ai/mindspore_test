@@ -21,7 +21,7 @@
 #include "common/op_enum.h"
 #include "common/fetch_content.h"
 #include "common/anf_util.h"
-#include "ops/fusion/prelu_fusion.h"
+#include "infer/cxx_api/prelu_fusion.h"
 #include "op/prelu_operator.h"
 
 namespace mindspore {

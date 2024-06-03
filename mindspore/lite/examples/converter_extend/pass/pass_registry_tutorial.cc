@@ -20,8 +20,8 @@
 #include <string>
 #include <vector>
 #include "include/registry/pass_registry.h"
-#include "ops/custom.h"
-#include "ops/fusion/add_fusion.h"
+#include "infer/custom.h"
+#include "infer/cxx_api/add_fusion.h"
 
 namespace mindspore {
 namespace opt {

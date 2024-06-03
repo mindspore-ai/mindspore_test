@@ -128,7 +128,7 @@ SymbolPtr DefaultBuilder(OperationBuilder *b) {
 ///
 /// \note When using this function, the `SetShapeDepend` or `SetValueDepend` should be set, and only one
 /// "DependOn::kShape" (or "DependOn::kValue") exists. the depending symbol is used as output.
-SymbolPtr TransparentInput(OperationBuilder *b);
+MS_CORE_API SymbolPtr TransparentInput(OperationBuilder *b);
 
 class MS_CORE_API OperationBuilderInfoRegistry {
  public:

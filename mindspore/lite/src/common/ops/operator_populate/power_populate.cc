@@ -15,7 +15,7 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/pow_parameter.h"
-#include "ops/fusion/pow_fusion.h"
+#include "infer/cxx_api/pow_fusion.h"
 using mindspore::ops::kNamePowFusion;
 using mindspore::schema::PrimitiveType_PowFusion;
 

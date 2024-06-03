@@ -19,7 +19,7 @@
 #include "abstract/abstract_value.h"
 #include "ops/test_ops.h"
 #include "ops/test_value_utils.h"
-#include "ops/ops_func_impl/isclose.h"
+#include "infer/ops_func_impl/isclose.h"
 
 namespace mindspore {
 namespace ops {

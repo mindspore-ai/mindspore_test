@@ -16,7 +16,7 @@
 
 #include <vector>
 #include "ops/test_ops.h"
-#include "ops/ops_func_impl/gather_nd.h"
+#include "infer/ops_func_impl/gather_nd.h"
 
 namespace mindspore {
 namespace ops {

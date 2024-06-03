@@ -1,0 +1,71 @@
+/**
+ * Copyright 2020-2022 Huawei Technologies Co., Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_SCATTER_ND_UPDATE_CPU_KERNEL_H_
+#define MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_SCATTER_ND_UPDATE_CPU_KERNEL_H_
+
+#include <vector>
+#include <memory>
+#include <algorithm>
+#include <map>
+#include <utility>
+#include <string>
+#include "kernel/cpu/cpu_kernel.h"
+#include "plugin/factory/ms_factory.h"
+#include "kernel/common_utils.h"
+
+namespace mindspore {
+namespace kernel {
+class ScatterUpdateArithmeticCpuKernelMod : public NativeCpuKernelMod {
+ public:
+  ScatterUpdateArithmeticCpuKernelMod() = default;
+  explicit ScatterUpdateArithmeticCpuKernelMod(const std::string &kernel_name) : kernel_type_(kernel_name) {}
+  ~ScatterUpdateArithmeticCpuKernelMod() override = default;
+
+  bool Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
+
+  int Resize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
+
+  bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
+              const std::vector<KernelTensor *> &outputs) override {
+    return kernel_func_(this, inputs, workspace, outputs);
+  }
+
+  std::vector<KernelAttr> GetOpSupport() override;
+
+ private:
+  template <typename T, typename S>
+  bool LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
+                    const std::vector<kernel::KernelTensor *> &workspace,
+                    const std::vector<kernel::KernelTensor *> &outputs);
+  using LaunchFunc =
+    std::function<bool(ScatterUpdateArithmeticCpuKernelMod *, const std::vector<kernel::KernelTensor *> &,
+                       const std::vector<kernel::KernelTensor *> &, const std::vector<kernel::KernelTensor *> &)>;
+  static std::map<std::string, std::vector<std::pair<KernelAttr, LaunchFunc>>> kernel_attr_map_;
+
+  LaunchFunc kernel_func_{};
+  TypeId dtype_value_{kTypeUnknown};
+  TypeId dtype_shape_{kTypeUnknown};
+  size_t unit_size_{0};
+  size_t num_units_{0};
+  size_t indices_unit_rank_{0};
+  std::string kernel_type_;
+  std::vector<size_t> out_strides_;
+};
+}  // namespace kernel
+}  // namespace mindspore
+
+#endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_CPU_SCATTER_ND_UPDATE_CPU_KERNEL_H_

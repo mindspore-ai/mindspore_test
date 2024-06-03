@@ -16,7 +16,7 @@
 
 #include "plugin/device/ascend/optimizer/format_type/remove_host_kernel.h"
 #include "include/common/utils/anfalgo.h"
-#include "mindspore/core/ops/array_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
 
 namespace mindspore {
 namespace opt {

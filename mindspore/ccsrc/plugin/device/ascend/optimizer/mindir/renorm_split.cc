@@ -19,9 +19,9 @@
 #include <memory>
 #include <vector>
 #include "include/common/utils/anfalgo.h"
-#include "ops/nn_op_name.h"
-#include "ops/array_ops.h"
-#include "ops/nn_ops.h"
+#include "op_def/nn_op_name.h"
+#include "op_def/array_ops.h"
+#include "op_def/nn_ops.h"
 #include "include/backend/optimizer/helper.h"
 
 namespace mindspore {

@@ -16,8 +16,8 @@
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "src/common/ops/operator_populate/utils.h"
 #include "nnacl/conv_parameter.h"
-#include "ops/conv2d.h"
-#include "ops/fusion/conv2d_fusion.h"
+#include "infer/conv2d.h"
+#include "infer/cxx_api/conv2d_fusion.h"
 using mindspore::ops::kActivationType;
 using mindspore::ops::kInChannel;
 using mindspore::ops::kNameConv2D;

@@ -20,8 +20,8 @@
 #include "common/anf_util.h"
 #include "common/op_enum.h"
 #include "common/check_base.h"
-#include "ops/fusion/conv2d_fusion.h"
-#include "ops/fusion/conv2d_transpose_fusion.h"
+#include "infer/cxx_api/conv2d_fusion.h"
+#include "infer/cxx_api/conv2d_transpose_fusion.h"
 
 namespace mindspore {
 namespace dpico {

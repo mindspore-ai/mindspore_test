@@ -16,11 +16,11 @@
 
 #include "pipeline/pynative/grad/grad.h"
 #include <algorithm>
-#include "ops/conv_pool_op_name.h"
-#include "ops/nn_op_name.h"
-#include "ops/math_op_name.h"
-#include "ops/sequence_ops.h"
-#include "ops/framework_ops.h"
+#include "op_def/conv_pool_op_name.h"
+#include "op_def/nn_op_name.h"
+#include "op_def/math_op_name.h"
+#include "op_def/sequence_ops.h"
+#include "op_def/framework_ops.h"
 #include "pipeline/pynative/grad/top_cell.h"
 #include "pipeline/pynative/grad/function/func_grad.h"
 #include "pipeline/pynative/grad/ir/ir_grad.h"

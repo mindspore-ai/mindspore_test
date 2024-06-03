@@ -16,7 +16,7 @@
 
 #define USE_DEPRECATED_API
 #include "tools/optimizer/format/to_nchw_format.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace opt {

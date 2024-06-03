@@ -16,7 +16,7 @@
 
 #include "extendrt/kernel/ascend/model/dyn_shape_process.h"
 #include <utility>
-#include "mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/op_base.h"
+#include "mindspore/ops/kernel/cpu/nnacl/op_base.h"
 #include "include/errorcode.h"
 
 namespace mindspore::kernel {

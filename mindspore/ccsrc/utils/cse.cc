@@ -21,7 +21,7 @@
 #include <vector>
 #include <set>
 
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "ir/anf.h"
 #include "utils/hash_map.h"
 #include "abstract/abstract_function.h"

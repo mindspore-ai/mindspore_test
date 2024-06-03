@@ -16,7 +16,7 @@
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "src/common/ops/operator_populate/utils.h"
 #include "nnacl/pad_parameter.h"
-#include "ops/fusion/pad_fusion.h"
+#include "infer/cxx_api/pad_fusion.h"
 using mindspore::ops::kNamePadFusion;
 using mindspore::schema::PrimitiveType_PadFusion;
 

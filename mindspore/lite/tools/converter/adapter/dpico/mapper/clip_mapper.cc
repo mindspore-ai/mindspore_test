@@ -18,7 +18,7 @@
 #include <memory>
 #include <utility>
 #include <vector>
-#include "ops/clip.h"
+#include "infer/clip.h"
 #include "op/clip_operator.h"
 
 namespace mindspore {

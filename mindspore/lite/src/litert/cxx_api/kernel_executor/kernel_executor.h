@@ -23,7 +23,7 @@
 #include "include/api/status.h"
 #include "include/api/context.h"
 #include "ops/base_operator.h"
-#include "ops/custom.h"
+#include "infer/custom.h"
 
 namespace mindspore {
 class KernelExecutorImpl;

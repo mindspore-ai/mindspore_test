@@ -21,7 +21,7 @@
 #include "tools/converter/adapter/acl/common/utils.h"
 #include "tools/converter/parser/parser_utils.h"
 #include "tools/converter/adapter/acl/mapper/primitive_mapper_register.h"
-#include "mindspore/core/ops/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "src/common/common.h"
 #include "transform/symbol/acl_base_symbol.h"
 #include "transform/symbol/symbol_utils.h"

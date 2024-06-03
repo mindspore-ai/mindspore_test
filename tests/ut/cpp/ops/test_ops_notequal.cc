@@ -24,8 +24,8 @@
 #include "ir/tensor.h"
 #include "mindapi/base/shape_vector.h"
 #include "mindapi/base/type_id.h"
-#include "ops/auto_generate/gen_ops_primitive.h"
-#include "ops/ops_func_impl/not_equal.h"
+#include "op_def/auto_generate/gen_ops_primitive.h"
+#include "infer/ops_func_impl/not_equal.h"
 #include "ops/test_ops.h"
 
 namespace mindspore {
@@ -97,20 +97,16 @@ TEST_P(TestNotEqualInferValue, not_equal_infer_value) {
   }
 }
 
-INSTANTIATE_TEST_CASE_P(TestNotEqualInferValue, TestNotEqualInferValue,
-                        testing::Values(NotEqualInferValueParams{ShapeVector{2, 2},
-                                                                 kNumberTypeFloat32,
-                                                                 {2, 2, 3, 3},
-                                                                 ShapeVector{2, 2},
-                                                                 kNumberTypeFloat32,
-                                                                 {3, 3, 2, 2},
-                                                                 {true, true, true, true}},
-                                        NotEqualInferValueParams{ShapeVector{1},
-                                                                 kNumberTypeFloat32,
-                                                                 {2},
-                                                                 ShapeVector{1},
-                                                                 kNumberTypeFloat32,
-                                                                 {2},
-                                                                 {false}}));
+INSTANTIATE_TEST_CASE_P(
+  TestNotEqualInferValue, TestNotEqualInferValue,
+  testing::Values(NotEqualInferValueParams{ShapeVector{2, 2},
+                                           kNumberTypeFloat32,
+                                           {2, 2, 3, 3},
+                                           ShapeVector{2, 2},
+                                           kNumberTypeFloat32,
+                                           {3, 3, 2, 2},
+                                           {true, true, true, true}},
+                  NotEqualInferValueParams{
+                    ShapeVector{1}, kNumberTypeFloat32, {2}, ShapeVector{1}, kNumberTypeFloat32, {2}, {false}}));
 }  // namespace ops
 }  // namespace mindspore

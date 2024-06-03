@@ -30,16 +30,16 @@
 #include "extendrt/delegate/factory.h"
 #include "include/common/utils/convert_utils.h"
 
-#include "ops/encoder_layer.h"
-#include "ops/fusion/mul_fusion.h"
-#include "ops/fusion/add_fusion.h"
-#include "ops/fusion/mat_mul_fusion.h"
-#include "ops/use_past_embedding.h"
-#include "ops/ops_func_impl/gather.h"
-#include "ops/reshape.h"
-#include "ops/not_equal.h"
-#include "ops/tuple_get_item.h"
-#include "ops/auto_generate/gen_lite_ops.h"
+#include "infer/encoder_layer.h"
+#include "infer/cxx_api/mul_fusion.h"
+#include "infer/cxx_api/add_fusion.h"
+#include "infer/cxx_api/mat_mul_fusion.h"
+#include "infer/use_past_embedding.h"
+#include "infer/ops_func_impl/gather.h"
+#include "infer/reshape.h"
+#include "infer/not_equal.h"
+#include "infer/tuple_get_item.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
 
 namespace mindspore {
 

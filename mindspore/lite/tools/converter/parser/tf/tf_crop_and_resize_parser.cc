@@ -19,7 +19,7 @@
 #include <map>
 #include <vector>
 #include "tools/converter/parser/tf/tf_node_parser_registry.h"
-#include "ops/crop_and_resize.h"
+#include "infer/crop_and_resize.h"
 
 namespace mindspore {
 namespace lite {

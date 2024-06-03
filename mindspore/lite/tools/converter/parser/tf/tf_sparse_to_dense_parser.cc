@@ -18,7 +18,7 @@
 #include "tools/converter/parser/tf/tf_sparse_to_dense_parser.h"
 #include <vector>
 #include <memory>
-#include "ops/sparse_to_dense.h"
+#include "infer/sparse_to_dense.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

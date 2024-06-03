@@ -32,7 +32,7 @@ MS_FL:
     tests/st/fl
 # cpu lite
 MS_CLOUD_CPU_AND_LITE:
-    mindspore/ccsrc/plugin/device/cpu/kernel/nnacl
+    mindspore/ops/kernel/cpu/nnacl
 # cpu gpu ascend
 MS_CLOUD:
     mindspore/python

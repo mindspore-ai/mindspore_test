@@ -24,8 +24,8 @@
 #include "include/common/utils/anfalgo.h"
 #include "ir/scalar.h"
 #include "ir/tensor.h"
-#include "mindspore/core/ops/array_ops.h"
-#include "mindspore/core/ops/math_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
 #include "utils/anf_utils.h"
 
 namespace mindspore::graphkernel {

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "ops/ops_func_impl/extract_image_patches.h"
+#include "infer/ops_func_impl/extract_image_patches.h"
 #include "ops/test_ops.h"
 #include "ops/test_value_utils.h"
 #include "include/c_api/ms/base/types.h"

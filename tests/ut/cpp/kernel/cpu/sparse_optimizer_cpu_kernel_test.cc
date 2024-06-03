@@ -16,7 +16,7 @@
 
 #include <vector>
 #include "common/common_test.h"
-#include "plugin/device/cpu/kernel/sparse_optimizer_cpu_kernel.h"
+#include "sparse_optimizer_cpu_kernel.h"
 
 namespace mindspore {
 namespace kernel {

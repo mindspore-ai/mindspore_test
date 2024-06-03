@@ -27,12 +27,12 @@
 #include "ir/anf.h"
 #include "kernel/common_utils.h"
 #include "kernel/framework_utils.h"
-#include "ops/arithmetic_ops.h"
-#include "ops/nn_ops.h"
-#include "ops/sequence_ops.h"
-#include "ops/framework_ops.h"
+#include "op_def/arithmetic_ops.h"
+#include "op_def/nn_ops.h"
+#include "op_def/sequence_ops.h"
+#include "op_def/framework_ops.h"
 #include "ops/op_def.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace opt {

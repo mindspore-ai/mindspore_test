@@ -29,7 +29,8 @@ include_directories(${CMAKE_BINARY_DIR})
 include_directories(${CMAKE_BINARY_DIR}/proto/metadef_protos)
 include_directories(${CMAKE_BINARY_DIR}/proto/ge)
 include_directories(${CUDA_INCLUDE_DIRS})
-include_directories(${CMAKE_SOURCE_DIR}/mindspore/ccsrc/plugin/device/cpu/kernel)
+include_directories(${CMAKE_SOURCE_DIR}/mindspore/ops)
+include_directories(${CMAKE_SOURCE_DIR}/mindspore/ops/kernel/cpu)
 
 include(${CMAKE_SOURCE_DIR}/cmake/graphengine_variables.cmake)
 MESSAGE("check  ut_test ${CMAKE_BINARY_DIR}")
@@ -172,19 +173,20 @@ file(GLOB_RECURSE MINDSPORE_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "../../../mindspore/ccsrc/plugin/device/cpu/hal/device/cpu_device_address.cc"
         "../../../mindspore/ccsrc/plugin/device/cpu/hal/device/cpu_device_synchronizer.cc"
         "../../../mindspore/ccsrc/plugin/device/cpu/hal/device/cpu_hash_table.cc"
-        "../../../mindspore/ccsrc/plugin/device/cpu/kernel/cpu_kernel.cc"
+        "../../../mindspore/ops/op_def/op_enum.cc"
+        "../../../mindspore/ops/kernel/cpu/cpu_kernel.cc"
         "../../../mindspore/ccsrc/plugin/factory/ms_factory.h"
-        "../../../mindspore/ccsrc/plugin/device/cpu/kernel/sparse_apply_adam_cpu_kernel.cc"
-        "../../../mindspore/ccsrc/plugin/device/cpu/kernel/sparse_apply_ftrl_cpu_kernel.cc"
-        "../../../mindspore/ccsrc/plugin/device/cpu/kernel/sparse_apply_lazy_adam_cpu_kernel.cc"
-        "../../../mindspore/ccsrc/plugin/device/cpu/kernel/sparse_apply_proximal_adagrad_cpu_kernel.cc"
-        "../../../mindspore/ccsrc/plugin/device/cpu/kernel/unique_cpu_kernel.cc"
-        "../../../mindspore/ccsrc/plugin/device/cpu/kernel/unique_with_pad_cpu_kernel.cc"
-        "../../../mindspore/ccsrc/plugin/device/cpu/kernel/adam_delta_cpu_kernel.cc"
-        "../../../mindspore/ccsrc/plugin/device/cpu/kernel/fused_ada_factor_cpu_kernel.cc"
+        "../../../mindspore/ops/kernel/cpu/sparse_apply_adam_cpu_kernel.cc"
+        "../../../mindspore/ops/kernel/cpu/sparse_apply_ftrl_cpu_kernel.cc"
+        "../../../mindspore/ops/kernel/cpu/sparse_apply_lazy_adam_cpu_kernel.cc"
+        "../../../mindspore/ops/kernel/cpu/sparse_apply_proximal_adagrad_cpu_kernel.cc"
+        "../../../mindspore/ops/kernel/cpu/unique_cpu_kernel.cc"
+        "../../../mindspore/ops/kernel/cpu/unique_with_pad_cpu_kernel.cc"
+        "../../../mindspore/ops/kernel/cpu/adam_delta_cpu_kernel.cc"
+        "../../../mindspore/ops/kernel/cpu/fused_ada_factor_cpu_kernel.cc"
         "../../../mindspore/ccsrc/plugin/device/cpu/optimizer/*.cc"
-        "../../../mindspore/ccsrc/plugin/device/gpu/kernel/akg/*.cc"
-        "../../../mindspore/ccsrc/plugin/device/cpu/kernel/akg/*.cc"
+        "../../../mindspore/ops/kernel/gpu/akg/*.cc"
+        "../../../mindspore/ops/kernel/cpu/akg/*.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/kernel/hccl/*.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/kernel/kernel_query.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/kernel/rts/rt_kernel_info.cc"
@@ -231,7 +233,7 @@ file(GLOB_RECURSE MINDSPORE_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "../../../mindspore/ccsrc/ps/*.cc"
         "../../../mindspore/ccsrc/distributed/cluster/actor_route_table_service.cc"
         "../../../mindspore/ccsrc/distributed/cluster/actor_route_table_proxy.cc"
-        "../../../mindspore/ccsrc/plugin/device/cpu/kernel/rpc/rpc_recv_kernel.cc"
+        "../../../mindspore/ops/kernel/cpu/rpc/rpc_recv_kernel.cc"
         "../../../mindspore/ccsrc/distributed/persistent/*.cc"
         "../../../mindspore/ccsrc/distributed/rpc/tcp/*.cc"
         "../../../mindspore/ccsrc/distributed/rpc/rdma/*.cc"
@@ -243,7 +245,7 @@ file(GLOB_RECURSE MINDSPORE_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "../../../mindspore/ccsrc/plugin/device/cpu/hal/profiler/cpu_data_saver.cc"
         "../../../mindspore/ccsrc/debug/profiler/data_saver.cc"
         "../../../mindspore/ccsrc/debug/common/csv_writer.cc"
-        "../../../mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/fp32/adam_fp32.c"
+        "../../../mindspore/ops/kernel/cpu/nnacl/fp32/adam_fp32.c"
         "../../../mindspore/ccsrc/kernel/kernel.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/kernel/ascend_kernel_mod.cc"
         "../../../mindspore/ccsrc/backend/common/optimizer/helper.cc"
@@ -274,8 +276,8 @@ list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ccsrc/plugin/device/asce
 list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ccsrc/plugin/device/ascend/kernel/tbe/tbe_version.cc")
 list(REMOVE_ITEM MINDSPORE_SRC_LIST
         "../../../mindspore/ccsrc/plugin/device/ascend/kernel/tbe/tiling/op_tiling_adapter.cc")
-list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ccsrc/plugin/device/cpu/kernel/akg/akg_cpu_kernel_mod.cc")
-list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ccsrc/plugin/device/cpu/kernel/akg/akg_cpu_kernel_build.cc")
+list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ops/kernel/cpu/akg/akg_cpu_kernel_mod.cc")
+list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ops/kernel/cpu/akg/akg_cpu_kernel_build.cc")
 list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ccsrc/runtime/graph_scheduler/rpc_node_scheduler.cc")
 list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ccsrc/runtime/graph_scheduler/actor/rpc/send_actor.cc")
 list(REMOVE_ITEM MINDSPORE_SRC_LIST "../../../mindspore/ccsrc/runtime/graph_scheduler/actor/rpc/recv_actor.cc")
@@ -298,6 +300,9 @@ add_dependencies(_ut_mindspore_obj proto_input_ut)
 
 foreach(number RANGE 1 ${CORE_OBJECT_COUNT})
     list(APPEND CORE_OBJECT_LIST $<TARGET_OBJECTS:core_obj_${number}>)
+endforeach()
+foreach(number RANGE 1 ${OPS_OBJECT_COUNT})
+    list(APPEND OPS_OBJECT_LIST $<TARGET_OBJECTS:ops_obj_${number}>)
 endforeach()
 include_directories("${CMAKE_BINARY_DIR}/plugin/device/ascend/kernel/aicpu")
 file(GLOB_RECURSE PROTO_IN RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
@@ -343,7 +348,8 @@ add_dependencies(_ut_obj engine-cache-server)
 foreach(comp ${ALL_UT_COMPS})
     add_library(_ut_${comp}_obj OBJECT ${UT_${comp}_SRCS})
     add_dependencies(_ut_${comp}_obj engine-cache-server)
-    set(ut_${comp}_objects $<TARGET_OBJECTS:_ut_${comp}_obj> $<TARGET_OBJECTS:_ut_obj> ${CORE_OBJECT_LIST})
+    set(ut_${comp}_objects $<TARGET_OBJECTS:_ut_${comp}_obj> $<TARGET_OBJECTS:_ut_obj>
+        ${CORE_OBJECT_LIST} ${OPS_OBJECT_LIST})
     add_executable(ut_${comp}_tests ${ut_${comp}_objects})
     # ci envs have no enough memory, so make link target sequentially
     if(LAST_COMP)

@@ -18,9 +18,9 @@
 #include "tools/optimizer/graph/unused_transpose_node_remove_pass.h"
 #include <vector>
 #include <memory>
-#include "mindspore/core/ops/lite_ops.h"
-#include "mindspore/core/ops/array_ops.h"
-#include "ops/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "include/errorcode.h"
 #include "nnacl/op_base.h"

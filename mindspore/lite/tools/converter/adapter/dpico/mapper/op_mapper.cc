@@ -17,7 +17,7 @@
 #include "mapper/op_mapper.h"
 #include <functional>
 #include <algorithm>
-#include "ops/tuple_get_item.h"
+#include "infer/tuple_get_item.h"
 #include "common/op_attr.h"
 #include "common/op_enum.h"
 #include "common/anf_util.h"

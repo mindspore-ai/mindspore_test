@@ -26,8 +26,8 @@
 #include "frontend/parallel/device_matrix.h"
 #include "frontend/parallel/dynamic_creator.h"
 #include "frontend/parallel/step_parallel_utils.h"
-#include "mindspore/core/ops/prompt_flash_attention.h"
-#include "mindspore/core/ops/array_ops.h"
+#include "mindspore/ops/infer/prompt_flash_attention.h"
+#include "mindspore/ops/op_def/array_ops.h"
 
 namespace mindspore {
 namespace parallel {

@@ -22,7 +22,7 @@
 #include <string>
 #include <algorithm>
 
-#include "ops/conv_pool_ops.h"
+#include "op_def/conv_pool_ops.h"
 #include "include/common/utils/utils.h"
 #include "utils/check_convert_utils.h"
 #include "utils/convert_utils_base.h"

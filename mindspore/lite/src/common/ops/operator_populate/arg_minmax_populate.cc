@@ -15,11 +15,11 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "src/common/ops/operator_populate/utils.h"
-#include "mindspore/core/ops/array_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
 #include "nnacl/arg_min_max_parameter.h"
-#include "ops/auto_generate/gen_lite_ops.h"
-#include "ops/fusion/arg_max_fusion.h"
-#include "ops/fusion/arg_min_fusion.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
+#include "infer/cxx_api/arg_max_fusion.h"
+#include "infer/cxx_api/arg_min_fusion.h"
 using mindspore::ops::kAxis;
 using mindspore::ops::kKeepDims;
 using mindspore::ops::kNameArgmax;

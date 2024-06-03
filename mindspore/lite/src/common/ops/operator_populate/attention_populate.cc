@@ -15,7 +15,7 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/attention_parameter.h"
-#include "ops/attention.h"
+#include "infer/attention.h"
 using mindspore::ops::kNameAttention;
 using mindspore::schema::PrimitiveType_Attention;
 namespace mindspore {

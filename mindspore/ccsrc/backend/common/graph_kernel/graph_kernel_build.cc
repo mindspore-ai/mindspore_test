@@ -22,7 +22,7 @@
 #include <map>
 #include <unordered_set>
 #include <algorithm>
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "kernel/graph_kernel/graph_kernel_json_generator.h"

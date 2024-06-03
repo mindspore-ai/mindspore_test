@@ -15,7 +15,6 @@
  */
 #include "mindspore/core/symbolic_shape/operation.h"
 #include "mindspore/core/symbolic_shape/utils.h"
-#include "mindspore/core/ops/symbol_ops_impl/common.h"
 
 namespace mindspore {
 namespace symshape {
@@ -81,7 +80,7 @@ SymbolPtr Operation::Emitter::Emit(const OpPtr &op) const {
 }
 
 void Operation::Emitter::Cse(const OpPtr &op) {
-  if (!op->isa<ops::ScalarIntOp>() || !op->output()->is<IntSymbol>()) {
+  if (!op->SupportCse()) {
     return;
   }
   bool has_same = false;

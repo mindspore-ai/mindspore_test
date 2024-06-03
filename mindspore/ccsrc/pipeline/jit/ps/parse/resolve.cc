@@ -23,9 +23,9 @@
 #include <algorithm>
 #include <unordered_map>
 
-#include "mindspore/core/ops/structure_ops.h"
-#include "mindspore/core/ops/sequence_ops.h"
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/structure_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "ir/param_info.h"
 #include "ir/value.h"
 #include "ir/map_tensor.h"

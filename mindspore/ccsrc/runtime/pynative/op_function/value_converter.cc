@@ -18,7 +18,7 @@
 
 #include <vector>
 #include <memory>
-#include "kernel/pyboost/auto_generate/contiguous.h"
+#include "kernel/common/pyboost/auto_generate/contiguous.h"
 
 namespace mindspore::runtime {
 namespace {

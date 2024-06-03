@@ -17,7 +17,7 @@
 #ifndef MINDSPORE_LITE_TOOLS_CONVERTER_ADAPTER_ACL_MAPPER_TRIU_MAPPER_H_
 #define MINDSPORE_LITE_TOOLS_CONVERTER_ADAPTER_ACL_MAPPER_TRIU_MAPPER_H_
 #include "tools/converter/adapter/acl/mapper/primitive_mapper.h"
-#include "ops/ops_func_impl/triu.h"
+#include "infer/ops_func_impl/triu.h"
 namespace mindspore {
 namespace lite {
 constexpr const char kNameTriu[] = "Triu";

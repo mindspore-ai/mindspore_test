@@ -16,9 +16,9 @@
 #include <vector>
 #include <memory>
 #include "common/common_test.h"
-#include "ops/ops_func_impl/fftn.h"
-#include "ops/auto_generate/gen_ops_name.h"
-#include "ops/op_name.h"
+#include "infer/ops_func_impl/fftn.h"
+#include "op_def/auto_generate/gen_ops_name.h"
+#include "op_def/op_name.h"
 #include "ir/primitive.h"
 #include "abstract/abstract_value.h"
 #include "ops/test_ops.h"

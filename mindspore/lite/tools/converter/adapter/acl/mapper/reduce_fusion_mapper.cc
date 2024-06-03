@@ -23,11 +23,11 @@
 #include "tools/converter/adapter/acl/common/utils.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "src/common/log_util.h"
-#include "ops/op_utils.h"
-#include "ops/auto_generate/gen_lite_ops.h"
-#include "ops/lp_norm.h"
+#include "ops_utils/op_utils.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
+#include "infer/lp_norm.h"
 #include "tools/lite_exporter/fetch_content.h"
-#include "ops/square_sum_v1.h"
+#include "infer/square_sum_v1.h"
 
 namespace mindspore {
 namespace lite {

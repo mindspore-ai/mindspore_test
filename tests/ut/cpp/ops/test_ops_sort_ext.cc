@@ -23,7 +23,7 @@
 #include "abstract/abstract_value.h"
 #include "include/backend/optimizer/helper.h"
 #include "ops/test_ops.h"
-#include "ops/ops_func_impl/sort_ext.h"
+#include "infer/ops_func_impl/sort_ext.h"
 #include "ops/test_value_utils.h"
 
 namespace mindspore {
@@ -66,39 +66,21 @@ TEST_P(TestSortExt, SortExt_dyn_shape) {
   auto expect_dtype = std::make_shared<Tuple>(
     std::vector<TypePtr>{std::make_shared<TensorType>(dtype_param.out_values_type), dtype_param.out_indices_type});
 
-  auto out_shape =
-    SortExt_func_impl.InferShape(prim, {x, shape_param.dim->ToAbstract(), shape_param.descending->ToAbstract(),
-                                        shape_param.stable->ToAbstract()});
+  auto out_shape = SortExt_func_impl.InferShape(
+    prim, {x, shape_param.dim->ToAbstract(), shape_param.descending->ToAbstract(), shape_param.stable->ToAbstract()});
   ASSERT_TRUE(*out_shape == *expect_shape);
   auto out_dtype = SortExt_func_impl.InferType(prim, {x, dim, descending, stable});
   ASSERT_TRUE(*out_dtype == *expect_dtype);
 }
 
 auto SortExtOpShapeTestCases = testing::ValuesIn({
-  SortExtShape{{10},
-               CreateScalar<int64_t>(-1),
-               CreateScalar<bool>(true),
-               CreateScalar<bool>(true),
-               {10},
-               {10}},
-  SortExtShape{{10, 8, 5},
-               CreateScalar<int64_t>(0),
-               CreateScalar<bool>(true),
-               CreateScalar<bool>(true),
-               {10, 8, 5},
-               {10, 8, 5}},
-  SortExtShape{{10, 8, 5},
-               CreateScalar<int64_t>(1),
-               CreateScalar<bool>(true),
-               CreateScalar<bool>(true),
-               {10, 8, 5},
-               {10, 8, 5}},
-  SortExtShape{{10, 8, 5},
-               CreateScalar<int64_t>(2),
-               CreateScalar<bool>(true),
-               CreateScalar<bool>(true),
-               {10, 8, 5},
-               {10, 8, 5}},
+  SortExtShape{{10}, CreateScalar<int64_t>(-1), CreateScalar<bool>(true), CreateScalar<bool>(true), {10}, {10}},
+  SortExtShape{
+    {10, 8, 5}, CreateScalar<int64_t>(0), CreateScalar<bool>(true), CreateScalar<bool>(true), {10, 8, 5}, {10, 8, 5}},
+  SortExtShape{
+    {10, 8, 5}, CreateScalar<int64_t>(1), CreateScalar<bool>(true), CreateScalar<bool>(true), {10, 8, 5}, {10, 8, 5}},
+  SortExtShape{
+    {10, 8, 5}, CreateScalar<int64_t>(2), CreateScalar<bool>(true), CreateScalar<bool>(true), {10, 8, 5}, {10, 8, 5}},
 });
 
 auto SortExtOpTypeTestCases = testing::ValuesIn({

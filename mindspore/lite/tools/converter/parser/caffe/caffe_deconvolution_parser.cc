@@ -16,10 +16,10 @@
 
 #include "tools/converter/parser/caffe/caffe_deconvolution_parser.h"
 #include <memory>
-#include "ops/fusion/conv2d_transpose_fusion.h"
+#include "infer/cxx_api/conv2d_transpose_fusion.h"
 #include "include/registry/converter_context.h"
 #include "nnacl/op_base.h"
-#include "ops/op_name.h"
+#include "op_def/op_name.h"
 
 namespace mindspore {
 namespace lite {

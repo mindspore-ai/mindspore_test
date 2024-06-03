@@ -16,7 +16,7 @@
 
 #include "tools/converter/parser/onnx/onnx_quantize_parser.h"
 #include <memory>
-#include "ops/quant_dtype_cast.h"
+#include "infer/quant_dtype_cast.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

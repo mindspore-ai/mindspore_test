@@ -15,7 +15,7 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/glu_parameter.h"
-#include "ops/glu.h"
+#include "infer/glu.h"
 using mindspore::ops::kAxis;
 using mindspore::ops::kNameGLU;
 using mindspore::schema::PrimitiveType_GLU;

@@ -16,13 +16,13 @@
 #include <vector>
 #include <memory>
 #include "common/common_test.h"
-#include "ops/ops_func_impl/bias_add_grad.h"
+#include "infer/ops_func_impl/bias_add_grad.h"
 #include "ir/dtype/type.h"
 #include "abstract/dshape.h"
 #include "utils/tensor_construct_utils.h"
 #include "ir/primitive.h"
 #include "abstract/abstract_value.h"
-#include "ops/auto_generate/gen_ops_name.h"
+#include "op_def/auto_generate/gen_ops_name.h"
 #include "ops/test_ops.h"
 #include "ops/test_ops_cmp_utils.h"
 #include "ops/test_value_utils.h"
@@ -57,11 +57,11 @@ TEST_P(TestBiasAddGrad, bias_add_grad_dyn_shape) {
 }
 
 INSTANTIATE_TEST_CASE_P(TestBiasAddGrad, TestBiasAddGrad,
-    testing::Values(TestBiasAddGradParams{{-1, -1, -1, 3}, kFloat32, "NHWC", {3}, kFloat32},
-                    TestBiasAddGradParams{{-1, -1, -1, 3}, kFloat64, "kValueAny", {-1}, kFloat64},
-                    TestBiasAddGradParams{{-1, -1, -1, 3}, kFloat32, "NCHW", {-1}, kFloat32},
-                    TestBiasAddGradParams{{-1, -1, -1, -1}, kInt32, "NCHW", {-1}, kInt32},
-                    TestBiasAddGradParams{{-1, -1, -1, -1, -1}, kFloat32, "NCDHW", {-1}, kFloat32},
-                    TestBiasAddGradParams{{-2}, kFloat32, "NHWC", {-1}, kFloat32}));
+                        testing::Values(TestBiasAddGradParams{{-1, -1, -1, 3}, kFloat32, "NHWC", {3}, kFloat32},
+                                        TestBiasAddGradParams{{-1, -1, -1, 3}, kFloat64, "kValueAny", {-1}, kFloat64},
+                                        TestBiasAddGradParams{{-1, -1, -1, 3}, kFloat32, "NCHW", {-1}, kFloat32},
+                                        TestBiasAddGradParams{{-1, -1, -1, -1}, kInt32, "NCHW", {-1}, kInt32},
+                                        TestBiasAddGradParams{{-1, -1, -1, -1, -1}, kFloat32, "NCDHW", {-1}, kFloat32},
+                                        TestBiasAddGradParams{{-2}, kFloat32, "NHWC", {-1}, kFloat32}));
 }  // namespace ops
 }  // namespace mindspore

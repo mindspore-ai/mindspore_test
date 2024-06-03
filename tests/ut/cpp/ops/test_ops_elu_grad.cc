@@ -15,7 +15,7 @@
  */
 #include <memory>
 #include "common/common_test.h"
-#include "ops/ops_func_impl/elu_grad.h"
+#include "infer/ops_func_impl/elu_grad.h"
 #include "ops/test_ops.h"
 #include "ops/test_ops_cmp_utils.h"
 

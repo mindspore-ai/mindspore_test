@@ -16,12 +16,12 @@
 
 #define USE_DEPRECATED_API
 #include "tools/optimizer/graph/split_one_pass.h"
-#include "mindspore/core/ops/sequence_ops.h"
-#include "mindspore/core/ops/array_ops.h"
-#include "ops/op_utils.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "ops_utils/op_utils.h"
 #include "src/common/utils.h"
 #include "tools/common/tensor_util.h"
-#include "ops/auto_generate/gen_lite_ops.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
 #include "utils/check_convert_utils.h"
 
 namespace mindspore {

@@ -15,8 +15,8 @@
  */
 
 #include "plugin/device/gpu/hal/device/gpu_kernel_task.h"
-#include "plugin/device/gpu/kernel/arrays/contiguous_gpu_kernel.h"
-#include "plugin/device/gpu/kernel/arrays/copy_with_slice_gpu_kernel.h"
+#include "kernel/gpu/arrays/contiguous_gpu_kernel.h"
+#include "kernel/gpu/arrays/copy_with_slice_gpu_kernel.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 
 namespace {

@@ -19,7 +19,7 @@
 
 #include <vector>
 #include "tools/converter/adapter/acl/mapper/primitive_mapper.h"
-#include "ops/fusion/max_pool_fusion.h"
+#include "infer/cxx_api/max_pool_fusion.h"
 
 using mindspore::ops::kNameMaxPoolFusion;
 

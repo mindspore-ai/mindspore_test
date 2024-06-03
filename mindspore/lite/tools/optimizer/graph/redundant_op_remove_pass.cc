@@ -20,17 +20,17 @@
 #include <vector>
 #include <utility>
 #include <algorithm>
-#include "mindspore/core/ops/sequence_ops.h"
-#include "mindspore/core/ops/nn_ops.h"
-#include "mindspore/core/ops/lite_ops.h"
-#include "mindspore/core/ops/array_ops.h"
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "include/errorcode.h"
 #include "tools/lite_exporter/fetch_content.h"
-#include "ops/make_tuple.h"
-#include "ops/depend.h"
-#include "ops/fusion/pad_fusion.h"
-#include "ops/op_utils.h"
+#include "infer/make_tuple.h"
+#include "infer/depend.h"
+#include "infer/cxx_api/pad_fusion.h"
+#include "ops_utils/op_utils.h"
 #include "nnacl/op_base.h"
 #include "include/common/utils/utils.h"
 

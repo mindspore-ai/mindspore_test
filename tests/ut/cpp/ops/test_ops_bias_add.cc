@@ -16,14 +16,14 @@
 #include <vector>
 #include <memory>
 #include "common/common_test.h"
-#include "ops/ops_func_impl/bias_add.h"
+#include "infer/ops_func_impl/bias_add.h"
 #include "ir/dtype/type.h"
 #include "abstract/dshape.h"
 #include "utils/tensor_construct_utils.h"
 #include "ir/primitive.h"
 #include "abstract/abstract_value.h"
 #include "ops/test_ops.h"
-#include "ops/auto_generate/gen_ops_name.h"
+#include "op_def/auto_generate/gen_ops_name.h"
 #include "ops/test_ops_cmp_utils.h"
 #include "ops/test_value_utils.h"
 
@@ -60,12 +60,14 @@ TEST_P(TestBiasAdd, bias_add_dyn_shape) {
   DoFuncImplInferAndCompare<BiasAddFuncImpl>(kNameBiasAdd, {input_x, bias, format}, expect_shape, expect_type);
 }
 
-INSTANTIATE_TEST_CASE_P(TestBiasAdd, TestBiasAdd,
-    testing::Values(TestBiasAddParams{{-1, -1, -1, 5}, kFloat32, {3}, kFloat32, "NCHW", {-1, 3, -1, 5}, kFloat32},
-                    TestBiasAddParams{{2, -1, 4}, kFloat32, {3}, kFloat32, "NCHW", {2, 3, 4}, kFloat32},
-                    TestBiasAddParams{{-1, -1, -1, -1 ,-1}, kFloat32, {3}, kFloat32, "NCDHW", {-1, 3, -1, -1, -1}, kFloat32},
-                    TestBiasAddParams{{-1, -1, -1}, kFloat32, {3}, kFloat32, "kValueAny", {-1, -1, -1}, kFloat32},
-                    TestBiasAddParams{{-1, -1, -1}, kFloat32, {-1}, kFloat32, "NHWC", {-1, -1, -1}, kFloat32},
-                    TestBiasAddParams{{-2}, kFloat32, {-2}, kFloat32, "kValueAny", {-2}, kFloat32}));
+INSTANTIATE_TEST_CASE_P(
+  TestBiasAdd, TestBiasAdd,
+  testing::Values(TestBiasAddParams{{-1, -1, -1, 5}, kFloat32, {3}, kFloat32, "NCHW", {-1, 3, -1, 5}, kFloat32},
+                  TestBiasAddParams{{2, -1, 4}, kFloat32, {3}, kFloat32, "NCHW", {2, 3, 4}, kFloat32},
+                  TestBiasAddParams{
+                    {-1, -1, -1, -1, -1}, kFloat32, {3}, kFloat32, "NCDHW", {-1, 3, -1, -1, -1}, kFloat32},
+                  TestBiasAddParams{{-1, -1, -1}, kFloat32, {3}, kFloat32, "kValueAny", {-1, -1, -1}, kFloat32},
+                  TestBiasAddParams{{-1, -1, -1}, kFloat32, {-1}, kFloat32, "NHWC", {-1, -1, -1}, kFloat32},
+                  TestBiasAddParams{{-2}, kFloat32, {-2}, kFloat32, "kValueAny", {-2}, kFloat32}));
 }  // namespace ops
 }  // namespace mindspore

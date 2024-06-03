@@ -17,7 +17,7 @@
 #include "ir/primitive.h"
 #include "abstract/abstract_value.h"
 #include "ops/test_ops.h"
-#include "ops/ops_func_impl/layer_norm_grad_ext.h"
+#include "infer/ops_func_impl/layer_norm_grad_ext.h"
 #include "ops/test_value_utils.h"
 
 namespace mindspore {
@@ -67,12 +67,8 @@ TEST_P(TestLayerNormGradExt, layer_norm_grad_ext_dyn_shape) {
   auto mean = std::make_shared<abstract::AbstractTensor>(param.mean_type, param.mean_shape);
   ASSERT_NE(mean, nullptr);
 
-  std::vector<abstract::AbstractBasePtr> input_args{std::move(dy),
-                                                    std::move(x),
-                                                    std::move(normalized_shape),
-                                                    std::move(mean),
-                                                    std::move(rstd),
-                                                    std::move(gamma),
+  std::vector<abstract::AbstractBasePtr> input_args{std::move(dy),   std::move(x),    std::move(normalized_shape),
+                                                    std::move(mean), std::move(rstd), std::move(gamma),
                                                     std::move(beta)};
   auto infer_impl = std::make_shared<LayerNormGradExtFuncImpl>();
   ASSERT_NE(infer_impl, nullptr);

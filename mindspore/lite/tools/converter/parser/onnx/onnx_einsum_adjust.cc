@@ -17,10 +17,10 @@
 #include <string>
 #include <vector>
 #include <memory>
-#include "ops/auto_generate/gen_lite_ops.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
 #include "ops/primitive_c.h"
-#include "ops/fusion/scale_fusion.h"
-#include "ops/fusion/mat_mul_fusion.h"
+#include "infer/cxx_api/scale_fusion.h"
+#include "infer/cxx_api/mat_mul_fusion.h"
 #include "tools/converter/ops/ops_def.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "src/common/utils.h"

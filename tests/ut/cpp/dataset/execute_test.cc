@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include "common/common.h"
-#include "mindspore/core/ops/framework_ops.h"
+#include "op_def/framework_ops.h"
 #include "include/api/types.h"
 #include "minddata/dataset/core/de_tensor.h"
 #include "minddata/dataset/include/dataset/audio.h"
@@ -283,7 +283,7 @@ TEST_F(MindDataTestExecute, TestCrop) {
 TEST_F(MindDataTestExecute, TestFilterWikipediaXMLEager) {
   // Test FilterWikipediaXML's Eager mode
   MS_LOG(INFO) << "Doing MindDataTestExecute-TestFilterWikipediaXMLEager.";
-  std::vector<std::string> origin = {"中国","Wcdma","Pang","Yuchao"};
+  std::vector<std::string> origin = {"中国", "Wcdma", "Pang", "Yuchao"};
   TensorShape input_shape({2, 2});
   std::shared_ptr<Tensor> de_tensor;
   Tensor::CreateFromVector(origin, input_shape, &de_tensor);
@@ -413,9 +413,8 @@ TEST_F(MindDataTestExecute, TestTransformInput1) {
   // Define transform operations
   std::shared_ptr<TensorTransform> decode = std::make_shared<vision::Decode>();
   auto resize = std::make_shared<vision::Resize>(std::vector<int32_t>{224, 224});
-  auto normalize = std::make_shared<vision::Normalize>(
-    std::vector<float>{0.485 * 255, 0.456 * 255, 0.406 * 255}, 
-    std::vector<float>{0.229 * 255, 0.224 * 255, 0.225 * 255});
+  auto normalize = std::make_shared<vision::Normalize>(std::vector<float>{0.485 * 255, 0.456 * 255, 0.406 * 255},
+                                                       std::vector<float>{0.229 * 255, 0.224 * 255, 0.225 * 255});
   std::shared_ptr<TensorTransform> hwc2chw = std::make_shared<vision::HWC2CHW>();
 
   mindspore::dataset::Execute Transform({decode, resize, normalize, hwc2chw});
@@ -450,9 +449,8 @@ TEST_F(MindDataTestExecute, TestTransformInput2) {
   // Define transform operations
   auto decode = std::make_shared<vision::Decode>();
   auto resize = std::make_shared<vision::Resize>(std::vector<int32_t>{224, 224});
-  auto normalize = std::make_shared<vision::Normalize>(
-    std::vector<float>{0.485 * 255, 0.456 * 255, 0.406 * 255}, 
-    std::vector<float>{0.229 * 255, 0.224 * 255, 0.225 * 255});
+  auto normalize = std::make_shared<vision::Normalize>(std::vector<float>{0.485 * 255, 0.456 * 255, 0.406 * 255},
+                                                       std::vector<float>{0.229 * 255, 0.224 * 255, 0.225 * 255});
   auto hwc2chw = std::make_shared<vision::HWC2CHW>();
 
   mindspore::dataset::Execute Transform({decode, resize, normalize, hwc2chw});
@@ -518,9 +516,8 @@ TEST_F(MindDataTestExecute, TestTransformInputSequential) {
   // Define transform#1 operations
   auto decode = std::make_shared<vision::Decode>();
   auto resize = std::make_shared<vision::Resize>(std::vector<int32_t>{224, 224});
-  auto normalize = std::make_shared<vision::Normalize>(
-    std::vector<float>{0.485 * 255, 0.456 * 255, 0.406 * 255}, 
-    std::vector<float>{0.229 * 255, 0.224 * 255, 0.225 * 255});
+  auto normalize = std::make_shared<vision::Normalize>(std::vector<float>{0.485 * 255, 0.456 * 255, 0.406 * 255},
+                                                       std::vector<float>{0.229 * 255, 0.224 * 255, 0.225 * 255});
 
   std::vector<std::shared_ptr<TensorTransform>> op_list = {decode, resize, normalize};
   mindspore::dataset::Execute Transform(op_list);
@@ -1225,7 +1222,8 @@ TEST_F(MindDataTestExecute, TestMaskAlongAxisIID) {
   std::shared_ptr<Tensor> input;
   TensorShape s = TensorShape({1, 1, 4, 4});
   ASSERT_OK(Tensor::CreateFromVector(std::vector<float>({1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 6.0f, 5.0f, 4.0f, 3.0f,
-                                                         2.0f, 1.0f, 4.0f, 3.0f, 2.0f, 1.0f}), s, &input));
+                                                         2.0f, 1.0f, 4.0f, 3.0f, 2.0f, 1.0f}),
+                                     s, &input));
   auto input_tensor = mindspore::MSTensor(std::make_shared<mindspore::dataset::DETensor>(input));
   std::shared_ptr<TensorTransform> mask_along_axisiid_op = std::make_shared<audio::MaskAlongAxisIID>(3, 9.0, 2);
   mindspore::dataset::Execute transform({mask_along_axisiid_op});
@@ -1664,7 +1662,7 @@ TEST_F(MindDataTestExecute, TestVadDefaultValue) {
   std::mt19937 gen;
   std::normal_distribution<float> distribution(1.0, 0.5);
   std::vector<float> vec;
-  for (int i = 0; i < 1000; ++i){
+  for (int i = 0; i < 1000; ++i) {
     vec.push_back(distribution(gen));
   }
   std::shared_ptr<Tensor> input;
@@ -2788,7 +2786,7 @@ TEST_F(MindDataTestExecute, TestResampleEager) {
 /// Description: test wrong input args of Resample
 /// Expectation: get false status
 TEST_F(MindDataTestExecute, TestResampleWithInvalidArg) {
-   MS_LOG(INFO) << "Doing MindDataTestExecute-TestResampleInvalidArgs.";
+  MS_LOG(INFO) << "Doing MindDataTestExecute-TestResampleInvalidArgs.";
   std::shared_ptr<Tensor> input;
   TensorShape s = TensorShape({1, 6});
   ASSERT_OK(Tensor::CreateFromVector(
@@ -3051,7 +3049,7 @@ TEST_F(MindDataTestExecute, TestTruncateOpStr) {
   std::shared_ptr<TensorTransform> truncate_op = std::make_shared<text::Truncate>(3);
   // apply Truncate
   mindspore::dataset::Execute trans({truncate_op});
-   Status status = trans(input_ms, &input_ms);
+  Status status = trans(input_ms, &input_ms);
   EXPECT_TRUE(status.IsOk());
 }
 
@@ -3066,8 +3064,7 @@ TEST_F(MindDataTestExecute, TestMFCCEager) {
   std::shared_ptr<Tensor> input;
   ASSERT_OK(Tensor::CreateFromVector(labels, TensorShape({1, 1, 30}), &input));
   auto input_ms = mindspore::MSTensor(std::make_shared<mindspore::dataset::DETensor>(input));
-  std::shared_ptr<TensorTransform> mfcc_op =
-    std::make_shared<audio::MFCC>(16000, 4, 2, NormMode::kOrtho, true, 10);
+  std::shared_ptr<TensorTransform> mfcc_op = std::make_shared<audio::MFCC>(16000, 4, 2, NormMode::kOrtho, true, 10);
   // apply MFCC
   mindspore::dataset::Execute trans({mfcc_op});
   Status status = trans(input_ms, &input_ms);
@@ -3179,14 +3176,13 @@ TEST_F(MindDataTestExecute, TestMelSpectrogramWrongArgs2) {
 TEST_F(MindDataTestExecute, TestInverseSpectrogram) {
   MS_LOG(INFO) << "Doing MindDataTestExecute-TestInverseSpectrogram.";
   // Original spectrogram
-  std::vector<float> labels = {1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 5, 5, 4, 4, 3, 3, 
+  std::vector<float> labels = {1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 5, 5, 4, 4, 3, 3,
                                2, 2, 1, 1, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6};
   std::shared_ptr<Tensor> input;
   ASSERT_OK(Tensor::CreateFromVector(labels, TensorShape({2, 9, 1, 2}), &input));
   auto input_ms = mindspore::MSTensor(std::make_shared<mindspore::dataset::DETensor>(input));
-  std::shared_ptr<TensorTransform> inverse_spectrogram_op =
-    std::make_shared<audio::InverseSpectrogram>(1, 16, 16, 8, 0, WindowType::kHann, false, true,
-                                                BorderType::kReflect, true);
+  std::shared_ptr<TensorTransform> inverse_spectrogram_op = std::make_shared<audio::InverseSpectrogram>(
+    1, 16, 16, 8, 0, WindowType::kHann, false, true, BorderType::kReflect, true);
   // apply InverseSpectrogram
   mindspore::dataset::Execute trans({inverse_spectrogram_op});
   Status status = trans(input_ms, &input_ms);
@@ -3198,35 +3194,31 @@ TEST_F(MindDataTestExecute, TestInverseSpectrogram) {
 /// Expectation: Throw correct error and message
 TEST_F(MindDataTestExecute, TestInverseSpectrogramWrongArgs) {
   MS_LOG(INFO) << "Doing MindDataTestExecute-TestInverseSpectrogramWrongArgs.";
-  std::vector<float> labels = {1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 5, 5, 4, 4, 3, 3, 
+  std::vector<float> labels = {1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 5, 5, 4, 4, 3, 3,
                                2, 2, 1, 1, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6};
   std::shared_ptr<Tensor> input;
   ASSERT_OK(Tensor::CreateFromVector(labels, TensorShape({2, 9, 1, 2}), &input));
   auto input_ms = mindspore::MSTensor(std::make_shared<mindspore::dataset::DETensor>(input));
-  std::shared_ptr<TensorTransform> inverse_spectrogram_op =
-    std::make_shared<audio::InverseSpectrogram>(1, -16, 16, 8, 0, WindowType::kHann, false, true,
-                                                BorderType::kReflect, true);
+  std::shared_ptr<TensorTransform> inverse_spectrogram_op = std::make_shared<audio::InverseSpectrogram>(
+    1, -16, 16, 8, 0, WindowType::kHann, false, true, BorderType::kReflect, true);
   mindspore::dataset::Execute trans({inverse_spectrogram_op});
   Status status = trans(input_ms, &input_ms);
   EXPECT_TRUE(status.IsError());
 
-  inverse_spectrogram_op =
-    std::make_shared<audio::InverseSpectrogram>(1, 16, -16, 8, 0, WindowType::kHann, false, true,
-                                                BorderType::kReflect, true);
+  inverse_spectrogram_op = std::make_shared<audio::InverseSpectrogram>(1, 16, -16, 8, 0, WindowType::kHann, false, true,
+                                                                       BorderType::kReflect, true);
   mindspore::dataset::Execute trans1({inverse_spectrogram_op});
   status = trans1(input_ms, &input_ms);
   EXPECT_TRUE(status.IsError());
 
-  inverse_spectrogram_op =
-    std::make_shared<audio::InverseSpectrogram>(1, 16, 16, -8, 0, WindowType::kHann, false, true,
-                                                BorderType::kReflect, true);
+  inverse_spectrogram_op = std::make_shared<audio::InverseSpectrogram>(1, 16, 16, -8, 0, WindowType::kHann, false, true,
+                                                                       BorderType::kReflect, true);
   mindspore::dataset::Execute trans2({inverse_spectrogram_op});
   status = trans2(input_ms, &input_ms);
   EXPECT_TRUE(status.IsError());
 
-  inverse_spectrogram_op =
-    std::make_shared<audio::InverseSpectrogram>(1, 16, 16, 8, -1, WindowType::kHann, false, true,
-                                                BorderType::kReflect, true);
+  inverse_spectrogram_op = std::make_shared<audio::InverseSpectrogram>(1, 16, 16, 8, -1, WindowType::kHann, false, true,
+                                                                       BorderType::kReflect, true);
   mindspore::dataset::Execute trans3({inverse_spectrogram_op});
   status = trans3(input_ms, &input_ms);
   EXPECT_TRUE(status.IsError());
@@ -3286,7 +3278,7 @@ TEST_F(MindDataTestExecute, TestPitchShiftWrongArgs1) {
   mindspore::dataset::Execute trans5({PitchShift_op});
   status = trans5(input_ms, &input_ms);
   EXPECT_TRUE(status.IsError());
-  
+
   PitchShift_op = std::make_shared<audio::PitchShift>(16000, 4, 12, 16, 16, -4, WindowType::kHann);
   mindspore::dataset::Execute trans6({PitchShift_op});
   status = trans6(input_ms, &input_ms);

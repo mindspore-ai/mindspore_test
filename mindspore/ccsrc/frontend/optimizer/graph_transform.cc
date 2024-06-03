@@ -17,7 +17,7 @@
 #include "frontend/optimizer/graph_transform.h"
 #include <vector>
 #include <algorithm>
-#include "mindspore/core/ops/sequence_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
 #include "ir/graph_utils.h"
 
 namespace mindspore {

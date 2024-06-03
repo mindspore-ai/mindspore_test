@@ -19,9 +19,9 @@
 #include <string>
 #include <memory>
 #include <vector>
-#include "ops/sequence_ops.h"
-#include "ops/array_ops.h"
-#include "ops/framework_ops.h"
+#include "op_def/sequence_ops.h"
+#include "op_def/array_ops.h"
+#include "op_def/framework_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"

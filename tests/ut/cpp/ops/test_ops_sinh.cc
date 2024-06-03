@@ -23,7 +23,7 @@
 #include "abstract/abstract_value.h"
 #include "ops/test_ops.h"
 #include "ops/test_value_utils.h"
-#include "ops/ops_func_impl/sinh.h"
+#include "infer/ops_func_impl/sinh.h"
 
 namespace mindspore {
 namespace ops {
@@ -67,11 +67,8 @@ auto SinhOpShapeTestCases = testing::ValuesIn({
   SinhShape{{-2}, {-2}},
 });
 
-auto SinhOpTypeTestCases = testing::ValuesIn({
-  SinhType{kFloat16, kFloat16},
-  SinhType{kFloat32, kFloat32},
-  SinhType{kComplex128, kComplex128}
-});
+auto SinhOpTypeTestCases =
+  testing::ValuesIn({SinhType{kFloat16, kFloat16}, SinhType{kFloat32, kFloat32}, SinhType{kComplex128, kComplex128}});
 
 INSTANTIATE_TEST_CASE_P(TestSinh, TestSinh, testing::Combine(SinhOpShapeTestCases, SinhOpTypeTestCases));
 }  // namespace ops

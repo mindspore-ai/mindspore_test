@@ -18,7 +18,7 @@
 #include "abstract/abstract_value.h"
 #include "ops/test_ops.h"
 #include "ops/test_ops_cmp_utils.h"
-#include "ops/ops_func_impl/real_div.h"
+#include "infer/ops_func_impl/real_div.h"
 
 namespace mindspore {
 namespace ops {

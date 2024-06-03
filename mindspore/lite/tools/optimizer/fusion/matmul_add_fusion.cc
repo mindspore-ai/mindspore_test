@@ -18,14 +18,14 @@
 #include "tools/optimizer/fusion/matmul_add_fusion.h"
 #include <vector>
 #include <memory>
-#include "mindspore/core/ops/nn_ops.h"
-#include "mindspore/core/ops/math_ops.h"
-#include "mindspore/core/ops/lite_ops.h"
-#include "ops/fusion/add_fusion.h"
-#include "ops/fusion/mat_mul_fusion.h"
+#include "mindspore/ops/op_def/nn_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
+#include "infer/cxx_api/add_fusion.h"
+#include "infer/cxx_api/mat_mul_fusion.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "nnacl/op_base.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace opt {

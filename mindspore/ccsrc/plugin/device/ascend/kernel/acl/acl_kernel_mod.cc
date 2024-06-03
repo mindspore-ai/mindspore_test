@@ -25,7 +25,7 @@
 #include "transform/acl_ir/acl_adapter_info.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "pybind_api/gil_scoped_long_running.h"
-#include "mindspore/core/ops/op_utils.h"
+#include "mindspore/ops/ops_utils/op_utils.h"
 #include "mindspore/ccsrc/include/transform/graph_ir/utils.h"
 #include "runtime/device/ms_device_shape_transfer.h"
 

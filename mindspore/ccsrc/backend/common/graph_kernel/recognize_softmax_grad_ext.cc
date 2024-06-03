@@ -16,7 +16,7 @@
 
 #include "backend/common/graph_kernel/recognize_softmax_grad_ext.h"
 #include <memory>
-#include "ops/math_ops.h"
+#include "op_def/math_ops.h"
 
 namespace mindspore::graphkernel {
 namespace {

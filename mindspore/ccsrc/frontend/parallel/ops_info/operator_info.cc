@@ -29,12 +29,12 @@
 #include "frontend/parallel/auto_parallel/graph_costmodel.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/graph_util/graph_utils.h"
-#include "mindspore/core/ops/sequence_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
 #include "include/common/debug/anf_dump_utils.h"
 #include "include/common/utils/parallel_context.h"
 #include "ir/tensor.h"
 #include "ir/value.h"
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/log_adapter.h"
 
 namespace mindspore {

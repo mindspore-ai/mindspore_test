@@ -20,11 +20,11 @@
 #include <list>
 #include <string>
 #include <algorithm>
-#include "mindspore/core/ops/sequence_ops.h"
-#include "mindspore/core/ops/other_ops.h"
-#include "mindspore/core/ops/nn_ops.h"
-#include "mindspore/core/ops/framework_ops.h"
-#include "mindspore/core/ops/array_op_name.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/other_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/array_op_name.h"
 #include "include/common/utils/utils.h"
 
 namespace mindspore {

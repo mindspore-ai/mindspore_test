@@ -19,10 +19,10 @@
 #include <string>
 #include <algorithm>
 #include "tools/optimizer/parallel/spliter.h"
-#include "ops/fusion/conv2d_fusion.h"
+#include "infer/cxx_api/conv2d_fusion.h"
 #include "tools/optimizer/parallel/split_strategy.h"
 #include "nnacl/op_base.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 
 using mindspore::schema::PrimitiveType_Conv2dTransposeFusion;
 namespace mindspore {

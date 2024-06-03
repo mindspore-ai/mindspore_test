@@ -18,7 +18,7 @@
 #include <numeric>
 #include <thread>
 #include "NvInferRuntimeCommon.h"
-#include "ops/all_reduce.h"
+#include "infer/all_reduce.h"
 
 namespace mindspore::lite {
 REGISTER_TENSORRT_PLUGIN(AllReducePluginCreater);

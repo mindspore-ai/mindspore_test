@@ -17,7 +17,7 @@
 #include "tools/converter/parser/tflite/tflite_conv_transpose_parser.h"
 #include <vector>
 #include <memory>
-#include "ops/fusion/conv2d_transpose_fusion.h"
+#include "infer/cxx_api/conv2d_transpose_fusion.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

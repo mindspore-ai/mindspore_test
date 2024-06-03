@@ -17,10 +17,10 @@
 #include "plugin/device/ascend/optimizer/ge/scalar_ops_output_unify_mindir.h"
 #include <memory>
 #include <vector>
-#include "ops/array_ops.h"
-#include "ops/other_ops.h"
-#include "ops/arithmetic_ops.h"
-#include "ops/auto_generate/gen_ops_primitive.h"
+#include "op_def/array_ops.h"
+#include "op_def/other_ops.h"
+#include "op_def/arithmetic_ops.h"
+#include "op_def/auto_generate/gen_ops_primitive.h"
 #include "include/common/utils/anfalgo.h"
 
 namespace mindspore {

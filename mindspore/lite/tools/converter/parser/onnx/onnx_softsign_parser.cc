@@ -16,7 +16,7 @@
 
 #include "tools/converter/parser/onnx/onnx_softsign_parser.h"
 #include <memory>
-#include "ops/softsign.h"
+#include "infer/softsign.h"
 
 namespace mindspore {
 namespace lite {

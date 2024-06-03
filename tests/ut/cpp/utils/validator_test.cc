@@ -17,7 +17,7 @@
 #include <string>
 #include "common/common_test.h"
 
-#include "ops/arithmetic_op_name.h"
+#include "op_def/arithmetic_op_name.h"
 #include "utils/log_adapter.h"
 #include "pipeline/jit/ps/validator.h"
 #include "pipeline/jit/ps/parse/parse.h"

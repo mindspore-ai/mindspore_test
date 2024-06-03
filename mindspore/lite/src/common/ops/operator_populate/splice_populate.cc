@@ -16,7 +16,7 @@
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/op_base.h"
 #include "nnacl/splice_parameter.h"
-#include "ops/splice.h"
+#include "infer/splice.h"
 using mindspore::ops::kNameSplice;
 using mindspore::schema::PrimitiveType_Splice;
 

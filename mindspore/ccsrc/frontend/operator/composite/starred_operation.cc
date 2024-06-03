@@ -21,8 +21,8 @@
 #include <vector>
 #include <utility>
 
-#include "mindspore/core/ops/sequence_ops.h"
-#include "mindspore/core/ops/array_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
 
 namespace mindspore {
 // namespace to support composite operators definition

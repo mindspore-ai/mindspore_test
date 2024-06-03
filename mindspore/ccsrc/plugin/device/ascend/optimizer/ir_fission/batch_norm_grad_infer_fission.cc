@@ -19,9 +19,9 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/common/utils/anfalgo.h"
-#include "ops/nn_ops.h"
-#include "ops/op_utils.h"
-#include "ops/sequence_ops.h"
+#include "op_def/nn_ops.h"
+#include "ops_utils/op_utils.h"
+#include "op_def/sequence_ops.h"
 #include "plugin/device/ascend/optimizer/get_value_helper.h"
 #include "utils/trace_base.h"
 
@@ -179,7 +179,7 @@ const AnfNodePtr BatchNormGradInferFission::Process(const FuncGraphPtr &func_gra
   auto is_training_input = cnode->input(kIsTraningIdx);
   MS_EXCEPTION_IF_NULL(is_training_input);
   auto value = is_training_input->abstract()->GetValue();
-  auto is_training = ops::GetValueWithCheck<bool>(value);
+  auto is_training = GetValueWithCheck<bool>(value);
   if (is_training) {
     MS_LOG(DEBUG) << "The is_training value of " << node->DebugString() << " is true, no need change";
     return nullptr;

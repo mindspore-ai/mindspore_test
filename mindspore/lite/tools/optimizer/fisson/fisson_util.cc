@@ -16,19 +16,19 @@
 #include "tools/optimizer/fisson/fisson_util.h"
 #include <unordered_set>
 #include <memory>
-#include "mindspore/core/ops/sequence_ops.h"
-#include "mindspore/core/ops/conv_pool_ops.h"
-#include "mindspore/core/ops/lite_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/conv_pool_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
 #include "src/common/utils.h"
-#include "ops/split_with_overlap.h"
+#include "infer/split_with_overlap.h"
 #include "tools/common/node_util.h"
-#include "ops/auto_generate/gen_lite_ops.h"
-#include "ops/make_tuple.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
+#include "infer/make_tuple.h"
 #include "tools/optimizer/parallel/spliter.h"
 #include "tools/optimizer/parallel/split_strategy.h"
 #include "nnacl/op_base.h"
 #include "src/common/log_util.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 #include "include/registry/converter_context.h"
 
 using mindspore::converter::FmkType;

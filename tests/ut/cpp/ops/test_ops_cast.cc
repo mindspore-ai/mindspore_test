@@ -25,8 +25,8 @@
 #include "ops/test_value_utils.h"
 #include "ir/primitive.h"
 #include "abstract/abstract_value.h"
-#include "ops/op_name.h"
-#include "ops/ops_func_impl/cast.h"
+#include "op_def/op_name.h"
+#include "infer/ops_func_impl/cast.h"
 #include "include/backend/optimizer/helper.h"
 
 namespace mindspore {
@@ -59,10 +59,9 @@ TEST_P(TestCast, dyn_shape) {
 
 INSTANTIATE_TEST_CASE_P(
   TestCast, TestCast,
-  testing::Values(
-    CastParams{{6, 8}, kInt32, CreatePyInt(kNumberTypeFloat64), {6, 8}, kFloat64},
-    CastParams{{-1, 8}, kFloat64,  CreatePyInt(kNumberTypeFloat16), {-1, 8}, kFloat16},
-    CastParams{{6, -1}, kFloat32, CreatePyInt(kNumberTypeComplex128), {6, -1}, kComplex128},
-    CastParams{{-1, -1}, kFloat64, CreatePyInt(kNumberTypeInt8), {-1, -1}, kInt8}));
+  testing::Values(CastParams{{6, 8}, kInt32, CreatePyInt(kNumberTypeFloat64), {6, 8}, kFloat64},
+                  CastParams{{-1, 8}, kFloat64, CreatePyInt(kNumberTypeFloat16), {-1, 8}, kFloat16},
+                  CastParams{{6, -1}, kFloat32, CreatePyInt(kNumberTypeComplex128), {6, -1}, kComplex128},
+                  CastParams{{-1, -1}, kFloat64, CreatePyInt(kNumberTypeInt8), {-1, -1}, kInt8}));
 }  // namespace ops
 }  // namespace mindspore

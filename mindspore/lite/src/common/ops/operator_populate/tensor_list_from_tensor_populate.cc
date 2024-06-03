@@ -15,7 +15,7 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/tensorlist_parameter.h"
-#include "ops/tensor_list_from_tensor.h"
+#include "infer/tensor_list_from_tensor.h"
 using mindspore::ops::kNameTensorListFromTensor;
 using mindspore::schema::PrimitiveType_TensorListFromTensor;
 namespace mindspore {

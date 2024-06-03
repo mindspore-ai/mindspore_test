@@ -19,7 +19,7 @@
 #include "ir/primitive.h"
 #include "abstract/abstract_value.h"
 #include "ops/test_ops.h"
-#include "ops/ops_func_impl/equal.h"
+#include "infer/ops_func_impl/equal.h"
 #include "ops/test_ops_dyn_cases.h"
 #include "include/backend/optimizer/helper.h"
 

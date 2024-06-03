@@ -16,7 +16,7 @@
 
 #include "extendrt/delegate/ascend_native/ascend_native_encoder_kernel.h"
 #include "extendrt/delegate/ascend_native/ascend_native_kernel_registry.h"
-#include "ops/encoder_layer.h"
+#include "infer/encoder_layer.h"
 
 namespace mindspore::kernel {
 using mindspore::ops::kNameEncoderLayer;

@@ -19,7 +19,7 @@
 #include <numeric>
 #include <functional>
 #include "src/extendrt/delegate/tensorrt/op/normalize_opt_plugin.h"
-#include "ops/fusion/layer_norm_fusion.h"
+#include "infer/cxx_api/layer_norm_fusion.h"
 
 namespace mindspore::lite {
 int NormalizeTensorRT::IsSupport(const BaseOperatorPtr &base_operator, const std::vector<TensorInfo> &in_tensors,

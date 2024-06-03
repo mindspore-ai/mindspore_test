@@ -23,6 +23,7 @@ import pathlib
 import logging
 import gen_utils
 from pyboost_utils import AclnnUtils, get_dtypes
+from gen_constants import MS_OPS_KERNEL_PATH
 
 auto_gen = ''
 
@@ -34,8 +35,8 @@ def gen_h(op_name, aclnn_name, op_yaml, kernelmod_h_path, need_update_shape):
 #ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_{op_name.upper()}_ACLNN{auto_gen.upper()}_KERNEL_MOD_H_
 #define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_{op_name.upper()}_ACLNN{auto_gen.upper()}_KERNEL_MOD_H_
 #include <vector>
-#include "ops/base_operator.h"
-#include "plugin/device/ascend/kernel/opapi/aclnn_kernel_mod.h"
+#include "mindspore/core/ops/base_operator.h"
+#include "{MS_OPS_KERNEL_PATH}/ascend/opapi/aclnn_kernel_mod.h"
 #include "transform/acl_ir/acl_convert.h"
 """
     update_shape = f"""
@@ -78,7 +79,7 @@ def gen_cc(op_name, class_name, op_yaml, kernelmod_cc_path, need_update_shape):
     """generate cc files"""
     kernelmod_name = op_yaml.get('dispatch').get("Ascend")
     cc_head = f"""
-#include "plugin/device/ascend/kernel/opapi/aclnn{auto_gen}/{op_name}_aclnn_kernel.h"
+#include "{MS_OPS_KERNEL_PATH}/ascend/opapi/aclnn{auto_gen}/{op_name}_aclnn_kernel.h"
 #include <algorithm>
 #include <vector>
 #include <memory>
@@ -135,8 +136,7 @@ bool {kernelmod_name}::Launch(const std::vector<KernelTensor *> &inputs, const s
                               const std::vector<KernelTensor *> &outputs, void *stream_ptr) {{
   MS_EXCEPTION_IF_NULL(stream_ptr);
   {input_templete}
-  ParseGenExecutor(GEN_EXECUTOR_BOOST(op_type_, hash_id_, {inputs}));
-  RunOp(stream_ptr, workspace);
+  RunOp(stream_ptr, workspace, {inputs});
   return true;
 }}
 """
@@ -180,7 +180,7 @@ def gen_aclnn_kernel(op_name, yaml_str, need_update_shape=False, auto=False):
     current_path = os.path.dirname(os.path.abspath(__file__))
     work_path = os.path.join(current_path, '../../../../')
 
-    aclnn_path = 'mindspore/ccsrc/plugin/device/ascend/kernel/opapi/aclnn/'
+    aclnn_path = '{MS_OPS_KERNEL_PATH}/ascend/opapi/aclnn/'
     # merge inner ops
     op_yaml = yaml_str.get(op_name)
     class_name = ''.join(word.capitalize() for word in op_name.split('_'))
@@ -196,7 +196,7 @@ def gen_aclnn_kernel(op_name, yaml_str, need_update_shape=False, auto=False):
             return
         auto_gen = "_auto_gen"
         dispatch['Ascend'] = class_name + "Ascend"
-        aclnn_path = 'mindspore/ccsrc/plugin/device/ascend/kernel/opapi/aclnn_auto_gen/'
+        aclnn_path = f'{MS_OPS_KERNEL_PATH}/ascend/opapi/aclnn_auto_gen/'
         pathlib.Path(os.path.join(work_path, aclnn_path)).mkdir(parents=True, exist_ok=True)
     if dispatch.get("Ascend") is None:
         raise ValueError("KernelMod {} is auto generated. If need achieve it, "
@@ -208,9 +208,9 @@ def gen_aclnn_kernel(op_name, yaml_str, need_update_shape=False, auto=False):
     generate(op_name, class_name, op_yaml, kernelmod_h_and_cc_path, need_update_shape)
 
 
-def get_registed_ops(file_path='mindspore/ccsrc/plugin/device/ascend/kernel/opapi/'):
+def get_registed_ops(file_path=f'{MS_OPS_KERNEL_PATH}/ascend/opapi/'):
     '''get registered ops by search files'''
-    # default search in 'mindspore/ccsrc/plugin/device/ascend/kernel/opapi/'
+    # default search in 'ops/kernel/ascend/opapi/'
     current_path = os.path.dirname(os.path.abspath(__file__))
     work_path = os.path.join(current_path, '../../../../')
     search_path = os.path.join(work_path, file_path)
@@ -230,7 +230,7 @@ def get_registed_ops(file_path='mindspore/ccsrc/plugin/device/ascend/kernel/opap
 
 
 registed_ops = get_registed_ops()
-manual_registed_ops = get_registed_ops('mindspore/ccsrc/plugin/device/ascend/kernel/opapi/aclnn/')
+manual_registed_ops = get_registed_ops(f'{MS_OPS_KERNEL_PATH}/ascend/opapi/aclnn/')
 
 
 def check_op_registed(op_name, manual=False):

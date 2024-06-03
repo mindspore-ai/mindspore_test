@@ -18,14 +18,14 @@
 #include "tools/optimizer/fusion/scale_scale_fusion.h"
 #include <functional>
 #include <memory>
-#include "mindspore/core/ops/lite_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
 #include "tools/converter/quantizer/quant_param_holder.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "tools/common/tensor_util.h"
-#include "ops/fusion/scale_fusion.h"
+#include "infer/cxx_api/scale_fusion.h"
 #include "securec/include/securec.h"
 #include "nnacl/op_base.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 
 namespace mindspore::opt {
 namespace {

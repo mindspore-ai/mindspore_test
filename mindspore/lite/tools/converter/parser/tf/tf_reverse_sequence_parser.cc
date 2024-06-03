@@ -19,7 +19,7 @@
 #include <map>
 #include <vector>
 #include "tools/converter/parser/tf/tf_node_parser_registry.h"
-#include "ops/reverse_sequence.h"
+#include "infer/reverse_sequence.h"
 
 namespace mindspore {
 namespace lite {

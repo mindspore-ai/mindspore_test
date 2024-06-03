@@ -27,10 +27,10 @@
 #include "transform/graph_ir/op_adapter_base.h"
 #include "include/common/utils/utils.h"
 #include "include/common/utils/anfalgo.h"
-#include "ops/other_ops.h"
-#include "ops/sequence_ops.h"
-#include "ops/framework_ops.h"
-#include "ops/op_utils.h"
+#include "op_def/other_ops.h"
+#include "op_def/sequence_ops.h"
+#include "op_def/framework_ops.h"
+#include "ops_utils/op_utils.h"
 namespace mindspore {
 namespace transform {
 class OpAdapterImpl {
@@ -438,13 +438,13 @@ class OpAdapter : public BaseOpAdapter {
  private:
   template <typename S>
   static S ConvertAny(const ValuePtr &value, const AnyTraits<S> &) {
-    return ops::GetValueWithCheck<S>(value);
+    return GetValueWithCheck<S>(value);
   }
 
   template <typename S>
   static std::vector<S> ConvertAny(const ValuePtr &value, const AnyTraits<std::vector<S>> &, size_t size,
                                    S default_val) {
-    auto v = ops::GetValueWithCheck<std::vector<S>>(value);
+    auto v = GetValueWithCheck<std::vector<S>>(value);
     if (v.size() < size) {
       v.insert(v.begin(), size - v.size(), default_val);
     }
@@ -453,7 +453,7 @@ class OpAdapter : public BaseOpAdapter {
 
   // specialization for reverse bool
   static bool ConvertAny(const ValuePtr &value, const AnyTraits<bool> &, bool reverse) {
-    return reverse != ops::GetValueWithCheck<bool>(value);
+    return reverse != GetValueWithCheck<bool>(value);
   }
 
   template <typename P, typename Q>
@@ -469,7 +469,7 @@ class OpAdapter : public BaseOpAdapter {
 
   // specialization for int
   static int64_t ConvertAny(const ValuePtr &value, const AnyTraits<int64_t>) {
-    return ops::GetValueWithCheck<int64_t>(value);
+    return GetValueWithCheck<int64_t>(value);
   }
 
   // specialization for float
@@ -509,12 +509,12 @@ class OpAdapter : public BaseOpAdapter {
         }
         auto sub_vector = it->cast<ValueListPtr>();
         for (auto &item : sub_vector->value()) {
-          sublist.emplace_back(ops::GetValueWithCheck<int64_t>(item));
+          sublist.emplace_back(GetValueWithCheck<int64_t>(item));
         }
       } else {
         auto sub_vector = it->cast<ValueTuplePtr>();
         for (auto &item : sub_vector->value()) {
-          sublist.emplace_back(ops::GetValueWithCheck<int64_t>(item));
+          sublist.emplace_back(GetValueWithCheck<int64_t>(item));
         }
       }
       list.emplace_back(sublist);
@@ -538,7 +538,7 @@ class OpAdapter : public BaseOpAdapter {
       }
       auto sub_vector = it->cast<ValueSequencePtr>();
       for (auto &item : sub_vector->value()) {
-        list.emplace_back(ops::GetValueWithCheck<int64_t>(item));
+        list.emplace_back(GetValueWithCheck<int64_t>(item));
       }
     }
     return list;
@@ -601,7 +601,7 @@ class OpAdapter : public BaseOpAdapter {
         return v;
       }
     } else {
-      return ops::GetValueWithCheck<std::vector<int64_t>>(value);
+      return GetValueWithCheck<std::vector<int64_t>>(value);
     }
     MS_LOG(EXCEPTION) << "Value should be ValueTuple or Scalar, but got " << value->type_name();
   }

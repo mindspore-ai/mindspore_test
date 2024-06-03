@@ -20,7 +20,7 @@
 #include <vector>
 #include "common/op_attr.h"
 #include "common/anf_util.h"
-#include "ops/lrn.h"
+#include "infer/lrn.h"
 #include "op/lrn_operator.h"
 
 namespace mindspore {

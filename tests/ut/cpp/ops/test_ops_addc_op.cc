@@ -16,8 +16,8 @@
 #include <vector>
 #include "ops/test_ops_cmp_utils.h"
 #include "ir/dtype/number.h"
-#include "ops/ops_func_impl/addcdiv.h"
-#include "ops/ops_func_impl/addcmul.h"
+#include "infer/ops_func_impl/addcdiv.h"
+#include "infer/ops_func_impl/addcmul.h"
 
 #ifndef TESTS_UT_CPP_OPS_TEST_OPS_ADDC_OP_H_
 #define TESTS_UT_CPP_OPS_TEST_OPS_ADDC_OP_H_

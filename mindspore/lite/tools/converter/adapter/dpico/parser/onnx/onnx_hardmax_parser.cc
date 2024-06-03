@@ -18,7 +18,7 @@
 #include <memory>
 #include <string>
 #include "common/op_attr.h"
-#include "ops/custom.h"
+#include "infer/custom.h"
 #include "./onnx.pb.h"
 #include "include/registry/node_parser_registry.h"
 #include "tools/converter/parser/onnx/onnx_node_parser.h"

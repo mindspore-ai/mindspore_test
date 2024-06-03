@@ -31,7 +31,7 @@
 #include <fstream>
 #include <sstream>
 #include "include/common/utils/config_manager.h"
-#include "mindspore/core/ops/structure_ops.h"
+#include "mindspore/ops/op_def/structure_ops.h"
 #include "utils/hash_map.h"
 #include "utils/ms_context.h"
 #include "ir/anf.h"

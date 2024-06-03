@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 #include "plugin/device/ascend/optimizer/ir_fission/batch_norm_grad_split.h"
-#include "ops/nn_op_name.h"
-#include "ops/sequence_ops.h"
+#include "op_def/nn_op_name.h"
+#include "op_def/sequence_ops.h"
 #include "include/common/utils/utils.h"
 #include "utils/ms_context.h"
 #include "include/backend/optimizer/helper.h"

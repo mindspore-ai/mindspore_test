@@ -15,7 +15,7 @@
  */
 #include "tools/converter/parser/onnx/onnx_groupnormsilu_parser.h"
 #include <memory>
-#include "ops/group_norm_silu.h"
+#include "infer/group_norm_silu.h"
 
 namespace mindspore {
 namespace lite {

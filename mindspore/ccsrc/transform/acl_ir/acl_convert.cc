@@ -15,16 +15,18 @@
  */
 
 #include "transform/acl_ir/acl_convert.h"
+#include <fstream>
 #include <map>
+#include <unordered_set>
 #include <limits>
 #include <algorithm>
 #include "transform/acl_ir/acl_adapter_info.h"
 #include "include/common/utils/convert_utils.h"
 #include "transform/acl_ir/acl_helper.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 #include "include/backend/device_address.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "ops/auto_generate/gen_ops_primitive.h"
+#include "op_def/auto_generate/gen_ops_primitive.h"
 #include "transform/acl_ir/op_api_util.h"
 #include "transform/symbol/acl_base_symbol.h"
 #include "transform/symbol/acl_rt_symbol.h"
@@ -180,6 +182,38 @@ size_t GetTupleSize(const KernelTensor *tensor) {
     return static_cast<size_t>(shape[kIndex0]);
   }
   return 1;
+}
+
+static std::once_flag kAclopStaticListInit;
+static std::unordered_set<std::string> kAclopStaticList;
+
+bool ReadStatciAclOp(const std::string &op_name, bool is_dynamic) {
+  static auto enable_static_env = common::GetEnv("MS_DEV_STATIC_ACL_OP");
+  if (enable_static_env == "1") {
+    return false;
+  }
+
+  static auto read_config = !enable_static_env.empty() && enable_static_env != "0";
+  if (read_config) {
+    std::call_once(kAclopStaticListInit, []() {
+      std::ifstream in_file(enable_static_env);
+      if (!in_file.is_open()) {
+        MS_LOG(WARNING) << "MS_DEV_STATIC_ACL_OP set path:" << enable_static_env << " is invalid.";
+        return;
+      }
+      std::string line;
+      while (getline(in_file, line)) {
+        kAclopStaticList.insert(line);
+      }
+      in_file.close();
+    });
+
+    if (kAclopStaticList.count(op_name) != 0) {
+      return false;
+    }
+  }
+
+  return is_dynamic;
 }
 }  // namespace
 
@@ -692,7 +726,7 @@ std::string AclConverter::GetFormatFromInputAttrMap(const std::vector<KernelTens
         continue;
       }
       MS_EXCEPTION_IF_NULL(inputs[ms_real_idx]);
-      auto format_enum = ops::GetScalarValue<int64_t>(inputs[ms_real_idx]->GetValue());
+      auto format_enum = GetScalarValue<int64_t>(inputs[ms_real_idx]->GetValue());
       format = FormatEnumToString(static_cast<mindspore::Format>(format_enum.value()));
     }
   }
@@ -1184,7 +1218,7 @@ void AclConverter::ProcessRunnerSpecialInfo(const std::string &prim_name,
   MS_EXCEPTION_IF_NULL(opinfo);
   auto op_type = opinfo->op_type();
   if (!AclAdapterManager::GetInstance().CheckAclAdapter(op_type)) {
-    is_dynamic_ = is_dynamic;
+    is_dynamic_ = ReadStatciAclOp(prim_name, is_dynamic);
     precision_mode_ = DEFAULT_MODE;
     return;
   }

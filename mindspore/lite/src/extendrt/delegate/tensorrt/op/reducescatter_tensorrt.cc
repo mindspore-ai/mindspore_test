@@ -18,7 +18,7 @@
 #include <numeric>
 #include <thread>
 #include "NvInferRuntimeCommon.h"
-#include "ops/reduce_scatter.h"
+#include "infer/reduce_scatter.h"
 
 namespace mindspore::lite {
 REGISTER_TENSORRT_PLUGIN(ReduceScatterPluginCreater);

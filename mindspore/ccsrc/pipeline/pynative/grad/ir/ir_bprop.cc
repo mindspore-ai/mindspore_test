@@ -22,10 +22,10 @@
 #include "include/common/utils/primitive_utils.h"
 #include "pipeline/jit/ps/pass.h"
 #include "ir/func_graph_cloner.h"
-#include "ops/sequence_ops.h"
-#include "ops/framework_ops.h"
-#include "ops/structure_ops.h"
-#include "ops/other_ops.h"
+#include "op_def/sequence_ops.h"
+#include "op_def/framework_ops.h"
+#include "op_def/structure_ops.h"
+#include "op_def/other_ops.h"
 
 namespace mindspore::pynative::autograd {
 namespace {

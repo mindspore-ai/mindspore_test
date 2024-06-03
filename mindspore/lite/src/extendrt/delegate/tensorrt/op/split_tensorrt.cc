@@ -18,8 +18,8 @@
 #include <numeric>
 #include <algorithm>
 #include "src/extendrt/delegate/tensorrt/tensorrt_utils.h"
-#include "ops/auto_generate/gen_lite_ops.h"
-#include "ops/unstack.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
+#include "infer/unstack.h"
 
 namespace mindspore::lite {
 int SplitTensorRT::IsSupport(const BaseOperatorPtr &base_operator, const std::vector<TensorInfo> &in_tensors,

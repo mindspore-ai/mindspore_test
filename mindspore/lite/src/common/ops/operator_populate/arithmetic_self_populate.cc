@@ -15,9 +15,9 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/arithmetic_self_parameter.h"
-#include "ops/auto_generate/gen_lite_ops.h"
-#include "ops/grad/log_grad.h"
-#include "ops/grad/neg_grad.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
+#include "infer/grad/log_grad.h"
+#include "infer/grad/neg_grad.h"
 using mindspore::schema::PrimitiveType_Abs;
 using mindspore::schema::PrimitiveType_Ceil;
 using mindspore::schema::PrimitiveType_Cos;

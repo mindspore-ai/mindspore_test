@@ -21,15 +21,15 @@
 #include <utility>
 #include <unordered_map>
 #include <algorithm>
-#include "mindspore/core/ops/array_ops.h"
-#include "mindspore/core/ops/math_ops.h"
-#include "mindspore/core/ops/sequence_ops.h"
-#include "mindspore/core/ops/nn_optimizer_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/nn_optimizer_ops.h"
 #include "frontend/parallel/ops_info/ops_utils.h"
 #include "frontend/parallel/device_manager.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/pass/pass_utils.h"
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/core/utils/convert_utils_base.h"
 #include "mindspore/ccsrc/pipeline/jit/ps/static_analysis/static_analysis.h"
 

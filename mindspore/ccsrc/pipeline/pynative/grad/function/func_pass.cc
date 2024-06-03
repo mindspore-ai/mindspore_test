@@ -19,9 +19,9 @@
 #include <vector>
 #include <functional>
 #include "pipeline/pynative/pynative_utils.h"
-#include "ops/sequence_ops.h"
-#include "ops/nn_ops.h"
-#include "ops/op_utils.h"
+#include "op_def/sequence_ops.h"
+#include "op_def/nn_ops.h"
+#include "ops_utils/op_utils.h"
 #include "include/backend/optimizer/helper.h"
 
 namespace mindspore {
@@ -294,7 +294,7 @@ NodePtr FuncPassForward::BatchNormGradToBNInferGrad(const NodePtrList &inputs, b
     return func_builder_->Emit(kBatchNormGradOpName, inputs);
   }
   constexpr size_t kIdxIsTraining = 6;
-  auto is_training_opt = mindspore::ops::GetScalarValue<bool>(inputs[kIdxIsTraining]->Value());
+  auto is_training_opt = mindspore::GetScalarValue<bool>(inputs[kIdxIsTraining]->Value());
   if (!is_training_opt.has_value()) {
     MS_LOG(DEBUG) << "Can not find Attr 'is_training' in training input";
     return func_builder_->Emit(kBatchNormGradOpName, inputs);
@@ -311,7 +311,7 @@ NodePtr FuncPassForward::BatchNormGradToBNInferGrad(const NodePtrList &inputs, b
   constexpr size_t kIdxEpsilon = 7;
   NodePtrList new_inputs{inputs[kIdxGrads], inputs[kIdxScale], inputs[kIdxVariance], inputs[kIdxEpsilon]};
 
-  auto epsilon_opt = mindspore::ops::GetScalarValue<pyfloat>(inputs[kIdxEpsilon]->Value());
+  auto epsilon_opt = mindspore::GetScalarValue<pyfloat>(inputs[kIdxEpsilon]->Value());
   float epsilon{1e-5};
   if (epsilon_opt.has_value()) {
     epsilon = epsilon_opt.has_value() ? epsilon_opt.value() : 1e-5;

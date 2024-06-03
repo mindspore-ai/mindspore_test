@@ -31,7 +31,7 @@ namespace ops {
 using abstract::AbstractBasePtr;
 
 /// \brief This class is a collection of functions related to operator, such as InferShape, InferType, Check, etc.
-class OpFuncImpl {
+class MIND_API OpFuncImpl {
  public:
   OpFuncImpl() = default;
   virtual ~OpFuncImpl() = default;

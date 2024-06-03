@@ -16,9 +16,9 @@
 
 #include "transform/graph_ir/op_declare/linalg_ops_declare.h"
 
-#include "ops/arithmetic_op_name.h"
-#include "ops/math_ops.h"
-#include "ops/arithmetic_ops.h"
+#include "op_def/arithmetic_op_name.h"
+#include "op_def/math_ops.h"
+#include "op_def/arithmetic_ops.h"
 
 namespace mindspore::transform {
 // Ger

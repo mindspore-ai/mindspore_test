@@ -16,8 +16,8 @@
 #include "plugin/device/ascend/optimizer/ir_fission/split_fission.h"
 #include <memory>
 #include <vector>
-#include "ops/array_op_name.h"
-#include "ops/sequence_ops.h"
+#include "op_def/array_op_name.h"
+#include "op_def/sequence_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "utils/trace_base.h"

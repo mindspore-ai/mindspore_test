@@ -16,11 +16,11 @@
 
 #include <vector>
 #include "common/common_test.h"
-#include "ops/fused_sparse_proximal_adagrad.h"
+#include "infer/fused_sparse_proximal_adagrad.h"
 
 #define private public
 #define protected public
-#include "plugin/device/cpu/kernel/sparse_apply_proximal_adagrad_cpu_kernel.h"
+#include "sparse_apply_proximal_adagrad_cpu_kernel.h"
 #undef private
 #undef protected
 

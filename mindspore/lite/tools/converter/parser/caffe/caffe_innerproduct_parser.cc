@@ -16,8 +16,8 @@
 
 #include "tools/converter/parser/caffe/caffe_innerproduct_parser.h"
 #include <memory>
-#include "ops/fusion/full_connection.h"
-#include "ops/op_utils.h"
+#include "infer/cxx_api/full_connection.h"
+#include "ops_utils/op_utils.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

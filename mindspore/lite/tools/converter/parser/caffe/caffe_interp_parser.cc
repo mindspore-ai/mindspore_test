@@ -16,7 +16,7 @@
 
 #include "tools/converter/parser/caffe/caffe_interp_parser.h"
 #include <memory>
-#include "ops/resize.h"
+#include "infer/resize.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

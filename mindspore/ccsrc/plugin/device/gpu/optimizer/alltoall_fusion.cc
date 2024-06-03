@@ -20,8 +20,8 @@
 #include <string>
 #include <algorithm>
 
-#include "ops/other_ops.h"
-#include "ops/array_ops.h"
+#include "op_def/other_ops.h"
+#include "op_def/array_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "ir/primitive.h"
@@ -29,7 +29,7 @@
 #include "plugin/device/gpu/hal/device/kernel_info_setter.h"
 #include "include/backend/distributed/init.h"
 #ifndef _WIN32
-#include "plugin/device/gpu/kernel/nccl/nccl_gpu_kernel.h"
+#include "kernel/gpu/nccl/nccl_gpu_kernel.h"
 #endif
 
 namespace mindspore {

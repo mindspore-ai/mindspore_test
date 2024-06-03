@@ -17,7 +17,7 @@
  */
 
 #include "ir/meta_func_graph.h"
-#include "mindspore/core/ops/sequence_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
 #include "utils/ms_context.h"
 #include "abstract/abstract_function.h"
 

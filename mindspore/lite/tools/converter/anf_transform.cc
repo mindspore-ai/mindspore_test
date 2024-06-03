@@ -132,7 +132,7 @@
 #include "tools/converter/parser/unify_format.h"
 #include "include/backend/optimizer/graph_optimizer.h"
 #include "tools/optimizer/fusion/squeeze_expanddims_fusion.h"
-#include "mindspore/core/ops/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "tools/common/string_util.h"
 #include "src/common/common.h"
 #include "tools/optimizer/graph/miniaturization_pass.h"

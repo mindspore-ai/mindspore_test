@@ -18,8 +18,8 @@
 #define MINDSPORE_LITE_TOOLS_CONVERTER_ADAPTER_ACL_MAPPER_TRANSFORMATION_OPS_MAPPER_H_
 
 #include "tools/converter/adapter/acl/mapper/primitive_mapper.h"
-#include "ops/space_to_batch_nd.h"
-#include "ops/batch_to_space.h"
+#include "infer/space_to_batch_nd.h"
+#include "infer/batch_to_space.h"
 
 namespace mindspore {
 namespace lite {

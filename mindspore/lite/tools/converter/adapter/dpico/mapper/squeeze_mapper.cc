@@ -19,7 +19,7 @@
 #include <utility>
 #include <algorithm>
 #include <vector>
-#include "ops/squeeze.h"
+#include "infer/squeeze.h"
 #include "op/squeeze_operator.h"
 
 namespace mindspore {

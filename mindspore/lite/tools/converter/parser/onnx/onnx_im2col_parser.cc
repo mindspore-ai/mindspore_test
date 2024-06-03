@@ -18,7 +18,7 @@
 #include <string>
 #include <vector>
 #include "tools/converter/parser/onnx/onnx_im2col_parser.h"
-#include "ops/im2col.h"
+#include "infer/im2col.h"
 
 namespace mindspore {
 namespace lite {

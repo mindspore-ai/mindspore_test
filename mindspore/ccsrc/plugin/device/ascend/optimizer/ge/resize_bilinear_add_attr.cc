@@ -17,8 +17,8 @@
 
 #include <memory>
 #include "include/common/utils/anfalgo.h"
-#include "ops/image_ops.h"
-#include "ops/auto_generate/gen_ops_primitive.h"
+#include "op_def/image_ops.h"
+#include "op_def/auto_generate/gen_ops_primitive.h"
 
 namespace mindspore {
 namespace opt {

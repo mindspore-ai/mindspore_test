@@ -21,7 +21,7 @@
 #include "common/common_test.h"
 #include "ir/dtype/type.h"
 #include "ir/primitive.h"
-#include "ops/ops_func_impl/fast_gelu_grad.h"
+#include "infer/ops_func_impl/fast_gelu_grad.h"
 #include "ops/test_ops.h"
 
 namespace mindspore {

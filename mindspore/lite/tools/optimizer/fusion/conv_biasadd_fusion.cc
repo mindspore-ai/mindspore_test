@@ -18,13 +18,13 @@
 #include <functional>
 #include <memory>
 #include <vector>
-#include "mindspore/core/ops/nn_ops.h"
-#include "mindspore/core/ops/lite_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
 #include "tools/lite_exporter/fetch_content.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "securec/include/securec.h"
 #include "nnacl/op_base.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 #include "mindapi/base/types.h"
 
 namespace mindspore::opt {

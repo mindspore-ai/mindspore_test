@@ -17,7 +17,7 @@
 #include <vector>
 #include "ops/test_ops_cmp_utils.h"
 #include "ir/dtype/number.h"
-#include "ops/ops_func_impl/argmin.h"
+#include "infer/ops_func_impl/argmin.h"
 #include "ops/test_value_utils.h"
 #include "abstract/dshape.h"
 

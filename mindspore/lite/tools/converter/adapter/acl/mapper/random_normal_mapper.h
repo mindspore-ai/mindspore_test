@@ -18,7 +18,7 @@
 #define MINDSPORE_LITE_TOOLS_CONVERTER_ADAPTER_ACL_MAPPER_RANDOM_NORMAL_MAPPER_H_
 
 #include "tools/converter/adapter/acl/mapper/primitive_mapper.h"
-#include "ops/random_normal.h"
+#include "infer/random_normal.h"
 
 namespace mindspore {
 namespace lite {

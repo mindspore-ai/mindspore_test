@@ -16,8 +16,8 @@
 #include "plugin/device/ascend/optimizer/ir_fusion/matmul_elemwise_fusion.h"
 #include <vector>
 #include "plugin/device/ascend/optimizer/common/gllo_utils.h"
-#include "mindspore/core/ops/nn_ops.h"
-#include "mindspore/core/ops/math_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"

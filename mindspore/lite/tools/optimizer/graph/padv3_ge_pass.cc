@@ -16,10 +16,10 @@
 #include <memory>
 #include <vector>
 #include <string>
-#include "ops/array_op_name.h"
-#include "ops/auto_generate/gen_lite_ops.h"
-#include "ops/make_tuple.h"
-#include "ops/nn_ops.h"
+#include "op_def/array_op_name.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
+#include "infer/make_tuple.h"
+#include "op_def/nn_ops.h"
 #include "tools/optimizer/graph/padv3_ge_pass.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "utils/anf_utils.h"

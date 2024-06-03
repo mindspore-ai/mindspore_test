@@ -20,7 +20,7 @@
 #include "common/common_test.h"
 #include "ir/dtype/type.h"
 #include "ir/primitive.h"
-#include "ops/ops_func_impl/normal_tensor_float.h"
+#include "infer/ops_func_impl/normal_tensor_float.h"
 #include "ops/test_ops.h"
 #include "test_value_utils.h"
 

@@ -18,12 +18,12 @@
 #include <cmath>
 #include <limits>
 #include <memory>
-#include "ops/fusion/sub_fusion.h"
-#include "ops/eltwise.h"
-#include "ops/custom.h"
+#include "infer/cxx_api/sub_fusion.h"
+#include "infer/eltwise.h"
+#include "infer/custom.h"
 #include "common/op_attr.h"
 #include "common/check_base.h"
-#include "ops/op_name.h"
+#include "op_def/op_name.h"
 
 namespace mindspore {
 namespace lite {

@@ -17,10 +17,10 @@
 
 #include <vector>
 
-#include "mindspore/core/ops/sequence_ops.h"
-#include "mindspore/core/ops/nn_ops.h"
-#include "mindspore/core/ops/math_ops.h"
-#include "mindspore/core/ops/op_utils.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/ops_utils/op_utils.h"
 #include "include/common/utils/anfalgo.h"
 #include "ir/primitive.h"
 #include "include/common/utils/utils.h"
@@ -87,9 +87,9 @@ const AnfNodePtr BiasDropoutAddFusion::Process(const FuncGraphPtr &graph, const 
   if (!utils::isa<ValueNodePtr>(prob) || !utils::isa<ValueNodePtr>(seed0) || !utils::isa<ValueNodePtr>(seed1)) {
     return nullptr;
   }
-  auto seed0_v = ops::GetScalarValue<int64_t>(seed0->cast<ValueNodePtr>()->value());
-  auto prob_v = ops::GetScalarValue<float>(prob->cast<ValueNodePtr>()->value());
-  auto seed1_v = ops::GetScalarValue<int64_t>(seed1->cast<ValueNodePtr>()->value());
+  auto seed0_v = GetScalarValue<int64_t>(seed0->cast<ValueNodePtr>()->value());
+  auto prob_v = GetScalarValue<float>(prob->cast<ValueNodePtr>()->value());
+  auto seed1_v = GetScalarValue<int64_t>(seed1->cast<ValueNodePtr>()->value());
   if (!prob_v.has_value() || !seed0_v.has_value() || !seed1_v.has_value()) {
     return nullptr;
   }

@@ -19,14 +19,14 @@
 #include <vector>
 #include <unordered_map>
 #include "nnacl/op_base.h"
-#include "ops/op_utils.h"
-#include "ops/auto_generate/gen_lite_ops.h"
-#include "ops/fusion/flash_attention.h"
-#include "ops/array_ops.h"
-#include "ops/nn_ops.h"
+#include "ops_utils/op_utils.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
+#include "infer/cxx_api/flash_attention.h"
+#include "op_def/array_ops.h"
+#include "op_def/nn_ops.h"
 #include "tools/optimizer/common/gllo_utils.h"
-#include "mindspore/core/ops/lite_ops.h"
-#include "ops/custom.h"
+#include "mindspore/ops/op_def/lite_ops.h"
+#include "infer/custom.h"
 
 namespace mindspore::opt {
 namespace {

@@ -19,9 +19,9 @@
 #include <vector>
 #include <unordered_map>
 #include "tools/optimizer/common/gllo_utils.h"
-#include "mindspore/core/ops/lite_ops.h"
-#include "mindspore/core/ops/custom.h"
-#include "ops/f_f_n.h"
+#include "mindspore/ops/op_def/lite_ops.h"
+#include "mindspore/ops/infer/custom.h"
+#include "infer/f_f_n.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

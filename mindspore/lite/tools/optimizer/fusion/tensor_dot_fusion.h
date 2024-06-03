@@ -23,7 +23,7 @@
 #include "tools/optimizer/common/pattern_process_pass_extends.h"
 #include "tools/converter/quantizer/quant_param_holder.h"
 #include "tools/optimizer/common/multiple_pattern_process_pass.h"
-#include "ops/fusion/scale_fusion.h"
+#include "infer/cxx_api/scale_fusion.h"
 #include "utils/check_convert_utils.h"
 
 namespace mindspore {

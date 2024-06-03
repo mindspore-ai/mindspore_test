@@ -19,13 +19,13 @@
 #include <set>
 #include <memory>
 #include <vector>
-#include "mindspore/core/ops/math_ops.h"
-#include "mindspore/core/ops/other_ops.h"
-#include "mindspore/core/ops/all_reduce.h"
-#include "mindspore/core/ops/lite_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/op_def/other_ops.h"
+#include "mindspore/ops/infer/all_reduce.h"
+#include "mindspore/ops/op_def/lite_ops.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "nnacl/op_base.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 #include "mindspore/ccsrc/frontend/parallel/ops_info/ops_utils.h"
 #include "mindspore/core/ir/anf.h"
 

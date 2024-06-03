@@ -20,7 +20,7 @@
 #include <string>
 #include <vector>
 #include "common/op_attr.h"
-#include "ops/custom.h"
+#include "infer/custom.h"
 #include "third_party/securec/include/securec.h"
 
 namespace mindspore {

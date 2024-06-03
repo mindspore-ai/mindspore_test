@@ -19,16 +19,16 @@
 #include <algorithm>
 #include <vector>
 #include <memory>
-#include "mindspore/core/ops/math_ops.h"
-#include "mindspore/core/ops/lite_ops.h"
-#include "mindspore/core/ops/array_ops.h"
-#include "ops/fusion/groupnorm_fusion.h"
+#include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "infer/cxx_api/groupnorm_fusion.h"
 #include "include/common/utils/utils.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "securec/include/securec.h"
 #include "nnacl/op_base.h"
 #include "src/common/ops/ops_utils.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace opt {

@@ -18,7 +18,7 @@
 #include <vector>
 #include <string>
 #include <memory>
-#include "ops/splice.h"
+#include "infer/splice.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

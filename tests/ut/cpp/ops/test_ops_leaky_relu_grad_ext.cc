@@ -15,7 +15,7 @@
  */
 #include <memory>
 #include "common/common_test.h"
-#include "ops/ops_func_impl/leaky_relu_grad_ext.h"
+#include "infer/ops_func_impl/leaky_relu_grad_ext.h"
 #include "ops/test_ops.h"
 #include "ops/test_ops_cmp_utils.h"
 #include "ops/test_value_utils.h"
@@ -26,13 +26,11 @@ OP_FUNC_IMPL_TEST_DECLARE(LeakyReLUGradExt, MultiInputOpParams);
 
 OP_FUNC_IMPL_TEST_CASES(
   LeakyReLUGradExt,
-  testing::Values(
-    MultiInputOpParams{{{2, 3}, {2, 3}}, {kFloat32, kFloat32}, {{2, 3}}, {kFloat32}, {}},
-    MultiInputOpParams{{{2, 3}, {2, 3}}, {kFloat32, kFloat32}, {{2, 3}}, {kFloat32}, {}},
-    MultiInputOpParams{{{2, 3}, {2, 3}}, {kFloat32, kFloat32}, {{2, 3}}, {kFloat32}, {}},
-    MultiInputOpParams{{{2, -1}, {2, -1}}, {kFloat32, kFloat32}, {{2, -1}}, {kFloat32}, {}},
-    MultiInputOpParams{{{-1, -1}, {-1, -1}}, {kFloat32, kFloat32}, {{-1, -1}}, {kFloat32}, {}},
-    MultiInputOpParams{{{-2}, {-2}}, {kFloat32, kFloat32}, {{-2}}, {kFloat32}, {}}
-  ));
+  testing::Values(MultiInputOpParams{{{2, 3}, {2, 3}}, {kFloat32, kFloat32}, {{2, 3}}, {kFloat32}, {}},
+                  MultiInputOpParams{{{2, 3}, {2, 3}}, {kFloat32, kFloat32}, {{2, 3}}, {kFloat32}, {}},
+                  MultiInputOpParams{{{2, 3}, {2, 3}}, {kFloat32, kFloat32}, {{2, 3}}, {kFloat32}, {}},
+                  MultiInputOpParams{{{2, -1}, {2, -1}}, {kFloat32, kFloat32}, {{2, -1}}, {kFloat32}, {}},
+                  MultiInputOpParams{{{-1, -1}, {-1, -1}}, {kFloat32, kFloat32}, {{-1, -1}}, {kFloat32}, {}},
+                  MultiInputOpParams{{{-2}, {-2}}, {kFloat32, kFloat32}, {{-2}}, {kFloat32}, {}}));
 }  // namespace ops
 }  // namespace mindspore

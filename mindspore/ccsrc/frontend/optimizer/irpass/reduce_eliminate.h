@@ -22,7 +22,7 @@
 #include <memory>
 
 #include "frontend/optimizer/irpass.h"
-#include "mindspore/core/ops/math_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
 #include "frontend/optimizer/optimizer.h"
 #include "frontend/optimizer/anf_visitor.h"
 #include "frontend/operator/ops.h"

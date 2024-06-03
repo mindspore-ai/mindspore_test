@@ -16,9 +16,9 @@
 
 #include "tools/converter/parser/tf/remove_ineffective_control_flow.h"
 #include <map>
-#include "mindspore/core/ops/framework_ops.h"
-#include "mindspore/core/ops/lite_ops.h"
-#include "mindspore/core/ops/sequence_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
 #include "nnacl/op_base.h"
 #include "tools/converter/parser/tf/tf_util.h"
 #include "tools/optimizer/common/gllo_utils.h"

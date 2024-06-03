@@ -23,7 +23,7 @@
 #include "include/registry/converter_context.h"
 #include "common/op_enum.h"
 #include "common/fetch_content.h"
-#include "ops/fusion/reduce_fusion.h"
+#include "infer/cxx_api/reduce_fusion.h"
 #include "op/reduction_operator.h"
 
 namespace mindspore {

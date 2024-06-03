@@ -1,10 +1,10 @@
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_BINARY_DIR})
 include_directories(${CMAKE_SOURCE_DIR}/mindspore/core)
+include_directories(${CMAKE_SOURCE_DIR}/mindspore/ops)
 include_directories(${CMAKE_SOURCE_DIR}/mindspore/ccsrc)
 include_directories(${CMAKE_SOURCE_DIR}/mindspore/ccsrc/minddata/dataset)
 
-include(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/gencode.cmake)
 if("${ENABLE_HIDDEN}" STREQUAL "OFF" AND NOT MSVC)
     string(REPLACE " -Werror " " " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
     string(REPLACE " -fvisibility=hidden" " -fvisibility=default" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
@@ -22,8 +22,6 @@ add_subdirectory(mindrt)
 
 if(CMAKE_SIZEOF_VOID_P EQUAL 4 OR NOT BUILD_LITE)
     file(GLOB_RECURSE CORE_OPS_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "ops/*.cc")
-    file(GLOB_RECURSE CORE_SYMBOL_OPS_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "ops/symbol_ops_impl/*.cc")
-    list(REMOVE_ITEM CORE_OPS_LIST ${CORE_SYMBOL_OPS_LIST})
     if(ENABLE_SECURITY)
         file(GLOB_RECURSE _INFER_SUMMARY_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "ops/*_summary.cc")
         list(REMOVE_ITEM CORE_OPS_LIST ${_INFER_SUMMARY_FILES})
@@ -39,6 +37,9 @@ else()
     file(GLOB_RECURSE CORE_OPS_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "${CMAKE_BINARY_DIR}/merge/mindspore/core/ops_merge*.cc")
 endif()
+
+set(OP_DEF_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../ops/op_def)
+list(APPEND CORE_OPS_LIST "${OP_DEF_DIR}/prim_def.cc")
 
 file(GLOB_RECURSE CORE_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
   "abstract/*.cc"
@@ -77,9 +78,6 @@ endif()
 
 if(NOT ONLY_BUILD_DEVICE_PLUGINS)
     set(CORE_SRC_LIST ${CORE_SRC_LIST} ${CORE_OPS_LIST})
-    if(CMAKE_SIZEOF_VOID_P EQUAL 4 OR NOT BUILD_LITE)
-        set(SYMBOLIC_SHAPE_SRC_LIST ${SYMBOLIC_SHAPE_SRC_LIST} ${CORE_SYMBOL_OPS_LIST})
-    endif()
 endif()
 
 if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Linux")

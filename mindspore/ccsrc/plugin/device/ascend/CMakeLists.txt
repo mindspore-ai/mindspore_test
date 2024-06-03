@@ -124,7 +124,7 @@ set_target_properties(mindspore_ascend PROPERTIES VERSION 2)
 set(MS_KERNELS_INTERNAL_LIB_PATH
     ${ORIGIN_PATH}/ascend/ms_kernels_internal/internal_kernel/lib)
 
-target_link_libraries(mindspore_ascend PRIVATE mindspore_backend mindspore_core mindspore_common)
+target_link_libraries(mindspore_ascend PRIVATE mindspore_backend mindspore_core mindspore_ops mindspore_common)
 target_link_libraries(mindspore_ascend PRIVATE mindspore_shared_lib)
 target_link_libraries(mindspore_ascend PRIVATE proto_input mindspore::protobuf)
 target_link_libraries(mindspore_ascend PRIVATE securec d_collective)
@@ -204,6 +204,3 @@ if(ENABLE_D)
             ${ORIGIN_PATH}:${ORIGIN_PATH}/lib:${ORIGIN_PATH}/lib/plugin/:${ASCEND_RPATH})
     endif()
 endif()
-
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/kernel/aicpu/aicpu_ops)
-add_subdirectory(kernel/aicpu/aicpu_ops)

@@ -16,9 +16,9 @@
 #include "plugin/device/ascend/optimizer/ir_fusion/layer_norm_beta_gamma_backprop_fusion.h"
 #include <memory>
 #include <vector>
-#include "ops/nn_op_name.h"
-#include "ops/sequence_ops.h"
-#include "ops/array_ops.h"
+#include "op_def/nn_op_name.h"
+#include "op_def/sequence_ops.h"
+#include "op_def/array_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "utils/trace_base.h"

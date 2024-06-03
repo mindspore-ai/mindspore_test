@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "ops/ops_func_impl/layer_norm_ext.h"
+#include "infer/ops_func_impl/layer_norm_ext.h"
 #include "common/common_test.h"
 #include "ir/primitive.h"
 #include "ir/dtype/type.h"
@@ -59,8 +59,8 @@ TEST_P(TestLayerNormExt, layer_norm_ext_dyn_shape) {
   ASSERT_NE(beta, nullptr);
   auto epsilon = std::make_shared<abstract::AbstractScalar>(param.epsilon);
   ASSERT_NE(epsilon, nullptr);
-  std::vector<abstract::AbstractBasePtr> input_args{
-    std::move(input_x), std::move(normalized_shape), std::move(gamma), std::move(beta), std::move(epsilon)};
+  std::vector<abstract::AbstractBasePtr> input_args{std::move(input_x), std::move(normalized_shape), std::move(gamma),
+                                                    std::move(beta), std::move(epsilon)};
   auto infer_impl = std::make_shared<LayerNormExtFuncImpl>();
   ASSERT_NE(infer_impl, nullptr);
   auto infer_shapes_ptr = infer_impl->InferShape(primitive, input_args);

@@ -19,14 +19,14 @@
 #include <functional>
 #include <algorithm>
 #include <memory>
-#include "mindspore/core/ops/random_ops.h"
-#include "mindspore/core/ops/lite_ops.h"
-#include "mindspore/core/ops/array_ops.h"
-#include "mindspore/core/ops/nn_ops.h"
-#include "mindspore/core/ops/op_name.h"
+#include "mindspore/ops/op_def/random_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "tools/converter/ops/ops_def.h"
-#include "ops/auto_generate/gen_lite_ops.h"
-#include "ops/uniform_real.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
+#include "infer/uniform_real.h"
 #include "include/errorcode.h"
 #include "nnacl/op_base.h"
 #include "tools/common/tensor_util.h"
@@ -34,7 +34,7 @@
 #include "tools/common/node_util.h"
 #include "tools/lite_exporter/fetch_content.h"
 #include "mindspore/core/abstract/utils.h"
-#include "mindspore/core/ops/op_utils.h"
+#include "mindspore/ops/ops_utils/op_utils.h"
 
 namespace mindspore::lite {
 namespace {

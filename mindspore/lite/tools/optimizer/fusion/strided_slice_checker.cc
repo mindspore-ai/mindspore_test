@@ -19,7 +19,7 @@
 #include <functional>
 #include <vector>
 #include "tools/optimizer/common/gllo_utils.h"
-#include "ops/op_name.h"
+#include "op_def/op_name.h"
 
 namespace mindspore {
 namespace opt {

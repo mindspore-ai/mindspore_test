@@ -19,7 +19,7 @@
 #include <string>
 #include <vector>
 
-#include "mindspore/core/ops/nn_ops.h"
+#include "op_def/nn_ops.h"
 
 #include "abstract/dshape.h"
 #include "include/backend/optimizer/helper.h"

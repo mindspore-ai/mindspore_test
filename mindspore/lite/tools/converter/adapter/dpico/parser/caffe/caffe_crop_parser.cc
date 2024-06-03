@@ -16,7 +16,7 @@
 
 #include "parser/caffe/caffe_crop_parser.h"
 #include <memory>
-#include "ops/crop.h"
+#include "infer/crop.h"
 #include "common/op_enum.h"
 
 namespace mindspore {

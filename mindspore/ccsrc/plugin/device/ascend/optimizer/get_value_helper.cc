@@ -16,7 +16,7 @@
 
 #include "plugin/device/ascend/optimizer/get_value_helper.h"
 #include "mindapi/base/format.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace opt {
@@ -24,7 +24,7 @@ std::string GetNodeFormatValue(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
   auto format_value = node->abstract()->GetValue();
   MS_EXCEPTION_IF_NULL(format_value);
-  auto format_enum = static_cast<mindspore::Format>(ops::GetValueWithCheck<int64_t>(format_value));
+  auto format_enum = static_cast<mindspore::Format>(GetValueWithCheck<int64_t>(format_value));
   auto format = FormatEnumToString(format_enum);
   return format;
 }
@@ -34,7 +34,7 @@ T GetNodeScalarValue(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
   auto value_ptr = node->abstract()->GetValue();
   MS_EXCEPTION_IF_NULL(value_ptr);
-  auto value = ops::GetValueWithCheck<T>(value_ptr);
+  auto value = GetValueWithCheck<T>(value_ptr);
   return value;
 }
 

@@ -17,7 +17,7 @@
 #include "frontend/parallel/pass/begin_end_overlap_inline.h"
 #include <memory>
 #include <list>
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "frontend/parallel/ops_info/ops_utils.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "abstract/abstract_function.h"

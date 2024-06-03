@@ -16,7 +16,7 @@
 
 #include "tools/converter/parser/caffe/caffe_activation_parser.h"
 #include <memory>
-#include "ops/fusion/activation.h"
+#include "infer/cxx_api/activation.h"
 #include "nnacl/op_base.h"
 #include "src/common/utils.h"
 

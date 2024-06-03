@@ -20,7 +20,7 @@
 #include <utility>
 #include <unordered_map>
 #include <algorithm>
-#include "mindspore/core/ops/structure_ops.h"
+#include "mindspore/ops/op_def/structure_ops.h"
 #include "pipeline/jit/ps/parse/resolve.h"
 #include "pipeline/jit/ps/pipeline.h"
 #include "frontend/operator/ops.h"

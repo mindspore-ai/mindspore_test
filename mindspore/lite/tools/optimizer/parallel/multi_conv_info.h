@@ -19,7 +19,7 @@
 #include <vector>
 #include "tools/optimizer/parallel/multi_node_split.h"
 #include "tools/optimizer/fisson/fisson_util.h"
-#include "ops/fusion/conv2d_fusion.h"
+#include "infer/cxx_api/conv2d_fusion.h"
 namespace mindspore {
 namespace opt {
 class MultiConvSplit : public MultiNodeSplit {

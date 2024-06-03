@@ -16,14 +16,14 @@
 #include "src/common/ops/operator_populate/arithmetic_operator_populate.h"
 #include <memory>
 #include <string>
-#include "ops/auto_generate/gen_lite_ops.h"
-#include "ops/squared_difference.h"
-#include "ops/mod.h"
-#include "ops/fusion/add_fusion.h"
-#include "ops/fusion/mul_fusion.h"
-#include "ops/eltwise.h"
-#include "ops/fusion/div_fusion.h"
-#include "ops/fusion/sub_fusion.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
+#include "infer/squared_difference.h"
+#include "infer/mod.h"
+#include "infer/cxx_api/add_fusion.h"
+#include "infer/cxx_api/mul_fusion.h"
+#include "infer/eltwise.h"
+#include "infer/cxx_api/div_fusion.h"
+#include "infer/cxx_api/sub_fusion.h"
 
 using mindspore::ops::kActivationType;
 using mindspore::ops::kMode;

@@ -23,10 +23,10 @@
 #include <utility>
 #include <vector>
 #include "mindapi/base/format.h"
-#include "mindspore/core/ops/framework_ops.h"
-#include "mindspore/core/ops/sequence_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
 #include "nnacl/op_base.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 #include "src/common/ops/anf_utils.h"
 #include "src/common/ops/populate/populate_register.h"
 #include "src/common/primitive_t_utils.h"

@@ -20,22 +20,22 @@
 #include <utility>
 #include <vector>
 #include <algorithm>
-#include "mindspore/core/ops/sequence_ops.h"
-#include "mindspore/core/ops/other_ops.h"
-#include "mindspore/core/ops/nn_optimizer_ops.h"
-#include "mindspore/core/ops/nn_ops.h"
-#include "mindspore/core/ops/math_ops.h"
-#include "mindspore/core/ops/lite_ops.h"
-#include "mindspore/core/ops/comparison_ops.h"
-#include "mindspore/core/ops/array_ops.h"
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/other_ops.h"
+#include "mindspore/ops/op_def/nn_optimizer_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
+#include "mindspore/ops/op_def/comparison_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "nnacl/op_base.h"
-#include "ops/tuple_get_item.h"
+#include "infer/tuple_get_item.h"
 #include "tools/common/tensor_util.h"
-#include "ops/op_utils.h"
-#include "ops/fusion/mat_mul_fusion.h"
-#include "ops/squeeze.h"
+#include "ops_utils/op_utils.h"
+#include "infer/cxx_api/mat_mul_fusion.h"
+#include "infer/squeeze.h"
 
 namespace mindspore::opt {
 namespace {

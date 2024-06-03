@@ -42,7 +42,7 @@
 #include "tools/converter/quantizer/quant_params.h"
 #include "tools/converter/quantizer/mixed_bit_weight_quantization.h"
 #include "tools/common/string_util.h"
-#include "ops/quant_dtype_cast.h"
+#include "infer/quant_dtype_cast.h"
 
 namespace mindspore::lite::quant {
 int UpdateTensorDataAndSize(const AnfNodePtr &node, const tensor::TensorPtr &weight, const void *quant_datas,

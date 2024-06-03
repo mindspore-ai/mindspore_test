@@ -1,9 +1,12 @@
 ## common setting
 include_directories(${CMAKE_SOURCE_DIR}/mindspore/core)
+include_directories(${CMAKE_SOURCE_DIR}/mindspore/ops)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_BINARY_DIR})
 include_directories(${CMAKE_SOURCE_DIR}/mindspore/core/mindrt/include)
 include_directories(${CMAKE_SOURCE_DIR}/mindspore/core/mindrt/src)
+
+set(MS_OPS_KERNEL_DIR "${CMAKE_SOURCE_DIR}/mindspore/ops/kernel")
 
 # graphengine include directories
 include(${CMAKE_SOURCE_DIR}/cmake/graphengine_variables.cmake)
@@ -215,8 +218,8 @@ if(ENABLE_CPU)
     elseif("${X86_64_SIMD}" STREQUAL "off" AND NOT ${ENABLE_ASAN})
         set(X86_64_SIMD "avx512")
     endif()
-    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/plugin/device/cpu/kernel)
-    add_subdirectory(plugin/device/cpu/kernel/nnacl)
+    include_directories("${MS_OPS_KERNEL_DIR}/cpu")
+    add_subdirectory("${MS_OPS_KERNEL_DIR}/cpu/nnacl" plugin/device/cpu/kernel/nnacl)
 endif()
 
 if(NOT CMAKE_SYSTEM_NAME MATCHES "Darwin")
@@ -321,14 +324,13 @@ endif()
 
 if(MODE_ASCEND_ALL)
     include_directories("${CMAKE_BINARY_DIR}/plugin/device/ascend/kernel/aicpu")
-    file(GLOB_RECURSE PROTO_IN RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "plugin/device/ascend/kernel/aicpu/proto/*.proto")
+    file(GLOB_RECURSE PROTO_IN "${MS_OPS_KERNEL_DIR}/ascend/aicpu/proto/*.proto")
     ms_protobuf_generate(PROTOSRCS PROTOHDRS ${PROTO_IN})
 
     file(GLOB_RECURSE PROTO_DUMP RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
             "plugin/device/ascend/hal/device/dump/proto/*.proto")
     ms_protobuf_generate(DUMP_PROTOSRCS PROTOHDRS ${PROTO_DUMP})
 
-    file(GLOB_RECURSE  RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "plugin/device/ascend/kernel/aicpu/proto/*.proto")
     ms_protobuf_generate(RANDOM_PROTOSRC RANDOM_PROTOHDR
             "plugin/device/ascend/optimizer/ir_fission/random_status.proto")
 
@@ -380,7 +382,7 @@ foreach(_comp ${SUB_COMP})
     string(REPLACE "/" "_" sub ${_comp})
     if(TARGET _mindspore_${sub}_obj)
         list(APPEND SUB_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_${sub}_obj>)
-        add_dependencies(_mindspore_${sub}_obj proto_input mindspore_core)
+        add_dependencies(_mindspore_${sub}_obj proto_input mindspore_core mindspore_ops)
     endif()
 endforeach()
 
@@ -423,7 +425,7 @@ endforeach()
 
 
 add_library(mindspore_common SHARED ${COMMON_SUB_OBJECTS_SRC})
-target_link_libraries(mindspore_common PRIVATE mindspore_core proto_input mindspore::protobuf)
+target_link_libraries(mindspore_common PRIVATE mindspore_core mindspore_ops proto_input mindspore::protobuf)
 set_target_properties(mindspore_common PROPERTIES INSTALL_RPATH $ORIGIN)
 if(CMAKE_SYSTEM_NAME MATCHES "Windows" OR CMAKE_SYSTEM_NAME MATCHES "Darwin")
     target_link_libraries(mindspore_common PRIVATE mindspore::pybind11_module)
@@ -476,7 +478,7 @@ foreach(_comp ${BACKEND_SUB_COMP})
 endforeach()
 
 set(CPU_KERNEL_OBJECT_COUNT 0)
-add_subdirectory(plugin/device/cpu/kernel)
+add_subdirectory("${MS_OPS_KERNEL_DIR}/cpu" plugin/device/cpu/kernel)
 foreach(number RANGE 1 ${CPU_KERNEL_OBJECT_COUNT})
     if(TARGET _mindspore_plugin_device_cpu_kernel_obj_${number})
         list(APPEND BACKEND_SUB_OBJECTS_SRC $<TARGET_OBJECTS:_mindspore_plugin_device_cpu_kernel_obj_${number}>)
@@ -511,7 +513,8 @@ if(CMAKE_SYSTEM_NAME MATCHES "Windows")
     target_link_libraries(mindspore_backend PRIVATE mindspore::pybind11_module)
 endif()
 
-target_link_libraries(mindspore_backend PRIVATE mindspore_core mindspore_common proto_input mindspore::protobuf)
+target_link_libraries(mindspore_backend PRIVATE mindspore_core mindspore_ops
+                      mindspore_common proto_input mindspore::protobuf)
 target_link_libraries(mindspore_backend PRIVATE securec)
 
 if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
@@ -601,23 +604,25 @@ if(CMAKE_SYSTEM_NAME MATCHES "Windows")
     target_link_libraries(mindspore PUBLIC mindspore::pybind11_module)
     if(NOT MSVC)
         target_link_libraries(_c_expression PRIVATE -Wl,--whole-archive mindspore -Wl,--no-whole-archive mindspore_core
-            mindspore_common mindspore_backend)
+            mindspore_ops mindspore_common mindspore_backend)
     else()
-        target_link_libraries(_c_expression PRIVATE mindspore_core mindspore_common mindspore_backend mindspore)
+        target_link_libraries(_c_expression PRIVATE mindspore_core mindspore_ops
+                              mindspore_common mindspore_backend mindspore)
     endif()
 elseif(CMAKE_SYSTEM_NAME MATCHES "Darwin")
     target_link_libraries(mindspore PUBLIC proto_input mindspore::protobuf mindspore::eigen mindspore::json)
     target_link_libraries(_c_expression PRIVATE -Wl,-all_load mindspore proto_input -Wl,-noall_load mindspore_core
-        mindspore_common mindspore_backend)
+                          mindspore_ops mindspore_common mindspore_backend)
     target_link_libraries(_c_expression PRIVATE mindspore::pybind11_module)
 else()
     if(ENABLE_CPU AND NOT WIN32)
         target_link_libraries(mindspore PUBLIC proto_input mindspore::protobuf mindspore::eigen mindspore::json)
     endif()
     target_link_libraries(_c_expression PRIVATE -Wl,--whole-archive mindspore proto_input -Wl,--no-whole-archive
-            mindspore_core mindspore_common mindspore_backend)
+            mindspore_core mindspore_ops mindspore_common mindspore_backend)
     target_link_libraries(_c_expression PRIVATE mindspore::pybind11_module)
 endif()
+
 
 set_target_properties(_c_expression PROPERTIES INSTALL_RPATH ${ORIGIN_PATH}/lib:${ORIGIN_PATH}/lib/plugin)
 if(USE_GLOG)

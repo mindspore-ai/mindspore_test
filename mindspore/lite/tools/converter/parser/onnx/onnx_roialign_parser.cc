@@ -16,7 +16,7 @@
 
 #include "tools/converter/parser/onnx/onnx_roialign_parser.h"
 #include <memory>
-#include "ops/roi_align.h"
+#include "infer/roi_align.h"
 
 namespace mindspore {
 namespace lite {

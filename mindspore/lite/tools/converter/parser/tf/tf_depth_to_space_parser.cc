@@ -19,7 +19,7 @@
 #include <map>
 #include <vector>
 #include "tools/converter/parser/tf/tf_node_parser_registry.h"
-#include "ops/depth_to_space.h"
+#include "infer/depth_to_space.h"
 
 namespace mindspore {
 namespace lite {

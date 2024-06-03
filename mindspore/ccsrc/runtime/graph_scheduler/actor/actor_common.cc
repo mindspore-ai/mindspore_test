@@ -17,9 +17,9 @@
 #include "runtime/graph_scheduler/actor/actor_common.h"
 #include <memory>
 #include <unordered_map>
-#include "ops/framework_op_name.h"
-#include "ops/framework_ops.h"
-#include "ops/structure_op_name.h"
+#include "op_def/framework_op_name.h"
+#include "op_def/framework_ops.h"
+#include "op_def/structure_op_name.h"
 #include "runtime/graph_scheduler/device_tensor_store.h"
 #include "utils/ms_context.h"
 #include "utils/ms_utils.h"

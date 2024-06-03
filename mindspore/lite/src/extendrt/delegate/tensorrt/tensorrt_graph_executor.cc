@@ -24,7 +24,7 @@
 #include <utility>
 #include <algorithm>
 #include <fstream>
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "src/extendrt/delegate/delegate_utils.h"
 #include "ccsrc/kernel/common_utils.h"
 #include "ccsrc/include/backend/optimizer/helper.h"
@@ -33,7 +33,7 @@
 #include "tools/optimizer/common/gllo_utils.h"
 #include "src/extendrt/utils/func_graph_utils.h"
 #include "src/extendrt/delegate/tensorrt/optimizer/tensorrt_optimizer.h"
-#include "ops/custom.h"
+#include "infer/custom.h"
 
 namespace mindspore::lite {
 namespace {

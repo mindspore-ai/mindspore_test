@@ -1,4 +1,4 @@
-The operator definitions for MindSpore are implemented as yaml files, in the directory "mindspore/core/ops/ops_def/".
+The operator definitions for MindSpore are implemented as yaml files, in the directory "mindspore/ops/op_def/yaml".
 
 There are two ways to generate python and c++ operator definitions from yaml files:
 
@@ -7,4 +7,4 @@ There are two ways to generate python and c++ operator definitions from yaml fil
 
 Python files generated in the directory "mindspore/python/mindspore/ops/auto_generate/".
 
-C++ files generated in the directory "mindspore/core/ops/auto_generate/".
+C++ files generated in the directory "mindspore/ops/op_def/auto_generate/".

@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 #include "include/transform/graph_ir/utils.h"
-#include "mindspore/core/ops/other_ops.h"
-#include "mindspore/core/ops/framework_ops.h"
-#include "mindspore/core/ops/sequence_op_name.h"
+#include "mindspore/ops/op_def/other_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/sequence_op_name.h"
 #include "transform/graph_ir/aoe_util.h"
 #include "transform/graph_ir/convert.h"
 #include "transform/graph_ir/op_adapter_map.h"

@@ -17,7 +17,7 @@
 #include "mindspore/ccsrc/debug/summary/summary.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
-#include "mindspore/core/ops/structure_ops.h"
+#include "mindspore/ops/op_def/structure_ops.h"
 #include "runtime/device/ms_device_shape_transfer.h"
 #include "utils/ms_context.h"
 #include "utils/trace_base.h"

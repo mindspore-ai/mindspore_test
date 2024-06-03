@@ -15,7 +15,7 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/affine_parameter.h"
-#include "ops/affine.h"
+#include "infer/affine.h"
 using mindspore::ops::kNameAffine;
 using mindspore::schema::PrimitiveType_Affine;
 namespace mindspore {

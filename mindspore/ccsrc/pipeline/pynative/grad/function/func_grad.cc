@@ -23,8 +23,8 @@
 #include "include/common/utils/primitive_utils.h"
 #include "include/common/utils/hook.h"
 #include "pipeline/pynative/pynative_utils.h"
-#include "ops/framework_ops.h"
-#include "ops/other_ops.h"
+#include "op_def/framework_ops.h"
+#include "op_def/other_ops.h"
 
 namespace mindspore::pynative::autograd {
 namespace {

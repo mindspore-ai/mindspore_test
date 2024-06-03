@@ -25,7 +25,7 @@
 #include "transform/graph_ir/op_adapter_base.h"
 #include "transform/graph_ir/io_format_map.h"
 #include "ir/kernel_tensor_value.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 
 namespace mindspore {
 GeDataTypeImm::GeDataTypeImm() : IntegerImm(kInt32), v_(::ge::DataType::DT_FLOAT) {}
@@ -69,9 +69,9 @@ std::vector<int64_t> ConvertAnyUtil(const ValuePtr &value, const std::string &na
     list[0] = 1;
     list[1] = 1;
     (void)std::transform(vec->value().begin(), vec->value().end(), list.begin() + 2,
-                         [](const ValuePtr &val) { return ops::GetValueWithCheck<int64_t>(val); });
+                         [](const ValuePtr &val) { return GetValueWithCheck<int64_t>(val); });
   } else {
-    int64_t data = ops::GetValueWithCheck<int64_t>(value);
+    int64_t data = GetValueWithCheck<int64_t>(value);
     int size = 2;  // 2 int in list
     list = TransformUtil::ConvertIntToList(data, size);
   }
@@ -91,7 +91,7 @@ std::string ConvertAnyUtil(const ValuePtr &value, const AnyTraits<std::vector<in
     if (i != 0) {
       buffer << ",";
     }
-    buffer << ops::GetValueWithCheck<int64_t>(it);
+    buffer << GetValueWithCheck<int64_t>(it);
     i++;
   }
   return buffer.str();
@@ -106,7 +106,7 @@ std::vector<float> ConvertAnyUtil(const ValuePtr &value, const AnyTraits<std::ve
   std::vector<float> list;
   list.resize(vec->value().size());
   (void)std::transform(vec->value().begin(), vec->value().end(), list.begin(),
-                       [](const ValuePtr &val) { return ops::GetValueWithCheck<float>(val); });
+                       [](const ValuePtr &val) { return GetValueWithCheck<float>(val); });
   return list;
 }
 
@@ -120,7 +120,7 @@ std::vector<int64_t> ConvertAnyUtil(const ValuePtr &value, const std::string &fo
   std::vector<int64_t> list;
   list.resize(vec->value().size());
   (void)std::transform(vec->value().begin(), vec->value().end(), list.begin(),
-                       [](const ValuePtr &val) { return ops::GetValueWithCheck<int64_t>(val); });
+                       [](const ValuePtr &val) { return GetValueWithCheck<int64_t>(val); });
   if (format == kOpFormat_NHWC) {
     if (list.size() < 4) {
       MS_LOG(EXCEPTION) << "The size of list is less than 4";
@@ -155,7 +155,7 @@ GeDataType ConvertAnyUtil(const ValuePtr &value, const AnyTraits<GEType>) {
     me_type = static_cast<TypeId>(GetValue<int64_t>(value));
   } else if (value->isa<KernelTensorValue>()) {
     // type id
-    auto value_opt = ops::GetScalarValue<int64_t>(value);
+    auto value_opt = GetScalarValue<int64_t>(value);
     me_type = static_cast<TypeId>(value_opt.value());
   } else {
     MS_LOG(EXCEPTION) << "error convert Value to TypePtr for value: " << value->ToString()
@@ -274,7 +274,7 @@ GeTensor NestedVectorToTensorImpl(const ValuePtrList &vec, const TypeId &type) {
   size_t attr_size2 = vec_item.size();
   std::vector<T1> attr_list;
   for (const auto &item : vec) {
-    auto value_list = ops::GetValueWithCheck<std::vector<T1>>(item);
+    auto value_list = GetValueWithCheck<std::vector<T1>>(item);
     (void)std::copy(value_list.begin(), value_list.end(), std::back_inserter(attr_list));
   }
   auto attr_value = MakeValue(attr_list);
@@ -494,7 +494,7 @@ std::string GetOpIOFormat(const AnfNodePtr &anf) {
     return ret;
   }
   if (prim->HasAttr("io_format")) {
-    return ops::GetValueWithCheck<std::string>(prim->GetAttr("io_format"));
+    return GetValueWithCheck<std::string>(prim->GetAttr("io_format"));
   }
   auto io_format_map = IOFormatMap::get();
   auto iter = io_format_map.find(prim->name());
@@ -507,10 +507,10 @@ std::string GetOpIOFormat(const AnfNodePtr &anf) {
     if (format->isa<Int64Imm>()) {
       bool converted = CheckAndConvertUtils::ConvertAttrValueToString(prim->name(), "format", &format);
       if (converted) {
-        return ops::GetValueWithCheck<std::string>(format);
+        return GetValueWithCheck<std::string>(format);
       }
     } else {
-      return ops::GetValueWithCheck<std::string>(format);
+      return GetValueWithCheck<std::string>(format);
     }
   }
   return iter->second;

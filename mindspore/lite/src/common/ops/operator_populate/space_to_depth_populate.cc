@@ -15,7 +15,7 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/space_to_depth_parameter.h"
-#include "ops/space_to_depth.h"
+#include "infer/space_to_depth.h"
 using mindspore::ops::kNameSpaceToDepth;
 using mindspore::schema::PrimitiveType_SpaceToDepth;
 

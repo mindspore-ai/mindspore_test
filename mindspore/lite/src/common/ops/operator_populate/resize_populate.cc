@@ -15,7 +15,7 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/resize_parameter.h"
-#include "ops/resize.h"
+#include "infer/resize.h"
 using mindspore::ops::kNameResize;
 using mindspore::schema::PrimitiveType_Resize;
 

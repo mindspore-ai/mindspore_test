@@ -21,7 +21,7 @@
 #include <string>
 #include <unordered_map>
 #include "tools/optimizer/common/pattern_process_pass_extends.h"
-#include "ops/fusion/scale_fusion.h"
+#include "infer/cxx_api/scale_fusion.h"
 #include "tools/optimizer/common/gllo_utils.h"
 
 namespace mindspore::opt {

@@ -15,7 +15,7 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/reduce_scatter_parameter.h"
-#include "ops/reduce_scatter.h"
+#include "infer/reduce_scatter.h"
 using mindspore::ops::kNameReduceScatter;
 using mindspore::schema::PrimitiveType_ReduceScatter;
 

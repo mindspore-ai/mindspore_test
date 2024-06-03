@@ -21,9 +21,9 @@
 #include "tools/converter/adapter/acl/mapper/primitive_mapper_register.h"
 #include "tools/converter/adapter/acl/mapper/tbe_op_def.h"
 #include "tools/converter/adapter/acl/common/utils.h"
-#include "ops/lstm.h"
+#include "infer/lstm.h"
 #include "nnacl/op_base.h"
-#include "ops/op_name.h"
+#include "op_def/op_name.h"
 #include "src/common/log_util.h"
 namespace mindspore {
 namespace {

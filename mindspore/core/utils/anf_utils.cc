@@ -19,10 +19,10 @@
 #include <string>
 #include <list>
 #include <algorithm>
-#include "ops/structure_ops.h"
-#include "ops/sequence_ops.h"
-#include "ops/other_ops.h"
-#include "ops/framework_ops.h"
+#include "op_def/structure_ops.h"
+#include "op_def/sequence_ops.h"
+#include "op_def/other_ops.h"
+#include "op_def/framework_ops.h"
 #include "utils/trace_base.h"
 #include "utils/hash_map.h"
 #include "utils/os.h"

@@ -16,7 +16,7 @@
 
 #include "tools/converter/parser/onnx/onnx_size_parser.h"
 #include <memory>
-#include "ops/size.h"
+#include "infer/size.h"
 
 namespace mindspore {
 namespace lite {

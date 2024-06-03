@@ -20,7 +20,7 @@
 #include "tools/converter/converter_packed_node.h"
 #include "tools/converter/offline_packing_optimizer.h"
 #include "src/litert/kernel/cpu/int8/matmul_dynamic_base_int8.h"
-#include "mindspore/core/ops/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "src/litert/kernel/cpu/fp32/matmul_fp32.h"
 #include "src/litert/kernel/cpu/nnacl/nnacl_kernel.h"
 #include "nnacl/kernel/matmul_struct.h"

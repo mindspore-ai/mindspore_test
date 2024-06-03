@@ -17,8 +17,8 @@
 #include "parser/caffe/caffe_shuffle_channel_parser.h"
 #include <memory>
 #include <vector>
-#include "ops/custom.h"
-#include "ops/op_name.h"
+#include "infer/custom.h"
+#include "op_def/op_name.h"
 
 namespace mindspore {
 namespace lite {

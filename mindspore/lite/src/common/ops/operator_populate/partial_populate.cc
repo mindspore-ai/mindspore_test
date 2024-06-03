@@ -15,7 +15,7 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/partial_fusion_parameter.h"
-#include "ops/fusion/partial_fusion.h"
+#include "infer/cxx_api/partial_fusion.h"
 using mindspore::ops::kNamePartialFusion;
 using mindspore::schema::PrimitiveType_PartialFusion;
 

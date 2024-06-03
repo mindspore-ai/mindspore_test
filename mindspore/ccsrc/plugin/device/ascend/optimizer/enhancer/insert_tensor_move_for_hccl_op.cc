@@ -17,9 +17,9 @@
 #include <vector>
 #include <set>
 #include <string>
-#include "ops/ascend_op_name.h"
-#include "ops/structure_op_name.h"
-#include "ops/framework_ops.h"
+#include "op_def/ascend_op_name.h"
+#include "op_def/structure_op_name.h"
+#include "op_def/framework_ops.h"
 #include "include/common/utils/utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"

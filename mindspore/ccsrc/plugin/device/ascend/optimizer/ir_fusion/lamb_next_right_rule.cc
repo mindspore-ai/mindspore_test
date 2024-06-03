@@ -15,8 +15,8 @@
  */
 #include "plugin/device/ascend/optimizer/ir_fusion/lamb_next_right_rule.h"
 #include <vector>
-#include "ops/ascend_op_name.h"
-#include "ops/math_ops.h"
+#include "op_def/ascend_op_name.h"
+#include "op_def/math_ops.h"
 #include "include/backend/optimizer/helper.h"
 #include "plugin/device/ascend/optimizer/ascend_helper.h"
 #include "utils/trace_base.h"

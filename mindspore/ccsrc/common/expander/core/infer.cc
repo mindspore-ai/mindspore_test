@@ -16,12 +16,12 @@
 
 #include "include/common/expander/core/infer.h"
 
-#include "mindspore/core/ops/other_ops.h"
-#include "mindspore/core/ops/nn_optimizer_ops.h"
-#include "mindspore/core/ops/nn_ops.h"
-#include "mindspore/core/ops/math_ops.h"
-#include "mindspore/core/ops/image_ops.h"
-#include "mindspore/core/ops/array_ops.h"
+#include "mindspore/ops/op_def/other_ops.h"
+#include "mindspore/ops/op_def/nn_optimizer_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/op_def/image_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "ir/anf.h"
 #include "ir/primitive.h"

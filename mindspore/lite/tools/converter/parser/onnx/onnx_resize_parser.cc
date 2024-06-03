@@ -19,8 +19,8 @@
 #include <vector>
 #include <map>
 #include <memory>
-#include "ops/resize.h"
-#include "ops/op_utils.h"
+#include "infer/resize.h"
+#include "ops_utils/op_utils.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

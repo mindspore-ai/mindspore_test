@@ -25,7 +25,7 @@
 #include "extendrt/delegate/ascend_native/ascend_native_impl/utils.h"
 #include "extendrt/kernel/base_kernel.h"
 #include "ops/base_operator.h"
-#include "ops/op_name.h"
+#include "op_def/op_name.h"
 
 namespace mindspore {
 namespace common {

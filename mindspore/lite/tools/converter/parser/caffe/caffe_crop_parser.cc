@@ -16,7 +16,7 @@
 
 #include "tools/converter/parser/caffe/caffe_crop_parser.h"
 #include <memory>
-#include "ops/crop.h"
+#include "infer/crop.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

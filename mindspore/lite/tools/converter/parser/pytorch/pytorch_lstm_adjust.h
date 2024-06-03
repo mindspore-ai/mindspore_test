@@ -21,7 +21,7 @@
 #include <set>
 #include <string>
 #include <unordered_map>
-#include "ops/lstm.h"
+#include "infer/lstm.h"
 #include "include/common/utils/utils.h"
 #include "tools/optimizer/common/format_utils.h"
 

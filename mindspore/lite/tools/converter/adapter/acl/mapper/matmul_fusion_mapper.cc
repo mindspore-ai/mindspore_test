@@ -17,8 +17,8 @@
 #include "tools/converter/adapter/acl/mapper/matmul_fusion_mapper.h"
 #include <memory>
 #include <vector>
-#include "mindspore/core/ops/math_ops.h"
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "tools/converter/adapter/acl/mapper/primitive_mapper_register.h"
 #include "tools/converter/adapter/acl/mapper/tbe_op_def.h"
 #include "tools/converter/adapter/acl/common/utils.h"
@@ -28,9 +28,9 @@
 #include "tools/common/tensor_util.h"
 #include "ir/named.h"
 #include "ir/func_graph.h"
-#include "ops/op_name.h"
-#include "ops/op_utils.h"
-#include "ops/auto_generate/gen_lite_ops.h"
+#include "op_def/op_name.h"
+#include "ops_utils/op_utils.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
 #include "nnacl/op_base.h"
 #include "ops/base_operator.h"
 

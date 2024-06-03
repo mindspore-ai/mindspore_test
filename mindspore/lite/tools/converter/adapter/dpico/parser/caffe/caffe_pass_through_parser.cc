@@ -18,7 +18,7 @@
 #include <memory>
 #include <map>
 #include <string>
-#include "ops/custom.h"
+#include "infer/custom.h"
 #include "common/op_attr.h"
 #include "third_party/securec/include/securec.h"
 

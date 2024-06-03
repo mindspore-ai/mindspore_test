@@ -18,8 +18,8 @@
 #include <map>
 #include <vector>
 #include <memory>
-#include "mindspore/core/ops/arithmetic_ops.h"
-#include "mindspore/core/ops/nn_ops.h"
+#include "mindspore/ops/op_def/arithmetic_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/transform/graph_ir/utils.h"

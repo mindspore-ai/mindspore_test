@@ -21,8 +21,8 @@
 #include <string>
 #include <algorithm>
 #include <queue>
-#include "mindspore/core/ops/framework_ops.h"
-#include "mindspore/core/ops/array_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
 #include "include/common/utils/utils.h"
 #include "frontend/parallel/step_parallel.h"
 #include "frontend/parallel/step_parallel_utils.h"

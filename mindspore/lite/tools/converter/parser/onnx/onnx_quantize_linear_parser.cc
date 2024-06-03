@@ -24,7 +24,7 @@
 #include <cstdint>
 #include "nnacl/op_base.h"
 #include "tools/converter/ops/ops_def.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 
 namespace mindspore::lite {
 namespace {

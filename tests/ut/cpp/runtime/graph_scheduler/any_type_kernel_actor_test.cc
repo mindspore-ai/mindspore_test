@@ -16,9 +16,9 @@
 
 #include "tests/ut/cpp/common/device_common_test.h"
 
-#include "mindspore/core/ops/comparison_ops.h"
-#include "mindspore/core/ops/framework_ops.h"
-#include "mindspore/core/ops/math_ops.h"
+#include "op_def/comparison_ops.h"
+#include "op_def/framework_ops.h"
+#include "op_def/math_ops.h"
 
 namespace mindspore {
 namespace runtime {

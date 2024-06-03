@@ -16,7 +16,7 @@
 
 #include "ir/dtype/number.h"
 #include "ops/test_ops_cmp_utils.h"
-#include "ops/ops_func_impl/prelu_grad.h"
+#include "infer/ops_func_impl/prelu_grad.h"
 
 namespace mindspore {
 namespace ops {
@@ -27,10 +27,11 @@ OP_FUNC_IMPL_TEST_CASES(
   testing::Values(
     MultiInputOpParams{{{5}, {5}, {1}}, {kFloat16, kFloat16, kFloat16}, {{5}, {1}}, {kFloat16, kFloat16}, {}},
     MultiInputOpParams{{{2, 3}, {2, 3}, {3}}, {kFloat16, kFloat16, kFloat16}, {{2, 3}, {3}}, {kFloat16, kFloat16}, {}},
-    MultiInputOpParams{{{2, 3, 4}, {2, 3, 4}, {3}}, {kFloat32, kFloat32, kFloat32}, {{2, 3, 4}, {3}}, {kFloat32, kFloat32}, {}},
-    MultiInputOpParams{{{-1, -1}, {-1, -1}, {-1}}, {kFloat32, kFloat32, kFloat32}, {{-1, -1}, {-1}}, {kFloat32, kFloat32}, {}},
+    MultiInputOpParams{
+      {{2, 3, 4}, {2, 3, 4}, {3}}, {kFloat32, kFloat32, kFloat32}, {{2, 3, 4}, {3}}, {kFloat32, kFloat32}, {}},
+    MultiInputOpParams{
+      {{-1, -1}, {-1, -1}, {-1}}, {kFloat32, kFloat32, kFloat32}, {{-1, -1}, {-1}}, {kFloat32, kFloat32}, {}},
     MultiInputOpParams{{{-1}, {-1}, {1}}, {kFloat32, kFloat32, kFloat32}, {{-1}, {1}}, {kFloat32, kFloat32}, {}},
-    MultiInputOpParams{{{-2}, {-2}, {-1}}, {kFloat32, kFloat32, kFloat32}, {{-2}, {-1}}, {kFloat32, kFloat32}, {}}
-  ));
+    MultiInputOpParams{{{-2}, {-2}, {-1}}, {kFloat32, kFloat32, kFloat32}, {{-2}, {-1}}, {kFloat32, kFloat32}, {}}));
 }  // namespace ops
 }  // namespace mindspore

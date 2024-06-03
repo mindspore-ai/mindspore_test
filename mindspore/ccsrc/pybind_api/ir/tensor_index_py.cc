@@ -27,7 +27,7 @@
 #include "utils/hash_set.h"
 #include "utils/log_adapter.h"
 #include "pipeline/pynative/pynative_execute.h"
-#include "mindspore/core/ops/array_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
 
 namespace mindspore::tensor {
 using tensor::TensorPy;

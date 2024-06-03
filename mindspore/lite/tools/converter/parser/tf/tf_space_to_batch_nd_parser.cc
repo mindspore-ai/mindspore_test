@@ -19,7 +19,7 @@
 #include <map>
 #include <vector>
 #include "tools/converter/parser/tf/tf_node_parser_registry.h"
-#include "ops/space_to_batch_nd.h"
+#include "infer/space_to_batch_nd.h"
 
 namespace mindspore {
 namespace lite {

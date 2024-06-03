@@ -53,7 +53,7 @@
 #include "tools/converter/converter_metagraph.h"
 #include "tools/common/string_util.h"
 #include "src/common/file_utils.h"
-#include "ops/dynamic_shape.h"
+#include "infer/dynamic_shape.h"
 #include "tools/common/parse_config_utils.h"
 #include "tools/converter/converter_packed_node.h"
 #include "tools/converter/config_parser/cpu_option_param_parser.h"

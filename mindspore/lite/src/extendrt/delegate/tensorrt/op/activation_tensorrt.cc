@@ -20,7 +20,7 @@
 #include <unordered_set>
 #include "src/extendrt/delegate/tensorrt/op/cast_tensorrt.h"
 #include "src/extendrt/delegate/tensorrt/op/activation_opt_plugin.h"
-#include "ops/fusion/activation.h"
+#include "infer/cxx_api/activation.h"
 
 namespace mindspore::lite {
 namespace {

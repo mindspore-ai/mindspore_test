@@ -16,19 +16,16 @@
 
 #include "ir/dtype/number.h"
 #include "ops/test_ops_cmp_utils.h"
-#include "ops/ops_func_impl/assign.h"
+#include "infer/ops_func_impl/assign.h"
 
 namespace mindspore::ops {
 OP_FUNC_IMPL_TEST_DECLARE(Assign, MultiInputOpParams);
 
 OP_FUNC_IMPL_TEST_CASES(
-  Assign,
-  testing::Values(
-    MultiInputOpParams{{{1}, {}}, {kFloat16, kFloat16}, {{1}}, {kFloat16}, {}},
-    MultiInputOpParams{{{}, {1}}, {kFloat32, kFloat32}, {{}}, {kFloat32}, {}},
-    MultiInputOpParams{{{2, 3, 4}, {2, 3, 4}}, {kFloat64, kFloat64}, {{2, 3, 4}}, {kFloat64}, {}},
-    MultiInputOpParams{{{1, 2}, {-2}}, {kUInt16, kUInt16}, {{-2}}, {kUInt16}, {}},
-    MultiInputOpParams{{{-1, -1}, {1, 2}}, {kBool, kBool}, {{-1, -1}}, {kBool}, {}},
-    MultiInputOpParams{{{-2}, {-1}}, {kComplex128, kComplex128}, {{-2}}, {kComplex128}, {}}
-  ));
+  Assign, testing::Values(MultiInputOpParams{{{1}, {}}, {kFloat16, kFloat16}, {{1}}, {kFloat16}, {}},
+                          MultiInputOpParams{{{}, {1}}, {kFloat32, kFloat32}, {{}}, {kFloat32}, {}},
+                          MultiInputOpParams{{{2, 3, 4}, {2, 3, 4}}, {kFloat64, kFloat64}, {{2, 3, 4}}, {kFloat64}, {}},
+                          MultiInputOpParams{{{1, 2}, {-2}}, {kUInt16, kUInt16}, {{-2}}, {kUInt16}, {}},
+                          MultiInputOpParams{{{-1, -1}, {1, 2}}, {kBool, kBool}, {{-1, -1}}, {kBool}, {}},
+                          MultiInputOpParams{{{-2}, {-1}}, {kComplex128, kComplex128}, {{-2}}, {kComplex128}, {}}));
 }  // namespace mindspore::ops

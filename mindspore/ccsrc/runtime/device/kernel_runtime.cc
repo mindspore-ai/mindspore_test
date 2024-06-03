@@ -21,9 +21,9 @@
 #include <vector>
 #include <set>
 #include <shared_mutex>
-#include "ops/ascend_op_name.h"
-#include "ops/nn_optimizer_op_name.h"
-#include "ops/sequence_ops.h"
+#include "op_def/ascend_op_name.h"
+#include "op_def/nn_optimizer_op_name.h"
+#include "op_def/sequence_ops.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"

@@ -19,9 +19,9 @@
 #include <memory>
 #include <deque>
 #include "include/errorcode.h"
-#include "ops/make_tuple.h"
-#include "ops/return.h"
-#include "ops/tuple_get_item.h"
+#include "infer/make_tuple.h"
+#include "infer/return.h"
+#include "infer/tuple_get_item.h"
 #include "tools/converter/ops/while.h"
 #include "tools/common/tensor_util.h"
 #include "src/common/log_util.h"

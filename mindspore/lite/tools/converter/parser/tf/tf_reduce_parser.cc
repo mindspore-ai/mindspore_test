@@ -19,7 +19,7 @@
 #include <map>
 #include <vector>
 #include "tools/converter/parser/tf/tf_node_parser_registry.h"
-#include "ops/fusion/reduce_fusion.h"
+#include "infer/cxx_api/reduce_fusion.h"
 
 namespace mindspore {
 namespace lite {

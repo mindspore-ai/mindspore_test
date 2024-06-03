@@ -17,7 +17,7 @@
 #include "parser/caffe/caffe_mish_parser.h"
 #include <memory>
 #include <string>
-#include "ops/custom.h"
+#include "infer/custom.h"
 
 namespace mindspore {
 namespace lite {

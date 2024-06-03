@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 #include "ops/test_ops_cmp_utils.h"
-#include "ops/ops_func_impl/a_cos_grad.h"
-#include "ops/ops_func_impl/acosh_grad.h"
-#include "ops/ops_func_impl/asin_grad.h"
-#include "ops/ops_func_impl/asinh_grad.h"
-#include "ops/ops_func_impl/atan_grad.h"
+#include "infer/ops_func_impl/a_cos_grad.h"
+#include "infer/ops_func_impl/acosh_grad.h"
+#include "infer/ops_func_impl/asin_grad.h"
+#include "infer/ops_func_impl/asinh_grad.h"
+#include "infer/ops_func_impl/atan_grad.h"
 
 namespace mindspore {
 namespace ops {

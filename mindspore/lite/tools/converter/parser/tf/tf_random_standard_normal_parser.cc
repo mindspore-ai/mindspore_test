@@ -19,7 +19,7 @@
 #include <map>
 #include <vector>
 #include "tools/converter/parser/tf/tf_node_parser_registry.h"
-#include "ops/random_standard_normal.h"
+#include "infer/random_standard_normal.h"
 
 namespace mindspore {
 namespace lite {

@@ -23,7 +23,7 @@
 #include "abstract/abstract_value.h"
 #include "include/backend/optimizer/helper.h"
 #include "ops/test_ops.h"
-#include "ops/ops_func_impl/add_ext.h"
+#include "infer/ops_func_impl/add_ext.h"
 #include "ops/test_value_utils.h"
 
 namespace mindspore {
@@ -61,25 +61,30 @@ TEST_P(TestAddExt, AddExt_dyn_shape) {
   ASSERT_TRUE(*out_dtype == *expect_dtype);
 }
 
-auto AddExtOpShapeTestCases = testing::ValuesIn({
-    /* y is number */
-    AddExtShape{{10}, {}, CreateScalar<int64_t>(2), {10}}, AddExtShape{{10, 1, 2}, {}, CreateScalar<int64_t>(2), {10, 1, 2}},
-    AddExtShape{{10, 4, 2}, {}, CreateScalar<int64_t>(2), {10, 4, 2}}, AddExtShape{{10, 1, -1}, {}, CreateScalar<int64_t>(2), {10, 1, -1}},
-    AddExtShape{{-2}, {}, CreateScalar<int64_t>(2), {-2}},
-    /* x is number */
-    AddExtShape{{}, {10}, CreateScalar<int64_t>(2), {10}}, AddExtShape{{}, {10, 1, 2}, CreateScalar<int64_t>(2), {10, 1, 2}},
-    AddExtShape{{}, {10, 4, 2}, CreateScalar<int64_t>(2), {10, 4, 2}}, AddExtShape{{}, {10, 1, -1}, CreateScalar<int64_t>(2), {10, 1, -1}},
-    AddExtShape{{}, {-2}, CreateScalar<int64_t>(2), {-2}},
-    /* x and y both tensor */
-    AddExtShape{{4, 5}, {2, 3, 4, 5}, CreateScalar<int64_t>(2), {2, 3, 4, 5}},
-    AddExtShape{{2, 1, 4, 5, 6, 9}, {9}, CreateScalar<int64_t>(2), {2, 1, 4, 5, 6, 9}},
-    AddExtShape{{2, 3, 4, -1}, {2, 3, 4, 5}, CreateScalar<int64_t>(2), {2, 3, 4, 5}},
-    AddExtShape{{2, 3, 4, -1}, {-1, -1, 4, 5}, CreateScalar<int64_t>(2), {2, 3, 4, 5}},
-    AddExtShape{{2, 1, 4, -1}, {-1, -1, 4, 5}, CreateScalar<int64_t>(2), {2, -1, 4, 5}},
-    AddExtShape{{2, 1, 4, 5, 6, 9}, {-2}, CreateScalar<int64_t>(2), {-2}}, AddExtShape{{2, 1, 4, 5, -1, 9}, {-2}, CreateScalar<int64_t>(2), {-2}},
-    AddExtShape{{-2}, {2, 1, 4, 5, 6, 9}, CreateScalar<int64_t>(2), {-2}}, AddExtShape{{-2}, {2, 1, 4, 5, -1, 9}, CreateScalar<int64_t>(2), {-2}},
-    AddExtShape{{-2}, {-2}, CreateScalar<int64_t>(2), {-2}}
-});
+auto AddExtOpShapeTestCases =
+  testing::ValuesIn({/* y is number */
+                     AddExtShape{{10}, {}, CreateScalar<int64_t>(2), {10}},
+                     AddExtShape{{10, 1, 2}, {}, CreateScalar<int64_t>(2), {10, 1, 2}},
+                     AddExtShape{{10, 4, 2}, {}, CreateScalar<int64_t>(2), {10, 4, 2}},
+                     AddExtShape{{10, 1, -1}, {}, CreateScalar<int64_t>(2), {10, 1, -1}},
+                     AddExtShape{{-2}, {}, CreateScalar<int64_t>(2), {-2}},
+                     /* x is number */
+                     AddExtShape{{}, {10}, CreateScalar<int64_t>(2), {10}},
+                     AddExtShape{{}, {10, 1, 2}, CreateScalar<int64_t>(2), {10, 1, 2}},
+                     AddExtShape{{}, {10, 4, 2}, CreateScalar<int64_t>(2), {10, 4, 2}},
+                     AddExtShape{{}, {10, 1, -1}, CreateScalar<int64_t>(2), {10, 1, -1}},
+                     AddExtShape{{}, {-2}, CreateScalar<int64_t>(2), {-2}},
+                     /* x and y both tensor */
+                     AddExtShape{{4, 5}, {2, 3, 4, 5}, CreateScalar<int64_t>(2), {2, 3, 4, 5}},
+                     AddExtShape{{2, 1, 4, 5, 6, 9}, {9}, CreateScalar<int64_t>(2), {2, 1, 4, 5, 6, 9}},
+                     AddExtShape{{2, 3, 4, -1}, {2, 3, 4, 5}, CreateScalar<int64_t>(2), {2, 3, 4, 5}},
+                     AddExtShape{{2, 3, 4, -1}, {-1, -1, 4, 5}, CreateScalar<int64_t>(2), {2, 3, 4, 5}},
+                     AddExtShape{{2, 1, 4, -1}, {-1, -1, 4, 5}, CreateScalar<int64_t>(2), {2, -1, 4, 5}},
+                     AddExtShape{{2, 1, 4, 5, 6, 9}, {-2}, CreateScalar<int64_t>(2), {-2}},
+                     AddExtShape{{2, 1, 4, 5, -1, 9}, {-2}, CreateScalar<int64_t>(2), {-2}},
+                     AddExtShape{{-2}, {2, 1, 4, 5, 6, 9}, CreateScalar<int64_t>(2), {-2}},
+                     AddExtShape{{-2}, {2, 1, 4, 5, -1, 9}, CreateScalar<int64_t>(2), {-2}},
+                     AddExtShape{{-2}, {-2}, CreateScalar<int64_t>(2), {-2}}});
 
 auto AddExtOpTypeTestCases = testing::ValuesIn({
   AddExtType{kFloat16, kFloat16, kFloat16},

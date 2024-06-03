@@ -22,10 +22,10 @@
 #include <vector>
 #include <utility>
 #include "utils/anf_utils.h"
-#include "mindspore/core/ops/framework_ops.h"
-#include "mindspore/core/ops/sequence_ops.h"
-#include "mindspore/core/ops/array_ops.h"
-#include "mindspore/core/ops/arithmetic_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/arithmetic_ops.h"
 #include "mindspore/core/symbolic_shape/operation_builder.h"
 #include "include/common/utils/anfalgo.h"
 #include "backend/common/graph_kernel/core/graph_builder.h"

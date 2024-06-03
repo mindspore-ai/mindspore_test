@@ -17,7 +17,7 @@
 #include "ir/primitive.h"
 #include "abstract/abstract_value.h"
 #include "ops/test_ops.h"
-#include "ops/ops_func_impl/layer_norm_grad_v3.h"
+#include "infer/ops_func_impl/layer_norm_grad_v3.h"
 
 namespace mindspore {
 namespace ops {

@@ -21,7 +21,7 @@
 #include <utility>
 #include "base/base.h"
 #include "abstract/ops/primitive_infer_map.h"
-#include "ops/auto_generate/gen_ops_primitive.h"
+#include "op_def/auto_generate/gen_ops_primitive.h"
 #include "pybind_api/ir/primitive_py.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "include/common/utils/stub_tensor.h"

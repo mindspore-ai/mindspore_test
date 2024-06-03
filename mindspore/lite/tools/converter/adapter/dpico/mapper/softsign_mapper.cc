@@ -19,7 +19,7 @@
 #include <utility>
 #include <vector>
 #include "common/anf_util.h"
-#include "ops/softsign.h"
+#include "infer/softsign.h"
 #include "op/softsign_operator.h"
 
 namespace mindspore {

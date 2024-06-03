@@ -20,7 +20,7 @@
 #include <memory>
 #include <unordered_map>
 #include "nnacl/nnacl_common.h"
-#include "ops/resize.h"
+#include "infer/resize.h"
 
 namespace mindspore::lite {
 int ResizeTensorRT::IsSupport(const BaseOperatorPtr &base_operator, const std::vector<TensorInfo> &in_tensors,

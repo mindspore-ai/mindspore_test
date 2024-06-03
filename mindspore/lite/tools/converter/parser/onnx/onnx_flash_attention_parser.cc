@@ -18,7 +18,7 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "ops/custom.h"
+#include "infer/custom.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

@@ -21,7 +21,7 @@
 #include "common/op_attr.h"
 #include "common/op_enum.h"
 #include "common/anf_util.h"
-#include "ops/scale.h"
+#include "infer/scale.h"
 #include "op/scale_operator.h"
 
 namespace mindspore {

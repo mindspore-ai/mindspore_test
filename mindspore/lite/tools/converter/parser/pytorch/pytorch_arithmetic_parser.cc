@@ -16,10 +16,10 @@
 
 #include "tools/converter/parser/pytorch/pytorch_arithmetic_parser.h"
 #include <memory>
-#include "ops/fusion/add_fusion.h"
-#include "ops/fusion/mul_fusion.h"
-#include "ops/fusion/div_fusion.h"
-#include "ops/fusion/sub_fusion.h"
+#include "infer/cxx_api/add_fusion.h"
+#include "infer/cxx_api/mul_fusion.h"
+#include "infer/cxx_api/div_fusion.h"
+#include "infer/cxx_api/sub_fusion.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

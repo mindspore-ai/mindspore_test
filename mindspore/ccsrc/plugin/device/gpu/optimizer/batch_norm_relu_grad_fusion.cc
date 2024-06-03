@@ -19,9 +19,9 @@
 #include <vector>
 #include <string>
 
-#include "ops/nn_optimizer_ops.h"
-#include "ops/nn_ops.h"
-#include "ops/op_utils.h"
+#include "op_def/nn_optimizer_ops.h"
+#include "op_def/nn_ops.h"
+#include "ops_utils/op_utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "ir/primitive.h"
@@ -30,7 +30,7 @@
 #include "plugin/device/gpu/hal/device/kernel_info_setter.h"
 #include "utils/ms_context.h"
 #include "kernel/graph_kernel_info.h"
-#include "ops/op_name.h"
+#include "op_def/op_name.h"
 
 namespace mindspore {
 namespace opt {
@@ -56,12 +56,12 @@ const AnfNodePtr BatchNormReluGradFusion::Process(const FuncGraphPtr &graph, con
   if (!utils::isa<ValueNodePtr>(is_train_input_node) || !utils::isa<ValueNodePtr>(format_input_node)) {
     return nullptr;
   }
-  auto is_train_v = ops::GetScalarValue<bool>(is_train_input_node->cast<ValueNodePtr>()->value());
+  auto is_train_v = GetScalarValue<bool>(is_train_input_node->cast<ValueNodePtr>()->value());
   if (!is_train_v.has_value() || !is_train_v.value()) {
     return nullptr;
   }
 
-  auto format_v = ops::GetScalarValue<int64_t>(format_input_node->cast<ValueNodePtr>()->value());
+  auto format_v = GetScalarValue<int64_t>(format_input_node->cast<ValueNodePtr>()->value());
   if (!format_v.has_value()) {
     return nullptr;
   }

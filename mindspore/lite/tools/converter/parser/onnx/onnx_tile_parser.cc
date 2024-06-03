@@ -17,7 +17,7 @@
 #include "tools/converter/parser/onnx/onnx_tile_parser.h"
 #include <vector>
 #include <memory>
-#include "ops/fusion/tile_fusion.h"
+#include "infer/cxx_api/tile_fusion.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

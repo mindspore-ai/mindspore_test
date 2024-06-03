@@ -17,7 +17,7 @@
 #include "tools/converter/parser/tflite/tflite_lsh_projection_parser.h"
 #include <vector>
 #include <memory>
-#include "ops/lsh_projection.h"
+#include "infer/lsh_projection.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

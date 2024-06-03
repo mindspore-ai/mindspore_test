@@ -17,7 +17,7 @@
 #include "tools/converter/converter_metagraph.h"
 #include <vector>
 #include <string>
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 #include "src/common/log_adapter.h"
 #include "tools/common/func_graph_utils.h"
 #include "tools/common/meta_graph_serializer.h"

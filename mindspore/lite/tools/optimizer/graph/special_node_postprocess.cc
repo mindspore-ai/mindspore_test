@@ -19,13 +19,13 @@
 #include <memory>
 #include <utility>
 #include <vector>
-#include "mindspore/core/ops/nn_ops.h"
-#include "mindspore/core/ops/lite_ops.h"
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "include/errorcode.h"
 #include "tools/optimizer/common/format_utils.h"
 #include "nnacl//op_base.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace opt {

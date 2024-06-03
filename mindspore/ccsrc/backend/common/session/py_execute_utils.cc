@@ -20,7 +20,7 @@
 #include "include/common/utils/stub_tensor.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "runtime/hardware/device_context_manager.h"
-#include "plugin/device/cpu/kernel/pyexecute/py_execute_cpu_kernel.h"
+#include "kernel/cpu/pyexecute/py_execute_cpu_kernel.h"
 #include "include/common/utils/convert_utils.h"
 #include "include/common/utils/convert_utils_py.h"
 

@@ -20,7 +20,7 @@
 
 #include "mindspore/core/symbolic_shape/symbol_engine.h"
 #include "mindspore/core/symbolic_shape/utils.h"
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "include/common/utils/anfalgo.h"
 #include "ir/anf.h"
 #include "backend/common/graph_kernel/symbol_engine/jit/transform_visitor.h"

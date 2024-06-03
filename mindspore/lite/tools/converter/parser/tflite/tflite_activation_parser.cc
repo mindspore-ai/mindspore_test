@@ -18,8 +18,8 @@
 #include <memory>
 #include <vector>
 #include "tools/converter/parser/tflite/tflite_util.h"
-#include "ops/fusion/prelu_fusion.h"
-#include "ops/fusion/activation.h"
+#include "infer/cxx_api/prelu_fusion.h"
+#include "infer/cxx_api/activation.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

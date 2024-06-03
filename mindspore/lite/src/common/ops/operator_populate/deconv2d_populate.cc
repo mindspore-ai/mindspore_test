@@ -16,7 +16,7 @@
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "src/common/ops/operator_populate/utils.h"
 #include "nnacl/conv_parameter.h"
-#include "ops/fusion/conv2d_transpose_fusion.h"
+#include "infer/cxx_api/conv2d_transpose_fusion.h"
 using mindspore::ops::kNameConv2dTransposeFusion;
 using mindspore::ops::kPadMode;
 using mindspore::schema::PrimitiveType_Conv2dTransposeFusion;

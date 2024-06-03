@@ -17,9 +17,9 @@
 #define USE_DEPRECATED_API
 #include "tools/optimizer/fusion/sigmoid_mul_fusion.h"
 #include <memory>
-#include "mindspore/core/ops/lite_ops.h"
-#include "ops/fusion/activation.h"
-#include "ops/op_utils.h"
+#include "mindspore/ops/op_def/lite_ops.h"
+#include "infer/cxx_api/activation.h"
+#include "ops_utils/op_utils.h"
 #include "include/common/utils/utils.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "nnacl/op_base.h"

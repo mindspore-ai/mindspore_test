@@ -17,7 +17,7 @@
 #include "tools/converter/adapter/acl/mapper/conv_base_mapper.h"
 #include <vector>
 #include <map>
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 #include "nnacl/op_base.h"
 #include "utils/check_convert_utils.h"
 

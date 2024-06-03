@@ -18,15 +18,15 @@
 #include "tools/optimizer/fusion/adjust_matmul_pass.h"
 #include <memory>
 #include <vector>
-#include "ops/resize.h"
-#include "ops/op_utils.h"
+#include "infer/resize.h"
+#include "ops_utils/op_utils.h"
 #include "mindspore/lite/tools/common/tensor_util.h"
-#include "mindspore/core/ops/lite_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
 #include "tools/optimizer/common/gllo_utils.h"
-#include "ops/auto_generate/gen_lite_ops.h"
-#include "ops/squeeze.h"
-#include "ops/fusion/mul_fusion.h"
-#include "ops/range_v2.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
+#include "infer/squeeze.h"
+#include "infer/cxx_api/mul_fusion.h"
+#include "infer/range_v2.h"
 
 namespace mindspore {
 namespace opt {

@@ -20,7 +20,7 @@
 #include "include/backend/optimizer/optimizer.h"
 #include "include/common/utils/anfalgo.h"
 #include "ir/anf.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 #include "utils/hash_map.h"
 #include "utils/ms_utils.h"
 

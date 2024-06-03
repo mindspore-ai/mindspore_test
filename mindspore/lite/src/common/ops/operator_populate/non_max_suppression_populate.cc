@@ -15,7 +15,7 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/non_max_suppression_parameter.h"
-#include "ops/non_max_suppression.h"
+#include "infer/non_max_suppression.h"
 using mindspore::ops::kNameNonMaxSuppression;
 using mindspore::schema::PrimitiveType_NonMaxSuppression;
 

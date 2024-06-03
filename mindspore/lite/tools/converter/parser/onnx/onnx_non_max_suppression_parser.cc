@@ -16,7 +16,7 @@
 
 #include "tools/converter/parser/onnx/onnx_non_max_suppression_parser.h"
 #include <memory>
-#include "ops/non_max_suppression.h"
+#include "infer/non_max_suppression.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

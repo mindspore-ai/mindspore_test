@@ -15,7 +15,7 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/fp32_grad/softmax_grad.h"
-#include "ops/sparse_softmax_cross_entropy_with_logits.h"
+#include "infer/sparse_softmax_cross_entropy_with_logits.h"
 using mindspore::ops::kNameSparseSoftmaxCrossEntropyWithLogits;
 using mindspore::schema::PrimitiveType_SparseSoftmaxCrossEntropyWithLogits;
 

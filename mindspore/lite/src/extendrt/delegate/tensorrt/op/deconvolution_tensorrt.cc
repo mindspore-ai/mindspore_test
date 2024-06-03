@@ -18,7 +18,7 @@
 #include <memory>
 #include "src/extendrt/delegate/tensorrt/op/activation_tensorrt.h"
 #include "nnacl/pack.h"
-#include "ops/fusion/conv2d_transpose_fusion.h"
+#include "infer/cxx_api/conv2d_transpose_fusion.h"
 
 namespace mindspore::lite {
 int DeconvolutionTensorRT::IsSupport(const BaseOperatorPtr &base_operator, const std::vector<TensorInfo> &in_tensors,

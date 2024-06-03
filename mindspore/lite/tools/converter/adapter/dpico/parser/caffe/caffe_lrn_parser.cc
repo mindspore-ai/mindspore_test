@@ -17,8 +17,8 @@
 #include "parser/caffe/caffe_lrn_parser.h"
 #include <memory>
 #include "common/op_attr.h"
-#include "ops/lrn.h"
-#include "ops/op_name.h"
+#include "infer/lrn.h"
+#include "op_def/op_name.h"
 
 namespace mindspore {
 namespace lite {

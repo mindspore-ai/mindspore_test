@@ -15,7 +15,7 @@
  */
 #include <vector>
 #include <memory>
-#include "ops/ops_func_impl/tensor_shape.h"
+#include "infer/ops_func_impl/tensor_shape.h"
 #include "ops/test_ops.h"
 #include "ops/test_ops_cmp_utils.h"
 #include "common/common_test.h"

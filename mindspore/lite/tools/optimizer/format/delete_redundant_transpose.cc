@@ -17,12 +17,12 @@
 #define USE_DEPRECATED_API
 #include "tools/optimizer/format/delete_redundant_transpose.h"
 #include <vector>
-#include "mindspore/core/ops/lite_ops.h"
-#include "mindspore/core/ops/array_ops.h"
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "tools/optimizer/common/format_utils.h"
 #include "nnacl/op_base.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 #include "tools/common/node_util.h"
 #include "tools/converter/quantizer/quant_params.h"
 

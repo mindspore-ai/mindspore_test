@@ -15,7 +15,7 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/tensorlist_parameter.h"
-#include "ops/tensor_list_get_item.h"
+#include "infer/tensor_list_get_item.h"
 using mindspore::ops::kElement_dtype;
 using mindspore::ops::kNameTensorListGetItem;
 using mindspore::schema::PrimitiveType_TensorListGetItem;

@@ -14,10 +14,7 @@ file(GLOB_RECURSE KERNEL_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 if(NOT BUILD_LITE)
-    file(GLOB_RECURSE PYBOOST_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-        "pyboost/*.cc"
-        "pyboost/auto_generate/*.cc"
-    )
+    file(GLOB_RECURSE PYBOOST_SRC_LIST ${MS_OPS_KERNEL_DIR}/common/pyboost/*.cc)
     list(APPEND KERNEL_SRC_LIST "${PYBOOST_SRC_LIST}")
 endif()
 
@@ -47,4 +44,4 @@ endif()
 
 set_property(SOURCE ${KERNEL_SRC_LIST} PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_KERNEL)
 add_library(_mindspore_kernel_obj OBJECT ${KERNEL_SRC_LIST})
-target_link_libraries(_mindspore_kernel_obj PRIVATE mindspore_core)
+target_link_libraries(_mindspore_kernel_obj PRIVATE mindspore_core mindspore_ops)

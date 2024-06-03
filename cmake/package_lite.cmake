@@ -26,6 +26,7 @@ set(SECUREC_DIR ${RUNTIME_PKG_NAME}/runtime/third_party/securec)
 set(MINDSPORE_LITE_LIB_NAME libmindspore-lite)
 set(MINDSPORE_LITE_EXTENDRT_LIB_NAME libmindspore-lite)
 set(MINDSPORE_CORE_LIB_NAME libmindspore_core)
+set(MINDSPORE_OPS_LIB_NAME libmindspore_ops)
 set(MINDSPORE_GE_LITERT_LIB_NAME libmsplugin-ge-litert)
 set(MINDSPORE_LITE_ASCEND_NATIVE_PLUGIN libascend_native_plugin)
 set(MINDSPORE_LITE_EXECUTOR_LIB_NAME liblite-unified-executor)
@@ -45,148 +46,156 @@ include(${TOP_DIR}/cmake/package_micro.cmake)
 
 function(__install_white_list_ops)
     install(FILES
-            ${TOP_DIR}/mindspore/core/ops/nn_op_name.h
-            ${TOP_DIR}/mindspore/core/ops/adam.h
-            ${TOP_DIR}/mindspore/core/ops/all.h
-            ${TOP_DIR}/mindspore/core/ops/apply_momentum.h
-            ${TOP_DIR}/mindspore/core/ops/assert.h
-            ${TOP_DIR}/mindspore/core/ops/audio_spectrogram.h
-            ${TOP_DIR}/mindspore/core/ops/batch_to_space.h
-            ${TOP_DIR}/mindspore/core/ops/batch_to_space_nd.h
-            ${TOP_DIR}/mindspore/core/ops/broadcast.h
-            ${TOP_DIR}/mindspore/core/ops/clip.h
-            ${TOP_DIR}/mindspore/core/ops/attention.h
-            ${TOP_DIR}/mindspore/core/ops/constant_of_shape.h
-            ${TOP_DIR}/mindspore/core/ops/crop.h
-            ${TOP_DIR}/mindspore/core/ops/custom_extract_features.h
-            ${TOP_DIR}/mindspore/core/ops/custom_normalize.h
-            ${TOP_DIR}/mindspore/core/ops/custom_predict.h
-            ${TOP_DIR}/mindspore/core/ops/depend.h
-            ${TOP_DIR}/mindspore/core/ops/depth_to_space.h
-            ${TOP_DIR}/mindspore/core/ops/detection_post_process.h
-            ${TOP_DIR}/mindspore/core/ops/eltwise.h
-            ${TOP_DIR}/mindspore/core/ops/fake_quant_with_min_max_vars.h
-            ${TOP_DIR}/mindspore/core/ops/fake_quant_with_min_max_vars_per_channel.h
-            ${TOP_DIR}/mindspore/core/ops/fake_quant_with_min_max_vars.h
-            ${TOP_DIR}/mindspore/core/ops/fft_real.h
-            ${TOP_DIR}/mindspore/core/ops/fft_imag.h
-            ${TOP_DIR}/mindspore/core/ops/fill.h
-            ${TOP_DIR}/mindspore/core/ops/fused_batch_norm.h
-            ${TOP_DIR}/mindspore/core/ops/hashtable_lookup.h
-            ${TOP_DIR}/mindspore/core/ops/instance_norm.h
-            ${TOP_DIR}/mindspore/core/ops/leaky_relu.h
-            ${TOP_DIR}/mindspore/core/ops/lp_normalization.h
-            ${TOP_DIR}/mindspore/core/ops/lrn.h
-            ${TOP_DIR}/mindspore/core/ops/lsh_projection.h
-            ${TOP_DIR}/mindspore/core/ops/lstm.h
-            ${TOP_DIR}/mindspore/core/ops/switch_layer.h
-            ${TOP_DIR}/mindspore/core/ops/mfcc.h
-            ${TOP_DIR}/mindspore/core/ops/mod.h
-            ${TOP_DIR}/mindspore/core/ops/non_max_suppression.h
-            ${TOP_DIR}/mindspore/core/ops/prior_box.h
-            ${TOP_DIR}/mindspore/core/ops/quant_dtype_cast.h
-            ${TOP_DIR}/mindspore/core/ops/resize.h
-            ${TOP_DIR}/mindspore/core/ops/reverse_sequence.h
-            ${TOP_DIR}/mindspore/core/ops/rfft.h
-            ${TOP_DIR}/mindspore/core/ops/roi_pooling.h
-            ${TOP_DIR}/mindspore/core/ops/sgd.h
-            ${TOP_DIR}/mindspore/core/ops/sigmoid_cross_entropy_with_logits.h
-            ${TOP_DIR}/mindspore/core/ops/skip_gram.h
-            ${TOP_DIR}/mindspore/core/ops/smooth_l1_loss.h
-            ${TOP_DIR}/mindspore/core/ops/softmax_cross_entropy_with_logits.h
-            ${TOP_DIR}/mindspore/core/ops/space_to_batch.h
-            ${TOP_DIR}/mindspore/core/ops/space_to_batch_nd.h
-            ${TOP_DIR}/mindspore/core/ops/space_to_depth.h
-            ${TOP_DIR}/mindspore/core/ops/sparse_softmax_cross_entropy_with_logits.h
-            ${TOP_DIR}/mindspore/core/ops/sparse_to_dense.h
-            ${TOP_DIR}/mindspore/core/ops/squeeze.h
-            ${TOP_DIR}/mindspore/core/ops/squared_difference.h
-            ${TOP_DIR}/mindspore/core/ops/stack.h
-            ${TOP_DIR}/mindspore/core/ops/switch.h
-            ${TOP_DIR}/mindspore/core/ops/tensor_list_from_tensor.h
-            ${TOP_DIR}/mindspore/core/ops/tensor_list_get_item.h
-            ${TOP_DIR}/mindspore/core/ops/tensor_list_reserve.h
-            ${TOP_DIR}/mindspore/core/ops/tensor_list_set_item.h
-            ${TOP_DIR}/mindspore/core/ops/tensor_list_stack.h
-            ${TOP_DIR}/mindspore/core/ops/unique.h
-            ${TOP_DIR}/mindspore/core/ops/unsqueeze.h
-            ${TOP_DIR}/mindspore/core/ops/unstack.h
-            ${TOP_DIR}/mindspore/core/ops/where.h
-            ${TOP_DIR}/mindspore/core/ops/scatter_nd_update.h
-            ${TOP_DIR}/mindspore/core/ops/gru.h
-            ${TOP_DIR}/mindspore/core/ops/invert_permutation.h
-            ${TOP_DIR}/mindspore/core/ops/size.h
-            ${TOP_DIR}/mindspore/core/ops/random_standard_normal.h
-            ${TOP_DIR}/mindspore/core/ops/crop_and_resize.h
-            ${TOP_DIR}/mindspore/core/ops/uniform_real.h
-            ${TOP_DIR}/mindspore/core/ops/splice.h
-            ${TOP_DIR}/mindspore/core/ops/call.h
-            ${TOP_DIR}/mindspore/core/ops/custom.h
-            ${TOP_DIR}/mindspore/core/ops/split_with_overlap.h
-            ${TOP_DIR}/mindspore/core/ops/ragged_range.h
-            ${TOP_DIR}/mindspore/core/ops/glu.h
-            ${TOP_DIR}/mindspore/core/ops/tensor_array.h
-            ${TOP_DIR}/mindspore/core/ops/tensor_array_read.h
-            ${TOP_DIR}/mindspore/core/ops/tensor_array_write.h
-            ${TOP_DIR}/mindspore/core/ops/affine.h
-            ${TOP_DIR}/mindspore/core/ops/all_gather.h
-            ${TOP_DIR}/mindspore/core/ops/reduce_scatter.h
-            ${TOP_DIR}/mindspore/core/ops/dynamic_quant.h
-            ${TOP_DIR}/mindspore/core/ops/random_normal.h
-            ${TOP_DIR}/mindspore/core/ops/op_name.h
-            ${TOP_DIR}/mindspore/core/ops/tuple_get_item.h
-            ${TOP_DIR}/mindspore/core/ops/tuple_get_item.h
-            ${TOP_DIR}/mindspore/core/ops/scale.h
-            ${TOP_DIR}/mindspore/core/ops/sub.h
-            ${TOP_DIR}/mindspore/core/ops/conv2d_transpose.h
-            ${TOP_DIR}/mindspore/core/ops/conv2d.h
-            ${TOP_DIR}/mindspore/core/ops/topk.h
-            ${TOP_DIR}/mindspore/core/ops/reduce.h
-            ${TOP_DIR}/mindspore/core/ops/max_pool.h
-            ${TOP_DIR}/mindspore/core/ops/make_tuple.h
             ${TOP_DIR}/mindspore/core/ops/base_operator.h
-            ${TOP_DIR}/mindspore/core/ops/return.h
-            ${TOP_DIR}/mindspore/core/ops/pad.h
             DESTINATION ${CONVERTER_ROOT_DIR}/include/ops
             COMPONENT ${RUNTIME_COMPONENT_NAME}
             )
     install(FILES
-            ${TOP_DIR}/mindspore/core/ops/fusion/activation.h
-            ${TOP_DIR}/mindspore/core/ops/fusion/add_fusion.h
-            ${TOP_DIR}/mindspore/core/ops/fusion/adder_fusion.h
-            ${TOP_DIR}/mindspore/core/ops/fusion/arg_max_fusion.h
-            ${TOP_DIR}/mindspore/core/ops/fusion/arg_min_fusion.h
-            ${TOP_DIR}/mindspore/core/ops/fusion/avg_pool_fusion.h
-            ${TOP_DIR}/mindspore/core/ops/fusion/conv2d_backprop_filter_fusion.h
-            ${TOP_DIR}/mindspore/core/ops/fusion/conv2d_backprop_input_fusion.h
-            ${TOP_DIR}/mindspore/core/ops/fusion/conv2d_fusion.h
-            ${TOP_DIR}/mindspore/core/ops/fusion/conv2d_transpose_fusion.h
-            ${TOP_DIR}/mindspore/core/ops/fusion/div_fusion.h
-            ${TOP_DIR}/mindspore/core/ops/fusion/embedding_lookup_fusion.h
-            ${TOP_DIR}/mindspore/core/ops/fusion/exp_fusion.h
-            ${TOP_DIR}/mindspore/core/ops/fusion/full_connection.h
-            ${TOP_DIR}/mindspore/core/ops/fusion/layer_norm_fusion.h
-            ${TOP_DIR}/mindspore/core/ops/fusion/l2_normalize_fusion.h
-            ${TOP_DIR}/mindspore/core/ops/fusion/mat_mul_fusion.h
-            ${TOP_DIR}/mindspore/core/ops/fusion/max_pool_fusion.h
-            ${TOP_DIR}/mindspore/core/ops/fusion/mul_fusion.h
-            ${TOP_DIR}/mindspore/core/ops/fusion/pad_fusion.h
-            ${TOP_DIR}/mindspore/core/ops/fusion/partial_fusion.h
-            ${TOP_DIR}/mindspore/core/ops/fusion/pow_fusion.h
-            ${TOP_DIR}/mindspore/core/ops/fusion/prelu_fusion.h
-            ${TOP_DIR}/mindspore/core/ops/fusion/reduce_fusion.h
-            ${TOP_DIR}/mindspore/core/ops/fusion/scale_fusion.h
-            ${TOP_DIR}/mindspore/core/ops/fusion/slice_fusion.h
-            ${TOP_DIR}/mindspore/core/ops/fusion/sub_fusion.h
-            ${TOP_DIR}/mindspore/core/ops/fusion/tile_fusion.h
-            ${TOP_DIR}/mindspore/core/ops/fusion/topk_fusion.h
-            DESTINATION ${CONVERTER_ROOT_DIR}/include/ops/fusion
+            ${TOP_DIR}/mindspore/ops/op_def/nn_op_name.h
+            ${TOP_DIR}/mindspore/ops/op_def/op_name.h
+            DESTINATION ${CONVERTER_ROOT_DIR}/include/op_def
             COMPONENT ${RUNTIME_COMPONENT_NAME}
             )
     install(FILES
-            ${TOP_DIR}/mindspore/core/ops/auto_generate/gen_lite_ops.h
-            ${TOP_DIR}/mindspore/core/ops/auto_generate/gen_ops_name.h
-            DESTINATION ${CONVERTER_ROOT_DIR}/include/ops/auto_generate
+            ${TOP_DIR}/mindspore/ops/infer/adam.h
+            ${TOP_DIR}/mindspore/ops/infer/all.h
+            ${TOP_DIR}/mindspore/ops/infer/apply_momentum.h
+            ${TOP_DIR}/mindspore/ops/infer/assert.h
+            ${TOP_DIR}/mindspore/ops/infer/audio_spectrogram.h
+            ${TOP_DIR}/mindspore/ops/infer/batch_to_space.h
+            ${TOP_DIR}/mindspore/ops/infer/batch_to_space_nd.h
+            ${TOP_DIR}/mindspore/ops/infer/broadcast.h
+            ${TOP_DIR}/mindspore/ops/infer/clip.h
+            ${TOP_DIR}/mindspore/ops/infer/attention.h
+            ${TOP_DIR}/mindspore/ops/infer/constant_of_shape.h
+            ${TOP_DIR}/mindspore/ops/infer/crop.h
+            ${TOP_DIR}/mindspore/ops/infer/custom_extract_features.h
+            ${TOP_DIR}/mindspore/ops/infer/custom_normalize.h
+            ${TOP_DIR}/mindspore/ops/infer/custom_predict.h
+            ${TOP_DIR}/mindspore/ops/infer/depend.h
+            ${TOP_DIR}/mindspore/ops/infer/depth_to_space.h
+            ${TOP_DIR}/mindspore/ops/infer/detection_post_process.h
+            ${TOP_DIR}/mindspore/ops/infer/eltwise.h
+            ${TOP_DIR}/mindspore/ops/infer/fake_quant_with_min_max_vars.h
+            ${TOP_DIR}/mindspore/ops/infer/fake_quant_with_min_max_vars_per_channel.h
+            ${TOP_DIR}/mindspore/ops/infer/fake_quant_with_min_max_vars.h
+            ${TOP_DIR}/mindspore/ops/infer/fft_real.h
+            ${TOP_DIR}/mindspore/ops/infer/fft_imag.h
+            ${TOP_DIR}/mindspore/ops/infer/fill.h
+            ${TOP_DIR}/mindspore/ops/infer/fused_batch_norm.h
+            ${TOP_DIR}/mindspore/ops/infer/hashtable_lookup.h
+            ${TOP_DIR}/mindspore/ops/infer/instance_norm.h
+            ${TOP_DIR}/mindspore/ops/infer/leaky_relu.h
+            ${TOP_DIR}/mindspore/ops/infer/lp_normalization.h
+            ${TOP_DIR}/mindspore/ops/infer/lrn.h
+            ${TOP_DIR}/mindspore/ops/infer/lsh_projection.h
+            ${TOP_DIR}/mindspore/ops/infer/lstm.h
+            ${TOP_DIR}/mindspore/ops/infer/switch_layer.h
+            ${TOP_DIR}/mindspore/ops/infer/mfcc.h
+            ${TOP_DIR}/mindspore/ops/infer/mod.h
+            ${TOP_DIR}/mindspore/ops/infer/non_max_suppression.h
+            ${TOP_DIR}/mindspore/ops/infer/prior_box.h
+            ${TOP_DIR}/mindspore/ops/infer/quant_dtype_cast.h
+            ${TOP_DIR}/mindspore/ops/infer/resize.h
+            ${TOP_DIR}/mindspore/ops/infer/reverse_sequence.h
+            ${TOP_DIR}/mindspore/ops/infer/rfft.h
+            ${TOP_DIR}/mindspore/ops/infer/roi_pooling.h
+            ${TOP_DIR}/mindspore/ops/infer/sgd.h
+            ${TOP_DIR}/mindspore/ops/infer/sigmoid_cross_entropy_with_logits.h
+            ${TOP_DIR}/mindspore/ops/infer/skip_gram.h
+            ${TOP_DIR}/mindspore/ops/infer/smooth_l1_loss.h
+            ${TOP_DIR}/mindspore/ops/infer/softmax_cross_entropy_with_logits.h
+            ${TOP_DIR}/mindspore/ops/infer/space_to_batch.h
+            ${TOP_DIR}/mindspore/ops/infer/space_to_batch_nd.h
+            ${TOP_DIR}/mindspore/ops/infer/space_to_depth.h
+            ${TOP_DIR}/mindspore/ops/infer/sparse_softmax_cross_entropy_with_logits.h
+            ${TOP_DIR}/mindspore/ops/infer/sparse_to_dense.h
+            ${TOP_DIR}/mindspore/ops/infer/squeeze.h
+            ${TOP_DIR}/mindspore/ops/infer/squared_difference.h
+            ${TOP_DIR}/mindspore/ops/infer/stack.h
+            ${TOP_DIR}/mindspore/ops/infer/switch.h
+            ${TOP_DIR}/mindspore/ops/infer/tensor_list_from_tensor.h
+            ${TOP_DIR}/mindspore/ops/infer/tensor_list_get_item.h
+            ${TOP_DIR}/mindspore/ops/infer/tensor_list_reserve.h
+            ${TOP_DIR}/mindspore/ops/infer/tensor_list_set_item.h
+            ${TOP_DIR}/mindspore/ops/infer/tensor_list_stack.h
+            ${TOP_DIR}/mindspore/ops/infer/unique.h
+            ${TOP_DIR}/mindspore/ops/infer/unsqueeze.h
+            ${TOP_DIR}/mindspore/ops/infer/unstack.h
+            ${TOP_DIR}/mindspore/ops/infer/where.h
+            ${TOP_DIR}/mindspore/ops/infer/scatter_nd_update.h
+            ${TOP_DIR}/mindspore/ops/infer/gru.h
+            ${TOP_DIR}/mindspore/ops/infer/invert_permutation.h
+            ${TOP_DIR}/mindspore/ops/infer/size.h
+            ${TOP_DIR}/mindspore/ops/infer/random_standard_normal.h
+            ${TOP_DIR}/mindspore/ops/infer/crop_and_resize.h
+            ${TOP_DIR}/mindspore/ops/infer/uniform_real.h
+            ${TOP_DIR}/mindspore/ops/infer/splice.h
+            ${TOP_DIR}/mindspore/ops/infer/call.h
+            ${TOP_DIR}/mindspore/ops/infer/custom.h
+            ${TOP_DIR}/mindspore/ops/infer/split_with_overlap.h
+            ${TOP_DIR}/mindspore/ops/infer/ragged_range.h
+            ${TOP_DIR}/mindspore/ops/infer/glu.h
+            ${TOP_DIR}/mindspore/ops/infer/tensor_array.h
+            ${TOP_DIR}/mindspore/ops/infer/tensor_array_read.h
+            ${TOP_DIR}/mindspore/ops/infer/tensor_array_write.h
+            ${TOP_DIR}/mindspore/ops/infer/affine.h
+            ${TOP_DIR}/mindspore/ops/infer/all_gather.h
+            ${TOP_DIR}/mindspore/ops/infer/reduce_scatter.h
+            ${TOP_DIR}/mindspore/ops/infer/dynamic_quant.h
+            ${TOP_DIR}/mindspore/ops/infer/random_normal.h
+            ${TOP_DIR}/mindspore/ops/infer/tuple_get_item.h
+            ${TOP_DIR}/mindspore/ops/infer/tuple_get_item.h
+            ${TOP_DIR}/mindspore/ops/infer/scale.h
+            ${TOP_DIR}/mindspore/ops/infer/sub.h
+            ${TOP_DIR}/mindspore/ops/infer/conv2d_transpose.h
+            ${TOP_DIR}/mindspore/ops/infer/conv2d.h
+            ${TOP_DIR}/mindspore/ops/infer/topk.h
+            ${TOP_DIR}/mindspore/ops/infer/reduce.h
+            ${TOP_DIR}/mindspore/ops/infer/max_pool.h
+            ${TOP_DIR}/mindspore/ops/infer/make_tuple.h
+            ${TOP_DIR}/mindspore/ops/infer/return.h
+            ${TOP_DIR}/mindspore/ops/infer/pad.h
+            DESTINATION ${CONVERTER_ROOT_DIR}/include/infer
+            COMPONENT ${RUNTIME_COMPONENT_NAME}
+            )
+    install(FILES
+            ${TOP_DIR}/mindspore/ops/infer/cxx_api/activation.h
+            ${TOP_DIR}/mindspore/ops/infer/cxx_api/add_fusion.h
+            ${TOP_DIR}/mindspore/ops/infer/cxx_api/adder_fusion.h
+            ${TOP_DIR}/mindspore/ops/infer/cxx_api/arg_max_fusion.h
+            ${TOP_DIR}/mindspore/ops/infer/cxx_api/arg_min_fusion.h
+            ${TOP_DIR}/mindspore/ops/infer/cxx_api/avg_pool_fusion.h
+            ${TOP_DIR}/mindspore/ops/infer/cxx_api/conv2d_backprop_filter_fusion.h
+            ${TOP_DIR}/mindspore/ops/infer/cxx_api/conv2d_backprop_input_fusion.h
+            ${TOP_DIR}/mindspore/ops/infer/cxx_api/conv2d_fusion.h
+            ${TOP_DIR}/mindspore/ops/infer/cxx_api/conv2d_transpose_fusion.h
+            ${TOP_DIR}/mindspore/ops/infer/cxx_api/div_fusion.h
+            ${TOP_DIR}/mindspore/ops/infer/cxx_api/embedding_lookup_fusion.h
+            ${TOP_DIR}/mindspore/ops/infer/cxx_api/exp_fusion.h
+            ${TOP_DIR}/mindspore/ops/infer/cxx_api/full_connection.h
+            ${TOP_DIR}/mindspore/ops/infer/cxx_api/layer_norm_fusion.h
+            ${TOP_DIR}/mindspore/ops/infer/cxx_api/l2_normalize_fusion.h
+            ${TOP_DIR}/mindspore/ops/infer/cxx_api/mat_mul_fusion.h
+            ${TOP_DIR}/mindspore/ops/infer/cxx_api/max_pool_fusion.h
+            ${TOP_DIR}/mindspore/ops/infer/cxx_api/mul_fusion.h
+            ${TOP_DIR}/mindspore/ops/infer/cxx_api/pad_fusion.h
+            ${TOP_DIR}/mindspore/ops/infer/cxx_api/partial_fusion.h
+            ${TOP_DIR}/mindspore/ops/infer/cxx_api/pow_fusion.h
+            ${TOP_DIR}/mindspore/ops/infer/cxx_api/prelu_fusion.h
+            ${TOP_DIR}/mindspore/ops/infer/cxx_api/reduce_fusion.h
+            ${TOP_DIR}/mindspore/ops/infer/cxx_api/scale_fusion.h
+            ${TOP_DIR}/mindspore/ops/infer/cxx_api/slice_fusion.h
+            ${TOP_DIR}/mindspore/ops/infer/cxx_api/sub_fusion.h
+            ${TOP_DIR}/mindspore/ops/infer/cxx_api/tile_fusion.h
+            ${TOP_DIR}/mindspore/ops/infer/cxx_api/topk_fusion.h
+            DESTINATION ${CONVERTER_ROOT_DIR}/include/infer/cxx_api
+            COMPONENT ${RUNTIME_COMPONENT_NAME}
+            )
+    install(FILES
+            ${TOP_DIR}/mindspore/ops/op_def/auto_generate/gen_lite_ops.h
+            ${TOP_DIR}/mindspore/ops/op_def/auto_generate/gen_ops_name.h
+            DESTINATION ${CONVERTER_ROOT_DIR}/include/op_def/auto_generate
             COMPONENT ${RUNTIME_COMPONENT_NAME}
             )
 endfunction()
@@ -397,7 +406,7 @@ if(PLATFORM_ARM64)
         endif()
         install(FILES ${glog_LIBPATH}/${glog_name} DESTINATION ${RUNTIME_LIB_DIR}
                 RENAME libmindspore_glog.so.0 COMPONENT ${RUNTIME_COMPONENT_NAME})
-        install(TARGETS mindspore_core DESTINATION ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
+        install(TARGETS mindspore_core mindspore_ops DESTINATION ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
         install(FILES ${TOP_DIR}/mindspore/lite/build/src/extendrt/convert/libruntime_convert_plugin.so
                 DESTINATION ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
         if(MSLITE_ENABLE_ACL)
@@ -511,7 +520,8 @@ if(PLATFORM_ARM64)
                     COMPONENT ${RUNTIME_COMPONENT_NAME})
             install(FILES ${glog_LIBPATH}/${glog_name} DESTINATION ${CONVERTER_ROOT_DIR}/lib
                     RENAME libmindspore_glog.so.0 COMPONENT ${RUNTIME_COMPONENT_NAME})
-            install(TARGETS mindspore_core DESTINATION ${CONVERTER_ROOT_DIR}/lib COMPONENT ${RUNTIME_COMPONENT_NAME})
+            install(TARGETS mindspore_core mindspore_ops DESTINATION ${CONVERTER_ROOT_DIR}/lib
+                    COMPONENT ${RUNTIME_COMPONENT_NAME})
             if(MSLITE_ENABLE_OPENCV)
                 install(FILES ${opencv_LIBPATH}/libopencv_core.so.4.5.2
                         DESTINATION ${CONVERTER_ROOT_DIR}/lib RENAME libopencv_core.so.4.5
@@ -532,7 +542,7 @@ if(PLATFORM_ARM64)
                             DESTINATION ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
                     install(FILES ${glog_LIBPATH}/${glog_name} DESTINATION ${RUNTIME_LIB_DIR}
                             RENAME libmindspore_glog.so.0 COMPONENT ${RUNTIME_COMPONENT_NAME})
-                    install(TARGETS mindspore_core DESTINATION ${CONVERTER_ROOT_DIR}/lib
+                    install(TARGETS mindspore_core mindspore_ops DESTINATION ${CONVERTER_ROOT_DIR}/lib
                             COMPONENT ${RUNTIME_COMPONENT_NAME})
                 endif()
                 install(FILES ${LITE_ACL_DIR}/libascend_pass_plugin.so DESTINATION ${CONVERTER_ROOT_DIR}/lib
@@ -652,7 +662,7 @@ elseif(PLATFORM_ARM32)
         endif()
         install(FILES ${glog_LIBPATH}/${glog_name} DESTINATION ${RUNTIME_LIB_DIR}
                 RENAME libmindspore_glog.so.0 COMPONENT ${RUNTIME_COMPONENT_NAME})
-        install(TARGETS mindspore_core DESTINATION ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
+        install(TARGETS mindspore_core mindspore_ops DESTINATION ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
         install(FILES ${TOP_DIR}/mindspore/lite/build/src/extendrt/convert/libruntime_convert_plugin.so
                 DESTINATION ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
         if(MSLITE_ENABLE_ACL)
@@ -740,7 +750,8 @@ elseif(WIN32)
         file(GLOB GLOG_LIB_LIST ${glog_LIBPATH}/../bin/*.dll)
         install(FILES ${GLOG_LIB_LIST} DESTINATION ${CONVERTER_ROOT_DIR}/lib
                 COMPONENT ${RUNTIME_COMPONENT_NAME})
-        install(TARGETS mindspore_core DESTINATION ${CONVERTER_ROOT_DIR}/lib COMPONENT ${RUNTIME_COMPONENT_NAME})
+        install(TARGETS mindspore_core mindspore_ops DESTINATION ${CONVERTER_ROOT_DIR}/lib
+                COMPONENT ${RUNTIME_COMPONENT_NAME})
         if(MSLITE_ENABLE_OPENCV)
             file(GLOB_RECURSE OPENCV_LIB_LIST
                     ${opencv_LIBPATH}/../bin/libopencv_core*
@@ -860,7 +871,7 @@ else()
                 install(FILES ${onednn_LIBPATH}/libdnnl.so.2.2 DESTINATION ${DNNL_DIR}
                         RENAME libdnnl.so.2 COMPONENT ${RUNTIME_COMPONENT_NAME})
         endif()
-        install(TARGETS mindspore_core DESTINATION ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
+        install(TARGETS mindspore_core mindspore_ops DESTINATION ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
         install(FILES ${TOP_DIR}/mindspore/lite/build/src/extendrt/convert/libruntime_convert_plugin.so
                 DESTINATION ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
         if(MSLITE_ENABLE_ACL)
@@ -945,7 +956,8 @@ else()
                 DESTINATION ${CONVERTER_ROOT_DIR}/lib COMPONENT ${RUNTIME_COMPONENT_NAME})
         install(FILES ${glog_LIBPATH}/${glog_name} DESTINATION ${CONVERTER_ROOT_DIR}/lib
                 RENAME libmindspore_glog.so.0 COMPONENT ${RUNTIME_COMPONENT_NAME})
-        install(TARGETS mindspore_core DESTINATION ${CONVERTER_ROOT_DIR}/lib COMPONENT ${RUNTIME_COMPONENT_NAME})
+        install(TARGETS mindspore_core mindspore_ops DESTINATION ${CONVERTER_ROOT_DIR}/lib
+                COMPONENT ${RUNTIME_COMPONENT_NAME})
         if(MSLITE_ENABLE_OPENCV)
             install(FILES ${opencv_LIBPATH}/libopencv_core.so.4.5.2
                     DESTINATION ${CONVERTER_ROOT_DIR}/lib RENAME libopencv_core.so.4.5
@@ -967,7 +979,8 @@ else()
                         DESTINATION ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
                 install(FILES ${glog_LIBPATH}/${glog_name} DESTINATION ${RUNTIME_LIB_DIR}
                         RENAME libmindspore_glog.so.0 COMPONENT ${RUNTIME_COMPONENT_NAME})
-                install(TARGETS mindspore_core DESTINATION ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
+                install(TARGETS mindspore_core mindspore_ops DESTINATION ${RUNTIME_LIB_DIR}
+                        COMPONENT ${RUNTIME_COMPONENT_NAME})
             endif()
             install(FILES ${LITE_ACL_DIR}/libascend_pass_plugin.so DESTINATION ${CONVERTER_ROOT_DIR}/lib
                     COMPONENT ${RUNTIME_COMPONENT_NAME})
@@ -1054,15 +1067,15 @@ endif()
 
 if(MSLITE_ENABLE_KERNEL_EXECUTOR)
     install(FILES
-            ${TOP_DIR}/mindspore/core/ops/auto_generate/gen_lite_ops.h
-            ${TOP_DIR}/mindspore/core/ops/auto_generate/gen_ops_name.h
+            ${TOP_DIR}/mindspore/ops/op_def/auto_generate/gen_lite_ops.h
+            ${TOP_DIR}/mindspore/ops/op_def/auto_generate/gen_ops_name.h
             ${TOP_DIR}/mindspore/core/ops/base_operator.h
-            ${TOP_DIR}/mindspore/core/ops/custom.h
-            ${TOP_DIR}/mindspore/core/ops/conv2d.h
-            ${TOP_DIR}/mindspore/core/ops/conv2d_transpose.h
-            ${TOP_DIR}/mindspore/core/ops/max_pool.h
-            ${TOP_DIR}/mindspore/core/ops/pad.h
-            ${TOP_DIR}/mindspore/core/ops/topk.h
+            ${TOP_DIR}/mindspore/ops/infer/custom.h
+            ${TOP_DIR}/mindspore/ops/infer/conv2d.h
+            ${TOP_DIR}/mindspore/ops/infer/conv2d_transpose.h
+            ${TOP_DIR}/mindspore/ops/infer/max_pool.h
+            ${TOP_DIR}/mindspore/ops/infer/pad.h
+            ${TOP_DIR}/mindspore/ops/infer/topk.h
             DESTINATION ${RUNTIME_INC_DIR}/ops
             COMPONENT ${RUNTIME_COMPONENT_NAME})
     install(FILES
@@ -1084,7 +1097,7 @@ if(MSLITE_ENABLE_KERNEL_EXECUTOR)
     install(FILES ${TOP_DIR}/mindspore/lite/src/litert/cxx_api/kernel_executor/kernel_executor.h DESTINATION
             ${RUNTIME_INC_DIR}/api COMPONENT ${RUNTIME_COMPONENT_NAME})
     install(TARGETS kernel_executor DESTINATION ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
-    install(TARGETS mindspore_core DESTINATION ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
+    install(TARGETS mindspore_core mindspore_ops DESTINATION ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
     install(FILES ${glog_LIBPATH}/${glog_name} DESTINATION ${RUNTIME_LIB_DIR}
         RENAME libmindspore_glog.so.0 COMPONENT ${RUNTIME_COMPONENT_NAME})
 endif()

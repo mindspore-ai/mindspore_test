@@ -18,7 +18,7 @@
 #include "common/common_test.h"
 #include "ops/test_ops.h"
 #include "abstract/dshape.h"
-#include "ops/ops_func_impl/rank.h"
+#include "infer/ops_func_impl/rank.h"
 
 namespace mindspore {
 namespace ops {

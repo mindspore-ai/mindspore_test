@@ -73,7 +73,7 @@ if(ENABLE_D OR ENABLE_GPU)
 endif()
 
 install(
-    TARGETS mindspore_core mindspore_common mindspore_backend mindspore_np_dtype
+    TARGETS mindspore_core mindspore_ops mindspore_common mindspore_backend mindspore_np_dtype
     DESTINATION ${INSTALL_LIB_DIR}
     COMPONENT mindspore
 )

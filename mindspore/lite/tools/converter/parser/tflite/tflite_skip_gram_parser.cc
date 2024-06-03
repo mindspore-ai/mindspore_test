@@ -17,7 +17,7 @@
 #include "tools/converter/parser/tflite/tflite_skip_gram_parser.h"
 #include <vector>
 #include <memory>
-#include "ops/skip_gram.h"
+#include "infer/skip_gram.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

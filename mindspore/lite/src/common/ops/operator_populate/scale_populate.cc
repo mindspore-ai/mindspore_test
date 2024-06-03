@@ -16,7 +16,7 @@
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "src/common/ops/operator_populate/utils.h"
 #include "nnacl/scale_parameter.h"
-#include "ops/fusion/scale_fusion.h"
+#include "infer/cxx_api/scale_fusion.h"
 using mindspore::ops::kNameScaleFusion;
 using mindspore::schema::PrimitiveType_ScaleFusion;
 

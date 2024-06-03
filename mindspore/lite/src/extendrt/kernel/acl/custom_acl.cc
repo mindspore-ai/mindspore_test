@@ -18,7 +18,7 @@
 #include <string>
 #include <vector>
 
-#include "ops/custom.h"
+#include "infer/custom.h"
 #include "abstract/abstract_value.h"
 #include "abstract/dshape.h"
 #include "abstract/ops/op_infer.h"

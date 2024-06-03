@@ -34,7 +34,7 @@
 #include "include/common/debug/common.h"
 #include "utils/file_utils.h"
 #include "include/backend/debug/profiler/profiling.h"
-#include "ops/nn_op_name.h"
+#include "op_def/nn_op_name.h"
 
 namespace mindspore {
 namespace runtime {

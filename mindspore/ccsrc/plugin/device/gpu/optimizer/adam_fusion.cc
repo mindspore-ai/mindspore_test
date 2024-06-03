@@ -24,10 +24,10 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
 #include "ir/primitive.h"
-#include "mindspore/core/ops/framework_ops.h"
-#include "mindspore/core/ops/math_ops.h"
-#include "mindspore/core/ops/nn_optimizer_ops.h"
-#include "mindspore/core/ops/sequence_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/op_def/nn_optimizer_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
 
 namespace mindspore {
 namespace opt {

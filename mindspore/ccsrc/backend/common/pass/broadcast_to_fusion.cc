@@ -16,9 +16,9 @@
 
 #include "backend/common/pass/broadcast_to_fusion.h"
 
-#include "mindspore/core/ops/array_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
 #include "include/common/utils/anfalgo.h"
-#include "mindspore/core/ops/op_utils.h"
+#include "mindspore/ops/ops_utils/op_utils.h"
 #include "include/backend/optimizer/helper.h"
 
 namespace mindspore {
@@ -42,7 +42,7 @@ const AnfNodePtr BroadcastToFusion::Process(const FuncGraphPtr &graph, const Anf
   }
 
   auto input_shape = cnode->input(kIndex2);
-  auto shape_array_opt = ops::GetArrayValue<int64_t>(input_shape->abstract());
+  auto shape_array_opt = GetArrayValue<int64_t>(input_shape->abstract());
   if (!shape_array_opt.has_value()) {
     return node;
   }

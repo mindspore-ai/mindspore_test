@@ -20,8 +20,8 @@
 #include <memory>
 #include <algorithm>
 #include <utility>
-#include "ops/other_op_name.h"
-#include "ops/framework_op_name.h"
+#include "op_def/other_op_name.h"
+#include "op_def/framework_op_name.h"
 #include "kernel/graph_kernel_info.h"
 #include "plugin/device/gpu/hal/device/gpu_common.h"
 #include "plugin/device/gpu/hal/device/kernel_info_setter.h"

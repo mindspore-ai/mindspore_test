@@ -19,11 +19,11 @@
 #include <map>
 #include <string>
 #include <vector>
-#include "mindspore/core/ops/array_ops.h"
-#include "mindspore/core/ops/math_ops.h"
-#include "ops/custom.h"
-#include "ops/fusion/add_fusion.h"
-#include "ops/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
+#include "infer/custom.h"
+#include "infer/cxx_api/add_fusion.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
 
 namespace mindspore {
 class AddNodeParserTest : public NodeParserTest {

@@ -17,13 +17,13 @@
 #include "parser/caffe/caffe_binary_math_parser.h"
 #include <memory>
 #include <vector>
-#include "ops/custom.h"
-#include "ops/fusion/add_fusion.h"
-#include "ops/fusion/sub_fusion.h"
-#include "ops/fusion/mul_fusion.h"
-#include "ops/fusion/div_fusion.h"
-#include "ops/squared_difference.h"
-#include "ops/auto_generate/gen_lite_ops.h"
+#include "infer/custom.h"
+#include "infer/cxx_api/add_fusion.h"
+#include "infer/cxx_api/sub_fusion.h"
+#include "infer/cxx_api/mul_fusion.h"
+#include "infer/cxx_api/div_fusion.h"
+#include "infer/squared_difference.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
 
 namespace mindspore {
 namespace lite {

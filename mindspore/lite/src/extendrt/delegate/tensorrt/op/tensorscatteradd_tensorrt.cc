@@ -18,8 +18,8 @@
 #include <functional>
 #include <memory>
 #include <numeric>
-#include "ops/tensor_scatter_add.h"
-#include "plugin/device/gpu/kernel/cuda_impl/cuda_ops/tensor_scatter_arithmetic.cuh"
+#include "infer/tensor_scatter_add.h"
+#include "kernel/gpu/cuda_impl/cuda_ops/tensor_scatter_arithmetic.cuh"
 #include "src/extendrt/delegate/tensorrt/tensorrt_utils.h"
 
 namespace mindspore::lite {

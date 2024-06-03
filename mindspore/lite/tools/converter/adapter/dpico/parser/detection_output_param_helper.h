@@ -22,7 +22,7 @@
 #include <memory>
 #include <vector>
 #include "op/detection_output_operator.h"
-#include "ops/custom.h"
+#include "infer/custom.h"
 #include "./pico_caffe.pb.h"
 
 namespace mindspore {

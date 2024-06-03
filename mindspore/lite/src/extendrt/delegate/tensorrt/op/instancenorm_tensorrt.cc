@@ -17,7 +17,7 @@
 #include "src/extendrt/delegate/tensorrt/op/instancenorm_tensorrt.h"
 #include <memory>
 #include <numeric>
-#include "ops/instance_norm.h"
+#include "infer/instance_norm.h"
 
 namespace mindspore::lite {
 namespace {

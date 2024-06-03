@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include <memory>
-#include "ops/ops_func_impl/stack_ext.h"
+#include "infer/ops_func_impl/stack_ext.h"
 #include "ops/test_ops.h"
 #include "ops/test_ops_cmp_utils.h"
 #include "ops/test_value_utils.h"
@@ -58,7 +58,7 @@ TEST_P(TestStack, dyn_shape) {
   auto expect_shape = std::make_shared<abstract::TensorShape>(param.out_shape);
   auto expect_type = std::make_shared<TensorType>(param.out_type);
   DoFuncImplInferAndCompare<StackExtFuncImpl>("StackExt", abstract::AbstractBasePtrList{tuple_x, axis}, expect_shape,
-                                           expect_type);
+                                              expect_type);
 }
 
 INSTANTIATE_TEST_CASE_P(TestStackGroup, TestStack,
