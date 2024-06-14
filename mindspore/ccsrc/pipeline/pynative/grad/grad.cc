@@ -946,13 +946,13 @@ void GradExecutor::EndGraphImpl(const InputArgsInfoPtr &input_args_info) {
     top_cell()->ClearCellHookOp();
   }
 
-  top_cell()->CheckSubCellHookChanged();
   // Checkout whether you need to compile graph when each top cell has run finished
   CheckNeedCompileGraph(input_args_info);
   if (!top_cell_->grad_first()) {
     DecreaseGradOrder();
   }
   top_input_args_info_ = input_args_info;
+  forward()->ClearForwardRes();
 }
 
 void GradExecutor::DoGradForCustomBprop(const InputArgsInfoPtr &input_args_info, const std::string &out_id) const {
@@ -2167,19 +2167,6 @@ TopCellInfoPtr GradExecutor::GetTopCell(const std::string &already_run_cell_id, 
   return nullptr;
 }
 
-void GradExecutor::SetHookChanged(const py::object &cell) const {
-  if (top_cell_ == nullptr) {
-    return;
-  }
-  const auto &cell_id = PyNativeAlgo::PyParser::GetIdByPyObj(cell);
-  if (top_cell_->cell_id().find(cell_id) != std::string::npos) {
-    top_cell_->set_hook_changed(true);
-  }
-  if (RequiresGrad()) {
-    top_cell_->set_sub_cell_hook_changed(cell_id);
-  }
-}
-
 void GradExecutor::ProcessOpGradInfo(const FrontendOpRunInfoPtr &op_run_info) const {
   MS_EXCEPTION_IF_NULL(op_run_info);
   RecordForwardGraph(op_run_info);
@@ -2333,7 +2320,7 @@ CNodePtr GradExecutor::ConstructForwardGraph(const FrontendOpRunInfoPtr &op_run_
   }
   const auto &cnode = curr_g()->NewCNodeInOrder(inputs);
   if (IsPrimitiveCNode(cnode, prim::kPrimCellBackwardHook)) {
-    top_cell()->RecordCellBackwardHookOp(op_run_info->cell_obj_id, cnode);
+    top_cell()->RecordCellBackwardHookOp(hook_cell_id_, cnode);
   }
   MS_LOG(DEBUG) << "Make CNode for " << op_run_info->base_op_run_info.op_name << ", new cnode is "
                 << cnode->DebugString();
