@@ -231,6 +231,8 @@ from mindspore.nn.layer import HShrink as Hardshrink
 from mindspore.nn.layer import HSigmoid as Hardsigmoid
 # 222
 from mindspore.nn.layer import HSwish as Hardswish
+# 238
+from mindspore.ops.operations.nn_ops import L1LossExt as L1Loss
 
 class BCEWithLogitsLoss(Cell):
     r"""
@@ -584,11 +586,12 @@ __all__ = [
     'SELU',
     # 220
     'Hardshrink',
-
     # 221
     'Hardsigmoid',
     # 222
     'Hardswish',
+    # 238
+    'L1Loss',
     # 267
     'Mish',
 ]

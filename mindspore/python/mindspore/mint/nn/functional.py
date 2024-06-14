@@ -229,6 +229,8 @@ from mindspore.ops.function.nn_func import hardsigmoid  # pylint: disable=W0611
 from mindspore.ops.function.nn_func import hardswish  # pylint: disable=W0611
 # 267
 from mindspore.ops.auto_generate import mish_ext as mish  # pylint: disable=W0611
+# 238
+from mindspore.ops.auto_generate import l1_loss_ext as l1_loss  # pylint: disable=W0611
 # 323
 
 # 324
@@ -574,6 +576,9 @@ __all__ = [
     # 99
 
     # 100
+
+    # 283
+    'l1_loss',
 
     # 323
 

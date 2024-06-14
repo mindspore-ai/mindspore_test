@@ -308,6 +308,8 @@ HSwish: 'aclnnHardswish'
 HSwishGrad: 'aclnnHardswishBackward'
 # 231
 MatrixInverseExt: 'aclnnInverse'
+# 238
+L1LossExt: 'aclnnL1Loss'
 
 # 256
 MedianExt: 'aclnnMedian'
