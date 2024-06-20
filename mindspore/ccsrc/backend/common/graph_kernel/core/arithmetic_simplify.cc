@@ -1006,8 +1006,9 @@ static std::vector<Expression> expressions = {
   {77, "ReduceMin(A,B)=Reshape(A,C)", EXPR_PATTERN(ReducePatternTree)},
   {78, "ReduceMax(A,B)=Reshape(A,C)", EXPR_PATTERN(ReducePatternTree)},
   {79, "Cast(A,B)=A", EXPR_PATTERN(CastPatternTree)},
+  {80, "Cast(A)=A", EXPR_PATTERN(CastPatternTree)},
   // transpose
-  {80, "Transpose(Transpose(A,B),C)=Transpose(A,D)", EXPR_PATTERN(TransposeCombinePatternTree)},
+  {81, "Transpose(Transpose(A,B),C)=Transpose(A,D)", EXPR_PATTERN(TransposeCombinePatternTree)},
 };
 
 mindspore::HashMap<std::string, std::vector<PatternTreePtr>> GetExpressions() {

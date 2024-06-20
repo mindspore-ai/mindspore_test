@@ -22,38 +22,6 @@
 #include "mindspore/core/symbolic_shape/int_symbol.h"
 
 namespace mindspore::graphkernel::inner {
-namespace {
-uint64_t FindIoNum(const std::vector<AreaPtr> *areas) {
-  std::unordered_map<PrimOpPtr, uint64_t> degree;
-  std::unordered_set<PrimOpPtr> visited;
-  uint64_t io_num = 0;
-  for (auto a = areas->begin(); a != areas->end(); ++a) {
-    for (auto op : (*a)->ops()) {
-      visited.insert(op);
-      for (auto o : op->inputs()) {
-        if (auto prim = o->As<PrimOp>(); prim) {
-          degree[prim]++;
-        }
-      }
-    }
-  }
-  for (auto op : visited) {
-    auto iter = degree.find(op);
-    if (iter == degree.end()) {  // is output node
-      io_num++;
-    }
-    io_num++;
-    for (auto o : op->inputs()) {
-      if (auto prim = o->As<PrimOp>(); prim && visited.find(prim) != visited.end()) {  // is not input node
-        io_num--;
-        break;
-      }
-    }
-  }
-  return io_num;
-}
-}  // namespace
-
 ReachTable::ReachTable(size_t size) : size_(size), reach_(size, std::vector<bool>(size, false)) {
   for (size_t i = 0; i < size_; ++i) {
     reach_[i][i] = true;
@@ -202,20 +170,8 @@ void SplitModel::LimitAreaSize(const AreaPtr &dom, std::vector<AreaPtr> *areas) 
   for (auto a = areas->begin(); a != areas->end(); ++a) {
     dom_size += (*a)->size();
   }
-  if (GraphKernelFlags::GetInstance().kernel_generator == "DVM") {
-    const uint64_t MAX_DVM_SIZE = 96;
-    max_size = std::min(MAX_DVM_SIZE, max_size);
-    if (dom_size <= max_size) {
-      uint64_t io_num = FindIoNum(areas);
-      max_size = max_size >= io_num ? max_size - io_num : 0;
-      if (dom_size <= max_size) {
-        return;
-      }
-    }
-  } else {
-    if (dom_size <= max_size) {
-      return;
-    }
+  if (dom_size <= max_size) {
+    return;
   }
   // fuse the smaller area in priority
   std::sort(areas->begin(), areas->end(),

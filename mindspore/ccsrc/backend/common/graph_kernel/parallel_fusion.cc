@@ -239,7 +239,21 @@ std::tuple<AnfNodePtrList, AnfNodePtrList, AnfNodePtrList, AnfNodePtrList> GetIn
   return std::make_tuple(multi_inputs_nodes, multi_outputs_nodes, no_input_nodes, no_output_nodes);
 }
 
-bool WhiteOpsFilter(const AnfNodePtr &node) { return common::AnfAlgo::IsGraphKernel(node); }
+bool WhiteOpsFilter(const AnfNodePtr &node) {
+  if (!common::AnfAlgo::IsGraphKernel(node)) {
+    return false;
+  }
+  auto device_info = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  if (device_info != kAscendDevice) {
+    return true;
+  }
+  auto sub_graph = GetCNodeFuncGraph(node);
+  auto nodes = TopoSort(sub_graph->get_return());
+  auto iter = std::find_if(nodes.begin(), nodes.end(), [](const AnfNodePtr &node) {
+    return IsPrimitiveCNode(node, prim::kPrimBatchMatMul) || IsPrimitiveCNode(node, prim::kPrimMatMul);
+  });
+  return iter == nodes.end();
+}
 
 // Parallel cannot work with stitching for now.
 bool Parallelizable(const AnfNodePtr &node) { return WhiteOpsFilter(node) && !IsBufferStitchNode(node); }

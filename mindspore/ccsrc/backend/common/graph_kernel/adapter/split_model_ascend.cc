@@ -16,9 +16,10 @@
 #include "backend/common/graph_kernel/adapter/split_model_ascend.h"
 #include <memory>
 #include <string>
-#include "mindspore/ops/op_def/array_op_name.h"
-#include "mindspore/ops/op_def/math_op_name.h"
-#include "mindspore/ops/op_def/nn_optimizer_op_name.h"
+#include <algorithm>
+#include "op_def/array_op_name.h"
+#include "op_def/math_op_name.h"
+#include "op_def/nn_optimizer_op_name.h"
 #include "utils/ms_context.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
 
@@ -180,6 +181,48 @@ class FuseReduceFwd : public FusePattern {
   FuseType fuse_type_;
   size_t size_limit_;
 };
+
+class FuseMatMul : public FusePattern {
+ public:
+  FuseMatMul() : FusePattern("matmul_depth") { direction_ = FuseDirection::BACKWARD; }
+  ~FuseMatMul() = default;
+
+ protected:
+  bool Check(const AreaPtr &dom) override {
+    return dom->size() == 1 && (dom->dom()->op() == kMatMulOpName || dom->dom()->op() == kBatchMatMulOpName);
+  }
+
+  bool IsSameShapeSize(int64_t size, const NodePtrList &output_nodes) {
+    for (auto &node : output_nodes) {
+      if (std::accumulate(node->shape.begin(), node->shape.end(), 1, std::multiplies<int64_t>()) != size) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  bool Match(const AreaPtr &dom) override {
+    constexpr size_t MAX_FUSE_NUM = 5;
+    size_t current_size = 0;
+    auto output_shape = dom->ops().back()->shape;
+    auto matmul_output_size = std::accumulate(output_shape.begin(), output_shape.end(), 1, std::multiplies<int64_t>());
+    auto dom_users = dom->users();
+    std::sort(dom_users.begin(), dom_users.end(),
+              [](const AreaPtr &a, const AreaPtr &b) { return a->area_outputs().size() < b->area_outputs().size(); });
+    for (auto &a : dom_users) {
+      if (current_size + a->area_outputs().size() > MAX_FUSE_NUM) {
+        break;
+      }
+      bool fuse_flag = (dom->dom()->op() == kMatMulOpName && a->pattern() <= NodePattern::BROADCAST) ||
+                       (dom->dom()->op() == kBatchMatMulOpName && a->pattern() < NodePattern::BROADCAST);
+      if (fuse_flag && !HasCircle(dom, a) && IsSameShapeSize(matmul_output_size, a->area_outputs())) {
+        (void)fused_areas_.emplace_back(a);
+        current_size += a->area_outputs().size();
+      }
+    }
+    return !fused_areas_.empty();
+  }
+};
 }  // namespace dvm
 
 void SplitModelAscend::InitFusePatterns() {
@@ -196,6 +239,9 @@ void SplitModelAscend::InitFusePatterns() {
     AddPattern(FuseElemwiseBroadcastBwd::CreateWidthMatcher(inner::ascend::kBroadcastFusionDepth), true);
     AddPattern(std::make_shared<inner::ascend::FuseElemAny>(), true);
     AddPattern(std::make_shared<inner::ascend::FuseSlice>(), true);
+    if (!graphkernel::GraphKernelFlags::GetInstance().disable_matmul_post_fusion) {
+      AddPattern(std::make_shared<inner::dvm::FuseMatMul>(), true);
+    }
   } else {
     // fuse pattern for akg
     AddPattern(std::make_shared<FuseVirtualNode>(), true);
