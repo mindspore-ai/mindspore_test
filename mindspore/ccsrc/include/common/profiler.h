@@ -131,7 +131,8 @@ enum class ProfilerEvent {
   // NoGraph grad
   kRunExpanderFunc,
   kEmitOp,
-  kRealeaseSource,
+  kExecute,
+  kReleaseResource,
 };
 
 static const std::map<ProfilerStage, std::string> kProfilerStageString = {
@@ -224,7 +225,8 @@ static const std::map<ProfilerEvent, std::string> kProfilerEventString = {
   // Run Grad fun events
   {ProfilerEvent::kRunExpanderFunc, "RunExpanderFunc"},
   {ProfilerEvent::kEmitOp, "EmitOp"},
-  {ProfilerEvent::kRealeaseSource, "ReleaseSource"},
+  {ProfilerEvent::kReleaseResource, "ReleaseResource"},
+  {ProfilerEvent::kExecute, "Execute"},
 };
 
 #define PROFILER_START(start_time)                                          \
