@@ -128,6 +128,10 @@ enum class ProfilerEvent {
   kAclnnMissCacheStage2,
   kAclnnUpdateAddress,
   kAclnnRunOp,
+  // NoGraph grad
+  kRunExpanderFunc,
+  kEmitOp,
+  kRealeaseSource,
 };
 
 static const std::map<ProfilerStage, std::string> kProfilerStageString = {
@@ -216,7 +220,12 @@ static const std::map<ProfilerEvent, std::string> kProfilerEventString = {
   {ProfilerEvent::kAclnnMissCacheStage1, "AclnnMissCacheStage1"},
   {ProfilerEvent::kAclnnMissCacheStage2, "AclnnMissCacheStage2"},
   {ProfilerEvent::kAclnnUpdateAddress, "AclnnUpdateAddress"},
-  {ProfilerEvent::kAclnnRunOp, "AclnnRunOp"}};
+  {ProfilerEvent::kAclnnRunOp, "AclnnRunOp"},
+  // Run Grad fun events
+  {ProfilerEvent::kRunExpanderFunc, "RunExpanderFunc"},
+  {ProfilerEvent::kEmitOp, "EmitOp"},
+  {ProfilerEvent::kRealeaseSource, "ReleaseSource"},
+};
 
 #define PROFILER_START(start_time)                                          \
   do {                                                                      \
