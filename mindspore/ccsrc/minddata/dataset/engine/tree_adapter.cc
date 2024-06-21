@@ -632,9 +632,14 @@ Status TreeAdapter::Launch() {
       MS_LOG(INFO) << "[Independent Dataset Process] End release gil. Current Py_IsInitialized: " << Py_IsInitialized()
                    << ", PyGILState_Check: " << PyGILState_Check();
       if (PyGILState_Check()) {
-        MS_LOG(EXCEPTION) << "[Independent Dataset Process] PyGILState_Check: " << PyGILState_Check()
-                          << ", it should be 0.";
+        MS_LOG(ERROR) << "[Independent Dataset Process] PyGILState_Check: " << PyGILState_Check()
+                      << ", it should be 0.";
+        exit(0);
       }
+
+      auto pid = getpid();
+      auto ppid = getppid();
+      auto tid = std::this_thread::get_id();
 
       prctl(PR_SET_NAME, "independent_dataset_process");  // set the thread name
       prctl(PR_SET_PDEATHSIG, SIGTERM);                   // if the main process exit, the subprocess will exit too.
