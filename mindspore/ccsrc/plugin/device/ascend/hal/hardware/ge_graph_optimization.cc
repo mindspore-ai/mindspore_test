@@ -160,6 +160,27 @@ void GEGraphOptimization::OptimizeACLGraphAfterKernelSelect(const KernelGraphPtr
   MS_LOG(DEBUG) << "Status record: end optimize acl graph after kernel select. graph id: " << graph->graph_id();
 }
 
+void GEGraphOptimization::OptimizeACLGraphAfterCreateKernel(const KernelGraphPtr &graph) {
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  int execution_mode = context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE);
+  // pynaitve process the pass in GEBackendOptimizeACLAfterKernelSelect
+  if (execution_mode == kPynativeMode) {
+    return;
+  }
+  MS_EXCEPTION_IF_NULL(graph);
+  MS_LOG(DEBUG) << "Status record: start optimize acl graph after create kernel. graph id: " << graph->graph_id();
+  // empty graph dont entry to backend
+  if (graph->execution_order().empty()) {
+    MS_LOG(DEBUG) << graph->ToString() << " is empty graph.";
+    AnfAlgo::InsertMakeTupleForOutput(NOT_NULL(graph));
+    graph->set_executable(false);
+    MS_LOG(DEBUG) << "Status record: end optimize acl graph after create kernel. graph id: " << graph->graph_id();
+  }
+  opt::AclAfterCreateKernel(graph);
+  MS_LOG(DEBUG) << "Status record: end optimize acl graph after create kernel. graph id: " << graph->graph_id();
+}
+
 void GEGraphOptimization::OptimizeACLGraphAfterInline(const KernelGraphPtr &graph) {
   MS_EXCEPTION_IF_NULL(graph);
   MS_LOG(DEBUG) << "Status record: start optimize acl graph after inline. graph id: " << graph->graph_id();

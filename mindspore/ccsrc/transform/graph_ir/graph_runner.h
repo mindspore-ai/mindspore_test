@@ -42,6 +42,8 @@ class GraphRunner {
   Status CompileGraph(const RunOptions &options, ::ge::CompiledGraphSummaryPtr *graph_summary);
   Status SetConstMemory(const RunOptions &options, const void *const memory, size_t size);
   Status UpdateFeatureMemory(const RunOptions &options, const void *const memory, size_t size);
+  Status SetFixedMemory(const RunOptions &options, const void *const memory, size_t size);
+  Status UpdateRefreshableMemory(const RunOptions &options, const void *const memory, size_t size);
   static std::shared_ptr<::ge::Session> NewSession(const SessionOptions &sess_options);
   Status RegisterExternalAllocator(const void *const stream, GeAllocatorPtr allocator);
   Status UnregisterExternalAllocator(const void *const stream);

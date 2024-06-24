@@ -35,6 +35,7 @@
 #include "plugin/device/ascend/kernel/hccl/hccl_kernel_metadata.h"
 #include "plugin/device/ascend/kernel/hccl/hccl_kernel_build.h"
 #include "mindspore/ops/kernel/ascend/pyboost/customize/customize_copy.h"
+#include "plugin/device/ascend/kernel/ge/ge_kernel_build.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_build.h"
 #include "kernel/graph_kernel/kernel_packet/kernel_packet_infer_functor.h"
 #include "plugin/device/ascend/kernel/graph_kernel/kernel_packet_ascend_kernel_mod.h"
@@ -91,7 +92,47 @@ std::string GetKernelTypeStr(const KernelType &kernel_type) {
   return type;
 }
 
-bool GenerateKernelMod(const std::vector<CNodePtr> &kernels);
+kernel::KernelModPtr GenerateAkgKernelMod(const CNodePtr &kernel);
+
+bool GenerateKernelMod(const std::vector<CNodePtr> &kernels, GeGraphExecutor *graph_executor = nullptr) {
+  for (const auto &kernel : kernels) {
+    MS_EXCEPTION_IF_NULL(kernel);
+    if (AnfAlgo::GetKernelMod(kernel)) {
+      continue;
+    }
+    if (AnfAlgo::IsKernelSelectBackoffOp(kernel)) {
+      continue;
+    }
+    std::string opname = common::AnfAlgo::GetCNodeName(kernel);
+    kernel::KernelModPtr kernel_mod_ptr = nullptr;
+    auto kernel_type = AnfAlgo::GetKernelType(kernel);
+    if (kernel_type == KernelType::ACL_KERNEL) {
+      kernel_mod_ptr = kernel::AclOpBuild(kernel);
+    } else if (kernel_type == KernelType::HOST_KERNEL) {
+      kernel_mod_ptr = kernel::HostOpBuild(kernel);
+    } else if (kernel_type == KernelType::HCCL_KERNEL) {
+      kernel_mod_ptr = kernel::HcclOpBuild(kernel);
+    } else if (kernel_type == KernelType::OPAPI_KERNEL) {
+      kernel_mod_ptr = kernel::AclnnOpBuild(kernel);
+    } else if (kernel_type == KernelType::AKG_KERNEL) {
+      kernel_mod_ptr = GenerateAkgKernelMod(kernel);
+    } else if (AnfAlgo::GetKernelType(kernel) == KernelType::RT_KERNEL) {
+      kernel_mod_ptr = kernel::RtOpBuild(kernel);
+    } else if (kernel_type == KernelType::INTERNAL_KERNEL) {
+      kernel_mod_ptr = kernel::InternalKernelBuild(kernel);
+    } else if (kernel_type == KernelType::GE_KERNEL) {
+      kernel_mod_ptr = kernel::GeOpBuild(kernel, graph_executor);
+    } else {
+      MS_LOG_WITH_NODE(EXCEPTION, kernel)
+        << "The kernel: " << kernel->fullname_with_scope()
+        << " kernel build failed, kernel type: " << kernel::KernelTypeLabel(AnfAlgo::GetKernelType(kernel));
+    }
+    MS_LOG(INFO) << "kernel opname:" << opname << ", kernel type:" << GetKernelTypeStr(kernel_type);
+    MS_EXCEPTION_IF_NULL(kernel_mod_ptr);
+    AnfAlgo::SetKernelMod(kernel_mod_ptr, kernel.get());
+  }
+  return true;
+}
 
 kernel::KernelModPtr CreateKernelPacketKernelMod(const CNodePtr &kernel) {
   MS_LOG(DEBUG) << "Build KernelPacket: " << kernel->DebugString();
@@ -132,44 +173,6 @@ kernel::KernelModPtr GenerateAkgKernelMod(const CNodePtr &kernel) {
 #else
   return nullptr;
 #endif
-}
-
-bool GenerateKernelMod(const std::vector<CNodePtr> &kernels) {
-  for (const auto &kernel : kernels) {
-    MS_EXCEPTION_IF_NULL(kernel);
-    if (AnfAlgo::GetKernelMod(kernel)) {
-      continue;
-    }
-    if (AnfAlgo::IsKernelSelectBackoffOp(kernel)) {
-      continue;
-    }
-    std::string opname = common::AnfAlgo::GetCNodeName(kernel);
-    kernel::KernelModPtr kernel_mod_ptr = nullptr;
-    auto kernel_type = AnfAlgo::GetKernelType(kernel);
-    if (kernel_type == KernelType::ACL_KERNEL) {
-      kernel_mod_ptr = kernel::AclOpBuild(kernel);
-    } else if (kernel_type == KernelType::HOST_KERNEL) {
-      kernel_mod_ptr = kernel::HostOpBuild(kernel);
-    } else if (kernel_type == KernelType::HCCL_KERNEL) {
-      kernel_mod_ptr = kernel::HcclOpBuild(kernel);
-    } else if (kernel_type == KernelType::OPAPI_KERNEL) {
-      kernel_mod_ptr = kernel::AclnnOpBuild(kernel);
-    } else if (kernel_type == KernelType::AKG_KERNEL) {
-      kernel_mod_ptr = GenerateAkgKernelMod(kernel);
-    } else if (AnfAlgo::GetKernelType(kernel) == KernelType::RT_KERNEL) {
-      kernel_mod_ptr = kernel::RtOpBuild(kernel);
-    } else if (kernel_type == KernelType::INTERNAL_KERNEL) {
-      kernel_mod_ptr = kernel::InternalKernelBuild(kernel);
-    } else {
-      MS_LOG_WITH_NODE(EXCEPTION, kernel)
-        << "The kernel: " << kernel->fullname_with_scope()
-        << " kernel build failed, kernel type: " << kernel::KernelTypeLabel(AnfAlgo::GetKernelType(kernel));
-    }
-    MS_LOG(INFO) << "kernel opname:" << opname << ", kernel type:" << GetKernelTypeStr(kernel_type);
-    MS_EXCEPTION_IF_NULL(kernel_mod_ptr);
-    AnfAlgo::SetKernelMod(kernel_mod_ptr, kernel.get());
-  }
-  return true;
 }
 
 bool GraphWithNoRealKernel(const KernelGraphPtr &kernel_graph) {
@@ -911,7 +914,9 @@ void GeKernelExecutor::OptimizeGraph(const FuncGraphPtr &graph) const {
   memo.clear();
   GEGraphOptimization::GetInstance().OptimizeACLGraphAfterKernelSelect(kernel_graph, &memo);
   memo.clear();
-  InlineCallGraph(kernel_graph);
+  if (common::GetEnv("MS_DEV_GE_AS_KERNEL") != "1") {
+    InlineCallGraph(kernel_graph);
+  }
   memo.clear();
   InlineSwitchGraph(kernel_graph, &memo);
   OptimizeExecutionOrder(NOT_NULL(graph));
@@ -932,10 +937,17 @@ void GeKernelExecutor::CreateKernel(const std::vector<CNodePtr> &nodes) const {
   profiler::CollectHostInfo("Ascend", "CreateKernel", "CreateGeKernel", 1, 0, 0);
   PROF_START(create_kernel);
   device::ascend::SetKernelInfoBeforeCreateKernel(nodes);
-  auto ret = GenerateKernelMod(nodes);
+  auto ret = GenerateKernelMod(nodes, graph_executor_);
   if (!ret) {
     MS_LOG(EXCEPTION) << "Kernel build error.";
   }
+
+  if (!nodes.empty()) {
+    auto kernel_graph = std::dynamic_pointer_cast<session::KernelGraph>(nodes[0]->func_graph());
+    MS_EXCEPTION_IF_NULL(kernel_graph);
+    GEGraphOptimization::GetInstance().OptimizeACLGraphAfterCreateKernel(kernel_graph);
+  }
+
   PROF_END(create_kernel);
   profiler::CollectHostInfo("Ascend", "CreateKernel", "CreateGeKernel", 1, 0, 1);
   MS_LOG(DEBUG) << "Status record: end create kernel.";
@@ -1049,6 +1061,9 @@ void GeKernelExecutor::PreprocessBeforeRun(const FuncGraphPtr &graph) const {
   }
   // use GE
   if (kernel_graph->is_graph_run_mode() && IsEnableRefMode()) {
+    if (common::GetEnv("MS_DEV_GE_AS_KERNEL") == "1") {
+      return;
+    }
     if (GraphWithNoRealKernel(kernel_graph)) {
       return;
     }

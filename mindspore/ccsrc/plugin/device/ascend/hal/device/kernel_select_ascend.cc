@@ -59,6 +59,7 @@ constexpr size_t kAclOpSelect = 1;
 constexpr size_t kHcclOpSelect = 2;
 constexpr size_t kHostOpSelect = 3;
 constexpr size_t kInternalOpSelect = 4;
+constexpr size_t kGeOpSelect = 5;
 
 std::string KernelSelectDebugString(const kernel::KernelBuildInfo *build_info,
                                     const std::vector<std::shared_ptr<kernel::KernelBuildInfo>> &kernel_info_list) {
@@ -604,6 +605,16 @@ std::tuple<bool, std::string, ExceptionType> SelectKernelInfoWithMsg(const Kerne
   transform::ErrorAclType acl_err_type = transform::ErrorAclType::kNormalOp;
   std::tuple<bool, std::string, ExceptionType> result = std::make_tuple(true, "", NoExceptionType);
   std::string op_name = common::AnfAlgo::GetCNodeName(node);
+
+  if (common::GetEnv("MS_DEV_GE_AS_KERNEL") == "1" &&
+      common::AnfAlgo::CheckPrimitiveType(node, prim::kPrimCallInline)) {
+    GenerateKernelBuildInfo(node, KernelType::GE_KERNEL);
+    if (op_selected_type[kGeOpSelect].count(op_name) == 0) {
+      (void)op_selected_type[kGeOpSelect].insert(op_name);
+      MS_LOG(INFO) << op_name << " select GE kernel.";
+    }
+    return result;
+  }
 
   if (IsEnableInternalNode(node)) {
     GenerateKernelBuildInfo(node, KernelType::INTERNAL_KERNEL);

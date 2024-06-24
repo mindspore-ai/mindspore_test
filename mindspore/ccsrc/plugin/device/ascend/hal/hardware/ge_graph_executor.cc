@@ -285,6 +285,8 @@ void EnableGraphOutputZeroCopy(const KernelGraphPtr &graph) {
 struct GraphSummary {
   size_t const_memory_size = 0;
   size_t feature_memory_size = 0;
+  size_t stable_feature_memory_size = 0;
+  size_t dynamic_feature_memory_size = 0;
   bool is_feature_memory_refreshable = false;
   size_t stream_num = 0;
   size_t event_num = 0;
@@ -311,6 +313,14 @@ struct GraphSummary {
       status = graph_summary->GetFeatureMemoryBaseRefreshable(is_feature_memory_refreshable);
       if (status != ::ge::GRAPH_SUCCESS) {
         MS_LOG(EXCEPTION) << "GetFeatureMemoryBaseRefreshable failed, status = " << status;
+      }
+      status = graph_summary->GetFixedFeatureMemorySize(stable_feature_memory_size);
+      if (status != ::ge::GRAPH_SUCCESS) {
+        MS_LOG(EXCEPTION) << "GetFixedFeatureMemorySize failed, status = " << status;
+      }
+      status = graph_summary->GetRefreshableFeatureMemorySize(dynamic_feature_memory_size);
+      if (status != ::ge::GRAPH_SUCCESS) {
+        MS_LOG(EXCEPTION) << "GetRefreshableFeatureMemorySize failed, status = " << status;
       }
       status = graph_summary->GetStreamNum(stream_num);
       if (status != ::ge::GRAPH_SUCCESS) {
@@ -343,9 +353,10 @@ struct GraphSummary {
   std::string ToString() const {
     std::stringstream ss;
     ss << "const_memory_size[" << const_memory_size << "], feature_memory_size[" << feature_memory_size
-       << "], is_feature_memory_refreshable[" << is_feature_memory_refreshable << "], stream_num[" << stream_num
-       << "], event_num[" << event_num << "], output size[" << output_shapes.size() << "], is_static[" << is_static
-       << "]";
+       << "], stable_feature_memory_size[" << stable_feature_memory_size << "], dynamic_feature_memory_size["
+       << dynamic_feature_memory_size << "], is_feature_memory_refreshable[" << is_feature_memory_refreshable
+       << "], stream_num[" << stream_num << "], event_num[" << event_num << "], output size[" << output_shapes.size()
+       << "], is_static[" << is_static << "]";
     if (!output_shapes.empty()) {
       if (output_shapes.size() != output_dtypes.size()) {
         MS_LOG(WARNING) << "The output_dtypes size in summary is not equal to output_shapes size.";
@@ -557,6 +568,23 @@ bool CacheFileExists(const std::string &name) {
   return ret;
 }
 
+std::vector<GeTensor> CreateNewGeTensorList(const std::vector<KernelTensor *> &tensors) {
+  std::vector<GeTensor> new_tensors;
+  for (const auto &tensor : tensors) {
+    MS_EXCEPTION_IF_NULL(tensor);
+    auto ge_tensor_desc =
+      transform::TransformUtil::GetGeTensorDesc(tensor->GetShapeVector(), tensor->dtype_id(), kOpFormat_DEFAULT);
+    MS_EXCEPTION_IF_NULL(ge_tensor_desc);
+    ge_tensor_desc->SetPlacement(::ge::kPlacementDevice);
+    GeTensor ge_tensor(*ge_tensor_desc);
+    if (ge_tensor.SetData(reinterpret_cast<uint8_t *>(tensor->device_ptr()), tensor->size(), [](void *) {}) !=
+        ::ge::GRAPH_SUCCESS) {
+      MS_LOG(EXCEPTION) << "Set ge tensor addr failed! addr size is " << tensor->size();
+    }
+    new_tensors.emplace_back(std::move(ge_tensor));
+  }
+  return new_tensors;
+}
 }  // namespace
 
 void GeGraphExecutor::AllocInputHostMemory(const KernelGraphPtr &kernel_graph) const {
@@ -657,6 +685,54 @@ void GeGraphExecutor::AllocConstMemory(const transform::RunOptions &options, con
     MS_LOG(EXCEPTION) << "SetConstMemory for graph " << options.name << " failed.";
   }
   MS_LOG(INFO) << "End AllocConstMemory";
+}
+
+void GeGraphExecutor::AllocFixedMemory(const transform::RunOptions &options, const KernelGraphPtr &graph,
+                                       size_t const_memory_size, size_t fixed_memory_size) const {
+  auto graph_runner = transform::GetGraphRunner();
+  MS_EXCEPTION_IF_NULL(graph_runner);
+  if (const_memory_size != 0) {
+    MS_LOG(INFO) << "Start AllocConstMemory, memory_size: " << const_memory_size;
+    auto memory = ResManager()->AllocateStaticMemory(const_memory_size);
+    if (memory == nullptr) {
+      MS_LOG(EXCEPTION) << "Allocate static memory failed, memory size:" << const_memory_size
+                        << ", graph: " << graph->ToString();
+    }
+    if (common::IsNeedProfileMemory()) {
+      MS_LOG(WARNING) << "Need Profile Memory, alloc type: ConstMemory, size: " << const_memory_size
+                      << ", graph: " << graph->ToString() << ", device address addr: " << memory;
+    }
+    UpdateTracker("AllocConstMemory", "ConstMemory", graph->ToString(), const_memory_size, memory,
+                  device::tracker::MemType::kGeConst);
+
+    auto ret = graph_runner->SetConstMemory(options, memory, const_memory_size);
+    if (ret != transform::Status::SUCCESS) {
+      MS_LOG(EXCEPTION) << "SetConstMemory for graph " << options.name << " failed.";
+    }
+    MS_LOG(INFO) << "End AllocConstMemory";
+  }
+
+  // TODO(lqk): Fixed memory used to memory reuse.
+  if (fixed_memory_size != 0) {
+    MS_LOG(INFO) << "Start AllocFixedMemory, memory_size: " << fixed_memory_size;
+    auto memory = ResManager()->AllocateStaticMemory(fixed_memory_size);
+    if (memory == nullptr) {
+      MS_LOG(EXCEPTION) << "Allocate static memory failed, memory size:" << fixed_memory_size
+                        << ", graph: " << graph->ToString();
+    }
+    if (common::IsNeedProfileMemory()) {
+      MS_LOG(WARNING) << "Need Profile Memory, alloc type: FixedMemory, size: " << fixed_memory_size
+                      << ", graph: " << graph->ToString() << ", device address addr: " << memory;
+    }
+    UpdateTracker("AllocFixedMemory", "FixedMemory", graph->ToString(), fixed_memory_size, memory,
+                  device::tracker::MemType::kGeFixed);
+
+    auto ret = graph_runner->SetFixedMemory(options, memory, fixed_memory_size);
+    if (ret != transform::Status::SUCCESS) {
+      MS_LOG(EXCEPTION) << "SetFixedMemory for graph " << options.name << " failed.";
+    }
+    MS_LOG(INFO) << "End AllocFixedMemory";
+  }
 }
 
 void GeGraphExecutor::AllocFeatureMemory(const transform::RunOptions &options, size_t memory_size) const {
@@ -1007,6 +1083,107 @@ bool GeGraphExecutor::CompileGraph(const KernelGraphPtr &graph,
   return true;
 }
 
+std::vector<std::pair<uint32_t, uint32_t>> GeGraphExecutor::GetGraphRefIndexes(const KernelGraphPtr &graph) const {
+  MS_EXCEPTION_IF_NULL(graph);
+  const auto &key = GetGraphName(graph);
+  if (io_indexes_.count(key) != 0) {
+    return io_indexes_.at(key);
+  }
+  return {};
+}
+
+size_t GeGraphExecutor::GetGraphRefreshableMemory(const KernelGraphPtr &graph) const {
+  MS_EXCEPTION_IF_NULL(graph);
+  const auto &key = GetGraphName(graph);
+  if (graph_use_memory_.count(key) != 0) {
+    return graph_use_memory_.at(key);
+  }
+  return 0;
+}
+
+void GeGraphExecutor::SetGraphRefreshableMemory(const KernelGraphPtr &graph, void *device_ptr, size_t size) {
+  MS_EXCEPTION_IF_NULL(graph);
+  auto graph_runner = transform::GetGraphRunner();
+  MS_EXCEPTION_IF_NULL(graph_runner);
+  transform::RunOptions run_options;
+  run_options.name = GetGraphName(graph);
+  auto ret = graph_runner->UpdateRefreshableMemory(run_options, device_ptr, size);
+  if (ret != transform::Status::SUCCESS) {
+    MS_LOG(EXCEPTION) << "UpdateRefreshableMemory for graph " << run_options.name << " failed.";
+  }
+}
+
+bool GeGraphExecutor::CompileGraphForKernel(const KernelGraphPtr &graph) {
+  MS_EXCEPTION_IF_NULL(graph);
+  MS_LOG(INFO) << "ge graph executor compile graph " << graph->ToString();
+  auto &compile_cache_context = CompileCacheContext::GetInstance();
+  auto use_compile_cache = compile_cache_context.UseCompileCache();
+  std::map<std::string, ShapeVector> origin_shape;
+  const auto &tensor_order_map = GetDefaultParams(graph, &origin_shape);
+  auto name = GetGraphName(graph);
+  bool has_cache = CacheFileExists(name);
+  if (use_compile_cache && has_cache) {
+    MS_LOG(INFO) << "Use ge compile cache, and skip specific optimization and ge_adapter execution";
+    std::set<KernelGraphPtr> memo;
+    GEGraphOptimization::GetInstance().OptimizeGEGraph(graph, &memo);
+    if (!BuildFakeGraph(graph)) {
+      return false;
+    }
+  } else {
+    (void)BuildGraph(graph, tensor_order_map);
+  }
+  SetDynamicShapeAttr(graph);
+  transform::RunOptions run_options;
+  run_options.name = GetGraphName(graph);
+  auto graph_runner = transform::GetGraphRunner();
+  if (graph_runner == nullptr) {
+    MS_LOG(EXCEPTION) << "Can not found GraphRunner.";
+  }
+  // create loop var
+  RunInitGraph(run_options.name);
+  if (graph->is_dynamic_shape()) {
+    // Release GIL before calling into (potentially long-running) C++ code
+    GilReleaseWithCheck gil_release;
+    auto ret = graph_runner->CompileGraph(run_options);
+    if (ret != transform::Status::SUCCESS) {
+      MS_LOG(EXCEPTION) << "Compile graph " << run_options.name << " failed.";
+    }
+  } else {
+    ::ge::CompiledGraphSummaryPtr ge_graph_summary = nullptr;
+    {
+      // Release GIL before calling into (potentially long-running) C++ code
+      GilReleaseWithCheck gil_release;
+      auto ret = graph_runner->CompileGraph(run_options, &ge_graph_summary);
+      if (ret != transform::Status::SUCCESS) {
+        MS_LOG(EXCEPTION) << "Compile graph " << run_options.name << " failed.";
+      }
+    }
+    GraphSummary summary(ge_graph_summary);
+    MS_LOG(INFO) << "Graph " << run_options.name << " summary: " << summary.ToString();
+    feature_memorys[run_options.name] = summary.feature_memory_size;
+    streams[run_options.name] = summary.stream_num;
+    if (summary.is_feature_memory_refreshable) {
+      graph_use_memory_[run_options.name] = summary.dynamic_feature_memory_size;
+      AllocFixedMemory(run_options, graph, summary.const_memory_size, summary.stable_feature_memory_size);
+    } else {
+      graph_use_memory_[run_options.name] = 0;
+      AllocFixedMemory(run_options, graph, summary.const_memory_size, summary.feature_memory_size);
+    }
+    dynamic_workspace_update_.insert(run_options.name);
+    AddRefCorrespondPairs(graph, summary.io_indexes);
+    io_indexes_[run_options.name] = summary.io_indexes;
+  }
+  AllocMemory(graph);
+
+  graph->set_run_mode(RunMode::kGraphMode);
+  graph->set_memory_managed_by_ge(true);
+  if (ConfigManager::GetInstance().dataset_mode() == DatasetMode::DS_SINK_MODE) {
+    graph->set_is_loop_count_sink(true);
+  }
+  RevertOriginShape(graph, origin_shape);
+  return true;
+}
+
 void GeGraphExecutor::AddRefCorrespondPairs(const KernelGraphPtr &graph,
                                             const std::vector<std::pair<uint32_t, uint32_t>> &io_indexes) const {
   MS_EXCEPTION_IF_NULL(graph);
@@ -1328,6 +1505,86 @@ bool GeGraphExecutor::RunGraphRefMode(const FuncGraphPtr &graph, const std::vect
     }
     transform::Status ret =
       transform::RunGraphWithStreamAsync(graph_runner, run_options, ResManager()->GetStream(), ge_inputs, &ge_outputs);
+    if (ret != transform::Status::SUCCESS) {
+      MS_LOG(EXCEPTION) << "Exec graph failed";
+    }
+  }
+  if (is_dynamic_shape) {
+    auto graph_outputs = common::AnfAlgo::GetAllOutputWithIndex(graph->output());
+    SetDynamicOutputs(graph_outputs, &ge_outputs, ResManager());
+    auto sync_ret = ResManager()->SyncStream();
+    if (!sync_ret) {
+      MS_LOG(EXCEPTION) << "Sync stream failed";
+    }
+  }
+  ClearForwardOutputAddress(kg, device_context_);
+  return true;
+}
+
+bool GeGraphExecutor::RunGraphRefModeForKernel(const FuncGraphPtr &graph, const std::vector<KernelTensor *> &inputs,
+                                               const std::vector<KernelTensor *> &outputs, void *stream) {
+  MS_EXCEPTION_IF_NULL(graph);
+  MS_EXCEPTION_IF_NULL(stream);
+  auto graph_name = GetGraphName(graph);
+  RunInitGraph(graph_name);
+  MS_LOG(INFO) << "GE run graph start in ref mode, graph: " << graph_name << ".";
+  (void)ResManager()->BindDeviceToCurrentThread(false);
+
+  // call ge rungraph
+  KernelGraphPtr kg = std::dynamic_pointer_cast<session::KernelGraph>(graph);
+  transform::RunOptions run_options;
+  run_options.name = graph_name;
+  auto graph_runner = transform::GetGraphRunner();
+  if (graph_runner == nullptr) {
+    MS_LOG(EXCEPTION) << "Can not found GraphRunner.";
+  }
+
+  std::vector<GeTensor> ge_inputs = CreateNewGeTensorList(inputs);
+  std::vector<GeTensor> ge_outputs = CreateNewGeTensorList(outputs);
+
+  bool is_dynamic_shape = kg->is_dynamic_shape();
+  if (IsMemoryPoolRecycle() && !is_dynamic_shape) {
+    auto max_static_memory_size = ResManager()->GetMaxUsedMemorySize();
+    auto iter = feature_memorys.find(graph_name);
+    if (iter == feature_memorys.end()) {
+      MS_LOG(EXCEPTION) << "Graph " << graph_name << " feature memory not found.";
+    }
+    auto feature_memory_size = iter->second;
+    if (feature_memory_size != 0) {
+      size_t total_memory_size = max_static_memory_size + feature_memory_size;
+      size_t max_hbm_memory_size = static_cast<size_t>(AscendMemAdapter::GetInstance().GetMsUsedHbmSize());
+      AscendMemAdapter::GetInstance().UpdateActualPeakMemory(total_memory_size);
+      UpdateFMTracker(feature_memory_size, graph_name);
+      if (common::IsNeedMemoryStatistic()) {
+        MS_LOG(WARNING) << "Now Memory Status, graph: " << graph_name
+                        << ", max_static_memory_size: " << max_static_memory_size
+                        << ", feature_memory_size: " << feature_memory_size
+                        << ", max_hbm_memory_size: " << max_hbm_memory_size;
+      }
+      if (total_memory_size > max_hbm_memory_size) {
+        MS_LOG(EXCEPTION) << "Memory pool not enough, graph: " << graph_name
+                          << ", max_static_memory_size: " << max_static_memory_size
+                          << ", feature_memory_size: " << feature_memory_size
+                          << ", max_hbm_memory_size: " << max_hbm_memory_size;
+      }
+    }
+  }
+
+  {
+    // Release GIL before calling into (potentially long-running) C++ code
+    GilReleaseWithCheck gil_release;
+    MS_LOG(INFO) << "Run graph begin, inputs size is: " << inputs.size() << ", " << graph_name;
+    if (IsNeedNotifyTTP(graph)) {
+      MS_LOG(INFO) << "Found optimizer sub graph and send event to mindio";
+      auto sync_ret = ResManager()->SyncStream();
+      if (!sync_ret) {
+        MS_LOG(EXCEPTION) << "Sync stream failed";
+      } else {
+        mindio::MindIOAdapter::GetInstance()->NotifyStartUpdatingOs();
+      }
+    }
+    transform::Status ret =
+      transform::RunGraphWithStreamAsync(graph_runner, run_options, stream, ge_inputs, &ge_outputs);
     if (ret != transform::Status::SUCCESS) {
       MS_LOG(EXCEPTION) << "Exec graph failed";
     }

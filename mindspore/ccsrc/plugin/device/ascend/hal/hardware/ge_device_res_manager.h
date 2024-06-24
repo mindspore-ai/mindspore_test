@@ -95,6 +95,7 @@ class GeDeviceResManager : public DeviceResManager {
 
   // Relevant function to allocate and free device memory of raw ptr.
   bool AllocateMemory(DeviceAddress *const &address, uint32_t stream_id = UINT32_MAX) const override;
+  void *AllocateStaticMemory(size_t size, uint32_t stream_id = kDefaultStreamIndex) const;
   void *AllocateMemory(size_t size, uint32_t stream_id = kDefaultStreamIndex) const override;
   void FreeMemory(DeviceAddress *const &address) const override;
   void FreeMemory(void *ptr) const override;

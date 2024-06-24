@@ -482,6 +482,37 @@ Status GraphRunner::UpdateFeatureMemory(const RunOptions &options, const void *c
   return Status::SUCCESS;
 }
 
+Status GraphRunner::SetFixedMemory(const RunOptions &options, const void *const memory, size_t size) {
+  DfGraphWrapperPtr wrap_ptr = nullptr;
+  auto name = options.name;
+  auto ret = GetWrapper(name, &wrap_ptr);
+  if (ret != Status::SUCCESS) {
+    return ret;
+  }
+  ge::Status ge_ret = sess_->SetGraphFixedFeatureMemoryBase(static_cast<uint32_t>(wrap_ptr->id_), memory, size);
+  if (ge_ret != ge::GRAPH_SUCCESS) {
+    MS_LOG(ERROR) << "Call GE SetGraphFixedFeatureMemoryBase Failed, ret is: " << ge_ret;
+    return Status::FAILED;
+  }
+  return Status::SUCCESS;
+}
+
+Status GraphRunner::UpdateRefreshableMemory(const RunOptions &options, const void *const memory, size_t size) {
+  DfGraphWrapperPtr wrap_ptr = nullptr;
+  auto name = options.name;
+  auto ret = GetWrapper(name, &wrap_ptr);
+  if (ret != Status::SUCCESS) {
+    return ret;
+  }
+  ge::Status ge_ret =
+    sess_->UpdateGraphRefreshableFeatureMemoryBase(static_cast<uint32_t>(wrap_ptr->id_), memory, size);
+  if (ge_ret != ge::GRAPH_SUCCESS) {
+    MS_LOG(ERROR) << "Call GE UpdateRefreshableFeatureMemoryBase Failed, ret is: " << ge_ret;
+    return Status::FAILED;
+  }
+  return Status::SUCCESS;
+}
+
 Status GraphRunner::GetWrapper(const std::string &name, DfGraphWrapperPtr *wrapper) const {
   MS_EXCEPTION_IF_NULL(wrapper);
   if (name.empty()) {

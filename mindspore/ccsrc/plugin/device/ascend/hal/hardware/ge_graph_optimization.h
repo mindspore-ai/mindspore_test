@@ -36,6 +36,7 @@ class GEGraphOptimization {
   void OptimizeACLGraphAfterInline(const KernelGraphPtr &graph);
   void UnifyMindIR(const KernelGraphPtr &graph);
   void GEMindIRPass(const KernelGraphPtr &graph) const;
+  void OptimizeACLGraphAfterCreateKernel(const KernelGraphPtr &graph);
 
  private:
   GEGraphOptimization() {}

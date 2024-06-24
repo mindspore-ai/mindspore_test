@@ -6,6 +6,7 @@ file(GLOB_RECURSE D_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     "kernel_query.cc"
     "ascend_kernel_mod.cc"
     "acl/*.cc"
+    "ge/*.cc"
     "tbe/*.cc"
     "host/*.cc"
     "aicpu/*.cc"
@@ -39,6 +40,7 @@ endif()
 
 file(GLOB_RECURSE SRC_IN_910B RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "acl/*.cc"
+        "ge/*.cc"
         "host/*.cc"
         "hccl/*.cc"
         "rts/*.cc"

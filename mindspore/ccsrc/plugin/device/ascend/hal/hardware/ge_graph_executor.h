@@ -59,11 +59,21 @@ class GeGraphExecutor : public GraphExecutor {
   size_t GetGraphFeatureMemory(const FuncGraphPtr &graph) const override;
   void InitGraphInfo(const FuncGraphPtr &graph) override;
 
+  // For run as kernelmod.
+  std::vector<std::pair<uint32_t, uint32_t>> GetGraphRefIndexes(const KernelGraphPtr &graph) const;
+  size_t GetGraphRefreshableMemory(const KernelGraphPtr &graph) const;
+  void SetGraphRefreshableMemory(const KernelGraphPtr &graph, void *device_ptr, size_t size);
+  bool CompileGraphForKernel(const KernelGraphPtr &graph);
+  bool RunGraphRefModeForKernel(const FuncGraphPtr &graph, const std::vector<KernelTensor *> &inputs,
+                                const std::vector<KernelTensor *> &outputs, void *stream);
+
  private:
   bool RunGraphRefMode(const FuncGraphPtr &graph, const std::vector<tensor::Tensor> &inputs);
   void AllocInputHostMemory(const KernelGraphPtr &kernel_graph) const;
   void AllocOutputHostMemory(const KernelGraphPtr &kernel_graph) const;
   void AllocConstMemory(const transform::RunOptions &options, const KernelGraphPtr &graph, size_t memory_size) const;
+  void AllocFixedMemory(const transform::RunOptions &options, const KernelGraphPtr &graph, size_t const_memory_size,
+                        size_t fixed_memory_size) const;
   void AllocFeatureMemory(const transform::RunOptions &options, size_t memory_size) const;
   void AllocParameterMemory(const KernelGraphPtr &kernel_graph, std::set<KernelGraphPtr> *memo = nullptr) const;
   void BuildInputDataGeTensor(const KernelGraphPtr &kernel_graph);
@@ -86,6 +96,9 @@ class GeGraphExecutor : public GraphExecutor {
   bool IsNeedNotifyTTP(const FuncGraphPtr &graph);
   mindspore::HashMap<session::KernelGraph *, GeInputData> input_datas_;
   mindspore::HashMap<session::KernelGraph *, GeOutputData> output_datas_;
+  mindspore::HashMap<std::string, std::vector<std::pair<uint32_t, uint32_t>>> io_indexes_;
+  mindspore::HashMap<std::string, size_t> graph_use_memory_;
+  mindspore::HashSet<std::string> dynamic_workspace_update_;
   std::map<std::string, int64_t> graph_sink_size_;
   int64_t pre_sink_size_{-1};
 };

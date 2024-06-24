@@ -189,6 +189,16 @@ void *GeDeviceResManager::AllocateMemory(size_t size, uint32_t stream_id) const 
   return mem_manager_->MallocMemFromMemPool(size, false, false, stream_id);
 }
 
+void *GeDeviceResManager::AllocateStaticMemory(size_t size, uint32_t stream_id) const {
+  MS_EXCEPTION_IF_NULL(runtime_instance_);
+  runtime_instance_->SetContext();
+  MS_EXCEPTION_IF_NULL(mem_manager_);
+  if (swap_manager_ != nullptr) {
+    return swap_manager_->AllocDeviceMemory(size, stream_id);
+  }
+  return mem_manager_->MallocMemFromMemPool(size, true, false, stream_id);
+}
+
 size_t GeDeviceResManager::GetMaxUsedMemorySize() const {
   MS_EXCEPTION_IF_NULL(mem_manager_);
   return mem_manager_->GetMaxUsedMemorySize();
@@ -365,6 +375,10 @@ void GeDeviceResManager::GeSetContextOptions(const std::shared_ptr<MsContext> &m
   (*options)["ge.exec.atomicCleanPolicy"] = atomic_clean_policy;
   MS_LOG(INFO) << "Set GE atomic clean policy to " << atomic_clean_policy << ".";
   (*options)["ge.graphRunMode"] = "1";
+
+  if (common::GetEnv("MS_DEV_GE_AS_KERNEL") == "1") {
+    (*options)["ge.featureBaseRefreshable"] = "1";
+  }
 }
 
 void GeDeviceResManager::CreateSessionAndGraphRunner() {
