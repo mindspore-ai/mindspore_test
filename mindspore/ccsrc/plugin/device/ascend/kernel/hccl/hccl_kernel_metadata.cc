@@ -42,7 +42,7 @@ std::string GetKernelFormat(const CNodePtr &kernel_node, size_t index) {
   auto parallel_context_instance = parallel::ParallelContext::GetInstance();
   static const std::set<std::string> kCommOpName = {kReceiveOpName,         kSendOpName,       kAllToAllvOpName,
                                                     kAllToAllOpName,        kMuxReceiveOpName, kBarrierOpName,
-                                                    kBatchISendIRecvOpName, kAlltoAllVOpName};
+                                                    kBatchISendIRecvOpName, kAlltoAllVOpName,  kAllGatherOpName};
   MS_EXCEPTION_IF_NULL(parallel_context_instance);
   if (parallel_context_instance->enable_parallel_optimizer() && op_name == kBroadcastOpName) {
     return kOpFormat_DEFAULT;

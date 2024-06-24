@@ -1117,9 +1117,9 @@ class _AutoParallelContext:
         """
         self.check_context_handle()
         if comm_type == "allgather" and not self.get_enable_all_gather_fusion():
-            return
+            self.set_enable_all_gather_fusion(True)
         if comm_type == "reducescatter" and not self.get_enable_reduce_scatter_fusion():
-            return
+            self.set_enable_reduce_scatter_fusion(True)
         if not isinstance(comm_fusion, dict):
             raise TypeError("For 'comm_fusion', {} config must be dict, but got the type : {}.".format(
                 comm_type, type(comm_fusion)))
@@ -1153,7 +1153,7 @@ class _AutoParallelContext:
         """
         self.check_context_handle()
         if not self.get_enable_all_reduce_fusion():
-            return
+            self.set_enable_all_reduce_fusion(True)
         if not isinstance(comm_fusion, dict):
             raise TypeError("For 'comm_fusion', the 'allreduce' config must be dict, but got the type : {}.".format(
                 type(comm_fusion)))

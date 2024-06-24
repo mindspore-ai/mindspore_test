@@ -69,6 +69,10 @@
 #include "plugin/device/ascend/optimizer/ge/broadcast_for_select.h"
 #include "plugin/device/ascend/optimizer/ge/fa_alltoallv_parallel.h"
 #include "plugin/device/ascend/optimizer/ir_fusion/shape_reshape_fusion.h"
+#include "include/common/utils/parallel_context.h"
+#include "backend/common/pass/communication_op_fusion.h"
+#include "backend/common/pass/concat_outputs_for_all_gather.h"
+#include "backend/common/pass/split_inputs_for_reduce_scatter.h"
 
 namespace mindspore {
 namespace opt {
@@ -139,6 +143,23 @@ void GEBackendOptimizeACL(const KernelGraphPtr &kernel_graph) {
   auto optimizer = std::make_shared<GraphOptimizer>();
   auto opt_acl_pm = std::make_shared<PassManager>("opt_acl_pm");
   opt_acl_pm->AddPass(std::make_shared<SeedAdapter>());
+
+  // Do communication op fusion before InsertTensorMoveForCommunication pass.
+  // So these passes are before kernel select process, no need to generate kernel build info in them.
+  if (parallel::ParallelContext::GetInstance()->enable_all_reduce_fusion()) {
+    MS_LOG(INFO) << "Parallel comm_fusion of AllReduce is enabled.";
+    opt_acl_pm->AddPass(std::make_shared<opt::AllReduceFusion>());
+  }
+  if (parallel::ParallelContext::GetInstance()->enable_all_gather_fusion()) {
+    MS_LOG(INFO) << "Parallel comm_fusion of AllGather is enabled.";
+    opt_acl_pm->AddPass(std::make_shared<opt::AllGatherFusion>());
+    opt_acl_pm->AddPass(std::make_shared<opt::ConcatOutputsForAllGather>());
+  }
+  if (parallel::ParallelContext::GetInstance()->enable_reduce_scatter_fusion()) {
+    MS_LOG(INFO) << "Parallel comm_fusion of ReduceScatter is enabled.";
+    opt_acl_pm->AddPass(std::make_shared<opt::ReduceScatterFusion>());
+    opt_acl_pm->AddPass(std::make_shared<opt::SplitInputsForReduceScatter>());
+  }
 
   if (common::IsEnableRuntimeConfig(common::kRuntimeInsertTensorMove)) {
     opt_acl_pm->AddPass(std::make_shared<opt::InsertTensorMoveForHcclOpGe>());

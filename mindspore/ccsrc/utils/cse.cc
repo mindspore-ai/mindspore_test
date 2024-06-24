@@ -22,6 +22,7 @@
 #include <set>
 
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/other_ops.h"
 #include "ir/anf.h"
 #include "utils/hash_map.h"
 #include "abstract/abstract_function.h"
@@ -109,6 +110,7 @@ bool CSE::BuildOrderGroupForOneGraph(const FuncGraphPtr &fg) {
       if (IsPrimitiveEquals(prim, prim::kPrimUpdateState)) {
         continue;
       }
+
       ValueNodePtr value_node = node->cast<ValueNodePtr>();
       auto value = value_node->value();
       MS_EXCEPTION_IF_NULL(value);
@@ -117,7 +119,12 @@ bool CSE::BuildOrderGroupForOneGraph(const FuncGraphPtr &fg) {
       auto cnode = node->cast<CNodePtr>();
       auto &inputs = cnode->inputs();
       size_t init = 0;
-      h = std::accumulate(inputs.begin(), inputs.end(), init, [&hashes](std::size_t hash, const AnfNodePtr &node_in) {
+      auto start_iter = inputs.begin();
+      // For AllReduce, we create hash from the second input.
+      if (IsPrimitiveCNode(node, prim::kPrimAllReduce)) {
+        start_iter += 1;
+      }
+      h = std::accumulate(start_iter, inputs.end(), init, [&hashes](std::size_t hash, const AnfNodePtr &node_in) {
         return hash_combine(hash, hashes[node_in]);
       });
     } else if (node->isa<Parameter>()) {
@@ -247,7 +254,12 @@ bool CSE::CheckReplace(const AnfNodePtr &main, const AnfNodePtr &node) {
       return false;
     }
     // Check inputs, all inputs should equal.
-    for (size_t i = 0; i < inputs1.size(); i++) {
+    size_t i = kAnfPrimitiveIndex;
+    if (IsPrimitiveCNode(c_main, prim::kPrimAllReduce)) {
+      // For AllReduce, we require inputs except Primitive to be equal, so we compare from the second input.
+      i = kAnfPrimitiveIndex + 1;
+    }
+    for (; i < inputs1.size(); i++) {
       auto input1 = GetReplicatedNode(inputs1[i]);
       auto input2 = GetReplicatedNode(inputs2[i]);
       MS_EXCEPTION_IF_NULL(input1);

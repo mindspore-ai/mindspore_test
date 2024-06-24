@@ -167,3 +167,39 @@ def test_hccl_all_to_all_v():
     """
     return_code = os.system("mpirun --allow-run-as-root -n 2 pytest -s test_all_to_all_v.py")
     assert return_code == 0
+
+
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level0", card_mark="allcards", essential_mark="essential")
+def test_entry_hccl_allreduce_fusion_by_attr():
+    """
+    Feature: msrun allreduce fusion test case.
+    Description: msrun allreduce fusion test case.
+    Expectation: success
+    """
+    return_code = os.system("rm -rf rank* && msrun --worker_num=8 --local_worker_num=8 --join=True "
+                            "pytest -s test_comm_fusion.py::test_hccl_allreduce_fusion_by_attr")
+    assert return_code == 0
+
+
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="allcards", essential_mark="essential")
+def test_entry_hccl_allgather_fusion_by_attr():
+    """
+    Feature: msrun allgather fusion test case.
+    Description: msrun allgather fusion test case.
+    Expectation: success
+    """
+    return_code = os.system("rm -rf rank* && msrun --worker_num=8 --local_worker_num=8 --join=True "
+                            "pytest -s test_comm_fusion.py::test_hccl_allgather_fusion_by_attr")
+    assert return_code == 0
+
+
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="allcards", essential_mark="essential")
+def test_entry_hccl_reducescatter_fusion_by_attr():
+    """
+    Feature: msrun reducescatter fusion test case.
+    Description: msrun reducescatter fusion test case.
+    Expectation: success
+    """
+    return_code = os.system("rm -rf rank* && msrun --worker_num=8 --local_worker_num=8 --join=True "
+                            "pytest -s test_comm_fusion.py::test_hccl_reducescatter_fusion_by_attr")
+    assert return_code == 0
