@@ -346,9 +346,11 @@ class GradOperation(GradOperation_):
         self.grad_position = (0,)
 
     def __call__(self, fn, weights=None):
-        weights_id = _get_grad_weights_id(weights)
-        if self.grad_fn is not None and self.fn == fn and self.weights_id == weights_id:
-            return self.grad_fn
+        weights_id = ''
+        if context.get_context("mode") == context.GRAPH_MODE:
+            weights_id = _get_grad_weights_id(weights)
+            if self.grad_fn is not None and self.fn == fn and self.weights_id == weights_id:
+                return self.grad_fn
         grad_ = GradOperation(self.get_all, self.get_by_list, self.sens_param)
         # If calling Grad in GRAPH_MODE or calling Grad in functions decorated with 'jit', do grad in GRAPH_MODE
         # If calling Grad in pure PYNATIVE_MODE do grad in PYNATIVE_MODE
@@ -554,10 +556,12 @@ class _Grad(GradOperation_):
         self.weights_id = None
 
     def __call__(self, fn, weights=None, grad_position=0):
-        weights_id = _get_grad_weights_id(weights)
-        if self.grad_fn is not None and self.fn == fn and self.grad_position == grad_position and \
-                self.weights_id == weights_id:
-            return self.grad_fn
+        weights_id = ''
+        if context.get_context("mode") == context.GRAPH_MODE:
+            weights_id = _get_grad_weights_id(weights)
+            if self.grad_fn is not None and self.fn == fn and self.grad_position == grad_position and \
+                    self.weights_id == weights_id:
+                return self.grad_fn
 
         def aux_fn(*args, **kwargs):
             outputs = fn(*args, **kwargs)

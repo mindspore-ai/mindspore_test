@@ -21,6 +21,7 @@
 #include "runtime/device/device_address_utils.h"
 #include "kernel/common/pyboost/op_runner.h"
 #include "kernel/common/pyboost/customize/op_common.h"
+#include "runtime/pipeline/pipeline.h"
 
 namespace mindspore {
 namespace kernel {
@@ -36,7 +37,7 @@ tensor::BaseTensorPtr NonZeroGPUCustomize(const std::shared_ptr<OpRunner> &op, c
   PyBoostUtils::PrepareOpInputs(device_context, op->stream_id(), input_tensor);
   // Create device address for output tensors
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
-  runtime::OpExecutor::GetInstance().WaitAll();
+  runtime::Pipeline::Get().WaitForward();
 
   // exec aclnnNonzero
   const auto &outputs = op->outputs();

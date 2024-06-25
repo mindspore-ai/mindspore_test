@@ -20,7 +20,6 @@
 #include <memory>
 #include <utility>
 #include <map>
-#include <vector>
 #include <string>
 #include "ir/anf.h"
 
