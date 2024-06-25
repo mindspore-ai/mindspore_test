@@ -146,9 +146,8 @@ py::object PyNativeExecutor::RealRunOp(const py::args &args) const {
   if (PyGILState_Check() == 0) {
     py::gil_scoped_acquire acquire;
     return PyNativeAlgo::DataConvert::ValueToPyObj(op_run_info->real_out);
-  } else {
-    return PyNativeAlgo::DataConvert::ValueToPyObj(op_run_info->real_out);
   }
+  return PyNativeAlgo::DataConvert::ValueToPyObj(op_run_info->real_out);
 }
 
 py::object PyNativeExecutor::CallConstantFolding(const py::args &args) const {

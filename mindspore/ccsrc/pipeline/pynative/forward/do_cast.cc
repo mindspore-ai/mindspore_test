@@ -173,9 +173,8 @@ ValuePtr CastOperation::DoParamMixPrecisionCastTuple(const FrontendOpRunInfoPtr 
   }
   if (value_seq->isa<ValueList>()) {
     return std::make_shared<ValueList>(result);
-  } else {
-    return std::make_shared<ValueTuple>(result);
   }
+  return std::make_shared<ValueTuple>(result);
 }
 
 void CastOperation::DoSignatureCast(const FrontendOpRunInfoPtr &op_run_info,

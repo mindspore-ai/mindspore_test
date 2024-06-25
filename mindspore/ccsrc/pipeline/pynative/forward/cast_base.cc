@@ -172,28 +172,33 @@ ValuePtr CastBaseOperation::ScalarToDstDtypeValue(const ValuePtr &src_value,
   // Tensor not do scalar cast
   if (src_value->isa<tensor::BaseTensor>()) {
     return nullptr;
-  } else if (src_value->isa<Int64Imm>()) {
+  }
+  if (src_value->isa<Int64Imm>()) {
     const auto &int64_v = src_value->cast<Int64ImmPtr>();
     return Cast<int64_t>(int64_v->value(), dst_type);
-  } else if (src_value->isa<FP32Imm>()) {
+  }
+  if (src_value->isa<FP32Imm>()) {
     const auto &fp32_v = src_value->cast<FP32ImmPtr>();
     return Cast<float>(fp32_v->value(), dst_type);
-  } else if (src_value->isa<Int32Imm>()) {
+  }
+  if (src_value->isa<Int32Imm>()) {
     const auto &int32_v = src_value->cast<Int32ImmPtr>();
     return Cast<int32_t>(int32_v->value(), dst_type);
-  } else if (src_value->isa<FP64Imm>()) {
+  }
+  if (src_value->isa<FP64Imm>()) {
     const auto &fp64_v = src_value->cast<FP64ImmPtr>();
     return Cast<double>(fp64_v->value(), dst_type);
-  } else if (src_value->isa<BoolImm>()) {
+  }
+  if (src_value->isa<BoolImm>()) {
     const auto &bool_v = src_value->cast<BoolImmPtr>();
     return Cast<bool>(bool_v->value(), dst_type);
-  } else if (src_value->isa<Int16Imm>()) {
+  }
+  if (src_value->isa<Int16Imm>()) {
     const auto &int16_v = src_value->cast<Int16ImmPtr>();
     return Cast<int16_t>(int16_v->value(), dst_type);
-  } else {
-    MS_LOG(DEBUG) << "Now, the value [" << src_value->ToString() << "] is not supported to cast directly.";
-    return nullptr;
   }
+  MS_LOG(DEBUG) << "Now, the value [" << src_value->ToString() << "] is not supported to cast directly.";
+  return nullptr;
 }
 }  // namespace pynative
 }  // namespace mindspore

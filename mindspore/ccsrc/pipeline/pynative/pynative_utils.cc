@@ -344,26 +344,36 @@ std::string Common::GetIdByValue(const ValuePtr &v) {
   MS_EXCEPTION_IF_NULL(v);
   if (v->isa<tensor::BaseTensor>()) {
     return v->cast<tensor::BaseTensorPtr>()->id();
-  } else if (v->isa<stub::StubNode>()) {
+  }
+  if (v->isa<stub::StubNode>()) {
     return GetIdByValue(v->cast<stub::StubNodePtr>()->WaitValue());
-  } else if (v->isa<Cell>()) {
+  }
+  if (v->isa<Cell>()) {
     return v->cast<CellPtr>()->id();
-  } else if (v->isa<mindspore::Type>()) {
+  }
+  if (v->isa<mindspore::Type>()) {
     auto type_ptr = v->cast<mindspore::TypePtr>();
     return "Type:" + type_ptr->ToString();
-  } else if (v->isa<StringImm>()) {
+  }
+  if (v->isa<StringImm>()) {
     return "S" + v->cast<StringImmPtr>()->value();
-  } else if (v->isa<BoolImm>()) {
+  }
+  if (v->isa<BoolImm>()) {
     return "B" + std::to_string(v->cast<BoolImmPtr>()->value());
-  } else if (v->isa<IntegerImm>()) {
+  }
+  if (v->isa<IntegerImm>()) {
     return "I" + std::to_string(v->cast<Int64ImmPtr>()->value());
-  } else if (v->isa<FloatImm>()) {
+  }
+  if (v->isa<FloatImm>()) {
     return "F" + std::to_string(v->cast<FP32ImmPtr>()->value());
-  } else if (v->isa<None>()) {
+  }
+  if (v->isa<None>()) {
     return "None";
-  } else if (v->isa<Ellipsis>()) {
+  }
+  if (v->isa<Ellipsis>()) {
     return "Ellipsis";
-  } else if (v->isa<ValueSequence>()) {
+  }
+  if (v->isa<ValueSequence>()) {
     auto p_list = v->cast<ValueSequencePtr>();
     string prefix = v->isa<ValueTuple>() ? "Tuple<" : "List<";
     if (p_list->size() == 0) {
@@ -451,7 +461,8 @@ bool Common::ValueHasDynamicShape(const ValuePtr &value) {
   MS_EXCEPTION_IF_NULL(value);
   if (value->isa<tensor::BaseTensor>()) {
     return value->cast<tensor::BaseTensorPtr>()->base_shape_ptr() != nullptr;
-  } else if (value->isa<ValueSequence>()) {
+  }
+  if (value->isa<ValueSequence>()) {
     auto value_seq = value->cast<ValueSequencePtr>();
     return std::any_of(value_seq->value().begin(), value_seq->value().end(),
                        [](const ValuePtr &elem) { return ValueHasDynamicShape(elem); });
@@ -574,15 +585,17 @@ std::pair<TypePtr, TypeId> Common::GetTypeFromValue(const ValuePtr &v) {
   MS_EXCEPTION_IF_NULL(v);
   if (v->isa<tensor::BaseTensor>()) {
     return std::make_pair(v->cast<tensor::BaseTensorPtr>()->Dtype(), kObjectTypeTensorType);
-  } else if (v->isa<ValueTuple>()) {
-    return std::make_pair(v->type(), kObjectTypeTuple);
-  } else if (v->isa<ValueList>()) {
-    return std::make_pair(v->type(), kObjectTypeList);
-  } else if (v->isa<None>()) {
-    return std::make_pair(kTypeNone, kMetaTypeNone);
-  } else {
-    return std::make_pair(v->type(), v->type()->object_type());
   }
+  if (v->isa<ValueTuple>()) {
+    return std::make_pair(v->type(), kObjectTypeTuple);
+  }
+  if (v->isa<ValueList>()) {
+    return std::make_pair(v->type(), kObjectTypeList);
+  }
+  if (v->isa<None>()) {
+    return std::make_pair(kTypeNone, kMetaTypeNone);
+  }
+  return std::make_pair(v->type(), v->type()->object_type());
 }
 
 ShapeVector Common::GetShapeFromValue(const ValuePtr &v) {
@@ -598,9 +611,8 @@ ShapeVector Common::GetShapeFromValue(const ValuePtr &v) {
                            [](int64_t s) { return s; });
     }
     return plant_shape_vector;
-  } else {
-    return ShapeVector{};
   }
+  return ShapeVector{};
 }
 
 ValuePtr Common::CreatOutputTensorValueByAbstract(const abstract::AbstractBasePtr &abs) {
@@ -924,7 +936,8 @@ InputType Common::SetValueGradInfo(const ValuePtr &value, const TopCellInfoPtr &
       top_cell->AddMetaGradInfo(tensor_value, auto_grad_meta_data);
     }
     return grad_type;
-  } else if (value->isa<ValueSequence>()) {
+  }
+  if (value->isa<ValueSequence>()) {
     const auto &value_seq = value->cast<ValueSequencePtr>()->value();
     InputType ret_type = grad_type;
     for (const auto &v : value_seq) {
@@ -934,15 +947,18 @@ InputType Common::SetValueGradInfo(const ValuePtr &value, const TopCellInfoPtr &
       }
     }
     return ret_type;
-  } else if (value->isa<tensor::COOTensor>()) {
+  }
+  if (value->isa<tensor::COOTensor>()) {
     const auto &coo_tensor = value->cast<tensor::COOTensorPtr>();
     const auto &indices_tensor = coo_tensor->GetIndices();
     return SetValueGradInfo(indices_tensor, top_cell, grad_type);
-  } else if (value->isa<tensor::CSRTensor>()) {
+  }
+  if (value->isa<tensor::CSRTensor>()) {
     const auto &csr_tensor = value->cast<tensor::CSRTensorPtr>();
     const auto &indices_tensor = csr_tensor->GetIndices();
     return SetValueGradInfo(indices_tensor, top_cell, grad_type);
-  } else if (value->isa<ValueDictionary>()) {
+  }
+  if (value->isa<ValueDictionary>()) {
     const auto &dic_v = value->cast<ValueDictionaryPtr>()->value();
     for (const auto &v : dic_v) {
       (void)SetValueGradInfo(v.second, top_cell, grad_type);
@@ -1095,14 +1111,16 @@ size_t Common::GetValueSize(const ValuePtr &v) {
   MS_EXCEPTION_IF_NULL(v);
   if (v->isa<tensor::BaseTensor>() || v->isa<Scalar>()) {
     return 1;
-  } else if (v->isa<ValueSequence>()) {
+  }
+  if (v->isa<ValueSequence>()) {
     auto seq = v->cast<ValueSequencePtr>();
     size_t output_size = 0;
     for (const auto &val : seq->value()) {
       output_size += GetValueSize(val);
     }
     return output_size;
-  } else if (v->isa<ValueDictionary>()) {
+  }
+  if (v->isa<ValueDictionary>()) {
     const auto &v_dict = v->cast<ValueDictionaryPtr>();
     size_t output_size = 0;
     for (const auto &val : v_dict->value()) {
@@ -1203,28 +1221,39 @@ void AutoGrad::CheckAndSetAbstract(const OpGradInfoPtr &op_grad_info) {
 std::string PyParser::GetIdByPyObj(const py::object &obj) {
   if (py::isinstance<tensor::BaseTensor>(obj)) {
     return obj.cast<tensor::BaseTensorPtr>()->id();
-  } else if (IsStubTensor(obj)) {
+  }
+  if (IsStubTensor(obj)) {
     return ConvertStubTensor(obj)->id();
-  } else if (py::isinstance<Cell>(obj)) {
+  }
+  if (py::isinstance<Cell>(obj)) {
     return obj.cast<CellPtr>()->id();
-  } else if (py::isinstance<mindspore::Type>(obj)) {
+  }
+  if (py::isinstance<mindspore::Type>(obj)) {
     auto type_ptr = obj.cast<mindspore::TypePtr>();
     return "Type:" + type_ptr->ToString();
-  } else if (py::isinstance<py::str>(obj)) {
+  }
+  if (py::isinstance<py::str>(obj)) {
     return "S" + obj.cast<std::string>();
-  } else if (py::isinstance<py::bool_>(obj)) {
+  }
+  if (py::isinstance<py::bool_>(obj)) {
     return "B" + py::str(obj).cast<std::string>();
-  } else if (py::isinstance<py::int_>(obj)) {
+  }
+  if (py::isinstance<py::int_>(obj)) {
     return "I" + py::str(obj).cast<std::string>();
-  } else if (py::isinstance<py::float_>(obj)) {
+  }
+  if (py::isinstance<py::float_>(obj)) {
     return "F" + py::str(obj).cast<std::string>();
-  } else if (py::isinstance<py::none>(obj)) {
+  }
+  if (py::isinstance<py::none>(obj)) {
     return "None";
-  } else if (py::isinstance<py::ellipsis>(obj)) {
+  }
+  if (py::isinstance<py::ellipsis>(obj)) {
     return "Ellipsis";
-  } else if (py::isinstance<py::tuple>(obj) || py::isinstance<py::list>(obj)) {
+  }
+  if (py::isinstance<py::tuple>(obj) || py::isinstance<py::list>(obj)) {
     return GetIdForPyTupleOrList(obj);
-  } else if (py::isinstance<py::function>(obj)) {
+  }
+  if (py::isinstance<py::function>(obj)) {
     return GetFnInfoByPyObj(obj);
   }
   // For id with value and obj can be the same
@@ -1272,58 +1301,37 @@ void PyParser::SetPrim(const FrontendOpRunInfoPtr &op_run_info, const py::object
 }
 
 std::string PyParser::BuilidPyInputTypeString(const py::object &obj) {
-  if (py::isinstance<py::bool_>(obj)) {
-    return "bool";
+  if (py::isinstance<mindspore::tensor::BaseTensor>(obj)) {
+    return "Tensor";
   }
-
+  if (IsStubTensor(obj)) {
+    return "Tensor";
+  }
   if (py::isinstance<py::int_>(obj)) {
     return "int";
   }
-
   if (py::isinstance<py::float_>(obj)) {
     return "float";
   }
-
+  if (py::isinstance<py::bool_>(obj)) {
+    return "bool";
+  }
   if (py::isinstance<py::str>(obj)) {
     return "string";
   }
-
   if (py::isinstance<py::none>(obj)) {
     return "None";
   }
 
-  if (py::isinstance<mindspore::tensor::BaseTensor>(obj)) {
-    return "Tensor";
-  }
-
-  if (IsStubTensor(obj)) {
-    return "Tensor";
-  }
-
-  if (py::isinstance<py::tuple>(obj)) {
+  if (py::isinstance<py::tuple>(obj) || py::isinstance<py::list>(obj)) {
     std::stringstream ss;
-    ss << "tuple<";
-    auto tuple = obj.cast<py::tuple>();
+    ss << (py::isinstance<py::tuple>(obj) ? "Tuple<" : "List<");
+    auto tuple = py::cast<py::tuple>(obj);
     for (size_t i = 0; i < tuple.size(); i++) {
       if (i == 0) {
         ss << BuilidPyInputTypeString(tuple[i]);
       } else {
         ss << ", " << BuilidPyInputTypeString(tuple[i]);
-      }
-    }
-    ss << ">";
-    return ss.str();
-  }
-
-  if (py::isinstance<py::list>(obj)) {
-    std::stringstream ss;
-    ss << "list<";
-    auto list = obj.cast<py::list>();
-    for (size_t i = 0; i < list.size(); i++) {
-      if (i == 0) {
-        ss << BuilidPyInputTypeString(list[i]);
-      } else {
-        ss << ", " << BuilidPyInputTypeString(list[i]);
       }
     }
     ss << ">";
@@ -1363,7 +1371,7 @@ void PyParser::PrintTypeCastError(const ops::OpDefPtr &op_def, const py::list &o
   }
   std::vector<std::string> op_type_list;
   for (size_t index = 0; index < op_inputs.size(); ++index) {
-    (void)op_type_list.emplace_back(PyParser::BuilidPyInputTypeString(op_inputs[index]));
+    (void)op_type_list.emplace_back(BuilidPyInputTypeString(op_inputs[index]));
   }
   MS_EXCEPTION(TypeError) << ops::BuildOpErrorMsg(op_def, op_type_list);
 }
@@ -1482,21 +1490,20 @@ ValuePtr DataConvert::PyObjToValue(const py::object &obj, bool stub) {
   return converted_ret;
 }
 
-ValuePtr DataConvert::BaseRefToValue(const BaseRef &value, bool requires_grad, bool is_out_sequence) {
+ValuePtr DataConvert::BaseRefToValue(const BaseRef &value, bool requires_grad, bool is_out_sequence, size_t op_index) {
   MS_EXCEPTION_IF_NULL(value);
   ValuePtr ret;
   if (utils::isa<tensor::BaseTensorPtr>(value)) {
     auto t = utils::cast<tensor::BaseTensorPtr>(value);
     if (requires_grad) {
-      t->set_auto_grad_meta_data(std::make_shared<AutoGradMetaData>());
-      t->auto_grad_meta_data()->set_input_type(InputType::kOpOutput);
+      t->set_auto_grad_meta_data(std::make_shared<AutoGradMetaData>(op_index, InputType::kOpOutput));
     }
     ret = t;
   } else if (utils::isa<ValuePtr>(value)) {
     ret = utils::cast<ValuePtr>(value);
   } else if (utils::isa<VectorRef>(value)) {
     auto vec_ref = utils::cast<VectorRef>(value);
-    ret = VectorRefToValue(vec_ref, requires_grad, is_out_sequence);
+    ret = VectorRefToValue(vec_ref, requires_grad, is_out_sequence, op_index);
   } else if (utils::isa<int>(value)) {
     ret = MakeValue(utils::cast<int>(value));
   } else if (utils::isa<float>(value)) {
@@ -1511,16 +1518,16 @@ ValuePtr DataConvert::BaseRefToValue(const BaseRef &value, bool requires_grad, b
   return ret;
 }
 
-ValuePtr DataConvert::VectorRefToValue(const VectorRef &vec_ref, bool requires_grad, bool is_out_sequence) {
+ValuePtr DataConvert::VectorRefToValue(const VectorRef &vec_ref, bool requires_grad, bool is_out_sequence,
+                                       size_t op_index) {
   MS_EXCEPTION_IF_NULL(vec_ref);
-
   size_t value_size = vec_ref.size();
   if (value_size == 1 && !is_out_sequence) {
-    return BaseRefToValue(vec_ref[0], requires_grad, is_out_sequence);
+    return BaseRefToValue(vec_ref[0], requires_grad, is_out_sequence, op_index);
   }
   std::vector<ValuePtr> v_list(value_size);
   for (size_t i = 0; i < value_size; ++i) {
-    v_list[i] = BaseRefToValue(vec_ref[i], requires_grad, is_out_sequence);
+    v_list[i] = BaseRefToValue(vec_ref[i], requires_grad, is_out_sequence, op_index);
   }
   return std::make_shared<ValueTuple>(v_list);
 }
@@ -1654,8 +1661,8 @@ void PyBoost::MakeOutputValue(const FrontendOpRunInfoPtr &op_run_info, const ker
     if (op->output_abs() != nullptr || op->output_value_simple_info() != nullptr) {
       // Set auto grad meta data for op output
       if (op_run_info->requires_grad) {
-        op->outputs()[0]->set_auto_grad_meta_data(std::make_shared<AutoGradMetaData>());
-        op->outputs()[0]->auto_grad_meta_data()->set_input_type(InputType::kOpOutput);
+        op->outputs()[0]->set_auto_grad_meta_data(std::make_shared<AutoGradMetaData>(
+          Common::GetPyNativeExecutor()->grad_executor()->top_cell()->op_index(), InputType::kOpOutput));
       }
       op_run_info->real_out = op->outputs()[0];
       return;
@@ -1667,8 +1674,8 @@ void PyBoost::MakeOutputValue(const FrontendOpRunInfoPtr &op_run_info, const ker
     MS_EXCEPTION_IF_NULL(output_tensor);
     // Set auto grad meta data for op outputs
     if (op_run_info->requires_grad) {
-      output_tensor->set_auto_grad_meta_data(std::make_shared<AutoGradMetaData>());
-      output_tensor->auto_grad_meta_data()->set_input_type(InputType::kOpOutput);
+      output_tensor->set_auto_grad_meta_data(std::make_shared<AutoGradMetaData>(
+        Common::GetPyNativeExecutor()->grad_executor()->top_cell()->op_index(), InputType::kOpOutput));
     }
     output_values[i] = output_tensor;
   }

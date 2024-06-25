@@ -31,11 +31,14 @@ ValuePtr GetInferValueFromAbstract(const AbstractBasePtr &abs) {
   MS_EXCEPTION_IF_NULL(abs);
   if (abs->isa<abstract::AbstractTensor>()) {
     return abs->cast<abstract::AbstractTensorPtr>()->BuildValue();
-  } else if (abs->isa<abstract::AbstractSlice>()) {
+  }
+  if (abs->isa<abstract::AbstractSlice>()) {
     return abs->cast<abstract::AbstractSlicePtr>()->BuildValue();
-  } else if (abs->isa<abstract::AbstractScalar>() || abs->isa<abstract::AbstractType>()) {
+  }
+  if (abs->isa<abstract::AbstractScalar>() || abs->isa<abstract::AbstractType>()) {
     return abs->BuildValue();
-  } else if (abs->isa<abstract::AbstractTuple>()) {
+  }
+  if (abs->isa<abstract::AbstractTuple>()) {
     auto tuple_abs = abs->cast<abstract::AbstractTuplePtr>();
     const auto &value = tuple_abs->BuildValue();
     MS_EXCEPTION_IF_NULL(value);
@@ -43,25 +46,29 @@ ValuePtr GetInferValueFromAbstract(const AbstractBasePtr &abs) {
       return value;
     }
     return tuple_abs->ElementsBuildValue<ValueTuple>();
-  } else if (abs->isa<abstract::AbstractList>()) {
+  }
+  if (abs->isa<abstract::AbstractList>()) {
     auto list_abs = abs->cast<abstract::AbstractListPtr>();
     const auto &value = list_abs->BuildValue();
     if (value->isa<ValueAny>()) {
       return value;
     }
     return list_abs->ElementsBuildValue<ValueList>();
-  } else if (abs->isa<abstract::AbstractRowTensor>()) {
+  }
+  if (abs->isa<abstract::AbstractRowTensor>()) {
     return abs->cast<abstract::AbstractRowTensorPtr>()->BuildValue();
-  } else if (abs->isa<abstract::AbstractCOOTensor>()) {
+  }
+  if (abs->isa<abstract::AbstractCOOTensor>()) {
     return abs->cast<abstract::AbstractCOOTensorPtr>()->BuildValue();
-  } else if (abs->isa<abstract::AbstractCSRTensor>()) {
+  }
+  if (abs->isa<abstract::AbstractCSRTensor>()) {
     return abs->cast<abstract::AbstractCSRTensorPtr>()->BuildValue();
-  } else if (abs->isa<abstract::AbstractMapTensor>()) {
-    return kValueAny;
-  } else {
-    MS_LOG(DEBUG) << "Unsupported abstract type for primitive, the abs is " << abs->ToString();
+  }
+  if (abs->isa<abstract::AbstractMapTensor>()) {
     return kValueAny;
   }
+  MS_LOG(DEBUG) << "Unsupported abstract type for primitive, the abs is " << abs->ToString();
+  return kValueAny;
 }
 
 void CallPyInferFunc(const PrimitivePtr &primitive, const FrontendOpRunInfoPtr &op_run_info) {
