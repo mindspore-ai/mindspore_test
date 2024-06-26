@@ -37,8 +37,6 @@ bool EnableCellReuse();
 
 bool HasBpropGetter(const OptimizerPtr &opt, const AnfNodePtr &k_fg_caller);
 
-AnfNodePtr GetBpropCaller(const FuncGraphManagerPtr &manager, const AnfNodePtr &bprop_getter);
-
 bool AddRecomputeNodes(const FuncGraphPtr &root, const opt::OptimizerPtr &opt);
 
 class RemoveNotRecomputeNode : public AnfVisitor {
