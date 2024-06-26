@@ -146,6 +146,12 @@ AnfNodePtr GetJUser(const FuncGraphManagerPtr &manager, const AnfNodePtr &j_node
   }
   return users.begin()->first;
 }
+
+void AddToManage(const pipeline::ResourceBasePtr &resources, const FuncGraphPtr &func_graph) {
+  auto manager_ptr = resources->manager();
+  MS_EXCEPTION_IF_NULL(manager_ptr);
+  manager_ptr->AddFuncGraph(func_graph);
+}
 }  // namespace
 
 FuncGraphPtr GradOneFuncGraph(const FuncGraphPtr &func_graph, const opt::OptimizerPtr &optimizer, bool is_top,
@@ -156,9 +162,7 @@ FuncGraphPtr GradOneFuncGraph(const FuncGraphPtr &func_graph, const opt::Optimiz
     return gradkv->second.func_graph();
   }
   const auto &resources = optimizer->resource();
-  auto manager_ptr = resources->manager();
-  MS_EXCEPTION_IF_NULL(manager_ptr);
-  manager_ptr->AddFuncGraph(func_graph);
+  AddToManage(resources, func_graph);
   auto multi_graph_sink = [&func_graph](const FuncGraphPtr &f) {
     if (MsContext::GetInstance()->get_param<bool>(MS_CTX_IS_MULTI_GRAPH_SINK)) {
       if (func_graph->has_flag(FUNC_GRAPH_FLAG_IGNORE_VALUE)) {
@@ -202,9 +206,7 @@ FuncGraphPtr Grad(const FuncGraphPtr &func_graph, const opt::OptimizerPtr &optim
   }
 
   const auto &resources = optimizer->resource();
-  auto manager_ptr = resources->manager();
-  MS_EXCEPTION_IF_NULL(manager_ptr);
-  manager_ptr->AddFuncGraph(func_graph);
+  AddToManage(resources, func_graph);
 
   FuncGraphPtr grad_fg = func_graph;
   if (func_graph->func_graphs_used().size() != 0 && optimizer->is_first_order_j()) {
