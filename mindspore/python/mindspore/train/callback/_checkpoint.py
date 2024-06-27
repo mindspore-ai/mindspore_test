@@ -39,7 +39,6 @@ from mindspore.common.generator import Generator
 from mindspore.common.api import _cell_graph_executor
 from mindspore._c_expression import _collect_host_info
 
-
 _cur_dir = os.getcwd()
 SAVE_DIR = _cur_dir
 _info_list = ["epoch_num", "step_num"]
@@ -88,14 +87,22 @@ def _chg_ckpt_file_name_if_same_exist(directory, prefix, exception=False):
             if index == 0:
                 suffix_num = max(suffix_num, 1)
             elif index != -1:
-                num = filename[pre_len+1:pre_len+index]
+                num = filename[pre_len + 1:pre_len + index]
                 if num.isdigit():
-                    suffix_num = max(suffix_num, int(num)+1)
+                    suffix_num = max(suffix_num, int(num) + 1)
 
     if suffix_num != 0:
         prefix = f'{prefix}_{suffix_num}'
 
     return prefix
+
+
+def _check_format_and_other_params(format, enc_key, enc_mode, crc_check=False, async_save=False, exception_save=False,
+                                   map_param_inc=False, global_step_num=None):
+    param_not_default = (enc_key is not None or enc_mode != "AES-GCM" or crc_check or async_save
+                         or exception_save or map_param_inc or global_step_num is not None)
+    if format == "safetensors" and param_not_default:
+        raise ValueError("For 'save_checkpoint', when format is 'safetensors', other param must be default.")
 
 
 class CheckpointConfig:
@@ -136,6 +143,7 @@ class CheckpointConfig:
         exception_save (bool): Whether to save the current checkpoint when an exception occurs. Default: ``False`` .
         crc_check (bool): Whether to perform crc32 calculation when saving checkpoint and save the calculation
                           result to the end of ckpt. Default: ``False`` .
+        format (str): Format of the output file, can be "ckpt" or "safetensors". Default: "ckpt".
         kwargs (dict): Configuration options dictionary.
 
     Raises:
@@ -188,6 +196,7 @@ class CheckpointConfig:
                  enc_mode='AES-GCM',
                  exception_save=False,
                  crc_check=False,
+                 format="ckpt",
                  **kwargs):
 
         if save_checkpoint_steps is not None:
@@ -231,8 +240,12 @@ class CheckpointConfig:
         self._enc_key = Validator.check_isinstance('enc_key', enc_key, (type(None), bytes))
         self._enc_mode = Validator.check_isinstance('enc_mode', enc_mode, str)
         self._crc_check = Validator.check_isinstance('crc_check', crc_check, bool)
+        self._format = Validator.check_isinstance('format', format, str)
         self._map_param_inc = kwargs.get('incremental', False)
         self.enable_redundance = kwargs.get('enable_redundance', False)
+
+        _check_format_and_other_params(format, enc_key, enc_mode, crc_check, async_save, exception_save,
+                                       self._map_param_inc)
 
     @property
     def save_checkpoint_steps(self):
@@ -332,6 +345,10 @@ class CheckpointConfig:
             bool, whether to enable crc check.
         """
         return self._crc_check
+
+    @property
+    def format(self):
+        return self._format
 
     @property
     def append_dict(self):
@@ -615,10 +632,10 @@ class ModelCheckpoint(Callback):
 
         if save_ckpt:
             if self._prefix_func:
-                cur_ckpoint_file = self._prefix + ".ckpt"
+                cur_ckpoint_file = self._prefix + f".{self._config.format}"
             else:
                 cur_ckpoint_file = self._prefix + "-" + str(cb_params.cur_epoch_num) + "_" \
-                    + str(step_num_in_epoch) + ".ckpt"
+                                   + str(step_num_in_epoch) + f".{self._config.format}"
             # update checkpoint file list.
             self._manager.update_ckpoint_filelist(self._directory, self._prefix)
             # keep checkpoint files number equal max number.
@@ -657,7 +674,8 @@ class ModelCheckpoint(Callback):
             else:
                 save_checkpoint(network, cur_file, self._config.integrated_save, self._config.async_save,
                                 self._append_dict, self._config.enc_key, self._config.enc_mode,
-                                crc_check=self._config.crc_check, incremental=self._map_param_inc)
+                                crc_check=self._config.crc_check, format=self._config.format,
+                                incremental=self._map_param_inc)
 
             self._latest_ckpt_file_name = cur_file
 
@@ -691,8 +709,9 @@ class ModelCheckpoint(Callback):
 class CheckpointManager:
     """Manage checkpoint files according to train_config of checkpoint."""
 
-    def __init__(self):
+    def __init__(self, format='ckpt'):
         self._ckpoint_filelist = []
+        self._format = format
 
     @property
     def ckpoint_filelist(self):
@@ -707,10 +726,12 @@ class CheckpointManager:
     def update_ckpoint_filelist(self, directory, prefix):
         """Update the checkpoint file list."""
         self._ckpoint_filelist = []
+        format = self._format
+        format_length = len(format) + 1
         files = os.listdir(directory)
         for filename in files:
-            if os.path.splitext(filename)[-1] == ".ckpt" and filename.startswith(prefix + "-"):
-                mid_name = filename[len(prefix):-5]
+            if os.path.splitext(filename)[-1] == f".{format}" and filename.startswith(prefix + "-"):
+                mid_name = filename[len(prefix):-format_length]
                 flag = not (True in [char.isalpha() for char in mid_name])
                 if flag:
                     self._ckpoint_filelist.append(os.path.join(directory, filename))
