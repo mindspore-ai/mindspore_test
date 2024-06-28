@@ -133,6 +133,7 @@ enum class ProfilerEvent {
   kEmitOp,
   kExecute,
   kReleaseResource,
+  kNativeFunc,
 };
 
 static const std::map<ProfilerStage, std::string> kProfilerStageString = {
@@ -227,6 +228,7 @@ static const std::map<ProfilerEvent, std::string> kProfilerEventString = {
   {ProfilerEvent::kEmitOp, "EmitOp"},
   {ProfilerEvent::kReleaseResource, "ReleaseResource"},
   {ProfilerEvent::kExecute, "Execute"},
+  {ProfilerEvent::kNativeFunc, "NativeFunc"},
 };
 
 #define PROFILER_START(start_time)                                          \

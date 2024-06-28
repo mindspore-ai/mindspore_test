@@ -85,9 +85,9 @@ inline NodePtr MinOrMaxOpGetMask(BpropBuilder *ib, const NodePtr &x, const NodeP
 NodePtr MinOrMaxOpGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr &out, const NodePtr &dout) {
   auto mask = MinOrMaxOpGetMask(ib, x, out);
   auto x_zeros = ib->Zeros(x);
-  auto mask_sum = ib->Emit("SumExt", {mask, ib->EmitValue(kNone), ib->Value(false), ib->EmitValue(kNone)});
+  auto mask_sum = ib->SumExt(mask, ib->EmitValue(kNone), ib->Value(false), ib->EmitValue(kNone));
   auto grad_div_mask_sum = ib->Div(dout, ib->Cast(mask_sum, ib->GetDtype(dout)));
-  auto dx = ib->Emit("MaskedFill", {x_zeros, mask, grad_div_mask_sum});
+  auto dx = ib->MaskedFill(x_zeros, mask, grad_div_mask_sum);
   return {dx};
 }
 }  // namespace
@@ -600,7 +600,7 @@ NodePtrList ConcatBpropStatic(BpropBuilder *ib, const NodePtr &dout, const Shape
   auto offsets = ConcatOffsetCal(input_shapes, axis_s);
   for (size_t i = 0; i < input_nums; ++i) {
     auto offset_value = ib->Value(offsets[i]);
-    auto slice_out = ib->Emit(kSliceOpName, {dout, offset_value, ib->Value(input_shapes[i])});
+    auto slice_out = ib->Slice(dout, offset_value, ib->Value(input_shapes[i]));
     res.push_back(slice_out);
   }
   return {ib->MakeTuple(res)};
@@ -1027,7 +1027,7 @@ REG_BPROP_BUILDER("SortExt").SetUnusedInputs({i2, i3}).SetBody(BODYFUNC(ib) {
 
   auto indices = ib->TupleGetItem(ib->GetInput(kIndex4), kIndex1);
   auto dout0 = ib->TupleGetItem(ib->GetInput(kIndex5), kIndex0);
-  auto zeros = ib->Emit("ZerosLikeExt", {input, ib->Value(static_cast<int64_t>(ib->GetDtypeId(dout0)))});
+  auto zeros = ib->ZerosLikeExt(input, ib->Value(static_cast<int64_t>(ib->GetDtypeId(dout0))));
   auto res = ib->Emit("Scatter", {zeros, dim, indices, dout0, ib->EmitValue(MakeValue<int64_t>(0))});
   return {res, ib->OutZeros(dim), ib->OutZeros(ib->GetInput(kIndex2)), ib->OutZeros(ib->GetInput(kIndex3))};
 });
@@ -1046,7 +1046,7 @@ REG_BPROP_BUILDER("Stack").SetUnusedInputs({i0, i1}).SetBody(StackBpropFunc);
 REG_BPROP_BUILDER("ReverseV2").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
   auto axis = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex3);
-  auto dx = ib->Emit("ReverseV2", {dout, axis});
+  auto dx = ib->ReverseV2(dout, axis);
   return {dx, ib->OutZeros(axis)};
 });
 
@@ -1394,7 +1394,7 @@ REG_BPROP_BUILDER("Concat").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
     NodePtrList tuple_out;
     for (size_t i = 0; i < input_nums; ++i) {
       auto input = ib->Shape(ib->TupleGetItem(x, i));
-      auto slice_out = ib->Emit(kSliceOpName, {dout, concat_offset[i], input});
+      auto slice_out = ib->Slice(dout, concat_offset[i], input);
       tuple_out.push_back(slice_out);
     }
     auto res = ib->MakeTuple(tuple_out);
@@ -1449,7 +1449,7 @@ REG_BPROP_BUILDER("TensorScatterDiv").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib)
     auto gather_update = ib->GatherNd(dout, indices);
     auto gather_x = ib->GatherNd(x, indices);
     auto mul_result = ib->Mul(update, update);
-    auto neg_result = ib->Emit("Neg", {mul_result});
+    auto neg_result = ib->Neg(mul_result);
     update_grad = ib->Mul(gather_update, (ib->Div(gather_x, neg_result)));
   } else {
     update_grad = ib->OutZeros(update);
@@ -1463,8 +1463,7 @@ REG_BPROP_BUILDER("TensorScatterSub").SetUnusedInputs({i0, i2, i3}).SetBody(BODY
   auto update = ib->GetInput(kIndex2);
   auto dout = ib->GetInput(kIndex4);
   auto dx = x->need_compute_grad_out() ? dout : ib->OutZeros(x);
-  auto update_grad =
-    update->need_compute_grad_out() ? ib->Emit("Neg", {ib->GatherNd(dout, indices)}) : ib->OutZeros(update);
+  auto update_grad = update->need_compute_grad_out() ? ib->Neg(ib->GatherNd(dout, indices)) : ib->OutZeros(update);
   return {dx, ib->OutZeros(indices), update_grad};
 });
 
@@ -1781,8 +1780,9 @@ REG_BPROP_BUILDER("Padding").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
 
 DEF_PURE_SHAPE_CALC(g_transpose)
   .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
-    auto perm = inputs[0];
+    const auto &perm = inputs[0];
     std::vector<int64_t> new_perm;
+    new_perm.reserve(perm.size());
     (void)std::transform(perm.begin(), perm.end(), std::back_inserter(new_perm),
                          [&perm](const int64_t v) { return v >= 0 ? v : v + SizeToLong(perm.size()); });
     auto res_perm = InvertPermutation(new_perm);
@@ -1826,7 +1826,7 @@ REG_BPROP_BUILDER("SplitTensor").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib) 
   auto dout = ib->GetInput(kIndex4);
   auto split_int = ib->GetInput(kIndex1);
   auto axis = ib->GetInput(kIndex2);
-  auto dx = ib->Emit("Concat", {dout, axis});
+  auto dx = ib->Concat(dout, axis);
   return {dx, ib->OutZeros(split_int), ib->OutZeros(axis)};
 });
 
@@ -1834,7 +1834,7 @@ REG_BPROP_BUILDER("SplitWithSize").SetUnusedInputs({i0, i3}).SetBody(BODYFUNC(ib
   auto dout = ib->GetInput(kIndex4);
   auto split_sections = ib->GetInput(kIndex1);
   auto axis = ib->GetInput(kIndex2);
-  auto dx = ib->Emit("Concat", {dout, axis});
+  auto dx = ib->Concat(dout, axis);
   return {dx, ib->OutZeros(split_sections), ib->OutZeros(axis)};
 });
 
@@ -1842,7 +1842,7 @@ REG_BPROP_BUILDER("Chunk").SetUnusedInputs({i0, i1, i2, i3}).SetBody(BODYFUNC(ib
   auto chunks = ib->GetInput(kIndex1);
   auto axis = ib->GetInput(kIndex2);
   auto dout = ib->GetInput(kIndex4);
-  auto dx = ib->Emit("Concat", {dout, axis});
+  auto dx = ib->Concat(dout, axis);
   return {dx, ib->OutZeros(chunks), ib->OutZeros(axis)};
 });
 
@@ -1893,10 +1893,9 @@ REG_BPROP_BUILDER("SliceExt").SetUnusedInputs({i5}).SetBody(BODYFUNC(ib) {
   auto step = ib->GetInput(kIndex4);
   auto dout = ib->GetInput(kIndex6);
   auto res = ib->ShapeCalc(g_slice_ext, {x, axis, begin, end}, {1, 2, 3});
-  auto dx =
-    ib->Emit(kConcatOpName, {ib->MakeTuple({ib->Emit("Zeros", {res[0], ib->Value<int64_t>(ib->GetDtypeId(dout))}), dout,
-                                            ib->Emit("Zeros", {res[1], ib->Value<int64_t>(ib->GetDtypeId(dout))})}),
-                             axis});
+  auto dx = ib->Concat(ib->MakeTuple({ib->Zeros(res[0], ib->Value<int64_t>(ib->GetDtypeId(dout))), dout,
+                                      ib->Zeros(res[1], ib->Value<int64_t>(ib->GetDtypeId(dout)))}),
+                       axis);
 
   return {dx, ib->OutZeros(axis), ib->OutZeros(begin), ib->OutZeros(end), ib->OutZeros(step)};
 });
@@ -2185,7 +2184,8 @@ REG_BPROP_BUILDER("ConjugateTranspose").SetUnusedInputs({i0, i2}).SetBody(BODYFU
 REG_BPROP_BUILDER("Triu").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
   auto diagonal = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex3);
-  auto dx = ib->Emit("Triu", {dout, diagonal});
+
+  auto dx = ib->Triu(dout, diagonal);
   return {dx, ib->OutZeros(diagonal)};
 });
 
@@ -2305,7 +2305,8 @@ REG_BPROP_BUILDER("Col2ImExt").SetUnusedInputs({i0, i1, i6}).SetBody(BODYFUNC(ib
   auto padding = ib->GetInput(kIndex4);
   auto stride = ib->GetInput(kIndex5);
   auto dout = ib->GetInput(kIndex7);
-  auto dx = ib->Emit("Col2ImGrad", {dout, kernel_size, dilation, padding, stride});
+
+  auto dx = ib->Col2ImGrad(dout, kernel_size, dilation, padding, stride);
   return {dx,
           ib->OutZeros(output_size),
           ib->OutZeros(kernel_size),
@@ -2332,7 +2333,7 @@ REG_BPROP_BUILDER("Im2ColExt").SetUnusedInputs({i0, i1, i6}).SetBody(BODYFUNC(ib
   auto stride = ib->GetInput(kIndex4);
   auto dout = ib->GetInput(kIndex6);
   auto output_size = ib->ShapeCalc(g_im2col_ext, {input})[0];
-  auto dx = ib->Emit("Col2ImExt", {dout, output_size, kernel_size, dilation, padding, stride});
+  auto dx = ib->Col2ImExt(dout, output_size, kernel_size, dilation, padding, stride);
   return {dx, ib->OutZeros(kernel_size), ib->OutZeros(dilation), ib->OutZeros(padding), ib->OutZeros(stride)};
 });
 
@@ -2344,7 +2345,7 @@ REG_BPROP_BUILDER("Col2ImGrad").SetUnusedInputs({i0, i1, i6}).SetBody(BODYFUNC(i
   auto stride = ib->GetInput(kIndex4);
   auto dout = ib->GetInput(kIndex6);
   auto output_size = ib->ShapeCalc(g_im2col_ext, {input})[0];
-  auto dx = ib->Emit("Col2ImExt", {dout, output_size, kernel_size, dilation, padding, stride});
+  auto dx = ib->Col2ImExt(dout, output_size, kernel_size, dilation, padding, stride);
   return {dx, ib->OutZeros(kernel_size), ib->OutZeros(dilation), ib->OutZeros(padding), ib->OutZeros(stride)};
 });
 
@@ -2621,7 +2622,7 @@ REG_BPROP_BUILDER("MaskedScatter").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
   dout = ib->Cast(dout, kFloat32);
   NodePtr dx = nullptr;
   if (x->need_compute_grad_out()) {
-    dx = ib->Emit("MaskedFill", {dout, mask, ib->Tensor(0, kFloat32)});
+    dx = ib->MaskedFill(dout, mask, ib->Tensor(0, kFloat32));
     dx = ib->Cast(dx, ib->GetDtype(x));
   } else {
     dx = ib->OutZeros(x);
@@ -2734,7 +2735,7 @@ REG_BPROP_BUILDER("RepeatInterleaveTensor").SetUnusedInputs({i0}).SetBody(BODYFU
   if (axis_node->isa<None>()) {
     axis = ib->Value(static_cast<int64_t>(-1));
   }
-  auto grad = ib->Emit("RepeatInterleaveGrad", {dout, repeats, axis});
+  auto grad = ib->RepeatInterleaveGrad(dout, repeats, axis);
   auto result = ib->Reshape(grad, x_shape);
   return {result, ib->OutZeros(repeats), ib->OutZeros(axis), ib->OutZeros(output_size)};
 });
