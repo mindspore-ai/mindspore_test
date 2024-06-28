@@ -408,7 +408,7 @@ def test_refkey_bprop():
             self.network = network
             self.weights = ParameterTuple(filter(lambda x: x.requires_grad, network.get_parameters()))
 
-        @jit(mode="PIJit", jit_config={"compile_by_trace": False}) # One-stage will fix it later
+        @jit(mode="PIJit")
         def construct(self, x):
             weights = self.weights
             grads = grad_by_list(self.network, weights)(x)
@@ -482,7 +482,7 @@ def test_forward_with_parameter_in_sub_cell():
             super(Net, self).__init__()
             self.net = Net1()
 
-        @jit(mode="PIJit", jit_config={"compile_by_trace": False}) # One-stage will fix it later
+        @jit(mode="PIJit")
         def construct(self, x, y):
             return self.net(x, y)
 
@@ -492,7 +492,7 @@ def test_forward_with_parameter_in_sub_cell():
             self.matmul = P.MatMul()
             self.z = Parameter(Tensor(np.array([1.0], np.float32)), name='z')
 
-        @jit(mode="PIJit", jit_config={"compile_by_trace": False}) # One-stage will fix it later
+        @jit(mode="PIJit")
         def construct(self, x, y):
             x = x * self.z
             out = self.matmul(x, y)
@@ -508,7 +508,7 @@ def test_forward_with_parameter_in_sub_cell():
             super(GradNet, self).__init__()
             self.net = net
 
-        @jit(mode="PIJit", jit_config={"compile_by_trace": False}) # One-stage will fix it later
+        @jit(mode="PIJit")
         def construct(self, x, y):
             grad_f = grad_all(self.net)
             return grad_f(x, y)
@@ -539,7 +539,7 @@ def test_forward_with_parameter_in_sub_cell_get_by_list():
             super(Net, self).__init__()
             self.net = Net1()
 
-        @jit(mode="PIJit", jit_config={"compile_by_trace": False}) # One-stage will fix it later
+        @jit(mode="PIJit")
         def construct(self, x, y):
             return self.net(x, y)
 
@@ -549,7 +549,7 @@ def test_forward_with_parameter_in_sub_cell_get_by_list():
             self.matmul = P.MatMul()
             self.z = Parameter(Tensor(np.array([1.0], np.float32)), name='z')
 
-        @jit(mode="PIJit", jit_config={"compile_by_trace": False}) # One-stage will fix it later
+        @jit(mode="PIJit")
         def construct(self, x, y):
             x = x * self.z
             out = self.matmul(x, y)
@@ -567,7 +567,7 @@ def test_forward_with_parameter_in_sub_cell_get_by_list():
             self.params = ParameterTuple(net.trainable_params())
             self.grad_op = C.GradOperation(get_by_list=True, get_all=True)
 
-        @jit(mode="PIJit", jit_config={"compile_by_trace": False}) # One-stage will fix it later
+        @jit(mode="PIJit")
         def construct(self, x, y):
             grad_f = self.grad_op(self.net, self.params)
             return grad_f(x, y)
@@ -649,7 +649,7 @@ def test_pynative_forward_with_parameter_in_sub_cell():
             super(Net, self).__init__()
             self.net = Net1()
 
-        @jit(mode="PIJit", jit_config={"compile_by_trace": False}) # One-stage will fix it later
+        @jit(mode="PIJit")
         def construct(self, x, y):
             return self.net(x, y)
 
@@ -659,7 +659,7 @@ def test_pynative_forward_with_parameter_in_sub_cell():
             self.matmul = P.MatMul()
             self.z = Parameter(Tensor(np.array([1.0], np.float32)), name='z')
 
-        @jit(mode="PIJit", jit_config={"compile_by_trace": False}) # One-stage will fix it later
+        @jit(mode="PIJit")
         def construct(self, x, y):
             x = x * self.z
             out = self.matmul(x, y)
@@ -675,7 +675,7 @@ def test_pynative_forward_with_parameter_in_sub_cell():
             super(GradNet, self).__init__()
             self.net = net
 
-        @jit(mode="PIJit", jit_config={"compile_by_trace": False}) # One-stage will fix it later
+        @jit(mode="PIJit")
         def construct(self, x, y):
             grad_f = grad_all(self.net)
             return grad_f(x, y)
@@ -706,7 +706,7 @@ def test_pynative_forward_with_parameter_in_sub_cell_get_by_list():
             super(Net, self).__init__()
             self.net = Net1()
 
-        @jit(mode="PIJit", jit_config={"compile_by_trace": False}) # One-stage will fix it later
+        @jit(mode="PIJit")
         def construct(self, x, y):
             return self.net(x, y)
 
@@ -716,7 +716,7 @@ def test_pynative_forward_with_parameter_in_sub_cell_get_by_list():
             self.matmul = P.MatMul()
             self.z = Parameter(Tensor(np.array([1.0], np.float32)), name='z')
 
-        @jit(mode="PIJit", jit_config={"compile_by_trace": False}) # One-stage will fix it later
+        @jit(mode="PIJit")
         def construct(self, x, y):
             x = x * self.z
             out = self.matmul(x, y)
@@ -734,7 +734,7 @@ def test_pynative_forward_with_parameter_in_sub_cell_get_by_list():
             self.params = ParameterTuple(net.trainable_params())
             self.grad_op = C.GradOperation(get_by_list=True, get_all=True)
 
-        @jit(mode="PIJit", jit_config={"compile_by_trace": False}) # One-stage will fix it later
+        @jit(mode="PIJit")
         def construct(self, x, y):
             grad_f = self.grad_op(self.net, self.params)
             return grad_f(x, y)
