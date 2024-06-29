@@ -18,6 +18,9 @@ import re
 import subprocess
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
+from mindspore.common import Tensor, Parameter
+from mindspore import context, lazy_inline, nn, ops
+import mindspore.common.dtype as dtype
 
 match_dyn_mem = re.compile(r'Total Static Memory size: (.*?)M', re.S)
 
@@ -130,3 +133,64 @@ def test_recompute_cell_and_op_recompute_with_tuple_outputs2():
     Expectation: Run successfully and the memory usage is reduced.
     """
     run_testcase("test_recompute_cell_and_op_recompute_with_tuple_outputs2", 53)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_recompute_origin_inputs_umonad_fv():
+    """
+    Feature: Recompute with lazy inline.
+    Description: Recomputed cell used the umonad fv from the origin inputs.
+    Expectation: Run successfully.
+    """
+
+    context.set_context(mode=context.GRAPH_MODE, jit_level='O2')
+
+    class TestIfBlock(nn.Cell):
+        def __init__(self):
+            super(TestIfBlock, self).__init__()
+            self.y = Parameter(Tensor([5], dtype.float32))
+
+        def construct(self, x):
+            x = x + self.y
+            x = x - 9
+            return x
+
+    class MyBlock(nn.Cell):
+        @lazy_inline
+        def __init__(self):
+            super(MyBlock, self).__init__()
+            self.block = TestIfBlock()
+            self.block.recompute()
+
+        def construct(self, x):
+            x = self.block(x)
+            return x
+
+    class Net(nn.Cell):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.blocks = nn.SequentialCell()
+            for _ in range(3):
+                b = MyBlock()
+                self.blocks.append(b)
+
+        def construct(self, x):
+            out = x
+            out = self.blocks(out)
+            return out
+
+    class Grad(nn.Cell):
+        def __init__(self, net):
+            super(Grad, self).__init__()
+            self.grad = ops.GradOperation()
+            self.net = net
+
+        def construct(self, x):
+            grad_net = self.grad(self.net)
+            return grad_net(x)
+
+    x = Tensor([10.0], dtype.float32)
+    net = Net()
+    grad_net = Grad(net)
+    grad = grad_net(x)
+    assert grad == 1
