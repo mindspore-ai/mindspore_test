@@ -211,6 +211,15 @@ class Variable {
   /// \param is_fake_bprop
   void set_is_fake_bprop(bool is_fake_bprop) { is_fake_bprop_ = is_fake_bprop; }
 
+  /// \brief Flag to judge whether the op is custom bprop op.
+  ///
+  bool is_custom_op_variable() const { return is_custom_op_variable_; }
+
+  /// \brief Set custom bprop flag.
+  ///
+  /// \param is_custom_op_variable
+  void set_is_custom_op_variable(bool is_custom_op_variable) { is_custom_op_variable_ = is_custom_op_variable; }
+
   /// \brief Flag to judge whether the variable is need propagate.
   ///
   /// \return True if the variable need propagate, false if not.
@@ -262,6 +271,8 @@ class Variable {
   bool is_need_propagate_{false};
   // Flag to judge variable whether need grad
   bool is_need_grad_{true};
+  // Variable is a custom bprop define
+  bool is_custom_op_variable_{false};
   // Flag the variable is a leaf in bprop.
   bool is_leaf_{false};
   ValuePtr out_value_{nullptr};
