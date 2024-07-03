@@ -22,6 +22,7 @@ from mindspore import context
 from mindspore.common import dtype
 from mindspore.common.api import jit
 from tests.mark_utils import arg_mark
+from mindspore._c_expression import get_code_extra
 
 @pytest.fixture(autouse=True)  
 def skip_if_python_version_too_high():  
@@ -54,6 +55,8 @@ def test_make_tuple():
     a = Tensor([1])
     jit(net.construct, mode="PIJit", jit_config=cfg)
     ret = net(a)
+    jcr = get_code_extra(Net.construct)
+    assert jcr["break_count_"] == 0
     assert isinstance(ret, tuple)
     assert len(ret) == 3
     assert ret[0] == Tensor([1])
@@ -77,6 +80,8 @@ def test_make_list():
     a = Tensor([1])
     jit(net.construct, mode="PIJit", jit_config=cfg)
     ret = net(a)
+    jcr = get_code_extra(Net.construct)
+    assert jcr["break_count_"] == 0
     assert isinstance(ret, list)
     assert len(ret) == 3
     assert ret[0] == Tensor([1])
@@ -101,6 +106,8 @@ def test_return_add_result_tuple():
     b = (4, 5, 6)
     jit(net.construct, mode="PIJit", jit_config=cfg)
     ret = net(a, b)
+    jcr = get_code_extra(Net.construct)
+    assert jcr["break_count_"] == 0
     assert ret == (1, 2, 3, 4, 5, 6)
 
 
@@ -121,6 +128,8 @@ def test_return_add_result_list():
     b = [4, 5, 6]
     jit(net.construct, mode="PIJit", jit_config=cfg)
     ret = net(a, b)
+    jcr = get_code_extra(Net.construct)
+    assert jcr["break_count_"] == 0
     assert ret == [1, 2, 3, 4, 5, 6]
 
 
@@ -144,6 +153,8 @@ def test_empty_tuple_input():
     context.set_context(mode=context.PYNATIVE_MODE)
     net = Net()
     ret = net(())
+    jcr = get_code_extra(Net.construct)
+    assert jcr["break_count_"] == 0
     assert np.all(ret.asnumpy() == np.array([2, 3, 4]))
 
 
@@ -167,6 +178,8 @@ def test_empty_list_input():
     context.set_context(mode=context.PYNATIVE_MODE)
     net = Net()
     ret = net([])
+    jcr = get_code_extra(Net.construct)
+    assert jcr["break_count_"] == 0
     assert np.all(ret.asnumpy() == np.array([2, 3, 4]))
 
 
@@ -190,6 +203,8 @@ def test_empty_dict_input():
     context.set_context(mode=context.PYNATIVE_MODE)
     net = Net()
     ret = net({})
+    jcr = get_code_extra(Net.construct)
+    assert jcr["break_count_"] == 0
     assert np.all(ret.asnumpy() == np.array([2, 3, 4]))
 
 
@@ -210,6 +225,8 @@ def test_tuple_slice():
     a = Tensor([1])
     jit(net.construct, mode="PIJit", jit_config=cfg)
     ret = net(a)
+    jcr = get_code_extra(Net.construct)
+    assert jcr["break_count_"] == 0
     assert isinstance(ret, tuple)
     assert len(ret) == 2
     assert ret[0] == Tensor([1])
@@ -233,6 +250,8 @@ def test_list_slice():
     a = Tensor([1])
     jit(net.construct, mode="PIJit", jit_config=cfg)
     ret = net(a)
+    jcr = get_code_extra(Net.construct)
+    assert jcr["break_count_"] == 0
     assert isinstance(ret, list)
     assert len(ret) == 2
     assert ret[0] == Tensor([1])
@@ -256,6 +275,8 @@ def test_list_slice_with_default_parameter():
     a = Tensor([1])
     jit(net.construct, mode="PIJit", jit_config=cfg)
     ret = net(a)
+    jcr = get_code_extra(Net.construct)
+    assert jcr["break_count_"] == 0
     assert isinstance(ret, list)
     assert len(ret) == 2
     assert ret[0] == Tensor([1])
@@ -279,6 +300,8 @@ def test_list_slice_with_default_parameter_2():
     a = Tensor([1])
     jit(net.construct, mode="PIJit", jit_config=cfg)
     ret = net(a)
+    jcr = get_code_extra(Net.construct)
+    assert jcr["break_count_"] == 0
     assert isinstance(ret, list)
     assert len(ret) == 3
     assert ret[0] == Tensor([1])
@@ -303,6 +326,8 @@ def test_list_slice_with_default_parameter_3():
     a = Tensor([1])
     jit(net.construct, mode="PIJit", jit_config=cfg)
     ret = net(a)
+    jcr = get_code_extra(Net.construct)
+    assert jcr["break_count_"] == 0
     assert isinstance(ret, list)
     assert len(ret) == 3
     assert ret[0] == Tensor([1])
@@ -327,6 +352,8 @@ def test_make_dict():
     a = Tensor([1])
     jit(net.construct, mode="PIJit", jit_config=cfg)
     ret = net(a)
+    jcr = get_code_extra(Net.construct)
+    assert jcr["break_count_"] == 0
     assert ret == Tensor([1])
 
 
@@ -348,6 +375,8 @@ def test_make_dict_2():
     a = Tensor([1])
     jit(net.construct, mode="PIJit", jit_config=cfg)
     ret = net(a)
+    jcr = get_code_extra(Net.construct)
+    assert jcr["break_count_"] == 0
     assert ret == Tensor([1])
 
 
@@ -368,6 +397,8 @@ def test_make_dict_3():
     a = Tensor([1])
     jit(net.construct, mode="PIJit", jit_config=cfg)
     ret = net(a)
+    jcr = get_code_extra(Net.construct)
+    assert jcr["break_count_"] == 0
     assert ret == Tensor([2])
 
 
@@ -389,6 +420,8 @@ def test_tuple_input():
     jit(net.construct, mode="PIJit", jit_config=cfg)
     ret = net(a, b)
     expect = np.array([[1.0, 2.0, 3.0], [1.0, 2.0, 3.0]])
+    jcr = get_code_extra(Net.construct)
+    assert jcr["break_count_"] == 0
     assert np.allclose(ret.asnumpy(), expect)
 
 
@@ -410,6 +443,8 @@ def test_list_input():
     jit(net.construct, mode="PIJit", jit_config=cfg)
     ret = net(a, b)
     expect = np.array([[1.0, 2.0, 3.0], [1.0, 2.0, 3.0]])
+    jcr = get_code_extra(Net.construct)
+    assert jcr["break_count_"] == 0
     assert np.allclose(ret.asnumpy(), expect)
 
 
@@ -430,6 +465,8 @@ def test_handle_constant():
     m = (1, 2)
     jit(net.construct, mode="PIJit", jit_config=cfg)
     ret = net(m)
+    jcr = get_code_extra(Net.construct)
+    assert jcr["break_count_"] == 0
     assert ret == (1, 2)
 
 
@@ -450,6 +487,8 @@ def test_handle_constant_2():
     m = [1, 2]
     jit(net.construct, mode="PIJit", jit_config=cfg)
     ret = net(m)
+    jcr = get_code_extra(Net.construct)
+    assert jcr["break_count_"] == 0
     assert ret == (1, 2)
 
 
@@ -468,6 +507,8 @@ def test_handle_mutable_kwargs_args():
     net = Net()
     jit(net.construct, mode="PIJit", jit_config=cfg)
     ret = net(1, 10, 100, s=1000)
+    jcr = get_code_extra(Net.construct)
+    assert jcr["break_count_"] == 0
     assert ret == 1012
 
 
@@ -486,6 +527,8 @@ def test_handle_mutable_kwargs_args_2():
     net = Net()
     jit(net.construct, mode="PIJit", jit_config=cfg)
     ret = net(1, 10, 100, s=1000)
+    jcr = get_code_extra(Net.construct)
+    assert jcr["break_count_"] == 0
     assert ret == 12
 
 
@@ -506,8 +549,12 @@ def test_use_free_variable():
     jit(net.construct, mode="PIJit", jit_config={"loop_unrolling": True, "compile_by_trace": True})
     input1 = (1, 2, 3, 4)
     assert net(input1)
+    jcr = get_code_extra(Net.construct)
+    assert jcr["break_count_"] == 0
     input2 = (1, 1, 1, 1, 1)
     assert not net(input2)
+    jcr = get_code_extra(Net.construct)
+    assert jcr["break_count_"] == 0
 
 
 @pytest.mark.skip(reason="When disable loop_unrolling, check guard failed.")
@@ -551,8 +598,12 @@ def test_guard_for_getattr():
     net = Net()
     jit(net.construct, mode="PIJit", jit_config=cfg)
     ret1 = net(1)
+    jcr = get_code_extra(Net.construct)
+    assert jcr["break_count_"] == 0
     net.a = 2
     ret2 = net(2)
+    jcr = get_code_extra(Net.construct)
+    assert jcr["break_count_"] == 0
     assert ret1 == 2
     assert ret2 == 4
 
@@ -576,8 +627,12 @@ def test_guard_for_getattr_2():
     net = Net()
     jit(net.construct, mode="PIJit", jit_config=cfg)
     ret1 = net(1)
+    jcr = get_code_extra(Net.construct)
+    assert jcr["break_count_"] == 0
     net.a = 2
     ret2 = net(1)
+    jcr = get_code_extra(Net.construct)
+    assert jcr["break_count_"] == 0
     assert ret1 == 2
     assert ret2 == 3
 
@@ -666,7 +721,11 @@ def test_guard_parameter():
     m = Tensor([[1, 1], [2, 2]], dtype.float32)
     net1 = Net()
     ret1 = net1(m)
+    jcr = get_code_extra(Net.construct)
+    assert jcr["break_count_"] == 0
     net2 = Net()
     ret2 = net2(m)
+    jcr = get_code_extra(Net.construct)
+    assert jcr["break_count_"] == 0
     assert np.allclose(ret1.asnumpy(), (net1.w * m).asnumpy())
     assert np.allclose(ret2.asnumpy(), (net2.w * m).asnumpy())
