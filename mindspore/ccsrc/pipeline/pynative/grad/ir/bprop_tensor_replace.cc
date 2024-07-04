@@ -186,15 +186,16 @@ void UpdatePipelineTopCellFowardTensor(const TensorReplaceInfo &ir_replace_info,
   }
 }
 
-void StoreForwardOutputWithOpInfo(const OpInfoWithTensorObject &op_info_with_tensor_object, const std::string &op_info,
+bool StoreForwardOutputWithOpInfo(const OpInfoWithTensorObject &op_info_with_tensor_object, const std::string &op_info,
                                   const ValuePtr &v, TensorReplaceInfo *replace_info) {
   // Use first ir top cell do opinfo replace
   const auto it = op_info_with_tensor_object.find(op_info);
   if (it == op_info_with_tensor_object.end()) {
     MS_LOG(DEBUG) << "Can not find op info " << op_info << " in ir top cell, no need do replace";
-    return;
+    return false;
   }
   replace_info->op_info_with_forward_output[op_info] = v;
+  return true;
 }
 
 void SaveForwardOutputTensorInfo(const FuncGraphPtr &func_graph, bool need_save_tensor_info,

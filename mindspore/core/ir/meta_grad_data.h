@@ -75,6 +75,15 @@ class AutoGradMetaData {
   bool is_register_hook() const { return is_register_hook_; }
   const std::map<uint64_t, TensorBackwardHookPtr> &backward_hooks() { return backward_hooks_; }
   void ClearBackwardHooks() { backward_hooks_.clear(); }
+  // Reset Parameter auto grad meta
+  void Reset() {
+    variable_ = {};
+    parameter_ = {};
+    k_node_ = {};
+    op_index_ = 0;
+    output_index_ = 0;
+    input_type_ = InputType::kUnkown;
+  }
 
  private:
   // Weakptr for variable, to avoid circular reference
@@ -85,10 +94,10 @@ class AutoGradMetaData {
   AnfNodeWeakPtr k_node_;
   // Optional for op output, represent index of op in execute order.
   size_t op_index_{0};
-  // Type of grad tensor
-  InputType input_type_{InputType::kUnkown};
   // Index of op output tensors.
   size_t output_index_{0};
+  // Type of grad tensor
+  InputType input_type_{InputType::kUnkown};
   bool is_register_hook_{false};
   // Tensor hooks
   std::map<uint64_t, TensorBackwardHookPtr> backward_hooks_;
