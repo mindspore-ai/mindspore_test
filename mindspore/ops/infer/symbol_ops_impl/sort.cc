@@ -13,16 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CORE_OPS_SYMBOL_OPS_IMPL_ADDN_H_
-#define MINDSPORE_CORE_OPS_SYMBOL_OPS_IMPL_ADDN_H_
-
 #include "mindspore/core/symbolic_shape/operation_builder.h"
 
 namespace mindspore {
 namespace symshape {
 namespace ops {
-SymbolPtr AddnBuildShape(OperationBuilder *b, const SymbolPtrList &symbols);
+REG_SYMBOL_OP_BUILDER("Sort").SetShapeDepend({DependOn::kShape}).SetShapeFunc([](OperationBuilder *b) -> SymbolPtr {
+  auto x_shape = b->GetInputShape(0);
+  return ListSymbol::Make({x_shape, x_shape});
+});
 }  // namespace ops
 }  // namespace symshape
 }  // namespace mindspore
-#endif  // MINDSPORE_CORE_OPS_SYMBOL_OPS_IMPL_ADDN_H_

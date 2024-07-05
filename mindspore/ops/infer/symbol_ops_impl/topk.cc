@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,28 +13,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CORE_OPS_SYMBOL_OPS_IMPL_ELEMWISE_BINOP_H_
-#define MINDSPORE_CORE_OPS_SYMBOL_OPS_IMPL_ELEMWISE_BINOP_H_
-
 #include "mindspore/ops/infer/symbol_ops_impl/common.h"
 
 namespace mindspore {
 namespace symshape {
 namespace ops {
-class OPS_API ElemwiseBinop : public InferShapeOp {
+class OPS_API TopK : public InferShapeOp {
  public:
   using InferShapeOp::InferShapeOp;
-  ElemwiseBinop(const SymbolPtr &lhs, const SymbolPtr &rhs) : InferShapeOp({lhs, rhs}) {}
-  ~ElemwiseBinop() override = default;
-  MS_DECLARE_PARENT(ElemwiseBinop, InferShapeOp)
-
-  static SymbolPtrList Process(const SymbolPtrList &lhs, const SymbolPtrList &rhs, const OperationEmitter &e,
-                               size_t shift = 0);
-
+  TopK(const SymbolPtr &x, const SymbolPtr &k) : InferShapeOp({x, k}) {}
+  ~TopK() override = default;
+  MS_DECLARE_PARENT(TopK, InferShapeOp)
  protected:
   SymbolPtr Eval() override;
 };
+
+SymbolPtr TopK::Eval() {
+  auto x = input_as<ListSymbol>(kIndex0);
+  SymbolPtr k = input(kIndex1);
+  if (k->is<ListSymbol>()) {
+    k = k->as<ListSymbol>()->item(0);
+  }
+  constexpr const size_t out_num = 2;
+  if (!x->HasData()) {
+    return GenList(SymbolPtrList(out_num, GenVList()));
+  }
+  DoNotEvalOnRun();
+  auto result = x->symbols();
+  if (!result.empty()) {
+    result.back() = k;
+  }
+  return GenList(SymbolPtrList(out_num, GenList(std::move(result))));
+}
+
+REG_SYMBOL_OP_BUILDER("TopK").SetShapeDepend({DependOn::kShape, DependOn::kValue}).SetShapeFuncWith<TopK>();
 }  // namespace ops
 }  // namespace symshape
 }  // namespace mindspore
-#endif  // MINDSPORE_CORE_OPS_SYMBOL_OPS_IMPL_ELEMWISE_BINOP_H_

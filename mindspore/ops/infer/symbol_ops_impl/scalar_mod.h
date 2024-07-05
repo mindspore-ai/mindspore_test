@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,23 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "mindspore/ops/infer/symbol_ops_impl/scalar_eq.h"
+#ifndef MINDSPORE_CORE_OPS_SYMBOL_OPS_IMPL_SCALAR_MOD_H_
+#define MINDSPORE_CORE_OPS_SYMBOL_OPS_IMPL_SCALAR_MOD_H_
+
+#include "mindspore/ops/infer/symbol_ops_impl/common.h"
 
 namespace mindspore {
 namespace symshape {
 namespace ops {
-SymbolPtr ScalarEq::Eval() {
-  // only eval on Building
-  auto lhs = input_as<IntSymbol>(0);
-  auto rhs = input_as<IntSymbol>(1);
-  if (lhs->HasData() && rhs->HasData()) {
-    return BoolSymbol::Make(lhs->value() == rhs->value());
-  }
-  return (*lhs == *rhs) ? BoolSymbol::Make(true) : BoolSymbol::Make(shared_from_this());
-}
+class OPS_API ScalarMod : public ScalarIntOp {
+ public:
+  using ScalarIntOp::ScalarIntOp;
+  ScalarMod(const SymbolPtr &lhs, const SymbolPtr &rhs) : ScalarIntOp({lhs, rhs}) { support_commutative_law_ = true; }
+  MS_DECLARE_PARENT(ScalarMod, ScalarIntOp)
 
-REG_SYMBOL_OP_BUILDER("ScalarEq").SetValueDependN<DependOn::kValue, 2>().SetValueFuncWith<ScalarEq>();
-REG_SYMBOL_OP_BUILDER("scalar_eq").SetValueDependN<DependOn::kValue, 2>().SetValueFuncWith<ScalarEq>();
+ protected:
+  SymbolPtr Eval() override;
+  void EvalOnRun() override { output_as<IntSymbol>()->SetValue(AsInt(input(0)) % AsInt(input(1))); }
+};
 }  // namespace ops
 }  // namespace symshape
 }  // namespace mindspore
+#endif  // MINDSPORE_CORE_OPS_SYMBOL_OPS_IMPL_SCALAR_MOD_H_
