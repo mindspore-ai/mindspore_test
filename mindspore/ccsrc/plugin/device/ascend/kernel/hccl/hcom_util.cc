@@ -17,6 +17,7 @@
 #include "plugin/device/ascend/kernel/hccl/hcom_util.h"
 #include <algorithm>
 #include <memory>
+#include <utility>
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
@@ -26,6 +27,7 @@
 #include "utils/ms_context.h"
 #include "utils/trace_base.h"
 #include "ir/dtype/type.h"
+#include "plugin/device/ascend/hal/hardware/ascend_collective_comm_lib.h"
 
 namespace mindspore {
 ::HcclDataType HcomUtil::ConvertHcclType(TypeId type_id) {
@@ -38,6 +40,13 @@ namespace mindspore {
     MS_LOG(EXCEPTION) << "HcomDataType can't support Current Ascend Data Type : " << TypeIdLabel(type_id);
   }
   return iter->second;
+}
+
+void HcomUtil::AdjustShapeByDataType(TypeId type_id, ShapeVector *shape) {
+  if (type_id == TypeId::kNumberTypeComplex64) {
+    // When the input type is Complex64, the type is converted to Float32 and the shape is increased
+    (void)shape->emplace_back(kComplex64ConvertFloat32Num);
+  }
 }
 
 bool HcomUtil::GetHcomDataType(const std::string &kernel_name, const std::vector<KernelTensor *> &inputs,
@@ -92,7 +101,7 @@ bool HcomUtil::GetHcomTypeSize(const HcclDataType &data_type, uint32_t *size) {
 
 bool HcomUtil::GetHcomCount(const PrimitivePtr &primitive, const vector<HcclDataType> &data_type_list,
                             const vector<ShapeVector> &shape_list, const size_t input_tensor_num,
-                            uint64_t *total_count) {
+                            const std::optional<int64_t> rank_size_opt, uint64_t *total_count) {
   MS_EXCEPTION_IF_NULL(primitive);
   MS_EXCEPTION_IF_NULL(total_count);
 
@@ -101,6 +110,17 @@ bool HcomUtil::GetHcomCount(const PrimitivePtr &primitive, const vector<HcclData
   uint64_t total_size = 0;
   size_t input_size;
   uint32_t type_size = 4;
+  size_t rank_size = 1;
+  if (rank_size_opt.has_value()) {
+    rank_size = LongToSize(rank_size_opt.value());
+  } else if (primitive->name() == kReduceScatterOpName) {
+    int64_t tmp_rank_size = 0;
+    if (!HcomUtil::GetHcomAttr<int64_t>(primitive, kAttrRankSize, &tmp_rank_size)) {
+      MS_LOG(ERROR) << "Get kAttrRankSize fail in " << primitive->name();
+      return false;
+    }
+    rank_size = LongToSize(tmp_rank_size);
+  }
 
   MS_EXCEPTION_IF_CHECK_FAIL(data_type_list.size() == shape_list.size(),
                              "Size of data_type_list must be equal to size of shape_list");
@@ -120,13 +140,8 @@ bool HcomUtil::GetHcomCount(const PrimitivePtr &primitive, const vector<HcclData
       MS_LOG(INFO) << "Communication operator " << primitive->name() << " has dynamic input.";
       input_size = (input_size + align_size - 1 + filled_size) / align_size * align_size;
     }
-    if (primitive->name() == kReduceScatterOpName) {
-      int64_t rank_size;
-      if (!HcomUtil::GetHcomAttr<int64_t>(primitive, kAttrRankSize, &rank_size)) {
-        return false;
-      }
-      input_size = static_cast<uint64_t>(input_size / LongToSize(rank_size));
-    }
+
+    input_size /= rank_size;
     bool all_dynamic = std::all_of(shape_list[i].begin(), shape_list[i].end(), [](int64_t x) { return x == -1; });
     if (!all_dynamic && (type_size == 0 || input_size % type_size != 0)) {
       MS_LOG(ERROR) << "primitive=" << primitive->name() << ", Input_size[" << input_size << "],Type_size[" << type_size
@@ -140,6 +155,22 @@ bool HcomUtil::GetHcomCount(const PrimitivePtr &primitive, const vector<HcclData
   return true;
 }
 
+std::pair<uint64_t, ::HcclDataType> HcomUtil::GetHcclCountAndTypeFromTensor(
+  const PrimitivePtr &primitive, const tensor::BaseTensorPtr &tensor, const std::optional<int64_t> rank_size_opt) {
+  auto type_id = tensor->data_type();
+  auto shape = tensor->shape();
+
+  auto hccl_type = ConvertHcclType(type_id);
+  AdjustShapeByDataType(type_id, &shape);
+
+  uint64_t hccl_count = 0;
+  constexpr size_t input_tensor_size = 1;
+  if (!GetHcomCount(primitive, {hccl_type}, {shape}, input_tensor_size, rank_size_opt, &hccl_count)) {
+    MS_LOG(EXCEPTION) << "GetHcomCount fail!";
+  }
+  return std::make_pair(hccl_count, hccl_type);
+}
+
 bool HcomUtil::GetHcomOperationType(const PrimitivePtr &primitive, HcclReduceOp *op_type) {
   MS_EXCEPTION_IF_NULL(primitive);
   MS_EXCEPTION_IF_NULL(op_type);
@@ -148,19 +179,22 @@ bool HcomUtil::GetHcomOperationType(const PrimitivePtr &primitive, HcclReduceOp 
   if (!GetHcomAttr<std::string>(primitive, kAttrOp, &hcom_op_type)) {
     return false;
   }
-  if (hcom_op_type == "min") {
-    *op_type = HCCL_REDUCE_MIN;
-  } else if (hcom_op_type == "max") {
-    *op_type = HCCL_REDUCE_MAX;
-  } else if (hcom_op_type == "prod") {
-    *op_type = HCCL_REDUCE_PROD;
-  } else if (hcom_op_type == "sum") {
-    *op_type = HCCL_REDUCE_SUM;
-  } else {
+
+  auto iter = kConstOpHcomReduceOpTypeMap.find(hcom_op_type);
+  if (iter == kConstOpHcomReduceOpTypeMap.end()) {
     MS_LOG(ERROR) << "HcomUtil::Get HCOM_ATTR_REDUCE_TYPE fail, [" << hcom_op_type << "] not support!";
     return false;
   }
+  *op_type = iter->second;
   return true;
+}
+
+HcclReduceOp HcomUtil::GetHcomReduceOpType(const std::string &reduce_op) {
+  auto iter = kConstOpHcomReduceOpTypeMap.find(reduce_op);
+  if (iter == kConstOpHcomReduceOpTypeMap.end()) {
+    MS_LOG(EXCEPTION) << "HcomUtil::Get HCOM_ATTR_REDUCE_TYPE fail, [" << reduce_op << "] not support!";
+  }
+  return iter->second;
 }
 
 bool HcomUtil::GetHcomReceiveType(const AnfNodePtr &anf_node, TypeId *receive_type) {

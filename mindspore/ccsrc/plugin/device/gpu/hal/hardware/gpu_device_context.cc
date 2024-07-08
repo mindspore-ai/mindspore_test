@@ -1095,6 +1095,11 @@ void *GPUDeviceResManager::GetStream(size_t stream_id) const {
   return GPUDeviceManager::GetInstance().GetStream(stream_id);
 }
 
+size_t GPUDeviceResManager::GetCommunicationStreamID() const {
+  MS_LOG(WARNING) << "CommunicationStreamID is no create yet, return default stream.";
+  return GPUDeviceManager::GetInstance().default_stream_id();
+}
+
 bool GPUDeviceResManager::DestroyStream(size_t stream_id) const {
   return GPUDeviceManager::GetInstance().DestroyStream(stream_id);
 }

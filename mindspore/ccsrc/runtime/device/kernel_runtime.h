@@ -123,6 +123,7 @@ class BACKEND_EXPORT KernelRuntime {
   virtual void *compute_stream() const { return nullptr; }
   virtual void *copy_data_stream() const { return nullptr; }
   virtual void *communication_stream() const { return nullptr; }
+  virtual size_t communication_stream_id() const { return communication_stream_id_; }
   void UpdateRefNodeOutputMem(const session::KernelGraph &graph) const;
   void UpdateSingleRefNodeMem(const CNodePtr &kernel, const session::KernelGraph &graph, bool reverse) const;
   virtual DeviceAddressPtr AssignExtraStaticMem(const TensorPtr &tensor, const AnfNodePtr &node, size_t index);
@@ -211,6 +212,7 @@ class BACKEND_EXPORT KernelRuntime {
 #if defined(ENABLE_DEBUGGER) && !defined(_WIN32) && !defined(_WIN64)
   std::shared_ptr<Debugger> debugger_;
 #endif
+  size_t communication_stream_id_{kDefaultStreamIndex};
   void *stream_{nullptr};
   void *communication_stream_{nullptr};
   void *copy_data_stream_{nullptr};

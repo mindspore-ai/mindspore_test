@@ -31,6 +31,7 @@
 #include "kernel/common/pyboost/pyboost_utils.h"
 #include "ops/ops_func_impl/simple_infer.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
+#include "kernel/common/pyboost/comm_handle.h"
 
 namespace mindspore {
 namespace tensor {
@@ -62,6 +63,10 @@ class BACKEND_EXPORT OpRunner : public std::enable_shared_from_this<OpRunner> {
   const std::vector<tensor::BaseTensorPtr> &outputs() const { return outputs_; }
   void set_outputs(const std::vector<tensor::BaseTensorPtr> &outputs) { outputs_ = outputs; }
   void set_stream_id(size_t stream_id) { stream_id_ = stream_id; }
+
+  void set_comm_handle(const CommHandlePtr &comm_handle) { comm_handle_ = comm_handle; }
+  CommHandlePtr comm_handle() const { return comm_handle_; }
+
   size_t stream_id() const { return stream_id_; }
   ValueSimpleInfoPtr output_value_simple_info() const { return output_value_simple_info_; }
 
@@ -139,6 +144,7 @@ class BACKEND_EXPORT OpRunner : public std::enable_shared_from_this<OpRunner> {
   // Input and output abstracts for grad.
   std::vector<AbstractBasePtr> input_abs_{};
   AbstractBasePtr output_abs_{nullptr};
+  CommHandlePtr comm_handle_{nullptr};
   // Forward output for grad.
   std::vector<tensor::BaseTensorPtr> outputs_{};
   const DeviceContext *device_context_{nullptr};

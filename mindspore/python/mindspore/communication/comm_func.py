@@ -17,11 +17,15 @@
 Defines communication operators with functional form.
 """
 from mindspore.communication import GlobalComm, get_group_rank_from_world_rank, get_group_size
+from mindspore.communication.management import _get_group
+from mindspore.communication._comm_helper import _get_group_rank_from_world_rank_from_cache_helper
 from mindspore.common.tensor import Tensor
 from mindspore._c_expression import Tensor as Tensor_
 from mindspore.ops import ReduceOp, cat
 from mindspore.ops._primitive_cache import _get_cache_prim
 from mindspore.ops.primitive import _primexpr
+from mindspore._c_expression import CommHandle as CommHandle_
+from mindspore import jit_class
 
 __all__ = [
     'all_reduce',
@@ -41,6 +45,36 @@ __all__ = [
 ]
 
 import mindspore.ops.operations as P
+
+
+@jit_class
+class CommHandle(CommHandle_):
+    r"""
+    Usually, handles are created in C++during the execution of communication operators and returned to the Python
+    layer. It will not be created directly in Python. Only in scenarios where graph patterns are compatible,
+    handles will be created using Python.
+    """
+
+    def wait(self):
+        r"""
+        The wait for asynchronous handles will not take effect for handles created on the Python side.
+
+        >>> import numpy as np
+        >>> from mindspore.communication import init
+        >>> from mindspore.communication.comm_func import all_reduce
+        >>> from mindspore import Tensor
+        >>>
+        >>> init()
+        >>> input_tensor = Tensor(np.ones([2, 8]).astype(np.float32))
+        >>> output, handle = all_reduce(input_tensor, async_op=True)
+        >>> handle.wait()
+        >>> print(output)
+        [[2. 2. 2. 2. 2. 2. 2. 2.]
+         [2. 2. 2. 2. 2. 2. 2. 2.]]
+        """
+
+
+default_handle = CommHandle()
 
 
 def _check_split_sizes_sequence(tensor, sequence):
@@ -132,7 +166,11 @@ def _get_size(shape):
     return numel
 
 
-def all_reduce(tensor, op=ReduceOp.SUM, group=GlobalComm.WORLD_COMM_GROUP):
+def _is_split_sizes_empty(split_sizes):
+    return split_sizes is None or not split_sizes
+
+
+def all_reduce(tensor, op=ReduceOp.SUM, group=GlobalComm.WORLD_COMM_GROUP, async_op=False):
     """
     Reduce tensors across all devices in such a way that all deviceswill get the same final result,
     returns the tensor which is all reduced.
@@ -146,10 +184,13 @@ def all_reduce(tensor, op=ReduceOp.SUM, group=GlobalComm.WORLD_COMM_GROUP):
                   On the CPU, only 'sum' is supported. Default: ``ReduceOp.SUM`` .
         group (str, optional): The communication group to work on. Default: ``GlobalComm.WORLD_COMM_GROUP`` , which
                   means ``"hccl_world_group"`` in Ascend, and ``"nccl_world_group"`` in GPU.
+        async_op (bool, optional): Whether this op should be an async op. Default: ``False`` .
 
     Returns:
-        Tensor, has the same shape of the input, i.e., :math:`(x_1, x_2, ..., x_R)`.
-        The contents depend on the specified operation.
+        Tuple(Tensor, CommHandle), the output tensor has the same shape of the input,
+        i.e., :math:`(x_1, x_2, ..., x_R)`. The contents depend on the specified operation.
+        CommHandle is an async work handle, if `async_op` is set to True. CommHandle will be None,
+        when `async_op` is False.
 
     Raises:
         TypeError: If the type of the first input parameter is not Tensor, or any of `op` and `group` is not a str.
@@ -185,11 +226,13 @@ def all_reduce(tensor, op=ReduceOp.SUM, group=GlobalComm.WORLD_COMM_GROUP):
     """
     if not isinstance(tensor, (Tensor, Tensor_)):
         raise TypeError("For all_reduce, the input tensor must be tensor")
+    group = _get_group(group)
     all_reduce_op = _get_cache_prim(P.AllReduce)(op=op, group=group)
-    return all_reduce_op(tensor)
+    output = all_reduce_op(tensor)
+    return _deal_comm_outputs(output, async_op)
 
 
-def all_gather_into_tensor(tensor, group=GlobalComm.WORLD_COMM_GROUP):
+def all_gather_into_tensor(tensor, group=GlobalComm.WORLD_COMM_GROUP, async_op=False):
     """
     Gathers tensors from the specified communication group and returns the tensor which is all gathered.
 
@@ -201,10 +244,13 @@ def all_gather_into_tensor(tensor, group=GlobalComm.WORLD_COMM_GROUP):
                         The shape of tensor is :math:`(x_1, x_2, ..., x_R)`.
         group (str, optional): The communication group to work on. Default: ``GlobalComm.WORLD_COMM_GROUP`` , which
             means ``"hccl_world_group"`` in Ascend, and ``"nccl_world_group"`` in GPU.
+        async_op (bool, optional): Whether this op should be an async op. Default: ``False`` .
 
     Returns:
-        Tensor. If the number of devices in the group is N,
-        then the shape of output is :math:`(N, x_1, x_2, ..., x_R)`.
+        Tuple(Tensor, CommHandle), if the number of devices in the group is N,
+        then the shape of output tensor is :math:`(N, x_1, x_2, ..., x_R)`.
+        CommHandle is an async work handle, if `async_op` is set to True.
+        CommHandle will be None, when `async_op` is False.
 
     Raises:
         TypeError: If the type of the first input parameter is not Tensor, or `group` is not a str.
@@ -248,11 +294,13 @@ def all_gather_into_tensor(tensor, group=GlobalComm.WORLD_COMM_GROUP):
 
     if not isinstance(tensor, (Tensor, Tensor_)):
         raise TypeError("For all_gather_into_tensor, the input tensor must be tensor")
+    group = _get_group(group)
     all_gather_op = _get_cache_prim(P.AllGather)(group=group)
-    return all_gather_op(tensor)
+    output = all_gather_op(tensor)
+    return _deal_comm_outputs(output, async_op)
 
 
-def reduce_scatter_tensor(tensor, op=ReduceOp.SUM, group=GlobalComm.WORLD_COMM_GROUP):
+def reduce_scatter_tensor(tensor, op=ReduceOp.SUM, group=GlobalComm.WORLD_COMM_GROUP, async_op=False):
     r"""
     Reduces and scatters tensors from the specified communication group and
     returns the tensor which is reduced and scattered.
@@ -268,9 +316,12 @@ def reduce_scatter_tensor(tensor, op=ReduceOp.SUM, group=GlobalComm.WORLD_COMM_G
                   like SUM and MAX. Default: ``ReduceOp.SUM`` .
         group (str, optional): The communication group to work on. Default: ``GlobalComm.WORLD_COMM_GROUP`` , which
             means ``"hccl_world_group"`` in Ascend, and ``"nccl_world_group"`` in GPU.
+        async_op (bool, optional): Whether this op should be an async op. Default: ``False`` .
 
     Returns:
-        Tensor, it has the same dtype as `input_x` with a shape of :math:`(N/rank\_size, *)`.
+        Tuple(Tensor, CommHandle), the output tensor has the same dtype as `input_x` with a shape of
+        :math:`(N/rank\_size, *)`. CommHandle is an async work handle, if `async_op` is set to True.
+        CommHandle will be None, when `async_op` is False.
 
     Raises:
         TypeError: If the type of the first input parameter is not Tensor, or any of `op` and `group` is not a str.
@@ -313,7 +364,8 @@ def reduce_scatter_tensor(tensor, op=ReduceOp.SUM, group=GlobalComm.WORLD_COMM_G
     if not isinstance(tensor, (Tensor, Tensor_)):
         raise TypeError("For reduce_scatter_tensor, the input tensor must be tensor")
     reduce_scatter_op = _get_cache_prim(P.ReduceScatter)(op=op, group=group)
-    return reduce_scatter_op(tensor)
+    output = reduce_scatter_op(tensor)
+    return _deal_comm_outputs(output, async_op)
 
 
 def reduce(tensor, dst, op=ReduceOp.SUM, group=GlobalComm.WORLD_COMM_GROUP):
@@ -428,6 +480,7 @@ class P2POp:
         >>> recv_op = P2POp(irecv, recv_tensor, 0)
         >>> recv_op = P2POp('irecv', (), 0, recv_dtype=mindspore.float32)
     """
+
     def __init__(self, op, tensor, peer, group=None, tag=0, *, recv_dtype=None):
         self.op = op
         self.tensor = tensor
@@ -799,7 +852,19 @@ def barrier(group=GlobalComm.WORLD_COMM_GROUP):
     return _op()
 
 
-def isend(tensor, dst=0, group=GlobalComm.WORLD_COMM_GROUP, tag=0):
+def _deal_comm_outputs(output, async_op):
+    if isinstance(output, tuple):
+        if not async_op:
+            output[1].wait()
+            return (output[0], None)
+        return output
+
+    if not async_op:
+        return (output, None)
+    return (output, default_handle)
+
+
+def send(tensor, dst=0, group=GlobalComm.WORLD_COMM_GROUP, tag=0):
     """
     Send tensors to the specified dest_rank.
 
@@ -842,17 +907,18 @@ def isend(tensor, dst=0, group=GlobalComm.WORLD_COMM_GROUP, tag=0):
         >>>
         >>> init()
         >>> input_ = Tensor(np.ones([2, 8]).astype(np.float32))
-        >>> isend(input_, 0)
+        >>> send(input_, 0)
     """
     if not isinstance(tensor, (Tensor, Tensor_)):
         raise TypeError("For isend, the input tensor must be tensor")
-    _dst = get_group_rank_from_world_rank(dst, group)
+    group = _get_group(group)
+    _dst = _get_group_rank_from_world_rank_from_cache_helper(dst, group)
     _op = _get_cache_prim(P.Send)(tag, _dst, group, group)
-    _depend = _get_cache_prim(P.Depend)()
-    return _depend(tensor, _op(tensor))
+    output = _op(tensor)
+    _deal_comm_outputs(output, False)
 
 
-def irecv(tensor, src=0, group=GlobalComm.WORLD_COMM_GROUP, tag=0):
+def recv(tensor, src=0, group=GlobalComm.WORLD_COMM_GROUP, tag=0):
     """
     Receive tensors from src.
 
@@ -872,7 +938,8 @@ def irecv(tensor, src=0, group=GlobalComm.WORLD_COMM_GROUP, tag=0):
             be received by the Send op with the same "tag". Default: 0.
 
     Returns:
-        Tensor, the shape of output is :math:`(x_1, x_2, ..., x_R)`.
+        Tuple(Tensor, CommHandle), the shape of the output tensor is :math:`(x_1, x_2, ..., x_R)`.
+        CommHandle is an async work handle.
 
     Raises:
         TypeError: If `src` is not an int or `group` is not a str.
@@ -907,7 +974,7 @@ def irecv(tensor, src=0, group=GlobalComm.WORLD_COMM_GROUP, tag=0):
         >>> init()
         >>> x = ms.Tensor(np.zeros([2, 2]))
         # Process 1 receive tensor from Process 0.
-        >>> out = irecv(x, src=0)
+        >>> out = recv(x, src=0)
         >>> print(out)
         [[ 0.  1.]
          [ 2.  3.]]
@@ -916,14 +983,147 @@ def irecv(tensor, src=0, group=GlobalComm.WORLD_COMM_GROUP, tag=0):
         raise TypeError("For irecv, the input tensor must be tensor")
     if not isinstance(src, int):
         raise TypeError("For irecv, the src must be int")
-    _src = get_group_rank_from_world_rank(src, group)
+    group = _get_group(group)
+    _src = _get_group_rank_from_world_rank_from_cache_helper(src, group)
     shape = tensor.shape
     dtype = tensor.dtype
     _op = _get_cache_prim(P.Receive)(tag, _src, shape, dtype, group, group)
-    return _op(tensor)
+    output, _ = _deal_comm_outputs(_op(tensor), False)
+    return output
 
 
-def all_to_all_with_output_shape(output_shape_list, input_tensor_list, group=None):
+def isend(tensor, dst=0, group=GlobalComm.WORLD_COMM_GROUP, tag=0):
+    """
+    Send tensors to the specified dest_rank asynchronously.
+
+    Note:
+        Send and Receive must be used in combination and have same tag.
+
+    Args:
+        tensor (Tensor): The shape of tensor is :math:`(x_1, x_2, ..., x_R)`.
+        dst (int, optional): A required integer identifying the destination rank(global rank). Default: 0.
+        group (str, optional): The communication group to work on.
+            Default: "hccl_world_group" on Ascend, "nccl_world_group" on GPU.
+        tag (int, optional): A required integer identifying the send/recv message tag. The message will
+            be received by the Receive op with the same "tag". Default: 0.
+
+    Returns:
+        CommHandle, it is an async work handle.
+
+    Raises:
+        TypeError: `dst` is not an int or `group` is not a str。
+        ValueError: If the rank ID of the process is greater than the rank size of the communication group.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU``
+
+    Examples:
+        .. note::
+            Before running the following examples, you need to configure the communication environment variables.
+
+            For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
+            without any third-party or configuration file dependencies.
+            Please see the `msrun start up
+            <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/msrun_launcher.html>`_
+            for more details.
+
+            This example should be run with 2 devices.
+
+        >>> from mindspore import ops
+        >>> import mindspore.nn as nn
+        >>> from mindspore.communication import init
+        >>> from mindspore.communication.comm_func import isend
+        >>> from mindspore import Tensor
+        >>> import numpy as np
+        >>>
+        >>> init()
+        >>> input_ = Tensor(np.ones([2, 8]).astype(np.float32))
+        >>> handle = isend(input_, 0)
+        >>> handle.wait()
+    """
+    if not isinstance(tensor, (Tensor, Tensor_)):
+        raise TypeError("For isend, the input tensor must be tensor")
+    group = _get_group(group)
+    _dst = _get_group_rank_from_world_rank_from_cache_helper(dst, group)
+    _op = _get_cache_prim(P.Send)(tag, _dst, group, group)
+    output = _op(tensor)
+    _, handle = _deal_comm_outputs(output, True)
+    return handle
+
+
+def irecv(tensor, src=0, group=GlobalComm.WORLD_COMM_GROUP, tag=0):
+    """
+    Receive tensors from src asynchronously.
+
+    Note:
+        Send and Receive must be used in combination and have same tag.
+        The shape and dtype of input `tensor` is used to receive tensor, but the value
+        of input `tensor` would not take effect.
+        Only support PyNative mode, Graph mode is not currently supported.
+
+    Args:
+        tensor (Tensor): The shape of tensor is :math:`(x_1, x_2, ..., x_R)`. The shape and dtype of this
+            tensor is used to receive tensor, but the value of input `tensor` would not take effect.
+        src (int, optional): A required integer identifying the source rank(global rank). Default: 0.
+        group (str, optional): The communication group to work on.
+            Default: "hccl_world_group" on Ascend, "nccl_world_group" on GPU.
+        tag (int, optional): A required integer identifying the send/recv message tag. The message will
+            be received by the Send op with the same "tag". Default: 0.
+
+    Returns:
+        Tuple(Tensor, CommHandle), the shape of output is :math:`(x_1, x_2, ..., x_R)`.
+        CommHandle is an async work handle, if `async_op` is set to True.
+        CommHandle will be None, when `async_op` is False.
+
+    Raises:
+        TypeError: If `src` is not an int or `group` is not a str.
+        ValueError: If the rank ID of the process is greater than the rank size of the communication group.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU``
+
+    Examples:
+        .. note::
+            Before running the following examples, you need to configure the communication environment variables.
+
+            For Ascend/GPU/CPU devices, it is recommended to use the msrun startup method
+            without any third-party or configuration file dependencies.
+            Please see the `msrun start up
+            <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/msrun_launcher.html>`_
+            for more details.
+
+            This example should be run with 2 devices.
+
+        >>> from mindspore import ops
+        >>> import mindspore.nn as nn
+        >>> from mindspore.communication import init
+        >>> from mindspore.communication.comm_func import irecv
+        >>> from mindspore import Tensor
+        >>> import numpy as np
+        >>>
+        # Launch 2 processes.
+        Process 0 send the following array to Process 1
+        [[ 0.  1.]
+         [ 2.  3.]]
+        >>> init()
+        >>> x = ms.Tensor(np.zeros([2, 2]))
+        # Process 1 receive tensor from Process 0.
+        >>> out, handle = irecv(x, src=0)
+        >>> handle.wait()
+        >>> print(out)
+        [[ 0.  1.]
+         [ 2.  3.]]
+    """
+    group = _get_group(group)
+    _src = _get_group_rank_from_world_rank_from_cache_helper(src, group)
+    shape = tensor.shape
+    dtype = tensor.dtype
+    _op = _get_cache_prim(P.Receive)(tag, _src, shape, dtype, group, group)
+    output = _op(tensor)
+    return _deal_comm_outputs(output, True)
+
+
+def all_to_all_with_output_shape(output_shape_list, input_tensor_list, group=None, async_op=False):
     """
     scatter and gather list of tensor to/from all rank according to input/output tensor list.
 
@@ -938,9 +1138,12 @@ def all_to_all_with_output_shape(output_shape_list, input_tensor_list, group=Non
             List of tensors to scatter to the remote rank.
         group (str, optional): The communication group to work on.
             Default: None, which means "hccl_world_group" on Ascend, "nccl_world_group" on GPU.
+        async_op (bool, optional): Whether this op should be an async op. Default: ``False`` .
 
     Returns:
-        Tuple(Tensor), the tensors gathered from remote ranks.
+        Tuple(Tuple(Tensor), CommHandle), the tensors is gathered from remote ranks.
+        CommHandle is an async work handle, if `async_op` is set to True.
+        CommHandle will be None, when `async_op` is False.
 
     Raises:
         TypeError: If `input_tensor_list` is not list of tensors.
@@ -1013,24 +1216,25 @@ def all_to_all_with_output_shape(output_shape_list, input_tensor_list, group=Non
     _op = _get_cache_prim(P.AlltoAllV)(send_numel_list, recv_numel_list, group)
     send_flatten_tensor = cat(send_flatten_tensor)
     output = _op(send_flatten_tensor)
+    output, handle = _deal_comm_outputs(output, async_op)
     result = []
     offset = 0
     for numel, shape in zip(recv_numel_list, recv_shape_list):
         result.append(output[offset:offset + numel].reshape(shape))
         offset = offset + numel
-    return tuple(result)
+    return (tuple(result), handle)
 
 
 def _get_all_to_all_single_numel_list(tensor, output_shape, output_split_sizes, input_split_sizes, group):
     """get numel list for all_to_all_single."""
-    if input_split_sizes is None or not input_split_sizes:
+    if _is_split_sizes_empty(input_split_sizes):
         _world_size = get_group_size(group)
         if tensor.shape[0] % _world_size != 0:
             raise ValueError("input shape at dim 0 must be divided by world_size, "
                              f"but got {tensor.shape[0]} and {_world_size}.")
         _split_size = tensor.shape[0] // _world_size
         input_split_sizes = (_split_size,) * _world_size
-    if output_split_sizes is None or not output_split_sizes:
+    if _is_split_sizes_empty(output_split_sizes):
         _world_size = get_group_size(group)
         shape_dim_0 = None
         if isinstance(output_shape, Tensor):
@@ -1059,7 +1263,7 @@ def _get_all_to_all_single_numel_list(tensor, output_shape, output_split_sizes, 
 
 
 def all_to_all_single_with_output_shape(output_shape, tensor, output_split_sizes=None,
-                                        input_split_sizes=None, group=None):
+                                        input_split_sizes=None, group=None, async_op=False):
     """
     scatter and gather input with split size to/from all rank, and return result in a single tensor.
 
@@ -1077,11 +1281,13 @@ def all_to_all_single_with_output_shape(output_shape, tensor, output_split_sizes
             it means equally split by ``world_size``. Default: None.
         group (str, optional): The communication group to work on.
             Default: None, which means "hccl_world_group" on Ascend, "nccl_world_group" on GPU.
+        async_op (bool, optional): Whether this op should be an async op. Default: ``False`` .
 
     Returns:
-        Tensor, the tensors gathered concatenated from remote ranks.
+        Tuple(Tensor, CommHandle), the output tensor is gathered concatenated from remote ranks.
         If the numel of tensor gathered from remote is zero, it will return a Tensor will value 0,
-        which has no actual meanning.
+        which has no actual meanning. CommHandle is an async work handle, if `async_op` is set to True.
+        CommHandle will be None, when `async_op` is False.
 
     Raises:
         TypeError: If `tensor` is not tensor.
@@ -1135,12 +1341,14 @@ def all_to_all_single_with_output_shape(output_shape, tensor, output_split_sizes
     if group is None:
         group = GlobalComm.WORLD_COMM_GROUP
 
+    split_sizes_empty = _is_split_sizes_empty(output_split_sizes) and _is_split_sizes_empty(input_split_sizes)
     send_numel_list, recv_numel_list, recv_shape_without_first_dim = \
         _get_all_to_all_single_numel_list(tensor, output_shape, output_split_sizes, input_split_sizes, group)
-    _op = _get_cache_prim(P.AlltoAllV)(send_numel_list, recv_numel_list, group)
+    _op = _get_cache_prim(P.AlltoAllV)(send_numel_list, recv_numel_list, group, split_sizes_empty)
     _input = tensor.reshape(-1)
     result = _op(_input)
+    result, handle = _deal_comm_outputs(result, async_op)
     if any(recv_numel_list):
         result = result.reshape((-1,) + recv_shape_without_first_dim)
 
-    return result
+    return result, handle

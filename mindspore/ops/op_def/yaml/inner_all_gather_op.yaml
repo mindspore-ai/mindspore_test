@@ -1,0 +1,19 @@
+#operator inner all gather
+inner_comm_all_gather:
+    args:
+        input:
+            dtype: tensor
+        rank_size:
+            dtype: int
+        group:
+            dtype: str
+    returns:
+        output:
+            dtype: tensor
+    function:
+        disable: True
+    dispatch:
+        enable: True
+        is_comm_op: True
+        Ascend: InnerCommAllGatherAscend
+        GPU: InnerCommAllGatherGPU

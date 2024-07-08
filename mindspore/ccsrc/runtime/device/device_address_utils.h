@@ -174,6 +174,25 @@ class BACKEND_EXPORT DeviceAddressUtils {
                                                               cross_stream_addresses);
   }
 
+  template <typename... T>
+  static void ProcessCrossStreamAddressWithEvent(const std::string &op_name, const DeviceContext *device_context,
+                                                 size_t op_stream_id, const DeviceEventPtr &event, const T &... args) {
+    // memory_stream_addresses pair : memory_stream_id, address.
+    std::vector<std::pair<uint32_t, void *>> cross_stream_addresses;
+    (GetCrossStreamAddressInfo(op_stream_id, &cross_stream_addresses, args), ...);
+    if (cross_stream_addresses.empty()) {
+      return;
+    }
+
+    device::MultiStreamController::GetInstance()->Refresh(device_context);
+    auto task_id_on_stream =
+      device::MultiStreamController::GetInstance()->LaunchTaskIdOnStream(device_context, op_stream_id);
+    MS_LOG(DEBUG) << "Launch stream_id:" << op_stream_id << ", task id:" << task_id_on_stream << ", op_name:" << op_name
+                  << ", cross_stream_addresses size:" << cross_stream_addresses.size();
+    device::MultiStreamController::GetInstance()->RecordEvent(device_context, task_id_on_stream, op_stream_id,
+                                                              cross_stream_addresses, event);
+  }
+
  private:
   // Whether device address of anf node is valid and device address type
   // is consistent with device type, for example, device address type

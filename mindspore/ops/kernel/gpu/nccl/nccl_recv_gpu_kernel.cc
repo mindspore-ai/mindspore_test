@@ -15,23 +15,26 @@
  */
 
 #include "kernel/gpu/nccl/nccl_recv_gpu_kernel.h"
+#include <utility>
 
 namespace mindspore {
 namespace kernel {
-MS_REG_GPU_KERNEL_ONE(
-  Receive, KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeFloat32).AddOutputAttr(kNumberTypeFloat32),
-  NcclRecvGpuKernel, float);
-MS_REG_GPU_KERNEL_ONE(
-  Receive, KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeFloat16).AddOutputAttr(kNumberTypeFloat32),
-  NcclRecvGpuKernel, float);
-MS_REG_GPU_KERNEL_ONE(
-  Receive, KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeFloat32).AddOutputAttr(kNumberTypeFloat16),
-  NcclRecvGpuKernel, half);
-MS_REG_GPU_KERNEL_ONE(
-  Receive, KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeFloat16).AddOutputAttr(kNumberTypeFloat16),
-  NcclRecvGpuKernel, half);
-MS_REG_GPU_KERNEL_ONE(Receive,
-                      KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeInt32).AddOutputAttr(kNumberTypeInt32),
-                      NcclRecvGpuKernel, int);
+const std::vector<std::pair<KernelAttr, NcclRecvGpuKernel::KernelRunFunc>> &NcclRecvGpuKernel::GetFuncList() const {
+  static const std::vector<std::pair<KernelAttr, NcclRecvGpuKernel::KernelRunFunc>> func_list = {
+    {KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeFloat32).AddOutputAttr(kNumberTypeFloat32),
+     &NcclRecvGpuKernel::LaunchKernel<float>},
+    {KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeFloat16).AddOutputAttr(kNumberTypeFloat32),
+     &NcclRecvGpuKernel::LaunchKernel<float>},
+    {KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeFloat32).AddOutputAttr(kNumberTypeFloat16),
+     &NcclRecvGpuKernel::LaunchKernel<half>},
+    {KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeFloat16).AddOutputAttr(kNumberTypeFloat16),
+     &NcclRecvGpuKernel::LaunchKernel<half>},
+    {KernelAttr().AddAllSameAttr(true).AddInputAttr(kNumberTypeInt32).AddOutputAttr(kNumberTypeInt32),
+     &NcclRecvGpuKernel::LaunchKernel<int>},
+  };
+  return func_list;
+}
+
+MS_KERNEL_FACTORY_REG(NativeGpuKernelMod, Receive, NcclRecvGpuKernel);
 }  // namespace kernel
 }  // namespace mindspore

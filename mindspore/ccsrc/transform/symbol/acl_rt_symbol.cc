@@ -22,6 +22,7 @@ namespace transform {
 aclrtCreateContextFunObj aclrtCreateContext_ = nullptr;
 aclrtCreateEventFunObj aclrtCreateEvent_ = nullptr;
 aclrtCreateEventWithFlagFunObj aclrtCreateEventWithFlag_ = nullptr;
+aclrtCreateEventExWithFlagFunObj aclrtCreateEventExWithFlag_ = nullptr;
 aclrtCreateStreamWithConfigFunObj aclrtCreateStreamWithConfig_ = nullptr;
 aclrtDestroyContextFunObj aclrtDestroyContext_ = nullptr;
 aclrtDestroyEventFunObj aclrtDestroyEvent_ = nullptr;
@@ -84,6 +85,7 @@ void LoadAclRtApiSymbol(const std::string &ascend_path) {
   aclrtCreateContext_ = DlsymAscendFuncObj(aclrtCreateContext, handler);
   aclrtCreateEvent_ = DlsymAscendFuncObj(aclrtCreateEvent, handler);
   aclrtCreateEventWithFlag_ = DlsymAscendFuncObj(aclrtCreateEventWithFlag, handler);
+  aclrtCreateEventExWithFlag_ = DlsymAscendFuncObj(aclrtCreateEventExWithFlag, handler);
   aclrtCreateStreamWithConfig_ = DlsymAscendFuncObj(aclrtCreateStreamWithConfig, handler);
   aclrtDestroyContext_ = DlsymAscendFuncObj(aclrtDestroyContext, handler);
   aclrtDestroyEvent_ = DlsymAscendFuncObj(aclrtDestroyEvent, handler);
@@ -142,6 +144,7 @@ void LoadSimulationRtApi() {
   ASSIGN_SIMU(aclrtCreateContext);
   ASSIGN_SIMU(aclrtCreateEvent);
   ASSIGN_SIMU(aclrtCreateEventWithFlag);
+  ASSIGN_SIMU(aclrtCreateEventExWithFlag);
   ASSIGN_SIMU(aclrtCreateStreamWithConfig);
   ASSIGN_SIMU(aclrtDestroyContext);
   ASSIGN_SIMU(aclrtDestroyEvent);

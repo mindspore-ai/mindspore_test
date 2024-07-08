@@ -73,6 +73,7 @@ class GPUDeviceResManager : public DeviceResManager {
   size_t QueryStreamSize() const override;
   std::vector<uint32_t> GetStreamIds() const override;
   void *GetStream(size_t stream_id) const;
+  size_t GetCommunicationStreamID() const override;
   bool DestroyStream(size_t stream_id) const override;
   void SetCurrentStreamId(size_t stream_id) override;
   size_t GetCurrentStreamId() const override;

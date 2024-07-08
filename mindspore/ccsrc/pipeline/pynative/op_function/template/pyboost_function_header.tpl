@@ -22,7 +22,8 @@
 #include "pybind_api/gil_scoped_long_running.h"
 #include "pipeline/pynative/predict_out_type_map.h"
 #include "pipeline/pynative/forward/forward_task.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_def.h"
+#include "op_def/auto_generate/gen_ops_def.h"
+#include "pybind_api/hal/comm_handle_py.h"
 ${include_op_header}
 
 namespace mindspore::pynative {

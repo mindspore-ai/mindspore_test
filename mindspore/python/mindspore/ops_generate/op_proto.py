@@ -45,7 +45,8 @@ class OpProto:
                  ascend,
                  prim_init,
                  is_dispatch,
-                 is_multi_output):
+                 is_multi_output,
+                 is_comm_op):
         self.operator_name = operator_name
         self.class_name = class_name
         self.op_args = op_args
@@ -60,6 +61,7 @@ class OpProto:
         self.prim_init = prim_init
         self.is_dispatch = is_dispatch
         self.is_multi_output = is_multi_output
+        self.is_comm_op = is_comm_op
 
     @staticmethod
     def get_device_special_name(dispatch, gpu, cpu, ascend):
@@ -111,6 +113,7 @@ class OpProto:
 
         is_pyboost = False
         is_dispatch = False
+        is_comm_op = False
         gpu = default_str
         cpu = default_str
         ascend = default_str
@@ -119,6 +122,7 @@ class OpProto:
             is_dispatch = True
             is_pyboost = yaml[dispatch_key].get('enable')
             gpu, cpu, ascend = OpProto.get_device_special_name(yaml[dispatch_key], gpu, cpu, ascend)
+            is_comm_op = yaml[dispatch_key].get('is_comm_op')
         return_dict = yaml['returns']
         class_name = convert_python_func_name_to_c(op_name)
         class_key = 'class'
@@ -137,5 +141,5 @@ class OpProto:
         if 'view' in yaml.keys():
             is_view = True
         op_proto = OpProto(op_name, op_args, return_args, class_name,
-                           is_pyboost, is_view, cpu, gpu, ascend, prim_init, is_dispatch, is_multi_output)
+                           is_pyboost, is_view, cpu, gpu, ascend, prim_init, is_dispatch, is_multi_output, is_comm_op)
         return op_proto

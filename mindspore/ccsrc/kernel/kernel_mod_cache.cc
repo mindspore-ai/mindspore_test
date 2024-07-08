@@ -45,6 +45,21 @@ std::string KernelModCache::GetKernelModKey(const std::string &op_name, const st
   }
   return key;
 }
+
+std::string KernelModCache::GetPrimAttrKernelModKey(const PrimitivePtr &prim, const std::string &device_name,
+                                                    const std::vector<KernelTensor *> &inputs) {
+  std::string key = prim->name();
+  key += "_";
+  key += device_name;
+  for (const auto &input : inputs) {
+    key += "_";
+    key += std::to_string(input->dtype_id());
+  }
+
+  key += prim->GetAttrsText();
+  return key;
+}
+
 void KernelModCache::ClearAllCache() { kernel_mod_cache_.clear(); }
 void KernelModCache::ClearOpCache(const std::string &key) { (void)kernel_mod_cache_.erase(key); }
 }  // namespace kernel

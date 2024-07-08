@@ -43,6 +43,7 @@ Event
     :template: classtemplate.rst
 
     mindspore.hal.Event
+    mindspore.hal.CommHandle
 
 Memory
 ------------

@@ -496,15 +496,18 @@ def generate_pyboost_functions(work_path, yaml_data):
             call_args_str.append(call_arg)
             cast_args_str.append(cast_arg)
         type_num, same_type = gen_signature_same_type_table(op_proto.indexes, operator_data)
-        pyboost_func_str += template.PYBOOST_FUNCTION_TEMPLATE.replace(func_name=op_proto.pyboost_function_name,
-                                                                       op_def_name=op_def_name_str, same_type=same_type,
-                                                                       type_num=type_num, parser_body=parser_body_str,
-                                                                       op_name=op_name_str,
-                                                                       convert_stub=convert_stub_str,
-                                                                       optional_to_value=optional_to_value_str,
-                                                                       call_args=call_args_str, grad_args=grad_args_str,
-                                                                       cast_args=cast_args_str, op_args=op_args_str,
-                                                                       class_name=op_proto.class_name)
+
+        funcion_tpl = template.PYBOOS_COMM_FUNCTION_TEMPLATE \
+            if op_proto.is_comm_op else template.PYBOOST_FUNCTION_TEMPLATE
+        pyboost_func_str += funcion_tpl.replace(func_name=op_proto.pyboost_function_name,
+                                                op_def_name=op_def_name_str, same_type=same_type,
+                                                type_num=type_num, parser_body=parser_body_str,
+                                                op_name=op_name_str,
+                                                convert_stub=convert_stub_str,
+                                                optional_to_value=optional_to_value_str,
+                                                call_args=call_args_str, grad_args=grad_args_str,
+                                                cast_args=cast_args_str, op_args=op_args_str,
+                                                class_name=op_proto.class_name)
         pyboost_func_str = pyboost_func_str + template.NEW_LINE + template.NEW_LINE
         pyboost_func_pybind_def += template.REGISTER_DEFINE_TEMPLATE.replace(
             pyboost_op_name=get_pyboost_name(op_proto.operator_name),

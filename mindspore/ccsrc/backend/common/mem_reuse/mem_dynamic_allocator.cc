@@ -26,6 +26,7 @@
 #include "utils/ms_context.h"
 #include "utils/convert_utils_base.h"
 #include "utils/ms_utils.h"
+#include "runtime/pipeline/pipeline.h"
 #ifdef ENABLE_DEBUGGER
 #include "plugin/device/cpu/hal/profiler/cpu_profiling.h"
 #endif
@@ -1150,6 +1151,8 @@ bool DynamicMemPoolBestFit::SyncAllEventsInner() {
       (void)carry_event_addresses.emplace(address);
     }
   }
+
+  runtime::Pipeline::Get().WaitAll();
   for (auto &address : carry_event_addresses) {
     if (address->SyncAllEvents() && address->status_ == DynamicMemBufStatus::kMemBufUsedByEvent) {
       FreeTensorMemInner(address->device_addr_);

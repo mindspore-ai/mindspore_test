@@ -45,6 +45,9 @@ tensor::BaseTensorPtr BACKEND_EXPORT ClampScalarCustomizeCall(const std::shared_
                                                               const std::optional<ScalarPtr> &min,
                                                               const std::optional<ScalarPtr> &max,
                                                               const std::string &device_target);
+
+void BACKEND_EXPORT CommonCommFunc(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
+                                   const std::function<void(void)> &pre_func, std::function<void()> launch_func);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore

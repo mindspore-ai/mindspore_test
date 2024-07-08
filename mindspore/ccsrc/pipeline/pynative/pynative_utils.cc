@@ -1586,6 +1586,12 @@ FrontendOpRunInfoPtr PyBoost::Init(const PrimitivePtr &prim, const py::list &arg
 
 void PyBoost::MakeOutputValue(const FrontendOpRunInfoPtr &op_run_info, const kernel::pyboost::OpPtr &op) {
   size_t size = op->outputs().size();
+  if (size == 0) {
+    if (!op_run_info->stub_output->isa<stub::NoneTypeNode>()) {
+      MS_LOG(EXCEPTION) << "op->outputs() size is 0, but stub_output is not a NoneTypeNode.";
+    }
+    return;
+  }
   // If op are Contiguous, Cast(precision, implicit cast), which are internal ops and not have stub output
   bool is_tuple_output = op_run_info->stub_output != nullptr ? op_run_info->stub_output->isa<stub::SequenceNode>()
                                                              : PredictOutTypeByName(op->primitive()->name()) == kTuple;
@@ -1622,7 +1628,7 @@ void PyBoost::MakeOutputValue(const FrontendOpRunInfoPtr &op_run_info, const ker
 void PyBoost::UpdateStubOutput(const FrontendOpRunInfoPtr &op_run_info, const AbstractBasePtr &abstract,
                                const kernel::pyboost::OpPtr &op) {
   MS_EXCEPTION_IF_NULL(op);
-  if (op_run_info->stub_output == nullptr) {
+  if (op_run_info->stub_output == nullptr || op_run_info->stub_output->isa<stub::NoneTypeNode>()) {
     return;
   }
   if (MS_UNLIKELY(op->output_value_simple_info() != nullptr)) {

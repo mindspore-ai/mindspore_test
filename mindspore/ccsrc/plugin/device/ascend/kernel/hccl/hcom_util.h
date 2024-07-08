@@ -21,6 +21,8 @@
 #include <map>
 #include <vector>
 #include <memory>
+#include <unordered_map>
+#include <utility>
 #include "ir/dtype.h"
 #include "hccl/base.h"
 #include "include/common/utils/contract.h"
@@ -29,12 +31,15 @@
 #include "kernel/kernel.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
 #include "mindspore/ops/op_def/ascend_op_name.h"
+#include "ir/base_tensor.h"
 
 namespace mindspore {
 using kernel::KernelTensor;
 using std::map;
 using std::string;
 using std::vector;
+constexpr int64_t kComplex64ConvertFloat32Num = 2;
+
 /* Correspondence between data_type and hcom data type in Ascend */
 static map<int64_t, HcclDataType> kConstOpHcomDataTypeMap = {
   {TypeId::kNumberTypeInt8, HCCL_DATA_TYPE_INT8},     {TypeId::kNumberTypeInt16, HCCL_DATA_TYPE_INT16},
@@ -55,6 +60,14 @@ static map<HcclDataType, uint32_t> kConstOpHcomDataTypeSizeMap = {
   {HCCL_DATA_TYPE_FP64, sizeof(double)},         {HCCL_DATA_TYPE_BFP16, sizeof(float) / 2},
 };
 
+/* Correspondence between reduce str and enum in hcom  */
+static std::unordered_map<std::string, HcclReduceOp> kConstOpHcomReduceOpTypeMap = {
+  {"min", HCCL_REDUCE_MIN},
+  {"max", HCCL_REDUCE_MAX},
+  {"prod", HCCL_REDUCE_PROD},
+  {"sum", HCCL_REDUCE_SUM},
+};
+
 class HcomUtil {
  public:
   static ::HcclDataType ConvertHcclType(TypeId type_id);
@@ -63,10 +76,17 @@ class HcomUtil {
   static bool GetHcclOpSize(const HcclDataType &data_type, const ShapeVector &shape, size_t *size);
   static bool GetHcomTypeSize(const HcclDataType &data_type, uint32_t *size);
   static bool GetHcomCount(const PrimitivePtr &primitive, const vector<HcclDataType> &data_type_list,
-                           const vector<ShapeVector> &shape_list, const size_t input_tensor_num, uint64_t *total_count);
+                           const vector<ShapeVector> &shape_list, const size_t input_tensor_num,
+                           const std::optional<int64_t> rank_size_opt, uint64_t *total_count);
+
+  static std::pair<uint64_t, ::HcclDataType> GetHcclCountAndTypeFromTensor(
+    const PrimitivePtr &primitive, const tensor::BaseTensorPtr &tensor,
+    const std::optional<int64_t> rank_size_opt = std::nullopt);
+  static HcclReduceOp GetHcomReduceOpType(const std::string &reduce_op);
   static bool GetHcomOperationType(const PrimitivePtr &primitive, HcclReduceOp *op_type);
   static void GetHcomGroup(NotNull<const AnfNodePtr &> anf_node, NotNull<std::string *> group);
   static bool GetHcomReceiveType(const AnfNodePtr &anf_node, TypeId *receive_type);
+  static void AdjustShapeByDataType(TypeId type_id, ShapeVector *shape);
 
   static inline bool IsReceiveOp(const std::string &kernel_name) {
     return kernel_name == mindspore::kReceiveOpName || kernel_name == mindspore::kMuxReceiveOpName;

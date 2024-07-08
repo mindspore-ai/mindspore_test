@@ -35,13 +35,15 @@ EventPy::~EventPy() {
     pynative::DispatchOp(std::make_shared<pynative::PassthroughFrontendTask>([device_ctx, event = event_]() {
       auto destroy_fn = [device_ctx, event]() {
         MS_LOG(DEBUG) << "DestroyEvent, event:" << event;
-        if (device_ctx != nullptr && device_ctx->initialized()) {
-          device_ctx->device_res_manager_->DestroyEvent(event);
-        }
+        runtime::OpExecutor::DispatchLaunchTask([device_ctx, event]() {
+          if (device_ctx != nullptr && device_ctx->initialized()) {
+            device_ctx->device_res_manager_->DestroyEvent(event);
+          }
+        });
       };
       if (!runtime::OpExecutor::NeedSync()) {
         runtime::OpExecutor::GetInstance().PushSimpleOpRunTask(
-          std::make_shared<runtime::PassthroughDeviceTask>(destroy_fn));
+          std::make_shared<runtime::PassthroughNoWaitDeviceTask>(destroy_fn));
       } else {
         destroy_fn();
       }
@@ -75,15 +77,17 @@ void EventPy::DispatchRecordEventTask(const StreamPyPtr &stream) {
           device::MultiStreamController::GetInstance()->LaunchTaskIdOnStream(stream->device_ctx(), record_stream_id);
         *task_id_on_stream = task_id;
         auto stream_ptr = stream->stream();
-        event->set_record_stream(stream_ptr);
-        event->RecordEvent();
+        runtime::OpExecutor::DispatchLaunchTask([stream_ptr, event]() {
+          event->set_record_stream(stream_ptr);
+          event->RecordEvent();
+        });
         MS_LOG(DEBUG) << "RecordEvent record_stream_id:" << record_stream_id << ", event:" << event << ", stream_ptr"
                       << stream_ptr << ", task_id_on_stream:" << *task_id_on_stream;
         EventCnt::DecreaseUnrecordedCnt(event);
       };
       if (!runtime::OpExecutor::NeedSync()) {
         runtime::OpExecutor::GetInstance().PushSimpleOpRunTask(
-          std::make_shared<runtime::PassthroughDeviceTask>(record_fn));
+          std::make_shared<runtime::PassthroughNoWaitDeviceTask>(record_fn));
       } else {
         record_fn();
       }
@@ -111,8 +115,10 @@ void EventPy::DispatchWaitEventTask(const StreamPyPtr &stream) {
         auto stream_ptr = stream->stream();
         MS_LOG(DEBUG) << "WaitEvent wait stream id:" << stream->stream_id() << ", record_stream_id:" << record_stream_id
                       << ", event:" << event << ", task_id_on_stream:" << *task_id_on_stream;
-        event->set_wait_stream(stream_ptr);
-        event->WaitEventWithoutReset();
+        runtime::OpExecutor::DispatchLaunchTask([stream_ptr, event]() {
+          event->set_wait_stream(stream_ptr);
+          event->WaitEventWithoutReset();
+        });
 
         // Release cross stream memory event, mark record_stream_id is use stream id, wait stream id is memory stream
         // id.
@@ -121,7 +127,7 @@ void EventPy::DispatchWaitEventTask(const StreamPyPtr &stream) {
       };
       if (!runtime::OpExecutor::NeedSync()) {
         runtime::OpExecutor::GetInstance().PushSimpleOpRunTask(
-          std::make_shared<runtime::PassthroughDeviceTask>(wait_fn));
+          std::make_shared<runtime::PassthroughNoWaitDeviceTask>(wait_fn));
       } else {
         wait_fn();
       }

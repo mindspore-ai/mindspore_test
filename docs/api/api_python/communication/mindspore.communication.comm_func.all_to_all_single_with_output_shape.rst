@@ -15,9 +15,12 @@ mindspore.communication.comm_func.all_to_all_single_with_output_shape
         - **output_split_sizes** (Union(Tuple(int), List(int))) - 接收张量在0维的切分大小列表。默认值：None，表示均匀切分。
         - **input_split_sizes** (Union(Tuple(int), List(int))) - 发送张量在0维的切分大小列表。默认值：None，表示均匀切分。
         - **group** (str, 可选) - 通信执行所在的通信组。默认值：None。为None时，在Ascend上将使用为 ``hccl_world_group``，在GPU上使用 ``nccl_world_group``。
+        - **async_op** (bool, 可选) - 本算子是否是异步算子。默认值： ``False`` 。
 
     返回：
-        从远端设备接收分块并合并的张量。如果从其他设备接收的张量为空，它将返回一个没有实际意义的值为0的张量。
+        Tuple(Tensor, CommHandle), Tensor为从远端设备接收分块并合并的张量。
+        如果从其他设备接收的张量为空，它将返回一个没有实际意义的值为0的张量。
+        若 `async_op` 是True，CommHandle是一个异步工作句柄。若 `async_op` 是False，CommHandle将返回None。
 
     异常：
         - **TypeError** - `tensor` 不是张量类型。

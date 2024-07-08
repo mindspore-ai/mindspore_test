@@ -163,7 +163,8 @@ int HcomReceiveKernel::Resize(const std::vector<KernelTensor *> &inputs, const s
   output_size_list_.push_back(size);
 
   // update hccl_count_
-  if (!HcomUtil::GetHcomCount(primitive_, hccl_data_type_list_, {real_shape_}, inputs.size(), &hccl_count_)) {
+  if (!HcomUtil::GetHcomCount(primitive_, hccl_data_type_list_, {real_shape_}, inputs.size(), std::nullopt,
+                              &hccl_count_)) {
     MS_LOG(ERROR) << "GetHcomCount fail!";
     return KRET_RESIZE_FAILED;
   }

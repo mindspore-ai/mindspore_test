@@ -155,15 +155,17 @@ bool PyBoostUtils::IsPyBoostCustomRegistered(const std::string &device_name, con
   return PyboostKernelExtraFuncFactory::GetInstance().IsPyBoostCustomRegistered(device_name, op_name);
 }
 
-kernel::KernelModPtr PyBoostUtils::CreateKernelMod(const PrimitivePtr &prim, const std::string &op_name,
-                                                   const DeviceContext *device_context,
+kernel::KernelModPtr PyBoostUtils::CreateKernelMod(const PrimitivePtr &prim, const DeviceContext *device_context,
                                                    const std::vector<KernelTensor *> &inputs,
-                                                   const std::vector<KernelTensor *> &outputs) {
+                                                   const std::vector<KernelTensor *> &outputs, bool with_prim_attr) {
   MS_EXCEPTION_IF_NULL(device_context);
   const auto &device_name = device_context->device_context_key().device_name_;
+  const auto &op_name = prim->name();
 
   auto &cache_helper = kernel::KernelModCache::GetInstance();
-  const auto &key = cache_helper.GetKernelModKey(op_name, device_name, inputs);
+
+  const auto &key = with_prim_attr ? cache_helper.GetPrimAttrKernelModKey(prim, device_name, inputs)
+                                   : cache_helper.GetKernelModKey(op_name, device_name, inputs);
   auto kernel_mod = cache_helper.GetKernelMod(key);
   if (kernel_mod == nullptr) {
     kernel_mod = device_context->GetKernelExecutor(false)->CreateKernelMod(op_name);
@@ -365,11 +367,11 @@ PyboostKernelExtraFuncFactory &PyboostKernelExtraFuncFactory::GetInstance() {
 
 void PyBoostUtils::LaunchKernel(const PrimitivePtr &primitive, const DeviceContext *device_context,
                                 const AddressInfoPair &input_address_info, const AddressInfoPair &output_address_info,
-                                size_t stream_id) {
+                                size_t stream_id, bool with_prim_attr) {
   const auto &real_name = primitive->name();
   // KernelMod init
-  auto kernel_mod = PyBoostUtils::CreateKernelMod(primitive, real_name, device_context, input_address_info.first,
-                                                  output_address_info.first);
+  auto kernel_mod = PyBoostUtils::CreateKernelMod(primitive, device_context, input_address_info.first,
+                                                  output_address_info.first, with_prim_attr);
   MS_EXCEPTION_IF_NULL(kernel_mod);
   // KernelMod resize
   if (kernel_mod->Resize(input_address_info.first, output_address_info.first) == kernel::KRET_RESIZE_FAILED) {

@@ -23,7 +23,9 @@ namespace mindspore {
 namespace runtime {
 namespace {
 constexpr auto kProfilerNamePyboost = "pyboost";
-}
+constexpr auto kPassthroughNamePyboost = "passthrough";
+constexpr auto kPassthroughNoWaitNamePyboost = "passthrough_no_wait";
+}  // namespace
 
 DeviceOpRunTask::DeviceOpRunTask(std::shared_ptr<OpTaskContext> context,
                                  std::function<void(const std::shared_ptr<OpTaskContext> &context)> run_func)
@@ -66,8 +68,14 @@ void PyBoostDeviceTask::Run() {
 
 void PassthroughDeviceTask::Run() {
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kPyNativeDeviceTask,
-                                     runtime::ProfilerRecorder::kNoName, false, false, task_id_);
+                                     kPassthroughNamePyboost, false, false, task_id_);
   Pipeline::Get().launch_stage()->Wait();
+  run_func_();
+}
+
+void PassthroughNoWaitDeviceTask::Run() {
+  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kPyNativeDeviceTask,
+                                     kPassthroughNoWaitNamePyboost, false, false, task_id_);
   run_func_();
 }
 }  // namespace runtime

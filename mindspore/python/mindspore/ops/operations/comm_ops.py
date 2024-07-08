@@ -24,6 +24,11 @@ from mindspore.communication.management import get_rank, get_group_size, GlobalC
 from mindspore.common import dtype as mstype
 from mindspore.ops.primitive import PrimitiveWithInfer, PrimitiveWithCheck, Primitive, prim_attr_register
 from mindspore.common.api import context
+from mindspore._c_expression import (pyboost_inner_comm_irecv, pyboost_inner_comm_isend, pyboost_inner_comm_all_reduce,
+                                     pyboost_inner_comm_all_gather, pyboost_inner_comm_all_to_all_v,
+                                     pyboost_inner_comm_reduce_scatter)
+from mindspore.common._stub_tensor import _convert_stub
+from mindspore.ops_generate.gen_ops_inner_prim import DtypeToEnum
 
 
 class ReduceOp:
@@ -178,17 +183,22 @@ class AllReduce(Primitive):
     @prim_attr_register
     def __init__(self, op=ReduceOp.SUM, group=GlobalComm.WORLD_COMM_GROUP):
         """Initialize AllReduce."""
+        self.group = _get_group(group)
         if not isinstance(op, type(ReduceOp.SUM)):
             raise TypeError(f"For '{self.name}', the 'op' must be str, but got {type(op).__name__}.")
-        if not isinstance(_get_group(group), str):
+        if not isinstance(self.group, str):
             raise TypeError(f"For '{self.name}', the 'group' must be str, "
-                            f"but got {type(_get_group(group)).__name__}.")
-        check_hcom_group_valid(group, prim_name=self.name)
+                            f"but got {type(self.group).__name__}.")
+        check_hcom_group_valid(self.group, prim_name=self.name)
         self.op = op
-        self.add_prim_attr('group', _get_group(group))
+        self.add_prim_attr('group', self.group)
         self.add_prim_attr('fusion', 0)
         self.add_prim_attr('index', 0)
         self.add_prim_attr('no_eliminate', True)
+
+    def __call__(self, x):
+        out, handle = pyboost_inner_comm_all_reduce(self, [x, self.op, self.group])
+        return (_convert_stub(out), handle)
 
 
 class Reduce(PrimitiveWithInfer):
@@ -354,12 +364,13 @@ class AllGather(PrimitiveWithInfer):
     @prim_attr_register
     def __init__(self, group=GlobalComm.WORLD_COMM_GROUP):
         """Initialize AllGather."""
-        validator.check_value_type('group', _get_group(group), (str,), self.name)
-        self.rank = get_rank(_get_group(group))
-        self.rank_size = get_group_size(_get_group(group))
+        self.group = _get_group(group)
+        validator.check_value_type('group', self.group, (str,), self.name)
+        self.rank = get_rank(self.group)
+        self.rank_size = get_group_size(self.group)
         validator.check('rank', self.rank, 'rank_size', self.rank_size, validator.LT, self.name)
         self.add_prim_attr('rank_size', self.rank_size)
-        self.add_prim_attr('group', _get_group(group))
+        self.add_prim_attr('group', self.group)
         self.add_prim_attr('fusion', 0)
         self.add_prim_attr('mean_flag', False)
         self.add_prim_attr('no_eliminate', True)
@@ -373,6 +384,10 @@ class AllGather(PrimitiveWithInfer):
     def infer_dtype(self, x_dtype):
         check_collective_target_dtype('x', x_dtype, self.name)
         return x_dtype
+
+    def __call__(self, x):
+        out, handle = pyboost_inner_comm_all_gather(self, [x, self.rank_size, self.group])
+        return (_convert_stub(out), handle)
 
 
 class _MiniStepAllGather(PrimitiveWithInfer):
@@ -578,13 +593,18 @@ class ReduceScatter(Primitive):
     def __init__(self, op=ReduceOp.SUM, group=GlobalComm.WORLD_COMM_GROUP):
         """Initialize ReduceScatter."""
         validator.check_value_type('op', op, (type(ReduceOp.SUM),), self.name)
-        validator.check_value_type('group', _get_group(group), (str,), self.name)
+        self.group = _get_group(group)
+        validator.check_value_type('group', self.group, (str,), self.name)
         self.op = op
-        self.rank_size = get_group_size(_get_group(group))
+        self.rank_size = get_group_size(self.group)
         self.add_prim_attr('rank_size', self.rank_size)
-        self.add_prim_attr('group', _get_group(group))
+        self.add_prim_attr('group', self.group)
         self.add_prim_attr('fusion', 0)
         self.add_prim_attr('no_eliminate', True)
+
+    def __call__(self, x):
+        out, handle = pyboost_inner_comm_reduce_scatter(self, [x, self.rank_size, self.op, self.group])
+        return (_convert_stub(out), handle)
 
 
 class _HostReduceScatter(PrimitiveWithInfer):
@@ -1412,7 +1432,7 @@ class Send(PrimitiveWithInfer):
     def __init__(self, sr_tag, dest_rank, group=GlobalComm.WORLD_COMM_GROUP, group_back=GlobalComm.WORLD_COMM_GROUP):
         self.rank = dest_rank
         self.sr_tag = sr_tag
-        self.group = group
+        self.group = _get_group(group)
         self.add_prim_attr("no_eliminate", True)
 
     def infer_shape(self, x_shape):
@@ -1421,6 +1441,13 @@ class Send(PrimitiveWithInfer):
 
     def infer_dtype(self, x_dtype):
         return x_dtype
+
+    def __call__(self, x):
+        out, handle = pyboost_inner_comm_isend(self, [x, self.rank, self.group, self.sr_tag])
+        return (_convert_stub(out), handle)
+
+
+dtype_to_type_id = DtypeToEnum()
 
 
 class Receive(PrimitiveWithInfer):
@@ -1498,7 +1525,7 @@ class Receive(PrimitiveWithInfer):
         self.tag = sr_tag
         self.shape = shape
         self.dtype = dtype
-        self.group = group
+        self.group = _get_group(group)
         self.add_prim_attr("no_eliminate", True)
         valid_type = [mstype.float16, mstype.float32, mstype.float64, mstype.bfloat16,
                       mstype.int8, mstype.int16, mstype.int32, mstype.int64,
@@ -1511,6 +1538,11 @@ class Receive(PrimitiveWithInfer):
 
     def infer_dtype(self, x_dtype=None):
         return self.get_attr_dict()['dtype']
+
+    def __call__(self, x):
+        out, handle = pyboost_inner_comm_irecv(self, [x, self.tag, self.rank, self.shape, self.group,
+                                                      dtype_to_type_id('InnerCommIrecv', 'dtype', self.dtype)])
+        return (_convert_stub(out), handle)
 
 
 class _MirrorOperator(PrimitiveWithInfer):
@@ -1676,6 +1708,8 @@ class _VirtualAssignAdd(PrimitiveWithInfer):
 
     def infer_dtype(self, x_dtype, y_dtype):
         return x_dtype
+
+
 virtual_assign_add = _VirtualAssignAdd()
 
 
@@ -1905,6 +1939,7 @@ class AlltoAllV(PrimitiveWithInfer):
         recv_numel_list(Union[tuple[int], list[int]]): split numel to gather from different remote rank.
         group (str): The communication group to work on. Default: ``GlobalComm.WORLD_COMM_GROUP``, which
           means ``"hccl_world_group"`` in Ascend, and ``"nccl_world_group"`` in GPU.
+        TODO:
 
     Inputs:
         - **input_x** (Tensor) - flatten tensor to scatter. The shape of tensor is :math:`(x_1)`.
@@ -1967,11 +2002,20 @@ class AlltoAllV(PrimitiveWithInfer):
     """
 
     @prim_attr_register
-    def __init__(self, send_numel_list, recv_numel_list, group=None):
+    def __init__(self, send_numel_list, recv_numel_list, group=None, split_sizes_empty=False):
         validator.check_value_type("send_numel_list", send_numel_list, [tuple, list], self.name)
         validator.check_value_type("recv_numel_list", recv_numel_list, [tuple, list], self.name)
-        if group is None:
-            group = GlobalComm.WORLD_COMM_GROUP
-        self.add_prim_attr('group', group)
+        self.group = GlobalComm.WORLD_COMM_GROUP if group is None else _get_group(group)
+        self.send_numel_list = send_numel_list
+        self.recv_numel_list = recv_numel_list
+        self.split_sizes_empty = split_sizes_empty
+        self.rank_size = get_group_size(self.group)
+
+        self.add_prim_attr('group', self.group)
         self.add_prim_attr('send_numel_list', send_numel_list)
         self.add_prim_attr('recv_numel_list', recv_numel_list)
+
+    def __call__(self, x):
+        out, handle = pyboost_inner_comm_all_to_all_v(self, [x, self.group, self.send_numel_list, self.recv_numel_list,
+                                                             self.rank_size, self.split_sizes_empty])
+        return (_convert_stub(out), handle)

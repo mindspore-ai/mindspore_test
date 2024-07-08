@@ -106,6 +106,12 @@ StreamPyPtr DefaultStream() {
   return std::make_shared<StreamPy>(device_ctx, default_stream_id);
 }
 
+StreamPyPtr CommunicationStream() {
+  auto device_ctx = GetDeviceCtx();
+  const auto &comm_stream_id = device_ctx->device_res_manager_->GetCommunicationStreamID();
+  return std::make_shared<StreamPy>(device_ctx, comm_stream_id);
+}
+
 void RegStream(py::module *m) {
   (void)py::class_<StreamPy, std::shared_ptr<StreamPy>>(*m, "Stream")
     .def(py::init<int>())
@@ -123,6 +129,7 @@ void RegStream(py::module *m) {
   (void)m->def("synchronize", &mindspore::hal::Synchronize, "Synchronize all stream");
   (void)m->def("current_stream", &mindspore::hal::CurrentStream, "Get current stream");
   (void)m->def("default_stream", &mindspore::hal::DefaultStream, "Get default stream");
+  (void)m->def("communication_stream", &mindspore::hal::CommunicationStream, "Get communication stream");
 }
 }  // namespace hal
 }  // namespace mindspore
