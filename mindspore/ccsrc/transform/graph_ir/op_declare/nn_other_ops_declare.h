@@ -20,6 +20,10 @@
 #include "op_proto/inc/nn_other.h"
 #include "transform/graph_ir/op_declare/op_declare_macro.h"
 
+// ApplyRotaryPosEmb
+DECLARE_OP_ADAPTER(ApplyRotaryPosEmb)
+DECLARE_OP_USE_OUTPUT(ApplyRotaryPosEmb)
+
 // InitPartitionMap
 DECLARE_OP_ADAPTER(InitPartitionMap)
 DECLARE_OP_USE_OUTPUT(InitPartitionMap)

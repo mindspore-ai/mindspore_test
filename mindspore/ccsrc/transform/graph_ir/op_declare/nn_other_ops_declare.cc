@@ -19,6 +19,14 @@
 #include <string>
 #include "transform/graph_ir/op_declare/op_declare_macro.h"
 namespace mindspore::transform {
+// ApplyRotaryPosEmb
+INPUT_MAP(ApplyRotaryPosEmb) = {
+  {1, INPUT_DESC(query)}, {2, INPUT_DESC(key)}, {3, INPUT_DESC(cos)}, {4, INPUT_DESC(sin)}};
+ATTR_MAP(ApplyRotaryPosEmb) = EMPTY_ATTR_MAP;
+INPUT_ATTR_MAP(ApplyRotaryPosEmb) = {{6, ATTR_DESC(layout, AnyTraits<int64_t>())}};
+OUTPUT_MAP(ApplyRotaryPosEmb) = {{0, OUTPUT_DESC(query)}, {1, OUTPUT_DESC(key)}};
+REG_ADPT_DESC(ApplyRotaryPosEmb, kNameApplyRotaryPosEmb, ADPT_DESC(ApplyRotaryPosEmb))
+
 // InitPartitionMap
 INPUT_MAP(InitPartitionMap) = {{1, INPUT_DESC(ps_num)}, {2, INPUT_DESC(ps_ids)}};
 ATTR_MAP(InitPartitionMap) = {{"_process_node_engine_id", ATTR_DESC(_process_node_engine_id, AnyTraits<std::string>())},
