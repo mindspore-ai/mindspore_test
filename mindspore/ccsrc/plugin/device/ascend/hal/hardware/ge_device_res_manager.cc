@@ -31,6 +31,7 @@
 #include "plugin/device/ascend/hal/device/ascend_event.h"
 #include "plugin/device/ascend/hal/device/ascend_pin_mem_pool.h"
 #include "plugin/device/cpu/hal/device/cpu_device_synchronizer.h"
+#include "mindspore/ops/kernel/ascend/pyboost/customize/stress_detect.h"
 #include "include/transform/graph_ir/utils.h"
 #include "transform/symbol/acl_rt_symbol.h"
 #include "transform/symbol/symbol_utils.h"
@@ -656,6 +657,15 @@ TensorPtr GeDeviceResManager::GetSliceByPaddingShapeHandle(const tensor::TensorP
                 << ", shape:" << shape << ", data_type:" << TypeIdToString(type_id);
   tensor->set_device_address(device_address);
   return tensor;
+}
+
+int GeDeviceResManager::StressDetect() const {
+  if (!BindDeviceToCurrentThread(false)) {
+    MS_LOG(ERROR) << "Bind context to current thread failed";
+    return 0;
+  }
+  MS_EXCEPTION_IF_NULL(device_context_);
+  return kernel::pyboost::StressDetectKernel(device_context_);
 }
 
 // ACL_EVENT_TIME_LINE: indicates that the number of created events is not limited, and the created events can be used
