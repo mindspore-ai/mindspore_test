@@ -206,6 +206,12 @@ std::vector<DeviceMemPtr> DynamicMemPoolBestFit::AllocContinuousTensorMem(const 
     mem_block->update_border_addr(mem_buf->device_addr_, AddressOffset(mem_buf->device_addr_, mem_buf->size_));
     device_addr_list.emplace_back(buf_addr);
     buf_addr = AddressOffset(buf_addr, i);
+    if (device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
+      if (continuous_mem_buf->device_addr_ != device_addr)
+        device::tracker::CALL_MEMORY_TRACKER(AllocMemBlock, continuous_mem_buf->device_addr_, i, GetMemoryPoolType(),
+                                             ActualPeakStatistics(), TotalUsedMemStatistics(), TotalMemStatistics(),
+                                             stream_id);
+    }
   }
   // Update the size of the last memory buf.
   continuous_mem_buf->size_ += rest_size;

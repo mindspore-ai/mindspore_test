@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <unordered_set>
 #include <utility>
+#include <set>
 #include <tuple>
 
 #include "include/backend/anf_runtime_algorithm.h"
@@ -107,7 +108,7 @@ void AclStreamAssign::AssignStream(const NotNull<KernelGraphPtr> &kernel_graph,
     MS_LOG(INFO) << "Not stream assign when pynative forward.";
     return;
   }
-  bool enable_multi_stream = false;
+  std::set<uint32_t> stream_ids;
   for (const auto &node : kernels) {
     if (AnfAlgo::IsKernelSelectBackoffOp(node)) {
       continue;
@@ -133,13 +134,13 @@ void AclStreamAssign::AssignStream(const NotNull<KernelGraphPtr> &kernel_graph,
     auto is_pp_interleave = parallel_context->pipeline_interleave();
     if (common::AnfAlgo::IsCommunicationOp(node)) {
       AddStreamIdForCommunicationOp(node, is_pp_interleave);
-      enable_multi_stream = true;
     } else {
       AnfAlgo::SetStreamId(kDefaultStreamIndex, node.get());
       common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kDefaultStreamIndex), node);
     }
+    stream_ids.insert(AnfAlgo::GetStreamId(node));
   }
-  kernel_graph->set_enable_multi_stream(enable_multi_stream);
+  kernel_graph->set_enable_multi_stream(stream_ids.size() > 1);
 
   for (size_t i = 1; i < kernels.size(); ++i) {
     if (common::AnfAlgo::GetCNodeName(kernels[i - 1]) == kMemSetOpName) {

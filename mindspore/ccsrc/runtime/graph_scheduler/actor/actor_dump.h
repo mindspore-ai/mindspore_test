@@ -22,7 +22,9 @@
 #include <memory>
 #include <fstream>
 #include <tuple>
+
 #include "runtime/graph_scheduler/actor/abstract_actor.h"
+#include "runtime/graph_scheduler/actor/actor_set.h"
 #include "runtime/graph_scheduler/actor/data_prepare_actor.h"
 #include "runtime/graph_scheduler/actor/data_source_actor.h"
 #include "runtime/graph_scheduler/actor/loop_count_actor.h"
@@ -45,6 +47,7 @@
 
 namespace mindspore {
 namespace runtime {
+void DumpContinuousMemoryNodes(const ActorSet *actor_set, std::ofstream &ofs);
 void DumpDataPrepareActor(const DataPrepareActorPtr &actor, std::ofstream &ofs);
 void DumpLoopCountActor(const LoopCountActorPtr &actor, std::ofstream &ofs);
 void DumpOutputActor(const OutputActorPtr &actor, std::ofstream &ofs);
