@@ -240,12 +240,14 @@ void EmplaceSliceInputs(const FrontendOpRunInfoPtr &op_run_info, const std::vect
   op_run_info->op_grad_info->input_value_grad_type.resize(op_run_info->input_size);
 }
 
-#ifndef ENABLE_TEST
 size_t GetCurStreamId(const std::string &device_target) {
+  auto stream_id = kDefaultStreamIndex;
+#ifndef ENABLE_TEST
   auto device_ctx = runtime::OpRunner::GetDeviceContext(device_target);
-  return device_ctx->device_res_manager_->GetCurrentStreamId();
-}
+  stream_id = device_ctx->device_res_manager_->GetCurrentStreamId();
 #endif
+  return stream_id;
+}
 }  // namespace
 
 void ForwardExecutor::WaitForwardTask() {
@@ -256,6 +258,8 @@ void ForwardExecutor::WaitForwardTask() {
 bool ForwardExecutor::IsVmOp(const std::string &op_name) const {
   return kVmOperators.find(op_name) != kVmOperators.end();
 }
+
+size_t ForwardExecutor::GetStreamId() const { return GetCurStreamId(device_target_); }
 
 std::string ForwardExecutor::GetCurrentCellObjId() const {
   if (forward_cell_stack_.empty()) {
@@ -455,19 +459,19 @@ bool ForwardExecutor::ProcessViewOp(const FrontendOpRunInfoPtr &op_run_info,
 
 void ForwardExecutor::DispatchSilceOpFrontendTask(const std::vector<ValuePtr> &input_values,
                                                   const std::vector<SliceOpInfoPtr> &slice_op_infos, bool requires_grad,
-                                                  const stub::StubNodePtr &stub_output) {
+                                                  const stub::StubNodePtr &stub_output, size_t stream_id) {
   auto forward_task = std::make_shared<SliceOpFrontendTask>(
     [this](const std::vector<ValuePtr> &input_values, const std::vector<SliceOpInfoPtr> &slice_op_infos,
-           bool requires_grad, const stub::StubNodePtr &stub_output) {
-      (void)RunSliceOpFrontend(input_values, slice_op_infos, requires_grad, stub_output);
+           bool requires_grad, const stub::StubNodePtr &stub_output, size_t stream_id) {
+      (void)RunSliceOpFrontend(input_values, slice_op_infos, requires_grad, stub_output, stream_id);
     },
-    input_values, slice_op_infos, requires_grad, stub_output);
+    input_values, slice_op_infos, requires_grad, stub_output, stream_id);
   runtime::Pipeline::Get().frontend_stage()->Push(forward_task);
 }
 
 ValuePtr ForwardExecutor::RunSliceOpFrontend(const std::vector<ValuePtr> &input_values,
                                              const std::vector<SliceOpInfoPtr> &slice_op_infos, bool requires_grad,
-                                             const stub::StubNodePtr &stub_output) {
+                                             const stub::StubNodePtr &stub_output, size_t stream_id) {
   if (input_values.empty()) {
     MS_LOG(EXCEPTION) << "input_values is empty.";
   }
@@ -489,7 +493,8 @@ ValuePtr ForwardExecutor::RunSliceOpFrontend(const std::vector<ValuePtr> &input_
 
     // Only last op need to update stub node.
     auto cur_op_stub_output = (i + 1 == slice_op_infos.size() ? stub_output : nullptr);
-    auto op_run_info = GenerateSliceOpRunInfo(slice_op_info->slice_op_name, requires_grad, cur_op_stub_output);
+    auto op_run_info =
+      GenerateSliceOpRunInfo(slice_op_info->slice_op_name, requires_grad, cur_op_stub_output, stream_id);
     if (slice_op_info->slice_op_name == kCastOpName) {
       // slice_index_inputs of Cast op is type
       MS_EXCEPTION_IF_CHECK_FAIL(slice_op_info->slice_index_inputs.size() == 1, "Size of cast type input should be 1");
@@ -606,12 +611,14 @@ PrimitivePtr ForwardExecutor::GetSlicePrimFromCache(const std::string &op_name) 
 }
 
 FrontendOpRunInfoPtr ForwardExecutor::GenerateSliceOpRunInfo(const std::string &op_name, bool requires_grad,
-                                                             const stub::StubNodePtr &stub_output) {
+                                                             const stub::StubNodePtr &stub_output, size_t stream_id) {
   Init();
   const auto &op_run_info = std::make_shared<FrontendOpRunInfo>();
   op_run_info->base_op_run_info.op_name = op_name;
   op_run_info->requires_grad = requires_grad;
   op_run_info->base_op_run_info.device_target = device_target_;
+
+  op_run_info->base_op_run_info.stream_id = stream_id;
 
   if (op_name == kCastOpName) {
     // Cast prim will be set in DoNormalCast.

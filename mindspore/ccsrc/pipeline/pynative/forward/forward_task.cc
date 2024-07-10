@@ -46,7 +46,7 @@ void PassthroughFrontendTask::Run() {
 void SliceOpFrontendTask::Run() {
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kPyNativeFrontendTask,
                                      "Slice Op", false, false, task_id_);
-  run_func_(input_values_, slice_op_infos_, requires_grad_, stub_output_);
+  run_func_(input_values_, slice_op_infos_, requires_grad_, stub_output_, stream_id_);
   input_values_.clear();
   slice_op_infos_.clear();
   stub_output_ = nullptr;

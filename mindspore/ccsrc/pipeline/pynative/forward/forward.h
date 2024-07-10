@@ -60,10 +60,11 @@ class ForwardExecutor {
   FrontendOpRunInfoPtr GenerateOpRunInfo(const py::args &args, bool stub = false);
   ValuePtr RunSliceOpFrontend(const std::vector<ValuePtr> &input_values,
                               const std::vector<SliceOpInfoPtr> &slice_op_infos, bool requires_grad,
-                              const stub::StubNodePtr &stub_output);
+                              const stub::StubNodePtr &stub_output, size_t stream_id);
   void DispatchSilceOpFrontendTask(const std::vector<ValuePtr> &input_values,
                                    const std::vector<SliceOpInfoPtr> &slice_op_infos, bool requires_grad,
-                                   const stub::StubNodePtr &stub_output);
+                                   const stub::StubNodePtr &stub_output, size_t stream_id);
+  size_t GetStreamId() const;
   void set_grad_executor(const GradExecutorPtr &grad_executor) { grad_executor_ = GradExecutorWeakPtr(grad_executor); }
   void RefreshForwardCallback();
   void ClearNodeAbsMap() const;
@@ -145,7 +146,7 @@ class ForwardExecutor {
                                const size_t &input_idx, bool need_wait = false);
   PrimitivePtr GetSlicePrimFromCache(const std::string &op_name);
   FrontendOpRunInfoPtr GenerateSliceOpRunInfo(const std::string &op_name, bool requires_grad,
-                                              const stub::StubNodePtr &stub_output);
+                                              const stub::StubNodePtr &stub_output, size_t stream_id);
   void CreateViewOpOutputs(const FrontendOpRunInfoPtr &op_run_info, const tensor::BaseTensorPtr &view_input_tensor,
                            runtime::KernelTaskType task_type, const TensorStorageInfoPtrList &storage_infos,
                            bool is_tuple_output);

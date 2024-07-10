@@ -125,17 +125,19 @@ py::object PyNativeExecutor::RunOpStub(const py::args &args) const {
 py::object PyNativeExecutor::RunSliceOpStub(const std::vector<ValuePtr> &input_values,
                                             const std::vector<SliceOpInfoPtr> &slice_op_infos) const {
   runtime::ProfilerStageRecorder recorder(runtime::ProfilerStage::kRunOp);
+
+  auto stream_id = forward_executor()->GetStreamId();
   SetCallbackForInputTensor(input_values);
   auto requires_grad = grad_executor()->RequiresGrad();
   if (!forward_executor()->EnablePipeline("")) {
     forward_executor()->WaitForwardTask();
-    auto ret = forward_executor()->RunSliceOpFrontend(input_values, slice_op_infos, requires_grad, nullptr);
+    auto ret = forward_executor()->RunSliceOpFrontend(input_values, slice_op_infos, requires_grad, nullptr, stream_id);
     return PyNativeAlgo::DataConvert::ValueToPyObj(ret);
   }
   auto top_type = kTensorType;
   auto node = stub::MakeTopNode(top_type);
   GilReleaseWithCheck release_gil;
-  forward_executor()->DispatchSilceOpFrontendTask(input_values, slice_op_infos, requires_grad, node.second);
+  forward_executor()->DispatchSilceOpFrontendTask(input_values, slice_op_infos, requires_grad, node.second, stream_id);
   return node.first;
 }
 
