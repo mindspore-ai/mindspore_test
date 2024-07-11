@@ -317,9 +317,10 @@ bool SchedulerHelper::IsIgnoredInputAddress(AbstractActor *const to_actor, size_
     return true;
   }
 
-  auto kernel_mod = AnfAlgo::GetKernelMod(to_kernel);
-  MS_EXCEPTION_IF_NULL(kernel_mod);
-  const auto &ignored_address = kernel_mod->GetLaunchIgnoredInputAddressIdx();
+  MS_EXCEPTION_IF_NULL(to_actor->device_contexts_[0]);
+  auto kernel_executor = to_actor->device_contexts_[0]->GetKernelExecutor(false);
+  MS_EXCEPTION_IF_NULL(kernel_executor);
+  const auto &ignored_address = kernel_executor->GetLaunchIgnoredInputAddressIdx(to_kernel);
   if (ignored_address.empty()) {
     return false;
   }
@@ -333,12 +334,14 @@ bool SchedulerHelper::IsIgnoredInputAddress(AbstractActor *const to_actor, size_
   return false;
 }
 
-size_t SchedulerHelper::GetIgnoredInputAddressCount(const AnfNodePtr &node) {
+size_t SchedulerHelper::GetIgnoredInputAddressCount(const AnfNodePtr &node, const DeviceContext *device_context) {
   MS_EXCEPTION_IF_NULL(node);
+  MS_EXCEPTION_IF_NULL(device_context);
   size_t input_num = common::AnfAlgo::GetInputTensorNum(node);
-  auto kernel_mod = AnfAlgo::GetKernelMod(node);
-  MS_EXCEPTION_IF_NULL(kernel_mod);
-  const auto &ignored_input_addresses = kernel_mod->GetLaunchIgnoredInputAddressIdx();
+
+  auto kernel_executor = device_context->GetKernelExecutor(false);
+  MS_EXCEPTION_IF_NULL(kernel_executor);
+  std::vector<size_t> ignored_input_addresses = kernel_executor->GetLaunchIgnoredInputAddressIdx(node);
   if (ignored_input_addresses.empty()) {
     return 0;
   }

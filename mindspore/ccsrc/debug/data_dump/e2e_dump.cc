@@ -249,6 +249,28 @@ void E2eDump::DumpInputSingleNode(const CNodePtr &node, const std::string &dump_
   DumpInputImpl(node, trans_flag, dump_path, &kernel_name, debugger);
 }
 
+tensor::TensorPtr GetConvertedTensorFromIgnoredInput(const AnfNodePtr node, size_t idx) {
+  auto kernel_with_index = common::AnfAlgo::GetPrevNodeOutput(node, idx);
+  MS_EXCEPTION_IF_NULL(kernel_with_index.first);
+  if (!kernel_with_index.first->isa<ValueNode>()) {
+    MS_LOG(INFO) << "Prim init args is not value node for idx: " << idx;
+    return nullptr;
+  }
+  std::shared_ptr<tensor::Tensor> converted_tensor = nullptr;
+  auto input = kernel_with_index.first->cast<ValueNodePtr>();
+  MS_EXCEPTION_IF_NULL(input);
+  const auto &input_value = input->value();
+  MS_EXCEPTION_IF_NULL(input_value);
+  if (input_value->isa<Scalar>()) {
+    converted_tensor = ScalarToTensor(input_value->cast<ScalarPtr>());
+  } else if (input_value->isa<ValueSequence>()) {
+    converted_tensor = SequenceToTensor(input_value->cast<ValueSequencePtr>());
+  } else {
+    MS_LOG(INFO) << "Prim init args is not scalar or valuesequence for idx: " << idx;
+  }
+  return converted_tensor;
+}
+
 void E2eDump::DumpArgsSingleNode(const CNodePtr &node, const std::string &dump_path, const Debugger *debugger) {
   auto op_name = GetKernelNodeName(node);
   int start_index = static_cast<int>(op_name.rfind('/')) + 1;
@@ -277,11 +299,21 @@ void E2eDump::DumpArgsSingleNode(const CNodePtr &node, const std::string &dump_p
         string input_tensor_name = input_kernel_name + ':' + "0";
         auto arg_name = op_arg.arg_name_;
         auto t_data = debugger->GetTensor(input_tensor_name);
-        std::string type = t_data->GetTypeString();
         std::shared_ptr<tensor::Tensor> converted_tensor = nullptr;
-        converted_tensor = std::make_shared<tensor::Tensor>(
-          ConvertStringToTypeId(type), t_data->GetShape(),
-          static_cast<void *>(const_cast<char *>(t_data->GetDataPtr())), t_data->GetByteSize());
+        if (t_data == nullptr) {
+          MS_LOG(INFO) << "Dump args single node input idx: " << idx
+                       << ", use host value for node: " << node->fullname_with_scope();
+          converted_tensor = GetConvertedTensorFromIgnoredInput(node, idx - 1);
+          if (converted_tensor == nullptr) {
+            continue;
+          }
+        } else {
+          std::string type = t_data->GetTypeString();
+          converted_tensor = std::make_shared<tensor::Tensor>(
+            ConvertStringToTypeId(type), t_data->GetShape(),
+            static_cast<void *>(const_cast<char *>(t_data->GetDataPtr())), t_data->GetByteSize());
+        }
+
         json[arg_name] =
           converted_tensor->data().ToString(converted_tensor->data_type(), converted_tensor->shape(), false);
       }

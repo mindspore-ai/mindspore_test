@@ -430,6 +430,13 @@ class BACKEND_EXPORT KernelExecutor {
     return false;
   };
 
+  virtual std::vector<size_t> GetLaunchIgnoredInputAddressIdx(const AnfNodePtr &node) const {
+    MS_EXCEPTION_IF_NULL(node);
+    auto kernel_mod = AnfAlgo::GetKernelMod(node);
+    MS_EXCEPTION_IF_NULL(kernel_mod);
+    return kernel_mod->GetLaunchIgnoredInputAddressIdx();
+  }
+
  protected:
   DeviceContext *device_context_{nullptr};
 };

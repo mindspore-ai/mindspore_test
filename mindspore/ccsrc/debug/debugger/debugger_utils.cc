@@ -83,14 +83,18 @@ std::vector<size_t> CheckRealOutput(const std::string &node_name, const size_t &
  * Runtime category: MindRT.
  * Description: Get Valid Tensor indexes.
  */
-vector<size_t> GetValidDumpIndex(const CNodePtr &cnode, size_t index_size, bool is_input) {
+vector<size_t> GetValidDumpIndex(const CNodePtr &cnode, size_t index_size, bool is_input,
+                                 const DeviceContext *device_context) {
   std::vector<size_t> valid_indexes;
   valid_indexes.reserve(index_size);
   if (is_input) {
     std::vector<size_t> ignored_address;
     auto kernel_mod = AnfAlgo::GetKernelMod(cnode);
     if (kernel_mod != nullptr) {
-      ignored_address = kernel_mod->GetLaunchIgnoredInputAddressIdx();
+      MS_EXCEPTION_IF_NULL(device_context);
+      auto kernel_executor = device_context->GetKernelExecutor(false);
+      MS_EXCEPTION_IF_NULL(kernel_executor);
+      ignored_address = kernel_executor->GetLaunchIgnoredInputAddressIdx(cnode);
     }
     std::set<size_t> ignored_address_set(ignored_address.begin(), ignored_address.end());
     for (size_t index = 0; index < index_size; ++index) {
@@ -197,7 +201,10 @@ void LoadInputs(const CNodePtr &cnode, std::vector<device::DeviceAddress *> devi
   auto kernel_mod = AnfAlgo::GetKernelMod(cnode);
   std::vector<size_t> ignored_address;
   if (kernel_mod != nullptr) {
-    ignored_address = kernel_mod->GetLaunchIgnoredInputAddressIdx();
+    MS_EXCEPTION_IF_NULL(device_context);
+    auto kernel_executor = device_context->GetKernelExecutor(false);
+    MS_EXCEPTION_IF_NULL(kernel_executor);
+    ignored_address = kernel_executor->GetLaunchIgnoredInputAddressIdx(cnode);
   }
 
   auto input_size = device_tensors.size();

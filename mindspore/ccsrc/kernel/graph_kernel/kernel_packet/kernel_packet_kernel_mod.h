@@ -81,6 +81,7 @@ class BACKEND_EXPORT KernelPacketKernelMod : public KernelMod {
   std::vector<const void *> host_data_cache_;
   KernelModPtr real_kernel_mod_;
   std::string real_node_debug_str_;
+  std::vector<size_t> ignored_input_idx_;
 };
 
 inline CNodePtr GetKernelPacketRealNode(const AnfNodePtr &kernelpacket) {

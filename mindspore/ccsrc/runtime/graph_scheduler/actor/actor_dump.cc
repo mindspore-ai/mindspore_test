@@ -233,8 +233,8 @@ void DumpKernelActor(const KernelActor *actor, std::ofstream &ofs) {
   auto kernel_info = dynamic_cast<KernelInfo *>(kernel->kernel_info());
   MS_EXCEPTION_IF_NULL(kernel_info);
   ofs << "\t\tkernel_name:" << kernel->fullname_with_scope() << "\tstream id:" << kernel_info->stream_id()
-      << "\tinputs_num:" << common::AnfAlgo::GetInputTensorNum(kernel)
-      << "\tignored_input_addresses_num:" << SchedulerHelper::GetIgnoredInputAddressCount(kernel)
+      << "\tinputs_num:" << common::AnfAlgo::GetInputTensorNum(kernel) << "\tignored_input_addresses_num:"
+      << SchedulerHelper::GetIgnoredInputAddressCount(kernel, actor->device_contexts()[0])
       << "\toutputs_num:" << AnfAlgo::GetOutputTensorNum(kernel) << "\tis_dynamic_shape:" << actor->is_dynamic_shape()
       << "\tis_launch_skipped:" << actor->is_launch_skipped() << "\n";
   const auto &somas_outputs = kernel_info->somas_output_result();

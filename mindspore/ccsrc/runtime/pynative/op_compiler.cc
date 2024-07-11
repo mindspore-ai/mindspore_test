@@ -70,15 +70,17 @@ void CreateDeviceAddressWithoutWorkspace(const KernelGraphPtr &graph, const Devi
   DeviceAddressUtils::UpdateDeviceAddressForRefNode(graph);
 }
 
-void SetIgnoreSyncHostToDeviceList(const SimpleGraphPtr &simple_graph) {
+void SetIgnoreSyncHostToDeviceList(const SimpleGraphPtr &simple_graph, const DeviceContext *device_context) {
   const auto &single_ops = simple_graph->single_ops_;
   for (const auto &single_op : single_ops) {
     const auto &kernel = single_op->kernel_;
     const auto &edges = single_op->inputs_;
 
-    auto kernel_mod = AnfAlgo::GetKernelMod(kernel);
-    MS_EXCEPTION_IF_NULL(kernel_mod);
-    std::vector<size_t> ignore_input_index_list = kernel_mod->GetLaunchIgnoredInputAddressIdx();
+    MS_EXCEPTION_IF_NULL(device_context);
+    auto kernel_executor = device_context->GetKernelExecutor(false);
+    MS_EXCEPTION_IF_NULL(kernel_executor);
+    std::vector<size_t> ignore_input_index_list = kernel_executor->GetLaunchIgnoredInputAddressIdx(kernel);
+
     for (size_t index : ignore_input_index_list) {
       // Some input may be converted to attribute or input size is wrong.
       // This behavior is incorrect, but it does exist in the current kernel
@@ -257,7 +259,7 @@ void OpCompiler::KernelBuild(const OpCompilerInfoPtr &op_compiler_info, const De
   runtime::OpRuntimeInfo::CacheGraphOpRuntimeInfo(graph);
 
   // After kernel generated.
-  SetIgnoreSyncHostToDeviceList(op_compiler_info->simple_graph_);
+  SetIgnoreSyncHostToDeviceList(op_compiler_info->simple_graph_, device_context);
 }
 
 #ifdef ENABLE_D
