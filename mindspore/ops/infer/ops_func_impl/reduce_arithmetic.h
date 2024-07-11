@@ -23,6 +23,7 @@
 
 namespace mindspore {
 namespace ops {
+constexpr auto kReduceInputAtLeastLen = 3;
 BaseShapePtr ReduceInferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args);
 BaseShapePtr NormInferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args);
 BaseShapePtr ReduceExtandInferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args);
