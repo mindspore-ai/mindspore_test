@@ -354,6 +354,21 @@ CUST_ATTR_MAP(NoRepeatNGram) = {{"ngram_size", ATTR_DESC(ngram_size, AnyTraits<i
 CUST_OUTPUT_MAP(NoRepeatNGram) = {{0, OUTPUT_DESC(out)}};
 REG_ADPT_DESC(NoRepeatNGram, prim::kPrimNoRepeatNGram->name(), CUST_ADPT_DESC(NoRepeatNGram));
 
+// GenerateEodMaskV2
+CUST_INPUT_MAP(GenerateEodMaskV2) = {{1, INPUT_DESC(inputs_ids)},
+                                     {2, INPUT_DESC(ele_pos)},
+                                     {3, INPUT_DESC(cur_step)},
+                                     {4, INPUT_DESC(seed)},
+                                     {5, INPUT_DESC(offset)}};
+CUST_ATTR_MAP(GenerateEodMaskV2) = {};
+CUST_INPUT_ATTR_MAP(GenerateEodMaskV2) = {
+  {6, ATTR_DESC(start, AnyTraits<int64_t>())},          {7, ATTR_DESC(steps, AnyTraits<std::vector<int64_t>>())},
+  {8, ATTR_DESC(error_mode, AnyTraits<int64_t>())},     {9, ATTR_DESC(flip_mode, AnyTraits<int64_t>())},
+  {10, ATTR_DESC(multiply_factor, AnyTraits<float>())}, {11, ATTR_DESC(bit_pos, AnyTraits<int64_t>())},
+  {12, ATTR_DESC(flip_probability, AnyTraits<float>())}};
+CUST_OUTPUT_MAP(GenerateEodMaskV2) = {{0, OUTPUT_DESC(output_ids)}};
+REG_ADPT_DESC(GenerateEodMaskV2, prim::kPrimGenerateEodMaskV2->name(), CUST_ADPT_DESC(GenerateEodMaskV2));
+
 // TopKRouter
 CUST_INPUT_MAP(TopKRouter) = {
   {1, INPUT_DESC(x)}, {2, INPUT_DESC(capacity)}, {3, INPUT_DESC(expert_num)}, {4, INPUT_DESC(drop_type)}};

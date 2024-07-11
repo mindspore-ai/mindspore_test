@@ -284,6 +284,7 @@ cust_op_lists = [
     "layernormgradgrad",
     "pdistgrad",
     "batchnormgradgrad",
+    "generateeodmaskv2",
 ]
 
 
