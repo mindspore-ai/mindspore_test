@@ -16,8 +16,8 @@ import pytest
 import numpy as np
 from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 from tests.mark_utils import arg_mark
-
 import mindspore as ms
 from mindspore import Tensor, context
 from mindspore import ops
@@ -35,7 +35,7 @@ def softmax_forward_func(x, axis=-1):
 
 @test_utils.run_with_cell
 def softmax_backward_func(x, axis=-1):
-    return ops.grad(softmax_forward_func, (0,))(x, axis)
+    return ops.grad(softmax_forward_func, (0,))(x, axis) # pylint: disable=not-callable
 
 
 @test_utils.run_with_cell
@@ -45,7 +45,7 @@ def softmax_backward_forward_func(dout, out, dim=-1):
 
 @test_utils.run_with_cell
 def softmax_double_backward_func(dout, out, dim=-1):
-    return ops.grad(softmax_backward_forward_func, (0, 1))(dout, out, dim)
+    return ops.grad(softmax_backward_forward_func, (0, 1))(dout, out, dim) # pylint: disable=not-callable
 
 
 @test_utils.run_with_cell
@@ -186,3 +186,39 @@ def test_softmax_bfloat16_tensor_api(mode):
     """
     context.set_context(mode=mode, device_target="Ascend")
     run_softmax_api(ms.bfloat16, np.float32)
+
+
+def ops_softmax_binary_compare(input_binary_data, output_binary_data, dim):
+    output = softmax_forward_func(Tensor(input_binary_data[0]), dim)
+    assert np.allclose(output.asnumpy(), output_binary_data[0], 1e-03, 1e-03)
+    output = softmax_backward_func(Tensor(input_binary_data[0]), dim)
+    assert np.allclose(output.asnumpy(), output_binary_data[1], 1e-03, 1e-03)
+
+
+@ops_binary_cases(OpsBinaryCase(input_info=[((128, 256, 256), np.float16)],
+                                output_info=[((128, 256, 256), np.float16), ((128, 256, 256), np.float16)],
+                                extra_info='SD5B'))
+def ops_softmax_binary_case1(input_binary_data=None, output_binary_data=None):
+    ops_softmax_binary_compare(input_binary_data, output_binary_data, -1)
+
+
+@ops_binary_cases(OpsBinaryCase(input_info=[((128, 256, 77), np.float16)],
+                                output_info=[((128, 256, 77), np.float16), ((128, 256, 77), np.float16)],
+                                extra_info='SD5B'))
+def ops_softmax_binary_case2(input_binary_data=None, output_binary_data=None):
+    ops_softmax_binary_compare(input_binary_data, output_binary_data, -1)
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b', 'platform_gpu'], level_mark='level0',
+          card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize("mode", [context.GRAPH_MODE, context.PYNATIVE_MODE])
+def test_softmax_binary_cases(mode):
+    """
+    Feature: Ops
+    Description: test op softmax
+    Expectation: expect correct result.
+    """
+    context.set_context(mode=mode)
+
+    ops_softmax_binary_case1()
+    ops_softmax_binary_case2()
