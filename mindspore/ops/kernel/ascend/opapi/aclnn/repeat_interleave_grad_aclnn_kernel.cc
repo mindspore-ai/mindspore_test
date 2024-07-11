@@ -38,7 +38,7 @@ bool RepeatInterleaveGradAscend::Launch(const std::vector<KernelTensor *> &input
   if (repeats_shape.empty()) {
     repeats->SetShapeVector(ShapeVector{1});
   }
-  RunOp(stream_ptr, workspace, inputs[kIndex0], inputs[kIndex1], dim_, outputs[kIndex0]);
+  RunOp(stream_ptr, workspace, inputs[kIndex0], repeats, dim_, outputs[kIndex0]);
   return true;
 }
 
