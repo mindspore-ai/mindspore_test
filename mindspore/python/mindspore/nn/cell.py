@@ -168,6 +168,10 @@ class Cell(Cell_):
         self._is_check_and_refresh = False
         self._amp_level = ""
         self._init_flag = False
+        self._shard_fn = None
+        self.has_bprop = False
+        if hasattr(self, "bprop"):
+            self.has_bprop = True
 
     def __getstate__(self):
         base = Cell_.__getstate__(self)
@@ -488,7 +492,7 @@ class Cell(Cell_):
 
         if self._enable_backward_hook:
             output = self._backward_hook_construct(*inputs, **kwargs)
-        elif hasattr(self, "_shard_fn"):
+        elif self._shard_fn is not None:
             output = self._shard_fn(*inputs, **kwargs)
         elif self.recompute_cell is not None:
             output = self.recompute_cell(*inputs, **kwargs)
@@ -652,7 +656,7 @@ class Cell(Cell_):
 
         shard_fn = Shard()
         fn = shard_fn(self, in_strategy, out_strategy, parameter_plan, device, level)
-        object.__setattr__(self, "_shard_fn", fn)
+        self._shard_fn = fn
         return fn
 
     def auto_cast_inputs(self, inputs):
