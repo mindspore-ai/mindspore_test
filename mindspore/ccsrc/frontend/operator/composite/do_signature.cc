@@ -23,8 +23,10 @@
 #include "abstract/param_validator.h"
 #include "frontend/operator/cc_implementations.h"
 #include "frontend/optimizer/opt.h"
+#include "include/common/utils/primfunc_utils.h"
 #include "include/common/utils/convert_utils.h"
 #include "include/common/pybind_api/api_register.h"
+#include "pipeline/jit/ps/static_analysis/prim.h"
 #include "ir/anf.h"
 #include "ir/dtype.h"
 #include "ops/op_def.h"
@@ -165,6 +167,38 @@ void CheckSigSize(const ValuePtr &function, const size_t &sig_size, const bool &
   }
 }
 
+void CheckPrimInputType(const ValuePtr &function, const AbstractBasePtrList &args_abs_list) {
+  if (!function->isa<Primitive>()) {
+    return;
+  }
+  auto prim = function->cast<PrimitivePtr>();
+  const auto &prim_name = prim->name();
+  auto op_def = mindspore::ops::GetOpDef(prim_name);
+  if (op_def == nullptr) {
+    return;
+  }
+  auto op_args = op_def->args_;
+  std::vector<ops::OpInputArg> op_call_args;
+  (void)std::copy_if(op_args.cbegin(), op_args.cend(), std::back_inserter(op_call_args),
+                     [](const ops::OpInputArg &arg) { return !arg.as_init_arg_; });
+  for (size_t i = 0; i < args_abs_list.size(); ++i) {
+    auto abs = args_abs_list[i];
+    auto op_arg = op_call_args[i];
+    if (!op_arg.arg_handler_.empty()) {
+      continue;
+    }
+    if (abstract::ValidateArgSpecialType(prim_name, abs, op_arg)) {
+      continue;
+    }
+    auto cast_dtypes = op_arg.cast_dtype_;
+    bool match = std::any_of(cast_dtypes.cbegin(), cast_dtypes.cend(),
+                             [&abs](const ops::OP_DTYPE &dtype) { return ops::ValidateArgsType(abs, dtype); });
+    if (!match) {
+      MS_EXCEPTION(TypeError) << ops::BuildOpInputsErrorMsg(op_def, op_arg.arg_name_, abs->BuildType());
+    }
+  }
+}
+
 SignatureEnumRW GetSignatureEnumRW(size_t index, const std::vector<Signature> &signature, bool has_var) {
   SignatureEnumRW sig = SignatureEnumRW::kRWDefault;
   // If sig_size is 0 use default.
@@ -199,6 +233,7 @@ std::vector<AnfNodePtr> GetNewInputsBySignatures(const FuncGraphPtr &func_graph,
   std::size_t sig_size = signature.size();
   auto has_var = (sig_size > 0 && signature[sig_size - 1].kind == SignatureEnumKind::kKindVarPositional);
   CheckSigSize(function, sig_size, has_var, args_abs_list, func_name);
+  CheckPrimInputType(function, args_abs_list);
   std::vector<AnfNodePtr> op_inputs;
   std::set<size_t> write_indices;
   std::vector<TypePtr> input_types;

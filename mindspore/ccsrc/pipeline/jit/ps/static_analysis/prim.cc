@@ -1221,6 +1221,15 @@ bool ValidateArgOptional(const AbstractBasePtr &abs_arg, const ops::OpInputArg &
 }
 }  // namespace
 
+bool ValidateArgSpecialType(const std::string &op_name, const AbstractBasePtr &abs, const ops::OpInputArg &op_arg) {
+  if (abs->isa<abstract::AbstractKeywordArg>()) {
+    MS_EXCEPTION(TypeError) << "For Primitive[" << op_name
+                            << "], only positional arguments as inputs are supported, but got " << abs->ToString();
+  }
+  return fallback::ContainsSequenceAnyType(abs) || ValidateArgOptional(abs, op_arg) ||
+         ops::ValidateArgsType(abs, op_arg.arg_dtype_);
+}
+
 PrimitiveFunctionEvaluator::PrimitiveFunctionEvaluator(const PrimitivePtr &prim_func)
     : TrivialPrimEvaluator("PrimitiveFunctionEvaluator"), prim_func_(prim_func) {
   frontend_func_impl_ = mindspore::ops::GetOpFrontendFuncImplPtr(prim_func->name());
@@ -2579,18 +2588,10 @@ bool ValidateAndConvertArgsType(const std::string &op_name, const std::vector<op
   for (size_t i = 0; i < op_args.size(); i++) {
     auto op_arg = op_args[i];
     auto abs_arg = abs_list[i];
-    if (abs_arg->isa<abstract::AbstractKeywordArg>()) {
-      MS_EXCEPTION(TypeError) << "For Primitive[" << op_name
-                              << "], only positional arguments as inputs are supported, but got "
-                              << abs_arg->ToString();
-    }
     if (HasAbstractUndetermined(abs_arg)) {
       exist_undetermined_arg = true;
     }
-    if (ValidateArgOptional(abs_arg, op_arg) || ops::ValidateArgsType(abs_arg, op_arg.arg_dtype_)) {
-      continue;
-    }
-    if (fallback::ContainsSequenceAnyType(abs_arg)) {
+    if (ValidateArgSpecialType(op_name, abs_arg, op_arg)) {
       continue;
     }
     bool match = false;

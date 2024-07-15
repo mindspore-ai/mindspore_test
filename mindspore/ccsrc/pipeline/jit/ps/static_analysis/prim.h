@@ -315,6 +315,8 @@ AbstractBasePtr PyInferRes2Abstract(const PrimitivePyPtr &prim_py, const py::dic
 // Get the __init__() arguments of the PrimitivePy object.
 AnfNodePtrList GetPrimitiveInitArgs(const PrimitivePyPtr &prim_py, const ops::OpDef *op_def);
 
+bool ValidateArgSpecialType(const std::string &op_name, const AbstractBasePtr &abs, const ops::OpInputArg &op_arg);
+
 // Process the primitive's arguments (such as dtype auto-cast, add argument with default-value...),
 // then generate the primitive CNode and add it to graph.
 // (The returned CNode is without abstract, need to evaluate its abstract manually).

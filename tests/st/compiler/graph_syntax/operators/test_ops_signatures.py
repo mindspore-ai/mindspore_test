@@ -146,3 +146,19 @@ def test_assignadd_bfloat16_float16(mode):
     ms.set_context(jit_level="O2")
     out = Net()(ms.Parameter(ms_data["float16"], name="x"), ms_data["bfloat16"])
     assert out.dtype == ms.float16
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_logical_xor_wrong_input_type():
+    """
+    Feature: Implicit type conversion.
+    Description: Test LogicalXor using wrong input type.
+    Expectation: Raise expected exception.
+    """
+    @ms.jit
+    def func(x, y):
+        return ms.ops.LogicalXor()(x, y)
+
+    with pytest.raises(TypeError) as raise_info:
+        func(1, ms.Tensor(2))
+    assert "Failed calling LogicalXor" in str(raise_info.value)

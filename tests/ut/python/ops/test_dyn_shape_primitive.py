@@ -266,7 +266,7 @@ def test_acos_unsupported_input_type(mode):
     ms.set_context(mode=mode, jit_syntax_level=ms.STRICT)
     with pytest.raises(TypeError) as info:
         ACos()("str")
-    assert "Failed calling ACos with \"ACos()(input=string)\"" in str(info.value)
+    assert "Failed calling ACos with" in str(info.value)
 
 
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
@@ -283,4 +283,4 @@ def test_diagonal_unsupported_input_type(mode):
     ms.set_context(mode=mode, jit_syntax_level=ms.STRICT)
     with pytest.raises(TypeError) as info:
         Diagonal()(1.0, 1, 1, -3)
-    assert "Failed calling Diagonal with \"Diagonal(offset=int, dim1=int, dim2=int)(input=float)\"" in str(info.value)
+    assert "Failed calling Diagonal with" in str(info.value)
