@@ -1,0 +1,18 @@
+#operator quant_linear_sparse
+quant_linear_sparse:
+  args:
+    x:
+      dtype: tensor
+    weight:
+      dtype: tensor
+    deqScale:
+      dtype: tensor
+    compressIdx:
+      dtype: tensor
+    bias:
+      dtype: tensor
+  returns:
+    y:
+      dtype: tensor
+  function:
+    disable: True
