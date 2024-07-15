@@ -80,7 +80,7 @@ WeightQuantBatchMatmul: 'aclnnWeightQuantBatchMatmulV2'
 # 3
 
 # 4
-
+CumminExt: 'aclnnCummin'
 # 5
 
 # 6
