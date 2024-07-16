@@ -24,7 +24,7 @@
 #include "infer/affine_grid.h"
 #include "infer/histogram.h"
 #include "op_def/auto_generate/gen_lite_ops.h"
-#include "infer/xlogy.h"
+#include "infer/ops_func_impl/xlogy.h"
 #include "op_def/op_name.h"
 
 namespace mindspore {
