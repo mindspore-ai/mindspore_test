@@ -232,6 +232,10 @@ class MS_CORE_API DebugInfo {
   /// \param[in] name The name to be set.
   void set_name(const std::string &name) { name_ = name; }
 
+  bool is_reusing() const { return is_reusing_; }
+
+  void set_is_reusing(bool reuse = true) { is_reusing_ = reuse; }
+
   /// \brief Get the debug name.
   ///
   /// \return The debug name of the DebugInfo.
@@ -243,6 +247,14 @@ class MS_CORE_API DebugInfo {
   void set_debug_name(const std::string &debug_name) { debug_name_ = debug_name; }
 
   HashMap<DebugInfoPtr, DebugInfoPtr> &shadow_debug_infos_map() { return shadow_debug_infos_map_; }
+
+  const std::vector<DebugInfoPtr> &real_loc() { return real_loc_; }
+
+  void AddLocation(const DebugInfoPtr &debug_info) { (void)real_loc_.emplace_back(debug_info); }
+
+  void set_real_loc(const std::vector<DebugInfoPtr> &debug_infos) {
+    (void)real_loc_.insert(real_loc_.cend(), debug_infos.cbegin(), debug_infos.cend());
+  }
 
   static DebugInfoPtr UpdateInlineCNodeDebugInfo(const DebugInfoPtr &call_debug_info, const DebugInfoPtr &debug_info);
 
@@ -260,6 +272,8 @@ class MS_CORE_API DebugInfo {
   std::string name_;
   std::string debug_name_;
   HashMap<DebugInfoPtr, DebugInfoPtr> shadow_debug_infos_map_;
+  std::vector<DebugInfoPtr> real_loc_;
+  bool is_reusing_ = false;
 };
 
 /// \brief NodeDebugInfo defines debug information for a node.

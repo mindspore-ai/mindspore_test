@@ -1808,8 +1808,6 @@ EvalResultPtr GetEvaluatedValueForNameSpaceString(const AbstractBasePtrList &arg
                                 out_node->scope()->name().compare(0, strlen(kAttrRecompute), kAttrRecompute) == 0);
     if (has_recompute_scope) {
       parse::UpdateRecomputeScope(new_node_to_fg);
-    } else if (MsContext::GetInstance()->get_param<int>(MS_CTX_DEBUG_LEVEL) == kLevelDebug) {
-      UpdateDebugInfo(new_node_to_fg, out_node->scope(), out_node->debug_info());
     }
   }
 
@@ -2154,8 +2152,6 @@ EvalResultPtr GetEvaluatedValueForBuiltinTypeAttrOrMethod(const AnalysisEnginePt
          out_conf->node()->scope()->name().compare(0, strlen(kAttrRecompute), kAttrRecompute) == 0);
       if (has_recompute_scope) {
         parse::UpdateRecomputeScope(converted_fg);
-      } else if (MsContext::GetInstance()->get_param<int>(MS_CTX_DEBUG_LEVEL) == kLevelDebug) {
-        UpdateDebugInfo(converted_fg, out_conf->node()->scope(), out_conf->node()->debug_info());
       }
     }
 
