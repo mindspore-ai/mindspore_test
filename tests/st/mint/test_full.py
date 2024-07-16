@@ -52,7 +52,10 @@ def full_backward_func(size, fill_value, dtype=None):
     return value_grad
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.level3
+@pytest.mark.env_onecard
+@pytest.mark.platform_arm_ascend_training
+@pytest.mark.platform_x86_ascend_training
 @pytest.mark.parametrize('mode', ['GE', 'pynative', 'KBK'])
 def test_full_forward_backward(mode):
     """
