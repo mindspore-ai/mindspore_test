@@ -906,6 +906,21 @@ FuncGraphPtr ProcessLazyInline(const py::object &obj, const ValuePtrList &args_v
   return func_graph;
 }
 
+void UpdateReuseFlag(const FuncGraphPtr &func_graph) {
+  // If graph is reused, mark every node in this graph.
+  if (func_graph == nullptr) {
+    return;
+  }
+  auto nodes = func_graph->nodes();
+  for (const auto &node : nodes) {
+    if (!node->isa<CNode>() || node->debug_info() == nullptr || node->debug_info()->trace_info() == nullptr ||
+        node->debug_info()->trace_info()->debug_info() == nullptr) {
+      continue;
+    }
+    node->debug_info()->trace_info()->debug_info()->set_is_reusing();
+  }
+}
+
 // Convert data to graph
 FuncGraphPtr ConvertToFuncGraph(const py::object &obj, const ValuePtrList &args_value_list,
                                 const std::string &python_mod_get_parse_method, bool forbid_reuse) {
@@ -918,6 +933,7 @@ FuncGraphPtr ConvertToFuncGraph(const py::object &obj, const ValuePtrList &args_
   bool is_cache = data_converter::GetObjectValue(obj_id, &value);
   if (!is_debug && is_cache && value != nullptr && value->isa<FuncGraph>()) {
     func_graph = value->cast<FuncGraphPtr>();
+    UpdateReuseFlag(func_graph);
     if (!func_graph->dropped()) {
       bool has_forbid_reuse_attr = py::hasattr(obj, PYTHON_FUNCTION_FORBID_REUSE);
       if (forbid_reuse || has_forbid_reuse_attr) {
