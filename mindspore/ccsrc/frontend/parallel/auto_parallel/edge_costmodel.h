@@ -85,7 +85,7 @@ class Edge {
   Status InitEdgeCost();
   std::map<CostPtrKey, CostPtrList> GetCostMap() { return cost_map_; }
   CostPtr GetCostByStrategyPair(const CostPtrKey &stra_pair);
-
+  StrategyPtr GetNextOpStrategyByOutStrategy(const StrategyPtr &out_strategy);
   StrategyPtr GetNextOpStrategyByPrevOpStrategyWithMiniComm(const StrategyPtr &prev_op_stra);
   StrategyPtr GetPrevOpStrategyByNextOpStrategyWithMiniComm(const StrategyPtr &next_op_stra);
   int64_t GetReshapeSWCIndexByNextOpStrategy(const StrategyPtr &next_op_stra);

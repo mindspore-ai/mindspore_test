@@ -105,9 +105,9 @@ Status Edge::InitEdgeCost() {
                        "Try to set 'elementwise_op_strategy_follow' false.";
     }
     if (edge_name_.find(RESHAPE) != std::string::npos) {
-      MS_LOG(ERROR) << "Generating cost for edge: " << edge_name_
-                    << " failed, it may be caused by setting different strategies for operators following Reshape. "
-                       "Try to fix that.";
+      MS_LOG(WARNING) << "Generating cost for edge: " << edge_name_
+                      << " failed, it may be caused by setting different strategies for operators following Reshape.";
+      return Status::SUCCESS;
     }
     MS_LOG(INFO) << "Generating cost for edge: " << edge_name_ << " failed.";
     return Status::FAILED;
@@ -352,6 +352,24 @@ CostPtr Edge::GetCostByStrategyPair(const CostPtrKey &stra_pair) {
   return cost_vec[0];
 }
 
+StrategyPtr Edge::GetNextOpStrategyByOutStrategy(const StrategyPtr &out_strategy) {
+  std::vector<std::shared_ptr<StrategyWithCost>> strategy_cost = next_op_->GetStrategyCost();
+  if (strategy_cost.empty()) {
+    MS_LOG(ERROR) << "There are no available strategy in strategy cost for edge: " << edge_name_;
+    return nullptr;
+  }
+  Dimensions out_strategy_dimensions = out_strategy->GetInputDim()[0];
+  for (const auto &swc : strategy_cost) {
+    StrategyPtr strategy_ptr = swc->strategy_ptr;
+    Strategies strategies = strategy_ptr->GetInputDim();
+    Dimensions dimensions = strategies[next_op_input_index_];
+    if (out_strategy_dimensions == dimensions) {
+      return strategy_ptr;
+    }
+  }
+  return strategy_cost[0]->strategy_ptr;
+}
+
 StrategyPtr Edge::GetNextOpStrategyByPrevOpStrategyWithMiniComm(const StrategyPtr &prev_op_stra) {
   std::vector<std::pair<StrategyPtr, double>> next_op_stras;
   // First, try to find the strategy with zero communication cost.
@@ -473,9 +491,7 @@ int64_t Edge::GetReshapeSWCIndexByNextOpStrategy(const StrategyPtr &next_op_stra
       MS_LOG(WARNING) << "Inconsistency occurred at edge: " << edge_name();
     }
   }
-  if (swc_index == -1) {
-    MS_LOG(EXCEPTION) << "No available strategy found at edge: " << edge_name_ << " for: " << prev_op_->name();
-  }
+
   return swc_index;
 }
 
@@ -498,9 +514,6 @@ int64_t Edge::GetReshapeSWCIndexByPrevOpStrategy(const StrategyPtr &prev_op_stra
       MS_LOG(WARNING) << "Inconsistency occurred at edge: " << edge_name();
     }
   }
-  if (swc_index == -1) {
-    MS_LOG(EXCEPTION) << "No available strategy found at edge: " << edge_name_ << " for: " << next_op_->name();
-  }
   return swc_index;
 }
 
@@ -514,9 +527,6 @@ StrategyPtr Edge::GetPrevOpStrategyByReshapeSWCIndex(int64_t swc_index) {
   auto reshape_ptr = std::dynamic_pointer_cast<ReshapeInfo>(next_op_);
   const auto &reshape_input_lyt = reshape_ptr->GetInputLayoutBySWCIndex(swc_index);
   auto stra = prev_op_->GetStrategyFromSWCByOutputLayout(reshape_input_lyt, prev_op_output_index_);
-  if (stra == nullptr) {
-    MS_LOG(EXCEPTION) << "No available strategy found at edge: " << edge_name_ << " for: " << prev_op_->name();
-  }
   return stra;
 }
 
@@ -530,9 +540,6 @@ StrategyPtr Edge::GetNextOpStrategyByReshapeSWCIndex(int64_t swc_index) {
   auto reshape_ptr = std::dynamic_pointer_cast<ReshapeInfo>(prev_op_);
   const auto &reshape_output_lyt = reshape_ptr->GetOutputLayoutBySWCIndex(swc_index);
   auto stra = next_op_->GetStrategyFromSWCByInputLayout(reshape_output_lyt, next_op_input_index_);
-  if (stra == nullptr) {
-    MS_LOG(EXCEPTION) << "No available strategy found at edge: " << edge_name_ << " for: " << prev_op_->name();
-  }
   return stra;
 }
 

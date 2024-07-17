@@ -78,6 +78,26 @@ def test_grad_accumulation_base():
     model.train(2, dataset, dataset_sink_mode=False)
 
 
+def test_grad_accumulation_auto_parallel():
+    '''
+    Feature: grad_accumulation base
+    Description: In grad_accumulation mode, expected success
+    Expectation: success
+    '''
+    context.set_auto_parallel_context(device_num=8, global_rank=0)
+    context.set_auto_parallel_context(parallel_mode="auto_parallel", search_mode="sharding_propagation")
+    data = Tensor(np.ones([32, 64]), dtype=ms.float32)
+    label = Tensor(np.ones([64, 64]), dtype=ms.float32)
+    strategy1 = ((8, 1), (1, 1))
+    strategy2 = ((4, 2), (2, 1))
+    net = GradAccumulationCell(Net(strategy1, strategy2), 4)
+    params = net.network.trainable_params()
+    dataset = DatasetLenet(data, label, 3)
+    optimizer = nn.Lamb(params, learning_rate=0.01)
+    model = Model(net, optimizer=optimizer)
+    model.train(2, dataset, dataset_sink_mode=False)
+    assert True
+
 def test_grad_accumulation_predict():
     '''
     Feature: grad_accumulation + predict

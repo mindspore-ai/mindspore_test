@@ -2295,6 +2295,11 @@ bool StrategyFound(const mindspore::HashMap<std::string, ValuePtr> &attrs) {
   return !((iter == attrs.end()) || (iter->second->type_name() == NONE));
 }
 
+bool OutStrategyFound(const mindspore::HashMap<std::string, ValuePtr> &attrs) {
+  auto iter = attrs.find(OUT_STRATEGY);
+  return !((iter == attrs.end()) || (iter->second->type_name() == NONE));
+}
+
 bool AttrFound(const mindspore::HashMap<std::string, ValuePtr> &attrs, const std::string &target) {
   auto iter = attrs.find(target);
   return !((iter == attrs.end()) || (iter->second->type_name() == NONE));
