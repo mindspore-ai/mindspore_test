@@ -34,6 +34,21 @@ constexpr auto kOutputsFormat = "outputs_format";
 constexpr auto kAttrToPrim = "to_prim";
 constexpr auto kAttrExpandFrom = "expand_from";
 
+#define GK_PROF_START(stage) double start_usec_##stage = mindspore::GetCurrentUSec()
+#define OSS_STR(stage) oss << "[GK_PROF]" << #stage
+#define OSS_VAR(stage) oss << "[GK_PROF]" << stage
+#define PROF_END_INNER(stage, OSS)                                                                           \
+  do {                                                                                                       \
+    double end_usec_##stage = mindspore::GetCurrentUSec();                                                   \
+    std::ostringstream oss;                                                                                  \
+    OSS(stage) << " costs " << (end_usec_##stage - start_usec_##stage) / kBasicTimeTransferUnit << " msec."; \
+    if (common::GetEnv("MS_DEV_GRAPH_KERNEL_PROF") == "on") {                                                \
+      std::cout << oss.str() << std::endl;                                                                   \
+    }                                                                                                        \
+  } while (0)
+#define GK_PROF_END(stage) PROF_END_INNER(stage, OSS_STR)
+#define GK_PROF_END_WITH_VAR(stage) PROF_END_INNER(stage, OSS_VAR)
+
 using OpWithLevel = std::tuple<std::string, unsigned int, PrimitivePtr>;
 
 class GkUtils {
