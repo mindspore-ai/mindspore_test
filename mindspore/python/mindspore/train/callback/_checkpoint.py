@@ -143,6 +143,9 @@ class CheckpointConfig:
         exception_save (bool): Whether to save the current checkpoint when an exception occurs. Default: ``False`` .
         crc_check (bool): Whether to perform crc32 calculation when saving checkpoint and save the calculation
                           result to the end of ckpt. Default: ``False`` .
+        remove_redundancy (bool): Whether to enable saving the checkpoint with redundancy removal.
+            Redundancy removal refers to eliminating redundant data in data parallelism mode. Default: ``False`` , means
+            redundant-free saving is not enabled.
         format (str): Format of the output file, can be "ckpt" or "safetensors". Default: "ckpt".
         kwargs (dict): Configuration options dictionary.
 
@@ -196,6 +199,7 @@ class CheckpointConfig:
                  enc_mode='AES-GCM',
                  exception_save=False,
                  crc_check=False,
+                 remove_redundancy=False,
                  format="ckpt",
                  **kwargs):
 
@@ -243,6 +247,7 @@ class CheckpointConfig:
         self._format = Validator.check_isinstance('format', format, str)
         self._map_param_inc = kwargs.get('incremental', False)
         self.enable_redundance = kwargs.get('enable_redundance', False)
+        self.remove_redundancy = Validator.check_isinstance('remove_redundancy', remove_redundancy, bool)
 
         _check_format_and_other_params(format, enc_key, enc_mode, crc_check, async_save, exception_save,
                                        self._map_param_inc)
@@ -618,6 +623,13 @@ class ModelCheckpoint(Callback):
 
         return False
 
+    def _append_dict_content(self, epoch_num, step_num):
+        """Append append_dict content."""
+        if "epoch_num" in self._append_dict:
+            self._append_dict["epoch_num"] = self._append_epoch_num + epoch_num
+        if "step_num" in self._append_dict:
+            self._append_dict["step_num"] = self._append_step_num + step_num
+
     def _save_ckpt(self, cb_params, force_to_save=False):
         """Save checkpoint files."""
         if cb_params.cur_step_num == self._last_triggered_step:
@@ -661,16 +673,46 @@ class ModelCheckpoint(Callback):
                 set_cur_net(cb_params.train_network)
                 cb_params.train_network.add_flags(ge_sync_data=True)
                 _cell_graph_executor(cb_params.train_network, phase='save')
-            if "epoch_num" in self._append_dict:
-                self._append_dict["epoch_num"] = self._append_epoch_num + cb_params.cur_epoch_num
-            if "step_num" in self._append_dict:
-                self._append_dict["step_num"] = self._append_step_num + cb_params.cur_step_num
+            self._append_dict_content(cb_params.cur_epoch_num, cb_params.cur_step_num)
             network = self._config.saved_network if self._config.saved_network is not None else cb_params.train_network
             if os.getenv("AITURBO") == "1":
                 save_checkpoint(network, cur_file, self._config.integrated_save, self._config.async_save,
                                 self._append_dict, self._config.enc_key, self._config.enc_mode,
                                 crc_check=self._config.crc_check, incremental=self._map_param_inc,
                                 global_step_num=cb_params.cur_step_num)
+            elif self._config.remove_redundancy:
+                parallel_mode = context.get_auto_parallel_context("parallel_mode")
+                if parallel_mode == "stand_alone":
+                    raise TypeError(f"The deduplication feature for saving checkpoint can only be used "
+                                    f"in parallel scenarios, but got {parallel_mode}.")
+                param_layout = network.parameter_layout_dict
+                rank_id = get_rank()
+                if param_layout:
+                    device_num = _get_device_num()
+                    stage_num = _get_auto_parallel_context("pipeline_stages")
+                    chunk_size = device_num // stage_num
+                    initial_rank = (rank_id // chunk_size) * chunk_size
+                    param_redundancy_dict = get_parameter_redundancy(param_layout, initial_rank)
+                    single_params = remove_param_redundancy(param_redundancy_dict)
+                    save_param_names = single_params.get(rank_id)
+                    param_layout_set = set(param_layout.keys())
+                    if save_param_names == param_layout.keys():
+                        logger.warning(
+                            f"For remove_redundancy save checkpoint, the saved parameters are non-redundant.")
+
+                    def choice_func(x):
+                        return x not in param_layout_set or x in save_param_names
+                else:
+                    param_redundancy_dict = get_parameter_redundancy(network)
+                    single_params = remove_param_redundancy(param_redundancy_dict)
+                    save_param_names = single_params.get(rank_id)
+
+                    def choice_func(x):
+                        return x in save_param_names
+                save_checkpoint(network, cur_file, False, self._config.async_save,
+                                self._append_dict, self._config.enc_key, self._config.enc_mode,
+                                crc_check=self._config.crc_check, incremental=self._map_param_inc,
+                                choice_func=choice_func)
             else:
                 save_checkpoint(network, cur_file, self._config.integrated_save, self._config.async_save,
                                 self._append_dict, self._config.enc_key, self._config.enc_mode,
