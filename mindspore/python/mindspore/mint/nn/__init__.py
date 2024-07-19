@@ -226,6 +226,10 @@ from mindspore.ops.auto_generate import BCEWithLogitsLoss as BCEWithLogitsLoss_p
 
 # 220
 from mindspore.nn.layer import HShrink as Hardshrink
+# 221
+from mindspore.nn.layer import HSigmoid as Hardsigmoid
+# 222
+from mindspore.nn.layer import HSwish as Hardswish
 
 class BCEWithLogitsLoss(Cell):
     r"""
@@ -511,6 +515,11 @@ __all__ = [
 
     # 220
     'Hardshrink',
+
+    # 221
+    'Hardsigmoid',
+    # 222
+    'Hardswish',
 ]
 
 __all__.extend(basic.__all__)

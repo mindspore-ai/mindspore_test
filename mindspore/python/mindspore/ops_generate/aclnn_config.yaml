@@ -292,6 +292,12 @@ Atan2Ext: 'aclnnAtan2'
 # 220
 HShrink: 'aclnnHardshrink'
 HShrinkGrad: 'aclnnHardshrinkBackward'
+# 221
+HSigmoid: 'aclnnHardsigmoid'
+HSigmoidGrad: 'aclnnHardsigmoidBackward'
+# 222
+HSwish: 'aclnnHardswish'
+HSwishGrad: 'aclnnHardswishBackward'
 # 231
 MatrixInverseExt: 'aclnnInverse'
 

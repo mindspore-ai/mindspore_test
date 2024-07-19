@@ -289,6 +289,8 @@ mindspore.mint.nn.functional
     mindspore.mint.nn.functional.gelu
     mindspore.mint.nn.functional.group_norm
     mindspore.mint.nn.functional.hardshrink
+    mindspore.mint.nn.functional.hardsigmoid
+    mindspore.mint.nn.functional.hardswish
     mindspore.mint.nn.functional.layer_norm
     mindspore.mint.nn.functional.leaky_relu
     mindspore.mint.nn.functional.relu
