@@ -17,13 +17,13 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "debug/data_dump/statistic_kernel.h"
+#include "debug/data_dump/device_statistic/kernel_launcher.h"
 #include "debug/debugger/debugger_utils.h"
+#include "debug/utils.h"
 #include "include/backend/debug/common/csv_writer.h"
+#include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/backend/debug/data_dump/dump_utils.h"
 #include "include/common/debug/anf_dump_utils.h"
-#include "include/backend/debug/data_dump/dump_json_parser.h"
-#include "debug/utils.h"
 
 namespace mindspore {
 
@@ -52,7 +52,8 @@ string TensorToString(TensorPtr tensor) {
 
 namespace datadump {
 
-TensorStat GetKernelTensorStats(const DumpTensorInfo &tensor_info, const std::vector<string> &stat_name_list) {
+TensorStat GetKernelTensorStats(const DumpTensorInfo &tensor_info, const std::vector<string> &stat_name_list,
+                                const std::uint32_t stream_id) {
   auto tensor = tensor_info.tensor;
   if (tensor == nullptr) {
     MS_LOG(WARNING) << "Tensor is nullptr, returning empty tensor statistics.";
@@ -69,19 +70,20 @@ TensorStat GetKernelTensorStats(const DumpTensorInfo &tensor_info, const std::ve
     return (std::find(stat_name_list.begin(), stat_name_list.end(), name) != stat_name_list.end());
   };
   std::string max_value =
-    is_calc_stat("max") ? TensorToString(CalStatistic("max", tensor_info.device_context, tensor)) : "0";
+    is_calc_stat("max") ? TensorToString(CalStatistic("max", tensor_info.device_context, tensor, stream_id)) : "0";
   std::string min_value =
-    is_calc_stat("min") ? TensorToString(CalStatistic("min", tensor_info.device_context, tensor)) : "0";
+    is_calc_stat("min") ? TensorToString(CalStatistic("min", tensor_info.device_context, tensor, stream_id)) : "0";
   std::string mean_value =
-    is_calc_stat("avg") ? TensorToString(CalStatistic("avg", tensor_info.device_context, tensor)) : "0";
-  std::string norm_value =
-    is_calc_stat("l2norm") ? TensorToString(CalStatistic("l2norm", tensor_info.device_context, tensor)) : "0";
+    is_calc_stat("avg") ? TensorToString(CalStatistic("avg", tensor_info.device_context, tensor, stream_id)) : "0";
+  std::string norm_value = is_calc_stat("l2norm")
+                             ? TensorToString(CalStatistic("l2norm", tensor_info.device_context, tensor, stream_id))
+                             : "0";
 
   size_t task_id = 0;  // Under the kbyk, there is no concept of task_id. The default setting is 0.
   uint64_t timestamp = Common::GetTimeStamp();
-  auto stream_id = tensor->stream_id();
+  auto tensor_stream_id = tensor->stream_id();
   string io = (tensor_info.is_input ? kInput : kOutput);
-  TensorStat stat(tensor_info.op_type, tensor_info.op_name, task_id, stream_id, timestamp, io, tensor_info.slot,
+  TensorStat stat(tensor_info.op_type, tensor_info.op_name, task_id, tensor_stream_id, timestamp, io, tensor_info.slot,
                   data_size, data_type, shape, max_value, min_value, mean_value, norm_value, data_count);
   return stat;
 }
@@ -91,6 +93,7 @@ void DumpKernelTensorStats(const DeviceContext *device_context, vector<device::D
   string node_name = GetKernelNodeName(node);
   GetFileKernelName(NOT_NULL(&node_name));
   string node_type = common::AnfAlgo::GetCNodeName(node);
+  uint32_t stream_id = AnfAlgo::GetStreamId(node);
   MS_LOG(DEBUG) << "Start calc " << node_name << " node statistics.";
   const string csv_header = CsvHeaderUtil::GetInstance().GetStatCsvHeader();
   const std::vector<string> &stat_name_list = DumpJsonParser::GetInstance().statistic_category();
@@ -110,7 +113,7 @@ void DumpKernelTensorStats(const DeviceContext *device_context, vector<device::D
   for (auto i : valid_index) {
     auto tensor = tensors[i]->kernel_tensor().get();
     DumpTensorInfo tensor_info(device_context, tensor, is_input, i, node_name, node_type);
-    auto stat = GetKernelTensorStats(tensor_info, stat_name_list);
+    auto stat = GetKernelTensorStats(tensor_info, stat_name_list, stream_id);
     stat.UpdateHeaderItemMap();
 
     csv.WriteToCsv(stat.type_);
