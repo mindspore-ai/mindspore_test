@@ -21,18 +21,21 @@
 #include <string>
 #include <vector>
 #include "backend/common/session/session_basic.h"
+#include "debug/data_dump/device_statistic/kernel_launcher.h"
+#include "debug/data_dump/tensor_info_collect.h"
 #include "debug/data_dump/tensor_statistic.h"
+#include "debug/utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
+#include "include/backend/debug/common/csv_writer.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/backend/debug/data_dump/e2e_dump.h"
+#include "include/backend/debug/data_dump/tensor_stat_dump.h"
 #include "include/backend/debug/debugger/debugger.h"
 #include "include/common/debug/anf_dump_utils.h"
+#include "include/common/debug/common.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/config_manager.h"
 #include "kernel/kernel.h"
-#include "include/backend/debug/data_dump/tensor_stat_dump.h"
-#include "debug/data_dump/tensor_info_collect.h"
-#include "include/common/debug/common.h"
 
 constexpr int kFailure = 1;
 constexpr auto kInput = "input";
@@ -529,6 +532,118 @@ TensorInfoCommForDump GetTensorInfoCommFromCnode(const CNodePtr &cnode) {
   return tensor_info_comm;
 }
 
+inline mindspore::tensor::TensorPtr DeviceAddress2Tensor(device::DeviceAddressPtr device_addr, const void *src) {
+  if (!device_addr) {
+    return nullptr;
+  }
+  auto host_type = device_addr->kernel_tensor()->dtype_id();
+  auto host_shape = device_addr->kernel_tensor()->GetShapeVector();
+
+  mindspore::tensor::TensorPtr out_tensor = std::make_shared<tensor::Tensor>(host_type, host_shape);
+  MS_EXCEPTION_IF_NULL(out_tensor);
+  size_t host_size = LongToSize(out_tensor->data().nbytes());
+  if (host_size == 0) {
+    MS_LOG(WARNING) << "Dump tensor size is 0 for tensor: . Skip it";
+    return out_tensor;
+  }
+  device_addr->CallAclrtMemcpy(out_tensor->data_c(), host_size, src, host_size);
+  return out_tensor;
+}
+
+inline string TensorToString(mindspore::tensor::TensorPtr tensor) {
+  if (!tensor) {
+    return "null";
+  }
+  return tensor->data().ToString(tensor->data_type(), tensor->shape(), false);
+}
+
+inline string ShapeToString(const ShapeVector &shape) {
+  std::ostringstream sstr;
+  sstr << "\"(";
+  for (size_t i = 0; i < shape.size(); i++) {
+    sstr << (i > 0 ? "," : "") << shape[i];
+  }
+  sstr << ")\"";
+  return string{sstr.str()};
+}
+
+inline void Write2File(const TensorInfoForDump &tensor_info, uint32_t stream_id,
+                       const TensorInfoCommForDump &tensor_info_comm) {
+  string node_name = tensor_info_comm.op_name;
+  string node_type = tensor_info_comm.op_type;
+
+  const string csv_header = CsvHeaderUtil::GetInstance().GetStatCsvHeader();
+  const std::vector<string> &stat_name_list = DumpJsonParser::GetInstance().statistic_category();
+
+  string filename = tensor_info_comm.dump_path + "/" + "statistic.csv";
+  CsvWriter csv;
+  if (!csv.OpenFile(filename, csv_header)) {
+    MS_LOG(WARNING) << "filename is " << filename;
+    MS_LOG(WARNING) << "Open statistic dump file failed, skipping current statistics";
+    return;
+  }
+  uint64_t timestamp = Common::GetTimeStamp();
+
+  csv.WriteToCsv(node_type);
+  csv.WriteToCsv(node_name);
+  csv.WriteToCsv(0);
+  csv.WriteToCsv(stream_id);
+  csv.WriteToCsv(timestamp);
+  csv.WriteToCsv(tensor_info.io);
+  csv.WriteToCsv(tensor_info.io_index);
+  csv.WriteToCsv(tensor_info.device_size);
+  csv.WriteToCsv(TypeIdToString(tensor_info.host_type, true));
+  csv.WriteToCsv(ShapeToString(tensor_info.host_shape));
+
+  for (const auto &name : stat_name_list) {
+    auto it = tensor_info.stat_results.find(name);
+    if (it == tensor_info.stat_results.end()) {
+      MS_LOG(EXCEPTION) << "The statistics of the " << name << " category cannot be found!";
+    }
+    auto result = it->second.back();
+    const void *add = nullptr;
+    if (result) {
+      add = result->GetPtr();
+    }
+    auto tensor = DeviceAddress2Tensor(result, add);
+    csv.WriteToCsv(TensorToString(tensor));
+  }
+  csv.WriteToCsv("", true);
+  csv.CloseFile();
+}
+
+void LaunchDeviceStatCallback(std::vector<TensorInfoForDump> *tensor_info_vec_ptr, const DeviceContext *device_context,
+                              uint32_t stream_id, const TensorInfoCommForDump &tensor_info_comm) {
+  const std::vector<std::string> &stat_name_list = DumpJsonParser::GetInstance().statistic_category();
+  std::vector<TensorInfoForDump> &tensor_info_vec = *tensor_info_vec_ptr;
+  // launch statistic kernel
+  for (auto &tensor_info : tensor_info_vec) {
+    auto kernel_tensor = tensor_info.device_tensor->kernel_tensor().get();
+    for (auto &name : stat_name_list) {
+      auto result = datadump::CalStatisticAsync(name, device_context, kernel_tensor, stream_id);
+      tensor_info.stat_results.emplace(name, result);
+    }
+  }
+
+  device::CallbackFunc callback_func = [tensor_info_vec, tensor_info_comm, stream_id]() mutable {
+    for (auto &tensor_info : tensor_info_vec) {
+      Write2File(tensor_info, stream_id, tensor_info_comm);
+    }
+  };
+  auto enable_stream_control = DumpJsonParser::GetInstance().IsDeviceStatHighPrecisionMode();
+  auto multi_stream_controller = device::MultiStreamController::GetInstance();
+  if (enable_stream_control && stream_id != kDefaultStreamIndex) {
+    multi_stream_controller->DispatchRecordWaitEvent(device_context, stream_id, kDefaultStreamIndex);
+  }
+  auto callback_ret = device_context->GetKernelExecutor(false)->LaunchCallback(callback_func, stream_id);
+  if (!callback_ret) {
+    MS_LOG(ERROR) << "Async device statistic dump callback launch fail.";
+  }
+  if (enable_stream_control && stream_id != kDefaultStreamIndex) {
+    multi_stream_controller->DispatchRecordWaitEvent(device_context, kDefaultStreamIndex, stream_id);
+  }
+}
+
 void DumpDataViaCallback(const CNodePtr &cnode, const std::vector<device::DeviceAddress *> &input_device_tensors,
                          const std::vector<device::DeviceAddress *> &output_device_tensors,
                          const DeviceContext *device_context) {
@@ -547,8 +662,12 @@ void DumpDataViaCallback(const CNodePtr &cnode, const std::vector<device::Device
   if (DumpJsonParser::GetInstance().OutputNeedDump()) {
     PrepareOutputDataViaCallback(cnode, output_device_tensors, &tensor_info_list);
   }
-
-  LaunchDumpCallback(tensor_info_list, device_context, stream_id, tensor_info_comm);
+  bool calc_device_stat = DumpJsonParser::GetInstance().IsDeviceCalcStats();
+  if (calc_device_stat) {
+    LaunchDeviceStatCallback(&tensor_info_list, device_context, stream_id, tensor_info_comm);
+  } else {
+    LaunchDumpCallback(tensor_info_list, device_context, stream_id, tensor_info_comm);
+  }
 }
 
 /*

@@ -46,9 +46,9 @@ if(NOT ENABLE_SECURITY)
     if(NOT CMAKE_SYSTEM_NAME MATCHES "Windows")
         list(APPEND _DEBUG_SRC_LIST
             "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/e2e_dump.cc"
-            "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/statistic_kernel.cc"
             "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/tensor_statistic.cc"
             )
+        file(GLOB_RECURSE _DEVICE_STATISTIC_LIST "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/device_statistic/*.cc")
     endif()
 endif()
 
@@ -56,6 +56,7 @@ set_property(SOURCE ${_DEBUG_SRC_LIST} ${_RDR_SRC_LIST} PROPERTY COMPILE_DEFINIT
     SUBMODULE_ID=mindspore::SubModuleId::SM_DEBUG)
 list(APPEND _DEBUG_SRC_LIST ${_RDR_SRC_LIST})
 list(LENGTH _DEBUG_SRC_LIST debug_files_size)
+list(APPEND _DEBUG_SRC_LIST ${_DEVICE_STATISTIC_LIST})
 if(${debug_files_size} GREATER 0)
   add_library(_mindspore_debug_obj OBJECT ${_DEBUG_SRC_LIST})
   if(CMAKE_SYSTEM_NAME MATCHES "Windows")
