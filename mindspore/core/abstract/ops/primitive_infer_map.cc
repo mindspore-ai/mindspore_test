@@ -25,10 +25,11 @@
 #include <iterator>
 
 #include "abstract/utils.h"
-#include "utils/core_op_utils.h"
-#include "utils/ms_context.h"
 #include "ops/ops_frontend_func_impl.h"
 #include "ops/op_def.h"
+#include "ops/infer_info/infer_info_utils.h"
+#include "utils/core_op_utils.h"
+#include "utils/ms_context.h"
 
 namespace mindspore {
 constexpr auto kAttrDynInputSizes = "dyn_input_sizes";
@@ -325,6 +326,21 @@ ValuePtr StandardPrimitiveImplReg::InferValue(const PrimitivePtr &prim, const Ab
   return op_infer_->InferValue(prim, args);
 }
 
+static BaseShapePtr ShapePtrFromShapeArray(const ShapeArray &shapes) {
+  if (shapes.empty()) {
+    MS_LOG(EXCEPTION) << "No shape provided";
+  }
+  std::vector<BaseShapePtr> shape_ptr_list;
+  std::transform(shapes.begin(), shapes.end(), std::back_inserter(shape_ptr_list), [](const ShapeVector &shape) {
+    return std::dynamic_pointer_cast<BaseShape>(std::make_shared<TensorShape>(shape));
+  });
+  if (shape_ptr_list.size() == 1) {
+    return shape_ptr_list[0];
+  } else {
+    return std::make_shared<TupleShape>(shape_ptr_list);
+  }
+}
+
 std::optional<BaseShapePtr> InferShapeByFuncImpl(const PrimitivePtr &primitive, const AbstractBasePtrList &input_args,
                                                  bool compile_phase) {
   MS_EXCEPTION_IF_NULL(primitive);
@@ -343,8 +359,29 @@ std::optional<BaseShapePtr> InferShapeByFuncImpl(const PrimitivePtr &primitive, 
   if (op_def == nullptr) {
     return std::nullopt;
   }
+  if (op_def->func_impl_.GeneralInferRegistered()) {
+    const auto &infer_infos = ops::ConvertAbstractListToInferInfoList(input_args, op_def);
+    if (OP_CHECK_SUCCESS != op_def->func_impl_.CheckValidation(primitive, input_args)) {
+      MS_LOG(EXCEPTION) << "CheckValidation failed for " << op_name;
+    }
+    auto shapes = op_def->func_impl_.InferShape(primitive, infer_infos);
+    return ShapePtrFromShapeArray(shapes);
+  }
   (void)op_def->func_impl_.CheckValidation(primitive, input_args);
   return op_def->func_impl_.InferShape(primitive, input_args);
+}
+
+static TypePtr TypePtrFromTypeIds(const std::vector<TypeId> &type_ids) {
+  if (type_ids.empty()) {
+    MS_LOG(EXCEPTION) << "No type id provided";
+  }
+  std::vector<TypePtr> types;
+  std::transform(type_ids.begin(), type_ids.end(), std::back_inserter(types),
+                 [](TypeId type_id) { return TypeIdToType(type_id); });
+  if (types.size() == 1) {
+    return types[0];
+  }
+  return std::make_shared<Tuple>(types);
 }
 
 std::optional<TypePtr> InferTypeByFuncImpl(const PrimitivePtr &primitive, const AbstractBasePtrList &input_args,
@@ -365,6 +402,14 @@ std::optional<TypePtr> InferTypeByFuncImpl(const PrimitivePtr &primitive, const 
   if (op_def == nullptr) {
     return std::nullopt;
   }
+  if (op_def->func_impl_.GeneralInferRegistered()) {
+    const auto infer_infos = ops::ConvertAbstractListToInferInfoList(input_args, op_def);
+    if (OP_CHECK_SUCCESS != op_def->func_impl_.CheckValidation(primitive, input_args)) {
+      MS_LOG(EXCEPTION) << "CheckValidation failed for " << op_name;
+    }
+    auto type_ids = op_def->func_impl_.InferType(primitive, infer_infos);
+    return TypePtrFromTypeIds(type_ids);
+  }
   (void)op_def->func_impl_.CheckValidation(primitive, input_args);
   return op_def->func_impl_.InferType(primitive, input_args);
 }
@@ -384,6 +429,9 @@ std::optional<AbstractBasePtr> InferAbstractByFuncImpl(const PrimitivePtr &primi
   auto op_def = ops::GetOpDef(op_name);
   if (op_def == nullptr) {
     return std::nullopt;
+  }
+  if (op_def->func_impl_.GeneralInferRegistered()) {
+    return ops::DoGeneralInfer(primitive, input_args, frontend_func_impl);
   }
   (void)op_def->func_impl_.CheckValidation(primitive, input_args);
   auto shape = op_def->func_impl_.InferShape(primitive, input_args);

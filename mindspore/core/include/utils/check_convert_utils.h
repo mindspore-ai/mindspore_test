@@ -475,6 +475,13 @@ class MS_CORE_API CheckAndConvertUtils {
                                const bool allow_mix = false);
   static bool CheckPrimAttrConverted(const std::string &op_name);
 
+  // ======================GeneralInfer=====================
+  static void CheckTypeIdValid(const std::string &arg_name, TypeId type, const std::set<TypeId> &valid_types,
+                               const std::string &prim_name);
+  static void CheckTypeIdsSame(const std::string &arg_name, const std::vector<TypeId> &types,
+                               const std::string &prim_name);
+  static bool IsEmptyTensorShape(const ShapeVector &shape);
+
  private:
   static TypePtr CheckTensorSubClass(const std::string &type_name, const TypePtr &type,
                                      const std::set<TypePtr> &template_types, const std::string &prim_name,

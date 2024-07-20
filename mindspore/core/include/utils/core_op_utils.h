@@ -24,6 +24,22 @@
 #include "ir/primitive.h"
 #include "ir/anf.h"
 
+#ifndef MS_UNLIKELY
+#ifdef _MSC_VER
+#define MS_UNLIKELY(x) (x)
+#define MS_LIKELY(x) (x)
+#else
+#define MS_LIKELY(x) __builtin_expect(!!(x), 1)
+#define MS_UNLIKELY(x) __builtin_expect(!!(x), 0)
+#endif
+#endif
+#define MS_CHECK_VALUE(cond, msg)        \
+  do {                                   \
+    if (MS_UNLIKELY(!(cond))) {          \
+      MS_EXCEPTION(ValueError) << (msg); \
+    }                                    \
+  } while (0)
+
 namespace mindspore::ops {
 MS_CORE_API std::set<int64_t> GetInputDependValueList(const PrimitivePtr &op_prim);
 

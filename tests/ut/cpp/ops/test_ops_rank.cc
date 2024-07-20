@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,44 +14,21 @@
  * limitations under the License.
  */
 
-#include <memory>
-#include "common/common_test.h"
-#include "ops/test_ops.h"
-#include "abstract/dshape.h"
-#include "infer/ops_func_impl/rank.h"
+#include "ops/utils/general_infer_utils.h"
 
-namespace mindspore {
-namespace ops {
-struct RankOpParams {
-  ShapeVector input_shape;
-  TypePtr input_type;
-  std::shared_ptr<abstract::NoShape> out_shape;
-  TypePtr out_type;
-};
-
-class TestRank : public TestOps, public testing::WithParamInterface<RankOpParams> {};
-
-TEST_P(TestRank, Rank_DynamicShape) {
-  const auto &param = GetParam();
-  auto input = std::make_shared<abstract::AbstractTensor>(param.input_type, param.input_shape);
-  ASSERT_NE(input, nullptr);
-  std::vector<abstract::AbstractBasePtr> input_args{std::move(input)};
-
-  auto primitive = std::make_shared<Primitive>("Rank");
-  OpFuncImplPtr infer_impl = std::make_shared<RankFuncImpl>();
-  ASSERT_NE(infer_impl, nullptr);
-  auto infer_shape = infer_impl->InferShape(primitive, input_args);
-  ASSERT_NE(infer_shape, nullptr);
-  auto infer_type = infer_impl->InferType(primitive, input_args);
-  ASSERT_NE(infer_type, nullptr);
-
-  ASSERT_TRUE(infer_shape == param.out_shape);
-  ASSERT_TRUE(infer_type == param.out_type);
+namespace mindspore::ops {
+namespace {
+std::vector<GeneralInferParam> prepare_params() {
+  GeneralInferParamGenerator generator;
+  generator.FeedInputArgs({InferInfoParam{ShapeVector{2, 3}, kNumberTypeFloat32}})
+    .FeedExpectedOutput({{}}, {kNumberTypeInt64});
+  generator.FeedInputArgs({InferInfoParam{ShapeVector{-1, -1}, kNumberTypeInt32}})
+    .FeedExpectedOutput({{}}, {kNumberTypeInt64});
+  generator.FeedInputArgs({InferInfoParam{ShapeVector{-2}, kNumberTypeFloat32}})
+    .FeedExpectedOutput({{}}, {kNumberTypeInt64});
+  return generator.Generate();
 }
+}  // namespace
 
-INSTANTIATE_TEST_CASE_P(TestOpsFuncImpl, TestRank,
-                        testing::Values(RankOpParams{{2, 3}, kFloat32, abstract::kNoShape, kInt64},
-                                        RankOpParams{{-1, -1}, kFloat32, abstract::kNoShape, kInt64},
-                                        RankOpParams{{-2}, kFloat32, abstract::kNoShape, kInt64}));
-}  // namespace ops
-}  // namespace mindspore
+INSTANTIATE_TEST_CASE_P(Rank, GeneralInferTest, testing::ValuesIn(prepare_params()));
+}  // namespace mindspore::ops

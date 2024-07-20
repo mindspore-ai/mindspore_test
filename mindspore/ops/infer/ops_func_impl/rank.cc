@@ -22,14 +22,12 @@
 #include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore::ops {
-BaseShapePtr RankFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                      const std::vector<AbstractBasePtr> &input_args) const {
-  return abstract::kNoShape;
+ShapeArray RankFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+  return {{}};
 }
 
-TypePtr RankFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
-  TypePtr res = kInt64;
-  return res;
+std::vector<TypeId> RankFuncImpl::InferType(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+  return {kNumberTypeInt64};
 }
 
 class OPS_API RankFrontendFuncImpl : public OpFrontendFuncImpl {

@@ -263,6 +263,36 @@ AbstractBasePtr MakeMonadAbstract(const MonadTypePtr &type) {
   MS_INTERNAL_EXCEPTION(UnknownError) << "Unsupported to convert type " << type->ToString() << " to monad abstract";
 }
 
+AbstractBasePtr MakeAbstract(const ShapeVector &shape, const TypeId &type) {
+  if (shape.empty()) {
+    return std::make_shared<abstract::AbstractScalar>(kValueAny, TypeIdToType(type));
+  } else {
+    return std::make_shared<abstract::AbstractTensor>(TypeIdToType(type), std::make_shared<Shape>(shape));
+  }
+}
+
+AbstractBasePtr MakeAbstract(const ShapeArray &shapes, const std::vector<TypeId> &types) {
+  if (shapes.size() == 0 && types.size() == 0) {
+    return std::make_shared<abstract::AbstractNone>();
+  }
+
+  std::vector<AbstractBasePtr> abstracts;
+  for (size_t i = 0; i < shapes.size(); ++i) {
+    abstracts.push_back(MakeAbstract(shapes[i], types[i]));
+  }
+  if (abstracts.size() == 1) {
+    return abstracts[0];
+  } else {
+    ValuePtrList values;
+    std::transform(abstracts.begin(), abstracts.end(), std::back_inserter(values),
+                   [](AbstractBasePtr abs) { return abs->GetValue(); });
+    auto sequence_value = std::make_shared<ValueSequence>(values);
+    auto sequence_abs = std::make_shared<AbstractTuple>(abstracts);
+    sequence_abs->set_value(sequence_value);
+    return sequence_abs;
+  }
+}
+
 AbstractBasePtr MakeAbstract(const BaseShapePtr &base_shape, const TypePtr &type) {
   MS_EXCEPTION_IF_NULL(base_shape);
   MS_EXCEPTION_IF_NULL(type);

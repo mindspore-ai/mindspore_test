@@ -28,6 +28,8 @@
 #include "kernel/common/pyboost/pyboost_kernel_extra_func.h"
 #include "utils/simple_info.h"
 #include "include/common/pynative/abstract_converter.h"
+#include "ops/infer_info/value_infer_info_adapter.h"
+#include "ops/ops_func_impl/simple_infer.h"
 
 namespace mindspore {
 namespace kernel {
@@ -41,6 +43,7 @@ AbstractBasePtr BACKEND_EXPORT ToAbstractNoValue(const BaseTensorPtr &tensor);
 class BACKEND_EXPORT PyBoostUtils {
  public:
   static AbstractBasePtr InferByOpDef(const PrimitivePtr &prim, const std::vector<AbstractBasePtr> &input_abs);
+
   static void DispatchRun(const std::shared_ptr<runtime::PyBoostDeviceTask> &task);
 
   static DeviceSyncPtr ContiguousByDeviceAddress(const DeviceSyncPtr &device_sync);

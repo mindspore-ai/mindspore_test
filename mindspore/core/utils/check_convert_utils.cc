@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <sstream>
 #include <iterator>
 #include <map>
 #include <set>
@@ -1560,5 +1561,47 @@ AbstractBasePtr CheckAndConvertUtils::CheckArgsSequenceType(const std::string &o
                             << "tuple or list, but got " << args_abs->GetType()->ToString() << ".";
   }
   return args_abs;
+}
+
+template <typename TypeIdList>
+static std::string TypeIdListToString(TypeIdList types) {
+  if (types.size() < 1) {
+    return "";
+  }
+  std::stringstream ss;
+  for (auto type : types) {
+    ss << TypeIdToString(type) << ", ";
+  }
+  auto str = ss.str();
+  return str.erase(str.length() - 2, str.length());
+}
+
+void CheckAndConvertUtils::CheckTypeIdValid(const std::string &arg_name, TypeId type,
+                                            const std::set<TypeId> &valid_types, const std::string &prim_name) {
+  if (valid_types.empty()) {
+    MS_LOG(EXCEPTION) << "Empty valid types.";
+  }
+  if (valid_types.count(type) == 0) {
+    MS_EXCEPTION(TypeError) << "For primitive[" << prim_name << "], the input[" << arg_name
+                            << "] supports types: " << TypeIdListToString(valid_types) << ". But got "
+                            << TypeIdToString(type) << ".";
+  }
+}
+
+void CheckAndConvertUtils::CheckTypeIdsSame(const std::string &arg_name, const std::vector<TypeId> &types,
+                                            const std::string &prim_name) {
+  if (types.size() <= 1) {
+    return;
+  }
+  for (size_t i = 1; i < types.size(); ++i) {
+    if (types[i] != types[i - 1]) {
+      MS_EXCEPTION(TypeError) << "For primitive[" << prim_name << "], the input[" << arg_name
+                              << "] elements should have same type, but got: " << TypeIdListToString(types) << ".";
+    }
+  }
+}
+
+bool CheckAndConvertUtils::IsEmptyTensorShape(const ShapeVector &shape) {
+  return std::any_of(shape.begin(), shape.end(), [](auto x) { return x == 0; });
 }
 }  // namespace mindspore

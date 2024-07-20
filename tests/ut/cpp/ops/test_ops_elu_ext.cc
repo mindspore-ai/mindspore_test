@@ -13,37 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <memory>
-#include "common/common_test.h"
-#include "infer/ops_func_impl/elu_ext.h"
-#include "ops/test_ops.h"
-#include "ops/test_ops_cmp_utils.h"
-#include "ops/test_value_utils.h"
 
-namespace mindspore {
-namespace ops {
+#include "ops/utils/general_infer_utils.h"
 
-class TestEluExt : public TestOps, public testing::WithParamInterface<EltwiseOpParams> {};
-
-TEST_P(TestEluExt, dyn_shape) {
-  const auto &param = GetParam();
-  auto input_x = std::make_shared<abstract::AbstractTensor>(param.x_type, param.x_shape);
-  auto expect_shape = std::make_shared<abstract::Shape>(param.out_shape);
-  auto expect_dtype = std::make_shared<TensorType>(param.out_type);
-  auto alpha = CreateScalar(1.f)->ToAbstract();
-
-  EluExtFuncImpl elu_func;
-  auto prim = std::make_shared<Primitive>("EluExt");
-
-  auto out_dtype = elu_func.InferType(prim, {input_x, alpha});
-  ASSERT_TRUE(*out_dtype == *expect_dtype);
-  auto out_shape = elu_func.InferShape(prim, {input_x, alpha});
-  ASSERT_TRUE(*out_shape == *expect_shape);
+namespace mindspore::ops {
+namespace {
+std::vector<GeneralInferParam> prepare_params() {
+  GeneralInferParamGenerator generator;
+  generator
+    .FeedInputArgs({InferInfoParam{ShapeVector{2, 3}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{}, kNumberTypeFloat32, CreateScalar<float>(1.)}})
+    .FeedExpectedOutput({{2, 3}}, {kNumberTypeFloat32});
+  generator
+    .FeedInputArgs({InferInfoParam{ShapeVector{2, -1}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{}, kNumberTypeFloat32, CreateScalar<float>(1.)}})
+    .FeedExpectedOutput({{2, -1}}, {kNumberTypeFloat32});
+  generator
+    .FeedInputArgs({InferInfoParam{ShapeVector{-1, -1}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{}, kNumberTypeFloat32, CreateScalar<float>(1.)}})
+    .FeedExpectedOutput({{-1, -1}}, {kNumberTypeFloat32});
+  generator
+    .FeedInputArgs({InferInfoParam{ShapeVector{-2}, kNumberTypeFloat32},
+                    InferInfoParam{ShapeVector{}, kNumberTypeFloat32, CreateScalar<float>(1.)}})
+    .FeedExpectedOutput({{-2}}, {kNumberTypeFloat32});
+  return generator.Generate();
 }
+}  // namespace
 
-OP_FUNC_IMPL_TEST_CASES(EluExt, testing::Values(EltwiseOpParams{{2, 3}, kFloat32, {2, 3}, kFloat32},
-                                                EltwiseOpParams{{2, -1}, kFloat32, {2, -1}, kFloat32},
-                                                EltwiseOpParams{{-1, -1}, kFloat32, {-1, -1}, kFloat32},
-                                                EltwiseOpParams{{-2}, kFloat32, {-2}, kFloat32}));
-}  // namespace ops
-}  // namespace mindspore
+INSTANTIATE_TEST_CASE_P(EluExt, GeneralInferTest, testing::ValuesIn(prepare_params()));
+}  // namespace mindspore::ops

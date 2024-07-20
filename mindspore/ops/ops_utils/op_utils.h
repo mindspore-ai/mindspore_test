@@ -39,27 +39,10 @@
 #include "mindspore/ops/op_def/array_op_name.h"
 #include "mindspore/ops/op_def/math_op_name.h"
 
-#ifndef MS_UNLIKELY
-#ifdef _MSC_VER
-#define MS_UNLIKELY(x) (x)
-#define MS_LIKELY(x) (x)
-#else
-#define MS_LIKELY(x) __builtin_expect(!!(x), 1)
-#define MS_UNLIKELY(x) __builtin_expect(!!(x), 0)
-#endif
-#endif
-#define MS_CHECK_VALUE(cond, msg)        \
-  do {                                   \
-    if (MS_UNLIKELY(!(cond))) {          \
-      MS_EXCEPTION(ValueError) << (msg); \
-    }                                    \
-  } while (0)
-
 namespace mindspore::ops {
 constexpr auto kBitSize = 64;
 const std::set<TypePtr> common_valid_types = {kInt8,   kInt16,  kInt32,   kInt64,   kUInt8,   kUInt16,
                                               kUInt32, kUInt64, kFloat16, kFloat32, kFloat64, kBFloat16};
-
 const std::set<TypePtr> common_valid_types_with_bool = {
   kInt8, kInt16, kInt32, kInt64, kUInt8, kUInt16, kUInt32, kUInt64, kFloat16, kFloat32, kFloat64, kBool, kBFloat16};
 
@@ -76,6 +59,40 @@ const std::set<TypePtr> common_float_types = {kFloat16, kFloat32, kFloat64, kBFl
 const std::set<TypePtr> all_types = {kBool,    kInt,     kInt8,    kInt16,     kInt32,      kInt64,
                                      kUInt,    kUInt8,   kUInt16,  kUInt32,    kUInt64,     kFloat,
                                      kFloat16, kFloat32, kFloat64, kComplex64, kComplex128, kBFloat16};
+
+const std::set<TypeId> common_valid_type_ids = {kNumberTypeInt8,    kNumberTypeInt16,   kNumberTypeInt32,
+                                                kNumberTypeInt64,   kNumberTypeUInt8,   kNumberTypeUInt16,
+                                                kNumberTypeUInt32,  kNumberTypeUInt64,  kNumberTypeFloat16,
+                                                kNumberTypeFloat32, kNumberTypeFloat64, kNumberTypeBFloat16};
+
+const std::set<TypeId> common_valid_type_ids_with_bool = {
+  kNumberTypeInt8,    kNumberTypeInt16,  kNumberTypeInt32,   kNumberTypeInt64,   kNumberTypeUInt8,
+  kNumberTypeUInt16,  kNumberTypeUInt32, kNumberTypeUInt64,  kNumberTypeFloat16, kNumberTypeFloat32,
+  kNumberTypeFloat64, kNumberTypeBool,   kNumberTypeBFloat16};
+
+const std::set<TypeId> common_valid_type_ids_with_complex = {
+  kNumberTypeInt8,    kNumberTypeInt16,     kNumberTypeInt32,      kNumberTypeInt64,   kNumberTypeUInt8,
+  kNumberTypeUInt16,  kNumberTypeUInt32,    kNumberTypeUInt64,     kNumberTypeFloat16, kNumberTypeFloat32,
+  kNumberTypeFloat64, kNumberTypeComplex64, kNumberTypeComplex128, kNumberTypeBFloat16};
+
+const std::set<TypeId> common_valid_type_ids_with_complex_and_bool = {
+  kNumberTypeInt8,    kNumberTypeInt16,     kNumberTypeInt32,      kNumberTypeInt64,   kNumberTypeUInt8,
+  kNumberTypeUInt16,  kNumberTypeUInt32,    kNumberTypeUInt64,     kNumberTypeFloat16, kNumberTypeFloat32,
+  kNumberTypeFloat64, kNumberTypeComplex64, kNumberTypeComplex128, kNumberTypeBool,    kNumberTypeBFloat16};
+
+const std::set<TypeId> common_integral_type_ids = {kNumberTypeInt8,   kNumberTypeInt16, kNumberTypeInt32,
+                                                   kNumberTypeInt64,  kNumberTypeUInt8, kNumberTypeUInt16,
+                                                   kNumberTypeUInt32, kNumberTypeUInt64};
+
+const std::set<TypeId> common_float_type_ids = {kNumberTypeFloat16, kNumberTypeFloat32, kNumberTypeFloat64,
+                                                kNumberTypeBFloat16};
+
+const std::set<TypeId> all_type_ids = {
+  kNumberTypeBool,      kNumberTypeInt,        kNumberTypeInt8,    kNumberTypeInt16,   kNumberTypeInt32,
+  kNumberTypeInt64,     kNumberTypeUInt,       kNumberTypeUInt8,   kNumberTypeUInt16,  kNumberTypeUInt32,
+  kNumberTypeUInt64,    kNumberTypeFloat,      kNumberTypeFloat16, kNumberTypeFloat32, kNumberTypeFloat64,
+  kNumberTypeComplex64, kNumberTypeComplex128, kNumberTypeBFloat16};
+
 std::vector<int64_t> CalBroadCastShape(const std::vector<int64_t> &x_shape, const std::vector<int64_t> &y_shape,
                                        const std::string &op_name, const std::string &op_x_name = "input1",
                                        const std::string &op_y_name = "input2");
@@ -291,5 +308,12 @@ OPS_API std::vector<int64_t> CalBroadCastShapeV3(const std::vector<int64_t> &x_s
 OPS_API int ConvertReductionForAclnn(Reduction reduction);
 OPS_API size_t CalOutputSize(const std::vector<int64_t> &output_shape, const size_t &type_size);
 OPS_API ValueTuplePtr ConvertShapeVectorToValueTuple(const ShapeVector &shape_vector);
+
+#define RETURN_IF_OPTIONAL_HAS_VALUE(opt) \
+  do {                                    \
+    if (opt.has_value()) {                \
+      return opt.value();                 \
+    }                                     \
+  } while (0)
 }  // namespace mindspore::ops
 #endif  // MINDSPORE_CORE_OPS_OP_UTILS_H
