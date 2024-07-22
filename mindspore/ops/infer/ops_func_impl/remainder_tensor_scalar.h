@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,24 +14,21 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_ARANGE_H_
-#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_ARANGE_H_
+#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_REMAINDER_TENSOR_SCALAR_H_
+#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_REMAINDER_TENSOR_SCALAR_H_
 
 #include <vector>
-#include <set>
-#include "mindspore/ops/op_def/op_name.h"
+#include "op_def/op_name.h"
 #include "mindspore/core/ops/ops_func_impl/op_func_impl.h"
 
 namespace mindspore::ops {
-class OPS_API ArangeFuncImpl : public OpFuncImpl {
+class OPS_API RemainderTensorScalarFuncImpl : public OpFuncImpl {
  public:
   BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
   TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
-  std::set<int64_t> GetValueDependArgIndices() const override { return {kInputIndex0, kInputIndex1, kInputIndex2}; };
-  // simple infer
   ShapeArray InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const override;
   TypePtrList InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const override;
 };
 }  // namespace mindspore::ops
 
-#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_ARANGE_H_
+#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_REMAINDER_TENSOR_SCALAR_H_
