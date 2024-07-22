@@ -17,7 +17,6 @@
 
 namespace mindspore {
 namespace kernel {
-MS_ACLNN_COMMON_KERNEL_FACTORY_REG(LogicalXor, aclnnLogicalXor, 3)
 MS_ACLNN_COMMON_KERNEL_FACTORY_REG(RealDiv, aclnnDiv, 3)
 }  // namespace kernel
 }  // namespace mindspore

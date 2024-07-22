@@ -105,6 +105,7 @@ Pointwise Operations
     mindspore.mint.logical_and
     mindspore.mint.logical_not
     mindspore.mint.logical_or
+    mindspore.mint.logical_xor
     mindspore.mint.mul
     mindspore.mint.neg
     mindspore.mint.negative

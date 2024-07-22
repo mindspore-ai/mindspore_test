@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
+#include <memory>
 #include "infer/ops_func_impl/logical_xor.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ops/ops_func_impl/simple_infer.h"
 
 namespace mindspore {
 namespace ops {
@@ -27,7 +29,16 @@ BaseShapePtr LogicalXorFuncImpl::InferShape(const PrimitivePtr &primitive,
 
 TypePtr LogicalXorFuncImpl::InferType(const PrimitivePtr &primitive,
                                       const std::vector<AbstractBasePtr> &input_args) const {
-  return input_args[kIndex0]->GetType()->Clone();
+  return std::make_shared<TensorType>(kBool);
 }
+
+TypePtrList LogicalXorFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
+  return {kBool};
+}
+
+ShapeArray LogicalXorFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
+  return {BroadCastInferShape(primitive->name(), input_values)};
+}
+REGISTER_SIMPLE_INFER(kNameLogicalXor, LogicalXorFuncImpl)
 }  // namespace ops
 }  // namespace mindspore

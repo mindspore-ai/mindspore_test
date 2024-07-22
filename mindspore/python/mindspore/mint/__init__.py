@@ -173,7 +173,7 @@ from mindspore.ops.functional import logical_not
 # 67
 from mindspore.ops.functional import logical_or
 # 68
-
+from mindspore.ops.functional import logical_xor
 # 69
 from mindspore.ops.functional import less_equal, le
 # 70
@@ -1126,7 +1126,7 @@ __all__ = [
     # 67
     'logical_or',
     # 68
-
+    'logical_xor',
     # 69
     'less_equal',
     'le',

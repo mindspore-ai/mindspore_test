@@ -10184,10 +10184,6 @@ def logical_xor(input, other):
         >>> print(output)
         [False True]
     """
-    if isinstance(input, Tensor) and input.dtype != mstype.bool_:
-        input = input.astype(mstype.bool_)
-    if isinstance(other, Tensor) and other.dtype != mstype.bool_:
-        other = other.astype(mstype.bool_)
     return logical_xor_(input, other)
 
 

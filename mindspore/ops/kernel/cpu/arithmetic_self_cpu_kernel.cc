@@ -174,12 +174,22 @@ void LogicalEqual(ArithmeticSelfCpuKernelFuncBool<T, S> *content, const T *in, S
 
 template <typename T, typename S>
 void LogicalNot(ArithmeticSelfCpuKernelFuncBool<T, S> *content, const T *in, S *out, size_t size) {
-  auto task = [&in, &out](size_t start, size_t end) {
-    for (size_t i = start; i < end; i++) {
-      out[i] = !in[i];
-    }
-  };
-  ParallelLaunchAutoSearch(task, size, content, &content->parallel_search_info_);
+  if constexpr (!((std::is_same_v<T, complex64>) || (std::is_same_v<T, complex128>))) {
+    auto task = [&in, &out](size_t start, size_t end) {
+      for (size_t i = start; i < end; i++) {
+        out[i] = !in[i];
+      }
+    };
+    ParallelLaunchAutoSearch(task, size, content, &content->parallel_search_info_);
+  } else {
+    auto a = !(*in).real() && !(*in).imag();
+    auto task = [&a, &out](size_t start, size_t end) {
+      for (size_t i = start; i < end; i++) {
+        out[i] = a;
+      }
+    };
+    ParallelLaunchAutoSearch(task, size, content, &content->parallel_search_info_);
+  }
 }
 
 template <typename T, typename S>
@@ -815,18 +825,24 @@ void ArithmeticSelfCpuKernelFuncBool<T, S>::LaunchKernel(const std::vector<Kerne
   const auto *input = reinterpret_cast<T *>(inputs[0]->device_ptr());
   auto *output = reinterpret_cast<S *>(outputs[0]->device_ptr());
   const size_t lens = outputs[0]->size() / sizeof(S);
-  if (this->kernel_name_ == kAbsOpName) {
-    return LogicalEqual<T, S>(this, input, output, lens);
-  } else if (this->kernel_name_ == kReciprocal) {
-    return Reciprocal<T, S>(this, input, output, lens);
-  } else if (this->kernel_name_ == kLogicalNot) {
-    return LogicalNot<T, S>(this, input, output, lens);
-  } else if (this->kernel_name_ == kReLU) {
-    return ReluBool<T, S>(this, input, output, lens);
-  } else if (this->kernel_name_ == kSqrt) {
-    return Sqrt<T, S>(this, input, output, lens);
+  if constexpr ((std::is_same<T, complex64>::value) || (std::is_same<T, complex128>::value)) {
+    if (this->kernel_name_ == kLogicalNot) {
+      return LogicalNot<T, S>(this, input, output, lens);
+    }
   } else {
-    MS_LOG(EXCEPTION) << "For 'ArithmeticSelf', it does not support " << this->kernel_name_ << " with bool as input.";
+    if (this->kernel_name_ == kAbsOpName) {
+      return LogicalEqual<T, S>(this, input, output, lens);
+    } else if (this->kernel_name_ == kReciprocal) {
+      return Reciprocal<T, S>(this, input, output, lens);
+    } else if (this->kernel_name_ == kLogicalNot) {
+      return LogicalNot<T, S>(this, input, output, lens);
+    } else if (this->kernel_name_ == kReLU) {
+      return ReluBool<T, S>(this, input, output, lens);
+    } else if (this->kernel_name_ == kSqrt) {
+      return Sqrt<T, S>(this, input, output, lens);
+    } else {
+      MS_LOG(EXCEPTION) << "For 'ArithmeticSelf', it does not support " << this->kernel_name_ << " with bool as input.";
+    }
   }
 }
 
@@ -1142,7 +1158,11 @@ static std::map<std::string, std::vector<std::pair<KernelAttr, ArithFuncCreator>
     {KernelAttr().AddInputAttr(kNumberTypeFloat32).AddOutputAttr(kNumberTypeBool),
      &CreateArithSelfFuncBool<float, bool>},
     {KernelAttr().AddInputAttr(kNumberTypeFloat64).AddOutputAttr(kNumberTypeBool),
-     &CreateArithSelfFuncBool<double, bool>}}},
+     &CreateArithSelfFuncBool<double, bool>},
+    {KernelAttr().AddInputAttr(kNumberTypeComplex64).AddOutputAttr(kNumberTypeBool),
+     &CreateArithSelfFuncBool<complex64, bool>},
+    {KernelAttr().AddInputAttr(kNumberTypeComplex128).AddOutputAttr(kNumberTypeBool),
+     &CreateArithSelfFuncBool<complex128, bool>}}},
   {kAsin,
    {{KernelAttr().AddInputAttr(kNumberTypeFloat16).AddOutputAttr(kNumberTypeFloat16),
      &CreateArithSelfFuncFloat16<float16, float16>},
