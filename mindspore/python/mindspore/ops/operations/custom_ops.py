@@ -338,7 +338,7 @@ class Custom(ops.PrimitiveWithInfer):
             or the attributes of `func` differs in different targets.
 
     Supported Platforms:
-        ``GPU`` ``CPU`` ``ASCEND``
+        ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> import numpy as np
