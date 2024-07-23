@@ -1251,6 +1251,28 @@ void DataPrepareActor::CopyDataFromDeviceTensorStore(const AnfNodePtr &front_nod
   }
 }
 
+namespace {
+bool NeedAllocDeviceMemory(const DeviceTensorPtr &device_tensor, const AnfNodePtr &backend_node,
+                           const AnfNodePtr &front_node) {
+  // If front_node has more than one device tensor, it means the node may used in multi graphs.
+  // so we will clear the device address flag of ignore.
+  const auto &device_tensors = DeviceTensorStore::GetInstance().Fetch(front_node.get());
+  if (TEST_FLAG(device_tensor->flag(), device::kDeviceAddressFlagIgnoreDevicePtr) && device_tensors.size() > 1) {
+    device_tensor->ClearFlag(device::kDeviceAddressFlagIgnoreDevicePtr);
+    MS_LOG(INFO) << "Clear ignore flag for device tensor:" << device_tensor
+                 << " in parameter:" << backend_node->DebugString();
+    return true;
+  }
+  // If node address has flag ignore, we will not prepare device data for it.
+  if (TEST_FLAG(device_tensor->flag(), device::kDeviceAddressFlagIgnoreDevicePtr)) {
+    MS_LOG(DEBUG) << "Skip alloc device memory for parameter:" << backend_node->DebugString()
+                  << " device address:" << device_tensor;
+    return false;
+  }
+  return true;
+}
+}  // namespace
+
 // Prepare the device data for persistent device tensor of weight node from host tensor.
 void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, const AnfNodePtr &front_node,
                                                 const TensorPtr &tensor, const DeviceContext *device_context,
@@ -1276,6 +1298,9 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
 
   auto device_tensor = AnfAlgo::GetMutableOutputAddr(backend_node, 0, false);
   MS_EXCEPTION_IF_NULL(device_tensor);
+  if (!NeedAllocDeviceMemory(device_tensor, backend_node, front_node)) {
+    return;
+  }
   auto host_tensor_address = std::dynamic_pointer_cast<DeviceTensor>(tensor->device_address());
   // Use the device address of host tensor to set device tensor.
   bool is_need_sync = IsNeedSync(tensor);
