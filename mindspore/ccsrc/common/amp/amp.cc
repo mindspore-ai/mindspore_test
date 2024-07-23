@@ -20,7 +20,7 @@
 namespace mindspore {
 namespace amp {
 static std::stack<AmpStrategyPtr> g_AmpStrategyStack;
-PrimArgList g_SetDtypeOptList = {PrimArg("ProdExt", {}), PrimArg("SumExt", {})};
+PrimArgList g_SetDtypeOptList = {};
 PrimArgList g_SetDtypeList = {};
 PrimArgList g_AutoPromoteList = {PrimArg("Addcdiv", {}),  PrimArg("Addcmul", {}),       PrimArg("Cross", {}),
                                  PrimArg("Dot", {}),      PrimArg("GridSampler2D", {}), PrimArg("GridSampler3D", {}),

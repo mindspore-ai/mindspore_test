@@ -60,6 +60,8 @@ AMP_WHITE_LIST = [
     gen.Convolution,
     P.Einsum,
     P.Dense,
+    gen.MatMulExt,
+    gen.BatchMatMulExt,
 ]
 
 AMP_BLACK_LIST = [
@@ -99,7 +101,10 @@ AMP_BLACK_LIST = [
     P.Softmax,
     P.LogSoftmax,
     P.CumProd,
-    P.CumSum
+    P.CumSum,
+    gen.CumsumExt,
+    gen.ProdExt,
+    gen.SumExt,
 ]
 
 # Indicates which inputs of primitives need to be converted
