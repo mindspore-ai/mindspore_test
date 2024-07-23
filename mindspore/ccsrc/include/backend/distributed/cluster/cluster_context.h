@@ -38,6 +38,8 @@ namespace distributed {
 namespace cluster {
 // The environment variable name represents the node id of a certain process(compute graph node).
 constexpr char kNodeId[] = "MS_NODE_ID";
+// The environment variable name represents the device id of a certain process(compute graph node).
+constexpr char kDeviceId[] = "DEVICE_ID";
 class ActorRouteTableProxy;
 // Node role based cluster built by MindSpore communication framework.
 class BACKEND_EXPORT ClusterContext {

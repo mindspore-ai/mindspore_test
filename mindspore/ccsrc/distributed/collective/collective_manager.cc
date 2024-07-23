@@ -519,11 +519,12 @@ bool CollectiveManager::InitHostCommlib() {
 
 bool CollectiveManager::InitDeviceCommLib() {
   std::string device_type = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  uint32_t device_id = MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID);
   // If library on device side is not supported, replace it with host library.
   if (!device_lib_supported_) {
     device_type = kCPUDevice;
   }
-  device::DeviceContextKey device_key = {device_type, local_rank_id_};
+  device::DeviceContextKey device_key = {device_type, device_id};
   device_ctx_ = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(device_key);
   MS_EXCEPTION_IF_NULL(device_ctx_);
   // We can initialize device context now because device id(local_rank_id_) is already assigned.
@@ -536,7 +537,7 @@ bool CollectiveManager::InitDeviceCommLib() {
   MS_EXCEPTION_IF_NULL(device_comm_lib_instance_);
 
   MS_LOG(INFO) << "Start initializing communication library on device side...";
-  RETURN_IF_FALSE_WITH_LOG(device_comm_lib_instance_->Initialize(global_rank_id_, global_rank_size_, local_rank_id_),
+  RETURN_IF_FALSE_WITH_LOG(device_comm_lib_instance_->Initialize(global_rank_id_, global_rank_size_, device_id),
                            "Failed to initialize communication library on device side.");
   MS_LOG(INFO) << "Communication library on device side is successfully initialized.";
   return true;
@@ -583,14 +584,20 @@ bool CollectiveManager::AssignLocalRank() {
                            "GetLocalGroupRankAndSize for world group failed.");
   host_comm_lib_instance_->SetLocalGroupRank(host_comm_lib_instance_->global_group_name(), local_rank_id_);
   host_comm_lib_instance_->SetLocalGroupSize(host_comm_lib_instance_->global_group_name(), local_group_size);
-  // No need to reset device_id if library on device side is not supported, e.g., ascend.
-  if (device_lib_supported_) {
+
+  MS_LOG(INFO) << "The local rank id assigned for this process is " << local_rank_id_;
+  common::SetEnv("RANK_ID", std::to_string(global_rank_id_).c_str());
+  common::SetEnv("RANK_SIZE", std::to_string(global_rank_size_).c_str());
+  // When starting with msrun and adding argument '--rank_table_file', device_id of ms_context will be set from env
+  // "DEVICE_ID"; here env "DEVICE_ID" is not equal to "local_rank_id_".
+  if (!common::GetEnv("RANK_TABLE_FILE").empty()) {
+    MsContext::GetInstance()->set_param_inner<uint32_t>(MS_CTX_DEVICE_ID, std::stoi(common::GetEnv("DEVICE_ID")));
+    MS_LOG(INFO) << "The device_id of ms_context is set to env DEVICE_ID [" << std::stoi(common::GetEnv("DEVICE_ID"))
+                 << "].";
+  } else {
     MsContext::GetInstance()->set_param_inner<uint32_t>(MS_CTX_DEVICE_ID, local_rank_id_);
-    MS_LOG(INFO) << "The local rank id assigned for this process is " << local_rank_id_
-                 << ". device_id of ms_context is set.";
-    common::SetEnv("RANK_ID", std::to_string(global_rank_id_).c_str());
     common::SetEnv("DEVICE_ID", std::to_string(local_rank_id_).c_str());
-    common::SetEnv("RANK_SIZE", std::to_string(global_rank_size_).c_str());
+    MS_LOG(INFO) << "The device_id of ms_context is set to local rank id [" << local_rank_id_ << "].";
   }
 
   return true;

@@ -60,6 +60,9 @@ struct NodeInfo {
   // The role name of this cluster node.
   std::string role;
 
+  // The device id of this cluster node.
+  std::string device_id;
+
   // The rank id of this cluster node(only for compute graph node).
   uint32_t rank_id{0};
 
@@ -201,6 +204,10 @@ class MetaServerNode : public NodeBase {
   // Check newly registered node's rank id is valid. If not, msn should reject this register request.
   bool CheckRankIdValidation(const std::string &node_id, const std::string &role, uint32_t rank_id,
                              const std::string &host_ip, std::string *reject_reason);
+
+  // Reassign node ranks based on rank table file. This method should be called only after cluster is successfully built
+  // and env 'RANK_TABLE_FILE' is set. It reassigns all node's rank ids according to rank table file.
+  bool ReassignNodeRankFromRanktablefile();
 
   // Reassign node ranks. This method should be called only after cluster is successfully built. It sorts all nodes with
   // their node ip and node id, then assign their rank ids.
