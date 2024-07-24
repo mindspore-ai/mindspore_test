@@ -388,7 +388,7 @@ class BACKEND_EXPORT KernelExecutor {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";
   }
   // Launch callback.
-  virtual bool LaunchCallback(std::function<void(void)> callback_func, size_t stream_id) const {
+  virtual bool LaunchCallback(std::function<void(void)> callback_func, size_t stream_id, bool is_block = false) const {
     callback_func();
     return true;
   };

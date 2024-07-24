@@ -189,7 +189,12 @@ void DebugActor::AscendKbkDump(const CNodePtr &cnode, const std::vector<DeviceTe
       read_data = CheckReadData(cnode);
     }
     if ((read_data && e2e_dump_enabled) || !sync_ok) {
-      ReadDataAndDump(cnode, input_device_tensors, output_device_tensors, exec_order_, device_context, abnormal_dump);
+      if (dump_json_parser.e2e_sync_dump_enabled()) {
+        ReadDataAndDump(cnode, input_device_tensors, output_device_tensors, exec_order_, device_context, abnormal_dump);
+      } else {
+        DumpDataViaCallback(cnode, input_device_tensors, output_device_tensors, device_context);
+      }
+
       if (!sync_ok) {
         MS_LOG(EXCEPTION) << "Sync stream error!";
       }

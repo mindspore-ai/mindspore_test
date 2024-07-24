@@ -96,6 +96,8 @@ void DumpKernelTensorStats(const DeviceContext *device_context, vector<device::D
   uint32_t rank_id = GetRankId();
   string filename = GenerateDumpPath(graph_id, rank_id) + "/" + kCsvFileName;
   CsvWriter csv;
+  std::lock_guard<std::mutex> lock(CsvFileMutexManager::GetInstance().GetCsvMutex(filename));
+
   auto valid_index = GetValidDumpIndex(node, tensors.size(), is_input);
   if (!valid_index.empty()) {
     if (!csv.OpenFile(filename, csv_header)) {
