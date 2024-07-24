@@ -106,6 +106,8 @@ bool TensorStatDump::DumpTensorStatsToFile(const std::string &dump_path, const s
   std::string filename = dump_path + "/" + kCsvFileName;
   // try to open file
   CsvWriter csv;
+  std::lock_guard<std::mutex> lock(CsvFileMutexManager::GetInstance().GetCsvMutex(filename));
+
   const auto csv_header = CsvHeaderUtil::GetInstance().GetStatCsvHeader();
   if (!csv.OpenFile(filename, csv_header)) {
     MS_LOG(WARNING) << "Open statistic dump file failed, skipping current statistics";

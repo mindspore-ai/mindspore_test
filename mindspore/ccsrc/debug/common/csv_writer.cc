@@ -24,13 +24,26 @@
 #include "include/common/debug/common.h"
 
 namespace mindspore {
+
+CsvFileMutexManager &CsvFileMutexManager::GetInstance() {
+  static CsvFileMutexManager instance;
+  return instance;
+}
+
+std::mutex &CsvFileMutexManager::GetCsvMutex(const std::string &file_name) {
+  std::lock_guard<std::mutex> lock(manager_mutex);
+  if (csv_mutex_map.find(file_name) == csv_mutex_map.end()) {
+    csv_mutex_map[file_name];
+  }
+  return csv_mutex_map[file_name];
+}
+
 CsvWriter &CsvWriter::GetInstance() {
   static CsvWriter instance = CsvWriter();
   return instance;
 }
 
 bool CsvWriter::OpenFile(const std::string &path, const std::string &header, bool trunc) {
-  std::shared_lock<std::shared_mutex> lock(write_mutex_);
   if (file_.is_open() && path == file_path_str_) {
     return true;
   }

@@ -19,12 +19,23 @@
 
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <fstream>
 #include <mutex>
 #include <shared_mutex>
 #include "utils/ms_utils.h"
 
 namespace mindspore {
+class CsvFileMutexManager {
+ public:
+  static CsvFileMutexManager &GetInstance();
+  std::mutex &GetCsvMutex(const std::string &file_name);
+
+ private:
+  std::unordered_map<std::string, std::mutex> csv_mutex_map;
+  std::mutex manager_mutex;
+};
+
 class CsvWriter {
  public:
   static CsvWriter &GetInstance();

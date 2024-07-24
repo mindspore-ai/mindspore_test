@@ -64,6 +64,7 @@ class BACKEND_EXPORT DumpJsonParser {
   std::string dump_layer() const { return dump_layer_; }
   bool async_dump_enabled() const { return async_dump_enabled_; }
   bool e2e_dump_enabled() const { return e2e_dump_enabled_; }
+  bool e2e_sync_dump_enabled() const { return e2e_sync_dump_enabled_; }
   std::vector<std::string> statistic_category() const { return statistic_category_; }
   uint32_t dump_mode() const { return dump_mode_; }
   std::string path() const { return path_; }
@@ -126,6 +127,7 @@ class BACKEND_EXPORT DumpJsonParser {
   inline static std::mutex lock_;
   bool async_dump_enabled_{false};
   bool e2e_dump_enabled_{false};
+  bool e2e_sync_dump_enabled_{false};
   bool is_dataset_sink_{false};
   bool dumpdatacallback_registered_{false};
   uint32_t dump_mode_{0};
@@ -177,6 +179,7 @@ class BACKEND_EXPORT DumpJsonParser {
   void ParseOpDebugMode(const nlohmann::json &content);
   void ParseFileFormat(const nlohmann::json &content);
   void ParseStatCalcMode(const nlohmann::json &content);
+  void ParseE2eSyncDumpEnable(const nlohmann::json &content);
 
   void JudgeDumpEnabled();
   void JsonConfigToString();

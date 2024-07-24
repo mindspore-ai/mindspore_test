@@ -940,7 +940,7 @@ void GeKernelExecutor::CreateKernel(const std::vector<CNodePtr> &nodes) const {
 }
 
 kernel::KernelModPtr GeKernelExecutor::CreateKernelMod(const std::string &op_name) const {
-  // Note: Only support generage aclnn kernel mod current.
+  // Note: Only support generate aclnn kernel mod current.
   auto kernel_ptr = kernel::Factory<kernel::AclnnKernelMod>::Instance().Create(op_name);
   if (kernel_ptr == nullptr) {
     MS_LOG(WARNING) << "aclnn can't find Kernel[" << op_name << "]";
@@ -1175,16 +1175,17 @@ void AclrtLaunchCallback(void *user_data) {
   delete callback_func;
 }
 
-bool GeKernelExecutor::LaunchCallback(CallbackFunc callback_func, size_t stream_id) const {
+bool GeKernelExecutor::LaunchCallback(CallbackFunc callback_func, size_t stream_id, bool is_block) const {
   auto stream = AscendStreamMng::GetInstance().GetStream(stream_id);
   if (stream == nullptr) {
     stream_id = kDefaultStreamIndex;
     stream = AscendStreamMng::GetInstance().GetStream(stream_id);
   }
   MS_EXCEPTION_IF_NULL(stream);
+  auto block_type =
+    is_block ? aclrtCallbackBlockType::ACL_CALLBACK_BLOCK : aclrtCallbackBlockType::ACL_CALLBACK_NO_BLOCK;
   auto callback_func_ptr = new CallbackFunc(callback_func);
-  aclError ret = CALL_ASCEND_API(aclrtLaunchCallback, AclrtLaunchCallback, callback_func_ptr,
-                                 aclrtCallbackBlockType::ACL_CALLBACK_NO_BLOCK, stream);
+  aclError ret = CALL_ASCEND_API(aclrtLaunchCallback, AclrtLaunchCallback, callback_func_ptr, block_type, stream);
   MS_LOG(DEBUG) << "Launch callback for stream_id : " << stream_id << ", ret : " << ret << ".";
   if (ret) {
     delete callback_func_ptr;

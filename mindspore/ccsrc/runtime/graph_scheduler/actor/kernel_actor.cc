@@ -162,7 +162,7 @@ void KernelActor::InitInputInfo() {
   input_kernel_tensors_for_infer_.resize(real_input_num_);
   for (auto &input_address : input_device_tensors_) {
     (void)memory_free_list_.emplace_back(input_address);
-    if (recorder_aid_ != nullptr || debug_aid_ != nullptr) {
+    if (recorder_aid_ != nullptr) {
       (void)mem_info_.inputs_.emplace_back(std::make_shared<Address>());
     }
   }
@@ -214,7 +214,7 @@ void KernelActor::InitOutputInfo() {
                   << " addr:" << output_address << " type:" << output_address->type_id()
                   << ", kernel tensor addr:" << output_address->kernel_tensor().get()
                   << ", kernel tensor: " << output_address->kernel_tensor()->ToString();
-    if (recorder_aid_ != nullptr || debug_aid_ != nullptr) {
+    if (recorder_aid_ != nullptr) {
       (void)mem_info_.outputs_.emplace_back(std::make_shared<Address>());
     }
     // The output taken over by soma does not need to allocate memory.
@@ -270,7 +270,7 @@ void KernelActor::InitWorkspaceInfo() {
     MS_EXCEPTION_IF_NULL(workspace_address);
     (void)workspace_device_tensors_.emplace_back(workspace_address.get());
     (void)workspace_kernel_tensors_.emplace_back(workspace_address->kernel_tensor().get());
-    if (recorder_aid_ != nullptr || debug_aid_ != nullptr) {
+    if (recorder_aid_ != nullptr) {
       (void)mem_info_.workspaces_.emplace_back(std::make_shared<Address>());
     }
 
@@ -421,7 +421,7 @@ void KernelActor::FetchWorkspaceDeviceTensor() {
   if (workspace_device_tensors_.size() > workspace_sizes.size()) {
     size_t size = workspace_device_tensors_.size() - workspace_sizes.size();
     (void)workspace_device_tensors_.erase(workspace_device_tensors_.end() - size, workspace_device_tensors_.end());
-    if (recorder_aid_ != nullptr || debug_aid_ != nullptr) {
+    if (recorder_aid_ != nullptr) {
       (void)mem_info_.workspaces_.erase(mem_info_.workspaces_.end() - size, mem_info_.workspaces_.end());
     }
 
@@ -445,7 +445,7 @@ void KernelActor::FetchWorkspaceDeviceTensor() {
                     << " addr:" << device_address;
       AnfAlgo::SetWorkspaceAddr(device_address, i, kernel_.get());  // set to kernel_info
       (void)workspace_device_tensors_.emplace_back(device_address.get());
-      if (recorder_aid_ != nullptr || debug_aid_ != nullptr) {
+      if (recorder_aid_ != nullptr) {
         (void)mem_info_.workspaces_.emplace_back(std::make_shared<Address>());
       }
       (void)memory_alloc_list_.emplace_back(device_address.get());
@@ -628,22 +628,15 @@ void KernelActor::OnMemoryAllocFinish(OpContext<DeviceTensor> *const context) {
                                               kernel_->fullname_with_scope()
                                          << trace::DumpSourceLines(kernel_);
   }
-
   // Record mem info, because async send may free device info.
-  if (recorder_aid_ != nullptr || debug_aid_ != nullptr) {
-    SetMemInfoForDebugAndRdr();
-  }
-
-  // Debug actor is blocked, must wait debug actor callback message to process continue.
-  if (debug_aid_ != nullptr) {
-    ActorDispatcher::SendSync(*debug_aid_, &DebugActor::DebugPostLaunch, kernel_, input_device_tensors_,
-                              output_device_tensors_, device_contexts_[0], context, &GetAID());
+  if (recorder_aid_ != nullptr) {
+    SetMemInfoForRdr();
   }
 
   PostLaunchKernel(context);
 }
 
-void KernelActor::SetMemInfoForDebugAndRdr() {
+void KernelActor::SetMemInfoForRdr() {
   for (size_t i = 0; i < input_device_tensors_.size(); ++i) {
     mem_info_.inputs_[i]->addr = input_device_tensors_[i]->GetMutablePtr();
     mem_info_.inputs_[i]->size = input_device_tensors_[i]->GetSize();
@@ -919,17 +912,10 @@ void KernelActor::ExecuteLaunchKernelTask(OpContext<DeviceTensor> *const context
                                          << trace::DumpSourceLines(kernel_);
   }
 
-  if (debug_aid_ != nullptr || recorder_aid_ != nullptr) {
-    SetMemInfoForDebugAndRdr();
-
-    if (debug_aid_ != nullptr) {
-      ActorDispatcher::SendSync(*debug_aid_, &DebugActor::DebugPostLaunch, kernel_, input_device_tensors_,
-                                output_device_tensors_, device_contexts_[0], context, &GetAID());
-    }
-    if (recorder_aid_ != nullptr) {
-      ActorDispatcher::Send(*recorder_aid_, &RecorderActor::RecordInfo, kernel_->fullname_with_scope(), &mem_info_,
-                            device_contexts_[0], context);
-    }
+  if (recorder_aid_ != nullptr) {
+    SetMemInfoForRdr();
+    ActorDispatcher::Send(*recorder_aid_, &RecorderActor::RecordInfo, kernel_->fullname_with_scope(), &mem_info_,
+                          device_contexts_[0], context);
   }
 
   if (is_dynamic_shape_ && kernel_mod_->IsNeedUpdateOutputShapeAndSize()) {
@@ -1040,6 +1026,24 @@ void TrackInputMemory(const std::vector<DeviceTensor *> &input_device_tensors, c
 }
 }  // namespace
 
+void KernelActor::DispatchDebugActor(OpContext<DeviceTensor> *const context) {
+  // Debug actor is blocked, must wait debug actor callback message to process continue.
+  if (debug_aid_ != nullptr) {
+    ActorDispatcher::SendSync(*debug_aid_, &DebugActor::DebugPostLaunch, kernel_, input_device_tensors_,
+                              output_device_tensors_, device_contexts_[0], context, &GetAID());
+  }
+}
+
+bool KernelActor::LaunchKernelWithDebug(OpContext<DeviceTensor> *const context) {
+  MS_LOG(DEBUG) << "Begin launch kernel: " << kernel_->fullname_with_scope();
+  auto ret = device_contexts_[0]->GetKernelExecutor(false)->LaunchKernel(
+    kernel_, input_kernel_tensors_, workspace_kernel_tensors_, output_kernel_tensors_, kernel_mod_, stream_);
+  MS_LOG(DEBUG) << "End launch kernel: " << kernel_->fullname_with_scope();
+
+  DispatchDebugActor(context);
+  return ret;
+}
+
 bool KernelActor::LaunchKernel(OpContext<DeviceTensor> *const context, bool is_skip_launch) {
   if (device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
     TrackInputMemory(input_device_tensors_, GetAID().Name(), depend_shape_input_list_);
@@ -1060,6 +1064,7 @@ bool KernelActor::LaunchKernel(OpContext<DeviceTensor> *const context, bool is_s
     MS_EXCEPTION_IF_NULL(output_device_tensors_[0]);
     if (input_device_tensors_[0]->GetPtr() == output_device_tensors_[0]->GetPtr()) {
       MS_LOG(DEBUG) << "Skipped launch kernel: " << kernel_->fullname_with_scope();
+      DispatchDebugActor(context);
       return true;
     } else {
       MS_LOG(ERROR) << "Input address:" << input_device_tensors_[0]->GetPtr()
@@ -1071,10 +1076,7 @@ bool KernelActor::LaunchKernel(OpContext<DeviceTensor> *const context, bool is_s
 
   // Cpu not support stream lock with LaunchKernel.
   if (!ActorDispatcher::enable_multi_stream() || is_multi_stream_process_skipped_) {
-    MS_LOG(DEBUG) << "Begin launch kernel: " << kernel_->fullname_with_scope();
-    auto ret = device_contexts_[0]->GetKernelExecutor(false)->LaunchKernel(
-      kernel_, input_kernel_tensors_, workspace_kernel_tensors_, output_kernel_tensors_, kernel_mod_, stream_);
-    MS_LOG(DEBUG) << "End launch kernel: " << kernel_->fullname_with_scope();
+    auto ret = LaunchKernelWithDebug(context);
     return ret;
   }
 
@@ -1084,17 +1086,11 @@ bool KernelActor::LaunchKernel(OpContext<DeviceTensor> *const context, bool is_s
     std::lock_guard<std::mutex> lock(
       multi_stream_controller->GetStreamMutex(device_contexts_[0], kernel_info_->stream_id()));
     ProcessMultiStreamBeforeKernelLaunch(context);
-    MS_LOG(DEBUG) << "Begin launch kernel: " << kernel_->fullname_with_scope();
-    ret = device_contexts_[0]->GetKernelExecutor(false)->LaunchKernel(
-      kernel_, input_kernel_tensors_, workspace_kernel_tensors_, output_kernel_tensors_, kernel_mod_, stream_);
-    MS_LOG(DEBUG) << "End launch kernel: " << kernel_->fullname_with_scope();
+    ret = LaunchKernelWithDebug(context);
     ProcessMultiStreamAfterKernelLaunch(context);
   } else {
     ProcessMultiStreamBeforeKernelLaunch(context);
-    MS_LOG(DEBUG) << "Begin launch kernel: " << kernel_->fullname_with_scope();
-    ret = device_contexts_[0]->GetKernelExecutor(false)->LaunchKernel(
-      kernel_, input_kernel_tensors_, workspace_kernel_tensors_, output_kernel_tensors_, kernel_mod_, stream_);
-    MS_LOG(DEBUG) << "End launch kernel: " << kernel_->fullname_with_scope();
+    ret = LaunchKernelWithDebug(context);
     ProcessMultiStreamAfterKernelLaunch(context);
   }
   return ret;

@@ -48,6 +48,10 @@ void ReadDataAndDump(const CNodePtr &cnode, std::vector<device::DeviceAddress *>
                      std::vector<device::DeviceAddress *> output_kernel_tensors, uint32_t exec_order,
                      const DeviceContext *device_context, const bool abnormal_dump = false);
 
+void DumpDataViaCallback(const CNodePtr &cnode, const std::vector<device::DeviceAddress *> &input_device_tensors,
+                         const std::vector<device::DeviceAddress *> &output_device_tensors,
+                         const DeviceContext *device_context);
+
 std::string CheckDatasetSinkMode(const KernelGraphPtr &graph_ptr);
 
 void LoadDataForDebugger(const KernelGraphPtr &graph_ptr);
