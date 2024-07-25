@@ -555,6 +555,7 @@ void DeviceAddressUtils::CreateKernelOutputDeviceAddress(const DeviceContext *de
       auto output_format = AnfAlgo::GetOutputFormat(kernel, i);
       auto output_type = AnfAlgo::GetOutputDeviceDataType(kernel, i);
       auto address_size = AnfAlgo::GetOutputTensorMemSize(kernel, i);
+
       UserDataPtr user_data = nullptr;
       auto kernel_info = dynamic_cast<device::KernelInfo *>(kernel->kernel_info());
       MS_EXCEPTION_IF_NULL(kernel_info);

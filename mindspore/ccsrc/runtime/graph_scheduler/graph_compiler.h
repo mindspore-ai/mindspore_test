@@ -32,6 +32,7 @@
 #include "ir/tensor.h"
 #include "include/backend/visible.h"
 #include "kernel/framework_utils.h"
+#include "include/backend/device_type.h"
 
 namespace mindspore {
 using device::DeviceContext;
@@ -218,6 +219,7 @@ class GraphCompiler {
                                                      const DeviceContext *device_context,
                                                      std::vector<KernelGraphPtr> *const all_graphs,
                                                      bool *const need_return_ahead);
+  KernelGraphPtr ConvertGraphToGeNode(KernelGraphPtr kernel_graph, device::DeviceType device_target);
 
   // The member variable 'session_' will be removed after removing session module.
   // Now all the GraphCompiler share the same 'session_'.

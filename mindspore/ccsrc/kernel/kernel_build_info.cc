@@ -227,6 +227,12 @@ size_t KernelBuildInfo::GetOutputNumWithoutMonad() const {
   return static_cast<size_t>(count);
 }
 
+size_t KernelBuildInfo::GetInputNumWithoutMonad() const {
+  const auto count = std::count_if(inputs_device_type_.begin(), inputs_device_type_.end(),
+                                   [](TypeId type) { return type != TypeId::kObjectTypeUMonad; });
+  return static_cast<size_t>(count);
+}
+
 std::string KernelBuildInfo::GetInputReshapeType(size_t input_index) const {
   if (input_reshape_type_.empty()) {
     return "";

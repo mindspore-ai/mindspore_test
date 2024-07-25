@@ -38,6 +38,8 @@ class GEMemoryAllocator {
                                const GraphSummary &summary, size_t stream_id, GeDeviceResManager *res_manager);
   static void AllocUnuseInput(const KernelGraphPtr &kernel_graph, const AnfNodePtr &input_node,
                               DeviceAddress *output_addr, GeDeviceResManager *res_manager);
+  static void AllocUnuseInput(const KernelGraphPtr &kernel_graph, KernelTensor *tensor,
+                              GeDeviceResManager *res_manager);
 };
 }  // namespace ascend
 }  // namespace device

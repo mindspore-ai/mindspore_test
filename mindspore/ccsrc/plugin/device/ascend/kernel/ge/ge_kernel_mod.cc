@@ -51,7 +51,7 @@ bool GeKernelMod::Launch(const std::vector<KernelTensor *> &inputs, const std::v
     graph_executor_->SetGraphWorkspaceMemory(graph_, workspace[0]->device_ptr(), workspace[0]->size());
   }
 
-  auto ret = graph_executor_->RunGraphRefModeForKernel(graph_, inputs, outputs, stream_ptr);
+  auto ret = graph_executor_->RunGraphRefModeForKernel(graph_, node_, inputs, outputs, stream_ptr);
   if (!ret) {
     MS_LOG(EXCEPTION) << "Launch ge graph failed, graph id: " << std::to_string(graph_->graph_id());
   }
@@ -66,6 +66,14 @@ void GeKernelMod::InitGeMemory(size_t stream_id) const {
     graph_executor_->InitGEFixMemory(graph_, stream_id);
     graph_->set_flag(kAlreadyInitMemory, true);
   }
+}
+
+bool GeKernelMod::IsNeedUpdateOutputShapeAndSize() {
+  MS_EXCEPTION_IF_NULL(graph_);
+  if (graph_->is_dynamic_shape()) {
+    return true;
+  }
+  return false;
 }
 }  // namespace kernel
 }  // namespace mindspore

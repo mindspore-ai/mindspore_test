@@ -458,6 +458,88 @@ void RecursiveSetRunMode(const KernelGraphPtr &graph, std::set<KernelGraphPtr> *
 }
 }  // namespace
 
+KernelGraphPtr GraphCompiler::ConvertGraphToGeNode(KernelGraphPtr kernel_graph, device::DeviceType device_target) {
+  MS_LOG(INFO) << "Start ConvertGraphToGeNode";
+
+  auto new_kernel_graph = session_->NewKernelGraph();
+  new_kernel_graph->set_device_target(device_target);
+
+  // add GEGraphOp
+  std::vector<AnfNodePtr> call_inline_inputs = {
+    NewValueNode(std::make_shared<Primitive>(prim::kPrimGEGraphOp->name()))};
+
+  auto graph_parameters = kernel_graph->parameters();
+
+  auto graph_inputs = kernel_graph->input_nodes();
+  auto new_graph_inputs = new_kernel_graph->MutableInputs();
+  MS_EXCEPTION_IF_NULL(new_graph_inputs);
+  // exclude tuple parameters, and keep the order
+  for (auto &input : graph_parameters) {
+    MS_EXCEPTION_IF_NULL(input);
+    if (std::find(graph_inputs.begin(), graph_inputs.end(), input) == graph_inputs.end()) {
+      continue;
+    }
+    // create new input
+    AnfNodePtr new_node;
+    if (input->isa<Parameter>()) {
+      new_node = session_->CreateNewParameter(input, new_kernel_graph.get());
+    } else {
+      MS_LOG(EXCEPTION) << "input node is not parameter or cnode, node: " << input->DebugString();
+    }
+    MS_EXCEPTION_IF_NULL(new_node);
+
+    // add new input to maps
+    bool is_in_map = false;
+    auto front_node = kernel_graph->GetFrontAnfByBackendAnf(input);
+    if (front_node != nullptr) {
+      new_kernel_graph->FrontBackendMapAdd(front_node, new_node);
+      is_in_map = true;
+    }
+    auto ele_front_node = kernel_graph->GetElementInTupleBackendFrontIndexMap(input);
+    if (ele_front_node.first != nullptr) {
+      new_kernel_graph->AddToTupleBackendFrontAnfIndexMap(new_node, ele_front_node);
+      is_in_map = true;
+    }
+    auto internal_front_node = kernel_graph->GetOriginFrontNodeByInternalParameter(input);
+    if (internal_front_node.first != nullptr) {
+      new_kernel_graph->CacheInternalParameterToFrontNode(new_node, internal_front_node);
+      is_in_map = true;
+    }
+
+    if (!is_in_map) {
+      MS_LOG(EXCEPTION) << "node not in map, node: " << input->DebugString() << ", ptr:" << input;
+    }
+    call_inline_inputs.emplace_back(new_node);
+    new_graph_inputs->push_back(new_node);
+    MS_LOG(DEBUG) << "Create new node: " << new_node->DebugString() << " for old node: " << input->DebugString();
+  }
+  if (call_inline_inputs.size() - 1 != graph_inputs.size()) {
+    MS_LOG(EXCEPTION) << "The input size of GeGraphOp [" << call_inline_inputs.size() - 1
+                      << "] and the input size of graph [" << graph_inputs.size() << "] are not equal.";
+  }
+
+  // create GEGraphOp node
+  auto call_inline = new_kernel_graph->NewCNode(call_inline_inputs);
+  MS_EXCEPTION_IF_NULL(call_inline);
+  call_inline->set_abstract(kernel_graph->get_return()->abstract());
+  common::AnfAlgo::SetNodeAttr(kAttrKernelGraph, MakeValue(kernel_graph), call_inline);
+
+  // copy backend_front_anf_map
+  auto sub_graph_backe_front_map = kernel_graph->backend_front_anf_map();
+  for (auto iter = sub_graph_backe_front_map.begin(); iter != sub_graph_backe_front_map.end(); iter++) {
+    if (new_kernel_graph->GetBackendAnfByFrontAnf(iter->second) != nullptr) {
+      continue;
+    }
+    new_kernel_graph->FrontBackendMapAdd(iter->second, iter->first);
+  }
+
+  new_kernel_graph->SetInputNodes();
+  new_kernel_graph->set_output(call_inline);
+  new_kernel_graph->SetExecOrderByDefault();
+  MS_LOG(INFO) << "End ConvertGraphToGeNode";
+  return new_kernel_graph;
+}
+
 GraphId GraphCompiler::CompileGraph(const GraphSegmentPtr &segment,
                                     const std::pair<AnfNodePtrList, AnfNodePtrList> &io_nodes,
                                     const DeviceContext *device_context, device::RunMode run_mode,
@@ -471,10 +553,56 @@ GraphId GraphCompiler::CompileGraph(const GraphSegmentPtr &segment,
   uint64_t start_time = profiler::GetClockSyscnt();
   auto kernel_graph =
     session_->ConstructKernelGraph(nodes, io_nodes.second, device_target, true, IsEnableZeroCopy(run_in_pynative));
+
+  auto actual_run_mode = run_mode;
+  if (actual_run_mode == device::RunMode::kUnknown) {
+    actual_run_mode = device_context->GetRunMode(kernel_graph);
+  }
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  if (!common::IsDisableRuntimeConfig(common::kRuntimeGeKernel)) {
+    if (context_ptr->backend_policy() == "ge" && device_context->GetDeviceType() == device::DeviceType::kAscend &&
+        !run_in_pynative && (actual_run_mode == device::RunMode::kGraphMode) && IsEnableRefMode()) {
+      kernel_graph->set_run_mode(actual_run_mode);
+
+      if (!AnfAlgo::IsNoRealKernelGraph(kernel_graph)) {  // no real node graph can skip
+        // ge optimize
+        opt::OptimizationWithoutBackend(kernel_graph);
+        // Unify the MindIR, must be before of the kernel_graph optimization.
+        auto kernel_executor = device_context->GetKernelExecutor(false);
+        if (kernel_executor != nullptr) {
+          kernel_executor->AddMindIRPass(kernel_graph);
+        }
+        device_context->GetKernelExecutor(false)->OptimizeGraph(kernel_graph);
+        kernel_graph->SetInputNodes();
+#ifdef ENABLE_DUMP_IR
+        // auto context_ptr = MsContext::GetInstance();
+        // MS_EXCEPTION_IF_NULL(context_ptr);
+        if (context_ptr->CanDump(kIntroductory)) {
+          std::string file_name =
+            "anf_graph_before_convert_to_ge_node_" + std::to_string(kernel_graph->graph_id()) + ".ir";
+          DumpIR(file_name, kernel_graph);
+        }
+#endif
+        // convert graph to ge_node
+        kernel_graph = ConvertGraphToGeNode(kernel_graph, device_target);
+#ifdef ENABLE_DUMP_IR
+        if (context_ptr->CanDump(kIntroductory)) {
+          std::string file_name =
+            "anf_graph_after_convert_to_ge_node_" + std::to_string(kernel_graph->graph_id()) + ".ir";
+          DumpIR(file_name, kernel_graph);
+        }
+#endif
+      }
+      actual_run_mode = device::RunMode::kKernelMode;
+    }
+  }
+
   (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageConstructKernelGraph, start_time,
                                   profiler::GetClockSyscnt(), 1);
   SetGraphDependency(kernel_graph, segment);
-  return CompileGraph(kernel_graph, io_nodes, device_context, run_mode, run_in_pynative);
+  // return graph_id;
+  return CompileGraph(kernel_graph, io_nodes, device_context, actual_run_mode, run_in_pynative);
 }
 
 GraphId GraphCompiler::CompileGraph(const KernelGraphPtr &kernel_graph,
@@ -492,6 +620,7 @@ GraphId GraphCompiler::CompileGraph(const KernelGraphPtr &kernel_graph,
   kernel_graph->erase_flag(kFlagPyNativeRunInGraph);
   SetRunGraphBySingleOpFlag(kernel_graph);
   kernel_graph->UpdateGraphAquireGilAttr();
+
   if (run_mode == device::RunMode::kUnknown) {
     kernel_graph->set_run_mode(device_context->GetRunMode(kernel_graph));
   } else {
@@ -648,6 +777,7 @@ KernelGraphPtr GraphCompiler::ConstructKernelGraphForGraphRunMode(const FuncGrap
     }
     root_graph->SetInputNodes();
     MS_EXCEPTION_IF_NULL(device_context->graph_executor_);
+    device_context->GetKernelExecutor(false)->OptimizeGraph(root_graph);
     if (!device_context->graph_executor_->CompileGraph(root_graph, {})) {
       MS_LOG(EXCEPTION) << "Compile graph failed: " << root_graph->graph_id();
     }

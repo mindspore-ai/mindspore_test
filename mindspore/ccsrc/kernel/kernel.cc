@@ -289,6 +289,13 @@ void KernelTensor::SetShapeVector(const ShapeVector &shape_vector) {
     return;
   }
 
+  if (host_info_->type_id_ == kObjectTypeString) {
+    if (!shape_vector.empty()) {
+      MS_LOG(EXCEPTION) << "For String Type, shape should be empty, but got " << shape_vector;
+    }
+    return;
+  }
+
   MS_LOG(EXCEPTION) << "Only support Scalar/Tensor/MapTensor type to set shape vector currently, but got type: "
                     << TypeIdLabel(host_info_->type_id_);
 }
@@ -306,6 +313,13 @@ void KernelTensor::SetShapeVector(ShapeVector &&shape_vector) {
   }
 
   if (host_info_->type_id_ == kObjectTypeNumber) {
+    if (!shape_vector.empty()) {
+      MS_LOG(EXCEPTION) << "For String Type, shape should be empty, but got " << shape_vector;
+    }
+    return;
+  }
+
+  if (host_info_->type_id_ == kObjectTypeString) {
     if (!shape_vector.empty()) {
       MS_LOG(EXCEPTION) << "For Number Type, shape should be empty, but got " << shape_vector;
     }
@@ -602,7 +616,7 @@ int KernelMod::Resize(const std::vector<KernelTensor *> &inputs, const std::vect
     MS_EXCEPTION_IF_NULL(output);
     size_t type_size = UnitSizeInBytes(output->dtype_id());
     if (type_size == 0) {
-      MS_LOG(WARNING) << "The type size is 0, type: " << TypeIdToType(output->dtype_id())->ToString();
+      MS_LOG(INFO) << "The type size is 0, type: " << TypeIdToType(output->dtype_id())->ToString();
     }
 
     const auto &shape = output->GetShapeVector();

@@ -176,16 +176,6 @@ kernel::KernelModPtr GenerateAkgKernelMod(const CNodePtr &kernel) {
 #endif
 }
 
-bool GraphWithNoRealKernel(const KernelGraphPtr &kernel_graph) {
-  const auto &nodes = kernel_graph->execution_order();
-  for (auto &node : nodes) {
-    if (AnfUtils::IsRealKernel(node)) {
-      return false;
-    }
-  }
-  return true;
-}
-
 void SetAclDebugKernel() {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
@@ -908,6 +898,8 @@ void GeKernelExecutor::OptimizeGraph(const FuncGraphPtr &graph) const {
   MS_EXCEPTION_IF_NULL(kernel_graph);
   // GE graph run mode do optimize in ProcessBeforeRun
   if (kernel_graph->is_graph_run_mode() && IsEnableRefMode()) {
+    std::set<KernelGraphPtr> memo;
+    GEGraphOptimization::GetInstance().OptimizeGEGraph(kernel_graph, &memo);
     return;
   }
   uint64_t start_time = profiler::GetClockSyscnt();
@@ -1078,7 +1070,7 @@ void GeKernelExecutor::PreprocessBeforeRun(const FuncGraphPtr &graph) const {
   }
   // use GE
   if (kernel_graph->is_graph_run_mode() && IsEnableRefMode()) {
-    if (GraphWithNoRealKernel(kernel_graph)) {
+    if (AnfAlgo::IsNoRealKernelGraph(kernel_graph)) {
       return;
     }
     MS_EXCEPTION_IF_NULL(graph_executor_);

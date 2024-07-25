@@ -32,6 +32,7 @@
 #include "include/backend/kernel_graph.h"
 #include "include/backend/optimizer/helper.h"
 #include "transform/acl_ir/ge_adapter_info.h"
+#include "plugin/device/ascend/kernel/acl/acl_kernel_build.h"
 
 namespace mindspore {
 namespace opt {
@@ -198,6 +199,11 @@ AnfNodePtr DealRefOutput::AddAdditionalToRefOutput(const FuncGraphPtr &func_grap
     builder.SetInputsKernelObjectType({kernel::KernelObjectType::TENSOR});
     builder.SetOutputsKernelObjectType({kernel::KernelObjectType::TENSOR});
     AnfAlgo::SetSelectKernelBuildInfo(builder.Build(), identity_node.get());
+
+    // kernel_mod
+    auto kernel_mod_ptr = kernel::AclOpBuild(identity_node);
+    MS_EXCEPTION_IF_NULL(kernel_mod_ptr);
+    AnfAlgo::SetKernelMod(kernel_mod_ptr, identity_node.get());
 
     final_node = identity_node;
     MS_LOG(INFO) << "DealRefOutput add Identity node " << final_node->fullname_with_scope();

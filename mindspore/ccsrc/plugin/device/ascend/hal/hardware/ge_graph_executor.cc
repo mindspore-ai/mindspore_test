@@ -322,22 +322,136 @@ bool CacheFileExists(const std::string &name) {
   return ret;
 }
 
-std::vector<GeTensor> CreateNewGeTensorList(const std::vector<KernelTensor *> &tensors) {
-  std::vector<GeTensor> new_tensors;
-  for (const auto &tensor : tensors) {
-    MS_EXCEPTION_IF_NULL(tensor);
-    auto ge_tensor_desc =
-      transform::TransformUtil::GetGeTensorDesc(tensor->GetShapeVector(), tensor->dtype_id(), kOpFormat_DEFAULT);
-    MS_EXCEPTION_IF_NULL(ge_tensor_desc);
-    ge_tensor_desc->SetPlacement(::ge::kPlacementDevice);
-    GeTensor ge_tensor(*ge_tensor_desc);
-    if (ge_tensor.SetData(reinterpret_cast<uint8_t *>(tensor->device_ptr()), tensor->size(), [](void *) {}) !=
-        ::ge::GRAPH_SUCCESS) {
-      MS_LOG(EXCEPTION) << "Set ge tensor addr failed! addr size is " << tensor->size();
+void SetOutputs(const std::vector<KernelWithIndex> &graph_outputs,
+                const std::vector<transform::GeTensorPtr> &ge_outputs, const std::vector<TypeId> &me_types) {
+  for (size_t i = 0; i < graph_outputs.size(); ++i) {
+    const auto &[output_node, idx] = common::AnfAlgo::FetchRealNodeSkipMonadControl(graph_outputs[i]);
+    const auto &tensor = ge_outputs[i];
+    auto output_addr = AnfAlgo::GetMutableOutputAddr(output_node, idx);
+    ::ge::Placement dp = tensor->GetTensorDesc().GetPlacement();
+    auto &&ge_data_uni = tensor->ResetData();
+    auto deleter = ge_data_uni.get_deleter();
+    auto ge_data = ge_data_uni.release();
+    MS_EXCEPTION_IF_NULL(ge_data);
+    if (dp == ::ge::kPlacementHost) {
+      constexpr int64_t kTensorAlignBytes = 64;
+      if (reinterpret_cast<uintptr_t>(ge_data) % kTensorAlignBytes != 0) {
+        MS_LOG(EXCEPTION) << "Skip zero-copy ge tensor " << reinterpret_cast<uintptr_t>(ge_data)
+                          << ", bytes not aligned with expected.";
+      }
+      if (me_types[i] == TypeId::kObjectTypeString) {
+        MS_LOG_WITH_NODE(EXCEPTION, output_node) << "It is not supported that Output node "
+                                                 << output_node->DebugString() << "'s output data type is string now.";
+      }
+      MS_LOG(DEBUG) << "Zero-copy ge tensor " << reinterpret_cast<uintptr_t>(ge_data) << " as aligned with "
+                    << kTensorAlignBytes << " types.";
+      output_addr->set_is_ptr_persisted(false);
+      output_addr->set_from_mem_pool(false);
+      output_addr->set_deleter(deleter);
+      output_addr->set_ptr(ge_data);
+      output_addr->SetSize(tensor->GetSize());
+    } else {
+      MS_LOG_WITH_NODE(EXCEPTION, output_node) << "It is not supported that Output node " << output_node->DebugString()
+                                               << "'s output data's placement is device now.";
     }
-    new_tensors.emplace_back(std::move(ge_tensor));
+    auto actual_shapes = tensor->GetTensorDesc().GetShape().GetDims();
+    UpdateOutputNodeShape(output_node, idx, me_types[i], actual_shapes);
   }
-  return new_tensors;
+}
+
+void SetOutput(GeDeviceResManager *res_manager, GeTensor *ge_output, const AnfNodePtr &output_node, size_t idx) {
+  if (output_node->isa<ValueNode>()) {
+    auto &&ge_data_uni = ge_output->ResetData();
+    auto deleter = ge_data_uni.get_deleter();
+    auto ge_data = ge_data_uni.release();
+    deleter(ge_data);
+    return;
+  }
+  auto actual_shapes = ge_output->GetTensorDesc().GetShape().GetDims();
+  for (size_t i = 0; i < actual_shapes.size(); ++i) {
+    if (actual_shapes[i] < 0) {
+      MS_LOG(EXCEPTION) << "Output shape must be greater than 0, but got " << actual_shapes;
+    }
+  }
+  auto output_addr = AnfAlgo::GetMutableOutputAddr(output_node, idx, false);
+  output_addr->SetSize(ge_output->GetSize());
+  auto &&ge_data_uni = ge_output->ResetData();
+  auto deleter = ge_data_uni.get_deleter();
+  auto ge_data = ge_data_uni.release();
+  MS_EXCEPTION_IF_NULL(ge_data);
+  output_addr->set_is_ptr_persisted(false);
+  output_addr->set_from_mem_pool(false);
+  output_addr->set_deleter(deleter);
+  output_addr->set_ptr(ge_data);
+  auto placement = ge_output->GetTensorDesc().GetPlacement();
+  if (placement == ::ge::kPlacementHost) {
+    MS_LOG(DEBUG) << output_node->DebugString() << "'s output data's placement is host";
+    size_t size = ge_output->GetSize();
+    void *mem = res_manager->AllocateMemory(size);
+    if (mem == nullptr) {
+      MS_LOG_WITH_NODE(EXCEPTION, output_node)
+        << "Allocate memory failed, memory size:" << size << ", output_node: " << output_node->ToString();
+    }
+    output_addr->set_from_mem_pool(true);
+    output_addr->set_ptr(mem);
+    auto *ascend_addr = dynamic_cast<AscendDeviceAddress *>(output_addr.get());
+    MS_EXCEPTION_IF_NULL(ascend_addr);
+    ascend_addr->SyncHostToDevice(size, ge_data);
+  }
+  // Update shape in kernel tensor.
+  const auto &kernel_tensor = AnfAlgo::GetOutputKernelTensor(output_node, idx);
+  MS_EXCEPTION_IF_NULL(kernel_tensor);
+  kernel_tensor->SetShapeVector(actual_shapes);
+  MS_LOG(INFO) << "[ZeroCopy] Update output " << output_node->DebugString() << " address to "
+               << output_addr->GetMutablePtr() << ", shape:" << actual_shapes
+               << ", type: " << TypeIdToString(output_addr->type_id()) << ", format: " << output_addr->format();
+}
+
+void SetDynamicOutputs(const std::vector<KernelWithIndex> &graph_outputs, std::vector<GeTensor> *ge_outputs,
+                       GeDeviceResManager *res_manager) {
+  MS_EXCEPTION_IF_NULL(res_manager);
+  size_t ge_outputs_index = 0;
+  size_t ge_outputs_size = ge_outputs->size();
+  for (size_t i = 0; i < graph_outputs.size(); ++i) {
+    const auto &[output_node, idx] = common::AnfAlgo::FetchRealNodeSkipMonadControl(graph_outputs[i]);
+    MS_EXCEPTION_IF_NULL(output_node);
+    if (HasAbstractMonad(output_node)) {
+      continue;
+    }
+    if (common::AnfAlgo::IsNoOuputNode(output_node)) {
+      continue;
+    }
+    if (ge_outputs_index >= ge_outputs_size) {
+      MS_LOG(EXCEPTION) << "GE data access is out of bounds, which the current index value is " << ge_outputs_index
+                        << ", the total number of GE output is " << ge_outputs_size << ".";
+    }
+    SetOutput(res_manager, &((*ge_outputs)[ge_outputs_index++]), output_node, idx);
+  }
+}
+
+void SetDynamicOutputsForKernel(const std::vector<GeTensor> &ge_outputs,
+                                const std::vector<KernelTensor *> &kernel_outputs, const AnfNodeWeakPtr &node,
+                                GeDeviceResManager *res_manager) {
+  size_t index_ge = 0;
+  for (size_t index_kernel = 0; index_kernel < kernel_outputs.size(); ++index_kernel) {
+    auto kernel_output = kernel_outputs[index_kernel];
+    if (kernel_output == nullptr) {
+      continue;
+    }
+    std::vector<TypeId> monad_type_id = {TypeId::kObjectTypeMonad, TypeId::kObjectTypeUMonad,
+                                         TypeId::kObjectTypeIOMonad};
+    if (std::any_of(monad_type_id.begin(), monad_type_id.end(),
+                    [&kernel_output](const TypeId type_id) { return type_id == kernel_output->dtype_id(); })) {
+      continue;
+    }
+
+    if (index_ge >= ge_outputs.size()) {
+      MS_LOG(EXCEPTION) << "index " << index_ge << " is larger than ge_outputs size: " << ge_outputs.size();
+    }
+    auto ge_output = ge_outputs[index_ge];
+    SetOutput(res_manager, &ge_output, node.lock(), index_kernel);
+    ++index_ge;
+  }
 }
 }  // namespace
 
@@ -463,8 +577,6 @@ void GeGraphExecutor::PreprocessBeforeRun(const KernelGraphPtr &graph) {
 }
 
 bool GeGraphExecutor::BuildGraph(const KernelGraphPtr &graph, const transform::TensorOrderMap &tensor_order_map) {
-  std::set<KernelGraphPtr> memo;
-  GEGraphOptimization::GetInstance().OptimizeGEGraph(graph, &memo);
   auto &compile_cache_context = CompileCacheContext::GetInstance();
   auto use_compile_cache = compile_cache_context.UseCompileCache();
   auto name = GetGraphName(graph);
@@ -492,8 +604,6 @@ bool GeGraphExecutor::CompileGraph(const KernelGraphPtr &graph,
   bool has_cache = CacheFileExists(name);
   if (use_compile_cache && has_cache) {
     MS_LOG(INFO) << "Use ge compile cache, and skip specific optimization and ge_adapter execution";
-    std::set<KernelGraphPtr> memo;
-    GEGraphOptimization::GetInstance().OptimizeGEGraph(graph, &memo);
     if (!BuildFakeGraph(graph)) {
       return false;
     }
@@ -532,7 +642,10 @@ bool GeGraphExecutor::CompileGraph(const KernelGraphPtr &graph,
     ge_message_manager_.SetFeatureMemory(run_options.name, summary.fixed_memory_size);
     ge_message_manager_.SetStream(run_options.name, summary.stream_num);
     AddRefCorrespondPairs(graph, summary.io_indexes);
-    io_indexes_[run_options.name] = summary.io_indexes;
+    // if not static, set graph dynamic
+    if (!summary.is_static) {
+      graph->SetGraphDynamicAttr(true);
+    }
   }
   GEMemoryAllocator::ProcessGraphDeviceAddress(graph, device_context_, ResManager());
 
@@ -567,6 +680,10 @@ void GeGraphExecutor::SetGraphWorkspaceMemory(const KernelGraphPtr &graph, void 
 }
 
 size_t GeGraphExecutor::GetGraphWorkSpaceMemory(const std::string &graph_name) const {
+  if (!ge_message_manager_.SummaryExist(graph_name)) {
+    MS_LOG(INFO) << "The summary of graph: " << graph_name << " is not exist.";
+    return 0;
+  }
   auto summary = ge_message_manager_.GetSummary(graph_name);
   return summary.workspace_memory_size;
 }
@@ -597,6 +714,9 @@ void GeGraphExecutor::AllocGEFixMemory() const {
 void GeGraphExecutor::InitGEFixMemory(const KernelGraphPtr &graph, size_t stream_id) const {
   transform::RunOptions run_options;
   run_options.name = GetGraphName(graph);
+  if (graph->is_dynamic_shape()) {
+    return;
+  }
   auto summary = ge_message_manager_.GetSummary(run_options.name);
   GEMemoryAllocator::AllocGraphMemory(run_options, graph, summary, stream_id, ResManager());
 }
@@ -604,47 +724,71 @@ void GeGraphExecutor::InitGEFixMemory(const KernelGraphPtr &graph, size_t stream
 bool GeGraphExecutor::CompileGraphForKernel(const KernelGraphPtr &graph) { return CompileGraph(graph, {}); }
 
 void GeGraphExecutor::AddRefCorrespondPairs(const KernelGraphPtr &graph,
-                                            const std::vector<std::pair<uint32_t, uint32_t>> &io_indexes) const {
+                                            const std::vector<std::pair<uint32_t, uint32_t>> &io_indexes) {
   MS_EXCEPTION_IF_NULL(graph);
   MS_LOG(INFO) << "Start convert io_indexes to ref_map, kernel graph: " << graph->ToString();
 
   std::map<session::AnfWithOutIndex, session::AnfWithOutIndex> ref_out_in_map = {};
   auto graph_inputs_all = graph->parameters();
   std::vector<AnfNodePtr> graph_inputs = {};
+  std::map<uint32_t, uint32_t> input_index_ge_to_kg;
+  uint32_t ge_index = 0;
+  uint32_t kg_index = 0;
   for (auto &node : graph_inputs_all) {
     MS_EXCEPTION_IF_NULL(node);
     auto abs = node->abstract();
     MS_EXCEPTION_IF_NULL(abs);
-    if (HasAbstractMonad(node) || abs->isa<abstract::AbstractSequence>()) {
-      MS_LOG(INFO) << "Input node: " << node->DebugString() << " is a monad or tuple/list parameter, skip.";
+    if (HasAbstractMonad(node)) {
+      MS_LOG(INFO) << "Input node: " << node->DebugString() << " is a monad parameter, skip.";
+      ++kg_index;
       continue;
     }
+
+    if (abs->isa<abstract::AbstractSequence>()) {
+      MS_LOG(INFO) << "Input node: " << node->DebugString() << " is a tuple/list parameter, skip.";
+      continue;
+    }
+
     graph_inputs.emplace_back(node);
+    input_index_ge_to_kg[ge_index] = kg_index;
+    ++kg_index;
+    ++ge_index;
   }
 
   std::vector<common::KernelWithIndex> graph_outputs_all = {};
   common::AnfAlgo::GetRealInputs(graph->get_return(), &graph_outputs_all);
   std::vector<common::KernelWithIndex> graph_outputs = {};
+  std::map<uint32_t, uint32_t> output_index_ge_to_kg;
 
+  ge_index = 0;
+  kg_index = 0;
   for (auto &node_with_index : graph_outputs_all) {
     if (common::AnfAlgo::IsNoOuputNode(node_with_index.first) || HasAbstractMonad(node_with_index.first)) {
       MS_LOG(INFO) << "Output node: " << node_with_index.first->fullname_with_scope()
                    << " is a no output node or monad node, skip.";
+      ++kg_index;
       continue;
     }
 
     graph_outputs.emplace_back(node_with_index);
+    output_index_ge_to_kg[ge_index] = kg_index;
+    ++kg_index;
+    ++ge_index;
   }
 
+  std::vector<std::pair<uint32_t, uint32_t>> kg_io_indexes;
   for (auto in_out_index : io_indexes) {
     if (in_out_index.first >= graph_inputs.size() || in_out_index.second >= graph_outputs.size()) {
       MS_LOG(EXCEPTION) << "The io_indexes out of range, input index: " << in_out_index.first
                         << ", output index: " << in_out_index.second << ", graph input size: " << graph_inputs.size()
                         << ", graph output size: " << graph_outputs.size();
     }
+
     session::AnfWithOutIndex origin_node = std::make_pair(graph_inputs[in_out_index.first], 0);
     session::AnfWithOutIndex final_node = graph_outputs[in_out_index.second];
     if (origin_node.first == final_node.first) {
+      kg_io_indexes.emplace_back(
+        std::make_pair(input_index_ge_to_kg[in_out_index.first], output_index_ge_to_kg[in_out_index.second]));
       MS_LOG(INFO) << "The origin node is same as final node, node: " << origin_node.first->fullname_with_scope();
       continue;
     }
@@ -662,12 +806,15 @@ void GeGraphExecutor::AddRefCorrespondPairs(const KernelGraphPtr &graph,
     }
 
     ref_out_in_map.emplace(final_node, origin_node);
+    kg_io_indexes.emplace_back(
+      std::make_pair(input_index_ge_to_kg[in_out_index.first], output_index_ge_to_kg[in_out_index.second]));
     MS_LOG(INFO) << "Convert io_index [" << in_out_index.first << ", " << in_out_index.second
                  << "] to ref_out_in_map, final_node: " << final_node.first->fullname_with_scope()
                  << ", index:" << final_node.second << ", origin_node: " << origin_node.first->fullname_with_scope()
                  << ", index: " << origin_node.second;
   }
 
+  io_indexes_[GetGraphName(graph)] = kg_io_indexes;
   graph->set_ref_out_in_map(ref_out_in_map);
 }
 
@@ -696,10 +843,11 @@ bool GeGraphExecutor::CompileGraph(const FuncGraphPtr &graph, const std::map<str
     const auto &tensor_order_map = GetDefaultParams(graph, &origin_shape);
     auto &compile_cache_context = CompileCacheContext::GetInstance();
     auto use_compile_cache = compile_cache_context.UseCompileCache();
+    std::set<KernelGraphPtr> memo;
+    GEGraphOptimization::GetInstance().OptimizeGEGraph(kg, &memo);
     if (use_compile_cache) {
       MS_LOG(INFO) << "Use ge compile cache, and skip specific optimization and ge_adapter execution";
-      std::set<KernelGraphPtr> memo;
-      GEGraphOptimization::GetInstance().OptimizeGEGraph(kg, &memo);
+
       if (!BuildFakeGraph(kg)) {
         (void)profiler::CollectHostInfo("Ascend", "CompileGraph", "GeCompileGraph_" + graph_name, start_time,
                                         profiler::GetClockSyscnt(), 1);
@@ -721,113 +869,6 @@ bool GeGraphExecutor::CompileGraph(const FuncGraphPtr &graph, const std::map<str
     (void)profiler::CollectHostInfo("Ascend", "CompileGraph", "GeCompileGraph_" + graph_name, start_time,
                                     profiler::GetClockSyscnt(), 1);
     return true;
-  }
-}
-
-void SetOutputs(const std::vector<KernelWithIndex> &graph_outputs,
-                const std::vector<transform::GeTensorPtr> &ge_outputs, const std::vector<TypeId> &me_types) {
-  for (size_t i = 0; i < graph_outputs.size(); ++i) {
-    const auto &[output_node, idx] = common::AnfAlgo::FetchRealNodeSkipMonadControl(graph_outputs[i]);
-    const auto &tensor = ge_outputs[i];
-    auto output_addr = AnfAlgo::GetMutableOutputAddr(output_node, idx);
-    ::ge::Placement dp = tensor->GetTensorDesc().GetPlacement();
-    auto &&ge_data_uni = tensor->ResetData();
-    auto deleter = ge_data_uni.get_deleter();
-    auto ge_data = ge_data_uni.release();
-    MS_EXCEPTION_IF_NULL(ge_data);
-    if (dp == ::ge::kPlacementHost) {
-      constexpr int64_t kTensorAlignBytes = 64;
-      if (reinterpret_cast<uintptr_t>(ge_data) % kTensorAlignBytes != 0) {
-        MS_LOG(EXCEPTION) << "Skip zero-copy ge tensor " << reinterpret_cast<uintptr_t>(ge_data)
-                          << ", bytes not aligned with expected.";
-      }
-      if (me_types[i] == TypeId::kObjectTypeString) {
-        MS_LOG_WITH_NODE(EXCEPTION, output_node) << "It is not supported that Output node "
-                                                 << output_node->DebugString() << "'s output data type is string now.";
-      }
-      MS_LOG(DEBUG) << "Zero-copy ge tensor " << reinterpret_cast<uintptr_t>(ge_data) << " as aligned with "
-                    << kTensorAlignBytes << " types.";
-      output_addr->set_is_ptr_persisted(false);
-      output_addr->set_from_mem_pool(false);
-      output_addr->set_deleter(deleter);
-      output_addr->set_ptr(ge_data);
-      output_addr->SetSize(tensor->GetSize());
-    } else {
-      MS_LOG_WITH_NODE(EXCEPTION, output_node) << "It is not supported that Output node " << output_node->DebugString()
-                                               << "'s output data's placement is device now.";
-    }
-    auto actual_shapes = tensor->GetTensorDesc().GetShape().GetDims();
-    UpdateOutputNodeShape(output_node, idx, me_types[i], actual_shapes);
-  }
-}
-
-void SetOutput(GeDeviceResManager *res_manager, GeTensor *ge_output, const AnfNodePtr &output_node, size_t idx) {
-  if (output_node->isa<ValueNode>()) {
-    auto &&ge_data_uni = ge_output->ResetData();
-    auto deleter = ge_data_uni.get_deleter();
-    auto ge_data = ge_data_uni.release();
-    deleter(ge_data);
-    return;
-  }
-  auto actual_shapes = ge_output->GetTensorDesc().GetShape().GetDims();
-  for (size_t i = 0; i < actual_shapes.size(); ++i) {
-    if (actual_shapes[i] < 0) {
-      MS_LOG(EXCEPTION) << "Output shape must be greater than 0, but got " << actual_shapes;
-    }
-  }
-  auto output_addr = AnfAlgo::GetMutableOutputAddr(output_node, idx, false);
-  output_addr->SetSize(ge_output->GetSize());
-  auto &&ge_data_uni = ge_output->ResetData();
-  auto deleter = ge_data_uni.get_deleter();
-  auto ge_data = ge_data_uni.release();
-  MS_EXCEPTION_IF_NULL(ge_data);
-  output_addr->set_is_ptr_persisted(false);
-  output_addr->set_from_mem_pool(false);
-  output_addr->set_deleter(deleter);
-  output_addr->set_ptr(ge_data);
-  auto placement = ge_output->GetTensorDesc().GetPlacement();
-  if (placement == ::ge::kPlacementHost) {
-    MS_LOG(DEBUG) << output_node->DebugString() << "'s output data's placement is host";
-    size_t size = ge_output->GetSize();
-    void *mem = res_manager->AllocateMemory(size);
-    if (mem == nullptr) {
-      MS_LOG_WITH_NODE(EXCEPTION, output_node)
-        << "Allocate memory failed, memory size:" << size << ", output_node: " << output_node->ToString();
-    }
-    output_addr->set_from_mem_pool(true);
-    output_addr->set_ptr(mem);
-    auto *ascend_addr = dynamic_cast<AscendDeviceAddress *>(output_addr.get());
-    MS_EXCEPTION_IF_NULL(ascend_addr);
-    ascend_addr->SyncHostToDevice(size, ge_data);
-  }
-  // Update shape in kernel tensor.
-  const auto &kernel_tensor = AnfAlgo::GetOutputKernelTensor(output_node, idx);
-  MS_EXCEPTION_IF_NULL(kernel_tensor);
-  kernel_tensor->SetShapeVector(actual_shapes);
-  MS_LOG(INFO) << "[ZeroCopy] Update output " << output_node->DebugString() << " address to "
-               << output_addr->GetMutablePtr() << ", shape:" << actual_shapes
-               << ", type: " << TypeIdToString(output_addr->type_id()) << ", format: " << output_addr->format();
-}
-
-void SetDynamicOutputs(const std::vector<KernelWithIndex> &graph_outputs, std::vector<GeTensor> *ge_outputs,
-                       GeDeviceResManager *res_manager) {
-  MS_EXCEPTION_IF_NULL(res_manager);
-  size_t ge_outputs_index = 0;
-  size_t ge_outputs_size = ge_outputs->size();
-  for (size_t i = 0; i < graph_outputs.size(); ++i) {
-    const auto &[output_node, idx] = common::AnfAlgo::FetchRealNodeSkipMonadControl(graph_outputs[i]);
-    MS_EXCEPTION_IF_NULL(output_node);
-    if (HasAbstractMonad(output_node)) {
-      continue;
-    }
-    if (common::AnfAlgo::IsNoOuputNode(output_node)) {
-      continue;
-    }
-    if (ge_outputs_index >= ge_outputs_size) {
-      MS_LOG(EXCEPTION) << "GE data access is out of bounds, which the current index value is " << ge_outputs_index
-                        << ", the total number of GE output is " << ge_outputs_size << ".";
-    }
-    SetOutput(res_manager, &((*ge_outputs)[ge_outputs_index++]), output_node, idx);
   }
 }
 
@@ -923,15 +964,6 @@ bool GeGraphExecutor::RunGraphRefModeInnner(const FuncGraphPtr &graph, const std
       MS_LOG(EXCEPTION) << "Exec graph failed";
     }
   }
-  if (is_dynamic_shape) {
-    auto graph_outputs = common::AnfAlgo::GetAllOutputWithIndex(graph->output());
-    SetDynamicOutputs(graph_outputs, ge_outputs, ResManager());
-    auto sync_ret = ResManager()->SyncStream();
-    if (!sync_ret) {
-      MS_LOG(EXCEPTION) << "Sync stream failed";
-    }
-  }
-  ClearForwardOutputAddress(kg, device_context_);
   return true;
 }
 
@@ -942,18 +974,145 @@ bool GeGraphExecutor::RunGraphRefMode(const FuncGraphPtr &graph, const std::vect
   KernelGraphPtr kg = std::dynamic_pointer_cast<session::KernelGraph>(graph);
   std::vector<GeTensor> ge_inputs = GenerateInputGeTensor(kg);
   std::vector<GeTensor> ge_outputs = GenerateOutputGeTensor(kg);
-  return RunGraphRefModeInnner(graph, ge_inputs, &ge_outputs, ResManager()->GetStream());
+  auto ret = RunGraphRefModeInnner(graph, ge_inputs, &ge_outputs, ResManager()->GetStream());
+  if (!ret) {
+    return ret;
+  }
+  if (kg->is_dynamic_shape()) {
+    auto graph_outputs = common::AnfAlgo::GetAllOutputWithIndex(graph->output());
+    SetDynamicOutputs(graph_outputs, &ge_outputs, ResManager());
+    auto sync_ret = ResManager()->SyncStream();
+    if (!sync_ret) {
+      MS_LOG(EXCEPTION) << "Sync stream failed";
+    }
+  }
+  ClearForwardOutputAddress(kg, device_context_);
+  return true;
 }
 
-bool GeGraphExecutor::RunGraphRefModeForKernel(const FuncGraphPtr &graph, const std::vector<KernelTensor *> &inputs,
+bool GeGraphExecutor::RunGraphRefModeForKernel(const KernelGraphPtr &graph, const AnfNodeWeakPtr &node,
+                                               const std::vector<KernelTensor *> &inputs,
                                                const std::vector<KernelTensor *> &outputs, void *stream) {
   MS_EXCEPTION_IF_NULL(graph);
   MS_EXCEPTION_IF_NULL(stream);
   auto graph_name = GetGraphName(graph);
   MS_LOG(INFO) << "Run graph begin, inputs size is: " << inputs.size() << ", " << graph_name;
-  std::vector<GeTensor> ge_inputs = CreateNewGeTensorList(inputs);
-  std::vector<GeTensor> ge_outputs = CreateNewGeTensorList(outputs);
-  return RunGraphRefModeInnner(graph, ge_inputs, &ge_outputs, stream);
+  bool is_dynamic_shape = graph->is_dynamic_shape();
+  std::vector<GeTensor> ge_inputs = CreateInputGeTensorList(inputs, graph);
+  std::vector<GeTensor> ge_outputs = CreateOutputGeTensorList(outputs, graph);
+  auto ret = RunGraphRefModeInnner(graph, ge_inputs, &ge_outputs, stream);
+  if (!ret) {
+    return ret;
+  }
+  if (is_dynamic_shape) {
+    MS_LOG(INFO) << "Update outputs for graph: " << graph_name;
+    SetDynamicOutputsForKernel(ge_outputs, outputs, node, ResManager());
+  }
+  return true;
+}
+
+std::vector<GeTensor> GeGraphExecutor::CreateInputGeTensorList(const std::vector<KernelTensor *> &tensors,
+                                                               const KernelGraphPtr &graph) {
+  MS_EXCEPTION_IF_NULL(graph);
+  std::vector<GeTensor> ge_inputs;
+  auto iter = input_datas_.find(graph.get());
+  if (iter == input_datas_.end()) {
+    return ge_inputs;
+  }
+  bool is_dynamic_shape = graph->is_dynamic_shape();
+  const auto &input_datas = iter->second.ge_inputs;
+  ge_inputs = input_datas;
+  size_t index = 0;
+  for (const auto &tensor : tensors) {
+    // input monad is nullptr
+    if (tensor == nullptr) {
+      continue;
+    }
+    // remove monad
+    std::vector<TypeId> monad_type_id = {TypeId::kObjectTypeMonad, TypeId::kObjectTypeUMonad,
+                                         TypeId::kObjectTypeIOMonad};
+    if (std::any_of(monad_type_id.begin(), monad_type_id.end(),
+                    [&tensor](const TypeId type_id) { return type_id == tensor->dtype_id(); })) {
+      continue;
+    }
+
+    if (index >= ge_inputs.size()) {
+      MS_LOG(EXCEPTION) << "The index " << index << " >= ge_inputs size: " << ge_inputs.size();
+    }
+
+    if (is_dynamic_shape) {
+      auto ge_tensor_desc =
+        transform::TransformUtil::GetGeTensorDesc(tensor->GetShapeVector(), tensor->dtype_id(), kOpFormat_DEFAULT);
+      MS_EXCEPTION_IF_NULL(ge_tensor_desc);
+      ge_tensor_desc->SetPlacement(::ge::kPlacementDevice);
+      (void)ge_inputs[index].SetTensorDesc(*ge_tensor_desc);
+    }
+
+    if (tensor->device_ptr() == nullptr) {
+      // alloc static memory for unused inputs
+      // error in ge when set nullptr into ge tensor
+      GEMemoryAllocator::AllocUnuseInput(graph, tensor, ResManager());
+    }
+
+    if (tensor->device_ptr() != ge_inputs[index].GetData() || tensor->size() != ge_inputs[index].GetSize()) {
+      if (ge_inputs[index].SetData(reinterpret_cast<uint8_t *>(tensor->device_ptr()), tensor->size(), [](void *) {}) !=
+          ::ge::GRAPH_SUCCESS) {
+        MS_LOG(EXCEPTION) << "Set ge tensor addr failed! addr size is " << tensor->size();
+      }
+    }
+
+    MS_LOG(DEBUG) << "Update GeTensor, shape: " << tensor->GetShapeVector() << ", tensor_size: " << tensor->size()
+                  << ", dtype: " << tensor->dtype_id();
+    ++index;
+  }
+  return ge_inputs;
+}
+
+std::vector<GeTensor> GeGraphExecutor::CreateOutputGeTensorList(const std::vector<KernelTensor *> &tensors,
+                                                                const KernelGraphPtr &graph) {
+  MS_EXCEPTION_IF_NULL(graph);
+  std::vector<GeTensor> ge_outputs;
+  auto iter = output_datas_.find(graph.get());
+  if (iter == output_datas_.end()) {
+    return ge_outputs;
+  }
+  bool is_dynamic_shape = graph->is_dynamic_shape();
+  const auto &output_datas = iter->second.ge_outputs;
+  ge_outputs = output_datas;
+
+  size_t index = 0;
+  for (const auto &tensor : tensors) {
+    // input monad is nullptr
+    if (tensor == nullptr) {
+      continue;
+    }
+    // remove monad
+    std::vector<TypeId> monad_type_id = {TypeId::kObjectTypeMonad, TypeId::kObjectTypeUMonad,
+                                         TypeId::kObjectTypeIOMonad};
+    if (std::any_of(monad_type_id.begin(), monad_type_id.end(),
+                    [&tensor](const TypeId type_id) { return type_id == tensor->dtype_id(); })) {
+      continue;
+    }
+    if (index >= ge_outputs.size()) {
+      MS_LOG(EXCEPTION) << "The index " << index << " >= ge_outputs size: " << ge_outputs.size();
+    }
+
+    if (is_dynamic_shape) {
+      ge_outputs[index].SetData(nullptr, 0U, [](void *) {});
+      continue;
+    }
+
+    if (tensor->device_ptr() != ge_outputs[index].GetData() || tensor->size() != ge_outputs[index].GetSize()) {
+      if (ge_outputs[index].SetData(reinterpret_cast<uint8_t *>(tensor->device_ptr()), tensor->size(), [](void *) {}) !=
+          ::ge::GRAPH_SUCCESS) {
+        MS_LOG(EXCEPTION) << "Set ge tensor addr failed! addr size is " << tensor->size();
+      }
+    }
+    MS_LOG(DEBUG) << "Update GeTensor, shape: " << tensor->GetShapeVector() << ", tensor_size: " << tensor->size()
+                  << ", dtype: " << tensor->dtype_id();
+    ++index;
+  }
+  return ge_outputs;
 }
 
 void GeGraphExecutor::DoAsyncCkpt(const FuncGraphPtr &graph) {

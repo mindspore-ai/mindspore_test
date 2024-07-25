@@ -535,6 +535,7 @@ void AnyTypeKernelActor::OnMemoryAllocFinish(OpContext<DeviceTensor> *const cont
                     << " to device address:" << node_device_tensors_[i];
       node_device_tensors_[i]->kernel_tensor()->SetType(input_device_tensors_[i]->kernel_tensor()->GetType());
       node_device_tensors_[i]->kernel_tensor()->SetShape(input_device_tensors_[i]->kernel_tensor()->GetShape());
+      node_device_tensors_[i]->kernel_tensor()->SetValue(input_device_tensors_[i]->kernel_tensor()->GetValueTrack());
       MS_LOG(DEBUG) << "set shape:" << input_device_tensors_[i]->kernel_tensor()->GetShape()->ToString()
                     << " from device address:" << input_device_tensors_[i]
                     << " to device address:" << node_device_tensors_[i];

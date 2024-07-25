@@ -553,6 +553,15 @@ void UpdateKernelTensorShape(const BaseShapePtr &base_shape,
   }
 }
 
+void UpdateGEGraphOpKernelTensor(const std::vector<kernel::KernelTensor *> &output_kernel_tensors) {
+  // In dynamic_shape, GEGraphOp don't need to alloc output memory, it will alloc through allocator, and the shape will
+  // update after launch
+  for (auto kernel_tensor : output_kernel_tensors) {
+    ShapeVector shape = {0};
+    kernel_tensor->SetShapeVector(shape);
+  }
+}
+
 abstract::AbstractBasePtr InferShapeAndType(const PrimitivePtr &primitive,
                                             const std::vector<AbstractBasePtr> &input_args) {
   MS_EXCEPTION_IF_NULL(primitive);

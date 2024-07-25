@@ -51,6 +51,13 @@ class GeMessageManager {
  public:
   void SetFeatureMemory(const std::string &name, size_t size) { feature_memorys[name] = size; }
   void SetStream(const std::string &name, size_t size) { streams[name] = size; }
+  bool SummaryExist(const std::string &name) const {
+    auto iter = summarys.find(name);
+    if (iter == summarys.end()) {
+      return false;
+    }
+    return true;
+  }
   void SetSummary(const std::string &name, const GraphSummary &summary) { summarys[name] = summary; }
   size_t GetFeatureMemory(const std::string &name) const {
     auto iter = feature_memorys.find(name);
@@ -98,8 +105,9 @@ class GeGraphExecutor : public GraphExecutor {
   void SetGraphWorkspaceMemory(const KernelGraphPtr &graph, void *device_ptr, size_t size);
   size_t GetGraphWorkSpaceMemory(const std::string &graph_name) const;
   bool CompileGraphForKernel(const KernelGraphPtr &graph);
-  bool RunGraphRefModeForKernel(const FuncGraphPtr &graph, const std::vector<KernelTensor *> &inputs,
-                                const std::vector<KernelTensor *> &outputs, void *stream);
+  bool RunGraphRefModeForKernel(const KernelGraphPtr &graph, const AnfNodeWeakPtr &node,
+                                const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs,
+                                void *stream);
   void AllocGEFixMemory() const;
   void InitGEFixMemory(const KernelGraphPtr &graph, size_t stream_id) const;
 
@@ -113,10 +121,14 @@ class GeGraphExecutor : public GraphExecutor {
   int64_t CurGraphSinkSize(std::string graph_name);
   std::vector<GeTensor> GenerateInputGeTensor(const KernelGraphPtr &kernel_graph) const;
   std::vector<GeTensor> GenerateOutputGeTensor(const KernelGraphPtr &kernel_graph) const;
+  // for GEGraphOp Run
+  std::vector<GeTensor> CreateInputGeTensorList(const std::vector<KernelTensor *> &tensorsz,
+                                                const KernelGraphPtr &graph);
+  std::vector<GeTensor> CreateOutputGeTensorList(const std::vector<KernelTensor *> &tensorsz,
+                                                 const KernelGraphPtr &graph);
   GeDeviceResManager *ResManager() const;
   void RunInitGraph(const std::string &graph_name);
-  void AddRefCorrespondPairs(const KernelGraphPtr &graph,
-                             const std::vector<std::pair<uint32_t, uint32_t>> &io_indexes) const;
+  void AddRefCorrespondPairs(const KernelGraphPtr &graph, const std::vector<std::pair<uint32_t, uint32_t>> &io_indexes);
   bool BuildGraph(const KernelGraphPtr &graph, const transform::TensorOrderMap &tensor_order_map);
   DeviceAddressPtr CreateOutputDeviceAddress(const KernelGraphPtr &kernel_graph,
                                              const KernelWithIndex &output_with_index,
@@ -126,6 +138,7 @@ class GeGraphExecutor : public GraphExecutor {
   void SetFlagIgnoreDevicePtr(const FuncGraphPtr &graph);
   mindspore::HashMap<session::KernelGraph *, GeInputData> input_datas_;
   mindspore::HashMap<session::KernelGraph *, GeOutputData> output_datas_;
+  // io_index for kernel_graph
   mindspore::HashMap<std::string, std::vector<std::pair<uint32_t, uint32_t>>> io_indexes_;
   std::map<std::string, int64_t> graph_sink_size_;
   int64_t pre_sink_size_{-1};

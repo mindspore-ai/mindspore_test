@@ -814,7 +814,7 @@ void KernelActor::FetchOutputDeviceTensor(OpContext<DeviceTensor> *const context
 
 void KernelActor::PreLaunchKernel(OpContext<DeviceTensor> *) {
   for (size_t i = 0; i < input_device_tensors_.size(); ++i) {
-    if (!input_device_tensors_[i]->GetValidPtr(kernel_info_->stream_id())) {
+    if (input_device_tensors_[i] == nullptr || !input_device_tensors_[i]->GetValidPtr(kernel_info_->stream_id())) {
       MS_LOG(DEBUG) << "For kernel: " << kernel_->fullname_with_scope() << ", input device tensor "
                     << input_device_tensors_[i] << " has no device ptr.";
     }
@@ -976,6 +976,11 @@ void KernelActor::InferAndResize(OpContext<DeviceTensor> *const context) {
 void KernelActor::InferShapeAndType() {
   MS_LOG(DEBUG) << "Begin InferShapeAnyType for kernel: " << kernel_->fullname_with_scope()
                 << ", inputs: " << input_kernel_tensors_for_infer_;
+  // for kPrimGEGraphOp, set shape as 0, it will update after run
+  if (common::AnfAlgo::CheckPrimitiveType(kernel_, prim::kPrimGEGraphOp)) {
+    opt::dynamic_shape::UpdateGEGraphOpKernelTensor(output_kernel_tensors_);
+    return;
+  }
   // 1. Infer operator's output's Shape and Type.
   auto abstract = opt::dynamic_shape::InferShapeAndType(kernel_mod_->primitive(), input_kernel_tensors_for_infer_);
   MS_EXCEPTION_IF_NULL(abstract);
@@ -989,6 +994,11 @@ void KernelActor::InferShapeAndType() {
 void KernelActor::InferShape() {
   MS_LOG(DEBUG) << "Begin InferShape for kernel: " << kernel_->fullname_with_scope()
                 << ", inputs: " << input_kernel_tensors_for_infer_;
+  // for GEGraphOp, set shape as 0, it will update after run
+  if (common::AnfAlgo::CheckPrimitiveType(kernel_, prim::kPrimGEGraphOp)) {
+    opt::dynamic_shape::UpdateGEGraphOpKernelTensor(output_kernel_tensors_);
+    return;
+  }
   // 1. Infer operator's output's Shape.
   auto base_shape = opt::dynamic_shape::InferShape(kernel_mod_->primitive(), input_kernel_tensors_for_infer_);
   MS_EXCEPTION_IF_NULL(base_shape);

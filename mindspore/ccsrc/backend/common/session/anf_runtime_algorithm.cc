@@ -1021,7 +1021,9 @@ KernelTensorPtr AnfRuntimeAlgorithm::CreateOutputKernelTensorWithDeviceInfo(
     shape = kernel_tensor->GetShape()->Clone();
     type = kernel_tensor->GetType()->Clone();
     value = kernel_tensor->GetValueTrack();
-  } else {
+  }
+
+  if (value == nullptr) {
     std::tie(shape, type, value) = GetAbstractInfo(node_with_index.first, node_with_index.second);
   }
 
@@ -1054,7 +1056,7 @@ size_t AnfRuntimeAlgorithm::GetOutputAddressNum(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(kernel_info);
   auto build_info = kernel_info->select_kernel_build_info();
   MS_EXCEPTION_IF_NULL(build_info);
-  return build_info->GetOutputNumWithoutMonad();
+  return build_info->GetOutputNum();
 }
 
 // set output device addr of anf_node
@@ -2435,5 +2437,16 @@ ValueNodePtr AnfRuntimeAlgorithm::CreateTypeIdValueNodeToFuncGraph(const FuncGra
   auto type_id_value = std::make_shared<Int64Imm>(static_cast<int64_t>(data_type));
   type_id_value_node->set_abstract(type_id_value->ToAbstract());
   return type_id_value_node;
+}
+
+bool AnfRuntimeAlgorithm::IsNoRealKernelGraph(const KernelGraphPtr &kernel_graph) {
+  MS_EXCEPTION_IF_NULL(kernel_graph);
+  const auto &nodes = kernel_graph->execution_order();
+  for (auto &node : nodes) {
+    if (AnfUtils::IsRealKernel(node)) {
+      return false;
+    }
+  }
+  return true;
 }
 }  // namespace mindspore::session

@@ -41,7 +41,7 @@ class GeKernelMod : public KernelMod {
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
               const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;
 
-  bool IsNeedUpdateOutputShapeAndSize() override { return false; }
+  bool IsNeedUpdateOutputShapeAndSize() override;
 
   void UpdateOutputShapeAndSize(const std::vector<KernelTensor *> &inputs,
                                 const std::vector<KernelTensor *> &outputs) override {}
@@ -51,6 +51,8 @@ class GeKernelMod : public KernelMod {
   void set_executor(device::ascend::GeGraphExecutor *executor) { graph_executor_ = executor; }
 
   void set_graph(const KernelGraphPtr &graph) { graph_ = graph; }
+
+  void set_kernel(const AnfNodePtr &node) { node_ = node; }
 
   std::vector<KernelAttr> GetOpSupport() override { MS_LOG(EXCEPTION) << "This interface is not support in GE."; }
 
@@ -65,6 +67,7 @@ class GeKernelMod : public KernelMod {
   device::ascend::GeGraphExecutor *graph_executor_ = nullptr;
   std::vector<std::pair<uint32_t, uint32_t>> io_indexes_;
   KernelGraphPtr graph_;
+  AnfNodeWeakPtr node_;
 };
 
 using GeKernelModPtr = std::shared_ptr<GeKernelMod>;

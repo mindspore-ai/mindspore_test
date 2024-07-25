@@ -250,6 +250,10 @@ void AllocOutputMemory(const KernelGraphPtr &kernel_graph, GeDeviceResManager *r
       continue;
     }
 
+    if (HasAbstractMonad(output_node)) {
+      continue;
+    }
+
     auto output_device_addr =
       CreateOutputDeviceAddress(kernel_graph, output_with_index, need_alloc_output_cnt, res_manager);
     AnfAlgo::SetOutputAddr(output_device_addr, output_with_index.second, output_node.get());
@@ -449,6 +453,20 @@ void GEMemoryAllocator::AllocUnuseInput(const KernelGraphPtr &kernel_graph, cons
                     << ", device address addr: " << memory;
   }
   UpdateTracker("UnusedInput", input_node->fullname_with_scope(), kernel_graph->ToString(), memory_size, memory,
+                device::tracker::MemType::kOther);
+}
+
+void GEMemoryAllocator::AllocUnuseInput(const KernelGraphPtr &kernel_graph, KernelTensor *tensor,
+                                        GeDeviceResManager *res_manager) {
+  MS_EXCEPTION_IF_NULL(res_manager);
+  MS_EXCEPTION_IF_NULL(tensor);
+  auto memory = res_manager->AllocateMemory(tensor->size());
+  tensor->set_device_ptr(memory);
+  if (common::IsNeedProfileMemory()) {
+    MS_LOG(WARNING) << "Need Profile Memory, alloc type: UnusedInput, size:" << tensor->size()
+                    << ", graph: " << kernel_graph->ToString() << ", device address addr: " << memory;
+  }
+  UpdateTracker("UnusedInput", kernel_graph->ToString(), kernel_graph->ToString(), tensor->size(), memory,
                 device::tracker::MemType::kOther);
 }
 

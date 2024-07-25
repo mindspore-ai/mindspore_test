@@ -1073,7 +1073,7 @@ void Somas::GraphOutputProcess(const session::KernelGraph &graph) {
     if (iter != nodes_map_.end()) {
       auto &node = iter->second.at(0);
       MS_EXCEPTION_IF_NULL(node);
-      if (output_index <= node->output_tensors_.size()) {
+      if (output_index < node->output_tensors_.size()) {
         auto &tensor = node->output_tensors_[output_index];
         MS_EXCEPTION_IF_NULL(tensor);
         if (need_reuse_graph_output) {

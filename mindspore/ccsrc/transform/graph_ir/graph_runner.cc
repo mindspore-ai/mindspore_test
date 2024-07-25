@@ -476,7 +476,7 @@ Status GraphRunner::UpdateFeatureMemory(const RunOptions &options, const void *c
   }
   ge::Status ge_ret = sess_->UpdateGraphFeatureMemoryBase(static_cast<uint32_t>(wrap_ptr->id_), memory, size);
   if (ge_ret != ge::GRAPH_SUCCESS) {
-    MS_LOG(ERROR) << "Call GE SetGraphConstMemoryBase Failed, ret is: " << ge_ret;
+    MS_LOG(ERROR) << "Call GE UpdateGraphFeatureMemoryBase Failed, ret is: " << ge_ret;
     return Status::FAILED;
   }
   return Status::SUCCESS;

@@ -111,6 +111,7 @@ bool ExecOrderBuilder::IsTrivialNode(const AnfNodePtr &node) {
 void ExecOrderBuilder::BuildLinkInfo() {
   std::queue<AnfNodePtr> to_visit;
   auto output = graph_->get_return();
+  MS_EXCEPTION_IF_NULL(output);
   if (!output->isa<CNode>()) {
     return;
   }
