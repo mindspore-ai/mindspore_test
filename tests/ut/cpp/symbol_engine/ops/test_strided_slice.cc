@@ -50,6 +50,7 @@ TEST_P(TestStridedSlice, static_shape) {
   UT_CHECK_NULL(out_shape);
   ASSERT_TRUE(helper_->SupportInfer());
   ASSERT_TRUE(helper_->CheckSymbolicShapeMatchesDigitalShape(node));
+  GlobalMockObject::verify();
 }
 
 TEST_P(TestStridedSlice, dynamic_shape) {

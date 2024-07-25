@@ -47,6 +47,7 @@ TEST_P(TestChunk, compare_shape_succ) {
   UT_CHECK_NULL(out_shape);
   ASSERT_TRUE(helper_->SupportInfer());
   ASSERT_TRUE(helper_->CheckSymbolicShapeMatchesDigitalShape(node));
+  GlobalMockObject::verify();
 }
 
 INSTANTIATE_TEST_CASE_P(TestSymShape, TestChunk,

@@ -38,6 +38,7 @@
 #include "mindspore/ops/op_def/structure_op_name.h"
 #include "utils/convert_utils_base.h"
 #include "utils/ms_context.h"
+#include "ir/graph_utils.h"
 
 #if !defined(BUILD_LITE)
 #include "pybind11/pybind11.h"
@@ -441,5 +442,26 @@ std::string GetPythonStackStr() {
        << ";Function:" << std::get<func_name_index>(stack_info) << '|';
   }
   return ss.str();
+}
+
+AnfNodeWeakPtrList SuccDeeperWithAttrGraph(const AnfNodePtr &node) {
+  if (node == nullptr) {
+    return {};
+  }
+  auto p = GetValuePtr<Primitive>(node);
+  if (p == nullptr) {
+    return SuccDeeperSimple(node);
+  }
+
+  // for GraphKernel or KernelPacket nodes, visit the inner subgraph.
+  if (p->HasAttr(FUNC_GRAPH_ATTR_GRAPH_KERNEL) || p->HasAttr(kAttrKernelPacketNode)) {
+    if (p->HasAttr(kAttrFuncGraph)) {
+      auto fg = p->GetAttr(kAttrFuncGraph)->cast<FuncGraphPtr>();
+      if (fg != nullptr && fg->get_return() != nullptr) {
+        return {fg->get_return()};
+      }
+    }
+  }
+  return {};
 }
 }  // namespace mindspore

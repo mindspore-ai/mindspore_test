@@ -42,6 +42,10 @@ std::pair<FuncGraphPtr, size_t> GetFuncGraphFromCNode(const CNodePtr &cnode) {
     MS_EXCEPTION_IF_NULL(sub_fg);
     begin_index = kIndex2;
   }
+  if (sub_fg == nullptr && common::AnfAlgo::HasNodeAttr(FUNC_GRAPH_ATTR_GRAPH_KERNEL, cnode) &&
+      common::AnfAlgo::HasNodeAttr(kAttrFuncGraph, cnode)) {
+    sub_fg = common::AnfAlgo::GetNodeAttr<FuncGraphPtr>(cnode, kAttrFuncGraph);
+  }
   if (sub_fg != nullptr && sub_fg->parameters().size() + begin_index < cnode->size()) {
     MS_LOG(INTERNAL_EXCEPTION) << "For graph " << sub_fg->ToString() << ", the parameter size "
                                << sub_fg->parameters().size() << " is less than cnode input num "
@@ -526,7 +530,7 @@ void SymbolEngineImpl::BuildSubgraphImpl(const CNodePtr &cnode, const FuncGraphP
 
   BuildNodesSymbol(sub_fg, GetCNodesOfFuncGraph(sub_fg));
   // only set the abstract for "call" node.
-  if (IsValueNode<FuncGraph>(cnode->input(0))) {
+  if (!IsPrimitiveCNode(cnode, prim::kPrimPartial)) {
     auto out_abs = sub_fg->output()->abstract();
     MS_EXCEPTION_IF_NULL(out_abs);
     auto cnode_abs = CloneAbstractIfSymbolExists(cnode);
@@ -682,7 +686,7 @@ std::string SymbolEngineImpl::DumpText() const {
 }
 
 void SymbolEngineImpl::GetAllNodes(const FuncGraphPtr &func_graph) {
-  auto nodes = TopoSort(func_graph->output(), SuccDeeperSimple, AlwaysInclude);
+  auto nodes = TopoSort(func_graph->output(), SuccDeeperWithAttrGraph, AlwaysInclude);
   for (auto &node : nodes) {
     if (node->isa<CNode>() && !IsPrimitiveCNode(node, prim::kPrimReturn) && node->func_graph() != nullptr) {
       (void)fg_cnodes_[node->func_graph().get()].emplace_back(node);
@@ -720,7 +724,7 @@ void CleanSymbols(const FuncGraphPtr &func_graph) {
   for (auto &param : func_graph->parameters()) {
     (void)params_abs.insert(param->abstract());
   }
-  auto nodes = TopoSort(func_graph->get_return(), SuccDeeperSimple, AlwaysInclude);
+  auto nodes = TopoSort(func_graph->get_return(), SuccDeeperWithAttrGraph, AlwaysInclude);
   for (auto &node : nodes) {
     auto abs = node->abstract();
     if (params_abs.find(abs) != params_abs.end()) {

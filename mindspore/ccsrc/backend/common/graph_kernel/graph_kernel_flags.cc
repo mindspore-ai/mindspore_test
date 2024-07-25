@@ -170,8 +170,11 @@ class FlagRegister {
 }  // namespace
 
 bool GraphKernelFlags::IsEnableKernelPacket() const {
-  // Default disable kernelpacket now.
-  // todo: default enable when jit_level is O1.
+  // when jit_level is O1 (enable dvm), default enable kernel packet, user can use the environment to disable it.
+  // whne jit_level is O0, default disable kernel packet, user can use the environment to enable it.
+  if (IsEnableGraphKernel()) {
+    return common::GetEnv("MS_DEV_ENABLE_KERNEL_PACKET") != "off";
+  }
   return common::GetEnv("MS_DEV_ENABLE_KERNEL_PACKET") == "on";
 }
 

@@ -89,6 +89,7 @@ ValueNodePtr ConstructGraph::NewValueNode(const ValuePtr &value) { return graph_
 CNodePtr ConstructGraph::NewCNodeWithoutInfer(const std::string &prim_name, const std::vector<AnfNodePtr> &inputs,
                                               const mindspore::HashMap<std::string, ValuePtr> &attrs) {
   MS_EXCEPTION_IF_NULL(graph_);
+  MS_LOG(DEBUG) << "Begin create cnode " << prim_name;
   auto prim = std::make_shared<Primitive>(prim_name);
   prim->SetAttrs(attrs);
   auto value_node = std::make_shared<ValueNode>(prim);

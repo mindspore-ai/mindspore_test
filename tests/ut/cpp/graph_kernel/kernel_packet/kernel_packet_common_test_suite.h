@@ -22,8 +22,15 @@
 #include "backend/common/graph_kernel/kernel_packet/symbol_engine_extender.h"
 #include "backend/common/graph_kernel/convert_call_to_prim.h"
 #include "include/common/utils/anfalgo.h"
+#include "kernel/graph_kernel/kernel_packet/kernel_packet_infer_functor.h"
+#include "mindspore/core/symbolic_shape/utils.h"
 
 namespace mindspore::graphkernel::test {
-class TestKernelPacket : public GraphKernelCommonTestSuite {};
+using NodeShapeVector = std::map<AnfNodePtr, ShapeVector>;
+class TestKernelPacket : public GraphKernelCommonTestSuite {
+ public:
+  CNodePtrList GetAllPacketNodes(const FuncGraphPtr &fg);
+  bool InferPacketNode(const CNodePtr &packet_node, const NodeShapeVector &input_real_shape);
+};
 }  // namespace mindspore::graphkernel::test
 #endif  // TESTS_UT_CPP_GRAPH_KERNEL_KERNEL_PACKET_KERNEL_PACKET_COMMON_TEST_SUITE_H_
