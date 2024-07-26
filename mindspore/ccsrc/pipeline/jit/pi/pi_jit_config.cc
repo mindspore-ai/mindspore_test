@@ -232,7 +232,7 @@ bool GraphJitConfig::AddAllowedInlineModules(PyObject *list) {
 }
 
 void GraphJitConfig::AddAllowedInlineModules(const std::string &module_name) {
-  kPIJitConfigDefault.allowed_inline_modules_.insert(module_name);
+  this->allowed_inline_modules_.insert(module_name);
 }
 
 bool GraphJitConfig::SetAutoJitFilter(PyObject *callable) {
@@ -279,6 +279,10 @@ bool GraphJitConfig::ShouldAutoJit(PyFrameObject *f) {
 
 GraphJitConfig::GraphJitConfig(const py::object &c) {
   *this = kPIJitConfigDefault;
+  this->Update(c);
+}
+
+void GraphJitConfig::Update(const py::object &c) {
   (void)c.cast<py::dict>();
   PyObject *key;
   PyObject *value;
@@ -340,7 +344,7 @@ void GraphJitConfig::ApplyAutoJitCell() {
 }  // namespace pijit
 
 void update_pijit_default_config(const py::kwargs &conf) {
-  mindspore::pijit::kPIJitConfigDefault = mindspore::pijit::GraphJitConfig(conf);
+  mindspore::pijit::kPIJitConfigDefault.Update(conf);
   mindspore::pijit::GraphJitConfig::ApplyAutoJitCell();
 }
 

@@ -119,6 +119,7 @@ class GraphJitConfig {
   }
 
   static void ApplyAutoJitCell();
+  void Update(const py::object &c);
 
  private:
   std::set<std::string> allowed_inline_modules_;
