@@ -35,7 +35,7 @@ from ..auto_generate import (AbsGrad, ACosGrad, LogitGrad, AcoshGrad, AsinGrad, 
                              SigmoidGrad, HSwishGrad, NLLLossGrad, AtanGrad, GridSampler3DGrad, GridSampler2DGrad,
                              ResizeBicubicGrad, HSigmoidGrad, CholeskyGrad, ResizeNearestNeighborGrad, LayerNormGrad,
                              HShrinkGrad, LayerNormGradGrad, SiLUGrad, MaximumGrad, MaximumGradGrad, RmsNormGrad,
-                             FlashAttentionScoreGrad, UpsampleTrilinear3DGrad, UpsampleNearest3DGrad,
+                             FlashAttentionScoreGrad, UpsampleTrilinear3DGrad, UpsampleNearest3DGrad, MaskedSelectGrad,
                              BinaryCrossEntropyGrad)
 
 
@@ -1989,20 +1989,6 @@ class MvlgammaGrad(Primitive):
     def __init__(self, p):
         self.init_prim_io_names(inputs=['y_grad', 'x'], outputs=['x_grad'])
         self.p = validator.check_value_type('p', p, [int], self.name)
-
-
-class MaskedSelectGrad(PrimitiveWithInfer):
-    """Computes gradient for MaskedSelect."""
-
-    @prim_attr_register
-    def __init__(self):
-        pass
-
-    def infer_shape(self, x, mask, grad):
-        return x
-
-    def infer_dtype(self, x, mask, grad):
-        return x
 
 
 class SoftShrinkGrad(Primitive):

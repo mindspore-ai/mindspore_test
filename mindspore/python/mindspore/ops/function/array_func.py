@@ -66,7 +66,7 @@ from mindspore._c_expression import Tensor as Tensor_
 from mindspore.ops._utils.utils import ms_arrange
 
 from mindspore.ops.auto_generate import cat, range, scatter_nd, deepcopy, masked_fill, diagonal, expand_dims, \
-    flip, transpose, triu, unsorted_segment_sum, diag, gather, gather_d, gather_nd, reshape, \
+    flip, transpose, triu, unsorted_segment_sum, diag, gather, gather_d, gather_nd, reshape, masked_select, \
     broadcast_to, strided_slice, ones, zeros, max_, min_, select
 from mindspore.ops.auto_generate.gen_ops_prim import scatter_add_ext_op, slice_ext_op, gather_d_op
 from mindspore.ops.operations.manually_defined import tile, rank, scalar_cast
@@ -88,7 +88,6 @@ gather_nd_ = P.GatherNd()
 ger_ = P.Ger()
 index_fill_ = IndexFill()
 lstsq_ = Lstsq()
-masked_select_ = P.MaskedSelect()
 matrix_band_part_ = P.array_ops.MatrixBandPart()
 ones_ = P.Ones()
 population_count_ = P.PopulationCount()
@@ -4623,38 +4622,6 @@ def tuple_to_array(input_x):
     else:
         dtype = mstype.float32
     return tuple_to_tensor_(input_x, dtype)
-
-
-def masked_select(input, mask):
-    """
-    Returns a new 1-D Tensor which indexes the `x` tensor according to the boolean `mask`.
-    The shapes of the `mask` tensor and the `x` tensor don't need to match, but they must be broadcastable.
-
-    Args:
-        input (Tensor): The shape of tensor is :math:`(x_1, x_2, ..., x_R)`.
-        mask (Tensor[bool]): The shape of tensor is :math:`(x_1, x_2, ..., x_R)`.
-
-    Returns:
-        A 1-D Tensor, with the same type as `input`.
-
-    Raises:
-        TypeError: If `input` or `mask` is not a Tensor.
-        TypeError: If dtype of `mask` is not bool.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import numpy as np
-        >>> import mindspore
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([1, 2, 3, 4]), mindspore.int64)
-        >>> mask = Tensor(np.array([1, 0, 1, 0]), mindspore.bool_)
-        >>> output = ops.masked_select(x, mask)
-        >>> print(output)
-        [1 3]
-    """
-    return masked_select_(input, mask)
 
 
 def diagflat(input, offset=0):

@@ -11,3 +11,5 @@ masked_select:
   dispatch:
     enable: True
     Ascend: MaskedSelectAscend
+    CPU: MaskedSelectCPU
+    GPU: MaskedSelectGPU

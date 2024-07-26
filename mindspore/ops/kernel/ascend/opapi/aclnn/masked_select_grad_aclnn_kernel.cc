@@ -56,7 +56,9 @@ bool InplaceZero::IsWorkSpaceSize() { return zero_ws_size_; }
 void MaskedSelectGradAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                       const std::vector<KernelTensor *> &outputs) {
   GetWorkspaceForResize(outputs[kIndex0], inputs[kIndex1], inputs[kIndex2]);
-  inplace_zero_.SetWorkspaceForInplaceZero(inputs[kIndex0], &workspace_size_list_);
+  if (!is_dynamic_) {
+    inplace_zero_.SetWorkspaceForInplaceZero(inputs[kIndex0], &workspace_size_list_);
+  }
 }
 
 bool MaskedSelectGradAclnnKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
