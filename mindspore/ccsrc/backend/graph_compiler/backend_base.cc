@@ -26,7 +26,6 @@
 #include "pipeline/jit/ps/parse/data_converter.h"
 #include "backend/graph_compiler/transform.h"
 #include "backend/common/pass/erase_invalid_micro_depend.h"
-#include "backend/common/pass/silent_check_v2.h"
 #include "backend/common/pass/erase_not_cut_attr.h"
 #include "backend/common/pass/switch_not_cut.h"
 #include "include/backend/distributed/recovery/recovery_context.h"
@@ -849,9 +848,6 @@ void MindRTBackendBase::UnifyMindIR(const FuncGraphPtr &root_graph) const {
   auto optimizer = std::make_shared<opt::GraphOptimizer>();
   auto unify_mindir_pm = std::make_shared<opt::PassManager>("unify_mindir_pm");
   unify_mindir_pm->AddPass(std::make_shared<opt::EraseInvalidMicroDepend>());
-  if (opt::IsNpuAsdEnable()) {
-    unify_mindir_pm->AddPass(std::make_shared<opt::SilentCheckV2>(root_graph));
-  }
   if (common::AnfAlgo::IsDynamicGraph(root_graph)) {
     unify_mindir_pm->AddPass(std::make_shared<opt::EraseNotCutAttr>());
   }

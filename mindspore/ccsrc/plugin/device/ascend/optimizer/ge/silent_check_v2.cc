@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "backend/common/pass/silent_check_v2.h"
+#include "plugin/device/ascend/optimizer/ge/silent_check_v2.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -22,9 +22,13 @@
 #include <memory>
 #include <regex>
 #include <string>
+#include <utility>
 #include <vector>
 #include "abstract/abstract_value.h"
 #include "abstract/dshape.h"
+#include "base/base.h"
+#include "include/backend/kernel_graph.h"
+#include "include/backend/optimizer/helper.h"
 #include "include/common/utils/utils.h"
 #include "ir/anf.h"
 #include "ir/dtype/number.h"
@@ -33,6 +37,7 @@
 #include "ir/scalar.h"
 #include "ir/tensor.h"
 #include "ir/value.h"
+#include "kernel/kernel_build_info.h"
 #include "mindapi/base/shape_vector.h"
 #include "op_def/auto_generate/gen_ops_name.h"
 #include "op_def/auto_generate/gen_ops_primitive.h"
@@ -40,6 +45,7 @@
 #include "infer/l2_normalize.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
+#include "utils/info.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
 #include "utils/ms_utils.h"
@@ -48,7 +54,6 @@ namespace mindspore {
 namespace opt {
 namespace {
 constexpr size_t kIndexOne = 1;
-constexpr size_t kInputSizeTwo = 2;
 constexpr char kScaleSense[] = "scale_sense";
 constexpr char kNpuAsdEnable[] = "NPU_ASD_ENABLE";
 constexpr char kParamSfdaPrefix[] = "silent_check_v2.sfda";
@@ -149,32 +154,29 @@ bool GradCommOperatorUnvisited(const BaseRef &ref) {
     if (!IsCommOperator(node)) {
       return false;
     }
-    return true;
+    return UnVisited(ref);
   }
   return false;
 }
 
-// Get abstract of the default value in the given parameter.
-AbstractBasePtr GetDefaultValueAbstract(const ParameterPtr &param) {
-  auto value = param->default_param();
-  MS_EXCEPTION_IF_NULL(value);
-  auto value_abs = value->ToAbstract();
-  MS_EXCEPTION_IF_NULL(value_abs);
-  if (value_abs->isa<abstract::AbstractMapTensor>()) {
-    // Return AbstractMapTensor for map parameter.
-    return value_abs;
-  }
-  // Make an AbstractRefTensor for the tensor value.
-  auto abs_tensor = value_abs->cast<abstract::AbstractTensorPtr>();
-  MS_EXCEPTION_IF_NULL(abs_tensor);
-  auto ref_key = std::make_shared<RefKey>(param->name());
-  return std::make_shared<abstract::AbstractRefTensor>(abs_tensor, ref_key);
-}
-
-AnfNodePtr CreateValueNode(const ValuePtr &value) {
+ValueNodePtr CreateValueNode(const FuncGraphPtr &func_graph, const ValuePtr &value, TypeId dtype,
+                             kernel::KernelObjectType obj_type) {
+  MS_EXCEPTION_IF_NULL(func_graph);
   auto value_node = std::make_shared<ValueNode>(value);
   MS_EXCEPTION_IF_NULL(value_node);
   value_node->set_abstract(value->ToAbstract());
+
+  auto kernel_graph = func_graph->cast<KernelGraphPtr>();
+  MS_EXCEPTION_IF_NULL(kernel_graph);
+  kernel_graph->AddValueNodeToGraph(value_node);
+
+  value_node->set_kernel_info(std::make_shared<device::KernelInfo>());
+  kernel::KernelBuildInfo::KernelBuildInfoBuilder builder;
+  builder.SetOutputsFormat({kOpFormat_DEFAULT});
+  builder.SetOutputsDeviceType({dtype});
+  builder.SetOutputsKernelObjectType({obj_type});
+  AnfAlgo::SetSelectKernelBuildInfo(builder.Build(), value_node.get());
+
   return value_node;
 }
 }  // namespace
@@ -197,46 +199,27 @@ const BaseRef SilentCheckV2::DefinePattern() const {
   return VectorRef({V, Xs});
 }
 
-ParameterPtr CreateSfdaParam(const FuncGraphPtr &func_graph, const AnfNodePtr &node) {
+using ParamNameValue = std::pair<std::string, tensor::TensorPtr>;
+using ParamNameValuePtr = std::shared_ptr<ParamNameValue>;
+
+ParamNameValuePtr GetSfdaParamNameValue(TypeId dtype = kNumberTypeFloat32) {
   static int param_sfda_index = 0;
-  auto param_name = std::string(kParamSfdaPrefix) + std::to_string(param_sfda_index++);
-  auto param_info = std::make_shared<ParamInfo>();
-  param_info->set_requires_grad(false);
-  param_info->set_name(param_name);
-
+  constexpr int kSfdaLength = 3;
   // set initial sfda value to 0.0
-  float sfda_init[] = {0.0, 0.0, 0.0};
-  auto param_default_value =
-    std::make_shared<tensor::Tensor>(kNumberTypeFloat32, ShapeVector{3}, sfda_init, sizeof(sfda_init));
-  param_default_value->set_param_info(param_info);
-
-  auto param = func_graph->add_parameter();
-  param->set_name(param_name);
-  param->set_default_param(param_default_value);
-  param->set_abstract(GetDefaultValueAbstract(param));
-
-  return param;
+  float sfda_init[kSfdaLength] = {0.0, 0.0, 0.0};
+  return std::make_shared<ParamNameValue>(
+    std::pair{std::string(kParamSfdaPrefix) + std::to_string(param_sfda_index++),
+              std::make_shared<tensor::Tensor>(dtype, ShapeVector{kSfdaLength}, sfda_init, sizeof(sfda_init))});
 }
 
-ParameterPtr CreateStepParam(const FuncGraphPtr &func_graph, const AnfNodePtr &node) {
-  static int param_sfda_index = 0;
-  auto param_name = std::string(kParamStepPrefix) + std::to_string(param_sfda_index++);
-  auto param_info = std::make_shared<ParamInfo>();
-  param_info->set_requires_grad(false);
-  param_info->set_name(param_name);
-
+ParamNameValuePtr GetStepParamNameValue() {
+  static int param_step_index = 0;
+  constexpr int kStepLength = 1;
   // set initial step values to 0
-  int64_t step_init[] = {0};
-  auto param_default_value =
-    std::make_shared<tensor::Tensor>(kNumberTypeInt64, ShapeVector{1}, step_init, sizeof(step_init));
-  param_default_value->set_param_info(param_info);
-
-  auto param = func_graph->add_parameter();
-  param->set_name(param_name);
-  param->set_default_param(param_default_value);
-  param->set_abstract(GetDefaultValueAbstract(param));
-
-  return param;
+  int64_t step_init[kStepLength] = {0};
+  return std::make_shared<ParamNameValue>(std::pair{
+    std::string(kParamStepPrefix) + std::to_string(param_step_index++),
+    std::make_shared<tensor::Tensor>(kNumberTypeInt64, ShapeVector{kStepLength}, step_init, sizeof(step_init))});
 }
 
 AnfNodePtr CreateNormForGE(const FuncGraphPtr &func_graph, const AnfNodePtr &node, const AnfNodePtr &dout) {
@@ -246,9 +229,11 @@ AnfNodePtr CreateNormForGE(const FuncGraphPtr &func_graph, const AnfNodePtr &nod
   square_node->set_abstract(dout->abstract());
   square_node->set_scope(node->scope());
 
-  auto reduce_axes = CreateValueNode(std::make_shared<ValueTuple>(std::vector<ValuePtr>{}));
+  auto reduce_axes = CreateValueNode(func_graph, std::make_shared<ValueTuple>(std::vector<ValuePtr>{}),
+                                     kNumberTypeInt64, kernel::KernelObjectType::TUPLE);
   // set keep_dims and skip_mode to False
-  auto false_node = CreateValueNode(std::make_shared<BoolImm>(false));
+  auto false_node =
+    CreateValueNode(func_graph, std::make_shared<BoolImm>(false), kNumberTypeBool, kernel::KernelObjectType::SCALAR);
   std::vector<AnfNodePtr> reduce_inputs = {NewValueNode(std::make_shared<Primitive>(ops::kNameReduceSum)), square_node,
                                            reduce_axes, false_node, false_node};
   auto reduce_node = func_graph->NewCNode(reduce_inputs);
@@ -268,19 +253,55 @@ AnfNodePtr CreateNormForGE(const FuncGraphPtr &func_graph, const AnfNodePtr &nod
 }
 
 AnfNodePtr CreateNormForKBK(const FuncGraphPtr &func_graph, const AnfNodePtr &node, const AnfNodePtr &dout) {
-  auto ord = CreateValueNode(std::make_shared<FP32Imm>(2.0));
-  auto dims = CreateValueNode(std::make_shared<ValueTuple>(std::vector<ValuePtr>{}));
-  auto keep_dims = CreateValueNode(std::make_shared<BoolImm>(false));
+  auto ord =
+    CreateValueNode(func_graph, std::make_shared<FP32Imm>(2), kNumberTypeFloat32, kernel::KernelObjectType::SCALAR);
+  auto dims = CreateValueNode(func_graph, std::make_shared<ValueTuple>(std::vector<ValuePtr>{}), kNumberTypeInt64,
+                              kernel::KernelObjectType::TUPLE);
+  auto keep_dims =
+    CreateValueNode(func_graph, std::make_shared<BoolImm>(false), kNumberTypeBool, kernel::KernelObjectType::SCALAR);
   std::vector<AnfNodePtr> norm_inputs = {NewValueNode(std::make_shared<Primitive>(ops::kNameNorm)), dout, ord, dims,
                                          keep_dims};
   auto norm_node = func_graph->NewCNode(norm_inputs);
   MS_EXCEPTION_IF_NULL(norm_node);
-  auto norm_abs = dout->abstract()->Clone();
+  auto abs_tensor = dout->abstract()->cast<abstract::AbstractTensorPtr>();
+  MS_EXCEPTION_IF_NULL(abs_tensor);
+  auto norm_abs = abs_tensor->abstract::AbstractTensor::Clone();
   norm_abs->set_shape(std::make_shared<abstract::TensorShape>(ShapeVector{}));
   norm_node->set_abstract(norm_abs);
   norm_node->set_scope(node->scope());
 
   return norm_node;
+}
+
+AnfNodePtr CreateCastNode(const FuncGraphPtr &func_graph, const AnfNodePtr &input, TypeId dst_type) {
+  // auto cast_node = load_node;
+  auto input_abs = input->abstract()->cast<abstract::AbstractTensorPtr>();
+  MS_EXCEPTION_IF_NULL(input_abs);
+  auto src_type = input_abs->element()->GetType()->type_id();
+  if (src_type == dst_type) {
+    return input;
+  }
+
+  PrimitivePtr cast_prim = std::make_shared<Primitive>(prim::kPrimCast->name());
+  MS_EXCEPTION_IF_NULL(cast_prim);
+  (void)cast_prim->AddAttr("dst_type", TypeIdToType(dst_type));
+  (void)cast_prim->AddAttr("DstT", TypeIdToType(dst_type));
+  (void)cast_prim->AddAttr("SrcT", TypeIdToType(src_type));
+  // Create dest type node.
+  auto dst_type_ptr = TypeIdToType(dst_type);
+  auto dst_type_node = CreateValueNode(func_graph, std::make_shared<Int64Imm>(dst_type), kNumberTypeInt64,
+                                       kernel::KernelObjectType::SCALAR);
+
+  // Insert Cast node
+  std::vector<AnfNodePtr> cast_inputs = {NewValueNode(cast_prim), input, dst_type_node};
+  auto cast_node = func_graph->NewCNode(cast_inputs);
+  MS_EXCEPTION_IF_NULL(cast_node);
+  auto cast_abs = input_abs->Clone()->cast<abstract::AbstractTensorPtr>();
+  cast_abs->element()->set_type(dst_type_ptr);
+  MS_EXCEPTION_IF_NULL(cast_abs);
+  cast_node->set_abstract(cast_abs);
+
+  return cast_node;
 }
 
 AnfNodePtr GetGradValue(const FuncGraphPtr &func_graph, const AnfNodePtr &node, const AnfNodePtr &dout,
@@ -296,16 +317,49 @@ AnfNodePtr GetGradValue(const FuncGraphPtr &func_graph, const AnfNodePtr &node, 
   auto load_node = func_graph->NewCNode(load_inputs);
   MS_EXCEPTION_IF_NULL(load_node);
   auto scale_param_abs = loss_scale->abstract()->cast<abstract::AbstractTensorPtr>();
+  MS_EXCEPTION_IF_NULL(scale_param_abs);
   load_node->set_abstract(scale_param_abs->abstract::AbstractTensor::Clone());
   load_node->set_scope(node->scope());
 
-  std::vector<AnfNodePtr> div_inputs = {NewValueNode(std::make_shared<Primitive>(ops::kNameDiv)), dout, load_node};
+  auto dout_abs = dout->abstract()->cast<abstract::AbstractTensorPtr>();
+  MS_EXCEPTION_IF_NULL(dout_abs);
+  auto dst_type = dout_abs->element()->GetType()->type_id();
+  // Ascend Div operator does not support bf16, in this case select fp32 as the middle computing data type
+  auto compute_type = (dst_type == kNumberTypeBFloat16 ? kNumberTypeFloat32 : dst_type);
+  // create cast node if the type of scale_sense is not the same as type of dout
+  auto cast_dout = CreateCastNode(func_graph, dout, compute_type);
+  auto cast_scale = CreateCastNode(func_graph, load_node, compute_type);
+  std::vector<AnfNodePtr> div_inputs = {NewValueNode(std::make_shared<Primitive>(ops::kNameDiv)), cast_dout,
+                                        cast_scale};
   auto div_node = func_graph->NewCNode(div_inputs);
   MS_EXCEPTION_IF_NULL(div_node);
-  div_node->set_abstract(dout->abstract());
+  div_node->set_abstract(cast_dout->abstract());
   div_node->set_scope(node->scope());
 
-  return div_node;
+  return CreateCastNode(func_graph, div_node, dst_type);
+}
+
+const FuncGraphPtr GetRootGraph(const FuncGraphPtr &func_graph) {
+  MS_EXCEPTION_IF_NULL(func_graph);
+  FuncGraphPtr root = func_graph;
+  while (root->parent() != nullptr) {
+    root = root->parent();
+  }
+  return root;
+}
+
+ParameterPtr GetLossScale(const FuncGraphPtr &root) {
+  MS_EXCEPTION_IF_NULL(root);
+  auto parameters = root->parameters();
+  for (const auto &param : parameters) {
+    auto param_ptr = param->cast<ParameterPtr>();
+    MS_EXCEPTION_IF_NULL(param_ptr);
+    const auto &name = param_ptr->name();
+    if (name == kScaleSense) {
+      return param_ptr;
+    }
+  }
+  return nullptr;
 }
 
 // replace print(i1, i2, U) with print(dummy_input, i1, i2, U) and set attributes of print
@@ -313,6 +367,7 @@ const AnfNodePtr SilentCheckV2::Process(const FuncGraphPtr &func_graph, const An
                                         const EquivPtr &) const {
   MS_EXCEPTION_IF_NULL(func_graph);
   MS_EXCEPTION_IF_NULL(node);
+  auto root = GetRootGraph(func_graph);
   common::AnfAlgo::SetNodeAttr(kAttrVisited, MakeValue(true), node);
 
   auto cnode = node->cast<CNodePtr>();
@@ -322,39 +377,45 @@ const AnfNodePtr SilentCheckV2::Process(const FuncGraphPtr &func_graph, const An
     return node;
   }
 
-  if (cnode->HasPrimalAttr(kPrimalAttrForwardUniqueId)) {
-    MS_LOG(WARNING) << cnode->fullname_with_scope() << ", has attr forward_unique_id=" << std::boolalpha
-                    << GetValue<std::string>(cnode->GetPrimalAttr(kPrimalAttrForwardUniqueId))
-                    << "inputs: " << cnode->DebugString();
-  }
+  MS_LOG(INFO) << cnode->fullname_with_scope() << " has attr forward_unique_id=" << std::boolalpha
+               << GetValue<std::string>(cnode->GetPrimalAttr(kPrimalAttrForwardUniqueId));
 
   // create SlientCheckV2 node
   auto check_prim = std::make_shared<Primitive>(kNameSilentCheckV2);
   check_prim->AddAttr("side_effect_mem", std::make_shared<BoolImm>(true));
   // input1: input_grad
-  auto dout = GetGradValue(func_graph, node, cnode->input(kIndexOne), loss_scale_);
+  auto loss_scale = GetLossScale(root);
+  auto dout = GetGradValue(func_graph, node, cnode->input(kIndexOne), loss_scale);
   // input0: val
   auto norm_node = MsContext::GetInstance()->GetJitLevel() == kAttrJitLevelO2
                      ? CreateNormForGE(func_graph, node, dout)
                      : CreateNormForKBK(func_graph, node, dout);
   // input2: sfda
-  auto param_sfda = CreateSfdaParam(func_graph, node);
+  auto param_sfda =
+    CreateValueNode(func_graph, GetSfdaParamNameValue()->second, kNumberTypeFloat32, kernel::KernelObjectType::TENSOR);
   // input3: step
-  auto param_step = CreateStepParam(func_graph, node);
+  auto param_step =
+    CreateValueNode(func_graph, GetStepParamNameValue()->second, kNumberTypeInt64, kernel::KernelObjectType::TENSOR);
   // input4: cMinSteps
-  auto min_steps = CreateValueNode(std::make_shared<Int64Imm>(kMinStepDefault));
+  auto min_steps = CreateValueNode(func_graph, std::make_shared<Int64Imm>(kMinStepDefault), kNumberTypeInt64,
+                                   kernel::KernelObjectType::SCALAR);
   // input5: cThreshL1
   auto upper_thresh = parse_thresh("NPU_ASD_UPPER_THRESH", "1000000,10000", 3);
-  auto thresh_l1 = CreateValueNode(std::make_shared<FP32Imm>(upper_thresh.front()));
+  auto thresh_l1 = CreateValueNode(func_graph, std::make_shared<FP32Imm>(upper_thresh.front()), kNumberTypeFloat32,
+                                   kernel::KernelObjectType::SCALAR);
   // input7: cThreshL2
-  auto thresh_l2 = CreateValueNode(std::make_shared<FP32Imm>(upper_thresh.back()));
+  auto thresh_l2 = CreateValueNode(func_graph, std::make_shared<FP32Imm>(upper_thresh.back()), kNumberTypeFloat32,
+                                   kernel::KernelObjectType::SCALAR);
   // input6: cCoeffL1
   auto sigma_thresh = parse_thresh("NPU_ASD_SIGMA_THRESH", "100000,5000", 3);
-  auto coeff_l1 = CreateValueNode(std::make_shared<FP32Imm>(sigma_thresh.front()));
+  auto coeff_l1 = CreateValueNode(func_graph, std::make_shared<FP32Imm>(sigma_thresh.front()), kNumberTypeFloat32,
+                                  kernel::KernelObjectType::SCALAR);
   // input8: cCoeffL2
-  auto coeff_l2 = CreateValueNode(std::make_shared<FP32Imm>(sigma_thresh.back()));
+  auto coeff_l2 = CreateValueNode(func_graph, std::make_shared<FP32Imm>(sigma_thresh.back()), kNumberTypeFloat32,
+                                  kernel::KernelObjectType::SCALAR);
   // input9: npuAsdDetect
-  auto npu_asd_detect = CreateValueNode(std::make_shared<Int64Imm>(GetNpuAsdDetectValue()));
+  auto npu_asd_detect = CreateValueNode(func_graph, std::make_shared<Int64Imm>(GetNpuAsdDetectValue()),
+                                        kNumberTypeInt64, kernel::KernelObjectType::SCALAR);
   std::vector<AnfNodePtr> check_inputs = {NewValueNode(check_prim),
                                           norm_node,
                                           dout,
@@ -368,8 +429,10 @@ const AnfNodePtr SilentCheckV2::Process(const FuncGraphPtr &func_graph, const An
                                           npu_asd_detect};
   auto check_node = func_graph->NewCNode(check_inputs);
   MS_EXCEPTION_IF_NULL(check_node);
+  auto tensor_abs = dout->abstract()->cast<abstract::AbstractTensorPtr>();
+  MS_EXCEPTION_IF_NULL(tensor_abs);
   // output0: input_grad
-  auto out_input_grad_abs = dout->abstract();
+  auto out_input_grad_abs = tensor_abs->abstract::AbstractTensor::Clone();
   // output1: sfda
   auto out_sfda_abs = param_sfda->abstract()->cast<abstract::AbstractTensorPtr>()->abstract::AbstractTensor::Clone();
   // output2: step
@@ -388,29 +451,9 @@ const AnfNodePtr SilentCheckV2::Process(const FuncGraphPtr &func_graph, const An
   depend_node->set_abstract(dout->abstract());
   depend_node->set_scope(node->scope());
 
-  // create new communication node to replace old node
-  std::vector<AnfNodePtr> comm_inputs = cnode->inputs();
-  comm_inputs[kIndexOne] = depend_node;
-  auto new_comm_node = func_graph->NewCNode(comm_inputs);
-  MS_EXCEPTION_IF_NULL(new_comm_node);
-  new_comm_node->set_abstract(node->abstract());
-  new_comm_node->set_scope(node->scope());
-  new_comm_node->set_fullname_with_scope(node->fullname_with_scope());
-
-  return new_comm_node;
-}
-
-void SilentCheckV2::GetLossScale() {
-  MS_EXCEPTION_IF_NULL(root_);
-  auto parameters = root_->parameters();
-  for (const auto &param : parameters) {
-    auto param_ptr = param->cast<ParameterPtr>();
-    MS_EXCEPTION_IF_NULL(param_ptr);
-    const auto &name = param_ptr->name();
-    if (name == kScaleSense) {
-      loss_scale_ = param_ptr;
-    }
-  }
+  // update cnode input
+  cnode->set_input(kIndexOne, depend_node);
+  return cnode;
 }
 }  // namespace opt
 }  // namespace mindspore

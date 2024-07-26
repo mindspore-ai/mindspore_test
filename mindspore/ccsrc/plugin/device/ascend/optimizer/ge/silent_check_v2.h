@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_BACKEND_COMMON_PASS_SILENT_CHECK_V2_H_
-#define MINDSPORE_CCSRC_BACKEND_COMMON_PASS_SILENT_CHECK_V2_H_
+#ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_OPTIMIZER_GE_SILENT_CHECK_V2_H_
+#define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_OPTIMIZER_GE_SILENT_CHECK_V2_H_
 
 #include <vector>
 #include "base/base.h"
@@ -29,21 +29,12 @@ bool IsNpuAsdEnable();
 
 class SilentCheckV2 : public PatternProcessPass {
  public:
-  explicit SilentCheckV2(const FuncGraphPtr &root, bool multigraph = true)
-      : PatternProcessPass("insert_silent_check_v2", multigraph), root_(root) {
-    GetLossScale();
-  }
+  explicit SilentCheckV2(bool multigraph = true) : PatternProcessPass("insert_silent_check_v2", multigraph) {}
   ~SilentCheckV2() override = default;
 
   const BaseRef DefinePattern() const override;
   const AnfNodePtr Process(const FuncGraphPtr &, const AnfNodePtr &node, const EquivPtr &) const override;
-
- private:
-  void GetLossScale();
-
-  FuncGraphPtr root_ = nullptr;
-  ParameterPtr loss_scale_ = nullptr;
 };
 }  // namespace opt
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_BACKEND_COMMON_PASS_SILENT_CHECK_V2_H_
+#endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_OPTIMIZER_GE_SILENT_CHECK_V2_H_
