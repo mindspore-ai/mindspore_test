@@ -816,6 +816,7 @@ constexpr char TENSOR_SCATTER_ELEMENTS[] = "TensorScatterElements";
 constexpr char STACK[] = "Stack";
 constexpr char STACK_EXT[] = "StackExt";
 constexpr char GRID_SAMPLER_2D[] = "GridSampler2D";
+constexpr char GENERATEEODMASKV2[] = "GenerateEodMaskV2";
 
 constexpr size_t LAST_INDEX(size_t s) {
   if (s < 1) {

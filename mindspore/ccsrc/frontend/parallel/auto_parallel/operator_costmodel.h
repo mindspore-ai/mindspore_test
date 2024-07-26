@@ -676,6 +676,7 @@ using InplaceAddCost = SubCost;
 using InplaceSubCost = InplaceAddCost;
 using InplaceUpdateCost = InplaceAddCost;
 using MaskedFillCost = SubCost;
+using GatherEodMaskV2Cost = SubCost;
 
 class MulCost : public SubCost {
  public:
