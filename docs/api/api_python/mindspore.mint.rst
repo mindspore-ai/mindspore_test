@@ -214,6 +214,8 @@ mindspore.mint.nn
     :template: classtemplate.rst
 
     mindspore.mint.nn.Hardshrink
+    mindspore.mint.nn.Hardsigmoid
+    mindspore.mint.nn.Hardswish
 
 线性层
 ^^^^^^^^^^^^^^^^^^
