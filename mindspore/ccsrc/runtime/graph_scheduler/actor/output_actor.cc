@@ -360,6 +360,8 @@ TensorPtr OutputActor::CreateOutputTensor(const AnfNodePtr &output_node, size_t 
     tensor->set_device_address(tensor_device_address);
     output_node_to_tensor_device_address_[{output_node, output_index}] = tensor_device_address;
   }
+
+  tensor->set_need_release_device_mem(true);
   return tensor;
 }
 
