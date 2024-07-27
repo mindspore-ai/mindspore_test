@@ -116,11 +116,18 @@ Status PagedAttentionMaskInfo::InferTensorMap() {
   Shape block_tensor_map{1, -1};
   Shape context_tensor_map{1};
   Shape alibi_mask_map{1, 0, -1, -1};
+  Shape antiquant_tensor_map{-1, 0};
+
   inputs_tensor_map_.emplace_back(query_tensor_map);
   inputs_tensor_map_.emplace_back(cache_tensor_map);
   inputs_tensor_map_.emplace_back(cache_tensor_map);
   inputs_tensor_map_.emplace_back(block_tensor_map);
   inputs_tensor_map_.emplace_back(context_tensor_map);
+  constexpr size_t antiquant_input_size = 8;
+  if (strategy()->GetInputDim().size() == antiquant_input_size) {
+    inputs_tensor_map_.emplace_back(antiquant_tensor_map);
+    inputs_tensor_map_.emplace_back(antiquant_tensor_map);
+  }
   inputs_tensor_map_.emplace_back(alibi_mask_map);
 
   Shape out_tensor_map{1, -1, 0};
