@@ -30,8 +30,8 @@
 
 asm_default_function MatVecMulPackFp32
     sub sp, sp, #16
-    stp x29, x30, [sp], #16
-  
+    stp x29, x30, [sp]
+
     dup v1.2d, xzr
     mov w7, #6
     dup v2.4s, w7
@@ -43,7 +43,7 @@ asm_default_function MatVecMulPackFp32
         st1 {v24.4s, v25.4s}, [x2], #32
         subs w6, w6, #8
         bge Loop1x8Start
-                
+
     Loop1xNStart:
         add w6, w6, #8
         cbz w6, End
@@ -59,7 +59,7 @@ asm_default_function MatVecMulPackFp32
         beq End
         st1 {v25.s}[2], [x2]
         b End
-            
+
     Loop1x4Start:
         add w6, w6, #4
         cbz w6, End
@@ -75,7 +75,7 @@ asm_default_function MatVecMulPackFp32
         beq End
         st1 {v24.s}[3], [x2], #4
         b End
-        
+
     Compute1x8Unit:
         mov x7, x0     // reload a-ptr
         mov w8, w5     // reset depth
@@ -140,7 +140,7 @@ asm_default_function MatVecMulPackFp32
                     fmax v25.4s, v25.4s, v1.4s
                 Return1x8:
                     ret
-  
+
     Compute1x4Unit:
         mov x7, x0     // reload a-ptr
         mov w8, w5     // reset depth
@@ -191,9 +191,8 @@ asm_default_function MatVecMulPackFp32
                     fmax v24.4s, v24.4s, v1.4s
                 Return1x4:
                     ret
-  
+
     End:
-        sub sp, sp, #16
         ldp x29, x30, [sp], #16
         ret
 #endif

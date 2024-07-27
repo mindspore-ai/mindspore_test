@@ -34,17 +34,18 @@
 
 asm_function MatmulFloatNeon64
   sub sp, sp, #144
-  st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
-  st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
-  stp x19, x20, [sp], #16
+  st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp]
+  add x9, sp, #64
+  st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [x9]
+  stp x19, x20, [sp, #128]
 
-  ldr x9, [sp, #8]
-  ldr x14, [sp, #16]
+  ldr x9, [sp, #152]
+  ldr x14, [sp, #160]
 
   mov w19, #32 // sizeof(float) * 8
   mul w15, w5, w19 // block stride of lhs/rhs: sizeof(float) * 8 * depth
   mov x19, #4
-  ldr x17, [sp]
+  ldr x17, [sp, #144]
   cbz x14, NoWinoSteps
   mul x8, x7, x17
   mov x11, #8
@@ -779,7 +780,6 @@ NoDstStep:
   bgt L1
 
 End1:
-  sub sp, sp, #144
   ld1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
   ld1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
   ldp x19, x20, [sp], #16

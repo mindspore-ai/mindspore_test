@@ -15,7 +15,7 @@
  */
 #ifdef ENABLE_ARM64
 #include "nnacl/assembly_global.h"
-    
+
 .text
 .align 5
 
@@ -30,24 +30,25 @@
 
 asm_default_function MatVecMulFp32
   sub sp, sp, #128
-  st1 {v8.8h, v9.8h, v10.8h, v11.8h}, [sp], #64
-  st1 {v12.8h, v13.8h, v14.8h, v15.8h}, [sp], #64
+  st1 {v8.8h, v9.8h, v10.8h, v11.8h}, [sp]
+  add x9, sp, #64
+  st1 {v12.8h, v13.8h, v14.8h, v15.8h}, [x9]
 
   mov w14, #4      // sizeof(float)
   mul w8, w14, w5  // rhs depthx1 block stride
   mov w14, #4
-  mul w13, w8, w14 // rhs depthx4 block stride 
+  mul w13, w8, w14 // rhs depthx4 block stride
 
 Loop:
   mov x15, x0     // reload a ptr
   mov x7, x1      // reload b ptr
   mov w9, w5      // reload depth
   cmp w6, #4
-  blt Loop1x1  
+  blt Loop1x1
 
-Loop1x4: 
-  dup v10.8h, wzr  
-  dup v11.8h, wzr  
+Loop1x4:
+  dup v10.8h, wzr
+  dup v11.8h, wzr
   dup v12.8h, wzr
   dup v13.8h, wzr
   dup v14.8h, wzr
@@ -150,7 +151,7 @@ End1x4:
 
   cbz x3, Act1x4
   ld1 {v15.4s}, [x3], #16
-  fadd v14.4s, v14.4s, v15.4s   // add bias 
+  fadd v14.4s, v14.4s, v15.4s   // add bias
 
 Act1x4:
   cmp w4, #3
@@ -214,8 +215,8 @@ Depth1_1x1:
   b Depth1_1x1
 
 End1x1:
-  faddp v6.4s, v4.4s, v4.4s  
-  faddp v7.4s, v6.4s, v6.4s  
+  faddp v6.4s, v4.4s, v4.4s
+  faddp v7.4s, v6.4s, v6.4s
   fadd v7.4s, v7.4s, v5.4s
 
   cbz x3, Act1x1
@@ -245,7 +246,6 @@ Write1x1:
   b Loop
 
 End:
-  sub sp, sp, #128
   ld1 {v8.8h, v9.8h, v10.8h, v11.8h}, [sp], #64
   ld1 {v12.8h, v13.8h, v14.8h, v15.8h}, [sp], #64
   ret
