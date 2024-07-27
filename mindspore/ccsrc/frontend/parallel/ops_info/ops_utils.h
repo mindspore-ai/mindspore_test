@@ -132,6 +132,7 @@ constexpr char CHECK_SET_STRATEGY_VALID_ONCE_ONLY[] = "check_set_strategy_valid_
 constexpr char REPEATED_NUM_IN_DEV_MATRIX_RIGHT[] = "repeated_num_in_dev_matrix_right_";
 constexpr char FLASH_SP_RUN_ONCE_ONLY[] = "FLASH_SP_RUN_ONCE_ONLY";
 constexpr char PP_OPT_SHARD_CONTROL[] = "Pipeline_Opt_Shard_control";
+constexpr char FIAS_SP_RUN_ONCE_ONLY[] = "FIAS_SP_RUN_ONCE_ONLY";
 constexpr char IN_STRATEGY[] = "in_strategy";
 constexpr char OUT_STRATEGY[] = "out_strategy";
 constexpr char LAYOUT[] = "layout";
@@ -361,6 +362,7 @@ constexpr char RING_ATTENTION_POS[] = "RING_ATTENTION_POS";
 constexpr char FLASH_SP_COMM_TYPE[] = "FLASH_SP_COMM_TYPE";
 constexpr char FLASH_SP_COMM_QKV[] = "FLASH_SP_COMM_QKV";
 constexpr char FLASH_SP_COMM_OML[] = "FLASH_SP_COMM_OML";
+constexpr char FIAS_INDEX[] = "FIAS_INDEX";
 constexpr char KEEP_ALIVE[] = "keep_alive";
 
 // Operator

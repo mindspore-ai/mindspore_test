@@ -167,9 +167,9 @@ Status OperatorInfo::CheckStrategyByVector(const Shapes &stra, const Shapes &inp
                         << ", shape is " << ShapeToString(origin_shapes[i]) << ", divisor is "
                         << ShapeToString(sub_input_shape);
         } else {
-          MS_LOG(ERROR) << name_ << ": The strategy is " << StrategyToString(stra) << ", shape " << shape_value
-                        << " at " << j << " cannot be divisible by strategy value " << strategy_value << ", shape is "
-                        << ShapeToString(sub_input_shape);
+          MS_LOG(ERROR) << name_ << ": Input index " << i << ", the strategy is " << StrategyToString(stra)
+                        << ", shape is " << ShapeToString(sub_input_shape) << ", shape value " << shape_value
+                        << " at dim index " << j << " cannot be divisible by strategy value " << strategy_value;
         }
         return FAILED;
       }

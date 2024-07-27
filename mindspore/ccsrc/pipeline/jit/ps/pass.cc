@@ -87,6 +87,7 @@
 #include "frontend/optimizer/comm_op_reuse_tag.h"
 #include "frontend/optimizer/py_interpret_to_execute.h"
 #include "frontend/parallel/pass/flash_sp.h"
+#include "frontend/parallel/pass/fias_sp.h"
 #include "utils/log_adapter.h"
 #include "utils/compile_config.h"
 #include "pipeline/jit/ps/pipeline_split.h"
@@ -413,12 +414,17 @@ opt::OptPassConfig GetOptPassA1(const opt::irpass::OptimizeIRPassLib &irpass) {
 }
 
 bool FlashSPFrontPass(const FuncGraphPtr &func_graph, const opt::OptimizerPtr &optimizer) {
-  if (func_graph->has_flag(parallel::FLASH_SP_RUN_ONCE_ONLY)) {
-    return false;
+  if (!func_graph->has_flag(parallel::FLASH_SP_RUN_ONCE_ONLY)) {
+    auto result = parallel::SetFlashSP(func_graph);
+    func_graph->set_flag(parallel::FLASH_SP_RUN_ONCE_ONLY, true);
+    return result;
   }
-  auto result = parallel::SetFlashSP(func_graph);
-  func_graph->set_flag(parallel::FLASH_SP_RUN_ONCE_ONLY, true);
-  return result;
+  if (!func_graph->has_flag(parallel::FIAS_SP_RUN_ONCE_ONLY)) {
+    auto result = parallel::SetFiasSP(func_graph);
+    func_graph->set_flag(parallel::FIAS_SP_RUN_ONCE_ONLY, true);
+    return result;
+  }
+  return false;
 }
 
 OptPassGroupMap GetOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass) {
