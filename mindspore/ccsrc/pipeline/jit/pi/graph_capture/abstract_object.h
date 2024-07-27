@@ -314,6 +314,7 @@ class AbstractDict : public AbstractSequence {
   py::dict dict_;
   Type k_type_;
   Type v_type_;
+  BoolCache ms_support_;
   bool element_valid_;
   bool modify_;
 };
