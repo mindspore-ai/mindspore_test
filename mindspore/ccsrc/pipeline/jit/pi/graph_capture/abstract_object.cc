@@ -960,6 +960,7 @@ AbstractDict::AbstractDict(Type type, py::object seq, RecMap *rec)
       dict_(),
       k_type_(kTypeAnyValue),
       v_type_(kTypeAnyValue),
+      ms_support_(kBoolUnknown),
       element_valid_(false),
       modify_(false) {
   type_object_ = &PyDict_Type;
@@ -1012,27 +1013,28 @@ bool AbstractTuple::IsMindSporeSupportedType() {
 }
 
 bool AbstractDict::IsMindSporeSupportedType() {
+  if (ms_support_ != kBoolUnknown) {
+    return ms_support_ == kBoolTrue;
+  }
+  ms_support_ = kBoolFalse;
   if (kMsSupportedType.find(k_type_) != kMsSupportedType.end() &&
       kMsSupportedType.find(v_type_) != kMsSupportedType.end()) {
+    ms_support_ = kBoolTrue;
     return true;
   }
-  if (this->IsElementValid()) {
-    for (auto i : *this) {
-      if (!i) {
-        return false;
-      }
-      Type t = i->GetType();
-      if (t == kTypeList || t == kTypeTuple || t == kTypeDict) {
-        // check self reference object
-        return false;
-      }
-      if (!i->IsMindSporeSupportedType()) {
-        return false;
-      }
+  if (!this->IsElementValid()) {
+    return false;
+  }
+  for (auto i : *this) {
+    if (!i) {
+      return false;
     }
-    return true;
+    if (!i->IsMindSporeSupportedType()) {
+      return false;
+    }
   }
-  return false;
+  ms_support_ = kBoolTrue;
+  return true;
 }
 
 std::string AbstractTuple::ToString() const {
