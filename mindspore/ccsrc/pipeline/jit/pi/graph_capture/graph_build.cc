@@ -2140,6 +2140,22 @@ py::object GetPIJitCopiedFunc(const py::object &func) {
 }
 
 ValueNode *GetSelfFromMethod(ValueNode *method) {
+  Opcode opcode(method->GetOpcode());
+  if (opcode.IsCall() && opcode != CALL_FUNCTION_EX) {
+    // method from the CALL_FUNCTION
+    py::object tp = method->input(0)->GetVobj() ? method->input(0)->GetVobj()->GetPyObject() : py::object();
+    if (tp.ptr() == reinterpret_cast<PyObject *>(&PyMethod_Type)) {
+      return method->input(2);
+    }
+  }
+  if (method->IsConstantValue()) {
+    if (method->GetGraph() != nullptr) {
+      auto self_object = PyMethod_GET_SELF(method->GetVobj()->GetPyObject().ptr());
+      return method->GetGraph()->NewValueNode(AObject::Convert(self_object), LOAD_CONST, 0);
+    } else {
+      MS_LOG(ERROR) << "the node [" << method->ToString() << "] has not graph";
+    }
+  }
   if (method->GetOpcode() != LOAD_ATTR) {
     return nullptr;
   }
