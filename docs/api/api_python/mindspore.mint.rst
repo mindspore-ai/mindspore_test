@@ -41,6 +41,7 @@ Tensor
     mindspore.mint.cat
     mindspore.mint.gather
     mindspore.mint.index_select
+    mindspore.mint.masked_select
     mindspore.mint.permute
     mindspore.mint.scatter_add
     mindspore.mint.split
