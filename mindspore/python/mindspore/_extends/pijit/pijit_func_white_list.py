@@ -262,7 +262,9 @@ _func_map = {
     # other builtin function
     function_id(collections.abc.Mapping.get): FUNC_KEY_MAPPING_GET,
     function_id(math.log): FUNC_KEY_BUILTIN_FUNC,
-
+    function_id(math.floor): FUNC_KEY_BUILTIN_FUNC,
+    function_id(math.isinf): FUNC_KEY_BUILTIN_FUNC,
+    function_id(math.isnan): FUNC_KEY_BUILTIN_FUNC,
     function_id(numpy.isinf): FUNC_KEY_BUILTIN_FUNC,
     function_id(numpy.isnan): FUNC_KEY_BUILTIN_FUNC,
     function_id(numpy.abs): FUNC_KEY_BUILTIN_FUNC,
