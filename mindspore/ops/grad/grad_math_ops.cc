@@ -1915,6 +1915,15 @@ REG_BPROP_BUILDER("Cross").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
   auto other = ib->GetInput(kIndex1);
   auto dim = ib->GetInput(kIndex2);
   auto dout = ib->GetInput(kIndex4);
+
+  auto input_type_id = ib->GetDtypeId(input);
+  bool is_complex = (input_type_id == kNumberTypeComplex64 || input_type_id == kNumberTypeComplex128);
+  if (input->need_compute_grad_out() && is_complex) {
+    other = ib->Conj(ib->GetInput(kIndex1));
+  }
+  if (other->need_compute_grad_out() && is_complex) {
+    input = ib->Conj(ib->GetInput(kIndex0));
+  }
   auto dinput = input->need_compute_grad_out() ? ib->Emit("Cross", {other, dout, dim}) : ib->OutZeros(input);
   auto dother = other->need_compute_grad_out() ? ib->Emit("Cross", {dout, input, dim}) : ib->OutZeros(other);
   std::vector<NodePtr> ret = BinopGradCommon(ib, input, other, dinput, dother);
