@@ -97,6 +97,7 @@ Tensor
     mindspore.mint.div
     mindspore.mint.divide
     mindspore.mint.erf
+    mindspore.mint.erfc
     mindspore.mint.erfinv
     mindspore.mint.exp
     mindspore.mint.floor
@@ -386,7 +387,7 @@ mindspore.mint.linalg
 mindspore.mint.special
 ----------------------
 
-三角函数
+逐元素运算
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. mscnplatwarnautosummary::
@@ -394,4 +395,5 @@ mindspore.mint.special
     :nosignatures:
     :template: classtemplate.rst
 
+    mindspore.mint.special.erfc
     mindspore.mint.special.sinc

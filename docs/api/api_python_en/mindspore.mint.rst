@@ -97,6 +97,7 @@ Pointwise Operations
     mindspore.mint.div
     mindspore.mint.divide
     mindspore.mint.erf
+    mindspore.mint.erfc
     mindspore.mint.erfinv
     mindspore.mint.exp
     mindspore.mint.floor
@@ -387,7 +388,7 @@ Inverses
 mindspore.mint.special
 ----------------------
 
-Sinc
+Pointwise Operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. msplatwarnautosummary::
@@ -395,4 +396,5 @@ Sinc
     :nosignatures:
     :template: classtemplate.rst
 
+    mindspore.mint.special.erfc
     mindspore.mint.special.sinc

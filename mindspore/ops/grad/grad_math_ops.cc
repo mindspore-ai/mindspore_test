@@ -1172,10 +1172,9 @@ REG_BPROP_BUILDER("Erf").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
 REG_BPROP_BUILDER("Erfc").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto dout = ib->GetInput(kIndex2);
-  auto half_root_pi =
-    ib->Cast(ib->RealDiv(ib->Tensor(2, ib->GetDtype(x)), (ib->Sqrt(ib->Tensor(pi, ib->GetDtype(x))))), ib->GetDtype(x));
-  auto x_square = ib->Square(x);
-  auto dx = ib->Mul(dout, (ib->Mul((ib->Neg(half_root_pi)), (ib->Exp(ib->Neg(x_square))))));
+  auto half_root_pi = ib->Tensor(-2 / sqrt(pi), ib->GetDtype(x));
+  auto x_square = ib->Emit("Square", {x});
+  auto dx = ib->Mul((ib->Mul(dout, half_root_pi)), (ib->Exp(ib->Emit("Neg", {x_square}))));
   return {dx};
 });
 

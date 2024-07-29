@@ -263,6 +263,8 @@ from mindspore.ops.function.math_func import arcsinh_ext as arcsinh
 from mindspore.ops.function.math_func import atan2_ext as atan2
 from mindspore.ops.function.math_func import arctan2_ext as arctan2
 
+# 204
+from mindspore.ops.auto_generate import erfc
 # 208
 from mindspore.ops.function.array_func import eye
 from mindspore.ops.function.random_func import rand_ext as rand
@@ -1215,7 +1217,8 @@ __all__ = [
     # 176
     'atan2',
     'arctan2',
-
+    # 204
+    'erfc',
     # 208
     'eye',
 

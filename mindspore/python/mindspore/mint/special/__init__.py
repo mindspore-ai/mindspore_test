@@ -15,8 +15,9 @@
 """mint module."""
 from __future__ import absolute_import
 
-from mindspore.ops.auto_generate import sinc
+from mindspore.ops.auto_generate import erfc, sinc
 
 __all__ = [
+    'erfc',
     'sinc',
 ]
