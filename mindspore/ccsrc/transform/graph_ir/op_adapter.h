@@ -189,7 +189,7 @@ class OpAdapter : public BaseOpAdapter {
       if (common::AnfAlgo::CheckPrimitiveType(anf, prim::kPrimReturn)) {
         auto cnode = anf->cast<CNodePtr>();
         MS_EXCEPTION_IF_NULL(cnode);
-        auto input_node = cnode->inputs()[1];
+        auto input_node = cnode->input(1);
         if (common::AnfAlgo::CheckPrimitiveType(judge_node, prim::kPrimMakeTuple)) {
           judge_node = input_node;
         }

@@ -83,6 +83,8 @@ constexpr size_t kDataInputIndex = 1;
 constexpr size_t kInputSize2 = 2;
 constexpr size_t kMergeInputSize = 2;
 constexpr size_t kNoOpOptThreshold = 3;
+constexpr size_t kCallNodeRealInputOffset2 = 2;
+constexpr size_t kCallNodeRealInputOffset3 = 3;
 constexpr auto kHcclFusionByFusionID = 2;
 constexpr auto kHcclFusionDefault = 1;
 constexpr auto kTypeNoOp = "NoOp";
@@ -279,6 +281,7 @@ std::set<std::string> GetFvNames(const FuncGraphPtr fg) {
   std::set<std::string> fvs;
   auto nodes = TopoSort(fg->get_return(), succ_include_fv);
   for (const auto &node : nodes) {
+    MS_EXCEPTION_IF_NULL(node);
     if (node->has_user_data(kIsFreeVariable)) {
       node->set_user_data(kIsFreeVariable, std::shared_ptr<bool>(nullptr));
       fvs.emplace(node->fullname_with_scope());
@@ -302,9 +305,9 @@ int64_t GetDynInputNum(const OpAdapterPtr &adpt, bool is_call, std::vector<int64
       // which should not be members of input args, so the dyn_input_num need to minus 2 in default.
       if (IsPrimitiveCNode(input, prim::kPrimUpdateState)) {
         // For PartitionedCall, Monod should not be a member of input args, so here dyn_input_num need to minus 3.
-        dyn_input_num = SizeToLong(input_size) - 3;
+        dyn_input_num = SizeToLong(input_size) - kCallNodeRealInputOffset3;
       } else {
-        dyn_input_num = SizeToLong(input_size) - 2;
+        dyn_input_num = SizeToLong(input_size) - kCallNodeRealInputOffset2;
       }
       return dyn_input_num;
     }
@@ -469,12 +472,14 @@ std::vector<AnfNodePtr> GetEmbeddingApplyAdamOutput(const CNodePtr &node) {
     MS_LOG(EXCEPTION) << "Need Depend ops, but get " << depend->fullname_with_scope();
   }
   auto depend_cnode = depend->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(depend_cnode);
   auto tuple = depend_cnode->input(2);
   MS_EXCEPTION_IF_NULL(tuple);
   if (!IsPrimitiveCNode(tuple, prim::kPrimMakeTuple)) {
     MS_LOG(EXCEPTION) << "Need MakeTuple ops, but get " << tuple->fullname_with_scope();
   }
   auto tuple_cnode = tuple->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(tuple_cnode);
   auto output_nodes = tuple_cnode->inputs();
   ret_nodes.emplace_back(depend_cnode->input(1));
   ret_nodes.insert(ret_nodes.end(), output_nodes.begin() + 1, output_nodes.end());
@@ -755,7 +760,7 @@ bool DfGraphConvertor::NodeInputKeepUpdate(const FuncGraphManagerPtr &manager, c
   auto user_it = node_users.find(node);
   if (user_it != node_users.end()) {
     auto &users = user_it->second;
-    for (auto &user_node : users) {
+    for (const auto &user_node : users) {
       auto &node_use = user_node.first;
       if (node_use && std::any_of(vec.begin(), vec.end(),
                                   [&node_use](const PrimitivePtr &prim) { return IsPrimitiveCNode(node_use, prim); })) {
@@ -913,11 +918,13 @@ void DfGraphConvertor::InitParamWithData(const TensorOrderMap &tensors) {
 }
 
 void DfGraphConvertor::ReplaceAllParameterToRefData() {
+  MS_EXCEPTION_IF_NULL(anf_graph_);
   if (ref_mode_ && (ref_mode_type_ == RefModeFlag::kRefModeAll) && !export_air_) {
     MS_LOG(INFO) << "Graph abs ref tenor to ref data, " << anf_graph_->ToString();
     auto parameters = anf_graph_->parameters();
     int64_t idx = 0;
     for (const auto &param : parameters) {
+      MS_EXCEPTION_IF_NULL(param);
       auto op_itor = op_cache_.find(param.get());
       if (op_itor != op_cache_.end() && op_itor->second->GetOpType() == kTypeRefData) {
         MS_LOG(INFO) << "This process param has default, have been change to RefData: " << param->fullname_with_scope();
@@ -931,6 +938,7 @@ void DfGraphConvertor::ReplaceAllParameterToRefData() {
         continue;
       }
       MS_EXCEPTION_IF_NULL(abs->BuildShape());
+      MS_EXCEPTION_IF_NULL(abs->BuildType());
       auto shape = abs->BuildShape()->GetShapeVector();
       auto type = abs->BuildType()->type_id();
       if (type == kObjectTypeTensorType) {
@@ -973,10 +981,10 @@ void DfGraphConvertor::ProcessInputData(vector<Operator> *init_input,
   (void)init_var->update_output_desc_y(*desc);
   (void)assign_op->set_input_ref(*init_var).set_input_value(*param_op);
   init_input->emplace_back(*init_var);
-  this->init_ops_.emplace_back(param_op);
-  this->init_ops_.emplace_back(assign_op);
-  this->init_ops_.emplace_back(init_var);
-  this->init_data_names_.emplace_back(name);
+  (void)this->init_ops_.emplace_back(param_op);
+  (void)this->init_ops_.emplace_back(assign_op);
+  (void)this->init_ops_.emplace_back(init_var);
+  (void)this->init_data_names_.emplace_back(name);
   infer_need_update_parameter_names->insert(name);
 }
 
@@ -1076,7 +1084,7 @@ DfGraphConvertor &DfGraphConvertor::GenerateBroadcastGraph(const TensorOrderMap 
   const int64_t root_rank_v = 0;
   (void)broadcast->SetAttr("root_rank", root_rank_v);
   (void)broadcast->SetAttr("group", "hccl_world_group");
-  broadcast_ops_.emplace_back(broadcast);
+  (void)broadcast_ops_.emplace_back(broadcast);
 
   // find every parameter, build broadcast subgraph (or initialize the parameter with constant)
   for (auto &it : anf_graph_->parameters()) {
@@ -1099,9 +1107,9 @@ DfGraphConvertor &DfGraphConvertor::GenerateBroadcastGraph(const TensorOrderMap 
         if (distribute_) {
           auto broadcast_var = std::make_shared<Variable>(name);
           (void)broadcast_var->update_output_desc_y(*desc);
-          broadcast_input.emplace_back(*broadcast_var);
-          broadcast_desc.emplace_back(*desc);
-          broadcast_ops_.emplace_back(broadcast_var);
+          (void)broadcast_input.emplace_back(*broadcast_var);
+          (void)broadcast_desc.emplace_back(*desc);
+          (void)broadcast_ops_.emplace_back(broadcast_var);
         }
       }
     }
@@ -1120,7 +1128,6 @@ DfGraphConvertor &DfGraphConvertor::GenerateCheckpointGraph() {
   if (error_ != SUCCESS) {
     MS_LOG(ERROR) << "Generate checkpoint graph failed, found error code " << error_ << ".";
     if (!unsupported_ops_names_.empty()) {
-      MS_LOG(ERROR) << "===========================================";
       MS_LOG(ERROR) << unsupported_ops_names_.size() << " Operator(s) cannot be converted:";
       std::string unsupported_ops_list;
       for (const auto &unsupported_ops : unsupported_ops_names_) {
@@ -1130,7 +1137,6 @@ DfGraphConvertor &DfGraphConvertor::GenerateCheckpointGraph() {
         unsupported_ops_list += unsupported_ops;
       }
       MS_LOG(ERROR) << "Unsupported op type list: " << unsupported_ops_list;
-      MS_LOG(ERROR) << "===========================================";
     }
     return *this;
   }
@@ -1184,7 +1190,7 @@ DfGraphConvertor &DfGraphConvertor::ConvertAllNode() {
     for (auto &p : anf_graph_->parameters()) {
       if (std::find(nodes.begin(), nodes.end(), p) == nodes.end()) {
         MS_LOG(INFO) << "Parameter " << p->DebugString() << " can not found in topo sort lists.";
-        nodes.emplace_back(p);
+        (void)nodes.emplace_back(p);
       }
     }
   }
@@ -1279,9 +1285,9 @@ std::vector<Operator> DfGraphConvertor::GetWhileBodyOutputs() {
           while_const_input_index_.find(idx_cond) != while_const_input_index_.end()) {
         continue;
       }
-      outputs.emplace_back(*(subgraph_input_cache_[idx]));
+      (void)outputs.emplace_back(*(subgraph_input_cache_[idx]));
     } else {
-      outputs.emplace_back(*Convert(j));
+      (void)outputs.emplace_back(*Convert(j));
     }
   }
   MS_LOG(DEBUG) << "get while body outputs size: " << outputs.size();
@@ -1372,7 +1378,7 @@ void DfGraphConvertor::BuildWhileSubGraph() {
       return;
     }
     graph_name += "_cond_graph";
-    graph_out.emplace_back(*(op_cache_[while_cond_node_.get()]));
+    (void)graph_out.emplace_back(*(op_cache_[while_cond_node_.get()]));
   } else {
     graph_name += "_body_graph";
     graph_out = GetWhileBodyOutputs();
@@ -1526,7 +1532,7 @@ void DfGraphConvertor::SetParamIndexMap(const std::vector<AnfNodePtr> &graphs) {
   auto body_graph_node_inputs = body_graph_node->cast<CNodePtr>()->inputs();
   std::vector<AnfNodePtr> body_params;
   for (auto it = body_graph_node_inputs.begin() + kInputOffset; it != body_graph_node_inputs.end(); ++it) {
-    body_params.emplace_back(*it);
+    (void)body_params.emplace_back(*it);
   }
 
   for (size_t i = 0; i < body_params.size(); i++) {
@@ -1545,7 +1551,7 @@ void DfGraphConvertor::SetParamIndexMap(const std::vector<AnfNodePtr> &graphs) {
   auto after_graph_node_inputs = after_graph_node->cast<CNodePtr>()->inputs();
   std::vector<AnfNodePtr> after_params;
   for (auto it = after_graph_node_inputs.begin() + 2; it != after_graph_node_inputs.end(); ++it) {
-    after_params.emplace_back(*it);
+    (void)after_params.emplace_back(*it);
   }
 
   for (size_t i = 0; i < after_params.size(); i++) {
@@ -1873,7 +1879,7 @@ void DfGraphConvertor::GetBranchNodeInput(const CNodePtr node) {
   for (size_t i = 0; i < branch_inputs.size(); i++) {
     auto item = branch_inputs[i];
     if (!IsDataInput(node, item, 0)) {
-      branch_control_input.emplace_back(item);
+      (void)branch_control_input.emplace_back(item);
       continue;
     }
     if (IsBodyGraph() && item->isa<Parameter>()) {
@@ -2019,7 +2025,7 @@ void DfGraphConvertor::SetGraphInputs(std::vector<Operator> *inputs) {
           if (IsDynamic(sv)) {
             dynamic_shape_inputs_ = true;
           }
-          input_shapes_.emplace_back(sv);
+          (void)input_shapes_.emplace_back(sv);
         }
       }
       //  the parameters which has not been converted to var
@@ -2071,6 +2077,7 @@ OperatorPtr DfGraphConvertor::SetGraphInputsForNotVar(const AnfNodePtr &it, int6
   }
   UpdateDataOpDesc(it, op);
   if (IsNormalGraph()) {
+    MS_EXCEPTION_IF_NULL(it);
     MS_LOG(INFO) << "add input " << it->ToString() << ", index " << *index;
     auto op_type = op->GetOpType();
     if (op_type == kTypeData || op_type == kTypeRefData) {
@@ -2096,6 +2103,7 @@ void DfGraphConvertor::SetGraphInputs(std::vector<Operator> *inputs, AnfNodeWeak
   int64_t index = 0;
   std::set<std::string> name_records = {};
   for (auto &it : params) {
+    MS_EXCEPTION_IF_NULL(it);
     auto name = std::static_pointer_cast<Parameter>(it)->name();
     OperatorPtr op;
     //  the parameters which has not been converted to var
@@ -2201,7 +2209,7 @@ void DfGraphConvertor::FillEmptyInputsWithNoInputOp(std::vector<Operator> *input
   MS_EXCEPTION_IF_NULL(inputs);
   MS_LOG(INFO) << "Fill empty graph inputs with cnode whose inputs are empty.";
   auto nodes = GetOrderedCNodes(anf_graph_);
-  for (auto &it : nodes) {
+  for (const auto &it : nodes) {
     if (!it->isa<CNode>()) {
       continue;
     }
@@ -2227,10 +2235,12 @@ void DfGraphConvertor::FillEmptyInputsWithNoInputOp(std::vector<Operator> *input
 }
 
 void DfGraphConvertor::SetupInputFormat(const FuncGraphManagerPtr &manager, const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
   if (!node->isa<Parameter>()) {
     return;
   }
   auto para = node->cast<ParameterPtr>();
+  MS_EXCEPTION_IF_NULL(para);
   std::vector<int64_t> shape;
   TypeId type;
   std::string format = kOpFormat_DEFAULT;
@@ -2272,6 +2282,7 @@ void DfGraphConvertor::SetupInputFormat(const FuncGraphManagerPtr &manager, cons
 void DfGraphConvertor::GenFakeGraphInRefMode() {
   const auto &nodes = GetOrderedCNodes(anf_graph_);
   for (const auto &node : nodes) {
+    MS_EXCEPTION_IF_NULL(node);
     if (!node->isa<CNode>()) {
       continue;
     }
@@ -2280,6 +2291,7 @@ void DfGraphConvertor::GenFakeGraphInRefMode() {
   auto manager = Manage(anf_graph_, true);
   MS_EXCEPTION_IF_NULL(manager);
   std::vector<AnfNodeWeakPtr> ge_input_nodes = {};
+  MS_EXCEPTION_IF_NULL(anf_graph_);
   const auto &params = anf_graph_->parameters();
   for (auto &node : params) {
     MS_EXCEPTION_IF_NULL(node);
@@ -2329,9 +2341,9 @@ void DfGraphConvertor::GenFakeGraph(const std::string &name) {
   MS_LOG(INFO) << "Gen fake compute graph " << name;
   df_graph_ = GenExampleGraph(name);
   MS_EXCEPTION_IF_NULL(df_graph_);
+  MS_EXCEPTION_IF_NULL(anf_graph_);
   bool sink_mode = ConfigManager::GetInstance().dataset_mode() == DS_SINK_MODE;
   if (IsNormalGraph() && sink_mode) {
-    MS_EXCEPTION_IF_NULL(anf_graph_);
     anf_graph_->set_flag(kGraphFlagHasGetNext, true);
   }
   const auto &params = anf_graph_->parameters();
@@ -2572,6 +2584,7 @@ void DfGraphConvertor::UpdateDataOpDesc(const AnfNodePtr &it, const OperatorPtr 
   if (desc == nullptr) {
     MS_LOG(ERROR) << "Update data op descriptor failed! TensorDesc is null.";
   } else {
+    MS_EXCEPTION_IF_NULL(op);
     (void)op->UpdateInputDesc(kTypeX, *desc);
     (void)op->UpdateOutputDesc(kTypeY, *desc);
   }
@@ -3061,7 +3074,7 @@ void DfGraphConvertor::AddInputAttrsForESNode(const CNodePtr &node, const AnfNod
   auto real = GetRealInputNode(node, input);
   MS_EXCEPTION_IF_NULL(real);
   auto op = Convert(real);
-  MS_EXCEPTION_IF_NULL(real);
+  MS_EXCEPTION_IF_NULL(op);
   if (!real->isa<ValueNode>()) {
     return;
   }
@@ -3170,11 +3183,13 @@ void DfGraphConvertor::SetOpInput(const OpAdapterPtr &adpt, const CNodePtr &node
 
 void DfGraphConvertor::SetOpAttrToInput(const OpAdapterPtr &adpt, const CNodePtr &node) {
   OperatorPtr src = Convert(node);
+  MS_EXCEPTION_IF_NULL(node);
   auto &inputs = node->inputs();
   size_t input_size = inputs.size();
   const auto &primitive = GetCNodePrimitive(node);
   MS_EXCEPTION_IF_NULL(primitive);
   const auto monad_size = std::count_if(inputs.begin() + kIndex1, inputs.end(), [](const AnfNodePtr &input) {
+    MS_EXCEPTION_IF_NULL(input);
     return input->isa<ValueNode>() && HasAbstractMonad(input);
   });
   const auto &attr_input_map = adpt->getAttrInputMap();
@@ -3402,6 +3417,7 @@ void DfGraphConvertor::NoOpOptimization() {
 }
 
 void DfGraphConvertor::ESOptimization() {
+  MS_EXCEPTION_IF_NULL(anf_graph_);
   MS_LOG(INFO) << "Start ESOptimization, graph:" << anf_graph_->ToString();
   MS_EXCEPTION_IF_NULL(df_graph_);
   auto all_nodes = df_graph_->GetDirectNode();
@@ -3426,6 +3442,7 @@ void DfGraphConvertor::ESOptimization() {
 void DfGraphConvertor::RemoveIdentityForES(::ge::GNode node) {
   ::ge::graphStatus ret;
   auto out_control_node = node.GetOutControlNodes();
+  MS_EXCEPTION_IF_NULL(df_graph_);
   for (size_t input_index = 0; input_index < node.GetInputsSize(); input_index++) {
     auto node_input = node.GetInDataNodesAndPortIndexs(static_cast<int32_t>(input_index));
     ret = df_graph_->RemoveEdge(*node_input.first, node_input.second, node, input_index);
@@ -3667,6 +3684,7 @@ OperatorPtr DfGraphConvertor::Convert(const AnfNodePtr node) {
 
 void DfGraphConvertor::ConvertTopK(const CNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
+  MS_EXCEPTION_IF_NULL(node->input(kIndex2));
   auto value_ptr = node->input(kIndex2)->cast<ValueNodePtr>();
   if (value_ptr == nullptr) {
     // input is not const valuenode, cannot convert to int32, throw exception when input k is int64 since cann
@@ -3703,6 +3721,8 @@ void DfGraphConvertor::ConvertTopK(const CNodePtr &node) {
 }
 
 AnfNodePtr DfGraphConvertor::CreateCast(const AnfNodePtr &input, const TypePtr &dst_type) const {
+  MS_EXCEPTION_IF_NULL(input);
+  MS_EXCEPTION_IF_NULL(dst_type);
   auto func_graph = input->func_graph();
   MS_EXCEPTION_IF_NULL(func_graph);
   AnfNodePtrList inputs = {NewValueNode(prim::kPrimCast), input,
@@ -3737,9 +3757,9 @@ std::vector<int64_t> DfGraphConvertor::CastToInt(const ValuePtr &value) const {
   } else {
     MS_EXCEPTION_IF_NULL(value->type());
     if (value->type()->number_type() == kNumberTypeInt64) {
-      cur_value.emplace_back(GetValue<int64_t>(value));
+      (void)cur_value.emplace_back(GetValue<int64_t>(value));
     } else {
-      cur_value.emplace_back(static_cast<int64_t>(GetValue<int>(value)));
+      (void)cur_value.emplace_back(static_cast<int64_t>(GetValue<int>(value)));
     }
   }
   return cur_value;
@@ -3904,6 +3924,7 @@ void DfGraphConvertor::ConvertParallelGroupToHcom(const CNodePtr &node) {
 }
 
 void DfGraphConvertor::ConvertParallelGroupIdToHcom(const CNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
   auto parallel_group_id_value = node->GetAttr(kParallelGroupId);
   auto parallel_group_id = GetValue<uint32_t>(parallel_group_id_value);
   OpAdapterPtr adpt = FindAdapter(node, training_);
@@ -4320,6 +4341,7 @@ void DfGraphConvertor::SaveParamFormat(const CNodePtr node) {
   AnfNodePtr op = node->input(0);
   if (IsValueNode<Primitive>(op)) {
     auto prim = GetValueNode<PrimitivePtr>(op);
+    MS_EXCEPTION_IF_NULL(prim);
     std::string format;
     auto op_def = ops::GetOpDef(prim->name());
     if (op_def) {
@@ -4435,6 +4457,7 @@ OperatorPtr DfGraphConvertor::ConvertValueNode(const ValueNodePtr node) {
     MS_LOG(WARNING) << "set attr value for const failed";
   }
 
+  MS_EXCEPTION_IF_NULL(op);
   if (op->GetOpType() != "Constant" && op->GetOpType() != "Const") {
     MS_LOG(ERROR) << "Get Constant operator failed, ge node type: " << op->GetOpType()
                   << ", ms node info: " << node->ToString() << ", is train: " << training_;

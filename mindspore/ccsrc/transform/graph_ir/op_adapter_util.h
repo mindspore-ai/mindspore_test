@@ -67,7 +67,9 @@ inline ValuePtr GetRealValue<GeTensor>(const GeTensor &) {
 template <typename T, typename std::enable_if<std::is_integral_v<std::decay_t<T>>>::type * = nullptr>
 T GetCastIntegralValue(const ValuePtr &value) {
   MS_EXCEPTION_IF_NULL(value);
-  TypeId type_id = value->type()->type_id();
+  auto type = value->type();
+  MS_EXCEPTION_IF_NULL(type);
+  TypeId type_id = type->type_id();
 
   switch (type_id) {
     case kNumberTypeBool:
@@ -97,7 +99,9 @@ T GetCastIntegralValue(const ValuePtr &value) {
 template <typename T, typename std::enable_if<std::is_floating_point_v<std::decay_t<T>>>::type * = nullptr>
 T GetCastFloatValue(const ValuePtr &value) {
   MS_EXCEPTION_IF_NULL(value);
-  TypeId type_id = value->type()->type_id();
+  auto type = value->type();
+  MS_EXCEPTION_IF_NULL(type);
+  TypeId type_id = type->type_id();
 
   switch (type_id) {
     case kNumberTypeFloat32:
