@@ -1528,6 +1528,44 @@ bool GraphBuilder::DoFormatValue(const Instr &instr) {
     arg.push_back(pop());
   }
   arg.insert(arg.begin(), pop());
+  constexpr unaryfunc conv_fn[] = {nullptr, PyObject_Str, PyObject_Repr, PyObject_ASCII};
+  constexpr size_t size = sizeof(conv_fn) / sizeof(conv_fn[0]);
+  size_t which_conversion = oparg & FVC_MASK;
+  bool have_fmt_spec = (oparg & FVS_MASK) == FVS_HAVE_SPEC;
+
+  ValueNode *fmt_spec_node = have_fmt_spec ? arg.back() : nullptr;
+  ValueNode *value_node = *arg.begin();
+  py::object value = value_node->GetVobj()->GetPyObject();
+  bool not_constant = std::any_of(arg.begin(), arg.end(), [](ValueNode *i) { return !i->IsConstantValue(); });
+
+  if (0 < which_conversion && which_conversion < size) {
+    if (not_constant) {
+      value = py::object();
+      value_node = nullptr;
+    } else {
+      value = py::reinterpret_steal<py::object>(conv_fn[which_conversion](value.ptr()));
+      value_node = NewValueNode(AObject::Convert(value), Instr{LOAD_CONST, 0});
+    }
+  }
+  ValueNode *result_node = nullptr;
+  if (value.ptr() != nullptr) {
+    if (PyUnicode_CheckExact(value.ptr()) && fmt_spec_node == nullptr) {
+      result_node = value_node;
+    } else if (not_constant) {
+      /* Actually call format(). */
+      result_node = nullptr;
+    } else {
+      /* Actually call format(). */
+      py::object fmt_spec = fmt_spec_node->GetVobj()->GetPyObject();
+      py::object result = py::reinterpret_steal<py::object>(PyObject_Format(value.ptr(), fmt_spec.ptr()));
+      result_node = NewValueNode(AObject::Convert(result), Instr{LOAD_CONST, 0});
+    }
+  }
+  if (result_node != nullptr) {
+    push(result_node);
+    return true;
+  }
+
   auto vo = AObject::MakeAObject(AObject::kTypeString);
   auto v = NewValueNode(vo, instr, arg);
   push(v);
@@ -1598,6 +1636,7 @@ bool GraphBuilder::DoByteCode(const Instr &instr) {
 GraphBuilder::GraphBuilder(const PyFrameObject *f)
     : root_(this), parent_(nullptr), graph_(nullptr), current_block_(nullptr) {
   PyCodeObject *co = f->f_code;
+  cur_bci_ = -1;
   int argc = co->co_argcount + co->co_kwonlyargcount;
   argc += (co->co_flags & CO_VARARGS) ? 1 : 0;
   argc += (co->co_flags & CO_VARKEYWORDS) ? 1 : 0;
