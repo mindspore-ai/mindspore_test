@@ -649,6 +649,26 @@ void ParseRealIndex(const mindspore::HashMap<size_t, size_t> &dynamic_len_index,
                       << " start need:" << std::to_string(real_output_num) << " for actor:" << actor->GetAID().Name();
   }
 }
+void ClearIgnoreFlagForWeight(const GraphCompilerInfo &graph_compiler_info) {
+  const auto &parser = graph_compiler_info.control_node_parser_;
+  MS_EXCEPTION_IF_NULL(parser);
+  if (!parser->IsInited()) {
+    return;
+  }
+  for (const auto &graph : graph_compiler_info.graphs_) {
+    MS_EXCEPTION_IF_NULL(graph);
+    for (const auto &input_node : graph->input_nodes()) {
+      if (!IsPersistentDeviceTensor(input_node) || !AnfAlgo::OutputAddrExist(input_node, 0)) {
+        continue;
+      }
+      const auto &device_tensor = AnfAlgo::GetMutableOutputAddr(input_node, 0, false);
+      MS_EXCEPTION_IF_NULL(device_tensor);
+      device_tensor->ClearFlag(device::kDeviceAddressFlagIgnoreDevicePtr);
+      MS_LOG(INFO) << "Clear ignore flag for device tensor:" << device_tensor
+                   << " in parameter:" << input_node->DebugString() << " in graph:" << graph->ToString();
+    }
+  }
+}
 }  // namespace
 
 void ControlNodeScheduler::CollectDynamicLenIndexForArgment(const GraphCompilerInfo &graph_compiler_info) const {
@@ -730,6 +750,9 @@ void ControlNodeScheduler::Link(ActorSet *const actor_set, const GraphCompilerIn
   SetTimeSummaryForControlActor(graph_compiler_info);
 
   CollectDynamicLenIndexForArgment(graph_compiler_info);
+
+  // Control flow do not support ignore flag for weight node.
+  ClearIgnoreFlagForWeight(graph_compiler_info);
   MS_LOG(DEBUG) << "Control node scheduler link end.";
 }
 
