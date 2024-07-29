@@ -3006,6 +3006,60 @@ bool GraphBuilder::TraceRunForIterZip(int jump_bci) {
   return true;
 }
 
+bool GraphBuilder::TraceRunForIterDictItems(int jump_bci) {
+  ValueNode *iter_node = seek(0);
+  ValueNode *dict_node;
+  int &index = iter_node->marker_;
+  if (index == 0) {
+    ValueNode *dict_item_node = iter_node->input(0);
+    if (dict_item_node->GetOpcode() == CALL_FUNCTION && dict_item_node->input(0)->GetOpcode() == LOAD_ATTR &&
+        dict_item_node->input(0)->GetName() == "items") {
+      // call expression "dict.items()"
+      push(dict_item_node->input(0)->input(0));
+    } else {
+      DoLoadConst({LOAD_CONST, 0, py::cast<py::object>(reinterpret_cast<PyObject *>(&PyDict_Type))});
+      push(dict_item_node);
+      DoCall({CALL_FUNCTION, 1});
+    }
+    std::swap(seek(0), seek(1));
+    dict_node = seek(1);
+    if (!dict_item_node->IsConstantValue()) {
+      MS_LOG(ERROR) << "guard dict keys failed node: [ << " << dict_item_node;
+    }
+  } else {
+    dict_node = seek(1);
+  }
+  py::object key;
+  py::object dict = dict_node->GetVobj()->GetPyObject();
+  if (dict.ptr() == nullptr) {
+    MS_LOG(INFO) << "infer failed \"dict(dict_items)\"";
+    return false;
+  }
+  auto it = dict.begin();
+  auto end = dict.end();
+  for (int i = 0; it != end && i < index; ++it, ++i) {
+  }
+  if (it != end) {
+    key = py::cast<py::object>(*it);
+  }
+  if (key.ptr() == nullptr) {
+    // for end
+    pop();  // iter node
+    pop();  // dict node
+    cur_bci_ = jump_bci;
+    return true;
+  }
+  ValueNode *key_node = NewValueNode(AObject::Convert(key), LOAD_CONST, -1, {});
+  push(key_node);
+  push(dict_node);
+  push(key_node);
+  DoItemAccess({BINARY_SUBSCR, 0});
+  DoBuildOp({BUILD_TUPLE, 2});
+  index++;
+  cur_bci_ = cur_bci_ + 1;
+  return true;
+}
+
 bool IsRangeType(ValueNode *iter_node) {
   if (iter_node->input(0)->GetOpcode() != CALL_FUNCTION) {
     return false;
@@ -3034,6 +3088,8 @@ bool GraphBuilder::TraceRunForIter(const Instr &instr) {
     succ = TraceRunForIterEnumerate(instr.extra_jump()->bci());
   } else if (iterable->GetTypeObject() == &PyZip_Type) {
     succ = TraceRunForIterZip(instr.extra_jump()->bci());
+  } else if (iterable->GetTypeObject() == &PyDictItems_Type) {
+    succ = TraceRunForIterDictItems(instr.extra_jump()->bci());
   } else {
     succ = TraceRunForIterSequence(instr.extra_jump()->bci(), IsRangeType(iter_node));
   }
