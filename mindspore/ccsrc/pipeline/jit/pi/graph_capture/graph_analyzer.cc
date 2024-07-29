@@ -373,12 +373,16 @@ void GraphAnalyzer::OptimizeSideEffectRecord() const {
 void GraphAnalyzer::ResetSideEffectRecord() const {
   // if break point is changed, rollback graph nodes(only reset break bci) and side-effect record
   int break_bci = graph_->GetStopTraceBci();
-  if (break_bci == -1 || graph_->GetSideEffect()->IsEmpty()) {
+  if (graph_->GetSideEffect()->IsEmpty()) {
     return;
   }
   const auto &nodes = graph_->GetTracedNodes();
-  auto iter = std::find_if(nodes.begin(), nodes.end(), [&break_bci](ValueNode *i) { return i->bci() > break_bci; });
-  graph_->GetSideEffect()->ResetRecord({nodes.begin(), iter});
+  if (break_bci == -1) {
+    graph_->GetSideEffect()->ResetRecord({nodes.begin(), nodes.end()});
+  } else {
+    auto iter = std::find_if(nodes.begin(), nodes.end(), [&break_bci](ValueNode *i) { return i->bci() > break_bci; });
+    graph_->GetSideEffect()->ResetRecord({nodes.begin(), iter});
+  }
   OptimizeSideEffectRecord();  // after reset record, rollback side-effect record status
 }
 
