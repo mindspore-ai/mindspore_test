@@ -181,6 +181,7 @@ _func_map = {
     function_id(len): FUNC_KEY_BUILTIN_FUNC,
     function_id(abs): FUNC_KEY_BUILTIN_FUNC,
     function_id(max): FUNC_KEY_BUILTIN_FUNC,
+    function_id(min): FUNC_KEY_BUILTIN_FUNC,
     function_id(all): FUNC_KEY_BUILTIN_FUNC,
     function_id(any): FUNC_KEY_BUILTIN_FUNC,
     function_id(hash): FUNC_KEY_BUILTIN_FUNC,
