@@ -39,6 +39,7 @@
 #include "pybind_api/ir/primitive_py.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "pipeline/jit/pi/python_adapter/pydef.h"
+#include "pipeline/jit/ps/parse/data_converter.h"
 
 namespace mindspore {
 namespace pijit {
@@ -2310,8 +2311,8 @@ bool CheckBuildSubGraph(const py::object &ret) {
 }
 }  // namespace
 
-std::vector<AbstractWrapperPtr> MindGraphBuilder::HandleInputArgs(const std::vector<ValueNode *> args) {
-  std::vector<AbstractWrapperPtr> ret;
+AbstractWrapperPtrList MindGraphBuilder::HandleInputArgs(const std::vector<ValueNode *> args) {
+  AbstractWrapperPtrList ret;
   for (auto arg : args) {
     MS_EXCEPTION_IF_NULL(arg);
     // TODO(LiangZhibo): need to handle node repeatedly found problem later.
@@ -2324,6 +2325,27 @@ std::vector<AbstractWrapperPtr> MindGraphBuilder::HandleInputArgs(const std::vec
     ret.push_back(new_wrapper);
   }
   return ret;
+}
+
+void MindGraphBuilder::HandleCustomBProp(const FuncGraphPtr &graph, const py::object &obj) const {
+  if (graph == nullptr || obj.ptr() == nullptr) {
+    return;
+  }
+  if (!py::hasattr(obj, parse::CUSTOM_BPROP_NAME)) {
+    return;
+  }
+  bool enable_bprop_debug = py::cast<bool>(py::getattr(obj, "bprop_debug"));
+  FuncGraphPtr bprop_graph = enable_bprop_debug
+                               ? parse::ConvertToBpropCut(obj)
+                               : parse::ConvertToFuncGraph(obj, {}, parse::PYTHON_MOD_GET_BPROP_METHOD);
+  if (bprop_graph != nullptr) {
+    (void)graph->transforms().emplace(parse::CUSTOM_BPROP_NAME, FuncGraphTransform(bprop_graph));
+    (void)bprop_graph->transforms().emplace("primal", FuncGraphTransform(graph));
+    graph->set_flag(FUNC_GRAPH_FLAG_DEFER_INLINE, true);
+    graph->set_flag(FUNC_GRAPH_FLAG_PRIMAL_OF_BPROP, true);
+    MS_LOG(INFO) << "Add custom bprop to graph.";
+  }
+  return;
 }
 
 StopTraceReason MindGraphBuilder::BuildSubGraph(CallNode *call_node, int depth, const py::object &func,
@@ -2361,7 +2383,8 @@ StopTraceReason MindGraphBuilder::BuildSubGraph(CallNode *call_node, int depth, 
     } else {
       sg->FGBuilder()->SetGraphName(GetFuncGraphName(func, sg));
       sg->FGAddOutput(false);
-      if (sg->FGBuilder()->graph() == nullptr) {
+      auto sub_graph = sg->FGBuilder()->graph();
+      if (sub_graph == nullptr) {
         MS_LOG(INFO) << "subgraph trace null";
         return StopTraceReason::kTrace_Fail;
       } else {
@@ -2371,6 +2394,10 @@ StopTraceReason MindGraphBuilder::BuildSubGraph(CallNode *call_node, int depth, 
           MS_LOG(INFO) << "add fg node suc: ";
           call_node->SetVobj(AObject::Convert(res));
           call_node->set_abstract_wrapper(res);
+        }
+        auto callable_obj = GetPyObject(call_node->input(0));
+        if (py::isinstance<Cell>(callable_obj)) {
+          HandleCustomBProp(sub_graph, callable_obj);
         }
       }
     }
@@ -2998,6 +3025,7 @@ StopTraceReason GraphBuilder::HandleCall(int depth) {
   PyCodeObject *co = reinterpret_cast<PyCodeObject *>(PyFunction_GET_CODE(callable_info.ptr()));
   PyObject *globals = PyFunction_GET_GLOBALS(callable_info.ptr());
   auto subgraph = GraphBuilder::Creator(this->root_ ? this->root_ : this, this, co, globals, trace_flag());
+  this->sub_graph = subgraph;
 
   // frame build
   FrameStates *frame = &(subgraph->frame_);
@@ -3774,7 +3802,7 @@ void MindGraphBuilder::FGAddOutput(bool is_top_graph) {
 }
 
 py::object MindGraphBuilder::FGAddNode(CallNode *call_node, const py::object &callable_info,
-                                       const std::vector<AbstractWrapperPtr> &args, StopTraceReason *stop_reason) {
+                                       const AbstractWrapperPtrList &args, StopTraceReason *stop_reason) {
   MS_LOG(INFO) << "try add node: " << py::str(callable_info);
   TraceGuard trace_guard(GetLocation(call_node));
   auto res = FGBuilder()->AddNode(callable_info, args);
@@ -3858,6 +3886,188 @@ std::pair<bool, std::vector<py::object>> MindGraphBuilder::GetInputsObject(CallN
   return std::pair<bool, std::vector<py::object>>(true, input_objects);
 }
 
+BindArgumentsHelper<ValueNode *> MindGraphBuilder::PackInputsForFunc(const py::object &obj, int op_code,
+                                                                     const std::vector<ValueNode *> &inputs,
+                                                                     bool eliminate_sens) {
+  auto func_info = obj;
+  bool is_cell_object = py::isinstance<Cell>(func_info);
+  func_info = FindPyFunc(AObject::Convert(func_info));
+  PyCodeObject *co = reinterpret_cast<PyCodeObject *>(PyFunction_GET_CODE(func_info.ptr()));
+  BindArgumentsHelper<ValueNode *> bind_helper(co);
+
+  bool pack_success = true;
+  auto cast_keys = [](ValueNode *node) {
+    MS_EXCEPTION_IF_CHECK_FAIL(node->IsConstantValue(), "'CALL_FUNCTION_KW' has error stack");
+    return node->GetVobj()->GetPyObject().cast<std::vector<std::string>>();
+  };
+  auto cast_seq = [this, &pack_success](ValueNode *node) {
+    size_t size = this->frame_.GetStacks().size();
+    if (!pack_success || !this->UnpackElements(node)) {
+      MS_LOG(ERROR) << "Unpack failed for argument [" << node->ToString() << "]";
+      pack_success = false;
+      return std::vector<ValueNode *>();
+    }
+    size = this->frame_.GetStacks().size() - size;
+    std::vector<ValueNode *> res = {frame_.GetStacks().end() - size, frame_.GetStacks().end()};
+    popn(size);
+    pack_success = true;
+    return res;
+  };
+  auto cast_map = [this, &pack_success](ValueNode *node) {
+    size_t size = this->frame_.GetStacks().size();
+    if (!pack_success || !this->UnpackDict(node)) {
+      MS_LOG(ERROR) << "Unpack failed for argument [" << node->ToString() << "]";
+      pack_success = false;
+      return std::map<std::string, ValueNode *>();
+    }
+    size = this->frame_.GetStacks().size() - size;
+    std::map<std::string, ValueNode *> res;
+    for (; size > 0; size -= kTwo) {
+      ValueNode *v_node = pop();
+      ValueNode *k_node = pop();
+      PyObject *k = k_node->GetVobj() ? k_node->GetVobj()->GetPyObject().ptr() : nullptr;
+      if (k == nullptr || !PyUnicode_Check(k)) {
+        MS_LOG(ERROR) << "keyword must be string";
+        pack_success = false;
+        return std::map<std::string, ValueNode *>();
+      }
+      res[PyUnicode_AsUTF8(k)] = v_node;
+    }
+    return res;
+  };
+  PackCallStackHelper<ValueNode *> pack_helper(op_code);
+
+  std::vector<ValueNode *> inputs_for_pack;
+  if (is_cell_object) {
+    auto forward_self_node = NewValueNode(AObject::Convert(obj), LOAD_CONST, -1, {});
+    inputs_for_pack.push_back(forward_self_node);
+  }
+  (void)std::copy(inputs.begin() + 1, inputs.end(), std::back_inserter(inputs_for_pack));
+  if (!pack_helper.Pack(inputs_for_pack, cast_keys, cast_seq, cast_map)) {
+    MS_LOG(EXCEPTION) << "Pack helper pack failed.";
+  }
+  if (eliminate_sens) {
+    auto &result = pack_helper.result();
+    auto &kw = result.kw_;
+    auto iter = kw.find("sens");
+    if (iter != kw.end()) {
+      kw.erase(iter);
+    } else {
+      auto &args = result.args_;
+      args.pop_back();
+    }
+  }
+  if (!bind_helper.Bind(pack_helper.result().args_, pack_helper.result().kw_)) {
+    MS_LOG(EXCEPTION) << "Bind helper bind args failed.";
+  }
+  PyObject *defaults = PyFunction_GET_DEFAULTS(func_info.ptr());
+  PyObject *kw_defaults = PyFunction_GET_KW_DEFAULTS(func_info.ptr());
+  auto convert = [this](PyObject *, PyObject *, PyObject *value) {
+    return this->NewValueNode(AObject::Convert(value), LOAD_CONST, 0);
+  };
+  if (!bind_helper.ApplyDefault(defaults, kw_defaults, convert)) {
+    MS_LOG(EXCEPTION) << "Bind helper apply default failed.";
+  }
+  return bind_helper;
+}
+
+std::pair<FuncGraphPtr, BindArgumentsHelper<ValueNode *>> MindGraphBuilder::BuildForwardGraph(CallNode *call_node) {
+  auto grad_net_node = static_cast<CallNode *>(call_node->input(0));
+  MS_EXCEPTION_IF_NULL(grad_net_node);
+  constexpr size_t grad_operation_index = 0;
+  constexpr size_t forward_node_index = 1;
+  auto grad_operation_node = grad_net_node->input(grad_operation_index);
+  auto grad_object = grad_operation_node->GetVobj()->GetPyObject();
+  auto forward_node = grad_net_node->input(forward_node_index);
+  bool has_sense = py::hasattr(grad_object, "sens_param") && (grad_object.attr("sens_param").ptr() == Py_True);
+  auto func_info = forward_node->GetVobj()->GetPyObject();
+  MS_EXCEPTION_IF_NULL(func_info.ptr());
+
+  BindArgumentsHelper<ValueNode *> bind_helper =
+    PackInputsForFunc(func_info, call_node->GetOpcode(), call_node->getInputs(), has_sense);
+
+  auto bind_arguments_result = bind_helper.results();
+  const auto &bind_args = bind_arguments_result.args_;
+  const auto &bind_vargs = bind_arguments_result.va_;
+  const auto &bind_kwargs = bind_arguments_result.kw_va_;
+
+  func_info = FindPyFunc(AObject::Convert(func_info));
+  push(NewValueNode(AObject::Convert(func_info), LOAD_CONST, -1, {}));
+  int arg_size = 0;
+  for (auto arg : bind_args) {
+    push(arg);
+    arg_size = arg_size + 1;
+  }
+  for (auto varg : bind_vargs) {
+    push(varg);
+    arg_size = arg_size + 1;
+  }
+
+  if (!bind_kwargs.empty()) {
+    // Use CALL_FUNCTION_KW to build forward node.
+    MS_LOG(EXCEPTION) << "Do not handle kwargs yet.";
+  } else {
+    DoCall({CALL_FUNCTION, arg_size});
+  }
+  pop();
+  auto forward_graph_builder = std::dynamic_pointer_cast<MindGraphBuilder>(this->sub_graph);
+  if (forward_graph_builder == nullptr) {
+    MS_LOG(INFO) << "Failed to get function graph builder for forward graph.";
+    return std::pair<FuncGraphPtr, BindArgumentsHelper<ValueNode *>>(nullptr, bind_helper);
+  }
+  auto fg = forward_graph_builder->FGBuilder()->graph();
+  if (fg == nullptr) {
+    MS_LOG(INFO) << "Failed to get function graph builder for forward graph.";
+    return std::pair<FuncGraphPtr, BindArgumentsHelper<ValueNode *>>(nullptr, bind_helper);
+  }
+  return std::pair<FuncGraphPtr, BindArgumentsHelper<ValueNode *>>(fg, bind_helper);
+}
+
+AbstractWrapperPtrList MindGraphBuilder::HandleInputsForGrad(CallNode *call_node,
+                                                             BindArgumentsHelper<ValueNode *> forward_inputs) {
+  auto grad_net_node = static_cast<CallNode *>(call_node->input(0));
+  MS_EXCEPTION_IF_NULL(grad_net_node);
+  constexpr size_t grad_operation_index = 0;
+  constexpr size_t forward_node_index = 1;
+  auto grad_operation_node = grad_net_node->input(grad_operation_index);
+  auto grad_object = grad_operation_node->GetVobj()->GetPyObject();
+  auto forward_node = grad_net_node->input(forward_node_index);
+  bool has_sense = py::hasattr(grad_object, "sens_param") && (grad_object.attr("sens_param").ptr() == Py_True);
+  auto func_info = forward_node->GetVobj()->GetPyObject();
+  MS_EXCEPTION_IF_NULL(func_info.ptr());
+
+  const auto &bind_arguments_result = forward_inputs.results();
+  const auto &bind_args = bind_arguments_result.args_;
+  const auto &bind_vargs = bind_arguments_result.va_;
+  const auto &bind_kwargs = bind_arguments_result.kw_va_;
+
+  // TODO(LiangZhibo): need to handle kwargs scene.
+  auto wrapper_args = HandleInputArgs(bind_args);
+  const auto &wrapper_vargs = HandleInputArgs(bind_vargs);
+
+  if (has_sense) {
+    if (!bind_vargs.empty() || !bind_kwargs.empty()) {
+      MS_LOG(EXCEPTION) << "Do not support sense param with vargs and kwargs yet.";
+    }
+    MS_EXCEPTION_IF_CHECK_FAIL(call_node->getInputs().size() > bind_args.size(), "Arg size check failed.");
+    auto sens_value_node = call_node->getInputs().back();
+    auto new_wrapper = FGBuilder()->AddLocalVariable(sens_value_node->GetVobj()->GetPyObject());
+    sens_value_node->set_abstract_wrapper(new_wrapper);
+    wrapper_args.push_back(new_wrapper);
+  }
+
+  AbstractWrapperPtrList final_wrapper;
+  bool input_offset = py::isinstance<Cell>(func_info) ? 1 : 0;
+  (void)std::copy(wrapper_args.begin() + input_offset, wrapper_args.end(), std::back_inserter(final_wrapper));
+  if (!bind_vargs.empty()) {
+    std::for_each(bind_vargs.begin(), bind_vargs.end(), [this](ValueNode *i) { push(i); });
+    DoBuildOp({BUILD_TUPLE, static_cast<int>(bind_vargs.size())});
+    auto build_tuple = pop();
+    final_wrapper.emplace_back(build_tuple->abstract_wrapper());
+  }
+  return final_wrapper;
+}
+
 py::object MindGraphBuilder::ResolveGradCall(CallNode *call_node, StopTraceReason *stop_reason) {
   auto grad_net_node = static_cast<CallNode *>(call_node->input(0));
   if (grad_net_node == nullptr) {
@@ -3875,17 +4085,43 @@ py::object MindGraphBuilder::ResolveGradCall(CallNode *call_node, StopTraceReaso
     MS_LOG(WARNING) << "Guard GradOperation value node failed, value node: "
                     << grad_net_node->input(grad_operation_index)->ToString();
   }
+
+  auto forward_net_object = grad_net_node->input(forward_net_index)->GetVobj()->GetPyObject();
+  (void)pi_jit_should_compile(forward_net_object, py::dict(), py::none());
+
   bool guard_forward_net = graph_->GuardValueNode(grad_net_node->input(forward_net_index), GId);
   if (!guard_forward_net) {
     MS_LOG(WARNING) << "Guard forward net value node for GradOperation failed, value node: "
                     << grad_net_node->input(forward_net_index)->ToString();
   }
 
-  bool need_unpack = (call_node->GetOpcode() == CALL_FUNCTION_KW || call_node->GetOpcode() == CALL_FUNCTION_EX);
-  std::vector<ValueNode *> args_value_nodes;
-  (void)std::copy(call_node->getInputs().begin() + 1, call_node->getInputs().end(),
-                  std::back_inserter(args_value_nodes));
-  auto ret = FGBuilder()->BuildGradNode(grad_net_wrapper, HandleInputArgs(args_value_nodes), need_unpack);
+  auto forward_result = BuildForwardGraph(call_node);
+  auto forward_fg = forward_result.first;
+  if (forward_fg == nullptr) {
+    MS_LOG(INFO) << "Build forward fg failed.";
+    return py::object();
+  } else {
+    DumpIR("tmp_forward.ir", forward_fg);
+  }
+
+  if (py::isinstance<Cell>(forward_net_object)) {
+    HandleCustomBProp(forward_fg, forward_net_object);
+  }
+
+  const auto &bind_arguments_result = forward_result.second.results();
+  const auto &bind_vargs = bind_arguments_result.va_;
+  const auto &bind_kwargs = bind_arguments_result.kw_va_;
+  bool need_unpack = !bind_vargs.empty() || !bind_kwargs.empty();
+
+  const auto &inputs_wrapper = HandleInputsForGrad(call_node, forward_result.second);
+  MS_LOG(INFO) << "need_unpack: " << need_unpack;
+  for (auto input_wrapper : inputs_wrapper) {
+    if (input_wrapper == nullptr) {
+      MS_LOG(EXCEPTION) << "Input wrapper is NULL, failed to build graph.";
+    }
+    MS_LOG(INFO) << "input wrapper is: " << input_wrapper->ToString();
+  }
+  auto ret = FGBuilder()->BuildGradNode(grad_net_wrapper, forward_fg, inputs_wrapper, need_unpack);
   if (ret != nullptr) {
     call_node->SetVobj(AObject::Convert(ret));
     call_node->set_abstract_wrapper(ret);
@@ -4022,7 +4258,7 @@ AbstractWrapperPtr MindGraphBuilder::HandleGetShapeOfDynamicLengthTensor(const A
   if (std::all_of(tensor_shape.begin(), tensor_shape.end(), [](auto e) { return e > 0; })) {
     return nullptr;
   }
-  std::vector<AbstractWrapperPtr> input_abstract_wrapper = {abstract_wrapper};
+  AbstractWrapperPtrList input_abstract_wrapper = {abstract_wrapper};
   return fg_builder_->AddNode(prim::kPrimShape, input_abstract_wrapper);
 }
 
@@ -4084,7 +4320,7 @@ AbstractWrapperPtr MindGraphBuilder::HandleMultiOp(const Instr &instr, const std
 
 AbstractWrapperPtr MindGraphBuilder::HandleBuildOp(const Instr &instr, const std::vector<ValueNode *> &p) {
   auto opcode = instr.op();
-  std::vector<AbstractWrapperPtr> inputs_wrapper = HandleInputArgs(p);
+  AbstractWrapperPtrList inputs_wrapper = HandleInputArgs(p);
   auto primitive = pijit::GraphUtils::GetPrimitive(opcode);
   if (primitive == nullptr) {
     return nullptr;
@@ -4092,7 +4328,7 @@ AbstractWrapperPtr MindGraphBuilder::HandleBuildOp(const Instr &instr, const std
   if (primitive == prim::kPrimMakeDict) {
     if (opcode == BUILD_CONST_KEY_MAP) {
       MS_LOG(DEBUG) << "BUILD_CONST_KEY_MAP case, need to pack values.";
-      std::vector<AbstractWrapperPtr> value_inputs_wrapper;
+      AbstractWrapperPtrList value_inputs_wrapper;
       (void)std::copy(inputs_wrapper.begin(), inputs_wrapper.end() - 1, std::back_inserter(value_inputs_wrapper));
       auto value_wrapper = fg_builder_->AddNode(prim::kPrimMakeTuple, value_inputs_wrapper);
       inputs_wrapper = {inputs_wrapper.back(), value_wrapper};
@@ -4102,8 +4338,8 @@ AbstractWrapperPtr MindGraphBuilder::HandleBuildOp(const Instr &instr, const std
       if (input_len % 2 != 0) {
         MS_LOG(INTERNAL_EXCEPTION) << "BUILD_KEY_MAP should have even input, but got: " << input_len;
       }
-      std::vector<AbstractWrapperPtr> key_inputs_wrapper;
-      std::vector<AbstractWrapperPtr> value_inputs_wrapper;
+      AbstractWrapperPtrList key_inputs_wrapper;
+      AbstractWrapperPtrList value_inputs_wrapper;
       for (size_t i = 0; i < input_len / 2; ++i) {
         key_inputs_wrapper.push_back(inputs_wrapper[2 * i]);
         value_inputs_wrapper.push_back(inputs_wrapper[2 * i + 1]);

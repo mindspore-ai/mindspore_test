@@ -21,6 +21,7 @@
 #include <utility>
 #include <map>
 #include <chrono>
+#include <algorithm>
 #include "pybind11/pybind11.h"
 #include "ir/cell.h"
 #include "pipeline/jit/pi/utils/opcode_declare.h"
@@ -181,7 +182,7 @@ class PackCallStackHelper {
     std::map<std::string, T> kw_;
   };
 
-  PackCallStackHelper(int opcode) : opcode_(opcode) {}
+  explicit PackCallStackHelper(int opcode) : opcode_(opcode) {}
   auto &result() { return result_; }
 
   template <typename CastKeys, typename CastSequence, typename CastKeyWords>
@@ -227,7 +228,9 @@ class BindArgumentsHelper {
     std::vector<E> va_;
     std::map<std::string, E> kw_va_;
   };
-  BindArgumentsHelper(PyCodeObject *co) : co_(co) { results_.args_.resize(co->co_argcount + co->co_kwonlyargcount); }
+  explicit BindArgumentsHelper(PyCodeObject *co) : co_(co) {
+    results_.args_.resize(co->co_argcount + co->co_kwonlyargcount);
+  }
   auto &results() { return results_; }
 
  private:

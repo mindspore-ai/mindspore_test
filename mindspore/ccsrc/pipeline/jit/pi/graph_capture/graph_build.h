@@ -281,6 +281,7 @@ class GraphBuilder {
   const auto &frame() const { return frame_; }
 
  protected:
+  GraphBuilderPtr sub_graph = nullptr;
   GraphBuilder *root_;
   GraphBuilder *parent_;
   Graph *graph_;
@@ -353,6 +354,15 @@ class MindGraphBuilder : public GraphBuilder {
   std::string co_name_;
   AbstractWrapperPtr HandleMultiOp(const Instr &instr, const std::vector<ValueNode *> &p, bool is_compare);
   AbstractWrapperPtr HandleBuildOp(const Instr &instr, const std::vector<ValueNode *> &p);
+
+  BindArgumentsHelper<ValueNode *> PackInputsForFunc(const py::object &obj, int op_code,
+                                                     const std::vector<ValueNode *> &inputs,
+                                                     bool eliminate_sens = false);
+
+  std::pair<FuncGraphPtr, BindArgumentsHelper<ValueNode *>> BuildForwardGraph(CallNode *call_node);
+  std::vector<AbstractWrapperPtr> HandleInputsForGrad(CallNode *call_node,
+                                                      BindArgumentsHelper<ValueNode *> forward_inputs);
+  void HandleCustomBProp(const FuncGraphPtr &graph, const py::object &obj) const;
 };
 }  // namespace pijit
 }  // namespace mindspore
