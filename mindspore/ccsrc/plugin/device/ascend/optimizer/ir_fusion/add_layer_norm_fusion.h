@@ -17,13 +17,16 @@
 #define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ADD_LAYERNORM_FUSION_H_
 
 #include <memory>
+#include <string>
 #include "include/backend/optimizer/optimizer.h"
+#include "mindspore/core/ops/nn_optimizer_ops.h"
+#include "mindspore/core/ops/math_ops.h"
 
 namespace mindspore {
 namespace opt {
-class AddLayernormFusion : public PatternProcessPass {
+class AddLayernormFusionBase : public PatternProcessPass {
  public:
-  explicit AddLayernormFusion(bool multigraph = true) : PatternProcessPass("add_layer_norm_fusion", multigraph) {
+  AddLayernormFusionBase(std::string name, size_t gamma_idx) : PatternProcessPass(name, true) {
     x1_ = std::make_shared<Var>();
     x2_ = std::make_shared<Var>();
     gamma_ = std::make_shared<Var>();
@@ -31,12 +34,13 @@ class AddLayernormFusion : public PatternProcessPass {
     begin_norm_axis_ = std::make_shared<Var>();
     begin_params_axis_ = std::make_shared<Var>();
     eps_ = std::make_shared<Var>();
+    normalize_shape_ = std::make_shared<Var>();
+    gamma_idx_ = gamma_idx;
   }
-  ~AddLayernormFusion() override = default;
-  const BaseRef DefinePattern() const override;
+  ~AddLayernormFusionBase() override = default;
   const AnfNodePtr Process(const FuncGraphPtr &, const AnfNodePtr &, const EquivPtr &) const override;
 
- private:
+ protected:
   VarPtr x1_;
   VarPtr x2_;
   VarPtr gamma_;
@@ -44,7 +48,45 @@ class AddLayernormFusion : public PatternProcessPass {
   VarPtr begin_norm_axis_;
   VarPtr begin_params_axis_;
   VarPtr eps_;
+  VarPtr normalize_shape_;
+
+ private:
+  size_t gamma_idx_;
 };
+
+class AddLayernormFusion : public AddLayernormFusionBase {
+ public:
+  AddLayernormFusion() : AddLayernormFusionBase("add_layer_norm_fusion", 1) {}
+  ~AddLayernormFusion() override = default;
+  const BaseRef DefinePattern() const override {
+    VectorRef add_layer_norm = VectorRef({prim::kPrimLayerNorm, VectorRef({prim::kPrimAdd, x1_, x2_}), gamma_, beta_,
+                                          begin_norm_axis_, begin_params_axis_, eps_});
+    return add_layer_norm;
+  }
+};
+
+class AddLayernormV3Fusion : public AddLayernormFusionBase {
+ public:
+  AddLayernormV3Fusion() : AddLayernormFusionBase("add_layer_norm_v3_fusion", 1) {}
+  ~AddLayernormV3Fusion() override = default;
+  const BaseRef DefinePattern() const override {
+    VectorRef add_layer_norm = VectorRef({prim::kPrimLayerNormV3, VectorRef({prim::kPrimAdd, x1_, x2_}), gamma_, beta_,
+                                          begin_norm_axis_, begin_params_axis_, eps_});
+    return add_layer_norm;
+  }
+};
+
+class AddLayernormExtFusion : public AddLayernormFusionBase {
+ public:
+  AddLayernormExtFusion() : AddLayernormFusionBase("add_layer_norm_ext_fusion", 2) {}
+  ~AddLayernormExtFusion() override = default;
+  const BaseRef DefinePattern() const override {
+    VectorRef add_layer_norm = VectorRef(
+      {prim::kPrimLayerNormExt, VectorRef({prim::kPrimAdd, x1_, x2_}), normalize_shape_, gamma_, beta_, eps_});
+    return add_layer_norm;
+  }
+};
+
 }  // namespace opt
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ADD_LAYERNORM_FUSION_H_
