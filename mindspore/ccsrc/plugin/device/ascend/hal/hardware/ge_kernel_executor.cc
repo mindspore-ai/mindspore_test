@@ -467,6 +467,8 @@ CNodePtr ProcessSwitchNode(const KernelGraphPtr &graph, const CNodePtr &kernel_c
   reverse(branch_graph_names.begin(), branch_graph_names.end());
   cond_gather_node->AddAttr(kAttrBranchGraphName, std::make_shared<ValueTuple>(branch_graph_names));
   graph->AddConditionGatherSwitchPair(cond_gather_node, cond_switch_node);
+  // Note: Kbk sub graph mode doesn't support 'SwitchInline' feature currently.
+  graph->set_enable_kbk_sub_graph_execute(false);
   MS_LOG(DEBUG) << "Add new condition gather node:" << cond_gather_node->fullname_with_scope()
                 << " and condition switch actor:" << cond_switch_node->fullname_with_scope()
                 << " for graph:" << graph->ToString();

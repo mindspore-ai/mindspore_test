@@ -561,6 +561,12 @@ class BACKEND_EXPORT KernelGraph : public FuncGraph {
   void set_has_kernel_need_user_data(bool has_kernel_need_user_data) {
     has_kernel_need_user_data_ = has_kernel_need_user_data;
   }
+
+  bool enable_kbk_sub_graph_execute() const { return enable_kbk_sub_graph_execute_; }
+  void set_enable_kbk_sub_graph_execute(bool enable_kbk_sub_graph_execute) {
+    enable_kbk_sub_graph_execute_ = enable_kbk_sub_graph_execute;
+  }
+
   void CacheRootWeight(const std::vector<AnfNodePtr> &weights);
   const std::vector<AnfNodePtr> &GetRootWeights() const { return root_weights_; }
 
@@ -692,6 +698,10 @@ class BACKEND_EXPORT KernelGraph : public FuncGraph {
   bool enable_multi_stream_{false};
   // Whether this graph contains kernel which need user data.
   bool has_kernel_need_user_data_{false};
+
+  // Whether this graph could be executed as kbk graph mode which disable kernel actor message mechanism.
+  // Note: Will be deleted in the future, after runtime refactor for kbk finish.
+  bool enable_kbk_sub_graph_execute_{true};
   std::vector<AnfNodePtr> root_weights_;
 };
 }  // namespace session

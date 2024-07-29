@@ -487,6 +487,11 @@ std::vector<AbstractActorPtr> AnyTypeGraphScheduler::Transform(const KernelGraph
   auto graph_compiler_info = ConstructGraphCompilerInfo(model_graph, real_graph, device_context);
   MS_LOG(INFO) << "Start transform for model graph:" << model_graph->ToString()
                << " and real graph:" << real_graph->ToString();
+  // Note: Kbk sub graph mode doesn't support PyExecutor kernel(Fallback feature) currently.
+  model_graph->set_enable_kbk_sub_graph_execute(false);
+  for (const auto &graph : graph_compiler_info->graphs_) {
+    graph->set_enable_kbk_sub_graph_execute(false);
+  }
   auto actor_set = GraphScheduler::GetInstance().Transform(*graph_compiler_info);
   MS_EXCEPTION_IF_NULL(actor_set);
   MS_LOG(INFO) << "End transform for model graph:" << model_graph->ToString()

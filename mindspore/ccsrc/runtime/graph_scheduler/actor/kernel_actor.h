@@ -20,6 +20,7 @@
 #include <vector>
 #include <set>
 #include <string>
+#include <map>
 #include <memory>
 #include <utility>
 #include "utils/hash_map.h"
@@ -128,6 +129,10 @@ class KernelActor : public DebugAwareActor {
     skip_launch_shape_related_op_ = skip_launch_shape_related_op;
   }
 
+  const std::map<size_t, std::pair<DeviceTensorPtr, const DeviceContext *>> &copy_output_device_tensors() const {
+    return copy_output_device_tensors_;
+  }
+
  protected:
   void Init() override;
   void Run(OpContext<DeviceTensor> *const context) override;
@@ -145,6 +150,10 @@ class KernelActor : public DebugAwareActor {
   void RunWithMultiPipeline(OpContext<DeviceTensor> *const context);
   // Execute launch kernel asynchronously in KernelAsyncLaunchActor.
   void RunWithAsyncLaunchKernel(OpContext<DeviceTensor> *const context);
+
+  // Infer shape(and type) and resize kernel mod for dynamic shape or dynamic value, and update memory size from kernel
+  // mod to output/workspace device tensors.
+  void InferAndUpdateDeviceTensorSize(OpContext<DeviceTensor> *const context);
 
   // Infer shape(and type) and resize kernel mod.
   void InferAndResize(OpContext<DeviceTensor> *const context);
@@ -195,6 +204,7 @@ class KernelActor : public DebugAwareActor {
   // The received input device type and format may be different from the formal parameter in the control flow
   // scenarios, so it needs to be copied from the input data to real data that kernel launch needs.
   std::vector<DeviceTensorPtr> copy_input_device_tensors_;
+  std::map<size_t, std::pair<DeviceTensorPtr, const DeviceContext *>> copy_output_device_tensors_;
   // Real data info that kernel launch needs, used to check the consistency of received input data.
   std::vector<std::shared_ptr<InputDataInfo>> real_input_data_infos_;
 
@@ -243,7 +253,7 @@ class KernelActor : public DebugAwareActor {
   void FetchOutputDeviceTensor(OpContext<DeviceTensor> *const context);
   void FetchWorkspaceDeviceTensor();
   // Need copy when the data type or format between real parameters and formal parameters are inconsistent.
-  void CopyInputDeviceTensor(const OpData<DeviceTensor> *input_data, OpContext<DeviceTensor> *const context);
+  void CopyInputDeviceTensor(DeviceTensor *device_tensor, size_t input_index, OpContext<DeviceTensor> *const context);
 
   // The processing before kernel launch: update the info of kernel launch.
   void PreLaunchKernel(OpContext<DeviceTensor> *const context);

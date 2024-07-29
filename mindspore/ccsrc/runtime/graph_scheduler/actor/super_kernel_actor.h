@@ -75,6 +75,10 @@ class SuperKernelActor : public DebugAwareActor {
 
   const KernelGraphPtr &graph() const { return graph_; }
 
+  void BuildAndLinkKernelActors();
+  const std::vector<KernelActorPtr> &kernel_actors() const { return kernel_actors_; }
+  const std::vector<size_t> &input_param_static_use_cnt() const { return input_params_use_cnt_; }
+
  protected:
   void Init() override;
   void Run(OpContext<DeviceTensor> *const context) override;
@@ -90,12 +94,39 @@ class SuperKernelActor : public DebugAwareActor {
  private:
   bool CopyInputDataPersistedHandle(const DeviceContext *device_context, DeviceTensor *input_device_tensor,
                                     const DeviceTensorPtr &node_device_tensor, size_t i);
+
+  // Generate and initialize all kernel actors by execution order of graph_ for kerkel by kernl execute a sub garph
+  // mode.
+  void BuildKernelActors();
+
+  // Parse all nodes dependence of graph_, record device tensor store key of every kernel, calculate original ref count
+  // of CNode and Parameter, prepare input and heterogeneous output device address of all kernels.
+  void LinkKernelActors();
+  void AnalyseNodesDependence();
+  void LinkKernelActor(const CNodePtr &kernel, size_t input_index, const AnfNodePtr &input_node, size_t output_index);
+  void LinkKernelActorByDeviceType(const CNodePtr &kernel, size_t input_index, const AnfNodePtr &input_node,
+                                   size_t output_index);
+
   void RunGraphKernelByKernel(OpContext<DeviceTensor> *const context);
+  // Need to correct current ref count or dynamic ref count by the use count of the input node(parameter) in the graph.
+  // From the outside, the input device address is used only once by the super kernel actor, origin ref count only +1 in
+  // compile phase.
+  void CorrectRefCount(size_t input_index, DeviceTensor *device_tensor);
+
+  void FetchPersistentDeviceTensor();
 
   void UpdateMemoryTraceMangerStatus(OpContext<DeviceTensor> *const context);
   void SetTraceMemoryForKernel(const KernelActorPtr &kernel_actor);
+  // Allocate block memory for use trace memory (run by static shape) step.
+  void AllocateTraceMemory(OpContext<DeviceTensor> *const context) const;
+  // Free block memory for use trace memory (run by static shape) step.
+  void FreeTraceMemory() const;
 
-  void FetchPersistentDeviceTensor();
+  // Handle copy output for different device type kernel.
+  bool CopyHeterogeneousOutput(OpContext<DeviceTensor> *const context, const KernelActorPtr &kernel_actor) const;
+
+  // Launch all kernels by execution order in kernel graph: graph_.
+  bool LaunchAllKernels(OpContext<DeviceTensor> *const context);
 
   friend class GraphScheduler;
   KernelGraphPtr graph_;
@@ -113,16 +144,16 @@ class SuperKernelActor : public DebugAwareActor {
   // Record the device address to the output node of graph.
   std::map<DeviceAddress *, OutputMemoryInfo> device_address_to_node_;
 
-  // For kerkel by kernl execute a sub garph.
-  void BuildKernelActors();
-  // Cache the kernel input index whose input is graph's input.
-  void ParseInputIndex();
+  // Record the use count of all input nodes(parameter) of graph_, use to correct current ref count in runtime.
+  std::vector<size_t> input_params_use_cnt_;
 
-  void CalcRefCount();
+  // Record all parameter nodes of graph_ and their index positions in graph_'s input_nodes.
+  mindspore::HashMap<AnfNode *, size_t> param_node_to_input_idx_;
 
   // Kernel by kernel sub graph execute mode need not send actor message.
   bool enable_kbk_sub_graph_execute_;
   bool already_fetch_persistent_device_tensor_{false};
+  mindspore::HashMap<AnfNodePtr, KernelActor *> cnode_to_kernel_actor_;
   std::vector<KernelActorPtr> kernel_actors_;
   mindspore::HashMap<AnfNode *, std::vector<std::pair<size_t, size_t>>> kernel_input_to_graph_input_indices_;
   SomasInfo *somas_info_;

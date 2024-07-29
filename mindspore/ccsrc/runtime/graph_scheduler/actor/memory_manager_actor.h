@@ -72,15 +72,15 @@ class MemoryManagerActor : public ActorBase {
   void FreeSomasMemory(SomasInfo *const somas_info, const DeviceContext *device_context,
                        OpContext<DeviceTensor> *const op_context, const AID &from_aid);
 
+  void FreeMemoryByRefCount(DeviceTensor *const device_tensor, const DeviceContext *device_context,
+                            const std::string &op_name);
+
   // Wait the MemoryManagerActor to finish running all current messages.
   void Wait(OpContext<DeviceTensor> *const op_context, const AID &from_aid);
 
  private:
   MemoryManagerActor() : ActorBase("MemoryManagerActor") {}
   DISABLE_COPY_AND_ASSIGN(MemoryManagerActor);
-
-  void FreeMemoryByRefCount(DeviceTensor *const device_tensor, const DeviceContext *device_context,
-                            const std::string &op_name);
 
   // When allocate device memory fail, print error log and set op context failed status.
   void SetOpContextMemoryAllocFail(const std::string &kernel_name, const DeviceContext *device_context,

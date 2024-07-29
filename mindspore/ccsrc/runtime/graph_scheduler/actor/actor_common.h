@@ -349,6 +349,11 @@ class ActorDispatcher {
   }
   static bool disable_kbk_sub_graph_execute() { return disable_kbk_sub_graph_execute_; }
 
+  static void set_enable_sub_graph_execute_for_cur_actor_set(bool enable_sub_graph_execute) {
+    enable_sub_graph_execute_for_cur_actor_set_ = enable_sub_graph_execute;
+  }
+  static bool enable_sub_graph_execute_for_cur_actor_set() { return enable_sub_graph_execute_for_cur_actor_set_; }
+
   static void set_enable_trace_dynamic_memory(bool enable_trace_dynamic_memory) {
     enable_trace_dynamic_memory_ = enable_trace_dynamic_memory;
   }
@@ -394,6 +399,7 @@ class ActorDispatcher {
   static bool enable_static_shape_;
   static bool enable_async_launch_kernel_;
   static bool disable_kbk_sub_graph_execute_;
+  static bool enable_sub_graph_execute_for_cur_actor_set_;
   static bool enable_trace_dynamic_memory_;
   static bool enable_use_trace_memory_;
 };
@@ -446,6 +452,11 @@ void ResetTraceMemoryStatus();
 // Kernel by kernel sub graph execute mode need not send actor message by kernel actor, just launch all kernels in
 // super kernel actor directly.
 bool EnableKbkSubGraphExecute();
+
+// Whether enable async launch kernel or infer->resize->launch pipeline.
+// Set ture will enable async launch, and also enable infer->resize->launch pipeline if actor set contains dynamic
+// shape kernel.
+bool EnableRuntimePipeline();
 
 // If enable async launch kernel, wait all kernels launch task finish.
 // If enable infer->resize->launch pipeline, also wait all infer, resize and launch task finish.

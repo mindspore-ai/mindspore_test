@@ -26,6 +26,7 @@
 #include "utils/phase.h"
 #include "utils/llm_manager.h"
 #include "utils/log_adapter.h"
+#include "op_def/framework_ops.h"
 
 namespace mindspore {
 namespace runtime {
@@ -67,29 +68,15 @@ inline bool InputDataNoNeedCopy(const AnfNodePtr &input_node, DeviceTensor *inpu
   return false;
 }
 
-void UpdateRefCountWithOnlyDependShape(const CNodePtr &kernel, size_t input_index, const AnfNodePtr &node,
-                                       size_t output_index) {
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  static const bool enable_infer_boost = ms_context->IsEnableInferBoost();
-  if (enable_infer_boost) {
-    UpdateRefCount(node, output_index, false);
-    return;
-  }
-
-  // Shape depend kernel should not increase ref count.
+bool IsOnlyDependShape(const CNodePtr &kernel, size_t input_index) {
   const auto &only_depend_shape_attr = common::AnfAlgo::GetCNodePrimitiveAttr(kernel, kAttrOnlyDependShape);
   if (only_depend_shape_attr != nullptr) {
     const auto &only_depend_shape = GetValue<std::vector<bool>>(only_depend_shape_attr);
     if (input_index < only_depend_shape.size() && only_depend_shape[input_index]) {
-      // Only depend shape no need to increase ref count, and update flag.
-      auto device_tensor = AnfAlgo::GetMutableOutputAddr(node, output_index, false);
-      MS_EXCEPTION_IF_NULL(device_tensor);
-      device_tensor->UpdateFlag(device::kDeviceAddressFlagNullptr);
-      return;
+      return true;
     }
   }
-  UpdateRefCount(node, output_index, false);
+  return false;
 }
 }  // namespace
 void SuperKernelActor::Init() {
@@ -164,12 +151,6 @@ void SuperKernelActor::Init() {
     is_parameters_need_copy_[i] = true;
   }
 
-  if (enable_kbk_sub_graph_execute_) {
-    BuildKernelActors();
-    ParseInputIndex();
-    CalcRefCount();
-  }
-
   if (type_ == KernelTransformType::kSuperKernelActor && !enable_kbk_sub_graph_execute_) {
     MS_EXCEPTION_IF_NULL(device_contexts_[0]);
     MS_EXCEPTION_IF_NULL(device_contexts_[0]->graph_executor_);
@@ -219,8 +200,22 @@ void SuperKernelActor::FetchInputDeviceTensor(OpContext<DeviceTensor> *const con
                         << ", device address addr: " << input_device_tensors_[index]->GetPtr() << ", index: " << index;
       }
 
-      if (input_data->data_->dynamic_ref_count() != INT32_MAX) {
-        (void)memory_free_list.emplace_back(input_data->data_);
+      if (!enable_kbk_sub_graph_execute_) {
+        if (input_data->data_->dynamic_ref_count() != INT32_MAX) {
+          (void)memory_free_list.emplace_back(input_data->data_);
+        }
+        continue;
+      }
+
+      // There is no memory free action for use trace memory step, need to free input device address of the kernel graph
+      // after launch all kernels.
+      if (ActorDispatcher::enable_use_trace_memory()) {
+        if (input_data->data_->original_ref_count() != SIZE_MAX ||
+            input_data->data_->dynamic_ref_count() != INT32_MAX) {
+          (void)memory_free_list.emplace_back(input_data->data_);
+        }
+      } else {
+        CorrectRefCount(index, input_data->data_);
       }
     }
     memory_free_lists_.push(memory_free_list);
@@ -235,7 +230,16 @@ void SuperKernelActor::Run(OpContext<DeviceTensor> *const context) {
   }
 
   if (enable_kbk_sub_graph_execute_) {
-    return RunGraphKernelByKernel(context);
+    try {
+      return RunGraphKernelByKernel(context);
+    } catch (const std::exception &e) {
+      if (context->error_info_.empty()) {
+        MsException::Instance().SetException();
+        std::string error_info =
+          "Run graph[" + std::to_string(graph_->graph_id()) + "] by kernek by kernel failed, exception: " + e.what();
+        SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
+      }
+    }
   }
   if (device_contexts_.empty() || device_contexts_[0] == nullptr) {
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "Invalid device context for super kernel actor:" + GetAID().Name());
@@ -307,6 +311,40 @@ void SuperKernelActor::FetchPersistentDeviceTensor() {
   }
 }
 
+void SuperKernelActor::CorrectRefCount(size_t input_index, DeviceTensor *device_tensor) {
+  MS_EXCEPTION_IF_NULL(device_tensor);
+  const auto &input_rec_cnt = input_params_use_cnt_.at(input_index);
+  if (input_rec_cnt == SIZE_MAX) {
+    bool is_max_rec_cnt =
+      device_tensor->original_ref_count() == SIZE_MAX && device_tensor->dynamic_ref_count() == INT32_MAX;
+    if (!is_max_rec_cnt) {
+      MS_LOG(EXCEPTION) << "Expect a max static and dynamic ref count input, but got static ref count: "
+                        << device_tensor->original_ref_count()
+                        << ", dynamic ref count: " << device_tensor->dynamic_ref_count();
+    }
+    return;
+  }
+
+  if (input_rec_cnt == 0) {
+    // No user for this input in graph.
+    return;
+  }
+
+  if (device_tensor->original_ref_count() != SIZE_MAX) {
+    MS_LOG(DEBUG) << "The device address: " << device_tensor
+                  << " current ref count before correct: " << device_tensor->ref_count()
+                  << ", after correct: " << (device_tensor->ref_count() + input_rec_cnt);
+    device_tensor->set_ref_count(device_tensor->ref_count() + input_rec_cnt);
+  } else if (device_tensor->dynamic_ref_count() != INT32_MAX) {
+    MS_LOG(DEBUG) << "The device address: " << device_tensor
+                  << " current dynamic ref count before correct: " << device_tensor->dynamic_ref_count()
+                  << ", after correct: " << (device_tensor->dynamic_ref_count() + input_rec_cnt);
+    device_tensor->set_dynamic_ref_count(device_tensor->dynamic_ref_count() + input_rec_cnt);
+  }
+  // Need to decrease current ref count once.
+  MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(device_tensor, device_contexts_[0], GetAID().Name());
+}
+
 void SuperKernelActor::UpdateMemoryTraceMangerStatus(OpContext<DeviceTensor> *const context) {
   MemoryTraceManager::GetInstance().PickMemoryTrackInfoForGraph(graph_->graph_id());
   if (!ActorDispatcher::enable_static_shape()) {
@@ -351,25 +389,7 @@ void SuperKernelActor::UpdateMemoryTraceMangerStatus(OpContext<DeviceTensor> *co
     MemoryTraceManager::GetInstance().ReserveKernelMemoryBlocks(memory_block_size, device_contexts_[0]);
   } else {
     // Not first step for dynamic shape, use record trace memory.
-    // Allocate block memory for static memory step.
-    ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kMemoryAlloc, GetAID().Name());
-    const auto &merge_blocks_with_device_context = MemoryTraceManager::GetInstance().GetMergeBlocks();
-    MS_EXCEPTION_IF_NULL(merge_blocks_with_device_context);
-    for (auto &item : *merge_blocks_with_device_context) {
-      const auto &device_context = item.first;
-      MS_EXCEPTION_IF_NULL(device_context);
-      const auto &merge_blocks = item.second;
-      for (auto &block : merge_blocks) {
-        MS_EXCEPTION_IF_NULL(block);
-        static const size_t kMemoryAlignSize = 1024;
-        void *block_addr = device_context->device_res_manager_->AllocateMemory(block->size_ + kMemoryAlignSize);
-        if (block_addr == nullptr) {
-          SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(GraphExecutionStrategy::kPipeline, *context,
-                                                      *(device_contexts_[0]), GetAID().Name(), block->size_);
-        }
-        block->start_ = reinterpret_cast<uint8_t *>(block_addr);
-      }
-    }
+    AllocateTraceMemory(context);
   }
 }
 
@@ -403,76 +423,137 @@ void SuperKernelActor::SetTraceMemoryForKernel(const KernelActorPtr &kernel_acto
   }
 }
 
-void SuperKernelActor::RunGraphKernelByKernel(OpContext<DeviceTensor> *const context) {
-  if (!ActorDispatcher::enable_async_launch_kernel()) {
-    std::string error_info =
-      "Runtime pipeline optimization is disabled, failed to execute graph kernel by kernel mode.";
-    MS_LOG(ERROR) << "Run graph failed, graph id: " << std::to_string(graph_->graph_id()) << ". " << error_info;
-    SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
-  }
-  if (!graph_->is_dynamic_shape()) {
-    ActorDispatcher::set_enable_static_shape(false);
-  }
-
-  // 1. Fetch input data
-  FetchInputDeviceTensor(context);
-  if (!already_fetch_persistent_device_tensor_) {
-    FetchPersistentDeviceTensor();
-    already_fetch_persistent_device_tensor_ = true;
-  }
-
-  // 2. Allocate somas memory for graph
-  if ((somas_info_ != nullptr) && (somas_info_->whole_block_size_ != 0)) {
-    MemoryManagerActor::GetInstance()->AllocateSomasMemory(somas_info_, device_contexts_[0], context, GetAID());
-  }
-  const auto &phase = PhaseManager::GetInstance().phase();
-  bool is_increment_graph = (phase.find("increment") != std::string::npos);
-  if (enable_trace_memory_ && graph_->is_dynamic_shape() && is_increment_graph) {
-    MS_LOG(DEBUG) << "Enable trace memory for increment inference graph: " << graph_->graph_id()
-                  << ", phase: " << phase;
-    UpdateMemoryTraceMangerStatus(context);
-
-    if (IsRunningFailed(context)) {
-      // Maybe allocate memory failed, early stop to run graph.
-      MS_LOG(INFO) << "Run failed and early stop to run graph: " << graph_->graph_id();
-      return;
+void SuperKernelActor::AllocateTraceMemory(OpContext<DeviceTensor> *const context) const {
+  ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kMemoryAlloc, GetAID().Name());
+  const auto &merge_blocks_with_device_context = MemoryTraceManager::GetInstance().GetMergeBlocks();
+  MS_EXCEPTION_IF_NULL(merge_blocks_with_device_context);
+  for (auto &item : *merge_blocks_with_device_context) {
+    const auto &device_context = item.first;
+    MS_EXCEPTION_IF_NULL(device_context);
+    const auto &merge_blocks = item.second;
+    for (auto &block : merge_blocks) {
+      MS_EXCEPTION_IF_NULL(block);
+      static const size_t kMemoryAlignSize = 1024;
+      void *block_addr = device_context->device_res_manager_->AllocateMemory(block->size_ + kMemoryAlignSize);
+      if (block_addr == nullptr) {
+        SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(GraphExecutionStrategy::kPipeline, *context, *(device_contexts_[0]),
+                                                    GetAID().Name(), block->size_);
+      }
+      block->start_ = reinterpret_cast<uint8_t *>(block_addr);
     }
   }
+}
 
-  // 3. Launch all kernels
+void SuperKernelActor::FreeTraceMemory() const {
+  ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kMemoryFree, GetAID().Name());
+  const auto &merge_blocks_with_device_context = MemoryTraceManager::GetInstance().GetMergeBlocks();
+  MS_EXCEPTION_IF_NULL(merge_blocks_with_device_context);
+  for (auto &item : *merge_blocks_with_device_context) {
+    const auto &device_context = item.first;
+    MS_EXCEPTION_IF_NULL(device_context);
+    const auto &merge_blocks = item.second;
+    for (auto &block : merge_blocks) {
+      MS_EXCEPTION_IF_NULL(block);
+      device_context->device_res_manager_->FreeMemory(block->start_);
+    }
+  }
+}
+
+bool SuperKernelActor::CopyHeterogeneousOutput(OpContext<DeviceTensor> *const context,
+                                               const KernelActorPtr &kernel_actor) const {
+  if (!WaitRuntimePipelineFinish(context)) {
+    return false;
+  }
+
+  for (const auto &output_index_to_copy_address : kernel_actor->copy_output_device_tensors_) {
+    const auto &output_index = output_index_to_copy_address.first;
+    const auto &dest_device_address = output_index_to_copy_address.second.first.get();
+    const auto &dest_device_context = output_index_to_copy_address.second.second;
+    const auto &src_device_address = kernel_actor->output_device_tensors_.at(output_index);
+    const auto &src_device_context = kernel_actor->device_contexts_[0];
+
+    if (kernel_actor->is_dynamic_shape_) {
+      // For dynamic shape case.
+      const auto &dest_kernel_tensor = dest_device_address->kernel_tensor();
+      const auto &src_kernel_tensor = src_device_address->kernel_tensor();
+      MS_EXCEPTION_IF_NULL(dest_kernel_tensor);
+      MS_EXCEPTION_IF_NULL(src_kernel_tensor);
+      dest_kernel_tensor->SetType(src_kernel_tensor->GetType()->Clone());
+      dest_kernel_tensor->SetShape(src_kernel_tensor->GetShape()->Clone());
+      dest_kernel_tensor->set_size(src_kernel_tensor->size());
+    }
+
+    // Allocate memory.
+    if (dest_device_address->kernel_tensor()->device_ptr() != nullptr) {
+      MS_LOG_WITH_NODE(EXCEPTION, kernel_actor->kernel_)
+        << "Memory leak detected in copy output device address for kernel: "
+        << kernel_actor->kernel_->fullname_with_scope();
+    }
+    std::vector<DeviceTensor *> mem_alloc_list = {dest_device_address};
+    MemoryManagerActor::GetInstance()->AllocateMemory(&mem_alloc_list, dest_device_context, context, GetAID());
+    if (IsRunningFailed(context)) {
+      // Maybe allocate memory failed, early stop to run graph.
+      return false;
+    }
+
+    auto ret = Copy(dest_device_address, src_device_address);
+    if (!ret) {
+      MS_LOG(ERROR) << "Copy for heterogeneous output failed, kernel actor: " << kernel_actor->GetAID().Name()
+                    << ", output index: " << output_index << ", dest device address: " << dest_device_address
+                    << ", src device address: " << src_device_address;
+      return false;
+    }
+
+    // Update ref count.
+    MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(src_device_address, src_device_context, GetAID().Name());
+    MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(dest_device_address, dest_device_context, GetAID().Name());
+  }
+
+  return true;
+}
+
+bool SuperKernelActor::LaunchAllKernels(OpContext<DeviceTensor> *const context) {
   size_t kernel_num = kernel_actors_.size();
-  const auto &execution_order = graph_->execution_order();
   for (size_t i = 0; i < kernel_num; i++) {
     const auto &kernel_actor = kernel_actors_[i];
     if (kernel_actor == nullptr) {
       continue;
     }
-    const auto &kernel = execution_order[i];
-    // 3.1 Prepare input data for kernel
+    const auto &kernel = kernel_actor->kernel();
+    // 1. Prepare input data for kernel
     const auto &iter = kernel_input_to_graph_input_indices_.find(kernel.get());
     if (iter != kernel_input_to_graph_input_indices_.end()) {
       std::vector<std::pair<size_t, size_t>> &input_to_graph_input_indices = iter->second;
       for (const auto &item : input_to_graph_input_indices) {
         kernel_actor->SetInputDeviceTensor(input_device_tensors_[item.second], item.first);
+        kernel_actor->memory_free_list_[item.first] = input_device_tensors_[item.second];
+        kernel_actor->CopyInputDeviceTensor(input_device_tensors_[item.second], item.first, context);
+      }
+    }
+    if (!kernel_actor->device_tensor_store_keys_.empty()) {
+      // Collect the inputs from device tensor store.
+      kernel_actor->FetchInputByTensorStore(&kernel_actor->input_device_tensors_, &kernel_actor->input_kernel_tensors_,
+                                            &kernel_actor->input_kernel_tensors_for_infer_,
+                                            &kernel_actor->memory_free_list_, context);
+      if (IsRunningFailed(context)) {
+        return false;
       }
     }
 
-    // 3.2 Allocate somas memory for this kernel
+    // 2. Allocate somas memory or cached memory for this kernel.
     kernel_actor->SetSomasMemory(context);
-
     if (ActorDispatcher::enable_use_trace_memory()) {
       SetTraceMemoryForKernel(kernel_actor);
     }
 
-    // Async Run Infer or Launch
+    // 3. Async Run Infer or Launch
     if (ActorDispatcher::enable_runtime_multi_pipeline() && !ActorDispatcher::enable_static_shape()) {
       // If the kernel need user data and is dynamic, maybe need input kernel's output user data to infer shape, this
       // value depend case can not handle in KernelTensor auto sync phase currently.
       if (kernel_actor->kernel_mod_->need_user_data() && kernel_actor->has_dynamic_) {
         MS_LOG(DEBUG) << "Begin wait runtime pipeline for kernel: " << kernel_actor->kernel_->fullname_with_scope();
         if (!WaitRuntimePipelineFinish(context)) {
-          MS_LOG(INFO) << "Run failed and early stop for kernel: " << kernel_actor->kernel_->fullname_with_scope();
-          return;
+          return false;
         }
         MS_LOG(DEBUG) << "End wait runtime pipeline for kernel: " << kernel_actor->kernel_->fullname_with_scope();
       }
@@ -486,8 +567,7 @@ void SuperKernelActor::RunGraphKernelByKernel(OpContext<DeviceTensor> *const con
       if (kernel_actor->kernel_mod_->IsNeedUpdateOutputShapeAndSize()) {
         MS_LOG(DEBUG) << "Begin wait runtime pipeline for kernel: " << kernel_actor->kernel_->fullname_with_scope();
         if (!WaitRuntimePipelineFinish(context)) {
-          MS_LOG(INFO) << "Run failed and early stop for kernel: " << kernel_actor->kernel_->fullname_with_scope();
-          return;
+          return false;
         }
         MS_LOG(DEBUG) << "End wait runtime pipeline for kernel: " << kernel_actor->kernel_->fullname_with_scope();
       }
@@ -497,14 +577,74 @@ void SuperKernelActor::RunGraphKernelByKernel(OpContext<DeviceTensor> *const con
         kernel_actor->ResizeKernelMod();
         kernel_actor->FetchOutputDeviceTensor(context);
         kernel_actor->FetchWorkspaceDeviceTensor();
+      } else if (!ActorDispatcher::enable_static_shape()) {
+        kernel_actor->device_contexts_[0]->device_res_manager_->BindDeviceToCurrentThread(false);
+        // Infer shape and resize for dynamic shape or dynamice value case when disable runtime multi pipeline.
+        kernel_actor->InferAndUpdateDeviceTensorSize(context);
       }
+
       Async(kernel_async_launch_aid_, &KernelAsyncLaunchActor::LaunchKernel, context, kernel_actor.get());
+    }
+
+    // 4. Copy for heterogeneous output device address if need.
+    if (kernel_actor->copy_output_device_tensors_.empty()) {
+      continue;
+    }
+    if (!CopyHeterogeneousOutput(context, kernel_actor)) {
+      MS_INTERNAL_EXCEPTION(RuntimeError)
+        << "Copy for heterogeneous output failed, kernel actor: " << kernel_actor->GetAID().Name();
     }
   }
 
-  WaitRuntimePipelineFinish(context);
+  return true;
+}
 
-  // 4. Free somas memory for graph
+void SuperKernelActor::RunGraphKernelByKernel(OpContext<DeviceTensor> *const context) {
+  // Mode check for dynamic shape, async launch and runtime multi pipeline.
+  if (!ActorDispatcher::enable_async_launch_kernel()) {
+    std::string error_info =
+      "Runtime pipeline optimization is disabled, failed to execute graph kernel by kernel mode.";
+    MS_LOG(ERROR) << "Run graph failed, graph id: " << std::to_string(graph_->graph_id()) << ". " << error_info;
+    SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
+  }
+  if (graph_->is_dynamic_shape() && !ActorDispatcher::enable_runtime_multi_pipeline()) {
+    MS_INTERNAL_EXCEPTION(RuntimeError) << "Must enable runtime multi pipeline when run dynamic shape graph.";
+  }
+  if (!graph_->is_dynamic_shape()) {
+    ActorDispatcher::set_enable_static_shape(false);
+  }
+
+  // 1. Fetch input data for this kernel graph and correct current ref count for input device address.
+  FetchInputDeviceTensor(context);
+
+  // 2. Allocate somas memory for graph
+  if ((somas_info_ != nullptr) && (somas_info_->whole_block_size_ != 0)) {
+    MemoryManagerActor::GetInstance()->AllocateSomasMemory(somas_info_, device_contexts_[0], context, GetAID());
+  }
+  const auto &phase = PhaseManager::GetInstance().phase();
+  bool is_increment_graph = (phase.find("increment") != std::string::npos);
+  if (enable_trace_memory_ && graph_->is_dynamic_shape() && is_increment_graph) {
+    MS_LOG(DEBUG) << "Enable trace memory for increment inference graph: " << graph_->graph_id()
+                  << ", phase: " << phase;
+    UpdateMemoryTraceMangerStatus(context);
+    if (IsRunningFailed(context)) {
+      // Maybe allocate memory failed, early stop to run graph.
+      MS_LOG(INFO) << "Run failed and early stop to run graph: " << graph_->ToString();
+      return;
+    }
+  }
+
+  // 3. Launch all kernels by execution order in kernel graph.
+  if (!LaunchAllKernels(context)) {
+    MS_INTERNAL_EXCEPTION(RuntimeError) << "Launch kernels by execution order failed for graph: " << graph_->ToString();
+  }
+
+  if (((somas_info_ != nullptr) && (somas_info_->whole_block_size_ != 0)) ||
+      ActorDispatcher::enable_trace_dynamic_memory() || ActorDispatcher::enable_use_trace_memory()) {
+    WaitRuntimePipelineFinish(context);
+  }
+
+  // 4. Free somas or cached memory for graph.
   if ((somas_info_ != nullptr) && (somas_info_->whole_block_size_ != 0)) {
     MemoryManagerActor::GetInstance()->FreeSomasMemory(somas_info_, device_contexts_[0], context, GetAID());
   }
@@ -515,22 +655,11 @@ void SuperKernelActor::RunGraphKernelByKernel(OpContext<DeviceTensor> *const con
     MemoryTraceManager::GetInstance().MergeBlocks();
   }
   if (ActorDispatcher::enable_use_trace_memory()) {
-    // Free block memory for static memory step.
-    ProfilerRecorder profiler(ProfilerModule::kRuntime, ProfilerEvent::kMemoryFree, GetAID().Name());
-    const auto &merge_blocks_with_device_context = MemoryTraceManager::GetInstance().GetMergeBlocks();
-    MS_EXCEPTION_IF_NULL(merge_blocks_with_device_context);
-    for (auto &item : *merge_blocks_with_device_context) {
-      const auto &device_context = item.first;
-      MS_EXCEPTION_IF_NULL(device_context);
-      const auto &merge_blocks = item.second;
-      for (auto &block : merge_blocks) {
-        MS_EXCEPTION_IF_NULL(block);
-        device_context->device_res_manager_->FreeMemory(block->start_);
-      }
-    }
+    // Free block memory for use trace memory (run by static shape) step.
+    FreeTraceMemory();
   }
 
-  // Free input data.
+  // Free input data for use trace memory (run by static shape) step.
   PostRun(context);
 }
 
@@ -802,14 +931,20 @@ void SuperKernelActor::SendMemoryFreeReq(OpContext<DeviceTensor> *const context)
   }
 }
 
+void SuperKernelActor::BuildAndLinkKernelActors() {
+  if (enable_kbk_sub_graph_execute_) {
+    BuildKernelActors();
+    LinkKernelActors();
+  }
+}
+
 void SuperKernelActor::BuildKernelActors() {
   MS_EXCEPTION_IF_NULL(graph_);
   const auto &execution_order = graph_->execution_order();
   size_t kernel_num = execution_order.size();
   kernel_actors_.resize(kernel_num);
 
-  mindspore::HashMap<AnfNodePtr, KernelActor *> node_to_kernel_actor_;
-
+  mindspore::HashMap<uint32_t, std::pair<KernelActorPtr, KernelActorPtr>> send_recv_nodes;
   // 1. Create kernel actor if need.
   for (size_t i = 0; i < kernel_num; i++) {
     const auto &kernel = execution_order[i];
@@ -848,9 +983,25 @@ void SuperKernelActor::BuildKernelActors() {
       (common::AnfAlgo::IsCommunicationOp(kernel) && common::AnfAlgo::GetCNodeName(kernel) != kMatMulAllReduceOpName) &&
       (common::AnfAlgo::GetInputTensorNum(kernel) > 1);
 
+    if (SchedulerHelper::IsSkipLaunchShapeRelatedOp(kernel_actor.get())) {
+      kernel_actor->set_skip_launch_shape_related_op(true);
+    }
+
+    if (IsPrimitiveCNode(kernel, prim::kPrimStreamSend)) {
+      SchedulerHelper::ProcessStreamSendRecvEventPair(&send_recv_nodes, kernel, kernel_actor, true);
+    } else if (IsPrimitiveCNode(kernel, prim::kPrimStreamRecv)) {
+      SchedulerHelper::ProcessStreamSendRecvEventPair(&send_recv_nodes, kernel, kernel_actor, false);
+    }
+
     SchedulerHelper::AddSomasInfo(kernel_actor.get());
 
-    node_to_kernel_actor_[kernel] = kernel_actor.get();
+    cnode_to_kernel_actor_[kernel] = kernel_actor.get();
+  }
+  for (auto &[event_pair_id, send_recv_actor] : send_recv_nodes) {
+    auto [send_actor, recv_actor] = send_recv_actor;
+    MS_LOG(DEBUG) << "Stream send/recv pair : " << event_pair_id << ", send_actor : " << send_actor
+                  << ", recv_actor : " << recv_actor << ".";
+    recv_actor->set_stream_send_actor(send_actor.get());
   }
 
   // 2. Add somas info.
@@ -869,8 +1020,8 @@ void SuperKernelActor::BuildKernelActors() {
     if (!AnfUtils::IsRealCNodeKernel(output_kernel)) {
       continue;
     }
-    auto iter = node_to_kernel_actor_.find(output_kernel);
-    if (iter == node_to_kernel_actor_.end()) {
+    auto iter = cnode_to_kernel_actor_.find(output_kernel);
+    if (iter == cnode_to_kernel_actor_.end()) {
       MS_LOG_WITH_NODE(EXCEPTION, output_kernel)
         << "Can not find kernel actor for node: " << output_kernel->fullname_with_scope();
     }
@@ -881,6 +1032,8 @@ void SuperKernelActor::BuildKernelActors() {
   }
 
   // 3. Initialize all kernel actor.
+  // Note: this step must execute before LinkKernelActors, LinkKernelActors will check whether the output ref count is
+  // max or not to optimize free performance for somas case, need not try to free the output which has a max ref count.
   for (size_t i = 0; i < kernel_num; i++) {
     const auto &kernel_actor = kernel_actors_[i];
     if (kernel_actor) {
@@ -889,56 +1042,52 @@ void SuperKernelActor::BuildKernelActors() {
   }
 }
 
-void SuperKernelActor::ParseInputIndex() {
+void SuperKernelActor::LinkKernelActors() {
   const auto &input_nodes = graph_->input_nodes();
   size_t input_num = input_nodes.size();
-  mindspore::HashMap<AnfNode *, size_t> node_to_input_idx;
-  node_to_input_idx.reserve(input_num);
-
+  param_node_to_input_idx_.reserve(input_num);
   for (size_t i = 0; i < input_num; i++) {
-    node_to_input_idx[input_nodes[i].get()] = i;
+    param_node_to_input_idx_[input_nodes[i].get()] = i;
   }
 
-  const auto &execution_order = graph_->execution_order();
-  size_t kernel_num = execution_order.size();
-  for (size_t i = 0; i < kernel_num; i++) {
-    const auto &kernel = execution_order[i];
-    MS_EXCEPTION_IF_NULL(kernel);
+  // Record origin ref count of all input nodes and set original ref count to 1 to record use count of input nodes in
+  // graph_, the original ref count will be restored.
+  std::vector<size_t> input_params_origin_ref_cnt(input_num);
+  for (size_t i = 0; i < input_num; i++) {
+    MS_EXCEPTION_IF_NULL(input_nodes[i]);
+    auto device_tensor = AnfAlgo::GetMutableOutputAddr(input_nodes[i], 0, false);
+    MS_EXCEPTION_IF_NULL(device_tensor);
+    input_params_origin_ref_cnt[i] = device_tensor->original_ref_count();
+    device_tensor->set_original_ref_count(1);
+    device_tensor->ResetRefCount();
+  }
 
-    if (!IsKernelActor(kernel, GraphExecutionStrategy::kPipeline) || IsSkippedKernelActor(kernel)) {
-      continue;
-    }
+  // Calculate original ref count of CNode and Parameter, prepare input and
+  // heterogeneous output device address of all kernels.
+  AnalyseNodesDependence();
 
-    auto real_input_num = common::AnfAlgo::GetInputTensorNum(kernel);
-    for (size_t j = 0; j < real_input_num; j++) {
-      auto real_input_node = common::AnfAlgo::GetPrevNodeOutput(kernel, j, false);
-      MS_EXCEPTION_IF_NULL(real_input_node.first);
-      // Note: only record input data, persist weight in compile phase.
-      if (real_input_node.first->isa<Parameter>()) {
-        auto iter = node_to_input_idx.find(real_input_node.first.get());
-        if (iter == node_to_input_idx.end()) {
-          MS_LOG_WITH_NODE(EXCEPTION, real_input_node.first)
-            << "Can not find index for input node: " << real_input_node.first->fullname_with_scope();
-        }
-        kernel_input_to_graph_input_indices_[kernel.get()].emplace_back(j, iter->second);
-      } else if (real_input_node.first->isa<ValueNode>()) {
-        const auto &kernel_actor = kernel_actors_[i];
-        MS_EXCEPTION_IF_NULL(kernel_actor);
-
-        const auto &real_device_context = device::FetchRealDeviceContext(kernel, device_contexts_[0]);
-        MS_EXCEPTION_IF_NULL(real_device_context);
-        const auto &front_node = AnfAlgo::FetchFrontNodeByBackendNode(real_input_node.first, *graph_);
-        MS_EXCEPTION_IF_NULL(front_node);
-        auto device_address =
-          DeviceTensorStore::GetInstance().Fetch(front_node.get(), real_device_context->GetDeviceType());
-        MS_EXCEPTION_IF_NULL(device_address);
-        kernel_actor->SetInputDeviceTensor(device_address.get(), j);
-      }
-    }
+  // Calculate use count of all input nodes according to original ref count, and restore original ref count.
+  input_params_use_cnt_.resize(input_num);
+  for (size_t i = 0; i < input_num; i++) {
+    auto device_tensor = AnfAlgo::GetMutableOutputAddr(input_nodes[i], 0, false);
+    MS_EXCEPTION_IF_NULL(device_tensor);
+    input_params_use_cnt_.at(i) =
+      device_tensor->original_ref_count() != SIZE_MAX ? (device_tensor->original_ref_count() - 1) : SIZE_MAX;
+    device_tensor->set_original_ref_count(input_params_origin_ref_cnt[i]);
+    device_tensor->ResetRefCount();
+    MS_LOG(DEBUG) << "SuperKernelActor: " << GetAID().Name() << " Parameter[" << input_nodes[i]->fullname_with_scope()
+                  << "] debug_name: " << input_nodes[i]->DebugString() << " use count is: " << input_params_use_cnt_[i];
   }
 }
 
-void SuperKernelActor::CalcRefCount() {
+void SuperKernelActor::AnalyseNodesDependence() {
+  HashMap<size_t, AnfNodePtr> device_tensor_store_keys_map;
+  device_tensor_store_keys_map.reserve(device_tensor_store_keys_.size());
+  std::for_each(device_tensor_store_keys_.begin(), device_tensor_store_keys_.end(),
+                [&device_tensor_store_keys_map](const std::pair<size_t, AnfNodePtr> &item) {
+                  device_tensor_store_keys_map.emplace(item.first, item.second);
+                });
+
   const auto &execution_order = graph_->execution_order();
   size_t kernel_num = execution_order.size();
   for (size_t i = 0; i < kernel_num; i++) {
@@ -948,24 +1097,134 @@ void SuperKernelActor::CalcRefCount() {
       continue;
     }
 
-    auto input_num = common::AnfAlgo::GetInputTensorNum(kernel);
-    for (size_t j = 0; j < input_num; j++) {
+    auto kernel_input_num = common::AnfAlgo::GetInputTensorNum(kernel);
+    for (size_t j = 0; j < kernel_input_num; j++) {
       auto input_node_with_idx = common::AnfAlgo::GetPrevNodeOutput(kernel, j, false);
       MS_EXCEPTION_IF_NULL(input_node_with_idx.first);
 
       if (input_node_with_idx.first->isa<CNode>()) {
         if (IsSkippedKernelActor(input_node_with_idx.first)) {
-          const auto &real_input_node_with_idx =
-            common::AnfAlgo::GetPrevNodeOutput(input_node_with_idx.first, 0, false);
-          UpdateRefCountWithOnlyDependShape(kernel, j, real_input_node_with_idx.first, real_input_node_with_idx.second);
-        } else {
-          UpdateRefCountWithOnlyDependShape(kernel, j, input_node_with_idx.first, input_node_with_idx.second);
+          auto real_input_node_with_idx = common::AnfAlgo::GetPrevNodeOutput(input_node_with_idx.first, 0, false);
+          if (!real_input_node_with_idx.first->isa<CNode>()) {
+            MS_INTERNAL_EXCEPTION(RuntimeError)
+              << "Expect a CNode for input[0] of kernel: " << input_node_with_idx.first->fullname_with_scope()
+              << ", which is a skipped kernel, but got: " << real_input_node_with_idx.first->DebugString();
+          }
+          input_node_with_idx = real_input_node_with_idx;
         }
-      } else if (IsPersistentDeviceTensor(input_node_with_idx.first)) {
-        UpdateRefCount(input_node_with_idx.first, input_node_with_idx.second, true);
+        LinkKernelActor(kernel, j, input_node_with_idx.first, input_node_with_idx.second);
+      } else if (input_node_with_idx.first->isa<ValueNode>()) {
+        auto device_tensor_store_key = AnfAlgo::FetchFrontNodeByBackendNode(input_node_with_idx.first, *graph_);
+        MS_EXCEPTION_IF_NULL(device_tensor_store_key);
+        auto &kernel_actor = kernel_actors_[i];
+        MS_EXCEPTION_IF_NULL(kernel_actor);
+        (void)kernel_actor->device_tensor_store_keys_.emplace_back(j, device_tensor_store_key);
+      } else if (input_node_with_idx.first->isa<Parameter>()) {
+        auto device_tensor =
+          AnfAlgo::GetMutableOutputAddr(input_node_with_idx.first, input_node_with_idx.second, false);
+        MS_EXCEPTION_IF_NULL(device_tensor);
+        UpdateRefCount(device_tensor.get(), false);
+
+        auto input_idx_iter = param_node_to_input_idx_.find(input_node_with_idx.first.get());
+        if (input_idx_iter == param_node_to_input_idx_.end()) {
+          MS_LOG_WITH_NODE(EXCEPTION, input_node_with_idx.first)
+            << "Can not find index for input node: " << input_node_with_idx.first->fullname_with_scope();
+        }
+        size_t input_node_idx = input_idx_iter->second;
+
+        const auto &device_tensor_store_key_iter = device_tensor_store_keys_map.find(input_node_idx);
+        if (device_tensor_store_key_iter != device_tensor_store_keys_map.end()) {
+          auto &kernel_actor = kernel_actors_[i];
+          MS_EXCEPTION_IF_NULL(kernel_actor);
+          (void)kernel_actor->device_tensor_store_keys_.emplace_back(j, device_tensor_store_key_iter->second);
+        } else {
+          kernel_input_to_graph_input_indices_[kernel.get()].emplace_back(j, input_node_idx);
+        }
       }
     }
   }
+}
+
+void SuperKernelActor::LinkKernelActor(const CNodePtr &kernel, size_t input_index, const AnfNodePtr &input_kernel,
+                                       size_t output_index) {
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  static const bool enable_infer_boost = ms_context->IsEnableInferBoost();
+  if (enable_infer_boost) {
+    LinkKernelActorByDeviceType(kernel, input_index, input_kernel, output_index);
+    return;
+  }
+
+  // Shape depend kernel should not increase ref count.
+  if (IsOnlyDependShape(kernel, input_index)) {
+    auto device_tensor = AnfAlgo::GetMutableOutputAddr(input_kernel, output_index, false);
+    MS_EXCEPTION_IF_NULL(device_tensor);
+    device_tensor->UpdateFlag(device::kDeviceAddressFlagNullptr);
+
+    auto *kernel_actor = cnode_to_kernel_actor_[kernel];
+    MS_EXCEPTION_IF_NULL(kernel_actor);
+    kernel_actor->SetInputDeviceTensor(device_tensor.get(), input_index);
+    kernel_actor->memory_free_list_[input_index] = device_tensor.get();
+    return;
+  }
+
+  LinkKernelActorByDeviceType(kernel, input_index, input_kernel, output_index);
+}
+
+void SuperKernelActor::LinkKernelActorByDeviceType(const CNodePtr &kernel, size_t input_index,
+                                                   const AnfNodePtr &input_kernel, size_t output_index) {
+  MS_EXCEPTION_IF_NULL(kernel);
+  MS_EXCEPTION_IF_NULL(input_kernel);
+  auto *kernel_actor = cnode_to_kernel_actor_[kernel];
+  MS_EXCEPTION_IF_NULL(kernel_actor);
+  const auto *device_context = kernel_actor->device_contexts().front();
+  MS_EXCEPTION_IF_NULL(device_context);
+
+  auto *input_kernel_actor = cnode_to_kernel_actor_[input_kernel];
+  if (input_kernel_actor == nullptr) {
+    MS_LOG(INTERNAL_EXCEPTION) << "Not found kernel actor for node: " + input_kernel->fullname_with_scope();
+  }
+  const auto *input_device_context = input_kernel_actor->device_contexts().front();
+  MS_EXCEPTION_IF_NULL(input_device_context);
+
+  const auto &input_device_tensor = AnfAlgo::GetMutableOutputAddr(input_kernel, output_index, false);
+  MS_EXCEPTION_IF_NULL(input_device_tensor);
+
+  bool need_not_copy_output_device_addr = (device_context->GetDeviceType() == input_device_context->GetDeviceType()) ||
+                                          SchedulerHelper::IsIgnoredInputAddress(kernel_actor, input_index);
+  if (need_not_copy_output_device_addr) {
+    UpdateRefCount(input_device_tensor.get(), false);
+    kernel_actor->SetInputDeviceTensor(input_device_tensor.get(), input_index);
+    kernel_actor->memory_free_list_[input_index] = input_device_tensor.get();
+    return;
+  }
+
+  auto &copy_output_device_tensors = input_kernel_actor->copy_output_device_tensors_;
+  auto iter = copy_output_device_tensors.find(output_index);
+  if (iter == copy_output_device_tensors.end()) {
+    const auto &input_kernel_tensor = input_device_tensor->kernel_tensor();
+    const auto input_copy_kernel_tensor = input_kernel_tensor->CloneKernelTensor();
+    MS_EXCEPTION_IF_NULL(input_copy_kernel_tensor);
+    input_copy_kernel_tensor->set_device_name(device_context->device_context_key().device_name_);
+    input_copy_kernel_tensor->set_device_id(device_context->device_context_key().device_id_);
+    input_copy_kernel_tensor->set_device_ptr(nullptr);
+
+    auto input_copy_device_address = device_context->device_res_manager_->CreateDeviceAddress(input_copy_kernel_tensor);
+    auto ret_pair =
+      copy_output_device_tensors.emplace(output_index, std::make_pair(input_copy_device_address, device_context));
+    if (ret_pair.second) {
+      iter = ret_pair.first;
+    } else {
+      MS_LOG(EXCEPTION) << "Insert copy output device address failed.";
+    }
+    UpdateRefCount(input_device_tensor.get(), false);
+  }
+
+  const auto &input_copy_device_address = iter->second.first;
+  MS_EXCEPTION_IF_NULL(input_copy_device_address);
+  UpdateRefCount(input_copy_device_address.get(), false);
+  kernel_actor->SetInputDeviceTensor(input_copy_device_address.get(), input_index);
+  kernel_actor->memory_free_list_[input_index] = input_copy_device_address.get();
 }
 }  // namespace runtime
 }  // namespace mindspore

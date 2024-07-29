@@ -43,6 +43,7 @@ class SchedulerHelper {
   static void AddMonadDeviceTensorStore(AbstractActor *const to_actor, const CNodePtr &kernel,
                                         const KernelGraphPtr &graph);
 
+  static bool IsSkipLaunchShapeRelatedOp(KernelActor *kernel_actor);
   // Judge whether need ignore the input address that is not used in the kernel launch.
   static bool IsIgnoredInputAddress(AbstractActor *const to_actor, size_t to_input_index);
   static size_t GetIgnoredInputAddressCount(const AnfNodePtr &node);
@@ -104,6 +105,10 @@ class SchedulerHelper {
 
   static void DumpActorSet(const ActorSet *actor_set, std::ofstream &ofs);
   static void DumpFormatActorSet(const ActorSet *actor_set, std::ofstream &ofs);
+
+  static void ProcessStreamSendRecvEventPair(
+    mindspore::HashMap<uint32_t, std::pair<KernelActorPtr, KernelActorPtr>> *send_recv_nodes, const CNodePtr &kernel,
+    const KernelActorPtr &kernel_actor, bool is_send_node);
 
   static size_t fusion_actor_index_;
 };

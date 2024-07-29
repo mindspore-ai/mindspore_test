@@ -27,6 +27,7 @@
 #include "include/backend/distributed/ps/ps_context.h"
 #include "utils/phase.h"
 #ifndef BUILD_LITE
+#include "include/backend/distributed/recovery/recovery_context.h"
 #include "runtime/graph_scheduler/actor/kernel_async_launch_actor.h"
 #include "runtime/graph_scheduler/actor/kernel_async_infer_actor.h"
 #include "runtime/graph_scheduler/actor/kernel_async_resize_actor.h"
@@ -42,6 +43,7 @@ bool ActorDispatcher::is_memory_free_sync_ = true;
 bool ActorDispatcher::enable_runtime_multi_pipeline_ = false;
 bool ActorDispatcher::enable_async_launch_kernel_ = false;
 bool ActorDispatcher::disable_kbk_sub_graph_execute_ = false;
+bool ActorDispatcher::enable_sub_graph_execute_for_cur_actor_set_ = false;
 bool ActorDispatcher::enable_static_shape_ = false;
 bool ActorDispatcher::enable_trace_dynamic_memory_ = false;
 bool ActorDispatcher::enable_use_trace_memory_ = false;
@@ -282,12 +284,44 @@ bool EnableKbkSubGraphExecute() {
     return false;
   }
 
+  if (!EnableRuntimePipeline()) {
+    return false;
+  }
+
+  if (!ActorDispatcher::enable_sub_graph_execute_for_cur_actor_set()) {
+    return false;
+  }
+
   // Only support sub graph execution mode for inference.
-  // static const bool enable_internal_kernels = common::GetEnv("MS_ENABLE_INTERNAL_KERNELS") == "on";
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   static const bool enable_internal_kernels = ms_context->IsEnableInferBoost();
   return enable_internal_kernels;
+}
+
+bool EnableRuntimePipeline() {
+  static bool disable_runtime_pipeline = common::IsDisableRuntimeConfig(common::kRuntimePipeline);
+  if (disable_runtime_pipeline) {
+    return false;
+  }
+
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  if (ms_context->get_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD)) {
+    return false;
+  }
+
+  if (ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kCPUDevice) {
+    return false;
+  }
+
+#ifndef BUILD_LITE
+  if (distributed::recovery::RecoveryContext::GetInstance()->enable_recovery()) {
+    return false;
+  }
+#endif
+
+  return true;
 }
 
 size_t GetDefragMemoryStepFreq() {

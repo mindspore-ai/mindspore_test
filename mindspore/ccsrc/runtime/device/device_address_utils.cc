@@ -563,6 +563,8 @@ void DeviceAddressUtils::CreateKernelOutputDeviceAddress(const DeviceContext *de
         user_data->set(kSyncUserDataHandler,
                        std::make_shared<device::DeviceAddress::SyncUserDataHandler>(pyexecute::UserDataToRawMemory));
         graph->set_has_kernel_need_user_data(true);
+        // Note: Kbk sub graph mode doesn't support PyExecutor kernel currently.
+        graph->set_enable_kbk_sub_graph_execute(false);
       }
       const auto &kernel_tensor = AnfAlgo::CreateOutputKernelTensorWithDeviceInfo(
         {kernel, i}, nullptr, address_size, output_format, output_type, trans::GetRuntimePaddingShape(kernel, i),

@@ -57,68 +57,6 @@ void CollectControlActors(const ActorSet *actor_set, std::vector<AbstractActorPt
   }
 }
 
-bool IsSkipLaunchShapeRelatedOp(KernelActor *kernel_actor) {
-  MS_EXCEPTION_IF_NULL(kernel_actor);
-  if (kernel_actor->skip_launch_shape_related_op()) {
-    return true;
-  }
-
-  auto &kernel = kernel_actor->kernel();
-  MS_EXCEPTION_IF_NULL(kernel);
-
-  // RealMakeTuple --> ShapeCalc pattern:
-  // If ShapeCalc is not value depend for one input RealMakeTuple op, we can skip launch this RealMakeTuple.
-  if (IsPrimitiveCNode(kernel, prim::kPrimRealMakeTuple)) {
-    auto func_graph = kernel->func_graph();
-    MS_EXCEPTION_IF_NULL(func_graph);
-    auto manager = func_graph->manager();
-    if (manager == nullptr) {
-      manager = Manage(func_graph, true);
-      func_graph->set_manager(manager);
-    }
-
-    const auto &users_set = manager->node_users()[kernel];
-    bool can_skip_launch_real_make_tuple = true;
-    for (const auto &item : users_set) {
-      const auto &user_node = item.first;
-      if (!user_node->isa<CNode>()) {
-        can_skip_launch_real_make_tuple = false;
-        break;
-      }
-      auto user_cnode = user_node->cast<CNodePtr>();
-      MS_EXCEPTION_IF_NULL(user_cnode);
-      if (!IsPrimitiveCNode(user_cnode, prim::kPrimShapeCalc)) {
-        can_skip_launch_real_make_tuple = false;
-        break;
-      }
-
-      if (!common::AnfAlgo::HasNodeAttr(kAttrOnlyDependShape, user_cnode)) {
-        can_skip_launch_real_make_tuple = false;
-        break;
-      }
-      const auto &only_depend_shape = common::AnfAlgo::GetNodeAttr<std::vector<bool>>(user_cnode, kAttrOnlyDependShape);
-      auto user_input_index = item.second;
-      if (user_input_index < 1) {
-        MS_LOG(EXCEPTION) << "The input index should start from 1, but got: " << user_input_index;
-      }
-      if (IntToSize(user_input_index) > only_depend_shape.size()) {
-        MS_LOG(EXCEPTION) << "The input index[" << user_input_index
-                          << "] is out of range, input size: " << only_depend_shape.size();
-      }
-      if (!only_depend_shape[user_input_index - 1]) {
-        can_skip_launch_real_make_tuple = false;
-        break;
-      }
-    }
-
-    if (can_skip_launch_real_make_tuple) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
 void UpdateDataArrowRefCount(AbstractActor *const to_actor, size_t to_input_index,
                              const DeviceTensorPtr &device_tensor) {
   MS_LOG(DEBUG) << "Process shape depend attribute for actor : " << to_actor->GetAID().Name();
@@ -302,6 +240,68 @@ void SchedulerHelper::AddMonadDeviceTensorStore(AbstractActor *const to_actor, c
   }
 }
 
+bool SchedulerHelper::IsSkipLaunchShapeRelatedOp(KernelActor *kernel_actor) {
+  MS_EXCEPTION_IF_NULL(kernel_actor);
+  if (kernel_actor->skip_launch_shape_related_op()) {
+    return true;
+  }
+
+  auto &kernel = kernel_actor->kernel();
+  MS_EXCEPTION_IF_NULL(kernel);
+
+  // RealMakeTuple --> ShapeCalc pattern:
+  // If ShapeCalc is not value depend for one input RealMakeTuple op, we can skip launch this RealMakeTuple.
+  if (IsPrimitiveCNode(kernel, prim::kPrimRealMakeTuple)) {
+    auto func_graph = kernel->func_graph();
+    MS_EXCEPTION_IF_NULL(func_graph);
+    auto manager = func_graph->manager();
+    if (manager == nullptr) {
+      manager = Manage(func_graph, true);
+      func_graph->set_manager(manager);
+    }
+
+    const auto &users_set = manager->node_users()[kernel];
+    bool can_skip_launch_real_make_tuple = true;
+    for (const auto &item : users_set) {
+      const auto &user_node = item.first;
+      if (!user_node->isa<CNode>()) {
+        can_skip_launch_real_make_tuple = false;
+        break;
+      }
+      auto user_cnode = user_node->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(user_cnode);
+      if (!IsPrimitiveCNode(user_cnode, prim::kPrimShapeCalc)) {
+        can_skip_launch_real_make_tuple = false;
+        break;
+      }
+
+      if (!common::AnfAlgo::HasNodeAttr(kAttrOnlyDependShape, user_cnode)) {
+        can_skip_launch_real_make_tuple = false;
+        break;
+      }
+      const auto &only_depend_shape = common::AnfAlgo::GetNodeAttr<std::vector<bool>>(user_cnode, kAttrOnlyDependShape);
+      auto user_input_index = item.second;
+      if (user_input_index < 1) {
+        MS_LOG(EXCEPTION) << "The input index should start from 1, but got: " << user_input_index;
+      }
+      if (IntToSize(user_input_index) > only_depend_shape.size()) {
+        MS_LOG(EXCEPTION) << "The input index[" << user_input_index
+                          << "] is out of range, input size: " << only_depend_shape.size();
+      }
+      if (!only_depend_shape[user_input_index - 1]) {
+        can_skip_launch_real_make_tuple = false;
+        break;
+      }
+    }
+
+    if (can_skip_launch_real_make_tuple) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 bool SchedulerHelper::IsIgnoredInputAddress(AbstractActor *const to_actor, size_t to_input_index) {
   MS_EXCEPTION_IF_NULL(to_actor);
   if (to_actor->type() != KernelTransformType::kKernelActor) {
@@ -402,8 +402,9 @@ void SchedulerHelper::AddDataArrow(AbstractActor *const from_actor, AbstractActo
     device_tensor->ClearFlag(device::kDeviceAddressFlagNotUsed);
   }
   // The device address of super kernel actor can't be changed, so set the max reference count.
-  if (IsControlFlowActor(to_actor->type()) || (from_actor->type_ == KernelTransformType::kSuperKernelActor) ||
-      (to_actor->type_ == KernelTransformType::kSuperKernelActor)) {
+  if (IsControlFlowActor(to_actor->type()) || (((from_actor->type_ == KernelTransformType::kSuperKernelActor) ||
+                                                (to_actor->type_ == KernelTransformType::kSuperKernelActor)) &&
+                                               !EnableKbkSubGraphExecute())) {
     UpdateRefCount(device_tensor.get(), true);
   } else {
     UpdateDataArrowRefCount(to_actor, to_input_index, device_tensor);
@@ -573,7 +574,7 @@ void SchedulerHelper::AddFormalParameterDeviceTensor(ControlActor *const from_ac
   MS_EXCEPTION_IF_NULL(input_node);
   MS_EXCEPTION_IF_NULL(graph);
   // Graph mode does not support dynamic shape and ref node.
-  if (graph->is_graph_run_mode() || graph->is_any_type_input()) {
+  if ((graph->is_graph_run_mode() && !EnableKbkSubGraphExecute()) || graph->is_any_type_input()) {
     return;
   }
 
@@ -834,6 +835,11 @@ void SchedulerHelper::AddMemorySign(AbstractActor *const from_actor, AbstractAct
   if (ms_context->get_param<int>(MS_CTX_MEMORY_OPTIMIZE_LEVEL) == kOptimizeO0) {
     return;
   }
+
+  if (EnableKbkSubGraphExecute()) {
+    return;
+  }
+
   // The link of memory actor no need add the memory sign.
   if (IsMemoryActor(from_actor->type()) || IsMemoryActor(to_actor->type())) {
     return;
@@ -1179,8 +1185,6 @@ void SchedulerHelper::DumpActorSet(const ActorSet *actor_set, std::ofstream &ofs
   DumpDataPrepareActor(actor_set->data_prepare_actor_, ofs);
   DumpDSActors(actor_set->data_source_actors_, ofs);
   DumpKernelActors(actor_set->kernel_actors_, ofs);
-  DumpKernelInferActors(actor_set->kernel_infer_actors_, ofs);
-  DumpKernelResizeActors(actor_set->kernel_resize_actors_, ofs);
   DumpSuperKernelActors(actor_set->super_kernel_actors_, ofs);
   DumpAnyTypeKernelActors(actor_set->any_type_kernel_actors_, ofs);
   // The on input kernel actors are taken over by control actor in the control flow scene.
@@ -1225,6 +1229,28 @@ void SchedulerHelper::DumpFormatActorSet(const ActorSet *actor_set, std::ofstrea
     MS_LOG(DEBUG) << "End dump format actor set:" << actor_set->name_;
   } catch (const std::exception &e) {
     MS_LOG(INFO) << "Failed to dump actor set:" << actor_set->name_ << ", msg: " << e.what();
+  }
+}
+
+void SchedulerHelper::ProcessStreamSendRecvEventPair(
+  mindspore::HashMap<uint32_t, std::pair<KernelActorPtr, KernelActorPtr>> *send_recv_nodes, const CNodePtr &kernel,
+  const KernelActorPtr &kernel_actor, bool is_send_node) {
+  auto primitive = common::AnfAlgo::GetCNodePrimitive(kernel);
+  MS_EXCEPTION_IF_NULL(primitive);
+  auto record_event_stream_pair_attr = primitive->GetAttr(kAttrRecordWaitEventStreamPairId);
+  if (record_event_stream_pair_attr != nullptr) {
+    auto event_pair_id = GetValue<uint32_t>(record_event_stream_pair_attr);
+    MS_LOG(DEBUG) << "Process event pair id : " << event_pair_id << ".";
+    auto &send_recv_actor = (*send_recv_nodes)[event_pair_id];
+    if (is_send_node) {
+      MS_EXCEPTION_IF_CHECK_FAIL(send_recv_actor.first == nullptr, "Stream send pair id is already set.");
+      send_recv_actor.first = kernel_actor;
+    } else {
+      MS_EXCEPTION_IF_CHECK_FAIL(send_recv_actor.second == nullptr, "Stream recv pair id is already set.");
+      send_recv_actor.second = kernel_actor;
+    }
+  } else {
+    MS_LOG(INFO) << "Stream send/recv kernel : " << kernel->DebugString() << " has no event stream pair id.";
   }
 }
 }  // namespace runtime
