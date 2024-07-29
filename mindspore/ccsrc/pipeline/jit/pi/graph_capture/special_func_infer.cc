@@ -113,10 +113,10 @@ static bool CallNodeReturnConst(CallNode *call_node, Graph *sub_graph, AObject *
   MS_EXCEPTION_IF_NULL(cnst);
 
   ValueNode *ret_node = sub_graph->NewValueNode(value, LOAD_CONST, -1, {});
-  call_node->SetSubGraph(sub_graph);
   ret_node->SetGraph(call_node->GetGraph());
-
   sub_graph->SetRetVal(ret_node);
+  call_node->SetVobj(sub_graph->GetRetVal()->GetVobj());
+  call_node->SetSubGraph(sub_graph);
   call_node->SetInlineReason(InlineReason::kInline);
   return true;
 }
@@ -636,7 +636,8 @@ static bool InferTensorAsType(CallNode *call_node, GraphBuilder *unused = nullpt
   return true;
 }
 
-static void RecordSideEffectCallNode(Graph *graph, CallNode *call_node, SideEffect::Type type, bool trace_flag) {
+static void RecordBuiltinMethodSideEffect(Graph *graph, CallNode *call_node, const std::string &method_name,
+                                          bool trace_flag) {
   const auto &side_effect = graph->GetSideEffect();
   ValueNode *side_effect_node;
   if (trace_flag) {
@@ -646,7 +647,7 @@ static void RecordSideEffectCallNode(Graph *graph, CallNode *call_node, SideEffe
     side_effect_node->SetVobj(AObject::MakeAObject(AObject::kTypeAnyValue));
     graph->GetTracedNodes().push_back(side_effect_node);
   }
-  side_effect->Record(side_effect_node, type);
+  side_effect->Record(side_effect_node, SideEffect::kBuiltinMethod, method_name);
 }
 
 static bool InferListAppend(CallNode *call_node, GraphBuilder *parent) {
@@ -688,9 +689,100 @@ static bool InferListAppend(CallNode *call_node, GraphBuilder *parent) {
   bool is_new_var = self->GetOpcode() == BUILD_LIST && replace_map.find(self) == replace_map.end();
   if (!is_new_var || is_referenced || self == new_element) {
     parent->GetGraph()->GetSideEffect()->data()->RecordModifiedAndReplacedNode(old_node, new_node);
-    RecordSideEffectCallNode(parent->GetGraph(), call_node, SideEffect::kListAppend, parent->trace_flag());
+    RecordBuiltinMethodSideEffect(parent->GetGraph(), call_node, "append", parent->trace_flag());
   }
   return true;
+}
+
+
+template <typename ElementsAction, typename FuncReturnAction, typename SafeReplaceChecker>
+static bool InferListMethodWithSideEffect(CallNode *call_node, GraphBuilder *parent, ElementsAction action,
+                                          FuncReturnAction return_action, SafeReplaceChecker is_safe_replace,
+                                          const std::string &method_name) {
+  call_node->SetSubGraph(nullptr);
+
+  // check is supported type and get arguments
+  bool is_method_descriptor = false;
+  ValueNode *self = GetSelfFromListAppendCall(call_node, &is_method_descriptor);
+  if (self == nullptr) {
+    return false;
+  }
+  // transform to "new_list = [old_list[0], old_list[1]..., new_element]"
+  const auto &stack = parent->frame().GetStacks();
+  int size = stack.size();
+  if (!parent->UnpackElements(self)) {
+    return false;
+  }
+  size = stack.size() - size;
+  std::vector<ValueNode *> elements(stack.end() - size, stack.end());
+  parent->popn(size);
+  // elements actions
+  action(call_node, parent, &elements);
+  for (const auto &i : elements) {
+    parent->push(i);
+  }
+  size = elements.size();
+  parent->DoBuildOp({BUILD_LIST, size});
+  // set function return value
+  return_action(call_node, parent);
+
+  // update frame status and record side-effect
+  auto new_node = parent->pop();
+  auto old_node = self;
+  bool is_referenced = false;
+  parent->ReplaceAll(old_node, new_node, &is_referenced);
+  const auto &replace_map = parent->GetGraph()->GetSideEffect()->data()->modified_and_replaced_map();
+  bool is_new_var = self->GetOpcode() == BUILD_LIST && replace_map.find(self) == replace_map.end();
+  if (!is_new_var || is_referenced || !is_safe_replace(call_node, parent)) {
+    parent->GetGraph()->GetSideEffect()->data()->RecordModifiedAndReplacedNode(old_node, new_node);
+    RecordBuiltinMethodSideEffect(parent->GetGraph(), call_node, method_name, parent->trace_flag());
+  }
+  return true;
+}
+
+static bool InferListReverse(CallNode *call_node, GraphBuilder *parent) {
+  auto reverse_action = [](CallNode *, GraphBuilder *, std::vector<ValueNode *> *elements) {
+    std::reverse(elements->begin(), elements->end());
+  };
+  auto return_none = [](CallNode *call_node, GraphBuilder *parent) {
+    auto builder = GraphBuilder::Creator(parent->root(), parent, nullptr, nullptr, parent->trace_flag());
+    CallNodeReturnConst(call_node, builder->GetGraph(), AObject::Convert(Py_None));
+  };
+  auto is_safe = [](CallNode *, GraphBuilder *) { return true; };
+  return InferListMethodWithSideEffect(call_node, parent, reverse_action, return_none, is_safe, "reverse");
+}
+
+static bool InferListPop(CallNode *call_node, GraphBuilder *parent) {
+  ValueNode *pop_value = nullptr;
+  auto pop_action = [&pop_value](CallNode *, GraphBuilder *, std::vector<ValueNode *> *elements) {
+    pop_value = elements->back();
+    elements->pop_back();
+  };
+  auto return_element = [&pop_value](CallNode *call_node, GraphBuilder *parent) {
+    MS_EXCEPTION_IF_NULL(pop_value);
+    auto builder = GraphBuilder::Creator(parent->root(), parent, nullptr, nullptr, parent->trace_flag());
+    auto sub_graph = builder->GetGraph();
+    sub_graph->SetRetVal(pop_value);
+    call_node->SetSubGraph(sub_graph);
+    call_node->SetVobj(sub_graph->GetRetVal()->GetVobj());
+    call_node->SetInlineReason(InlineReason::kInline);
+  };
+  auto is_safe = [](CallNode *, GraphBuilder *) { return true; };
+  return InferListMethodWithSideEffect(call_node, parent, pop_action, return_element, is_safe, "pop");
+}
+
+static bool InferListRemove(CallNode *call_node, GraphBuilder *parent) {
+  auto remove_action = [](CallNode *call_node, GraphBuilder *, std::vector<ValueNode *> *elements) {
+    bool is_method_descriptor = false;
+    (void)GetSelfFromListAppendCall(call_node, &is_method_descriptor);
+    std::remove(elements->begin(), elements->end(), call_node->input(1 + is_method_descriptor));
+  };
+  auto return_none = [](CallNode *call_node, GraphBuilder *parent) {
+    auto builder = GraphBuilder::Creator(parent->root(), parent, nullptr, nullptr, parent->trace_flag());
+    CallNodeReturnConst(call_node, builder->GetGraph(), AObject::Convert(Py_None));
+  };
+  auto is_safe = [](CallNode *, GraphBuilder *) { return true; };
+  return InferListMethodWithSideEffect(call_node, parent, remove_action, return_none, is_safe, "remove");
 }
 
 static bool InferDictPop(CallNode *call_node, GraphBuilder *parent) {
@@ -747,7 +839,7 @@ static bool InferDictPop(CallNode *call_node, GraphBuilder *parent) {
   bool is_new_var = self->GetOpcode() == BUILD_MAP && replace_map.find(self) == replace_map.end();
   if (!is_new_var || is_referenced) {
     parent->GetGraph()->GetSideEffect()->data()->RecordModifiedAndReplacedNode(old_node, new_node);
-    RecordSideEffectCallNode(parent->GetGraph(), call_node, SideEffect::kDictPop, parent->trace_flag());
+    RecordBuiltinMethodSideEffect(parent->GetGraph(), call_node, "pop", parent->trace_flag());
   }
   return true;
 }
@@ -836,6 +928,9 @@ enum FuncKey {
   FUNC_KEY_GRAPH_CELL,            // "mindspore.nn.cell.GraphCell"
   FUNC_KEY_MS_API,                // mindspore api
   FUNC_KEY_MAPPING_GET,           // mapping get
+  FUNC_KEY_LIST_POP,              // list.pop
+  FUNC_KEY_LIST_REMOVE,           // list.remove
+  FUNC_KEY_LIST_REVERSE,          // list.reverse
   FUNC_KEY_COUNT,
 };
 static FuncKey FindFuncKey(const py::object &callable);
@@ -845,6 +940,9 @@ static const std::unordered_map<FuncKey, InferFunc> infer_func_map = {
   {FUNC_KEY_PIJIT_FORBIDDEN, SetForbiddenFuncInfo},
   {FUNC_KEY_BUILTIN_FUNC, InferBuiltinFuncOrMethod},
   {FUNC_KEY_LIST_APPEND, InferListAppend},
+  {FUNC_KEY_LIST_POP, InferListPop},
+  {FUNC_KEY_LIST_REMOVE, InferListRemove},
+  {FUNC_KEY_LIST_REVERSE, InferListReverse},
   {FUNC_KEY_DICT_POP, InferDictPop},
   {FUNC_KEY_PRIMITIVE, InferPrimitive},
   {FUNC_KEY_META_FUNCG_RAPH, InferMetaFunc},
