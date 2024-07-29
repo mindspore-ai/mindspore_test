@@ -17,7 +17,6 @@ test MindSpore vlog interface
 """
 
 import subprocess
-import pytest
 import os
 import shutil
 from tests.mark_utils import arg_mark
@@ -69,8 +68,7 @@ def test_op_proto_warnings():
     check_output('50', ': log level for printing vlog tags already been used', False)
 
 
-@pytest.mark.level0
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_vlog_to_file():
     """
     Feature: test mindspore vlog interface

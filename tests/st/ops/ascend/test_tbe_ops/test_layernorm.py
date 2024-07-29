@@ -13,7 +13,6 @@
 # limitations under the License.
 # ============================================================================
 import numpy as np
-import pytest
 
 from mindspore import context
 from mindspore import log as logger
@@ -47,7 +46,6 @@ def pt_me_layernorm(input_data, normalized_shape, gamma, beta, axis):
     logger.info(out_me.asnumpy())
 
 
-@pytest.mark.lower_bs
 def test_normal_layernorm_1_128_1024_axis_2():
     """
     2 input[1, 128, 1024],normalized_shape=[128, 1024]

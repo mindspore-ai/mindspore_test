@@ -14,7 +14,6 @@
 # ============================================================================
 """burgers pinns"""
 import time
-import pytest
 
 import numpy as np
 from mindspore import context, nn, ops, jit, set_seed, Tensor
@@ -23,6 +22,7 @@ import mindspore.common.dtype as mstype
 
 from src.burgers import Burgers1D
 from src.utils import calculate_l2_error
+from tests.mark_utils import arg_mark
 
 set_seed(123456)
 np.random.seed(123456)
@@ -45,11 +45,8 @@ class Net(nn.Cell):
         return self.layers(x)
 
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend_training
-@pytest.mark.platform_x86_ascend_training
-@pytest.mark.platform_x86_gpu_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+          essential_mark='unessential')
 def test_mindflow_burgers_pinns():
     """
     Feature: burgers pinns

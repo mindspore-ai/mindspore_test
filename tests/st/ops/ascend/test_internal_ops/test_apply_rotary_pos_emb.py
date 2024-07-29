@@ -22,6 +22,9 @@ import mindspore as ms
 from mindspore import context, Tensor
 from mindspore.common.np_dtype import bfloat16
 
+from tests.mark_utils import arg_mark
+
+
 def get_ms_dtype(query_dtype):
     if query_dtype == np.float32:
         ms_dtype = ms.float32
@@ -145,9 +148,7 @@ def _test_rope(query_dtype, cos_dtype, cos_format, batch_size, seq_len, num_head
     run(net, seq_len, batch_size, num_head, num_head, hidden_dim, max_seq_len, query_dtype, np.int32, ndim, cos_format)
 
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('query_dtype', [np.float16])
 @pytest.mark.parametrize('cos_dtype', [np.float16, np.float32])
 @pytest.mark.parametrize('cos_format', [2])
@@ -163,9 +164,7 @@ def test_rope_float16(query_dtype, cos_dtype, cos_format, batch_size, seq_len, n
     _test_rope(query_dtype, cos_dtype, cos_format, batch_size, seq_len, num_head)
 
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('query_dtype', [bfloat16])
 @pytest.mark.parametrize('cos_dtype', [bfloat16, np.float32])
 @pytest.mark.parametrize('cos_format', [2])

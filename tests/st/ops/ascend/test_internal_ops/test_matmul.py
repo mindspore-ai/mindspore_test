@@ -21,6 +21,9 @@ import mindspore as ms
 from mindspore import context
 from mindspore.common.np_dtype import bfloat16
 
+from tests.mark_utils import arg_mark
+
+
 class MatMulCustom(ms.nn.Cell):
     def __init__(self, ta, tb):
         super().__init__()
@@ -111,9 +114,7 @@ def matmul(m, k, n, trans_a=False, trans_b=False, with_bias=False, mstype=ms.flo
     assert res, "matmul compare fail."
 
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('ms_dtype', [ms.float16, ms.bfloat16])
 @pytest.mark.parametrize('is_dynamic', [False, True])
 @pytest.mark.parametrize('trans_a', [False, True])

@@ -22,6 +22,7 @@ import mindspore as ms
 from mindspore.ops.operations.nn_ops import PagedAttention, PagedAttentionMask
 from mindspore.nn import Cell
 from mindspore import context
+from tests.mark_utils import arg_mark
 
 
 class PagedAttentionNet(Cell):
@@ -285,9 +286,7 @@ class PagedAttentionTest:
                 err_cnt, expect.shape[0], err_ratio))
 
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_paged_attention_bnsd():
     """
     Feature: test FlashAttentionScore op in kbk enabling infer_boost
@@ -312,9 +311,9 @@ def test_paged_attention_bnsd():
     }
     PagedAttentionTest(i_test)
 
+
 @pytest.mark.skip
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_paged_attention_bsh_256():
     """
     Feature: test FlashAttentionScore op in kbk enabling infer_boost
@@ -339,9 +338,8 @@ def test_paged_attention_bsh_256():
     }
     PagedAttentionTest(i_test)
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_onecard
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_paged_attention_longseq():
     """
     Feature: test FlashAttentionScore op in kbk enabling infer_boost
@@ -366,9 +364,8 @@ def test_paged_attention_longseq():
     }
     PagedAttentionTest(i_test)
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_onecard
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_paged_attention_rand0():
     """
     Feature: test FlashAttentionScore op in kbk enabling infer_boost
@@ -393,9 +390,8 @@ def test_paged_attention_rand0():
     }
     PagedAttentionTest(i_test)
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_onecard
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_paged_attention_fd_long():
     """
     Feature: test FlashAttentionScore op in kbk enabling infer_boost
@@ -420,9 +416,9 @@ def test_paged_attention_fd_long():
     }
     PagedAttentionTest(i_test)
 
+
 @pytest.mark.skip
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_paged_attention_fd_bsh_alibi():
     """
     Feature: test FlashAttentionScore op in kbk enabling infer_boost

@@ -23,6 +23,8 @@ import mindspore.nn as nn
 from mindspore import Tensor, context, ops
 from mindspore.common.np_dtype import bfloat16
 
+from tests.mark_utils import arg_mark
+
 
 class NetMatmulWithSplit3(nn.Cell):
     """Matmul with split."""
@@ -177,9 +179,7 @@ def _test_matmul_qkv(m=0, k=0, n0=0, n1=0, n2=0, mstype=ms.float16, is_dyn=False
     assert result, "compare correct."
 
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('ms_dtype', [ms.float16, ms.bfloat16])
 @pytest.mark.parametrize('is_dynamic', [False, True])
 @pytest.mark.parametrize('dim_k', [128, 1024, 11264])
@@ -192,9 +192,7 @@ def test_matmul_qkv_out_num_3_with_diff_k(ms_dtype, is_dynamic, dim_k):
     _test_matmul_qkv(32, dim_k, 1408, 128, 128, mstype=ms_dtype, is_dyn=is_dynamic)
 
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('ms_dtype', [ms.float16, ms.bfloat16])
 @pytest.mark.parametrize('is_dynamic', [False, True])
 @pytest.mark.parametrize('dim_m', [1, 32, 1024])
@@ -207,9 +205,7 @@ def test_matmul_qkv_out_num_3_with_diff_m(ms_dtype, is_dynamic, dim_m):
     _test_matmul_qkv(dim_m, 8192, 1024, 128, 128, mstype=ms_dtype, is_dyn=is_dynamic)
 
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('ms_dtype', [ms.float16, ms.bfloat16])
 @pytest.mark.parametrize('is_dynamic', [False, True])
 @pytest.mark.parametrize('dim_m', [1, 32, 1024])

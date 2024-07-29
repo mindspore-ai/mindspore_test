@@ -128,9 +128,7 @@ def test_fallback_all_dict_get():
     assert not out[0] and out[1]
 
 
-@pytest.mark.level0
-@pytest.mark.platform_x86_gpu_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_fallback_all_with_free_variables():
     """
     Feature: JIT Fallback
