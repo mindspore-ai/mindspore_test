@@ -696,6 +696,12 @@ int AObject::BinaryIs(AObject *l, AObject *r) {
     MS_EXCEPTION_IF_CHECK_FAIL(!const_a, "shouldn't reach here");
     return false;
   }
+  if (a == nullptr || b == nullptr) {
+    return -1;
+  }
+  if (Py_TYPE(a) != Py_TYPE(b)) {
+    return false;
+  }
   return -1;
 }
 
