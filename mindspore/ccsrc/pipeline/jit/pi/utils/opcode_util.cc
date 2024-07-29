@@ -53,7 +53,7 @@ bool Opcode::CheckIsOp(int oparg, bool *invert) const {
   if (invert != nullptr) {
     *invert = oparg == PyCmp_IS_NOT;
   }
-  return code_ == COMPARE_OP ? oparg == PyCmp_IS : false;
+  return code_ == COMPARE_OP ? (oparg == PyCmp_IS || oparg == PyCmp_IS_NOT) : false;
 #else
   if (invert != nullptr) {
     *invert = oparg;
@@ -66,7 +66,7 @@ bool Opcode::CheckContainsOp(int oparg, bool *invert) const {
   if (invert != nullptr) {
     *invert = oparg == PyCmp_NOT_IN;
   }
-  return code_ == COMPARE_OP ? oparg == PyCmp_IN : false;
+  return code_ == COMPARE_OP ? (oparg == PyCmp_IN || oparg == PyCmp_NOT_IN) : false;
 #else
   if (invert != nullptr) {
     *invert = oparg;
