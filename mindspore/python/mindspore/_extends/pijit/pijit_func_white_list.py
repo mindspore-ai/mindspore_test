@@ -153,6 +153,9 @@ FUNC_KEY_PSJIT_CONVERTMAP = 15 # "mindspore._extends.parse.resources.convert_obj
 FUNC_KEY_GRAPH_CELL = 16  # "mindspore.nn.cell.GraphCell"
 FUNC_KEY_MS_API = 17  # mindspore common api
 FUNC_KEY_MAPPING_GET = 18 # collections.abc.Mapping.get
+FUNC_KEY_LIST_POP = 19  # list.pop
+FUNC_KEY_LIST_REMOVE = 20  # list.remove
+FUNC_KEY_LIST_REVERSE = 21  # list.reverse
 
 # Initialized only once. This map will initialize by c++ when start pijit.
 # key is customer if fuzzy match. (Primitive, constexpr, primexpr, MetaFuncGraph)
@@ -233,6 +236,9 @@ _func_map = {
     function_id(str.format_map): FUNC_KEY_BUILTIN_FUNC,
     function_id(str.__format__): FUNC_KEY_BUILTIN_FUNC,
     function_id(list.append): FUNC_KEY_LIST_APPEND,
+    function_id(list.pop): FUNC_KEY_LIST_POP,
+    function_id(list.remove): FUNC_KEY_LIST_REMOVE,
+    function_id(list.reverse): FUNC_KEY_LIST_REVERSE,
     function_id(dict.pop): FUNC_KEY_DICT_POP,
 
     # instancemethod
