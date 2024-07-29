@@ -196,16 +196,16 @@ void SideEffect::ResetRecord(const std::set<ValueNode *> &nodes_set) {
     return;
   }
   // sort
-  std::map<int, const Entry *> ordered_nodes;
+  std::map<int, Entry> ordered_nodes;
   for (const auto &i : nodes_) {
-    ordered_nodes[i.second.order_] = &i.second;
+    ordered_nodes[i.second.order_] = std::move(i.second);
   }
   // rollback
   keep_alive_.clear();
   nodes_.clear();
   data_->ClearCache();
   for (const auto &i : ordered_nodes) {
-    this->Record(i.second->node_, i.second->type_, i.second->method_name_);
+    this->Record(i.second.node_, i.second.type_, i.second.method_name_);
   }
 }
 
