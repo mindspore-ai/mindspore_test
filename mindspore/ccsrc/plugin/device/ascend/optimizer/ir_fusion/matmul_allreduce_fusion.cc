@@ -33,6 +33,7 @@
 #include "ops/other_op_name.h"
 #include "mindspore/ccsrc/frontend/parallel/ops_info/ops_utils.h"
 #include "mindspore/core/ir/anf.h"
+#include "plugin/device/ascend/hal/common/ascend_utils.h"
 
 namespace mindspore::opt {
 const BaseRef MatMulAllReduceFusion::DefinePattern() const {
@@ -105,7 +106,8 @@ const AnfNodePtr MatMulAllReduceFusion::Process(const mindspore::FuncGraphPtr &f
   MS_EXCEPTION_IF_NULL(ms_context);
 
   if (ms_context->IsEnableInferBoost()) {
-    if (common::GetEnv("MS_ENABLE_LCCL").empty()) {
+    auto enable_lccl = device::ascend::EnableLcclEnv();
+    if (enable_lccl != "on") {
       return nullptr;
     }
     auto enable_op_list = ms_context->ms_internal_enable_custom_kernel_list();

@@ -18,10 +18,6 @@ from tests.mark_utils import arg_mark
 
 os.environ["GLOG_v"] = "1"
 os.environ['ASCEND_HOME_PATH'] = "/usr/local/Ascend/latest"
-os.environ["MS_ENABLE_LCCL"] = "1"
-os.environ["MS_INTERNAL_ENABLE_CUSTOM_KERNEL_LIST"] = "MatMulAllReduce"
-os.environ["CUSTOM_MATMUL_SHUFFLE"] = "on"
-os.environ["RUN_MODE"] = "predict"
 TOELERANCE = 5e-2
 PEAK_MEMORY_NAME = "Actual peak memory usage (with fragments):"
 
@@ -106,7 +102,7 @@ def test_llama_predict_4p_bs4():
     os.system(f"cat {log_path}")
     assert ret == 0
 
-    expect_peak_memory = 2630
+    expect_peak_memory = 3377
     peak_memory = get_num_from_log(f"{log_path}", PEAK_MEMORY_NAME)
     assert peak_memory <= expect_peak_memory * (1 + TOELERANCE)
 

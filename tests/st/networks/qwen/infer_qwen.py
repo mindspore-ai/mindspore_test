@@ -21,8 +21,9 @@ import numpy as np
 
 workspace = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(workspace, "mindformers"))
-from mindformers import LlamaConfig, TransformerOpParallelConfig, LlamaForCausalLM, init_context
+from mindformers import LlamaConfig, TransformerOpParallelConfig, LlamaForCausalLM
 from mindformers.tools.register import MindFormerConfig
+from mindformers.core.context import build_context
 from mindspore import set_seed
 from mindspore import Profiler
 
@@ -79,10 +80,7 @@ def build_model(config_path, batch_size=1, model_parallel=1, use_bf16=False):
         config.model.model_config.param_init_type = "bfloat16"
 
     # initialize env
-    init_context(use_parallel=config.use_parallel,
-                 context_config=config.context,
-                 parallel_config=config.parallel)
-
+    build_context(config)
     model_config = LlamaConfig(**config.model.model_config)
 
     # set model parameters
