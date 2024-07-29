@@ -151,7 +151,7 @@ int32_t BatchNormFuncImpl::CheckValidation(const PrimitivePtr &primitive,
     return OP_CHECK_RETRY;
   }
   MS_CHECK_VALUE(epsilon_value.value() > 0 && epsilon_value.value() <= 1,
-                 CheckAndConvertUtils::FormatCheckInRangeMsg<pyfloat>("epsilon", epsilon_value.value(), kIncludeRight,
+                 CheckAndConvertUtils::FormatCheckInRangeMsg<pyfloat>("eps", epsilon_value.value(), kIncludeRight,
                                                                       {0., 1.}, primitive));
 
   auto momentum_value = GetScalarValue<pyfloat>(input_args[attr_pos + 2]->GetValue());
