@@ -194,6 +194,16 @@ bool GenerateAclInitJson(const string &json_file_path) {
 }
 }  // namespace
 
+bool EnableLccl() {
+  std::string enable_lccl_env = "off";
+  if (MsContext::GetInstance()->IsEnableInferBoost()) {
+    enable_lccl_env = common::GetEnv("MS_ENABLE_LCCL", "on");
+  } else {
+    enable_lccl_env = common::GetEnv("MS_ENABLE_LCCL", "off");
+  }
+  return enable_lccl_env == "on";
+}
+
 void InitializeAcl() {
   std::lock_guard<std::mutex> lock(g_acl_init_mutex);
   if (g_acl_initialized) {
