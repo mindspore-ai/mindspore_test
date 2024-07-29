@@ -57,6 +57,12 @@ bool ShouldFallBackInRuntime(const PrimitivePtr &prim) {
 
 bool IsValidScalar(const AbstractBasePtr &abs) {
   auto build_type = abs->BuildType();
+  if (build_type->isa<String>()) {
+    auto value = abs->BuildValue()->cast<StringImmPtr>();
+    const auto &str = value->value();
+    const std::string fake_prefix = "FakeNodeKey";
+    return str.substr(0, fake_prefix.size()) != fake_prefix;
+  }
   return build_type->isa<String>() || build_type->isa<Number>();
 }
 
@@ -117,6 +123,9 @@ ValuePtr FuncGraphBuilder::ConvertPyObjToValue(const py::object &obj) {
   ValuePtr ret = nullptr;
   try {
     MS_LOG_TRY_CATCH_SCOPE;
+    if (py::isinstance<Cell>(obj)) {
+      return std::make_shared<parse::InterpretedObject>(obj);
+    }
     if (!parse::ConvertData(obj, &ret)) {
       return nullptr;
     }
@@ -626,15 +635,21 @@ AbstractWrapperPtr FuncGraphBuilder::BuildGradNetNode(const ValuePtr &callable_v
   const std::string grad_prefix = "MetaFuncGraph-grad";
   const std::string fake_node_key_prefix = "FakeNodeKey";
   std::vector<AnfNodePtr> input_node_list;
-  std::vector<AbstractBasePtr> input_abs_list;
-  if (!GetInputNodesAndAbstracts(callable_value, inputs_abstract_wrapper, &input_node_list, &input_abs_list)) {
-    return nullptr;
+
+  (void)input_node_list.emplace_back(NewValueNode(callable_value));
+  for (const auto &input_wrapper : inputs_abstract_wrapper) {
+    auto node = GetNodeByWrapper(input_wrapper);
+    if (node == nullptr) {
+      // When build grad operation node failed, let forward net run pi jit.
+      constexpr size_t forward_net_index = 0;
+      auto forward_net_object = AbstractWrapper::FetchPythonObject(inputs_abstract_wrapper[forward_net_index]);
+      (void)AbstractWrapper::MarkObjectPiJItShouldCompile(forward_net_object);
+      return nullptr;
+    }
+    (void)input_node_list.emplace_back(node);
   }
   auto fake_node = graph_->NewCNode(input_node_list);
-  constexpr auto forward_fg_index = 1;
-  auto forward_fg = GetValueNode<FuncGraphPtr>(input_node_list[forward_fg_index]);
-  MS_EXCEPTION_IF_NULL(forward_fg);
-  auto origin_forward_fg_output = forward_fg->output();
+
   std::stringstream ss;
   ss << fake_node.get();
   auto output_py_obj = py::str(fake_node_key_prefix + " " + grad_prefix + " " + ss.str());
@@ -643,23 +658,19 @@ AbstractWrapperPtr FuncGraphBuilder::BuildGradNetNode(const ValuePtr &callable_v
   abs->set_user_data(kGradNetInputs, std::make_shared<std::vector<AbstractWrapperPtr>>(inputs_abstract_wrapper));
   abs->set_user_data(kGradFuncPyObject, std::make_shared<py::object>(callable_obj));
   fake_node->set_abstract(abs);
-  auto cur_forward_fg_output = forward_fg->output();
-  if (origin_forward_fg_output != cur_forward_fg_output) {
-    // has_aux for GradOperation will change the output of forward fg.
-    forward_fg->set_output(origin_forward_fg_output);
-  }
+
   auto abstract_wrapper = std::make_shared<AbstractWrapper>(fake_node->abstract());
   (void)key_to_node_.emplace(abstract_wrapper, fake_node);
   MS_LOG(INFO) << "Build GradOperation Net fake node: " << fake_node->DebugString();
   return abstract_wrapper;
 }
 
-AbstractWrapperPtr FuncGraphBuilder::BuildGradNode(const AbstractWrapperPtr &key,
+AbstractWrapperPtr FuncGraphBuilder::BuildGradNode(const AbstractWrapperPtr &key, const FuncGraphPtr &forward_fg,
                                                    const std::vector<AbstractWrapperPtr> &inputs, bool need_unpack) {
   AbstractWrapperPtr ret;
   try {
     MS_LOG_TRY_CATCH_SCOPE;
-    ret = HandleGrad(key, inputs, need_unpack);
+    ret = HandleGrad(key, forward_fg, inputs, need_unpack);
   } catch (const std::exception &e) {
     MS_LOG(INFO) << "Failed to build grad node with key: " << key << ". The exception:\n" << e.what();
   }
@@ -675,7 +686,7 @@ AbstractWrapperPtr FuncGraphBuilder::BuildGradNode(const AbstractWrapperPtr &key
 //     grad_result_node: grad_net_node(forward_inputs) or unpack_call(grad_net_node, forward_inputs)
 //     return grad_result_node
 //   final node for evaluated: fg(other_inputs, forward_inputs)
-AbstractWrapperPtr FuncGraphBuilder::HandleGrad(const AbstractWrapperPtr &key,
+AbstractWrapperPtr FuncGraphBuilder::HandleGrad(const AbstractWrapperPtr &key, const FuncGraphPtr &forward_fg,
                                                 const std::vector<AbstractWrapperPtr> &inputs, bool need_unpack) {
   auto fake_node = ReadLocalVariable(key);
   if (fake_node == nullptr || !fake_node->isa<CNode>()) {
@@ -706,16 +717,12 @@ AbstractWrapperPtr FuncGraphBuilder::HandleGrad(const AbstractWrapperPtr &key,
   MS_EXCEPTION_IF_NULL(value);
   auto meta = value->cast<MetaFuncGraphPtr>();
   MS_EXCEPTION_IF_NULL(meta);
-
-  auto forward_fg_node = fake_node_inputs[0];
-  MS_EXCEPTION_IF_NULL(forward_fg_node);
-  auto forward_fg = GetValueNode<FuncGraphPtr>(forward_fg_node);
   MS_EXCEPTION_IF_NULL(forward_fg);
   auto origin_forward_fg_output = forward_fg->output();
   auto fake_cnode = fake_node->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(fake_cnode);
   auto meta_node = NewValueNode(std::make_shared<prim::DoSignaturePrimitive>(meta->name(), meta));
-  std::vector<AnfNodePtr> grad_net_node_inputs{meta_node, forward_fg_node};
+  std::vector<AnfNodePtr> grad_net_node_inputs{meta_node, NewValueNode(forward_fg)};
   FuncGraphPtr fg = std::make_shared<FuncGraph>();
   for (size_t i = 1; i < fake_node_inputs.size(); ++i) {
     (void)grad_net_node_inputs.emplace_back(fg->add_parameter());
@@ -725,13 +732,19 @@ AbstractWrapperPtr FuncGraphBuilder::HandleGrad(const AbstractWrapperPtr &key,
   if (need_unpack) {
     auto unpack_call_op = NewValueNode(std::make_shared<prim::UnpackCall>(parse::NAMED_METAGRAPH_UNPACKCALL));
     grad_result_node_inputs.push_back(unpack_call_op);
-  }
-  grad_result_node_inputs.push_back(grad_net_node);
-  for (size_t i = 0; i < inputs.size(); ++i) {
-    (void)grad_result_node_inputs.emplace_back(fg->add_parameter());
+    grad_result_node_inputs.push_back(grad_net_node);
+    for (size_t i = 0; i < inputs.size(); ++i) {
+      (void)grad_result_node_inputs.emplace_back(fg->add_parameter());
+    }
+  } else {
+    grad_result_node_inputs.push_back(grad_net_node);
+    for (size_t i = 0; i < inputs.size(); ++i) {
+      (void)grad_result_node_inputs.emplace_back(fg->add_parameter());
+    }
   }
   auto grad_result_node = fg->NewCNodeInOrder(grad_result_node_inputs);
   fg->set_output(grad_result_node);
+  DumpIR("tmp_grad_fg.ir", fg);
   std::vector<AnfNodePtr> final_node_input = {NewValueNode(fg)};
   std::vector<AbstractBasePtr> final_node_abs;
   for (size_t i = 1; i < fake_node_inputs.size(); ++i) {
@@ -749,6 +762,10 @@ AbstractWrapperPtr FuncGraphBuilder::HandleGrad(const AbstractWrapperPtr &key,
     (void)final_node_abs.emplace_back(node->abstract());
   }
   auto final_node = graph_->NewCNodeInOrder(final_node_input);
+  MS_LOG(INFO) << "final_node: " << final_node->DebugString(2);
+  for (auto abs : final_node_abs) {
+    MS_LOG(INFO) << "final input abstract: " << abs->ToString();
+  }
   fg->set_manager(mng_);
   auto analyze_res = pipeline::AbstractAnalyze(fg, final_node_abs);
   MS_EXCEPTION_IF_NULL(analyze_res.eval_result);

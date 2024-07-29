@@ -19,6 +19,7 @@
 
 #include <string>
 #include <memory>
+#include <vector>
 
 #include "pybind11/pybind11.h"
 #include "ir/value.h"
@@ -29,6 +30,7 @@ namespace py = pybind11;
 namespace mindspore {
 class AbstractWrapper;
 using AbstractWrapperPtr = std::shared_ptr<AbstractWrapper>;
+using AbstractWrapperPtrList = std::vector<AbstractWrapperPtr>;
 
 class AbstractWrapper {
  public:
@@ -38,6 +40,8 @@ class AbstractWrapper {
 
   static py::object ConvertToPyObject(const AbstractWrapperPtr &wrapper);
   static py::object ConvertToPyObject(const AbstractBasePtr &abstract);
+  static py::object FetchPythonObject(const AbstractWrapperPtr &wrapper);
+  static bool MarkObjectPiJItShouldCompile(const py::object &object);
 
  private:
   AbstractBasePtr abstract_;
