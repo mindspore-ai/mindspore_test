@@ -231,6 +231,7 @@ class GraphBuilder {
   bool TraceRunForIterSequence(int jump_bci, bool is_range_type);
   bool TraceRunForIterEnumerate(int jump_bci);
   bool TraceRunForIterZip(int jump_bci);
+  bool TraceRunForIterDictItems(int jump_bci);
 
   // bytecode operations
   bool TraceRunControl(const Instr &instr);
