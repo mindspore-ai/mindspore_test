@@ -10,7 +10,7 @@ mindspore.mint.median
         - **dim** (int, 可选) - 进行中值计算的轴。默认值： ``None`` 。
         - **keepdim** (bool, 可选) - 是否保留 ``dim`` 指定的维度。默认值： ``False`` 。
 
-    输出：
+    返回：
         - **y** (Tensor) - 输出中值，数据类型与 ``input`` 相同。
 
           - 如果 ``dim`` 为 ``None`` ， ``y`` 只有一个元素。
