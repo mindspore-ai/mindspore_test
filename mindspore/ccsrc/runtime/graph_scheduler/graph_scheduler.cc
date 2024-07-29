@@ -1077,7 +1077,7 @@ void GraphScheduler::CacheGraphOutputToActor(const GraphCompilerInfo &graph_comp
                    << " debug string:" << origin_output_with_index.first->DebugString()
                    << " with index:" << origin_output_with_index.second;
 
-      SchedulerHelper::AddSomasInfoForGraphOutput(output_actor, output_kernel, output_index, graph_id);
+      SchedulerHelper::AddSomasInfoForGraphOutput(output_actor, output_index, graph_id);
     }
   }
 }

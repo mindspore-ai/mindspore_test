@@ -870,7 +870,7 @@ void SuperKernelActor::BuildKernelActors() {
     const auto &output_actor = iter->second;
     MS_EXCEPTION_IF_NULL(output_actor);
     output_actor->is_output_kernel_ = true;
-    SchedulerHelper::AddSomasInfoForGraphOutput(output_actor, output_kernel, output_index, graph_->graph_id());
+    SchedulerHelper::AddSomasInfoForGraphOutput(output_actor, output_index, graph_->graph_id());
   }
 
   // 3. Initialize all kernel actor.
