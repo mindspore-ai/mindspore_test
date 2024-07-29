@@ -159,11 +159,88 @@ const std::unordered_map<int, bool (GraphBuilder::*)(const Instr &)> GraphBuilde
   {WITH_CLEANUP_FINISH, &GraphBuilder::DoException},
   {END_FINALLY, &GraphBuilder::DoException},
   {SETUP_EXCEPT, &GraphBuilder::DoException},
+  {BUILD_TUPLE_UNPACK, &GraphBuilder::DoBuildWithUnpack},
+  {BUILD_TUPLE_UNPACK_WITH_CALL, &GraphBuilder::DoBuildWithUnpack},
+  {BUILD_LIST_UNPACK, &GraphBuilder::DoBuildWithUnpack},
+  {BUILD_SET_UNPACK, &GraphBuilder::DoBuildWithUnpack},
+  {BUILD_MAP_UNPACK, &GraphBuilder::DoBuildWithUnpack},
+  {BUILD_MAP_UNPACK_WITH_CALL, &GraphBuilder::DoBuildWithUnpack},
 };
 
 bool GraphBuilder::DoOtherBytecode(const Instr &instr) {
   MS_LOG(ERROR) << "TODO: resolve for instruction " << instr.ToString();
   return false;
+}
+
+
+bool GraphBuilder::DoBuildWithUnpack(const Instr &instr) {
+  int opcode = instr.op();
+  int iterable_count = instr.arg();
+  std::vector<ValueNode *> iterables(frame_.GetStacks().end() - iterable_count, frame_.GetStacks().end());
+  std::vector<ValueNode *> result_elements;
+  for (int i = 0; i < iterable_count; i++) {
+    auto iterable = iterables[i];
+    auto op = iterable->GetOpcode();
+    if (op == BUILD_LIST || op == BUILD_TUPLE || op == BUILD_SET) {
+      result_elements.insert(result_elements.end(), iterable->getInputs().begin(), iterable->getInputs().end());
+      continue;
+    }
+    if (opcode == BUILD_MAP_UNPACK || opcode == BUILD_MAP_UNPACK_WITH_CALL) {
+      if (iterable->GetOpcode() == BUILD_MAP) {
+        result_elements.insert(result_elements.end(), iterable->getInputs().begin(), iterable->getInputs().end());
+      } else if (iterable->GetVobj()->GetPyObject().ptr() != nullptr) {
+        PyObject *map_object = iterable->GetVobj()->GetPyObject().ptr();
+        auto keys = py::reinterpret_steal<py::object>(PyDict_Keys(map_object));
+        Py_ssize_t key_size = PyList_GET_SIZE(keys.ptr());
+        for (Py_ssize_t j = 0; i < key_size; ++i) {
+          Instr instr_get_key(LOAD_CONST, 0, py::reinterpret_borrow<py::object>(PyList_GET_ITEM(keys.ptr(), j)));
+          this->DoLoadConst(instr_get_key);
+          this->push(iterable);
+          this->DoLoadConst(instr_get_key);
+          this->DoGetItem({BINARY_SUBSCR, 0});
+        }
+        std::vector<ValueNode *> elements = {frame_.GetStacks().end() - key_size * 2, frame_.GetStacks().end()};
+        popn(key_size * 2);
+        result_elements.insert(result_elements.end(), elements.begin(), elements.end());
+      } else {
+        std::cout << "DoBuildWithUnpack iterable->GetVobj()->GetPyObject().ptr() == nullptr" << std::endl;
+        return false;
+      }
+    } else {
+      AObject *seq = iterable->GetVobj();
+      PyObject *o = (seq == nullptr) ? nullptr : seq->GetPyObject().ptr();
+      Py_ssize_t size = (o == nullptr) ? -1 : PyObject_Size(o);
+      if (size == -1) {
+        std::cout << "DoBuildWithUnpack size == -1" << std::endl;
+        return false;
+      }
+      push(iterable);
+      if (DoUnpack({UNPACK_SEQUENCE, (int)size})) {
+        std::vector<ValueNode *> elements(frame_.GetStacks().end() - size, frame_.GetStacks().end());
+        result_elements.insert(result_elements.end(), elements.begin(), elements.end());
+        popn(size);
+      } else {
+        pop();
+        std::cout << "DoBuildWithUnpack DoUnpack failed" << std::endl;
+        return false;
+      }
+    }
+  }
+  popn(iterable_count);
+  for (auto ele : result_elements) {
+    push(ele);
+  }
+  int result_element_count = result_elements.size();
+  if (opcode == BUILD_TUPLE_UNPACK || opcode == BUILD_TUPLE_UNPACK_WITH_CALL) {
+    DoBuildOp({BUILD_TUPLE, result_element_count});
+  } else if (opcode == BUILD_LIST_UNPACK) {
+    DoBuildOp({BUILD_LIST, result_element_count});
+  } else if (opcode == BUILD_SET_UNPACK) {
+    DoBuildOp({BUILD_SET, result_element_count});
+  } else if (opcode == BUILD_MAP_UNPACK || opcode == BUILD_MAP_UNPACK_WITH_CALL) {
+    DoBuildOp({BUILD_MAP, result_element_count / 2});
+  }
+  return true;
 }
 
 bool GraphBuilder::ReplaceAll(ValueNode *old_node, ValueNode *new_node, bool *is_referenced) {
