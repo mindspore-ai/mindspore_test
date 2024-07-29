@@ -1556,8 +1556,9 @@ bool GraphBuilder::DoFormatValue(const Instr &instr) {
       result_node = nullptr;
     } else {
       /* Actually call format(). */
-      py::object fmt_spec = fmt_spec_node->GetVobj()->GetPyObject();
-      py::object result = py::reinterpret_steal<py::object>(PyObject_Format(value.ptr(), fmt_spec.ptr()));
+      PyObject *po = NULL;
+      if (fmt_spec_node != nullptr) po = fmt_spec_node->GetVobj()->GetPyObject().ptr();
+      py::object result = py::reinterpret_steal<py::object>(PyObject_Format(value.ptr(), po));
       result_node = NewValueNode(AObject::Convert(result), Instr{LOAD_CONST, 0});
     }
   }
