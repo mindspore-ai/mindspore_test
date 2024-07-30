@@ -2,6 +2,40 @@
 
 [View English](./RELEASE.md)
 
+## MindSpore 2.3.1 Release Notes
+
+### 主要特性及增强
+
+- [STABLE] 去掉了在使用 [Layout](https://www.mindspore.cn/docs/zh-CN/r2.3.1/api_python/mindspore/mindspore.Layout.html#mindspore.Layout) 构建切分策略时，interleaved_parallel 对应的 device_matrix 的值必须为 2 的限制。
+- [STABLE] 增加了用户自定义控制边的环境变量 [MS_CUSTOM_DEPEND_CONFIG_PATH](https://www.mindspore.cn/docs/zh-CN/r2.3.1/note/env_var_list.html)，用户可以自行配置控制边以实现更好的通信计算隐藏。
+
+### API 变更
+
+#### 新增API
+
+- [STABLE] 新增API[mindspore.mint.repeat_interleave](https://www.mindspore.cn/docs/zh-CN/r2.3.1/api_python/mint/mindspore.mint.repeat_interleave.html)。
+
+### 贡献者
+
+ccsszz;dairenjie;DeshiChen;fuhouyu;gaoshuanglong;gaoyong10;GuoZhibin;halo;huoxinyou;jiangchao_j;jiaorui;jiaxueyu;jijiarong;JuiceZ;lichen;liujunzhu;liuluobin;LLLRT;looop5;luoyang ;Margaret_wangrui;mengyuanli;panzhihui;pengqi;PingqiLi;Renyuan Zhang;tanghuikang;tianxiaodong;TuDouNi;wudawei;XianglongZeng;xiaosh;xiaoxin_zhang;XinDu;yanghaoran;yanglong;yangruoqi713;Yanzhi_YI;yao_yf;YijieChen;yuchaojie;YuJianfeng;zangqx;zhengzuohe;zhouyaqiang0;ZPaC;zyli2020;胡彬;宦晓玲;康伟;李林杰;刘崇鸣;王禹程;俞涵;周莉莉;邹文祥
+
+欢迎以任何形式对项目提供贡献！
+
+## MindSpore Lite 2.3.1 Release Notes
+
+### 主要特性及增强
+
+昇腾后端模型转换时，支持使用配置文件中的[input_shape 参数](https://www.mindspore.cn/lite/docs/zh-CN/r2.3.1/use/cloud_infer/converter_tool_ascend.html)来指定输入尺寸。
+
+### API 变更
+
+- [ModelGroup接口](https://www.mindspore.cn/lite/docs/zh-CN/r2.3.1/use/cloud_infer/runtime_cpp.html) 新增模型权重共享支持，节省显存。
+- [Model.get_model_info接口](https://www.mindspore.cn/lite/docs/zh-CN/r2.3.1/use/converter_tool.html?highlight=get_model_info) 新增支持获取模型的输入尺寸。
+
+### 贡献者
+
+熊攀;ZhangZGC;jxl;zhangyanhui;emmmmtang;huandong1;yefeng
+
 ## MindSpore 2.3.0 Release Notes
 
 ### 主要特性及增强
