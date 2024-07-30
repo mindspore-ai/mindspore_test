@@ -50,11 +50,19 @@ class CustomAclnnKernelMod : public AclnnKernelMod {
   }
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
               const std::vector<KernelTensor *> &outputs, void *stream_ptr) override {
-    RunOp(stream_ptr, workspace, inputs, outputs);
+    CallRun(stream_ptr, workspace, inputs, outputs);
     return true;
   }
 
  private:
+  template <typename... Ts>
+  void CallRun(void *stream_ptr, const std::vector<KernelTensor *> &workspace, const std::vector<Ts> &... vecs) {
+    const auto &res_tuple = this->GetKernelTuple<N>(vecs...);
+    std::apply(
+      [this, stream_ptr, &workspace](const auto &... args) { return this->RunOp(stream_ptr, workspace, args...); },
+      res_tuple);
+  }
+
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
 
