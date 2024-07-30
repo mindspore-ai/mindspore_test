@@ -38,34 +38,6 @@ class SilentCheckV2Ascend : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 
-  void SetWorkspaceForInplaceCopy(const KernelTensor *output, const KernelTensor *input, size_t order) {
-    copy_hash_ids_[order] = transform::CalcOpApiHash(inplace_copy_str_, input);
-    auto copy_hash_id = copy_hash_ids_[order];
-    if (cache_hash_.count(copy_hash_id) == 0) {
-      const bool use_huge_pages = false;
-      auto return_value = GEN_EXECUTOR_CUST(inplace_copy_str_, use_huge_pages, output, input);
-      UpdateInplacemWorkspace(std::get<kWsSizeIndex>(return_value), false, order, order);
-    } else {
-      auto return_value = GEN_EXECUTOR_BOOST(inplace_copy_str_, copy_hash_id, output, input);
-      UpdateInplacemWorkspace(std::get<kWsSizeIndex>(return_value), true, std::get<kHashIdIndex>(return_value), order);
-    }
-  }
-
-  inline void UpdateInplacemWorkspace(uint64_t ws_size, bool boost, uint64_t new_hash_id = 0, size_t order = 0) {
-    copy_ws_sizes_[order] = ws_size;
-    if (ws_size != 0) {
-      workspace_size_list_.emplace_back(ws_size);
-    }
-
-    if (boost) {
-      copy_hash_ids_[order] = new_hash_id;
-    }
-  }
-
-  const std::string inplace_copy_str_{"aclnnInplaceCopy"};
-  std::vector<uint64_t> copy_ws_sizes_{0, 0, 0};
-  std::vector<uint64_t> copy_hash_ids_{0, 0, 0};
-
   int64_t c_min_steps_{7};
   pyfloat c_thresh_l1_{1000000.};
   pyfloat c_coeff_l1_{100000.};

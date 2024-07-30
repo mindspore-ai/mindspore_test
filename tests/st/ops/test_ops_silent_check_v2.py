@@ -24,8 +24,9 @@ from mindspore import ops
 def silent_check_v2(val, input_grad, sfda, step, c_min_steps=7, c_thresh_l1=1000000.,
                     c_coeff_l1=100000., c_thresh_l2=10000., c_coeff_l2=5000., npu_asd_detect=1):
     op = ops.auto_generate.silent_check_v2_op
-    return op(val, input_grad, sfda, step, c_min_steps, c_thresh_l1,
-              c_coeff_l1, c_thresh_l2, c_coeff_l2, npu_asd_detect)
+    _, _, _, result = op(val, input_grad, sfda, step, c_min_steps, c_thresh_l1,
+                         c_coeff_l1, c_thresh_l2, c_coeff_l2, npu_asd_detect)
+    return input_grad, sfda, step, result
 
 
 @test_utils.run_with_cell
