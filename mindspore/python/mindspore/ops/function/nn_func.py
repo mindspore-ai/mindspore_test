@@ -3678,6 +3678,7 @@ def pad_ext(input, pad, mode='constant', value=0.0):
         ``Ascend``
 
     Examples:
+        >>> import mindspore as ms
         >>> from mindspore import ops
         >>> import numpy as np
         >>> x = ms.Tensor(np.arange(1 * 2 * 2 * 2).reshape((1, 2, 2, 2)), dtype=ms.float64)
