@@ -1799,7 +1799,7 @@ bool GraphBuilder::WhiteListFuncCheckAndInfer(CallNode *call_node, const py::obj
     return true;
   }
 
-  InferFunc infer_func = FindInferFunc(callable);
+  InferFunc infer_func = FindInferFunc(callable, trace_flag());
   if (infer_func == nullptr) {
     return false;
   }
@@ -3599,26 +3599,6 @@ LocationPtr MindGraphBuilder::GetLocation(CallNode *call_node) const {
   auto line_no = call_node->GetLineNo();
   std::vector<std::string> comments;
   return std::make_shared<Location>(file_name, line_no, 0, line_no, 0, "", std::move(comments));
-}
-
-bool MindGraphBuilder::WhiteListFuncCheckAndInfer(CallNode *call_node, const py::object &callable) {
-  InferFunc infer_func = FindInferFunc(callable, trace_flag());
-  if (infer_func != nullptr) {
-    call_node->SetSubGraph(NewGraph(nullptr, nullptr));
-    call_node->GetSubGraph()->SetGuard(root_->GetGraph()->GetGuard());
-    bool has_sub_graph = infer_func(call_node, this);
-    if (!has_sub_graph) {
-      call_node->SetInlineReason(InlineReason::kInlineFuncSpecialize);
-      MS_ASSERT(!call_node->GetSubGraph());  // check infer function
-      return true;
-    }
-    call_node->SetInlineReason(InlineReason::kInline);
-    ValueNode *ret_node = call_node->GetSubGraph()->GetRetVal();
-    MS_EXCEPTION_IF_CHECK_FAIL(ret_node, "infer special function failed");
-    seek(0) = ret_node;
-    return true;
-  }
-  return false;
 }
 
 bool MindGraphBuilder::FGAddTopInputs(int args_count, bool has_vargs, bool has_kwargs) {

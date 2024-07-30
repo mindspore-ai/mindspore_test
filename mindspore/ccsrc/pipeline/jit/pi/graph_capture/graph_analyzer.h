@@ -41,7 +41,7 @@ class GraphAnalyzer {
   // escaped_locals and captured.values do not intersect
   struct CapturedInfo {
     struct Info {
-      // contains inputs and operations, used to find
+      // contains inputs and operations, fast to find
       mindspore::CompactSet<ValueNode *> values;
       // the inputs of operations
       std::vector<ValueNode *> inputs;
@@ -116,6 +116,8 @@ class GraphAnalyzer {
   virtual void CollectCapturedInputs();
   virtual void CollectCapturedAndInterpret();
   virtual void CollectGraphInputs();
+  bool ProduceInterpretValue(ValueNode *v);
+
   bool need_interpret_;
   Graph *graph_;
   CapturedInfo info_;
@@ -128,7 +130,6 @@ class GraphAnalyzer {
   bool HandleSideEffectNodeForCapture(AbstractNode *capture_node);
   bool AddToCaptured(ValueNode *value);
   bool HandleCallableToGraph(AObject *f);
-  bool ProduceInterpretValue(ValueNode *v);
   void CleanCapturedValue();
 };
 

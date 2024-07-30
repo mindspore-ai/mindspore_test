@@ -315,7 +315,6 @@ class MindGraphBuilder : public GraphBuilder {
   StopTraceReason BuildSubGraph(CallNode *call_node, int depth, const py::object &func,
                                 const GraphBuilderPtr &subgraph) override;
   py::object ResolveCallable(CallNode *call_node, StopTraceReason *stop_reason) override;
-  bool WhiteListFuncCheckAndInfer(CallNode *, const py::object &f) override;
 
   LocationPtr GetLocation(CallNode *call_node) const;
 

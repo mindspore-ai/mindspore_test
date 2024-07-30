@@ -243,8 +243,6 @@ bool GraphAnalyzer::AddToCaptured(ValueNode *v) {
 }
 
 void GraphAnalyzer::AddToEscaped(ValueNode *v) {
-  MS_EXCEPTION_IF_CHECK_FAIL(GetCaptureInfo().interpret_.values.find(v) == GetCaptureInfo().interpret_.values.end(),
-                             "duplicate escaped values");
   GetCaptureInfo().interpret_.values.insert(v);
   GetCaptureInfo().interpret_.operations.push_back(v);
 }
@@ -467,6 +465,22 @@ bool GraphAnalyzer::AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes) {
       CleanCapturedValue();
       break;
     }
+    /**
+     * produce the values if it can be produced by interpret values before call graph
+     * e.g
+     *   return parameter.some_attribute
+     *   return build_map(parameters, other_constants)
+     */
+    if (ProduceInterpretValue(node)) {
+      continue;
+    }
+    /**
+     * produce the values if it can be produced by interpret values and graph outputs after call graph
+     * e.g
+     *   graph_outputs = call_graph()
+     *   return graph_outputs[0].dtype, graph_outputs[1].asnumpy
+     * ...save alive nodes and reconstruct these values when generated the code
+     */
 
     //  reset break graph point
     isAllNodesSupportOutput = false;
@@ -738,9 +752,6 @@ void MindGraphAnalyzer::Analyze() {
   auto origin_stop_bci = graph_->GetStopTraceBci();
   UseDefAnalyze();
 
-  const FrameStates &enter_frame = graph_->GetFrame(0);
-  GetCaptureInfo().interpret_.values.insert(enter_frame.GetLocals().begin(), enter_frame.GetLocals().end());
-
   auto mind_graph_builder = std::static_pointer_cast<MindGraphBuilder>(graph_builder_);
   MS_EXCEPTION_IF_NULL(mind_graph_builder);
   auto func_graph_builder = mind_graph_builder->FGBuilder();
@@ -792,15 +803,34 @@ bool MindGraphAnalyzer::AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes) 
       MS_LOG(INFO) << "Skip non local value used as graph output: " << node->ToString();
       continue;
     }
+    // If this node can't find in func_graph, it's not a graph output
     auto capturedLocals = info_.captured_.operations;
     if (std::find(capturedLocals.begin(), capturedLocals.end(), node) == capturedLocals.end()) {
       continue;
     }
+    // add output for func_graph
     if (func_graph_builder->AddOutput(node->abstract_wrapper(), true)) {
       MS_LOG(INFO) << "Add output success for node: " << node->ToString();
       GetCaptureInfo().captured_.outputs.push_back(node);
       continue;
     }
+    /**
+     * produce the values if it can be produced by interpret values before call graph
+     * e.g
+     *   return parameter.some_attribute
+     *   return build_map(parameters, other_constants)
+     */
+    if (ProduceInterpretValue(node)) {
+      continue;
+    }
+    /**
+     * produce the values if it can be produced by interpret values and graph outputs after call graph
+     * e.g
+     *   graph_outputs = call_graph()
+     *   return graph_outputs[0].dtype, graph_outputs[1].asnumpy
+     * ...save alive nodes and reconstruct these values when generated the code
+     */
+
     MS_LOG(INFO) << "Add output failed for node: " << node->ToString();
     GetCaptureInfo().captured_.outputs.clear();
     //  reset break graph point
@@ -823,6 +853,11 @@ bool MindGraphAnalyzer::AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes) 
 }
 
 void MindGraphAnalyzer::UpdateCapturedOrder() {
+  const auto &locals = graph_->GetFrame(0).GetLocals();
+  GetCaptureInfo().interpret_.inputs = locals;
+  GetCaptureInfo().interpret_.values.insert(locals.begin(), locals.end());
+
+  // assume all values is captured to func_graph
   const auto &traced_nodes = graph_->GetTracedNodes();
   auto stop_bci = graph_->GetStopTraceBci();
   if (stop_bci == -1) {
@@ -841,7 +876,8 @@ void MindGraphAnalyzer::UpdateCapturedOrder() {
   for (auto val : captured_local_order) {
     new_capture_local_values.insert(val);
   }
-  GetCaptureInfo().captured_.values = new_capture_local_values;
+  // remove duplicates
+  GetCaptureInfo().captured_.values = std::move(new_capture_local_values);
 }
 
 void MindGraphAnalyzer::CollectCapturedAndInterpret() {
