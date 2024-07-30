@@ -14,6 +14,7 @@
 # ==============================================================================
 import copy
 import os
+import random
 import subprocess
 import time
 import psutil
@@ -2646,6 +2647,54 @@ def test_generator_with_generator_object_iterated_multi_times():
     assert count == 9
 
 
+def test_generator_with_seed_and_multiprocessing_mode():
+    """
+    Feature: GeneratorDataset
+    Description: test GeneratorDataset with seed in multiprocessing mode
+    Expectation: SUCCESS
+    """
+    origin_seed = ds.config.get_seed()
+    ds.config.set_seed(1234)
+
+    expected_data = [990, 931, 797, 706, 452, 435, 120, 549, 8, 863, 93, 607, 933,
+                     482, 966, 401, 962, 153, 827, 978, 597, 725, 36, 358, 688, 739,
+                     710, 662, 86, 804]
+
+    expected_data2 = [1989, 1930, 1796, 1705, 1451, 1434, 1119, 1548, 1007, 1862, 1606,
+                      1092, 1481, 1932, 1400, 1965, 1152, 1961, 1977, 1826, 1596, 1724,
+                      1035, 1357, 1687, 1738, 1709, 1661, 1085, 1803]
+
+    # Random-accessible object as input source
+    class RandintDataset:
+        def __init__(self):
+            pass
+
+        def __getitem__(self, index):
+            return np.array(random.randint(1, 1000)), np.array(1)
+
+        def __len__(self):
+            return 10
+
+    loader = RandintDataset()
+    dataset = ds.GeneratorDataset(source=loader, column_names=["data", "label"], num_parallel_workers=2)
+
+    def add_column(data):
+        return data, np.array(random.randint(1000, 2000))
+    dataset = dataset.map(add_column, input_columns=["data"], output_columns=["data", "data2"], num_parallel_workers=2,
+                          python_multiprocessing=True)
+
+    epoch = 3
+    dataset_iter = dataset.create_dict_iterator(num_epochs=epoch)
+    index = 0
+    for _ in range(epoch):
+        for item in dataset_iter:
+            assert item["data"] == expected_data[index]
+            assert item["data2"] == expected_data2[index]
+            index += 1
+
+    ds.config.set_seed(origin_seed)
+
+
 if __name__ == "__main__":
     test_generator_0()
     test_generator_1()
@@ -2712,3 +2761,4 @@ if __name__ == "__main__":
     test_generator_shared_queue_reuse_with_empty_numpy()
     test_generator_with_invalid_max_row_size()
     test_generator_with_generator_object_iterated_multi_times()
+    test_generator_with_seed_and_multiprocessing_mode()
