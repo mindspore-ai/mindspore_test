@@ -187,3 +187,12 @@ def test_xlogy_dynamic_shape():
 
     test_cell = test_utils.to_cell_obj(xlogy_forward_func)
     TEST_OP(test_cell, [[x1, y1], [x2, y2]], '', disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
+
+    x1 = Tensor(generate_random_input((2, 3, 4), np.float32))
+    y1 = 2
+
+    x2 = Tensor(generate_random_input((5, 2, 3, 4), np.float32))
+    y2 = 3
+
+    test_cell = test_utils.to_cell_obj(xlogy_forward_func)
+    TEST_OP(test_cell, [[x1, y1], [x2, y2]], '', disable_yaml_check=True, disable_mode=['GRAPH_MODE'])

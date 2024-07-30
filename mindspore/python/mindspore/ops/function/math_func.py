@@ -1702,9 +1702,9 @@ def xlogy_ext(input, other):
     """
     if isinstance(input, Tensor) and isinstance(other, Tensor):
         return xlogy_op(input, other)
-    if isinstance(input, Tensor) and isinstance(other, numbers.Number):
+    if isinstance(input, Tensor) and isinstance(other, (float, int, bool)):
         return xlogy_scalar_other_op(input, other)
-    if isinstance(input, numbers.Number) and isinstance(other, Tensor):
+    if isinstance(input, (float, int, bool)) and isinstance(other, Tensor):
         return xlogy_scalar_self_op(input, other)
     raise TypeError(f"For 'xlogy', at least one of input and other should be Tensor.")
 
