@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -164,6 +164,7 @@ std::variant<KernelTensor *, AclHostInfoPtr> GetInputParam(const std::vector<Ker
 
 static const char kDynamicN[] = "N";
 AddressPtr UpdateKernelTensorAddress(KernelTensor *tensor, size_t split_num, size_t index) {
+  MS_EXCEPTION_IF_NULL(tensor);
   auto offset = tensor->size() / split_num;
   auto ori_device = reinterpret_cast<uint8_t *>(tensor->device_ptr());
   return std::make_shared<mindspore::kernel::Address>(reinterpret_cast<void *>(ori_device + offset * index), offset);
@@ -287,6 +288,8 @@ void AttrHelper<ConvertType>::ConvertValueToRealType(const ValuePtr &value, cons
 template <typename ConvertType>
 template <typename T>
 void AttrHelper<ConvertType>::ConvertListAttr(const ValuePtr &value, T trans_struct) {
+  MS_EXCEPTION_IF_NULL(value);
+  MS_EXCEPTION_IF_NULL(value->cast<ValueSequencePtr>());
   const auto &value_sequence = value->cast<ValueSequencePtr>()->value();
   ShapeVector shape;
   TypePtr type_ptr = nullptr;
@@ -300,7 +303,6 @@ void AttrHelper<ConvertType>::ConvertListAttr(const ValuePtr &value, T trans_str
   if (type_ptr == nullptr) {
     return;
   }
-  MS_EXCEPTION_IF_NULL(type_ptr);
   TypeId type_id = type_ptr->type_id();
   if constexpr (std::is_same<T, TensorParams *>::value) {
     trans_struct->data_type = type_id;
@@ -340,12 +342,14 @@ void AttrHelper<ConvertType>::GetValueSequenceDataTypeAndShape(const ValuePtrLis
                                                                ShapeVector *shape, bool *is_ge_datatype) {
   MS_EXCEPTION_IF_NULL(data_type);
   MS_EXCEPTION_IF_NULL(shape);
+  MS_EXCEPTION_IF_NULL(is_ge_datatype);
   if (value_sequence.size() == 0) {
     MS_LOG(WARNING) << "value sequence is empty, failed to get data type";
     return;
   }
   (void)shape->push_back(value_sequence.size());
   auto val = value_sequence[0];
+  MS_EXCEPTION_IF_NULL(val);
   if (val->isa<GeDataTypeImm>()) {
     *is_ge_datatype = true;
     return;
@@ -358,6 +362,7 @@ void AttrHelper<ConvertType>::GetValueSequenceDataTypeAndShape(const ValuePtrLis
     GetValueSequenceDataTypeAndShape(sub_sequence, data_type, shape, is_ge_datatype);
   }
 }
+
 void AclConverter::ConvertValueDependToHostInput(const std::string &kernel_name,
                                                  const std::vector<KernelTensor *> &inputs,
                                                  const std::vector<TensorParams> &input_params,
@@ -375,6 +380,7 @@ void AclConverter::ConvertValueDependToHostInput(const std::string &kernel_name,
     MS_LOG(DEBUG) << "ms adapter proto index is " << ms_proto_idx << " real index is " << ms_real_idx;
     const auto &input = inputs[ms_real_idx];
     const auto &param = input_params[ms_real_idx];
+    MS_EXCEPTION_IF_NULL(input);
     auto value_ptr = input->GetValue();
     MS_EXCEPTION_IF_NULL(value_ptr);
     auto type_id = input->dtype_id();
@@ -418,6 +424,12 @@ bool AclConverter::IsNeedSkipExecute(const std::string &kernel_name, const std::
     auto func = acl_info.input_check_selector();
     auto is_real_skip = func(inputs);
     if (is_real_skip) {
+      if (inputs.empty() || outputs.empty()) {
+        MS_LOG(EXCEPTION) << "Skip node [" << kernel_name << "] should have at least one input and output, but got "
+                          << inputs.size() << " input and " << outputs.size() << " output.";
+      }
+      MS_EXCEPTION_IF_NULL(inputs[0]);
+      MS_EXCEPTION_IF_NULL(outputs[0]);
       aclError status =
         CALL_ASCEND_API(aclrtMemcpyAsync, outputs[0]->device_ptr(), outputs[0]->size(), inputs[0]->device_ptr(),
                         inputs[0]->size(), ACL_MEMCPY_DEVICE_TO_DEVICE, stream_ptr);
@@ -508,6 +520,7 @@ void AclConverter::ConvertInputsMutiDynParams(const PrimitivePtr &prim, const st
 }
 
 void AclConverter::ConvertInputMsIndexToAclIndex(const PrimitivePtr &prim, const std::vector<KernelTensor *> &inputs) {
+  MS_EXCEPTION_IF_NULL(prim);
   auto info = GeAdapterManager::GetInstance().GetInfo(prim->name(), true);
   MS_EXCEPTION_IF_NULL(info);
   auto flags = info->GetInputMappingFlags();
@@ -520,6 +533,7 @@ void AclConverter::ConvertInputMsIndexToAclIndex(const PrimitivePtr &prim, const
 
 void AclConverter::ConvertToAclInput(const PrimitivePtr &prim, const std::vector<KernelTensor *> &inputs,
                                      const std::vector<TensorParams> &input_params) {
+  MS_EXCEPTION_IF_NULL(prim);
   auto info = GeAdapterManager::GetInstance().GetInfo(prim->name(), true);
   MS_EXCEPTION_IF_NULL(info);
   auto flags = info->GetInputMappingFlags();
@@ -664,6 +678,7 @@ void AclConverter::ConvertToAclOutput(const std::string &kernel_name, const std:
 void AclConverter::ConvertAttrToAclInput(const mindspore::HashMap<std::string, ValuePtr> &attrs,
                                          const std::string &kernel_name, std::vector<TensorParams> *input_params) {
   MS_LOG(DEBUG) << "Start convert attr to acl input";
+  MS_EXCEPTION_IF_NULL(input_params);
   auto info = GeAdapterManager::GetInstance().GetInfo(kernel_name, true);
   MS_EXCEPTION_IF_NULL(info);
   for (const auto &[input_idx, ms_attr_name] : info->attr_input_map()) {
@@ -914,7 +929,7 @@ void AclConverter::GenerateRealGeIdx() {
     }
     max_ge_number += block_size;
     MS_LOG(DEBUG) << "Dynamic info:[ms_adapter_idx] " << adapter_idx.first << ",[ge_adapter_idx] " << adapter_idx.second
-                  << ",[ms_real.idx] " << mapping_info.first << ",[ge_real_idx] " << mapping_info.second;
+                  << ",[ms_real_idx] " << mapping_info.first << ",[ge_real_idx] " << mapping_info.second;
   }
   std::transform(
     ms_and_ge_inputs_sort_info_.begin(), ms_and_ge_inputs_sort_info_.end(),
@@ -949,8 +964,8 @@ void AclConverter::ResizeAclOpInputs(const PrimitivePtr &prim, const std::vector
       MS_LOG(EXCEPTION) << "Attribute " << kAttrDynInputSizes << " of primitive " << prim_name << " is "
                         << dyn_input_sizes << ", of which size is empty";
     }
-    // NOTE: attribute kAttrDynInputSizes is a vector<int64_t> with its element value -1 for dynamic input, and number
-    // of foled real inputs for dynamic input. For example a op with 5 inputs, of whicch the input 1 and 2 are dynamic
+    // NOTE: attribute kAttrDynInputSizes is a vector<int64_t> with its element value -1 for non-dyn input, and number
+    // of foled real inputs for dynamic input. For example a op with 5 inputs, of which the input 1 and 2 are dynamic
     // inputs, the attribute `dyn_input_size` of it may be the value as below:
     // ms_proto_index : |  0 |  1 |  2 |  3 |  4 |
     // dyn_input_sizes: | -1 |  2 |  5 | -1 | -1 |
@@ -1057,6 +1072,7 @@ std::pair<aclTensorDesc *, aclDataBuffer *> AclConverter::ConvertTensorToAclDesc
   MS_EXCEPTION_IF_NULL(acl_desc);
 
   // Create buf.
+  MS_EXCEPTION_IF_NULL(address);
   auto buffer_maker = std::make_shared<AclTensorBufferMaker>(address->addr, address->size, params.data_type, is_input);
   auto acl_data = buffer_maker->Get();
   MS_EXCEPTION_IF_NULL(acl_data);
@@ -1097,6 +1113,7 @@ std::pair<aclTensorDesc *, aclDataBuffer *> AclConverter::ConvertTensorToAclDesc
   MS_EXCEPTION_IF_NULL(acl_desc);
 
   // Create buf.
+  MS_EXCEPTION_IF_NULL(ori_tensor);
   auto buffer_maker =
     std::make_shared<AclTensorBufferMaker>(ori_tensor->device_ptr(), ori_tensor->size(), params.data_type, is_input);
   auto acl_data = buffer_maker->Get();
@@ -1110,6 +1127,7 @@ std::pair<aclTensorDesc *, aclDataBuffer *> AclConverter::ConvertTensorToAclDesc
                                                                                  const std::string &desc_name,
                                                                                  AclDumpString *dump_str,
                                                                                  bool is_input) const {
+  MS_EXCEPTION_IF_NULL(acl_host_info);
   AclTensorDescMaker tensor;
   if (dump_str != nullptr) {
     dump_str->tensor_name = desc_name;
@@ -1163,6 +1181,7 @@ std::pair<aclTensorDesc *, aclDataBuffer *> AclConverter::ConvertTensorToAclDesc
     DumpAclString(ACL_DT_UNDEFINED, params.ori_shape, params.dev_shape, ACL_FORMAT_UNDEFINED, ACL_FORMAT_UNDEFINED,
                   dump_str);
   } else {
+    MS_EXCEPTION_IF_NULL(host_tensor);
     auto acl_data_type = ConvertType(host_tensor->data_type());
     auto acl_ori_format = ConvertFormat(params.ori_format);
     acl_desc = tensor.Create(acl_data_type, params.ori_shape, acl_ori_format)

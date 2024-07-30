@@ -45,10 +45,7 @@ class AllToAllInfer : public abstract::OpInferBase {
  public:
   BaseShapePtr InferShape(const PrimitivePtr &primitive,
                           const std::vector<AbstractBasePtr> &input_args) const override {
-    MS_EXCEPTION_IF_NULL(primitive);
-    for (const auto &item : input_args) {
-      MS_EXCEPTION_IF_NULL(item);
-    }
+    MS_EXCEPTION_IF_NULL(input_args[0]);
     return input_args[0]->GetShape();
   }
 

@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ void *AclAllocator::AllocFunc(void *obj, size_t size) {
   MS_EXCEPTION_IF_NULL(allocator);
   auto stream_ptr = allocator->stream();
   auto stream_id = device::ascend::AscendStreamMng::GetInstance().GetStreamId(stream_ptr);
+  MS_EXCEPTION_IF_NULL(allocator->device_context_);
   MS_EXCEPTION_IF_NULL(allocator->device_context_->device_res_manager_);
   auto block = allocator->device_context_->device_res_manager_->AllocateMemory(size, stream_id);
   if (block == nullptr) {
@@ -49,6 +50,7 @@ void AclAllocator::FreeFunc(void *obj, void *block) {
   MS_EXCEPTION_IF_NULL(obj);
   auto allocator = static_cast<AclAllocator *>(obj);
   MS_EXCEPTION_IF_NULL(allocator);
+  MS_EXCEPTION_IF_NULL(allocator->device_context_);
   MS_EXCEPTION_IF_NULL(allocator->device_context_->device_res_manager_);
   allocator->device_context_->device_res_manager_->FreeMemory(block);
 }

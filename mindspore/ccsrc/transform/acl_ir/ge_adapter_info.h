@@ -87,7 +87,7 @@ struct GeTensorInfo {
 
 class GeAdapterInfo {
  public:
-  explicit GeAdapterInfo(OpAdapterPtr adpt) : adapter_(std::move(adpt)) {}
+  explicit GeAdapterInfo(OpAdapterPtr adpt) : adapter_(std::move(adpt)) { MS_EXCEPTION_IF_NULL(adapter_); }
   ~GeAdapterInfo() = default;
 
   void InitInfo();

@@ -82,12 +82,6 @@ class BACKEND_EXPORT AnfRuntimeAlgorithm {
   static std::vector<int64_t> GetOutputDeviceShape(const AnfNodePtr &node, size_t output_idx, ShapeVector real_shape);
   // get input shapes which will built and run in device
   static std::vector<int64_t> GetInputDeviceShape(const AnfNodePtr &node, size_t input_idx);
-  // get output shapes for tbe build
-  static std::vector<int64_t> GetOutputDeviceShapeForTbeBuild(const AnfNodePtr &node, size_t output_idx,
-                                                              const std::string &format);
-  // get input shapes for tbe build
-  static std::vector<int64_t> GetInputDeviceShapeForTbeBuild(const AnfNodePtr &node, size_t input_idx,
-                                                             const std::string &format);
   // get input kernel object type
   static std::vector<KernelObjectType> GetInputKernelObjectTypes(const AnfNodePtr &node);
   static KernelObjectType GetInputKernelObjectType(const AnfNodePtr &node, size_t input_idx);

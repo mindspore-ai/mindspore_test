@@ -142,6 +142,7 @@ bool HitCache(const char *aclnn_api, aclOpExecutor **executor, uint64_t *workspa
   GatherInfo(std::string(aclnn_api), args...);
   uint64_t hash_id = calc_hash_id();
   set_hash_key_func(hash_id);
+  MS_EXCEPTION_IF_NULL(executor);
   *executor = get_exec_cache_func(hash_id, workspace_size);
   static const auto uninit_cache_thread_local = transform::GetOpApiFunc("UnInitPTACacheThreadLocal");
   UnInitCacheThreadLocal uninit_cache_thread_local_func =
@@ -179,6 +180,7 @@ bool HitCacheSingle(const char *aclnn_api, aclOpExecutor **executor, uint64_t *w
   init_cache_thread_local_func();
   g_hash_offset = 0;
 
+  MS_EXCEPTION_IF_NULL(hash_id);
   if (*hash_id == 0) {
     GatherInfo(std::string(aclnn_api), args...);
     *hash_id = calc_hash_id();
@@ -187,6 +189,7 @@ bool HitCacheSingle(const char *aclnn_api, aclOpExecutor **executor, uint64_t *w
   }
 
   set_hash_key_func(*hash_id);
+  MS_EXCEPTION_IF_NULL(executor);
   *executor = get_exec_cache_func(*hash_id, workspace_size);
   if (*executor == nullptr) {
     return false;
