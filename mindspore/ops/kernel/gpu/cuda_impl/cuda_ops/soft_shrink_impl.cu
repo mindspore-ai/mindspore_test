@@ -19,8 +19,8 @@
 
 template <typename T>
 __global__ void SoftShrinkComp(size_t size, const T *input, const float lambd, T *output) {
-  const T positive_lambd = static_cast<T>(lambd);
-  const T negative_lambd = static_cast<T>(-1 * lambd);
+  const T positive_lambd = lambd;
+  const T negative_lambd = -(lambd);
   const T zero = static_cast<T>(0);
   for (size_t pos = blockIdx.x * blockDim.x + threadIdx.x; pos < size; pos += blockDim.x * gridDim.x) {
     output[pos] = (input[pos] > positive_lambd)
@@ -31,8 +31,8 @@ __global__ void SoftShrinkComp(size_t size, const T *input, const float lambd, T
 
 template <typename T>
 __global__ void SoftShrinkGradComp(size_t size, const T *dy_addr, const T *x_addr, const float lambd, T *dx_addr) {
-  const T positive_lambd = static_cast<T>(lambd);
-  const T negative_lambd = static_cast<T>(-1 * lambd);
+  const T positive_lambd = lambd;
+  const T negative_lambd = -(lambd);
   const T zero = static_cast<T>(0);
   for (size_t pos = blockIdx.x * blockDim.x + threadIdx.x; pos < size; pos += blockDim.x * gridDim.x) {
     dx_addr[pos] = (x_addr[pos] >= negative_lambd && x_addr[pos] <= positive_lambd) ? zero : dy_addr[pos];
@@ -42,15 +42,16 @@ __global__ void SoftShrinkGradComp(size_t size, const T *dy_addr, const T *x_add
 template <typename T>
 cudaError_t SoftShrink(const size_t &size, const T *input, const float lambd, T *output, const uint32_t &device_id,
                        cudaStream_t cuda_stream) {
-  SoftShrinkComp<<<CUDA_BLOCKS(device_id, size), CUDA_THREADS(device_id), 0, cuda_stream>>>(size, input, lambd, output);
+  SoftShrinkComp<T>
+    <<<CUDA_BLOCKS(device_id, size), CUDA_THREADS(device_id), 0, cuda_stream>>>(size, input, lambd, output);
   return GetCudaStatus();
 }
 
 template <typename T>
 cudaError_t SoftShrinkGrad(const size_t &size, const T *dy_addr, const T *x_addr, const float lambd, T *dx_addr,
                            const uint32_t &device_id, cudaStream_t cuda_stream) {
-  SoftShrinkGradComp<<<CUDA_BLOCKS(device_id, size), CUDA_THREADS(device_id), 0, cuda_stream>>>(size, dy_addr, x_addr,
-                                                                                                lambd, dx_addr);
+  SoftShrinkGradComp<T>
+    <<<CUDA_BLOCKS(device_id, size), CUDA_THREADS(device_id), 0, cuda_stream>>>(size, dy_addr, x_addr, lambd, dx_addr);
   return GetCudaStatus();
 }
 

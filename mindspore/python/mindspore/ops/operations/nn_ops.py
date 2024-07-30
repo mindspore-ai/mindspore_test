@@ -38,7 +38,7 @@ from ..auto_generate import (CeLU, Flatten, LogSoftmax, ReLU, ReLU6, Dense, Tanh
                              FlashAttentionScore, Embedding, UpsampleNearest1D, UpsampleNearest2D,
                              UpsampleNearest3D, UpsampleTrilinear3D,
                              UpsampleBilinear2D, UpsampleLinear1D,
-                             BinaryCrossEntropy, BCEWithLogitsLoss)
+                             BinaryCrossEntropy, BCEWithLogitsLoss, SoftShrink)
 from .manually_defined import BatchNorm
 
 
@@ -7462,43 +7462,6 @@ class Dilation2D(Primitive):
         self.add_prim_attr('stride', self.stride)
         self.dilation = _check_format_stride_or_dilation("dilation", dilation, self.name, self.data_format)
         self.add_prim_attr('dilation', self.dilation)
-
-
-class SoftShrink(Primitive):
-    r"""
-    Applies the SoftShrink function element-wise.
-
-    Refer to :func:`mindspore.ops.softshrink` for more details.
-
-    Args:
-        lambd(float, optional): The :math:`\lambda` must be no less than zero. Default: ``0.5`` .
-
-    Inputs:
-        - **input_x** (Tensor) - The input of soft shrink with data type of float16 or float32.
-
-    Outputs:
-        Tensor, has the same shape and data type as `input_x`.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input_x = Tensor(np.array([[ 0.5297,  0.7871,  1.1754], [ 0.7836,  0.6218, -1.1542]]), mindspore.float16)
-        >>> softshrink = ops.SoftShrink()
-        >>> output = softshrink(input_x)
-        >>> print(output)
-        [[ 0.02979  0.287    0.676  ]
-         [ 0.2837   0.1216  -0.6543 ]]
-    """
-
-    @prim_attr_register
-    def __init__(self, lambd=0.5):
-        """Initialize SoftShrink"""
-        validator.check_value_type("lambd", lambd, [float], self.name)
-        validator.check_number("lambd", lambd, 0, validator.GE, self.name)
 
 
 class ApplyAdagradDA(Primitive):

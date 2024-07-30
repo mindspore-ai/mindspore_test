@@ -51,7 +51,7 @@ class SoftShrinkGpuKernelMod : public NativeGpuKernelMod, public MatchKernelHelp
                     const std::vector<kernel::KernelTensor *> &outputs);
   void *cuda_stream_{nullptr};
   size_t size_ = 1;
-  float lambd_ = 0;
+  float lambd = 0.5;
 };
 }  // namespace kernel
 }  // namespace mindspore

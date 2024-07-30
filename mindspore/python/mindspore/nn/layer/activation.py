@@ -1381,21 +1381,21 @@ class SoftShrink(Cell):
         :align: center
 
     Args:
-        lambd (float): the :math:`\lambda` must be no less than zero for the SoftShrink formulation.
-            Default: ``0.5`` .
+        lambd (number, optional): The threshold :math:`\lambda` defined by the Hard Shrink formula. Default: ``0.5`` .
 
     Inputs:
-        - **input_x** (Tensor) - The input of SoftShrink with data type of float16 or float32.
-          Any number of additional dimensions.
+        - **input** (Tensor) - The input of Hard Shrink. Supported dtypes:
+
+          - Ascend: float16, float32, bfloat16.
+          - CPU/GPU: float16, float32.
 
     Outputs:
-        Tensor, has the same shape and data type as `input_x`.
+        Tensor, the same shape and data type as the input.
 
     Raises:
-        TypeError: If lambd is not a float.
-        TypeError: If input_x is not a Tensor.
-        TypeError: If dtype of input_x is neither float16 nor float32.
-        ValueError: If lambd is less than 0.
+        TypeError: If `lambd` is not a float, int or bool.
+        TypeError: If `input` is not a tensor.
+        TypeError: If dtype of `input` is not float16, float32 or bfloat16.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -1404,9 +1404,9 @@ class SoftShrink(Cell):
         >>> import mindspore
         >>> from mindspore import Tensor, nn
         >>> import numpy as np
-        >>> input_x = Tensor(np.array([[ 0.5297,  0.7871,  1.1754], [ 0.7836,  0.6218, -1.1542]]), mindspore.float16)
+        >>> input = Tensor(np.array([[ 0.5297,  0.7871,  1.1754], [ 0.7836,  0.6218, -1.1542]]), mindspore.float16)
         >>> softshrink = nn.SoftShrink()
-        >>> output = softshrink(input_x)
+        >>> output = softshrink(input)
         >>> print(output)
         [[ 0.02979  0.287    0.676  ]
          [ 0.2837   0.1216  -0.6543 ]]
@@ -1416,8 +1416,8 @@ class SoftShrink(Cell):
         super(SoftShrink, self).__init__()
         self.softshrink = P.SoftShrink(lambd)
 
-    def construct(self, input_x):
-        output = self.softshrink(input_x)
+    def construct(self, input):
+        output = self.softshrink(input)
         return output
 
 

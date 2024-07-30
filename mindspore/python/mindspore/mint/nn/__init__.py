@@ -225,7 +225,7 @@ from mindspore.mint.nn.layer.normalization import GroupNorm
 # 99
 from mindspore.nn.layer import AvgPool2dExt as AvgPool2d
 # 100
-
+from mindspore.nn.layer import SoftShrink as Softshrink
 # 220
 from mindspore.nn.layer import HShrink as Hardshrink
 # 221

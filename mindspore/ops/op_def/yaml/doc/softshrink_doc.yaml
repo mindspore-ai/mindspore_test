@@ -1,0 +1,48 @@
+softshrink:
+    description: |
+        Soft Shrink activation function. Calculates the output according to the input elements.
+
+        The formula is defined as follows:
+
+        .. math::
+            \text{SoftShrink}(x) =
+            \begin{cases}
+            x - \lambda, & \text{ if } x > \lambda \\
+            x + \lambda, & \text{ if } x < -\lambda \\
+            0, & \text{ otherwise }
+            \end{cases}
+
+        SoftShrink Activation Function Graph:
+
+        .. image:: ../images/Softshrink.png
+            :align: center
+
+        Args:
+            input (Tensor): The input of Soft Shrink. Supported dtypes: 
+
+                - Ascend: float16, float32, bfloat16.
+                - CPU/GPU: float16, float32.
+            lambd (number, optional): The threshold :math:`\lambda` defined by the Soft Shrink formula.
+                Default: ``0.5`` .
+
+        Returns:
+            Tensor, has the same data type and shape as the input `input`.
+
+        Raises:
+            TypeError: If `lambd` is not a float, int or bool.
+            TypeError: If `input` is not a tensor.
+            TypeError: If dtype of `input` is not float16, float32 or bfloat16.
+
+        Supported Platforms:
+            ``Ascend`` ``GPU`` ``CPU``
+
+        Examples:
+            >>> import mindspore
+            >>> from mindspore import Tensor
+            >>> from mindspore import ops
+            >>> import numpy as np
+            >>> x = Tensor(np.array([[ 0.5297,  0.7871,  1.1754], [ 0.7836,  0.6218, -1.1542]]), mindspore.float32)
+            >>> output = ops.softshrink(x)
+            >>> print(output)
+            [[ 0.02979  0.287    0.676  ]
+            [ 0.2837   0.1216  -0.6543 ]]

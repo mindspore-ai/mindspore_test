@@ -517,7 +517,6 @@ def get_in_top_k_vmap_rule(prim, axis_size):
 
 @vmap_rules_getters.register(G.FastGeLUGrad)
 @vmap_rules_getters.register(G.HSwishGrad)
-@vmap_rules_getters.register(G.SoftShrinkGrad)
 def get_common_activation_grad_vmap_rule(prim, axis_size):
     """VmapRule for common activation grad operation."""
     prim_name = prim.name
@@ -542,6 +541,49 @@ def get_common_activation_grad_vmap_rule(prim, axis_size):
                                "after batch transforming, but got x_shape {}, dy_shape {}"
                                .format(prim_name, x_shape, dy_shape))
         out = prim(x, dy)
+        return out, 0
+
+    return vmap_rule
+
+
+@vmap_rules_getters.register("SoftShrink")
+def get_softshrink_vmap_rule(prim, axis_size):
+    """VmapRule for `SoftShrink`."""
+    def vmap_rule(x_bdim, lambd_bdim):
+        var, dim = x_bdim
+        lambd, _ = lambd_bdim
+        out = prim(var, lambd)
+        return out, dim
+
+    return vmap_rule
+
+
+@vmap_rules_getters.register("SoftShrinkGrad")
+def get_softshrink_grad_vmap_rule(prim, axis_size):
+    """VmapRule for `SoftShrinkGrad`."""
+    prim_name = prim.name
+
+    def vmap_rule(dy_bdim, x_bdim, lambd_bdim):
+        x, x_dim = x_bdim
+        lambd, _ = lambd_bdim
+        dy, dy_dim = dy_bdim
+        x_shape = F.shape(x)
+        dy_shape = F.shape(dy)
+        if x_dim == dy_dim and x_shape == dy_shape:
+            out = prim(dy, x, lambd)
+            return out, x_dim
+
+        if F.rank(x):
+            x = _bdim_at_front(x, x_dim, 1)
+        if F.rank(dy):
+            dy = _bdim_at_front(dy, dy_dim, 1)
+        x_shape = F.shape(x)
+        dy_shape = F.shape(dy)
+        if x_shape != dy_shape:
+            raise RuntimeError("For {} vmap, input x shape is supposed to be the same as input dy shape "
+                               "after batch transforming, but got x_shape {}, dy_shape {}"
+                               .format(prim_name, x_shape, dy_shape))
+        out = prim(dy, x, lambd)
         return out, 0
 
     return vmap_rule
@@ -2196,7 +2238,6 @@ get_unop_vmap_rule = vmap_rules_getters.register(P.SeLU)(get_unop_vmap_rule)
 get_unop_vmap_rule = vmap_rules_getters.register(P.HSigmoid)(get_unop_vmap_rule)
 get_unop_vmap_rule = vmap_rules_getters.register(P.Softplus)(get_unop_vmap_rule)
 get_unop_vmap_rule = vmap_rules_getters.register(P.Softsign)(get_unop_vmap_rule)
-get_unop_vmap_rule = vmap_rules_getters.register(P.SoftShrink)(get_unop_vmap_rule)
 get_unop_vmap_rule = vmap_rules_getters.register(P.GeLU)(get_unop_vmap_rule)
 get_unop_vmap_rule = vmap_rules_getters.register(P.FastGeLU)(get_unop_vmap_rule)
 get_unop_vmap_rule = vmap_rules_getters.register(P.HSwish)(get_unop_vmap_rule)

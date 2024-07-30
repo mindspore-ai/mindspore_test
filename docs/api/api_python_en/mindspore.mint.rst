@@ -236,6 +236,7 @@ Non-linear Activations (weighted sum, nonlinearity)
     mindspore.mint.nn.Hardsigmoid
     mindspore.mint.nn.Hardswish
     mindspore.mint.nn.ReLU
+    mindspore.mint.nn.Softshrink
 
 Linear Layers
 ^^^^^^^^^^^^^^^^^^
@@ -324,6 +325,7 @@ Non-linear activation functions
     mindspore.mint.nn.functional.silu
     mindspore.mint.nn.functional.softmax
     mindspore.mint.nn.functional.softplus
+    mindspore.mint.nn.functional.softshrink
     mindspore.mint.nn.functional.tanh
 
 Linear functions

@@ -15,13 +15,17 @@
  */
 
 #include "kernel/cpu/soft_shrink_grad_cpu_kernel.h"
-#include "mindspore/ops/infer/grad/soft_shrink_grad.h"
 #include "kernel/cpu/nnacl/fp32_grad/activation_grad_fp32.h"
 
 namespace mindspore {
 namespace kernel {
-#define SOFT_SHRINK_GRAD_CPU_REGISTER(DT, T) \
-  KernelAttr().AddInputAttr(DT).AddInputAttr(DT).AddOutputAttr(DT), &SoftShrinkGradCpuKernelMod::LaunchKernel<T>
+#define SOFT_SHRINK_GRAD_CPU_REGISTER(DT, T)             \
+  KernelAttr()                                           \
+    .AddInputAttr(DT)                                    \
+    .AddInputAttr(DT)                                    \
+    .AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32) \
+    .AddOutputAttr(DT),                                  \
+    &SoftShrinkGradCpuKernelMod::LaunchKernel<T>
 
 template <typename T>
 bool SoftShrinkGradCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
@@ -37,7 +41,7 @@ bool SoftShrinkGradCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTe
       auto src0_tmp = src0 + start;
       auto src1_tmp = src1 + start;
       auto out_tmp = out + start;
-      (void)SoftShrinkGrad(src0_tmp, src1_tmp, (end - start), out_tmp, this->lambd_);
+      (void)SoftShrinkGrad(src0_tmp, src1_tmp, (end - start), out_tmp, lambd);
     };
     ParallelLaunchAutoSearch(task, size_, this, &parallel_search_info_);
     return true;
@@ -47,7 +51,7 @@ bool SoftShrinkGradCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTe
   T *dy_addr = reinterpret_cast<T *>(inputs.at(kIndex0)->device_ptr());
   T *x_addr = reinterpret_cast<T *>(inputs.at(kIndex1)->device_ptr());
   T *dx_addr = reinterpret_cast<T *>(outputs.at(kIndex0)->device_ptr());
-  T lambd_value = static_cast<T>(lambd_);
+  T lambd_value = static_cast<T>(lambd);
   auto task = [dy_addr, x_addr, dx_addr, lambd_value](size_t start, size_t end) {
     for (size_t i = start; i < end; i++) {
       dx_addr[i] = (x_addr[i] >= -lambd_value && x_addr[i] <= lambd_value) ? 0 : dy_addr[i];
@@ -65,8 +69,6 @@ bool SoftShrinkGradCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
     return false;
   }
 
-  lambd_ = GetValue<float>(primitive_->GetAttr(ops::kLambd));
-
   if (auto ret = MatchKernelFunc(kernel_name_, inputs, outputs); !ret) {
     return ret;
   }
@@ -82,11 +84,12 @@ int SoftShrinkGradCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs
 
   auto in_shape = inputs[kIndex0]->GetShapeVector();
   size_ = std::accumulate(in_shape.begin(), in_shape.end(), size_t(1), std::multiplies<size_t>());
+  lambd = inputs[kIndex2]->GetValueWithCheck<float>();
   return KRET_OK;
 }
 
-const std::vector<std::pair<KernelAttr, SoftShrinkGradCpuKernelMod::KernelRunFunc>>
-  &SoftShrinkGradCpuKernelMod::GetFuncList() const {
+const std::vector<std::pair<KernelAttr, SoftShrinkGradCpuKernelMod::KernelRunFunc>> &
+SoftShrinkGradCpuKernelMod::GetFuncList() const {
   static const std::vector<std::pair<KernelAttr, SoftShrinkGradCpuKernelMod::KernelRunFunc>> func_list = {
     {SOFT_SHRINK_GRAD_CPU_REGISTER(kNumberTypeFloat32, float)},
     {SOFT_SHRINK_GRAD_CPU_REGISTER(kNumberTypeInt32, int32_t)},

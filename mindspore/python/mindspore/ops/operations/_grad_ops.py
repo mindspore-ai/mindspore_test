@@ -36,7 +36,7 @@ from ..auto_generate import (AbsGrad, ACosGrad, LogitGrad, AcoshGrad, AsinGrad, 
                              ResizeBicubicGrad, HSigmoidGrad, CholeskyGrad, ResizeNearestNeighborGrad, LayerNormGrad,
                              HShrinkGrad, LayerNormGradGrad, SiLUGrad, MaximumGrad, MaximumGradGrad, RmsNormGrad,
                              FlashAttentionScoreGrad, UpsampleTrilinear3DGrad, UpsampleNearest3DGrad, MaskedSelectGrad,
-                             BinaryCrossEntropyGrad)
+                             BinaryCrossEntropyGrad, SoftShrinkGrad)
 
 
 class SparseFillEmptyRowsGrad(Primitive):
@@ -1989,37 +1989,6 @@ class MvlgammaGrad(Primitive):
     def __init__(self, p):
         self.init_prim_io_names(inputs=['y_grad', 'x'], outputs=['x_grad'])
         self.p = validator.check_value_type('p', p, [int], self.name)
-
-
-class SoftShrinkGrad(Primitive):
-    r"""
-          Gradients for SoftShrink operation.
-
-          Args:
-              lambd – The \lambdaλ (must be no less than zero) value for the Softshrink formulation. Default: 0.5.
-
-          Inputs:
-              - **input_grad** (Tensor) - The input gradient.
-              - **input_x** (Tensor) - The input of SoftShrink with data type of float16 or float32.
-                Any number of additional dimensions.
-
-          Outputs:
-              output - Tensor, has the same shape and data type as input_x.
-
-          Raises:
-              TypeError: If lambd is not a float.
-              TypeError: If dtype of input_x is neither float16 nor float32.
-              ValueError: If lambd is less than to 0.
-
-          Supported Platforms:
-              ``Ascend``
-      """
-
-    @prim_attr_register
-    def __init__(self, lambd=0.5):
-        self.init_prim_io_names(inputs=['input_grad', 'input_x'], outputs=['output'])
-        validator.check_value_type("lambd", lambd, [float], self.name)
-        validator.check_number("lambd", lambd, 0, validator.GE, self.name)
 
 
 class CdistGrad(Primitive):

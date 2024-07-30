@@ -193,6 +193,10 @@ static const std::map<std::string, std::vector<string>> kAttrMapNeedAdjust = {
    {
      "axis",
    }},
+  {"Softshrink",
+   {
+     "lambd",
+   }},
   {"FusedInferAttentionScore",
    {
      "num_heads",

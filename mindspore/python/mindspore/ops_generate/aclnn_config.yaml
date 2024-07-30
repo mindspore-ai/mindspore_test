@@ -289,7 +289,8 @@ AsinhExt: 'aclnnAsinh'
 # 174
 AtanExt: 'aclnnAtan'
 # 175
-
+SoftShrink: 'aclnnSoftshrink'
+SoftShrinkGrad: 'aclnnSoftshrinkBackward'
 # 176
 Atan2Ext: 'aclnnAtan2'
 # 220

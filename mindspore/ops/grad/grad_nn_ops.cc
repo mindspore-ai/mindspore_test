@@ -2313,11 +2313,12 @@ REG_BPROP_BUILDER("HShrink").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   return {dx, ib->OutZeros(lambd)};
 });
 
-REG_BPROP_BUILDER("SoftShrink").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("SoftShrink").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   auto input_x = ib->GetInput(kIndex0);
-  auto dout = ib->GetInput(kIndex2);
-  auto dx = ib->Emit("SoftShrinkGrad", {dout, input_x}, {{"lambd", ib->GetAttr("lambd")}});
-  return {dx};
+  auto lambd = ib->GetInput(kIndex1);
+  auto dout = ib->GetInput(kIndex3);
+  auto dx = ib->Emit("SoftShrinkGrad", {dout, input_x, lambd});
+  return {dx, ib->OutZeros(lambd)};
 });
 
 REG_BPROP_BUILDER("SoftMarginLoss").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {

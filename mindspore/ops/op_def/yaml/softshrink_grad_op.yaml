@@ -1,0 +1,20 @@
+#operator softshrink_grad
+softshrink_grad:
+    args:
+        input_grad:
+            dtype: tensor
+        input_x:
+            dtype: tensor
+        lambd:
+            dtype: float
+            default: 0.5
+            type_cast: int, bool
+            prim_init: True
+    returns:
+        output: 
+            dtype: tensor
+    class:
+        name: SoftShrinkGrad
+    dispatch:
+        enable: True
+        Ascend: SoftShrinkGradAscend
