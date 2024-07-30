@@ -1096,6 +1096,8 @@ Status ParseExampleOp::ParallelParseExample(const TensorRow &raw_bytes, TensorRo
     }
   };
 
+  CheckAndInitPool();
+
   ParallelFor(ProcessMiniBatch, num_minibatches, pool_);
 
   for (Status &status : status_of_minibatch) {
@@ -1423,5 +1425,11 @@ Status ParseExampleOp::ConstructColumnMap(const std::string &example_bytes) {
     CHECK_FAIL_RETURN_UNEXPECTED(!column_name_id_map_.empty(), "Can not get column name map, it is empty.");
   }
   return Status::OK();
+}
+
+void ParseExampleOp::CheckAndInitPool() {
+  if (parallel_parse_ && pool_ == nullptr) {
+    pool_ = std::make_unique<Eigen::ThreadPool>(kThreadPoolSize);
+  }
 }
 }  // namespace mindspore::dataset

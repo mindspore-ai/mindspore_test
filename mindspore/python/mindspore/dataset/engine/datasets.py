@@ -3153,6 +3153,7 @@ def _worker_loop(operations, pipe, worker_id):
     # that the random results of each process are different.
     if get_seed() != 5489:
         set_seed(get_seed() + worker_id)
+
     while not _main_process_already_exit():
         _ignore_sigint()
 

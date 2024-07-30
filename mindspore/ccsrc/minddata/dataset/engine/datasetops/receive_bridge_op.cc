@@ -95,10 +95,9 @@ Status ReceiveBridgeOp::MonitorIndependentDatasetProcess() {
 
   while (!tree_->isFinished()) {
     RETURN_IF_INTERRUPTED();
-    if (MonitorSubprocess(subprocess_pid_) != Status::OK() && receive_info_.eof_row_.row_step_ == 0) {
-      err_status_ = STATUS_ERROR(StatusCode::kMDUnexpectedError,
-                                 "The independent dataset process: " + std::to_string(subprocess_pid_) +
-                                   " exits, and the main process will exits.");
+    auto st = MonitorSubprocess(subprocess_pid_);
+    if (st != Status::OK() && receive_info_.eof_row_.row_step_ == 0) {
+      err_status_ = st;
       break;
     }
 

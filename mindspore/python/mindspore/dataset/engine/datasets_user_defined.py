@@ -46,7 +46,7 @@ from . import samplers
 from .queue import _SharedQueue
 from .validators import check_generatordataset, check_numpyslicesdataset, check_paddeddataset
 from ..core.config import get_enable_shared_mem, get_prefetch_size, get_multiprocessing_timeout_interval, \
-    get_enable_watchdog, get_debug_mode
+    get_enable_watchdog, get_debug_mode, get_seed, set_seed
 from ..core.datatypes import mstypelist_to_detypelist
 from ..core.py_util_helpers import ExceptionHandler
 from ..transforms import transforms
@@ -193,7 +193,7 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
         self.need_join = False
 
     def is_mp_enabled(self):
-        return self.workers is not None
+        return self.workers is not None and self.workers
 
     def launch(self, op_id=-1):
         """launch the multiprocessing pool"""
@@ -521,13 +521,18 @@ def _main_process_already_exit(eof, is_multiprocessing, idx_queue, result_queue,
     return False
 
 
-def _generator_worker_loop(dataset, idx_queue, result_queue, eof, is_multiprocessing, ppid=-1):
+def _generator_worker_loop(dataset, idx_queue, result_queue, eof, is_multiprocessing, worker_id, ppid=-1):
     """
     Multithread or multiprocess generator worker process loop.
     """
     if is_multiprocessing:
         result_queue.cancel_join_thread()  # Ensure that the process does not hung when exiting
         signal.signal(signal.SIGTERM, partial(_subprocess_handle, eof))
+
+        # init the random seed and np.random seed for the subprocess
+        if get_seed() != 5489:
+            set_seed(get_seed() + worker_id)
+
     while not eof.is_set():
         _ignore_sigint(is_multiprocessing=is_multiprocessing)
 
@@ -585,7 +590,8 @@ class _GeneratorWorkerMt(threading.Thread):
     def __init__(self, dataset, eof, worker_id):
         self.idx_queue = queue.Queue(16)
         self.res_queue = queue.Queue(16)
-        super().__init__(target=_generator_worker_loop, args=(dataset, self.idx_queue, self.res_queue, eof, False),
+        super().__init__(target=_generator_worker_loop,
+                         args=(dataset, self.idx_queue, self.res_queue, eof, False, worker_id),
                          name="GeneratorWorkerThread" + str(worker_id))
 
     def put(self, item):
@@ -622,7 +628,8 @@ class _GeneratorWorkerMp(multiprocessing.Process):
         else:
             self.res_queue = multiprocessing.Queue(queue_size)
         self.idx_queue.cancel_join_thread()  # Ensure that the process does not hung when exiting
-        super().__init__(target=_generator_worker_loop, args=(dataset, self.idx_queue, self.res_queue, eof, True, ppid),
+        super().__init__(target=_generator_worker_loop,
+                         args=(dataset, self.idx_queue, self.res_queue, eof, True, worker_id, ppid),
                          name="GeneratorWorkerProcess" + str(worker_id))
 
     def put(self, item):
