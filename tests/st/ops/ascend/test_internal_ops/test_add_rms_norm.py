@@ -22,6 +22,8 @@ from mindspore import nn, Tensor, context
 from mindspore import ops
 from mindspore.ops.operations._infer_ops import QuantV2
 
+from tests.mark_utils import arg_mark
+
 
 class Add_RmsNorm(nn.Cell):
     def __init__(self, with_cast=False, with_quant=False, is_internal=True):
@@ -90,9 +92,7 @@ def _test_add_rmsnorm_fusion(shape, dtype, internal_kernel, with_cast=False, wit
     return output[0].astype(ms.float32).asnumpy(), output[1].astype(ms.float32).asnumpy()
 
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('dtype', ["float16", "float32", "bfloat16"])
 @pytest.mark.parametrize('is_dynamic', [False])
 def test_add_rms_norm_normal(dtype, is_dynamic):
@@ -109,9 +109,7 @@ def test_add_rms_norm_normal(dtype, is_dynamic):
     assert np.amax(np.abs(result_internal[1] - result_aclnn[1])) < 5e-3
 
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_add_rms_norm_f16_with_cast():
     """
     Feature: test add_rmsnorm fusion with cast in graph mode

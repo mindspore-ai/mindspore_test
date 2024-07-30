@@ -16,13 +16,13 @@
 import os
 import numpy as np
 import math
-import pytest
 import itertools as it
 
 import mindspore as ms
 from mindspore.ops.operations.nn_ops import FlashAttentionScore
 from mindspore.nn import Cell
 from mindspore import context
+from tests.mark_utils import arg_mark
 
 
 class FlashAttentionScoreNet(Cell):
@@ -271,9 +271,7 @@ class FlashAttentionScoreTest:
                 err_cnt, expect.shape[0], err_ratio))
 
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_flash_attention_score_sd():
     """
     Feature: test FlashAttentionScore op in kbk enabling infer_boost
@@ -297,9 +295,8 @@ def test_flash_attention_score_sd():
     }
     FlashAttentionScoreTest(i_test)
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_onecard
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_flash_attention_score_bnsd_64():
     """
     Feature: test FlashAttentionScore op in kbk enabling infer_boost
@@ -323,9 +320,8 @@ def test_flash_attention_score_bnsd_64():
     }
     FlashAttentionScoreTest(i_test)
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_onecard
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_flash_attention_score_bsh():
     """
     Feature: test FlashAttentionScore op in kbk enabling infer_boost
@@ -349,9 +345,8 @@ def test_flash_attention_score_bsh():
     }
     FlashAttentionScoreTest(i_test)
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_onecard
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_flash_attention_score_bsh_mask():
     """
     Feature: test FlashAttentionScore op in kbk enabling infer_boost
@@ -375,9 +370,8 @@ def test_flash_attention_score_bsh_mask():
     }
     FlashAttentionScoreTest(i_test)
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_onecard
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_flash_attention_score_bsh_mask_alibi():
     """
     Feature: test FlashAttentionScore op in kbk enabling infer_boost
@@ -401,9 +395,8 @@ def test_flash_attention_score_bsh_mask_alibi():
     }
     FlashAttentionScoreTest(i_test)
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_onecard
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_flash_attention_score_fa_bsh_small():
     """
     Feature: test FlashAttentionScore op in kbk enabling infer_boost
@@ -427,9 +420,8 @@ def test_flash_attention_score_fa_bsh_small():
     }
     FlashAttentionScoreTest(i_test)
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_onecard
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_flash_attention_score_d256_amask_fp16():
     """
     Feature: test FlashAttentionScore op in kbk enabling infer_boost
@@ -453,9 +445,8 @@ def test_flash_attention_score_d256_amask_fp16():
     }
     FlashAttentionScoreTest(i_test)
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_onecard
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_flash_attention_score_d256_low_tri_bf16():
     """
     Feature: test FlashAttentionScore op in kbk enabling infer_boost
@@ -479,9 +470,8 @@ def test_flash_attention_score_d256_low_tri_bf16():
     }
     FlashAttentionScoreTest(i_test)
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_onecard
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_flash_attention_score_nan():
     """
     Feature: test FlashAttentionScore op in kbk enabling infer_boost

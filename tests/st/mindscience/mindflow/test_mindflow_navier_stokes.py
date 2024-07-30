@@ -14,13 +14,13 @@
 # ============================================================================
 """navier stokes pinns"""
 import time
-import pytest
 
 import numpy as np
 from mindspore import context, nn, ops, jit, set_seed, Tensor
 import mindspore.common.dtype as mstype
 
 from src.navier_stokes2d import NavierStokes2D
+from tests.mark_utils import arg_mark
 
 from tests.st.utils import test_utils
 
@@ -45,11 +45,8 @@ class Net(nn.Cell):
         return self.layers(x)
 
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend_training
-@pytest.mark.platform_x86_ascend_training
-@pytest.mark.platform_x86_gpu_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+          essential_mark='unessential')
 @test_utils.run_test_with_On
 def test_mindflow_navier_stokes():
     """

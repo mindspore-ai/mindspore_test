@@ -640,9 +640,7 @@ def test_cycle_container_structure_3():
     assert ret2 == b
 
 
-@pytest.mark.level0
-@pytest.mark.platform_x86_gpu_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_guard_parameter():
     """
     Feature: One stage basic operation.

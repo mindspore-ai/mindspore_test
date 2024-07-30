@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-import pytest
 import torch
 import numpy as np
 
@@ -22,6 +21,7 @@ from mindspore import Tensor
 from mindspore.nn import Cell
 
 from grad import GradOfFirstInput
+from tests.mark_utils import arg_mark
 
 
 class CrossEntropyLoss(Cell):
@@ -110,9 +110,7 @@ def _test_cross_entropy_default_input_precision():
     allclose_nparray(torch_grad.astype(dtype), ms_grad, loss, loss)
 
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_default_input_pynative_mode():
     """
     Feature: Test cross_entropy ops infer and grad precision in pynative model.
@@ -123,9 +121,7 @@ def test_default_input_pynative_mode():
     _test_cross_entropy_default_input_precision()
 
 
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_default_input_graph_mode():
     """
     Feature: Test cross_entropy ops infer and grad precision in graph model.

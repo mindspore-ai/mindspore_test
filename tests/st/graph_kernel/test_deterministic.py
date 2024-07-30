@@ -14,10 +14,11 @@
 # ============================================================================
 
 import numpy as np
-import pytest
 import mindspore.context as context
 from mindspore import Tensor, nn
 import mindspore.ops as ops
+
+from tests.mark_utils import arg_mark
 from tests.st.graph_kernel.gk_utils import AssertGKEnable
 
 
@@ -33,9 +34,7 @@ class ReduceNet(nn.Cell):
         return y2
 
 
-@pytest.mark.level1
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_fuse_reduce_deterministic():
     """
     Feature: O1 deterministic test case

@@ -49,7 +49,6 @@ def me_greater(inputa, inputb):
     return out.asnumpy()
 
 
-@pytest.mark.ssd_tbe
 def test_greater_2d_scalar0():
     a = np.random.randint(-5, 5, [8, 32]).astype(np.int32)
     b = np.random.randint(-5, 5, [8, 32]).astype(np.int32)
