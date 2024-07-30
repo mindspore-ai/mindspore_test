@@ -55,28 +55,30 @@ class SliceOpFrontendTask : public runtime::AsyncTask {
  public:
   SliceOpFrontendTask(
     std::function<void(const std::vector<ValuePtr> &input_values, const std::vector<SliceOpInfoPtr> &slice_op_infos,
-                       bool requires_grad, const stub::StubNodePtr &stub_output)>
+                       bool requires_grad, const stub::StubNodePtr &stub_output, size_t stream_id)>
       run_func,
     std::vector<ValuePtr> input_values, std::vector<SliceOpInfoPtr> slice_op_infos, bool requires_grad,
-    const stub::StubNodePtr &stub_output)
+    const stub::StubNodePtr &stub_output, size_t stream_id)
       : AsyncTask(runtime::kFrontendTask),
         run_func_(std::move(run_func)),
         input_values_(std::move(input_values)),
         slice_op_infos_(std::move(slice_op_infos)),
         requires_grad_(requires_grad),
-        stub_output_(stub_output) {}
+        stub_output_(stub_output),
+        stream_id_(stream_id) {}
   ~SliceOpFrontendTask() override = default;
   void Run() override;
   void SetException(const std::exception_ptr &e) override;
 
  private:
   std::function<void(const std::vector<ValuePtr> &input_values, const std::vector<SliceOpInfoPtr> &slice_op_infos,
-                     bool requires_grad, const stub::StubNodePtr &stub_output)>
+                     bool requires_grad, const stub::StubNodePtr &stub_output, size_t stream_id)>
     run_func_;
   std::vector<ValuePtr> input_values_;
   std::vector<SliceOpInfoPtr> slice_op_infos_;
   bool requires_grad_{false};
   stub::StubNodePtr stub_output_;
+  size_t stream_id_{kDefaultStreamIndex};
 };
 
 using BackendOpRunInfoPtr = session::BackendOpRunInfoPtr;

@@ -2170,7 +2170,7 @@ py::object TensorIndex::SetItemIndexInfo(const py::object &py_data, const py::ob
     data_shape = dyn_cast<abstract::Shape>(abs->BuildShape())->shape();
     data_type = abs->BuildType();
     MS_EXCEPTION_IF_NULL(data_type);
-    if (EnableView()) {
+    if (EnableView(true)) {
       data_value = value;
     }
   } else {
