@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_IR_FUSION_MATMUL_ELEMWISE_FUSION_H_
-#define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_IR_FUSION_MATMUL_ELEMWISE_FUSION_H_
+#ifndef MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_IR_FUSION_INFER_MATMUL_ELEMWISE_FUSION_H_
+#define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_IR_FUSION_INFER_MATMUL_ELEMWISE_FUSION_H_
 
 #include <memory>
 #include <string>
@@ -52,6 +52,17 @@ class MatmulElemBiasaddFusion : public MatmulElemFusionBase {
   const std::string GetElemwiseType() const override { return "bias_add"; };
 };
 
+class MatmulElemAddFusion : public MatmulElemFusionBase {
+ public:
+  explicit MatmulElemAddFusion(bool multigraph = true)
+      : MatmulElemFusionBase(multigraph, "matmul_elem_add_fusion", kBinaryInputNum) {}
+  ~MatmulElemAddFusion() override = default;
+
+ protected:
+  const VectorRef DefineMatmulFusionPattern(const VectorRef &predecessor) const override;
+  const std::string GetElemwiseType() const override { return "bias_add"; };
+};
+
 class MatmulElemReluFusion : public MatmulElemFusionBase {
  public:
   explicit MatmulElemReluFusion(bool multigraph = true)
@@ -77,4 +88,4 @@ class MatmulElemGeluFusion : public MatmulElemFusionBase {
 }  // namespace opt
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_IR_FUSION_MATMUL_ELEMWISE_FUSION_H_
+#endif  // MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_IR_FUSION_INFER_MATMUL_ELEMWISE_FUSION_H_
