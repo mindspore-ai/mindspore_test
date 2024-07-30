@@ -19,9 +19,9 @@
 #include <queue>
 #include <memory>
 #include <vector>
-#include "mindspore/core/ops/reshape_ext.h"
-#include "mindspore/core/ops/scalar_graph_holder.h"
-#include "mindspore/core/ops/array_ops.h"
+#include "mindspore/ops/infer/reshape_ext.h"
+#include "mindspore/ops/infer/scalar_graph_holder.h"
+#include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/core/utils/ms_context.h"
 #include "include/common/utils/anfalgo.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"

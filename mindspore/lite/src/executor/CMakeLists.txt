@@ -207,7 +207,7 @@ if(MSLITE_ENABLE_GRAPH_KERNEL)
     file(GLOB_RECURSE GRAPH_KERNEL_SRC
         ${TOOLS_DIR}/graph_kernel/common/*.cc
         ${TOOLS_DIR}/graph_kernel/runtime/*.cc
-        ${CCSRC_DIR}/plugin/device/cpu/kernel/akg/akg_kernel_loader.cc
+        ${OPS_DIR}/kernel/cpu/akg/akg_kernel_loader.cc
         )
     set(LITE_SRC ${LITE_SRC} ${GRAPH_KERNEL_SRC})
 endif()
@@ -274,7 +274,7 @@ if(NOT MSLITE_SIMPLEST_CLOUD_INFERENCE)
         target_link_libraries(lite-unified-executor
                 quantizer_mid fusion_mid proto_mid graph_pass_mid preprocess_mid
                 cpu_kernel_mid ccsrc_src_mid converter_src_mid lite_exporter_mid
-                config_parser_mid mslite_converter_plugin mindspore_core coder_mid
+                config_parser_mid mslite_converter_plugin mindspore_core mindspore_ops coder_mid
                 mindir_serializer_mid mindspore::protobuf ${SECUREC_LIBRARY})
         target_link_libraries(lite-unified-executor
                 ccsrc_debug_common_mid_ mindir_proto_mid _mindspore_transform_express_ir_obj)

@@ -19,19 +19,19 @@
 #include <memory>
 #include <vector>
 #include "schema/inner/model_generated.h"
-#include "ops/affine.h"
+#include "infer/affine.h"
 #include "src/common/log_adapter.h"
-#include "ops/splice.h"
+#include "infer/splice.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "nnacl/op_base.h"
-#include "ops/op_utils.h"
-#include "ops/array_ops.h"
-#include "ops/math_ops.h"
-#include "ops/comparison_ops.h"
-#include "ops/nn_optimizer_ops.h"
-#include "ops/fusion/kv_cache_mgr.h"
-#include "ops/auto_generate/gen_lite_ops.h"
-#include "ops/make_tuple.h"
+#include "ops_utils/op_utils.h"
+#include "op_def/array_ops.h"
+#include "op_def/math_ops.h"
+#include "op_def/comparison_ops.h"
+#include "op_def/nn_optimizer_ops.h"
+#include "infer/cxx_api/kv_cache_mgr.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
+#include "infer/make_tuple.h"
 namespace mindspore::opt {
 const BaseRef KVCacheMgrOneBranchFusion::DefinePattern() const {
   if (!InitVar()) {

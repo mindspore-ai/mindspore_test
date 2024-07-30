@@ -27,7 +27,7 @@
 #include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
 #include "plugin/device/ascend/kernel/acl/acl_kernel_build.h"
 #include "acl/acl_rt.h"
-#include "ops/array_op_name.h"
+#include "op_def/array_op_name.h"
 
 namespace mindspore::device::ascend {
 std::vector<uint8_t *> LaunchTransData::GetKernelOutputAddr() { return outputs_addr_; }

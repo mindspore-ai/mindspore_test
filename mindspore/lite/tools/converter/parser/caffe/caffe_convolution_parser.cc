@@ -16,7 +16,7 @@
 
 #include "tools/converter/parser/caffe/caffe_convolution_parser.h"
 #include <memory>
-#include "ops/fusion/conv2d_fusion.h"
+#include "infer/cxx_api/conv2d_fusion.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

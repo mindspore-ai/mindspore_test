@@ -17,7 +17,7 @@
 #include "tools/converter/parser/onnx/onnx_megatron_op_parser.h"
 #include <memory>
 #include <vector>
-#include "ops/fusion/layer_norm_fusion.h"
+#include "infer/cxx_api/layer_norm_fusion.h"
 #include "tools/converter/ops/ops_def.h"
 
 namespace mindspore {

@@ -15,7 +15,7 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/predict_parameter.h"
-#include "ops/custom_predict.h"
+#include "infer/custom_predict.h"
 using mindspore::ops::kNameCustomPredict;
 using mindspore::schema::PrimitiveType_CustomPredict;
 namespace mindspore {

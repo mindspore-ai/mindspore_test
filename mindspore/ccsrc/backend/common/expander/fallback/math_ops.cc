@@ -17,9 +17,9 @@
 #include "backend/common/expander/fallback/fallback_irbuilder.h"
 #include "include/common/utils/utils.h"
 #include "utils/shape_utils.h"
-#include "ops/ops_func_impl/matmul_ext.h"
-#include "ops/op_utils.h"
-#include "ops/op_enum.h"
+#include "infer/ops_func_impl/matmul_ext.h"
+#include "ops_utils/op_utils.h"
+#include "mindspore/ops/op_def/op_enum.h"
 
 namespace mindspore {
 namespace expander {
@@ -145,7 +145,7 @@ REG_FALLBACK_BUILDER("MeanExt").SetBody(BODYFUNC(ib) {
   MS_EXCEPTION_IF_NULL(dtype_type);
   // cppcheck-suppress *
   if (!dtype_type->isa<TypeNone>()) {
-    auto dtype_opt = ops::GetScalarValue<int64_t>(dtype->BuildValue());
+    auto dtype_opt = GetScalarValue<int64_t>(dtype->BuildValue());
     MS_CHECK_VALUE(dtype_opt.has_value(), "For 'MeanExt', dtype must have valid value.");
     input = ib->Cast(input, TypeIdToType(static_cast<TypeId>(dtype_opt.value())));
   }
@@ -169,7 +169,7 @@ REG_FALLBACK_BUILDER("SumExt").SetBody(BODYFUNC(ib) {
   auto dtype_type = dtype->abstract()->BuildType();
   MS_EXCEPTION_IF_NULL(dtype_type);
   if (!dtype_type->isa<TypeNone>()) {
-    auto dtype_opt = ops::GetScalarValue<int64_t>(dtype->BuildValue());
+    auto dtype_opt = GetScalarValue<int64_t>(dtype->BuildValue());
     MS_CHECK_VALUE(dtype_opt.has_value(), "For 'SumExt', dtype must have valid value.");
     input = ib->Cast(input, TypeIdToType(static_cast<TypeId>(dtype_opt.value())));
   } else {
@@ -203,7 +203,7 @@ REG_FALLBACK_BUILDER("ProdExt").SetBody(BODYFUNC(ib) {
       input = ib->Cast(input, kInt64);
     }
   } else {
-    auto dtype_opt = ops::GetScalarValue<int64_t>(dtype->BuildValue());
+    auto dtype_opt = GetScalarValue<int64_t>(dtype->BuildValue());
     if (!dtype_opt.has_value()) {
       MS_LOG(EXCEPTION) << "For 'ProdExt', dtype must have valid value.";
     }
@@ -260,7 +260,7 @@ REG_FALLBACK_BUILDER("DivMod").SetBody(BODYFUNC(ib) {
   }
 
   auto mode_value_ptr = rounding_mode->BuildValue();
-  auto mode_opt = mindspore::ops::GetScalarValue<int64_t>(mode_value_ptr);
+  auto mode_opt = mindspore::GetScalarValue<int64_t>(mode_value_ptr);
 
   if (mode_opt.value() == ops::RoundingMode::FLOOR) {
     return {ib->Emit("FloorDiv", {input_x, input_y})};

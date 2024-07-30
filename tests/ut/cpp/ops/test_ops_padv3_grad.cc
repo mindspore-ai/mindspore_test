@@ -17,7 +17,7 @@
 #include <memory>
 #include <string>
 #include "common/common_test.h"
-#include "ops/grad/pad_v3_grad.h"
+#include "infer/grad/pad_v3_grad.h"
 #include "ir/dtype/type.h"
 #include "abstract/dshape.h"
 #include "utils/tensor_construct_utils.h"

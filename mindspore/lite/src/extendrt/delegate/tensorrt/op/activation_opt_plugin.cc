@@ -25,7 +25,7 @@
 #include "src/extendrt/delegate/tensorrt/tensorrt_utils.h"
 #include "NvInferRuntimeCommon.h"
 #include "src/extendrt/delegate/tensorrt/cuda_impl/activation.cuh"
-#include "plugin/device/gpu/kernel/cuda_impl/cuda_ops/swish_impl.cuh"
+#include "kernel/gpu/cuda_impl/cuda_ops/swish_impl.cuh"
 
 namespace mindspore::lite {
 REGISTER_TENSORRT_PLUGIN(ActivationOptPluginCreater);

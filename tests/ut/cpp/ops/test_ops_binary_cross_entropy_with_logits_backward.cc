@@ -23,7 +23,7 @@
 #include "abstract/abstract_value.h"
 #include "include/backend/optimizer/helper.h"
 #include "ops/test_ops.h"
-#include "ops/ops_func_impl/binary_cross_entropy_with_logits_backward.h"
+#include "infer/ops_func_impl/binary_cross_entropy_with_logits_backward.h"
 #include "ops/test_value_utils.h"
 
 namespace mindspore {

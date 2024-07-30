@@ -143,14 +143,14 @@ if(MSLITE_MINDDATA_IMPLEMENT STREQUAL "full")
     include_directories("${MINDDATA_DIR}/kernels/image")
     include_directories("${MINDDATA_DIR}/liteapi")
     include_directories("${TOP_DIR}")
-    include_directories("${TOP_DIR}/mindspore/ccsrc/plugin/device/cpu/kernel")
+    include_directories("${TOP_DIR}/mindspore/ops/kernel/cpu")
 
     set(MINDDATA_FULL_SRC
         ${TOP_DIR}/mindspore/lite/src/litert/cxx_api/types.cc
         ${TOP_DIR}/mindspore/lite/src/litert/cxx_api/tensor_utils.cc
         ${TOP_DIR}/mindspore/lite/src/litert/cxx_api/tensor/tensor_impl.cc
         ${TOP_DIR}/mindspore/lite/src/tensor.cc
-        ${TOP_DIR}/mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/tensor_c_utils.c
+        ${TOP_DIR}/mindspore/ops/kernel/cpu/nnacl/tensor_c_utils.c
         ${TOP_DIR}/mindspore/lite/src/common/utils.cc
         ${TOP_DIR}/mindspore/lite/src/common/string_util.cc
         ${CORE_DIR}/utils/status.cc
@@ -416,12 +416,14 @@ if(MSLITE_MINDDATA_IMPLEMENT STREQUAL "full")
     if((MSLITE_ENABLE_CLOUD_FUSION_INFERENCE OR MSLITE_ENABLE_CLOUD_INFERENCE) AND MSLITE_ENABLE_ACL)
         target_link_libraries(minddata-lite
             mindspore_core
+            mindspore_ops
             mindspore::opencv_core
             mindspore::opencv_imgcodecs
             mindspore::opencv_imgproc
             )
         target_link_libraries(minddata-lite_static
             mindspore_core
+            mindspore_ops
             mindspore::opencv_core
             mindspore::opencv_imgcodecs
             mindspore::opencv_imgproc

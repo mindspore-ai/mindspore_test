@@ -15,7 +15,7 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/fp32/topk_fp32.h"
-#include "ops/fusion/topk_fusion.h"
+#include "infer/cxx_api/topk_fusion.h"
 
 using mindspore::ops::kNameTopKFusion;
 using mindspore::schema::PrimitiveType_TopKFusion;

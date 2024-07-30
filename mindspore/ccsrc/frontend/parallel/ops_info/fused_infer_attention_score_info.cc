@@ -27,9 +27,9 @@
 #include "frontend/parallel/device_matrix.h"
 #include "frontend/parallel/dynamic_creator.h"
 #include "frontend/parallel/step_parallel_utils.h"
-#include "mindspore/core/ops/ops_func_impl/fused_infer_attention_score.h"
-#include "mindspore/core/ops/array_ops.h"
-#include "ops/op_enum.h"
+#include "mindspore/ops/infer/ops_func_impl/fused_infer_attention_score.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/op_enum.h"
 
 namespace mindspore {
 using mindspore::ops::FASInputLayoutMode;

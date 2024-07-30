@@ -16,14 +16,14 @@
 
 #define USE_DEPRECATED_API
 #include "tools/optimizer/graph/infershape_pass.h"
-#include "mindspore/core/ops/lite_ops.h"
-#include "mindspore/core/ops/array_ops.h"
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "tools/common/node_util.h"
 #include "tools/common/tensor_util.h"
 #include "nnacl/op_base.h"
 #include "src/common/log_util.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 #include "tools/optimizer/graph/decrease_transpose_algo.h"
 
 namespace mindspore {

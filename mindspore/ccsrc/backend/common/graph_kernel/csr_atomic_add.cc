@@ -20,9 +20,9 @@
 #include "backend/common/graph_kernel/graph_kernel_helper.h"
 #include "include/backend/kernel_graph.h"
 #include "include/common/utils/utils.h"
-#include "mindspore/core/ops/math_ops.h"
-#include "mindspore/core/ops/sequence_ops.h"
-#include "mindspore/core/ops/sparse_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/sparse_ops.h"
 
 namespace mindspore::graphkernel {
 class ReduceSumCsrChecker : public AtomicAddChecker {

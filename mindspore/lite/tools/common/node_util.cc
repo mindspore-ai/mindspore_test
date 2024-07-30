@@ -18,19 +18,19 @@
 #include <memory>
 #include <set>
 #include <vector>
-#include "mindspore/core/ops/sequence_ops.h"
-#include "mindspore/core/ops/nn_optimizer_ops.h"
-#include "mindspore/core/ops/lite_ops.h"
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/nn_optimizer_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "src/common/ops/populate/populate_register.h"
 #include "src/common/common.h"
 #include "src/common/log_adapter.h"
 #include "tools/common/graph_util.h"
 #include "tools/common/tensor_util.h"
 #include "src/litert/infer_manager.h"
-#include "mindspore/core/ops/switch.h"
-#include "mindspore/core/ops/call.h"
-#include "mindspore/core/ops/fusion/partial_fusion.h"
+#include "mindspore/ops/infer/switch.h"
+#include "mindspore/ops/infer/call.h"
+#include "mindspore/ops/infer/cxx_api/partial_fusion.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

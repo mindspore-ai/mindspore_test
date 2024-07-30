@@ -17,10 +17,10 @@
 #include "transform/graph_ir/op_declare/array_ops_declare.h"
 #include <string>
 #include <vector>
-#include "mindspore/core/ops/array_ops.h"
-#include "mindspore/core/ops/other_ops.h"
-#include "mindspore/core/ops/nn_ops.h"
-#include "mindspore/core/ops/structure_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/other_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
+#include "mindspore/ops/op_def/structure_ops.h"
 
 namespace mindspore::transform {
 // const

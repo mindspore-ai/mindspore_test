@@ -16,7 +16,7 @@
 
 #include "tools/converter/parser/onnx/onnx_adder_parser.h"
 #include <memory>
-#include "ops/fusion/adder_fusion.h"
+#include "infer/cxx_api/adder_fusion.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

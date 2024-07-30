@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include "backend/common/graph_kernel/convert_custom_for_ge.h"
-#include "mindspore/core/ops/custom.h"
+#include "mindspore/ops/infer/custom.h"
 #include "utils/anf_utils.h"
 #include "utils/file_utils.h"
 #include "kernel/framework_utils.h"

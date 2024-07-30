@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include "ops/test_ops_cmp_utils.h"
-#include "ops/ops_func_impl/angle.h"
+#include "infer/ops_func_impl/angle.h"
 
 namespace mindspore {
 namespace ops {

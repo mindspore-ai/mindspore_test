@@ -16,9 +16,9 @@
 
 #include "frontend/operator/prim_to_function.h"
 
-#include "mindspore/core/ops/arithmetic_ops.h"
-#include "mindspore/core/ops/comparison_ops.h"
-#include "mindspore/core/ops/structure_ops.h"
+#include "mindspore/ops/op_def/arithmetic_ops.h"
+#include "mindspore/ops/op_def/comparison_ops.h"
+#include "mindspore/ops/op_def/structure_ops.h"
 namespace mindspore {
 // namespace to support prim related definition
 namespace prim {

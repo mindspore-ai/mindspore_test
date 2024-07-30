@@ -31,7 +31,7 @@
 #include "include/api/status.h"
 #include "mindspore/ccsrc/kernel/kernel.h"
 #include "include/common/utils/anfalgo.h"
-#include "mindspore/core/ops/custom.h"
+#include "mindspore/ops/infer/custom.h"
 #include "mindspore/lite/src/common/common.h"
 
 namespace mindspore {

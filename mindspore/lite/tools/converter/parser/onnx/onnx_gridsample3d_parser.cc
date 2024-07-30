@@ -16,9 +16,9 @@
 
 #include "tools/converter/parser/onnx/onnx_gridsample3d_parser.h"
 #include <memory>
-#include "ops/auto_generate/gen_lite_ops.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
 #include "nnacl/op_base.h"
-#include "ops/op_enum.h"
+#include "mindspore/ops/op_def/op_enum.h"
 
 namespace mindspore {
 namespace lite {

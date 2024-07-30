@@ -25,7 +25,7 @@
 #include "runtime/hardware/device_context.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "plugin/device/gpu/hal/hardware/gpu_deprecated_interface.h"
-#include "plugin/device/gpu/kernel/cuda_impl/cuda_ops/cuda_device_info.h"
+#include "kernel/gpu/cuda_impl/cuda_ops/cuda_device_info.h"
 
 namespace mindspore {
 namespace device {

@@ -19,10 +19,10 @@
 #include <memory>
 #include <vector>
 #include <string>
-#include "ops/fusion/conv2d_fusion.h"
+#include "infer/cxx_api/conv2d_fusion.h"
 #include "nnacl/op_base.h"
-#include "ops/op_utils.h"
-#include "mindspore/core/ops/conv3d.h"
+#include "ops_utils/op_utils.h"
+#include "mindspore/ops/infer/conv3d.h"
 
 namespace mindspore::lite {
 STATUS GetConvChannel(const onnx::GraphProto &onnx_graph, const onnx::NodeProto &onnx_node, int64_t group,

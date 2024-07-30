@@ -15,7 +15,7 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/group_norm_parameter.h"
-#include "ops/fusion/groupnorm_fusion.h"
+#include "infer/cxx_api/groupnorm_fusion.h"
 using mindspore::ops::kNameGroupNormFusion;
 using mindspore::schema::PrimitiveType_GroupNormFusion;
 namespace mindspore {

@@ -15,10 +15,10 @@
  */
 #include <memory>
 #include "common/common_test.h"
-#include "ops/ops_func_impl/mean_ext.h"
-#include "ops/ops_func_impl/sum_ext.h"
-#include "ops/ops_func_impl/prod_ext.h"
-#include "ops/auto_generate/gen_ops_name.h"
+#include "infer/ops_func_impl/mean_ext.h"
+#include "infer/ops_func_impl/sum_ext.h"
+#include "infer/ops_func_impl/prod_ext.h"
+#include "op_def/auto_generate/gen_ops_name.h"
 #include "ops/test_ops.h"
 #include "ops/test_ops_cmp_utils.h"
 #include "ops/test_value_utils.h"
@@ -40,18 +40,16 @@ struct ReduceExtandParams {
 
 static auto value_any = std::make_shared<abstract::AbstractScalar>(kValueAny, kTypeAny);
 static auto value_none = std::make_shared<abstract::AbstractScalar>(kValueAny, kTypeNone);
-static auto keep_dims_true = std::make_shared<BoolImm>(true)->ToAbstract();
-static auto keep_dims_false = std::make_shared<BoolImm>(false)->ToAbstract();
-static auto dtype_float64 = std::make_shared<Int64Imm>(kNumberTypeFloat64)->ToAbstract();
-static auto dtype_int32 = std::make_shared<Int64Imm>(kNumberTypeInt32)->ToAbstract();
-static auto dtype_int16 = std::make_shared<Int64Imm>(kNumberTypeInt16)->ToAbstract();
-static auto dtype_int8 = std::make_shared<Int64Imm>(kNumberTypeInt8)->ToAbstract();
-static auto dtype_uint8 = std::make_shared<Int64Imm>(kNumberTypeUInt8)->ToAbstract();
-static auto dtype_bool = std::make_shared<Int64Imm>(kNumberTypeBool)->ToAbstract();
+static auto keep_dims_true = std::make_shared<BoolImm>(true) -> ToAbstract();
+static auto keep_dims_false = std::make_shared<BoolImm>(false) -> ToAbstract();
+static auto dtype_float64 = std::make_shared<Int64Imm>(kNumberTypeFloat64) -> ToAbstract();
+static auto dtype_int32 = std::make_shared<Int64Imm>(kNumberTypeInt32) -> ToAbstract();
+static auto dtype_int16 = std::make_shared<Int64Imm>(kNumberTypeInt16) -> ToAbstract();
+static auto dtype_int8 = std::make_shared<Int64Imm>(kNumberTypeInt8) -> ToAbstract();
+static auto dtype_uint8 = std::make_shared<Int64Imm>(kNumberTypeUInt8) -> ToAbstract();
+static auto dtype_bool = std::make_shared<Int64Imm>(kNumberTypeBool) -> ToAbstract();
 
-AbstractBasePtr CreateInt(const int &value) {
-  return CreatePyInt(value)->ToAbstract();
-}
+AbstractBasePtr CreateInt(const int &value) { return CreatePyInt(value)->ToAbstract(); }
 
 AbstractBasePtr CreateIntTuple(const std::vector<NumberContainer> &value) {
   return CreatePyIntTuple(value)->ToAbstract();
@@ -71,7 +69,8 @@ static std::map<std::string, OpFuncImplPtr> reduce_extand_func_impl = {
 };
 }  // namespace
 
-class TestReduceExtand : public TestOps, public testing::WithParamInterface<std::tuple<const char *, ReduceExtandParams>> {};
+class TestReduceExtand : public TestOps,
+                         public testing::WithParamInterface<std::tuple<const char *, ReduceExtandParams>> {};
 
 TEST_P(TestReduceExtand, dyn_shape) {
   const auto &op_name = std::get<0>(GetParam());
@@ -107,10 +106,13 @@ auto ReduceExtandTestCase = testing::ValuesIn(
    ReduceExtandParams{{2, 3, 4}, kFloat32, {2, 4}, kFloat32, CreateIntTuple({-2}), keep_dims_false, value_none},
    ReduceExtandParams{{2, 3, 4}, kFloat32, {2, 1, 1}, kFloat32, CreateIntTuple({-1, -2}), keep_dims_true, value_none},
    ReduceExtandParams{{2, 3, 4}, kFloat32, {4}, kFloat32, CreateIntTuple({-2, -3}), keep_dims_false, value_none},
-   ReduceExtandParams{{2, 3, 4}, kFloat32, {-1, 1, -1}, kFloat32, CreateIntTuple({kValueAny, 1}), keep_dims_true, value_none},
+   ReduceExtandParams{
+     {2, 3, 4}, kFloat32, {-1, 1, -1}, kFloat32, CreateIntTuple({kValueAny, 1}), keep_dims_true, value_none},
    ReduceExtandParams{{2, 3, 4}, kFloat32, {-1}, kFloat32, CreateIntTuple({kValueAny, 1}), keep_dims_false, value_none},
-   ReduceExtandParams{{2, 3, 4}, kFloat32, {-1, -1, -1}, kFloat32, CreateIntTuple({kValueAny, kValueAny}), keep_dims_true, value_none},
-   ReduceExtandParams{{2, 3, 4}, kFloat32, {-1}, kFloat32, CreateIntTuple({kValueAny, kValueAny}), keep_dims_false, value_none},
+   ReduceExtandParams{
+     {2, 3, 4}, kFloat32, {-1, -1, -1}, kFloat32, CreateIntTuple({kValueAny, kValueAny}), keep_dims_true, value_none},
+   ReduceExtandParams{
+     {2, 3, 4}, kFloat32, {-1}, kFloat32, CreateIntTuple({kValueAny, kValueAny}), keep_dims_false, value_none},
    ReduceExtandParams{{2, 3, 4}, kFloat32, {-1, -1, -1}, kFloat32, value_any, keep_dims_true, value_none},
    ReduceExtandParams{{2, 3, 4}, kFloat32, {-2}, kFloat32, value_any, keep_dims_false, value_none},
    ReduceExtandParams{{2, 3, 4}, kFloat32, {}, kFloat32, CreateIntTuple({}), keep_dims_false, value_none},
@@ -120,10 +122,14 @@ auto ReduceExtandTestCase = testing::ValuesIn(
    ReduceExtandParams{{-1, -1, 4}, kFloat32, {-1, 4}, kFloat32, CreateIntTuple({1}), keep_dims_false, value_none},
    ReduceExtandParams{{-1, 3, 4}, kFloat32, {1, 3, 1}, kFloat32, CreateIntTuple({0, 2}), keep_dims_true, value_none},
    ReduceExtandParams{{-1, 3, 4}, kFloat32, {3}, kFloat32, CreateIntTuple({0, 2}), keep_dims_false, value_none},
-   ReduceExtandParams{{-1, -1, 4}, kFloat32, {-1, 1, -1}, kFloat32, CreateIntTuple({kValueAny, 1}), keep_dims_true, value_none},
-   ReduceExtandParams{{-1, -1, 4}, kFloat32, {-1}, kFloat32, CreateIntTuple({kValueAny, 1}), keep_dims_false,  value_none},
-   ReduceExtandParams{{-1, -1, 4}, kFloat32, {-1, -1, -1}, kFloat32, CreateIntTuple({kValueAny, kValueAny}), keep_dims_true, value_none},
-   ReduceExtandParams{{-1, -1, 4}, kFloat32, {-1}, kFloat32, CreateIntTuple({kValueAny, kValueAny}), keep_dims_false, value_none},
+   ReduceExtandParams{
+     {-1, -1, 4}, kFloat32, {-1, 1, -1}, kFloat32, CreateIntTuple({kValueAny, 1}), keep_dims_true, value_none},
+   ReduceExtandParams{
+     {-1, -1, 4}, kFloat32, {-1}, kFloat32, CreateIntTuple({kValueAny, 1}), keep_dims_false, value_none},
+   ReduceExtandParams{
+     {-1, -1, 4}, kFloat32, {-1, -1, -1}, kFloat32, CreateIntTuple({kValueAny, kValueAny}), keep_dims_true, value_none},
+   ReduceExtandParams{
+     {-1, -1, 4}, kFloat32, {-1}, kFloat32, CreateIntTuple({kValueAny, kValueAny}), keep_dims_false, value_none},
    ReduceExtandParams{{-1, -1, 4}, kFloat32, {-1, -1, -1}, kFloat32, value_any, keep_dims_true, value_none},
    ReduceExtandParams{{-1, -1, 4}, kFloat32, {-2}, kFloat32, value_any, keep_dims_false, value_none},
    ReduceExtandParams{{-1, -1, 4}, kFloat32, {}, kFloat32, CreateIntTuple({}), keep_dims_false, value_none},
@@ -173,19 +179,19 @@ auto ReduceExtandTestCase_ProdExt = testing::ValuesIn(
    ReduceExtandParams{{}, kFloat32, {}, kFloat32, value_any, keep_dims_true, value_none},
    ReduceExtandParams{{}, kFloat32, {}, kFloat32, value_any, keep_dims_false, value_none}});
 
-auto ReduceExtandTestCase_ExtraDtype = testing::ValuesIn(
-  {ReduceExtandParams{{}, kFloat32, {-2}, kFloat32, value_any, value_any, value_none},
-   ReduceExtandParams{{}, kComplex64, {-2}, kComplex64, value_any, value_any, value_none},
-   ReduceExtandParams{{}, kInt32, {-2}, kInt64, value_any, value_any, value_none},
-   ReduceExtandParams{{}, kInt16, {-2}, kInt64, value_any, value_any, value_none},
-   ReduceExtandParams{{}, kInt8, {-2}, kInt64, value_any, value_any, value_none},
-   ReduceExtandParams{{}, kUInt8, {-2}, kInt64, value_any, value_any, value_none},
-   ReduceExtandParams{{}, kBool, {-2}, kInt64, value_any, value_any, value_none},
-   ReduceExtandParams{{}, kInt32, {-2}, kBool, value_any, value_any, dtype_bool},
-   ReduceExtandParams{{}, kInt16, {-2}, kUInt8, value_any, value_any, dtype_uint8},
-   ReduceExtandParams{{}, kInt8, {-2}, kBool, value_any, value_any, dtype_bool},
-   ReduceExtandParams{{}, kUInt8, {-2}, kInt16, value_any, value_any, dtype_int16},
-   ReduceExtandParams{{}, kBool, {-2}, kInt32, value_any, value_any, dtype_int32}});
+auto ReduceExtandTestCase_ExtraDtype =
+  testing::ValuesIn({ReduceExtandParams{{}, kFloat32, {-2}, kFloat32, value_any, value_any, value_none},
+                     ReduceExtandParams{{}, kComplex64, {-2}, kComplex64, value_any, value_any, value_none},
+                     ReduceExtandParams{{}, kInt32, {-2}, kInt64, value_any, value_any, value_none},
+                     ReduceExtandParams{{}, kInt16, {-2}, kInt64, value_any, value_any, value_none},
+                     ReduceExtandParams{{}, kInt8, {-2}, kInt64, value_any, value_any, value_none},
+                     ReduceExtandParams{{}, kUInt8, {-2}, kInt64, value_any, value_any, value_none},
+                     ReduceExtandParams{{}, kBool, {-2}, kInt64, value_any, value_any, value_none},
+                     ReduceExtandParams{{}, kInt32, {-2}, kBool, value_any, value_any, dtype_bool},
+                     ReduceExtandParams{{}, kInt16, {-2}, kUInt8, value_any, value_any, dtype_uint8},
+                     ReduceExtandParams{{}, kInt8, {-2}, kBool, value_any, value_any, dtype_bool},
+                     ReduceExtandParams{{}, kUInt8, {-2}, kInt16, value_any, value_any, dtype_int16},
+                     ReduceExtandParams{{}, kBool, {-2}, kInt32, value_any, value_any, dtype_int32}});
 
 INSTANTIATE_TEST_CASE_P(TestMeanExtGroup, TestReduceExtand,
                         testing::Combine(testing::ValuesIn({kNameMeanExt}), ReduceExtandTestCase));
@@ -206,7 +212,9 @@ struct ReduceExtandInferValueParams {
   tensor::TensorPtr out;
 };
 
-class TestReduceExtandInferValue : public TestOps, public testing::WithParamInterface<std::tuple<const char *, ReduceExtandInferValueParams>> {};
+class TestReduceExtandInferValue
+    : public TestOps,
+      public testing::WithParamInterface<std::tuple<const char *, ReduceExtandInferValueParams>> {};
 
 TEST_P(TestReduceExtandInferValue, dyn_shape_infer_value) {
   const auto &op_name = std::get<0>(GetParam());
@@ -237,45 +245,42 @@ TEST_P(TestReduceExtandInferValue, dyn_shape_infer_value) {
 
 auto ReduceExtandInferValueTestCase_MeanExt = testing::ValuesIn(
   {ReduceExtandInferValueParams{
-    CreateTensor<float>(ShapeVector{2, 2}, kNumberTypeFloat32, std::vector<float>{2, 3, 4, 5}),
-    CreateIntTuple({0}), keep_dims_false, dtype_float64,
-    CreateTensor<double>(ShapeVector{2}, kNumberTypeFloat64, std::vector<double>{3, 4})},
+     CreateTensor<float>(ShapeVector{2, 2}, kNumberTypeFloat32, std::vector<float>{2, 3, 4, 5}), CreateIntTuple({0}),
+     keep_dims_false, dtype_float64,
+     CreateTensor<double>(ShapeVector{2}, kNumberTypeFloat64, std::vector<double>{3, 4})},
    ReduceExtandInferValueParams{
-    CreateTensor<float>(ShapeVector{2, 2}, kNumberTypeFloat32, std::vector<float>{2, 3, 4, 5}),
-    value_none, keep_dims_false, dtype_float64,
-    CreateTensor<double>(ShapeVector{}, kNumberTypeFloat64, std::vector<double>{3.5})},
+     CreateTensor<float>(ShapeVector{2, 2}, kNumberTypeFloat32, std::vector<float>{2, 3, 4, 5}), value_none,
+     keep_dims_false, dtype_float64, CreateTensor<double>(ShapeVector{}, kNumberTypeFloat64, std::vector<double>{3.5})},
    ReduceExtandInferValueParams{
-    CreateTensor<float>(ShapeVector{2, 2}, kNumberTypeFloat32, std::vector<float>{2, 3, 4, 5}),
-    CreateIntTuple({0}), keep_dims_true, value_none,
-    CreateTensor<float>(ShapeVector{1, 2}, kNumberTypeFloat32, std::vector<float>{3, 4})}});
+     CreateTensor<float>(ShapeVector{2, 2}, kNumberTypeFloat32, std::vector<float>{2, 3, 4, 5}), CreateIntTuple({0}),
+     keep_dims_true, value_none,
+     CreateTensor<float>(ShapeVector{1, 2}, kNumberTypeFloat32, std::vector<float>{3, 4})}});
 
 auto ReduceExtandInferValueTestCase_SumExt = testing::ValuesIn(
   {ReduceExtandInferValueParams{
-    CreateTensor<float>(ShapeVector{2, 2}, kNumberTypeFloat32, std::vector<float>{2, 3, 4, 5}),
-    CreateIntTuple({0}), keep_dims_false, dtype_float64,
-    CreateTensor<double>(ShapeVector{2}, kNumberTypeFloat64, std::vector<double>{6, 8})},
+     CreateTensor<float>(ShapeVector{2, 2}, kNumberTypeFloat32, std::vector<float>{2, 3, 4, 5}), CreateIntTuple({0}),
+     keep_dims_false, dtype_float64,
+     CreateTensor<double>(ShapeVector{2}, kNumberTypeFloat64, std::vector<double>{6, 8})},
    ReduceExtandInferValueParams{
-    CreateTensor<float>(ShapeVector{2, 2}, kNumberTypeFloat32, std::vector<float>{2, 3, 4, 5}),
-    value_none, keep_dims_false, dtype_float64,
-    CreateTensor<double>(ShapeVector{}, kNumberTypeFloat64, std::vector<double>{14})},
+     CreateTensor<float>(ShapeVector{2, 2}, kNumberTypeFloat32, std::vector<float>{2, 3, 4, 5}), value_none,
+     keep_dims_false, dtype_float64, CreateTensor<double>(ShapeVector{}, kNumberTypeFloat64, std::vector<double>{14})},
    ReduceExtandInferValueParams{
-    CreateTensor<float>(ShapeVector{2, 2}, kNumberTypeFloat32, std::vector<float>{2, 3, 4, 5}),
-    CreateIntTuple({0}), keep_dims_true, value_none,
-    CreateTensor<float>(ShapeVector{1, 2}, kNumberTypeFloat32, std::vector<float>{6, 8})}});
+     CreateTensor<float>(ShapeVector{2, 2}, kNumberTypeFloat32, std::vector<float>{2, 3, 4, 5}), CreateIntTuple({0}),
+     keep_dims_true, value_none,
+     CreateTensor<float>(ShapeVector{1, 2}, kNumberTypeFloat32, std::vector<float>{6, 8})}});
 
 auto ReduceExtandInferValueTestCase_ProdExt = testing::ValuesIn(
   {ReduceExtandInferValueParams{
-    CreateTensor<float>(ShapeVector{2, 2}, kNumberTypeFloat32, std::vector<float>{2, 3, 4, 5}),
-    CreateIntTuple({0}), keep_dims_false, dtype_float64,
-    CreateTensor<double>(ShapeVector{2}, kNumberTypeFloat64, std::vector<double>{8, 15})},
+     CreateTensor<float>(ShapeVector{2, 2}, kNumberTypeFloat32, std::vector<float>{2, 3, 4, 5}), CreateIntTuple({0}),
+     keep_dims_false, dtype_float64,
+     CreateTensor<double>(ShapeVector{2}, kNumberTypeFloat64, std::vector<double>{8, 15})},
    ReduceExtandInferValueParams{
-    CreateTensor<float>(ShapeVector{2, 2}, kNumberTypeFloat32, std::vector<float>{2, 3, 4, 5}),
-    value_none, keep_dims_false, dtype_float64,
-    CreateTensor<double>(ShapeVector{}, kNumberTypeFloat64, std::vector<double>{120})},
+     CreateTensor<float>(ShapeVector{2, 2}, kNumberTypeFloat32, std::vector<float>{2, 3, 4, 5}), value_none,
+     keep_dims_false, dtype_float64, CreateTensor<double>(ShapeVector{}, kNumberTypeFloat64, std::vector<double>{120})},
    ReduceExtandInferValueParams{
-    CreateTensor<float>(ShapeVector{2, 2}, kNumberTypeFloat32, std::vector<float>{2, 3, 4, 5}),
-    CreateIntTuple({0}), keep_dims_true, value_none,
-    CreateTensor<float>(ShapeVector{1, 2}, kNumberTypeFloat32, std::vector<float>{8, 15})}});
+     CreateTensor<float>(ShapeVector{2, 2}, kNumberTypeFloat32, std::vector<float>{2, 3, 4, 5}), CreateIntTuple({0}),
+     keep_dims_true, value_none,
+     CreateTensor<float>(ShapeVector{1, 2}, kNumberTypeFloat32, std::vector<float>{8, 15})}});
 
 INSTANTIATE_TEST_CASE_P(TestMeanExtInferValueGroup, TestReduceExtandInferValue,
                         testing::Combine(testing::ValuesIn({kNameMeanExt}), ReduceExtandInferValueTestCase_MeanExt));

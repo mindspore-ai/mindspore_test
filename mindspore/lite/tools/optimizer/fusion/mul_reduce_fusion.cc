@@ -21,14 +21,14 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include "mindspore/core/ops/lite_ops.h"
-#include "mindspore/core/ops/array_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "tools/lite_exporter/fetch_content.h"
-#include "ops/fusion/mat_mul_fusion.h"
-#include "ops/fusion/mul_fusion.h"
-#include "ops/squeeze.h"
-#include "ops/op_name.h"
+#include "infer/cxx_api/mat_mul_fusion.h"
+#include "infer/cxx_api/mul_fusion.h"
+#include "infer/squeeze.h"
+#include "op_def/op_name.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

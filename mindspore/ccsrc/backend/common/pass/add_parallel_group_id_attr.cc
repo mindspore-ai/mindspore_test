@@ -25,9 +25,9 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
 #include "utils/anf_utils.h"
-#include "ops/array_op_name.h"
-#include "ops/framework_ops.h"
-#include "ops/sequence_ops.h"
+#include "op_def/array_op_name.h"
+#include "op_def/framework_ops.h"
+#include "op_def/sequence_ops.h"
 #include "utils/ms_context.h"
 
 namespace mindspore {

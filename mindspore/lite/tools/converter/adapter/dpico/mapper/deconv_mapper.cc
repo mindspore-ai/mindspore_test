@@ -19,7 +19,7 @@
 #include <vector>
 #include <utility>
 #include "common/op_enum.h"
-#include "ops/fusion/conv2d_transpose_fusion.h"
+#include "infer/cxx_api/conv2d_transpose_fusion.h"
 #include "op/deconv_operator.h"
 
 namespace mindspore {

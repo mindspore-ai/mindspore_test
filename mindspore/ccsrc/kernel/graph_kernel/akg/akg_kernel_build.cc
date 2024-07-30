@@ -25,7 +25,7 @@
 #include <utility>
 #include <vector>
 #include <iostream>
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "ir/dtype.h"
 #include "ir/func_graph.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"

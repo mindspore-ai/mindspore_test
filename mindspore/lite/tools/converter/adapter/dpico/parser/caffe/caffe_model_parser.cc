@@ -28,9 +28,9 @@
 #include "parser/unify_format.h"
 #include "mindapi/ir/func_graph.h"
 #include "include/registry/converter_context.h"
-#include "ops/make_tuple.h"
-#include "ops/return.h"
-#include "ops/tuple_get_item.h"
+#include "infer/make_tuple.h"
+#include "infer/return.h"
+#include "infer/tuple_get_item.h"
 
 using mindspore::converter::kFmkTypeCaffe;
 namespace mindspore {

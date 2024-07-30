@@ -15,7 +15,7 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/matmul_parameter.h"
-#include "ops/fusion/full_connection.h"
+#include "infer/cxx_api/full_connection.h"
 using mindspore::ops::kNameFullConnection;
 using mindspore::schema::PrimitiveType_FullConnection;
 namespace mindspore {

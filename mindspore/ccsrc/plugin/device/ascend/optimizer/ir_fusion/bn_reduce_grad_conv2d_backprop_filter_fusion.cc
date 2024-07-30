@@ -17,9 +17,9 @@
 #include <memory>
 #include <vector>
 #include <set>
-#include "ops/ascend_op_name.h"
-#include "ops/conv_pool_ops.h"
-#include "ops/nn_ops.h"
+#include "op_def/ascend_op_name.h"
+#include "op_def/conv_pool_ops.h"
+#include "op_def/nn_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "ir/primitive.h"

@@ -18,7 +18,7 @@
 #include "include/common/utils/utils.h"
 #include "utils/shape_utils.h"
 #include "utils/check_convert_utils.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace expander {
@@ -95,7 +95,7 @@ REG_FALLBACK_BUILDER("Ones").SetBody(BODYFUNC(ib) {
   auto size = ib->GetInput(kIndex0);
   auto dtype = ib->GetInput(kIndex1);
   auto dtype_ptr = dtype->BuildValue();
-  auto dtype_val = ops::GetValueWithCheck<int64_t>(dtype_ptr);
+  auto dtype_val = GetValueWithCheck<int64_t>(dtype_ptr);
   auto out_type = TypeIdToType(static_cast<TypeId>(dtype_val));
   auto value = ib->Tensor(1, out_type);
   auto out = ib->Emit("FillV2", {size, value});
@@ -106,7 +106,7 @@ REG_FALLBACK_BUILDER("Zeros").SetBody(BODYFUNC(ib) {
   auto size = ib->GetInput(kIndex0);
   auto dtype = ib->GetInput(kIndex1);
   auto dtype_ptr = dtype->BuildValue();
-  auto dtype_val = ops::GetValueWithCheck<int64_t>(dtype_ptr);
+  auto dtype_val = GetValueWithCheck<int64_t>(dtype_ptr);
   auto out_type = TypeIdToType(static_cast<TypeId>(dtype_val));
   auto value = ib->Tensor(0, out_type);
   auto out = ib->Emit("FillV2", {size, value});
@@ -318,7 +318,7 @@ REG_FALLBACK_BUILDER("SplitTensor").SetBody(BODYFUNC(ib) {
   auto input = ib->GetInput(kIndex0);
   auto split_int = ib->GetInput(kIndex1);
   auto axis = ib->GetInput(kIndex2);
-  if (!ops::IsValueKnown(axis->BuildValue()) || !ops::IsValueKnown(split_int->BuildValue())) {
+  if (!IsValueKnown(axis->BuildValue()) || !IsValueKnown(split_int->BuildValue())) {
     MS_EXCEPTION(ValueError) << "For `SplitWithTensor` , the `split_int` and `axis` must currently be a constant!";
   }
   const auto &input_shape = input->shape();
@@ -340,7 +340,7 @@ REG_FALLBACK_BUILDER("SplitTensor").SetBody(BODYFUNC(ib) {
 REG_FALLBACK_BUILDER("SplitWithSize").SetBody(BODYFUNC(ib) {
   auto input = ib->GetInput(kIndex0);
   auto axis = ib->GetInput(kIndex2);
-  if (!ops::IsValueKnown(axis->BuildValue())) {
+  if (!IsValueKnown(axis->BuildValue())) {
     MS_EXCEPTION(ValueError) << "For `SplitWithSize` , the `split_int` and `axis` must currently be a constant!";
   }
   const auto &input_shape = input->shape();

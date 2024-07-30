@@ -25,7 +25,7 @@
 #include "securec/include/securec.h"
 #include "include/registry/model_parser.h"
 #include "include/registry/model_parser_registry.h"
-#include "ops/custom.h"
+#include "infer/custom.h"
 
 namespace mindspore {
 namespace lite {

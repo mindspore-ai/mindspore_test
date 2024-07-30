@@ -20,8 +20,8 @@
 #include <vector>
 #include "tools/converter/parser/tf/tf_node_parser_registry.h"
 #include "tools/converter/parser/tf/tf_util.h"
-#include "ops/fusion/avg_pool_fusion.h"
-#include "ops/fusion/max_pool_fusion.h"
+#include "infer/cxx_api/avg_pool_fusion.h"
+#include "infer/cxx_api/max_pool_fusion.h"
 
 namespace mindspore {
 namespace lite {

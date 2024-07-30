@@ -18,7 +18,7 @@
 #include <memory>
 #include <set>
 #include <string>
-#include "mindspore/core/ops/structure_ops.h"
+#include "mindspore/ops/op_def/structure_ops.h"
 #include "tools/converter/parser/parser_utils.h"
 #include "nnacl/op_base.h"
 

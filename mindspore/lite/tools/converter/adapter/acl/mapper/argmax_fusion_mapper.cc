@@ -16,11 +16,12 @@
 
 #include "tools/converter/adapter/acl/mapper/argmax_fusion_mapper.h"
 #include <memory>
+#include <vector>
 #include "tools/converter/adapter/acl/mapper/primitive_mapper_register.h"
 #include "src/common/log_util.h"
 #include "tools/converter/adapter/acl/mapper/tbe_op_def.h"
-#include "ops/op_utils.h"
-#include "ops/auto_generate/gen_lite_ops.h"
+#include "ops_utils/op_utils.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
 
 namespace mindspore {
 namespace lite {

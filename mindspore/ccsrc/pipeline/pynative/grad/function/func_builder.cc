@@ -27,7 +27,7 @@
 #include "include/backend/optimizer/helper.h"
 #include "include/backend/optimizer/op_adaptation_info_factory.h"
 #include "pipeline/pynative/pynative_utils.h"
-#include "mindspore/core/ops/op_utils.h"
+#include "mindspore/core/utils/core_op_utils.h"
 #include "frontend/operator/cc_implementations.h"
 
 namespace mindspore::pynative::autograd {

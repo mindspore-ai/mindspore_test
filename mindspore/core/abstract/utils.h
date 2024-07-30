@@ -46,7 +46,7 @@ MS_CORE_API AbstractBasePtr AbstractBroaden(const AbstractBasePtr &abs);
 // else self.Clone;
 MS_CORE_API AbstractBasePtr SensitivityTransform(const AbstractBasePtr &spec);
 
-ShapeVector BroadcastShape(ShapeVector shpx, ShapeVector shpy);
+MS_CORE_API ShapeVector BroadcastShape(ShapeVector shpx, ShapeVector shpy);
 MS_CORE_API size_t TypeIdSize(const TypeId data_type);
 template <typename T>
 T ShapeSize(const std::vector<T> &shape) {

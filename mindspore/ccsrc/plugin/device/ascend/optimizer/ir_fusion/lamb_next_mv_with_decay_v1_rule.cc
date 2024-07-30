@@ -19,8 +19,8 @@
 #include <string>
 #include <tuple>
 #include <utility>
-#include "ops/ascend_op_name.h"
-#include "ops/math_ops.h"
+#include "op_def/ascend_op_name.h"
+#include "op_def/math_ops.h"
 #include "plugin/device/ascend/optimizer/ascend_helper.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"

@@ -27,7 +27,7 @@
 #include "mindapi/base/shape_vector.h"
 #include "test_value_utils.h"
 #include "ops/test_ops.h"
-#include "ops/ops_func_impl/correlate.h"
+#include "infer/ops_func_impl/correlate.h"
 #include "include/c_api/ms/base/types.h"
 
 namespace mindspore {

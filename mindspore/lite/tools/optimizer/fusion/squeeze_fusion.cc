@@ -17,15 +17,15 @@
 #define USE_DEPRECATED_API
 #include "tools/optimizer/fusion/squeeze_fusion.h"
 #include <memory>
-#include "mindspore/core/ops/nn_ops.h"
-#include "mindspore/core/ops/lite_ops.h"
-#include "mindspore/core/ops/array_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
 #include "schema/inner/model_generated.h"
-#include "ops/squeeze.h"
-#include "ops/unsqueeze.h"
+#include "infer/squeeze.h"
+#include "infer/unsqueeze.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "nnacl/op_base.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 
 namespace mindspore::opt {
 const BaseRef SqueezeFusion::DefinePattern() const {

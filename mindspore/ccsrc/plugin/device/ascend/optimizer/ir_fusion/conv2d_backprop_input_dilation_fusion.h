@@ -19,7 +19,7 @@
 #include <memory>
 #include <vector>
 #include "include/backend/optimizer/optimizer.h"
-#include "mindspore/core/ops/conv_pool_ops.h"
+#include "mindspore/ops/op_def/conv_pool_ops.h"
 
 namespace mindspore {
 namespace opt {

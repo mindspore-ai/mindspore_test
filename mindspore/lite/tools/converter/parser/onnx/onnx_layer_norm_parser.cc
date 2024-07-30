@@ -16,7 +16,7 @@
 
 #include "tools/converter/parser/onnx/onnx_layer_norm_parser.h"
 #include <memory>
-#include "ops/fusion/layer_norm_fusion.h"
+#include "infer/cxx_api/layer_norm_fusion.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

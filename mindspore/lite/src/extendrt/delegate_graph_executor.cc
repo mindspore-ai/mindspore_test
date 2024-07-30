@@ -17,7 +17,7 @@
 #include <set>
 #include <memory>
 #include "src/extendrt/subgraph_kernel.h"
-#include "ops/fusion/partial_fusion.h"
+#include "infer/cxx_api/partial_fusion.h"
 namespace mindspore {
 // Graph sink delegate, the whole FuncGraph as a node to execute.
 void GraphSinkDelegate::ReplaceNodes(const std::shared_ptr<FuncGraph> &graph) {

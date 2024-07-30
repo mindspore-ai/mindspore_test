@@ -17,9 +17,9 @@
 #include "transform/graph_ir/op_declare/transformation_ops_declare.h"
 #include <string>
 #include <vector>
-#include "ops/array_ops.h"
-#include "ops/nn_ops.h"
-#include "ops/image_ops.h"
+#include "op_def/array_ops.h"
+#include "op_def/nn_ops.h"
+#include "op_def/image_ops.h"
 
 namespace mindspore::transform {
 // Flatten

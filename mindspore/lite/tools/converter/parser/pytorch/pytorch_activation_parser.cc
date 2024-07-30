@@ -17,7 +17,7 @@
 #include "tools/converter/parser/pytorch/pytorch_activation_parser.h"
 #include <memory>
 #include "securec/include/securec.h"
-#include "ops/fusion/activation.h"
+#include "infer/cxx_api/activation.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

@@ -31,8 +31,8 @@
 #include "include/common/utils/utils.h"
 #include "kernel/framework_utils.h"
 #include "kernel/kernel.h"
-#include "mindspore/core/ops/math_ops.h"
-#include "mindspore/core/ops/sequence_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
 #include "utils/log_adapter.h"
 
 namespace mindspore::graphkernel {

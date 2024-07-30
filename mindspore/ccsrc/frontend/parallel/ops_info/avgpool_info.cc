@@ -21,7 +21,7 @@
 #include <utility>
 #include <vector>
 
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 #include "frontend/parallel/device_matrix.h"
 #include "frontend/parallel/dynamic_creator.h"
 #include "frontend/parallel/strategy.h"

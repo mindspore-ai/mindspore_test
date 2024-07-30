@@ -18,7 +18,7 @@
 #define MINDSPORE_LITE_TOOLS_CONVERTER_ADAPTER_ACL_MAPPER_CONV_3D_MAPPER
 
 #include "tools/converter/adapter/acl/mapper/primitive_mapper.h"
-#include "ops/conv3d.h"
+#include "infer/conv3d.h"
 
 using mindspore::ops::kNameConv3D;
 

@@ -22,8 +22,8 @@
 #include <set>
 #include "graph/types.h"
 #include "utils/log_adapter.h"
-#include "ops/auto_generate/gen_ops_primitive.h"
-#include "ops/nn_ops.h"
+#include "op_def/auto_generate/gen_ops_primitive.h"
+#include "op_def/nn_ops.h"
 
 using ge::DT_BF16;
 using ge::DT_BOOL;

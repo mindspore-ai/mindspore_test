@@ -17,7 +17,7 @@
 #include <memory>
 #include <string>
 #include "common/common_test.h"
-#include "ops/pad_v3.h"
+#include "infer/pad_v3.h"
 #include "ir/dtype/type.h"
 #include "abstract/dshape.h"
 #include "utils/tensor_construct_utils.h"

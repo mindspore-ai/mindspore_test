@@ -19,7 +19,7 @@
 #include <vector>
 #include <string>
 #include <algorithm>
-#include "mindspore/core/ops/other_ops.h"
+#include "mindspore/ops/op_def/other_ops.h"
 #include "ir/func_graph.h"
 #include "frontend/parallel/ops_info/ops_utils.h"
 #include "frontend/parallel/device_manager.h"

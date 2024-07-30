@@ -15,7 +15,7 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/reverse_sequence_parameter.h"
-#include "ops/reverse_sequence.h"
+#include "infer/reverse_sequence.h"
 using mindspore::ops::kNameReverseSequence;
 using mindspore::schema::PrimitiveType_ReverseSequence;
 

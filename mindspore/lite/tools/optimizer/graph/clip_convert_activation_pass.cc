@@ -18,10 +18,10 @@
 #include "tools/optimizer/graph/clip_convert_activation_pass.h"
 #include <vector>
 #include <memory>
-#include "mindspore/core/ops/lite_ops.h"
-#include "ops/clip.h"
-#include "ops/fusion/activation.h"
-#include "ops/op_utils.h"
+#include "mindspore/ops/op_def/lite_ops.h"
+#include "infer/clip.h"
+#include "infer/cxx_api/activation.h"
+#include "ops_utils/op_utils.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "src/tensor.h"
 #include "src/common/log_adapter.h"

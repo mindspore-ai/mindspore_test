@@ -19,8 +19,8 @@
 #include <memory>
 #include "src/common/log_adapter.h"
 #include "ir/func_graph.h"
-#include "ops/fusion/conv2d_fusion.h"
-#include "plugin/device/cpu/kernel/nnacl/op_base.h"
+#include "infer/cxx_api/conv2d_fusion.h"
+#include "nnacl/op_base.h"
 
 namespace mindspore {
 ValueNodePtr ConvFusionInoutTest::CreateConvPrimitiveValue() {

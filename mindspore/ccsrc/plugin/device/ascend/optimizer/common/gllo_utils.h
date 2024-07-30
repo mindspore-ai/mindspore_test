@@ -22,7 +22,7 @@
 #include <vector>
 #include "ir/anf.h"
 #include "base/base_ref.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace opt {

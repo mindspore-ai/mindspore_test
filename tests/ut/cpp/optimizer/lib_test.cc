@@ -18,7 +18,7 @@
 
 #include "common/common_test.h"
 
-#include "mindspore/core/ops/sequence_ops.h"
+#include "op_def/sequence_ops.h"
 #include "common/py_func_graph_fetcher.h"
 #include "ir/anf.h"
 #include "ir/func_graph.h"
@@ -610,7 +610,7 @@ TEST_F(TestOptLib, test_partial_unused_args_eliminate) {
   ASSERT_NE(before_fg, nullptr);
   ASSERT_NE(after_fg, nullptr);
   auto manager = Manage(before_fg, true);
-  //OptimizerPtr optimizer = std::make_shared<Optimizer>("ut_test", std::make_shared<pipeline::Resource>());
+  // OptimizerPtr optimizer = std::make_shared<Optimizer>("ut_test", std::make_shared<pipeline::Resource>());
   auto opt = opt::irpass::PartialUnusedArgsEliminate();
   opt(before_fg);
   ASSERT_TRUE(Isomorphic(before_fg, after_fg, &equiv_graph, &equiv_node));

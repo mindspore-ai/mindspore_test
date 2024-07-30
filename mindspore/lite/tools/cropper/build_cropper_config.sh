@@ -72,7 +72,7 @@ HEADER_LOCATION="-I${MINDSPORE_HOME}
 -I${MINDSPORE_HOME}/mindspore/lite/build/schema
 -I${MINDSPORE_HOME}/mindspore/lite/build/schema/inner
 -I${MINDSPORE_HOME}/mindspore/lite/build/src
--I${MINDSPORE_HOME}/mindspore/ccsrc/plugin/device/cpu/kernel
+-I${MINDSPORE_HOME}/mindspore/ops/kernel/cpu
 -I${MINDSPORE_HOME}/mindspore/ccsrc/minddata/dataset"
 
 REMOVE_LISTS_STR=""
@@ -241,23 +241,23 @@ getCommonFile() {
   while IFS='' read -r line; do mindrt_files_h+=("$line"); done < <(ls mindspore/core/mindrt/src/thread/*.h)
   others_files_h=(
     mindspore/lite/src/litert/infer_manager.h
-    mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/infer/infer_register.h
-    mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/nnacl_utils.h
+    mindspore/ops/kernel/cpu/nnacl/infer/infer_register.h
+    mindspore/ops/kernel/cpu/nnacl/nnacl_utils.h
     mindspore/lite/src/common/ops/populate/populate_register.h
-    mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/op_base.h
+    mindspore/ops/kernel/cpu/nnacl/op_base.h
     mindspore/core/ir/dtype/type_id.h
     mindspore/core/utils/overload.h
     mindspore/lite/tools/common/option.h
-    mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/intrinsics/ms_simd_instructions.h
-    mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/intrinsics/ms_simd_instructions_fp16.h
-    mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/infer/infer.h
-    mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/infer/common_infer.h
-    mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/tensor_c.h
-    mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/errorcode.h
-    mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/common_func.h
-    mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/tensor_c_utils.h
-    mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/tensorlist_c.h
-    mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/tensorlist_c_utils.h
+    mindspore/ops/kernel/cpu/nnacl/intrinsics/ms_simd_instructions.h
+    mindspore/ops/kernel/cpu/nnacl/intrinsics/ms_simd_instructions_fp16.h
+    mindspore/ops/kernel/cpu/nnacl/infer/infer.h
+    mindspore/ops/kernel/cpu/nnacl/infer/common_infer.h
+    mindspore/ops/kernel/cpu/nnacl/tensor_c.h
+    mindspore/ops/kernel/cpu/nnacl/errorcode.h
+    mindspore/ops/kernel/cpu/nnacl/common_func.h
+    mindspore/ops/kernel/cpu/nnacl/tensor_c_utils.h
+    mindspore/ops/kernel/cpu/nnacl/tensorlist_c.h
+    mindspore/ops/kernel/cpu/nnacl/tensorlist_c_utils.h
     mindspore/core/utils/log_adapter.h
     mindspore/core/ir/api_tensor_impl.h
     mindspore/lite/src/litert/cxx_api/tensor/tensor_impl.h
@@ -301,29 +301,29 @@ getCommonFile() {
   )
   # sava all assembly files
   assembly_files=()
-  while IFS='' read -r line; do assembly_files+=("$line"); done < <(ls mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/assembly/*/*.S)
+  while IFS='' read -r line; do assembly_files+=("$line"); done < <(ls mindspore/ops/kernel/cpu/nnacl/assembly/*/*.S)
   others_files_c=(
-    mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/nnacl_utils.c
-    mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/errorcode.c
+    mindspore/ops/kernel/cpu/nnacl/nnacl_utils.c
+    mindspore/ops/kernel/cpu/nnacl/errorcode.c
     mindspore/lite/src/litert/infer_manager.cc
     mindspore/lite/src/common/ops/populate/populate_register.cc
     mindspore/lite/src/common/ops/populate/custom_populate.cc
-    mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/infer/infer_register.c
-    mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/infer/shape_fusion_infer.c
-    mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/infer/common_infer.c
+    mindspore/ops/kernel/cpu/nnacl/infer/infer_register.c
+    mindspore/ops/kernel/cpu/nnacl/infer/shape_fusion_infer.c
+    mindspore/ops/kernel/cpu/nnacl/infer/common_infer.c
     mindspore/lite/src/litert/kernel/cpu/fp32/shape_fusion_fp32.cc
     mindspore/core/utils/status.cc
     mindspore/core/utils/log_adapter.cc
-    mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/kernel.c
-    mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/tensor_c_utils.c
-    mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/tensorlist_c_utils.c
-    mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/base/format_transpose.c
-    mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/base/cast_base.c
-    mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/fp32/transpose_fp32.c
-    mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/fp32/pack_fp32.c
-    mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/fp16/pack_fp16.c
-    mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/fp32/pack_fp32_opt.c
-    mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/nnacl_common.c
+    mindspore/ops/kernel/cpu/nnacl/kernel.c
+    mindspore/ops/kernel/cpu/nnacl/tensor_c_utils.c
+    mindspore/ops/kernel/cpu/nnacl/tensorlist_c_utils.c
+    mindspore/ops/kernel/cpu/nnacl/base/format_transpose.c
+    mindspore/ops/kernel/cpu/nnacl/base/cast_base.c
+    mindspore/ops/kernel/cpu/nnacl/fp32/transpose_fp32.c
+    mindspore/ops/kernel/cpu/nnacl/fp32/pack_fp32.c
+    mindspore/ops/kernel/cpu/nnacl/fp16/pack_fp16.c
+    mindspore/ops/kernel/cpu/nnacl/fp32/pack_fp32_opt.c
+    mindspore/ops/kernel/cpu/nnacl/nnacl_common.c
   )
   all_files=("${src_files[@]}" "${regist_files[@]}" "${common_files[@]}" "${runtime_files_cc[@]}"
     "${others_files_c[@]}" "${assembly_files[@]}" "${nnacl_files_cc[@]}" "${mindrt_files[@]}"
@@ -417,7 +417,7 @@ getCommonFile
 getTrainCommonFile
 # get src/common/ops
 getOpsFile "REG_POPULATE\(PrimitiveType_" "mindspore/lite/src/common/ops/populate" "prototype" &
-getOpsFile "REG_INFER\(.*?, PrimType_" "mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/infer" "prototype" &
+getOpsFile "REG_INFER\(.*?, PrimType_" "mindspore/ops/kernel/cpu/nnacl/infer" "prototype" &
 # support for cpu
 getOpsFile "REG_KERNEL\(.*?, kNumberTypeFloat32, PrimitiveType_" "mindspore/lite/src/litert/kernel/cpu" "kNumberTypeFloat32" &
 getOpsFile "REG_KERNEL\(.*?, kNumberTypeFloat16, PrimitiveType_" "mindspore/lite/src/litert/kernel/cpu" "kNumberTypeFloat16" &
@@ -425,11 +425,11 @@ getOpsFile "REG_KERNEL\(.*?, kNumberTypeInt8, PrimitiveType_" "mindspore/lite/sr
 getOpsFile "REG_KERNEL\(.*?, kNumberTypeInt32, PrimitiveType_" "mindspore/lite/src/litert/kernel/cpu" "kNumberTypeInt32" &
 getOpsFile "REG_KERNEL\(.*?, kNumberTypeBool, PrimitiveType_" "mindspore/lite/src/litert/kernel/cpu" "kNumberTypeInt32" &
 #support for nnacl kernel
-getNnaclKernelFile "REG_KERNEL_CREATOR\(PrimType_" "mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/kernel" "kNumberTypeFloat32" "kNumberTypeFloat32" &
-getNnaclKernelFile "REG_KERNEL_CREATOR\(PrimType_" "mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/kernel" "kNumberTypeFloat16" "kNumberTypeFloat16" &
-getNnaclKernelFile "REG_KERNEL_CREATOR\(PrimType_" "mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/kernel" "kNumberTypeInt8" "kNumberTypeInt8" &
-getNnaclKernelFile "REG_KERNEL_CREATOR\(PrimType_" "mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/kernel" "kNumberTypeInt32" "kNumberTypeInt32" &
-getNnaclKernelFile "REG_KERNEL_CREATOR\(PrimType_" "mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/kernel" "kNumberTypeInt32" "kNumberTypeBool" &
+getNnaclKernelFile "REG_KERNEL_CREATOR\(PrimType_" "mindspore/ops/kernel/cpu/nnacl/kernel" "kNumberTypeFloat32" "kNumberTypeFloat32" &
+getNnaclKernelFile "REG_KERNEL_CREATOR\(PrimType_" "mindspore/ops/kernel/cpu/nnacl/kernel" "kNumberTypeFloat16" "kNumberTypeFloat16" &
+getNnaclKernelFile "REG_KERNEL_CREATOR\(PrimType_" "mindspore/ops/kernel/cpu/nnacl/kernel" "kNumberTypeInt8" "kNumberTypeInt8" &
+getNnaclKernelFile "REG_KERNEL_CREATOR\(PrimType_" "mindspore/ops/kernel/cpu/nnacl/kernel" "kNumberTypeInt32" "kNumberTypeInt32" &
+getNnaclKernelFile "REG_KERNEL_CREATOR\(PrimType_" "mindspore/ops/kernel/cpu/nnacl/kernel" "kNumberTypeInt32" "kNumberTypeBool" &
 getNnaclKernelFile "NNACL_KERNEL\(PrimitiveType_" "mindspore/lite/src/litert/kernel/cpu/nnacl" "kNumberTypeFloat32" "kNumberTypeFloat32" &
 getNnaclKernelFile "NNACL_KERNEL\(PrimitiveType_" "mindspore/lite/src/litert/kernel/cpu/nnacl" "kNumberTypeFloat16" "kNumberTypeFloat16" &
 getNnaclKernelFile "NNACL_KERNEL\(PrimitiveType_" "mindspore/lite/src/litert/kernel/cpu/nnacl" "kNumberTypeInt8" "kNumberTypeInt8" &
@@ -482,7 +482,7 @@ npu_files=("${npu_files[@]}" "${npu_others_files[@]}")
 # support for nnapi
 while IFS='' read -r line; do npu_files+=("$line"); done < <(ls mindspore/lite/src/litert/delegate/nnapi/*.cc)
 while IFS='' read -r line; do npu_files+=("$line"); done < <(ls mindspore/lite/src/litert/delegate/nnapi/op/*.cc)
-nnapi_others_files=("mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/fp32/transpose_fp32.c")
+nnapi_others_files=("mindspore/ops/kernel/cpu/nnacl/fp32/transpose_fp32.c")
 npu_files=("${npu_files[@]}" "${nnapi_others_files[@]}")
 
 # shellcheck disable=SC2068

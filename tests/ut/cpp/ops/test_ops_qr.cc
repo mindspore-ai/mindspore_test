@@ -27,7 +27,7 @@
 #include "mindapi/base/shape_vector.h"
 #include "test_value_utils.h"
 #include "ops/test_ops.h"
-#include "ops/ops_func_impl/qr.h"
+#include "infer/ops_func_impl/qr.h"
 
 namespace mindspore {
 namespace ops {
@@ -82,13 +82,15 @@ TEST_P(TestQR, dyn_shape) {
 }
 
 auto qr_shape_cases = testing::Values(
-  QrShape{{5, 4}, CreateScalar(true), {5, 5}, {5, 4}},
-  QrShape{{5, 4}, CreateScalar(false), {5, 4}, {4, 4}},
+  QrShape{{5, 4}, CreateScalar(true), {5, 5}, {5, 4}}, QrShape{{5, 4}, CreateScalar(false), {5, 4}, {4, 4}},
   QrShape{{-1, -1, -1}, CreateScalar(true), {-1, -1, -1}, {-1, -1, -1}},
-  QrShape{{-1, -1, -1}, CreateScalar(false), {-1, -1, -1}, {-1, -1, -1}},
-  QrShape{{-2}, CreateScalar(true), {-2}, {-2}},
-  QrShape{{-2}, CreateScalar(false), {-2}, {-2},
-});
+  QrShape{{-1, -1, -1}, CreateScalar(false), {-1, -1, -1}, {-1, -1, -1}}, QrShape{{-2}, CreateScalar(true), {-2}, {-2}},
+  QrShape{
+    {-2},
+    CreateScalar(false),
+    {-2},
+    {-2},
+  });
 
 auto qr_type_cases = testing::ValuesIn({
   QrType{kFloat16, kFloat16, kFloat16},

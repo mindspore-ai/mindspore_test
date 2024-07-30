@@ -20,7 +20,7 @@
 #include <vector>
 #include "tools/converter/parser/tf/tf_node_parser_registry.h"
 #include "tools/converter/parser/tf/tf_util.h"
-#include "ops/fusion/conv2d_transpose_fusion.h"
+#include "infer/cxx_api/conv2d_transpose_fusion.h"
 #include "tools/converter/converter_context.h"
 
 namespace mindspore {

@@ -15,7 +15,7 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/fp32/roi_pooling_fp32.h"
-#include "ops/roi_pooling.h"
+#include "infer/roi_pooling.h"
 using mindspore::ops::kNameROIPooling;
 using mindspore::schema::PrimitiveType_ROIPooling;
 

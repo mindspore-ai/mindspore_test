@@ -15,9 +15,9 @@
  */
 #include "backend/common/graph_kernel/substitute_dropout.h"
 
-#include "ops/array_ops.h"
-#include "mindspore/core/ops/nn_ops.h"
-#include "mindspore/core/ops/op_utils.h"
+#include "op_def/array_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
+#include "mindspore/ops/ops_utils/op_utils.h"
 #include "include/common/utils/utils.h"
 #include "include/backend/optimizer/helper.h"
 #include "backend/common/graph_kernel/graph_kernel_helper.h"
@@ -43,9 +43,9 @@ AnfNodePtr DropoutExpanderDeco::Run(const AnfNodePtr &node) {
   auto shape = AnfAlgo::GetInputDeviceShape(cnode, 0);
   // Get seed from original dropout's attrs, rather than set seed by time.
   // Only seed0 and seed1 are all equal to 0, then set seed = time.
-  int64_t seed = ops::GetScalarValue<int64_t>(cnode->input(kIndex3)->cast<ValueNodePtr>()->value()).value();
+  int64_t seed = GetScalarValue<int64_t>(cnode->input(kIndex3)->cast<ValueNodePtr>()->value()).value();
   if (seed == 0) {
-    seed = ops::GetScalarValue<int64_t>(cnode->input(kIndex4)->cast<ValueNodePtr>()->value()).value();
+    seed = GetScalarValue<int64_t>(cnode->input(kIndex4)->cast<ValueNodePtr>()->value()).value();
     if (seed == 0) {
       seed = seed_++;
     }

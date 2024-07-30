@@ -20,7 +20,7 @@
 #include <utility>
 #include <unordered_map>
 #include "common/op_attr.h"
-#include "ops/fusion/activation.h"
+#include "infer/cxx_api/activation.h"
 #include "op/relu_operator.h"
 #include "op/sigmoid_operator.h"
 #include "op/tanh_operator.h"

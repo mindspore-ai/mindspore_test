@@ -21,8 +21,8 @@
 #include <queue>
 #include <unordered_map>
 #include <utility>
-#include "mindspore/core/ops/sequence_ops.h"
-#include "mindspore/core/ops/array_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
 #include "kernel/kernel.h"
 #include "backend/common/graph_kernel/graph_kernel_helper.h"

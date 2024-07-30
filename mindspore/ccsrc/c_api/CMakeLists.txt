@@ -25,7 +25,7 @@ target_link_libraries(mindspore_c_api PRIVATE ${SECUREC_LIBRARY} mindspore_backe
         proto_input mindspore::protobuf)
 # On ARM platform, the call of infer API will be treated as the cross-library call from frontend by compiler. Thus, the
 # link mode should be be PUBLIC or else a segmentation fault will occur.
-target_link_libraries(mindspore_c_api PUBLIC mindspore_core)
+target_link_libraries(mindspore_c_api PUBLIC mindspore_core mindspore_ops)
 
 if(ENABLE_CPU)
     target_link_libraries(mindspore_c_api PRIVATE mindspore::dnnl mindspore::mkldnn)

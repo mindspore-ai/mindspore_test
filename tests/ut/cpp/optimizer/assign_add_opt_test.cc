@@ -18,7 +18,7 @@
 
 #include "common/common_test.h"
 #include "common/resource.h"
-#include "mindspore/core/ops/sequence_ops.h"
+#include "op_def/sequence_ops.h"
 #include "common/py_func_graph_fetcher.h"
 #include "ir/anf.h"
 #include "ir/func_graph.h"
@@ -33,10 +33,10 @@
 #include "pipeline/jit/ps/parse/data_converter.h"
 #include "include/common/utils/convert_utils.h"
 #include "mindspore/ccsrc/pipeline/jit/ps/static_analysis/static_analysis.h"
-#include "mindspore/core/ops/math_ops.h"
-#include "mindspore/core/ops/array_ops.h"
-#include "mindspore/core/ops/framework_ops.h"
-#include "mindspore/core/ops/nn_optimizer_ops.h"
+#include "op_def/math_ops.h"
+#include "op_def/array_ops.h"
+#include "op_def/framework_ops.h"
+#include "op_def/nn_optimizer_ops.h"
 #include "frontend/parallel/pass/assign_add_opt.h"
 #include "mindspore/ccsrc/frontend/parallel/device_manager.h"
 

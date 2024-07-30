@@ -27,8 +27,8 @@
 #include "mindspore/core/utils/check_convert_utils.h"
 #include "nnacl/op_base.h"
 #include "tools/converter/parser/parser_utils.h"
-#include "ops/op_utils.h"
-#include "ops/op_name.h"
+#include "ops_utils/op_utils.h"
+#include "op_def/op_name.h"
 
 namespace mindspore {
 namespace lite {

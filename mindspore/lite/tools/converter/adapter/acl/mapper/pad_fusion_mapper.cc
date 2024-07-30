@@ -20,7 +20,7 @@
 #include <string>
 #include "tools/converter/adapter/acl/mapper/primitive_mapper_register.h"
 #include "tools/converter/adapter/acl/mapper/tbe_op_def.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 #include "src/common/log_util.h"
 
 namespace mindspore {

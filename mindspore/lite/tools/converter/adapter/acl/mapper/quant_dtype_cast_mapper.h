@@ -18,7 +18,7 @@
 #define ACL_MAPPER_PRIMITIVE_QUANT_DTYPE_CAST_MAPPER_H
 
 #include "tools/converter/adapter/acl/mapper/primitive_mapper.h"
-#include "ops/quant_dtype_cast.h"
+#include "infer/quant_dtype_cast.h"
 
 using mindspore::ops::kNameQuantDTypeCast;
 

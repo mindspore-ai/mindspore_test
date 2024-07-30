@@ -16,11 +16,11 @@
 
 #include "tools/converter/parser/pytorch/pytorch_unaryop_parser.h"
 #include <memory>
-#include "ops/auto_generate/gen_lite_ops.h"
-#include "ops/fusion/tile_fusion.h"
-#include "ops/fusion/exp_fusion.h"
-#include "ops/tan.h"
-#include "ops/eltwise.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
+#include "infer/cxx_api/tile_fusion.h"
+#include "infer/cxx_api/exp_fusion.h"
+#include "infer/tan.h"
+#include "infer/eltwise.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

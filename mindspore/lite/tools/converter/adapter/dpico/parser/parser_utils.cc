@@ -24,12 +24,12 @@
 #include "common/anf_util.h"
 #include "parser/caffe/inputs_adjust.h"
 #include "common/data_transpose_utils.h"
-#include "ops/fusion/conv2d_fusion.h"
-#include "ops/fusion/conv2d_transpose_fusion.h"
-#include "ops/adam.h"
-#include "ops/apply_momentum.h"
-#include "ops/sgd.h"
-#include "ops/op_name.h"
+#include "infer/cxx_api/conv2d_fusion.h"
+#include "infer/cxx_api/conv2d_transpose_fusion.h"
+#include "infer/adam.h"
+#include "infer/apply_momentum.h"
+#include "infer/sgd.h"
+#include "op_def/op_name.h"
 #include "common/check_base.h"
 
 namespace mindspore::lite {

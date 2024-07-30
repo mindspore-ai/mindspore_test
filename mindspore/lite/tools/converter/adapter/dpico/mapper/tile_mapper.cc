@@ -23,7 +23,7 @@
 #include "common/op_attr.h"
 #include "common/op_enum.h"
 #include "common/anf_util.h"
-#include "ops/fusion/tile_fusion.h"
+#include "infer/cxx_api/tile_fusion.h"
 #include "op/tile_operator.h"
 
 namespace mindspore {

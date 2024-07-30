@@ -17,7 +17,7 @@
 #include "node_parser/add_parser_tutorial.h"
 #include <memory>
 #include "include/registry/node_parser_registry.h"
-#include "ops/fusion/add_fusion.h"
+#include "infer/cxx_api/add_fusion.h"
 
 namespace mindspore {
 namespace converter {

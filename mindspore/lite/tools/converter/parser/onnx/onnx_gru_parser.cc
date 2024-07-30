@@ -18,10 +18,10 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "ops/gru.h"
+#include "infer/gru.h"
 #include "nnacl/op_base.h"
 #include "include/registry/converter_context.h"
-#include "mindspore/core/ops/grad/gru_v2_grad.h"
+#include "mindspore/ops/infer/grad/gru_v2_grad.h"
 
 namespace mindspore {
 namespace lite {

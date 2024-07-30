@@ -15,11 +15,13 @@
  */
 
 #include "tools/converter/adapter/acl/mapper/cast_mapper.h"
+#include <vector>
+#include <memory>
 #include "tools/converter/adapter/acl/mapper/primitive_mapper_register.h"
 #include "tools/converter/adapter/acl/common/utils.h"
 #include "tools/lite_exporter/fetch_content.h"
 #include "nnacl/op_base.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace lite {

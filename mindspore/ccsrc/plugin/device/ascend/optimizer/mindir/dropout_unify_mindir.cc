@@ -21,13 +21,13 @@
 #include <numeric>
 #include <functional>
 #include <algorithm>
-#include "ops/sequence_ops.h"
-#include "ops/nn_ops.h"
+#include "op_def/sequence_ops.h"
+#include "op_def/nn_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "utils/log_adapter.h"
 #include "runtime/device/ms_device_shape_transfer.h"
-#include "mindspore/core/ops/op_utils.h"
+#include "mindspore/ops/ops_utils/op_utils.h"
 
 /*
     DropoutGenMask：
@@ -84,7 +84,7 @@ AnfNodePtr CreateKeepProbValueNode(const FuncGraphPtr &func_graph, const AnfNode
   if (cnode_name == kDropoutOpName) {
     auto keep_prob_v = cnode->input(kIndex2)->cast<ValueNodePtr>();
     MS_EXCEPTION_IF_NULL(keep_prob_v);
-    auto keep_prob_opt = ops::GetScalarValue<float>(keep_prob_v->value());
+    auto keep_prob_opt = GetScalarValue<float>(keep_prob_v->value());
     MS_EXCEPTION_IF_CHECK_FAIL(keep_prob_opt.has_value(), "can't get keep_prob value from " + cnode_name);
     keep_prob = keep_prob_opt.value();
   } else if (cnode_name == prim::kPrimDropoutExt->name() || cnode_name == prim::kPrimDropoutGradExt->name()) {
@@ -113,7 +113,7 @@ AnfNodePtr CreateKeepProbValueNode(const FuncGraphPtr &func_graph, const AnfNode
       return keep_prob_node;
     }
     MS_EXCEPTION_IF_NULL(p_value);
-    auto p_opt = ops::GetScalarValue<float>(p_value->value());
+    auto p_opt = GetScalarValue<float>(p_value->value());
     MS_EXCEPTION_IF_CHECK_FAIL(p_opt.has_value(), "can't get p value from " + cnode_name);
     keep_prob = static_cast<float>(1.0) - p_opt.value();
   } else {

@@ -19,12 +19,11 @@
 #include "ops/test_ops.h"
 #include "ops/test_ops_cmp_utils.h"
 #include "ops/test_value_utils.h"
-#include "ops/ops_func_impl/group_norm_grad.h"
+#include "infer/ops_func_impl/group_norm_grad.h"
 
 namespace mindspore {
 namespace ops {
-struct GroupNormGradOpParams
-{
+struct GroupNormGradOpParams {
   ShapeVector dy_shape;
   TypePtr dy_type;
   ShapeVector x_shape;
@@ -74,14 +73,20 @@ TEST_P(TestGroupNormGrad, group_norm_grad_dyn_shape) {
   auto dbeta_is_require = param.dbeta_is_require->ToAbstract();
   ASSERT_NE(dbeta_is_require, nullptr);
 
-  std::vector<abstract::AbstractBasePtr> input_args{std::move(dy), std::move(x), std::move(mean), std::move(rstd),
-                                                    std::move(gamma), std::move(num_groups), std::move(dx_is_require),
-                                                    std::move(dgamma_is_require), std::move(dbeta_is_require)};
+  std::vector<abstract::AbstractBasePtr> input_args{std::move(dy),
+                                                    std::move(x),
+                                                    std::move(mean),
+                                                    std::move(rstd),
+                                                    std::move(gamma),
+                                                    std::move(num_groups),
+                                                    std::move(dx_is_require),
+                                                    std::move(dgamma_is_require),
+                                                    std::move(dbeta_is_require)};
   auto infer_impl = std::make_shared<GroupNormGradFuncImpl>();
   ASSERT_NE(infer_impl, nullptr);
   auto infer_shapes_ptr = infer_impl->InferShape(primitive, input_args);
   std::shared_ptr<abstract::TupleShape> infer_shapes =
-            std::dynamic_pointer_cast<abstract::TupleShape>(infer_shapes_ptr);
+    std::dynamic_pointer_cast<abstract::TupleShape>(infer_shapes_ptr);
   ASSERT_NE(infer_shapes, nullptr);
   auto infer_types_ptr = infer_impl->InferType(primitive, input_args);
   std::shared_ptr<Tuple> infer_types = std::dynamic_pointer_cast<Tuple>(infer_types_ptr);
@@ -108,27 +113,26 @@ TEST_P(TestGroupNormGrad, group_norm_grad_dyn_shape) {
   ASSERT_TRUE(*((*infer_types)[2]) == *expect_pd_beta_type);
 }
 
-INSTANTIATE_TEST_CASE_P(
-  TestGroupNormGradGroup, TestGroupNormGrad,
-  testing::Values(GroupNormGradOpParams{{1, 2, 4, 4},
-                                        kFloat32,
-                                        {1, 2, 4, 4},
-                                        kFloat32,
-                                        {1, 2},
-                                        kFloat32,
-                                        {1, 2},
-                                        kFloat32,
-                                        {2},
-                                        kFloat32,
-                                        CreateScalar<int64_t>(2),
-                                        CreateScalar<bool>(true),
-                                        CreateScalar<bool>(true),
-                                        CreateScalar<bool>(true),
-                                        {1, 2, 4, 4},
-                                        kFloat32,
-                                        {2},
-                                        kFloat32,
-                                        {2},
-                                        kFloat32}));
+INSTANTIATE_TEST_CASE_P(TestGroupNormGradGroup, TestGroupNormGrad,
+                        testing::Values(GroupNormGradOpParams{{1, 2, 4, 4},
+                                                              kFloat32,
+                                                              {1, 2, 4, 4},
+                                                              kFloat32,
+                                                              {1, 2},
+                                                              kFloat32,
+                                                              {1, 2},
+                                                              kFloat32,
+                                                              {2},
+                                                              kFloat32,
+                                                              CreateScalar<int64_t>(2),
+                                                              CreateScalar<bool>(true),
+                                                              CreateScalar<bool>(true),
+                                                              CreateScalar<bool>(true),
+                                                              {1, 2, 4, 4},
+                                                              kFloat32,
+                                                              {2},
+                                                              kFloat32,
+                                                              {2},
+                                                              kFloat32}));
 }  // namespace ops
 }  // namespace mindspore

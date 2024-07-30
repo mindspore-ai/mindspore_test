@@ -25,7 +25,7 @@
 #include "tools/optimizer/common/gllo_utils.h"
 #include "tools/optimizer/common/multiple_pattern_process_pass.h"
 #include "tools/optimizer/common/pattern_process_pass_extends.h"
-#include "mindspore/core/ops/nn_optimizer_ops.h"
+#include "mindspore/ops/op_def/nn_optimizer_ops.h"
 
 namespace mindspore {
 namespace opt {

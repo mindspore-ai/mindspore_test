@@ -16,8 +16,8 @@
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "src/common/ops/operator_populate/utils.h"
 #include "nnacl/fp32/exp_fp32.h"
-#include "ops/auto_generate/gen_lite_ops.h"
-#include "ops/fusion/exp_fusion.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
+#include "infer/cxx_api/exp_fusion.h"
 using mindspore::ops::kBase;
 using mindspore::ops::kNameExp;
 using mindspore::ops::kNameExpFusion;

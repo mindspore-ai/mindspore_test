@@ -15,7 +15,7 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/fp32/local_response_norm_fp32.h"
-#include "ops/lrn.h"
+#include "infer/lrn.h"
 using mindspore::ops::kNameLRN;
 using mindspore::schema::PrimitiveType_LRN;
 namespace mindspore {

@@ -21,7 +21,7 @@
 #include <string>
 #include <map>
 #include <unordered_map>
-#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "kernel/cpu/cpu_kernel.h"
 #include "nnacl/transpose_parameter.h"
 #include "kernel/common_utils.h"
 

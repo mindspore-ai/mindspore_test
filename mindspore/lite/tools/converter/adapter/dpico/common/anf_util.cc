@@ -25,9 +25,9 @@
 #include "common/op_enum.h"
 #include "common/op_attr.h"
 #include "common/string_util.h"
-#include "ops/custom.h"
-#include "ops/tuple_get_item.h"
-#include "ops/auto_generate/gen_lite_ops.h"
+#include "infer/custom.h"
+#include "infer/tuple_get_item.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
 #include "common/check_base.h"
 namespace mindspore {
 namespace ops {

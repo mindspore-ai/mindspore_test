@@ -16,7 +16,7 @@
 
 #include "tools/converter/parser/onnx/onnx_hardswish_parser.h"
 #include <memory>
-#include "ops/ops_func_impl/hswish.h"
+#include "infer/ops_func_impl/hswish.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

@@ -22,7 +22,7 @@
 #include <deque>
 #include <vector>
 #include <utility>
-#include "ops/sequence_ops.h"
+#include "op_def/sequence_ops.h"
 #include "include/common/utils/anfalgo.h"
 
 namespace mindspore {

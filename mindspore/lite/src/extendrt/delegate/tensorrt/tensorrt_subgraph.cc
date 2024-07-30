@@ -30,8 +30,8 @@
 #include "src/extendrt/delegate/delegate_utils.h"
 #include "src/extendrt/delegate/tensorrt/tensorrt_utils.h"
 #include "src/common/utils.h"
-#include "ops/auto_generate/gen_lite_ops.h"
-#include "ops/fusion/topk_fusion.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
+#include "infer/cxx_api/topk_fusion.h"
 
 namespace mindspore::lite {
 TensorRTSubGraph::TensorRTSubGraph(std::vector<TensorRTOp *> ops, const std::vector<TensorInfo> &inputs,

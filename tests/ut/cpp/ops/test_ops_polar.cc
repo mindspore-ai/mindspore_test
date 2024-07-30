@@ -16,7 +16,7 @@
 #include <vector>
 #include <memory>
 #include "common/common_test.h"
-#include "ops/polar.h"
+#include "infer/polar.h"
 #include "ir/dtype/type.h"
 #include "abstract/dshape.h"
 #include "utils/tensor_construct_utils.h"
@@ -53,9 +53,8 @@ TEST_P(TestPolar, dyn_shape) {
 }
 
 INSTANTIATE_TEST_CASE_P(TestPolarGroup, TestPolar,
-                        testing::Values(
-                          PolarParams{{2, 3}, kFloat32, {2, 3}, kFloat32, {2, 3}, kComplex64},
-                          PolarParams{{-1, -1}, kFloat32, {-1, -1}, kFloat32, {-1, -1}, kComplex64},
-                          PolarParams{{-2}, kFloat32, {-2}, kFloat32, {-2}, kComplex64}));
+                        testing::Values(PolarParams{{2, 3}, kFloat32, {2, 3}, kFloat32, {2, 3}, kComplex64},
+                                        PolarParams{{-1, -1}, kFloat32, {-1, -1}, kFloat32, {-1, -1}, kComplex64},
+                                        PolarParams{{-2}, kFloat32, {-2}, kFloat32, {-2}, kComplex64}));
 }  // namespace ops
 }  // namespace mindspore

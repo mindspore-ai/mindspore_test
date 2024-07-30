@@ -17,7 +17,7 @@
 #include "plugin/device/ascend/optimizer/mindir/specialized_prepare.h"
 #include <memory>
 #include <vector>
-#include "mindspore/core/ops/other_ops.h"
+#include "mindspore/ops/op_def/other_ops.h"
 
 namespace mindspore {
 namespace opt {

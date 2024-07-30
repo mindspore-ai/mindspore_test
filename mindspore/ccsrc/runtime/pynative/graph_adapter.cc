@@ -30,7 +30,7 @@
 #include "runtime/graph_scheduler/actor/actor_common.h"
 #include "runtime/graph_scheduler/scheduler_helper.h"
 #include "runtime/device/device_address_utils.h"
-#include "kernel/pyboost/pyboost_utils.h"
+#include "kernel/common/pyboost/pyboost_utils.h"
 
 namespace mindspore::pynative {
 namespace {

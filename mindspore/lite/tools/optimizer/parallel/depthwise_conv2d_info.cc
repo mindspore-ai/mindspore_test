@@ -22,19 +22,19 @@
 #include <algorithm>
 #include <utility>
 #include "securec/include/securec.h"
-#include "mindspore/core/ops/conv_pool_ops.h"
-#include "mindspore/core/ops/lite_ops.h"
+#include "mindspore/ops/op_def/conv_pool_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
 #include "nnacl/op_base.h"
-#include "ops/fusion/conv2d_fusion.h"
+#include "infer/cxx_api/conv2d_fusion.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "include/common/utils/utils.h"
 #include "include/errorcode.h"
 #include "tools/optimizer/parallel/operator_info_register.h"
 #include "tools/optimizer/fisson/fisson_util.h"
-#include "ops/split_with_overlap.h"
+#include "infer/split_with_overlap.h"
 #include "src/tensor.h"
 #include "tools/optimizer/parallel/spliter.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 
 using mindspore::schema::PrimitiveType_Conv2DFusion;
 namespace mindspore {

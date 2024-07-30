@@ -19,7 +19,7 @@
 
 #include "tools/converter/adapter/acl/mapper/primitive_mapper.h"
 #include "tools/converter/adapter/acl/mapper/tbe_op_def.h"
-#include "ops/resize.h"
+#include "infer/resize.h"
 
 namespace mindspore {
 namespace lite {

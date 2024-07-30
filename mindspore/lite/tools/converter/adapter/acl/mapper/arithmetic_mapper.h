@@ -18,12 +18,12 @@
 #define MINDSPORE_LITE_TOOLS_CONVERTER_ADAPTER_ACL_MAPPER_ARITHMETIC_MAPPER_H_
 
 #include "tools/converter/adapter/acl/mapper/primitive_mapper.h"
-#include "ops/fusion/add_fusion.h"
-#include "ops/fusion/div_fusion.h"
-#include "ops/fusion/mul_fusion.h"
-#include "ops/fusion/pow_fusion.h"
-#include "ops/fusion/sub_fusion.h"
-#include "ops/fusion/exp_fusion.h"
+#include "infer/cxx_api/add_fusion.h"
+#include "infer/cxx_api/div_fusion.h"
+#include "infer/cxx_api/mul_fusion.h"
+#include "infer/cxx_api/pow_fusion.h"
+#include "infer/cxx_api/sub_fusion.h"
+#include "infer/cxx_api/exp_fusion.h"
 
 namespace mindspore {
 namespace lite {

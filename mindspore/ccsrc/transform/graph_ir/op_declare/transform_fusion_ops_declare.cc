@@ -17,7 +17,7 @@
 #include "transform/graph_ir/op_declare/transform_fusion_ops_declare.h"
 #include <vector>
 #include <string>
-#include "ops/fusion/flash_attention.h"
+#include "infer/cxx_api/flash_attention.h"
 
 namespace mindspore::transform {
 // KVCacheMgr

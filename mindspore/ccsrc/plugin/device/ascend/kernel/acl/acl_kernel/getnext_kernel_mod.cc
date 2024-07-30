@@ -18,7 +18,7 @@
 #include "plugin/device/ascend/hal/device/ascend_data_queue.h"
 #include "include/backend/data_queue/data_queue_mgr.h"
 #include "transform/acl_ir/acl_helper.h"
-#include "ops/structure_op_name.h"
+#include "op_def/structure_op_name.h"
 #include "pybind_api/gil_scoped_long_running.h"
 
 namespace mindspore {

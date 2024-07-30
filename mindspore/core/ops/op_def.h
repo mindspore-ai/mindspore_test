@@ -20,8 +20,8 @@
 #include <vector>
 #include <memory>
 #include <unordered_map>
-#include "ir/dtype/type_id.h"
-#include "ops_func_impl/op_func_impl.h"
+#include "mindspore/core/ir/dtype/type_id.h"
+#include "mindspore/core/ops/ops_func_impl/op_func_impl.h"
 namespace mindspore::ops {
 
 enum OP_DTYPE : int64_t {
@@ -90,6 +90,6 @@ class OpDefRegHelper {
 };
 
 #define REGISTER_PRIMITIVE_OP_DEF(op_name, op_def) \
-  static auto op_def_helper_##op_name = OpDefRegHelper(op_name, op_def);
+  static const OpDefRegHelper op_def_helper_##op_name(#op_name, op_def);
 }  // namespace mindspore::ops
 #endif

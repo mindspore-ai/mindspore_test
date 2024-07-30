@@ -17,7 +17,7 @@
 #include "src/extendrt/delegate/tensorrt/op/batchnorm_tensorrt.h"
 #include <memory>
 #include <numeric>
-#include "ops/fused_batch_norm.h"
+#include "infer/fused_batch_norm.h"
 
 namespace mindspore::lite {
 int BatchNormTensorRT::IsSupport(const BaseOperatorPtr &base_operator, const std::vector<TensorInfo> &in_tensors,

@@ -21,7 +21,7 @@
 #include <vector>
 #include <utility>
 #include "include/api/format.h"
-#include "ops/make_tuple.h"
+#include "infer/make_tuple.h"
 #include "common/anf_util.h"
 #include "common/op_attr.h"
 #include "common/op_enum.h"
@@ -30,7 +30,7 @@
 #include "src/mapper_config_parser.h"
 #include "src/om_generator.h"
 #include "src/graph_split_api.h"
-#include "ops/tuple_get_item.h"
+#include "infer/tuple_get_item.h"
 #include "third_party/securec/include/securec.h"
 #include "include/registry/converter_context.h"
 

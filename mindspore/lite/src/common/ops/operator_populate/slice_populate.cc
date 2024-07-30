@@ -16,7 +16,7 @@
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "src/common/ops/operator_populate/utils.h"
 #include "nnacl/slice_parameter.h"
-#include "ops/fusion/slice_fusion.h"
+#include "infer/cxx_api/slice_fusion.h"
 using mindspore::ops::kNameSliceFusion;
 using mindspore::schema::PrimitiveType_SliceFusion;
 

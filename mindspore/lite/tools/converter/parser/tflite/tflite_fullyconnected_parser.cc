@@ -17,7 +17,7 @@
 #include "tools/converter/parser/tflite/tflite_fullyconnected_parser.h"
 #include <vector>
 #include <memory>
-#include "ops/fusion/full_connection.h"
+#include "infer/cxx_api/full_connection.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

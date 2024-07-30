@@ -16,8 +16,8 @@
 
 #include "tools/converter/adapter/acl/mapper/conv3d_mapper.h"
 #include "tools/converter/adapter/acl/mapper/primitive_mapper_register.h"
-#include "ops/op_utils.h"
-#include "mindspore/core/ops/op_name.h"
+#include "ops_utils/op_utils.h"
+#include "mindspore/ops/op_def/op_name.h"
 
 namespace mindspore {
 namespace lite {

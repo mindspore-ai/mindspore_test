@@ -42,11 +42,12 @@ endif()
 
 add_library(kernel_executor SHARED ${KERNEL_EXECUTOR_SRC})
 
-add_dependencies(kernel_executor fbs_inner_src fbs_src mindspore_core)
+add_dependencies(kernel_executor fbs_inner_src fbs_src mindspore_core mindspore_ops)
 
 target_link_libraries(kernel_executor
         mindspore-lite
         mindspore_core
+        mindspore_ops
         mindspore::json
         mindspore::flatbuffers
         mindspore::glog)

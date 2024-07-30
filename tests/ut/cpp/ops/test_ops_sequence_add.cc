@@ -16,7 +16,7 @@
 #include <vector>
 #include <memory>
 #include "common/common_test.h"
-#include "ops/sequence_op_name.h"
+#include "op_def/sequence_op_name.h"
 #include "ir/dtype/type.h"
 #include "abstract/dshape.h"
 #include "utils/tensor_construct_utils.h"
@@ -124,29 +124,19 @@ TEST_P(TestSequenceAddDyn, sequence_add_dyn_shape) {
   }
 }
 
-INSTANTIATE_TEST_CASE_P(TestSequenceAddDyn, TestSequenceAddDyn,
-                        testing::Values(TestSequenceAddParams {true, true, false,
-                                                               std::vector<ShapeVector>{{2, 3}, {2, 3}},
-                                                               kInt32,
-                                                               std::vector<ShapeVector>{{2, 3}, {2, 3}},
-                                                               kInt32,
-                                                               std::vector<ShapeVector>{{2, 3}, {2, 3}, {2, 3}, {2, 3}},
-                                                               kInt32},
-                                        TestSequenceAddParams {true, false, true,
-                                                               std::vector<ShapeVector>{{2, 3}, {2, 3}},
-                                                               kInt32,
-                                                               std::vector<ShapeVector>{{2, 3}, {2, 3}},
-                                                               kInt32,
-                                                               std::vector<ShapeVector>{{2, 3}, {2, 3}, {2, 3}, {2, 3}},
-                                                               kInt32},
-                                        TestSequenceAddParams {false, true, false,
-                                                               std::vector<ShapeVector>{{1, 2, 3}}, kInt32,
-                                                               std::vector<ShapeVector>{{4, 5, 6}}, kInt32,
-                                                               std::vector<ShapeVector>{{1, 2, 3, 4, 5, 6}}, kInt32},
-                                        TestSequenceAddParams {false, false, true,
-                                                               std::vector<ShapeVector>{{1, 2, 3}}, kInt32,
-                                                               std::vector<ShapeVector>{{4, 5, 6}}, kInt32,
-                                                               std::vector<ShapeVector>{{1, 2, 3, 4, 5, 6}}, kInt32}
-                                        ));
+INSTANTIATE_TEST_CASE_P(
+  TestSequenceAddDyn, TestSequenceAddDyn,
+  testing::Values(TestSequenceAddParams{true, true, false, std::vector<ShapeVector>{{2, 3}, {2, 3}}, kInt32,
+                                        std::vector<ShapeVector>{{2, 3}, {2, 3}}, kInt32,
+                                        std::vector<ShapeVector>{{2, 3}, {2, 3}, {2, 3}, {2, 3}}, kInt32},
+                  TestSequenceAddParams{true, false, true, std::vector<ShapeVector>{{2, 3}, {2, 3}}, kInt32,
+                                        std::vector<ShapeVector>{{2, 3}, {2, 3}}, kInt32,
+                                        std::vector<ShapeVector>{{2, 3}, {2, 3}, {2, 3}, {2, 3}}, kInt32},
+                  TestSequenceAddParams{false, true, false, std::vector<ShapeVector>{{1, 2, 3}}, kInt32,
+                                        std::vector<ShapeVector>{{4, 5, 6}}, kInt32,
+                                        std::vector<ShapeVector>{{1, 2, 3, 4, 5, 6}}, kInt32},
+                  TestSequenceAddParams{false, false, true, std::vector<ShapeVector>{{1, 2, 3}}, kInt32,
+                                        std::vector<ShapeVector>{{4, 5, 6}}, kInt32,
+                                        std::vector<ShapeVector>{{1, 2, 3, 4, 5, 6}}, kInt32}));
 }  // namespace ops
 }  // namespace mindspore

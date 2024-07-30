@@ -17,8 +17,8 @@
 #include "src/extendrt/delegate/tensorrt/op/pool_tensorrt.h"
 #include "src/extendrt/delegate/tensorrt/op/activation_tensorrt.h"
 #include "src/extendrt/delegate/tensorrt/tensorrt_utils.h"
-#include "ops/fusion/avg_pool_fusion.h"
-#include "ops/fusion/max_pool_fusion.h"
+#include "infer/cxx_api/avg_pool_fusion.h"
+#include "infer/cxx_api/max_pool_fusion.h"
 
 namespace mindspore::lite {
 int PoolTensorRT::IsSupport(const BaseOperatorPtr &base_operator, const std::vector<TensorInfo> &in_tensors,

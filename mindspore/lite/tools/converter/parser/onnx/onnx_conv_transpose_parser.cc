@@ -18,7 +18,7 @@
 #include <vector>
 #include <memory>
 #include <algorithm>
-#include "ops/fusion/conv2d_transpose_fusion.h"
+#include "infer/cxx_api/conv2d_transpose_fusion.h"
 #include "nnacl/op_base.h"
 #include "src/common/log_util.h"
 

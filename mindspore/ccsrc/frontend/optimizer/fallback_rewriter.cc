@@ -26,14 +26,14 @@
 #include <vector>
 #include <set>
 #include <unordered_map>
-#include "ops/structure_ops.h"
-#include "ops/sparse_tensor_ops.h"
-#include "ops/sequence_ops.h"
-#include "ops/array_ops.h"
-#include "ops/arithmetic_ops.h"
-#include "ops/framework_ops.h"
-#include "ops/auto_generate/gen_ops_primitive.h"
-#include "ops/op_utils.h"
+#include "op_def/structure_ops.h"
+#include "op_def/sparse_tensor_ops.h"
+#include "op_def/sequence_ops.h"
+#include "op_def/array_ops.h"
+#include "op_def/arithmetic_ops.h"
+#include "op_def/framework_ops.h"
+#include "op_def/auto_generate/gen_ops_primitive.h"
+#include "ops_utils/op_utils.h"
 #include "abstract/abstract_value.h"
 #include "base/base.h"
 #include "pipeline/jit/ps/debug/trace.h"
@@ -1626,7 +1626,7 @@ class AfterOptARewriter : public BaseRewriter {
     MS_EXCEPTION_IF_NULL(dtype_abs);
     auto dtype_val = dtype_abs->GetValue();
     MS_EXCEPTION_IF_NULL(dtype_val);
-    auto type_id_opt = ops::GetScalarValue<int64_t>(dtype_val);
+    auto type_id_opt = GetScalarValue<int64_t>(dtype_val);
     if (!type_id_opt.has_value()) {
       MS_LOG(EXCEPTION) << "the dtype input is invalid!";
     }

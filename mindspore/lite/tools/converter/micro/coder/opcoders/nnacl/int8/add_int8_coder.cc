@@ -22,7 +22,7 @@
 #include "coder/opcoders/parallel.h"
 #include "coder/opcoders/serializers/nnacl_serializer/nnacl_int8_serializer.h"
 #include "coder/utils/common.h"
-#include "mindspore/core/ops/array_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
 #include "nnacl/int8/quantize.h"
 
 using mindspore::schema::PrimitiveType_AddFusion;

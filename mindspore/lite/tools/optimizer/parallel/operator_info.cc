@@ -18,12 +18,12 @@
 #include "tools/optimizer/parallel/operator_info.h"
 #include <algorithm>
 #include "tools/optimizer/parallel/split_strategy.h"
-#include "ops/auto_generate/gen_lite_ops.h"
-#include "ops/tuple_get_item.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
+#include "infer/tuple_get_item.h"
 #include "include/common/utils/utils.h"
 #include "include/errorcode.h"
 #include "nnacl/op_base.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 #include "src/common/log_util.h"
 
 namespace mindspore {

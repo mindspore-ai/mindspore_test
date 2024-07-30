@@ -22,7 +22,7 @@
 #include "include/registry/converter_context.h"
 #include "tools/converter/adapter/acl/mapper/tbe_op_def.h"
 #include "nnacl/op_base.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "src/common/log_util.h"
 

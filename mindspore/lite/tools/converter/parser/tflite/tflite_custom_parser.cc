@@ -20,16 +20,16 @@
 #include <vector>
 #include "flatbuffers/flexbuffers.h"
 
-#include "ops/audio_spectrogram.h"
-#include "ops/custom_extract_features.h"
-#include "ops/custom_normalize.h"
-#include "ops/custom_predict.h"
-#include "ops/detection_post_process.h"
-#include "ops/auto_generate/gen_lite_ops.h"
-#include "ops/fft_real.h"
-#include "ops/fft_imag.h"
-#include "ops/mfcc.h"
-#include "ops/rfft.h"
+#include "infer/audio_spectrogram.h"
+#include "infer/custom_extract_features.h"
+#include "infer/custom_normalize.h"
+#include "infer/custom_predict.h"
+#include "infer/detection_post_process.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
+#include "infer/fft_real.h"
+#include "infer/fft_imag.h"
+#include "infer/mfcc.h"
+#include "infer/rfft.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

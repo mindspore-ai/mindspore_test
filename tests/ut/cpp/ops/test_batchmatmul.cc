@@ -16,7 +16,7 @@
 #include <vector>
 #include <memory>
 #include "common/common_test.h"
-#include "ops/ops_func_impl/batch_mat_mul.h"
+#include "infer/ops_func_impl/batch_mat_mul.h"
 #include "ir/dtype/type.h"
 #include "abstract/dshape.h"
 #include "utils/tensor_construct_utils.h"
@@ -25,7 +25,7 @@
 #include "ops/test_ops.h"
 #include "ops/test_value_utils.h"
 #include "ops/test_ops_cmp_utils.h"
-#include "ops/auto_generate/gen_ops_primitive.h"
+#include "op_def/auto_generate/gen_ops_primitive.h"
 
 namespace mindspore {
 namespace ops {
@@ -57,7 +57,6 @@ struct BmmTypes {
   TypePtr out_type;
   TypePtr cast_type;
 };
-
 
 class TestBmm : public TestOps, public testing::WithParamInterface<std::tuple<BmmShapes, BmmTypes>> {};
 

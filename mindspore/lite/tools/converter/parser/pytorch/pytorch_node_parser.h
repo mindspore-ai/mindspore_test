@@ -25,7 +25,7 @@
 #include "include/errorcode.h"
 #include "ir/dtype/type_id.h"
 #include "ops/primitive_c.h"
-#include "ops/op_name.h"
+#include "op_def/op_name.h"
 #include "src/common/log_adapter.h"
 #include "tools/common/tensor_util.h"
 #include "tools/converter/parser/parser_utils.h"

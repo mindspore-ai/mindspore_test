@@ -22,7 +22,7 @@
 #include "common/anf_util.h"
 #include "common/op_attr.h"
 #include "op/custom_operator.h"
-#include "ops/custom.h"
+#include "infer/custom.h"
 
 namespace mindspore {
 namespace dpico {

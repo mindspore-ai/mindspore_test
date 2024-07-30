@@ -16,21 +16,21 @@
 #include <vector>
 #include "ops/test_ops_cmp_utils.h"
 #include "ir/dtype/number.h"
-#include "ops/ops_func_impl/argmax_ext.h"
+#include "infer/ops_func_impl/argmax_ext.h"
 #include "ops/test_value_utils.h"
 #include "abstract/dshape.h"
-#include "ops/auto_generate/gen_ops_primitive.h"
+#include "op_def/auto_generate/gen_ops_primitive.h"
 
 namespace mindspore {
 namespace ops {
 
 struct ArgMaxExtParams {
   ShapeVector input_shape;
-  TypePtr     input_dtype;
-  ValuePtr    dim;
-  ValuePtr    keepdim;
+  TypePtr input_dtype;
+  ValuePtr dim;
+  ValuePtr keepdim;
   ShapeVector output_shape;
-  TypePtr     output_dtype;
+  TypePtr output_dtype;
 };
 
 class TestArgMaxExt : public TestOps, public testing::WithParamInterface<ArgMaxExtParams> {};

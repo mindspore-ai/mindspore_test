@@ -16,10 +16,10 @@
 
 #define USE_DEPRECATED_API
 #include "tools/optimizer/graph/mul_constant_pass.h"
-#include "mindspore/core/ops/lite_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
 #include "nnacl/op_base.h"
-#include "ops/op_utils.h"
-#include "ops/fusion/mul_fusion.h"
+#include "ops_utils/op_utils.h"
+#include "infer/cxx_api/mul_fusion.h"
 #include "src/common/utils.h"
 #include "tools/common/tensor_util.h"
 #include "tools/lite_exporter/fetch_content.h"

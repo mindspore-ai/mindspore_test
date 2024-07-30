@@ -24,8 +24,8 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/parallel_context.h"
 #include "include/common/utils/utils.h"
-#include "ops/ascend_op_name.h"
-#include "ops/framework_op_name.h"
+#include "op_def/ascend_op_name.h"
+#include "op_def/framework_op_name.h"
 #include "frontend/parallel/ops_info/ops_utils.h"
 #include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
 

@@ -28,8 +28,8 @@
 #include <algorithm>
 #include "src/extendrt/delegate/tensorrt/tensorrt_utils.h"
 #include "NvInferRuntimeCommon.h"
-#include "ops/attention.h"
-#include "ops/custom.h"
+#include "infer/attention.h"
+#include "infer/custom.h"
 #include "tools/graph_kernel/common/utils.h"
 
 namespace mindspore::lite {

@@ -17,7 +17,7 @@
 #include "parser/caffe/caffe_clip_parser.h"
 #include <memory>
 #include <vector>
-#include "ops/clip.h"
+#include "infer/clip.h"
 
 namespace mindspore {
 namespace lite {

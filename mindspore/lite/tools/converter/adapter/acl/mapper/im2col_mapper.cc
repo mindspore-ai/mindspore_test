@@ -19,7 +19,7 @@
 #include "tools/converter/adapter/acl/mapper/im2col_mapper.h"
 #include "tools/converter/adapter/acl/mapper/primitive_mapper_register.h"
 #include "src/common/log_util.h"
-#include "ops/im2col.h"
+#include "infer/im2col.h"
 
 namespace mindspore {
 namespace lite {

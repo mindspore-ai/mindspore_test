@@ -18,8 +18,8 @@
 #include "tools/optimizer/graph/input_data_type_trans_pass.h"
 #include <vector>
 #include <memory>
-#include "ops/op_utils.h"
-#include "ops/auto_generate/gen_lite_ops.h"
+#include "ops_utils/op_utils.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "tools/optimizer/common/format_utils.h"
 #include "tools/lite_exporter/fetch_content.h"

@@ -18,7 +18,7 @@
 #include <vector>
 #include <memory>
 #include <string>
-#include "ops/fusion/pad_fusion.h"
+#include "infer/cxx_api/pad_fusion.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

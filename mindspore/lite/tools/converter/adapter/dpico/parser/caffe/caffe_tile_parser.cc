@@ -18,7 +18,7 @@
 #include <memory>
 #include <vector>
 #include "common/op_attr.h"
-#include "ops/fusion/tile_fusion.h"
+#include "infer/cxx_api/tile_fusion.h"
 
 namespace mindspore {
 namespace lite {

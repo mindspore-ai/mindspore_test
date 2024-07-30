@@ -15,15 +15,15 @@
  */
 #define USE_DEPRECATED_API
 #include "tools/converter/parser/pytorch/pytorch_lstm_adjust.h"
-#include "ops/lstm.h"
+#include "infer/lstm.h"
 #include "src/common/utils.h"
 #include "tools/lite_exporter/fetch_content.h"
 #include "tools/common/tensor_util.h"
 #include "utils/check_convert_utils.h"
 #include "nnacl/op_base.h"
-#include "ops/op_utils.h"
-#include "mindspore/core/ops/nn_ops.h"
-#include "mindspore/core/ops/sequence_ops.h"
+#include "ops_utils/op_utils.h"
+#include "mindspore/ops/op_def/nn_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
 
 namespace mindspore {
 namespace opt {

@@ -18,13 +18,13 @@
 #include "tools/optimizer/fusion/transpose_matmul_fusion.h"
 #include <memory>
 #include <vector>
-#include "mindspore/core/ops/lite_ops.h"
-#include "mindspore/core/ops/array_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "tools/optimizer/common/format_utils.h"
 #include "nnacl/op_base.h"
-#include "ops/auto_generate/gen_lite_ops.h"
-#include "ops/op_utils.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
+#include "ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace opt {

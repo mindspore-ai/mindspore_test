@@ -21,7 +21,7 @@
 #include "include/api/types.h"
 #include "include/api/data_type.h"
 #include "extendrt/kernel/ascend/model/model_infer.h"
-#include "core/ops/custom.h"
+#include "infer/custom.h"
 #include "plugin/factory/ms_factory.h"
 #include "src/common/log_util.h"
 #include "src/common/common.h"

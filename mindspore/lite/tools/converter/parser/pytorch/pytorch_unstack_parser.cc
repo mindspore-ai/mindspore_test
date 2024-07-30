@@ -17,7 +17,7 @@
 #include "tools/converter/parser/pytorch/pytorch_unstack_parser.h"
 #include <memory>
 #include <vector>
-#include "ops/unstack.h"
+#include "infer/unstack.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

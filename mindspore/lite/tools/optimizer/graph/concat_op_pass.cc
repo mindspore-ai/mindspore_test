@@ -16,18 +16,18 @@
 #include <memory>
 #include <vector>
 #include <string>
-#include "ops/auto_generate/gen_lite_ops.h"
-#include "ops/auto_generate/gen_ops_primitive.h"
-#include "ops/array_ops.h"
-#include "ops/lite_ops.h"
-#include "ops/tuple_get_item.h"
-#include "ops/make_tuple.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
+#include "op_def/auto_generate/gen_ops_primitive.h"
+#include "op_def/array_ops.h"
+#include "op_def/lite_ops.h"
+#include "infer/tuple_get_item.h"
+#include "infer/make_tuple.h"
 #include "tools/optimizer/graph/concat_op_pass.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "tools/optimizer/graph/lite_tensor_extractor.h"
 #include "mindspore/core/abstract/ops/primitive_infer_map.h"
 #include "mindspore/core/utils/anf_utils.h"
-#include "mindspore/core/ops/math_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
 #include "extendrt/utils/func_graph_utils.h"
 #include "include/common/utils/anfalgo.h"
 

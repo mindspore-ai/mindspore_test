@@ -28,6 +28,8 @@ import template
 from template import CppTemplate
 from gen_pyboost_func import gen_pyboost_code
 from gen_aclnn_implement import gen_aclnn_kernel
+import gen_constants as K
+
 
 
 def _get_op_name(yaml_key, yaml_value):
@@ -635,7 +637,7 @@ def generate_op_prim_opdef(yaml_data):
 #include <memory>
 #include "ir/anf.h"
 #include "ir/primitive.h"
-#include "ops/auto_generate/gen_ops_name.h"
+#include "{K.OP_DEF_AUTO_GENERATE_PATH}/gen_ops_name.h"
 #include "mindapi/base/macros.h"
 
 namespace mindspore::prim {{
@@ -665,7 +667,7 @@ def generate_lite_ops(yaml_data):
 
 #include <vector>
 #include "ops/base_operator.h"
-#include "ops/auto_generate/gen_ops_name.h"
+#include "{K.OP_DEF_AUTO_GENERATE_PATH}/gen_ops_name.h"
 
 namespace mindspore::ops {{
 """
@@ -674,14 +676,14 @@ namespace mindspore::ops {{
 #endif  // MINDSPORE_CORE_OPS_GEN_LITE_OPS_H_
 """
 
-    lite_ops_cc_head = """
-#include "ops/auto_generate/gen_lite_ops.h"
+    lite_ops_cc_head = f"""
+#include "{K.OP_DEF_AUTO_GENERATE_PATH}/gen_lite_ops.h"
 #include "mindapi/src/helper.h"
-#include "ops/primitive_c.h"
+#include "mindspore/core/ops/primitive_c.h"
 #include "ops/base_operator.h"
 #include "abstract/abstract_value.h"
 
-namespace mindspore::ops {
+namespace mindspore::ops {{
 """
 
     lite_ops_cc_end = f"""}}  // namespace mindspore::ops
@@ -694,7 +696,7 @@ namespace mindspore::ops {
     lite_ops_cc_gen += lite_ops_cc_head
     for operator_name, operator_data in yaml_data.items():
         op_name = _get_op_name(operator_name, operator_data)
-        lite_ops_h_gen += f"""class MIND_API {op_name} : public BaseOperator {{
+        lite_ops_h_gen += f"""class OPS_API {op_name} : public BaseOperator {{
  public:
   MIND_API_BASE_MEMBER({op_name});
   {op_name}() : BaseOperator(kName{op_name}) {{}}\n"""
@@ -740,10 +742,8 @@ def generate_cc_opdef(yaml_data):
     """
     gen_cc_code = f"""\n
 namespace mindspore::ops {{"""
-    gen_opdef_map = f"""
-std::unordered_map<std::string, OpDefPtr> gOpDefTable = {{"""
     gen_include = f"""\n
-#include \"ops/auto_generate/gen_ops_def.h\""""
+#include \"{K.OP_DEF_AUTO_GENERATE_PATH}/gen_ops_def.h\""""
     gen_include += f"""
 #include \"mindspore/core/ir/signature.h\""""
 
@@ -770,9 +770,8 @@ std::unordered_map<std::string, OpDefPtr> gOpDefTable = {{"""
         is_view_str = f"""{is_view}"""
 
 
-        gen_include += f"""\n#include "ops/ops_func_impl/{operator_name}.h\""""
+        gen_include += f"""\n#include "{K.MS_OPS_FUNC_IMPL_PATH}/{operator_name}.h\""""
         cc_index_str = ''
-        gen_opdef_map += f"""\n  {{"{class_name}", &g{class_name}}},"""
         input_args_str = ''
         args_dict = {}
         for i, (arg_name, arg_info) in enumerate(args.items()):
@@ -814,8 +813,6 @@ std::unordered_map<std::string, OpDefPtr> gOpDefTable = {{"""
                                                        indexes=cc_index_str, enable_dispatch=enable_dispatch_str,
                                                        is_view=is_view_str)
         gen_cc_code += op_def_cc
-    gen_opdef_map += f"""\n}};"""
-    gen_cc_code += gen_opdef_map
 
     cc_opdef_end = f"""\n}}  // namespace mindspore::ops\n"""
     return gen_include + gen_cc_code + cc_opdef_end
@@ -847,8 +844,8 @@ from mindspore.ops._primitive_cache import _get_cache_prim
 
 
 def generate_ops_prim_file(work_path, yaml_str, doc_str, file_pre):
-    py_path = os.path.join(work_path, f'mindspore/python/mindspore/ops/auto_generate/{file_pre}_ops_prim.py')
-    tmp_py_path = os.path.join(work_path, f'mindspore/python/mindspore/ops/auto_generate/tmp_{file_pre}_ops_prim.py')
+    py_path = os.path.join(work_path, f'{K.PY_AUTO_GEN_PATH}/{file_pre}_ops_prim.py')
+    tmp_py_path = os.path.join(work_path, f'{K.PY_AUTO_GEN_PATH}/tmp_{file_pre}_ops_prim.py')
     pyboost_import_header = generate_pyboost_import_header(yaml_str)
     py_prim = generate_py_primitive(yaml_str, doc_str)
     write_file(tmp_py_path, py_licence_str + ops_py_prim_header + pyboost_import_header + py_prim)
@@ -856,8 +853,8 @@ def generate_ops_prim_file(work_path, yaml_str, doc_str, file_pre):
 
 
 def generate_ops_def_file(work_path, yaml_str, doc_str, file_pre):
-    py_path = os.path.join(work_path, f'mindspore/python/mindspore/ops/auto_generate/{file_pre}_ops_def.py')
-    tmp_py_path = os.path.join(work_path, f'mindspore/python/mindspore/ops/auto_generate/tmp_{file_pre}_ops_def.py')
+    py_path = os.path.join(work_path, f'{K.PY_AUTO_GEN_PATH}/{file_pre}_ops_def.py')
+    tmp_py_path = os.path.join(work_path, f'{K.PY_AUTO_GEN_PATH}/tmp_{file_pre}_ops_def.py')
     py_func = generate_py_op_func(yaml_str, doc_str)
     write_file(tmp_py_path, py_licence_str + ops_py_def_header + py_func)
     check_change_and_replace_file(py_path, tmp_py_path)
@@ -869,6 +866,8 @@ def generate_ops_py_files(work_path, yaml_str, doc_str, file_pre):
     """
     generate_ops_prim_file(work_path, yaml_str, doc_str, file_pre)
     generate_ops_def_file(work_path, yaml_str, doc_str, file_pre)
+    shutil.copy(os.path.join(work_path, K.PY_OPS_GEN_PATH, 'ops_auto_generate_init.txt'),
+              os.path.join(work_path, K.PY_AUTO_GEN_PATH, "__init__.py"))
 
 
 def generate_ops_cc_files(work_path, yaml_str):
@@ -876,35 +875,35 @@ def generate_ops_cc_files(work_path, yaml_str):
     Generate ops c++ file from yaml.
     """
     # ops_def
-    op_cc_path = os.path.join(work_path, 'mindspore/core/ops/auto_generate/gen_ops_def.cc')
-    tmp_op_cc_path = os.path.join(work_path, 'mindspore/core/ops/auto_generate/tmp_gen_ops_def.cc')
+    op_cc_path = os.path.join(work_path, K.MS_OP_DEF_AUTO_GENERATE_PATH, 'gen_ops_def.cc')
+    tmp_op_cc_path = os.path.join(work_path, K.MS_OP_DEF_AUTO_GENERATE_PATH, 'tmp_gen_ops_def.cc')
     cc_def_code = generate_cc_opdef(yaml_str)
     write_file(tmp_op_cc_path, cc_license_str + cc_def_code)
     check_change_and_replace_file(op_cc_path, tmp_op_cc_path)
 
     # ops_primitive
-    op_prim_path = os.path.join(work_path, 'mindspore/core/ops/auto_generate/gen_ops_primitive.h')
-    tmp_op_prim_path = os.path.join(work_path, 'mindspore/core/ops/auto_generate/tmp_gen_ops_primitive.h')
+    op_prim_path = os.path.join(work_path, K.MS_OP_DEF_AUTO_GENERATE_PATH, 'gen_ops_primitive.h')
+    tmp_op_prim_path = os.path.join(work_path, K.MS_OP_DEF_AUTO_GENERATE_PATH, 'tmp_gen_ops_primitive.h')
     op_prim_code = generate_op_prim_opdef(yaml_str)
     write_file(tmp_op_prim_path, cc_license_str + op_prim_code)
     check_change_and_replace_file(op_prim_path, tmp_op_prim_path)
 
     # lite_h_ops
-    lite_ops_h_path = os.path.join(work_path, 'mindspore/core/ops/auto_generate/gen_lite_ops.h')
-    tmp_lite_ops_h_path = os.path.join(work_path, 'mindspore/core/ops/auto_generate/tmp_gen_lite_ops.h')
+    lite_ops_h_path = os.path.join(work_path, K.MS_OP_DEF_AUTO_GENERATE_PATH, 'gen_lite_ops.h')
+    tmp_lite_ops_h_path = os.path.join(work_path, K.MS_OP_DEF_AUTO_GENERATE_PATH, 'tmp_gen_lite_ops.h')
     lite_ops_h_code, lite_ops_cc_code = generate_lite_ops(yaml_str)
     write_file(tmp_lite_ops_h_path, cc_license_str + lite_ops_h_code)
     check_change_and_replace_file(lite_ops_h_path, tmp_lite_ops_h_path)
 
     # lite_cc_ops
-    lite_ops_cc_path = os.path.join(work_path, 'mindspore/core/ops/auto_generate/gen_lite_ops.cc')
-    tmp_lite_ops_cc_path = os.path.join(work_path, 'mindspore/core/ops/auto_generate/tmp_gen_lite_ops.cc')
+    lite_ops_cc_path = os.path.join(work_path, K.MS_OP_DEF_AUTO_GENERATE_PATH, 'gen_lite_ops.cc')
+    tmp_lite_ops_cc_path = os.path.join(work_path, K.MS_OP_DEF_AUTO_GENERATE_PATH, 'tmp_gen_lite_ops.cc')
     write_file(tmp_lite_ops_cc_path, cc_license_str + lite_ops_cc_code)
     check_change_and_replace_file(lite_ops_cc_path, tmp_lite_ops_cc_path)
 
     # ops_names
-    op_name_path = os.path.join(work_path, 'mindspore/core/ops/auto_generate/gen_ops_name.h')
-    tmp_op_name_path = os.path.join(work_path, 'mindspore/core/ops/auto_generate/tmp_gen_ops_name.h')
+    op_name_path = os.path.join(work_path, K.MS_OP_DEF_AUTO_GENERATE_PATH, 'gen_ops_name.h')
+    tmp_op_name_path = os.path.join(work_path, K.MS_OP_DEF_AUTO_GENERATE_PATH, 'tmp_gen_ops_name.h')
     op_name_code = generate_op_name_opdef(yaml_str)
     write_file(tmp_op_name_path, cc_license_str + op_name_code)
     check_change_and_replace_file(op_name_path, tmp_op_name_path)
@@ -958,7 +957,7 @@ def generate_create_instance_helper_file(work_path, yaml_str):
     """
     Generate C++ helper file from yaml.
     """
-    dst_dir = os.path.join(work_path, 'mindspore/python/mindspore/ops/auto_generate')
+    dst_dir = os.path.join(work_path, K.PY_AUTO_GEN_PATH)
     op_py_path = os.path.join(dst_dir, 'cpp_create_prim_instance_helper.py')
     tmp_op_py_path = os.path.join(dst_dir, 'tmp_cpp_create_prim_instance_helper.py')
     py_labels = generate_op_labels(yaml_str)
@@ -971,11 +970,11 @@ def generate_aclnn_reg_code(yaml_data):
     """generate aclnn register code"""
     current_path = os.path.dirname(os.path.abspath(__file__))
     work_path = os.path.join(current_path, '../../../../')
-    ops_yaml_path = os.path.join(work_path, 'mindspore/python/mindspore/ops_generate/ops.yaml')
+    ops_yaml_path = os.path.join(work_path, K.PY_OPS_GEN_PATH, "ops.yaml")
     yaml_str = gen_utils.safe_load_yaml(ops_yaml_path)
 
     reg_code = f"""
-#include "plugin/device/ascend/kernel/opapi/aclnn_kernel_mod.h"
+#include "{K.MS_OPS_KERNEL_PATH}/ascend/opapi/aclnn_kernel_mod.h"
 
 namespace mindspore {{
 namespace kernel {{
@@ -1010,8 +1009,8 @@ def generate_aclnn_reg_file(work_path, yaml_str):
     """
     Generate nnacl kernelmod register
     """
-    tmp_register_file = work_path + 'mindspore/ccsrc/plugin/device/ascend/kernel/opapi/tmp_aclnn_kernel_register.cc'
-    register_file = work_path + 'mindspore/ccsrc/plugin/device/ascend/kernel/opapi/aclnn_kernel_register_auto.cc'
+    tmp_register_file = work_path + f'{K.MS_OPS_KERNEL_PATH}/ascend/opapi/tmp_aclnn_kernel_register.cc'
+    register_file = work_path + f'{K.MS_OPS_KERNEL_PATH}/ascend/opapi/aclnn_kernel_register_auto.cc'
     reg_code = generate_aclnn_reg_code(yaml_str)
     write_file(tmp_register_file, cc_license_str + reg_code)
     check_change_and_replace_file(register_file, tmp_register_file)
@@ -1021,8 +1020,8 @@ def generate_arg_handler_files(work_path):
     """
     Generate arg handler files.
     """
-    dst_dir = os.path.join(work_path, 'mindspore/python/mindspore/ops/auto_generate')
-    src_arg_handler_path = os.path.join(work_path, 'mindspore/python/mindspore/ops_generate/arg_handler.py')
+    dst_dir = os.path.join(work_path, K.PY_AUTO_GEN_PATH)
+    src_arg_handler_path = os.path.join(work_path, K.PY_OPS_GEN_PATH, 'arg_handler.py')
     dst_arg_handler_path = os.path.join(dst_dir, 'gen_arg_handler.py')
     tmp_dst_arg_handler_path = os.path.join(dst_dir, 'tmp_gen_arg_handler.py')
     if not os.path.exists(dst_dir):
@@ -1030,7 +1029,7 @@ def generate_arg_handler_files(work_path):
     shutil.copy(src_arg_handler_path, tmp_dst_arg_handler_path)
     check_change_and_replace_file(dst_arg_handler_path, tmp_dst_arg_handler_path)
 
-    src_arg_dtype_cast_path = os.path.join(work_path, 'mindspore/python/mindspore/ops_generate/arg_dtype_cast.py')
+    src_arg_dtype_cast_path = os.path.join(work_path, K.PY_OPS_GEN_PATH, 'arg_dtype_cast.py')
     dst_arg_dtype_cast_path = os.path.join(dst_dir, 'gen_arg_dtype_cast.py')
     tmp_arg_dtype_cast_path = os.path.join(dst_dir, 'tmp_arg_dtype_cast.py')
     shutil.copy(src_arg_dtype_cast_path, tmp_arg_dtype_cast_path)
@@ -1042,18 +1041,18 @@ def main():
     work_path = os.path.join(current_path, '../../../../')
 
     # merge ops yaml
-    ops_yaml_path = os.path.join(work_path, 'mindspore/python/mindspore/ops_generate/ops.yaml')
-    doc_yaml_path = os.path.join(work_path, 'mindspore/python/mindspore/ops_generate/ops_doc.yaml')
+    ops_yaml_path = os.path.join(work_path, K.PY_OPS_GEN_PATH, 'ops.yaml')
+    doc_yaml_path = os.path.join(work_path, K.PY_OPS_GEN_PATH, 'ops_doc.yaml')
 
-    ops_yaml_dir_path = os.path.join(work_path, 'mindspore/core/ops/ops_def/')
-    infer_ops_yaml_dir_path = os.path.join(work_path, 'mindspore/core/ops/ops_def/infer/')
-    doc_yaml_dir_path = os.path.join(work_path, 'mindspore/core/ops/ops_def/doc/')
+    ops_yaml_dir_path = os.path.join(work_path, K.MS_YAML_PATH)
+    infer_ops_yaml_dir_path = os.path.join(ops_yaml_dir_path, "infer")
+    doc_yaml_dir_path = os.path.join(ops_yaml_dir_path, "doc")
     merge_files(ops_yaml_dir_path, ops_yaml_path, '*op.yaml')
     merge_files_append(infer_ops_yaml_dir_path, ops_yaml_path, '*op.yaml')
     merge_files(doc_yaml_dir_path, doc_yaml_path, '*doc.yaml')
 
     # make auto_generate dir
-    cc_path = os.path.join(work_path, 'mindspore/core/ops/auto_generate/')
+    cc_path = os.path.join(work_path, K.MS_OP_DEF_AUTO_GENERATE_PATH)
     pathlib.Path(cc_path).mkdir(parents=True, exist_ok=True)
 
     # generate arg_handler files

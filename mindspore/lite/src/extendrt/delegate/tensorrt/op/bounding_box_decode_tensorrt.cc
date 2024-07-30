@@ -23,8 +23,8 @@
 #include <unordered_map>
 #include "src/extendrt/delegate/tensorrt/tensorrt_utils.h"
 #include "NvInferRuntimeCommon.h"
-#include "plugin/device/gpu/kernel/cuda_impl/cuda_ops/boundingbox_decode_impl.cuh"
-#include "ops/bounding_box_decode.h"
+#include "kernel/gpu/cuda_impl/cuda_ops/boundingbox_decode_impl.cuh"
+#include "infer/bounding_box_decode.h"
 
 namespace mindspore::lite {
 int BoundingBoxDecodeTensorRT::IsSupport(const BaseOperatorPtr &base_operator,

@@ -17,9 +17,9 @@
 #include "transform/graph_ir/op_declare/nn_calculation_ops_declare.h"
 #include <string>
 #include <vector>
-#include "ops/conv_pool_ops.h"
-#include "ops/nn_ops.h"
-#include "ops/auto_generate/gen_ops_primitive.h"
+#include "op_def/conv_pool_ops.h"
+#include "op_def/nn_ops.h"
+#include "op_def/auto_generate/gen_ops_primitive.h"
 
 namespace mindspore::transform {
 // BiasAddGrad

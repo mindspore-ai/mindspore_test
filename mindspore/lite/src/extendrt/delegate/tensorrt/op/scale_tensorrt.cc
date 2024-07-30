@@ -19,7 +19,7 @@
 #include <functional>
 #include "src/extendrt/delegate/tensorrt/op/activation_tensorrt.h"
 #include "src/extendrt/delegate/tensorrt/tensorrt_utils.h"
-#include "ops/fusion/scale_fusion.h"
+#include "infer/cxx_api/scale_fusion.h"
 
 namespace mindspore::lite {
 constexpr int SCALE_INDEX = 1;

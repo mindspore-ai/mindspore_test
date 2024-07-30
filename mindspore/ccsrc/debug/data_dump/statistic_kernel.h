@@ -25,7 +25,7 @@
 #include "include/common/debug/common.h"
 #include "ir/dtype/tensor_type.h"
 #include "mindrt/include/async/async.h"
-#include "ops/auto_generate/gen_ops_primitive.h"
+#include "op_def/auto_generate/gen_ops_primitive.h"
 #include "runtime/device/device_address_utils.h"
 #include "runtime/graph_scheduler/actor/actor_common.h"
 #include "runtime/graph_scheduler/device_tensor_store.h"

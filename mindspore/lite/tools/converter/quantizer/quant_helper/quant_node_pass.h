@@ -24,7 +24,7 @@
 #include "ir/anf.h"
 #include "ir/func_graph.h"
 #include "ops/primitive_c.h"
-#include "ops/tuple_get_item.h"
+#include "infer/tuple_get_item.h"
 #include "tools/converter/quantizer/quant_param_holder.h"
 #include "tools/converter/quantizer/quantize_util.h"
 

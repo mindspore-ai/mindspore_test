@@ -18,12 +18,12 @@
 #include <memory>
 #include <unordered_map>
 #include <unordered_set>
-#include "mindspore/core/ops/array_ops.h"
+#include "op_def/array_ops.h"
 #include "include/common/utils/anfalgo.h"
-#include "mindspore/core/ops/op_utils.h"
-#include "mindspore/core/ops/auto_generate/gen_ops_name.h"
+#include "ops_utils/op_utils.h"
+#include "op_def/auto_generate/gen_ops_name.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "ops/nn_ops.h"
+#include "op_def/nn_ops.h"
 
 namespace mindspore {
 namespace opt {

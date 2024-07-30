@@ -15,10 +15,10 @@
  */
 
 #include "ops/test_value_utils.h"
-#include "ops/auto_generate/gen_ops_name.h"
+#include "op_def/auto_generate/gen_ops_name.h"
 #include "ops/test_ops.h"
-#include "ops/ops_func_impl/dct.h"
-#include "mindspore/core/ops/op_enum.h"
+#include "infer/ops_func_impl/dct.h"
+#include "mindspore/ops/op_def/op_enum.h"
 
 namespace mindspore {
 namespace ops {

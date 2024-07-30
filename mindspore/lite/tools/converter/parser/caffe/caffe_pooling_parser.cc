@@ -16,9 +16,9 @@
 
 #include "tools/converter/parser/caffe/caffe_pooling_parser.h"
 #include <memory>
-#include "ops/fusion/avg_pool_fusion.h"
-#include "ops/fusion/max_pool_fusion.h"
-#include "ops/op_utils.h"
+#include "infer/cxx_api/avg_pool_fusion.h"
+#include "infer/cxx_api/max_pool_fusion.h"
+#include "ops_utils/op_utils.h"
 #include "include/registry/converter_context.h"
 #include "nnacl/op_base.h"
 #include "src/common/log_util.h"

@@ -15,7 +15,7 @@
  */
 
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm_lib.h"
-#include "ops/ascend_op_name.h"
+#include "op_def/ascend_op_name.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
 #include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
 #include "runtime/hardware/device_context_manager.h"

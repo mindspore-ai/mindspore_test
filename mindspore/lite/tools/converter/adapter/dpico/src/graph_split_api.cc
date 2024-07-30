@@ -18,10 +18,10 @@
 #include <unordered_set>
 #include <string>
 #include <algorithm>
-#include "ops/auto_generate/gen_lite_ops.h"
-#include "ops/return.h"
-#include "ops/make_tuple.h"
-#include "ops/tuple_get_item.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
+#include "infer/return.h"
+#include "infer/make_tuple.h"
+#include "infer/tuple_get_item.h"
 #include "common/op_attr.h"
 #include "include/errorcode.h"
 #include "include/api/format.h"

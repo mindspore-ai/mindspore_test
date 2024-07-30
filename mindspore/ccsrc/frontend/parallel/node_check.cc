@@ -20,7 +20,7 @@
 #include <string>
 
 #include "frontend/parallel/ops_info/ops_utils.h"
-#include "mindspore/core/ops/other_ops.h"
+#include "op_def/other_ops.h"
 
 namespace mindspore {
 namespace parallel {

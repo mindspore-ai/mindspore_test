@@ -15,7 +15,7 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/dynamic_quant_parameter.h"
-#include "ops/dynamic_quant.h"
+#include "infer/dynamic_quant.h"
 using mindspore::ops::kNameDynamicQuant;
 using mindspore::schema::PrimitiveType_DynamicQuant;
 namespace mindspore {

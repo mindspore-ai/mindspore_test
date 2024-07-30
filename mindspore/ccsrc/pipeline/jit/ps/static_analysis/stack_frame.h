@@ -23,7 +23,7 @@
 #include <vector>
 
 #include "pipeline/jit/ps/static_analysis/evaluator.h"
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/compile_config.h"
 
 namespace mindspore {

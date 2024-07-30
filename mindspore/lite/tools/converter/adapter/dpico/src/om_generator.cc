@@ -20,9 +20,9 @@
 #include <algorithm>
 #include <numeric>
 #include <unordered_map>
-#include "ops/tuple_get_item.h"
-#include "ops/custom.h"
-#include "ops/make_tuple.h"
+#include "infer/tuple_get_item.h"
+#include "infer/custom.h"
+#include "infer/make_tuple.h"
 #include "common/anf_util.h"
 #include "common/string_util.h"
 #include "mapper/op_mapper_registry.h"

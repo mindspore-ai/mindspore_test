@@ -24,9 +24,9 @@
 #include "utils/tensor_construct_utils.h"
 #include "ir/primitive.h"
 #include "abstract/abstract_value.h"
-#include "ops/op_name.h"
-#include "ops/auto_generate/gen_ops_name.h"
-#include "ops/ops_func_impl/fused_infer_attention_score.h"
+#include "op_def/op_name.h"
+#include "op_def/auto_generate/gen_ops_name.h"
+#include "infer/ops_func_impl/fused_infer_attention_score.h"
 #include "ops/test_value_utils.h"
 
 namespace mindspore {
@@ -42,7 +42,8 @@ struct FusedInferAttentionScoreParams {
   TypePtr out2_type;
 };
 
-class TestFusedInferAttentionScore : public TestOps, public testing::WithParamInterface<FusedInferAttentionScoreParams> {};
+class TestFusedInferAttentionScore : public TestOps,
+                                     public testing::WithParamInterface<FusedInferAttentionScoreParams> {};
 
 TEST_P(TestFusedInferAttentionScore, dyn_shape) {
   const auto &param = GetParam();
@@ -71,26 +72,22 @@ TEST_P(TestFusedInferAttentionScore, dyn_shape) {
   auto expect_out2_shape = std::make_shared<abstract::Shape>(param.out2_shape);
   ASSERT_NE(expect_out1_shape, nullptr);
   ASSERT_NE(expect_out2_shape, nullptr);
-  auto expect_shape = std::make_shared<abstract::TupleShape>(
-    abstract::BaseShapePtrList({expect_out1_shape, expect_out2_shape}));
+  auto expect_shape =
+    std::make_shared<abstract::TupleShape>(abstract::BaseShapePtrList({expect_out1_shape, expect_out2_shape}));
   auto expect_out1_dtype = std::make_shared<TensorType>(param.out1_type);
   auto expect_out2_dtype = std::make_shared<TensorType>(param.out2_type);
   ASSERT_NE(expect_out1_dtype, nullptr);
   ASSERT_NE(expect_out2_dtype, nullptr);
-  auto expect_dtype = 
-    std::make_shared<Tuple>(std::vector<TypePtr>{expect_out1_dtype, expect_out2_dtype});
+  auto expect_dtype = std::make_shared<Tuple>(std::vector<TypePtr>{expect_out1_dtype, expect_out2_dtype});
 
   // execute
   auto input_none = std::make_shared<abstract::AbstractNone>();
   auto input_scalar = std::make_shared<abstract::AbstractScalar>();
   std::vector<AbstractBasePtr> input_args = {
-    qkv,          qkv,          qkv,          input_none,      input_none,
-    input_none,   input_none,   input_none,   input_none,      input_none,
-    input_none,   input_none,   input_none,   input_none,      input_none,
-    input_none,   input_none,
-    head_num,     input_scalar, input_scalar, input_scalar,    input_layout,
-    input_scalar, input_scalar, input_scalar, input_scalar,    input_scalar,
-    input_scalar};
+    qkv,          qkv,          qkv,          input_none,   input_none,   input_none,   input_none,
+    input_none,   input_none,   input_none,   input_none,   input_none,   input_none,   input_none,
+    input_none,   input_none,   input_none,   head_num,     input_scalar, input_scalar, input_scalar,
+    input_layout, input_scalar, input_scalar, input_scalar, input_scalar, input_scalar, input_scalar};
   auto out_shape = fused_infer_attention_score_func_impl->InferShape(prim, input_args);
   auto out_dtype = fused_infer_attention_score_func_impl->InferType(prim, input_args);
   // verify output
@@ -98,43 +95,41 @@ TEST_P(TestFusedInferAttentionScore, dyn_shape) {
   ASSERT_TRUE(*out_shape == *expect_shape);
   ASSERT_NE(out_dtype, nullptr);
   ASSERT_TRUE(*out_dtype == *expect_dtype);
-  
 }
 
 INSTANTIATE_TEST_CASE_P(TestFusedInferAttentionScoreGroup, TestFusedInferAttentionScore,
                         testing::Values(FusedInferAttentionScoreParams{{16, 5, 4, 128},
-                                                                  kFloat16,
-                                                                  CreateScalar<int64_t>(1), //BNSD
-                                                                  CreateScalar<int64_t>(5),
-                                                                  {16, 5, 4, 128},
-                                                                  kFloat16,
-                                                                  {16, 5, 4, 1},
-                                                                  kFloat32},
+                                                                       kFloat16,
+                                                                       CreateScalar<int64_t>(1),  // BNSD
+                                                                       CreateScalar<int64_t>(5),
+                                                                       {16, 5, 4, 128},
+                                                                       kFloat16,
+                                                                       {16, 5, 4, 1},
+                                                                       kFloat32},
                                         FusedInferAttentionScoreParams{{-1, 5, -1, -1},
-                                                                  kBFloat16,
-                                                                  CreateScalar<int64_t>(1), //BNSD
-                                                                  CreateScalar<int64_t>(5),
-                                                                  {-1, 5, -1, -1},
-                                                                  kBFloat16,
-                                                                  {-1, 5, -1, 1},
-                                                                  kFloat32},
+                                                                       kBFloat16,
+                                                                       CreateScalar<int64_t>(1),  // BNSD
+                                                                       CreateScalar<int64_t>(5),
+                                                                       {-1, 5, -1, -1},
+                                                                       kBFloat16,
+                                                                       {-1, 5, -1, 1},
+                                                                       kFloat32},
                                         FusedInferAttentionScoreParams{{-1, -1, 5, -1},
-                                                                  kInt8,
-                                                                  CreateScalar<int64_t>(3), //BSND
-                                                                  CreateScalar<int64_t>(5),
-                                                                  {-1, -1, 5, -1},
-                                                                  kInt8,
-                                                                  {-1, 5, -1, 1},
-                                                                  kFloat32},
+                                                                       kInt8,
+                                                                       CreateScalar<int64_t>(3),  // BSND
+                                                                       CreateScalar<int64_t>(5),
+                                                                       {-1, -1, 5, -1},
+                                                                       kInt8,
+                                                                       {-1, 5, -1, 1},
+                                                                       kFloat32},
                                         FusedInferAttentionScoreParams{{-1, -1, -1},
-                                                                  kFloat16,
-                                                                  CreateScalar<int64_t>(0), //BSH
-                                                                  CreateScalar<int64_t>(5),
-                                                                  {-1, -1, -1},
-                                                                  kFloat16,
-                                                                  {-1, 5, -1, 1},
-                                                                  kFloat32}));
+                                                                       kFloat16,
+                                                                       CreateScalar<int64_t>(0),  // BSH
+                                                                       CreateScalar<int64_t>(5),
+                                                                       {-1, -1, -1},
+                                                                       kFloat16,
+                                                                       {-1, 5, -1, 1},
+                                                                       kFloat32}));
 
 }  // namespace ops
 }  // namespace mindspore
-

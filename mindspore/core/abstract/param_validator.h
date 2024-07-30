@@ -34,29 +34,33 @@ namespace abstract {
 // check if variable's type is an instance of any of accepts or of a subclass of it.
 TypePtr CheckType(TypePtr type, const TypePtrList &accepts, const std::string &error_message_prefix);
 
-TypePtr CheckTensorDType(const AbstractBasePtr &tensor, const TypePtrList &accepts,
-                         const std::string &error_message_prefix);
+MS_CORE_API TypePtr CheckTensorDType(const AbstractBasePtr &tensor, const TypePtrList &accepts,
+                                     const std::string &error_message_prefix);
 
-TypePtr CheckTensorsDTypeSame(const AbstractTensorPtrList &tensor_list, const TypePtrList &accepts,
-                              const std::string &error_message_prefix);
+MS_CORE_API TypePtr CheckTensorsDTypeSame(const AbstractTensorPtrList &tensor_list, const TypePtrList &accepts,
+                                          const std::string &error_message_prefix);
 
-TypePtr CheckScalarType(const AbstractScalarPtr &scalar, const TypePtrList &accepts,
-                        const std::string &error_message_prefix);
+MS_CORE_API TypePtr CheckScalarType(const AbstractScalarPtr &scalar, const TypePtrList &accepts,
+                                    const std::string &error_message_prefix);
 
-void CheckShapeSame(const std::string &op, const AbstractTensorPtr &tensor_base, const AbstractTensorPtr &tensor);
+MS_CORE_API void CheckShapeSame(const std::string &op, const AbstractTensorPtr &tensor_base,
+                                const AbstractTensorPtr &tensor);
 
-void CheckShapeSame(const std::string &op, const AbstractBasePtr &tensor_base, const AbstractBasePtr &tensor);
+MS_CORE_API void CheckShapeSame(const std::string &op, const AbstractBasePtr &tensor_base,
+                                const AbstractBasePtr &tensor);
 
-inline void CheckDtypeSame(const std::string &op, const TypePtr &type1, const TypePtr &type2) {
+MS_CORE_API inline void CheckDtypeSame(const std::string &op, const TypePtr &type1, const TypePtr &type2) {
   if (*type1 != *type2) {
     MS_EXCEPTION(TypeError) << "For '" << op << "', the dtype of two args should be same, but the first arg dtype "
                             << type1->ToString() << " are not consistent with second arg dtype " << type2->ToString();
   }
 }
 
-TypePtr CheckDtypeSame(const std::string &op, const AbstractTensorPtr &tensor_base, const AbstractTensorPtr &tensor);
+MS_CORE_API TypePtr CheckDtypeSame(const std::string &op, const AbstractTensorPtr &tensor_base,
+                                   const AbstractTensorPtr &tensor);
 
-TypePtr CheckDtypeSame(const std::string &op, const AbstractBasePtr &tensor_base, const AbstractBasePtr &tensor);
+MS_CORE_API TypePtr CheckDtypeSame(const std::string &op, const AbstractBasePtr &tensor_base,
+                                   const AbstractBasePtr &tensor);
 
 MS_CORE_API int64_t CheckAxis(const std::string &op, const std::string &args_name, const ValuePtr &axis, int64_t min,
                               int64_t max, const std::string &rank_name);
@@ -65,7 +69,7 @@ MS_CORE_API void CheckArgsSize(const std::string &op, const AbstractBasePtrList 
 
 void CheckShapeAllPositive(const std::string &op, const ShapeVector &shape);
 
-void CheckShapeAnyAndPositive(const std::string &op, const ShapeVector &shape);
+MS_CORE_API void CheckShapeAnyAndPositive(const std::string &op, const ShapeVector &shape);
 
 std::vector<int64_t> CheckAttrIntOrTuple(const std::string &op, const ValuePtr &attr, const size_t start_idx,
                                          const size_t num_element);
@@ -73,7 +77,8 @@ std::vector<int64_t> CheckAttrIntOrTuple(const std::string &op, const ValuePtr &
 std::string CheckAttrStringSet(const std::string &op, const ValuePtr &attr, const std::string &attr_name,
                                const std::set<std::string> &val_set);
 
-void CheckRequiredArgsSize(const std::string &op, const AbstractBasePtrList &args_abs_list, size_t size_expect);
+MS_CORE_API void CheckRequiredArgsSize(const std::string &op, const AbstractBasePtrList &args_abs_list,
+                                       size_t size_expect);
 
 template <typename T>
 struct ReportNameTraits {};

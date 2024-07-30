@@ -18,15 +18,15 @@
 #include "tools/optimizer/fusion/affine_fusion.h"
 #include <memory>
 #include <vector>
-#include "mindspore/core/ops/lite_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
 #include "schema/inner/model_generated.h"
-#include "ops/affine.h"
+#include "infer/affine.h"
 #include "src/common/log_adapter.h"
-#include "ops/splice.h"
-#include "ops/auto_generate/gen_lite_ops.h"
+#include "infer/splice.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "nnacl/op_base.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 
 namespace mindspore::opt {
 constexpr auto kInputWithBiasNum = 4;

@@ -18,7 +18,7 @@
 #include <memory>
 #include <utility>
 #include <algorithm>
-#include "mindspore/core/ops/array_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
 #include "pipeline/pynative/pynative_utils.h"
 #include "include/common/profiler.h"
 

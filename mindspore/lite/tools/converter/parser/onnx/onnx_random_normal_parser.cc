@@ -17,7 +17,7 @@
 #include <algorithm>
 #include <memory>
 #include <vector>
-#include "ops/random_normal.h"
+#include "infer/random_normal.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

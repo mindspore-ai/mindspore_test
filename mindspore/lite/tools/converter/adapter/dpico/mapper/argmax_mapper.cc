@@ -19,7 +19,7 @@
 #include <utility>
 #include <vector>
 #include "common/anf_util.h"
-#include "ops/fusion/arg_max_fusion.h"
+#include "infer/cxx_api/arg_max_fusion.h"
 #include "op/argmax_operator.h"
 
 namespace mindspore {

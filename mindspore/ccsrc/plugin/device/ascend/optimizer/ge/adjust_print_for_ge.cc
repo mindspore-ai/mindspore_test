@@ -19,8 +19,8 @@
 #include <algorithm>
 #include <memory>
 #include <vector>
-#include "ops/framework_ops.h"
-#include "ops/sequence_ops.h"
+#include "op_def/framework_ops.h"
+#include "op_def/sequence_ops.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
 

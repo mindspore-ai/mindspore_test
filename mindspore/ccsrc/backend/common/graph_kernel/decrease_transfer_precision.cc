@@ -20,9 +20,9 @@
 #include <memory>
 #include <utility>
 #include "include/common/utils/utils.h"
-#include "mindspore/core/ops/sequence_ops.h"
-#include "mindspore/core/ops/math_ops.h"
-#include "mindspore/core/ops/array_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
 #include "backend/common/graph_kernel/graph_kernel_helper.h"
 #include "ir/manager.h"
 #include "kernel/kernel_build_info.h"

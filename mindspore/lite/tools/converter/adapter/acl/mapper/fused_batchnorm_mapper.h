@@ -18,7 +18,7 @@
 #define MINDSPORE_LITE_TOOLS_CONVERTER_ADAPTER_ACL_MAPPER_FUSED_BATCHNORM_MAPPER_H_
 
 #include "tools/converter/adapter/acl/mapper/primitive_mapper.h"
-#include "ops/fused_batch_norm.h"
+#include "infer/fused_batch_norm.h"
 
 using mindspore::ops::kNameFusedBatchNorm;
 

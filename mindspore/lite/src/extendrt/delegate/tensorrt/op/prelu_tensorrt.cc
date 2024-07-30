@@ -17,7 +17,7 @@
 #include "src/extendrt/delegate/tensorrt/op/prelu_tensorrt.h"
 #include <numeric>
 #include "src/extendrt/delegate/tensorrt/tensorrt_utils.h"
-#include "ops/fusion/prelu_fusion.h"
+#include "infer/cxx_api/prelu_fusion.h"
 
 namespace mindspore::lite {
 int PReluTensorRT::IsSupport(const BaseOperatorPtr &base_operator, const std::vector<TensorInfo> &in_tensors,

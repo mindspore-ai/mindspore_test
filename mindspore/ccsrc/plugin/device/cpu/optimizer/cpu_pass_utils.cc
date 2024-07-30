@@ -17,13 +17,13 @@
 #include <memory>
 #include <string>
 
-#include "ops/array_ops.h"
+#include "op_def/array_ops.h"
 #include "ir/anf.h"
 #include "ir/func_graph.h"
 #include "include/backend/optimizer/helper.h"
 #include "kernel/kernel_build_info.h"
 #include "plugin/factory/ms_factory.h"
-#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "kernel/cpu/cpu_kernel.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/kernel_graph.h"

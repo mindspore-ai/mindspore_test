@@ -15,7 +15,7 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/call_parameter.h"
-#include "ops/call.h"
+#include "infer/call.h"
 using mindspore::ops::kNameCall;
 using mindspore::schema::PrimitiveType_Call;
 namespace mindspore {

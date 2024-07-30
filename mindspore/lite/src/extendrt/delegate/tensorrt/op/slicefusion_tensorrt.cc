@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <utility>
 #include "src/extendrt/delegate/tensorrt/tensorrt_utils.h"
-#include "ops/fusion/slice_fusion.h"
+#include "infer/cxx_api/slice_fusion.h"
 
 namespace mindspore::lite {
 nvinfer1::ITensor *SliceFusionTensorRT::GetDynamicSliceSize(TensorRTContext *ctx, nvinfer1::ITensor *input,

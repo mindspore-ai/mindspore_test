@@ -19,7 +19,7 @@
 #include <limits>
 #include <cmath>
 #include "common/op_attr.h"
-#include "ops/fusion/activation.h"
+#include "infer/cxx_api/activation.h"
 
 namespace mindspore {
 namespace lite {

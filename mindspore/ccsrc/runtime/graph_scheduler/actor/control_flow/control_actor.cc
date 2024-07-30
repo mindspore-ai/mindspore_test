@@ -17,7 +17,7 @@
 #include "runtime/graph_scheduler/actor/control_flow/control_actor.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
-#include "ops/framework_ops.h"
+#include "op_def/framework_ops.h"
 #include "utils/profile.h"
 
 namespace mindspore {

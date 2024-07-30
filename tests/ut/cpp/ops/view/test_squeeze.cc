@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include "test_view.h"
-#include "mindspore/core/ops/view/squeeze_strides_calc.h"
+#include "mindspore/ops/view/squeeze_strides_calc.h"
 
 namespace mindspore {
 namespace ops {

@@ -20,7 +20,7 @@
 #include <vector>
 #include <string>
 
-#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "kernel/cpu/cpu_kernel.h"
 #include "kernel/common_utils.h"
 
 namespace mindspore::kernel {

@@ -18,7 +18,7 @@
 #include <numeric>
 #include <functional>
 #include "src/extendrt/delegate/tensorrt/tensorrt_utils.h"
-#include "ops/fusion/pad_fusion.h"
+#include "infer/cxx_api/pad_fusion.h"
 
 namespace mindspore::lite {
 int PadTensorRT::IsSupport(const BaseOperatorPtr &base_operator, const std::vector<TensorInfo> &in_tensors,

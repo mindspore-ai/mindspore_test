@@ -17,7 +17,7 @@
 #include "src/extendrt/delegate/tensorrt/op/fullyconnected_tensorrt.h"
 #include "src/extendrt/delegate/tensorrt/tensorrt_utils.h"
 #include "src/extendrt/delegate/tensorrt/op/activation_tensorrt.h"
-#include "ops/fusion/full_connection.h"
+#include "infer/cxx_api/full_connection.h"
 
 namespace mindspore::lite {
 constexpr int BIAS_INDEX = 2;

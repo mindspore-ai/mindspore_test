@@ -20,11 +20,11 @@
 #include <set>
 #include <memory>
 #include <string>
-#include "mindspore/core/ops/lite_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
 #include "tools/optimizer/common/gllo_utils.h"
-#include "ops/fusion/conv2d_fusion.h"
+#include "infer/cxx_api/conv2d_fusion.h"
 #include "nnacl/op_base.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 
 namespace mindspore::lite::quant {
 std::unordered_map<std::string, VectorRef> CLEPattern::DefinePatterns() const {

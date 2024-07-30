@@ -23,10 +23,10 @@
 #include "tools/optimizer/common/multiple_pattern_process_pass.h"
 #include "include/common/utils/utils.h"
 #include "include/errorcode.h"
-#include "ops/encoder_layer.h"
+#include "infer/encoder_layer.h"
 #include "tools/optimizer/fusion/multi_head_attention_fusion.h"
-#include "ops/fusion/layer_norm_fusion.h"
-#include "ops/fusion/activation.h"
+#include "infer/cxx_api/layer_norm_fusion.h"
+#include "infer/cxx_api/activation.h"
 
 namespace mindspore {
 namespace opt {

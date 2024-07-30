@@ -16,9 +16,9 @@
 #include "pipeline/pynative/pynative_utils.h"
 #include <algorithm>
 #include <vector>
-#include "ops/sparse_ops.h"
-#include "ops/sequence_ops.h"
-#include "ops/framework_ops.h"
+#include "op_def/sparse_ops.h"
+#include "op_def/sequence_ops.h"
+#include "op_def/framework_ops.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/backend/optimizer/op_adaptation_info_factory.h"
 #include "pybind_api/ir/primitive_py.h"
@@ -36,15 +36,15 @@
 #include "frontend/optimizer/environ_conversion.h"
 #include "frontend/optimizer/fallback_rewriter.h"
 #include "pipeline/pynative/grad/jit/jit_grad.h"
-#include "ops/sequence_op_name.h"
-#include "ops/structure_ops.h"
-#include "ops/other_ops.h"
+#include "op_def/sequence_op_name.h"
+#include "op_def/structure_ops.h"
+#include "op_def/other_ops.h"
 #include "pipeline/pynative/predict_out_type_map.h"
-#include "kernel/pyboost/auto_generate/contiguous.h"
+#include "kernel/common/pyboost/auto_generate/contiguous.h"
 #include "runtime/pipeline/pipeline.h"
-#include "ops/auto_generate/gen_ops_primitive.h"
+#include "op_def/auto_generate/gen_ops_primitive.h"
 #include "include/common/pynative/abstract_converter.h"
-#include "kernel/pyboost/pyboost_utils.h"
+#include "kernel/common/pyboost/pyboost_utils.h"
 
 namespace mindspore {
 namespace pynative {

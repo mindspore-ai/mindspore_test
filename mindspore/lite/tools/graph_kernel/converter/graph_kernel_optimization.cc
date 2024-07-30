@@ -22,7 +22,7 @@
 #include <map>
 #include "include/backend/optimizer/graph_optimizer.h"
 #include "ir/func_graph.h"
-#include "mindspore/core/ops/array_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
 
 #include "backend/common/graph_kernel/core/arithmetic_simplify.h"
 #include "backend/common/graph_kernel/core/eliminate_redundant_output.h"

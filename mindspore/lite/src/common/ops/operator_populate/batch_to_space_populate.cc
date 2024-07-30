@@ -15,8 +15,8 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/batch_to_space_parameter.h"
-#include "ops/batch_to_space.h"
-#include "ops/batch_to_space_nd.h"
+#include "infer/batch_to_space.h"
+#include "infer/batch_to_space_nd.h"
 using mindspore::ops::kBlockSize;
 using mindspore::ops::kCrops;
 using mindspore::ops::kNameBatchToSpace;

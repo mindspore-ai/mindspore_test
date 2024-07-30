@@ -18,8 +18,8 @@
 
 #include <memory>
 
-#include "mindspore/core/ops/sequence_ops.h"
-#include "mindspore/core/ops/nn_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
 #include "include/common/utils/anfalgo.h"
 
 namespace mindspore {

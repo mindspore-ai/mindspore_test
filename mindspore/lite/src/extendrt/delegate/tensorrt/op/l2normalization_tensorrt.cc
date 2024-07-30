@@ -17,7 +17,7 @@
 #include "src/extendrt/delegate/tensorrt/op/l2normalization_tensorrt.h"
 #include <numeric>
 #include "src/extendrt/delegate/tensorrt/tensorrt_utils.h"
-#include "ops/fusion/l2_normalize_fusion.h"
+#include "infer/cxx_api/l2_normalize_fusion.h"
 
 namespace mindspore::lite {
 int L2NormalizationTensorRT::IsSupport(const BaseOperatorPtr &base_operator, const std::vector<TensorInfo> &in_tensors,

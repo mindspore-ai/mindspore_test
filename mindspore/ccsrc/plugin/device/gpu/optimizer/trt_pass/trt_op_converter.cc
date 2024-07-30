@@ -20,7 +20,7 @@
 #include <NvInfer.h>
 #include "plugin/device/gpu/optimizer/trt_pass/trt_converter_context.h"
 #include "plugin/device/gpu/optimizer/trt_pass/trt_op_factory.h"
-#include "plugin/device/gpu/kernel/trt/trt_utils.h"
+#include "kernel/gpu/trt/trt_utils.h"
 
 namespace mindspore {
 namespace opt {

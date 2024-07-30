@@ -19,13 +19,13 @@
 #include "ir/tensor.h"
 #include "mindapi/base/shape_vector.h"
 #include "mindapi/base/type_id.h"
-#include "ops/auto_generate/gen_ops_primitive.h"
+#include "op_def/auto_generate/gen_ops_primitive.h"
 #include "ops/test_ops.h"
 #include "common/common_test.h"
 #include "ir/dtype/type.h"
 #include "ir/primitive.h"
 #include "abstract/abstract_value.h"
-#include "ops/ops_func_impl/tile.h"
+#include "infer/ops_func_impl/tile.h"
 #include "ops/test_ops_cmp_utils.h"
 
 namespace mindspore {

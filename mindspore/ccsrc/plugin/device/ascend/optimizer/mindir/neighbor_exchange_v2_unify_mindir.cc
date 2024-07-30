@@ -19,9 +19,9 @@
 #include <vector>
 #include <string>
 #include <utility>
-#include "ops/other_ops.h"
-#include "ops/array_ops.h"
-#include "ops/framework_ops.h"
+#include "op_def/other_ops.h"
+#include "op_def/array_ops.h"
+#include "op_def/framework_ops.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
 #include "include/backend/optimizer/helper.h"

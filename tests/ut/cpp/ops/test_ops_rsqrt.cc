@@ -16,8 +16,8 @@
 #include <vector>
 #include <memory>
 #include "common/common_test.h"
-#include "ops/ops_func_impl/rsqrt.h"
-#include "ops/auto_generate/gen_ops_name.h"
+#include "infer/ops_func_impl/rsqrt.h"
+#include "op_def/auto_generate/gen_ops_name.h"
 #include "abstract/abstract_value.h"
 #include "ops/test_ops.h"
 #include "ops/test_ops_dyn_cases.h"
@@ -38,21 +38,16 @@ TEST_P(TestRsqrt, dyn_shape) {
   DoFuncImplInferAndCompare<RsqrtFuncImpl>(kNameRsqrt, {x}, expect_shape, expect_type);
 }
 
-INSTANTIATE_TEST_CASE_P(TestRsqrtGroup, TestRsqrt,
-                        testing::Combine(EltwiseDynShapeTestCases,
-                                         testing::ValuesIn({EltwiseOpTypeParams{kFloat16, kFloat16},
-                                                            EltwiseOpTypeParams{kFloat32, kFloat32},
-                                                            EltwiseOpTypeParams{kFloat64, kFloat64},
-                                                            EltwiseOpTypeParams{kBool, kFloat32},
-                                                            EltwiseOpTypeParams{kUInt8, kFloat32},
-                                                            EltwiseOpTypeParams{kInt8, kFloat32},
-                                                            EltwiseOpTypeParams{kUInt16, kFloat32},
-                                                            EltwiseOpTypeParams{kInt16, kFloat32},
-                                                            EltwiseOpTypeParams{kUInt32, kFloat32},
-                                                            EltwiseOpTypeParams{kInt32, kFloat32},
-                                                            EltwiseOpTypeParams{kUInt64, kFloat32},
-                                                            EltwiseOpTypeParams{kInt64, kFloat32},
-                                                            EltwiseOpTypeParams{kComplex64, kComplex64},
-                                                            EltwiseOpTypeParams{kComplex128, kComplex128}})));
+INSTANTIATE_TEST_CASE_P(
+  TestRsqrtGroup, TestRsqrt,
+  testing::Combine(EltwiseDynShapeTestCases,
+                   testing::ValuesIn({EltwiseOpTypeParams{kFloat16, kFloat16}, EltwiseOpTypeParams{kFloat32, kFloat32},
+                                      EltwiseOpTypeParams{kFloat64, kFloat64}, EltwiseOpTypeParams{kBool, kFloat32},
+                                      EltwiseOpTypeParams{kUInt8, kFloat32}, EltwiseOpTypeParams{kInt8, kFloat32},
+                                      EltwiseOpTypeParams{kUInt16, kFloat32}, EltwiseOpTypeParams{kInt16, kFloat32},
+                                      EltwiseOpTypeParams{kUInt32, kFloat32}, EltwiseOpTypeParams{kInt32, kFloat32},
+                                      EltwiseOpTypeParams{kUInt64, kFloat32}, EltwiseOpTypeParams{kInt64, kFloat32},
+                                      EltwiseOpTypeParams{kComplex64, kComplex64},
+                                      EltwiseOpTypeParams{kComplex128, kComplex128}})));
 }  // namespace ops
 }  // namespace mindspore

@@ -17,7 +17,7 @@
 #include "extendrt/delegate/ascend_native/ascend_native_layernorm_kernel.h"
 #include "extendrt/delegate/ascend_native/ascend_native_kernel_registry.h"
 #include "extendrt/delegate/ascend_native/ascend_native_impl/layernorm.h"
-#include "ops/fusion/layer_norm_fusion.h"
+#include "infer/cxx_api/layer_norm_fusion.h"
 namespace mindspore::kernel {
 using mindspore::ops::kNameLayerNormFusion;
 

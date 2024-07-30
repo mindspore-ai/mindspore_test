@@ -18,8 +18,8 @@
 #include <memory>
 #include <vector>
 #include "common/op_attr.h"
-#include "ops/custom.h"
-#include "ops/op_name.h"
+#include "infer/custom.h"
+#include "op_def/op_name.h"
 
 namespace mindspore {
 namespace lite {

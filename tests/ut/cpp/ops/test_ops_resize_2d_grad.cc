@@ -19,9 +19,9 @@
 #include <vector>
 #include <memory>
 #include "common/common_test.h"
-#include "ops/ops_func_impl/resize_bicubic_grad.h"
-#include "ops/ops_func_impl/resize_bilinear_grad.h"
-#include "ops/auto_generate/gen_ops_name.h"
+#include "infer/ops_func_impl/resize_bicubic_grad.h"
+#include "infer/ops_func_impl/resize_bilinear_grad.h"
+#include "op_def/auto_generate/gen_ops_name.h"
 #include "ir/dtype/type.h"
 #include "abstract/dshape.h"
 #include "utils/tensor_construct_utils.h"

@@ -19,8 +19,8 @@
 #include <vector>
 #include <memory>
 #include <set>
-#include "ops/ascend_op_name.h"
-#include "ops/other_ops.h"
+#include "op_def/ascend_op_name.h"
+#include "op_def/other_ops.h"
 #include "include/common/utils/signal_util.h"
 #include "plugin/device/ascend/hal/device/ascend_device_address.h"
 #include "utils/ms_context.h"

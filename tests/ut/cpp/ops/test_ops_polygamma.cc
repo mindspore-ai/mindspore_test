@@ -16,7 +16,7 @@
 #include <vector>
 #include <memory>
 #include "common/common_test.h"
-#include "ops/polygamma.h"
+#include "infer/polygamma.h"
 #include "ir/dtype/type.h"
 #include "abstract/dshape.h"
 #include "utils/tensor_construct_utils.h"
@@ -53,9 +53,8 @@ TEST_P(TestPolygamma, dyn_shape) {
 }
 
 INSTANTIATE_TEST_CASE_P(TestPolygammaGroup, TestPolygamma,
-                        testing::Values(
-                          PolygammaParams{{}, kInt32, {2, 3}, kFloat32, {2, 3}, kFloat32},
-                          PolygammaParams{{}, kInt32, {-1, -1}, kFloat32, {-1, -1}, kFloat32},
-                          PolygammaParams{{}, kInt32, {-2}, kFloat32, {-2}, kFloat32}));
+                        testing::Values(PolygammaParams{{}, kInt32, {2, 3}, kFloat32, {2, 3}, kFloat32},
+                                        PolygammaParams{{}, kInt32, {-1, -1}, kFloat32, {-1, -1}, kFloat32},
+                                        PolygammaParams{{}, kInt32, {-2}, kFloat32, {-2}, kFloat32}));
 }  // namespace ops
 }  // namespace mindspore

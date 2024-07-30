@@ -25,7 +25,7 @@
 #include <iomanip>
 #include <unordered_map>
 #include <functional>
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "pybind_api/pybind_patch.h"
 #include "pybind11/pybind11.h"
 #include "ir/param_info.h"
@@ -86,7 +86,7 @@
 #include "include/backend/distributed/recovery/recovery_context.h"
 #include "include/common/utils/dynamic_obfuscation/dynamic_obfuscation.h"
 #include "include/common/utils/dynamic_obfuscation/registry_opaque_predicate.h"
-#include "mindspore/ccsrc/plugin/device/cpu/kernel/pyexecute/py_execute_cpu_kernel.h"
+#include "mindspore/ops/kernel/cpu/pyexecute/py_execute_cpu_kernel.h"
 #include "include/backend/distributed/init.h"
 #include "include/backend/debug/profiler/profiling.h"
 #include "kernel/graph_kernel/graph_kernel_builder_manager.h"

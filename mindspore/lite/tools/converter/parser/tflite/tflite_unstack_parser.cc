@@ -18,7 +18,7 @@
 #include "tools/converter/parser/tflite/tflite_unstack_parser.h"
 #include <vector>
 #include <memory>
-#include "ops/unstack.h"
+#include "infer/unstack.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

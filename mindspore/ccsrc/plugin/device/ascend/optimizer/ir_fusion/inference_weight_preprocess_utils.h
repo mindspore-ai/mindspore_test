@@ -30,7 +30,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/api/data_type.h"
 #include "mindspore/core/utils/ms_context.h"
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 
 namespace mindspore {
 namespace opt {

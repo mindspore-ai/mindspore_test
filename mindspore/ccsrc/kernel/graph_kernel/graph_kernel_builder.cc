@@ -34,7 +34,7 @@
 #include "ir/func_graph.h"
 #include "kernel/framework_utils.h"
 #include "kernel/graph_kernel/graph_kernel_json_generator.h"
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/file_utils.h"
 
 namespace mindspore {

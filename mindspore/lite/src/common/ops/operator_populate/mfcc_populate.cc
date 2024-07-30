@@ -15,7 +15,7 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/infer/mfcc_infer.h"
-#include "ops/mfcc.h"
+#include "infer/mfcc.h"
 using mindspore::ops::kNameMfcc;
 using mindspore::schema::PrimitiveType_Mfcc;
 namespace mindspore {

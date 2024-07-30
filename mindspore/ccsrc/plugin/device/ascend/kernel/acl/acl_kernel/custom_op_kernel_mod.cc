@@ -19,7 +19,7 @@
 #include <algorithm>
 #include <functional>
 #include "transform/acl_ir/acl_helper.h"
-#include "ops/structure_op_name.h"
+#include "op_def/structure_op_name.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "runtime/device/kernel_runtime.h"
 

@@ -16,10 +16,11 @@
 
 #include "tools/converter/adapter/acl/mapper/split_mapper.h"
 #include <memory>
+#include <vector>
 #include "tools/converter/adapter/acl/mapper/primitive_mapper_register.h"
 #include "src/common/log_util.h"
 #include "tools/converter/adapter/acl/mapper/tbe_op_def.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace lite {

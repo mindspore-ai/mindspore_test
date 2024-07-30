@@ -17,16 +17,16 @@
 #include "tools/converter/parser/onnx/onnx_arithmetic_operation_parser.h"
 #include <memory>
 #include <string>
-#include "ops/auto_generate/gen_lite_ops.h"
-#include "ops/fusion/add_fusion.h"
-#include "ops/fusion/mul_fusion.h"
-#include "ops/fusion/div_fusion.h"
-#include "ops/fusion/sub_fusion.h"
-#include "ops/fusion/exp_fusion.h"
-#include "ops/tan.h"
-#include "ops/fusion/pow_fusion.h"
-#include "ops/eltwise.h"
-#include "ops/mod.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
+#include "infer/cxx_api/add_fusion.h"
+#include "infer/cxx_api/mul_fusion.h"
+#include "infer/cxx_api/div_fusion.h"
+#include "infer/cxx_api/sub_fusion.h"
+#include "infer/cxx_api/exp_fusion.h"
+#include "infer/tan.h"
+#include "infer/cxx_api/pow_fusion.h"
+#include "infer/eltwise.h"
+#include "infer/mod.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

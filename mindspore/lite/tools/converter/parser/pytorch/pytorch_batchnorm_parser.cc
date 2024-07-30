@@ -16,7 +16,7 @@
 
 #include "tools/converter/parser/pytorch/pytorch_batchnorm_parser.h"
 #include <memory>
-#include "ops/fused_batch_norm.h"
+#include "infer/fused_batch_norm.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

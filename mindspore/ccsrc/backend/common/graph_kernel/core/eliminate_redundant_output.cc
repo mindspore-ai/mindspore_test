@@ -21,9 +21,9 @@
 #include <string>
 #include <utility>
 
-#include "mindspore/core/ops/sequence_ops.h"
-#include "mindspore/core/ops/nn_optimizer_ops.h"
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/nn_optimizer_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "ir/anf.h"
 #include "ir/graph_utils.h"
 #include "utils/anf_utils.h"

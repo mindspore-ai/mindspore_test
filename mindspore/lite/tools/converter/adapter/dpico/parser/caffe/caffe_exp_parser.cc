@@ -17,7 +17,7 @@
 #include "parser/caffe/caffe_exp_parser.h"
 #include <memory>
 #include <vector>
-#include "ops/fusion/exp_fusion.h"
+#include "infer/cxx_api/exp_fusion.h"
 
 namespace mindspore {
 namespace lite {

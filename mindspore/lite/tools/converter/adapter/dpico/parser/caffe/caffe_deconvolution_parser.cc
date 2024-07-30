@@ -18,8 +18,8 @@
 #include <memory>
 #include "common/op_enum.h"
 #include "common/check_base.h"
-#include "ops/fusion/conv2d_transpose_fusion.h"
-#include "ops/op_name.h"
+#include "infer/cxx_api/conv2d_transpose_fusion.h"
+#include "op_def/op_name.h"
 
 namespace mindspore {
 namespace lite {

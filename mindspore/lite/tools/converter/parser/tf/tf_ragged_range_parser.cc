@@ -18,7 +18,7 @@
 #include <memory>
 #include "tools/converter/parser/tf/tf_node_parser_registry.h"
 #include "tools/converter/parser/tf/tf_util.h"
-#include "ops/ragged_range.h"
+#include "infer/ragged_range.h"
 
 namespace mindspore {
 namespace lite {

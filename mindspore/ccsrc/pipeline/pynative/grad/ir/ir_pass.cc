@@ -19,9 +19,9 @@
 #include <vector>
 #include <functional>
 #include "pipeline/pynative/pynative_utils.h"
-#include "ops/sequence_ops.h"
-#include "ops/nn_ops.h"
-#include "ops/op_utils.h"
+#include "op_def/sequence_ops.h"
+#include "op_def/nn_ops.h"
+#include "ops_utils/op_utils.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/common/utils/hook.h"
 #include "runtime/pynative/op_function/pyboost_grad_functions.h"
@@ -108,7 +108,7 @@ std::optional<T> GetScalarAnfNodeValue(const AnfNodePtr &anf_node) {
     return std::nullopt;
   }
   auto value_node = anf_node->cast<ValueNodePtr>();
-  auto value_opt = mindspore::ops::GetScalarValue<T>(value_node->value());
+  auto value_opt = mindspore::GetScalarValue<T>(value_node->value());
   if (!value_opt.has_value()) {
     return std::nullopt;
   }

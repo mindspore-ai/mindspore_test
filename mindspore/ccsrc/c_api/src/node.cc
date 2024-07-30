@@ -15,7 +15,7 @@
  */
 
 #include "include/c_api/ms/node.h"
-#include "mindspore/core/ops/sequence_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
 #include "c_api/src/helper.h"
 #include "c_api/src/common.h"
 #include "c_api/src/utils.h"
@@ -30,7 +30,7 @@
 #include "abstract/dshape.h"
 #include "pipeline/pynative/base.h"
 #include "pipeline/pynative/pynative_utils.h"
-#include "mindspore/core/ops/other_ops.h"
+#include "mindspore/ops/op_def/other_ops.h"
 
 constexpr size_t firstInIdx = 1;
 constexpr size_t secondInIdx = 2;

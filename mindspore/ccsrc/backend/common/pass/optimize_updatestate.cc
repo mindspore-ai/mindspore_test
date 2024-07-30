@@ -18,7 +18,7 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 
 namespace mindspore {
 namespace opt {

@@ -22,7 +22,7 @@
 #include <algorithm>
 #include <queue>
 #include <utility>
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "include/common/utils/utils.h"
 #include "frontend/parallel/step_parallel.h"
 

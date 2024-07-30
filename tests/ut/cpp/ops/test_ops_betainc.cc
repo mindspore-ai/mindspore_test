@@ -16,14 +16,14 @@
 #include <vector>
 #include <memory>
 #include "common/common_test.h"
-#include "ops/ops_func_impl/betainc.h"
+#include "infer/ops_func_impl/betainc.h"
 #include "ir/dtype/type.h"
 #include "abstract/dshape.h"
 #include "utils/tensor_construct_utils.h"
 #include "ir/primitive.h"
 #include "abstract/abstract_value.h"
 #include "ops/test_ops.h"
-#include "ops/auto_generate/gen_ops_name.h"
+#include "op_def/auto_generate/gen_ops_name.h"
 #include "ops/test_ops_cmp_utils.h"
 
 namespace mindspore {
@@ -57,11 +57,13 @@ TEST_P(TestBetainc, betainc_dyn_shape) {
   DoFuncImplInferAndCompare<BetaincFuncImpl>(kNameBetainc, input_args, expect_shape, expect_type);
 }
 
-INSTANTIATE_TEST_CASE_P(TestBetainc, TestBetainc,
-    testing::Values(TestBetaincParams{{-1, -1}, kFloat32, {-2}, kFloat32, {-2}, kFloat32, {-1, -1}, kFloat32},
-                    TestBetaincParams{{2, 2}, kFloat32, {-1, -1}, kFloat32, {-2}, kFloat32, {2, 2}, kFloat32},
-                    TestBetaincParams{{-1, -1}, kFloat32, {-1, -1}, kFloat32, {-1, -1}, kFloat32, {-1, -1}, kFloat32},
-                    TestBetaincParams{{-2}, kFloat32, {-2}, kFloat32, {-2}, kFloat32, {-2}, kFloat32},
-                    TestBetaincParams{{2, -1, -1}, kFloat32, {-1, 3, -1}, kFloat32, {-1, -1, 4}, kFloat32, {2, 3, 4}, kFloat32}));
+INSTANTIATE_TEST_CASE_P(
+  TestBetainc, TestBetainc,
+  testing::Values(TestBetaincParams{{-1, -1}, kFloat32, {-2}, kFloat32, {-2}, kFloat32, {-1, -1}, kFloat32},
+                  TestBetaincParams{{2, 2}, kFloat32, {-1, -1}, kFloat32, {-2}, kFloat32, {2, 2}, kFloat32},
+                  TestBetaincParams{{-1, -1}, kFloat32, {-1, -1}, kFloat32, {-1, -1}, kFloat32, {-1, -1}, kFloat32},
+                  TestBetaincParams{{-2}, kFloat32, {-2}, kFloat32, {-2}, kFloat32, {-2}, kFloat32},
+                  TestBetaincParams{
+                    {2, -1, -1}, kFloat32, {-1, 3, -1}, kFloat32, {-1, -1, 4}, kFloat32, {2, 3, 4}, kFloat32}));
 }  // namespace ops
 }  // namespace mindspore

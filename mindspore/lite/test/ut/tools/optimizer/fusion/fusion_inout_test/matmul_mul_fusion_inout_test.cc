@@ -18,9 +18,9 @@
 #include <memory>
 #include "tools/optimizer/fusion/matmul_mul_fusion.h"
 #include "test/ut/tools/optimizer/fusion/fusion_inout_test/conv_fusion_inout_test.h"
-#include "plugin/device/cpu/kernel/nnacl/op_base.h"
-#include "ops/fusion/mul_fusion.h"
-#include "ops/fusion/mat_mul_fusion.h"
+#include "nnacl/op_base.h"
+#include "infer/cxx_api/mul_fusion.h"
+#include "infer/cxx_api/mat_mul_fusion.h"
 
 namespace mindspore {
 class MatmulMulFusionInoutTest : public FusionInoutTest {

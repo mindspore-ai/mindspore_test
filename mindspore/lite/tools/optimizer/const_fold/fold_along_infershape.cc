@@ -17,8 +17,8 @@
 #define USE_DEPRECATED_API
 #include "tools/optimizer/const_fold/fold_along_infershape.h"
 #include <memory>
-#include "mindspore/core/ops/framework_ops.h"
-#include "mindspore/core/ops/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/framework_ops.h"
+#include "op_def/auto_generate/gen_ops_primitive.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

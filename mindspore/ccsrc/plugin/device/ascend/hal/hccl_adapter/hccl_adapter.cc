@@ -30,8 +30,8 @@
 #include "include/backend/distributed/constants.h"
 #include "include/common/utils/parallel_context.h"
 #include "include/common/utils/anfalgo.h"
-#include "ops/ascend_op_name.h"
-#include "ops/framework_op_name.h"
+#include "op_def/ascend_op_name.h"
+#include "op_def/framework_op_name.h"
 
 static constexpr const auto kHcclPluginFileName = "libhccl_plugin.so";
 

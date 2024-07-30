@@ -20,9 +20,9 @@
 #include <vector>
 #include "include/backend/kernel_info.h"
 #include "include/backend/optimizer/helper.h"
-#include "mindspore/core/ops/framework_ops.h"
-#include "mindspore/core/ops/nn_ops.h"
-#include "mindspore/core/ops/nn_optimizer_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
+#include "mindspore/ops/op_def/nn_optimizer_ops.h"
 namespace mindspore::graphkernel {
 const BaseRef SplitReshapeAndCache::DefinePattern() const {
   VarPtr v0 = std::make_shared<Var>();

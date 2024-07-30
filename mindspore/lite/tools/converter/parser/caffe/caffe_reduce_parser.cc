@@ -17,7 +17,7 @@
 #include "tools/converter/parser/caffe/caffe_reduce_parser.h"
 #include <memory>
 #include <vector>
-#include "ops/fusion/reduce_fusion.h"
+#include "infer/cxx_api/reduce_fusion.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

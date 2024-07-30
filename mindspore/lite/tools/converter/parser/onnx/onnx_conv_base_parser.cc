@@ -17,7 +17,7 @@
 #include "tools/converter/parser/onnx/onnx_conv_base_parser.h"
 #include <vector>
 #include <string>
-#include "ops/fusion/conv2d_fusion.h"
+#include "infer/cxx_api/conv2d_fusion.h"
 #include "nnacl/op_base.h"
 #include "src/common/log_util.h"
 

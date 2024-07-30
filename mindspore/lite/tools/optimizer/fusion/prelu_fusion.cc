@@ -15,10 +15,10 @@
  */
 
 #include "tools/optimizer/fusion/prelu_fusion.h"
-#include "mindspore/core/ops/math_ops.h"
-#include "mindspore/core/ops/lite_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
 #include "nnacl/op_base.h"
-#include "ops/fusion/prelu_fusion.h"
+#include "infer/cxx_api/prelu_fusion.h"
 
 namespace mindspore {
 namespace opt {

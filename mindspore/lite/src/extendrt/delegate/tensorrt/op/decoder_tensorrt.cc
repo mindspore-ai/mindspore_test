@@ -23,7 +23,7 @@
 #include <unordered_map>
 #include <algorithm>
 #include "NvInferRuntimeCommon.h"
-#include "ops/decoder_layer.h"
+#include "infer/decoder_layer.h"
 #include "src/fastertransformer/kernels/unfused_attention_kernels.h"
 #include "src/fastertransformer/kernels/activation_kernels.h"
 #include "src/fastertransformer/utils/cuda_utils.h"
@@ -31,7 +31,7 @@
 #include "src/fastertransformer/kernels/layernorm_kernels.h"
 #include "src/extendrt/delegate/tensorrt/tensorrt_utils.h"
 
-#include "mindspore/core/ops/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "src/fastertransformer/layers/ms_layers/decoder.h"
 #include "src/fastertransformer/layers/ms_layers/BaseLayer.h"
 #include "src/fastertransformer/layers/ms_layers/attention.h"

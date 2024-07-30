@@ -20,8 +20,8 @@
 #include "ir/primitive.h"
 #include "abstract/abstract_value.h"
 #include "ops/test_ops.h"
-#include "ops/ops_func_impl/chunk.h"
-#include "ops/auto_generate/gen_ops_name.h"
+#include "infer/ops_func_impl/chunk.h"
+#include "op_def/auto_generate/gen_ops_name.h"
 #include "ops/test_value_utils.h"
 
 namespace mindspore {
@@ -30,7 +30,7 @@ struct ChunkParams {
   ShapeVector x_shape;
   TypePtr x_type;
   ValuePtr chunks;  // can not be kValueAny.
-  ValuePtr dims;  // can not be kValueAny.
+  ValuePtr dims;    // can not be kValueAny.
   std::vector<ShapeVector> out_shape;
   std::vector<TypePtr> out_type;
 };
@@ -62,7 +62,6 @@ INSTANTIATE_TEST_CASE_P(
       {3, 3}, kFloat32, CreateScalar<int64_t>(2), CreateScalar<int64_t>(0), {{2, 3}, {1, 3}}, {kFloat32, kFloat32}},
     ChunkParams{
       {-1, 2}, kFloat32, CreateScalar<int64_t>(2), CreateScalar<int64_t>(1), {{-1, 1}, {-1, 1}}, {kFloat32, kFloat32}},
-    ChunkParams{
-      {2, -1}, kFloat32, CreateScalar<int64_t>(1), CreateScalar<int64_t>(0), {{2, -1}}, {kFloat32}}));
+    ChunkParams{{2, -1}, kFloat32, CreateScalar<int64_t>(1), CreateScalar<int64_t>(0), {{2, -1}}, {kFloat32}}));
 }  // namespace ops
 }  // namespace mindspore

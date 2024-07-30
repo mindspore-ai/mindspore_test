@@ -37,6 +37,7 @@ public class NativeLibrary {
 
     private static final String GLOG_LIBNAME = "mindspore_glog";
     private static final String MINDSPORE_CORE_LIBNAME = "mindspore_core";
+    private static final String MINDSPORE_OPS_LIBNAME = "mindspore_ops";
     private static final String OPENCV_CORE_LIBNAME = "opencv_core";
     private static final String OPENCV_IMGCODECS_LIBNAME = "opencv_imgcodecs";
     private static final String OPENCV_IMGPROC_LIBNAME = "opencv_imgproc";
@@ -78,6 +79,7 @@ public class NativeLibrary {
      * libopencv_imgcodecs.so
      * libmslite_converter_plugin.so
      * libmindspore_core.so
+     * libmindspore_ops.so
      * libmindspore_converter.so
      * libmindspore-lite.so
      * mindspore-lite-jni
@@ -92,6 +94,7 @@ public class NativeLibrary {
         loadLib(makeResourceName("lib" + OPENCV_IMGPROC_LIBNAME + ".so"));
         loadLib(makeResourceName("lib" + OPENCV_IMGCODECS_LIBNAME + ".so"));
         loadLib(makeResourceName("lib" + MINDSPORE_CORE_LIBNAME + ".so"));
+        loadLib(makeResourceName("lib" + MINDSPORE_OPS_LIBNAME + ".so"));
         loadLib(makeResourceName("lib" + MSLITE_CONVERTER_PLUGIN_LIBNAME + ".so"));
         loadLib(makeResourceName("lib" + MINDSPORE_CONVERTER_LIBNAME + ".so"));
         loadLib(makeResourceName("lib" + DNNL_LIBNAME + ".so"));

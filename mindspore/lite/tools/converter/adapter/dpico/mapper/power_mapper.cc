@@ -21,7 +21,7 @@
 #include "common/fetch_content.h"
 #include "common/anf_util.h"
 #include "common/op_enum.h"
-#include "ops/fusion/pow_fusion.h"
+#include "infer/cxx_api/pow_fusion.h"
 #include "op/power_operator.h"
 
 namespace mindspore {

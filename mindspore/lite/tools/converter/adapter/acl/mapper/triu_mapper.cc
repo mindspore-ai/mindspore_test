@@ -19,9 +19,9 @@
 #include "tools/converter/adapter/acl/mapper/primitive_mapper_register.h"
 #include "tools/converter/adapter/acl/mapper/tbe_op_def.h"
 #include "tools/converter/adapter/acl/common/utils.h"
-#include "ops/tensor_copy.h"
+#include "infer/tensor_copy.h"
 #include "src/common/log_util.h"
-#include "mindspore/core/ops/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 namespace mindspore {
 namespace lite {
 namespace {

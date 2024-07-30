@@ -15,7 +15,7 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/scatter_elements_parameter.h"
-#include "ops/scatter_elements.h"
+#include "infer/scatter_elements.h"
 using mindspore::ops::kNameScatterElements;
 using mindspore::schema::PrimitiveType_ScatterElements;
 

@@ -20,8 +20,8 @@
 
 #include "include/common/utils/convert_utils_py.h"
 #include "include/common/fallback.h"
-#include "mindspore/core/ops/math_ops.h"
-#include "mindspore/core/ops/sequence_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
 #include "pipeline/jit/ps/fallback.h"
 #include "pipeline/jit/ps/parse/data_converter.h"
 

@@ -19,13 +19,13 @@
 #include <memory>
 #include <utility>
 #include <algorithm>
-#include "mindspore/core/ops/nn_ops.h"
-#include "mindspore/core/ops/op_utils.h"
+#include "mindspore/ops/op_def/nn_ops.h"
+#include "mindspore/ops/ops_utils/op_utils.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "mindspore/core/ops/array_op_name.h"
-#include "mindspore/core/ops/sequence_op_name.h"
-#include "mindspore/core/ops/auto_generate/gen_ops_name.h"
+#include "mindspore/ops/op_def/array_op_name.h"
+#include "mindspore/ops/op_def/sequence_op_name.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 
 namespace mindspore {
 namespace opt {
@@ -41,10 +41,10 @@ bool ConvertBasePaddings::HasDynPaddings(const CNodePtr &cnode) const {
   MS_EXCEPTION_IF_NULL(paddings_value);
   auto input_paddings_type_id = common::AnfAlgo::GetPrevNodeOutputInferDataType(cnode, kIndex1);
   if (input_paddings_type_id == kNumberTypeInt32) {
-    auto paddings_array_value = ops::GetArrayValue<int32_t>(paddings_value);
+    auto paddings_array_value = GetArrayValue<int32_t>(paddings_value);
     return !paddings_array_value.has_value();
   }
-  auto paddings_array_value = ops::GetArrayValue<int64_t>(paddings_value);
+  auto paddings_array_value = GetArrayValue<int64_t>(paddings_value);
   return !paddings_array_value.has_value();
 }
 
@@ -220,10 +220,10 @@ const AnfNodePtr ConvertBasePaddings::OptimizePaddingsValue(const FuncGraphPtr &
   if (paddings_type->template isa<TensorType>()) {
     auto paddings_value = ori_paddings->GetValue();
     MS_EXCEPTION_IF_NULL(paddings_value);
-    auto paddings_array_value = ops::GetArrayValue<T>(paddings_value);
+    auto paddings_array_value = GetArrayValue<T>(paddings_value);
     paddings_data = paddings_array_value.value().ToVector();
   } else {
-    auto paddings_value = ops::GetArrayValue<T>(ori_paddings);
+    auto paddings_value = GetArrayValue<T>(ori_paddings);
     paddings_data = paddings_value->ToVector();
   }
   if (!paddings_contiguous) {

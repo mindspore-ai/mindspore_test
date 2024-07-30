@@ -23,7 +23,7 @@
 #include "abstract/abstract_value.h"
 #include "include/backend/optimizer/helper.h"
 #include "ops/test_ops.h"
-#include "ops/ops_func_impl/cumsum_ext.h"
+#include "infer/ops_func_impl/cumsum_ext.h"
 #include "ops/test_value_utils.h"
 
 namespace mindspore {
@@ -59,11 +59,16 @@ TEST_P(TestCumsumExt, dyn_shape) {
 
 INSTANTIATE_TEST_CASE_P(
   TestCumsumExt, TestCumsumExt,
-  testing::Values(CumsumExtShapeParams{{3, 4, 5}, kFloat32, CreateScalar<int64_t>(2), CreatePyInt(kNumberTypeFloat64), {3, 4, 5}, kFloat64},
-                  CumsumExtShapeParams{{3, 4, 5}, kInt64, CreateScalar<int64_t>(0), CreatePyInt(kNumberTypeFloat64), {3, 4, 5}, kFloat64},
-                  CumsumExtShapeParams{{3, 4, 5}, kInt64, CreateScalar<int64_t>(-3), CreatePyInt(kNumberTypeInt8), {3, 4, 5}, kInt8},
-                  CumsumExtShapeParams{{2, 3, 4, 5}, kInt32, CreateScalar<int64_t>(-2), CreatePyInt(kNumberTypeInt64), {2, 3, 4, 5}, kInt64},
-                  CumsumExtShapeParams{{-1, -1, -1}, kUInt8, CreateScalar<int64_t>(2), CreatePyInt(kNumberTypeInt16), {-1, -1, -1}, kInt16},
-                  CumsumExtShapeParams{{-2}, kFloat32, CreateScalar<int64_t>(2), CreatePyInt(kNumberTypeFloat32), {-2}, kFloat32}));
+  testing::Values(
+    CumsumExtShapeParams{
+      {3, 4, 5}, kFloat32, CreateScalar<int64_t>(2), CreatePyInt(kNumberTypeFloat64), {3, 4, 5}, kFloat64},
+    CumsumExtShapeParams{
+      {3, 4, 5}, kInt64, CreateScalar<int64_t>(0), CreatePyInt(kNumberTypeFloat64), {3, 4, 5}, kFloat64},
+    CumsumExtShapeParams{{3, 4, 5}, kInt64, CreateScalar<int64_t>(-3), CreatePyInt(kNumberTypeInt8), {3, 4, 5}, kInt8},
+    CumsumExtShapeParams{
+      {2, 3, 4, 5}, kInt32, CreateScalar<int64_t>(-2), CreatePyInt(kNumberTypeInt64), {2, 3, 4, 5}, kInt64},
+    CumsumExtShapeParams{
+      {-1, -1, -1}, kUInt8, CreateScalar<int64_t>(2), CreatePyInt(kNumberTypeInt16), {-1, -1, -1}, kInt16},
+    CumsumExtShapeParams{{-2}, kFloat32, CreateScalar<int64_t>(2), CreatePyInt(kNumberTypeFloat32), {-2}, kFloat32}));
 }  // namespace ops
 }  // namespace mindspore

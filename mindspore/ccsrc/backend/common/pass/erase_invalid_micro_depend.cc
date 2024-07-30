@@ -20,9 +20,9 @@
 #include <vector>
 #include <algorithm>
 #include "include/common/utils/parallel_context.h"
-#include "ops/sequence_ops.h"
-#include "ops/other_ops.h"
-#include "ops/framework_ops.h"
+#include "op_def/sequence_ops.h"
+#include "op_def/other_ops.h"
+#include "op_def/framework_ops.h"
 #include "utils/ms_context.h"
 
 namespace mindspore {

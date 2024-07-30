@@ -15,7 +15,7 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/resize_parameter.h"
-#include "ops/crop_and_resize.h"
+#include "infer/crop_and_resize.h"
 using mindspore::ops::kNameCropAndResize;
 using mindspore::schema::PrimitiveType_CropAndResize;
 namespace mindspore {

@@ -23,7 +23,7 @@
 
 #include "transform/graph_ir/op_adapter_base.h"
 #include "ir/scalar.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 
 namespace mindspore {
 class GeDataTypeImm final : public IntegerImm {
@@ -71,23 +71,23 @@ T GetCastIntegralValue(const ValuePtr &value) {
 
   switch (type_id) {
     case kNumberTypeBool:
-      return static_cast<T>(ops::GetValueWithCheck<bool>(value));
+      return static_cast<T>(GetValueWithCheck<bool>(value));
     case kNumberTypeInt8:
-      return static_cast<T>(ops::GetValueWithCheck<int8_t>(value));
+      return static_cast<T>(GetValueWithCheck<int8_t>(value));
     case kNumberTypeInt16:
-      return static_cast<T>(ops::GetValueWithCheck<int16_t>(value));
+      return static_cast<T>(GetValueWithCheck<int16_t>(value));
     case kNumberTypeInt32:
-      return static_cast<T>(ops::GetValueWithCheck<int32_t>(value));
+      return static_cast<T>(GetValueWithCheck<int32_t>(value));
     case kNumberTypeInt64:
-      return static_cast<T>(ops::GetValueWithCheck<int64_t>(value));
+      return static_cast<T>(GetValueWithCheck<int64_t>(value));
     case kNumberTypeUInt8:
-      return static_cast<T>(ops::GetValueWithCheck<uint8_t>(value));
+      return static_cast<T>(GetValueWithCheck<uint8_t>(value));
     case kNumberTypeUInt16:
-      return static_cast<T>(ops::GetValueWithCheck<uint16_t>(value));
+      return static_cast<T>(GetValueWithCheck<uint16_t>(value));
     case kNumberTypeUInt32:
-      return static_cast<T>(ops::GetValueWithCheck<uint32_t>(value));
+      return static_cast<T>(GetValueWithCheck<uint32_t>(value));
     case kNumberTypeUInt64:
-      return static_cast<T>(ops::GetValueWithCheck<uint64_t>(value));
+      return static_cast<T>(GetValueWithCheck<uint64_t>(value));
     default:
       MS_LOG(EXCEPTION) << "Get and cast value of type " << value->type()->ToString() << " to integral type fail.";
   }
@@ -101,9 +101,9 @@ T GetCastFloatValue(const ValuePtr &value) {
 
   switch (type_id) {
     case kNumberTypeFloat32:
-      return static_cast<T>(ops::GetValueWithCheck<float>(value));
+      return static_cast<T>(GetValueWithCheck<float>(value));
     case kNumberTypeFloat64:
-      return static_cast<T>(ops::GetValueWithCheck<double>(value));
+      return static_cast<T>(GetValueWithCheck<double>(value));
     default:
       MS_LOG(EXCEPTION) << "Get and cast value of type " << value->type()->ToString()
                         << " to floating point type fail.";

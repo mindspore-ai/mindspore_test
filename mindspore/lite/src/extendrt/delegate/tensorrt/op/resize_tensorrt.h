@@ -21,7 +21,7 @@
 #include <map>
 #include <memory>
 #include "src/extendrt/delegate/tensorrt/op/tensorrt_op.h"
-#include "ops/resize.h"
+#include "infer/resize.h"
 
 namespace mindspore::lite {
 class ResizeTensorRT : public TensorRTOp {

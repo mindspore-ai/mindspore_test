@@ -21,9 +21,9 @@
 #include "tools/converter/adapter/acl/mapper/tbe_op_def.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "tools/converter/adapter/acl/common/utils.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 #include "src/common/log_util.h"
-#include "mindspore/core/ops/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 namespace mindspore {
 namespace lite {
 STATUS SpaceToDepthMapper::Mapper(const CNodePtr &cnode) {

@@ -23,7 +23,7 @@
 #include <sstream>
 #include <string>
 #include <utility>
-#include "ops/sequence_ops.h"
+#include "op_def/sequence_ops.h"
 #include "pipeline/jit/pi/auto_grad/edge.h"
 #include "pipeline/jit/pi/auto_grad/grad_executor.h"
 #include "pipeline/jit/pi/auto_grad/native_backward_function.h"

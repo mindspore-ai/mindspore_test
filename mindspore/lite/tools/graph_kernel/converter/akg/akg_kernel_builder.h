@@ -20,7 +20,7 @@
 #include <map>
 #include <set>
 #include <memory>
-#include "ops/custom.h"
+#include "infer/custom.h"
 #include "utils/anf_utils.h"
 #include "kernel/graph_kernel/graph_kernel_json_generator.h"
 

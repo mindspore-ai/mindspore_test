@@ -22,7 +22,7 @@
 #include "include/backend/optimizer/helper.h"
 #include "ir/dtype/type.h"
 #include "ir/primitive.h"
-#include "ops/ops_func_impl/nllloss_grad.h"
+#include "infer/ops_func_impl/nllloss_grad.h"
 #include "ops/test_ops.h"
 #include "ops/test_ops_cmp_utils.h"
 #include "utils/ms_context.h"
@@ -66,23 +66,24 @@ TEST_P(TestNLLLossGrad, dyn_shape) {
   auto expect_shape = std::make_shared<abstract::Shape>(param.out_shape);
   auto expect_type = std::make_shared<TensorType>(param.out_type);
   if (param.is_success) {
-    DoFuncImplInferAndCompare<NLLLossGradFuncImpl>(kNameNLLLossGrad_, {x, dy, label, weight, total_weight}, expect_shape, expect_type);
+    DoFuncImplInferAndCompare<NLLLossGradFuncImpl>(kNameNLLLossGrad_, {x, dy, label, weight, total_weight},
+                                                   expect_shape, expect_type);
   } else {
-    ASSERT_ANY_THROW(DoFuncImplInferAndCompare<NLLLossGradFuncImpl>(kNameNLLLossGrad_, {x, dy, label, weight, total_weight}, expect_shape, expect_type));
+    ASSERT_ANY_THROW(DoFuncImplInferAndCompare<NLLLossGradFuncImpl>(
+      kNameNLLLossGrad_, {x, dy, label, weight, total_weight}, expect_shape, expect_type));
   }
 }
 
 INSTANTIATE_TEST_CASE_P(
   TestNLLLossGradGroup, TestNLLLossGrad,
   testing::Values(
-    NLLLossGradOpParams{{2, 3}, kFloat32, {2, 3}, kFloat32, {2}, kInt32, {3}, kFloat32, {}, kFloat32, true,
-                        {2, 3}, kFloat32},
-    NLLLossGradOpParams{{-1, -1}, kFloat32, {-1, -1}, kFloat32, {-1}, kInt32, {-1}, kFloat32, {}, kFloat32, true,
-                        {-1, -1}, kFloat32},
-    NLLLossGradOpParams{{-2}, kFloat32, {-2}, kFloat32, {-2}, kInt32, {-2}, kFloat32, {}, kFloat32, true,
-                        {-1, -1}, kFloat32},
+    NLLLossGradOpParams{
+      {2, 3}, kFloat32, {2, 3}, kFloat32, {2}, kInt32, {3}, kFloat32, {}, kFloat32, true, {2, 3}, kFloat32},
+    NLLLossGradOpParams{
+      {-1, -1}, kFloat32, {-1, -1}, kFloat32, {-1}, kInt32, {-1}, kFloat32, {}, kFloat32, true, {-1, -1}, kFloat32},
+    NLLLossGradOpParams{
+      {-2}, kFloat32, {-2}, kFloat32, {-2}, kInt32, {-2}, kFloat32, {}, kFloat32, true, {-1, -1}, kFloat32},
     NLLLossGradOpParams{{2, 3}, kFloat32, {2, 3}, kFloat32, {3}, kInt32, {3}, kFloat32, {}, kFloat32, false},
-    NLLLossGradOpParams{{2, 3}, kFloat32, {2, 3}, kFloat32, {2}, kInt32, {2}, kFloat32, {}, kFloat32, false}
- ));
+    NLLLossGradOpParams{{2, 3}, kFloat32, {2, 3}, kFloat32, {2}, kInt32, {2}, kFloat32, {}, kFloat32, false}));
 }  // namespace ops
 }  // namespace mindspore

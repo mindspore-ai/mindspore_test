@@ -15,7 +15,7 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/squeeze_parameter.h"
-#include "ops/squeeze.h"
+#include "infer/squeeze.h"
 using mindspore::ops::kAxis;
 using mindspore::ops::kNameSqueeze;
 using mindspore::schema::PrimitiveType_Squeeze;

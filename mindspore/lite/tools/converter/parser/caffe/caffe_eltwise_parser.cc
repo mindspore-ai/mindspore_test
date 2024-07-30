@@ -17,7 +17,7 @@
 #include "tools/converter/parser/caffe/caffe_eltwise_parser.h"
 #include <cmath>
 #include <memory>
-#include "ops/eltwise.h"
+#include "infer/eltwise.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

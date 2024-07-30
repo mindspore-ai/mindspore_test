@@ -17,12 +17,11 @@
 #include "ir/primitive.h"
 #include "abstract/abstract_value.h"
 #include "ops/test_ops.h"
-#include "ops/ops_func_impl/layer_norm_grad_grad.h"
+#include "infer/ops_func_impl/layer_norm_grad_grad.h"
 
 namespace mindspore {
 namespace ops {
-struct LayerNormGradGradOpParams
-{
+struct LayerNormGradGradOpParams {
   ShapeVector x_shape;
   TypePtr x_type;
   ShapeVector dy_shape;
@@ -78,14 +77,21 @@ TEST_P(TestLayerNormGradGrad, layer_norm_grad_grad_dyn_shape) {
   auto begin_param_axis = std::make_shared<abstract::AbstractScalar>(static_cast<int64_t>(param.begin_params_axis));
   ASSERT_NE(begin_param_axis, nullptr);
 
-  std::vector<abstract::AbstractBasePtr> input_args{std::move(x), std::move(dy), std::move(variance), std::move(mean),
-                                                    std::move(gamma), std::move(d_dx), std::move(d_dg), std::move(d_db),
-                                                    std::move(begin_norm_axis), std::move(begin_param_axis)};
+  std::vector<abstract::AbstractBasePtr> input_args{std::move(x),
+                                                    std::move(dy),
+                                                    std::move(variance),
+                                                    std::move(mean),
+                                                    std::move(gamma),
+                                                    std::move(d_dx),
+                                                    std::move(d_dg),
+                                                    std::move(d_db),
+                                                    std::move(begin_norm_axis),
+                                                    std::move(begin_param_axis)};
   auto infer_impl = std::make_shared<LayerNormGradGradFuncImpl>();
   ASSERT_NE(infer_impl, nullptr);
   auto infer_shapes_ptr = infer_impl->InferShape(primitive, input_args);
-  std::shared_ptr<abstract::TupleShape> infer_shapes = 
-                                                     std::dynamic_pointer_cast<abstract::TupleShape>(infer_shapes_ptr);
+  std::shared_ptr<abstract::TupleShape> infer_shapes =
+    std::dynamic_pointer_cast<abstract::TupleShape>(infer_shapes_ptr);
   ASSERT_NE(infer_shapes, nullptr);
   auto infer_types_ptr = infer_impl->InferType(primitive, input_args);
   std::shared_ptr<Tuple> infer_types = std::dynamic_pointer_cast<Tuple>(infer_types_ptr);
@@ -114,9 +120,9 @@ TEST_P(TestLayerNormGradGrad, layer_norm_grad_grad_dyn_shape) {
 
 INSTANTIATE_TEST_CASE_P(
   TestLayerNormGradGradGroup, TestLayerNormGradGrad,
-  testing::Values(LayerNormGradGradOpParams{{1, 2, 3, 4}, kFloat32, {1, 2, 3, 4}, kFloat32, {1}, kFloat32, {1}, kFloat32,
-                                        {2, 3, 4}, kFloat32, {1, 2, 3, 4}, kFloat32, {2, 3, 4}, kFloat32,
-                                        {2, 3, 4}, kFloat32, 1, 1, {1, 2, 3, 4}, kFloat32, {1, 2, 3, 4}, kFloat32,
-                                        {2, 3, 4}, kFloat32}));
+  testing::Values(LayerNormGradGradOpParams{
+    {1, 2, 3, 4}, kFloat32,     {1, 2, 3, 4}, kFloat32,  {1},       kFloat32,  {1},      kFloat32, {2, 3, 4},
+    kFloat32,     {1, 2, 3, 4}, kFloat32,     {2, 3, 4}, kFloat32,  {2, 3, 4}, kFloat32, 1,        1,
+    {1, 2, 3, 4}, kFloat32,     {1, 2, 3, 4}, kFloat32,  {2, 3, 4}, kFloat32}));
 }  // namespace ops
 }  // namespace mindspore

@@ -15,7 +15,7 @@
  */
 
 #include "ops/test_ops.h"
-#include "ops/ops_func_impl/lin_space_ext.h"
+#include "infer/ops_func_impl/lin_space_ext.h"
 #include "ops/test_value_utils.h"
 
 namespace mindspore {
@@ -30,7 +30,6 @@ struct LinSpaceExtParams {
   TypePtr output_type;
   ValuePtr dtype;
 };
-
 
 class TestLinSpaceExt : public TestOps, public testing::WithParamInterface<LinSpaceExtParams> {};
 
@@ -53,7 +52,10 @@ TEST_P(TestLinSpaceExt, dyn_shape) {
 
 INSTANTIATE_TEST_CASE_P(
   TestLinSpaceExt, TestLinSpaceExt,
-  testing::Values(LinSpaceExtParams{{}, kFloat64, {}, kFloat64, CreateScalar<int64_t>(3), {3}, kFloat32, CreatePyInt(kNumberTypeFloat32)},
-                  LinSpaceExtParams{{}, kFloat64, {}, kFloat64, CreateScalar(kValueAny), {-1}, kFloat64, CreatePyInt(kNumberTypeFloat64)}));
+  testing::Values(
+    LinSpaceExtParams{
+      {}, kFloat64, {}, kFloat64, CreateScalar<int64_t>(3), {3}, kFloat32, CreatePyInt(kNumberTypeFloat32)},
+    LinSpaceExtParams{
+      {}, kFloat64, {}, kFloat64, CreateScalar(kValueAny), {-1}, kFloat64, CreatePyInt(kNumberTypeFloat64)}));
 }  // namespace ops
 }  // namespace mindspore

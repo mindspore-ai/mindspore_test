@@ -20,8 +20,8 @@
 #include <map>
 #include <fstream>
 #include <iostream>
-#include "mindspore/core/ops/other_ops.h"
-#include "mindspore/core/ops/framework_ops.h"
+#include "op_def/other_ops.h"
+#include "op_def/framework_ops.h"
 #include "utils/file_utils.h"
 #include "include/backend/distributed/collective/collective_manager.h"
 

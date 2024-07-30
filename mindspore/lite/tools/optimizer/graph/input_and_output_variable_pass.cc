@@ -20,13 +20,13 @@
 #include <utility>
 #include <vector>
 #include <string>
-#include "ops/auto_generate/gen_lite_ops.h"
-#include "mindspore/core/ops/lite_ops.h"
-#include "ops/fusion/conv2d_fusion.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
+#include "infer/cxx_api/conv2d_fusion.h"
 #include "mindspore/lite/include/errorcode.h"
-#include "ops/op_utils.h"
-#include "ops/depend.h"
-#include "ops/sequence_ops.h"
+#include "ops_utils/op_utils.h"
+#include "infer/depend.h"
+#include "op_def/sequence_ops.h"
 #include "tools/common/func_graph_utils.h"
 
 namespace mindspore::opt {

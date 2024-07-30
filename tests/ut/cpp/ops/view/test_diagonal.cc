@@ -15,7 +15,7 @@
  */
 
 #include "test_view.h"
-#include "mindspore/core/ops/view/diagonal_strides_calc.h"
+#include "mindspore/ops/view/diagonal_strides_calc.h"
 
 namespace mindspore {
 namespace ops {

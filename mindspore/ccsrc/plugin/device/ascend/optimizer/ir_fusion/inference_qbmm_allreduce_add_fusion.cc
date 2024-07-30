@@ -18,10 +18,10 @@
 #include <algorithm>
 #include <limits>
 #include "plugin/device/ascend/optimizer/common/gllo_utils.h"
-#include "mindspore/core/ops/nn_ops.h"
-#include "mindspore/core/ops/math_ops.h"
-#include "mindspore/core/ops/other_ops.h"
-#include "mindspore/core/ops/framework_ops.h"
+#include "op_def/nn_ops.h"
+#include "op_def/math_ops.h"
+#include "op_def/other_ops.h"
+#include "op_def/framework_ops.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
 #include "include/backend/optimizer/helper.h"

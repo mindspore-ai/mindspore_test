@@ -18,16 +18,16 @@
 #include "tools/optimizer/fusion/conv_pad_fusion.h"
 #include <memory>
 #include <vector>
-#include "mindspore/core/ops/lite_ops.h"
-#include "mindspore/core/ops/array_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
 #include "tools/common/tensor_util.h"
 #include "tools/lite_exporter/fetch_content.h"
-#include "ops/fusion/pad_fusion.h"
-#include "ops/fusion/conv2d_fusion.h"
+#include "infer/cxx_api/pad_fusion.h"
+#include "infer/cxx_api/conv2d_fusion.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "nnacl/op_base.h"
 #include "ops/primitive_c.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 #include "src/common/utils.h"
 
 namespace mindspore {

@@ -16,14 +16,14 @@
 #include <vector>
 #include <memory>
 #include "common/common_test.h"
-#include "ops/ops_func_impl/rms_norm_grad.h"
+#include "infer/ops_func_impl/rms_norm_grad.h"
 #include "ir/dtype/type.h"
 #include "abstract/dshape.h"
 #include "utils/tensor_construct_utils.h"
 #include "ir/primitive.h"
 #include "abstract/abstract_value.h"
 #include "ops/test_ops.h"
-#include "ops/auto_generate/gen_ops_name.h"
+#include "op_def/auto_generate/gen_ops_name.h"
 #include "ops/test_ops_cmp_utils.h"
 
 namespace mindspore {
@@ -57,14 +57,16 @@ TEST_P(TestRmsNormGrad, rms_norm_dyn_grad_shape) {
   auto dx_type = std::make_shared<TensorType>(param.dtype);
   auto dgamma_shape = std::make_shared<abstract::Shape>(param.dgamma_shape);
 
-  auto expect_shape = std::make_shared<abstract::TupleShape>(std::vector<abstract::BaseShapePtr>{dx_shape, dgamma_shape});
+  auto expect_shape =
+    std::make_shared<abstract::TupleShape>(std::vector<abstract::BaseShapePtr>{dx_shape, dgamma_shape});
   auto expect_type = std::make_shared<Tuple>(std::vector<TypePtr>{dx_type, std::make_shared<TensorType>(kFloat32)});
   DoFuncImplInferAndCompare<RmsNormGradFuncImpl>(kNameRmsNormGrad, input_args, expect_shape, expect_type);
 }
 
-INSTANTIATE_TEST_CASE_P(TestRmsNormGrad, TestRmsNormGrad,
-    testing::Values(TestRmsNormGradParams{kFloat32, {-2}, {-2}, {-2}, {-1, -1, -1}, {-2}, {-1, -1, -1}},
-                    TestRmsNormGradParams{kFloat16, {-1, -1, -1}, {-1, -1, -1}, {-1, -1, -1}, {-2}, {-1, -1, -1}, {-2}},
-                    TestRmsNormGradParams{kFloat32, {2, 3, 4}, {2, 3, 4}, {2, 1, 1}, {2, 3}, {2, 3, 4}, {2, 3}}));
+INSTANTIATE_TEST_CASE_P(
+  TestRmsNormGrad, TestRmsNormGrad,
+  testing::Values(TestRmsNormGradParams{kFloat32, {-2}, {-2}, {-2}, {-1, -1, -1}, {-2}, {-1, -1, -1}},
+                  TestRmsNormGradParams{kFloat16, {-1, -1, -1}, {-1, -1, -1}, {-1, -1, -1}, {-2}, {-1, -1, -1}, {-2}},
+                  TestRmsNormGradParams{kFloat32, {2, 3, 4}, {2, 3, 4}, {2, 1, 1}, {2, 3}, {2, 3, 4}, {2, 3}}));
 }  // namespace ops
 }  // namespace mindspore

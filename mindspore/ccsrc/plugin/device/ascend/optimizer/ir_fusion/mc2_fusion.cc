@@ -19,8 +19,8 @@
 #include "plugin/device/ascend/optimizer/common/gllo_utils.h"
 #include "include/common/utils/anfalgo.h"
 #include "utils/ms_context.h"
-#include "ops/math_ops.h"
-#include "ops/other_ops.h"
+#include "op_def/math_ops.h"
+#include "op_def/other_ops.h"
 
 namespace mindspore::opt {
 namespace {

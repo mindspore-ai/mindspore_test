@@ -19,7 +19,7 @@
 #include <cstdint>
 #include <memory>
 #include <string>
-#include "mindspore/core/ops/sequence_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
 #include "pybind11/pybind11.h"
 #include "ir/anf.h"
 #include "ir/func_graph.h"

@@ -17,15 +17,15 @@
 #include "common/common_test.h"
 #include "ops/test_ops.h"
 #include "ops/test_ops_cmp_utils.h"
-#include "ops/ops_func_impl/sinc.h"
+#include "infer/ops_func_impl/sinc.h"
 
 namespace mindspore {
 namespace ops {
 OP_FUNC_IMPL_TEST_DECLARE(Sinc, EltwiseOpParams);
 
 OP_FUNC_IMPL_TEST_CASES(Sinc, testing::Values(EltwiseOpParams{{2, 3}, kBool, {2, 3}, kFloat32},
-                                             EltwiseOpParams{{-1, 3}, kInt16, {-1, 3}, kFloat32},
-                                             EltwiseOpParams{{-1, -1}, kFloat16, {-1, -1}, kFloat16},
-                                             EltwiseOpParams{{-2}, kComplex64, {-2}, kComplex64}));
+                                              EltwiseOpParams{{-1, 3}, kInt16, {-1, 3}, kFloat32},
+                                              EltwiseOpParams{{-1, -1}, kFloat16, {-1, -1}, kFloat16},
+                                              EltwiseOpParams{{-2}, kComplex64, {-2}, kComplex64}));
 }  // namespace ops
 }  // namespace mindspore

@@ -17,12 +17,12 @@
 #define USE_DEPRECATED_API
 #include "tools/optimizer/fusion/remove_transitivity_op.h"
 #include <vector>
-#include "mindspore/core/ops/sequence_ops.h"
-#include "mindspore/core/ops/lite_ops.h"
-#include "mindspore/core/ops/array_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
 #include "tools/optimizer/fusion/strided_slice_checker.h"
 #include "tools/optimizer/common/gllo_utils.h"
-#include "ops/op_name.h"
+#include "op_def/op_name.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

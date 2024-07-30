@@ -19,7 +19,7 @@
 #include <utility>
 #include <vector>
 #include "common/anf_util.h"
-#include "ops/reverse_v2.h"
+#include "infer/reverse_v2.h"
 #include "op/reverse_operator.h"
 
 namespace mindspore {

@@ -23,7 +23,7 @@
 #include "abstract/abstract_value.h"
 #include "include/backend/optimizer/helper.h"
 #include "ops/test_ops.h"
-#include "ops/ops_func_impl/cummax.h"
+#include "infer/ops_func_impl/cummax.h"
 #include "ops/test_value_utils.h"
 
 namespace mindspore {
@@ -47,8 +47,10 @@ TEST_P(TestCummax, dyn_shape) {
 
   auto values_shape = std::make_shared<abstract::Shape>(param.values_shape);
   auto indices_shape = std::make_shared<abstract::Shape>(param.indices_shape);
-  auto expect_shape = std::make_shared<abstract::TupleShape>(std::vector<abstract::BaseShapePtr>{values_shape, indices_shape});
-  auto expect_type = std::make_shared<Tuple>(std::vector<TypePtr>{std::make_shared<TensorType>(param.values_type), param.indices_type});
+  auto expect_shape =
+    std::make_shared<abstract::TupleShape>(std::vector<abstract::BaseShapePtr>{values_shape, indices_shape});
+  auto expect_type =
+    std::make_shared<Tuple>(std::vector<TypePtr>{std::make_shared<TensorType>(param.values_type), param.indices_type});
 
   CummaxFuncImpl cummax_func_impl;
   auto prim = std::make_shared<Primitive>("Cummax");
@@ -61,11 +63,12 @@ TEST_P(TestCummax, dyn_shape) {
 
 INSTANTIATE_TEST_CASE_P(
   TestCummax, TestCummax,
-  testing::Values(CummaxShapeParams{{3, 4, 5}, kFloat32, CreateScalar<int64_t>(2), {3, 4, 5}, kFloat32, {3, 4, 5}, kInt64},
-                  CummaxShapeParams{{3, 4, 5}, kInt64, CreateScalar<int64_t>(0), {3, 4, 5}, kInt64, {3, 4, 5}, kInt64},
-                  CummaxShapeParams{{3, 4, 5}, kInt64, CreateScalar<int64_t>(-3), {3, 4, 5}, kInt64, {3, 4, 5}, kInt64},
-                  CummaxShapeParams{{2, 3, 4, 5}, kInt32, CreateScalar<int64_t>(-2), {2, 3, 4, 5}, kInt32, {2, 3, 4, 5}, kInt64},
-                  CummaxShapeParams{{-1, -1, -1}, kUInt64, CreateScalar<int64_t>(2), {-1, -1, -1}, kUInt64, {-1, -1, -1}, kInt64},
-                  CummaxShapeParams{{-2}, kFloat32, CreateScalar<int64_t>(2), {-2}, kFloat32, {-2}, kInt64}));
+  testing::Values(
+    CummaxShapeParams{{3, 4, 5}, kFloat32, CreateScalar<int64_t>(2), {3, 4, 5}, kFloat32, {3, 4, 5}, kInt64},
+    CummaxShapeParams{{3, 4, 5}, kInt64, CreateScalar<int64_t>(0), {3, 4, 5}, kInt64, {3, 4, 5}, kInt64},
+    CummaxShapeParams{{3, 4, 5}, kInt64, CreateScalar<int64_t>(-3), {3, 4, 5}, kInt64, {3, 4, 5}, kInt64},
+    CummaxShapeParams{{2, 3, 4, 5}, kInt32, CreateScalar<int64_t>(-2), {2, 3, 4, 5}, kInt32, {2, 3, 4, 5}, kInt64},
+    CummaxShapeParams{{-1, -1, -1}, kUInt64, CreateScalar<int64_t>(2), {-1, -1, -1}, kUInt64, {-1, -1, -1}, kInt64},
+    CummaxShapeParams{{-2}, kFloat32, CreateScalar<int64_t>(2), {-2}, kFloat32, {-2}, kInt64}));
 }  // namespace ops
 }  // namespace mindspore

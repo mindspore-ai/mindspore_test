@@ -20,15 +20,15 @@
 #include <map>
 #include <algorithm>
 #include <utility>
-#include "mindspore/core/ops/array_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
 #include "tools/converter/converter_context.h"
 #include "tools/converter/quantizer/quant_param_holder.h"
 #include "src/common/log_adapter.h"
 #include "src/common/quant_utils.h"
 #include "tools/converter/parser/parser_utils.h"
 #include "nnacl/op_base.h"
-#include "ops/op_utils.h"
-#include "ops/fake_quant_param.h"
+#include "ops_utils/op_utils.h"
+#include "infer/fake_quant_param.h"
 
 namespace mindspore {
 namespace lite {

@@ -15,7 +15,7 @@
  */
 
 #include "plugin/device/ascend/optimizer/format_type/utils.h"
-#include "ops/array_ops.h"
+#include "op_def/array_ops.h"
 #include "include/backend/optimizer/helper.h"
 
 namespace mindspore {

@@ -17,12 +17,12 @@
  */
 
 #include "pipeline/jit/ps/resource.h"
-#include "mindspore/core/ops/sparse_tensor_ops.h"
-#include "mindspore/core/ops/sequence_ops.h"
-#include "mindspore/core/ops/comparison_ops.h"
-#include "mindspore/core/ops/array_ops.h"
-#include "mindspore/core/ops/arithmetic_ops.h"
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/sparse_tensor_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/comparison_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/arithmetic_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "include/common/utils/compile_cache_context.h"
 #include "ir/dtype.h"
 #include "pipeline/jit/ps/static_analysis/static_analysis.h"

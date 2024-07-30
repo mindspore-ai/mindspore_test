@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "ops/op_def.h"
+#include "mindspore/core/ops/op_def.h"
 
 namespace mindspore::ops {
-MS_EXPORT extern std::unordered_map<std::string, OpDefPtr> gOpDefTable;
 ${extern_variable}
 }// namespace mindspore::ops

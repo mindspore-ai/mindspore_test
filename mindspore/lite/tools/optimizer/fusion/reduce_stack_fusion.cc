@@ -17,11 +17,11 @@
 #define USE_DEPRECATED_API
 #include "tools/optimizer/fusion/reduce_stack_fusion.h"
 #include <functional>
-#include "mindspore/core/ops/lite_ops.h"
-#include "mindspore/core/ops/array_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "tools/lite_exporter/fetch_content.h"
-#include "ops/op_name.h"
+#include "op_def/op_name.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

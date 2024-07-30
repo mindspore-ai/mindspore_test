@@ -15,7 +15,7 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/stack_parameter.h"
-#include "ops/stack.h"
+#include "infer/stack.h"
 using mindspore::ops::kNameStack;
 using mindspore::schema::PrimitiveType_Stack;
 namespace mindspore {

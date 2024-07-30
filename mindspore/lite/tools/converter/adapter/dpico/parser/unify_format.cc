@@ -19,12 +19,12 @@
 #include "common/check_base.h"
 #include "common/format_utils.h"
 #include "parser/parser_utils.h"
-#include "ops/tuple_get_item.h"
-#include "ops/adam.h"
-#include "ops/sgd.h"
-#include "ops/fusion/conv2d_fusion.h"
-#include "ops/fusion/conv2d_transpose_fusion.h"
-#include "ops/op_name.h"
+#include "infer/tuple_get_item.h"
+#include "infer/adam.h"
+#include "infer/sgd.h"
+#include "infer/cxx_api/conv2d_fusion.h"
+#include "infer/cxx_api/conv2d_transpose_fusion.h"
+#include "op_def/op_name.h"
 
 namespace mindspore {
 namespace lite {

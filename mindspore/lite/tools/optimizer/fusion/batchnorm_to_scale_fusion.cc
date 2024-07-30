@@ -17,16 +17,16 @@
 #define USE_DEPRECATED_API
 #include "tools/optimizer/fusion/batchnorm_to_scale_fusion.h"
 #include <memory>
-#include "mindspore/core/ops/sequence_ops.h"
-#include "mindspore/core/ops/nn_ops.h"
-#include "ops/fused_batch_norm.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
+#include "infer/fused_batch_norm.h"
 #include "include/common/utils/utils.h"
-#include "ops/fusion/scale_fusion.h"
+#include "infer/cxx_api/scale_fusion.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "tools/common/tensor_util.h"
 #include "securec/include/securec.h"
 #include "nnacl/op_base.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 #include "src/common/utils.h"
 
 namespace mindspore::opt {

@@ -21,7 +21,7 @@
 #include "src/extendrt/delegate/tensorrt/op/tensorrt_op.h"
 #include "src/extendrt/delegate/tensorrt/op/tensorrt_plugin.h"
 #include "src/extendrt/delegate/tensorrt/cuda_impl/cudnn_utils.h"
-#include "ops/fusion/activation.h"
+#include "infer/cxx_api/activation.h"
 
 namespace mindspore::lite {
 constexpr auto ACTIVATION_OPT_PLUGIN_NAME{"ActivationOptPlugin"};

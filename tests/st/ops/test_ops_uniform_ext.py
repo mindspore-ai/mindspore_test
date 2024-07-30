@@ -36,7 +36,7 @@ class UniformExtCell(Cell):
         return self.uniform(x, from_, to, seed, offset)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("context_mode", [
     mindspore.PYNATIVE_MODE,
     mindspore.GRAPH_MODE

@@ -21,7 +21,7 @@
 #include "common/common_test.h"
 #include "ir/dtype/type.h"
 #include "ir/primitive.h"
-#include "ops/ops_func_impl/batch_norm_ext.h"
+#include "infer/ops_func_impl/batch_norm_ext.h"
 #include "ops/test_ops.h"
 #include "ops/test_ops_cmp_utils.h"
 #include "ops/test_value_utils.h"
@@ -71,12 +71,11 @@ TEST_P(TestBatchNormExt, dyn_shape) {
   ASSERT_NE(epsilon, nullptr);
   ASSERT_NE(momentum, nullptr);
 
-  auto [expect_shape, expect_type] = MakeOutputTupleShapeAndType(
-    {param.y_shape, param.saved_mean_shape, param.saved_mean_shape},
-    {param.x_type, param.weight_type, param.weight_type});
+  auto [expect_shape, expect_type] =
+    MakeOutputTupleShapeAndType({param.y_shape, param.saved_mean_shape, param.saved_mean_shape},
+                                {param.x_type, param.weight_type, param.weight_type});
   DoFuncImplInferAndCompare<BatchNormExtFuncImpl>(
-    "BatchNormExt", {x, weight, bias, mean, variance, training, momentum, epsilon}, expect_shape,
-    expect_type);
+    "BatchNormExt", {x, weight, bias, mean, variance, training, momentum, epsilon}, expect_shape, expect_type);
 }
 
 INSTANTIATE_TEST_CASE_P(TestBatchNormExt, TestBatchNormExt,

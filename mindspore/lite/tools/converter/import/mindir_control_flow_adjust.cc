@@ -18,9 +18,9 @@
 #include <memory>
 #include <set>
 #include <algorithm>
-#include "mindspore/core/ops/sequence_ops.h"
-#include "ops/make_tuple.h"
-#include "ops/return.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "infer/make_tuple.h"
+#include "infer/return.h"
 #include "tools/converter/converter_context.h"
 #include "tools/converter/quantizer/quant_param_holder.h"
 #include "src/common/log_adapter.h"

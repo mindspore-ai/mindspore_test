@@ -20,7 +20,7 @@
 #include <vector>
 #include <algorithm>
 #include "common/anf_util.h"
-#include "ops/unsqueeze.h"
+#include "infer/unsqueeze.h"
 #include "op/unsqueeze_operator.h"
 
 namespace mindspore {

@@ -19,7 +19,7 @@
 #include "common/op_enum.h"
 #include "common/op_attr.h"
 #include "common/data_transpose_utils.h"
-#include "ops/fusion/full_connection.h"
+#include "infer/cxx_api/full_connection.h"
 
 namespace mindspore {
 namespace lite {

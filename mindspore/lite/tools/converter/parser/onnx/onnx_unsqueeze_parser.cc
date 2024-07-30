@@ -17,7 +17,7 @@
 #include "tools/converter/parser/onnx/onnx_unsqueeze_parser.h"
 #include <memory>
 #include <vector>
-#include "ops/unsqueeze.h"
+#include "infer/unsqueeze.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

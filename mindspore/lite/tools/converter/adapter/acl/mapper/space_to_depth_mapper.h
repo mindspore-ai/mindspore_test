@@ -18,7 +18,7 @@
 #define MINDSPORE_LITE_TOOLS_CONVERTER_ADAPTER_ACL_MAPPER_SPACE_TO_DEPTH_MAPPER_H_
 
 #include "tools/converter/adapter/acl/mapper/primitive_mapper.h"
-#include "ops/space_to_depth.h"
+#include "infer/space_to_depth.h"
 
 namespace mindspore {
 namespace lite {

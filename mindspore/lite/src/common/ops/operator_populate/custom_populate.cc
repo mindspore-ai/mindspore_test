@@ -16,7 +16,7 @@
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/custom_parameter.h"
 #include "nnacl/split_parameter.h"
-#include "ops/custom.h"
+#include "infer/custom.h"
 using mindspore::ops::kNameCustom;
 using mindspore::schema::PrimitiveType_Custom;
 namespace mindspore {

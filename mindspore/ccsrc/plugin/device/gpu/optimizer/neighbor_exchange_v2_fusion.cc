@@ -21,10 +21,10 @@
 #include <string>
 
 #include "base/base.h"
-#include "ops/array_op_name.h"
-#include "ops/sequence_ops.h"
-#include "ops/other_ops.h"
-#include "ops/framework_ops.h"
+#include "op_def/array_op_name.h"
+#include "op_def/sequence_ops.h"
+#include "op_def/other_ops.h"
+#include "op_def/framework_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/convert_utils.h"
@@ -33,7 +33,7 @@
 #include "plugin/device/gpu/hal/device/kernel_info_setter.h"
 #include "include/backend/optimizer/helper.h"
 #ifndef _WIN32
-#include "plugin/device/gpu/kernel/nccl/nccl_gpu_kernel.h"
+#include "kernel/gpu/nccl/nccl_gpu_kernel.h"
 #endif
 
 namespace mindspore {

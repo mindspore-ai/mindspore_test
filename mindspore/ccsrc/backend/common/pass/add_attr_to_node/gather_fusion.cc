@@ -30,7 +30,7 @@ const AnfNodePtr GatherFusionProcess(const FuncGraphPtr &graph, const AnfNodePtr
   if (idx != SIZE_MAX) {
     auto batch_dim_node = common::AnfAlgo::GetInputNode(cnode, idx);
     if (utils::isa<ValueNodePtr>(batch_dim_node)) {
-      auto batch_dim_v = ops::GetScalarValue<int64_t>(batch_dim_node->cast<ValueNodePtr>()->value());
+      auto batch_dim_v = GetScalarValue<int64_t>(batch_dim_node->cast<ValueNodePtr>()->value());
       if (batch_dim_v.has_value()) {
         batch_dim = batch_dim_node->cast<ValueNodePtr>()->value();
       }

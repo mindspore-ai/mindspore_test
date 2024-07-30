@@ -25,12 +25,11 @@
 #include <set>
 #include <string>
 #include <queue>
-#include <list>
-#include "mindspore/core/ops/sequence_ops.h"
-#include "mindspore/core/ops/other_ops.h"
-#include "mindspore/core/ops/array_ops.h"
-#include "mindspore/core/ops/structure_ops.h"
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/other_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/structure_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/hash_map.h"
 #include "frontend/operator/ops.h"
 #include "frontend/optimizer/optimizer.h"
@@ -62,9 +61,9 @@
 #include "utils/symbolic.h"
 #include "mindspore/core/utils/parallel_node_check.h"
 #include "frontend/parallel/parallel_optimizer/opt_param_mgr.h"
-#include "mindspore/core/ops/conv_pool_ops.h"
-#include "mindspore/core/ops/nn_ops.h"
-#include "mindspore/core/ops/ops_func_impl/flash_attention_score.h"
+#include "mindspore/ops/op_def/conv_pool_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
+#include "mindspore/ops/infer/ops_func_impl/flash_attention_score.h"
 
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/backend/distributed/ps/util.h"

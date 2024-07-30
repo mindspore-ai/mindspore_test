@@ -15,7 +15,7 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/skip_gram_parameter.h"
-#include "ops/skip_gram.h"
+#include "infer/skip_gram.h"
 using mindspore::ops::kNameSkipGram;
 using mindspore::schema::PrimitiveType_SkipGram;
 namespace mindspore {

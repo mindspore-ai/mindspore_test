@@ -20,7 +20,7 @@
 #include <string>
 #include <memory>
 #include "include/backend/optimizer/optimizer.h"
-#include "mindspore/core/ops/math_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
 #include "ir/anf.h"
 #include "dnnl.hpp"
 

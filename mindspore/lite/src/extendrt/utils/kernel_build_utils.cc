@@ -18,7 +18,7 @@
 #include <string>
 #include <memory>
 #include <algorithm>
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "kernel/common_utils.h"
 #include "plugin/factory/ms_factory.h"
 #include "kernel/kernel_build_info.h"

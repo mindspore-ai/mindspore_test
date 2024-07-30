@@ -21,7 +21,7 @@
 #include <map>
 #include <vector>
 #include <memory>
-#include "mindspore/core/ops/sequence_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/core/ops/op_def.h"
 #include "ir/tensor.h"
 #include "include/backend/device_address.h"

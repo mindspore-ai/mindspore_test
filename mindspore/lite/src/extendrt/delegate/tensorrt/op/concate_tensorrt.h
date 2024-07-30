@@ -18,8 +18,8 @@
 #include <string>
 #include <vector>
 #include "src/extendrt/delegate/tensorrt/op/tensorrt_op.h"
-#include "ops/auto_generate/gen_lite_ops.h"
-#include "ops/stack.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
+#include "infer/stack.h"
 
 namespace mindspore::lite {
 class ConcateTensorRT : public TensorRTOp {

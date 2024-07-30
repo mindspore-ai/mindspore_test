@@ -18,7 +18,7 @@
 #include <memory>
 #include <vector>
 #include "common/op_attr.h"
-#include "ops/custom.h"
+#include "infer/custom.h"
 
 namespace mindspore {
 namespace lite {

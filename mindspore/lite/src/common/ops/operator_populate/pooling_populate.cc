@@ -16,8 +16,8 @@
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "src/common/ops/operator_populate/utils.h"
 #include "nnacl/pooling_parameter.h"
-#include "ops/fusion/avg_pool_fusion.h"
-#include "ops/fusion/max_pool_fusion.h"
+#include "infer/cxx_api/avg_pool_fusion.h"
+#include "infer/cxx_api/max_pool_fusion.h"
 using mindspore::ops::kNameAvgPoolFusion;
 using mindspore::ops::kNameMaxPoolFusion;
 using mindspore::schema::PrimitiveType_AvgPoolFusion;

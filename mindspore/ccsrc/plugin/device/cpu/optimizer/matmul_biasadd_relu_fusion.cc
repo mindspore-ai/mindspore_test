@@ -20,16 +20,16 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include "ops/ascend_op_name.h"
+#include "op_def/ascend_op_name.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/kernel_graph.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
 #include "kernel/common_utils.h"
-#include "mindspore/core/ops/nn_ops.h"
-#include "mindspore/core/ops/nn_optimizer_ops.h"
-#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "mindspore/ops/op_def/nn_ops.h"
+#include "mindspore/ops/op_def/nn_optimizer_ops.h"
+#include "kernel/cpu/cpu_kernel.h"
 #include "plugin/factory/ms_factory.h"
 #include "utils/ms_context.h"
 

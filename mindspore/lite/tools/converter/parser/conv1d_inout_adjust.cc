@@ -20,18 +20,18 @@
 #include <vector>
 #include <algorithm>
 #include <memory>
-#include "mindspore/core/ops/conv_pool_ops.h"
-#include "mindspore/core/ops/nn_ops.h"
-#include "mindspore/core/ops/lite_ops.h"
+#include "mindspore/ops/op_def/conv_pool_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
 #include "mindspore/lite/include/errorcode.h"
-#include "ops/conv2d.h"
-#include "ops/squeeze.h"
-#include "ops/unsqueeze.h"
-#include "ops/auto_generate/gen_lite_ops.h"
+#include "infer/conv2d.h"
+#include "infer/squeeze.h"
+#include "infer/unsqueeze.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
 #include "ops/primitive_c.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "nnacl/op_base.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 
 namespace mindspore::lite {
 namespace {

@@ -21,8 +21,8 @@
 #include "src/extendrt/delegate/tensorrt/tensorrt_utils.h"
 #include "NvInferRuntimeCommon.h"
 #include "src/extendrt/delegate/tensorrt/op/nmswithmask_tensorrt.h"
-#include "plugin/device/gpu/kernel/cuda_impl/cuda_ops/nms_with_mask_impl.cuh"
-#include "ops/nms_with_mask.h"
+#include "kernel/gpu/cuda_impl/cuda_ops/nms_with_mask_impl.cuh"
+#include "infer/nms_with_mask.h"
 
 namespace mindspore::lite {
 int NMSwithmaskTensorRT::IsSupport(const BaseOperatorPtr &base_operator, const std::vector<TensorInfo> &in_tensors,

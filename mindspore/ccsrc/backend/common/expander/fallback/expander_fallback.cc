@@ -20,7 +20,7 @@
 #include <map>
 #include <memory>
 #include "base/base.h"
-#include "ops/op_name.h"
+#include "op_def/op_name.h"
 #include "utils/ms_utils.h"
 #include "utils/anf_utils.h"
 #include "utils/ms_context.h"

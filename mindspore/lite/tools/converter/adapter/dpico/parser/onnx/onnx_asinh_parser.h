@@ -20,7 +20,7 @@
 #include <memory>
 #include "include/registry/node_parser.h"
 #include "ops/base_operator.h"
-#include "ops/custom.h"
+#include "infer/custom.h"
 
 namespace mindspore {
 namespace lite {

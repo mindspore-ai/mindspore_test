@@ -23,7 +23,7 @@
 #include "include/backend/kernel_graph.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
-#include "ops/framework_op_name.h"
+#include "op_def/framework_op_name.h"
 
 namespace mindspore {
 namespace device {

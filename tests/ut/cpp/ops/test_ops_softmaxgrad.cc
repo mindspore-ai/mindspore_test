@@ -16,8 +16,8 @@
 #include <vector>
 #include <memory>
 #include "common/common_test.h"
-#include "ops/sequence_op_name.h"
-#include "ops/grad/softmax_grad.h"
+#include "op_def/sequence_op_name.h"
+#include "infer/grad/softmax_grad.h"
 #include "ir/dtype/type.h"
 #include "ir/value.h"
 #include "abstract/dshape.h"

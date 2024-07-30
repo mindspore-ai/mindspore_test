@@ -16,7 +16,7 @@
 
 #include "tools/converter/parser/onnx/onnx_matmul_parser.h"
 #include <memory>
-#include "ops/fusion/mat_mul_fusion.h"
+#include "infer/cxx_api/mat_mul_fusion.h"
 #include "nnacl/op_base.h"
 #include "src/common/utils.h"
 

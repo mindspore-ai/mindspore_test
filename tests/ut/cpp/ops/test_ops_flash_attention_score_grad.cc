@@ -24,9 +24,9 @@
 #include "utils/tensor_construct_utils.h"
 #include "ir/primitive.h"
 #include "abstract/abstract_value.h"
-#include "ops/op_name.h"
-#include "ops/auto_generate/gen_ops_name.h"
-#include "ops/ops_func_impl/flash_attention_score_grad.h"
+#include "op_def/op_name.h"
+#include "op_def/auto_generate/gen_ops_name.h"
+#include "infer/ops_func_impl/flash_attention_score_grad.h"
 #include "ops/test_value_utils.h"
 
 namespace mindspore {

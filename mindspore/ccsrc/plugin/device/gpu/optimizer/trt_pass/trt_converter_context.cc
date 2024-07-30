@@ -20,7 +20,7 @@
 #include <algorithm>
 #include "plugin/device/gpu/hal/device/trt_loader.h"
 #include "plugin/device/gpu/optimizer/trt_pass/trt_op_factory.h"
-#include "plugin/device/gpu/kernel/trt/trt_utils.h"
+#include "kernel/gpu/trt/trt_utils.h"
 #include "include/common/utils/convert_utils.h"
 #include "include/common/utils/utils.h"
 #include "utils/singleton.h"

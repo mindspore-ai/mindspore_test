@@ -17,7 +17,7 @@
 #define USE_DEPRECATED_API
 #include <memory>
 #include "common/common_test.h"
-#include "ops/fusion/layer_norm_fusion.h"
+#include "infer/cxx_api/layer_norm_fusion.h"
 #include "tools/converter/parser/onnx/onnx_layer_norm_parser.h"
 #include "include/registry/converter_context.h"
 #include "include/registry/node_parser_registry.h"

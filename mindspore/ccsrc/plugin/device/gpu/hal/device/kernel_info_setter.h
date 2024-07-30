@@ -23,11 +23,11 @@
 #include <memory>
 #include <map>
 #include "ir/anf.h"
-#include "ops/conv_pool_ops.h"
-#include "ops/nn_optimizer_ops.h"
-#include "ops/nn_ops.h"
-#include "ops/array_ops.h"
-#include "ops/math_op_name.h"
+#include "op_def/conv_pool_ops.h"
+#include "op_def/nn_optimizer_ops.h"
+#include "op_def/nn_ops.h"
+#include "op_def/array_ops.h"
+#include "op_def/math_op_name.h"
 #include "ir/dtype.h"
 #include "include/common/utils/utils.h"
 #include "kernel/kernel.h"

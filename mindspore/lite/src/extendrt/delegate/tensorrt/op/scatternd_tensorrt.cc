@@ -17,9 +17,9 @@
 #include "src/extendrt/delegate/tensorrt/op/scatternd_tensorrt.h"
 #include <numeric>
 #include "src/extendrt/delegate/tensorrt/tensorrt_utils.h"
-#include "ops/scatter_nd_update.h"
-#include "ops/tensor_scatter_update.h"
-#include "ops/tensor_scatter_add.h"
+#include "infer/scatter_nd_update.h"
+#include "infer/tensor_scatter_update.h"
+#include "infer/tensor_scatter_add.h"
 
 namespace mindspore::lite {
 int ScatterNdTensorRT::IsSupport(const BaseOperatorPtr &base_operator, const std::vector<TensorInfo> &in_tensors,

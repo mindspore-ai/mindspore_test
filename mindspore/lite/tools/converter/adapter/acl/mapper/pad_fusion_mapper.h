@@ -18,7 +18,7 @@
 #define MINDSPORE_LITE_TOOLS_CONVERTER_ADAPTER_ACL_MAPPER_PAD_FUSION_MAPPER_H_
 
 #include "tools/converter/adapter/acl/mapper/primitive_mapper.h"
-#include "ops/fusion/pad_fusion.h"
+#include "infer/cxx_api/pad_fusion.h"
 
 using mindspore::ops::kNamePadFusion;
 

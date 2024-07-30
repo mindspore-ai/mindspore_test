@@ -17,9 +17,9 @@
 #include "plugin/device/ascend/optimizer/enhancer/insert_transpose_for_sort.h"
 #include <algorithm>
 #include <string>
-#include "ops/sequence_ops.h"
-#include "ops/array_ops.h"
-#include "ops/auto_generate/gen_ops_primitive.h"
+#include "op_def/sequence_ops.h"
+#include "op_def/array_ops.h"
+#include "op_def/auto_generate/gen_ops_primitive.h"
 #include "plugin/device/ascend/optimizer/create_node_helper.h"
 
 namespace mindspore {

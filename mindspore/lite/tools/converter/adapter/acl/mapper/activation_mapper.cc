@@ -20,16 +20,16 @@
 #include <memory>
 #include "tools/converter/adapter/acl/mapper/primitive_mapper_register.h"
 #include "tools/converter/adapter/acl/common/utils.h"
-#include "ops/auto_generate/gen_lite_ops.h"
-#include "ops/leaky_relu.h"
-#include "ops/softsign.h"
-#include "ops/softplus.h"
-#include "ops/selu.h"
-#include "ops/ops_func_impl/hswish.h"
-#include "ops/ops_func_impl/sign.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
+#include "infer/leaky_relu.h"
+#include "infer/softsign.h"
+#include "infer/softplus.h"
+#include "infer/selu.h"
+#include "infer/ops_func_impl/hswish.h"
+#include "infer/ops_func_impl/sign.h"
 #include "nnacl/op_base.h"
 #include "src/common/log_util.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace lite {

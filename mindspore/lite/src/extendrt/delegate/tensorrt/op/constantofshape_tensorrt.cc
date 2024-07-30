@@ -16,7 +16,7 @@
 
 #include "src/extendrt/delegate/tensorrt/op/constantofshape_tensorrt.h"
 #include "src/extendrt/delegate/tensorrt/tensorrt_utils.h"
-#include "ops/constant_of_shape.h"
+#include "infer/constant_of_shape.h"
 
 namespace mindspore::lite {
 int ConstantOfShapeTensorRT::IsSupport(const BaseOperatorPtr &base_operator, const std::vector<TensorInfo> &in_tensors,

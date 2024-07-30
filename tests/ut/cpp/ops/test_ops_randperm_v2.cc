@@ -25,7 +25,7 @@
 #include "mindapi/base/type_id.h"
 #include "mindapi/base/shape_vector.h"
 #include "ops/test_ops.h"
-#include "ops/ops_func_impl/randperm_v2.h"
+#include "infer/ops_func_impl/randperm_v2.h"
 
 namespace mindspore {
 namespace ops {
@@ -65,11 +65,12 @@ TEST_P(TestRandpermV2, dyn_shape) {
   ASSERT_TRUE(*out_dtype == *param.expect_dtype);
 }
 
-INSTANTIATE_TEST_CASE_P(TestOpsFuncImpl, TestRandpermV2,
-                        testing::Values(RandpermV2OpParams{256, 0, 0, kNumberTypeUInt8, {256}, kUInt8},
-                                        RandpermV2OpParams{128, 0, 0, kNumberTypeInt8, {128}, kInt8},
-                                        RandpermV2OpParams{32678, 0, 0, kNumberTypeInt16, {32678}, kInt16},
-                                        RandpermV2OpParams{2147483648, -1, 0, kNumberTypeInt32, {2147483648}, kInt32},
-                                        RandpermV2OpParams{9223372036854775807, -1, 0, kNumberTypeInt64, {9223372036854775807}, kInt64}));
+INSTANTIATE_TEST_CASE_P(
+  TestOpsFuncImpl, TestRandpermV2,
+  testing::Values(RandpermV2OpParams{256, 0, 0, kNumberTypeUInt8, {256}, kUInt8},
+                  RandpermV2OpParams{128, 0, 0, kNumberTypeInt8, {128}, kInt8},
+                  RandpermV2OpParams{32678, 0, 0, kNumberTypeInt16, {32678}, kInt16},
+                  RandpermV2OpParams{2147483648, -1, 0, kNumberTypeInt32, {2147483648}, kInt32},
+                  RandpermV2OpParams{9223372036854775807, -1, 0, kNumberTypeInt64, {9223372036854775807}, kInt64}));
 }  // namespace ops
 }  // namespace mindspore

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include <memory>
-#include "ops/ops_func_impl/concat.h"
+#include "infer/ops_func_impl/concat.h"
 #include "ops/test_ops.h"
 #include "ops/test_ops_cmp_utils.h"
 #include "ops/test_value_utils.h"
@@ -23,7 +23,7 @@
 #include "ir/primitive.h"
 #include "abstract/abstract_value.h"
 #include "abstract/ops/primitive_infer_map.h"
-#include "ops/auto_generate/gen_ops_primitive.h"
+#include "op_def/auto_generate/gen_ops_primitive.h"
 
 namespace mindspore::ops {
 struct ConcatParams {

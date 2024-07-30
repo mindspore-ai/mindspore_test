@@ -18,9 +18,9 @@
 #include <memory>
 #include <string>
 #include <utility>
-#include "ops/nn_op_name.h"
-#include "ops/sequence_ops.h"
-#include "ops/math_ops.h"
+#include "op_def/nn_op_name.h"
+#include "op_def/sequence_ops.h"
+#include "op_def/math_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "frontend/optimizer/opt.h"

@@ -21,8 +21,8 @@
 #include "common/anf_util.h"
 #include "common/check_base.h"
 #include "common/op_enum.h"
-#include "ops/make_tuple.h"
-#include "ops/depend.h"
+#include "infer/make_tuple.h"
+#include "infer/depend.h"
 #include "include/registry/converter_context.h"
 
 namespace mindspore {

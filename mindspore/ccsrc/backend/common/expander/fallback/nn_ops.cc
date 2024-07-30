@@ -19,11 +19,11 @@
 #include "utils/shape_utils.h"
 #include "utils/check_convert_utils.h"
 #include "mindapi/base/types.h"
-#include "ops/op_utils.h"
-#include "ops/nn_ops.h"
-#include "ops/auto_generate/gen_ops_name.h"
-#include "ops/renorm.h"
-#include "ops/scatter_update.h"
+#include "ops_utils/op_utils.h"
+#include "op_def/nn_ops.h"
+#include "op_def/auto_generate/gen_ops_name.h"
+#include "infer/renorm.h"
+#include "infer/scatter_update.h"
 
 namespace mindspore {
 namespace expander {
@@ -78,7 +78,7 @@ REG_FALLBACK_BUILDER("ArgMaxExt").SetBody(BODYFUNC(ib) {
     is_dim_none = False;
   }
   auto res = ib->Emit("Argmax", {input_x, dim_value, ib->Value<int64_t>(kInt64->type_id())});
-  auto keepdim_value = ops::GetScalarValue<bool>(keepdim->BuildValue());
+  auto keepdim_value = GetScalarValue<bool>(keepdim->BuildValue());
   if (!keepdim_value.has_value()) {
     auto true_case = [&res, &dim](Emitter *e) -> NodePtrList { return {e->Emit("ExpandDims", {res, dim})}; };
     auto false_case = [&res](Emitter *e) -> NodePtrList { return {res}; };
@@ -289,7 +289,7 @@ REG_FALLBACK_BUILDER("UpsampleNearest1D").SetBody(BODYFUNC(ib) {
   if (output_size->abstract()->BuildType()->isa<TypeNone>()) {
     auto value_ptr = scales->BuildValue();
     auto x_shape = x->shape();
-    if (!IsDynamicShape(x_shape) && ops::IsValueKnown(value_ptr)) {
+    if (!IsDynamicShape(x_shape) && IsValueKnown(value_ptr)) {
       auto scales = GetValue<std::vector<pyfloat>>(value_ptr);
       std::vector<int64_t> size{static_cast<int64_t>(x_shape[2] * scales[0]), 1};
       size_node = ib->Value(size);
@@ -299,7 +299,7 @@ REG_FALLBACK_BUILDER("UpsampleNearest1D").SetBody(BODYFUNC(ib) {
     }
   } else {
     auto value_ptr = output_size->BuildValue();
-    if (ops::IsValueKnown(value_ptr)) {
+    if (IsValueKnown(value_ptr)) {
       auto output_size_val = GetValue<std::vector<int64_t>>(value_ptr);
       std::vector<int64_t> size{output_size_val.at(0), 1};
       size_node = ib->Value(size);
@@ -346,7 +346,7 @@ REG_FALLBACK_BUILDER("UpsampleNearest2D").SetBody(BODYFUNC(ib) {
   auto x_shape = x->shape();
   if (output_size->abstract()->BuildType()->isa<TypeNone>()) {
     auto value_ptr = scales->BuildValue();
-    if (!IsDynamicShape(x_shape) && ops::IsValueKnown(value_ptr)) {
+    if (!IsDynamicShape(x_shape) && IsValueKnown(value_ptr)) {
       auto scales = GetValue<std::vector<pyfloat>>(value_ptr);
       std::vector<int64_t> size{static_cast<int64_t>(x_shape[2] * scales[0]),
                                 static_cast<int64_t>(x_shape[3] * scales[1])};
@@ -358,7 +358,7 @@ REG_FALLBACK_BUILDER("UpsampleNearest2D").SetBody(BODYFUNC(ib) {
   } else {
     if (IsDynamicRank(x_shape)) {
       auto value_ptr = output_size->BuildValue();
-      if (ops::IsValueKnown(value_ptr)) {
+      if (IsValueKnown(value_ptr)) {
         auto output_size_val = GetValue<std::vector<int64_t>>(value_ptr);
         std::vector<int64_t> size(2, 1);
         std::transform(output_size_val.begin(), std::min(output_size_val.begin() + kIndex2, output_size_val.end()),
@@ -403,7 +403,7 @@ REG_FALLBACK_BUILDER("UpsampleNearest1DGrad").SetBody(BODYFUNC(ib) {
 
   auto value_ptr = input_size->BuildValue();
   NodePtr size_node;
-  if (ops::IsValueKnown(value_ptr)) {
+  if (IsValueKnown(value_ptr)) {
     auto input_size_val = GetValue<std::vector<int64_t>>(value_ptr);
     std::vector<int64_t> size{input_size_val[input_size_val.size() - 1], 1};
     size_node = ib->Value(size);
@@ -445,7 +445,7 @@ REG_FALLBACK_BUILDER("UpsampleNearest2DGrad").SetBody(BODYFUNC(ib) {
 
   auto value_ptr = input_size->BuildValue();
   NodePtr size_node;
-  if (ops::IsValueKnown(value_ptr)) {
+  if (IsValueKnown(value_ptr)) {
     auto input_size_val = GetValue<std::vector<int64_t>>(value_ptr);
     std::vector<int64_t> size{input_size_val.begin() + (input_size_val.size() - kIndex2), input_size_val.end()};
     size_node = ib->Value(size);
@@ -481,7 +481,7 @@ REG_FALLBACK_BUILDER("UpsampleBilinear2DGrad").SetBody(BODYFUNC(ib) {
   }
   // create original_image tensor
   auto value_ptr = input_size->BuildValue();
-  if (!ops::IsValueKnown(value_ptr)) {
+  if (!IsValueKnown(value_ptr)) {
     MS_LOG(EXCEPTION) << "For UpsampleBilinear2DGrad, input_size should be const.";
   }
   auto x_type = dout->dtype()->type_id();
@@ -506,7 +506,7 @@ REG_FALLBACK_BUILDER("UpsampleLinear1D").SetBody(BODYFUNC(ib) {
     // fetch sizes
     auto scales_value_ptr = scales->BuildValue();
     MS_EXCEPTION_IF_NULL(scales_value_ptr);
-    if (ops::IsValueKnown(scales_value_ptr)) {
+    if (IsValueKnown(scales_value_ptr)) {
       auto scales_value = GetValue<std::vector<pyfloat>>(scales_value_ptr);
       std::vector<int64_t> sizes_vec{static_cast<int64_t>(x_shape.at(kIndex2) * scales_value.at(kIndex0))};
       sizes_node = ib->Value(sizes_vec);
@@ -518,7 +518,7 @@ REG_FALLBACK_BUILDER("UpsampleLinear1D").SetBody(BODYFUNC(ib) {
     // fetch scales
     auto output_size_value_ptr = output_size->BuildValue();
     MS_EXCEPTION_IF_NULL(output_size_value_ptr);
-    if (ops::IsValueKnown(output_size_value_ptr)) {
+    if (IsValueKnown(output_size_value_ptr)) {
       auto output_size_value = GetValue<std::vector<int64_t>>(output_size_value_ptr);
       std::vector<float> scales_vec{static_cast<float>(output_size_value.at(kIndex0)) /
                                     static_cast<float>(x_shape.at(kIndex2))};
@@ -531,7 +531,7 @@ REG_FALLBACK_BUILDER("UpsampleLinear1D").SetBody(BODYFUNC(ib) {
   NodePtr coordinate_transformation_mode_node{nullptr};
   auto align_corners_ptr = align_corners->BuildValue();
   MS_EXCEPTION_IF_NULL(align_corners_ptr);
-  if (ops::IsValueKnown(align_corners_ptr)) {
+  if (IsValueKnown(align_corners_ptr)) {
     auto align_corners_val = GetValue<bool>(align_corners_ptr);
     coordinate_transformation_mode_node = align_corners_val
                                             ? ib->Value(static_cast<int64_t>(CoordinateTransformMode::ALIGN_CORNERS))
@@ -557,7 +557,7 @@ REG_FALLBACK_BUILDER("UpsampleLinear1DGrad").SetBody(BODYFUNC(ib) {
 
   auto align_corners_ptr = align_corners->BuildValue();
   MS_EXCEPTION_IF_NULL(align_corners_ptr);
-  if (ops::IsValueKnown(align_corners_ptr)) {
+  if (IsValueKnown(align_corners_ptr)) {
     auto align_corners_val = GetValue<bool>(align_corners_ptr);
     if (!align_corners_val && !scale_factor->abstract()->BuildType()->isa<TypeNone>()) {
       MS_LOG(EXCEPTION) << "For UpsampleLinear1DGrad with align_corners false, scales was not supported.";
@@ -569,7 +569,7 @@ REG_FALLBACK_BUILDER("UpsampleLinear1DGrad").SetBody(BODYFUNC(ib) {
   auto dout_type = dout->dtype()->type_id();
   NodePtr origin_image{nullptr};
   auto value_ptr = input_size->BuildValue();
-  if (ops::IsValueKnown(value_ptr)) {
+  if (IsValueKnown(value_ptr)) {
     auto input_size_val = GetValue<std::vector<int64_t>>(value_ptr);
     input_size_val.insert(input_size_val.begin() + kIndex2, 1);
     origin_image = ib->Fill(static_cast<double>(0.), input_size_val, dout_type);
@@ -595,7 +595,7 @@ REG_FALLBACK_BUILDER("ResizeLinear1D").SetBody(BODYFUNC(ib) {
   auto x_shape = x->shape();
   auto size_value_ptr = size->BuildValue();
   MS_EXCEPTION_IF_NULL(size_value_ptr);
-  if (ops::IsValueKnown(size_value_ptr)) {
+  if (IsValueKnown(size_value_ptr)) {
     auto size_value = GetValue<std::vector<int64_t>>(size_value_ptr);
     std::vector<float> scales_vec{static_cast<float>(size_value.at(kIndex0)) / static_cast<float>(x_shape.at(kIndex2))};
     scales_node = ib->Value(scales_vec);
@@ -619,7 +619,7 @@ REG_FALLBACK_BUILDER("ResizeLinear1DGrad").SetBody(BODYFUNC(ib) {
   auto new_dout = ib->ExpandDims(ib->Cast(dout, TypeId::kNumberTypeFloat32), -2);
   NodePtr align_corners{nullptr};
   auto value_ptr = coordinate_transformation_mode->BuildValue();
-  if (ops::IsValueKnown(value_ptr)) {
+  if (IsValueKnown(value_ptr)) {
     auto mode = static_cast<CoordinateTransformMode>(GetValue<int64_t>(value_ptr));
     align_corners = mode == CoordinateTransformMode ::ALIGN_CORNERS ? ib->Value(true) : ib->Value(false);
   } else {
@@ -642,7 +642,7 @@ REG_FALLBACK_BUILDER("Scatter").SetBody(BODYFUNC(ib) {
   auto reduce = ib->GetInput(kIndex4);
   auto dim_val = dim->BuildValue();
   auto reduce_val = reduce->BuildValue();
-  if (!ops::IsValueKnown(dim_val) || !ops::IsValueKnown(reduce_val)) {
+  if (!IsValueKnown(dim_val) || !IsValueKnown(reduce_val)) {
     MS_EXCEPTION(ValueError) << "For `TensorScatterElements` op, the `dim` and `reduce` must currently be a constant!";
   }
   std::unordered_map<int64_t, std::string> reduce_val_string{{0, "none"}, {1, "add"}};
@@ -817,7 +817,7 @@ REG_FALLBACK_BUILDER("Embedding").SetBody(BODYFUNC(ib) {
 
   if (max_norm_value != nullptr && !max_norm_value->isa<None>()) {
     auto norm_type_value = norm_type->BuildValue();
-    if (!ops::IsValueKnown(max_norm_value) || !ops::IsValueKnown(norm_type_value)) {
+    if (!IsValueKnown(max_norm_value) || !IsValueKnown(norm_type_value)) {
       MS_INTERNAL_EXCEPTION(ValueError) << "For `Embedding` op, max_norm and norm_type must be constant!";
     }
 
@@ -870,7 +870,7 @@ REG_FALLBACK_BUILDER("BatchNormExt").SetBody(BODYFUNC(ib) {
   auto eps_ptr = eps->BuildValue();
   auto training_ptr = training->BuildValue();
   auto momentum_ptr = momentum->BuildValue();
-  if (!ops::IsValueKnown(eps_ptr) || !ops::IsValueKnown(training_ptr) || !ops::IsValueKnown(momentum_ptr)) {
+  if (!IsValueKnown(eps_ptr) || !IsValueKnown(training_ptr) || !IsValueKnown(momentum_ptr)) {
     MS_EXCEPTION(ValueError) << "For `BatchNormExt` op, the `momentum` , `training` and `eps` must be a constant!";
   }
   auto eps_value = GetValue<float>(eps_ptr);
@@ -912,7 +912,7 @@ REG_FALLBACK_BUILDER("BatchNormGradExt").SetBody(BODYFUNC(ib) {
   auto eps_ptr = eps->BuildValue();
   auto training_ptr = training->BuildValue();
 
-  if (!ops::IsValueKnown(eps_ptr) || !ops::IsValueKnown(training_ptr)) {
+  if (!IsValueKnown(eps_ptr) || !IsValueKnown(training_ptr)) {
     MS_EXCEPTION(ValueError) << "For `BatchNormGradExt` op, the  `training` and `eps` must be a constant!";
   }
   auto eps_value = GetValue<float>(eps_ptr);
@@ -949,7 +949,7 @@ REG_FALLBACK_BUILDER("GroupNorm").SetBody(BODYFUNC(ib) {
   auto weight = ib->Cast(ib->GetInput(kIndex2), kFloat32);
   auto bias = ib->Cast(ib->GetInput(kIndex3), kFloat32);
   auto eps = ib->GetInput(kIndex4);
-  if (!ops::IsValueKnown(eps->BuildValue()) || !ops::IsValueKnown(groups->BuildValue())) {
+  if (!IsValueKnown(eps->BuildValue()) || !IsValueKnown(groups->BuildValue())) {
     MS_EXCEPTION(ValueError) << "For `GroupNorm` op, the  `num_groups` and `eps` must be a constant!";
   }
   auto eps_value = ib->Tensor(GetValue<float>(eps->BuildValue()));
@@ -997,7 +997,7 @@ REG_FALLBACK_BUILDER("GroupNormGrad").SetBody(BODYFUNC(ib) {
   auto gamma = ib->Cast(ib->GetInput(kIndex4), kFloat32);
   auto groups = ib->GetInput(kIndex5);
 
-  if (!ops::IsValueKnown(groups->BuildValue())) {
+  if (!IsValueKnown(groups->BuildValue())) {
     MS_EXCEPTION(ValueError) << "For `GroupNormGrad` op, the  `num_groups` must be a constant!";
   }
   auto x_shape = x->shape();

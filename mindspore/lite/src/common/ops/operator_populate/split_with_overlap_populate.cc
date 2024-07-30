@@ -15,7 +15,7 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/split_parameter.h"
-#include "ops/split_with_overlap.h"
+#include "infer/split_with_overlap.h"
 using mindspore::ops::kNameSplitWithOverlap;
 using mindspore::schema::PrimitiveType_SplitWithOverlap;
 

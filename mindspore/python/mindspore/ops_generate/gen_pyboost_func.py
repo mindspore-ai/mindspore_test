@@ -28,6 +28,7 @@ import template
 from template import CppTemplate
 from op_proto import OpProto
 from gen_utils import check_change_and_replace_file, py_licence_str, write_file
+import gen_constants as K
 
 
 @dataclass
@@ -47,7 +48,7 @@ def generate_pyboost_base_op_header_code(work_path, op_name_str, operator_name, 
                                                                              op_name_upper=op_name_str.upper(),
                                                                              call_args=call_args_with_type,
                                                                              return_type=cpp_func_return)
-    op_header_dir_path = os.path.join(work_path, "mindspore/ccsrc/kernel/pyboost/auto_generate/")
+    op_header_dir_path = os.path.join(work_path, f"{K.MS_COMMON_PYBOOST_KERNEL_PATH}/auto_generate/")
     pathlib.Path(op_header_dir_path).mkdir(parents=True, exist_ok=True)
     tmp_op_file_path = os.path.join(op_header_dir_path, "tmp_" + operator_name + ".h")
     dst_op_file_path = os.path.join(op_header_dir_path, operator_name + ".h")
@@ -187,23 +188,20 @@ def generate_pyboost_op_source_code(work_path, op_proto, template_paths, convert
                                         return_values=converter.call_func_outputs,
                                         customize_func=op_proto.ascend + "Customize",
                                         )
-            customize_include = "#include \"plugin/device/ascend/kernel/pyboost/customize/{}.h\"".format(
-                operator_name.lower())
+            customize_include = f'#include "{K.MS_OPS_KERNEL_PATH}/ascend/pyboost/customize/{operator_name.lower()}.h"'
         elif is_cpu and op_proto.cpu != 'default':
             call_impl = cus_tpl.replace(call_args=converter.call_args,
                                         return_values=converter.call_func_outputs,
                                         customize_func=op_proto.cpu + "Customize",
                                         )
-            customize_include = "#include \"plugin/device/cpu/kernel/pyboost/customize/{}.h\"".format(
-                operator_name.lower())
+            customize_include = f'#include "{K.MS_OPS_KERNEL_PATH}/cpu/pyboost/customize/{operator_name.lower()}.h"'
             register_custom_kernel = "MS_REG_PYBOOST_CPU_CUSTOM_KERNEL({});".format(op_name_str)
         elif is_gpu and op_proto.gpu != 'default':
             call_impl = cus_tpl.replace(call_args=converter.call_args,
                                         return_values=converter.call_func_outputs,
                                         customize_func=op_proto.gpu + "Customize",
                                         )
-            customize_include = "#include \"plugin/device/gpu/kernel/pyboost/customize/{}.h\"".format(
-                operator_name.lower())
+            customize_include = f'#include "{K.MS_OPS_KERNEL_PATH}/gpu/pyboost/customize/{operator_name.lower()}.h"'
             register_custom_kernel = "MS_REG_PYBOOST_GPU_CUSTOM_KERNEL({});".format(op_name_str)
         elif op_proto.is_view:
             set_output_abs = "SetOutputAbstract();"
@@ -215,7 +213,7 @@ def generate_pyboost_op_source_code(work_path, op_proto, template_paths, convert
                                          return_values=converter.call_func_outputs,
                                          input=converter.call_args[0],
                                          set_output_abs=set_output_abs)
-            customize_include = "#include \"mindspore/core/ops/view/{}_strides_calc.h\"".format(proto_operator_name)
+            customize_include = f'#include "{K.MS_OPS_VIEW_PATH}/{proto_operator_name}_strides_calc.h"'
         else:
             cast_input_code, real_call_args_tensor = generate_tensor_cpu_cast_input_code(
                 converter.call_args_with_tensor, call_args_tensor)
@@ -226,7 +224,7 @@ def generate_pyboost_op_source_code(work_path, op_proto, template_paths, convert
             aclnn_name = AclnnUtils.get_aclnn_interface(op_name_str)
             if converter.inplace_process != '':
                 real_output = ''
-            customize_include = '#include "ops/auto_generate/gen_ops_primitive.h"'
+            customize_include = f'#include "{K.OP_DEF_AUTO_GENERATE_PATH}/gen_ops_primitive.h"'
 
             call_impl = call_tpl.replace(aclnn_name=aclnn_name,
                                          call_args=converter.call_args,
@@ -270,10 +268,10 @@ def generate_pyboost_op_register_source_code(work_path, all_ops, all_operator_na
     for op_name in all_ops:
         factory_str += "template class OpFactory<{0}>;\n".format(op_name)
     for operator_name in all_operator_names:
-        include_str += "#include \"kernel/pyboost/auto_generate/{0}.h\"\n".format(operator_name)
+        include_str += f'#include "{K.MS_COMMON_PYBOOST_KERNEL_PATH}/auto_generate/{operator_name}.h"\n'
     op_register_file_str = template.PYBOOST_OP_REGISTER_TEMPLATE.replace(op_includes=include_str,
                                                                          op_factory_templates=factory_str)
-    op_register_dir_path = os.path.join(work_path, "mindspore/ccsrc/kernel/pyboost/auto_generate/")
+    op_register_dir_path = os.path.join(work_path, f"{K.MS_COMMON_PYBOOST_KERNEL_PATH}/auto_generate/")
     pathlib.Path(op_register_dir_path).mkdir(parents=True, exist_ok=True)
     tmp_op_register_file_path = os.path.join(op_register_dir_path, "tmp_" + "op_register.cc")
     dst_op_register_file_path = os.path.join(op_register_dir_path, "op_register.cc")
@@ -360,12 +358,12 @@ def generate_ops_header_files(work_path, yaml_data):
     :return: void
     """
     extern_str = ''
-    extern_template = CppTemplate("MS_EXPORT extern OpDef g${op_name};\n")
+    extern_template = CppTemplate("OPS_API extern OpDef g${op_name};\n")
     for operator_name, operator_data in yaml_data.items():
         op_proto = OpProto.load_from_yaml(operator_name, operator_data)
         extern_str += extern_template.replace(op_name=op_proto.class_name)
     ops_header_file = template.GEN_OPS_DEF_HEADER_TEMPLATE.replace(extern_variable=extern_str)
-    dir_path = os.path.join(work_path, "mindspore/core/ops/auto_generate")
+    dir_path = os.path.join(work_path, K.MS_OP_DEF_AUTO_GENERATE_PATH)
     pathlib.Path(dir_path).mkdir(parents=True, exist_ok=True)
     dst_file_path = os.path.join(dir_path, "gen_ops_def.h")
     tmp_file_path = os.path.join(dir_path, "tmp_gen_ops_def.h")
@@ -411,7 +409,7 @@ def generate_pyboost_functions(work_path, yaml_data):
     pyboost_func_str = ''
     pyboost_func_pybind_def = ''
     pyboost_func_include_headers_str = ''
-    pyboost_func_include_header_template = CppTemplate("#include \"kernel/pyboost/auto_generate/${operator_name}.h\"\n")
+    pyboost_func_include_header_template = CppTemplate(f'#include "{K.MS_COMMON_PYBOOST_KERNEL_PATH}/auto_generate/${{operator_name}}.h"\n')
     for operator_name, operator_data in yaml_data.items():
         op_proto = OpProto.load_from_yaml(operator_name, operator_data)
         if not op_proto.is_dispatch:
@@ -568,7 +566,7 @@ def generate_pyboost_grad_functions(work_path, yaml_data):
     pyboost_func_str = ''
     pyboost_func_reg_def = ''
     pyboost_func_include_headers_str = ''
-    pyboost_func_include_header_template = CppTemplate("#include \"kernel/pyboost/auto_generate/${operator_name}.h\"\n")
+    pyboost_func_include_header_template = CppTemplate(f'#include "{K.MS_COMMON_PYBOOST_KERNEL_PATH}/auto_generate/${{operator_name}}.h"\n')
     for operator_name, operator_data in yaml_data.items():
         if not is_pyboost_enable(operator_data):
             continue
@@ -640,9 +638,7 @@ def get_auto_generate_template():
                                template.PYBOOST_CPU_CUSTOMIZE_CALL_TEMPLATE]
     op_view_template_path = [template.PYBOOST_ASCEND_VIEW_CALL_TEMPLATE, template.PYBOOST_GPU_VIEW_CALL_TEMPLATE,
                              template.PYBOOST_CPU_VIEW_CALL_TEMPLATE]
-    code_generate_path = ["mindspore/ccsrc/plugin/device/ascend/kernel/pyboost/auto_generate/",
-                          "mindspore/ccsrc/plugin/device/gpu/kernel/pyboost/auto_generate/",
-                          "mindspore/ccsrc/plugin/device/cpu/kernel/pyboost/auto_generate/"]
+    code_generate_path = [f"{K.MS_OPS_KERNEL_PATH}/{device}/pyboost/auto_generate/" for device in ["ascend", "gpu", "cpu"]]
     return TemplatePaths(op_header_template_path, op_call_template_path, op_source_template_path,
                          op_custom_template_path,
                          op_view_template_path, code_generate_path)
@@ -760,7 +756,7 @@ def delete_residual_files(work_path, all_operator_name, code_generate_path_list)
     """
     Delete residual files.
     """
-    code_generate_path_list.append("mindspore/ccsrc/kernel/pyboost/auto_generate/")
+    code_generate_path_list.append(f"{K.MS_COMMON_PYBOOST_KERNEL_PATH}/auto_generate/")
     for code_generate_path in code_generate_path_list:
         all_files_name = []
         code_generate_path = os.path.join(work_path, code_generate_path)

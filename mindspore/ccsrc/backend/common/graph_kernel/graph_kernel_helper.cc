@@ -36,7 +36,7 @@
 #include "kernel/graph_kernel/akg/akg_kernel_json_decoder.h"
 #include "kernel/graph_kernel/graph_kernel_json_generator.h"
 #include "kernel/kernel.h"
-#include "mindspore/core/ops/sequence_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
 #include "pipeline/jit/ps/action.h"
 #include "utils/hash_set.h"
 #include "utils/check_convert_utils.h"

@@ -18,9 +18,9 @@
 #include "tools/optimizer/graph/lite_tensor_extractor.h"
 #include <memory>
 #include <vector>
-#include "mindspore/core/ops/nn_optimizer_ops.h"
-#include "mindspore/core/ops/nn_ops.h"
-#include "mindspore/core/ops/lite_ops.h"
+#include "mindspore/ops/op_def/nn_optimizer_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
 #include "src/tensorlist.h"
 #include "tools/optimizer/common/format_utils.h"
 #include "utils/ms_utils_secure.h"

@@ -18,7 +18,7 @@
 #include "tools/converter/parser/tflite/tflite_where_parser.h"
 #include <vector>
 #include <memory>
-#include "ops/where.h"
+#include "infer/where.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

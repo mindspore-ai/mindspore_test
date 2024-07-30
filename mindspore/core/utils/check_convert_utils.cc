@@ -35,10 +35,10 @@
 #include "mindapi/base/format.h"
 #include "mindapi/base/type_id.h"
 #include "mindapi/base/types.h"
-#include "ops/op_name.h"
+#include "op_def/op_name.h"
 #include "utils/convert_utils_base.h"
 #include "utils/ms_context.h"
-#include "ops/op_utils.h"
+#include "utils/value_utils.h"
 #include "ir/kernel_tensor_value.h"
 
 namespace mindspore {
@@ -962,22 +962,22 @@ ShapeVector CheckAndConvertUtils::CheckTensorIntValue(const std::string &tensor_
   MS_EXCEPTION_IF_NULL(tensor_type_ptr);
   auto tensor_type = tensor_type_ptr->element()->type_id();
   if (tensor_type == kNumberTypeInt32) {
-    auto data_opt = ops::GetArrayValue<int>(value);
+    auto data_opt = GetArrayValue<int>(value);
     const auto &data = data_opt.value();
     for (size_t i = 0; i < data.size(); i++) {
       tensor_value.push_back(static_cast<int64_t>(data[i]));
     }
   } else if (tensor_type == kNumberTypeInt64) {
-    auto data_opt = ops::GetArrayValue<int64_t>(value);
+    auto data_opt = GetArrayValue<int64_t>(value);
     tensor_value = data_opt.value().ToVector();
   } else if (tensor_type == kNumberTypeUInt32) {
-    auto data_opt = ops::GetArrayValue<uint32_t>(value);
+    auto data_opt = GetArrayValue<uint32_t>(value);
     const auto &data = data_opt.value();
     for (size_t i = 0; i < data.size(); i++) {
       tensor_value.push_back(static_cast<int64_t>(data[i]));
     }
   } else if (tensor_type == kNumberTypeUInt64) {
-    auto data_opt = ops::GetArrayValue<uint64_t>(value);
+    auto data_opt = GetArrayValue<uint64_t>(value);
     const auto &data = data_opt.value();
     for (size_t i = 0; i < data.size(); i++) {
       tensor_value.push_back(static_cast<int64_t>(data[i]));
@@ -1270,7 +1270,7 @@ std::vector<pyfloat> CheckAndConvertUtils::CheckListOrTupleFloat(const std::stri
       return e->type_id() == kNumberTypeFloat64 || e->type_id() == kNumberTypeFloat32;
     });
     if (is_correct) {
-      const auto &arr_value = ops::GetArrayValue<pyfloat>(abs);
+      const auto &arr_value = GetArrayValue<pyfloat>(abs);
       if (arr_value->HasUnknownValue()) {
         MS_EXCEPTION(ValueError) << "For primitive[" << prim_name << "], there are unknown values in the " << arg_name
                                  << ", please handle this case before calling this function.";
@@ -1346,14 +1346,14 @@ std::vector<int64_t> CheckAndConvertUtils::CheckIntOrTupleInt(const std::string 
                                  "but got "
                               << abs->ToString();
     } else if (type_list.front()->type_id() == kNumberTypeInt64) {
-      const auto &arr_value = ops::GetArrayValue<int64_t>(abs);
+      const auto &arr_value = GetArrayValue<int64_t>(abs);
       if (arr_value->HasUnknownValue()) {
         MS_EXCEPTION(ValueError) << "For primitive[" << prim_name << "], there are unknown values in the " << arg_name
                                  << ", please handle this case before calling this function.";
       }
       result = arr_value->ToVector();
     } else if (type_list.front()->type_id() == kNumberTypeInt32) {
-      const auto &arr_value = ops::GetArrayValue<int>(abs);
+      const auto &arr_value = GetArrayValue<int>(abs);
       if (arr_value->HasUnknownValue()) {
         MS_EXCEPTION(ValueError) << "For primitive[" << prim_name << "], there are unknown values in the " << arg_name
                                  << ", please handle this case before calling this function.";
@@ -1363,17 +1363,17 @@ std::vector<int64_t> CheckAndConvertUtils::CheckIntOrTupleInt(const std::string 
                            [](int ele) -> int64_t { return static_cast<int64_t>(ele); });
     }
   } else {
-    if (!ops::IsValueKnown(abs)) {
+    if (!IsValueKnown(abs)) {
       MS_EXCEPTION(ValueError) << "For primitive[" << prim_name << "], the value of  [" << arg_name
                                << "] is unknown, please handle this case before calling this function.";
     }
     auto data_type = abs->GetType();
     MS_EXCEPTION_IF_NULL(data_type);
     if (data_type->type_id() == kNumberTypeInt64) {
-      const auto &val = ops::GetScalarValue<int64_t>(abs->GetValue());
+      const auto &val = GetScalarValue<int64_t>(abs->GetValue());
       result.push_back(val.value());
     } else if (data_type->type_id() == kNumberTypeInt32) {
-      const auto &val = ops::GetScalarValue<int>(abs->GetValue());
+      const auto &val = GetScalarValue<int>(abs->GetValue());
       result.push_back(val.value());
     } else {
       MS_EXCEPTION(TypeError) << "For primitive[" << prim_name << "], when the " << arg_name
@@ -1428,7 +1428,7 @@ std::vector<int64_t> CheckAndConvertUtils::CheckTupleInt(const std::string &arg_
       });
   } else if (attr->isa<KernelTensorValue>()) {
     // to_do: check type of the KernelTensorValue is int64
-    auto data_opt = ops::GetArrayValue<int64_t>(attr);
+    auto data_opt = GetArrayValue<int64_t>(attr);
     const auto &data_array = data_opt.value();
     result = data_array.ToVector();
   } else {
@@ -1454,7 +1454,7 @@ std::vector<int64_t> CheckAndConvertUtils::CheckListInt(const std::string &arg_n
       });
   } else if (attr->isa<KernelTensorValue>()) {
     // to_do: check type of the KernelTensorValue is int64
-    auto data_opt = ops::GetArrayValue<int64_t>(attr);
+    auto data_opt = GetArrayValue<int64_t>(attr);
     const auto &data_array = data_opt.value();
     result = data_array.ToVector();
   } else {

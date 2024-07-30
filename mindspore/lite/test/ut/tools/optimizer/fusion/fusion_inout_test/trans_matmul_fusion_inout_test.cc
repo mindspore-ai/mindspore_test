@@ -19,8 +19,8 @@
 #include "tools/optimizer/fusion/transpose_matmul_fusion.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "test/ut/tools/optimizer/fusion/fusion_inout_test/matmul_fusion_inout_test.h"
-#include "plugin/device/cpu/kernel/nnacl/op_base.h"
-#include "ops/auto_generate/gen_lite_ops.h"
+#include "nnacl/op_base.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
 
 namespace mindspore {
 namespace {

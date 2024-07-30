@@ -35,12 +35,12 @@
 #include "mindapi/base/type_id.h"
 #include "mindspore/ccsrc/include/common/debug/common.h"
 #include "nlohmann/json.hpp"
-#include "ops/array_op_name.h"
-#include "ops/conv_pool_op_name.h"
-#include "ops/framework_ops.h"
-#include "ops/math_op_name.h"
-#include "ops/nn_ops.h"
-#include "ops/sequence_ops.h"
+#include "op_def/array_op_name.h"
+#include "op_def/conv_pool_op_name.h"
+#include "op_def/framework_ops.h"
+#include "op_def/math_op_name.h"
+#include "op_def/nn_ops.h"
+#include "op_def/sequence_ops.h"
 #include "utils/anf_utils.h"
 
 namespace mindspore {

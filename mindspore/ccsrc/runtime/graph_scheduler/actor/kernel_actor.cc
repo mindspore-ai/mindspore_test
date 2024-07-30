@@ -31,7 +31,7 @@
 #include "include/backend/distributed/collective/collective_manager.h"
 #include "backend/common/optimizer/dynamic_shape/dynamic_shape_helper.h"
 #include "kernel/framework_utils.h"
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/compile_config.h"
 
 namespace mindspore {

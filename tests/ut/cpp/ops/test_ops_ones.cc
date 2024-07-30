@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-#include "ops/ops_func_impl/ones.h"
+#include "infer/ops_func_impl/ones.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "ops/test_ops.h"
 #include "ops/test_value_utils.h"
-#include "ops/auto_generate/gen_ops_name.h"
-#include "ops/auto_generate/gen_ops_primitive.h"
+#include "op_def/auto_generate/gen_ops_name.h"
+#include "op_def/auto_generate/gen_ops_primitive.h"
 #include "ops/test_ops_cmp_utils.h"
 #include "utils/tensor_construct_utils.h"
 
@@ -53,12 +53,11 @@ TEST_P(TestOnes, ones_dyn_shape) {
 }
 
 auto ones_test_cases = testing::Values(
-    OnesShapeParam{CreatePyIntTuple({2, 2, 3}), CreateScalar<int64_t>(kNumberTypeInt64), {2, 2, 3}, kInt64},
-    OnesShapeParam{CreatePyIntTuple({3, 4}), CreateScalar<int64_t>(kNumberTypeFloat32), {3, 4}, kFloat32},
-    OnesShapeParam{CreatePyIntTuple({kValueAny, 2, 3}), CreateScalar<int64_t>(kNumberTypeFloat64), {-1, 2, 3}, kFloat64},
-    OnesShapeParam{CreatePyIntTuple({}), CreateScalar<int64_t>(kNumberTypeInt32), {-2}, kInt32});
+  OnesShapeParam{CreatePyIntTuple({2, 2, 3}), CreateScalar<int64_t>(kNumberTypeInt64), {2, 2, 3}, kInt64},
+  OnesShapeParam{CreatePyIntTuple({3, 4}), CreateScalar<int64_t>(kNumberTypeFloat32), {3, 4}, kFloat32},
+  OnesShapeParam{CreatePyIntTuple({kValueAny, 2, 3}), CreateScalar<int64_t>(kNumberTypeFloat64), {-1, 2, 3}, kFloat64},
+  OnesShapeParam{CreatePyIntTuple({}), CreateScalar<int64_t>(kNumberTypeInt32), {-2}, kInt32});
 INSTANTIATE_TEST_CASE_P(TestOnes, TestOnes, ones_test_cases);
-
 
 // Test InferValue
 class TestOnesInferValue : public TestOps, public testing::WithParamInterface<OnesShapeParam> {};
@@ -77,7 +76,7 @@ TEST_P(TestOnesInferValue, ones_infer_value) {
   auto input_args = abstract::AbstractBasePtrList{in_shape, dtype_value};
   auto out_value_opt = abstract::InferValueByFuncImpl(prim::kPrimOnes, input_args);
   if (!out_value_opt.has_value()) {
-  MS_LOG(ERROR) << "Ones has no inferValue implement!";
+    MS_LOG(ERROR) << "Ones has no inferValue implement!";
     ASSERT_TRUE(False);
   }
   auto infer_out = out_value_opt.value();
@@ -89,8 +88,8 @@ TEST_P(TestOnesInferValue, ones_infer_value) {
 }
 
 auto ones_infer_value_test_cases = testing::Values(
-    OnesShapeParam{CreatePyIntTuple({2, 2, 3}), CreateScalar<int64_t>(kNumberTypeInt64), {2, 2, 3}, kInt64},
-    OnesShapeParam{CreatePyIntTuple({3, 4}), CreateScalar<int64_t>(kNumberTypeFloat32), {3, 4}, kFloat32});
+  OnesShapeParam{CreatePyIntTuple({2, 2, 3}), CreateScalar<int64_t>(kNumberTypeInt64), {2, 2, 3}, kInt64},
+  OnesShapeParam{CreatePyIntTuple({3, 4}), CreateScalar<int64_t>(kNumberTypeFloat32), {3, 4}, kFloat32});
 INSTANTIATE_TEST_CASE_P(TestOnesInferValue, TestOnesInferValue, ones_infer_value_test_cases);
 }  // namespace ops
 }  // namespace mindspore

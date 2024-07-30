@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 #include "plugin/device/ascend/optimizer/ir_fusion/conv2d_backprop_input_biasadd_fusion.h"
-#include "mindspore/core/ops/conv_pool_ops.h"
-#include "mindspore/core/ops/nn_ops.h"
+#include <vector>
+#include "mindspore/ops/op_def/conv_pool_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
 #include "include/common/utils/anfalgo.h"
 
 namespace mindspore {

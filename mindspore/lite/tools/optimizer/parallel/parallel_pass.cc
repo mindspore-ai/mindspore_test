@@ -19,9 +19,9 @@
 #include "include/errorcode.h"
 #include "ir/tensor.h"
 #include "tools/optimizer/parallel/operator_info_register.h"
-#include "ops/fusion/conv2d_fusion.h"
+#include "infer/cxx_api/conv2d_fusion.h"
 #include "nnacl/op_base.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace opt {

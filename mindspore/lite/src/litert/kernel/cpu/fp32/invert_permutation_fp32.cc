@@ -18,7 +18,7 @@
 #include "src/litert/kernel_registry.h"
 #include "schema/model_generated.h"
 #include "nnacl/fp32/invert_permutation_fp32.h"
-#include "mindspore/ccsrc/plugin/device/cpu/kernel/nnacl/errorcode.h"
+#include "mindspore/ops/kernel/cpu/nnacl/errorcode.h"
 
 using mindspore::kernel::KERNEL_ARCH;
 using mindspore::lite::KernelRegistrar;

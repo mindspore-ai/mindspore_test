@@ -20,8 +20,8 @@
 #include <vector>
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/optimizer/helper.h"
-#include "mindspore/core/ops/array_ops.h"
-#include "mindspore/core/ops/math_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
 
 namespace mindspore::graphkernel {
 const BaseRef FloatStatusBaseFusion::DefinePattern() const {

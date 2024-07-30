@@ -23,7 +23,7 @@
 #include "backend/common/graph_kernel/core/graph_kernel_callback.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
-#include "mindspore/core/ops/lite_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
 #include "nlohmann/json.hpp"
 #include "tools/graph_kernel/converter/akg/utils.h"
 #include "utils/anf_utils.h"

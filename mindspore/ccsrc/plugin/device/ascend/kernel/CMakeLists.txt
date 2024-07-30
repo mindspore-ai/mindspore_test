@@ -3,53 +3,49 @@ if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
 endif()
 
 file(GLOB_RECURSE D_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-        "kernel_query.cc"
-        "ascend_kernel_mod.cc"
-        "acl/*.cc"
-        "opapi/*.cc"
-        "tbe/*.cc"
-        "host/*.cc"
-        "aicpu/*.cc"
-        "rts/*.cc"
-        "hccl/*.cc"
-        "pyboost/*.cc"
-        "pyboost/call/*.cc"
-        "pyboost/auto_generate/*.cc"
-        "akg/*.cc"
-        "graph_kernel/*.cc"
-        "bisheng/bisheng_kernel_mod.cc"
-        "bisheng/bisheng_kernel_build.cc"
-        "bisheng/custom_bisheng_kernel.cc"
-        "bisheng/bisheng_kernel_metadata.cc"
-    )
-    file(GLOB_RECURSE AICPU_OPS_SRC RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-        "aicpu/aicpu_ops/*.cc"
-    )
-    file(GLOB_RECURSE INTERNAL_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-        "internal/*.cc"
-    )
-    list(REMOVE_ITEM D_SRC_LIST ${AICPU_OPS_SRC})
-    add_compile_definitions(ENABLE_D)
+    "kernel_query.cc"
+    "ascend_kernel_mod.cc"
+    "acl/*.cc"
+    "tbe/*.cc"
+    "host/*.cc"
+    "aicpu/*.cc"
+    "rts/*.cc"
+    "hccl/*.cc"
+    "akg/*.cc"
+    "graph_kernel/*.cc"
+    "bisheng/bisheng_kernel_mod.cc"
+    "bisheng/bisheng_kernel_build.cc"
+    "bisheng/custom_bisheng_kernel.cc"
+    "bisheng/bisheng_kernel_metadata.cc"
+)
 
-    if(ENABLE_SECURITY)
-        list(REMOVE_ITEM D_SRC_LIST "rts/profiling_kernel_mod.cc")
-    endif()
+file(GLOB_RECURSE OPS_KERNEL_ASCEND_SRC_LIST "${MS_OPS_KERNEL_DIR}/ascend/*.cc")
+file(GLOB_RECURSE AICPU_OPS_SRC "${MS_OPS_KERNEL_DIR}/ascend/aicpu/*.cc")
+list(REMOVE_ITEM OPS_KERNEL_ASCEND_SRC_LIST ${AICPU_OPS_SRC})
+list(APPEND D_SRC_LIST ${OPS_KERNEL_ASCEND_SRC_LIST})
 
-    if(ENABLE_AKG AND ${CMAKE_SYSTEM_NAME} MATCHES "Linux" AND ENABLE_D)
-        file(GLOB_RECURSE AKG_D_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "akg/*.cc")
+file(GLOB_RECURSE INTERNAL_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
+    "internal/*.cc"
+)
+add_compile_definitions(ENABLE_D)
+
+if(ENABLE_SECURITY)
+    list(REMOVE_ITEM D_SRC_LIST "rts/profiling_kernel_mod.cc")
+endif()
+
+if(ENABLE_AKG AND ${CMAKE_SYSTEM_NAME} MATCHES "Linux" AND ENABLE_D)
+    file(GLOB_RECURSE AKG_D_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "akg/*.cc")
 endif()
 
 file(GLOB_RECURSE SRC_IN_910B RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "acl/*.cc"
         "host/*.cc"
         "hccl/*.cc"
-        "opapi/*.cc"
-        "pyboost/*.cc"
-        "pyboost/auto_generate/*.cc"
         "rts/*.cc"
         "akg/*.cc"
         "graph_kernel/*.cc"
         )
+list(APPEND SRC_IN_910B ${OPS_KERNEL_ASCEND_SRC_LIST})
 file(GLOB_RECURSE INTERNAL_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     "internal/*.cc"
 )
@@ -66,7 +62,6 @@ else()
     )
     list(REMOVE_ITEM SRC_IN_910B "hccl/hcom_matmul_all_reduce.cc")
 endif()
-list(REMOVE_ITEM SRC_IN_910B ${AICPU_OPS_SRC})
 
 if(ENABLE_DVM)
     file(GLOB_RECURSE DVM_SRC RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
@@ -82,4 +77,7 @@ if(ENABLE_D)
 endif()
 
 add_subdirectory(aicore)
-add_subdirectory(ascendc)
+
+add_subdirectory(${MS_OPS_KERNEL_DIR}/ascend/ascendc "ascendc")
+include_directories(${MS_OPS_KERNEL_DIR}/ascend/aicpu/aicpu_ops)
+add_subdirectory(${MS_OPS_KERNEL_DIR}/ascend/aicpu/aicpu_ops aicpu/aicpu_ops)

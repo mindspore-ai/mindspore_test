@@ -17,7 +17,7 @@
 #include <cuda_fp16.h>
 #include <stdio.h>
 #include <inttypes.h>
-#include "plugin/device/cpu/kernel/nnacl/op_base.h"
+#include "nnacl/op_base.h"
 
 __device__ __forceinline__ uint64_t Pop(const uint64_t *chunks, uint64_t *curr_chunk, uint8_t bit_count,
                                         int32_t *curr_bit_count, int32_t *curr_chunk_index) {

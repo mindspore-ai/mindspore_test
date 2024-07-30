@@ -19,8 +19,8 @@
 #include <map>
 #include <vector>
 #include "tools/converter/parser/tf/tf_node_parser_registry.h"
-#include "ops/fusion/activation.h"
-#include "ops/leaky_relu.h"
+#include "infer/cxx_api/activation.h"
+#include "infer/leaky_relu.h"
 
 namespace mindspore {
 namespace lite {

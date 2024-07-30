@@ -26,7 +26,7 @@
 #include "base/base.h"
 #include "ir/dtype/number.h"
 #include "mindspore/lite/tools/common/graph_util.h"
-#include "ops/fusion/conv2d_fusion.h"
+#include "infer/cxx_api/conv2d_fusion.h"
 
 namespace mindspore {
 namespace lite {

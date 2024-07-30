@@ -16,10 +16,10 @@
 
 #include <unordered_map>
 #include "src/extendrt/delegate/tensorrt/op/topk_tensorrt.h"
-#include "mindspore/core/ops/array_ops.h"
-#include "ops/fusion/arg_max_fusion.h"
-#include "ops/fusion/arg_min_fusion.h"
-#include "ops/fusion/topk_fusion.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "infer/cxx_api/arg_max_fusion.h"
+#include "infer/cxx_api/arg_min_fusion.h"
+#include "infer/cxx_api/topk_fusion.h"
 
 namespace mindspore::lite {
 namespace {

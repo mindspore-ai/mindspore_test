@@ -18,8 +18,8 @@
 #include <memory>
 #include "tools/optimizer/fusion/conv_biasadd_fusion.h"
 #include "test/ut/tools/optimizer/fusion/fusion_inout_test/conv_fusion_inout_test.h"
-#include "plugin/device/cpu/kernel/nnacl/op_base.h"
-#include "ops/auto_generate/gen_lite_ops.h"
+#include "nnacl/op_base.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
 
 namespace mindspore {
 class ConvBiasFusionInoutTest : public ConvFusionInoutTest {

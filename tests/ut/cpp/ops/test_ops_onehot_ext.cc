@@ -20,7 +20,7 @@
 #include "common/common_test.h"
 #include "ir/dtype/type.h"
 #include "ir/primitive.h"
-#include "ops/ops_func_impl/one_hot_ext.h"
+#include "infer/ops_func_impl/one_hot_ext.h"
 #include "ops/test_ops.h"
 #include "test_value_utils.h"
 
@@ -75,10 +75,16 @@ TEST_P(TestOneHot, one_hot_ext_dyn_shape) {
   ASSERT_TRUE(*infer_type == *expect_type);
 }
 
-INSTANTIATE_TEST_CASE_P(
-  TestOneHotGroup, TestOneHot,
-  testing::Values(
-    OneHotOpParams{{2, 2, 3}, kInt32, CreateScalar<int64_t>(10), {1}, kInt32, {0}, kInt32,
-                   CreateScalar<int64_t>(-1), {2, 2, 3, 10}, kInt32}));
+INSTANTIATE_TEST_CASE_P(TestOneHotGroup, TestOneHot,
+                        testing::Values(OneHotOpParams{{2, 2, 3},
+                                                       kInt32,
+                                                       CreateScalar<int64_t>(10),
+                                                       {1},
+                                                       kInt32,
+                                                       {0},
+                                                       kInt32,
+                                                       CreateScalar<int64_t>(-1),
+                                                       {2, 2, 3, 10},
+                                                       kInt32}));
 }  // namespace ops
 }  // namespace mindspore

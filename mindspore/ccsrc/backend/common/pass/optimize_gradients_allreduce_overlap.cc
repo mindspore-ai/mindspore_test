@@ -17,8 +17,8 @@
 #include "backend/common/pass/optimize_gradients_allreduce_overlap.h"
 #include <algorithm>
 #include <vector>
-#include "mindspore/core/ops/other_ops.h"
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/other_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/parallel_context.h"
 #include "utils/ms_context.h"

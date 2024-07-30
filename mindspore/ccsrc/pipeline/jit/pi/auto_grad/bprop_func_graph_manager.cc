@@ -21,7 +21,7 @@
 #include "frontend/optimizer/ad/grad.h"
 #include "frontend/optimizer/irpass.h"
 #include "ir/func_graph_cloner.h"
-#include "ops/sequence_ops.h"
+#include "op_def/sequence_ops.h"
 #include "pipeline/jit/ps/pass.h"
 #include "pipeline/jit/ps/resource.h"
 #include "pipeline/pynative/pynative_utils.h"

@@ -22,9 +22,9 @@
 #include <vector>
 #include <string>
 #include <algorithm>
-#include "mindspore/core/ops/math_ops.h"
-#include "mindspore/core/ops/lite_ops.h"
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "tools/optimizer/graph/node_infershape.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "tools/optimizer/common/format_utils.h"
@@ -32,13 +32,13 @@
 #include "tools/common/tensor_util.h"
 #include "tools/converter/quantizer/fse_decoder.h"
 #include "tools/converter/adapter/acl/mapper/tbe_op_def.h"
-#include "ops/fse_decode.h"
-#include "ops/op_name.h"
-#include "ops/auto_generate/gen_lite_ops.h"
-#include "ops/fusion/mul_fusion.h"
-#include "ops/fusion/add_fusion.h"
-#include "ops/fusion/mat_mul_fusion.h"
-#include "ops/array_ops.h"
+#include "infer/fse_decode.h"
+#include "op_def/op_name.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
+#include "infer/cxx_api/mul_fusion.h"
+#include "infer/cxx_api/add_fusion.h"
+#include "infer/cxx_api/mat_mul_fusion.h"
+#include "op_def/array_ops.h"
 #include "ir/dtype.h"
 
 namespace mindspore::lite::quant {

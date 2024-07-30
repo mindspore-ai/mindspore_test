@@ -18,13 +18,13 @@
 #include "tools/optimizer/fusion/fullconnected_add_fusion.h"
 #include <vector>
 #include <memory>
-#include "mindspore/core/ops/nn_ops.h"
-#include "mindspore/core/ops/lite_ops.h"
-#include "ops/fusion/add_fusion.h"
-#include "ops/fusion/full_connection.h"
+#include "mindspore/ops/op_def/nn_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
+#include "infer/cxx_api/add_fusion.h"
+#include "infer/cxx_api/full_connection.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "nnacl/op_base.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace opt {

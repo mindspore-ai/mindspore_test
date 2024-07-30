@@ -24,7 +24,7 @@
 #include "tools/optimizer/common/multiple_pattern_process_pass.h"
 #include "include/common/utils/utils.h"
 #include "include/errorcode.h"
-#include "ops/attention.h"
+#include "infer/attention.h"
 
 namespace mindspore {
 namespace opt {

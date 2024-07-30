@@ -19,7 +19,7 @@
 #include <map>
 #include <vector>
 #include "tools/converter/parser/tf/tf_node_parser_registry.h"
-#include "ops/non_max_suppression.h"
+#include "infer/non_max_suppression.h"
 
 namespace mindspore {
 namespace lite {

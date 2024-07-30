@@ -29,9 +29,9 @@
 #include "frontend/parallel/step_parallel_utils.h"
 #include "include/common/utils/comm_manager.h"
 #include "include/common/utils/parallel_context.h"
-#include "mindspore/core/ops/framework_ops.h"
-#include "mindspore/core/ops/sequence_ops.h"
-#include "mindspore/core/ops/other_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/other_ops.h"
 #include "utils/ms_context.h"
 
 namespace mindspore {

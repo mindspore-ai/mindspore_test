@@ -18,8 +18,8 @@
 #include <set>
 #include <functional>
 #include "include/common/debug/anf_ir_dump.h"
-#include "plugin/device/cpu/kernel/pyexecute/py_execute_cpu_kernel.h"
-#include "mindspore/core/ops/framework_ops.h"
+#include "kernel/cpu/pyexecute/py_execute_cpu_kernel.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "include/common/fallback.h"
 #include "include/common/utils/stub_tensor.h"
 #include "include/backend/py_execute_utils.h"

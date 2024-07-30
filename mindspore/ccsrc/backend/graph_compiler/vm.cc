@@ -18,7 +18,7 @@
 
 #include "backend/graph_compiler/vm.h"
 #include <algorithm>
-#include "ops/nn_op_name.h"
+#include "op_def/nn_op_name.h"
 #include "backend/graph_compiler/vmimpl.h"
 #include "backend/graph_compiler/backend.h"
 #include "pipeline/jit/ps/parse/data_converter.h"

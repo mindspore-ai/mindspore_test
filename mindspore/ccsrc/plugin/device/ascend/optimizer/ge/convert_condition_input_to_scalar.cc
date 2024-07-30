@@ -15,8 +15,8 @@
  */
 #include "plugin/device/ascend/optimizer/ge/convert_condition_input_to_scalar.h"
 
-#include "mindspore/core/ops/math_ops.h"
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "include/common/utils/anfalgo.h"
 #include "mindspore/core/ir/value.h"
 

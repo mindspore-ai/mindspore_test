@@ -18,7 +18,7 @@
 #include <tuple>
 #include <algorithm>
 #include <utility>
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "extendrt/delegate/factory.h"
 #include "include/common/utils/scoped_long_running.h"
 #include "include/api/context.h"
@@ -43,17 +43,17 @@
 #include "src/extendrt/delegate/ascend_ge/aoe_api_tune_process.h"
 #include "extendrt/delegate/ascend_ge/ge_utils.h"
 #include "extendrt/delegate/ascend_ge/ge_dynamic_utils.h"
-#include "mindspore/core/ops/lite_ops.h"
-#include "mindspore/core/ops/nn_optimizer_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
+#include "mindspore/ops/op_def/nn_optimizer_ops.h"
 #include "mindspore/lite/tools/common/string_util.h"
 #include "mindspore/lite/src/extendrt/cxx_api/file_utils.h"
-#include "mindspore/core/ops/custom.h"
+#include "mindspore/ops/infer/custom.h"
 #include "mindspore/lite/src/common/common.h"
 #include "mindspore/lite/tools/common/custom_ascend_utils.h"
 #include "op_proto/inc/array_ops.h"
 #include "op_proto/inc/elewise_calculation_ops.h"
 #include "mindspore/lite/tools/optimizer/graph/attr_to_args_pass.h"
-#include "mindspore/core/ops/nn_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
 #include <nlohmann/json.hpp>
 
 namespace mindspore {

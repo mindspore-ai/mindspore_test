@@ -20,9 +20,9 @@
 #include <set>
 #include <string>
 #include <vector>
-#include "mindspore/core/ops/lite_ops.h"
-#include "mindspore/core/ops/math_ops.h"
-#include "mindspore/core/ops/nn_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
 #include "schema/inner/model_generated.h"
 #include "src/common/quant_utils.h"
 namespace mindspore::lite::quant {

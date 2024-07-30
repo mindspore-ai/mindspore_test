@@ -48,7 +48,7 @@
 #include "tools/converter/config_parser/quant_param_parser.h"
 #include "tools/common/string_util.h"
 #include "src/common/file_utils.h"
-#include "ops/dynamic_shape.h"
+#include "infer/dynamic_shape.h"
 #include "tools/common/func_graph_utils.h"
 #include "tools/converter/import/remove_public_primitive.h"
 #include "tools/optimizer/graph/redundant_op_remove_pass.h"

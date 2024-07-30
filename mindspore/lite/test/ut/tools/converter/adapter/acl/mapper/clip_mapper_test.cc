@@ -17,9 +17,9 @@
 #define USE_DEPRECATED_API
 #include <memory>
 #include "common/common_test.h"
-#include "ops/clip.h"
-#include "ops/return.h"
-#include "ops/make_tuple.h"
+#include "infer/clip.h"
+#include "infer/return.h"
+#include "infer/make_tuple.h"
 #include "include/errorcode.h"
 #include "src/common/log_adapter.h"
 #include "tools/converter/anf_transform.h"

@@ -20,7 +20,7 @@
 #include <memory>
 #include <functional>
 #include "src/extendrt/delegate/tensorrt/tensorrt_utils.h"
-#include "ops/fusion/tile_fusion.h"
+#include "infer/cxx_api/tile_fusion.h"
 
 namespace mindspore::lite {
 int TileTensorRT::IsSupport(const BaseOperatorPtr &base_operator, const std::vector<TensorInfo> &in_tensors,

@@ -16,21 +16,21 @@
 
 #include "ir/dtype/number.h"
 #include "ops/test_ops_cmp_utils.h"
-#include "ops/ops_func_impl/minimum_grad.h"
+#include "infer/ops_func_impl/minimum_grad.h"
 
 namespace mindspore {
 namespace ops {
 OP_FUNC_IMPL_TEST_DECLARE(MinimumGrad, MultiInputOpParams);
 
 OP_FUNC_IMPL_TEST_CASES(
-  MinimumGrad,
-  testing::Values(
-    MultiInputOpParams{{{1, 3}, {2, 1}}, {kFloat64, kFloat64}, {{1, 3}, {2, 1}}, {kFloat64, kFloat64}, {}},
-    MultiInputOpParams{{{-1, 3}, {-1, 1}}, {kInt32, kInt32}, {{-1, 3}, {-1, 1}}, {kInt32, kInt32}, {}},
-    MultiInputOpParams{{{-1, 1, 3}, {1, -1, 3}}, {kFloat32, kFloat32}, {{-1, 1, 3}, {1, -1, 3}}, {kFloat32, kFloat32}, {}},
-    MultiInputOpParams{{{-1, 2, 3}, {2, -1, 3}}, {kFloat32, kFloat32}, {{-1, 2, 3}, {2, -1, 3}}, {kFloat32, kFloat32}, {}},
-    MultiInputOpParams{{{-2}, {2, 3}}, {kFloat32, kFloat32}, {{-2}, {2, 3}}, {kFloat32, kFloat32}, {}},
-    MultiInputOpParams{{{-2}, {-2}}, {kFloat32, kFloat32}, {{-2}, {-2}}, {kFloat32, kFloat32}, {}}
-  ));
+  MinimumGrad, testing::Values(
+                 MultiInputOpParams{{{1, 3}, {2, 1}}, {kFloat64, kFloat64}, {{1, 3}, {2, 1}}, {kFloat64, kFloat64}, {}},
+                 MultiInputOpParams{{{-1, 3}, {-1, 1}}, {kInt32, kInt32}, {{-1, 3}, {-1, 1}}, {kInt32, kInt32}, {}},
+                 MultiInputOpParams{
+                   {{-1, 1, 3}, {1, -1, 3}}, {kFloat32, kFloat32}, {{-1, 1, 3}, {1, -1, 3}}, {kFloat32, kFloat32}, {}},
+                 MultiInputOpParams{
+                   {{-1, 2, 3}, {2, -1, 3}}, {kFloat32, kFloat32}, {{-1, 2, 3}, {2, -1, 3}}, {kFloat32, kFloat32}, {}},
+                 MultiInputOpParams{{{-2}, {2, 3}}, {kFloat32, kFloat32}, {{-2}, {2, 3}}, {kFloat32, kFloat32}, {}},
+                 MultiInputOpParams{{{-2}, {-2}}, {kFloat32, kFloat32}, {{-2}, {-2}}, {kFloat32, kFloat32}, {}}));
 }  // namespace ops
 }  // namespace mindspore

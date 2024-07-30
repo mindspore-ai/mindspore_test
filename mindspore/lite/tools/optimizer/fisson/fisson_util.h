@@ -24,7 +24,7 @@
 #include "schema/inner/model_generated.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "mindspore/lite/include/lite_types.h"
-#include "ops/fusion/conv2d_fusion.h"
+#include "infer/cxx_api/conv2d_fusion.h"
 
 namespace mindspore {
 using mindspore::schema::PrimitiveType;

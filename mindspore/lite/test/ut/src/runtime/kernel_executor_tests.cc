@@ -18,12 +18,12 @@
 #include "include/registry/register_kernel_interface.h"
 #include "include/registry/register_kernel.h"
 #include "src/litert/cxx_api/kernel_executor/kernel_executor.h"
-#include "ops/auto_generate/gen_lite_ops.h"
-#include "ops/conv2d.h"
-#include "ops/topk.h"
-#include "ops/conv2d_transpose.h"
-#include "ops/max_pool.h"
-#include "ops/pad.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
+#include "infer/conv2d.h"
+#include "infer/topk.h"
+#include "infer/conv2d_transpose.h"
+#include "infer/max_pool.h"
+#include "infer/pad.h"
 #include "ops/base_operator.h"
 
 namespace mindspore {

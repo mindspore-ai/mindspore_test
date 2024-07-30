@@ -16,12 +16,12 @@
 
 #define USE_DEPRECATED_API
 #include "tools/optimizer/fusion/mul_activation_fusion.h"
-#include "mindspore/core/ops/lite_ops.h"
-#include "ops/fusion/activation.h"
-#include "ops/fusion/mul_fusion.h"
+#include "mindspore/ops/op_def/lite_ops.h"
+#include "infer/cxx_api/activation.h"
+#include "infer/cxx_api/mul_fusion.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "nnacl/op_base.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 
 namespace mindspore::opt {
 const BaseRef MulActivationFusion::DefinePattern() const {

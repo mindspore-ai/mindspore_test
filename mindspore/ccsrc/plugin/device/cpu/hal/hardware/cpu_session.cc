@@ -26,10 +26,10 @@
 #include "include/common/utils/anfalgo.h"
 #include "plugin/factory/ms_factory.h"
 #include "runtime/device/kernel_runtime.h"
-#include "plugin/device/cpu/kernel/cpu_kernel.h"
+#include "kernel/cpu/cpu_kernel.h"
 #include "plugin/device/cpu/optimizer/print_value_type.h"
 #ifdef ENABLE_AKG
-#include "plugin/device/cpu/kernel/akg/akg_cpu_kernel_build.h"
+#include "kernel/cpu/akg/akg_cpu_kernel_build.h"
 #endif
 #include "plugin/device/cpu/hal/device/kernel_select_cpu.h"
 #include "include/backend/optimizer/optimizer.h"

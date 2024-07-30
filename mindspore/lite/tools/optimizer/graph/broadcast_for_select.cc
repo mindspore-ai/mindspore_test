@@ -18,7 +18,7 @@
 #include <vector>
 #include <memory>
 #include <algorithm>
-#include "mindspore/core/ops/array_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "nnacl/op_base.h"
 #include "include/common/utils/anfalgo.h"

@@ -20,7 +20,7 @@
 #include "common/common_test.h"
 #include "ir/dtype/type.h"
 #include "ir/primitive.h"
-#include "ops/ops_func_impl/non_zero_ext.h"
+#include "infer/ops_func_impl/non_zero_ext.h"
 #include "ops/ops_frontend_func_impl.h"
 #include "ops/test_ops_cmp_utils.h"
 #include "ops/test_ops.h"
@@ -56,7 +56,7 @@ TEST_P(TestNonZeroExt, non_zero_ext_dyn_shape) {
     }
     auto expect_shape = expect_abs->GetShape();
     auto expect_type = expect_abs->GetType();
-    // infer 
+    // infer
     auto infer_impl = GetOpFrontendFuncImplPtr("NonZeroExt");
     ASSERT_NE(infer_impl, nullptr);
     std::vector<abstract::AbstractBasePtr> input_args{std::move(x)};
@@ -88,11 +88,10 @@ TEST_P(TestNonZeroExt, non_zero_ext_dyn_shape) {
 }
 
 INSTANTIATE_TEST_CASE_P(TestNonZeroExtGroup, TestNonZeroExt,
-                        testing::Values(
-                          NonZeroExtOpParams{{2, 3}, kFloat, {{6},{6}}, kInt64, false},
-                          NonZeroExtOpParams{{2, 2, 3}, kFloat, {{12},{12},{12}}, kInt64, false},
-                          NonZeroExtOpParams{{3, 4}, kFloat, {{-1},{-1}}, kInt64, true},
-                          NonZeroExtOpParams{{-1, -1, -1}, kFloat, {{-1},{-1},{-1}}, kInt64, true},
-                          NonZeroExtOpParams{{-2}, kFloat, {{-2}}, kInt64, true}));
+                        testing::Values(NonZeroExtOpParams{{2, 3}, kFloat, {{6}, {6}}, kInt64, false},
+                                        NonZeroExtOpParams{{2, 2, 3}, kFloat, {{12}, {12}, {12}}, kInt64, false},
+                                        NonZeroExtOpParams{{3, 4}, kFloat, {{-1}, {-1}}, kInt64, true},
+                                        NonZeroExtOpParams{{-1, -1, -1}, kFloat, {{-1}, {-1}, {-1}}, kInt64, true},
+                                        NonZeroExtOpParams{{-2}, kFloat, {{-2}}, kInt64, true}));
 }  // namespace ops
 }  // namespace mindspore

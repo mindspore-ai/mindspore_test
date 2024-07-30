@@ -18,7 +18,7 @@
 #include <memory>
 #include <vector>
 #include "tools/converter/parser/onnx/onnx_model_parser.h"
-#include "ops/constant_of_shape.h"
+#include "infer/constant_of_shape.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

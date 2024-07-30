@@ -23,9 +23,9 @@
 #include "tools/optimizer/common/multiple_pattern_process_pass.h"
 #include "include/common/utils/utils.h"
 #include "include/errorcode.h"
-#include "ops/decoder_layer.h"
-#include "ops/fusion/layer_norm_fusion.h"
-#include "ops/fusion/activation.h"
+#include "infer/decoder_layer.h"
+#include "infer/cxx_api/layer_norm_fusion.h"
+#include "infer/cxx_api/activation.h"
 #include "tools/optimizer/fusion/multi_head_attention_fusion.h"
 
 namespace mindspore {

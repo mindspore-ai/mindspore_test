@@ -15,7 +15,7 @@
  */
 
 #include "test_view.h"
-#include "mindspore/core/ops/view/slice_strides_calc.h"
+#include "mindspore/ops/view/slice_strides_calc.h"
 
 namespace mindspore {
 namespace ops {

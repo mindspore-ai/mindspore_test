@@ -16,7 +16,7 @@
 
 #include "tools/converter/parser/onnx/onnx_lrn_parser.h"
 #include <memory>
-#include "ops/lrn.h"
+#include "infer/lrn.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

@@ -23,7 +23,7 @@
 #include "mindapi/base/shared_ptr.h"
 #include "mindapi/base/type_id.h"
 #include "mindapi/ir/tensor.h"
-#include "ops/return.h"
+#include "infer/return.h"
 
 namespace mindspore {
 api::FuncGraphPtr ModelParserTest::Parse(const converter::ConverterParameters &flag) {

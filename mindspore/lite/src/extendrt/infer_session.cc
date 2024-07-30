@@ -23,7 +23,7 @@
 #include "extendrt/delegate/plugin/ascend_ge_executor_plugin.h"
 #include "extendrt/delegate/plugin/ascend_native_executor_plugin.h"
 #include "extendrt/kernel/ascend/plugin/ascend_kernel_plugin.h"
-#include "plugin/device/cpu/kernel/nnacl/op_base.h"
+#include "nnacl/op_base.h"
 
 namespace mindspore {
 namespace {

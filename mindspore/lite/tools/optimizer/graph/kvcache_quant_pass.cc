@@ -16,9 +16,9 @@
 #include <memory>
 #include <vector>
 #include <string>
-#include "ops/array_ops.h"
+#include "op_def/array_ops.h"
 #include "tools/converter/adapter/acl/mapper/tbe_op_def.h"
-#include "ops/op_name.h"
+#include "op_def/op_name.h"
 #include "tools/converter/quantizer/quantize_util.h"
 #include "mindspore/core/utils/anf_utils.h"
 #include "tools/optimizer/graph/kvcache_quant_pass.h"

@@ -28,7 +28,7 @@
 #include "frontend/parallel/graph_util/generate_graph.h"
 #include "frontend/parallel/tensor_layout/tensor_redistribution.h"
 #include "ir/value.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 #include "utils/log_adapter.h"
 
 namespace mindspore {

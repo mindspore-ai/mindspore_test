@@ -16,7 +16,7 @@
 
 #include "parser/caffe/caffe_argmax_parser.h"
 #include <memory>
-#include "ops/fusion/arg_max_fusion.h"
+#include "infer/cxx_api/arg_max_fusion.h"
 
 namespace mindspore {
 namespace lite {

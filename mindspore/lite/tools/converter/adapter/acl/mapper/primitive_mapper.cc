@@ -23,10 +23,10 @@
 #include "ir/graph_utils.h"
 #include "include/errorcode.h"
 #include "include/registry/converter_context.h"
-#include "ops/op_utils.h"
-#include "ops/fusion/avg_pool_fusion.h"
-#include "ops/fusion/max_pool_fusion.h"
-#include "plugin/device/cpu/kernel/nnacl/op_base.h"
+#include "ops_utils/op_utils.h"
+#include "infer/cxx_api/avg_pool_fusion.h"
+#include "infer/cxx_api/max_pool_fusion.h"
+#include "nnacl/op_base.h"
 #include "src/common/log_util.h"
 
 namespace mindspore {

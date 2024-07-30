@@ -23,8 +23,8 @@
 #include <unordered_map>
 #include "src/extendrt/delegate/tensorrt/tensorrt_utils.h"
 #include "NvInferRuntimeCommon.h"
-#include "plugin/device/gpu/kernel/cuda_impl/cuda_ops/cumsum_impl.cuh"
-#include "ops/auto_generate/gen_lite_ops.h"
+#include "kernel/gpu/cuda_impl/cuda_ops/cumsum_impl.cuh"
+#include "op_def/auto_generate/gen_lite_ops.h"
 
 namespace mindspore::lite {
 int CumsumTensorRT::IsSupport(const BaseOperatorPtr &base_operator, const std::vector<TensorInfo> &in_tensors,

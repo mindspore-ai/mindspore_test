@@ -22,8 +22,8 @@
 #include <utility>
 #include <algorithm>
 
-#include "ops/array_op_name.h"
-#include "ops/conv_pool_ops.h"
+#include "op_def/array_op_name.h"
+#include "op_def/conv_pool_ops.h"
 #include "include/common/utils/utils.h"
 #include "utils/ms_context.h"
 #include "utils/check_convert_utils.h"

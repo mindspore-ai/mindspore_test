@@ -18,18 +18,18 @@
 #include "tools/optimizer/fusion/norm_fusion.h"
 #include <algorithm>
 #include <memory>
-#include "mindspore/core/ops/math_ops.h"
-#include "mindspore/core/ops/lite_ops.h"
-#include "mindspore/core/ops/array_ops.h"
-#include "ops/fusion/layer_norm_fusion.h"
-#include "ops/fusion/reduce_fusion.h"
-#include "mindspore/core/ops/instance_norm.h"
+#include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "infer/cxx_api/layer_norm_fusion.h"
+#include "infer/cxx_api/reduce_fusion.h"
+#include "mindspore/ops/infer/instance_norm.h"
 #include "include/common/utils/utils.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "securec/include/securec.h"
 #include "nnacl/op_base.h"
 #include "src/common/ops/anf_utils.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace opt {

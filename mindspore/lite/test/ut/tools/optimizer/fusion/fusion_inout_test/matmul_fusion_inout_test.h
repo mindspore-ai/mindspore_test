@@ -24,7 +24,7 @@
 #include "include/backend/optimizer/pass.h"
 #include "include/backend/optimizer/optimizer.h"
 #include "include/backend/optimizer/pass_manager.h"
-#include "ops/fusion/activation.h"
+#include "infer/cxx_api/activation.h"
 
 namespace mindspore {
 class MatMulFusionInoutTest : public FusionInoutTest {

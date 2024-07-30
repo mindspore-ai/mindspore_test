@@ -18,7 +18,7 @@
 #include <memory>
 #include "nnacl/op_base.h"
 #include "tools/converter/ops/ops_def.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 
 namespace mindspore::lite {
 PrimitiveCPtr OnnxDequantizeLinearParser::Parse(const onnx::GraphProto &onnx_graph, const onnx::NodeProto &onnx_node) {

@@ -15,7 +15,7 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/fp32/space_to_batch_fp32.h"
-#include "ops/space_to_batch.h"
+#include "infer/space_to_batch.h"
 using mindspore::ops::kNameSpaceToBatch;
 using mindspore::schema::PrimitiveType_SpaceToBatch;
 

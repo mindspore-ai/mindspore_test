@@ -19,7 +19,7 @@
 #include <string>
 #include "ir/anf.h"
 #include "ir/primitive.h"
-#include "ops/array_ops.h"
+#include "op_def/array_ops.h"
 #include "tools/converter/adapter/acl/mapper/primitive_mapper_register.h"
 #include "src/common/log_util.h"
 #include "utils/log_adapter.h"

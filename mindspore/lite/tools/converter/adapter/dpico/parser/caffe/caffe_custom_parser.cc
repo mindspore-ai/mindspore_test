@@ -17,7 +17,7 @@
 #include "parser/caffe/caffe_custom_parser.h"
 #include <memory>
 #include <string>
-#include "ops/custom.h"
+#include "infer/custom.h"
 #include "common/op_attr.h"
 #include "./extended_attr.h"
 #include "./pico_caffe.pb.h"

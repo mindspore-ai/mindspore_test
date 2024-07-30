@@ -17,7 +17,7 @@
 #include "src/extendrt/delegate/tensorrt/op/fill_tensorrt.h"
 #include <numeric>
 #include "src/extendrt/delegate/tensorrt/tensorrt_utils.h"
-#include "ops/fill.h"
+#include "infer/fill.h"
 
 namespace mindspore::lite {
 int FillTensorRT::IsSupport(const BaseOperatorPtr &base_operator, const std::vector<TensorInfo> &in_tensors,

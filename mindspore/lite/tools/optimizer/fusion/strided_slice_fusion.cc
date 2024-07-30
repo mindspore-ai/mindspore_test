@@ -18,13 +18,13 @@
 #include "tools/optimizer/fusion/strided_slice_fusion.h"
 #include <memory>
 #include <vector>
-#include "mindspore/core/ops/array_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
 #include "tools/optimizer/fusion/strided_slice_checker.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "tools/lite_exporter/fetch_content.h"
 #include "ir/func_graph.h"
 #include "nnacl/op_base.h"
-#include "ops/op_name.h"
+#include "op_def/op_name.h"
 
 namespace mindspore {
 namespace opt {

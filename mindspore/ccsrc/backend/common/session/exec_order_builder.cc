@@ -16,7 +16,7 @@
 #include "backend/common/session/exec_order_builder.h"
 #include <algorithm>
 #include <string>
-#include "ops/ascend_op_name.h"
+#include "op_def/ascend_op_name.h"
 #include "include/common/utils/anfalgo.h"
 #include "utils/ms_context.h"
 

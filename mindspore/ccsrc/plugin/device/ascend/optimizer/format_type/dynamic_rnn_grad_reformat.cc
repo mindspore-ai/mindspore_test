@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 #include "plugin/device/ascend/optimizer/format_type/dynamic_rnn_grad_reformat.h"
-#include "ops/ascend_op_name.h"
-#include "ops/math_ops.h"
-#include "ops/array_ops.h"
+#include "op_def/ascend_op_name.h"
+#include "op_def/math_ops.h"
+#include "op_def/array_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 namespace mindspore {

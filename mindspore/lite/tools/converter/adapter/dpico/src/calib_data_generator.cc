@@ -21,7 +21,7 @@
 #include <string>
 #include <numeric>
 #include <algorithm>
-#include "ops/tuple_get_item.h"
+#include "infer/tuple_get_item.h"
 #include "common/anf_util.h"
 #include "common/string_util.h"
 #include "common/file_util.h"

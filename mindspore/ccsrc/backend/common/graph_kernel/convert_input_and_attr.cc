@@ -27,11 +27,11 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/api/format.h"
-#include "ops/auto_generate/gen_ops_primitive.h"
-#include "ops/array_ops.h"
+#include "op_def/auto_generate/gen_ops_primitive.h"
+#include "op_def/array_ops.h"
 #include "ops/op_def.h"
-#include "ops/op_utils.h"
-#include "ops/sequence_ops.h"
+#include "ops_utils/op_utils.h"
+#include "op_def/sequence_ops.h"
 #include "utils/anf_utils.h"
 #include "utils/check_convert_utils.h"
 
@@ -284,7 +284,7 @@ bool ConvertGraphKernelToFrontEnd::ConvertInputsType(const CNodePtr &cnode, size
     return false;
   }
 
-  auto value_opt = ops::GetArrayValue<int64_t>(input->cast<ValueNodePtr>()->value());
+  auto value_opt = GetArrayValue<int64_t>(input->cast<ValueNodePtr>()->value());
   if (!value_opt.has_value()) {
     return false;
   }

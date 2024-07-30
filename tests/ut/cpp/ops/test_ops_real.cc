@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "ops/ops_func_impl/real.h"
+#include "infer/ops_func_impl/real.h"
 #include "ops/test_ops.h"
 #include "ops/test_ops_cmp_utils.h"
 

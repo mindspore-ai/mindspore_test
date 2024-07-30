@@ -20,8 +20,8 @@
 #include <map>
 #include "src/extendrt/delegate/tensorrt/op/tensorrt_op.h"
 
-#include "ops/auto_generate/gen_lite_ops.h"
-#include "ops/fusion/exp_fusion.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
+#include "infer/cxx_api/exp_fusion.h"
 
 namespace mindspore::lite {
 class UnaryTensorRT : public TensorRTOp {

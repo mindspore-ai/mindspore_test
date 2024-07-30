@@ -18,7 +18,7 @@
 #define MINDSPORE_LITE_TOOLS_CONVERTER_ADAPTER_ACL_MAPPER_AVGPOOL_FUSION_MAPPER_H_
 
 #include "tools/converter/adapter/acl/mapper/primitive_mapper.h"
-#include "ops/fusion/avg_pool_fusion.h"
+#include "infer/cxx_api/avg_pool_fusion.h"
 
 using mindspore::ops::kNameAvgPoolFusion;
 

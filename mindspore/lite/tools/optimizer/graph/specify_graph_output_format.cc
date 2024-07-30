@@ -20,15 +20,15 @@
 #include <vector>
 #include <map>
 #include <stack>
-#include "mindspore/core/ops/sequence_ops.h"
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "tools/converter/parser/parser_utils.h"
 #include "tools/optimizer/common/format_utils.h"
 #include "tools/lite_exporter/fetch_content.h"
 #include "src/common/log_adapter.h"
 #include "nnacl/op_base.h"
-#include "ops/op_utils.h"
-#include "ops/make_tuple.h"
+#include "ops_utils/op_utils.h"
+#include "infer/make_tuple.h"
 
 namespace mindspore {
 namespace opt {

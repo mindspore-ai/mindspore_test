@@ -13,7 +13,7 @@ endif()
 
 include(${LITE_DIR}/cmake/ccsrc_converter.cmake)
 
-include_directories(${TOP_DIR}/mindspore/ccsrc/plugin/device/cpu/kernel)
+include_directories(${TOP_DIR}/mindspore/ops/kernel/cpu)
 
 file(GLOB_RECURSE CONVERTER_SRC RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}/ops/*.cc
@@ -85,6 +85,7 @@ add_subdirectory(config_parser)
 add_subdirectory(micro/coder)
 
 add_subdirectory(${CORE_DIR} mindspore_core)
+add_subdirectory(${OPS_DIR} mindspore_ops)
 
 if(MSLITE_ENABLE_ACL)
     set(MODE_ASCEND_ACL ON)
@@ -322,7 +323,7 @@ set(LITE_SRC
         ${CORE_DIR}/abstract/abstract_value.cc
         ${CORE_DIR}/ir/anf.cc
         ${CORE_DIR}/base/base.cc
-        ${CORE_DIR}/ops/auto_generate/gen_lite_ops.cc
+        ${OPS_DIR}/op_def/auto_generate/gen_lite_ops.cc
         )
 
 set_property(SOURCE ${CONVERTER_SRC} PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_LITE)
@@ -378,6 +379,7 @@ target_link_libraries(mindspore_converter
         ${SECUREC_LIBRARY}
         mindspore::json
         mindspore_core
+        mindspore_ops
         mslite_converter_plugin
         mindspore::glog
         mindspore::protobuf

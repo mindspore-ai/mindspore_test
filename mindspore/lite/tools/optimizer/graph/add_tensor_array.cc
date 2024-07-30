@@ -18,17 +18,17 @@
 #include "tools/optimizer/graph/add_tensor_array.h"
 #include <vector>
 #include <memory>
-#include "mindspore/core/ops/sequence_ops.h"
-#include "mindspore/core/ops/lite_ops.h"
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "mindspore/core/abstract/dshape.h"
-#include "ops/tensor_array.h"
-#include "ops/tensor_array_read.h"
-#include "ops/tensor_array_write.h"
+#include "infer/tensor_array.h"
+#include "infer/tensor_array_read.h"
+#include "infer/tensor_array_write.h"
 #include "nnacl/op_base.h"
-#include "ops/make_tuple.h"
-#include "ops/return.h"
+#include "infer/make_tuple.h"
+#include "infer/return.h"
 
 namespace mindspore::opt {
 constexpr auto kDefaultIndex = 0;

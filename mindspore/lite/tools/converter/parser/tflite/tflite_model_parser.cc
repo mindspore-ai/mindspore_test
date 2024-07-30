@@ -20,8 +20,8 @@
 #include <memory>
 #include <algorithm>
 #include <utility>
-#include "mindspore/core/ops/lite_ops.h"
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "include/registry/node_parser_registry.h"
 #include "ops/primitive_c.h"
 #include "ir/func_graph.h"
@@ -35,9 +35,9 @@
 #include "tools/converter/parser/unify_format.h"
 #include "nnacl/op_base.h"
 #include "src/common/log_util.h"
-#include "ops/make_tuple.h"
-#include "ops/return.h"
-#include "ops/tuple_get_item.h"
+#include "infer/make_tuple.h"
+#include "infer/return.h"
+#include "infer/tuple_get_item.h"
 
 using mindspore::converter::kFmkTypeTflite;
 namespace mindspore::lite {

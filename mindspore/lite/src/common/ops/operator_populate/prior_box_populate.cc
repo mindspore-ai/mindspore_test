@@ -15,7 +15,7 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/prior_box_parameter.h"
-#include "ops/prior_box.h"
+#include "infer/prior_box.h"
 using mindspore::ops::kNamePriorBox;
 using mindspore::schema::PrimitiveType_PriorBox;
 

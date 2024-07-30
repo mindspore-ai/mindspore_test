@@ -21,8 +21,8 @@
 #include <list>
 #include <unordered_map>
 #include <algorithm>
-#include "mindspore/core/ops/other_ops.h"
-#include "mindspore/core/ops/array_ops.h"
+#include "mindspore/ops/op_def/other_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
 #include "frontend/optimizer/optimizer.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/graph_util/graph_info.h"

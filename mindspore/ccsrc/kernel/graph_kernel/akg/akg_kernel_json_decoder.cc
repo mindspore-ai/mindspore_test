@@ -16,8 +16,8 @@
 #include "kernel/graph_kernel/akg/akg_kernel_json_decoder.h"
 
 #include <memory>
-#include "mindspore/core/ops/sequence_ops.h"
-#include "mindspore/core/ops/array_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
 #include "kernel/graph_kernel/graph_kernel_json_generator.h"
 #include "kernel/framework_utils.h"
 #include "backend/common/graph_kernel/adapter/fake_abstract_shape.h"

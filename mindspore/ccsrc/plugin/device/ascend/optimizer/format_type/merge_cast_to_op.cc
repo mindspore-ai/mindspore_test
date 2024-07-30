@@ -21,12 +21,12 @@
 #include <algorithm>
 #include <string>
 
-#include "ops/ascend_op_name.h"
-#include "ops/structure_op_name.h"
-#include "ops/math_op_name.h"
-#include "ops/sequence_ops.h"
-#include "ops/array_ops.h"
-#include "ops/framework_ops.h"
+#include "op_def/ascend_op_name.h"
+#include "op_def/structure_op_name.h"
+#include "op_def/math_op_name.h"
+#include "op_def/sequence_ops.h"
+#include "op_def/array_ops.h"
+#include "op_def/framework_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"

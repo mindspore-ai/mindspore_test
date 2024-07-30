@@ -26,8 +26,8 @@
 #include <tuple>
 #include <utility>
 
-#include "mindspore/core/ops/sequence_ops.h"
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "frontend/operator/ops.h"
 #include "include/common/utils/utils.h"
 #include "ir/func_graph_cloner.h"

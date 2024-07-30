@@ -21,7 +21,7 @@
 #include <vector>
 
 #include "ir/anf.h"
-#include "mindspore/core/ops/nn_optimizer_ops.h"
+#include "mindspore/ops/op_def/nn_optimizer_ops.h"
 #include "kernel/framework_utils.h"
 #include "backend/common/graph_kernel/graph_kernel_helper.h"
 

@@ -16,7 +16,7 @@
 #include "backend/common/pass/add_attr_to_node/add_attr_to_node_register.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "utils/ms_context.h"
-#include "ops/array_ops.h"
+#include "op_def/array_ops.h"
 
 namespace mindspore {
 namespace opt {

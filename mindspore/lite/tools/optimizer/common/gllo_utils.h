@@ -24,12 +24,12 @@
 #include <utility>
 #include <vector>
 #include "ops/primitive_c.h"
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "ir/anf.h"
 #include "ir/func_graph.h"
 #include "src/common/utils.h"
 #include "include/backend/optimizer/pattern_engine.h"
-#include "ops/fusion/conv2d_backprop_input_fusion.h"
+#include "infer/cxx_api/conv2d_backprop_input_fusion.h"
 #include "schema/inner/model_generated.h"
 #include "tools/converter/converter_context.h"
 

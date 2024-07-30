@@ -22,7 +22,7 @@
 #include "tools/optimizer/graph/make_list_pass.h"
 #include "mindspore/core/abstract/ops/primitive_infer_map.h"
 #include "mindspore/core/utils/anf_utils.h"
-#include "ops/sequence_ops.h"
+#include "op_def/sequence_ops.h"
 
 namespace mindspore::opt {
 // From:

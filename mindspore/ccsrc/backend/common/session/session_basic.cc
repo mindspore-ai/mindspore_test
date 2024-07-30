@@ -22,10 +22,10 @@
 #include <functional>
 #include <unordered_map>
 
-#include "ops/ascend_op_name.h"
-#include "ops/structure_op_name.h"
-#include "ops/framework_op_name.h"
-#include "ops/sequence_ops.h"
+#include "op_def/ascend_op_name.h"
+#include "op_def/structure_op_name.h"
+#include "op_def/framework_op_name.h"
+#include "op_def/sequence_ops.h"
 #include "utils/hash_map.h"
 #include "ops/primitive_c.h"
 #include "ir/manager.h"

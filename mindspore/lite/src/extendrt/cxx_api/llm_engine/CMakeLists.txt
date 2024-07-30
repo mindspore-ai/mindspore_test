@@ -18,6 +18,7 @@ find_library(llm_engine libllm_engine.so ${ASCEND_CANN_RUNTIME_PATH} ${ASCEND_TO
 find_library(ge_graph libgraph.so ${ASCEND_CANN_RUNTIME_PATH} ${ASCEND_TOOLKIT_RUNTIME_PATH})
 find_library(acl libascendcl.so ${ASCEND_CANN_RUNTIME_PATH} ${ASCEND_TOOLKIT_RUNTIME_PATH})
 
-target_link_libraries(llm_engine_plugin ${llm_engine} ${ge_graph} ${acl} mindspore_converter mindspore_core)
+target_link_libraries(llm_engine_plugin ${llm_engine} ${ge_graph} ${acl}
+                      mindspore_converter mindspore_core mindspore_ops)
 
 target_link_libraries(llm_engine_plugin mindspore-extendrt)

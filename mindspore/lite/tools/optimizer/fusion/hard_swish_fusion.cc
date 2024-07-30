@@ -16,9 +16,9 @@
 
 #include "tools/optimizer/fusion/hard_swish_fusion.h"
 #include <vector>
-#include "mindspore/core/ops/lite_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
 #include "nnacl/op_base.h"
-#include "ops/fusion/activation.h"
+#include "infer/cxx_api/activation.h"
 
 namespace mindspore {
 namespace opt {

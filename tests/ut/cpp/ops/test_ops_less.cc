@@ -17,12 +17,11 @@
 #include "ir/primitive.h"
 #include "abstract/abstract_value.h"
 #include "ops/test_ops.h"
-#include "ops/ops_func_impl/less.h"
+#include "infer/ops_func_impl/less.h"
 
 namespace mindspore {
 namespace ops {
-struct LessOpParams
-{
+struct LessOpParams {
   ShapeVector x_shape;
   TypePtr x_type;
   ShapeVector y_shape;
@@ -57,10 +56,9 @@ TEST_P(TestLess, less_dyn_shape) {
   ASSERT_TRUE(*infer_type == *expect_type);
 }
 
-INSTANTIATE_TEST_CASE_P(
-  TestLessGroup, TestLess,
-  testing::Values(LessOpParams{{2, 3, 4}, kFloat32, {2, 1, 4}, kFloat32, {2, 3, 4}, kBool},
-                  LessOpParams{{2, 3, 4}, kFloat32, {-1, -1, -1}, kFloat32, {2, 3, 4}, kBool},
-                  LessOpParams{{2, 3, 4}, kFloat32, {1}, kFloat32, {2, 3, 4}, kBool}));
+INSTANTIATE_TEST_CASE_P(TestLessGroup, TestLess,
+                        testing::Values(LessOpParams{{2, 3, 4}, kFloat32, {2, 1, 4}, kFloat32, {2, 3, 4}, kBool},
+                                        LessOpParams{{2, 3, 4}, kFloat32, {-1, -1, -1}, kFloat32, {2, 3, 4}, kBool},
+                                        LessOpParams{{2, 3, 4}, kFloat32, {1}, kFloat32, {2, 3, 4}, kBool}));
 }  // namespace ops
 }  // namespace mindspore

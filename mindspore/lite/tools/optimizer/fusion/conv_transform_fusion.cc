@@ -19,15 +19,15 @@
 #include <algorithm>
 #include <memory>
 #include <vector>
-#include "mindspore/core/ops/lite_ops.h"
-#include "ops/fusion/conv2d_fusion.h"
-#include "ops/fusion/conv2d_transpose_fusion.h"
+#include "mindspore/ops/op_def/lite_ops.h"
+#include "infer/cxx_api/conv2d_fusion.h"
+#include "infer/cxx_api/conv2d_transpose_fusion.h"
 #include "tools/common/tensor_util.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "tools/converter/quantizer/quant_param_holder.h"
 #include "securec/include/securec.h"
 #include "nnacl/op_base.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 
 namespace mindspore::opt {
 namespace {

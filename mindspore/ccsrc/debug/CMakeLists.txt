@@ -81,6 +81,7 @@ if(ENABLE_DEBUGGER)
         target_link_libraries(_mindspore_offline_debug PRIVATE
             mindspore::pybind11_module
             mindspore_core
+            mindspore_ops
             mindspore::ssl mindspore::crypto
             )
         set_target_properties(_mindspore_offline_debug PROPERTIES

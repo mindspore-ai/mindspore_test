@@ -16,7 +16,7 @@
 
 #include "tools/converter/parser/onnx/onnx_multinomial_parser.h"
 #include <memory>
-#include "ops/multinomial.h"
+#include "infer/multinomial.h"
 #include "mindapi/ir/type.h"
 
 namespace mindspore {

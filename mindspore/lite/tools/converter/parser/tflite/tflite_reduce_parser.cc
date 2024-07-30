@@ -17,7 +17,7 @@
 #include "tools/converter/parser/tflite/tflite_reduce_parser.h"
 #include <vector>
 #include <memory>
-#include "ops/fusion/reduce_fusion.h"
+#include "infer/cxx_api/reduce_fusion.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

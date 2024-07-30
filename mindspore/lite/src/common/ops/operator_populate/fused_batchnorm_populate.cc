@@ -15,7 +15,7 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/batchnorm_parameter.h"
-#include "ops/fused_batch_norm.h"
+#include "infer/fused_batch_norm.h"
 using mindspore::ops::kNameFusedBatchNorm;
 using mindspore::schema::PrimitiveType_FusedBatchNorm;
 namespace mindspore {

@@ -29,7 +29,7 @@
 #include "backend/graph_compiler/backend.h"
 #include "ir/cell.h"
 #include "runtime/pipeline/async_hqueue.h"
-#include "ops/view/view_strides_calculator.h"
+#include "mindspore/ops/view/view_strides_calculator.h"
 #include "runtime/pipeline/async_rqueue.h"
 
 namespace mindspore {

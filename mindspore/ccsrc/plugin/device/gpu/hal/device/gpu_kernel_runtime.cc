@@ -17,8 +17,8 @@
 #include <algorithm>
 #include <map>
 #include <chrono>
-#include "ops/framework_op_name.h"
-#include "ops/sequence_ops.h"
+#include "op_def/framework_op_name.h"
+#include "op_def/sequence_ops.h"
 #include "include/common/debug/anf_dump_utils.h"
 #include "plugin/device/gpu/hal/device/gpu_device_address.h"
 #include "plugin/device/gpu/hal/device/cuda_driver.h"
@@ -47,7 +47,7 @@
 #ifndef ENABLE_SECURITY
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 #endif
-#include "plugin/device/gpu/kernel/gpu_kernel.h"
+#include "kernel/gpu/gpu_kernel.h"
 #ifdef ENABLE_DEBUGGER
 #include "debug/debug_services.h"
 #endif

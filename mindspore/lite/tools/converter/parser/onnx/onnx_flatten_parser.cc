@@ -16,7 +16,7 @@
 
 #include "tools/converter/parser/onnx/onnx_flatten_parser.h"
 #include <memory>
-#include "ops/auto_generate/gen_lite_ops.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
 
 namespace mindspore {
 namespace lite {

@@ -15,10 +15,11 @@
  */
 
 #include "plugin/device/ascend/optimizer/ir_fusion/lamb_next_mv_rule.h"
+#include <utility>
 #include <memory>
 #include <algorithm>
-#include "ops/ascend_op_name.h"
-#include "ops/math_ops.h"
+#include "op_def/ascend_op_name.h"
+#include "op_def/math_ops.h"
 #include "include/common/utils/utils.h"
 #include "include/backend/optimizer/helper.h"
 #include "plugin/device/ascend/optimizer/ascend_helper.h"

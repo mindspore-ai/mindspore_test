@@ -19,12 +19,12 @@
 #include <string>
 #include <unordered_map>
 #include <utility>
-#include "mindspore/core/ops/symbol_ops_impl/scalar_add.h"
-#include "mindspore/core/ops/symbol_ops_impl/scalar_sub.h"
-#include "mindspore/core/ops/symbol_ops_impl/scalar_mul.h"
-#include "mindspore/core/ops/symbol_ops_impl/scalar_div.h"
-#include "mindspore/core/ops/symbol_ops_impl/scalar_max.h"
-#include "mindspore/core/ops/symbol_ops_impl/scalar_min.h"
+#include "mindspore/ops/infer/symbol_ops_impl/scalar_add.h"
+#include "mindspore/ops/infer/symbol_ops_impl/scalar_sub.h"
+#include "mindspore/ops/infer/symbol_ops_impl/scalar_mul.h"
+#include "mindspore/ops/infer/symbol_ops_impl/scalar_div.h"
+#include "mindspore/ops/infer/symbol_ops_impl/scalar_max.h"
+#include "mindspore/ops/infer/symbol_ops_impl/scalar_min.h"
 
 namespace mindspore::graphkernel::symshape {
 void TransformVisitor::Init(const FuncGraphPtr &func_graph) {

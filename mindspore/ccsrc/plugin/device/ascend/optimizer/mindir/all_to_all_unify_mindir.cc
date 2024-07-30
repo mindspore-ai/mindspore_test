@@ -17,8 +17,8 @@
 #include "plugin/device/ascend/optimizer/mindir/all_to_all_unify_mindir.h"
 #include <vector>
 #include <string>
-#include "ops/other_ops.h"
-#include "ops/array_ops.h"
+#include "op_def/other_ops.h"
+#include "op_def/array_ops.h"
 #include "utils/trace_base.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/comm_manager.h"

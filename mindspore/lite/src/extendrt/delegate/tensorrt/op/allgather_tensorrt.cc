@@ -17,7 +17,7 @@
 #include "src/extendrt/delegate/tensorrt/op/allgather_tensorrt.h"
 #include <numeric>
 #include "NvInferRuntimeCommon.h"
-#include "ops/all_gather.h"
+#include "infer/all_gather.h"
 
 namespace mindspore::lite {
 REGISTER_TENSORRT_PLUGIN(AllGatherPluginCreater);

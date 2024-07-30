@@ -21,13 +21,13 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
-#include "mindspore/core/ops/framework_ops.h"
-#include "ops/adam.h"
-#include "ops/apply_momentum.h"
-#include "ops/fusion/conv2d_fusion.h"
-#include "ops/fusion/conv2d_transpose_fusion.h"
-#include "ops/fusion/conv2d_backprop_input_fusion.h"
-#include "ops/sgd.h"
+#include "mindspore/ops/op_def/framework_ops.h"
+#include "infer/adam.h"
+#include "infer/apply_momentum.h"
+#include "infer/cxx_api/conv2d_fusion.h"
+#include "infer/cxx_api/conv2d_transpose_fusion.h"
+#include "infer/cxx_api/conv2d_backprop_input_fusion.h"
+#include "infer/sgd.h"
 #include "tools/common/tensor_util.h"
 #include "tools/converter/parser/conv1d_inout_adjust.h"
 #include "tools/converter/parser/inputs_adjust.h"
@@ -38,7 +38,7 @@
 #include "tools/optimizer/format/to_format_base.h"
 #include "tools/optimizer/common/pass_manager_extends.h"
 #include "nnacl/op_base.h"
-#include "ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 #include "src/common/common.h"
 #include "tools/converter/parser/conv2d_transpose_input_adjust.h"
 

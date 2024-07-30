@@ -19,7 +19,7 @@
 #include <vector>
 #include <memory>
 #include <string>
-#include "ops/batch_to_space.h"
+#include "infer/batch_to_space.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

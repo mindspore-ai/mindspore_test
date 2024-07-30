@@ -34,7 +34,7 @@
 #include "src/common/config_infos.h"
 #include "tools/converter/parser/parser_utils.h"
 #include "include/backend/optimizer/graph_optimizer.h"
-#include "mindspore/core/ops/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "tools/common/string_util.h"
 #include "src/common/common.h"
 #include "tools/optimizer/fusion/antiquant_add_mul_matmul_allreduce_fusion.h"

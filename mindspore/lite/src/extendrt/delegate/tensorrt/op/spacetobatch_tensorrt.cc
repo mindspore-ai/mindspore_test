@@ -23,8 +23,8 @@
 #include <unordered_map>
 #include "src/extendrt/delegate/tensorrt/tensorrt_utils.h"
 #include "NvInferRuntimeCommon.h"
-#include "plugin/device/gpu/kernel/cuda_impl/cuda_ops/spacetobatch_impl.cuh"
-#include "ops/space_to_batch_nd.h"
+#include "kernel/gpu/cuda_impl/cuda_ops/spacetobatch_impl.cuh"
+#include "infer/space_to_batch_nd.h"
 
 namespace mindspore::lite {
 int SpaceToBatchTensorRT::IsSupport(const BaseOperatorPtr &base_operator, const std::vector<TensorInfo> &in_tensors,

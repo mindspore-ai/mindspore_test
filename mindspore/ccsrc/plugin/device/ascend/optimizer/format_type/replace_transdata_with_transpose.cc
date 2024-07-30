@@ -19,7 +19,7 @@
 #include <memory>
 #include <set>
 #include <vector>
-#include "ops/array_ops.h"
+#include "op_def/array_ops.h"
 #include "include/backend/optimizer/optimizer.h"
 #include "plugin/device/ascend/optimizer/ascend_helper.h"
 

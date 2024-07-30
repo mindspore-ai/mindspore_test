@@ -17,7 +17,7 @@
 #include "parser/caffe/caffe_lstm_parser.h"
 #include <memory>
 #include <vector>
-#include "ops/custom.h"
+#include "infer/custom.h"
 #include "common/op_attr.h"
 
 namespace mindspore {

@@ -18,7 +18,7 @@
 #include <memory>
 #include <utility>
 #include <vector>
-#include "ops/roi_pooling.h"
+#include "infer/roi_pooling.h"
 #include "op/roi_pool_operator.h"
 
 namespace mindspore {

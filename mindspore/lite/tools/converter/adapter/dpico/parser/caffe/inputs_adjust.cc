@@ -19,13 +19,13 @@
 #include "common/op_enum.h"
 #include "common/anf_util.h"
 #include "common/check_base.h"
-#include "ops/auto_generate/gen_lite_ops.h"
-#include "ops/fusion/topk_fusion.h"
-#include "ops/fusion/tile_fusion.h"
-#include "ops/fusion/reduce_fusion.h"
-#include "ops/fusion/pad_fusion.h"
-#include "ops/fusion/pow_fusion.h"
-#include "ops/resize.h"
+#include "op_def/auto_generate/gen_lite_ops.h"
+#include "infer/cxx_api/topk_fusion.h"
+#include "infer/cxx_api/tile_fusion.h"
+#include "infer/cxx_api/reduce_fusion.h"
+#include "infer/cxx_api/pad_fusion.h"
+#include "infer/cxx_api/pow_fusion.h"
+#include "infer/resize.h"
 
 namespace mindspore::lite {
 namespace {

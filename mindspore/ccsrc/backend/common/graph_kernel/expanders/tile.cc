@@ -18,7 +18,7 @@
 
 #include "mindapi/base/shape_vector.h"
 #include "backend/common/graph_kernel/expanders/op_desc_registry.h"
-#include "ops/ops_func_impl/tile.h"
+#include "infer/ops_func_impl/tile.h"
 
 namespace mindspore::graphkernel::expanders {
 class Tile : public OpDesc {

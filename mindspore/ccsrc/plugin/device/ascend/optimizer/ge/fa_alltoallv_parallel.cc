@@ -26,12 +26,12 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/comm_manager.h"
 #include "include/backend/optimizer/helper.h"
-#include "ops/array_ops.h"
-#include "ops/other_ops.h"
-#include "ops/framework_ops.h"
-#include "mindspore/core/ops/nn_ops.h"
+#include "op_def/array_ops.h"
+#include "op_def/other_ops.h"
+#include "op_def/framework_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "mindspore/core/ops/ops_func_impl/flash_attention_score.h"
+#include "mindspore/ops/infer/ops_func_impl/flash_attention_score.h"
 
 namespace mindspore {
 namespace opt {

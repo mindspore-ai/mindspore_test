@@ -18,10 +18,10 @@
 #include <memory>
 #include <unordered_map>
 #include <unordered_set>
-#include "mindspore/core/ops/array_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
 #include "include/common/utils/anfalgo.h"
-#include "mindspore/core/ops/op_utils.h"
-#include "mindspore/core/ops/auto_generate/gen_ops_name.h"
+#include "mindspore/ops/ops_utils/op_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 #include "include/backend/anf_runtime_algorithm.h"
 
 namespace mindspore {

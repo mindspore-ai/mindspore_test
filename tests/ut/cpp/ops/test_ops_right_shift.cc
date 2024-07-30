@@ -16,8 +16,8 @@
 #include <vector>
 #include <memory>
 #include "common/common_test.h"
-#include "ops/ops_func_impl/right_shift.h"
-#include "ops/auto_generate/gen_ops_name.h"
+#include "infer/ops_func_impl/right_shift.h"
+#include "op_def/auto_generate/gen_ops_name.h"
 #include "abstract/abstract_value.h"
 #include "ops/test_ops.h"
 #include "ops/test_ops_cmp_utils.h"

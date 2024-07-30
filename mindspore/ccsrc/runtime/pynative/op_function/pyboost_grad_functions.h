@@ -20,7 +20,7 @@
 #include <map>
 #include <string>
 #include <vector>
-#include "kernel/pyboost/op_runner.h"
+#include "kernel/common/pyboost/op_runner.h"
 #include "runtime/pynative/op_runner.h"
 #include "runtime/pynative/op_function/func_object.h"
 #include "backend/graph_compiler/backend.h"

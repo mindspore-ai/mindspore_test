@@ -24,9 +24,9 @@
 
 #include "extendrt/graph_partitioner/condition_partitioner.h"
 
-#include "mindspore/core/ops/structure_ops.h"
-#include "mindspore/core/ops/sequence_ops.h"
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/structure_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/ms_context.h"
 
 namespace mindspore {

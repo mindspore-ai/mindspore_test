@@ -20,7 +20,7 @@
 #include <vector>
 #include "common/anf_util.h"
 #include "common/op_enum.h"
-#include "ops/fusion/exp_fusion.h"
+#include "infer/cxx_api/exp_fusion.h"
 #include "op/exp_operator.h"
 
 namespace mindspore {

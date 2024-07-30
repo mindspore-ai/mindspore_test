@@ -23,11 +23,11 @@
 #include <string>
 #include <utility>
 #include "include/common/utils/anfalgo.h"
-#include "mindspore/core/ops/array_ops.h"
-#include "mindspore/core/ops/framework_ops.h"
-#include "mindspore/core/ops/nn_ops.h"
-#include "mindspore/core/ops/sequence_ops.h"
-#include "mindspore/core/ops/structure_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/structure_ops.h"
 #include "mindspore/ccsrc/runtime/hardware/device_context.h"
 #include "utils/anf_utils.h"
 #include "utils/ms_context.h"

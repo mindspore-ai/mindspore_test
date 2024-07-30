@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include "plugin/device/cpu/optimizer/insert_cast_to_pyexecute.h"
-#include "mindspore/core/ops/framework_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
 

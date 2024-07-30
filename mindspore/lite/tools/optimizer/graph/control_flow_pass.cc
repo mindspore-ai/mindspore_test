@@ -19,11 +19,11 @@
 #include <vector>
 #include <memory>
 #include <algorithm>
-#include "mindspore/core/ops/sequence_ops.h"
-#include "mindspore/core/ops/lite_ops.h"
-#include "mindspore/core/ops/framework_ops.h"
-#include "ops/switch.h"
-#include "ops/fusion/partial_fusion.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
+#include "infer/switch.h"
+#include "infer/cxx_api/partial_fusion.h"
 #include "include/errorcode.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "src/common/log_adapter.h"

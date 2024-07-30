@@ -17,7 +17,7 @@
 #include "tools/converter/parser/caffe/caffe_power_parser.h"
 #include <vector>
 #include <memory>
-#include "ops/fusion/pow_fusion.h"
+#include "infer/cxx_api/pow_fusion.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

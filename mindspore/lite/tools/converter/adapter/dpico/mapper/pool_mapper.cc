@@ -21,8 +21,8 @@
 #include "common/op_enum.h"
 #include "common/anf_util.h"
 #include "op/pool_operator.h"
-#include "ops/fusion/max_pool_fusion.h"
-#include "ops/fusion/avg_pool_fusion.h"
+#include "infer/cxx_api/max_pool_fusion.h"
+#include "infer/cxx_api/avg_pool_fusion.h"
 
 namespace mindspore {
 namespace dpico {

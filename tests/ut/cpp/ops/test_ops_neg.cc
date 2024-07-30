@@ -20,8 +20,8 @@
 #include "ir/tensor.h"
 #include "mindapi/base/shape_vector.h"
 #include "mindapi/base/type_id.h"
-#include "ops/auto_generate/gen_ops_primitive.h"
-#include "ops/ops_func_impl/neg.h"
+#include "op_def/auto_generate/gen_ops_primitive.h"
+#include "infer/ops_func_impl/neg.h"
 #include "ops/test_ops.h"
 #include "ops/test_ops_cmp_utils.h"
 

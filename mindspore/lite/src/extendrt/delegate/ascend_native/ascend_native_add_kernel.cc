@@ -17,7 +17,7 @@
 #include "extendrt/delegate/ascend_native/ascend_native_add_kernel.h"
 #include "extendrt/delegate/ascend_native/ascend_native_kernel_registry.h"
 #include "extendrt/delegate/ascend_native/ascend_native_impl/add.h"
-#include "ops/fusion/add_fusion.h"
+#include "infer/cxx_api/add_fusion.h"
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore::kernel {

@@ -18,7 +18,7 @@
 #define MINDSPORE_LITE_TOOLS_CONVERTER_ADAPTER_ACL_MAPPER_SCATTER_ND_UPDATE_MAPPER_H_
 
 #include "tools/converter/adapter/acl/mapper/primitive_mapper.h"
-#include "ops/scatter_nd_update.h"
+#include "infer/scatter_nd_update.h"
 namespace mindspore {
 namespace lite {
 using mindspore::ops::kNameScatterNdUpdate;

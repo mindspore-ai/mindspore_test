@@ -18,7 +18,7 @@
 #include <vector>
 #include <memory>
 #include <algorithm>
-#include "ops/squeeze.h"
+#include "infer/squeeze.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

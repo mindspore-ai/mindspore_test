@@ -29,7 +29,7 @@
 #include "ir/func_graph.h"
 #include "base/base.h"
 #include "include/common/utils/utils.h"
-#include "ops/array_op_name.h"
+#include "op_def/array_op_name.h"
 #include "include/backend/distributed/constants.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/backend/distributed/cluster/cluster_context.h"

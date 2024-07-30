@@ -25,7 +25,7 @@
 #include "src/extendrt/delegate/tensorrt/tensorrt_utils.h"
 #include "NvInferRuntimeCommon.h"
 #include "src/extendrt/delegate/tensorrt/cuda_impl/fse_decode.cuh"
-#include "ops/fse_decode.h"
+#include "infer/fse_decode.h"
 #include "tools/converter/quantizer/fse_chunk_end.h"
 
 namespace mindspore::lite {

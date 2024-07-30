@@ -18,7 +18,7 @@
 #define MINDSPORE_LITE_TOOLS_CONVERTER_ADAPTER_ACL_MAPPER_LPNORMALIZATION_MAPPER_H_
 
 #include "tools/converter/adapter/acl/mapper/primitive_mapper.h"
-#include "ops/lp_normalization.h"
+#include "infer/lp_normalization.h"
 
 namespace mindspore {
 namespace lite {

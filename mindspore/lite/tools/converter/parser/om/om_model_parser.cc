@@ -26,9 +26,9 @@
 #include "tools/common/tensor_util.h"
 #include "tools/common/custom_ascend_utils.h"
 #include "tools/converter/parser/lite_model_parser_creator.h"
-#include "ops/return.h"
-#include "ops/tuple_get_item.h"
-#include "mindspore/core/ops/sequence_ops.h"
+#include "infer/return.h"
+#include "infer/tuple_get_item.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
 
 namespace mindspore {
 namespace lite {

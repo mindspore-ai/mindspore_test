@@ -18,14 +18,14 @@
 #include <vector>
 
 #include "common/common_test.h"
-#include "mindspore/core/ops/arithmetic_ops.h"
+#include "op_def/arithmetic_ops.h"
 #include "common/py_func_graph_fetcher.h"
 #include "frontend/optimizer/ad/dfunctor.h"
 #include "include/common/debug/draw.h"
 #include "include/common/utils/convert_utils.h"
 #include "ir/manager.h"
 #include "ir/value.h"
-#include "ops/auto_generate/gen_ops_primitive.h"
+#include "op_def/auto_generate/gen_ops_primitive.h"
 
 namespace mindspore {
 namespace prim {

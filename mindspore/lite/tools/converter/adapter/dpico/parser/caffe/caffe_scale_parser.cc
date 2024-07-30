@@ -18,7 +18,7 @@
 #include <memory>
 #include "common/op_attr.h"
 #include "common/op_enum.h"
-#include "ops/fusion/scale_fusion.h"
+#include "infer/cxx_api/scale_fusion.h"
 
 namespace mindspore {
 namespace lite {

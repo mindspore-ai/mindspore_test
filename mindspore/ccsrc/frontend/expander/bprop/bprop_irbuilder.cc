@@ -19,13 +19,13 @@
 #include <algorithm>
 #include <limits>
 #include <vector>
-#include "frontend/expander/bprop/grad_ops/common_utils.h"
+#include "frontend/expander/bprop/common_utils.h"
 #include "include/common/expander/core/node.h"
 #include "include/common/utils/utils.h"
 #include "ir/anf.h"
-#include "ops/array_ops.h"
-#include "ops/sequence_op_name.h"
-#include "ops/tensor_to_scalar.h"
+#include "op_def/array_ops.h"
+#include "op_def/sequence_op_name.h"
+#include "infer/tensor_to_scalar.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
 

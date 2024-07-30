@@ -25,7 +25,7 @@
 #include "tools/optimizer/common/gllo_utils.h"
 #include "mindrt/src/thread/threadpool.h"
 #include "nnacl/fp32/scale_fp32.h"
-#include "ops/fusion/scale_fusion.h"
+#include "infer/cxx_api/scale_fusion.h"
 #include "nnacl/fp32/matmul_fp32.h"
 
 namespace mindspore::lite::quant {

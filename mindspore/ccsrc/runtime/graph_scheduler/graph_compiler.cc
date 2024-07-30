@@ -58,7 +58,7 @@
 #include "include/common/utils/compile_cache_context.h"
 #include "utils/phase.h"
 #include "pipeline/jit/ps/base.h"
-#include "ops/framework_ops.h"
+#include "op_def/framework_ops.h"
 
 namespace mindspore {
 namespace runtime {

@@ -15,7 +15,7 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/constant_of_shape_parameter.h"
-#include "ops/constant_of_shape.h"
+#include "infer/constant_of_shape.h"
 using mindspore::ops::kNameConstantOfShape;
 using mindspore::schema::PrimitiveType_ConstantOfShape;
 namespace mindspore {

@@ -17,7 +17,7 @@
 #include "tools/converter/parser/tflite/tflite_hashtable_lookup_parser.h"
 #include <vector>
 #include <memory>
-#include "ops/hashtable_lookup.h"
+#include "infer/hashtable_lookup.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

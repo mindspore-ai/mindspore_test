@@ -16,7 +16,7 @@
 
 #include "parser/caffe/caffe_prelu_parser.h"
 #include <memory>
-#include "ops/fusion/prelu_fusion.h"
+#include "infer/cxx_api/prelu_fusion.h"
 
 namespace mindspore {
 namespace lite {

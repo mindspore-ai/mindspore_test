@@ -15,7 +15,7 @@
  */
 
 #include "src/litert/kernel/cpu/fp32_grad/power_grad.h"
-#include "plugin/device/cpu/kernel/nnacl/op_base.h"
+#include "nnacl/op_base.h"
 #include "schema/model_generated.h"
 #include "src/litert/kernel_registry.h"
 #include "include/errorcode.h"

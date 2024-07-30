@@ -19,7 +19,7 @@
 #include <utility>
 #include <algorithm>
 #include <vector>
-#include "ops/crop.h"
+#include "infer/crop.h"
 #include "op/crop_operator.h"
 
 namespace mindspore {

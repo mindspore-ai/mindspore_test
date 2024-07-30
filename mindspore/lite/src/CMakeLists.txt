@@ -1,8 +1,8 @@
 add_compile_definitions(USE_ANDROID_LOG)
 
 set(LITE_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-include_directories(${CCSRC_DIR}/plugin/device/cpu/kernel)
 include_directories(${CORE_DIR})
+include_directories(${OPS_DIR}/kernel/cpu)
 
 set(TOOLS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../tools)
 if(NOT MSLITE_ENABLE_RUNTIME_CONVERT)
@@ -333,6 +333,7 @@ set(TRAIN_SRC
 
 if(MSLITE_ENABLE_KERNEL_EXECUTOR AND NOT MSLITE_ENABLE_CONVERTER)
     add_subdirectory(${CORE_DIR} mindspore_core)
+    add_subdirectory(${OPS_DIR} mindspore_ops)
 endif()
 
 if(MSLITE_ENABLE_MINDRT)
@@ -369,7 +370,7 @@ if(MSLITE_ENABLE_GRAPH_KERNEL)
     file(GLOB_RECURSE GRAPH_KERNEL_SRC
         ${TOOLS_DIR}/graph_kernel/common/*.cc
         ${TOOLS_DIR}/graph_kernel/runtime/*.cc
-        ${CCSRC_DIR}/plugin/device/cpu/kernel/akg/akg_kernle_loader.cc
+        ${OPS_DIR}/kernel/cpu/akg/akg_kernle_loader.cc
         )
     set(LITE_SRC ${LITE_SRC} ${GRAPH_KERNEL_SRC})
 endif()
@@ -561,12 +562,12 @@ if(MSLITE_ENABLE_RUNTIME_CONVERT)
     target_link_libraries(mindspore-lite
             quantizer_mid fusion_mid proto_mid graph_pass_mid preprocess_mid
             cpu_kernel_mid ccsrc_src_mid converter_src_mid lite_exporter_mid
-            config_parser_mid mslite_converter_plugin mindspore_core coder_mid
+            config_parser_mid mslite_converter_plugin mindspore_core mindspore_ops coder_mid
             mindir_serializer_mid mindspore::protobuf ${SECUREC_LIBRARY})
     target_link_libraries(mindspore-lite_static
             quantizer_mid fusion_mid proto_mid graph_pass_mid preprocess_mid
             cpu_kernel_mid ccsrc_src_mid converter_src_mid lite_exporter_mid
-            config_parser_mid mslite_converter_plugin mindspore_core coder_mid
+            config_parser_mid mslite_converter_plugin mindspore_core mindspore_ops coder_mid
             mindir_serializer_mid mindspore::protobuf ${SECUREC_LIBRARY})
     target_link_libraries(mindspore-lite
             ccsrc_debug_common_mid_ mindir_proto_mid _mindspore_transform_express_ir_obj)
@@ -576,7 +577,7 @@ endif()
 
 if(SUPPORT_CUDA AND NOT (MSLITE_ENABLE_CLOUD_FUSION_INFERENCE OR MSLITE_ENABLE_CLOUD_INFERENCE))
     set(CUDA_PATH $ENV{CUDA_HOME})
-    include_directories(${CCSRC_DIR}/plugin/device/gpu/kernel)
+    include_directories(${OPS_DIR}/kernel/gpu)
     set(ENABLE_GPU on)
     add_definitions(-DENABLE_GPU)
     set(CUDA_VERSION 11.1)
@@ -585,8 +586,8 @@ if(SUPPORT_CUDA AND NOT (MSLITE_ENABLE_CLOUD_FUSION_INFERENCE OR MSLITE_ENABLE_C
     find_package(CUDA)
     add_subdirectory(extendrt/kernel/cuda)
     list(APPEND CUDA_NVCC_FLAGS -arch=sm_53 --expt-relaxed-constexpr)
-    add_subdirectory(${CCSRC_DIR}/plugin/device/gpu/kernel/cuda_impl/cuda_ops cuda_ops)
-    target_link_libraries(mindspore-lite cuda_lite_kernel_mid cuda_ops mindspore_core)
+    add_subdirectory(${OPS_DIR}/kernel/gpu/cuda_impl/cuda_ops cuda_ops)
+    target_link_libraries(mindspore-lite cuda_lite_kernel_mid cuda_ops mindspore_core mindspore_ops)
 endif()
 
 if(MSLITE_ENABLE_MULTI_LAYOUT)
@@ -635,8 +636,8 @@ if(MSLITE_ENABLE_MODEL_OBF)
 endif()
 
 if(MSLITE_ENABLE_KERNEL_EXECUTOR)
-    target_link_libraries(mindspore-lite mindspore_core)
-    target_link_libraries(mindspore-lite_static mindspore_core)
+    target_link_libraries(mindspore-lite mindspore_core mindspore_ops)
+    target_link_libraries(mindspore-lite_static mindspore_core mindspore_ops)
 endif()
 
 add_subdirectory(extendrt)

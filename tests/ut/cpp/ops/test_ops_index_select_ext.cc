@@ -20,7 +20,7 @@
 #include "common/common_test.h"
 #include "ir/dtype/type.h"
 #include "ir/primitive.h"
-#include "ops/ops_func_impl/index_select.h"
+#include "infer/ops_func_impl/index_select.h"
 #include "ops/test_ops.h"
 #include "ops/test_ops_cmp_utils.h"
 #include "ops/test_value_utils.h"
@@ -67,7 +67,8 @@ TEST_P(TestIndexSelect, dyn_shape) {
   TypeCompare(infer_type, expect_type);
 }
 
-INSTANTIATE_TEST_CASE_P(TestIndexSelectGroup, TestIndexSelect,
+INSTANTIATE_TEST_CASE_P(
+  TestIndexSelectGroup, TestIndexSelect,
   testing::Values(
     IndexSelectOpParams{{2, 2, 3}, kFloat32, CreateScalar<int64_t>(-1), {4}, kInt64, {2, 2, 4}, kFloat32},
     IndexSelectOpParams{{2, 2, -1}, kFloat32, CreateScalar<int64_t>(-1), {4}, kInt64, {2, 2, 4}, kFloat32},
@@ -80,7 +81,6 @@ INSTANTIATE_TEST_CASE_P(TestIndexSelectGroup, TestIndexSelect,
     IndexSelectOpParams{{-1, -1, -1}, kFloat32, kValueAny, {4}, kInt64, {-1, -1, -1}, kFloat32},
     IndexSelectOpParams{{-2}, kFloat32, kValueAny, {4}, kInt64, {-2}, kFloat32},
     IndexSelectOpParams{{2, 2, 3}, kFloat32, kValueAny, {-1}, kInt64, {-1, -1, -1}, kFloat32},
-    IndexSelectOpParams{{2, 2, 3}, kFloat32, kValueAny, {-2}, kInt64, {-1, -1, -1}, kFloat32}
-  ));
+    IndexSelectOpParams{{2, 2, 3}, kFloat32, kValueAny, {-2}, kInt64, {-1, -1, -1}, kFloat32}));
 }  // namespace ops
 }  // namespace mindspore

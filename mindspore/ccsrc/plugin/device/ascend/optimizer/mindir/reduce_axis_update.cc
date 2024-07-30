@@ -19,7 +19,7 @@
 #include <memory>
 #include <set>
 #include <string>
-#include "mindspore/core/ops/math_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
 #include "include/common/utils/anfalgo.h"
 
 namespace mindspore {

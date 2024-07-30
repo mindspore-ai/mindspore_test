@@ -19,7 +19,7 @@
 
 #include "tools/converter/adapter/acl/mapper/primitive_mapper.h"
 #include "tools/converter/adapter/acl/mapper/conv_base_mapper.h"
-#include "ops/grad/conv2d_backprop_input.h"
+#include "infer/grad/conv2d_backprop_input.h"
 
 namespace mindspore {
 namespace lite {

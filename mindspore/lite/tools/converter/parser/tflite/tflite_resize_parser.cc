@@ -19,7 +19,7 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "ops/resize.h"
+#include "infer/resize.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

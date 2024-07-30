@@ -23,7 +23,7 @@
 #include "abstract/abstract_value.h"
 #include "include/backend/optimizer/helper.h"
 #include "ops/test_ops.h"
-#include "ops/ops_func_impl/binary_cross_entropy.h"
+#include "infer/ops_func_impl/binary_cross_entropy.h"
 #include "ops/test_value_utils.h"
 
 namespace mindspore {
@@ -53,54 +53,22 @@ TEST_P(TestBinaryCrossEntropy, dyn_shape) {
 
   BinaryCrossEntropyFuncImpl binary_cross_entropy_func_impl;
   auto prim = std::make_shared<Primitive>("BinaryCrossEntropy");
-  auto out_dtype =
-    binary_cross_entropy_func_impl.InferType(prim, {input, target, weight, reduction});
+  auto out_dtype = binary_cross_entropy_func_impl.InferType(prim, {input, target, weight, reduction});
   ASSERT_TRUE(*out_dtype == *expect_dtype);
-  auto out_shape =
-    binary_cross_entropy_func_impl.InferShape(prim, {input, target, weight, reduction});
+  auto out_shape = binary_cross_entropy_func_impl.InferShape(prim, {input, target, weight, reduction});
   ASSERT_TRUE(*out_shape == *expect_shape);
 }
 // enum Reduction : int64_t {REDUCTION_SUM = 0,MEAN = 1,NONE = 2,};
-INSTANTIATE_TEST_CASE_P(TestBinaryCrossEntropy, TestBinaryCrossEntropy,
-                        testing::Values(BinaryCrossEntropyParams{{3, 4, 5},
-                                                            kFloat32,
-                                                            {3, 4, 5},
-                                                            kFloat32,
-                                                            {3, 4, 5},
-                                                            kFloat32,
-                                                            CreateScalar<int64_t>(2),
-                                                            {3, 4, 5}},
-                                        BinaryCrossEntropyParams{{3, 4, 5},
-                                                            kFloat32,
-                                                            {3, 4, 5},
-                                                            kFloat16,
-                                                            {3, 4, 5},
-                                                            kFloat32,
-                                                            CreateScalar<int64_t>(1),
-                                                            {}},
-                                        BinaryCrossEntropyParams{{3, 4, 5},
-                                                            kFloat32,
-                                                            {3, 4, 5},
-                                                            kFloat32,
-                                                            {3, 4, 5},
-                                                            kFloat32,
-                                                            CreateScalar<int64_t>(0),
-                                                            {}},
-                                        BinaryCrossEntropyParams{{-1},
-                                                            kFloat32,
-                                                            {-1},
-                                                            kFloat32,
-                                                            {-1},
-                                                            kFloat32,
-                                                            CreateScalar<int64_t>(2),
-                                                            {-1}},
-                                        BinaryCrossEntropyParams{{-2},
-                                                            kFloat32,
-                                                            {-2},
-                                                            kFloat32,
-                                                            {-2},
-                                                            kFloat32,
-                                                            CreateScalar<int64_t>(2),
-                                                            {-2}}));
+INSTANTIATE_TEST_CASE_P(
+  TestBinaryCrossEntropy, TestBinaryCrossEntropy,
+  testing::Values(
+    BinaryCrossEntropyParams{
+      {3, 4, 5}, kFloat32, {3, 4, 5}, kFloat32, {3, 4, 5}, kFloat32, CreateScalar<int64_t>(2), {3, 4, 5}},
+    BinaryCrossEntropyParams{
+      {3, 4, 5}, kFloat32, {3, 4, 5}, kFloat16, {3, 4, 5}, kFloat32, CreateScalar<int64_t>(1), {}},
+    BinaryCrossEntropyParams{
+      {3, 4, 5}, kFloat32, {3, 4, 5}, kFloat32, {3, 4, 5}, kFloat32, CreateScalar<int64_t>(0), {}},
+    BinaryCrossEntropyParams{{-1}, kFloat32, {-1}, kFloat32, {-1}, kFloat32, CreateScalar<int64_t>(2), {-1}},
+    BinaryCrossEntropyParams{{-2}, kFloat32, {-2}, kFloat32, {-2}, kFloat32, CreateScalar<int64_t>(2), {-2}}));
 }  // namespace ops
 }  // namespace mindspore
