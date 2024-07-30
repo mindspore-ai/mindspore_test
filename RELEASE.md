@@ -2,6 +2,41 @@
 
 [查看中文](./RELEASE_CN.md)
 
+## MindSpore 2.3.1 Release Notes
+
+### Major Features and Improvements
+
+- [STABLE] Remove the restriction that the value of device_matrix must be 2 correspongding to interleaved_parallel when using [Layout](https://www.mindspore.cn/docs/en/r2.3.1/api_python/mindspore/mindspore.Layout.html) to construct the parallel strategy.
+- [STABLE] Add user-defined control edges environment [MS_CUSTOM_DEPEND_CONFIG_PATH](https://www.mindspore.cn/docs/en/r2.3.1/note/env_var_list.html) support to achieve better overlapping of communication and computation.
+
+### API Change
+
+#### New API
+
+- [STABLE] Add new API [mindspore.mint.repeat_interleave](https://www.mindspore.cn/docs/en/r2.3.1/api_python/mint/mindspore.mint.repeat_interleave.html).
+
+### Contributors
+
+ccsszz;dairenjie;DeshiChen;fuhouyu;gaoshuanglong;gaoyong10;GuoZhibin;halo;huoxinyou;jiangchao_j;jiaorui;jiaxueyu;jijiarong;JuiceZ;lichen;liujunzhu;liuluobin;LLLRT;looop5;luoyang ;Margaret_wangrui;mengyuanli;panzhihui;pengqi;PingqiLi;Renyuan Zhang;tanghuikang;tianxiaodong;TuDouNi;wudawei;XianglongZeng;xiaosh;xiaoxin_zhang;XinDu;yanghaoran;yanglong;yangruoqi713;Yanzhi_YI;yao_yf;YijieChen;yuchaojie;YuJianfeng;zangqx;zhengzuohe;zhouyaqiang0;ZPaC;zyli2020;胡彬;宦晓玲;康伟;李林杰;刘崇鸣;王禹程;俞涵;周莉莉;邹文祥
+
+Contributions of any kind are welcome!
+
+## MindSpore Lite 2.3.1 Release Notes
+
+### Major Features and Improvements
+
+When converting Ascend backend models, the [input_shape](https://www.mindspore.cn/lite/docs/en/r2.3.1/use/cloud_infer/converter_tool_ascend.html) parameter in the configuration file is supported to specify the input size.
+
+### API Change
+
+- [ModelGroup](https://www.mindspore.cn/lite/docs/en/r2.3.1/use/cloud_infer/runtime_cpp.html) interface adds model weight sharing support to save video memory.
+
+- [Model.get_model_info](https://www.mindspore.cn/lite/docs/en/r2.3.1/use/converter_tool.html?highlight=get_model_info) interface adds support for obtaining the input size of the model.
+
+### Contributors
+
+熊攀;ZhangZGC;jxl;zhangyanhui;emmmmtang;huandong1;yefeng
+
 ## MindSpore 2.3.0 Release Notes
 
 ### Major Features and Improvements
