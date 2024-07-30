@@ -11,6 +11,21 @@ if(NOT ENABLE_GLIBCXX)
     add_compile_definitions(_GLIBCXX_USE_CXX11_ABI=0)
 endif()
 
+if(DEFINED ENV{MS_INTERNAL_KERNEL_HOME})
+    add_compile_definitions(ENABLE_INTERNAL_KERNELS)
+endif()
+
+if(DEFINED ENV{MS_INTERNAL_KERNEL_HOME})
+    MESSAGE(STATUS "MS_INTERNAL_KERNEL_HOME=$ENV{MS_INTERNAL_KERNEL_HOME} found.")
+    include_directories($ENV{MS_INTERNAL_KERNEL_HOME})
+    include_directories($ENV{MS_INTERNAL_KERNEL_HOME}/internal_kernel/include)
+    include_directories($ENV{MS_INTERNAL_KERNEL_HOME}/asdops/include)
+    include_directories($ENV{MS_INTERNAL_KERNEL_HOME}/lccl/include)
+
+    link_directories($ENV{MS_INTERNAL_KERNEL_HOME}/internal_kernel/lib)
+    link_directories($ENV{MS_INTERNAL_KERNEL_HOME}/lccl/lib)
+endif()
+
 file(STRINGS "${CMAKE_SOURCE_DIR}/version.txt" MSVERSION)
 add_definitions(-DMSVERSION=\"${MSVERSION}\")
 
@@ -59,6 +74,12 @@ file(GLOB_RECURSE UT_OLD_BACKEND_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./dev
         ./pre_activate/common/*.cc  ./session/*.cc ./runtime/device/move_to_test.cc
         ./transform/*.cc ./vm/*.cc ./runtime/graph_scheduler/*.cc ./runtime/device/gsm/*.cc)
 file(GLOB_RECURSE UT_BACKEND_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./backend/*.cc ./runtime/graph_scheduler/*.cc)
+
+if(DEFINED ENV{MS_INTERNAL_KERNEL_HOME})
+    file(GLOB_RECURSE UT_INTERNAL_KERNEL_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./internal/*.cc
+    ./backend/graph_optimizer_test_framework.cc)
+endif()
+
 # build backend/graph_optimizer_test_framework.cc in symbol_engine obj to use the ConstructGraph functions.
 file(GLOB_RECURSE UT_SYMBOL_ENGINE_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         ./backend/graph_optimizer_test_framework.cc ./symbol_engine/*.cc)
@@ -96,6 +117,10 @@ list(APPEND UT_MINDDATA0_SRCS ${UT_MINDDATA_COMMON_SRCS})
 list(APPEND UT_MINDDATA1_SRCS ${UT_MINDDATA_COMMON_SRCS})
 
 set(ALL_UT_COMPS CORE MINDDATA0 MINDDATA1 API FRONTEND OLD_BACKEND BACKEND PS CCSRC OTHERS SYMBOL_ENGINE)
+
+if(DEFINED ENV{MS_INTERNAL_KERNEL_HOME})
+    list(APPEND ALL_UT_COMPS INTERNAL_KERNEL)
+endif()
 
 set(REPEATED_DEFINED_FILE stub/ps/ps_core_stub.cc)
 list(REMOVE_ITEM UT_SRCS ${REPEATED_DEFINED_FILE})
@@ -211,6 +236,7 @@ file(GLOB_RECURSE MINDSPORE_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/ir_fusion/batchnormgrad_to_bninfergrad.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/ir_fusion/histogram_fixed_width_fusion.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/ir_fusion/adaptive_max_pool2d_fusion.cc"
+        "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/ir_fusion/add_layer_norm_fusion.cc"
         "../../../mindspore/ccsrc/backend/common/graph_kernel/*.cc"
         "../../../mindspore/ccsrc/backend/common/expander/*.cc"
         "../../../mindspore/ccsrc/common/expander/*.cc"

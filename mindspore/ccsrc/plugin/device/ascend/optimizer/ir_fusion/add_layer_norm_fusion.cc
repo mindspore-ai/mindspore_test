@@ -31,14 +31,8 @@
 
 namespace mindspore {
 namespace opt {
-const BaseRef AddLayernormFusion::DefinePattern() const {
-  VectorRef add_layer_norm = VectorRef({prim::kPrimLayerNorm, VectorRef({prim::kPrimAdd, x1_, x2_}), gamma_, beta_,
-                                        begin_norm_axis_, begin_params_axis_, eps_});
-  return add_layer_norm;
-}
-
-const AnfNodePtr AddLayernormFusion::Process(const FuncGraphPtr &graph, const AnfNodePtr &node,
-                                             const EquivPtr &equiv) const {
+const AnfNodePtr AddLayernormFusionBase::Process(const FuncGraphPtr &graph, const AnfNodePtr &node,
+                                                 const EquivPtr &equiv) const {
   return nullptr;
 }
 }  // namespace opt
@@ -76,14 +70,8 @@ std::vector<std::string> SplitString(const std::string &str, char delim) {
 }
 }  // namespace
 
-const BaseRef AddLayernormFusion::DefinePattern() const {
-  VectorRef add_layer_norm = VectorRef({prim::kPrimLayerNorm, VectorRef({prim::kPrimAdd, x1_, x2_}), gamma_, beta_,
-                                        begin_norm_axis_, begin_params_axis_, eps_});
-  return add_layer_norm;
-}
-
-const AnfNodePtr AddLayernormFusion::Process(const FuncGraphPtr &graph, const AnfNodePtr &node,
-                                             const EquivPtr &equiv) const {
+const AnfNodePtr AddLayernormFusionBase::Process(const FuncGraphPtr &graph, const AnfNodePtr &node,
+                                                 const EquivPtr &equiv) const {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   if (!ms_context->IsEnableInferBoost()) {
@@ -108,8 +96,6 @@ const AnfNodePtr AddLayernormFusion::Process(const FuncGraphPtr &graph, const An
   auto x2 = utils::cast<AnfNodePtr>((*equiv)[x2_]);
   auto gamma = utils::cast<AnfNodePtr>((*equiv)[gamma_]);
   auto beta = utils::cast<AnfNodePtr>((*equiv)[beta_]);
-  auto begin_norm_axis = utils::cast<AnfNodePtr>((*equiv)[begin_norm_axis_]);
-  auto begin_params_axis = utils::cast<AnfNodePtr>((*equiv)[begin_params_axis_]);
   auto eps = utils::cast<AnfNodePtr>((*equiv)[eps_]);
   MS_EXCEPTION_IF_NULL(x1);
   MS_EXCEPTION_IF_NULL(x2);
@@ -124,8 +110,8 @@ const AnfNodePtr AddLayernormFusion::Process(const FuncGraphPtr &graph, const An
   }
 
   auto x_dtype = common::AnfAlgo::GetPrevNodeOutputInferDataType(node, 0);
-  auto gamma_dtype = common::AnfAlgo::GetPrevNodeOutputInferDataType(node, 1);
-  auto beta_dtype = common::AnfAlgo::GetPrevNodeOutputInferDataType(node, 2);
+  auto gamma_dtype = common::AnfAlgo::GetPrevNodeOutputInferDataType(node, gamma_idx_);
+  auto beta_dtype = common::AnfAlgo::GetPrevNodeOutputInferDataType(node, gamma_idx_ + 1);
   if (x_dtype != gamma_dtype || x_dtype != beta_dtype) {
     return nullptr;
   }
@@ -145,7 +131,7 @@ const AnfNodePtr AddLayernormFusion::Process(const FuncGraphPtr &graph, const An
   } else {
     auto prim = std::make_shared<Primitive>("AddLayerNorm");
     MS_EXCEPTION_IF_NULL(prim);
-    inputs = {NewValueNode(prim), x1, x2, gamma, beta, begin_norm_axis, begin_params_axis, eps};
+    inputs = {NewValueNode(prim), x1, x2, gamma, beta, eps};
   }
 
   auto add_layernorm = graph->NewCNode(inputs);
