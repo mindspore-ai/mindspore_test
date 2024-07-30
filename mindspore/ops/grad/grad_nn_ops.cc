@@ -228,39 +228,47 @@ NodePtrList FastGeLUBpropExpander(BpropBuilder *ib) {
   return {dx};
 }
 
+DAttr Conv2DAttrs(BpropBuilder *ib) {
+  DAttr attrs{{"pad_mode", ib->GetAttr("pad_mode")},
+              {"pad", ib->GetAttr("pad")},
+              {"dilation", ib->GetAttr("dilation")},
+              {"stride", ib->GetAttr("stride")},
+              {"group", ib->GetAttr("group")},
+              {"groups", ib->GetAttr("group")},
+              {"format", ib->GetAttr("format")},
+              {"data_format", ib->GetAttr("format")},
+              {"out_channel", ib->GetAttr("out_channel")},
+              {"kernel_size", ib->GetAttr("kernel_size")},
+              {"mode", MakeValue(1)}};
+  return attrs;
+}
+
+DAttr Conv2DBackpropAttrs(BpropBuilder *ib) {
+  DAttr attrs{{"mode", ib->GetAttr("mode")},
+              {"dilation", ib->GetAttr("dilation")},
+              {"stride", ib->GetAttr("stride")},
+              {"group", ib->GetAttr("group")},
+              {"groups", ib->GetAttr("group")},
+              {"format", ib->GetAttr("format")},
+              {"data_format", ib->GetAttr("format")},
+              {"out_channel", ib->GetAttr("out_channel")},
+              {"kernel_size", ib->GetAttr("kernel_size")},
+              {"pad_mode", ib->GetAttr("pad_mode")},
+              {"pad", ib->GetAttr("pad")},
+              {"pad_list", ib->GetAttr("pad_list")}};
+  return attrs;
+}
+
 NodePtrList Conv2DTransposeBpropExpander(BpropBuilder *ib) {
   auto x = ib->GetInput(kIndex0);
   auto w = ib->GetInput(kIndex1);
   auto f_sizes = ib->GetInput(kIndex2);
   auto dout = ib->GetInput(kIndex4);
   auto w_shape = ib->Shape(w);
-  auto dx = x->need_compute_grad_out() ? ib->Emit(kConv2DOpName, {dout, w},
-                                                  {{"pad_mode", ib->GetAttr("pad_mode")},
-                                                   {"pad", ib->GetAttr("pad")},
-                                                   {"dilation", ib->GetAttr("dilation")},
-                                                   {"stride", ib->GetAttr("stride")},
-                                                   {"group", ib->GetAttr("group")},
-                                                   {"groups", ib->GetAttr("group")},
-                                                   {"format", ib->GetAttr("format")},
-                                                   {"data_format", ib->GetAttr("format")},
-                                                   {"out_channel", ib->GetAttr("out_channel")},
-                                                   {"kernel_size", ib->GetAttr("kernel_size")},
-                                                   {"mode", MakeValue(1)}})
-                                       : ib->OutZeros(x);
-  auto dw = w->need_compute_grad_out() ? ib->Emit(kConv2DBackpropFilterOpName, {x, dout, w_shape},
-                                                  {{"mode", ib->GetAttr("mode")},
-                                                   {"dilation", ib->GetAttr("dilation")},
-                                                   {"stride", ib->GetAttr("stride")},
-                                                   {"group", ib->GetAttr("group")},
-                                                   {"groups", ib->GetAttr("group")},
-                                                   {"format", ib->GetAttr("format")},
-                                                   {"data_format", ib->GetAttr("format")},
-                                                   {"out_channel", ib->GetAttr("out_channel")},
-                                                   {"kernel_size", ib->GetAttr("kernel_size")},
-                                                   {"pad_mode", ib->GetAttr("pad_mode")},
-                                                   {"pad", ib->GetAttr("pad")},
-                                                   {"pad_list", ib->GetAttr("pad_list")}})
-                                       : ib->OutZeros(w);
+  auto dx = x->need_compute_grad_out() ? ib->Emit(kConv2DOpName, {dout, w}, Conv2DAttrs(ib)) : ib->OutZeros(x);
+  auto dw = w->need_compute_grad_out()
+              ? ib->Emit(kConv2DBackpropFilterOpName, {x, dout, w_shape}, Conv2DBackpropAttrs(ib))
+              : ib->OutZeros(w);
   return {dx, dw, ib->OutZeros(f_sizes)};
 }
 
@@ -2224,33 +2232,10 @@ REG_BPROP_BUILDER("Conv2DBackpropFilter").SetUnusedInputs({i2, i3}).SetBody(BODY
   auto filter_size = ib->GetInput(kIndex2);
   auto dout = ib->GetInput(kIndex4);
   auto x_shape = ib->Shape(x);
-  auto dw_dx = dy->need_compute_grad_out() ? ib->Emit(kConv2DBackpropInputOpName, {dy, dout, x_shape},
-                                                      {{"mode", ib->GetAttr("mode")},
-                                                       {"dilation", ib->GetAttr("dilation")},
-                                                       {"stride", ib->GetAttr("stride")},
-                                                       {"group", ib->GetAttr("group")},
-                                                       {"groups", ib->GetAttr("group")},
-                                                       {"format", ib->GetAttr("format")},
-                                                       {"data_format", ib->GetAttr("format")},
-                                                       {"out_channel", ib->GetAttr("out_channel")},
-                                                       {"kernel_size", ib->GetAttr("kernel_size")},
-                                                       {"pad_mode", ib->GetAttr("pad_mode")},
-                                                       {"pad", ib->GetAttr("pad")},
-                                                       {"pad_list", ib->GetAttr("pad_list")}})
-                                           : ib->OutZeros(dy);
-  auto dw_dy = x->need_compute_grad_out() ? ib->Emit(kConv2DOpName, {x, dout},
-                                                     {{"pad_mode", ib->GetAttr("pad_mode")},
-                                                      {"pad", ib->GetAttr("pad")},
-                                                      {"dilation", ib->GetAttr("dilation")},
-                                                      {"stride", ib->GetAttr("stride")},
-                                                      {"group", ib->GetAttr("group")},
-                                                      {"groups", ib->GetAttr("group")},
-                                                      {"format", ib->GetAttr("format")},
-                                                      {"data_format", ib->GetAttr("format")},
-                                                      {"out_channel", ib->GetAttr("out_channel")},
-                                                      {"kernel_size", ib->GetAttr("kernel_size")},
-                                                      {"mode", MakeValue(1)}})
-                                          : ib->OutZeros(x);
+  auto dw_dx = dy->need_compute_grad_out()
+                 ? ib->Emit(kConv2DBackpropInputOpName, {dy, dout, x_shape}, Conv2DBackpropAttrs(ib))
+                 : ib->OutZeros(dy);
+  auto dw_dy = x->need_compute_grad_out() ? ib->Emit(kConv2DOpName, {x, dout}, Conv2DAttrs(ib)) : ib->OutZeros(x);
   return {dw_dy, dw_dx, ib->OutZeros(filter_size)};
 });
 

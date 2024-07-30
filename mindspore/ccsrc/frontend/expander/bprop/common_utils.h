@@ -48,8 +48,6 @@ NodePtrList ReturnZeros(BpropBuilder *ib);
 // normalize the axis to [0, rank)
 int64_t NormalizeAxis(int64_t axis, size_t rank);
 
-std::vector<int64_t> GetTransposeAxis(const std::vector<int64_t> &x_shape, int64_t axis);
-
 std::vector<int64_t> TupleDiv(const std::vector<int64_t> &x, const std::vector<int64_t> &y);
 
 std::vector<int64_t> ReduceShape(const std::vector<int64_t> &x, const std::vector<int64_t> &axis,

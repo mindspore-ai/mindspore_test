@@ -620,22 +620,35 @@ class Transpose1PatternTree : public PatternTree {
   }
 };
 
-// Transpose(A,B)=Reshape(A,C)
-class Transpose2PatternTree : public PatternTree {
+// Reshape(Reshape(A,B),C)=Reshape(A,C)
+class ReshapePatternTree : public PatternTree {
  public:
-  explicit Transpose2PatternTree(const std::string &pattern_str) : PatternTree(pattern_str) {}
-  ~Transpose2PatternTree() override = default;
+  explicit ReshapePatternTree(const std::string &pattern_str) : PatternTree(pattern_str) {}
+  ~ReshapePatternTree() override = default;
 
   std::shared_ptr<ParaMap> UpdateParameters(const inner::NodePtr &origin_root,
                                             const std::shared_ptr<ParaMap> &para_to_ref) const override {
     MS_EXCEPTION_IF_NULL(para_to_ref);
     inner::GraphBuilder gb("");
     auto out_shape = origin_root->shape;
-    auto out_shape_tensornode = gb.Tensor(out_shape);
-    (*para_to_ref)['C'] = out_shape_tensornode;
+    (*para_to_ref)['C'] = gb.Tensor(out_shape);
     (void)para_to_ref->erase('B');
     return para_to_ref;
   }
+
+ protected:
+  mindspore::HashMap<PatternNodePtr, inner::DAttrs> SetAttributes(const inner::NodePtr &origin_root) override {
+    auto attrs_map = PatternTree::SetAttributes(origin_root);
+    attrs_map[this->rhs_root()] = {{"format", MakeValue(origin_root->format)}};
+    return attrs_map;
+  }
+};
+
+// Transpose(A,B)=Reshape(A,C)
+class Transpose2PatternTree : public ReshapePatternTree {
+ public:
+  explicit Transpose2PatternTree(const std::string &pattern_str) : ReshapePatternTree(pattern_str) {}
+  ~Transpose2PatternTree() override = default;
 
  protected:
   bool CheckInputsAndAttrs(const inner::NodePtr &origin_root) const override {
@@ -675,31 +688,6 @@ class Transpose2PatternTree : public PatternTree {
     return true;
   }
 
-  mindspore::HashMap<PatternNodePtr, inner::DAttrs> SetAttributes(const inner::NodePtr &origin_root) override {
-    auto attrs_map = PatternTree::SetAttributes(origin_root);
-    attrs_map[this->rhs_root()] = {{"format", MakeValue(origin_root->format)}};
-    return attrs_map;
-  }
-};
-
-// Reshape(Reshape(A,B),C)=Reshape(A,C)
-class ReshapePatternTree : public PatternTree {
- public:
-  explicit ReshapePatternTree(const std::string &pattern_str) : PatternTree(pattern_str) {}
-  ~ReshapePatternTree() override = default;
-
-  std::shared_ptr<ParaMap> UpdateParameters(const inner::NodePtr &origin_root,
-                                            const std::shared_ptr<ParaMap> &para_to_ref) const override {
-    MS_EXCEPTION_IF_NULL(para_to_ref);
-    inner::GraphBuilder gb("");
-    auto out_shape = origin_root->shape;
-    auto out_shape_tensornode = gb.Tensor(out_shape);
-    (*para_to_ref)['C'] = out_shape_tensornode;
-    (void)para_to_ref->erase('B');
-    return para_to_ref;
-  }
-
- protected:
   mindspore::HashMap<PatternNodePtr, inner::DAttrs> SetAttributes(const inner::NodePtr &origin_root) override {
     auto attrs_map = PatternTree::SetAttributes(origin_root);
     attrs_map[this->rhs_root()] = {{"format", MakeValue(origin_root->format)}};
