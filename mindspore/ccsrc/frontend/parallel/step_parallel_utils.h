@@ -99,7 +99,8 @@ std::pair<AnfNodePtr, int64_t> GetRealKernelNode(const AnfNodePtr &node, int64_t
                                                  CNodePtr *call_node = nullptr, bool ignore_get_item = true);
 
 std::vector<std::pair<AnfNodePtr, int>> GetOutputNodesWithFilter(const AnfNodePtr &node,
-                                                                 std::function<bool(const AnfNodePtr &)> filter);
+                                                                 std::function<bool(const AnfNodePtr &)> filter,
+                                                                 bool get_all_nodes_according_search = false);
 AnfNodePtr GetInputNodeWithFilter(const AnfNodePtr &node,
                                   std::function<std::pair<bool, size_t>(const CNodePtr &)> filter);
 void RedistributionPreNode(const CNodePtr &cnode, const FuncGraphManagerPtr &manager,
