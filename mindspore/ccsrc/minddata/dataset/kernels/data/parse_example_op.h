@@ -44,11 +44,7 @@ class ParseExampleOp : public TensorOp {
       : data_schema_(std::move(data_schema)),
         column_list_(std::move(column_list)),
         parallel_parse_(parallel_parse),
-        pool_(nullptr) {
-    if (parallel_parse) {
-      pool_ = std::make_unique<Eigen::ThreadPool>(kThreadPoolSize);
-    }
-  }
+        pool_(nullptr) {}
 
   ~ParseExampleOp() override = default;
 
@@ -66,6 +62,8 @@ class ParseExampleOp : public TensorOp {
                                 std::vector<VarLenTensorBuffer> *varlen_tensor_vector, size_t tensor_index);
 
   Status ConstructColumnMap(const std::string &example_bytes);
+
+  void CheckAndInitPool();
 
   DataSchema data_schema_;
   std::vector<std::string> column_list_;
