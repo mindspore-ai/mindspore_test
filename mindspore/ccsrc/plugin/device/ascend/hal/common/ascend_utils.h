@@ -86,6 +86,8 @@ struct CallbackThread {
 };
 using CallbackThreadPtr = std::shared_ptr<CallbackThread>;
 
+bool EnableLccl();
+
 void InitializeAcl();
 
 std::string GetFormatMode();

@@ -421,7 +421,8 @@ class _Context:
             self.set_param(key_args_map[jit_key], jit_config[jit_key])
         self.jit_config = jit_config
 
-        if 'infer_boost' in jit_config and jit_config['infer_boost'] == "on" and jit_config['jit_level'] != "O0":
+        jit_level = jit_config.get("jit_level", None)
+        if jit_config.get("infer_boost", None) == "on" and (jit_level == "O1" or jit_level == "O2"):
             raise ValueError(f"Only jit_level set O0 can set infer_boost to on.")
 
     def set_backend_policy(self, policy):
