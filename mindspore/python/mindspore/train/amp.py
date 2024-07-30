@@ -379,7 +379,8 @@ def _set_amp_decorator(obj, amp_level, amp_dtype, white_list, black_list):
                 return obj(*args, **kwargs)
         return wrapper
     if isinstance(obj, nn.Cell):
-        obj.construct = _set_amp_decorator(obj.construct, amp_level, amp_dtype, white_list, black_list)
+        obj.construct = types.MethodType(
+            _set_amp_decorator(obj.construct.__func__, amp_level, amp_dtype, white_list, black_list), obj)
         return obj
     raise TypeError(f"For amp_level '{amp_level}', the network type should be Cell or function, bot got {type(obj)}.")
 
