@@ -30,7 +30,7 @@ from mindspore._c_expression import GradOperation_, HyperMap_, Map_, MultitypeFu
     SequenceSliceGetItem_, ListSliceSetItem_, VmapOperation_, TaylorOperation_, ListPop_, \
     ListClear_, ListReverse_, ListExtend_, DictClear_, DictHasKey_, DictUpdate_, DictFromKeys_, \
     ZerosLike_, TensorIndexGetitem_, TensorIndexSetitem_, ListAdd_, DictSetItem_, \
-    HandleBoolTensor_, PreSetitemByTuple_, StarredGetItem_,\
+    HandleBoolTensor_, PreSetitemByTuple_, StarredGetItem_, \
     StarredUnpack_, StarredUnpackMerge_, IterConverter_, HasNext_, Next_, MSContext
 from mindspore.common import dtype as mstype
 from mindspore.common.api import jit, _pynative_executor, _wrap_func
@@ -557,8 +557,8 @@ class _Grad(GradOperation_):
                 self.weights_id == weights_id:
             return self.grad_fn
 
-        def aux_fn(*args):
-            outputs = fn(*args)
+        def aux_fn(*args, **kwargs):
+            outputs = fn(*args, **kwargs)
             if not isinstance(outputs, tuple) or len(outputs) < 2:
                 raise ValueError("When has_aux is True, origin fn requires more than one outputs.")
             res = (outputs[0],)
@@ -959,6 +959,7 @@ class _ListAppend(ListAppend_):
     Args:
         name (str): The name of the metafuncgraph object.
     """
+
     # `__init__` method removed entirely
     def __call__(self, *args):
         pass
