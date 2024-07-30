@@ -35,7 +35,7 @@ from mindformers.models.llama.llama_config import LlamaConfig
 from mindformers.models.llama.llama import LlamaForCausalLM
 from mindformers import Trainer, TrainingArguments
 
-ms.set_context(jit_config={"jit_level": "O0", "infer_boost": "on"})
+ms.set_context(jit_config={"jit_level": "O1"})
 ms.set_context(mode=ms.GRAPH_MODE)
 ms.set_auto_parallel_context(parallel_mode=ms.ParallelMode.SEMI_AUTO_PARALLEL,
                              gradients_mean=True,
@@ -46,8 +46,8 @@ init()
 
 def generator_train():
     """train dataset generator"""
-    seq_len = 4097
-    step_num = 20
+    seq_len = 1025
+    step_num = 10
     batch_size = 8
     vocab_size = 32000
     input_ids = np.random.randint(low=0, high=vocab_size, size=(
@@ -62,7 +62,9 @@ def build_model(test_mode,
                 softmax_compute_type="float32",
                 layernorm_compute_type="float32",
                 rotary_dtype="float32",
-                param_init_type="float16"):
+                param_init_type="float16",
+                gradient_accumulation_steps=1,
+                fine_grain_inteleave=1):
     """init task trainer."""
     set_seed(0)
     np.random.seed(0)
@@ -71,12 +73,12 @@ def build_model(test_mode,
         batch_size=8, num_train_epochs=1, use_parallel=True)
 
     model_config = LlamaConfig(num_layers=2,
-                               hidden_size=5120,
-                               num_heads=40,
-                               seq_length=4096,
+                               hidden_size=1536,
+                               num_heads=12,
+                               seq_length=1024,
                                batch_size=8,
                                use_flash_attention=True,
-                               use_past=True,
+                               use_past=False,
                                is_dynamic=is_dynamic,
                                compute_dtype=compute_dtype,
                                layernorm_compute_type=layernorm_compute_type,
@@ -85,68 +87,90 @@ def build_model(test_mode,
                                param_init_type=param_init_type,
                                block_size=32,
                                num_blocks=20,
-                               do_sample=False)
+                               do_sample=False,
+                               fine_grain_inteleave=fine_grain_inteleave)
     model = LlamaForCausalLM(model_config)
 
-    if test_mode == 'test_train' or 'test_train_cp':
-        train_dataset = GeneratorDataset(
-            generator_train, column_names=["input_ids"])
-        train_dataset = train_dataset.batch(batch_size=8)
 
-        loss_list_std = [10.623913, 10.65274, 10.632439, 10.615196, 10.624016,
-                         10.622704, 10.608397, 10.601301, 10.58601, 10.568909,
-                         10.556030, 10.547592, 10.536463, 10.51494, 10.506217,
-                         10.49535, 10.488544, 10.481762, 10.477485, 10.476085]
-        avg_step_time_std = 600
-        if test_mode == 'test_train_cp':
-            loss_list_std = [10.625912, 10.657716, 10.634726, 10.621475, 10.610769,
-                             10.618938, 10.604843, 10.600471, 10.587988, 10.570846,
-                             10.552904, 10.544569, 10.532495, 10.515340, 10.504728,
-                             10.496460, 10.492355, 10.483429, 10.476978, 10.475496]
-            avg_step_time_std = 1200
-        callback = TrainingChecker(loss_list_std=loss_list_std,
-                                   avg_step_time_std=avg_step_time_std,
-                                   micro_batch_num=2,
-                                   micro_batch_interleave_num=2)
+    train_dataset = GeneratorDataset(
+        generator_train, column_names=["input_ids"])
+    train_dataset = train_dataset.batch(batch_size=8)
 
-        task_trainer = Trainer(task='text_generation',
-                               model=model,
-                               args=args,
-                               train_dataset=train_dataset,
-                               callbacks=callback)
-    else:
-        task_trainer = Trainer(task='text_generation', model=model, args=args)
+    loss_list_std = [10.451367, 10.455378, 10.465119, 10.463621, 10.476261,
+                     10.462841, 10.472476, 10.468395, 10.469678, 10.461041,]
+    avg_step_time_std = 80
+    if test_mode == 'test_train_cp':
+        loss_list_std = [10.448591, 10.450175, 10.458983, 10.466015, 10.473140,
+                         10.459602, 10.472231, 10.466570, 10.462967, 10.467032,]
+        avg_step_time_std = 150
+    if test_mode == 'test_train_dp':
+        loss_list_std = [10.448593, 10.450171, 10.458986, 10.466034, 10.473145,
+                         10.459610, 10.472258, 10.466605, 10.462999, 10.467015,]
+        avg_step_time_std = 80
+    callback = TrainingChecker(loss_list_std=loss_list_std,
+                               avg_step_time_std=avg_step_time_std,
+                               micro_batch_num=2,
+                               micro_batch_interleave_num=2,
+                               gradient_accumulation_steps=gradient_accumulation_steps)
+
+    task_trainer = Trainer(task='text_generation',
+                           model=model,
+                           args=args,
+                           train_dataset=train_dataset,
+                           callbacks=callback)
+
     return task_trainer
 
 
-def run_llama_8p_train():
-    """test msrun launch llama on 8p for Trainer.train()."""
-    task_trainer = build_model('test_train')
-    task_trainer.config.callbacks[1].save_checkpoint_steps = 100
-    task_trainer.config.callbacks = task_trainer.config.callbacks[:1]
-    task_trainer.config.runner_config.epochs = 1
-    task_trainer.config.runner_config.sink_mode = False
-    task_trainer.config.runner_wrapper.scale_sense.loss_scale_value = 1024
-    task_trainer.set_parallel_config(data_parallel=2,
-                                     model_parallel=2,
-                                     pipeline_stage=2,
-                                     micro_batch_num=2,
-                                     micro_batch_interleave_num=2)
-    task_trainer.train()
-    sys.exit(0)
-
-
-def run_llama_8p_train_cp():
-    """test msrun launch llama on context parallel for Trainer.train()."""
-    task_trainer = build_model('test_train_cp')
+def run_llama_4p_train():
+    """test msrun launch llama on 4p for Trainer.train()."""
+    task_trainer = build_model('test_train', fine_grain_inteleave=2)
     task_trainer.config.callbacks[1].save_checkpoint_steps = 100
     task_trainer.config.callbacks = task_trainer.config.callbacks[:1]
     task_trainer.config.runner_config.epochs = 1
     task_trainer.config.runner_config.sink_mode = False
     task_trainer.config.runner_wrapper.scale_sense.loss_scale_value = 1024
     task_trainer.set_parallel_config(data_parallel=1,
-                                     model_parallel=4,
+                                     model_parallel=2,
+                                     pipeline_stage=2,
+                                     micro_batch_num=2,
+                                     micro_batch_interleave_num=2,
+                                     vocab_emb_dp=False)
+    task_trainer.train()
+    sys.exit(0)
+
+
+def run_llama_2p_train_cp():
+    """test msrun launch llama on context parallel for Trainer.train()."""
+    task_trainer = build_model('test_train_cp', gradient_accumulation_steps=2)
+    task_trainer.config.callbacks[1].save_checkpoint_steps = 100
+    task_trainer.config.callbacks = task_trainer.config.callbacks[:1]
+    task_trainer.config.runner_config.epochs = 1
+    task_trainer.config.runner_config.sink_mode = False
+    task_trainer.config.runner_wrapper.scale_sense.loss_scale_value = 1024
+    task_trainer.config.runner_config.gradient_accumulation_steps = 2
+    task_trainer.set_parallel_config(data_parallel=1,
+                                     model_parallel=1,
                                      context_parallel=2,
+                                     pipeline_stage=1,
+                                     micro_batch_num=2,
+                                     micro_batch_interleave_num=2)
+    task_trainer.train()
+    sys.exit(0)
+
+
+def run_llama_2p_train_dp():
+    """test msrun launch llama on data parallel for Trainer.train()."""
+    task_trainer = build_model('test_train_dp')
+    task_trainer.config.callbacks[1].save_checkpoint_steps = 100
+    task_trainer.config.callbacks = task_trainer.config.callbacks[:1]
+    task_trainer.config.runner_config.epochs = 1
+    task_trainer.config.runner_config.sink_mode = False
+    task_trainer.config.runner_wrapper.scale_sense.loss_scale_value = 1024
+    task_trainer.config.parallel.parallel_optimizer_config.optimizer_weight_shard_size = 1
+    task_trainer.set_parallel_config(data_parallel=2,
+                                     model_parallel=1,
+                                     context_parallel=1,
                                      pipeline_stage=1,
                                      micro_batch_num=2,
                                      micro_batch_interleave_num=2)
@@ -165,9 +189,11 @@ def run_llama():
         '--test_mode', default="", type=str, help='test_mode.')
     args = parser.parse_args()
     if args.test_mode == "test_train":
-        run_llama_8p_train()
+        run_llama_4p_train()
     elif args.test_mode == "test_train_cp":
-        run_llama_8p_train_cp()
+        run_llama_2p_train_cp()
+    elif args.test_mode == "test_train_dp":
+        run_llama_2p_train_dp()
 
 
 run_llama()
