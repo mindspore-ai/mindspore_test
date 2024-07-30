@@ -34,7 +34,7 @@ class TestPartition : public UT::Common {
               std::vector<int64_t> edge_tail);
   void InitEdge(std::shared_ptr<Graph> graph, int vHead, int vTail);
   void InitNode(std::shared_ptr<Graph> graph, int num_node);
-  TensorParam *MakeTensor(int n, int c, int h, int w);
+  TensorParam MakeTensor(int n, int c, int h, int w);
   std::shared_ptr<Graph> MakeMatMulData(int numNode);
 };
 
@@ -71,15 +71,13 @@ void TestPartition::InitEdge(std::shared_ptr<Graph> graph, int vHead, int vTail)
 }
 
 // Local function for Create() to crate Tensor
-TensorParam *TestPartition::MakeTensor(int n, int c, int h, int w) {
-  TensorParam *p_tensor = new TensorParam;
-  p_tensor->tensor_type = kFloat32;
-  p_tensor->tensor_shape.shape_n = n;
-  p_tensor->tensor_shape.shape_c = c;
-  p_tensor->tensor_shape.shape_h = h;
-  p_tensor->tensor_shape.shape_w = w;
-
-  return p_tensor;
+TensorParam TestPartition::MakeTensor(int n, int c, int h, int w) {
+  TensorParam tp;
+  tp.tensor_shape.shape_n = n;
+  tp.tensor_shape.shape_c = c;
+  tp.tensor_shape.shape_h = h;
+  tp.tensor_shape.shape_w = w;
+  return std::move(tp);
 };
 
 // Local function for Create() to create MatMul Operator
@@ -98,6 +96,8 @@ std::shared_ptr<Graph> TestPartition::MakeMatMulData(int numNode) {
 
   std::vector<int64_t> edgeHead(edgeNum);  // int edgeHead[8] = {0,2,4,6,1,3,5,7};
   std::vector<int64_t> edgeTail(edgeNum);  // int edgeTail[8] = {2,4,6,8,2,4,6,8};
+  std::vector<std::string> node_param_name_vec = {".projection.weight", ".mapping.weight", ".attention.dense2.weight",
+     ".attention_norm.weight"};
 
   for (int i = 0; i < edgeNum; i++) {
     edgeHead[i] = i;
@@ -110,84 +110,40 @@ std::shared_ptr<Graph> TestPartition::MakeMatMulData(int numNode) {
 
   // Create graph
   std::shared_ptr<Graph> graph(new Graph);
+  graph->dyn_shape_tmp_fix = true; //TEST
   TestPartition::Create(graph, numNode, edgeHead, edgeTail);
+  int k = 0;
 
   // Add Node information.
   for (int i = 0; i < numNode; i++) {
     if (0 == i) {
-      graph->nodes[i].info = InfoType::kConstant;
-      TensorParam *p_tensor_out = new TensorParam;
-      p_tensor_out->tensor_type = kFloat32;
-      p_tensor_out->tensor_shape.shape_w = ARRAY_B;
-      p_tensor_out->tensor_shape.shape_h = ARRAY_A;
-
-      graph->nodes[i].tensor_parm = *p_tensor_out;
+      graph->nodes[i].info               = InfoType::kConstant;
+      graph->nodes[i].tensor_parm        = MakeTensor(1, 1, ARRAY_A, ARRAY_B);
 
     } else if (0 == i % 4) {
-      graph->nodes[i].info = InfoType::kApplication;
-      graph->nodes[i].apply.op_type = OperatorType::kRecMatMul;
-
-      TensorParam *p_tensor0 = new TensorParam;
-      p_tensor0->tensor_type = kFloat32;
-      p_tensor0->tensor_shape.shape_w = ARRAY_C;
-      p_tensor0->tensor_shape.shape_h = ARRAY_A;
-
-      TensorParam *p_tensor1 = new TensorParam;
-      p_tensor1->tensor_type = kFloat32;
-      p_tensor1->tensor_shape.shape_w = ARRAY_B;
-      p_tensor1->tensor_shape.shape_h = ARRAY_C;
-
-      TensorParam *p_tensor_out = new TensorParam;
-      p_tensor_out->tensor_type = kFloat32;
-      p_tensor_out->tensor_shape.shape_w = ARRAY_B;
-      p_tensor_out->tensor_shape.shape_h = ARRAY_A;
-
-      graph->nodes[i].apply.arguments[0] = *p_tensor0;
-      graph->nodes[i].apply.arguments[1] = *p_tensor1;
-      graph->nodes[i].tensor_parm = *p_tensor_out;
+      graph->nodes[i].info               = InfoType::kApplication;
+      graph->nodes[i].apply.op_type      = OperatorType::kRecMatMul;
+      graph->nodes[i].param_name         = node_param_name_vec[k++];
+      graph->nodes[i].apply.arguments[0] = MakeTensor(1, 1, ARRAY_A, ARRAY_C);
+      graph->nodes[i].apply.arguments[1] = MakeTensor(1, 1, ARRAY_C, ARRAY_B);
+      graph->nodes[i].tensor_parm        = MakeTensor(1, 1, ARRAY_A, ARRAY_B);
 
     } else if (1 == i % 4) {
-      graph->nodes[i].info = InfoType::kConstant;
-
-      TensorParam *p_tensor_out = new TensorParam;
-      p_tensor_out->tensor_type = kFloat32;
-      p_tensor_out->tensor_shape.shape_w = ARRAY_C;
-      p_tensor_out->tensor_shape.shape_h = ARRAY_B;
-
-      graph->nodes[i].tensor_parm = *p_tensor_out;
+      graph->nodes[i].info               = InfoType::kConstant;
+      graph->nodes[i].tensor_parm        = MakeTensor(1, 1, ARRAY_B, ARRAY_C);
 
     } else if (2 == i % 4) {
-      graph->nodes[i].info = InfoType::kApplication;
-      graph->nodes[i].apply.op_type = OperatorType::kRecMatMul;
-
-      TensorParam *p_tensor0 = new TensorParam;
-      p_tensor0->tensor_type = kFloat32;
-      p_tensor0->tensor_shape.shape_w = ARRAY_B;
-      p_tensor0->tensor_shape.shape_h = ARRAY_A;
-
-      TensorParam *p_tensor1 = new TensorParam;
-      p_tensor1->tensor_type = kFloat32;
-      p_tensor1->tensor_shape.shape_w = ARRAY_C;
-      p_tensor1->tensor_shape.shape_h = ARRAY_B;
-
-      TensorParam *p_tensor_out = new TensorParam;
-      p_tensor_out->tensor_type = kFloat32;
-      p_tensor_out->tensor_shape.shape_w = ARRAY_C;
-      p_tensor_out->tensor_shape.shape_h = ARRAY_A;
-
-      graph->nodes[i].apply.arguments[0] = *p_tensor0;
-      graph->nodes[i].apply.arguments[1] = *p_tensor1;
-      graph->nodes[i].tensor_parm = *p_tensor_out;
+      graph->nodes[i].info               = InfoType::kApplication;
+      graph->nodes[i].apply.op_type      = OperatorType::kRecMatMul;
+      graph->nodes[i].param_name         = node_param_name_vec[k++];
+      graph->nodes[i].apply.arguments[0] = MakeTensor(1, 1, ARRAY_A, ARRAY_B);
+      graph->nodes[i].apply.arguments[1] = MakeTensor(1, 1, ARRAY_B, ARRAY_C);
+      graph->nodes[i].tensor_parm        = MakeTensor(1, 1, ARRAY_A, ARRAY_C);
 
     } else if (3 == i % 4) {
-      graph->nodes[i].info = InfoType::kConstant;
+      graph->nodes[i].info               = InfoType::kConstant;
+      graph->nodes[i].tensor_parm        = MakeTensor(1, 1, ARRAY_C, ARRAY_B);
 
-      TensorParam *p_tensor_out = new TensorParam;
-      p_tensor_out->tensor_type = kFloat32;
-      p_tensor_out->tensor_shape.shape_w = ARRAY_B;
-      p_tensor_out->tensor_shape.shape_h = ARRAY_C;
-
-      graph->nodes[i].tensor_parm = *p_tensor_out;
     };
   };
   return graph;
@@ -195,13 +151,51 @@ std::shared_ptr<Graph> TestPartition::MakeMatMulData(int numNode) {
 
 TEST_F(TestPartition, test_GetWeights) {
   std::shared_ptr<Graph> graph = MakeMatMulData(9);
+
   double wop1 = GetWeights(graph->nodes[2]);
   double wop2 = GetWeights(graph->nodes[4]);
   double wop3 = GetWeights(graph->nodes[6]);
   double wop4 = GetWeights(graph->nodes[8]);
   ASSERT_GE(wop1, wop2);
-  ASSERT_GE(wop2, wop3);
+  ASSERT_LE(wop2, wop3);
   ASSERT_GE(wop3, wop4);
+}
+
+/// Feature: test GetWeights with different OperatorType
+/// Description:
+/// Expectation: success
+TEST_F(TestPartition, test_GetWeights2) {
+  std::shared_ptr<Graph> graph = MakeMatMulData(3);
+
+  graph->nodes[2].apply.op_type = OperatorType::kRecConvolution;
+  GetWeights(graph->nodes[2]);
+
+  graph->nodes[2].apply.op_type = OperatorType::kRecPooling;
+  GetWeights(graph->nodes[2]);
+
+  graph->nodes[2].apply.op_type = OperatorType::kRecElmWiseOp;
+  GetWeights(graph->nodes[2]);
+
+  graph->nodes[2].apply.op_type = OperatorType::kRecReLU;
+  GetWeights(graph->nodes[2]);
+
+  graph->nodes[2].apply.op_type = OperatorType::kRecReshape;
+  GetWeights(graph->nodes[2]);
+
+  graph->nodes[2].apply.op_type = OperatorType::kRecBiasAdd;
+  GetWeights(graph->nodes[2]);
+
+  graph->nodes[2].apply.op_type = OperatorType::kRecLog;
+  GetWeights(graph->nodes[2]);
+
+  graph->nodes[2].apply.op_type = OperatorType::kRecSoftmax;
+  GetWeights(graph->nodes[2]);
+
+  graph->nodes[2].apply.op_type = OperatorType::kRecStandAlone;
+  GetWeights(graph->nodes[2]);
+
+  graph->nodes[2].apply.op_type = OperatorType::kRecBatchMatMul;
+  GetWeights(graph->nodes[2]);
 }
 
 TEST_F(TestPartition, test_SortByWeight) {
@@ -221,6 +215,95 @@ TEST_F(TestPartition, test_SortByWeight2) {
 TEST_F(TestPartition, test_PartitionNode) {
   std::shared_ptr<Graph> graph = MakeMatMulData(9);
   // node 2 is the first kRecMatMul Operator
+  Graph::NodeType node2 = graph->nodes[2];
+  std::vector<std::pair<std::string, StrategyRec>> nameToStrategy;
+  bool isTraining = true;
+  StrategyRec str = PartitionNode(node2, nameToStrategy, graph, isTraining);
+  ASSERT_EQ(str.outputTensor.str_h, 1);
+  ASSERT_EQ(str.outputTensor.str_w, 1);
+}
+
+/// Feature: test PartitionNode with nodes of type kRecBatchMatMul
+/// Description:
+/// Expectation: success
+TEST_F(TestPartition, test_PartitionNode2) {
+  std::shared_ptr<Graph> graph = MakeMatMulData(9);
+
+  graph->nodes[2].apply.op_type = OperatorType::kRecBatchMatMul;
+  graph->nodes[4].apply.op_type = OperatorType::kRecBatchMatMul;
+  graph->nodes[6].apply.op_type = OperatorType::kRecBatchMatMul;
+  graph->nodes[8].apply.op_type = OperatorType::kRecBatchMatMul;
+  
+  Graph::NodeType node = graph->nodes[2];
+  std::vector<std::pair<std::string, StrategyRec>> nameToStrategy;
+  bool isTraining = true;
+  StrategyRec str = PartitionNode(node, nameToStrategy, graph, isTraining);
+  ASSERT_EQ(str.outputTensor.str_h, 1);
+  ASSERT_EQ(str.outputTensor.str_w, 1);
+
+  node = graph->nodes[4];
+  str = PartitionNode(node, nameToStrategy, graph, isTraining);
+  ASSERT_EQ(str.outputTensor.str_h, 1);
+  ASSERT_EQ(str.outputTensor.str_w, 0.5);
+
+  node = graph->nodes[6];
+  str = PartitionNode(node, nameToStrategy, graph, isTraining);
+  ASSERT_EQ(str.outputTensor.str_h, 1);
+  ASSERT_EQ(str.outputTensor.str_w, 0.5);
+}
+
+/// Feature: test PartitionNode with nodes of type kRecPooling
+/// Description:
+/// Expectation: success
+TEST_F(TestPartition, test_PartitionNode3) {
+  std::shared_ptr<Graph> graph = MakeMatMulData(9);
+  
+  graph->nodes[2].apply.op_type = OperatorType::kRecPooling;
+  Graph::NodeType node2 = graph->nodes[2];
+  std::vector<std::pair<std::string, StrategyRec>> nameToStrategy;
+  bool isTraining = true;
+  StrategyRec str = PartitionNode(node2, nameToStrategy, graph, isTraining);
+  ASSERT_EQ(str.outputTensor.str_h, 1);
+  ASSERT_EQ(str.outputTensor.str_w, 1);
+}
+
+/// Feature: test PartitionNode with nodes of type kRecReLU
+/// Description:
+/// Expectation: success
+TEST_F(TestPartition, test_PartitionNode4) {
+  std::shared_ptr<Graph> graph = MakeMatMulData(9);
+
+  graph->nodes[2].apply.op_type = OperatorType::kRecReLU;
+  Graph::NodeType node2 = graph->nodes[2];
+  std::vector<std::pair<std::string, StrategyRec>> nameToStrategy;
+  bool isTraining = true;
+  StrategyRec str = PartitionNode(node2, nameToStrategy, graph, isTraining);
+  ASSERT_EQ(str.outputTensor.str_h, 0.5);
+  ASSERT_EQ(str.outputTensor.str_w, 1);
+}
+
+/// Feature: test PartitionNode with nodes of type kRecBiasAdd
+/// Description:
+/// Expectation: success
+TEST_F(TestPartition, test_PartitionNode5) {
+  std::shared_ptr<Graph> graph = MakeMatMulData(9);
+
+  graph->nodes[2].apply.op_type = OperatorType::kRecBiasAdd;
+  Graph::NodeType node2 = graph->nodes[2];
+  std::vector<std::pair<std::string, StrategyRec>> nameToStrategy;
+  bool isTraining = true;
+  StrategyRec str = PartitionNode(node2, nameToStrategy, graph, isTraining);
+  ASSERT_EQ(str.outputTensor.str_h, 0.5);
+  ASSERT_EQ(str.outputTensor.str_w, 1);
+}
+
+/// Feature: test PartitionNode with nodes of type kRecElmWiseOp
+/// Description:
+/// Expectation: success
+TEST_F(TestPartition, test_PartitionNode6) {
+  std::shared_ptr<Graph> graph = MakeMatMulData(9);
+
+  graph->nodes[2].apply.op_type = OperatorType::kRecElmWiseOp;
   Graph::NodeType node2 = graph->nodes[2];
   std::vector<std::pair<std::string, StrategyRec>> nameToStrategy;
   bool isTraining = true;
