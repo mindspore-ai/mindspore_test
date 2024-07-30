@@ -35,13 +35,15 @@ class NetMatmulWithSplit3(nn.Cell):
         self.w = ms.Parameter(weight, requires_grad=False)
         self.split_with_size = ms.ops.auto_generate.SplitWithSize()
         self.sizes = [n0, n1, n2]
+        self.n = n0 + n1 + n2
         self.reshape = ms.ops.Reshape()
         self.shape = ms.ops.Shape()
 
     def construct(self, x):
+        out_shape = self.shape(x)[:-1] + (self.n,)
+        x = self.reshape(x, (-1, self.shape(x)[2]))
         res0 = self.matmul0(x, self.w)
-        new_shape = (1, self.shape(x)[0], self.w.shape[0])
-        res2 = self.reshape(res0, new_shape)
+        res2 = self.reshape(res0, out_shape)
         res = self.split_with_size(res2, self.sizes, -1)
         return res
 
@@ -55,13 +57,15 @@ class NetMatmulWithSplit2(nn.Cell):
         self.w = ms.Parameter(weight, requires_grad=False)
         self.split_with_size = ms.ops.auto_generate.SplitWithSize()
         self.sizes = [n0, n1]
+        self.n = n0 + n1
         self.reshape = ms.ops.Reshape()
         self.shape = ms.ops.Shape()
 
     def construct(self, x):
+        out_shape = self.shape(x)[:-1] + (self.n,)
+        x = self.reshape(x, (-1, self.shape(x)[2]))
         res0 = self.matmul0(x, self.w)
-        new_shape = (1, self.shape(x)[0], self.w.shape[0])
-        res2 = self.reshape(res0, new_shape)
+        res2 = self.reshape(res0, out_shape)
         res = self.split_with_size(res2, self.sizes, -1)
         return res
 
@@ -130,7 +134,7 @@ def _test_matmul_qkv(m=0, k=0, n0=0, n1=0, n2=0, mstype=ms.float16, is_dyn=False
     elif ms.bfloat16 == mstype:
         np_type = bfloat16
 
-    i0_host = np.random.normal(0.0, 0.5, size=[m, k]).astype(np_type)
+    i0_host = np.random.normal(0.0, 0.5, size=[1, m, k]).astype(np_type)
     i1_host = np.random.normal(0.0, 0.5, size=[n0, k]).astype(np_type)
     i2_host = np.random.normal(0.0, 0.5, size=[n1, k]).astype(np_type)
 
@@ -157,7 +161,7 @@ def _test_matmul_qkv(m=0, k=0, n0=0, n1=0, n2=0, mstype=ms.float16, is_dyn=False
         output_split = run_expect_split(
             i0_host_fp32, i1_host_fp32, i2_host_fp32, None)
     if is_dyn:
-        input_dyn = Tensor(shape=(None, None), dtype=mstype)
+        input_dyn = Tensor(shape=(None, None, None), dtype=mstype)
         net.set_inputs(input_dyn)
 
     if profiling:
@@ -216,3 +220,18 @@ def test_matmul_qkv_out_num_2_with_diff_m(ms_dtype, is_dynamic, dim_m):
     Expectation: Success.
     """
     _test_matmul_qkv(dim_m, 4096, 3584, 3584, mstype=ms_dtype, is_dyn=is_dynamic)
+
+@pytest.mark.level0
+@pytest.mark.platform_arm_ascend910b_training
+@pytest.mark.parametrize('input_shape', [(1, 8192, 2048, 256, 256),
+                                         (32, 4096, 4096, 4096, 4096),
+                                         (16, 12288, 1536, 1536, 1536)])
+@pytest.mark.env_onecard
+def test_dynamic_shape(input_shape):
+    """
+    Feature: Test MatmulSplitOut3 with different dynamic shape
+    Description: Test MatmulSplitOut3 with different dynamic shape enabling infer_boost in kbk.
+    Expectation: Success.
+    """
+    m, k, n0, n1, n2 = input_shape
+    _test_matmul_qkv(m, k, n0, n1, n2, mstype=ms.float16, is_dyn=True)

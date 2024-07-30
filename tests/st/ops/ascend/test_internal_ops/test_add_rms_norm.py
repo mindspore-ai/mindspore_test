@@ -18,11 +18,9 @@ import numpy as np
 import pytest
 
 import mindspore as ms
-from mindspore import nn, Tensor, context
+from mindspore import nn, Tensor, context, Parameter
 from mindspore import ops
 from mindspore.ops.operations._infer_ops import QuantV2
-
-from tests.mark_utils import arg_mark
 
 
 class Add_RmsNorm(nn.Cell):
@@ -32,16 +30,11 @@ class Add_RmsNorm(nn.Cell):
         self.with_cast = with_cast
         self.quant = QuantV2()
         self.with_quant = with_quant
-        if is_internal:
-            self.t_zp = Tensor(np.ones((1,)).astype(
-                np.int8), dtype=ms.int8) * 2
-            self.t_scale = Tensor(np.ones((1,)).astype(
-                np.float16), dtype=ms.float16) * 2
-        else:
-            self.t_zp = Tensor(np.ones((1, 1024)).astype(
-                np.int8), dtype=ms.int8) * 2
-            self.t_scale = Tensor(np.ones((1, 1024)).astype(
-                np.float16), dtype=ms.float16) * 2
+
+        self.t_scale = Parameter(Tensor(np.ones((1,)).astype(
+            np.float16), dtype=ms.float16) * 2)
+        self.t_zp = Parameter(Tensor(np.ones((1,)).astype(
+            np.int8), dtype=ms.int8) * 2)
 
     def construct(self, x1, x2, gamma):
         res = x1 + x2
@@ -92,7 +85,9 @@ def _test_add_rmsnorm_fusion(shape, dtype, internal_kernel, with_cast=False, wit
     return output[0].astype(ms.float32).asnumpy(), output[1].astype(ms.float32).asnumpy()
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.level0
+@pytest.mark.platform_arm_ascend910b_training
+@pytest.mark.env_onecard
 @pytest.mark.parametrize('dtype', ["float16", "float32", "bfloat16"])
 @pytest.mark.parametrize('is_dynamic', [False])
 def test_add_rms_norm_normal(dtype, is_dynamic):
@@ -109,7 +104,9 @@ def test_add_rms_norm_normal(dtype, is_dynamic):
     assert np.amax(np.abs(result_internal[1] - result_aclnn[1])) < 5e-3
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.level0
+@pytest.mark.platform_arm_ascend910b_training
+@pytest.mark.env_onecard
 def test_add_rms_norm_f16_with_cast():
     """
     Feature: test add_rmsnorm fusion with cast in graph mode
@@ -121,4 +118,23 @@ def test_add_rms_norm_f16_with_cast():
     result_internal = _test_add_rmsnorm_fusion(shape, dtype, True, True)
     result_aclnn = _test_add_rmsnorm_fusion(shape, dtype, False)
     assert np.amax(np.abs(result_internal[0] - result_aclnn[0])) < 5e-3
+    assert np.amax(np.abs(result_internal[1] - result_aclnn[1])) < 5e-3
+
+
+@pytest.mark.level0
+@pytest.mark.platform_arm_ascend910b_training
+@pytest.mark.env_onecard
+def test_add_rms_norm_f16_quant():
+    """
+    Feature: test add_rms_norm fusion with quant in graph mode
+    Description: test add_rms_norm.
+    Expectation: the result is the same with aclnn version of two ops
+    """
+    shape = (1, 1024, 11264)
+    dtype = "float16"
+    result_internal = _test_add_rmsnorm_fusion(
+        shape, dtype, True, with_quant=True)
+    result_aclnn = _test_add_rmsnorm_fusion(
+        shape, dtype, False, with_quant=True)
+    assert np.amax(np.abs(result_internal[0] - result_aclnn[0])) < 2
     assert np.amax(np.abs(result_internal[1] - result_aclnn[1])) < 5e-3
