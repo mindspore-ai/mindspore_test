@@ -236,15 +236,6 @@ void AscendKernelRuntime::TaskExceptionCallback(aclrtExceptionInfo *task_fail_in
 
 void AscendKernelRuntime::ReleaseDeviceRes() {
   MS_LOG(INFO) << "Ascend finalize start";
-#ifdef ENABLE_DEBUGGER
-  if (debugger_ && debugger_->debugger_enabled()) {
-    debugger_->SetTrainingDone(true);
-    bool ret = debugger_->SendMetadata(false);
-    if (!ret) {
-      MS_LOG(ERROR) << "Failed to SendMetadata when finalize";
-    }
-  }
-#endif
   SetContextForce();
 
   // release ge runtime

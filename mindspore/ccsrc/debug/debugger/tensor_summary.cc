@@ -28,8 +28,6 @@
 #endif
 
 namespace mindspore {
-using CONDITION_TYPE = DebugServices::CONDITION_TYPE;
-
 RangeCountCalculator::RangeCountCalculator()
     : range_start_inclusive(-std::numeric_limits<double>::infinity()),
       range_end_inclusive(std::numeric_limits<double>::infinity()),
@@ -115,58 +113,6 @@ TensorSummary<T>::TensorSummary(const void *current_tensor_ptr, const void *cons
       zero_count_(0),
       epsilon_(1.0e-9),
       mean_sd_cal_enabled_(false) {}
-
-/*
- * Feature group: Online debugger, Offline debugger.
- * Target device group: Ascend, GPU.
- * Runtime category: Old runtime, MindRT.
- * Description: Initialize watchpoints calculators based on the watchpoint category. Process all the elements within the
- * current tensor.
- */
-template <typename T>
-void TensorSummary<T>::SummarizeTensor(const std::vector<DebugServices::watchpoint_t> &wps) {
-  InitCalculators(wps);
-  for (size_t i = 0; i < num_elements_; ++i) {
-    auto current_value = static_cast<double>(current_tensor_ptr_[i]);
-    double previous_value = std::numeric_limits<double>::quiet_NaN();
-    if (prev_tensor_ptr_) {
-      if (num_elements_ == prev_num_elements_) {
-        previous_value = static_cast<double>(prev_tensor_ptr_[i]);
-      } else {
-        MS_LOG(DEBUG) << "Current and previous tensor are not the same size.";
-      }
-    }
-    if (std::isinf(current_value)) {
-      inf_count_ += 1;
-    }
-    if (std::isnan(current_value)) {
-      nan_count_ += 1;
-    }
-    if (current_value == 0.0) {
-      zero_count_ += 1;
-    }
-    max_ = std::max(max_, current_value);
-    min_ = std::min(min_, current_value);
-    if (mean_sd_cal_enabled_) {
-      current_mean_variance_.ProcessElement(current_value);
-    }
-    for (auto &it : all_close_) {
-      it.second->ProcessElement(current_value, previous_value);
-    }
-    for (auto &range_count : range_counts_) {
-      range_count.second->ProcessElement(current_value);
-    }
-    for (auto &mean : means_) {
-      if (mean.first.compare("curr_prev_diff_mean") == 0) {
-        mean.second->ProcessElement(std::abs(current_value - previous_value));
-      } else if (mean.first.compare("abs_prev_mean") == 0) {
-        mean.second->ProcessElement(std::abs(previous_value));
-      } else if (mean.first.compare("abs_current_mean") == 0) {
-        mean.second->ProcessElement(std::abs(current_value));
-      }
-    }
-  }
-}
 
 /*
  * Feature group: Online debugger, Offline debugger.
@@ -272,132 +218,6 @@ void TensorSummary<T>::TensorStatisticsSingleThread() {
   avg_ = mean_calc.GetMean();
 }
 
-/*
- * Feature group: Online debugger, Offline debugger.
- * Target device group: Ascend, GPU.
- * Runtime category: Old runtime, MindRT.
- * Description: Returns a tuple with three elements, the first element is a bool and it is true if the watchpoint is
- * hit. The second element is the error_code which is set in this function and the third element is the parameter_list
- * for the watchpoint.
- */
-template <typename T>
-std::tuple<bool, int, std::vector<DebugServices::parameter_t>> TensorSummary<T>::IsWatchpointHit(
-  DebugServices::watchpoint_t wp) {
-  auto parameter_list = wp.parameter_list;
-  bool hit = false;
-  const uint8_t bit_size = 32;
-  std::bitset<bit_size> error_code;
-  CONDITION_TYPE type = wp.condition.type;
-  // bit 0 denotes presence of nan
-  (void)error_code.set(0, nan_count_ > 0);
-  // bit 1 denotes presence of inf
-  (void)error_code.set(1, inf_count_ > 0);
-
-  if (type == CONDITION_TYPE::HAS_NAN) {
-    error_code.reset();
-    hit = nan_count_ > 0;
-  } else if (type == CONDITION_TYPE::HAS_INF) {
-    error_code.reset();
-    hit = inf_count_ > 0;
-  } else if (type == CONDITION_TYPE::GENERAL_OVERFLOW) {
-    error_code.reset();
-    hit = (nan_count_ + inf_count_) > 0;
-  } else if (type == CONDITION_TYPE::NOT_CHANGED && prev_tensor_ptr_ && error_code.none()) {
-    hit = all_close_[wp.id]->IsAllClose();
-  } else if ((type == CONDITION_TYPE::NOT_CHANGED || type == CONDITION_TYPE::CHANGE_TOO_LARGE ||
-              type == CONDITION_TYPE::CHANGE_TOO_SMALL) &&
-             !prev_tensor_ptr_) {
-    // bit 2 denotes absence of previous tensor
-    error_code.set(2, true);
-  }
-
-  if (error_code.none()) {
-    for (auto &parameter : parameter_list) {
-      if (parameter.disabled || error_code.any()) {
-        continue;
-      }
-      // extract inequality type from watchpoint for backward compatibility
-      std::string inequality_type;
-      if (wp.is_gt_wp()) {
-        inequality_type = "gt";
-      } else if (wp.is_lt_wp()) {
-        inequality_type = "lt";
-      }
-      parameter.Evaluate(StatLookup(parameter.name, wp), inequality_type);
-      hit = hit || parameter.hit;
-    }
-  }
-  return std::make_tuple(hit, static_cast<int32_t>(error_code.to_ulong()), parameter_list);
-}
-
-template <typename T>
-double_t TensorSummary<T>::StatLookup(const std::string &parameter_name, const DebugServices::watchpoint_t &wp) {
-  if (parameter_name == "param") {
-    return StatLookup(wp);
-  }
-  std::string param_type;
-  auto pos = parameter_name.find_last_of('_');
-  if (pos != std::string::npos) {
-    param_type = parameter_name.substr(0, pos);
-  }
-
-  if (param_type == "max") {
-    return max_;
-  }
-  if (param_type == "min") {
-    return min_;
-  }
-  if (param_type == "max_min") {
-    return max_ - min_;
-  }
-  if (param_type == "mean") {
-    return current_mean_variance_.GetMean();
-  }
-  if (param_type == "sd") {
-    return current_mean_variance_.GetStandardDeviation();
-  }
-  if (param_type == "abs_mean") {
-    if (means_.find("abs_current_mean") != means_.end()) {
-      return means_["abs_current_mean"]->GetMean();
-    }
-  }
-  if (param_type == "abs_mean_update_ratio" && prev_tensor_ptr_) {
-    if (means_.find("curr_prev_diff_mean") != means_.end() && means_.find("abs_prev_mean") != means_.end()) {
-      return means_["curr_prev_diff_mean"]->GetMean() / (means_["abs_prev_mean"]->GetMean() + epsilon_);
-    }
-  }
-  if (param_type == "range_percentage") {
-    if (range_counts_.find(wp.id) != range_counts_.end()) {
-      return range_counts_[wp.id]->GetPercentInRange();
-    }
-  }
-  if (param_type == "zero_percentage") {
-    return GetZeroValPercent();
-  }
-  return std::numeric_limits<double_t>::quiet_NaN();
-}
-
-template <typename T>
-double_t TensorSummary<T>::StatLookup(const DebugServices::watchpoint_t &wp) const {
-  CONDITION_TYPE type = wp.condition.type;
-  if (type == CONDITION_TYPE::MAX_LT || type == CONDITION_TYPE::MAX_GT) {
-    return max_;
-  }
-  if (type == CONDITION_TYPE::MIN_LT || type == CONDITION_TYPE::MIN_GT) {
-    return min_;
-  }
-  if (type == CONDITION_TYPE::MEAN_LT || type == CONDITION_TYPE::MEAN_GT) {
-    return current_mean_variance_.GetMean();
-  }
-  if (type == CONDITION_TYPE::SD_LT || type == CONDITION_TYPE::SD_GT) {
-    return current_mean_variance_.GetStandardDeviation();
-  }
-  if (type == CONDITION_TYPE::MAX_MIN_GT || type == CONDITION_TYPE::MAX_MIN_LT) {
-    return max_ - min_;
-  }
-  return std::numeric_limits<double_t>::quiet_NaN();
-}
-
 template <typename T>
 double_t TensorSummary<T>::GetZeroValPercent() const {
   if (num_elements_ == 0) {
@@ -407,35 +227,6 @@ double_t TensorSummary<T>::GetZeroValPercent() const {
   return (zero_count_ * 100.0) / num_elements_;
 }
 
-template <typename T>
-void TensorSummary<T>::InitCalculators(const std::vector<DebugServices::watchpoint_t> &wps) {
-  for (auto &wp : wps) {
-    auto wp_id = wp.id;
-    mean_sd_cal_enabled_ = mean_sd_cal_enabled_ || wp.mean_sd_enabled();
-    if (wp.allclose_enabled() && prev_tensor_ptr_) {
-      all_close_[wp_id] = std::make_unique<AllCloseCalculator>();
-      if (!wp.parameter_list[0].disabled) {
-        all_close_[wp_id]->set_rtol(wp.parameter_list[0].value);
-      }
-      if (!wp.parameter_list[1].disabled) {
-        all_close_[wp_id]->set_atol(wp.parameter_list[1].value);
-      }
-    } else if (wp.range_enabled()) {
-      range_counts_[wp_id] = std::make_unique<RangeCountCalculator>();
-      if (!wp.parameter_list[0].disabled) {
-        range_counts_[wp_id]->set_range_start_inclusive(wp.parameter_list[0].value);
-      }
-      if (!wp.parameter_list[1].disabled) {
-        range_counts_[wp_id]->set_range_end_inclusive(wp.parameter_list[1].value);
-      }
-    } else if (wp.tensor_update_ratio_mean_enabled() && prev_tensor_ptr_) {
-      (void)means_.emplace("curr_prev_diff_mean", std::make_unique<MeanCalculator>());
-      (void)means_.emplace("abs_prev_mean", std::make_unique<MeanCalculator>());
-    } else if (wp.abs_mean_enabled()) {
-      (void)means_.emplace("abs_current_mean", std::make_unique<MeanCalculator>());
-    }
-  }
-}
 template class TensorSummary<uint8_t>;
 template class TensorSummary<int8_t>;
 template class TensorSummary<uint16_t>;
