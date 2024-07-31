@@ -75,16 +75,19 @@ size_t GetTensorNumFromAbstract(const abstract::AbstractBasePtr &abs) {
     // Is a tensor
     constexpr size_t kTensorOutputNum = 1;
     return kTensorOutputNum;
-  } else if (abs->isa<abstract::AbstractSequence>()) {
+  }
+  if (abs->isa<abstract::AbstractSequence>()) {
     const auto &abs_seq = abs->cast<abstract::AbstractSequencePtr>()->elements();
     return std::accumulate(abs_seq.begin(), abs_seq.end(), 0, [](size_t out_num, const abstract::AbstractBasePtr &abs) {
       return out_num + GetTensorNumFromAbstract(abs);
     });
-  } else if (abs->isa<abstract::AbstractCSRTensor>()) {
+  }
+  if (abs->isa<abstract::AbstractCSRTensor>()) {
     // Currently, CSRTensor only supports 2-D matrix (shape has 2 values). 5 outputs = 3 Tensors + 2 shape values.
     constexpr size_t kCSRTensorOutputNum = 5;
     return kCSRTensorOutputNum;
-  } else if (abs->isa<abstract::AbstractCOOTensor>()) {
+  }
+  if (abs->isa<abstract::AbstractCOOTensor>()) {
     // Currently, COOTensor only supports 2-D matrix (shape has 2 values). 4 outputs = 2 Tensors + 2 shape values.
     constexpr size_t kCOOTensorOutputNum = 4;
     return kCOOTensorOutputNum;
@@ -167,7 +170,8 @@ bool JitOutputHasDict(const abstract::AbstractBasePtr &abs) {
   MS_EXCEPTION_IF_NULL(abs);
   if (abs->isa<abstract::AbstractDictionary>()) {
     return true;
-  } else if (abs->isa<abstract::AbstractSequence>()) {
+  }
+  if (abs->isa<abstract::AbstractSequence>()) {
     const auto &abs_sequence = abs->cast<abstract::AbstractSequencePtr>();
     return std::any_of(abs_sequence->elements().begin(), abs_sequence->elements().end(),
                        [](const abstract::AbstractBasePtr &item) { return JitOutputHasDict(item); });

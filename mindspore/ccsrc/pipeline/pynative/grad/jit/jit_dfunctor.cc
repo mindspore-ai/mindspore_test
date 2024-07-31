@@ -105,7 +105,8 @@ ValueNodePtr GenNewTensor(const CNodePtr &cnode_morph) {
     }
     auto value_tuple = std::make_shared<ValueTuple>(output_values);
     return gen_output_value_node(value_tuple);
-  } else if (cnode_type->isa<List>()) {
+  }
+  if (cnode_type->isa<List>()) {
     auto list_shape = cnode_shape->cast<abstract::ListShapePtr>();
     MS_EXCEPTION_IF_NULL(list_shape);
     auto list_type = cnode_type->cast<ListPtr>();
@@ -120,10 +121,12 @@ ValueNodePtr GenNewTensor(const CNodePtr &cnode_morph) {
     }
     auto value_tuple = std::make_shared<ValueList>(output_values);
     return gen_output_value_node(value_tuple);
-  } else if (cnode_type->isa<TensorType>()) {
+  }
+  if (cnode_type->isa<TensorType>()) {
     auto tensor_value = GenNewTensorInner(cnode_type, cnode_shape);
     return gen_output_value_node(tensor_value);
-  } else if (cnode_shape->isa<abstract::NoShape>()) {
+  }
+  if (cnode_shape->isa<abstract::NoShape>()) {
     ShapeVector NoShape;
     auto tensor_value = std::make_shared<tensor::Tensor>(cnode_type->type_id(), NoShape);
     return gen_output_value_node(tensor_value);

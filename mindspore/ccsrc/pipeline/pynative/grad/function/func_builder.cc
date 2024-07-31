@@ -240,10 +240,9 @@ NodePtr FuncBuilder::OutZeros(const NodePtr &node) {
   const auto &value = val_seq->value()[kIndexZero];
   if (!value->isa<tensor::Tensor>()) {
     return NewFuncNode(kNone, nullptr, InputType::kConstant);
-  } else {
-    ValuePtrList values(val_seq->size(), kNone);
-    return NewFuncNode(std::make_shared<ValueTuple>(values), nullptr, InputType::kConstant);
   }
+  ValuePtrList values(val_seq->size(), kNone);
+  return NewFuncNode(std::make_shared<ValueTuple>(values), nullptr, InputType::kConstant);
 }
 
 ValuePtr FuncBuilder::Ones(const ValuePtr &value) {

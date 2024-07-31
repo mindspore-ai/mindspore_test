@@ -119,7 +119,8 @@ AnfNodePtr IrVariable::RealDout() {
   // For input, if it is a sparsetensor, we need return a sparsetensor.
   if (out_value()->isa<tensor::BaseTensor>() || dout_abs->isa<abstract::AbstractSparseTensor>()) {
     return accumulate_dout;
-  } else if (out_value()->isa<tensor::MetaSparseTensor>()) {
+  }
+  if (out_value()->isa<tensor::MetaSparseTensor>()) {
     return PyNativeAlgo::AutoGrad::BuildSparseTensorNode(ir_function_node()->tape(), out_value(), accumulate_dout);
   }
   return accumulate_dout;

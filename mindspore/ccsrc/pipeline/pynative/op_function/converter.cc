@@ -61,9 +61,11 @@ FP32ImmPtr ConvertFloat(const py::object &obj) {
 ScalarPtr ConvertNumber(const py::object &obj) {
   if (py::isinstance<py::float_>(obj)) {
     return std::make_shared<FP32Imm>(py::cast<double>(obj));
-  } else if (py::isinstance<py::bool_>(obj)) {
+  }
+  if (py::isinstance<py::bool_>(obj)) {
     return std::make_shared<BoolImm>(py::cast<bool>(obj));
-  } else if (py::isinstance<py::int_>(obj)) {
+  }
+  if (py::isinstance<py::int_>(obj)) {
     return std::make_shared<Int64Imm>(py::cast<int64_t>(obj));
   }
   return nullptr;

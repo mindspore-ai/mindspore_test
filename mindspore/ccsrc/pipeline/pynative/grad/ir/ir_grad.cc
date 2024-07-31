@@ -112,14 +112,17 @@ bool IsConstant(const ValuePtr &value) {
       return false;
     }
     return true;
-  } else if (value->isa<ValueSequence>()) {
+  }
+  if (value->isa<ValueSequence>()) {
     auto val_seq = value->cast<ValueSequencePtr>();
     return std::all_of(val_seq->value().begin(), val_seq->value().end(),
                        [](const ValuePtr &value) { return IsConstant(value); });
-  } else if (value->isa<tensor::COOTensor>()) {
+  }
+  if (value->isa<tensor::COOTensor>()) {
     auto coo_tensor = value->cast<tensor::COOTensorPtr>();
     return IsConstant(coo_tensor->GetIndices());
-  } else if (value->isa<tensor::CSRTensor>()) {
+  }
+  if (value->isa<tensor::CSRTensor>()) {
     auto csr_tensor = value->cast<tensor::CSRTensorPtr>();
     return IsConstant(csr_tensor->GetIndices());
   }
@@ -724,9 +727,8 @@ AnfNodePtr IrGrad::GetWeightGrad(bool grad_weights, const tensor::BaseTensorPtrL
     auto weight_grad_ret = ad_param()->tape_->FuncGraph::NewCNode(weights_grad_list);
     weight_grad_ret->set_abstract(std::make_shared<abstract::AbstractTuple>(weights_grad_spec));
     return weight_grad_ret;
-  } else {
-    return GetGradNodeByIndex(weights[0]);
   }
+  return GetGradNodeByIndex(weights[0]);
 }
 
 void IrGrad::SetOutput(const tensor::BaseTensorPtrList &weights, const std::vector<size_t> &grad_position,

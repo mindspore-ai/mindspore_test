@@ -245,7 +245,8 @@ AnfNodePtr IrBprop::MapParameter(const ValuePtr &value, const abstract::Abstract
       return AddParameterNode(tensor, abs);
     }
     return PyNativeAlgo::Common::CreateValueNodeByValue(value, abs);
-  } else if (value->isa<ValueSequence>()) {
+  }
+  if (value->isa<ValueSequence>()) {
     const auto &val_seq = value->cast<ValueSequencePtr>()->value();
     const auto &abs_seq = abs->cast<abstract::AbstractSequencePtr>();
     MS_EXCEPTION_IF_NULL(abs_seq);
@@ -265,15 +266,16 @@ AnfNodePtr IrBprop::MapParameter(const ValuePtr &value, const abstract::Abstract
     }
     cnode->set_abstract(abs);
     return cnode;
-  } else if (value->isa<tensor::COOTensor>()) {
+  }
+  if (value->isa<tensor::COOTensor>()) {
     const auto &coo_tensor = value->cast<tensor::COOTensorPtr>();
     return MapParameter(coo_tensor->GetIndices(), abs);
-  } else if (value->isa<tensor::CSRTensor>()) {
+  }
+  if (value->isa<tensor::CSRTensor>()) {
     const auto &csr_tensor = value->cast<tensor::CSRTensorPtr>();
     return MapParameter(csr_tensor->GetIndices(), abs);
-  } else {
-    return PyNativeAlgo::Common::CreateValueNodeByValue(value, abs);
   }
+  return PyNativeAlgo::Common::CreateValueNodeByValue(value, abs);
 }
 
 ParameterPtr IrBprop::AddParameterNode(const tensor::BaseTensorPtr &tensor, const abstract::AbstractBasePtr &abs) {
@@ -824,17 +826,16 @@ AnfNodePtr IrBprop::BuildKNodeForCNodeInput(const AnfNodePtr &input_node) {
       MS_LOG(EXCEPTION) << "Can not find input in adjoint map, inp: " << input_node->DebugString();
     }
     return input_adjoint_iter->second->k_node();
-  } else {
-    // Tuple sens will come in
-    if (input_node->isa<Parameter>()) {
-      const auto input_adjoint_iter = ad_param_->anfnode_to_variable_adjoint_.find(input_node);
-      if (input_adjoint_iter != ad_param_->anfnode_to_variable_adjoint_.end() &&
-          input_adjoint_iter->second->k_node() != nullptr) {
-        return input_adjoint_iter->second->k_node();
-      }
-    }
-    return input_node;
   }
+  // Tuple sens will come in
+  if (input_node->isa<Parameter>()) {
+    const auto input_adjoint_iter = ad_param_->anfnode_to_variable_adjoint_.find(input_node);
+    if (input_adjoint_iter != ad_param_->anfnode_to_variable_adjoint_.end() &&
+        input_adjoint_iter->second->k_node() != nullptr) {
+      return input_adjoint_iter->second->k_node();
+    }
+  }
+  return input_node;
 }
 
 AnfNodePtr IrBprop::BuildKNodeForTupleGetItem(const AnfNodePtr &input_node) {
@@ -896,19 +897,18 @@ AnfNodePtr IrBprop::GetKnode(const PrimitivePtr &prim, const CNodePtr &cnode, co
                              bool jit_by_value) {
   if (IsPrimitiveEquals(prim, prim::kPrimMirror)) {
     return ad_param_->anfnode_to_variable_adjoint_.at(cnode->input(kIndex1))->k_node();
-  } else {
-    auto c_k_node = ad_param_->tape_->FuncGraph::NewCNode(cnode_inputs);
-    c_k_node->set_abstract(cnode->abstract());
-    // In jit, copy forward graph cnode info to bprop graph
-    if (jit_by_value && cnode->forward().first != nullptr) {
-      auto new_v_node = PyNativeAlgo::Common::CreateValueNodeByValue(cnode->forward().first->value(),
-                                                                     cnode->forward().first->abstract());
-      c_k_node->set_forward(new_v_node, cnode->forward().second);
-      ad_param_->tape_->set_used_forward_nodes({c_k_node});
-    }
-    c_k_node->AddAttr(bprop_pass::kIsKNode, MakeValue(true));
-    return c_k_node;
   }
+  auto c_k_node = ad_param_->tape_->FuncGraph::NewCNode(cnode_inputs);
+  c_k_node->set_abstract(cnode->abstract());
+  // In jit, copy forward graph cnode info to bprop graph
+  if (jit_by_value && cnode->forward().first != nullptr) {
+    auto new_v_node =
+      PyNativeAlgo::Common::CreateValueNodeByValue(cnode->forward().first->value(), cnode->forward().first->abstract());
+    c_k_node->set_forward(new_v_node, cnode->forward().second);
+    ad_param_->tape_->set_used_forward_nodes({c_k_node});
+  }
+  c_k_node->AddAttr(bprop_pass::kIsKNode, MakeValue(true));
+  return c_k_node;
 }
 
 void IrBprop::UpdateNextEdgeForDict(const IrFunctionNodePtr &fn, const AnfNodePtr &din, const ValuePtr &input_arg,
@@ -1001,7 +1001,8 @@ AnfNodePtr IrBprop::TraceInput(const IrFunctionNodePtr &fn, const ValuePtr &out_
       return din;
     }
     return PyNativeAlgo::AutoGrad::BuildSpecialNode(ad_param_->tape_, out_value, out_abs, SpecialType::kZerosLikeType);
-  } else if (out_value->isa<ValueSequence>()) {
+  }
+  if (out_value->isa<ValueSequence>()) {
     // The corresponding output of node is ValueSequence, but used one of it
     AnfNodePtrList inputs;
     (void)inputs.emplace_back(NewValueNode(prim::kPrimMakeTuple));
@@ -1028,7 +1029,8 @@ AnfNodePtr IrBprop::TraceInput(const IrFunctionNodePtr &fn, const ValuePtr &out_
       LazyAddUser(fn->fake_dout(), new_din, index);
     }
     return new_din;
-  } else if (out_value->isa<ValueDictionary>()) {
+  }
+  if (out_value->isa<ValueDictionary>()) {
     return TraceInputForDict(fn, out_value, out_abs, input_tensor, din);
   }
   MS_LOG(DEBUG) << "Get non tensor input " << out_value->ToString();
