@@ -35,7 +35,11 @@ bool BestFit(const pair<size_t, size_t> &a, const pair<size_t, size_t> &b) {
 bool WorstFit(const pair<size_t, size_t> &a, const pair<size_t, size_t> &b) {
   return a.second > b.second || (a.second == b.second && a.first < b.first);
 }
-size_t SharedObjects(FootPrint *p) { return p->Next()->getOffset(); }
+size_t SharedObjects(FootPrint *p) {
+  MS_EXCEPTION_IF_NULL(p);
+  MS_EXCEPTION_IF_NULL(p->Next());
+  return p->Next()->getOffset();
+}
 size_t SingleObject(FootPrint *) { return SIZE_MAX; }
 
 bool (*g_pBranching[kNumFittingTypes])(const pair<size_t, size_t> &a, const pair<size_t, size_t> &b) = {
@@ -83,6 +87,7 @@ bool FootPrint::findFirst(vector<Interval> *interval_v, const BlockTensor &block
   if (block.Alone()) {
     block_size = block.m_size_;
   } else {
+    MS_EXCEPTION_IF_NULL(block.m_start_tensor_);
     block_size = block.m_start_tensor_->size_;  // consider only first tensor for contiguous block
   }
 
@@ -121,6 +126,7 @@ bool FootPrint::findFirst(vector<Interval> *interval_v, const BlockTensor &block
 
   if (bfound) {
     *offset = fit_ret.first;
+    MS_EXCEPTION_IF_NULL(m_foot_print_next_);
     m_foot_print_next_->m_offset_ = std::max(m_foot_print_next_->m_offset_, *offset + block.m_size_);
   }
 
@@ -138,7 +144,9 @@ bool FootPrint::findOffset(const std::vector<VectorBitSet> *constraints, const B
 
   // transform constrained tensors in non eligible intervals
   if (block.Alone()) {
-    if (m_algorithm_ == static_cast<uint32_t>(kManyObjects) && m_starts_.size() > 0 && m_starts_[0]->Alone() &&
+    MS_EXCEPTION_IF_NULL(block.m_start_tensor_);
+    if (m_algorithm_ == static_cast<uint32_t>(kManyObjects) && m_starts_.size() > 0 && m_starts_[0] != nullptr &&
+        m_starts_[0]->Alone() && m_starts_[0]->m_start_tensor_ != nullptr &&
         !(*constraints)[block.m_start_tensor_->index_].IsBitTrue(m_starts_[0]->m_start_tensor_->index_)) {
       return false;
     }
@@ -190,6 +198,7 @@ void FootPrint::addElem(BlockTensor *block, const size_t &offset) {
   MS_EXCEPTION_IF_NULL(block);
   if (m_foot_print_next_ == nullptr) {
     m_foot_print_next_ = std::make_shared<FootPrint>();
+    MS_EXCEPTION_IF_NULL(m_foot_print_next_);
     size_t newoffset = m_offset_ + block->m_size_;
     m_foot_print_next_->setOffset(newoffset);
     m_foot_print_next_->setAlignment(m_alignment_);
@@ -227,6 +236,7 @@ bool FastHeuristic::Eval(vector<BlockTensor> *block_tensors_v, const std::shared
   auto start = std::chrono::system_clock::now();
 
   std::shared_ptr<FootPrint> p = foot_print;
+  MS_EXCEPTION_IF_NULL(foot_print);
   bool bpushed = false;
   size_t offset = foot_print->getOffset();
   m_tensors_allocated_ = 0;
@@ -234,6 +244,7 @@ bool FastHeuristic::Eval(vector<BlockTensor> *block_tensors_v, const std::shared
 
   for (auto &block : *block_tensors_v) {
     if (!block.m_bre_allocate_) {
+      MS_EXCEPTION_IF_NULL(block.m_start_tensor_);
       offset = block.m_start_tensor_->offset_;
       auto aux_id = foot_print->m_solId_;
       auto aux_offset = block.m_start_tensor_->offset_;
@@ -248,6 +259,7 @@ bool FastHeuristic::Eval(vector<BlockTensor> *block_tensors_v, const std::shared
     p = foot_print;
     block.m_current_sol_ = foot_print->m_solId_;
     while (!bpushed) {
+      MS_EXCEPTION_IF_NULL(p);
       if (p->findOffset(pConstraints, block, &offset)) {
         p->addElem(&block, offset);
         tensor = block.m_start_tensor_;
