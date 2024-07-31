@@ -43,7 +43,7 @@ def flatten_backward_func(x, start_dim=0, end_dim=-1):
     return flatten_bwd_func(x, start_dim, end_dim)
 
 
-@pytest.mark.level3
+@pytest.mark.level0
 @pytest.mark.env_onecard
 @pytest.mark.platform_arm_ascend_training
 @pytest.mark.platform_x86_ascend_training
@@ -75,7 +75,7 @@ def test_flatten_normal(mode):
     np.testing.assert_allclose(output2.asnumpy(), expect2, rtol=1e-4)
 
 
-@pytest.mark.level3
+@pytest.mark.level0
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.env_onecard
 @pytest.mark.parametrize("mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
@@ -98,7 +98,7 @@ def test_flatten_bfloat16(mode):
     np.testing.assert_allclose(output2.asnumpy(), expect2, rtol=5e-3, atol=5e-3)
 
 
-@pytest.mark.level3
+@pytest.mark.level0
 @pytest.mark.env_onecard
 @pytest.mark.platform_arm_ascend_training
 @pytest.mark.platform_x86_ascend_training

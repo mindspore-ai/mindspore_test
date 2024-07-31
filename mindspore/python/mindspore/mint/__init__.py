@@ -16,6 +16,7 @@
 from __future__ import absolute_import
 import mindspore.ops as ops
 from mindspore.ops.function.array_func import gather_ext as gather, max_ext as max, min_ext as min
+from mindspore.ops.function.nn_func import conv2d_ext as conv2d
 from mindspore.mint.nn.functional import sigmoid, tanh
 from mindspore.mint.nn import functional
 from mindspore.mint import linalg
@@ -24,6 +25,7 @@ from mindspore.ops import erf, where
 from mindspore.ops.function.math_func import linspace_ext as linspace
 from mindspore.ops.function.math_func import median_ext as median
 from mindspore.ops.function.array_func import ones_like_ext as ones_like
+from mindspore.ops.function.array_func import full_ext as full
 from mindspore.ops.function.array_func import zeros_like_ext as zeros_like
 from mindspore.ops.function.array_func import unique_ext as unique
 from mindspore.ops.function.math_func import isclose
@@ -64,7 +66,7 @@ from mindspore.ops.functional import flip
 # 14
 
 # 15
-
+from mindspore.ops.auto_generate import flatten_ext as flatten
 # 16
 from mindspore.ops.functional import matmul
 from mindspore.ops.auto_generate import bmm_ext as bmm
@@ -512,7 +514,6 @@ def cat(tensors, dim=0):
     return ops.auto_generate.cat(tensors, dim)
 
 
-
 def cummax(input, dim):
     r"""
     Returns a tuple (values, indices) where 'values' is the cumulative maximum value of input Tensor `input`
@@ -562,7 +563,6 @@ def cummax(input, dim):
          [2 1 2 0]]
     """
     return ops.auto_generate.cummax(input, dim)
-
 
 
 def mean(input, dim=None, keepdim=False, *, dtype=None):
@@ -971,6 +971,8 @@ def zeros(size, *, dtype=None):
 
 
 __all__ = [
+    'conv2d',
+    'full',
     'ones_like',
     'zeros_like',
     'abs',
@@ -1012,7 +1014,7 @@ __all__ = [
     # 14
 
     # 15
-
+    'flatten',
     # 16
     'matmul',
     'bmm',

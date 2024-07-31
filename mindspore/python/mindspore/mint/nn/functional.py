@@ -17,6 +17,7 @@ from __future__ import absolute_import
 import mindspore.ops as ops
 from mindspore.ops.function.nn_func import max_pool2d_ext as max_pool2d
 from mindspore.ops.functional import (
+    conv_transpose2d,
     grid_sample
 )
 # 1
@@ -199,7 +200,7 @@ from mindspore.ops.functional import embedding
 # 89
 
 # 90
-
+from mindspore.ops.function.nn_func import avg_pool2d_ext as avg_pool2d
 # 91
 
 # 92
@@ -370,6 +371,7 @@ def one_hot(tensor, num_classes=-1):
 
 
 __all__ = [
+    'conv_transpose2d',
     'max_pool2d',
     # 1
     'binary_cross_entropy_with_logits',
@@ -550,7 +552,7 @@ __all__ = [
     # 89
 
     # 90
-
+    'avg_pool2d',
     # 91
     'grid_sample',
     # 92
