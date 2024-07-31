@@ -38,16 +38,19 @@ int HcomBatchISendIRecvKernel::Resize(const std::vector<KernelTensor *> &inputs,
   size_t output_index = 0;
   for (size_t i = 0; i < op_types.size(); ++i) {
     size_t size;
+    ShapeVector shape;
     auto type_ = op_types_[i];
     if (type_ == "isend") {
-      size = SizeOf(outputs[i]->GetDeviceShapeVector());
+      shape = outputs[i]->GetDeviceShapeVector();
     } else if (type_ == "irecv") {
-      size = SizeOf(shape_v[output_index]);
+      shape = shape_v[output_index];
       output_index++;
     } else {
       MS_LOG(EXCEPTION) << "HcclBatchISendIRecv only support 'isend' or 'irecv', but got "
                         << "'" << op_types_[i] << "'.";
     }
+    auto dtype = HcomUtil::ConvertHcclType(outputs[i]->dtype_id());
+    HcomUtil::GetHcclOpSize(dtype, shape, &size);
     output_size_list_.push_back(size);
   }
   return KRET_OK;
