@@ -24,7 +24,6 @@ from mindspore.common._auto_dynamic import is_auto_dynamic, convert_new_shapes
 from mindspore.common.dtype import pytype_to_dtype
 from mindspore.common.api import _cell_graph_executor, _is_args_fullmode, ARG_SPECIFIED
 from mindspore.common._utils import is_shape_unknown
-from mindspore.context import ParallelMode
 from mindspore.dataset.engine import offload
 from mindspore import context, nn
 from mindspore.train._utils import _exec_datagraph, _get_types_and_shapes, _construct_tensor_list
@@ -32,7 +31,6 @@ from mindspore.parallel._utils import _get_device_num, _get_global_rank, _need_t
     _to_full_shapes, _get_pipeline_stages, _change_symbols_for_parallel, _is_in_auto_parallel_mode, \
     _origin_shapes, _dynamic_shape_for_dataset
 from mindspore.parallel._ps_context import _is_role_sched
-from mindspore.parallel._utils import _get_parallel_mode
 from mindspore.ops import operations as P
 from mindspore.common.auto_dynamic_shape import _auto_dynamic_shape
 
@@ -263,9 +261,9 @@ def connect_network_with_dataset(network, dataset_helper):
             "The dataset has been connected to other network, please check the code.")
     is_dynamic = bool(network.get_inputs())
     queue_name = dataset.__transfer_dataset__.queue_name
-    parallel_mode = _get_parallel_mode()
-    is_auto_parallel = parallel_mode in (ParallelMode.SEMI_AUTO_PARALLEL, ParallelMode.AUTO_PARALLEL)
-    if _dynamic_sink_scenario(dataset, dataset_iter, is_dynamic) and not is_auto_parallel:
+    # In pipeline parallel, some stages have no GetNext, should not get in.
+    use_pipeline_parallel = (context.get_auto_parallel_context("pipeline_stages") > 1)
+    if _dynamic_sink_scenario(dataset, dataset_iter, is_dynamic) and not use_pipeline_parallel:
         dataset_types, dataset_shapes = dataset_helper.get_data_info()
         # Need to do full_batch for shapes which also do in the _DatasetIterMSLoopSink
         if _need_to_full():
@@ -306,7 +304,8 @@ def connect_network_with_dataset(network, dataset_helper):
             dataset_types, dataset_shapes = dataset_helper.types_shapes()
             aux.__shape_type__ = str(dataset_types) + str(dataset_shapes)
 
-    if _dynamic_sink_data(dataset, dataset_iter) and _dynamic_sink_exception_scenario(dataset_iter, is_dynamic):
+    if _dynamic_sink_data(dataset, dataset_iter) and _dynamic_sink_exception_scenario(dataset_iter, is_dynamic) and \
+        not use_pipeline_parallel:
         dataset_helper.get_data_info()
     network.add_flags(sink_mode=True)
     return network
