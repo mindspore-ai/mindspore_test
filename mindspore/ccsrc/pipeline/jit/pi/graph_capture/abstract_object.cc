@@ -127,7 +127,7 @@ bool AbstractObjectBase::IsMindSporeSupportedType() {
   return kMsSupportedType.find(GetType()) != kMsSupportedType.end();
 }
 
-std::string AbstractObjectBase::ToString(PyObject *op) {
+std::string AbstractObjectBase::ToString(PyObject *op, bool print_type, size_t limit) {
   if (op == nullptr) {
     return "<NULL>";
   }
@@ -139,7 +139,9 @@ std::string AbstractObjectBase::ToString(PyObject *op) {
   py::object obj = py::cast<py::object>(op);
   AObject::Type t = AObject::GetPyType(op);
   std::stringstream s;
-  s << std::string(py::str(reinterpret_cast<PyObject *>(Py_TYPE(op)))) << "{ ";
+  if (print_type) {
+    s << (Py_TYPE(op)->tp_name ? Py_TYPE(op)->tp_name : "<unnamed>") << "{ ";
+  }
   switch (t) {
     case AObject::kTypeTensor:
     case AObject::kTypeStubTensor: {
@@ -147,33 +149,35 @@ std::string AbstractObjectBase::ToString(PyObject *op) {
       break;
     }
     case AObject::kTypeBoundMethod: {
-      s << std::string(py::str(PyMethod_GET_FUNCTION(op))) << " at " << ToString(PyMethod_GET_SELF(op));
+      auto func = reinterpret_cast<PyFunctionObject *>(PyMethod_GET_FUNCTION(op));
+      s << PyUnicode_AsUTF8(func->func_qualname) << " of " << ToString(PyMethod_GET_SELF(op), print_type);
       break;
     }
     case AObject::kTypeNNCellList:
     case AObject::kTypeList:
     case AObject::kTypeTuple: {
-      s << (t == AObject::kTypeTuple ? "( " : "[ ");
+      size_t size = 0;
+      s << (t == AObject::kTypeTuple ? "(" : "[");
       for (auto i : py::iter(obj)) {
-        s << ToString(i.ptr()) << ", ";
+        s << ToString(i.ptr(), print_type) << ",";
+        size++;
       }
-      s.seekp(-2, s.cur);
-      s << (t == AObject::kTypeTuple ? " )" : " ]");
+      s.seekp(size == 0 ? 0 : -1, s.cur);
+      s << (t == AObject::kTypeTuple ? ")" : "]");
       break;
     }
     case AObject::kTypeDict: {
       PyObject *key;
       PyObject *val;
       Py_ssize_t pos = 0;
-      s << "{ ";
+      s << "{";
       while (PyDict_Next(op, &pos, &key, &val)) {
-        s << ToString(key) << ":" << ToString(val) << ", ";
+        s << ToString(key, print_type) << ":" << ToString(val, print_type) << ",";
       }
-      s.seekp(-2, s.cur);
-      s << " }";
+      s.seekp(pos == 0 ? 0 : -1, s.cur);
+      s << "}";
       break;
     }
-    case AObject::kTypeAnyValue:
     case AObject::kTypeCell: {
       s << " at " << op;
       break;
@@ -182,22 +186,34 @@ std::string AbstractObjectBase::ToString(PyObject *op) {
       s << std::string(py::str(obj));
       break;
   }
-  s << " }";
-  return s.str();
+  s << (print_type ? " }" : "");
+  auto ret = s.str();
+  return ret.size() < limit ? ret : ret.substr(0, limit) + "...";
 }
 
 std::string AbstractObjectBase::ToString() const {
-  std::string s = " ";
-#define ABSTRACT_MS_FLAG_DEF(unit, bit) s += ((ms_flag_ & kMsFlag##unit) ? #unit "|" : "");
+  std::stringstream s;
+#define ABSTRACT_MS_FLAG_DEF(unit, bit) s << ((ms_flag_ & kMsFlag##unit) ? #unit "|" : "");
 #include "abstract_ms_flag.def"
 #undef ABSTRACT_MS_FLAG_DEF
-  if (s.back() == '|') {
-    s.pop_back();
+  if (ms_flag_) {
+    s.seekp(-1, s.cur);
   }
   if (type_object_ != nullptr) {
-    s += std::string(py::str(reinterpret_cast<PyObject *>(type_object_)));
+    s << (type_object_->tp_name ? type_object_->tp_name : "<unnamed>");
+  } else {
+    s << GetTypeDesc(AObject::kTypeAnyValue);
   }
-  return GetTypeDesc(GetType()) + s;
+  return s.str();
+}
+
+std::string AbstractObject::ToString() const {
+  std::stringstream s;
+  s << this->AbstractObjectBase::ToString();
+  if (value_.ptr() != nullptr) {
+    s << "{value=" << AObject::ToString(value_.ptr(), false, 40) << "}";
+  }
+  return s.str();
 }
 
 AbstractObjectBase::Type AbstractObjectBase::GetPyType(PyTypeObject *tp) {
@@ -1039,22 +1055,39 @@ bool AbstractDict::IsMindSporeSupportedType() {
 
 std::string AbstractTuple::ToString() const {
   std::stringstream s;
-  s << this->AObject::ToString() << "<" << GetTypeDesc(element_type_) << ">";
+  s << this->AObject::ToString();
+  if (element_type_ != AObject::kTypeAnyValue) {
+    s << "<" << GetTypeDesc(element_type_) << ">";
+  }
   if (this->IsElementValid()) {
-    s << " size:" << this->size();
+    if (value_.ptr() != nullptr) {
+      s << "{value=" << AObject::ToString(value_.ptr(), false, 20) << "}";
+    } else {
+      s << "size=" << this->size();
+    }
   } else {
-    s << "<NoSize>";
+    s << "<" << GetTypeDesc(AObject::kTypeAnyValue) << ">";
   }
   return s.str();
 }
 
 std::string AbstractDict::ToString() const {
   std::stringstream s;
-  s << this->AObject::ToString() << '<' << GetTypeDesc(k_type_) << ',' << GetTypeDesc(v_type_) << '>';
+  s << this->AObject::ToString();
+  if (k_type_ != AObject::kTypeAnyValue) {
+    s << "k:<" << GetTypeDesc(k_type_) << '>';
+  }
+  if (v_type_ != AObject::kTypeAnyValue) {
+    s << "v:<" << GetTypeDesc(v_type_) << '>';
+  }
   if (this->IsElementValid()) {
-    s << " size:" << size();
+    if (value_.ptr() != nullptr) {
+      s << "{value=" << AObject::ToString(value_.ptr(), false, 20) << "}";
+    } else {
+      s << "size=" << this->size();
+    }
   } else {
-    s << "<NoSize>";
+    s << "<" << GetTypeDesc(AObject::kTypeAnyValue) << ">";
   }
   return s.str();
 }
@@ -1711,19 +1744,15 @@ AObject *AbstractTensor::GetAttr(const std::string &name) {
 
 std::string AbstractTensor::ToString() const {
   std::stringstream s;
-  py::object dtype;
-  py::object shape;
-  std::stringstream extra_info;
+  s << this->AbstractObjectBase::ToString();
   if (value_.ptr()) {
-    dtype = value_.attr("dtype");
-    shape = value_.attr("shape");
-    if (is_stub_) {
-      extra_info << "stub_tensor ";
-    }
-    extra_info << "init=" << (CheckTensorDataInitialized(value_) ? "True" : "False");
+    s << AObject::ToString(value_.ptr(), false, 40);
+  } else {
+    s << "{NULL,NULL}";
   }
-  s << this->AbstractObjectBase::ToString() << '\'' << std::string(py::str(dtype.ptr())) << ','
-    << std::string(py::str(shape.ptr())) << "' " << extra_info.str() << ' ';
+  if (value_.ptr() != nullptr) {
+    s << " data_allocated=" << (CheckTensorDataInitialized(value_) ? "True" : "False");
+  }
   return s.str();
 }
 

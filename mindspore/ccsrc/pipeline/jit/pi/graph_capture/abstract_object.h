@@ -135,7 +135,7 @@ class AbstractObjectBase {
   static int BinaryIs(AObject *l, AObject *r);
 
   static const char *GetTypeDesc(AObject::Type type);
-  static std::string ToString(PyObject *);
+  static std::string ToString(PyObject *, bool print_type = true, size_t limit = SIZE_MAX);
 
  protected:
   static AObject *MakeAObject(Type type, PyTypeObject *tp, PyObject *op, RecMap *rec = nullptr);
@@ -158,6 +158,7 @@ class AbstractObject : public AbstractObjectBase {
   AObject *GetAttr(const std::string &name) override;
   AObject *GetItem(AObject *key);
   bool SetAttr(const std::string &n, AObject *v) override;
+  std::string ToString() const override;
 
  protected:
   py::object value_;
@@ -171,7 +172,6 @@ class AbstractType : public AbstractObject {
     this->SetTypeObject(&PyType_Type);
   }
   virtual ~AbstractType() {}
-  std::string ToString() const override { return std::string(py::str(value_.ptr())); }
   bool IsMindSporeSupportedType() override { return false; }
 
   Type GetTypeType() const { return type_type_; }
