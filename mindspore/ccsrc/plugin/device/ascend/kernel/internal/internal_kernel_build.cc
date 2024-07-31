@@ -51,15 +51,14 @@ void GetValidKernelBuildInfoWithInternalFormat(const AnfNodePtr &node, std::vect
 #include "mindspore/ops/op_def/nn_op_name.h"
 #include "acl/acl_base.h"
 #include "transform/acl_ir/acl_helper.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 
 namespace mindspore {
 namespace kernel {
 namespace {
-static const char k310PKey[] = "Ascend310P";
-
 // unordered_map value vector<vector<size_t>> mean:
 // the first vector is input_idx, the second is output_idx
-static const std::unordered_map<std::string, std::vector<std::vector<size_t> > > kNzFormatOpsList = {
+static std::unordered_map<std::string, std::vector<std::vector<size_t> > > kNzFormatOpsList = {
   {kMatMulOpName, {{0, 1}, {0}}},
   {"QuantLinearSparse", {{0}, {0}}},
   {"QuantBatchMatmul", {{0, 1}, {0}}},
@@ -78,18 +77,6 @@ static const std::unordered_map<std::string, std::unordered_map<size_t, int64_t>
     {1, internal::TransDataParam::ATTENTION_INPUT_QKV},
     {2, internal::TransDataParam::ATTENTION_INPUT_QKV},
     {6, internal::TransDataParam::ATTENTION_INPUT_MASK}}}};
-
-bool IsAscend310PSoc() {
-  const char *soc_name_c = aclrtGetSocName();
-  if (soc_name_c == nullptr) {
-    return false;
-  }
-  std::string soc_name(soc_name_c);
-  if (soc_name.find(k310PKey) != std::string::npos) {
-    return true;
-  }
-  return false;
-}
 
 int64_t GetSpecialFormat(const AnfNodePtr &cur_node, const AnfNodePtr &input_node, const size_t input_idx) {
   MS_EXCEPTION_IF_NULL(cur_node);
@@ -148,6 +135,23 @@ bool NeedSetParameterFormat(const AnfNodePtr &input_node, const std::string &new
   }
   return false;
 }
+
+void UpdateNzFormatOpsList(const AnfNodePtr &node) {
+  auto cnode = node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
+  if (AnfUtils::GetCNodeName(node) == prim::kPrimGroupedMatmul->name() &&
+      common::AnfAlgo::HasNodeAttr(kAttrDynInputSizes, cnode)) {
+    auto dyn_input_sizes = common::AnfAlgo::GetNodeAttr<std::vector<int64_t> >(cnode, kAttrDynInputSizes);
+    if (!dyn_input_sizes.empty()) {
+      auto weight_num = static_cast<size_t>(dyn_input_sizes[0]);
+      std::vector<size_t> input_idx;
+      for (size_t i = weight_num; i < weight_num * 2; ++i) {
+        input_idx.emplace_back(i);
+      }
+      kNzFormatOpsList[prim::kPrimGroupedMatmul->name()] = {input_idx, {}};
+    }
+  }
+}
 }  // namespace
 
 void GetValidKernelBuildInfoWithInternalFormat(const AnfNodePtr &node, std::vector<std::string> *input_formats,
@@ -156,12 +160,8 @@ void GetValidKernelBuildInfoWithInternalFormat(const AnfNodePtr &node, std::vect
   MS_EXCEPTION_IF_NULL(input_formats);
   MS_EXCEPTION_IF_NULL(output_formats);
 
-  bool is_310p = IsAscend310PSoc();
-  if (!is_310p) {
-    return;
-  }
-
   size_t input_num = common::AnfAlgo::GetInputTensorNum(node);
+  UpdateNzFormatOpsList(node);
 
   auto format_idx_iter = kNzFormatOpsList.find(AnfUtils::GetCNodeName(node));
   if (format_idx_iter != kNzFormatOpsList.end()) {

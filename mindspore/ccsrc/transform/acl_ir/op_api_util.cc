@@ -116,7 +116,11 @@ void OpApiUtil::GetValidKernelBuildInfo(const AnfNodePtr &node, std::vector<std:
   input_reshape_types->assign(input_num, "");
   output_reshape_types->assign(output_num, "");
 
-  if (kernel_type == INTERNAL_KERNEL || IsOneOfPrimitiveCNode(node, {prim::kPrimReshapeExt, prim::kPrimReshape})) {
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  if (context_ptr->IsEnableInferBoost() && context_ptr->ascend_soc_version() == "ascend310p" &&
+      (kernel_type == INTERNAL_KERNEL ||
+       IsOneOfPrimitiveCNode(node, {prim::kPrimReshapeExt, prim::kPrimGroupedMatmul}))) {
     kernel::GetValidKernelBuildInfoWithInternalFormat(node, input_formats, output_formats);
     return;
   }
