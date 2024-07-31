@@ -24,7 +24,7 @@ namespace mindspore::transform {
 INPUT_MAP(KVCacheMgr) = {{1, INPUT_DESC(past)}, {2, INPUT_DESC(cur)}, {3, INPUT_DESC(index)}};
 ATTR_MAP(KVCacheMgr) = EMPTY_ATTR_MAP;
 OUTPUT_MAP(KVCacheMgr) = {{0, OUTPUT_DESC(past)}};
-REG_ADPT_DESC(KVCacheMgr, "KVCacheMgr", ADPT_DESC(KVCacheMgr))
+REG_ADPT_DESC(KVCacheMgr, kNameKVCacheMgr, ADPT_DESC(KVCacheMgr))
 
 // DecoderKVCache
 INPUT_MAP(DecoderKvCache) = {{1, INPUT_DESC(cache)},          {2, INPUT_DESC(update)},
@@ -33,7 +33,7 @@ INPUT_MAP(DecoderKvCache) = {{1, INPUT_DESC(cache)},          {2, INPUT_DESC(upd
                              {7, INPUT_DESC(cur_max_seq_len)}};
 ATTR_MAP(DecoderKvCache) = EMPTY_ATTR_MAP;
 OUTPUT_MAP(DecoderKvCache) = {{0, OUTPUT_DESC(out)}};
-REG_ADPT_DESC(DecoderKvCache, "DecoderKVCache", ADPT_DESC(DecoderKvCache))
+REG_ADPT_DESC(DecoderKvCache, kNameDecoderKVCache, ADPT_DESC(DecoderKvCache))
 
 // PromptKVCache
 INPUT_MAP(PromptKvCache) = {{1, INPUT_DESC(cache)},          {2, INPUT_DESC(update)},
@@ -42,7 +42,7 @@ INPUT_MAP(PromptKvCache) = {{1, INPUT_DESC(cache)},          {2, INPUT_DESC(upda
                             {7, INPUT_DESC(cur_max_seq_len)}};
 ATTR_MAP(PromptKvCache) = EMPTY_ATTR_MAP;
 OUTPUT_MAP(PromptKvCache) = {{0, OUTPUT_DESC(out)}};
-REG_ADPT_DESC(PromptKvCache, "PromptKVCache", ADPT_DESC(PromptKvCache))
+REG_ADPT_DESC(PromptKvCache, kNamePromptKVCache, ADPT_DESC(PromptKvCache))
 
 // FlashAttention
 INPUT_MAP(FlashAttention) = {
@@ -93,5 +93,5 @@ ATTR_MAP(GroupNormSilu) = {{"activate_silu", ATTR_DESC(activate_silu, AnyTraits<
                            {"eps", ATTR_DESC(eps, AnyTraits<float>())},
                            {"num_groups", ATTR_DESC(num_groups, AnyTraits<int64_t>())}};
 OUTPUT_MAP(GroupNormSilu) = {{0, OUTPUT_DESC(y)}, {1, OUTPUT_DESC(mean)}, {2, OUTPUT_DESC(rstd)}};
-REG_ADPT_DESC(GroupNormSilu, "GroupNormSilu", ADPT_DESC(GroupNormSilu))
+REG_ADPT_DESC(GroupNormSilu, kNameGroupNormSilu, ADPT_DESC(GroupNormSilu))
 }  // namespace mindspore::transform

@@ -33,7 +33,7 @@ INPUT_MAP(ApplyCamePart2) = {{1, INPUT_DESC(grad)},        {2, INPUT_DESC(sum_gr
 ATTR_MAP(ApplyCamePart2) = EMPTY_ATTR_MAP;
 OUTPUT_MAP(ApplyCamePart2) = {
   {0, OUTPUT_DESC(r)}, {1, OUTPUT_DESC(c)}, {2, OUTPUT_DESC(u)}, {3, OUTPUT_DESC(sum_square_u)}};
-REG_ADPT_DESC(ApplyCamePart2, "ApplyCamePart2", ADPT_DESC(ApplyCamePart2))
+REG_ADPT_DESC(ApplyCamePart2, kNameApplyCamePart2, ADPT_DESC(ApplyCamePart2))
 
 // ApplyCamePart3
 INPUT_MAP(ApplyCamePart3) = {{1, INPUT_DESC(u)},
@@ -47,7 +47,7 @@ ATTR_MAP(ApplyCamePart3) = EMPTY_ATTR_MAP;
 INPUT_ATTR_MAP(ApplyCamePart3) = {{8, ATTR_DESC(use_first_moment, AnyTraits<bool>())}};
 OUTPUT_MAP(ApplyCamePart3) = {
   {0, OUTPUT_DESC(m)}, {1, OUTPUT_DESC(sum_u_r)}, {2, OUTPUT_DESC(sum_u_c)}, {3, OUTPUT_DESC(sum_u_rc)}};
-REG_ADPT_DESC(ApplyCamePart3, "ApplyCamePart3", ADPT_DESC(ApplyCamePart3))
+REG_ADPT_DESC(ApplyCamePart3, kNameApplyCamePart3, ADPT_DESC(ApplyCamePart3))
 
 // ApplyCamePart4
 INPUT_MAP(ApplyCamePart4) = {
@@ -56,5 +56,5 @@ INPUT_MAP(ApplyCamePart4) = {
   {9, INPUT_DESC(sum_u_r)},      {10, INPUT_DESC(sum_u_c)}, {11, INPUT_DESC(sum_u_rc)}, {12, INPUT_DESC(global_shape)}};
 ATTR_MAP(ApplyCamePart4) = EMPTY_ATTR_MAP;
 OUTPUT_MAP(ApplyCamePart4) = {{0, OUTPUT_DESC(param)}, {1, OUTPUT_DESC(r)}, {2, OUTPUT_DESC(c)}};
-REG_ADPT_DESC(ApplyCamePart4, "ApplyCamePart4", ADPT_DESC(ApplyCamePart4));
+REG_ADPT_DESC(ApplyCamePart4, kNameApplyCamePart4, ADPT_DESC(ApplyCamePart4));
 }  // namespace mindspore::transform
