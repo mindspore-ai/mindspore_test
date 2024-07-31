@@ -203,6 +203,40 @@ std::optional<float> GetAlpha(const NodePtr &alpha) {
   return std::nullopt;
 }
 
+ShapeArray ReduceStdShapeFunc(const ShapeVector &x_shape, const ShapeVector &axis) {
+  ShapeVector new_axis = axis;
+  if (new_axis.empty() && !x_shape.empty()) {
+    new_axis.reserve(x_shape.size());
+    for (int64_t i = 0; i < SizeToLong(x_shape.size()); i++) {
+      new_axis.push_back(i);
+    }
+  }
+  (void)std::transform(new_axis.begin(), new_axis.end(), new_axis.begin(), [&x_shape](const int64_t &c) {
+    if (c < 0) {
+      return c + SizeToLong(x_shape.size());
+    }
+    return c;
+  });
+  for (size_t i = 1; i < new_axis.size(); ++i) {
+    for (size_t j = 0; j < new_axis.size() - i; ++j) {
+      if (new_axis[j] > (new_axis[j + 1])) {
+        std::swap(new_axis[j], new_axis[j + 1]);
+      }
+    }
+  }
+  // input_x:[2,3,4,5]  new_axis:   [0, 2]
+  // reduce: [3,5]      reshape:[1,3,1,5]
+  auto reshape = x_shape;
+  for (auto &i : new_axis) {
+    reshape[LongToSize(i)] = 1;
+  }
+  int64_t num = 1;
+  for (const auto &i : new_axis) {
+    num *= x_shape[LongToSize(i)];
+  }
+  return {reshape, {num - 1}, {num}};
+}
+
 class ReduceStdShapeCalc : public ShapeCalcFunctor {
  public:
   // cppcheck-suppress unknownMacro
@@ -215,39 +249,7 @@ class ReduceStdShapeCalc : public ShapeCalcFunctor {
 
   void FromValue(const ValuePtr &value) override { axis_ = GetValue<std::vector<int64_t>>(value); }
 
-  ShapeArray Calc(const ShapeArray &inputs) const override {
-    auto new_axis = axis_;
-    auto x_shape = inputs.at(0);
-    if (new_axis.empty() && !x_shape.empty()) {
-      for (int64_t i = 0; i < SizeToLong(x_shape.size()); i++) {
-        new_axis.push_back(i);
-      }
-    }
-    (void)std::transform(new_axis.begin(), new_axis.end(), new_axis.begin(), [&x_shape](const int64_t &c) {
-      if (c < 0) {
-        return c + SizeToLong(x_shape.size());
-      }
-      return c;
-    });
-    for (size_t i = 1; i < new_axis.size(); ++i) {
-      for (size_t j = 0; j < new_axis.size() - i; ++j) {
-        if (new_axis[j] > (new_axis[j + 1])) {
-          std::swap(new_axis[j], new_axis[j + 1]);
-        }
-      }
-    }
-    // input_x:[2,3,4,5]  new_axis:   [0, 2]
-    // reduce: [3,5]      reshape:[1,3,1,5]
-    auto reshape = x_shape;
-    for (auto &i : new_axis) {
-      reshape[LongToSize(i)] = 1;
-    }
-    int64_t num = 1;
-    for (const auto &i : new_axis) {
-      num *= x_shape[LongToSize(i)];
-    }
-    return {reshape, {num - 1}, {num}};
-  }
+  ShapeArray Calc(const ShapeArray &inputs) const override { return ReduceStdShapeFunc(inputs.at(0), axis_); }
 
   std::vector<int64_t> Infer(const ShapeArray &inputs, const HashSet<size_t> &) const override {
     auto shape_x = inputs.at(0);
@@ -2503,39 +2505,7 @@ REG_BPROP_BUILDER("Renorm").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
 });
 
 DEF_PURE_SHAPE_CALC(g_reduce_std)
-  .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
-    auto x_shape = inputs.at(0);
-    auto new_axis = inputs.at(1);
-    if (new_axis.empty() && !x_shape.empty()) {
-      for (int64_t i = 0; i < SizeToLong(x_shape.size()); i++) {
-        new_axis.push_back(i);
-      }
-    }
-    (void)std::transform(new_axis.begin(), new_axis.end(), new_axis.begin(), [&x_shape](const int64_t &c) {
-      if (c < 0) {
-        return c + SizeToLong(x_shape.size());
-      }
-      return c;
-    });
-    for (size_t i = 1; i < new_axis.size(); ++i) {
-      for (size_t j = 0; j < new_axis.size() - i; ++j) {
-        if (new_axis[j] > (new_axis[j + 1])) {
-          std::swap(new_axis[j], new_axis[j + 1]);
-        }
-      }
-    }
-    // input_x:[2,3,4,5]  new_axis:   [0, 2]
-    // reduce: [3,5]      reshape:[1,3,1,5]
-    auto reshape = x_shape;
-    for (auto &i : new_axis) {
-      reshape[LongToSize(i)] = 1;
-    }
-    int64_t num = 1;
-    for (const auto &i : new_axis) {
-      num *= x_shape[LongToSize(i)];
-    }
-    return {reshape, {num - 1}, {num}};
-  })
+  .SetCalc([](const ShapeArray &inputs) -> ShapeArray { return ReduceStdShapeFunc(inputs.at(0), inputs.at(1)); })
   .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &) -> ShapeVector {
     auto shape_x = inputs.at(0);
     auto rank = IsDynamicRank(shape_x) ? -1 : SizeToLong(shape_x.size());

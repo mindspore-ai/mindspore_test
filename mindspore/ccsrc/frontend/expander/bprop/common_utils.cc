@@ -374,24 +374,6 @@ std::vector<int64_t> Range(int64_t start, int64_t stop, int64_t step) {
 
 std::vector<int64_t> Range(int64_t stop) { return Range(0, stop); }
 
-std::vector<int64_t> GetTransposeAxis(const std::vector<int64_t> &x_shape, int64_t axis) {
-  std::vector<int64_t> reverse_axis;
-  if (x_shape.empty()) {
-    return reverse_axis;
-  }
-  auto rk = static_cast<int64_t>(x_shape.size());
-  if (axis < 0) {
-    axis += rk;
-  }
-  reverse_axis.reserve(x_shape.size());
-  for (int64_t i = 0; i < rk; ++i) {
-    (void)reverse_axis.emplace_back(i);
-  }
-  reverse_axis[LongToSize(axis)] = rk - 1;
-  reverse_axis[LongToSize(rk - 1)] = axis;
-  return reverse_axis;
-}
-
 int64_t CheckRange(int64_t idx, int64_t dim_size) {
   if (idx < -dim_size || idx >= dim_size) {
     MS_EXCEPTION(IndexError) << "index {" << idx << "} is out of bounds for dimension with size {" << dim_size << "}";
