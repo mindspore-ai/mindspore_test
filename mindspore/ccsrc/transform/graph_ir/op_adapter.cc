@@ -573,6 +573,7 @@ std::shared_ptr<GeTensorDesc> OpAdapterImpl::CreateOutputDesc(const abstract::Sh
 
 Status OpAdapterImpl::UpdateMultiOutputDesc(const OperatorPtr &op, const abstract::BaseShapePtr &shp,
                                             const TypePtr &type, const std::string &format) {
+  MS_EXCEPTION_IF_NULL(op);
   auto tuple_shp = dyn_cast<abstract::TupleShape>(shp);
   MS_EXCEPTION_IF_NULL(tuple_shp);
 
@@ -611,7 +612,11 @@ Status OpAdapterImpl::UpdateMultiOutputDesc(const OperatorPtr &op, const abstrac
     }
     TypeId me_type = type_elem->type_id();
     if (kObjectTypeTensorType == me_type) {
-      me_type = dyn_cast<TensorType>(type_elem)->element()->type_id();
+      auto tensor_type = dyn_cast<TensorType>(type_elem);
+      MS_EXCEPTION_IF_NULL(tensor_type);
+      auto tensor_element = tensor_type->element();
+      MS_EXCEPTION_IF_NULL(tensor_element);
+      me_type = tensor_element->type_id();
     }
     if (me_type == kMetaTypeNone) {
       continue;
@@ -687,7 +692,7 @@ void OpAdapterImpl::UpdateNormalOpInputDesc(const OperatorPtr &op, const AnfNode
           real_input_map[input_index] = i + kIndex1;
           input_index += 1;
         } else {
-          input_index += dyn_input_size;
+          input_index += LongToSize(dyn_input_size);
         }
       }
     }
@@ -943,10 +948,16 @@ std::map<std::string, ValuePtr> OpAdapterImpl::GetNormalOpAttrList(const Operato
   // set attr from const input
   for (auto &it : input_attr_map_) {
     size_t cur_idx = GetRealAnfInputIndex(real_input_indices, it.first);
-    if (inputs.size() <= cur_idx || !inputs[cur_idx]->isa<ValueNode>()) {
+    if (inputs.size() <= cur_idx) {
       continue;
     }
+    MS_EXCEPTION_IF_NULL(inputs[cur_idx]);
+    if (!inputs[cur_idx]->isa<ValueNode>()) {
+      continue;
+    }
+
     auto const_value = GetValueNode(inputs[cur_idx]);
+    MS_EXCEPTION_IF_NULL(const_value);
     MS_LOG(DEBUG) << "Get input attr: input_" << cur_idx << "(" << it.second.name
                   << "), value: " << const_value->ToString();
     if (const_value->isa<None>()) {

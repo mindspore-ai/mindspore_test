@@ -28,6 +28,7 @@ constexpr size_t kNumDimsNCHW = 4;
 
 inline ShapeVector GetShape(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
+  MS_EXCEPTION_IF_NULL(node->abstract());
   auto base_shape = node->abstract()->GetShape();
   if (base_shape->isa<abstract::Shape>()) {
     auto shape_ptr = base_shape->cast<abstract::ShapePtr>();
