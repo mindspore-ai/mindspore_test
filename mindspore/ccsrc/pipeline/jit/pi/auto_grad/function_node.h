@@ -116,9 +116,6 @@ class FunctionNode : public FunctionContext {
   /// \return The bprop function graph.
   const FuncGraphPtr &GetBpropFunction() const { return grad_fn_; }
 
-  /// \brief Generate the bprop function.
-  void GenerateBropFunction();
-
   /// \brief Start gradient calculation.
   void ApplyNative();
 
@@ -155,11 +152,6 @@ class FunctionNode : public FunctionContext {
   std::string ToString() const;
 
  private:
-  /// \brief Generate the grad value of function.
-  ///
-  /// \param[in] dout The gradient of the output.
-  void ApplyInner(const ValuePtr &dout);
-
   /// \brief Calculate the gradient of the next layer function node.
   ///
   /// \param[in] grad_values The the gradient values.

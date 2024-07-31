@@ -25,7 +25,6 @@
 #include <utility>
 #include "op_def/sequence_ops.h"
 #include "pipeline/jit/pi/auto_grad/edge.h"
-#include "pipeline/jit/pi/auto_grad/grad_executor.h"
 #include "pipeline/jit/pi/auto_grad/native_backward_function.h"
 #include "utils/ms_utils.h"
 
@@ -40,17 +39,6 @@ void FunctionNode::CleanResource() {
   backward_func_ = nullptr;
   edges_.clear();
   dependences_.clear();
-}
-
-void PostBpropFunctionToEdges(const py::object &tensor) {
-  py::object grad_fn = python_adapter::GetPyObjAttr(tensor, "grad_fn");
-  if (py::isinstance<py::none>(grad_fn)) {
-    return;
-  }
-  auto func_node = grad_fn.cast<grad::FunctionNodePtr>();
-  func_node->GenerateBropFunction();
-  auto edges = func_node->GetNextEdges();
-  std::for_each(edges.begin(), edges.end(), [](const EdgePtr &edge) { edge->GetNode()->GenerateBropFunction(); });
 }
 
 ValuePtrList ConvertTupleToValueList(const py::list &inputs) {
@@ -205,39 +193,6 @@ void FunctionNode::ApplyNative() {
   ApplyEdges(flatten_values);
 }
 
-/// \brief Generate the bprop function.
-void FunctionNode::GenerateBropFunction() {
-  auto generate_task = std::make_shared<RunGenerateBpropTask>([this]() {
-    MS_LOG(DEBUG) << "Generate brop function for node " << tensor_.ptr() << ", tensor is " << tensor_.ptr();
-    auto output = GetOutput();
-    auto executor = GradExecutor::GetInstance();
-    {
-      // gil for PyObject accessing
-      py::gil_scoped_acquire gil_acquire;
-      auto acc_fn = executor->GetAccumulateGraph(output);
-      acc_fn_ = executor->PrimBpropGraphPass(acc_fn);
-    }
-
-    auto func = GetFunction();
-    if (func->isa<None>()) {
-      return;
-    }
-    try {
-      // gil for PyObject accessing
-      py::gil_scoped_acquire gil_acquire;
-      grad_fn_ = executor->GetBpropGraph(NewValueNode(func), GetInputs(), output, output);
-    } catch (const std::exception &e) {
-      MS_LOG(ERROR) << "Prim : " << func->ToString() << " Output : " << output->ToString();
-      MS_LOG(ERROR) << e.what();
-    }
-  });
-  GradExecutor::GetInstance()->DispatchGenerateTask(generate_task);
-  {
-    py::gil_scoped_release release;
-    GradExecutor::GetInstance()->GetAsyncTaskManager()->GetGenerateTaskQueue()->Wait();
-  }
-}
-
 void Visit(const FunctionNodePtr &node, const std::function<void(const FunctionNodePtr &)> &callback) {
   std::queue<FunctionNodePtr> nodes;
   nodes.push(node);
@@ -281,34 +236,6 @@ void FunctionNode::Apply(const py::object &grad) {
   SyncGradToPyObject();
   auto release_func = [](const FunctionNodePtr &node) { node->CleanResource(); };
   Visit(shared_from_base<FunctionNode>(), release_func);
-}
-
-void FunctionNode::ApplyInner(const ValuePtr &dout) {
-  MS_LOG(DEBUG) << "Start run apply() of " << tensor_.ptr() << ", tensor is " << tensor_.ptr();
-  MS_LOG(DEBUG) << "Prim is " << GetFunction()->ToString() << ", dout is " << dout->ToString();
-  auto run_task = std::make_shared<RunBpropTask>(
-    [this](const ValuePtr &dout) {
-      AccumulateGradient(dout, index_);
-      if (grad_fn_ == nullptr) {
-        return;
-      }
-      // gil for PyObject accessing
-      py::gil_scoped_acquire gil_acquire;
-      auto ret = GradExecutor::GetInstance()->RunGraph(grad_fn_, GetInputs(), GetOutput(), dout);
-      if (!ret->isa<ValueTuple>()) {
-        return;
-      }
-      auto tuple = ret->cast<ValueTuplePtr>();
-      std::for_each(edges_.begin(), edges_.end(),
-                    [&tuple](const auto &edge) { edge->GetNode()->ApplyInner(tuple->value()[edge->GetIndex()]); });
-    },
-    dout);
-
-  GradExecutor::GetInstance()->DispatchRunTask(run_task);
-  {
-    py::gil_scoped_release release;
-    GradExecutor::GetInstance()->GetAsyncTaskManager()->GetRunTaskQueue()->Wait();
-  }
 }
 
 void FunctionNode::UpdateDependence() {
