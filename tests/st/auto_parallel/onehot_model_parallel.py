@@ -32,7 +32,7 @@ def setup_module():
     global device_num
     global rank_id
     np.random.seed(0)
-    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
+    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend", jit_config={"jit_level": "O2"})
     context.set_context(device_id=device_id)
     distributedTool.init()
     device_num = distributedTool.get_group_size()
@@ -51,12 +51,12 @@ class Onehot(Cell):
         trans_stra = None
         if strategy:
             trans_stra = (strategy[0],)
-        self.onehot = P.OneHot().shard(strategy=strategy)
+        self.onehot = P.OneHot().shard(in_strategy=strategy)
         self.depth = depth
         self.on_value = Tensor(on_value, ms.float32)
         self.off_value = Tensor(off_value, ms.float32)
-        self.transpose = P.Transpose().shard(strategy=trans_stra)
-        self.sub = P.Sub().shard(strategy=((1, 1), (1, 1)))
+        self.transpose = P.Transpose().shard(in_strategy=trans_stra)
+        self.sub = P.Sub().shard(in_strategy=((1, 1), (1, 1)))
         self.axis = axis
 
     def construct(self, input_, indices):
@@ -87,15 +87,15 @@ class DataGenerator():
         data = (self.generate_data(shape) * 2).astype(np.float32)
         stra = [1] * len(shape)
         stra[0] = device_num
-        datas = self.get_parallel_blocks(data, stra)
-        return Tensor(data), Tensor(datas[rank_id])
+        data = self.get_parallel_blocks(data, stra)
+        return Tensor(data), Tensor(data[rank_id])
 
     def label_data(self, shape, classes):
         data = (self.generate_data(shape) * (classes - 1)).astype(np.int32)
         stra = [1] * len(shape)
         stra[0] = device_num
-        datas = self.get_parallel_blocks(data, stra)
-        return Tensor(data), Tensor(datas[rank_id])
+        data = self.get_parallel_blocks(data, stra)
+        return Tensor(data), Tensor(data[rank_id])
 
 
 class OneHotFactory:
@@ -118,7 +118,7 @@ class OneHotFactory:
         return out
 
     def forward_mindspore_parallel_impl(self):
-        context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
+        context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", full_batch=True)
         net = Onehot(axis=self.axis,
                      depth=self.depth,
                      on_value=self.on_value,
