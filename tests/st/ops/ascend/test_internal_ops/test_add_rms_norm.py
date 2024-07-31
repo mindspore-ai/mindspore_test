@@ -124,3 +124,22 @@ def test_add_rms_norm_f16_with_cast():
     result_aclnn = _test_add_rmsnorm_fusion(shape, dtype, False)
     assert np.amax(np.abs(result_internal[0] - result_aclnn[0])) < 5e-3
     assert np.amax(np.abs(result_internal[1] - result_aclnn[1])) < 5e-3
+
+
+@pytest.mark.level0
+@pytest.mark.platform_arm_ascend910b_training
+@pytest.mark.env_onecard
+def test_add_rms_norm_f16_quant():
+    """
+    Feature: test add_rms_norm fusion with quant in graph mode
+    Description: test add_rms_norm.
+    Expectation: the result is the same with aclnn version of two ops
+    """
+    shape = (1, 1024, 11264)
+    dtype = "float16"
+    result_internal = _test_add_rmsnorm_fusion(
+        shape, dtype, True, with_quant=True)
+    result_aclnn = _test_add_rmsnorm_fusion(
+        shape, dtype, False, with_quant=True)
+    assert np.amax(np.abs(result_internal[0] - result_aclnn[0])) < 2
+    assert np.amax(np.abs(result_internal[1] - result_aclnn[1])) < 5e-3

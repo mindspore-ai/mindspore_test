@@ -102,4 +102,8 @@ parse_device()
   if [[ "X$ENABLE_INTERNAL_KERNELS" == "Xon" ]]; then
     source ${BASEPATH}/scripts/build/check_and_build_ms_kernels_internal.sh
   fi
+  if [[ "X$RUN_TESTCASES" == "Xon" ]]; then
+    echo "Enable MS Internal Kernels for UT."
+    source ${BASEPATH}/scripts/build/check_and_build_ms_kernels_internal.sh
+  fi
 }

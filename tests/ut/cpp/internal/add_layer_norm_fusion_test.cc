@@ -19,6 +19,7 @@
 #include "plugin/device/ascend/optimizer/ir_fusion/add_layer_norm_fusion.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/debug/anf_ir_dump.h"
+#include "utils/phase.h"
 #include "pre_activate/common/pattern_to_pattern_pass_utils.h"
 
 namespace mindspore {
@@ -29,9 +30,12 @@ class AddLayernormFusionUT : public UT::Common {
 };
 
 /// Feature: A backend pass: AddLayernormFusion
-/// Description: Convert LayerNormExt(Add) to AddLayernorm
+/// Description: Convert LayerNorm(Add) to AddLayernorm
 /// Expectation: After optimize, match AddLayernorm.
 TEST_F(AddLayernormFusionUT, AddLayernormFusionTest) {
+  std::map<std::string, std::string> jit_config;
+  jit_config["infer_boost"] = "on";
+  PhaseManager::GetInstance().set_jit_config(jit_config);
   test::ConstructGraph c;
   auto input_0 = c.NewTensorInput("input_0", kFloat16, {1, 1024, 11264});
   auto input_1 = c.NewTensorInput("input_1", kFloat16, {1, 1024, 11264});
@@ -54,6 +58,9 @@ TEST_F(AddLayernormFusionUT, AddLayernormFusionTest) {
 /// Description: Convert LayerNormV3(Add) to AddLayernorm
 /// Expectation: After optimize, match AddLayernorm.
 TEST_F(AddLayernormFusionUT, AddLayernormV3FusionTest) {
+  std::map<std::string, std::string> jit_config;
+  jit_config["infer_boost"] = "on";
+  PhaseManager::GetInstance().set_jit_config(jit_config);
   test::ConstructGraph c;
   auto input_0 = c.NewTensorInput("input_0", kFloat16, {1, 1024, 11264});
   auto input_1 = c.NewTensorInput("input_1", kFloat16, {1, 1024, 11264});
@@ -77,6 +84,9 @@ TEST_F(AddLayernormFusionUT, AddLayernormV3FusionTest) {
 /// Description: Convert LayerNormExt(Add) to AddLayernorm
 /// Expectation: After optimize, match AddLayernorm.
 TEST_F(AddLayernormFusionUT, AddLayernormExtFusionTest) {
+  std::map<std::string, std::string> jit_config;
+  jit_config["infer_boost"] = "on";
+  PhaseManager::GetInstance().set_jit_config(jit_config);
   test::ConstructGraph c;
   auto input_0 = c.NewTensorInput("input_0", kFloat16, {1, 1024, 11264});
   auto input_1 = c.NewTensorInput("input_1", kFloat16, {1, 1024, 11264});
