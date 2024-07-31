@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2020-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,44 +88,54 @@ std::pair<std::string, std::string> Map::GetMapInputIndex(size_t num) const {
   return std::pair<std::string, std::string>(error_index, next_index);
 }
 
-AnfNodePtr Map::FullMakeList(const std::shared_ptr<List> &type, const FuncGraphPtr &func_graph,
-                             const AnfNodePtr &fn_arg, const ArgsPairList &arg_pairs) {
-  MS_EXCEPTION_IF_NULL(func_graph);
-  MS_EXCEPTION_IF_NULL(type);
-
-  std::size_t size = type->elements().size();
+template <typename T>
+void Map::CheckArgsInSequence(const ArgsPairList &arg_pairs, TypeId type_id, std::size_t size) {
   size_t num = 0;
   std::ostringstream oss;
   bool is_not_same = false;
   for (auto &item : arg_pairs) {
     num++;
-    auto lhs = std::dynamic_pointer_cast<List>(item.second);
-    auto [error_index, next_index] = GetMapInputIndex(num);
+    auto lhs = std::dynamic_pointer_cast<T>(item.second);
+    auto [error_index_res, next_index_res] = GetMapInputIndex(num);
     if (lhs == nullptr) {
-      MS_LOG(EXCEPTION) << "The " << error_index << " element in Map has wrong type, expected a List, but got "
-                        << item.second->ToString() << ".";
+      std::string type_name = "List";
+      if (type_id == kObjectTypeTuple) {
+        type_name = "Tuple";
+      }
+      MS_LOG(EXCEPTION) << "The " << error_index_res << " element in Map has wrong type, expected a " << type_name
+                        << ", but got " << item.second->ToString() << ". ";
     }
     if (lhs->dynamic_len()) {
-      MS_LOG(EXCEPTION) << "For 'map', the dynamic length input is unsupported in graph mode";
+      MS_LOG(EXCEPTION) << "For 'map', the dynamic length input is unsupported in graph mode. ";
     }
     if (lhs->elements().size() != size) {
-      oss << "\nThe length of the " << error_index << " element in Map is " << size << ", but the length of the "
-          << next_index << " element in Map is " << lhs->elements().size() << ".\n";
+      oss << "\nThe length of the " << error_index_res << " element in Map is " << size << ", but the length of the "
+          << next_index_res << " element in Map is " << lhs->elements().size() << ".\n";
       is_not_same = true;
       break;
     }
   }
   if (is_not_same) {
+    if (type_id == kObjectTypeTuple) {
+      MS_LOG(EXCEPTION) << "For 'Map', the length of tuples must be the same. " << oss.str();
+    }
     MS_LOG(EXCEPTION) << "For 'Map', the length of lists must be the same. " << oss.str();
   }
+}
 
+AnfNodePtr Map::MapConverter(const FuncGraphPtr &func_graph, const AnfNodePtr &fn_arg, const ArgsPairList &arg_pairs,
+                             TypeId type_id, std::size_t size) {
   constexpr size_t prim_hold_len = 1;
   std::vector<AnfNodePtr> inputs;
   inputs.reserve(size + prim_hold_len);
-  inputs.push_back(NewValueNode(prim::kPrimMakeList));
-
+  if (type_id == kObjectTypeTuple) {
+    inputs.push_back(NewValueNode(prim::kPrimMakeTuple));
+  } else {
+    inputs.push_back(NewValueNode(prim::kPrimMakeList));
+  }
   for (size_t i = 0; i < size; i++) {
-    MS_LOG(DEBUG) << "FullMakeList for the " << i << "th arg of the target, reverse_: " << reverse_ << ".";
+    MS_LOG(DEBUG) << "FullMakeList or FullMakeTuple for the " << i << "th arg of the target, reverse_: " << reverse_
+                  << ".";
     auto res_fg = GenerateLeafFunc(arg_pairs.size());
     auto fn = NewValueNode(res_fg);
 
@@ -137,7 +147,11 @@ AnfNodePtr Map::FullMakeList(const std::shared_ptr<List> &type, const FuncGraphP
 
     size_t pos = (reverse_ ? (size - 1 - i) : i);
     (void)std::transform(arg_pairs.begin(), arg_pairs.end(), std::back_inserter(inputs2),
-                         [&func_graph, pos](const std::pair<AnfNodePtr, Any> &item) {
+                         [&func_graph, &pos, type_id](const std::pair<AnfNodePtr, Any> &item) {
+                           if (type_id == kObjectTypeTuple) {
+                             return func_graph->NewCNodeInOrder(
+                               {NewValueNode(prim::kPrimTupleGetItem), item.first, NewValueNode(SizeToLong(pos))});
+                           }
                            return func_graph->NewCNodeInOrder(
                              {NewValueNode(prim::kPrimListGetItem), item.first, NewValueNode(SizeToLong(pos))});
                          });
@@ -152,68 +166,22 @@ AnfNodePtr Map::FullMakeList(const std::shared_ptr<List> &type, const FuncGraphP
   return func_graph->NewCNodeInOrder(inputs);
 }
 
+AnfNodePtr Map::FullMakeList(const std::shared_ptr<List> &type, const FuncGraphPtr &func_graph,
+                             const AnfNodePtr &fn_arg, const ArgsPairList &arg_pairs) {
+  MS_EXCEPTION_IF_NULL(func_graph);
+  MS_EXCEPTION_IF_NULL(type);
+  std::size_t size = type->elements().size();
+  CheckArgsInSequence<List>(arg_pairs, kObjectTypeList, size);
+  return MapConverter(func_graph, fn_arg, arg_pairs, kObjectTypeList, size);
+}
+
 AnfNodePtr Map::FullMakeTuple(const std::shared_ptr<Tuple> &type, const FuncGraphPtr &func_graph,
                               const AnfNodePtr &fn_arg, const ArgsPairList &arg_pairs) {
   MS_EXCEPTION_IF_NULL(func_graph);
   MS_EXCEPTION_IF_NULL(type);
-
   size_t size = type->elements().size();
-  size_t num = 0;
-  std::ostringstream oss;
-  bool is_not_same = false;
-  for (auto &item : arg_pairs) {
-    num++;
-    auto lhs = std::dynamic_pointer_cast<Tuple>(item.second);
-    auto [error_index, next_index] = GetMapInputIndex(num);
-    if (lhs == nullptr) {
-      MS_LOG(EXCEPTION) << "The " << error_index << " element in Map has wrong type, expected a Tuple, but got "
-                        << item.second->ToString() << ".";
-    }
-    if (lhs->dynamic_len()) {
-      MS_LOG(EXCEPTION) << "For 'map', the dynamic length input is unsupported in graph mode";
-    }
-    if (lhs->elements().size() != size) {
-      oss << "\nThe length of the " << error_index << " element in Map is " << size << ", but the length of the "
-          << next_index << " element in Map is " << lhs->elements().size() << ".\n";
-      is_not_same = true;
-      break;
-    }
-  }
-  if (is_not_same) {
-    MS_LOG(EXCEPTION) << "For 'Map', the length of tuples must be the same. " << oss.str();
-  }
-
-  constexpr size_t prim_hold_len = 1;
-  std::vector<AnfNodePtr> inputs;
-  inputs.reserve(size + prim_hold_len);
-  inputs.push_back(NewValueNode(prim::kPrimMakeTuple));
-
-  for (size_t i = 0; i < size; i++) {
-    MS_LOG(DEBUG) << "FullMakeTuple for the " << i << "th arg of the tuple inputs, reverse_: " << reverse_ << ".";
-    auto res_fg = GenerateLeafFunc(arg_pairs.size());
-    auto fn = NewValueNode(res_fg);
-
-    std::vector<AnfNodePtr> inputs2;
-    inputs2.push_back(fn);
-    if (fn_arg != nullptr) {
-      inputs2.push_back(fn_arg);
-    }
-
-    size_t pos = (reverse_ ? (size - 1 - i) : i);
-    (void)std::transform(arg_pairs.begin(), arg_pairs.end(), std::back_inserter(inputs2),
-                         [&func_graph, &pos](const std::pair<AnfNodePtr, Any> &item) {
-                           return func_graph->NewCNodeInOrder(
-                             {NewValueNode(prim::kPrimTupleGetItem), item.first, NewValueNode(SizeToLong(pos))});
-                         });
-
-    auto call_node = func_graph->NewCNodeInOrder(inputs2);
-    if (reverse_) {
-      (void)inputs.insert(inputs.cbegin() + 1, call_node);
-    } else {
-      inputs.emplace_back(call_node);
-    }
-  }
-  return func_graph->NewCNodeInOrder(inputs);
+  CheckArgsInSequence<Tuple>(arg_pairs, kObjectTypeTuple, size);
+  return MapConverter(func_graph, fn_arg, arg_pairs, kObjectTypeTuple, size);
 }
 
 AnfNodePtr Map::Make(const FuncGraphPtr &func_graph, const AnfNodePtr &fn_arg, const ArgsPairList &arg_pairs) {

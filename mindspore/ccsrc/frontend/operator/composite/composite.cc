@@ -135,44 +135,54 @@ std::pair<std::string, std::string> HyperMap::GetHyperMapInputIndex(size_t num) 
   return std::pair<std::string, std::string>(error_index, next_index);
 }
 
-AnfNodePtr HyperMap::FullMake(const std::shared_ptr<List> &type, const FuncGraphPtr &func_graph,
-                              const AnfNodePtr &fn_arg, const ArgsPairList &arg_map) const {
-  MS_EXCEPTION_IF_NULL(func_graph);
-  MS_EXCEPTION_IF_NULL(type);
-
-  size_t size = type->elements().size();
+template <typename T>
+void HyperMap::CheckArgsInSequence(const ArgsPairList &arg_map, TypeId type_id, std::size_t size) const {
   size_t num = 0;
   std::ostringstream oss;
   bool is_not_same = false;
   for (auto &item : arg_map) {
     num++;
-    auto lhs = std::static_pointer_cast<List>(item.second);
-    auto [error_index, next_index] = GetHyperMapInputIndex(num);
+    auto lhs = std::static_pointer_cast<T>(item.second);
+    auto [error_index_res, next_index_res] = GetHyperMapInputIndex(num);
     if (lhs == nullptr) {
-      MS_LOG(EXCEPTION) << "The " << error_index << " element in HyperMap has wrong type, expected a List, but got "
-                        << item.second->ToString() << ".";
+      std::string type_name = "List";
+      if (type_id == kObjectTypeTuple) {
+        type_name = "Tuple";
+      }
+      MS_LOG(EXCEPTION) << "The " << error_index_res << " element in HyperMap has wrong type, expected a " << type_name
+                        << ", but got " << item.second->ToString() << ".";
     }
-    if (lhs->elements().size() != size) {
-      oss << "\nThe length of the " << error_index << " element in HyperMap is " << size << ", but the length of the "
-          << next_index << " element in HyperMap is " << lhs->elements().size() << ".\n";
+    size_t ele_size = lhs->elements().size();
+    if (ele_size != size) {
+      oss << "\nThe length of the " << error_index_res << " element in HyperMap is " << size
+          << ", but the length of the " << next_index_res << " element in HyperMap is " << ele_size << ".\n";
       is_not_same = true;
       break;
     }
   }
   if (is_not_same) {
-    MS_LOG(EXCEPTION) << "The lists in HyperMap should have the same length. " << oss.str();
+    std::string types_name = "lists";
+    if (type_id == kObjectTypeTuple) {
+      types_name = "tuples";
+    }
+    MS_LOG(EXCEPTION) << "The " << types_name << " in HyperMap should have the same length. " << oss.str();
   }
+}
 
-  // Cannot use shared_from_base() also known as this, as it will make a reference cycle on
-  // hypermap and graph generated, it will cause memory leak.
+AnfNodePtr HyperMap::HyperMapConverter(const FuncGraphPtr &func_graph, const AnfNodePtr &fn_arg,
+                                       const ArgsPairList &arg_map, TypeId type_id, std::size_t size) const {
   auto fn_rec = NewValueNode(std::make_shared<HyperMap>(*this));
   constexpr size_t kPrimHoldLen = 1;
   std::vector<AnfNodePtr> inputs;
   inputs.reserve(size + kPrimHoldLen);
-  inputs.push_back(NewValueNode(prim::kPrimMakeList));
-
+  if (type_id == kObjectTypeList) {
+    inputs.push_back(NewValueNode(prim::kPrimMakeList));
+  } else {
+    inputs.push_back(NewValueNode(prim::kPrimMakeTuple));
+  }
   for (size_t i = 0; i < size; i++) {
-    MS_LOG(DEBUG) << "FullMakeList for the " << i << "th element of the target, reverse_: " << reverse_;
+    MS_LOG(DEBUG) << "FullMakeList or FullMakeTuple for the " << i
+                  << "th element of the target, reverse_: " << reverse_;
     std::vector<AnfNodePtr> inputs2;
     inputs2.push_back(fn_rec);
     if (fn_arg != nullptr) {
@@ -180,9 +190,13 @@ AnfNodePtr HyperMap::FullMake(const std::shared_ptr<List> &type, const FuncGraph
     }
     size_t pos = (reverse_ ? (size - 1 - i) : i);
     (void)std::transform(arg_map.begin(), arg_map.end(), std::back_inserter(inputs2),
-                         [&func_graph, pos](const std::pair<AnfNodePtr, Any> &item) {
+                         [&func_graph, &pos, &type_id](const std::pair<AnfNodePtr, Any> &item) {
+                           if (type_id == kObjectTypeList) {
+                             return func_graph->NewCNodeInOrder(
+                               {NewValueNode(prim::kPrimListGetItem), item.first, NewValueNode(SizeToLong(pos))});
+                           }
                            return func_graph->NewCNodeInOrder(
-                             {NewValueNode(prim::kPrimListGetItem), item.first, NewValueNode(SizeToLong(pos))});
+                             {NewValueNode(prim::kPrimTupleGetItem), item.first, NewValueNode(SizeToLong(pos))});
                          });
 
     auto call_node = func_graph->NewCNodeInOrder(inputs2);
@@ -192,74 +206,39 @@ AnfNodePtr HyperMap::FullMake(const std::shared_ptr<List> &type, const FuncGraph
       inputs.emplace_back(call_node);
     }
   }
-  return func_graph->NewCNodeInOrder(inputs);
+  if (inputs.size() > 1) {
+    return func_graph->NewCNodeInOrder(inputs);
+  }
+  if (type_id == kObjectTypeList) {
+    // Empty list.
+    auto empty_list_value = std::make_shared<ValueList>(ValuePtrList());
+    return NewValueNode(empty_list_value);
+  }
+  // Empty tuple.
+  auto empty_tuple_value = std::make_shared<ValueTuple>(ValuePtrList());
+  return NewValueNode(empty_tuple_value);
+}
+
+AnfNodePtr HyperMap::FullMake(const std::shared_ptr<List> &type, const FuncGraphPtr &func_graph,
+                              const AnfNodePtr &fn_arg, const ArgsPairList &arg_map) const {
+  MS_EXCEPTION_IF_NULL(func_graph);
+  MS_EXCEPTION_IF_NULL(type);
+  size_t size = type->elements().size();
+  CheckArgsInSequence<List>(arg_map, kObjectTypeList, size);
+  // Cannot use shared_from_base() also known as this, as it will make a reference cycle on
+  // hypermap and graph generated, it will cause memory leak.
+  return HyperMapConverter(func_graph, fn_arg, arg_map, kObjectTypeList, size);
 }
 
 AnfNodePtr HyperMap::FullMake(const std::shared_ptr<Tuple> &type, const FuncGraphPtr &func_graph,
                               const AnfNodePtr &fn_arg, const ArgsPairList &arg_map) const {
   MS_EXCEPTION_IF_NULL(func_graph);
   MS_EXCEPTION_IF_NULL(type);
-
   size_t size = type->elements().size();
-  size_t num = 0;
-  std::ostringstream oss;
-  bool is_not_same = false;
-  for (auto &item : arg_map) {
-    num++;
-    auto lhs = std::static_pointer_cast<Tuple>(item.second);
-    auto [error_index, next_index] = GetHyperMapInputIndex(num);
-    if (lhs == nullptr) {
-      MS_LOG(EXCEPTION) << "The " << error_index << " element in HyperMap has wrong type, expected a Tuple, but got "
-                        << item.second->ToString() << ".";
-    }
-    if (lhs->elements().size() != size) {
-      oss << "\nThe length of the " << error_index << " element in HyperMap is " << size << ", but the length of the "
-          << next_index << " element in HyperMap is " << lhs->elements().size() << ".\n";
-      is_not_same = true;
-      break;
-    }
-  }
-  if (is_not_same) {
-    MS_LOG(EXCEPTION) << "The length of tuples in HyperMap must be the same. " << oss.str();
-  }
-
+  CheckArgsInSequence<Tuple>(arg_map, kObjectTypeTuple, size);
   // Cannot use shared_from_base() also known as this, as it will make a reference cycle on
   // hypermap and graph generated, it will cause memory leak.
-  auto fn_rec = NewValueNode(std::make_shared<HyperMap>(*this));
-  constexpr size_t kPrimHoldLen = 1;
-  std::vector<AnfNodePtr> inputs;
-  inputs.reserve(size + kPrimHoldLen);
-  inputs.push_back(NewValueNode(prim::kPrimMakeTuple));
-
-  for (size_t i = 0; i < size; i++) {
-    MS_LOG(DEBUG) << "FullMakeTuple for the " << i << "th element of the target, reverse_: " << reverse_;
-    std::vector<AnfNodePtr> inputs2;
-    inputs2.push_back(fn_rec);
-    if (fn_arg != nullptr) {
-      inputs2.push_back(fn_arg);
-    }
-    size_t pos = (reverse_ ? (size - 1 - i) : i);
-    (void)std::transform(arg_map.begin(), arg_map.end(), std::back_inserter(inputs2),
-                         [&func_graph, &pos](std::pair<AnfNodePtr, Any> item) {
-                           return func_graph->NewCNodeInOrder(
-                             {NewValueNode(prim::kPrimTupleGetItem), item.first, NewValueNode(SizeToLong(pos))});
-                         });
-
-    auto call_node = func_graph->NewCNodeInOrder(inputs2);
-    if (reverse_) {
-      inputs.insert(inputs.begin() + 1, call_node);
-    } else {
-      inputs.emplace_back(call_node);
-    }
-  }
-
-  if (inputs.size() > 1) {
-    return func_graph->NewCNodeInOrder(inputs);
-  }
-  // Empty tuple.
-  auto empty_tuple_value = std::make_shared<ValueTuple>(ValuePtrList());
-  auto empty_tuple = NewValueNode(empty_tuple_value);
-  return empty_tuple;
+  return HyperMapConverter(func_graph, fn_arg, arg_map, kObjectTypeTuple, size);
 }
 
 AnfNodePtr HyperMap::FullMake(const std::shared_ptr<Dictionary> &type, const FuncGraphPtr &func_graph,
@@ -274,15 +253,16 @@ AnfNodePtr HyperMap::FullMake(const std::shared_ptr<Dictionary> &type, const Fun
   for (auto &item : arg_map) {
     num++;
     auto lhs = std::static_pointer_cast<Dictionary>(item.second);
-    auto [error_index, next_index] = GetHyperMapInputIndex(num);
+    auto [dict_error_index, dict_next_index] = GetHyperMapInputIndex(num);
     if (lhs == nullptr) {
-      MS_LOG(EXCEPTION) << "The " << error_index
+      MS_LOG(EXCEPTION) << "The " << dict_error_index
                         << " element in HyperMap has wrong type, expected a Dictionary, but got "
                         << item.second->ToString() << ".";
     }
     if (lhs->key_values().size() != size) {
-      oss << "\nThe length of the " << error_index << " element in HyperMap is " << size << ", but the length of the "
-          << next_index << " element in HyperMap is " << lhs->key_values().size() << ".\n";
+      oss << "\nThe length of the " << dict_error_index << " element in HyperMap is " << size
+          << ", but the length of the " << dict_next_index << " element in HyperMap is " << lhs->key_values().size()
+          << ".\n";
       is_not_same = true;
       break;
     }
@@ -2071,6 +2051,22 @@ FuncGraphPtr IterConverter::GenerateFuncGraph(const AbstractBasePtrList &args_ab
   return fg;
 }
 
+AnfNodePtr ConvertPyInterpret(const FuncGraphPtr &fg, const AnfNodePtr &input, const std::string &sequence_func_type) {
+  AnfNodePtrList local_key_inputs = {NewValueNode(prim::kPrimMakeTuple)};
+  AnfNodePtrList local_value_inputs = {NewValueNode(prim::kPrimMakeTuple)};
+  std::stringstream script_buffer;
+  script_buffer << sequence_func_type << "(";
+  const std::string data_str = "__data__";
+  script_buffer << data_str << ")";
+  (void)local_key_inputs.emplace_back(NewValueNode(data_str));
+  (void)local_value_inputs.emplace_back(input);
+  const auto &script = script_buffer.str();
+  auto local_key_node = fg->NewCNode(local_key_inputs);
+  auto local_value_node = fg->NewCNode(local_value_inputs);
+  auto local_dict_node = fg->NewCNode({NewValueNode(prim::kPrimMakeDict), local_key_node, local_value_node});
+  return fallback::CreatePyInterpretCNode(fg, script, py::dict(), local_dict_node);
+}
+
 // HasNext is used to check whether the input has next element input.
 FuncGraphPtr HasNext::GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) {
   constexpr auto input_size = 1;
@@ -2081,19 +2077,8 @@ FuncGraphPtr HasNext::GenerateFuncGraph(const AbstractBasePtrList &args_abs_list
   MS_EXCEPTION_IF_NULL(input_abs);
   auto input = fg->add_parameter();
   if (input_abs->isa<abstract::AbstractAny>() || input_abs->BuildValue()->isa<parse::InterpretedObject>()) {
-    AnfNodePtrList local_key_inputs = {NewValueNode(prim::kPrimMakeTuple)};
-    AnfNodePtrList local_value_inputs = {NewValueNode(prim::kPrimMakeTuple)};
-    std::stringstream script_buffer;
-    script_buffer << "__import__('mindspore').common._utils._jit_fallback_has_next_func(";
-    const std::string data_str = "__data__";
-    script_buffer << data_str << ")";
-    (void)local_key_inputs.emplace_back(NewValueNode(data_str));
-    (void)local_value_inputs.emplace_back(input);
-    const auto &script = script_buffer.str();
-    auto local_key_node = fg->NewCNode(local_key_inputs);
-    auto local_value_node = fg->NewCNode(local_value_inputs);
-    auto local_dict_node = fg->NewCNode({NewValueNode(prim::kPrimMakeDict), local_key_node, local_value_node});
-    auto ret = fallback::CreatePyInterpretCNode(fg, script, py::dict(), local_dict_node);
+    const std::string has_next_func = "__import__('mindspore').common._utils._jit_fallback_has_next_func";
+    auto ret = ConvertPyInterpret(fg, input, has_next_func);
     fg->set_output(ret);
     return fg;
   }
@@ -2116,19 +2101,8 @@ FuncGraphPtr Next::GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) {
   MS_EXCEPTION_IF_NULL(input_abs);
   auto input = fg->add_parameter();
   if (input_abs->isa<abstract::AbstractAny>() || input_abs->BuildValue()->isa<parse::InterpretedObject>()) {
-    AnfNodePtrList local_key_inputs = {NewValueNode(prim::kPrimMakeTuple)};
-    AnfNodePtrList local_value_inputs = {NewValueNode(prim::kPrimMakeTuple)};
-    std::stringstream script_buffer;
-    script_buffer << "__import__('mindspore').common._utils._jit_fallback_next_func(";
-    const std::string data_str = "__data__";
-    script_buffer << data_str << ")";
-    (void)local_key_inputs.emplace_back(NewValueNode(data_str));
-    (void)local_value_inputs.emplace_back(input);
-    const auto &script = script_buffer.str();
-    auto local_key_node = fg->NewCNode(local_key_inputs);
-    auto local_value_node = fg->NewCNode(local_value_inputs);
-    auto local_dict_node = fg->NewCNode({NewValueNode(prim::kPrimMakeDict), local_key_node, local_value_node});
-    auto ret = fallback::CreatePyInterpretCNode(fg, script, py::dict(), local_dict_node);
+    const std::string next_func = "__import__('mindspore').common._utils._jit_fallback_next_func";
+    auto ret = ConvertPyInterpret(fg, input, next_func);
     fg->set_output(ret);
     return fg;
   }
@@ -2157,19 +2131,7 @@ FuncGraphPtr TupleFunc::GenerateFuncGraph(const AbstractBasePtrList &args_abs_li
   MS_EXCEPTION_IF_NULL(input_abs);
   auto input = fg->add_parameter();
   if (fallback::ContainsSequenceAnyType(input_abs)) {
-    AnfNodePtrList local_key_inputs = {NewValueNode(prim::kPrimMakeTuple)};
-    AnfNodePtrList local_value_inputs = {NewValueNode(prim::kPrimMakeTuple)};
-    std::stringstream script_buffer;
-    script_buffer << "tuple(";
-    const std::string data_str = "__data__";
-    script_buffer << data_str << ")";
-    (void)local_key_inputs.emplace_back(NewValueNode(data_str));
-    (void)local_value_inputs.emplace_back(input);
-    const auto &script = script_buffer.str();
-    auto local_key_node = fg->NewCNode(local_key_inputs);
-    auto local_value_node = fg->NewCNode(local_value_inputs);
-    auto local_dict_node = fg->NewCNode({NewValueNode(prim::kPrimMakeDict), local_key_node, local_value_node});
-    auto ret = fallback::CreatePyInterpretCNode(fg, script, py::dict(), local_dict_node);
+    auto ret = ConvertPyInterpret(fg, input, "tuple");
     fg->set_output(ret);
     return fg;
   } else if (input_abs->isa<abstract::AbstractTuple>()) {
@@ -2209,19 +2171,7 @@ FuncGraphPtr ListFunc::GenerateFuncGraph(const AbstractBasePtrList &args_abs_lis
   MS_EXCEPTION_IF_NULL(input_abs);
   auto input = fg->add_parameter();
   if (fallback::ContainsSequenceAnyType(input_abs)) {
-    AnfNodePtrList local_key_inputs = {NewValueNode(prim::kPrimMakeTuple)};
-    AnfNodePtrList local_value_inputs = {NewValueNode(prim::kPrimMakeTuple)};
-    std::stringstream script_buffer;
-    script_buffer << "list(";
-    const std::string data_str = "__data__";
-    script_buffer << data_str << ")";
-    (void)local_key_inputs.emplace_back(NewValueNode(data_str));
-    (void)local_value_inputs.emplace_back(input);
-    const auto &script = script_buffer.str();
-    auto local_key_node = fg->NewCNode(local_key_inputs);
-    auto local_value_node = fg->NewCNode(local_value_inputs);
-    auto local_dict_node = fg->NewCNode({NewValueNode(prim::kPrimMakeDict), local_key_node, local_value_node});
-    auto ret = fallback::CreatePyInterpretCNode(fg, script, py::dict(), local_dict_node);
+    auto ret = ConvertPyInterpret(fg, input, "list");
     fg->set_output(ret);
     return fg;
   } else if (input_abs->isa<abstract::AbstractList>()) {
