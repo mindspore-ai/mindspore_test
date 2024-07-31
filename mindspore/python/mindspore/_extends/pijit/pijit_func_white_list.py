@@ -34,6 +34,7 @@ from mindspore._extends.parse.resources import convert_object_map
 from mindspore import _checkparam as validator
 from mindspore import Parameter, ParameterTuple
 from mindspore.common.initializer import Zero
+from mindspore.ops.function import array_func
 
 
 def _get_after_grad_code():
@@ -165,6 +166,7 @@ FUNC_KEY_LIST_REVERSE = 21  # list.reverse
 _func_map = {
     # special function
     pijit_constexpr_key: FUNC_KEY_PIJIT_CONSTEXPR,
+    id(getattr(array_func, "_get_max_type")): FUNC_KEY_PIJIT_CONSTEXPR,
     pijit_forbidden_key: FUNC_KEY_PIJIT_FORBIDDEN,
     primitive_key: FUNC_KEY_PRIMITIVE,
     constexpr_key: FUNC_KEY_CONSTEXPR,
