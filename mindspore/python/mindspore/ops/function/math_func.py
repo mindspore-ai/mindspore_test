@@ -36,7 +36,7 @@ from mindspore.ops.auto_generate import Cummin, BatchMatMul, lin_space_ext_op, N
 from mindspore.ops import auto_generate
 from mindspore.ops.operations.math_ops import STFT
 from mindspore.ops.operations.math_ops import LuUnpack
-from mindspore.ops.auto_generate.pyboost_inner_prim import roll_impl
+from mindspore.ops.auto_generate.pyboost_inner_prim import roll_impl, cross_impl
 from mindspore.ops.operations.math_ops import Ormqr
 from mindspore.ops.operations.math_ops import DivMod
 from mindspore.ops.operations.array_ops import MatrixSetDiagV3, Transpose
@@ -9655,8 +9655,7 @@ def cross(input, other, dim=None):
     """
     if dim is None:
         dim = -65530
-    cross_op = _get_cache_prim(P.Cross)(dim=dim)
-    return cross_op(input, other)
+    return cross_impl(input, other, dim)
 
 
 def _einsum_convert_num_to_char(num):
