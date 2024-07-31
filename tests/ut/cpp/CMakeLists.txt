@@ -241,6 +241,8 @@ file(GLOB_RECURSE MINDSPORE_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/ir_fusion/add_rms_norm_quant_fusion.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/ir_fusion/inference_weight_preprocess_utils.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/ir_fusion/inference_qbmm_add_fusion.cc"
+        "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/ir_fusion/inference_swiglu_fusion.cc"
+        "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/ir_fusion/inference_matmul_split_fusion.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/optimizer/common/gllo_utils.cc"
         "../../../mindspore/ccsrc/backend/common/graph_kernel/*.cc"
         "../../../mindspore/ccsrc/backend/common/expander/*.cc"
