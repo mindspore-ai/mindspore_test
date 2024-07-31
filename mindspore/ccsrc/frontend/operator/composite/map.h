@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2020-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,6 +77,10 @@ class Map : public MetaFuncGraph {
                            const ArgsPairList &arg_pairs);
   AnfNodePtr Make(const FuncGraphPtr &func_graph, const AnfNodePtr &fn_arg, const ArgsPairList &arg_pairs);
   std::pair<std::string, std::string> GetMapInputIndex(size_t num) const;
+  template <typename T>
+  void CheckArgsInSequence(const ArgsPairList &arg_pairs, TypeId type_id, std::size_t size);
+  AnfNodePtr MapConverter(const FuncGraphPtr &func_graph, const AnfNodePtr &fn_arg, const ArgsPairList &arg_pairs,
+                          TypeId type_id, std::size_t size);
   void Init() {
     if (fn_leaf_ != nullptr) {
       name_ = "map[" + fn_leaf_->name() + "]";

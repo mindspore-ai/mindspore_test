@@ -82,6 +82,10 @@ class HyperMap : public MetaFuncGraph {
                       const ArgsPairList &arg_map) const;
   AnfNodePtr Make(const FuncGraphPtr &func_graph, const AnfNodePtr &fn_arg, const ArgsPairList &arg_map) const;
   std::pair<std::string, std::string> GetHyperMapInputIndex(size_t num) const;
+  template <typename T>
+  void CheckArgsInSequence(const ArgsPairList &arg_map, TypeId type_id, std::size_t size) const;
+  AnfNodePtr HyperMapConverter(const FuncGraphPtr &func_graph, const AnfNodePtr &fn_arg, const ArgsPairList &arg_map,
+                               TypeId type_id, std::size_t size) const;
 
   MultitypeFuncGraphPtr fn_leaf_;
   bool reverse_;
