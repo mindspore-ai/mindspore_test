@@ -1518,7 +1518,8 @@ AnfNodePtr GetInputNodeWithFilter(const AnfNodePtr &node,
 }
 
 std::vector<std::pair<AnfNodePtr, int>> GetOutputNodesWithFilter(const AnfNodePtr &node,
-                                                                 std::function<bool(const AnfNodePtr &)> filter) {
+                                                                 std::function<bool(const AnfNodePtr &)> filter,
+                                                                 bool get_all_nodes_according_search) {
   auto func_graph = node->func_graph();
   MS_EXCEPTION_IF_NULL(func_graph);
   auto manager = func_graph->manager();
@@ -1533,6 +1534,9 @@ std::vector<std::pair<AnfNodePtr, int>> GetOutputNodesWithFilter(const AnfNodePt
     for (auto &pair : user_set) {
       if (filter(pair.first)) {
         anf_queue.push(pair.first);
+        if (get_all_nodes_according_search) {
+          res.push_back(pair);
+        }
         continue;
       }
       res.push_back(pair);
