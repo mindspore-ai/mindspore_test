@@ -17,11 +17,6 @@
 #include "symbol_engine/math_info/symbol_test_utils.h"
 
 namespace mindspore::symshape::test {
-SymbolPtr SymbolHelper::Emit(const OpPtr &op) {
-  InitSymbolEngine();
-  return symbol_engine_->emitter_->Emit(op);
-}
-
 void SymbolHelper::InitSymbolEngine() {
   if (symbol_engine_ != nullptr) {
     return;

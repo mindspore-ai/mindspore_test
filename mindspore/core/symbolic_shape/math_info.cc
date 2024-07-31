@@ -15,20 +15,41 @@
  */
 
 #include "mindspore/core/symbolic_shape/math_info.h"
+#include <functional>
+#include <algorithm>
 #include "mindspore/core/symbolic_shape/int_symbol.h"
 
 namespace mindspore {
 namespace symshape {
+using Func = std::function<bool(const Frac &, const Frac &)>;
+bool CmpExpr(const IntSymbolPtr &s, const Frac &a1, const Frac &b1, const Frac &a2, const Frac &b2, const Func &cmp) {
+  if (a1 == a2) {
+    return cmp(b1, b2);
+  }
+  // check "a1 * s + b1 < a2 * s + b2",
+  //   <-- (a1 - a2) * s < (b2 - b1)
+  //   <-- a * s < b     set a=(a1-a2), b=(b2-b1)
+  //   <-- s < (b / a)   for a > 0
+  //    or s > (b / a)   for a < 0
+  auto a = a1 - a2;
+  auto b = b2 - b1;
+  MS_EXCEPTION_IF_NULL(s);
+  if (a.x() > 0) {
+    return cmp(Frac(s->range_max()), b / a);
+  } else {
+    return cmp(b / a, Frac(s->range_min()));
+  }
+}
+
 bool RelationExpr::operator<(const RelationExpr &other) const {
   // check "a1 * s + b1 < a2 * s + b2", that is to check "(a1 - a2) * s + (b1 - b2) < 0".
-  if (a == other.a) {
-    return b < other.b;
-  }
-  if (b > other.b) {
-    return false;
-  }
-  // the right expr is "(s->is_positive() && a < other.a) || (s->is_negative() && a > other.a)", when s is not null.
-  return a < other.a;
+  auto sym = s != nullptr ? s : other.s;
+  return CmpExpr(sym, a, b, other.a, other.b, [](const Frac &x, const Frac &y) { return x < y; });
+}
+
+bool RelationExpr::operator<=(const RelationExpr &other) const {
+  auto sym = s != nullptr ? s : other.s;
+  return CmpExpr(sym, a, b, other.a, other.b, [](const Frac &x, const Frac &y) { return x <= y; });
 }
 
 IntSymbolPtr MathInfo::ToIntSymbol() const { return int_symbol_->as_sptr<IntSymbol>(); }
@@ -41,6 +62,7 @@ void MathInfo::SetDivisorRemainder(int64_t d, int64_t r) {
   div_rem_.first = d;
   r = (r % d + d) % d;  // keep remainder in range [0, d)
   div_rem_.second = r;
+  range_.first = std::max(range_.first, d + r);
 }
 
 void MathInfo::UpdateExprRoot() const {

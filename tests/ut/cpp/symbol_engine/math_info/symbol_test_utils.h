@@ -26,7 +26,11 @@ namespace mindspore::symshape::test {
 using IntSymbolInfo = symshape::SymbolInfo;
 class SymbolHelper {
  public:
-  SymbolPtr Emit(const OpPtr &op);
+  SymbolPtr Emit(const OpPtr &op) { return emitter().Emit(op); }
+  const OperationEmitter &emitter() {
+    InitSymbolEngine();
+    return *(symbol_engine_->emitter_);
+  }
 
  protected:
   void InitSymbolEngine();

@@ -124,7 +124,7 @@ struct RelationExpr {
   bool operator==(const RelationExpr &other) const { return a == other.a && b == other.b; }
   bool operator<(const RelationExpr &other) const;
   // note: "a <= b" is false does not means "b < a" is true.
-  bool operator<=(const RelationExpr &other) const { return (*this == other) || (*this < other); }
+  bool operator<=(const RelationExpr &other) const;
 };
 
 class MS_CORE_API MathInfo {

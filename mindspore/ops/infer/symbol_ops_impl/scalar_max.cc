@@ -29,7 +29,7 @@ SymbolPtr ScalarMax::Eval() {
     DoNotEvalOnRun();
     return lhs;
   }
-  if (*rhs > *lhs) {
+  if (*rhs >= *lhs) {
     DoNotEvalOnRun();
     return rhs;
   }

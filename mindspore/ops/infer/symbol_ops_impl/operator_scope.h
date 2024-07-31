@@ -43,6 +43,10 @@ class OPS_API OperatorScope {
     ~SymbolHolder() = default;
     // implicitly convert SymbolHolder to SymbolPtr
     operator SymbolPtr() const { return sym_; }
+    template <typename T>
+    std::shared_ptr<T> as() {
+      return sym_->as_sptr<T>();
+    }
 
     SymbolHolder operator+(const SymbolHolder &s2) const { return (*this) + s2.sym_; }
     SymbolHolder operator-(const SymbolHolder &s2) const { return (*this) - s2.sym_; }
