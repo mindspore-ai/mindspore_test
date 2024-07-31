@@ -468,7 +468,7 @@ std::string Graph::ToString(int depth) const {
     s << prefix << "Frame:\n" << GetFrame(0).ToString();
   }
 
-  s << prefix << "Nodes:\n";
+  s << prefix << "Graph " << this << " Nodes:\n";
   for (auto i : GetTracedNodes()) {
     s << prefix << i->ToString() << "\n";
     if (i->GetType() != AbstractNode::Call) {
@@ -481,7 +481,9 @@ std::string Graph::ToString(int depth) const {
     }
     s << prefix << "}\n";
   }
-  s << prefix << "return: " << (GetRetVal() ? GetRetVal()->ToString() : "trace break") << "\n";
+  if (GetRetVal()) {
+    s << prefix << "Return the Node " << GetRetVal() << "\n";
+  }
   s << prefix << GetStopTraceReasonDesc(GetStopTraceReason()) << "\n";
   s << prefix << "break bci: " << GetStopTraceBci() << "\n\n";
 

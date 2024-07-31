@@ -46,18 +46,22 @@ void ConstantInfo::set_value(const py::object &op) {
 }
 
 std::string ConstantInfo::ToString() const {
+  auto Limit = [](const std::string &s) {
+    constexpr size_t limit = 120;
+    return s.size() < limit ? s : s.substr(0, limit) + "...";
+  };
   std::stringstream s;
   if (type() != nullptr) {
     s << "type=" << (type()->tp_name ? type()->tp_name : "<unnamed>") << ", ";
   }
   if (value().ptr() != nullptr) {
-    s << "value=" << std::string(py::str(value().ptr())) << ", ";
+    s << "value=" << Limit(py::str(value().ptr())) << ", ";
   }
   if (len() != -1) {
     s << "len=" << len() << ", ";
   }
   for (const auto &i : attrs_) {
-    s << i.first << "=" << std::string(py::str(i.second.ptr())) << ", ";
+    s << i.first << "=" << Limit(py::str(i.second.ptr())) << ", ";
   }
   return s.str();
 }
