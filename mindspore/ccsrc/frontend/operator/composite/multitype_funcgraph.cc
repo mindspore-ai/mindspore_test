@@ -236,23 +236,28 @@ const std::string MultitypeFuncGraph::PrintMatchFailLog(const TypeListMap<py::fu
   return oss.str();
 }
 
+bool CheckOneElement(const TypePtr &type) {
+  if (type->isa<AnyType>()) {
+    return true;
+  }
+  bool res = false;
+  if (type->isa<Tuple>()) {
+    const auto &elements = type->cast<TuplePtr>()->elements();
+    res = CheckContainsAny(elements);
+  } else if (type->isa<List>()) {
+    const auto &elements = type->cast<ListPtr>()->elements();
+    res = CheckContainsAny(elements);
+  } else if (type->isa<Dictionary>()) {
+    const auto &elements = type->cast<DictionaryPtr>()->key_values();
+    res = CheckDictContainsAny(elements);
+  }
+  return res;
+}
+
 bool CheckDictContainsAny(const std::vector<std::pair<mindspore::ValuePtr, mindspore::TypePtr>> &key_values) {
   for (const auto &pair : key_values) {
     const auto &type = pair.second;
-    if (type->isa<AnyType>()) {
-      return true;
-    }
-    bool res = false;
-    if (type->isa<Tuple>()) {
-      const auto &elements = type->cast<TuplePtr>()->elements();
-      res = CheckContainsAny(elements);
-    } else if (type->isa<List>()) {
-      const auto &elements = type->cast<ListPtr>()->elements();
-      res = CheckContainsAny(elements);
-    } else if (type->isa<Dictionary>()) {
-      const auto &elements = type->cast<DictionaryPtr>()->key_values();
-      res = CheckDictContainsAny(elements);
-    }
+    bool res = CheckOneElement(type);
     if (res) {
       return true;
     }
@@ -262,20 +267,7 @@ bool CheckDictContainsAny(const std::vector<std::pair<mindspore::ValuePtr, minds
 
 bool CheckContainsAny(const TypePtrList &types) {
   for (const auto &type : types) {
-    if (type->isa<AnyType>()) {
-      return true;
-    }
-    bool res = false;
-    if (type->isa<Tuple>()) {
-      const auto &elements = type->cast<TuplePtr>()->elements();
-      res = CheckContainsAny(elements);
-    } else if (type->isa<List>()) {
-      const auto &elements = type->cast<ListPtr>()->elements();
-      res = CheckContainsAny(elements);
-    } else if (type->isa<Dictionary>()) {
-      const auto &elements = type->cast<DictionaryPtr>()->key_values();
-      res = CheckDictContainsAny(elements);
-    }
+    bool res = CheckOneElement(type);
     if (res) {
       return true;
     }
