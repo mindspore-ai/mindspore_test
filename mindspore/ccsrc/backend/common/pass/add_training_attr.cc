@@ -42,7 +42,7 @@ void AddAttrTraining(const FuncGraphPtr &func_graph, const CNodePtr &cnode) {
     return;
   }
   auto prim = GetCNodePrimitive(cnode);
-
+  MS_EXCEPTION_IF_NULL(prim);
   ValuePtr is_train = MakeValue(false);
   if (prim->HasAttr(kAttrIsTraining)) {
     is_train = prim->GetAttr(kAttrIsTraining);

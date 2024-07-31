@@ -62,6 +62,7 @@ bool IsValidInlinePartial(const AnfNodePtr &node, std::set<FuncGraphPtr> *checke
       return false;
     } else if (real_output_node->isa<Parameter>()) {
       const auto &output_node = sub_graph->return_node()->input(1);
+      MS_EXCEPTION_IF_NULL(output_node);
       const auto &abstract = output_node->abstract();
       if (abstract == nullptr || (!abstract->isa<abstract::AbstractTensor>()) ||
           common::AnfAlgo::HasAbstractRef(output_node)) {
@@ -241,14 +242,17 @@ bool SwitchNotCut::Run(const FuncGraphPtr &func_graph) {
     for (const auto &cnode : inline_call_nodes) {
       cnode->AddPrimalAttr(kAttrNotCut, MakeValue(true));
       const auto &switch_node = cnode->input(0)->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(switch_node);
       switch_node->AddPrimalAttr(kAttrNotCut, MakeValue(true));
       const auto &true_partial_node = switch_node->input(kSwitchTrueBranchIndex)->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(true_partial_node);
       true_partial_node->AddPrimalAttr(kAttrNotCut, MakeValue(true));
       auto true_partial_graph = true_partial_node->input(kIndex1);
       auto true_sub_graph = common::AnfAlgo::GetValueNodeFuncGraph(true_partial_graph);
       MS_EXCEPTION_IF_NULL(true_sub_graph);
       true_sub_graph->set_flag(kFlagSwitchInline, true);
       const auto &false_partial_node = switch_node->input(kSwitchFalseBranchIndex)->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(false_partial_node);
       false_partial_node->AddPrimalAttr(kAttrNotCut, MakeValue(true));
       auto false_partial_graph = false_partial_node->input(kIndex1);
       auto false_sub_graph = common::AnfAlgo::GetValueNodeFuncGraph(false_partial_graph);

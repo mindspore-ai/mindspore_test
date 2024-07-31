@@ -88,6 +88,7 @@ void AoeUtil::Initialize() {
     aoe_tuning_graph_ = DlsymFuncObj(AoeTuningGraph, plugin_handle_);
     aoe_destroy_session_ = DlsymFuncObj(AoeDestroySession, plugin_handle_);
     auto ms_context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(ms_context);
     std::string aoe_job_type = ms_context->get_param<std::string>(MS_CTX_AOE_JOB_TYPE);
     std::map<::ge::AscendString, ::ge::AscendString> globalOptions = {
       {AoeOptions::JOB_TYPE, ::ge::AscendString(aoe_job_type.c_str())}};

@@ -82,6 +82,7 @@ void ModifyOutputAndCallerToMap(const CNodePtr &cnode, const FuncGraphPtr &fg,
     MS_EXCEPTION_IF_NULL(node);
     if (node->isa<CNode>()) {
       auto partial_node = dyn_cast<CNode>(node);
+      MS_EXCEPTION_IF_NULL(partial_node);
       const auto &partial_inputs = partial_node->inputs();
       MS_EXCEPTION_IF_NULL(partial_inputs.at(0));
       if (IsPrimitive(partial_inputs.at(0), prim::kPrimPartial)) {

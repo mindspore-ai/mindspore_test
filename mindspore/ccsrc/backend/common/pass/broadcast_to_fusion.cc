@@ -42,6 +42,7 @@ const AnfNodePtr BroadcastToFusion::Process(const FuncGraphPtr &graph, const Anf
   }
 
   auto input_shape = cnode->input(kIndex2);
+  MS_EXCEPTION_IF_NULL(input_shape);
   auto shape_array_opt = GetArrayValue<int64_t>(input_shape->abstract());
   if (!shape_array_opt.has_value()) {
     return node;

@@ -59,6 +59,7 @@ PassManagerPtr GetBackendCommonOptimizationPassManagerPtr(const FuncGraphPtr &gr
   common_pm->AddPass(std::make_shared<CustomOpConstInputToAttr>());
   // Disable const to tensor pass, ascend platform need to match the change in the future.
   auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
   int execution_mode = context->get_param<int>(MS_CTX_EXECUTION_MODE);
   if (execution_mode == kPynativeMode) {
     common_pm->AddPass(std::make_shared<ConvertConstInputToTensorInput>());

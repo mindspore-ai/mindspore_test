@@ -67,6 +67,8 @@ CNodePtr NewConcatNode(const FuncGraphPtr &func_graph, const std::pair<std::vect
   std::vector<AnfNodePtr> cnode_inputs(node_info.first.begin(), node_info.first.end());
   auto axis_value = MakeValue<int64_t>(0);
   auto axis = NewValueNode(axis_value);
+  MS_EXCEPTION_IF_NULL(axis_value);
+  MS_EXCEPTION_IF_NULL(axis);
   axis->set_abstract(axis_value->ToAbstract());
   auto kernel_info = std::make_shared<device::KernelInfo>();
   MS_EXCEPTION_IF_NULL(kernel_info);
@@ -79,6 +81,7 @@ CNodePtr NewConcatNode(const FuncGraphPtr &func_graph, const std::pair<std::vect
   builder.SetOutputsKernelObjectType({kernel::KernelObjectType::SCALAR});
   AnfAlgo::SetSelectKernelBuildInfo(builder.Build(), axis.get());
   auto kernel_graph = func_graph->cast<KernelGraphPtr>();
+  MS_EXCEPTION_IF_NULL(kernel_graph);
   kernel_graph->AddValueNodeToGraph(axis);
   auto concat_node = NewCNode(cnode_inputs, func_graph);
 

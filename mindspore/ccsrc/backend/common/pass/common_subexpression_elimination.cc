@@ -131,6 +131,8 @@ bool BackendCSE::CheckEqualCnodeInputs(const AnfNodePtr &main, const AnfNodePtr 
     if (IsValueNode<tensor::Tensor>(inp1_j) && IsValueNode<tensor::Tensor>(inp2_j)) {
       auto tensor1 = GetValueNode<tensor::TensorPtr>(inp1_j);
       auto tensor2 = GetValueNode<tensor::TensorPtr>(inp2_j);
+      MS_EXCEPTION_IF_NULL(tensor1);
+      MS_EXCEPTION_IF_NULL(tensor2);
       if (tensor1->ValueEqual(*tensor2)) {
         continue;
       }
@@ -153,6 +155,8 @@ bool BackendCSE::CheckValueNode(const ValueNodePtr &main, const ValueNodePtr &no
   } else if (main_value->isa<tensor::Tensor>() && node_value->isa<tensor::Tensor>()) {
     auto main_tensor = main_value->cast<tensor::TensorPtr>();
     auto node_tensor = node_value->cast<tensor::TensorPtr>();
+    MS_EXCEPTION_IF_NULL(main_tensor);
+    MS_EXCEPTION_IF_NULL(node_tensor);
     return (AbsOf(main) == AbsOf(node)) && CheckEqualKernelBuildInfo(main, node) &&
            main_tensor->device_address() == node_tensor->device_address();
   }

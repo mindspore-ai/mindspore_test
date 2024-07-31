@@ -41,6 +41,7 @@ const size_t kIdx0 = 0;
 const size_t kIdx1 = 1;
 const size_t kIdx2 = 2;
 const size_t kIdx3 = 3;
+constexpr size_t kFactorySize = 2;
 
 namespace {
 class MsTensorRel {
@@ -203,7 +204,7 @@ std::shared_ptr<GeTensorDesc> TransformUtil::GetGeTensorDesc(const ShapeVector &
   GeFormat dev_ge_format = dev_format.empty() ? ori_ge_format : ConvertFormat(dev_format, dev_ge_shape.GetDimNum());
   if (me_type == MeDataType::kNumberTypeInt4) {
     int64_t last_dim = dev_ge_shape.GetDimNum() - 1;
-    dev_ge_shape.SetDim(last_dim, dev_ge_shape.GetDim(last_dim) * 2);
+    dev_ge_shape.SetDim(last_dim, dev_ge_shape.GetDim(last_dim) * kFactorySize);
   }
   desc->SetShape(dev_ge_shape);
   desc->SetFormat(dev_ge_format);

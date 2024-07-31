@@ -249,6 +249,7 @@ bool IsInitDataSetQueueNode(const AnfNodePtr &node) {
 }
 
 std::string GetCNodeTargetFuncName(const CNodePtr cnode) {
+  MS_EXCEPTION_IF_NULL(cnode);
   if (IsCaseNode(cnode)) {
     return string(kNameCase);
   }
@@ -467,10 +468,12 @@ transform::Status CompileDatasetGraph(const DatasetGraphParam &param, const std:
 }
 
 bool ConvertCheck(const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
   if (!node->cast<CNodePtr>() || !AnfUtils::IsRealKernel(node)) {
     return true;
   }
   PrimitivePtr prim = common::AnfAlgo::GetCNodePrimitive(node);
+  MS_EXCEPTION_IF_NULL(prim);
   auto &adapter_map = OpAdapterMap::get();
   return adapter_map.find(prim->name()) != adapter_map.end();
 }
@@ -483,9 +486,11 @@ bool DynamicShapeSupportCheck(const AnfNodePtr &node, bool train) {
 
 bool SinkGraphCheck(const AnfNodePtr &node, bool train) {
   PrimitivePtr prim = common::AnfAlgo::GetCNodePrimitive(node);
+  MS_EXCEPTION_IF_NULL(prim);
   auto adpt = FindAdapter(prim->name(), train);
   MS_EXCEPTION_IF_NULL(adpt);
   auto input_attr_map = adpt->getInputAttrMap();
+  MS_EXCEPTION_IF_NULL(node);
   auto cnode = node->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(cnode);
   auto input_size = cnode->size();

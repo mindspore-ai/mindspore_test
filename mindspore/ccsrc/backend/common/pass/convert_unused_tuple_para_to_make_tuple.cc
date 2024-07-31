@@ -40,6 +40,7 @@ bool ConvertUnusedTupleParaToMakeTuple::Run(const FuncGraphPtr &func_graph) {
       continue;
     }
     auto make_tuple = kernel_graph->TransTupleToMakeTuple(parameter);
+    MS_EXCEPTION_IF_NULL(make_tuple);
     make_tuple->set_scope(parameter->scope());
     kernel_graph->InsertTupleParameterToMakeTupleMap(parameter, make_tuple);
     // Replace graph inputs.

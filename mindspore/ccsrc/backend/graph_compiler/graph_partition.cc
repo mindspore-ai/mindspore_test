@@ -688,6 +688,7 @@ void ProcessCloseFollowing(const FuncGraphPtr &graph, const AnfNodePtr &cut_node
     return;
   }
 
+  MS_EXCEPTION_IF_NULL(graph);
   auto manager = graph->manager();
   if (manager == nullptr) {
     return;
@@ -704,6 +705,7 @@ void ProcessCloseFollowing(const FuncGraphPtr &graph, const AnfNodePtr &cut_node
 
   while (!node_queue.empty()) {
     auto top_node = node_queue.front();
+    MS_EXCEPTION_IF_NULL(top_node);
     node_queue.pop();
     top_node->seen_ = seen;
     follow_set.push_back(top_node);
@@ -744,6 +746,7 @@ bool IsNeedInline(const CNodePtr &cnode) {
   if (!context->IsKByKExecutorMode() || context->CellReuseLevel() != CellReuseLevel::kLazyInline) {
     return false;
   }
+  MS_EXCEPTION_IF_NULL(cnode);
   const auto &inputs = cnode->inputs();
   AnfNodePtr fn = inputs[0];
   FuncGraphPtr child_graph = common::AnfAlgo::GetValueNodeFuncGraph(fn);

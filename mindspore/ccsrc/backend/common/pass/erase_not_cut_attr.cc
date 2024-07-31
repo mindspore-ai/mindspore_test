@@ -23,7 +23,7 @@ bool EraseNotCutAttr::Run(const FuncGraphPtr &func_graph) {
   MS_EXCEPTION_IF_NULL(func_graph);
   AnfNodePtr return_node = func_graph->get_return();
   MS_EXCEPTION_IF_NULL(return_node);
-  std::vector<AnfNodePtr> all_nodes = TopoSort(return_node);
+  const std::vector<AnfNodePtr> &all_nodes = TopoSort(return_node);
   for (auto &node : all_nodes) {
     if (!node->isa<CNode>()) {
       continue;

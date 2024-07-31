@@ -435,6 +435,7 @@ bool IsCustomPrim(const PrimitivePtr &prim) {
 
 bool IsNoNeedConstantFoldCNode(const PrimitivePtr &prim) {
   // ON_THE_FLY Quantization node dont need constant folding.
+  MS_EXCEPTION_IF_NULL(prim);
   return prim->GetAttr("no_need_constant_folding") != nullptr;
 }
 
