@@ -7153,6 +7153,9 @@ def lp_pool1d(x, norm_type, kernel_size, stride=None, ceil_mode=False):
     .. math::
         f(X) = \sqrt[p]{\sum_{x \in X} x^{p}}
 
+    Note:
+        This interface currently does not support Atlas A2 training series products.
+
     Args:
         x (Tensor): Tensor of shape :math:`(N, C, L_{in})` or :math:`(C, L_{in})`.
         norm_type (Union[int, float]): Type of normalization, represents p in the formula, can not be 0,
@@ -7229,6 +7232,9 @@ def lp_pool2d(x, norm_type, kernel_size, stride=None, ceil_mode=False):
 
     .. math::
         f(X) = \sqrt[p]{\sum_{x \in X} x^{p}}
+
+    Note:
+        This interface currently does not support Atlas A2 training series products.
 
     Args:
         x (Tensor): Tensor of shape :math:`(N, C, H_{in}, W_{in})`.
