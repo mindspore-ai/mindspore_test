@@ -43,7 +43,7 @@ def setup_module():
     global device_num
     global rank_id
     np.random.seed(0)
-    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
+    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend", jit_config={"jit_level": "O2"})
     context.set_context(device_id=device_id)
     distributedTool.init()
     rank_id = distributedTool.get_rank()
@@ -119,6 +119,10 @@ class Dataset():
     def get_repeat_count(self):
         return self.length
 
+    def create_tuple_iterator(self, num_epochs=-1, do_copy=True):
+        _ = num_epochs
+        return self
+
 
 class ModelCallback(Callback):
     def __init__(self):
@@ -139,20 +143,20 @@ class SoftmaxCrossEntropyExpand(Cell):
         if len(stra_list) < 11:
             stra_list = [None] * 11
         self.exp = P.Exp()
-        self.reduce_sum = P.ReduceSum(keep_dims=True).shard(strategy=stra_list[1])
-        self.onehot = P.OneHot().shard(strategy=stra_list[2])
+        self.reduce_sum = P.ReduceSum(keep_dims=True).shard(in_strategy=stra_list[1])
+        self.onehot = P.OneHot().shard(in_strategy=stra_list[2])
         self.on_value = Tensor(1.0, mstype.float32)
         self.off_value = Tensor(0.0, mstype.float32)
-        self.div = P.Div().shard(strategy=stra_list[3])
-        self.log = P.Log().shard(strategy=stra_list[4])
-        self.sum_cross_entropy = P.ReduceSum(keep_dims=False).shard(strategy=stra_list[5])
-        self.mul = P.Mul().shard(strategy=stra_list[6])
-        self.mul2 = P.Mul().shard(strategy=stra_list[7])
+        self.div = P.Div().shard(in_strategy=stra_list[3])
+        self.log = P.Log().shard(in_strategy=stra_list[4])
+        self.sum_cross_entropy = P.ReduceSum(keep_dims=False).shard(in_strategy=stra_list[5])
+        self.mul = P.Mul().shard(in_strategy=stra_list[6])
+        self.mul2 = P.Mul().shard(in_strategy=stra_list[7])
         self.cast = P.Cast()
-        self.reduce_mean = P.ReduceMean(keep_dims=False).shard(strategy=stra_list[8])
+        self.reduce_mean = P.ReduceMean(keep_dims=False).shard(in_strategy=stra_list[8])
         self.sparse = sparse
-        self.reduce_max = P.ReduceMax(keep_dims=True).shard(strategy=stra_list[9])
-        self.sub = P.Sub().shard(strategy=stra_list[10])
+        self.reduce_max = P.ReduceMax(keep_dims=True).shard(in_strategy=stra_list[9])
+        self.sub = P.Sub().shard(in_strategy=stra_list[10])
 
     def construct(self, logit, label):
         logit_max = self.reduce_max(logit, -1)
@@ -173,7 +177,7 @@ class MatmulNet(Cell):
         super(MatmulNet, self).__init__()
         if loss_stra_list is None:
             loss_stra_list = []
-        self.matmul = P.MatMul(transpose_b=True).shard(strategy=matmul_stra)
+        self.matmul = P.MatMul(transpose_b=True).shard(in_strategy=matmul_stra)
         self.loss = SoftmaxCrossEntropyExpand(sparse=True, stra_list=loss_stra_list)
         self.weight = Parameter(Tensor(np.ones(MatmulParamShape), dtype=ms.float32), name="weight")
 
