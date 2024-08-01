@@ -595,6 +595,6 @@ def test_two_matmul_same_input():
     validator = ParallelValidator(net, phase)
     # check sub_graph
     sub_graph = {
-        'AllGather-0': ['Reshape-1'],
+        'AllGather-0': ['ReLU-0'],
     }
     assert validator.check_graph_structure(sub_graph)

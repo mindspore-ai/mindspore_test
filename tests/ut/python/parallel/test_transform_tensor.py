@@ -30,7 +30,7 @@ def test_transform_tensor_by_layout_allconcat_axis_1():
     device_list = [0, 1, 2, 3, 4, 5, 6, 7]
     rank_id = 0
     op_list = _transform_tensor_by_layout(from_layout, to_layout, device_list, rank_id)
-    assert op_list == [('Reshape', [32, 1, 32]), ('AllGather', [0, 1, 2]), ('Reshape', [32, 64])]
+    assert op_list == [('Reshape', [32, 1, 32]), ('AllConcat', [0, 1, 2]), ('Reshape', [32, 64])]
 
 
 def test_transform_tensor_by_layout_allconcat_axis_1_using_none_map():
@@ -44,7 +44,7 @@ def test_transform_tensor_by_layout_allconcat_axis_1_using_none_map():
     device_list = [0, 1, 2, 3, 4, 5, 6, 7]
     rank_id = 0
     op_list = _transform_tensor_by_layout(from_layout, to_layout, device_list, rank_id)
-    assert op_list == [('Reshape', [1, 4, 256]), ('AllGather', [0, 1, 1]), ('Reshape', [8, 256])]
+    assert op_list == [('Reshape', [1, 4, 256]), ('AllConcat', [0, 1, 1]), ('Reshape', [8, 256])]
 
 
 def test_transform_tensor_by_layout_allconcat_to_single():
@@ -58,7 +58,7 @@ def test_transform_tensor_by_layout_allconcat_to_single():
     device_list = [0, 1, 2, 3, 4, 5, 6, 7]
     rank_id = 0
     op_list = _transform_tensor_by_layout(from_layout, to_layout, device_list, rank_id)
-    assert op_list == [('AllGather', [0, 2, 4, 6, 0]), ('AllGather', [0, 1, 1])]
+    assert op_list == [('AllConcat', [0, 2, 4, 6, 0]), ('AllConcat', [0, 1, 1])]
 
 
 def test_transform_tensor_by_layout_allconcat_axis_0():
@@ -72,7 +72,7 @@ def test_transform_tensor_by_layout_allconcat_axis_0():
     device_list = [0, 1, 2, 3, 4, 5, 6, 7]
     rank_id = 0
     op_list = _transform_tensor_by_layout(from_layout, to_layout, device_list, rank_id)
-    assert op_list == [('Reshape', [1, 4, 256]), ('AllGather', [0, 1, 2, 3, 1]), ('Reshape', [16, 256])]
+    assert op_list == [('Reshape', [1, 4, 256]), ('AllConcat', [0, 1, 2, 3, 1]), ('Reshape', [16, 256])]
 
 
 def test_transform_tensor_by_layout_all_to_all():
@@ -86,7 +86,7 @@ def test_transform_tensor_by_layout_all_to_all():
     device_list = list(range(0, 8))
     rank_id = 0
     op_list = _transform_tensor_by_layout(from_layout, to_layout, device_list, rank_id)
-    assert op_list == [('AllGather', [0, 1, 2, 3, 4, 5, 6, 7, 0]), ('StridedSlice', [0, 0, 32, 8, 1, 1])]
+    assert op_list == [('AllConcat', [0, 1, 2, 3, 4, 5, 6, 7, 0]), ('StridedSlice', [0, 0, 32, 8, 1, 1])]
 
 
 def test_transform_tensor_by_layout_mix():
@@ -100,9 +100,9 @@ def test_transform_tensor_by_layout_mix():
     device_list = [0, 1, 2, 3, 4, 5, 6, 7]
     rank_id = 1
     op_list = _transform_tensor_by_layout(from_layout, to_layout, device_list, rank_id)
-    assert op_list == [('Reshape', [1, 2, 8, 32, 64]), ('AllGather', [1, 3, 3]),
+    assert op_list == [('Reshape', [1, 2, 8, 32, 64]), ('AllConcat', [1, 3, 3]),
                        ('StridedSlice', [0, 0, 0, 0, 0, 1, 1, 8, 64, 64, 1, 1, 1, 1, 1]),
-                       ('AllGather', [0, 1, 4]), ('StridedSlice', [0, 0, 4, 0, 0, 1, 1, 8, 64, 128, 1, 1, 1, 1, 1]),
+                       ('AllConcat', [0, 1, 4]), ('StridedSlice', [0, 0, 4, 0, 0, 1, 1, 8, 64, 128, 1, 1, 1, 1, 1]),
                        ('Reshape', [4, 64, 128])]
 
 
@@ -164,7 +164,7 @@ def test_generate_transform_operator_stack_2():
     assert len(param_rank_map) == 8
     transform_operator_stack = _generate_transform_operator_stack(param_rank_map, 0)
     assert transform_operator_stack == [(0, 1, ('StridedSlice', [0, 0, 32, 8, 1, 1])),
-                                        (0, 0, ('AllGather', [0, 1, 2, 3, 4, 5, 6, 7, 0]))]
+                                        (0, 0, ('AllConcat', [0, 1, 2, 3, 4, 5, 6, 7, 0]))]
 
 
 def test_generate_transform_operator_stack_3():
@@ -197,10 +197,10 @@ def test_generate_transform_operator_stack_4():
     transform_operator_stack = _generate_transform_operator_stack(param_rank_map, rank_id)
     assert transform_operator_stack == [(1, 5, ('Reshape', [4, 64, 128])),
                                         (1, 4, ('StridedSlice', [0, 0, 4, 0, 0, 1, 1, 8, 64, 128, 1, 1, 1, 1, 1])),
-                                        (1, 3, ('AllGather', [0, 1, 4])),
+                                        (1, 3, ('AllConcat', [0, 1, 4])),
                                         (0, 2, ('StridedSlice', [0, 0, 0, 0, 0, 1, 1, 8, 64, 64, 1, 1, 1, 1, 1])),
                                         (1, 2, ('StridedSlice', [0, 0, 0, 0, 0, 1, 1, 8, 64, 64, 1, 1, 1, 1, 1])),
-                                        (0, 1, ('AllGather', [0, 2, 3])), (1, 1, ('AllGather', [1, 3, 3])),
+                                        (0, 1, ('AllConcat', [0, 2, 3])), (1, 1, ('AllConcat', [1, 3, 3])),
                                         (0, 0, ('Reshape', [1, 2, 8, 32, 64])), (2, 0, ('Reshape', [1, 2, 8, 32, 64])),
                                         (1, 0, ('Reshape', [1, 2, 8, 32, 64])), (3, 0, ('Reshape', [1, 2, 8, 32, 64]))]
 

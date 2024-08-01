@@ -35,13 +35,14 @@ using Param = std::pair<std::pair<std::string, ValuePtr>, int64_t>;
 using OperatorParams = std::vector<Param>;
 using OperatorAttrs = std::vector<Attr>;
 // OutPutInfo.fist: true if the operator's output is a tuple
-// OutPutInfo.second: elements number of the tuple output. Only meaningful if OutPutInfo.fist is true.
+// OutPutInfo.second: elements number of the tuple output. Only meaningful if OutPutInfo.first is true.
 using OutPutInfo = std::pair<bool, uint64_t>;
 using OutPutInfoVector = std::vector<OutPutInfo>;
 using OperatorArgs = std::pair<OperatorAttrs, OperatorParams>;
 using Operator = std::pair<OperatorName, OperatorArgs>;
 using OperatorVector = std::vector<Operator>;
-using RedistributionOpListPtr = std::shared_ptr<std::pair<OperatorVector, OutPutInfoVector>>;
+using RedistributionOpList = std::pair<OperatorVector, OutPutInfoVector>;
+using RedistributionOpListPtr = std::shared_ptr<RedistributionOpList>;
 
 struct Cost {
   Cost();

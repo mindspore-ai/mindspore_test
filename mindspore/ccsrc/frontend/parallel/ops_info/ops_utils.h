@@ -383,6 +383,7 @@ constexpr char MIRROR_MINI_STEP_OPERATOR[] = "_MirrorMiniStepOperator";
 constexpr char LOCAL_STEP[] = "local_step";
 constexpr char STRIDED_SLICE[] = "StridedSlice";
 constexpr char ALL_GATHER[] = "AllGather";
+constexpr char ALL_CONCAT[] = "AllConcat";
 constexpr char VIRTUAL_CONVERTER_END[] = "_VirtualConverterEnd";
 constexpr char VIRTUAL_CONVERTER_BEGIN[] = "_VirtualConverterBegin";
 constexpr char MINI_STEP_ALL_GATHER[] = "_MiniStepAllGather";
