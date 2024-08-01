@@ -43,11 +43,16 @@ namespace dataset {
 const int kMsgQueuePermission = 0600;
 const int kMsgQueueClosed = 2;
 
-const int kWorkerErrorMsg = 111;
+// content is err status which is stored in err_msg_
+const int kWorkerErrorMsg = 111;       // worker -> master, request mtype
 const int kWorkerErrorMsgSize = 4096;  // the max length of err msg which will be sent to main process
 
-const int kWorkerSendDataMsg = 777;
-const int kMasterSendDataMsg = 999;
+// indicate that master consumer(iterator/to_device) is finish
+const int kMasterReceiveBridgeOpFinishedMsg = 222;  // master -> worker, request mtype
+
+// contest is Tensor(normal data / eoe / eof) which is stored in shared memory
+const int kWorkerSendDataMsg = 777;  // worker -> master, request mtype
+const int kMasterSendDataMsg = 999;  // master -> worker, response mtype
 
 const int kFourBytes = 4;
 
@@ -83,6 +88,9 @@ class DATASET_API MessageQueue {
 
   // convert err msg to Status
   Status DeserializeStatus();
+
+  // get the err status flag
+  bool GetErrorStatus();
 
   // the below is the message content
   // kWorkerSendDataMsg, normal tensor from subprocess to main process

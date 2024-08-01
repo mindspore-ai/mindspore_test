@@ -114,7 +114,7 @@ Status SharedMemoryQueue::ReleaseCurrentShm() {
 
   // del the shm
   if (shm_id_ != -1) {
-    if (shmctl(shm_id_, IPC_RMID, NULL) == -1) {
+    if (shmctl(shm_id_, IPC_RMID, NULL) == -1 && errno != EINVAL) {
       RETURN_STATUS_UNEXPECTED("shmctl shm_id: " + std::to_string(shm_id_) + " error. Errno: " + std::to_string(errno));
     }
     MS_LOG(INFO) << "Delete shared memory with shm_id: " << std::to_string(shm_id_) << ", thread id: " << ss.str()

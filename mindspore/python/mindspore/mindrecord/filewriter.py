@@ -509,10 +509,10 @@ class FileWriter:
                 try:
                     self._queue.put("EOF", block=False)
                 except queue.Full:
-                    time.sleep(1)
                     if not self._workers[i].is_alive():
                         raise RuntimeError("Worker process(pid:{}) has stopped abnormally. Please check " \
                                            "the above log".format(self._workers[i].pid))
+                    time.sleep(1)
                     continue
                 break
 
