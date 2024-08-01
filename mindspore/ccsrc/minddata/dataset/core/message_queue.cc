@@ -85,7 +85,8 @@ Status MessageQueue::MsgSnd(int64_t mtype, int shm_id, uint64_t shm_size) {
                              ", mtype: " + std::to_string(mtype) + ", shm_id: " + std::to_string(shm_id) +
                              ", shm_size: " + std::to_string(shm_size));
   }
-  MS_LOG(DEBUG) << "Exec msgsnd success, mtype: " << mtype << ", shm_id: " << shm_id << ", shm_size: " << shm_id;
+  MS_LOG(DEBUG) << "Exec msgsnd success, msg queue id: " << msg_queue_id_ << ", mtype: " << mtype
+                << ", shm_id: " << shm_id << ", shm_size: " << shm_id << ", err status: " << GetErrorStatus();
   return Status::OK();
 }
 
@@ -100,12 +101,18 @@ Status MessageQueue::MsgRcv(int64_t mtype) {
     RETURN_STATUS_UNEXPECTED("Exec msgrcv failed. Msg queue id: " + std::to_string(msg_queue_id_) +
                              ", mtype: " + std::to_string(mtype) + ", errno: " + std::to_string(errno));
   }
-  MS_LOG(DEBUG) << "Exec msgrcv success, mtype: " << mtype << ", shm_id: " << shm_id_ << ", shm_size: " << shm_id_;
+  MS_LOG(DEBUG) << "Exec msgrcv success, msg queue id: " << msg_queue_id_ << ", mtype: " << mtype
+                << ", shm_id: " << shm_id_ << ", shm_size: " << shm_id_ << ", err status: " << GetErrorStatus();
   return Status::OK();
 }
 
 int MessageQueue::MsgRcv(int64_t mtype, int msgflg) {
-  return msgrcv(msg_queue_id_, this, sizeof(MessageQueue), mtype, msgflg);
+  auto ret = msgrcv(msg_queue_id_, this, sizeof(MessageQueue), mtype, msgflg);
+  if (ret > 0) {
+    MS_LOG(DEBUG) << "Exec msgrcv success, msg queue id: " << msg_queue_id_ << ", mtype: " << mtype
+                  << ", shm_id: " << shm_id_ << ", shm_size: " << shm_id_ << ", err status: " << GetErrorStatus();
+  }
+  return ret;
 }
 
 // two error status case:
@@ -303,6 +310,14 @@ Status MessageQueue::DeserializeStatus() {
   }
   MS_LOG(INFO) << "End deserialize status: " << ret;
   return ret;
+}
+
+bool MessageQueue::GetErrorStatus() {
+  int *status_code = reinterpret_cast<int *>(err_msg_);
+  if (*status_code != 0) {
+    return true;
+  }
+  return false;
 }
 #endif
 }  // namespace dataset

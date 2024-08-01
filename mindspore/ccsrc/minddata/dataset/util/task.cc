@@ -215,6 +215,19 @@ Status Task::Join(WaitFlag blocking) {
               }
             }
           }
+
+          // Because ReceiveBridgeOp maybe hung by MsgRcv from SendBridgeOp
+          if (wait_times > 5 && my_name_.find("ReceiveBridgeOp") != std::string::npos) {
+            MS_LOG(WARNING) << "Wait " << wait_times << " seconds, "
+                            << "the task: " << my_name_ << ".";
+
+            // just wait 30 seconds
+            if (wait_times > kWaitInterruptTaskTime) {
+              MS_LOG(WARNING) << "Task: " << my_name_ << " Thread ID " << ss.str()
+                              << " is not responding. Break the interrupt.";
+              break;
+            }
+          }
 #endif
         }
       } else {

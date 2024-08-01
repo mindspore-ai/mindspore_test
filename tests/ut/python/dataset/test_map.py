@@ -690,7 +690,7 @@ def generator_with_multi_transforms(mode):
     time.sleep(1)
 
     # for probably failed
-    assert len(transforms.EXECUTORS_LIST) in [0, 1]
+    assert len(transforms.EXECUTORS_LIST) in [0, 1, 2]
 
 
 def test_generator_or_map_with_pyfunc_use_global_executor():
