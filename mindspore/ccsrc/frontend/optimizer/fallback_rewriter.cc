@@ -702,9 +702,9 @@ class BeforeOptARewriter : public BaseRewriter {
       // changed_elements maps old element to new element.
       mindspore::HashMap<AbstractBasePtr, AbstractBasePtr> changed_elements;
       for (const auto &element : seq_elements) {
-        auto new_element = ConvertToAbstractSequence(element, depth + 1);
-        if (new_element != nullptr) {
-          (void)changed_elements.emplace(element, new_element);
+        auto new_sequence_element = ConvertToAbstractSequence(element, depth + 1);
+        if (new_sequence_element != nullptr) {
+          (void)changed_elements.emplace(element, new_sequence_element);
         }
       }
       if (changed_elements.empty()) {
@@ -1358,9 +1358,9 @@ class AfterOptARewriter : public BaseRewriter {
     auto list_input_node = node_inputs[node_list_index];
     if (IsPrimitiveCNode(list_input_node, prim::kPrimMakeList)) {
       TraceGuard trace_guard(std::make_shared<TraceCopy>(list_input_node->debug_info()));
-      auto new_node = ConvertMakeList(list_input_node->cast<CNodePtr>());
-      (void)manager_->Replace(list_input_node, new_node);
-      list_input_node = new_node;
+      auto new_pop_list_node = ConvertMakeList(list_input_node->cast<CNodePtr>());
+      (void)manager_->Replace(list_input_node, new_pop_list_node);
+      list_input_node = new_pop_list_node;
     }
     std::vector<AnfNodePtr> key_value_list{NewValueNode(prim::kPrimMakeTuple)};
     (void)key_value_list.emplace_back(list_input_node);
@@ -1503,9 +1503,9 @@ class AfterOptARewriter : public BaseRewriter {
     auto list_input_node = node_inputs[node_list_index];
     if (IsPrimitiveCNode(list_input_node, prim::kPrimMakeList)) {
       TraceGuard trace_guard(std::make_shared<TraceCopy>(list_input_node->debug_info()));
-      auto new_node = ConvertMakeList(list_input_node->cast<CNodePtr>());
-      (void)manager_->Replace(list_input_node, new_node);
-      list_input_node = new_node;
+      auto new_insert_list_node = ConvertMakeList(list_input_node->cast<CNodePtr>());
+      (void)manager_->Replace(list_input_node, new_insert_list_node);
+      list_input_node = new_insert_list_node;
     }
     std::vector<AnfNodePtr> key_value_list{NewValueNode(prim::kPrimMakeTuple)};
     (void)key_value_list.emplace_back(list_input_node);
@@ -2529,9 +2529,9 @@ class AfterOptARewriter : public BaseRewriter {
       // changed_elements maps old element to new element.
       mindspore::HashMap<AbstractBasePtr, AbstractBasePtr> changed_elements;
       for (const auto &element : seq_elements) {
-        auto new_element = ConvertToAbstractTuple(element, depth + 1);
-        if (new_element != nullptr) {
-          (void)changed_elements.emplace(element, new_element);
+        auto new_tuple_element = ConvertToAbstractTuple(element, depth + 1);
+        if (new_tuple_element != nullptr) {
+          (void)changed_elements.emplace(element, new_tuple_element);
         }
       }
       if (changed_elements.empty()) {
