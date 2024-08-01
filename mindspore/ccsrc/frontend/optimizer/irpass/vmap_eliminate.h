@@ -48,10 +48,14 @@ class ExpandVmapPrim : public ExpandMetaFgPrim {
   using VisitedHashSetPair = std::pair<mindspore::HashSet<FuncGraphPtr>, mindspore::HashSet<AnfNodePtr>>;
   void ExpandVmapValueNode(const FuncGraphPtr &vmap_fg, const pipeline::ResourceBasePtr &resource,
                            VisitedHashSetPair *visited_pair, int axis_size);
+
+  void ExpandVmapInput(const FuncGraphPtr &vmap_fg, const FuncGraphManagerPtr &manager,
+                       const mindspore::HashSet<AnfNodePtr> &visited_node, const AnfNodePtr &node);
   void ExpandVmapFreeVariable(const FuncGraphPtr &vmap_fg, const FuncGraphManagerPtr &manager,
                               const mindspore::HashSet<AnfNodePtr> &visited_node);
   void ExpandVmapPartialInputs(const FuncGraphPtr &vmap_fg, const FuncGraphManagerPtr &manager,
                                const mindspore::HashSet<AnfNodePtr> &visited_node);
+
   FuncGraphPtr ExpandVmapFuncGraph(const FuncGraphPtr &vmap_fg, const pipeline::ResourceBasePtr &resource,
                                    int axis_size, VisitedHashSetPair *visited_pair);
   // Entry to perform Vmap transformation.
