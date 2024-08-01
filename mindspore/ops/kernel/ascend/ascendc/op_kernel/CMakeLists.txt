@@ -7,7 +7,13 @@ elseif(EXISTS /usr/local/Ascend/ascend-toolkit/latest)
 else()
     set(KERNEL_OPC_PATH /usr/local/Ascend)
 endif()
-set(OPC_PATH ${KERNEL_OPC_PATH}/aarch64-linux/bin/opc)
+
+if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL x86_64)
+  set(OPC_PATH ${KERNEL_OPC_PATH}/x86_64-linux/bin/opc)
+else()
+  set(OPC_PATH ${KERNEL_OPC_PATH}/aarch64-linux/bin/opc)
+endif()
+
 set(BUILTIN_OPP_PATH ${KERNEL_OPC_PATH}/opp/built-in/op_impl/ai_core/tbe)
 
 foreach(compute_unit ${ASCEND_COMPUTE_UNIT})
