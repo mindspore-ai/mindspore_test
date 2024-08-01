@@ -25,7 +25,7 @@ from mindspore.common.tensor import Tensor
 from mindspore._c_expression import Tensor as Tensor_
 from mindspore.common.dtype import dtype_to_nptype, pytype_to_dtype
 from mindspore.common import dtype as mstype
-from mindspore.context import ParallelMode
+from mindspore import context
 from mindspore import log as logger
 from mindspore import _checkparam as Validator
 from mindspore.common.api import _cell_graph_executor
@@ -34,7 +34,6 @@ from mindspore.train.checkpoint_pb2 import Checkpoint
 from mindspore.train.node_strategy_pb2 import ParallelStrategyMap as ckpt_strategy
 from mindspore.train.lineage_pb2 import DatasetGraph, TrainLineage, EvaluationLineage, UserDefinedInfo
 from mindspore.parallel._parallel_serialization import _make_dir
-from mindspore.parallel._utils import _get_parallel_mode
 from mindspore.ops.operations import debug_ops
 
 
@@ -74,9 +73,8 @@ def _exec_datagraph(exec_dataset, dataset_size, phase='dataset', create_data_inf
     if queue_name is None:
         queue_name = str("")
 
-    parallel_mode = _get_parallel_mode()
-    is_auto_parallel = parallel_mode in (ParallelMode.SEMI_AUTO_PARALLEL, ParallelMode.AUTO_PARALLEL)
-    if is_auto_parallel:
+    use_pipeline_parallel = (context.get_auto_parallel_context("pipeline_stages") > 1)
+    if use_pipeline_parallel:
         create_data_info_queue = False
 
     exec_dataset = exec_dataset.device_que(send_epoch_end=send_epoch_end,
