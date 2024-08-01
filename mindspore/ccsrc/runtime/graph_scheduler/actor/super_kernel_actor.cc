@@ -491,6 +491,9 @@ void SuperKernelActor::RunGraphKernelByKernel(OpContext<DeviceTensor> *const con
         MS_LOG(DEBUG) << "End wait runtime pipeline for kernel: " << kernel_actor->kernel_->fullname_with_scope();
       }
     } else {
+      if (kernel_actor->kernel_mod_->kernel_name() == "PagedAttention") {
+        kernel_actor->ResizeKernelMod();
+      }
       Async(kernel_async_launch_aid_, &KernelAsyncLaunchActor::LaunchKernel, context, kernel_actor.get());
     }
   }

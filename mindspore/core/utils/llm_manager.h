@@ -20,7 +20,11 @@
 #include <string>
 #include <memory>
 #include <map>
+#include <vector>
 #include "mindapi/base/macros.h"
+#include "ir/meta_tensor.h"
+#include "utils/log_adapter.h"
+#include "ir/tensor_data.h"
 
 namespace mindspore {
 // Current not support multi -thread use this Single Instance
@@ -52,7 +56,30 @@ class MS_CORE_API LLMManager {
   /// \return The seq_length_graph_input_index.
   int32_t get_seq_length_graph_input_index();
 
+  /// \brief Get the query_length_graph_input_index.
+  ///
+  /// \return The query_length_graph_input_index.
+  int32_t get_query_length_graph_input_index();
+
   bool enable_multi_level_seq_length_{false};
+
+  void set_current_batch_seq_length(const std::vector<int32_t> &batch_seq_length) {
+    current_batch_seq_length_ = batch_seq_length;
+  }
+
+  const std::vector<int32_t> &get_current_batch_seq_length() { return current_batch_seq_length_; }
+
+  void set_current_batch_query_length(const std::vector<int32_t> &batch_query_length) {
+    current_batch_query_length_ = batch_query_length;
+  }
+
+  const std::vector<int32_t> &get_current_batch_query_length() { return current_batch_query_length_; }
+
+  tensor::TensorDataPtr get_graph_input(const std::string &name);
+
+  void add_graph_input(const std::string &name, tensor::TensorDataPtr tensor);
+
+  void reset_graph_inputs();
 
  private:
   LLMManager();
@@ -64,6 +91,10 @@ class MS_CORE_API LLMManager {
   int32_t current_round_up_max_seq_length_{1024};
   int32_t seq_length_level_size_{128};
   int32_t seq_length_graph_input_index_{-1};
+  int32_t query_length_graph_input_index_{-1};
+  std::vector<int32_t> current_batch_seq_length_;
+  std::vector<int32_t> current_batch_query_length_;
+  std::map<std::string, tensor::TensorDataPtr> graph_inputs_map_;
 };
 }  // namespace mindspore
 #endif  // MINDSPORE_CORE_UTILS_LLM_MANAGER_H_

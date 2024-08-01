@@ -44,6 +44,7 @@
 #include "runtime/pynative/graph_adapter.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "utils/log_adapter.h"
+#include "utils/llm_manager.h"
 #ifdef ENABLE_DEBUGGER
 #include "include/backend/debug/debugger/debugger.h"
 #endif
@@ -1240,6 +1241,12 @@ void MindRTBackendBase::RunGraph(const ActorInfo &actor_info, const VectorRef &a
     ConstructOutputs(actor_set, outputs, root_graph_);
     actor_set->output_actor_->FreeSummaryNodeMem();
     runtime::GraphScheduler::GetInstance().ClearActorData(actor_set);
+    auto ms_context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(ms_context);
+    if (ms_context->IsEnableInferBoost()) {
+      auto &llm_manager = LLMManager::GetInstance();
+      llm_manager.reset_graph_inputs();
+    }
     PROFILER_END(start_time, runtime::ProfilerModule::kKernel, runtime::ProfilerEvent::kOutputProcess, actor_set->name_,
                  false);
   }

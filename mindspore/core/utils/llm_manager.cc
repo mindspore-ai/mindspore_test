@@ -40,6 +40,14 @@ void LLMManager::init() {
                  << seq_length_graph_input_index_;
   }
 
+  auto llm_query_length_idx_env = common::GetEnv("MS_LLM_QUERY_LENGTH_INDEX");
+  if (!llm_query_length_idx_env.empty()) {
+    query_length_graph_input_index_ = stoi(llm_query_length_idx_env);
+    enable_multi_level_seq_length_ = true;
+    MS_LOG(INFO) << "LLM Manager init: enable multi_level_seq_length with query input index: "
+                 << query_length_graph_input_index_;
+  }
+
   auto llm_seq_length_level_size = common::GetEnv("MS_LLM_SEQ_LENGTH_LEVEL_SIZE");
   if (!llm_seq_length_level_size.empty()) {
     seq_length_level_size_ = stoi(llm_seq_length_level_size);
@@ -64,5 +72,23 @@ bool LLMManager::update_round_up_max_seq_length(int32_t max_seq_lenght) {
 
 int32_t LLMManager::get_current_round_up_max_seq_length() { return current_round_up_max_seq_length_; }
 
-int32_t LLMManager::LLMManager::get_seq_length_graph_input_index() { return seq_length_graph_input_index_; }
+int32_t LLMManager::get_seq_length_graph_input_index() { return seq_length_graph_input_index_; }
+
+int32_t LLMManager::get_query_length_graph_input_index() { return query_length_graph_input_index_; }
+
+tensor::TensorDataPtr LLMManager::get_graph_input(const std::string &name) {
+  auto it = graph_inputs_map_.find(name);
+  if (it == graph_inputs_map_.end()) {
+    return nullptr;
+  }
+  return it->second;
+}
+
+void LLMManager::add_graph_input(const std::string &name, tensor::TensorDataPtr tensor) {
+  graph_inputs_map_[name] = tensor;
+}
+
+void LLMManager::reset_graph_inputs() {
+  graph_inputs_map_.clear();
+}
 }  // namespace mindspore
