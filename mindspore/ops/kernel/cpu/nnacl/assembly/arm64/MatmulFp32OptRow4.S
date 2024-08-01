@@ -19,7 +19,7 @@
 .text
 .align 5
 
-// void MatmulFloatNeon64(const float *a, const float *b, float *c, const float *bias, int act_type, int depth
+// void MatmulFloatNeon64OptRow4(const float *a, const float *b, float *c, const float *bias, int act_type, int depth
 //                        int row, int col, size_t stride, size_t writeMode)
 // x0: a
 // x1: b
@@ -34,13 +34,14 @@
 
 asm_function MatmulFloatNeon64OptRow4
     sub sp, sp, #160
-    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
-    st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
-    stp x19, x20, [sp], #16
-    stp x21, x22, [sp], #16
+    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp]
+    add x9, sp, #64
+    st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [x9]
+    stp x19, x20, [sp, #128]
+    stp x21, x22, [sp, #144]
 
-    ldr x8, [sp]
-    ldr x9, [sp, #8]
+    ldr x8, [sp, #160]
+    ldr x9, [sp, #168]
 
     mov x21, #48 // sizeof(float) * 12
 
@@ -588,7 +589,6 @@ LoopColEnd:
         subs x6, x6, #12
         bgt LoopRow4
 
-  sub sp, sp, #160
   ld1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
   ld1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
   ldp x19, x20, [sp], #16

@@ -33,16 +33,17 @@
 
 asm_function BigMatmulFloatNeon64Opt
     sub sp, sp, #224
-    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
-    st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
-    stp x19, x20, [sp], #16
-    stp x21, x22, [sp], #16
-    stp x23, x24, [sp], #16
-    stp x25, x26, [sp], #16
-    stp x27, x28, [sp], #16
-    stp x29, x30, [sp], #16
+    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp]
+    add x9, sp, #64
+    st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [x9]
+    stp x19, x20, [sp, #128]
+    stp x21, x22, [sp, #144]
+    stp x23, x24, [sp, #160]
+    stp x25, x26, [sp, #176]
+    stp x27, x28, [sp, #192]
+    stp x29, x30, [sp, #208]
 
-    ldr x8, [sp]
+    ldr x8, [sp, #224]
     mov x20, #1
     mov x22, #32
     mov x23, #48
@@ -2020,7 +2021,7 @@ Reload:
 
 ReloadEnd:
   ret
-  
+
 Compute12x8Unit:
     subs x21, x21, #2
     ble Compute12x8End
@@ -2515,7 +2516,6 @@ Compute4x4Unit:
         ret
 
 End:
-  sub sp, sp, #224
   ld1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
   ld1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
   ldp x19, x20, [sp], #16

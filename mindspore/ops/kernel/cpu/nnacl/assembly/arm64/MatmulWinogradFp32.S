@@ -27,9 +27,9 @@ asm_function MatrixMultiplyWinograd
     // x19 ~ x29 should be also preserved
     // whereas our coding style do not permit such amount of parameters
     sub sp, sp, #48
-    st1 {v8.4s}, [sp], #16
-    stp x19, x20, [sp], #16
-    stp x21, x22, [sp], #16
+    st1 {v8.4s}, [sp]
+    stp x19, x20, [sp, #16]
+    stp x21, x22, [sp, #32]
     mov x8, #4
     mul x10, x5, x8
     mov x17, x3  // m
@@ -176,7 +176,6 @@ asm_function MatrixMultiplyWinograd
             add x0, x0, x21
             b LoopM
     EndLoopM:
-        sub sp, sp, #48
         ld1 {v8.4s}, [sp], #16
         ldp x19, x20, [sp], #16
         ldp x21, x22, [sp], #16
