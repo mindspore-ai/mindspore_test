@@ -34,6 +34,7 @@
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "utils/hash_map.h"
 #include "utils/ms_context.h"
+#include "utils/phase.h"
 #include "ir/anf.h"
 #include "ir/func_graph.h"
 #include "ir/tensor.h"
@@ -57,6 +58,7 @@ enum class RefModeFlag {
 };
 constexpr char kGraphFlagHasGetNext[] = "graph_has_getnext";
 constexpr char kGraphNeedIteration[] = "graph_need_iteration";
+constexpr auto kNoNeedAllocDeviceAddress = "no_need_alloc_device_address";
 
 struct GEInputList {
   std::vector<AnfNodeWeakPtr> ge_inputs;
@@ -103,17 +105,18 @@ class DfGraphConvertor {
     MS_EXCEPTION_IF_NULL(anf_graph);
     if (ref_mode_type == RefModeFlag::kRefModeEnv) {
       ref_mode_ = IsEnableRefMode();
-      ref_mode_type_ = RefModeFlag::kRefModeAll;
+      ref_mode_type_ = IsTwoPhaseInfer() ? RefModeFlag::kRefModeVariable : RefModeFlag::kRefModeAll;
     } else {
       ref_mode_ = (ref_mode_type != RefModeFlag::kRefModeNone);
       ref_mode_type_ = ref_mode_type;
     }
+
     dyn_ref_data_func_ = dyn_ref_data_func;
     auto context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(context);
     bool enable_ge = context->backend_policy() == "ge";
     bool enable_training = phase_prefix_ == "train";
-    static bool is_training = false;
+    bool is_training = false;
     if (enable_ge && enable_training) {
       is_training = true;
     }
@@ -137,7 +140,8 @@ class DfGraphConvertor {
     MS_EXCEPTION_IF_NULL(graph_manager_);
     MS_LOG(INFO) << "Create DfGraphConvertor with graph: " << graph_name << "(type: " << graph_type << ")"
                  << ", training: " << training_ << ", dynamic input: " << dynamic_shape_inputs_
-                 << ", distribute: " << distribute_;
+                 << ", distribute: " << distribute_ << ", ref_mode: " << ref_mode_
+                 << ", ref_mod_type_: " << ref_mode_type_;
   }
 
   ~DfGraphConvertor() {}

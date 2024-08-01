@@ -48,6 +48,7 @@
 #include "include/common/utils/convert_utils.h"
 #include "utils/ms_context.h"
 #include "utils/profile.h"
+#include "utils/phase.h"
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
 #include "include/common/utils/signal_util.h"
 #include "include/backend/distributed/cluster/topology/compute_graph_node.h"

@@ -123,6 +123,7 @@ class GeGraphExecutor : public GraphExecutor {
                                              size_t need_alloc_output_cnt) const;
   void DoAsyncCkpt(const FuncGraphPtr &graph);
   bool IsNeedNotifyTTP(const FuncGraphPtr &graph);
+  void SetFlagIgnoreDevicePtr(const FuncGraphPtr &graph);
   mindspore::HashMap<session::KernelGraph *, GeInputData> input_datas_;
   mindspore::HashMap<session::KernelGraph *, GeOutputData> output_datas_;
   mindspore::HashMap<std::string, std::vector<std::pair<uint32_t, uint32_t>>> io_indexes_;

@@ -22,6 +22,7 @@
 #include "runtime/graph_scheduler/actor/debug_actor.h"
 #include "async/async.h"
 #include "utils/log_adapter.h"
+#include "utils/phase.h"
 #include "kernel/common_utils.h"
 #include "utils/ms_context.h"
 #include "include/backend/mem_reuse/mem_tracker.h"

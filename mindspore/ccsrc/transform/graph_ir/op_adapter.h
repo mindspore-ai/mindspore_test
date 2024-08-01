@@ -107,7 +107,7 @@ class OpAdapterImpl {
   void updateInputDesc(const OperatorPtr &op, const AnfNodePtr &node);
   void updateOutputDesc(const OperatorPtr &op, const abstract::BaseShapePtr &shp, const TypePtr &type,
                         const AnfNodePtr &node);
-  int setAttr(const OperatorPtr &op, const std::string &attr_key, const ValuePtr &attr_value);
+  int setAttr(const OperatorPtr &op, const std::string &attr_key, const ValuePtr &attr_value, bool is_ref = false);
   int SetCustomOpAttr(const CusOperatorPtr &op, const PrimitivePtr &prim) const;
   int SetNormalOpAttr(const OperatorPtr &op, const PrimitivePtr &prim);
   int SetNoFoldingOpAttr(const OperatorPtr &op, const PrimitivePtr &prim);
@@ -423,7 +423,8 @@ class OpAdapter : public BaseOpAdapter {
     impl_->updateOutputDesc(op, shp, type, node);
   }
 
-  int setAttr(const OperatorPtr &op, const std::string &attrKey, const ValuePtr &attrValue) override {
+  int setAttr(const OperatorPtr &op, const std::string &attrKey, const ValuePtr &attrValue,
+              bool is_ref = false) override {
     return impl_->setAttr(op, attrKey, attrValue);
   }
 
@@ -470,6 +471,11 @@ class OpAdapter : public BaseOpAdapter {
     return v;
   }
 
+  template <typename S>
+  static GeTensor ConvertAnyWithRef(const ValuePtr &value, const AnyTraits<S> &) {
+    MS_LOG(EXCEPTION) << "ConvertAnyWithRef does not support type " << typeid(S).name();
+  }
+
   // specialization for reverse bool
   static bool ConvertAny(const ValuePtr &value, const AnyTraits<bool> &, bool reverse) {
     return reverse != GetValueWithCheck<bool>(value);
@@ -484,6 +490,11 @@ class OpAdapter : public BaseOpAdapter {
   static GeTensor ConvertAny(const ValuePtr &value, const AnyTraits<mindspore::tensor::Tensor> &traits) {
     // To-DO the format may read from ME tensor
     return ConvertAnyUtil(value, traits);
+  }
+
+  static GeTensor ConvertAnyWithRef(const ValuePtr &value, const AnyTraits<mindspore::tensor::Tensor> &traits) {
+    // To-DO the format may read from ME tensor
+    return ConvertAnyUtilWithRef(value, traits);
   }
 
   // specialization for int
