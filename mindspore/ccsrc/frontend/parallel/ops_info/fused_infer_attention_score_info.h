@@ -45,6 +45,10 @@ class FusedInferAttentionScoreInfo : public OperatorInfo {
   void ReComputeBatchSplitFlagList() override;
   void ReplaceNodeInputOrAttrs() override;
 
+  int64_t input_layout() { return input_layout_; }
+  int64_t s1_split_num() { return sp_; }
+  RankList GetSPRankList();
+
  protected:
   Status InferForwardCommunication() override { return SUCCESS; }
   Status InferDevMatrixShape() override;
@@ -57,6 +61,7 @@ class FusedInferAttentionScoreInfo : public OperatorInfo {
 
  private:
   bool CheckStrategy(int64_t strategy, int64_t true_value, const std::string &dim_name, const std::string &input_name);
+  Status CheckInputInRingAttention();
   void GenerateExpectStrategies();
   bool CheckStrategyOnIndex(int64_t strategy, int64_t true_value, const std::string &dim_name,
                             const std::string &input_name);
@@ -87,6 +92,7 @@ class FusedInferAttentionScoreInfo : public OperatorInfo {
                                                 {0}, {0}, {0}, {0},          {0},       {0}, {0}, {0}};
   std::vector<bool> optional_inputs_;
   size_t atten_mask_rank_ = 0;
+  Shape attn_mask_shape_;
   size_t pse_shift_rank_ = 0;
   std::vector<Shape> expect_strategies_;
   bool is_ifa_ = false;
