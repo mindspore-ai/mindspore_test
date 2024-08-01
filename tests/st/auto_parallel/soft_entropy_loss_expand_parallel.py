@@ -119,6 +119,10 @@ class Dataset():
     def get_repeat_count(self):
         return self.length
 
+    def create_tuple_iterator(self, num_epochs=-1, do_copy=True):
+        _ = num_epochs
+        return self
+
 
 class ModelCallback(Callback):
     def __init__(self):
