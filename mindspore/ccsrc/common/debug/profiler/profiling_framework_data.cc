@@ -154,7 +154,7 @@ void ProfilingFrameworkData::RecordHostProfile(std::shared_ptr<ProfilerData> dat
   }
   std::vector<std::string> stack_vec;
   stack_vec.push_back(data->py_stack_);
-  std::string op_name = data->op_name_;
+  std::string op_name = data->op_full_name_;
   if (data->is_stage_) {
     op_name = kProfilerStageString.at(data->stage_);
   } else if (data->op_name_ != "flow") {
