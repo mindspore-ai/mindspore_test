@@ -130,7 +130,7 @@ py::object ConvertToPythonTensor(const py::object &obj) {
   return obj;
 }
 
-py::object ConvertToPyObj(const AbstractBasePtr &abs) {
+py::object ConvertToPyObjInner(const AbstractBasePtr &abs) {
   if (abs->isa<abstract::AbstractNone>()) {
     return py::none();
   }
@@ -166,6 +166,39 @@ py::object ConvertToPyObj(const AbstractBasePtr &abs) {
   }
 
   return py_obj;
+}
+
+py::object ConvertToPyObj(const AbstractBasePtr &abs) {
+  MS_EXCEPTION_IF_NULL(abs);
+  if (abs->isa<abstract::AbstractList>()) {
+    auto abs_list = abs->cast<abstract::AbstractListPtr>();
+    py::list ret = py::list(abs_list->size());
+    const auto &elements = abs_list->elements();
+    for (size_t i = 0; i < elements.size(); ++i) {
+      ret[i] = ConvertToPyObj(elements[i]);
+    }
+    return ret;
+  } else if (abs->isa<abstract::AbstractTuple>()) {
+    auto abs_tuple = abs->cast<abstract::AbstractTuplePtr>();
+    py::tuple ret = py::tuple(abs_tuple->size());
+    const auto &elements = abs_tuple->elements();
+    for (size_t i = 0; i < elements.size(); ++i) {
+      ret[i] = ConvertToPyObj(elements[i]);
+    }
+    return ret;
+  } else if (abs->isa<abstract::AbstractDictionary>()) {
+    auto abs_dict = abs->cast<abstract::AbstractDictionaryPtr>();
+    py::dict ret = py::dict();
+    const auto &key_value_pairs = abs_dict->elements();
+    for (size_t i = 0; i < key_value_pairs.size(); ++i) {
+      py::object key = ConvertToPyObj(key_value_pairs[i].first);
+      // The key should be unique.
+      key = py::isinstance<py::none>(key) ? py::str(std::to_string(i)) : key;
+      ret[key] = ConvertToPyObj(key_value_pairs[i].second);
+    }
+    return ret;
+  }
+  return ConvertToPyObjInner(abs);
 }
 }  // namespace
 

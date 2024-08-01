@@ -959,10 +959,17 @@ static const std::unordered_map<FuncKey, InferFunc> infer_func_map = {
 };
 
 static const std::unordered_map<FuncKey, InferFunc> mind_infer_func_map = {
-  {FUNC_KEY_PIJIT_CONSTEXPR, JustCallAndSetRes},     {FUNC_KEY_PIJIT_FORBIDDEN, SetForbiddenFuncInfo},
-  {FUNC_KEY_LIST_APPEND, InferListAppend},           {FUNC_KEY_DICT_POP, InferDictPop},
-  {FUNC_KEY_BUILTIN_FUNC, InferBuiltinFuncOrMethod}, {FUNC_KEY_PSJIT_CODE, SetCallResType<AObject::kTypeTensor>},
-  {FUNC_KEY_GET_CACHE_PRIM, InferGetCachePrim},      {FUNC_KEY_REGISTRY_GET, InferRegistryGet},
+  {FUNC_KEY_PIJIT_CONSTEXPR, JustCallAndSetRes},
+  {FUNC_KEY_PIJIT_FORBIDDEN, SetForbiddenFuncInfo},
+  {FUNC_KEY_LIST_APPEND, InferListAppend},
+  {FUNC_KEY_DICT_POP, InferDictPop},
+  {FUNC_KEY_BUILTIN_FUNC, InferBuiltinFuncOrMethod},
+  {FUNC_KEY_PSJIT_CODE, SetCallResType<AObject::kTypeTensor>},
+  {FUNC_KEY_GET_CACHE_PRIM, InferGetCachePrim},
+  {FUNC_KEY_REGISTRY_GET, InferRegistryGet},
+  {FUNC_KEY_LIST_POP, InferListPop},
+  {FUNC_KEY_LIST_REMOVE, InferListRemove},
+  {FUNC_KEY_LIST_REVERSE, InferListReverse},
 };
 
 InferFunc FindInferFunc(const py::object &callable, bool trace_flag) {
