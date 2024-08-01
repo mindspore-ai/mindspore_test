@@ -218,6 +218,8 @@ class AttrHelper {
   void ConvertValueSequenceToList(const ValuePtr &value, std::vector<T> *array_list,
                                   ShapeVector *shape = nullptr) const {
     MS_EXCEPTION_IF_NULL(array_list);
+    MS_EXCEPTION_IF_NULL(value);
+    MS_EXCEPTION_IF_NULL(value->cast<ValueSequencePtr>());
     const auto &value_sequence = value->cast<ValueSequencePtr>()->value();
     if (value_sequence.size() == 0) {
       return;

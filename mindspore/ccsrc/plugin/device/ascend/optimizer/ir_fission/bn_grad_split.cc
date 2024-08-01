@@ -39,6 +39,7 @@ constexpr size_t kIdxIsTrain = 7;
 constexpr size_t kIdxEpsilon = 8;
 constexpr size_t kIdxFormat = 9;
 }  // namespace
+
 void BnGradSplit::CreateOutputsOfUpdateGrad(const FuncGraphPtr &graph, const CNodePtr &bn_grad_node,
                                             std::vector<AnfNodePtr> *bn_update_grad_outputs, bool is_dynamic) const {
   MS_EXCEPTION_IF_NULL(graph);

@@ -1232,6 +1232,20 @@ void GetPrimitiveChangeInfo(const PrimitivePtr &prim, std::string *me_name, bool
   }
 }
 
+PrimitivePtr GetClonePrimitive(const PrimitivePtr &prim, std::string *ori_name) {
+  PrimitivePtr prim_clone = prim;
+  std::string me_name;
+  bool ir_change = false;
+  GetPrimitiveChangeInfo(prim, &me_name, &ir_change);
+  if (!me_name.empty()) {
+    prim_clone = prim->Clone();
+    MS_EXCEPTION_IF_NULL(prim_clone);
+    prim_clone->set_name(me_name);
+    *ori_name = prim->name();
+  }
+  return prim_clone;
+}
+
 void CppInferShape(const PrimitivePtr &prim, const AbstractBasePtrList &args_spec_list, const CNodePtr &cnode) {
   MS_EXCEPTION_IF_NULL(prim);
   MS_EXCEPTION_IF_NULL(cnode);
@@ -1248,18 +1262,8 @@ void CppInferShape(const PrimitivePtr &prim, const AbstractBasePtrList &args_spe
     }
   }
 
-  PrimitivePtr prim_clone = prim;
-  MS_EXCEPTION_IF_NULL(prim_clone);
-  std::string me_name;
   std::string ori_name;
-  bool ir_change = false;
-  GetPrimitiveChangeInfo(prim, &me_name, &ir_change);
-  if (!me_name.empty()) {
-    prim_clone = prim->Clone();
-    ori_name = prim->name();
-    prim_clone->set_name(me_name);
-  }
-
+  const auto &prim_clone = GetClonePrimitive(prim, &ori_name);
   auto infer_spec_list = RectifyAbstract(prim_clone, args_spec_list);
   AbstractBasePtr out_abs = InferShapeWithCheck(prim, prim_clone, infer_spec_list, old_abs, cnode);
 
@@ -1274,17 +1278,8 @@ void CppInferShape(const PrimitivePtr &prim, const AbstractBasePtrList &args_spe
 
 AbstractBasePtr CppInferShapeAndType(const PrimitivePtr &prim, const AbstractBasePtrList &args_spec_list) {
   MS_EXCEPTION_IF_NULL(prim);
-  PrimitivePtr prim_clone = prim;
-  MS_EXCEPTION_IF_NULL(prim_clone);
-  std::string me_name;
   std::string ori_name;
-  bool ir_change = false;
-  GetPrimitiveChangeInfo(prim, &me_name, &ir_change);
-  if (!me_name.empty()) {
-    prim_clone = prim->Clone();
-    ori_name = prim->name();
-    prim_clone->set_name(me_name);
-  }
+  const auto &prim_clone = GetClonePrimitive(prim, &ori_name);
 
   AbstractBasePtr ret;
   if (auto abstract_optional = abstract::InferAbstractByFuncImpl(prim_clone, args_spec_list);

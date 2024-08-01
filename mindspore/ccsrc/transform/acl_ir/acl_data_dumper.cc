@@ -39,6 +39,7 @@ class AclDataDumper : public DataDumper {
       MS_LOG(INFO) << "Call aclmdlInitDump failed, acl data dump function will be unusable.";
     }
   }
+
   void EnableDump(uint32_t device_id, uint32_t step_id, bool is_init,
                   const std::vector<std::string> &all_kernel_names) override {
     auto &dump_parser = DumpJsonParser::GetInstance();
@@ -76,7 +77,7 @@ class AclDataDumper : public DataDumper {
       std::string json_file_name = acl_dump_file_path + +"/acl_dump_" + std::to_string(device_id) + ".json";
       if (CALL_ASCEND_API(aclmdlSetDump, json_file_name.c_str()) != ACL_ERROR_NONE) {
         MS_LOG(WARNING)
-          << "Call aclmdlSetDump failed, acl data dump function will be unusable. Please check whether the config file"
+          << "Call aclmdlSetDump failed, acl data dump function will be unusable. Please check whether the config file "
           << json_file_name;
       }
     }

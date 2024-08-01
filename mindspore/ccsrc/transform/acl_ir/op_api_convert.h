@@ -210,7 +210,11 @@ class OpApiTensorConverter : public AttrHelper<OpApiTensorConverter> {
   }
 
  private:
-  inline aclDataType GetDataType(const ValuePtr &value) { return AclConverter::ConvertType(value->type()->type_id()); }
+  inline aclDataType GetDataType(const ValuePtr &value) {
+    MS_EXCEPTION_IF_NULL(value);
+    MS_EXCEPTION_IF_NULL(value->type());
+    return AclConverter::ConvertType(value->type()->type_id());
+  }
 };
 
 inline aclTensor *ConvertType(const mindspore::kernel::KernelTensor *tensor) {
@@ -357,6 +361,10 @@ inline aclTensor *ConvertType(std::pair<mindspore::kernel::KernelTensor *, bool>
   }
   // Check if shape need transpose.
   if (trans) {
+    if (shape.size() <= 1 || strides.size() <= 1) {
+      MS_LOG(INTERNAL_EXCEPTION) << "Size of shape and strides should be greater than 1 when need transpose, "
+                                 << "but got shape size " << shape.size() << ", strides size " << strides.size();
+    }
     std::swap(shape[shape.size() - 1], shape[shape.size() - 2]);
     std::swap(strides[strides.size() - 1], strides[strides.size() - 2]);
   }
@@ -479,6 +487,7 @@ inline aclTensorList *ConvertType(const std::vector<tensor::BaseTensorPtr> &tens
 }
 
 inline aclTensor *ConvertType(const tensor::TensorPtr &tensor) {
+  MS_EXCEPTION_IF_NULL(tensor);
   return ConvertType(tensor->cast<tensor::BaseTensorPtr>());
 }
 
@@ -660,7 +669,6 @@ inline ScalarPtr ConvertKernelTensor<ScalarPtr>(mindspore::kernel::KernelTensor 
   }
 
   MS_EXCEPTION_IF_NULL(value_ptr);
-
   if (!value_ptr->isa<Scalar>()) {
     MS_LOG(EXCEPTION) << "Current tensor's must be a scalar, please check!";
   }

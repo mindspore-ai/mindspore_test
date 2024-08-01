@@ -101,6 +101,7 @@ bool NeedNDInput(const CNodePtr &cnode, const AnfNodePtr &input_node, const std:
     return true;
   }
 
+  MS_EXCEPTION_IF_NULL(input_node);
   auto input_cnode = input_node->cast<CNodePtr>();
   if (input_cnode != nullptr && common::AnfAlgo::HasNodeAttr(kAttrAclSpecialFormat, input_cnode)) {
     return true;
@@ -241,13 +242,13 @@ void RefreshRefFormat(const std::unordered_map<size_t, size_t> &ref_map, const s
 }
 }  // namespace
 
-void SetParameterFormat(const AnfNodePtr &node, const std::string &format, std::string *old_foramt) {
+void SetParameterFormat(const AnfNodePtr &node, const std::string &format, std::string *old_format) {
   MS_EXCEPTION_IF_NULL(node);
   if (!node->isa<Parameter>()) {
     if (IsPrimitiveCNode(node, prim::kPrimCast)) {
       auto kernel_with_index = common::AnfAlgo::GetPrevNodeOutput(node, 0);
       if (kernel_with_index.first->isa<Parameter>()) {
-        SetParameterFormat(kernel_with_index.first, format, old_foramt);
+        SetParameterFormat(kernel_with_index.first, format, old_format);
       } else {
         return;
       }
@@ -285,7 +286,8 @@ void SetParameterFormat(const AnfNodePtr &node, const std::string &format, std::
   MS_EXCEPTION_IF_NULL(build_info);
   build_info->SetOutputsFormat(output_formats);
   kernel_info->set_select_kernel_build_info(build_info);
-  *old_foramt = format;
+  MS_EXCEPTION_IF_NULL(old_format);
+  *old_format = format;
 }
 
 bool AclHelper::IsPrintDebugString() {
@@ -446,6 +448,7 @@ KernelType AclHelper::GetKernelInfoByOutputs(const AnfNodePtr &node, const std::
 }
 
 KernelType AclHelper::GetKernelInfoFromGe(const AnfNodePtr &node, ErrorAclType *err_type) {
+  MS_EXCEPTION_IF_NULL(err_type);
   MS_EXCEPTION_IF_NULL(node);
   auto cnode = node->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(cnode);

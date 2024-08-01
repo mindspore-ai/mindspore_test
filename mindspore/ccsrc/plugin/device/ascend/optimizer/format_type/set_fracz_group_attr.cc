@@ -207,40 +207,31 @@ std::vector<KernelWithIndex> GetNeighborFraczNodes(const FuncGraphManagerPtr &ma
   return ret;
 }
 
-bool SetAttrFraczGroup(const FuncGraphPtr &func_graph, const CNodePtr &cnode) {
+bool SetAttrFraczGroup(const FuncGraphPtr &func_graph, const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(func_graph);
-  MS_EXCEPTION_IF_NULL(cnode);
-  auto groups = common::AnfAlgo::GetNodeAttr<int64_t>(cnode, kAttrGroups);
+  MS_EXCEPTION_IF_NULL(node);
+  // Get groups
+  int64_t groups = 1;
+  if (node->isa<Parameter>()) {
+    auto param = node->cast<ParameterPtr>();
+    groups = param->fracz_group();
+  } else if (node->isa<CNode>()) {
+    groups = common::AnfAlgo::GetNodeAttr<int64_t>(node, kAttrGroups);
+  }
   if (groups == 1) {
     return false;
   }
-  auto manager = func_graph->manager();
-  MS_EXCEPTION_IF_NULL(manager);
-  std::vector<KernelWithIndex> todo{KernelWithIndex{cnode, 0}};
-  while (!todo.empty()) {
-    KernelWithIndex node_index = todo.back();
-    if (HasFraczGroupAttrAndSet(node_index.first, node_index.second, groups)) {
-      todo.pop_back();
-      continue;
-    }
-    auto next_nodes = GetNeighborFraczNodes(manager, node_index.first, node_index.second, groups);
-    (void)std::copy(next_nodes.begin(), next_nodes.end(), std::back_inserter(todo));
-  }
-  return true;
-}
-
-bool SetAttrFraczGroup(const FuncGraphPtr &func_graph, const ParameterPtr &param) {
-  MS_EXCEPTION_IF_NULL(func_graph);
-  MS_EXCEPTION_IF_NULL(param);
-  auto groups = param->fracz_group();
-  if (groups == 1) {
-    return false;
-  }
+  // Get group cnodes
   auto manager = func_graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
   std::vector<KernelWithIndex> todo{};
-  auto used_cnodes = GetNeighborFraczNodes(manager, param, 0, groups);
-  std::copy(used_cnodes.begin(), used_cnodes.end(), std::back_inserter(todo));
+  if (node->isa<Parameter>()) {
+    auto used_cnodes = GetNeighborFraczNodes(manager, node, 0, groups);
+    std::copy(used_cnodes.begin(), used_cnodes.end(), std::back_inserter(todo));
+  } else if (node->isa<CNode>()) {
+    (void)todo.emplace_back(KernelWithIndex{node, 0});
+  }
+  // Set fracz groups for all nodes
   while (!todo.empty()) {
     KernelWithIndex node_index = todo.back();
     if (HasFraczGroupAttrAndSet(node_index.first, node_index.second, groups)) {
