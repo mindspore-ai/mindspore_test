@@ -162,10 +162,17 @@
   template <>       \
   const mindspore::HashMap<std::string, AttrDesc> OpAdapter<T>::attr_map_
 #define EMPTY_ATTR_MAP mindspore::HashMap<std::string, AttrDesc>()
-#define ATTR_DESC(name, ...)                                                                                         \
+#define ATTR_DESC(name, ...) ATTR_DESC_BASE(nullptr, name, __VA_ARGS__)
+#define ATTR_DESC_REF(name, ...)                                                                                   \
+  ATTR_DESC_BASE([](const OperatorPtr op,                                                                          \
+                    const ValuePtr &value) { (void)op->SetAttr(#name, (ConvertAnyWithRef(value, __VA_ARGS__))); }, \
+                 name, __VA_ARGS__)
+
+#define ATTR_DESC_BASE(REF_FUNC, name, ...)                                                                          \
   {                                                                                                                  \
 #name,                                                                                                             \
       [](const OperatorPtr op, const ValuePtr &value) { (void)op->SetAttr(#name, (ConvertAny(value, __VA_ARGS__))); }, \
+      REF_FUNC, \
       [](const OperatorPtr op, ValuePtr *ms_value) {                                                                   \
         if (ms_value == nullptr || *ms_value == nullptr) {                                                             \
           auto ret = GetAttrType(__VA_ARGS__);                                                                         \

@@ -84,6 +84,7 @@ class GeGraphExecutor : public GraphExecutor {
   void AllocMemory(const KernelGraphPtr &graph);
   void DoAsyncCkpt(const FuncGraphPtr &graph);
   bool IsNeedNotifyTTP(const FuncGraphPtr &graph);
+  void SetFlagIgnoreDevicePtr(const FuncGraphPtr &graph);
   mindspore::HashMap<session::KernelGraph *, GeInputData> input_datas_;
   mindspore::HashMap<session::KernelGraph *, GeOutputData> output_datas_;
   std::map<std::string, int64_t> graph_sink_size_;

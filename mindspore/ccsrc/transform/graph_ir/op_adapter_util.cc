@@ -48,12 +48,19 @@ std::string GeDataTypeImm::DumpText() const {
 }
 
 namespace transform {
-GeTensor ConvertAnyUtil(const ValuePtr &value, const AnyTraits<mindspore::tensor::Tensor> &) {
+inline GeTensor ConvertAnyUtilTensor(const ValuePtr &value, const AnyTraits<mindspore::tensor::Tensor> &, bool is_ref) {
   // To-DO the format may read from ME tensor
   MS_EXCEPTION_IF_NULL(value);
   auto me_tensor = value->cast<MeTensorPtr>();
-  auto ge_tensor = TransformUtil::ConvertTensor(me_tensor, kOpFormat_ND);
+  auto ge_tensor = TransformUtil::ConvertTensor(me_tensor, kOpFormat_ND, !is_ref);
   return ge_tensor == nullptr ? GeTensor() : *ge_tensor;
+}
+GeTensor ConvertAnyUtilWithRef(const ValuePtr &value, const AnyTraits<mindspore::tensor::Tensor> &traits) {
+  return ConvertAnyUtilTensor(value, traits, true);
+}
+
+GeTensor ConvertAnyUtil(const ValuePtr &value, const AnyTraits<mindspore::tensor::Tensor> &traits) {
+  return ConvertAnyUtilTensor(value, traits, false);
 }
 
 std::vector<int64_t> ConvertAnyUtil(const ValuePtr &value, const std::string &name,

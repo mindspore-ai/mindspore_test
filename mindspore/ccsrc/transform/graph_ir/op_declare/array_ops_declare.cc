@@ -25,7 +25,7 @@
 namespace mindspore::transform {
 // const
 INPUT_MAP(Const) = EMPTY_INPUT_MAP;
-ATTR_MAP(Const) = {{"value", ATTR_DESC(value, AnyTraits<ValueAny>())}};
+ATTR_MAP(Const) = {{"value", ATTR_DESC_REF(value, AnyTraits<ValueAny>())}};
 OUTPUT_MAP(Const) = {{0, OUTPUT_DESC(y)}};
 
 // Constant
