@@ -32,6 +32,8 @@
 namespace mindspore {
 namespace parallel {
 namespace {
+constexpr auto kCastType = "cast_type";
+constexpr auto kGetItemIndex = "get_item_index";
 static Shape GetMakeTupleValue(const CNodePtr &cnode) {
   MS_EXCEPTION_IF_NULL(cnode);
   MS_EXCEPTION_IF_CHECK_FAIL(cnode->inputs().size() == kSizeThree, "Input size of Reshape is not 3.");
@@ -101,7 +103,7 @@ bool IsSameTargetShape(const CNodePtr &reshape_node_a, const CNodePtr &reshape_n
   return true;
 }
 
-void MergeAllGather(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphManagerPtr &manager) {
+std::unordered_map<CNodePtr, std::vector<CNodePtr>> AllGatherInputMap(const std::vector<AnfNodePtr> &all_nodes) {
   std::unordered_map<CNodePtr, std::vector<CNodePtr>> allgather_input_map;
   for (const auto &node : all_nodes) {
     if (!IsPrimitiveCNode(node, prim::kPrimAllGather)) {
@@ -115,9 +117,38 @@ void MergeAllGather(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphMan
     if (!IsPrimitiveCNode(pre_node)) {
       continue;
     }
+    if (IsPrimitiveCNode(pre_node, prim::kPrimCast)) {
+      auto cast_value = pre_node->cast<CNodePtr>()->input(kIndex2)->cast<ValueNodePtr>()->value();
+      allgather_cnode->AddAttr(kCastType, cast_value);
+      pre_node = pre_node->cast<CNodePtr>()->input(kIndex1);
+    }
+    if (IsPrimitiveCNode(pre_node, prim::kPrimTupleGetItem)) {
+      auto index_value = pre_node->cast<CNodePtr>()->input(kIndex2)->cast<ValueNodePtr>()->value();
+      allgather_cnode->AddAttr(kGetItemIndex, index_value);
+      pre_node = pre_node->cast<CNodePtr>()->input(kIndex1);
+    }
     auto pre_cnode = pre_node->cast<CNodePtr>();
     allgather_input_map[pre_cnode].push_back(allgather_cnode);
   }
+  return allgather_input_map;
+}
+
+bool CheckAttr(const CNodePtr &allgather_cnode1, const CNodePtr &allgather_cnode2, const std::string &attr) {
+  if (allgather_cnode1->HasAttr(attr) != allgather_cnode2->HasAttr(attr)) {
+    return false;
+  }
+  if (allgather_cnode1->HasAttr(attr)) {
+    auto attr1 = GetValue<int64_t>(allgather_cnode1->GetAttr(attr));
+    auto attr2 = GetValue<int64_t>(allgather_cnode2->GetAttr(attr));
+    if (attr1 != attr2) {
+      return false;
+    }
+  }
+  return true;
+}
+
+void MergeAllGather(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphManagerPtr &manager) {
+  auto allgather_input_map = AllGatherInputMap(all_nodes);
   for (const auto &allgather_pairs : allgather_input_map) {
     if (allgather_pairs.second.size() <= 1) {
       continue;
@@ -148,6 +179,12 @@ void MergeAllGather(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphMan
           }
         }
         if (allgather_cnode1->func_graph() != allgather_cnode2->func_graph()) {
+          return false;
+        }
+        if (!CheckAttr(allgather_cnode1, allgather_cnode2, kCastType)) {
+          return false;
+        }
+        if (!CheckAttr(allgather_cnode1, allgather_cnode2, kGetItemIndex)) {
           return false;
         }
         return true;
