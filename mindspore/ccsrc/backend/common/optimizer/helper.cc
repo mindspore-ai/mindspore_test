@@ -54,12 +54,18 @@ namespace {
 constexpr size_t kType32Len = 4;
 constexpr size_t kType64Len = 8;
 constexpr auto kNopNodeRealInputIndex = 1;
+constexpr auto kInputIdx2 = 2;
+constexpr auto kInputIdx3 = 3;
+constexpr auto kInputIdx4 = 4;
+constexpr auto kInputIdx5 = 5;
+constexpr auto kInputIdx6 = 6;
+
 const std::map<std::string, std::map<size_t, TypeId>> OpInputDtypeMap = {{prim::kPrimGroupedMatmul->name(),
-                                                                          {{2, TypeId::kNumberTypeFloat16},
-                                                                           {3, TypeId::kNumberTypeUInt64},
-                                                                           {4, TypeId::kNumberTypeFloat32},
-                                                                           {5, TypeId::kNumberTypeFloat16},
-                                                                           {6, TypeId::kNumberTypeFloat16}}}};
+                                                                          {{kInputIdx2, TypeId::kNumberTypeFloat16},
+                                                                           {kInputIdx3, TypeId::kNumberTypeUInt64},
+                                                                           {kInputIdx4, TypeId::kNumberTypeFloat32},
+                                                                           {kInputIdx5, TypeId::kNumberTypeFloat16},
+                                                                           {kInputIdx6, TypeId::kNumberTypeFloat16}}}};
 
 void UpdateDumpFlagAndDebugInfo(const CNodePtr &node, const std::vector<AnfNodePtr> &orig_nodes) {
   MS_EXCEPTION_IF_NULL(node);
@@ -759,20 +765,20 @@ bool AnfEqual(const BaseRef &a, const BaseRef &b) {
     } else if (a_node->isa<ValueNode>() && b_node->isa<ValueNode>()) {
       auto a_value_node_ptr = a_node->cast<ValueNodePtr>();
       if (a_value_node_ptr == nullptr) {
-        MS_LOG(INTERNAL_EXCEPTION) << "Cast value node ptr fail.";
+        MS_LOG(INTERNAL_EXCEPTION) << "Cast value node ptr fail, node: " << a_node->DebugString();
       }
       auto a_value_ptr = a_value_node_ptr->value();
       if (a_value_ptr == nullptr) {
-        MS_LOG(INTERNAL_EXCEPTION) << "Value ptr is nullptr.";
+        MS_LOG(INTERNAL_EXCEPTION) << "Value ptr is nullptr, node: " << a_node->DebugString();
       }
 
       auto b_value_node_ptr = b_node->cast<ValueNodePtr>();
       if (b_value_node_ptr == nullptr) {
-        MS_LOG(INTERNAL_EXCEPTION) << "Cast value node ptr fail.";
+        MS_LOG(INTERNAL_EXCEPTION) << "Cast value node ptr fail, node: " << b_node->DebugString();
       }
       auto b_value_ptr = b_value_node_ptr->value();
       if (b_value_ptr == nullptr) {
-        MS_LOG(INTERNAL_EXCEPTION) << "Value ptr is nullptr.";
+        MS_LOG(INTERNAL_EXCEPTION) << "Value ptr is nullptr, node: " << b_node->DebugString();
       }
       if (a_value_ptr->isa<tensor::Tensor>() && b_value_ptr->isa<tensor::Tensor>()) {
         auto a_tensor_ptr = a_value_ptr->cast<tensor::TensorPtr>();
@@ -891,6 +897,7 @@ std::pair<AbstractBasePtr, size_t> RectifyAbstractFromStructuralAttr(const Value
       if (abs->isa<abstract::AbstractSequence>() &&
           std::find(list_start_vec.begin(), list_start_vec.end(), input_index + offset) != list_start_vec.end()) {
         auto abs_seq = abs->cast<abstract::AbstractSequencePtr>();
+        MS_EXCEPTION_IF_NULL(abs_seq);
         const auto &elements = abs_seq->elements();
         bool is_nested = std::any_of(elements.begin(), elements.end(),
                                      [](const AbstractBasePtr &abs) { return abs->isa<abstract::AbstractSequence>(); });
@@ -1018,6 +1025,7 @@ AbstractBasePtrList RectifyAbstractFromDynamicInput(const PrimitivePtr &prim,
 }
 
 AbstractBasePtrList RectifyAbstract(const PrimitivePtr &prim, const AbstractBasePtrList &input_abstract) {
+  MS_EXCEPTION_IF_NULL(prim);
   auto input_structural = prim->GetAttr(kAttrTupleInputStructural);
   if (input_structural != nullptr) {
     if (prim->HasAttr(kAttrListStartIndex)) {
@@ -1049,6 +1057,7 @@ inline AbstractBasePtr InferShapeWithCheck(const PrimitivePtr &prim, const Primi
       out_abs = infer.InferShapeAndType(nullptr, prim_clone, infer_spec_list);
     } else {
       out_abs = orig_abs->Clone();
+      MS_EXCEPTION_IF_NULL(out_abs);
       auto shape = infer.InferShape(prim_clone, infer_spec_list);
       if (shape == nullptr) {
         MS_LOG(EXCEPTION) << "Infer shape with backend function failed";
@@ -1457,6 +1466,7 @@ int64_t SplitTupleInputs(const FuncGraphPtr &graph, const AnfNodePtr &tuple_inpu
 }
 
 static bool IsNotSequenceOfTensor(const abstract::AbstractBasePtr &abs) {
+  MS_EXCEPTION_IF_NULL(abs);
   if (abs->isa<abstract::AbstractTensor>()) {
     return false;
   }
@@ -1475,6 +1485,7 @@ static bool IsNotSequenceOfTensor(const abstract::AbstractBasePtr &abs) {
 }
 
 std::vector<int64_t> GenPrintAttrDynInputSizes(const CNodePtr &cnode) {
+  MS_EXCEPTION_IF_NULL(cnode);
   int64_t num_inputs = 0;
   std::vector<AnfNodePtr> node_inputs = cnode->inputs();
   for (size_t node_inputs_index = 1; node_inputs_index < node_inputs.size(); ++node_inputs_index) {
@@ -1520,6 +1531,8 @@ void UseEmptyNodeReplaceNone(const FuncGraphPtr &graph, const std::string &cnode
 void GetPlantInputsAndSize(const FuncGraphPtr &graph, const CNodePtr &cnode_ptr, std::vector<AnfNodePtr> *plant_inputs,
                            std::vector<int64_t> *dyn_input_sizes) {
   MS_EXCEPTION_IF_NULL(cnode_ptr);
+  MS_EXCEPTION_IF_NULL(plant_inputs);
+  MS_EXCEPTION_IF_NULL(dyn_input_sizes);
   auto cnode_name = common::AnfAlgo::GetCNodeName(cnode_ptr);
   plant_inputs->push_back(common::AnfAlgo::GetCNodePrimitiveNode(cnode_ptr));
   size_t input_num = cnode_ptr->size() - 1;

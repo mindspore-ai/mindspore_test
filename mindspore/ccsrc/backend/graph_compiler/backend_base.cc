@@ -123,6 +123,7 @@ void PushTupleTensor(const VectorRef &args, const std::vector<AnfNodePtr> &param
 
 bool GetTensorFromForwardOutputParameter(const AnfNodePtr &input_node, std::vector<tensor::TensorPtr> *input_tensors) {
   MS_EXCEPTION_IF_NULL(input_node);
+  MS_EXCEPTION_IF_NULL(input_tensors);
   // if input_node if from ValueNode,
   // push Tensor of ValueNode to input_tensors.
   if (input_node->isa<Parameter>()) {
@@ -351,6 +352,8 @@ void CheckNodeValid(const AnfNodePtr &node) {
 }
 
 bool AddKernelGraphCompileInfo(const KernelGraphPtr &kernel_graph, const session::SessionPtr &session_ptr) {
+  MS_EXCEPTION_IF_NULL(kernel_graph);
+  MS_EXCEPTION_IF_NULL(session_ptr);
   const auto &parameters = kernel_graph->parameters();
   // Just have a return node or empty graph
   if ((kernel_graph->nodes().size() - parameters.size()) < kIndex2) {
@@ -374,8 +377,10 @@ bool AddKernelGraphCompileInfo(const KernelGraphPtr &kernel_graph, const session
   if (!run_by_single_op) {
     const auto &nodes = TopoSort(kernel_graph->get_return());
     for (const auto &node : nodes) {
+      MS_EXCEPTION_IF_NULL(node);
       if (node->isa<CNode>()) {
         const auto &cnode = node->cast<CNodePtr>();
+        MS_EXCEPTION_IF_NULL(cnode);
         // Bprop cut use prim_py, no need change
         if (auto prim = GetValueNode<PrimitivePtr>(cnode->input(kIndex0));
             !IsPrimitiveEquals(prim, prim::kPrimBpropCut)) {
@@ -395,6 +400,7 @@ bool AddKernelGraphCompileInfo(const KernelGraphPtr &kernel_graph, const session
     }
   }
   auto output_node = kernel_graph->NewCNode({NewValueNode(prim::kPrimMakeTuple), kernel_graph->output()});
+  MS_EXCEPTION_IF_NULL(output_node);
   AbstractBasePtrList output_abs_list{kernel_graph->output()->abstract()};
   auto abstract_tuple = std::make_shared<abstract::AbstractTuple>(output_abs_list);
   output_node->set_abstract(abstract_tuple);
@@ -407,6 +413,7 @@ bool NeedCheckMultiTarget(const FuncGraphPtr &func_graph, int ms_execution_mode)
   if (ms_execution_mode == kGraphMode) {
     return true;
   }
+  MS_EXCEPTION_IF_NULL(func_graph);
   bool run_in_dynamic = ms_execution_mode == kPynativeMode && func_graph->has_flag(kFlagEnableRunGraphBySingleOp);
   bool is_call_graph = func_graph->has_flag(kFlagJitCallGraph);
   bool is_control_flow = !func_graph->func_graphs_used_total().empty();
@@ -695,6 +702,7 @@ bool IsFuncGraphSupportSwitchInline(const FuncGraphPtr &graph) {
 }
 
 bool IsEnableControlFlowInline(const FuncGraphPtr &graph) {
+  MS_EXCEPTION_IF_NULL(graph);
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
   if (std::any_of(
@@ -734,6 +742,7 @@ bool IsEnableControlFlowInline(const FuncGraphPtr &graph) {
         MS_EXCEPTION_IF_NULL(node);
         if (common::AnfAlgo::IsCallNode(node)) {
           const auto &cnode = node->cast<CNodePtr>();
+          MS_EXCEPTION_IF_NULL(cnode);
           if (!common::AnfAlgo::CheckPrimitiveType(cnode->input(0), prim::kPrimSwitch)) {
             return true;
           }
@@ -850,6 +859,7 @@ void MindRTBackendBase::UnifyMindIR(const FuncGraphPtr &root_graph) const {
 }
 
 void MindRTBackendBase::CompileSubGraph(const FuncGraphPtr &func_graph, device::RunMode run_mode) {
+  MS_EXCEPTION_IF_NULL(func_graph);
   auto root_graph = func_graph;
   if (!func_graph->has_flag(kFlagIsPyNativeBpropKernelGraph)) {
     root_graph = WrapPrimitives(func_graph);
@@ -1119,7 +1129,7 @@ void MindRTBackendBase::ConstructOutputs(runtime::ActorSet *actor_set, VectorRef
   }
 }
 
-void MindRTBackendBase::ContiguousArgs(const VectorRef &args, const GraphCompilerInfo &graph_compiler_info) {
+void MindRTBackendBase::ContiguousArgs(const VectorRef &args, const GraphCompilerInfo &) {
   for (const auto &arg : args) {
     if (utils::isa<tensor::BaseTensorPtr>(arg)) {
       auto value = utils::cast<tensor::BaseTensorPtr>(arg);

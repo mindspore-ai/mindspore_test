@@ -102,6 +102,7 @@ void AddMissingAttrs(const CNodePtr &cnode, kernel::OpImplyType imply_type,
   bool need_update = false;
   std::vector<std::string> missing_optional_attrs;
   for (const auto &attr : all_attrs) {
+    MS_EXCEPTION_IF_NULL(attr);
     auto attr_name = attr->name();
     if (missing_attrs.find(attr_name) == missing_attrs.end()) {
       continue;

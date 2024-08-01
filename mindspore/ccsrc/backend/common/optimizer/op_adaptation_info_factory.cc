@@ -129,6 +129,7 @@ CNodePtr OpAdaptationInfoRegister::CreateTargetOp(const CNodePtr &origin_op,
   auto inputs = origin_op->inputs();
   target_inputs.push_back(inputs[0]);
   auto graph = origin_op->func_graph();
+  MS_EXCEPTION_IF_NULL(graph);
   bool ir_change = false;
   for (size_t i = 0; i < inputs.size() - 1; ++i) {
     auto input_node = inputs[i + 1];
@@ -163,7 +164,6 @@ CNodePtr OpAdaptationInfoRegister::CreateTargetOp(const CNodePtr &origin_op,
 
   // Update target_op's inputs
   target_inputs[0] = NewValueNode(target_primitive);
-  MS_EXCEPTION_IF_NULL(graph);
   auto target_op = opt::NewCNode(target_inputs, graph, {origin_op});
   MS_EXCEPTION_IF_NULL(target_op);
   target_op->set_abstract(origin_op->abstract());
@@ -205,6 +205,7 @@ bool OpAdaptationInfoRegister::ConvertInputToAttr(const CNodePtr &origin_op, siz
   MS_EXCEPTION_IF_NULL(value);
   if (value->isa<tensor::Tensor>()) {
     auto tensor = value->cast<tensor::TensorPtr>();
+    MS_EXCEPTION_IF_NULL(tensor);
     if (tensor->data().const_data() == nullptr && !tensor->has_user_data(kTensorValueIsEmpty)) {
       MS_LOG(DEBUG) << "Const input data ptr is null from op " << origin_op->fullname_with_scope() << "'s input " << i;
       return false;

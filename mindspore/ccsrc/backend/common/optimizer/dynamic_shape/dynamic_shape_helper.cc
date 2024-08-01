@@ -235,7 +235,7 @@ tensor::TensorPtr GetDependValueTensor(const AnfNodePtr &node, size_t i,
   // Second use the device address of node as fault-tolerant.
   auto output_addr =
     AnfAlgo::GetMutableOutputAddr(input_node_with_index.first, input_node_with_index.second, skip_nop_node);
-  MS_EXCEPTION_IF_NULL(output_addr);
+
   if (output_addr != nullptr && output_addr->IsPtrValid()) {
     // The second parameter must be false, otherwise the device address cannot be released and allocated, and the
     // address size will be wrong in the dynamic shape scenario.

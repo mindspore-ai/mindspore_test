@@ -141,7 +141,7 @@ class BACKEND_EXPORT MindRTBackendBase : public Backend {
 
   void UpdateGraphCompilerInfo(const ActorInfo &actor_info);
 
-  void ContiguousArgs(const VectorRef &args, const GraphCompilerInfo &graph_compiler_info);
+  void ContiguousArgs(const VectorRef &args, const GraphCompilerInfo &);
 
   // Wait multi stream finish.
   void WaitMultiStream(const GraphCompilerInfo &graph_compiler_info);

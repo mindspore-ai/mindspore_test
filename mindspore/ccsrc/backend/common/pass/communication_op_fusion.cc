@@ -109,7 +109,8 @@ std::string GetFusionGroupKey(const AnfNodePtr &node) {
         auto segment_info = GetValue<int64_t>(prim->GetAttr(kAttrSegment));
         MS_LOG(INFO) << "Cnode : " << cnode->fullname_with_scope() << ", instance_name: " << prim->instance_name()
                      << ", segment: " << segment_info;
-        fusion = segment_info + 2;
+        int64_t fusion_interval = 2;
+        fusion = segment_info + fusion_interval;
         (void)prim->AddAttr(kAttrFusion, MakeValue(std::make_shared<Int64Imm>(fusion)));
         MS_LOG(INFO) << "Now cnode : " << cnode->fullname_with_scope()
                      << ", fusion: " << GetValue<int64_t>(prim->GetAttr(kAttrFusion));
@@ -581,6 +582,7 @@ bool CommunicationOpFusion::DoFusion(const FuncGraphPtr &func_graph, const Commu
       if (common::GetEnv("MS_ENABLE_FRONTEND_SCHEDULING_OPTIMIZATION") == "1") {
         auto &users = manager->node_users()[communication_op_node_item];
         for (auto &node : users) {
+          MS_EXCEPTION_IF_NULL(node.first);
           auto cnode = node.first->cast<CNodePtr>();
           MS_EXCEPTION_IF_NULL(cnode);
           if (cnode->HasAttr("comp_comm_scheduling_depend")) {
@@ -590,6 +592,7 @@ bool CommunicationOpFusion::DoFusion(const FuncGraphPtr &func_graph, const Commu
             }
             std::vector<AnfNodePtr> depend_inputs{NewValueNode(prim::kPrimDepend), cnode->input(1)->cast<CNodePtr>()};
             auto depend_node = cnode->func_graph()->NewCNode(depend_inputs);
+            MS_EXCEPTION_IF_NULL(depend_node);
             depend_node->set_abstract(cnode->input(1)->cast<CNodePtr>()->abstract()->Clone());
             depend_node->AddAttr("comp_comm_scheduling_depend", MakeValue(true));
             if (!manager->Replace(cnode, depend_node)) {

@@ -224,10 +224,10 @@ AnfNodePtr CreateRealMakeTupleByTupleUnfoldInput(const FuncGraphPtr &func_graph,
 }
 
 bool IsBackOffOp(const CNodePtr &cnode) {
-  std::vector<std::string> back_off_op_list = {prim::kPrimTupleToTensor->name(), prim::kPrimScalarToTensor->name(),
-                                               prim::kPrimTensorToTuple->name(), prim::kPrimTensorToScalar->name(),
-                                               prim::kPrimRealMakeTuple->name(), prim::kPrimRealTupleGetItem->name(),
-                                               prim::kPrimTupleSetItem->name()};
+  static const std::vector<std::string> back_off_op_list = {
+    prim::kPrimTupleToTensor->name(),  prim::kPrimScalarToTensor->name(), prim::kPrimTensorToTuple->name(),
+    prim::kPrimTensorToScalar->name(), prim::kPrimRealMakeTuple->name(),  prim::kPrimRealTupleGetItem->name(),
+    prim::kPrimTupleSetItem->name()};
   if (std::find(back_off_op_list.begin(), back_off_op_list.end(), common::AnfAlgo::GetCNodeName(cnode)) !=
       back_off_op_list.end()) {
     return true;
@@ -430,6 +430,7 @@ void GenerateKernelObjectTypeForNewCNode(const CNodePtr &cnode, std::vector<Kern
 }
 
 AnfNodePtr ConstructInputByValueNode(const FuncGraphPtr &func_graph, const AnfNodePtr &input) {
+  MS_EXCEPTION_IF_NULL(input);
   auto kernel_graph = std::dynamic_pointer_cast<session::KernelGraph>(func_graph);
   if (kernel_graph == nullptr || (!input->isa<ValueNode>())) {
     return nullptr;
@@ -750,11 +751,13 @@ AnfNodePtrList InsertTypeTransformOp::ProcessTupleToTupleUnfoldForSkipOp(const F
           bool new_get_item_prim = false;
           auto new_get_item_inputs =
             ProcessTupleToTupleUnfoldForTupleGetItem(func_graph, input, get_item, &new_get_item_prim);
-          new_get_item_inputs.emplace_back(get_item->input(2));
+          constexpr size_t kIndex2 = 2;
+          constexpr int kRecLevel = 2;
+          new_get_item_inputs.emplace_back(get_item->input(kIndex2));
           auto new_get_item = CreateNewNode(func_graph, new_get_item_inputs, get_item);
           MS_LOG(DEBUG) << "Create new node " << new_get_item->fullname_with_scope() << " "
-                        << new_get_item->DebugString(2) << " to replace " << get_item->fullname_with_scope() << " "
-                        << get_item->DebugString(2)
+                        << new_get_item->DebugString(kRecLevel) << " to replace " << get_item->fullname_with_scope()
+                        << " " << get_item->DebugString(kRecLevel)
                         << " build info:" << AnfAlgo::GetSelectKernelBuildInfo(new_get_item)->ToString();
           new_inputs.emplace_back(new_get_item);
         }

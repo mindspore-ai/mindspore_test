@@ -230,6 +230,7 @@ void AllocateMemForTensor(const tensor::BaseTensorPtr &tensor, DeviceContext *de
 }
 
 device::DeviceAddressPtrList GetOutputDeviceAddress(const OpCompilerInfoPtr &op_compiler_info) {
+  MS_EXCEPTION_IF_NULL(op_compiler_info);
   const auto &output_edges = op_compiler_info->simple_graph_->outputs_;
   device::DeviceAddressPtrList output_address;
   output_address.reserve(output_edges.size());
@@ -239,8 +240,10 @@ device::DeviceAddressPtrList GetOutputDeviceAddress(const OpCompilerInfoPtr &op_
 }
 
 void ClearOpInputOutput(const OpCompilerInfoPtr &op_compiler_info) {
+  MS_EXCEPTION_IF_NULL(op_compiler_info);
   const auto &all_edges = op_compiler_info->simple_graph_->all_edges_;
   for (const auto &edge : all_edges) {
+    MS_EXCEPTION_IF_NULL(edge);
     if (edge->type_ != pynative::EdgeType::kValueNodeEdge) {
       // Just set edge address to null rather than clone empty address.
       // Clone empty address in next RunOp if needed.
@@ -409,6 +412,7 @@ void GetControlOpInput(const std::shared_ptr<GraphCompiler> &graph_compiler,
   }
   for (size_t index = 1; index < back_size; ++index) {
     auto input_node = backend_cnode->input(index);
+    MS_EXCEPTION_IF_NULL(input_node);
     ValuePtr value = nullptr;
     if (input_node->isa<Parameter>() && input_node->abstract() != nullptr &&
         input_node->abstract()->isa<abstract::AbstractSequence>()) {
@@ -589,6 +593,8 @@ bool DisableRunOpAsync(const OpCompilerInfoPtr &op_compiler_info, const session:
 #if defined(__APPLE__)
   return true;
 #else
+  MS_EXCEPTION_IF_NULL(op_compiler_info);
+  MS_EXCEPTION_IF_NULL(op_run_info);
   return op_run_info->base_op_run_info.has_dynamic_output ||  // Infer output is dynamic.
          op_compiler_info->need_refresh_abstract_ ||          // Graph output is dynamic after IR Pass. (e.g. Dropout)
          op_compiler_info->need_erase_ ||                     // Random op cache need to be erased.
@@ -623,6 +629,7 @@ void CreateKernelTensor(const std::vector<std::vector<tensor::TensorPtr>> &input
 void CreateKernelTensor(const BaseRef &arg) {
   if (utils::isa<tensor::BaseTensor>(arg)) {
     auto tensor = utils::cast<tensor::BaseTensorPtr>(arg);
+    MS_EXCEPTION_IF_NULL(tensor);
     auto device_address = std::static_pointer_cast<device::DeviceAddress>(tensor->device_address());
     if (device_address != nullptr) {
       runtime::DeviceAddressUtils::CreateKernelTensor(device_address, tensor);
@@ -808,6 +815,7 @@ void MindRTBackend::RunGraphBySingleOp(const GraphCompilerInfo &graph_compiler_i
     MS_EXCEPTION_IF_NULL(ms_context);
     const std::string &device_target = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
     for (const auto &kernel : graph->execution_order()) {
+      MS_EXCEPTION_IF_NULL(kernel);
       MS_LOG(DEBUG) << "Split and run op " << kernel->fullname_with_scope();
       InputInfo input_info;
       VectorRef op_outputs;
@@ -1162,6 +1170,7 @@ void MindRTBackend::RunViewKernelTask(const pynative::BaseOpRunInfo &base_op_run
       kernel_tensor->SetType(std::make_shared<TensorType>(input_tensor->Dtype()));
       kernel_tensor->SetShape(std::make_shared<abstract::TensorShape>(input_tensor->shape()));
       kernel_tensor->set_stream_id(base_op_run_info.stream_id);
+      MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
       auto input_addr = device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
 
       input_tensor->set_device_address(input_addr);
@@ -1236,6 +1245,7 @@ void MindRTBackend::UpdateOutputDynamic(const session::BackendOpRunInfoPtr &op_r
   MS_EXCEPTION_IF_NULL(op_run_info);
   MS_LOG(DEBUG) << "No promise, just create tensor and address, op " << op_run_info->base_op_run_info.op_name;
   MS_EXCEPTION_IF_NULL(op_compiler_info);
+  MS_EXCEPTION_IF_NULL(outputs);
   auto output_nodes = op_compiler_info->graph_output_nodes_;
   auto outputs_size = output_nodes.size();
   if (op_compiler_info->graph_outputs_tensor_num_.size() != outputs_size) {
