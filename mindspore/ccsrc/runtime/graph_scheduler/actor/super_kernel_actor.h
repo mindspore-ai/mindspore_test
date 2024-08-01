@@ -134,6 +134,8 @@ class SuperKernelActor : public DebugAwareActor {
   // Launch all kernels by execution order in kernel graph: graph_.
   bool LaunchAllKernels(OpContext<DeviceTensor> *const context);
 
+  void TrackInputMemory();
+
   friend class GraphScheduler;
   KernelGraphPtr graph_;
 

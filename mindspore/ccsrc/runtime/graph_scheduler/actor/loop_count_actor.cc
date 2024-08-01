@@ -67,12 +67,15 @@ void LoopCountActor::IncreaseLoopCount(OpContext<DeviceTensor> *const context) {
   }
 
   if (profiler_aid_ != nullptr) {
+    MS_LOG(INFO) << "Sync stream in the step end by profiler.";
+    ProfilerRecorder profiler(ProfilerModule::kKernel, ProfilerEvent::kStreamSync, GetAID().Name());
     SendProfilerReq(context);
     return;
   }
 
   // Sync device stream.
   if ((strategy_ == GraphExecutionStrategy::kPipeline) && is_need_sync_stream_) {
+    MS_LOG(INFO) << "Sync stream in the step end.";
     ProfilerRecorder profiler(ProfilerModule::kKernel, ProfilerEvent::kStreamSync, GetAID().Name());
     std::set<const DeviceContext *> sync_stream_device_contexts;
     for (auto &device_context : device_contexts_) {
