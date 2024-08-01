@@ -59,7 +59,7 @@ class TreeAdapter {
   // This function performs syntax checking, semantics checking, optimizes, and then builds
   // the Execution tree.
   Status Compile(const std::shared_ptr<DatasetNode> &input_ir, int32_t num_epochs = -1, int64_t global_step = 0,
-                 int64_t dataset_size = -1);
+                 int64_t dataset_size = -1, bool independent_dataset = false);
 
   // Return the root node of the IR after cloned from the parsed IR tree
   std::shared_ptr<DatasetNode> RootIRNode() const { return root_ir_; }
@@ -156,6 +156,8 @@ class TreeAdapter {
   pid_t parent_process_id_;  // parent process id
   pid_t process_id_;         // current process id
   pid_t sub_process_id_;     // sub process id
+
+  bool independent_dataset_;  // BuildVocabConsumer, DatasetSizeGetter, SaveToDisk consumer no need to start subprocess
 #endif
 
   // 1. the tree holder, the send_tree_ will be moved to it and launched in independent dataset process

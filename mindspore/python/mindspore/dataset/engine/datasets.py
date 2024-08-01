@@ -3452,6 +3452,12 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
         while _PythonMultiprocessing.is_process_alive(ppid):
             if quit_signal.is_set():
                 return
+
+            # independent dataset mode, the subprocess of GeneratorDataset / map / batch should exit when
+            # independent dataset process have exit
+            if os.getppid() != ppid:
+                break
+
             time.sleep(0.1)
 
         _PythonMultiprocessing._terminate_processes(workers)

@@ -34,6 +34,8 @@
 
 namespace mindspore {
 namespace dataset {
+const int kMonitorInterval = 1;
+
 class ReceiveBridgeOp : public ParallelOp<TensorRow, TensorRow> {
  public:
   enum RowStep {
@@ -112,6 +114,7 @@ class ReceiveBridgeOp : public ParallelOp<TensorRow, TensorRow> {
   MessageQueue msg_queue_;           // get msg from independent process
   ReceiveInfo receive_info_;         // receive info, including msgrcv and msgsnd status
   int subprocess_pid_;               // the independent dataset process id
+  bool monitor_alive_;               // whether the monitor is alive
   Status err_status_;                // the err status from independent dataset process
 
  protected:

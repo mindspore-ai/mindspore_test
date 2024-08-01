@@ -90,6 +90,8 @@ class SendBridgeOp : public ParallelOp<TensorRow, TensorRow> {
 
   MessageQueue GetMessageQueue();
 
+  SharedMemoryQueue GetSharedMemoryQueue();
+
  private:
   std::unique_ptr<ChildIterator> child_iterator_;  // An iterator for fetching.
 
