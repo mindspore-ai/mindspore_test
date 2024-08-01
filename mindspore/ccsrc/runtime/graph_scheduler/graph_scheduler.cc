@@ -3301,13 +3301,15 @@ void GraphScheduler::BindNumaNode() {
   if (numa_handle_ == nullptr) {
     numa_handle_ = GetNumaAdapterHandle();
     if (numa_handle_ == nullptr) {
-      MS_LOG(EXCEPTION) << "Load numa library failed.";
+      MS_LOG(WARNING) << "Load numa library failed.";
+      return;
     }
   }
   (void)LoadNumaCpuInfo(numa_handle_.get(), rank_id, &numa_cpus_);
   auto ret = NumaBind(numa_handle_.get(), rank_id);
   if (ret != StatusCode::kSuccess) {
-    MS_LOG(EXCEPTION) << "Bind numa node failed, ret = " << ret.GetErrDescription();
+    MS_LOG(WARNING) << "Bind numa node failed, ret = " << ret.GetErrDescription();
+    return;
   }
   MS_LOG(INFO) << "Numa bind memory and cpu successful.";
 #endif
