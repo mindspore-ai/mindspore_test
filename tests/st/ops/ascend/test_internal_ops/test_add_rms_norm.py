@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 
 import mindspore as ms
-from mindspore import nn, Tensor, context
+from mindspore import nn, Tensor, context, Parameter
 from mindspore import ops
 from mindspore.ops.operations._infer_ops import QuantV2
 
@@ -30,16 +30,11 @@ class Add_RmsNorm(nn.Cell):
         self.with_cast = with_cast
         self.quant = QuantV2()
         self.with_quant = with_quant
-        if is_internal:
-            self.t_zp = Tensor(np.ones((1,)).astype(
-                np.int8), dtype=ms.int8) * 2
-            self.t_scale = Tensor(np.ones((1,)).astype(
-                np.float16), dtype=ms.float16) * 2
-        else:
-            self.t_zp = Tensor(np.ones((1, 1024)).astype(
-                np.int8), dtype=ms.int8) * 2
-            self.t_scale = Tensor(np.ones((1, 1024)).astype(
-                np.float16), dtype=ms.float16) * 2
+
+        self.t_scale = Parameter(Tensor(np.ones((1,)).astype(
+            np.float16), dtype=ms.float16) * 2)
+        self.t_zp = Parameter(Tensor(np.ones((1,)).astype(
+            np.int8), dtype=ms.int8) * 2)
 
     def construct(self, x1, x2, gamma):
         res = x1 + x2
