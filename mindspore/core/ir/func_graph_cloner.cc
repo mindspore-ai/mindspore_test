@@ -264,7 +264,7 @@ void Cloner::CloneFuncGraphValueNodes(const FuncGraphPtr &func_graph, const Func
     MS_EXCEPTION_IF_NULL(return_node);
     target_func_graph->set_return(return_node);
   } else {
-    MS_LOG(ERROR) << "Has no return node, func_graph: " << func_graph << "/" << func_graph->ToString();
+    MS_LOG(INFO) << "Has no return node, func_graph: " << func_graph << "/" << func_graph->ToString();
   }
 
   auto &cnodes = func_graph->func_graph_cnodes_index();

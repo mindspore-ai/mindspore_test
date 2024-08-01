@@ -68,8 +68,8 @@ FuncGraphPtr MetaFuncGraph::GenerateFuncGraph(const abstract::AbstractBasePtrLis
   if (iter == cache_.end()) {
     FuncGraphPtr fg = GenerateFromTypes(types);
     MS_EXCEPTION_IF_NULL(fg);
-    MS_LOG(INFO) << "MetaFuncgraph: cache miss for types: " << mindspore::ToString(args_abs_list)
-                 << ", g: " << fg->ToString();
+    MS_LOG(DEBUG) << "MetaFuncgraph: cache miss for types: " << mindspore::ToString(args_abs_list)
+                  << ", g: " << fg->ToString();
     cache_[types] = fg;
     return fg;
   } else {
