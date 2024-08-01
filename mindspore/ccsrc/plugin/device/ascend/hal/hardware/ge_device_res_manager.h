@@ -187,6 +187,7 @@ class GeDeviceResManager : public DeviceResManager {
   bool is_use_cpu_memory_ = false;
   MemUceInfo mem_uce_info_;
   std::mutex mem_uce_info_mutex_;
+  DynamicMemPool *mem_pool_;
 };
 }  // namespace ascend
 }  // namespace device
