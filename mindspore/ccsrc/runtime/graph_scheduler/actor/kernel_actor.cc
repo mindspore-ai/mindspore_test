@@ -1148,6 +1148,9 @@ void KernelActor::ProcessMultiStreamBeforeKernelLaunch(OpContext<DeviceTensor> *
 
   std::vector<KernelTensor *> cross_stream_kernel_tensors;
   for (const auto &input_kernel_tensor : input_kernel_tensors_) {
+    if (stream_id == kDefaultStreamIndex) {
+      continue;
+    }
     if (input_kernel_tensor->stream_id() == stream_id) {
       continue;
     }
