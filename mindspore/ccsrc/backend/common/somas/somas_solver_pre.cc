@@ -63,6 +63,8 @@ Status SomasSolverPre::AddContiguousInfoInMap(const vector<vector<size_t>> &cont
       if (CheckTensors(pTensors, SizeToUint(index1), SizeToUint(index2)) == FAILED) {
         return FAILED;
       }
+      MS_EXCEPTION_IF_NULL(tensors[index1]);
+      MS_EXCEPTION_IF_NULL(tensors[index2]);
       tensors[index1]->right_ = tensors[index2];
       tensors[index2]->left_ = tensors[index1];
     }
@@ -80,8 +82,11 @@ Status SomasSolverPre::AddContiguousInfoInMultiMaps(const vector<vector<size_t>>
       if (CheckTensors(pTensors, SizeToUint(index1), SizeToUint(index2)) == FAILED) {
         return FAILED;
       }
+      MS_EXCEPTION_IF_NULL(vecTensorsMap);
       for (size_t sol = 0; sol < vecTensorsMap->size(); sol++) {
         auto &tensors_sol = (*vecTensorsMap)[sol];
+        MS_EXCEPTION_IF_NULL(tensors_sol[index1]);
+        MS_EXCEPTION_IF_NULL(tensors_sol[index2]);
         tensors_sol[index1]->right_ = tensors_sol[index2];
         tensors_sol[index2]->left_ = tensors_sol[index1];
       }
@@ -92,7 +97,7 @@ Status SomasSolverPre::AddContiguousInfoInMultiMaps(const vector<vector<size_t>>
 vector<TensorsDescMap> SomasSolverPre::CreateTensorsMaps(const TensorsDescMap &tensors, size_t total_sol) const {
   vector<TensorsDescMap> vecTensorsMap(total_sol);
   vecTensorsMap[0] = tensors;
-  for (auto &pairT : tensors) {
+  for (const auto &pairT : tensors) {
     for (size_t sol = 1; sol < total_sol; sol++) {
       SomasSolverTensorDesc newDesc = *(pairT.second.get());
       SomasSolverTensorDescPtr newDescPtr = std::make_shared<SomasSolverTensorDesc>(newDesc);
@@ -148,6 +153,7 @@ Status SomasSolverPre::Solving(const session::KernelGraph &graph, TensorsDescMap
         for (size_t branching_strategy = 0; branching_strategy < numFittingTypes; branching_strategy++) {
           std::shared_ptr<SomasSolverCore> pSolver =
             std::make_shared<SomasSolverCore>(vecTensorsMap[sol], pConstraints, sol);
+          MS_EXCEPTION_IF_NULL(pSolver);
           pSolver->SetAlgorithmStrategy(AlgorithmType(algorithm_strategy));
           pSolver->SetSortingStrategy(SortingType(sort_strategy));
           pSolver->SetFittingStrategy(FittingType(branching_strategy));
@@ -167,7 +173,7 @@ Status SomasSolverPre::Solving(const session::KernelGraph &graph, TensorsDescMap
     auto end = std::chrono::system_clock::now();
     size_t total_time = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
     auto &best_solver = solvers[best_info.best_sol];
-    for (auto &tensor : tensors) {
+    for (const auto &tensor : tensors) {
       *(tensor.second.get()) = *(vecTensorsMap[best_info.best_sol][tensor.first]);
     }
     MS_EXCEPTION_IF_NULL(best_solver);
@@ -211,6 +217,7 @@ void SomasSolverPre::TensorRelationLog(const std::vector<VectorBitSet> *pConstra
   MS_LOG(INFO) << "SomasSolver::Log Writing somas_tensor_relation.ir..";
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
+  MS_EXCEPTION_IF_NULL(pConstraints);
   auto save_graphs_path = context_ptr->GetSaveGraphsPath();
   std::string filename =
     GetSaveGraphsPathName("somas_tensor_relation_" + std::to_string(graph.graph_id()) + ".ir", save_graphs_path);
@@ -235,7 +242,8 @@ void SomasSolverPre::SolverInputLog(const session::KernelGraph &graph, const Ten
   std::string filename =
     GetSaveGraphsPathName("somas_solver_input_" + std::to_string(graph.graph_id()) + ".ir", save_graphs_path);
   std::ostringstream oss;
-  for (auto &t : tensors) {
+  for (const auto &t : tensors) {
+    MS_EXCEPTION_IF_NULL(t.second);
     oss << "T " << t.second->index_ << " " << t.second->size_ << " " << t.second->lifelong_ << std::endl;
   }
 
@@ -261,7 +269,7 @@ void SomasSolverPre::SolverOutputLog(const session::KernelGraph &graph, const Te
   constexpr size_t contiguous_left = 1;
   constexpr size_t contiguous_mid = 2;
   constexpr size_t contiguous_right = 3;
-  for (auto &t : tensors) {
+  for (const auto &t : tensors) {
     SomasSolverTensorDescPtr tensor = t.second;
     MS_EXCEPTION_IF_NULL(tensor);
     int continuous = 0;

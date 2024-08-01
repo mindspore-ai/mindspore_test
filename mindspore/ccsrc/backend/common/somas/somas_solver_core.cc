@@ -77,10 +77,13 @@ bool SomasSolverCore::Verify(const size_t &upperbound) {
 
   for (auto t1_ : tensors_) {
     // check alignment
+    MS_EXCEPTION_IF_NULL(t1_.second);
     result = std::max(result, t1_.second->size_ + t1_.second->offset_);
     for (auto t2_ : tensors_) {
       t1 = t1_.second;
       t2 = t2_.second;
+      MS_EXCEPTION_IF_NULL(t1);
+      MS_EXCEPTION_IF_NULL(t2);
       if (t1->index_ == t2->index_) {
         continue;
       }
@@ -173,6 +176,8 @@ void SomasSolverCore::Clean() {
 }
 
 static bool GreaterSizeSmallerIndex(const BlockTensor &t1, const BlockTensor &t2) {
+  MS_EXCEPTION_IF_NULL(t1.m_start_tensor_);
+  MS_EXCEPTION_IF_NULL(t2.m_start_tensor_);
   if (t1.m_start_tensor_->is_graph_output_ != t2.m_start_tensor_->is_graph_output_) {
     return t1.m_start_tensor_->is_graph_output_;
   }
@@ -180,6 +185,8 @@ static bool GreaterSizeSmallerIndex(const BlockTensor &t1, const BlockTensor &t2
          (t1.m_size_ == t2.m_size_ && t1.m_start_tensor_->index_ < t2.m_start_tensor_->index_);
 }
 static bool SmallerReusePeakMemGreaterSizeSmallerIndex(const BlockTensor &t1, const BlockTensor &t2) {
+  MS_EXCEPTION_IF_NULL(t1.m_start_tensor_);
+  MS_EXCEPTION_IF_NULL(t2.m_start_tensor_);
   if (t1.m_start_tensor_->is_graph_output_ != t2.m_start_tensor_->is_graph_output_) {
     return t1.m_start_tensor_->is_graph_output_;
   }
@@ -191,28 +198,38 @@ static bool SmallerReusePeakMemGreaterSizeSmallerIndex(const BlockTensor &t1, co
 }
 #ifdef SOMAS_DEBUG
 static bool GreaterSizeGreaterIndex(const BlockTensor &t1, const BlockTensor &t2) {
+  MS_EXCEPTION_IF_NULL(t1.m_start_tensor_);
+  MS_EXCEPTION_IF_NULL(t2.m_start_tensor_);
   return t1.m_size_ > t2.m_size_ ||
          (t1.m_size_ == t2.m_size_ && t1.m_start_tensor_->index_ > t2.m_start_tensor_->index_);
 }
 static bool GreaterSizeSmallerConstraintsSmallerIndex(const BlockTensor &t1, const BlockTensor &t2) {
+  MS_EXCEPTION_IF_NULL(t1.m_start_tensor_);
+  MS_EXCEPTION_IF_NULL(t2.m_start_tensor_);
   return t1.m_size_ > t2.m_size_ ||
          (t1.m_size_ == t2.m_size_ && t1.m_start_tensor_->constraints_ < t2.m_start_tensor_->constraints_) ||
          (t1.m_size_ == t2.m_size_ && t1.m_start_tensor_->constraints_ == t2.m_start_tensor_->constraints_ &&
           t1.m_start_tensor_->index_ < t2.m_start_tensor_->index_);
 }
 static bool GreaterSizeSmallerConstraintsGreaterIndex(const BlockTensor &t1, const BlockTensor &t2) {
+  MS_EXCEPTION_IF_NULL(t1.m_start_tensor_);
+  MS_EXCEPTION_IF_NULL(t2.m_start_tensor_);
   return t1.m_size_ > t2.m_size_ ||
          (t1.m_size_ == t2.m_size_ && t1.m_start_tensor_->constraints_ < t2.m_start_tensor_->constraints_) ||
          (t1.m_size_ == t2.m_size_ && t1.m_start_tensor_->constraints_ == t2.m_start_tensor_->constraints_ &&
           t1.m_start_tensor_->index_ > t2.m_start_tensor_->index_);
 }
 static bool GreaterSizeGreaterConstraintsSmallerIndex(const BlockTensor &t1, const BlockTensor &t2) {
+  MS_EXCEPTION_IF_NULL(t1.m_start_tensor_);
+  MS_EXCEPTION_IF_NULL(t2.m_start_tensor_);
   return t1.m_size_ > t2.m_size_ ||
          (t1.m_size_ == t2.m_size_ && t1.m_start_tensor_->constraints_ > t2.m_start_tensor_->constraints_) ||
          (t1.m_size_ == t2.m_size_ && t1.m_start_tensor_->constraints_ == t2.m_start_tensor_->constraints_ &&
           t1.m_start_tensor_->index_ < t2.m_start_tensor_->index_);
 }
 static bool GreaterSizeGreaterConstraintsGreaterIndex(const BlockTensor &t1, const BlockTensor &t2) {
+  MS_EXCEPTION_IF_NULL(t1.m_start_tensor_);
+  MS_EXCEPTION_IF_NULL(t2.m_start_tensor_);
   return t1.m_size_ > t2.m_size_ ||
          (t1.m_size_ == t2.m_size_ && t1.m_start_tensor_->constraints_ > t2.m_start_tensor_->constraints_) ||
          (t1.m_size_ == t2.m_size_ && t1.m_start_tensor_->constraints_ == t2.m_start_tensor_->constraints_ &&
@@ -244,6 +261,7 @@ size_t SomasSolverCore::Search(const std::shared_ptr<FootPrint> &pFootprint) {
   MS_LOG(INFO) << "Calling FastSolver Search for " << block_tensors_.size() << " tensors ";
   auto start = std::chrono::system_clock::now();
   if (fh.Eval(&block_tensors_, pFootprint, &constraints_)) {
+    MS_EXCEPTION_IF_NULL(pFootprint);
     result = pFootprint->Result();
     auto end = std::chrono::system_clock::now();
     timing_ = std::chrono::duration_cast<std::chrono::milliseconds>((end - start)).count();
@@ -273,12 +291,14 @@ void SomasSolverCore::AppendLifelongTensors() {
   size_t offset = upperbound_;
   std::map<size_t, SomasSolverTensorDescPtr> lifelongTensors;
   for (const auto &t : tensors_) {
+    MS_EXCEPTION_IF_NULL(t.second);
     if (t.second->lifelong_) {
       (void)lifelongTensors.emplace(t.first, t.second);
     }
   }
   for (const auto &t : lifelongTensors) {
     auto &pTensor = t.second;
+    MS_EXCEPTION_IF_NULL(pTensor);
     pTensor->offset_ = offset;
     offset += pTensor->size_;
   }
@@ -290,6 +310,7 @@ size_t SomasSolverCore::FindSolutions() {
   MS_LOG(DEBUG) << "Start allocating blocks,offset strategy: " << branchingNames[branching_strategy_];
 
   std::shared_ptr<FootPrint> pFootprint = std::make_shared<FootPrint>();
+  MS_EXCEPTION_IF_NULL(pFootprint);
   pFootprint->setBranchingStrategy(static_cast<uint32_t>(branching_strategy_));
   pFootprint->setCurrentSol(sol_count_);
   pFootprint->setAlgorithm(static_cast<uint32_t>(algorithm_));

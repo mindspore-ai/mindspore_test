@@ -50,6 +50,7 @@ SomasTensor::SomasTensor(size_t id, size_t source_node_id, size_t source_stream_
 }
 
 SomasSolverTensorDescPtr SomasTensor::GetSolverTensorDesc() {
+  MS_EXCEPTION_IF_NULL(solver_tensor_desc_);
   if (contiguous_) {
     solver_tensor_desc_->Update(id_, aligned_size_, offset_, can_reuse_peak_mem_, is_graph_output_, false);
   } else {
