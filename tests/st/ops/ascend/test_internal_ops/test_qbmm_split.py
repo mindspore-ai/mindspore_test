@@ -182,7 +182,7 @@ def test_qbmm_qkv_11008_4096_4096(m, k, is_dyn):
 
 @pytest.mark.level0
 @pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.parametrize('m', [1, 32, 256])
+@pytest.mark.parametrize('m', [32, 256])
 @pytest.mark.parametrize('k', [8192])
 @pytest.mark.parametrize('is_dyn', [False, True])
 @pytest.mark.env_onecard

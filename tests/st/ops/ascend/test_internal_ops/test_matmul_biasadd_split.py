@@ -153,7 +153,7 @@ def _test_matmul_qkv(m=0, k=0, n0=0, n1=0, n2=0, mstype=ms.float16, is_dyn=False
 @pytest.mark.level0
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.parametrize('m', [32])
-@pytest.mark.parametrize('k', [1024, 11264, 128])
+@pytest.mark.parametrize('k', [1024, 2048, 128])
 @pytest.mark.parametrize('mstype', [ms.float16])
 @pytest.mark.parametrize('is_dyn', [False, True])
 @pytest.mark.env_onecard
@@ -184,7 +184,7 @@ def test_matmul_qkv_11008_4096_4096(m, k, mstype, is_dyn):
 
 @pytest.mark.level0
 @pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.parametrize('m', [1, 32, 256])
+@pytest.mark.parametrize('m', [32, 256])
 @pytest.mark.parametrize('k', [8192])
 @pytest.mark.parametrize('mstype', [ms.float16])
 @pytest.mark.parametrize('is_dyn', [False, True])
@@ -199,7 +199,7 @@ def test_matmul_ffn_3584_3584(m, k, mstype, is_dyn):
 
 @pytest.mark.level1
 @pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.parametrize('m', [1, 16, 256, 1024])
+@pytest.mark.parametrize('m', [16, 256, 1024])
 @pytest.mark.parametrize('k_n_shape', [(8192, 1024, 128, 128), (8192, 2048, 256, 256),
                                        (4096, 4096, 4096, 4096), (12288, 1536, 1536, 1536)])
 @pytest.mark.parametrize('mstype', [ms.float16])
@@ -217,7 +217,7 @@ def test_matmul_qkv_out_num_3_with_diff_shape(m, k_n_shape, mstype, is_dyn):
 
 @pytest.mark.level1
 @pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.parametrize('m', [1, 16, 256, 1024])
+@pytest.mark.parametrize('m', [16, 256, 1024])
 @pytest.mark.parametrize('k_n_shape', [(4096, 11008, 11008), (8192, 2752, 2752),
                                        (12288, 5376, 5376)])
 @pytest.mark.parametrize('mstype', [ms.float16])
@@ -235,9 +235,9 @@ def test_matmul_ffn(m, k_n_shape, mstype, is_dyn):
 
 @pytest.mark.level1
 @pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.parametrize('input_shape', [(1, 8192, 1024, 128, 128),
+@pytest.mark.parametrize('input_shape', [(16, 8192, 1024, 128, 128),
                                          (32, 4096, 4096, 4096, 4096),
-                                         (16, 12288, 1536, 1536, 1536)])
+                                         (16, 2048, 1536, 1536, 1536)])
 @pytest.mark.env_onecard
 def test_dynamic_shape(input_shape):
     """

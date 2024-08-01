@@ -15,7 +15,7 @@
  */
 
 #include "backend/graph_optimizer_test_framework.h"
-#include "ops/sequence_ops.h"
+#include "op_def/sequence_ops.h"
 #include "common/common_test.h"
 #include "plugin/device/ascend/optimizer/ir_fusion/inference_matmul_split_fusion.h"
 #include "include/common/utils/anfalgo.h"
