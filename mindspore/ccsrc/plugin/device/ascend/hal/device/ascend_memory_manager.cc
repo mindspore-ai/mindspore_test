@@ -53,43 +53,7 @@ void AscendMemoryManager::FreeMemFromMemPool(void *device_ptr) {
   AscendMemoryPool::GetInstance().FreeTensorMem(device_ptr);
 }
 
-size_t AscendMemoryManager::GetMaxUsedMemorySize() const { return AscendMemoryPool::GetInstance().GetMaxUsedMemSize(); }
-
 // Relevant function to manage memory statistics
-size_t AscendMemoryManager::GetTotalMemStatistics() const {
-  return AscendMemoryPool::GetInstance().TotalMemStatistics();
-}
-size_t AscendMemoryManager::GetTotalUsedMemStatistics() const {
-  return AscendMemoryPool::GetInstance().TotalUsedMemStatistics();
-}
-size_t AscendMemoryManager::GetTotalIdleMemStatistics() const {
-  return AscendMemoryPool::GetInstance().TotalIdleMemStatistics();
-}
-size_t AscendMemoryManager::GetTotalEagerFreeMemStatistics() const {
-  return AscendMemoryPool::GetInstance().TotalEagerFreeMemStatistics();
-}
-size_t AscendMemoryManager::GetUsedMemPeakStatistics() const {
-  return AscendMemoryPool::GetInstance().MaxMemAllocatedStatistics();
-}
-size_t AscendMemoryManager::GetReservedMemPeakStatistics() const {
-  return AscendMemoryPool::GetInstance().MaxMemReservedStatistics();
-}
-std::unordered_map<std::string, std::size_t> AscendMemoryManager::GetBlockCountsStatistics() const {
-  return AscendMemoryPool::GetInstance().BlockCountsStatistics();
-}
-std::unordered_map<std::string, std::size_t> AscendMemoryManager::GetBlockUnitSizeStatistics() const {
-  return AscendMemoryPool::GetInstance().BlockUnitSizeStatistics();
-}
-std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>
-AscendMemoryManager::GetCommonMemBlocksInfoStatistics() const {
-  return AscendMemoryPool::GetInstance().CommonMemBlocksInfoStatistics();
-}
-std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>
-AscendMemoryManager::GetPersistentMemBlocksInfoStatistics() const {
-  return AscendMemoryPool::GetInstance().PersistentMemBlocksInfoStatistics();
-}
-void AscendMemoryManager::ResetMaxMemoryReserved() { AscendMemoryPool::GetInstance().ResetMaxMemReserved(); }
-void AscendMemoryManager::ResetMaxMemoryAllocated() { AscendMemoryPool::GetInstance().ResetMaxMemAllocated(); }
 
 uint8_t *AscendMemoryManager::MallocStaticMem(size_t size, bool communication_mem, uint32_t graph_id) {
   size_t align_size = 0;

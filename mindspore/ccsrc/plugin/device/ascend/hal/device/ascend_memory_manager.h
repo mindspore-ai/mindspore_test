@@ -38,7 +38,6 @@ class BACKEND_EXPORT AscendMemoryManager : public MemoryManager {
   void *MallocMemFromMemPool(size_t size, bool from_persistent_mem, bool need_recycle = false,
                              uint32_t stream_id = kDefaultStreamIndex) override;
   void FreeMemFromMemPool(void *device_ptr) override;
-  size_t GetMaxUsedMemorySize() const override;
   uint64_t GetMsMaxMemSize() const;
   bool MallocContinuousMemFromMemPool(const DeviceAddressPtrList &addr_list, size_t total_size,
                                       std::vector<size_t> size_list, uint32_t stream_id = kDefaultStreamIndex) override;
@@ -53,20 +52,6 @@ class BACKEND_EXPORT AscendMemoryManager : public MemoryManager {
   uint64_t GetMsUsedHbmSize() const;
 
   // Relevant function to manage memory statistics
-  size_t GetTotalMemStatistics() const override;
-  size_t GetTotalUsedMemStatistics() const override;
-  size_t GetTotalIdleMemStatistics() const override;
-  size_t GetTotalEagerFreeMemStatistics() const override;
-  size_t GetUsedMemPeakStatistics() const override;
-  size_t GetReservedMemPeakStatistics() const override;
-  std::unordered_map<std::string, std::size_t> GetBlockCountsStatistics() const override;
-  std::unordered_map<std::string, std::size_t> GetBlockUnitSizeStatistics() const override;
-  std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>> GetCommonMemBlocksInfoStatistics()
-    const override;
-  std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>
-  GetPersistentMemBlocksInfoStatistics() const override;
-  void ResetMaxMemoryReserved() override;
-  void ResetMaxMemoryAllocated() override;
 
   DynamicMemPool *GetMemoryPool() override;
 
