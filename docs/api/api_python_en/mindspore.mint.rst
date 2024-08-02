@@ -23,6 +23,8 @@ Creation Operations
 
     mindspore.mint.arange
     mindspore.mint.eye
+    mindspore.mint.full
+    mindspore.mint.linspace
     mindspore.mint.ones
     mindspore.mint.ones_like
     mindspore.mint.zeros
@@ -39,6 +41,7 @@ Indexing, Slicing, Joining, Mutating Operations
     mindspore.mint.cat
     mindspore.mint.gather
     mindspore.mint.index_select
+    mindspore.mint.masked_select
     mindspore.mint.permute
     mindspore.mint.scatter_add
     mindspore.mint.split
@@ -73,11 +76,24 @@ Pointwise Operations
 
     mindspore.mint.abs
     mindspore.mint.add
-    mindspore.mint.clamp
-    mindspore.mint.atan2
+    mindspore.mint.acos
+    mindspore.mint.acosh
+    mindspore.mint.arccos
+    mindspore.mint.arccosh
+    mindspore.mint.arcsin
+    mindspore.mint.arcsinh
     mindspore.mint.arctan2
+    mindspore.mint.asin
+    mindspore.mint.asinh
+    mindspore.mint.atan2
+    mindspore.mint.bitwise_and
+    mindspore.mint.bitwise_or
+    mindspore.mint.bitwise_xor
     mindspore.mint.ceil
+    mindspore.mint.clamp
     mindspore.mint.cos
+    mindspore.mint.cosh
+    mindspore.mint.cross
     mindspore.mint.div
     mindspore.mint.divide
     mindspore.mint.erf
@@ -93,9 +109,12 @@ Pointwise Operations
     mindspore.mint.negative
     mindspore.mint.pow
     mindspore.mint.reciprocal
+    mindspore.mint.roll
     mindspore.mint.rsqrt
     mindspore.mint.sigmoid
     mindspore.mint.sin
+    mindspore.mint.sinc
+    mindspore.mint.sinh
     mindspore.mint.sqrt
     mindspore.mint.square
     mindspore.mint.sub
@@ -110,10 +129,12 @@ Reduction Operations
     :template: classtemplate.rst
 
     mindspore.mint.argmax
+    mindspore.mint.argmin
     mindspore.mint.all
     mindspore.mint.any
     mindspore.mint.max
     mindspore.mint.mean
+    mindspore.mint.median
     mindspore.mint.min
     mindspore.mint.prod
     mindspore.mint.sum
@@ -164,7 +185,10 @@ Other Operations
     :template: classtemplate.rst
 
     mindspore.mint.broadcast_to
+    mindspore.mint.cummax
+    mindspore.mint.cummin
     mindspore.mint.cumsum
+    mindspore.mint.flatten
     mindspore.mint.flip
     mindspore.mint.repeat_interleave
     mindspore.mint.searchsorted
@@ -182,6 +206,18 @@ Convolution Layers
 
     mindspore.mint.nn.Fold
     mindspore.mint.nn.Unfold
+
+Non-linear Activations (weighted sum, nonlinearity)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. msplatwarnautosummary::
+    :toctree: mint
+    :nosignatures:
+    :template: classtemplate.rst
+
+    mindspore.mint.nn.Hardshrink
+    mindspore.mint.nn.Hardsigmoid
+    mindspore.mint.nn.Hardswish
 
 Linear Layers
 ^^^^^^^^^^^^^^^^^^
@@ -202,6 +238,16 @@ Dropout Layers
     :template: classtemplate.rst
 
     mindspore.mint.nn.Dropout
+
+Pooling Layers
+^^^^^^^^^^^^^^
+
+.. msplatwarnautosummary::
+    :toctree: mint
+    :nosignatures:
+    :template: classtemplate.rst
+
+    mindspore.mint.nn.AvgPool2d
 
 Loss Functions
 ^^^^^^^^^^^^^^^
@@ -235,6 +281,7 @@ Pooling functions
     :nosignatures:
     :template: classtemplate.rst
 
+    mindspore.mint.nn.functional.avg_pool2d
     mindspore.mint.nn.functional.max_pool2d
 
 Non-linear activation functions
@@ -249,6 +296,9 @@ Non-linear activation functions
     mindspore.mint.nn.functional.elu
     mindspore.mint.nn.functional.gelu
     mindspore.mint.nn.functional.group_norm
+    mindspore.mint.nn.functional.hardshrink
+    mindspore.mint.nn.functional.hardsigmoid
+    mindspore.mint.nn.functional.hardswish
     mindspore.mint.nn.functional.layer_norm
     mindspore.mint.nn.functional.leaky_relu
     mindspore.mint.nn.functional.relu
@@ -333,3 +383,16 @@ Inverses
     :template: classtemplate.rst
 
     mindspore.mint.linalg.inv
+
+mindspore.mint.special
+----------------------
+
+Sinc
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. msplatwarnautosummary::
+    :toctree: mint
+    :nosignatures:
+    :template: classtemplate.rst
+
+    mindspore.mint.special.sinc

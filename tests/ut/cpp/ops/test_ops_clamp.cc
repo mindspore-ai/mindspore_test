@@ -26,6 +26,7 @@
 #include "infer/ops_func_impl/clamp_scalar.h"
 #include "infer/ops_func_impl/clamp_tensor.h"
 #include "ops/test_value_utils.h"
+#include "ops/test_ops_cmp_utils.h"
 
 namespace mindspore {
 namespace ops {
@@ -58,6 +59,31 @@ TEST_P(TestClampTensor, clamp_dyn_shape) {
   ASSERT_TRUE(*out_shape == *expect_shape);
 }
 
+class TestClampTensorSimpleInfer : public TestOps, public testing::WithParamInterface<ClampShapeParams> {};
+
+TEST_P(TestClampTensorSimpleInfer, clamp_dyn_shape) {
+  const auto &param = GetParam();
+  auto x = std::make_shared<tensor::BaseTensor>(param.x_type->type_id(), param.x_shape);
+  auto min = std::make_shared<tensor::BaseTensor>(param.min_type->type_id(), param.min_shape);
+  auto max = std::make_shared<tensor::BaseTensor>(param.max_type->type_id(), param.max_shape);
+  ValuePtrList input_values;
+  input_values.push_back(std::move(x));
+  input_values.push_back(std::move(min));
+  input_values.push_back(std::move(max));
+
+  ClampTensorFuncImpl clamp_func_impl;
+  auto prim = std::make_shared<Primitive>("ClampTensor");
+
+  auto expect_shape = ShapeArray{param.x_shape};
+  auto expect_type = TypePtrList{param.x_type};
+
+  auto output_shape = clamp_func_impl.InferShape(prim, input_values);
+  auto output_type = clamp_func_impl.InferType(prim, input_values);
+
+  ShapeCompare(output_shape, expect_shape);
+  TypeCompare(output_type, expect_type);
+}
+
 INSTANTIATE_TEST_CASE_P(TestClampTensor, TestClampTensor,
                         testing::Values(ClampShapeParams{{3, 4, 5}, kFloat32, {3, 4, 1}, kFloat32, {3, 4, 1}, kFloat32},
                                         ClampShapeParams{{3, 4, 5}, kInt64, {}, kFloat32, {}, kFloat32},
@@ -65,6 +91,11 @@ INSTANTIATE_TEST_CASE_P(TestClampTensor, TestClampTensor,
                                         ClampShapeParams{{3, 4, 5}, kFloat16, {}, kFloat32, {}, kFloat32},
                                         ClampShapeParams{{-1, -1, -1}, kInt32, {}, kFloat32, {}, kFloat32},
                                         ClampShapeParams{{-2}, kFloat32, {}, kFloat32, {}, kFloat32}));
+INSTANTIATE_TEST_CASE_P(TestClampTensorSimpleInfer, TestClampTensorSimpleInfer,
+                        testing::Values(ClampShapeParams{{3, 4, 5}, kFloat32, {3, 4, 1}, kFloat32, {3, 4, 1}, kFloat32},
+                                        ClampShapeParams{{3, 4, 5}, kInt64, {}, kFloat32, {}, kFloat32},
+                                        ClampShapeParams{{3, 4, 5}, kInt64, {}, kInt64, {}, kInt64},
+                                        ClampShapeParams{{3, 4, 5}, kFloat16, {}, kFloat32, {}, kFloat32}));
 
 class TestClampScalar : public TestOps, public testing::WithParamInterface<ClampShapeParams> {};
 
@@ -86,6 +117,31 @@ TEST_P(TestClampScalar, clamp_dyn_shape) {
   ASSERT_TRUE(*out_shape == *expect_shape);
 }
 
+class TestClampScalarSimpleInfer : public TestOps, public testing::WithParamInterface<ClampShapeParams> {};
+
+TEST_P(TestClampScalarSimpleInfer, clamp_dyn_shape) {
+  const auto &param = GetParam();
+  auto x = std::make_shared<tensor::BaseTensor>(param.x_type->type_id(), param.x_shape);
+  auto min = std::make_shared<tensor::BaseTensor>(param.min_type->type_id(), param.min_shape);
+  auto max = std::make_shared<tensor::BaseTensor>(param.max_type->type_id(), param.max_shape);
+  ValuePtrList input_values;
+  input_values.push_back(std::move(x));
+  input_values.push_back(std::move(min));
+  input_values.push_back(std::move(max));
+
+  ClampScalarFuncImpl clamp_func_impl;
+  auto prim = std::make_shared<Primitive>("ClampTensor");
+
+  auto expect_shape = ShapeArray{param.x_shape};
+  auto expect_type = TypePtrList{param.x_type};
+
+  auto output_shape = clamp_func_impl.InferShape(prim, input_values);
+  auto output_type = clamp_func_impl.InferType(prim, input_values);
+
+  ShapeCompare(output_shape, expect_shape);
+  TypeCompare(output_type, expect_type);
+}
+
 INSTANTIATE_TEST_CASE_P(TestClampScalar, TestClampScalar,
                         testing::Values(ClampShapeParams{{3, 4, 5}, kFloat32, {}, kFloat32, {}, kFloat32},
                                         ClampShapeParams{{3, 4, 5}, kInt64, {}, kFloat32, {}, kFloat32},
@@ -93,5 +149,11 @@ INSTANTIATE_TEST_CASE_P(TestClampScalar, TestClampScalar,
                                         ClampShapeParams{{3, 4, 5}, kFloat16, {}, kFloat32, {}, kFloat32},
                                         ClampShapeParams{{-1, -1, -1}, kInt32, {}, kFloat32, {}, kFloat32},
                                         ClampShapeParams{{-2}, kFloat32, {}, kFloat32, {}, kFloat32}));
+INSTANTIATE_TEST_CASE_P(TestClampScalarSimpleInfer, TestClampScalarSimpleInfer,
+                        testing::Values(ClampShapeParams{{3, 4, 5}, kFloat32, {}, kFloat32, {}, kFloat32},
+                                        ClampShapeParams{{3, 4, 5}, kInt64, {}, kFloat32, {}, kFloat32},
+                                        ClampShapeParams{{3, 4, 5}, kInt64, {}, kInt64, {}, kInt64},
+                                        ClampShapeParams{{3, 4, 5}, kFloat16, {}, kFloat32, {}, kFloat32}));
+
 }  // namespace ops
 }  // namespace mindspore

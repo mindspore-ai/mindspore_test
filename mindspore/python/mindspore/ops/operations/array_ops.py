@@ -39,7 +39,7 @@ from ..auto_generate import (ExpandDims, Reshape, TensorShape, Transpose, Gather
                              OnesLike, ZerosLike, Argmax, ArgMaxExt,
                              ReverseV2, Diag, Eye, ScatterNd, ResizeNearestNeighborV2,
                              GatherNd, GatherD, Range, MaskedFill, RightShift, NonZero,
-                             ResizeNearestNeighbor, Identity, Split, CumSum, CumProd,
+                             ResizeNearestNeighbor, Identity, Split, CumSum, CumProd, MaskedSelect,
                              Cummax, Cummin, Argmin, Concat, UnsortedSegmentSum, ScalarToTensor,
                              Triu, BroadcastTo, StridedSlice, Select, TopkExt, SearchSorted)
 from .manually_defined import Rank, Shape, Tile, Cast, Ones, Zeros
@@ -4354,53 +4354,6 @@ class MaskedScatter(Primitive):
     def __init__(self):
         """Initialize MaskedScatter"""
         self.init_prim_io_names(inputs=['x', 'mask', 'updates'], outputs=['y'])
-
-
-class MaskedSelect(PrimitiveWithCheck):
-    """
-    Returns a new 1-D Tensor which indexes the `x` tensor according to the boolean `mask`.
-    The shapes of the `mask` tensor and the `x` tensor don't need to match, but they must be broadcastable.
-
-    Inputs:
-        - **x** (Tensor) - Input Tensor of any dimension.
-        - **mask** (Tensor[bool]) - Boolean mask Tensor, has the same shape as `x`.
-
-    Outputs:
-        A 1-D Tensor, with the same type as x.
-
-    Raises:
-        TypeError: If `x` or `mask` is not a Tensor.
-        TypeError: If dtype of `mask` is not bool.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([1, 2, 3, 4]), mindspore.int32)
-        >>> mask = Tensor(np.array([1, 0, 1, 0]), mindspore.bool_)
-        >>> output = ops.MaskedSelect()(x, mask)
-        >>> print(output)
-        [1 3]
-        >>> x = Tensor(2.1, mindspore.float32)
-        >>> mask = Tensor(True, mindspore.bool_)
-        >>> output = ops.MaskedSelect()(x, mask)
-        >>> print(output)
-        [2.1]
-    """
-
-    @prim_attr_register
-    def __init__(self):
-        self.init_prim_io_names(inputs=['x', 'mask'], outputs=['output'])
-
-    def check_shape(self, x_shape, mask_shape):
-        get_broadcast_shape(x_shape, mask_shape, self.name, arg_name1="x", arg_name2="mask")
-
-    def check_dtype(self, x_dtype, mask_dtype):
-        validator.check_tensor_dtype_valid('mask', mask_dtype, [mstype.bool_], self.name)
-        validator.check_tensor_dtype_valid('x', x_dtype, (mstype.bool_,) + mstype.number_type, self.name)
 
 
 class _TensorScatterOp(PrimitiveWithInfer):

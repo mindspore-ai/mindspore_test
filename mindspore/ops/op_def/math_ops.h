@@ -40,7 +40,6 @@ GVAR_DEF(PrimitivePtr, kPrimBesselY1, std::make_shared<Primitive>("BesselY1"));
 GVAR_DEF(PrimitivePtr, kPrimTan, std::make_shared<Primitive>("Tan"));
 GVAR_DEF(PrimitivePtr, kPrimImag, std::make_shared<Primitive>(kImagOpName));
 GVAR_DEF(PrimitivePtr, kPrimCauchy, std::make_shared<Primitive>(kCauchyOpName));
-GVAR_DEF(PrimitivePtr, kPrimCross, std::make_shared<Primitive>(kCrossOpName));
 GVAR_DEF(PrimitivePtr, kPrimEditDistance, std::make_shared<Primitive>(kEditDistanceOpName));
 GVAR_DEF(PrimitivePtr, kPrimBesselI0, std::make_shared<Primitive>("BesselI0"));
 GVAR_DEF(PrimitivePtr, kPrimBesselI1, std::make_shared<Primitive>("BesselI1"));
@@ -120,7 +119,6 @@ GVAR_DEF(PrimitivePtr, kPrimSquareSumAll, std::make_shared<Primitive>("SquareSum
 GVAR_DEF(PrimitivePtr, kPrimSquareSumV1, std::make_shared<Primitive>("SquareSumV1"));
 GVAR_DEF(PrimitivePtr, kPrimPolar, std::make_shared<Primitive>("Polar"));
 GVAR_DEF(PrimitivePtr, kPrimXdivy, std::make_shared<Primitive>("Xdivy"));
-GVAR_DEF(PrimitivePtr, kPrimXlogy, std::make_shared<Primitive>("Xlogy"));
 GVAR_DEF(PrimitivePtr, kPrimRaggedRange, std::make_shared<Primitive>(kRaggedRangeOpName));
 GVAR_DEF(PrimitivePtr, kPrimBitwiseOr, std::make_shared<Primitive>("BitwiseOr"));
 GVAR_DEF(PrimitivePtr, kPrimBitwiseAnd, std::make_shared<Primitive>("BitwiseAnd"));

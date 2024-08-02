@@ -8,7 +8,12 @@ mindspore.nn.HSigmoid
     Hard Sigmoid定义为：
 
     .. math::
-        \text{hsigmoid}(x_{i}) = \max(0, \min(1, \frac{x_{i} + 3}{6})),
+        \text{Hardsigmoid}(input) =
+        \begin{cases}
+        0, & \text{ if } input \leq -3, \\
+        1, & \text{ if } input \geq +3, \\
+        input/6 + 1/2, & \text{ otherwise }
+        \end{cases}
 
     HSigmoid函数图：
 
@@ -16,10 +21,11 @@ mindspore.nn.HSigmoid
         :align: center
 
     输入：
-        - **input_x** (Tensor) - Hard Sigmoid的输入，任意维度的Tensor。
+        - **input** (Tensor) - Hard Sigmoid的输入。
 
     输出：
-        Tensor，数据类型和shape与 `input_x` 的相同。
+        Tensor，数据类型和shape与 `input` 的相同。
 
     异常：
-        - **TypeError** - `input_x` 不是Tensor。
+        - **TypeError** - `input` 不是Tensor。
+        - **TypeError** - `input` 不是int或者float类型。

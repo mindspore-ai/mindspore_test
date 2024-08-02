@@ -38,9 +38,9 @@ from ..auto_generate import (Add, Addcdiv, Addcmul, ReduceMean, ReduceSum, Reduc
                              Greater, GreaterEqual, Gcd, LogicalNot, LogicalAnd, LogicalOr,
                              LogicalXor, Cos, ACos, Sin, Asin, Abs, Round, Atan, Atanh, Atan2,
                              LinSpace, MatrixDeterminant, LogMatrixDeterminant, Erfinv, Conj,
-                             Real, Complex, Angle, MatrixExp, CholeskyInverse, Trace, Cholesky,
+                             Real, Complex, Angle, MatrixExp, CholeskyInverse, Trace, Cholesky, Cross,
                              FFTWithSize, NextAfter, NanToNum, Eig, Qr, Roll, Maximum, Div, DivMod, CumProd,
-                             CumSum, Less, LessEqual, AssignAdd, IsFinite, IsClose, TanhGrad)
+                             CumSum, Less, LessEqual, AssignAdd, IsFinite, IsClose, TanhGrad, Xlogy)
 
 
 def _infer_shape_reduce(x, axis, keep_dims, prim_name):
@@ -1801,48 +1801,6 @@ class Xdivy(Primitive):
             out = np.array(out, x.dtype)
             return Tensor(out)
         return None
-
-
-class Xlogy(Primitive):
-    r"""
-    Computes the first input tensor multiplied by the logarithm of second input tensor element-wise.
-    Returns zero when `x` is zero.
-
-    Refer to :func:`mindspore.ops.xlogy` for more details.
-
-    Inputs:
-        - **x** (Union[Tensor, number.Number, bool]) - The first input is a number.Number or
-          a bool or a tensor whose data type is
-          `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_ or
-          `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_.
-        - **y** (Union[Tensor, number.Number, bool]) - The second input is a number.Number or
-          a bool when the first input is a tensor or a tensor whose data type is number or bool\_.
-          When the first input is Scalar, the second input must be a Tensor whose data type is number or bool\_.
-
-    Outputs:
-        Tensor, the shape is the same as the one after broadcasting,
-        and the data type is the one with higher precision or higher digits among the two inputs.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([-5, 0, 4]), mindspore.float32)
-        >>> y = Tensor(np.array([2, 2, 2]), mindspore.float32)
-        >>> xlogy = ops.Xlogy()
-        >>> output = xlogy(x, y)
-        >>> print(output)
-        [-3.465736   0.        2.7725887]
-    """
-    __mindspore_signature__ = (sig.sig_dtype.T, sig.sig_dtype.T)
-
-    @prim_attr_register
-    def __init__(self):
-        """Initialize Xlogy."""
-        self.init_prim_io_names(inputs=['x', 'y'], outputs=['output'])
 
 
 class _LogicBinaryOp(_BinaryOp):
@@ -4293,49 +4251,6 @@ class Polygamma(Primitive):
     def __init__(self):
         """Initialize Polygamma"""
         self.init_prim_io_names(inputs=['a', 'x'], outputs=['y'])
-
-
-class Cross(Primitive):
-    """
-    Returns the cross product of vectors in dimension `dim` of x1 and x2.
-
-    .. warning::
-        This is an experimental API that is subject to change or deletion.
-
-    Refer to :func:`mindspore.ops.cross` for more details.
-
-    Args:
-        dim (int): Spefcified dim along which to cumpute cross product with. Default: ``-65530`` .
-
-    Inputs:
-        - **x1** (Tensor) - Input Tensor.
-        - **x2** (Tensor) - Another input Tensor, must have the same shape and
-          the same type as `x1`, and the size of their `dim` dimension should be 3.
-
-    Outputs:
-        Tensor, has the same shape and type as inputs.
-
-    Supported Platforms:
-        ``Ascend`` ``CPU``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor
-        >>> from mindspore import dtype as mstype
-        >>> from mindspore import ops
-        >>> cross = ops.Cross(dim = 0)
-        >>> x1 = Tensor([1, 2, 3], mstype.int8)
-        >>> x2 = Tensor([1, 2, 3], mstype.int8)
-        >>> output = cross(x1, x2)
-        >>> print(output)
-        [0 0 0]
-    """
-
-    @prim_attr_register
-    def __init__(self, dim=-65530):
-        validator.check_value_type('dim', dim, [int], self.name)
-        self.init_prim_io_names(inputs=['x1', 'x2'], outputs=['y'])
 
 
 class RaggedRange(Primitive):

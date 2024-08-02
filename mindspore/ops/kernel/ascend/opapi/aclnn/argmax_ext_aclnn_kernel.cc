@@ -30,6 +30,7 @@ void ArgMaxAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                     const std::vector<KernelTensor *> &outputs) {
   dim_ = 0;
   keepdim_ = false;
+  dim_is_none_ = false;
   auto in_shape = inputs[kIndex0]->GetShapeVector();
   input_realshape_ = in_shape;
   output_realshape_ = outputs[kIndex0]->GetShapeVector();
@@ -38,17 +39,39 @@ void ArgMaxAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
     dim_ = dim_value_opt.value();
     keepdim_ = transform::ConvertKernelTensor<bool>(inputs[kIndex2]);
   } else {  // input dim is None set flatten size
-    int input_flatten_size = std::accumulate(in_shape.begin(), in_shape.end(), 1, std::multiplies<int64_t>());
-    input_realshape_ = ShapeVector{input_flatten_size};
-    inputs[kIndex0]->SetShapeVector(input_realshape_);
+    dim_is_none_ = true;
   }
-  GetWorkspaceForResize(inputs[kIndex0], dim_, keepdim_, outputs[kIndex0]);
+
+  if (dim_is_none_) {
+    input_kernel_tensor_ = inputs[kIndex0]->CloneKernelTensor();
+
+    int input_flatten_size = std::accumulate(in_shape.begin(), in_shape.end(), 1, std::multiplies<int64_t>());
+    auto input_flatten_shape = ShapeVector{input_flatten_size};
+    input_kernel_tensor_->SetShapeVector(input_flatten_shape);
+
+    size_t offset = 0;
+    auto input_flatten_shape_ori = input_flatten_shape;
+    auto input_flatten_shape_new = input_flatten_shape;
+    std::vector<int64_t> strides_new = {1};
+    std::vector<int64_t> strides_ori = {1};
+    TensorStorageInfoPtr tensor_storage_info = std::make_shared<TensorStorageInfo>(
+      input_flatten_shape_new, strides_new, offset, input_flatten_shape_ori, strides_ori, true);
+    input_kernel_tensor_->set_tensor_storage_info(tensor_storage_info);
+    GetWorkspaceForResize(input_kernel_tensor_.get(), dim_, keepdim_, outputs[kIndex0]);
+  } else {
+    GetWorkspaceForResize(inputs[kIndex0], dim_, keepdim_, outputs[kIndex0]);
+  }
 }
 
 bool ArgMaxAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                           const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
-  RunOp(stream_ptr, workspace, inputs[kIndex0], dim_, keepdim_, outputs[kIndex0]);
+  if (dim_is_none_) {
+    input_kernel_tensor_->set_device_ptr(inputs[kIndex0]->device_ptr());
+    RunOp(stream_ptr, workspace, input_kernel_tensor_.get(), dim_, keepdim_, outputs[kIndex0]);
+  } else {
+    RunOp(stream_ptr, workspace, inputs[kIndex0], dim_, keepdim_, outputs[kIndex0]);
+  }
   return true;
 }
 

@@ -56,7 +56,10 @@ def do_test_chunk_forward(mode):
         assert np.allclose(res.asnumpy(), exp)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@pytest.mark.level3
+@pytest.mark.env_onecard
+@pytest.mark.platform_arm_ascend_training
+@pytest.mark.platform_x86_ascend_training
 @pytest.mark.parametrize("mode", ['GE', 'pynative', 'KBK'])
 def test_chunk_forward_with_minus_dim(mode):
     """
@@ -83,7 +86,10 @@ def test_chunk_forward_with_minus_dim(mode):
         assert np.allclose(res.asnumpy(), exp)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.level3
+@pytest.mark.env_onecard
+@pytest.mark.platform_arm_ascend_training
+@pytest.mark.platform_x86_ascend_training
 @pytest.mark.parametrize("mode", ['GE', 'pynative'])
 def test_chunk_forward(mode):
     """
@@ -94,7 +100,10 @@ def test_chunk_forward(mode):
     do_test_chunk_forward(mode)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.level3
+@pytest.mark.env_onecard
+@pytest.mark.platform_arm_ascend_training
+@pytest.mark.platform_x86_ascend_training
 def test_chunk_forward_kbk():
     """
     Feature: Chunk
@@ -104,7 +113,10 @@ def test_chunk_forward_kbk():
     do_test_chunk_forward('KBK')
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.level3
+@pytest.mark.env_onecard
+@pytest.mark.platform_arm_ascend_training
+@pytest.mark.platform_x86_ascend_training
 @pytest.mark.parametrize("mode", ['GE', 'pynative', 'KBK'])
 def test_chunk_backward(mode):
     """
@@ -128,7 +140,10 @@ def test_chunk_backward(mode):
     assert grad.asnumpy().shape == x.shape
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@pytest.mark.level3
+@pytest.mark.env_onecard
+@pytest.mark.platform_arm_ascend_training
+@pytest.mark.platform_x86_ascend_training
 @pytest.mark.parametrize("context_mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_chunk_forward_dynamic_shape(context_mode):
     """

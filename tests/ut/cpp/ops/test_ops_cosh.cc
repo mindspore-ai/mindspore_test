@@ -24,6 +24,8 @@
 #include "ops/test_ops.h"
 #include "infer/ops_func_impl/cosh.h"
 #include "ops/test_value_utils.h"
+#include "ops/test_ops_cmp_utils.h"
+#include "op_def/auto_generate/gen_ops_name.h"
 
 namespace mindspore {
 namespace ops {
@@ -53,6 +55,13 @@ TEST_P(TestCosh, cosh_dyn_shape) {
   ASSERT_TRUE(*out_shape == *expect_shape);
   auto out_dtype = cosh_func_impl.InferType(prim, {x});
   ASSERT_TRUE(*out_dtype == *expect_dtype);
+
+  // simple infer
+  auto x_value = std::make_shared<tensor::Tensor>(dtype_param.x_type->type_id(), shape_param.x_shape);
+  auto expect_shape_simple_infer = {shape_param.out_shape};
+  auto expect_dtype_simple_infer = {dtype_param.out_type};
+  DoFuncImplSimpleInferAndCompare<CoshFuncImpl>(kNameCosh, {x_value}, {expect_shape_simple_infer},
+                                                {expect_dtype_simple_infer});
 }
 
 auto CoshOpShapeTestCases = testing::ValuesIn({
@@ -68,9 +77,18 @@ auto CoshOpShapeTestCases = testing::ValuesIn({
 });
 
 auto CoshOpTypeTestCases = testing::ValuesIn({
+  CoshType{kBool, kFloat32},
+  CoshType{kUInt8, kFloat32},
+  CoshType{kInt8, kFloat32},
+  CoshType{kInt16, kFloat32},
+  CoshType{kInt32, kFloat32},
+  CoshType{kInt64, kFloat32},
   CoshType{kFloat16, kFloat16},
   CoshType{kFloat32, kFloat32},
   CoshType{kFloat64, kFloat64},
+  CoshType{kComplex64, kComplex64},
+  CoshType{kComplex128, kComplex128},
+  CoshType{kBFloat16, kBFloat16},
 });
 
 INSTANTIATE_TEST_CASE_P(TestCosh, TestCosh, testing::Combine(CoshOpShapeTestCases, CoshOpTypeTestCases));

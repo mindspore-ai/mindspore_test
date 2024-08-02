@@ -31,20 +31,25 @@ from mindspore.ops import composite as C
 from mindspore.ops.composite.multitype_ops import _constexpr_utils as const_utils
 from mindspore.ops.primitive import constexpr, _primexpr
 from mindspore.ops.operations._inner_ops import TileSize
-from mindspore.ops.auto_generate import Cummin, BatchMatMul, LinSpaceExt, Norm
+from mindspore.ops.auto_generate import Cummin, BatchMatMul, lin_space_ext_op, Norm, BitwiseAndScalar, BitwiseAndTensor,\
+    BitwiseOrScalar, BitwiseOrTensor, BitwiseXorScalar, BitwiseXorTensor
 from mindspore.ops import auto_generate
 from mindspore.ops.operations.math_ops import STFT
 from mindspore.ops.operations.math_ops import LuUnpack
-from mindspore.ops.operations.math_ops import Roll
+from mindspore.ops.auto_generate.pyboost_inner_prim import roll_impl, cross_impl
 from mindspore.ops.operations.math_ops import Ormqr
 from mindspore.ops.operations.math_ops import DivMod
 from mindspore.ops.operations.array_ops import MatrixSetDiagV3, Transpose
-from mindspore.ops.auto_generate import (minimum, maximum, mul, sin, sinc, sinh, cummax, real, conj, add, sub, cos, cosh,
+from mindspore.ops.auto_generate import (minimum, maximum, mul, sin, sinc, sinh, cummax, real, conj, add, sub, cos,
+                                         cosh,
                                          matrix_exp, sqrt, rsqrt, square, trace, nextafter, abs, acos, acosh, angle,
                                          asin, asinh, atan, atan2, atanh, ceil, equal, erf, erfc, erfinv, exp, expm1,
                                          floor, floor_divide, floor_mod, gcd, greater, greater_equal, less, less_equal,
                                          log, log1p, neg, not_equal, pow, round, isfinite, argmax_ext, mean_ext_op,
-                                         sum_ext_op, prod_ext_op, all, matrix_inverse_ext, atan2_ext, sign)
+                                         sum_ext_op, prod_ext_op, all, matrix_inverse_ext, atan2_ext, sign, acos_ext,
+                                         acosh_ext, asin_ext, asinh_ext, median_ext_op, median_dim_op, xlogy_op,
+                                         xlogy_scalar_other_op, xlogy_scalar_self_op)
+from mindspore.ops.auto_generate.gen_ops_def import add_ext, sub_ext, bmm_ext
 from mindspore.ops.auto_generate import tanh
 from mindspore.nn import layer
 from mindspore._checkparam import check_is_number
@@ -230,6 +235,12 @@ truncate_mod_ = P.TruncateMod()
 xlogy_ = P.Xlogy()
 zeros_ = P.Zeros()
 zeta_ = P.Zeta()
+bitwise_and_scalar_ = BitwiseAndScalar()
+bitwise_and_tensor_ = BitwiseAndTensor()
+bitwise_or_scalar_ = BitwiseOrScalar()
+bitwise_or_tensor_ = BitwiseOrTensor()
+bitwise_xor_scalar_ = BitwiseXorScalar()
+bitwise_xor_tensor_ = BitwiseXorTensor()
 
 
 #####################################
@@ -1646,6 +1657,57 @@ def xlogy(input, other):
     return xlogy_(input, other)
 
 
+def xlogy_ext(input, other):
+    r"""
+    Computes the first input multiplied by the logarithm of second input element-wise.
+    Returns zero when `input` is zero.
+
+    .. math::
+
+        out_i = input_{i}\log{other_{i}}
+
+    Inputs of `input` and `other` comply with the implicit type conversion rules to make the data types consistent.
+    The inputs must be two tensors or one tensor and one scalar.
+    When the inputs are two tensors, the shapes of them could be broadcast.
+
+    Args:
+        input (Union[Tensor, number.Number, bool]): The first input is a number.Number or
+            a bool or a tensor whose data type is
+            `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_ or
+            `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_.
+        other (Union[Tensor, number.Number, bool]): The second input is a number.Number or
+            a bool or a tensor whose data type is number or bool\_ when the first input is a tensor.
+            When the first input is Scalar, the second input must be a Tensor whose data type is number or bool\_.
+
+    Returns:
+        Tensor, the shape is the same as the one after broadcasting,
+        and the data type is the one with higher precision or higher digits among the two inputs.
+
+    Raises:
+        TypeError: If `input` and `other` is not a number.Number or a bool or a Tensor.
+        ValueError: If `input` could not be broadcast to a tensor with shape of `other`.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, ops
+        >>> input = Tensor(np.array([-5, 0, 4]), mindspore.float32)
+        >>> other = Tensor(np.array([2, 2, 2]), mindspore.float32)
+        >>> output = ops.xlogy_ext(input, other)
+        >>> print(output)
+        [-3.465736   0.        2.7725887]
+    """
+    if isinstance(input, Tensor) and isinstance(other, Tensor):
+        return xlogy_op(input, other)
+    if isinstance(input, Tensor) and isinstance(other, (float, int, bool)):
+        return xlogy_scalar_other_op(input, other)
+    if isinstance(input, (float, int, bool)) and isinstance(other, Tensor):
+        return xlogy_scalar_self_op(input, other)
+    raise TypeError(f"For 'xlogy', at least one of input and other should be Tensor.")
+
 def arccosh(input):
     r"""
     Alias for :func:`mindspore.ops.acosh`.
@@ -1665,6 +1727,16 @@ def arccosh(input):
     return acosh_(input)
 
 
+def arccosh_ext(input):
+    r"""
+    Alias for :func:`mindspore.ops.acosh_ext`.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+    """
+    return acosh_ext(input)
+
+
 def arcsin(x):
     r"""
     Alias for :func:`mindspore.ops.asin`.
@@ -1673,6 +1745,16 @@ def arcsin(x):
         ``Ascend`` ``GPU`` ``CPU``
     """
     return asin_(x)
+
+
+def arcsin_ext(x):
+    r"""
+    Alias for :func:`mindspore.ops.asin_ext`.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+    """
+    return asin_ext(x)
 
 
 def arctan(input):
@@ -1790,6 +1872,16 @@ def arccos(input):
     return acos(input)
 
 
+def arccos_ext(input):
+    """
+    Alias for :func:`mindspore.ops.acos_ext` .
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+    """
+    return acos_ext(input)
+
+
 def arcsinh(input):
     r"""
     Alias for :func:`mindspore.ops.asinh`.
@@ -1798,6 +1890,16 @@ def arcsinh(input):
         ``Ascend`` ``GPU`` ``CPU``
     """
     return asinh(input)
+
+
+def arcsinh_ext(input):
+    r"""
+    Alias for :func:`mindspore.ops.asinh_ext`.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+    """
+    return asinh_ext(input)
 
 
 def arctanh(input):
@@ -1850,6 +1952,46 @@ def bitwise_and(input, other):
     return bitwise_and_(input, other)
 
 
+def bitwise_and_ext(input, other):
+    r"""
+    Returns bitwise `and` of two tensors element-wise.
+
+    .. math::
+
+        out_i = input_{i} \wedge other_{i}
+
+    Note:
+        Args of `input` and `other` comply with the implicit type conversion rules to
+        make the data types consistent.
+        If they have different data types, the lower priority data type will be converted to
+        the relatively highest priority data type.
+
+    Args:
+        input (Tensor): The input tensor.
+        other (Tensor, Number.number): The input tensor or scalar. It has the same shape
+            with `input` or its shape is able to broadcast with `input`.
+
+    Returns:
+        Tensor, the shape is the same as the one after broadcasting, and the data type is same as `input`.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, ops
+        >>> input = Tensor(np.array([0, 0, 1, -1, 1, 1, 1]), mindspore.int16)
+        >>> other = Tensor(np.array([0, 1, 1, -1, -1, 2, 3]), mindspore.int16)
+        >>> output = ops.bitwise_and_ext(input, other)
+        >>> print(output)
+        [ 0  0  1 -1  1  0  1]
+    """
+    if not isinstance(other, Tensor):
+        return bitwise_and_scalar_(input, other)
+    return bitwise_and_tensor_(input, other)
+
+
 def bitwise_or(input, other):
     r"""
     Returns bitwise `or` of two tensors element-wise.
@@ -1890,6 +2032,46 @@ def bitwise_or(input, other):
     return bitwise_or_(input, other)
 
 
+def bitwise_or_ext(input, other):
+    r"""
+    Returns bitwise `or` of two tensors element-wise.
+
+    .. math::
+
+        out_i = input_{i} \mid other_{i}
+
+    Note:
+        Args of `input` and `other` comply with the implicit type conversion rules to
+        make the data types consistent.
+        If they have different data types, the lower priority data type will be converted to
+        the relatively highest priority data type.
+
+    Args:
+        input (Tensor): The input tensor.
+        other (Tensor, Number.number): The input tensor or scalar. It has the same shape
+            with `input` or its shape is able to broadcast with `input`.
+
+    Returns:
+        Tensor, the shape is the same as the one after broadcasting, and the data type is same as `input`.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, ops
+        >>> input = Tensor(np.array([0, 0, 1, -1, 1, 1, 1]), mindspore.int16)
+        >>> other = Tensor(np.array([0, 1, 1, -1, -1, 2, 3]), mindspore.int16)
+        >>> output = ops.bitwise_or_ext(input, other)
+        >>> print(output)
+        [ 0  1  1 -1 -1  3  3]
+    """
+    if not isinstance(other, Tensor):
+        return bitwise_or_scalar_(input, other)
+    return bitwise_or_tensor_(input, other)
+
+
 def bitwise_xor(input, other):
     r"""
     Returns bitwise `xor` of two tensors element-wise.
@@ -1928,6 +2110,46 @@ def bitwise_xor(input, other):
         [ 0  1  0  0 -2  3  2]
     """
     return bitwise_xor_(input, other)
+
+
+def bitwise_xor_ext(input, other):
+    r"""
+    Returns bitwise `xor` of two tensors element-wise.
+
+    .. math::
+
+        out_i = input_{i} \oplus other_{i}
+
+    Note:
+        Args of `input` and `other` comply with the implicit type conversion rules to
+        make the data types consistent.
+        If they have different data types, the lower priority data type will be converted to
+        the relatively highest priority data type.
+
+    Args:
+        input (Tensor): The input tensor.
+        other (Tensor, Number.number): The input tensor or scalar. It has the same shape
+            with `input` or its shape is able to broadcast with `input`.
+
+    Returns:
+        Tensor, the shape is the same as the one after broadcasting, and the data type is same as `input`.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, ops
+        >>> input = Tensor(np.array([0, 0, 1, -1, 1, 1, 1]), mindspore.int16)
+        >>> other = Tensor(np.array([0, 1, 1, -1, -1, 2, 3]), mindspore.int16)
+        >>> output = ops.bitwise_xor_ext(input, other)
+        >>> print(output)
+        [ 0  1  0  0 -2  3  2]
+    """
+    if not isinstance(other, Tensor):
+        return bitwise_xor_scalar_(input, other)
+    return bitwise_xor_tensor_(input, other)
 
 
 def bitwise_left_shift(input, other):
@@ -2555,38 +2777,38 @@ def linspace_ext(start, end, steps, *, dtype=None):
         \end{aligned}
 
     Args:
-        start (Union[Tensor, Number]): Start value of interval.
-          If `start` is Tensor, data type must be float32 or float64 and with shape of 0-D.
-        end (Union[Tensor, Number]): Last value of interval.
-          If `end` is Tensor, data type must be float32 or float64 and with shape of 0-D.
-        steps (Union[Tensor, int]): Number of ticks in the interval, inclusive of start and end.
-            Must be positive int number or 0D int32/int64 Tensor.
+        start (Union[float, int]): Start value of interval.
+            It can be a float or integer.
+        end (Union[float, int]): Last value of interval.
+            It can be a float or integer.
+        steps (int): Number of ticks in the interval, inclusive of start and end.
+            Must be positive integer.
 
     Keyword Args:
-        dtype (mindspore.dtype, optional): The output Tensor data type. Default: ``None`` , the data type of output
-            Tensor is float32.
+        dtype (mindspore.dtype, optional): The output Tensor data type. Default: ``None`` ,
+            in which case the data type of output Tensor is float32.
 
     Returns:
-        Tensor, has the shape of :math:`(steps,)`.
+        Tensor, has the shape of :math:`(steps,)`, with dtype specified by `dtype`.
 
     Raises:
-        TypeError: If dtype of `start` or dtype of `end` is not supported.
-        ValueError: If shape of `start` or shape of `end` is not 0-D.
-        TypeError: If `steps` is not int or 0D int32/int64 Tensor.
-        ValueError: If `steps` is not positive int number.
+        TypeError: If type of `start` or dtype of `end` is not supported.
+        ValueError: If `steps` is not positive integer.
 
     Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
+        ``Ascend``
 
     Examples:
-        >>> start = Tensor(1, mindspore.float32)
-        >>> end = Tensor(10, mindspore.float32)
+        >>> import mindspore as ms
+        >>> from mindspore import ops
+        >>> start = 1
+        >>> end = 10
         >>> steps = 5
-        >>> output = ops.function.math_func.linspace_ext(start, end, steps, dtype=mindspore.float32)
+        >>> output = ops.function.math_func.linspace_ext(start, end, steps, dtype=ms.float32)
         >>> print(output)
         [ 1.    3.25  5.5   7.75 10.  ]
     """
-    return _get_cache_prim(LinSpaceExt)()(start, end, steps, dtype)
+    return lin_space_ext_op(start, end, steps, dtype)
 
 
 def det(input):
@@ -2995,6 +3217,7 @@ def logit(input, eps=None):
         eps = -1.0
     logit_ = _get_cache_prim(P.Logit)(eps)
     return logit_(input)
+
 
 #####################################
 # Comparison Operation Functions.
@@ -3604,6 +3827,51 @@ def fmin(input, other):
     """
     fmin_ = Fmin()
     return fmin_(input, other)
+
+
+def median_ext(input, dim=None, keepdim=False):
+    r"""
+    Output the median on the specified dimension ``dim`` and its corresponding index.
+    If ``dim`` is None, calculate the median of all elements in the Tensor.
+
+    Args:
+        input (Tensor): A Tensor of any dimension whose data type is uint8, int16, int32, int64, float16 or float32.
+        dim (int, optional): The dimension need to reduce. Default: ``None`` .
+        keepdim (bool, optional): Whether the output tensor need to retain ``dim`` dimension or not.
+            Default: ``False`` .
+
+    Returns:
+        - y (Tensor) - Output median, with the same data type as ``input`` .
+
+          - If ``dim`` is ``None`` , ``y`` only has one element.
+          - If ``keepdim`` is ``True`` , the ``y`` has the same shape as the ``input`` except the shape
+            of ``y`` in dimension `dim` is size 1.
+          - Otherwise, the ``y`` lacks `dim` dimension than input.
+
+        - indices (Tensor) - The index of the median. Shape is consistent with ``y`` , with a data type of int64.
+
+    Raises:
+        TypeError: If dtype of ``input`` is not one of the following: uint8, int16, int32, int64, float16 or float32.
+        TypeError: If input ``input`` is not a Tensor.
+        TypeError: If ``dim`` is not a int.
+        TypeError: If ``keepdim`` is not a bool.
+        ValueError: If ``dim`` is not in range of [-x.dim, x.dim-1].
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import Tensor, ops
+        >>> x = Tensor(np.array([[0.57, 0.11, 0.21],[0.38, 0.50, 0.57], [0.36, 0.16, 0.44]]).astype(np.float32))
+        >>> y = ops.function.math_func.median_ext(x, dim=0, keepdim=False)
+        >>> print(y)
+        (Tensor(shape=[3], dtype=Float32, value= [ 3.79999995e-01,  1.59999996e-01,  4.39999998e-01]),
+        Tensor(shape=[3], dtype=Int64, value= [1, 2, 2]))
+    """
+    if dim is None:
+        return median_ext_op(input)
+    return median_dim_op(input, dim, keepdim)
 
 
 def median(input, axis=-1, keepdims=False):
@@ -8405,6 +8673,54 @@ def baddbmm(input, batch1, batch2, beta=1, alpha=1):
     return y
 
 
+def baddbmm_ext(input, batch1, batch2, beta=1, alpha=1):
+    r"""
+    The result is the sum of the input and a batch matrix-matrix product of matrices in batch1 and batch2.
+    The formula is defined as follows:
+
+    .. math::
+        \text{out}_{i} = \beta \text{input}_{i} + \alpha (\text{batch1}_{i} \mathbin{@} \text{batch2}_{i})
+
+    Args:
+        input (Tensor): The input Tensor. When batch1 is a :math:`(C, W, T)` Tensor and batch2 is a
+            :math:`(C, T, H)` Tensor, input must be broadcastable with :math:`(C, W, H)` Tensor.
+        batch1 (Tensor): :math:`batch1` in the above formula. Must be 3-D Tensor, dtype is same as input.
+        batch2 (Tensor): :math:`batch2` in the above formula. Must be 3-D Tensor, dtype is same as input.
+        beta (Union[float, int], optional): multiplier for input. Default: ``1`` .
+        alpha (Union[float, int], optional): multiplier for :math:`batch1 @ batch2`. Default: ``1`` .
+            Arguments beta and alpha must be integers when inputs of type not FloatTensor, otherwise they should
+            be a real number.
+
+    Returns:
+        Tensor, has the same dtype as input, shape will be :math:`(C, W, H)`.
+
+    Raises:
+        TypeError: The type of `input`, `batch1`, `batch2` is not Tensor.
+        TypeError: The types of `input`, `batch1`, `batch2` are different.
+        TypeError: For inputs of type FloatTensor or DoubleTensor, \
+                    arguments beta and alpha not be real numbers, otherwise not be integers.
+        TypeError: For Baddbmm, attributes alpha and beta are not real numbers
+        ValueError: If `batch1` and `batch2` are not 3-D tensors.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import Tensor, ops
+        >>> from mindspore.ops.function.math_func import baddbmm_ext
+        >>> input = Tensor(np.ones([1, 3, 3]).astype(np.float32))
+        >>> batch1 = Tensor(np.ones([1, 3, 4]).astype(np.float32))
+        >>> batch2 = Tensor(np.ones([1, 4, 3]).astype(np.float32))
+        >>> output = baddbmm_ext(input, batch1, batch2)
+        >>> print(output)
+        [[[5. 5. 5.]
+          [5. 5. 5.]
+          [5. 5. 5.]]]
+    """
+    return ops.auto_generate.baddbmm(input, batch1, batch2, beta, alpha)
+
+
 def log2(input):
     r"""
     Returns a new Tensor by taking the base 2 logarithm of the elements in the input Tensor.
@@ -8563,16 +8879,12 @@ def roll(input, shifts, dims=None):
         >>> import mindspore as ms
         >>> from mindspore import ops
         >>> from mindspore import Tensor
-        >>> input_x = Tensor(np.array([0, 1, 2, 3, 4]).astype(np.float32))
-        >>> output = ops.roll(input_x, shifts=2, dims=0)
+        >>> input = Tensor(np.array([0, 1, 2, 3, 4]).astype(np.float32))
+        >>> output = ops.roll(input, shifts=2, dims=0)
         >>> print(output)
         [3. 4. 0. 1. 2.]
     """
-    _shape = input.shape
-    if dims is None:
-        flatten_x = input.reshape(-1)
-        return Roll(shifts, 0)(flatten_x).reshape(_shape)
-    return Roll(shifts, dims)(input)
+    return roll_impl(input, shifts, dims)
 
 
 def xdivy(x, y):
@@ -8750,7 +9062,6 @@ def _check_is_tensor(param_name, input, cls_name):
     """Returns True if input is Tensor."""
     if not isinstance(input, Tensor):
         raise TypeError(f"For {cls_name}, {param_name} must be a Tensor, but got {type(input)}.")
-
 
 
 def any(input, axis=None, keep_dims=False):
@@ -9344,8 +9655,7 @@ def cross(input, other, dim=None):
     """
     if dim is None:
         dim = -65530
-    cross_op = _get_cache_prim(P.Cross)(dim=dim)
-    return cross_op(input, other)
+    return cross_impl(input, other, dim)
 
 
 def _einsum_convert_num_to_char(num):

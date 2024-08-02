@@ -23,7 +23,9 @@
 #include "abstract/abstract_value.h"
 #include "ops/test_ops.h"
 #include "ops/test_value_utils.h"
+#include "ops/test_ops_cmp_utils.h"
 #include "infer/ops_func_impl/sinh.h"
+#include "op_def/auto_generate/gen_ops_name.h"
 
 namespace mindspore {
 namespace ops {
@@ -53,6 +55,13 @@ TEST_P(TestSinh, sinh_dyn_shape) {
   auto output_dtype = sinh_func_impl.InferType(prim, {input});
   ASSERT_TRUE(*output_shape == *expect_shape);
   ASSERT_TRUE(*output_dtype == *expect_dtype);
+
+  // simple infer
+  auto input_value = std::make_shared<tensor::Tensor>(dtype_param.input_type->type_id(), shape_param.input_shape);
+  auto expect_shape_simple_infer = {shape_param.output_shape};
+  auto expect_dtype_simple_infer = {dtype_param.output_type};
+  DoFuncImplSimpleInferAndCompare<SinhFuncImpl>(kNameSinh, {input_value}, {expect_shape_simple_infer},
+                                                {expect_dtype_simple_infer});
 }
 
 auto SinhOpShapeTestCases = testing::ValuesIn({
@@ -67,8 +76,11 @@ auto SinhOpShapeTestCases = testing::ValuesIn({
   SinhShape{{-2}, {-2}},
 });
 
-auto SinhOpTypeTestCases =
-  testing::ValuesIn({SinhType{kFloat16, kFloat16}, SinhType{kFloat32, kFloat32}, SinhType{kComplex128, kComplex128}});
+auto SinhOpTypeTestCases = testing::ValuesIn(
+  {SinhType{kBool, kFloat32}, SinhType{kUInt8, kFloat32}, SinhType{kInt8, kFloat32}, SinhType{kInt16, kFloat32},
+   SinhType{kInt32, kFloat32}, SinhType{kInt64, kFloat32}, SinhType{kFloat16, kFloat16}, SinhType{kFloat32, kFloat32},
+   SinhType{kFloat64, kFloat64}, SinhType{kComplex64, kComplex64}, SinhType{kComplex128, kComplex128},
+   SinhType{kBFloat16, kBFloat16}});
 
 INSTANTIATE_TEST_CASE_P(TestSinh, TestSinh, testing::Combine(SinhOpShapeTestCases, SinhOpTypeTestCases));
 }  // namespace ops

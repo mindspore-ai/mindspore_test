@@ -23,6 +23,8 @@ Tensor
 
     mindspore.mint.arange
     mindspore.mint.eye
+    mindspore.mint.full
+    mindspore.mint.linspace
     mindspore.mint.ones
     mindspore.mint.ones_like
     mindspore.mint.zeros
@@ -39,6 +41,7 @@ Tensor
     mindspore.mint.cat
     mindspore.mint.gather
     mindspore.mint.index_select
+    mindspore.mint.masked_select
     mindspore.mint.permute
     mindspore.mint.scatter_add
     mindspore.mint.split
@@ -73,11 +76,24 @@ Tensor
 
     mindspore.mint.abs
     mindspore.mint.add
-    mindspore.mint.clamp
-    mindspore.mint.atan2
+    mindspore.mint.acos
+    mindspore.mint.acosh
+    mindspore.mint.arccos
+    mindspore.mint.arccosh
+    mindspore.mint.arcsin
+    mindspore.mint.arcsinh
     mindspore.mint.arctan2
+    mindspore.mint.asin
+    mindspore.mint.asinh
+    mindspore.mint.atan2
+    mindspore.mint.bitwise_and
+    mindspore.mint.bitwise_or
+    mindspore.mint.bitwise_xor
     mindspore.mint.ceil
+    mindspore.mint.clamp
     mindspore.mint.cos
+    mindspore.mint.cosh
+    mindspore.mint.cross
     mindspore.mint.div
     mindspore.mint.divide
     mindspore.mint.erf
@@ -93,9 +109,12 @@ Tensor
     mindspore.mint.negative
     mindspore.mint.pow
     mindspore.mint.reciprocal
+    mindspore.mint.roll
     mindspore.mint.rsqrt
     mindspore.mint.sigmoid
     mindspore.mint.sin
+    mindspore.mint.sinc
+    mindspore.mint.sinh
     mindspore.mint.sqrt
     mindspore.mint.square
     mindspore.mint.sub
@@ -110,10 +129,12 @@ Reduction运算
     :template: classtemplate.rst
 
     mindspore.mint.argmax
+    mindspore.mint.argmin
     mindspore.mint.all
     mindspore.mint.any
     mindspore.mint.max
     mindspore.mint.mean
+    mindspore.mint.median
     mindspore.mint.min
     mindspore.mint.prod
     mindspore.mint.sum
@@ -143,7 +164,7 @@ Reduction运算
     mindspore.mint.topk
     mindspore.mint.sort
 
-BLAS和LAPACK运算 
+BLAS和LAPACK运算
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. mscnplatwarnautosummary::
@@ -155,7 +176,7 @@ BLAS和LAPACK运算
     mindspore.mint.inverse
     mindspore.mint.matmul
 
-其他运算 
+其他运算
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. mscnplatwarnautosummary::
@@ -164,7 +185,10 @@ BLAS和LAPACK运算
     :template: classtemplate.rst
 
     mindspore.mint.broadcast_to
+    mindspore.mint.cummax
+    mindspore.mint.cummin
     mindspore.mint.cumsum
+    mindspore.mint.flatten
     mindspore.mint.flip
     mindspore.mint.repeat_interleave
     mindspore.mint.searchsorted
@@ -181,6 +205,18 @@ mindspore.mint.nn
 
     mindspore.mint.nn.Fold
     mindspore.mint.nn.Unfold
+
+非线性激活层 (加权和，非线性)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. mscnplatwarnautosummary::
+    :toctree: mint
+    :nosignatures:
+    :template: classtemplate.rst
+
+    mindspore.mint.nn.Hardshrink
+    mindspore.mint.nn.Hardsigmoid
+    mindspore.mint.nn.Hardswish
 
 线性层
 ^^^^^^^^^^^^^^^^^^
@@ -201,6 +237,16 @@ Dropout层
     :template: classtemplate.rst
 
     mindspore.mint.nn.Dropout
+
+池化层
+^^^^^^^^^^^^^^
+
+.. mscnplatwarnautosummary::
+    :toctree: mint
+    :nosignatures:
+    :template: classtemplate.rst
+
+    mindspore.mint.nn.AvgPool2d
 
 损失函数
 ^^^^^^^^^^^^^^^
@@ -234,6 +280,7 @@ mindspore.mint.nn.functional
     :nosignatures:
     :template: classtemplate.rst
 
+    mindspore.mint.nn.functional.avg_pool2d
     mindspore.mint.nn.functional.max_pool2d
 
 非线性激活函数
@@ -248,6 +295,9 @@ mindspore.mint.nn.functional
     mindspore.mint.nn.functional.elu
     mindspore.mint.nn.functional.gelu
     mindspore.mint.nn.functional.group_norm
+    mindspore.mint.nn.functional.hardshrink
+    mindspore.mint.nn.functional.hardsigmoid
+    mindspore.mint.nn.functional.hardswish
     mindspore.mint.nn.functional.layer_norm
     mindspore.mint.nn.functional.leaky_relu
     mindspore.mint.nn.functional.relu
@@ -332,3 +382,16 @@ mindspore.mint.linalg
     :template: classtemplate.rst
 
     mindspore.mint.linalg.inv
+
+mindspore.mint.special
+----------------------
+
+三角函数
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. mscnplatwarnautosummary::
+    :toctree: mint
+    :nosignatures:
+    :template: classtemplate.rst
+
+    mindspore.mint.special.sinc

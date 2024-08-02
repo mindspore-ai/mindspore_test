@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 #include "infer/ops_func_impl/hswish.h"
+#include "ops/ops_func_impl/simple_infer.h"
+#include "mindspore/ops/ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace ops {
@@ -27,7 +29,21 @@ BaseShapePtr HSwishFuncImpl::InferShape(const PrimitivePtr &primitive,
 TypePtr HSwishFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
   MS_EXCEPTION_IF_NULL(input_args[0]);
   MS_EXCEPTION_IF_NULL(input_args[0]->GetType());
-  return input_args[0]->GetType()->Clone();
+  return input_args[0]->GetType();
 }
+
+TypePtrList HSwishFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  MS_EXCEPTION_IF_NULL(x_tensor);
+  const auto &input_type = x_tensor->Dtype();
+  return {input_type};
+}
+
+ShapeArray HSwishFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  MS_EXCEPTION_IF_NULL(x_tensor);
+  return {x_tensor->shape()};
+}
+REGISTER_SIMPLE_INFER(kNameHSwish, HSwishFuncImpl)
 }  // namespace ops
 }  // namespace mindspore

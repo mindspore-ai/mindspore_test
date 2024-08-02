@@ -63,7 +63,8 @@ using NodeMapEquiv = mindspore::HashMap<AnfNodePtr, AnfNodePtr>;
 COMMON_EXPORT bool Isomorphic(const FuncGraphPtr &g1, const FuncGraphPtr &g2, FuncGraphPairMapEquiv *equiv_func_graph,
                               NodeMapEquiv *equiv_node);
 
-COMMON_EXPORT tensor::TensorPtr ScalarToTensor(const ScalarPtr &scalar);
+COMMON_EXPORT tensor::TensorPtr ScalarToTensor(const ScalarPtr &scalar,
+                                               const std::optional<TypePtr> &dtype = std::nullopt);
 
 COMMON_EXPORT tensor::TensorPtr SequenceToTensor(const ValueSequencePtr &sequence);
 
@@ -101,6 +102,8 @@ COMMON_EXPORT ValuePtr UpdateValueByAttrDataType(const ValuePtr &value, const st
 COMMON_EXPORT std::map<SignatureEnumDType, std::pair<TypeId, bool>> GetSignatureTypeMap(
   const std::vector<SignatureEnumDType> &dtypes, const std::vector<TypeId> &args_type_id,
   const std::vector<bool> &args_is_tensor, const std::set<size_t> &write_indices = {});
+
+COMMON_EXPORT TypeId ConvertTypeForTensorsOrScalars(const TypeId &type1, const TypeId &type2);
 
 COMMON_EXPORT std::string ValueSimpleInfoToString(const ValueSimpleInfo &value_simple_info);
 

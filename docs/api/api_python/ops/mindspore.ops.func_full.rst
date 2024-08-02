@@ -16,5 +16,5 @@ mindspore.ops.full
         Tensor。
 
     异常：
-        - **TypeError** - `size` 不是元组。
+        - **TypeError** - `size` 不是元组或列表。
         - **ValueError** - `size` 中包含小于0的成员。

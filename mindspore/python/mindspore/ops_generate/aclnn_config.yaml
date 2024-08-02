@@ -74,13 +74,13 @@ StackExt: 'aclnnStack'
 TopkExt: 'aclnnTopk'
 WeightQuantBatchMatmul: 'aclnnWeightQuantBatchMatmulV2'
 # 1
-
+Xlogy: 'aclnnXLogYTensor'
 # 2
 
 # 3
 
 # 4
-
+CumminExt: 'aclnnCummin'
 # 5
 
 # 6
@@ -275,7 +275,36 @@ LeakyReLUGradExt: 'aclnnLeakyReluBackward'
 
 # 100
 
+# 109
+ArgMinExt: 'aclnnArgMin'
+
+# 151
+AcosExt: 'aclnnAcos'
+# 152
+AcoshExt: 'aclnnAcosh'
+# 172
+AsinExt: 'aclnnAsin'
+# 173
+AsinhExt: 'aclnnAsinh'
+# 174
+
+# 175
+
 # 176
 Atan2Ext: 'aclnnAtan2'
+# 220
+HShrink: 'aclnnHardshrink'
+HShrinkGrad: 'aclnnHardshrinkBackward'
+# 221
+HSigmoid: 'aclnnHardsigmoid'
+HSigmoidGrad: 'aclnnHardsigmoidBackward'
+# 222
+HSwish: 'aclnnHardswish'
+HSwishGrad: 'aclnnHardswishBackward'
 # 231
 MatrixInverseExt: 'aclnnInverse'
+
+# 256
+MedianExt: 'aclnnMedian'
+
+# 301

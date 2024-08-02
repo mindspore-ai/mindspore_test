@@ -15,15 +15,17 @@
 """mint module."""
 from __future__ import absolute_import
 import mindspore.ops as ops
-from mindspore.ops.extend import gather, conv2d, max, min
-from mindspore.ops.extend import array_func, math_func, nn_func
-from mindspore.mint.nn.functional import *
+from mindspore.ops.function.array_func import gather_ext as gather, max_ext as max, min_ext as min
+from mindspore.ops.function.nn_func import conv2d_ext as conv2d
+from mindspore.mint.nn.functional import sigmoid, tanh
 from mindspore.mint.nn import functional
 from mindspore.mint import linalg
-from mindspore.ops import erf, where, triu
+from mindspore.mint import special
+from mindspore.ops import erf, where
 from mindspore.ops.function.math_func import linspace_ext as linspace
-from mindspore.ops.function.array_func import full_ext as full
+from mindspore.ops.function.math_func import median_ext as median
 from mindspore.ops.function.array_func import ones_like_ext as ones_like
+from mindspore.ops.function.array_func import full_ext as full
 from mindspore.ops.function.array_func import zeros_like_ext as zeros_like
 from mindspore.ops.function.array_func import unique_ext as unique
 from mindspore.ops.function.math_func import isclose
@@ -31,12 +33,16 @@ from mindspore.ops.auto_generate import abs
 # 1
 from mindspore.ops.function.math_func import divide, div
 from mindspore.ops.auto_generate import topk_ext as topk
+from mindspore.ops.function.math_func import roll
 # 2
 from mindspore.ops.function.math_func import sin
 # 3
 from mindspore.ops.function.clip_func import clamp
 # 4
-
+from mindspore.ops.auto_generate import sinc
+from mindspore.ops.auto_generate import sinh
+from mindspore.ops.auto_generate import cosh
+from mindspore.ops.function.math_func import xlogy_ext as xlogy
 # 5
 from mindspore.ops.auto_generate import cumsum_ext as cumsum
 # 6
@@ -47,7 +53,8 @@ from mindspore.ops.auto_generate import stack_ext as stack
 # 8
 
 # 9
-
+from mindspore.ops.auto_generate import masked_select
+from mindspore.ops.function.math_func import cross
 # 10
 from mindspore.ops.function.math_func import ne
 # 11
@@ -122,11 +129,11 @@ from mindspore.ops.functional import cos
 # 45
 
 # 46
-
+from mindspore.ops.function.math_func import bitwise_and_ext as bitwise_and
 # 47
-
+from mindspore.ops.function.math_func import bitwise_or_ext as bitwise_or
 # 48
-
+from mindspore.ops.function.math_func import bitwise_xor_ext as bitwise_xor
 # 49
 
 # 50
@@ -194,7 +201,7 @@ from mindspore.ops.function import arange_ext as arange
 # 81
 from mindspore.ops.auto_generate import index_select_ext as index_select
 # 82
-
+from mindspore.ops.auto_generate import cummin_ext as cummin
 # 83
 from mindspore.ops.function.array_func import narrow_ext as narrow
 # 84
@@ -206,7 +213,7 @@ from mindspore.mint import nn, optim
 # 87
 
 # 88
-from mindspore.ops.function.array_func import chunk_ext as chunk
+
 # 89
 
 # 90
@@ -218,7 +225,7 @@ from mindspore.ops.function.array_func import chunk_ext as chunk
 # 93
 
 # 94
-from mindspore.ops.function.math_func import tanh
+
 # 95
 
 # 96
@@ -231,12 +238,30 @@ from mindspore.ops.function.math_func import tanh
 
 # 100
 
+# 109
+from mindspore.ops.auto_generate import argmin_ext as argmin
+
 # 122
+
+# 151
+from mindspore.ops.function.math_func import acos_ext as acos
+from mindspore.ops.function.math_func import arccos_ext as arccos
+# 152
+from mindspore.ops.function.math_func import acosh_ext as acosh
+from mindspore.ops.function.math_func import arccosh_ext as arccosh
+# 172
+from mindspore.ops.function.math_func import asin_ext as asin
+from mindspore.ops.function.math_func import arcsin_ext as arcsin
+# 173
+from mindspore.ops.function.math_func import asinh_ext as asinh
+from mindspore.ops.function.math_func import arcsinh_ext as arcsinh
+# 174
+
+# 175
 
 # 176
 from mindspore.ops.function.math_func import atan2_ext as atan2
 from mindspore.ops.function.math_func import arctan2_ext as arctan2
-
 
 # 208
 from mindspore.ops.function.array_func import eye
@@ -249,6 +274,9 @@ from mindspore.ops.function.math_func import inverse_ext as inverse
 
 # 285
 from mindspore.ops.function.array_func import scatter_add_ext as scatter_add
+
+
+# 301
 
 
 def add(input, other, *, alpha=1):
@@ -429,7 +457,6 @@ def all(input, dim=None, keepdim=False):
     return ops.function.math_func.all(input, dim, keepdim)
 
 
-
 def cat(tensors, dim=0):
     r"""
     Connect input tensors along with the given dimension.
@@ -485,6 +512,57 @@ def cat(tensors, dim=0):
          [2. 1. 2. 1.]]
     """
     return ops.auto_generate.cat(tensors, dim)
+
+
+def cummax(input, dim):
+    r"""
+    Returns a tuple (values, indices) where 'values' is the cumulative maximum value of input Tensor `input`
+    along the dimension `dim`, and `indices` is the index location of each maximum value.
+
+    .. math::
+        \begin{array}{ll} \\
+            y_{i} = \max(x_{1}, x_{2}, ... , x_{i})
+        \end{array}
+
+    Args:
+        input (Tensor): The input Tensor. Rank of `input` must be greater than 0.
+        dim (int): The dimension to do the operation over. The value of `dim` must be in the range
+            `[-input.ndim, input.ndim - 1]`.
+
+    Returns:
+        tuple [Tensor], tuple of 2 Tensors, containing the cumulative maximum of elements and the index.
+        The shape of each output tensor is the same as that of input `input`.
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+        TypeError: If `dim` is not an int.
+        ValueError: If `dim` is out the range of `[-input.ndim, input.ndim - 1]`.
+
+    .. note::
+        O2 mode is not supported in Ascend.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor
+        >>> from mindspore import ops
+        >>> x = Tensor(np.array([[3, 4, 6, 10], [1, 6, 7, 9], [4, 3, 8, 7], [1, 3, 7, 9]]).astype(np.float32))
+        >>> output = mint.cummax(x, dim=0)
+        >>> print(output[0])
+        [[ 3.  4.  6. 10.]
+         [ 3.  6.  7. 10.]
+         [ 4.  6.  8. 10.]
+         [ 4.  6.  8. 10.]]
+        >>> print(output[1])
+        [[0 0 0 0]
+         [0 1 1 0]
+         [2 1 2 0]
+         [2 1 2 0]]
+    """
+    return ops.auto_generate.cummax(input, dim)
 
 
 def mean(input, dim=None, keepdim=False, *, dtype=None):
@@ -893,24 +971,28 @@ def zeros(size, *, dtype=None):
 
 
 __all__ = [
+    'conv2d',
     'full',
     'ones_like',
     'zeros_like',
     'abs',
     'erf',
     'where',
-    'linspace',
     'isclose',
     # 1
     'div',
     'divide',
     'topk',
+    'roll',
     # 2
     'sin',
     # 3
     'clamp',
+    'xlogy',
     # 4
-
+    'sinc',
+    'sinh',
+    'cosh',
     # 5
     'cumsum',
     # 6
@@ -966,8 +1048,8 @@ __all__ = [
     # 30
     'searchsorted',
     # 31
-
-    # 32
+    'cummax',
+    'cummin',
     'sub',
     # 33
     'split',
@@ -996,7 +1078,9 @@ __all__ = [
     # 45
 
     # 46
-
+    'bitwise_and',
+    'bitwise_or',
+    'bitwise_xor',
     # 47
     'max',
     # 48
@@ -1014,7 +1098,7 @@ __all__ = [
     # 54
     'normal',
     # 55
-
+    'cross',
     # 56
 
     # 57
@@ -1077,14 +1161,14 @@ __all__ = [
     'narrow',
     # 84
 
-    # 85
+    'masked_select',
 
     # 86
 
     # 87
 
     # 88
-    'chunk',
+
     # 89
 
     # 90
@@ -1109,12 +1193,34 @@ __all__ = [
 
     # 100
 
+    # 109
+    'argmin',
+
+    # 151
+    'acos',
+    'arccos',
+    # 152
+    'acosh',
+    'arccosh',
+    # 172
+    'asin',
+    'arcsin',
+    # 173
+    'asinh',
+    'arcsinh',
+    # 174
+
+    # 175
+
     # 176
     'atan2',
     'arctan2',
 
     # 208
     'eye',
+
+    # 256
+    'median',
     'rand',
     'rand_like',
     # 210
@@ -1123,15 +1229,15 @@ __all__ = [
     'inverse',
     # 285
     'scatter_add',
+    # 301
+
     # 304
 
     # 305
-    'triu',
+
 ]
-__all__.extend(array_func.__all__)
-__all__.extend(math_func.__all__)
-__all__.extend(nn_func.__all__)
 __all__.extend(functional.__all__)
 __all__.extend(nn.__all__)
 __all__.extend(optim.__all__)
 __all__.extend(linalg.__all__)
+__all__.extend(special.__all__)

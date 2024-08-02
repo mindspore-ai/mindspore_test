@@ -18,10 +18,11 @@ Neural Networks Cells.
 Predefined building blocks or computing units to construct neural networks.
 """
 from __future__ import absolute_import
+import mindspore.ops as ops
 from mindspore.nn.cell import Cell
 from mindspore.nn.extend import *
 from mindspore.nn.extend import basic, embedding
-from mindspore.nn.extend import MaxPool2d
+
 # 1
 
 # 2
@@ -40,7 +41,7 @@ from mindspore.nn.layer.basic import Fold
 from mindspore.nn.extend.layer import normalization
 from mindspore.nn.extend.layer.normalization import *
 # 9
-from mindspore.nn.layer.basic import UpsampleExt as Upsample
+
 # 10
 
 # 11
@@ -220,10 +221,15 @@ from mindspore.nn.extend.basic import Linear
 # 98
 
 # 99
-
+from mindspore.nn.layer import AvgPool2dExt as AvgPool2d
 # 100
-from mindspore.ops.auto_generate import BCEWithLogitsLoss as BCEWithLogitsLoss_prim
 
+# 220
+from mindspore.nn.layer import HShrink as Hardshrink
+# 221
+from mindspore.nn.layer import HSigmoid as Hardsigmoid
+# 222
+from mindspore.nn.layer import HSwish as Hardswish
 
 class BCEWithLogitsLoss(Cell):
     r"""
@@ -296,7 +302,7 @@ class BCEWithLogitsLoss(Cell):
     """
     def __init__(self, weight=None, reduction='mean', pos_weight=None):
         super(BCEWithLogitsLoss, self).__init__()
-        self.bce_with_logits = BCEWithLogitsLoss_prim(reduction)
+        self.bce_with_logits = ops.auto_generate.BCEWithLogitsLoss(reduction)
         self.weight = weight
         self.pos_weight = pos_weight
 
@@ -304,8 +310,8 @@ class BCEWithLogitsLoss(Cell):
         out = self.bce_with_logits(input, target, self.weight, self.pos_weight)
         return out
 
+
 __all__ = [
-    'MaxPool2d',
     # 1
     'BCEWithLogitsLoss',
     # 2
@@ -323,7 +329,7 @@ __all__ = [
     # 8
 
     # 9
-    'Upsample',
+
     # 10
 
     # 11
@@ -503,8 +509,16 @@ __all__ = [
     # 98
 
     # 99
-
+    'AvgPool2d',
     # 100
+
+    # 220
+    'Hardshrink',
+
+    # 221
+    'Hardsigmoid',
+    # 222
+    'Hardswish',
 ]
 
 __all__.extend(basic.__all__)

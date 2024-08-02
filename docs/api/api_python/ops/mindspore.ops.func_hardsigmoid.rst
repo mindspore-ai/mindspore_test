@@ -8,9 +8,12 @@ mindspore.ops.hardsigmoid
     Hard Sigmoid定义为：
 
     .. math::
-        \text{hsigmoid}(x_{i}) = \max(0, \min(1, \frac{x_{i} + 3}{6}))
-
-    其中，:math:`x_i` 是输入Tensor的一个元素。
+        \text{Hardswish}(input) =
+        \begin{cases}
+        0, & \text{ if } input \leq -3, \\
+        1, & \text{ if } input \geq +3, \\
+        input/6 + 1/2, & \text{ otherwise }
+        \end{cases}
 
     HSigmoid函数图：
 
@@ -25,4 +28,4 @@ mindspore.ops.hardsigmoid
 
     异常：
         - **TypeError** - `input` 不是Tensor。
-        - **TypeError** - `input` 的dtype不是int或者float类型。
+        - **TypeError** - `input` 不是int或者float类型。

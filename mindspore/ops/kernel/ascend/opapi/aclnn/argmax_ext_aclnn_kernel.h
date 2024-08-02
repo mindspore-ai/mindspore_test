@@ -17,6 +17,7 @@
 #define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_ARGMAX_EXT_ACLNN_KERNEL_MOD_H_
 #include <vector>
 #include <utility>
+#include <memory>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
 #include "transform/acl_ir/acl_convert.h"
@@ -36,8 +37,10 @@ class ArgMaxAscend : public AclnnKernelMod {
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
   int64_t dim_ = 0;
   bool keepdim_ = false;
+  bool dim_is_none_ = false;
   ShapeVector input_realshape_;
   ShapeVector output_realshape_;
+  std::shared_ptr<KernelTensor> input_kernel_tensor_;
 };
 }  // namespace kernel
 }  // namespace mindspore

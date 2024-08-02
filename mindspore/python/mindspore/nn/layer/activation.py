@@ -1171,7 +1171,12 @@ class HSwish(Cell):
     Hard swish is defined as:
 
     .. math::
-        \text{hswish}(x_{i}) = x_{i} * \frac{ReLU6(x_{i} + 3)}{6},
+        \text{Hardswish}(input) =
+        \begin{cases}
+        0, & \text{ if } input \leq -3, \\
+        input, & \text{ if } input \geq +3, \\
+        input*(input + 3)/6, & \text{ otherwise }
+        \end{cases}
 
     HSwish Activation Function Graph:
 
@@ -1179,14 +1184,14 @@ class HSwish(Cell):
         :align: center
 
     Inputs:
-        - **x** (Tensor) - The input of HSwish, data type must be float16 or float32.
-          The shape is :math:`(N,*)` where :math:`*` means, any number of additional dimensions.
+        - **input** (Tensor) - The input of HSwish.
 
     Outputs:
-        Tensor, with the same type and shape as the `x`.
+        Tensor, with the same type and shape as the `input`.
 
     Raises:
-        TypeError: If dtype of `x` is neither float16 nor float32.
+        TypeError: If `input` is not a tensor.
+        TypeError: If `input` is neither int nor float.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -1195,9 +1200,9 @@ class HSwish(Cell):
         >>> import mindspore
         >>> from mindspore import Tensor, nn
         >>> import numpy as np
-        >>> x = Tensor(np.array([-1, -2, 0, 2, 1]), mindspore.float16)
+        >>> input = Tensor(np.array([-1, -2, 0, 2, 1]), mindspore.float16)
         >>> hswish = nn.HSwish()
-        >>> result = hswish(x)
+        >>> result = hswish(input)
         >>> print(result)
         [-0.3333 -0.3333  0.      1.667   0.6665]
     """
@@ -1207,8 +1212,8 @@ class HSwish(Cell):
         super(HSwish, self).__init__()
         self.hswish = P.HSwish()
 
-    def construct(self, x):
-        return self.hswish(x)
+    def construct(self, input):
+        return self.hswish(input)
 
 
 class HSigmoid(Cell):
@@ -1218,7 +1223,12 @@ class HSigmoid(Cell):
     Hard sigmoid is defined as:
 
     .. math::
-        \text{hsigmoid}(x_{i}) = \max(0, \min(1, \frac{x_{i} + 3}{6})),
+        \text{Hardsigmoid}(input) =
+        \begin{cases}
+        0, & \text{ if } input \leq -3, \\
+        1, & \text{ if } input \geq +3, \\
+        input/6 + 1/2, & \text{ otherwise }
+        \end{cases}
 
     HSigmoid Activation Function Graph:
 
@@ -1226,13 +1236,14 @@ class HSigmoid(Cell):
         :align: center
 
     Inputs:
-        - **input_x** (Tensor) - The input of HSigmoid. Tensor of any dimension.
+        - **input** (Tensor) - The input of HSigmoid.
 
     Outputs:
-        Tensor, with the same type and shape as the `input_x`.
+        Tensor, with the same type and shape as the `input`.
 
     Raises:
-        TypeError: If `input_x` is not a Tensor.
+        TypeError: If `input` is not a Tensor.
+        TypeError: If `input` is neither int nor float.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -1241,9 +1252,9 @@ class HSigmoid(Cell):
         >>> import mindspore
         >>> from mindspore import Tensor, nn
         >>> import numpy as np
-        >>> x = Tensor(np.array([-1, -2, 0, 2, 1]), mindspore.float16)
+        >>> input = Tensor(np.array([-1, -2, 0, 2, 1]), mindspore.float16)
         >>> hsigmoid = nn.HSigmoid()
-        >>> result = hsigmoid(x)
+        >>> result = hsigmoid(input)
         >>> print(result)
         [0.3333 0.1666 0.5    0.8335 0.6665]
     """
@@ -1253,8 +1264,8 @@ class HSigmoid(Cell):
         super(HSigmoid, self).__init__()
         self.hsigmoid = P.HSigmoid()
 
-    def construct(self, input_x):
-        return self.hsigmoid(input_x)
+    def construct(self, input):
+        return self.hsigmoid(input)
 
 
 class LogSigmoid(Cell):
@@ -1430,17 +1441,21 @@ class HShrink(Cell):
         :align: center
 
     Args:
-        lambd (float): The threshold :math:`\lambda` defined by the Hard Shrink formula. Default: ``0.5`` .
+        lambd (number, optional): The threshold :math:`\lambda` defined by the Hard Shrink formula. Default: ``0.5`` .
 
     Inputs:
-        - **input_x** (Tensor) - The input of Hard Shrink with data type of float16 or float32.
+        - **input** (Tensor) - The input of Hard Shrink. Supported dtypes:
+
+          - Ascend: float16, float32, bfloat16.
+          - CPU/GPU: float16, float32.
 
     Outputs:
         Tensor, the same shape and data type as the input.
 
     Raises:
-        TypeError: If `lambd` is not a float.
-        TypeError: If dtype of `input_x` is neither float16 nor float32.
+        TypeError: If `lambd` is not a float, int or bool.
+        TypeError: If `input` is not a tensor.
+        TypeError: If dtype of `input` is not float16, float32 or bfloat16.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -1449,20 +1464,20 @@ class HShrink(Cell):
         >>> import mindspore
         >>> from mindspore import Tensor, nn
         >>> import numpy as np
-        >>> input_x = Tensor(np.array([[ 0.5,  1,  2.0], [0.0533,0.0776,-2.1233]]), mindspore.float32)
+        >>> input = Tensor(np.array([[0.5, 1, 2.0], [0.0533, 0.0776, -2.1233]]), mindspore.float32)
         >>> hshrink = nn.HShrink()
-        >>> output = hshrink(input_x)
+        >>> output = hshrink(input)
         >>> print(output)
         [[ 0.      1.      2.    ]
-        [ 0.      0.     -2.1233]]
+         [ 0.      0.     -2.1233]]
     """
 
     def __init__(self, lambd=0.5):
         super(HShrink, self).__init__()
         self.hshrink = P.HShrink(lambd)
 
-    def construct(self, input_x):
-        return self.hshrink(input_x)
+    def construct(self, input):
+        return self.hshrink(input)
 
 
 class Threshold(Cell):

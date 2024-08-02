@@ -1,7 +1,7 @@
 mindspore.ops.hardshrink
 ========================
 
-.. py:function:: mindspore.ops.hardshrink(x, lambd=0.5)
+.. py:function:: mindspore.ops.hardshrink(input, lambd=0.5)
 
     Hard Shrink激活函数。按输入元素计算输出。公式定义如下：
 
@@ -13,19 +13,22 @@ mindspore.ops.hardshrink
         0, & \text{ otherwise }
         \end{cases}
 
-    HShrink函数图：
+    HShrink激活函数图：
 
     .. image:: ../images/HShrink.png
         :align: center
 
     参数：
-        - **x** (Tensor) - Hard Shrink的输入，数据类型为float16或float32。
-        - **lambd** (float，可选) - Hard Shrink公式定义的阈值 :math:`\lambda` 。默认值： ``0.5`` 。
+        - **input** (Tensor) - Hard Shrink的输入。支持数据类型：
+
+          - Ascend：float16、float32、bfloat16。
+          - CPU/GPU：float16、float32。
+        - **lambd** (number，可选) - Hard Shrink公式定义的阈值 :math:`\lambda` 。默认值： ``0.5`` 。
 
     返回：
-        Tensor，shape和数据类型与输入 `x` 相同。
+        Tensor，shape和数据类型与输入 `input` 相同。
 
     异常：
-        - **TypeError** - `lambd` 不是float。
-        - **TypeError** - `x` 不是Tensor。
-        - **TypeError** - `x` 的dtype既不是float16也不是float32。
+        - **TypeError** - `lambd` 不是float、int或bool。
+        - **TypeError** - `input` 不是Tensor。
+        - **TypeError** - `input` 的dtype不是float16、float32或bfloat16。
