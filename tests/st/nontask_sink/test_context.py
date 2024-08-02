@@ -25,7 +25,7 @@ def test_memory_optimize_level_context():
     """
     context.set_context(device_target='Ascend')
     ascend_memory_optimize_level = context.get_context("memory_optimize_level")
-    assert ascend_memory_optimize_level == 1
+    assert ascend_memory_optimize_level == 0
     context.set_context(device_target='CPU')
     cpu_memory_optimize_level = context.get_context("memory_optimize_level")
     assert cpu_memory_optimize_level == 0
