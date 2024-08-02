@@ -18,27 +18,27 @@ How to run this:
 pytest tests/st/test_model/test_llama_model/test_parallel_train.py
 """
 import os
+from multiprocessing.pool import Pool
 
 from tests.mark_utils import arg_mark
 
 
+def run_command(command_info):
+    cmd, log_path = command_info
+    ret = os.system(cmd)
+    return ret, log_path
+
+
+def check_results(commands, results):
+    error_idx = [_ for _ in range(len(results)) if results[_][0] != 0]
+    for idx in error_idx:
+        print(f"testcase {commands[idx]} failed. please check log {results[idx][1]}.")
+        os.system(f"grep -E 'ERROR|error|Error' {results[idx][1]} -C 5")
+    assert error_idx == []
+
+
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='allcards', essential_mark='essential')
 def test_train():
-    """
-    Feature: Trainer.train()
-    Description: Test parallel trainer for train.
-    Expectation: AssertionError
-    """
-    os.environ['ASCEND_HOME_PATH'] = "/usr/local/Ascend/latest"
-    sh_path = os.path.split(os.path.realpath(__file__))[0]
-    os.system(f"source {sh_path}/env.sh")
-    ret = os.system(f"bash {sh_path}/mpirun_launch_llama.sh 8 test_train")
-    os.system(f"grep -E 'ERROR|error' {sh_path}/test_train.log -C 10")
-    assert ret == 0
-
-
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='allcards', essential_mark='essential')
-def test_train_cp():
     """
     Feature: Trainer.train()
     Description: Test context parallel trainer for train.
@@ -47,6 +47,17 @@ def test_train_cp():
     os.environ['ASCEND_HOME_PATH'] = "/usr/local/Ascend/latest"
     sh_path = os.path.split(os.path.realpath(__file__))[0]
     os.system(f"source {sh_path}/env.sh")
-    ret = os.system(f"bash {sh_path}/mpirun_launch_llama.sh 8 test_train_cp")
-    os.system(f"grep -E 'ERROR|error' {sh_path}/test_train_cp.log -C 10")
-    assert ret == 0
+    commands = [(f"export ASCEND_RT_VISIBLE_DEVICES=0,1,2,3 && "
+                 f"bash {sh_path}/msrun_launch_llama.sh 4 test_train 8128",
+                 f"{sh_path}/test_train/worker_0.log"),
+                (f"export ASCEND_RT_VISIBLE_DEVICES=4,5 && "
+                 f"bash {sh_path}/msrun_launch_llama.sh 2 test_train_cp 8129",
+                 f"{sh_path}/test_train_cp/worker_0.log"),
+                (f"export ASCEND_RT_VISIBLE_DEVICES=6,7 && "
+                 f"bash {sh_path}/msrun_launch_llama.sh 2 test_train_dp 8131",
+                 f"{sh_path}/test_train_dp/worker_0.log")
+                ]
+
+    with Pool(len(commands)) as pool:
+        results = list(pool.imap(run_command, commands))
+    check_results(commands, results)
