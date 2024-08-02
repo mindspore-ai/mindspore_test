@@ -483,6 +483,12 @@ void SetRecomputedAttr(const FuncGraphPtr &graph, const std::vector<CNodePtr> &o
       MS_EXCEPTION_IF_NULL(output_cnode);
       output_cnode->AddAttr(kAttrRecompute, MakeValue(true));
     }
+    // Set attr for the make_tuple input for op such as concat.
+    for (const auto &input : cnode->inputs()) {
+      if (IsPrimitiveCNode(input, prim::kPrimMakeTuple)) {
+        input->cast<CNodePtr>()->AddAttr(kAttrRecompute, MakeValue(true));
+      }
+    }
   }
 }
 
