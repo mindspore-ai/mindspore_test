@@ -717,25 +717,29 @@ void ExpandVmapPrim::ExpandVmapValueNode(const FuncGraphPtr &vmap_fg, const pipe
   }
 }
 
+void ExpandVmapPrim::ExpandVmapInput(const FuncGraphPtr &vmap_fg, const FuncGraphManagerPtr &manager,
+                                     const mindspore::HashSet<AnfNodePtr> &visited_node, const AnfNodePtr &node) {
+  if (visited_node.count(node) > 0 || node->isa<CNode>()) {
+    return;
+  }
+  MS_LOG(DEBUG) << "vmap_fg: " << vmap_fg->ToString() << ", node: " << node->DebugString();
+  if (IsValueNode<Scalar>(node) || IsValueNode<tensor::Tensor>(node) || IsValueNode<None>(node) ||
+      IsValueNode<ValueTuple>(node) || IsValueNode<Type>(node)) {
+    BindAxis(node, vmap_fg, top_func_graph_, manager);
+  } else if (node->isa<Parameter>()) {
+    BindParamAxis(node, vmap_fg, top_func_graph_, manager, &stacked_params_);
+  } else {
+    MS_LOG(EXCEPTION) << "vmap do not support transform " << node->DebugString() << " right now.";
+  }
+}
+
 void ExpandVmapPrim::ExpandVmapFreeVariable(const FuncGraphPtr &vmap_fg, const FuncGraphManagerPtr &manager,
                                             const mindspore::HashSet<AnfNodePtr> &visited_node) {
   // Map free variable.
   auto free_variables_nodes = vmap_fg->free_variables();
   MS_LOG(DEBUG) << "vmap_fg: " << vmap_fg->ToString() << ", fv size: " << vmap_fg->free_variables().size();
   for (const auto &pair : free_variables_nodes) {
-    auto node = pair.first;
-    if (visited_node.count(node) > 0 || node->isa<CNode>()) {
-      continue;
-    }
-    MS_LOG(DEBUG) << "vmap_fg: " << vmap_fg->ToString() << ", node: " << node->DebugString();
-    if (IsValueNode<Scalar>(node) || IsValueNode<tensor::Tensor>(node) || IsValueNode<None>(node) ||
-        IsValueNode<ValueTuple>(node) || IsValueNode<Type>(node)) {
-      BindAxis(node, vmap_fg, top_func_graph_, manager);
-    } else if (node->isa<Parameter>()) {
-      BindParamAxis(node, vmap_fg, top_func_graph_, manager, &stacked_params_);
-    } else {
-      MS_LOG(EXCEPTION) << "vmap do not support transform " << node->DebugString() << " right now.";
-    }
+    ExpandVmapInput(vmap_fg, manager, visited_node, pair.first);
   }
 }
 
@@ -744,18 +748,7 @@ void ExpandVmapPrim::ExpandVmapPartialInputs(const FuncGraphPtr &vmap_fg, const 
   // Map partial inputs.
   MS_LOG(DEBUG) << "vmap_fg: " << vmap_fg->ToString() << ", partial_inputs_ size: " << partial_inputs_.size();
   for (const auto &node : partial_inputs_) {
-    if (visited_node.count(node) > 0 || node->isa<CNode>()) {
-      continue;
-    }
-    MS_LOG(DEBUG) << "vmap_fg: " << vmap_fg->ToString() << ", node: " << node->DebugString();
-    if (IsValueNode<Scalar>(node) || IsValueNode<tensor::Tensor>(node) || IsValueNode<None>(node) ||
-        IsValueNode<ValueTuple>(node) || IsValueNode<Type>(node)) {
-      BindAxis(node, vmap_fg, top_func_graph_, manager);
-    } else if (node->isa<Parameter>()) {
-      BindParamAxis(node, vmap_fg, top_func_graph_, manager, &stacked_params_);
-    } else {
-      MS_LOG(EXCEPTION) << "vmap do not support transform " << node->DebugString() << " right now.";
-    }
+    ExpandVmapInput(vmap_fg, manager, visited_node, node);
   }
 }
 
