@@ -93,7 +93,7 @@ class Linear(Cell):
 
 
 class MoEFFNet(Cell):
-    def __init__(self, hidden_size, ffn_hidden_size, expert_num, dp, ep, mp, has_bias=True):
+    def __init__(self, hidden_size, ffn_hidden_size, expert_num, dp, ep, mp, has_bias=True, transpose_b=False):
         super(MoEFFNet, self).__init__()
         input_size = hidden_size
         output_size = ffn_hidden_size
@@ -102,7 +102,7 @@ class MoEFFNet(Cell):
         self.mapping = Linear(in_channels=input_size,
                               out_channels=output_size,
                               has_bias=has_bias,
-                              transpose_b=False,
+                              transpose_b=transpose_b,
                               expert_num=expert_num,
                               outer_batch=dp,
                               param_init_type=param_init_type,
@@ -111,16 +111,22 @@ class MoEFFNet(Cell):
         self.projection = Linear(in_channels=output_size,
                                  out_channels=input_size,
                                  has_bias=has_bias,
-                                 transpose_b=False,
+                                 transpose_b=transpose_b,
                                  expert_num=expert_num,
                                  outer_batch=dp,
                                  param_init_type=param_init_type,
                                  compute_dtype=compute_dtype)
 
-        self.mapping.shard(strategy_matmul=((dp, ep, 1, 1), (ep, 1, mp)),
-                           strategy_bias=((dp, ep, 1, mp), (1, ep, 1, mp)))
-        self.projection.shard(strategy_matmul=((dp, ep, 1, mp), (ep, mp, 1)),
-                              strategy_bias=((dp, ep, mp, 1), (1, ep, 1, 1)))
+        if transpose_b:
+            self.mapping.shard(strategy_matmul=((dp, ep, 1, 1), (ep, mp, 1)),
+                               strategy_bias=((dp, ep, 1, mp), (1, ep, 1, mp)))
+            self.projection.shard(strategy_matmul=((dp, ep, 1, mp), (ep, 1, mp)),
+                                  strategy_bias=((dp, ep, mp, 1), (1, ep, 1, 1)))
+        else:
+            self.mapping.shard(strategy_matmul=((dp, ep, 1, 1), (ep, 1, mp)),
+                               strategy_bias=((dp, ep, 1, mp), (1, ep, 1, mp)))
+            self.projection.shard(strategy_matmul=((dp, ep, 1, mp), (ep, mp, 1)),
+                                  strategy_bias=((dp, ep, mp, 1), (1, ep, 1, 1)))
         self.shape = ops.Shape()
         self.reshape = ops.Reshape()
         self.stride_slice_ep = ops.StridedSlice().shard(((ep, 1, 1, 1),))
@@ -181,7 +187,8 @@ def test_batch_matmul_opt(has_bias):
     dp = 1
     ep = 16
     mp = 8
-    net = MoEFFNet(hidden_size, ffn_hidden_size, expert_num, dp, ep, mp, has_bias)
+    transpose_b = True
+    net = MoEFFNet(hidden_size, ffn_hidden_size, expert_num, dp, ep, mp, has_bias, transpose_b)
     x = Tensor(np.ones([expert_num, expert_num, channel, hidden_size]), dtype=ms.float16)
 
     if os.path.exists("./batchmatmul_allreduce_opt/rank_0"):
