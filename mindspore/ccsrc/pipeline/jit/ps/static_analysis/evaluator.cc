@@ -409,6 +409,10 @@ EvalResultPtr BaseFuncGraphEvaluator::Eval(AnalysisEnginePtr engine, const Abstr
     MS_EXCEPTION_IF_NULL(engine->root_func_graph());
     if (engine->root_func_graph() == func_graph_evaluator->func_graph()) {
       engine->set_root_context(context);
+      if (common::GetCompileConfig("STRICT_CHECK_PARENT_CONTEXT") != "1") {
+        MS_LOG(INFO) << "Add root_func_graph_backup";
+        engine->set_root_func_graph_backup(fg);
+      }
     }
   }
   bool always_eval_flag = false;
