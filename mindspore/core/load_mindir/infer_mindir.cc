@@ -179,8 +179,7 @@ AbstractBasePtr MindIREngine::InferPrimitiveShape(const PrimitivePtr &prim,
 
     if (raise_exception_) {
       MS_LOG(INTERNAL_EXCEPTION) << "Get infer shape function failed, primitive name:" << prim->name()
-                                 << " primitive type:" << prim->type_name()
-                                 << " It will keep the previous value with danger.";
+                                 << " primitive type:" << prim->type_name() << ".";
     } else {
       MS_LOG(INFO) << "Get infer shape function failed, primitive name:" << prim->name()
                    << " primitive type:" << prim->type_name() << " It will keep the previous value with danger.";
@@ -188,8 +187,7 @@ AbstractBasePtr MindIREngine::InferPrimitiveShape(const PrimitivePtr &prim,
   } catch (const std::exception &ex) {
     if (raise_exception_) {
       MS_LOG(INTERNAL_EXCEPTION) << "Catch primitive:" << prim->ToString()
-                                 << " InferPrimitiveShape exception:" << ex.what()
-                                 << " It will keep the previous value with danger.";
+                                 << " InferPrimitiveShape exception:" << ex.what() << ".";
     } else {
       MS_LOG(INFO) << "Catch primitive:" << prim->ToString() << " InferPrimitiveShape exception:" << ex.what()
                    << " It will keep the previous value with danger.";
@@ -225,8 +223,8 @@ void MindIREngine::EvalCommonPrimitive(const PrimitivePtr &prim, const CNodePtr 
     MS_LOG(INFO) << node->ToString()
                  << " can't be inferred shape. It will keep the previous value with danger. Prim: " << prim->ToString();
     if (node->abstract() == nullptr) {
-      MS_LOG(WARNING) << "The abstract of the node: " << node->ToString()
-                      << " is nullptr. And it can't be inferred shape. Prim: " << prim->ToString();
+      MS_LOG(INFO) << "The abstract of the node: " << node->ToString()
+                   << " is nullptr. And it can't be inferred shape. Prim: " << prim->ToString();
     } else {
       result = node->abstract()->Clone();
     }
@@ -528,7 +526,7 @@ void MindIREngine::InferCNode(const AnfNodePtr &node) {
   auto cnode = node->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(cnode);
   if (CheckCNodeNotReady(cnode)) {
-    MS_LOG(INFO) << "The node is not ready: " << cnode->DebugString();
+    MS_LOG(DEBUG) << "The node is not ready: " << cnode->DebugString();
     return;
   }
   AbstractBasePtr possible_func = GetCNodeOperatorAbstract(cnode);
