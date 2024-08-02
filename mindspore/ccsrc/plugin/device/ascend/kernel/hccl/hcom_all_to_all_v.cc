@@ -47,14 +47,19 @@ int HcomAlltoAllVKernel::Resize(const std::vector<KernelTensor *> &inputs, const
   output_size_list_.clear();
   auto recv_numel_list = GetValue<std::vector<int64_t>>(primitive_->GetAttr("recv_numel_list"));
   int64_t output_numel = 0;
+  ShapeVector shape;
   for (size_t i = 0; i < recv_numel_list.size(); i++) {
     output_numel += recv_numel_list[i];
   }
-  if (output_numel == 0) {
-    output_size_list_.push_back(SizeOf(ShapeVector{}));
-  } else {
-    output_size_list_.push_back(SizeOf(ShapeVector{output_numel}));
+  if (output_numel != 0) {
+    shape.push_back(output_numel);
   }
+
+  size_t size = 0;
+  if (!HcomUtil::GetHcclOpSize(GetHcclDataType(), shape, &size)) {
+    MS_LOG(INTERNAL_EXCEPTION) << "GetHcclOpOutputSize failed";
+  }
+  output_size_list_.push_back(size);
   return KRET_OK;
 }
 
