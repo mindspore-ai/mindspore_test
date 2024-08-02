@@ -330,6 +330,7 @@ class AnalysisEngine : public std::enable_shared_from_this<AnalysisEngine> {
   FuncGraphPtr root_func_graph() const { return root_func_graph_.lock(); }
   FuncGraphPtr root_func_graph_backup() const { return root_func_graph_backup_.lock(); }
   void set_root_func_graph_backup(const FuncGraphPtr &fg) { root_func_graph_backup_ = FuncGraphWeakPtr(fg); }
+
   AnalysisContextPtr root_context() const { return root_context_; }
   void set_root_context(const AnalysisContextPtr &context) { root_context_ = context; }
 
