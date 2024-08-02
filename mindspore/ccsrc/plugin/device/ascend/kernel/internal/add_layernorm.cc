@@ -29,13 +29,7 @@ internal::OpParamPtr InternalAddLayerNorm::CreateOpParam(const std::vector<Kerne
   // setup param from inputs
   internal::AddLayerNormParam op_param;
 
-  auto beginNormAxis = inputs[kIndex4]->GetValueWithCheck<int64_t>();
-  auto beginParamsAxis = inputs[kIndex5]->GetValueWithCheck<int64_t>();
-  if (beginNormAxis != -1 || beginParamsAxis != -1) {
-    MS_LOG(EXCEPTION) << "beginNormAxis and beginParamsAxis must both be -1, but get beginNormAxis: '" << beginNormAxis
-                      << " and beginParamsAxis: " << beginParamsAxis;
-  }
-  op_param.eps = inputs[kIndex6]->GetValueWithCheck<float>();
+  op_param.eps = inputs[kIndex4]->GetValueWithCheck<float>();
 
   param_ptr->specificParam = op_param;
   param_ptr->opId = internal::OpId::AddLayerNorm;
