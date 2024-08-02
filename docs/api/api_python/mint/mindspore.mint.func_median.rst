@@ -7,7 +7,7 @@ mindspore.mint.median
 
     参数：
         - **input** (Tensor) - 任意维度的Tensor，支持的数据类型为：uint8, int16, int32, int64, float16 or float32.
-        - **dim** (int, 可选) - 进行中值计算的轴。默认值： ``None`` 。
+        - **dim** (int, 可选) - 指定计算的轴。默认值： ``None`` 。
         - **keepdim** (bool, 可选) - 是否保留 ``dim`` 指定的维度。默认值： ``False`` 。
 
     返回：
