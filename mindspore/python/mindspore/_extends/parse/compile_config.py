@@ -239,6 +239,15 @@ Value Range:
 """
 ENABLE_RECOMPUTE_BEFORE_INLINE = ''
 
+"""
+Name: STRICT_CHECK_PARENT_CONTEXT
+Function: Whether to check parent context strictly.
+Value Range:
+    1: Enable
+    Default: Disable.
+"""
+STRICT_CHECK_PARENT_CONTEXT = ''
+
 __all__ = [
     "COMPILE_PROFILE",
     "COMPILE_PROFILE_FINISH_ACTION",
@@ -265,4 +274,5 @@ __all__ = [
     "COMBINE_LIKE_GRAPHS",
     "DUMP_VALIDATE_BEFORE_RESET_ID",
     "ENABLE_RECOMPUTE_BEFORE_INLINE",
+    "STRICT_CHECK_PARENT_CONTEXT",
 ]
