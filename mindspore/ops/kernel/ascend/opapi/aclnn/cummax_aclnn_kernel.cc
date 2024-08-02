@@ -22,17 +22,16 @@ namespace kernel {
 
 void CummaxAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                     const std::vector<KernelTensor *> &outputs) {
-  auto axis = transform::ConvertKernelTensor<int64_t>(inputs[kIndex1]);
-  GetWorkspaceForResize(inputs[kIndex0], axis, outputs[kIndex0], outputs[kIndex1]);
+  axis_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex1]);
+  auto input_shape = inputs[kIndex0]->GetShape()->GetShapeVector();
+  axis_ = axis_ < 0 ? axis_ + SizeToLong(input_shape.size()) : axis_;
+  GetWorkspaceForResize(inputs[kIndex0], axis_, outputs[kIndex0], outputs[kIndex1]);
 }
 
 bool CummaxAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                           const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
-  auto axis = transform::ConvertKernelTensor<int64_t>(inputs[kIndex1]);
-  auto input_shape = inputs[kIndex0]->GetShape()->GetShapeVector();
-  axis = axis < 0 ? axis + SizeToLong(input_shape.size()) : axis;
-  RunOp(stream_ptr, workspace, inputs[kIndex0], axis, outputs[kIndex0], outputs[kIndex1]);
+  RunOp(stream_ptr, workspace, inputs[kIndex0], axis_, outputs[kIndex0], outputs[kIndex1]);
   return true;
 }
 

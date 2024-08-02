@@ -33,6 +33,7 @@ class CumminExtAscend : public AclnnKernelMod {
   void GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
 
  private:
+  int64_t dim_;
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
 }  // namespace kernel

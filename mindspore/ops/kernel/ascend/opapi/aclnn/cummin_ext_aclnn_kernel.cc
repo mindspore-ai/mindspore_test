@@ -22,17 +22,16 @@ namespace kernel {
 
 void CumminExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                        const std::vector<KernelTensor *> &outputs) {
-  auto dim = transform::ConvertKernelTensor<int64_t>(inputs[kIndex1]);
-  GetWorkspaceForResize(inputs[kIndex0], dim, outputs[kIndex0], outputs[kIndex1]);
+  dim_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex1]);
+  auto input_shape = inputs[kIndex0]->GetShape()->GetShapeVector();
+  dim_ = dim_ < 0 ? dim_ + SizeToLong(input_shape.size()) : dim_;
+  GetWorkspaceForResize(inputs[kIndex0], dim_, outputs[kIndex0], outputs[kIndex1]);
 }
 
 bool CumminExtAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                              const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
-  auto dim = transform::ConvertKernelTensor<int64_t>(inputs[kIndex1]);
-  auto input_shape = inputs[kIndex0]->GetShape()->GetShapeVector();
-  dim = dim < 0 ? dim + SizeToLong(input_shape.size()) : dim;
-  RunOp(stream_ptr, workspace, inputs[kIndex0], dim, outputs[kIndex0], outputs[kIndex1]);
+  RunOp(stream_ptr, workspace, inputs[kIndex0], dim_, outputs[kIndex0], outputs[kIndex1]);
   return true;
 }
 
