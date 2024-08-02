@@ -49,32 +49,14 @@ void MoveCastBehindAllGather(const FuncGraphPtr &func_graph, const CNodePtr &all
   auto manager = func_graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
   auto cast_input_node = cast_cnode->input(kIndex1);
-  auto cast_input_node_users = GetOutputNodesWithFilter(cast_input_node, [](const AnfNodePtr &node) {
-    return IsOneOfPrimitiveCNode(node, {prim::kPrimMakeTuple, prim::kPrimDepend});
-  });
-  for (auto &cast_input_node_user_pair : cast_input_node_users) {
-    if (cast_input_node_user_pair.first != cast_cnode &&
-        !IsPrimitiveCNode(cast_input_node_user_pair.first, prim::kPrimUpdateState)) {
-      return;
-    }
-  }
 
   // Get operator list from all_gather to cast
-  AnfNodePtrList op_list;
-  auto cur_node = cast_input_node;
-  while (cur_node != all_gather_cnode) {
-    op_list.push_back(cur_node);
-    auto cur_cnode = cur_node->cast<CNodePtr>();
-    if (cur_cnode == nullptr) {
-      break;
-    }
-    cur_node = cur_cnode->input(kIndex1);
-  }
-  if (cur_node != all_gather_cnode) {
-    MS_LOG(DEBUG) << "Get op list from all_gather to cast failed.";
-    return;
-  }
-  op_list.push_back(cur_node);
+  auto all_gather_node_users = GetOutputNodesWithFilter(
+    all_gather_cnode,
+    [](const AnfNodePtr &node) {
+      return IsOneOfPrimitiveCNode(node, {prim::kPrimMakeTuple, prim::kPrimDepend, prim::kPrimLoad});
+    },
+    true);
 
   auto cast_node_users = manager->node_users()[cast_cnode];
 
@@ -93,9 +75,32 @@ void MoveCastBehindAllGather(const FuncGraphPtr &func_graph, const CNodePtr &all
   auto new_cast_abs = std::make_shared<abstract::AbstractTensor>(TypeIdToType(cast_dtype),
                                                                  cast_cnode->input(kIndex1)->abstract()->GetShape());
   cast_cnode->set_abstract(new_cast_abs);
-  for (auto node : op_list) {
-    auto abs = std::make_shared<abstract::AbstractTensor>(TypeIdToType(cast_dtype), node->abstract()->GetShape());
-    node->set_abstract(abs);
+  auto new_all_gather_abs =
+    std::make_shared<abstract::AbstractTensor>(TypeIdToType(cast_dtype), all_gather_cnode->abstract()->GetShape());
+  all_gather_cnode->set_abstract(new_all_gather_abs);
+  for (auto user_pair : all_gather_node_users) {
+    if (user_pair.first == cast_cnode) {
+      continue;
+    }
+    if (IsOneOfPrimitiveCNode(user_pair.first, {prim::kPrimUpdateState, prim::kPrimDepend}) &&
+        user_pair.second == kIndex2) {
+      continue;
+    } else if (IsPrimitiveCNode(user_pair.first, prim::kPrimMakeTuple)) {
+      auto make_tuple_abs = user_pair.first->abstract();
+      MS_EXCEPTION_IF_NULL(make_tuple_abs);
+      auto make_tuple_abs_tuple = make_tuple_abs->cast<abstract::AbstractTuplePtr>();
+      MS_EXCEPTION_IF_NULL(make_tuple_abs_tuple);
+      auto abs_list = make_tuple_abs_tuple->ElementsBroaden();
+      auto index = user_pair.second - 1;
+      auto new_abstract =
+        std::make_shared<abstract::AbstractTensor>(TypeIdToType(cast_dtype), abs_list.at(index)->GetShape());
+      abs_list.at(index) = new_abstract;
+      user_pair.first->set_abstract(std::make_shared<abstract::AbstractTuple>(abs_list));
+    } else {
+      auto abs =
+        std::make_shared<abstract::AbstractTensor>(TypeIdToType(cast_dtype), user_pair.first->abstract()->GetShape());
+      user_pair.first->set_abstract(abs);
+    }
   }
   return;
 }
@@ -112,12 +117,25 @@ void OptimizeParallelAllGatherComm(const FuncGraphPtr &graph) {
       }
       auto all_gather_cnode = node->cast<CNodePtr>();
       auto all_gather_node_user_list = GetOutputNodesWithFilter(all_gather_cnode, [](const AnfNodePtr &node) {
-        return IsOneOfPrimitiveCNode(node, {prim::kPrimLoad, prim::kPrimDepend});
+        return IsOneOfPrimitiveCNode(node, {prim::kPrimLoad, prim::kPrimDepend, prim::kPrimMakeTuple});
       });
-      if (all_gather_node_user_list.size() == kSizeOne &&
-          IsPrimitiveCNode(all_gather_node_user_list.front().first, prim::kPrimCast)) {
-        MoveCastBehindAllGather(each_graph, all_gather_cnode,
-                                all_gather_node_user_list.front().first->cast<CNodePtr>());
+
+      CNodePtr cast_cnode = nullptr;
+      for (auto node_user_pair : all_gather_node_user_list) {
+        auto user_node = node_user_pair.first;
+        if (IsPrimitiveCNode(user_node, prim::kPrimUpdateState) && node_user_pair.second == kIndex2) {
+          continue;
+        }
+        if (IsPrimitiveCNode(user_node, prim::kPrimCast) && cast_cnode == nullptr) {
+          cast_cnode = user_node->cast<CNodePtr>();
+          continue;
+        }
+        cast_cnode = nullptr;
+        break;
+      }
+
+      if (cast_cnode != nullptr) {
+        MoveCastBehindAllGather(each_graph, all_gather_cnode, cast_cnode);
       }
     }
   }
