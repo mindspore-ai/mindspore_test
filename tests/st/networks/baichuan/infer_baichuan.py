@@ -175,7 +175,7 @@ def run_baichuan_4p_bs4(args):
     profiler_path = os.path.join(os.path.dirname(
         os.path.abspath(__file__)), "predict_profiler")
     os.system(f"rm -rf {profiler_path}")
-    profiler = Profiler(start_profile=False, output_path=profiler_path)
+    profiler = Profiler(start_profile=False, output_path=profiler_path, data_simplification=False)
     profiler.start()
     inputs_ids = generate_input_ids(8, 12)
     outputs = model.generate(inputs_ids,
