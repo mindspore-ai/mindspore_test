@@ -349,6 +349,7 @@ bool FuncGrad::KPynativeOp(const GradParamPtr &grad_param) {
     variable->set_is_fake_bprop(true);
     variable->set_fake_prim_name(prim->name());
   }
+  variable->set_is_custom_op_variable(is_custom_prim);
 
   (void)variable_set_.insert(variable);
   SetFlattenTensorGradMetaData(PyNativeAlgo::DataConvert::FlattenTensorSeqInValue(grad_param->op_grad_info->out_value),
@@ -468,8 +469,11 @@ void FuncGrad::BackPropagate() {
       const auto &last_gradient = gradient_out[i];
       // If last_gradient is None, It represents that this tensor grad is zeros.
       if (last_gradient->isa<None>()) {
-        MS_LOG(DEBUG) << last_variable->ToString() << ", its gradient is kNone!";
-        continue;
+        if (!last_variable->is_custom_op_variable()) {
+          MS_LOG(DEBUG) << last_variable->ToString() << ", its gradient is kNone, no need propagate!";
+          continue;
+        }
+        MS_LOG(DEBUG) << "Get custom bprop variable, zeros input din may be have non zeors dout";
       }
       if (input_buffer.find(last_fn.get()) != input_buffer.end()) {
         Add(last_gradient, next_edge.input_index, func_impl_, &input_buffer[last_fn.get()]);

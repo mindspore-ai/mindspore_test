@@ -381,6 +381,14 @@ void IrBprop::BackPropagate() {
     for (const auto &next_edge : next_edges) {
       const auto &last_variable = next_edge.first;
       const auto &din = next_edge.second;
+      // If din is Zeroslike, It represents that this tensor grad is zeros.
+      if (static_cast<bool>(MS_UNLIKELY(PyNativeAlgo::AutoGrad::IsZerosLikeNode(din)))) {
+        if (!last_variable->is_custom_op_variable()) {
+          MS_LOG(DEBUG) << last_variable->ToString() << ", its gradient is zeroslike, no need propagate!";
+          continue;
+        }
+        MS_LOG(DEBUG) << "Get custom bprop variable, zeros input din may be have non zeors dout";
+      }
 #ifndef ENABLE_TEST
       // VM no need run pass
       pass_forward_->ConvertMakeTupleInputToDynamicInput(din, seen, bprop_graph_run_by_single_op_);
