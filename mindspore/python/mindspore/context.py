@@ -1710,7 +1710,8 @@ def set_context(**kwargs):
 
             - jit_level (str): Used to control the compilation optimization level. Default: ``""`` , The framework
               automatically selects the execution method based on product, Altas training product is O2, and all other
-              products are O0. The value range is as follows:
+              products are O0. In addition, The option of the dynamic shape must be O0 or O1, O2 is not supported.
+              The value range is as follows:
 
               - ``"O0"``: Except for optimizations that may affect functionality, all other optimizations are turned
                 off, adopt KernelByKernel execution mode.
