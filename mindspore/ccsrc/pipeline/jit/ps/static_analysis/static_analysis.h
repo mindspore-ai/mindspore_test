@@ -325,6 +325,7 @@ class AnalysisEngine : public std::enable_shared_from_this<AnalysisEngine> {
   const PrimEvaluatorMap &PrimConstructors() const { return prim_constructors_; }
 
   FuncGraphPtr root_func_graph() const { return root_func_graph_.lock(); }
+
   AnalysisContextPtr root_context() const { return root_context_; }
   void set_root_context(const AnalysisContextPtr &context) { root_context_ = context; }
 
