@@ -14,7 +14,7 @@
 # ============================================================================
 import numpy as np
 import mindspore.nn as nn
-from mindspore import Tensor
+from mindspore import ops, Tensor
 from mindspore import context
 from mindspore.ops import GradOperation
 from mindspore.common import ParameterTuple
@@ -232,3 +232,26 @@ def test_pynative_hook_base_line():
     assert np.allclose(grad[1][0].asnumpy(), expect_grad[1][0].asnumpy(), 0.000001, 0.000001)
     assert np.allclose(grad[1][1].asnumpy(), expect_grad[1][1].asnumpy(), 0.000001, 0.000001)
     assert np.allclose(grad[1][2].asnumpy(), expect_grad[1][2].asnumpy(), 0.000001, 0.000001)
+
+
+class SpiltNet(nn.Cell):
+    def construct(self, x, axis):
+        return ops.split(x, axis)
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_pynative_hook_tuple_with_single_element():
+    """
+    Feature: PyNative hook function.
+    Description: The backward function input is a tuple with single element.
+    Expectation: The calculation result is correct.
+    """
+    input_x = np.arange(9).astype("float32").reshape((1, 9))
+    split_net = SpiltNet()
+    split_net.register_backward_hook(backward_hook_fn)
+    output = split_net(Tensor(input_x), 1)
+    output_cat = ops.cat(output, axis=1)
+    print(output_cat)
