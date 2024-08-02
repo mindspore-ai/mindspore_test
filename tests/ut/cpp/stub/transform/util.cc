@@ -74,7 +74,10 @@ OpAdapterPtr FindAdapter(const std::string &op_name, bool train) { return nullpt
 OpAdapterPtr FindAdapter(const AnfNodePtr node, bool train) { return nullptr; }
 
 OperatorPtr OpAdapterImpl::GenerateCustomOp(const AnfNodePtr anf) { return nullptr; }
-int OpAdapterImpl::setAttr(const OperatorPtr &op, const std::string &attr_key, const ValuePtr &attr_value) { return 0; }
+int OpAdapterImpl::setAttr(const OperatorPtr &op, const std::string &attr_key, const ValuePtr &attr_value,
+                           bool is_ref) {
+  return 0;
+}
 int OpAdapterImpl::setAttr(const OperatorPtr &op, const PrimitivePtr &prim) { return 0; }
 int OpAdapterImpl::setAttr(const OperatorPtr &op, const AnfNodePtr &node) { return 0; }
 int OpAdapterImpl::setInput(const OperatorPtr &op, int index, const OutHandler &handle) { return 0; }

@@ -117,6 +117,13 @@ static Q ConvertAnyUtil(const ValuePtr &value, const AnyTraits<P> &, const AnyTr
 
 GeTensor ConvertAnyUtil(const ValuePtr &value, const AnyTraits<mindspore::tensor::Tensor> &traits);
 
+template <typename P, typename Q>
+static Q ConvertAnyUtilWithRef(const ValuePtr &value, const AnyTraits<P> &, const AnyTraits<Q> &) {
+  MS_LOG(EXCEPTION) << "The type is not support, P is " << typeid(P).name() << ", Q is " << typeid(Q).name();
+}
+
+GeTensor ConvertAnyUtilWithRef(const ValuePtr &value, const AnyTraits<mindspore::tensor::Tensor> &traits);
+
 std::vector<int64_t> ConvertAnyUtil(const ValuePtr &value, const std::string &name,
                                     const AnyTraits<std::vector<int64_t>>);
 

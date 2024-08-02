@@ -792,14 +792,19 @@ void OpAdapterImpl::updateOutputDesc(const OperatorPtr &op, const abstract::Base
   updateInputDesc(op, node);
 }
 
-int OpAdapterImpl::setAttr(const OperatorPtr &op, const std::string &attr_key, const ValuePtr &attr_value) {
+int OpAdapterImpl::setAttr(const OperatorPtr &op, const std::string &attr_key, const ValuePtr &attr_value,
+                           bool is_ref) {
   auto it = attr_map_.find(attr_key);
   if (it != attr_map_.end()) {
     // switch case for each avalilable attribute type
     MS_LOG(DEBUG) << "Op: " << op->GetName() << ", set attr: " << attr_key << "(" << it->second.name
                   << "), value: " << attr_value->ToString();
     adpt_->AddAttrToDrawGraph(attr_key + std::string("=") + attr_value->ToString());
-    it->second.set_attr(op, attr_value);
+    if (is_ref) {
+      it->second.set_attr_with_ref(op, attr_value);
+    } else {
+      it->second.set_attr(op, attr_value);
+    }
     return 0;
   }
   return static_cast<int>(NOT_FOUND);

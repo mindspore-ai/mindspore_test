@@ -78,6 +78,7 @@ using DynSubGraphFunc = std::function<void(OperatorPtr, unsigned int, DfGraphPtr
 struct AttrDesc {
   std::string name;
   AttrFunc set_attr;
+  AttrFunc set_attr_with_ref{nullptr};
   GetAttrFunc get_attr;
   enum {
     REQUIRED = 0,
@@ -149,7 +150,8 @@ class BaseOpAdapter {
   virtual int setInput(const OperatorPtr &op, int index, const OutHandler &handle) = 0;
   virtual int setInput(const OperatorPtr &op, int index, const std::shared_ptr<std::vector<OutHandler>> &handler_vec,
                        bool use_create_byindex_func = false, size_t dyn_index = 0) = 0;
-  virtual int setAttr(const OperatorPtr &op, const std::string &attrKey, const ValuePtr &attrValue) = 0;
+  virtual int setAttr(const OperatorPtr &op, const std::string &attrKey, const ValuePtr &attrValue,
+                      bool is_ref = false) = 0;
   virtual int setAttr(const OperatorPtr &op, const PrimitivePtr &prim) = 0;
   virtual int setAttr(const OperatorPtr &op, const AnfNodePtr &node) = 0;
   virtual int setAttr(const std::string &attrKey, const ValuePtr &attrValue) = 0;

@@ -868,12 +868,14 @@ void DfGraphConvertor::InitParamWithData(const TensorOrderMap &tensors) {
       if (adpt_const == nullptr) {
         continue;
       }
+      MS_LOG(INFO) << "InitParam with const for node: " << name;
       auto const_op = adpt_const->generate(name + "_const");
-      (void)adpt_const->setAttr(const_op, "value", it.second);
+      (void)adpt_const->setAttr(const_op, "value", it.second, true);
       const_op->UpdateOutputDesc(kTypeY, *desc);
       const_op_to_value_[const_op] = it.second;
       vars_[name] = const_op;
       op_itor->second = const_op;
+      node->set_user_data(kNoNeedAllocDeviceAddress, std::make_shared<bool>(true));
     } else {
       auto &infer_need_update_parameter_names =
         Singleton<mindspore::device::ascend::InferNeedUpdateParaNames>::Instance().GetInferParameterNames();
