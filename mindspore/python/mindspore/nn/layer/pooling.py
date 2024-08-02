@@ -96,6 +96,9 @@ class LPPool1d(Cell):
     .. math::
         f(X) = \sqrt[p]{\sum_{x \in X} x^{p}}
 
+    Note:
+        This interface currently does not support Atlas A2 training series products.
+
     Args:
         norm_type (Union[int, float]): Type of normalization, represents :math:`p` in the formula, can not be 0.
 
@@ -168,6 +171,9 @@ class LPPool2d(Cell):
 
     .. math::
         f(X) = \sqrt[p]{\sum_{x \in X} x^{p}}
+
+    Note:
+        This interface currently does not support Atlas A2 training series products.
 
     Args:
         norm_type(Union[int, float]): Type of normalization, represents :math:`p` in the formula, can not be 0.
