@@ -1146,12 +1146,13 @@ void KernelActor::ProcessMultiStreamBeforeKernelLaunch(OpContext<DeviceTensor> *
     return;
   }
 
+  if (stream_id == kDefaultStreamIndex) {
+    return;
+  }
+
   std::vector<KernelTensor *> cross_stream_kernel_tensors;
   for (const auto &input_kernel_tensor : input_kernel_tensors_) {
-    if (stream_id == kDefaultStreamIndex) {
-      continue;
-    }
-    if (input_kernel_tensor->stream_id() == stream_id) {
+    if (input_kernel_tensor->stream_id() == stream_id && input_kernel_tensor->stream_id() == kDefaultStreamIndex) {
       continue;
     }
     if (input_kernel_tensor->task_id_on_stream() == nullptr) {
