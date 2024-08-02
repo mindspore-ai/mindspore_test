@@ -2742,8 +2742,8 @@ AnfNodePtr CheckAndConvertPrimitiveArgs(const PrimitivePtr &prim,
   };
 
   auto new_cnode = CheckAndConvertPrimitiveArgs(prim, graph, args_pair, eval_func, is_preprocessed);
-  MS_LOG(INFO) << "Convert primitive args: " << prim->name() << ". node: " << out_conf->node()->DebugString()
-               << ", new_node: " << new_cnode->DebugString();
+  MS_LOG(DEBUG) << "Convert primitive args: " << prim->name() << ". node: " << out_conf->node()->DebugString()
+                << ", new_node: " << new_cnode->DebugString();
   return new_cnode;
 }
 
@@ -2826,8 +2826,8 @@ EvalResultPtr PrimitiveArgsToInputsEvaluator::EvalPrim(const AnalysisEnginePtr &
 
   new_node->set_debug_info(cnode->debug_info());
   auto new_conf = engine->MakeConfig(new_node, out_conf->context(), out_conf->func_graph());
-  MS_LOG(INFO) << "Convert primitive args to inputs: " << prim_->ToString() << ". node: " << cnode->DebugString()
-               << ", new node: " << new_node->DebugString();
+  MS_LOG(DEBUG) << "Convert primitive args to inputs: " << prim_->ToString() << ". node: " << cnode->DebugString()
+                << ", new node: " << new_node->DebugString();
   return engine->ForwardConfig(out_conf, new_conf);
 }
 

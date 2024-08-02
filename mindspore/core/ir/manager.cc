@@ -396,8 +396,8 @@ void FuncGraphManager::AddFuncGraphs(const FuncGraphPtr &source_func_graph) {
 // Drop the func graph
 void FuncGraphManager::DropFuncGraph(const FuncGraphPtr &fg, bool force) {
   if (force || (is_manage_ && drop_unused_graph_ && !fg->reserved())) {
-    MS_LOG(INFO) << "Drop " << fg << "/" << fg->ToString() << ", use_count: " << fg.use_count()
-                 << ", type: " << fg->type_name();
+    MS_LOG(DEBUG) << "Drop " << fg << "/" << fg->ToString() << ", use_count: " << fg.use_count()
+                  << ", type: " << fg->type_name();
     fg->ResetReturnOwner();
     fg->ResetOwnNodes();
     fg->set_dropped(true);

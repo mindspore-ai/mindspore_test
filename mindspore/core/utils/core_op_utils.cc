@@ -75,7 +75,7 @@ size_t GetInputIndexByName(const std::string &op_name, const std::string &input_
   auto ks_iter = op_def->indexes_.find(input_name);
   if (ks_iter != op_def->indexes_.end()) {
     size_t index = ks_iter->second;
-    MS_LOG(INFO) << "Find " << input_name << "in " << index << "th input of OP " << op_name;
+    MS_LOG(DEBUG) << "Find " << input_name << "in " << index << "th input of OP " << op_name;
     return index;
   }
   MS_LOG(INFO) << "Not Find " << input_name << "in OP " << op_name;
