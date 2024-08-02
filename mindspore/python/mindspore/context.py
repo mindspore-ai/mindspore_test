@@ -798,6 +798,8 @@ class _Context:
                             "enable_begin_end_inline_opt": (ms_ctx_param.enable_begin_end_inline_opt, bool),
                             "enable_concat_eliminate_opt": (ms_ctx_param.enable_concat_eliminate_opt, bool),
                             "interleaved_layernorm_comm": (ms_ctx_param.interleaved_layernorm_comm, bool),
+                            "enable_allreduce_slice_to_reducescatter":
+                                (ms_ctx_param.enable_allreduce_slice_to_reducescatter, bool),
                             "compute_communicate_fusion_level":
                                 (ms_ctx_param.compute_communicate_fusion_level, int),
                             "enable_flash_attention_load_balance":
