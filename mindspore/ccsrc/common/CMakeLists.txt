@@ -1,6 +1,7 @@
 if(CMAKE_SYSTEM_NAME MATCHES "Windows")
     file(GLOB_RECURSE _COMMON_ALL_SRC_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "duplex_pipe_win.cc"
+        "env_vars.cc"
         "thread_pool.cc"
         "fallback.cc"
         "profiler.cc"
@@ -9,6 +10,7 @@ if(CMAKE_SYSTEM_NAME MATCHES "Windows")
 else()
     file(GLOB_RECURSE _COMMON_ALL_SRC_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "duplex_pipe.cc"
+        "env_vars.cc"
         "thread_pool.cc"
         "fallback.cc"
         "profiler.cc"
