@@ -1081,7 +1081,8 @@ bool GeKernelExecutor::PySyncRuning(void *stream) const {
   MS_EXCEPTION_IF_NULL(res_manager_);
   auto ms_context = MsContext::GetInstance();
   static bool sync_stream = common::IsEnableRuntimeConfig(common::kRuntimeSynchronize);
-  if ((sync_stream || ms_context->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_SYNCHRONIZE)) &&
+  if ((sync_stream || ms_context->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_SYNCHRONIZE) ||
+       ms_context->get_param<std::string>(MS_CTX_DETERMINISTIC) == "ON") &&
       !AscendStreamMng::GetInstance().SyncStream(stream)) {
     return false;
   }
@@ -1158,7 +1159,7 @@ bool GeKernelExecutor::LaunchKernel(const CNodePtr &kernel, const vector<KernelT
       return false;
     }
   }
-  // for PyNative Sync Run mode
+  // for PyNative and KBK Sync Run mode
   auto ret = PySyncRuning(stream);
   if (!ret) {
     MS_LOG(EXCEPTION) << "Sync run failed, detail: " << CALL_ASCEND_API(aclGetRecentErrMsg)
@@ -1223,7 +1224,7 @@ bool GeKernelExecutor::ExecuteKernelTask(const runtime::KernelTaskType &task_typ
   }
 
   auto stream = AscendStreamMng::GetInstance().GetStream(stream_id);
-  // for PyNative Sync Run mode
+  // for PyNative and KBK Sync Run mode
   auto ret = PySyncRuning(stream);
   return ret;
 }
