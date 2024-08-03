@@ -15,6 +15,7 @@
  */
 
 #include "transform/graph_ir/op_declare/array_ops_declare.h"
+#include <cstdint>
 #include <string>
 #include <vector>
 #include "mindspore/ops/op_def/array_ops.h"
@@ -42,7 +43,10 @@ REG_ADPT_DESC(Debug, prim::kPrimDebug->name(), ADPT_DESC(Summary))
 // OutfeedEnqueueOpV2
 DYN_INPUT_MAP(OutfeedEnqueueOpV2) = {{2, DYN_INPUT_DESC(x)}};
 INPUT_MAP(OutfeedEnqueueOpV2) = {{1, INPUT_DESC(tensor_name)}};
-ATTR_MAP(OutfeedEnqueueOpV2) = {{"channel_name", ATTR_DESC(channel_name, AnyTraits<std::string>())}};
+ATTR_MAP(OutfeedEnqueueOpV2) = {{"channel_name", ATTR_DESC(channel_name, AnyTraits<std::string>())},
+                                {"slice_size", ATTR_DESC(slice_size, AnyTraits<int64_t>())},
+                                {"wait_time", ATTR_DESC(wait_time, AnyTraits<int>())},
+                                {"slice_sync", ATTR_DESC(slice_sync, AnyTraits<bool>())}};
 OUTPUT_MAP(OutfeedEnqueueOpV2) = EMPTY_OUTPUT_MAP;
 REG_ADPT_DESC(TensorSummary, "TensorSummary", ADPT_DESC(OutfeedEnqueueOpV2))
 REG_ADPT_DESC(ScalarSummary, "ScalarSummary", ADPT_DESC(OutfeedEnqueueOpV2))

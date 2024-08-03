@@ -215,10 +215,14 @@ enum VLogLevel : int {
   VL_INVALID = 0,  // invalid vlog level
   VL_FLOW = 1,     // start of end to end flow related log level
 
-  VL_CORE = COMPONENT_START + (SM_CORE - 1) * COMPONENT_RANGE,                            // 0. core
-  VL_ANALYZER = COMPONENT_START + (SM_ANALYZER - 1) * COMPONENT_RANGE,                    // 1. static analyzer
-  VL_COMMON = COMPONENT_START + (SM_COMMON - 1) * COMPONENT_RANGE,                        // 2. common
-  VL_DEBUG = COMPONENT_START + (SM_DEBUG - 1) * COMPONENT_RANGE,                          // 3. debug
+  VL_CORE = COMPONENT_START + (SM_CORE - 1) * COMPONENT_RANGE,          // 0. core
+  VL_ANALYZER = COMPONENT_START + (SM_ANALYZER - 1) * COMPONENT_RANGE,  // 1. static analyzer
+  VL_COMMON = COMPONENT_START + (SM_COMMON - 1) * COMPONENT_RANGE,      // 2. common
+
+  VL_DEBUG = COMPONENT_START + (SM_DEBUG - 1) * COMPONENT_RANGE,  // 3. debug
+  VL_PRINT_DUMP_V0 = VL_DEBUG,                                    // verbose level0 for print and tensordump, etc.
+  VL_PRINT_DUMP_V1,                                               // verbose level1 for print and tensordump, etc.
+
   VL_OFFLINE_DEBUG = COMPONENT_START + (SM_OFFLINE_DEBUG - 1) * COMPONENT_RANGE,          // 4. offline debug
   VL_DEVICE = COMPONENT_START + (SM_DEVICE - 1) * COMPONENT_RANGE,                        // 5. device
   VL_GE_ADPT = COMPONENT_START + (SM_GE_ADPT - 1) * COMPONENT_RANGE,                      // 6. ge adapter
