@@ -291,6 +291,29 @@ class _Context:
                              f"{deterministic_options}, but got {deterministic}.")
         self.set_param(ms_ctx_param.deterministic, deterministic)
 
+        hccl_deterministic = os.getenv("HCCL_DETERMINISTIC")
+        te_parallel_compiler = os.getenv("TE_PARALLEL_COMPILER")
+        if deterministic == "ON":
+            if hccl_deterministic and hccl_deterministic != "true":
+                logger.warning(f"Environment 'HCCL_DETERMINISTIC' should be 'true' when set deterministic='ON', but "
+                               f"got '{hccl_deterministic}'. 'HCCL_DETERMINISTIC' will be set to 'true'.")
+            if te_parallel_compiler and te_parallel_compiler != "1":
+                logger.warning(f"Environment 'TE_PARALLEL_COMPILER' should be '1' when set deterministic='ON', but "
+                               f"got '{te_parallel_compiler}'. 'TE_PARALLEL_COMPILER' will be set to '1'.")
+            os.environ["HCCL_DETERMINISTIC"] = "true"
+            os.environ["TE_PARALLEL_COMPILER"] = "1"
+        if deterministic == "OFF":
+            if hccl_deterministic and hccl_deterministic != "false":
+                logger.warning(f"Environment 'HCCL_DETERMINISTIC' should not be set or be 'false' when set "
+                               f"deterministic='OFF', but got '{hccl_deterministic}'. 'HCCL_DETERMINISTIC' "
+                               f"will be unset.")
+                del os.environ["HCCL_DETERMINISTIC"]
+            if te_parallel_compiler and te_parallel_compiler != "0":
+                logger.warning(f"Environment 'TE_PARALLEL_COMPILER' should not be set or be '0' when set "
+                               f"deterministic='OFF', but got '{te_parallel_compiler}'. 'TE_PARALLEL_COMPILER' "
+                               f"will be unset.")
+                del os.environ["TE_PARALLEL_COMPILER"]
+
     def set_ascend_config(self, ascend_config):
         """
         Enable ascend config.
