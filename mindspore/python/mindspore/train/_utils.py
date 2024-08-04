@@ -29,12 +29,14 @@ from mindspore import context
 from mindspore import log as logger
 from mindspore import _checkparam as Validator
 from mindspore.common.api import _cell_graph_executor
+from mindspore.communication import get_group_size
 from mindspore.train.mind_ir_pb2 import ModelProto as mindir_model
 from mindspore.train.checkpoint_pb2 import Checkpoint
 from mindspore.train.node_strategy_pb2 import ParallelStrategyMap as ckpt_strategy
 from mindspore.train.lineage_pb2 import DatasetGraph, TrainLineage, EvaluationLineage, UserDefinedInfo
 from mindspore.parallel._parallel_serialization import _make_dir
 from mindspore.ops.operations import debug_ops
+from mindspore.nn.cell import Cell
 
 
 def _convert_type(types):
@@ -326,6 +328,11 @@ def get_parameter_redundancy(layout_obj, initial_rank=0):
     """
     if isinstance(layout_obj, str):
         parameter_layout = parse_strategy_ckpt(layout_obj)
+    elif isinstance(layout_obj, Cell):
+        from mindspore.communication.management import get_process_group_ranks
+        groups_ranks = (tuple(get_process_group_ranks()),)
+        param_redundancy_dict = {param.name: groups_ranks for _, param in layout_obj.parameters_and_names()}
+        return param_redundancy_dict
     else:
         parameter_layout = {}
         for k, v in layout_obj.items():
@@ -344,12 +351,22 @@ def get_parameter_redundancy(layout_obj, initial_rank=0):
         locate_list = redundancy_matrix.reshape((-1, len(slices))).tolist()
         redundancy_dict = {}
         for index, locate in enumerate(locate_list):
-            redundancy_dict.setdefault(tuple(locate), []).append(index+initial_rank)
+            redundancy_dict.setdefault(tuple(locate), []).append(index + initial_rank)
         redundancy_list = []
         for _, indices in sorted(redundancy_dict.items()):
             redundancy_list.append(tuple(indices))
-
         param_redundancy_dict[key] = tuple(redundancy_list)
+    for key, value in layout_obj.items():
+        if value[5]:
+            world_groups = ("hccl_world_group", "nccl_world_group", "mccl_world_group")
+            opt_para_num = int(value[5][0]) if value[5] not in world_groups else get_group_size()
+            param_redundancy_ranks = param_redundancy_dict.get(key)
+            res = []
+            for param_ranks in param_redundancy_ranks:
+                if len(param_ranks) % opt_para_num == 0:
+                    for i in range(0, opt_para_num):
+                        res.append(param_ranks[i::opt_para_num])
+            param_redundancy_dict[key] = tuple(res)
     return param_redundancy_dict
 
 

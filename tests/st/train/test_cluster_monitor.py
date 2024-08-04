@@ -48,13 +48,13 @@ parameter_layout_dict = {
     card_mark='onecard',
     essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-def test_functional_amp_overflow(mode):
+def test_ccae_dp_tp(mode):
     """
-    Feature: mindspore.amp.overflow
-    Description: test amp overflow
+    Feature: Dp and tp of CCAE.
+    Description: Check whether the TP and DP values for ccae are correct.
     Expectation: Success.
     """
     ms.set_context(mode=mode)
     dp, tp = _get_dp_tp_from_layout(parameter_layout_dict)
-    assert tp == [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11], [12, 13, 14, 15]]
-    assert dp == [[0, 4, 8, 12], [1, 5, 9, 13], [2, 6, 10, 14], [3, 7, 11, 15]]
+    assert tp == [[0, 4, 8, 12, 1, 5, 9, 13, 2, 6, 10, 14, 3, 7, 11, 15]]
+    assert dp == [[0], [4], [8], [12], [1], [5], [9], [13], [2], [6], [10], [14], [3], [7], [11], [15]]
