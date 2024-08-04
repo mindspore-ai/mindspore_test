@@ -17,7 +17,12 @@
 #define PYBIND_API_PYBIND_PATCH_H_
 
 namespace pybind11 {
+#if !defined(PYBIND11_VERSION_HEX) || PYBIND11_VERSION_HEX < 0x02080100
+// In 2.7.0, pybind added macro PYBIND11_VERSION_HEX.
+// In 2.8.1, pybind added attribute_error by default, so we shouldn't add it by ourselves.
+// Refer to https://pybind11.readthedocs.io/en/stable/changelog.html
 PYBIND11_RUNTIME_EXCEPTION(attribute_error, PyExc_AttributeError)
+#endif
 PYBIND11_RUNTIME_EXCEPTION(name_error, PyExc_NameError)
 PYBIND11_RUNTIME_EXCEPTION(assertion_error, PyExc_AssertionError)
 PYBIND11_RUNTIME_EXCEPTION(base_exception, PyExc_BaseException)
