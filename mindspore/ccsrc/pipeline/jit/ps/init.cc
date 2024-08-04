@@ -561,7 +561,7 @@ PYBIND11_MODULE(_c_expression, m) {
 #ifndef ENABLE_SECURITY
     MS_LOG(INFO) << "Start mindspore.profiler...";
     try {
-      py::module profiler = py::module::import("mindspore.profiler").attr("EnvProfiler")();
+      auto profiler = py::module::import("mindspore.profiler").attr("EnvProfiler")();
       (void)profiler.attr("analyse")();
     } catch (const std::exception &e) {
       MS_LOG(ERROR) << "Failed to parse profiler data." << e.what();
