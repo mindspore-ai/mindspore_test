@@ -1,12 +1,19 @@
-file(GLOB_RECURSE _PIJIT_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-        "graph_capture/*.cc"
-        "graph_compiler/*.cc"
-        "graph_guard/*.cc"
-        "graph_build/*.cc"
-        "utils/*.cc"
-        "*.c"
-        "*.cc"
-)
+if(${PYTHON_VERSION} VERSION_LESS "3.11")
+    file(GLOB_RECURSE _PIJIT_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
+            "graph_capture/*.cc"
+            "graph_compiler/*.cc"
+            "graph_guard/*.cc"
+            "graph_build/*.cc"
+            "utils/*.cc"
+            "*.c"
+            "*.cc"
+    )
+else()
+    # pijit cannot support python>=3.11 for now, but will be adapted very soon.
+    file(GLOB_RECURSE _PIJIT_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
+            "init.cc"
+    )
+endif()
 
 set_property(SOURCE ${_PIJIT_SRC_LIST} PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_PI)
 add_library(_mindspore_pipeline_jit_pi_obj OBJECT ${_PIJIT_SRC_LIST})

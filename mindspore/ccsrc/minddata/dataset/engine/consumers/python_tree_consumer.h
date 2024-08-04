@@ -40,7 +40,7 @@ class PythonIteratorConsumer : public IteratorConsumer {
   /// Returns the next row in a vector format
   /// \param[out] out std::vector of Tensors
   /// \return Status error code
-  Status GetNextAsList(const py::list *out);
+  Status GetNextAsList(py::list *out);
 
   /// Returns the next row in as a map
   /// \param[out] out std::map of string to Tensor
@@ -59,7 +59,7 @@ class PythonPullBasedIteratorConsumer : public PullBasedIteratorConsumer {
   /// Returns the next row in a vector format
   /// \param[out] out std::vector of Tensors
   /// \return Status error code
-  Status GetNextAsList(const py::list *out);
+  Status GetNextAsList(py::list *out);
 
   /// Returns the next row in as a map
   /// \param[out] out std::map of string to Tensor
