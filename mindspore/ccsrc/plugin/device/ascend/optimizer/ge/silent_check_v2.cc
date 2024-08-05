@@ -79,11 +79,12 @@ std::vector<std::string> split(const std::string &str, char delim) {
   return result;
 }
 
-// parse string in format "value0,value1" satisfying value0 > value0 to two float values
+// parse string in format "value0,value1" satisfying value0 > value1 to two int values and then convert them to float
 std::vector<float> parse_thresh(const std::string &value, float min_val) {
+  constexpr size_t kNumAsdThreshItems = 2;
   std::vector<float> values;
   auto items = split(value, ',');
-  if (items.size() != 2) {
+  if (items.size() != kNumAsdThreshItems) {
     return values;
   }
   try {
@@ -274,7 +275,6 @@ AnfNodePtr CreateNormForKBK(const FuncGraphPtr &func_graph, const AnfNodePtr &no
 }
 
 AnfNodePtr CreateCastNode(const FuncGraphPtr &func_graph, const AnfNodePtr &input, TypeId dst_type) {
-  // auto cast_node = load_node;
   auto input_abs = input->abstract()->cast<abstract::AbstractTensorPtr>();
   MS_EXCEPTION_IF_NULL(input_abs);
   auto src_type = input_abs->element()->GetType()->type_id();
