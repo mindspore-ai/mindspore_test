@@ -13,15 +13,15 @@
 # limitations under the License.
 """Test network turn on mix_precision with auto mode."""
 
-import pytest
 import numpy as np
 import mindspore as ms
-from mindspore.amp import auto_mixed_precision, build_train_network
+from mindspore.train.amp import auto_mixed_precision, build_train_network, _OutputTo32
 from mindspore.train.loss_scale_manager import FixedLossScaleManager
 from mindspore import nn
 from mindspore import ops
 from mindspore import Tensor
 from mindspore import context
+from tests.mark_utils import arg_mark
 
 
 class Net(nn.Cell):
@@ -97,13 +97,10 @@ class Net_FP16(nn.Cell):
         x = self.cast(x, ms.float16)
         x = self.relu(x)
         x = self.mean(x, (2, 3))
-        x = self.cast(x, ms.float32)
         return x
 
 
-@pytest.mark.level0
-@pytest.mark.platform_x86_ascend_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_auto_mix_precision_infer_auto():
     """
     Feature: auto mixed precision auto mode.
@@ -125,9 +122,7 @@ def test_auto_mix_precision_infer_auto():
     assert np.allclose(out_pynative.asnumpy(), out_pynative2.asnumpy(), 0.0001, 0.0001)
 
 
-@pytest.mark.level0
-@pytest.mark.platform_x86_ascend_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_auto_mix_precision_train_auto():
     """
     Feature: auto mixed precision auto mode.
@@ -140,7 +135,6 @@ def test_auto_mix_precision_train_auto():
 
     # auto mixed precision
     net_pynative = Net(3, 10)
-    net_pynative = auto_mixed_precision(net_pynative, amp_level="auto", dtype=ms.float16)
     opt_pynative = nn.Momentum(params=net_pynative.trainable_params(),
                                learning_rate=0.001,
                                momentum=0.0009,
@@ -150,12 +144,13 @@ def test_auto_mix_precision_train_auto():
     train_network_pynative = build_train_network(net_pynative,
                                                  opt_pynative,
                                                  loss_pynative,
-                                                 level="O0",
+                                                 level="auto",
                                                  loss_scale_manager=FixedLossScaleManager(drop_overflow_update=False))
     loss_pynative = train_network_pynative(Tensor(input_data), Tensor(label_data))
 
     # manual mixed precision
     net_pynative2 = Net_FP16(3, 10)
+    net_pynative2 = _OutputTo32(net_pynative2)
     opt_pynative2 = nn.Momentum(params=net_pynative2.trainable_params(),
                                 learning_rate=0.001,
                                 momentum=0.0009,
@@ -220,9 +215,7 @@ def func_for_amp_fp16(x, in_c, out_c):
     return x
 
 
-@pytest.mark.level0
-@pytest.mark.platform_x86_ascend_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_auto_mix_precision_infer_func_auto():
     """
     Feature: auto mixed precision auto mode.
@@ -315,13 +308,10 @@ class SubNet_FP16(nn.Cell):
         x = self.bn(x)
         x = ops.cast(x, ms.float16)
         x = self.relu(x)
-        x = ops.cast(x, ms.float32)
         return x
 
 
-@pytest.mark.level0
-@pytest.mark.platform_x86_ascend_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_auto_mix_precision_infer_subnet_auto():
     """
     Feature: auto mixed precision auto mode.
@@ -345,9 +335,7 @@ def test_auto_mix_precision_infer_subnet_auto():
     assert np.allclose(out_pynative.asnumpy(), out_pynative2.asnumpy(), 0.0001, 0.0001)
 
 
-@pytest.mark.level0
-@pytest.mark.platform_x86_ascend_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_auto_mix_precision_train_subnet_auto():
     """
     Feature: auto mixed precision auto mode.
@@ -362,6 +350,7 @@ def test_auto_mix_precision_train_subnet_auto():
     sub_net = SubNet(3, 10)
     sub_net = auto_mixed_precision(sub_net, amp_level="auto", dtype=ms.float16)
     net_pynative = NetWithSubNet(sub_net, 3)
+    net_pynative = _OutputTo32(net_pynative)
     opt_pynative = nn.Momentum(params=net_pynative.trainable_params(),
                                learning_rate=0.001,
                                momentum=0.0009,
@@ -378,6 +367,7 @@ def test_auto_mix_precision_train_subnet_auto():
     # manual mixed precision
     sub_net_fp16 = SubNet_FP16(3, 10)
     net_pynative2 = NetWithSubNet(sub_net_fp16, 3)
+    net_pynative2 = _OutputTo32(net_pynative2)
     opt_pynative2 = nn.Momentum(params=net_pynative2.trainable_params(),
                                 learning_rate=0.001,
                                 momentum=0.0009,
@@ -421,9 +411,7 @@ class NetWithRecompute(nn.Cell):
         return x
 
 
-@pytest.mark.level0
-@pytest.mark.platform_x86_ascend_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_auto_mix_precision_recompute():
     """
     Feature: auto mixed precision auto mode.

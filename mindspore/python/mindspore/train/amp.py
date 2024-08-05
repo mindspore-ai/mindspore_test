@@ -113,6 +113,13 @@ AMP_PRIM_ARG_TABLE = collections.defaultdict(list, {})
 # Primitives in inner amp black list will not be converted in O2/O3
 _INNER_AMP_BLACK_LIST = []
 
+BATCHNORM_CELLS = [
+    nn.BatchNorm1d,
+    nn.BatchNorm2d,
+    nn.BatchNorm3d,
+    nn.LayerNorm,
+]
+
 MS_AMP_BY_REWRITE = False
 
 
@@ -496,7 +503,7 @@ def auto_mixed_precision(network, amp_level="O0", dtype=mstype.float16):
         # set amp_strategy context decorator for the object
         network = _set_amp_decorator(network, AmpLevel.AmpAuto, dtype, white_list, black_list)
     else:
-        raise ValueError("The amp level {} is not supported".format(amp_level))
+        raise ValueError(f"The amp level {amp_level} is not supported")
 
     setattr(network, "_amp_level", amp_level)
 
@@ -511,7 +518,7 @@ def _do_keep_batchnorm_fp32(network):
         subcell = cells[name]
         if subcell == network:
             continue
-        elif isinstance(subcell, nn.Cell) and isinstance(subcell, tuple(AMP_BLACK_LIST)):
+        elif isinstance(subcell, nn.Cell) and isinstance(subcell, tuple(BATCHNORM_CELLS)):
             network._cells[name] = _OutputTo16(subcell.to_float(mstype.float32))
             change = True
         else:
@@ -534,6 +541,10 @@ _config_level = {
         "cast_model_type": mstype.float16,
         "loss_scale_manager": DynamicLossScaleManager()},
     "O3": {
+        "keep_batchnorm_fp32": False,
+        "cast_model_type": mstype.float16,
+        "loss_scale_manager": None},
+    "auto": {
         "keep_batchnorm_fp32": False,
         "cast_model_type": mstype.float16,
         "loss_scale_manager": None}}
@@ -560,19 +571,10 @@ def _check_kwargs(key_words):
 def _check_level(level, boost_level):
     """Check level."""
     if not isinstance(level, str):
-        raise TypeError("The argument `level` must be a string in ['O0', 'O1', 'O2', 'O3', 'auto'], \
-                         but got type {}.".format(type(level)))
+        raise TypeError(f"The argument `level` must be a string in ['O0', 'O1', 'O2', 'O3', 'auto'],"
+                        f"but got type {type(level)}.")
     validator.check('level', level, "", ['O0', 'O1', 'O2', 'O3', 'auto'], validator.IN)
     validator.check('boost_level', boost_level, "", ['O0', 'O1', 'O2'], validator.IN)
-
-    if level == "auto":
-        device_target = context.get_context('device_target')
-        if device_target == "GPU":
-            level = "O2"
-        elif device_target == "Ascend":
-            level = "O3"
-        else:
-            raise ValueError("Level `auto` only support when `device_target` is GPU or Ascend.")
 
     enable_boost = False
     if boost_level in ["O1", "O2"]:
@@ -655,20 +657,16 @@ def build_train_network(network, optimizer, loss_fn=None, level='O0', boost_leve
             Default: ``None`` .
         level (str): Supports ['O0', 'O1', 'O2', 'O3', 'auto']. Default: ``'O0'`` .
 
-            - 'O0': Do not change.
-            - 'O1': Cast the operators in white_list to float16, the remaining operators are kept in float32.
-              The operators in the whitelist: [Conv1d, Conv2d, Conv3d, Conv1dTranspose, Conv2dTranspose,
-              Conv3dTranspose, Dense, LSTMCell, RNNCell, GRUCell, MatMul, BatchMatMul, PReLU, ReLU, Ger].
-            - 'O2': Cast network to float16, keep `mindspore.nn.BatchNorm` series interface,
-              :class:`mindspore.nn.LayerNorm` and `loss_fn` (if set) run in float32, using dynamic loss scale.
-            - 'O3': Cast network to float16, with additional property `keep_batchnorm_fp32=False` .
-            - 'auto': Set to level to recommended level in different devices. Set level to 'O2' on GPU, Set
-              level to 'O3' Ascend. The recommended level is chosen by the export experience, not applicable to all
-              scenarios. User should specify the level for special network.
+            - "O0": Do not change.
+            - "O1": Convert cells and operators in whitelist to lower precision operations, and keep full
+              precision operations for the rest.
+            - "O2": Keep full precision operations for cells and operators in blacklist, and convert the rest
+              to lower precision operations.
+            - "O3": Cast network to lower precision.
+            - "auto": Automatically determine the the accuracy of operators based on the blacklist and whitelist.
 
-            'O2' is recommended on GPU, 'O3' is recommended on Ascend. Property of `keep_batchnorm_fp32`,
-            `cast_model_type` and `loss_scale_manager` determined by `level` setting may be overwritten by settings in
-            `kwargs`.
+            Property of `keep_batchnorm_fp32`, `cast_model_type` and `loss_scale_manager` determined by `level`
+            setting may be overwritten by settings in `kwargs`.
 
         boost_level (str): Option for argument `level` in `mindspore.boost` , level for boost mode
             training. Supports ['O0', 'O1', 'O2']. Default: ``'O0'`` .
