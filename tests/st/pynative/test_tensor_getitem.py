@@ -24,6 +24,7 @@ from mindspore.nn import Cell
 from mindspore.common.parameter import ParameterTuple
 from mindspore.ops import composite as C
 from tests.mark_utils import arg_mark
+from mindspore.common.api import _pynative_executor
 
 
 grad_by_list_with_sens = C.GradOperation(get_by_list=True, sens_param=True)
@@ -918,6 +919,7 @@ def test_tensor_assign_exception():
     # 2. A[Tuple(Slice...)] = U, U.size error
     with pytest.raises(ValueError):
         net(Ta, Tb, Tck)
+        _pynative_executor.sync()
     # 3. A[Tuple(Slice...)] = U,  Slice error
     # with pytest.raises(IndexError):
     #     net_e1(Ta, b)
@@ -926,9 +928,11 @@ def test_tensor_assign_exception():
     # 1. A[Slice] = U,  u.size is error
     with pytest.raises(ValueError):
         net2(t, Tb, tck)
+        _pynative_executor.sync()
     # 3. A[Slice] = U, U.size error
     with pytest.raises(ValueError):
         net2(t, Tb, tck)
+        _pynative_executor.sync()
 
     # Error for A[Tuple(Slice...)] = Number
     # 1. A[Tuple(Slice...)] = Number,  Slice error
@@ -940,18 +944,22 @@ def test_tensor_assign_exception():
     # 1. A[Number] = U, U is a Tensor, u.size not match
     with pytest.raises(ValueError):
         net(Ta, Tb, Tck)
+        _pynative_executor.sync()
     # 2. A[Number] = U, the number index error
     with pytest.raises(IndexError):
         net(Ta4d, b, Ta4d_ck)
+        _pynative_executor.sync()
 
     # Error for A[(n,m)] = scalar/Tensor
     # 1. A[(n,m)] = U, U is a tensor. u.size not match
     net = TensorAssignWithTupleInteger()
     with pytest.raises(ValueError):
         net(Ta, Tb, Tck)
+        _pynative_executor.sync()
     # 2. A[(n,m)] = U, the number index error
     with pytest.raises(IndexError):
         net(Ta4d, b, Ta4d_ck)
+        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['cpu_linux'],
@@ -976,14 +984,17 @@ def test_tensor_assign_exception_2():
     net(Ta, Ta4d)
     with pytest.raises(ValueError):
         net(Ta, Tb)
+        _pynative_executor.sync()
     # 2. A[::, 1:, ...] = scalar/tensor
     net = TensorAssignWithTupleEllipsis()
     net(Ta, b)
     with pytest.raises(ValueError):
         net(Ta, Tb)
+        _pynative_executor.sync()
     net = TensorAssignWithMultiEllipsis()
     with pytest.raises(IndexError):
         net(Ta)
+        _pynative_executor.sync()
 
 
 class TensorAssignWithMultiEllipsis(Cell):

@@ -25,6 +25,7 @@
 #include "pipeline/pynative/pynative_utils.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"
+#include "runtime/pipeline/pipeline.h"
 
 namespace mindspore::pynative::autograd {
 namespace {
@@ -182,13 +183,13 @@ ValuePtrList CallBackwardHooks(const ValuePtr &value, ValuePtrList *grad_in) {
   if (grad_in->size() != kSizeOne) {
     MS_LOG(EXCEPTION) << "Tensor hook just work on one tensor value, not support value sequence";
   }
-  runtime::OpExecutor::GetInstance().WaitAll();
+  runtime::Pipeline::Get().WaitForward();
   for (const auto &hook : auto_grad_meta->backward_hooks()) {
     MS_LOG(DEBUG) << "Run hook id " << hook.first;
     MS_EXCEPTION_IF_NULL(hook.second);
     (*grad_in)[kIndex0] = (*(hook.second))(grad_in->front());
   }
-  runtime::OpExecutor::GetInstance().WaitAll();
+  runtime::Pipeline::Get().WaitForward();
   MS_LOG(DEBUG) << PyNativeAlgo::Common::PrintDebugInfo(*grad_in, "After hook print gradient in: ");
   return *grad_in;
 }

@@ -29,7 +29,7 @@
 #include "pipeline/pynative/pynative_utils.h"
 #include "mindspore/core/utils/core_op_utils.h"
 #include "frontend/operator/cc_implementations.h"
-#include "mindspore/ccsrc/kernel/pyboost/op_register.h"
+#include "kernel/common/pyboost/op_register.h"
 #include "pipeline/pynative/grad/function/auto_generate/pyboost_native_grad_functions.h"
 
 namespace mindspore::pynative::autograd {
@@ -359,29 +359,29 @@ NodePtr FuncBuilder::MatMul(const NodePtr &a, const NodePtr &b, bool transpose_a
 }
 
 NodePtr FuncBuilder::MatMulExt(const NodePtr &a, const NodePtr &b) {
-  auto [input, mat] = UnifyDtype2(a, b);
+  auto [input, mat] = UnifyDtype(a, b);
   return NativeFunc::MatMulExt(input, mat);
 }
 
 NodePtr FuncBuilder::Add(const NodePtr &lhs, const NodePtr &rhs) {
-  auto [input, other] = UnifyDtype2(lhs, rhs);
+  auto [input, other] = UnifyDtype(lhs, rhs);
   return NativeFunc::Add(input, other);
 }
 NodePtr FuncBuilder::Sub(const NodePtr &lhs, const NodePtr &rhs) {
-  auto [input, other] = UnifyDtype2(lhs, rhs);
+  auto [input, other] = UnifyDtype(lhs, rhs);
   return NativeFunc::Sub(input, other);
 }
 NodePtr FuncBuilder::Mul(const NodePtr &lhs, const NodePtr &rhs) {
-  auto [input, other] = UnifyDtype2(lhs, rhs);
+  auto [input, other] = UnifyDtype(lhs, rhs);
   return NativeFunc::Mul(input, other);
 }
 NodePtr FuncBuilder::Div(const NodePtr &lhs, const NodePtr &rhs) {
-  auto [input, other] = UnifyDtype2(lhs, rhs);
+  auto [input, other] = UnifyDtype(lhs, rhs);
   return NativeFunc::Div(input, other);
 }
 
 NodePtr FuncBuilder::Pow(const NodePtr &lhs, const NodePtr &rhs) {
-  auto [input, exponent] = UnifyDtype2(lhs, rhs);
+  auto [input, exponent] = UnifyDtype(lhs, rhs);
   return NativeFunc::Pow(input, exponent);
 }
 
@@ -389,7 +389,7 @@ NodePtr FuncBuilder::Equal(const NodePtr &lhs, const NodePtr &rhs, const TypePtr
   auto abs = lhs->abstract();
   MS_EXCEPTION_IF_NULL(abs);
   if (abs->isa<abstract::AbstractTensor>()) {
-    auto [input, other] = UnifyDtype2(lhs, rhs);
+    auto [input, other] = UnifyDtype(lhs, rhs);
     auto node = NativeFunc::Equal(input, other);
     return dst_type == nullptr ? node : Cast(node, dst_type);
   } else if (abs->isa<abstract::AbstractScalar>()) {
@@ -399,31 +399,31 @@ NodePtr FuncBuilder::Equal(const NodePtr &lhs, const NodePtr &rhs, const TypePtr
 }
 
 NodePtr FuncBuilder::NotEqual(const NodePtr &lhs, const NodePtr &rhs, const TypePtr &dst_type) {
-  auto [input, other] = UnifyDtype2(lhs, rhs);
+  auto [input, other] = UnifyDtype(lhs, rhs);
   auto node = NativeFunc::NotEqual(input, other);
   return dst_type == nullptr ? node : Cast(node, dst_type);
 }
 
 NodePtr FuncBuilder::GreaterEqual(const NodePtr &lhs, const NodePtr &rhs, const TypePtr &dst_type) {
-  auto [input, other] = UnifyDtype2(lhs, rhs);
+  auto [input, other] = UnifyDtype(lhs, rhs);
   auto node = NativeFunc::GreaterEqual(input, other);
   return dst_type == nullptr ? node : Cast(node, dst_type);
 }
 
 NodePtr FuncBuilder::Greater(const NodePtr &lhs, const NodePtr &rhs, const TypePtr &dst_type) {
-  auto [input, other] = UnifyDtype2(lhs, rhs);
+  auto [input, other] = UnifyDtype(lhs, rhs);
   auto node = NativeFunc::Greater(input, other);
   return dst_type == nullptr ? node : Cast(node, dst_type);
 }
 
 NodePtr FuncBuilder::LessEqual(const NodePtr &lhs, const NodePtr &rhs, const TypePtr &dst_type) {
-  auto [input, other] = UnifyDtype2(lhs, rhs);
+  auto [input, other] = UnifyDtype(lhs, rhs);
   auto node = NativeFunc::LessEqual(input, other);
   return dst_type == nullptr ? node : Cast(node, dst_type);
 }
 
 NodePtr FuncBuilder::Less(const NodePtr &lhs, const NodePtr &rhs, const TypePtr &dst_type) {
-  auto [input, other] = UnifyDtype2(lhs, rhs);
+  auto [input, other] = UnifyDtype(lhs, rhs);
   auto node = NativeFunc::Less(input, other);
   return dst_type == nullptr ? node : Cast(node, dst_type);
 }

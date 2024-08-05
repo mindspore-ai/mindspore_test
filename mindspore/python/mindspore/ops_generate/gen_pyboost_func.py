@@ -405,7 +405,8 @@ def generate_pyboost_functions(work_path, yaml_data):
     pyboost_func_str = ''
     pyboost_func_pybind_def = ''
     pyboost_func_include_headers_str = ''
-    pyboost_func_include_header_template = CppTemplate(f'#include "{K.MS_COMMON_PYBOOST_KERNEL_PATH}/auto_generate/${{operator_name}}.h"\n')
+    pyboost_func_include_header_template = CppTemplate(
+        f'#include "{K.MS_COMMON_PYBOOST_KERNEL_PATH}/auto_generate/${{operator_name}}.h"\n')
     for operator_name, operator_data in yaml_data.items():
         op_proto = OpProto.load_from_yaml(operator_name, operator_data)
         if not op_proto.is_dispatch:
@@ -579,7 +580,8 @@ def generate_pyboost_grad_functions(work_path, yaml_data):
     pyboost_func_str = ''
     pyboost_func_reg_def = ''
     pyboost_func_include_headers_str = ''
-    pyboost_func_include_header_template = CppTemplate(f'#include "{K.MS_COMMON_PYBOOST_KERNEL_PATH}/auto_generate/${{operator_name}}.h"\n')
+    pyboost_func_include_header_template = CppTemplate(
+        f'#include "{K.MS_COMMON_PYBOOST_KERNEL_PATH}/auto_generate/${{operator_name}}.h"\n')
     for operator_name, operator_data in yaml_data.items():
         if not is_pyboost_enable(operator_data):
             continue
@@ -628,7 +630,8 @@ def generate_pyboost_native_grad_functions(work_path, yaml_data):
     pyboost_func_str = ''
     pyboost_func_include_headers_str = ''
     native_function_headers_str = ''
-    native_include_header_template = CppTemplate("#include \"kernel/pyboost/auto_generate/${operator_name}.h\"\n")
+    native_include_header_template = CppTemplate(
+        f'#include "{K.MS_COMMON_PYBOOST_KERNEL_PATH}/auto_generate/${{operator_name}}.h"\n')
     native_function_header_template = CppTemplate("static NodePtr $func_name(${call_args_with_type});\n")
     native_function_sigle_output_template = "const auto &output_value = op->outputs()[0];\n"
     native_function_multi_output_template = template.MULTI_OUTPUT_TEMPLATE
@@ -715,7 +718,8 @@ def get_auto_generate_template():
                                template.PYBOOST_CPU_CUSTOMIZE_CALL_TEMPLATE]
     op_view_template_path = [template.PYBOOST_ASCEND_VIEW_CALL_TEMPLATE, template.PYBOOST_GPU_VIEW_CALL_TEMPLATE,
                              template.PYBOOST_CPU_VIEW_CALL_TEMPLATE]
-    code_generate_path = [f"{K.MS_OPS_KERNEL_PATH}/{device}/pyboost/auto_generate/" for device in ["ascend", "gpu", "cpu"]]
+    code_generate_path = [f"{K.MS_OPS_KERNEL_PATH}/{device}/pyboost/auto_generate/" for device in
+                          ["ascend", "gpu", "cpu"]]
     return TemplatePaths(op_header_template_path, op_call_template_path, op_source_template_path,
                          op_custom_template_path,
                          op_view_template_path, code_generate_path)
@@ -910,7 +914,8 @@ def gen_pyboost_inner_prim(work_path, op_yaml_data):
             arg_handler = arg_info.get('arg_handler')
             processed_arg = arg_name
             if arg_handler is not None and arg_handler != 'dtype_to_type_id':
-                process_func += f"""converted_{arg_name} = {arg_handler}('{operator_name}', '{arg_name}', {arg_name})\n"""
+                process_func += \
+                    f"""converted_{arg_name} = {arg_handler}('{operator_name}', '{arg_name}', {arg_name})\n"""
                 processed_arg = 'converted_' + arg_name
             input_args.append(arg_name)
             processed_args.append(processed_arg)

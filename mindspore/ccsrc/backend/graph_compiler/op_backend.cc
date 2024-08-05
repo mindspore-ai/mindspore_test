@@ -19,7 +19,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
-#include "ops/structure_op_name.h"
+#include "op_def/structure_op_name.h"
 #include "runtime/pynative/op_executor.h"
 #include "runtime/pynative/op_runner.h"
 #include "runtime/device/device_address_utils.h"

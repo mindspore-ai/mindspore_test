@@ -17,7 +17,7 @@
 #include "pipeline/pynative/grad/function/auto_generate/pyboost_native_grad_functions.h"
 #include "runtime/pynative/op_executor.h"
 #include "runtime/pynative/op_function/value_converter.h"
-#include "kernel/pyboost/pyboost_utils.h"
+#include "kernel/common/pyboost/pyboost_utils.h"
 #include "backend/graph_compiler/vmimpl.h"
 #include "include/common/utils/python_adapter.h"
 #include "pybind_api/gil_scoped_long_running.h"

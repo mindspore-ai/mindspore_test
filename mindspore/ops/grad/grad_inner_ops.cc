@@ -134,7 +134,7 @@ REG_BPROP_BUILDER("FillTensor").SetUnusedInputs({i0, i1, i2, i3}).SetBody(BODYFU
     auto input_dtype = ib->GetDtype(value)->type_id();
     auto value_dtype = ib->Value(static_cast<int64_t>(input_dtype));
     auto real_dvalue = ib->Reshape(dvalue, v_shape);
-    auto dvalue_out = ib->FillTensor(value_shape, real_dvalue, value_dtype);
+    auto dvalue_out = ib->Emit("FillTensor", {v_shape, real_dvalue, value_dtype});
     return {ib->OutZeros(size), dvalue_out, ib->OutZeros(type)};
   }
   if (!value->shape().empty()) {

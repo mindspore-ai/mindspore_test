@@ -28,6 +28,7 @@ def scatter_nd_forward_func(indices, updates, shape):
 
 @test_utils.run_with_cell
 def scatter_nd_backward_func(indices, updates, shape):
+    # pylint: disable=E1102
     return ops.grad(scatter_nd_forward_func, (0, 1))(indices, updates, shape)
 
 

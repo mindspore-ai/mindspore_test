@@ -4,7 +4,7 @@
 #include <map>
 #include <string>
 #include <vector>
-#include "kernel/pyboost/op_runner.h"
+#include "kernel/common/pyboost/op_runner.h"
 #include "runtime/pynative/op_runner.h"
 #include "frontend/expander/bprop/bprop_irbuilder.h"
 

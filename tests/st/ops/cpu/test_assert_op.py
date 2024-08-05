@@ -19,7 +19,6 @@ import mindspore.nn as nn
 from mindspore.ops import operations as P
 from mindspore import Tensor, context
 
-
 context.set_context(mode=context.GRAPH_MODE, device_target='CPU')
 
 
@@ -31,7 +30,9 @@ class AssertTEST(nn.Cell):
     def construct(self, cond, x):
         return self.assert1(cond, x)
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_assert_op():
     """
     Feature: Assert cpu kernel
