@@ -1963,8 +1963,8 @@ def bitwise_and_ext(input, other):
     Note:
         Args of `input` and `other` comply with the implicit type conversion rules to
         make the data types consistent.
-        If they have different data types, the lower priority data type will be converted to
-        the relatively highest priority data type.
+        If they have different data types, the lower precision data type will be converted to
+        the relatively highest precision data type.
 
     Args:
         input (Tensor): The input tensor.
@@ -2043,8 +2043,8 @@ def bitwise_or_ext(input, other):
     Note:
         Args of `input` and `other` comply with the implicit type conversion rules to
         make the data types consistent.
-        If they have different data types, the lower priority data type will be converted to
-        the relatively highest priority data type.
+        If they have different data types, the lower precision data type will be converted to
+        the relatively highest precision data type.
 
     Args:
         input (Tensor): The input tensor.
@@ -2123,8 +2123,8 @@ def bitwise_xor_ext(input, other):
     Note:
         Args of `input` and `other` comply with the implicit type conversion rules to
         make the data types consistent.
-        If they have different data types, the lower priority data type will be converted to
-        the relatively highest priority data type.
+        If they have different data types, the lower precision data type will be converted to
+        the relatively highest precision data type.
 
     Args:
         input (Tensor): The input tensor.
