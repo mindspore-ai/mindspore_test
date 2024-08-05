@@ -86,6 +86,7 @@ AnfNodePtr CreateSubNode(const FuncGraphPtr &fg, const vector<AnfNodePtr> &input
   const auto &mean = inputs[0];
   MS_EXCEPTION_IF_NULL(mean);
   const auto &tuple_getitems = inputs[1];
+  MS_EXCEPTION_IF_NULL(fg);
   auto sub_node = fg->NewCNode({NewValueNode(std::make_shared<Primitive>(kSubOpName)), mean, tuple_getitems});
   MS_EXCEPTION_IF_NULL(sub_node);
   sub_node->set_abstract(mean->abstract());
@@ -93,6 +94,7 @@ AnfNodePtr CreateSubNode(const FuncGraphPtr &fg, const vector<AnfNodePtr> &input
 }
 
 AnfNodePtr CreateDataNode(const CNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
   auto prim_bn = GetValueNode<PrimitivePtr>(node->input(0));
   auto momentum_val = prim_bn->GetAttr(kMomentum);
   MS_EXCEPTION_IF_NULL(momentum_val);
@@ -133,8 +135,10 @@ AnfNodePtr CreateAssignSubNode(const FuncGraphPtr &fg, const vector<AnfNodePtr> 
 }
 
 void SetScopeForNewNodes(const vector<AnfNodePtr> &nodes, const AnfNodePtr &bn_node) {
+  MS_EXCEPTION_IF_NULL(bn_node);
   auto bn_scope = bn_node->scope();
   for (auto node : nodes) {
+    MS_EXCEPTION_IF_NULL(node);
     node->set_scope(bn_scope);
   }
 }
@@ -255,6 +259,7 @@ bool BatchNormTransform::NeedBNTransform(const BaseRef &ref) {
     // if executed before the 4th and 5th input of BatchNorm is None
     if (IsPrimitiveCNode(node, prim::kPrimBatchNorm)) {
       auto c_node = node->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(c_node);
       auto bn_inputs = c_node->inputs();
       if (c_node->size() != kBNDefaultInputNum) {
         return false;

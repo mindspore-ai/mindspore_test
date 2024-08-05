@@ -42,11 +42,14 @@ const AnfNodePtr AvgPoolGradForGE::Process(const FuncGraphPtr &graph, const AnfN
   MS_EXCEPTION_IF_NULL(avg_pool_grad_node);
   // get shape node
   auto input_x = avg_pool_grad_node->input(kIndex1);
+  MS_EXCEPTION_IF_NULL(input_x);
   auto input_x_shape = input_x->Shape();
   AnfNodePtr shape_node = nullptr;
+  MS_EXCEPTION_IF_NULL(input_x_shape);
   if (input_x_shape->IsDynamic()) {
     shape_node = CreateTensorShapeNode(graph, input_x, node);
   } else {
+    MS_EXCEPTION_IF_NULL(input_x_shape->cast<abstract::ShapePtr>());
     auto shape_vector = input_x_shape->cast<abstract::ShapePtr>()->shape();
     std::vector<int32_t> value_node_data;
     (void)std::transform(shape_vector.begin(), shape_vector.end(), std::back_inserter(value_node_data), LongToInt);

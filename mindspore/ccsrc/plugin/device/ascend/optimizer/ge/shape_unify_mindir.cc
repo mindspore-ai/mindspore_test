@@ -43,8 +43,11 @@ namespace mindspore {
 namespace opt {
 namespace {
 ValueNodePtr CreateScalarValue(const FuncGraphPtr &func_graph, int64_t value) {
+  MS_EXCEPTION_IF_NULL(func_graph);
   auto scalar_value = MakeValue(value);
   auto scalar_node = NewValueNode(scalar_value);
+  MS_EXCEPTION_IF_NULL(scalar_value);
+  MS_EXCEPTION_IF_NULL(scalar_node);
   scalar_node->set_abstract(scalar_value->ToAbstract());
   func_graph->AddValueNode(scalar_node);
   return scalar_node;
@@ -105,8 +108,13 @@ CNodePtr ShapeUnifyMindIR::CreateTensorToScalar(const FuncGraphPtr &func_graph, 
   MS_EXCEPTION_IF_NULL(tensor_to_scalar);
 
   // set abstract
+  MS_EXCEPTION_IF_NULL(anf_node);
+  MS_EXCEPTION_IF_NULL(anf_node->abstract());
   auto abstract_tensor = anf_node->abstract()->cast<abstract::AbstractTensorPtr>();
+  MS_EXCEPTION_IF_NULL(abstract_tensor);
+  MS_EXCEPTION_IF_NULL(abstract_tensor->element());
   auto type_ptr = abstract_tensor->element()->GetTypeTrack();
+  MS_EXCEPTION_IF_NULL(type_ptr);
   TypeId type_id = type_ptr->type_id();
   auto tmp_abstract = std::make_shared<abstract::AbstractScalar>(kValueAny, TypeIdToType(type_id));
   MS_EXCEPTION_IF_NULL(tmp_abstract);

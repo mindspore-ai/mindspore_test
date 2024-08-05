@@ -86,6 +86,7 @@ void GetNeedReplaceEdges(const AnfNodePtr &old_make_tuple, const AnfNodePtr &nod
       auto format = AnfAlgo::GetOutputFormat(real_input, index);
       if (kFormatsNeedTransdata.find(format) == kFormatsNeedTransdata.end() &&
           !IsDepthwiseCase(real_input, index, format)) {
+        MS_EXCEPTION_IF_NULL(edges);
         (void)edges->emplace_back(std::make_tuple(old_make_tuple, tuple_input_index, transdata_input));
       }
     }
@@ -107,6 +108,7 @@ HashMap<AnfNodePtr, size_t> GetTransdataRefCount(const FuncGraphPtr &func_graph)
   auto real_outputs = common::AnfAlgo::GetAllOutput(func_graph->get_return());
   HashMap<AnfNodePtr, size_t> transdata_ref_count;
   for (auto &node : real_outputs) {
+    MS_EXCEPTION_IF_NULL(node);
     if (!node->isa<CNode>()) {
       continue;
     }

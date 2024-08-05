@@ -81,6 +81,7 @@ bool NodeNeedCast(const TypeId node_dtype, const std::unordered_set<TypeId> &src
 
 const CNodePtr AddCastForGeInput(const FuncGraphPtr &graph, const CNodePtr &node,
                                  const std::vector<CastInfo> &cast_info_vector) {
+  MS_EXCEPTION_IF_NULL(node);
   std::vector<AnfNodePtr> new_inputs(node->inputs());
   bool tag = False;
   for (size_t i = 0; i < cast_info_vector.size(); ++i) {
@@ -102,6 +103,7 @@ const CNodePtr AddCastForGeInput(const FuncGraphPtr &graph, const CNodePtr &node
   auto kernel_graph = graph->cast<KernelGraphPtr>();
   MS_EXCEPTION_IF_NULL(kernel_graph);
   auto new_node = kernel_graph->NewCNodeWithInfos(new_inputs, node);
+  MS_EXCEPTION_IF_NULL(new_node);
   new_node->set_scope(node->scope());
   new_node->set_fullname_with_scope(node->fullname_with_scope());
   new_node->set_abstract(node->abstract());
@@ -147,6 +149,7 @@ const CNodePtr AddCastForGeOutput(const FuncGraphPtr &graph, const CNodePtr &nod
     (void)new_outputs.emplace_back(std::move(tuple_getitem));
   }
   auto make_tuple = CreateMakeTupleNode(graph, new_outputs);
+  MS_EXCEPTION_IF_NULL(make_tuple);
   make_tuple->set_scope(node->scope());
   return make_tuple;
 }

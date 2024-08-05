@@ -215,12 +215,16 @@ const AnfNodePtr ConvertBasePaddings::OptimizePaddingsValue(const FuncGraphPtr &
                                                             const bool &paddings_contiguous, const size_t &dst_length,
                                                             bool force_length8) const {
   std::vector<T> paddings_data;
+  MS_EXCEPTION_IF_NULL(ori_paddings);
   auto paddings_type = ori_paddings->GetType();
   MS_EXCEPTION_IF_NULL(paddings_type);
   if (paddings_type->template isa<TensorType>()) {
     auto paddings_value = ori_paddings->GetValue();
     MS_EXCEPTION_IF_NULL(paddings_value);
     auto paddings_array_value = GetArrayValue<T>(paddings_value);
+    if (!paddings_array_value.has_value()) {
+      MS_LOG(EXCEPTION) << "The paddings_value GetArrayValue failed.";
+    }
     paddings_data = paddings_array_value.value().ToVector();
   } else {
     auto paddings_value = GetArrayValue<T>(ori_paddings);
@@ -363,6 +367,7 @@ void ConvertPadV3GradPaddings::ReduceOutputDims(const FuncGraphPtr &graph, const
   auto output_shape = common::AnfAlgo::GetOutputInferShape(node, kIndex0);
   auto reshape_node = CreateReshapeNode(graph, node, output_shape);
   MS_EXCEPTION_IF_NULL(reshape_node);
+  MS_EXCEPTION_IF_NULL(graph);
   auto manager = graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
   (void)manager->Replace(node, reshape_node);

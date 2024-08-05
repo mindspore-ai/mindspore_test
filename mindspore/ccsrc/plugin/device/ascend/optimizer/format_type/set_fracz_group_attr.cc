@@ -151,6 +151,7 @@ std::vector<KernelWithIndex> GetCNodeNeighborFraczNodes(const FuncGraphManagerPt
         auto item_index = common::AnfAlgo::GetTupleGetItemOutIndex(cnode);
         while (input->isa<CNode>() && common::AnfAlgo::GetCNodeName(input) == kDependName) {
           common::AnfAlgo::SetNodeAttr(kAttrFracZGroup, MakeValue(groups), input);
+          MS_EXCEPTION_IF_NULL(input->cast<CNodePtr>());
           input = input->cast<CNodePtr>()->input(1);
           MS_EXCEPTION_IF_NULL(input);
         }

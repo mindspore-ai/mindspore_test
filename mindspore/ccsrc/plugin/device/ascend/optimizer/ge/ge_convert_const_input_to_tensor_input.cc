@@ -37,10 +37,12 @@ AnfNodePtr UpdateConstInput(const FuncGraphPtr &func_graph, const CNodePtr &cnod
   MS_EXCEPTION_IF_NULL(func_graph);
   auto new_cnode = NewCNode(new_inputs, func_graph);
   MS_EXCEPTION_IF_NULL(new_cnode);
+  MS_EXCEPTION_IF_NULL(cnode);
   new_cnode->set_primal_attrs(cnode->primal_attrs());
   new_cnode->set_attrs(cnode->attrs());
   new_cnode->set_scope(cnode->scope());
   if (common::AnfAlgo::CheckPrimitiveType(cnode, prim::kPrimDepend)) {
+    MS_EXCEPTION_IF_NULL(new_inputs[1]);
     new_cnode->set_abstract(new_inputs[1]->abstract());
   } else {
     new_cnode->set_abstract(cnode->abstract());
