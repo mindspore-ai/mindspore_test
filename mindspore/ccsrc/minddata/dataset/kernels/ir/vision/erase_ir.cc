@@ -81,7 +81,7 @@ std::shared_ptr<TensorOp> EraseOperation::Build() {
     return dvpp_tensor_op;
 #endif
   } else {
-    MS_LOG(ERROR) << "AdjustContrast: Invalid device target. It's not CPU or Ascend.";
+    MS_LOG(ERROR) << "Erase: Invalid device target. It's not CPU or Ascend.";
     return nullptr;
   }
 }
