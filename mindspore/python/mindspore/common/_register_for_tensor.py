@@ -16,6 +16,8 @@
 """Registry the relation."""
 
 from __future__ import absolute_import
+import os
+from mindspore import context
 from mindspore._c_expression import Tensor as Tensor_
 
 
@@ -23,7 +25,20 @@ class Registry:
     """Used for tensor operator registration"""
 
     def __init__(self):
-        pass
+        self._tensor_method_map = {}
+        self._mint_functions = []
+
+    def register(self, obj_str, obj, is_mint=False):
+        """ Register the relation."""
+        if not isinstance(obj_str, str):
+            raise TypeError("key for tensor registry must be string.")
+        if is_mint:
+            if os.environ.get("MS_TENSOR_METHOD_BOOST") == '1' and context.get_context("device_target") == 'Ascend':
+                self._tensor_method_map[obj_str] = obj
+                self._mint_functions.append(obj_str)
+        else:
+            if obj_str not in self._mint_functions:
+                self._tensor_method_map[obj_str] = obj
 
     def get(self, obj_str):
         """Get property if obj is not vm_compare"""
@@ -34,11 +49,11 @@ class Registry:
             def wrap(*args):
                 new_args = list(args)
                 new_args.append(obj_str)
-                return getattr(self, "vm_compare")(*new_args)
+                return self._tensor_method_map["vm_compare"](*new_args)
 
             obj = wrap
         else:
-            obj = getattr(self, obj_str)
+            obj = self._tensor_method_map[obj_str]
         return obj
 
 
