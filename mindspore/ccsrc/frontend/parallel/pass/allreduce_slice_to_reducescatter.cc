@@ -29,7 +29,9 @@
 
 namespace mindspore {
 namespace parallel {
-const size_t kBatchMatmulInputs = 2;
+const size_t kBatchMatMulStrategyNum = 2;
+const size_t kBatchMatMulTransposeAIndex = 3;
+const size_t kBatchMatMulTransposeBIndex = 4;
 const size_t kReshapeShapeIndex = 2;
 const size_t kStridedSliceBeginIndex = 2;
 const size_t kStridedSliceEndIndex = 3;
@@ -144,9 +146,62 @@ std::vector<Shape> GetNodeStrategy(const AnfNodePtr &node) {
   return GetValue<std::vector<Shape>>(input_strategy);
 }
 
+std::vector<Shape> GetBatchMatMulStrategy(const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
+  auto cnode = node->cast<CNodePtr>();
+  if (cnode == nullptr) {
+    return {};
+  }
+
+  auto transpose_a = cnode->input(kBatchMatMulTransposeAIndex);
+  auto transpose_b = cnode->input(kBatchMatMulTransposeBIndex);
+  if (transpose_a == nullptr || transpose_b == nullptr) {
+    return {};
+  }
+
+  auto transpose_a_value_node = transpose_a->cast<ValueNodePtr>();
+  auto transpose_b_value_node = transpose_b->cast<ValueNodePtr>();
+  if (transpose_a_value_node == nullptr || transpose_b_value_node == nullptr) {
+    return {};
+  }
+
+  auto transpose_a_value = transpose_a_value_node->value();
+  auto transpose_b_value = transpose_b_value_node->value();
+
+  if (transpose_a_value == nullptr || transpose_b_value == nullptr) {
+    return {};
+  }
+
+  auto transpose_a_bool = GetValue<bool>(transpose_a_value);
+  auto transpose_b_bool = GetValue<bool>(transpose_b_value);
+
+  auto origin_strategy = GetNodeStrategy(node);
+  if (origin_strategy.size() < kBatchMatMulStrategyNum) {
+    return {};
+  }
+
+  // (x, ep, 1, mp) * (ep, mp, 1)
+  auto &bmm_input1_strategy = origin_strategy.at(0);
+  auto &bmm_input2_strategy = origin_strategy.at(1);
+  if (transpose_a_bool && bmm_input1_strategy.size() >= kMinInputDimNum) {
+    auto tmp = bmm_input1_strategy[bmm_input1_strategy.size() - 1];
+    bmm_input1_strategy[bmm_input1_strategy.size() - 1] =
+      bmm_input1_strategy[bmm_input1_strategy.size() - kMpIndexFromRight];
+    bmm_input1_strategy[bmm_input1_strategy.size() - kMpIndexFromRight] = tmp;
+  }
+
+  if (transpose_b_bool && bmm_input2_strategy.size() >= kMinInputDimNum) {
+    auto tmp = bmm_input2_strategy[bmm_input2_strategy.size() - 1];
+    bmm_input2_strategy[bmm_input2_strategy.size() - 1] =
+      bmm_input2_strategy[bmm_input2_strategy.size() - kMpIndexFromRight];
+    bmm_input2_strategy[bmm_input2_strategy.size() - kMpIndexFromRight] = tmp;
+  }
+  return origin_strategy;
+}
+
 bool CheckBatchMatmulAndStridedSliceStrategy(const std::vector<Shape> &bmm_input_strategy,
                                              const std::vector<Shape> &stridedslice_input_strategy) {
-  if (bmm_input_strategy.size() < kBatchMatmulInputs) {
+  if (bmm_input_strategy.size() < kBatchMatMulStrategyNum) {
     return false;
   }
 
@@ -197,7 +252,7 @@ bool CheckBatchMatmulAndStridedSliceStrategy(const std::vector<Shape> &bmm_input
 }
 
 bool CheckCase1Strategy(const AllReduceSliceToReduceScatterParams &params) {
-  auto bmm_input_strategy = GetNodeStrategy(params.batch_matmul);
+  auto bmm_input_strategy = GetBatchMatMulStrategy(params.batch_matmul);
   auto stridedslice_input_strategy = GetNodeStrategy(params.strategy_stridedslice);
   if (!CheckBatchMatmulAndStridedSliceStrategy(bmm_input_strategy, stridedslice_input_strategy)) {
     return false;
@@ -274,7 +329,7 @@ bool CheckBiasAddAndStridedSliceStrategy(const std::vector<Shape> &bias_add_inpu
 }
 
 bool CheckCase2Strategy(const AllReduceSliceToReduceScatterParams &params) {
-  auto bmm_input_strategy = GetNodeStrategy(params.batch_matmul);
+  auto bmm_input_strategy = GetBatchMatMulStrategy(params.batch_matmul);
   auto stridedslice_input_strategy = GetNodeStrategy(params.strategy_stridedslice);
   if (!CheckBatchMatmulAndStridedSliceStrategy(bmm_input_strategy, stridedslice_input_strategy)) {
     return false;
@@ -430,7 +485,7 @@ void AllReduceSliceToReduceScatterCase2(const AllReduceSliceToReduceScatterParam
 
 bool CheckAndFillParallelParams(AllReduceSliceToReduceScatterParams *params) {
   MS_EXCEPTION_IF_NULL(params);
-  auto bmm_input_strategy = GetNodeStrategy(params->batch_matmul);
+  auto bmm_input_strategy = GetBatchMatMulStrategy(params->batch_matmul);
 
   // (x, ep, 1, mp) * (ep, mp, 1)
   auto &bmm_input1_strategy = bmm_input_strategy.at(0);
