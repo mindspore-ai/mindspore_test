@@ -31,6 +31,7 @@ CONFIG_KEY_VARIABLE = "cacheVariables"
 CONFIG_KEY_CANN_PATH = "ASCEND_CANN_PACKAGE_PATH"
 CONFIG_KEY_VENDOR_NAME = "vendor_name"
 CONFIG_KEY_COMPUTE_UNIT = "ASCEND_COMPUTE_UNIT"
+CANN_VERSION = 7.3
 
 
 def get_config():
@@ -103,42 +104,43 @@ class CustomOOC():
         """generate compile project by msopgen"""
         if os.path.exists(self.custom_project) and os.path.isdir(self.custom_project):
             shutil.rmtree(self.custom_project)
-        command = ['msopgen', '-h']
-        result = subprocess.run(command, shell=False, stderr=subprocess.STDOUT)
-        if result.returncode != 0:
-            raise RuntimeError(
-                "[msopgen] is not existed, Please check if the [toolkit] is installed in the current environment.")
-        log_fd = os.open("generate.log", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o700)
-        log_file = os.fdopen(log_fd, "w")
-        command = ['msopgen', 'gen', '-i', './template.json', '-c', 'ai_core-Ascend310P1', '-lan', 'cpp', '-out',
-                   self.custom_project]
-        result = subprocess.run(command, shell=False, stdout=log_file, stderr=subprocess.STDOUT)
-        log_file.close()
-        if result.returncode == 0:
-            logger.info("Generate custom project successfully!")
-        else:
-            with open('generate.log', 'r') as file:
-                for line in file:
-                    logger.error(line.strip())
-            raise RuntimeError("Generate custom project failed!")
-        with open(os.path.join(self.custom_project, 'CMakePresets.json'), 'r', encoding='utf-8') as f:
+        sample_path = "../CANN-" + str(CANN_VERSION) + \
+                      "/tools/msopgen/template/operator_demo_projects/ascendc_operator_sample"
+        src_dir = os.path.join(self.args.ascend_cann_package_path, sample_path)
+        if not os.path.isdir(src_dir):
+            raise ValueError("There is no the path {}".format(src_dir))
+
+        shutil.copytree(src_dir, self.custom_project)
+        os.chmod(self.custom_project, 0o700)
+        for root, dirs, files in os.walk(self.custom_project):
+            for d in dirs:
+                os.path.join(root, d)
+                os.chmod(os.path.join(root, d), 0o700)
+            for f in files:
+                os.path.join(root, f)
+                os.chmod(os.path.join(root, f), 0o700)
+
+        cmake_preset_path = os.path.join(self.custom_project, 'CMakePresets.json')
+        with open(cmake_preset_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
         data[CONFIG_KEY_CONFIGUREPRESET][0][CONFIG_KEY_VARIABLE][CONFIG_KEY_COMPUTE_UNIT][
             CONFIG_KEY_VALUE] = "ascend310p;ascend310b;ascend910;ascend910b"
         with os.fdopen(
-                os.open(os.path.join(self.custom_project, 'CMakePresets.json'), os.O_WRONLY | os.O_CREAT | os.O_TRUNC,
+                os.open(cmake_preset_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC,
                         0o700), "w") as f:
             json.dump(data, f, ensure_ascii=False, indent=4)
         ascend_suffix = {SUFFIX_CPP, SUFFIX_H}
         for item in os.listdir(os.path.join(self.custom_project, OP_HOST)):
             if item.split('.')[-1] in ascend_suffix:
-                os.remove(os.path.join(self.custom_project, OP_HOST, item))
+                default_host = os.path.join(self.custom_project, OP_HOST, item)
+                os.remove(default_host)
 
         for item in os.listdir(os.path.join(self.custom_project, OP_KERNEL)):
             if item.split('.')[-1] in ascend_suffix:
-                os.remove(os.path.join(self.custom_project, OP_KERNEL, item))
+                default_kernel = os.path.join(self.custom_project, OP_KERNEL, item)
+                os.remove(default_kernel)
 
-    def get_cann_path(self):
+    def set_cann_path(self):
         """get cann path by user set or default"""
         if self.args.ascend_cann_package_path != "":
             cann_package_path = self.args.ascend_cann_package_path
@@ -150,14 +152,13 @@ class CustomOOC():
         if not os.path.isdir(cann_package_path):
             logger.error(f"The path '{cann_package_path}' is not a valid path.")
 
-        return cann_package_path
+        self.args.ascend_cann_package_path = cann_package_path
 
     def compile_config(self):
         """create CMakePresets.json by config"""
         with open(os.path.join(self.custom_project, 'CMakePresets.json'), 'r', encoding='utf-8') as f:
             data = json.load(f)
-        cann_package_path = self.get_cann_path()
-        self.args.ascend_cann_package_path = cann_package_path
+        cann_package_path = self.args.ascend_cann_package_path
         logger.info("The ASCEND_CANN_PACKAGE_PATH used for compiling the custom operator is is {}".format(
             cann_package_path))
         data[CONFIG_KEY_CONFIGUREPRESET][0][CONFIG_KEY_VARIABLE][CONFIG_KEY_CANN_PATH][
@@ -262,6 +263,7 @@ class CustomOOC():
     def compile(self):
         """compile op"""
         self.check_args()
+        self.set_cann_path()
         self.generate_compile_project()
         self.compile_config()
         self.compile_custom()
