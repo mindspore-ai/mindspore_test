@@ -12,18 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-import pytest
 from mindspore.common import Tensor, Parameter, jit
 from mindspore.nn import Cell
 from mindspore import ops
 import mindspore as ms
-
+from tests.mark_utils import arg_mark
 
 ms.context.set_context(mode=ms.GRAPH_MODE)
 
-@pytest.mark.level0
-@pytest.mark.platform_x86_gpu_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_param_compile_cache():
     """
     Feature: Support compile cache when exist parameter in the top graph inputs.
@@ -52,9 +49,7 @@ def test_param_compile_cache():
     assert out2 == 4
 
 
-@pytest.mark.level0
-@pytest.mark.platform_x86_gpu_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_param_compile_cache_kwargs():
     """
     Feature: Support compile cache when exist parameter in the top graph inputs.
@@ -83,9 +78,7 @@ def test_param_compile_cache_kwargs():
     assert out2 == 8
 
 
-@pytest.mark.level0
-@pytest.mark.platform_x86_gpu_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_param_compile_cache_jit():
     """
     Feature: Support compile cache when exist parameter in the top graph inputs.

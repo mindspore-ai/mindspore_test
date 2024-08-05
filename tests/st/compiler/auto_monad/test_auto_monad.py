@@ -1821,9 +1821,7 @@ def test_return_none_with_side_effect_mutil_func():
     assert res[1] == 12
 
 
-@pytest.mark.level0
-@pytest.mark.platform_x86_gpu_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_bprop_print_func():
     """
     Feature: Support side effect node in bprop.
@@ -1869,9 +1867,7 @@ def test_bprop_print_func():
     check_output(cap.output, patterns)
 
 
-@pytest.mark.level0
-@pytest.mark.platform_x86_gpu_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_bprop_assign_func():
     """
     Feature: Support side effect node in bprop.
