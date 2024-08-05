@@ -1,4 +1,4 @@
-# Copyright 2022 Huawei Technologies Co., Ltd
+# Copyright 2022-2024 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -134,7 +134,7 @@ def test_doubel_elements_hypermap_correct_mix_inputs():
 
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_double_elements_hypermap_inputs_length_mismatch():
     """
     Feature: HyperMap
@@ -144,7 +144,7 @@ def test_double_elements_hypermap_inputs_length_mismatch():
     x = (Tensor(np.array([1, 2, 3]), mstype.float32), Tensor(np.array([4, 5, 6]), mstype.float32))
     y = ((1, 2), (2, 1), (5, 6))
     common_map = HyperMapNet(double_elements_fg)
-    with pytest.raises(Exception, match="The length of tuples in HyperMap must be the same"):
+    with pytest.raises(Exception, match="The tuples in HyperMap should have the same length."):
         common_map((x, y))
 
 
