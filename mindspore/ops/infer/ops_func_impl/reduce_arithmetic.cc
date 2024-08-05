@@ -33,6 +33,14 @@ int64_t CalRealAixs(const int64_t &axis, const size_t &x_shape_size, const Primi
 }
 
 BaseShapePtr ReduceInferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) {
+  if (input_args.size() < kReduceInputAtLeastLen) {
+    MS_LOG(EXCEPTION) << "For " << primitive->name() << ", the input length should be at least "
+                      << kReduceInputAtLeastLen << " but got " << input_args.size();
+  }
+  for (size_t i = 0; i < kReduceInputAtLeastLen; ++i) {
+    MS_EXCEPTION_IF_NULL(input_args[i]);
+  }
+
   auto keep_dims_value = input_args[kInputIndex2]->GetValue();
   auto keep_dims_opt = GetScalarValue<bool>(keep_dims_value);
   if (MS_UNLIKELY(!keep_dims_opt.has_value())) {
