@@ -516,7 +516,7 @@ def cat(tensors, dim=0):
 
 def cummax(input, dim):
     r"""
-    Returns a tuple (values, indices) where 'values' is the cumulative maximum value of input Tensor `input`
+    Returns a tuple (values, indices) where `values` is the cumulative maximum value of input Tensor `input`
     along the dimension `dim`, and `indices` is the index location of each maximum value.
 
     .. math::

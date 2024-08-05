@@ -1,7 +1,7 @@
 masked_select:
     description: |
-        Returns a new 1-D Tensor which indexes the `x` tensor according to the boolean `mask`.
-        The shapes of the `mask` tensor and the `x` tensor don't need to match, but they must be broadcastable.
+        Returns a new 1-D Tensor which indexes the `input` tensor according to the boolean `mask`.
+        The shapes of the `mask` tensor and the `input` tensor don't need to match, but they must be broadcastable.
         
         Args:
             input (Tensor): The shape of tensor is :math:`(x_1, x_2, ..., x_R)`.

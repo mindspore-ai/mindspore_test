@@ -1,6 +1,6 @@
 cummin_ext:
     description: |
-        Returns a tuple (values, indices) where 'values' is the cumulative minimum value of input Tensor `input`
+        Returns a tuple (values, indices) where `values` is the cumulative minimum value of input Tensor `input`
         along the dimension `dim`, and `indices` is the index location of each minimum value.
         
         .. math::
