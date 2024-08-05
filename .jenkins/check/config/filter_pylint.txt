@@ -277,3 +277,8 @@
 
 #PIJit
 "mindspore/tests/st/pi_jit"
+
+#Profiler
+"mindspore/mindspore/python/mindspore/profiler/dynamic_profiler.py"                                 "protected-access"
+"mindspore/mindspore/python/mindspore/profiler/dynamic_profiler.py"                                 "useless-super-delegation"
+"mindspore/mindspore/python/mindspore/profiler/dynamic_profiler.py"                                 "ungrouped-imports"

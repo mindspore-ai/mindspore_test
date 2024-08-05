@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-import os
 from argparse import ArgumentParser
 
 import mindspore as ms
@@ -26,7 +25,7 @@ from mindspore.dataset.vision import Inter
 from mindspore.common import dtype as mstype
 from mindspore.common.initializer import TruncatedNormal
 from mindspore.train import Model
-import shutil
+from mindspore.profiler import DynamicProfilerMonitor
 
 
 def conv(in_channels, out_channels, kernel_size, stride=1, padding=0):
@@ -83,10 +82,11 @@ class LeNet5(nn.Cell):
         return output
 
 
-def create_dataset(data_path, batch_size=32, repeat_size=1, num_parallel_workers=1):
+def create_dataset(batch_size=32, repeat_size=1, num_parallel_workers=1):
     """create dataset for train"""
     # define dataset
-    mnist_ds = ds.MnistDataset(data_path, num_samples=batch_size * 5)
+    mnist_ds = ds.FakeImageDataset(num_images=1000, image_size=(32, 32, 1),
+                                   num_classes=10, base_seed=0, num_samples=batch_size * 10)
 
     resize_height, resize_width = 32, 32
     rescale = 1.0 / 255.0
@@ -114,53 +114,16 @@ def create_dataset(data_path, batch_size=32, repeat_size=1, num_parallel_workers
     return mnist_ds
 
 
-def merge_folders(source_folder, target_folder):
-    """
-    Move current folder to target folder.
-    """
-
-    for item in os.listdir(source_folder):
-        source = os.path.join(source_folder, item)
-        target = os.path.join(target_folder, item)
-
-        if os.path.exists(target):
-            if os.path.exists(source):
-                merge_folders(source, target)
-            else:
-                print(f"The file {item} is exist in {target_folder}")
-        else:
-            shutil.move(source, target)
-
-
-class DynamicProfiler(ms.Callback):
-    """
-    Dynamic Profiler callback.
-    Args:
-        data_path (str): Data storage address.
-    """
-
-    def __init__(self, data_path):
-        super(DynamicProfiler, self).__init__()
-        self.rank_id = int(os.getenv('RANK_ID', '0'))
-        self.output_path = data_path
-        self.profiler = ms.Profiler(start_profile=False,
-                                    output_path=os.path.join(self.output_path, 'current', str(self.rank_id)))
-
+class StepMonitor(ms.Callback):
     def on_train_step_begin(self, run_context):
         cb_params = run_context.original_args()
         step_num = cb_params.cur_step_num
-        self.profiler.start()
-
-        step_path = os.path.join(self.output_path, str(step_num))
-        if not os.path.exists(step_path):
-            os.makedirs(step_path)
+        print(f"-------------- Step {step_num} begin ----------------")
 
     def on_train_step_end(self, run_context):
         cb_params = run_context.original_args()
         step_num = cb_params.cur_step_num
-        self.profiler.stop()
-        merge_folders(os.path.join(self.output_path, 'current', str(self.rank_id)),
-                      os.path.join(self.output_path, str(step_num), str(self.rank_id)))
+        print(f"-------------- Step {step_num} end ----------------")
 
 
 def train_with_profiler():
@@ -168,24 +131,26 @@ def train_with_profiler():
     target = args.target
     mode = args.mode
     output_path = args.output_path
-    mnist_path = '/home/workspace/mindspore_dataset/mnist'
+    cfg_path = args.cfg_path
     context.set_context(mode=mode, device_target=target)
-    ds_train = create_dataset(os.path.join(mnist_path, "train"))
+    ds_train = create_dataset()
     if ds_train.get_dataset_size() == 0:
         raise ValueError("Please check dataset size > 0 and batch_size <= dataset size")
 
     lenet = LeNet5()
     loss = nn.SoftmaxCrossEntropyWithLogits(sparse=True, reduction="mean")
     optim = Momentum(lenet.trainable_params(), learning_rate=0.1, momentum=0.9)
-    profile_callback = DynamicProfiler(output_path)
+    profile_callback = DynamicProfilerMonitor(cfg_path=cfg_path, output_path=output_path)
+    step_cb = StepMonitor()
 
     model = Model(lenet, loss_fn=loss, optimizer=optim, metrics={'acc': Accuracy()})
-    model.train(3, ds_train, callbacks=[profile_callback], dataset_sink_mode=False)
+    model.train(3, ds_train, callbacks=[profile_callback, step_cb], dataset_sink_mode=False)
 
 
 parser = ArgumentParser(description='test dynamic profiler')
-parser.add_argument('--target', type=str)
-parser.add_argument('--mode', type=int)
+parser.add_argument('--target', type=str, default='Ascend')
+parser.add_argument('--mode', type=int, default=0)
+parser.add_argument('--cfg_path', type=str)
 parser.add_argument('--output_path', type=str)
 args = parser.parse_args()
 train_with_profiler()

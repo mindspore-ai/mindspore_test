@@ -67,7 +67,7 @@ class FileManager:
             raise RuntimeError(msg) from err
 
     @classmethod
-    def create_json_file(cls, output_path: str, json_data: List, file_name: str) -> None:
+    def create_json_file(cls, output_path: str, json_data: List, file_name: str, indent: int = None) -> None:
         """Create json file with least authority"""
         if not json_data:
             return
@@ -75,7 +75,7 @@ class FileManager:
         file_path = os.path.join(output_path, file_name)
         flags = os.O_WRONLY | os.O_CREAT
         with os.fdopen(os.open(file_path, flags, cls.DATA_FILE_AUTHORITY), 'w') as fp:
-            json.dump(json_data, fp, ensure_ascii=False)
+            json.dump(json_data, fp, ensure_ascii=False, indent=indent)
 
     @classmethod
     def read_csv_file(cls, file_path: str) -> list:
