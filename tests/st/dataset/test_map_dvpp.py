@@ -25,12 +25,9 @@ import pytest
 import mindspore as ms
 import mindspore.dataset as ds
 import mindspore.dataset.vision as vision
-<<<<<<< HEAD
-from tests.mark_utils import arg_mark
-=======
 from mindspore.dataset.transforms import transforms
 from mindspore.dataset.vision import Inter
->>>>>>> 848110f625d... Fix map with dvpp output_shapes and output_types
+from tests.mark_utils import arg_mark
 
 # pylint: disable=W0212
 # W0212: protected-access
@@ -1730,36 +1727,6 @@ def test_map_with_dvpp_perspective_with_exception():
     assert "The input tensor is not of shape [H,W], [H,W,C] or [N,H,W,C]." in str(info.value)
 
 
-<<<<<<< HEAD
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_basic_transforms_multi_worker_mode():
-    """
-    Feature: Test DVPP transforms with multi-threading/multi-processing mode
-    Description: Test dvpp basic transforms together to reduce st time.
-    Expectation: SUCCESS
-    """
-    test_map_with_pyfunc_with_multi_op_process_mode()
-    test_map_with_pyfunc_with_multi_op_thread_mode()
-
-
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_basic_transforms_pipeline():
-    """
-    Feature: Mix DVPP & CPU basic transforms in pipeline mode
-    Description: Test dvpp basic transforms together to reduce st time.
-    Expectation: SUCCESS
-    """
-    test_map_with_dvpp_resize()
-    test_map_with_dvpp_resize_mixed_op()
-    test_map_with_dvpp_decode()
-    test_map_with_dvpp_decode_with_pre_pyfun()
-    test_map_with_dvpp_decode_mixed_op()
-    test_map_with_dvpp_normalize()
-    test_map_with_dvpp_normalize_mixed_op()
-=======
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_onecard
 def test_map_with_dvpp_shape_and_type():
     """
     Feature: Map op
@@ -1785,7 +1752,34 @@ def test_map_with_dvpp_shape_and_type():
     assert numpy_slices_dataset2.output_types() == ['uint8']
     for item in numpy_slices_dataset2.create_dict_iterator(num_epochs=1, output_numpy=True):
         assert item["image"].shape == (100, 75, 4)
->>>>>>> 848110f625d... Fix map with dvpp output_shapes and output_types
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_basic_transforms_multi_worker_mode():
+    """
+    Feature: Test DVPP transforms with multi-threading/multi-processing mode
+    Description: Test dvpp basic transforms together to reduce st time.
+    Expectation: SUCCESS
+    """
+    test_map_with_pyfunc_with_multi_op_process_mode()
+    test_map_with_pyfunc_with_multi_op_thread_mode()
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_basic_transforms_pipeline():
+    """
+    Feature: Mix DVPP & CPU basic transforms in pipeline mode
+    Description: Test dvpp basic transforms together to reduce st time.
+    Expectation: SUCCESS
+    """
+    test_map_with_dvpp_resize()
+    test_map_with_dvpp_resize_mixed_op()
+    test_map_with_dvpp_decode()
+    test_map_with_dvpp_decode_with_pre_pyfun()
+    test_map_with_dvpp_decode_mixed_op()
+    test_map_with_dvpp_normalize()
+    test_map_with_dvpp_normalize_mixed_op()
+    test_map_with_dvpp_shape_and_type()
 
 
 if __name__ == '__main__':
