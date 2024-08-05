@@ -58,6 +58,10 @@ std::string GetCurrentDir() {
 ::ge::MemBlock *GeAllocator::Malloc(size_t size) {
   auto addr = res_manager_->AllocateMemory(size);
   MS_LOG(DEBUG) << "GE Allocator malloc addr: " << addr << " size: " << size;
+  if (addr == nullptr) {
+    MS_LOG(ERROR) << "GE Allocator malloc addr failed.";
+    return nullptr;
+  }
   auto mem_block = new ::ge::MemBlock(*this, addr, size);
   return mem_block;
 }
