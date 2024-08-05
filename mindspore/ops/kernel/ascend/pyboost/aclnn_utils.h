@@ -21,6 +21,7 @@
 #include <string>
 #include <vector>
 #include <utility>
+#include <memory>
 #include "runtime/device/device_address_utils.h"
 #include "runtime/pipeline/pipeline.h"
 #include "transform/acl_ir/op_api_exec.h"

@@ -46,7 +46,7 @@ void CustomizeCopyAscendInner(device::DeviceContext *device_context, const devic
   LAUNCH_ACLNN(aclnnInplaceCopy, device_context, stream_id, output_addr, input_addr);
   MS_LOG(DEBUG) << "Launch end";
 }
-}
+}  // namespace
 
 // Unconventional pyboost writing. Please do not refer to this to implement other operators!
 void CustomizeCopyAscend(device::DeviceContext *device_context, const device::DeviceAddressPtr &input_addr,
