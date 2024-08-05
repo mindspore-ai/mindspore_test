@@ -409,30 +409,6 @@ TypeId GetTypeIdFromAbstractTensor(const AbstractBasePtr &abs_base) {
   return abs_base->BuildType()->type_id();
 }
 
-TypeId GetAbstractObjectType(const AbstractBasePtr &abstract) {
-  if (abstract == nullptr) {
-    return kTypeUnknown;
-  }
-  if (abstract->isa<abstract::AbstractTensor>()) {
-    return kObjectTypeTensorType;
-  }
-  if (abstract->isa<abstract::AbstractTuple>()) {
-    return kObjectTypeTuple;
-  }
-  if (abstract->isa<abstract::AbstractList>()) {
-    return kObjectTypeList;
-  }
-  if (abstract->isa<abstract::AbstractScalar>()) {
-    // scalar input may not converted to tensor
-    return kObjectTypeNumber;
-  }
-  if (abstract->isa<abstract::AbstractNone>()) {
-    return kMetaTypeNone;
-  }
-
-  return kTypeUnknown;
-}
-
 std::pair<std::vector<TypeId>, std::vector<TypeId>> GetOutputTypeFromAbstractBase(const AbstractBasePtr &abs_base) {
   std::vector<TypeId> output_dtype;
   std::vector<TypeId> output_type;
@@ -440,10 +416,10 @@ std::pair<std::vector<TypeId>, std::vector<TypeId>> GetOutputTypeFromAbstractBas
     auto abs_tuple = std::dynamic_pointer_cast<abstract::AbstractTuple>(abs_base);
     for (auto &abs : abs_tuple->elements()) {
       (void)output_dtype.emplace_back(GetTypeIdFromAbstractTensor(abs));
-      (void)output_type.emplace_back(GetAbstractObjectType(abs));
+      (void)output_type.emplace_back(session::AnfRuntimeAlgorithm::GetAbstractObjectType(abs));
     }
   } else {
-    (void)output_type.emplace_back(GetAbstractObjectType(abs_base));
+    (void)output_type.emplace_back(session::AnfRuntimeAlgorithm::GetAbstractObjectType(abs_base));
     (void)output_dtype.emplace_back(GetTypeIdFromAbstractTensor(abs_base));
   }
   return std::make_pair(output_type, output_dtype);
@@ -465,7 +441,7 @@ std::pair<std::vector<TypeId>, std::vector<TypeId>> GetInputTypeFromAbstractBase
     } else {
       input_dtype.emplace_back(GetTypeIdFromAbstractTensor(abs));
     }
-    input_type.emplace_back(GetAbstractObjectType(abs));
+    input_type.emplace_back(session::AnfRuntimeAlgorithm::GetAbstractObjectType(abs));
   }
   return std::make_pair(input_type, input_dtype);
 }
