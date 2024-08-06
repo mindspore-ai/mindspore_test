@@ -156,6 +156,9 @@ class ControlActor : public MemoryAwareActor {
   // Output Arrows.
   std::vector<DataArrowPtr> output_partial_arrows_;
 
+  std::set<int> input_need_disable_dynamic_ref_counts_;
+  std::vector<bool> output_need_disable_dynamic_ref_counts_;
+
   std::vector<AID> output_branch_id_arrows_;
   // The branch id is the unique identifier of the control actor. In the control flow, there are multiple control
   // actors calling the same subgraph at the same time. At this time, the output of the subgraph needs to be returned

@@ -78,6 +78,7 @@ const char kAllocDefragMemoryStepFreq[] = "defrag_memory_step_freq";
 const char kRuntimeConf[] = "MS_DEV_RUNTIME_CONF";
 const char kRuntimeInline[] = "inline";
 const char kRuntimeSwitchInline[] = "switch_inline";
+const char kRuntimeControlFlowOptimize[] = "control_flow_optimize";
 const char kRuntimeMultiStream[] = "multi_stream";
 const char kRuntimePipeline[] = "pipeline";
 const char kRuntimeKbkSubGraphMode[] = "kbk_sub_graph_mode";

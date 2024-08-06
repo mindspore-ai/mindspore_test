@@ -556,9 +556,13 @@ void KernelActor::SendMemoryFreeReq(OpContext<DeviceTensor> *const context) {
     MS_LOG(DEBUG) << "depend_shape_input_list size : " << depend_shape_input_list_.size() << ".";
     std::vector<DeviceTensor *> free_list;
     for (size_t i = 0; i < memory_free_list_.size(); i++) {
-      const auto device_tensor = memory_free_list_[i];
-      if (device_tensor->dynamic_ref_count() == INT32_MAX && device_tensor->ref_count() != SIZE_MAX &&
-          i < depend_shape_input_list_.size() && depend_shape_input_list_[i]) {
+      if (common::IsDisableRuntimeConfig(common::kRuntimeControlFlowOptimize)) {
+        if (memory_free_list_[i]->dynamic_ref_count() != INT32_MAX || memory_free_list_[i]->ref_count() == SIZE_MAX) {
+          free_list.emplace_back(memory_free_list_[i]);
+          continue;
+        }
+      }
+      if (i < depend_shape_input_list_.size() && depend_shape_input_list_[i]) {
         MS_LOG(DEBUG) << "Skip memory free for kernel actor : " << kernel_->fullname_with_scope() << " index : " << i
                       << ", device address : " << memory_free_list_[i] << ".";
         continue;
