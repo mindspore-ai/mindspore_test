@@ -351,6 +351,8 @@ class AnalysisEngine : public std::enable_shared_from_this<AnalysisEngine> {
   EvaluatorPtr HandleNestedRecursion(const std::vector<EvaluatorPtr> &evaluators, const EvaluatorPtr &eval,
                                      const AbstractBasePtrList &args_abs_list, const EvalTraceRevIter &it,
                                      bool *continue_flag);
+  AbstractBasePtr ObtainEvalResult(const AnfNodePtr &node, const AnfNodeConfigPtr &conf);
+  bool IsRealToComplexGradient(const CNodePtr &cnode, const AnfNodeConfigPtr &conf);
 
   const PrimEvaluatorMap &prim_constructors_;
   FuncGraphManagerPtr func_graph_manager_;

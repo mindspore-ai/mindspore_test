@@ -91,7 +91,6 @@ REG_PRIM_INFER_FUNC(FlattenConcat, true)
 REG_PRIM_INFER_FUNC(Load, true)
 // REG_PRIM_INFER_FUNC(TransData, true)
 // REG_PRIM_INFER_FUNC(TensorMove, true)
-REG_PRIM_INFER_FUNC(RealInner, true)
 // REG_PRIM_INFER_FUNC(AdamApplyOne, true)
 // REG_PRIM_INFER_FUNC(AdamApplyOneWithDecay, true)
 }  // namespace abstract

@@ -176,29 +176,5 @@ AbstractBasePtr InferImplLinSpace(const AnalysisEnginePtr &, const PrimitivePtr 
   AbstractTensorPtr ret = std::make_shared<AbstractTensor>(start->element(), std::make_shared<Shape>(shape));
   return ret;
 }
-
-AbstractBasePtr InferImplRealInner(const AnalysisEnginePtr &, const PrimitivePtr &primitive,
-                                   const AbstractBasePtrList &args_abs_list) {
-  // Inputs: one tensors.
-  constexpr auto kRealInputNum = 1;
-  const std::string op_name = primitive->name();
-  CheckArgsSize(op_name, args_abs_list, kRealInputNum);
-  AbstractBasePtr input_abs = args_abs_list[0];
-  auto input = dyn_cast<AbstractTensor>(input_abs);
-  if (input == nullptr) {
-    return input_abs->Clone();
-  }
-  TypePtr input_type = input->element()->GetTypeTrack();
-  TypePtr output_type = nullptr;
-  if (input_type->type_id() == TypeId::kNumberTypeComplex64) {
-    output_type = kFloat32;
-  } else if (input_type->type_id() == TypeId::kNumberTypeComplex128) {
-    output_type = kFloat64;
-  } else {
-    return input_abs->Clone();
-  }
-
-  return std::make_shared<AbstractTensor>(output_type, input->shape());
-}
 }  // namespace abstract
 }  // namespace mindspore
