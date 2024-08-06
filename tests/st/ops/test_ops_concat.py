@@ -220,14 +220,14 @@ def test_concat_forward_dyn_seq(mode, dyn_mode):
     shape1 = (2, 4)
     num1 = 2
     tensor_inputs1, expect1 = forward_datas_prepare(shape1, num=num1, axis=axis)
-    out1 = fwd_seq_cell(tensor_inputs1, axis)
+    out1 = fwd_seq_cell(ms.mutable(tensor_inputs1), axis)
     assert np.allclose(out1.asnumpy(), expect1)
 
     # Dynamic sequence only support same shape inner now.
     shape2 = (3, 3) if dyn_mode == "dyn_shape" else (2, 2, 2)
     num2 = 2  # Should be different, set 2 here for mutable limit.
     tensor_inputs2, expect2 = forward_datas_prepare(shape2, num=num2, axis=axis)
-    out2 = fwd_seq_cell(tensor_inputs2, axis)
+    out2 = fwd_seq_cell(ms.mutable(tensor_inputs2), axis)
     assert np.allclose(out2.asnumpy(), expect2)
 
 
@@ -252,7 +252,7 @@ def test_concat_backward_dyn_seq(mode, dyn_mode):
     shape1 = (2, 4)
     num1 = 2
     input_seq1, _ = forward_datas_prepare(shape1, num=num1, axis=axis, need_expect=False)
-    grads1 = bwd_seq_cell(input_seq1, axis)
+    grads1 = bwd_seq_cell(ms.mutable(input_seq1), axis)
     expect_grad1 = (np.ones(shape1).astype(np.float32),) * num1
     for out, expect in zip(grads1, expect_grad1):
         assert np.allclose(out.asnumpy(), expect)
@@ -261,7 +261,7 @@ def test_concat_backward_dyn_seq(mode, dyn_mode):
     shape2 = (3, 3) if dyn_mode == "dyn_shape" else (2, 2, 2)
     num2 = 2  # Should be different, set 2 here for mutable bug.
     input_seq2, _ = forward_datas_prepare(shape2, num=num2, axis=axis, need_expect=False)
-    grad2 = bwd_seq_cell(input_seq2, axis)
+    grad2 = bwd_seq_cell(ms.mutable(input_seq2), axis)
     expect_grad2 = (np.ones(shape2).astype(np.float32),) * num2
     for out, expect in zip(grad2, expect_grad2):
         assert np.allclose(out.asnumpy(), expect)
