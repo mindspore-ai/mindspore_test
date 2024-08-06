@@ -15,6 +15,9 @@
         \frac{1}{d_{ker} * h_{ker} * w_{ker}} \sum_{l=0}^{d_{ker}-1} \sum_{m=0}^{h_{ker}-1} \sum_{n=0}^{w_{ker}-1}
         \text{input}(N_i, C_j, s_0 \times d + l, s_1 \times h + m, s_2 \times w + n)
 
+    .. note::
+        该接口暂不支持Atlas A2 训练系列产品。
+
     参数：
         - **kernel_size** (Union[int, tuple[int]]) - 指定池化核尺寸大小，是一个整数，对应深度、高度和宽度，或者是含3个分别对应深度、高度和宽度整数的tuple。默认值： ``1`` 。
         - **strides** (Union[int, tuple[int]]) - 池化操作的移动步长，是一个整数，对应移动深度、高度和宽度，或者是含3个分别表对应移动深度、高度和宽度整数的tuple。默认值： ``1`` 。
