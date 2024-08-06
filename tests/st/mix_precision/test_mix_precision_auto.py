@@ -13,6 +13,7 @@
 # limitations under the License.
 """Test network turn on mix_precision with auto mode."""
 
+import pytest
 import numpy as np
 import mindspore as ms
 from mindspore.train.amp import auto_mixed_precision, build_train_network, _OutputTo32
@@ -100,71 +101,75 @@ class Net_FP16(nn.Cell):
         return x
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
-def test_auto_mix_precision_infer_auto():
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+          essential_mark='unessential')
+@pytest.mark.parametrize("mode", (context.GRAPH_MODE, context.PYNATIVE_MODE))
+def test_auto_mix_precision_infer_auto(mode):
     """
     Feature: auto mixed precision auto mode.
     Description: test network infer result of amp auto mode compared with manual mixed precision.
     Expectation: success.
     """
-    context.set_context(mode=context.PYNATIVE_MODE)
+    context.set_context(mode=mode)
     input_data = np.random.randn(32, 3, 224, 224).astype(np.float32)
 
     # auto mixed precision
-    net_pynative = Net(3, 10)
-    net_pynative = auto_mixed_precision(net_pynative, amp_level="auto", dtype=ms.float16)
-    out_pynative = net_pynative(Tensor(input_data))
+    net = Net(3, 10)
+    net = auto_mixed_precision(net, amp_level="auto", dtype=ms.float16)
+    out = net(Tensor(input_data))
 
     # manual mixed precision
-    net_pynative2 = Net_FP16(3, 10)
-    out_pynative2 = net_pynative2(Tensor(input_data))
+    net2 = Net_FP16(3, 10)
+    out2 = net2(Tensor(input_data))
 
-    assert np.allclose(out_pynative.asnumpy(), out_pynative2.asnumpy(), 0.0001, 0.0001)
+    assert np.allclose(out.asnumpy(), out2.asnumpy(), 0.0001, 0.0001)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_auto_mix_precision_train_auto():
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
+@pytest.mark.parametrize("mode", (context.GRAPH_MODE, context.PYNATIVE_MODE))
+def test_auto_mix_precision_train_auto(mode):
     """
     Feature: auto mixed precision auto mode.
     Description: test network train result of amp auto mode compared with manual mixed precision.
     Expectation: success.
     """
-    context.set_context(mode=context.PYNATIVE_MODE)
+    context.set_context(mode=mode)
     input_data = np.random.randn(32, 3, 224, 224).astype(np.float32)
     label_data = np.random.randn(32, 10).astype(np.float32)
 
     # auto mixed precision
-    net_pynative = Net(3, 10)
-    opt_pynative = nn.Momentum(params=net_pynative.trainable_params(),
-                               learning_rate=0.001,
-                               momentum=0.0009,
-                               weight_decay=0.001,
-                               loss_scale=0.0001)
-    loss_pynative = nn.SoftmaxCrossEntropyWithLogits(sparse=False)
-    train_network_pynative = build_train_network(net_pynative,
-                                                 opt_pynative,
-                                                 loss_pynative,
-                                                 level="auto",
-                                                 loss_scale_manager=FixedLossScaleManager(drop_overflow_update=False))
-    loss_pynative = train_network_pynative(Tensor(input_data), Tensor(label_data))
+    net = Net(3, 10)
+    opt = nn.Momentum(params=net.trainable_params(),
+                      learning_rate=0.001,
+                      momentum=0.0009,
+                      weight_decay=0.001,
+                      loss_scale=0.0001)
+    loss = nn.SoftmaxCrossEntropyWithLogits(sparse=False)
+    train_network = build_train_network(net,
+                                        opt,
+                                        loss,
+                                        level="auto",
+                                        loss_scale_manager=FixedLossScaleManager(drop_overflow_update=False))
+    loss = train_network(Tensor(input_data), Tensor(label_data))
 
     # manual mixed precision
-    net_pynative2 = Net_FP16(3, 10)
-    net_pynative2 = _OutputTo32(net_pynative2)
-    opt_pynative2 = nn.Momentum(params=net_pynative2.trainable_params(),
-                                learning_rate=0.001,
-                                momentum=0.0009,
-                                weight_decay=0.001,
-                                loss_scale=0.0001)
-    loss_pynative2 = nn.SoftmaxCrossEntropyWithLogits(sparse=False)
-    train_network_pynative2 = build_train_network(net_pynative2,
-                                                  opt_pynative2,
-                                                  loss_pynative2,
-                                                  level="O0",
-                                                  loss_scale_manager=FixedLossScaleManager(drop_overflow_update=False))
-    loss_pynative2 = train_network_pynative2(Tensor(input_data), Tensor(label_data))
+    net2 = Net_FP16(3, 10)
+    net2 = _OutputTo32(net2)
+    opt2 = nn.Momentum(params=net2.trainable_params(),
+                       learning_rate=0.001,
+                       momentum=0.0009,
+                       weight_decay=0.001,
+                       loss_scale=0.0001)
+    loss2 = nn.SoftmaxCrossEntropyWithLogits(sparse=False)
+    train_network2 = build_train_network(net2,
+                                         opt2,
+                                         loss2,
+                                         level="O0",
+                                         loss_scale_manager=FixedLossScaleManager(drop_overflow_update=False))
+    loss2 = train_network2(Tensor(input_data), Tensor(label_data))
 
-    assert np.allclose(loss_pynative.asnumpy(), loss_pynative2.asnumpy(), 0.0001, 0.0001)
+    assert np.allclose(loss.asnumpy(), loss2.asnumpy(), 0.0001, 0.0001)
 
 
 def func_for_amp(x, in_c, out_c):
@@ -215,24 +220,26 @@ def func_for_amp_fp16(x, in_c, out_c):
     return x
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
-def test_auto_mix_precision_infer_func_auto():
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+          essential_mark='unessential')
+@pytest.mark.parametrize("mode", (context.GRAPH_MODE, context.PYNATIVE_MODE))
+def test_auto_mix_precision_infer_func_auto(mode):
     """
     Feature: auto mixed precision auto mode.
     Description: test function infer result of amp auto mode compared with manual mixed precision.
     Expectation: success.
     """
-    context.set_context(mode=context.PYNATIVE_MODE)
+    context.set_context(mode=mode, jit_config={"jit_level": "O1"})
     input_data = np.random.randn(32, 3, 224, 224).astype(np.float32)
 
     # auto mixed precision
-    func_pynative = auto_mixed_precision(func_for_amp, amp_level="auto", dtype=ms.float16)
-    out_pynative = func_pynative(Tensor(input_data), 3, 10)
+    func = auto_mixed_precision(func_for_amp, amp_level="auto", dtype=ms.float16)
+    out = func(Tensor(input_data), 3, 10)
 
     # manual mixed precision
-    out_pynative2 = func_for_amp_fp16(Tensor(input_data), 3, 10)
+    out2 = func_for_amp_fp16(Tensor(input_data), 3, 10)
 
-    assert np.allclose(out_pynative.asnumpy(), out_pynative2.asnumpy(), 0.0001, 0.0001)
+    assert np.allclose(out.asnumpy(), out2.asnumpy(), 0.0001, 0.0001)
 
 
 class SubNet(nn.Cell):
@@ -311,77 +318,81 @@ class SubNet_FP16(nn.Cell):
         return x
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
-def test_auto_mix_precision_infer_subnet_auto():
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+          essential_mark='unessential')
+@pytest.mark.parametrize("mode", (context.GRAPH_MODE, context.PYNATIVE_MODE))
+def test_auto_mix_precision_infer_subnet_auto(mode):
     """
     Feature: auto mixed precision auto mode.
     Description: test subnet infer result of amp auto mode compared with manual mixed precision.
     Expectation: success.
     """
-    context.set_context(mode=context.PYNATIVE_MODE)
+    context.set_context(mode=mode)
     input_data = np.random.randn(32, 3, 224, 224).astype(np.float32)
 
     # auto mixed precision
     sub_net = SubNet(3, 10)
     sub_net = auto_mixed_precision(sub_net, amp_level="auto", dtype=ms.float16)
-    net_pynative = NetWithSubNet(sub_net, 3)
-    out_pynative = net_pynative(Tensor(input_data))
+    net = NetWithSubNet(sub_net, 3)
+    out = net(Tensor(input_data))
 
     # manual mixed precision
     sub_net_fp16 = SubNet_FP16(3, 10)
-    net_pynative2 = NetWithSubNet(sub_net_fp16, 3)
-    out_pynative2 = net_pynative2(Tensor(input_data))
+    net2 = NetWithSubNet(sub_net_fp16, 3)
+    out2 = net2(Tensor(input_data))
 
-    assert np.allclose(out_pynative.asnumpy(), out_pynative2.asnumpy(), 0.0001, 0.0001)
+    assert np.allclose(out.asnumpy(), out2.asnumpy(), 0.0001, 0.0001)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
-def test_auto_mix_precision_train_subnet_auto():
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+          essential_mark='unessential')
+@pytest.mark.parametrize("mode", (context.GRAPH_MODE, context.PYNATIVE_MODE))
+def test_auto_mix_precision_train_subnet_auto(mode):
     """
     Feature: auto mixed precision auto mode.
     Description: test subnet train result of amp auto mode compared with manual mixed precision.
     Expectation: success.
     """
-    context.set_context(mode=context.PYNATIVE_MODE)
+    context.set_context(mode=mode)
     input_data = np.random.randn(32, 3, 224, 224).astype(np.float32)
     label_data = np.random.randn(32, 10).astype(np.float32)
 
     # auto mixed precision
     sub_net = SubNet(3, 10)
     sub_net = auto_mixed_precision(sub_net, amp_level="auto", dtype=ms.float16)
-    net_pynative = NetWithSubNet(sub_net, 3)
-    net_pynative = _OutputTo32(net_pynative)
-    opt_pynative = nn.Momentum(params=net_pynative.trainable_params(),
-                               learning_rate=0.001,
-                               momentum=0.0009,
-                               weight_decay=0.001,
-                               loss_scale=0.0001)
-    loss_pynative = nn.SoftmaxCrossEntropyWithLogits(sparse=False)
-    train_network_pynative = build_train_network(net_pynative,
-                                                 opt_pynative,
-                                                 loss_pynative,
-                                                 level="O0",
-                                                 loss_scale_manager=FixedLossScaleManager(drop_overflow_update=False))
-    loss_pynative = train_network_pynative(Tensor(input_data), Tensor(label_data))
+    net = NetWithSubNet(sub_net, 3)
+    net = _OutputTo32(net)
+    opt = nn.Momentum(params=net.trainable_params(),
+                      learning_rate=0.001,
+                      momentum=0.0009,
+                      weight_decay=0.001,
+                      loss_scale=0.0001)
+    loss = nn.SoftmaxCrossEntropyWithLogits(sparse=False)
+    train_network = build_train_network(net,
+                                        opt,
+                                        loss,
+                                        level="O0",
+                                        loss_scale_manager=FixedLossScaleManager(drop_overflow_update=False))
+    loss = train_network(Tensor(input_data), Tensor(label_data))
 
     # manual mixed precision
     sub_net_fp16 = SubNet_FP16(3, 10)
-    net_pynative2 = NetWithSubNet(sub_net_fp16, 3)
-    net_pynative2 = _OutputTo32(net_pynative2)
-    opt_pynative2 = nn.Momentum(params=net_pynative2.trainable_params(),
-                                learning_rate=0.001,
-                                momentum=0.0009,
-                                weight_decay=0.001,
-                                loss_scale=0.0001)
-    loss_pynative2 = nn.SoftmaxCrossEntropyWithLogits(sparse=False)
-    train_network_pynative2 = build_train_network(net_pynative2,
-                                                  opt_pynative2,
-                                                  loss_pynative2,
-                                                  level="O0",
-                                                  loss_scale_manager=FixedLossScaleManager(drop_overflow_update=False))
-    loss_pynative2 = train_network_pynative2(Tensor(input_data), Tensor(label_data))
+    net2 = NetWithSubNet(sub_net_fp16, 3)
+    net2 = _OutputTo32(net2)
+    opt2 = nn.Momentum(params=net2.trainable_params(),
+                       learning_rate=0.001,
+                       momentum=0.0009,
+                       weight_decay=0.001,
+                       loss_scale=0.0001)
+    loss2 = nn.SoftmaxCrossEntropyWithLogits(sparse=False)
+    train_network2 = build_train_network(net2,
+                                         opt2,
+                                         loss2,
+                                         level="O0",
+                                         loss_scale_manager=FixedLossScaleManager(drop_overflow_update=False))
+    loss2 = train_network2(Tensor(input_data), Tensor(label_data))
 
-    assert np.allclose(loss_pynative.asnumpy(), loss_pynative2.asnumpy(), 0.0001, 0.0001)
+    assert np.allclose(loss.asnumpy(), loss2.asnumpy(), 0.0001, 0.0001)
 
 
 class NetWithRecompute(nn.Cell):
@@ -411,14 +422,16 @@ class NetWithRecompute(nn.Cell):
         return x
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
-def test_auto_mix_precision_recompute():
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+          essential_mark='unessential')
+@pytest.mark.parametrize("mode", (context.GRAPH_MODE, context.PYNATIVE_MODE))
+def test_auto_mix_precision_recompute(mode):
     """
     Feature: auto mixed precision auto mode.
     Description: test amp auto mode using network with recompute.
     Expectation: success.
     """
-    context.set_context(mode=context.PYNATIVE_MODE)
+    context.set_context(mode=mode)
     input_data = np.random.randn(32, 3, 224, 224).astype(np.float16)
 
     # net with amp should run success
@@ -427,3 +440,76 @@ def test_auto_mix_precision_recompute():
     grad_net = ops.GradOperation()(net)
     grad_val = grad_net(Tensor(input_data))
     _ = grad_val.asnumpy()
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_amp_single_func():
+    """
+    Feature: auto mixed precision auto mode.
+    Description: test amp auto mode using single function.
+    Expectation: success.
+    """
+    def func(x, y):
+        return ops.matmul(x, y)
+
+    x = ms.Tensor(np.ones([1, 2]), ms.float32)
+    y = ms.Tensor(np.ones([2,]), ms.float32)
+    amp_func = auto_mixed_precision(func, amp_level="auto", dtype=ms.float16)
+    # Pynative mode
+    assert amp_func(x, y).dtype == ms.float16
+    # Graph mode
+    assert ms.jit(amp_func)(x, y).dtype == ms.float16
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_amp_inner_func():
+    """
+    Feature: auto mixed precision auto mode.
+    Description: test amp auto mode using nested function.
+    Expectation: success.
+    """
+    def inner_func(x, y):
+        return ops.matmul(x, y)
+
+    inner_func = auto_mixed_precision(inner_func, amp_level="auto", dtype=ms.float16)
+
+    def func(x, y):
+        return inner_func(x, y) + 1
+
+    x = ms.Tensor(np.ones([1, 2]), ms.float32)
+    y = ms.Tensor(np.ones([2,]), ms.float32)
+    # Pynative mode
+    assert func(x, y).dtype == ms.float16
+    # Graph mode
+    assert ms.jit(func)(x, y).dtype == ms.float16
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_amp_nested_func():
+    """
+    Feature: auto mixed precision auto mode.
+    Description: test amp auto mode using nested function.
+    Expectation: success.
+    """
+    def inner_func(x, y):
+        return ops.matmul(x, y)
+
+    def func1(x, y):
+        return inner_func(x, y)
+
+    func1 = auto_mixed_precision(func1, amp_level="auto", dtype=ms.float16)
+
+    def func2(x, y):
+        return inner_func(x, y)
+
+    def func(x, y):
+        return func1(x, y), func2(x, y)
+
+    x = ms.Tensor(np.ones([1, 2]), ms.float32)
+    y = ms.Tensor(np.ones([2,]), ms.float32)
+    # Pynative mode
+    out_pynative = func(x, y)
+    assert out_pynative[0].dtype == ms.float16 and out_pynative[1].dtype == ms.float32
+    # Graph mode
+    out_graph = ms.jit(func)(x, y)
+    assert out_graph[0].dtype == ms.float16 and out_graph[1].dtype == ms.float32

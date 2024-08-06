@@ -106,6 +106,8 @@ COMMON_EXPORT std::map<SignatureEnumDType, std::pair<TypeId, bool>> GetSignature
 
 COMMON_EXPORT TypeId ConvertTypeForTensorsOrScalars(const TypeId &type1, const TypeId &type2);
 
+COMMON_EXPORT bool IsFloatTensor(const TypeId &type_id, bool is_tensor);
+
 COMMON_EXPORT TypeId GetMixPrecisionPromoteType(const std::vector<TypeId> &args_type_id,
                                                 const std::vector<bool> &args_is_tensor);
 

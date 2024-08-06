@@ -932,13 +932,27 @@ TypeId ConvertTypeForTensorsOrScalars(const TypeId &type1, const TypeId &type2) 
   return ConvertTypeForTensorsOrScalars(type1, type2, GetHashId(type1, type2));
 }
 
+bool IsFloatTensor(const TypeId &type_id, bool is_tensor) {
+  static std::set<TypeId> float_type_list = {kNumberTypeFloat16, kNumberTypeBFloat16, kNumberTypeFloat32,
+                                             kNumberTypeFloat64};
+  return is_tensor && float_type_list.find(type_id) != float_type_list.end();
+}
+
 TypeId GetMixPrecisionPromoteType(const std::vector<TypeId> &args_type_id, const std::vector<bool> &args_is_tensor) {
+  TypeId promote_type_id = kTypeUnknown;
   size_t args_size = args_type_id.size();
-  auto type_id = args_type_id.front();
-  for (size_t i = 1; i < args_size; ++i) {
-    type_id = ConvertTypeForTensorsOrScalars(args_type_id[i], type_id, GetHashId(args_type_id[i], type_id));
+  for (size_t i = 0; i < args_size; ++i) {
+    if (IsFloatTensor(args_type_id[i], args_is_tensor[i])) {
+      if (promote_type_id == kTypeUnknown) {
+        // Record the first float tensor.
+        promote_type_id = args_type_id[i];
+      } else {
+        promote_type_id =
+          ConvertTypeForTensorsOrScalars(args_type_id[i], promote_type_id, GetHashId(args_type_id[i], promote_type_id));
+      }
+    }
   }
-  return type_id;
+  return promote_type_id;
 }
 
 std::string ValueSimpleInfoToString(const ValueSimpleInfo &value_simple_info) {

@@ -37,7 +37,6 @@ bool GetDealList(const std::vector<AnfNodePtr> &node_list, std::vector<std::vect
   std::vector<AnfNodePtr> cast_16to32_list;
   AnfNodePtr cast_32to16_load_monad = nullptr;
   AnfNodePtr cast_16to32_load_monad = nullptr;
-  constexpr size_t second_input_index = 2;
   for (auto &cast_node : node_list) {
     MS_EXCEPTION_IF_NULL(cast_node);
     // currently, we only deal with the construct : [Param->Cast->] to avoid being a cycle.
@@ -53,22 +52,12 @@ bool GetDealList(const std::vector<AnfNodePtr> &node_list, std::vector<std::vect
       if (dst == kNumberTypeFloat16 && src == kNumberTypeFloat32) {
         cast_32to16_list.push_back(cast_node);
         if (IsPrimitiveCNode(input0, prim::kPrimLoad)) {
-          auto &monad_32to16 = input0->cast<CNodePtr>()->inputs().at(second_input_index);
-          if (cast_32to16_load_monad == nullptr) {
-            cast_32to16_load_monad = monad_32to16;
-          } else if (cast_32to16_load_monad != monad_32to16) {
-            return false;
-          }
+          return false;
         }
       } else if (dst == kNumberTypeFloat32 && src == kNumberTypeFloat16) {
         cast_16to32_list.push_back(cast_node);
         if (IsPrimitiveCNode(input0, prim::kPrimLoad)) {
-          auto &monad_16to32 = input0->cast<CNodePtr>()->inputs().at(second_input_index);
-          if (cast_16to32_load_monad == nullptr) {
-            cast_16to32_load_monad = monad_16to32;
-          } else if (cast_16to32_load_monad != monad_16to32) {
-            return false;
-          }
+          return false;
         }
       }
     }
