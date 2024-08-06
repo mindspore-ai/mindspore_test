@@ -86,6 +86,12 @@ class SendBridgeOp : public ParallelOp<TensorRow, TensorRow> {
 
   Status GetNextRowPullMode(TensorRow *const row) override;
 
+  MessageQueue::State MessageQueueState();
+
+  MessageQueue GetMessageQueue();
+
+  SharedMemoryQueue GetSharedMemoryQueue();
+
  private:
   std::unique_ptr<ChildIterator> child_iterator_;  // An iterator for fetching.
 

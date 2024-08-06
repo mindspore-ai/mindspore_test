@@ -59,7 +59,7 @@ class TreeAdapter {
   // This function performs syntax checking, semantics checking, optimizes, and then builds
   // the Execution tree.
   Status Compile(const std::shared_ptr<DatasetNode> &input_ir, int32_t num_epochs = -1, int64_t global_step = 0,
-                 int64_t dataset_size = -1);
+                 int64_t dataset_size = -1, bool independent_dataset = false);
 
   // Return the root node of the IR after cloned from the parsed IR tree
   std::shared_ptr<DatasetNode> RootIRNode() const { return root_ir_; }
@@ -126,6 +126,8 @@ class TreeAdapter {
   Status SplitBySendReceiveOp();
 #endif
 
+  Status CheckTreeIfNull();
+
   // Build an Execution tree
   Status Build(const std::shared_ptr<DatasetNode> &root_ir, int64_t init_epoch = 0);
 
@@ -140,11 +142,24 @@ class TreeAdapter {
   std::shared_ptr<DatasetNode> root_ir_;
 #if !defined(__APPLE__) && !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && \
   !defined(ANDROID)
+  // Launch the subprocess
+  Status LaunchSubprocess();
+
+  // The subprocess is changed to daemon and do nothing, just waiting for the main process exit
+  void SubprocessDaemonLoop();
+
   // the send tree, like: xxDataset -> map -> ... -> batch -> send
   std::unique_ptr<ExecutionTree> send_tree_;
   // the receive tree, like: receive -> iterator / data_queue
   std::unique_ptr<ExecutionTree> receive_tree_;
+
+  pid_t parent_process_id_;  // parent process id
+  pid_t process_id_;         // current process id
+  pid_t sub_process_id_;     // sub process id
+
+  bool independent_dataset_;  // BuildVocabConsumer, DatasetSizeGetter, SaveToDisk consumer no need to start subprocess
 #endif
+
   // 1. the tree holder, the send_tree_ will be moved to it and launched in independent dataset process
   // 2. the tree holder, the receive_tree_ will be moved to it and launched in main dataset process
   std::unique_ptr<ExecutionTree> tree_;

@@ -3153,6 +3153,7 @@ def _worker_loop(operations, pipe, worker_id):
     # that the random results of each process are different.
     if get_seed() != 5489:
         set_seed(get_seed() + worker_id)
+
     while not _main_process_already_exit():
         _ignore_sigint()
 
@@ -3302,7 +3303,7 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
 
         self.eot = None
         self.watch_dog = None
-        self.ppid = os.getpid()
+        self.ppid = None
         self.hook = None
         self.warning_ctl = None
         # cache thread (get_ident()) to worker_id mapping in Python layer
@@ -3451,6 +3452,12 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
         while _PythonMultiprocessing.is_process_alive(ppid):
             if quit_signal.is_set():
                 return
+
+            # independent dataset mode, the subprocess of GeneratorDataset / map / batch should exit when
+            # independent dataset process have exit
+            if os.getppid() != ppid:
+                break
+
             time.sleep(0.1)
 
         _PythonMultiprocessing._terminate_processes(workers)
@@ -3462,7 +3469,7 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
         Launch Python multiprocessing pool.
 
         Args:
-            pop_id: ID for operation to have Python multiprocessing pool launched
+            op_id: ID for operation to have Python multiprocessing pool launched
 
         Returns:
             Python multiprocssing pool is launched.
@@ -3476,6 +3483,7 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
             logger.warning(message)
             self.terminate()
             self.reset()
+        self.ppid = os.getpid()
         self.create_pool()
 
     def create_pool(self):

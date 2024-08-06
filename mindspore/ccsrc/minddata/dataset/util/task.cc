@@ -130,7 +130,7 @@ Task::Task(const std::string &myName, const std::function<Status()> &f, int32_t 
     : my_name_(myName),
       operator_id_(operator_id),
       thread_id_(-1),
-      rc_(),
+      rc_(Status::OK()),
       fnc_obj_(f),
       task_group_(nullptr),
       is_master_(false),
@@ -213,6 +213,19 @@ Status Task::Join(WaitFlag blocking) {
                                 << " is not responding. Maybe it has been destroyed. Stop the task.";
                 break;
               }
+            }
+          }
+
+          // Because ReceiveBridgeOp maybe hung by MsgRcv from SendBridgeOp
+          if (wait_times > 5 && my_name_.find("ReceiveBridgeOp") != std::string::npos) {
+            MS_LOG(WARNING) << "Wait " << wait_times << " seconds, "
+                            << "the task: " << my_name_ << ".";
+
+            // just wait 30 seconds
+            if (wait_times > kWaitInterruptTaskTime) {
+              MS_LOG(WARNING) << "Task: " << my_name_ << " Thread ID " << ss.str()
+                              << " is not responding. Break the interrupt.";
+              break;
             }
           }
 #endif
