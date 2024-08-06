@@ -302,8 +302,6 @@ FuncGraphPtr JitBpropGraphPass(const ResourcePtr &resource, bool need_renormaliz
   });
   if (need_renormalize) {
     (void)map.emplace_back(std::make_pair("renormalize", opt::OptPassConfig::Renormalize()));
-    opt::OptPassConfig real_op_eliminate = opt::OptPassConfig{irpass.real_op_eliminate_};
-    (void)map.emplace_back(std::make_pair("real_op_eliminate", real_op_eliminate));
   }
   MS_EXCEPTION_IF_NULL(resource);
   auto func_graph = resource->func_graph();
@@ -549,7 +547,6 @@ OptPassGroupMap GetOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass) {
      {"after_resolve", after_resolve_pass},
      {"a_after_grad", a_after_grad},
      {"renormalize", opt::OptPassConfig::Renormalize()},
-     {"real_op_eliminate", opt::OptPassConfig({irpass.real_op_eliminate_})},
      {"add_forward_monad_depend", opt::OptPassConfig(opt::irpass::AddForwardMonadDepend)},
      {"auto_monad_grad", opt::OptPassConfig(ReAutoMonadWrapper)},
      {"auto_monad_eliminator", opt::OptPassConfig(opt::AutoMonadEliminator())},

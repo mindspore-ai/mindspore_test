@@ -63,7 +63,6 @@ constexpr auto kMatrixDiagV3OpName = "MatrixDiagV3";
 constexpr auto kMatrixDiagPartV3OpName = "MatrixDiagPartV3";
 constexpr auto kMatrixSetDiagV3OpName = "MatrixSetDiagV3";
 constexpr auto kMatrixBandPartOpName = "MatrixBandPart";
-constexpr auto kRealInnerOpName = "RealInner";
 constexpr auto kSplitVOpName = "SplitV";
 constexpr auto kFillV2OpName = "FillV2";
 constexpr auto kFillsOpName = "Fills";

@@ -422,6 +422,7 @@ constexpr char kInlineSubGraphName[] = "inline_sub_graph_name";
 constexpr char kAttrBpropAutoMonadLevel[] = "bprop_auto_monad_level";
 constexpr char kAttrSideEffectBpropAppPropagate[] = "side_effect_bprop_app_propagate";
 constexpr char kAttrSideEffectBpropApp[] = "side_effect_bprop_app";
+constexpr char kAttrCheckComplex[] = "check_complex";
 constexpr auto kAttrOriginOutputShape = "origin_output_shape";
 constexpr auto kAttrOriginInputShapes = "origin_input_shapes";
 constexpr char kAttrNotRemove[] = "not_remove";
