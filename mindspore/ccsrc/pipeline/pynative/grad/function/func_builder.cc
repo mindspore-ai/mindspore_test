@@ -28,6 +28,7 @@
 #include "include/backend/optimizer/op_adaptation_info_factory.h"
 #include "pipeline/pynative/pynative_utils.h"
 #include "utils/core_op_utils.h"
+#include "pipeline/pynative/grad/grad_utils.h"
 #include "frontend/operator/cc_implementations.h"
 #include "kernel/common/pyboost/op_register.h"
 #include "pipeline/pynative/grad/function/auto_generate/pyboost_native_grad_functions.h"
@@ -226,7 +227,7 @@ NodePtr FuncBuilder::EmitOp(const PrimitivePtr &prim, const NodePtrList &inputs)
   }
   // Set abstract to tensor cache
   if (op_runner_info.output_value_simple_info != nullptr) {
-    PyNativeAlgo::AutoGrad::CacheOutputAbstract(value_result, op_runner_info.output_abs);
+    PyNativeAlgo::AutoGradUtil::CacheOutputAbstract(value_result, op_runner_info.output_abs);
   }
   auto result = NewFuncNode(value_result, op_runner_info.output_abs, InputType::kOpOutput);
   return result;
@@ -434,6 +435,15 @@ NodePtr FuncBuilder::Less(const NodePtr &lhs, const NodePtr &rhs, const TypePtr 
 NodePtr FuncBuilder::Concat(const NodePtr &tensors, const NodePtr &axis) {
   tensors->SetValue(FillZeros(tensors->Value(), tensors->abstract()));
   return NativeFunc::Concat(tensors, axis);
+}
+
+NodePtr FuncBuilder::InplaceCopy(const NodePtr &variable, const NodePtr &value) {
+  return NativeFunc::InplaceCopy(variable, value);
+}
+
+NodePtr FuncBuilder::AsStrided(const NodePtr &input, const NodePtr &size, const NodePtr &stride,
+                               const NodePtr &storage_offset) {
+  return NativeFunc::AsStrided(input, size, stride, storage_offset);
 }
 
 NodePtr FuncBuilder::Abs(const NodePtr &input) { return NativeFunc::Abs(input); }
@@ -1224,18 +1234,18 @@ NodePtr FuncBuilder::TupleGetItem(const NodePtr &input, size_t i) {
 NodePtr FuncBuilder::OutZeros(const NodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
   if (!node->Value()->isa<ValueSequence>()) {
-    return NewFuncNode(kNone, nullptr, InputType::kConstant);
+    return NewFuncNode(kNone, node->abstract(), InputType::kConstant);
   }
   auto val_seq = node->Value()->cast<ValueSequencePtr>();
   if (val_seq->size() == kSizeZero) {
     return NewFuncNode(kNone, nullptr, InputType::kConstant);
   }
   const auto &value = val_seq->value()[kIndexZero];
-  if (!value->isa<tensor::Tensor>()) {
+  if (!value->isa<tensor::BaseTensor>()) {
     return NewFuncNode(kNone, nullptr, InputType::kConstant);
   }
   ValuePtrList values(val_seq->size(), kNone);
-  return NewFuncNode(std::make_shared<ValueTuple>(values), nullptr, InputType::kConstant);
+  return NewFuncNode(std::make_shared<ValueTuple>(values), node->abstract(), InputType::kConstant);
 }
 
 ValuePtr FuncBuilder::Ones(const ValuePtr &value) {

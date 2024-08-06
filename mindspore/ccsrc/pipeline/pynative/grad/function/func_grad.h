@@ -48,9 +48,10 @@ class FuncBackwardNode : public BackwardNode {
   void PreProcess(const ValuePtrList &dout, const FuncBuilderPtr &emitter);
   const expander::bprop::BpropBuilderFunc &grad_func() { return func_; }
   void set_attrs(const mindspore::HashMap<std::string, ValuePtr> &attrs) { attrs_ = attrs; }
+  const mindspore::HashMap<std::string, ValuePtr> attrs() const { return attrs_; }
   void Release() override;
 
- private:
+ protected:
   mindspore::HashMap<std::string, ValuePtr> attrs_;
   NodePtrList node_inputs_;
   expander::bprop::BpropBuilderFunc func_;
@@ -97,7 +98,6 @@ class GraphRoot : public BackwardNode {
   explicit GraphRoot(const string &name) : BackwardNode(name) {}
   ~GraphRoot() override = default;
   ValuePtrList CallBackward(const ValuePtrList &grads) override { return grads; }
-  ValuePtrList BuildFlattenSensGradient(const ValuePtrList &sens_gradient) const;
 };
 
 class FakeBackwardNode : public BackwardNode {
@@ -107,6 +107,35 @@ class FakeBackwardNode : public BackwardNode {
   ValuePtrList CallBackward(const ValuePtrList &grads) override {
     MS_LOG(EXCEPTION) << "Illegal primitive " << name() << "'s bprop not defined";
   }
+};
+
+class CopySliceNode : public BackwardNode {
+ public:
+  CopySliceNode(std::string name, expander::bprop::BpropBuilderFunc inplace_op_func,
+                mindspore::HashMap<std::string, ValuePtr> attrs, NodePtrList node_inputs, FuncBuilderPtr emitter,
+                size_t output_size, NodePtr base, std::string inplace_op_name)
+      : BackwardNode(std::move(name), output_size),
+        inplace_func_(std::move(inplace_op_func)),
+        attrs_(std::move(attrs)),
+        node_inputs_(node_inputs),
+        emitter_(emitter),
+        base_(std::move(base)),
+        inplace_op_name_(std::move(inplace_op_name)) {
+    op_output_ = node_inputs.back()->Value();
+  }
+  ~CopySliceNode() override = default;
+  ValuePtrList CallBackward(const ValuePtrList &grads) override;
+  NodePtrList CallBackwardImpl(const NodePtr &grad_node, const tensor::BaseTensorPtr &view_tensor);
+  std::string inplace_op_name() const { return inplace_op_name_; }
+  void Release() override;
+
+ private:
+  expander::bprop::BpropBuilderFunc inplace_func_;
+  mindspore::HashMap<std::string, ValuePtr> attrs_;
+  NodePtrList node_inputs_;
+  FuncBuilderPtr emitter_;
+  NodePtr base_;
+  std::string inplace_op_name_;
 };
 
 class FuncGrad : public AutoGrad {
@@ -121,10 +150,15 @@ class FuncGrad : public AutoGrad {
   // Reverse connect jit or higher order sub bprop funcgraph
   bool KPynativeWithFProp(const GradParamPtr &grad_param) override;
   void CallCustomBprop(const CustomContext &context) override;
+  // Save get and update variable of tensor.
+  VariablePtr SafeGetVariableImpl(const tensor::BaseTensorPtr &tensor) override;
+
   ValuePtr Finish(const tensor::BaseTensorPtrList &weights, const std::vector<size_t> &grad_position,
                   const GradAttr &grad_attr, const ValuePtr &sens = nullptr);
 
  private:
+  void RebaseVariable(const OpGradInfoPtr &op_grad_info, const VariablePtr &variable);
+  void UpdateNextEdges(const BackwardNodePtr &grad_node, const ValuePtrList &inputs);
   void BackPropagate();
   void BuildForwardLastNode(const ValuePtr &sens_gradient);
   void WeightNodeNotInGradButHasTensorHook(const FuncVariablePtr &variable, const BackwardNodePtr &fn) const;
@@ -153,7 +187,6 @@ class FuncGrad : public AutoGrad {
                         const std::vector<size_t> &grad_position);
   void PruningInput(const GradAttr &grad_attr, const std::vector<size_t> &grad_position);
   void PruningWeights(const tensor::BaseTensorPtrList &weights, const GradAttr &grad_attr);
-
   bool is_run_recompute_{false};
   std::shared_ptr<FuncBuilder> func_impl_;
   OrderedSet<FuncVariablePtr> variable_set_;

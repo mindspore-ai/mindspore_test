@@ -131,7 +131,8 @@ class ME_EXPORT ForwardExecutor {
                                                     const TensorStorageInfoPtr &storage_info);
 
   void CreateViewOutputTensor(const FrontendOpRunInfoPtr &op_run_info, const tensor::BaseTensorPtr &input_tensor,
-                              const TensorStorageInfoPtr &storage_info, runtime::KernelTaskType task_type);
+                              const TensorStorageInfoPtr &storage_info, runtime::KernelTaskType task_type,
+                              bool is_multi_output);
 
   void DispatchAllocateMemTask(const FrontendOpRunInfoPtr &op_run_info, const tensor::TensorPtr &input_tensor,
                                const size_t &input_idx, bool need_wait = false);

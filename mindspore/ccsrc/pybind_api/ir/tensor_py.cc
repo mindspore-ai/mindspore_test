@@ -24,7 +24,6 @@
 #include "include/common/utils/python_adapter.h"
 #include "mindspore/ccsrc/include/backend/distributed/embedding_cache/embedding_cache_utils.h"
 #include "pybind_api/ir/tensor_index_py.h"
-#include "pybind_api/ir/hook_py.h"
 #include "include/common/profiler.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "runtime/pynative/op_executor.h"
@@ -32,6 +31,12 @@
 #include "include/backend/mbuf_device_address.h"
 
 namespace mindspore {
+namespace pynative::autograd {
+struct RegisterHook {
+  uint64_t static RegisterTensorBackwardHook(const tensor::Tensor &tensor, const py::function &hook);
+  static void RemoveTensorBackwardHook(uint64_t id);
+};
+}  // namespace pynative::autograd
 namespace tensor {
 namespace {
 struct TensorToNumpyRegister {
@@ -1051,8 +1056,8 @@ void RegMetaTensor(const py::module *m) {
     .def("is_contiguous", &Tensor::is_contiguous)
     .def("stride", &Tensor::stride)
     .def("storage_offset", &Tensor::storage_offset)
-    .def("register_hook", &RegisterHook::RegisterTensorBackwardHook)
-    .def("remove_hook", &RegisterHook::RemoveTensorBackwardHook)
+    .def("register_hook", &pynative::autograd::RegisterHook::RegisterTensorBackwardHook)
+    .def("remove_hook", &pynative::autograd::RegisterHook::RemoveTensorBackwardHook)
     .def("__str__", &Tensor::ToString)
     .def("__repr__", &Tensor::ToStringRepr)
     .def("_offload", &TensorPy::Offload)

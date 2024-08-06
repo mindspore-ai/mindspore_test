@@ -40,6 +40,7 @@ def addmm__dyn_shape_func(input1, mat1, mat2, beta, alpha):
 
 @test_utils.run_with_cell
 def addmm__forward_func(input1, mat1, mat2, beta, alpha):
+    input1 = input1 * 1
     return input1.addmm_(mat1, mat2, beta=beta, alpha=alpha)
 
 

@@ -1,0 +1,21 @@
+#operator as_strided
+as_strided:
+    args:
+        input:
+            dtype: tensor
+        size:
+            dtype: tuple[int]
+        stride:
+            dtype: tuple[int]
+        storage_offset:
+            dtype: int
+            default: 0
+    returns:
+        output:
+            dtype: tensor
+    view: True
+    dispatch:
+        enable: True
+
+
+

@@ -16,46 +16,13 @@
 
 #include "pipeline/pynative/grad/variable.h"
 #include <memory>
+#include "pipeline/pynative/grad/grad_utils.h"
 #include "pipeline/pynative/pynative_utils.h"
 
 namespace mindspore::pynative::autograd {
-void BackwardNode::UpdateNextEdges(const ValuePtrList &inputs) {
-  MS_LOG(DEBUG) << "Get input size " << inputs.size();
-  next_edges_.reserve(inputs.size());
-  gradient_index_.reserve(inputs.size());
-  for (size_t i = 0; i < inputs.size(); ++i) {
-    const auto &value = inputs[i];
-    if (value->isa<tensor::BaseTensor>()) {
-      const auto &tensor = value->cast<tensor::BaseTensorPtr>();
-      auto auto_grad_meta_data = tensor->auto_grad_meta_data();
-      // Get scalar tensor
-      if (auto_grad_meta_data == nullptr) {
-        continue;
-      }
-      auto variable = auto_grad_meta_data->variable();
-      if (variable == nullptr || !variable->is_need_grad()) {
-        continue;
-      }
-      MS_LOG(DEBUG) << "Add next edge for tensor " << tensor->id();
-      (void)next_edges_.emplace_back(variable, auto_grad_meta_data->output_index());
-      (void)gradient_index_.emplace_back(i);
-    }
-    // to do sparse tensor.
-  }
-}
-
 ValuePtrList BackwardNode::PostProcess(const ValuePtrList &gradient_value) {
-  ValuePtrList gradients;
-  ValuePtrList flatten_values = PyNativeAlgo::DataConvert::FlattenTensorSeqInValueSeq(gradient_value, false);
-  gradients.reserve(flatten_values.size());
-  for (const auto index : gradient_index_) {
-    if (MS_UNLIKELY(index >= flatten_values.size())) {
-      MS_LOG(EXCEPTION) << "Inputs gradient index should smaller than flatten_values size!";
-    }
-    const auto &gradient_tensor = flatten_values[index];
-    (void)gradients.emplace_back(gradient_tensor);
-  }
-  return gradients;
+  auto flatten_gradients = PyNativeAlgo::DataConvert::FlattenTensorSeqInValueSeq(gradient_value, false);
+  return flatten_gradients;
 }
 
 ValuePtrList BackwardNode::LazeUpdateZeroGradient(const ValuePtrList &dout, FuncBuilder *func_builder,
@@ -73,8 +40,8 @@ ValuePtrList BackwardNode::LazeUpdateZeroGradient(const ValuePtrList &dout, Func
   for (size_t i = 0; i < dout.size(); ++i) {
     if (dout[i]->isa<None>()) {
       MS_LOG(DEBUG) << "Op " << name() << " has multi outputs, and exist null dout, now do emit zeros";
-      auto zero_value =
-        PyNativeAlgo::AutoGrad::BuildSpecialValueGrad(outputs[i], nullptr, func_builder, SpecialType::kZerosLikeType);
+      auto zero_value = PyNativeAlgo::AutoGradUtil::BuildSpecialValueGrad(outputs[i], nullptr, func_builder,
+                                                                          SpecialType::kZerosLikeType);
       MS_EXCEPTION_IF_NULL(zero_value);
       real_dout[i] = zero_value;
     } else {
@@ -89,6 +56,11 @@ std::string FuncVariable::ToString() const {
   buf << "Variable name: " << func_node()->name() << ", is_need_grad: " << is_need_grad()
       << ", is_need_propagate: " << is_need_propagate() << " is_leaf: " << is_leaf() << "\n";
   for (size_t i = 0; i < func_node()->next_edges().size(); ++i) {
+    if (!func_node()->next_edges()[i].is_defined()) {
+      buf << "Last edge: " << i << " undefined edge"
+          << "\n";
+      continue;
+    }
     auto last_variable = func_node()->next_edges()[i].variable;
     auto index = func_node()->next_edges()[i].input_index;
     MS_EXCEPTION_IF_NULL(last_variable->func_node());
@@ -116,8 +88,9 @@ std::string IrVariable::ToString() const {
 }
 
 AnfNodePtr IrVariable::RealDout() {
-  if (static_cast<bool>(MS_UNLIKELY(PyNativeAlgo::AutoGrad::IsZerosLikeNode(ir_function_node()->accumulate_dout())))) {
-    ir_function_node()->set_accumulate_dout(PyNativeAlgo::AutoGrad::BuildSpecialNode(
+  if (static_cast<bool>(
+        MS_UNLIKELY(PyNativeAlgo::AutoGradUtil::IsZerosLikeNode(ir_function_node()->accumulate_dout())))) {
+    ir_function_node()->set_accumulate_dout(PyNativeAlgo::AutoGradUtil::BuildSpecialNode(
       ir_function_node()->tape(), out_value(), ir_function_node()->accumulate_dout()->abstract(),
       SpecialType::kZerosLikeType));
   }
@@ -129,8 +102,33 @@ AnfNodePtr IrVariable::RealDout() {
     return accumulate_dout;
   }
   if (out_value()->isa<tensor::MetaSparseTensor>()) {
-    return PyNativeAlgo::AutoGrad::BuildSparseTensorNode(ir_function_node()->tape(), out_value(), accumulate_dout);
+    return PyNativeAlgo::AutoGradUtil::BuildSparseTensorNode(ir_function_node()->tape(), out_value(), accumulate_dout);
   }
   return accumulate_dout;
 }
+
+namespace impl {
+AutoGradMetaDataPtr get_autograd_meta_impl(const tensor::BaseTensorPtr &tensor) {
+  MS_EXCEPTION_IF_NULL(tensor);
+  return get_autograd_meta_impl(*tensor);
+}
+
+AutoGradMetaDataPtr get_autograd_meta_impl(const tensor::BaseTensor &tensor) {
+  auto auto_grad_meta = tensor.auto_grad_meta_data();
+  if (auto_grad_meta == nullptr) {
+    return nullptr;
+  }
+  return std::dynamic_pointer_cast<AutoGradMetaData>(auto_grad_meta);
+}
+
+ViewAutoGradMetaDataPtr get_view_autograd_meta_impl(const tensor::BaseTensorPtr &tensor) {
+  MS_EXCEPTION_IF_NULL(tensor);
+  if (tensor->auto_grad_meta_data() == nullptr) {
+    return nullptr;
+  }
+  const auto &meta_data = tensor->auto_grad_meta_data();
+  auto view_meta_data = std::dynamic_pointer_cast<ViewAutoGradMetaData>(meta_data);
+  return view_meta_data;
+}
+}  // namespace impl
 }  // namespace mindspore::pynative::autograd

@@ -14,20 +14,18 @@
  * limitations under the License.
  */
 
-#include "pybind_api/ir/hook_py.h"
+#include "pipeline/pynative/grad/hook_py.h"
 #include <memory>
 #include <string>
 #include "include/common/utils/hook.h"
 
-namespace mindspore {
-namespace tensor {
-
+namespace mindspore::pynative::autograd {
 namespace {
 AutoGradMetaDataWeakPtr BuildAutoGradMeta(const tensor::Tensor &tensor) {
-  auto auto_grad_meta_data = tensor.auto_grad_meta_data();
+  auto auto_grad_meta_data = impl::get_autograd_meta_impl(tensor);
   if (auto_grad_meta_data == nullptr) {
     auto_grad_meta_data = std::make_shared<AutoGradMetaData>();
-    const_cast<Tensor &>(tensor).set_auto_grad_meta_data(auto_grad_meta_data);
+    const_cast<tensor::Tensor &>(tensor).set_auto_grad_meta_data(auto_grad_meta_data);
     MS_LOG(DEBUG) << "Tensor has no auto_grad_meta_data, build it";
   }
   return {auto_grad_meta_data};
@@ -39,7 +37,7 @@ inline uint64_t GetTensorNumId(const std::string &id) { return std::stoull(id.su
 std::map<uint64_t, std::vector<uint64_t>> RegisterHook::tensor_id_with_unique_id_ = {};
 std::map<uint64_t, std::pair<AutoGradMetaDataWeakPtr, TensorBackwardHookPtr>> RegisterHook::hook_meta_fn_map_ = {};
 
-uint64_t RegisterHook::RegisterTensorBackwardHook(const Tensor &tensor, const py::function &hook) {
+uint64_t RegisterHook::RegisterTensorBackwardHook(const tensor::Tensor &tensor, const py::function &hook) {
   // Delete char 'T'
   const auto &tensor_id = GetTensorNumId(tensor.id());
   ++unique_id_;
@@ -101,5 +99,4 @@ void RegisterHook::UpdateTensorBackwardHook(const AutoGradMetaDataPtr &auto_grad
     }
   }
 }
-}  // namespace tensor
-}  // namespace mindspore
+}  // namespace mindspore::pynative::autograd

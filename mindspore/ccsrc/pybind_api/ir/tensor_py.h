@@ -27,7 +27,6 @@
 #include "include/common/np_dtype/np_dtypes.h"
 
 namespace py = pybind11;
-
 namespace pybind11 {
 namespace detail {
 // Similar to enums in `pybind11/numpy.h`. Determined by doing:

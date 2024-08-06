@@ -80,6 +80,7 @@ BaseTensor::BaseTensor(const BaseTensor &tensor)
     : MetaTensor(tensor),
       is_forward_output_(tensor.is_forward_output_),
       need_pipeline_sync_(tensor.need_pipeline_sync_),
+      version_(tensor.version_),
       id_(tensor.id_),
       device_sync_(tensor.device_sync_),
       sync_status_(tensor.sync_status_),
@@ -94,6 +95,7 @@ BaseTensor::BaseTensor(const BaseTensor &tensor, TypeId data_type)
     : MetaTensor(data_type, tensor.shape_),
       is_forward_output_(tensor.is_forward_output_),
       need_pipeline_sync_(tensor.need_pipeline_sync_),
+      version_(tensor.version_),
       id_(tensor.data_type_ != data_type ? MakeId() : tensor.id_),
       device_sync_(tensor.device_sync_),
       sync_status_(tensor.sync_status_),
@@ -112,6 +114,7 @@ BaseTensor &BaseTensor::operator=(const BaseTensor &tensor) {
   data_ = tensor.data_;
   id_ = tensor.id_;
   sync_status_ = tensor.sync_status_;
+  version_ = tensor.version_;
   device_sync_ = tensor.device_sync_;
   need_pipeline_sync_ = tensor.need_pipeline_sync_;
   lazy_callback_ = tensor.lazy_callback_;
@@ -257,12 +260,13 @@ void BaseTensor::ExecuteLazyTask() const {
 DeviceSyncPtr BaseTensor::device_address() const { return device_sync_; }
 
 const TensorStorageInfoPtr BaseTensor::storage_info() const {
-  if (device_sync_ == nullptr) {
-    return nullptr;
+  if (device_sync_ != nullptr) {
+    return device_sync_->GetTensorStorageInfo();
   }
-
-  return device_sync_->GetTensorStorageInfo();
+  return storage_info_;
 }
+
+void BaseTensor::set_storage_info(const TensorStorageInfoPtr &storage_info) { storage_info_ = storage_info; }
 
 bool BaseTensor::is_contiguous() const {
   const auto &storage = storage_info();
@@ -311,6 +315,7 @@ BaseTensor &BaseTensor::AssignValue(const BaseTensor &tensor) {
     need_pipeline_sync_ = tensor.need_pipeline_sync_;
     is_forward_output_ = tensor.is_forward_output_;
     sync_status_ = tensor.sync_status_;
+    version_ = tensor.version_;
     MS_EXCEPTION_IF_NULL(data_);
     if (data_->is_sub_data()) {
       // If tensor data is sub data, we should keep data

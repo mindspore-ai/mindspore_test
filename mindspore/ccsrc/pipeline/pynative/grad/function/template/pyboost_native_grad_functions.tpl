@@ -22,6 +22,7 @@
 #include "include/common/utils/python_adapter.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "include/common/expander/core/node.h"
+#include "pipeline/pynative/grad/grad_utils.h"
 #include "pipeline/pynative/pynative_utils.h"
 #include "runtime/pynative/op_function/pyboost_grad_functions.h"
 ${include_op_header}
@@ -76,7 +77,7 @@ NodePtr NativeFunc::RunOpDeprecated(const PrimitivePtr &prim, const NodePtrList 
   }
   // Set abstract to tensor cache
   if (op_runner_info.output_value_simple_info != nullptr) {
-    PyNativeAlgo::AutoGrad::CacheOutputAbstract(value_result, op_runner_info.output_abs);
+    PyNativeAlgo::AutoGradUtil::CacheOutputAbstract(value_result, op_runner_info.output_abs);
   }
   auto result = std::make_shared<expander::FuncNode>(value_result, op_runner_info.output_abs, InputType::kOpOutput, inputs[0]->emitter());
   return result;

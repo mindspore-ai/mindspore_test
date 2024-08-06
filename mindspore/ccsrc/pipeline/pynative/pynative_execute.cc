@@ -21,7 +21,7 @@
 #include "pipeline/jit/ps/debug/trace.h"
 #include "pybind_api/pybind_patch.h"
 #include "pybind_api/gil_scoped_long_running.h"
-#include "pybind_api/ir/hook_py.h"
+#include "pipeline/pynative/grad/hook_py.h"
 #include "include/common/utils/config_manager.h"
 #include "include/common/pybind_api/api_register.h"
 #include "frontend/optimizer/ad/grad.h"
@@ -33,7 +33,6 @@
 #include "ir/cell.h"
 #include "include/common/utils/stub_tensor.h"
 #include "include/common/utils/python_utils.h"
-#include "frontend/operator/ops_front_infer_function.h"
 #include "kernel/kernel_mod_cache.h"
 #include "runtime/pipeline/pipeline.h"
 
@@ -181,7 +180,7 @@ void PyNativeExecutor::ClearRes() const {
   kernel::KernelModCache::GetInstance().ClearAllCache();
   pynative::autograd::ClearAutoGradCache();
   PyNativeAlgo::Common::ClearRes();
-  tensor::RegisterHook::ClearHookMap();
+  autograd::RegisterHook::ClearHookMap();
 
   // Maybe exit in runop step
   auto ms_context = MsContext::GetInstance();

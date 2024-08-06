@@ -63,6 +63,10 @@ class FuncBuilder : public BpropBuilder {
   NodePtr LessEqual(const NodePtr &input, const NodePtr &other, const TypePtr &dst_type) override;
   NodePtr Less(const NodePtr &input, const NodePtr &other, const TypePtr &dst_type) override;
   NodePtr Concat(const NodePtr &tensors, const NodePtr &axis) override;
+  NodePtr InplaceCopy(const NodePtr &variable, const NodePtr &value) override;
+  NodePtr AsStrided(const NodePtr &input, const NodePtr &size, const NodePtr &stride,
+                    const NodePtr &storage_offset) override;
+
   // Here is auto generate.
   NodePtr Abs(const NodePtr &input) override;
   NodePtr AdamW(const NodePtr &var, const NodePtr &m, const NodePtr &v, const NodePtr &max_v, const NodePtr &gradient,

@@ -657,7 +657,8 @@ def get_bprop_fft_with_size(self):
                 dx = rfft_fn(dout)
                 dx = reverse_branch(dx, onesided, dout_shape, offset_shape,
                                     output_type, dout, norm, inverse, signal_ndim, offset_size)
-        return (dx,)
+        return dx, zeros_like(signal_ndim), zeros_like(inverse), zeros_like(real), zeros_like(norm_enum), \
+               zeros_like(onesided), zeros_like(signal_sizes)
 
     return bprop
 
