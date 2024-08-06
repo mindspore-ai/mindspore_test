@@ -1429,9 +1429,7 @@ REG_BPROP_BUILDER("Atanh").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   if (x_dtype_id == kNumberTypeComplex64 || x_dtype_id == kNumberTypeComplex128) {
     MS_EXCEPTION(TypeError) << "For 'Atanh', gradient not support for complex type currently.";
   } else {
-    auto one = ib->Tensor(1, x_dtype);
-    auto tmp = one - ib->Pow(x, ib->Tensor(2, x_dtype));
-    dx = ib->Div(one, tmp) * dout;
+    dx = ib->Div(dout, ib->Sub(ib->Tensor(1, ib->GetDtype(x)), ib->Square(x)));
   }
   return {dx};
 });

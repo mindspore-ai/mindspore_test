@@ -258,7 +258,8 @@ from mindspore.ops.function.math_func import arcsinh_ext as arcsinh
 # 174
 
 # 175
-
+from mindspore.ops.function.math_func import atanh
+from mindspore.ops.function.math_func import arctanh
 # 176
 from mindspore.ops.function.math_func import atan2_ext as atan2
 from mindspore.ops.function.math_func import arctan2_ext as arctan2
@@ -1214,7 +1215,8 @@ __all__ = [
     # 174
 
     # 175
-
+    'atanh',
+    'arctanh',
     # 176
     'atan2',
     'arctan2',

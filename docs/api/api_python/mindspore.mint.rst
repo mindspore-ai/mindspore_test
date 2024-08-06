@@ -83,9 +83,11 @@ Tensor
     mindspore.mint.arcsin
     mindspore.mint.arcsinh
     mindspore.mint.arctan2
+    mindspore.mint.arctanh
     mindspore.mint.asin
     mindspore.mint.asinh
     mindspore.mint.atan2
+    mindspore.mint.atanh
     mindspore.mint.bitwise_and
     mindspore.mint.bitwise_or
     mindspore.mint.bitwise_xor
