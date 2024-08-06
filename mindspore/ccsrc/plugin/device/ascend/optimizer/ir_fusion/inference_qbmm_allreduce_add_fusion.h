@@ -16,18 +16,15 @@
 #ifndef MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_IR_FUSION_INFERENCE_QBMM_ALLREDUCE_ADD_FUSION_H_
 #define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_IR_FUSION_INFERENCE_QBMM_ALLREDUCE_ADD_FUSION_H_
 
-#include <memory>
-#include <string>
-#include "include/backend/optimizer/optimizer.h"
-#include "op_def/math_ops.h"
+#include "plugin/device/ascend/optimizer/ir_fusion/inference_qbmm_fusion_base.h"
 
 namespace mindspore {
 namespace opt {
-class QbmmAllReduceAddFusion : public PatternProcessPass {
+class QbmmAllReduceAddFusion : public QbmmFusionBase {
  public:
   explicit QbmmAllReduceAddFusion(const std::string &name = "inference_qbmm_allreduce_add_fusion",
                                   bool multigraph = true)
-      : PatternProcessPass(name, multigraph) {}
+      : QbmmFusionBase(name, multigraph) {}
 
   ~QbmmAllReduceAddFusion() override = default;
 
@@ -35,21 +32,8 @@ class QbmmAllReduceAddFusion : public PatternProcessPass {
   const BaseRef DefinePattern() const override;
 
  private:
-  bool Init() const;
-  CNodePtr UpdateQbmmAllReduceAddNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
+  CNodePtr CreateQbmmAllReduceAddNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
                                       const EquivPtr &equiv) const;
-
- protected:
-  mutable VarPtr qbmm_prim_ = nullptr;
-  mutable VarPtr x_ = nullptr;
-  mutable VarPtr w_ = nullptr;
-  mutable VarPtr scale_ = nullptr;
-  mutable VarPtr unused_offset_ = nullptr;
-  mutable VarPtr orig_bias_ = nullptr;
-  mutable VarPtr trans_a_ = nullptr;
-  mutable VarPtr trans_b_ = nullptr;
-  mutable VarPtr out_dtype_ = nullptr;
-  mutable VarPtr bias_tensor_ = nullptr;
 };
 }  // namespace opt
 }  // namespace mindspore
