@@ -254,13 +254,9 @@ def test_transforms_transform_input_consistency():
     data2 = [1, 2, 3]
     data2_copy = copy.deepcopy(data2)
 
-    def check_result_any(output, inputs, inputs_copy):
-        assert (inputs == inputs_copy).all()
-        assert (output != inputs_copy).any()
-
     def check_result(output, inputs, inputs_copy):
         assert (inputs == inputs_copy).all()
-        assert output != inputs_copy
+        assert not np.array_equal(output, inputs_copy)
 
     def check_result2(output, inputs, inputs_copy):
         assert inputs == inputs_copy
@@ -268,10 +264,10 @@ def test_transforms_transform_input_consistency():
 
     def check_result3(output, inputs, inputs_copy):
         assert inputs == inputs_copy
-        assert output != inputs_copy
+        assert not np.array_equal(output, inputs_copy)
 
     out = transforms.Compose([transforms.Fill(10), transforms.Mask(Relational.EQ, 100)])(data1_copy)
-    check_result_any(out, data1, data1_copy)
+    check_result(out, data1, data1_copy)
 
     pre_array = np.array([10, 20])
     append_array = np.array([100])
@@ -282,7 +278,7 @@ def test_transforms_transform_input_consistency():
     check_result3(out, data2, data2_copy)
 
     out = transforms.Fill(100)(data1_copy)
-    check_result_any(out, data1, data1_copy)
+    check_result(out, data1, data1_copy)
 
     out = transforms.Mask(Relational.EQ, 2)(data2_copy)
     check_result2(out, data2, data2_copy)
@@ -300,10 +296,10 @@ def test_transforms_transform_input_consistency():
     check_result(out, data, data_copy)
 
     out = transforms.RandomChoice([transforms.Fill(100)])(data1_copy)
-    check_result_any(out, data1, data1_copy)
+    check_result(out, data1, data1_copy)
 
     out = transforms.RandomOrder([transforms.Mask(Relational.EQ, 100)])(data1_copy)
-    check_result_any(out, data1, data1_copy)
+    check_result(out, data1, data1_copy)
 
     out = transforms.Slice(slice(1, 3))(data1_copy)
     check_result(out, data1, data1_copy)
@@ -311,7 +307,7 @@ def test_transforms_transform_input_consistency():
     data = np.array([2.71606445312564e-03, 6.3476562564e-03]).astype(np.float64)
     data_copy = copy.deepcopy(data)
     out = transforms.TypeCast(np.float16)(data_copy)
-    check_result_any(out, data, data_copy)
+    check_result(out, data, data_copy)
 
     data = [[0, -1, -2, -1, 2], [2, -0, 2, 1, -3]]
     data_copy = copy.deepcopy(data)
@@ -349,11 +345,11 @@ def test_vision_transform_input_consistency():
 
     def check_result(output, inputs, inputs_copy):
         assert (inputs == inputs_copy).all()
-        assert output != inputs_copy
+        assert not np.array_equal(output, inputs_copy)
 
     def check_result2(output, inputs, inputs_copy):
         assert (np.array(inputs) == np.array(inputs_copy)).all()
-        assert output != np.array(inputs_copy)
+        assert not np.array_equal(output, inputs_copy)
 
     data = np.random.randint(0, 256, (20, 20, 3)) / 255.0
     data = data.astype(np.float32)
@@ -628,7 +624,7 @@ def test_vision_transform_input_consistency():
     assert (out == np.array(data5_copy)).all()
 
     out = vision.ToPIL()(data1_copy)
-    check_result(out, data1, data1_copy)
+    assert (data1 == data1_copy).all()
 
     out = vision.ToTensor()(data1_copy)
     check_result(out, data1, data1_copy)
@@ -695,11 +691,11 @@ def test_text_transform_input_consistency():
 
     def check_result(output, inputs, inputs_copy):
         assert inputs == inputs_copy
-        assert output != inputs_copy
+        assert not np.array_equal(output, inputs_copy)
 
     def check_result2(output, inputs, inputs_copy):
         assert (inputs == inputs_copy).all()
-        assert output != inputs_copy
+        assert not np.array_equal(output, inputs_copy)
 
     def check_result_len(output, inputs, inputs_copy):
         assert inputs == inputs_copy

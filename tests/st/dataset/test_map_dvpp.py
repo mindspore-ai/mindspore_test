@@ -1,4 +1,4 @@
-# Copyright 2023 Huawei Technologies Co., Ltd
+# Copyright 2023-2024 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,8 +24,9 @@ import pytest
 
 import mindspore as ms
 import mindspore.dataset as ds
-from mindspore.dataset.transforms import transforms
 import mindspore.dataset.vision as vision
+from mindspore.dataset.transforms import transforms
+from mindspore.dataset.vision import Inter
 from tests.mark_utils import arg_mark
 
 # pylint: disable=W0212
@@ -1726,6 +1727,33 @@ def test_map_with_dvpp_perspective_with_exception():
     assert "The input tensor is not of shape [H,W], [H,W,C] or [N,H,W,C]." in str(info.value)
 
 
+def test_map_with_dvpp_shape_and_type():
+    """
+    Feature: Map op
+    Description: Test map with dvpp output_shapes and output_types
+    Expectation: The result is equal to the expected
+    """
+    ms.set_context(device_target="Ascend")
+
+    data = np.random.randint(0, 255, size=(1, 100, 100, 3)).astype(np.uint8)
+    resize_op = vision.Resize([100, 75], Inter.BICUBIC).device("Ascend")
+    crop_op = vision.Crop((0, 0), (100, 75)).device("Ascend")
+    transforms_list = [resize_op, crop_op]
+    numpy_slices_dataset = ds.NumpySlicesDataset(data, ["image"])
+    numpy_slices_dataset = numpy_slices_dataset.map(operations=transforms_list, input_columns=["image"])
+    assert numpy_slices_dataset.output_shapes() == [[100, 75, 3]]
+    assert numpy_slices_dataset.output_types() == ['uint8']
+
+    transforms_list2 = [vision.Resize([100, 75], Inter.BICUBIC),
+                        vision.ConvertColor(vision.ConvertMode.COLOR_BGR2RGBA).device("Ascend")]
+    numpy_slices_dataset2 = ds.NumpySlicesDataset(data, ["image"])
+    numpy_slices_dataset2 = numpy_slices_dataset2.map(operations=transforms_list2, input_columns=["image"])
+    assert numpy_slices_dataset2.output_shapes() == [[100, 75, 4]]
+    assert numpy_slices_dataset2.output_types() == ['uint8']
+    for item in numpy_slices_dataset2.create_dict_iterator(num_epochs=1, output_numpy=True):
+        assert item["image"].shape == (100, 75, 4)
+
+
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_basic_transforms_multi_worker_mode():
     """
@@ -1751,6 +1779,7 @@ def test_basic_transforms_pipeline():
     test_map_with_dvpp_decode_mixed_op()
     test_map_with_dvpp_normalize()
     test_map_with_dvpp_normalize_mixed_op()
+    test_map_with_dvpp_shape_and_type()
 
 
 if __name__ == '__main__':
@@ -1770,3 +1799,4 @@ if __name__ == '__main__':
     test_map_with_dvpp_vertical_flip_with_exception()
     test_map_with_dvpp_resize_crop_with_exception()
     test_map_with_dvpp_perspective_with_exception()
+    test_map_with_dvpp_shape_and_type()
