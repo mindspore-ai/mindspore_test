@@ -50,6 +50,7 @@ REG_SYMBOL_OP_BUILDER("Exp").SetShapeDepend({DependOn::kShape}).SetShapeFunc(Tra
 REG_SYMBOL_OP_BUILDER("FastGeLU").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("FillV2").SetShapeDepend({DependOn::kValue, DependOn::kNone}).SetShapeFunc(TransValueToShape);
 REG_SYMBOL_OP_BUILDER("GeLU").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
+REG_SYMBOL_OP_BUILDER("GeLUGrad").SetShapeDepend({DependOn::kNone, DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("IsFinite").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("LogicalNot").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("Log").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
@@ -89,6 +90,8 @@ REG_SYMBOL_OP_BUILDER("StopGradient").SetShapeDepend({DependOn::kShape}).SetShap
 REG_SYMBOL_OP_BUILDER("StridedSliceGrad")
   .SetShapeDepend({DependOn::kNone, DependOn::kValue})
   .SetShapeFunc(TransValueToShape);
+REG_SYMBOL_OP_BUILDER("Tanh").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
+REG_SYMBOL_OP_BUILDER("TanhGrad").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("TensorScatterUpdate").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("Tril").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("UniformExt").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
@@ -105,6 +108,15 @@ REG_SYMBOL_OP_BUILDER("TensorToTuple").SetValueDepend({DependOn::kValue}).SetVal
 REG_SYMBOL_OP_BUILDER("TupleToTensor").SetValueDepend({DependOn::kValue}).SetValueFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("ListToTuple").SetValueDepend({DependOn::kValue}).SetValueFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("TupleToList").SetValueDepend({DependOn::kValue}).SetValueFunc(TransparentInput);
+REG_SYMBOL_OP_BUILDER("TensorToScalar")
+  .SetValueDepend({DependOn::kValue})
+  .SetValueFunc([](OperationBuilder *b) -> SymbolPtr {
+    auto inp = b->GetInputValue(0);
+    if (inp->is<ListSymbol>()) {
+      return inp->HasData() ? inp->as<ListSymbol>()->item(0) : nullptr;
+    }
+    return inp;
+  });
 }  // namespace ops
 }  // namespace symshape
 }  // namespace mindspore

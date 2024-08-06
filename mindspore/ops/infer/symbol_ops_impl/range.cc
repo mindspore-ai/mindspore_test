@@ -39,7 +39,8 @@ SymbolPtr Range::Eval() {
   // range length = (end - start) / step.  (to ceil)
   auto len = Emit(std::make_shared<ScalarSub>(end, start));
   len = Emit(std::make_shared<ScalarCeilDiv>(len, step));
-  return Emit(std::make_shared<ScalarMin>(len, maxlen));
+  len = Emit(std::make_shared<ScalarMin>(len, maxlen));
+  return GenList({len});
 }
 
 REG_SYMBOL_OP_BUILDER("Range").SetShapeDependN<DependOn::kValue, 4>().SetShapeFuncWith<Range>();
