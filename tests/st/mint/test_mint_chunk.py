@@ -179,7 +179,7 @@ def test_chunk_forward_dynamic_shape(context_mode):
             _ = test_cell(input_tensor, chunks, dims)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level3', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize("context_mode", [ms.GRAPH_MODE])
 def test_chunk_forward_dynamic_rank(context_mode):
     """
@@ -198,7 +198,7 @@ def test_chunk_forward_dynamic_rank(context_mode):
         _ = test_cell(input_tensor, chunks, dims)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level3', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize("context_mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_chunk_backward_dynamic_shape(context_mode):
     """
@@ -223,7 +223,7 @@ def test_chunk_backward_dynamic_shape(context_mode):
     assert np.allclose(out.asnumpy(), expect_output)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level3', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize("context_mode", [ms.GRAPH_MODE])
 def test_chunk_backward_dynamic_rank(context_mode):
     """
@@ -242,7 +242,7 @@ def test_chunk_backward_dynamic_rank(context_mode):
         _ = test_cell(input_tensor, chunks, dims)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level3', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize("context_mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_chunk_forward_mutable(context_mode):
     """
