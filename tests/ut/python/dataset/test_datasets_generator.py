@@ -2465,6 +2465,79 @@ def test_generator_with_dynamic_shared_queue():
     assert count == 3
 
 
+def test_generator_shared_queue_reuse_with_fixed_shape():
+    """
+    Feature: GeneratorDataset
+    Description: Test shared memory reuse with fixed shape data
+    Expectation: The dataset is processed as expected
+    """
+
+    data = np.random.random((32, 32, 1)).astype(np.uint8)  # 1K
+
+    class FixedDataset:
+        def __init__(self):
+            self.data = data
+            self.len = 60
+
+        def __getitem__(self, index):
+            return self.data
+
+        def __len__(self):
+            return self.len
+
+    def map_func(input_data):
+        return input_data
+
+    def batch_func(input_data, batch_info):
+        return input_data
+
+    dataset = ds.GeneratorDataset(FixedDataset(), column_names=["data"], num_parallel_workers=2, shuffle=False)
+    dataset = dataset.map(map_func, num_parallel_workers=2, python_multiprocessing=True)
+    dataset = dataset.batch(2, num_parallel_workers=2, per_batch_map=batch_func, python_multiprocessing=True)
+
+    count = 0
+    for sample in dataset.create_dict_iterator(output_numpy=True, num_epochs=1):
+        np.testing.assert_array_equal(sample["data"], np.array([data, data]))
+        count += 1
+    assert count == 30
+
+
+def test_generator_shared_queue_reuse_with_dynamic_shape():
+    """
+    Feature: GeneratorDataset
+    Description: Test shared memory reuse with dynamic shape data
+    Expectation: The dataset is processed as expected
+    """
+
+    data = [np.random.random((32, 32, i + 1)).astype(np.uint8) for i in range(30)]
+
+    class DynamicDataset:
+        def __init__(self):
+            self.data = data
+
+        def __getitem__(self, index):
+            return self.data[index // 2]
+
+        def __len__(self):
+            return len(self.data) * 2
+
+    def map_func(input_data):
+        return input_data
+
+    def batch_func(input_data, batch_info):
+        return input_data
+
+    dataset = ds.GeneratorDataset(DynamicDataset(), column_names=["data"], num_parallel_workers=2, shuffle=False)
+    dataset = dataset.map(map_func, num_parallel_workers=2, python_multiprocessing=True)
+    dataset = dataset.batch(2, num_parallel_workers=2, per_batch_map=batch_func, python_multiprocessing=True)
+
+    count = 0
+    for sample in dataset.create_dict_iterator(output_numpy=True, num_epochs=1):
+        np.testing.assert_array_equal(sample["data"], np.array([data[count], data[count]]))
+        count += 1
+    assert count == 30
+
+
 def test_generator_with_invalid_max_row_size():
     """
     Feature: GeneratorDataset

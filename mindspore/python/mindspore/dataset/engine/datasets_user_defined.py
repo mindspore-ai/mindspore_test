@@ -1,4 +1,4 @@
-# Copyright 2019-2023 Huawei Technologies Co., Ltd
+# Copyright 2019-2024 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ After declaring the dataset object, you can further apply dataset operations
 (e.g. filter, skip, concat, map, batch) on it.
 """
 import builtins
-import copy
 import errno
 import itertools
 import math
@@ -224,7 +223,7 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
             self.eof = threading.Event()
         # Create workers
 
-        # get default queue size and adjust queuesize per worker if there are large # workers
+        # get default queue size and adjust queue size per worker if there are large # workers
         queue_size = get_prefetch_size()
         queue_size = min(queue_size, queue_size * 4 // self.num_worker)
         queue_size = max(2, queue_size)
@@ -232,7 +231,7 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
         if self.multi_process and get_enable_shared_mem():
             # generator dataset use idx_queue and res_queue to transfer data between main and subprocess
             # idx_queue is used multiprocess.Queue which is not shared memory, so it's size is 0.
-            # res_queue is used shared memory, so it' size is max_rowsize which is defined by user.
+            # res_queue is used shared memory, so its size is max_rowsize which is defined by user.
             _check_shm_usage(self.num_worker, queue_size, 0, self.max_rowsize)
         self.count = multiprocessing.Value('i', 0)
         for worker_id in range(self.num_worker):
@@ -329,14 +328,6 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
                     time.sleep(0.1)
                     wait_count = self._interval_log(i, start_time, wait_count)
                 result = self.workers[i % self.num_worker].get()
-                # Because there is no need to copy when creating Tensors in the C++layer, it reduces the time
-                # from np.ndarray to C++Tensor creation. However, when using shared memory in multiple processes,
-                # the address of the shared memory will always be passed to subsequent nodes in the dataset pipeline,
-                # and the shared memory will also be written by the current node, causing dirty data to be accessed
-                # by subsequent nodes in the pipeline. So make a memory copy here to solve the problem of
-                # shared memory being contaminated.
-                if self.multi_process is True and get_enable_shared_mem():
-                    result = copy.deepcopy(result)
                 if isinstance(result, ExceptionHandler):
                     result.reraise()
             except queue.Empty:
@@ -623,7 +614,7 @@ class _GeneratorWorkerMp(multiprocessing.Process):
             self.res_queue = _SharedQueue(queue_size, count, max_rowsize=max_rowsize)
         else:
             self.res_queue = multiprocessing.Queue(queue_size)
-        self.idx_queue.cancel_join_thread()  # Ensure that the process does not hung when exiting
+        self.idx_queue.cancel_join_thread()  # Ensure that the process does not hang when exiting
         super().__init__(target=_generator_worker_loop, args=(dataset, self.idx_queue, self.res_queue, eof, True, ppid),
                          name="GeneratorWorkerProcess" + str(worker_id))
 
@@ -714,7 +705,7 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
             allocation to copy data between processes, the total occupied shared memory will increase as
             ``num_parallel_workers`` and :func:`mindspore.dataset.config.set_prefetch_size` increase. If set to -1,
             shared memory will be dynamically allocated with the actual size of data. This is only used if
-            ``python_multiprocessing`` is set to True. Default: ``6``.
+            ``python_multiprocessing`` is set to True. Default: ``None`` , allocate shared memory dynamically.
 
     Raises:
         RuntimeError: If source raises an exception during execution.
@@ -732,16 +723,16 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
 
     Note:
         - If you configure `python_multiprocessing=True` (Default: ``True`` ) and `num_parallel_workers>1`
-          (default: ``1`` ) indicates that the multi-process mode is started for data load acceleration.
+          (default: ``1`` ) indicates that the multiprocessing mode is started for data load acceleration.
           At this time, as the datasetiterates, the memory consumption of the subprocess will gradually increase,
           mainly because the subprocess of the user-defined dataset obtains the member variables from the main
           process in the Copy On Write way.
           Example: If you define a dataset with `__ init__` function which contains a large number of member variable
           data (for example, a very large file name list is loaded during the dataset construction) and uses the
-          multi-process mode, which may cause the problem of OOM (the estimated total memory usage is:
+          multiprocessing mode, which may cause the problem of OOM (the estimated total memory usage is:
           `(num_parallel_workers+1) * size of the parent process` ). The simplest solution is to replace Python objects
           (such as list/dict/int/float/string) with non referenced data types
-          (such as Pandas, Numpy or PyArrow objects) for member variables, or load less meta data in member variables,
+          (such as Pandas, Numpy or PyArrow objects) for member variables, or load less metadata in member variables,
           or configure `python_multiprocessing=False` to use multi-threading mode.
 
           There are several classes/functions that can help you reduce the size of member variables, and you can choose
@@ -821,7 +812,7 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
     @check_generatordataset
     def __init__(self, source, column_names=None, column_types=None, schema=None, num_samples=None,
                  num_parallel_workers=1, shuffle=None, sampler=None, num_shards=None, shard_id=None,
-                 python_multiprocessing=True, max_rowsize=6):
+                 python_multiprocessing=True, max_rowsize=None):
         super().__init__(num_parallel_workers=num_parallel_workers, sampler=sampler, num_samples=num_samples,
                          shuffle=shuffle, num_shards=num_shards, shard_id=shard_id)
         if isinstance(source, builtins.zip):
@@ -873,7 +864,7 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
             if isinstance(self.sampler, samplers.Sampler) or hasattr(self.sampler, "__iter__"):
                 self.source_len = len(list(sampler))
 
-        self.max_rowsize = max_rowsize
+        self.max_rowsize = max_rowsize if max_rowsize is not None else -1
         self.sample_fn = None
 
     def __deepcopy__(self, memodict):
@@ -941,11 +932,11 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
 
     def __validate_memory_usage(self):
         """
-        Check memory usage when mulit-processing mode, when 85% prompt warning and 100% raise error.
+        Check memory usage when multiprocessing mode, when 85% prompt warning and 100% raise error.
         """
         if self.python_multiprocessing:
-            # if use num_parallel_workers is to large when python_multiprocessing=True which would cause
-            # OOM error get the num_shards
+            # setting num_parallel_workers too large when using python multiprocessing may cause
+            # out of memory for getting num_shards
             valid_num_shards = 1
             if isinstance(self.sampler, samplers.DistributedSampler):
                 valid_num_shards = self.sampler.num_shards
