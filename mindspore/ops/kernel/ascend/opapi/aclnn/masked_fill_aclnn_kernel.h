@@ -39,8 +39,7 @@ class MaskedFillAscend : public AclnnKernelMod {
   void SetWorkspaceForInplaceCopy(const KernelTensor *output, const KernelTensor *input) {
     copy_hash_id_ = transform::CalcOpApiHash(inplace_copy_str_, input);
     if (cache_hash_.count(copy_hash_id_) == 0) {
-      const bool use_huge_pages = false;
-      auto return_value = GEN_EXECUTOR_CUST(inplace_copy_str_, use_huge_pages, output, input);
+      auto return_value = GEN_EXECUTOR_CUST(inplace_copy_str_, output, input);
       UpdateInplacemWorkspace(std::get<kWsSizeIndex>(return_value), false);
     } else {
       auto return_value = GEN_EXECUTOR_BOOST(inplace_copy_str_, copy_hash_id_, output, input);

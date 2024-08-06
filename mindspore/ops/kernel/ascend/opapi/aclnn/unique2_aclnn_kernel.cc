@@ -39,9 +39,8 @@ bool Unique2Ascend::Launch(const std::vector<KernelTensor *> &inputs, const std:
   auto return_inverse = transform::ConvertKernelTensor<bool>(inputs[kIndex2]);
   auto return_counts = transform::ConvertKernelTensor<bool>(inputs[kIndex3]);
 
-  bool use_huge_pages = True;
-  auto res = GEN_EXECUTOR_CUST(op_type_, use_huge_pages, inputs[kIndex0], sorted, return_inverse, return_counts,
-                               outputs[kIndex0], outputs[kIndex1], outputs[kIndex2]);
+  auto res = GEN_EXECUTOR_CUST(op_type_, inputs[kIndex0], sorted, return_inverse, return_counts, outputs[kIndex0],
+                               outputs[kIndex1], outputs[kIndex2]);
   UpdateWorkspace(res);
   executor_ = std::get<kIndex1>(res);
   auto &all_acl_tensor = std::get<kIndex2>(res);

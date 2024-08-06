@@ -39,8 +39,7 @@ class EmbeddingAscend : public AclnnKernelMod {
   void SetWorkspaceForRenorm(const KernelTensor *weight, const KernelTensor *input, double max_norm, double norm_type) {
     renorm_hash_id_ = transform::CalcOpApiHash(embedding_renorm_name_, weight, input, max_norm, norm_type);
     if (cache_hash_.count(renorm_hash_id_) == 0) {
-      const bool use_huge_pages = false;
-      auto return_value = GEN_EXECUTOR_CUST(embedding_renorm_name_, use_huge_pages, weight, input, max_norm, norm_type);
+      auto return_value = GEN_EXECUTOR_CUST(embedding_renorm_name_, weight, input, max_norm, norm_type);
       UpdateRenormWorkspace(std::get<kWsSizeIndex>(return_value), false);
     } else {
       auto return_value =

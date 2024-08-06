@@ -42,8 +42,7 @@ class GatherDGradAscend : public AclnnKernelMod {
   void SetWorkspaceForInplaceZero(const KernelTensor *input) {
     zero_hash_id_ = transform::CalcOpApiHash(inplace_zero_str_, input);
     if (cache_hash_.count(zero_hash_id_) == 0) {
-      const bool use_huge_pages = false;
-      auto return_value = GEN_EXECUTOR_CUST(inplace_zero_str_, use_huge_pages, input);
+      auto return_value = GEN_EXECUTOR_CUST(inplace_zero_str_, input);
       UpdateInplacemWorkspace(std::get<kWsSizeIndex>(return_value), false);
     } else {
       auto return_value = GEN_EXECUTOR_BOOST(inplace_zero_str_, zero_hash_id_, input);

@@ -74,8 +74,7 @@
     runtime::ProfilerRecorder aclnn_profiler(runtime::ProfilerModule::kPynative,                                  \
                                              runtime::ProfilerEvent::kPyBoostLaunchAclnn, aclnn_name, false);     \
     auto stream_ptr = device_context->device_res_manager_->GetStream(real_stream_id);                             \
-    auto use_huge_pages = true;                                                                                   \
-    auto return_values = GEN_EXECUTOR_CUST(aclnn_name, use_huge_pages, args...);                                  \
+    auto return_values = GEN_EXECUTOR_CUST(aclnn_name, args...);                                                  \
     auto ws_size = std::get<0>(return_values);                                                                    \
     auto executor_handle = std::get<1>(return_values);                                                            \
     if (ws_size == 0) {                                                                                           \

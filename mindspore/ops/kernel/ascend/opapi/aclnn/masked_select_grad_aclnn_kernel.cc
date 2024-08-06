@@ -28,8 +28,7 @@ void InplaceZero::SetWorkspaceForInplaceZero(const KernelTensor *input, std::vec
   zero_hash_id_ = transform::CalcOpApiHash(inplace_zero_str_, input);
   uint64_t ws_size;
   if (cache_hash_.count(zero_hash_id_) == 0) {
-    const bool use_huge_pages = false;
-    auto return_value = GEN_EXECUTOR_CUST(inplace_zero_str_, use_huge_pages, input);
+    auto return_value = GEN_EXECUTOR_CUST(inplace_zero_str_, input);
     ws_size = std::get<kWsSizeIndex>(return_value);
   } else {
     auto return_value = GEN_EXECUTOR_BOOST(inplace_zero_str_, zero_hash_id_, input);
