@@ -17,18 +17,17 @@ mindspore.train.FlopsUtilizationCollector
     异常：
         - **TypeError** - `data_size` 不是正整数。
         - **TypeError** - `full_flops` 不是布尔类型。
-        - **AssertionError** - 不是静态图或者不是静态shape。
 
-    .. py:method:: epoch_begin(run_context)
+    .. py:method:: step_begin(run_context)
 
-        在epoch开始时记录时间。
+        在step开始时记录时间。
 
         参数：
             - **run_context** (RunContext) - 包含模型的相关信息。详情请参考 :class:`mindspore.train.RunContext`。
 
-    .. py:method:: epoch_end(run_context)
+    .. py:method:: step_end(run_context)
 
-        在epoch结束时打印模型利用率信息MFU，硬件利用率信息HFU。
+        在step结束时打印模型利用率信息MFU，硬件利用率信息HFU。
 
         参数：
             - **run_context** (RunContext) - 包含模型的相关信息。详情请参考 :class:`mindspore.train.RunContext`。
