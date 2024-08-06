@@ -103,7 +103,7 @@ Status SharedMemoryQueue::ReleaseCurrentShm() {
     // detach the shm
     std::stringstream ss_addr;
     ss_addr << shm_addr_;
-    if (shmdt(shm_addr_) == -1) {
+    if (shmdt(shm_addr_) == -1 && errno != EINVAL) {
       RETURN_STATUS_UNEXPECTED("shmdt shm_addr: " + ss_addr.str() + " error. Errno: " + std::to_string(errno));
     }
     MS_LOG(INFO) << "Detach shared memory: " << shm_addr_ << ", size: " << shm_size_ << ", thread id: " << ss.str()
