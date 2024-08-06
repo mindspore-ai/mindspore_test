@@ -50,7 +50,7 @@ constexpr size_t kInputQueryHiddenDimBSND = 3;
 constexpr size_t kRank2 = 2;
 constexpr size_t kRank3 = 3;
 constexpr size_t kRank4 = 4;
-constexpr size_t kDpAxis = 2;
+constexpr int kDpAxis = 2;
 enum SparseMode : int64_t {
   kSparseDefaultMask = 0,
   kSparseAllMask,
@@ -315,36 +315,25 @@ Status FusedInferAttentionScoreInfo::InferDevMatrixShape() {
 }
 
 void FusedInferAttentionScoreInfo::InferOptionalTensorMap() {
-  if (is_ifa_) {  // IFA
-    if (atten_mask_rank_ == kRank2) {
-      optional_tensor_map_[ops::kFusedInferAttentionScoreInputAttnMaskIndex] = {dev_matrix_batch_dim_,
-                                                                                dev_matrix_s1_dim_};
-    } else if (atten_mask_rank_ == kRank3) {
-      optional_tensor_map_[ops::kFusedInferAttentionScoreInputAttnMaskIndex] = {dev_matrix_batch_dim_, -1,
-                                                                                dev_matrix_s1_dim_};
-    } else if (atten_mask_rank_ == kRank4) {
-      optional_tensor_map_[ops::kFusedInferAttentionScoreInputAttnMaskIndex] = {dev_matrix_batch_dim_, -1, -1,
-                                                                                dev_matrix_s1_dim_};
-    }
-  } else {
-    int32_t pos_s = sparse_mode_ == 0 ? dev_matrix_s1_dim_ : -1;
-    if (atten_mask_rank_ == kRank2) {
-      optional_tensor_map_[ops::kFusedInferAttentionScoreInputAttnMaskIndex] = {pos_s, -1};
-      optional_op_strategies_[ops::kFusedInferAttentionScoreInputAttnMaskIndex] = {0, 0};
-    }
-    if (atten_mask_rank_ == kRank3) {
-      int32_t pos_dp = attn_mask_shape_[0] == 1 ? -1 : kDpAxis;  // attn_mask [1, Q_S, KV_S] or [B, Q_S, KV_S]
-      optional_tensor_map_[ops::kFusedInferAttentionScoreInputAttnMaskIndex] = {pos_dp, pos_s, -1};
-      optional_op_strategies_[ops::kFusedInferAttentionScoreInputAttnMaskIndex] = {kDpAxis, 0, 0};
-    }
-    if (atten_mask_rank_ == kRank4) {
-      optional_tensor_map_[ops::kFusedInferAttentionScoreInputAttnMaskIndex] = {kDpAxis, -1, pos_s, -1};
-      optional_op_strategies_[ops::kFusedInferAttentionScoreInputAttnMaskIndex] = {kDpAxis, 0, 0, 0};
-    }
-    if (pse_shift_rank_ == kRank4) {
-      optional_tensor_map_[ops::kFusedInferAttentionScoreInputPseShiftIndex] = {
-        dev_matrix_batch_dim_, dev_matrix_n1_dim_, dev_matrix_s1_dim_, -1};
-    }
+  int64_t pos_s = (sparse_mode_ == 0 ? dev_matrix_s1_dim_ : -1);
+  if (atten_mask_rank_ == kRank2) {
+    optional_tensor_map_[ops::kFusedInferAttentionScoreInputAttnMaskIndex] =
+      is_ifa_ ? Shape({dev_matrix_batch_dim_, dev_matrix_s1_dim_}) : Shape({pos_s, -1});
+    optional_op_strategies_[ops::kFusedInferAttentionScoreInputAttnMaskIndex] = {0, 0};
+  } else if (atten_mask_rank_ == kRank3) {
+    int64_t pos_dp = (attn_mask_shape_[0] == 1 ? -1 : kDpAxis);  // attn_mask [1, Q_S, KV_S] or [B, Q_S, KV_S]
+    optional_tensor_map_[ops::kFusedInferAttentionScoreInputAttnMaskIndex] =
+      is_ifa_ ? Shape({dev_matrix_batch_dim_, -1, dev_matrix_s1_dim_}) : Shape({pos_dp, pos_s, -1});
+    optional_op_strategies_[ops::kFusedInferAttentionScoreInputAttnMaskIndex] = {kDpAxis, 0, 0};
+  } else if (atten_mask_rank_ == kRank4) {
+    optional_tensor_map_[ops::kFusedInferAttentionScoreInputAttnMaskIndex] =
+      is_ifa_ ? Shape({dev_matrix_batch_dim_, -1, -1, dev_matrix_s1_dim_}) : Shape({kDpAxis, -1, pos_s, -1});
+    optional_op_strategies_[ops::kFusedInferAttentionScoreInputAttnMaskIndex] = {kDpAxis, 0, 0, 0};
+  }
+  if (pse_shift_rank_ == kRank4) {
+    optional_tensor_map_[ops::kFusedInferAttentionScoreInputPseShiftIndex] =
+      is_ifa_ ? Shape({dev_matrix_batch_dim_, dev_matrix_n1_dim_, -1, dev_matrix_s1_dim_})
+              : Shape({dev_matrix_batch_dim_, dev_matrix_n1_dim_, dev_matrix_s1_dim_, -1});
   }
 
   for (auto index = static_cast<size_t>(ops::kFusedInferAttentionScoreInputPseShiftIndex);

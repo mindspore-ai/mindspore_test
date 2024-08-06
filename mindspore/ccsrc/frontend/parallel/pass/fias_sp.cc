@@ -280,7 +280,7 @@ int64_t GetPosInSpDevice(std::shared_ptr<FusedInferAttentionScoreInfo> fias_info
   int64_t pos = -1;
   for (size_t rank_list_idx = 0; rank_list_idx < rankList.size(); ++rank_list_idx) {
     if (rank_id == rankList[rank_list_idx]) {
-      pos = rank_list_idx;
+      pos = static_cast<int64_t>(rank_list_idx);
     }
   }
   return pos;
@@ -291,9 +291,11 @@ int64_t GetUDMaskIndex(int index, int64_t pos, int64_t split_num) {
   return step_index >= 0 ? step_index : split_num + step_index;
 }
 
-void GetLayoutInfo(int64_t input_layout, Shape *q_shape, Shape *kv_shape, int64_t *fa_b, int64_t *fa_s1, int64_t *fa_h1,
-                   int64_t *fa_s2, int64_t *fa_n1, const CNodePtr &fa_score_node,
-                   const std::shared_ptr<OperatorInfo> &operator_info) {
+void GetLayoutInfo(const CNodePtr &fa_score_node, Shape *q_shape, Shape *kv_shape, int64_t *fa_b, int64_t *fa_s1,
+                   int64_t *fa_h1, int64_t *fa_s2, int64_t *fa_n1, int64_t *input_layout) {
+  std::shared_ptr<OperatorInfo> operator_info = fa_score_node->user_data<parallel::OperatorInfo>();
+  auto fias_info_ptr = std::dynamic_pointer_cast<FusedInferAttentionScoreInfo>(operator_info);
+  *input_layout = fias_info_ptr->input_layout();
   *q_shape = operator_info->inputs_tensor_info_new()[kIndex0]->GetValue().tensor_layout().base_slice_shape().array();
   *kv_shape = operator_info->inputs_tensor_info_new()[kIndex1]
                 ->GetElement(0)
@@ -305,12 +307,12 @@ void GetLayoutInfo(int64_t input_layout, Shape *q_shape, Shape *kv_shape, int64_
     fa_score_node->input(ops::FusedInferAttentionScoreInputIndex::kFusedInferAttentionScoreInputNumHeadsIndex + 1)
       ->cast<ValueNodePtr>()
       ->value());
-  if (input_layout == FASInputLayoutMode::BSH) {
+  if (*input_layout == FASInputLayoutMode::BSH) {
     *fa_b = (*q_shape)[kIndex0];
     *fa_s1 = (*q_shape)[kIndex1];
     *fa_h1 = (*q_shape)[kIndex2];
     *fa_s2 = (*kv_shape)[kIndex1];
-  } else if (input_layout == FASInputLayoutMode::BNSD) {
+  } else if (*input_layout == FASInputLayoutMode::BNSD) {
     *fa_b = (*q_shape)[kIndex0];
     *fa_s1 = (*q_shape)[kIndex2];
     *fa_h1 = (*q_shape)[kIndex1] * (*q_shape)[kIndex3];
@@ -318,9 +320,9 @@ void GetLayoutInfo(int64_t input_layout, Shape *q_shape, Shape *kv_shape, int64_
   }
 }
 
-void UpdateAttentionOutput(CNodePtr *history_lse, CNodePtr *acc_attention, const CNodePtr &softmax_lse,
-                           CNodePtr attention_output, int64_t fa_b, int64_t fa_s1, int64_t fa_n1, int64_t fa_h1,
-                           int64_t input_layout, int fa_index, int index) {
+void UpdateAttentionOutput(const CNodePtr &softmax_lse, CNodePtr attention_output, int64_t fa_b, int64_t fa_s1,
+                           int64_t fa_n1, int64_t fa_h1, int64_t input_layout, CNodePtr *acc_attention,
+                           CNodePtr *history_lse) {
   auto sub_lse = NewSubNode(*history_lse, softmax_lse);
   auto sigmoid_lse = NewSigmoidNode(sub_lse);
   auto log_lse = NewLogNode(sigmoid_lse);
@@ -349,8 +351,22 @@ void UpdateAttentionOutput(CNodePtr *history_lse, CNodePtr *acc_attention, const
   (*history_lse) = update_lse;
 }
 
-void SetFusedFAInputs(int index, const AnfNodePtr &key_node, const AnfNodePtr &value_node,
-                      const AnfNodePtr &actual_mask, std::vector<AnfNodePtr> *fa_inputs) {
+void SetFusedFAInputs(int index, const CNodePtr &fa_score_node, const AnfNodePtr &key_node,
+                      const AnfNodePtr &value_node, std::vector<AnfNodePtr> *fa_inputs, int64_t rank_id,
+                      int64_t sp_num) {
+  std::shared_ptr<OperatorInfo> operator_info = fa_score_node->user_data<parallel::OperatorInfo>();
+  auto fias_info_ptr = std::dynamic_pointer_cast<FusedInferAttentionScoreInfo>(operator_info);
+  auto pos = GetPosInSpDevice(fias_info_ptr, rank_id);
+  auto pos_index = GetUDMaskIndex(index, pos, sp_num);
+  AnfNodePtr actual_mask;
+  auto attn_node =
+    fa_score_node->input(ops::FusedInferAttentionScoreInputIndex::kFusedInferAttentionScoreInputAttnMaskIndex + 1);
+  if (!IsValueNode<None>(attn_node)) {
+    auto attn_shape =
+      operator_info->inputs_tensor_info_new()[kIndex4]->GetValue().tensor_layout().base_slice_shape().array();
+    auto attn_split_node = NewSplitNode(attn_node, attn_shape.size() - 1, sp_num);
+    actual_mask = NewTupleGetItemNode(attn_split_node, pos_index);
+  }
   if (index == 0) {
     (*fa_inputs)[ops::FusedInferAttentionScoreInputIndex::kFusedInferAttentionScoreInputKeyIndex] = key_node;
     (*fa_inputs)[ops::FusedInferAttentionScoreInputIndex::kFusedInferAttentionScoreInputValueIndex] = value_node;
@@ -369,9 +385,14 @@ void SetFusedFAInputs(int index, const AnfNodePtr &key_node, const AnfNodePtr &v
   }
 }
 
-CNodePtr CreateReplaceFSPGraph(const FuncGraphManagerPtr &manager,
-                               const std::vector<CNodePtr> &origin_nodes_topological, const CNodePtr &fa_score_node,
-                               FSPInfo *fsp_info, int fa_index) {
+void KVInputSwitch(const CNodePtr &fa_score_node, const Shape &kv_shape, int64_t sp_num, int64_t send_rank_id,
+                   int64_t recv_rank_id, int64_t fa_b, int64_t fa_s1, int64_t fa_h1, int64_t fa_n1,
+                   int64_t input_layout, int64_t rank_id, int fa_index, CNodePtr *local_fa_node,
+                   CNodePtr *acc_attention) {
+  CNodePtr kv_received_tuple;
+  CNodePtr history_lse;
+  CNodePtr key_node_item;
+  CNodePtr value_node_item;
   std::vector<AnfNodePtr> fa_inputs;
   for (size_t i = 0; i < ops::FusedInferAttentionScoreInputIndex::kFusedInferAttentionScoreInputsNum; ++i) {
     fa_inputs.push_back(fa_score_node->input(i + 1));
@@ -380,24 +401,7 @@ CNodePtr CreateReplaceFSPGraph(const FuncGraphManagerPtr &manager,
     fa_score_node->input(ops::FusedInferAttentionScoreInputIndex::kFusedInferAttentionScoreInputKeyIndex + 1);
   auto value_node =
     fa_score_node->input(ops::FusedInferAttentionScoreInputIndex::kFusedInferAttentionScoreInputValueIndex + 1);
-  auto attn_node =
-    fa_score_node->input(ops::FusedInferAttentionScoreInputIndex::kFusedInferAttentionScoreInputAttnMaskIndex + 1);
 
-  int64_t sp_num = fsp_info->GetSPNum(), rank_id = fsp_info->GetRankId();
-  int64_t send_rank_id = fsp_info->GetSendRankId(), recv_rank_id = fsp_info->GetRecvRankId();
-
-  std::shared_ptr<OperatorInfo> operator_info = fa_score_node->user_data<parallel::OperatorInfo>();
-  auto fias_info_ptr = std::dynamic_pointer_cast<FusedInferAttentionScoreInfo>(operator_info);
-  auto input_layout = fias_info_ptr->input_layout();
-  auto pos = GetPosInSpDevice(fias_info_ptr, rank_id);
-
-  Shape q_shape, kv_shape;
-  int64_t fa_b, fa_s1, fa_h1, fa_s2, fa_n1;
-  GetLayoutInfo(input_layout, &q_shape, &kv_shape, &fa_b, &fa_s1, &fa_h1, &fa_s2, &fa_n1, fa_score_node, operator_info);
-
-  CNodePtr local_fa_node, kv_received_tuple, softmax_out, attention_output, acc_attention;
-  CNodePtr softmax_lse, history_lse, key_node_item, value_node_item;
-  AnfNodePtr actual_mask;
   for (int i = 0; i < sp_num; ++i) {
     if (i == 0) {
       key_node_item = NewTupleGetItemNode(key_node, kIndex0);
@@ -417,36 +421,52 @@ CNodePtr CreateReplaceFSPGraph(const FuncGraphManagerPtr &manager,
       kv_received_tuple =
         NewNeighborExchangeNode(kv_concat_tuple, {send_rank_id}, {recv_rank_id}, fa_index, i, neigh_shape);
     }
+    SetFusedFAInputs(i, fa_score_node, key_node, value_node, &fa_inputs, rank_id, sp_num);
 
-    auto pos_index = GetUDMaskIndex(i, pos, sp_num);
-    if (!IsValueNode<None>(attn_node)) {
-      auto attn_shape =
-        operator_info->inputs_tensor_info_new()[kIndex4]->GetValue().tensor_layout().base_slice_shape().array();
-      auto attn_split_node = NewSplitNode(attn_node, attn_shape.size() - 1, sp_num);
-      actual_mask = NewTupleGetItemNode(attn_split_node, pos_index);
-    }
-    SetFusedFAInputs(i, key_node, value_node, actual_mask, &fa_inputs);
-
-    local_fa_node = NewFusedInferAttentionScoreNode(fa_inputs, fa_index, i);
-    common::AnfAlgo::CopyNodeAttrs(fa_score_node, local_fa_node);
+    *local_fa_node = NewFusedInferAttentionScoreNode(fa_inputs, fa_index, i);
+    common::AnfAlgo::CopyNodeAttrs(fa_score_node, *local_fa_node);
     if (i != sp_num - 1) {
       auto kv_exchanged_item = NewTupleGetItemNode(kv_received_tuple, kIndex0);
       auto kv_split = NewSplitNode(kv_exchanged_item, kIndex0, kIndex2);
       key_node = NewTupleGetItemNode(kv_split, kIndex0);
       value_node = NewTupleGetItemNode(kv_split, kIndex1);
     }
-    attention_output = NewTupleGetItemNode(local_fa_node, kIndex0);
-    softmax_lse = NewTupleGetItemNode(local_fa_node, kIndex1);
+    CNodePtr attention_output = NewTupleGetItemNode(*local_fa_node, kIndex0);
+    CNodePtr softmax_lse = NewTupleGetItemNode(*local_fa_node, kIndex1);
     if (i == 0) {
-      acc_attention = attention_output->cast<CNodePtr>();
+      *acc_attention = attention_output->cast<CNodePtr>();
       history_lse = softmax_lse->cast<CNodePtr>();
     } else {
-      UpdateAttentionOutput(&history_lse, &acc_attention, softmax_lse, attention_output, fa_b, fa_s1, fa_n1, fa_h1,
-                            input_layout, fa_index, i);
+      UpdateAttentionOutput(softmax_lse, attention_output, fa_b, fa_s1, fa_n1, fa_h1, input_layout, acc_attention,
+                            &history_lse);
     }
   }
+}
+
+CNodePtr CreateReplaceFSPGraph(const FuncGraphManagerPtr &manager,
+                               const std::vector<CNodePtr> &origin_nodes_topological, const CNodePtr &fa_score_node,
+                               FSPInfo *fsp_info, int fa_index) {
+  int64_t sp_num = fsp_info->GetSPNum();
+  int64_t rank_id = fsp_info->GetRankId();
+  int64_t send_rank_id = fsp_info->GetSendRankId();
+  int64_t recv_rank_id = fsp_info->GetRecvRankId();
+  int64_t fa_b = 0;
+  int64_t fa_s1 = 0;
+  int64_t fa_s2 = 0;
+  int64_t fa_h1 = 0;
+  int64_t fa_n1 = 0;
+  int64_t input_layout = 0;
+  Shape q_shape;
+  Shape kv_shape;
+  GetLayoutInfo(fa_score_node, &q_shape, &kv_shape, &fa_b, &fa_s1, &fa_h1, &fa_s2, &fa_n1, &input_layout);
+
+  CNodePtr new_fa_node;
+  CNodePtr acc_attention;
+  KVInputSwitch(fa_score_node, kv_shape, sp_num, send_rank_id, recv_rank_id, fa_b, fa_s1, fa_h1, fa_n1, input_layout,
+                rank_id, fa_index, &new_fa_node, &acc_attention);
+
   acc_attention = NewCastNode(acc_attention, TypeId::kNumberTypeFloat16);
-  softmax_out = NewTupleGetItemNode(local_fa_node, kIndex1);
+  auto softmax_out = NewTupleGetItemNode(new_fa_node, kIndex1);
   std::vector<AnfNodePtr> output_tuple = {acc_attention, softmax_out};
   auto attention_results = NewMakeTupleNode(output_tuple);
   return attention_results;
