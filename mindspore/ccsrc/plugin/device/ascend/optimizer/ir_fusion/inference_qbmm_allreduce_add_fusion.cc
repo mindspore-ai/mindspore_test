@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #include "plugin/device/ascend/optimizer/ir_fusion/inference_qbmm_allreduce_add_fusion.h"
+#include <memory>
 #include "mindspore/core/ops/other_ops.h"
 #include "plugin/device/ascend/optimizer/common/gllo_utils.h"
 #include "plugin/device/ascend/optimizer/ir_fusion/inference_weight_preprocess_utils.h"

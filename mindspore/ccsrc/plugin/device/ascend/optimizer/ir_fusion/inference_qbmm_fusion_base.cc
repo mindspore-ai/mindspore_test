@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 #include "plugin/device/ascend/optimizer/ir_fusion/inference_qbmm_fusion_base.h"
+#include <memory>
+#include <string>
 #include "plugin/device/ascend/optimizer/common/gllo_utils.h"
 #include "plugin/device/ascend/optimizer/ir_fusion/inference_weight_preprocess_utils.h"
 #include "utils/ms_context.h"

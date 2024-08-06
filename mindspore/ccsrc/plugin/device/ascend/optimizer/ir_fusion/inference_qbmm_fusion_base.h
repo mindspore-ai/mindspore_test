@@ -15,11 +15,7 @@
  */
 #ifndef MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_IR_FUSION_INFERENCE_QBMM_FUSION_BASE_H_
 #define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_IR_FUSION_INFERENCE_QBMM_FUSION_BASE_H_
-#include <memory>
 #include <string>
-#include <vector>
-#include <algorithm>
-#include <limits>
 #include "include/backend/optimizer/optimizer.h"
 #include "mindspore/core/ops/nn_ops.h"
 #include "mindspore/core/ops/math_ops.h"
