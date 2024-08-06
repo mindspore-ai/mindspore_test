@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "plugin/device/ascend/optimizer/ge/silent_check_v2.h"
+#include "backend/common/pass/silent_check_v2.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -27,7 +27,6 @@
 #include "abstract/abstract_value.h"
 #include "abstract/dshape.h"
 #include "base/base.h"
-#include "include/backend/kernel_graph.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/common/utils/utils.h"
 #include "ir/anf.h"
@@ -53,7 +52,6 @@
 namespace mindspore {
 namespace opt {
 namespace {
-constexpr size_t kIndexOne = 1;
 constexpr char kScaleSense[] = "scale_sense";
 constexpr char kNpuAsdEnable[] = "NPU_ASD_ENABLE";
 constexpr char kParamSfdaPrefix[] = "silent_check_v2.sfda";
@@ -146,30 +144,13 @@ bool IsCommOperator(const AnfNodePtr &node) {
   return common::AnfAlgo::IsCommunicationOp(prim->name()) && (prim->name() != kBarrierOpName);
 }
 
-bool GradCommOperatorUnvisited(const BaseRef &ref) {
-  if (utils::isa<AnfNodePtr>(ref)) {
-    auto node = utils::cast<AnfNodePtr>(ref);
-    MS_EXCEPTION_IF_NULL(node);
-
-    // skip non-communication operators
-    if (!IsCommOperator(node)) {
-      return false;
-    }
-    return UnVisited(ref);
-  }
-  return false;
-}
-
 ValueNodePtr CreateValueNode(const FuncGraphPtr &func_graph, const ValuePtr &value, TypeId dtype,
                              kernel::KernelObjectType obj_type) {
   MS_EXCEPTION_IF_NULL(func_graph);
   auto value_node = std::make_shared<ValueNode>(value);
   MS_EXCEPTION_IF_NULL(value_node);
   value_node->set_abstract(value->ToAbstract());
-
-  auto kernel_graph = func_graph->cast<KernelGraphPtr>();
-  MS_EXCEPTION_IF_NULL(kernel_graph);
-  kernel_graph->AddValueNodeToGraph(value_node);
+  func_graph->AddValueNode(value_node);
 
   value_node->set_kernel_info(std::make_shared<device::KernelInfo>());
   kernel::KernelBuildInfo::KernelBuildInfoBuilder builder;
@@ -192,12 +173,6 @@ bool IsNpuAsdEnable() {
     return false;
   }
   return GetNpuAsdDetectValue() > 0;
-}
-
-const BaseRef SilentCheckV2::DefinePattern() const {
-  VarPtr V = std::make_shared<CondVar>(GradCommOperatorUnvisited);
-  VarPtr Xs = std::make_shared<SeqVar>();
-  return VectorRef({V, Xs});
 }
 
 using ParamNameValue = std::pair<std::string, tensor::TensorPtr>;
@@ -339,36 +314,22 @@ AnfNodePtr GetGradValue(const FuncGraphPtr &func_graph, const AnfNodePtr &node, 
   return CreateCastNode(func_graph, div_node, dst_type);
 }
 
-const FuncGraphPtr GetRootGraph(const FuncGraphPtr &func_graph) {
-  MS_EXCEPTION_IF_NULL(func_graph);
-  FuncGraphPtr root = func_graph;
-  while (root->parent() != nullptr) {
-    root = root->parent();
-  }
-  return root;
-}
-
-ParameterPtr GetLossScale(const FuncGraphPtr &root) {
-  MS_EXCEPTION_IF_NULL(root);
-  auto parameters = root->parameters();
+void SilentCheckV2::GetLossScale() {
+  MS_EXCEPTION_IF_NULL(root_);
+  auto parameters = root_->parameters();
   for (const auto &param : parameters) {
     auto param_ptr = param->cast<ParameterPtr>();
     MS_EXCEPTION_IF_NULL(param_ptr);
     const auto &name = param_ptr->name();
     if (name == kScaleSense) {
-      return param_ptr;
+      loss_scale_ = param_ptr;
     }
   }
-  return nullptr;
 }
 
-// replace print(i1, i2, U) with print(dummy_input, i1, i2, U) and set attributes of print
-const AnfNodePtr SilentCheckV2::Process(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
-                                        const EquivPtr &) const {
+AnfNodePtr SilentCheckV2::CreateSlientCheckNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(func_graph);
   MS_EXCEPTION_IF_NULL(node);
-  auto root = GetRootGraph(func_graph);
-  common::AnfAlgo::SetNodeAttr(kAttrVisited, MakeValue(true), node);
 
   auto cnode = node->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(cnode);
@@ -384,8 +345,7 @@ const AnfNodePtr SilentCheckV2::Process(const FuncGraphPtr &func_graph, const An
   auto check_prim = std::make_shared<Primitive>(kNameSilentCheckV2);
   check_prim->AddAttr("side_effect_mem", std::make_shared<BoolImm>(true));
   // input1: input_grad
-  auto loss_scale = GetLossScale(root);
-  auto dout = GetGradValue(func_graph, node, cnode->input(kIndexOne), loss_scale);
+  auto dout = GetGradValue(func_graph, node, cnode->input(kIndexOne), loss_scale_);
   // input0: val
   auto norm_node = MsContext::GetInstance()->GetJitLevel() == kAttrJitLevelO2
                      ? CreateNormForGE(func_graph, node, dout)
@@ -450,10 +410,40 @@ const AnfNodePtr SilentCheckV2::Process(const FuncGraphPtr &func_graph, const An
   MS_EXCEPTION_IF_NULL(depend_node);
   depend_node->set_abstract(dout->abstract());
   depend_node->set_scope(node->scope());
+  return depend_node;
+}
 
-  // update cnode input
-  cnode->set_input(kIndexOne, depend_node);
-  return cnode;
+bool SilentCheckV2::Run(const FuncGraphPtr &func_graph) {
+  MS_EXCEPTION_IF_NULL(func_graph);
+  auto manager = func_graph->manager();
+  MS_EXCEPTION_IF_NULL(manager);
+  AnfNodePtr return_node = func_graph->get_return();
+  MS_EXCEPTION_IF_NULL(return_node);
+  std::vector<AnfNodePtr> all_nodes = TopoSort(return_node);
+  bool changed = false;
+
+  for (auto &node : all_nodes) {
+    MS_EXCEPTION_IF_NULL(node);
+    if (!node->isa<CNode>()) {
+      continue;
+    }
+    auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
+    // skip forward node in graph
+    if (!cnode->HasPrimalAttr(kPrimalAttrForwardUniqueId)) {
+      continue;
+    }
+    // skip non-communicator operators
+    if (!IsCommOperator(cnode->input(ops::kInputIndex0))) {
+      continue;
+    }
+    auto check_node = CreateSlientCheckNode(func_graph, node);
+    // update cnode input
+    cnode->set_input(ops::kInputIndex1, check_node);
+    manager->SetEdge(cnode, ops::kInputIndex1, check_node);
+    changed = true;
+  }
+  return changed;
 }
 }  // namespace opt
 }  // namespace mindspore

@@ -14,27 +14,34 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_OPTIMIZER_GE_SILENT_CHECK_V2_H_
-#define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_OPTIMIZER_GE_SILENT_CHECK_V2_H_
+#ifndef MINDSPORE_CCSRC_BACKEND_COMMON_PASS_SILENT_CHECK_V2_H_
+#define MINDSPORE_CCSRC_BACKEND_COMMON_PASS_SILENT_CHECK_V2_H_
 
 #include <vector>
 #include "base/base.h"
-#include "include/backend/optimizer/optimizer.h"
+#include "include/backend/optimizer/pass.h"
 #include "ir/anf.h"
 #include "ir/func_graph.h"
+#include "utils/log_adapter.h"
 
 namespace mindspore {
 namespace opt {
 bool IsNpuAsdEnable();
 
-class SilentCheckV2 : public PatternProcessPass {
+class SilentCheckV2 : public Pass {
  public:
-  explicit SilentCheckV2(bool multigraph = true) : PatternProcessPass("insert_silent_check_v2", multigraph) {}
+  explicit SilentCheckV2(const FuncGraphPtr &root) : Pass("insert_silent_check_v2"), root_(root) {}
   ~SilentCheckV2() override = default;
 
-  const BaseRef DefinePattern() const override;
-  const AnfNodePtr Process(const FuncGraphPtr &, const AnfNodePtr &node, const EquivPtr &) const override;
+  bool Run(const FuncGraphPtr &func_graph) override;
+
+ private:
+  void GetLossScale();
+  AnfNodePtr CreateSlientCheckNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node);
+
+  FuncGraphPtr root_ = nullptr;
+  ParameterPtr loss_scale_ = nullptr;
 };
 }  // namespace opt
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_OPTIMIZER_GE_SILENT_CHECK_V2_H_
+#endif  // MINDSPORE_CCSRC_BACKEND_COMMON_PASS_SILENT_CHECK_V2_H_

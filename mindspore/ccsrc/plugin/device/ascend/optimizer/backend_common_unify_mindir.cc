@@ -54,7 +54,6 @@
 #include "plugin/device/ascend/optimizer/ge/lamb_fission.h"
 #include "plugin/device/ascend/optimizer/ge/adjust_print_for_ge.h"
 #include "plugin/device/ascend/optimizer/ge/add_attr_to_dump.h"
-#include "plugin/device/ascend/optimizer/ge/silent_check_v2.h"
 #include "plugin/device/ascend/optimizer/ge/getnext_for_ge.h"
 #include "plugin/device/ascend/optimizer/ir_fusion/adaptive_max_pool2d_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion/flash_attention_fusion.h"
@@ -140,9 +139,6 @@ void GetBackendCommonUnifyMindIRPassManager(PassManagerPtr *unify_mindir_pm) {
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::LambFissionGe>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::AdjustPrintForGe>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::AddAttrToDump>());
-  if (opt::IsNpuAsdEnable()) {
-    (*unify_mindir_pm)->AddPass(std::make_shared<opt::SilentCheckV2>());
-  }
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::GetNextForGE>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::SyncBnSplit>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::SyncBnGradSplit>());
