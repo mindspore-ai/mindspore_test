@@ -551,6 +551,11 @@ void GraphScheduler::BuildAndScheduleGlobalActor() {
   if (debugger->DebuggerBackendEnabled()) {
     debugger_actor_need = true;
   }
+
+  // If dump hooker tool is enabled
+  if (common::GetEnv("MS_HOOK_ENABLE") == "on") {
+    debugger_actor_need = true;
+  }
 #endif
 #ifndef ENABLE_SECURITY
   if (debugger_actor_need) {

@@ -79,6 +79,19 @@ class DebugActor : public ActorBase {
   // Release device memory for AllFinite kernel.
   void Finalize() override;
 
+  void HandleHookDebugger(uint32_t device_id, const std::vector<KernelGraphPtr> &graphs, bool is_kbyk);
+
+  bool IsE2EDumpEnabled();
+
+  void HandleE2EDump(const std::vector<KernelGraphPtr> &graphs);
+
+  void HandleDebugger(const std::vector<KernelGraphPtr> &graphs, const std::vector<AnfNodePtr> &origin_parameters_order,
+                      OpContext<DeviceTensor> *const op_context);
+
+  void ClearAndSaveGraphs(const std::vector<KernelGraphPtr> &graphs,
+                          const std::vector<DeviceContext *> &device_contexts,
+                          OpContext<DeviceTensor> *const op_context);
+
   std::map<const DeviceContext *, kernel::KernelModPtr> finite_kernel_mods_;
   std::map<const DeviceContext *, std::map<uint32_t, DeviceAddressPtr>> finite_output_device_addresses_;
 

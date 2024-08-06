@@ -29,6 +29,7 @@
 #ifdef ENABLE_DEBUGGER
 #include "include/backend/debug/debugger/debugger.h"
 #include "debug/debugger/debugger_utils.h"
+#include "debug/hooker/hook_debugger.h"
 #endif
 #include "debug/data_dump/data_dumper.h"
 #include "include/common/debug/common.h"
@@ -212,11 +213,13 @@ void DebugActor::DebugOnStepBegin(const std::vector<KernelGraphPtr> &graphs,
                                   std::vector<DeviceContext *> device_contexts,
                                   OpContext<DeviceTensor> *const op_context, const AID *) {
   MS_LOG(INFO) << "Debug on step begin.";
+
   auto context = MsContext::GetInstance();
-  auto is_kbyk = context->IsKByKExecutorMode();
   MS_EXCEPTION_IF_NULL(context);
-  std::string backend = context->backend_policy();
+
   device_ctx_ = device_contexts[0];
+  auto is_kbyk = context->IsKByKExecutorMode();
+  auto backend = context->backend_policy();
   auto profiler = profiler::Profiler::GetInstance(kAscendDevice);
   if ((profiler == nullptr || !profiler->IsInitialized()) &&
       device_ctx_->GetDeviceType() == device::DeviceType::kAscend) {
@@ -224,26 +227,57 @@ void DebugActor::DebugOnStepBegin(const std::vector<KernelGraphPtr> &graphs,
     if (common::GetEnv("ENABLE_MS_GE_DUMP") != "1") {
       ACLDump(device_id, graphs, is_kbyk);
     }
+    HandleHookDebugger(device_id, graphs, is_kbyk);
   }
-#ifndef ENABLE_SECURITY
-  if (DumpJsonParser::GetInstance().e2e_dump_enabled() && !graphs.empty()) {
-    // First graph is the dataset graph when dataset_sink_mode = True
-    auto graph = graphs[0];
-    bool is_dataset_sink = graph->IsDatasetGraph();
-    uint32_t cur_step = DumpJsonParser::GetInstance().cur_dump_iter();
-    if (cur_step == 1 && DumpJsonParser::GetInstance().GetDatasetSink()) {
-      uint32_t init_step = 0;
-      DumpJsonParser::GetInstance().UpdateDumpIter(init_step);
-      MS_LOG(INFO) << "In dataset sink mode, reset step to init_step: " << init_step;
-    }
-    DumpJsonParser::GetInstance().SetDatasetSink(is_dataset_sink);
+
+  if (IsE2EDumpEnabled() && !graphs.empty()) {
+    HandleE2EDump(graphs);
   }
-#endif
+
   if (backend == "ge") {
     return;
   }
+
   MS_EXCEPTION_IF_NULL(op_context);
   std::lock_guard<std::mutex> locker(debug_mutex_);
+
+  HandleDebugger(graphs, origin_parameters_order, op_context);
+
+  if (IsE2EDumpEnabled()) {
+    ClearAndSaveGraphs(graphs, device_contexts, op_context);
+  }
+}
+
+void DebugActor::HandleHookDebugger(uint32_t device_id, const std::vector<KernelGraphPtr> &graphs, bool is_kbyk) {
+#ifdef ENABLE_DEBUGGER
+  auto &hookDebugger = hooker::HookDebugger::GetInstance();
+  hookDebugger.HookOnStepBegin(device_id, graphs, step_count, is_dataset_sink, is_kbyk);
+#endif
+}
+
+bool DebugActor::IsE2EDumpEnabled() {
+#ifndef ENABLE_SECURITY
+  return DumpJsonParser::GetInstance().e2e_dump_enabled();
+#else
+  return false;
+#endif
+}
+
+void DebugActor::HandleE2EDump(const std::vector<KernelGraphPtr> &graphs) {
+  auto graph = graphs[0];
+  bool is_dataset_sink = graph->IsDatasetGraph();
+  uint32_t cur_step = DumpJsonParser::GetInstance().cur_dump_iter();
+  if (cur_step == 1 && DumpJsonParser::GetInstance().GetDatasetSink()) {
+    uint32_t init_step = 0;
+    DumpJsonParser::GetInstance().UpdateDumpIter(init_step);
+    MS_LOG(INFO) << "In dataset sink mode, reset step to init_step: " << init_step;
+  }
+  DumpJsonParser::GetInstance().SetDatasetSink(is_dataset_sink);
+}
+
+void DebugActor::HandleDebugger(const std::vector<KernelGraphPtr> &graphs,
+                                const std::vector<AnfNodePtr> &origin_parameters_order,
+                                OpContext<DeviceTensor> *const op_context) {
 #ifdef ENABLE_DEBUGGER
   if (!graphs.empty()) {
     // First graph is the dataset graph when dataset_sink_mode = True
@@ -258,20 +292,23 @@ void DebugActor::DebugOnStepBegin(const std::vector<KernelGraphPtr> &graphs,
     debugger->PreExecuteGraphDebugger(graphs, origin_parameters_order);
   }
 #endif
+}
+
+void DebugActor::ClearAndSaveGraphs(const std::vector<KernelGraphPtr> &graphs,
+                                    const std::vector<DeviceContext *> &device_contexts,
+                                    OpContext<DeviceTensor> *const op_context) {
 #ifndef ENABLE_SECURITY
-  if (DumpJsonParser::GetInstance().e2e_dump_enabled()) {
-    DumpJsonParser::GetInstance().ClearGraph();
-    if (graphs.size() != device_contexts.size()) {
-      SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*op_context), "Graph num:" + std::to_string(graphs.size()) +
-                                                         " is not equal to device context size:" +
-                                                         std::to_string(device_contexts.size()) + " for debug actor.");
-    }
-    for (size_t i = 0; i < graphs.size(); ++i) {
-      MS_EXCEPTION_IF_NULL(graphs[i]);
-      MS_EXCEPTION_IF_NULL(device_contexts[i]);
-      if (device_contexts[i]->GetDeviceType() == device::DeviceType::kCPU) {
-        DumpJsonParser::GetInstance().SaveGraph(graphs[i].get());
-      }
+  DumpJsonParser::GetInstance().ClearGraph();
+  if (graphs.size() != device_contexts.size()) {
+    SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*op_context), "Graph num:" + std::to_string(graphs.size()) +
+                                                       " is not equal to device context size:" +
+                                                       std::to_string(device_contexts.size()) + " for debug actor.");
+  }
+  for (size_t i = 0; i < graphs.size(); ++i) {
+    MS_EXCEPTION_IF_NULL(graphs[i]);
+    MS_EXCEPTION_IF_NULL(device_contexts[i]);
+    if (device_contexts[i]->GetDeviceType() == device::DeviceType::kCPU) {
+      DumpJsonParser::GetInstance().SaveGraph(graphs[i].get());
     }
   }
 #endif
@@ -290,15 +327,20 @@ void DebugActor::DebugOnStepEnd(OpContext<DeviceTensor> *const, const AID *, int
   MS_EXCEPTION_IF_NULL(context);
   std::string backend = context->backend_policy();
   step_count = total_running_count_;
+  device_ctx_->device_res_manager_->SyncAllStreams();
   if (dump_flag == true) {
     auto registered_dumper = datadump::DataDumperRegister::Instance().GetDumperForBackend(device::DeviceType::kAscend);
     if (registered_dumper != nullptr) {
-      device_ctx_->device_res_manager_->SyncAllStreams();
       registered_dumper->Finalize();
     }
     dump_flag = false;
   }
-  device_ctx_->device_res_manager_->SyncAllStreams();
+
+#ifdef ENABLE_DEBUGGER
+  auto &hookDebugger = hooker::HookDebugger::GetInstance();
+  hookDebugger.HookOnStepEnd();
+#endif
+
   std::lock_guard<std::mutex> locker(debug_mutex_);
 
 #ifndef ENABLE_SECURITY
