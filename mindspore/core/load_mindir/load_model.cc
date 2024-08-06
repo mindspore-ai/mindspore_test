@@ -833,7 +833,7 @@ abstract::AbstractSequencePtr MSANFModelParser::BuildAbstractSequence(const mind
   for (int i = 0; i < attr_proto.values_size(); ++i) {
     auto abs = GetNodeAbstractFromAttrProtoWithType(attr_proto.values(i));
     if (abs == nullptr) {
-      MS_LOG(WARNING) << "Failed to get the tuple's abstract from AttrProto. " << attr_proto.DebugString();
+      MS_LOG(INFO) << "Failed to get the tuple's abstract from AttrProto. " << attr_proto.DebugString();
       return nullptr;
     }
     (void)vec.emplace_back(abs);
@@ -2453,7 +2453,7 @@ abstract::AbstractBasePtr MSANFModelParser::BuildAbstractFunction(const mind_ir:
         auto &item_proto = attr_proto.values(index);
         auto item_abstract = BuildAbstractFunction(item_proto);
         if (item_abstract == nullptr) {
-          MS_LOG(WARNING) << "Can't get the abstract of function union closure: " << item_proto.DebugString();
+          MS_LOG(INFO) << "Can't get the abstract of function union closure: " << item_proto.DebugString();
           return nullptr;
         }
         (void)func_list.emplace_back(item_abstract->cast<abstract::AbstractFuncAtomPtr>());
