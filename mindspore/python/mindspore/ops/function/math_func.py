@@ -47,7 +47,7 @@ from mindspore.ops.auto_generate import (minimum, maximum, mul, sin, sinc, sinh,
                                          floor, floor_divide, floor_mod, gcd, greater, greater_equal, less, less_equal,
                                          log, log1p, neg, not_equal, pow, round, isfinite, argmax_ext, mean_ext_op,
                                          sum_ext_op, prod_ext_op, all, matrix_inverse_ext, atan2_ext, sign, acos_ext,
-                                         acosh_ext, asin_ext, asinh_ext, median_ext_op, median_dim_op, xlogy_op,
+                                         acosh_ext, asin_ext, asinh_ext, tan, median_ext_op, median_dim_op, xlogy_op,
                                          xlogy_scalar_other_op, xlogy_scalar_self_op)
 from mindspore.ops.auto_generate.gen_ops_def import add_ext, sub_ext, bmm_ext
 from mindspore.ops.auto_generate import tanh
@@ -224,7 +224,6 @@ scalar_to_tensor_ = P.ScalarToTensor()
 shape_ = P.Shape()
 sign_ = P.Sign()
 sparse_segment_mean_ = SparseSegmentMean()
-tan_ = P.Tan()
 tanh_ = P.Tanh()
 tensor_round_ = P.Round()
 tile_ = P.Tile()
@@ -1567,38 +1566,6 @@ def t(input):
     if input.ndim == 2:
         return transpose_(input, (1, 0))
     return input
-
-
-def tan(input):
-    r"""
-    Computes tangent of `input` element-wise.
-
-    .. math::
-
-        out_i = \tan(input_i)
-
-    Args:
-        input (Tensor): The input Tensor, valid for any dimensions.
-
-    Returns:
-        Tensor, has the same shape as `input`.
-
-    Raises:
-        TypeError: If `input` is not a Tensor.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input = Tensor(np.array([-1.0, 0.0, 1.0]), mindspore.float32)
-        >>> output = ops.tan(input)
-        >>> print(output)
-        [-1.5574081 0. 1.5574081]
-    """
-    return tan_(input)
 
 
 def xlogy(input, other):

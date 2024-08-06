@@ -279,6 +279,7 @@ from mindspore.ops.function.array_func import scatter_add_ext as scatter_add
 
 
 # 301
+from mindspore.ops.function.math_func import tan
 
 
 def add(input, other, *, alpha=1):
@@ -1233,7 +1234,7 @@ __all__ = [
     # 285
     'scatter_add',
     # 301
-
+    'tan',
     # 304
 
     # 305

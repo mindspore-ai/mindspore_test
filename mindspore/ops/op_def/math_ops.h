@@ -37,7 +37,6 @@ GVAR_DEF(PrimitivePtr, kPrimBesselJ0, std::make_shared<Primitive>("BesselJ0"));
 GVAR_DEF(PrimitivePtr, kPrimBesselJ1, std::make_shared<Primitive>("BesselJ1"));
 GVAR_DEF(PrimitivePtr, kPrimBesselY0, std::make_shared<Primitive>("BesselY0"));
 GVAR_DEF(PrimitivePtr, kPrimBesselY1, std::make_shared<Primitive>("BesselY1"));
-GVAR_DEF(PrimitivePtr, kPrimTan, std::make_shared<Primitive>("Tan"));
 GVAR_DEF(PrimitivePtr, kPrimImag, std::make_shared<Primitive>(kImagOpName));
 GVAR_DEF(PrimitivePtr, kPrimCauchy, std::make_shared<Primitive>(kCauchyOpName));
 GVAR_DEF(PrimitivePtr, kPrimEditDistance, std::make_shared<Primitive>(kEditDistanceOpName));

@@ -120,6 +120,7 @@ Tensor
     mindspore.mint.sqrt
     mindspore.mint.square
     mindspore.mint.sub
+    mindspore.mint.tan
     mindspore.mint.tanh
 
 Reduction运算

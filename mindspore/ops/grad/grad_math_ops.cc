@@ -1391,17 +1391,16 @@ REG_BPROP_BUILDER("AddN").SetUnusedInputs({i0, i1}).SetBody(AddnGradFunc);
 
 REG_BPROP_BUILDER("AccumulateNV2").SetUnusedInputs({i0, i1}).SetBody(AddnGradFunc);
 
-REG_BPROP_BUILDER("Tan").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("Tan").SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
+  auto out = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex2);
   auto x_dtype_id = ib->GetDtypeId(x);
   NodePtr dx;
   if (x_dtype_id == kNumberTypeComplex64 || x_dtype_id == kNumberTypeComplex128) {
     MS_EXCEPTION(TypeError) << "For 'Tan', gradient not support for complex type currently.";
   } else {
-    auto cosx = ib->Cos(x);
-    auto secx2 = ib->Square(ib->Reciprocal(cosx));
-    dx = secx2 * dout;
+    dx = dout * ib->Add(ib->Tensor(1, ib->GetDtype(x)), ib->Square(out));
   }
   return {dx};
 });
