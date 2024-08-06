@@ -56,8 +56,6 @@ class DoSignatureMetaFuncGraph : public MetaFuncGraph {
 };
 using RWSignaturePtr = std::shared_ptr<DoSignatureMetaFuncGraph>;
 
-extern const std::map<TypeId, size_t> type_map;
-
 // shared with pynative
 void RaiseExceptionForConvertRefDtype(const ValuePtr &func, const std::string &ref_type, const std::string &target_type,
                                       size_t index);

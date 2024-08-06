@@ -281,7 +281,9 @@ void GetMixPrecisionAutoPromoteType(const FrontendOpRunInfoPtr &op_run_info) {
   }
   auto [args_type_id, args_has_tensor] = GetTypeInfo(op_run_info);
   auto promote_type_id = GetMixPrecisionPromoteType(args_type_id, args_has_tensor);
-  op_run_info->mix_precision_type = TypeIdToType(promote_type_id);
+  if (promote_type_id != kTypeUnknown) {
+    op_run_info->mix_precision_type = TypeIdToType(promote_type_id);
+  }
   MS_LOG(DEBUG) << "Set op " << op_run_info->base_op_run_info.op_name << " promote type "
                 << TypeIdToString(promote_type_id);
 }

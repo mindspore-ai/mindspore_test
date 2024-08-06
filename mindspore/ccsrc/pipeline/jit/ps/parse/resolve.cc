@@ -29,6 +29,7 @@
 #include "ir/param_info.h"
 #include "ir/value.h"
 #include "ir/map_tensor.h"
+#include "ir/func_graph_cloner.h"
 #include "pipeline/jit/ps/fallback.h"
 #include "pipeline/jit/ps/parse/data_converter.h"
 #include "pipeline/jit/ps/parse/parse.h"
@@ -392,6 +393,13 @@ AnfNodePtr ResolveObjectAndAddToManager(const FuncGraphManagerPtr &manager, cons
     auto new_fg = GetValueNode<FuncGraphPtr>(resolved_node);
     auto fg = node->func_graph();
     MS_EXCEPTION_IF_NULL(fg);
+    // If func_graph has amp strategy but its python obj does not, it may be from cache and need to be cloned.
+    if (new_fg->amp_strategy() != nullptr && new_fg->amp_strategy() != fg->amp_strategy() &&
+        !py::hasattr(obj, FUNC_GRAPH_FLAG_AMP_STRATEGY)) {
+      new_fg = BasicClone(new_fg);
+      new_fg->set_amp_strategy(fg->amp_strategy());
+      resolved_node = NewValueNode(new_fg);
+    }
     // If it's the sub func graph resolved in a reserved func graph.
     if (fg->reserved()) {
       new_fg->set_reserved(true);

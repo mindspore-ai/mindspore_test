@@ -20,7 +20,7 @@ from mindspore.common import dtype as mstype
 from mindspore.train.amp import auto_mixed_precision, custom_mixed_precision
 from mindspore._c_expression import amp as amp_c
 from mindspore._c_expression.amp import pop_amp_strategy, push_amp_strategy, create_amp_strategy, \
-    get_curr_amp_strategy, AmpStrategy, AmpLevel, PrimCastStrategy, PrimCastStrategyInfo
+    get_curr_amp_strategy, AmpStrategy, AmpLevel, PrimCastStrategy, PrimCastStrategyInfo, get_prim_cast_strategy_info
 
 
 def test_create_amp_strategy():
@@ -108,19 +108,19 @@ def test_check_prim_cast_strategy():
     amp_strategy = create_amp_strategy(AmpLevel.AmpAuto, mstype.float16, white_list, black_list)
     assert isinstance(amp_strategy, AmpStrategy)
     # test white list
-    prim_strategy_info = amp_strategy.get_prim_cast_strategy_info("Conv2D")
+    prim_strategy_info = get_prim_cast_strategy_info(amp_strategy, "Conv2D")
     assert isinstance(prim_strategy_info, PrimCastStrategyInfo)
     assert prim_strategy_info.strategy == PrimCastStrategy.AmpDoCast
     assert prim_strategy_info.dtype == mstype.float16
     assert prim_strategy_info.arg_pos == [0, 1]
     # test black list
-    prim_strategy_info = amp_strategy.get_prim_cast_strategy_info("LayerNorm")
+    prim_strategy_info = get_prim_cast_strategy_info(amp_strategy, "LayerNorm")
     assert isinstance(prim_strategy_info, PrimCastStrategyInfo)
     assert prim_strategy_info.strategy == PrimCastStrategy.AmpDoCast
     assert prim_strategy_info.dtype == mstype.float32
     assert prim_strategy_info.arg_pos == [0]
     # test out of list
-    prim_strategy_info = amp_strategy.get_prim_cast_strategy_info("Pad")
+    prim_strategy_info = get_prim_cast_strategy_info(amp_strategy, "Pad")
     assert isinstance(prim_strategy_info, PrimCastStrategyInfo)
     assert prim_strategy_info.strategy == PrimCastStrategy.AmpIgnore
 

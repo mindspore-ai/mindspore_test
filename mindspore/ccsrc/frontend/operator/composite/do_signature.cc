@@ -24,6 +24,7 @@
 #include "frontend/operator/cc_implementations.h"
 #include "frontend/optimizer/opt.h"
 #include "include/common/utils/primfunc_utils.h"
+#include "include/common/amp/amp.h"
 #include "include/common/utils/convert_utils.h"
 #include "include/common/pybind_api/api_register.h"
 #include "pipeline/jit/ps/static_analysis/prim.h"
@@ -37,9 +38,6 @@
 namespace mindspore {
 // namespace to support composite operators definition
 namespace prim {
-const std::map<TypeId, size_t> type_map = {{kNumberTypeBool, 1},    {kNumberTypeInt8, 2},    {kNumberTypeUInt8, 3},
-                                           {kNumberTypeInt16, 4},   {kNumberTypeInt32, 5},   {kNumberTypeInt64, 6},
-                                           {kNumberTypeFloat16, 7}, {kNumberTypeFloat32, 8}, {kNumberTypeFloat64, 9}};
 namespace {
 const std::vector<Signature> &GetSignature(const ValuePtr &function) {
   static const auto empty = std::vector<Signature>();
@@ -90,58 +88,9 @@ void GetTypeInfo(const std::vector<TypePtr> &input_types, std::vector<TypeId> *a
   }
 }
 
-void DoAutoCast(const std::vector<Signature> &signature, const std::vector<TypePtr> &input_types,
-                const FuncGraphPtr &graph, const std::pair<ValuePtr, std::set<size_t>> &write_indices_pair,
-                std::vector<AnfNodePtr> *op_inputs) {
-  MS_EXCEPTION_IF_NULL(graph);
-  std::vector<SignatureEnumDType> dtypes;
-  (void)std::transform(signature.begin(), signature.end(), std::back_inserter(dtypes),
-                       [](const Signature &sig) { return sig.dtype; });
-  int64_t empty_dtype_count = std::count(dtypes.begin(), dtypes.end(), SignatureEnumDType::kDTypeEmptyDefaultValue);
-  if (dtypes.empty() || static_cast<int64_t>(dtypes.size()) == empty_dtype_count) {
-    return;
-  }
-  auto args_size = signature.size();
-  if (args_size > input_types.size() || args_size > op_inputs->size()) {
-    // It is possible that op_inputs size is larger than signatures size in vmap.
-    MS_LOG(INTERNAL_EXCEPTION) << "For auto type cast, the number of args should be greater than or equal to "
-                               << args_size << ", but got input_types size: " << input_types.size()
-                               << ", op_inputs size: " << op_inputs->size();
-  }
-  auto func = write_indices_pair.first;
-  auto write_indices = write_indices_pair.second;
-
-  std::vector<TypeId> args_type_id;
-  std::vector<bool> args_has_tensor;
-  GetTypeInfo(input_types, &args_type_id, &args_has_tensor);
-  auto sig_type_map = GetSignatureTypeMap(dtypes, args_type_id, args_has_tensor, write_indices);
-  for (size_t i = 0; i < args_size; ++i) {
-    auto it = sig_type_map.find(dtypes[i]);
-    if (it == sig_type_map.end()) {
-      continue;
-    }
-    TypeId current_type_id = args_type_id[i];
-    TypeId target_type_id = (it->second).first;
-    if (current_type_id == kTypeUnknown || target_type_id == kTypeUnknown) {
-      continue;
-    }
-    if (write_indices.find(i) != write_indices.end() && current_type_id != target_type_id) {
-      RaiseExceptionForConvertRefDtype(func, TypeIdToString(current_type_id), TypeIdToString(target_type_id), i);
-    }
-    bool arg_is_tensor = args_has_tensor[i];
-    bool contain_tensor = (it->second).second;
-    bool need_scalar_to_tensor = !arg_is_tensor && contain_tensor;
-    auto param = (*op_inputs)[i];
-    auto target_type_node = NewValueNode(static_cast<int64_t>(target_type_id));
-    if (need_scalar_to_tensor) {
-      auto current_type_node = NewValueNode(static_cast<int64_t>(current_type_id));
-      param = graph->NewCNodeAfter(param, {NewValueNode(prim::kPrimScalarToTensor), param, current_type_node});
-      (*op_inputs)[i] = graph->NewCNodeAfter(param, {NewValueNode(prim::kPrimCast), param, target_type_node});
-    } else if (current_type_id != target_type_id) {
-      PrimitivePtr cast_op = contain_tensor ? prim::kPrimCast : prim::kPrimScalarCast;
-      (*op_inputs)[i] = graph->NewCNodeAfter(param, {NewValueNode(cast_op), param, target_type_node});
-    }
-  }
+bool IsTypeRef(const SignatureEnumRW &sig, const TypePtr &type) {
+  return sig == SignatureEnumRW::kRWWrite &&
+         !((type->type_id() == kObjectTypeRef) || (type->type_id() == kObjectTypeRefKey));
 }
 
 void CheckSigSize(const ValuePtr &function, const size_t &sig_size, const bool &has_var,
@@ -224,6 +173,106 @@ TypePtr GetMixedPrecisionTargetType(const FuncGraphPtr &func_graph) {
     return nullptr;
   }
 }
+
+bool GetImplicitPromoteType(const std::vector<Signature> &signature, const std::set<size_t> &write_indices,
+                            std::vector<TypeId> *args_type_id, std::vector<bool> *args_is_tensor) {
+  if (signature.empty()) {
+    return false;
+  }
+  std::vector<SignatureEnumDType> dtypes;
+  (void)std::transform(signature.begin(), signature.end(), std::back_inserter(dtypes),
+                       [](const Signature &sig) { return sig.dtype; });
+  int64_t empty_dtype_count = std::count(dtypes.begin(), dtypes.end(), SignatureEnumDType::kDTypeEmptyDefaultValue);
+  if (static_cast<int64_t>(dtypes.size()) == empty_dtype_count) {
+    return false;
+  }
+  auto args_size = dtypes.size();
+  if (args_size > args_type_id->size()) {
+    // It is possible that op_inputs size is larger than signatures size in vmap.
+    MS_LOG(INTERNAL_EXCEPTION) << "For auto type cast, the number of args should be greater than or equal to "
+                               << args_size << ", but got " << args_type_id->size() << ".";
+  }
+  auto sig_type_map = GetSignatureTypeMap(dtypes, *args_type_id, *args_is_tensor, write_indices);
+  for (size_t i = 0; i < args_size; ++i) {
+    auto it = sig_type_map.find(dtypes[i]);
+    if (it == sig_type_map.end()) {
+      continue;
+    }
+    (*args_type_id)[i] = (it->second).first;
+    (*args_is_tensor)[i] = (it->second).second;
+  }
+  return true;
+}
+
+bool GetAutoMixedPrecisionType(const FuncGraphPtr &func_graph, const ValuePtr &function,
+                               const std::pair<std::vector<TypeId>, std::vector<bool>> &source_type_info,
+                               std::vector<TypeId> *target_type_id, std::vector<bool> *target_is_tensor) {
+  if (!function->isa<Primitive>() || func_graph->amp_strategy() == nullptr || !func_graph->amp_strategy()->IsEnable()) {
+    return false;
+  }
+  const auto &prim_name = function->cast<PrimitivePtr>()->name();
+  auto strategy_info = GetPrimCastStrategyInfo(func_graph->amp_strategy(), prim_name);
+  if (strategy_info.strategy == amp::PrimCastStrategy::Ignore) {
+    return false;
+  }
+  TypeId amp_type_id;
+  if (strategy_info.strategy == amp::PrimCastStrategy::AutoPromote) {
+    amp_type_id = GetMixPrecisionPromoteType(source_type_info.first, source_type_info.second);
+    if (amp_type_id == kTypeUnknown) {
+      return false;
+    }
+  } else {
+    amp_type_id = strategy_info.dtype->type_id();
+  }
+  MS_LOG(DEBUG) << "For Operator[" << prim_name << "], its amp strategy is " << strategy_info.strategy
+                << ", and target type_id is" << TypeIdToString(amp_type_id);
+
+  for (size_t i = 0; i < target_type_id->size(); ++i) {
+    if (IsFloatTensor((*target_type_id)[i], (*target_is_tensor)[i])) {
+      (*target_type_id)[i] = amp_type_id;
+    }
+  }
+  return true;
+}
+
+void DoTypeCast(const FuncGraphPtr &func_graph, const std::pair<ValuePtr, std::set<size_t>> &function_write_indices,
+                const std::pair<std::vector<TypeId>, std::vector<bool>> &source_type_info,
+                const std::pair<std::vector<TypeId>, std::vector<bool>> &target_type_info,
+                std::vector<AnfNodePtr> *op_inputs) {
+  auto func = function_write_indices.first;
+  auto write_indices = function_write_indices.second;
+  for (size_t i = 0; i < source_type_info.first.size(); ++i) {
+    TypeId source_type_id = (source_type_info.first)[i];
+    TypeId target_type_id = (target_type_info.first)[i];
+    bool source_is_tensor = (source_type_info.second)[i];
+    bool target_is_tensor = (target_type_info.second)[i];
+    if (source_type_id == kTypeUnknown || target_type_id == kTypeUnknown) {
+      continue;
+    }
+    if (source_type_id == target_type_id && source_is_tensor == target_is_tensor) {
+      continue;
+    }
+    if (write_indices.find(i) != write_indices.end()) {
+      RaiseExceptionForConvertRefDtype(func, TypeIdToString(source_type_id), TypeIdToString(target_type_id), i);
+    }
+    auto param = (*op_inputs)[i];
+    auto target_type_node = NewValueNode(static_cast<int64_t>(target_type_id));
+    MS_LOG(DEBUG) << "Do type cast for Primitive[" << func->ToString() << "], source_is_tensor: " << source_is_tensor
+                  << ", target_is_tensor: " << target_is_tensor
+                  << ", source_type_id: " << TypeIdToString(source_type_id)
+                  << ", target_type_id: " << TypeIdToString(target_type_id);
+    if (!source_is_tensor && target_is_tensor) {
+      // Scalar needs to be converted to Tensor.
+      auto source_type_node = NewValueNode(static_cast<int64_t>(source_type_id));
+      param = func_graph->NewCNodeAfter(param, {NewValueNode(prim::kPrimScalarToTensor), param, source_type_node});
+      (*op_inputs)[i] = func_graph->NewCNodeAfter(param, {NewValueNode(prim::kPrimCast), param, target_type_node});
+    } else {
+      // If target type is not Tensor but scalar, use ScalarCast.
+      PrimitivePtr cast_op = target_is_tensor ? prim::kPrimCast : prim::kPrimScalarCast;
+      (*op_inputs)[i] = func_graph->NewCNodeAfter(param, {NewValueNode(cast_op), param, target_type_node});
+    }
+  }
+}
 }  // namespace
 
 std::vector<AnfNodePtr> GetNewInputsBySignatures(const FuncGraphPtr &func_graph, const std::string &func_name,
@@ -268,8 +317,7 @@ std::vector<AnfNodePtr> GetNewInputsBySignatures(const FuncGraphPtr &func_graph,
         (void)write_indices.insert(i);
       }
       // If sig is SignatureEnumRW::kRWRef, not do anything.
-    } else if (sig == SignatureEnumRW::kRWWrite &&
-               !((type->type_id() == kObjectTypeRef) || (type->type_id() == kObjectTypeRefKey))) {
+    } else if (IsTypeRef(sig, type)) {
       RaiseExceptionForCheckParameter(func_name, i, type->ToString());
     }
     MS_LOG(DEBUG) << "Function " << func_name << "'s input " << i << " " << param->DebugString(2) << " abs "
@@ -279,8 +327,22 @@ std::vector<AnfNodePtr> GetNewInputsBySignatures(const FuncGraphPtr &func_graph,
   }
   // process default
   ProcessDefault(func_name, args_abs_list.size(), signature, has_var, &op_inputs);
-  auto write_indices_pair = std::make_pair(function, write_indices);
-  DoAutoCast(signature, input_types, func_graph, write_indices_pair, &op_inputs);
+  // Record type info.
+  std::vector<TypeId> source_type_id;
+  std::vector<bool> source_is_tensor;
+  GetTypeInfo(input_types, &source_type_id, &source_is_tensor);
+  // Auto mixed precision.
+  std::vector<TypeId> target_type_id = source_type_id;
+  std::vector<bool> target_is_tensor = source_is_tensor;
+  bool amp_type_changed = GetAutoMixedPrecisionType(
+    func_graph, function, std::make_pair(source_type_id, source_is_tensor), &target_type_id, &target_is_tensor);
+  // Implicit type promotion.
+  bool promote_type_changed = GetImplicitPromoteType(signature, write_indices, &target_type_id, &target_is_tensor);
+  // Do type cast.
+  if (promote_type_changed || amp_type_changed) {
+    DoTypeCast(func_graph, std::make_pair(function, write_indices), std::make_pair(source_type_id, source_is_tensor),
+               std::make_pair(target_type_id, target_is_tensor), &op_inputs);
+  }
   return op_inputs;
 }
 

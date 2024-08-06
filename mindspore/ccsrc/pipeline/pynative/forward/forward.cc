@@ -257,7 +257,7 @@ bool GetMixprecisionTypeFromStrategy(const FrontendOpRunInfoPtr &op_run_info) {
     return false;
   }
   const auto &op_cast_strategy_info =
-    cur_amp_Strategy->GetPrimCastStrategyInfo(op_run_info->op_grad_info->op_prim->name());
+    GetPrimCastStrategyInfo(cur_amp_Strategy, op_run_info->op_grad_info->op_prim->name());
   if (op_cast_strategy_info.strategy == amp::Ignore) {
     return false;
   }

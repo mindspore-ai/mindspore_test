@@ -518,16 +518,7 @@ void AnalyzeFailExporter::ExportOneFuncGraph(const FuncGraphPtr &func_graph, con
     oss << "indirect: " << *(func_graph->indirect()) << "\n";
   }
   oss << "subgraph attr:" << std::endl;
-  for (const auto &attr : func_graph->attrs()) {
-    oss << attr.first << ": ";
-    MS_EXCEPTION_IF_NULL(attr.second);
-    if (attr.second->isa<BoolImm>()) {
-      oss << GetValue<bool>(attr.second);
-    } else if (attr.second->isa<StringImm>()) {
-      oss << (GetValue<std::string>(attr.second));
-    }
-    oss << std::endl;
-  }
+  GetSubgraphAttrAsString(func_graph, oss);
   oss << "subgraph instance: " << func_graph->ToString() << " : " << func_graph.get() << std::endl;
   // Dump side effect info.
   auto effect_info = func_graph->GetEffectInfo();

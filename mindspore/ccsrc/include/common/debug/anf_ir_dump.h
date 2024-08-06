@@ -148,6 +148,8 @@ class AnfExporter {
   bool check_integrity_ = false;  // whether check integrity or not, when dumping ir for loading, must set it to true
 };
 
+COMMON_EXPORT void GetSubgraphAttrAsString(const FuncGraphPtr &func_graph, std::ostringstream &oss);
+
 COMMON_EXPORT void ExportIR(const std::string &filename, const FuncGraphPtr &func_graph);
 }  // namespace mindspore
 

@@ -40,6 +40,7 @@
 #include "ir/manager.h"
 #include "ir/func_graph_transform.h"
 #include "ir/func_graph_base.h"
+#include "ir/dtype/amp.h"
 #include "abstract/abstract_value.h"
 #include "mindspore/core/symbolic_shape/symbol_engine.h"
 
@@ -104,6 +105,7 @@ const char FUNC_GRAPH_FLAG_NO_RECURSIVE[] = "no_recursive";
 const char FUNC_GRAPH_FLAG_ARGS_NO_EXPAND[] = "args_no_expand";
 const char FUNC_GRAPH_FLAG_PROXY_GRAPH[] = "proxy_graph";
 const char FUNC_GRAPH_FLAG_NO_CHILD_GRAPH[] = "no_child_graph";
+const char FUNC_GRAPH_FLAG_AMP_STRATEGY[] = "amp_strategy";
 
 const char kFuncGraphFlagUndetermined[] = "undeterminate";
 const char kFuncGraphFlagBackPropEntry[] = "back_prop_entry";
@@ -218,6 +220,9 @@ class MS_CORE_API FuncGraph : public FuncGraphBase, public EffectInfoHolder {
   bool has_attr(const std::string &key) const;
   ValuePtr get_attr(const std::string &key) const;
   void set_attr(const std::string &key, const ValuePtr &value) { attrs_[key] = value; }
+
+  void set_amp_strategy(const amp::AmpStrategyPtr &amp_strategy) { amp_strategy_ = amp_strategy; }
+  amp::AmpStrategyPtr amp_strategy() const { return amp_strategy_; }
 
   mindspore::HashMap<std::string, FuncGraphTransform> &transforms() { return transforms_; }
   void set_transforms(const mindspore::HashMap<std::string, FuncGraphTransform> &transforms) {
@@ -513,6 +518,9 @@ class MS_CORE_API FuncGraph : public FuncGraphBase, public EffectInfoHolder {
 
   // The graph is used as some input of Switch, SwitchLayer, or Partial.
   std::shared_ptr<bool> indirect_;
+
+  // Auto mixed precision strategy.
+  amp::AmpStrategyPtr amp_strategy_{nullptr};
 
   int64_t stage_;
   int64_t segment_;
