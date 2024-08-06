@@ -15,7 +15,7 @@
  */
 #include "plugin/device/ascend/optimizer/ir_fusion/inference_qbmm_allreduce_add_fusion.h"
 #include <memory>
-#include "mindspore/core/ops/other_ops.h"
+#include "mindspore/ops/op_def/other_ops.h"
 #include "plugin/device/ascend/optimizer/common/gllo_utils.h"
 #include "plugin/device/ascend/optimizer/ir_fusion/inference_weight_preprocess_utils.h"
 #include "utils/ms_context.h"
@@ -48,7 +48,7 @@ const BaseRef QbmmAllReduceAddFusion::DefinePattern() const {
     MS_LOG(DEBUG) << "initial member failed.";
     return {};
   }
-  VectorRef qbmm_ref({qbmm_prim_, x_, w_, scale_, unused_offset_, orig_bias_, trans_a_, trans_b_, out_dtype_});
+  VectorRef qbmm_ref({qbmm_prim_, x_, w_, scale_, offset_, bias_, trans_a_, trans_b_, out_dtype_});
   auto is_allreduce = std::make_shared<CondVar>(IsSpecifiedNode<&prim::kPrimAllReduce>);
   MS_CHECK_TRUE_RET(is_allreduce != nullptr, {});
   VectorRef allreduce_ref({is_allreduce, qbmm_ref});

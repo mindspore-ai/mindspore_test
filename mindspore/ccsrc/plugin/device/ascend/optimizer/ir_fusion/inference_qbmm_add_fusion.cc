@@ -25,7 +25,7 @@ namespace mindspore {
 namespace opt {
 CNodePtr QbmmAddFusion::CreateQbmmAddNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
                                           const EquivPtr &equiv) const {
-  MS_LOG(WARNING) << "start create QbmmAddFusion node";
+  MS_LOG(DEBUG) << "start create QbmmAddFusion node";
   MS_ASSERT(func_graph != nullptr && node != nullptr && equiv != nullptr);
   std::string prim_name = "QuantBatchMatmul";
   auto qbmm_prim = std::make_shared<Primitive>(prim_name);
@@ -42,13 +42,13 @@ CNodePtr QbmmAddFusion::CreateQbmmAddNode(const FuncGraphPtr &func_graph, const 
   if (node->abstract() != nullptr) {
     new_qbmm_node->set_abstract(node->abstract()->Clone());
   }
-  MS_LOG(WARNING) << "create QbmmAddFusion node success.";
+  MS_LOG(DEBUG) << "create QbmmAddFusion node success.";
   return new_qbmm_node;
 }
 
 const BaseRef QbmmAddFusion::DefinePattern() const {
   if (!Init()) {
-    MS_LOG(WARNING) << "initial member failed.";
+    MS_LOG(DEBUG) << "initial member failed.";
     return {};
   }
   VectorRef qbmm_ref({qbmm_prim_, x_, w_, scale_, offset_, bias_, trans_a_, trans_b_, out_dtype_});
