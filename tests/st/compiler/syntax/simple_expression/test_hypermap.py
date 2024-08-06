@@ -1,4 +1,4 @@
-# Copyright 2021-2023 Huawei Technologies Co., Ltd
+# Copyright 2021-2024 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@ def test_hypermap_noleaf_tuple_list_mix():
         main_noleaf((tensor1, 1), [tensor2, 2])
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
           essential_mark='unessential')
 def test_hypermap_noleaf_tuple_length():
     """
@@ -58,7 +58,7 @@ def test_hypermap_noleaf_tuple_length():
     """
     tensor1 = Tensor(np.array([[1.2, 2.1], [2.2, 3.2]]).astype('float32'))
     tensor2 = Tensor(np.array([[1.2, 2.1], [2.2, 3.2]]).astype('float32'))
-    with pytest.raises(Exception, match="The length of tuples in HyperMap must be the same"):
+    with pytest.raises(Exception, match="The tuples in HyperMap should have the same length."):
         main_noleaf((tensor1, 1), (tensor2, 2, 2))
 
 
