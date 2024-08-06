@@ -86,6 +86,7 @@ AnfNodePtr CreateUpdateStateNode(const FuncGraphPtr &graph, const bool is_need_u
 
 ValueNodePtr CreateValueNode(const FuncGraphPtr &graph, const ValuePtr &value_ptr) {
   MS_EXCEPTION_IF_NULL(value_ptr);
+  MS_EXCEPTION_IF_NULL(graph);
   auto kernel_graph = graph->cast<KernelGraphPtr>();
   if (kernel_graph == nullptr) {
     auto new_node = std::make_shared<ValueNode>(value_ptr);

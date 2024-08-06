@@ -62,11 +62,14 @@ const AnfNodePtr MakeTupleUnifyMindIR::Process(const FuncGraphPtr &func_graph, c
   MS_EXCEPTION_IF_NULL(make_tuple_node);
   auto make_tuple_cnode = make_tuple_node->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(make_tuple_cnode);
+  MS_EXCEPTION_IF_NULL(make_tuple_cnode->input(kIndex1));
   auto abstract = make_tuple_cnode->input(kIndex1)->abstract();
+  MS_EXCEPTION_IF_NULL(abstract);
   if (!utils::isa<abstract::AbstractScalarPtr>(abstract)) {
     return node;
   }
   auto type_ptr = abstract->cast<abstract::AbstractScalarPtr>()->GetTypeTrack();
+  MS_EXCEPTION_IF_NULL(type_ptr);
   TypeId type_id = type_ptr->type_id();
 
   std::vector<AnfNodePtr> tensor_node_list = {NewValueNode(std::make_shared<Primitive>(kMakeTupleOpName))};
@@ -76,11 +79,14 @@ const AnfNodePtr MakeTupleUnifyMindIR::Process(const FuncGraphPtr &func_graph, c
   for (size_t i = kIndex1; i < make_tuple_cnode->size(); i++) {
     auto make_tuple_input = make_tuple_cnode->input(i);
 
+    MS_EXCEPTION_IF_NULL(make_tuple_input);
+    MS_EXCEPTION_IF_NULL(make_tuple_input->abstract());
     auto abstract_scalar = make_tuple_input->abstract()->cast<abstract::AbstractScalarPtr>();
     if (abstract_scalar == nullptr) {
       return node;
     }
     auto item_type_ptr = abstract_scalar->GetTypeTrack();
+    MS_EXCEPTION_IF_NULL(item_type_ptr);
     TypeId item_type_id = item_type_ptr->type_id();
     if (item_type_id != type_id) {
       return node;

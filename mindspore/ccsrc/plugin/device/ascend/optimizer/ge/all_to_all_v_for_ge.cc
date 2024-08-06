@@ -286,6 +286,7 @@ const AnfNodePtr AllToAllvForGE::Process(const FuncGraphPtr &graph, const AnfNod
   auto flatten_reshape_nodes =
     CreateFlattenReshapeNodes(graph, {all_to_all_v_inputs.begin() + 1, all_to_all_v_inputs.end()});
   auto concat_node = CreateConcatNode(graph, flatten_reshape_nodes);
+  MS_EXCEPTION_IF_NULL(concat_node);
   concat_node->set_scope(node->scope());
   // get the outputs shapes of origin node to restore outputs of new node
   auto origin_output_shapes = GetAllToAllvOutputShapes(all_to_all_v);
@@ -296,11 +297,13 @@ const AnfNodePtr AllToAllvForGE::Process(const FuncGraphPtr &graph, const AnfNod
     return new_atav_node;
   }
   auto split_node = CreateSplitNode(graph, new_atav_node, origin_output_shapes);
+  MS_EXCEPTION_IF_NULL(split_node);
   split_node->set_scope(node->scope());
   AnfNodePtrList split_outputs;
   CreateMultipleOutputsOfAnfNode(graph, split_node, origin_output_shapes.size(), &split_outputs);
   auto reshape_nodes = CreateReshapeNodes(graph, split_outputs, origin_output_shapes);
   auto maketuple_node = CreateMakeTupleNode(graph, reshape_nodes);
+  MS_EXCEPTION_IF_NULL(maketuple_node);
   maketuple_node->set_scope(node->scope());
   return maketuple_node;
 }

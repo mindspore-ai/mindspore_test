@@ -37,6 +37,7 @@ bool IsDepthwiseCase(const CNodePtr &node, size_t index, const std::string &form
   MS_EXCEPTION_IF_NULL(base_shape);
   if (base_shape->isa<abstract::Shape>()) {
     auto shape_ptr = base_shape->cast<abstract::ShapePtr>();
+    MS_EXCEPTION_IF_NULL(shape_ptr);
     auto shape_vec = shape_ptr->shape();
     return shape_vec.size() == kNchwDimNum && shape_vec[kDimC] == 1;
   }
