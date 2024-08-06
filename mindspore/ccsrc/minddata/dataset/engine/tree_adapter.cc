@@ -525,29 +525,28 @@ void TreeAdapter::SubprocessDaemonLoop() {
                  << "and waiting for the main process: " << std::to_string(parent_process_id_) << " to exit.";
     sleep(log_interval);
 
+    // get the newest shared memory queue and message queue
+    auto shared_memmory_queue = dynamic_cast<SendBridgeOp *>(tree_->root().get())->GetSharedMemoryQueue();
+    auto message_queue = dynamic_cast<SendBridgeOp *>(tree_->root().get())->GetMessageQueue();
+
+    tree_->AllTasks()->interrupt_all();
+
+    // release the message queue
+    message_queue.SetReleaseFlag(true);
+
+    // this will break hung by MsgRcv which is in SendBridgeOp / ReceiveBridgeOp
+    message_queue.ReleaseQueue();
+
+    // release the shm memory queue
+    auto ret = shared_memmory_queue.ReleaseCurrentShm();
+    if (ret != Status::OK()) {
+      MS_LOG(ERROR) << ret.ToString();
+    }
+
     // the parent had been closed
     if (getppid() != parent_process_id_) {
       MS_LOG(INFO) << "[Independent Dataset Process] Main process: " << std::to_string(parent_process_id_)
                    << " had been closed. Current process: " << std::to_string(process_id_) << " will exit too.";
-
-      // the shared memory queue maybe update, so get it here
-      auto shared_memmory_queue = dynamic_cast<SendBridgeOp *>(tree_->root().get())->GetSharedMemoryQueue();
-      auto message_queue = dynamic_cast<SendBridgeOp *>(tree_->root().get())->GetMessageQueue();
-
-      tree_->AllTasks()->interrupt_all();
-
-      // release the message queue
-      message_queue.SetReleaseFlag(true);
-
-      // this will break hung by MsgRcv which is in ReceiveBridgeOp::operator()
-      message_queue.ReleaseQueue();
-
-      // release the shm memory queue
-      auto ret = shared_memmory_queue.ReleaseCurrentShm();
-      if (ret != Status::OK()) {
-        MS_LOG(ERROR) << ret.ToString();
-      }
-
       exit(0);
     }
   }
@@ -576,7 +575,10 @@ Status TreeAdapter::LaunchSubprocess() {
   auto ret = tree_->Launch();
   if (ret != Status::OK()) {
     // here should prompt error because it's in subprocess
-    MS_LOG(ERROR) << log_prefix << " launch failed.";
+    MS_LOG(ERROR) << log_prefix << ". Launch failed.";
+
+    // release the message queue
+    message_queue.SetReleaseFlag(true);
 
     // send the INDEPENDENT error message to main process
     if (message_queue.SerializeStatus(ret) != Status::OK()) {
@@ -607,6 +609,9 @@ Status TreeAdapter::LaunchSubprocess() {
     if (ret != Status::OK()) {
       MS_LOG(ERROR) << log_prefix << ". Got error info in independent dataset pipeline.";
 
+      // release the message queue
+      message_queue.SetReleaseFlag(true);
+
       // send the INDEPENDENT error message to main process
       if (message_queue.SerializeStatus(ret) != Status::OK()) {
         MS_LOG(EXCEPTION) << log_prefix << " serialize Status failed.";
@@ -629,7 +634,7 @@ Status TreeAdapter::LaunchSubprocess() {
       MS_LOG(INFO) << log_prefix
                    << ". Got ReceiveBridgeOp finished message from main process. Current process will exit.";
 
-      // the shared memory queue maybe update, so get it here
+      // get the newest shared memory queue
       auto shared_memmory_queue = dynamic_cast<SendBridgeOp *>(tree_->root().get())->GetSharedMemoryQueue();
 
       tree_->AllTasks()->interrupt_all();
@@ -637,7 +642,7 @@ Status TreeAdapter::LaunchSubprocess() {
       // release the message queue
       message_queue.SetReleaseFlag(true);
 
-      // this will break hung by MsgRcv which is in ReceiveBridgeOp::operator()
+      // this will break hung by MsgRcv which is in SendBridgeOp / ReceiveBridgeOp
       message_queue.ReleaseQueue();
 
       // the message queue should be released in main process ReceiveBridgeOp, so just release the shared memory queue
@@ -680,6 +685,9 @@ Status TreeAdapter::Launch() {
                  << ", PyGILState_Check: " << PyGILState_Check();
     GilAcquireWithCheck gil_acquire_with_check;
     PyOS_BeforeFork();
+
+    // ignore the SIGCHLD, the independent dataset process will exit successful without to be a defunct status
+    signal(SIGCHLD, SIG_IGN);
 
     // launch the sub-process to detach dataset with send
     pid_t fpid = fork();
