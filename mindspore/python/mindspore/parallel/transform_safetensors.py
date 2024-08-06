@@ -150,6 +150,7 @@ def ckpt_to_safetensors(file_path, save_path=None, name_map=None, file_name_rege
         file_name_regex (str, optional): Regular expression used to match the file that needs to be converted.
                                    Defaults: ``None``.
         processes_num (int, optional): Number of processes to use for parallel processing. Defaults: 1.
+
     Raises:
         ValueError: If the input path is invalid or the save_path is not a directory,
                     or the file_path does not end with '.ckpt'.
