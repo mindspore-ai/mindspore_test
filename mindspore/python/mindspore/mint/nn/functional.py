@@ -51,7 +51,7 @@ from mindspore.ops.function.nn_func import dropout_ext as dropout
 # 15
 
 # 16
-
+from mindspore.ops.function.nn_func import log_softmax_ext as log_softmax
 # 17
 from mindspore.ops.function.nn_func import binary_cross_entropy
 # 18
@@ -406,7 +406,7 @@ __all__ = [
     # 15
 
     # 16
-
+    'log_softmax',
     # 17
 
     # 18

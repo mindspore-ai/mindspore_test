@@ -10,3 +10,5 @@ log_softmax:
     returns:
         output:
             dtype: tensor
+    dispatch:
+        enable: True

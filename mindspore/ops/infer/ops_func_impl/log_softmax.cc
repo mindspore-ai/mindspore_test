@@ -49,6 +49,9 @@ int32_t LogSoftmaxFuncImpl::CheckValidation(const PrimitivePtr &primitive,
   } else {
     auto axis_value = axis_opt.value();
     int64_t x_rank = SizeToLong(x_shape_vec.size());
+    if (x_rank == 0) {
+      x_rank = 1;
+    }
     MS_CHECK_VALUE(
       axis_value >= -x_rank && axis_value < x_rank,
       CheckAndConvertUtils::FormatCheckInRangeMsg("axis", axis_value, kIncludeLeft, {-x_rank, x_rank}, primitive));

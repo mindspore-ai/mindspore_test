@@ -16,6 +16,7 @@
 from __future__ import absolute_import
 
 from mindspore.ops.auto_generate import erfc, expm1, sinc, log1p, round_op
+from mindspore.ops.function.nn_func import log_softmax_ext as log_softmax
 
 def round(input):
     r"""
@@ -57,4 +58,5 @@ __all__ = [
     'round',
     'sinc',
     'log1p',
+    'log_softmax',
 ]

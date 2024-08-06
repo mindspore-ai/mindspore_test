@@ -22,9 +22,9 @@
 
 namespace mindspore {
 namespace ops {
-OP_FUNC_IMPL_TEST_DECLARE(LogSoftmaxGrad, MultiInputOpParams);
+OP_FUNC_IMPL_INFER_TEST_DECLARE(LogSoftmaxGrad, MultiInputOpParams);
 
-OP_FUNC_IMPL_TEST_CASES(
+OP_FUNC_IMPL_INFER_TEST_CASES(
   LogSoftmaxGrad,
   testing::Values(
     MultiInputOpParams{{{2, 3}, {2, 3}}, {kFloat32, kFloat32}, {{2, 3}}, {kFloat32}, {CreateScalar<int64_t>(-1)}},

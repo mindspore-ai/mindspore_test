@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 #include "utils/check_convert_utils.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ops/ops_func_impl/simple_infer.h"
 
 namespace mindspore {
 namespace ops {
@@ -54,11 +55,38 @@ int32_t LogSoftmaxGradFuncImpl::CheckValidation(const PrimitivePtr &primitive,
   } else {
     auto axis_value = axis_opt.value();
     int64_t grad_rank = SizeToLong(grad_shape_vec.size());
+    if (grad_rank == 0) {
+      grad_rank = 1;
+    }
     MS_CHECK_VALUE(axis_value >= -grad_rank && axis_value < grad_rank,
                    CheckAndConvertUtils::FormatCheckInRangeMsg("axis", axis_value, kIncludeLeft,
                                                                {-grad_rank, grad_rank}, primitive));
   }
   return check_status;
 }
+
+TypePtrList LogSoftmaxGradFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  MS_EXCEPTION_IF_NULL(x_tensor);
+  return {x_tensor->Dtype()};
+}
+
+ShapeArray LogSoftmaxGradFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
+  const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  MS_EXCEPTION_IF_NULL(x_tensor);
+  auto x_shape = x_tensor->shape();
+  auto x_rank = SizeToLong(x_shape.size());
+  if (x_rank == 0) {
+    x_rank = 1;
+  }
+  auto axis_opt = GetScalarValue<int64_t>(input_values[kInputIndex2]);
+  auto axis_value = axis_opt.value();
+  MS_CHECK_VALUE(
+    axis_value >= -x_rank && axis_value < x_rank,
+    CheckAndConvertUtils::FormatCheckInRangeMsg("axis", axis_value, kIncludeLeft, {-x_rank, x_rank}, primitive));
+  return {x_tensor->shape()};
+}
+
+REGISTER_SIMPLE_INFER(kNameLogSoftmaxGrad, LogSoftmaxGradFuncImpl)
 }  // namespace ops
 }  // namespace mindspore

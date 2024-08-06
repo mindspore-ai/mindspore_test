@@ -241,6 +241,7 @@ Non-linear Activations (weighted sum, nonlinearity)
     mindspore.mint.nn.Hardshrink
     mindspore.mint.nn.Hardsigmoid
     mindspore.mint.nn.Hardswish
+    mindspore.mint.nn.LogSoftmax
     mindspore.mint.nn.Mish
     mindspore.mint.nn.ReLU
     mindspore.mint.nn.SELU
@@ -328,6 +329,7 @@ Non-linear activation functions
     mindspore.mint.nn.functional.hardswish
     mindspore.mint.nn.functional.layer_norm
     mindspore.mint.nn.functional.leaky_relu
+    mindspore.mint.nn.functional.log_softmax
     mindspore.mint.nn.functional.mish
     mindspore.mint.nn.functional.relu
     mindspore.mint.nn.functional.selu
@@ -428,5 +430,6 @@ Pointwise Operations
     mindspore.mint.special.erfc
     mindspore.mint.special.expm1
     mindspore.mint.special.log1p
+    mindspore.mint.special.log_softmax
     mindspore.mint.special.round
     mindspore.mint.special.sinc

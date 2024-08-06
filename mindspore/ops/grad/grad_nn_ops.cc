@@ -1858,6 +1858,44 @@ REG_BPROP_BUILDER("LogSoftmax").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
   return {dx, ib->OutZeros(axis)};
 });
 
+DEF_PURE_SHAPE_CALC(g_log_softmax_ext_shape)
+  .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
+    auto x_shape = inputs.at(kIndex0);
+    size_t ndim = x_shape.size();
+    int64_t ret;
+    if (ndim == 0 || ndim == 1 || ndim == 3) {
+      ret = 0;
+    } else {
+      ret = 1;
+    }
+    return {{ret}};
+  })
+  .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &) -> std::vector<int64_t> {
+    auto shape_out = inputs.at(kIndex0);
+    if (IsDynamicRank(shape_out)) {
+      return {-1};
+    }
+    return {1};
+  });
+
+REG_BPROP_BUILDER("LogSoftmaxExt").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto dim = ib->GetInput(kIndex1);
+  auto dtype = ib->GetInput(kIndex2);
+  auto out = ib->GetInput(kIndex3);
+  auto dout = ib->GetInput(kIndex4);
+  auto new_dim = dim;
+  if (ib->GetDtype(dim)->isa<TypeNone>()) {
+    new_dim = ib->ShapeCalc(g_log_softmax_ext_shape, {input})[0];
+    new_dim = ib->TupleGetItem(new_dim, 0);
+  }
+  auto dx = ib->Emit("LogSoftmaxGrad", {out, dout, new_dim});
+  if (ib->GetDtype(input) != ib->GetDtype(dx)) {
+    dx = ib->Cast(dx, ib->GetDtype(input));
+  }
+  return {dx, ib->OutZeros(new_dim), ib->OutZeros(dtype)};
+});
+
 REG_BPROP_BUILDER("Softplus").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto dout = ib->GetInput(kIndex2);

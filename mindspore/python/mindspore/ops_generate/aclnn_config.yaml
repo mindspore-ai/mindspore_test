@@ -89,7 +89,8 @@ CumsumExt: 'aclnnCumsum'
 # 7
 Col2ImGrad: 'aclnnIm2col'
 # 8
-
+LogSoftmaxExt: 'aclnnLogSoftmax'
+LogSoftmaxGrad: 'aclnnLogSoftmaxBackward'
 # 9
 
 # 10

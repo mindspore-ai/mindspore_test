@@ -55,7 +55,7 @@ from mindspore.nn.layer.basic import DropoutExt as Dropout
 # 15
 
 # 16
-
+from mindspore.nn.layer import LogSoftmaxExt as LogSoftmax
 # 17
 
 # 18
@@ -430,7 +430,7 @@ __all__ = [
     # 15
 
     # 16
-
+    'LogSoftmax',
     # 17
 
     # 18

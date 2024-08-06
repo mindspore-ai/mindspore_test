@@ -3011,6 +3011,49 @@ def softmax_ext(input, dim=None, dtype=None):
     return softmax_impl(input, dim)
 
 
+def log_softmax_ext(input, dim=None, *, dtype=None):
+    r"""
+    Applies the Log Softmax function to the input tensor on the specified axis.
+    Supposes a slice in the given axis, :math:`x` for each element :math:`x_i`,
+    the Log Softmax function is shown as follows:
+
+    .. math::
+        \text{output}(x_i) = \log \left(\frac{\exp(x_i)} {\sum_{j = 0}^{N-1}\exp(x_j)}\right),
+
+    where :math:`N` is the length of the Tensor.
+
+    Args:
+        input (Tensor): The input Tensor.
+        dim (int, optional): The axis to perform the Log softmax operation. Default: ``None`` .
+
+    Keyword Args:
+        dtype (:class:`mindspore.dtype`, optional): The desired dtype of returned Tensor. If not set to None, the input
+            Tensor will be cast to `dtype` before the operation is performed. This is useful for preventing overflows.
+            If set to None, stay the same as original Tensor. Default: ``None`` .
+
+    Returns:
+        Tensor, with the same shape as the input.
+
+    Raises:
+        TypeError: If `dim` is not an int.
+        ValueError: If `dim` is not in range [-len(input.shape), len(input.shape)).
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, ops
+        >>> logits = Tensor(np.array([1, 2, 3, 4, 5]), mindspore.float32)
+        >>> output = ops.function.nn_func.log_softmax_ext(logits, dim=-1)
+        >>> print(output)
+        [-4.4519143 -3.4519143 -2.4519143 -1.4519144 -0.4519144]
+    """
+    log_softmax_op = _get_cache_prim(P.LogSoftmaxExt)()
+    return log_softmax_op(input, dim, dtype)
+
+
 def softmin(x, axis=-1, *, dtype=None):
     r"""
     Applies the Softmin operation to the input tensor on the specified axis.
