@@ -165,8 +165,9 @@ size_t AscendVmmAdapter::MmapDeviceMem(const size_t size, const DeviceMemPtr add
           }
         }
         used_handle_size += cached_handle_sets_.size();
-        MS_LOG(ERROR) << "Malloc physical memory failed, inuse physical memory handle size : " << used_handle_size
-                      << ", physical_handle_size_ size : " << physical_handle_size_ << ".";
+        // This may be a normal case at the memory usage boundary.
+        MS_LOG(WARNING) << "Malloc physical memory failed, inuse physical memory handle size : " << used_handle_size
+                        << ", physical_handle_size_ size : " << physical_handle_size_ << ".";
         MoveBackMappedHandle(&mapped_vmm_handle, &vmm_map_, &cached_handle_sets_);
         return 0;
       } else {
