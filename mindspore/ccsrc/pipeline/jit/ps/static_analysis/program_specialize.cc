@@ -1371,7 +1371,6 @@ const EvaluatorCacheMgrPtr FuncGraphSpecializer::GetEvalCache(const EvaluatorPtr
 
 std::pair<AbstractBasePtrList, AbstractBasePtr> FuncGraphSpecializer::BuildFromBroadedArgs(const EvaluatorPtr &eval) {
   MS_EXCEPTION_IF_NULL(eval);
-  std::unordered_set<AbstractBasePtrList, AbstractBasePtrListHasher, AbstractBasePtrListEqual> choices;
   EvalResultPtr res = nullptr;
   AbstractBasePtrList broaded_args_list;
   std::vector<AbstractBasePtrList> args_vector;
@@ -1390,6 +1389,7 @@ std::pair<AbstractBasePtrList, AbstractBasePtr> FuncGraphSpecializer::BuildFromB
   if (args_vector.size() < args_size) {
     MS_LOG(INTERNAL_EXCEPTION) << "Should have " << args_size << " or more choices, but: " << args_vector.size();
   }
+
   AbstractBasePtrList joined_args = args_vector[0];
   for (size_t i = 1; i < args_vector.size(); ++i) {
     // The args may be not joinable (AbstractScalar join with AbstractTensor), just ignore that case.
@@ -1403,7 +1403,6 @@ std::pair<AbstractBasePtrList, AbstractBasePtr> FuncGraphSpecializer::BuildFromB
     }
   }
   MS_LOG(DEBUG) << "Joined args list: " << joined_args.size() << ", " << ::mindspore::ToString(joined_args);
-
   EvaluatorCacheMgrPtr real = std::make_shared<EvaluatorCacheMgr>();
   const auto joined_eval_result = origin_eval_cache.get(joined_args);
   if (joined_eval_result != nullptr) {
@@ -1413,6 +1412,8 @@ std::pair<AbstractBasePtrList, AbstractBasePtr> FuncGraphSpecializer::BuildFromB
     eval_cache_[eval] = real;
     return std::make_pair(joined_args, joined_eval_result->abstract());
   }
+
+  std::unordered_set<AbstractBasePtrList, AbstractBasePtrListHasher, AbstractBasePtrListEqual> choices;
   for (const auto &args : args_vector) {
     broaded_args_list.clear();
     BroadenArgs(args, &broaded_args_list);
@@ -1819,6 +1820,14 @@ SpecializeStatusCode FuncGraphSpecializer::AcquireUniqueEvalResult(
     if (IsPolyFunc(func, args_abs_list)) {
       return kSpecializePoly;
     }
+    const auto partial_app_eval = eval->cast_ptr<PartialAppEvaluator>();
+    if (eval->isa<MetaFuncGraphEvaluator>() ||
+        (partial_app_eval != nullptr && partial_app_eval->evaluator()->isa<MetaFuncGraphEvaluator>())) {
+      MS_LOG(DEBUG) << "Keep poly for meta func graph specialize. evaluator: " << eval->ToString();
+      return kSpecializePoly;
+    }
+    MS_LOG(DEBUG) << "Retry poly specialize for " << eval->ToString();
+
     *res = BuildFromBroadedArgs(eval);
     if (!res->first.empty()) {
       MS_LOG(DEBUG) << "Build for generalized args_abs_list successfully.";

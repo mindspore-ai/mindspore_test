@@ -312,6 +312,8 @@ class PartialAppEvaluator : public Evaluator {
     bound_node_ = AnfNodeWeakPtr(node);
   }
 
+  const EvaluatorPtr evaluator() const { return evaluator_; }
+
   EvalResultPtr Eval(AnalysisEnginePtr, const AbstractBasePtrList &, const AnfNodeConfigPtr &) override {
     MS_LOG(INTERNAL_EXCEPTION) << "Should not be called, Run() method should be called";
   }
