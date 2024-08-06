@@ -35,9 +35,8 @@ TypePtr ErfcFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector
                                     [&input_type_id](const TypeId &type_id) { return input_type_id == type_id; });
   if (is_int_or_bool) {
     return std::make_shared<TensorType>(kFloat32);
-  } else {
-    return input_type;
   }
+  return input_type;
 }
 
 TypePtrList ErfcFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
@@ -50,9 +49,8 @@ TypePtrList ErfcFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePt
                                     [&input_type_id](const TypeId &type_id) { return input_type_id == type_id; });
   if (is_int_or_bool) {
     return {kFloat32};
-  } else {
-    return {input_type};
   }
+  return {input_type};
 }
 
 ShapeArray ErfcFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
