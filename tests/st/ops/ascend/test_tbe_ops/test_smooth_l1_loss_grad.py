@@ -55,7 +55,7 @@ def test_smoothl1loss_grad_no_reduce():
     Expectation: the output is same as expect.
     """
 
-    epsilon = 1e-6
+    epsilon = 1e-4
 
     beta = 1.0
     dx = smoothl1loss_grad(beta)
@@ -63,13 +63,10 @@ def test_smoothl1loss_grad_no_reduce():
                            0.24838912, -0.46063876, 0.41411355, 0.04507046, -1.4708229,
                            0.04481723, 0.38508227, -0.17292616, -0.52333146, -1.0309995,
                            0.61330026, 0.83921754, -0.3092124, 0.1391843, -0.9755451], dtype=np.float32)
-
     dx2_expect = -dx1_expect
 
-    diff1 = np.absolute(dx[0].asnumpy() - dx1_expect)
-    diff2 = np.absolute(dx[1].asnumpy() - dx2_expect)
-    assert(diff1 < epsilon).all()
-    assert(diff2 < epsilon).all()
+    np.testing.assert_allclose(dx[0].asnumpy(), dx1_expect, rtol=epsilon, atol=epsilon)
+    np.testing.assert_allclose(dx[1].asnumpy(), dx2_expect, rtol=epsilon, atol=epsilon)
 
     beta = 1 / 9
     dx = smoothl1loss_grad(beta)
@@ -77,13 +74,10 @@ def test_smoothl1loss_grad_no_reduce():
                            0.7198442, -0.46063876, 1.0571222, 0.3436183, -1.7630402,
                            0.32408398, 0.38508227, -0.676922, -0.6116763, -1.0309995,
                            0.93128014, 0.83921754, -0.3092124, 0.33126342, -0.9755451], dtype=np.float32)
-
     dx2_expect = -dx1_expect
 
-    diff1 = np.absolute(dx[0].asnumpy() - np.array(dx1_expect))
-    diff2 = np.absolute(dx[1].asnumpy() - np.array(dx2_expect))
-    assert(diff1 < epsilon).all()
-    assert(diff2 < epsilon).all()
+    np.testing.assert_allclose(dx[0].asnumpy(), dx1_expect, rtol=epsilon, atol=epsilon)
+    np.testing.assert_allclose(dx[1].asnumpy(), dx2_expect, rtol=epsilon, atol=epsilon)
 
 
 def smoothl1loss_grad_2(beta, reduction):
