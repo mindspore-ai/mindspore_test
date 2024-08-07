@@ -591,6 +591,12 @@ bool CollectiveManager::AssignLocalRank() {
   // When starting with msrun and adding argument '--rank_table_file', device_id of ms_context will be set from env
   // "DEVICE_ID"; here env "DEVICE_ID" is not equal to "local_rank_id_".
   if (!common::GetEnv("RANK_TABLE_FILE").empty()) {
+    if (common::GetEnv("DEVICE_ID").empty() || !common::IsStrNumeric(common::GetEnv("DEVICE_ID"))) {
+      MS_LOG(EXCEPTION)
+        << "Launching distributed job using dynamic cluster or OpenMPI, but the deive id is not imported when set env "
+           "'RANK_TABLE_FILE'. Please use msrun startup method to rearrange rank ids based on rank table file or do "
+           "not set env 'RANK_TABLE_FILE' to arrange rank ids by default.";
+    }
     MsContext::GetInstance()->set_param_inner<uint32_t>(MS_CTX_DEVICE_ID, std::stoi(common::GetEnv("DEVICE_ID")));
     MS_LOG(INFO) << "The device_id of ms_context is set to env DEVICE_ID [" << std::stoi(common::GetEnv("DEVICE_ID"))
                  << "].";

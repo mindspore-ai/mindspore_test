@@ -22,7 +22,7 @@ message RegistrationMessage {
   string host_name = 2;
   string role = 3;
   string host_ip = 4;
-  string device_id = 5;
+  uint32 device_id = 5;
 }
 
 message RegistrationRespMessage {

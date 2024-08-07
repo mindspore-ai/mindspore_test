@@ -45,6 +45,12 @@ constexpr char kRole[] = "role";
 constexpr char kRankId[] = "rank_id";
 constexpr char kDeviceId[] = "device_id";
 
+// The keys for parsed information of rank table file.
+constexpr char kRankTableServerList[] = "server_list";
+constexpr char kRankTableDevice[] = "device";
+constexpr char kRankTablePodIp[] = "pod_ip";
+constexpr char kRankTableRankId[] = "rank_id";
+
 MetaServerNode::~MetaServerNode() {
   try {
     (void)Finalize(true);
@@ -695,28 +701,34 @@ bool MetaServerNode::CheckRankIdValidation(const std::string &node_id, const std
 bool MetaServerNode::ReassignNodeRankFromRanktablefile() {
   std::string rank_table_file_path = common::GetEnv("RANK_TABLE_FILE");
   if (!rank_table_file_path.empty()) {
-    MS_LOG(INFO) << "Start reassiging rank ids for nodes according to rank table file, json file path: "
+    MS_LOG(INFO) << "Start reassigning rank ids for nodes according to rank table file, json file path: "
                  << rank_table_file_path;
     std::ifstream jsonFile(rank_table_file_path, std::ifstream::in);
     if (!jsonFile.is_open()) {
-      MS_LOG(WARNING) << "Failed to open rank table file json file. Won't reassign rank id from rank table file.";
+      MS_LOG(WARNING)
+        << "Failed to open rank table file. Won't reassign rank id based on rank table file. This may be because the "
+           "path of rank table file is incorrect or the access of json file is not permitted.";
       return false;
     }
 
     nlohmann::json rank_table_file_data;
     try {
       rank_table_file_data = nlohmann::json::parse(jsonFile);
-
       if (rank_table_file_data.is_null()) {
-        MS_LOG(WARNING) << "Failed to read data from rank table file. Won't reassign rank id from rank table file.";
+        MS_LOG(WARNING) << "Failed to read data from rank table file. Won't reassign rank id based on rank table file.";
         return false;
       }
 
       std::map<std::string, std::vector<std::string>> mapped_rank_id;
-      for (const auto &server_list : rank_table_file_data["server_list"]) {
-        std::string pod_ip = server_list["pod_ip"];
-        for (const auto &device : server_list["device"]) {
-          std::string rank_id = device["rank_id"];
+      for (const auto &server_list : rank_table_file_data[kRankTableServerList]) {
+        if (server_list.find(kRankTablePodIp) == server_list.end()) {
+          MS_LOG(WARNING) << "Cannot find key 'pod_ip' in 'server_list' from rank table file. Won't reassign rank id "
+                             "based on rank table file.";
+          return false;
+        }
+        std::string pod_ip = server_list[kRankTablePodIp];
+        for (const auto &device : server_list[kRankTableDevice]) {
+          std::string rank_id = device[kRankTableRankId];
           (void)mapped_rank_id[pod_ip].push_back(rank_id);
         }
       }
@@ -730,17 +742,22 @@ bool MetaServerNode::ReassignNodeRankFromRanktablefile() {
       for (auto &n : nodes_) {
         std::shared_ptr<NodeInfo> &node_info = n.second;
         const std::string &role = node_info->role;
-        uint32_t device_id = std::stoi(node_info->device_id);
+        uint32_t device_id = node_info->device_id;
+        if (device_id == UINT32_MAX) {
+          MS_LOG(WARNING) << "Device id is set incorrectly in the scenario where importing rank table file. Won't "
+                             "reassign rank id based on rank table file.";
+          return false;
+        }
         if (mapped_rank_id.find(node_info->host_ip) == mapped_rank_id.end()) {
-          MS_LOG(WARNING) << "Current node's HOST_IP cannot be found in rank table file. Won't reassign rank id from "
-                             "rank table file.";
+          MS_LOG(WARNING) << "Current node's HOST_IP cannot be found in rank table file. Won't reassign rank id based "
+                             "on rank table file.";
           return false;
         } else {
           if (mapped_local_rank_size[node_info->host_ip] != mapped_rank_id[node_info->host_ip].size()) {
             MS_LOG(WARNING) << "Current node's DEVICE_ID [" << mapped_local_rank_size[node_info->host_ip]
                             << "] is not equal to total number of devices ["
                             << mapped_rank_id[node_info->host_ip].size()
-                            << "] in rank table file. Won't reassign rank id from rank table file.";
+                            << "] in rank table file. Won't reassign rank id based on rank table file.";
             return false;
           } else {
             std::string new_rank = mapped_rank_id[node_info->host_ip][device_id];
@@ -754,12 +771,13 @@ bool MetaServerNode::ReassignNodeRankFromRanktablefile() {
         }
       }
     } catch (const std::exception &e) {
-      MS_LOG(WARNING) << "Rank table file is incorrect. Won't reassign rank id from rank table file. Json error: "
+      MS_LOG(WARNING) << "Rank table file is incorrect. Won't reassign rank id based on rank table file. Json error: "
                       << e.what();
       return false;
     }
+    return true;
   }
-  return true;
+  return false;
 }
 
 void MetaServerNode::ReassignNodeRank() {
@@ -773,7 +791,7 @@ void MetaServerNode::ReassignNodeRank() {
     return;
   }
 
-  MS_LOG(INFO) << "Start sorting and reassiging rank ids for nodes according to node ips and node ids.";
+  MS_LOG(INFO) << "Start sorting and reassigning rank ids for nodes according to node ips and node ids.";
   std::map<std::string, std::map<NodeKey, uint32_t>> node_ranks;
   for (auto &n : nodes_) {
     std::shared_ptr<NodeInfo> &node_info = n.second;

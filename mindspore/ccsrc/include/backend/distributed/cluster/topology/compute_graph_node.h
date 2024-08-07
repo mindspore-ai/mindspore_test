@@ -34,8 +34,14 @@ namespace topology {
 // The ComputeGraphNode is a separate process representing a sub-graph of the distributed computation graph.
 class BACKEND_EXPORT ComputeGraphNode : public NodeBase {
  public:
-  ComputeGraphNode(const std::string &node_id, const std::string &role, const std::string &device_id = "")
-      : NodeBase(node_id, role), client_ip_(""), authenticated_(false), enable_hb_(false), device_id_(device_id) {}
+  ComputeGraphNode(const std::string &node_id, const std::string &role)
+      : NodeBase(node_id, role), client_ip_(""), authenticated_(false), enable_hb_(false) {
+    uint32_t device_id = UINT32_MAX;
+    if (!common::GetEnv("DEVICE_ID").empty()) {
+      device_id = std::stoi(common::GetEnv("DEVICE_ID"));
+    }
+    device_id_ = device_id;
+  }
   ~ComputeGraphNode() override;
 
   bool Initialize() override;
@@ -114,7 +120,7 @@ class BACKEND_EXPORT ComputeGraphNode : public NodeBase {
   bool enable_hb_;
 
   // The device id of a single process.
-  std::string device_id_;
+  uint32_t device_id_;
 
   std::shared_ptr<std::function<void(void)>> abnormal_callback_;
 

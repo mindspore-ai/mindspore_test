@@ -170,7 +170,6 @@ void ClusterContext::InitClusterConfig() {
 bool ClusterContext::BuildCluster() {
   // Get node_id from environment configuration or uuid generator.
   node_id_ = common::GetEnv(kNodeId);
-  std::string device_id = common::GetEnv(kDeviceId);
   if (node_id_.length() == 0) {
     node_id_ = ps::core::CommUtil::GenerateUUID();
   }
@@ -179,7 +178,7 @@ bool ClusterContext::BuildCluster() {
     auto node_num = node_num_each_role_[kEnvRoleOfWorker] + node_num_each_role_[kEnvRoleOfServer];
     node_base_ = std::make_shared<topology::MetaServerNode>(node_id_, node_role_, node_num);
   } else {
-    node_base_ = std::make_shared<topology::ComputeGraphNode>(node_id_, node_role_, device_id);
+    node_base_ = std::make_shared<topology::ComputeGraphNode>(node_id_, node_role_);
   }
   MS_EXCEPTION_IF_NULL(node_base_);
   // For cgn, 'Initialize' will block until it connect to msn, or time out.

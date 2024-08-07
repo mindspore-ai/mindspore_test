@@ -61,7 +61,7 @@ struct NodeInfo {
   std::string role;
 
   // The device id of this cluster node.
-  std::string device_id;
+  uint32_t device_id;
 
   // The rank id of this cluster node(only for compute graph node).
   uint32_t rank_id{0};
