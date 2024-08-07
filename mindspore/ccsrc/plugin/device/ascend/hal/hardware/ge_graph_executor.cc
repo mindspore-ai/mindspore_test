@@ -670,44 +670,6 @@ void GeGraphExecutor::AddRefCorrespondPairs(const KernelGraphPtr &graph,
   graph->set_ref_out_in_map(ref_out_in_map);
 }
 
-void RemoveLoad(const FuncGraphPtr &func_graph) {
-  auto mng = func_graph->manager();
-  if (mng == nullptr) {
-    mng = Manage(func_graph, true);
-    func_graph->set_manager(mng);
-  }
-
-  auto manager = func_graph->manager();
-  if (manager == nullptr) {
-    return;
-  }
-
-  for (auto &cnode : func_graph->GetOrderedCnodes()) {
-    if (common::AnfAlgo::CheckPrimitiveType(cnode, prim::kPrimLoad)) {
-      auto node_users = manager->node_users()[cnode];
-      if (node_users.empty()) {
-        MS_LOG(WARNING) << cnode->fullname_with_scope() << " cnode is isolated.";
-        continue;
-      }
-      bool has_assign = false;
-      for (const auto &user : node_users) {
-        if (common::AnfAlgo::CheckPrimitiveType(user.first, prim::kPrimAssign)) {
-          has_assign = true;
-          break;
-        }
-      }
-      if (!has_assign) {
-        MS_LOG(INFO) << cnode->fullname_with_scope() << " `Load` node is removed.";
-        bool ret = manager->Replace(cnode, cnode->input(1));
-        if (!ret) {
-          MS_LOG(WARNING) << cnode->fullname_with_scope() << " replace redundant op failed.";
-          return;
-        }
-      }
-    }
-  }
-}
-
 bool GeGraphExecutor::CompileGraph(const FuncGraphPtr &graph, const std::map<string, string> &compile_options) {
   MS_EXCEPTION_IF_NULL(graph);
 
@@ -720,9 +682,6 @@ bool GeGraphExecutor::CompileGraph(const FuncGraphPtr &graph, const std::map<str
   MS_EXCEPTION_IF_NULL(kg);
 
   if (IsEnableRefMode()) {
-    if (IsTwoPhaseInfer()) {
-      RemoveLoad(graph);
-    }
     auto ret = CompileGraph(kg, compile_options);
     profiler::CollectHostInfo("Ascend", "CompileGraph", "GeCompileGraph_" + graph_name, 1, 0, kCollectHostInfoEnd);
     InitGEFixMemory(kg, 0);
