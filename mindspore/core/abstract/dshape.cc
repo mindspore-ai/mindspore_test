@@ -23,8 +23,7 @@
 namespace mindspore {
 namespace abstract {
 namespace {
-std::string ShapeVectorToStr(const std::vector<int64_t> &shp) {
-  std::ostringstream buffer;
+void ShapeVectorToStr(const std::vector<int64_t> &shp, std::ostringstream &buffer) {
   bool f_begin = true;
   buffer << "(";
   for (auto &x : shp) {
@@ -36,7 +35,6 @@ std::string ShapeVectorToStr(const std::vector<int64_t> &shp) {
     buffer << x;
   }
   buffer << ")";
-  return buffer.str();
 }
 }  // namespace
 
@@ -58,9 +56,11 @@ bool BaseShape::operator!=(const BaseShape &other) const { return !(*this == oth
 
 std::string TensorShape::ToString() const {
   std::ostringstream buffer;
-  buffer << ShapeVectorToStr(shape_);
+  ShapeVectorToStr(shape_, buffer);
   return buffer.str();
 }
+
+void TensorShape::ToStringWithBuffer(std::ostringstream &buffer) const { ShapeVectorToStr(shape_, buffer); }
 
 std::string TensorShape::DumpText() const {
   std::ostringstream buffer;
@@ -156,6 +156,19 @@ std::string SequenceShape::ToString() const {
     buffer << p_shp->ToString();
   }
   return buffer.str();
+}
+
+void SequenceShape::ToStringWithBuffer(std::ostringstream &buffer) const {
+  bool f_begin = true;
+  for (const auto &p_shp : p_shapes_) {
+    if (!f_begin) {
+      buffer << ", ";
+    } else {
+      f_begin = false;
+    }
+    MS_EXCEPTION_IF_NULL(p_shp);
+    p_shp->ToStringWithBuffer(buffer);
+  }
 }
 
 BaseShapePtrList SequenceShape::ElementsClone() const {

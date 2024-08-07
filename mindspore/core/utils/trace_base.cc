@@ -70,12 +70,16 @@ void ReplaceLinefeed(std::string *txt) {
   for (size_t i = 0; i < txt->length(); i++) {
     if ((*txt)[i] == lf) {
       (*txt)[i] = slash;
+      if (i + 1 < txt->length() && (*txt)[i + 1] == lf) {
+        erases.emplace_back(i + 1);
+        ++i;
+      }
     }
     if ((*txt)[i] == cr) {
       (*txt)[i] = slash;
       if (i + 1 < txt->length() && (*txt)[i + 1] == lf) {
         erases.emplace_back(i + 1);
-        i++;
+        ++i;
       }
     }
   }

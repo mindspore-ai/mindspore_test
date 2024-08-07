@@ -91,6 +91,7 @@ std::string Location::DebugString() const {
 std::string Location::ToString(SourceLineTip tip, int start_line) {
   std::stringstream debug_info_ss;
   std::stringstream section_debug_info_ss;
+  char *file_out;
   if (tip != kSourceSectionTipNextLineHere) {
     // For example,
     // the location is from {line 9, column 4}, to {line 15, column 20}:
@@ -120,26 +121,25 @@ std::string Location::ToString(SourceLineTip tip, int start_line) {
     MS_LOG(WARNING) << "The file '" << file_name_ << "' may not exists.";
     return debug_info_ss.str();
   }
-  std::ifstream file(path.value());
-  if (!file.is_open()) {
+  FILE *file = fopen(path.value().c_str(), "r");
+  if (file == NULL) {
     MS_LOG(WARNING) << "Failed to open file '" << file_name_ << "'.";
     return debug_info_ss.str();
   }
   // Read the lines one by one.
+  char line[200];
   int line_num = 0;
-  std::string line;
-  (void)getline(file, line);
-  while (line_num != line_ - 1) {
+  file_out = fgets(line, 200, file);
+  while (line_num != line_ - 1 && file_out != NULL) {
     if (tip == kSourceSectionTipNextLineHere && line_num >= start_line - 1) {
       section_debug_info_ss << line << "\n";
     }
-    (void)getline(file, line);
-    line_num++;
+    file_out = fgets(line, 200, file);
+    ++line_num;
   }
-  file.close();
+  fclose(file);
   // Store the line string as cache.
   line_str_ = line;
-
   if (tip == kSourceSectionTipNextLineHere) {
     section_debug_info_ss << HighlightLine(line, column_, column_end_, line_end_ == line_, tip) << std::endl;
     return section_debug_info_ss.str();
