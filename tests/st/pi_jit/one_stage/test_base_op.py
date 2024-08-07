@@ -730,3 +730,28 @@ def test_guard_parameter():
     assert jcr["break_count_"] == 0
     assert np.allclose(ret1.asnumpy(), (net1.w * m).asnumpy())
     assert np.allclose(ret2.asnumpy(), (net2.w * m).asnumpy())
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_dict_items_call_in_control_flow():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        @jit(mode="PIJit")
+        def construct(self, x, y, z):
+            m = {"1": x + z, "2": y - z}
+            ret = 0
+            for _, v in m.items():
+                ret = ret + v
+            return ret
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    a = Tensor([1, 2, 3])
+    b = Tensor([1, 1, 1])
+    c = Tensor([2, 2, 2])
+    net = Net()
+    ret = net(a, b, c)
+    assert np.all(ret.asnumpy() == np.array([2, 3, 4]))
