@@ -1642,46 +1642,55 @@ bool GraphBuilder::DoByteCode(const Instr &instr) {
   return true;
 }
 
-GraphBuilder::GraphBuilder(const PyFrameObject *f)
+GraphBuilder::GraphBuilder(const PyFrameWrapper &f)
     : root_(this), parent_(nullptr), graph_(nullptr), current_block_(nullptr) {
-  PyCodeObject *co = f->f_code;
-  cur_bci_ = -1;
-  int argc = co->co_argcount + co->co_kwonlyargcount;
-  argc += (co->co_flags & CO_VARARGS) ? 1 : 0;
-  argc += (co->co_flags & CO_VARKEYWORDS) ? 1 : 0;
-  int ncells = PyTuple_GET_SIZE(co->co_cellvars);
-  int nfrees = PyTuple_GET_SIZE(co->co_freevars);
-
-  graph_ = NewGraph(co, f->f_globals);
-
-  frame_.ResizeLocal(co->co_nlocals);
-  frame_.ResizeClosure(ncells + nfrees);
+  auto co_wrapper = f.GetCode();
+  PyCodeObject *co = co_wrapper.ptr();
+  int argc = co_wrapper.ArgCount();
+  int nfrees = co_wrapper.FreeVarsSize();
+  int nlocals = co->co_nlocals;
+  int fast_local_size = co_wrapper.FastLocalSize();
+  int free_offset = fast_local_size - nfrees;
+  auto varnames_release_handle = co_wrapper.VarNames();
+  PyObject *names = varnames_release_handle.ptr();
+  PyObject **fast_locals = f.FastLocal();
+  graph_ = NewGraph(co, f.Globals().ptr());
+  frame_.ResizeLocal(nlocals);
   for (int i = 0; i < argc; i++) {
-    if (f->f_localsplus[i] == nullptr) {
+    if (fast_locals[i] == nullptr) {
       continue;
     }
-    auto vo = AObject::Convert(f->f_localsplus[i]);
+    auto vo = AObject::Convert(fast_locals[i]);
     ParamNode *n = graph_->allocator().NewNode<ParamNode>(vo, i);
-    n->SetName(PyUnicode_AsUTF8(PyTuple_GET_ITEM(co->co_varnames, i)));
+    n->SetName(PyUnicode_AsUTF8(PyTuple_GET_ITEM(names, i)));
     frame_.SetLocal(i, n);
-    graph_->GetSideEffect()->data()->Track(f->f_localsplus[i], n);
+    graph_->GetSideEffect()->data()->Track(fast_locals[i], n);
   }
-  for (int i = 0; i < ncells + nfrees; i++) {
-    PyObject *cell = f->f_localsplus[co->co_nlocals + i];
+  frame_.ResizeClosure(fast_local_size - nlocals);
+  for (int fast_index = nlocals; fast_index < fast_local_size; fast_index++) {
+    PyObject *cell = fast_locals[fast_index];
+    if (cell == nullptr) {
+      continue;
+    }
+    int offset = fast_index - nlocals;
+    int oparg = IS_PYTHON_3_11_PLUS ? fast_index : offset;
+    AbstractNode::Type t = fast_index < free_offset ? AbstractNode::CellVar : AbstractNode::FreeVar;
     PyObject *cell_contents = PyCell_GET(cell);
     int oparg = i;
     CellVarNode *n = graph_->NewCellNode(AObject::Convert(cell), LOAD_CLOSURE, oparg);
     graph_->GetTracedNodes().push_back(n);
 
     frame_.SetClosure(i, n);
-    if (i < ncells && co->co_cell2arg != nullptr && co->co_cell2arg[i] != CO_CELL_NOT_AN_ARG) {
+    n->SetIndex(oparg);
+    frame_.SetClosure(offset, n);
+    if (t == AbstractNode::CellVar && co->co_cell2arg != nullptr && co->co_cell2arg[offset] != CO_CELL_NOT_AN_ARG) {
       MS_EXCEPTION_IF_NULL(cell_contents);
-      n->SetFromParam(co->co_cell2arg[i]);
+      n->SetFromParam(co->co_cell2arg[offset]);
     }
     if (cell_contents == nullptr) {
       n->SetValue(&ValueNode::kUnboundLocal);
     } else {
-      ValueNode *param = NewValueNode(AObject::Convert(cell_contents), LOAD_DEREF, i);
+      ValueNode *param = NewValueNode(AObject::Convert(cell_contents), LOAD_DEREF, oparg);
       param->SetGraph(graph_);
       n->AddCellOper(param);
       n->SetValue(param);
@@ -1698,7 +1707,7 @@ void GraphBuilder::CollectInlineInfo(CallNode *node, int depth) {
   int code_size = 0;
   if (sub_graph != nullptr && sub_graph->GetCodeObj() != nullptr) {
     inline_name = py::str(reinterpret_cast<PyObject *>(sub_graph->GetCodeObj())).cast<std::string>();
-    code_size = SizeToInt((PyBytes_GET_SIZE(sub_graph->GetCodeObj()->co_code)) / sizeof(_Py_CODEUNIT));
+    code_size = _PyCode_NBYTES(sub_graph->GetCodeObj());
   }
   std::string func_name = graph_->GetCodeName();
   std::string root_name = root_->GetGraph()->GetCodeName();
@@ -1908,6 +1917,7 @@ bool CheckSupportCreateInstance(CallNode *call_node) {
 }
 
 AObject *GraphBuilder::BuildSuperObject(PyCodeObject *co) {
+  AObject *super_obj = nullptr;
   if (co->co_argcount == 0) {
     PyErr_SetString(PyExc_RuntimeError, "super(): no arguments");
     return nullptr;
@@ -1963,7 +1973,7 @@ AObject *GraphBuilder::BuildSuperObject(PyCodeObject *co) {
   tuple_obj[0] = py_type;
   tuple_obj[1] = py_obj;
   PyObject *ret = PyObject_Call(reinterpret_cast<PyObject *>(&PySuper_Type), tuple_obj.ptr(), nullptr);
-  AObject *super_obj = AObject::Convert(ret);
+  super_obj = AObject::Convert(ret);
   Py_DECREF(ret);
   return super_obj;
 }
@@ -2087,23 +2097,19 @@ static py::object CopyPyFunc(const py::object &o) {
   MS_EXCEPTION_IF_CHECK_FAIL(PyFunction_Check(o.ptr()), "must be function");
   PyFunctionObject *func = reinterpret_cast<PyFunctionObject *>(o.ptr());
   PyCodeObject *code = reinterpret_cast<PyCodeObject *>(func->func_code);
-  PyObject *new_name = PyUnicode_FromFormat("%s%U", kPIJitCopyFuncKey, code->co_name);
-  PyCodeObject *new_code =
-    PyCode_New(code->co_argcount, code->co_kwonlyargcount, code->co_nlocals, code->co_stacksize, code->co_flags,
-               code->co_code, code->co_consts, code->co_names, code->co_varnames, code->co_freevars, code->co_cellvars,
-               code->co_filename, code->co_name, code->co_firstlineno, GetCodeLineTable(code));
-  if (new_code == nullptr || new_name == nullptr) {
+  PyObject *new_name_object = PyUnicode_FromFormat("%s%U", kPIJitCopyFuncKey, code->co_name);
+  if (new_name_object == nullptr) {
     throw py::error_already_set();
   }
-  PyObject *new_func = PyFunction_NewWithQualName(reinterpret_cast<PyObject *>(new_code), func->func_globals, new_name);
+  py::object new_name = py::reinterpret_steal<py::object>(new_name_object);
+  py::object new_code = PyCodeWrapper(code).DeepCopy();
+  PyObject *new_func = PyFunction_NewWithQualName(new_code.ptr(), func->func_globals, new_name.ptr());
   PyFunctionObject *new_ff = reinterpret_cast<PyFunctionObject *>(new_func);
   REPLACE_PY_MEMBER(new_ff->func_closure, func->func_closure);
   REPLACE_PY_MEMBER(new_ff->func_defaults, func->func_defaults);
   REPLACE_PY_MEMBER(new_ff->func_kwdefaults, func->func_kwdefaults);
   REPLACE_PY_MEMBER(new_ff->func_annotations, func->func_annotations);
 
-  Py_DECREF(new_name);
-  Py_DECREF(new_code);
   return py::reinterpret_steal<py::object>(new_func);
 }
 
@@ -2220,16 +2226,19 @@ bool GraphBuilder::ReplaceCall(CallNode *call_node, const py::object &old_func) 
   return true;
 }
 
-MindGraphBuilder::MindGraphBuilder(const PyFrameObject *f) : GraphBuilder(f) {
+MindGraphBuilder::MindGraphBuilder(const PyFrameWrapper &f) : GraphBuilder(f) {
   std::vector<std::string> comments;
-  auto location = std::make_shared<Location>(py::cast<std::string>(f->f_code->co_filename), f->f_code->co_firstlineno,
-                                             0, f->f_code->co_firstlineno, 0, "", std::move(comments));
+  auto co = f.GetCode();
+  const char *name = co.Name();
+  const char *file = co.FileName();
+  int first_line = co.FirstLine();
+
+  auto location = std::make_shared<Location>(file, first_line, 0, first_line, 0, "", std::move(comments));
   MS_EXCEPTION_IF_NULL(location);
   TraceGuard trace_guard(location);
   fg_builder_ = std::make_shared<FuncGraphBuilder>(true);
-  fg_builder_->SetGraphName(py::cast<std::string>(f->f_code->co_name) + "_" +
-                            std::to_string(f->f_code->co_firstlineno));
-  co_name_ = py::cast<std::string>(f->f_code->co_name);
+  fg_builder_->SetGraphName(std::string() + name + "_" + std::to_string(first_line));
+  co_name_ = name;
 }
 
 namespace {
@@ -2492,15 +2501,20 @@ bool GraphBuilder::UnpackCallExParams(std::vector<ValueNode *> *params, int extr
 
 bool GraphBuilder::PackKwParams(const py::object &func, std::vector<ValueNode *> *params, FrameStates *frame,
                                 std::vector<ValueNode *> *kwvargs) {
-  PyCodeObject *co = reinterpret_cast<PyCodeObject *>(PyFunction_GET_CODE(func.ptr()));
+  PyCodeWrapper co(PyFunction_GET_CODE(func.ptr()));
   AObject *keys_info = params->back()->GetVobj();
   if (params->back()->GetOpcode() != LOAD_CONST || keys_info->GetType() != AObject::kTypeTuple) {
     return false;  // other case
   }
 
-  const int posonlyargcount = GetCodePositionOnlyArgCount(co);
-  PyObject **vars = &PyTuple_GET_ITEM(co->co_varnames, 0);
-  const int argc = co->co_argcount + co->co_kwonlyargcount;
+  const int posonlyargcount = co.PositionOnlyArgCount();
+  py::object varnames = co.VarNames();
+
+  PyObject **vars = &PyTuple_GET_ITEM(varnames.ptr(), 0);
+  bool has_va;
+  bool has_kw_va;
+  int argc = co.ArgCount(&has_va, &has_kw_va);
+  argc = argc - has_va - has_kw_va;
   PyObject **kwnames = &PyTuple_GET_ITEM(keys_info->GetPyObject().ptr(), 0);
   const int k_cnt = PyTuple_GET_SIZE(keys_info->GetPyObject().ptr());
   // kwnames must be string
@@ -2533,7 +2547,7 @@ bool GraphBuilder::PackKwParams(const py::object &func, std::vector<ValueNode *>
   }
 
   params->resize(params->size() - 1 - k_cnt);
-  if (!(co->co_flags & CO_VARKEYWORDS)) {
+  if (!has_kw_va) {
     return kw_2_p_cnt == k_cnt;  // if not equal, too many key-word arguments
   }
   return true;
@@ -2567,7 +2581,8 @@ bool GraphBuilder::CheckAndSetDefaultParams(const py::object &func, FrameStates 
   PyObject *kwdefs = PyFunction_GET_KW_DEFAULTS(func.ptr());
 
   const int argc = co->co_argcount + co->co_kwonlyargcount;
-  PyObject *vars = co->co_varnames;
+  py::object varnames_release_handle = PyCodeWrapper(co).VarNames();
+  PyObject *vars = varnames_release_handle.ptr();
 
   int defs_off = defs ? co->co_argcount - PyTuple_GET_SIZE(defs) : INT_MAX;
   for (int i = position_argc; i < argc; ++i) {
@@ -2702,9 +2717,10 @@ bool GraphBuilder::HandleCallParameters(const py::object &func_info, CallNode *c
 
   MS_EXCEPTION_IF_CHECK_FAIL(params.size() == 0, "check parameters handle");
 
+  // python3.10 and lower only
   // after store all params
   // cell2arg
-  const Py_ssize_t ncells = PyTuple_GET_SIZE(co->co_cellvars);
+  const Py_ssize_t ncells = PyCodeWrapper(co).CellVarsSize();
   const Py_ssize_t *c2a_arr = co->co_cell2arg;
   for (int i = 0; c2a_arr != nullptr && i < ncells; ++i) {
     if (c2a_arr[i] != CO_CELL_NOT_AN_ARG) {
@@ -2787,11 +2803,11 @@ void GraphBuilder::ResolveClosure(const py::object &func_info, CallNode *call_no
     MS_LOG(INTERNAL_EXCEPTION) << "When resolving closure, get func_info failed.";
   }
   ValueNode *callable_node = call_node->input(0);
-  PyCodeObject *co = reinterpret_cast<PyCodeObject *>(PyFunction_GET_CODE(func_info.ptr()));
+  PyCodeWrapper co(PyFunction_GET_CODE(func_info.ptr()));
   PyObject *closure = PyFunction_GET_CLOSURE(func_info.ptr());
 
-  int ncells = PyTuple_GET_SIZE(co->co_cellvars);
-  int nfrees = PyTuple_GET_SIZE(co->co_freevars);
+  int ncells = co.CellVarsSize();
+  int nfrees = co.FreeVarsSize();
   frame->ResizeClosure(ncells + nfrees);
 
   auto TrackExtraAttrArgs = [this, &call_node](ValueNode *src, const std::string &name) {
@@ -3451,8 +3467,8 @@ bool GraphBuilder::TraceRunControl(const Instr &instr) {
 }
 
 static void EliminateCellAccess(Graph *g) {
-  PyCodeObject *co = g->GetCodeObj();
-  int ncells = PyTuple_GET_SIZE(co->co_cellvars);
+  PyCodeWrapper co(g->GetCodeObj());
+  int ncells = co.CellVarsSize();
   if (ncells == 0) {
     return;
   }
@@ -3519,7 +3535,7 @@ StopTraceReason GraphBuilder::TraceRun() {
 }
 
 extern void AddConfigToGuard(const GraphJitConfig &c, OptGuardPtr guard);
-extern void AddGuardForParam(const PyFrameObject *f, OptGuardPtr guard, bool detach);
+extern void AddGuardForParam(const PyFrameWrapper &f, OptGuardPtr guard, bool detach);
 
 /**
  * Generate a graph from callable, this function will actually create python frame
@@ -3531,15 +3547,17 @@ static std::unique_ptr<GraphBuilder> GenerateRootGraph(const py::object &callabl
     PyErr_Clear();
     return nullptr;
   }
-  auto jcr = JitCompileResults::Create(frame->f_code);
+  PyFrameWrapper ef(FrameConvert(frame));
+  PyCodeObject *co = ef.GetCode().ptr();
+  auto jcr = JitCompileResults::Create(co);
   jcr->set_conf(std::make_shared<GraphJitConfig>(conf));
   jcr->set_code(jcr->codehub()->AddOptTarget(OptOption::CreateOptionByPoint(jcr)));
 
-  auto res = std::make_unique<GraphBuilder>(frame);
+  auto res = std::make_unique<GraphBuilder>(ef);
 
   auto code = res->GetGraph()->GetGuard();
   AddConfigToGuard(conf, code->GetGuard());
-  AddGuardForParam(frame, code->GetGuard(), conf.GetBoolConfig(GraphJitConfig::kGuardDetachObject));
+  AddGuardForParam(ef, code->GetGuard(), conf.GetBoolConfig(GraphJitConfig::kGuardDetachObject));
 
   Py_DECREF(frame);
   return res;

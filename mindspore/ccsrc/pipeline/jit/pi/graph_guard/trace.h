@@ -21,7 +21,7 @@
 #include <vector>
 #include <map>
 #include <functional>
-#include "pipeline/jit/pi/pydef.h"
+#include "pipeline/jit/pi/python_adapter/pydef.h"
 #include "pybind11/pybind11.h"
 #include "pipeline/jit/pi/graph_guard/info.h"
 

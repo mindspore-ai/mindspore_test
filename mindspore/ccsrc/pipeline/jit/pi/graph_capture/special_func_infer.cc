@@ -360,12 +360,13 @@ static py::object FindClosure(const py::object &o, const std::vector<std::string
   if (!PyFunction_Check(func)) {
     return py::object();
   }
-  PyCodeObject *co = reinterpret_cast<PyCodeObject *>(PyFunction_GET_CODE(func));
+  PyCodeWrapper co(PyFunction_GET_CODE(func));
   PyObject *closure = PyFunction_GET_CLOSURE(func);
-  Py_ssize_t i = PyTuple_GET_SIZE(co->co_freevars) - 1;
+  auto freevar_names = co.FreeVars();
+  Py_ssize_t i = PyTuple_GET_SIZE(freevar_names.ptr()) - 1;
   bool find = false;
   for (; i >= 0 && !find; --i) {
-    std::string name = PyUnicode_AsUTF8(PyTuple_GET_ITEM(co->co_freevars, i));
+    std::string name = PyUnicode_AsUTF8(PyTuple_GET_ITEM(freevar_names.ptr(), i));
     find = std::find(names.begin(), names.end(), name) != names.end();
   }
   if (!find) {

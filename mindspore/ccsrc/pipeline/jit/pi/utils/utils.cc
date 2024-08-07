@@ -18,11 +18,12 @@
 #include <iomanip>
 #include "ir/tensor.h"
 #include "ir/map_tensor.h"
-#include "pipeline/jit/pi/pydef.h"
+#include "pipeline/jit/pi/python_adapter/pydef.h"
 #include "pybind11/pybind11.h"
 #include "utils/log_adapter.h"
 #include "pipeline/jit/pi/utils/opcode_util.h"
 #include "runtime/hardware/device_context_manager.h"
+#include "pipeline/jit/pi/utils/opcode_declare.h"
 
 namespace mindspore {
 namespace pijit {
@@ -230,17 +231,14 @@ std::pair<py::object, py::object> Utils::PackCallStackArgs(const std::vector<py:
   return {pargs, kwargs};
 }
 
-#if (PY_MAJOR_VERSION == 3) && (PY_MINOR_VERSION < 9)
-PyObject *RetFrame(PyFrameObject *f, int) {
-  Py_INCREF(f);
-  return reinterpret_cast<PyObject *>(f);
+PyObject *RetFrame(PY_FRAME_EVAL_FUNCTION_SIGNATURE) {
+  if (std::is_same<std::remove_pointer<decltype(f)>::type, PyFrameObject>::value) {
+    Py_INCREF(f);
+    return reinterpret_cast<PyObject *>(f);
+  }
+  MS_LOG(ERROR) << "python3.11 not implement prepare frame";
+  return nullptr;
 }
-#else
-PyObject *RetFrame(PyThreadState *, PyFrameObject *f, int) {
-  Py_INCREF(f);
-  return reinterpret_cast<PyObject *>(f);
-}
-#endif
 
 PyFrameObject *Utils::PrepareFrame(PyObject *callable, PyObject *args, PyObject *kwargs) {
   if (callable == nullptr || args == nullptr) {
@@ -254,8 +252,6 @@ PyFrameObject *Utils::PrepareFrame(PyObject *callable, PyObject *args, PyObject 
   if (frame != nullptr) {
     return reinterpret_cast<PyFrameObject *>(frame);
   }
-  MS_LOG(DEBUG) << "prepare frame for " << std::string(py::str(callable)) << " failed because "
-                << Utils::ReportPythonException();
   return nullptr;
 }
 

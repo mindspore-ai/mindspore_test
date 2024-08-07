@@ -33,6 +33,7 @@
 #include "pipeline/jit/pi/graph_capture/abstract_object.h"
 #include "pipeline/jit/pi/pi_jit_config.h"
 #include "pipeline/jit/pi/external.h"
+#include "pipeline/jit/pi/utils/opcode_declare.h"
 
 namespace mindspore {
 namespace pijit {
@@ -2678,9 +2679,8 @@ PyObject *GetObjectFromTrace(const PyFrameObject *frame, TracePtr trace, std::ma
                           frame->f_localsplus, frame->f_code,     cache};
   if (trace != nullptr) {
     return trace->Retrieve(&context, perf);
-  } else {
-    return nullptr;
   }
+  return nullptr;
 }
 }  // namespace pijit
 }  // namespace mindspore

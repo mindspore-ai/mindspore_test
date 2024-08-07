@@ -19,12 +19,14 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <set>
 #include "pybind11/pybind11.h"
 #include "pybind_api/ir/primitive_py.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "pipeline/jit/ps/pipeline.h"
 #include "pipeline/jit/pi/utils/utils.h"
-#include "pipeline/jit/pi/pydef.h"
+#include "pipeline/jit/pi/python_adapter/pydef.h"
+#include "pipeline/jit/pi/utils/opcode_declare.h"
 
 namespace mindspore {
 namespace pijit {
@@ -49,7 +51,7 @@ OptStrategy::ExecKind OptStrategy::MakeExecStrategyByPerf(OptPerfPtr graph_perf,
 OptStrategy::ExecKind OptStrategy::MakeExecStrategyByComplex(PyCodeObject *co, int threshold) {
   // currently just use instruction count to judge whether to use graph build
   // later it need cost model to make judgement here
-  if (co != nullptr && SizeToInt(PyBytes_GET_SIZE(co->co_code) / sizeof(_Py_CODEUNIT)) < threshold) {
+  if (co != nullptr && _PyCode_NBYTES(co) < threshold) {
     return ExecKind::kExecPyNative;
   } else {
     return ExecKind::kExecGraph;
@@ -302,13 +304,13 @@ OptStrategy::CalcKind OptStrategy::MakeCalcStrategyByShape(const ShapeVector &sh
   }
 }
 
-OptCodeSet OptStrategy::MakeGuardListStrategyByFrame(const PyFrameObject *frame, const OptCodeSet &codes) {
+OptCodeSet OptStrategy::MakeGuardListStrategyByFrame(const OptCodeSet &codes) {
   OptCodeSet ret;
   std::transform(codes.begin(), codes.end(), std::back_inserter(ret), [](const OptCodePtr &code) { return code; });
   return ret;
 }
 
-GuardItemVector OptStrategy::MakeGuardItemListStrategyByFrame(const PyFrameObject *frame, const GuardItemVector &list) {
+GuardItemVector OptStrategy::MakeGuardItemListStrategyByFrame(const GuardItemVector &list) {
   GuardItemVector ret;
   std::transform(list.begin(), list.end(), std::back_inserter(ret), [](const GuardItemPtr &code) { return code; });
   return ret;

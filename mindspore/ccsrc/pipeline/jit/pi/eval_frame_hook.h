@@ -17,19 +17,19 @@
 #define MINDSPORE_PI_JIT_EVAL_FRAME_HOOK_H
 
 #include <vector>
-#include "pybind11/pybind11.h"
+#include "pipeline/jit/pi/python_adapter/py_frame.h"
 
 namespace mindspore {
 namespace pijit {
 
 class PyFrameEvalHookManager {
  public:
-  using Hook = bool (*)(PyThreadState *, PyFrameObject *, PyObject **result);
+  using Hook = bool (*)(PyThreadState *, EvalFrameObject *, PyObject **result);
 
   static PyFrameEvalHookManager *GetInstance();
 
   void Register(Hook f) { func_.push_back(f); }
-  PyObject *RunHook(PyThreadState *, PyFrameObject *);
+  PyObject *RunHook(PyThreadState *, EvalFrameObject *);
 
  private:
   PyFrameEvalHookManager();

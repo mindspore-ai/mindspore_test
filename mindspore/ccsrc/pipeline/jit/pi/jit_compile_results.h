@@ -21,7 +21,7 @@
 #include <list>
 #include <string>
 #include <memory>
-#include "pybind11/pybind11.h"
+#include "pipeline/jit/pi/python_adapter/py_frame.h"
 #include "pipeline/jit/pi/graph_guard/cache.h"
 #include "pipeline/jit/pi/pi_jit_config.h"
 #include "pipeline/jit/pi/utils/utils.h"
@@ -111,7 +111,7 @@ class JitCompileResults {
   };
 
   State stat() const { return stat_; }
-  PyFrameObject *origin_frame() const { return reinterpret_cast<PyFrameObject *>(compile_frame_.ptr()); }
+  const auto &origin_frame() const { return compile_frame_; }
   const auto &input_signature() const { return input_signature_; }
   const auto &code() const { return code_; }
   const auto &codehub() const { return codehub_; }
@@ -122,7 +122,7 @@ class JitCompileResults {
 
   void set_stat(State s);
   void set_input_signature(const py::object &sig) { input_signature_ = sig; }
-  void set_origin_frame(PyFrameObject *f) { compile_frame_ = py::cast<py::object>(reinterpret_cast<PyObject *>(f)); }
+  void set_origin_frame(EvalFrameObject *f) { compile_frame_ = PyFrameWrapper(f); }
   void set_code(const OptCodePtr &p) { code_ = p; }
   void set_codehub(const OptCodeHubPtr &p) { codehub_ = p; }
   void set_tbs(const std::shared_ptr<Traceback> &t) { tbs_ = t; }
@@ -134,7 +134,7 @@ class JitCompileResults {
   JitCompileResults();
   ~JitCompileResults();
 
-  py::object compile_frame_;
+  PyFrameWrapper compile_frame_;
   py::object input_signature_;
   State stat_;
 

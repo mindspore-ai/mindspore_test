@@ -17,17 +17,15 @@
 #define MINDSPORE_PI_JIT_RUNTIME_H
 
 #include <vector>
-#include "pipeline/jit/pi/pydef.h"
+#include "pipeline/jit/pi/python_adapter/pydef.h"
 #include "pipeline/jit/pi/jit_compile_results.h"
 
 namespace mindspore {
 namespace pijit {
 namespace py = pybind11;
 
-std::vector<py::object> PackArgs(const PyFrameObject *frame);
-
-void AutoGrad(PyFrameObject *f, PyObject *ret);
-PyObject *CallCodeHook(PyThreadState *tstate, PyFrameObject *f, JitCompileResults *c);
+void AutoGrad(EvalFrameObject *f, PyObject *ret);
+PyObject *CallCodeHook(PyThreadState *tstate, EvalFrameObject *f, JitCompileResults *c);
 
 }  // namespace pijit
 }  // namespace mindspore

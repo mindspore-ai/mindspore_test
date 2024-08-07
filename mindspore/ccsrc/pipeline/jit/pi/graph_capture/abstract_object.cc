@@ -21,7 +21,8 @@
 #include <memory>
 #include "utils/log_adapter.h"
 #include "pipeline/jit/pi/utils/utils.h"
-#include "pipeline/jit/pi/pydef.h"
+#include "pipeline/jit/pi/python_adapter/pydef.h"
+#include "pipeline/jit/pi/python_adapter/py_code.h"
 #include "pipeline/jit/pi/graph_guard/infer.h"
 #include "pipeline/jit/pi/graph_compiler/utils.h"
 #include "pipeline/jit/pi/graph_compiler/pi_ir/ctrl_flow.h"
@@ -32,6 +33,7 @@
 #include "pipeline/jit/ps/parse/data_converter.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "include/common/utils/convert_utils_py.h"
+#include "pipeline/jit/pi/utils/opcode_declare.h"
 
 namespace mindspore {
 namespace pijit {
@@ -328,7 +330,7 @@ AObject *AbstractObjectBase::MakeFunction(const std::vector<AObject *> &args, co
   MS_EXCEPTION_IF_CHECK_FAIL(func, "MAKE_FUNCTION failed");
   if (IntToSize(oparg) & 0x08) {
     func->func_closure = (*iter--).inc_ref().ptr();
-    Py_ssize_t nfrees = PyTuple_GET_SIZE(reinterpret_cast<PyCodeObject *>(code)->co_freevars);
+    Py_ssize_t nfrees = PyCodeWrapper(code).FreeVarsSize();
     bool is_valid = func->func_closure && nfrees == PyTuple_GET_SIZE(func->func_closure);
     MS_EXCEPTION_IF_CHECK_FAIL(is_valid, "must be has python objects, and it is tuple of cell objects");
   }

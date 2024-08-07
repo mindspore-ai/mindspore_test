@@ -13,17 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_PI_JIT_PYDEF_H
-#define MINDSPORE_PI_JIT_PYDEF_H
+#ifndef MINDSPORE_PI_JIT_PYTHON_ADAPTER_PYDEF_H
+#define MINDSPORE_PI_JIT_PYTHON_ADAPTER_PYDEF_H
 
-#define PY_SSIZE_T_CLEAN
-#include <Python.h>
-#include "pybind11/pybind11.h"
-#include "pipeline/jit/pi/utils/opcode_declare.h"
+#include "pipeline/jit/pi/python_adapter/py_macro.h"
 
 #if (PY_MAJOR_VERSION == 3) && (PY_MINOR_VERSION < 9)
-
-#define Py_IS_TYPE(ob, type) Py_TYPE(ob) == type
 
 extern "C" {
 typedef PyObject *(*_PyFrameEvalFunction)(PyFrameObject *, int);
@@ -44,20 +39,19 @@ inline PyObject *PyObject_Vectorcall(PyObject *func, PyObject *const *stack, Py_
 }
 #endif
 
-inline auto GetCodeLineTable(PyCodeObject *co) {
-#if (PY_MAJOR_VERSION == 3) && (PY_MINOR_VERSION < 10)
-  return co->co_lnotab;
+#if IS_PYTHON_3_11_PLUS
+using EvalFrameObject = _PyInterpreterFrame;
 #else
-  return co->co_linetable;
-#endif
-}
+using EvalFrameObject = PyFrameObject;
+#endif  // IS_PYTHON_3_11_PLUS
 
-inline auto GetCodePositionOnlyArgCount(PyCodeObject *co) {
-#if (PY_MAJOR_VERSION == 3) && (PY_MINOR_VERSION > 7)
-  return co->co_posonlyargcount;
+#if IS_PYTHON_3_11_PLUS
+#define PY_FRAME_EVAL_FUNCTION_SIGNATURE PyThreadState *ts, _PyInterpreterFrame *f, int exc
+#elif IS_PYTHON_3_9_PLUS
+#define PY_FRAME_EVAL_FUNCTION_SIGNATURE PyThreadState *ts, PyFrameObject *f, int exc
 #else
-  return 0;
+#define PY_FRAME_EVAL_FUNCTION_SIGNATURE PyFrameObject *f, int exc
+#define PY_FRAME_EVAL_FUNCTION_DECLARE_THREAD_STATE() PyThreadState *ts = PyThreadState_Get()
 #endif
-}
 
 #endif

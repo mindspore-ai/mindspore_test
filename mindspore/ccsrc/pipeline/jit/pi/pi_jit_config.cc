@@ -19,7 +19,7 @@
 #include "utils/log_adapter.h"
 #include "pipeline/jit/pi/external.h"
 #include "pipeline/jit/pi/utils/utils.h"
-#include "pipeline/jit/pi/pydef.h"
+#include "pipeline/jit/pi/python_adapter/pydef.h"
 
 namespace mindspore {
 namespace pijit {

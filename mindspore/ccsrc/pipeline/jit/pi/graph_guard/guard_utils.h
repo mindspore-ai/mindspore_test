@@ -22,7 +22,7 @@
 #include <string>
 #include <utility>
 #include <tuple>
-#include "pipeline/jit/pi/pydef.h"
+#include "pipeline/jit/pi/python_adapter/pydef.h"
 #include "include/common/utils/python_adapter.h"
 #include "pipeline/jit/pi/graph_guard/trace.h"
 #include "utils/convert_utils_base.h"
