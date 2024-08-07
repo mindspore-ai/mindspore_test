@@ -65,13 +65,13 @@ def run_e2e_dump(test_key="test_e2e_dump"):
         add(Tensor(x), Tensor(y))
         if context.get_context("device_target") == "Ascend":
             assert len(os.listdir(dump_file_path)) == 3
-            output_name = "Add.Default_Add-op*.0.0.*.output.0.DefaultFormat.npy"
+            output_name = "Add.Default_Add-op*.0.0.*.output.0.DefaultFormat.*.npy"
         elif context.get_context("device_target") == "CPU":
             assert len(os.listdir(dump_file_path)) == 5
-            output_name = "Add.Default_Add-op*.0.0.*.output.0.DefaultFormat.npy"
+            output_name = "Add.Default_Add-op*.0.0.*.output.0.DefaultFormat.*.npy"
         else:
             assert len(os.listdir(dump_file_path)) == 3
-            output_name = "Add.Default_Add-op*.0.0.*.output.0.DefaultFormat.npy"
+            output_name = "Add.Default_Add-op*.0.0.*.output.0.DefaultFormat.*.npy"
         output_path = glob.glob(os.path.join(dump_file_path, output_name))[0]
         real_path = os.path.realpath(output_path)
         output = np.load(real_path)
@@ -359,7 +359,7 @@ def run_constant_e2e_dump():
         assert os.path.exists(constant_path)
         assert len(os.listdir(constant_path)) == 1
 
-        output_name = "Parameter.data-*.0.0.*.DefaultFormat.npy"
+        output_name = "Parameter.data-*.0.0.*.DefaultFormat.*.npy"
         output_path = glob.glob(os.path.join(constant_path, output_name))[0]
         real_path = os.path.realpath(output_path)
         output = np.load(real_path)

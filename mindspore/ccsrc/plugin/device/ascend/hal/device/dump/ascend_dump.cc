@@ -80,7 +80,8 @@ const std::map<ProtoDataType, mindspore::TypeId> kDataTypetoMSTypeMap = {
   {ProtoDataType::DT_STRING, mindspore::TypeId::kObjectTypeString},
   {ProtoDataType::DT_BF16, mindspore::TypeId::kNumberTypeBFloat16},
   {ProtoDataType::DT_COMPLEX64, mindspore::TypeId::kNumberTypeComplex64},
-  {ProtoDataType::DT_COMPLEX128, mindspore::TypeId::kNumberTypeComplex128}};
+  {ProtoDataType::DT_COMPLEX128, mindspore::TypeId::kNumberTypeComplex128},
+  {ProtoDataType::DT_INT4, mindspore::TypeId::kNumberTypeInt4}};
 
 inline uint64_t UnpackUint64Value(const char *ptr) {
 #if defined(__APPLE__)
@@ -258,8 +259,9 @@ bool AscendAsyncDump::DumpTensorStatsIfNeeded(const dump_data_t &dump_tensor_inf
   std::string stream_id = file_name.substr(third_dot + 1, fourth_dot - third_dot - 1);
   std::string timestamp = file_name.substr(fourth_dot + 1);
   std::shared_ptr<TensorData> data = std::make_shared<TensorData>();
-  if (dump_tensor_info.data_type <= TypeId::kNumberTypeBegin ||
-      dump_tensor_info.data_type >= TypeId::kNumberTypeComplex64) {
+  if ((dump_tensor_info.data_type <= TypeId::kNumberTypeBegin ||
+       dump_tensor_info.data_type >= TypeId::kNumberTypeComplex64) &&
+      dump_tensor_info.data_type != TypeId::kNumberTypeInt4) {
     MS_LOG(ERROR) << "Data type of operator " << file_name << " is not supported by statistic dump. The data type is: "
                   << TypeIdToString(dump_tensor_info.data_type, true);
     return false;
@@ -295,15 +297,26 @@ bool AscendAsyncDump::DumpTensorDataIfNeeded(const dump_data_t &dump_tensor_info
   if (!DumpJsonParser::GetInstance().IsTensorDump()) {
     return true;
   }
+  std::string type_str = TypeIdToString(dump_tensor_info.data_type);
+  transform(type_str.begin(), type_str.end(), type_str.begin(), tolower);
   // dump_path: dump_dir/op_type.op_name.task_id.stream_id.timestamp
   std::ostringstream dump_path_ss;
   dump_path_ss << dump_tensor_info.dump_file_path << "." << dump_tensor_info.in_out_str << "." << dump_tensor_info.slot
-               << "." << dump_tensor_info.format;
+               << "." << dump_tensor_info.format << "." << type_str;
   std::string dump_path_slot = dump_path_ss.str();
   std::shared_ptr<tensor::Tensor> trans_buf = nullptr;
   if (dump_tensor_info.trans_buf) {
     if (dump_tensor_info.trans_buf->data_type_c() == TypeId::kNumberTypeBFloat16) {
       trans_buf = std::make_shared<tensor::Tensor>(*dump_tensor_info.trans_buf, TypeId::kNumberTypeFloat32);
+    } else if (dump_tensor_info.trans_buf->data_type_c() == TypeId::kNumberTypeInt4) {
+      auto tensor_int8 =
+        std::make_shared<tensor::Tensor>(TypeId::kNumberTypeInt8, dump_tensor_info.trans_buf->shape_c());
+      bool split_succeed = SplitInt8ToInt4x2(dump_tensor_info.trans_buf->data_c(), dump_tensor_info.trans_buf->Size(),
+                                             tensor_int8->data_c(), tensor_int8->DataSize());
+      if (!split_succeed) {
+        return false;
+      }
+      trans_buf = tensor_int8;
     } else {
       trans_buf = dump_tensor_info.trans_buf;
     }
@@ -311,6 +324,14 @@ bool AscendAsyncDump::DumpTensorDataIfNeeded(const dump_data_t &dump_tensor_info
     std::shared_ptr<tensor::Tensor> bfloat16_tensor = std::make_shared<tensor::Tensor>(
       dump_tensor_info.data_type, dump_tensor_info.host_shape, dump_tensor_info.data_ptr, dump_tensor_info.data_size);
     trans_buf = std::make_shared<tensor::Tensor>(*bfloat16_tensor, TypeId::kNumberTypeFloat32);
+  } else if (dump_tensor_info.data_type == TypeId::kNumberTypeInt4) {
+    auto tensor_int8 = std::make_shared<tensor::Tensor>(TypeId::kNumberTypeInt8, dump_tensor_info.host_shape);
+    bool split_succeed = SplitInt8ToInt4x2(dump_tensor_info.data_ptr, dump_tensor_info.data_size, tensor_int8->data_c(),
+                                           tensor_int8->DataSize());
+    if (!split_succeed) {
+      return false;
+    }
+    trans_buf = tensor_int8;
   }
   bool dump_succ = false;
   if (trans_buf) {

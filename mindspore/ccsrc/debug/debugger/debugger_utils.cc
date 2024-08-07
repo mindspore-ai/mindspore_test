@@ -15,6 +15,7 @@
  */
 
 #include "debug/debugger/debugger_utils.h"
+#include <algorithm>
 #include <memory>
 #include <set>
 #include <string>
@@ -343,7 +344,11 @@ inline std::shared_ptr<TensorData> PrepareStatTensorData(mindspore::tensor::Tens
   std::shared_ptr<TensorData> tensor_data = std::make_shared<TensorData>();
   tensor_data->SetTensor(out_tensor);
   tensor_data->SetDataPtr(static_cast<char *>(out_tensor->data_c()));
-  tensor_data->SetByteSize(LongToSize(out_tensor->data().nbytes()));
+  auto byte_size = LongToSize(out_tensor->data().nbytes());
+  if (tensor_info.host_type == kNumberTypeInt4) {
+    byte_size = byte_size / 2;
+  }
+  tensor_data->SetByteSize(byte_size);
   tensor_data->SetType(tensor_info.host_type);
   tensor_data->SetShape(out_tensor->shape());
   tensor_data->SetFormat(tensor_info.format);
@@ -352,7 +357,16 @@ inline std::shared_ptr<TensorData> PrepareStatTensorData(mindspore::tensor::Tens
 
 void DumpTensorToFile(std::string file_path, mindspore::tensor::TensorPtr out_tensor, TypeId host_type,
                       size_t host_size, ShapeVector host_shape) {
-  if (host_type == TypeId::kNumberTypeBFloat16) {
+  if (host_type == kNumberTypeInt4) {
+    auto int8_tensor = std::make_shared<tensor::Tensor>(TypeId::kNumberTypeInt8, host_shape);
+    bool split_succeed =
+      SplitInt8ToInt4x2(out_tensor->data_c(), host_size, int8_tensor->data_c(), int8_tensor->DataSize());
+    if (!split_succeed) {
+      return;
+    }
+    DumpJsonParser::DumpToFile(file_path, int8_tensor->data_c(), int8_tensor->Size(), int8_tensor->shape_c(),
+                               static_cast<TypeId>(int8_tensor->data_type_c()));
+  } else if (host_type == TypeId::kNumberTypeBFloat16) {
     std::shared_ptr<tensor::Tensor> float32_tensor =
       std::make_shared<tensor::Tensor>(*out_tensor, TypeId::kNumberTypeFloat32);
     DumpJsonParser::DumpToFile(file_path, float32_tensor->data_c(), float32_tensor->Size(), float32_tensor->shape_c(),
@@ -383,8 +397,11 @@ void LaunchDumpCallback(const std::vector<TensorInfoForDump> &tensor_info_list, 
       }
 
       uint64_t timestamp = Common::GetTimeStamp();
+      std::string type_str = TypeIdToString(host_type);
+      transform(type_str.begin(), type_str.end(), type_str.begin(), tolower);
       std::string file_path = tensor_info_comm.file_path_prefix + '.' + std::to_string(timestamp) + '.' +
-                              tensor_info.io + '.' + std::to_string(tensor_info.io_index) + '.' + tensor_info.format;
+                              tensor_info.io + '.' + std::to_string(tensor_info.io_index) + '.' + tensor_info.format +
+                              "." + type_str;
 
       auto host_shape = tensor_info.host_shape;
       mindspore::tensor::TensorPtr out_tensor = std::make_shared<tensor::Tensor>(host_type, host_shape);
@@ -395,14 +412,20 @@ void LaunchDumpCallback(const std::vector<TensorInfoForDump> &tensor_info_list, 
         continue;
       }
       size_t device_size = tensor_info.device_size;
+      if (host_type == kNumberTypeInt4) {
+        host_size /= 2;
+        device_size /= 2;
+      }
       if (host_size > device_size) {
         MS_LOG(ERROR) << "Dump host size " << host_size << " greater than device size " << device_size;
         continue;
       }
       auto ret_rt_memcpy = tensor_info.device_tensor->CallAclrtMemcpy(out_tensor->data_c(), host_size,
-                                                                      tensor_info.device_ptr, tensor_info.device_size);
+                                                                      tensor_info.device_ptr, device_size);
       MS_LOG(DEBUG) << "Callback aclrtmemcpy for " << file_path << ". result is: " << ret_rt_memcpy << file_path;
 
+      // Tensor must be saved before statistic. Because the tensor would be changed in DumpTensorStatsToFile when data
+      // type is int4, if tensor saved after statistic, the tensor value would be wrong.
       if (dump_tensor) {
         DumpTensorToFile(file_path, out_tensor, host_type, host_size, host_shape);
       }
