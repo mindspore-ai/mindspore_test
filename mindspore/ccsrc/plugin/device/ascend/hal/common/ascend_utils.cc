@@ -195,6 +195,10 @@ bool GenerateAclInitJson(const string &json_file_path) {
 }  // namespace
 
 bool EnableLccl() {
+  auto ascend_soc_version = MsContext::GetInstance()->ascend_soc_version();
+  if (ascend_soc_version != "ascend910b") {
+    return false;
+  }
   std::string enable_lccl_env = "off";
   if (MsContext::GetInstance()->IsEnableInferBoost()) {
     enable_lccl_env = common::GetEnv("MS_ENABLE_LCCL", "on");
