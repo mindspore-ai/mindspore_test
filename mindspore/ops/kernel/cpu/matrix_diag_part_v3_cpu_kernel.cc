@@ -34,6 +34,8 @@ constexpr size_t kMatrixDiagPartV3InputsNum = 3;
 constexpr size_t kMatrixDiagPartV3OutputsNum = 1;
 constexpr int64_t kParallelArrayNumSameShape = 2048;  // all cores running if data size is too large
 constexpr int64_t ZERO = 0;
+constexpr int64_t kNumber1 = 1;
+constexpr int64_t kNumber2 = 2;
 static std::pair<int64_t, int64_t> ComputeTwo(int64_t diag_index, int64_t max_diag_len, int64_t num_rows,
                                               int64_t num_cols, bool align_superdiag, bool align_subdiag) {
   bool left_align = (diag_index >= ZERO && align_superdiag) || (diag_index <= ZERO && align_subdiag);
@@ -112,6 +114,14 @@ bool MatrixDiagPartV3CpuKernelMod::LaunchKernel(const std::vector<kernel::Kernel
   upper_diag_index_ = k_Data[0];
   if (k_len == k_len_max) {
     upper_diag_index_ = k_Data[1];
+  }
+  auto rank = SizeToLong(x_shape_.size());
+  int64_t row = x_shape_[LongToSize(rank - kNumber2)];
+  int64_t col = x_shape_[LongToSize(rank - kNumber1)];
+  if (!(upper_diag_index_ > -row && upper_diag_index_ < col)) {
+    MS_LOG(EXCEPTION) << "For MaxtrixDiagPartV3, the value of k must be in (-x.shape[-2], x.shape[-1],"
+                      << " meaning the value of k must be in (" << -row << ", " << col << ") in this case"
+                      << ", but got " << upper_diag_index_ << ".";
   }
   if (!(lower_diag_index <= upper_diag_index_)) {
     MS_LOG(EXCEPTION) << "For MatrixDiagPartV3, k[0] can not be larger than k[1] . ,received " << lower_diag_index

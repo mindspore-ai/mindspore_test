@@ -31,6 +31,8 @@ BaseShapePtr ExpandDimsFuncImpl::InferShape(const PrimitivePtr &primitive,
 
   auto input_x_rank = input_x_shape_vec.size();
   auto output_rank = input_x_rank + 1;
+
+  MS_EXCEPTION_IF_NULL(input_args[kIndex1]);
   auto axis_value = input_args[kIndex1]->GetValue();
   auto axis_value_scalar = GetScalarValue<int64_t>(axis_value);
 
