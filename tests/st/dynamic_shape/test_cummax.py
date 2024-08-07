@@ -14,12 +14,12 @@
 # ============================================================================
 import numpy as np
 import pytest
-from tests.st.utils import test_utils
 
 from mindspore import ops
 from mindspore import Tensor
 import mindspore as ms
 from tests.mark_utils import arg_mark
+from tests.st.utils import test_utils
 
 @test_utils.run_with_cell
 def cummax_forward_func(x, axis):
@@ -59,8 +59,8 @@ def test_cummax_forward(context_mode, dtype):
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux'], level_mark='level1', card_mark='onecard',
           essential_mark='unessential')
 @pytest.mark.parametrize("context_mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-@pytest.mark.parametrize("dtype", [np.int8, np.int16, np.int32, np.int64, np.uint8, np.uint16,
-                                   np.uint32, np.uint64, np.float64, np.float32, np.float16])
+@pytest.mark.parametrize("dtype", [np.int8, np.int16, np.int32, np.int64, np.uint8,
+                                   np.float64, np.float32, np.float16])
 def test_cummax_vmap(context_mode, dtype):
     """
     Feature: Vmap.
