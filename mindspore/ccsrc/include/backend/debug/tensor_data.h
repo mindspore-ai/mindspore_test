@@ -234,10 +234,10 @@ class TensorData {
 
   std::string GetTypeString() const {
     const std::map<DbgDataType, std::string> kDbgDataTypeToStringMap = {
-      {DT_BOOL, "bool"},        {DT_INT8, "int8"},       {DT_INT16, "int16"},     {DT_INT32, "int32"},
-      {DT_INT64, "int64"},      {DT_UINT8, "uint8"},     {DT_UINT16, "uint16"},   {DT_UINT32, "uint32"},
-      {DT_UINT64, "uint64"},    {DT_FLOAT16, "float16"}, {DT_FLOAT32, "float32"}, {DT_FLOAT64, "float64"},
-      {DT_BFLOAT16, "bfloat16"}};
+      {DT_BOOL, "bool"},         {DT_INT8, "int8"},       {DT_INT16, "int16"},     {DT_INT32, "int32"},
+      {DT_INT64, "int64"},       {DT_UINT8, "uint8"},     {DT_UINT16, "uint16"},   {DT_UINT32, "uint32"},
+      {DT_UINT64, "uint64"},     {DT_FLOAT16, "float16"}, {DT_FLOAT32, "float32"}, {DT_FLOAT64, "float64"},
+      {DT_BFLOAT16, "bfloat16"}, {DT_INT4, "int4"}};
     auto iter_type = kDbgDataTypeToStringMap.find(data_type_);
     if (iter_type == kDbgDataTypeToStringMap.end()) {
       return std::string();
@@ -259,6 +259,10 @@ class TensorData {
       case TypeId::kNumberTypeBool:
         this->data_type_ = DbgDataType::DT_BOOL;
         this->data_type_size_ = sizeof(bool);
+        break;
+      case TypeId::kNumberTypeInt4:
+        this->data_type_ = DbgDataType::DT_INT4;
+        this->data_type_size_ = 0.5;
         break;
       case TypeId::kNumberTypeInt8:
         this->data_type_ = DbgDataType::DT_INT8;
@@ -440,7 +444,7 @@ class TensorData {
   char *data_ptr_{nullptr};                           // pointer to the pre-allocated memory
   uint64_t size_{0};                                  // size_ in bytes
   DbgDataType data_type_{DbgDataType::DT_UNDEFINED};  // internal debugger type
-  size_t data_type_size_{0};
+  float data_type_size_{0.};
   std::vector<int64_t> shape_;
   std::string name_;
   uint64_t slot_;

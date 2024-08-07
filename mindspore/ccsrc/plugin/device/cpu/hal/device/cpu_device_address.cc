@@ -127,7 +127,7 @@ bool CPUDeviceAddress::DumpMemToFile(const std::string &filepath, const std::str
     MS_LOG(ERROR) << "Dump file path is null!";
     return ret;
   }
-  std::string path = filepath + '.' + format();
+  std::string path = filepath + '.' + format() + "." + TypeIdToString(host_type);
   MS_LOG(DEBUG) << "E2E Dump path is " << path;
   if (GetSize() == 0) {
     MS_LOG(INFO) << "Data size is 0 for file: " << path << ", no need to dump.";

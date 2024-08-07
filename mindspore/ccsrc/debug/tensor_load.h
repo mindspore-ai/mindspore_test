@@ -27,6 +27,8 @@
 #include <algorithm>
 #include "include/backend/debug/tensor_data.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
+#include "include/backend/debug/data_dump/dump_utils.h"
+
 namespace mindspore {
 class TensorLoader {
  public:
@@ -80,7 +82,7 @@ class TensorLoader {
     std::map<std::string, std::shared_ptr<TensorData>>::const_iterator iter = tensor_list_map_.find(tensor_loader_name);
     if (iter != tensor_list_map_.cend()) {
       std::shared_ptr<TensorData> node = iter->second;
-      std::string path = filepath + '.' + node->GetFormat();
+      std::string path = filepath + '.' + node->GetFormat() + '.' + node->GetTypeString();
       if (node->GetByteSize() == 0) {
         MS_LOG(INFO) << "The byte size is 0 for tensor: " << tensor_loader_name;
         return false;
@@ -95,6 +97,11 @@ class TensorLoader {
         return DumpJsonParser::DumpToFile(path, float32_tensor->data_c(), float32_tensor->Size(),
                                           float32_tensor->shape_c(),
                                           static_cast<TypeId>(float32_tensor->data_type_c()));
+      } else if (type_string == "int4") {
+        auto int8_tensor = std::make_shared<tensor::Tensor>(TypeId::kNumberTypeInt8, node->GetShape());
+        SplitInt8(node->GetDataPtr(), int8_tensor->data_c(), node->GetByteSize());
+        return DumpJsonParser::DumpToFile(path, int8_tensor->data_c(), int8_tensor->Size(), int8_tensor->shape_c(),
+                                          static_cast<TypeId>(int8_tensor->data_type_c()));
       }
       return DumpJsonParser::DumpToFile(path, node->GetDataPtr(), node->GetByteSize(), node->GetShape(),
                                         StringToTypeId(node->GetTypeString()));

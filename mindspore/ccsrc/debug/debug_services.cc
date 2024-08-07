@@ -162,7 +162,16 @@ DebugServices::TensorStat DebugServices::GetTensorStatistics(const std::shared_p
   }
   std::unique_ptr<ITensorSummary> base_summary_ptr;
   void *previous_tensor_ptr = nullptr;
-  base_summary_ptr = GetSummaryPtr(tensor, previous_tensor_ptr, tensor->GetNumElements(), 0, tensor->GetType());
+  if (tensor->GetType() == DbgDataType::DT_INT4) {
+    auto tensor_int8 = std::make_shared<tensor::Tensor>(TypeId::kNumberTypeInt8, tensor->GetShape());
+    SplitInt8(tensor->GetDataPtr(), tensor_int8->data_c(), tensor->GetByteSize());
+    tensor->SetTensor(tensor_int8);
+    tensor->SetDataPtr(static_cast<char *>(tensor_int8->data_c()));
+    base_summary_ptr =
+      GetSummaryPtr(tensor, previous_tensor_ptr, tensor_int8->data().nbytes(), 0, DbgDataType::DT_INT8);
+  } else {
+    base_summary_ptr = GetSummaryPtr(tensor, previous_tensor_ptr, tensor->GetNumElements(), 0, tensor->GetType());
+  }
   if (base_summary_ptr == nullptr) {
     MS_LOG(WARNING) << "base_summary_ptr is nullptr, returning empty tensor statistics.";
     TensorStat empty_tensor_stat_data;
@@ -185,7 +194,11 @@ DebugServices::TensorStat DebugServices::GetTensorStatistics(const std::shared_p
     MS_LOG(DEBUG) << "Calc md5 costs time : " << msTime.GetRunTimeUS() << " microseconds.";
   }
   msTime.Start();
-  base_summary_ptr->TensorStatistics(tensor->GetType());
+  if (tensor->GetType() == DbgDataType::DT_INT4) {
+    base_summary_ptr->TensorStatistics(DbgDataType::DT_INT8);
+  } else {
+    base_summary_ptr->TensorStatistics(tensor->GetType());
+  }
   msTime.End();
   MS_LOG(DEBUG) << "Calc statistic costs time : " << msTime.GetRunTimeUS() << " microseconds.";
   TensorStat tensor_stat_data(
