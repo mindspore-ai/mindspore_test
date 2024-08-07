@@ -24,6 +24,7 @@
 #include "include/common/utils/python_adapter.h"
 #include "pipeline/jit/pi/runtime.h"
 #include "utils/convert_utils_base.h"
+#include "pipeline/jit/pi/python_adapter/pydef.h"
 
 namespace mindspore {
 namespace pijit {
@@ -31,7 +32,7 @@ using CallableGraph = std::function<PyObject *(PyObject *, PyObject *)>;
 // Compiler to parse python byte code
 class Compiler {
  public:
-  static CallableGraph Compile(const PyFunctionObject &func, const PyFrameObject &frame, const std::string &phase);
+  static CallableGraph Compile(const PyFunctionObject &func, const PyFrameWrapper &frame, const std::string &phase);
 
  private:
   Compiler() = default;

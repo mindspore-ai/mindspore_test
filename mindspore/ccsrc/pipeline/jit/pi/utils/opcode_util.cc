@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 #include "pipeline/jit/pi/utils/opcode_util.h"
-#include "pipeline/jit/pi/pydef.h"
+#include "pipeline/jit/pi/python_adapter/pydef.h"
+#include "pipeline/jit/pi/utils/opcode_declare.h"
 
 namespace mindspore {
 namespace pijit {

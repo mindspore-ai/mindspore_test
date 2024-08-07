@@ -21,6 +21,7 @@
 #include <utility>
 #include <memory>
 #include <string>
+#include "pipeline/jit/pi/python_adapter/py_frame.h"
 #include "pipeline/jit/pi/graph_capture/graph.h"
 #include "pipeline/jit/pi/graph_build/func_graph_builder.h"
 #include "utils/convert_utils_base.h"
@@ -48,7 +49,7 @@ class GraphBuilder {
   static const char *ID___call__;
   static const char *ID_construct;
 
-  explicit GraphBuilder(const PyFrameObject *f);
+  explicit GraphBuilder(const PyFrameWrapper &f);
   GraphBuilder(GraphBuilder *r, GraphBuilder *p, PyCodeObject *co, PyObject *globals)
       : root_(r), parent_(p), graph_(NewGraph(co, globals)), frame_(), current_block_(nullptr) {}
   explicit GraphBuilder(GraphBuilder *r) : root_(r), parent_(nullptr), graph_(nullptr), current_block_(nullptr) {}
@@ -58,7 +59,7 @@ class GraphBuilder {
     }
     graph_pool_.clear();
   }
-  static GraphBuilderPtr Creator(const PyFrameObject *f, bool trace_flag) {
+  static GraphBuilderPtr Creator(const PyFrameWrapper &f, bool trace_flag) {
     return trace_flag ? std::static_pointer_cast<GraphBuilder>(std::make_shared<MindGraphBuilder>(f))
                       : std::make_shared<GraphBuilder>(f);
   }
@@ -294,7 +295,7 @@ class GraphBuilder {
 
 class MindGraphBuilder : public GraphBuilder {
  public:
-  explicit MindGraphBuilder(const PyFrameObject *f);
+  explicit MindGraphBuilder(const PyFrameWrapper &f);
   MindGraphBuilder(GraphBuilder *r, GraphBuilder *p, PyCodeObject *co, PyObject *globals)
       : GraphBuilder(r, p, co, globals) {
     std::vector<std::string> comments;

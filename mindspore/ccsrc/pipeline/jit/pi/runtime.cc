@@ -37,6 +37,7 @@
 #include "pipeline/jit/pi/graph_compiler/parser/byte_code_parser.h"
 #include "pipeline/jit/pi/graph_compiler/utils.h"
 #include "pipeline/jit/pi/utils/utils.h"
+#include "pipeline/jit/pi/utils/opcode_declare.h"
 #include "pipeline/jit/pi/graph_guard/guard.h"
 #include "pipeline/jit/pi/graph_guard/strategy.h"
 #include "pipeline/jit/pi/graph_guard/shape_ctx.h"
@@ -53,8 +54,8 @@ namespace mindspore {
 namespace pijit {
 
 void AddConfigToGuard(const GraphJitConfig &c, OptGuardPtr guard);
-void AddGuardForParam(const PyFrameObject *f, OptGuardPtr guard, bool detach);
-void AddGuardForGlobals(const PyFrameObject *f, OptGuardPtr guard, bool detach);
+void AddGuardForParam(const PyFrameWrapper &f, OptGuardPtr guard, bool detach);
+void AddGuardForGlobals(const PyFrameWrapper &f, OptGuardPtr guard, bool detach);
 static void AddGradFlagForParam(bool grad_flag, OptGuardPtr guard, bool detach);
 static void CollectTraceBack(JitCompileResults *c, PyCodeObject *code, bool is_graph_mode);
 
@@ -340,77 +341,10 @@ int Traceback::FindMaxNameLength(const std::list<Element> &tbs) const {
   return max_length;
 }
 
-static PyFrameObject *RebuildFrame(PyThreadState *tstate, PyCodeObject *co, const PyFrameObject *f) {
-  int argc = f->f_code->co_argcount + f->f_code->co_kwonlyargcount;
-  MS_ASSERT(co != nullptr && argc == co->co_argcount + co->co_kwonlyargcount);
-  MS_ASSERT((f->f_code->co_flags & CO_VARARGS) == (co->co_flags & CO_VARARGS));
-  MS_ASSERT((f->f_code->co_flags & CO_VARKEYWORDS) == (co->co_flags & CO_VARKEYWORDS));
-  argc += (static_cast<unsigned int>(f->f_code->co_flags) & CO_VARARGS) ? 1 : 0;
-  argc += (static_cast<unsigned int>(f->f_code->co_flags) & CO_VARKEYWORDS) ? 1 : 0;
-
-  PyFrameObject *frame = PyFrame_New(tstate, co, f->f_globals, NULL);
-  // copy arguments
-  for (int i = 0; i < argc; i++) {
-    Py_XINCREF(f->f_localsplus[i]);
-    frame->f_localsplus[i] = f->f_localsplus[i];
-  }
-  // restore arguments from cell
-  std::vector<PyObject *> cells_content(f->f_code->co_nlocals, nullptr);
-  for (int i = 0; f->f_code->co_cell2arg != NULL && i < PyTuple_GET_SIZE(f->f_code->co_cellvars); ++i) {
-    Py_ssize_t argi = f->f_code->co_cell2arg[i];
-    if (argi != CO_CELL_NOT_AN_ARG) {
-      PyObject *cell = f->f_localsplus[f->f_code->co_nlocals + i];
-      cells_content[argi] = PyCell_GET(cell);
-    }
-  }
-  // new cell
-  for (int i = 0; i < PyTuple_GET_SIZE(co->co_cellvars); ++i) {
-    PyObject *cell;
-    if (co->co_cell2arg != NULL && co->co_cell2arg[i] != CO_CELL_NOT_AN_ARG) {
-      Py_ssize_t argi = co->co_cell2arg[i];
-      MS_EXCEPTION_IF_CHECK_FAIL(cells_content[argi], "Unbound local exception");
-      cell = PyCell_New(cells_content[argi]);
-    } else {
-      cell = PyCell_New(NULL);
-    }
-    frame->f_localsplus[co->co_nlocals + i] = cell;
-  }
-
-  // copy closure
-  for (int i = 0; i < PyTuple_GET_SIZE(co->co_freevars); ++i) {
-    int a = f->f_code->co_nlocals + PyTuple_GET_SIZE(f->f_code->co_cellvars) + i;
-    int b = co->co_nlocals + PyTuple_GET_SIZE(co->co_cellvars) + i;
-    auto o = f->f_localsplus[a];
-    Py_XINCREF(o);
-    frame->f_localsplus[b] = o;
-  }
-  return frame;
-}
-
-static PyObject *GetClosure(const PyFrameObject *f) {
-  int nfrees = PyTuple_GET_SIZE(f->f_code->co_freevars);
-  if (nfrees == 0) {
-    return nullptr;
-  }
-  PyObject *closure = PyTuple_New(nfrees);
-  int idx = f->f_code->co_nlocals + PyTuple_GET_SIZE(f->f_code->co_cellvars);
-  for (int i = 0; i < nfrees; ++i) {
-    PyObject *o = f->f_localsplus[idx + i];
-    Py_INCREF(o);
-    PyTuple_SET_ITEM(closure, i, o);
-  }
-  return closure;
-}
-
-static PyFrameObject *PrepareCallCompiledCallable(PyThreadState *tstate, const PyFrameObject *f,
-                                                  const JitCompileResults *c) {
-  return RebuildFrame(tstate, c->code()->GetPythonCode(), f);
-}
-
-static void GuardForFrame(const PyFrameObject *frame, const OptCodePtr &oc, const GraphJitConfig &conf) {
-  const char *code_name = PyUnicode_AsUTF8(frame->f_code->co_name);
+static void GuardForFrame(const PyFrameWrapper &f, const OptCodePtr &oc, const GraphJitConfig &conf) {
+  const char *code_name = f.GetCode().Name();
   AddConfigToGuard(conf, oc->GetGuard());
-  AddGuardForParam(frame, oc->GetGuard(), conf.GetBoolConfig(GraphJitConfig::kGuardDetachObject));
+  AddGuardForParam(f, oc->GetGuard(), conf.GetBoolConfig(GraphJitConfig::kGuardDetachObject));
   AddGradFlagForParam(pynative::PyNativeExecutor::GetInstance()->grad_flag(), oc->GetGuard(),
                       conf.GetBoolConfig(GraphJitConfig::kGuardDetachObject));
   if (conf.GetBoolConfig(GraphJitConfig::kPrintGuard)) {
@@ -461,7 +395,7 @@ static void MarkBreak(Graph *g) {
 }
 
 std::vector<py::object> GetAllArgs(JitCompileResults *jcr) {
-  auto all_args = PackArgs(jcr->origin_frame());
+  auto all_args = jcr->origin_frame().PackArgs();
   constexpr size_t arg_index = 0;
   constexpr size_t vargs_index = 1;
   constexpr size_t kwargs_index = 2;
@@ -525,11 +459,10 @@ static auto TraceRun(JitCompileResults *jcr) {
   if (conf.GetBoolConfig(GraphJitConfig::kTraceFlag)) {
     auto mg = std::dynamic_pointer_cast<MindGraphBuilder>(g);
     MS_EXCEPTION_IF_NULL(mg);
-    auto code = jcr->origin_frame()->f_code;
-    int args_count = code->co_argcount + code->co_kwonlyargcount;
-    bool has_vargs = code->co_flags & CO_VARARGS;
-    bool has_kwargs = code->co_flags & CO_VARKEYWORDS;
-    (void)mg->FGAddTopInputs(args_count, has_vargs, has_kwargs);
+    bool has_vargs;
+    bool has_kwargs;
+    int args_count = jcr->origin_frame().GetCode().ArgCount(&has_vargs, &has_kwargs);
+    (void)mg->FGAddTopInputs(args_count - has_vargs - has_kwargs, has_vargs, has_kwargs);
   }
 
   (void)g->TraceRun();
@@ -541,7 +474,7 @@ static void Inline(JitCompileResults *jcr, const GraphBuilderPtr &g) {
   GraphJitConfig &conf = *jcr->conf();
   // One stage should skip inline process.
   if (!conf.GetBoolConfig(GraphJitConfig::kTraceFlag)) {
-    BytecodeInliner inliner(g->GetGraph(), py::cast<py::dict>(jcr->origin_frame()->f_globals));
+    BytecodeInliner inliner(g->GetGraph(), py::cast<py::dict>(jcr->origin_frame().Globals()));
     inliner.Run();
   }
 }
@@ -582,7 +515,7 @@ static void GraphCapture(JitCompileResults *jcr) {
     g->DumpDFG();
   }
 
-  py::object new_code = MakeCodeFromCodeGen(g, analyzer, jcr->origin_frame()->f_globals);
+  py::object new_code = MakeCodeFromCodeGen(g, analyzer, jcr->origin_frame().Globals().ptr());
   if (new_code.ptr() != nullptr) {
     jcr->code()->SetPythonCode(new_code);
     jcr->set_stat(JitCompileResults::GRAPH_CALLABLE);
@@ -608,24 +541,25 @@ static void GraphCapture(JitCompileResults *jcr) {
 
 static void CollectTraceBack(JitCompileResults *c, PyCodeObject *code, bool is_graph_mode) {
   if (code == nullptr) {
-    code = c->origin_frame()->f_code;
+    code = c->origin_frame().GetCode().ptr();
   }
-  std::string name = Utils::GetPyName(c->origin_frame()->f_code->co_name);
+  std::string name = c->origin_frame().GetCode().Name();
   std::string changed_name = Utils::GetPyName(code->co_name);
-  int code_size = SizeToInt((PyBytes_GET_SIZE(code->co_code)) / sizeof(_Py_CODEUNIT));
+  int code_size = _PyCode_NBYTES(code);
   c->tbs()->PushTbs({name, changed_name, code_size, is_graph_mode});
 }
 
-std::string GetFuncGraphPhase(const PyFrameObject &frame, const OptCodePtr &oc) {
-  std::string phase = py::cast<std::string>(frame.f_code->co_filename) + "_" +
-                      std::to_string(frame.f_code->co_firstlineno) + "_" + py::cast<std::string>(frame.f_code->co_name);
+std::string GetFuncGraphPhase(const PyFrameWrapper &frame, const OptCodePtr &oc) {
+  PyCodeObject *co = frame.GetCode().ptr();
+  const char *co_name = frame.GetCode().Name();
+  const char *co_filename = frame.GetCode().FileName();
+  std::string phase = std::string() + co_filename + "_" + std::to_string(co->co_firstlineno) + "_" + co_name;
   if (oc != nullptr) {
     phase += std::to_string(oc->GetGuard()->Info().Id());
   } else {
-    for (int i = 0; i < frame.f_code->co_argcount; i++) {
-      PyObject *obj = PyTuple_GET_ITEM(frame.f_code->co_varnames, i);
-      py::object para = py::cast<py::object>(PyDict_GetItem(frame.f_locals, obj));
-      auto node = GraphUtils::ConvertPythonObjectToAnfNode(para);
+    py::dict locals = frame.Locals();
+    for (const auto &pair : locals) {
+      auto node = GraphUtils::ConvertPythonObjectToAnfNode(py::cast<py::object>(pair.second));
       phase += "_" + node->abstract()->ToString();
     }
   }
@@ -643,67 +577,38 @@ void AddConfigToGuard(const GraphJitConfig &c, OptGuardPtr guard) {
   guard->UpdateConfig(bool_cfg, int_cfg);
 }
 
-void AddGuardForParam(const PyFrameObject *f, OptGuardPtr guard, bool detach) {
-  int argc = f->f_code->co_argcount + f->f_code->co_kwonlyargcount;
-  PyObject *vargs = NULL;
-  PyObject *kwargs = NULL;
-  if (static_cast<unsigned int>(f->f_code->co_flags) & CO_VARARGS) {
-    vargs = f->f_localsplus[argc];
-  }
-  if (static_cast<unsigned int>(f->f_code->co_flags) & CO_VARKEYWORDS) {
-    kwargs = f->f_localsplus[argc + (vargs ? 1 : 0)];
-  }
-  for (int i = 0; i < argc; ++i) {
-    if (f->f_localsplus[i] == nullptr) {
-      continue;
-    }
-    RootTracePtr ptr = std::make_shared<RootTrace>(f->f_localsplus[i], mindspore::pijit::TraceType::Param, i);
+void AddGuardForParam(const PyFrameWrapper &wrapper, OptGuardPtr guard, bool detach) {
+  auto lh = [&guard, &detach](PyObject *value, int fast_index) {
+    RootTracePtr ptr = std::make_shared<RootTrace>(value, mindspore::pijit::TraceType::Param, fast_index);
     guard->GuardOn(ptr, mindspore::pijit::GuardLevel::GDeduce, false);
     if (detach) {
       ptr->Detach();
     }
-  }
-  if (vargs != NULL) {
-    RootTracePtr ptr = std::make_shared<RootTrace>(f->f_localsplus[argc], mindspore::pijit::TraceType::Param, argc);
+  };
+  auto ch = [&wrapper, &guard, &detach](PyObject *cell_or_local, int fast_index) {
+    bool is_cell = PyCell_Check(cell_or_local);
+    auto value = is_cell ? PyCell_GET(cell_or_local) : cell_or_local;
+    auto type = is_cell ? TraceType::Deref : TraceType::Param;
+#if IS_PYTHON_3_11_PLUS
+    int guard_retrieve_index = fast_index;
+    MS_LOG(ERROR) << "not implement in python3.11, retrieve deref index is error";
+#else
+    int guard_retrieve_index = fast_index - wrapper.GetCode().LocalSize();
+#endif
+    RootTracePtr ptr = std::make_shared<RootTrace>(value, type, guard_retrieve_index);
     guard->GuardOn(ptr, mindspore::pijit::GuardLevel::GDeduce, false);
     if (detach) {
       ptr->Detach();
     }
-  }
-  if (kwargs != NULL) {
-    RootTracePtr ptr = std::make_shared<RootTrace>(f->f_localsplus[argc + (vargs ? 1 : 0)],
-                                                   mindspore::pijit::TraceType::Param, argc + (vargs ? 1 : 0));
-    guard->GuardOn(ptr, mindspore::pijit::GuardLevel::GDeduce, false);
-    if (detach) {
-      ptr->Detach();
-    }
-  }
-  for (int i = 0; f->f_code->co_cell2arg && i < PyTuple_GET_SIZE(f->f_code->co_cellvars); ++i) {
-    Py_ssize_t arg = f->f_code->co_cell2arg[i];
-    if (arg != CO_CELL_NOT_AN_ARG) {
-      auto cell = f->f_localsplus[f->f_code->co_nlocals + i];
-      RootTracePtr ptr = std::make_shared<RootTrace>(PyCell_GET(cell), mindspore::pijit::TraceType::Deref, i);
-      guard->GuardOn(ptr, mindspore::pijit::GuardLevel::GDeduce, false);
-      if (detach) {
-        ptr->Detach();
-      }
-    }
-  }
-  for (int i = 0; i < PyTuple_GET_SIZE(f->f_code->co_freevars); ++i) {
-    Py_ssize_t arg = PyTuple_GET_SIZE(f->f_code->co_cellvars) + i;
-    auto cell = f->f_localsplus[f->f_code->co_nlocals + arg];
-    RootTracePtr ptr = std::make_shared<RootTrace>(PyCell_GET(cell), mindspore::pijit::TraceType::Deref, arg);
-    guard->GuardOn(ptr, mindspore::pijit::GuardLevel::GDeduce, false);
-    if (detach) {
-      ptr->Detach();
-    }
-  }
+  };
+  wrapper.ForEachFastLocal(lh, ch, ch);
 }
 
-void AddGuardForGlobals(const PyFrameObject *f, OptGuardPtr guard, bool detach) {
-  PyCodeObject *co = f->f_code;
-  const _Py_CODEUNIT *bytecodes = reinterpret_cast<_Py_CODEUNIT *>(PyBytes_AsString(co->co_code));
-  int size = (PyBytes_GET_SIZE(co->co_code)) / SizeToInt(sizeof(_Py_CODEUNIT));
+void AddGuardForGlobals(const PyFrameWrapper &wrapper, OptGuardPtr guard, bool detach) {
+  EvalFrameObject *f = wrapper.frame();
+  PyCodeObject *co = wrapper.GetCode().ptr();
+  const _Py_CODEUNIT *bytecodes = _PyCode_CODE(co);
+  int size = _PyCode_NBYTES(co) / sizeof(_Py_CODEUNIT);
   unsigned int exarg = 0;
   for (int bci = 0; bci < size; ++bci) {
     int opcode = _Py_OPCODE(bytecodes[bci]);
@@ -769,10 +674,10 @@ static void AddGradFlagForParam(bool grad_flag, OptGuardPtr guard, bool detach) 
   }
 }
 
-static std::string CallGraphCompiler(JitCompileResults *jcr, PyFunctionObject *func, const PyFrameObject *frame) {
-  std::string phase = GetFuncGraphPhase(*frame, jcr->code());
+static std::string CallGraphCompiler(JitCompileResults *jcr, PyFunctionObject *func, const PyFrameWrapper &frame) {
+  std::string phase = GetFuncGraphPhase(frame, jcr->code());
   MS_LOG(DEBUG) << "Phase is " << phase << "!";
-  CallableGraph callable = mindspore::pijit::Compiler::Compile(*func, *frame, phase);
+  CallableGraph callable = mindspore::pijit::Compiler::Compile(*func, frame, phase);
   if (callable == nullptr) {
     jcr->set_stat(JitCompileResults::NEVER_COMPILE);
     return std::string();
@@ -812,7 +717,7 @@ std::string GraphToString(FuncGraphPtr graph) {
   return ret;
 }
 
-static void GraphCompile(JitCompileResults *jcr, const PyFrameObject *frame) {
+static void GraphCompile(JitCompileResults *jcr, const PyFrameWrapper &frame) {
   TimeRecorder recorder(__FUNCTION__, kPIJitConfigDefault.GetBoolConfig(GraphJitConfig::kLogPerf));
   GuardForFrame(frame, jcr->code(), *jcr->conf());
   AddGuardForGlobals(frame, jcr->code()->GetGuard(), jcr->conf()->GetBoolConfig(GraphJitConfig::kGuardDetachObject));
@@ -821,26 +726,24 @@ static void GraphCompile(JitCompileResults *jcr, const PyFrameObject *frame) {
   OptStrategy::MakeGCStrategy(jcr->codehub(), jcr->conf()->getIntConfig(GraphJitConfig::kLimitGraphSize),
                               jcr->conf()->getIntConfig(GraphJitConfig::kLimitGraphCount), enable_dynamicshape,
                               jcr->code());
-  // restore function object from frame
-  PyObject *new_func = PyFunction_New(reinterpret_cast<PyObject *>(frame->f_code), frame->f_globals);
-  Py_XSETREF(PyFunction_GET_CLOSURE(new_func), GetClosure(frame));
-  PyFunctionObject *func = reinterpret_cast<PyFunctionObject *>(new_func);
-  PyFrameObject *f = const_cast<PyFrameObject *>(frame);
+  py::object func_handler = frame.GetFunction();
+  PyFunctionObject *func = reinterpret_cast<PyFunctionObject *>(func_handler.ptr());
+
   std::vector<PyObject *> backup;
   if (enable_dynamicshape) {
-    backup = jcr->code()->GetGuard()->ApplyDynamicShape(f);
-    PyFrame_FastToLocals(f);
+    backup = jcr->code()->GetGuard()->ApplyDynamicShape(frame.frame());
+    PyFrame_FastToLocals(frame.frame());
   }
+
   RunEnvironment runEnvironment;
   runEnvironment.fetchAndSetRunEnv(jcr);
   std::string phase = CallGraphCompiler(jcr, func, frame);
   runEnvironment.resumePreviousRunEnv();
-  if (enable_dynamicshape) {
-    jcr->code()->GetGuard()->RevertDynamicShape(f, backup);
-    PyFrame_FastToLocals(f);
-  }
 
-  Py_DECREF(new_func);
+  if (enable_dynamicshape) {
+    jcr->code()->GetGuard()->RevertDynamicShape(frame.frame(), backup);
+    PyFrame_FastToLocals(frame.frame());
+  }
 
   if (jcr->conf()->GetBoolConfig(GraphJitConfig::kReuseGraph)) {
     auto graph_executor = mindspore::pipeline::GraphExecutorPy::GetInstance();
@@ -863,7 +766,7 @@ static void GraphCompile(JitCompileResults *jcr, const PyFrameObject *frame) {
         std::cout << "Graph Duplicated:" << std::endl;
         std::cout << "  Graph:" << graph_buffer.str() << std::endl;
         std::cout << "  Bytecode:" << std::endl;
-        Utils::DisFuncObject(reinterpret_cast<PyObject *>(frame->f_code));
+        Utils::DisFuncObject(PyFunction_GET_CODE(func));
       }
       // find duplicate graph and reuse it
       pcode->Copy(jcr->code());
@@ -876,18 +779,18 @@ static void GraphCompile(JitCompileResults *jcr, const PyFrameObject *frame) {
 
 extern bool UnsupportedCodeTypeCheck(PyCodeObject *co);
 static bool JitCompile(PyThreadState *tstate, JitCompileResults *c) {
-  if (UnsupportedCodeTypeCheck(c->origin_frame()->f_code)) {
+  const auto &frame = c->origin_frame();
+  PyCodeObject *code = frame.GetCode().ptr();
+  if (UnsupportedCodeTypeCheck(code)) {
     return false;
   }
-  ShapeContext sc(c->origin_frame(), c->input_signature().ptr());
-  std::string code_str = py::str(reinterpret_cast<PyObject *>(c->origin_frame()->f_code));
-  MS_LOG(DEBUG) << "---start compile " << code_str << "---";
+  ShapeContext sc(c->origin_frame().frame(), c->input_signature().ptr());
+  MS_LOG(DEBUG) << "---start compile " << py::str(reinterpret_cast<PyObject *>(code)) << "---";
 
   // new guard code
   c->set_code(c->codehub()->AddOptTarget(OptOption::CreateOptionByPoint(c)));
   AddConfigToGuard(*c->conf(), c->code()->GetGuard());
 
-  py::object frame = py::reinterpret_borrow<py::object>(reinterpret_cast<PyObject *>(c->origin_frame()));
   if (c->stat() == JitCompileResults::GRAPH_CANDIDATE) {
     TimeRecorder time_recorder("kTimeCompileCapture", kPIJitConfigDefault.GetBoolConfig(GraphJitConfig::kLogPerf));
     runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kCapture, runtime::ProfilerEvent::kCaptureProcess,
@@ -895,15 +798,9 @@ static bool JitCompile(PyThreadState *tstate, JitCompileResults *c) {
     c->set_stat(JitCompileResults::GRAPH_BUILDING);
     auto aobject_resource = AObject::MakeResource();
     GraphCapture(c);
-    sc.ApplySignature();
-    if (c->stat() == JitCompileResults::GRAPH_CAPTURED) {
-      PyFrameObject *f = PrepareCallCompiledCallable(tstate, c->origin_frame(), c);
-      frame = py::reinterpret_steal<py::object>(reinterpret_cast<PyObject *>(f));
-    }
     if (c->conf()->GetBoolConfig(GraphJitConfig::kTraceFlag)) {
-      PyFrameObject *f = reinterpret_cast<PyFrameObject *>(frame.ptr());
-      GuardForFrame(f, c->code(), *c->conf());
-      AddGuardForGlobals(f, c->code()->GetGuard(), c->conf()->GetBoolConfig(GraphJitConfig::kGuardDetachObject));
+      GuardForFrame(frame, c->code(), *c->conf());
+      AddGuardForGlobals(frame, c->code()->GetGuard(), c->conf()->GetBoolConfig(GraphJitConfig::kGuardDetachObject));
     }
     aobject_resource.Release();
   }
@@ -914,9 +811,7 @@ static bool JitCompile(PyThreadState *tstate, JitCompileResults *c) {
     runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kCapture, runtime::ProfilerEvent::kCaptureCompile,
                                        "PIJitCompile");
     c->set_stat(JitCompileResults::GRAPH_BUILDING);
-    PyFrameObject *f = reinterpret_cast<PyFrameObject *>(frame.ptr());
-    PyFrame_FastToLocals(f);
-    GraphCompile(c, f);
+    GraphCompile(c, frame);
   }
 
   auto guard = c->code()->GetGuard()->Optimize();
@@ -929,7 +824,7 @@ static bool JitCompile(PyThreadState *tstate, JitCompileResults *c) {
   if (c->conf()->GetBoolConfig(GraphJitConfig::kPrintAfterAll)) {
     GRAPH_JIT_LOG_F("%s\n", c->tbs()->Dump().c_str());
 
-    GRAPH_JIT_LOG_F("generated guard at %s\n", code_str.c_str());
+    GRAPH_JIT_LOG_F("generated guard at %s\n", std::string(py::str(reinterpret_cast<PyObject *>(code))).c_str());
     GRAPH_JIT_LOG_F("%s\n", c->code()->GetGuard()->ToString().c_str());
   }
   if (c->stat() != JitCompileResults::GRAPH_CALLABLE) {
@@ -937,33 +832,6 @@ static bool JitCompile(PyThreadState *tstate, JitCompileResults *c) {
     return false;
   }
   return true;
-}
-
-std::vector<py::object> PackArgs(const PyFrameObject *frame) {
-  const Py_ssize_t argc = frame->f_code->co_argcount + frame->f_code->co_kwonlyargcount;
-  bool has_varg = static_cast<unsigned int>(frame->f_code->co_flags) & CO_VARARGS;
-  py::list args(argc);
-  py::object vargs;
-  py::object kwvargs;
-  for (Py_ssize_t i = 0; i < argc; ++i) {
-    args[i] = py::reinterpret_borrow<py::object>(frame->f_localsplus[i]);
-  }
-  if (has_varg) {
-    vargs = py::reinterpret_borrow<py::object>(frame->f_localsplus[argc]);
-  }
-  if (static_cast<unsigned int>(frame->f_code->co_flags) & CO_VARKEYWORDS) {
-    kwvargs = py::reinterpret_borrow<py::object>(frame->f_localsplus[argc + has_varg]);
-  }
-
-  const Py_ssize_t ncells = PyTuple_GET_SIZE(frame->f_code->co_cellvars);
-  for (Py_ssize_t i = 0; frame->f_code->co_cell2arg && i < ncells; ++i) {
-    Py_ssize_t argi = frame->f_code->co_cell2arg[i];
-    if (argi != CO_CELL_NOT_AN_ARG) {
-      PyObject *cell = frame->f_localsplus[frame->f_code->co_nlocals + i];
-      args[argi] = py::reinterpret_borrow<py::object>(PyCell_GET(cell));
-    }
-  }
-  return {args, vargs, kwvargs};
 }
 
 static py::object ResultMutable(py::object obj) {
@@ -1005,7 +873,7 @@ static py::object CallGraph(const JitCompileResults *c, const py::object &args, 
   RunEnvironment runEnvironment;
   runEnvironment.fetchAndSetRunEnv(c);
   PyObject *py_args = args.ptr();
-  PyObject *py_kwvargs = kwvargs.ptr();
+  PyObject *py_kwvargs = kwvargs.ptr() == Py_None ? nullptr : kwvargs.ptr();
   PyObject *res;
   if (c->conf()->GetBoolConfig(GraphJitConfig::kPerfStatistics) &&
       c->code()->GetPerf(OptPerf::PerfKind::kPerfGraph)->GetStatistics()->GetTotalCount() <
@@ -1032,39 +900,23 @@ static py::object CallGraph(const JitCompileResults *c, const py::object &args, 
   return res_obj;
 }
 
-static py::object CallCompiledCallable(PyThreadState *tstate, PyFrameObject *f, const JitCompileResults *c) {
-  PyFrameObject *new_f;
+static py::object CallCompiledCallable(PyThreadState *tstate, const PyFrameWrapper &f, const JitCompileResults *c) {
   PyObject *res;
-  int bci;
-
-  if (c->code()->GetPythonCode() != nullptr) {
-    new_f = PrepareCallCompiledCallable(tstate, f, c);
-  } else {
-    Py_INCREF(f);
-    new_f = f;
-  }
-
   if (c->conf()->GetBoolConfig(GraphJitConfig::kPerfStatistics) &&
       c->code()->GetPerf(OptPerf::PerfKind::kPerfPyNative)->GetStatistics()->GetTotalCount() <
         c->conf()->getIntConfig(GraphJitConfig::kPerfStatisticsCount)) {
-    std::function<PyObject *(PyThreadState * tstate, PyFrameObject * f, int exc)> func = [](PyThreadState *tstate,
-                                                                                            PyFrameObject *f, int exc) {
-      auto ret = _PyEval_EvalFrameDefault(tstate, f, exc);
+    auto func = [&tstate, &f, &c]() {
+      auto res = f.EvalNewCode(tstate, c->code()->GetPythonCode());
       runtime::Pipeline::Get().WaitAll();
-      return ret;
+      return res;
     };
     runtime::Pipeline::Get().WaitAll();
-    // use function pointer not std::function
-    res = CallFunction(c->code()->GetPerf(OptPerf::PerfKind::kPerfPyNative), func, tstate, new_f, 0);
+    res = CallFunction(c->code()->GetPerf(OptPerf::PerfKind::kPerfPyNative), std::function(func));
   } else {
-    res = _PyEval_EvalFrameDefault(tstate, new_f, 0);
+    res = f.EvalNewCode(tstate, c->code()->GetPythonCode());
   }
-
-  bci = new_f->f_lasti;
-  Py_DECREF(new_f);
-
   if (res == NULL && !PyErr_Occurred()) {
-    PyErr_Format(PyExc_RuntimeError, "compiled function failed with unknown error, error bci %d", bci);
+    PyErr_Format(PyExc_RuntimeError, "compiled function failed with unknown error");
   }
   return py::reinterpret_steal<py::object>(res);
 }
@@ -1197,23 +1049,25 @@ static bool PreferCallGraph(const JitCompileResults *c, py::object args) {
   return stat == OptStrategy::ExecKind::kExecGraph;
 }
 
-static void SetExecStatus(const JitCompileResults *c, const PyFrameObject *f, bool graph_preferred) {
+static void SetExecStatus(const JitCompileResults *c, const PyFrameWrapper &f, bool graph_preferred) {
   bool enable_statistics = c->conf()->GetBoolConfig(GraphJitConfig::kPerfStatistics);
   int graph_bytecode_min = c->conf()->getIntConfig(GraphJitConfig::kStaticGraphBytecodeMin);
   if (enable_statistics || (graph_bytecode_min > 0)) {
-    PyObject_SetItem(f->f_globals, reinterpret_cast<PyObject *>(f->f_code), (graph_preferred ? Py_True : Py_False));
+    auto globals = f.Globals();
+    auto code = reinterpret_cast<PyObject *>(f.GetCode().ptr());
+    PyObject_SetItem(globals.ptr(), code, graph_preferred ? Py_True : Py_False);
   }
 }
 
-static py::object CallCompiledResults(PyThreadState *tstate, PyFrameObject *f, JitCompileResults *c) {
+static py::object CallCompiledResults(PyThreadState *tstate, const PyFrameWrapper &f, JitCompileResults *c) {
   if (MsContext::GetInstance()->get_param<bool>(MS_CTX_PRECOMPILE_ONLY)) {
     return py::none();
   }
 
   ValidateCompiledResults(c);
 
-  std::vector<py::object> packed_args = PackArgs(f);
-  if (packed_args[1].ptr() != nullptr) {
+  auto packed_args = f.PackArgs();
+  if (packed_args[1].ptr() != Py_None) {
     PyList_Append(packed_args[0].ptr(), packed_args[1].ptr());
   }
 
@@ -1238,8 +1092,10 @@ static py::object CallCompiledResults(PyThreadState *tstate, PyFrameObject *f, J
   c->code()->Inc();
 
   if (kPIJitConfigDefault.GetBoolConfig(GraphJitConfig::kLogPerf)) {
-    PyObject *new_code = c->code()->GetPythonCode() ? c->code()->GetPythonCode()->co_code : f->f_code->co_code;
-    ByteCodeRunStatistic::GetInstance()->Count(graph_preferred ? f->f_code->co_code : new_code, graph_preferred);
+    PyCodeObject *new_code = c->code()->GetPythonCode() ? c->code()->GetPythonCode() : f.GetCode().ptr();
+    PyCodeObject *cur_code = graph_preferred ? f.GetCode().ptr() : new_code;
+    py::object bytes = PyCodeWrapper(cur_code).Code();
+    ByteCodeRunStatistic::GetInstance()->Count(bytes.ptr(), graph_preferred);
   }
 
   // dump traceback
@@ -1253,7 +1109,7 @@ static py::object CallCompiledResults(PyThreadState *tstate, PyFrameObject *f, J
   return res;
 }
 
-static bool CheckGuard(JitCompileResults *c, const PyFrameObject *f) {
+static bool CheckGuard(JitCompileResults *c, const PyFrameWrapper &f) {
   TimeRecorder time_recorder(__FUNCTION__, kPIJitConfigDefault.GetBoolConfig(GraphJitConfig::kLogPerf));
 
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kCapture, runtime::ProfilerEvent::kCaptureGuard,
@@ -1267,12 +1123,12 @@ static bool CheckGuard(JitCompileResults *c, const PyFrameObject *f) {
   std::map<size_t, bool> fail;
   OptOptionPtr opt = OptOption::CreateOptionByPoint(c);
   auto set = c->codehub()->GetOptTarget(opt);
-  set = OptStrategy::MakeGuardListStrategyByFrame(f, set);
+  set = OptStrategy::MakeGuardListStrategyByFrame(set);
   for (size_t i = set.size(); i != 0; i--) {
     auto oc = set[i - 1];
     OptGuardPtr guard = oc->GetGuard();
     bool print_guard = c->conf()->GetBoolConfig(GraphJitConfig::kPrintGuard);
-    if (guard != nullptr && guard->Check(f, print_guard, &cache, &success, &fail,
+    if (guard != nullptr && guard->Check(f.frame(), print_guard, &cache, &success, &fail,
                                          c->conf()->GetBoolConfig(GraphJitConfig::kLogGuardPerf))) {
       c->set_code(oc);
       c->codehub()->UpdateOptTarget(opt, oc);
@@ -1339,24 +1195,27 @@ py::tuple EliminateStubTensor(const py::tuple &args) {
 }
 
 // bellowing code is used for debugging code generate, and will be remove soon
-py::object test_graph_ir_code_gen(PyFrameObject *frame) {
-  PyFrame_FastToLocals(frame);
-  auto func =
-    py::reinterpret_steal<py::object>(PyFunction_New(reinterpret_cast<PyObject *>(frame->f_code), frame->f_globals));
+py::object test_graph_ir_code_gen(const PyFrameWrapper &f) {
+  auto co_wrapper = f.GetCode();
+  PyObject *globals = f.Globals().ptr();
+  PyCodeObject *co = co_wrapper.ptr();
+  py::object f_locals = f.Locals();
+  bool has_va;
+  bool has_kw_va;
+  int arg_cnt = co_wrapper.ArgCount(&has_va, &has_kw_va);
+
+  auto func = py::reinterpret_steal<py::object>(PyFunction_New(reinterpret_cast<PyObject *>(co), globals));
   mindspore::pijit::Utils::DisFuncObject(func.ptr());
   auto byteCodeParser = std::make_shared<mindspore::pijit::ByteCodeParser>(func);
   mindspore::pijit::ir::FunctionNodePtr func_node = byteCodeParser->Parse();
   auto inliner = std::make_shared<mindspore::pijit::FuncInliner>(func_node);
   inliner->Run();
-  int arg_cnt = frame->f_code->co_argcount + frame->f_code->co_kwonlyargcount;
-  if (static_cast<unsigned int>(frame->f_code->co_flags) & CO_VARARGS) {
-    arg_cnt++;
-  }
-  py::list locals = py::reinterpret_steal<py::list>(PyDict_Values(frame->f_locals));
+
+  py::list locals = py::reinterpret_steal<py::list>(PyMapping_Values(f_locals.ptr()));
+  arg_cnt -= has_kw_va;
   py::tuple args = py::reinterpret_steal<py::tuple>(PyList_AsTuple(PyList_GetSlice(locals.ptr(), 0, arg_cnt)));
-  py::dict kwargs = (static_cast<unsigned int>(frame->f_code->co_flags) & CO_VARKEYWORDS) == 0x0
-                      ? py::dict()
-                      : py::cast<py::dict>(locals[arg_cnt]);
+  py::dict kwargs = has_kw_va ? py::dict() : py::cast<py::dict>(locals[arg_cnt]);
+
   args = EliminateStubTensor(args);
   mindspore::pijit::AbstractTypeDeducer::Deduce(func_node, args, kwargs);
   func_node->Sort();
@@ -1383,10 +1242,11 @@ py::object test_graph_ir_code_gen(PyFrameObject *frame) {
   return res;
 }
 
-static py::object CodeHook(PyThreadState *tstate, JitCompileResults *c, PyFrameObject *frame) {
+static py::object CodeHook(PyThreadState *tstate, JitCompileResults *c, EvalFrameObject *frame) {
   if (c->conf()->GetBoolConfig(GraphJitConfig::kTestGraphIR)) {
-    return test_graph_ir_code_gen(frame);
+    return test_graph_ir_code_gen(PyFrameWrapper(frame));
   }
+  PyCodeObject *co = PyFrameWrapper(frame).GetCode().ptr();
   bool just_compiled = false;
   switch (c->stat()) {
     case JitCompileResults::NEVER_COMPILE:
@@ -1397,7 +1257,7 @@ static py::object CodeHook(PyThreadState *tstate, JitCompileResults *c, PyFrameO
       }
     /* fallthrough */
     case JitCompileResults::GRAPH_CANDIDATE:
-      MS_EXCEPTION_IF_CHECK_FAIL(c->origin_frame() == nullptr || c->origin_frame() == frame,
+      MS_EXCEPTION_IF_CHECK_FAIL(c->origin_frame().frame() == nullptr || c->origin_frame().frame() == frame,
                                  "check recursive call compiling function");
       c->set_origin_frame(frame);
       if (c->conf()->GetBoolConfig(GraphJitConfig::kCompileWithoutCapture)) {
@@ -1410,9 +1270,9 @@ static py::object CodeHook(PyThreadState *tstate, JitCompileResults *c, PyFrameO
       just_compiled = true;
     /* fallthrough */
     case JitCompileResults::GRAPH_CALLABLE: {
-      if (CheckGuard(c, frame)) {
+      if (CheckGuard(c, PyFrameWrapper(frame))) {
         c->set_origin_frame(nullptr);
-        return CallCompiledResults(tstate, frame, c);
+        return CallCompiledResults(tstate, PyFrameWrapper(frame), c);
       }
       if (c->stat() == JitCompileResults::NEVER_COMPILE) {
         break;
@@ -1425,7 +1285,7 @@ static py::object CodeHook(PyThreadState *tstate, JitCompileResults *c, PyFrameO
     }
     case JitCompileResults::GRAPH_BUILDING:
       MS_LOG(ERROR) << "recursive call, compiler call the code "
-                    << std::string(py::str(reinterpret_cast<PyObject *>(frame->f_code))) << " which is compiling";
+                    << std::string(py::str(reinterpret_cast<PyObject *>(co))) << " which is compiling";
       break;
     default:
       MS_LOG(EXCEPTION) << "shouldn't reach here";
@@ -1436,7 +1296,7 @@ static py::object CodeHook(PyThreadState *tstate, JitCompileResults *c, PyFrameO
   return py::reinterpret_steal<py::object>(res);
 }
 
-PyObject *CallCodeHook(PyThreadState *tstate, PyFrameObject *f, JitCompileResults *c) {
+PyObject *CallCodeHook(PyThreadState *tstate, EvalFrameObject *f, JitCompileResults *c) {
   py::object res;
   try {
     res = CodeHook(tstate, c, f);
@@ -1448,83 +1308,88 @@ PyObject *CallCodeHook(PyThreadState *tstate, PyFrameObject *f, JitCompileResult
   return res.inc_ref().ptr();
 }
 
-py::list CollectGradientArguments(const PyFrameObject &frame) {
+py::list CollectGradientArguments(PyCodeObject *co, PyObject **fast_locals) {
   py::list arguments;
+  bool has_va;
+  bool has_kw_va;
+  auto argc = PyCodeWrapper(co).ArgCount(&has_va, &has_kw_va);
+  argc = argc - has_va - has_kw_va;
 
   // Collect Positional Arguments
-  for (int index = 1; index < frame.f_code->co_argcount; index++) {
-    arguments.append(py::cast<py::object>(frame.f_localsplus[index]));
+  for (int index = 1; index < argc; index++) {
+    arguments.append(py::cast<py::object>(fast_locals[index]));
   }
 
   // Collect Variable Arguments
-  if ((static_cast<unsigned int>(frame.f_code->co_flags) & CO_VARARGS) != 0x0) {
-    auto var_args = py::cast<py::tuple>(frame.f_localsplus[frame.f_code->co_argcount]);
+  if (has_va) {
+    auto var_args = py::cast<py::tuple>(fast_locals[argc++]);
     std::for_each(var_args.begin(), var_args.end(), [&arguments](const auto &arg) { arguments.append(arg); });
   }
 
   // Collect Variable Arguments
-  if ((static_cast<unsigned int>(frame.f_code->co_flags) & CO_VARKEYWORDS) != 0x0) {
-    auto kw_args = py::cast<py::dict>(frame.f_localsplus[frame.f_code->co_argcount + 1]);
+  if (has_kw_va) {
+    auto kw_args = py::cast<py::dict>(fast_locals[argc++]);
     std::for_each(kw_args.begin(), kw_args.end(), [&arguments](const auto &item) { arguments.append(item.second); });
   }
 
   return arguments;
 }
 
-void AutoGrad(PyFrameObject *f, PyObject *ret) {
+void AutoGrad(EvalFrameObject *frame, PyObject *ret) {
   // improve performance for infer
   if (kPIJitConfigDefault.GetBoolConfig(GraphJitConfig::kInferOnly)) {
     return;
   }
+  PyFrameWrapper f(frame);
+  auto co_wrapper = f.GetCode();
   // must have a return value and prim must have argument
-  if (ret == nullptr || f->f_code->co_argcount <= 0) {
+  if (ret == nullptr || co_wrapper.FastLocalSize() <= 0) {
     return;
   }
+  PyCodeObject *co = co_wrapper.ptr();
+  const char *co_name = PyUnicode_AsUTF8(co->co_name);
   // the call function of primitive
-  if (py::cast<py::object>(f->f_code->co_name).cast<std::string>() != "__call__") {
+  if (std::string(co_name) != "__call__") {
     return;
   }
-  // only record primitvie now
-  if (f->f_localsplus[0] == nullptr) {
+  // only record primitive now
+  PyObject **f_localsplus = f.FastLocal();
+  if (f_localsplus[0] == nullptr) {
     return;
   }
-  if (!py::isinstance<Primitive>(f->f_localsplus[0]) && !py::isinstance<PrimitivePy>(f->f_localsplus[0]) &&
-      !py::isinstance<PrimitivePyAdapter>(f->f_localsplus[0])) {
+  if (!py::isinstance<Primitive>(f_localsplus[0]) && !py::isinstance<PrimitivePy>(f_localsplus[0]) &&
+      !py::isinstance<PrimitivePyAdapter>(f_localsplus[0])) {
     return;
   }
   // gradient info check
   if (!grad::FunctionNode::HasAttrReqGrad(ret) && !py::isinstance<py::tuple>(ret)) {
     return;
   }
-  MS_EXCEPTION_IF_CHECK_FAIL(f->f_code->co_kwonlyargcount == 0, "Must not have kw only args.");
-  auto inputs = CollectGradientArguments(*f);
+  MS_EXCEPTION_IF_CHECK_FAIL(co->co_kwonlyargcount == 0, "Must not have kw only args.");
+  auto inputs = CollectGradientArguments(co, f_localsplus);
   if (!std::any_of(inputs.begin(), inputs.end(),
                    [](const auto &input) { return grad::FunctionNode::IsRequiresGradient(input); })) {
     return;
   }
-  grad::FunctionNode::RecordPrimitive(py::cast<py::object>(f->f_localsplus[0]), py::cast<py::object>(ret), inputs);
+  grad::FunctionNode::RecordPrimitive(py::cast<py::object>(f_localsplus[0]), py::cast<py::object>(ret), inputs);
 }
 
-#if (PY_MAJOR_VERSION == 3) && (PY_MINOR_VERSION < 9)
-PyObject *EvalFrame(PyFrameObject *f, int exc) {
-  PyThreadState *tstate = PyThreadState_Get();
-
-#else
-PyObject *EvalFrame(PyThreadState *tstate, PyFrameObject *f, int exc) {
+PyObject *EvalFrame(PY_FRAME_EVAL_FUNCTION_SIGNATURE) {
+#ifdef PY_FRAME_EVAL_FUNCTION_DECLARE_THREAD_STATE
+  PY_FRAME_EVAL_FUNCTION_DECLARE_THREAD_STATE();
 #endif
-
   // exception handler
   if (exc != 0) {
-    return _PyEval_EvalFrameDefault(tstate, f, exc);
+    return _PyEval_EvalFrameDefault(ts, f, exc);
   }
-  return PyFrameEvalHookManager::GetInstance()->RunHook(tstate, f);
+  return PyFrameEvalHookManager::GetInstance()->RunHook(ts, f);
 }
 }  // namespace pijit
 }  // namespace mindspore
 
 namespace mindspore {
 
-#if (PY_MAJOR_VERSION == 3) && (PY_MINOR_VERSION >= 7) && (PY_MINOR_VERSION <= 10)
+#if (PY_MAJOR_VERSION == 3) && (PY_MINOR_VERSION >= 7) && (PY_MINOR_VERSION <= 11)
 
 py::bool_ pi_jit_enable() {
   PyInterpreterState *inter = PyInterpreterState_Main();
@@ -1579,7 +1444,10 @@ py::bool_ pi_jit_should_compile(const py::object &funcHandle, const py::object &
     return true;
   }
 
-  auto raw_code_size = (PyBytes_GET_SIZE(reinterpret_cast<PyCodeObject *>(code)->co_code)) / sizeof(_Py_CODEUNIT);
+  pijit::PyCodeWrapper co(code);
+  py::object bytes = co.Code();
+
+  auto raw_code_size = PyBytes_GET_SIZE(bytes.ptr());
   std::string raw_func_info_name = py::str(code).cast<std::string>();
   std::string raw_func_name = "";
   if (PyFunction_Check(func)) {

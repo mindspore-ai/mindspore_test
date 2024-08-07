@@ -23,7 +23,8 @@
 #include <string>
 #include <vector>
 #include "include/common/utils/python_adapter.h"
-#include "pipeline/jit/pi/pydef.h"
+#include "pipeline/jit/pi/python_adapter/pydef.h"
+#include "pipeline/jit/pi/utils/opcode_declare.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "frontend/operator/ops.h"
 #include "mindspore/ops/op_def/sparse_tensor_ops.h"

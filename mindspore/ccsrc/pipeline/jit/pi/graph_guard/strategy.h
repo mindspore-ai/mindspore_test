@@ -48,8 +48,8 @@ class OptStrategy {
   } CalcKind;
   static CalcKind MakeCalcStrategyByInputs(int bytecode, int opargs, const PyObjectArray &objs);
   static CalcKind MakeCalcStrategyByShape(const ShapeVector &shape);
-  static OptCodeSet MakeGuardListStrategyByFrame(const PyFrameObject *frame, const OptCodeSet &codes);
-  static GuardItemVector MakeGuardItemListStrategyByFrame(const PyFrameObject *frame, const GuardItemVector &list);
+  static OptCodeSet MakeGuardListStrategyByFrame(const OptCodeSet &codes);
+  static GuardItemVector MakeGuardItemListStrategyByFrame(const GuardItemVector &list);
 };
 
 }  // namespace pijit

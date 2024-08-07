@@ -17,7 +17,7 @@
 #include <set>
 #include <vector>
 #include <functional>
-#include "pipeline/jit/pi/pydef.h"
+#include "pipeline/jit/pi/python_adapter/pydef.h"
 #include "pipeline/jit/pi/graph_capture/node.h"
 #include "pipeline/jit/pi/graph_capture/graph.h"
 

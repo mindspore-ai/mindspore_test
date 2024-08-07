@@ -25,14 +25,6 @@
 #include "pipeline/jit/pi/external.h"
 #include "pipeline/jit/pi/graph_compiler/compiler.h"
 
-#ifndef PY_MAKECODEUNIT
-#ifdef WORDS_BIGENDIAN
-#define PY_MAKECODEUNIT(opcode, oparg) (MS_ASSERT((opcode) < NO_IMPL_OPCODE), ((opcode) << 8) | (oparg))
-#else
-#define PY_MAKECODEUNIT(opcode, oparg) (MS_ASSERT((opcode) < NO_IMPL_OPCODE), (opcode) | ((oparg) << 8))
-#endif
-#endif
-
 namespace mindspore {
 namespace pijit {
 constexpr const size_t MoveEightBits = 8;
@@ -186,9 +178,9 @@ std::pair<py::bytes, py::bytes> CodeGenerator::ConvertToCodeBytes(const std::vec
     }
     int oparg = i->arg();
     for (unsigned c = 0, exa = IntToSize(oparg) >> MoveEightBits; exa > 0; exa >>= MoveEightBits, ++c) {
-      co_code.insert(co_code.end() - c, PY_MAKECODEUNIT(EXTENDED_ARG, exa & 0xff));
+      co_code.insert(co_code.end() - c, _Py_MAKECODEUNIT(EXTENDED_ARG, exa & 0xff));
     }
-    co_code.push_back(PY_MAKECODEUNIT(i->op(), (signed)oparg & 0xff));
+    co_code.push_back(_Py_MAKECODEUNIT(i->op(), (signed)oparg & 0xff));
   }
   const char *code_data = reinterpret_cast<const char *>(co_code.data());
   const size_t code_size = co_code.size() * sizeof(co_code[0]);
@@ -696,12 +688,16 @@ static std::vector<std::unique_ptr<Instr>> MakeFunc(const py::object &code, cons
 }
 
 std::vector<std::string> CodeBreakGenerator::GetClosureNames() const {
+  PyCodeWrapper co(co_);
+  py::tuple cells = co.CellVars();
+  py::tuple frees = co.FreeVars();
+
   std::vector<std::string> names;
-  for (Py_ssize_t i = 0; i < PyTuple_GET_SIZE(co_->co_cellvars); ++i) {
-    names.push_back(PyUnicode_AsUTF8(PyTuple_GET_ITEM(co_->co_cellvars, i)));
+  for (Py_ssize_t i = 0; i < PyTuple_GET_SIZE(cells.ptr()); ++i) {
+    names.push_back(PyUnicode_AsUTF8(PyTuple_GET_ITEM(cells.ptr(), i)));
   }
-  for (Py_ssize_t i = 0; i < PyTuple_GET_SIZE(co_->co_freevars); ++i) {
-    names.push_back(PyUnicode_AsUTF8(PyTuple_GET_ITEM(co_->co_freevars, i)));
+  for (Py_ssize_t i = 0; i < PyTuple_GET_SIZE(frees.ptr()); ++i) {
+    names.push_back(PyUnicode_AsUTF8(PyTuple_GET_ITEM(frees.ptr(), i)));
   }
   return names;
 }
@@ -742,7 +738,8 @@ void CodeBreakGenerator::CallCapturedCode(CodeGenerator *code_gen) {
   int flag = (param_info.vargs_ ? CO_VARARGS : 0) | (param_info.kwargs_ ? CO_VARKEYWORDS : 0);
   py::object code = MakeCapturedCode(std::move(param_info.sort_), param_info.args_.size(), flag);
 
-  int closures = PyTuple_GET_SIZE(co_->co_cellvars) + PyTuple_GET_SIZE(co_->co_freevars);
+  PyCodeWrapper co(co_);
+  int closures = co.CellVarsSize() + co.FreeVarsSize();
   code_gen->AddInstrs(MakeFunc(code, "<pijit.compile>", closures));
   code_gen->AddInstrs(std::move(param_info.load_));
   if (flag) {
@@ -831,7 +828,7 @@ py::object CodeBreakGenerator::MakeUntrackedCode(int untracked_bci, int untracke
     (signed)co_->co_flags & ~(CO_VARARGS | CO_VARKEYWORDS),
     first_line,
     std::move(list),
-    py::cast<std::vector<std::string>>(co_->co_varnames),
+    py::cast<std::vector<std::string>>(PyCodeWrapper(co_).VarNames()),
     std::vector<std::string>(),
     GetClosureNames(),
     MakeBrkName(PyUnicode_AsUTF8(co_->co_name), untracked_bci),
@@ -870,7 +867,8 @@ void CodeBreakGenerator::BreakAtIf(CodeGenerator *code_gen) const {
   int op = list[break_bci_]->op();
   int stack_effect = -1;
   int stack_count = SizeToInt(interpret_.outputs.size() - alive_locals_.size());
-  int closures = PyTuple_GET_SIZE(co_->co_cellvars) + PyTuple_GET_SIZE(co_->co_freevars);
+  PyCodeWrapper co(co_);
+  int closures = co.CellVarsSize() + co.FreeVarsSize();
   py::object code;
 
   MS_EXCEPTION_IF_CHECK_FAIL(stack_count >= 1, "error stack");
@@ -924,7 +922,8 @@ void CodeBreakGenerator::BreakAtBlock(CodeGenerator *code_gen, int untracked_bci
   untracked_stack_effect = 0;
 
   py::object code = MakeUntrackedCode(untracked_bci, untracked_stack_effect);
-  int closures = PyTuple_GET_SIZE(co_->co_cellvars) + PyTuple_GET_SIZE(co_->co_freevars);
+  PyCodeWrapper co(co_);
+  int closures = co.CellVarsSize() + co.FreeVarsSize();
   code_gen->AddInstrs(MakeFunc(code, "<pijit.resume>", closures));
 
   for (auto i : alive_locals_) {
@@ -969,7 +968,8 @@ void CodeBreakGenerator::CallUntrackedCode(CodeGenerator *code_gen) {
   }
 
   py::object code = MakeUntrackedCode(untracked_bci, untracked_stack_effect);
-  int closures = PyTuple_GET_SIZE(co_->co_cellvars) + PyTuple_GET_SIZE(co_->co_freevars);
+  PyCodeWrapper co(co_);
+  int closures = co.CellVarsSize() + co.FreeVarsSize();
   code_gen->AddInstrs(MakeFunc(code, "<pijit.resume>", closures));
 
   ReconstructStack(code_gen, untracked_bci, untracked_stack_effect);
@@ -1073,13 +1073,17 @@ void CodeBreakGenerator::ExtendCodeInfo(CodeGenerator *cg, bool merge_kw_only) c
   int argc = merge_kw_only ? (co_->co_argcount) + co_->co_kwonlyargcount : co_->co_argcount;
   int kw_only = merge_kw_only ? 0 : co_->co_kwonlyargcount;
 
+  PyCodeWrapper co(co_);
+  auto varnames = co.VarNames();
+  auto cellvars = co.CellVars();
+  auto freevars = co.FreeVars();
   cg->SetArgsInfo(argc, kw_only);
   cg->SetLocalsCount(co_->co_nlocals);
   cg->SetCodeFlags(co_->co_flags);
   cg->SetFirstLineNumber(co_->co_firstlineno);
-  cg->SetVariableNames(py::cast<std::vector<std::string>>(co_->co_varnames));
-  cg->SetCellVariableNames(py::cast<std::vector<std::string>>(co_->co_cellvars));
-  cg->SetFreeVariableNames(py::cast<std::vector<std::string>>(co_->co_freevars));
+  cg->SetVariableNames(py::cast<std::vector<std::string>>(varnames));
+  cg->SetCellVariableNames(py::cast<std::vector<std::string>>(cellvars));
+  cg->SetFreeVariableNames(py::cast<std::vector<std::string>>(freevars));
   cg->SetFileName(py::reinterpret_borrow<py::object>(co_->co_filename));
 }
 

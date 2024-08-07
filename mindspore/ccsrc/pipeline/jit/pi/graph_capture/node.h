@@ -29,6 +29,7 @@
 #include "pipeline/jit/pi/utils/utils.h"
 #include "pipeline/jit/pi/graph_guard/trace.h"
 #include "pipeline/jit/pi/graph_capture/abstract_wrapper.h"
+#include "pipeline/jit/pi/utils/opcode_declare.h"
 
 namespace mindspore {
 namespace pijit {

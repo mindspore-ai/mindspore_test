@@ -22,7 +22,6 @@
 #include <map>
 #include <chrono>
 #include "pybind11/pybind11.h"
-#include "pipeline/jit/pi/pydef.h"
 #include "ir/cell.h"
 
 namespace mindspore {

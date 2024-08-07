@@ -32,7 +32,7 @@
 #include "frontend/operator/composite/composite.h"
 #include "ir/cell.h"
 #include "pipeline/jit/ps/resource.h"
-#include "pipeline/jit/pi/pydef.h"
+#include "pipeline/jit/pi/python_adapter/pydef.h"
 #include "pipeline/jit/pi/graph_guard/guard_utils.h"
 #include "pipeline/jit/ps/parse/data_converter.h"
 #include "pipeline/jit/ps/action.h"

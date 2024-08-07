@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 #include "pipeline/jit/pi/eval_frame_hook.h"
-#include "pipeline/jit/pi/pydef.h"
 #include "pipeline/jit/pi/pi_jit_config.h"
 #include "pipeline/jit/pi/runtime.h"
 #include "pipeline/jit/pi/external.h"
@@ -22,12 +21,12 @@
 namespace mindspore {
 namespace pijit {
 
-bool ApplyAutoJit(PyThreadState *ts, PyFrameObject *f, PyObject **result) {
+bool ApplyAutoJit(PyThreadState *ts, EvalFrameObject *f, PyObject **result) {
   if (!kPIJitConfigDefault.GetBoolConfig(GraphJitConfig::kAutoJit)) {
     return false;
   }
 
-  PyObject *code = reinterpret_cast<PyObject *>(f->f_code);
+  PyObject *code = reinterpret_cast<PyObject *>(PyFrameWrapper(f).GetCode().ptr());
   auto c = GetJitCompileResults(code);
   if (c == nullptr) {
     if (!kPIJitConfigDefault.ShouldAutoJit(f)) {
@@ -40,7 +39,7 @@ bool ApplyAutoJit(PyThreadState *ts, PyFrameObject *f, PyObject **result) {
   return true;
 }
 
-bool ApplyAutoGrad(PyThreadState *ts, PyFrameObject *f, PyObject **result) {
+bool ApplyAutoGrad(PyThreadState *ts, EvalFrameObject *f, PyObject **result) {
   if (kPIJitConfigDefault.GetBoolConfig(GraphJitConfig::kInferOnly)) {
     return false;
   }
@@ -52,8 +51,8 @@ bool ApplyAutoGrad(PyThreadState *ts, PyFrameObject *f, PyObject **result) {
 PyFrameEvalHookManager::PyFrameEvalHookManager() : func_() {
   this->Register(ApplyAutoGrad);
   this->Register(ApplyAutoJit);
-  this->Register([](PyThreadState *ts, PyFrameObject *f, PyObject **result) {
-    auto c = GetJitCompileResults(f->f_code);
+  this->Register([](PyThreadState *ts, EvalFrameObject *f, PyObject **result) {
+    auto c = GetJitCompileResults(PyFrameWrapper(f).GetCode().ptr());
     *result = c != nullptr ? CallCodeHook(ts, f, c) : _PyEval_EvalFrameDefault(ts, f, 0);
     return true;
   });
@@ -64,7 +63,7 @@ PyFrameEvalHookManager *PyFrameEvalHookManager::GetInstance() {
   return &instance;
 }
 
-PyObject *PyFrameEvalHookManager::RunHook(PyThreadState *ts, PyFrameObject *f) {
+PyObject *PyFrameEvalHookManager::RunHook(PyThreadState *ts, EvalFrameObject *f) {
   PyObject *res = nullptr;
   if (std::any_of(func_.rbegin(), func_.rend(), [&](Hook func) { return func(ts, f, &res); })) {
     return res;
