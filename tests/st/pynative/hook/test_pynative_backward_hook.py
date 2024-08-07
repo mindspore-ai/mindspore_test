@@ -14,8 +14,7 @@
 # ============================================================================
 import numpy as np
 import mindspore.nn as nn
-from mindspore import ops, Tensor
-from mindspore import context
+from mindspore import ops, Tensor, jit, context
 from mindspore.ops import GradOperation
 from mindspore.common import ParameterTuple
 from tests.mark_utils import arg_mark
@@ -255,3 +254,47 @@ def test_pynative_hook_tuple_with_single_element():
     output = split_net(Tensor(input_x), 1)
     output_cat = ops.cat(output, axis=1)
     print(output_cat)
+
+
+def backward_hook_with_jit(cell_id, grad_inp, grad_outp):
+    """
+    print input and output
+    """
+    print(cell_id)
+    print("input: ", grad_inp)
+    print("outp: ", grad_outp)
+    return Tensor(np.array([2, 3, 4, 5])).astype(np.float32), Tensor(np.array([5, 6, 7, 8]).astype(np.float32))
+
+
+class NetJit(nn.Cell):
+    def __init__(self):
+        super(NetJit, self).__init__()
+        self.mul = nn.MatMul()
+        self.relu = nn.ReLU()
+        self.handle = self.mul.register_backward_hook(backward_hook_with_jit)
+
+    @jit
+    def construct(self, x, y):
+        x = self.mul(x, y)
+        x = self.relu(x)
+        x = x + y
+        return x
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_hook_backward_with_jit():
+    """
+    Feature: Test hook backward feature
+    Description: test hook with jit
+    Expectation: Success
+    """
+    context.set_context(mode=context.PYNATIVE_MODE, save_graphs=0)
+    input_x = Tensor(np.array([1, 2, 3, 4]).astype(np.float32))
+    input_y = Tensor(np.array([5, 6, 7, 8]).astype(np.float32))
+    net = NetJit()
+    output = net(input_x, input_y)
+    assert np.allclose(output.asnumpy(), Tensor(np.array([75, 76, 77, 78])).astype(np.float32).asnumpy(),
+                       0.001, 0.001)

@@ -262,6 +262,10 @@ void TopCellInfo::SaveForwardOutputTensorInfoInBpropGraph(const FuncGraphPtr &fu
   initial_graph_param_size_ = func_graph->parameters().size();
   if (has_bprop_cut_op()) {
     MS_LOG(DEBUG) << "Top cell has bprop cut, no need to save forward output tensor info";
+    const auto &value_node_list = func_graph->value_nodes();
+    for (const auto &elem : value_node_list) {
+      PyNativeAlgo::DataConvert::TransformValueNodeBaseTensorToTensor(elem.first->cast<ValueNodePtr>());
+    }
     return;
   }
   MS_LOG(DEBUG) << "Save top cell forward output tensor info";

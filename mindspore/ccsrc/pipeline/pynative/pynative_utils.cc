@@ -1635,6 +1635,17 @@ bool DataConvert::RunOpConvertConstInputToAttr(const FrontendOpRunInfoPtr &op_ru
   return true;
 }
 
+void DataConvert::TransformValueNodeBaseTensorToTensor(const ValueNodePtr &value_node) {
+  MS_EXCEPTION_IF_NULL(value_node);
+  const auto &v = value_node->value();
+  MS_EXCEPTION_IF_NULL(v);
+  if (!v->isa<tensor::BaseTensor>()) {
+    return;
+  }
+  const auto &tensor = v->cast<tensor::BaseTensorPtr>();
+  value_node->set_value(std::make_shared<tensor::Tensor>(*tensor));
+}
+
 FrontendOpRunInfoPtr PyBoost::Init(const PrimitivePtr &prim, const py::list &args) {
   const auto &pynative_executor = Common::GetPyNativeExecutor();
   const auto &forward_executor = pynative_executor->forward_executor();
