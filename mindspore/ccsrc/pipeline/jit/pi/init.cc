@@ -25,10 +25,21 @@ using FunctionNode = mindspore::pijit::grad::FunctionNode;
 void RegPIJitInterface(py::module *m) {
 #if (PY_MAJOR_VERSION == 3) && (PY_MINOR_VERSION >= 11)
   // pijit cannot support python>=3.11 for now, but will be adapted very soon.
-  (void)m->def("jit_mode_pi_enable", []() { return py::bool_(false); });
+  (void)m->def("jit_mode_pi_enable", []() {
+    MS_LOG(ERROR) << "not support python3.11 bytecode yet.";
+    return py::bool_(false);
+  });
   (void)m->def("jit_mode_pi_disable", []() { return py::bool_(false); });
   (void)m->def("jit_mode_pi_compile",
                [](const py::object &, const py::object &, const py::object &) { return py::bool_(false); });
+  (void)m->def(
+    "update_pijit_default_config", [](py::args, py::kwargs) { return py::none() }, "update pijit default config");
+  (void)m->def(
+    "get_code_extra", [](py::args, py::kwargs) { return py::none() },
+    "get copy of code extra which is the pijit compile result");
+  (void)m->def(
+    "function_id", [](py::args, py::kwargs) { return py::int_(0); },
+    "Get cpp function pointer, or python function pointer, or object pointer");
 #else
   // PIJit interface
   (void)m->def("jit_mode_pi_enable", &mindspore::pi_jit_enable, "enable jit from python byte code");
