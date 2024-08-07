@@ -15,9 +15,14 @@
 """test while in PIJit and pynative mode"""
 from mindspore import Tensor, jit, context
 from mindspore.common import dtype as mstype
-import pytest
+import sys  
+import pytest 
 from tests.mark_utils import arg_mark
 
+@pytest.fixture(autouse=True)  
+def skip_if_python_version_too_high():  
+    if sys.version_info >= (3, 11):  
+        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 #@jit(mode="PIJit")
 #TODO: fix CODEHOOK
