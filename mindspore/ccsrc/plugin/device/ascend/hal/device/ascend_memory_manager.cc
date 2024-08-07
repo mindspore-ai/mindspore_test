@@ -93,8 +93,8 @@ std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>
 AscendMemoryManager::GetPersistentMemBlocksInfoStatistics() const {
   return AscendMemoryPool::GetInstance().PersistentMemBlocksInfoStatistics();
 }
-void AscendMemoryManager::ResetMaxMemoryReserved() const { AscendMemoryPool::GetInstance().ResetMaxMemReserved(); }
-void AscendMemoryManager::ResetMaxMemoryAllocated() const { AscendMemoryPool::GetInstance().ResetMaxMemAllocated(); }
+void AscendMemoryManager::ResetMaxMemoryReserved() { AscendMemoryPool::GetInstance().ResetMaxMemReserved(); }
+void AscendMemoryManager::ResetMaxMemoryAllocated() { AscendMemoryPool::GetInstance().ResetMaxMemAllocated(); }
 
 uint8_t *AscendMemoryManager::MallocStaticMem(size_t size, bool communication_mem, uint32_t graph_id) {
   size_t align_size = 0;

@@ -292,14 +292,18 @@ GeDeviceResManager::GetPersistentMemBlocksInfoStatistics() const {
   return mem_manager_->GetPersistentMemBlocksInfoStatistics();
 }
 
-void GeDeviceResManager::ResetMaxMemoryReserved() const {
+void GeDeviceResManager::ResetMaxMemoryReserved() {
   MS_EXCEPTION_IF_NULL(mem_manager_);
-  mem_manager_->ResetMaxMemoryReserved();
+  auto memory_pool = mem_manager_->memory_pool();
+  MS_EXCEPTION_IF_NULL(memory_pool);
+  memory_pool->ResetMaxMemReserved();
 }
 
-void GeDeviceResManager::ResetMaxMemoryAllocated() const {
+void GeDeviceResManager::ResetMaxMemoryAllocated() {
   MS_EXCEPTION_IF_NULL(mem_manager_);
-  mem_manager_->ResetMaxMemoryAllocated();
+  auto memory_pool = mem_manager_->memory_pool();
+  MS_EXCEPTION_IF_NULL(memory_pool);
+  memory_pool->ResetMaxMemAllocated();
 }
 
 void GeDeviceResManager::SwapIn(const void *host_ptr, void *device_ptr, size_t mem_size, void *stream) {

@@ -8,6 +8,10 @@ endif()
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -Wno-user-defined-warnings -Wno-inconsistent-missing-override \
         -Wno-overloaded-virtual -Wno-unused-const-variable -Wno-pessimizing-move")
+    if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+      set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -finline-functions -funswitch-loops \
+          -fgcse-after-reload -finline-small-functions -fpredictive-commoning")
+    endif()
 endif()
 
 set_property(SOURCE ${_PREACTIVATE_SRC_LIST} PROPERTY COMPILE_DEFINITIONS

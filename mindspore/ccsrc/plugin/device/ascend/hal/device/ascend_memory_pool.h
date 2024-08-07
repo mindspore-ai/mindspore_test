@@ -17,54 +17,143 @@
 #ifndef MINDSPORE_CCSRC_RUNTIME_DEVICE_ASCEND_ASCEND_MEMORY_POOL_H_
 #define MINDSPORE_CCSRC_RUNTIME_DEVICE_ASCEND_ASCEND_MEMORY_POOL_H_
 
+#include <atomic>
 #include <memory>
 #include <string>
-#include "utils/hash_map.h"
-#include "include/backend/visible.h"
+
+#include "include/backend/mem_reuse/abstract_dynamic_mem_pool.h"
+#include "include/backend/mem_reuse/enhanced_dynamic_mem_pool.h"
 #include "include/backend/mem_reuse/mem_dynamic_allocator.h"
+#include "include/backend/visible.h"
+#include "plugin/device/ascend/hal/device/abstract_ascend_memory_pool_support.h"
+#include "plugin/device/ascend/hal/profiler/ascend_profiling.h"
+#include "utils/hash_map.h"
+#include "utils/ms_context.h"
+#include "utils/ms_utils.h"
 
 namespace mindspore {
 namespace device {
 namespace ascend {
-class BACKEND_EXPORT AscendMemoryPool : public DynamicMemPoolBestFit {
+class DefaultAscendMemoryPool : public AbstractAscendMemoryPoolSupport, public AbstractDynamicMemPool {
  public:
-  ~AscendMemoryPool() override = default;
+  DefaultAscendMemoryPool();
+  DefaultAscendMemoryPool(const DefaultAscendMemoryPool &) = delete;
+  DefaultAscendMemoryPool &operator=(const DefaultAscendMemoryPool &) = delete;
+  ~DefaultAscendMemoryPool() override = default;
+
+  std::string GetMemoryPoolType() const override { return "DefaultAscendMemoryPool"; }
+
+  void SetMemPoolBlockSize(size_t available_device_mem_size) override {
+    return AbstractAscendMemoryPoolSupport::SetMemPoolBlockSize(available_device_mem_size);
+  }
+
+  size_t CalMemBlockAllocSize(size_t size, bool from_persistent_mem, bool need_recycle = false) override {
+    return AbstractAscendMemoryPoolSupport::CalMemBlockAllocSize(size, from_persistent_mem, need_recycle);
+  }
+
+  const bool IsEnableEagerFree() const override { return AbstractAscendMemoryPoolSupport::IsEnableEagerFree(); }
+};
+
+class DefaultEnhancedAscendMemoryPool : public AbstractAscendMemoryPoolSupport, public EnhancedDynamicMemPool {
+ public:
+  DefaultEnhancedAscendMemoryPool();
+  DefaultEnhancedAscendMemoryPool(const DefaultEnhancedAscendMemoryPool &) = delete;
+  DefaultEnhancedAscendMemoryPool &operator=(const DefaultEnhancedAscendMemoryPool &) = delete;
+  ~DefaultEnhancedAscendMemoryPool() override = default;
+
+  std::string GetMemoryPoolType() const override { return "DefaultEnhancedAscendMemoryPool"; }
+
+  void SetMemPoolBlockSize(size_t available_device_mem_size) override {
+    return AbstractAscendMemoryPoolSupport::SetMemPoolBlockSize(available_device_mem_size);
+  }
+
+  size_t CalMemBlockAllocSize(size_t size, bool from_persistent_mem, bool need_recycle = false) override {
+    return AbstractAscendMemoryPoolSupport::CalMemBlockAllocSize(size, from_persistent_mem, need_recycle);
+  }
+
+  const bool IsEnableEagerFree() const override { return AbstractAscendMemoryPoolSupport::IsEnableEagerFree(); }
+};
+
+class BestFitAscendMemoryPool : public AbstractAscendMemoryPoolSupport, public DynamicMemPoolBestFit {
+ public:
+  BestFitAscendMemoryPool();
+  BestFitAscendMemoryPool(const BestFitAscendMemoryPool &) = delete;
+  BestFitAscendMemoryPool &operator=(const BestFitAscendMemoryPool &) = delete;
+  ~BestFitAscendMemoryPool() override = default;
+
+  void SetMemPoolBlockSize(size_t available_device_mem_size) override {
+    return AbstractAscendMemoryPoolSupport::SetMemPoolBlockSize(available_device_mem_size);
+  }
+
+  size_t CalMemBlockAllocSize(size_t size, bool from_persistent_mem, bool need_recycle = false) override {
+    return AbstractAscendMemoryPoolSupport::CalMemBlockAllocSize(size, from_persistent_mem, need_recycle);
+  }
+
+  const bool IsEnableEagerFree() const override { return AbstractAscendMemoryPoolSupport::IsEnableEagerFree(); }
+
+  std::string GetMemoryPoolType() const override { return "BestFitAscendMemoryPool"; }
+};
+
+class BACKEND_EXPORT AscendMemoryPool {
+ public:
   AscendMemoryPool(const AscendMemoryPool &) = delete;
   AscendMemoryPool &operator=(const AscendMemoryPool &) = delete;
 
-  size_t AllocDeviceMem(size_t size, DeviceMemPtr *addr) override;
-  bool FreeDeviceMem(const DeviceMemPtr &addr) override;
-  size_t MmapDeviceMem(const size_t size, const DeviceMemPtr addr) override;
-  size_t GetMaxUsedMemSize() const override;
-  size_t GetVmmUsedMemSize() const override;
-  size_t free_mem_size() override;
-  uint64_t total_mem_size() const override;
-  std::string GetMemoryPoolType() const override { return "Ascend"; }
-  // Set mem pool block size
-  void SetMemPoolBlockSize(size_t available_device_mem_size) override;
-
-  void ResetIdleMemBuf() const;
-
-  static AscendMemoryPool &GetInstance() {
-    static AscendMemoryPool instance;
-    return instance;
+  static AbstractAscendMemoryPoolSupport &GetInstance() {
+    static std::once_flag flag;
+    std::call_once(flag, [&]() {
+      if (UseOldMemoryPool()) {
+        instance_ = std::make_shared<BestFitAscendMemoryPool>();
+      } else {
+        if (UseEnhancedMemoryPool()) {
+          instance_ = std::make_shared<DefaultEnhancedAscendMemoryPool>();
+        } else {
+          instance_ = std::make_shared<DefaultAscendMemoryPool>();
+        }
+      }
+    });
+    return *instance_;
   }
 
- protected:
-  // Calculate memory block required alloc size when adding the memory block.
-  size_t CalMemBlockAllocSize(size_t size, bool from_persistent_mem, bool need_recycle) override;
+  static bool UseOldMemoryPool() {
+    return common::IsDisableRuntimeConfig(common::kRuntimeGeKernel) ||
+           common::IsEnableAllocConfig(common::kAllocMemoryPool);
+  }
 
-  // The related interface of device memory eager free.
-  const bool IsEnableEagerFree() const override;
-  const bool SyncAllStreams() override;
-  size_t AllocDeviceMemByEagerFree(size_t size, DeviceMemPtr *addr) override;
-  size_t FreeDeviceMemByEagerFree(const DeviceMemPtr addr, const size_t size) override;
+  // Use enhanced memory pool when enable debug, enable log, enable prof, dry run and so on.
+  static bool UseEnhancedMemoryPool() {
+    bool enable_debugger = false;
+#ifdef ENABLE_DEBUGGER
+    auto profiler = profiler::Profiler::GetInstance(kCPUDevice);
+    if (profiler != nullptr && profiler->GetEnableFlag() && profiler->GetProfileMemoryFlag()) {
+      enable_debugger = true;
+    }
+#endif
+    auto submodule = common::GetEnv("MS_SUBMODULE_LOG_v");
+    bool enable_pre_act_log = ParseDebugConfig(submodule, "PRE_ACT") == "0";
+    bool enable_debug_log = common::GetEnv("GLOG_v") == "0";
+    return enable_debugger || enable_pre_act_log || enable_debug_log ||
+           MsContext::GetInstance()->get_param<bool>(MS_CTX_ENABLE_PROF_MEM) ||
+           common::IsEnableAllocConfig(common::kAllocMemoryTracker) || common::IsNeedProfileMemory();
+  }
+
+  static std::string ParseDebugConfig(std::string input, std::string config) {
+    auto pos = input.find(config);
+    if (pos == std::string::npos) {
+      return "";
+    }
+    auto config_pos = input.find(",", pos);
+    size_t skip_count = config.size() + 1;
+    auto config_str = input.substr(pos + skip_count, config_pos - pos - skip_count);
+    if (config_str.find("}") != std::string::npos) {
+      config_str = config_str.substr(0, config_str.size() - 1);
+    }
+    // need trim laster
+    return config_str;
+  }
 
  private:
-  AscendMemoryPool();
-  std::mutex mutex_;
-  // overflow memory info, key is kernel, val is memory ptr
-  mindspore::HashMap<std::string, void *> overflow_memory_info_map_;
+  static std::shared_ptr<AbstractAscendMemoryPoolSupport> instance_;
 };
 }  // namespace ascend
 }  // namespace device

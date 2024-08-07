@@ -1188,13 +1188,14 @@ void KernelActor::ProcessMultiStreamAfterKernelLaunch(OpContext<DeviceTensor> *c
   auto stream_id = kernel_info_->stream_id();
   if (stream_id != kDefaultStreamIndex) {
     for (const auto &input_kernel_tensor : input_kernel_tensors_) {
-      if (input_kernel_tensor->stream_id() == kernel_info_->stream_id()) {
+      if (input_kernel_tensor->stream_id() == stream_id) {
         cross_stream_addresses_.emplace_back(kDefaultStreamIndex, input_kernel_tensor->device_ptr());
       }
     }
     for (const auto &output_kernel_tensor : output_kernel_tensors_) {
       cross_stream_addresses_.emplace_back(kDefaultStreamIndex, output_kernel_tensor->device_ptr());
     }
+
     // Record event.
     if (!cross_stream_addresses_.empty()) {
       MS_LOG(DEBUG) << "Record event for kernel : " << kernel_->fullname_with_scope()

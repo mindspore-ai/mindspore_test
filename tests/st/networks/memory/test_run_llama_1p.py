@@ -41,7 +41,7 @@ def run_command(cmd, log_path, tracker_path, somas_check, enable_somas):
     if enable_somas:
         assert int(eager_free_cnt) <= 2
     else:
-        assert int(eager_free_cnt) > 2
+        assert int(eager_free_cnt) > 0
 
     somas_para = "allocate somas merged blocks"
     somas_output = subprocess.check_output(

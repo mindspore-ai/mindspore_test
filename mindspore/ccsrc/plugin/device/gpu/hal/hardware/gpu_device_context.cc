@@ -471,11 +471,11 @@ GPUDeviceResManager::GetPersistentMemBlocksInfoStatistics() const {
   MS_EXCEPTION_IF_NULL(mem_manager_);
   return mem_manager_->GetPersistentMemBlocksInfoStatistics();
 }
-void GPUDeviceResManager::ResetMaxMemoryReserved() const {
+void GPUDeviceResManager::ResetMaxMemoryReserved() {
   MS_EXCEPTION_IF_NULL(mem_manager_);
   mem_manager_->ResetMaxMemoryReserved();
 }
-void GPUDeviceResManager::ResetMaxMemoryAllocated() const {
+void GPUDeviceResManager::ResetMaxMemoryAllocated() {
   MS_EXCEPTION_IF_NULL(mem_manager_);
   mem_manager_->ResetMaxMemoryAllocated();
 }

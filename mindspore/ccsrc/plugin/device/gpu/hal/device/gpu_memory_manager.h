@@ -53,8 +53,8 @@ class GPUMemoryManager : public MemoryManager {
     const override;
   std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>
   GetPersistentMemBlocksInfoStatistics() const override;
-  void ResetMaxMemoryReserved() const override;
-  void ResetMaxMemoryAllocated() const override;
+  void ResetMaxMemoryReserved() override;
+  void ResetMaxMemoryAllocated() override;
 
  protected:
   uint8_t *MallocStaticMem(size_t size, bool communication_mem, uint32_t graph_id) override;
