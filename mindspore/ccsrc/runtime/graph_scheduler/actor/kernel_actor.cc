@@ -853,6 +853,7 @@ void KernelActor::ExecuteInferShapeTask(OpContext<DeviceTensor> *const context) 
   if (is_dynamic_type_) {
     InferShapeAndType();
   } else if (is_dynamic_shape_) {
+    device_contexts_[0]->device_res_manager_->BindDeviceToCurrentThread(false);
     InferShape();
   }
 
