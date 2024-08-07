@@ -26,6 +26,7 @@ import socket
 from enum import Enum
 from multiprocessing import Process
 from typing import List
+from sys import getsizeof
 import numpy as np
 
 from mindspore import log as logger, context
@@ -65,6 +66,8 @@ from mindspore.profiler.parser.ascend_hccl_generator import AscendHCCLGenerator
 from mindspore.profiler.parser.ascend_communicate_generator import AscendCommunicationGenerator
 from mindspore.profiler.parser.ascend_memory_generator import AscendMemoryGenerator
 from mindspore.profiler.parser.ascend_integrate_generator import AscendIntegrateGenerator
+from mindspore.profiler.parser.ascend_analysis.file_manager import FileManager
+
 
 INIT_OP_NAME = 'Default/InitDataSetQueue'
 
@@ -490,6 +493,9 @@ class Profiler:
         self._rank_size = 1
         self._rank_id = 0
         self._ascend_profiler = None
+        self.metadata = {}
+        self.max_str_len = 4096
+        self.max_meta_size = 50 * 1024
         self._timeline_size_limit_byte = 500 * 1024 * 1024  # 500MB
         self._parallel_strategy = True
         self._model_iteration_dict = None
@@ -956,7 +962,88 @@ class Profiler:
         self._init_profiler_info()
         ProfilerInfo.set_diff_time(self._start_time - self._monotonic_time)
         ProfilerInfo.save(self._output_path)
+        self._dump_metadata()
         logger.info("Profiling: stop time: %d", self._stop_time)
+
+    def add_metadata(self, key: str, value: str):
+        """
+        Report custom metadata key-value pair data.
+
+        Args:
+            key (str): The key to the metadata.
+            value (str): The value to the metadata.
+
+        Examples:
+            >>> from mindspore import Profiler
+            >>> # Profiler init.
+            >>> profiler = Profiler()
+            >>> # Call Profiler add_metadata
+            >>> profiler.add_metadata("test_key", "test_value")
+            >>> # Profiler end
+            >>> profiler.analyse()
+            >>>
+        """
+        if not isinstance(key, str) or not isinstance(value, str):
+            logger.warning("The key and value of metadata must be string. Skip this metadata.")
+            return
+        if not self._check_str_valid(key) or not self._check_str_valid(value):
+            logger.warning("Invalid input key or value. Skip this metadata.")
+            return
+        add_size = getsizeof(key) + getsizeof(value)
+        if getsizeof(self.metadata) + add_size < self.max_meta_size:
+            if key in self.metadata:
+                logger.warning(f"{key} is already saved as metadata, override it.")
+            self.metadata[key] = value
+        else:
+            logger.warning("Too many metadata added. Skip this metadata")
+
+    def add_metadata_json(self, key: str, value: str):
+        """
+        Report custom metadata key-value pair data with the value as a JSON string data.
+
+        Args:
+            key (str): The key to the metadata.
+            value (str): The json str format value to the metadata.
+
+        Examples:
+            >>> from mindspore import Profiler
+            >>> # Profiler init.
+            >>> profiler = Profiler()
+            >>> # Call Profiler add_metadata_json
+            >>> profiler.add_metadata_json("test_key", "{'k1': 'v1', 'k2': 'v2'}")
+            >>> # Profiler end
+            >>> profiler.analyse()
+            >>>
+        """
+        if not isinstance(key, str) or not isinstance(value, str):
+            logger.warning("The key and value of metadata must be string. Skip this metadata.")
+            return
+        if not self._check_str_valid(key) or not self._check_str_valid(value):
+            logger.warning("Invalid input key or value. Skip this metadata.")
+            return
+        add_size = getsizeof(key) + getsizeof(value)
+        if getsizeof(self.metadata) + add_size < self.max_meta_size:
+            try:
+                if key in self.metadata:
+                    logger.warning(f"{key} is already saved as metadata, override it.")
+                self.metadata[key] = json.loads(value)
+            except ValueError:
+                logger.warning("The metadata value must be json format string. Skip this metadata")
+        else:
+            logger.warning("Too many metadata added. Skip this metadata")
+
+    def _dump_metadata(self):
+        """Dump metadata to file."""
+        if not self.metadata:
+            return
+        FileManager.create_json_file(self._output_path, self.metadata, "profiler_metadata.json", indent=4)
+        self.metadata.clear()
+
+    def _check_str_valid(self, input_str: str):
+        """Check str length"""
+        if len(input_str) > self.max_str_len:
+            return False
+        return True
 
     def _set_ascend_job_id(self, ascend_job_id):
         """Set output_path for offline parsing performance data."""
@@ -1412,6 +1499,11 @@ class Profiler:
         source_profiler_info_path = os.path.join(self._output_path, f"profiler_info_{dev_id}.json")
         target_profiler_info_path = os.path.join(ascend_ms_path, f"profiler_info_{dev_id}.json")
         shutil.copy(source_profiler_info_path, target_profiler_info_path)
+
+        source_profiler_metadata_path = os.path.join(self._output_path, f"profiler_metadata.json")
+        if os.path.exists(source_profiler_metadata_path):
+            target_profiler_metadata_path = os.path.join(ascend_ms_path, f"profiler_metadata.json")
+            shutil.copy(source_profiler_metadata_path, target_profiler_metadata_path)
 
         source_timeline_path = os.path.join(self._output_path, f"ascend_timeline_display_{dev_id}.json")
         target_timeline_path = os.path.join(ascend_profiler_output_path, f"trace_view.json")
