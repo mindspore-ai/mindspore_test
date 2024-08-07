@@ -593,6 +593,33 @@ bool InferBuiltinFuncOrMethod(CallNode *call_node, GraphBuilder *unused = nullpt
   return false;
 }
 
+// dict.items()
+bool InferDictItems(CallNode *call_node, GraphBuilder *unused = nullptr) {
+  MS_LOG(INFO) << "Start to handle dict items.";
+  (void)JustCallAndSetRes(call_node);
+  auto func = call_node->input(0);
+  if (func->GetOpcode() == LOAD_ATTR) {
+    auto dict_node = func->input(0);
+    MS_EXCEPTION_IF_NULL(dict_node);
+    auto wrapper = dict_node->abstract_wrapper();
+    if (wrapper == nullptr) {
+      MS_LOG(INFO) << "Wrapper is NULL for dict node: " << dict_node->ToString() << ", failed to infer dict.items()";
+      return false;
+    }
+    auto mind_builder = static_cast<MindGraphBuilder *>(unused);
+    std::vector<AbstractWrapperPtr> inputs_wrapper = {wrapper};
+    auto ret = mind_builder->FGBuilder()->AddNode(prim::kPrimDictItems, inputs_wrapper);
+    if (ret == nullptr) {
+      MS_LOG(INFO) << "Handle dict items failed for node: " << call_node->ToString();
+      return false;
+    }
+    call_node->set_abstract_wrapper(ret);
+    return true;
+  }
+  MS_LOG(INFO) << "Failed to infer dict.items for node: " << call_node->ToString();
+  return false;
+}
+
 static bool InferTensorAsType(CallNode *call_node, GraphBuilder *unused = nullptr) {
   ValueNode *self_node = GetBoundSelf(call_node);
   bool is_not_method = call_node->input(0)->GetVobj()->GetType() != AObject::kTypeBoundMethod;
@@ -968,6 +995,7 @@ enum FuncKey {
   FUNC_KEY_LIST_POP,              // list.pop
   FUNC_KEY_LIST_REMOVE,           // list.remove
   FUNC_KEY_LIST_REVERSE,          // list.reverse
+  FUNC_KEY_DICT_ITEMS,            // dict.items
   FUNC_KEY_COUNT,
 };
 static FuncKey FindFuncKey(const py::object &callable);
@@ -1008,6 +1036,7 @@ static const std::unordered_map<FuncKey, InferFunc> mind_infer_func_map = {
   {FUNC_KEY_LIST_POP, InferListPop},
   {FUNC_KEY_LIST_REMOVE, InferListRemove},
   {FUNC_KEY_LIST_REVERSE, InferListReverse},
+  {FUNC_KEY_DICT_ITEMS, InferDictItems},
 };
 
 InferFunc FindInferFunc(const py::object &callable, bool trace_flag) {

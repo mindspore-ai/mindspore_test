@@ -157,6 +157,7 @@ FUNC_KEY_MAPPING_GET = 18 # collections.abc.Mapping.get
 FUNC_KEY_LIST_POP = 19  # list.pop
 FUNC_KEY_LIST_REMOVE = 20  # list.remove
 FUNC_KEY_LIST_REVERSE = 21  # list.reverse
+FUNC_KEY_DICT_ITEMS = 22  # dict.items
 
 # Initialized only once. This map will initialize by c++ when start pijit.
 # key is customer if fuzzy match. (Primitive, constexpr, primexpr, MetaFuncGraph)
@@ -242,6 +243,7 @@ _func_map = {
     function_id(list.remove): FUNC_KEY_LIST_REMOVE,
     function_id(list.reverse): FUNC_KEY_LIST_REVERSE,
     function_id(dict.pop): FUNC_KEY_DICT_POP,
+    function_id(dict.items): FUNC_KEY_DICT_ITEMS,
 
     # instancemethod
     function_id(Tensor_._flatten_tensors): FUNC_KEY_BUILTIN_FUNC,  # pylint: disable=protected-access
