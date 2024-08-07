@@ -78,7 +78,7 @@ MapTargetDevice DecodeOperation::Type() {
   } else if (device_target_ == "Ascend") {
     return MapTargetDevice::kAscend910B;
   } else {
-    MS_LOG(ERROR) << "Resize: Invalid device target. It's not CPU or Ascend.";
+    MS_LOG(ERROR) << "Decode: Invalid device target. It's not CPU or Ascend.";
     return MapTargetDevice::kInvalid;
   }
 }

@@ -46,7 +46,7 @@ Status CropOperation::ValidateParams() {
   RETURN_IF_NOT_OK(ValidateVectorNonNegative("Crop", "coordinates", coordinates_));
   // device target
   if (device_target_ != "CPU" && device_target_ != "Ascend") {
-    std::string err_msg = "ResizedCrop: Invalid device target. It's not CPU or Ascend.";
+    std::string err_msg = "Crop: Invalid device target. It's not CPU or Ascend.";
     LOG_AND_RETURN_STATUS_SYNTAX_ERROR(err_msg);
   }
   return Status::OK();
@@ -75,7 +75,7 @@ std::shared_ptr<TensorOp> CropOperation::Build() {
     return dvpp_tensor_op;
 #endif
   } else {
-    MS_LOG(ERROR) << "ResizedCrop: Invalid device target. It's not CPU or Ascend.";
+    MS_LOG(ERROR) << "Crop: Invalid device target. It's not CPU or Ascend.";
     return nullptr;
   }
 }
