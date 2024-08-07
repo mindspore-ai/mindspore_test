@@ -449,6 +449,9 @@ def avg_pool2d(input_x, kernel_size=1, stride=1, padding=0, ceil_mode=False, cou
     .. warning::
         `kernel_size` is in the range `[1, 255]`. `stride` is in the range `[1, 63]`.
 
+    Note:
+        This interface currently does not support Atlas A2 training series products.
+
     Args:
         input_x (Tensor): Tensor of shape :math:`(N, C_{in}, H_{in}, W_{in})`.
         kernel_size (Union[int, tuple[int]]): The size of kernel used to take the average value. It is an int number
@@ -619,6 +622,9 @@ def avg_pool3d(input_x, kernel_size=1, stride=1, padding=0, ceil_mode=False, cou
 
     .. warning::
         `kernel_size` is in the range `[1, 255]`. `stride` is in the range `[1, 63]`.
+
+    Note:
+        This interface currently does not support Atlas A2 training series products.
 
     Args:
         input_x (Tensor): Tensor of shape :math:`(N, C, D_{in}, H_{in}, W_{in})`. Currently support float16 and

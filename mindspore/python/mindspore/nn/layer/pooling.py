@@ -800,6 +800,9 @@ class AvgPool3d(_PoolNd):
         \frac{1}{d_{ker} * h_{ker} * w_{ker}} \sum_{l=0}^{d_{ker}-1} \sum_{m=0}^{h_{ker}-1} \sum_{n=0}^{w_{ker}-1}
         \text{input}(N_i, C_j, s_0 \times d + l, s_1 \times h + m, s_2 \times w + n)
 
+    Note:
+        This interface currently does not support Atlas A2 training series products.
+
     Args:
         kernel_size (Union[int, tuple[int]], optional): The size of kernel used to take the average value,
             can be an int number or a single element tuple that represents depth, height and width, or a tuple of three
@@ -969,6 +972,9 @@ class AvgPool2d(_PoolNd):
         \text{output}(N_i, C_j, h, w) = \frac{1}{h_{ker} * w_{ker}} \sum_{m=0}^{h_{ker}-1} \sum_{n=0}^{w_{ker}-1}
         \text{input}(N_i, C_j, s_0 \times h + m, s_1 \times w + n)
 
+    Note:
+        This interface currently does not support Atlas A2 training series products.
+
     Args:
         kernel_size (Union[int, tuple[int]]): The size of kernel used to take the average value.
             The data type of kernel_size must be int or a single element tuple and the value represents the height
@@ -1129,6 +1135,9 @@ class AvgPool1d(_PoolNd):
     .. math::
         \text{output}(N_i, C_j, l) = \frac{1}{l_{ker}} \sum_{n=0}^{l_{ker}-1}
         \text{input}(N_i, C_j, s_0 \times l + n)
+
+    Note:
+        This interface currently does not support Atlas A2 training series products.
 
     Args:
         kernel_size (int): The size of kernel window used to take the average value, Default: ``1`` .
