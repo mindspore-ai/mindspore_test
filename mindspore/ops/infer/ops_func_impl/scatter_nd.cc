@@ -92,8 +92,14 @@ void ScatterNdCheckShape(const PrimitivePtr &prim, const BaseShapePtr &indices_s
 BaseShapePtr ScatterNdFuncImpl::InferShape(const PrimitivePtr &prim,
                                            const std::vector<AbstractBasePtr> &input_args) const {
   ShapeVector output_shape{};
+  MS_EXCEPTION_IF_NULL(input_args[kInputIndex0]);
+  MS_EXCEPTION_IF_NULL(input_args[kInputIndex0]->GetShape());
   auto indices_shape_base = input_args[kInputIndex0]->GetShape();
+  MS_EXCEPTION_IF_NULL(input_args[kInputIndex1]);
+  MS_EXCEPTION_IF_NULL(input_args[kInputIndex1]->GetShape());
   auto updates_shape_base = input_args[kInputIndex1]->GetShape();
+  MS_EXCEPTION_IF_NULL(input_args[kInputIndex2]);
+  MS_EXCEPTION_IF_NULL(input_args[kInputIndex2]->GetShape());
   auto shape_base = input_args[kInputIndex2]->GetShape();
   const auto &indices_shape = indices_shape_base->GetShapeVector();
   const auto &updates_shape = updates_shape_base->GetShapeVector();
@@ -145,6 +151,8 @@ BaseShapePtr ScatterNdFuncImpl::InferShape(const PrimitivePtr &prim,
 }
 
 TypePtr ScatterNdFuncImpl::InferType(const PrimitivePtr &prim, const std::vector<AbstractBasePtr> &input_args) const {
+  MS_EXCEPTION_IF_NULL(input_args[kInputIndex1]);
+  MS_EXCEPTION_IF_NULL(input_args[kInputIndex1]->GetType());
   auto dtype = input_args[kInputIndex1]->GetType();
   return dtype->Clone();
 }
