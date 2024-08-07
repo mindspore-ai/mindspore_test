@@ -567,18 +567,33 @@ void TensorTransform::MergeAllConcat(std::vector<RedisOpPair> *transform_op_list
     }
     auto concat_axis_a = a.second.back();
     auto concat_axis_b = b.second.back();
-    auto concat_interval_a = a.second[1] - a.second[0];
+    if (concat_axis_a != concat_axis_b) {
+      return false;
+    }
+    auto concat_interval_a = a.second.at(1) - a.second.at(0);
     auto concat_size_a = SizeToLong(a.second.size()) - 1;
-    auto concat_interval_b = b.second[1] - b.second[0];
-    return concat_axis_a == concat_axis_b && concat_interval_a * concat_size_a == concat_interval_b;
+    auto concat_interval_b = b.second.at(1) - b.second.at(0);
+    return (concat_interval_a * concat_size_a) == concat_interval_b;
   };
   auto merge_concat_group = [](const RedisOpPair &a, const RedisOpPair &b) {
-    auto input_a = a.second;
-    auto input_b = b.second;
-    auto concat_interval_a = input_a[1] - input_a[0];
-    auto concat_interval_b = input_b[1] - input_b[0];
-    auto concat_size_b = SizeToLong((input_b.size() - 1));
-    auto start = input_a[0];
+    RankList rank_list_a(a.second.begin(), a.second.end() - 1);
+    RankList rank_list_b(b.second.begin(), b.second.end() - 1);
+    std::set<int64_t> common_rank_set;
+    std::set<int64_t> rank_set_a(rank_list_a.begin(), rank_list_a.end());
+    for (auto rank : rank_list_b) {
+      if (rank_set_a.find(rank) != rank_set_a.end()) {
+        common_rank_set.insert(rank);
+      }
+    }
+    if (common_rank_set.size() != 1) {
+      MS_LOG(EXCEPTION) << "Failed to merge group, because they don't only have a common rank. The first group is "
+                        << rank_list_a << ", and the seconde group is " << rank_list_b;
+    }
+    auto common_rank = *common_rank_set.begin();
+    auto concat_interval_a = rank_list_a.at(1) - rank_list_a.at(0);
+    auto concat_interval_b = rank_list_b.at(1) - rank_list_b.at(0);
+    auto concat_size_b = SizeToLong((rank_list_b.size()));
+    auto start = rank_list_b.at(0) - (common_rank - rank_list_a.at(0));
     auto end = start + concat_interval_b * concat_size_b;
     auto step = concat_interval_a;
     std::vector<int64_t> new_input;
@@ -586,7 +601,7 @@ void TensorTransform::MergeAllConcat(std::vector<RedisOpPair> *transform_op_list
     for (int64_t i = start; i < end; i += step) {
       new_input.push_back(i);
     }
-    new_input.push_back(input_a.back());
+    new_input.push_back(a.second.back());
     return new_input;
   };
   auto is_all_concat_with_virtual_rank_group = [&](const RedisOpPair &redis_op_pair) {
