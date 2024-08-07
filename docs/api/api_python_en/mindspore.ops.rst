@@ -630,6 +630,7 @@ Type Cast
     :nosignatures:
     :template: classtemplate.rst
 
+    mindspore.ops.cast
     mindspore.ops.is_tensor
     mindspore.ops.scalar_cast
     mindspore.ops.scalar_to_tensor
