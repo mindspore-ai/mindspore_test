@@ -215,7 +215,7 @@ void InitializeAcl() {
   std::string file_name = "./aclinit.json";
   auto realpath = Common::CreatePrefixPath(file_name);
   if (realpath.has_value()) {
-    if (GenerateAclInitJson(realpath.value())) {
+    if (Common::FileExists(realpath.value()) || GenerateAclInitJson(realpath.value())) {
       acl_json_path = realpath.value().c_str();
     }
   } else {
