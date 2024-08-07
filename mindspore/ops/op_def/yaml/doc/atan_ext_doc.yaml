@@ -1,0 +1,31 @@
+atan_ext:
+    description: |
+        Computes the trigonometric inverse tangent of the input element-wise.
+
+        .. math::
+
+            out_i = \tan^{-1}(input_i)
+
+        Args:
+            input (Tensor): The shape of tensor is
+                :math:`(N,*)` where :math:`*` means, any number of additional dimensions.
+
+        Returns:
+            A Tensor, has the same shape as the input.
+            The dtype of output is float32 when dtype of `input` is in
+            [bool, int8, uint8, int16, int32, int64]. Otherwise output has the same dtype as `input`.
+
+        Raises:
+            TypeError: If `input` is not a Tensor.
+
+        Supported Platforms:
+            ``Ascend`` ``GPU`` ``CPU``
+
+        Examples:
+            >>> import mindspore
+            >>> import numpy as np
+            >>> from mindspore import Tensor, ops
+            >>> input = Tensor(np.array([1.0, 0.0]), mindspore.float32)
+            >>> output = ops.atan_ext(input)
+            >>> print(output)
+            [0.7853982 0.       ]

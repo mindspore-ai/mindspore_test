@@ -47,8 +47,8 @@ from mindspore.ops.auto_generate import (minimum, maximum, mul, sin, sinc, sinh,
                                          floor, floor_divide, floor_mod, gcd, greater, greater_equal, less, less_equal,
                                          log, log1p, neg, not_equal, pow, round, isfinite, argmax_ext, mean_ext_op,
                                          sum_ext_op, prod_ext_op, all, matrix_inverse_ext, atan2_ext, sign, acos_ext,
-                                         acosh_ext, asin_ext, asinh_ext, tan, median_ext_op, median_dim_op, xlogy_op,
-                                         xlogy_scalar_other_op, xlogy_scalar_self_op)
+                                         acosh_ext, asin_ext, asinh_ext, atan_ext, tan, median_ext_op, median_dim_op,
+                                         xlogy_op, xlogy_scalar_other_op, xlogy_scalar_self_op)
 from mindspore.ops.auto_generate.gen_ops_def import add_ext, sub_ext, bmm_ext
 from mindspore.ops.auto_generate import tanh
 from mindspore.nn import layer
@@ -1741,6 +1741,16 @@ def arctan(input):
         [0.7853982 0.       ]
     """
     return atan_(input)
+
+
+def arctan_ext(input):
+    r"""
+    Alias for :func:`mindspore.ops.atan_ext`.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+    """
+    return atan_ext(input)
 
 
 def arctan2(input, other):

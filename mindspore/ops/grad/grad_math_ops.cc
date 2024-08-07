@@ -1141,6 +1141,19 @@ REG_BPROP_BUILDER("Atan").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   return {dx};
 });
 
+REG_BPROP_BUILDER("AtanExt").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto dout = ib->GetInput(kIndex2);
+  auto x_dtype_id = ib->GetDtypeId(x);
+  NodePtr dx;
+  if (x_dtype_id == kNumberTypeComplex64 || x_dtype_id == kNumberTypeComplex128) {
+    MS_EXCEPTION(TypeError) << "For 'Atan', gradient not support for complex type currently.";
+  } else {
+    dx = ib->Div(dout, ib->Add(ib->Square(x), ib->Tensor(1, ib->GetDtype(x))));
+  }
+  return {dx};
+});
+
 REG_BPROP_BUILDER("AtanGrad").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto out = ib->GetInput(kIndex2);

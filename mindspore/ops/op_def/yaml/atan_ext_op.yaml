@@ -1,0 +1,12 @@
+#operator atan_ext
+atan_ext:
+    args:
+        input:
+            dtype: tensor
+    returns:
+        output: 
+            dtype: tensor
+    class:
+        name: AtanExt
+    dispatch:
+        enable: True

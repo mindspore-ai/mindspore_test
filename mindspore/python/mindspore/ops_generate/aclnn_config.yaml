@@ -287,7 +287,7 @@ AsinExt: 'aclnnAsin'
 # 173
 AsinhExt: 'aclnnAsinh'
 # 174
-
+AtanExt: 'aclnnAtan'
 # 175
 
 # 176
