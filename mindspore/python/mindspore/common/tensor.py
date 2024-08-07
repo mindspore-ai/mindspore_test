@@ -3164,6 +3164,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             sorter (Union[int, list, tuple, Tensor]): optional tensor of
                 integer indices that sort the tensor into ascending order on the innermost dimension
                 and the type must be int64. They are typically the result of argsort. Default: ``None`` .
+                CPU and GPU can only use default values
 
         Returns:
             Tensor, array of insertion points with the same shape as `v`.

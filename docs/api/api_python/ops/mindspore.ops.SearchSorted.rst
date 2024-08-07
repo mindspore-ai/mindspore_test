@@ -17,7 +17,7 @@ mindspore.ops.SearchSorted
     输入：
         - **sorted_sequence** (Tensor) - Tensor的shape为 :math:`(x_1, x_2, ..., x_R-1, x_R)` 或 `x_1`。在最里面的维度上必须包含单调递增的序列。
         - **values** (Tensor) - 要插入元素的值。Tensor的shape为 :math:`(x_1, x_2, ..., x_R-1, x_S)`。
-        - **sorter** (Tensor, 可选) -  如果提供，shape将与 `sorted_sequence` 一致, 类型必须为int64，包含整数索引，这些索引将在最内层维度上按升序给 `sorted_sequence` 排序。默认值： ``None`` 。
+        - **sorter** (Tensor, 可选) -  如果提供，shape将与 `sorted_sequence` 一致, 类型必须为int64，包含整数索引，这些索引将在最内层维度上按升序给 `sorted_sequence` 排序。默认值： ``None`` 。CPU和GPU只支持默认值。
 
     输出：
         表示 `sorted_sequence` 最内维度的索引的Tensor，如果插入 `values` Tensor中相应的值，则 `sorted_sequence` Tensor的顺序将被保留；如果out_int32为True，则返回的数据类型为int32，否则为int64，并且shape与values的shape相同。
