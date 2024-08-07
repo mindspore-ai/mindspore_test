@@ -21,10 +21,12 @@ After declaring the dataset object, you can further apply dataset operations
 import builtins
 import copy
 import errno
+import itertools
 import math
 import os
 import signal
 import time
+from types import GeneratorType
 import multiprocessing
 from multiprocessing.util import Finalize
 import queue
@@ -634,6 +636,20 @@ class _GeneratorWorkerMp(multiprocessing.Process):
             del self.res_queue
 
 
+class _GeneratorWrapper:
+    """Wrapper the generator so that it can be iterated multiple times in GeneratorDataset."""
+    def __init__(self, generator):
+        self.generator = generator
+        self.generator_new, self.generator = itertools.tee(self.generator)
+
+    def __iter__(self):
+        self.generator_new, self.generator = itertools.tee(self.generator)
+        return self
+
+    def __next__(self):
+        return next(self.generator_new)
+
+
 class GeneratorDataset(MappableDataset, UnionBaseDataset):
     """
     A source dataset that generates data from Python by invoking Python data source each epoch.
@@ -790,6 +806,11 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
             self.source = [item for item in source]
         else:
             self.source = source
+
+        # wrapper the generator so that it can be iterated multiple times
+        if isinstance(self.source, GeneratorType):
+            self.source = _GeneratorWrapper(self.source)
+
         self.prepared_source = None  # source to be sent to C++
         if hasattr(self, 'operator_mixed') and getattr(self, 'operator_mixed') is True:
             self.num_parallel_workers = 1
