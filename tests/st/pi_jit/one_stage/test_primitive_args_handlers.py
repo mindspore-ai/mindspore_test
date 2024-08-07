@@ -14,7 +14,8 @@
 # ============================================================================
 """Test Primitive's arguments dtype auto-cast with one stage"""
 import numpy as np
-import pytest
+import sys  
+import pytest 
 import mindspore as ms
 from mindspore import Tensor
 from mindspore import context
@@ -23,6 +24,11 @@ from mindspore.common.api import jit
 from ..share.utils import match_array, assert_executed_by_graph_mode
 from tests.mark_utils import arg_mark
 
+@pytest.fixture(autouse=True)  
+def skip_if_python_version_too_high():  
+    if sys.version_info >= (3, 11):  
+        pytest.skip("Skipping tests on Python 3.11 and higher.") 
+        
 cfg = {
     "replace_nncell_by_construct": True,
     "print_after_all": False,

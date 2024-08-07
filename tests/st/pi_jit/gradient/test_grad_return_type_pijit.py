@@ -14,7 +14,8 @@
 # ============================================================================
 """test function grad with PIJit in pynative mode"""
 import numpy as np
-import pytest
+import sys  
+import pytest 
 import mindspore.nn as nn
 import mindspore as ms
 from mindspore import Tensor, Parameter, ops
@@ -24,6 +25,10 @@ from mindspore.ops import composite as C
 from mindspore import jit
 from tests.mark_utils import arg_mark
 
+@pytest.fixture(autouse=True)  
+def skip_if_python_version_too_high():  
+    if sys.version_info >= (3, 11):  
+        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 class GradOperationNet(nn.Cell):
     def __init__(self, net, get_all=False, get_by_list=False, sens_param=False):

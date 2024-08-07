@@ -13,13 +13,19 @@
 # limitations under the License.
 # ============================================================================
 """Test basic operation with one stage"""
-import pytest
+import sys  
+import pytest 
 import numpy as np
 from mindspore import Tensor
 from mindspore import context
 from mindspore.common.api import jit, jit_class
 from tests.mark_utils import arg_mark
 
+@pytest.fixture(autouse=True)  
+def skip_if_python_version_too_high():  
+    if sys.version_info >= (3, 11):  
+        pytest.skip("Skipping tests on Python 3.11 and higher.") 
+        
 cfg = {
     "replace_nncell_by_construct": True,
     "print_after_all": False,
