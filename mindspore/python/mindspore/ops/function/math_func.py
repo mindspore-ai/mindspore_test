@@ -49,7 +49,7 @@ from mindspore.ops.auto_generate import (minimum, maximum, mul, sin, sinc, sinh,
                                          log, log1p, neg, not_equal, pow, round_op, isfinite, argmax_ext, mean_ext_op,
                                          sum_ext_op, prod_ext_op, all, matrix_inverse_ext, atan2_ext, sign, acos_ext,
                                          acosh_ext, asin_ext, asinh_ext, atan_ext, tan, median_ext_op, median_dim_op,
-                                         xlogy_op, xlogy_scalar_other_op, xlogy_scalar_self_op, trunc)
+                                         xlogy_op, xlogy_scalar_other_op, xlogy_scalar_self_op, trunc, histc_ext)
 
 
 

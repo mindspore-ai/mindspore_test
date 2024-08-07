@@ -1,0 +1,22 @@
+#operator histc_ext
+histc_ext:
+  args:
+    input:
+      dtype: tensor
+    bins:
+      dtype: int
+      type_cast: tensor
+      default: 100
+    min:
+      dtype: number
+      type_cast: tensor
+      default: 0
+    max:
+      dtype: number
+      type_cast: tensor
+      default: 0
+  returns:
+    output:
+      dtype: tensor
+  dispatch:
+    enable: True
