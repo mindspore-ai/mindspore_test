@@ -33,6 +33,8 @@ constexpr auto kAllTarget = "ALL";
 constexpr auto kOutputsFormat = "outputs_format";
 constexpr auto kAttrToPrim = "to_prim";
 constexpr auto kAttrExpandFrom = "expand_from";
+constexpr auto kNeedResetKernelInfo = "need_reset_kernel_info";
+constexpr auto kNeedKernelInfo = "need_kernel_info";
 
 #define GK_PROF_START(stage) double start_usec_##stage = mindspore::GetCurrentUSec()
 #define OSS_STR(stage) oss << "[GK_PROF]" << #stage

@@ -27,10 +27,22 @@
 #include "utils/hash_set.h"
 #include "backend/common/graph_kernel/core/graph_kernel_callback.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
+#include "backend/common/graph_kernel/core/graph_builder.h"
 #include "backend/common/graph_kernel/split_model/split_model_factory.h"
+#include "backend/common/graph_kernel/core/graph_kernel_splitter_rebuild.h"
+#include "include/common/debug/anf_ir_dump.h"
 
 namespace mindspore::graphkernel {
 namespace {
+mindspore::HashMap<AnfNodePtr, size_t> GetTopoSortMap(const FuncGraphPtr &func_graph) {
+  auto todos = TopoSort(func_graph->get_return());
+  mindspore::HashMap<AnfNodePtr, size_t> node_idx_map;
+  for (size_t i = 0; i < todos.size(); ++i) {
+    node_idx_map[todos[i]] = i;
+  }
+  return node_idx_map;
+}
+
 void TraverseFuncGraphFromCNode(const CNodePtr &cnode, const std::function<void(AnfNodePtr &)> &callback) {
   mindspore::HashSet<AnfNodePtr> visited;
   std::queue<AnfNodePtr> que;
@@ -156,6 +168,16 @@ class Area {
   const mindspore::HashSet<AnfNodePtr> &nodes() const { return nodes_; }
   const std::vector<AnfNodePtr> &spy_cnodes() const { return spy_cnodes_; }
 
+  void SortTraitors(const mindspore::HashMap<AnfNodePtr, size_t> &node_idx_map) {
+    std::sort(traitor_nodes_.begin(), traitor_nodes_.end(), [&node_idx_map](const AnfNodePtr &a, const AnfNodePtr &b) {
+      auto a_it = node_idx_map.find(a);
+      MS_EXCEPTION_IF_CHECK_FAIL(a_it != node_idx_map.end(), a->ToString() + " is not in toposort!");
+      auto b_it = node_idx_map.find(b);
+      MS_EXCEPTION_IF_CHECK_FAIL(b_it != node_idx_map.end(), b->ToString() + " is not in toposort!");
+      return a_it->second < b_it->second;
+    });
+  }
+
  private:
   // This is a CNode that does not belong to this area.
   bool IsExternalCNode(const AnfNodePtr &node) const { return node->isa<CNode>() && this->nodes_.count(node) == 0; }
@@ -186,6 +208,11 @@ class AreaGraph {
     return area_graph;
   }
 
+  void SortTraitors(const mindspore::HashMap<AnfNodePtr, size_t> &node_idx_map) {
+    for (auto &area : areas_) {
+      area.SortTraitors(node_idx_map);
+    }
+  }
   // Split the graph to multiple areas, and reconnect the edges between the areas.
   // The output `main_cnodes` is a topo-sorted cnode list in main graph, holding the new sub_func_graphs.
   // The output `cnode_group_id` represents the indices of main_cnodes before topo-sorting.
@@ -283,6 +310,11 @@ class AreaGraph {
     for (const auto &param : sub_func_graph->parameters()) {
       // assert the param exists.
       const auto &input_node = param_node_map.find(param->cast<ParameterPtr>())->second;
+      if (node_to_tuple_get_item_.find(input_node) != node_to_tuple_get_item_.end()) {
+        // reuse tuple get item
+        main_cnode_inputs.emplace_back(node_to_tuple_get_item_[input_node]);
+        continue;
+      }
       size_t input_area = node_area_map_[input_node];
       // if the input node is in a tuple, then we need to create a GetItem fot it.
       if (node_index_in_returned_tuple_.count(input_node) != 0) {
@@ -299,6 +331,7 @@ class AreaGraph {
           getitem_node->set_abstract(main_cnodes[input_area]->abstract());
         }
         (void)main_cnode_inputs.emplace_back(getitem_node);
+        node_to_tuple_get_item_[input_node] = getitem_node;
       } else {
         (void)main_cnode_inputs.emplace_back(main_cnodes[input_area]);
       }
@@ -325,6 +358,8 @@ class AreaGraph {
   mindspore::HashMap<AnfNodePtr, size_t> node_area_map_;
   // Map the nodes to their index if there are multiple value in an area
   mindspore::HashMap<AnfNodePtr, size_t> node_index_in_returned_tuple_;
+  // Map AnfNode to TupleGetItem Node
+  mindspore::HashMap<AnfNodePtr, CNodePtr> node_to_tuple_get_item_;
 };
 
 class Splitter {
@@ -337,20 +372,11 @@ class Splitter {
     if (!split_schemer_->Split(ori_sub_func_graph)) {
       return false;
     }
-
-    auto area_graph = AreaGraph::BuildAreaGraph(split_schemer_->split_plan());
-    if (area_graph == nullptr) {
-      return false;
+    if (common::GetEnv("MS_DEV_USE_OLD_REBUILD") == "on") {
+      MS_LOG(WARNING) << "Use old rebuild plan";
+      return RebuildGraphWithAreaGraph();
     }
-
-    // The output new_subgraph_cnodes are topo sorted, use a list to store its order in split_plan.
-    std::vector<size_t> cnodes_group_id;
-    area_graph->SplitGraph(main_func_graph_, &new_subgraph_cnodes_, &cnodes_group_id,
-                           [this](const Area &area) { this->AreaExpand(area); });
-
-    RebuildGraph(cnodes_group_id);
-
-    return true;
+    return RebuildGraph();
   }
 
   static SplitterPtr MakeSplitter(const CNodePtr &main_cnode, const SplitSchemerPtr &split_schemer) {
@@ -365,10 +391,38 @@ class Splitter {
   ~Splitter() = default;
 
  private:
+  bool RebuildGraph() {
+    Rebuilder(old_subgraph_cnode_, split_schemer_, param_to_main_graph_node_map_).Rebuild();
+    return true;
+  }
+
+  bool RebuildGraphWithAreaGraph() {
+    auto area_graph = AreaGraph::BuildAreaGraph(split_schemer_->split_plan());
+    if (area_graph == nullptr) {
+      return false;
+    }
+    if (common::GetEnv("MS_DEV_GRAPH_KERNEL_TOPOSORT") == "on") {
+      MS_LOG(WARNING) << "Toposort old rebuild plan";
+      auto node_idx_map = GetTopoSortMap(GetCNodeFuncGraph(old_subgraph_cnode_));
+      area_graph->SortTraitors(node_idx_map);
+    }
+
+    // The output new_subgraph_cnodes are topo sorted, use a list to store its order in split_plan.
+    std::vector<size_t> cnodes_group_id;
+    area_graph->SplitGraph(main_func_graph_, &new_subgraph_cnodes_, &cnodes_group_id,
+                           [this](const Area &area) { this->AreaExpand(area); });
+
+    RebuildGraph(cnodes_group_id);
+
+    return true;
+  }
   // Maintain new subgraphs in main graph.
   void RebuildGraph(const std::vector<size_t> &cnodes_group_id) {
     BindFuncGraph();
     RecoverParameter();
+    if (common::GetEnv("MS_DEV_GRAPH_KERNEL_TOPOSORT") == "on") {
+      SortParameters(cnodes_group_id);
+    }
     SetSplitNodeName(cnodes_group_id);
     ConnectToMainGraph(cnodes_group_id);
     UpdateMainNodesKernelInfo();
@@ -384,6 +438,45 @@ class Splitter {
         }
       };
       TraverseFuncGraph(sub_func_graph, callback);
+    }
+  }
+
+  void SortParameters(const std::vector<size_t> &cnodes_group_id) {
+    for (size_t i = 0; i < new_subgraph_cnodes_.size(); i++) {
+      if (split_schemer_->NeedInline(cnodes_group_id[i])) {
+        continue;
+      }
+      auto cnode = new_subgraph_cnodes_[i];
+      auto sub_func_graph = GetCNodeFuncGraph(cnode);
+      mindspore::HashMap<AnfNodePtr, size_t> node_idx_map;
+      auto nodes = TopoSort(sub_func_graph->get_return());
+      for (auto &node : nodes) {
+        if (!node->isa<CNode>()) {
+          continue;
+        }
+        for (auto &input : node->cast<CNodePtr>()->inputs()) {
+          if (input->isa<Parameter>() && node_idx_map.count(input) == 0) {
+            node_idx_map[input] = node_idx_map.size();
+          }
+        }
+      }
+      const auto &params = sub_func_graph->parameters();
+      AnfNodePtrList new_params{params};
+      std::sort(new_params.begin(), new_params.end(), [&node_idx_map](const AnfNodePtr &a, const AnfNodePtr &b) {
+        return node_idx_map[a] < node_idx_map[b];
+      });
+      auto ParameterToInput = [&params, &cnode](const AnfNodePtr &p) {
+        size_t j = std::find(params.begin(), params.end(), p) - params.begin();
+        return j == params.size() ? nullptr : cnode->input(j + 1);
+      };
+      AnfNodePtrList new_inputs{cnode->inputs()[0]};
+      for (size_t k = 0; k < new_params.size(); k++) {
+        auto input = ParameterToInput(new_params[k]);
+        MS_EXCEPTION_IF_NULL(input);
+        new_inputs.emplace_back(input);
+      }
+      sub_func_graph->set_parameters(new_params);
+      cnode->set_inputs(new_inputs);
     }
   }
 
@@ -565,7 +658,7 @@ class Splitter {
   std::vector<AnfNodePtr> maingraph_nodes_;    // The nodes in main graph finally, include "call" and inlined node
   SplitSchemerPtr split_schemer_;
   mindspore::HashMap<ParameterPtr, AnfNodePtr> param_to_main_graph_node_map_;
-};
+};  // namespace
 
 class CppCostModelSplitSchemer : public CommonSplitSchemer {
  public:
@@ -628,6 +721,24 @@ bool GraphKernelSplitter::TrySplit(const CNodePtr &sub_root_cnode) {
   return result;
 }
 
+namespace {
+void SetKernelInfo(const FuncGraphPtr &func_graph) {
+  auto nodes = TopoSort(func_graph->get_return());
+  for (auto iter = nodes.cbegin(); iter != nodes.cend(); ++iter) {
+    auto node = (*iter)->cast<CNodePtr>();
+    if (node != nullptr) {
+      if (node->HasAttr(kNeedKernelInfo)) {
+        Callback::Instance()->SetGraphKernelNodeKernelInfo(node);
+        node->EraseAttr(kNeedKernelInfo);
+      } else if (node->HasAttr(kNeedResetKernelInfo)) {
+        Callback::Instance()->ResetKernelInfo(node);
+        node->EraseAttr(kNeedResetKernelInfo);
+      }
+    }
+  }
+}
+}  // namespace
+
 bool GraphKernelSplitter::Run(const FuncGraphPtr &func_graph) {
   MS_EXCEPTION_IF_NULL(func_graph);
   auto mng = func_graph->manager();
@@ -645,6 +756,9 @@ bool GraphKernelSplitter::Run(const FuncGraphPtr &func_graph) {
     if (node != nullptr && AnfUtils::IsGraphKernel(node)) {
       changed = TrySplit(node) || changed;
     }
+  }
+  if (changed && common::GetEnv("MS_DEV_USE_OLD_REBUILD") != "on") {
+    SetKernelInfo(func_graph);
   }
   mng->RemoveRoots();
   mng->KeepRoots({func_graph});

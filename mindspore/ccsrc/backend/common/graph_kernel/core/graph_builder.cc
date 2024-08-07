@@ -34,6 +34,7 @@
 #include "backend/common/graph_kernel/core/value_depend_op_utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "kernel/common_utils.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 
 namespace mindspore::graphkernel {
 // find outputs of nodes
@@ -320,6 +321,9 @@ std::tuple<FuncGraphPtr, AnfNodePtrList, AnfNodePtrList> BuildGraphFromNodes(con
   AnfNodePtrToAnfNodePtrMap eqv;
   // Merge CNodes into a AnfGraph that represents a linear instruction segment
   for (auto &node : nodes) {
+    if (IsPrimitiveCNode(node, prim::kPrimReturn)) {
+      continue;
+    }
     auto &node_inputs = node->cast<CNodePtr>()->inputs();
     std::vector<AnfNodePtr> new_args{node_inputs[0]};
     (void)std::transform(
@@ -347,8 +351,12 @@ std::tuple<FuncGraphPtr, AnfNodePtrList, AnfNodePtrList> BuildGraphFromNodes(con
     output_args.push_back(NewValueNode(prim::kPrimMakeTuple));
     (void)std::transform(std::begin(outputs), std::end(outputs), std::back_inserter(output_args),
                          [&eqv](const AnfNodePtr &o) -> AnfNodePtr { return eqv[o]; });
+    AbstractBasePtrList out_abs_list;
+    (void)std::transform(output_args.begin() + 1, output_args.end(), std::back_inserter(out_abs_list),
+                         [](const AnfNodePtr &node) { return node->abstract(); });
     // Set output for AnfGraph
     fg_output = fg->NewCNode(output_args);
+    fg_output->set_abstract(std::make_shared<abstract::AbstractTuple>(out_abs_list));
   } else {
     fg_output = eqv[outputs[0]];
   }
