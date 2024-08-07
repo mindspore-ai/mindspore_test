@@ -212,6 +212,16 @@ Convolution Layers
     mindspore.mint.nn.Fold
     mindspore.mint.nn.Unfold
 
+Normalization Layers
+^^^^^^^^^^^^^^^^^^^^
+
+.. msplatwarnautosummary::
+    :toctree: mint
+    :nosignatures:
+    :template: classtemplate.rst
+
+    mindspore.mint.nn.GroupNorm
+
 Non-linear Activations (weighted sum, nonlinearity)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

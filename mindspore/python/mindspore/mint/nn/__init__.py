@@ -104,6 +104,7 @@ from mindspore.nn.extend.basic import Linear
 # 39
 
 # 40
+from mindspore.mint.nn.layer.normalization import GroupNorm
 
 # 41
 
@@ -393,6 +394,7 @@ __all__ = [
     # 39
 
     # 40
+    'GroupNorm',
 
     # 41
 

@@ -211,6 +211,15 @@ mindspore.mint.nn
     mindspore.mint.nn.Fold
     mindspore.mint.nn.Unfold
 
+归一化层
+^^^^^^^^^^^^^^^^^^
+.. mscnplatwarnautosummary::
+    :toctree: mint
+    :nosignatures:
+    :template: classtemplate.rst
+
+    mindspore.mint.nn.GroupNorm
+
 非线性激活层 (加权和，非线性)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
