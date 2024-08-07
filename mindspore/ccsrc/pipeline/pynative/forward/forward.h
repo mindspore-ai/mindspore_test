@@ -39,7 +39,7 @@ class GradExecutor;
 using GradExecutorPtr = std::shared_ptr<GradExecutor>;
 using GradExecutorWeakPtr = std::weak_ptr<GradExecutor>;
 
-class ForwardExecutor {
+class ME_EXPORT ForwardExecutor {
  public:
   ForwardExecutor()
       : cast_operation_(std::make_shared<CastOperation>()),

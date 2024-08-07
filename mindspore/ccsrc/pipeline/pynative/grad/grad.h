@@ -39,14 +39,13 @@ class ForwardExecutor;
 using ForwardExecutorPtr = std::shared_ptr<ForwardExecutor>;
 using ForwardExecutorWeakPtr = std::weak_ptr<ForwardExecutor>;
 
-class GradExecutor {
+class ME_EXPORT GradExecutor {
   // key: already run cell id, value: all already run top cell
   using TopCellIdWithTopCell = std::map<std::string, TopCellInfoPtr>;
   // key: already run cell id, value: pipeline top cell
   using PipelineTopCellMap = std::map<std::string, std::vector<TopCellInfoPtr>>;
 
  public:
-  GradExecutor() = default;
   ~GradExecutor() = default;
   explicit GradExecutor(const ForwardExecutorPtr &forward_executor = nullptr)
       : forward_executor_(ForwardExecutorWeakPtr(forward_executor)),

@@ -19,6 +19,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "kernel/common/pyboost/auto_generate/maximum.h"
 #include "kernel/common/pyboost/auto_generate/minimum.h"
+#include "runtime/pipeline/pipeline.h"
 
 namespace mindspore {
 namespace kernel {

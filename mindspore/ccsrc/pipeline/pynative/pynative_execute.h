@@ -31,7 +31,7 @@
 namespace mindspore::pynative {
 namespace py = pybind11;
 
-class PyNativeExecutor : public std::enable_shared_from_this<PyNativeExecutor> {
+class ME_EXPORT PyNativeExecutor : public std::enable_shared_from_this<PyNativeExecutor> {
  public:
   static const std::shared_ptr<PyNativeExecutor> &GetInstance() {
     std::lock_guard<std::mutex> i_lock(instance_lock_);

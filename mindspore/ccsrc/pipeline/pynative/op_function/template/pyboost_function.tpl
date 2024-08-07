@@ -1,4 +1,4 @@
-py::object ${func_name}_Base(const PrimitivePtr &prim, const py::list &args) {
+py::object ME_EXPORT ${func_name}_Base(const PrimitivePtr &prim, const py::list &args) {
   #ifndef ENABLE_TEST
     MS_LOG(DEBUG) << "Run ${func_name} start";
     auto op_run_info = PyNativeAlgo::PyBoost::Init(prim, args);
@@ -57,7 +57,7 @@ py::object ${func_name}_Base(const PrimitivePtr &prim, const py::list &args) {
   #endif
 }
 
-py::object ${func_name}(const py::args &args) {
+py::object ME_EXPORT ${func_name}(const py::args &args) {
   if (args.size() != kIndex2) {
     MS_LOG(EXCEPTION) << "Two args are needed by RunOp"
                       << ", but got " << args.size();
@@ -68,7 +68,7 @@ py::object ${func_name}(const py::args &args) {
   return ${func_name}_Base(prim, args[1]);
 }
 
-class ${class_name}PrimAdapter: public PrimitiveFunctionAdapter {
+class ME_EXPORT ${class_name}PrimAdapter: public PrimitiveFunctionAdapter {
   public:
    ${class_name}PrimAdapter() : PrimitiveFunctionAdapter() {}
    ~${class_name}PrimAdapter() = default;
