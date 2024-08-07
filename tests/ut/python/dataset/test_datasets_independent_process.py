@@ -799,7 +799,6 @@ if __name__ == "__main__":
     test_dataset_with_independent_process()
     test_dataset_with_independent_process_dynamic_shape()
     test_dataset_with_independent_process_train_and_eval()
-    test_dataset_with_independent_process_two_stage_pipeline()
     test_dataset_with_independent_process_with_dict()
     test_generator_with_generator_object_iterated_multi_times()
     test_dataset_mnistdataset_with_for_loop_iterator()
