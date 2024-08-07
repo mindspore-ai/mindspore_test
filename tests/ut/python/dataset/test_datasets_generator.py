@@ -2602,51 +2602,6 @@ def test_generator_with_invalid_max_row_size():
     assert "not within the required interval of [-1, 2147483647]" in str(e.value)
 
 
-def test_generator_with_generator_object_iterated_multi_times():
-    """
-    Feature: GeneratorDataset
-    Description: test GeneratorDataset with generator object iterated in multi times
-    Expectation: SUCCESS
-    """
-
-    # Generator
-    def my_generator(start, end):
-        for i in range(start, end):
-            yield i
-
-    expected = [x for x in my_generator(3, 6)]
-
-    dataset = ds.GeneratorDataset(source=my_generator(3, 6), column_names=["data"])
-
-    assert dataset.get_dataset_size() == 3
-    assert dataset.output_shapes() == [[]]
-    assert dataset.output_types() == [np.int64]
-
-    count = 0
-    for _ in range(5):
-        index = 0
-        for d in dataset.create_tuple_iterator(output_numpy=True):
-            assert len(d) == 1
-            assert d[0] == expected[index]
-            index += 1
-            count += 1
-        assert index == 3
-    assert count == 15
-
-    epochs = 3
-    dataset_iter = dataset.create_tuple_iterator(output_numpy=True, num_epochs=epochs)
-    count = 0
-    for _ in range(epochs):
-        index = 0
-        for d in dataset_iter:
-            assert len(d) == 1
-            assert d[0] == expected[index]
-            index += 1
-            count += 1
-        assert index == 3
-    assert count == 9
-
-
 def test_generator_with_seed_and_multiprocessing_mode():
     """
     Feature: GeneratorDataset
@@ -2693,6 +2648,51 @@ def test_generator_with_seed_and_multiprocessing_mode():
             index += 1
 
     ds.config.set_seed(origin_seed)
+
+
+def test_generator_with_generator_object_iterated_multi_times():
+    """
+    Feature: GeneratorDataset
+    Description: test GeneratorDataset with generator object iterated in multi times
+    Expectation: SUCCESS
+    """
+
+    # Generator
+    def my_generator(start, end):
+        for i in range(start, end):
+            yield i
+
+    expected = [x for x in my_generator(3, 6)]
+
+    dataset = ds.GeneratorDataset(source=my_generator(3, 6), column_names=["data"])
+
+    assert dataset.get_dataset_size() == 3
+    assert dataset.output_shapes() == [[]]
+    assert dataset.output_types() == [np.int64]
+
+    count = 0
+    for _ in range(5):
+        index = 0
+        for d in dataset.create_tuple_iterator(output_numpy=True):
+            assert len(d) == 1
+            assert d[0] == expected[index]
+            index += 1
+            count += 1
+        assert index == 3
+    assert count == 15
+
+    epochs = 3
+    dataset_iter = dataset.create_tuple_iterator(output_numpy=True, num_epochs=epochs)
+    count = 0
+    for _ in range(epochs):
+        index = 0
+        for d in dataset_iter:
+            assert len(d) == 1
+            assert d[0] == expected[index]
+            index += 1
+            count += 1
+        assert index == 3
+    assert count == 9
 
 
 if __name__ == "__main__":
