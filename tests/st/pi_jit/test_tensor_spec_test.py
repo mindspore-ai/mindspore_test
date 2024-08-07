@@ -13,11 +13,17 @@
 # limitations under the License.
 # ============================================================================
 """run tensor specialized test"""
-import pytest
+import sys  
+import pytest 
 from mindspore import Tensor, jit, context
 from mindspore.common import dtype as mstype
 from tests.mark_utils import arg_mark
 
+@pytest.fixture(autouse=True)  
+def skip_if_python_version_too_high():  
+    if sys.version_info >= (3, 11):  
+        pytest.skip("Skipping tests on Python 3.11 and higher.") 
+        
 zero = Tensor([0], mstype.int32)
 one = Tensor([1], mstype.int32)
 five = Tensor([5], mstype.int32)

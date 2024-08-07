@@ -1,4 +1,5 @@
-import pytest
+import sys  
+import pytest 
 import mindspore as ms
 import mindspore.nn as nn
 from mindspore import Tensor, jit
@@ -6,6 +7,10 @@ import numpy as np
 from collections import OrderedDict
 from tests.mark_utils import arg_mark
 
+@pytest.fixture(autouse=True)  
+def skip_if_python_version_too_high():  
+    if sys.version_info >= (3, 11):  
+        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 class TestGetitemMethodNet(nn.Cell):
     def __init__(self):

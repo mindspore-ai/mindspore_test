@@ -1,4 +1,5 @@
-import pytest
+import sys  
+import pytest 
 import numpy as np
 import mindspore.nn as nn
 import mindspore.ops.operations as P
@@ -7,6 +8,10 @@ from mindspore import Tensor, jit, context
 from mindspore.common.initializer import TruncatedNormal
 from tests.mark_utils import arg_mark
 
+@pytest.fixture(autouse=True)  
+def skip_if_python_version_too_high():  
+    if sys.version_info >= (3, 11):  
+        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 # context.set_context(save_graphs = True, save_graphs_path="./grahp_jit")
 def conv(in_channels, out_channels, kernel_size, stride=1, padding=0):

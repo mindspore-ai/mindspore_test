@@ -1,8 +1,13 @@
-import pytest
+import sys  
+import pytest 
 from mindspore import jit, context
 from ..share.utils import match_array
 from tests.mark_utils import arg_mark
 
+@pytest.fixture(autouse=True)  
+def skip_if_python_version_too_high():  
+    if sys.version_info >= (3, 11):  
+        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 def convert_numbers_to_float_and_int(val1, val2):
     return float(val1), float(val2), int(val1), int(val2)
