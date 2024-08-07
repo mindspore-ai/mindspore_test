@@ -45,6 +45,7 @@ from mindspore.nn.extend.layer.normalization import *
 # 10
 
 # 11
+from mindspore.nn.layer import ReLU
 
 # 12
 
@@ -333,6 +334,7 @@ __all__ = [
     # 10
 
     # 11
+    'ReLU',
 
     # 12
 

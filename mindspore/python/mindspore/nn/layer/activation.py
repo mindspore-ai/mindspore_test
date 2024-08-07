@@ -434,8 +434,8 @@ class ReLU(Cell):
         super(ReLU, self).__init__()
         self.relu = P.ReLU()
 
-    def construct(self, x):
-        return self.relu(x)
+    def construct(self, input):
+        return self.relu(input)
 
 
 class ReLU6(Cell):

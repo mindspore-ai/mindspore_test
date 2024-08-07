@@ -222,6 +222,7 @@ mindspore.mint.nn
     mindspore.mint.nn.Hardshrink
     mindspore.mint.nn.Hardsigmoid
     mindspore.mint.nn.Hardswish
+    mindspore.mint.nn.ReLU
 
 线性层
 ^^^^^^^^^^^^^^^^^^

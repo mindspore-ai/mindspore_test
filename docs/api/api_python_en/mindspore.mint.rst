@@ -223,6 +223,7 @@ Non-linear Activations (weighted sum, nonlinearity)
     mindspore.mint.nn.Hardshrink
     mindspore.mint.nn.Hardsigmoid
     mindspore.mint.nn.Hardswish
+    mindspore.mint.nn.ReLU
 
 Linear Layers
 ^^^^^^^^^^^^^^^^^^

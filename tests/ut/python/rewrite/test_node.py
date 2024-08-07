@@ -257,7 +257,7 @@ class KwargNet(nn.Cell):
 
     def construct(self, x):
         x = self.add(x=x, y=x)
-        x = self.relu(x=x)
+        x = self.relu(input=x)
         return x
 
 
@@ -277,4 +277,4 @@ def test_get_kwargs():
     relu_node = stree.get_node("relu")
     relu_kwargs = relu_node.get_kwargs()
     assert isinstance(relu_kwargs, dict)
-    assert relu_kwargs.get('x') == ScopedValue.create_naming_value('x')
+    assert relu_kwargs.get('input') == ScopedValue.create_naming_value('x')
