@@ -381,6 +381,7 @@ class MaxPool3d(_PoolNd):
     Examples:
         >>> import mindspore as ms
         >>> import mindspore.nn as nn
+        >>> from mindspore import Tensor
         >>> import numpy as np
         >>> np_x = np.random.randint(0, 10, [5, 3, 4, 6, 7])
         >>> x = Tensor(np_x, ms.float32)
