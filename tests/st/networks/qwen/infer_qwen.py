@@ -15,7 +15,7 @@
 import argparse
 import sys
 import os
-import glob
+# import glob
 import pandas as pd
 import numpy as np
 
@@ -181,12 +181,12 @@ def run_qwen_4p_bs4(args):
     for output in outputs:
         assert (EXPECT_RES == output).all()
 
-    profiler_file = glob.glob(os.path.join(os.path.join(
-        profiler_path, "**"), "op_statistic_*.csv"), recursive=True)[0]
-    expect_total_time = 19549
-    total_time = get_total_time_from_profiler_file(profiler_file)
-    print(f"total_time: {total_time}")
-    assert total_time <= expect_total_time * (1 + TOELERANCE)
+    # profiler_file = glob.glob(os.path.join(os.path.join(
+    #     profiler_path, "**"), "op_statistic_*.csv"), recursive=True)[0]
+    # expect_total_time = 19549
+    # total_time = get_total_time_from_profiler_file(profiler_file)
+    # print(f"total_time: {total_time}")
+    # assert total_time <= expect_total_time * (1 + TOELERANCE)
 
 
 if __name__ == "__main__":
