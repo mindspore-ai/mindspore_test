@@ -55,6 +55,7 @@ class PipelineInterleave {
   bool IsRedundancyParameter(const AnfNodePtr &parameter, const std::vector<AnfNodePtr> &non_cloned_parameters);
   void InsertSendReceive(const AnfNodePtr &node, const AnfNodePtr &user_node, int64_t order);
   void RemoveMonadNode();
+  void BroadCastGraphStage(const FuncGraphPtr &fg);
   std::vector<AnfNodePtr> GetLoadNodeByParam(const AnfNodePtr &param) const;
   ValuePtr SetMicroBatch(const AnfNodePtr &node, int64_t micro_size, size_t batch_axis) const;
   void FreezeGradient();

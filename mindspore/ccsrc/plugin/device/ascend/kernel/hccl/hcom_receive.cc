@@ -76,7 +76,9 @@ int HcomReceiveKernel::ReceiveShapeForDynamic() {
     } else {
       MS_LOG(EXCEPTION) << "Cannot find " << kAttrSrTag << " in attrs";
     }
-    std::string inter_process_edge_name = std::to_string(src_rank_) + "_" + std::to_string(dst_rank) + "_tag_" +
+    auto src_global_rank =
+      primitive_->HasAttr(kAttrSrcGlobalRank) ? GetValue<int64_t>(primitive_->GetAttr(kAttrSrcGlobalRank)) : src_rank_;
+    std::string inter_process_edge_name = std::to_string(src_global_rank) + "_" + std::to_string(dst_rank) + "_tag_" +
                                           std::to_string(sr_tag) + "_rpc_addr";  // rpc addr
     MS_LOG(INFO) << "Start server for recv actor. Server address: " << server_url
                  << ", remote function id: " << kRemoteFuncId

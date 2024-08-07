@@ -62,7 +62,9 @@ int HcomSendKernel::SendShapeForDynamic() {
     } else {
       MS_LOG(EXCEPTION) << "Cannot find " << kAttrSrTag << " in attrs";
     }
-    std::string server_url_key = std::to_string(src_rank) + "_" + std::to_string(dest_rank_) + "_tag_" +
+    auto dst_global_rank =
+      primitive_->HasAttr(kAttrDstGlobalRank) ? GetValue<int64_t>(primitive_->GetAttr(kAttrDstGlobalRank)) : dest_rank_;
+    std::string server_url_key = std::to_string(src_rank) + "_" + std::to_string(dst_global_rank) + "_tag_" +
                                  std::to_string(sr_tag) + "_rpc_addr";  // rpc addr
 
     auto node = distributed::cluster::ClusterContext::instance()->node();

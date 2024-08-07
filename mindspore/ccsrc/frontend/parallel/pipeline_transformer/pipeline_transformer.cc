@@ -88,6 +88,19 @@ static AbstractBasePtr GetRealAbstract(const AnfNodePtr &node) {
   return node->abstract();
 }
 
+void PipelineTransformer::BroadCastGraphStage(const FuncGraphPtr &fg) {
+  auto stage = fg->stage();
+  auto value_nodes = fg->value_nodes();
+  for (const auto &value_pair : value_nodes) {
+    auto node = value_pair.first;
+    if (IsValueNode<FuncGraph>(node)) {
+      auto sub_graph = GetValueNode<FuncGraphPtr>(node);
+      sub_graph->set_stage(stage);
+      BroadCastGraphStage(sub_graph);
+    }
+  }
+}
+
 FuncGraphPtr FindNodeGraph(const CNodePtr &cnode) {
   auto graph = cnode->func_graph();
   if (IsValueNode<FuncGraph>(cnode->input(0))) {
@@ -558,6 +571,7 @@ void PipelineTransformer::BroadCastColoring() {
     if (fg == root_ || fg == main_graph_ || fg == shared_cell_) {
       continue;
     }
+    BroadCastGraphStage(fg);
     auto all_nodes = fg->nodes();
     for (auto node : all_nodes) {
       if (node->user_data<NodeStageInfo>() != nullptr) {

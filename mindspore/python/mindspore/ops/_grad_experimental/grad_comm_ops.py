@@ -95,6 +95,9 @@ def get_bprop_send(self):
     dtype = self.get_attr_dict()["dtype"]
     tag = self.get_attr_dict()["sr_tag"]
     send_grad = Receive(tag, self.rank, shape, dtype, self.group_back)
+    if "dst_global_rank" in self.get_attr_dict():
+        dst_global_rank = self.get_attr_dict().get("dst_global_rank")
+        send_grad.add_prim_attr("src_global_rank", dst_global_rank)
     virtual_input = Tensor(0.0, dtype)
 
     def bprop(x, out, dout):
@@ -110,7 +113,11 @@ def get_bprop_receive(self):
     tag = self.get_attr_dict()["sr_tag"]
     flash_tag = self.get_attr_dict().get("flash_tag")
     receive_grad = Send(tag, self.rank, self.group_back)
-    receive_grad.add_prim_attr("shape", self.shape)
+    shape = self.get_attr_dict()["shape"]
+    receive_grad.add_prim_attr("shape", shape)
+    if "src_global_rank" in self.get_attr_dict():
+        src_global_rank = self.get_attr_dict().get("src_global_rank")
+        receive_grad.add_prim_attr("dst_global_rank", src_global_rank)
     depend = P.Depend()
     cast = P.Cast()
     out_tensor = Tensor(0.0, mstype.float16)
