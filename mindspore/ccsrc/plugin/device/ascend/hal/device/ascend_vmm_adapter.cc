@@ -225,7 +225,10 @@ size_t AscendVmmAdapter::EagerFreeDeviceMem(const DeviceMemPtr addr, const size_
   size_t ret_size = 0;
   auto iter = vmm_map_.lower_bound(addr);
   if (iter == vmm_map_.end()) {
-    MS_LOG(ERROR) << "Can not find the vmm segment.";
+    // Memory less than 2MB may be at the end of a vmm segment, and it's a normal case.
+    if (size >= kVmmAlignSize) {
+      MS_LOG(ERROR) << "Can not find the vmm segment.";
+    }
     return 0;
   }
   auto vmm_start_addr = iter->first;
