@@ -34,36 +34,9 @@ class GatherDGradAscend : public AclnnKernelMod {
   void GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
 
  private:
-  DEFINE_GET_WORKSPACE_FOR_RESIZE()
+  DEFINE_GET_WORKSPACE_FOR_OPS(aclnnScatterAdd, ScatterAdd)
+  DEFINE_GET_WORKSPACE_FOR_OPS(aclnnInplaceZero, InplaceZero)
 
-  static constexpr size_t kWsSizeIndex = 0;
-  static constexpr size_t kHashIdIndex = 3;
-
-  void SetWorkspaceForInplaceZero(const KernelTensor *input) {
-    zero_hash_id_ = transform::CalcOpApiHash(inplace_zero_str_, input);
-    if (cache_hash_.count(zero_hash_id_) == 0) {
-      auto return_value = GEN_EXECUTOR_CUST(inplace_zero_str_, input);
-      UpdateInplacemWorkspace(std::get<kWsSizeIndex>(return_value), false);
-    } else {
-      auto return_value = GEN_EXECUTOR_BOOST(inplace_zero_str_, zero_hash_id_, input);
-      UpdateInplacemWorkspace(std::get<kWsSizeIndex>(return_value), true, std::get<kHashIdIndex>(return_value));
-    }
-  }
-
-  inline void UpdateInplacemWorkspace(uint64_t ws_size, bool boost, uint64_t new_hash_id = 0) {
-    zero_ws_size_ = ws_size;
-    if (zero_ws_size_ != 0) {
-      workspace_size_list_.emplace_back(ws_size);
-    }
-
-    if (boost) {
-      zero_hash_id_ = new_hash_id;
-    }
-  }
-
-  const std::string inplace_zero_str_{"aclnnInplaceZero"};
-  bool zero_ws_size_{0};
-  uint64_t zero_hash_id_{0};
   int64_t dim_;
 };
 }  // namespace kernel

@@ -34,33 +34,8 @@ class MaskedFillAscend : public AclnnKernelMod {
   void GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
 
  private:
-  DEFINE_GET_WORKSPACE_FOR_RESIZE()
-
-  void SetWorkspaceForInplaceCopy(const KernelTensor *output, const KernelTensor *input) {
-    copy_hash_id_ = transform::CalcOpApiHash(inplace_copy_str_, input);
-    if (cache_hash_.count(copy_hash_id_) == 0) {
-      auto return_value = GEN_EXECUTOR_CUST(inplace_copy_str_, output, input);
-      UpdateInplacemWorkspace(std::get<kWsSizeIndex>(return_value), false);
-    } else {
-      auto return_value = GEN_EXECUTOR_BOOST(inplace_copy_str_, copy_hash_id_, output, input);
-      UpdateInplacemWorkspace(std::get<kWsSizeIndex>(return_value), true, std::get<kHashIdIndex>(return_value));
-    }
-  }
-
-  inline void UpdateInplacemWorkspace(uint64_t ws_size, bool boost, uint64_t new_hash_id = 0) {
-    copy_ws_size_ = ws_size;
-    if (copy_ws_size_ != 0) {
-      workspace_size_list_.emplace_back(ws_size);
-    }
-
-    if (boost) {
-      copy_hash_id_ = new_hash_id;
-    }
-  }
-
-  const std::string inplace_copy_str_{"aclnnInplaceCopy"};
-  bool copy_ws_size_{0};
-  uint64_t copy_hash_id_{0};
+  DEFINE_GET_WORKSPACE_FOR_OPS(aclnnInplaceMaskedFillTensor, InplaceMaskedFillTensor)
+  DEFINE_GET_WORKSPACE_FOR_OPS(aclnnInplaceCopy, InplaceCopy)
 };
 }  // namespace kernel
 }  // namespace mindspore

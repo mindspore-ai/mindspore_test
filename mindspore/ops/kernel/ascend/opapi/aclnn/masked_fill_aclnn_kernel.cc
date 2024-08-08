@@ -32,21 +32,16 @@ namespace kernel {
 
 void MaskedFillAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                         const std::vector<KernelTensor *> &outputs) {
-  GetWorkspaceForResize(outputs[kIndex0], inputs[kIndex1], inputs[kIndex2]);
-  SetWorkspaceForInplaceCopy(outputs[kIndex0], inputs[kIndex0]);
+  ClearOpsWorkSpaceList();
+  GetWorkspaceForResizeInplaceCopy(outputs[kIndex0], inputs[kIndex0]);
+  GetWorkspaceForResizeInplaceMaskedFillTensor(outputs[kIndex0], inputs[kIndex1], inputs[kIndex2]);
 }
 
 bool MaskedFillAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                               const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
-  void *ws_addr = copy_ws_size_ != 0 ? workspace.back()->device_ptr() : nullptr;
-  transform::aclOpExecutor *executor;
-  std::function<void()> release_func;
-  std::tie(std::ignore, executor, release_func, std::ignore, std::ignore) =
-    GEN_EXECUTOR_BOOST(inplace_copy_str_, copy_hash_id_, outputs[kIndex0], inputs[kIndex0]);
-  RUN_OP_API_ASYNC(inplace_copy_str_, ws_addr, copy_ws_size_, executor, stream_ptr, release_func);
-
-  RunOp(stream_ptr, workspace, outputs[kIndex0], inputs[kIndex1], inputs[kIndex2]);
+  RunOpInplaceCopy(stream_ptr, workspace, outputs[kIndex0], inputs[kIndex0]);
+  RunOpInplaceMaskedFillTensor(stream_ptr, workspace, outputs[kIndex0], inputs[kIndex1], inputs[kIndex2]);
   return true;
 }
 
