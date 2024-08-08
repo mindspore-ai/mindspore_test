@@ -1151,7 +1151,7 @@ void DataPrepareActor::PrepareDataForSequenceAndScalarValue(const ValueNodePtr &
   }
 
   UpdateRefCount(device_tensor.get(), true);
-  MS_LOG(INFO) << "Prepare device data for value node: " << node->DebugString();
+  MS_LOG(DEBUG) << "Prepare device data for value node: " << node->DebugString();
   device::DynamicMemAllocatorDebugInfo::SetDebugInfo(node->fullname_with_scope(), device::AllocatorType::kConstantValue,
                                                      0);
   // 1. Allocate device memory for value node.
