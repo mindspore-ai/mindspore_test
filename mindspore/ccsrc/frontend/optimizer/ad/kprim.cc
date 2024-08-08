@@ -574,8 +574,7 @@ FuncGraphPtr KPrim::BpropCut(const ValueNodePtr &value_node, const pipeline::Res
   bprop_cut->CopyHookFunction(prim_py);
 
   auto cell_id = GetValue<std::string>(prim->GetAttr("cell_id"));
-  if (cell_id != "") {
-    (void)bprop_cut->AddAttr("cell_hook", MakeValue(true));
+  if (!cell_id.empty()) {
     (void)bprop_cut->AddAttr("cell_id", MakeValue(cell_id));
   }
 

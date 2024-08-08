@@ -265,7 +265,7 @@ ValuePtrList HookBackwardNode::CallBackward(const ValuePtrList &grads) {
   if (utils::isa<PyObjectRef>(out)) {
     PyObjectRef py_ref = utils::cast<PyObjectRef>(out);
     auto out_py_tuple = py_ref.object_;
-    ConvertPyObjectToTensor(out_py_tuple, &gradient_values);
+    ConvertPyObjectToCTensor(out_py_tuple, &gradient_values);
   }
   if (gradient_values.empty()) {
     MS_LOG(EXCEPTION) << "Hook fn output is not <PyObjectRef> type!";
@@ -597,8 +597,7 @@ BackwardNodePtr FuncGrad::BuildCustomBackwardNode(const PrimitivePtr &prim, cons
       MS_LOG(INFO) << "Can not find bprop function for " << prim->name() << ". fn: " << ConvertPyObjToString(fn);
       return BuildFakeBackwardNode(prim, flatten_inputs, op_grad_info);
     }
-    (void)prim_py->AddBackwardHookFn(0, fn);
-    (void)prim_py->AddAttr("custom_op_bprop", MakeValue(true));
+    (void)prim_py->SetHookFn(fn, HookType::kCustomOpBprop);
   }
   return BuildHookBackwardNode(prim, flatten_inputs, op_grad_info);
 }

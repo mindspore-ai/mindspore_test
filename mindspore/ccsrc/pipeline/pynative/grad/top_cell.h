@@ -71,10 +71,7 @@ class TopCellInfo {
   inline bool is_init_kpynative() const { return is_init_kpynative_; }
   inline void set_init_kpynative(bool init) { is_init_kpynative_ = init; }
   inline size_t grad_order() const { return grad_order_; }
-  inline const CellIdWithBackwardHookOp &cell_backward_hook_op() const { return cell_backward_hook_op_; }
-  void RecordCellBackwardHookOp(const std::string &cell_id, const AnfNodePtr &hook_op);
   void GetOpInfo(const FrontendOpRunInfoPtr &op_run_info, bool is_jit_graph) const;
-  inline void ClearCellHookOp() { cell_backward_hook_op_.clear(); }
   inline bool forward_already_run() const { return forward_already_run_; }
   inline void set_forward_already_run(bool set_forward_already_run) { forward_already_run_ = set_forward_already_run; }
   inline bool need_compile_graph() const { return need_compile_graph_; }
@@ -255,10 +252,6 @@ class TopCellInfo {
   autograd::AutoGradPtr auto_grad_cell_ptr_{nullptr};
 
   OrderedMap<FuncGraphPtr, GraphInfoPtr> graph_info_map_;
-
-  // Record backward hook ops for each cell object.
-  // Each cell object has two backward hook ops.
-  CellIdWithBackwardHookOp cell_backward_hook_op_;
 
   // For forward output replace
   TensorReplaceInfo replace_info_;

@@ -355,7 +355,7 @@ void RunControlOperator(const std::shared_ptr<GraphCompiler> &graph_compiler,
       PyObjectRef py_ref = utils::cast<PyObjectRef>(out);
       auto out_py_tuple = py_ref.object_;
       std::vector<ValuePtr> output_tensors;
-      ConvertPyObjectToTensor(out_py_tuple, &output_tensors);
+      ConvertPyObjectToCTensor(out_py_tuple, &output_tensors);
       // If bprop change grad, kernel abstract need update for its users
       std::vector<abstract::AbstractBasePtr> output_tensor_abs;
       for (auto &tensor : output_tensors) {

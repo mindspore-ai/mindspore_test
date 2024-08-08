@@ -216,10 +216,6 @@ void PyNativeExecutor::Sync() const {
   runtime::ProfilerAnalyzer::GetInstance().StartStep();
 }
 
-void PyNativeExecutor::SetHookCellId(const py::object &cell) const {
-  grad_executor()->set_hook_cell_id(PyNativeAlgo::PyParser::GetIdByPyObj(cell));
-}
-
 bool PyNativeExecutor::grad_flag() const { return grad_executor()->grad_flag(); }
 
 void PyNativeExecutor::set_grad_flag(bool flag) const { grad_executor()->set_grad_flag(flag); }
@@ -348,12 +344,11 @@ void RegPyNativeExecutor(const py::module *m) {
     .def("grad", &PyNativeExecutor::RunGrad, "pynative executor run grad.")
     .def("grad_flag", &PyNativeExecutor::grad_flag, "pynative grad flag")
     .def("enable_grad", &PyNativeExecutor::enable_grad, "pynative enable grad, used for with no_grad")
-    .def("set_hook_id", &PyNativeExecutor::SetHookCellId, "set pynative hook changed")
     .def("set_grad_flag", &PyNativeExecutor::set_grad_flag, py::arg("flag") = py::bool_(false),
          "Executor set grad flag.")
     .def("set_enable_grad", &PyNativeExecutor::set_enable_grad, py::arg("enable_grad") = py::bool_(true),
          "pynative set enable grad")
-    .def("set_eval_use_dynamic_shape_process", &PyNativeExecutor::set_forward_use_dynamic_shape_process,
+    .def("set_cell_use_dynamic_shape_process", &PyNativeExecutor::set_forward_use_dynamic_shape_process,
          "set eval use dynamic shape process.")
     .def("set_dynamic_input", &PyNativeExecutor::SetDynamicInput, "set dynamic input")
     .def("get_dynamic_input", &PyNativeExecutor::GetDynamicInput, "get dynamic input")

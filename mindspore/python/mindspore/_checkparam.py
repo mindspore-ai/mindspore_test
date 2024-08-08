@@ -29,7 +29,6 @@ from mindspore import log as logger
 from mindspore.common import dtype as mstype
 from mindspore._c_expression import Tensor as Tensor_
 
-
 EQ = 1  # ==
 NE = 2  # !=
 LT = 3  # <
@@ -148,7 +147,7 @@ def _check_3d_int_or_tuple(arg_name, arg_value, prim_name, allow_five=False, ret
             ret = (1, 1, arg_value, arg_value, arg_value) if ret_five else (arg_value, arg_value, arg_value)
         elif len(arg_value) == 3:
             ret = (1, 1, arg_value[0], arg_value[1], arg_value[2]) if ret_five else arg_value
-        else: # case: len(arg_value) == 5
+        else:  # case: len(arg_value) == 5
             ret = arg_value if ret_five else (arg_value[2], arg_value[3], arg_value[4])
 
         return ret
@@ -240,6 +239,7 @@ def check_is_number(arg_value, arg_type, arg_name=None, prim_name=None):
         else:
             raise TypeError(f"{prim_name} type of {arg_name} must be '{arg_type.__name__}', " \
                             f"but got '{type(arg_value).__name__}'.")
+
     _check_param()
     return arg_value
 
@@ -265,6 +265,7 @@ def check_number_range(arg_value, lower_limit, upper_limit, rel, value_type, arg
             rel_str = _format_str_two_value(lower_limit, upper_limit, rel)
             raise ValueError(f"{prim_name} {arg_name} must be in range of {rel_str}, " \
                              f"but got {arg_value} with type '{type(arg_value).__name__}'.")
+
     _check_param()
     return arg_value
 
@@ -274,6 +275,7 @@ def check(arg_name, arg_value, value_name, value, rel=EQ, prim_name=None, excp_c
     Method for judging relation between two int values or list/tuple made up of ints.
     This method is not suitable for judging relation between floats, since it does not consider float error.
     """
+
     def _check():
         if not _check_binary_rel(arg_value, value, rel):
             rel_str = _format_str_one_value(f'{value_name}: {value}', rel)
@@ -475,20 +477,24 @@ def check_non_negative_float(arg_value, arg_name=None, prim_name=None):
 
 def check_number(arg_name, arg_value, value, rel, prim_name):
     """Number value judgment."""
+
     def _check():
         if not _check_binary_rel(arg_value, value, rel):
             rel_str = _format_str_one_value(value, rel)
             raise ValueError(f'For \'{prim_name}\', the argument \'{arg_name}\' ' \
                              f'must {rel_str}, but got {arg_value}.')
+
     _check()
     return arg_value
 
 
 def check_isinstance(arg_name, arg_value, classes):
     """Check arg isinstance of classes"""
+
     def _check():
         if not isinstance(arg_value, classes):
             raise ValueError(f'The parameter \'{arg_name}\' must be isinstance of {classes}, but got {arg_value}.')
+
     _check()
     return arg_value
 
@@ -507,6 +513,7 @@ def check_bool(arg_value, arg_name=None, prim_name=None):
     def _check():
         if not isinstance(arg_value, bool):
             raise TypeError(f"{prim_name} {arg_name} must be a bool, but got {type(arg_value).__name__}.")
+
     _check()
     return arg_value
 
@@ -547,6 +554,7 @@ def check_string(arg_value, valid_values, arg_name=None, prim_name=None):
         if not (isinstance(arg_value, str) and arg_value in valid_values):
             raise ValueError(f"{msg_prefix} '{arg_name}' must be str and must be in '{valid_values}'," \
                              f" but got '{arg_value}'.")
+
     _check()
     return arg_value
 
@@ -626,10 +634,12 @@ def check_subclass(arg_name, type_, template_types, prim_name, addition_error_in
 
 def check_valid_input(arg_name, arg_value, prim_name):
     """Checks valid value."""
+
     def _check():
         if arg_value is None:
             raise ValueError(f"For \'{prim_name}\', the argument '{arg_name}'" \
                              f"can not be None, but got {arg_value}.")
+
     _check()
     return arg_value
 
@@ -786,6 +796,7 @@ def check_astype_dtype(dtype):
 
 def check_transpose_axis(axes, ndim):
     """Check the axis argument for tensor.transpose"""
+
     def _check_dim():
         # if multiple arguments provided, it must be `ndim` number of ints
         if len(axes) != ndim:
@@ -793,7 +804,7 @@ def check_transpose_axis(axes, ndim):
                              f"but got {len(axes)} in the number of axes.")
 
     if not axes or (len(axes) == 1 and axes[0] is None):
-        return tuple(range(ndim-1, -1, -1))
+        return tuple(range(ndim - 1, -1, -1))
 
     if len(axes) == 1:
         perm = axes[0]
@@ -912,6 +923,7 @@ def prepare_shape_for_squeeze(shape, axes):
 
 def check_axis_in_range(axis, ndim):
     """Checks axes are with the bounds of ndim"""
+
     def _check():
         if not isinstance(axis, int):
             raise TypeError(f'The axes must be integers, but got {type(axis)}')
@@ -928,6 +940,7 @@ def check_axis_valid(axes, ndim):
     Checks axes are valid given ndim, and returns axes that can be passed
     to the built-in operator (non-negative, int or tuple)
     """
+
     def _check_range(axes):
         for axis in axes:
             check_axis_in_range(axis, ndim)
@@ -977,16 +990,17 @@ def infer_out_shape(*shapes):
     """
     Returns shape of output after broadcasting. Raises ValueError if shapes cannot be broadcast.
     """
+
     def _check(items, max_size, shapes):
         for item in items:
             if item not in (1, max_size):
                 raise ValueError(f'For Tensor, the dimension on each axis must be 1 or the max value on the axis' \
                                  f'to support broadcasting, but got shapes {shapes,}')
+
     shape_out = ()
     max_len = max([len(it) for it in shapes])
     for i in range(max_len):
-        items = [it[i-(max_len-len(it))] if i - (max_len - len(it))
-                 >= 0 else 1 for it in shapes]
+        items = [it[i - (max_len - len(it))] if i - (max_len - len(it)) >= 0 else 1 for it in shapes]
         max_size = 0 if 0 in items else max(items)
         _check(items, max_size, shapes)
         shape_out = shape_out + (max_size,)
@@ -1015,6 +1029,7 @@ def check_axis_type(axis, type_int=True, type_tuple=True, type_list=True):
 
 def check_and_canonicalize_axes(axes, ndim):
     """Check whether the types and values of input axes are valid."""
+
     def _check(axes, ax, ndim):
         if not isinstance(ax, int):
             raise TypeError(f"Each axis should be integer, but got {type(ax)} in {axes}.")
@@ -1091,8 +1106,8 @@ def check_csr_tensor_shape(indptr_shp, indices_shp, values_shp, csr_shp):
                          f"{len(csr_shp)}")
     if values_shp[1:] != csr_shp[2:]:
         raise ValueError(f"CSRTensor's shape[2: ] must be equal to value's shape[1: ]," \
-                         f"but CSRTensor's shape[2: ] got: {csr_shp[2: ]} and value's shape[1: ]" \
-                         f"got: {values_shp[1: ]}")
+                         f"but CSRTensor's shape[2: ] got: {csr_shp[2:]} and value's shape[1: ]" \
+                         f"got: {values_shp[1:]}")
 
 
 def check_csr_tensor_dtype(indptr_dtype, indices_dtype):
@@ -1370,9 +1385,34 @@ def check_hook_fn(hook_type, hook_fn):
     if hook_fn.__code__.co_name == "staging_specialize":
         raise TypeError(f"Decorating hook function {hook_fn.__name__} with '@jit' is not supported.")
 
-    if hook_type == "register_hook" and hook_fn.__code__.co_argcount != 1:
-        raise TypeError(f"Tensor hook function {hook_fn.__name__} arg num is not equal to 1.")
+    is_class_method = hasattr(hook_fn, '__self__')
+    tensor_hook_func_args_num = 2 if is_class_method else 1
+    pre_hook_func_args_num = 3 if is_class_method else 2
+    forward_hook_and_backward_hook_func_args_num = 4 if is_class_method else 3
+
+    if hook_type == "register_hook" and hook_fn.__code__.co_argcount != tensor_hook_func_args_num:
+        raise TypeError(
+            f"Tensor hook function {hook_fn.__name__} arg num {hook_fn.__code__.co_argcount} is not equal to 1")
+
+    if hook_type == "register_forward_pre_hook" and hook_fn.__code__.co_argcount != pre_hook_func_args_num:
+        raise TypeError(
+            f"forward_pre_hook function {hook_fn.__name__} args num {hook_fn.__code__.co_argcount} is not equal to 2")
+
+    if (hook_type == "register_forward_hook" and
+            hook_fn.__code__.co_argcount != forward_hook_and_backward_hook_func_args_num):
+        raise TypeError(
+            f"forward_hook function {hook_fn.__name__} args num {hook_fn.__code__.co_argcount} is not equal to 3")
+
+    if hook_type == "register_backward_pre_hook" and hook_fn.__code__.co_argcount != pre_hook_func_args_num:
+        raise TypeError(
+            f"backward_pre_hook function {hook_fn.__name__} args num {hook_fn.__code__.co_argcount} is not equal to 2")
+
+    if (hook_type == "register_backward_hook" and
+            hook_fn.__code__.co_argcount != forward_hook_and_backward_hook_func_args_num):
+        raise TypeError(
+            f"backward_hook function {hook_fn.__name__} args num {hook_fn.__code__.co_argcount} is not equal to 3")
 
     return True
+
 
 _set_record = {}

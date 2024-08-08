@@ -187,8 +187,7 @@ void IrBprop::BuildCustomBpropCNode(const CNodePtr &cnode, const PrimitivePtr &p
       MS_LOG(INFO) << "Can not find bprop function for " << prim->name() << ". fn: " << ConvertPyObjToString(fn);
       return;
     }
-    (void)prim_py->AddBackwardHookFn(0, fn);
-    (void)prim_py->AddAttr("custom_op_bprop", MakeValue(true));
+    (void)prim_py->SetHookFn(fn, HookType::kCustomOpBprop);
   }
   BuildBPropCutCNode(cnode, prim, outputs);
 }

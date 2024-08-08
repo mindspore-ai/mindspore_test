@@ -44,7 +44,6 @@ from mindspore.parallel.shard import Shard
 from mindspore._check_jit_forbidden_api import jit_forbidden_register
 from mindspore.common._decorator import deprecated
 from mindspore.common._register_for_recompute import recompute_registry
-from mindspore.common._with_context import _PyNativeCellCall
 
 
 class Cell(Cell_):
@@ -102,9 +101,9 @@ class Cell(Cell_):
     """
 
     IGNORE_LIST = ['_scope', '_cell_init_args', '_auto_prefix', '_cells', '_params', '_create_time',
-                   '_func_graph_flags', '_parameter_layout_dict', '_params_list', '_phase',
-                   '_forward_pre_hook', '_forward_hook', '_enable_forward_pre_hook', '_enable_forward_hook',
-                   '_bprop_debug', '_enable_backward_hook', '_cell_backward_hook', '_is_run', '_param_prefix',
+                   '_func_graph_flags', '_parameter_layout_dict', '_params_list', '_phase', '_bprop_debug',
+                   '_forward_pre_hook', '_forward_hook', '_backward_pre_hook', '_backward_hook',
+                   '_cell_backward_pre_hook', '_cell_backward_hook', '_is_run', '_param_prefix',
                    '_attr_synced', 'pynative', 'requires_grad', 'cell_type']
     total_instance_count = 0
 
@@ -148,13 +147,17 @@ class Cell(Cell_):
         if flags:
             self.add_flags(**flags)
         self._bprop_debug = False
+
+        # hook
         self._forward_pre_hook = OrderedDict()
         self._forward_hook = OrderedDict()
-        self._enable_forward_pre_hook = False
-        self._enable_forward_hook = False
-        self._enable_backward_hook = False
+        self._backward_pre_hook = OrderedDict()
+        self._cell_backward_pre_hook = None
+        self._backward_hook = OrderedDict()
         self._cell_backward_hook = None
         self._is_recursion_hook = False
+        self._is_call_new_graph_before = False
+
         self.cell_type = None
         self.cast = Cast()
         self._has_config_recompute = False
@@ -482,15 +485,15 @@ class Cell(Cell_):
         """
         logger.warning(f"The 'run_construct' function of '{self.cls_name}' will be removed in a future version. "
                        f"Calling this function is not recommended.")
-        output = self._run_construct(cast_inputs, kwargs)
+        output = self._run_construct_with_hook(cast_inputs, kwargs)
         return output
 
-    def _run_construct(self, *inputs, **kwargs):
+    def _run_construct_with_hook(self, *inputs, **kwargs):
         """Run the construct function"""
-        if self._enable_forward_pre_hook:
+        if self._forward_pre_hook:
             inputs = self._run_forward_pre_hook(inputs)
 
-        if self._enable_backward_hook:
+        if self._backward_hook:
             output = self._backward_hook_construct(*inputs, **kwargs)
         elif self._shard_fn is not None:
             output = self._shard_fn(*inputs, **kwargs)
@@ -499,8 +502,11 @@ class Cell(Cell_):
         else:
             output = self.construct(*inputs, **kwargs)
 
-        if self._enable_forward_hook:
+        if self._forward_hook:
             output = self._run_forward_hook(inputs, output)
+
+        if self._backward_pre_hook:
+            output = self._run_backward_pre_hook(output)
 
         return output
 
@@ -536,15 +542,18 @@ class Cell(Cell_):
                             f"but got {len(args)}.")
 
     def _reset_hook(self):
-        self._enable_forward_pre_hook = False
-        self._enable_forward_hook = False
-        self._enable_backward_hook = False
+        self._forward_pre_hook = None
+        self._forward_hook = None
+        self._backward_pre_hook = None
+        self._cell_backward_pre_hook = None
+        self._backward_hook = None
+        self._cell_backward_hook = None
 
     def _hook_fn_registered(self):
         '''Hook function in graph mode'''
         # Check super().__init__() in graph mode.
         try:
-            if self._enable_forward_pre_hook or self._enable_forward_hook or self._enable_backward_hook:
+            if self._forward_pre_hook or self._forward_hook or self._backward_pre_hook or self._backward_hook:
                 return True
         except AttributeError as e:
             raise AttributeError(f"The '{type(self).__name__}' object does not inherit attribute from 'cell'. "
@@ -727,9 +736,38 @@ class Cell(Cell_):
             self._init_check()
             self._init_flag = True
 
-        with _PyNativeCellCall(self, args, kwargs) as call:
-            output = self._run_construct(*args, **kwargs)
-            call.output = output
+        if self.requires_grad:
+            self._is_call_new_graph_before = True
+            _pynative_executor.set_grad_flag(True)
+            _pynative_executor.new_graph(self, *args, **kwargs)
+        elif self._dynamic_shape_inputs is not None:
+            _pynative_executor.set_cell_use_dynamic_shape_process(True)
+
+        # bprop cell in middle
+        if self.has_bprop and not self._is_call_new_graph_before and _pynative_executor.grad_flag():
+            _pynative_executor.new_graph(self, *args, **kwargs)
+
+        # Set mixed precision
+        if self.mixed_precision_type is not None:
+            _pynative_executor.set_mixed_precision_type(self.mixed_precision_type)
+
+        if not (self._forward_pre_hook or self._forward_hook or self._backward_pre_hook or self._backward_hook):
+            output = self.construct(*args, **kwargs)
+        else:
+            output = self._run_construct_with_hook(*args, **kwargs)
+
+        if self.requires_grad:
+            _pynative_executor.end_graph(self, output, *args, **kwargs)
+        elif self._dynamic_shape_inputs is not None:
+            _pynative_executor.set_cell_use_dynamic_shape_process(False)
+
+        # bprop cell in middle
+        if self.has_bprop and not self._is_call_new_graph_before and _pynative_executor.grad_flag():
+            _pynative_executor.end_graph(self, output, *args, **kwargs)
+
+        # mixed precision reset
+        if self.mixed_precision_type is not None:
+            _pynative_executor.set_mixed_precision_type(MixedPrecisionType.NOTSET, False)
 
         return output
 
@@ -2071,13 +2109,8 @@ class Cell(Cell_):
             return HookHandle()
         if not check_hook_fn("register_forward_pre_hook", hook_fn):
             return HookHandle()
-
-        self._enable_forward_pre_hook = True
-        if not hasattr(self, '_forward_pre_hook_key'):
-            self._forward_pre_hook_key = -1
-        self._forward_pre_hook_key += 1
-        self._forward_pre_hook[self._forward_pre_hook_key] = hook_fn
-        handle = HookHandle(self, self._forward_pre_hook_key, "_forward_pre_hook")
+        handle = HookHandle(self._forward_pre_hook)
+        self._forward_pre_hook[handle.handle_id] = hook_fn
         return handle
 
     def _run_forward_pre_hook(self, inputs):
@@ -2174,13 +2207,8 @@ class Cell(Cell_):
             return HookHandle()
         if not check_hook_fn("register_forward_hook", hook_fn):
             return HookHandle()
-
-        self._enable_forward_hook = True
-        if not hasattr(self, '_forward_hook_key'):
-            self._forward_hook_key = -1
-        self._forward_hook_key += 1
-        self._forward_hook[self._forward_hook_key] = hook_fn
-        handle = HookHandle(self, self._forward_hook_key, "_forward_hook")
+        handle = HookHandle(self._forward_hook)
+        self._forward_hook[handle.handle_id] = hook_fn
         return handle
 
     def _run_forward_hook(self, inputs, output):
@@ -2212,6 +2240,95 @@ class Cell(Cell_):
                         len(forward_hook_output), len(output)))
         return forward_hook_output
 
+    def register_backward_pre_hook(self, hook_fn):
+        """
+        Register the backward pre hook function.
+
+        Note:
+            - The `register_backward_pre_hook(hook_fn)` does not work in graph mode or functions decorated with 'jit'.
+            - The 'hook_fn' must be defined as the following code.
+              `cell` is the Cell object. `grad_output` is the gradient passed to the Cell.
+            - The 'hook_fn' should have the following signature:
+              hook_fn(cell, grad_output) -> New grad_output gradient or None.
+            - The 'hook_fn' is executed in the python environment. In order to prevent running failed when switching to
+              graph mode, it is not recommended to write it in the `construct` function of Cell object. In the pynative
+              mode, if the `register_backward_pre_hook` function is called in the `construct` function of the Cell
+              object, a hook function will be added at each run time of Cell object.
+
+        Args:
+            hook_fn (function): Python function. Backward pre hook function.
+
+        Returns:
+            A handle corresponding to the `hook_fn` . The handle can be used to remove the added `hook_fn` by calling
+            `handle.remove()` .
+
+        Raises:
+            TypeError: If the `hook_fn` is not a function of python.
+
+        Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+        Examples:
+            >>> import numpy as np
+            >>> import mindspore as ms
+            >>> from mindspore import Tensor, nn, ops
+            >>> ms.set_context(mode=ms.PYNATIVE_MODE)
+            >>> def backward_pre_hook_fn(cell, grad_output):
+            ...     print("backward input: ", grad_output)
+            ...
+            >>> class Net(nn.Cell):
+            ...     def __init__(self):
+            ...         super(Net, self).__init__()
+            ...         self.relu = nn.ReLU()
+            ...         self.handle = self.relu.register_backward_pre_hook()
+            ...
+            ...     def construct(self, x):
+            ...         x = x + x
+            ...         x = self.relu(x)
+            ...         return x
+            >>> grad = ops.GradOperation(get_all=True)
+            >>> net = Net()
+            >>> output = grad(net)(Tensor(np.ones([1]).astype(np.float32)))
+            backward input: (Tensor(shape=[1], dtype=Float32, value= [ 1.00000000e+00]),)
+            >>> print(output)
+            (Tensor(shape=[1], dtype=Float32, value= [ 2.00000000e+00]),)
+        """
+        if context._get_mode() == context.GRAPH_MODE:
+            return HookHandle()
+        if not check_hook_fn("register_backward_pre_hook", hook_fn):
+            return HookHandle()
+        handle = HookHandle(self._backward_pre_hook)
+        self._backward_pre_hook[handle.handle_id] = hook_fn
+        if self._cell_backward_pre_hook is None:
+            # Generate a CellBackwardHook prim, and add function for it
+            self._cell_backward_pre_hook = inner.CellBackwardHook(self.cls_name + "(" + str(id(self)) + ")",
+                                                                  self, self._backward_pre_hook)
+            self._cell_backward_pre_hook.register_backward_pre_hook()
+        return handle
+
+    def _run_backward_pre_hook(self, outputs):
+        """
+        Running backward pre hook function registered on Cell object.
+
+        Args:
+            outputs: The output objects of cell object.
+
+        Returns:
+            - **outputs** - New backward gradient or None.
+
+        Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+        """
+        ret = self._cell_backward_pre_hook(outputs)
+        if isinstance(outputs, tuple):
+            if not isinstance(ret, tuple):
+                ret = (ret,)
+            if len(ret) != len(outputs):
+                raise TypeError(
+                    "The backward pre hook return value size is {} not equal to output size {}".format(
+                        len(ret), len(outputs)))
+        return ret
+
     def register_backward_hook(self, hook_fn):
         """
         Register the backward hook function.
@@ -2219,11 +2336,11 @@ class Cell(Cell_):
         Note:
             - The `register_backward_hook(hook_fn)` does not work in graph mode or functions decorated with 'jit'.
             - The 'hook_fn' must be defined as the following code.
-              `cell_id` is the information of registered Cell object, including name and ID. `grad_input` is the
-              gradient passed to the Cell. `grad_output` is the gradient computed and passed to the next Cell or
-              primitive, which may be modified by returning a new output gradient.
+              `cell` is the registered Cell object. `grad_input` is the gradient computed and passed to
+              the next Cell or primitive, which can be return a new gradient or None. `grad_output` is the gradient
+              passed to the Cell.
             - The 'hook_fn' should have the following signature:
-              hook_fn(cell_id, grad_input, grad_output) -> New output gradient or none.
+              hook_fn(cell, grad_input, grad_output) -> New grad_input gradient or none.
             - The 'hook_fn' is executed in the python environment. In order to prevent running failed when switching to
               graph mode, it is not recommended to write it in the `construct` function of Cell object. In the pynative
               mode, if the `register_backward_hook` function is called in the `construct` function of the Cell object,
@@ -2247,15 +2364,15 @@ class Cell(Cell_):
             >>> import mindspore as ms
             >>> from mindspore import Tensor, nn, ops
             >>> ms.set_context(mode=ms.PYNATIVE_MODE)
-            >>> def backward_hook_fn(cell_id, grad_input, grad_output):
-            ...     print("backward input: ", grad_input)
-            ...     print("backward output: ", grad_output)
+            >>> def backward_hook_fn(cell, grad_input, grad_output):
+            ...     print("backward input: ", grad_output)
+            ...     print("backward output: ", grad_input)
             ...
             >>> class Net(nn.Cell):
             ...     def __init__(self):
             ...         super(Net, self).__init__()
             ...         self.relu = nn.ReLU()
-            ...         self.handle = self.relu.register_backward_hook(backward_hook_fn)
+            ...         self.handle = self.relu.register_backward_hook()
             ...
             ...     def construct(self, x):
             ...         x = x + x
@@ -2273,15 +2390,13 @@ class Cell(Cell_):
             return HookHandle()
         if not check_hook_fn("register_backward_hook", hook_fn):
             return HookHandle()
-
+        handle = HookHandle(self._backward_hook)
+        self._backward_hook[handle.handle_id] = hook_fn
         if self._cell_backward_hook is None:
-            self._enable_backward_hook = True
-            self._cell_backward_hook = inner.CellBackwardHook(self.cls_name + "(" + str(id(self)) + ")")
-            backward_hook_key = self._cell_backward_hook.register_backward_hook(hook_fn)
-            handle = HookHandle(self, backward_hook_key, "_cell_backward_hook")
-        else:
-            backward_hook_key = self._cell_backward_hook.register_backward_hook(hook_fn)
-            handle = HookHandle(self, backward_hook_key, "_cell_backward_hook")
+            # Generate a CellBackwardHook prim, and add function for it
+            self._cell_backward_hook = inner.CellBackwardHook(self.cls_name + "(" + str(id(self)) + ")",
+                                                              self, self._backward_hook)
+            self._cell_backward_hook.register_backward_hook()
         return handle
 
     def _backward_hook_construct(self, *inputs, **kwargs):
@@ -2300,8 +2415,8 @@ class Cell(Cell_):
         """
         # cell_backward_hook has CellBackwardHook op, so keep input args as they are.
         outputs = self._cell_backward_hook(*inputs)
-        # If the inputs has more than two args, the outputs will also have more than two args and will be wrapped into
-        # a tuple, so need do unwrap.
+        # If the inputs have more than two args, the outputs will also have more than two args and will be wrapped into
+        # a tuple, so need to do unwrapping.
         is_need_unwrap = False
         if isinstance(outputs, tuple) and len(inputs) > 1:
             is_need_unwrap = True

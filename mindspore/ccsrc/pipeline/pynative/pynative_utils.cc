@@ -2473,15 +2473,11 @@ PrimitivePyPtr AutoGrad::BuildBpropCutPrim(const PrimitivePtr &prim, bool is_nee
   if (prim->HasAttr("cell_id")) {
     auto cell_id = GetValue<std::string>(prim->GetAttr("cell_id"));
     if (!cell_id.empty()) {
-      (void)bprop_cut->AddAttr("cell_hook", MakeValue(true));
       (void)bprop_cut->AddAttr("cell_id", MakeValue(cell_id));
     }
   }
-  // Only custom op need add this attr, hook function not need.
-  if (prim->HasAttr("custom_op_bprop")) {
-    (void)bprop_cut->AddAttr("custom_op_bprop", MakeValue(true));
-  }
   (void)bprop_cut->AddAttr("custom_op_name", MakeValue(prim->name()));
+  (void)bprop_cut->AddAttr("hook_type", MakeValue(prim_py->HookTypeToString()));
   if (is_need_recompute) {
     (void)bprop_cut->AddAttr("is_recompute", MakeValue(true));
   }

@@ -1605,7 +1605,7 @@ class _PyNativeExecutor:
         """
         self._executor.set_is_run_recompute(status)
 
-    def set_eval_use_dynamic_shape_process(self, flag):
+    def set_cell_use_dynamic_shape_process(self, flag):
         """
         Set the dynamic shape flag of eval process.
 
@@ -1615,7 +1615,7 @@ class _PyNativeExecutor:
         Return:
             None.
         """
-        self._executor.set_eval_use_dynamic_shape_process(flag)
+        self._executor.set_cell_use_dynamic_shape_process(flag)
 
     def set_dynamic_input(self, obj, *args):
         """
@@ -1655,18 +1655,6 @@ class _PyNativeExecutor:
         """
 
         return self._executor.set_mixed_precision_type(mixed_precision_type, is_push)
-
-    def set_hook_id(self, cell=None):
-        """
-        Register a hook on Cell instance.
-
-        Args:
-            cell (Cell): The cell instance.
-
-        Return:
-            None.
-        """
-        self._executor.set_hook_id(cell)
 
     def constant_folding(self, *args):
         """

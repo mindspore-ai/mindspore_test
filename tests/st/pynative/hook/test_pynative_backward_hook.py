@@ -40,19 +40,34 @@ def forward_hook_fn_add(cell, inp, outp):
     return out
 
 
-def backward_hook_fn(cell_id, grad_inp, grad_outp):
+def backward_hook_fn(cell, grad_inp, grad_outp):
     return Tensor(np.ones([1]).astype(np.float32)), Tensor(np.ones([1]).astype(np.float32))
 
 
-def backward_hook_fn2(cell_id, grad_inp, grad_outp):
+def backward_hook_fn2(cell, grad_inp, grad_outp):
     return Tensor(np.ones([1]).astype(np.float32) * 2), Tensor(np.ones([1]).astype(np.float32) * 3)
 
 
-def backward_hook_fn3(cell_id, grad_inp, grad_outp):
+def backward_hook_fn3(cell, grad_inp, grad_outp):
     return Tensor(np.ones([1]).astype(np.float32) * 5), Tensor(np.ones([1]).astype(np.float32) * 6)
 
 
-def backward_hook_fn4(cell_id, grad_inp, grad_outp):
+def backward_hook_fn4(cell, grad_inp, grad_outp):
+    return (Tensor(np.ones([2, 2, 2, 2]).astype(np.float32) * 10),)
+
+
+def backward_hook_fn5(cell, grad_inp, grad_outp):
+    print("cell.a ", cell.a)
+    cell.a = 2
+    return grad_inp[0] * 2
+
+
+unpair_v = 1
+
+
+def backward_hook_fn6(cell, grad_inp, grad_outp):
+    global unpair_v
+    unpair_v += 1
     return (Tensor(np.ones([2, 2, 2, 2]).astype(np.float32) * 10),)
 
 
@@ -72,6 +87,7 @@ class SingleNet(nn.Cell):
     def __init__(self):
         super(SingleNet, self).__init__()
         self.conv = nn.Conv2d(2, 2, kernel_size=2, stride=1, padding=0, weight_init="ones", pad_mode="valid")
+        self.conv.a = 1
         self.bn = nn.BatchNorm2d(2, momentum=0.99, eps=0.00001, gamma_init="ones")
 
     def construct(self, x):
@@ -298,3 +314,40 @@ def test_hook_backward_with_jit():
     output = net(input_x, input_y)
     assert np.allclose(output.asnumpy(), Tensor(np.array([75, 76, 77, 78])).astype(np.float32).asnumpy(),
                        0.001, 0.001)
+
+
+def test_pynative_backward_hook_with_modify_cell():
+    """
+    Feature: PyNative hook function.
+    Description: Test PyNative backward hook function.
+    Expectation: The calculation result is correct.
+    """
+    context.set_context(mode=context.PYNATIVE_MODE)
+    input_x = Tensor(np.ones([2, 2, 2, 2]).astype(np.float32) * 2)
+    grad_op = GradOperation(get_all=True, get_by_list=True, sens_param=False)
+    # register backward hook.
+    net = SingleNet()
+    net.conv.register_backward_hook(backward_hook_fn5)
+    grad = grad_op(net, ParameterTuple(net.trainable_params()))(input_x)
+    assert len(grad) == 2
+    assert net.conv.a == 2
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_pynative_backward_hook_unpair():
+    """
+    Feature: PyNative backward hook function.
+    Description: The unpair case for PyNative hook function.
+    Expectation: The calculation result is correct.
+    """
+    context.set_context(mode=context.PYNATIVE_MODE)
+    input_x = Tensor(np.ones([2, 2, 2, 2]).astype(np.float32) * 2)
+    grad_op = GradOperation(get_by_list=True, sens_param=False)
+    # register backward hook.
+    net = SingleNet()
+    net.conv.register_backward_hook(backward_hook_fn6)
+    grad_op(net, ParameterTuple(net.trainable_params()))(input_x)
+    assert unpair_v == 2

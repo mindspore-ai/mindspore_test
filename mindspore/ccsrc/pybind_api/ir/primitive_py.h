@@ -22,6 +22,7 @@
 #include <utility>
 #include <vector>
 #include <memory>
+#include <unordered_map>
 #include "utils/hash_map.h"
 #include "abstract/abstract_value.h"
 #include "ir/primitive.h"
@@ -42,6 +43,24 @@ using PrimitivePyAdapterPtr = std::shared_ptr<PrimitivePyAdapter>;
 class PrimitiveFunctionAdapter;
 using PrimitiveFunctionAdapterPtr = std::shared_ptr<PrimitiveFunctionAdapter>;
 
+// For hook type
+enum class HookType {
+  // Custom op bprop
+  kCustomOpBprop = 0,
+  // Cell custom bprop
+  kCellCustomBprop,
+  // HookBackward op
+  kHookBackwardOp,
+  // TensorHook
+  kTensorHook,
+  // Backward pre hook
+  kBackwardPreHook,
+  // Backward hook
+  kBackwardHook,
+  // Default
+  kUnknown,
+};
+
 class PrimitivePy : public Primitive {
  public:
   explicit PrimitivePy(const std::string &name);
@@ -54,16 +73,17 @@ class PrimitivePy : public Primitive {
   py::function GetVmapRuleFunction(const bool is_side_effect = false, int axis_size = 0);
   py::function GetBpropFunction();
   py::function GetTaylorRuleFunction();
-  const std::map<int, py::function> &backward_hook_fn() const { return backward_hook_fn_; }
+  HookType hook_type() { return hook_type_; }
+  std::string HookTypeToString() const;
+  const py::function &hook_fn() const { return hook_fn_; }
   void CopyHookFunction(const PrimitivePyPtr &primitive_py);
   void AddBpropCutPrim(const PrimitivePyPtr &bprop_cut_prim);
-  void AddBackwardHookFn(const int &key, const py::function &backward_hook_fn);
-  void RemoveBackwardHookFn(const int &key);
+  void SetHookFn(const py::function &hook_fn, HookType hook_type);
   BaseRef RunHookFunction(const VectorRef &args) const;
   BaseRef RunCellCustomBpropFunction(const py::tuple &py_args) const;
   BaseRef RunCustomOpBpropFunction(const py::tuple &py_args) const;
   BaseRef RunCellHookFunction(const py::tuple &py_args) const;
-  BaseRef RunVariableHookFunction(const py::tuple &py_args, bool is_tensor_hook) const;
+  BaseRef RunVariableHookFunction(const py::tuple &py_args) const;
   BaseRef RunComputeFunction(const VectorRef &args) const override;
   py::object RunPyComputeFunction(const py::tuple &py_args) const;
   bool HasComputeFunction() const;
@@ -83,15 +103,18 @@ class PrimitivePy : public Primitive {
  private:
   py::function GetComputeFunction() const;
   py::object UnpackRetValueOfCellHook(const py::object &grad_out) const;
-  void CheckHookConsistency(const py::object &grad_out, const py::object &expected_grad_out, const py::object &code_obj,
+  void CheckHookConsistency(const py::object &grad_out, const py::object &expected_grad_out,
                             const py::object &co_name) const;
   py::object python_obj_;
   std::string bprop_cls_name_;
   PrimitivePyAdapterPtr adapter_;
   std::vector<Signature> signatures_;
   std::vector<PrimitivePyWeakPtr> bprop_cut_prims_;
-  std::map<int, py::function> backward_hook_fn_;
-  static std::map<std::string, std::pair<std::map<int, py::function>, py::object>> hook_grad_;
+  HookType hook_type_{HookType::kUnknown};
+  py::function hook_fn_{py::none()};
+  // If a cell registers a backward hook, but the inputs of the cell does not calculate the derivative, and the
+  // parameters in the cell need to calculate the derivative, then the hook function will not be executed
+  static std::unordered_map<std::string, py::function> unpair_backward_hook_grad_;
 };
 
 class PrimitivePyAdapter {
@@ -104,8 +127,7 @@ class PrimitivePyAdapter {
   void AddPyAttr(const py::str &name, const py::object &obj);
   void DelPyAttr(const py::str &name);
   py::dict GetAttrDict();
-  int AddBackwardHookFn(const py::function &backward_hook_fn);
-  void RemoveBackwardHookFn(int key);
+  void SetHookFn(const py::function &hook_fn, HookType hook_type);
   void set_prim_type(const PrimType t);
   void set_const_prim(bool is_const_prim);
   void set_inplace_prim(bool inplace_prim);
@@ -146,7 +168,6 @@ class PrimitivePyAdapter {
 
   bool const_prim_{false};
   bool inplace_prim_{false};
-  int backward_hook_fn_key_{-1};
   uint64_t id_;
   std::string name_;
   std::string instance_name_;
@@ -155,7 +176,8 @@ class PrimitivePyAdapter {
   mindspore::HashMap<std::string, ValuePtr> attrs_;
   std::vector<size_t> const_input_indexes_;
   std::vector<Signature> signatures_;
-  std::map<int, py::function> backward_hook_fn_;
+  HookType hook_type_{HookType::kUnknown};
+  py::function hook_fn_{py::none()};
   UserData user_data_;
 };
 

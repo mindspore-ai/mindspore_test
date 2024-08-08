@@ -344,14 +344,34 @@
             - **mp_comm_recompute** (bool) - 表示在自动并行或半自动并行模式下，指定Cell内部由模型并行引入的通信操作是否重计算。默认值： ``True`` 。
             - **parallel_optimizer_comm_recompute** (bool) - 表示在自动并行或半自动并行模式下，指定Cell内部由优化器并行引入的AllGather通信是否重计算。默认值： ``False`` 。
 
+    .. py:method:: register_backward_pre_hook(hook_fn)
+
+        设置Cell对象的反向hook函数。
+
+        .. note::
+            - `register_backward_pre_hook(hook_fn)` 在图模式下，或者在PyNative模式下使用 `jit` 装饰器功能时不起作用。
+            - hook_fn必须有如下代码定义。 `cell` 是已注册Cell对象的信息。 `grad_output` 是反向传递给Cell对象的梯度。 用户可以在hook_fn中返回None或者返回新的梯度。
+            - hook_fn返回None或者新的相应于`grad_output`的梯度：hook_fn(cell, grad_output) -> New grad_output or None。
+            - 为了避免脚本在切换到图模式时运行失败，不建议在Cell对象的 `construct` 函数中调用 `register_backward_hook(hook_fn)` 。
+            - PyNative模式下，如果在Cell对象的 `construct` 函数中调用 `register_backward_hook(hook_fn)` ，那么Cell对象每次运行都将增加一个 `hook_fn` 。
+
+        参数：
+            - **hook_fn** (function) - 捕获Cell对象信息和反向输入，输出梯度的 `hook_fn` 函数。
+
+        返回：
+            返回与 `hook_fn` 函数对应的 `handle` 对象。可通过调用 `handle.remove()` 来删除添加的 `hook_fn` 函数。
+
+        异常：
+            - **TypeError** - 如果 `hook_fn` 不是Python函数。
+
     .. py:method:: register_backward_hook(hook_fn)
 
         设置Cell对象的反向hook函数。
 
         .. note::
             - `register_backward_hook(hook_fn)` 在图模式下，或者在PyNative模式下使用 `jit` 装饰器功能时不起作用。
-            - hook_fn必须有如下代码定义。 `cell_id` 是已注册Cell对象的信息，包括名称和ID。 `grad_input` 是反向传递给Cell对象的梯度。 `grad_output` 是Cell对象的反向输出梯度。用户可以在hook_fn中打印梯度数据或者返回新的输出梯度。
-            - hook_fn返回新的输出梯度或者None：hook_fn(cell_id, grad_input, grad_output) -> New grad_output or None。
+            - hook_fn必须有如下代码定义。 `cell` 是已注册Cell对象的信息。 `grad_input` 是Cell对象的反向输出梯度。 `grad_output` 是反向传递给Cell对象的梯度。 用户可以在hook_fn中返回None或者返回新的梯度。
+            - hook_fn返回None或者新的相应于`grad_input`的梯度：hook_fn(cell, grad_input, grad_output) -> New grad_input or None。
             - 为了避免脚本在切换到图模式时运行失败，不建议在Cell对象的 `construct` 函数中调用 `register_backward_hook(hook_fn)` 。
             - PyNative模式下，如果在Cell对象的 `construct` 函数中调用 `register_backward_hook(hook_fn)` ，那么Cell对象每次运行都将增加一个 `hook_fn` 。
 

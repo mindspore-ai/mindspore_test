@@ -21,12 +21,6 @@
 
 namespace mindspore {
 namespace pynative {
-void TopCellInfo::RecordCellBackwardHookOp(const std::string &cell_id, const AnfNodePtr &hook_op) {
-  MS_EXCEPTION_IF_NULL(hook_op);
-  MS_LOG(DEBUG) << "Get cell register backward hook, id " << cell_id;
-  (void)cell_backward_hook_op_[cell_id].emplace_back(hook_op);
-}
-
 void TopCellInfo::GetOpInfo(const FrontendOpRunInfoPtr &op_run_info, bool is_jit_graph) const {
   // Dynamic shape no need do value node replace
   if (use_dynamic_shape_process_ && !is_jit_graph) {

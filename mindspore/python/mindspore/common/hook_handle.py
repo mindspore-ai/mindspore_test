@@ -77,27 +77,19 @@ class HookHandle:
         It is only supported in pynative mode and works when registering or removing hook function for Cell object.
 
     Args:
-        hook_cell (Cell): The Cell object with hook function registered on. Default value: None.
-        hook_key (int): The key of cell hook function in dict. It is generated during cell hook function registration.
-                        Default value: -1.
-        hook_type (str): The type of cell hook function: '_forward_pre_hook', '_forward_hook' or '_cell_backward_hook'.
-                         Default value: "".
+        hook_dict (Dict): The hook object with hook function registered on. Default value: None.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
     """
-    def __init__(self, hook_cell=None, hook_key=-1, hook_type=""):
-        if hook_cell is not None:
-            self._hook_cell = weakref.ref(hook_cell)
-        else:
-            self._hook_cell = hook_cell
-        self._hook_key = hook_key
-        self._hook_type = hook_type
+    unique_id = 0
 
-    def __del__(self):
-        self._hook_cell = None
-        self._hook_key = None
-        self._hook_type = None
+    def __init__(self, hook_dict=None):
+        self.hook_dict_ref = None
+        if hook_dict is not None:
+            self.hook_dict_ref = weakref.ref(hook_dict)
+            self.handle_id = HookHandle.unique_id
+            HookHandle.unique_id += 1
 
     def remove(self):
         """
@@ -121,7 +113,7 @@ class HookHandle:
             >>> from mindspore import Tensor
             >>> from mindspore.ops import GradOperation
             >>> ms.set_context(mode=ms.PYNATIVE_MODE)
-            >>> def forward_pre_hook_fn(cell_id, inputs):
+            >>> def forward_pre_hook_fn(cell, inputs):
             ...     print("forward inputs: ", inputs)
             ...
             >>> class Net(nn.Cell):
@@ -145,11 +137,7 @@ class HookHandle:
             (Tensor(shape=[1], dtype=Float32, value= [ 2.00000000e+00]), Tensor(shape=[1], dtype=Float32,
             value= [ 2.00000000e+00]))
         """
-        if self._hook_cell is not None:
-            hook_cell = self._hook_cell()
-            if self._hook_type == "_forward_pre_hook" and self._hook_key in hook_cell._forward_pre_hook:
-                del hook_cell._forward_pre_hook[self._hook_key]
-            elif self._hook_type == "_forward_hook" and self._hook_key in hook_cell._forward_hook:
-                del hook_cell._forward_hook[self._hook_key]
-            elif self._hook_type == "_cell_backward_hook":
-                hook_cell._cell_backward_hook.remove_backward_hook(self._hook_key)
+        if self.hook_dict_ref is not None:
+            hook_dict = self.hook_dict_ref()
+            if hook_dict is not None  and self.handle_id in hook_dict:
+                del hook_dict[self.handle_id]

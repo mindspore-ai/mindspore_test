@@ -67,14 +67,13 @@ class AutoGradMetaData {
   void set_op_index(size_t op_index) { op_index_ = op_index; }
   [[nodiscard]] size_t output_index() const { return output_index_; }
   void set_output_index(size_t output_index) { output_index_ = output_index; }
-  void AddBackwardHook(uint64_t id, TensorBackwardHookPtr hook) {
-    (void)backward_hooks_.emplace(id, std::move(hook));
+  void AddBackwardHook(uint64_t handle_id, TensorBackwardHookPtr hook) {
+    (void)backward_hooks_.emplace(handle_id, std::move(hook));
     is_register_hook_ = true;
   }
-  void RemoveBackwardHook(uint64_t id) { (void)backward_hooks_.erase(id); }
+  void RemoveBackwardHook(uint64_t handle_id) { (void)backward_hooks_.erase(handle_id); }
   bool is_register_hook() const { return is_register_hook_; }
   const std::map<uint64_t, TensorBackwardHookPtr> &backward_hooks() { return backward_hooks_; }
-  void ClearBackwardHooks() { backward_hooks_.clear(); }
   // Reset Parameter auto grad meta
   void Reset() {
     variable_ = {};

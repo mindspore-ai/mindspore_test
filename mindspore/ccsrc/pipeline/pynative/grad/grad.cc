@@ -955,7 +955,6 @@ void GradExecutor::EndGraphImpl(const InputArgsInfoPtr &input_args_info) {
 
   if (input_args_info->is_grad_topest_cell) {
     MS_LOG(DEBUG) << "Cur top last cell " << input_args_info->cell_id;
-    top_cell()->ClearCellHookOp();
   }
 
   // Checkout whether you need to compile graph when each top cell has run finished
@@ -1020,7 +1019,7 @@ void GradExecutor::GetCustomBpropPrim(const py::object &obj, const py::args &arg
       (void)input_args_info->input_arg_value_vec.emplace_back(PyNativeAlgo::DataConvert::PyObjToValue(args[i]));
     }
   }
-  fake_prim->AddBackwardHookFn(0, bprop_func);
+  fake_prim->SetHookFn(bprop_func, HookType::kCellCustomBprop);
 
   (void)fake_prim->AddAttr("cell_id", MakeValue(input_args_info->cell_id));
   (void)fake_prim->AddAttr(parse::CUSTOM_BPROP_NAME, MakeValue(true));
@@ -1384,8 +1383,8 @@ std::vector<tensor::BaseTensorPtr> GradExecutor::GetWeightsArgs(const py::object
       (void)w_args.emplace_back(tensor);
     }
   } else {
-    MS_LOG(DEBUG) << "No parameter tuple get, try get weights params by input weight";
     if (py::isinstance<py::tuple>(weights) || py::isinstance<py::list>(weights)) {
+      MS_LOG(DEBUG) << "Get weights params by input tuple/list weight";
       auto weights_tuple = py::cast<py::tuple>(weights);
       for (size_t i = 0; i < weights_tuple.size(); ++i) {
         const auto value = PyNativeAlgo::DataConvert::PyObjToValue(weights_tuple[i]);
@@ -1395,13 +1394,14 @@ std::vector<tensor::BaseTensorPtr> GradExecutor::GetWeightsArgs(const py::object
       }
     } else if (!py::isinstance<py::none>(weights)) {
       // Single input
+      MS_LOG(DEBUG) << "Get weights params by single input weight";
       const auto value = PyNativeAlgo::DataConvert::PyObjToValue(weights);
       auto tensor = value->cast<tensor::BaseTensorPtr>();
       (void)w_args.emplace_back(tensor);
       MS_EXCEPTION_IF_NULL(tensor);
       *weight_param_is_tuple = false;
     } else {
-      MS_LOG(DEBUG) << "Get default weight";
+      MS_LOG(DEBUG) << "Get default weight from forward record";
       return GetDefaultWeights();
     }
   }
@@ -2228,63 +2228,14 @@ void GradExecutor::DoOpGrad(const FrontendOpRunInfoPtr &op_run_info) const {
   }
 }
 
-AnfNodePtr GradExecutor::GetRealInputNodeBySkipHook(const AnfNodePtr &input_node) const {
-  if (input_node == nullptr) {
-    MS_LOG(DEBUG) << "The input node is nullptr.";
-    return input_node;
-  }
-  const auto &cell_backward_hook_op = top_cell()->cell_backward_hook_op();
-  for (const auto &elem : cell_backward_hook_op) {
-    constexpr size_t cell_backward_hook_num = 2;
-    if (elem.second.size() < cell_backward_hook_num) {  // In cell own scope, no need to skip backward hook op.
-      continue;
-    }
-    // The input node is the first backward hook op of another cell, skip the backward hook op.
-    if (IsPrimitiveCNode(input_node, prim::kPrimCellBackwardHook) && input_node == elem.second[0]) {
-      // Single input.
-      auto backward_hook_op = input_node->cast<CNodePtr>();
-      MS_EXCEPTION_IF_NULL(backward_hook_op);
-      return backward_hook_op->input(1);
-    }
-    if (IsPrimitiveCNode(input_node, prim::kPrimTupleGetItem)) {
-      // Multi inputs.
-      auto tuple_get_item = input_node->cast<CNodePtr>();
-      MS_EXCEPTION_IF_NULL(tuple_get_item);
-      auto inp_in_tuple = tuple_get_item->input(1);
-      MS_EXCEPTION_IF_NULL(inp_in_tuple);
-      if (IsPrimitiveCNode(inp_in_tuple, prim::kPrimCellBackwardHook) && inp_in_tuple == elem.second[0]) {
-        constexpr size_t idx = 2;
-        auto idx_node = tuple_get_item->input(idx);
-        MS_EXCEPTION_IF_NULL(idx_node);
-        auto value_node = idx_node->cast<ValueNodePtr>();
-        MS_EXCEPTION_IF_NULL(value_node);
-        auto out_idx = GetValue<int64_t>(value_node->value());
-        auto backward_hook_op = inp_in_tuple->cast<CNodePtr>();
-        MS_EXCEPTION_IF_NULL(backward_hook_op);
-        return backward_hook_op->input(1 + LongToSize(out_idx));
-      }
-    }
-  }
-  return input_node;
-}
-
 CNodePtr GradExecutor::ConstructForwardGraph(const FrontendOpRunInfoPtr &op_run_info) const {
   MS_EXCEPTION_IF_NULL(op_run_info);
   AnfNodePtrList inputs;
   (void)inputs.emplace_back(NewValueNode(op_run_info->op_grad_info->op_prim));
   for (size_t i = 0; i < op_run_info->input_size; i++) {
-    AnfNodePtr input_node = nullptr;
-    const auto node = GetInput(op_run_info->op_grad_info->input_value[i], op_run_info->input_value_id[i]);
-    input_node = GetRealInputNodeBySkipHook(node);
-    // update abstract
-    if (input_node != nullptr) {
-      (void)inputs.emplace_back(input_node);
-    }
+    (void)inputs.emplace_back(GetInput(op_run_info->op_grad_info->input_value[i], op_run_info->input_value_id[i]));
   }
   const auto &cnode = curr_g()->NewCNodeInOrder(inputs);
-  if (IsPrimitiveCNode(cnode, prim::kPrimCellBackwardHook)) {
-    top_cell()->RecordCellBackwardHookOp(hook_cell_id_, cnode);
-  }
   MS_LOG(DEBUG) << "Make CNode for " << op_run_info->base_op_run_info.op_name << ", new cnode is "
                 << cnode->DebugString();
   return cnode;

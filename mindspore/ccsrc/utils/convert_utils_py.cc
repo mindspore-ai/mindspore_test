@@ -923,7 +923,9 @@ ValuePtr ConvertPyObjectToCObject(const py::object &input_object) {
   return output;
 }
 
-void ConvertPyObjectToTensor(const py::object &input_object, std::vector<ValuePtr> *tensors) {
+ValuePtr ConvertPyObjectToCTensor(const py::object &input_object) { return ConvertPyObjectToCObject(input_object); }
+
+void ConvertPyObjectToCTensor(const py::object &input_object, std::vector<ValuePtr> *tensors) {
   if (!py::isinstance<py::tuple>(input_object)) {
     MS_LOG(EXCEPTION) << "Input object should be tuple";
   }
@@ -933,31 +935,28 @@ void ConvertPyObjectToTensor(const py::object &input_object, std::vector<ValuePt
   }
 }
 
-void ConvertCTensorToPyTensor(const py::tuple &input_args, py::tuple *convert_args) {
-  MS_EXCEPTION_IF_NULL(convert_args);
-  if (input_args.size() != (*convert_args).size()) {
-    MS_LOG(EXCEPTION) << "The size of input_args: " << input_args.size()
-                      << " should be equal to the size of convert_args: " << (*convert_args).size();
+py::object ConvertCTensorToPyTensor(const py::object &input_arg) {
+  if (py::isinstance<tensor::Tensor>(input_arg)) {
+    return python_adapter::CallPyFn(parse::PYTHON_MOD_PARSE_MODULE, parse::PYTHON_MOD_CONVERT_TO_MS_TENSOR, input_arg);
   }
-  for (size_t i = 0; i < input_args.size(); ++i) {
-    if (py::isinstance<tensor::Tensor>(input_args[i])) {
-      (*convert_args)[i] =
-        python_adapter::CallPyFn(parse::PYTHON_MOD_PARSE_MODULE, parse::PYTHON_MOD_CONVERT_TO_MS_TENSOR, input_args[i]);
-    } else if (py::isinstance<tensor::CSRTensor>(input_args[i])) {
-      (*convert_args)[i] = python_adapter::CallPyFn(parse::PYTHON_MOD_PARSE_MODULE,
-                                                    parse::PYTHON_MOD_CONVERT_TO_MS_CSRTENSOR, input_args[i]);
-    } else if (py::isinstance<tensor::COOTensor>(input_args[i])) {
-      (*convert_args)[i] = python_adapter::CallPyFn(parse::PYTHON_MOD_PARSE_MODULE,
-                                                    parse::PYTHON_MOD_CONVERT_TO_MS_COOTENSOR, input_args[i]);
-    } else if (py::isinstance<py::tuple>(input_args[i])) {
-      auto tuple_inp_arg = py::cast<py::tuple>(input_args[i]);
-      py::tuple convert_tuple_arg(tuple_inp_arg.size());
-      ConvertCTensorToPyTensor(tuple_inp_arg, &convert_tuple_arg);
-      (*convert_args)[i] = convert_tuple_arg;
-    } else {
-      (*convert_args)[i] = input_args[i];
+  if (py::isinstance<tensor::CSRTensor>(input_arg)) {
+    return python_adapter::CallPyFn(parse::PYTHON_MOD_PARSE_MODULE, parse::PYTHON_MOD_CONVERT_TO_MS_CSRTENSOR,
+                                    input_arg);
+  }
+  if (py::isinstance<tensor::COOTensor>(input_arg)) {
+    return python_adapter::CallPyFn(parse::PYTHON_MOD_PARSE_MODULE, parse::PYTHON_MOD_CONVERT_TO_MS_COOTENSOR,
+                                    input_arg);
+  }
+  if (py::isinstance<py::tuple>(input_arg)) {
+    auto tuple_inp_arg = py::cast<py::tuple>(input_arg);
+    py::tuple convert_tuple_arg(tuple_inp_arg.size());
+    for (size_t i = 0; i < tuple_inp_arg.size(); ++i) {
+      convert_tuple_arg[i] = ConvertCTensorToPyTensor(tuple_inp_arg[i]);
     }
+    return convert_tuple_arg;
   }
+  MS_LOG(DEBUG) << "Get no convert py object " << ConvertPyObjToString(input_arg);
+  return input_arg;
 }
 
 std::string ConvertPyObjToString(const py::object &obj) { return py::str(obj).cast<std::string>(); }

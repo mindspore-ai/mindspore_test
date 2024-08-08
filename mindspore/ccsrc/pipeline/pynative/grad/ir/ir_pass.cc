@@ -31,6 +31,7 @@ namespace pynative {
 namespace bprop_pass {
 namespace {
 constexpr auto kTupleToMakeTuple = "tuple_to_make_tuple";
+constexpr auto kHookType = "hook_type";
 
 mindspore::HashMap<AnfNodePtr, std::vector<std::pair<size_t, AnfNodePtr>>> node_attr_value_;
 
@@ -535,8 +536,8 @@ AnfNodePtr IrPassForward::PassBackwardHook(const ValuePtr &value, const AnfNodeP
     MS_LOG(DEBUG) << "Insert bprop cut fn " << ConvertPyObjToString(hook_fn) << " for tensor " << value->ToString()
                   << " with id " << tensor->id();
     auto bprop_cut = std::make_shared<PrimitivePy>("bprop_cut");
-    bprop_cut->AddAttr("tensor_hook", MakeValue(true));
-    bprop_cut->AddBackwardHookFn(kIndex0, hook_fn);
+    bprop_cut->SetHookFn(hook_fn, HookType::kTensorHook);
+    (void)bprop_cut->AddAttr(kHookType, MakeValue(bprop_cut->HookTypeToString()));
     // Need input out and dout for bprop run, current just make a fake
     AnfNodePtrList inputs{NewValueNode(bprop_cut), grad_node, NewValueNode(MakeValue("FakeOutput")), res};
     res = ir_bprop_->ad_param()->tape_->FuncGraph::NewCNode(inputs);

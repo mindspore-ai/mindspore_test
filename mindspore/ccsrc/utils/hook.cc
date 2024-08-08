@@ -22,54 +22,40 @@
 
 namespace mindspore {
 namespace {
-py::tuple GetPythonArg(const ValuePtr &grad) {
+py::object GetPythonArg(const ValuePtr &grad) {
   // Get _c_expression tensor
-  py::tuple py_args(kIndex1);
-  py_args[0] = ValueToPyData(grad);
+  auto c_expression_tensor = ValueToPyData(grad);
   // Get python tensor
-  py::tuple converted_args(kIndex1);
-  ConvertCTensorToPyTensor(py_args, &converted_args);
-  return converted_args;
+  return ConvertCTensorToPyTensor(c_expression_tensor);
 }
 
-ValuePtrList GetCValue(const py::object &output) {
+ValuePtr GetCValue(const py::object &output) {
   // Convert pyobject output to c++ tensor.
-  ValuePtrList output_tensors;
-  ConvertPyObjectToTensor(output, &output_tensors);
-  return output_tensors;
+  return ConvertPyObjectToCTensor(output);
 }
 
-void RunHook(std::map<uint64_t, py::function> *hook_map, py::tuple *arg) {
+py::object RunHook(std::map<uint64_t, py::function> *hook_map, const py::object &arg) {
   MS_EXCEPTION_IF_NULL(hook_map);
-  MS_EXCEPTION_IF_NULL(arg);
+  py::object grad_out = arg;
   for (auto it = hook_map->begin(); it != hook_map->end();) {
     if (it->second.ptr() == nullptr) {
       MS_LOG(DEBUG) << "Hook id " << it->first << " have been delete by python";
       hook_map->erase(it++);
     } else {
       MS_LOG(DEBUG) << "Run hook id " << it->first << " and its value " << ConvertPyObjToString(it->second);
-      // Flatten input
-      auto res = (it->second)(*(*arg));
+      auto res = (it->second)(grad_out);
       if (py::isinstance<py::none>(res)) {
-        MS_EXCEPTION(ValueError) << "Get None result for hook call";
+        ++it;
+        continue;
       }
       if (MS_UNLIKELY(py::isinstance<py::tuple>(res) || py::isinstance<py::list>(res))) {
-        auto tuple = py::cast<py::tuple>(res);
-        if (tuple.size() != arg->size()) {
-          MS_LOG(EXCEPTION) << "Hook input size " << arg->size() << " is not equal to hook output size "
-                            << tuple.size();
-        }
-        *arg = res;
-      } else {
-        // Default
-        if (arg->size() != kIndex1) {
-          MS_LOG(EXCEPTION) << "Hook output size " << arg->size() << "is not equal to default input size 1";
-        }
-        (*arg)[kIndex0] = res;
+        MS_LOG(EXCEPTION) << "Tensor hook should be return None or a single value";
       }
       ++it;
+      grad_out = res;
     }
   }
+  return grad_out;
 }
 }  // namespace
 
@@ -85,8 +71,7 @@ TensorBackwardHook::~TensorBackwardHook() {
 ValuePtr TensorBackwardHook::operator()(const ValuePtr &grad) {
   py::gil_scoped_acquire acquire_gil;
   auto py_args = GetPythonArg(grad);
-  RunHook(&hook_map_, &py_args);
-  auto c_output_values = GetCValue(py_args);
-  return c_output_values[kIndex0];
+  auto ret = RunHook(&hook_map_, py_args);
+  return GetCValue(ret);
 }
 }  // namespace mindspore

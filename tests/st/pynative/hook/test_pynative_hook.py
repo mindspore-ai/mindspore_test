@@ -28,9 +28,6 @@ from mindspore.ops import operations as P
 from mindspore.common.initializer import TruncatedNormal
 from tests.mark_utils import arg_mark
 
-context.set_context(mode=context.PYNATIVE_MODE, device_target="Ascend")
-
-
 grad_all = C.GradOperation(get_all=True)
 
 
@@ -62,9 +59,9 @@ class test_custom_hook_function_base():
         return hook_function, cell_hook_function
 
 
-def cell_hook_function_print_grad(cell_id, grad_input, grad_output):
-    assert grad_output[0].asnumpy().shape == (32, 6, 14, 14)
-    assert grad_input[0].asnumpy().shape == (32, 16, 10, 10)
+def cell_hook_function_print_grad(cell, grad_input, grad_output):
+    assert grad_input[0].asnumpy().shape == (32, 6, 14, 14)
+    assert grad_output[0].asnumpy().shape == (32, 16, 10, 10)
 
 
 def custom_hook_function_print_and_save_grad(grad_out):
@@ -106,6 +103,7 @@ class LeNet5(nn.Cell):
 
 class GradWrap(nn.Cell):
     """ GradWrap definition """
+
     def __init__(self, network):
         super(GradWrap, self).__init__(auto_prefix=False)
         self.network = network
@@ -241,12 +239,12 @@ VAR_HOOK_DONE = False
 CELL_BPROP_DONE = False
 
 
-def cell_hook_function1(cell_id, grad_input, grad_output):
-    print(cell_id)
+def cell_hook_function1(cell, grad_input, grad_output):
+    print("cell_id", id(cell))
     global CELL_HOOK_DONE
     CELL_HOOK_DONE = True
-    assert grad_output[0].asnumpy().shape == (32, 6, 14, 14)
-    assert grad_input[0].asnumpy().shape == (32, 16, 10, 10)
+    assert grad_input[0].asnumpy().shape == (32, 6, 14, 14)
+    assert grad_output[0].asnumpy().shape == (32, 16, 10, 10)
 
 
 def var_hook_function(grad_out):
@@ -284,6 +282,7 @@ class LeNet(nn.Cell):
     Examples:
         >>> LeNet(num_class=10)
     """
+
     def __init__(self, num_class=10):
         super(LeNet, self).__init__()
         self.num_class = num_class
