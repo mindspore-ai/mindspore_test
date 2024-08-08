@@ -31,6 +31,8 @@ constexpr size_t kInputIndex1 = 1;
 constexpr size_t kInputIndex2 = 2;
 constexpr size_t kInputIndex3 = 3;
 constexpr size_t kInputIndex4 = 4;
+constexpr size_t kDimSize0 = 0;
+constexpr size_t kDimSize5 = 5;
 }  // namespace
 
 bool MaxUnpool3DCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
@@ -85,6 +87,9 @@ bool MaxUnpool3DCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTenso
   auto *raw_indices = static_cast<INDICES_T *>(inputs[kInputIndex1]->device_ptr());
   auto *raw_output = static_cast<DATA_T *>(outputs[kInputIndex0]->device_ptr());
   size_t num_batch = static_cast<size_t>(input_shape_[kInputIndex0]);
+  if (output_shape_.size() != kDimSize0 && output_shape_.size() != kDimSize5) {
+    MS_EXCEPTION(ValueError) << "MaxUnpool3D: Output_shape size must be 0 or 5.";
+  }
   if (data_format_ == "NDHWC") {
     size_t input_depth = LongToSize(input_shape_[kInputIndex1]);
     size_t input_height = LongToSize(input_shape_[kInputIndex2]);
