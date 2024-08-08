@@ -55,7 +55,7 @@ from mindspore.ops.function.nn_func import log_softmax_ext as log_softmax
 # 17
 from mindspore.ops.function.nn_func import binary_cross_entropy
 # 18
-
+from mindspore.ops.auto_generate import prelu
 # 19
 
 # 20
@@ -416,7 +416,7 @@ __all__ = [
     # 17
 
     # 18
-
+    'prelu',
     # 19
     'binary_cross_entropy',
     # 20

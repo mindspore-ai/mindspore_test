@@ -59,7 +59,7 @@ from mindspore.nn.layer import LogSoftmaxExt as LogSoftmax
 # 17
 
 # 18
-
+from mindspore.nn.layer import PReLUExt as PReLU
 # 19
 
 # 20
@@ -503,7 +503,7 @@ __all__ = [
     # 17
 
     # 18
-
+    'PReLU',
     # 19
 
     # 20

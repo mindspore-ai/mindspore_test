@@ -10,3 +10,5 @@ prelu:
             dtype: tensor
     class:
         name: PReLU
+    dispatch:
+        enable: True
