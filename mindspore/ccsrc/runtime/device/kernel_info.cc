@@ -140,8 +140,9 @@ bool KernelInfo::SetWorkspaceAddr(const DeviceAddressPtr &output_address, size_t
     }
   }
   if (index >= workspace_address_list_.size()) {
-    MS_LOG(ERROR) << "Index [" << index << "] out of range";
-    return false;
+    for(size_t i = 0; i < index - workspace_address_list_.size() + 1; i++){
+      workspace_address_list_.emplace_back(nullptr);
+    }
   }
   workspace_address_list_[index] = output_address;
   return true;
