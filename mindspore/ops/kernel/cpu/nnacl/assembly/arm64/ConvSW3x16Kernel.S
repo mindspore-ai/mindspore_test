@@ -30,18 +30,18 @@ asm_function SWConv3x16Kernel
     // x19 ~ x29 should be also preserved
     // whereas our coding style do not permit such amount of parameters
     sub sp, sp, #128
-    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
-    stp x19, x20, [sp], #16
-    stp x21, x22, [sp], #16
-    stp x23, x24, [sp], #16
-    stp x25, x26, [sp], #16
+    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp]
+    stp x19, x20, [sp, #64]
+    stp x21, x22, [sp, #80]
+    stp x23, x24, [sp, #96]
+    stp x25, x26, [sp, #112]
 
-    ldr x10, [sp]
-    ldr x11, [sp, #8]
-    ldr x12, [sp, #16]
-    ldr x13, [sp, #24]
-    ldr x14, [sp, #32]
-    ldr x15, [sp, #40]
+    ldr x10, [sp, #128]
+    ldr x11, [sp, #136]
+    ldr x12, [sp, #144]
+    ldr x13, [sp, #152]
+    ldr x14, [sp, #160]
+    ldr x15, [sp, #168]
     lsl x7, x7, #2
     lsl x11, x11, #2
     lsl x12, x12, #2
@@ -524,7 +524,6 @@ asm_function SWConv3x16Kernel
             st1 {v7.4s}, [x22], #16
             st1 {v11.4s}, [x22]
     End:
-    sub sp, sp, #128
     ld1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
     ldp x19, x20, [sp], #16
     ldp x21, x22, [sp], #16

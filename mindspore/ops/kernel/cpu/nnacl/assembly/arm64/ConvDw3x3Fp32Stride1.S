@@ -36,12 +36,13 @@
 
 asm_function ConvDw3x3Stride1
     sub sp, sp, #128
-    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
-    st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
+    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp]
+    add x9, sp, #64
+    st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [x9]
 
-    ldr w8, [sp]
-    ldr w9, [sp, #8]
-    ldr w10, [sp, #16]
+    ldr w8, [sp, #128]
+    ldr w9, [sp, #136]
+    ldr w10, [sp, #144]
 
     mov w11, #4
     mul w15, w4, w11   // col_size * 4
@@ -203,7 +204,6 @@ WIDTH1_LEFT:
         st1 {v21.4s}, [x0]
 
 End:
-    sub sp, sp, #128
     ld1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
     ld1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
     ret

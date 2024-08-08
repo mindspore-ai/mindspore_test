@@ -31,8 +31,9 @@
 
 asm_function VecMatmulFp16Neon64_2
   sub sp, sp, #128
-  st1 {v8.8h, v9.8h, v10.8h, v11.8h}, [sp], #64
-  st1 {v12.8h, v13.8h, v14.8h, v15.8h}, [sp], #64
+  st1 {v8.8h, v9.8h, v10.8h, v11.8h}, [sp]
+  add x9, sp, #64
+  st1 {v12.8h, v13.8h, v14.8h, v15.8h}, [x9]
 
 LoopCol:
   mov x15, x0   // reload a ptr
@@ -174,7 +175,6 @@ Write7:
   b End
 
 End:
-  sub sp, sp, #128
   ld1 {v8.8h, v9.8h, v10.8h, v11.8h}, [sp], #64
   ld1 {v12.8h, v13.8h, v14.8h, v15.8h}, [sp], #64
   ret

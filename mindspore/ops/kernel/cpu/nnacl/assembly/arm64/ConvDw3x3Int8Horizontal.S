@@ -32,21 +32,21 @@ asm_function ConvDw3x3Int8Horizontal
     // x19 ~ x29 should be also preserved
     // whereas our coding style do not permit such amount of parameters
     sub sp, sp, #48
-    stp x19, x20, [sp], #16
-    stp x21, x22, [sp], #16
-    stp x23, x24, [sp], #16
+    stp x19, x20, [sp]
+    stp x21, x22, [sp, #16]
+    stp x23, x24, [sp, #32]
 
     dup v25.8b, w7                      // in_zp
-    ldr x8, [sp]
+    ldr x8, [sp, #48]
     dup v26.4s, w8                      // out_zp
-    ldr x9, [sp, #8]                    // out_multiplier
-    ldr x10, [sp, #16]                  // left_shift
-    ldr x11, [sp, #24]                  // right_shift
-    ldr x12, [sp, #32]
+    ldr x9, [sp, #56]                    // out_multiplier
+    ldr x10, [sp, #64]                  // left_shift
+    ldr x11, [sp, #72]                  // right_shift
+    ldr x12, [sp, #80]
     dup v30.4s, w12                     // acc_min
-    ldr x13, [sp, #40]
+    ldr x13, [sp, #88]
     dup v31.4s, w13                     // acc_max
-    ldr x14, [sp, #48]                  // per_channel
+    ldr x14, [sp, #96]                  // per_channel
     cbnz x14, PerChannelDump
     PerLayerDump:
         ld1r {v27.4s}, [x9]
@@ -58,9 +58,9 @@ asm_function ConvDw3x3Int8Horizontal
         ld1 {v28.4s}, [x10], #16
         ld1 {v29.4s}, [x11], #16
     ContinueFunc:
-    ldr x12, [sp, #32]
+    ldr x12, [sp, #80]
     dup v30.4s, w12                     // acc_min
-    ldr x13, [sp, #40]
+    ldr x13, [sp, #88]
     dup v31.4s, w13                     // acc_max
 
     mov x12, #2
@@ -248,7 +248,6 @@ asm_function ConvDw3x3Int8Horizontal
 
         st1 {v23.s}[0], [x0], #4
         st1 {v24.s}[0], [x0], #4
-    sub sp, sp, #48
     ldp x19, x20, [sp], #16
     ldp x21, x22, [sp], #16
     ldp x23, x24, [sp], #16

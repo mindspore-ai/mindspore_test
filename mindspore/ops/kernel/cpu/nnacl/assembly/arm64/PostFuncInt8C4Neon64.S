@@ -54,14 +54,14 @@
 
 asm_function PostFuncInt8C4Neon64
   sub sp, sp, #16
-  stp x24, x25, [sp], #16
+  stp x24, x25, [sp]
 
-  ldr w8, [sp]
-  ldr w9, [sp, #8]
-  ldr w10, [sp, #16]
-  ldr w11, [sp, #24]
-  ldr w12, [sp, #32]
-  ldr w13, [sp, #40]
+  ldr w8, [sp, #16]
+  ldr w9, [sp, #24]
+  ldr w10, [sp, #32]
+  ldr w11, [sp, #40]
+  ldr w12, [sp, #48]
+  ldr w13, [sp, #56]
 
   dup v26.4s, w7
   dup v27.4s, w8
@@ -254,7 +254,6 @@ Loop_C1_3:
 
 
 End:
-  sub sp, sp, #16
   ldp x24, x25, [sp], #16
   ret
 #endif

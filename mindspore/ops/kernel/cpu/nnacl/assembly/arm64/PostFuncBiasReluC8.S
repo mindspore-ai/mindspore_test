@@ -34,8 +34,9 @@
 
 asm_function PostFuncBiasReluC8
   sub sp, sp, #128
-  st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
-  st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
+  st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp]
+  add x9, sp, #64
+  st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [x9]
 
   movi v26.4s, #6
   scvtf v26.4s, v26.4s
@@ -546,7 +547,6 @@ Loop_C1_7_Write:
   b Loop_C1_7_Write
 
 End:
-  sub sp, sp, #128
   ld1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
   ld1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
   ret

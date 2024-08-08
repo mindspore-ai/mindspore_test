@@ -34,12 +34,12 @@
 
 asm_function MatmulFp16Neon64Opt
     sub sp, sp, #96
-    st1 {v8.8h, v9.8h, v10.8h, v11.8h}, [sp], #64
-    stp x19, x20, [sp], #16
-    stp x21, x22, [sp], #16
+    st1 {v8.8h, v9.8h, v10.8h, v11.8h}, [sp]
+    stp x19, x20, [sp, #64]
+    stp x21, x22, [sp, #80]
 
-    ldr x8, [sp]
-    ldr x9, [sp, #8]
+    ldr x8, [sp, #96]
+    ldr x9, [sp, #104]
 
     mov x21, #32 // sizeof(float16_t) * 16
     mul x17, x5, x21 // block stride of lhs/rhs: sizeof(float16_t) * 16 * depth
@@ -1178,7 +1178,6 @@ LoopColEnd:
         subs x6, x6, #16
         bgt LoopRowStart
 
-    sub sp, sp, #96
     ld1 {v8.8h, v9.8h, v10.8h, v11.8h}, [sp], #64
     ldp x19, x20, [sp], #16
     ldp x21, x22, [sp], #16

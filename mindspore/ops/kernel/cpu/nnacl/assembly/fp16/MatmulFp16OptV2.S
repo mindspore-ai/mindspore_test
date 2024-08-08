@@ -34,15 +34,16 @@
 
 asm_function MatmulFp16OptV2
     sub sp, sp, #192
-    st1 {v8.8h, v9.8h, v10.8h, v11.8h}, [sp], #64
-    st1 {v12.8h, v13.8h, v14.8h, v15.8h}, [sp], #64
-    stp x19, x20, [sp], #16
-    stp x21, x22, [sp], #16
-    stp x23, x24, [sp], #16
-    stp x29, x30, [sp], #16
+    st1 {v8.8h, v9.8h, v10.8h, v11.8h}, [sp]
+    add x9, sp, #64
+    st1 {v12.8h, v13.8h, v14.8h, v15.8h}, [x9]
+    stp x19, x20, [sp, #128]
+    stp x21, x22, [sp, #144]
+    stp x23, x24, [sp, #160]
+    stp x29, x30, [sp, #176]
 
-    ldr x8, [sp]
-    ldr x9, [sp, #8]  // writeMode
+    ldr x8, [sp, #192]
+    ldr x9, [sp, #200]  // writeMode
     lsl x8, x8, #1  // stride * sizeof(float16_t)
 
     lsl x15, x7, #1 // col * sizeof(float16_t)
@@ -2955,7 +2956,6 @@ Compute1x4Unit:
         ret
 
 End:
-  sub sp, sp, #192
   ld1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
   ld1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
   ldp x19, x20, [sp], #16

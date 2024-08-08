@@ -31,21 +31,22 @@ asm_function ConvSwFp32Center
     // x19 ~ x29 should be also preserved
     // whereas our coding style do not permit such amount of parameters
     sub sp, sp, #208
-    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
-    st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
-    stp x19, x20, [sp], #16
-    stp x21, x22, [sp], #16
-    stp x23, x24, [sp], #16
-    stp x25, x26, [sp], #16
-    stp x27, x28, [sp], #16
+    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp]
+    add x9, sp, #64
+    st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [x9]
+    stp x19, x20, [sp, #128]
+    stp x21, x22, [sp, #144]
+    stp x23, x24, [sp, #160]
+    stp x25, x26, [sp, #176]
+    stp x27, x28, [sp, #192]
 
-    ldr x8, [sp]
-    ldr x9, [sp, #8]
-    ldr x10, [sp, #16]
-    ldr x11, [sp, #24]
-    ldr x12, [sp, #32]
-    ldr x13, [sp, #40]
-    ldr x14, [sp, #48]
+    ldr x8, [sp, #208]
+    ldr x9, [sp, #216]
+    ldr x10, [sp, #224]
+    ldr x11, [sp, #232]
+    ldr x12, [sp, #240]
+    ldr x13, [sp, #248]
+    ldr x14, [sp, #256]
     mul x15, x6, x7
     mul x15, x10, x15
     mov x16, #16
@@ -198,9 +199,9 @@ asm_function ConvSwFp32Center
                 add x20, x20, x13
                 subs x22, x22, #1
                 bne LoopKh16
-            ldr x16, [sp, #64]
+            ldr x16, [sp, #272]
             cbnz x16, Relu616
-            ldr x26, [sp, #56]
+            ldr x26, [sp, #264]
             cbnz x26, Relu16
             b Write16
         Relu616:
@@ -347,9 +348,9 @@ asm_function ConvSwFp32Center
                 add x20, x20, x13
                 subs x22, x22, #1
                 bne LoopKh8
-            ldr x16, [sp, #64]
+            ldr x16, [sp, #272]
             cbnz x16, Relu68
-            ldr x26, [sp, #56]
+            ldr x26, [sp, #264]
             cbnz x26, Relu8
             b Write8
         Relu68:
@@ -426,9 +427,9 @@ asm_function ConvSwFp32Center
                 add x20, x20, x13
                 subs x22, x22, #1
                 bne LoopKh
-            ldr x16, [sp, #64]
+            ldr x16, [sp, #272]
             cbnz x16, Relu6
-            ldr x26, [sp, #56]
+            ldr x26, [sp, #264]
             cbnz x26, Relu
             b Write
         Relu6:
@@ -446,7 +447,6 @@ asm_function ConvSwFp32Center
         subs x4, x4, #1
         bne LoopH
 
-    sub sp, sp, #208
     ld1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
     ld1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
     ldp x19, x20, [sp], #16
