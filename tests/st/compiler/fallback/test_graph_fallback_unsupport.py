@@ -273,7 +273,6 @@ def test_call_third_party_class():
     assert out == deque([4, 3, 2, 1])
 
 
-@pytest.mark.skip(reason="kwargs with AbstractAny, fix later")
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
           essential_mark='unessential')
 def test_np_ix_with_variable():

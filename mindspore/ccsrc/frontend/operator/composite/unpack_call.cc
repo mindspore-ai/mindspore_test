@@ -20,16 +20,19 @@
 
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "abstract/abstract_value.h"
 #include "abstract/dshape.h"
 #include "frontend/operator/cc_implementations.h"
 #include "ir/anf.h"
 #include "frontend/optimizer/opt.h"
 #include "include/common/pybind_api/api_register.h"
+#include "pipeline/jit/ps/fallback.h"
 
 namespace mindspore {
 // namespace to support composite operators definition
 namespace prim {
+using mindspore::abstract::AbstractAny;
 using mindspore::abstract::AbstractBase;
 using mindspore::abstract::AbstractDictionary;
 using mindspore::abstract::AbstractDictionaryPtr;
@@ -41,11 +44,92 @@ using mindspore::abstract::AbstractListPtr;
 using mindspore::abstract::AbstractTuple;
 using mindspore::abstract::AbstractTuplePtr;
 
+FuncGraphPtr ConvertUnpackToPyInterpretFuncGraph(const AbstractBasePtrList &args_abs_list) {
+  // No need to check, check will be done in infer.
+  // Support AbstractTuple[Optional], AbstractAny, AbstractDictionary[Optional] args list
+  auto res_graph = std::make_shared<FuncGraph>();
+  res_graph->set_flag(FUNC_GRAPH_FLAG_CORE, true);
+  res_graph->debug_info()->set_name("UnpackCallToPyInterpret");
+
+  // Generate pyinterpret node's inputs
+  AnfNodePtrList local_key_inputs = {NewValueNode(prim::kPrimMakeTuple)};
+  AnfNodePtrList local_value_inputs = {NewValueNode(prim::kPrimMakeTuple)};
+
+  // Get function
+  std::stringstream script_buffer;
+  const std::string call_func_str = "__call_func_str__";
+  script_buffer << call_func_str << "(";
+  (void)local_key_inputs.emplace_back(NewValueNode(call_func_str));
+  (void)local_value_inputs.emplace_back(res_graph->add_parameter());
+
+  // Get input parameters:
+  // UnpackCall(__call_func_str__, (a, b), args(AbstractAny), {kwargs})
+  // -> PyInterpret(__call_func_str__, a, b, args, kwargs)
+  // -> eval(__call_func_str__(a, b, *args, **kwargs))
+  // 1. Process stable parameters, must be a tuple
+  size_t index = 1;
+  size_t args_size = args_abs_list.size();
+  if (index < args_size && args_abs_list[index]->isa<AbstractTuple>()) {
+    auto arg_tuple = args_abs_list[index++]->cast<AbstractTuplePtr>();
+    AnfNodePtr para_tuple = res_graph->add_parameter();
+    for (size_t i = 0; i < arg_tuple->size(); ++i) {
+      const auto param_str = "__input__" + std::to_string(i) + "__";
+      script_buffer << param_str << ",";
+      (void)local_key_inputs.emplace_back(NewValueNode(param_str));
+      (void)local_value_inputs.emplace_back(
+        res_graph->NewCNode({NewValueNode(prim::kPrimTupleGetItem), para_tuple, NewValueNode(SizeToLong(i))}));
+    }
+  }
+
+  // 2. Process *args(AbstractAny)
+  if (index < args_size && args_abs_list[index]->isa<AbstractAny>()) {
+    const auto param_str = "args";
+    script_buffer << "*" << param_str << ",";
+    (void)local_key_inputs.emplace_back(NewValueNode(param_str));
+    (void)local_value_inputs.emplace_back(res_graph->add_parameter());
+    index++;
+  }
+
+  // 3. Process **kwargs, must be a dictionary
+  if (index < args_size && args_abs_list[index]->isa<AbstractDictionary>()) {
+    const auto param_str = "kwargs";
+    script_buffer << "**" << param_str;
+    (void)local_key_inputs.emplace_back(NewValueNode(param_str));
+    (void)local_value_inputs.emplace_back(res_graph->add_parameter());
+    index++;
+  }
+  script_buffer << ")";
+
+  if (index != args_size) {
+    MS_LOG(INTERNAL_EXCEPTION) << "Invalid input args for unpack call.";
+  }
+
+  // Set func_graph output as generated pyinterpret node
+  const auto &script = script_buffer.str();
+  const auto key_tuple = res_graph->NewCNode(local_key_inputs);
+  const auto value_tuple = res_graph->NewCNode(local_value_inputs);
+  auto local_dict_node = res_graph->NewCNode({NewValueNode(prim::kPrimMakeDict), key_tuple, value_tuple});
+  auto res = fallback::CreatePyInterpretCNode(res_graph, script, py::dict(), local_dict_node);
+  res_graph->set_output(res);
+
+  MS_LOG(DEBUG) << "Convert UnpackCall funcgraph as PyInterpret: " << res->DebugString();
+  return res_graph;
+}
+
 FuncGraphPtr UnpackCall::GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) {
   size_t arg_length = args_abs_list.size();
   const size_t min_args_size = 2;
   if (arg_length < min_args_size) {
     MS_LOG(INTERNAL_EXCEPTION) << "The UnpackCall operator requires arguments >=2, but got " << arg_length << ".";
+  }
+
+  bool exist_any = std::any_of(args_abs_list.begin() + 1, args_abs_list.end(), [](const AbstractBasePtr &abs) {
+    MS_EXCEPTION_IF_NULL(abs);
+    return abs->isa<AbstractAny>();
+  });
+  if (exist_any) {
+    MS_LOG(DEBUG) << "The arguments of UnpackCall operator should not be AbstractAny, convert to PyInterpret";
+    return ConvertUnpackToPyInterpretFuncGraph(args_abs_list);
   }
 
   // No need to check, check will be done in infer.
@@ -56,7 +140,7 @@ FuncGraphPtr UnpackCall::GenerateFuncGraph(const AbstractBasePtrList &args_abs_l
   AnfNodePtr fn_node = res_graph->add_parameter();
   std::vector<AnfNodePtr> elems;
   elems.push_back(fn_node);
-  for (size_t index = 1; index < arg_length; index++) {
+  for (size_t index = 1; index < arg_length; ++index) {
     MS_EXCEPTION_IF_NULL(args_abs_list[index]);
     if (args_abs_list[index]->isa<AbstractTuple>()) {
       auto arg_tuple = args_abs_list[index]->cast<AbstractTuplePtr>();
