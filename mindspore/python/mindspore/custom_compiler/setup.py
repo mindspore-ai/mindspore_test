@@ -31,7 +31,6 @@ CONFIG_KEY_VARIABLE = "cacheVariables"
 CONFIG_KEY_CANN_PATH = "ASCEND_CANN_PACKAGE_PATH"
 CONFIG_KEY_VENDOR_NAME = "vendor_name"
 CONFIG_KEY_COMPUTE_UNIT = "ASCEND_COMPUTE_UNIT"
-CANN_VERSION = 7.3
 
 
 def get_config():
@@ -104,8 +103,7 @@ class CustomOOC():
         """generate compile project by msopgen"""
         if os.path.exists(self.custom_project) and os.path.isdir(self.custom_project):
             shutil.rmtree(self.custom_project)
-        sample_path = "../CANN-" + str(CANN_VERSION) + \
-                      "/tools/msopgen/template/operator_demo_projects/ascendc_operator_sample"
+        sample_path = "../latest/tools/msopgen/template/operator_demo_projects/ascendc_operator_sample"
         src_dir = os.path.join(self.args.ascend_cann_package_path, sample_path)
         if not os.path.isdir(src_dir):
             raise ValueError("There is no the path {}".format(src_dir))
