@@ -150,8 +150,11 @@ bool ElimShapeCalcOnBroadcastArgsGrad::CheckSymbolEqual(const ListSymbolPtr &inp
   }
   for (size_t i = input_shape->size(); i > shift; i--) {
     auto inp = input_shape->symbols()[input_shape->size() - i];
-    SymbolPtr out = (i <= output_shape->size()) ? output_shape->symbols()[output_shape->size() - i] : kSym1;
-    if (!inp->EqualsTo(out)) {
+    if (i <= output_shape->size()) {
+      if (!inp->EqualsTo(output_shape->symbols()[output_shape->size() - i])) {
+        return false;
+      }
+    } else if (!inp->EqualsTo(kSym1)) {
       return false;
     }
   }
