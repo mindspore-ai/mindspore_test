@@ -2264,7 +2264,14 @@ REG_BPROP_BUILDER("MaskedSelect").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   auto mask = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex3);
   auto dx = ib->Emit("MaskedSelectGrad", {x, mask, dout});
-  return {dx, ib->OutZeros(mask)};
+  auto dmask = ib->ZerosLike(mask);
+  auto x_shape = ib->GetShape(x);
+  auto dx_shape = ib->GetShape(dx);
+  if (x_shape != dx_shape) {
+    return BinopGradCommon(ib, x, mask, dx, dmask);
+  } else{
+    return {dx, dmask};
+  }
 });
 
 REG_BPROP_BUILDER("SplitV").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {

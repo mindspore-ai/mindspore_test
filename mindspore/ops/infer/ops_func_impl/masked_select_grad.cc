@@ -29,8 +29,7 @@ BaseShapePtr MaskedSelectGradFuncImpl::InferShape(const PrimitivePtr &primitive,
   for (const auto &item : input_args) {
     MS_EXCEPTION_IF_NULL(item);
   }
-  auto input_shape_ptr = input_args[kInputIndex0]->GetShape();
-  return input_shape_ptr->Clone();
+  return BroadCastInferShape(primitive->name(), input_args);
 }
 
 TypePtr MaskedSelectGradFuncImpl::InferType(const PrimitivePtr &primitive,
@@ -48,8 +47,8 @@ TypePtrList MaskedSelectGradFuncImpl::InferType(const PrimitivePtr &primitive, c
 ShapeArray MaskedSelectGradFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
   const auto &input_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
-  auto &input_shape = input_tensor->shape();
-  return {input_shape};
+  auto broadcast_shape = BroadCastInferShape(primitive->name(), input_values);
+  return {broadcast_shape};
 }
 REGISTER_SIMPLE_INFER(kNameMaskedSelectGrad, MaskedSelectGradFuncImpl)
 }  // namespace ops
