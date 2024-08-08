@@ -1402,7 +1402,7 @@ def searchsorted(sorted_sequence, values, *, out_int32=False, right=False, side=
             set to ``"left"`` while `right` is ``True``. Default: ``None`` .
         sorter(Tensor, optional): if provided, a tensor matching the shape of the unsorted sorted_sequence
             containing a sequence of indices that sort it in the ascending order on the innermost
-            dimension and type must be int64. Default: ``None`` .
+            dimension and type must be int64. Default: ``None`` . CPU and GPU can only use default values
 
     Returns:
         Tensor containing the indices from the innermost dimension of `sorted_sequence` such that,

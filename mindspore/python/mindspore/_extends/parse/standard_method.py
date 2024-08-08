@@ -1794,7 +1794,7 @@ def searchsorted(x, v, side='left', sorter=None):
             no suitable index, return either 0 or N (where N is the length of `a`).
         sorter (Union[int, float, bool, list, tuple, Tensor]): 1-D optional array of
             integer indices that sort array `a` into ascending order. They are typically
-            the result of argsort.
+            the result of argsort. CPU and GPU can only use default values
 
     Returns:
         Tensor, array of insertion points with the same shape as `v`.
