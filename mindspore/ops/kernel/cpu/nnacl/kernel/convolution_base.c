@@ -132,7 +132,7 @@ int ConvBaseInitConvWeightBias(ConvolutionBaseStruct *conv) {
     return ret;
   }
 
-  if (conv->base_.in_size_ == THREE_TENSOR) {
+  if ((conv->base_.in_size_ == THREE_TENSOR) && (conv->origin_bias_ != NULL)) {
     memcpy(conv->bias_data_, conv->origin_bias_, GetSize(conv->base_.in_[THIRD_INPUT]));
   }
 
