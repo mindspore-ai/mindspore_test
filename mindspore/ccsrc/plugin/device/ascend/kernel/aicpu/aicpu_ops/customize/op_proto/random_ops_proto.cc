@@ -69,6 +69,29 @@ IMPLEMT_COMMON_INFERFUNC(LogNormalReverseInferShape) {
 CUST_COMMON_INFER_FUNC_REG(LogNormalReverse, LogNormalReverseInferShape);
 // ----------------LogNormalReverse END-------------------
 
+CUST_IMPLEMT_INFERFUNC(RandomChoiceWithMask, RandomChoiceWithMaskInfer) {
+  auto x_desc = op.GetInputDescByName("x");
+  auto x_shape = x_desc.GetShape();
+  int64_t x_rank = IsUnknownRankShape(x_shape) ? UNKNOWN_DIM : x_shape.GetDims().size();
+
+  int64_t count;
+  if (op.GetAttr("count", count) != GRAPH_SUCCESS) {
+    OP_LOGE(TbeGetName(op).c_str(), "Get attr 'count' failed.");
+    return GRAPH_FAILED;
+  }
+
+  auto index_desc = op.GetOutputDesc("index");
+  auto mask_desc = op.GetOutputDesc("mask");
+  Shape index_shape({count, x_rank});
+  Shape mask_shape({count});
+
+  index_desc.SetDataType(DT_INT32);
+  mask_desc.SetDataType(DT_BOOL);
+  return op.UpdateOutputDesc("index", index_desc) && op.UpdateOutputDesc("mask", mask_desc);
+}
+CUST_INFER_FUNC_REG(RandomChoiceWithMask, RandomChoiceWithMaskInfer);
+// ----------------RandomChoiceWithMask End-------------------
+
 // ----------------Dropout2D-------------------
 IMPLEMT_COMMON_INFERFUNC(Dropout2DInferShape) {
   TensorDesc output_desc = op.GetOutputDescByName("output");
