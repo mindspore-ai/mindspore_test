@@ -601,7 +601,7 @@ Status TreeAdapter::LaunchSubprocess() {
     // got error from dataset pipeline
     ret = tree_->AllTasks()->GetTaskErrorIfAny();
     if (ret != Status::OK()) {
-      MS_LOG(ERROR) << log_prefix << ". Got error info in independent dataset pipeline.";
+      MS_LOG(INFO) << log_prefix << ". Got error info in independent dataset pipeline.";
 
       // release the message queue
       message_queue.SetReleaseFlag(true);

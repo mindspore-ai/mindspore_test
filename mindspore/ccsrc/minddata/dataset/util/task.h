@@ -116,6 +116,8 @@ class Task : public IntrpResource {
   pthread_t GetNativeHandle() const;
 #endif
 
+  pid_t GetProcessID() { return process_id_; }
+
  private:
   mutable std::mutex mux_;
   std::string my_name_;
