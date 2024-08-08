@@ -1231,7 +1231,7 @@ Status UpdateShapeNode(const CNodePtr &cnode, const FuncGraphPtr &func_graph) {
       continue;
     }
     if (shape_user == nullptr || IsTargetOp(shape_user, ZEROS)) {
-      MS_LOG(ERROR) << "won't supply shape for " << shape_user->fullname_with_scope();
+      MS_LOG(WARNING) << "won't supply shape for " << shape_user->fullname_with_scope();
       continue;
     }
     MS_EXCEPTION_IF_CHECK_FAIL(IsTupleGetItem(shape_user),
