@@ -23,8 +23,8 @@ import json
 import os
 import shutil
 import stat
-import threading
-from threading import Thread, RLock
+from threading import RLock
+from multiprocessing import Process, active_children
 from collections import defaultdict, OrderedDict
 from io import BytesIO
 
@@ -61,7 +61,7 @@ from mindspore.ops import Cast
 from mindspore.parallel._cell_wrapper import get_allgather_cell, _single_parameter_broadcast
 from mindspore.parallel._tensor import _load_tensor, _get_tensor_strategy, _get_tensor_slice_index
 from mindspore.parallel._tensor import _reshape_param_data, _reshape_param_data_with_weight
-from mindspore.parallel._utils import _infer_rank_list, _remove_repeated_slices, _is_in_auto_parallel_mode,\
+from mindspore.parallel._utils import _infer_rank_list, _remove_repeated_slices, _is_in_auto_parallel_mode, \
     _get_device_num
 from mindspore.parallel._auto_parallel_context import _get_auto_parallel_context
 from mindspore.parallel._parallel_serialization import _convert_to_list, _convert_to_layout, _build_searched_strategy, \
@@ -600,7 +600,7 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
                     data_list[key].append(dims)
                     tensor_type = str(param["data"].dtype)
                     data_list[key].append(tensor_type)
-                    data = param["data"]
+                    data = param["data"] if not async_save else param["data"].asnumpy()
                     data_list[key].append(data)
 
     if os.getenv("AITURBO") == "1":
@@ -609,10 +609,10 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
         aiturbo.save_ckpt(ckpt_name, global_step_num, data_list_np, crc_check)
     elif async_save:
         data_copy = copy.deepcopy(data_list)
-        thr = Thread(target=_exec_save,
-                     args=(ckpt_file_name, data_copy, enc_key, enc_mode, map_param_inc, crc_check, format),
-                     name="asyn_save_ckpt")
-        thr.start()
+        process = Process(target=_exec_save,
+                          args=(ckpt_file_name, data_copy, enc_key, enc_mode, map_param_inc, crc_check, format),
+                          name="asyn_save_ckpt")
+        process.start()
     else:
         _exec_save(ckpt_file_name, data_list, enc_key, enc_mode, map_param_inc, crc_check, format)
 
@@ -3010,8 +3010,10 @@ def async_ckpt_thread_status():
         >>> ms.async_ckpt_thread_status()
         False
     """
-    thr_list = threading.enumerate()
-    return True in [ele.getName() == "asyn_save_ckpt" for ele in thr_list]
+    for process in active_children():
+        if process.name == "asyn_save_ckpt":
+            return True
+    return False
 
 
 def _check_predict_strategy(predict_strategy):

@@ -18,8 +18,8 @@ from __future__ import absolute_import
 import os
 import stat
 import time
+from multiprocessing import active_children
 
-import threading
 import mindspore.context as context
 from mindspore import log as logger
 from mindspore import nn
@@ -583,10 +583,9 @@ class ModelCheckpoint(Callback):
                 os.remove(graph_file_name)
             _save_graph(cb_params.train_network, graph_file_name)
             self._graph_saved = True
-        thread_list = threading.enumerate()
-        for thread in thread_list:
-            if thread.getName() == "asyn_save_ckpt":
-                thread.join()
+        for process in active_children():
+            if process.name == "asyn_save_ckpt":
+                process.join()
         self._save_ckpt(cb_params)
 
     def end(self, run_context):
@@ -602,10 +601,9 @@ class ModelCheckpoint(Callback):
 
         self._save_ckpt(cb_params, _to_save_last_ckpt)
 
-        thread_list = threading.enumerate()
-        for thread in thread_list:
-            if thread.getName() == "asyn_save_ckpt":
-                thread.join()
+        for process in active_children():
+            if process.name == "asyn_save_ckpt":
+                process.join()
 
         destroy_allgather_cell()
 
