@@ -193,6 +193,8 @@ Status ReceiveBridgeOp::operator()() {
           MS_LOG(INFO) << "The independent dataset process exit, please check the error message.";
           return err_status_;
         } else {
+          // if the pipeline had been interrupted, ignore the MsgRcv error
+          RETURN_IF_INTERRUPTED();
           return status;
         }
       }
@@ -220,6 +222,8 @@ Status ReceiveBridgeOp::operator()() {
         MS_LOG(INFO) << "The independent dataset process exit, please check the error message.";
         return err_status_;
       } else {
+        // if the pipeline had been interrupted, ignore the MsgRcv error
+        RETURN_IF_INTERRUPTED();
         return status;
       }
     }
