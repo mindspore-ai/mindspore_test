@@ -172,6 +172,9 @@ class OperatorInfo {
   void set_inputs_divisor(const Shapes &in_divisor) { inputs_divisor_ = in_divisor; }
   void set_outputs_divisor(const Shapes &out_divisor) { outputs_divisor_ = out_divisor; }
   void set_dynamic_shape_flag(bool flag) { dynamic_shape_flag_ = flag; }
+  Shapes inputs_divisor() { return inputs_divisor_; }
+  Shapes outputs_divisor() { return outputs_divisor_; }
+  bool dynamic_shape_flag() { return dynamic_shape_flag_; }
 
   double GetForwardMemoryCostFromCNode();
   // This is a common method for setting operator cost for a given strategy, in which the validity of this strategy

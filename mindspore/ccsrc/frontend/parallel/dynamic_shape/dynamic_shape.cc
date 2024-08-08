@@ -419,5 +419,84 @@ void UpdateParamSymbolicShape(const FuncGraphPtr &root) {
   }
   ParallelContext::GetInstance()->set_symbol_infos({});
 }
+
+static Status CheckLayoutAndDivisor(const std::vector<std::shared_ptr<TensorLayout>> &tensor_layouts,
+                                    const Shapes &divisors) {
+  if (tensor_layouts.size() != divisors.size()) {
+    return FAILED;
+  }
+
+  for (size_t i = 0; i < divisors.size(); ++i) {
+    Shape shard = tensor_layouts[i]->shard_strategy();
+    Shape divisor = divisors[i];
+    if (shard.size() != divisor.size()) {
+      return FAILED;
+    }
+    for (size_t j = 0; j < divisor.size(); ++j) {
+      if (divisor[j] % shard[j] != 0) {
+        MS_LOG(ERROR) << "the symbol-divisor:" << ShapeToString(divisor)
+                      << " can not be divisible by strategy: " << ShapeToString(shard) << ", the layout is "
+                      << tensor_layouts[i]->ToString();
+        return FAILED;
+      }
+    }
+  }
+
+  return SUCCESS;
+}
+
+static Status CheckLayoutFormatForDynamicShape(const std::vector<std::shared_ptr<TensorLayout>> &layouts,
+                                               const std::string &name) {
+  for (auto &layout : layouts) {
+    if (layout->IsInterleavedParallel()) {
+      MS_LOG(ERROR) << "it does not support to config interleave parallel in layout for dynamic shape, the op name is "
+                    << name;
+      return FAILED;
+    }
+    Shapes tensor_map_before = layout->tensor_map_before();
+    for (auto &map_ele : tensor_map_before) {
+      if (map_ele.size() > 1) {
+        MS_LOG(ERROR) << "it does not support to config multi-map in layout for dynamic shape, the op name is " << name;
+        return FAILED;
+      }
+    }
+  }
+  return SUCCESS;
+}
+
+Status CheckLayoutForDynamicShape(const std::vector<std::shared_ptr<TensorLayout>> &in_tensor_layouts,
+                                  const std::vector<std::shared_ptr<TensorLayout>> &out_tensor_layouts,
+                                  const OperatorInfoPtr &op_info) {
+  MS_EXCEPTION_IF_NULL(op_info);
+  if (!op_info->dynamic_shape_flag()) {
+    return SUCCESS;
+  }
+
+  if (CheckLayoutFormatForDynamicShape(in_tensor_layouts, op_info->name()) != SUCCESS) {
+    MS_LOG(ERROR) << "check input layouts format failed";
+    return FAILED;
+  }
+
+  if (CheckLayoutFormatForDynamicShape(out_tensor_layouts, op_info->name()) != SUCCESS) {
+    MS_LOG(ERROR) << "check output layouts format failed";
+    return FAILED;
+  }
+
+  Shapes inputs_divisor = op_info->inputs_divisor();
+  Shapes outputs_divisor = op_info->outputs_divisor();
+  if (CheckLayoutAndDivisor(in_tensor_layouts, inputs_divisor) != SUCCESS) {
+    MS_LOG(ERROR) << "input layout is invalid, the op name is " << op_info->name() << ", the inputs shape is "
+                  << ShapesToString(op_info->inputs_shape());
+    return FAILED;
+  }
+
+  // only check out_tensor_layouts if it is not empty
+  if (!out_tensor_layouts.empty() && CheckLayoutAndDivisor(out_tensor_layouts, outputs_divisor) != SUCCESS) {
+    MS_LOG(ERROR) << "output layout is invalid, the op name is " << op_info->name() << ", the outputs shape is "
+                  << ShapesToString(op_info->outputs_shape());
+    return FAILED;
+  }
+  return SUCCESS;
+}
 }  // namespace parallel
 }  // namespace mindspore

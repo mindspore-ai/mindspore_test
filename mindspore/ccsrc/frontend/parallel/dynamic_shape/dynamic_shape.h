@@ -66,6 +66,9 @@ bool IsDynamicShapes(const Shapes &shapes);
 bool IsDynamicShape(const Shape &shape);
 bool IsSemiOrAutoParallelMode();
 void UpdateParamSymbolicShape(const FuncGraphPtr &root);
+Status CheckLayoutForDynamicShape(const std::vector<std::shared_ptr<TensorLayout>> &in_tensor_layouts,
+                                  const std::vector<std::shared_ptr<TensorLayout>> &out_tensor_layouts,
+                                  const OperatorInfoPtr &op_info);
 }  // namespace parallel
 }  // namespace mindspore
 
