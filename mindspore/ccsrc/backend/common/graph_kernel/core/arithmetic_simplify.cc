@@ -705,8 +705,8 @@ class RTTPatternTree : public PatternTree {
                                             const std::shared_ptr<ParaMap> &para_to_ref) const override {
     MS_EXCEPTION_IF_NULL(para_to_ref);
     inner::GraphBuilder gb("");
-    auto out_shape = origin_root->shape;
-    auto out_shape_tensornode = gb.Tensor(out_shape);
+    auto rtt_out_shape = origin_root->shape;
+    auto out_shape_tensornode = gb.Tensor(rtt_out_shape);
     (*para_to_ref)['E'] = out_shape_tensornode;
     (void)para_to_ref->erase('B');
     (void)para_to_ref->erase('C');
@@ -747,8 +747,8 @@ class StridedSlicePatternTree : public PatternTree {
                                             const std::shared_ptr<ParaMap> &para_to_ref) const override {
     MS_EXCEPTION_IF_NULL(para_to_ref);
     inner::GraphBuilder gb("");
-    auto out_shape = origin_root->shape;
-    auto out_shape_tensornode = gb.Tensor(out_shape);
+    auto stridedslice_out_shape = origin_root->shape;
+    auto out_shape_tensornode = gb.Tensor(stridedslice_out_shape);
     (*para_to_ref)['E'] = out_shape_tensornode;
     (void)para_to_ref->erase('B');
     (void)para_to_ref->erase('C');
