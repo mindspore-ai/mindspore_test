@@ -19,6 +19,55 @@
 #include "kernel/common_utils.h"
 
 namespace mindspore::graphkernel::expander {
+namespace {
+NodePtrList ComputeAdamApplyOneWithDecay(const DefaultIrBuilder *ib) {
+  auto grad = ib->input(kIndex0);
+  auto v = ib->input(kIndex1);
+  auto m = ib->input(kIndex2);
+  auto var = ib->input(kIndex3);
+  auto lr = ib->input(kIndex4);
+  auto beta1 = ib->input(kIndex5);
+  auto beta1_apply_one = ib->input(kIndex6);
+  auto beta2 = ib->input(kIndex7);
+  auto beta2_apply_one = ib->input(kIndex8);
+  auto decay = ib->input(kIndex9);
+  auto epsilon = ib->input(kIndex10);
+  // calc m_new : m_new = beta1 * m + (1 - beta1) * grad
+  auto m_b = ib->Mul(beta1, m);
+  auto m_g = ib->Mul(beta1_apply_one, grad);
+  auto m_new = ib->Add(m_b, m_g);
+
+  // calc v_new: v_new = beta2 * v + (1 - beta2) * grad * grad
+  auto v_b = ib->Mul(beta2, v);
+  auto grad_mul = ib->Mul(grad, grad);
+  auto v_g = ib->Mul(beta2_apply_one, grad_mul);
+  auto v_new = ib->Add(v_b, v_g);
+
+  // calc var_new: var_new = var - (m_new / (sqrt(v_new) + epsilon) + decay * var) * lr
+  auto v_sqrt = ib->Sqrt(v_new);
+  auto sqrt_ep = ib->Add(v_sqrt, epsilon);
+  auto update = ib->Div(m_new, sqrt_ep);
+  auto decay_var = ib->Mul(decay, var);
+  auto new_update = ib->Add(update, decay_var);
+  auto lr_update = ib->Mul(lr, new_update);
+  auto var_new = ib->Sub(var, lr_update);
+  return {v_new, m_new, var_new};
+}
+}  // namespace
+
+REG_EXPANDER_FUNC("AdamApplyOneWithDecay").SetBody(BODYFUNC(ib) { return ComputeAdamApplyOneWithDecay(ib); });
+
+REG_EXPANDER_FUNC("AdamApplyOneWithDecayAssign").SetBody(BODYFUNC(ib) {
+  auto compute_res = ComputeAdamApplyOneWithDecay(ib);
+  auto origin_v = ib->input(kIndex1);
+  auto origin_m = ib->input(kIndex2);
+  auto origin_var = ib->input(kIndex3);
+  auto v_res = ib->Assign(origin_v, compute_res[0]);
+  auto m_res = ib->Assign(origin_m, compute_res[1]);
+  auto var_res = ib->Assign(origin_var, compute_res[2]);
+  return {v_res, m_res, var_res};
+});
+
 REG_EXPANDER_FUNC("Sigmoid").SetBody(BODYFUNC(ib) {
   const auto &input_x = ib->input(kIndex0);
   auto const_one = ib->Tensor(1.0, input_x->GetDtype());
