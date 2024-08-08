@@ -50,7 +50,7 @@ bool ContiguousCpuKernel::LaunchContiguous(TypeId input_type_id, const device::D
                                            const device::DeviceAddressPtr &output) {
   const auto &iter = func_list_.find(std::make_pair(input_type_id, output_type_id));
   if (iter == func_list_.end()) {
-    MS_LOG(EXCEPTION) << "type_id:" << input_type_id << " is invalid";
+    MS_EXCEPTION(TypeError) << "type_id:" << TypeIdToString(input_type_id) << " is invalid";
   }
   int64_t type_size = SizeToLong(GetDataTypeSize(input_type_id) / GetDataTypeSize(output_type_id));
 
