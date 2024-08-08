@@ -35,7 +35,7 @@ bool InferMindIR(const ResourcePtr &resource) {
   return true;
 }
 
-std::vector<AnfNodePtr> ArgsNeededToConvert(const PrimitivePtr &prim) {
+std::vector<AnfNodePtr> ArgsNeededToConvert(const PrimitivePtr &prim, const CNodePtr &cnode) {
   MS_EXCEPTION_IF_NULL(prim);
   auto op_def = mindspore::ops::GetOpDef(prim->name());
   std::vector<AnfNodePtr> prim_init_arg_nodes;
@@ -70,7 +70,7 @@ void ModifyOneCNode(const FuncGraphPtr &func_graph, const CNodePtr &cnode) {
     auto prim = GetValueNode<PrimitivePtr>(inputs[0]);
     if (mindspore::ops::IsPrimitiveFunction(prim->name())) {
       // Append Primitive arguments to the inputs.
-      std::vector<AnfNodePtr> prim_init_arg_nodes = ArgsNeededToConvert(prim);
+      std::vector<AnfNodePtr> prim_init_arg_nodes = ArgsNeededToConvert(prim, cnode);
       // Get call args.
       AnfNodePtrList prim_call_arg_nodes(inputs.begin() + 1, inputs.end());
       // Create new node.

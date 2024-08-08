@@ -47,7 +47,7 @@ class DictGetitemEliminator : public AnfVisitor {
       auto value_tuple_cnode = dyn_cast_ptr<CNode>(values_tuple_);
       MS_EXCEPTION_IF_NULL(value_tuple_cnode);
       if (value_tuple_cnode->size() <= id_) {
-        MS_LOG(EXCEPTION) << "The id found is out of value tuple index.";
+        MS_LOG_WITH_NODE(EXCEPTION, node) << "The id found is out of value tuple index.";
       }
       return value_tuple_cnode->input(id_);
     }

@@ -172,7 +172,7 @@ AnfNodePtr EliminateUpdateStateWithDepend(const CNodePtr &update_state) {
   }
   // Replace Depend with its input.
   if (depend->size() != kDependSize) {
-    MS_LOG(EXCEPTION) << "The Depend node has wrong inputs. " << depend->DebugString();
+    MS_LOG_WITH_NODE(EXCEPTION, depend) << "The Depend node has wrong inputs. " << depend->DebugString();
   }
   auto depend_input = depend->input(kInputIndex);
   (void)mgr->Replace(depend, depend_input);
@@ -956,7 +956,7 @@ AnfNodePtr SwitchCallMonadParameterEliminater::operator()(const OptimizerPtr &, 
   MS_LOG(DEBUG) << "Found switch call with monad parameter, " << switch_call->DebugString();
   auto switch_cnode = dyn_cast<CNode>(switch_node);
   if (switch_cnode == nullptr) {
-    MS_LOG(EXCEPTION) << "switch node cast to CNode failed, " << switch_node->DebugString();
+    MS_LOG_WITH_NODE(EXCEPTION, switch_node) << "switch node cast to CNode failed, " << switch_node->DebugString();
   }
   constexpr size_t condition_index = 1;
   constexpr size_t first_fg_index = 2;

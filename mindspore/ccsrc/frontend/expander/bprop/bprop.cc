@@ -426,9 +426,10 @@ void BpropExpander::PostProcess(const CNodePtr &cnode) const {
   outputs_->reserve(output_nodes_.size());
   constexpr const size_t num_out_and_dout = 2;
   if (output_nodes_.size() + num_out_and_dout != input_nodes_.size()) {
-    MS_LOG(EXCEPTION) << "For bprop [" << AnfUtils::GetCNodeName(cnode)
-                      << "], the output size should be equal to input size (exclude out and dout), but got "
-                      << output_nodes_.size() << " vs " << (input_nodes_.size() - num_out_and_dout);
+    MS_LOG_WITH_NODE(EXCEPTION, cnode)
+      << "For bprop [" << AnfUtils::GetCNodeName(cnode)
+      << "], the output size should be equal to input size (exclude out and dout), but got " << output_nodes_.size()
+      << " vs " << (input_nodes_.size() - num_out_and_dout);
   }
   for (size_t i = 0; i < output_nodes_.size(); i++) {
     (void)outputs_->emplace_back(output_nodes_[i]->get()->cast<CNodePtr>());

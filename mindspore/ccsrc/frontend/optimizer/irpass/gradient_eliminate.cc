@@ -32,7 +32,7 @@ AnfNodePtr ExpandJPrimitive(const ValueNodePtr &vnode, const pipeline::ResourceB
   }
   // when find in J failed, try in Jmeta
   auto prim = GetValueNode<PrimitivePtr>(vnode);
-  MetaFuncGraphPtr meta = ad::Kmeta(prim, resource);
+  MetaFuncGraphPtr meta = ad::Kmeta(prim, resource, vnode);
   if (meta != nullptr) {
     return NewValueNode(meta);
   }

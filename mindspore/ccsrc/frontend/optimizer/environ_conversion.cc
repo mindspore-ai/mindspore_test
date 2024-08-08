@@ -42,7 +42,8 @@ bool IsAbstractEnvType(const abstract::AbstractBasePtr &abs) {
 }
 
 abstract::AbstractBasePtr TransformAbstractRecursively(const abstract::AbstractBasePtr &orig_abs,
-                                                       const abstract::AbstractBasePtr target_abs) {
+                                                       const abstract::AbstractBasePtr target_abs,
+                                                       const AnfNodePtr &node) {
   if (orig_abs == nullptr) {
     return nullptr;
   }
@@ -60,7 +61,7 @@ abstract::AbstractBasePtr TransformAbstractRecursively(const abstract::AbstractB
   for (auto elem : elements) {
     if (elem->isa<abstract::AbstractSequence>()) {
       auto inner_abs_seq = elem->cast<abstract::AbstractSequencePtr>();
-      auto transformed_abs = TransformAbstractRecursively(inner_abs_seq, target_abs);
+      auto transformed_abs = TransformAbstractRecursively(inner_abs_seq, target_abs, node);
       if (transformed_abs != nullptr) {
         new_elements.push_back(transformed_abs);
         transformed = true;
@@ -81,7 +82,8 @@ abstract::AbstractBasePtr TransformAbstractRecursively(const abstract::AbstractB
     } else if (abs_seq->isa<abstract::AbstractList>()) {
       new_abs = std::make_shared<abstract::AbstractList>(new_elements);
     } else {
-      MS_LOG(INTERNAL_EXCEPTION) << "abs_seq is not AbstractTuple or AbstractList, but: " << abs_seq->ToString();
+      MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, node)
+        << "abs_seq is not AbstractTuple or AbstractList, but: " << abs_seq->ToString();
     }
     return new_abs;
   }
@@ -90,7 +92,7 @@ abstract::AbstractBasePtr TransformAbstractRecursively(const abstract::AbstractB
 }
 
 void TransformNodeAbstractIfEnvType(const AnfNodePtr &node, const abstract::AbstractBasePtr &target_abs) {
-  auto transformed_abs = TransformAbstractRecursively(node->abstract(), target_abs);
+  auto transformed_abs = TransformAbstractRecursively(node->abstract(), target_abs, node);
   if (transformed_abs != nullptr) {
     node->set_abstract(transformed_abs);
   }
@@ -100,12 +102,13 @@ TypeId GetValueType(const CNodePtr &cnode) {
   // (EnvironSet/EnvironGet, environ, key, value/default)
   constexpr size_t environ_input_size = 4;
   if (cnode->size() != environ_input_size) {
-    MS_LOG(INTERNAL_EXCEPTION) << "EnvrionSet/EnvironGet cnode should have 4 inputs, but: " << cnode->DebugString();
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, cnode)
+      << "EnvrionSet/EnvironGet cnode should have 4 inputs, but: " << cnode->DebugString();
   }
   const auto &value_abstract = cnode->input(3)->abstract();
   if (value_abstract == nullptr) {
-    MS_LOG(INTERNAL_EXCEPTION) << "The 4th input of EnvironSet/EnvironGet cnode should abstract, but not set, node: "
-                               << cnode->DebugString();
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, cnode)
+      << "The 4th input of EnvironSet/EnvironGet cnode should abstract, but not set, node: " << cnode->DebugString();
   }
   if (IsAbstractEnvType(value_abstract)) {
     return kObjectTypeEnvType;
@@ -203,7 +206,8 @@ bool EnvironConversion(const pipeline::ResourcePtr &resource) {
     // Abstract of Environ & Value will be set by later TransformNodeAbstract function.
     // Key
     if (!IsValueNode<SymbolicKeyInstance>(cnode->input(kSymbolicKeyOffset))) {
-      MS_LOG(INTERNAL_EXCEPTION) << "should be SymbolicKey, but: " << cnode->input(kSymbolicKeyOffset)->ToString();
+      MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, cnode)
+        << "should be SymbolicKey, but: " << cnode->input(kSymbolicKeyOffset)->ToString();
     }
     const auto &transformed_key_node = GetTransformedKeyNode(cnode->input(kSymbolicKeyOffset), &symbolic_key_map);
     txn.SetEdge(node, kSymbolicKeyOffset, transformed_key_node);
