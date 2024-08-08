@@ -14,6 +14,7 @@
 # ============================================================================
 import os
 import stat
+import time
 
 import pytest
 
@@ -124,6 +125,26 @@ def test_load_checkpoint_async(mode):
     output_param_dict_fu = load_checkpoint_async("./lenet.ckpt")
     output_param_dict = output_param_dict_fu.result()
     remove_ckpt("./lenet.ckpt")
+
+    assert 'conv2.weight' in output_param_dict
+    assert 'conv1.weight' not in output_param_dict
+    assert 'fc1.bias' not in output_param_dict
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('mode', [context.GRAPH_MODE])
+def test_save_checkpoint_async(mode):
+    """
+    Feature: mindspore.save_checkpoint async
+    Description: save checkpoint async.
+    Expectation: success
+    """
+    net = LeNet5()
+    ms.save_checkpoint(net, "./lenet_async.ckpt",
+                       choice_func=lambda x: x.startswith("conv") and not x.startswith("conv1"), async_save=True)
+    time.sleep(3)
+    output_param_dict = ms.load_checkpoint("./lenet_async.ckpt")
+    remove_ckpt("./lenet_async.ckpt")
 
     assert 'conv2.weight' in output_param_dict
     assert 'conv1.weight' not in output_param_dict
