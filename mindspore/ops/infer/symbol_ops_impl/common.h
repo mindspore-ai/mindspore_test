@@ -25,6 +25,7 @@
 #include "mindspore/core/symbolic_shape/utils.h"
 #include "mindspore/core/symbolic_shape/operation.h"
 #include "mindspore/core/symbolic_shape/operation_builder.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace symshape {

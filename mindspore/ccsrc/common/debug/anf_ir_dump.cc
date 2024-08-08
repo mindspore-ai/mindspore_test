@@ -1474,7 +1474,7 @@ void DumpIR(std::ostringstream &out_oss, const FuncGraphPtr &graph, bool dump_fu
     return;
   }
   auto nodes =
-    TopoSort(graph->get_return(), avoid_circle ? SuccIncoming : SuccDeeperWithAttrGraph, AlwaysInclude, avoid_circle);
+    TopoSort(graph->get_return(), avoid_circle ? SuccIncoming : SuccDeeperSimple, AlwaysInclude, avoid_circle);
 
   OrderedMap<AnfNodePtr, int32_t> para_map;
   std::ostringstream param_oss;

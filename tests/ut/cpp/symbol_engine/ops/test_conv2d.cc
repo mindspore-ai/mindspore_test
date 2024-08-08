@@ -18,30 +18,56 @@
 #include "common/graph_optimizer_test_framework.h"
 
 namespace mindspore::symshape::test {
-/// Feature: Symbolic shape for Conv2D
-/// Description: cond2d with padmode="same"
-/// Expectation: success.
-TEST_F(TestSymbolEngine, conv2d_samepad_1) {
+struct Conv2DTestParam {
+  ShapeVector x_shape;
+  ShapeVector w_shape;
+  ShapeVector kernel_size;
+  int64_t mode;
+  int64_t out_channel;
+  ShapeVector pad;
+  int64_t pad_mode;
+  std::string format;
+  int64_t groups;
+  ShapeVector stride;
+  ShapeVector dilation;
+};
+class TestConv2D : public TestSymbolEngine, public testing::WithParamInterface<Conv2DTestParam> {};
+
+/// Feature: symbolic shape
+/// Description: test infer symbolic shape for Conv2D
+/// Expectation: symbolic shape match the digital shape
+TEST_P(TestConv2D, dyn_shape) {
   mindspore::test::ConstructGraph cg;
-  auto x = cg.NewTensorInput("x", kFloat32, {4, 3, -1, -1});
-  auto w = cg.NewTensorInput("w", kFloat32, {1280, 3, 14, 14});
+  const auto &param = GetParam();
+  auto x = cg.NewTensorInput("x", kFloat32, param.x_shape);
+  auto w = cg.NewTensorInput("w", kFloat32, param.w_shape);
   auto node = cg.NewCNode("Conv2D", {x, w},
-                          {{"kernel_size", MakeValue<ShapeVector>({14, 14})},
-                           {"mode", MakeValue<int64_t>(1)},
-                           {"out_channel", MakeValue<int64_t>(1280)},
-                           {"pad", MakeValue<ShapeVector>({0, 0, 0, 0})},
-                           {"pad_mode", MakeValue<int64_t>(1)},
-                           {"format", MakeValue<std::string>("NCHW")},
-                           {"groups", MakeValue<int64_t>(1)},
-                           {"group", MakeValue<int64_t>(1)},
-                           {"stride", MakeValue<ShapeVector>({1, 1, 14, 14})},
-                           {"dilation", MakeValue<ShapeVector>({1, 1, 1, 1})}});
+                          {{"kernel_size", MakeValue<ShapeVector>(param.kernel_size)},
+                           {"mode", MakeValue<int64_t>(param.mode)},
+                           {"out_channel", MakeValue<int64_t>(param.out_channel)},
+                           {"pad", MakeValue<ShapeVector>(param.pad)},
+                           {"pad_mode", MakeValue<int64_t>(param.pad_mode)},
+                           {"format", MakeValue<std::string>(param.format)},
+                           {"groups", MakeValue<int64_t>(param.groups)},
+                           {"group", MakeValue<int64_t>(param.groups)},
+                           {"stride", MakeValue<ShapeVector>(param.stride)},
+                           {"dilation", MakeValue<ShapeVector>(param.dilation)}});
   helper_->InitSymbolEngine(cg.GetGraph());
   auto out_shape = helper_->BuildSymbolicShape(node);
   UT_CHECK_NULL(out_shape);
   ASSERT_TRUE(helper_->SupportInfer());
   ASSERT_TRUE(helper_->CheckSymbolicShapeMatchesDigitalShape(node));
 }
+
+INSTANTIATE_TEST_CASE_P(
+  TestSymShape, TestConv2D,
+  testing::Values(
+    // pad_mode = valid
+    Conv2DTestParam{
+      {4, 3, -1, -1}, {1280, 3, 14, 14}, {14, 14}, 1, 1280, {0, 0, 0, 0}, 1, "NCHW", 1, {1, 1, 14, 14}, {1, 1, 1, 1}},
+    // pad_mode = pad
+    Conv2DTestParam{
+      {-1, 128, 256, 256}, {3, 128, 3, 3}, {3, 3}, 1, 3, {1, 1, 1, 1}, 0, "NCHW", 1, {1, 1, 1, 1}, {1, 1, 1, 1}}));
 
 /// Feature: Symbolic shape for Conv2D
 /// Description: cond2d with padmode="valid"
