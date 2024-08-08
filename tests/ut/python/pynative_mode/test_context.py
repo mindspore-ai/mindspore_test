@@ -99,6 +99,22 @@ def test_max_device_memory_size():
         context.set_context(max_device_memory="3.5G")
     context.set_context.__wrapped__(max_device_memory="3GB")
 
+def test_deterministic():
+    """"
+    Feature: test deterministic context setting
+    Description: Test case for simplest deterministic setting
+    Expectation: The results are as expected
+    """
+    with pytest.raises(ValueError):
+        context.set_context(deterministic='NOTRIGHT')
+    context.set_context(deterministic='ON')
+    assert os.getenv("HCCL_DETERMINISTIC") == "true"
+    assert os.getenv("TE_PARALLEL_COMPILER") == "1"
+    context.set_context(deterministic='OFF')
+    assert "HCCL_DETERMINISTIC" not in os.environ
+    assert "TE_PARALLEL_COMPILER" not in os.environ
+
+
 def test_jit_config():
     """"
     Feature: test jit_config function
