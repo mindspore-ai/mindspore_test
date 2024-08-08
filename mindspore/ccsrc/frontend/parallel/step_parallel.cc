@@ -3734,7 +3734,7 @@ static void ParallelPartProcess(const std::vector<AnfNodePtr> &all_nodes, const 
   }
   MergeMicroMirrorForSharedParameter(root);
   // Insert TensorToTuple for FlashAttentionScore if input actual_seq_len is tensor
-  PostProcessActualSeqLenInputForFlashAttentionScore(root, all_nodes);
+  PostProcessActualSeqLenInputForFlashAttentionScore(root, all_nodes_after_pp);
   return;
 }
 
