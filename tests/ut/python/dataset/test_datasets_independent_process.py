@@ -424,9 +424,57 @@ def test_dataset_with_independent_process_with_dict():
     del os.environ["MS_INDEPENDENT_DATASET"]
 
 
+def test_generator_with_generator_object_iterated_multi_times():
+    """
+    Feature: GeneratorDataset
+    Description: test GeneratorDataset with generator object iterated in multi times
+    Expectation: SUCCESS
+    """
+    os.environ["MS_INDEPENDENT_DATASET"] = "true"
+
+    # Generator
+    def my_generator(start, end):
+        for i in range(start, end):
+            yield i
+
+    expected = [x for x in my_generator(3, 6)]
+
+    dataset = ds.GeneratorDataset(source=my_generator(3, 6), column_names=["data"])
+
+    assert dataset.get_dataset_size() == 3
+    assert dataset.output_shapes() == [[]]
+    assert dataset.output_types() == [np.int64]
+
+    count = 0
+    for _ in range(5):
+        index = 0
+        for d in dataset.create_tuple_iterator(output_numpy=True):
+            assert len(d) == 1
+            assert d[0] == expected[index]
+            index += 1
+            count += 1
+        assert index == 3
+    assert count == 15
+
+    epochs = 3
+    dataset_iter = dataset.create_tuple_iterator(output_numpy=True, num_epochs=epochs)
+    count = 0
+    for _ in range(epochs):
+        index = 0
+        for d in dataset_iter:
+            assert len(d) == 1
+            assert d[0] == expected[index]
+            index += 1
+            count += 1
+        assert index == 3
+    assert count == 9
+    del os.environ["MS_INDEPENDENT_DATASET"]
+
+
 if __name__ == "__main__":
     test_dataset_with_independent_process()
     test_dataset_with_independent_process_dynamic_shape()
     test_dataset_with_independent_process_train_and_eval()
     test_dataset_with_independent_process_two_stage_pipeline()
     test_dataset_with_independent_process_with_dict()
+    test_generator_with_generator_object_iterated_multi_times()
