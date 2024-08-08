@@ -37,6 +37,8 @@ class PythonIteratorConsumer : public IteratorConsumer {
 
   ~PythonIteratorConsumer() = default;
 
+  Status Init(const std::shared_ptr<DatasetNode> &root, int64_t global_step = 0, int64_t dataset_size = -1) override;
+
   /// Returns the next row in a vector format
   /// \param[out] out std::vector of Tensors
   /// \return Status error code
