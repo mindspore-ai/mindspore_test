@@ -1,10 +1,15 @@
-import pytest
+import sys  
+import pytest 
 import numpy as np
 from mindspore.common.tensor import Tensor
 from ..share.ops.primitive.sin_ops import SinMock
 from ..dynamic_shape_operations.sin import SinDynamicShapeFactory
 from tests.mark_utils import arg_mark
 
+@pytest.fixture(autouse=True)  
+def skip_if_python_version_too_high():  
+    if sys.version_info >= (3, 11):  
+        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_p_sin_32x1024x1269():

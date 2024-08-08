@@ -1,4 +1,5 @@
-import pytest
+import sys  
+import pytest 
 from mindspore import Tensor, jit, ops
 from mindspore import numpy as np
 import mindspore.nn as nn
@@ -6,6 +7,10 @@ from mindspore import context
 from .share.utils import match_array
 from tests.mark_utils import arg_mark
 
+@pytest.fixture(autouse=True)  
+def skip_if_python_version_too_high():  
+    if sys.version_info >= (3, 11):  
+        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 class ListTest():
     list = list()

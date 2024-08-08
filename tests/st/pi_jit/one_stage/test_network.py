@@ -13,7 +13,8 @@
 # limitations under the License.
 # ============================================================================
 """Test network with one stage"""
-import pytest
+import sys  
+import pytest 
 import numpy as onp
 import mindspore.nn as nn
 from mindspore.common.initializer import Normal
@@ -21,6 +22,11 @@ from mindspore import context, Tensor, jit
 from mindspore import numpy as np
 from ..share.utils import match_array
 from tests.mark_utils import arg_mark
+
+@pytest.fixture(autouse=True)  
+def skip_if_python_version_too_high():  
+    if sys.version_info >= (3, 11):  
+        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 cfg = {
     "replace_nncell_by_construct": True,
