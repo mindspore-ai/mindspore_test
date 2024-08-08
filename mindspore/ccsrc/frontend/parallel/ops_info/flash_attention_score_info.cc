@@ -944,10 +944,7 @@ Status FlashAttentionScoreInfo::InferSplitNumAndDevMatrixShapeByLayout() {
                     << query_batch_map;
       return FAILED;
     }
-    n1_split_num_ = 1;
-    for (auto map_id : query_head_map) {
-      n1_split_num_ *= GetSplitNumByMapId(dev_matrix_shape, map_id);
-    }
+
     batch_split_num_ = GetSplitNumByMapId(dev_matrix_shape, dev_matrix_batch_dim_);
     s1_split_num_ = GetSplitNumByMapId(dev_matrix_shape, dev_matrix_s1_dim_);
     if (s1_split_num_ > 1 && GetSplitNumByTensorMap(dev_matrix_shape, query_seq_map) !=
@@ -958,7 +955,7 @@ Status FlashAttentionScoreInfo::InferSplitNumAndDevMatrixShapeByLayout() {
                         << ", s1_split_num: " << s1_split_num_ << " when layout is TND";
     }
   } else {
-    if (query_batch_map.size() != 1 || query_seq_map.size() != 1 || query_head_map.size() != 1) {
+    if (query_batch_map.size() != 1 || query_seq_map.size() != 1) {
       MS_LOG(ERROR) << name_
                     << ": Each dimension of query can only be mapped to one device matrix dimension, but got the "
                        "tensor info of query is "
@@ -967,12 +964,14 @@ Status FlashAttentionScoreInfo::InferSplitNumAndDevMatrixShapeByLayout() {
     }
     dev_matrix_batch_dim_ = query_batch_map[0];
     dev_matrix_s1_dim_ = query_seq_map[0];
-    dev_matrix_n1_dim_ = query_head_map[0];
-    n1_split_num_ = GetSplitNumByMapId(dev_matrix_shape, dev_matrix_n1_dim_);
     batch_split_num_ = GetSplitNumByMapId(dev_matrix_shape, dev_matrix_batch_dim_);
     s1_split_num_ = GetSplitNumByMapId(dev_matrix_shape, dev_matrix_s1_dim_);
   }
 
+  n1_split_num_ = 1;
+  for (auto map_id : query_head_map) {
+    n1_split_num_ *= GetSplitNumByMapId(dev_matrix_shape, map_id);
+  }
   return SUCCESS;
 }
 

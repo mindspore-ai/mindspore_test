@@ -35,9 +35,9 @@ def setup_function():
 grad_all = C.GradOperation(get_all=True)
 
 
-def generate_inputs(B, N, S, D, input_layout, use_mqa=False, with_real_shift=True, sparse_mode=0):
-    N_Q = N
-    N_KV = 1 if use_mqa else N
+def generate_inputs(B, N1, N2, S, D, input_layout, with_real_shift=True, sparse_mode=0):
+    N_Q = N1
+    N_KV = N2
     compressed_mask_mode = [2, 3, 4, 5, 6, 7, 8]
     if input_layout == "BSH":
         H_Q = N_Q * D
@@ -65,7 +65,7 @@ def generate_inputs(B, N, S, D, input_layout, use_mqa=False, with_real_shift=Tru
         value = Tensor(np.ones((B * S, N_KV, D), dtype=np.float16))
     else:
         raise ValueError(f"input_layout is invalid.")
-    real_shift = Tensor(np.ones((B, N, S, S), dtype=np.float16)) if with_real_shift else None
+    real_shift = Tensor(np.ones((B, N_Q, S, S), dtype=np.float16)) if with_real_shift else None
     if sparse_mode not in compressed_mask_mode:
         attn_mask = Tensor(np.ones((B, 1, S, S), dtype=np.uint8))
     else:
@@ -100,7 +100,7 @@ def compile_net(net, *inputs):
 
 class Net(nn.Cell):
     def __init__(self, head_num, keep_prob=0.9, input_layout="BSH", sparse_mode=0, use_mqa=False,
-                 with_real_shift=True, dp=None, mp=None, sp=1, use_layout=False):
+                 with_real_shift=True, dp=None, mp=None, sp=1, use_layout=False, self_defined_strategy=None):
         super(Net, self).__init__()
         self.reshape = P.Reshape()
         self.drop_gen_mask = P.DropoutGenMask()
@@ -116,7 +116,9 @@ class Net(nn.Cell):
                                          next_tokens=next_tokens,
                                          input_layout=input_layout,
                                          sparse_mode=sparse_mode)
-        if dp is not None and mp is not None:
+        if self_defined_strategy is not None:
+            self.fa_op.shard(in_strategy=self_defined_strategy)
+        elif dp is not None and mp is not None:
             if use_layout:
                 if input_layout == "TND":
                     layout = Layout(device_matrix=(dp, sp, mp), alias_name=("dp", "sp", "mp"))
@@ -190,7 +192,7 @@ def test_self_attention_standalone(keep_prob, input_layout, with_real_shift):
     set_auto_parallel_context(device_num=8, global_rank=0)
     context.set_auto_parallel_context(parallel_mode="stand_alone")
     B, N, S, D = 8, 16, 1024, 128
-    query, key, value, real_shift, attn_mask = generate_inputs(B, N, S, D, input_layout,
+    query, key, value, real_shift, attn_mask = generate_inputs(B, N, N, S, D, input_layout,
                                                                with_real_shift=with_real_shift)
     net = Net(N, keep_prob, input_layout, with_real_shift=with_real_shift)
     compile_net(net, query, key, value, real_shift, attn_mask)
@@ -208,7 +210,7 @@ def test_self_attention_standalone_with_compressed_mask(input_layout, sparse_mod
     set_auto_parallel_context(device_num=8, global_rank=0)
     context.set_auto_parallel_context(parallel_mode="stand_alone")
     B, N, S, D = 8, 16, 1024, 128
-    query, key, value, real_shift, attn_mask = generate_inputs(B, N, S, D, input_layout,
+    query, key, value, real_shift, attn_mask = generate_inputs(B, N, N, S, D, input_layout=input_layout,
                                                                sparse_mode=sparse_mode)
     net = Net(N, input_layout=input_layout, sparse_mode=sparse_mode)
     compile_net(net, query, key, value, real_shift, attn_mask)
@@ -228,10 +230,9 @@ def test_flash_attention_semi_auto_parallel(input_layout, use_mqa, with_real_shi
     dp = 2
     mp = 4
     B, N, S, D = 8, 16, 1024, 128
-    query, key, value, real_shift, attn_mask = generate_inputs(B, N, S, D,
-                                                               input_layout,
-                                                               use_mqa,
-                                                               with_real_shift)
+    query, key, value, real_shift, attn_mask = generate_inputs(B, N, 1 if use_mqa else N, S, D,
+                                                               input_layout=input_layout,
+                                                               with_real_shift=with_real_shift)
     net = Net(N, input_layout=input_layout, use_mqa=use_mqa,
               with_real_shift=with_real_shift, dp=dp, mp=mp)
     compile_net(net, query, key, value, real_shift, attn_mask)
@@ -250,7 +251,7 @@ def test_flash_attention_semi_auto_parallel_with_compressed_mask(input_layout, s
     dp = 2
     mp = 4
     B, N, S, D = 8, 16, 1024, 128
-    query, key, value, real_shift, attn_mask = generate_inputs(B, N, S, D,
+    query, key, value, real_shift, attn_mask = generate_inputs(B, N, N, S, D,
                                                                input_layout,
                                                                sparse_mode=sparse_mode)
     net = Net(N, input_layout=input_layout, sparse_mode=sparse_mode, dp=dp, mp=mp)
@@ -269,7 +270,7 @@ def test_flash_attention_dp(keep_prob, input_layout, with_real_shift):
     set_auto_parallel_context(device_num=8, global_rank=0)
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
     B, N, S, D = 8, 16, 1024, 128
-    query, key, value, real_shift, attn_mask = generate_inputs(B, N, S, D, input_layout,
+    query, key, value, real_shift, attn_mask = generate_inputs(B, N, N, S, D, input_layout=input_layout,
                                                                with_real_shift=with_real_shift)
     net = Net(N, keep_prob, input_layout, with_real_shift=with_real_shift)
     compile_net(net, query, key, value, real_shift, attn_mask)
@@ -288,7 +289,9 @@ def test_flash_attention_auto_parallel(keep_prob, input_layout, use_mqa, with_re
     set_auto_parallel_context(device_num=8, global_rank=0)
     context.set_auto_parallel_context(parallel_mode="auto_parallel")
     B, N, S, D = 8, 16, 1024, 128
-    query, key, value, real_shift, attn_mask = generate_inputs(B, N, S, D, input_layout, use_mqa, with_real_shift)
+    query, key, value, real_shift, attn_mask = generate_inputs(B, N, 1 if use_mqa else N, S, D,
+                                                               input_layout=input_layout,
+                                                               with_real_shift=with_real_shift)
     net = Net(N, keep_prob, input_layout, use_mqa=use_mqa, with_real_shift=with_real_shift)
     compile_net(net, query, key, value, real_shift, attn_mask)
 
@@ -308,10 +311,9 @@ def test_flash_attention_with_seq_parallel(input_layout, use_mqa, with_real_shif
     mp = 2
     sp = 2
     B, N, S, D = 8, 16, 1024, 128
-    query, key, value, real_shift, attn_mask = generate_inputs(B, N, S, D,
-                                                               input_layout,
-                                                               use_mqa,
-                                                               with_real_shift)
+    query, key, value, real_shift, attn_mask = generate_inputs(B, N, 1 if use_mqa else N, S, D,
+                                                               input_layout=input_layout,
+                                                               with_real_shift=with_real_shift)
     net = Net(N, input_layout=input_layout, use_mqa=use_mqa,
               with_real_shift=with_real_shift, dp=dp, mp=mp, sp=sp)
     compile_net(net, query, key, value, real_shift, attn_mask)
@@ -331,7 +333,7 @@ def test_flash_attention_compressed_mask_with_seq_parallel(input_layout, sparse_
     mp = 2
     sp = 2
     B, N, S, D = 8, 16, 1024, 128
-    query, key, value, real_shift, attn_mask = generate_inputs(B, N, S, D,
+    query, key, value, real_shift, attn_mask = generate_inputs(B, N, N, S, D,
                                                                input_layout,
                                                                sparse_mode=sparse_mode)
     net = Net(N, input_layout=input_layout, sparse_mode=sparse_mode,
@@ -359,9 +361,8 @@ def test_flash_attention_with_load_balance(input_layout, use_mqa, with_real_shif
     mp = 2
     sp = 2
     B, N, S, D = 8, 16, 1024, 128
-    query, key, value, real_shift, attn_mask = generate_inputs(B, N, S, D,
-                                                               input_layout,
-                                                               use_mqa=use_mqa,
+    query, key, value, real_shift, attn_mask = generate_inputs(B, N, 1 if use_mqa else N, S, D,
+                                                               input_layout=input_layout,
                                                                with_real_shift=with_real_shift)
     net = Net(N, input_layout=input_layout, use_mqa=use_mqa, with_real_shift=with_real_shift,
               dp=dp, mp=mp, sp=sp)
@@ -392,7 +393,7 @@ def test_flash_attention_compressed_mask_with_load_balance(input_layout, sparse_
     mp = 2
     sp = 2
     B, N, S, D = 8, 16, 1024, 128
-    query, key, value, real_shift, attn_mask = generate_inputs(B, N, S, D,
+    query, key, value, real_shift, attn_mask = generate_inputs(B, N, N, S, D,
                                                                input_layout,
                                                                sparse_mode=sparse_mode)
     net = Net(N, input_layout=input_layout, sparse_mode=sparse_mode,
@@ -447,9 +448,8 @@ def test_flash_attention_tnd(is_actual_tuple, dp_sp_mp, use_layout):
     B, N, S, D = 8, 16, 1024, 128
     input_layout = "TND"
     sparse_mode = 3
-    query, key, value, real_shift, attn_mask = generate_inputs(B, N, S, D,
+    query, key, value, real_shift, attn_mask = generate_inputs(B, N, N, S, D,
                                                                input_layout,
-                                                               use_mqa=False,
                                                                sparse_mode=sparse_mode,
                                                                with_real_shift=False
                                                                )
@@ -469,3 +469,31 @@ def test_flash_attention_tnd(is_actual_tuple, dp_sp_mp, use_layout):
             compile_net(net, query, key, value, real_shift, attn_mask, actual_seq_qlen, actual_seq_kvlen)
     else:
         compile_net(net, query, key, value, real_shift, attn_mask, actual_seq_qlen, actual_seq_kvlen)
+
+
+def test_flash_attention_bsh_layout_with_gqa():
+    """
+    Features: test FlashAttentionScoreInfo FlashAttentionScore
+    Description: Test for BSH with GQA
+    Expectation: compile success
+    """
+    set_auto_parallel_context(device_num=128, global_rank=0)
+    context.set_auto_parallel_context(parallel_mode='semi_auto_parallel')
+    dp, sp, mp = 2, 8, 8
+    B, N1, N2, S, D = 8, 64, 8, 1024, 128
+    input_layout = "BSH"
+    sparse_mode = 2
+    query, key, value, real_shift, attn_mask = generate_inputs(B, N1, N2, S, D,
+                                                               input_layout,
+                                                               sparse_mode=sparse_mode,
+                                                               with_real_shift=False
+                                                               )
+    layout = Layout((dp, sp, mp), ("dp", "sp", "mp"))
+    in_strategy = (layout("dp", "None", ("sp", "mp")),
+                   layout("dp", "None", "mp"),
+                   layout("dp", "None", "mp"),
+                   layout("None", "None"))
+    net = Net(N1, input_layout=input_layout, use_mqa=False, keep_prob=1.0, sparse_mode=sparse_mode,
+              with_real_shift=False, dp=dp, mp=mp, sp=sp, use_layout=True, self_defined_strategy=in_strategy)
+
+    compile_net(net, query, key, value, real_shift, attn_mask)
