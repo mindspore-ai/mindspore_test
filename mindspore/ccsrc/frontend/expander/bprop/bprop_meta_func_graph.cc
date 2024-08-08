@@ -118,7 +118,7 @@ FuncGraphPtr GetBpropMetaFuncGraph(const PrimitivePtr &primal, const CNodePtr &c
     const auto &op_primc_fns = ops::OpPrimCRegister::GetInstance().GetPrimCMap();
     const auto iter = op_primc_fns.find(prim_name);
     if (iter == op_primc_fns.end()) {
-      MS_LOG(EXCEPTION) << "The " << prim_name << " operator is not registered";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << "The " << prim_name << " operator is not registered";
     }
     auto primc = iter->second();
     forward_inputs_size = GetValue<std::vector<std::string>>(primc->GetAttr(kAttrInputNames)).size();

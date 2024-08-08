@@ -780,7 +780,8 @@ FuncGraphPtr GraphExecutorPy::GetFuncGraph(const std::string &phase) {
 void GraphExecutorPy::SetJitPrimalFuncGraph(const FuncGraphPtr &primal_func_graph, const std::string &phase) {
   const auto it = info_.find(phase);
   if (it == info_.end()) {
-    MS_LOG(INTERNAL_EXCEPTION) << "No executor info. found for phase: " << phase;
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, primal_func_graph->return_node())
+      << "No executor info. found for phase: " << phase;
     return;
   }
   MS_EXCEPTION_IF_NULL(primal_func_graph);
@@ -808,7 +809,7 @@ FuncGraphPtr GraphExecutorPy::GetJitGradGraph(const std::string &phase) {
 void GraphExecutorPy::SetJitGradGraph(const FuncGraphPtr &grad_graph, const std::string &phase) {
   const auto it = info_.find(phase);
   if (it == info_.end()) {
-    MS_LOG(INTERNAL_EXCEPTION) << "No executor info. found for phase: " << phase;
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, grad_graph->return_node()) << "No executor info. found for phase: " << phase;
     return;
   }
   if (it->second->jit_grad_graph != nullptr) {
@@ -1790,11 +1791,11 @@ void ProcessVmArgInner(const py::tuple &args, const ResourcePtr &res, VectorRef 
       auto param_ptr = (graph_params[i])->cast_ptr<Parameter>();
       MS_EXCEPTION_IF_NULL(param_ptr);
       if (!param_ptr->has_default()) {
-        MS_LOG(EXCEPTION) << "Parameter[" << i << "] has no default param";
+        MS_LOG_WITH_NODE(EXCEPTION, graph_params[i]) << "Parameter[" << i << "] has no default param";
       }
       if (!param_ptr->default_param()->isa<Tensor>()) {
-        MS_LOG(EXCEPTION) << "Parameter[" << param_ptr->ToString()
-                          << "] is not initialized, need to call `.init_data()`";
+        MS_LOG_WITH_NODE(EXCEPTION, graph_params[i])
+          << "Parameter[" << param_ptr->ToString() << "] is not initialized, need to call `.init_data()`";
       }
       arg_list->push_back(param_ptr->default_param());
     }

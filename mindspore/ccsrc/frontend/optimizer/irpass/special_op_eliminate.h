@@ -420,14 +420,14 @@ class PynativeEliminater : public OptimizerCaller {
     return GetValueNode<StringImmPtr>(value_node)->value() == str_value;
   }
 
-  ValuePtr FillGetItem(const ValuePtr &value, const ValuePtr &idx) const {
+  ValuePtr FillGetItem(const ValuePtr &value, const ValuePtr &idx, const AnfNodePtr &node) const {
     MS_LOG(DEBUG) << "Start FillGetItem" << value->ToString() << idx->ToString();
     if (!idx->isa<Int64Imm>()) {
-      MS_LOG(EXCEPTION) << "Getitem idx must int:" << idx->ToString();
+      MS_LOG_WITH_NODE(EXCEPTION, node) << "Getitem idx must int:" << idx->ToString();
     }
 
     if (!value->isa<ValueTuple>()) {
-      MS_LOG(EXCEPTION) << "Getitem value must tuple:" << value->ToString();
+      MS_LOG_WITH_NODE(EXCEPTION, node) << "Getitem value must tuple:" << value->ToString();
     }
 
     auto value_tuple = value->cast<ValueTuplePtr>();
@@ -436,7 +436,7 @@ class PynativeEliminater : public OptimizerCaller {
     return (*value_tuple)[idx_t];
   }
 
-  ValuePtr FillZero(const ValuePtr &value) {
+  ValuePtr FillZero(const ValuePtr &value, const AnfNodePtr &node) {
     MS_LOG(DEBUG) << "Start FillZero";
     ValuePtr out = nullptr;
     if (value->isa<Int64Imm>()) {
@@ -458,12 +458,12 @@ class PynativeEliminater : public OptimizerCaller {
       MS_LOG(DEBUG) << "Start FillZero Tuple" << value->ToString();
       auto value_tuple = value->cast<ValueTuplePtr>();
       for (size_t i = 0; i < value_tuple->size(); i++) {
-        value_list.push_back(FillZero((*value_tuple)[i]));
+        value_list.push_back(FillZero((*value_tuple)[i], node));
       }
       out = std::make_shared<ValueTuple>(value_list);
     }
     if (out == nullptr) {
-      MS_LOG(INTERNAL_EXCEPTION) << "FillZero failed:" << value->ToString();
+      MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, node) << "FillZero failed:" << value->ToString();
     }
     MS_LOG(DEBUG) << "Result: " << out->ToString();
     return out;
@@ -475,7 +475,7 @@ class PynativeEliminater : public OptimizerCaller {
     if (rep != nullptr) {
       if (rep->isa<ValueNode>()) {
         auto value_node = rep->cast<ValueNodePtr>();
-        auto new_value_node = NewValueNode(FillZero(value_node->value()));
+        auto new_value_node = NewValueNode(FillZero(value_node->value(), node));
         new_value_node->set_has_new_value(value_node->has_new_value());
         MS_LOG(DEBUG) << "Zeros_like replace ok " << rep->DebugString(4);
         return new_value_node;
@@ -489,7 +489,7 @@ class PynativeEliminater : public OptimizerCaller {
     if (rep != nullptr) {
       if (rep->isa<ValueNode>() && !HasAbstractMonad(rep)) {
         auto value_node = rep->cast<ValueNodePtr>();
-        auto new_value_node = NewValueNode(FillZero(value_node->value()));
+        auto new_value_node = NewValueNode(FillZero(value_node->value(), node));
         new_value_node->set_has_new_value(value_node->has_new_value());
         MS_LOG(DEBUG) << "Zeros_like replace ok 2 " << rep->DebugString(4);
         return new_value_node;
@@ -533,7 +533,7 @@ class PynativeEliminater : public OptimizerCaller {
             if (!value_node->value()->isa<ValueTuple>()) {
               return nullptr;
             }
-            new_node = NewValueNode(FillGetItem(value_node->value(), idx->value()));
+            new_node = NewValueNode(FillGetItem(value_node->value(), idx->value(), node));
             new_node->set_has_new_value(value_node->has_new_value());
           }
         }
@@ -624,7 +624,7 @@ class AllReduceConstElim : public OptimizerCaller {
         uint32_t num_of_devices;
         // Get number of devices
         if (!CommManager::GetInstance().GetRankSize(group, &num_of_devices)) {
-          MS_LOG(INTERNAL_EXCEPTION) << "Failed to get num of devices for group [" + group + "]";
+          MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, node) << "Failed to get num of devices for group [" + group + "]";
         }
         // Multiply constant by number of devices then return
         std::vector<AnfNodePtr> mul_inputs;
@@ -633,8 +633,9 @@ class AllReduceConstElim : public OptimizerCaller {
         auto constant_value_node = constant_node->cast<ValueNodePtr>();
         MS_EXCEPTION_IF_NULL(constant_value_node);
         if (!constant_value_node->value()->isa<tensor::Tensor>()) {
-          MS_LOG(EXCEPTION) << "Expect the constant input for AllReduce to be a Tensor. Got " +
-                                 constant_value_node->value()->ToString();
+          MS_LOG_WITH_NODE(EXCEPTION, constant_value_node)
+            << "Expect the constant input for AllReduce to be a Tensor. Got " +
+                 constant_value_node->value()->ToString();
         }
         auto constant_tensor = constant_value_node->value()->cast<tensor::TensorPtr>();
         auto tensor_dtype = constant_tensor->Dtype();

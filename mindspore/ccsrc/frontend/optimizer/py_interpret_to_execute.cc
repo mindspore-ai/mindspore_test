@@ -69,7 +69,8 @@ AnfNodePtr FuncGraphToPyData(const AnfNodePtr &node) {
 
 std::vector<AnfNodePtr> ConvertValueTupleToList(const AnfNodePtr &node) {
   if ((!IsValueNode<ValueTuple>(node) && !IsPrimitiveCNode(node, prim::kPrimMakeTuple))) {
-    MS_LOG(INTERNAL_EXCEPTION) << "The dictionary's keys and values should be a tuple, but got " << node->DebugString();
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, node)
+      << "The dictionary's keys and values should be a tuple, but got " << node->DebugString();
   }
   std::vector<AnfNodePtr> node_list;
   if (IsPrimitiveCNode(node, prim::kPrimMakeTuple)) {
@@ -90,8 +91,8 @@ std::pair<std::vector<AnfNodePtr>, std::vector<AnfNodePtr>> UnzipGlobalDict(cons
   std::vector<AnfNodePtr> keys;
   std::vector<AnfNodePtr> values;
   if (!dict_node->isa<ValueNode>()) {
-    MS_LOG(INTERNAL_EXCEPTION) << "The PyInterpret global dict should be a InterpretedObject value node, but got "
-                               << dict_node->DebugString();
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, dict_node)
+      << "The PyInterpret global dict should be a InterpretedObject value node, but got " << dict_node->DebugString();
   }
   // Process the PyInterpret operator defined by the frontend and its global information is empty.
   if (IsValueNode<ValueDictionary>(dict_node)) {
@@ -104,13 +105,13 @@ std::pair<std::vector<AnfNodePtr>, std::vector<AnfNodePtr>> UnzipGlobalDict(cons
   MS_EXCEPTION_IF_NULL(interpreted_object);
   ValuePtr converted_value = nullptr;
   if (!parse::ConvertData(interpreted_object->obj(), &converted_value)) {
-    MS_LOG(INTERNAL_EXCEPTION) << "Convert data failed";
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, dict_node) << "Convert data failed";
   }
   MS_EXCEPTION_IF_NULL(converted_value);
   auto dict_value = dyn_cast<ValueDictionary>(converted_value);
   if (dict_value == nullptr) {
-    MS_LOG(INTERNAL_EXCEPTION) << "The PyInterpret local dict or global dict should be a dictionary, but got "
-                               << converted_value->ToString();
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, dict_node)
+      << "The PyInterpret local dict or global dict should be a dictionary, but got " << converted_value->ToString();
   }
   for (auto item : dict_value->value()) {
     (void)keys.emplace_back(NewValueNodeWithAbstract(item.first));
@@ -124,8 +125,8 @@ std::pair<std::vector<AnfNodePtr>, std::vector<AnfNodePtr>> UnzipLocalDict(const
   if (dict_node->isa<ValueNode>()) {
     auto dict_value = GetValueNode<ValueDictionaryPtr>(dict_node);
     if (dict_value == nullptr) {
-      MS_LOG(INTERNAL_EXCEPTION) << "The PyInterpret local dict should be a dictionary, but got "
-                                 << dict_node->DebugString();
+      MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, dict_node)
+        << "The PyInterpret local dict should be a dictionary, but got " << dict_node->DebugString();
     }
 
     auto abs = dict_node->abstract();
@@ -135,10 +136,9 @@ std::pair<std::vector<AnfNodePtr>, std::vector<AnfNodePtr>> UnzipLocalDict(const
     const auto &elements_pair = dict_abs->elements();
     const auto &dict_value_value = dict_value->value();
     if (elements_pair.size() != dict_value_value.size()) {
-      MS_LOG(INTERNAL_EXCEPTION) << "For node: " << dict_node->DebugString()
-                                 << ", the abstract elements size is: " << elements_pair.size()
-                                 << " and the value elements size is: " << dict_value_value.size()
-                                 << ". Size not matched.";
+      MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, dict_node)
+        << "For node: " << dict_node->DebugString() << ", the abstract elements size is: " << elements_pair.size()
+        << " and the value elements size is: " << dict_value_value.size() << ". Size not matched.";
     }
 
     std::vector<AnfNodePtr> keys;
@@ -153,8 +153,8 @@ std::pair<std::vector<AnfNodePtr>, std::vector<AnfNodePtr>> UnzipLocalDict(const
   }
 
   if (!IsPrimitiveCNode(dict_node, prim::kPrimMakeDict)) {
-    MS_LOG(INTERNAL_EXCEPTION) << "The PyInterpret local dict should be a dictionary, but got "
-                               << dict_node->DebugString();
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, dict_node)
+      << "The PyInterpret local dict should be a dictionary, but got " << dict_node->DebugString();
   }
   auto make_dict_node = dict_node->cast_ptr<CNode>();
   constexpr auto kMakeDictKeysInputIndex = 1;
@@ -240,8 +240,8 @@ CNodePtr Transform(const CNodePtr &cnode, const FuncGraphManagerPtr &manager,
     const auto &script_strimm_node = NewValueNode(std::make_shared<StringImm>(script_str));
     new_cnode->set_input(input_index_one, script_strimm_node);
   } else if (!IsValueNode<StringImm>(first_input)) {
-    MS_LOG(INTERNAL_EXCEPTION) << "The first input should be a Script or string, but got "
-                               << cnode->input(input_index_one)->DebugString();
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, cnode)
+      << "The first input should be a Script or string, but got " << cnode->input(input_index_one)->DebugString();
   }
   auto global_dict_node = cnode->input(input_index_two);
   auto local_dict_node = cnode->input(input_index_three);

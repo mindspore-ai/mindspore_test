@@ -671,7 +671,8 @@ bool ParseAction(const ResourcePtr &resource) {
 
   auto top_graph = converted_ret->cast<FuncGraphPtr>();
   if (top_graph == nullptr) {
-    MS_LOG(INTERNAL_EXCEPTION) << "Object to parse " << std::string(py::str(input)) << " is not function or cell.";
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, top_graph->return_node())
+      << "Object to parse " << std::string(py::str(input)) << " is not function or cell.";
   }
   if (py::hasattr(input, parse::PYTHON_PARSE_METHOD) || py::hasattr(input, "__jit_function__")) {
     (void)std::for_each(top_graph->parameters().begin(), top_graph->parameters().end(),
@@ -707,7 +708,7 @@ bool CombineLikeGraphs(const ResourcePtr &resource) {
     cloner.Run();
     auto cloned_fg_iter = cloner.cloned_func_graphs().find(fg);
     if (cloned_fg_iter == cloner.cloned_func_graphs().end()) {
-      MS_LOG(INTERNAL_EXCEPTION) << "Clone func graph failed! " << fg->ToString();
+      MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, fg->return_node()) << "Clone func graph failed! " << fg->ToString();
     }
     auto base_graph = cloned_fg_iter->second;
     MS_LOG(DEBUG) << "Basegraph:" << base_graph->ToString();
@@ -812,7 +813,7 @@ void GeneralizeReusingGraph(const FuncGraphPtr &func_graph, const FuncGraphPtr &
   cloner.Run();
   auto cloned_fg_iter = cloner.cloned_func_graphs().find(fg);
   if (cloned_fg_iter == cloner.cloned_func_graphs().end()) {
-    MS_LOG(INTERNAL_EXCEPTION) << "Clone func graph failed! " << fg->ToString();
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, fg->return_node()) << "Clone func graph failed! " << fg->ToString();
   }
   auto reusing_graph = cloned_fg_iter->second;
   auto &cloned_nodes = cloner.cloned_nodes();
@@ -1322,7 +1323,8 @@ bool HasIncorporateCall(const std::vector<AnfNodePtr> &all_nodes) {
     if (IsPrimitiveCNode(cnode, prim::kPrimSwitchLayer)) {
       auto make_tuple = cnode->input(kSwitchLayerBranchesIndex);
       if (!IsPrimitiveCNode(make_tuple, prim::kPrimMakeTuple)) {
-        MS_LOG(INTERNAL_EXCEPTION) << "SwitchLayer input2 should be make_tuple, but got: " << make_tuple->DebugString();
+        MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, cnode)
+          << "SwitchLayer input2 should be make_tuple, but got: " << make_tuple->DebugString();
       }
       const auto &make_tuple_inputs = make_tuple->cast<CNodePtr>()->inputs();
       if (std::any_of(make_tuple_inputs.begin() + 1, make_tuple_inputs.end(), [](const AnfNodePtr &input) {

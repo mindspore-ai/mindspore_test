@@ -278,8 +278,8 @@ class InlinerBase : public AnfVisitor {
     auto old_size = params.size();
     constexpr auto print_deep = 10;
     if (old_size != new_params.size()) {
-      MS_LOG(INTERNAL_EXCEPTION) << "Parameter size not match." << old_size << " new " << new_params.size()
-                                 << fg->output()->DebugString(print_deep);
+      MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, fg->output()) << "Parameter size not match." << old_size << " new "
+                                                         << new_params.size() << fg->output()->DebugString(print_deep);
     }
     for (size_t i = 0; i < old_size; i++) {
       (void)mng->Replace(params[i], new_params[i]);
@@ -365,7 +365,7 @@ class InlinerBase : public AnfVisitor {
       if (IsPrimitiveCNode(item, prim::kPrimSwitch)) {
         auto sw_inputs = item->cast<CNodePtr>()->inputs();
         if (sw_inputs.size() != kIndex4) {
-          MS_LOG(EXCEPTION) << "Switch inputs should be 4";
+          MS_LOG_WITH_NODE(EXCEPTION, item) << "Switch inputs should be 4";
         }
         if (CheckSwitchInputs(sw_inputs)) {
           has_branch = true;
@@ -374,7 +374,7 @@ class InlinerBase : public AnfVisitor {
       } else if (IsCNodeGraph(item)) {
         auto cinputs = item->cast<CNodePtr>()->inputs();
         if (cinputs.size() < 1) {
-          MS_LOG(EXCEPTION) << "Graph call inputs should be greater than 1";
+          MS_LOG_WITH_NODE(EXCEPTION, item) << "Graph call inputs should be greater than 1";
         }
         FuncGraphPtr call_fg = GetValueNode<FuncGraphPtr>(cinputs[0]);
         bool call_fg_has_branch = GraphHasBranch(call_fg);
@@ -385,7 +385,7 @@ class InlinerBase : public AnfVisitor {
       } else if (IsPrimitiveCNode(item, prim::kPrimPartial)) {
         auto cinputs = item->cast<CNodePtr>()->inputs();
         if (cinputs.size() < kIndex2) {
-          MS_LOG(EXCEPTION) << "Partial call inputs should be greater than 2";
+          MS_LOG_WITH_NODE(EXCEPTION, item) << "Partial call inputs should be greater than 2";
         }
         FuncGraphPtr call_fg = GetValueNode<FuncGraphPtr>(cinputs[1]);
         if (call_fg == nullptr) {

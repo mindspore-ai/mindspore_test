@@ -33,7 +33,7 @@ void ModifyGraphs(const FuncGraphPtr &func_graph);
 void ModifyOneFuncGraph(const FuncGraphPtr &func_graph, std::set<FuncGraphPtr> *func_graph_set,
                         std::set<FuncGraphPtr> *func_graph_modified);
 void ModifyOneCNode(const FuncGraphPtr &func_graph, const CNodePtr &cnode);
-std::vector<AnfNodePtr> ArgsNeededToConvert(const PrimitivePtr &prim);
+std::vector<AnfNodePtr> ArgsNeededToConvert(const PrimitivePtr &prim, const CNodePtr &cnode);
 bool InferMindIR(const ResourcePtr &resource);
 }  // namespace pipeline
 }  // namespace mindspore

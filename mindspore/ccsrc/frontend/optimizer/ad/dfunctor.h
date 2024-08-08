@@ -142,7 +142,7 @@ class KPrim {
 
   FuncGraphPtr KPrimitive(const CNodePtr &cnode, const ValueNodePtr &value_node,
                           const pipeline::ResourceBasePtr &resources);
-  MetaFuncGraphPtr KMetaFuncGraph(const PrimitivePtr &prim);
+  MetaFuncGraphPtr KMetaFuncGraph(const PrimitivePtr &prim, const AnfNodePtr &node);
   // bprop_fg and primal_fg in bprop_fg's transforms are FuncGraph just after convert.
   // current_primal_fg is the specialized and AutoMonaded primal_fg.
   FuncGraphPtr KUserDefinedCellBprop(const FuncGraphPtr &bprop_fg, const FuncGraphPtr &current_primal_fg);
@@ -216,7 +216,7 @@ FuncGraphPtr KPrim::BpropToK(const T &primal, const FuncGraphPtr &bprop_fg, cons
   // Make sure (out, dout) provided.
   constexpr auto number_two = 2;
   if (cloned_bprop_fg->parameters().size() < number_two) {
-    MS_LOG(EXCEPTION)
+    MS_LOG_WITH_NODE(EXCEPTION, cloned_bprop_fg->return_node())
       << "The function 'bprop' of Primitive or Cell requires at least 2 params 'out' and 'dout', but got only "
       << cloned_bprop_fg->parameters().size() << ".\n"
       << trace::GetDebugInfoStr(cloned_bprop_fg->debug_info());
