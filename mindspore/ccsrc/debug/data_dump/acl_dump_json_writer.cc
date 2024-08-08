@@ -84,16 +84,6 @@ void AclDumpJsonWriter::Parse() {
 
 bool AclDumpJsonWriter::WriteToFile(uint32_t device_id, uint32_t step_id, bool is_init,
                                     nlohmann::json target_kernel_names) {
-  nlohmann::json dump_list;
-
-  if (!target_kernel_names.empty()) {
-    for (const auto &s : target_kernel_names) {
-      layer_.emplace_back(s);
-    }
-  }
-  if (!layer_.empty()) {
-    dump_list.push_back({{"layer", layer_}});
-  }
   std::string dump_path = dump_base_path_ + "/" + std::to_string(step_id);
   nlohmann::json dump;
   if (dump_scene_ == "lite_exception") {
@@ -106,6 +96,15 @@ bool AclDumpJsonWriter::WriteToFile(uint32_t device_id, uint32_t step_id, bool i
     }
     dump = {{"dump_path", dump_path}, {"dump_debug", "on"}};
   } else {
+    if (!target_kernel_names.empty()) {
+      for (const auto &s : target_kernel_names) {
+        layer_.emplace_back(s);
+      }
+    }
+    nlohmann::json dump_list;
+    if (!layer_.empty()) {
+      dump_list.push_back({{"layer", layer_}});
+    }
     if (is_init == True) {
       dump = {{"dump_path", dump_base_path_}, {"dump_mode", dump_mode_}, {"dump_step", std::to_string(2147483647)}};
     } else {
@@ -117,9 +116,6 @@ bool AclDumpJsonWriter::WriteToFile(uint32_t device_id, uint32_t step_id, bool i
       dump["dump_list"] = nlohmann::json::array();
     }
     dump["dump_op_switch"] = "on";
-    if (dump_scene_ != "normal") {
-      dump["dump_scene"] = dump_scene_;
-    }
   }
   nlohmann::json whole_content = {{"dump", dump}};
   std::string json_file_str = whole_content.dump();

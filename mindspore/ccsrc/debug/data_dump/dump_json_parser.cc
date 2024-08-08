@@ -880,7 +880,7 @@ void DumpJsonParser::ParseOpDebugMode(const nlohmann::json &content) {
       auto device_target = context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
       if (device_target == "CPU" || device_target == "GPU") {
         MS_LOG(WARNING) << "Abnormal dump is not supported on " << device_target
-                        << " backend, and none operator data would be saved when abnormal dump is enabled. ";
+                        << " backend, and none operator data would be saved when abnormal dump is enabled.";
       }
       if (e2e_dump_enabled_ && iteration_ != "all") {
         MS_LOG(WARNING) << "For e2e exception dump, it is not support to specify iteration, set iteration to all.";

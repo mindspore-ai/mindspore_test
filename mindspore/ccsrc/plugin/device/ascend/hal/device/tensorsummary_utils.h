@@ -17,9 +17,9 @@
 #ifndef MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_HAL_DEVICE_TENSORSUMMARY_UTILS_H_
 #define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_HAL_DEVICE_TENSORSUMMARY_UTILS_H_
 
-#include <vector>
 #include <string>
 #include <utility>
+#include <vector>
 #include "plugin/device/ascend/hal/device/mbuf_receive_manager.h"
 
 namespace mindspore::device::ascend {

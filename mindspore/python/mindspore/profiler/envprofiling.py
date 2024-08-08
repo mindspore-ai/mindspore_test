@@ -17,6 +17,7 @@ import json
 import os
 import time
 from mindspore.profiler import Profiler
+from mindspore.profiler.parser.ascend_analysis.file_manager import FileManager
 from mindspore.profiler.profiling import AICORE_METRICS_DICT, DeviceSupportParam, ALWAYS_VALID_PARAM
 from mindspore.profiler.common.validator.validate_path import validate_and_normalize_path
 from mindspore.profiler.parser.integrator import DeviceTarget
@@ -77,8 +78,7 @@ def construct_profiling_options():
         if not output_path:
             output_path = os.path.join(os.getcwd(), "data")
         conbine_options["output_path"] = validate_and_normalize_path(output_path)
-        if not os.path.exists(output_path):
-            os.makedirs(output_path, exist_ok=True)
+        FileManager.make_dir_safety(output_path)
         conbine_options["file_output_path"] = os.path.join(output_path, "profiler")
     return conbine_options
 

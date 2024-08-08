@@ -26,7 +26,6 @@
 #include "debug/utils.h"
 
 namespace mindspore {
-
 namespace {
 using TensorPtr = tensor::TensorPtr;
 

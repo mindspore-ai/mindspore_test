@@ -16,6 +16,7 @@
 Transformer Cells module, include TransformerEncoderLayer, TransformerDecoderLayer,
 TransformerEncoder, TransformerDecoder, Transformer.
 """
+import copy
 import math
 from typing import Union, Optional
 import mindspore
@@ -31,7 +32,6 @@ from .basic import Dense, Dropout
 from .activation import ReLU, GELU
 from .normalization import LayerNorm
 from .container import CellList
-
 __all__ = ['MultiheadAttention', 'TransformerEncoderLayer', 'TransformerDecoderLayer',
            'TransformerEncoder', 'TransformerDecoder', 'Transformer']
 
@@ -588,7 +588,7 @@ class TransformerEncoder(Cell):
                                          encoder_layer.dropout_num, encoder_layer.activation1,
                                          encoder_layer.layernorm_eps, encoder_layer.batch_first,
                                          encoder_layer.norm_first, dtype=encoder_layer.dtype)
-        self.layers = CellList([layers for _ in range(num_layers)])
+        self.layers = CellList([copy.deepcopy(layers) for _ in range(num_layers)])
         self.num_layers = num_layers
         self.norm = norm
 
@@ -663,7 +663,7 @@ class TransformerDecoder(Cell):
                                          decoder_layer.dropout_num, decoder_layer.activation1,
                                          decoder_layer.layernorm_eps, decoder_layer.batch_first,
                                          decoder_layer.norm_first, dtype=decoder_layer.dtype)
-        self.layers = CellList([layers for _ in range(num_layers)])
+        self.layers = CellList([copy.deepcopy(layers) for _ in range(num_layers)])
         self.num_layers = num_layers
         self.norm = norm
 
