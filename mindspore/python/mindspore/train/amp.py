@@ -31,7 +31,6 @@ from mindspore.ops import operations as P
 from mindspore.ops import Primitive
 from mindspore import log as logger
 
-
 AMP_WHITE_LIST = [
     nn.Conv1d,
     nn.Conv2d,
@@ -54,7 +53,6 @@ AMP_WHITE_LIST = [
     P.ReLU,
     P.Ger
 ]
-
 
 AMP_BLACK_LIST = [
     nn.BatchNorm1d,
