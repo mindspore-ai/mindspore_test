@@ -65,13 +65,9 @@ Graph::Graph(PyCodeObject *co, PyObject *globals, const GraphJitConfig &conf)
 const std::shared_ptr<SideEffect> &Graph::GetSideEffect() const { return side_effect_; }
 void Graph::SetSideEffect(const std::shared_ptr<SideEffect> &handler) { side_effect_ = handler; }
 
-ValueNode *Graph::NewValueNode(AObject *obj_info, int op, int arg, const std::vector<ValueNode *> &inputs,
-                               const std::string &name) {
-  // when got a new object, check it's side-effect replaced node ......
-  MS_EXCEPTION_IF_CHECK_FAIL(!Opcode(op).IsCall(), "must not be call function opcode");
-  ValueNode *node = this->allocator().NewNode<ValueNode>(obj_info, op, arg, inputs);
+static void SetNodeInfo(Graph *graph, ValueNode *node, AObject *obj_info, const std::string &name) {
   node->SetName(name);
-  node->SetGraph(this);
+  node->SetGraph(graph);
   ConstantInfo::CollectConstantInfo(node);
   if (node->IsConstantValue() && obj_info && CheckConstPyObject(obj_info->GetPyObject().ptr())) {
     node->SetOpcode(LOAD_CONST);
@@ -80,15 +76,36 @@ ValueNode *Graph::NewValueNode(AObject *obj_info, int op, int arg, const std::ve
   }
   auto new_object = obj_info ? obj_info->GetPyObject().ptr() : nullptr;
   if (new_object != nullptr && !CheckConstPyObject(new_object)) {  // literal not need track
-    this->side_effect_->data()->Track(new_object, node);
+    graph->GetSideEffect()->data()->Track(new_object, node);
   }
-  return node;
 }
 
 CallNode *Graph::NewCallNode(int op, int arg, const std::vector<ValueNode *> &inputs) {
   MS_EXCEPTION_IF_CHECK_FAIL(Opcode(op).IsCall(), "must be call function opcode");
   CallNode *node = this->allocator().NewNode<CallNode>(op, arg, inputs);
   node->SetGraph(this);
+  return node;
+}
+
+ValueNode *Graph::NewValueNode(AObject *obj_info, int op, int arg, const std::vector<ValueNode *> &inputs,
+                               const std::string &name) {
+  // when got a new object, check it's side-effect replaced node ......
+  MS_EXCEPTION_IF_CHECK_FAIL(!Opcode(op).IsCall(), "must not be call function opcode");
+  ValueNode *node = this->allocator().NewNode<ValueNode>(obj_info, op, arg, inputs);
+  SetNodeInfo(this, node, obj_info, name);
+  return node;
+}
+
+CellVarNode *Graph::NewCellNode(AObject *obj_info, int op, int arg, const std::vector<ValueNode *> &inputs,
+                                const std::string &name) {
+  CellVarNode *node = this->allocator().NewNode<CellVarNode>(CellVarNode::CellVar);
+  SetNodeInfo(this, node, obj_info, name);
+  for (auto i : inputs) {
+    node->AddInput(i);
+  }
+  node->SetOpcode(op);
+  node->SetOparg(arg);
+  node->SetVobj(obj_info);
   return node;
 }
 
@@ -229,6 +246,8 @@ TracePtr GetTrace(ValueNode *node, bool strict, bool print, int depth, int max_d
     return strict ? nullptr : std::make_shared<UnsupportedTrace>(nullptr, tv, opcode, oparg);
   }
   switch (node->GetType()) {
+    case AbstractNode::Type::CellVar: /* fall-through */
+    case AbstractNode::Type::FreeVar: /* fall-through */
     case AbstractNode::Type::Value:
       if (!has_unsupported) {
         ret = CreateOpTrace(obj, opcode, oparg, tv, module_name, name, strict, print);
@@ -241,8 +260,6 @@ TracePtr GetTrace(ValueNode *node, bool strict, bool print, int depth, int max_d
       }
       break;
     case AbstractNode::Type::Param:
-    case AbstractNode::Type::CellVar: /* fall-through */
-    case AbstractNode::Type::FreeVar:
       if (oparg == -1) {
         return nullptr;
       }

@@ -112,7 +112,7 @@ class GraphBuilder {
    * \param callable_node The value node of callable object
    * \param frame FrameStates to place closure node
    */
-  void ResolveClosure(const py::object &func_info, ValueNode *callable_node, FrameStates *frame);
+  void ResolveClosure(const py::object &func_info, CallNode *call_node, FrameStates *frame);
 
   std::pair<PyObject *, ValueNode *> SearchSelfPyObject(PyCodeObject *co);
   bool HandleSuper(const Instr &instr, AObject *super);

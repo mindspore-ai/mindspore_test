@@ -27,8 +27,7 @@ ValueNode ValueNode::kUnboundLocal(ValueNode::kUnbound, &kNullObject, 0, 0);
 // these value node not in locals
 bool IsNonLocalValue(ValueNode *i) {
   int op = i->GetOpcode();
-  return op == LOAD_CONST || op == LOAD_GLOBAL || op == LOAD_DEREF || i->GetType() == ValueNode::CellVar ||
-         i->GetType() == ValueNode::FreeVar;
+  return op == LOAD_CONST || op == LOAD_GLOBAL || op == LOAD_DEREF;
 }
 
 void ValueNode::SetVobj(AObject *object_info) {
@@ -86,15 +85,6 @@ std::string ParamNode::ToString() const {
   s << this->AbstractNode::ToString() << " Parameter " << GetOparg() << "("
     << (GetName().empty() ? "<unnamed>" : GetName()) << ") = " << GetVobj()->ToString();
   return s.str();
-}
-
-std::string CellVarNode::ToString() const {
-  if (val_) {
-    return std::string("Cell:").append(val_->ToString());
-  }
-  char buf[64];
-  snprintf(buf, sizeof(buf), "Cell:%p->(nil)", this);
-  return buf;
 }
 
 std::string CallNode::ToString() const {

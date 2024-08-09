@@ -139,6 +139,10 @@ class Graph {
   Allocator &allocator() { return alloc_; }
   ValueNode *NewValueNode(AObject *, int op, int arg, const std::vector<ValueNode *> & = {},
                           const std::string &name = "");
+
+  CellVarNode *NewCellNode(AObject *, int op, int arg, const std::vector<ValueNode *> & = {},
+                           const std::string &name = "");
+
   CallNode *NewCallNode(int op, int arg, const std::vector<ValueNode *> &);
   const std::vector<LoopInfo *> &loops() const { return loops_; }
   void AddLoop(LoopInfo *loop) { loops_.emplace_back(loop); }
