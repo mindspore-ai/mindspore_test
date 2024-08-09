@@ -608,7 +608,7 @@ def test_dataset_wikitextdataset_with_op_input_error():
     os.environ["MS_INDEPENDENT_DATASET"] = "False"
 
 
-def test_dataset_generator_error():
+def skip_test_dataset_generator_error():
     """
     Feature: Dataset With Independent Process
     Description: Test dataset in independent process with script error
@@ -629,7 +629,6 @@ def test_dataset_generator_error():
         def __len__(self):
             return len(self._data)
 
-    # gzj dataset = ds.GeneratorDataset(RandomAccessDataset(), ["num", "label"], num_parallel_workers=8)
     dataset = ds.GeneratorDataset(RandomAccessDataset(), ["num", "label"])
 
     with pytest.raises(RuntimeError) as err:

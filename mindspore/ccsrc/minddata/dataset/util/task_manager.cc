@@ -18,6 +18,7 @@
 #include <set>
 #include "./securec.h"
 #include "minddata/dataset/util/task_manager.h"
+#include "utils/ms_utils.h"
 
 namespace mindspore {
 namespace dataset {
@@ -227,6 +228,32 @@ void TaskManager::InterruptMaster(const Status &rc) {
       // non-sink + pyfunc     -> don't print error (the error has been raised in python layer)
       // sink     + non-pyfunc -> print error
       // sink     + pyfunc     -> print error in ShutdownGroup
+#if !defined(__APPLE__) && !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && \
+  !defined(ANDROID)
+      bool independent_dataset_env = false;
+      std::string env_independent_dataset = common::GetEnv("MS_INDEPENDENT_DATASET");
+      transform(env_independent_dataset.begin(), env_independent_dataset.end(), env_independent_dataset.begin(),
+                ::tolower);
+      if (env_independent_dataset == "true") {
+        independent_dataset_env = true;
+      } else {
+        independent_dataset_env = false;
+      }
+
+      pid_t current_process_id = 0;
+#if defined(_WIN32) || defined(_WIN64)
+      current_process_id = GetCurrentProcessId();
+#else
+      current_process_id = getpid();
+#endif
+      // independent dataset process mode, ignore the subprocess prompt error
+      // master->GetProcessID() is the main process id
+      if (independent_dataset_env == true && master->GetProcessID() != current_process_id) {
+        MS_LOG(INFO) << "[Independent Dataset Process] Ignore err msg in independent dataset process. It is: "
+                     << master->rc_;
+        return;
+      }
+#endif
       MS_LOG(ERROR) << "MindSpore dataset is terminated with err msg: " << master->rc_;
     }
   }
