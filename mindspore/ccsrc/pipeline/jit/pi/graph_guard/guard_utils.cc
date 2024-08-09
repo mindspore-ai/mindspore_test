@@ -24,6 +24,7 @@
 #include "pipeline/jit/pi/graph_guard/strategy.h"
 #include "pipeline/jit/pi/graph_guard/guard.h"
 #include "pipeline/jit/pi/graph_guard/infer.h"
+#include "pipeline/jit/pi/python_adapter/pydef.h"
 
 namespace mindspore {
 namespace pijit {
@@ -1912,7 +1913,7 @@ class EqGuard : public GuardItem {
     last_ = obj->GetObject();
   }
 
-  virtual bool Check(const PyFrameObject *frame, std::map<size_t, PyObject *> *cache, bool perf) {
+  virtual bool Check(const EvalFrameObject *frame, std::map<size_t, PyObject *> *cache, bool perf) {
     if (var_->IsConst()) {
       return true;
     }
@@ -2015,7 +2016,7 @@ class TypeGuard : public GuardItem {
     }
   }
 
-  virtual bool Check(const PyFrameObject *frame, std::map<size_t, PyObject *> *cache, bool perf) {
+  virtual bool Check(const EvalFrameObject *frame, std::map<size_t, PyObject *> *cache, bool perf) {
     if (var_->IsConst() || is_const_) {
       return true;
     }
@@ -2103,7 +2104,7 @@ class IdGuard : public GuardItem {
     refId_ = obj->GetObject();
   }
 
-  virtual bool Check(const PyFrameObject *frame, std::map<size_t, PyObject *> *cache, bool perf) {
+  virtual bool Check(const EvalFrameObject *frame, std::map<size_t, PyObject *> *cache, bool perf) {
     if (var_->IsConst()) {
       return true;
     }
@@ -2173,7 +2174,7 @@ class ReprGuard : public GuardItem {
 
   virtual ~ReprGuard() { Py_XDECREF(refRepr_); }
 
-  virtual bool Check(const PyFrameObject *frame, std::map<size_t, PyObject *> *cache, bool perf) {
+  virtual bool Check(const EvalFrameObject *frame, std::map<size_t, PyObject *> *cache, bool perf) {
     if (var_->IsConst()) {
       return true;
     }
@@ -2281,7 +2282,7 @@ class AttrGuard : public GuardItem {
 
   ~AttrGuard() = default;
 
-  virtual bool Check(const PyFrameObject *frame, std::map<size_t, PyObject *> *cache, bool perf) {
+  virtual bool Check(const EvalFrameObject *frame, std::map<size_t, PyObject *> *cache, bool perf) {
     if (var_->IsConst()) {
       return true;
     }

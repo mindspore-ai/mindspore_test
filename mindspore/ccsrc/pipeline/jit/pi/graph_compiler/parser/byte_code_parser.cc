@@ -928,7 +928,7 @@ void ByteCodeParser::ParseLoadClosure(const InstrPtr &instr) {
   PyCodeWrapper co(const_cast<PyCodeObject *>(&code_));
   py::tuple locals_names = co.FastLocalNames();
 #if IS_PYTHON_3_11_PLUS
-  int free_offset = co->co_nlocalsplus - co.FreeVarsSize();
+  int free_offset = co.ptr()->co_nlocalsplus - co.FreeVarsSize();
   int names_offset = 0;
 #else
   int free_offset = co.CellVarsSize();

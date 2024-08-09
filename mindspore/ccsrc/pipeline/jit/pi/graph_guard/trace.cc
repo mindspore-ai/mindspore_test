@@ -34,6 +34,7 @@
 #include "pipeline/jit/pi/pi_jit_config.h"
 #include "pipeline/jit/pi/external.h"
 #include "pipeline/jit/pi/utils/opcode_declare.h"
+#include "pipeline/jit/pi/python_adapter/pydef.h"
 
 namespace mindspore {
 namespace pijit {
@@ -456,6 +457,10 @@ PyObject *RootTrace::RetrieveName(PTraceContext context) {
 }
 
 PyObject *RootTrace::RetrieveClassDeref(PTraceContext context) {
+#if IS_PYTHON_3_11_PLUS
+  MS_LOG(ERROR) << "not implement in python3.11";
+  return nullptr;
+#else
   PyObject *ret = nullptr;
   Py_ssize_t idx = idx_ - PyTuple_GET_SIZE(context->f_code->co_cellvars);
   if (idx >= 0 && idx < PyTuple_GET_SIZE(context->f_code->co_freevars)) {
@@ -472,7 +477,9 @@ PyObject *RootTrace::RetrieveClassDeref(PTraceContext context) {
       Py_XINCREF(ret);
     }
   }
+
   return ret;
+#endif
 }
 
 std::string RootTrace::ToString(bool include_param) {
@@ -1485,26 +1492,24 @@ static std::unordered_map<int, PythonBytecodeFuncSet> kBytecodeExecuter = {
     }}},
   {INPLACE_AND,
    {ByteCodeTest(INPLACE_AND),
-    [](int opargs, const PyObjectArray &objs, PTraceContext ctx) -> PyObject
-                                                                   * {
-                                                                     if (ByteCodeCheck(INPLACE_AND, opargs, objs)) {
-                                                                       return PyNumber_InPlaceAnd(objs[0], objs[1]);
-                                                                     } else {
-                                                                       Py_INCREF(objs[0]);
-                                                                       return objs[0];
-                                                                     }
-                                                                   }}},
+    [](int opargs, const PyObjectArray &objs, PTraceContext ctx) -> PyObject * {
+      if (ByteCodeCheck(INPLACE_AND, opargs, objs)) {
+        return PyNumber_InPlaceAnd(objs[0], objs[1]);
+      } else {
+        Py_INCREF(objs[0]);
+        return objs[0];
+      }
+    }}},
   {INPLACE_XOR,
    {ByteCodeTest(INPLACE_XOR),
-    [](int opargs, const PyObjectArray &objs, PTraceContext ctx) -> PyObject
-                                                                   * {
-                                                                     if (ByteCodeCheck(INPLACE_XOR, opargs, objs)) {
-                                                                       return PyNumber_InPlaceXor(objs[0], objs[1]);
-                                                                     } else {
-                                                                       Py_INCREF(objs[0]);
-                                                                       return objs[0];
-                                                                     }
-                                                                   }}},
+    [](int opargs, const PyObjectArray &objs, PTraceContext ctx) -> PyObject * {
+      if (ByteCodeCheck(INPLACE_XOR, opargs, objs)) {
+        return PyNumber_InPlaceXor(objs[0], objs[1]);
+      } else {
+        Py_INCREF(objs[0]);
+        return objs[0];
+      }
+    }}},
   {INPLACE_OR,
    {ByteCodeTest(INPLACE_OR),
     [](int opargs, const PyObjectArray &objs, PTraceContext ctx) -> PyObject
@@ -2673,14 +2678,19 @@ void UnsupportedTrace::Detach() {
 
 bool UnsupportedTrace::Support(TraceType tt) { return tt == TraceType::Unsupported; }
 
-PyObject *GetObjectFromTrace(const PyFrameObject *frame, TracePtr trace, std::map<size_t, PyObject *> *cache,
+PyObject *GetObjectFromTrace(const EvalFrameObject *frame, TracePtr trace, std::map<size_t, PyObject *> *cache,
                              bool perf) {
+#if IS_PYTHON_3_11_PLUS
+  MS_LOG(ERROR) << "not implement in python3.11";
+  return nullptr;
+#else
   TraceContext context = {frame->f_globals,    frame->f_builtins, frame->f_locals,
                           frame->f_localsplus, frame->f_code,     cache};
   if (trace != nullptr) {
     return trace->Retrieve(&context, perf);
   }
   return nullptr;
+#endif
 }
 }  // namespace pijit
 }  // namespace mindspore

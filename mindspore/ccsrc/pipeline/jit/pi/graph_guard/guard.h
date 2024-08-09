@@ -27,6 +27,7 @@
 #include "include/common/utils/python_adapter.h"
 #include "pipeline/jit/pi/graph_guard/trace.h"
 #include "pipeline/jit/pi/graph_guard/guard_utils.h"
+#include "pipeline/jit/pi/python_adapter/pydef.h"
 
 namespace mindspore {
 namespace pijit {
@@ -55,7 +56,7 @@ class OptGuard : public std::enable_shared_from_this<OptGuard> {
   /// \param[in] fail to record the items which fail to guard
   /// \param[in] perf to record the performance of guard
   /// \param[out] the variables have been modified
-  virtual bool Check(const PyFrameObject *frame, bool print, std::map<size_t, PyObject *> *cache = nullptr,
+  virtual bool Check(const EvalFrameObject *frame, bool print, std::map<size_t, PyObject *> *cache = nullptr,
                      std::map<size_t, bool> *success = nullptr, std::map<size_t, bool> *fail = nullptr,
                      bool perf = false);
   /// \brief guard the variable which has trace to retrieve
@@ -80,8 +81,8 @@ class OptGuard : public std::enable_shared_from_this<OptGuard> {
   virtual void Pop();
   virtual bool IsEmpty() { return guardList_.size() == 0; }
   virtual bool MatchShape(std::shared_ptr<OptGuard> other);
-  virtual std::vector<PyObject *> ApplyDynamicShape(PyFrameObject *frame);
-  virtual void RevertDynamicShape(PyFrameObject *frame, const std::vector<PyObject *> &backup);
+  virtual std::vector<PyObject *> ApplyDynamicShape(EvalFrameObject *frame);
+  virtual void RevertDynamicShape(EvalFrameObject *frame, const std::vector<PyObject *> &backup);
 
   std::string ToString() const;
   virtual const InfoPack &Info();

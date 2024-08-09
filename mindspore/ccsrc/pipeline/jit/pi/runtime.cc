@@ -578,6 +578,9 @@ void AddConfigToGuard(const GraphJitConfig &c, OptGuardPtr guard) {
 }
 
 void AddGuardForParam(const PyFrameWrapper &wrapper, OptGuardPtr guard, bool detach) {
+#if IS_PYTHON_3_11_PLUS
+  MS_LOG(ERROR) << "not implement in python3.11";
+#else
   auto lh = [&guard, &detach](PyObject *value, int fast_index) {
     RootTracePtr ptr = std::make_shared<RootTrace>(value, mindspore::pijit::TraceType::Param, fast_index);
     guard->GuardOn(ptr, mindspore::pijit::GuardLevel::GDeduce, false);
@@ -602,9 +605,13 @@ void AddGuardForParam(const PyFrameWrapper &wrapper, OptGuardPtr guard, bool det
     }
   };
   wrapper.ForEachFastLocal(lh, ch, ch);
+#endif
 }
 
 void AddGuardForGlobals(const PyFrameWrapper &wrapper, OptGuardPtr guard, bool detach) {
+#if IS_PYTHON_3_11_PLUS
+  MS_LOG(ERROR) << "not implement in python3.11";
+#else
   EvalFrameObject *f = wrapper.frame();
   PyCodeObject *co = wrapper.GetCode().ptr();
   const _Py_CODEUNIT *bytecodes = _PyCode_CODE(co);
@@ -647,6 +654,7 @@ void AddGuardForGlobals(const PyFrameWrapper &wrapper, OptGuardPtr guard, bool d
       ptr->Detach();
     }
   }
+#endif
 }
 
 static void AddGradFlagForParam(bool grad_flag, OptGuardPtr guard, bool detach) {
@@ -674,6 +682,7 @@ static void AddGradFlagForParam(bool grad_flag, OptGuardPtr guard, bool detach) 
   }
 }
 
+#if !IS_PYTHON_3_11_PLUS
 static std::string CallGraphCompiler(JitCompileResults *jcr, PyFunctionObject *func, const PyFrameWrapper &frame) {
   std::string phase = GetFuncGraphPhase(frame, jcr->code());
   MS_LOG(DEBUG) << "Phase is " << phase << "!";
@@ -701,6 +710,7 @@ static std::string CallGraphCompiler(JitCompileResults *jcr, PyFunctionObject *f
   jcr->set_stat(JitCompileResults::GRAPH_CALLABLE);
   return phase;
 }
+#endif
 
 std::string GraphToString(FuncGraphPtr graph) {
   std::ostringstream graph_buffer;
@@ -718,6 +728,9 @@ std::string GraphToString(FuncGraphPtr graph) {
 }
 
 static void GraphCompile(JitCompileResults *jcr, const PyFrameWrapper &frame) {
+#if IS_PYTHON_3_11_PLUS
+  MS_LOG(ERROR) << "not implement in python3.11";
+#else
   TimeRecorder recorder(__FUNCTION__, kPIJitConfigDefault.GetBoolConfig(GraphJitConfig::kLogPerf));
   GuardForFrame(frame, jcr->code(), *jcr->conf());
   AddGuardForGlobals(frame, jcr->code()->GetGuard(), jcr->conf()->GetBoolConfig(GraphJitConfig::kGuardDetachObject));
@@ -775,6 +788,7 @@ static void GraphCompile(JitCompileResults *jcr, const PyFrameWrapper &frame) {
       OptCodeHub::Register(key, jcr->code());
     }
   }
+#endif
 }
 
 extern bool UnsupportedCodeTypeCheck(PyCodeObject *co);

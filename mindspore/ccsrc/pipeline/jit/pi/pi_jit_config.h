@@ -19,6 +19,7 @@
 #include <set>
 #include <string>
 #include "pybind11/pybind11.h"
+#include "pipeline/jit/pi/python_adapter/pydef.h"
 
 namespace mindspore {
 namespace pijit {
@@ -87,7 +88,7 @@ class GraphJitConfig {
   int getIntConfig(Options o) const { return o > kIntConf && o < kOptionsCount ? int_conf[o - kIntConf] : 0; }
   const auto &allowed_inline_modules() const { return allowed_inline_modules_; }
 
-  bool ShouldAutoJit(PyFrameObject *f);
+  bool ShouldAutoJit(EvalFrameObject *f);
 
   void AddAllowedInlineModules(const std::string &module_name);
 
