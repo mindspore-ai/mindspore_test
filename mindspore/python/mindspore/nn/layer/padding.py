@@ -279,20 +279,6 @@ class ConstantPad1d(_ConstantPadNd):
            [0.5 1.  1.  1.  1.  0.5]]]]
         >>> print(out.shape)
         (1, 2, 3, 6)
-        >>> # padding is negative
-        >>> padding = (-1, 0)
-        >>> value = 0.5
-        >>> pad1d = ms.nn.ConstantPad1d(padding, value)
-        >>> out = pad1d(x)
-        >>> print(out)
-        [[[[1. 1. 1.]
-           [1. 1. 1.]
-           [1. 1. 1.]]
-          [[1. 1. 1.]
-           [1. 1. 1.]
-           [1. 1. 1.]]]]
-        >>> print(out.shape)
-        (1, 2, 3, 3)
     """
 
     def __init__(self, padding, value):
@@ -336,21 +322,21 @@ class ConstantPad2d(_ConstantPadNd):
         >>> import mindspore as ms
         >>> x = np.ones(shape=(1, 2, 3, 4)).astype(np.float32)
         >>> x = ms.Tensor(x)
-        >>> padding = (-1, 1, 0, 1)
+        >>> padding = (1, 1, 0, 1)
         >>> value = 0.5
         >>> pad2d = ms.nn.ConstantPad2d(padding, value)
         >>> out = pad2d(x)
         >>> print(out)
-        [[[[1.  1.  1.  0.5]
-           [1.  1.  1.  0.5]
-           [1.  1.  1.  0.5]
-           [0.5 0.5 0.5 0.5]]
-          [[1.  1.  1.  0.5]
-           [1.  1.  1.  0.5]
-           [1.  1.  1.  0.5]
-           [0.5 0.5 0.5 0.5]]]]
+        [[[[0.5  1.  1.  1.  1.  0.5]
+           [0.5  1.  1.  1.  1.  0.5]
+           [0.5  1.  1.  1.  1.  0.5]
+           [0.5  0.5 0.5 0.5 0.5 0.5]]
+          [[0.5  1.  1.  1.  1.  0.5]
+           [0.5  1.  1.  1.  1.  0.5]
+           [0.5  1.  1.  1.  1.  0.5]
+           [0.5  0.5 0.5 0.5 0.5 0.5]]]]
         >>> print(out.shape)
-        (1, 2, 4, 4)
+        (1, 2, 4, 6)
     """
 
     def __init__(self, padding, value):
@@ -396,25 +382,25 @@ class ConstantPad3d(_ConstantPadNd):
         >>> import mindspore as ms
         >>> x = np.ones(shape=(1, 2, 3, 4)).astype(np.float32)
         >>> x = ms.Tensor(x)
-        >>> padding = (-1, 1, 0, 1, 1, 0)
+        >>> padding = (1, 1, 0, 1, 1, 0)
         >>> value = 0.5
         >>> pad3d = ms.nn.ConstantPad3d(padding, value)
         >>> out = pad3d(x)
         >>> print(out)
-        [[[[0.5 0.5 0.5 0.5]
-           [0.5 0.5 0.5 0.5]
-           [0.5 0.5 0.5 0.5]
-           [0.5 0.5 0.5 0.5]]
-          [[1.  1.  1.  0.5]
-           [1.  1.  1.  0.5]
-           [1.  1.  1.  0.5]
-           [0.5 0.5 0.5 0.5]]
-          [[1.  1.  1.  0.5]
-           [1.  1.  1.  0.5]
-           [1.  1.  1.  0.5]
-           [0.5 0.5 0.5 0.5]]]]
+        [[[[0.5 0.5 0.5 0.5 0.5 0.5]
+           [0.5 0.5 0.5 0.5 0.5 0.5]
+           [0.5 0.5 0.5 0.5 0.5 0.5]
+           [0.5 0.5 0.5 0.5 0.5 0.5]]
+          [[0.5 1.  1.  1.  1.  0.5]
+           [0.5 1.  1.  1.  1.  0.5]
+           [0.5 1.  1.  1.  1.  0.5]
+           [0.5 0.5 0.5 0.5 0.5 0.5]]
+          [[0.5 1.  1.  1.  1.  0.5]
+           [0.5 1.  1.  1.  1.  0.5]
+           [0.5 1.  1.  1.  1.  0.5]
+           [0.5 0.5 0.5 0.5 0.5 0.5]]]]
         >>> print(out.shape)
-        (1, 3, 4, 4)
+        (1, 3, 4, 6)
     """
 
     def __init__(self, padding, value):
@@ -652,20 +638,20 @@ class ZeroPad2d(_ConstantPadNd):
         >>> import mindspore as ms
         >>> x = np.ones(shape=(1, 2, 3, 4)).astype(np.float32)
         >>> x = ms.Tensor(x)
-        >>> padding = (-1, 1, 0, 1)
+        >>> padding = (1, 1, 0, 1)
         >>> pad = ms.nn.ZeroPad2d(padding)
         >>> out = pad(x)
         >>> print(out)
-        [[[[1. 1. 1. 0.]
-           [1. 1. 1. 0.]
-           [1. 1. 1. 0.]
-           [0. 0. 0. 0.]]
-          [[1. 1. 1. 0.]
-           [1. 1. 1. 0.]
-           [1. 1. 1. 0.]
-           [0. 0. 0. 0.]]]]
+        [[[[0. 1. 1. 1. 1. 0.]
+           [0. 1. 1. 1. 1. 0.]
+           [0. 1. 1. 1. 1. 0.]
+           [0. 0. 0. 0. 0. 0.]]
+          [[0. 1. 1. 1. 1. 0.]
+           [0. 1. 1. 1. 1. 0.]
+           [0. 1. 1. 1. 1. 0.]
+           [0. 0. 0. 0. 0. 0.]]]]
         >>> print(out.shape)
-        (1, 2, 4, 4)
+        (1, 2, 4, 6)
     """
 
     def __init__(self, padding):
