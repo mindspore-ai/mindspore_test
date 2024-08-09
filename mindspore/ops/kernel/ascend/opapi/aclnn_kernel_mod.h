@@ -48,21 +48,22 @@ using CacheTuple = std::tuple<uint64_t, aclOpExecutor *, ProcessCache, size_t>;
 
 #define DEFINE_GET_WORKSPACE_FOR_OPS(OP_TYPE, FUNC_NAME)                                                          \
   std::string op_type_##FUNC_NAME##_ = #OP_TYPE;                                                                  \
+  uint64_t hash_id_##FUNC_NAME##_{0};                                                                             \
   template <typename... Args>                                                                                     \
   void GetWorkspaceForResize##FUNC_NAME(const Args &... args) {                                                   \
-    hash_id_ = transform::AclnnHash(op_type_##FUNC_NAME##_, args...);                                             \
+    hash_id_##FUNC_NAME##_ = transform::AclnnHash(op_type_##FUNC_NAME##_, args...);                               \
     size_t cur_workspace = 0;                                                                                     \
-    if (hash_map_.count(hash_id_)) {                                                                              \
-      hash_cache_.splice(hash_cache_.begin(), hash_cache_, hash_map_[hash_id_]);                                  \
+    if (hash_map_.count(hash_id_##FUNC_NAME##_)) {                                                                \
+      hash_cache_.splice(hash_cache_.begin(), hash_cache_, hash_map_[hash_id_##FUNC_NAME##_]);                    \
       cur_workspace = std::get<3>(hash_cache_.front());                                                           \
     } else {                                                                                                      \
       auto [workspace, executor, cache, fail_cache] = GEN_EXECUTOR_FOR_RESIZE(op_type_##FUNC_NAME##_, args...);   \
       cur_workspace = workspace;                                                                                  \
       if (!fail_cache) {                                                                                          \
-        hash_cache_.emplace_front(hash_id_, executor, cache, workspace);                                          \
-        hash_map_[hash_id_] = hash_cache_.begin();                                                                \
+        hash_cache_.emplace_front(hash_id_##FUNC_NAME##_, executor, cache, workspace);                            \
+        hash_map_[hash_id_##FUNC_NAME##_] = hash_cache_.begin();                                                  \
       } else {                                                                                                    \
-        hash_id_ = 0;                                                                                             \
+        hash_id_##FUNC_NAME##_ = 0;                                                                               \
         cache(true, {});                                                                                          \
       }                                                                                                           \
     }                                                                                                             \
@@ -74,20 +75,21 @@ using CacheTuple = std::tuple<uint64_t, aclOpExecutor *, ProcessCache, size_t>;
     }                                                                                                             \
                                                                                                                   \
     if (cur_workspace != 0) {                                                                                     \
-      std::vector<size_t> workspace_size_list = {cur_workspace};                                                  \
-      SetWorkspaceSizeList(workspace_size_list);                                                                  \
+      ops_workspace_size_map_[#FUNC_NAME] = {ops_workspace_size_idx_, cur_workspace};                             \
+      ++ops_workspace_size_idx_;                                                                                  \
+      (void)workspace_size_list_.emplace_back(cur_workspace);                                                     \
     }                                                                                                             \
   }                                                                                                               \
                                                                                                                   \
   template <typename... Args>                                                                                     \
   std::pair<aclOpExecutor *, std::function<void()>> GetExecutor##FUNC_NAME(const Args &... args) {                \
-    if (hash_id_ == 0 || !hash_map_.count(hash_id_)) {                                                            \
+    if (hash_id_##FUNC_NAME##_ == 0 || !hash_map_.count(hash_id_##FUNC_NAME##_)) {                                \
       aclOpExecutor *executor;                                                                                    \
       std::function<void()> release_func;                                                                         \
       std::tie(std::ignore, executor, release_func) = GEN_EXECUTOR(op_type_##FUNC_NAME##_, args...);              \
       return std::make_pair(executor, release_func);                                                              \
     }                                                                                                             \
-    const auto &cur_run = *hash_map_[hash_id_];                                                                   \
+    const auto &cur_run = *hash_map_[hash_id_##FUNC_NAME##_];                                                     \
     UPDATE_TENSOR_FOR_LAUNCH(std::get<2>(cur_run), args...);                                                      \
     const auto &executor = std::get<1>(cur_run);                                                                  \
     return std::make_pair(executor, nullptr);                                                                     \
@@ -96,18 +98,21 @@ using CacheTuple = std::tuple<uint64_t, aclOpExecutor *, ProcessCache, size_t>;
   template <typename... Args>                                                                                     \
   void RunOp##FUNC_NAME(void *stream_ptr, const std::vector<KernelTensor *> &workspace, const Args &... args) {   \
     auto [executor, release_func] = GetExecutor##FUNC_NAME(args...);                                              \
-    if (workspace_size_list_.empty()) {                                                                           \
+    const auto& iter = ops_workspace_size_map_.find(#FUNC_NAME);                                                  \
+    if (iter == ops_workspace_size_map_.end()) {                                                                  \
       RUN_OP_API_ASYNC(op_type_##FUNC_NAME##_, nullptr, 0, executor, stream_ptr, release_func);                   \
     } else {                                                                                                      \
-      if (workspace.empty()) {                                                                                    \
+      auto workspace_size_idx = iter->second.first;                                                               \
+      auto workspace_size = iter->second.second;                                                                  \
+      if (workspace.empty() || workspace.size() <= workspace_size_idx) {                                          \
         MS_LOG(EXCEPTION) << "Failed to allocate workspace tensor!";                                              \
       }                                                                                                           \
-      auto workspace_tensor = workspace[0];                                                                       \
-      if (workspace_tensor->size() != workspace_size_list_[0]) {                                                  \
+      auto workspace_tensor = workspace[workspace_size_idx];                                                      \
+      if (workspace_tensor->size() != workspace_size) {                                                           \
         MS_LOG(EXCEPTION) << "Please check 'GetWorkSpaceInfo' and 'Launch' func. Expected workspace size is"      \
-                          << workspace_size_list_[0] << ", but get " << workspace_tensor->size();                 \
+                          << workspace_size << ", but get " << workspace_tensor->size();                          \
       }                                                                                                           \
-      RUN_OP_API_ASYNC(op_type_##FUNC_NAME##_, workspace_tensor->device_ptr(), workspace_size_list_[0], executor, \
+      RUN_OP_API_ASYNC(op_type_##FUNC_NAME##_, workspace_tensor->device_ptr(), workspace_size, executor,          \
                        stream_ptr, release_func);                                                                 \
     }                                                                                                             \
   }
@@ -255,6 +260,12 @@ class AclnnKernelMod : public KernelMod {
     is_dynamic_ = is_dynamic;
   }
 
+  void ClearOpsWorkSpaceList() {
+    ops_workspace_size_idx_ = 0;
+    ops_workspace_size_map_.clear();
+    workspace_size_list_.clear();
+  }
+
  protected:
   template <size_t N, std::size_t... Is>
   auto GetTupleFrontImpl(const std::vector<KernelTensor *> &vecs, std::index_sequence<Is...>) {
@@ -297,6 +308,8 @@ class AclnnKernelMod : public KernelMod {
   std::string op_type_;
   uint64_t hash_id_{0};
   std::unordered_set<uint64_t> cache_hash_;
+  std::unordered_map<std::string, std::pair<size_t, size_t>> ops_workspace_size_map_;
+  size_t ops_workspace_size_idx_{0};
   static bool is_dynamic_;
   std::mutex mtx_;
   std::unordered_map<uint64_t, std::list<CacheTuple>::iterator> hash_map_;
