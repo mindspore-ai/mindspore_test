@@ -213,6 +213,9 @@ bool CollectiveManager::InitializeDummyCommLib() {
                            "Failed to initialize dummy communication library.");
   global_rank_id_ = comm_lib_instance_->global_rank_id();
   global_rank_size_ = comm_lib_instance_->global_rank_size();
+  for (uint32_t i = 0; i < global_rank_size_; i++) {
+    global_group_ranks_.push_back(i);
+  }
   MS_LOG(WARNING) << "Initializing dummy collective communication with rank size: " << global_rank_size_
                   << ", rank id: " << global_rank_id_ << ". Real rank size: 1.";
 
@@ -223,6 +226,11 @@ bool CollectiveManager::InitializeDummyCommLib() {
     MS_LOG(WARNING) << "Initialize dummy Ascend collective communication lib.";
     RETURN_IF_FALSE_WITH_LOG(InitDeviceCommLib(), "Failed to initialize dummy device communication library on Ascend.");
   }
+  // Create dummy device global communication group.
+  auto group_name = device_comm_lib_instance_->global_group_name();
+  RETURN_IF_FALSE_WITH_LOG(CreateCommunicationGroup(group_name, global_group_ranks_),
+                           "Failed to create group " + group_name);
+
   inited_ = true;
   finalized_ = false;
   need_reinit_ = false;
