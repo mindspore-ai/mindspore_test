@@ -1850,14 +1850,16 @@ class BCEWithLogitsLoss(LossBase):
 
         weight (Tensor, optional): A rescaling weight applied to the loss of each batch element.
             If not None, it can be broadcast to a tensor with shape of `input`,
-            data type must be float16 or float32. Default: ``None`` .
+            data type must be float16, float32 or bfloat16(only Atlas A2 series products are supported).
+            Default: ``None`` .
         pos_weight (Tensor, optional): A weight of positive examples. Must be a vector with length equal to the
             number of classes. If not None, it must be broadcast to a tensor with shape of `input`, data type
-            must be float16 or float32. Default: ``None`` .
+            must be float16, float32 or bfloat16(only Atlas A2 series products are supported). Default: ``None`` .
 
     Inputs:
         - **input** (Tensor) - Input `input` with shape :math:`(N, *)` where :math:`*` means, any number
-          of additional dimensions. The data type must be float16 or float32.
+          of additional dimensions. The data type must be float16, float32 or bfloat16(only Atlas A2 series products
+          are supported).
         - **target** (Tensor) - Ground truth label with shape :math:`(N, *)` where :math:`*` means, any number
           of additional dimensions. The same shape and data type as `input`.
 
@@ -1867,9 +1869,9 @@ class BCEWithLogitsLoss(LossBase):
 
     Raises:
         TypeError: If input `input` or `target` is not Tensor.
-        TypeError: If data type of `input` or `target` is neither float16 nor float32.
+        TypeError: If data type of `input` or `target` is not float16, float32 or bfloat16.
         TypeError: If `weight` or `pos_weight` is a parameter.
-        TypeError: If data type of `weight` or `pos_weight` is neither float16 nor float32.
+        TypeError: If data type of `weight` or `pos_weight` is not float16 , float32 or bfloat16.
         TypeError: If data type of `reduction` is not string.
         ValueError: If `weight` or `pos_weight` can not be broadcast to a tensor with shape of `input`.
         ValueError: If `reduction` is not one of ``'none'``, ``'mean'``, ``'sum'``.
