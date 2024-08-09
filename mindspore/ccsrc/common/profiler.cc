@@ -77,7 +77,7 @@ ProfilerRecorder::ProfilerRecorder(ProfilerModule module, ProfilerEvent event, c
   if (!profiler.profiler_enable()) {
     return;
   }
-  data_ = std::make_unique<Data>(module, event, profiler.GetBriefName(op_name),
+  data_ = std::make_unique<Data>(module, event, op_name, profiler.GetBriefName(op_name),
                                  !profiler.enable_by_env() && need_py_stack ? GetPythonStackStr_() : std::string(),
                                  profiler.GetTimeStamp(), flow_id, is_inner_event);
 }
@@ -90,8 +90,8 @@ ProfilerRecorder::~ProfilerRecorder() {
   if (data_ == nullptr) {
     return;
   }
-  profiler.RecordData(std::make_shared<ProfilerData>(data_->module_, data_->event_, data_->op_name_,
-                                                     data_->is_inner_event_, data_->start_time_,
+  profiler.RecordData(std::make_shared<ProfilerData>(data_->module_, data_->event_, data_->op_full_name_,
+                                                     data_->op_name_, data_->is_inner_event_, data_->start_time_,
                                                      profiler.GetTimeStamp(), data_->flow_id_, data_->py_stack_));
 }
 
@@ -110,8 +110,8 @@ void PythonProfilerRecorder::record_start() {
 void PythonProfilerRecorder::record_end() {
   if (runtime::ProfilerAnalyzer::GetInstance().profiler_enable()) {
     auto end_time = runtime::ProfilerAnalyzer::GetInstance().GetTimeStamp();
-    runtime::ProfilerAnalyzer::GetInstance().RecordData(
-      std::make_shared<runtime::ProfilerData>(module_, event_, record_name_, false, start_time_, end_time));
+    runtime::ProfilerAnalyzer::GetInstance().RecordData(std::make_shared<runtime::ProfilerData>(
+      module_, event_, record_name_, record_name_, false, start_time_, end_time));
   }
 }
 
@@ -255,8 +255,8 @@ void ProfilerAnalyzer::RecordFlowData(uint64_t flow_id) {
     return;
   }
   ProfilerAnalyzer::GetInstance().RecordData(std::make_shared<ProfilerData>(
-    ProfilerModule::kDefault, ProfilerEvent::kDefault, kNameFlow, true, ProfilerAnalyzer::GetInstance().GetTimeStamp(),
-    ProfilerAnalyzer::GetInstance().GetTimeStamp(), flow_id));
+    ProfilerModule::kDefault, ProfilerEvent::kDefault, kNameFlow, kNameFlow, true,
+    ProfilerAnalyzer::GetInstance().GetTimeStamp(), ProfilerAnalyzer::GetInstance().GetTimeStamp(), flow_id));
 }
 
 void ProfilerAnalyzer::StartStep() {
