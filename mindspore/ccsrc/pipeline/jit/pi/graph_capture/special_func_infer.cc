@@ -694,7 +694,6 @@ static bool InferListAppend(CallNode *call_node, GraphBuilder *parent) {
   return true;
 }
 
-
 template <typename ElementsAction, typename FuncReturnAction, typename SafeReplaceChecker>
 static bool InferListMethodWithSideEffect(CallNode *call_node, GraphBuilder *parent, ElementsAction action,
                                           FuncReturnAction return_action, SafeReplaceChecker is_safe_replace,
@@ -775,7 +774,7 @@ static bool InferListRemove(CallNode *call_node, GraphBuilder *parent) {
   auto remove_action = [](CallNode *call_node, GraphBuilder *, std::vector<ValueNode *> *elements) {
     bool is_method_descriptor = false;
     (void)GetSelfFromListAppendCall(call_node, &is_method_descriptor);
-    std::remove(elements->begin(), elements->end(), call_node->input(1 + is_method_descriptor));
+    (void)std::remove(elements->begin(), elements->end(), call_node->input(1 + is_method_descriptor));
   };
   auto return_none = [](CallNode *call_node, GraphBuilder *parent) {
     auto builder = GraphBuilder::Creator(parent->root(), parent, nullptr, nullptr, parent->trace_flag());

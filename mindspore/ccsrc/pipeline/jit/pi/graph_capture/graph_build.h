@@ -237,6 +237,7 @@ class GraphBuilder {
   bool TraceRunControl(const Instr &instr);
   bool TraceRunForIter(const Instr &instr);
   bool DoUnpack(const Instr &instr);
+  bool DoBuildWithUnpackHelper(const Instr &instr, Py_ssize_t i, ValueNode *iterable, std::vector<ValueNode *> *);
   bool DoBuildWithUnpack(const Instr &instr);
   bool DoCall(const Instr &instr);
   bool DoNop(const Instr &instr);
