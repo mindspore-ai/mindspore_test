@@ -15,6 +15,7 @@
 """
 Testing Autotune support in DE
 """
+import os
 import sys
 import numpy as np
 import pytest
@@ -25,6 +26,20 @@ def err_out_log(out, err, log=False):
     if log:
         sys.stdout.write(out)
         sys.stderr.write(err)
+
+
+def test_disable_autotune_in_independent_mode():
+    """
+    Feature: Disable autotune in independent mode.
+    Description: Test autotune is disable in independent mode.
+    Expectation: Exception raised to notify feature not supported.
+    """
+    os.environ["MS_INDEPENDENT_DATASET"] = "True"
+    with pytest.raises(RuntimeError) as err:
+        ds.config.set_enable_autotune(True)
+    assert "Dataset AutoTune is not supported in Dataset Independent mode" in str(err.value)
+    os.environ["MS_INDEPENDENT_DATASET"] = "False"
+
 
 # pylint: disable=unused-variable
 @pytest.mark.forked
