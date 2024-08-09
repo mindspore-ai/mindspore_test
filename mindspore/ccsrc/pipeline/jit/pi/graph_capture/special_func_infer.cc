@@ -752,10 +752,30 @@ static bool InferListReverse(CallNode *call_node, GraphBuilder *parent) {
 }
 
 static bool InferListPop(CallNode *call_node, GraphBuilder *parent) {
+  call_node->SetSubGraph(nullptr);
+  call_node->SetInlineReason(InlineReason::kInlineFunc_Type_Unsupported);
+  if (call_node->GetOpcode() == CALL_FUNCTION_EX) {
+    return false;
+  }
+  Py_ssize_t index = -1;
+  if (call_node->GetOparg() != 0) {  // tack exactly one arg
+    bool is_method_descriptor = false;
+    (void)GetSelfFromListAppendCall(call_node, &is_method_descriptor);
+    auto index_node = call_node->input(1 + is_method_descriptor);
+    if (!parent->GetGraph()->GuardValueNode(index_node)) {
+      return false;
+    }
+    // only accept pop a constant index
+    index = py::int_(index_node->GetVobj()->GetPyObject());
+  }
+
   ValueNode *pop_value = nullptr;
-  auto pop_action = [&pop_value](CallNode *, GraphBuilder *, std::vector<ValueNode *> *elements) {
-    pop_value = elements->back();
-    elements->pop_back();
+  auto pop_action = [&pop_value, &index](CallNode *call_node, GraphBuilder *, std::vector<ValueNode *> *elements) {
+    index = index < 0 ? elements->size() + index : index;
+    auto iter = elements->begin() + index;
+    pop_value = *iter;
+    (void)elements->erase(iter);
+    return true;
   };
   auto return_element = [&pop_value](CallNode *call_node, GraphBuilder *parent) {
     MS_EXCEPTION_IF_NULL(pop_value);
@@ -771,10 +791,28 @@ static bool InferListPop(CallNode *call_node, GraphBuilder *parent) {
 }
 
 static bool InferListRemove(CallNode *call_node, GraphBuilder *parent) {
-  auto remove_action = [](CallNode *call_node, GraphBuilder *, std::vector<ValueNode *> *elements) {
-    bool is_method_descriptor = false;
-    (void)GetSelfFromListAppendCall(call_node, &is_method_descriptor);
-    (void)std::remove(elements->begin(), elements->end(), call_node->input(1 + is_method_descriptor));
+  call_node->SetSubGraph(nullptr);
+  call_node->SetInlineReason(InlineReason::kInlineFunc_Type_Unsupported);
+  if (call_node->GetOpcode() == CALL_FUNCTION_EX) {
+    return false;
+  }
+  bool is_descr = false;
+  ValueNode *self = GetSelfFromListAppendCall(call_node, &is_descr);
+  if (self == nullptr) {
+    return false;
+  }
+  ValueNode *target = call_node->input(1 + is_descr);
+  const auto &elem = self->getInputs();
+  if (self->GetOpcode() != BUILD_LIST || elem.end() == std::find(elem.begin(), elem.end(), target)) {
+    return false;  // erase any value
+  }
+  /**
+   * only specialized for this case that object id is find in list:
+   * my_list = list_build(x, y, z)
+   * my_list.erase(x)
+   */
+  auto remove_action = [&is_descr, &target](CallNode *call_node, GraphBuilder *, std::vector<ValueNode *> *elements) {
+    (void)std::remove(elements->begin(), elements->end(), target);
   };
   auto return_none = [](CallNode *call_node, GraphBuilder *parent) {
     auto builder = GraphBuilder::Creator(parent->root(), parent, nullptr, nullptr, parent->trace_flag());
