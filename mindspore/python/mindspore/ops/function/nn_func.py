@@ -1238,7 +1238,8 @@ def binary_cross_entropy_with_logits(input, target, weight=None, pos_weight=None
     Adds sigmoid activation function to input `input` as logits, and uses the given logits to compute binary cross
     entropy between the `input` and the `target`.
 
-    Sets input `input` as :math:`X`, input target as :math:`Y`, input weight as :math:`W`, output as :math:`L`. Then,
+    Sets input `input` as :math:`X`, input `target` as :math:`Y`, input `weight` as :math:`W`, output as :math:`L`.
+    Then,
 
     .. math::
 
@@ -1279,15 +1280,19 @@ def binary_cross_entropy_with_logits(input, target, weight=None, pos_weight=None
     :math:`P_c>1` increases the recall, :math:`P_c<1` increases the precision.
 
     Args:
-        input (Tensor): Input `input`. Data type must be float16 or float32.
+        input (Tensor): Input `input`. Data type must be float16, float32 or bfloat16(only Atlas A2 series products
+          are supported).
         target (Tensor): Ground truth label, has the same shape as `input`.
-          Data type must be float16 or float32.
+          Data type must be float16, float32 or bfloat16(only Atlas A2 series products
+          are supported).
         weight (Tensor, optional): A rescaling weight applied to the loss of each batch element. It can be
-          broadcast to a tensor with shape of `input`. Data type must be float16 or float32.
-          Default: ``None``, `weight` is a Tensor whose value is ``1``.
+          broadcast to a tensor with shape of `input`. Data type must be float16, float32 or bfloat16(only Atlas A2
+          series products are supported).
+          Default: ``None``, it equals to `weight` is a Tensor whose value is ``1``.
         pos_weight (Tensor, optional): A weight of positive examples. Must be a vector with length equal to the
           number of classes. It can be broadcast to a tensor with shape of `input`.
-          Data type must be float16 or float32. Default: ``None``, `pos_weight` is a Tensor whose value is ``1``.
+          Data type must be float16, float32 or bfloat16(only Atlas A2 series products are supported).
+          Default: ``None``, it equals to `pos_weight` is a Tensor whose value is ``1``.
         reduction (str, optional): Apply specific reduction method to the output: ``'none'`` , ``'mean'`` ,
             ``'sum'`` . Default: ``'mean'`` .
 
@@ -1301,7 +1306,7 @@ def binary_cross_entropy_with_logits(input, target, weight=None, pos_weight=None
 
     Raises:
         TypeError: If input `input`, `target`, `weight`, `pos_weight` is not Tensor.
-        TypeError: If data type of input `input`, `target`, `weight`, `pos_weight` is neither float16 nor float32.
+        TypeError: If data type of input `input`, `target`, `weight`, `pos_weight` is not float16, float32 or bfloat16.
         TypeError: If data type of input `reduction` is not string.
         ValueError: If `weight` or `pos_weight` can not be broadcast to a tensor with shape of `input`.
         ValueError: If `reduction` is not one of ``'none'``, ``'mean'`` or ``'sum'``.
