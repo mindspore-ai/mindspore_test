@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Huawei Technologies Co., Ltd
+ * Copyright 2022-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,7 @@ FuncGraphPtr DictSetItem::GenerateFuncGraph(const abstract::AbstractBasePtrList 
 
   FuncGraphPtr ret = std::make_shared<FuncGraph>();
   ret->set_flag(FUNC_GRAPH_FLAG_CORE, true);
+  MS_EXCEPTION_IF_NULL(ret->debug_info());
   ret->debug_info()->set_name("setitem");
 
   auto dict_param = ret->add_parameter();
@@ -52,7 +53,7 @@ FuncGraphPtr DictSetItem::GenerateFuncGraph(const abstract::AbstractBasePtrList 
   if (fallback::HasObjInExtraInfoHolder(dict_abs) && !fallback::GetCreateInGraphFromExtraInfoHolder(dict_abs)) {
     // The dict input has attached python object and the object is not created in graph.
     // Convert the DictSetItem to InplaceDictSetItem node.
-    inputs.insert(inputs.begin(), NewValueNode(prim::kPrimDictInplaceSetItem));
+    (void)inputs.insert(inputs.begin(), NewValueNode(prim::kPrimDictInplaceSetItem));
     auto dict_inplace_setitem_node = ret->NewCNodeInOrder(inputs);
     dict_inplace_setitem_node->set_has_side_effect_node(true);
     ret->set_output(dict_inplace_setitem_node);
@@ -60,7 +61,7 @@ FuncGraphPtr DictSetItem::GenerateFuncGraph(const abstract::AbstractBasePtrList 
     return ret;
   }
 
-  inputs.insert(inputs.begin(), NewValueNode(prim::kPrimDictSetItem));
+  (void)inputs.insert(inputs.begin(), NewValueNode(prim::kPrimDictSetItem));
   auto dict_setitem_node = ret->NewCNode(inputs);
   ret->set_output(dict_setitem_node);
   return ret;
@@ -72,6 +73,7 @@ FuncGraphPtr DictClear::GenerateFuncGraph(const abstract::AbstractBasePtrList &a
 
   FuncGraphPtr ret = std::make_shared<FuncGraph>();
   ret->set_flag(FUNC_GRAPH_FLAG_CORE, true);
+  MS_EXCEPTION_IF_NULL(ret->debug_info());
   ret->debug_info()->set_name("clear");
   (void)ret->add_parameter();
 
@@ -114,6 +116,7 @@ FuncGraphPtr DictHasKey::GenerateFuncGraph(const abstract::AbstractBasePtrList &
   const auto &elems = dict->elements();
   FuncGraphPtr ret = std::make_shared<FuncGraph>();
   ret->set_flag(FUNC_GRAPH_FLAG_CORE, true);
+  MS_EXCEPTION_IF_NULL(ret->debug_info());
   ret->debug_info()->set_name("has_key");
   // If key_value or value of dictionary has variable, then we convert has key operation to pyexecute.
   bool has_variable = (key_value == kValueAny) || std::any_of(elems.cbegin(), elems.cend(),
@@ -147,6 +150,7 @@ FuncGraphPtr DictUpdate::GenerateFuncGraph(const abstract::AbstractBasePtrList &
 
   FuncGraphPtr ret = std::make_shared<FuncGraph>();
   ret->set_flag(FUNC_GRAPH_FLAG_CORE, true);
+  MS_EXCEPTION_IF_NULL(ret->debug_info());
   ret->debug_info()->set_name("update");
 
   AnfNodePtrList key_inputs;
@@ -194,6 +198,7 @@ FuncGraphPtr DictFromKeys::GenerateFuncGraph(const abstract::AbstractBasePtrList
 
   FuncGraphPtr ret = std::make_shared<FuncGraph>();
   ret->set_flag(FUNC_GRAPH_FLAG_CORE, true);
+  MS_EXCEPTION_IF_NULL(ret->debug_info());
   ret->debug_info()->set_name("fromkeys");
   (void)ret->add_parameter();
   (void)ret->add_parameter();
@@ -220,6 +225,7 @@ FuncGraphPtr DictFromKeys::GenerateFuncGraph(const abstract::AbstractBasePtrList
 
 abstract::AbstractBasePtrList DictFromKeys::ParseIterableObject(const abstract::AbstractBasePtr &arg_key) const {
   auto key_type = arg_key->BuildType();
+  MS_EXCEPTION_IF_NULL(key_type);
   if (key_type->IsSameTypeId(List::kTypeId) || key_type->IsSameTypeId(Tuple::kTypeId)) {
     abstract::AbstractSequencePtr dict_keys = dyn_cast<abstract::AbstractSequence>(arg_key);
     MS_EXCEPTION_IF_NULL(dict_keys);

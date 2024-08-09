@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2023 Huawei Technologies Co., Ltd
+ * Copyright 2019-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ FuncGraphPtr ListAppend::GenerateFuncGraph(const abstract::AbstractBasePtrList &
 
   FuncGraphPtr ret = std::make_shared<FuncGraph>();
   ret->set_flag(FUNC_GRAPH_FLAG_CORE, true);
+  MS_EXCEPTION_IF_NULL(ret->debug_info());
   ret->debug_info()->set_name("append");
   AnfNodePtr arg0_node = ret->add_parameter();
   AnfNodePtr arg1_node = ret->add_parameter();
@@ -66,6 +67,7 @@ FuncGraphPtr ListInsert::GenerateFuncGraph(const abstract::AbstractBasePtrList &
   int64_t len = SizeToLong(list_len);
   FuncGraphPtr ret = std::make_shared<FuncGraph>();
   ret->set_flag(FUNC_GRAPH_FLAG_CORE, true);
+  MS_EXCEPTION_IF_NULL(ret->debug_info());
   ret->debug_info()->set_name("insert");
   AnfNodePtr arg0_node = ret->add_parameter();
   AnfNodePtr insert_index_node = ret->add_parameter();
@@ -126,6 +128,7 @@ FuncGraphPtr ListPop::GenerateFuncGraph(const abstract::AbstractBasePtrList &arg
   int64_t len = SizeToLong(list_len);
   FuncGraphPtr ret = std::make_shared<FuncGraph>();
   ret->set_flag(FUNC_GRAPH_FLAG_CORE, true);
+  MS_EXCEPTION_IF_NULL(ret->debug_info());
   ret->debug_info()->set_name("pop");
   AnfNodePtr arg0_node = ret->add_parameter();
   AnfNodePtr pop_index_node = ret->add_parameter();
@@ -178,6 +181,7 @@ FuncGraphPtr ListClear::GenerateFuncGraph(const abstract::AbstractBasePtrList &a
 
   FuncGraphPtr ret = std::make_shared<FuncGraph>();
   ret->set_flag(FUNC_GRAPH_FLAG_CORE, true);
+  MS_EXCEPTION_IF_NULL(ret->debug_info());
   ret->debug_info()->set_name("clear");
   (void)ret->add_parameter();
 
@@ -192,6 +196,7 @@ FuncGraphPtr ListExtend::GenerateFuncGraph(const abstract::AbstractBasePtrList &
 
   FuncGraphPtr ret = std::make_shared<FuncGraph>();
   ret->set_flag(FUNC_GRAPH_FLAG_CORE, true);
+  MS_EXCEPTION_IF_NULL(ret->debug_info());
   ret->debug_info()->set_name("extend");
 
   constexpr size_t current_index = 0;
@@ -288,6 +293,7 @@ FuncGraphPtr ListReverse::GenerateFuncGraph(const abstract::AbstractBasePtrList 
 
   FuncGraphPtr ret = std::make_shared<FuncGraph>();
   ret->set_flag(FUNC_GRAPH_FLAG_CORE, true);
+  MS_EXCEPTION_IF_NULL(ret->debug_info());
   ret->debug_info()->set_name("reverse");
   AnfNodePtr arg_node = ret->add_parameter();
   // List inplace operation do not support:

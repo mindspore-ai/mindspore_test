@@ -43,9 +43,9 @@ AnfNodePtr Map::FullMakeLeaf(const FuncGraphPtr &func_graph, const AnfNodePtr &f
   MS_EXCEPTION_IF_NULL(func_graph);
   std::vector<AnfNodePtr> inputs;
   if (fn_arg != nullptr) {
-    inputs.emplace_back(fn_arg);
+    (void)inputs.emplace_back(fn_arg);
   } else {
-    inputs.emplace_back(NewValueNode(fn_leaf_));
+    (void)inputs.emplace_back(NewValueNode(fn_leaf_));
   }
   (void)inputs.insert(inputs.cend(), args.cbegin(), args.cend());
   return func_graph->NewCNodeInOrder(inputs);
@@ -56,6 +56,7 @@ FuncGraphPtr Map::GenerateLeafFunc(const size_t &args_size) {
   FuncGraphPtr res_fg = std::make_shared<FuncGraph>();
   res_fg->set_flag(FUNC_GRAPH_FLAG_CORE, true);
   res_fg->set_flag(FUNC_GRAPH_FLAG_SPECIALIZE_PARAMETER, true);
+  MS_EXCEPTION_IF_NULL(res_fg->debug_info());
   res_fg->debug_info()->set_name("map");
   AnfNodePtr fn_param = nullptr;
   if (fn_leaf_ == nullptr) {
@@ -63,7 +64,7 @@ FuncGraphPtr Map::GenerateLeafFunc(const size_t &args_size) {
   }
   AnfNodePtrList args;
   for (size_t i = 0; i < args_size; ++i) {
-    args.emplace_back(res_fg->add_parameter());
+    (void)args.emplace_back(res_fg->add_parameter());
   }
   res_fg->set_output(FullMakeLeaf(res_fg, fn_param, args));
   return res_fg;
@@ -160,7 +161,7 @@ AnfNodePtr Map::MapConverter(const FuncGraphPtr &func_graph, const AnfNodePtr &f
     if (reverse_) {
       (void)inputs.insert(inputs.cbegin() + 1, call_node);
     } else {
-      inputs.emplace_back(call_node);
+      (void)inputs.emplace_back(call_node);
     }
   }
   return func_graph->NewCNodeInOrder(inputs);
@@ -265,6 +266,7 @@ FuncGraphPtr Map::GenerateFromTypes(const TypePtrList &args_abs_list) {
   FuncGraphPtr res_fg = std::make_shared<FuncGraph>();
   res_fg->set_flag(FUNC_GRAPH_FLAG_CORE, true);
   res_fg->set_flag(FUNC_GRAPH_FLAG_SPECIALIZE_PARAMETER, true);
+  MS_EXCEPTION_IF_NULL(res_fg->debug_info());
   res_fg->debug_info()->set_name("map");
 
   AnfNodePtr fn_param = nullptr;

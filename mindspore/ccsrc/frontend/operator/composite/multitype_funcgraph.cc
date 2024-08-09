@@ -1,8 +1,7 @@
-
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2020-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -133,6 +132,8 @@ std::vector<mindspore::TypePtrList> GetSortedCache(const TypeListMap<py::functio
       return true;
     }
     for (size_t i = match_max_idx; i < a.size(); ++i) {
+      MS_EXCEPTION_IF_NULL(a[i]);
+      MS_EXCEPTION_IF_NULL(b[i]);
       if (a[i]->type_id() == b[i]->type_id()) {
         continue;
       }
@@ -179,6 +180,7 @@ const std::string MultitypeFuncGraph::PrintMatchFailLog(const TypeListMap<py::fu
   bool external_flag = false;
   buffer1 << "<";
   for (size_t i = 0; i < types.size(); ++i) {
+    MS_EXCEPTION_IF_NULL(types[i]);
     if (types[i]->type_id() == kMetaTypeExternal) {
       external_flag = true;
     }
@@ -216,6 +218,7 @@ const std::string MultitypeFuncGraph::PrintMatchFailLog(const TypeListMap<py::fu
   for (auto &item : cache_vec) {
     oss << "<";
     for (size_t i = 0; i < item.size(); ++i) {
+      MS_EXCEPTION_IF_NULL(item[i]);
       std::string item_str = item[i]->ToString();
       (void)item_str.erase(std::remove(item_str.begin(), item_str.end(), ' '), item_str.end());
       if (i != item.size() - 1) {
@@ -257,6 +260,7 @@ bool CheckOneElement(const TypePtr &type) {
 bool CheckDictContainsAny(const std::vector<std::pair<mindspore::ValuePtr, mindspore::TypePtr>> &key_values) {
   for (const auto &pair : key_values) {
     const auto &type = pair.second;
+    MS_EXCEPTION_IF_NULL(type);
     bool res = CheckOneElement(type);
     if (res) {
       return true;
@@ -267,6 +271,7 @@ bool CheckDictContainsAny(const std::vector<std::pair<mindspore::ValuePtr, minds
 
 bool CheckContainsAny(const TypePtrList &types) {
   for (const auto &type : types) {
+    MS_EXCEPTION_IF_NULL(type);
     bool res = CheckOneElement(type);
     if (res) {
       return true;
@@ -283,7 +288,10 @@ FuncGraphPtr MultitypeFuncGraph::GenerateFromTypes(const TypePtrList &types) {
   if (name_ == "getitem" || name_ == "setitem") {
     need_convert = CheckContainsAny(types);
   } else {
-    need_convert = std::any_of(types.begin(), types.end(), [](const TypePtr &type) { return type->isa<AnyType>(); });
+    need_convert = std::any_of(types.begin(), types.end(), [](const TypePtr &type) {
+      MS_EXCEPTION_IF_NULL(type);
+      return type->isa<AnyType>();
+    });
   }
   if (!py_fn.is_none() && !need_convert) {
     FuncGraphPtr func_graph = parse::ParsePythonCode(py_fn);
@@ -303,7 +311,10 @@ FuncGraphPtr MultitypeFuncGraph::GenerateFromTypes(const TypePtrList &types) {
     return stub;
   }
 
-  bool has_dic = std::any_of(types.begin(), types.end(), [](const TypePtr &type) { return type->isa<Dictionary>(); });
+  bool has_dic = std::any_of(types.begin(), types.end(), [](const TypePtr &type) {
+    MS_EXCEPTION_IF_NULL(type);
+    return type->isa<Dictionary>();
+  });
   if (!need_raise_ || !has_dic) {
     FuncGraphPtr func_graph = std::make_shared<FuncGraph>();
     AnfNodePtrList node_inputs{};

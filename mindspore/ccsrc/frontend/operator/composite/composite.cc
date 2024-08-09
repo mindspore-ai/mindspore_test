@@ -203,7 +203,7 @@ AnfNodePtr HyperMap::HyperMapConverter(const FuncGraphPtr &func_graph, const Anf
     if (reverse_) {
       (void)inputs.insert(inputs.cbegin() + 1, call_node);
     } else {
-      inputs.emplace_back(call_node);
+      (void)inputs.emplace_back(call_node);
     }
   }
   if (inputs.size() > 1) {
@@ -368,6 +368,7 @@ FuncGraphPtr HyperMap::GenerateFromTypes(const TypePtrList &args_abs_list) {
   FuncGraphPtr res_fg = std::make_shared<FuncGraph>();
   res_fg->set_flag(FUNC_GRAPH_FLAG_CORE, true);
   res_fg->set_flag(FUNC_GRAPH_FLAG_SPECIALIZE_PARAMETER, true);
+  MS_EXCEPTION_IF_NULL(res_fg->debug_info());
   res_fg->debug_info()->set_name("hyper_map");
 
   AnfNodePtr fn_param = nullptr;
@@ -419,6 +420,7 @@ FuncGraphPtr MakeTupleGradient::GenerateFuncGraph(const AbstractBasePtrList &arg
   // ▶make_tuple_
   ss << "\u25B8make_tuple_" << tuple_size;
   FuncGraphPtr fg = std::make_shared<FuncGraph>();
+  MS_EXCEPTION_IF_NULL(fg->debug_info());
   fg->debug_info()->set_name(ss.str());
 
   std::vector<AnfNodePtr> params;
@@ -437,6 +439,7 @@ FuncGraphPtr MakeTupleGradient::GenerateFuncGraph(const AbstractBasePtrList &arg
   ss.clear();
   // ◀make_tuple_
   ss << "\u25C2make_tuple_" << tuple_size;
+  MS_EXCEPTION_IF_NULL(bprop->debug_info());
   bprop->debug_info()->set_name(ss.str());
   AnfNodePtr dout = bprop->add_parameter();
 
@@ -463,6 +466,7 @@ FuncGraphPtr MakeListGradient::GenerateFuncGraph(const AbstractBasePtrList &args
   // ▶make_list_
   ss << "\u25B8make_list_" << list_size;
   FuncGraphPtr fg = std::make_shared<FuncGraph>();
+  MS_EXCEPTION_IF_NULL(fg->debug_info());
   fg->debug_info()->set_name(ss.str());
 
   std::vector<AnfNodePtr> params;
@@ -481,6 +485,7 @@ FuncGraphPtr MakeListGradient::GenerateFuncGraph(const AbstractBasePtrList &args
   ss.clear();
   // ◀make_list_
   ss << "\u25C2make_list_" << list_size;
+  MS_EXCEPTION_IF_NULL(bprop->debug_info());
   bprop->debug_info()->set_name(ss.str());
   AnfNodePtr dout = bprop->add_parameter();
 
@@ -507,6 +512,7 @@ FuncGraphPtr MakeDictGradient::GenerateFuncGraph(const AbstractBasePtrList &args
   // ▶make_dict_
   ss << "\u25B8make_dict_" << input_size;
   FuncGraphPtr fg = std::make_shared<FuncGraph>();
+  MS_EXCEPTION_IF_NULL(fg->debug_info());
   fg->debug_info()->set_name(ss.str());
 
   std::vector<AnfNodePtr> params{NewValueNode(prim::kPrimMakeDict)};
@@ -524,6 +530,7 @@ FuncGraphPtr MakeDictGradient::GenerateFuncGraph(const AbstractBasePtrList &args
   ss.clear();
   // ◀make_dict_
   ss << "\u25C2make_dict_" << input_size;
+  MS_EXCEPTION_IF_NULL(bprop->debug_info());
   bprop->debug_info()->set_name(ss.str());
   AnfNodePtr dout = bprop->add_parameter();
 
@@ -569,6 +576,7 @@ FuncGraphPtr PyExecuteGradient::GenerateFuncGraph(const AbstractBasePtrList &arg
   // ▶PyExecute
   ss << "\u25B8PyExecute_" << args_size;
   FuncGraphPtr fg = std::make_shared<FuncGraph>();
+  MS_EXCEPTION_IF_NULL(fg->debug_info());
   fg->debug_info()->set_name(ss.str());
 
   std::vector<AnfNodePtr> params;
@@ -588,6 +596,7 @@ FuncGraphPtr PyExecuteGradient::GenerateFuncGraph(const AbstractBasePtrList &arg
   ss.clear();
   // ◀PyExecute
   ss << "\u25C2PyExecute_" << args_size;
+  MS_EXCEPTION_IF_NULL(bprop->debug_info());
   bprop->debug_info()->set_name(ss.str());
   (void)bprop->add_parameter();
 
@@ -666,6 +675,7 @@ FuncGraphPtr MutableGradient::GenerateFuncGraph(const AbstractBasePtrList &args_
   // ▶mutable_
   ss << "\u25B8mutable_" << input_size;
   FuncGraphPtr fg = std::make_shared<FuncGraph>();
+  MS_EXCEPTION_IF_NULL(fg->debug_info());
   fg->debug_info()->set_name(ss.str());
 
   std::vector<AnfNodePtr> params;
@@ -684,6 +694,7 @@ FuncGraphPtr MutableGradient::GenerateFuncGraph(const AbstractBasePtrList &args_
   ss.clear();
   // ◀mutable_
   ss << "\u25C2mutable_" << input_size;
+  MS_EXCEPTION_IF_NULL(bprop->debug_info());
   bprop->debug_info()->set_name(ss.str());
   AnfNodePtr dout = bprop->add_parameter();
 
@@ -729,7 +740,8 @@ bool EnableGradForScalar(const AbstractBasePtr &abs) {
 bool CanGradArgument(const AbstractTuplePtr &tuple_arg, size_t pos) {
   MS_EXCEPTION_IF_NULL(tuple_arg);
   return tuple_arg->size() > pos && (*tuple_arg)[pos] != nullptr &&
-         ((*tuple_arg)[pos]->BuildValue()->ContainsValueAny() || EnableGradForScalar((*tuple_arg)[pos]));
+         (((*tuple_arg)[pos]->BuildValue() != nullptr && (*tuple_arg)[pos]->BuildValue()->ContainsValueAny()) ||
+          EnableGradForScalar((*tuple_arg)[pos]));
 }
 
 void GenerateFuncGraphByPosition(const FuncGraphPtr &fg, const AbstractTuplePtr &tuple_arg, const AbstractTuplePtr &pos,
@@ -787,6 +799,7 @@ FuncGraphPtr Tail::GenerateTailFuncGraph(const AbstractSequencePtr &sequence_arg
   MS_EXCEPTION_IF_NULL(sequence_arg);
   FuncGraphPtr fg = std::make_shared<FuncGraph>();
   fg->set_flag(FUNC_GRAPH_FLAG_CORE, true);
+  MS_EXCEPTION_IF_NULL(fg->debug_info());
   fg->debug_info()->set_name("tail");
 
   AnfNodePtr tuple_parameter = fg->add_parameter();
@@ -826,6 +839,7 @@ FuncGraphPtr Tail::GenerateGradFuncGraph(const AbstractTuplePtr &tuple_arg, cons
   MS_EXCEPTION_IF_NULL(tuple_arg);
   FuncGraphPtr fg = std::make_shared<FuncGraph>();
   fg->set_flag(FUNC_GRAPH_FLAG_CORE, true);
+  MS_EXCEPTION_IF_NULL(fg->debug_info());
   fg->debug_info()->set_name("grad_tail");
 
   if (tail_type_ == kGradFirst) {
@@ -1228,6 +1242,7 @@ FuncGraphPtr GradOperation::GenerateFuncGraph(const AbstractBasePtrList &args_ab
   std::ostringstream ss;
   ss << "grad{" << nparam << "}";
   grad_fg->set_flag(FUNC_GRAPH_FLAG_CORE, true);
+  MS_EXCEPTION_IF_NULL(grad_fg->debug_info());
   grad_fg->debug_info()->set_name(ss.str());
   ParameterPtr param_graph = grad_fg->add_parameter();
 
@@ -1452,6 +1467,7 @@ FuncGraphPtr VmapOperation::GenerateFuncGraph(const AbstractBasePtrList &args_ab
   std::ostringstream ss;
   ss << "vmap{" << nparam << "}";
   vmap_fg->set_flag(FUNC_GRAPH_FLAG_CORE, true);
+  MS_EXCEPTION_IF_NULL(vmap_fg->debug_info());
   vmap_fg->debug_info()->set_name(ss.str());
 
   // Add parameter for `fn`, `in_axes` and `out_axes` respectively.
@@ -1534,6 +1550,7 @@ FuncGraphPtr TaylorOperation::GenerateFuncGraph(const AbstractBasePtrList &args_
   std::ostringstream ss;
   ss << "taylorgrad{" << nparam << "}";
   grad_fg->set_flag(FUNC_GRAPH_FLAG_CORE, true);
+  MS_EXCEPTION_IF_NULL(grad_fg->debug_info());
   grad_fg->debug_info()->set_name(ss.str());
   ParameterPtr param_graph = grad_fg->add_parameter();
 
@@ -1574,7 +1591,7 @@ FuncGraphPtr TupleAdd::GenerateFuncGraph(const AbstractBasePtrList &args_abs_lis
       return stub;
     }
     MS_LOG(EXCEPTION) << "The type of argument in TupleAdd operator should be tuple, but the first argument is "
-                      << args_abs_list[0]->ToString() << ", the second argument is " << args_abs_list[1]->ToString();
+                      << abs_a->ToString() << ", the second argument is " << abs_b->ToString();
   }
 
   FuncGraphPtr ret = std::make_shared<FuncGraph>();
@@ -1621,7 +1638,7 @@ FuncGraphPtr ListAdd::GenerateFuncGraph(const AbstractBasePtrList &args_abs_list
       return stub;
     }
     MS_LOG(EXCEPTION) << "The type of argument in ListAdd operator should be list, but the first argument is "
-                      << args_abs_list[0]->ToString() << ", the second argument is " << args_abs_list[1]->ToString();
+                      << abs_a->ToString() << ", the second argument is " << abs_b->ToString();
   }
 
   FuncGraphPtr ret = std::make_shared<FuncGraph>();
@@ -1673,6 +1690,7 @@ int64_t CheckSliceMember(const AbstractBasePtr &member, int64_t default_value, c
     MS_EXCEPTION(TypeError)
       << "The argument of SliceMember operator must be a Scalar or None or constant Tensor, but got a variable Tensor";
   }
+  MS_EXCEPTION_IF_NULL(member->BuildType());
   MS_EXCEPTION(TypeError)
     << "The argument of SliceMember operator must be a Scalar or None or constant Tensor, but got "
     << member->BuildType()->ToString();
@@ -1865,6 +1883,7 @@ FuncGraphPtr Shard::GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) 
   std::ostringstream ss;
   ss << "shard{" << parameter_size << "}";
   shard_fg->set_flag(FUNC_GRAPH_FLAG_CORE, true);
+  MS_EXCEPTION_IF_NULL(shard_fg->debug_info());
   shard_fg->debug_info()->set_name(ss.str());
   // Make the Shard node.
   std::vector<AnfNodePtr> inputs;
@@ -1997,6 +2016,7 @@ FuncGraphPtr ZerosLike::GenerateFuncGraph(const AbstractBasePtrList &args_abs_li
     if (abs_seq->dynamic_len()) {
       FuncGraphPtr res_graph = std::make_shared<FuncGraph>();
       res_graph->set_flag(FUNC_GRAPH_FLAG_CORE, true);
+      MS_EXCEPTION_IF_NULL(res_graph->debug_info());
       res_graph->debug_info()->set_name("zeros_like");
       auto x_parameter = res_graph->add_parameter();
       res_graph->set_output(res_graph->NewCNodeInOrder({NewValueNode(prim::kPrimSequenceZerosLike), x_parameter}));
