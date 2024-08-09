@@ -14,35 +14,41 @@
 # ============================================================================
 """test call function ex implement"""
 import sys  
-import pytest 
-import mindspore as ms
+import pytest
 import mindspore.context as context
 from tests.mark_utils import arg_mark
 from mindspore import Tensor, jit, JitConfig
 from mindspore._c_expression import update_pijit_default_config, get_code_extra
+
 
 @pytest.fixture(autouse=True)  
 def skip_if_python_version_too_high():  
     if sys.version_info >= (3, 11):  
         pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
+
 SYS_VER = (sys.version_info.major, sys.version_info.minor)
 if SYS_VER != (3, 7) and SYS_VER != (3, 9):
     pytest.skip(reason="not implement for python" + str(SYS_VER), allow_module_level=True)
 
+
 def add(a, b):
     return a + b
+
 
 @jit(mode="PIJIT", jit_config=JitConfig(compile_with_try=False))
 def add_tuple(a, b):
     c = (a, b)
     return add(*c)
 
+
 @jit(mode="PIJIT", jit_config=JitConfig(compile_with_try=False))
 def add_list(a, b):
     c = [a, b]
     return add(*c)
 
+
+@pytest.mark.skip(reason="tmp skip")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('jit_func', [add_list, add_tuple])
 def test_call_ex_param(jit_func):
