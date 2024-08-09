@@ -172,6 +172,51 @@ bool GraphBuilder::DoOtherBytecode(const Instr &instr) {
   return false;
 }
 
+bool GraphBuilder::DoBuildWithUnpackHelper(const Instr &instr, Py_ssize_t i, ValueNode *iterable,
+                                           std::vector<ValueNode *> *result_elements) {
+  int opcode = instr.op();
+  if (opcode == BUILD_MAP_UNPACK || opcode == BUILD_MAP_UNPACK_WITH_CALL) {
+    if (iterable->GetOpcode() == BUILD_MAP) {
+      result_elements->insert(result_elements->end(), iterable->getInputs().begin(), iterable->getInputs().end());
+    } else if (iterable->GetVobj()->GetPyObject().ptr() != nullptr) {
+      PyObject *map_object = iterable->GetVobj()->GetPyObject().ptr();
+      auto keys = py::reinterpret_steal<py::object>(PyDict_Keys(map_object));
+      Py_ssize_t key_size = PyList_GET_SIZE(keys.ptr());
+      for (Py_ssize_t j = 0; i < key_size; ++i) {
+        Instr instr_get_key(LOAD_CONST, 0, py::reinterpret_borrow<py::object>(PyList_GET_ITEM(keys.ptr(), j)));
+        this->DoLoadConst(instr_get_key);
+        this->push(iterable);
+        this->DoLoadConst(instr_get_key);
+        this->DoGetItem({BINARY_SUBSCR, 0});
+      }
+      std::vector<ValueNode *> elements = {frame_.GetStacks().end() - key_size * 2, frame_.GetStacks().end()};
+      popn(key_size * 2);
+      result_elements->insert(result_elements->end(), elements.begin(), elements.end());
+    } else {
+      std::cout << "DoBuildWithUnpack iterable->GetVobj()->GetPyObject().ptr() == nullptr" << std::endl;
+      return false;
+    }
+  } else {
+    AObject *seq = iterable->GetVobj();
+    PyObject *o = (seq == nullptr) ? nullptr : seq->GetPyObject().ptr();
+    Py_ssize_t size = (o == nullptr) ? -1 : PyObject_Size(o);
+    if (size == -1) {
+      std::cout << "DoBuildWithUnpack size == -1" << std::endl;
+      return false;
+    }
+    push(iterable);
+    if (DoUnpack({UNPACK_SEQUENCE, static_cast<int>(size)})) {
+      std::vector<ValueNode *> elements(frame_.GetStacks().end() - size, frame_.GetStacks().end());
+      result_elements->insert(result_elements->end(), elements.begin(), elements.end());
+      popn(size);
+    } else {
+      pop();
+      std::cout << "DoBuildWithUnpack DoUnpack failed" << std::endl;
+      return false;
+    }
+  }
+  return true;
+}
 
 bool GraphBuilder::DoBuildWithUnpack(const Instr &instr) {
   int opcode = instr.op();
@@ -185,45 +230,8 @@ bool GraphBuilder::DoBuildWithUnpack(const Instr &instr) {
       result_elements.insert(result_elements.end(), iterable->getInputs().begin(), iterable->getInputs().end());
       continue;
     }
-    if (opcode == BUILD_MAP_UNPACK || opcode == BUILD_MAP_UNPACK_WITH_CALL) {
-      if (iterable->GetOpcode() == BUILD_MAP) {
-        result_elements.insert(result_elements.end(), iterable->getInputs().begin(), iterable->getInputs().end());
-      } else if (iterable->GetVobj()->GetPyObject().ptr() != nullptr) {
-        PyObject *map_object = iterable->GetVobj()->GetPyObject().ptr();
-        auto keys = py::reinterpret_steal<py::object>(PyDict_Keys(map_object));
-        Py_ssize_t key_size = PyList_GET_SIZE(keys.ptr());
-        for (Py_ssize_t j = 0; i < key_size; ++i) {
-          Instr instr_get_key(LOAD_CONST, 0, py::reinterpret_borrow<py::object>(PyList_GET_ITEM(keys.ptr(), j)));
-          this->DoLoadConst(instr_get_key);
-          this->push(iterable);
-          this->DoLoadConst(instr_get_key);
-          this->DoGetItem({BINARY_SUBSCR, 0});
-        }
-        std::vector<ValueNode *> elements = {frame_.GetStacks().end() - key_size * 2, frame_.GetStacks().end()};
-        popn(key_size * 2);
-        result_elements.insert(result_elements.end(), elements.begin(), elements.end());
-      } else {
-        std::cout << "DoBuildWithUnpack iterable->GetVobj()->GetPyObject().ptr() == nullptr" << std::endl;
-        return false;
-      }
-    } else {
-      AObject *seq = iterable->GetVobj();
-      PyObject *o = (seq == nullptr) ? nullptr : seq->GetPyObject().ptr();
-      Py_ssize_t size = (o == nullptr) ? -1 : PyObject_Size(o);
-      if (size == -1) {
-        std::cout << "DoBuildWithUnpack size == -1" << std::endl;
-        return false;
-      }
-      push(iterable);
-      if (DoUnpack({UNPACK_SEQUENCE, (int)size})) {
-        std::vector<ValueNode *> elements(frame_.GetStacks().end() - size, frame_.GetStacks().end());
-        result_elements.insert(result_elements.end(), elements.begin(), elements.end());
-        popn(size);
-      } else {
-        pop();
-        std::cout << "DoBuildWithUnpack DoUnpack failed" << std::endl;
-        return false;
-      }
+    if (!DoBuildWithUnpackHelper(instr, i, iterable, &result_elements)) {
+      return false;
     }
   }
   popn(iterable_count);

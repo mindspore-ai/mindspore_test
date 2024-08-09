@@ -663,11 +663,27 @@ static AObject::Type BinaryAdd(AObject::Type l, AObject::Type r) {
 
 static AObject::Type BinaryInferDefault(AObject::Type, AObject::Type) { return AObject::kTypeAnyValue; }
 
-static bool IsSameType(PyObject *a, PyObject *b) {
-  if (a != nullptr && b != nullptr && PyType_Check(a) && PyType_Check(b)) {
+static int CheckConstantIs(PyObject *a, PyObject *b, bool const_a, bool const_b) {
+  // all is const object
+  if (const_a && const_b) {
     return a == b;
   }
-  return false;
+  // unknown type
+  if (a == nullptr || b == nullptr) {
+    return -1;
+  }
+  // type is type
+  if (PyType_Check(a) && PyType_Check(b)) {
+    return a == b;
+  }
+  // type not match
+  if (Py_TYPE(a) != Py_TYPE(b)) {
+    return false;
+  }
+  if (const_a || const_b) {
+    return false;
+  }
+  return -1;
 }
 
 int AObject::BinaryIs(AObject *l, AObject *r) {
@@ -676,16 +692,9 @@ int AObject::BinaryIs(AObject *l, AObject *r) {
   const auto &map = const_object_type_map;
   bool const_a = map.find(a) != map.end();
   bool const_b = map.find(b) != map.end();
-  // all is const object
-  if (const_a && const_b) {
-    return a == b;
-  }
-  if (IsSameType(a, b)) {
-    return true;
-  }
-  // a const object and a known object
-  if ((const_a && b) || (const_b && a)) {
-    return false;
+  int constant = CheckConstantIs(a, b, const_a, const_b);
+  if (constant != -1) {
+    return constant;
   }
   // a const object and a unknown object, but known it's type
   if (const_a && r != nullptr && r->GetType() != AObject::kTypeAnyValue && r->GetType() != AObject::kTypeBool) {
@@ -694,12 +703,6 @@ int AObject::BinaryIs(AObject *l, AObject *r) {
   }
   if (const_b && l != nullptr && l->GetType() != AObject::kTypeAnyValue && l->GetType() != AObject::kTypeBool) {
     MS_EXCEPTION_IF_CHECK_FAIL(!const_a, "shouldn't reach here");
-    return false;
-  }
-  if (a == nullptr || b == nullptr) {
-    return -1;
-  }
-  if (Py_TYPE(a) != Py_TYPE(b)) {
     return false;
   }
   return -1;
