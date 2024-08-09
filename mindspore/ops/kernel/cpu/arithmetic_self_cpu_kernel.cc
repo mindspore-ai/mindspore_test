@@ -442,6 +442,11 @@ void Exp(ArithmeticSelfCpuKernelFunc<T, S> *content, const T *in, S *out, size_t
   auto task = [&in, &out](size_t start, size_t end) {
     if constexpr (std::is_same_v<T, float>) {
       (void)::ExpFp32(in + start, out + start, end - start);
+      for (size_t i = start; i < end; i++) {
+        if (std::isnan(in[i])) {
+          out[i] = in[i];
+        }
+      }
       return;
     }
     for (size_t i = start; i < end; i++) {
