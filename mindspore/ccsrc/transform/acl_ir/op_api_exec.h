@@ -325,14 +325,17 @@ class ApiCachePool {
     if (workspace_status != 0) {                                                                                   \
       MS_LOG(EXCEPTION) << workspace_api_name << " call failed, please check!";                                    \
     }                                                                                                              \
+    int32_t repeat_ret = 0;                                                                                        \
     static const auto aclSetAclOpExecutorRepeatable = reinterpret_cast<transform::_aclSetAclOpExecutorRepeatable>( \
       transform::GetOpApiFunc("aclSetAclOpExecutorRepeatable"));                                                   \
     if (aclSetAclOpExecutorRepeatable == nullptr) {                                                                \
-      MS_LOG(EXCEPTION) << "aclSetAclOpExecutorRepeatable is nullptr";                                             \
-    }                                                                                                              \
-    auto repeat_ret = aclSetAclOpExecutorRepeatable(executor);                                                     \
-    if (repeat_ret != 0) {                                                                                         \
-      MS_LOG(WARNING) << workspace_api_name << " don't support cache!";                                            \
+      repeat_ret = -1;                                                                                             \
+      MS_LOG(WARNING) << "aclSetAclOpExecutorRepeatable is nullptr";                                               \
+    } else {                                                                                                       \
+      repeat_ret = aclSetAclOpExecutorRepeatable(executor);                                                        \
+      if (repeat_ret != 0) {                                                                                       \
+        MS_LOG(INFO) << workspace_api_name << " don't support cache!";                                             \
+      }                                                                                                            \
     }                                                                                                              \
     auto graph_cache = transform::GraphCache(executor, std::move(converted_params));                               \
     auto process_cache = transform::ProcessCache(graph_cache);                                                     \
