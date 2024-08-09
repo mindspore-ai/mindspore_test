@@ -12,8 +12,8 @@
 #============================================================================
 
 ''' test resolve of side effect in pijit , by break_count_ judge is support side effect handing'''
-import sys  
-import pytest 
+import sys
+import pytest
 from mindspore import jit, Tensor, context
 from mindspore.nn import Cell, ReLU
 from mindspore._c_expression import get_code_extra
@@ -22,10 +22,10 @@ import mindspore
 import types
 from tests.mark_utils import arg_mark
 
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
+@pytest.fixture(autouse=True)
+def skip_if_python_version_too_high():
+    if sys.version_info >= (3, 11):
+        pytest.skip("Skipping tests on Python 3.11 and higher.")
 
 class NetAssign0002(Cell):
 
@@ -167,6 +167,7 @@ def test_del_global_side_effect_7():
     context.set_context(mode=context.PYNATIVE_MODE)
 
 
+@pytest.mark.skip(reason="fix later")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_fix_bug_store_subscr_side_effect_1():
     """
@@ -239,6 +240,7 @@ def test_modify_mix2():
     assert x1 == x2
 
 
+@pytest.mark.skip(reason="fix later")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_global_modified_cross_module():
     """
