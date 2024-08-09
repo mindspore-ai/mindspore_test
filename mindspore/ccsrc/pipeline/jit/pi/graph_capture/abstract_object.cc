@@ -140,32 +140,26 @@ std::string AbstractObjectBase::ToString(PyObject *op, bool print_type, size_t l
   AObject::Type t = AObject::GetPyType(op);
   std::stringstream s;
   if (print_type) {
-    s << (Py_TYPE(op)->tp_name ? Py_TYPE(op)->tp_name : "<unnamed>") << "{ ";
+    s << (Py_TYPE(op)->tp_name ? Py_TYPE(op)->tp_name : "<unnamed>") << "{";
   }
   switch (t) {
     case AObject::kTypeTensor:
-    case AObject::kTypeStubTensor: {
+    case AObject::kTypeStubTensor:
       s << std::string(py::str(obj.attr("shape"))) << ", " << std::string(py::str(obj.attr("dtype")));
       break;
-    }
-    case AObject::kTypeBoundMethod: {
-      auto func = reinterpret_cast<PyFunctionObject *>(PyMethod_GET_FUNCTION(op));
-      s << PyUnicode_AsUTF8(func->func_qualname) << " of " << ToString(PyMethod_GET_SELF(op), print_type);
+    case AObject::kTypeBoundMethod:
+      s << PyUnicode_AsUTF8(reinterpret_cast<PyFunctionObject *>(PyMethod_GET_FUNCTION(op))->func_qualname) << " of "
+        << ToString(PyMethod_GET_SELF(op), print_type);
       break;
-    }
     case AObject::kTypeNNCellList:
     case AObject::kTypeList:
-    case AObject::kTypeTuple: {
-      size_t size = 0;
+    case AObject::kTypeTuple:
       s << (t == AObject::kTypeTuple ? "(" : "[");
       for (auto i : py::iter(obj)) {
         s << ToString(i.ptr(), print_type) << ",";
-        size++;
       }
-      s.seekp(size == 0 ? 0 : -1, s.cur);
       s << (t == AObject::kTypeTuple ? ")" : "]");
       break;
-    }
     case AObject::kTypeDict: {
       PyObject *key;
       PyObject *val;
@@ -174,19 +168,17 @@ std::string AbstractObjectBase::ToString(PyObject *op, bool print_type, size_t l
       while (PyDict_Next(op, &pos, &key, &val)) {
         s << ToString(key, print_type) << ":" << ToString(val, print_type) << ",";
       }
-      s.seekp(pos == 0 ? 0 : -1, s.cur);
       s << "}";
       break;
     }
-    case AObject::kTypeCell: {
-      s << " at " << op;
+    case AObject::kTypeCell:
+      s << "object at " << op;
       break;
-    }
     default:
       s << std::string(py::str(obj));
       break;
   }
-  s << (print_type ? " }" : "");
+  s << (print_type ? "}" : "");
   auto ret = s.str();
   return ret.size() < limit ? ret : ret.substr(0, limit) + "...";
 }
