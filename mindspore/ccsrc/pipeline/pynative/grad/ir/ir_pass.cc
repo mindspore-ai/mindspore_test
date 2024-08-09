@@ -734,7 +734,7 @@ void IrPassForward::ReverseCNodeInputs(const CNodePtr &cnode, AnfNodePtrList *cn
     if (t.second->isa<ValueNode>()) {
       auto vnode = t.second->cast<ValueNodePtr>();
       auto v = vnode->value();
-      (void)PyNativeAlgo::Common::SetValueGradInfo(v, nullptr, InputType::kConstant);
+      (void)PyNativeAlgo::Common::SetValueGradInfo(v, InputType::kConstant);
       AddCNodeInputs(cnode, cnode_inputs, t.first, PyNativeAlgo::Common::CreateValueNodeByValue(v, nullptr));
       (void)inputs_value->insert(inputs_value->begin() + SizeToLong(t.first), v);
     } else if (t.second->isa<Parameter>()) {

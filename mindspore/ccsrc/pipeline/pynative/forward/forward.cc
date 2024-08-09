@@ -735,8 +735,8 @@ ValuePtr ForwardExecutor::RunOpInVM(const FrontendOpRunInfoPtr &op_run_info) con
   op_run_info->run_in_vm = true;
   if (op_run_info->requires_grad) {
     for (size_t i = 0; i < op_run_info->input_size; i++) {
-      op_run_info->op_grad_info->input_value_grad_type[i] = PyNativeAlgo::Common::SetValueGradInfo(
-        op_run_info->op_grad_info->input_value[i], nullptr, InputType::kConstant);
+      op_run_info->op_grad_info->input_value_grad_type[i] =
+        PyNativeAlgo::Common::SetValueGradInfo(op_run_info->op_grad_info->input_value[i], InputType::kConstant);
       (void)op_run_info->base_op_run_info.expanded_input_values.emplace_back(op_run_info->op_grad_info->input_value[i]);
     }
   }
@@ -748,7 +748,7 @@ ValuePtr ForwardExecutor::RunOpInVM(const FrontendOpRunInfoPtr &op_run_info) con
     auto result_v = ConstructOutputInVM(result);
     if (op_run_info->requires_grad) {
       op_run_info->op_grad_info->output_size = result.size();
-      (void)PyNativeAlgo::Common::SetValueGradInfo(result_v, grad()->top_cell(), InputType::kOpOutput);
+      (void)PyNativeAlgo::Common::SetValueGradInfo(result_v, InputType::kOpOutput);
     }
     MS_LOG(DEBUG) << "RunOpInVM end";
     return result_v;
@@ -772,7 +772,7 @@ ValuePtr ForwardExecutor::RunOpInVM(const FrontendOpRunInfoPtr &op_run_info) con
     result_v = std::make_shared<ValueTuple>(std::vector{result_v});
   }
   if (op_run_info->requires_grad) {
-    (void)PyNativeAlgo::Common::SetValueGradInfo(result_v, nullptr, InputType::kOpOutput);
+    (void)PyNativeAlgo::Common::SetValueGradInfo(result_v, InputType::kOpOutput);
   }
   op_run_info->op_grad_info->output_size = PyNativeAlgo::Common::GetValueSize(result_v);
   MS_LOG(DEBUG) << "RunOpInVM end";

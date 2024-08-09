@@ -546,7 +546,7 @@ void GradExecutor::HandleInputArgsForTopCell(const InputArgsInfoPtr &input_args_
     const auto &v = input_value[i];
     auto param_i_abs = PyNativeAlgo::Common::SetAbstractValueToAnyValue(v->ToAbstract());
     if (!top_cell()->is_bprop_need_get_forward_graph()) {
-      (void)PyNativeAlgo::Common::SetValueGradInfo(v, top_cell(), InputType::kInput);
+      (void)PyNativeAlgo::Common::SetValueGradInfo(v, InputType::kInput);
       (void)input_param_values.emplace_back(v);
       (void)abs_list.emplace_back(param_i_abs);
     }
@@ -861,7 +861,7 @@ void GradExecutor::SetForwardLastNodeInfo(const ValuePtr &v) const {
   }
   // Set last output abstract and will be used for sens
   auto fake_v = PyNativeAlgo::Common::CreateFakeValueWithoutDeviceAddress(value);
-  (void)PyNativeAlgo::Common::SetValueGradInfo(fake_v, top_cell_, InputType::kOpOutput);
+  (void)PyNativeAlgo::Common::SetValueGradInfo(fake_v, InputType::kOpOutput);
   top_cell()->SetLastOutputValueForwardOutputFlag(fake_v);
   if (forward()->enable_async()) {
     auto auto_grad_cell_ptr = top_cell()->auto_grad_cell_ptr();
@@ -989,10 +989,10 @@ void GradExecutor::DoGradForCustomBprop(const InputArgsInfoPtr &input_args_info,
     (void)op_run_info->op_grad_info->input_abs.emplace_back(
       PyNativeAlgo::Common::SetAbstractValueToAnyValue(value->ToAbstract()));
     op_run_info->op_grad_info->input_value_grad_type[i] =
-      PyNativeAlgo::Common::SetValueGradInfo(value, top_cell_, InputType::kConstant);
+      PyNativeAlgo::Common::SetValueGradInfo(value, InputType::kConstant);
   }
   op_run_info->op_grad_info->output_size = PyNativeAlgo::Common::GetValueSize(op_run_info->real_out);
-  (void)PyNativeAlgo::Common::SetValueGradInfo(op_run_info->real_out, top_cell_, InputType::kOpOutput);
+  (void)PyNativeAlgo::Common::SetValueGradInfo(op_run_info->real_out, InputType::kOpOutput);
   DoOpGrad(op_run_info);
   RecordForwardGraph(op_run_info);
 }
@@ -1569,7 +1569,7 @@ bool GradExecutor::NeedIncreaseGradOrder(const std::string &obj_id) {
 }
 
 py::object GradExecutor::CheckAlreadyRun(const prim::GradOperationPtr &grad, const py::object &obj,
-                                         const py::object &weights, const py::object &grad_hash_id,
+                                         const py::object &weights, const py::object &grad_position,
                                          const py::args &args) {
   const auto &obj_id = PyNativeAlgo::PyParser::GetIdByPyObj(obj);
 
@@ -1586,9 +1586,9 @@ py::object GradExecutor::CheckAlreadyRun(const prim::GradOperationPtr &grad, con
   bool neee_increase_grad_order = NeedIncreaseGradOrder(obj_id);
 
   // Include grad position
-  std::string grad_position;
-  if (!py::isinstance<py::none>(grad_hash_id)) {
-    grad_position = std::string(py::str(grad_hash_id));
+  std::string grad_position_str;
+  if (!py::isinstance<py::none>(grad_position)) {
+    grad_position_str = std::string(py::str(grad_position));
   }
 
   // Include weights id
@@ -1601,7 +1601,7 @@ py::object GradExecutor::CheckAlreadyRun(const prim::GradOperationPtr &grad, con
 
   // Include grad operation
   grad_operation_ = std::to_string(grad->get_all_) + std::to_string(grad->get_by_list_) +
-                    std::to_string(grad->sens_param_) + grad_position + weights_obj_id;
+                    std::to_string(grad->sens_param_) + grad_position_str + weights_obj_id;
 
   auto input_args_id = GetInputArgsId(args);
   // Under the condition that the stack is empty (forward process completed or no forward process),
@@ -1768,7 +1768,7 @@ void GradExecutor::MakeNestedCnode(bool has_custom_bprop, const std::vector<Valu
   RecordNestedGraph(first_grad_fg, inner_graph_info, forward_args, out_value);
 
   // Get input values
-  PyNativeAlgo::Common::SetGraphInputAndWeightsInfo(op_run_info, first_grad_fg, top_cell());
+  PyNativeAlgo::Common::SetGraphInputAndWeightsInfo(op_run_info, first_grad_fg);
   auto grad_fg = first_grad_fg;
   if (has_call_graph) {
     auto r = std::make_shared<pipeline::Resource>();

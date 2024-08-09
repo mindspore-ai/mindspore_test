@@ -105,7 +105,7 @@ class GradExecutor {
   void RecordNestedGraph(const FuncGraphPtr &first_grad_fg, const GraphInfoPtr &inner_graph_info,
                          const std::vector<ValuePtr> &forward_args, const ValuePtr &out);
   py::object CheckAlreadyRun(const prim::GradOperationPtr &grad, const py::object &obj, const py::object &weights,
-                             const py::object &grad_hash_id, const py::args &args);
+                             const py::object &grad_position, const py::args &args);
   TopCellInfoPtr GetAlreadyRunTopCell(const std::string &already_run_cell_id) const;
   TopCellInfoPtr GetPipelineRunTopCell(const std::string &already_run_cell_id) const;
   TopCellInfoPtr GetPipelineTopCell(const std::string &already_run_cell_id, const std::string &input_args_id,

@@ -702,7 +702,7 @@ ValuePtrList IrBprop::GetInputArgs(const CNodePtr &cnode, AnfNodePtrList *cnode_
           v = new_tensor;
         }
       }
-      (void)PyNativeAlgo::Common::SetValueGradInfo(v, nullptr, InputType::kConstant);
+      (void)PyNativeAlgo::Common::SetValueGradInfo(v, InputType::kConstant);
       // In case of jit forward graph and pynative bprop graph used same valuenode
       auto new_v_node = PyNativeAlgo::Common::CreateValueNodeByValue(v, v_node->abstract());
       (void)cnode_inputs->emplace_back(new_v_node);

@@ -312,10 +312,10 @@ void Jit::MakeAdjointForJit(const FrontendOpRunInfoPtr &op_run_info, const GradE
   MS_EXCEPTION_IF_NULL(grad_executor);
 
   const auto &top_cell = grad_executor->top_cell();
-  PyNativeAlgo::Common::SetGraphInputAndWeightsInfo(op_run_info, jit_forward_graph, top_cell);
+  PyNativeAlgo::Common::SetGraphInputAndWeightsInfo(op_run_info, jit_forward_graph);
   RecordForwardGraphForJit(op_run_info, grad_executor, jit_forward_graph);
   // Connect grad graph of jit to context.
-  (void)PyNativeAlgo::Common::SetValueGradInfo(op_run_info->real_out, top_cell, InputType::kOpOutput);
+  (void)PyNativeAlgo::Common::SetValueGradInfo(op_run_info->real_out, InputType::kOpOutput);
   MS_EXCEPTION_IF_NULL(jit_forward_graph);
   MS_EXCEPTION_IF_NULL(jit_forward_graph->output()->abstract());
   if (grad_executor->dynamic_shape()->enable_unknown_shape() &&

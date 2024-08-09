@@ -81,10 +81,9 @@ struct Common {
   }
   static void ClearDeviceAddress(const ValuePtr &value);
   static inline bool IsConstant(InputType grad_type) { return grad_type == InputType::kConstant; }
-  static InputType SetValueGradInfo(const ValuePtr &value, const TopCellInfoPtr &top_cell, InputType grad_type);
-  static InputType SetTensorGradInfo(const tensor::BaseTensorPtr &tensor, const TopCellInfoPtr &top_cell);
-  static void SetGraphInputAndWeightsInfo(const FrontendOpRunInfoPtr &op_run_info, const FuncGraphPtr &func_graph,
-                                          const TopCellInfoPtr &top_cell);
+  static InputType SetValueGradInfo(const ValuePtr &value, InputType grad_type);
+  static InputType SetTensorGradInfo(const tensor::BaseTensorPtr &tensor);
+  static void SetGraphInputAndWeightsInfo(const FrontendOpRunInfoPtr &op_run_info, const FuncGraphPtr &func_graph);
   static void ProcessTupleParam(const FuncGraphPtr &bprop_graph, size_t position);
   static void ProcessDictParam(const FuncGraphPtr &bprop_graph, size_t position);
   static void FreeFuncGraphForwardNodes(const FuncGraphPtr &func_graph);
