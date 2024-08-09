@@ -54,6 +54,10 @@ void BytecodeInliner::Run() {
     InitCFG();
   }
 
+  if (graph_->Config().GetBoolConfig(GraphJitConfig::kLogGraphBreak)) {
+    GRAPH_JIT_LOG_F("===before start instruction rebuild\n%s", graph_->ToString(1).c_str());
+  }
+
   Rebuild();
 
   if (graph_->Config().GetBoolConfig(GraphJitConfig::kPrintBB)) {
@@ -61,6 +65,10 @@ void BytecodeInliner::Run() {
   }
 
   ResetGraphStat();
+
+  if (graph_->Config().GetBoolConfig(GraphJitConfig::kLogGraphBreak)) {
+    GRAPH_JIT_LOG_F("===after instruction rebuild\n%s", graph_->ToString(1).c_str());
+  }
 
   if (graph_->Config().GetBoolConfig(GraphJitConfig::kLogGraphBreak)) {
     std::stringstream s;

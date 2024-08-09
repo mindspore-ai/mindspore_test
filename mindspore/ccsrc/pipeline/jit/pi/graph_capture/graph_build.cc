@@ -2861,8 +2861,16 @@ void GraphBuilder::ResolveClosure(const py::object &func_info, CallNode *call_no
         MS_EXCEPTION_IF_CHECK_FAIL(graph_->GetTracedNodes().back() == tmp, "can't find the node");
         graph_->GetTracedNodes().pop_back();
         freevar = graph_->NewCellNode(tmp->GetVobj(), BINARY_SUBSCR, 0, tmp->getInputs());
-        MS_ASSERT(PyObject_RichCompareBool(tmp->GetVobj()->GetPyObject().ptr(), PyTuple_GET_ITEM(closure, i), Py_EQ) ==
-                  1);
+
+        auto infer_result = tmp->GetVobj()->GetPyObject().ptr();
+        auto actually_result = PyTuple_GET_ITEM(closure, i);
+        // tuple and list will copy it, so only log it not error it
+        if (infer_result != actually_result) {
+          MS_LOG(INFO) << "LOAD_ATTR cell_contents of an cell object maybe failed, cell object is " << py::str(closure)
+                       << " but infer result is  " << py::str(infer_result);
+        }
+        // must be equal
+        MS_ASSERT(py::handle(infer_result).equal(actually_result));
 
         call_node->AddParam(freevar);
         auto cell_contents_node = TrackExtraAttrArgs(freevar, "cell_contents");
@@ -3006,12 +3014,13 @@ bool GraphBuilder::TraceRunForIterSequence(int jump_bci, bool is_range_type) {
   ValueNode *seq_node = iter_node->input(0);
   PyObject *seq = seq_node->GetVobj()->GetPyObject().ptr();
   if (seq == nullptr) {
+    MS_LOG(INFO) << "no sequence object for loop";
     return false;  // infer failed
   }
   Py_ssize_t size = PySequence_Size(seq);
   if (size == -1) {
     PyErr_Clear();
-    MS_LOG(DEBUG) << "FOR_ITER without __len__";
+    MS_LOG(INFO) << "FOR_ITER without __len__";
     return false;
   }
 
@@ -3019,6 +3028,7 @@ bool GraphBuilder::TraceRunForIterSequence(int jump_bci, bool is_range_type) {
   if (index == 0 && ((is_range_type && !GuardIterInputs(graph_, seq_node)) ||
                      (!is_range_type && !GuardLoopSequence(graph_, seq_node)))) {
     // loop start.
+    MS_LOG(INFO) << "guard loop sequence failed";
     return false;
   }
 
@@ -3268,6 +3278,9 @@ bool GraphBuilder::TraceRunForIter(const Instr &instr) {
     succ = TraceRunForIterSequence(instr.extra_jump()->bci(), IsRangeType(iter_node));
   }
   if (!succ) {
+    if (graph_->Config().GetBoolConfig(GraphJitConfig::kLogGraphBreak)) {
+      GRAPH_JIT_LOG_F("loop unsupported by trace, iter node is [%s]", iter_node->ToString().c_str());
+    }
     graph_->StopTraceAt(cur_bci_, StopTraceReason::kStopTraceLoop_Unsupported);
   }
   return succ;

@@ -92,7 +92,7 @@ SideEffect::CacheResult SideEffect::LoadAttr(ValueNode *src, const std::string &
     Find(src);
   } else {
     auto iter = data()->id_map().find(src_object);
-    MS_EXCEPTION_IF_CHECK_FAIL(iter != data()->id_map().end(), "can't find the node of object");
+    MS_EXCEPTION_IF_CHECK_FAIL(iter != data()->id_map().end(), "missing track for node " + src->ToString());
     (void)std::find_if(iter->second.begin(), iter->second.end(), Find);
   }
   return result;
