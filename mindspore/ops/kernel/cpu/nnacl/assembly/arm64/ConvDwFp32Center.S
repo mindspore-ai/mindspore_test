@@ -31,21 +31,22 @@ asm_function ConvDwFp32Center
     // x19 ~ x29 should be also preserved
     // whereas our coding style do not permit such amount of parameters
     sub sp, sp, #192
-    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
-    st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
-    stp x19, x20, [sp], #16
-    stp x21, x22, [sp], #16
-    stp x23, x24, [sp], #16
-    stp x25, x26, [sp], #16
+    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp]
+    add x9, sp, #64
+    st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [x9]
+    stp x19, x20, [sp, #128]
+    stp x21, x22, [sp, #144]
+    stp x23, x24, [sp, #160]
+    stp x25, x26, [sp, #176]
 
-    ldr x8, [sp]
-    ldr x9, [sp, #8]
-    ldr x10, [sp, #16]
-    ldr x11, [sp, #24]
-    ldr x12, [sp, #32]
-    ldr x13, [sp, #40]
-    ldr x14, [sp, #48]
-    ldr x15, [sp, #56]
+    ldr x8, [sp, #192]
+    ldr x9, [sp, #200]
+    ldr x10, [sp, #208]
+    ldr x11, [sp, #216]
+    ldr x12, [sp, #224]
+    ldr x13, [sp, #232]
+    ldr x14, [sp, #240]
+    ldr x15, [sp, #248]
 
     ld1 {v24.4s}, [x3]
     movi v26.4s, #6
@@ -302,7 +303,6 @@ asm_function ConvDwFp32Center
         subs x4, x4, #1
         bne LoopH
 
-    sub sp, sp, #192
     ld1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
     ld1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
     ldp x19, x20, [sp], #16

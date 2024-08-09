@@ -34,15 +34,16 @@
 
 asm_function MatmulFp16Neon64
   sub sp, sp, #144
-  st1 {v8.8h, v9.8h, v10.8h, v11.8h}, [sp], #64
-  st1 {v12.8h, v13.8h, v14.8h, v15.8h}, [sp], #64
-  stp x19, x20, [sp], #16
+  st1 {v8.8h, v9.8h, v10.8h, v11.8h}, [sp]
+  add x9, sp, #64
+  st1 {v12.8h, v13.8h, v14.8h, v15.8h}, [x9]
+  stp x19, x20, [sp, #128]
 
   mov w18, #16 // sizeof(float16) * 8
   mul w15, w5, w18 // block stride of lhs/rhs: sizeof(float16) * 8 * depth
   mov x11, x3 // bias flag
   mov x19, #2
-  ldr x17, [sp]
+  ldr x17, [sp, #144]
   mul x17, x17, x19
 
 L1:
@@ -308,7 +309,7 @@ Relu:
   fmax v31.8h, v31.8h, v14.8h
 
 Write:
-  ldrb w13, [sp, #8]
+  ldrb w13, [sp, #152]
   cbz w13, WriteC8
   cmp w7, #1
   beq Write1
@@ -877,14 +878,13 @@ End2:
   subs w7, w7, #8 // rhs col - 8
   add x1, x1, x15 // rhs ptr + stride
   add x3, x3, #16 // bias ptr + stride
-  ldrb w13, [sp, #8]
+  ldrb w13, [sp, #152]
   cbz w13, NoDstStep
   add x2, x2, #16 // dst ptr + stride
 NoDstStep:
   bgt L1
 
 End1:
-  sub sp, sp, #144
   ld1 {v8.8h, v9.8h, v10.8h, v11.8h}, [sp], #64
   ld1 {v12.8h, v13.8h, v14.8h, v15.8h}, [sp], #64
   ldp x19, x20, [sp], #16

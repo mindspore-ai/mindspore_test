@@ -30,14 +30,14 @@ asm_function DeconvDwFp16Center
     // x19 ~ x29 should be also preserved
     // whereas our coding style do not permit such amount of parameters
     sub sp, sp, #32
-    stp x19, x20, [sp], #16
-    stp x21, x22, [sp], #16
+    stp x19, x20, [sp]
+    stp x21, x22, [sp, #16]
 
-    ldr x8, [sp]
-    ldr x9, [sp, #8]
-    ldr x10, [sp, #16]
-    ldr x11, [sp, #24]
-    ldr x12, [sp, #32]
+    ldr x8, [sp, #32]
+    ldr x9, [sp, #40]
+    ldr x10, [sp, #48]
+    ldr x11, [sp, #56]
+    ldr x12, [sp, #64]
 
     LoopH:
         mov x15, x0
@@ -69,7 +69,6 @@ asm_function DeconvDwFp16Center
         subs x3, x3, #1
         bne LoopH
 
-    sub sp, sp, #32
     ldp x19, x20, [sp], #16
     ldp x21, x22, [sp], #16
     ret

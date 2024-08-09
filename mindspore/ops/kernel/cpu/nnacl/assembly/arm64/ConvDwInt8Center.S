@@ -34,44 +34,45 @@ asm_function ConvDwInt8Center
     // x19 ~ x29 should be also preserved
     // whereas our coding style do not permit such amount of parameters
     sub sp, sp, #192
-    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
-    st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
-    stp x19, x20, [sp], #16
-    stp x21, x22, [sp], #16
-    stp x23, x24, [sp], #16
-    stp x25, x26, [sp], #16
+    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp]
+    add x9, sp, #64
+    st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [x9]
+    stp x19, x20, [sp, #128]
+    stp x21, x22, [sp, #144]
+    stp x23, x24, [sp, #160]
+    stp x25, x26, [sp, #176]
 
-    ldr x8, [sp]
-    ldr x9, [sp, #8]
-    ldr x10, [sp, #16]
-    ldr x11, [sp, #24]
-    ldr x12, [sp, #32]
-    ldr x13, [sp, #40]
+    ldr x8, [sp, #192]
+    ldr x9, [sp, #200]
+    ldr x10, [sp, #208]
+    ldr x11, [sp, #216]
+    ldr x12, [sp, #224]
+    ldr x13, [sp, #232]
 
-    ldr x14, [sp, #48] // input_zp
+    ldr x14, [sp, #240] // input_zp
     ld1 {v19.8b}, [x14], #8
 
-    ldr x15, [sp, #56] // output_zp
+    ldr x15, [sp, #248] // output_zp
     ld1 {v20.4s}, [x15], #16
     ld1 {v21.4s}, [x15], #16
 
-    ldr x16, [sp, #64] // out_multiplier
+    ldr x16, [sp, #256] // out_multiplier
     ld1 {v22.4s}, [x16], #16
     ld1 {v23.4s}, [x16], #16
 
-    ldr x17, [sp, #72] // left_shift
+    ldr x17, [sp, #264] // left_shift
     ld1 {v24.4s}, [x17], #16
     ld1 {v25.4s}, [x17], #16
 
-    ldr x25, [sp, #80] // right shift
+    ldr x25, [sp, #272] // right shift
     ld1 {v26.4s}, [x25], #16
     ld1 {v27.4s}, [x25], #16
 
-    ldr x19, [sp, #88] // acc_min
+    ldr x19, [sp, #280] // acc_min
     ld1 {v28.4s}, [x19], #16
     ld1 {v29.4s}, [x19], #16
 
-    ldr x20, [sp, #96] // acc_max
+    ldr x20, [sp, #288] // acc_max
     ld1 {v30.4s}, [x20], #16
     ld1 {v31.4s}, [x20], #16
 
@@ -283,7 +284,6 @@ asm_function ConvDwInt8Center
         subs x4, x4, #1
         bne LoopH
 
-    sub sp, sp, #192
     ld1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
     ld1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
     ldp x19, x20, [sp], #16

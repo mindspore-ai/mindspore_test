@@ -33,9 +33,10 @@
 
 asm_function MatMulR4Int8Neon64
   sub sp, sp, #144
-  st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
-  st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
-  stp x19, x20, [sp], #16
+  st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp]
+  add x9, sp, #64
+  st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [x9]
+  stp x19, x20, [sp, #128]
 
   mov w15, #0       // b col index
   mov w16, #0       // a row index
@@ -185,7 +186,6 @@ End2:
   b L1
 
 End1:
-  sub sp, sp, #144
   ld1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
   ld1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
   ldp x19, x20, [sp], #16

@@ -30,7 +30,7 @@ asm_function WinogradTransLeft
 //x6:length
 
 sub sp, sp, #32
-stp x19, x20, [sp], #32
+stp x19, x20, [sp]
 
 mov x8, #16 // 4 * sizeof(float)
 mul x8, x6, x8
@@ -152,7 +152,6 @@ LoopH:
     subs x4, x4, #1
     bne LoopH
 
-    sub sp, sp, #32
     ldp x19, x20, [sp], #32
     ret
 

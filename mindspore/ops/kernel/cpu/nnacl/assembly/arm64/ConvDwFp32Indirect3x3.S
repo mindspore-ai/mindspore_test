@@ -25,14 +25,14 @@
 
 asm_function ConvDwFp32Indirect3x3
     sub sp, sp, #32
-    stp x19, x20, [sp], #16
-    stp x21, x22, [sp], #16
+    stp x19, x20, [sp]
+    stp x21, x22, [sp, #16]
 
     movi v31.4s, #6
     scvtf v31.4s, v31.4s
     dup v30.4s, wzr
 
-    ldr x8, [sp]
+    ldr x8, [sp, #32]
     cmp x5, #0
     beq End
 
@@ -153,7 +153,6 @@ asm_function ConvDwFp32Indirect3x3
         cmp x5, #0
         bgt LoopPixel
 End:
-    sub sp, sp, #32
     ldp x19, x20, [sp], #16
     ldp x21, x22, [sp], #16
 ret

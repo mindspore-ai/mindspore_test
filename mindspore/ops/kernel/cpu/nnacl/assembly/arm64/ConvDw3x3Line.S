@@ -29,8 +29,9 @@ asm_function ConvDw3x3Line
     // x19 ~ x29 should be also preserved
     // whereas our coding style do not permit such amount of parameters
     sub sp, sp, #128
-    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
-    st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
+    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp]
+    add x9, sp, #64
+    st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [x9]
 
     ldr x8, [x1]
     ldr x9, [x1, #8]
@@ -196,7 +197,6 @@ asm_function ConvDw3x3Line
         add x0, x0, #16
         bgt LoopC4
 
-    sub sp, sp, #128
     ld1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
     ld1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
     ret

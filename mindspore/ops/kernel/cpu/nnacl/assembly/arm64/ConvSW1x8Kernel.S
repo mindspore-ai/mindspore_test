@@ -30,17 +30,17 @@ asm_function SWConv1x8Kernel
     // x19 ~ x29 should be also preserved
     // whereas our coding style do not permit such amount of parameters
     sub sp, sp, #64
-    stp x19, x20, [sp], #16
-    stp x21, x22, [sp], #16
-    stp x23, x24, [sp], #16
-    stp x25, x26, [sp], #16
+    stp x19, x20, [sp]
+    stp x21, x22, [sp, #16]
+    stp x23, x24, [sp, #32]
+    stp x25, x26, [sp, #48]
 
-    ldr x10, [sp]
-    ldr x11, [sp, #8]
-    ldr x12, [sp, #16]
-    ldr x13, [sp, #24]
-    ldr x14, [sp, #32]
-    ldr x15, [sp, #40]
+    ldr x10, [sp, #64]
+    ldr x11, [sp, #72]
+    ldr x12, [sp, #80]
+    ldr x13, [sp, #88]
+    ldr x14, [sp, #96]
+    ldr x15, [sp, #104]
     lsl x7, x7, #2
     lsl x11, x11, #2
     lsl x12, x12, #2
@@ -270,7 +270,6 @@ asm_function SWConv1x8Kernel
             st1 {v0.4s}, [x0]
             st1 {v1.4s}, [x20]
     End:
-    sub sp, sp, #64
     ldp x19, x20, [sp], #16
     ldp x21, x22, [sp], #16
     ldp x23, x24, [sp], #16

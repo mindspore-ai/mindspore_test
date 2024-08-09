@@ -29,8 +29,9 @@ asm_function TiledC4MatmulFp32
 //x5: oc4
 
 sub sp, sp, #128
-st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
-st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
+st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp]
+add x9, sp, #64
+st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [x9]
 
 mov x7, #4 //sizeof(float)
 mul x3, x3, x7
@@ -272,7 +273,6 @@ LoopOcHalf:
     st1 {v20.4s, v21.4s, v22.4s, v23.4s}, [x0], #64
 
 LoopOcEnd:
-    sub sp, sp, #128
     ld1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
     ld1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
     ret

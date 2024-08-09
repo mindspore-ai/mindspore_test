@@ -43,23 +43,24 @@
 
 asm_function MatmulInt8Opt
     sub sp, sp, #224
-    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
-    st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
-    stp x19, x20, [sp], #16
-    stp x21, x22, [sp], #16
-    stp x23, x24, [sp], #16
-    stp x25, x26, [sp], #16
-    stp x27, x28, [sp], #16
-    stp x29, x30, [sp], #16
+    st1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp]
+    add x9, sp, #64
+    st1 {v12.4s, v13.4s, v14.4s, v15.4s}, [x9]
+    stp x19, x20, [sp, #128]
+    stp x21, x22, [sp, #144]
+    stp x23, x24, [sp, #160]
+    stp x25, x26, [sp, #176]
+    stp x27, x28, [sp, #192]
+    stp x29, x30, [sp, #208]
 
-    ldr w8, [sp]
-    ldr w9, [sp, #8]
-    ldr w10, [sp, #16]
-    ldr x11, [sp, #24]
-    ldr x12, [sp, #32]
-    ldr x13, [sp, #40]
-    ldr x14, [sp, #48]
-    ldr x15, [sp, #56]
+    ldr w8, [sp, #224]
+    ldr w9, [sp, #232]
+    ldr w10, [sp, #240]
+    ldr x11, [sp, #248]
+    ldr x12, [sp, #256]
+    ldr x13, [sp, #264]
+    ldr x14, [sp, #272]
+    ldr x15, [sp, #280]
 
     mov x23, #4
     mul x23, x23, x5  // lhs step
@@ -70,7 +71,7 @@ LoopRow:
     mov x17, x4 // reload rhs col
     mov x29, x7 // reload bias ptr
     mov x27, x2 // reload dst ptr
-    ldr x28, [sp, #64] // reload filter_zp
+    ldr x28, [sp, #288] // reload filter_zp
 
     LoopCol:
         mov x25, x6 // reload a_sums ptr
@@ -334,16 +335,15 @@ LoopRow:
 LoopColEnd:
     subs x3, x3, #4
     ble LoopRowEnd
-    ldr x11, [sp, #24]
-    ldr x12, [sp, #32]
-    ldr x13, [sp, #40]
+    ldr x11, [sp, #248]
+    ldr x12, [sp, #256]
+    ldr x13, [sp, #264]
     add x6, x6, #16
     add x0, x0, x23
     add x2, x2, x24
     b LoopRow
 
 LoopRowEnd:
-    sub sp, sp, #224
     ld1 {v8.4s, v9.4s, v10.4s, v11.4s}, [sp], #64
     ld1 {v12.4s, v13.4s, v14.4s, v15.4s}, [sp], #64
     ldp x19, x20, [sp], #16

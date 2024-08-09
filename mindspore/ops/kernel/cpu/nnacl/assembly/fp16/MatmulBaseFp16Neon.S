@@ -34,13 +34,14 @@
 
 asm_function MatmulBaseFp16Neon
     sub sp, sp, #160
-    st1 {v8.8h, v9.8h, v10.8h, v11.8h}, [sp], #64
-    st1 {v12.8h, v13.8h, v14.8h, v15.8h}, [sp], #64
-    stp x19, x20, [sp], #16
-    stp x21, x22, [sp], #16
+    st1 {v8.8h, v9.8h, v10.8h, v11.8h}, [sp]
+    add x9, sp, #64
+    st1 {v12.8h, v13.8h, v14.8h, v15.8h}, [x9]
+    stp x19, x20, [sp, #128]
+    stp x21, x22, [sp, #144]
 
-    ldr x8, [sp]
-    ldr x9, [sp, #8]  // act
+    ldr x8, [sp, #160]
+    ldr x9, [sp, #168]  // act
     add x8, x8, x8  // stride * sizeof(float16_t)
 
     add x16, x7, x7 // col * sizeof(float16_t)
@@ -951,7 +952,6 @@ LoopColEnd:
     add x0, x0, x15
     bgt LoopRowStart
 
-    sub sp, sp, #160
     ld1 {v8.8h, v9.8h, v10.8h, v11.8h}, [sp], #64
     ld1 {v12.8h, v13.8h, v14.8h, v15.8h}, [sp], #64
     ldp x19, x20, [sp], #16
