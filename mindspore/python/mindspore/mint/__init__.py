@@ -14,6 +14,7 @@
 # ============================================================================
 """mint module."""
 from __future__ import absolute_import
+from mindspore.common._register_for_tensor import tensor_operator_registry
 import mindspore.ops as ops
 from mindspore.ops.function.array_func import gather_ext as gather, max_ext as max, min_ext as min
 from mindspore.ops.function.nn_func import conv2d_ext as conv2d
@@ -1241,3 +1242,12 @@ __all__.extend(nn.__all__)
 __all__.extend(optim.__all__)
 __all__.extend(linalg.__all__)
 __all__.extend(special.__all__)
+
+
+def register_mint_tensor_operator(op_name, op_func):
+    tensor_operator_registry.register(op_name, op_func, is_mint=True)
+
+register_mint_tensor_operator('split', split)
+register_mint_tensor_operator('topk', topk)
+register_mint_tensor_operator('index_select', index_select)
+register_mint_tensor_operator('bitwise_and', bitwise_and)

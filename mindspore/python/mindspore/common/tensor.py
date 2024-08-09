@@ -3808,6 +3808,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         r"""
         For details, please refer to :func:`mindspore.ops.topk`.
         """
+        dim = -1 if dim is None else dim
         return tensor_operator_registry.get("topk")(self, k, dim, largest, sorted)
 
     def top_k(self, k, sorted=True):
@@ -4856,4 +4857,4 @@ def _check_astype_and_convert(dtype):
     return dtype
 
 
-setattr(tensor_operator_registry, 'vm_compare', _vm_compare)
+tensor_operator_registry.register('vm_compare', _vm_compare)
