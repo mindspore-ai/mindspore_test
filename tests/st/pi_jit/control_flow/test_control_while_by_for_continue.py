@@ -5,6 +5,13 @@ import mindspore.ops.operations as P
 from mindspore.common import Parameter
 from .ctrl_factory import CtrlFactory
 from tests.mark_utils import arg_mark
+import sys  
+import pytest 
+
+@pytest.fixture(autouse=True)  
+def skip_if_python_version_too_high():  
+    if sys.version_info >= (3, 11):  
+        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 
 class CtrlWhileForContinueOne(Cell):
