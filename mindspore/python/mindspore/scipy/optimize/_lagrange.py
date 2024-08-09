@@ -14,6 +14,7 @@
 # ============================================================================
 """Lagrange"""
 import sys
+import logging
 from typing import NamedTuple
 import numpy as np
 import mindspore as ms
@@ -184,9 +185,9 @@ def minimize_lagrange(func, x0, constraints, save_tol=None, obj_weight=1.0, lowe
         for i in range(steps):
             lang_val = train_net(image, label)
             if log_sw:
-                print(F"round:{j}, step:{i}")
-                print(F"object_value:{net.object_value.value()}, loss_value:{net.loss_list.value()}, \
-                            lagrange_value:{lang_val}")
+                logging.info("round:%d, step:%d", j, i)
+                logging.info("object_value:%f, loss_value:%f, lagrange_value:%f", net.object_value.value(),
+                             net.loss_list.value(), lang_val)
             if i == 0 and j == 0:
                 f0 = net.object_value.value().asnumpy()
             chkres = check_tol(f0, net.object_value.value().asnumpy(), save_tol, net.loss_list.value().asnumpy())

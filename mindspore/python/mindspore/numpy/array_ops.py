@@ -211,7 +211,7 @@ def rollaxis(x, axis, start=0):
     if start < axis:
         if axis + 1 < ndim:
             new_perm = perm[0:start] + perm[axis:axis + 1] + \
-                perm[start:axis] + perm[axis+1:]
+                perm[start:axis] + perm[axis + 1:]
         else:
             new_perm = perm[0:start] + perm[axis:axis + 1] + perm[start:axis]
     if start > axis:
@@ -219,7 +219,7 @@ def rollaxis(x, axis, start=0):
             new_perm = perm[0:axis] + perm[axis + 1:start] + \
                 perm[axis:axis + 1] + perm[start:]
         else:
-            new_perm = perm[0:axis] + perm[axis+1:start] + \
+            new_perm = perm[0:axis] + perm[axis + 1:start] + \
                 perm[axis:axis + 1]
 
     return F.transpose(x, new_perm)
@@ -929,7 +929,7 @@ def stack(arrays, axis=0):
         ndim = F.rank(arrays)
         axis = axis % ndim
         axes = F.make_range(ndim)
-        perm = axes[1:axis+1] + (0,) + axes[axis+1:]
+        perm = axes[1:axis + 1] + (0,) + axes[axis + 1:]
         if _is_shape_empty(shape):
             return _empty(mstype.float32, shape[1:axis + 1] + (shape[0],) + shape[axis + 1:])
         return transpose(arrays, perm)
@@ -1481,7 +1481,7 @@ def _split_sub_tensors(x, indices, axis):
     begin = _list_comprehensions(x.ndim, 0)
     end = _list_comprehensions(x.shape)
     for i, idx in enumerate(indices):
-        begin[axis] = 0 if i == 0 else indices[i-1]
+        begin[axis] = 0 if i == 0 else indices[i - 1]
         end[axis] = idx
         if end[axis] <= begin[axis]:
             _raise_value_error("empty sub-tensor encountered.")
