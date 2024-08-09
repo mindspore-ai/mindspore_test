@@ -30,8 +30,21 @@ namespace dataset {
 PYBIND_REGISTER(GlobalContext, 0, ([](const py::module *m) {
                   (void)py::class_<GlobalContext>(*m, "GlobalContext")
                     .def_static("config_manager", &GlobalContext::config_manager, py::return_value_policy::reference)
-                    .def_static("profiling_manager", &GlobalContext::profiling_manager,
-                                py::return_value_policy::reference);
+                    .def_static(
+                      "profiling_manager",
+                      []() {
+                        // todo in Dataset Independent mode
+                        std::string env_independent_dataset = common::GetEnv("MS_INDEPENDENT_DATASET");
+                        transform(env_independent_dataset.begin(), env_independent_dataset.end(),
+                                  env_independent_dataset.begin(), ::tolower);
+                        if (env_independent_dataset == "true") {
+                          THROW_IF_ERROR(
+                            STATUS_ERROR(mindspore::StatusCode::kMDUnexpectedError,
+                                         "Dataset Profiling is not supported in Dataset Independent mode."));
+                        }
+                        return GlobalContext::profiling_manager();
+                      },
+                      py::return_value_policy::reference);
                 }));
 
 PYBIND_REGISTER(ConfigManager, 0, ([](const py::module *m) {

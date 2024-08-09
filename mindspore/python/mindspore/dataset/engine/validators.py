@@ -27,7 +27,7 @@ from ..core.validator_helpers import parse_user_args, type_check, type_check_lis
     INT32_MAX, check_valid_detype, check_dir, check_file, check_sampler_shuffle_shard_options, \
     validate_dataset_param_value, check_padding_options, \
     check_num_parallel_workers, check_columns, check_pos_int32, check_valid_str, check_dataset_num_shards_shard_id, \
-    check_valid_list_tuple, check_int32
+    check_valid_list_tuple, check_int32, check_independent_mode
 
 from . import datasets
 from . import samplers
@@ -1480,12 +1480,14 @@ def check_map(method):
         check_max_rowsize(max_rowsize)
         if offload is not None:
             type_check(offload, (bool,), "offload")
+            check_independent_mode("Dataset Offload", offload)
 
         if callbacks is not None:
             if isinstance(callbacks, (list, tuple)):
                 type_check_list(callbacks, (DSCallback,), "callbacks")
             else:
                 type_check(callbacks, (DSCallback,), "callbacks")
+            check_independent_mode("Dataset Callbacks")
 
         for param_name, param in zip(nreq_param_columns, [input_columns, output_columns]):
             if param is not None:
@@ -2023,6 +2025,7 @@ def check_cache_option(cache):
     """Sanity check for cache parameter"""
     if cache is not None:
         type_check(cache, (cache_client.DatasetCache,), "cache")
+        check_independent_mode("Dataset Cache")
 
 
 def check_to_device_send(method):
