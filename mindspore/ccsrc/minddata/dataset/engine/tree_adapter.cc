@@ -72,21 +72,10 @@ TreeAdapter::TreeAdapter(UsageFlag usage)
   process_id_ = getpid();
   sub_process_id_ = -1;
 
-  auto independent_dataset_env = false;
   std::string env_independent_dataset = common::GetEnv("MS_INDEPENDENT_DATASET");
   transform(env_independent_dataset.begin(), env_independent_dataset.end(), env_independent_dataset.begin(), ::tolower);
-  if (env_independent_dataset == "true") {
-    independent_dataset_env = true;
-    MS_LOG(INFO) << "Environment MS_INDEPENDENT_DATASET is true, dataset will be ran in subprocess.";
-  } else if (env_independent_dataset == "false" || env_independent_dataset == "") {
-    independent_dataset_env = false;
-    MS_LOG(INFO) << "Environment MS_INDEPENDENT_DATASET is false, dataset will be ran in main process.";
-  } else {
-    MS_LOG(WARNING) << "Environment MS_INDEPENDENT_DATASET: " << env_independent_dataset
-                    << " is configured wrong, dataset will be ran in main process.";
-  }
 
-  if (independent_dataset_env == true) {
+  if (env_independent_dataset == "true") {
     independent_dataset_ = true;
   } else {
     independent_dataset_ = false;
@@ -394,6 +383,11 @@ Status TreeAdapter::Compile(const std::shared_ptr<DatasetNode> &input_ir, int32_
   //         false              true       false
   //         false              false      false
   independent_dataset_ = independent_dataset && independent_dataset_;
+  if (independent_dataset_ == true) {
+    MS_LOG(INFO) << "Environment MS_INDEPENDENT_DATASET is true, dataset will be ran in subprocess.";
+  } else {
+    MS_LOG(INFO) << "Environment MS_INDEPENDENT_DATASET is false, dataset will be ran in main process.";
+  }
 #endif
 
   // Clone the input IR tree and insert under the root node
