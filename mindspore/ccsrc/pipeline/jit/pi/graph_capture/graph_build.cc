@@ -2326,7 +2326,8 @@ bool GraphBuilder::UnpackCallExDict(std::vector<ValueNode *> *params, CallNode *
 bool GraphBuilder::UnpackDynamicLengthTupleByBytecode(std::vector<ValueNode *> *params, ValueNode *args_node,
                                                       CallNode *call_node) {
   // user-defined sequence, dynamic length tuple unpack
-  if (args_node->GetVobj() && args_node->GetVobj()->GetType() != AObject::kTypeTuple) {
+  if (args_node->GetVobj() && args_node->GetVobj()->GetType() != AObject::kTypeTuple &&
+      args_node->GetVobj()->GetType() != AObject::kTypeList) {
     return false;
   }
   AbstractTuple *tuple = static_cast<AbstractTuple *>(args_node->GetVobj());
@@ -2361,7 +2362,7 @@ bool GraphBuilder::UnpackCallExParams(std::vector<ValueNode *> *params, int extr
     return false;
   }
   *has_kw = params->size();
-  if (args_node->GetOpcode() != BUILD_TUPLE) {
+  if (args_node->GetOpcode() != BUILD_TUPLE && args_node->GetOpcode() != BUILD_LIST) {
     return UnpackDynamicLengthTupleByBytecode(params, args_node, call_node);
   }
   params->insert(params->begin(), args_node->getInputs().begin(), args_node->getInputs().end());
@@ -3991,10 +3992,15 @@ bool MindGraphBuilder::UnpackCallExParams(std::vector<ValueNode *> *params, int 
     return false;
   }
   py::object object = args_node->GetVobj()->GetPyObject();
-  if (!py::isinstance<py::tuple>(object)) {
+  if (!py::isinstance<py::tuple>(object) && !py::isinstance<py::list>(object)) {
     return false;
   }
-  size_t args_len = py::len(py::cast<py::tuple>(object));
+  size_t args_len = 0;
+  if (py::isinstance<py::tuple>(object)) {
+    args_len = py::len(py::cast<py::tuple>(object));
+  } else {
+    args_len = py::len(py::cast<py::list>(object));
+  }
   if (args_len == 0) {
     return true;
   }
