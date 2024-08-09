@@ -470,18 +470,15 @@ void CheckHcclBufferSize(const std::string &jit_level) {
   }
 
   MS_LOG(INFO) << "The hccl buff size is: " << hccl_buffer_size_env;
-  int hccl_buffer_size = 400;
+  int hccl_buffer_size = 0;
   try {
     hccl_buffer_size = stoi(hccl_buffer_size_env);
   } catch (const std::exception &e) {
     MS_LOG(EXCEPTION) << "Invalid argument: " << e.what() << " when parse " << hccl_buffer_size_env;
   }
 
-  if (hccl_buffer_size == 2) {
-    MS_LOG(EXCEPTION) << "Due to poor performance, HCCL_SUFFSIZE cannot be set to 2 in KBK mode.";
-  }
   if (hccl_buffer_size <= 100) {
-    MS_LOG(WARNING) << "Setting HCCL_SUFFSIZE too small may result in poor performance, the HCCL_SUFFSIZE is: "
+    MS_LOG(WARNING) << "Setting HCCL_BUFFSIZE too small may result in poor performance, the HCCL_BUFFSIZE is: "
                     << hccl_buffer_size_env;
   }
 }
