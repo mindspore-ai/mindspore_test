@@ -46,8 +46,10 @@ bool HcomUtil::GetHcomDataType(const std::string &kernel_name, const std::vector
 
   data_type_list->clear();
   const std::vector<KernelTensor *> &tensors = HcomUtil::IsReceiveOp(kernel_name) ? outputs : inputs;
-  std::transform(tensors.begin(), tensors.end(), std::back_inserter(*data_type_list),
-                 [](KernelTensor *tensor_ptr) { return ConvertHcclType(tensor_ptr->dtype_id()); });
+  std::transform(tensors.begin(), tensors.end(), std::back_inserter(*data_type_list), [](KernelTensor *tensor_ptr) {
+    MS_EXCEPTION_IF_NULL(tensor_ptr);
+    return ConvertHcclType(tensor_ptr->dtype_id());
+  });
 
   if (!data_type_list->empty()) {
     if (std::any_of(data_type_list->begin(), data_type_list->end(),

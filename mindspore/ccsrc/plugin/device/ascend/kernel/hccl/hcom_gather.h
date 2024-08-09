@@ -41,9 +41,9 @@ class HcomGatherKernel : public HcclKernel {
                     void *stream_ptr);
 
  private:
-  int rank_id_;
-  int dest_rank_;
-  int rank_size_;
+  int rank_id_{0};
+  int dest_rank_{0};
+  int rank_size_{0};
 };
 MS_HCCL_REG_KERNEL(CollectiveGather, HcomGatherKernel);
 }  // namespace kernel

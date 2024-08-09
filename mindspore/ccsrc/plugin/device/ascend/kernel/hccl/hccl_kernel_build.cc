@@ -28,6 +28,7 @@ namespace kernel {
 KernelModPtr HcclOpBuild(const AnfNodePtr &anf_node) {
   MS_EXCEPTION_IF_NULL(anf_node);
   auto prim = common::AnfAlgo::GetCNodePrimitive(anf_node);
+  MS_EXCEPTION_IF_NULL(prim);
   MS_LOG(INFO) << "Build hccl op [" << prim->name() << "]";
 
   auto kernel_mod_ptr = HcclKernelFactory::Get(prim->name());

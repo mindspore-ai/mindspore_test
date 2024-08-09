@@ -26,6 +26,11 @@ namespace mindspore {
 namespace kernel {
 void TensorShapeKernelMod::Execute(const std::vector<KernelTensor *> &inputs,
                                    const std::vector<KernelTensor *> &outputs, void *stream_ptr) const {
+  if (inputs.empty() || outputs.empty()) {
+    MS_LOG(EXCEPTION) << "Invalid TensorShape input or output size (" << inputs.size() << ", " << outputs.size()
+                      << ").";
+  }
+
   MS_EXCEPTION_IF_NULL(inputs[0]);
   MS_EXCEPTION_IF_NULL(outputs[0]);
   MS_EXCEPTION_IF_NULL(stream_ptr);

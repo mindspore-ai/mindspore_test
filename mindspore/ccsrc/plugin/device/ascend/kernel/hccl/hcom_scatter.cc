@@ -38,7 +38,8 @@ int HcomScatterKernel::Resize(const std::vector<KernelTensor *> &inputs, const s
     MS_LOG(ERROR) << "HcclKernel Resize failed.";
     return res;
   }
-  auto output_shape = outputs[0]->GetDeviceShapeVector();
+  MS_EXCEPTION_IF_NULL(outputs[kIndex0]);
+  auto output_shape = outputs[kIndex0]->GetDeviceShapeVector();
   hccl_count_ = SizeOf(output_shape);
   return KRET_OK;
 }

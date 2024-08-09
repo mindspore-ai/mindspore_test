@@ -50,6 +50,7 @@ int HostKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const std::
 
   auto calc_size_list = [](const std::vector<KernelTensor *> &tensors, std::vector<size_t> *list_ptr) -> bool {
     for (KernelTensor *tensor : tensors) {
+      MS_EXCEPTION_IF_NULL(tensor);
       int64_t size = 1;
       if (!GetShapeSize(tensor->GetShapeVector(), TypeIdToType(tensor->dtype_id()), &size)) {
         return false;
