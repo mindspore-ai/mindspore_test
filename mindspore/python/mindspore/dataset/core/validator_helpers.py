@@ -766,6 +766,13 @@ def check_dict(data, key_type, value_type, param_name):
                                 .format(key, param_name, value_type, type(value)))
 
 
+def check_independent_mode(feature_name, condition=True):
+    # todo in Dataset Independent mode
+    independent_process_env = os.getenv("MS_INDEPENDENT_DATASET", None)
+    if condition and independent_process_env and independent_process_env.strip() in ['True', 'true']:
+        raise RuntimeError(f"{feature_name} is not supported in Dataset Independent mode.")
+
+
 def check_feature_shape(data, shape, param_name):
     if isinstance(data, dict):
         for key, value in data.items():
