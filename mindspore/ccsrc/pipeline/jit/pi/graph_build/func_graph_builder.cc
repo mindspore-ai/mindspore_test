@@ -937,7 +937,7 @@ bool FuncGraphBuilder::CheckCallable(const py::object &obj) {
   return py::isinstance<MetaFuncGraph>(obj) ||
          (py::hasattr(obj, PYTHON_PRIMITIVE_FLAG) &&
           parse::data_converter::GetObjType(obj) != parse::RESOLVE_TYPE_CLASS_TYPE) ||
-         FunctionShouldBeParseInAst(obj) ||
+         py::isinstance<PrimitiveFunctionAdapter>(obj) || FunctionShouldBeParseInAst(obj) ||
          (py::hasattr(obj, ms_class_attr) && py::cast<bool>(py::getattr(obj, ms_class_attr)));
 }
 
