@@ -1087,7 +1087,9 @@ static FuncKey KeyFinderSkipModule(const py::object &callable) {
   if (!PyFunction_Check(func_info) && !PyCFunction_Check(func_info) && !PyType_Check(func_info)) {
     func_info = reinterpret_cast<PyObject *>(Py_TYPE(func_info));
   }
-  MS_LOG(DEBUG) << "func " << std::string(py::str(func_info)) << " is forbidden to analyze, module is " << mod;
+  if (kPIJitConfigDefault.GetBoolConfig(GraphJitConfig::kLogGraphBreak)) {
+    MS_LOG(ERROR) << "func " << std::string(py::str(func_info)) << " is forbidden to analyze, module is " << mod;
+  }
   return FUNC_KEY_PIJIT_FORBIDDEN;
 }
 
