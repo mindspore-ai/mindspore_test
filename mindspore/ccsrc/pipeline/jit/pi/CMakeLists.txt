@@ -1,4 +1,4 @@
-if(${PYTHON_VERSION} VERSION_LESS "3.11")
+if(${PYTHON_VERSION} VERSION_LESS "3.12")
     file(GLOB_RECURSE _PIJIT_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
             "graph_capture/*.cc"
             "graph_compiler/*.cc"
@@ -9,7 +9,7 @@ if(${PYTHON_VERSION} VERSION_LESS "3.11")
             "*.cc"
     )
 else()
-    # pijit cannot support python>=3.11 for now, but will be adapted very soon.
+    # pijit cannot support python>=3.12 for now, but will be adapted very soon.
     file(GLOB_RECURSE _PIJIT_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
             "init.cc"
     )
