@@ -1,6 +1,7 @@
 set(PYTHON_VERSION ${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR})
 
 set(NEED_PYBIND_PATCH FALSE)
+set(PYBIND_DISABLE_GIL_CHECK FALSE)
 if(ENABLE_GITEE OR ENABLE_GITEE_EULER) # Channel GITEE_EULER is NOT supported now, use GITEE instead.
     if(PYTHON_VERSION MATCHES "3.7")
         set(REQ_URL "https://gitee.com/mirrors/pybind11/repository/archive/v2.4.3.tar.gz")
@@ -24,6 +25,7 @@ if(ENABLE_GITEE OR ENABLE_GITEE_EULER) # Channel GITEE_EULER is NOT supported no
         set(REQ_URL "https://gitee.com/mirrors/pybind11/repository/archive/v2.13.1.tar.gz")
         set(SHA256 "2200dda5c64ece586f537af8fd292103a3042cb40c443dde1b70fd1e419d8cb0")
         set(PYBIND_VERSION 2.13.1)
+        set(PYBIND_DISABLE_GIL_CHECK TRUE)
     else()
         message("Could not find Python versions 3.7 - 3.11")
         return()
@@ -51,6 +53,7 @@ else()
         set(REQ_URL "https://github.com/pybind/pybind11/archive/v2.13.1.tar.gz")
         set(SHA256 "51631e88960a8856f9c497027f55c9f2f9115cafb08c0005439838a05ba17bfc")
         set(PYBIND_VERSION 2.13.1)
+        set(PYBIND_DISABLE_GIL_CHECK TRUE)
     else()
         message("Could not find Python versions 3.7 - 3.11")
         return()
@@ -59,6 +62,12 @@ endif()
 set(pybind11_CXXFLAGS "-D_FORTIFY_SOURCE=2 -O2")
 set(pybind11_CFLAGS "-D_FORTIFY_SOURCE=2 -O2")
 set(pybind11_patch ${TOP_DIR}/third_party/patch/pybind11/pybind11.patch001)
+
+if(PYBIND_DISABLE_GIL_CHECK)
+    message(WARNING "Macro PYBIND11_NO_ASSERT_GIL_HELD_INCREF_DECREF is added, "
+                    "so pybind11's GIL check for py::handle inc_ref() and dec_ref() is disabled.")
+    add_definitions(-DPYBIND11_NO_ASSERT_GIL_HELD_INCREF_DECREF)
+endif()
 
 if(NEED_PYBIND_PATCH)
     mindspore_add_pkg(pybind11
