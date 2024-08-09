@@ -45,7 +45,6 @@ enum class MemType : int {
   kContinuousMemory,
   kPyNativeInput,
   kPyNativeOutput,
-  kGeFeatureMemory,
   kWorkSpace,
   kOther
 };
@@ -63,7 +62,6 @@ const std::map<MemType, std::string> MemTypeToStr = {{MemType::kWeight, "Weight"
                                                      {MemType::kContinuousMemory, "ContinuousMemory"},
                                                      {MemType::kPyNativeInput, "PyNativeInput"},
                                                      {MemType::kPyNativeOutput, "PyNativeOutput"},
-                                                     {MemType::kGeFeatureMemory, "GeFeatureMemory"},
                                                      {MemType::kWorkSpace, "WorkSpace"},
                                                      {MemType::kOther, "Other"}};
 using DeviceMemPtr = const void *;

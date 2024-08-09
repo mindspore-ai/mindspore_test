@@ -58,6 +58,8 @@ class GeKernelMod : public KernelMod {
 
   std::vector<std::pair<uint32_t, uint32_t>> io_indexes() const { return io_indexes_; }
 
+  void InitGeMemory(size_t stream_id) const;
+
  protected:
   bool skip_run_{false};
   device::ascend::GeGraphExecutor *graph_executor_ = nullptr;

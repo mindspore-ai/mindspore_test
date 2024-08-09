@@ -47,5 +47,15 @@ TEST_F(TestCheckMsContext, test_kbk_mode) {
   ms_context_.set_param<std::string>(MS_CTX_DEVICE_TARGET, "Ascend");
   ms_context_.set_param<std::string>(MS_CTX_JIT_LEVEL, "O0");
   ASSERT_TRUE(ms_context_.IsKByKExecutorMode());
+
+  ms_context_.set_param<std::string>(MS_CTX_DEVICE_TARGET, "Ascend");
+  ms_context_.set_param<std::string>(MS_CTX_JIT_LEVEL, "O2");
+  ms_context_.set_param<int>(MS_CTX_EXECUTION_MODE, 0);
+  ASSERT_FALSE(ms_context_.IsKByKExecutorMode());
+
+  ms_context_.set_param<std::string>(MS_CTX_DEVICE_TARGET, "Ascend");
+  ms_context_.set_param<std::string>(MS_CTX_JIT_LEVEL, "O2");
+  ms_context_.set_param<bool>(MS_CTX_ENABLE_HYBRID_MODE, true);
+  ASSERT_TRUE(ms_context_.IsKByKExecutorMode());
 }
 }  // namespace mindspore

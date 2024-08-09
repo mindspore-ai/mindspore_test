@@ -233,6 +233,9 @@ uint8_t *AscendMemAdapter::MallocDynamicDevMem(size_t size, const std::string &t
   if (AscendVmmAdapter::GetInstance().IsEnabled()) {
     MS_LOG(EXCEPTION) << "VMM is enabled, can not allocate dynamic memory.";
   }
+  if (!common::IsDisableRuntimeConfig(common::kRuntimeGeKernel)) {
+    MS_LOG(EXCEPTION) << "GE Kernel mod, The dynamic memory allocation is disabled.";
+  }
   size = GetRoundUpAlignSize(size);
   int64_t new_dynamic_offset = cur_dynamic_mem_offset_ + static_cast<int64_t>(size);
   if (!common::IsNeedProfileMemory() && new_dynamic_offset > static_mem_offset_) {
@@ -269,22 +272,23 @@ void AscendMemAdapter::ResetDynamicMemory() {
 std::string AscendMemAdapter::DevMemStatistics() const {
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
+  static bool disable_ge_kernel = common::IsDisableRuntimeConfig(common::kRuntimeGeKernel);
   std::ostringstream oss;
   oss << "\nDevice HBM memory size: " << device_hbm_total_size_ / kMBToByte << "M";
   oss << "\nMindSpore Used memory size: " << ms_used_hbm_size_ / kMBToByte << "M";
   oss << "\nMindSpore memory base address: " << reinterpret_cast<void *>(device_mem_base_addr_);
-  if (!context->IsKByKExecutorMode()) {
+  if (disable_ge_kernel) {
     oss << "\nTotal Static Memory size: " << (ms_used_hbm_size_ - static_mem_offset_) / kMBToByte << "M";
     oss << "\nTotal Dynamic memory size: " << history_max_dynamic_mem_offset_ / kMBToByte << "M";
   }
   if (IsMemoryPoolRecycle()) {
     size_t max_actual = std::max(actual_peak_memory_, (ms_used_hbm_size_ - static_mem_offset_));
     oss << "\nActual peak memory usage: " << max_actual / kMBToByte << "M";
-  } else if (context->IsKByKExecutorMode()) {
+  } else if (!disable_ge_kernel) {
     oss << "\nUsed peak memory usage (without fragments): " << used_peak_memory_ / kMBToByte << "M";
     oss << "\nActual peak memory usage (with fragments): " << actual_peak_memory_ / kMBToByte << "M";
   }
-  if (!context->IsKByKExecutorMode()) {
+  if (disable_ge_kernel) {
     oss << "\nDynamic memory size of this graph: " << cur_dynamic_mem_offset_ / kMBToByte << "M";
   }
   oss << std::endl;

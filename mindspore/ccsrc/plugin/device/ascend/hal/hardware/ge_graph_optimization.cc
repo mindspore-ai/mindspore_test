@@ -99,6 +99,9 @@ void GEGraphOptimization::OptimizeGEGraph(const KernelGraphPtr &graph, std::set<
     }
   }
   for (auto &child_graph : graph->child_graph_order()) {
+    if (child_graph.lock()->has_flag(kFlagGeKernel)) {
+      continue;
+    }
     OptimizeGEGraph(child_graph.lock(), memo);
   }
   MS_LOG(DEBUG) << "Status record: end optimize ge graph. graph id: " << graph->graph_id();
@@ -123,6 +126,9 @@ void GEGraphOptimization::OptimizeACLGraph(const KernelGraphPtr &graph, std::set
   opt::AscendUnfoldInputsForSpecialNodes(graph);
   opt::GEBackendOptimizeACL(graph);
   for (auto &child_graph : graph->child_graph_order()) {
+    if (child_graph.lock()->has_flag(kFlagGeKernel)) {
+      continue;
+    }
     OptimizeACLGraph(child_graph.lock(), memo);
   }
   MS_LOG(DEBUG) << "Status record: end optimize acl graph. graph id: " << graph->graph_id();
@@ -155,6 +161,9 @@ void GEGraphOptimization::OptimizeACLGraphAfterKernelSelect(const KernelGraphPtr
     graph->SetExecOrderByDefault();
   }
   for (auto &child_graph : graph->child_graph_order()) {
+    if (child_graph.lock()->has_flag(kFlagGeKernel)) {
+      continue;
+    }
     OptimizeACLGraphAfterKernelSelect(child_graph.lock(), memo);
   }
   MS_LOG(DEBUG) << "Status record: end optimize acl graph after kernel select. graph id: " << graph->graph_id();

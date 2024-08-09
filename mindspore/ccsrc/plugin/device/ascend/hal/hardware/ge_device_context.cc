@@ -66,6 +66,59 @@ bool IsDynamicShapeFuncGraph(const FuncGraphPtr &func_graph) {
   });
 }
 
+bool IsNeedHybridMode(const FuncGraphPtr &func_graph) {
+  // cell reuse + pipeline parallel
+  // only O2
+  if (func_graph == nullptr) {
+    return false;
+  }
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  auto nodes = TopoSort(func_graph->get_return(), SuccDeeperSimple);
+  bool has_cell_reuse = std::any_of(nodes.begin(), nodes.end(), [](const AnfNodePtr &node) {
+    if (node == nullptr || !node->isa<CNode>()) {
+      return false;
+    }
+    auto cnode = node->cast<CNodePtr>();
+    const auto &inputs = cnode->inputs();
+
+    // for func graph
+    AnfNodePtr fn = inputs[0];
+    FuncGraphPtr child_graph = common::AnfAlgo::GetValueNodeFuncGraph(fn);
+    bool func_graph_has_cell_reuse = child_graph != nullptr && child_graph->has_flag(FUNC_GRAPH_FLAG_CELL_REUSE);
+
+    // for kernel graph
+    bool kernel_graph_has_cell_reuse = false;
+    if (IsPrimitiveCNode(cnode, prim::kPrimCall)) {
+      auto call_graph = cnode->input(kIndex1);
+      auto sub_kernel_graph = session::AnfRuntimeAlgorithm::GetValueNodeKernelGraph(call_graph);
+      kernel_graph_has_cell_reuse = sub_kernel_graph != nullptr && sub_kernel_graph->need_inline();
+    }
+    return func_graph_has_cell_reuse || kernel_graph_has_cell_reuse;
+  });
+
+  auto parallel_context = parallel::ParallelContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(parallel_context);
+  auto stages = parallel_context->pipeline_stage_split_num();
+  auto grad_accu_step = parallel_context->grad_accumulation_step();
+  MS_LOG(INFO) << "graph: " << func_graph->ToString() << "stages: " << stages << ", grad_accu_step: " << grad_accu_step;
+  if (stages <= 1 && grad_accu_step <= 1) {
+    if (has_cell_reuse) {
+      // no pipeline + cell reuse + O2
+      context->SetCellReuseLevel(CellReuseLevel::kNoInline);
+    }
+    return false;
+  }
+  if (common::IsDisableRuntimeConfig(common::kRuntimeGeKernel)) {
+    if (has_cell_reuse) {
+      // force subgraph sink
+      context->SetCellReuseLevel(CellReuseLevel::kNoInline);
+    }
+    return false;
+  }
+  return has_cell_reuse;
+}
+
 void SetAclOpDebugOption(const std::shared_ptr<MsContext> &ms_context) {
   MS_EXCEPTION_IF_NULL(ms_context);
   auto op_debug_option = ms_context->get_param<std::string>(MS_CTX_OP_DEBUG_OPTION);
@@ -153,11 +206,17 @@ RunMode GeDeviceContext::GetRunMode(const FuncGraphPtr &func_graph) const {
     return RunMode::kKernelMode;
   }
 
-  if (context->IsKByKExecutorMode()) {
-    MS_LOG(INFO) << "RunMode::kKernelMode";
+  if (context->IsKByKExecutorMode() && !context->get_param<bool>(MS_CTX_ENABLE_HYBRID_MODE)) {
+    MS_LOG(INFO) << "RunMode::kKernelMode, graph: " << func_graph->ToString();
     return RunMode::kKernelMode;
   } else {
-    MS_LOG(INFO) << "RunMode::kGraphMode";
+    if (IsNeedHybridMode(func_graph)) {
+      context->set_param(MS_CTX_ENABLE_HYBRID_MODE, true);
+      MS_LOG(INFO) << "RunMode::kHybridMode, graph: " << func_graph->ToString();
+      return RunMode::kHybridMode;
+    }
+    context->set_param(MS_CTX_ENABLE_HYBRID_MODE, false);
+    MS_LOG(INFO) << "RunMode::kGraphMode, graph: " << func_graph->ToString();
     return RunMode::kGraphMode;
   }
 }

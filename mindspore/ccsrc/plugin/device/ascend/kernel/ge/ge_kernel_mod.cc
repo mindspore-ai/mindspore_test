@@ -22,11 +22,15 @@
 #include "ir/tensor.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "pybind_api/gil_scoped_long_running.h"
-#include "mindspore/core/ops/op_utils.h"
+#include "ops_utils/op_utils.h"
 #include "mindspore/ccsrc/include/transform/graph_ir/utils.h"
 
 namespace mindspore {
 namespace kernel {
+namespace {
+const char kAlreadyInitMemory[] = "kAlreadyInitMemory";
+}
+
 bool GeKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
   MS_LOG(DEBUG) << "GeKernelMod Init";
   return true;
@@ -44,7 +48,7 @@ bool GeKernelMod::Launch(const std::vector<KernelTensor *> &inputs, const std::v
   MS_EXCEPTION_IF_NULL(graph_);
 
   if (!workspace.empty()) {
-    graph_executor_->SetGraphRefreshableMemory(graph_, workspace[0]->device_ptr(), workspace[0]->size());
+    graph_executor_->SetGraphWorkspaceMemory(graph_, workspace[0]->device_ptr(), workspace[0]->size());
   }
 
   auto ret = graph_executor_->RunGraphRefModeForKernel(graph_, inputs, outputs, stream_ptr);
@@ -53,6 +57,15 @@ bool GeKernelMod::Launch(const std::vector<KernelTensor *> &inputs, const std::v
   }
 
   return true;
+}
+
+void GeKernelMod::InitGeMemory(size_t stream_id) const {
+  MS_EXCEPTION_IF_NULL(graph_executor_);
+  MS_EXCEPTION_IF_NULL(graph_);
+  if (!graph_->has_flag(kAlreadyInitMemory)) {
+    graph_executor_->InitGEFixMemory(graph_, stream_id);
+    graph_->set_flag(kAlreadyInitMemory, true);
+  }
 }
 }  // namespace kernel
 }  // namespace mindspore

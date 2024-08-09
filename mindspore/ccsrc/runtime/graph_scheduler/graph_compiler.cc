@@ -435,6 +435,26 @@ GraphId CompileAnyTypeInputGraph(const KernelGraphPtr &graph, const AnfNodePtrLi
   DeviceAddressUtils::CreateGraphOutputDeviceAddress(device_context, graph);
   return graph->graph_id();
 }
+
+void RecursiveSetRunMode(const KernelGraphPtr &graph, std::set<KernelGraphPtr> *memo) {
+  if (memo->find(graph) != memo->end()) {
+    return;
+  }
+  memo->insert(graph);
+  MS_LOG(INFO) << "Kernel graph: " << graph->ToString()
+               << ", set run mode:" << device::run_mode_to_name_map.at(graph->RunMode());
+  for (auto &child_graph : graph->child_graph_order()) {
+    auto child_graph_ptr = child_graph.lock();
+    MS_EXCEPTION_IF_NULL(child_graph_ptr);
+    auto run_mode = graph->RunMode();
+    if (run_mode == device::RunMode::kHybridMode && child_graph_ptr->need_inline()) {
+      child_graph_ptr->set_run_mode(device::RunMode::kGraphMode);
+    } else {
+      child_graph_ptr->set_run_mode(run_mode);
+    }
+    RecursiveSetRunMode(child_graph_ptr, memo);
+  }
+}
 }  // namespace
 
 GraphId GraphCompiler::CompileGraph(const GraphSegmentPtr &segment,
@@ -475,6 +495,8 @@ GraphId GraphCompiler::CompileGraph(const KernelGraphPtr &kernel_graph,
   } else {
     kernel_graph->set_run_mode(run_mode);
   }
+  std::set<KernelGraphPtr> memo;
+  RecursiveSetRunMode(kernel_graph, &memo);
   auto manager = MakeManager({kernel_graph});
   if (manager) {
     manager->AddFuncGraph(kernel_graph);
@@ -569,6 +591,8 @@ GraphId GraphCompiler::CompileDynamicGraph(const KernelGraphPtr &kernel_graph, c
   session_->SetInputNodeUsage(kernel_graph, manager);
   kernel_graph->SetOptimizerFlag();
   kernel_graph->set_run_mode(device::RunMode::kKernelMode);
+  std::set<KernelGraphPtr> memo;
+  RecursiveSetRunMode(kernel_graph, &memo);
 
   // kernel_graph kernel does not support pynative mode now, print a warning here.
   graphkernel::GraphKernelFlags::GetInstance().CheckSupport();

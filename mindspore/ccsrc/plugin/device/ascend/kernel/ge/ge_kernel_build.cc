@@ -18,19 +18,19 @@
 #include <vector>
 #include "plugin/device/ascend/kernel/ge/ge_kernel_build.h"
 #include "plugin/device/ascend/kernel/ge/ge_kernel_mod.h"
+#include "plugin/device/ascend/hal/hardware/ge_utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "plugin/factory/ms_factory.h"
 #include "kernel/framework_utils.h"
-#include "ops/framework_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/trace_base.h"
-#include "mindspore/core/ops/framework_ops.h"
 
 namespace mindspore {
 namespace kernel {
 namespace {
-static const char kAlreadyCompile[] = "AlreadyCompile";
+const char kAlreadyCompile[] = "AlreadyCompile";
 
 bool GraphWithNoRealKernel(const KernelGraphPtr &kernel_graph) {
   const auto &nodes = kernel_graph->execution_order();
@@ -47,8 +47,8 @@ KernelModPtr GeOpBuild(const AnfNodePtr &anf_node, device::ascend::GeGraphExecut
   MS_EXCEPTION_IF_NULL(anf_node);
   MS_EXCEPTION_IF_NULL(graph_executor);
 
-  if (!common::AnfAlgo::CheckPrimitiveType(anf_node, prim::kPrimCallInline)) {
-    MS_LOG(EXCEPTION) << "Current node must be callinline! but got " << anf_node->DebugString();
+  if (!common::AnfAlgo::CheckPrimitiveType(anf_node, prim::kPrimCallGE)) {
+    MS_LOG(EXCEPTION) << "Current node must be callGE! but got " << anf_node->DebugString();
   }
 
   auto kernel_mod_ptr = std::make_shared<GeKernelMod>();
@@ -67,6 +67,7 @@ KernelModPtr GeOpBuild(const AnfNodePtr &anf_node, device::ascend::GeGraphExecut
   }
 
   auto inline_subgraph = common::AnfAlgo::GetNodeAttr<KernelGraphPtr>(anf_node, kAttrKernelGraph);
+  MS_LOG(INFO) << "GeOpBuild, node name: " << anf_node->fullname_with_scope() << ", " << inline_subgraph->ToString();
   MS_EXCEPTION_IF_NULL(inline_subgraph);
   if (GraphWithNoRealKernel(inline_subgraph)) {
     kernel_mod_ptr->set_skip_run(true);
@@ -93,7 +94,8 @@ KernelModPtr GeOpBuild(const AnfNodePtr &anf_node, device::ascend::GeGraphExecut
       MS_LOG_WITH_NODE(EXCEPTION, cnode) << "#dmsg#Kernel build failed:#dmsg#ge kernel op["
                                          << cnode->fullname_with_scope() << "] Resize failed.";
     }
-    auto dynamic_mem = graph_executor->GetGraphRefreshableMemory(inline_subgraph);
+    const auto &key = device::ascend::GetGraphName(inline_subgraph);
+    auto dynamic_mem = graph_executor->GetGraphWorkSpaceMemory(key);
     insert_func(dynamic_mem);
     kernel_mod_ptr->SetWorkspaceSizeList(workspace_list);
   }

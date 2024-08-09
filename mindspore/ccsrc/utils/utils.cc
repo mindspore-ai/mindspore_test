@@ -310,11 +310,12 @@ bool IsEnableRefMode() {
 
 bool IsMemoryPoolRecycle() {
   static bool optimize_mem = !common::IsDisableAlllocConfig(common::kAllocMemoryRecycle);
+  static bool disable_ge_kernel = common::IsDisableRuntimeConfig(common::kRuntimeGeKernel);
   static bool enable_ref_mode = IsEnableRefMode();
   auto context_ptr = MsContext::GetInstance();
   auto mode = context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE);
   auto task_sink = context_ptr->get_param<bool>(MS_CTX_ENABLE_TASK_SINK);
-  return optimize_mem && enable_ref_mode && mode == kGraphMode && task_sink;
+  return disable_ge_kernel && optimize_mem && enable_ref_mode && mode == kGraphMode && task_sink;
 }
 
 size_t GetSystemMemorySize(const std::string &key) {

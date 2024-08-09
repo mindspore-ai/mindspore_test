@@ -46,20 +46,27 @@ const AnfNodePtr ProcessCallInline::Process(const FuncGraphPtr &graph, const Anf
   MS_EXCEPTION_IF_NULL(node);
   auto cnode = node->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(cnode);
+  auto kernel_graph = graph->cast<KernelGraphPtr>();
+  MS_EXCEPTION_IF_NULL(kernel_graph);
   if (CheckCallInline(cnode)) {
     auto call_graph = cnode->input(kIndex1);
     auto sub_kernel_graph = session::AnfRuntimeAlgorithm::GetValueNodeKernelGraph(call_graph);
-    std::vector<AnfNodePtr> call_inline_inputs = {
-      NewValueNode(std::make_shared<Primitive>(prim::kPrimCallInline->name()))};
-    for (size_t i = kIndex1; i < common::AnfAlgo::GetInputNum(cnode); i++) {
-      call_inline_inputs.emplace_back(common::AnfAlgo::GetInputNode(cnode, i));
+    std::vector<AnfNodePtr> call_inputs = {};
+    if (kernel_graph->RunMode() == device::RunMode::kHybridMode) {
+      call_inputs.push_back(NewValueNode(std::make_shared<Primitive>(prim::kPrimCallGE->name())));
+      sub_kernel_graph->set_flag(kFlagGeKernel, true);
+    } else {
+      call_inputs.push_back(NewValueNode(std::make_shared<Primitive>(prim::kPrimCallInline->name())));
     }
-    auto call_inline = graph->NewCNode(call_inline_inputs);
-    MS_EXCEPTION_IF_NULL(call_inline);
-    call_inline->set_scope(node->scope());
-    call_inline->set_abstract(cnode->abstract());
-    common::AnfAlgo::SetNodeAttr(kAttrKernelGraph, MakeValue(sub_kernel_graph), call_inline);
-    return call_inline;
+    for (size_t i = kIndex1; i < common::AnfAlgo::GetInputNum(cnode); i++) {
+      call_inputs.emplace_back(common::AnfAlgo::GetInputNode(cnode, i));
+    }
+    auto new_call_node = graph->NewCNode(call_inputs);
+    MS_EXCEPTION_IF_NULL(new_call_node);
+    new_call_node->set_scope(node->scope());
+    new_call_node->set_abstract(cnode->abstract());
+    common::AnfAlgo::SetNodeAttr(kAttrKernelGraph, MakeValue(sub_kernel_graph), new_call_node);
+    return new_call_node;
   }
   return nullptr;
 }

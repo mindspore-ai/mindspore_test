@@ -168,7 +168,6 @@ void AddCommFusionForKbk(const PassManagerPtr &opt_acl_pm, const KernelGraphPtr 
     MS_LOG(INFO) << "This not kbk mode. Do not do communication operation fusion.";
     return;
   }
-
   // Do communication op fusion before InsertTensorMoveForCommunication pass.
   // So these passes are before kernel select process, no need to generate kernel build info in them.
   if (parallel::ParallelContext::GetInstance()->enable_all_reduce_fusion()) {

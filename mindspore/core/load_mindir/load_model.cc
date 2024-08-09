@@ -2073,9 +2073,7 @@ bool MSANFModelParser::BuildFuncGraph(const FuncGraphPtr &output_graph, const mi
   MS_EXCEPTION_IF_NULL(context);
   const bool force_no_inline = common::IsDisableRuntimeConfig(common::kRuntimeInline);
   if (output_graph->has_flag(FUNC_GRAPH_FLAG_CELL_REUSE)) {
-    const bool enable_ge = context->backend_policy() == "ge";
-    auto cell_reuse_level =
-      (enable_ge && !context->IsKByKExecutorMode()) ? CellReuseLevel::kNoInline : CellReuseLevel::kLazyInline;
+    auto cell_reuse_level = CellReuseLevel::kLazyInline;
     if (force_no_inline) {
       cell_reuse_level = CellReuseLevel::kNoInline;
     }

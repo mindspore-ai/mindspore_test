@@ -606,8 +606,7 @@ std::tuple<bool, std::string, ExceptionType> SelectKernelInfoWithMsg(const Kerne
   std::tuple<bool, std::string, ExceptionType> result = std::make_tuple(true, "", NoExceptionType);
   std::string op_name = common::AnfAlgo::GetCNodeName(node);
 
-  if (common::GetEnv("MS_DEV_GE_AS_KERNEL") == "1" &&
-      common::AnfAlgo::CheckPrimitiveType(node, prim::kPrimCallInline)) {
+  if (common::AnfAlgo::CheckPrimitiveType(node, prim::kPrimCallGE)) {
     GenerateKernelBuildInfo(node, KernelType::GE_KERNEL);
     if (op_selected_type[kGeOpSelect].count(op_name) == 0) {
       (void)op_selected_type[kGeOpSelect].insert(op_name);
@@ -646,7 +645,8 @@ std::tuple<bool, std::string, ExceptionType> SelectKernelInfoWithMsg(const Kerne
   // for backend inline
   if (IsOneOfPrimitiveCNode(
         node, {prim::kPrimCallInline, prim::kPrimSwitch, prim::kPrimPartialInline, prim::kPrimConditionSwitch,
-               prim::kPrimConditionGather, prim::kPrimReshapeExt, prim::kPrimMoveTo, prim::kPrimMoveAssign})) {
+               prim::kPrimConditionGather, prim::kPrimReshapeExt, prim::kPrimMoveTo, prim::kPrimMoveAssign,
+               prim::kPrimStreamSend, prim::kPrimStreamRecv})) {
     GenerateKernelBuildInfo(node, KernelType::RT_KERNEL);
     return result;
   }

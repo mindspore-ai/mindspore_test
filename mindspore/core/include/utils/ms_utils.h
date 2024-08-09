@@ -84,6 +84,7 @@ const char kRuntimeView[] = "view";
 const char kRuntimeInsertTensorMove[] = "insert_tensormove";
 const char kRuntimeAllfinite[] = "all_finite";
 const char kRuntimeParalletAssignAddOpt[] = "parallel_assignadd_opt";
+const char kRuntimeGeKernel[] = "ge_kernel";
 // Runtime debug config.
 const char kRuntimeSynchronize[] = "synchronize";
 const char kRuntimeMemoryTrack[] = "memory_track";

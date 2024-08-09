@@ -2870,6 +2870,14 @@ AnfNodePtr KernelGraphMgr::DoInline(const FuncGraphPtr &func_graph, const FuncGr
       MS_EXCEPTION_IF_NULL(value_node);
       graph->AddValueNodeToGraph(value_node);
     }
+    // Create new primitive node for cnode.
+    if (new_node->isa<CNode>()) {
+      auto new_cnode = new_node->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(new_cnode);
+      auto prim = common::AnfAlgo::GetCNodePrimitive(new_cnode);
+      new_cnode->set_input(0, NewValueNode(std::make_shared<Primitive>(prim->name())));
+      common::AnfAlgo::CopyNodeAttrs(ori_node, new_cnode);
+    }
     // Add sub graph kernel for switch inline kernel graph.
     if (new_node->isa<CNode>() && target_kernel_graph != nullptr && is_switch_inline) {
       MS_LOG(DEBUG) << "Add inline sub graph for kernel:" << new_node->fullname_with_scope()

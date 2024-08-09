@@ -416,6 +416,8 @@ class BACKEND_EXPORT KernelExecutor {
   // Get rank id for distributed training.
   virtual uint32_t GetRankID() const { return 0; }
 
+  virtual void AllocGraphFixedMemory() const {}
+
   void SetDeviceContext(DeviceContext *device_context) { device_context_ = device_context; }
 
   virtual bool ExecuteKernelTask(const runtime::KernelTaskType &task_type,

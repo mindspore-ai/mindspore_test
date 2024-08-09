@@ -495,6 +495,13 @@ const ActorInfo &MindRTBackendBase::CompileGraphs(const FuncGraphPtr &func_graph
   (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageCompileGraphs, 1, 0, 0);
   PROF_START(compile_backend_graph);
 
+  const auto &device_context =
+    device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_name_, device_id_});
+  MS_EXCEPTION_IF_NULL(device_context);
+  device_context->Initialize();
+  device_context->device_res_manager_->BindDeviceToCurrentThread(false);
+  auto run_mode = device_context->GetRunMode(func_graph);
+
   auto root_graph = WrapPrimitives(func_graph);
   MS_EXCEPTION_IF_NULL(root_graph);
   bool pynative_with_jit_call_graph = func_graph->has_flag(kFlagPyNativeWithJitCallGraph);
@@ -520,31 +527,24 @@ const ActorInfo &MindRTBackendBase::CompileGraphs(const FuncGraphPtr &func_graph
   func_graph_to_kernel_graph_ids_.clear();
   control_nodes_.clear();
 
-  const auto &device_context =
-    device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_name_, device_id_});
-  MS_EXCEPTION_IF_NULL(device_context);
-  device_context->Initialize();
-  device_context->device_res_manager_->BindDeviceToCurrentThread(false);
-
   // Current only ascend do need do checkout in PartitionGraph
   bool all_support = device_context->PartitionGraph(func_graph);
   PROF_START(CompileSubGraph);
   if (all_support) {
-    auto run_mode = device_context->GetRunMode(func_graph);
     if (run_mode == device::RunMode::kGraphMode && pynative::GraphAdapter::PyNativeEnableTaskSink(func_graph)) {
       auto graph_id = graph_compiler_->CompileWholeGraphForGraphRunMode(func_graph, device_context);
       graph_id_to_device_context_[graph_id] = device_context;
     } else {
       // Build symbol engine for root graph before partition graph
-      BuildSymbolEngine(func_graph, device::RunMode::kKernelMode);
-      CompileSubGraph(func_graph, device::RunMode::kKernelMode);
+      BuildSymbolEngine(func_graph, run_mode);
+      CompileSubGraph(func_graph);
     }
   } else {
     if (NeedCheckMultiTarget(func_graph, ms_execution_mode_)) {
       ProcessNotSupportCnode(func_graph, device_context->GetDeviceType(), mindspore::device::DeviceType::kCPU);
     }
     // Build symbol engine for root graph before partition graph
-    BuildSymbolEngine(func_graph, device_context->GetRunMode(func_graph));
+    BuildSymbolEngine(func_graph, run_mode);
     CompileSubGraph(func_graph);
   }
   PROF_END(CompileSubGraph);

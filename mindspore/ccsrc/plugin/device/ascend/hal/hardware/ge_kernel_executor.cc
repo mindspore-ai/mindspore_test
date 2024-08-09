@@ -36,6 +36,7 @@
 #include "plugin/device/ascend/kernel/hccl/hccl_kernel_build.h"
 #include "mindspore/ops/kernel/ascend/pyboost/customize/customize_copy.h"
 #include "plugin/device/ascend/kernel/ge/ge_kernel_build.h"
+#include "plugin/device/ascend/kernel/ge/ge_kernel_mod.h"
 #include "plugin/device/ascend/kernel/internal/internal_kernel_build.h"
 #include "kernel/graph_kernel/kernel_packet/kernel_packet_infer_functor.h"
 #include "plugin/device/ascend/kernel/graph_kernel/kernel_packet_ascend_kernel_mod.h"
@@ -116,7 +117,7 @@ bool GenerateKernelMod(const std::vector<CNodePtr> &kernels, GeGraphExecutor *gr
       kernel_mod_ptr = kernel::AclnnOpBuild(kernel);
     } else if (kernel_type == KernelType::AKG_KERNEL) {
       kernel_mod_ptr = GenerateAkgKernelMod(kernel);
-    } else if (AnfAlgo::GetKernelType(kernel) == KernelType::RT_KERNEL) {
+    } else if (kernel_type == KernelType::RT_KERNEL) {
       kernel_mod_ptr = kernel::RtOpBuild(kernel);
     } else if (kernel_type == KernelType::INTERNAL_KERNEL) {
       kernel_mod_ptr = kernel::InternalKernelBuild(kernel);
@@ -246,6 +247,9 @@ void SelectKernel(const KernelGraphPtr &kernel_graph, std::set<KernelGraphPtr> *
     kernel_graph->SetKernelObjectTypesForUnrealNodes();
   }
   for (auto &child_graph : kernel_graph->child_graph_order()) {
+    if (child_graph.lock()->has_flag(kFlagGeKernel)) {
+      continue;
+    }
     SelectKernel(child_graph.lock(), memo);
   }
 }
@@ -914,19 +918,20 @@ void GeKernelExecutor::OptimizeGraph(const FuncGraphPtr &graph) const {
   memo.clear();
   GEGraphOptimization::GetInstance().OptimizeACLGraphAfterKernelSelect(kernel_graph, &memo);
   memo.clear();
-  if (common::GetEnv("MS_DEV_GE_AS_KERNEL") != "1") {
-    InlineCallGraph(kernel_graph);
-  }
+  InlineCallGraph(kernel_graph);
   memo.clear();
   InlineSwitchGraph(kernel_graph, &memo);
-  OptimizeExecutionOrder(NOT_NULL(graph));
   profiler::CollectHostInfo("Ascend", "Graph Optimization", "GeOptimizeGraph", 1, 0, 1);
 }
 
 void GeKernelExecutor::CreateKernel(const std::vector<CNodePtr> &nodes) const {
-  if (!nodes.empty() && IsEnableRefMode()) {
-    auto kernel_graph = std::dynamic_pointer_cast<session::KernelGraph>(nodes[0]->func_graph());
-    MS_EXCEPTION_IF_NULL(kernel_graph);
+  if (nodes.empty()) {
+    return;
+  }
+  auto func_graph = nodes[0]->func_graph();
+  auto kernel_graph = std::dynamic_pointer_cast<session::KernelGraph>(func_graph);
+  MS_EXCEPTION_IF_NULL(kernel_graph);
+  if (IsEnableRefMode()) {
     // Not create kernel when use GE
     if (!kernel_graph->is_from_single_op() && kernel_graph->is_graph_run_mode()) {
       return;
@@ -936,18 +941,13 @@ void GeKernelExecutor::CreateKernel(const std::vector<CNodePtr> &nodes) const {
   MS_LOG(DEBUG) << "Status record: start create kernel.";
   profiler::CollectHostInfo("Ascend", "CreateKernel", "CreateGeKernel", 1, 0, 0);
   PROF_START(create_kernel);
-  device::ascend::SetKernelInfoBeforeCreateKernel(nodes);
+  SetKernelInfoBeforeCreateKernel(nodes);
   auto ret = GenerateKernelMod(nodes, graph_executor_);
   if (!ret) {
     MS_LOG(EXCEPTION) << "Kernel build error.";
   }
-
-  if (!nodes.empty()) {
-    auto kernel_graph = std::dynamic_pointer_cast<session::KernelGraph>(nodes[0]->func_graph());
-    MS_EXCEPTION_IF_NULL(kernel_graph);
-    GEGraphOptimization::GetInstance().OptimizeACLGraphAfterCreateKernel(kernel_graph);
-  }
-
+  GEGraphOptimization::GetInstance().OptimizeACLGraphAfterCreateKernel(kernel_graph);
+  OptimizeExecutionOrder(NOT_NULL(func_graph));
   PROF_END(create_kernel);
   profiler::CollectHostInfo("Ascend", "CreateKernel", "CreateGeKernel", 1, 0, 1);
   MS_LOG(DEBUG) << "Status record: end create kernel.";
@@ -964,36 +964,23 @@ kernel::KernelModPtr GeKernelExecutor::CreateKernelMod(const std::string &op_nam
   return kernel_ptr;
 }
 
-namespace {
-void CreateEventKernelMod(const KernelGraphPtr &kernel_graph) {
-  MS_EXCEPTION_IF_NULL(kernel_graph);
-  auto nodes = kernel_graph->execution_order();
-  for (auto &node : nodes) {
-    MS_EXCEPTION_IF_NULL(node);
-    if (!IsOneOfPrimitiveCNode(node, {prim::kPrimStreamSend, prim::kPrimStreamRecv})) {
-      continue;
-    }
-    device::ascend::GenerateKernelBuildInfo(node, RT_KERNEL);
-    auto kernel_mod_ptr = kernel::RtOpBuild(node);
-    MS_EXCEPTION_IF_NULL(kernel_mod_ptr);
-    AnfAlgo::SetKernelMod(kernel_mod_ptr, node.get());
-  }
-}
-}  // namespace
-
 void GeKernelExecutor::DoStreamAssign(const KernelGraphPtr &kernel_graph,
                                       const std::vector<std::pair<CNodePtr, CNodePtr>> &sched_events) {
   MS_LOG(DEBUG) << "Status record: start stream assign.";
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   MS_EXCEPTION_IF_NULL(kernel_graph);
+  if (ms_context->IsEnableInferBoost()) {
+    MS_LOG(INFO) << "InferBoost mode, skip assign stream.";
+    return;
+  }
+  MS_LOG(INFO) << "Status record: start stream assign, " << kernel_graph->ToString();
   // stream assign
   if (common::IsDisableRuntimeConfig(common::kRuntimeMultiStream)) {
     MS_LOG(INFO) << "Force single stream.";
   } else {
     AclStreamAssign::GetInstance().AssignStream(NOT_NULL(kernel_graph), sched_events);
   }
-  CreateEventKernelMod(kernel_graph);
 #ifdef ENABLE_DUMP_IR
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
@@ -1003,20 +990,15 @@ void GeKernelExecutor::DoStreamAssign(const KernelGraphPtr &kernel_graph,
     DumpIR(file_name, kernel_graph, true, kWholeStack);
   }
 #endif
-  kernel_graph->PrintGraphExecuteOrder();
-  MS_LOG(DEBUG) << "Status record: end stream assign.";
+  MS_LOG(INFO) << "Status record: end stream assign, " << kernel_graph->ToString();
 }
 
-void GeKernelExecutor::DoSomas(const FuncGraphPtr &graph,
-                               const std::vector<std::pair<CNodePtr, CNodePtr>> &sched_events) {
+void GeKernelExecutor::DoSomas(const FuncGraphPtr &graph) {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   MS_EXCEPTION_IF_NULL(graph);
   auto kernel_graph = graph->cast<KernelGraphPtr>();
   MS_EXCEPTION_IF_NULL(kernel_graph);
-  if (!ms_context->IsEnableInferBoost()) {
-    DoStreamAssign(kernel_graph, sched_events);
-  }
   // somas
   MS_LOG(DEBUG) << "Status record: start do somas.";
   if (ms_context->get_param<int>(MS_CTX_MEMORY_OPTIMIZE_LEVEL) != kOptimizeO0) {
@@ -1048,6 +1030,38 @@ void GeKernelExecutor::OptimizeExecutionOrder(const FuncGraphPtr &graph) const {
   FixExecutionOrderForInlineControlFlowGraph(kernel_graph);
 }
 
+void GeKernelExecutor::AllocGraphFixedMemory() const { graph_executor_->AllocGEFixMemory(); }
+
+namespace {
+void InitGeMemory(const KernelGraphPtr &kernel_graph) {
+  auto execution_order = kernel_graph->execution_order();
+  for (const auto &node : execution_order) {
+    if (!IsPrimitiveCNode(node, prim::kPrimCallGE)) {
+      continue;
+    }
+    auto stream_id = AnfAlgo::GetStreamId(node);
+    auto ge_kernel_mod = dynamic_cast<kernel::GeKernelMod *>(AnfAlgo::GetKernelMod(node));
+    MS_EXCEPTION_IF_NULL(ge_kernel_mod);
+    ge_kernel_mod->InitGeMemory(stream_id);
+  }
+}
+
+void CreateEventKernelMod(const KernelGraphPtr &kernel_graph) {
+  MS_EXCEPTION_IF_NULL(kernel_graph);
+  auto nodes = kernel_graph->execution_order();
+  for (auto &node : nodes) {
+    MS_EXCEPTION_IF_NULL(node);
+    if (!IsOneOfPrimitiveCNode(node, {prim::kPrimStreamSend, prim::kPrimStreamRecv})) {
+      continue;
+    }
+    device::ascend::GenerateKernelBuildInfo(node, RT_KERNEL);
+    auto kernel_mod_ptr = kernel::RtOpBuild(node);
+    MS_EXCEPTION_IF_NULL(kernel_mod_ptr);
+    AnfAlgo::SetKernelMod(kernel_mod_ptr, node.get());
+  }
+}
+}  // namespace
+
 void GeKernelExecutor::PreprocessBeforeRun(const FuncGraphPtr &graph) const {
   MS_EXCEPTION_IF_NULL(graph);
   profiler::CollectHostInfo("Ascend", "PreprocessBeforeRun", "GePreprocess", 1, 0, 0);
@@ -1061,9 +1075,6 @@ void GeKernelExecutor::PreprocessBeforeRun(const FuncGraphPtr &graph) const {
   }
   // use GE
   if (kernel_graph->is_graph_run_mode() && IsEnableRefMode()) {
-    if (common::GetEnv("MS_DEV_GE_AS_KERNEL") == "1") {
-      return;
-    }
     if (GraphWithNoRealKernel(kernel_graph)) {
       return;
     }
@@ -1100,8 +1111,11 @@ void GeKernelExecutor::PreprocessBeforeRun(const FuncGraphPtr &graph) const {
   if (ms_context_exec_order == kExecOrderGpto) {
     mindspore::gpto::GPTO(kernel_graph, &sched_events);
   }
-  DoSomas(NOT_NULL(graph), sched_events);
-
+  DoStreamAssign(kernel_graph, sched_events);
+  CreateEventKernelMod(kernel_graph);
+  InitGeMemory(kernel_graph);
+  kernel_graph->PrintGraphExecuteOrder();
+  DoSomas(NOT_NULL(graph));
   profiler::CollectHostInfo("Ascend", "PreprocessBeforeRun", "GePreprocess", 1, 0, 1);
 }
 
