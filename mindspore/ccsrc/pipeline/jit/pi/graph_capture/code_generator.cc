@@ -333,7 +333,7 @@ py::object CodeGenerator::Transform(const Code &ccode) {
   py::object co_freevars = ConvertVector(ccode.co_freevars);
   py::object co_cellvars = ConvertVector(ccode.co_cellvars);
   py::str co_name(AttachCodeID(ccode.co_name));
-
+#if !IS_PYTHON_3_11_PLUS
   PyCodeObject *new_code = PyCode_New(ccode.co_argcount,        // co_argcount
                                       ccode.co_kwonlyargcount,  // co_kwonlyargcount
                                       ccode.co_nlocals,         // co_nlocals
@@ -353,6 +353,9 @@ py::object CodeGenerator::Transform(const Code &ccode) {
   if (new_code != nullptr) {
     return py::reinterpret_steal<py::object>(reinterpret_cast<PyObject *>(new_code));
   }
+#else
+  MS_LOG(ERROR) << "not implement in python3.11";
+#endif
   throw py::error_already_set();
 }
 

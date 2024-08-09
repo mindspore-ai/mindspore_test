@@ -17,6 +17,7 @@
 #include <internal/pycore_code.h>
 #endif
 #include "pipeline/jit/pi/python_adapter/py_code.h"
+#include "utils/log_adapter.h"
 
 namespace mindspore {
 namespace pijit {
@@ -158,18 +159,16 @@ PyCodeWrapper::LocalKind PyCodeWrapper::FastLocalKind(int i) const {
 }
 
 py::object PyCodeWrapper::DeepCopy() {
+#if !IS_PYTHON_3_11_PLUS
   PyCodeObject *co = this->ptr_;
-  PyCodeObject *new_code = PyCode_New(
-    co->co_argcount, co->co_kwonlyargcount, co->co_nlocals, co->co_stacksize, co->co_flags, Code().ptr(), co->co_consts,
-    co->co_names, VarNames().ptr(), FreeVars().ptr(), CellVars().ptr(), co->co_filename, co->co_name,
-#if IS_PYTHON_3_11_PLUS
-    co->co_qualname, co->co_firstlineno, code_wrapper.LineTab().ptr(), co->co_exceptiontable);
-#else
-    co->co_firstlineno, LineTab().ptr());
-#endif
+  PyCodeObject *new_code =
+    PyCode_New(co->co_argcount, co->co_kwonlyargcount, co->co_nlocals, co->co_stacksize, co->co_flags, Code().ptr(),
+               co->co_consts, co->co_names, VarNames().ptr(), FreeVars().ptr(), CellVars().ptr(), co->co_filename,
+               co->co_name, co->co_firstlineno, LineTab().ptr());
   if (new_code != nullptr) {
     return py::reinterpret_steal<py::object>(reinterpret_cast<PyObject *>(new_code));
   }
+#endif
   throw py::error_already_set();
 }
 

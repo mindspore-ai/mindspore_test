@@ -17,13 +17,14 @@
 #include <algorithm>
 #include <map>
 #include "ir/tensor.h"
+#include "pipeline/jit/pi/python_adapter/pydef.h"
 
 namespace py = pybind11;
 
 namespace mindspore {
 namespace pijit {
 
-ShapeContext::ShapeContext(PyFrameObject *f, PyObject *signature)
+ShapeContext::ShapeContext(EvalFrameObject *f, PyObject *signature)
     : frame_(f), signature_(signature), is_method_(false), applied_(false) {
   Py_XINCREF(f);
   Py_XINCREF(signature);
@@ -44,10 +45,14 @@ ShapeContext::ShapeContext(PyFrameObject *f, PyObject *signature)
       Py_DECREF(signature);
       signature_ = tuple;
     }
+#if !IS_PYTHON_3_11_PLUS
     int argc = frame_->f_code->co_argcount + frame_->f_code->co_kwonlyargcount;
     is_method_ = (argc == (PyTuple_GET_SIZE(signature_) + 1)) ? true : false;
     std::vector<PyObject *> locals(&(frame_->f_localsplus[is_method_ ? 1 : 0]), &(frame_->f_localsplus[argc]));
     origin_ = locals;
+#else
+    MS_LOG(ERROR) << "not implement in python3.11";
+#endif
   }
 }
 
@@ -193,6 +198,14 @@ static bool CheckItemValid(PyObject *sig, PyObject *org) {
   return true;
 }
 
+#if IS_PYTHON_3_11_PLUS
+bool ShapeContext::CheckValid() {
+  MS_LOG(ERROR) << "not implement in python3.11";
+  return false;
+}
+void ShapeContext::ApplySignature() { MS_LOG(ERROR) << "not implement in python3.11"; }
+void ShapeContext::RevertSignature() { MS_LOG(ERROR) << "not implement in python3.11"; }
+#else
 bool ShapeContext::CheckValid() {
   if (signature_ == nullptr) {
     return false;
@@ -239,6 +252,7 @@ void ShapeContext::RevertSignature() {
   }
   applied_ = false;
 }
+#endif
 
 }  // namespace pijit
 }  // namespace mindspore

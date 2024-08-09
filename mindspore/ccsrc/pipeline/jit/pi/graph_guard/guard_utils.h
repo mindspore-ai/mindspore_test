@@ -43,7 +43,8 @@ class GuardItem : public std::enable_shared_from_this<GuardItem> {
  public:
   explicit GuardItem(TracePtr var);
   virtual ~GuardItem() = default;
-  virtual bool Check(const PyFrameObject *frame, std::map<size_t, PyObject *> *cache = nullptr, bool perf = false) = 0;
+  virtual bool Check(const EvalFrameObject *frame, std::map<size_t, PyObject *> *cache = nullptr,
+                     bool perf = false) = 0;
   virtual bool Check(PyObject *obj) = 0;
   virtual std::string ToString() = 0;
   virtual const InfoPack &Info() = 0;

@@ -37,6 +37,7 @@
 #include "ir/cell.h"
 #include "pybind_api/ir/primitive_py.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
+#include "pipeline/jit/pi/python_adapter/pydef.h"
 
 namespace mindspore {
 namespace pijit {
@@ -784,6 +785,10 @@ PyObject *SetLocalPyObject(ValueNode *node) {
 }
 
 std::pair<PyObject *, ValueNode *> GraphBuilder::SearchSelfPyObject(PyCodeObject *co) {
+#if IS_PYTHON_3_11_PLUS
+  MS_LOG(ERROR) << "not implement in python3.11";
+  return {nullptr, nullptr};
+#else
   if (co->co_argcount < 1) {
     return {nullptr, nullptr};
   }
@@ -805,6 +810,7 @@ std::pair<PyObject *, ValueNode *> GraphBuilder::SearchSelfPyObject(PyCodeObject
   }
   obj_value = std::make_pair(obj, value);
   return obj_value;
+#endif
 }
 
 ValueNode *GraphBuilder::HandleGetattr(ValueNode *target_node, const Instr &instr) {
@@ -1676,17 +1682,17 @@ GraphBuilder::GraphBuilder(const PyFrameWrapper &f)
     int oparg = IS_PYTHON_3_11_PLUS ? fast_index : offset;
     AbstractNode::Type t = fast_index < free_offset ? AbstractNode::CellVar : AbstractNode::FreeVar;
     PyObject *cell_contents = PyCell_GET(cell);
-    int oparg = i;
     CellVarNode *n = graph_->NewCellNode(AObject::Convert(cell), LOAD_CLOSURE, oparg);
     graph_->GetTracedNodes().push_back(n);
-
-    frame_.SetClosure(i, n);
-    n->SetIndex(oparg);
     frame_.SetClosure(offset, n);
+#if !IS_PYTHON_3_11_PLUS
     if (t == AbstractNode::CellVar && co->co_cell2arg != nullptr && co->co_cell2arg[offset] != CO_CELL_NOT_AN_ARG) {
       MS_EXCEPTION_IF_NULL(cell_contents);
       n->SetFromParam(co->co_cell2arg[offset]);
     }
+#else
+    MS_LOG(ERROR) << "not implement in python3.11";
+#endif
     if (cell_contents == nullptr) {
       n->SetValue(&ValueNode::kUnboundLocal);
     } else {
@@ -1917,6 +1923,10 @@ bool CheckSupportCreateInstance(CallNode *call_node) {
 }
 
 AObject *GraphBuilder::BuildSuperObject(PyCodeObject *co) {
+#if IS_PYTHON_3_11_PLUS
+  MS_LOG(ERROR) << "not implement in python3.11";
+  return nullptr;
+#else
   AObject *super_obj = nullptr;
   if (co->co_argcount == 0) {
     PyErr_SetString(PyExc_RuntimeError, "super(): no arguments");
@@ -1976,6 +1986,7 @@ AObject *GraphBuilder::BuildSuperObject(PyCodeObject *co) {
   super_obj = AObject::Convert(ret);
   Py_DECREF(ret);
   return super_obj;
+#endif
 }
 
 bool GraphBuilder::ClassInstantiationFold(CallNode *call_node, AObject::Type type) {
@@ -2696,6 +2707,10 @@ bool GraphBuilder::HandlePositionParams(const py::object &func, std::vector<Valu
 }
 
 bool GraphBuilder::HandleCallParameters(const py::object &func_info, CallNode *call_node, FrameStates *frame) {
+#if IS_PYTHON_3_11_PLUS
+  MS_LOG(ERROR) << "not implement in python3.11";
+  return false;
+#else
   if (func_info.ptr() == nullptr) {
     MS_LOG(EXCEPTION) << "HandleCallParameters with empty func_info input.";
   }
@@ -2746,6 +2761,7 @@ bool GraphBuilder::HandleCallParameters(const py::object &func_info, CallNode *c
     }
   }
   return true;
+#endif
 }
 
 static void SetGradFuncInfo(mindspore::pijit::CallNode *call_node);

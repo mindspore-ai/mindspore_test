@@ -250,7 +250,7 @@ bool GraphJitConfig::SetAutoJitFilter(PyObject *callable) {
   return true;
 }
 
-bool GraphJitConfig::ShouldAutoJit(PyFrameObject *f) {
+bool GraphJitConfig::ShouldAutoJit(EvalFrameObject *f) {
   if (!GetBoolConfig(kAutoJit)) {
     return false;
   }
