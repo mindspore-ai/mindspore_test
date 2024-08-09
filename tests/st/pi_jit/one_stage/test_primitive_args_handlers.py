@@ -373,26 +373,43 @@ def test_reshape_type_cast_from_list_tensor_to_tuple():
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_concat_axis_default_value():
+def test_concat_axis_using_default_value():
     """
     Feature: One stage basic operation.
     Description: Test one stage basic operation.
     Expectation: No exception.
     """
     @jit(mode="PIJit", jit_config=cfg)
-    def fn(tensors, axis=None):
-        return ops.cat(tensors, axis=axis) if axis is not None else ops.cat(tensors)
+    def fn(tensors):
+        return ops.cat(tensors)
 
     context.set_context(mode=context.PYNATIVE_MODE)
     x1 = Tensor(np.array([[0, 1], [2, 1]]))
     x2 = Tensor(np.array([[0, 1], [2, 1]]))
     ret = fn((x1, x2))
     match_array(ret.asnumpy(), np.array([[0, 1], [2, 1], [0, 1], [2, 1]]))
+    assert_executed_by_graph_mode(fn)
 
+
+@pytest.mark.level0
+@pytest.mark.platform_x86_cpu
+@pytest.mark.env_onecard
+def test_concat_axis_using_custom_value():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+    @jit(mode="PIJit", jit_config=cfg)
+    def fn(tensors, axis):
+        return ops.cat(tensors, axis=axis)
+
+    context.set_context(mode=context.PYNATIVE_MODE)
     x1 = Tensor(np.array([[0, 1], [2, 1]]))
     x2 = Tensor(np.array([[0, 1], [2, 1]]))
     ret = fn((x1, x2), axis=1)
     match_array(ret.asnumpy(), np.array([[0, 1, 0, 1], [2, 1, 2, 1]]))
+    assert_executed_by_graph_mode(fn)
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
