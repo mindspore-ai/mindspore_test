@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+import os
 from builtins import range, super
 import time
 
@@ -598,6 +599,21 @@ def test_clear_callback():
         pass
     # this ensure that callback is indeed called
     assert cb.flag and cb.row_cnt == 4
+
+
+def test_disable_callback_in_independent_mode():
+    """
+    Feature: Disable callback in independent mode.
+    Description: Test callback is disable in independent mode.
+    Expectation: Exception raised to notify feature not supported.
+    """
+    os.environ["MS_INDEPENDENT_DATASET"] = "True"
+    with pytest.raises(RuntimeError) as err:
+        my_cb = MyWaitedCallback([], 1)
+        data = ds.NumpySlicesDataset([1, 2, 3, 4], shuffle=False)
+        data = data.map(operations=(lambda x: x), callbacks=[my_cb])
+    assert "Dataset Callbacks is not supported in Dataset Independent mode" in str(err.value)
+    os.environ["MS_INDEPENDENT_DATASET"] = "False"
 
 
 if __name__ == '__main__':

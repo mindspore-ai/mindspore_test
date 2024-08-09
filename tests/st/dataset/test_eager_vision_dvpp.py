@@ -38,6 +38,20 @@ input_apple_jpg = "/home/workspace/mindspore_dataset/910B_dvpp/apple.jpg"
 result_data_dir = "/home/workspace/mindspore_dataset/910B_dvpp/testAscend910BDvpp"
 
 
+def test_disable_dvpp_in_independent_mode():
+    """
+    Feature: Disable dvpp in independent mode.
+    Description: Test dvpp is disable in independent mode.
+    Expectation: Exception raised to notify feature not supported.
+    """
+    os.environ["MS_INDEPENDENT_DATASET"] = "True"
+    with pytest.raises(RuntimeError) as err:
+        img = np.ones([224, 224, 3], dtype=np.uint8)
+        _ = vision.Resize((30, 30)).device("Ascend")(img)
+    assert "Transform in Ascend mode is not supported in Dataset Independent mode" in str(err.value)
+    os.environ["MS_INDEPENDENT_DATASET"] = "False"
+
+
 def test_eager_decode_dvpp():
     """
     Feature: Decode op when Ascend910B
@@ -2034,6 +2048,7 @@ def test_basic_transforms_dvpp():
     test_eager_rotate_dvpp()
     test_eager_posterize_dvpp()
     test_eager_solarize_dvpp()
+    test_disable_dvpp_in_independent_mode()
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')

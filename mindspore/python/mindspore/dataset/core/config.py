@@ -32,6 +32,8 @@ import mindspore._c_dataengine as cde
 from mindspore import log as logger
 from mindspore.dataset.core.validator_helpers import replace_none, type_check
 from mindspore.dataset.debug import DebugHook, PrintMetaDataHook
+from mindspore.dataset.core.validator_helpers import check_independent_mode
+
 
 __all__ = ['set_sending_batches', 'load', '_init_device_info',
            'set_seed', 'get_seed',
@@ -544,6 +546,8 @@ def set_enable_autotune(enable, filepath_prefix=None):
     if not isinstance(enable, bool):
         raise TypeError("enable must be of type bool.")
 
+    check_independent_mode("Dataset AutoTune", enable)
+
     save_autoconfig = bool(enable and filepath_prefix is not None)
 
     if filepath_prefix and not isinstance(filepath_prefix, str):
@@ -728,6 +732,9 @@ def set_auto_offload(offload):
     """
     if not isinstance(offload, bool):
         raise TypeError("offload must be a bool dtype")
+
+    check_independent_mode("Dataset Offload", offload)
+
     _config.set_auto_offload(offload)
 
 
