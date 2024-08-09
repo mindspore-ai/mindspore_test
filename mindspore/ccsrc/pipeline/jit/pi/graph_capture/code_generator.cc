@@ -549,15 +549,6 @@ void CodeGenerator::LoadValue(ValueNode *node) {
     NewInstr(LOAD_FAST, iter->second);
     return;
   }
-  if (node->GetType() == ValueNode::CellVar || node->GetType() == ValueNode::FreeVar) {
-    int index = static_cast<CellVarNode *>(node)->GetIndex();
-    if (index < 0) {
-      LoadConst(py::reinterpret_steal<py::object>(PyCell_New(nullptr)));
-    } else {
-      NewInstr(LOAD_CLOSURE, index);
-    }
-    return;
-  }
   int opcode = node->GetOpcode();
   if (opcode == LOAD_DEREF) {
     NewInstr(opcode, node->GetOparg());

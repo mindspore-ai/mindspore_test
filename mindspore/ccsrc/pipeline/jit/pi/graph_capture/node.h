@@ -158,15 +158,13 @@ class ValueNode : public InstrNode {
 // simulate PyCellObject, oparg is index
 class CellVarNode : public ValueNode {
  public:
-  explicit CellVarNode(Type t) : ValueNode(t, nullptr, -1, CO_CELL_NOT_AN_ARG), val_(nullptr) {}
+  explicit CellVarNode(Type t)
+      : ValueNode(t, nullptr, LOAD_CLOSURE, 0), val_(nullptr), from_param_(CO_CELL_NOT_AN_ARG) {}
 
   // If the cell contains an argument, then this should be the argument index. Plz refer to PyCodeObject.co_cell2arg.
   // If not an argument, then this index should be CO_CELL_NOT_AN_ARG.
-  void SetFromParam(int i) { SetOparg(i); }
-  int GetFromParam() const { return GetOparg(); }
-  // The closure index
-  void SetIndex(int i) { return SetOpcode(i); }
-  int GetIndex() const { return GetOpcode(); }
+  void SetFromParam(int i) { from_param_ = i; }
+  int GetFromParam() const { return from_param_; }
   // The object stored in this cell
   auto GetValue() const { return val_; }
   void SetValue(ValueNode *v) { val_ = v; }
@@ -174,11 +172,11 @@ class CellVarNode : public ValueNode {
   auto &GetCellOper() { return cell_oper_; }
   void AddCellOper(ValueNode *i) { cell_oper_.push_back(i); }
   virtual ~CellVarNode() {}
-  std::string ToString() const override;
 
  private:
   ValueNode *val_;
   std::vector<ValueNode *> cell_oper_;  // record cell operation
+  int from_param_;
 };
 
 class ParamNode : public ValueNode {

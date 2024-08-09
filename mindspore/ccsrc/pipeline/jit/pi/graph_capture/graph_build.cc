@@ -749,7 +749,7 @@ bool GraphBuilder::DoGlobalAccess(const Instr &instr) {
 }
 
 bool GraphBuilder::HandleSuper(const Instr &instr, AObject *super) {
-  if (super != nullptr && super->GetTypeObject() != &PySuper_Type) {
+  if (super == nullptr || super->GetTypeObject() != &PySuper_Type) {
     return false;
   }
   ValueNode *self_super = SearchSelfPyObject(graph_->GetCodeObj()).second;
@@ -1669,11 +1669,10 @@ GraphBuilder::GraphBuilder(const PyFrameObject *f)
   for (int i = 0; i < ncells + nfrees; i++) {
     PyObject *cell = f->f_localsplus[co->co_nlocals + i];
     PyObject *cell_contents = PyCell_GET(cell);
-    AbstractNode::Type t = i < ncells ? AbstractNode::CellVar : AbstractNode::FreeVar;
-    CellVarNode *n = graph_->allocator().NewNode<CellVarNode>(t);
-    n->SetGraph(graph_);
-    n->SetVobj(AObject::Convert(cell));
-    n->SetIndex(i);
+    int oparg = i;
+    CellVarNode *n = graph_->NewCellNode(AObject::Convert(cell), LOAD_CLOSURE, oparg);
+    graph_->GetTracedNodes().push_back(n);
+
     frame_.SetClosure(i, n);
     if (i < ncells && co->co_cell2arg != nullptr && co->co_cell2arg[i] != CO_CELL_NOT_AN_ARG) {
       MS_EXCEPTION_IF_NULL(cell_contents);
@@ -1844,25 +1843,6 @@ bool ApplyInlinePolicy(CallNode *call_node) {
   Graph *g = call_node->GetSubGraph();
   if (g == nullptr || g->GetRetVal() == nullptr) {
     return false;
-  }
-
-  PyCodeObject *co = g->GetCodeObj();
-  int ncells = PyTuple_GET_SIZE(co->co_cellvars);
-  int nfrees = PyTuple_GET_SIZE(co->co_freevars);
-
-  bool is_make_func = call_node->input(0)->GetOpcode() == MAKE_FUNCTION;
-  if (is_make_func) {
-    // inline MAKE_FUNCTION, need eliminate cell and free variable if the function is not dead local.
-    return ncells == 0;
-  }
-
-  const auto &closures = g->GetFrame(0).GetClosures();
-  if (std::any_of(closures.begin(), closures.begin() + ncells, [](auto n) { return !n->GetCellOper().empty(); })) {
-    return false;
-  }
-  if (nfrees > 0) {
-    // if inline, guard free variable
-    return nfrees == 1 && std::string("__class__") == PyUnicode_AsUTF8(PyTuple_GET_ITEM(co->co_freevars, 0));
   }
   if (g->GetRetVal()->GetOpcode() == MAKE_FUNCTION) {
     return false;
@@ -2802,42 +2782,95 @@ py::object GraphBuilder::ResolveCallable(CallNode *call_node, StopTraceReason *s
   return callable_info;
 }
 
-void GraphBuilder::ResolveClosure(const py::object &func_info, ValueNode *callable_node, FrameStates *frame) {
+void GraphBuilder::ResolveClosure(const py::object &func_info, CallNode *call_node, FrameStates *frame) {
   if (func_info.ptr() == nullptr) {
     MS_LOG(INTERNAL_EXCEPTION) << "When resolving closure, get func_info failed.";
   }
+  ValueNode *callable_node = call_node->input(0);
   PyCodeObject *co = reinterpret_cast<PyCodeObject *>(PyFunction_GET_CODE(func_info.ptr()));
   PyObject *closure = PyFunction_GET_CLOSURE(func_info.ptr());
 
   int ncells = PyTuple_GET_SIZE(co->co_cellvars);
   int nfrees = PyTuple_GET_SIZE(co->co_freevars);
   frame->ResizeClosure(ncells + nfrees);
-  for (int i = 0; i < ncells; i++) {
-    CellVarNode *n = graph_->allocator().NewNode<CellVarNode>(CellVarNode::CellVar);
-    n->SetVobj(AObject::Convert(py::reinterpret_steal<py::object>(PyCell_New(nullptr))));
-    frame->SetClosure(i, n);
-  }
-  // track free variable
-  bool make_func = callable_node->GetOpcode() == MAKE_FUNCTION;
-  for (int i = 0; i < nfrees; ++i) {
-    CellVarNode *freevar = nullptr;
-    if (make_func) {
-      ValueNode *tuple = *(callable_node->getInputs().end() - 3);
-      MS_EXCEPTION_IF_CHECK_FAIL(tuple->GetOpcode() == BUILD_TUPLE, "unknown closure source");
-      freevar = reinterpret_cast<CellVarNode *>(tuple->input(i));
-    } else if (closure) {
-      auto v = PyTuple_GET_ITEM(closure, i);
-      freevar = graph_->allocator().NewNode<CellVarNode>(CellVarNode::FreeVar);
-      freevar->SetVobj(AObject::Convert(v));
 
-      // if inline, guard free variable
-      ValueNode *param = NewValueNode(AObject::Convert(PyCell_GET(v)), LOAD_DEREF, -1);
-      param->SetGraph(graph_);
-      freevar->SetValue(param);
+  auto TrackExtraAttrArgs = [this, &call_node](ValueNode *src, const std::string &name) {
+    push(src);
+    DoAttrAccess({LOAD_ATTR, 0, name});
+    ValueNode *attr_node = pop();
+    MS_EXCEPTION_IF_CHECK_FAIL(graph_->GetTracedNodes().back() == attr_node, "can't find attr node");
+    graph_->GetTracedNodes().pop_back();
+    call_node->AddParam(attr_node);
+    return attr_node;
+  };
+
+  if (ncells > 0) {
+    // track cell variable
+    ValueNode *type_node = NewValueNode(AObject::Convert(reinterpret_cast<PyObject *>(&PyCell_Type)), LOAD_CONST, 0);
+    call_node->AddParam(type_node);
+    for (int i = 0; i < ncells; i++) {
+      auto obj_info = AObject::Convert(py::reinterpret_steal<py::object>(PyCell_New(nullptr)));
+      CellVarNode *cell_node = graph_->NewCellNode(obj_info, CALL_FUNCTION, 0, {type_node});
+      // one stage treat it as constant, do nothing
+      call_node->AddParam(cell_node);
+      frame->SetClosure(i, cell_node);
+    }
+  }
+  if (nfrees > 0) {
+    // track free variable
+    ValueNode *func_node = nullptr;
+    switch (callable_node->GetVobj()->GetType()) {
+      case AObject::kTypeCell:
+        func_node = TrackExtraAttrArgs(callable_node, "construct");
+        break;
+      case AObject::kTypeAnyValue:
+        func_node = TrackExtraAttrArgs(callable_node, "__call__");
+        break;
+      case AObject::kTypeFunction:
+      case AObject::kTypeBoundMethod:
+        func_node = callable_node;
+        break;
+      default:
+        MS_LOG(INTERNAL_EXCEPTION) << "can't find the function of object";
+        break;
+    }
+
+    // track free variable
+    bool make_func = func_node->GetOpcode() == MAKE_FUNCTION;
+    ValueNode *closures_node = nullptr;
+    if (make_func) {
+      closures_node = *(func_node->getInputs().end() - 3);
+    } else if (closure) {
+      closures_node = TrackExtraAttrArgs(func_node, "__closure__");
     } else {
       MS_LOG(EXCEPTION) << "error no closure";
     }
-    frame->SetClosure(ncells + i, freevar);
+    for (int i = 0; i < nfrees; ++i) {
+      CellVarNode *freevar = nullptr;
+      if (make_func) {
+        MS_EXCEPTION_IF_CHECK_FAIL(closures_node->GetOpcode() == BUILD_TUPLE, "unknown closure source");
+        freevar = reinterpret_cast<CellVarNode *>(closures_node->input(i));
+      } else {
+        ValueNode *index_node = NewValueNode(AObject::Convert(py::int_(i)), LOAD_CONST, 0);
+        // track the node
+        push(closures_node);
+        push(index_node);
+        DoItemAccess({BINARY_SUBSCR, 0});
+        auto tmp = pop();
+        // replaced
+        MS_EXCEPTION_IF_CHECK_FAIL(graph_->GetTracedNodes().back() == tmp, "can't find the node");
+        graph_->GetTracedNodes().pop_back();
+        freevar = graph_->NewCellNode(tmp->GetVobj(), BINARY_SUBSCR, 0, tmp->getInputs());
+        MS_ASSERT(PyObject_RichCompareBool(tmp->GetVobj()->GetPyObject().ptr(), PyTuple_GET_ITEM(closure, i), Py_EQ) ==
+                  1);
+
+        call_node->AddParam(freevar);
+        auto cell_contents_node = TrackExtraAttrArgs(freevar, "cell_contents");
+        MS_EXCEPTION_IF_NULL(cell_contents_node->GetVobj()->GetPyObject().ptr());
+        freevar->SetValue(cell_contents_node);
+      }
+      frame->SetClosure(ncells + i, freevar);
+    }
   }
 }
 
@@ -2902,7 +2935,7 @@ StopTraceReason GraphBuilder::HandleCall(int depth) {
 
   // frame build
   FrameStates *frame = &(subgraph->frame_);
-  ResolveClosure(callable_info, call_node->input(0), frame);
+  ResolveClosure(callable_info, call_node, frame);
   if (!HandleCallParameters(callable_info, call_node, frame)) {
     call_node->SetInlineReason(InlineReason::kInlineFunc_ArgHandle_Unsupported);
     return StopTraceReason::kStopTraceFunc_ArgHandle_Unsupported;
@@ -3692,7 +3725,7 @@ std::vector<ValueNode *> MindGraphBuilder::GetNewArgs(CallNode *call_node, AObje
   }
   auto new_callable_info = FindPyFunc(vobj);
   FrameStates f;
-  ResolveClosure(new_callable_info, call_node->input(0), &f);
+  ResolveClosure(new_callable_info, call_node, &f);
 
   // Need to consider repeat add issue.
   if (!HandleCallParameters(new_callable_info, call_node, &f)) {
