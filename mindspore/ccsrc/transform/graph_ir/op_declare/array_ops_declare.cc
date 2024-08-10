@@ -54,6 +54,7 @@ REG_ADPT_DESC(ImageSummary, "ImageSummary", ADPT_DESC(OutfeedEnqueueOpV2))
 REG_ADPT_DESC(HistogramSummary, "HistogramSummary", ADPT_DESC(OutfeedEnqueueOpV2))
 REG_ADPT_DESC(TensorDump, kNameTensorDump, ADPT_DESC(OutfeedEnqueueOpV2))
 REG_ADPT_DESC(Print, kNamePrint, ADPT_DESC(OutfeedEnqueueOpV2))
+REG_ADPT_DESC(TensorReport, kNameTensorReport, ADPT_DESC(OutfeedEnqueueOpV2))
 
 // Data
 INPUT_MAP(Data) = EMPTY_INPUT_MAP;

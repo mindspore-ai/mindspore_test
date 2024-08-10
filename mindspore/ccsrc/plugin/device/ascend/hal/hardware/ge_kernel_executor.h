@@ -28,7 +28,6 @@
 #include "runtime/device/kernel_runtime.h"
 #include "plugin/device/ascend/hal/device/ascend_device_address.h"
 #include "plugin/device/ascend/hal/hardware/ge_graph_executor.h"
-#include "plugin/device/ascend/mindio/mindio_adapter.h"
 
 namespace mindspore {
 namespace device {

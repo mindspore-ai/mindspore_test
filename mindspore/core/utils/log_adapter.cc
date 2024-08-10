@@ -846,7 +846,6 @@ const std::string GetSubModuleName(SubModuleId module_id) {
     "API",                // SM_API
     "SYMBOLIC_SHAPE",     // SM_SYMBOLIC_SHAPE
     "GRAPH_KERNEL",       // SM_GRAPH_KERNEL
-    "MINDIO",             // SM MINDIO
     "LLM_BOOST",          // SM_LLM_BOOST
   };
   return sub_module_names[IntToSize(module_id % NUM_SUBMODUES)];

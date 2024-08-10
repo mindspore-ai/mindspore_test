@@ -23,6 +23,7 @@ from mindspore.common import dtype as mstype
 from mindspore import _checkparam as validator
 from mindspore.common._decorator import deprecated
 from mindspore.ops.primitive import prim_attr_register, Primitive
+from mindspore import log as logger
 
 
 class ScalarCast(Primitive):
@@ -59,3 +60,13 @@ class ScalarCast(Primitive):
         value = np.cast[np_dtype.lower()](input_x)
         value = value.item()
         return value
+
+class TensorReport(Primitive):
+    @prim_attr_register
+    def __init__(self):
+        """Initialize TensorReport"""
+        self.add_prim_attr("side_effect_io", True)
+        self.add_prim_attr("channel_name", "ms_tensor_report")
+
+    def __call__(self, file, input_x):
+        logger.warning("TensorReport doesn't support pynative mode.")

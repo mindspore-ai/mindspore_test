@@ -344,6 +344,7 @@ constexpr const char kNameLARSUpdate[] = "LARSUpdate";
 constexpr const char kNameRound[] = "Round";
 constexpr const char kNamePrint[] = "Print";
 constexpr const char kNameTensorDump[] = "TensorDump";
+constexpr const char kNameTensorReport[] = "TensorReport";
 constexpr const char kNameStringFormat[] = "StringFormat";
 constexpr const char kNameApplyFtrl[] = "ApplyFtrl";
 constexpr const char kNameDiag[] = "Diag";

@@ -91,7 +91,6 @@ set(ASCEND_COMMON_SUB
         hal/common
         hal/hccl_adapter
         hal/profiler
-        mindio
         )
 
 foreach(a_comp ${ASCEND_COMMON_SUB})

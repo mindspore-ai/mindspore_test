@@ -948,15 +948,6 @@ bool GeGraphExecutor::RunGraphRefModeInnner(const FuncGraphPtr &graph, const std
   {
     // Release GIL before calling into (potentially long-running) C++ code
     GilReleaseWithCheck gil_release;
-    if (IsNeedNotifyTTP(graph)) {
-      MS_LOG(INFO) << "Found optimizer sub graph and send event to mindio";
-      auto sync_ret = ResManager()->SyncStream();
-      if (!sync_ret) {
-        MS_LOG(EXCEPTION) << "Sync stream failed";
-      } else {
-        mindio::MindIOAdapter::GetInstance()->NotifyStartUpdatingOs();
-      }
-    }
     transform::Status ret =
       transform::RunGraphWithStreamAsync(graph_runner, run_options, stream, ge_inputs, ge_outputs);
     if (ret != transform::Status::SUCCESS) {
@@ -1141,16 +1132,6 @@ void GeGraphExecutor::DoAsyncCkpt(const FuncGraphPtr &graph) {
       }
     }
   }
-}
-
-bool GeGraphExecutor::IsNeedNotifyTTP(const FuncGraphPtr &graph) {
-  MS_EXCEPTION_IF_NULL(graph);
-  auto kg = std::dynamic_pointer_cast<session::KernelGraph>(graph);
-  if (mindio::MindIOAdapter::GetInstance()->IsEnable() && kg != nullptr && kg->has_attr(kIsRefGraph) &&
-      GetValue<bool>(kg->get_attr(kIsRefGraph))) {
-    return true;
-  }
-  return false;
 }
 
 bool GeGraphExecutor::RunGraph(const FuncGraphPtr &graph, const std::vector<tensor::Tensor> &inputs,

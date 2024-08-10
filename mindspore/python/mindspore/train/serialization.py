@@ -20,6 +20,7 @@ from __future__ import division
 import binascii
 import json
 import os
+import re
 import shutil
 import stat
 from threading import RLock
@@ -68,7 +69,7 @@ from mindspore.parallel._parallel_serialization import _convert_to_list, _conver
 from mindspore.parallel._ps_context import _set_checkpoint_load_status, _store_warm_up_ptr_by_tensor, \
     _store_warm_up_ptr_by_tensor_list, _cache_enable
 from mindspore.parallel.checkpoint_transform import sync_pipeline_shared_parameters
-from mindspore.train._utils import read_proto
+from mindspore.train._utils import read_proto, get_parameter_redundancy
 from mindspore._c_expression import load_mindir, _encrypt, _decrypt, _is_cipher_file, dynamic_obfuscate_mindir, \
     split_mindir, split_dynamic_mindir
 from mindspore.common.generator import Generator
@@ -116,6 +117,63 @@ def init_ckpt_file_system(fs: FileSystem):
 # Initialize checkpoint file system
 init_ckpt_file_system(_ckpt_fs)
 
+def _get_cur_rank_dp(parameter_layout_dict):
+    """ Get dp and tp from layout dict. """
+    pp_num = _get_auto_parallel_context("pipeline_stages")
+    dev_num = _get_device_num()
+    global_rank = get_rank()
+    pipe_size = dev_num // pp_num
+    initial_rank = (global_rank // pipe_size) * pipe_size
+    parameter_redundancy_dict = get_parameter_redundancy(
+        parameter_layout_dict, initial_rank)
+    value_len = sys.maxsize
+    min_value = ()
+    for key, value in parameter_redundancy_dict.items():
+        if "accu_grads" in key or "inputs" in key:
+            continue
+        for item in value:
+            if len(item) < value_len and global_rank in item:
+                value_len = len(item)
+                min_value = item
+    return min_value
+
+def get_ckpt_path_with_strategy(cur_ckpt_path, cur_strategy_path):
+    """
+    Find available checkpoint file path from all backup checkpoint files of current rank.
+    It suppose that checkpoint path contains substring 'rank_{rank_id}' which is used to
+    distinguish between different path.If cur_ckpt_path doesn't have 'rank_{rank_id}' substring, will return
+    cur_ckpt_path itself when cur_ckpt_path is exist, otherwise return None.
+
+    Note:
+       This API must be called after the communication is initialized because the cluster information
+       needs to be obtained internally.
+
+    Args:
+        cur_ckpt_path (str): the checkpoint file path which cur rank needs.
+        cur_strategy_path (str): strategy file path for current rank.
+
+    Returns:
+        - new_ckpt_file (String), if found available checkpoint file , return it.
+        - None, if not found available checkpoint, return None.
+
+    Examples:
+        >>> from mindspore import get_ckpt_path_with_strategy
+        >>> ms.set_context(mode=ms.GRAPH_MODE)
+        >>> ms.set_auto_parallel_context(parallel_mode=ms.ParallelMode.DATA_PARALLEL, gradients_mean=True)
+        >>> init()
+        >>> ckpt_file= "./rank_5/iteration-1_40.ckpt"
+        >>> strategy_file = "./src_pipeline_strategys/src_strategy_5.ckpt"
+        >>> ckpt_file_new = get_ckpt_path_with_strategy(ckpt_file, stragegy_file)
+        >>> print(ckpt_file_new)
+    """
+    dp = _get_cur_rank_dp(cur_strategy_path)
+    pattern = r'rank_\d+'
+    for i in dp:
+        new_ckpt_path = re.sub(pattern, f"rank_{str(i)}", cur_ckpt_path)
+        if not os.path.isfile(new_ckpt_path):
+            continue
+        return new_ckpt_path
+    return None
 
 class ParamDictFuture:
     def __init__(self, executor, param_dict_future):
@@ -450,14 +508,12 @@ def _check_save_obj_and_ckpt_file_name(save_obj, ckpt_file_name, format):
         ckpt_file_name += f".{format}"
     return ckpt_file_name
 
-
 def _check_format_and_other_params(format, enc_key, enc_mode, crc_check=False, async_save=False, map_param_inc=False,
                                    global_step_num=None):
     param_not_default = (enc_key is not None or enc_mode != "AES-GCM" or crc_check or async_save
                          or map_param_inc or global_step_num is not None)
     if format == "safetensors" and param_not_default:
         raise ValueError("For 'save_checkpoint', when format is 'safetensors', other param must be default.")
-
 
 def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
                     async_save=False, append_dict=None, enc_key=None, enc_mode="AES-GCM", choice_func=None,
@@ -537,7 +593,17 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
     global_step_num = kwargs.get('global_step_num', None)
     _check_format_and_other_params(format, enc_key, enc_mode, crc_check, async_save, map_param_inc, global_step_num)
 
-    save_obj = _convert_save_obj_to_param_list(save_obj, integrated_save, append_dict, choice_func)
+    tft_env = os.getenv("MS_ENABLE_TFT", "")
+    mode = context.get_context("mode")
+    device_target = context.get_context("device_target")
+    tft_enable = ("TTP:1" in tft_env) and (device_target == "Ascend") and (mode == context.GRAPH_MODE)
+    if tft_enable:
+        s1 = mindspore.hal.Stream()
+        with mindspore.hal.StreamCtx(s1):
+            save_obj = _convert_save_obj_to_param_list(save_obj, integrated_save, append_dict, choice_func)
+        s1.synchronize()
+    else:
+        save_obj = _convert_save_obj_to_param_list(save_obj, integrated_save, append_dict, choice_func)
 
     if append_dict:
         append_info_list = []
@@ -713,6 +779,10 @@ def _convert_cell_to_param_list(save_obj, integrated_save, append_dict, choice_f
             random_byte = _executor._graph_executor.get_random_status(phase)
             param_list.append({"name": "random_op", "data": random_byte})
             append_dict.pop("random_op")
+    tft_env = os.getenv("MS_ENABLE_TFT", "")
+    mode = context.get_context("mode")
+    device_target = context.get_context("device_target")
+    tft_enable = ("TTP:1" in tft_env) and (device_target == "Ascend") and (mode == context.GRAPH_MODE)
     for (key, value) in param_dict.items():
         each_param = {"name": key}
         if isinstance(value, MapParameter):
@@ -736,11 +806,14 @@ def _convert_cell_to_param_list(save_obj, integrated_save, append_dict, choice_f
             param_data.append(value.key)
         else:
             param_data = value.data
+            if tft_enable:
+                param_data = Tensor(Tensor_.move_to(value, "CPU", False))
 
             # in automatic model parallel scenario, some parameters were split to all the devices,
             # which should be combined before saving
             if key in parameter_layout_dict:
-                param_data = Tensor(value.data)
+                if not tft_enable:
+                    param_data = Tensor(value.data)
                 param_data = _get_merged_param_data(save_obj, parameter_layout_dict, key, param_data,
                                                     integrated_save)
 

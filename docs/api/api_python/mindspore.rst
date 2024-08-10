@@ -95,6 +95,7 @@ mindspore
     mindspore.ckpt_to_safetensors
     mindspore.convert_model
     mindspore.export
+    mindspore.get_ckpt_path_with_strategy
     mindspore.load
     mindspore.load_checkpoint
     mindspore.load_checkpoint_async
