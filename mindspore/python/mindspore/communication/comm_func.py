@@ -44,7 +44,7 @@ import mindspore.ops.operations as P
 
 
 def _check_split_sizes_sequence(tensor, sequence):
-    if sequence == []:
+    if not sequence:
         raise TypeError(f"sequence can not be empty list.")
     element0 = sequence[0]
     for idx in range(1, len(sequence)):
@@ -519,6 +519,8 @@ def batch_isend_irecv(p2p_op_list):
     receive_shapes = []
     receive_dtypes = []
     tags = []
+    if not p2p_op_list:
+        raise TypeError(f"p2p_op_list can not be empty list.")
     group = p2p_op_list[0].group
     if group is None:
         group = GlobalComm.WORLD_COMM_GROUP
@@ -910,6 +912,10 @@ def irecv(tensor, src=0, group=GlobalComm.WORLD_COMM_GROUP, tag=0):
         [[ 0.  1.]
          [ 2.  3.]]
     """
+    if not isinstance(tensor, (Tensor, Tensor_)):
+        raise TypeError("For irecv, the input tensor must be tensor")
+    if not isinstance(src, int):
+        raise TypeError("For irecv, the src must be int")
     _src = get_group_rank_from_world_rank(src, group)
     shape = tensor.shape
     dtype = tensor.dtype
