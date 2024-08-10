@@ -73,7 +73,7 @@ class IrGrad : public AutoGrad {
   void UpdateSensParameter(const ValuePtr &value);
   // Replace input or weights parameter from primal funcgraph to parameters of tape_;
   void ReplacePrimalParameter(bool has_sens_arg);
-  void UpdateTapeParameter(const tensor::BaseTensorPtr &tensor);
+  void UpdateTapeParameter(const tensor::BaseTensorPtr &tensor) const;
   void DoParameterReplaceByManager(bool has_sens_arg);
   void DoParameterReplaceByUser(bool has_sens_arg, expander::bprop::UserType *user);
   // Set sens and weights parameter nodes by user input info

@@ -36,9 +36,8 @@ BoolImmPtr ConvertBool(const py::object &obj) {
       auto obj_int64 = py::cast<int64_t>(obj);
       bool obj_bool = obj_int64 != 0;
       return std::make_shared<BoolImm>(obj_bool);
-    } else {
-      return nullptr;
     }
+    return nullptr;
   }
   return PyCast<bool, BoolImm>(obj);
 }

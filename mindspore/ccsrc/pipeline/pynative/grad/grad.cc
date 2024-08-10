@@ -2295,7 +2295,8 @@ AnfNodePtr GradExecutor::GetRealInputNodeBySkipHook(const AnfNodePtr &input_node
       auto backward_hook_op = input_node->cast<CNodePtr>();
       MS_EXCEPTION_IF_NULL(backward_hook_op);
       return backward_hook_op->input(1);
-    } else if (IsPrimitiveCNode(input_node, prim::kPrimTupleGetItem)) {
+    }
+    if (IsPrimitiveCNode(input_node, prim::kPrimTupleGetItem)) {
       // Multi inputs.
       auto tuple_get_item = input_node->cast<CNodePtr>();
       MS_EXCEPTION_IF_NULL(tuple_get_item);

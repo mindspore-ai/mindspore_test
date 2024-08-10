@@ -742,15 +742,14 @@ compile::MindRTBackendPtr ForwardExecutor::GetMindRtBackend(const string &cur_de
   const auto iter = mindrt_backends_.find(cur_device_target);
   if (iter != mindrt_backends_.end()) {
     return iter->second;
-  } else {
-    auto ms_context = MsContext::GetInstance();
-    MS_EXCEPTION_IF_NULL(ms_context);
-    auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-    auto backend = std::make_shared<compile::MindRTBackend>("ms", cur_device_target, device_id);
-    MS_EXCEPTION_IF_NULL(backend);
-    mindrt_backends_[cur_device_target] = backend;
-    return backend;
   }
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  auto backend = std::make_shared<compile::MindRTBackend>("ms", cur_device_target, device_id);
+  MS_EXCEPTION_IF_NULL(backend);
+  mindrt_backends_[cur_device_target] = backend;
+  return backend;
 }
 
 ValuePtr ForwardExecutor::RunOpWithBackendPolicy(const FrontendOpRunInfoPtr &op_run_info,

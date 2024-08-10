@@ -106,6 +106,7 @@ void SetDependValue(const PrimitivePtr &primitive, const NodePtrList &inputs) {
 }
 
 std::vector<int64_t> BuildShape(const abstract::AbstractBasePtr &abs) {
+  MS_EXCEPTION_IF_NULL(abs);
   auto base_shape = abs->BuildShape();
   if (base_shape->isa<abstract::NoShape>()) {
     return {};
@@ -116,6 +117,7 @@ std::vector<int64_t> BuildShape(const abstract::AbstractBasePtr &abs) {
 }
 
 bool ParseCond(const NodePtr &cond) {
+  MS_EXCEPTION_IF_NULL(cond);
   auto cond_val = cond->Value();
   if (cond_val->isa<BoolImm>()) {
     return GetValue<bool>(cond_val);
@@ -136,6 +138,7 @@ bool ParseCond(const NodePtr &cond) {
 }  // namespace
 
 NodePtr FuncBuilder::EmitOp(const PrimitivePtr &prim, const NodePtrList &inputs) {
+  MS_EXCEPTION_IF_NULL(prim);
   MS_LOG(DEBUG) << "Emit op " << prim->name();
   auto real_inputs = pass_forward_->PassForOpInput(prim, inputs);
   std::vector<ValuePtr> op_inputs;
@@ -230,6 +233,7 @@ NodePtr FuncBuilder::TupleGetItem(const NodePtr &input, size_t i) {
 }
 
 NodePtr FuncBuilder::OutZeros(const NodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
   if (!node->Value()->isa<ValueSequence>()) {
     return NewFuncNode(kNone, nullptr, InputType::kConstant);
   }
@@ -246,18 +250,22 @@ NodePtr FuncBuilder::OutZeros(const NodePtr &node) {
 }
 
 ValuePtr FuncBuilder::Ones(const ValuePtr &value) {
+  MS_EXCEPTION_IF_NULL(value);
   auto ones_abs = PyNativeAlgo::Common::SetAbstractValueToAnyValue(value->ToAbstract());
   NodePtrList inputs{NewFuncNode(value, ones_abs, InputType::kOpOutput)};
   return EmitOp(prim::kPrimOnesLike, inputs)->Value();
 }
 
 ValuePtr FuncBuilder::Zeros(const ValuePtr &value) {
+  MS_EXCEPTION_IF_NULL(value);
   auto zeros_abs = PyNativeAlgo::Common::SetAbstractValueToAnyValue(value->ToAbstract());
   auto input = NewFuncNode(value, zeros_abs, InputType::kOpOutput);
   return ZerosLike(input)->Value();
 }
 
 ValuePtr FuncBuilder::Add(const ValuePtr &input, const ValuePtr &other) {
+  MS_EXCEPTION_IF_NULL(input);
+  MS_EXCEPTION_IF_NULL(other);
   auto input_abs = PyNativeAlgo::Common::SetAbstractValueToAnyValue(input->ToAbstract());
   auto other_abs = PyNativeAlgo::Common::SetAbstractValueToAnyValue(other->ToAbstract());
   auto input_node = NewFuncNode(input, input_abs, InputType::kOpOutput);
@@ -334,6 +342,8 @@ NodePtrList FuncBuilder::FlattenNode(const NodePtr &input) {
 }
 
 ValuePtr FuncBuilder::FillZeros(const ValuePtr &value, const abstract::AbstractBasePtr &abs) {
+  MS_EXCEPTION_IF_NULL(value);
+  MS_EXCEPTION_IF_NULL(abs);
   auto convert_value = value;
   if (value->isa<None>()) {
     if (abs->isa<abstract::AbstractTensor>()) {

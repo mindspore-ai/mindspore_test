@@ -858,7 +858,7 @@ void IrGrad::ReplacePrimalParameter(bool has_sens_arg) {
   ElimateTupleGetItem();
 }
 
-void IrGrad::UpdateTapeParameter(const tensor::BaseTensorPtr &tensor) {
+void IrGrad::UpdateTapeParameter(const tensor::BaseTensorPtr &tensor) const {
   auto p = ad_param()->tape_->add_parameter();
   auto param = ExtractParameter(tensor);
   if (param == nullptr) {
