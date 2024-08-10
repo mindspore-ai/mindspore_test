@@ -475,7 +475,8 @@ bool Common::IsTensor(const ValuePtr &v, bool include_sequence) {
   if (include_sequence) {
     if (v->isa<tensor::MetaSparseTensor>() || v->isa<tensor::BaseTensor>()) {
       return true;
-    } else if (v->isa<ValueSequence>()) {
+    }
+    if (v->isa<ValueSequence>()) {
       auto v_seq = v->cast<ValueSequencePtr>();
       if (v_seq->size() == 0) {
         MS_LOG(DEBUG) << "Get empty value sequence";
@@ -488,10 +489,9 @@ bool Common::IsTensor(const ValuePtr &v, bool include_sequence) {
       // All value are tensor
       return std::all_of(v_seq->value().begin(), v_seq->value().end(),
                          [](const ValuePtr &e) { return IsTensor(e, true); });
-    } else {
-      MS_LOG(DEBUG) << "Get value " << v->ToString();
-      return false;
     }
+    MS_LOG(DEBUG) << "Get value " << v->ToString();
+    return false;
   }
   MS_LOG(DEBUG) << "Get value " << v->ToString();
   return v->isa<tensor::BaseTensor>() || v->isa<tensor::MetaSparseTensor>();
@@ -602,7 +602,8 @@ ShapeVector Common::GetShapeFromValue(const ValuePtr &v) {
   MS_EXCEPTION_IF_NULL(v);
   if (v->isa<tensor::BaseTensor>()) {
     return v->cast<tensor::BaseTensorPtr>()->shape_c();
-  } else if (v->isa<ValueSequence>()) {
+  }
+  if (v->isa<ValueSequence>()) {
     const auto &v_seq = v->cast<ValueSequencePtr>()->value();
     ShapeVector plant_shape_vector;
     for (const auto &item : v_seq) {
@@ -890,25 +891,27 @@ ValuePtr Common::CreateFakeValueWithoutDeviceAddress(const ValuePtr &value) {
     }
     t->set_device_address(nullptr);
     return t;
-  } else if (value->isa<ValueSequence>()) {
+  }
+  if (value->isa<ValueSequence>()) {
     const auto &value_seq = value->cast<ValueSequencePtr>();
     ValuePtrList value_list;
     (void)std::transform(value_seq->value().begin(), value_seq->value().end(), std::back_inserter(value_list),
                          [](const ValuePtr &elem) { return CreateFakeValueWithoutDeviceAddress(elem); });
     return std::make_shared<ValueTuple>(value_list);
-  } else if (value->isa<stub::StubNode>()) {
+  }
+  if (value->isa<stub::StubNode>()) {
     const auto &stub_node = value->cast<stub::StubNodePtr>();
     return CreateFakeValueWithoutDeviceAddress(stub_node->WaitValue());
-  } else if (value->isa<ValueDictionary>()) {
+  }
+  if (value->isa<ValueDictionary>()) {
     auto dic_v = value->cast<ValueDictionaryPtr>();
     std::vector<std::pair<ValuePtr, ValuePtr>> key_values;
     for (const auto &v : dic_v->value()) {
       (void)key_values.emplace_back(v.first, CreateFakeValueWithoutDeviceAddress(v.second));
     }
     return std::make_shared<ValueDictionary>(key_values);
-  } else {
-    return value;
   }
+  return value;
 }
 
 InputType Common::SetValueGradInfo(const ValuePtr &value, const TopCellInfoPtr &top_cell, InputType grad_type) {

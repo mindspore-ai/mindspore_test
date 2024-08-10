@@ -64,6 +64,7 @@ std::string EdgeEnumToString(EdgeType edge_type) {
 }
 
 std::vector<session::KernelWithIndex> GetGraphOutputs(const KernelGraphPtr &graph) {
+  MS_EXCEPTION_IF_NULL(graph);
   const auto &output_nodes = graph->outputs();
   std::vector<session::KernelWithIndex> outputs;
   outputs.reserve(output_nodes.size());
@@ -74,6 +75,7 @@ std::vector<session::KernelWithIndex> GetGraphOutputs(const KernelGraphPtr &grap
 
 void ConvertValueNodes(const KernelGraphPtr &graph, const device::DeviceContext *device_context,
                        std::map<device::DeviceAddress *, EdgePtr> *address_to_edge) {
+  MS_EXCEPTION_IF_NULL(graph);
   const auto &value_nodes = graph->graph_value_nodes();
   for (const auto &value_node : value_nodes) {
     MS_EXCEPTION_IF_NULL(value_node);
@@ -97,6 +99,8 @@ void ConvertValueNodes(const KernelGraphPtr &graph, const device::DeviceContext 
 
 std::vector<EdgePtr> ConvertGraphInputs(const KernelGraphPtr &graph, const device::DeviceContext *device_context,
                                         std::map<device::DeviceAddress *, EdgePtr> *address_to_edge) {
+  MS_EXCEPTION_IF_NULL(graph);
+  MS_EXCEPTION_IF_NULL(address_to_edge);
   const auto &inputs = graph->inputs();
   std::vector<EdgePtr> graph_inputs_edges;
   graph_inputs_edges.reserve(inputs.size());

@@ -828,7 +828,8 @@ AnfNodePtr IrBprop::BuildKNodeForCNodeInput(const AnfNodePtr &input_node) {
     if (input_adjoint_iter == ad_param_->anfnode_to_variable_adjoint_.end()) {
       if (IsPrimitiveCNode(input_node, prim::kPrimMakeTuple)) {
         return BuildKNodeForMakeTuple(input_node);
-      } else if (IsPrimitiveCNode(input_node, prim::kPrimTupleGetItem)) {
+      }
+      if (IsPrimitiveCNode(input_node, prim::kPrimTupleGetItem)) {
         return BuildKNodeForTupleGetItem(input_node);
       }
       MS_LOG(EXCEPTION) << "Can not find input in adjoint map, inp: " << input_node->DebugString();

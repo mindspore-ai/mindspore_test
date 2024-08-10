@@ -60,11 +60,10 @@ bool IsNodeInfoChange(const NodeInfo &old_node_info, const NodeInfo &new_node_in
     MS_LOG(DEBUG) << "Graph is dynamic, input is tuple, but old seq node info size " << input_size
                   << ", new seq node info size " << new_node_info.seq_node.size();
     return true;
-  } else {
-    for (size_t i = 0; i < input_size; ++i) {
-      if (IsNodeInfoChange(old_node_info.seq_node[i], new_node_info.seq_node[i])) {
-        return true;
-      }
+  }
+  for (size_t i = 0; i < input_size; ++i) {
+    if (IsNodeInfoChange(old_node_info.seq_node[i], new_node_info.seq_node[i])) {
+      return true;
     }
   }
 
@@ -128,6 +127,7 @@ bool IsInputsNodeInfoChange(const std::vector<NodeInfo> &old_inputs_node_info,
 }
 
 NodeInfo GetNodeInfoFromValue(const ValuePtr &input) {
+  MS_EXCEPTION_IF_NULL(input);
   if (input->isa<tensor::BaseTensor>()) {
     NodeInfo node_info;
     auto tensor = input->cast<tensor::BaseTensorPtr>();
@@ -358,7 +358,8 @@ py::object DynamicShape::GetDynamicInput(const py::object &actual_input) {
       dyn_shape_args[i] = GetDynamicInput(tuple_actual_args[i]);
     }
     return dyn_shape_args;
-  } else if (py::isinstance<py::list>(actual_input)) {
+  }
+  if (py::isinstance<py::list>(actual_input)) {
     auto list_actual_args = py::cast<py::list>(actual_input);
     size_t args_size = list_actual_args.size();
     py::list dyn_shape_args;
@@ -366,7 +367,8 @@ py::object DynamicShape::GetDynamicInput(const py::object &actual_input) {
       dyn_shape_args.append(GetDynamicInput(list_actual_args[i]));
     }
     return dyn_shape_args;
-  } else if (py::isinstance<tensor::BaseTensor>(actual_input)) {
+  }
+  if (py::isinstance<tensor::BaseTensor>(actual_input)) {
     const auto &infer = PyNativeAlgo::Common::GetPyNativeExecutor()->forward_executor()->infer_operation();
     auto tensor_ptr = py::cast<tensor::BaseTensorPtr>(actual_input);
     MS_EXCEPTION_IF_NULL(tensor_ptr);
@@ -463,6 +465,7 @@ bool NodeDynamicDetect::IsNodeDynamic(const TopCellInfoPtr &top_cell, const Valu
 
   // 1.Detect jit phase
   const DynamicDetectNodeInfoPtr &old_node_info = dynamic_nodes[node_idx];
+  MS_EXCEPTION_IF_NULL(old_node_info);
   if (node->is_graph_node) {
     if (!old_node_info->is_graph_node || node->graph_phase != old_node_info->graph_phase) {
       MS_LOG(DEBUG) << "Graph is dynamic, old is_graph_node: " << old_node_info->is_graph_node
@@ -527,7 +530,8 @@ bool NodeDynamicDetect::IsNeedSaveDynamicDetectNodes(const TopCellInfoPtr &top_c
     // top_cell->cell_id() is cell id with inputs shape, if cell id in cell_id_with_dynamic_detect_nodes_
     // id same with top_cell->cell_id(), no need save nodes.
     return cell_infos.begin()->first != top_cell->cell_id();
-  } else if (cell_infos.size() == kMaxCacheDynamicShapeCellNum) {
+  }
+  if (cell_infos.size() == kMaxCacheDynamicShapeCellNum) {
     auto cell_infos_iter = cell_infos.find(top_cell->cell_id());
     if (cell_infos_iter == cell_infos.end()) {
       // cell_id_with_dynamic_detect_nodes_ has two cell id already, current cell is is different
