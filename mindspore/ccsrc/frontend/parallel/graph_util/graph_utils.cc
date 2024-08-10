@@ -276,8 +276,8 @@ inline bool IsSameRank(const Shape &shape_vec, const Shape &targe_shape_vec) {
   return shape_vec.size() == targe_shape_vec.size();
 }
 
-bool HasAssebledDynamicDim(const Shape &shape_vec, const AssembledDynamicDimsMapping &dyn_dims_mapping,
-                           const TensorRedistributionPtr &tensor_redistribution, bool is_same_rank) {
+bool HasAssembledDynamicDim(const Shape &shape_vec, const AssembledDynamicDimsMapping &dyn_dims_mapping,
+                            const TensorRedistributionPtr &tensor_redistribution, bool is_same_rank) {
   for (int64_t dim : shape_vec) {
     auto iter = dyn_dims_mapping.find(dim);
     if (iter != dyn_dims_mapping.end()) {
@@ -453,18 +453,16 @@ AnfNodePtr ConvertConstParamToDynamic(const TensorRedistributionPtr &tensor_redi
   // The rank should be compared between shape_vec and origin_from_shape, because
   // the mapping is generated according to origin_from_shape.
   bool is_same_rank = IsSameRank(shape_vec, origin_from_shape);
-  if (!HasAssebledDynamicDim(shape_vec, dyn_dims_mapping, tensor_redistribution, is_same_rank)) {
+  if (!HasAssembledDynamicDim(shape_vec, dyn_dims_mapping, tensor_redistribution, is_same_rank)) {
     // If the shape_vec is (-1, dim_1) and dim_1 is not a generated fake value by tensor redistribution,
     // so it doesn't have to match.
     AnfNodePtr val = NewValueNode(param.first.second);
     MS_EXCEPTION_IF_NULL(val);
-    val->set_abstract(param.first.second->ToAbstract());
     return val;
   }
   if (shape_vec.size() == 1) {
     std::vector<int64_t> const_shape{-1};
     AnfNodePtr val = NewValueNode(const_shape);
-    val->set_abstract(param.first.second->ToAbstract());
     return val;
   }
   std::vector<AnfNodePtr> shape_input;
@@ -474,7 +472,7 @@ AnfNodePtr ConvertConstParamToDynamic(const TensorRedistributionPtr &tensor_redi
     MatchingAccordingToPrime(shape_vec, dyn_dims_mapping, tensor_redistribution, func_graph, &shape_input,
                              reshape_mode);
   } else {
-    if (is_same_rank) {
+    if (is_same_rank && reshape_mode != ReshapeMode::FROM_ORIGIN_BASE_SLICE_TO_TO_ORIGIN_BASE_SLICE) {
       MatchingAccordingToIndex(shape_vec, dyn_dims_mapping, tensor_redistribution, func_graph, &shape_input,
                                reshape_mode);
     } else {
@@ -525,7 +523,6 @@ Status ConvertStridedSliceInputs(const OperatorParams &params,
       int64_t value = GetValue<int64_t>(param.first.second);
       MS_LOG(INFO) << "STRIDEDSLICE: param=" << param.first.first << ", param.second=" << value;
       AnfNodePtr val = NewValueNode(value);
-      val->set_abstract(param.first.second->ToAbstract());
       (void)new_node_input->emplace_back(val);
       continue;
     }
@@ -539,7 +536,6 @@ Status ConvertStridedSliceInputs(const OperatorParams &params,
     }
     AnfNodePtr val = NewValueNode(shape_vec);
     MS_ERROR_IF_NULL_W_RET_VAL(val, FAILED);
-    val->set_abstract(param.first.second->ToAbstract());
     (void)new_node_input->emplace_back(val);
   }
   return SUCCESS;
@@ -580,6 +576,38 @@ void ReplaceDynamicAxisToNegOne(const TensorRedistributionPtr &tensor_redistribu
       (*shape_vec)[i] = -1;
     }
   }
+}
+
+bool SkipForOneDynamicAxisInTargetShape(const Shape &shape_vec,
+                                        const TensorRedistributionPtr &tensor_redistribution_from_cnode,
+                                        const enum ReshapeMode &mode) {
+  if (mode == ReshapeMode::FROM_ORIGIN_BASE_SLICE_TO_TO_ORIGIN_BASE_SLICE) {
+    auto to_origin_no_assembled = tensor_redistribution_from_cnode->to_origin_no_assembled();
+    Shape origin_to_no_assembled_base_slice = to_origin_no_assembled.base_slice_shape().array();
+    bool has_one_dynamic_axis =
+      std::count(origin_to_no_assembled_base_slice.begin(), origin_to_no_assembled_base_slice.end(), -1) == 1;
+    if (has_one_dynamic_axis) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool UpdateOneDynamicShapeAxisToNegOne(Shape *shape_vec,
+                                       const TensorRedistributionPtr &tensor_redistribution_from_cnode,
+                                       const enum ReshapeMode &mode) {
+  if (mode == ReshapeMode::FROM_ORIGIN_BASE_SLICE_TO_TO_ORIGIN_BASE_SLICE) {
+    auto to_origin_no_assembled = tensor_redistribution_from_cnode->to_origin_no_assembled();
+    Shape origin_to_no_assembled_base_slice = to_origin_no_assembled.base_slice_shape().array();
+    for (size_t i = 0; i < origin_to_no_assembled_base_slice.size(); ++i) {
+      if (origin_to_no_assembled_base_slice[i] == -1) {
+        (*shape_vec)[i] = -1;
+        return true;
+      }
+    }
+    return false;
+  }
+  MS_LOG(EXCEPTION) << "Unsupported reshape mode: " << mode;
 }
 
 Status ConvertReshapeInputs(const OperatorParams &params,
@@ -627,7 +655,9 @@ Status ConvertReshapeInputs(const OperatorParams &params,
                << ", origin_to_no_assembled: " << origin_to_no_assembled
                << ", origin_to_no_assembled_slice: " << origin_to_no_assembled_slice;
   // if only has one dynamic axis, then replace it with -1 simply.
-  if (reshape_mode == ReshapeMode::NO_RESHAPE && HasOnlyOneDynamicAxis(shape_vec, tensor_redistribution_from_cnode)) {
+  if ((reshape_mode == ReshapeMode::NO_RESHAPE || reshape_mode == ReshapeMode::FROM_ORIGIN_SLICE_TO_FROM_LAYOUT_SLICE ||
+       reshape_mode == ReshapeMode::TO_ORIGIN_SLICE_TO_TO_LAYOUT_SLICE) &&
+      HasOnlyOneDynamicAxis(shape_vec, tensor_redistribution_from_cnode)) {
     // After HasOnlyOneDynamicAxis checks, shape_vec must have one dynamic axis and it must be prime axis.
     Shape new_shape_vec(shape_vec);
     ReplaceDynamicAxisToNegOne(tensor_redistribution_from_cnode, &new_shape_vec);
@@ -636,10 +666,16 @@ Status ConvertReshapeInputs(const OperatorParams &params,
     (void)new_node_input->emplace_back(val);
     return SUCCESS;
   }
+  if (SkipForOneDynamicAxisInTargetShape(shape_vec, tensor_redistribution_from_cnode, reshape_mode)) {
+    Shape new_shape_vec(shape_vec);
+    UpdateOneDynamicShapeAxisToNegOne(&new_shape_vec, tensor_redistribution_from_cnode, reshape_mode);
+    AnfNodePtr val = NewValueNode(new_shape_vec);
+    (void)new_node_input->emplace_back(val);
+    return SUCCESS;
+  }
   if (!WhetherMatchingIsNeededForReshape(shape_vec, tensor_redistribution_from_cnode)) {
     MS_LOG(INFO) << "No need to matching for " << shape_vec;
     AnfNodePtr val = NewValueNode(shape_param.first.second);
-    val->set_abstract(shape_param.first.second->ToAbstract());
     (void)new_node_input->emplace_back(val);
     return SUCCESS;
   }
@@ -664,7 +700,6 @@ Status ConvertSplitInputs(const OperatorParams &params, const FuncGraphPtr &func
     }
     AnfNodePtr val = NewValueNode(param.first.second);
     MS_EXCEPTION_IF_NULL(val);
-    val->set_abstract(param.first.second->ToAbstract());
     (void)split_inputs.emplace_back(val);
   }
   constexpr char tag[] = "redistribution_allsplit";
@@ -733,7 +768,8 @@ std::vector<AnfNodePtr> CreateInput(const Operator &op, const AnfNodePtr &pre_no
     TensorRedistributionPtr tensor_redistribution = GetTensorRedistributionFromCNode(cur_cnode);
     // 1. Only deal with Reshape in user scripts.
     // 2. Deal with non-user Reshape. If only have StrideSliceD, Concat and Split cannot reach.
-    if (tensor_redistribution != nullptr && tensor_redistribution->IsAssembledStaticShape()) {
+    if (tensor_redistribution != nullptr &&
+        (tensor_redistribution->IsAssembledStaticShape() || tensor_redistribution->IsMultiDynamicAxisReshape())) {
       MS_LOG(DEBUG) << cur_cnode->fullname_with_scope() << " distribute_operator is not nullptr";
       if (ConvertParamsToInputs(op, tensor_redistribution, cur_cnode->func_graph(), &new_node_input) == SUCCESS) {
         is_done = true;
@@ -756,7 +792,6 @@ std::vector<AnfNodePtr> CreateInput(const Operator &op, const AnfNodePtr &pre_no
     for (const auto &param : params) {
       AnfNodePtr val = NewValueNode(param.first.second);
       MS_EXCEPTION_IF_NULL(val);
-      val->set_abstract(param.first.second->ToAbstract());
       int64_t position = param.second;
       (void)new_node_input.insert(new_node_input.cbegin() + position - 1, val);
     }
@@ -1124,13 +1159,22 @@ Status UpdateReshapeShapeValue(const CNodePtr &reshape_cnode, const CNodePtr &sh
   Map tensor_map = tensor_info.tensor_layout().tensor_map();
   Arrangement dev_arr = tensor_info.tensor_layout().device_arrangement();
   TensorRedistributionPtr tensor_redistribution = GetTensorRedistributionFromCNode(reshape_cnode);
-
+  MS_LOG(INFO) << "shape: " << shape << ", tensor_map: " << tensor_map.array() << ", dev_arr: " << dev_arr.array();
   std::vector<AnfNodePtr> make_tuple_inputs;
   std::string instance_name = std::string(REDISTRIBUTION_OP) + "_replace_reshape";
   for (size_t i = 0; i < shape.size(); ++i) {
     if (shape[i] > 0) {
-      // Get const value and set to make_tuple_inputs.
-      auto const_val_node = NewValueNode(MakeValue(shape[i]));
+      ValueNodePtr const_val_node = nullptr;
+      if (tensor_map.array().size() == shape.size() && tensor_map.GetDimByIdx(i) != -1) {
+        int64_t scalar = dev_arr.GetDimByReverseIdx(tensor_map.GetDimByIdx(i));
+        MS_EXCEPTION_IF_CHECK_FAIL(shape[i] % scalar == 0,
+                                   "Const shape cannot be divided for index " + std::to_string(i));
+        int64_t partial_shape = shape[i] / scalar;
+        const_val_node = NewValueNode(MakeValue(partial_shape));
+      } else {
+        // Get const value and set to make_tuple_inputs.
+        const_val_node = NewValueNode(MakeValue(shape[i]));
+      }
       make_tuple_inputs.emplace_back(const_val_node);
       MS_LOG(INFO) << "Create ValueNode " << shape[i];
       continue;

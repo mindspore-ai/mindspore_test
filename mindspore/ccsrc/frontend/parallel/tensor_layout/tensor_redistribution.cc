@@ -96,17 +96,19 @@ Status TensorRedistribution::MakeFromToLayout(const TensorLayout &from, const Te
   return FAILED;
 }
 
-Status TensorRedistribution::Init(const TensorLayout &from, const TensorLayout &to, const RankList &dev_list) {
+Status TensorRedistribution::Init(const TensorLayout &from, const TensorLayout &to, const RankList &dev_list,
+                                  bool is_multi_dynamic_axis_reshape) {
   if (MakeFromToLayout(from, to) != SUCCESS) {
     MS_LOG(ERROR) << "Make from_layout and to_layout failed.";
     return FAILED;
   }
   this->is_dynamic_shape_ = CheckDynamicShape(from, to);
-  if (this->is_dynamic_shape_) {
+  this->is_multi_dynamic_axis_reshape_ = is_multi_dynamic_axis_reshape;
+  this->from_origin_no_assembled_ = this->from_origin_;
+  this->to_origin_no_assembled_ = this->to_origin_;
+  if (!is_multi_dynamic_axis_reshape && this->is_dynamic_shape_) {
     // Dynamic info of func_graph should be considered.
     MS_LOG(INFO) << "LayoutTransfer inited with dynamic shape.";
-    this->from_origin_no_assembled_ = this->from_origin_;
-    this->to_origin_no_assembled_ = this->to_origin_;
     Status ret = this->AssembleStaticTensorShape(this->from_origin_no_assembled_, this->to_origin_no_assembled_,
                                                  &this->from_origin_, &this->to_origin_);
     if (ret != Status::SUCCESS) {
@@ -142,6 +144,38 @@ Status TensorRedistribution::Init(const TensorLayout &from, const TensorLayout &
   return Status::SUCCESS;
 }
 
+void PastUniformFromShape(Shape *from_shape, ReplacementMemo *dynamic_axis_mapping, const Shape &to_shape,
+                          const Array &to_factors) {
+  Shape from_shape_divisor(*from_shape);
+  Shape to_shape_divisor(to_shape);
+  MS_LOG(DEBUG) << "from_shape: " << *from_shape << ", to_shape: " << to_shape;
+  for (int64_t &from_dim_val : from_shape_divisor) {
+    for (int64_t &to_dim_val : to_shape_divisor) {
+      if (from_dim_val == 1) {
+        break;
+      }
+      if (to_dim_val == -1) {
+        continue;
+      }
+      int64_t gcd_v = std::gcd(from_dim_val, to_dim_val);
+      from_dim_val /= gcd_v;
+      to_dim_val /= gcd_v;
+    }
+  }
+  int64_t to_left_size = GetTensorSize(to_shape_divisor);
+  MS_LOG(DEBUG) << "from_shape_divisor: " << from_shape_divisor << ", to_shape_divisor: " << to_shape_divisor
+                << ", to_left_size: " << to_left_size;
+  // if to_left_size is equal to 1,
+  // it means from_shape's size is enough to allocate to to_shape.
+  if (to_left_size == 1) {
+    return;
+  }
+  for (auto &iter : *dynamic_axis_mapping) {
+    (*from_shape)[iter.first] = from_shape->at(iter.first) * to_left_size;
+    iter.second = iter.second * to_left_size;
+  }
+}
+
 Status TensorRedistribution::CalculateFromTensorShape(Shape *from_shape, const Array &from_factors,
                                                       const Shape &to_shape, const Array &to_factors) {
   if (from_shape->size() != from_factors.GetDimSize() || to_shape.size() != to_factors.GetDimSize()) {
@@ -154,19 +188,15 @@ Status TensorRedistribution::CalculateFromTensorShape(Shape *from_shape, const A
   if (to_layout_const_size > from_layout_const_size && to_layout_const_size % from_layout_const_size == 0) {
     to_layout_added_factor *= (to_layout_const_size / from_layout_const_size);
   }
-  MS_LOG(INFO) << "from_shape=" << (*from_shape) << ", from_factors=" << from_factors.array()
-               << ", to_shape=" << to_shape << ", to_factors=" << to_factors.array()
-               << ", to_layout_added_factor=" << to_layout_added_factor;
   if (from_layout_const_size > to_layout_const_size && from_layout_const_size % to_layout_const_size == 0) {
     int64_t merged_const_factor = from_layout_const_size / to_layout_const_size;
     // Existed dim in from_layout already satisfy to_layout_added_factor.
     if (to_layout_added_factor > merged_const_factor && to_layout_added_factor % merged_const_factor == 0) {
       to_layout_added_factor /= merged_const_factor;
     }
-    if (to_layout_added_factor == 1) {
-      to_layout_added_factor = -1;
-    }
+    to_layout_added_factor = to_layout_added_factor == 1 ? -1 : to_layout_added_factor;
   }
+
   bool strict_mode = UseStrictMode(*from_shape, to_shape);
   std::vector<int64_t> known_dims;
   (void)std::copy_if(from_shape->begin(), from_shape->end(), std::back_inserter(known_dims),
@@ -180,6 +210,11 @@ Status TensorRedistribution::CalculateFromTensorShape(Shape *from_shape, const A
   if (last_dyn_dim_iter != from_shape->rend()) {
     last_dyn_dim = from_shape->size() - (last_dyn_dim_iter - from_shape->rbegin()) - 1;
   }
+
+  MS_LOG(INFO) << "from_shape=" << (*from_shape) << ", from_factors=" << from_factors.array()
+               << ", to_shape=" << to_shape << ", to_factors=" << to_factors.array()
+               << ", to_layout_added_factor=" << to_layout_added_factor << ", known_dims=" << known_dims
+               << ", last_dyn_dim=" << last_dyn_dim;
   for (size_t i = 0; i < from_shape->size(); ++i) {
     if (from_shape->at(i) != -1) {
       continue;
@@ -188,14 +223,21 @@ Status TensorRedistribution::CalculateFromTensorShape(Shape *from_shape, const A
     if (prime_num == -1) {
       return Status::FAILED;
     }
-    (*from_shape)[i] = prime_num * from_factors.GetDimByIdx(i);
-    if (strict_mode && from_shape->at(i) < to_factors.GetDimByIdx(i) &&
-        from_factors.GetDimByIdx(i) < to_factors.GetDimByIdx(i)) {
-      int64_t common_factor = std::gcd(from_factors.GetDimByIdx(i), to_factors.GetDimByIdx(i));
+    int64_t shard_value = from_factors.GetDimByIdx(i);
+    (*from_shape)[i] = prime_num * shard_value;
+    if (to_layout_added_factor > 0) {
+      int64_t redundancy_factor = std::gcd(shard_value, to_layout_added_factor);
+      MS_LOG(DEBUG) << "redundancy_factor=" << redundancy_factor;
+      to_layout_added_factor /= redundancy_factor;
+    }
+    if (strict_mode && from_shape->at(i) < to_factors.GetDimByIdx(i) && shard_value < to_factors.GetDimByIdx(i)) {
+      int64_t common_factor = std::gcd(shard_value, to_factors.GetDimByIdx(i));
       int64_t left_factor = to_factors.GetDimByIdx(i) / common_factor;
       (*from_shape)[i] *= left_factor;
-      if (to_layout_added_factor >= left_factor && to_layout_added_factor % left_factor == 0) {
-        to_layout_added_factor /= left_factor;
+      if (to_layout_added_factor >= left_factor) {
+        int64_t redundancy_factor = std::gcd(left_factor, to_layout_added_factor);
+        MS_LOG(DEBUG) << "redundancy_factor=" << redundancy_factor;
+        to_layout_added_factor /= redundancy_factor;
       }
       if (to_layout_added_factor < left_factor) {
         to_layout_added_factor = -1;
@@ -204,15 +246,14 @@ Status TensorRedistribution::CalculateFromTensorShape(Shape *from_shape, const A
     if (strict_mode && from_shape->at(i) >= to_factors.GetDimByIdx(i) &&
         from_shape->at(i) % to_factors.GetDimByIdx(i) != 0) {
       (*from_shape)[i] *= to_factors.GetDimByIdx(i);
-      if (to_layout_added_factor >= to_factors.GetDimByIdx(i) &&
-          to_layout_added_factor % to_factors.GetDimByIdx(i) == 0) {
-        to_layout_added_factor /= to_factors.GetDimByIdx(i);
+      if (to_layout_added_factor >= to_factors.GetDimByIdx(i)) {
+        int64_t redundancy_factor = std::gcd(to_factors.GetDimByIdx(i), to_layout_added_factor);
+        MS_LOG(DEBUG) << "redundancy_factor=" << redundancy_factor;
+        to_layout_added_factor /= redundancy_factor;
       }
     }
     if (i == last_dyn_dim && to_layout_added_factor > 0) {
-      if (from_shape->at(i) % to_layout_added_factor != 0) {
-        (*from_shape)[i] *= to_layout_added_factor;
-      }
+      (*from_shape)[i] *= to_layout_added_factor;
       to_layout_added_factor = -1;
     }
     known_dims.emplace_back(from_shape->at(i));
@@ -222,6 +263,7 @@ Status TensorRedistribution::CalculateFromTensorShape(Shape *from_shape, const A
       return Status::FAILED;
     }
   }
+  PastUniformFromShape(from_shape, &this->from_dims_replace_memo_, to_shape, to_factors);
   return Status::SUCCESS;
 }
 
@@ -312,9 +354,31 @@ Status TensorRedistribution::CalculateToTensorShapeUsingEnumeration(const Shape 
   }
 }
 
+inline bool IsOverflowInt64(const Shape &shape) {
+  int64_t capacity = std::accumulate(shape.begin(), shape.end(), INT64_MAX, std::divides<int64_t>());
+  return capacity <= 0;
+}
+
 void CalculateToTensorShapeForOneDynamicAxis(const Shape &from_shape, const Shape &origin_to_shape, Shape *to_shape) {
   Shape from_shape_divisor(from_shape);
   size_t dynamic_axis = 0;
+  if (!IsOverflowInt64(from_shape)) {
+    int64_t left = GetTensorSize(from_shape);
+    MS_LOG(DEBUG) << "use naive for one dynamic axis. from_shape: " << from_shape
+                  << ", origin_to_shape: " << origin_to_shape << ", to_shape: " << (*to_shape) << ", left: " << left;
+    for (size_t i = 0; i < origin_to_shape.size(); ++i) {
+      int64_t dim_val = origin_to_shape[i];
+      (*to_shape)[i] = dim_val;
+      if (dim_val == -1) {
+        dynamic_axis = i;
+        continue;
+      }
+      left /= dim_val;
+    }
+    (*to_shape)[dynamic_axis] = left;
+    MS_LOG(INFO) << "to_shape=" << (*to_shape);
+    return;
+  }
   for (size_t i = 0; i < origin_to_shape.size(); ++i) {
     int64_t dim_val = origin_to_shape[i];
     (*to_shape)[i] = dim_val;
