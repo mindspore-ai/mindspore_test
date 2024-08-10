@@ -39,13 +39,15 @@ int WhereInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC **
     return check_ret;
   }
 
-  const TensorC *input = inputs[0];
+  const TensorC *input0 = inputs[0];
   TensorC *output = outputs[0];
+  NNACL_CHECK_NULL_RETURN_ERR(input0);
+  NNACL_CHECK_NULL_RETURN_ERR(output);
 
   // Need to dynamically allocate at runtime.
   if (inputs_size == 1) {
     output->data_type_ = kNumberTypeInt32;
-    output->format_ = input->format_;
+    output->format_ = input0->format_;
     return NNACL_INFER_INVALID;
   }
 
@@ -53,9 +55,10 @@ int WhereInferShape(const TensorC *const *inputs, size_t inputs_size, TensorC **
     return NNACL_INPUT_TENSOR_ERROR;
   }
 
-  const TensorC *input0 = inputs[0];
   const TensorC *input1 = inputs[1];
   const TensorC *input2 = inputs[2];
+  NNACL_CHECK_NULL_RETURN_ERR(input1);
+  NNACL_CHECK_NULL_RETURN_ERR(input2);
   SetDataTypeFormat(output, input1);
   if (!InferFlag(inputs, inputs_size)) {
     return NNACL_INFER_INVALID;
