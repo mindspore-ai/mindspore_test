@@ -97,7 +97,8 @@ bool HcomMatMulAllReduceKernel::Launch(const std::vector<KernelTensor *> &inputs
                                        const std::vector<KernelTensor *> &workspace,
                                        const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_LOG(DEBUG) << "MatMulAllReduce launch";
-  if (inputs.empty() || outputs.empty() || workspace.empty() || hccl_data_type_list_.empty()) {
+  if ((inputs.size() < kMatMulAllReduceInputNum) || outputs.empty() || workspace.empty() ||
+      hccl_data_type_list_.empty()) {
     MS_LOG(ERROR) << "Invalid AllReduce input, output or data type size (" << inputs.size() << ", " << outputs.size()
                   << ", " << workspace.size() << ", " << hccl_data_type_list_.size() << ").";
     return false;

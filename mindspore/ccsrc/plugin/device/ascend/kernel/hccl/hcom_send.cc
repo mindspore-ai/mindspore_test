@@ -32,7 +32,7 @@ namespace mindspore {
 namespace kernel {
 constexpr int64_t DYNAMIC_SHAPE = -1;
 HcomSendKernel::~HcomSendKernel() {
-  if (client_) {
+  if (client_ != nullptr) {
     try {
       (void)client_->Disconnect(server_url_);
       client_->Finalize();

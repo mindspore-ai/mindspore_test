@@ -42,6 +42,12 @@ bool MuxRecvAscendKernel::Launch(const std::vector<KernelTensor *> &, const std:
     return false;
   }
   // Do the message sending by calling the hcclsend API.
+  if (outputs.empty() || hccl_data_type_list_.empty()) {
+    MS_LOG(ERROR) << "Invalid MuxRecvAscend output or data type size (" << outputs.size() << ", "
+                  << hccl_data_type_list_.size() << ").";
+    return false;
+  }
+  MS_EXCEPTION_IF_NULL(outputs[0]);
   MS_EXCEPTION_IF_NULL(stream_ptr);
   auto hccl_result = hccl::HcclAdapter::GetInstance().HcclRecv(outputs[0]->device_ptr(), hccl_count_,
                                                                hccl_data_type_list_[0], src_rank_, stream_ptr, comm_);

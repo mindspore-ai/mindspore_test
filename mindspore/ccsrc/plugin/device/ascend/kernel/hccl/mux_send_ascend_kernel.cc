@@ -55,6 +55,11 @@ bool MuxSendAscendKernel::Launch(const std::vector<KernelTensor *> &inputs, cons
     return false;
   }
   // Do the message sending by calling the hcclsend API.
+  if (inputs.empty() || hccl_data_type_list_.empty()) {
+    MS_LOG(ERROR) << "Invalid MuxSendAscend input or data type size (" << inputs.size() << ", "
+                  << hccl_data_type_list_.size() << ").";
+    return false;
+  }
   MS_EXCEPTION_IF_NULL(inputs[0]);
   MS_EXCEPTION_IF_NULL(stream_ptr);
   auto hccl_result = hccl::HcclAdapter::GetInstance().HcclSend(inputs[0]->device_ptr(), hccl_count_,
@@ -79,6 +84,7 @@ bool MuxSendAscendKernel::Init(const std::vector<KernelTensor *> &inputs, const 
   src_rank_ = UintToInt(cgn_->rank_id());
 
   if (common::UseHostCollective()) {
+    MS_EXCEPTION_IF_NULL(primitive_);
     MS_EXCEPTION_IF_NULL(comm_);
     primitive_->set_attr(kAttrComm, MakeValue<int64_t>(reinterpret_cast<int64_t>(comm_)));
   }
@@ -109,14 +115,14 @@ bool MuxSendAscendKernel::Handshake(const int dest_rank) {
     }
     if (response == nullptr) {
       std::this_thread::sleep_for(std::chrono::nanoseconds(interval));
-      MS_LOG(WARNING) << "Retry to negotiate with the mux recv kernerl.";
+      MS_LOG(WARNING) << "Retry to negotiate with the mux recv kernel.";
       continue;
     }
   }
-  if (response != nullptr) {
-    delete response;
-    response = nullptr;
-  }
+
+  delete response;
+  response = nullptr;
+
   return true;
 }
 bool MuxSendAscendKernel::Connect(const int dest_rank) {
@@ -134,9 +140,7 @@ bool MuxSendAscendKernel::Connect(const int dest_rank) {
         (void)sleep(interval);
       }
     }
-    if (!success) {
-      return false;
-    }
+
     // Record the address of the mux recv kernel and connect to it.
     auto server_url = dest_addrs_[dest_rank];
     const size_t retry = 1;

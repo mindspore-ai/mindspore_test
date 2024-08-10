@@ -31,6 +31,11 @@ namespace mindspore {
 namespace kernel {
 bool ReshapeKernelMod::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &,
                               const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
+  if (inputs.empty() || outputs.empty()) {
+    MS_LOG(ERROR) << "Invalid Reshape input or output size (" << inputs.size() << ", " << outputs.size() << ").";
+    return false;
+  }
+
   MS_EXCEPTION_IF_NULL(inputs[0]);
   MS_EXCEPTION_IF_NULL(outputs[0]);
   MS_EXCEPTION_IF_NULL(stream_ptr);
