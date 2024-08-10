@@ -307,7 +307,7 @@ void PrimitivePy::CheckHookConsistency(const py::object &grad_out, const py::obj
 
   if (py::isinstance<tensor::Tensor>(expected_grad_out) || IsStubTensor(expected_grad_out)) {
     if (!py::isinstance<tensor::Tensor>(grad_out) && !IsStubTensor(grad_out)) {
-      MS_EXCEPTION(TypeError) << "The output type of:" << py::str(co_name) << " should be a tensor but got "
+      MS_EXCEPTION(TypeError) << "The output type of function: " << py::str(co_name) << " should be a tensor but got "
                               << py::cast<std::string>(grad_out.attr("__class__").attr("__name__")) << ".";
     }
     tensor::TensorPtr actual_out_tensor =
@@ -318,7 +318,7 @@ void PrimitivePy::CheckHookConsistency(const py::object &grad_out, const py::obj
     MS_EXCEPTION_IF_NULL(actual_out_tensor);
     MS_EXCEPTION_IF_NULL(expected_out_tensor);
     if (actual_out_tensor->GetShapeAndDataTypeInfo() != expected_out_tensor->GetShapeAndDataTypeInfo()) {
-      MS_EXCEPTION(ValueError) << "The output type of " << py::str(co_name)
+      MS_EXCEPTION(ValueError) << "The output type of function: " << py::str(co_name)
                                << " is not consistent with the expected, it should be "
                                << expected_out_tensor->GetShapeAndDataTypeInfo() << ", but got "
                                << actual_out_tensor->GetShapeAndDataTypeInfo();

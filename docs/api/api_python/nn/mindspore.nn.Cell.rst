@@ -350,8 +350,8 @@
 
         .. note::
             - `register_backward_pre_hook(hook_fn)` 在图模式下，或者在PyNative模式下使用 `jit` 装饰器功能时不起作用。
-            - hook_fn必须有如下代码定义。 `cell` 是已注册Cell对象的信息。 `grad_output` 是反向传递给Cell对象的梯度。 用户可以在hook_fn中返回None或者返回新的梯度。
-            - hook_fn返回None或者新的相应于`grad_output`的梯度：hook_fn(cell, grad_output) -> New grad_output or None。
+            - hook_fn必须有如下代码定义：`cell` 是已注册Cell对象的信息， `grad_output` 是反向传递给Cell对象的梯度。 用户可以在hook_fn中返回None或者返回新的梯度。
+            - hook_fn返回None或者新的相应于 `grad_output` 的梯度：hook_fn(cell, grad_output) -> New grad_output or None。
             - 为了避免脚本在切换到图模式时运行失败，不建议在Cell对象的 `construct` 函数中调用 `register_backward_hook(hook_fn)` 。
             - PyNative模式下，如果在Cell对象的 `construct` 函数中调用 `register_backward_hook(hook_fn)` ，那么Cell对象每次运行都将增加一个 `hook_fn` 。
 
@@ -370,8 +370,8 @@
 
         .. note::
             - `register_backward_hook(hook_fn)` 在图模式下，或者在PyNative模式下使用 `jit` 装饰器功能时不起作用。
-            - hook_fn必须有如下代码定义。 `cell` 是已注册Cell对象的信息。 `grad_input` 是Cell对象的反向输出梯度。 `grad_output` 是反向传递给Cell对象的梯度。 用户可以在hook_fn中返回None或者返回新的梯度。
-            - hook_fn返回None或者新的相应于`grad_input`的梯度：hook_fn(cell, grad_input, grad_output) -> New grad_input or None。
+            - hook_fn必须有如下代码定义：`cell` 是已注册Cell对象的信息， `grad_input` 是Cell对象的反向输出梯度， `grad_output` 是反向传递给Cell对象的梯度。 用户可以在hook_fn中返回None或者返回新的梯度。
+            - hook_fn返回None或者新的相应于 `grad_input` 的梯度：hook_fn(cell, grad_input, grad_output) -> New grad_input or None。
             - 为了避免脚本在切换到图模式时运行失败，不建议在Cell对象的 `construct` 函数中调用 `register_backward_hook(hook_fn)` 。
             - PyNative模式下，如果在Cell对象的 `construct` 函数中调用 `register_backward_hook(hook_fn)` ，那么Cell对象每次运行都将增加一个 `hook_fn` 。
 

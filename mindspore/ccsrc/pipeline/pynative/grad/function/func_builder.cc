@@ -392,7 +392,8 @@ NodePtr FuncBuilder::Equal(const NodePtr &lhs, const NodePtr &rhs, const TypePtr
     auto [input, other] = UnifyDtype(lhs, rhs);
     auto node = NativeFunc::Equal(input, other);
     return dst_type == nullptr ? node : Cast(node, dst_type);
-  } else if (abs->isa<abstract::AbstractScalar>()) {
+  }
+  if (abs->isa<abstract::AbstractScalar>()) {
     return ScalarEq(lhs, rhs, dst_type);
   }
   MS_LOG(EXCEPTION) << "'Equal' only support [Tensor] or [Scalar] input, but got: " << abs->ToString();

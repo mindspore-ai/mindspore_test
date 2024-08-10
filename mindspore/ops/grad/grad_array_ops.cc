@@ -2718,7 +2718,7 @@ REG_BPROP_BUILDER("RepeatInterleaveInt").SetUnusedInputs({i0}).SetBody(BODYFUNC(
   if (axis_node->isa<None>()) {
     axis = ib->Value(static_cast<int64_t>(-1));
   }
-  auto new_repeats = ib->Reshape(ib->ScalarToTensor(repeats, kInt64), ib->Value(std::vector<int64_t>{1}));
+  auto new_repeats = ib->Emitter::Reshape(ib->ScalarToTensor(repeats, kInt64), ib->Value(std::vector<int64_t>{1}));
   auto grad = ib->Emit("RepeatInterleaveGrad", {dout, new_repeats, axis});
   auto result = ib->Reshape(grad, x_shape);
   return {result, ib->OutZeros(repeats), ib->OutZeros(axis), ib->OutZeros(output_size)};

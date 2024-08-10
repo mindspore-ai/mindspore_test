@@ -1385,32 +1385,33 @@ def check_hook_fn(hook_type, hook_fn):
     if hook_fn.__code__.co_name == "staging_specialize":
         raise TypeError(f"Decorating hook function {hook_fn.__name__} with '@jit' is not supported.")
 
-    is_class_method = hasattr(hook_fn, '__self__')
-    tensor_hook_func_args_num = 2 if is_class_method else 1
-    pre_hook_func_args_num = 3 if is_class_method else 2
-    forward_hook_and_backward_hook_func_args_num = 4 if is_class_method else 3
+    tensor_hook_func_args_num = 1
+    pre_hook_func_args_num = 2
+    forward_hook_and_backward_hook_func_args_num = 3
+    # Real args number, exclude class method self param
+    hook_fn_args_num = len(inspect.signature(hook_fn).parameters)
 
-    if hook_type == "register_hook" and hook_fn.__code__.co_argcount != tensor_hook_func_args_num:
-        raise TypeError(
-            f"Tensor hook function {hook_fn.__name__} arg num {hook_fn.__code__.co_argcount} is not equal to 1")
+    if hook_type == "register_hook" and hook_fn_args_num != tensor_hook_func_args_num:
+        raise TypeError(f"Tensor hook function {hook_fn.__name__} arg num should be {tensor_hook_func_args_num}, but "
+                        f"got {hook_fn_args_num}")
 
-    if hook_type == "register_forward_pre_hook" and hook_fn.__code__.co_argcount != pre_hook_func_args_num:
-        raise TypeError(
-            f"forward_pre_hook function {hook_fn.__name__} args num {hook_fn.__code__.co_argcount} is not equal to 2")
+    if hook_type == "register_forward_pre_hook" and hook_fn_args_num != pre_hook_func_args_num:
+        raise TypeError(f"forward_pre_hook function {hook_fn.__name__} args num should be {pre_hook_func_args_num}, "
+                        f"but got {hook_fn_args_num}")
 
     if (hook_type == "register_forward_hook" and
-            hook_fn.__code__.co_argcount != forward_hook_and_backward_hook_func_args_num):
-        raise TypeError(
-            f"forward_hook function {hook_fn.__name__} args num {hook_fn.__code__.co_argcount} is not equal to 3")
+            hook_fn_args_num != forward_hook_and_backward_hook_func_args_num):
+        raise TypeError(f"forward_hook function {hook_fn.__name__} args num should be "
+                        f"{forward_hook_and_backward_hook_func_args_num}, but got {hook_fn_args_num}")
 
-    if hook_type == "register_backward_pre_hook" and hook_fn.__code__.co_argcount != pre_hook_func_args_num:
-        raise TypeError(
-            f"backward_pre_hook function {hook_fn.__name__} args num {hook_fn.__code__.co_argcount} is not equal to 2")
+    if hook_type == "register_backward_pre_hook" and hook_fn_args_num != pre_hook_func_args_num:
+        raise TypeError(f"backward_pre_hook function {hook_fn.__name__} args num should be {pre_hook_func_args_num},"
+                        f" but got {hook_fn_args_num}")
 
     if (hook_type == "register_backward_hook" and
-            hook_fn.__code__.co_argcount != forward_hook_and_backward_hook_func_args_num):
-        raise TypeError(
-            f"backward_hook function {hook_fn.__name__} args num {hook_fn.__code__.co_argcount} is not equal to 3")
+            hook_fn_args_num != forward_hook_and_backward_hook_func_args_num):
+        raise TypeError(f"backward_hook function {hook_fn.__name__} args num should be "
+                        f"{forward_hook_and_backward_hook_func_args_num}, but got {hook_fn_args_num}")
 
     return True
 

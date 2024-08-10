@@ -34,6 +34,7 @@ class RingBuffer {
     cache_[current_index_] = object;
     current_index_ += 1;
   }
+  void clear() { std::array<T, Capacity>().swap(cache_); }
 
  private:
   std::array<T, Capacity> cache_;

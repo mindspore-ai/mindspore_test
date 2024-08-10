@@ -180,6 +180,7 @@ void PyNativeExecutor::ClearRes() const {
   pynative::OpCompiler::GetInstance().ClearAllCache();
   kernel::KernelModCache::GetInstance().ClearAllCache();
   pynative::autograd::ClearAutoGradCache();
+  PyNativeAlgo::Common::ClearRes();
   tensor::RegisterHook::ClearHookMap();
 
   // Maybe exit in runop step

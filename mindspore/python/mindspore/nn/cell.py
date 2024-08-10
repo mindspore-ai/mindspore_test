@@ -135,7 +135,7 @@ class Cell(Cell_):
         self._id = 1
         self.exist_names = set("")
         self.exist_objs = set()
-        self.recompute_cell = None
+        self._recompute_cell = None
         self.mixed_precision_type = None
         self.sig = inspect.signature(self.construct)
         init_pipeline()
@@ -485,10 +485,10 @@ class Cell(Cell_):
         """
         logger.warning(f"The 'run_construct' function of '{self.cls_name}' will be removed in a future version. "
                        f"Calling this function is not recommended.")
-        output = self._run_construct_with_hook(cast_inputs, kwargs)
+        output = self._run_construct(cast_inputs, kwargs)
         return output
 
-    def _run_construct_with_hook(self, *inputs, **kwargs):
+    def _run_construct(self, *inputs, **kwargs):
         """Run the construct function"""
         if self._forward_pre_hook:
             inputs = self._run_forward_pre_hook(inputs)
@@ -497,8 +497,8 @@ class Cell(Cell_):
             output = self._backward_hook_construct(*inputs, **kwargs)
         elif self._shard_fn is not None:
             output = self._shard_fn(*inputs, **kwargs)
-        elif self.recompute_cell is not None:
-            output = self.recompute_cell(*inputs, **kwargs)
+        elif self._recompute_cell is not None:
+            output = self._recompute_cell(*inputs, **kwargs)
         else:
             output = self.construct(*inputs, **kwargs)
 
@@ -693,6 +693,7 @@ class Cell(Cell_):
         for param in self.get_parameters(expand=False):
             if param.has_init:
                 param.init_data()
+        self._init_flag = True
 
     def _self_check(self):
         if not self._is_check_and_refresh:
@@ -731,11 +732,23 @@ class Cell(Cell_):
             return out
 
         # Run in PyNative mode.
-        self._self_check()
-        if not self._init_flag:
+        if not (self._init_flag or self._is_check_and_refresh):
+            self._self_check()
             self._init_check()
-            self._init_flag = True
 
+        if not (self.requires_grad or self._dynamic_shape_inputs or self.has_bprop or self.mixed_precision_type):
+            if not (self._forward_pre_hook or self._forward_hook or self._backward_pre_hook or self._backward_hook or
+                    self._shard_fn or self._recompute_cell):
+                return self.construct(*args, **kwargs)
+
+            return self._run_construct(*args, **kwargs)
+
+        return self._complex_call(*args, **kwargs)
+
+    def _complex_call(self, *args, **kwargs):
+        """
+        PyNative call with requires_grad or hooks
+        """
         if self.requires_grad:
             self._is_call_new_graph_before = True
             _pynative_executor.set_grad_flag(True)
@@ -751,10 +764,11 @@ class Cell(Cell_):
         if self.mixed_precision_type is not None:
             _pynative_executor.set_mixed_precision_type(self.mixed_precision_type)
 
-        if not (self._forward_pre_hook or self._forward_hook or self._backward_pre_hook or self._backward_hook):
+        if not (self._forward_pre_hook or self._forward_hook or self._backward_pre_hook or self._backward_hook or
+                self._shard_fn or self._recompute_cell):
             output = self.construct(*args, **kwargs)
         else:
-            output = self._run_construct_with_hook(*args, **kwargs)
+            output = self._run_construct(*args, **kwargs)
 
         if self.requires_grad:
             _pynative_executor.end_graph(self, output, *args, **kwargs)
@@ -2421,11 +2435,11 @@ class Cell(Cell_):
         if isinstance(outputs, tuple) and len(inputs) > 1:
             is_need_unwrap = True
 
-        if self.recompute_cell is not None:
+        if self._recompute_cell is not None:
             if is_need_unwrap:
-                outputs = self.recompute_cell(*outputs, **kwargs)
+                outputs = self._recompute_cell(*outputs, **kwargs)
             else:
-                outputs = self.recompute_cell(outputs, **kwargs)
+                outputs = self._recompute_cell(outputs, **kwargs)
         else:
             if is_need_unwrap:
                 outputs = self.construct(*outputs, **kwargs)
@@ -2562,7 +2576,7 @@ class Cell(Cell_):
                 Default: ``False`` .
         """
         if context.get_context("mode") == context.PYNATIVE_MODE:
-            self.recompute_cell = recompute_registry.get()(self.construct)
+            self._recompute_cell = recompute_registry.get()(self.construct)
             return
         self._recompute()
         if 'mp_comm_recompute' in kwargs.keys():
