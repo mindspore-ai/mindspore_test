@@ -279,7 +279,7 @@ Status MessageQueue::DeserializeStatus() {
                                  "memcpy_s the file name len of Status failed. err code: " + std::to_string(ret_code));
     offset += kFourBytes;
 
-    file_name.resize(file_name_len + 1, '\0');
+    file_name.resize(file_name_len, '\0');
     ret_code = memcpy_s(file_name.data(), file_name_len, err_msg_ + offset, file_name_len);
     CHECK_FAIL_RETURN_UNEXPECTED(ret_code == EOK,
                                  "memcpy_s the file name of Status failed. err code: " + std::to_string(ret_code));
@@ -297,7 +297,7 @@ Status MessageQueue::DeserializeStatus() {
     ret_code == EOK, "memcpy_s the err description len of Status failed. err code: " + std::to_string(ret_code));
   offset += kFourBytes;
 
-  err_description.resize(err_description_len + 1, '\0');
+  err_description.resize(err_description_len, '\0');
   ret_code = memcpy_s(err_description.data(), err_description_len, err_msg_ + offset, err_description_len);
   CHECK_FAIL_RETURN_UNEXPECTED(ret_code == EOK,
                                "memcpy_s the err description of Status failed. err code: " + std::to_string(ret_code));

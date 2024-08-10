@@ -39,7 +39,6 @@ ReceiveBridgeOp::ReceiveBridgeOp(int32_t op_connector_size, SharedMemoryQueue re
       receive_queue_(receive_queue),
       msg_queue_(msg_queue),
       subprocess_pid_(-1),
-      monitor_alive_(false),
       err_status_(Status::OK()) {
   receive_info_.normal_row_.sample_ = 0;
   receive_info_.normal_row_.row_step_ = ReceiveBridgeOp::RowStep::kNone;
@@ -95,23 +94,29 @@ Status ReceiveBridgeOp::MonitorIndependentDatasetProcess() {
   TaskManager::FindMe()->Post();
 
   while (!tree_->isFinished()) {
-    RETURN_IF_INTERRUPTED();
+    if (mindspore::dataset::this_thread::is_interrupted()) {
+      // send message to independent process and independent process will exit
+      RETURN_IF_NOT_OK(msg_queue_.MsgSnd(kMasterReceiveBridgeOpFinishedMsg));
+
+      // sleep waiting for independent dataset process get the message queue
+      sleep(kMonitorInterval * 2);
+
+      MS_LOG(INFO) << "Monitor thread was interrupted.";
+      break;
+    }
+
     auto st = MonitorSubprocess(subprocess_pid_);
     if (st != Status::OK() && receive_info_.eof_row_.row_step_ == 0) {
+      MS_LOG(INFO) << "Monitor thread detects that the independent dataset process is abnormal.";
       err_status_ = st;
       break;
     }
 
     // get error flag from dataset independent process
     if (msg_queue_.MsgRcv(kWorkerErrorMsg, IPC_NOWAIT) > 0) {
+      MS_LOG(INFO) << "Monitor thread get err status from the independent dataset process.";
       err_status_ = msg_queue_.DeserializeStatus();
       break;
-    }
-
-    // monitor will exit by WorkerEntry end
-    if (monitor_alive_ != true) {
-      MS_LOG(INFO) << "Monitor thread will exit.";
-      return Status::OK();
     }
 
     sleep(kMonitorInterval);  // check the independent dataset process status in every 1s
@@ -141,7 +146,6 @@ Status ReceiveBridgeOp::operator()() {
   RETURN_IF_NOT_OK(RegisterAndLaunchThreads());
 
   // start the monitor thread
-  monitor_alive_ = true;
   RETURN_IF_NOT_OK(tree_->AllTasks()->CreateAsyncTask(
     "ReceiveBridge-MonitorIndependentDatasetProcess",
     std::bind(&ReceiveBridgeOp::MonitorIndependentDatasetProcess, this), nullptr, id()));
@@ -242,18 +246,6 @@ Status ReceiveBridgeOp::operator()() {
   for (int32_t wkr_id = 0; wkr_id < num_workers_; wkr_id++) {
     RETURN_IF_NOT_OK(SendQuitFlagToWorker(NextWorkerID()));
   }
-
-  // send message to independent process and independent process will exit
-  RETURN_IF_NOT_OK(msg_queue_.MsgSnd(kMasterReceiveBridgeOpFinishedMsg));
-
-  // quit the monitor thread
-  monitor_alive_ = false;
-
-  // sleep waiting for:
-  // 1. the monitor thread exit
-  // 2. independent dataset process get the message queue
-  // the shared memory queue and message queue will be released in independent dataset process
-  sleep(kMonitorInterval * 2);
 
   return Status::OK();
 }

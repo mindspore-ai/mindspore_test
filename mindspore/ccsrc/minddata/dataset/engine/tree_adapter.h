@@ -145,8 +145,8 @@ class TreeAdapter {
   // Launch the subprocess
   Status LaunchSubprocess();
 
-  // The subprocess is changed to daemon and do nothing, just waiting for the main process exit
-  void SubprocessDaemonLoop();
+  // The subprocess will exit
+  void SubprocessExit(int exit_code);
 
   // the send tree, like: xxDataset -> map -> ... -> batch -> send
   std::unique_ptr<ExecutionTree> send_tree_;

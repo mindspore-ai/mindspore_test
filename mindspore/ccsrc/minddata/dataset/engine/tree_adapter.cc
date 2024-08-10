@@ -511,39 +511,36 @@ Status TreeAdapter::GetNext(TensorRow *row) {
 
 #if !defined(__APPLE__) && !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && \
   !defined(ANDROID)
-void TreeAdapter::SubprocessDaemonLoop() {
-  const int log_interval = 10;
-  while (true) {
-    MS_LOG(INFO) << "[Independent Dataset Process] Process: " << std::to_string(process_id_)
-                 << " will become a daemon, doing nothing but looping "
-                 << "and waiting for the main process: " << std::to_string(parent_process_id_) << " to exit.";
-    sleep(log_interval);
+void TreeAdapter::SubprocessExit(int exit_code) {
+  // get the newest message queue and shared memory queue
+  auto message_queue = dynamic_cast<SendBridgeOp *>(tree_->root().get())->GetMessageQueue();
+  auto shared_memmory_queue = dynamic_cast<SendBridgeOp *>(tree_->root().get())->GetSharedMemoryQueue();
 
-    // get the newest shared memory queue and message queue
-    auto shared_memmory_queue = dynamic_cast<SendBridgeOp *>(tree_->root().get())->GetSharedMemoryQueue();
-    auto message_queue = dynamic_cast<SendBridgeOp *>(tree_->root().get())->GetMessageQueue();
+  // interrupt all the pipeline thread
+  (void)tree_->AllTasks()->interrupt_all();
 
-    tree_->AllTasks()->interrupt_all();
-
-    // release the message queue
-    message_queue.SetReleaseFlag(true);
-
-    // this will break hung by MsgRcv which is in SendBridgeOp / ReceiveBridgeOp
-    message_queue.ReleaseQueue();
-
-    // release the shm memory queue
-    auto ret = shared_memmory_queue.ReleaseCurrentShm();
-    if (ret != Status::OK()) {
-      MS_LOG(ERROR) << ret.ToString();
-    }
-
-    // the parent had been closed
-    if (getppid() != parent_process_id_) {
-      MS_LOG(INFO) << "[Independent Dataset Process] Main process: " << std::to_string(parent_process_id_)
-                   << " had been closed. Current process: " << std::to_string(process_id_) << " will exit too.";
-      exit(0);
-    }
+  // wait all the thread exit
+  MS_LOG(INFO) << "[Independent Dataset Process] Begin waiting for all pipeline threads exit.";
+  auto ret = tree_->AllTasks()->join_all(Task::WaitFlag::kBlocking);
+  if (ret != Status::OK()) {
+    MS_LOG(ERROR) << ret.ToString();
   }
+  MS_LOG(INFO) << "[Independent Dataset Process] End waiting for all pipeline threads exit.";
+
+  // release the message queue
+  message_queue.SetReleaseFlag(true);
+
+  // this will break hung by MsgRcv which is in SendBridgeOp / ReceiveBridgeOp
+  message_queue.ReleaseQueue();
+
+  // the message queue should be released in main process ReceiveBridgeOp, so just release the shared memory queue
+  ret = shared_memmory_queue.ReleaseCurrentShm();
+  if (ret != Status::OK()) {
+    MS_LOG(ERROR) << ret.ToString();
+  }
+
+  // independent will exit
+  _exit(exit_code);
 }
 
 Status TreeAdapter::LaunchSubprocess() {
@@ -580,9 +577,9 @@ Status TreeAdapter::LaunchSubprocess() {
     }
     message_queue.MsgSnd(kWorkerErrorMsg);
 
-    // Infinite loop
-    SubprocessDaemonLoop();
+    (void)SubprocessExit(-1);
   }
+
   launched_ = true;
 
   // The the subprocess should be alive
@@ -611,7 +608,11 @@ Status TreeAdapter::LaunchSubprocess() {
         MS_LOG(EXCEPTION) << log_prefix << " serialize Status failed.";
       }
       message_queue.MsgSnd(kWorkerErrorMsg);
-      break;
+
+      // waiting for the main process get the message
+      sleep(kMonitorInterval * 2);
+
+      (void)SubprocessExit(-1);
     }
 
     // the message queue had been released by main process
@@ -619,8 +620,7 @@ Status TreeAdapter::LaunchSubprocess() {
     if (state == MessageQueue::State::kReleased) {
       MS_LOG(INFO) << log_prefix << ". Message queue had been released by main process.";
 
-      tree_->AllTasks()->interrupt_all();
-      break;
+      (void)SubprocessExit(0);
     }
 
     // get message ReceiveBridgeOp finished from main process, indicate that iterator / to_device is finished
@@ -628,40 +628,22 @@ Status TreeAdapter::LaunchSubprocess() {
       MS_LOG(INFO) << log_prefix
                    << ". Got ReceiveBridgeOp finished message from main process. Current process will exit.";
 
-      // get the newest shared memory queue
-      auto shared_memmory_queue = dynamic_cast<SendBridgeOp *>(tree_->root().get())->GetSharedMemoryQueue();
-
-      tree_->AllTasks()->interrupt_all();
-
-      // release the message queue
-      message_queue.SetReleaseFlag(true);
-
-      // this will break hung by MsgRcv which is in SendBridgeOp / ReceiveBridgeOp
-      message_queue.ReleaseQueue();
-
-      // the message queue should be released in main process ReceiveBridgeOp, so just release the shared memory queue
-      ret = shared_memmory_queue.ReleaseCurrentShm();
-      if (ret != Status::OK()) {
-        MS_LOG(ERROR) << ret.ToString();
-      }
-
-      // independent will exit
-      exit(0);
+      (void)SubprocessExit(0);
     }
 
     // the parent had been closed
     if (getppid() != parent_process_id_) {
       MS_LOG(INFO) << log_prefix << ". Main process: " << std::to_string(parent_process_id_)
                    << " had been closed. Current process: " << std::to_string(process_id_) << " will exit too.";
-      break;
+
+      (void)SubprocessExit(0);
     }
   }
 
-  // Infinite loop
-  SubprocessDaemonLoop();
+  (void)SubprocessExit(-1);
 
-  // The process may not run to this point
-  return Status::OK();
+  // The process may not run to this point. exit() will cause core, so we use _exit()
+  _exit(-1);
 }
 #endif
 
