@@ -277,79 +277,54 @@ static bool IsVariableNode(PyObject *obj) {
   if (obj == nullptr) {
     return false;
   }
-  return CheckContainer(obj) || IsTensorPyObject(obj) || CheckScalar(obj);
-}
-
-static std::vector<TracePtr> GetTraceClosure(ValueNode *node, bool *succ, bool strict, bool print, int depth, int max_depth);
-static std::vector<TracePtr> GetTraceClosureByInputs(ValueNode *node, bool *succ, bool strict, bool print, int depth, int max_depth) {
-  const std::vector<ValueNode *> &inputs = node->getInputs();
-  std::vector<TracePtr> ret;
-  for (auto it : inputs) {
-    auto list = GetTraceClosure(it, succ, strict, print, depth, max_depth);
-    ret.insert(ret.begin(), list.begin(), list.end());
-  }
-  return ret;
+  return IsTensorPyObject(obj) || CheckScalar(obj);
 }
 
 static std::vector<TracePtr> GetTraceClosure(ValueNode *node, bool *succ, bool strict, bool print, int depth, int max_depth) {
+  std::vector<ValueNode *> todo;
+  std::map<ValueNode *, bool> done;
+  todo.push_back(node);
   std::vector<TracePtr> ret;
-  switch (node->GetType()) {
-    case AbstractNode::Type::Call:
-    {
-      Graph *sub_graph = static_cast<CallNode *>(node)->GetSubGraph();
-      if (sub_graph && sub_graph->GetRetVal() != nullptr) {
-        node = sub_graph->GetRetVal();
-        PyObject *obj = node->GetVobj() ? node->GetVobj()->GetPyObject().ptr() : nullptr;
-        if (IsVariableNode(obj)) {
-          auto list = GetTraceClosureByInputs(node, succ, strict, print, depth, max_depth);
-          ret.insert(ret.end(), list.begin(), list.end());
-        }
-      } else {
-        int opcode = node->GetOpcode();
-        PyObject *obj = node->GetVobj() ? node->GetVobj()->GetPyObject().ptr() : nullptr;
-        if (IsVariableNode(obj)) {
-          if (opcode == LOAD_ATTR) {
-            auto item = GetTrace(node, strict, print, depth, max_depth);
-            if (item != nullptr) {
-              ret.insert(ret.end(), item);
+  while(todo.size() > 0) {
+    node = todo[0];
+    done[node] = true;
+    todo.erase(todo.begin());
+    switch(node->GetType()) {
+      case AbstractNode::Type::Call:
+      case AbstractNode::Type::Value:
+        {
+          int opcode = node->GetOpcode();
+          PyObject *obj = node->GetVobj() ? node->GetVobj()->GetPyObject().ptr() : nullptr;
+          if (IsVariableNode(obj)) {
+            if (opcode == LOAD_ATTR) {
+              auto item = GetTrace(node, strict, print, depth, max_depth);
+              if (item != nullptr) {
+                ret.insert(ret.end(), item);
+              } else {
+                *succ = false;
+                MS_LOG(DEBUG) << "too deep trace for guard";
+                return {};
+              }
             } else {
-              *succ = false;
-              MS_LOG(DEBUG) << "too deep trace for guard";
-	          }
-          } else {
-            auto list = GetTraceClosureByInputs(node, succ, strict, print, depth, max_depth);
-            ret.insert(ret.end(), list.begin(), list.end());
+              auto inputs = node->getInputs();
+              for (auto input : inputs) {
+                if (done.find(input) != done.end()) {
+                  continue;
+                } else {
+                  todo.push_back(input);
+                }
+              }
+            }
           }
         }
-      }
+        break;
+      case AbstractNode::Type::Param:
+      case AbstractNode::Type::CellVar:
+      case AbstractNode::Type::FreeVar:
+      case AbstractNode::Type::kUnbound:
+      default:
+        break;
     }
-      break;
-    case AbstractNode::Type::Value:
-      {
-        int opcode = node->GetOpcode();
-        PyObject *obj = node->GetVobj() ? node->GetVobj()->GetPyObject().ptr() : nullptr;
-        if (IsVariableNode(obj)) {
-          if (opcode == LOAD_ATTR) {
-            auto item = GetTrace(node, strict, print, depth, max_depth);
-            if (item != nullptr) {
-              ret.insert(ret.end(), item);
-            } else {
-              *succ = false;
-              MS_LOG(DEBUG) << "too deep trace for guard";
-      	    }
-          } else {
-            auto list = GetTraceClosureByInputs(node, succ, strict, print, depth, max_depth);
-            ret.insert(ret.end(), list.begin(), list.end());
-          }
-        }
-      }
-      break;
-    case AbstractNode::Type::Param:
-    case AbstractNode::Type::CellVar:
-    case AbstractNode::Type::FreeVar:
-    case AbstractNode::Type::kUnbound:
-    default:
-      break;
   }
   return ret;
 }
