@@ -154,11 +154,13 @@ class Graph {
   }
 
   bool GuardValueNode(ValueNode *, GuardLevel level = GuardLevel::GEqual);
+  bool GuardValueNodeClosure(ValueNode *, GuardLevel level = GuardLevel::GDeduce);
   bool GuardType(ValueNode *);
   bool GuardSequenceNodeLength(ValueNode *, Py_ssize_t);
   bool GuardInlinedFunc(CallNode *call_node);
 
   TracePtr TraceValueNode(ValueNode *, int max_trace_depth = -1);
+  std::vector<TracePtr> TraceValueNodeClosure(ValueNode *, bool *ret, int max_trace_depth = -1);
   int GetPruneBranchCount() const { return prune_branch_count_; }
   void SetPruneBranchCount(int count) { prune_branch_count_ = count; }
   const std::shared_ptr<OptCode> &GetGuard() const { return guard_; }
