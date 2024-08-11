@@ -133,6 +133,19 @@ bool GuardConstCallNodeParam(CallNode *call_node, Graph *sub_graph, int max_guar
     }
     TracePtr tr = sub_graph->TraceValueNode(i, max_guard_depth);
     if (tr == nullptr) {
+      bool bSucc = true;
+      auto vec = sub_graph->TraceValueNodeClosure(i, &bSucc);
+      if (bSucc) {
+        std::map<size_t, TracePtr> rep;
+        for (auto item : vec) {
+          auto id = item->Info().Id();
+          if (rep.find(id) == rep.end()) {
+            rep[id] = item;
+            traces.push_back({item, GDeduce});
+          }
+        }
+        continue;
+      }
       if (static_cast<size_t>(max_guard_depth) >= INT_MAX) {
         LogGuardFailed(i, sub_graph->Config(), "GuardConstCannNodeParm failed");
       }
@@ -496,6 +509,7 @@ static bool InferGradFunc(CallNode *call_node, GraphBuilder *unused = nullptr) {
   py::object after_grad = vo->GetPyObject();
   TracePtr trace = call_node->GetGraph()->TraceValueNode(call_node->input(0));
   if (trace == nullptr) {
+    MS_LOG(DEBUG) << "too deep trace for guard";
     vo->ClearMsFlag(AObject::kMsFlagGradFunc);
     call_node->SetSubGraph(nullptr);
     return false;

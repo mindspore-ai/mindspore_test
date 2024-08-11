@@ -2999,6 +2999,9 @@ bool GuardIterInputs(Graph *graph, ValueNode *seq_node, Py_ssize_t seq_size = -1
       return false;
     }
     TracePtr tr = graph->TraceValueNode(input_node);
+    if (tr == nullptr) {
+      return graph->GuardValueNodeClosure(input_node);
+    }
     if (!(graph->GetGuard()->GetGuard()->GuardOn(tr, GuardLevel::GEqual))) {
       MS_LOG(INFO) << "Iterator guard fail: " << seq_node->ToString();
       return false;
@@ -3372,7 +3375,7 @@ bool IsSatisfyPruneLimit(int cond, Graph *graph_, ValueNode *cond_node) {
         return true;
       }
     }
-    return false;
+    return graph_->GuardValueNodeClosure(cond_node);
   }
   PyObject *bool_value = cond_node->GetVobj()->GetPyObject().ptr();
   if (bool_value != Py_True && bool_value != Py_False) {
