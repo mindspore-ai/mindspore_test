@@ -15,7 +15,7 @@
 """mint module."""
 from __future__ import absolute_import
 
-from mindspore.ops.auto_generate import erfc, sinc, log1p, round_op
+from mindspore.ops.auto_generate import erfc, expm1, sinc, log1p, round_op
 
 def round(input):
     r"""
@@ -53,6 +53,7 @@ def round(input):
 
 __all__ = [
     'erfc',
+    'expm1',
     'round',
     'sinc',
     'log1p',

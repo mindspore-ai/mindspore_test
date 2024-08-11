@@ -270,6 +270,8 @@ from mindspore.ops.function.math_func import round
 
 # 204
 from mindspore.ops.auto_generate import erfc
+# 207
+from mindspore.ops.auto_generate import expm1
 # 208
 from mindspore.ops.function.array_func import eye
 from mindspore.ops.function.random_func import rand_ext as rand
@@ -1234,6 +1236,8 @@ __all__ = [
     # 177
     'round',
 
+    # 207
+    'expm1',
     # 204
     'erfc',
     # 208

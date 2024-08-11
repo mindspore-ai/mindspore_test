@@ -1307,11 +1307,16 @@ REG_BPROP_BUILDER("Exp").SetBody(BODYFUNC(ib) {
   return {dx};
 });
 
-REG_BPROP_BUILDER("Expm1").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("Expm1").SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
+  auto out = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex2);
-  auto g = ib->Exp(x);
-  auto dx = ib->Mul(g, dout);
+  TypeId exp_type = ib->GetDtypeId(out);
+  if (exp_type == kNumberTypeComplex64 || exp_type == kNumberTypeComplex128) {
+    out = ib->Conj(out);
+  }
+  auto out_1p = ib->Add(out, ib->Tensor(1, ib->GetDtype(out)));
+  auto dx = ib->Mul(dout, out_1p);
   return {dx};
 });
 

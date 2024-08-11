@@ -51,6 +51,7 @@ const std::unordered_map<std::string, std::pair<std::vector<CastInfo>, std::vect
   {ops::kNameErfinv, {{{0, int_type_with_bool, kNumberTypeFloat32}}, {}}},
   {ops::kNameErf, {{{0, {kNumberTypeInt64, kNumberTypeBool}, kNumberTypeFloat32}}, {}}},
   {ops::kNameErfc, {{{0, {kNumberTypeInt64, kNumberTypeBool}, kNumberTypeFloat32}}, {}}},
+  {ops::kNameExpm1, {{{0, {kNumberTypeInt64, kNumberTypeBool}, kNumberTypeFloat32}}, {}}},
   {ops::kNameReduceAny, {{{0, {}, kNumberTypeBool}}, {}}},
   {ops::kNameReduceAll, {{{0, {}, kNumberTypeBool}}, {}}},
   {ops::kNameLogicalAnd, {{{0, {}, kNumberTypeBool}, {1, {}, kNumberTypeBool}}, {}}},
