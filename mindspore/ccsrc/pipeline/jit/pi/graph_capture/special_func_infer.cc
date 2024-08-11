@@ -140,9 +140,9 @@ bool GuardConstCallNodeParam(CallNode *call_node, Graph *sub_graph, int max_guar
         for (auto item : vec) {
           auto id = item->Info().Id();
           if (rep.find(id) == rep.end()) {
-            rep[id] = item;
             traces.push_back({item, GDeduce});
           }
+          rep[id] = item;
         }
         continue;
       }
@@ -161,7 +161,6 @@ bool GuardConstCallNodeParam(CallNode *call_node, Graph *sub_graph, int max_guar
     }
     traces.push_back({tr, level});
   }
-
   const auto &guard = sub_graph->GetGuard()->GetGuard();
   guard->Backup();
   for (const auto &i : traces) {

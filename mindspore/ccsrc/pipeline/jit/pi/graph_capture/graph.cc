@@ -272,7 +272,6 @@ TracePtr GetTrace(ValueNode *node, bool strict, bool print, int depth, int max_d
   return CacheTrace(node, ret, strict, tv, opcode, oparg, obj);
 }
 
-
 static bool IsVariableNode(PyObject *obj) {
   if (obj == nullptr) {
     return false;
@@ -280,44 +279,43 @@ static bool IsVariableNode(PyObject *obj) {
   return IsTensorPyObject(obj) || CheckScalar(obj);
 }
 
-static std::vector<TracePtr> GetTraceClosure(ValueNode *node, bool *succ, bool strict, bool print, int depth, int max_depth) {
+static std::vector<TracePtr> GetTraceClosure(ValueNode *node, bool *succ, bool strict, bool print, int depth,
+                                             int max_depth) {
   std::vector<ValueNode *> todo;
   std::map<ValueNode *, bool> done;
   todo.push_back(node);
   std::vector<TracePtr> ret;
-  while(todo.size() > 0) {
+  while (todo.size() > 0) {
     node = todo[0];
     done[node] = true;
     todo.erase(todo.begin());
-    switch(node->GetType()) {
+    switch (node->GetType()) {
       case AbstractNode::Type::Call:
-      case AbstractNode::Type::Value:
-        {
-          int opcode = node->GetOpcode();
-          PyObject *obj = node->GetVobj() ? node->GetVobj()->GetPyObject().ptr() : nullptr;
-          if (IsVariableNode(obj)) {
-            if (opcode == LOAD_ATTR) {
-              auto item = GetTrace(node, strict, print, depth, max_depth);
-              if (item != nullptr) {
-                ret.insert(ret.end(), item);
-              } else {
-                *succ = false;
-                MS_LOG(DEBUG) << "too deep trace for guard";
-                return {};
-              }
+      case AbstractNode::Type::Value: {
+        int opcode = node->GetOpcode();
+        PyObject *obj = node->GetVobj() ? node->GetVobj()->GetPyObject().ptr() : nullptr;
+        if (IsVariableNode(obj)) {
+          if (opcode == LOAD_ATTR) {
+            auto item = GetTrace(node, strict, print, depth, max_depth);
+            if (item != nullptr) {
+              ret.insert(ret.end(), item);
             } else {
-              auto inputs = node->getInputs();
-              for (auto input : inputs) {
-                if (done.find(input) != done.end()) {
-                  continue;
-                } else {
-                  todo.push_back(input);
-                }
+              *succ = false;
+              MS_LOG(DEBUG) << "too deep trace for guard";
+              return {};
+            }
+          } else {
+            auto inputs = node->getInputs();
+            for (auto input : inputs) {
+              if (done.find(input) != done.end()) {
+                continue;
+              } else {
+                todo.push_back(input);
               }
             }
           }
         }
-        break;
+      } break;
       case AbstractNode::Type::Param:
       case AbstractNode::Type::CellVar:
       case AbstractNode::Type::FreeVar:
@@ -358,9 +356,9 @@ bool Graph::GuardValueNodeClosure(ValueNode *node, GuardLevel level) {
     for (auto item : vec) {
       auto id = item->Info().Id();
       if (rep.find(id) == rep.end()) {
-        rep[id] = item;
         GetGuard()->GetGuard()->GuardOn(item, level);
       }
+      rep[id] = item;
     }
     return true;
   } else {
@@ -388,7 +386,7 @@ std::vector<TracePtr> Graph::TraceValueNodeClosure(ValueNode *node, bool *ret, i
   }
   bool succ = true;
   auto list = GetTraceClosure(node, &succ, Config().GetBoolConfig(GraphJitConfig::kStrictTrace),
-                  Config().GetBoolConfig(GraphJitConfig::kPrintGuard), 0, max_trace_depth);
+                              Config().GetBoolConfig(GraphJitConfig::kPrintGuard), 0, max_trace_depth);
   if (ret != nullptr) {
     *ret = succ;
   }
