@@ -19,40 +19,38 @@
 
 #include <vector>
 #include <map>
+#include <utility>
 #include "kernel/cpu/cpu_kernel.h"
 #include "plugin/factory/ms_factory.h"
 
 namespace mindspore {
 namespace kernel {
-class IsFiniteCpuKernelMod : public NativeCpuKernelMod {
+class IsFiniteCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<IsFiniteCpuKernelMod> {
  public:
   IsFiniteCpuKernelMod() = default;
   ~IsFiniteCpuKernelMod() override = default;
 
   bool Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
 
+  int Resize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
+
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
-              const std::vector<KernelTensor *> &outputs) override;
+              const std::vector<KernelTensor *> &outputs) override {
+    return kernel_func_(this, inputs, workspace, outputs);
+  }
+
+  const std::vector<std::pair<KernelAttr, KernelRunFunc>> &GetFuncList() const override;
+
+  std::vector<KernelAttr> GetOpSupport() override { return OpSupport(); }
 
  private:
   template <typename T>
-  void LaunchKernelFloat(const std::vector<KernelTensor *> &inputs,
-                         const std::vector<kernel::KernelTensor *> &outputs) const;
+  bool LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
+                    const std::vector<kernel::KernelTensor *> &outputs);
 
-  void LaunchKernelOther(const std::vector<KernelTensor *> &inputs,
-                         const std::vector<kernel::KernelTensor *> &outputs) const;
-
-  void LaunchKernelFloat16(const std::vector<KernelTensor *> &inputs,
-                           const std::vector<kernel::KernelTensor *> &outputs) const;
-
-  std::map<TypeId, size_t> dtype_map_ = {{kNumberTypeBool, sizeof(bool)},       {kNumberTypeInt8, sizeof(int8_t)},
-                                         {kNumberTypeInt16, sizeof(int16_t)},   {kNumberTypeInt32, sizeof(int32_t)},
-                                         {kNumberTypeInt64, sizeof(int64_t)},   {kNumberTypeFloat16, sizeof(float16)},
-                                         {kNumberTypeFloat32, sizeof(float)},   {kNumberTypeFloat64, sizeof(double)},
-                                         {kNumberTypeUInt8, sizeof(uint8_t)},   {kNumberTypeUInt16, sizeof(uint16_t)},
-                                         {kNumberTypeUInt32, sizeof(uint32_t)}, {kNumberTypeUInt64, sizeof(uint64_t)}};
-  TypeId input_dtype_{kTypeUnknown};
+  static const std::vector<std::pair<KernelAttr, IsFiniteCpuKernelMod::KernelRunFunc>> func_list_;
 };
+
 }  // namespace kernel
 }  // namespace mindspore
 

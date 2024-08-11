@@ -27,67 +27,80 @@ constexpr size_t kIsFiniteOutputsNum = 1;
 }  // namespace
 
 bool IsFiniteCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
-  input_dtype_ = inputs[kIndex0]->dtype_id();
-  if (dtype_map_.find(input_dtype_) == dtype_map_.end()) {
-    MS_LOG(EXCEPTION) << "For '" << kernel_name_
-                      << "', the dtype of 'x' must be bool, int, float, or uint, but got: " << input_dtype_;
-  }
-  return true;
-}
-
-bool IsFiniteCpuKernelMod::Launch(const std::vector<kernel::KernelTensor *> &inputs,
-                                  const std::vector<kernel::KernelTensor *> &,
-                                  const std::vector<kernel::KernelTensor *> &outputs) {
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kIsFiniteInputsNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kIsFiniteOutputsNum, kernel_name_);
-  if (input_dtype_ == kNumberTypeFloat16) {
-    LaunchKernelFloat16(inputs, outputs);
-  } else if (input_dtype_ == kNumberTypeFloat32) {
-    LaunchKernelFloat<float>(inputs, outputs);
-  } else if (input_dtype_ == kNumberTypeFloat64) {
-    LaunchKernelFloat<double>(inputs, outputs);
-  } else {
-    LaunchKernelOther(inputs, outputs);
+  if (!MatchKernelFunc(kernel_name_, inputs, outputs)) {
+    return false;
   }
   return true;
 }
 
-void IsFiniteCpuKernelMod::LaunchKernelFloat16(const std::vector<KernelTensor *> &inputs,
-                                               const std::vector<kernel::KernelTensor *> &outputs) const {
-  const auto *input = reinterpret_cast<float16 *>(inputs[0]->device_ptr());
-  auto *output = reinterpret_cast<bool *>(outputs[0]->device_ptr());
-
-  size_t elem_num = inputs[0]->size() / sizeof(float16);
-
-  for (size_t i = 0; i < elem_num; i++) {
-    float temp_num = static_cast<float>(input[i]);
-    output[i] = !std::isinf(temp_num) && !std::isnan(temp_num);
+int IsFiniteCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
+                                 const std::vector<KernelTensor *> &outputs) {
+  if (int ret = KernelMod::Resize(inputs, outputs); ret != KRET_OK) {
+    return ret;
   }
+  return KRET_OK;
 }
 
 template <typename T>
-void IsFiniteCpuKernelMod::LaunchKernelFloat(const std::vector<KernelTensor *> &inputs,
-                                             const std::vector<kernel::KernelTensor *> &outputs) const {
-  T *input = reinterpret_cast<T *>(inputs[0]->device_ptr());
-  bool *output = reinterpret_cast<bool *>(outputs[0]->device_ptr());
+bool IsFiniteCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &,
+                                        const std::vector<kernel::KernelTensor *> &outputs) {
+  CHECK_KERNEL_INPUTS_NUM(inputs.size(), kIsFiniteInputsNum, kernel_name_);
+  CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kIsFiniteOutputsNum, kernel_name_);
+  auto input = reinterpret_cast<T *>(inputs[kIndex0]->device_ptr());
+  auto output = reinterpret_cast<bool *>(outputs[kIndex0]->device_ptr());
 
-  size_t elem_num = inputs[0]->size() / sizeof(T);
-
-  for (size_t i = 0; i < elem_num; i++) {
-    output[i] = !std::isinf(input[i]) && !std::isnan(input[i]);
-  }
+  CTask task;
+  task = [this, &input, &output](size_t start, size_t end) {
+    for (size_t i = start; i < end; i++) {
+      if ((std::is_same_v<T, float16>) || (std::is_same_v<T, float>)) {
+        float temp_num = static_cast<float>(input[i]);
+        output[i] = !std::isinf(temp_num) && !std::isnan(temp_num);
+      } else if (std::is_same_v<T, double>) {
+        double temp_num = static_cast<double>(input[i]);
+        output[i] = !std::isinf(temp_num) && !std::isnan(temp_num);
+      } else {
+        output[i] = true;
+      }
+    }
+  };
+  size_t elem_num = outputs[kIndex0]->size() / sizeof(bool);
+  ParallelLaunch(task, elem_num, 0, this, pool_);
+  return true;
 }
 
-void IsFiniteCpuKernelMod::LaunchKernelOther(const std::vector<KernelTensor *> &inputs,
-                                             const std::vector<kernel::KernelTensor *> &outputs) const {
-  bool *output = reinterpret_cast<bool *>(outputs[0]->device_ptr());
-  auto type_iter = dtype_map_.find(input_dtype_);
-  size_t elem_num = inputs[0]->size() / (type_iter->second);
-  for (size_t i = 0; i < elem_num; i++) {
-    output[i] = true;
-  }
-}
+const std::vector<std::pair<KernelAttr, IsFiniteCpuKernelMod::KernelRunFunc>> IsFiniteCpuKernelMod::func_list_ = {
+  {KernelAttr().AddInputAttr(kNumberTypeBool).AddOutputAttr(kNumberTypeBool),
+   &IsFiniteCpuKernelMod::LaunchKernel<bool>},
+  {KernelAttr().AddInputAttr(kNumberTypeInt8).AddOutputAttr(kNumberTypeBool),
+   &IsFiniteCpuKernelMod::LaunchKernel<int8_t>},
+  {KernelAttr().AddInputAttr(kNumberTypeInt16).AddOutputAttr(kNumberTypeBool),
+   &IsFiniteCpuKernelMod::LaunchKernel<int16_t>},
+  {KernelAttr().AddInputAttr(kNumberTypeInt32).AddOutputAttr(kNumberTypeBool),
+   &IsFiniteCpuKernelMod::LaunchKernel<int32_t>},
+  {KernelAttr().AddInputAttr(kNumberTypeInt64).AddOutputAttr(kNumberTypeBool),
+   &IsFiniteCpuKernelMod::LaunchKernel<int64_t>},
+  {KernelAttr().AddInputAttr(kNumberTypeFloat16).AddOutputAttr(kNumberTypeBool),
+   &IsFiniteCpuKernelMod::LaunchKernel<float16>},
+  {KernelAttr().AddInputAttr(kNumberTypeFloat32).AddOutputAttr(kNumberTypeBool),
+   &IsFiniteCpuKernelMod::LaunchKernel<float>},
+  {KernelAttr().AddInputAttr(kNumberTypeFloat64).AddOutputAttr(kNumberTypeBool),
+   &IsFiniteCpuKernelMod::LaunchKernel<double>},
+  {KernelAttr().AddInputAttr(kNumberTypeUInt8).AddOutputAttr(kNumberTypeBool),
+   &IsFiniteCpuKernelMod::LaunchKernel<uint8_t>},
+  {KernelAttr().AddInputAttr(kNumberTypeUInt16).AddOutputAttr(kNumberTypeBool),
+   &IsFiniteCpuKernelMod::LaunchKernel<uint16_t>},
+  {KernelAttr().AddInputAttr(kNumberTypeUInt32).AddOutputAttr(kNumberTypeBool),
+   &IsFiniteCpuKernelMod::LaunchKernel<uint32_t>},
+  {KernelAttr().AddInputAttr(kNumberTypeUInt64).AddOutputAttr(kNumberTypeBool),
+   &IsFiniteCpuKernelMod::LaunchKernel<uint64_t>},
+};
 
+const std::vector<std::pair<KernelAttr, IsFiniteCpuKernelMod::KernelRunFunc>> &IsFiniteCpuKernelMod::GetFuncList()
+  const {
+  return func_list_;
+}
 MS_KERNEL_FACTORY_REG(NativeCpuKernelMod, IsFinite, IsFiniteCpuKernelMod);
 }  // namespace kernel
 }  // namespace mindspore
