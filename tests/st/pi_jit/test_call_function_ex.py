@@ -36,19 +36,18 @@ def add(a, b):
     return a + b
 
 
-@jit(mode="PIJIT", jit_config=JitConfig(compile_with_try=False))
+@jit(mode="PIJit")
 def add_tuple(a, b):
     c = (a, b)
     return add(*c)
 
 
-@jit(mode="PIJIT", jit_config=JitConfig(compile_with_try=False))
+@jit(mode="PIJit")
 def add_list(a, b):
     c = [a, b]
     return add(*c)
 
 
-@pytest.mark.skip(reason="tmp skip")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('jit_func', [add_list, add_tuple])
 def test_call_ex_param(jit_func):
@@ -60,5 +59,5 @@ def test_call_ex_param(jit_func):
     context.set_context(mode=context.PYNATIVE_MODE)
     x = Tensor([1])
     y = Tensor([2])
-    assert(jit_func(x, y) == 3)
+    assert(all(jit_func(x, y) == Tensor([3])))
     assert(get_code_extra(jit_func)['break_count_'] == 0)
