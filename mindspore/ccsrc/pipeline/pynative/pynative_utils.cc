@@ -1310,14 +1310,15 @@ std::string PyParser::BuilidPyInputTypeString(const py::object &obj) {
   if (IsStubTensor(obj)) {
     return "Tensor";
   }
+  // bool must before int, because bool is a special int
+  if (py::isinstance<py::bool_>(obj)) {
+    return "bool";
+  }
   if (py::isinstance<py::int_>(obj)) {
     return "int";
   }
   if (py::isinstance<py::float_>(obj)) {
     return "float";
-  }
-  if (py::isinstance<py::bool_>(obj)) {
-    return "bool";
   }
   if (py::isinstance<py::str>(obj)) {
     return "string";

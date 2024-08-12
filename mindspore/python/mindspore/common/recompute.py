@@ -34,7 +34,7 @@ class _WrapCell(Cell):
     """
 
     def __init__(self, function):
-        super(_WrapCell, self).__init__()
+        super(_WrapCell, self).__init__(auto_prefix=False)
         self.function = function
 
     def construct(self, *args, **kwargs):
