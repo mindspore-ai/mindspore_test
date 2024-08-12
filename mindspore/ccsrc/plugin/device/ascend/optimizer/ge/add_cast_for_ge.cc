@@ -57,6 +57,11 @@ const std::unordered_map<std::string, std::pair<std::vector<CastInfo>, std::vect
   {ops::kNameLogicalOr, {{{0, {}, kNumberTypeBool}, {1, {}, kNumberTypeBool}}, {}}},
   {ops::kNameLogicalXor, {{{0, {}, kNumberTypeBool}, {1, {}, kNumberTypeBool}}, {}}},
   {ops::kNameLogicalNot, {{{0, {}, kNumberTypeBool}}, {}}},
+  {ops::kNameLog1p,
+   {{{0,
+      {kNumberTypeUInt8, kNumberTypeInt8, kNumberTypeInt16, kNumberTypeInt32, kNumberTypeInt64, kNumberTypeBool},
+      kNumberTypeFloat32}},
+    {}}},
   {ops::kNameDiv, {{{0, int_type_with_bool, kNumberTypeFloat32}, {1, int_type_with_bool, kNumberTypeFloat32}}, {}}},
   {ops::kNameArgMaxWithValue, {{}, {{0, {}, kNumberTypeInt32}}}},
   {ops::kNameArgMinWithValue, {{}, {{0, {}, kNumberTypeInt32}}}}};

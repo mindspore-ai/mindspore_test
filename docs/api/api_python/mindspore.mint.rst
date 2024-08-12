@@ -106,6 +106,7 @@ Tensor
     mindspore.mint.exp
     mindspore.mint.floor
     mindspore.mint.log
+    mindspore.mint.log1p
     mindspore.mint.logical_and
     mindspore.mint.logical_not
     mindspore.mint.logical_or
@@ -416,4 +417,5 @@ mindspore.mint.special
     :template: classtemplate.rst
 
     mindspore.mint.special.erfc
+    mindspore.mint.special.log1p
     mindspore.mint.special.sinc

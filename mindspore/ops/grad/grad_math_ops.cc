@@ -1247,8 +1247,11 @@ REG_BPROP_BUILDER("Log1p").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto dout = ib->GetInput(kIndex2);
   auto x_1p = ib->Add(x, ib->Tensor(1, ib->GetDtype(x)));
-  auto g = ib->Reciprocal(x_1p);
-  auto dx = ib->Mul(g, dout);
+  TypeId exp_type = ib->GetDtypeId(x);
+  if (exp_type == kNumberTypeComplex64 || exp_type == kNumberTypeComplex128) {
+    x_1p = ib->Conj(x_1p);
+  }
+  auto dx = ib->Div(dout, x_1p);
   return {dx};
 });
 

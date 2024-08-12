@@ -275,6 +275,8 @@ from mindspore.ops.function.random_func import rand_like_ext as rand_like
 from mindspore.ops.auto_generate import floor
 # 231
 from mindspore.ops.function.math_func import inverse_ext as inverse
+# 244
+from mindspore.ops.auto_generate import log1p
 # 275
 from mindspore.ops.function.math_func import remainder_ext as remainder
 # 285
@@ -1236,6 +1238,8 @@ __all__ = [
     'floor',
     # 231
     'inverse',
+    # 244
+    'log1p',
     # 275
     'remainder',
     # 285
