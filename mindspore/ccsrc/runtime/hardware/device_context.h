@@ -22,6 +22,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <utility>
 
 #include "include/backend/device_type.h"
 #include "include/backend/device_address.h"
@@ -314,6 +315,22 @@ class BACKEND_EXPORT DeviceResManager {
   std::shared_ptr<SwapManager> swap_manager() const { return swap_manager_; }
 
   std::shared_ptr<MemoryManager> mem_manager() const { return mem_manager_; }
+
+  virtual std::pair<vector<size_t>, vector<size_t>> AllocDeviceMemoryForTensorList(
+    const std::vector<tensor::TensorPtr> &tensor_list, bool enable_mem_align) {
+    MS_LOG(EXCEPTION) << "Unimplemented interface.";
+  }
+
+  virtual tensor::TensorPtr GetSliceByTensorListIndexHandle(const std::vector<tensor::TensorPtr> &tensor_list,
+                                                            const std::vector<size_t> &before_padding_size,
+                                                            const std::vector<size_t> &after_padding_size, size_t start,
+                                                            size_t end) {
+    MS_LOG(EXCEPTION) << "Unimplemented interface.";
+  }
+  virtual tensor::TensorPtr GetSliceByPaddingShapeHandle(const tensor::TensorPtr &first_tensor, size_t start,
+                                                         size_t end) {
+    MS_LOG(EXCEPTION) << "Unimplemented interface.";
+  }
 
  protected:
   // Ensure the thread safety for allocating device memory.

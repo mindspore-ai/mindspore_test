@@ -17,6 +17,8 @@
 #include "plugin/device/cpu/hal/hardware/cpu_device_context.h"
 #include <map>
 #include <string>
+#include <unordered_set>
+#include <utility>
 #include "plugin/device/cpu/hal/device/cpu_device_address.h"
 #include "plugin/device/cpu/hal/device/cpu_memory_manager.h"
 #include "plugin/device/cpu/optimizer/reg_cpu_const_input_to_attr.h"
@@ -167,6 +169,108 @@ std::vector<void *> CPUDeviceResManager::AllocateContinuousMemory(const std::vec
                                                                   uint32_t stream_id) const {
   MS_EXCEPTION_IF_NULL(mem_manager_);
   return mem_manager_->MallocContinuousMemFromMemPool(size_list, stream_id);
+}
+
+std::pair<vector<size_t>, vector<size_t>> CPUDeviceResManager::AllocDeviceMemoryForTensorList(
+  const std::vector<tensor::TensorPtr> &tensor_list, bool enable_mem_align) {
+  MS_EXCEPTION_IF_NULL(mem_manager_);
+  std::unordered_set<tensor::TensorPtr> unique_list;
+  vector<size_t> before_padding_sizes;
+  for (size_t i = 0; i < tensor_list.size(); ++i) {
+    const auto &tensor = tensor_list[i];
+    if (!unique_list.insert(tensor).second) {
+      MS_LOG(EXCEPTION) << "Tensor input should be unique. Tensor[" << i << "], " << tensor->ToString();
+    }
+    auto real_size = tensor->Size();
+    if (tensor->device_address() != nullptr) {
+      const auto &device_address = std::dynamic_pointer_cast<DeviceAddress>(tensor->device_address());
+      real_size = device_address->GetSize();
+    }
+    before_padding_sizes.emplace_back(real_size);
+  }
+  std::vector<size_t> after_padding_sizes = before_padding_sizes;
+  auto stream_id = DefaultStream();
+  auto device_ptr_list = AllocateContinuousMemory(before_padding_sizes, stream_id);
+  for (size_t i = 0; i < after_padding_sizes.size(); ++i) {
+    errno_t ret = memset_s(device_ptr_list[i], after_padding_sizes[i], 0, after_padding_sizes[i]);
+    if (ret != EOK) {
+      MS_LOG(EXCEPTION) << "Memset failed.";
+    }
+    MS_LOG(DEBUG) << "Clear ptr:" << device_ptr_list[i] << ", size:" << after_padding_sizes[i];
+  }
+
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+
+  // create device for all tensor in tensor list
+  for (size_t i = 0; i < tensor_list.size(); ++i) {
+    const auto &tensor = tensor_list[i];
+    const auto &ptr = device_ptr_list[i];
+    auto device_address = CreateDeviceAddress(ptr, before_padding_sizes[i], tensor->shape(), Format::DEFAULT_FORMAT,
+                                              tensor->data_type(), device_name, device_id, stream_id);
+    MS_LOG(DEBUG) << "Create DeviceAddress, ptr:" << ptr << ", size:" << before_padding_sizes[i]
+                  << ", shape:" << tensor->shape() << ", data_type:" << TypeIdToString(tensor->data_type());
+    MS_EXCEPTION_IF_NULL(device_address);
+    if (tensor->device_address() == nullptr) {
+      device_address->SyncHostToDevice(before_padding_sizes[i], tensor->data_c());
+    } else {
+      device_address->SyncDeviceToDevice(tensor->device_address().get());
+    }
+    tensor->set_device_address(device_address);
+  }
+  return std::make_pair(before_padding_sizes, after_padding_sizes);
+}
+
+tensor::TensorPtr CPUDeviceResManager::GetSliceByTensorListIndexHandle(
+  const std::vector<tensor::TensorPtr> &tensor_list, const std::vector<size_t> &before_padding_size,
+  const std::vector<size_t> &after_padding_size, size_t start, size_t end) {
+  if (start >= tensor_list.size() || end > tensor_list.size()) {
+    MS_EXCEPTION(ValueError) << "start:" << start << ", end:" << end << ", but tensor_list size:" << tensor_list.size();
+  }
+  size_t size = std::accumulate(after_padding_size.begin() + start, after_padding_size.begin() + end - 1,
+                                before_padding_size[end - 1]);
+  ShapeVector shape = {int64_t(size / UnitSizeInBytes(tensor_list[start]->data_type()))};
+  auto tensor = std::make_shared<tensor::Tensor>(tensor_list[start]->data_type(), shape);
+  MS_EXCEPTION_IF_NULL(tensor_list[start]->device_address());
+  auto ptr = tensor_list[start]->device_address()->GetMutablePtr();
+
+  auto stream_id = DefaultStream();
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+
+  auto device_address = CreateDeviceAddress(ptr, size, shape, Format::DEFAULT_FORMAT, tensor->data_type(), device_name,
+                                            device_id, stream_id);
+  tensor->set_device_address(device_address);
+  return tensor;
+}
+
+tensor::TensorPtr CPUDeviceResManager::GetSliceByPaddingShapeHandle(const tensor::TensorPtr &first_tensor, size_t start,
+                                                                    size_t end) {
+  auto type_id = first_tensor->data_type();
+  auto type_size = UnitSizeInBytes(type_id);
+  size_t tensor_size = (end - start) * type_size;
+  ShapeVector shape = {static_cast<int64_t>(end - start)};
+  auto tensor = std::make_shared<tensor::Tensor>(type_id, shape);
+  MS_EXCEPTION_IF_NULL(first_tensor->device_address());
+  auto ptr = first_tensor->device_address()->GetMutablePtr();
+  auto offset_size = start * type_size;
+
+  auto stream_id = DefaultStream();
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
+  const auto &device_name = ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+
+  auto device_address = CreateDeviceAddress(reinterpret_cast<uint8_t *>(ptr) + offset_size, tensor_size, shape,
+                                            Format::DEFAULT_FORMAT, type_id, device_name, device_id, stream_id);
+  MS_LOG(DEBUG) << "Create DeviceAddress, offset size to ptr0:" << offset_size << ", tensor_size:" << tensor_size
+                << ", shape:" << shape << ", data_type:" << TypeIdToString(type_id);
+  tensor->set_device_address(device_address);
+  return tensor;
 }
 
 namespace {

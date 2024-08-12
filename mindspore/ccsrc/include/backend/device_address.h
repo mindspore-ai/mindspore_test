@@ -70,7 +70,6 @@ using kernel::AddressCommon;
 using kernel::AddressCommonPtr;
 using kernel::KernelTensor;
 using kernel::KernelTensorPtr;
-
 struct StorageInfo {
   void *host_ptr_{nullptr};
   std::string file_name_{""};
