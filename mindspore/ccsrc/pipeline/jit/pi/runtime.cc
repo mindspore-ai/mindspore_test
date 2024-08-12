@@ -828,9 +828,11 @@ static bool JitCompile(PyThreadState *tstate, JitCompileResults *c) {
     GraphCompile(c, frame);
   }
 
-  auto guard = c->code()->GetGuard()->Optimize();
-  if (guard != nullptr) {
-    c->code()->SetGuard(guard);
+  if (c->conf()->getIntConfig(GraphJitConfig::kGuardRelaxCount) > 0) {
+    auto guard = c->code()->GetGuard()->Optimize();
+    if (guard != nullptr) {
+      c->code()->SetGuard(guard);
+    }
   }
 
   CollectTraceBack(c, c->code()->GetPythonCode(), c->code()->GetNativeFunc() != nullptr);

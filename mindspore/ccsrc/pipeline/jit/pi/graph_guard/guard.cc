@@ -328,7 +328,7 @@ bool OptGuard::Check(const EvalFrameObject *frame, bool print, std::map<size_t, 
 bool OptGuard::GuardOn(TracePtr var, GuardLevel tp, bool needSpecialize, int recurseDepth) {
   // Now we have TypeGuard IdGuard NameGuard AttrGuard EqGuard, let's add guard to guardlist based on type
   PyObject *obj = var->GetObject();
-  if (int_config_.find(kGuardRelaxCnt) != int_config_.end()) {
+  if (int_config_.find(kGuardRelaxCnt) != int_config_.end() && int_config_[kGuardRelaxCnt] != 0) {
     var->SetRelaxCount(int_config_[kGuardRelaxCnt]);
   }
   GuardItemPtr item = nullptr;
