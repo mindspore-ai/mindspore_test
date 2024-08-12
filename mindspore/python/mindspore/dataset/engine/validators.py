@@ -1375,6 +1375,19 @@ def check_sync_wait(method):
         type_check(condition_name, (str,), "condition_name")
         type_check(num_batch, (int,), "num_batch")
 
+        check_independent_mode("Dataset sync wait")
+
+        return method(self, *args, **kwargs)
+
+    return new_method
+
+
+def check_sync_update(method):
+    """check the input arguments of sync_update."""
+
+    @wraps(method)
+    def new_method(self, *args, **kwargs):
+        check_independent_mode("Dataset sync update")
         return method(self, *args, **kwargs)
 
     return new_method

@@ -14,6 +14,7 @@
 # limitations under the License.
 # ==============================================================================
 
+import os
 import numpy as np
 import pytest
 import mindspore.dataset as ds
@@ -34,6 +35,21 @@ class Augment:
 
     def update(self, data):
         self.loss = data["loss"]
+
+
+def test_disable_syncwait_in_independent_mode():
+    """
+    Feature: Disable sync wait in independent mode.
+    Description: Test syncwait is disable in independent mode.
+    Expectation: Exception raised to notify feature not supported.
+    """
+    os.environ["MS_INDEPENDENT_DATASET"] = "True"
+    with pytest.raises(RuntimeError) as err:
+        dataset = ds.GeneratorDataset(gen, column_names=["input"])
+        aug = Augment(0)
+        dataset = dataset.sync_wait(condition_name="policy", callback=aug.update)
+    assert "Dataset sync wait is not supported in Dataset Independent mode" in str(err.value)
+    os.environ["MS_INDEPENDENT_DATASET"] = "False"
 
 
 def test_simple_sync_wait():
