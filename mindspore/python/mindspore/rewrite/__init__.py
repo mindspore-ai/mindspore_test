@@ -25,5 +25,4 @@ from .sparsify.sparsify import sparsify
 from .sparsify.utils import ArgType, SparseFunc
 
 
-__all__ = ["SymbolTree", "Node", "NodeType", "ScopedValue", "ValueType", "PatternEngine", "PatternNode", "VarNode",
-           "Replacement"]
+__all__ = ["SymbolTree", "Node", "NodeType", "ScopedValue", "ValueType"]
