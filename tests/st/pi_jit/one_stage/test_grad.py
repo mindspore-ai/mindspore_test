@@ -60,7 +60,7 @@ def test_base_grad_operation():
     pynative_res = grad_net(a, b)
     jit_mode_pi_enable()
     pijit_res = grad_net(a, b)
-    jcr = get_code_extra(GradNet.construct)
+    jcr = get_code_extra(GradNet.construct.__wrapped__)
     assert jcr["break_count_"] == 0
     assert np.allclose(pynative_res.asnumpy(), pijit_res.asnumpy())
     jit_mode_pi_disable()
@@ -100,7 +100,7 @@ def test_base_grad_operation_2():
     pynative_res = grad_net(a, b)
     jit_mode_pi_enable()
     pijit_res = grad_net(a, b)
-    jcr = get_code_extra(GradNet.construct)
+    jcr = get_code_extra(GradNet.construct.__wrapped__)
     assert jcr["break_count_"] == 0
     assert isinstance(pynative_res, tuple) and isinstance(pijit_res, tuple)
     assert len(pynative_res) == 2 and len(pijit_res) == 2
@@ -148,7 +148,7 @@ def test_base_grad_operation_3():
     pynative_res = grad_net(a, b)
     jit_mode_pi_enable()
     pijit_res = grad_net(a, b)
-    jcr = get_code_extra(GradNet.construct)
+    jcr = get_code_extra(GradNet.construct.__wrapped__)
     assert jcr["break_count_"] == 0
     assert isinstance(pynative_res, tuple) and isinstance(pijit_res, tuple)
     assert len(pynative_res) == 1 and len(pijit_res) == 1
@@ -195,7 +195,7 @@ def test_base_grad_operation_4():
     pynative_res = grad_net(a, b)
     jit_mode_pi_enable()
     pijit_res = grad_net(a, b)
-    jcr = get_code_extra(GradNet.construct)
+    jcr = get_code_extra(GradNet.construct.__wrapped__)
     assert jcr["break_count_"] == 0
     assert isinstance(pynative_res, tuple) and isinstance(pijit_res, tuple)
     assert len(pynative_res) == 2 and len(pijit_res) == 2
@@ -246,7 +246,7 @@ def test_base_grad_operation_5():
     pynative_res = grad_net(a, b)
     jit_mode_pi_enable()
     pijit_res = grad_net(a, b)
-    jcr = get_code_extra(GradNet.construct)
+    jcr = get_code_extra(GradNet.construct.__wrapped__)
     assert jcr["break_count_"] == 0
     assert np.allclose(pynative_res.asnumpy(), pijit_res.asnumpy())
     jit_mode_pi_disable()
@@ -292,7 +292,7 @@ def test_base_grad_operation_6():
     pynative_res = grad_net(a, b)
     jit_mode_pi_enable()
     pijit_res = grad_net(a, b)
-    jcr = get_code_extra(GradNet.construct)
+    jcr = get_code_extra(GradNet.construct.__wrapped__)
     assert jcr["break_count_"] == 0
     assert isinstance(pynative_res, tuple) and isinstance(pijit_res, tuple)
     assert len(pynative_res) == 2 and len(pijit_res) == 2
@@ -340,7 +340,7 @@ def test_functional_grad():
     pynative_res = grad_net(a, b)
     jit_mode_pi_enable()
     pijit_res = grad_net(a, b)
-    jcr = get_code_extra(GradNet.construct)
+    jcr = get_code_extra(GradNet.construct.__wrapped__)
     assert jcr["break_count_"] == 0
     assert np.allclose(pynative_res.asnumpy(), pijit_res.asnumpy())
     jit_mode_pi_disable()
@@ -383,7 +383,7 @@ def test_functional_grad_2():
     pynative_res = grad_net(a, b)
     jit_mode_pi_enable()
     pijit_res = grad_net(a, b)
-    jcr = get_code_extra(GradNet.construct)
+    jcr = get_code_extra(GradNet.construct.__wrapped__)
     assert jcr["break_count_"] == 0
     assert isinstance(pynative_res, tuple) and isinstance(pijit_res, tuple)
     assert len(pynative_res) == 2 and len(pijit_res) == 2
@@ -430,7 +430,7 @@ def test_functional_grad_3():
     pynative_res = grad_net(a, b)
     jit_mode_pi_enable()
     pijit_res = grad_net(a, b)
-    jcr = get_code_extra(GradNet.construct)
+    jcr = get_code_extra(GradNet.construct.__wrapped__)
     assert jcr["break_count_"] == 0
     assert isinstance(pynative_res, tuple) and isinstance(pijit_res, tuple)
     assert len(pynative_res) == 2 and len(pijit_res) == 2
@@ -479,7 +479,7 @@ def test_functional_grad_4():
     pynative_res = grad_net(a, b)
     jit_mode_pi_enable()
     pijit_res = grad_net(a, b)
-    jcr = get_code_extra(GradNet.construct)
+    jcr = get_code_extra(GradNet.construct.__wrapped__)
     assert jcr["break_count_"] == 0
     assert isinstance(pynative_res, tuple) and isinstance(pijit_res, tuple)
     assert len(pynative_res) == 2 and len(pijit_res) == 2
@@ -529,7 +529,7 @@ def test_functional_grad_5():
     pynative_res = grad_net(a, b)
     jit_mode_pi_enable()
     pijit_res = grad_net(a, b)
-    jcr = get_code_extra(GradNet.construct)
+    jcr = get_code_extra(GradNet.construct.__wrapped__)
     assert jcr["break_count_"] == 0
     assert isinstance(pynative_res, tuple) and isinstance(pijit_res, tuple)
     assert len(pynative_res) == 2 and len(pijit_res) == 2
@@ -582,7 +582,7 @@ def test_second_grad_operation():
     pynative_res = sec_grad_net(a)
     jit_mode_pi_enable()
     pijit_res = sec_grad_net(a)
-    jcr = get_code_extra(SecGradNet.construct)
+    jcr = get_code_extra(SecGradNet.construct.__wrapped__)
     assert jcr["break_count_"] == 0
     assert np.allclose(pynative_res.asnumpy(), pijit_res.asnumpy())
     jit_mode_pi_disable()

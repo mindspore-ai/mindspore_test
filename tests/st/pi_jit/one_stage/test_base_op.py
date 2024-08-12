@@ -47,14 +47,13 @@ def test_make_tuple():
     Expectation: No exception.
     """
     class Net(nn.Cell):
-        @jit(mode="PIJit", jit_config=cfg)
         def construct(self, x):
             return (x, x+1, x+2)
 
     context.set_context(mode=context.PYNATIVE_MODE)
     net = Net()
     a = Tensor([1])
-    ret = net(a)
+    ret = jit(Net.construct, mode="PIJit", jit_config=cfg)(net, a)
     jcr = get_code_extra(Net.construct)
     assert jcr["break_count_"] == 0
     assert isinstance(ret, tuple)
@@ -72,14 +71,13 @@ def test_make_list():
     Expectation: No exception.
     """
     class Net(nn.Cell):
-        @jit(mode="PIJit", jit_config=cfg)
         def construct(self, x):
             return [x, x+1, x+2]
 
     context.set_context(mode=context.PYNATIVE_MODE)
     net = Net()
     a = Tensor([1])
-    ret = net(a)
+    ret = jit(Net.construct, mode="PIJit", jit_config=cfg)(net, a)
     jcr = get_code_extra(Net.construct)
     assert jcr["break_count_"] == 0
     assert isinstance(ret, list)
@@ -97,7 +95,6 @@ def test_return_add_result_tuple():
     Expectation: No exception.
     """
     class Net(nn.Cell):
-        @jit(mode="PIJit", jit_config=cfg)
         def construct(self, x, y):
             return x + y
 
@@ -105,7 +102,7 @@ def test_return_add_result_tuple():
     net = Net()
     a = (1, 2, 3)
     b = (4, 5, 6)
-    ret = net(a, b)
+    ret = jit(Net.construct, mode="PIJit", jit_config=cfg)(net, a, b)
     jcr = get_code_extra(Net.construct)
     assert jcr["break_count_"] == 0
     assert ret == (1, 2, 3, 4, 5, 6)
@@ -119,7 +116,6 @@ def test_return_add_result_list():
     Expectation: No exception.
     """
     class Net(nn.Cell):
-        @jit(mode="PIJit", jit_config=cfg)
         def construct(self, x, y):
             return x + y
 
@@ -127,7 +123,7 @@ def test_return_add_result_list():
     net = Net()
     a = [1, 2, 3]
     b = [4, 5, 6]
-    ret = net(a, b)
+    ret = jit(Net.construct, mode="PIJit", jit_config=cfg)(net, a, b)
     jcr = get_code_extra(Net.construct)
     assert jcr["break_count_"] == 0
     assert ret == [1, 2, 3, 4, 5, 6]
@@ -146,13 +142,12 @@ def test_empty_tuple_input():
             self.a = Parameter(Tensor([1, 2, 3]))
             self.b = Parameter(Tensor([1, 1, 1]))
 
-        @jit(mode="PIJit", jit_config=cfg)
         def construct(self, x):
             return self.a + self.b
 
     context.set_context(mode=context.PYNATIVE_MODE)
     net = Net()
-    ret = net(())
+    ret = jit(Net.construct, mode="PIJit", jit_config=cfg)(net, ())
     jcr = get_code_extra(Net.construct)
     assert jcr["break_count_"] == 0
     assert np.all(ret.asnumpy() == np.array([2, 3, 4]))
@@ -171,13 +166,12 @@ def test_empty_list_input():
             self.a = Parameter(Tensor([1, 2, 3]))
             self.b = Parameter(Tensor([1, 1, 1]))
 
-        @jit(mode="PIJit", jit_config=cfg)
         def construct(self, x):
             return self.a + self.b
 
     context.set_context(mode=context.PYNATIVE_MODE)
     net = Net()
-    ret = net([])
+    ret = jit(Net.construct, mode="PIJit", jit_config=cfg)(net, [])
     jcr = get_code_extra(Net.construct)
     assert jcr["break_count_"] == 0
     assert np.all(ret.asnumpy() == np.array([2, 3, 4]))
@@ -196,13 +190,12 @@ def test_empty_dict_input():
             self.a = Parameter(Tensor([1, 2, 3]))
             self.b = Parameter(Tensor([1, 1, 1]))
 
-        @jit(mode="PIJit", jit_config=cfg)
         def construct(self, x):
             return self.a + self.b
 
     context.set_context(mode=context.PYNATIVE_MODE)
     net = Net()
-    ret = net({})
+    ret = jit(Net.construct, mode="PIJit", jit_config=cfg)(net, {})
     jcr = get_code_extra(Net.construct)
     assert jcr["break_count_"] == 0
     assert np.all(ret.asnumpy() == np.array([2, 3, 4]))
@@ -216,7 +209,6 @@ def test_tuple_slice():
     Expectation: No exception.
     """
     class Net(nn.Cell):
-        @jit(mode="PIJit", jit_config=cfg)
         def construct(self, x):
             m = (x, x+1, x+2)
             return m[0:2:1]
@@ -224,7 +216,7 @@ def test_tuple_slice():
     context.set_context(mode=context.PYNATIVE_MODE)
     net = Net()
     a = Tensor([1])
-    ret = net(a)
+    ret = jit(Net.construct, mode="PIJit", jit_config=cfg)(net, a)
     jcr = get_code_extra(Net.construct)
     assert jcr["break_count_"] == 0
     assert isinstance(ret, tuple)
@@ -241,7 +233,6 @@ def test_list_slice():
     Expectation: No exception.
     """
     class Net(nn.Cell):
-        @jit(mode="PIJit", jit_config=cfg)
         def construct(self, x):
             m = [x, x+1, x+2]
             return m[0:2:1]
@@ -249,7 +240,7 @@ def test_list_slice():
     context.set_context(mode=context.PYNATIVE_MODE)
     net = Net()
     a = Tensor([1])
-    ret = net(a)
+    ret = jit(Net.construct, mode="PIJit", jit_config=cfg)(net, a)
     jcr = get_code_extra(Net.construct)
     assert jcr["break_count_"] == 0
     assert isinstance(ret, list)
@@ -266,7 +257,6 @@ def test_list_slice_with_default_parameter():
     Expectation: No exception.
     """
     class Net(nn.Cell):
-        @jit(mode="PIJit", jit_config=cfg)
         def construct(self, x):
             m = [x, x+1, x+2]
             return m[0:2]
@@ -274,7 +264,7 @@ def test_list_slice_with_default_parameter():
     context.set_context(mode=context.PYNATIVE_MODE)
     net = Net()
     a = Tensor([1])
-    ret = net(a)
+    ret = jit(Net.construct, mode="PIJit", jit_config=cfg)(net, a)
     jcr = get_code_extra(Net.construct)
     assert jcr["break_count_"] == 0
     assert isinstance(ret, list)
@@ -291,7 +281,6 @@ def test_list_slice_with_default_parameter_2():
     Expectation: No exception.
     """
     class Net(nn.Cell):
-        @jit(mode="PIJit", jit_config=cfg)
         def construct(self, x):
             m = [x, x+1, x+2]
             return m[::]
@@ -299,7 +288,7 @@ def test_list_slice_with_default_parameter_2():
     context.set_context(mode=context.PYNATIVE_MODE)
     net = Net()
     a = Tensor([1])
-    ret = net(a)
+    ret = jit(Net.construct, mode="PIJit", jit_config=cfg)(net, a)
     jcr = get_code_extra(Net.construct)
     assert jcr["break_count_"] == 0
     assert isinstance(ret, list)
@@ -317,7 +306,6 @@ def test_list_slice_with_default_parameter_3():
     Expectation: No exception.
     """
     class Net(nn.Cell):
-        @jit(mode="PIJit", jit_config=cfg)
         def construct(self, x):
             m = [x, x+1, x+2]
             return m[:]
@@ -325,7 +313,7 @@ def test_list_slice_with_default_parameter_3():
     context.set_context(mode=context.PYNATIVE_MODE)
     net = Net()
     a = Tensor([1])
-    ret = net(a)
+    ret = jit(Net.construct, mode="PIJit", jit_config=cfg)(net, a)
     jcr = get_code_extra(Net.construct)
     assert jcr["break_count_"] == 0
     assert isinstance(ret, list)
@@ -343,7 +331,6 @@ def test_make_dict():
     Expectation: No exception.
     """
     class Net(nn.Cell):
-        @jit(mode="PIJit", jit_config=cfg)
         def construct(self, x):
             m = {"x": x, "y": x+1}
             return m["x"]
@@ -351,7 +338,7 @@ def test_make_dict():
     context.set_context(mode=context.PYNATIVE_MODE)
     net = Net()
     a = Tensor([1])
-    ret = net(a)
+    ret = jit(Net.construct, mode="PIJit", jit_config=cfg)(net, a)
     jcr = get_code_extra(Net.construct)
     assert jcr["break_count_"] == 0
     assert ret == Tensor([1])
@@ -365,7 +352,6 @@ def test_make_dict_2():
     Expectation: No exception.
     """
     class Net(nn.Cell):
-        @jit(mode="PIJit", jit_config=cfg)
         def construct(self, x):
             m = {}
             m["x"] = x
@@ -374,7 +360,7 @@ def test_make_dict_2():
     context.set_context(mode=context.PYNATIVE_MODE)
     net = Net()
     a = Tensor([1])
-    ret = net(a)
+    ret = jit(Net.construct, mode="PIJit", jit_config=cfg)(net, a)
     jcr = get_code_extra(Net.construct)
     assert jcr["break_count_"] == 0
     assert ret == Tensor([1])
@@ -388,7 +374,6 @@ def test_make_dict_3():
     Expectation: No exception.
     """
     class Net(nn.Cell):
-        @jit(mode="PIJit", jit_config=cfg)
         def construct(self, x):
             m = {"x": x+1}
             return m["x"]
@@ -396,7 +381,7 @@ def test_make_dict_3():
     context.set_context(mode=context.PYNATIVE_MODE)
     net = Net()
     a = Tensor([1])
-    ret = net(a)
+    ret = jit(Net.construct, mode="PIJit", jit_config=cfg)(net, a)
     jcr = get_code_extra(Net.construct)
     assert jcr["break_count_"] == 0
     assert ret == Tensor([2])
@@ -410,7 +395,6 @@ def test_tuple_input():
     Expectation: No exception.
     """
     class Net(nn.Cell):
-        @jit(mode="PIJit", jit_config=cfg)
         def construct(self, x, y):
             return x/y
 
@@ -418,7 +402,7 @@ def test_tuple_input():
     net = Net()
     a = (1.0, 2.0, 3.0)
     b = Tensor(np.ones([2, 3]).astype(np.float32))
-    ret = net(a, b)
+    ret = jit(Net.construct, mode="PIJit", jit_config=cfg)(net, a, b)
     expect = np.array([[1.0, 2.0, 3.0], [1.0, 2.0, 3.0]])
     jcr = get_code_extra(Net.construct)
     assert jcr["break_count_"] == 0
@@ -433,7 +417,6 @@ def test_list_input():
     Expectation: No exception.
     """
     class Net(nn.Cell):
-        @jit(mode="PIJit", jit_config=cfg)
         def construct(self, x, y):
             return x/y
 
@@ -441,7 +424,7 @@ def test_list_input():
     net = Net()
     a = [1.0, 2.0, 3.0]
     b = Tensor(np.ones([2, 3]).astype(np.float32))
-    ret = net(a, b)
+    ret = jit(Net.construct, mode="PIJit", jit_config=cfg)(net, a, b)
     expect = np.array([[1.0, 2.0, 3.0], [1.0, 2.0, 3.0]])
     jcr = get_code_extra(Net.construct)
     assert jcr["break_count_"] == 0
@@ -456,7 +439,6 @@ def test_handle_constant():
     Expectation: No exception.
     """
     class Net(nn.Cell):
-        @jit(mode="PIJit", jit_config=cfg)
         def construct(self, x):
             a, b = x
             return (a, b)
@@ -464,7 +446,7 @@ def test_handle_constant():
     context.set_context(mode=context.PYNATIVE_MODE)
     net = Net()
     m = (1, 2)
-    ret = net(m)
+    ret = jit(Net.construct, mode="PIJit", jit_config=cfg)(net, m)
     jcr = get_code_extra(Net.construct)
     assert jcr["break_count_"] == 0
     assert ret == (1, 2)
@@ -478,7 +460,6 @@ def test_handle_constant_2():
     Expectation: No exception.
     """
     class Net(nn.Cell):
-        @jit(mode="PIJit", jit_config=cfg)
         def construct(self, x):
             a, b = x
             return (a, b)
@@ -486,7 +467,7 @@ def test_handle_constant_2():
     context.set_context(mode=context.PYNATIVE_MODE)
     net = Net()
     m = [1, 2]
-    ret = net(m)
+    ret = jit(Net.construct, mode="PIJit", jit_config=cfg)(net, m)
     jcr = get_code_extra(Net.construct)
     assert jcr["break_count_"] == 0
     assert ret == (1, 2)
@@ -500,13 +481,12 @@ def test_handle_mutable_kwargs_args():
     Expectation: No exception.
     """
     class Net(nn.Cell):
-        @jit(mode="PIJit", jit_config=cfg)
         def construct(self, a, *args, b=1, **kwargs):
             return a + b + args[0] + kwargs["s"]
 
     context.set_context(mode=context.PYNATIVE_MODE)
     net = Net()
-    ret = net(1, 10, 100, s=1000)
+    ret = jit(Net.construct, mode="PIJit", jit_config=cfg)(net, 1, 10, 100, s=1000)
     jcr = get_code_extra(Net.construct)
     assert jcr["break_count_"] == 0
     assert ret == 1012
@@ -520,13 +500,12 @@ def test_handle_mutable_kwargs_args_2():
     Expectation: No exception.
     """
     class Net(nn.Cell):
-        @jit(mode="PIJit", jit_config=cfg)
         def construct(self, a, *args, b=1, **kwargs):
             return a + b + args[0]
 
     context.set_context(mode=context.PYNATIVE_MODE)
     net = Net()
-    ret = net(1, 10, 100, s=1000)
+    ret = jit(Net.construct, mode="PIJit", jit_config=cfg)(net, 1, 10, 100, s=1000)
     jcr = get_code_extra(Net.construct)
     assert jcr["break_count_"] == 0
     assert ret == 12
@@ -550,11 +529,11 @@ def test_use_free_variable():
     net = Net()
     input1 = (1, 2, 3, 4)
     assert net(input1)
-    jcr = get_code_extra(Net.construct)
+    jcr = get_code_extra(Net.construct.__wrapped__)
     assert jcr["break_count_"] == 0
     input2 = (1, 1, 1, 1, 1)
     assert not net(input2)
-    jcr = get_code_extra(Net.construct)
+    jcr = get_code_extra(Net.construct.__wrapped__)
     assert jcr["break_count_"] == 0
 
 
@@ -599,11 +578,11 @@ def test_guard_for_getattr():
     context.set_context(mode=context.PYNATIVE_MODE)
     net = Net()
     ret1 = net(1)
-    jcr = get_code_extra(Net.construct)
+    jcr = get_code_extra(Net.construct.__wrapped__)
     assert jcr["break_count_"] == 0
     net.a = 2
     ret2 = net(2)
-    jcr = get_code_extra(Net.construct)
+    jcr = get_code_extra(Net.construct.__wrapped__)
     assert jcr["break_count_"] == 0
     assert ret1 == 2
     assert ret2 == 4
@@ -628,11 +607,11 @@ def test_guard_for_getattr_2():
     context.set_context(mode=context.PYNATIVE_MODE)
     net = Net()
     ret1 = net(1)
-    jcr = get_code_extra(Net.construct)
+    jcr = get_code_extra(Net.construct.__wrapped__)
     assert jcr["break_count_"] == 0
     net.a = 2
     ret2 = net(1)
-    jcr = get_code_extra(Net.construct)
+    jcr = get_code_extra(Net.construct.__wrapped__)
     assert jcr["break_count_"] == 0
     assert ret1 == 2
     assert ret2 == 3
@@ -722,11 +701,11 @@ def test_guard_parameter():
     m = Tensor([[1, 1], [2, 2]], dtype.float32)
     net1 = Net()
     ret1 = net1(m)
-    jcr = get_code_extra(Net.construct)
+    jcr = get_code_extra(Net.construct.__wrapped__)
     assert jcr["break_count_"] == 0
     net2 = Net()
     ret2 = net2(m)
-    jcr = get_code_extra(Net.construct)
+    jcr = get_code_extra(Net.construct.__wrapped__)
     assert jcr["break_count_"] == 0
     assert np.allclose(ret1.asnumpy(), (net1.w * m).asnumpy())
     assert np.allclose(ret2.asnumpy(), (net2.w * m).asnumpy())
