@@ -1685,7 +1685,7 @@ class CellData : public ItemData {
     if (ItemData::operator==(obj)) {
       const CellData &other = static_cast<const CellData &>(obj);
       for (size_t i = 0; i < listK_.size(); ++i) {
-        if (*(listK_[i]) == *(other.listK_[i]) && *(listV_[i]) == *(other.listV_[i])) {
+        if (i < other.listK_.size() && *(listK_[i]) == *(other.listK_[i]) && *(listV_[i]) == *(other.listV_[i])) {
           continue;
         } else {
           return false;

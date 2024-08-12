@@ -176,11 +176,11 @@ std::pair<py::bytes, py::bytes> CodeGenerator::ConvertToCodeBytes(const std::vec
       bci = i->bci();
       line = i->line();
     }
-    int oparg = i->arg();
-    for (unsigned c = 0, exa = IntToSize(oparg) >> MoveEightBits; exa > 0; exa >>= MoveEightBits, ++c) {
-      co_code.insert(co_code.end() - c, _Py_MAKECODEUNIT(EXTENDED_ARG, exa & 0xff));
+    unsigned oparg = Opcode(i->op()).HasArg() ? i->arg() : 0;
+    for (unsigned c = 0, exa = oparg >> MoveEightBits; exa > 0; exa >>= MoveEightBits, ++c) {
+      co_code.insert(co_code.end() - c, _Py_MAKECODEUNIT(EXTENDED_ARG, exa & 0xffu));
     }
-    co_code.push_back(_Py_MAKECODEUNIT(i->op(), (signed)oparg & 0xff));
+    co_code.push_back(_Py_MAKECODEUNIT(i->op(), oparg & 0xffu));
   }
   const char *code_data = reinterpret_cast<const char *>(co_code.data());
   const size_t code_size = co_code.size() * sizeof(co_code[0]);

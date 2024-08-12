@@ -433,22 +433,19 @@ std::vector<ValueNode *> GraphAnalyzer::GetAliveLocals(Graph *g) {
     uniques.insert(output);
   }
   outputs.assign(uniques.begin(), uniques.end());
+
+  if (this->graph_->Config().GetBoolConfig(GraphJitConfig::kLogGraphBreak)) {
+    GRAPH_JIT_LOG_F("UD analyze: alive node size : %ld", outputs.size());
+    for (auto node : outputs) {
+      if (node) {
+        GRAPH_JIT_LOG_F("UD analyze: alive node: %s", node->ToString().c_str());
+      }
+    }
+  }
   return outputs;
 }
 
-void PrintAliveNodes(std::vector<ValueNode *> aliveNodes) {
-  GRAPH_JIT_LOG_F("UD analyze: alive node size : %ld", aliveNodes.size());
-  for (auto node : aliveNodes) {
-    if (node) {
-      GRAPH_JIT_LOG_F("UD analyze: alive node: %s", node->ToString().c_str());
-    }
-  }
-}
-
 bool GraphAnalyzer::AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes) {
-  if (this->graph_->Config().GetBoolConfig(GraphJitConfig::kLogGraphBreak)) {
-    PrintAliveNodes(aliveNodes);
-  }
   bool isAllNodesSupportOutput = true;
   for (auto node : aliveNodes) {
     AObject *o = node->GetVobj();
