@@ -32,6 +32,7 @@ PrimitiveCPtr OnnxPromptFlashAttentionParser::Parse(const onnx::GraphProto &onnx
   auto prim = std::make_unique<ops::PromptFlashAttention>();
   MS_CHECK_TRUE_RET(prim != nullptr, nullptr);
   auto prim_c = prim->GetPrim();
+  MS_CHECK_TRUE_RET(prim_c != nullptr, nullptr);
   int64_t num_heads = 0;
   prim_c->AddAttr("input_layout", MakeValue<std::string>("BNSD"));
   for (const auto &onnx_node_attr : onnx_node.attribute()) {

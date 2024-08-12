@@ -262,6 +262,7 @@ STATUS ReplaceTransposeWithGraphInput(const FuncGraphPtr &func_graph, const CNod
 
 STATUS FullFillParam(const FuncGraphPtr &func_graph, const CNodePtr &cnode, bool keep_origin_dtype, int32_t size) {
   auto manager = func_graph->manager();
+  MS_CHECK_TRUE_MSG(manager != nullptr, RET_ERROR, "funcgraph has no manager");
   switch (cnode->size()) {
     case opt::kInputSizeFour: {
       ParameterPtr new_param_node = nullptr;

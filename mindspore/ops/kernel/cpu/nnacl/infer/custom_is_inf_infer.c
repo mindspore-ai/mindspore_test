@@ -26,6 +26,8 @@ int CustomIsInfInferShape(const TensorC *const *inputs, size_t inputs_size, Tens
 
   const TensorC *input = inputs[FIRST_INPUT];
   TensorC *output = outputs[FIRST_INPUT];
+  NNACL_CHECK_NULL_RETURN_ERR(input);
+  NNACL_CHECK_NULL_RETURN_ERR(output);
   output->data_type_ = kNumberTypeBool;
   output->format_ = input->format_;
   if (!InferFlag(inputs, inputs_size)) {

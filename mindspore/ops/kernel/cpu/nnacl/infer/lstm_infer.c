@@ -29,6 +29,12 @@ int CheckInputShapeValid(const TensorC *const *inputs, size_t inputs_size, const
   const TensorC *bias = inputs[FOURTH_INPUT];
   const TensorC *hidden_init = inputs[FIFTH_INPUT];
   const TensorC *cell_init = inputs[SIXTH_INPUT];
+  NNACL_CHECK_NULL_RETURN_ERR(input);
+  NNACL_CHECK_NULL_RETURN_ERR(weight_i);
+  NNACL_CHECK_NULL_RETURN_ERR(weight_g);
+  NNACL_CHECK_NULL_RETURN_ERR(bias);
+  NNACL_CHECK_NULL_RETURN_ERR(hidden_init);
+  NNACL_CHECK_NULL_RETURN_ERR(cell_init);
   NNACL_CHECK_TRUE_RET(input->shape_size_ == DIMENSION_3D && weight_i->shape_size_ == DIMENSION_3D &&
                          weight_g->shape_size_ == DIMENSION_3D && bias->shape_size_ == DIMENSION_2D,
                        NNACL_ERR);

@@ -75,7 +75,7 @@ CNodePtr Conv1DInOutAdjust::NewSqueezeOpNode(const FuncGraphPtr &func_graph, con
 }
 
 lite::STATUS Conv1DInOutAdjust::ExpandFilterShape(const AnfNodePtr &weight_node, const schema::Format &format) {
-  MS_ASSERT(weight_node != nullptr);
+  MS_CHECK_TRUE_MSG(weight_node != nullptr, lite::RET_ERROR, "weight node is nullptr.");
   auto weight_tensor = opt::GetTensorInfo(weight_node);
   MS_CHECK_TRUE_MSG(weight_tensor != nullptr, lite::RET_ERROR, "weight node must be param value.");
   auto shape = weight_tensor->shape();

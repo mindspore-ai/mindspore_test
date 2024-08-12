@@ -32,7 +32,6 @@ int SparseSegmentSumInferShape(const TensorC *const *inputs, size_t inputs_size,
   }
 
   return NNACL_INFER_INVALID;
-  // return NNACL_OK;
 }
 
 REG_INFER(SparseSegmentSum, PrimType_SparseSegmentSum, SparseSegmentSumInferShape)
