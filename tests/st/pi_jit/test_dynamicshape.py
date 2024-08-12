@@ -13,8 +13,8 @@
 # limitations under the License.
 # ============================================================================
 """run dynamic shape test"""
-import sys  
-import pytest 
+import sys
+import pytest
 import mindspore as ms
 import mindspore.nn as nn
 from mindspore import Tensor, jit, context, Symbol
@@ -23,10 +23,10 @@ from mindspore._c_expression import get_code_extra
 from .share.utils import match_array
 from tests.mark_utils import arg_mark
 
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
+@pytest.fixture(autouse=True)
+def skip_if_python_version_too_high():
+    if sys.version_info >= (3, 11):
+        pytest.skip("Skipping tests on Python 3.11 and higher.")
 s=Symbol(max=10,min=1)
 g_relu=nn.ReLU()
 
@@ -102,7 +102,7 @@ def test_signature_case():
     match_array(res1, t1)
     res2 = SignatureNet()(t2)
     match_array(res2, t2)
-    jcr1 = get_code_extra(signature_test)
+    jcr1 = get_code_extra(signature_test.__wrapped__)
     assert(jcr1["compile_count_"] == 1)
-    jcr2 = get_code_extra(SignatureNet().construct)
+    jcr2 = get_code_extra(SignatureNet().construct.__wrapped__)
     assert(jcr2["compile_count_"] == 1)

@@ -13,7 +13,7 @@
 # limitations under the License.
 # ============================================================================
 """test call function ex implement"""
-import sys  
+import sys
 import pytest
 import mindspore.context as context
 from tests.mark_utils import arg_mark
@@ -21,10 +21,10 @@ from mindspore import Tensor, jit, JitConfig
 from mindspore._c_expression import update_pijit_default_config, get_code_extra
 
 
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
+@pytest.fixture(autouse=True)
+def skip_if_python_version_too_high():
+    if sys.version_info >= (3, 11):
+        pytest.skip("Skipping tests on Python 3.11 and higher.")
 
 
 SYS_VER = (sys.version_info.major, sys.version_info.minor)
@@ -60,4 +60,4 @@ def test_call_ex_param(jit_func):
     x = Tensor([1])
     y = Tensor([2])
     assert(all(jit_func(x, y) == Tensor([3])))
-    assert(get_code_extra(jit_func)['break_count_'] == 0)
+    assert(get_code_extra(jit_func.__wrapped__)['break_count_'] == 0)
