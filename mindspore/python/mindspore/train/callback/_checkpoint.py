@@ -711,8 +711,8 @@ class ModelCheckpoint(Callback):
                         return x in save_param_names
                 save_checkpoint(network, cur_file, False, self._config.async_save,
                                 self._append_dict, self._config.enc_key, self._config.enc_mode,
-                                crc_check=self._config.crc_check, incremental=self._map_param_inc,
-                                choice_func=choice_func)
+                                crc_check=self._config.crc_check, format=self._config.format,
+                                incremental=self._map_param_inc, choice_func=choice_func)
             else:
                 save_checkpoint(network, cur_file, self._config.integrated_save, self._config.async_save,
                                 self._append_dict, self._config.enc_key, self._config.enc_mode,
