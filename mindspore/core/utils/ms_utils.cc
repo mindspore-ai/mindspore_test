@@ -59,15 +59,34 @@ std::string Config::GetValue(const std::string &config, const std::string &confi
       return "";
     }
 
+    // Remove the single or double quotes at the beginning and ending of the string. 'xxx', "xxxx" '""xxxx""' they are
+    // equal
+    while ((env_value.front() == kSingleQuote || env_value.front() == kDoubleQuote) &&
+           env_value.front() == env_value.back()) {
+      env_value.erase(0, 1);
+      env_value.pop_back();
+    }
+
     std::ostringstream oss_buf;
     oss_buf << "[" << config << "]Runtime config:";
+    // Replace semicolon with commas to standardize delimiter
+    std::replace(env_value.begin(), env_value.end(), kSemicolon, kComma);
     std::stringstream ss(env_value);
     std::string item;
-    while (std::getline(ss, item, ',')) {
-      std::size_t delimiterPos = item.find(':');
+    while (std::getline(ss, item, kComma)) {
+      // Trim spaces around the item
+      item.erase(0, item.find_first_not_of(kWhiteSpace));
+      item.erase(item.find_last_not_of(kWhiteSpace) + 1);
+      std::size_t delimiterPos = item.find(kColon);
       if (delimiterPos != std::string::npos) {
         std::string key = item.substr(0, delimiterPos);
         std::string value = item.substr(delimiterPos + 1);
+        // Trim spaces around key and value
+        key.erase(0, key.find_first_not_of(kWhiteSpace));
+        key.erase(key.find_last_not_of(kWhiteSpace) + 1);
+
+        value.erase(0, value.find_first_not_of(kWhiteSpace));
+        value.erase(value.find_last_not_of(kWhiteSpace) + 1);
         oss_buf << "  " << key << ":" << value;
         configs[config][key] = value;
       }
