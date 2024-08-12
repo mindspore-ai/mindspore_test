@@ -15,6 +15,7 @@
  */
 // STOP_TRACE_REASON_KIND (kind, description)
 STOP_TRACE_REASON_KIND(NonStopTrace, "NonStopTrace")
+STOP_TRACE_REASON_KIND(StopTraceReasonUnknown, "Unknown Reason")
 STOP_TRACE_REASON_KIND(StopTraceInfer_Fail, "Infer_Fail")
 STOP_TRACE_REASON_KIND(StopTraceLoop_Unsupported, "Loop_Unsupported")
 STOP_TRACE_REASON_KIND(StopTraceIf_Unsupported, "If_Unsupported")

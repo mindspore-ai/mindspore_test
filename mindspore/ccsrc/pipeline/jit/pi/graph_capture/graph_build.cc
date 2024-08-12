@@ -1615,25 +1615,23 @@ bool GraphBuilder::DoByteCode(const Instr &instr) {
   }
 
   auto func_iter = bytecode_meth_map_.find(instr.op());
-  bool support = false;
-  if (func_iter != bytecode_meth_map_.end()) {
-    const auto func = func_iter->second;
-    support = (this->*func)(instr);
+  if (func_iter == bytecode_meth_map_.end()) {
+    graph_->StopTraceAt(cur_bci_, StopTraceReason::kStopTraceByteCode_Unsupported);
+    MS_LOG(WARNING) << "ByteCode " << Opcode(instr.op()).name() << " is not supported yet.";
+    return false;
   }
+  auto infer_succ = (this->*(func_iter->second))(instr);
 
   const auto &nodes = graph_->GetTracedNodes();
   for (auto i = nodes.rbegin(); i != nodes.rend() && (*i)->GetBlock() == nullptr; ++i) {
     (*i)->SetBlock(current_block_);
   }
 
-  if (instr.op() == RETURN_VALUE) {
-    return false;
+  if (!infer_succ && graph_->GetStopTraceBci() == -1) {
+    graph_->StopTraceAt(cur_bci_, StopTraceReason::kStopTraceReasonUnknown);
   }
 
-  if (!support) {
-    if (graph_->GetStopTraceBci() == -1) {
-      graph_->StopTraceAt(cur_bci_, StopTraceReason::kStopTraceByteCode_Unsupported);
-    }
+  if (instr.op() == RETURN_VALUE || !infer_succ) {
     return false;
   }
 
