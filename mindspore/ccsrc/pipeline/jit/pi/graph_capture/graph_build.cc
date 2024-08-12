@@ -1629,6 +1629,7 @@ bool GraphBuilder::DoByteCode(const Instr &instr) {
 
   if (!infer_succ && graph_->GetStopTraceBci() == -1) {
     graph_->StopTraceAt(cur_bci_, StopTraceReason::kStopTraceReasonUnknown);
+    MS_LOG(WARNING) << "Set Unknown Reason to " << instr.ToString() << " at bci " << cur_bci_;
   }
 
   if (instr.op() == RETURN_VALUE || !infer_succ) {

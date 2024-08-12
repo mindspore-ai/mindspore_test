@@ -71,6 +71,15 @@ class GraphAnalyzer {
     Info captured_;
 
     /**
+     * for captured outputs, it's maybe invalid type as graph's outputs.
+     * if type is number/string/tensor/tuple, it's valid graph's output.
+     * if type is list, convert to tuple as graph's output, then convert to tuple again in python.
+     * if type is dict, convert to keys tuple and values tuple as graph's output, then convert to dict again in python.
+     * Others, recreate in python.
+     */
+    Info outputs_optimize_;
+
+    /**
      * for interpret inputs, it's ordered and same as original function.
      * if not break graph, outputs is return value, else outputs is ordered by stack values and alive locals.
      */

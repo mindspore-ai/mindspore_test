@@ -769,6 +769,17 @@ void CodeBreakGenerator::FixInterpretOuput(CodeGenerator *code_gen) {
     code_gen->NewInstr(STORE_FAST, code_gen->AllocLocal(i));
   });
   // reconstruct interpret values if need
+  int index = interpret_.operations.size() + 1;
+  std::for_each(outputs_optimize_.operations.rbegin(), outputs_optimize_.operations.rend(),
+                [code_gen, &index](ValueNode *input) {
+                  // fill interpret local map
+                  auto target = code_gen->GetLocalsMap().find(input);
+                  if (target == code_gen->GetLocalsMap().end()) {
+                    code_gen->MarkAlive(input);
+                    code_gen->BuildOper(input, index);
+                  }
+                  index++;
+                });
 }
 
 void CodeBreakGenerator::RestoreStack(CodeGenerator *code_gen) const {
@@ -991,6 +1002,9 @@ py::object CodeBreakGenerator::MakeDispatchCode() {
   for (auto i : captured_.inputs) {
     code_gen.MarkAlive(i);
   }
+  for (auto i : outputs_optimize_.inputs) {
+    code_gen.MarkAlive(i);
+  }
   code_gen.Build();
 
   CallCapturedCode(&code_gen);
@@ -1101,6 +1115,9 @@ void CodeBreakGenerator::Init(const Graph *graph, const GraphAnalyzer &analyzer)
   captured_.inputs = info.captured_.inputs;
   captured_.outputs = info.captured_.outputs;
   captured_.operations = info.captured_.operations;
+  outputs_optimize_.inputs = info.outputs_optimize_.inputs;
+  outputs_optimize_.outputs = info.outputs_optimize_.outputs;
+  outputs_optimize_.operations = info.outputs_optimize_.operations;
   graph_inputs_info_.args = info.graph_inputs_.args;
   graph_inputs_info_.vargs = info.graph_inputs_.vargs;
   graph_inputs_info_.kwargs = info.graph_inputs_.kwargs;
