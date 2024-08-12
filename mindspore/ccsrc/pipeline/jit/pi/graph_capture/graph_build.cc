@@ -1714,6 +1714,9 @@ bool GraphBuilder::DoByteCode(const Instr &instr) {
 
 GraphBuilder::GraphBuilder(const PyFrameWrapper &f)
     : root_(this), parent_(nullptr), graph_(nullptr), current_block_(nullptr), no_grad_(false) {
+#if IS_PYTHON_3_11_PLUS
+  MS_LOG(ERROR) << "not implement in python3.11";
+#else
   auto co_wrapper = f.GetCode();
   PyCodeObject *co = co_wrapper.ptr();
   int argc = co_wrapper.ArgCount();
@@ -1749,14 +1752,10 @@ GraphBuilder::GraphBuilder(const PyFrameWrapper &f)
     CellVarNode *n = graph_->NewCellNode(AObject::Convert(cell), LOAD_CLOSURE, oparg);
     graph_->GetTracedNodes().push_back(n);
     frame_.SetClosure(offset, n);
-#if !IS_PYTHON_3_11_PLUS
     if (t == AbstractNode::CellVar && co->co_cell2arg != nullptr && co->co_cell2arg[offset] != CO_CELL_NOT_AN_ARG) {
       MS_EXCEPTION_IF_NULL(cell_contents);
       n->SetFromParam(co->co_cell2arg[offset]);
     }
-#else
-    MS_LOG(ERROR) << "not implement in python3.11";
-#endif
     if (cell_contents == nullptr) {
       n->SetValue(&ValueNode::kUnboundLocal);
     } else {
@@ -1768,6 +1767,7 @@ GraphBuilder::GraphBuilder(const PyFrameWrapper &f)
       n->SetValue(param);
     }
   }
+#endif
 }
 
 void GraphBuilder::CollectInlineInfo(CallNode *node, int depth) {
