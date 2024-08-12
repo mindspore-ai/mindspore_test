@@ -301,3 +301,8 @@ if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
     set(LINK_SOS libtinyxml libicuuc libicudata libicui18n)
     changerpath($<TARGET_FILE:_c_dataengine> _c_dataengine "${LINK_SOS}")
 endif()
+
+# link librt.so for shm_open and shm_unlink
+if(CMAKE_SYSTEM_NAME MATCHES "Linux")
+    target_link_libraries(_c_dataengine PRIVATE rt)
+endif()
