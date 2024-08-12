@@ -39,15 +39,12 @@ def test_code_generator_with_complete_graph():
     Description: Test one stage code generate with complete graph.
     Expectation: No exception.
     """
-
-    @jit(mode="PIJit", jit_config={**cfg, "interpret_captured_code": False})
     def graph_test(x, y, *args, z = 1, **kw):
         a = x + y
         b = y - z
         c = x * y * z * a * b
         return c
 
-    @jit(mode="PIJit", jit_config={**cfg, "interpret_captured_code": True})
     def code_test(x, y, *args, z = 1, **kw):
         a = x + y
         b = y - z
@@ -56,8 +53,8 @@ def test_code_generator_with_complete_graph():
 
     x = Tensor(numpy.zeros((4, 4)))
     y = Tensor(numpy.random.rand(4, 4))
-    result = graph_test(x, y)
-    excepted = code_test(x, y)
+    result = jit(mode="PIJit", jit_config={**cfg, "interpret_captured_code": False})(graph_test)(x, y)
+    excepted = jit(mode="PIJit", jit_config={**cfg, "interpret_captured_code": True})(code_test)(x, y)
 
     graph_phase = get_code_extra(graph_test)["code"].get("phase_", None)
     non_code = get_code_extra(graph_test)["code"].get("compiled_code_", None)
@@ -76,8 +73,6 @@ def test_code_generator_with_exception():
     Description: Test one stage code generate with exception code.
     Expectation: Raise exception.
     """
-
-    @jit(mode="PIJit", jit_config = {**cfg, "interpret_captured_code":True})
     def code_test(x, y, unknown_func, *args, z=1, **kw):
         a = x + y
         b = y - z
@@ -92,8 +87,9 @@ def test_code_generator_with_exception():
     unknown_func = Tensor.shape.__set__ # a function with exception
 
     msg = None
+    wrapped = jit(code_test, mode="PIJit", jit_config = {**cfg, "interpret_captured_code":True})
     try:
-        z = code_test(x, y, unknown_func=unknown_func)
+        z = wrapped(x, y, unknown_func=unknown_func)
         print(z)
     except Exception as e:
         msg = str(e)

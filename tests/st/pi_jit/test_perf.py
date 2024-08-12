@@ -104,6 +104,8 @@ def test_perf_statistic_case(func_param):
     func(a, b)
     func(a, b)
     func(a, b)
+
+    func = func.__wrapped__
     if param is True:
         assert func.__globals__[func.__code__]
     else:

@@ -445,7 +445,6 @@ def test_MutMul_with_no_init_args():
     Description: Test one stage basic operation.
     Expectation: No exception.
     """
-    @jit(mode="PIJit", jit_config=cfg)
     def fn(x, y):
         op = ops.MatMul()
         return op(x, y)
@@ -453,7 +452,7 @@ def test_MutMul_with_no_init_args():
     context.set_context(mode=context.PYNATIVE_MODE)
     a = Tensor([[1, 2, 3], [1, 2, 3]], dtype=ms.float32)
     b = Tensor([[1], [2], [3]], dtype=ms.float32)
-    ret = fn(a, b)
+    ret = jit(fn, mode="PIJit", jit_config=cfg)(a, b)
 
     match_array(ret.asnumpy(), np.array([[14], [14]]).astype(np.float32))
     assert_executed_by_graph_mode(fn)
@@ -465,7 +464,6 @@ def test_MutMul_with_two_init_args():
     Description: Test one stage basic operation.
     Expectation: No exception.
     """
-    @jit(mode="PIJit", jit_config=cfg)
     def fn(x, y, transpose_a=None, transpose_b=None):
         op = ops.MatMul(transpose_a=transpose_a, transpose_b=transpose_b)
         return op(x, y)
@@ -473,7 +471,7 @@ def test_MutMul_with_two_init_args():
     context.set_context(mode=context.PYNATIVE_MODE)
     a = Tensor([[1, 1], [2, 2], [3, 3]], dtype=ms.float32)
     b = Tensor([[1, 2, 3]], dtype=ms.float32)
-    ret = fn(a, b, transpose_a=True, transpose_b=True)
+    ret = jit(fn, mode="PIJit", jit_config=cfg)(a, b, transpose_a=True, transpose_b=True)
 
     match_array(ret.asnumpy(), np.array([[14], [14]]).astype(np.float32))
     assert_executed_by_graph_mode(fn)
@@ -486,7 +484,6 @@ def test_MutMul_with_one_init_arg_transpose_a():
     Description: Test one stage basic operation.
     Expectation: No exception.
     """
-    @jit(mode="PIJit", jit_config=cfg)
     def fn(x, y, transpose_a=None):
         op = ops.MatMul(transpose_a=transpose_a)
         return op(x, y)
@@ -494,7 +491,7 @@ def test_MutMul_with_one_init_arg_transpose_a():
     context.set_context(mode=context.PYNATIVE_MODE)
     a = Tensor([[1, 1], [2, 2], [3, 3]], dtype=ms.float32)
     b = Tensor([[1], [2], [3]], dtype=ms.float32)
-    ret = fn(a, b, transpose_a=True)
+    ret = jit(fn, mode="PIJit", jit_config=cfg)(a, b, transpose_a=True)
 
     match_array(ret.asnumpy(), np.array([[14], [14]]).astype(np.float32))
     assert_executed_by_graph_mode(fn)
@@ -507,7 +504,6 @@ def test_MutMul_with_one_init_arg_transpose_b():
     Description: Test one stage basic operation.
     Expectation: No exception.
     """
-    @jit(mode="PIJit", jit_config=cfg)
     def fn(x, y, transpose_b=None):
         op = ops.MatMul(transpose_b=transpose_b)
         return op(x, y)
@@ -515,7 +511,7 @@ def test_MutMul_with_one_init_arg_transpose_b():
     context.set_context(mode=context.PYNATIVE_MODE)
     a = Tensor([[1, 2, 3], [1, 2, 3]], dtype=ms.float32)
     b = Tensor([[1, 2, 3]], dtype=ms.float32)
-    ret = fn(a, b, transpose_b=True)
+    ret = jit(fn, mode="PIJit", jit_config=cfg)(a, b, transpose_b=True)
 
     match_array(ret.asnumpy(), np.array([[14], [14]]).astype(np.float32))
     assert_executed_by_graph_mode(fn)
@@ -528,7 +524,6 @@ def test_BiasAdd_with_no_init_args():
     Description: Test one stage basic operation.
     Expectation: No exception.
     """
-    @jit(mode="PIJit", jit_config=cfg)
     def fn(x, y):
         op = ops.BiasAdd()
         return op(x, y)
@@ -536,7 +531,7 @@ def test_BiasAdd_with_no_init_args():
     context.set_context(mode=context.PYNATIVE_MODE)
     a = Tensor([[1, 2, 3], [2, 3, 4]], dtype=ms.float32)
     b = Tensor([1, 1, 1], dtype=ms.float32)
-    ret = fn(a, b)
+    ret = jit(fn, mode="PIJit", jit_config=cfg)(a, b)
 
     match_array(ret.asnumpy(), np.array([[2, 3, 4], [3, 4, 5]]).astype(np.float32))
     assert_executed_by_graph_mode(fn)
@@ -549,7 +544,6 @@ def test_BiasAdd_with_one_init_args():
     Description: Test one stage basic operation.
     Expectation: No exception.
     """
-    @jit(mode="PIJit", jit_config=cfg)
     def fn(x, y):
         op = ops.BiasAdd(data_format='NCHW')
         return op(x, y)
@@ -557,7 +551,7 @@ def test_BiasAdd_with_one_init_args():
     context.set_context(mode=context.PYNATIVE_MODE)
     a = Tensor([[1, 2, 3], [2, 3, 4]], dtype=ms.float32)
     b = Tensor([1, 1, 1], dtype=ms.float32)
-    ret = fn(a, b)
+    ret = jit(fn, mode="PIJit", jit_config=cfg)(a, b)
 
     match_array(ret.asnumpy(), np.array([[2, 3, 4], [3, 4, 5]]).astype(np.float32))
     assert_executed_by_graph_mode(fn)

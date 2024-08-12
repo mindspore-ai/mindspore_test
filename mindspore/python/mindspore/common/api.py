@@ -41,7 +41,7 @@ from mindspore.common.sparse_tensor import RowTensor as PythonRowTensor
 from mindspore._c_expression.amp import get_curr_amp_strategy
 from mindspore._c_expression import GraphExecutor_, Tensor, CSRTensor, RowTensor, COOTensor, \
     PyNativeExecutor_, verify_inputs_signature, init_exec_dataset, _set_dataset_mode_config, init_pipeline, \
-    _ms_memory_recycle, _bind_device_ctx, jit_mode_pi_enable, jit_mode_pi_compile
+    _ms_memory_recycle, _bind_device_ctx
 from mindspore.parallel._ps_context import _is_role_sched
 from mindspore.parallel._utils import _check_full_batch, _get_parameter_broadcast, _is_pynative_parallel, \
     _is_in_auto_parallel_mode
@@ -52,6 +52,7 @@ from mindspore.common.mutable import mutable
 from mindspore.common._register_for_adapter import ms_adapter_registry
 from mindspore.common.auto_dynamic_shape import get_auto_dynamic_shape_args, update_auto_dynamic_shape_phase, \
     get_auto_dynamic_shape_args_with_check_input_signature, update_auto_dynamic_shape_phase_with_check_input_signature
+from mindspore.common._pijit_context import PIJitCaptureContext
 
 # Store ms_function class compiled pipeline cache.
 ms_compile_cache = set()
@@ -784,18 +785,6 @@ def _get_jit_hash(hash_input):
     return _get_obj_id(hash_input)
 
 
-def _update_graph_executor_config(jit_config):
-    """Update GraphExecutor jit_config"""
-    if isinstance(jit_config, JitConfig):
-        jit_config = jit_config.jit_config_dict
-    if not isinstance(jit_config, dict):
-        return
-    valid_config = dict()
-    for k, v in jit_config.items():
-        valid_config[str(k)] = str(v)
-    GraphExecutor_.get_instance().set_jit_config(JitConfig(**valid_config).jit_config_dict)
-
-
 def jit(fn=None, mode="PSJit", input_signature=None, hash_args=None, jit_config=None, compile_once=False):
     """
     Create a callable MindSpore graph from a Python function.
@@ -950,40 +939,9 @@ def jit(fn=None, mode="PSJit", input_signature=None, hash_args=None, jit_config=
 
         return staging_specialize
 
-    def pi_wrap_mindspore(decorated):
-        func = decorated
-        if isinstance(func, ms.nn.Cell):
-            func = func.construct
-        if isinstance(func, type) and issubclass(func, ms.nn.Cell):
-            func = func.construct
-        if isinstance(func, types.MethodType):
-            func = func.__func__
-        if not isinstance(func, types.FunctionType):
-            logger.warning("only support function and mindspore.nn.Cell instance")
-            return decorated
-
-        # generator, coroutine, awaitable and a function that return them is unsupported
-        UNSUPPORTED_CODE_TYPE = (inspect.CO_GENERATOR | inspect.CO_COROUTINE |
-                                 inspect.CO_ASYNC_GENERATOR | inspect.CO_ITERABLE_COROUTINE)
-        if func.__code__.co_flags & UNSUPPORTED_CODE_TYPE:
-            return decorated
-
-        _update_graph_executor_config(jit_config)
-        config = dict()
-        if isinstance(jit_config, JitConfig):
-            config.update(jit_config.jit_config_dict)
-        elif jit_config is not None:
-            config.update(jit_config)
-        jit_mode_pi_enable()
-
-        if jit_mode_pi_compile(func, config, input_signature) is False:
-            logger.warning('add fn {} to compile failed '.format(func))
-
-        return decorated
-
     wrap_func = wrap_mindspore
     if mode == "PIJit":
-        wrap_func = pi_wrap_mindspore
+        wrap_func = PIJitCaptureContext(jit_config, input_signature)
 
     if fn is not None:
         return wrap_func(fn)

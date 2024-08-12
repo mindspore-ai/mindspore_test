@@ -44,7 +44,7 @@ void RegPIJitInterface(py::module *m) {
   // PIJit interface
   (void)m->def("jit_mode_pi_enable", &mindspore::pi_jit_enable, "enable jit from python byte code");
   (void)m->def("jit_mode_pi_disable", &mindspore::pi_jit_disable, "disable jit from python byte code");
-  (void)m->def("jit_mode_pi_compile", &mindspore::pi_jit_should_compile, "add function to compile");
+  (void)m->def("pi_jit_set_context", &mindspore::PIJitSetContext, "set compile context attribute");
   (void)m->def("update_pijit_default_config", &mindspore::update_pijit_default_config, "update pijit default config");
   (void)m->def("get_code_extra", &mindspore::get_code_extra,
                "get copy of code extra which is the pijit compile result");

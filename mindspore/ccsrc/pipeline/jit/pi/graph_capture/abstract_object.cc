@@ -935,6 +935,9 @@ AObject *AbstractTuple::Unary(int op) const {
       aobject = iter->second;                                    \
     } else {                                                     \
       Type t = GetPyType(item);                                  \
+      if (item == nullptr) {                                     \
+        MS_LOG(ERROR) << "invalid container which has nullptr";  \
+      }                                                          \
       if (t == kTypeList || t == kTypeTuple || t == kTypeDict) { \
         PyTypeObject *tp = Py_TYPE(item);                        \
         aobject = MakeAObject(t, tp, item, rec);                 \

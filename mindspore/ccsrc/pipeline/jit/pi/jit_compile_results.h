@@ -97,6 +97,7 @@ class JitCompileResults {
  public:
   static JitCompileResults *Create(PyCodeObject *code);
   static Py_ssize_t InitIndex();
+  static JitCompileResults skip_;
 
  private:
   static void FreeCallback(void *);

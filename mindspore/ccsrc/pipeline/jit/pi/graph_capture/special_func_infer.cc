@@ -466,13 +466,17 @@ void HandleGradFuncCall(CallNode *call_node, AObject *decorated, bool sens_param
     grad_func_node->GetVobj()->ClearMsFlag(except_flag);
     return;
   }
-  py::object infer_after_grad = Utils::GetModuleAttr(kModuleName, "infer_after_grad", true, true);
   py::object result;
-  try {
-    result = infer_after_grad(after_grad, args, res->GetPyObject());
-  } catch (std::exception &e) {
-    MS_LOG(WARNING) << "Error while infer_after_grad, error:" << e.what();
-    PyErr_Clear();
+  if (after_grad.ptr() != nullptr && res->GetPyObject().ptr() != nullptr) {
+    py::object infer_func = Utils::GetModuleAttr(kModuleName, "infer_after_grad", true, true);
+    PyObject *infer_args[] = {after_grad.ptr(), args.ptr(), res->GetPyObject().ptr()};
+    constexpr auto argc = (sizeof(infer_args) / sizeof((infer_args)[0]));
+    PyObject *infer_result = PyObject_Vectorcall(infer_func.ptr(), infer_args, argc, nullptr);
+    result = py::reinterpret_steal<py::object>(infer_result);
+    if (result.ptr() == nullptr) {
+      MS_LOG(INFO) << "got an error when infer grad " << py::error_already_set().what();
+      PyErr_Clear();
+    }
   }
   if (result.ptr() != nullptr && result.ptr() != Py_None) {
     call_node->SetVobj(AObject::Convert(result));

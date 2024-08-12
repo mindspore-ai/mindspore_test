@@ -41,6 +41,7 @@
 #include "pipeline/jit/pi/graph_guard/guard.h"
 #include "pipeline/jit/pi/graph_guard/strategy.h"
 #include "pipeline/jit/pi/graph_guard/shape_ctx.h"
+#include "pipeline/jit/pi/capture_context.h"
 #include "pipeline/jit/ps/pipeline.h"
 #include "pipeline/pynative/pynative_utils.h"
 #include "runtime/pynative/op_executor.h"
@@ -886,6 +887,8 @@ static py::object CallGraph(const JitCompileResults *c, const py::object &args, 
                                      "PIJitRunGraph");
 
   StaticAnalysisExceptionCleaner exception_cleaner;
+  CaptureContext::DisableScope compiler_disable_scope;
+
   RunEnvironment runEnvironment;
   runEnvironment.fetchAndSetRunEnv(c);
   PyObject *py_args = args.ptr();
@@ -1132,6 +1135,7 @@ static bool CheckGuard(JitCompileResults *c, const PyFrameWrapper &f) {
                                      "PIJitGuard");
 
   StaticAnalysisExceptionCleaner exception_cleaner;
+  CaptureContext::DisableScope compiler_disable_scope;
 
   c->set_code(nullptr);
   std::map<size_t, PyObject *> cache;
@@ -1183,6 +1187,7 @@ static bool JitCompileWithTry(PyThreadState *tstate, JitCompileResults *c) {
 
   JitSyntaxLevelScope jit_syntax_level_scope(c->conf()->GetBoolConfig(GraphJitConfig::kTraceFlag));
   StaticAnalysisExceptionCleaner exception_cleaner;
+  CaptureContext::DisableScope compiler_disable_scope;
 
   if (!c->conf()->GetBoolConfig(GraphJitConfig::kCompileWithTry)) {
     return JitCompile(tstate, c);
@@ -1444,6 +1449,8 @@ py::bool_ pi_jit_should_compile(const py::object &funcHandle, const py::object &
     return false;
   }
   mindspore::pijit::JitCompileResults *c = mindspore::pijit::CreateJitCompileResults(code);
+  MS_LOG(DEBUG) << "mark to compile " << std::string(py::str(code));
+
   if (c == nullptr) {
     return false;
   }
@@ -1580,6 +1587,11 @@ size_t FunctionId(const py::object &callable) {
     Py_DECREF(descr);
   }
   return reinterpret_cast<size_t>(result);
+}
+
+void PIJitSetContext(py::args va, py::kwargs kw) {
+  auto ctx = pijit::CaptureContext::GetInstance();
+  ctx->SetContext(va, kw);
 }
 
 }  // namespace mindspore
