@@ -175,6 +175,7 @@ static bool CallGradNodes(const FuncGraphPtr &graph, const FuncGraphPtr &grad_gr
   (void)(visit->insert(graph));
   const auto &cnodes = graph->GetOrderedCnodes();
   for (const auto &cnode : cnodes) {
+    MS_EXCEPTION_IF_NULL(cnode);
     const auto &abs = cnode->input(0)->abstract();
     if (!abs || !abs->isa<abstract::AbstractFunction>()) {
       continue;
@@ -198,10 +199,12 @@ static bool CallGradNodes(const FuncGraphPtr &graph, const FuncGraphPtr &grad_gr
 static FuncGraphPtr FindGradGraph(const FuncGraphPtr &root) {
   const auto &nodes = DeepScopedGraphSearch(root->get_return());
   for (const auto &node : nodes) {
+    MS_EXCEPTION_IF_NULL(node);
     if (!node->isa<CNode>()) {
       continue;
     }
     const auto &cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     if (cnode->HasPrimalAttr(PARAMETER_START_SHARE_CELL) && cnode->HasPrimalAttr(kPrimalAttrForwardNodeName)) {
       const auto &grad_graph = cnode->func_graph();
       MS_LOG(INFO) << "The specified grad nodes is in graph " << grad_graph->ToString();
@@ -229,6 +232,7 @@ void SetParameterStartForCellShare(const FuncGraphPtr &root) {
   std::set<FuncGraphPtr> call_grad_nodes;
   bool has_find = false;
   for (auto &node : all_nodes) {
+    MS_EXCEPTION_IF_NULL(node);
     // if cnode is a call_backward node
     if (!IsPrimitiveCNode(node->input(0), prim::kPrimTupleGetItem)) {
       continue;
@@ -545,6 +549,7 @@ void HandleReceiveParam(const FuncGraphPtr &root) {
       continue;
     }
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     if (!cnode->HasPrimalAttr(PIPELINE_PARAM)) {
       continue;
     }
@@ -589,6 +594,7 @@ void AddVirtualAssignAdd(const FuncGraphPtr &root) {
   auto node_users_map = root->manager()->node_users();
   for (auto &parameter : parameters) {
     auto parameter_ptr = parameter->cast<ParameterPtr>();
+    MS_EXCEPTION_IF_NULL(parameter_ptr);
     auto accu_parameter = FindGradAccuParameter(parameters, parameter_ptr->name());
     if (!accu_parameter) {
       continue;
@@ -831,12 +837,14 @@ PipelinePair GetForwardEndBeforePair(const PipelinePair &forward_end_pair) {
   if (!IsLastStage()) {
     for (auto &node : forward_end_pair.first) {
       auto cnode = node->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(cnode);
       auto temp_node = GetActualOp(cnode->input(1));
       MS_EXCEPTION_IF_NULL(temp_node);
       forward_end_before_pair.first.push_back(temp_node);
     }
     for (auto &node : forward_end_pair.second) {
       auto cnode = node->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(cnode);
       auto temp_node = GetActualOp(cnode->input(1));
       MS_EXCEPTION_IF_NULL(temp_node);
       forward_end_before_pair.second.push_back(temp_node);
@@ -853,6 +861,7 @@ int64_t GetMicroMax(const FuncGraphPtr &root, const std::vector<AnfNodePtr> &for
     MS_LOG(EXCEPTION) << "can not find the end node of pipeline, you are advised to use 'PipelineCell' to fix it.";
   } else {
     auto forward_end_cnode = forward_end.back()->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(forward_end_cnode);
     auto micro_size = forward_end_cnode->GetPrimalAttr(MICRO);
     MS_EXCEPTION_IF_NULL(micro_size);
     micro_max = GetValue<int64_t>(micro_size);
@@ -928,6 +937,7 @@ void LastStageEndNode(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphM
       continue;
     }
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     if (!cnode->HasPrimalAttr(MICRO)) {
       continue;
     }
@@ -973,6 +983,7 @@ void ParameterStartNode(const std::vector<AnfNodePtr> &all_nodes, const FuncGrap
       continue;
     }
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     auto prim = GetCNodePrimitive(node);
     if (prim && prim->HasAttr(PARAMETER_START_SHARE_CELL)) {
       cnode->AddPrimalAttr(PARAMETER_START_SHARE_CELL, prim->GetAttr(PARAMETER_START_SHARE_CELL));
@@ -1030,6 +1041,7 @@ void GetBorderNode(std::vector<AnfNodePtr> *forward_start, std::vector<AnfNodePt
     }
     auto prim = GetCNodePrimitive(node);
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     auto share_cell = EnableShareCell();
     if (share_cell && cnode->HasPrimalAttr(PARAMETER_START)) {
       backward_end->push_back(node);
@@ -1155,6 +1167,7 @@ void ReorderForPredict(const FuncGraphPtr &root, const FuncGraphManagerPtr &mana
       continue;
     }
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     if (cnode->HasPrimalAttr(PIPELINE_BEGIN)) {
       if (IsPrimitiveCNode(cnode, prim::kPrimStridedSlice)) {
         cnode->AddPrimalAttr(SLICE_INDEX, MakeValue(slice_index));

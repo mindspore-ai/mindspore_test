@@ -116,6 +116,7 @@ std::set<FuncGraphPtr> FindForwardGraphByRootNodes(const std::vector<AnfNodePtr>
 
 AnfNodePtr GetAccuGrad(const std::vector<AnfNodePtr> &parameters, const std::string &weight_name) {
   for (auto &param : parameters) {
+    MS_EXCEPTION_IF_NULL(param);
     if (!ParameterIsCloned(param)) {
       continue;
     }
@@ -212,6 +213,7 @@ CNodePtr CreateSplit(const std::vector<AnfNodePtr> &inputs, const FuncGraphPtr &
 }
 
 CNodePtr CreateCast(const AnfNodePtr &cast_input, const ValueNodePtr &dest_type, const FuncGraphPtr &func_graph) {
+  MS_EXCEPTION_IF_NULL(func_graph);
   auto cast_prim = NewValueNode(prim::kPrimScalarCast);
   auto cast = func_graph->NewCNode({cast_prim, cast_input, dest_type});
   return cast;
@@ -299,8 +301,7 @@ bool HasAssebledDynamicDim(const Shape &shape_vec, const AssembledDynamicDimsMap
 }
 
 void MatchingAccordingToPrime(const Shape &shape_vec, const AssembledDynamicDimsMapping &dyn_dims_mapping,
-                              const TensorRedistributionPtr &tensor_redistribution, const FuncGraphPtr &func_graph,
-                              std::vector<AnfNodePtr> *shape_input,
+                              const FuncGraphPtr &func_graph, std::vector<AnfNodePtr> *shape_input,
                               enum ReshapeMode reshape_mode = ReshapeMode::NO_RESHAPE) {
   MS_LOG(INFO) << "Match with prime, shape_vec=" << shape_vec << ", reshape_mode=" << reshape_mode;
   MS_EXCEPTION_IF_NULL(shape_input);
@@ -471,15 +472,13 @@ AnfNodePtr ConvertConstParamToDynamic(const TensorRedistributionPtr &tensor_redi
   if (reshape_mode == ReshapeMode::FROM_ORIGIN_SLICE_TO_FROM_LAYOUT_SLICE ||
       reshape_mode == ReshapeMode::TO_ORIGIN_SLICE_TO_TO_LAYOUT_SLICE ||
       reshape_mode == ReshapeMode::FROM_ORIGIN_BASE_SLICE_TO_TO_ORIGIN_BASE_SLICE) {
-    MatchingAccordingToPrime(shape_vec, dyn_dims_mapping, tensor_redistribution, func_graph, &shape_input,
-                             reshape_mode);
+    MatchingAccordingToPrime(shape_vec, dyn_dims_mapping, func_graph, &shape_input, reshape_mode);
   } else {
     if (is_same_rank) {
       MatchingAccordingToIndex(shape_vec, dyn_dims_mapping, tensor_redistribution, func_graph, &shape_input,
                                reshape_mode);
     } else {
-      MatchingAccordingToPrime(shape_vec, dyn_dims_mapping, tensor_redistribution, func_graph, &shape_input,
-                               reshape_mode);
+      MatchingAccordingToPrime(shape_vec, dyn_dims_mapping, func_graph, &shape_input, reshape_mode);
     }
   }
   if (shape_input.size() != shape_vec.size()) {
@@ -585,6 +584,7 @@ void ReplaceDynamicAxisToNegOne(const TensorRedistributionPtr &tensor_redistribu
 Status ConvertReshapeInputs(const OperatorParams &params,
                             const TensorRedistributionPtr &tensor_redistribution_from_cnode,
                             const FuncGraphPtr &func_graph, std::vector<AnfNodePtr> *new_node_input) {
+  MS_EXCEPTION_IF_NULL(tensor_redistribution_from_cnode);
   Param shape_param;
   bool use_origin_shape = false;
   ReshapeMode reshape_mode = ReshapeMode::NO_RESHAPE;
@@ -967,6 +967,7 @@ bool ModifyGraph(const CNodePtr &current_cnode, const CNodePtr &previous_tuple_g
 }
 
 Status UpdateShapeToRootPath(const CNodePtr &cnode, const AnfNodePtr &root_node, int32_t depth = 0) {
+  MS_EXCEPTION_IF_NULL(cnode);
   if (depth == MAX_RECURSIVE_DEPTH) {
     return REACH_MAX_RECURSIVE_DEPTH;
   }
