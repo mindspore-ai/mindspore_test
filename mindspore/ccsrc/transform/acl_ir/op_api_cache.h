@@ -191,6 +191,10 @@ bool HitCacheSingle(const char *aclnn_api, aclOpExecutor **executor, uint64_t *w
   set_hash_key_func(*hash_id);
   MS_EXCEPTION_IF_NULL(executor);
   *executor = get_exec_cache_func(*hash_id, workspace_size);
+  static const auto uninit_cache_thread_local = transform::GetOpApiFunc("UnInitPTACacheThreadLocal");
+  UnInitCacheThreadLocal uninit_cache_thread_local_func =
+    reinterpret_cast<UnInitCacheThreadLocal>(uninit_cache_thread_local);
+  uninit_cache_thread_local_func();
   if (*executor == nullptr) {
     return false;
   }

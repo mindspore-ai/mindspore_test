@@ -33,8 +33,7 @@ bool AllFiniteAscend::Launch(const std::vector<KernelTensor *> &inputs, const st
   aclrtMemsetAsync(outputs[kIndex0]->device_ptr(), kAlignSize, 0, kAlignSize, stream_ptr);
   release_func_ = nullptr;
   for (size_t i = 0; i < inputs.size(); ++i) {
-    const bool use_huge_pages = true;
-    auto res = GEN_EXECUTOR_CUST(op_type_, use_huge_pages, inputs[i], outputs[kIndex0]);
+    auto res = GEN_EXECUTOR_CUST(op_type_, inputs[i], outputs[kIndex0]);
     RUN_OP_API_ASYNC(op_type_, nullptr, 0, std::get<kIndex1>(res), stream_ptr, release_func_);
   }
   return true;

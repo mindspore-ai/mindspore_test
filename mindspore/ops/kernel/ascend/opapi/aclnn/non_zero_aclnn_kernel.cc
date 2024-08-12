@@ -34,8 +34,7 @@ void NonZeroAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
 bool NonZeroAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                            const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
-  auto use_huge_pages = true;
-  auto res = GEN_EXECUTOR_CUST(op_type_, use_huge_pages, inputs[kIndex0], outputs[kIndex0]);
+  auto res = GEN_EXECUTOR_CUST(op_type_, inputs[kIndex0], outputs[kIndex0]);
   UpdateWorkspace(res);
   executor_ = std::get<1>(res);
   auto &all_tensor = std::get<2>(res);
