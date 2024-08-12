@@ -210,9 +210,9 @@ py::tuple PyFrameWrapper::PackArgs() const {
   }
   PyTuple_SET_ITEM(ret, 0, Py_NewRef(args));
   value = (co->co_flags & CO_VARARGS) ? fast[argc++] : Py_None;
-  PyTuple_SET_ITEM(ret, 1, Py_NewRef(value));
+  PyTuple_SET_ITEM(ret, 1, Py_XNewRef(value));
   value = (co->co_flags & CO_VARKEYWORDS) ? fast[argc++] : Py_None;
-  PyTuple_SET_ITEM(ret, kTwo, Py_NewRef(value));
+  PyTuple_SET_ITEM(ret, kTwo, Py_XNewRef(value));
 
 #if !IS_PYTHON_3_11_PLUS
   Py_ssize_t ncells = PyTuple_GET_SIZE(co->co_cellvars);
@@ -221,9 +221,12 @@ py::tuple PyFrameWrapper::PackArgs() const {
       Py_ssize_t argi = co->co_cell2arg[i];
       if (argi != CO_CELL_NOT_AN_ARG) {
         value = PyCell_GET(fast[co->co_nlocals + i]);
-        assert(value != nullptr && PyList_GET_ITEM(args, argi) == nullptr && "must be uninitialized");
         Py_INCREF(value);
-        PyList_SET_ITEM(args, argi, value);
+        if (argi < argc) {
+          PyList_SET_ITEM(args, argi, value);
+        } else {
+          PyTuple_SET_ITEM(ret, (co->co_flags & CO_VARARGS) ? (argi == argc ? 1 : kTwo) : kTwo, value);
+        }
       }
     }
   }

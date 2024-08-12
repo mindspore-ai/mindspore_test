@@ -194,7 +194,7 @@ bool GraphBuilder::DoBuildWithUnpackHelper(const Instr &instr, Py_ssize_t i, Val
       popn(key_size * 2);
       result_elements->insert(result_elements->end(), elements.begin(), elements.end());
     } else {
-      std::cout << "DoBuildWithUnpack iterable->GetVobj()->GetPyObject().ptr() == nullptr" << std::endl;
+      MS_LOG(DEBUG) << "DoBuildWithUnpack iterable->GetVobj()->GetPyObject().ptr() == nullptr" << std::endl;
       return false;
     }
   } else {
@@ -202,17 +202,18 @@ bool GraphBuilder::DoBuildWithUnpackHelper(const Instr &instr, Py_ssize_t i, Val
     PyObject *o = (seq == nullptr) ? nullptr : seq->GetPyObject().ptr();
     Py_ssize_t size = (o == nullptr) ? -1 : PyObject_Size(o);
     if (size == -1) {
-      std::cout << "DoBuildWithUnpack size == -1" << std::endl;
+      PyErr_Clear();
+      MS_LOG(DEBUG) << "DoBuildWithUnpack size == -1" << std::endl;
       return false;
     }
     push(iterable);
     if (DoUnpack({UNPACK_SEQUENCE, static_cast<int>(size)})) {
       std::vector<ValueNode *> elements(frame_.GetStacks().end() - size, frame_.GetStacks().end());
-      result_elements->insert(result_elements->end(), elements.begin(), elements.end());
+      result_elements->insert(result_elements->end(), elements.rbegin(), elements.rend());
       popn(size);
     } else {
       pop();
-      std::cout << "DoBuildWithUnpack DoUnpack failed" << std::endl;
+      MS_LOG(DEBUG) << "DoBuildWithUnpack DoUnpack failed" << std::endl;
       return false;
     }
   }
@@ -1697,6 +1698,7 @@ GraphBuilder::GraphBuilder(const PyFrameWrapper &f)
       n->SetValue(&ValueNode::kUnboundLocal);
     } else {
       ValueNode *param = NewValueNode(AObject::Convert(cell_contents), LOAD_DEREF, oparg);
+      graph_->GetTracedNodes().push_back(param);
       param->SetGraph(graph_);
       n->AddCellOper(param);
       n->SetValue(param);
