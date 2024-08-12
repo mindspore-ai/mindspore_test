@@ -99,8 +99,8 @@ std::string ValueNode::ToString() const {
   }
   std::stringstream s;
   int w = 30;
-  s << std::setw(w) << std::left << this->InstrNode::ToString();
-  s << this->AbstractNode::ToString() << "vobj=" << (vobj_ ? vobj_->ToString() : "(nil)");
+  s << std::setw(w) << std::left << this->InstrNode::ToString() << " ";
+  s << this->AbstractNode::ToString() << " vobj=" << (vobj_ ? vobj_->ToString() : "(nil)");
   s << " inputs=(";
   for (auto i : inputs_) {
     s << i << ',';
@@ -118,9 +118,8 @@ std::string InstrNode::ToString() const {
   s << std::setw(w) << std::left;
   if (bci() >= 0) {
     s << bci();
-  } else {
-    s << ' ';
   }
+  s << ' ';
   w = 12;
   s << std::setw(w) << std::left << Opcode(GetOpcode()).name();
   if (Opcode(GetOpcode()).HasArg()) {
