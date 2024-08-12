@@ -157,6 +157,7 @@ RedisOpPair TensorTransform::ExtractStridedSliceOp(const Operator &slice_op_pair
 // AllGather(rank_list..., 0) => AllConcat(rank_list..., 0)
 Status TensorTransform::TransAllGatherToAllConcat(
   std::vector<std::pair<std::string, std::vector<int64_t>>> *transform_op_list) {
+  MS_EXCEPTION_IF_NULL(transform_op_list);
   std::vector<size_t> allconcat_index;
   for (size_t i = 0; i < transform_op_list->size(); ++i) {
     if ((*transform_op_list)[i].first != ALL_GATHER) {
@@ -217,6 +218,7 @@ Status TensorTransform::TransAllGatherToAllConcat(
 // AllConcat(rank_list..., 0) => AllGather(rank_list..., 0)
 Status TensorTransform::TransAllConcatToAllGather(
   std::vector<std::pair<std::string, std::vector<int64_t>>> *transform_op_list) {
+  MS_EXCEPTION_IF_NULL(transform_op_list);
   int64_t index = transform_op_list->size() - 1;
   while (index >= 0) {
     if ((*transform_op_list)[LongToSize(index)].first != ALL_CONCAT) {
@@ -246,6 +248,7 @@ Status TensorTransform::TransAllConcatToAllGather(
 
 Status TensorTransform::TransStridedSliceToSlice(const Shape &input_shape,
                                                  std::vector<RedisOpPair> *transform_op_list) {
+  MS_EXCEPTION_IF_NULL(transform_op_list);
   auto shape_list = GetRedistributionOpShape(input_shape, *transform_op_list);
   for (size_t i = 0; i < transform_op_list->size(); ++i) {
     auto op_pair = transform_op_list->at(i);
@@ -534,6 +537,7 @@ void TensorTransform::ShowRedisOpList(const Shape &input_shape, const std::vecto
 // Eliminate reshape if in_shape == out_shape
 void TensorTransform::EliminateRedundancyReshape(const Shape &input_shape,
                                                  std::vector<RedisOpPair> *transform_op_list) {
+  MS_EXCEPTION_IF_NULL(transform_op_list);
   size_t left_reshape_index = 0;
   while (left_reshape_index < transform_op_list->size()) {
     if (transform_op_list->at(left_reshape_index).first != RESHAPE) {
@@ -646,6 +650,7 @@ void TensorTransform::MergeAllConcat(std::vector<RedisOpPair> *transform_op_list
 // Slice(axis, slice_num1 * slice_num2, index1 * slice_num2 + index2)
 // e.g. Slice(0, 4, 2)->Slice(0, 2, 1) => Slice(0, 8, 3)
 void TensorTransform::MergeSlice(std::vector<RedisOpPair> *transform_op_list) {
+  MS_EXCEPTION_IF_NULL(transform_op_list);
   size_t pre_slice_index = 0;
   while (pre_slice_index < transform_op_list->size()) {
     if (transform_op_list->at(pre_slice_index).first != SLICE) {
@@ -682,6 +687,7 @@ void TensorTransform::MergeSlice(std::vector<RedisOpPair> *transform_op_list) {
 // Optimize transform_op_list. If axis > 1 and in_shape[0:axis] == 1, then
 // AllConcat(rank_list..., axis > 1) => Reshape->AllConcat(rank_list, axis=0)->Reshape(out_shape)
 void TensorTransform::OptimizeAllConcat(const Shape &input_shape, std::vector<RedisOpPair> *transform_op_list) {
+  MS_EXCEPTION_IF_NULL(transform_op_list);
   for (size_t i = 0; i < transform_op_list->size(); ++i) {
     auto op_pair = transform_op_list->at(i);
     auto op_name = op_pair.first;
@@ -717,6 +723,7 @@ void TensorTransform::OptimizeAllConcat(const Shape &input_shape, std::vector<Re
 // If axis > 0 and input_shape[0:axis] == 1, then
 // Slice(axis>0)->Reshape => Slice(axis=0)->Reshape
 void TensorTransform::OptimizeSlice(const Shape &input_shape, std::vector<RedisOpPair> *transform_op_list) {
+  MS_EXCEPTION_IF_NULL(transform_op_list);
   for (int64_t i = transform_op_list->size() - 2; i >= 0; --i) {
     auto slice_op_pair = transform_op_list->at(i);
     auto reshape_op_pair = transform_op_list->at(i + 1);
@@ -740,6 +747,7 @@ void TensorTransform::OptimizeSlice(const Shape &input_shape, std::vector<RedisO
 
 Status TensorTransform::ReorderAndMergeRedistributionOp(const Shape &input_shape,
                                                         std::vector<RedisOpPair> *transform_op_list) {
+  MS_EXCEPTION_IF_NULL(transform_op_list);
   // 1. Preprocess for transform_op_list
   // 1.1 Validate, only solve AllConcat, SLICE and Reshape
   std::vector<std::string> valid_op = {ALL_CONCAT, SLICE, RESHAPE};
