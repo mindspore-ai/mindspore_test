@@ -37,6 +37,8 @@
 #include <frameobject.h>
 
 #define CHECK(expr) assert(expr)
+#define CHECK_EQ(expr_a, expr_b) assert((expr_a) == (expr_b))
+#define CHECK_GE(expr_a, expr_b) assert((expr_a) >= (expr_b))
 
 #if (PY_MAJOR_VERSION == 3) && (PY_MINOR_VERSION < 9)
 
@@ -111,7 +113,7 @@ static void Adapter_PyObject_VirtualFree(void *obj, size_t size) {
 // From https://github.com/python/cpython/blob/3.11/Python/pystate.c#L2222
 static void Adapter_PyThreadState_PopFrame(PyThreadState *tstate, _PyInterpreterFrame *frame) {
   CHECK(tstate->datastack_chunk);
-  PyObject **base = reinterpret_cast<PyObject **>(frame);
+  PyObject **base = (PyObject **)frame;
   if (base == &tstate->datastack_chunk->data[0]) {
     _PyStackChunk *chunk = tstate->datastack_chunk;
     _PyStackChunk *previous = chunk->previous;
@@ -120,7 +122,7 @@ static void Adapter_PyThreadState_PopFrame(PyThreadState *tstate, _PyInterpreter
     tstate->datastack_top = &previous->data[previous->top];
     tstate->datastack_chunk = previous;
     Adapter_PyObject_VirtualFree(chunk, chunk->size);
-    tstate->datastack_limit = reinterpret_cast<PyObject **>((reinterpret_cast<PyObject **>(previous)) + previous->size);
+    tstate->datastack_limit = (PyObject **)(((char *)previous) + previous->size);
   } else {
     CHECK(tstate->datastack_top);
     CHECK(tstate->datastack_top >= base);
@@ -171,7 +173,7 @@ static PyFrameObject *Adapter_PyFrame_MakeAndSetFrameObject(_PyInterpreterFrame 
     // this, since we aren't backed by a real _PyInterpreterFrame anymore.
     // Just pretend that we have an owned, cleared frame so frame_dealloc
     // doesn't make the situation worse:
-    f->f_frame = reinterpret_cast<_PyInterpreterFrame *>(f)->_f_frame_data;
+    f->f_frame = (_PyInterpreterFrame *)f->_f_frame_data;
     f->f_frame->owner = FRAME_CLEARED;
     f->f_frame->frame_obj = f;
     Py_DECREF(f);
@@ -198,9 +200,9 @@ static PyFrameObject *Adapter_PyFrame_GetFrameObject(_PyInterpreterFrame *frame)
 static void take_ownership(PyFrameObject *f, _PyInterpreterFrame *frame) {
   CHECK(frame->owner != FRAME_OWNED_BY_FRAME_OBJECT);
   CHECK(frame->owner != FRAME_CLEARED);
-  Py_ssize_t size = (reinterpret_cast<char *>(&frame)->localsplus[frame->stacktop]) - reinterpret_cast<char *>(frame);
-  memcpy(reinterpret_cast<_PyInterpreterFrame *>(f)->_f_frame_data, frame, size);
-  frame = reinterpret_cast<_PyInterpreterFrame *>(f)->_f_frame_data;
+  Py_ssize_t size = ((char *)&frame->localsplus[frame->stacktop]) - (char *)frame;
+  memcpy((_PyInterpreterFrame *)f->_f_frame_data, frame, size);
+  frame = (_PyInterpreterFrame *)f->_f_frame_data;
   f->f_frame = frame;
   frame->owner = FRAME_OWNED_BY_FRAME_OBJECT;
   if (_PyFrame_IsIncomplete(frame)) {
@@ -224,12 +226,12 @@ static void take_ownership(PyFrameObject *f, _PyInterpreterFrame *frame) {
       /* Nothing we can do about it */
       PyErr_Clear();
     } else {
-      f->f_back = reinterpret_cast<PyFrameObject *>(Py_NewRef)(back);
+      f->f_back = (PyFrameObject *)Py_NewRef(back);
     }
     frame->previous = NULL;
   }
-  if (!PyObject_GC_IsTracked(reinterpret_cast<PyObject *>(f))) {
-    PyObject_GC_Track(reinterpret_cast<PyObject *>(f));
+  if (!PyObject_GC_IsTracked((PyObject *)f)) {
+    PyObject_GC_Track((PyObject *)f);
   }
 }
 
@@ -279,7 +281,7 @@ static _PyStackChunk *allocate_chunk(int size_in_bytes, _PyStackChunk *previous)
 // From https://github.com/python/cpython/blob/3.11/Python/pystate.c#L2182
 static PyObject **push_chunk(PyThreadState *tstate, int size) {
   int allocate_size = DATA_STACK_CHUNK_SIZE;
-  while (allocate_size < static_cast<int>(sizeof(PyObject *) * (size + MINIMUM_OVERHEAD))) {
+  while (allocate_size < (int)sizeof(PyObject *) * (size + MINIMUM_OVERHEAD)) {
     allocate_size *= 2;
   }
   _PyStackChunk *new = allocate_chunk(allocate_size, tstate->datastack_chunk);
@@ -290,7 +292,7 @@ static PyObject **push_chunk(PyThreadState *tstate, int size) {
     tstate->datastack_chunk->top = tstate->datastack_top - &tstate->datastack_chunk->data[0];
   }
   tstate->datastack_chunk = new;
-  tstate->datastack_limit = reinterpret_cast<PyObject **>((reinterpret_cast<char *> new) + allocate_size);
+  tstate->datastack_limit = (PyObject **)(((char *)new) + allocate_size);
   // When new is the "root" chunk (i.e. new->previous == NULL), we can keep
   // _PyThreadState_PopFrame from freeing it later by "skipping" over the
   // first element:
@@ -302,7 +304,7 @@ static PyObject **push_chunk(PyThreadState *tstate, int size) {
 // From https://github.com/python/cpython/blob/3.11/Python/pystate.c#L2207
 static _PyInterpreterFrame *Adapter_PyThreadState_BumpFramePointerSlow(PyThreadState *tstate, size_t size) {
   if (_PyThreadState_HasStackSpace(tstate, size)) {
-    _PyInterpreterFrame *res = reinterpret_cast<_PyInterpreterFrame *>(tstate)->datastack_top;
+    _PyInterpreterFrame *res = (_PyInterpreterFrame *)tstate->datastack_top;
     tstate->datastack_top += size;
     return res;
   }
@@ -310,11 +312,11 @@ static _PyInterpreterFrame *Adapter_PyThreadState_BumpFramePointerSlow(PyThreadS
     PyErr_NoMemory();
     return NULL;
   }
-  return reinterpret_cast<_PyInterpreterFrame *>(push_chunk(tstate, static_cast<int>(size)));
+  return (_PyInterpreterFrame *)push_chunk(tstate, (int)size);
 }
 
 _PyInterpreterFrame *EvalFramePushAndInit(PyThreadState *ts, PyFunctionObject *func, PyObject *locals) {
-  PyCodeObject *new_co = reinterpret_cast<PyCodeObject *>(func)->func_code;
+  PyCodeObject *new_co = (PyCodeObject *)func->func_code;
   size_t frame_size = new_co->co_nlocalsplus + new_co->co_stacksize + FRAME_SPECIALS_SIZE;
   _PyInterpreterFrame *new_f = Adapter_PyThreadState_BumpFramePointerSlow(ts, frame_size);
   if (new_f == NULL) {

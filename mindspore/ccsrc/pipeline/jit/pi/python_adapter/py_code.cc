@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#if IS_PYTHON_3_11_PLUS
-#include <internal/pycore_code.h>
-#endif
 #include "pipeline/jit/pi/python_adapter/py_code.h"
+#if IS_PYTHON_3_11_PLUS
+#include "internal/pycore_code.h"
+#endif
 #include "utils/log_adapter.h"
 
 namespace mindspore {
