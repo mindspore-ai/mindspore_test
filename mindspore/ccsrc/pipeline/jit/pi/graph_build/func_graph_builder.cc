@@ -855,7 +855,7 @@ FuncGraphPtr FuncGraphBuilder::graph() {
     MS_LOG(DEBUG) << "The graph " << graph_->ToString() << " has not been set output.";
     return nullptr;
   }
-  bool all_value_node = std::any_of(output_nodes_.begin(), output_nodes_.end(),
+  bool all_value_node = std::all_of(output_nodes_.begin(), output_nodes_.end(),
                                     [](const AnfNodePtr &node) { return node->isa<ValueNode>(); });
   if (prev_builders().empty() && all_value_node) {
     MS_LOG(INFO) << "All graph output is value node, no need to run graph.";

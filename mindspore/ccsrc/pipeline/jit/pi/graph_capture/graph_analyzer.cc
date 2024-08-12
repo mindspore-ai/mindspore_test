@@ -15,6 +15,7 @@
  */
 #include "pipeline/jit/pi/graph_capture/graph_analyzer.h"
 #include <algorithm>
+#include <list>
 #include <unordered_set>
 #include <utility>
 #include <string>
@@ -346,15 +347,11 @@ void GraphAnalyzer::CollectCapturedInputs() {
 void GraphAnalyzer::UseDefAnalyze() {
   // UD analyze: alive nodes analysis
   std::vector<ValueNode *> aliveLocals = GetAliveLocals(graph_);
-  if (!aliveLocals.empty()) {
-    bool isStopAnalyze = false;
-    while (!isStopAnalyze) {
-      isStopAnalyze = AnalyzeAliveLocals(aliveLocals);
-      if (isStopAnalyze) {
-        break;
-      }
-      aliveLocals = GetAliveLocals(graph_);
-    }
+  if (aliveLocals.empty()) {
+    return;
+  }
+  while (!AnalyzeAliveLocals(aliveLocals)) {
+    aliveLocals = GetAliveLocals(graph_);
   }
 }
 
@@ -552,6 +549,7 @@ void GraphAnalyzer::CapturedInfo::GraphInputs::clear() {
 void GraphAnalyzer::CapturedInfo::clear() {
   captured_.clear();
   interpret_.clear();
+  outputs_optimize_.clear();
   graph_inputs_.clear();
 }
 
@@ -783,70 +781,63 @@ void MindGraphAnalyzer::Analyze() {
   if (!support_ret) {
     return;
   }
-  need_interpret_ = !graph_->GetSideEffect()->IsEmpty();
+  need_interpret_ = !graph_->GetSideEffect()->IsEmpty() || !GetCaptureInfo().outputs_optimize_.operations.empty();
 }
 
+inline bool IsSequence(const AObject::Type &type) { return type == AObject::kTypeTuple || type == AObject::kTypeList; }
+
+bool IsValidOutput(AObject *vobj) {
+  if (vobj == nullptr) {
+    return false;
+  }
+  auto type = vobj->GetType();
+  if (!IsSequence(type)) {
+    return vobj->IsMindSporeSupportedType();
+  }
+  auto tuple = static_cast<const AbstractTuple *>(vobj);
+  return std::all_of(tuple->begin(), tuple->end(), [](AObject *element) { return IsValidOutput(element); });
+}
+
+inline bool IsValidOutput(const ValueNode *node) { return node != nullptr && IsValidOutput(node->GetVobj()); }
+
 bool MindGraphAnalyzer::AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes) {
-  bool isAllNodesSupportOutput = true;
   auto mind_graph_builder = std::static_pointer_cast<MindGraphBuilder>(graph_builder_);
   MS_EXCEPTION_IF_NULL(mind_graph_builder);
   auto func_graph_builder = mind_graph_builder->FGBuilder();
   MS_EXCEPTION_IF_NULL(func_graph_builder);
   func_graph_builder->ClearOutputNodes();
-  GetCaptureInfo().captured_.outputs.clear();
-  for (auto node : aliveNodes) {
+  auto &outputs = GetCaptureInfo().captured_.outputs;
+  auto &values = GetCaptureInfo().interpret_.values;
+  outputs.clear();
+  std::list<ValueNode *> nodes(aliveNodes.begin(), aliveNodes.end());
+  while (!nodes.empty()) {
+    auto node = nodes.front();
+    nodes.pop_front();
     // If the value can get from local, no need to add to graph output.
     if (IsNonLocalValue(node)) {
       MS_LOG(INFO) << "Skip non local value used as graph output: " << node->ToString();
       continue;
     }
-    // If this node can't find in func_graph, it's not a graph output
-    auto capturedLocals = info_.captured_.operations;
-    if (std::find(capturedLocals.begin(), capturedLocals.end(), node) == capturedLocals.end()) {
+
+    if (std::find(values.begin(), values.end(), node) != values.end()) {
       continue;
     }
+
     // add output for func_graph
-    if (func_graph_builder->AddOutput(node->abstract_wrapper(), true)) {
-      MS_LOG(INFO) << "Add output success for node: " << node->ToString();
+    if (IsValidOutput(node) && std::find(outputs.begin(), outputs.end(), node) == outputs.end() &&
+        func_graph_builder->AddOutput(node->abstract_wrapper(), true)) {
+      MS_LOG(INFO) << "Add graph output : " << node->ToString();
       GetCaptureInfo().captured_.outputs.push_back(node);
       continue;
     }
-    /**
-     * produce the values if it can be produced by interpret values before call graph
-     * e.g
-     *   return parameter.some_attribute
-     *   return build_map(parameters, other_constants)
-     */
-    if (ProduceInterpretValue(node)) {
-      continue;
-    }
-    /**
-     * produce the values if it can be produced by interpret values and graph outputs after call graph
-     * e.g
-     *   graph_outputs = call_graph()
-     *   return graph_outputs[0].dtype, graph_outputs[1].asnumpy
-     * ...save alive nodes and reconstruct these values when generated the code
-     */
 
-    MS_LOG(INFO) << "Add output failed for node: " << node->ToString();
-    GetCaptureInfo().captured_.outputs.clear();
-    //  reset break graph point
-    isAllNodesSupportOutput = false;
-    int new_break_point = node->bci();
-    auto curNode = node;
-    if (new_break_point == -1) {
-      // No node is unsupported output since no node in captured output.
-      isAllNodesSupportOutput = true;
-      break;
-    }
-    MS_EXCEPTION_IF_NULL(curNode->GetGraph());
-    if (this->graph_->Config().GetBoolConfig(GraphJitConfig::kLogGraphBreak)) {
-      GRAPH_JIT_LOG_F("reset break point: %d", new_break_point);
-    }
-    this->graph_->StopTraceAt(new_break_point, StopTraceReason::kStopTraceDataDependsOnGraphOut);
-    break;
+    MS_LOG(INFO) << "Invalid output : " << node->ToString();
+    GetCaptureInfo().outputs_optimize_.operations.push_back(node);
+
+    std::for_each(node->getInputs().begin(), node->getInputs().end(),
+                  [&nodes](ValueNode *input) { nodes.push_back(input); });
   }
-  return isAllNodesSupportOutput;
+  return true;
 }
 
 void MindGraphAnalyzer::UpdateCapturedOrder() {
@@ -884,6 +875,15 @@ void MindGraphAnalyzer::CollectCapturedAndInterpret() {
 
   GetCaptureInfo().interpret_.inputs = graph_->GetFrame(0).GetLocals();
   GetCaptureInfo().interpret_.outputs = std::move(alive_nodes);
+
+  std::set<ValueNode *> outputs_optimize_inputs;
+  for (const auto &i : GetCaptureInfo().outputs_optimize_.operations) {
+    for (const auto &j : i->getInputs()) {
+      outputs_optimize_inputs.insert(j);
+    }
+  }
+  auto inserter = std::back_inserter(GetCaptureInfo().outputs_optimize_.inputs);
+  std::copy(outputs_optimize_inputs.begin(), outputs_optimize_inputs.end(), inserter);
 
   // remove side-effect node
   auto is_remove = [this](ValueNode *node) { return this->graph_->GetSideEffect()->IsRecord(node); };
