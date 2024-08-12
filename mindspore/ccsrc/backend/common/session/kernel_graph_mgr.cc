@@ -2709,7 +2709,9 @@ CNodePtr KernelGraphMgr::ConstructOutput(const AnfNodePtrList &outputs, const st
       if (out_func_graph_manager == nullptr) {
         return backend_anf;
       }
-      HandleInternalOutput(out, backend_anf, out_func_graph_manager, graph);
+      if (!context_ptr->IsKByKExecutorMode()) {
+        HandleInternalOutput(out, backend_anf, out_func_graph_manager, graph);
+      }
       return backend_anf;
     }
     MS_LOG(EXCEPTION) << "Can't find the node in the equiv map!";

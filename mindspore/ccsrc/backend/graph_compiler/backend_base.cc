@@ -565,13 +565,13 @@ const ActorInfo &MindRTBackendBase::CompileGraphs(const FuncGraphPtr &func_graph
   }
   const ActorInfo &actor_info = graph_compiler_info->name_;
   (void)actor_to_graph_compiler_info_.emplace(graph_compiler_info->name_, std::move(graph_compiler_info));
-  PROF_END(compile_backend_graph);
 
   for (const auto &graph_id_to_context : graph_id_to_device_context_) {
     auto context = graph_id_to_context.second;
     device::MultiStreamController::GetInstance()->Refresh(context);
   }
 
+  PROF_END(compile_backend_graph);
   (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageCompileGraphs, 1, 0, 1);
   MS_LOG(INFO) << "Status record: end compile function graph: " << func_graph->ToString()
                << ", produce actor: " << actor_info;

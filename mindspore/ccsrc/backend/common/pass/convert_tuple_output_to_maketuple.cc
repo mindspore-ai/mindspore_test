@@ -60,8 +60,11 @@ AnfNodePtr ConvertTupleInputToMakeTuple(const FuncGraphPtr &graph, const AnfNode
 bool IsKerenlGraphOutput(const FuncGraphPtr &func_graph, const AnfNodePtr &node) {
   const auto &outputs = common::AnfAlgo::GetAllOutputIndexByReturnTypes(func_graph->output());
   return std::find_if(outputs.begin(), outputs.end(), [&node](const auto &output) {
+           if (output.first == node) {
+             return true;
+           }
            const auto &real_pair = common::AnfAlgo::VisitKernelWithReturnType(node, 0);
-           return output.first == node || (real_pair.first == output.first && real_pair.second == output.second);
+           return real_pair.first == output.first && real_pair.second == output.second;
          }) != outputs.end();
 }
 
@@ -70,8 +73,7 @@ bool IsNeedConvert(const FuncGraphPtr &func_graph, const AnfNodePtr &input) {
   return (input->Type() != nullptr && common::AnfAlgo::IsTupleOutput(input) &&
           !common::AnfAlgo::CheckPrimitiveType(input, prim::kPrimCall) &&
           (input->isa<Parameter>() || (input->isa<ValueNode>() && !AnfAlgo::IsSequenceOutputOfScalar(input)) ||
-           IsKerenlGraphOutput(func_graph, input)) &&
-          (!common::AnfAlgo::IsDynamicSequence(input)));
+           IsKerenlGraphOutput(func_graph, input)));
 }
 }  // namespace
 
@@ -102,7 +104,7 @@ const AnfNodePtr ConvertTupleOutputToMaketuple::Process(const FuncGraphPtr &func
   MS_EXCEPTION_IF_NULL(manager);
   bool cnode_input_changed = false;
   for (size_t i = kIndex1; i < cnode->size(); ++i) {
-    const auto &input = cnode->inputs()[i];
+    const auto &input = cnode->input(i);
     if (IsNeedConvert(func_graph, input)) {
       MS_LOG(INFO) << "Convert tuple input to make tuple for node:" << node->fullname_with_scope()
                    << ", input node:" << input->fullname_with_scope();
