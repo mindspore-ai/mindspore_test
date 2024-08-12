@@ -62,6 +62,13 @@ KernelPacketEnginePtr KernelPacketEngine::Build(const FuncGraphPtr &func_graph) 
   engine->SetBaseNodeDepend(basenode);
   engine->PreBuild();
   engine->BuildImpl();
+  // todo: this is a debug env, default disable now.
+  if (common::GetEnv("MS_DEV_KP_NO_GETVALUE") == "1" &&
+      std::any_of(func_graph->parameters().begin(), func_graph->parameters().end(),
+                  [](const AnfNodePtr &p) { return p->abstract()->GetSymbolicValue() != nullptr; })) {
+    MS_LOG(INFO) << "KernelPacket should begin with shape-depend ops";
+    return nullptr;
+  }
   return engine;
 }
 }  // namespace packet

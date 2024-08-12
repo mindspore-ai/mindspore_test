@@ -16,8 +16,26 @@
 
 #include "symbol_engine/ops/symbolic_shape_test_utils.h"
 #include "symbolic_shape/utils.h"
+#include "include/common/debug/anf_ir_dump.h"
 
 namespace mindspore::symshape::test {
+void TestSymbolEngine::SaveIR(const FuncGraphPtr &fg, const std::string &name) {
+  if (common::GetEnv("MS_DEV_SAVE_GRAPHS") == "") {
+    return;
+  }
+  MS_EXCEPTION_IF_NULL(fg);
+  auto current_test_info = testing::UnitTest::GetInstance()->current_test_info();
+  std::string case_name = current_test_info->test_case_name();
+  std::string cur_name = current_test_info->name();
+  auto fname = case_name + "." + cur_name + ".";
+  if (name == "") {
+    fname += "fg.ir";
+  } else {
+    fname += name + ".ir";
+  }
+  DumpIR(fname, fg, true);
+}
+
 void SymbolEngineImplTestHelper::InitSymbolEngine(const FuncGraphPtr &fg) {
   if (fg->symbol_engine() != nullptr) {
     CleanSymbols(fg);

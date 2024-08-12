@@ -76,6 +76,23 @@ class OPS_API ScalarCeilDiv : public ScalarIntOp {
     return DoubleToLong(std::ceil(LongToDouble(x) / LongToDouble(y)));
   }
 };
+
+class OPS_API ScalarRealDiv : public InferValueOp {
+ public:
+  using InferValueOp::InferValueOp;
+  ScalarRealDiv(const SymbolPtr &lhs, const SymbolPtr &rhs) : InferValueOp({lhs, rhs}) {}
+  MS_DECLARE_PARENT(ScalarRealDiv, InferValueOp)
+
+ protected:
+  SymbolPtr Eval() override;
+  void EvalOnRun() override { output_as<FloatSymbol>()->SetValue(DivWithCheck(AsInt(input(0)), AsInt(input(1)))); }
+  inline double DivWithCheck(int64_t x, int64_t y) const {
+    if (y == 0) {
+      MS_LOG(EXCEPTION) << "For ScalarRealDiv, the denominator can not be zero.";
+    }
+    return LongToDouble(x) / LongToDouble(y);
+  }
+};
 }  // namespace ops
 }  // namespace symshape
 }  // namespace mindspore

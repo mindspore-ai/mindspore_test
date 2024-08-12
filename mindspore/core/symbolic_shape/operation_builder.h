@@ -80,6 +80,7 @@ class MS_CORE_API OperationBuilder {
   const OperationBuilderInfo &symbol_builder_info() const { return symbol_builder_info_; }
 
  protected:
+  bool CheckOutputValue(const SymbolPtr &v) const;
   OperationEmitter *emitter_;
   const OperationBuilderInfo &symbol_builder_info_;
   bool is_building_shape_{false};

@@ -105,6 +105,12 @@ SymbolPtr KernelTensorValueToSymbol(const ValuePtr &v, bool to_scalar) {
   if (type_ptr->type_id() == kNumberTypeInt32) {
     return IntSymbol::Make(static_cast<int64_t>(GetScalarValue<int32_t>(v).value()));
   }
+  if (type_ptr->type_id() == kNumberTypeFloat64) {
+    return FloatSymbol::Make(GetScalarValue<double>(v).value());
+  }
+  if (type_ptr->type_id() == kNumberTypeFloat32) {
+    return FloatSymbol::Make(static_cast<double>(GetScalarValue<float>(v).value()));
+  }
   auto value_opt = GetArrayValue<int64_t>(v);
   if (value_opt.has_value()) {
     auto vec = value_opt.value().ToVector();

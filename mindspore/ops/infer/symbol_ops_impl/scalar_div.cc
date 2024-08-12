@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <vector>
 #include <memory>
+#include "mindspore/ops/infer/symbol_ops_impl/scalar_cast.h"
 
 namespace mindspore {
 namespace symshape {
@@ -115,7 +116,27 @@ SymbolPtr ScalarCeilDiv::Eval() {
   return GenVInt();
 }
 
-REG_SYMBOL_OP_BUILDER("ScalarDiv").SetValueDependN<DependOn::kValue, 2>().SetValueFuncWith<ScalarDiv>();
+SymbolPtr ScalarRealDiv::Eval() {
+  auto lhs = input_as_sptr<IntSymbol>(0);
+  auto rhs = input_as_sptr<IntSymbol>(1);
+  if (lhs->HasData() && rhs->HasData()) {
+    return FloatSymbol::Make(DivWithCheck(lhs->value(), rhs->value()));
+  }
+  if (lhs->HasData() && lhs->value() == 0) {
+    return FloatSymbol::Make(0);
+  }
+  if (rhs->HasData() && rhs->value() == 1) {
+    DoNotEvalOnRun();
+    return Emit(std::make_shared<ScalarCast<FloatSymbol>>(lhs));
+  }
+  if (*lhs == *rhs) {
+    DoNotEvalOnRun();
+    return FloatSymbol::Make(1);
+  }
+  return FloatSymbol::Make(shared_from_this());
+}
+
+REG_SYMBOL_OP_BUILDER("ScalarDiv").SetValueDependN<DependOn::kValue, 2>().SetValueFuncWith<ScalarRealDiv>();
 REG_SYMBOL_OP_BUILDER("ScalarFloorDiv").SetValueDependN<DependOn::kValue, 2>().SetValueFuncWith<ScalarFloorDiv>();
 }  // namespace ops
 }  // namespace symshape
