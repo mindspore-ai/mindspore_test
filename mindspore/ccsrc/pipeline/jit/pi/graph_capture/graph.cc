@@ -590,6 +590,23 @@ static std::string TraceInferFailed(ValueNode *node, int depth = 0) {
   return s.str();
 }
 
+static void PrintCallNode(std::ostream *os, CallNode *node, int depth) {
+  std::string prefix(depth << 1, ' ');
+  auto &s = *os;
+  s << prefix << "{ inline stat " << GetInlineReasonDesc(node->GetInlineReason());
+  if (!node->GetParams().empty()) {
+    s << ", has extra operations to handle parameters:" << std::endl;
+    for (const auto &ex : node->GetParams()) {
+      s << prefix << "  " << ex->ToString() << std::endl;
+    }
+  }
+  s << std::endl;
+  if (node->GetSubGraph() != nullptr) {
+    s << node->GetSubGraph()->ToString(depth + 1);
+  }
+  s << prefix << "}" << std::endl;
+}
+
 std::string Graph::ToString(int depth) const {
   std::stringstream s;
   std::string prefix(depth << 1, ' ');
@@ -606,12 +623,7 @@ std::string Graph::ToString(int depth) const {
     if (i->GetType() != AbstractNode::Call) {
       continue;
     }
-    CallNode *node = static_cast<CallNode *>(i);
-    s << prefix << "{ inline stat " << GetInlineReasonDesc(node->GetInlineReason()) << "\n";
-    if (node->GetSubGraph() != nullptr) {
-      s << node->GetSubGraph()->ToString(depth + 1);
-    }
-    s << prefix << "}\n";
+    PrintCallNode(&s, static_cast<CallNode *>(i), depth);
   }
   if (GetRetVal()) {
     s << prefix << "Return the Node " << GetRetVal() << "\n";

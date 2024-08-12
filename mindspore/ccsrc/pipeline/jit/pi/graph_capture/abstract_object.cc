@@ -38,6 +38,8 @@
 namespace mindspore {
 namespace pijit {
 static const size_t DictStep = 2;
+constexpr size_t kValueToStringLimit = 120;
+
 #define FIND_MAP_CACHE(map, target) \
   do {                              \
     auto iter = (map).find(target); \
@@ -147,11 +149,13 @@ std::string AbstractObjectBase::ToString(PyObject *op, bool print_type, size_t l
   switch (t) {
     case AObject::kTypeTensor:
     case AObject::kTypeStubTensor:
-      s << std::string(py::str(obj.attr("shape"))) << ", " << std::string(py::str(obj.attr("dtype")));
+      s << "Tensor'" << std::string(py::str(obj.attr("shape"))) << ", " << std::string(py::str(obj.attr("dtype")))
+        << "'";
       break;
     case AObject::kTypeBoundMethod:
-      s << PyUnicode_AsUTF8(reinterpret_cast<PyFunctionObject *>(PyMethod_GET_FUNCTION(op))->func_qualname) << " of "
-        << ToString(PyMethod_GET_SELF(op), print_type);
+      s << "<bound method "
+        << PyUnicode_AsUTF8(reinterpret_cast<PyFunctionObject *>(PyMethod_GET_FUNCTION(op))->func_qualname) << " of "
+        << ToString(PyMethod_GET_SELF(op), print_type) << ">";
       break;
     case AObject::kTypeNNCellList:
     case AObject::kTypeList:
@@ -174,7 +178,7 @@ std::string AbstractObjectBase::ToString(PyObject *op, bool print_type, size_t l
       break;
     }
     case AObject::kTypeCell:
-      s << "object at " << op;
+      s << (Py_TYPE(op)->tp_name ? Py_TYPE(op)->tp_name : "<unnamed>") << " object at " << op;
       break;
     default:
       s << std::string(py::str(obj));
@@ -205,7 +209,7 @@ std::string AbstractObject::ToString() const {
   std::stringstream s;
   s << this->AbstractObjectBase::ToString();
   if (value_.ptr() != nullptr) {
-    s << "{value=" << AObject::ToString(value_.ptr(), false, 40) << "}";
+    s << "{value=" << AObject::ToString(value_.ptr(), false, kValueToStringLimit) << "}";
   }
   return s.str();
 }
@@ -1055,7 +1059,7 @@ std::string AbstractTuple::ToString() const {
   }
   if (this->IsElementValid()) {
     if (value_.ptr() != nullptr) {
-      s << "{value=" << AObject::ToString(value_.ptr(), false, 20) << "}";
+      s << "{value=" << AObject::ToString(value_.ptr(), false, kValueToStringLimit) << "}";
     } else {
       s << "size=" << this->size();
     }
@@ -1076,7 +1080,7 @@ std::string AbstractDict::ToString() const {
   }
   if (this->IsElementValid()) {
     if (value_.ptr() != nullptr) {
-      s << "{value=" << AObject::ToString(value_.ptr(), false, 20) << "}";
+      s << "{value=" << AObject::ToString(value_.ptr(), false, kValueToStringLimit) << "}";
     } else {
       s << "size=" << this->size();
     }
@@ -1740,7 +1744,7 @@ std::string AbstractTensor::ToString() const {
   std::stringstream s;
   s << this->AbstractObjectBase::ToString();
   if (value_.ptr()) {
-    s << AObject::ToString(value_.ptr(), false, 40);
+    s << "{" << AObject::ToString(value_.ptr(), false, kValueToStringLimit) << "}";
   } else {
     s << "{NULL,NULL}";
   }
