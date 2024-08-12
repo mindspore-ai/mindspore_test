@@ -23,6 +23,7 @@
 #include "include/backend/debug/data_dump/tensor_stat_dump.h"
 #include "runtime/device/ms_device_shape_transfer.h"
 #include "utils/ms_context.h"
+#include "debug/data_dump/overflow_counter.h"
 
 namespace mindspore {
 namespace ascend {
@@ -469,25 +470,31 @@ int32_t DumpDataCallBack(const DumpChunk *dump_chunk, int32_t size) {
     return 1;
   }
 
+  uint32_t set_overflow_num = DumpJsonParser::GetInstance().overflow_number();
+  uint32_t overflow_count = OverflowCounter::GetInstance().getCount();
   if (isLastChunk == 1) {
-    // construct dump data object
-    toolkit::dumpdata::DumpData dump_data;
-    std::vector<char> data_buf;
-    if (!dump_data_build->ConstructDumpData(&dump_data, &data_buf)) {
-      MS_LOG(ERROR) << "Failed to parse data for node " << file_name;
-      return 0;
+    if (set_overflow_num == 0 || overflow_count < set_overflow_num) {
+      // construct dump data object
+      toolkit::dumpdata::DumpData dump_data;
+      std::vector<char> data_buf;
+      if (!dump_data_build->ConstructDumpData(&dump_data, &data_buf)) {
+        MS_LOG(ERROR) << "Failed to parse data for node " << file_name;
+        return 0;
+      }
+      // convert and save to files
+      auto separator = file_name.rfind("/");
+      auto file_base_name = file_name.substr(separator + 1);
+      if (file_base_name.rfind("Opdebug.Node_OpDebug.") == 0) {
+        // save overflow data
+        AscendAsyncDump::DumpOpDebugToFile(file_name, dump_data, data_buf.data());
+      } else {
+        AscendAsyncDump::DumpTensorToFile(file_name, dump_data, data_buf.data());
+        if (overflow_count < set_overflow_num) {
+          OverflowCounter::GetInstance().addCount();
+        }
+      }
+      manager.ClearDumpDataBuilder(file_name);
     }
-
-    // convert and save to files
-    auto separator = file_name.rfind("/");
-    auto file_base_name = file_name.substr(separator + 1);
-    if (file_base_name.rfind("Opdebug.Node_OpDebug.") == 0) {
-      // save overflow data
-      AscendAsyncDump::DumpOpDebugToFile(file_name, dump_data, data_buf.data());
-    } else {
-      AscendAsyncDump::DumpTensorToFile(file_name, dump_data, data_buf.data());
-    }
-    manager.ClearDumpDataBuilder(file_name);
   }
   return 0;
 }

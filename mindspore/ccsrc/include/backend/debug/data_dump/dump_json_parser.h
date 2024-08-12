@@ -67,6 +67,7 @@ class BACKEND_EXPORT DumpJsonParser {
   bool e2e_sync_dump_enabled() const { return e2e_sync_dump_enabled_; }
   std::vector<std::string> statistic_category() const { return statistic_category_; }
   uint32_t dump_mode() const { return dump_mode_; }
+  uint32_t overflow_number() const { return overflow_number_; }
   std::string path() const { return path_; }
   std::string saved_data() const { return saved_data_; }
   std::string iteration_string() const { return iteration_; }
@@ -131,6 +132,7 @@ class BACKEND_EXPORT DumpJsonParser {
   bool is_dataset_sink_{false};
   bool dumpdatacallback_registered_{false};
   uint32_t dump_mode_{0};
+  uint32_t overflow_number_{0};
   std::string path_;
   std::string net_name_;
   std::string saved_data_;
@@ -179,6 +181,7 @@ class BACKEND_EXPORT DumpJsonParser {
   void ParseOpDebugMode(const nlohmann::json &content);
   void ParseFileFormat(const nlohmann::json &content);
   void ParseStatCalcMode(const nlohmann::json &content);
+  void ParseOverflowNumber(const nlohmann::json &content);
   void ParseE2eSyncDumpEnable(const nlohmann::json &content);
 
   void JudgeDumpEnabled();
