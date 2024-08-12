@@ -107,7 +107,7 @@ class OrderEnforcer {
     auto side_effect_nodes = FindNodeUsers(prev_u, [&update_state](const AnfNodePtr &user_node) {
       return (user_node != update_state) && !IsPrimitiveCNode(user_node, prim::kPrimLoad);
     });
-    // For such side effect cnodes, try enfore order for them.
+    // For such side effect cnodes, try enforce order for them.
     for (auto &side_effect_node : side_effect_nodes) {
       HandleSideEffectNode(side_effect_node->cast<CNodePtr>(), prev_u->cast<CNodePtr>());
     }
@@ -147,7 +147,7 @@ class OrderEnforcer {
   AnfNodePtr FindLastUpdateState(const CNodePtr &cnode) {
     // Find all update_state nodes from the user of input load nodes.
     std::vector<AnfNodePtr> all_update_states;
-    for (size_t index = 1; index < cnode->size(); index++) {
+    for (size_t index = 1; index < cnode->size(); ++index) {
       auto &input = cnode->input(index);
       if (IsPrimitiveCNode(input, prim::kPrimLoad)) {
         std::vector<AnfNodePtr> update_states = FindUpdateStateUsers(input);

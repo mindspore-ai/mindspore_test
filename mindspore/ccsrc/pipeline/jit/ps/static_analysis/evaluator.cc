@@ -240,7 +240,7 @@ bool ContainsAbstractAny(const AbstractBasePtrList &args_abs_list) {
 }
 
 // MakeTuple and MakeList will handle AbstractAny in ops infer.
-const mindspore::HashSet<PrimitivePtr, PrimitiveHasher, PrimitiveEqual> ignore_any_type_checking_prims{
+static const mindspore::HashSet<PrimitivePtr, PrimitiveHasher, PrimitiveEqual> ignore_any_type_checking_prims{
   prim::kPrimReturn,         prim::kPrimDepend,       prim::kPrimSwitch,      prim::kPrimSwitchLayer,
   prim::kPrimUpdateState,    prim::kPrimLoad,         prim::kPrimIsConstant,  prim::kPrimMakeKeywordArg,
   prim::kPrimIsShapeUnknown, prim::kPrimIsDimUnknown, prim::kPrimListGetItem, prim::kPrimTupleGetItem,

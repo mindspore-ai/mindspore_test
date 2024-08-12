@@ -74,6 +74,7 @@ using ClassTypePtr = std::shared_ptr<parse::ClassType>;
 namespace abstract {
 using mindspore::parse::PyObjectWrapper;
 
+namespace {
 mindspore::HashSet<std::string> prims_to_skip_undetermined_infer{kMakeTupleOpName,  kMakeListOpName,   kSwitchOpName,
                                                                  kEnvironSetOpName, kEnvironGetOpName, kLoadOpName,
                                                                  kUpdateStateOpName};
@@ -127,6 +128,7 @@ AnfNodePtr GetNodeAfterArgHandler(const AnfNodePtr &node, const std::string &op_
   return fg->NewCNodeInOrder(
     {NewValueNode(arg_handler_fg), NewValueNode(op_name), NewValueNode(op_arg.arg_name_), node});
 }
+}  // namespace
 
 CNodePtr DoSignatureEvaluator::GenerateNewNodeBySignatures(const ValuePtr &func,
                                                            const AbstractBasePtrList &args_abs_list,
@@ -448,7 +450,7 @@ void CheckTensorCondValid(const AbstractBasePtr &cond) {
     return;
   }
   constexpr auto num_one = 1;
-  for (size_t i = 0; i < cond_shape.size(); i++) {
+  for (size_t i = 0; i < cond_shape.size(); ++i) {
     if (cond_shape[i] != num_one && cond_shape[i] != Shape::kShapeDimAny && cond_shape[i] != Shape::kShapeRankAny) {
       MS_LOG(ERROR) << "The condition value of control flow can be a tensor with one element, "
                     << "but got tensor with shape " << base_shape->ToString();
@@ -476,7 +478,7 @@ EvalResultPtr SwitchEvaluator::Run(AnalysisEnginePtr engine, const ConfigPtrList
   }
 
   // Inputs: condition, true branch, false branch
-  constexpr auto switch_input_size = 3;
+  constexpr size_t switch_input_size = 3;
   if (args_conf_list.size() != switch_input_size) {
     MS_LOG(EXCEPTION) << "Switch evaluator requires 3 parameters, while the input size is " << args_abs_list.size()
                       << ".";
@@ -1227,7 +1229,7 @@ PrimitiveFunctionEvaluator::PrimitiveFunctionEvaluator(const PrimitivePtr &prim_
   op_def_ = mindspore::ops::GetOpDef(prim_func->name());
 }
 
-bool HasAbstractUndetermined(const AbstractBasePtr &abs) {
+static bool HasAbstractUndetermined(const AbstractBasePtr &abs) {
   if (abs->isa<AbstractSequence>()) {
     auto abs_seq = abs->cast<abstract::AbstractSequencePtr>();
     return std::any_of(abs_seq->elements().cbegin(), abs_seq->elements().cend(), HasAbstractUndetermined);
@@ -1251,7 +1253,7 @@ void PrimitiveFunctionEvaluator::CheckArgsSizeAndType(const AbstractBasePtrList 
   }
 
   // Check inputs type.
-  for (size_t i = 0; i < op_args.size(); i++) {
+  for (size_t i = 0; i < op_args.size(); ++i) {
     if (HasAbstractUndetermined(real_abs_args[i])) {
       continue;
     }
@@ -1847,6 +1849,7 @@ EvalResultPtr GetEvaluatedValueForNameSpaceString(const AbstractBasePtrList &arg
 
 EvalResultPtr GenerateFuncGraphForOverriddenMethod(AnfNodePtr node, const ValuePtr &item_value,
                                                    const AnfNodeConfigPtr &out_conf) {
+  MS_EXCEPTION_IF_NULL(item_value);
   const auto &item_str = item_value->cast_ptr<StringImm>();
   FuncGraphPtr inner_fg = nullptr;
   py::object overridden_method = py::none();
@@ -2512,6 +2515,7 @@ TypePtr GetLocalArgsUniqueDtype(const AnfNodePtr &node, const AbstractBasePtrLis
 }
 
 void AddLabelsToPrimitiveFunction(const PrimitivePtr &prim_func) {
+  MS_EXCEPTION_IF_NULL(prim_func);
   auto prim_name = prim_func->name();
   py::module mod = py::module::import(parse::PYTHON_MOD_PRIMITIVE_OP_CREATE_INSTANCE_HELPER_MODULE);
   if (!py::hasattr(mod, parse::PYTHON_MOD_PRIMITIVE_OP_LABELS_DICT)) {
@@ -2883,7 +2887,7 @@ EvalResultPtr DoTransPrimitiveFunctionEvaluator::EvalPrim(const AnalysisEnginePt
                               << "]', the number of inputs and init args (including default arguments) should be "
                               << op_args_size << ", but got " << args_abs_list.size() << ". ";
     }
-    for (size_t i = 0; i < op_args_size; i++) {
+    for (size_t i = 0; i < op_args_size; ++i) {
       if (op_def->args_[i].as_init_arg_) {
         ++init_args_size;
       }
@@ -2916,7 +2920,7 @@ AnfNodePtrList GetInitArgsFromUnpackCall(const prim::DoTransPrimitiveFunctionPtr
   std::map<std::string, AnfNodePtr> key_map;
   auto fg = out_conf->node()->func_graph();
   constexpr size_t inputs_start_index = 2;
-  for (size_t index = inputs_start_index; index < unpack_call_cnode->size(); index++) {
+  for (size_t index = inputs_start_index; index < unpack_call_cnode->size(); ++index) {
     auto input = unpack_call_cnode->input(index);
     AnfNodeConfigPtr config = engine->MakeConfig(input, out_conf->context(), out_conf->func_graph());
     MS_EXCEPTION_IF_NULL(config);
@@ -3167,8 +3171,7 @@ EvalResultPtr MakeListEvaluator::EvalPrim(const AnalysisEnginePtr &, const Abstr
       }
 
       (void)sequence_nodes->emplace_back(AnfNodeWeakPtr(out_conf->node()));
-      bool has_any = fallback::ContainsSequenceAnyType(abs);
-      if (has_any) {
+      if (fallback::ContainsSequenceAnyType(abs)) {
         SetSequenceElementsUseFlagsRecursively(abs, true);
       }
     }
