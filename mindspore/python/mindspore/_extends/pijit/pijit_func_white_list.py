@@ -168,6 +168,7 @@ _func_map = {
     # special function
     pijit_constexpr_key: FUNC_KEY_PIJIT_CONSTEXPR,
     id(getattr(array_func, "_get_max_type")): FUNC_KEY_PIJIT_CONSTEXPR,
+    id(Cell.__getattr__): FUNC_KEY_PIJIT_CONSTEXPR,
     pijit_forbidden_key: FUNC_KEY_PIJIT_FORBIDDEN,
     primitive_key: FUNC_KEY_PRIMITIVE,
     constexpr_key: FUNC_KEY_CONSTEXPR,
