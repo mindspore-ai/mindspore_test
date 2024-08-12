@@ -658,7 +658,7 @@ def _check_jvp_input_v_len(inputs_len, v_len):
 
 def jvp(fn, inputs, v, has_aux=False):
     """
-    Compute the jacobian-vector-product of the given network. `jvp` matches
+    Compute the jacobian-vector-product of the given network. The calculation procedure of JVP can be found in
     `forward-mode differentiation
     <https://www.mindspore.cn/docs/en/master/design/programming_paradigm.html#forward-mode-ad>`_.
 
