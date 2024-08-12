@@ -17,6 +17,7 @@
 #include "pipeline/jit/pi/pi_jit_config.h"
 #include "pipeline/jit/pi/runtime.h"
 #include "pipeline/jit/pi/external.h"
+#include "pipeline/jit/pi/capture_context.h"
 
 namespace mindspore {
 namespace pijit {
@@ -48,14 +49,38 @@ bool ApplyAutoGrad(PyThreadState *ts, EvalFrameObject *f, PyObject **result) {
   return true;
 }
 
+bool ApplyCaptureContext(PyThreadState *tstate, EvalFrameObject *ef, PyObject **result) {
+  PyFrameWrapper f(ef);
+  auto ctx = CaptureContext::GetInstance();
+  if (!ctx->IsEnable()) {
+    return false;
+  }
+  PyCodeObject *co = f.GetCode().ptr();
+  auto c = GetJitCompileResults(co);
+  if (c == nullptr) {
+    if (ctx->IsSkip(f)) {
+      SetJitCompileResults(co, &JitCompileResults::skip_);
+      c = &JitCompileResults::skip_;
+      MS_LOG(DEBUG) << "skip code " << py::str(reinterpret_cast<PyObject *>(co));
+    } else {
+      py::object code = py::cast<py::object>(reinterpret_cast<PyObject *>(co));
+      (void)pi_jit_should_compile(code, py::dict(), py::none());
+      c = GetJitCompileResults(co);
+    }
+  }
+  if (c->stat() == JitCompileResults::NEVER_COMPILE) {
+    *result = _PyEval_EvalFrameDefault(tstate, f.frame(), 0);
+    return true;
+  }
+  c->set_conf(ctx->config());
+  *result = CallCodeHook(tstate, f.frame(), c);
+  return true;
+}
+
 PyFrameEvalHookManager::PyFrameEvalHookManager() : func_() {
   this->Register(ApplyAutoGrad);
   this->Register(ApplyAutoJit);
-  this->Register([](PyThreadState *ts, EvalFrameObject *f, PyObject **result) {
-    auto c = GetJitCompileResults(PyFrameWrapper(f).GetCode().ptr());
-    *result = c != nullptr ? CallCodeHook(ts, f, c) : _PyEval_EvalFrameDefault(ts, f, 0);
-    return true;
-  });
+  this->Register(ApplyCaptureContext);
 }
 
 PyFrameEvalHookManager *PyFrameEvalHookManager::GetInstance() {

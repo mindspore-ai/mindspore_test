@@ -19,10 +19,11 @@ namespace mindspore {
 namespace pijit {
 
 static Py_tss_t *tss_ = nullptr;
+JitCompileResults JitCompileResults::skip_;
 
 void JitCompileResults::FreeCallback(void *ptr) {
   // maybe nullptr if other module use _PyEval_RequestCodeExtraIndex
-  if (ptr == nullptr) {
+  if (ptr == nullptr || ptr == &skip_) {
     return;
   }
   JitCompileResults *c = reinterpret_cast<JitCompileResults *>(ptr);

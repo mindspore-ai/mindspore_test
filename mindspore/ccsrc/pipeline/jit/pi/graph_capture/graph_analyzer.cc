@@ -101,6 +101,9 @@ bool GraphAnalyzer::ProduceInterpretValue(ValueNode *v) {
   bool repeat_op = graph_->Config().GetBoolConfig(GraphJitConfig::kEnableOptimizeForAttrItem);
   auto &locals = GetCaptureInfo().interpret_.values;
   auto &values = GetCaptureInfo().captured_.values;
+  if (locals.find(v) != locals.end()) {
+    return true;
+  }
   for (auto i : v->getInputs()) {
     if (IsNonLocalValue(i) || locals.find(i) != locals.end()) {
       continue;
@@ -391,7 +394,6 @@ void GraphAnalyzer::Analyze() {
     CleanCapturedValue();
   }
   UseDefAnalyze();
-  ResetSideEffectRecord();  // if rollback nodes, rollback side-effects
 
   CollectCapturedAndInterpret();
   CollectGraphInputs();
@@ -459,23 +461,9 @@ bool GraphAnalyzer::AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes) {
       CleanCapturedValue();
       break;
     }
-    /**
-     * produce the values if it can be produced by interpret values before call graph
-     * e.g
-     *   return parameter.some_attribute
-     *   return build_map(parameters, other_constants)
-     */
     if (ProduceInterpretValue(node)) {
       continue;
     }
-    /**
-     * produce the values if it can be produced by interpret values and graph outputs after call graph
-     * e.g
-     *   graph_outputs = call_graph()
-     *   return graph_outputs[0].dtype, graph_outputs[1].asnumpy
-     * ...save alive nodes and reconstruct these values when generated the code
-     */
-
     //  reset break graph point
     isAllNodesSupportOutput = false;
     int new_break_point = node->bci();
@@ -492,6 +480,7 @@ bool GraphAnalyzer::AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes) {
     const FrameStates &enter_frame = graph_->GetFrame(0);
     GetCaptureInfo().interpret_.values.insert(enter_frame.GetLocals().begin(), enter_frame.GetLocals().end());
     (void)AnalyzeRecursive(graph_);
+    ResetSideEffectRecord();  // if rollback nodes, rollback side-effects
     break;
   }
   return isAllNodesSupportOutput;
@@ -768,8 +757,6 @@ void MindGraphAnalyzer::Analyze() {
     CollectCapturedAndInterpret();
     return;
   }
-  ResetSideEffectRecord();
-
   CollectCapturedAndInterpret();
   CollectGraphInputs();
 
@@ -830,7 +817,6 @@ bool MindGraphAnalyzer::AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes) 
       GetCaptureInfo().captured_.outputs.push_back(node);
       continue;
     }
-
     MS_LOG(INFO) << "Invalid output : " << node->ToString();
     GetCaptureInfo().outputs_optimize_.operations.push_back(node);
 

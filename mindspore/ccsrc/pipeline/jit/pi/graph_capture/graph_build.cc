@@ -29,6 +29,7 @@
 #include "pipeline/jit/pi/external.h"
 #include "pipeline/jit/pi/graph_build/func_graph_builder.h"
 #include "pipeline/jit/pi/graph_capture/abstract_object.h"
+#include "pipeline/jit/pi/capture_context.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "pipeline/jit/pi/graph_compiler/utils.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
@@ -1771,6 +1772,9 @@ py::object GraphBuilder::FindPyFunc(AObject *vobj) {
   }
 
   if (PyFunction_Check(func.ptr())) {
+    if (PyFunction_GET_CODE(func.ptr()) == CaptureContext::GetInstance()->wrapper_code()) {
+      return func.attr("__wrapped__");
+    }
     return func;
   }
   return py::cast<py::object>(nullptr);

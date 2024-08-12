@@ -65,11 +65,13 @@ class DenseFactory():
         elif self.dtype == np.float32:
             self.loss *= 10  # 累加次数达到200000+，ccb结论放宽精度标准
         ps_net = Dense()
-        jit(ps_net.construct, mode="PSJit")(self.x_ms, self.w_ms, self.b_ms)
+        ps_net = jit(ps_net.construct, mode="PSJit")
+        ps_net(self.x_ms, self.w_ms, self.b_ms)
         context.set_context(mode=context.GRAPH_MODE)
         out_psjit = self.forward_mindspore_impl(ps_net)
         pi_net = Dense()
-        jit(pi_net.construct, mode="PIJit")(self.x_ms, self.w_ms, self.b_ms)
+        pi_net = jit(pi_net.construct, mode="PIJit")
+        pi_net(self.x_ms, self.w_ms, self.b_ms)
         context.set_context(mode=context.PYNATIVE_MODE)
         out_pijit = self.forward_mindspore_impl(pi_net)
         allclose_nparray(out_pijit, out_psjit, self.loss, self.loss)

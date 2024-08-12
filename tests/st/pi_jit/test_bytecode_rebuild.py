@@ -17,16 +17,16 @@ from mindspore import ops, numpy, Tensor
 from mindspore.nn import Cell
 from mindspore import jit
 from mindspore._c_expression import get_code_extra
-import sys  
-import pytest 
+import sys
+import pytest
 from .share.utils import match_array, assert_executed_by_graph_mode
 from tests.mark_utils import arg_mark
 
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
-        
+@pytest.fixture(autouse=True)
+def skip_if_python_version_too_high():
+    if sys.version_info >= (3, 11):
+        pytest.skip("Skipping tests on Python 3.11 and higher.")
+
 config = {
     "replace_nncell_by_construct": True,
     "interpret_captured_code": True,
@@ -282,9 +282,8 @@ def test_graph_parameter_is_closure_variable():
     x = Tensor([1, 2, 3])
     o1 = fn(x)
 
-    jit(fn, mode='PIJit', jit_config={'compile_with_try': False})
     x = Tensor([1, 2, 3])
-    o2 = fn(x)
+    o2 = jit(fn, mode='PIJit', jit_config={'compile_with_try': False})(x)
 
     match_array(o1.asnumpy(), o2.asnumpy())
     jcr = get_code_extra(fn)
@@ -319,9 +318,7 @@ def test_graph_parameter_is_closure_variable_v2():
     x = Tensor([1, 2, 3])
     y = Tensor([1, 1, 1])
     o1 = fn(x, y)
-
-    jit(fn, mode='PIJit', jit_config={'compile_with_try': False})
-    o2 = fn(x, y)
+    o2 = jit(fn, mode='PIJit', jit_config={'compile_with_try': False})(x, y)
 
     match_array(o1.asnumpy(), o2.asnumpy())
     jcr = get_code_extra(fn)
@@ -353,9 +350,7 @@ def test_graph_parameter_is_closure_variable_v3():
 
     x = Tensor([1, 2, 3])
     o1 = fn(x)
-
-    jit(fn, mode='PIJit', jit_config={'compile_with_try': False})
-    o2 = fn(x)
+    o2 = jit(fn, mode='PIJit', jit_config={'compile_with_try': False})(x)
 
     assert len(o1) == len(o2)
     for l, r in zip(o1, o2):
@@ -388,9 +383,7 @@ def test_graph_parameter_is_closure_variable_v4():
 
     x = Tensor([1, 2, 3])
     o1 = fn(x)
-
-    jit(fn, mode='PIJit', jit_config={'compile_with_try': False})
-    o2 = fn(x)
+    o2 = jit(fn, mode='PIJit', jit_config={'compile_with_try': False})(x)
 
     assert len(o1) == len(o2)
     for l, r in zip(o1, o2):
@@ -422,9 +415,8 @@ def test_graph_parameter_is_closure_variable_v5():
     x = Tensor([1, 2, 3])
     o1 = fn(x)
 
-    jit(fn, mode='PIJit', jit_config={'compile_with_try': False})
     x = Tensor([1, 2, 3])
-    o2 = fn(x)
+    o2 = jit(fn, mode='PIJit', jit_config={'compile_with_try': False})(x)
 
     match_array(o1.asnumpy(), o2.asnumpy())
     jcr = get_code_extra(fn)

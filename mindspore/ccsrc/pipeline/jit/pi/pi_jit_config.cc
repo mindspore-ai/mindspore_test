@@ -19,6 +19,7 @@
 #include "utils/log_adapter.h"
 #include "pipeline/jit/pi/external.h"
 #include "pipeline/jit/pi/utils/utils.h"
+#include "pipeline/jit/pi/capture_context.h"
 #include "pipeline/jit/pi/python_adapter/pydef.h"
 
 namespace mindspore {
@@ -31,6 +32,13 @@ constexpr int kDefaultMaxTraceDepth = 16;
 constexpr const char *kModuleName = "mindspore._extends.pijit.pijit_func_white_list";
 constexpr const char *kFuncMapName = "_func_map";
 constexpr const char *kGuardFuncMapName = "guard_func_map";
+
+template <>
+bool GraphJitConfig::SetBool<GraphJitConfig::Options::kPIJitContextMode>(PyObject *value) {
+  bool_conf[kPIJitContextMode - kBoolConf] = value == Py_True;
+  CaptureContext::GetInstance()->set_use_white_list(value == Py_True);
+  return true;
+}
 
 static const std::unordered_map<std::string, bool (GraphJitConfig::*)(PyObject *)> key_map = {
   {"auto_jit_func_filter", &GraphJitConfig::SetAutoJitFilter},
@@ -66,6 +74,7 @@ static const std::unordered_map<std::string, bool (GraphJitConfig::*)(PyObject *
   {"kFeatureBreakAtInlinedFunction", &GraphJitConfig::SetBool<GraphJitConfig::kFeatureBreakAtInlinedFunction>},
   {"kEnableEliminateUnusedOperation", &GraphJitConfig::SetBool<GraphJitConfig::kEnableEliminateUnusedOperation>},
   {"kEnableGeneratorExpressionToTuple", &GraphJitConfig::SetBool<GraphJitConfig::kEnableGeneratorExpressionToTuple>},
+  {"pijit_context_mode", &GraphJitConfig::SetBool<GraphJitConfig::kPIJitContextMode>},
   // kEnableOptimizeForAttrItem
   {"MAX_INLINE_DEPTH", &GraphJitConfig::SetInt<GraphJitConfig::kMaxInlineDepth>},
   {"MAX_TRACE_DEPTH", &GraphJitConfig::SetInt<GraphJitConfig::kMaxTraceDepth>},
@@ -86,7 +95,7 @@ static const std::unordered_map<std::string, bool (GraphJitConfig::*)(PyObject *
   {"jit_level", &GraphJitConfig::AddJitLevel},
 };
 
-GraphJitConfig::GraphJitConfig() {
+GraphJitConfig::GraphJitConfig() : int_conf{0}, bool_conf{false} {
   bool_conf[kAutoJitCell - kBoolConf] = false;
   bool_conf[kAutoGrad - kBoolConf] = false;
   bool_conf[kPrintAfterAll - kBoolConf] = false;
@@ -140,9 +149,11 @@ GraphJitConfig::GraphJitConfig() {
   int_conf[kLimitGraphCount - kIntConf] = 0;
   int_conf[kGuardRelaxCount - kIntConf] = 0;
 
-  allowed_inline_modules_.insert("mindspore");
+  AddAllowedInlineModules("mindspore");
 
   jit_level = "O0";
+
+  SetBool<Options::kPIJitContextMode>(Py_True);
 }
 
 static py::object GetObjectsMap() {
@@ -232,7 +243,11 @@ bool GraphJitConfig::AddAllowedInlineModules(PyObject *list) {
 }
 
 void GraphJitConfig::AddAllowedInlineModules(const std::string &module_name) {
-  this->allowed_inline_modules_.insert(module_name);
+  CaptureContext::GetInstance()->AddKnownModule(module_name);
+}
+
+const std::set<std::string> &GraphJitConfig::allowed_inline_modules() const {
+  return CaptureContext::GetInstance()->known_modules();
 }
 
 bool GraphJitConfig::SetAutoJitFilter(PyObject *callable) {

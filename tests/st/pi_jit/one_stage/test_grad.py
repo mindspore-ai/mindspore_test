@@ -46,6 +46,7 @@ def test_base_grad_operation():
             self.net = net
             self.grad_op = GradOperation(False, False, False)
 
+        @jit(mode="PIJit")
         def construct(self, x, y):
             grad_ret = self.grad_op(self.net)(x, y)
             return grad_ret
@@ -58,7 +59,6 @@ def test_base_grad_operation():
     jit_mode_pi_disable()
     pynative_res = grad_net(a, b)
     jit_mode_pi_enable()
-    jit(GradNet.construct, mode="PIJit")
     pijit_res = grad_net(a, b)
     jcr = get_code_extra(GradNet.construct)
     assert jcr["break_count_"] == 0
@@ -86,6 +86,7 @@ def test_base_grad_operation_2():
             self.net = net
             self.grad_op = GradOperation(True, False, False)
 
+        @jit(mode="PIJit")
         def construct(self, x, y):
             grad_ret = self.grad_op(self.net)(x, y)
             return grad_ret
@@ -98,7 +99,6 @@ def test_base_grad_operation_2():
     jit_mode_pi_disable()
     pynative_res = grad_net(a, b)
     jit_mode_pi_enable()
-    jit(GradNet.construct, mode="PIJit")
     pijit_res = grad_net(a, b)
     jcr = get_code_extra(GradNet.construct)
     assert jcr["break_count_"] == 0
@@ -134,6 +134,7 @@ def test_base_grad_operation_3():
             self.params = ParameterTuple(self.net.trainable_params())
             self.grad_op = GradOperation(False, True, False)
 
+        @jit(mode="PIJit")
         def construct(self, x, y):
             grad_ret = self.grad_op(self.net, self.params)(x, y)
             return grad_ret
@@ -146,7 +147,6 @@ def test_base_grad_operation_3():
     jit_mode_pi_disable()
     pynative_res = grad_net(a, b)
     jit_mode_pi_enable()
-    jit(GradNet.construct, mode="PIJit")
     pijit_res = grad_net(a, b)
     jcr = get_code_extra(GradNet.construct)
     assert jcr["break_count_"] == 0
@@ -181,6 +181,7 @@ def test_base_grad_operation_4():
             self.params = ParameterTuple(self.net.trainable_params())
             self.grad_op = GradOperation(True, True, False)
 
+        @jit(mode="PIJit")
         def construct(self, x, y):
             grad_ret = self.grad_op(self.net, self.params)(x, y)
             return grad_ret
@@ -193,7 +194,6 @@ def test_base_grad_operation_4():
     jit_mode_pi_disable()
     pynative_res = grad_net(a, b)
     jit_mode_pi_enable()
-    jit(GradNet.construct, mode="PIJit")
     pijit_res = grad_net(a, b)
     jcr = get_code_extra(GradNet.construct)
     assert jcr["break_count_"] == 0
@@ -232,6 +232,7 @@ def test_base_grad_operation_5():
             self.sense = Tensor([5, 5, 5])
             self.grad_op = GradOperation(False, False, True)
 
+        @jit(mode="PIJit")
         def construct(self, x, y):
             grad_ret = self.grad_op(self.net)(x, y, self.sense)
             return grad_ret
@@ -244,7 +245,6 @@ def test_base_grad_operation_5():
     jit_mode_pi_disable()
     pynative_res = grad_net(a, b)
     jit_mode_pi_enable()
-    jit(GradNet.construct, mode="PIJit")
     pijit_res = grad_net(a, b)
     jcr = get_code_extra(GradNet.construct)
     assert jcr["break_count_"] == 0
@@ -278,6 +278,7 @@ def test_base_grad_operation_6():
             self.params = ParameterTuple(self.net.trainable_params())
             self.grad_op = GradOperation(True, True, True)
 
+        @jit(mode="PIJit")
         def construct(self, x, y):
             grad_ret = self.grad_op(self.net, self.params)(x, y, self.sense)
             return grad_ret
@@ -290,7 +291,6 @@ def test_base_grad_operation_6():
     jit_mode_pi_disable()
     pynative_res = grad_net(a, b)
     jit_mode_pi_enable()
-    jit(GradNet.construct, mode="PIJit")
     pijit_res = grad_net(a, b)
     jcr = get_code_extra(GradNet.construct)
     assert jcr["break_count_"] == 0
@@ -326,6 +326,7 @@ def test_functional_grad():
             super(GradNet, self).__init__()
             self.net = net
 
+        @jit(mode="PIJit")
         def construct(self, x, y):
             grad_ret = ops.grad(self.net)(x, y)
             return grad_ret
@@ -338,7 +339,6 @@ def test_functional_grad():
     jit_mode_pi_disable()
     pynative_res = grad_net(a, b)
     jit_mode_pi_enable()
-    jit(GradNet.construct, mode="PIJit")
     pijit_res = grad_net(a, b)
     jcr = get_code_extra(GradNet.construct)
     assert jcr["break_count_"] == 0
@@ -369,6 +369,7 @@ def test_functional_grad_2():
             super(GradNet, self).__init__()
             self.net = net
 
+        @jit(mode="PIJit")
         def construct(self, x, y):
             grad_ret = ops.grad(self.net, grad_position=(0, 1))(x, y)
             return grad_ret
@@ -381,7 +382,6 @@ def test_functional_grad_2():
     jit_mode_pi_disable()
     pynative_res = grad_net(a, b)
     jit_mode_pi_enable()
-    jit(GradNet.construct, mode="PIJit")
     pijit_res = grad_net(a, b)
     jcr = get_code_extra(GradNet.construct)
     assert jcr["break_count_"] == 0
@@ -416,6 +416,7 @@ def test_functional_grad_3():
             self.net = net
             self.params = ParameterTuple(self.net.trainable_params())
 
+        @jit(mode="PIJit")
         def construct(self, x, y):
             grad_ret = ops.grad(self.net, grad_position=(0, 1), weights=self.params)(x, y)
             return grad_ret
@@ -428,7 +429,6 @@ def test_functional_grad_3():
     jit_mode_pi_disable()
     pynative_res = grad_net(a, b)
     jit_mode_pi_enable()
-    jit(GradNet.construct, mode="PIJit")
     pijit_res = grad_net(a, b)
     jcr = get_code_extra(GradNet.construct)
     assert jcr["break_count_"] == 0
@@ -465,6 +465,7 @@ def test_functional_grad_4():
             self.net = net
             self.params = ParameterTuple(self.net.trainable_params())
 
+        @jit(mode="PIJit")
         def construct(self, x, y):
             grad_ret = ops.grad(self.net, 0, None, has_aux=True)(x, y)
             return grad_ret
@@ -477,7 +478,6 @@ def test_functional_grad_4():
     jit_mode_pi_disable()
     pynative_res = grad_net(a, b)
     jit_mode_pi_enable()
-    jit(GradNet.construct, mode="PIJit")
     pijit_res = grad_net(a, b)
     jcr = get_code_extra(GradNet.construct)
     assert jcr["break_count_"] == 0
@@ -515,6 +515,7 @@ def test_functional_grad_5():
             self.net = net
             self.params = ParameterTuple(self.net.trainable_params())
 
+        @jit(mode="PIJit")
         def construct(self, x, y):
             grad_ret = ops.grad(self.net, 0, None, False, True)(x, y)
             return grad_ret
@@ -527,7 +528,6 @@ def test_functional_grad_5():
     jit_mode_pi_disable()
     pynative_res = grad_net(a, b)
     jit_mode_pi_enable()
-    jit(GradNet.construct, mode="PIJit")
     pijit_res = grad_net(a, b)
     jcr = get_code_extra(GradNet.construct)
     assert jcr["break_count_"] == 0
@@ -568,6 +568,7 @@ def test_second_grad_operation():
             self.net = net
             self.grad_op = GradOperation(False, False, False)
 
+        @jit(mode="PIJit")
         def construct(self, x):
             grad_ret = self.grad_op(self.net)(x)
             return grad_ret
@@ -580,7 +581,6 @@ def test_second_grad_operation():
     jit_mode_pi_disable()
     pynative_res = sec_grad_net(a)
     jit_mode_pi_enable()
-    jit(SecGradNet.construct, mode="PIJit")
     pijit_res = sec_grad_net(a)
     jcr = get_code_extra(SecGradNet.construct)
     assert jcr["break_count_"] == 0

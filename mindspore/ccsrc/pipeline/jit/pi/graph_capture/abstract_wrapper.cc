@@ -170,33 +170,40 @@ py::object ConvertToPyObjInner(const AbstractBasePtr &abs) {
 
 py::object ConvertToPyObj(const AbstractBasePtr &abs) {
   MS_EXCEPTION_IF_NULL(abs);
+  bool succ = true;
   if (abs->isa<abstract::AbstractList>()) {
     auto abs_list = abs->cast<abstract::AbstractListPtr>();
     py::list ret = py::list(abs_list->size());
     const auto &elements = abs_list->elements();
-    for (size_t i = 0; i < elements.size(); ++i) {
-      ret[i] = ConvertToPyObj(elements[i]);
+    for (size_t i = 0; succ && i < elements.size(); ++i) {
+      auto tmp = ConvertToPyObj(elements[i]);
+      succ = tmp.ptr() != nullptr;
+      ret[i] = tmp;
     }
-    return ret;
+    return succ ? ret : py::object();
   } else if (abs->isa<abstract::AbstractTuple>()) {
     auto abs_tuple = abs->cast<abstract::AbstractTuplePtr>();
     py::tuple ret = py::tuple(abs_tuple->size());
     const auto &elements = abs_tuple->elements();
-    for (size_t i = 0; i < elements.size(); ++i) {
-      ret[i] = ConvertToPyObj(elements[i]);
+    for (size_t i = 0; succ && i < elements.size(); ++i) {
+      auto tmp = ConvertToPyObj(elements[i]);
+      succ = tmp.ptr() != nullptr;
+      ret[i] = tmp;
     }
-    return ret;
+    return succ ? ret : py::object();
   } else if (abs->isa<abstract::AbstractDictionary>()) {
     auto abs_dict = abs->cast<abstract::AbstractDictionaryPtr>();
     py::dict ret = py::dict();
     const auto &key_value_pairs = abs_dict->elements();
-    for (size_t i = 0; i < key_value_pairs.size(); ++i) {
+    for (size_t i = 0; succ && i < key_value_pairs.size(); ++i) {
       py::object key = ConvertToPyObj(key_value_pairs[i].first);
       // The key should be unique.
       key = py::isinstance<py::none>(key) ? py::str(std::to_string(i)) : key;
-      ret[key] = ConvertToPyObj(key_value_pairs[i].second);
+      auto tmp = ConvertToPyObj(key_value_pairs[i].second);
+      succ = tmp.ptr() != nullptr;
+      ret[key] = tmp;
     }
-    return ret;
+    return succ ? ret : py::object();
   }
   return ConvertToPyObjInner(abs);
 }
