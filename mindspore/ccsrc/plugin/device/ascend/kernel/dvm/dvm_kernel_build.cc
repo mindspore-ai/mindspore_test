@@ -70,17 +70,6 @@ ShapeVector GetAxisList(const AnfNodePtr &axis_input) {
   return result;
 }
 
-std::vector<int64_t> GetMatMulPadShape(const AnfNodePtr &node) {
-  constexpr int64_t ALIGN_256 = 256;
-  constexpr int64_t ALIGN_128 = 128;
-  constexpr int64_t ALIGN_32 = 32;
-  auto shape = CheckAndConvertUtils::ConvertShapePtrToShapeMap(node->Shape())[kShape];
-  if (shape.back() % ALIGN_128 == 0 || (shape.back() <= ALIGN_256 && shape.back() % ALIGN_32 == 0)) {
-    return {};
-  }
-  return std::vector<int64_t>{ALIGN_256 - shape.back() % ALIGN_256};
-}
-
 static std::unordered_map<std::string, std::pair<OpType, int>> op_type_map = {
   {"Abs", {OP_UNARY, dvm::UnaryOpType::kAbs}},
   {"Exp", {OP_UNARY, dvm::UnaryOpType::kExp}},
@@ -353,32 +342,7 @@ class OpBuilder {
     }
     auto transpose_a = GetValue<bool>(prim->GetAttr(kTransposeA));
     auto transpose_b = GetValue<bool>(prim->GetAttr(kTransposeB));
-    dvm::NDObject *mix_fusion[kSizeTwo];
-    bool pad_fusion = false;
-    for (size_t i = 0; i < kSizeTwo; i++) {
-      auto input_node = node->input(i + 1);
-      auto pad_shape = GetMatMulPadShape(input_node);
-      shapes_ref_source_->push_back(pad_shape);
-      pad_shape_ref_[i] = std::make_shared<dvm::ShapeRef>(shapes_ref_source_->back());
-      if (!pad_shape.empty()) {
-        pad_fusion = true;
-        kernel_->StageSwitch(dvm::KernelType::kStaticShape);
-        auto load = kernel_->Copy(GetInput(input_node));
-        mix_fusion[i] = kernel_->StagePadStore(load, pad_shape_ref_[i].get());
-      }
-    }
-    if (pad_fusion) {
-      kernel_->StageSwitch(dvm::KernelType::kStaticMix);
-    }
-    for (size_t i = 0; i < kSizeTwo; i++) {
-      auto input_node = node->input(i + 1);
-      if (pad_shape_ref_[i]->size) {
-        mix_fusion[i] = kernel_->StageLoad(mix_fusion[i]);
-      } else {
-        mix_fusion[i] = GetInput(input_node);
-      }
-    }
-    auto op = kernel_->MatMul(mix_fusion[0], mix_fusion[1], transpose_a, transpose_b);
+    auto op = kernel_->MatMul(GetInput(node->input(kIndex1)), GetInput(node->input(kIndex2)), transpose_a, transpose_b);
     EmitOp(node, op);
   }
 
@@ -530,7 +494,6 @@ class OpBuilder {
   std::unordered_map<AnfNodePtr, dvm::NDObject *> ops_map_;
   std::unordered_map<AnfNodePtr, ShapeRefPtr> *shapes_ref_;
   std::vector<ShapeVector> *shapes_ref_source_;
-  ShapeRefPtr pad_shape_ref_[kSizeTwo];
   static std::unordered_map<dvm::DType, TypeId> v_type_map;
   static std::unordered_map<TypeId, dvm::DType> ms_type_map;
   bool empty_input_{false};
@@ -696,13 +659,7 @@ class SingleDvmKernelBuilder : public DvmKernelBuilder {
       return IsPrimitiveCNode(node, prim::kPrimMatMul) || IsPrimitiveCNode(node, prim::kPrimBatchMatMul);
     });
     if (iter != nodes->end()) {
-      auto cnode = (*iter)->cast<CNodePtr>();
       std::rotate(nodes->begin(), iter, iter + 1);
-      for (size_t i = 0; i < kSizeTwo; i++) {
-        if (!GetMatMulPadShape(cnode->input(i + 1)).empty()) {
-          return dvm::KernelType::kStaticStages;
-        }
-      }
       return dvm::KernelType::kStaticMix;
     } else {
       return is_dynamic_ ? dvm::KernelType::kDynShape : dvm::KernelType::kStaticShape;
