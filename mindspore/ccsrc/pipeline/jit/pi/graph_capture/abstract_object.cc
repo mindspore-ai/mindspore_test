@@ -1346,9 +1346,6 @@ bool AbstractTuple::Update() {
   if (!this->IsElementValid()) {
     return false;
   }
-  if (trace_flag_) {
-    return true;
-  }
   this->element_type_ = kTypeAnyValue;
   // copy it
   PyObject *c = (this->type_ == kTypeTuple) ? PyTuple_New(items_.size()) : PyList_New(items_.size());
