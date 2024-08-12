@@ -69,7 +69,10 @@ void ArgMaxFusion::set_output_type(const TypeId output_type) {
 int64_t ArgMaxFusion::get_axis() const { return GetValue<int64_t>(GetAttr(kAxis)); }
 
 TypeId ArgMaxFusion::get_output_type() const {
-  auto type_ptr = GetAttr(kOutputType)->cast<api::TensorTypePtr>()->element();
+  auto output_type = GetAttr(kOutputType);
+  MS_EXCEPTION_IF_NULL(output_type);
+  auto type_ptr = output_type->cast<api::TensorTypePtr>()->element();
+  MS_EXCEPTION_IF_NULL(type_ptr);
   return type_ptr->type_id();
 }
 
