@@ -26,6 +26,9 @@
 #include <pmmintrin.h>
 #include <xmmintrin.h>
 #endif
+#if defined(__aarch64__) && !defined(__APPLE__)
+#include <stdio.h>
+#endif
 #include "plugin/device/cpu/hal/device/cpu_device_address.h"
 #include "mindspore/ops/infer/lp_norm.h"
 #include "kernel/cpu/nnacl/op_base.h"
@@ -52,6 +55,20 @@ std::vector<size_t> CalPhysicalIndexes(const std::vector<size_t> &input_shape,
   }
   return physical_indexes;
 }
+#if defined(__aarch64__) && !defined(__APPLE__)
+void disable_ftz() {
+    uint32_t fpcr;
+    asm volatile ("mrs %0, fpcr" : "=r"(fpcr));
+    fpcr &= ~(1 << 24);
+    asm volatile ("msr fpcr, %0" : : "r"(fpcr));
+}
+void enable_ftz() {
+    uint32_t fpcr;
+    asm volatile ("mrs %0, fpcr" : "=r"(fpcr));
+    fpcr |= (1 << 24);
+    asm volatile ("msr fpcr, %0" : : "r"(fpcr));
+}
+#endif
 }  // namespace
 
 bool LpNormCpuKernelMod::GetReductionAttr() {
@@ -148,11 +165,6 @@ bool LpNormCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> 
   std::vector<std::pair<size_t, T>> reduce_buffer(thread_num, {0, template_zero});
   CTask reduce_task = [this, &input, &output, &reduce_buffer, &thread_num, &template_zero, &template_one](size_t start,
                                                                                                           size_t end) {
-#ifdef PLATFORM_86
-    // Small value should be reserved, or else the value scaling brought by 'pow' will cause precision loss
-    _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_OFF);
-    _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_OFF);
-#endif
     auto stride_per_thread = UP_DIV(input_elements_, thread_num);
     size_t task_id = (start / stride_per_thread);
     T acc = template_zero;
@@ -172,24 +184,20 @@ bool LpNormCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> 
         reduce_buffer[task_id] = {i, acc};
       }
     }
-#ifdef PLATFORM_86
-    _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
-    _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
-#endif
   };
   CTask combine_task = [this, &output](size_t start, size_t end) {
-#ifdef PLATFORM_86
-    _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_OFF);
-    _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_OFF);
-#endif
     for (size_t i = start; i < end; ++i) {
       output[i] = std::max(std::pow(output[i], 1 / p_), epsilon_);
     }
-#ifdef PLATFORM_86
-    _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
-    _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
-#endif
   };
+#ifdef PLATFORM_86
+    // Small value should be reserved, or else the value scaling brought by 'pow' will cause precision loss
+    _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_OFF);
+    _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_OFF);
+#endif
+#if defined(__aarch64__) && !defined(__APPLE__)
+    disable_ftz();
+#endif
   if (is_parallel) {
     ParallelLaunch(reduce_task, input_elements_, 0, this, pool_);
     for (const auto &buffer : reduce_buffer) {
@@ -205,6 +213,13 @@ bool LpNormCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> 
   if (!is_p_zero_) {
     combine_task(0, input_elements_ / reduce_size_);
   }
+#ifdef PLATFORM_86
+    _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
+    _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
+#endif
+#if defined(__aarch64__) && !defined(__APPLE__)
+    enable_ftz();
+#endif
   return true;
 }
 
