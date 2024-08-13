@@ -203,6 +203,7 @@ static bool IsUsedParameter(const FuncGraphPtr &graph, const AnfNodePtr &paramet
   }
   for (auto node_user : node_users) {
     auto use_node = node_user.first->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(use_node);
     if (IsValueNode<FuncGraph>(use_node->input(0))) {
       auto graph_sub = GetValueNode<FuncGraphPtr>(use_node->input(0));
       auto parameters = graph_sub->parameters();
@@ -211,6 +212,7 @@ static bool IsUsedParameter(const FuncGraphPtr &graph, const AnfNodePtr &paramet
     }
     if (use_node->input(0)->isa<CNode>()) {
       auto cnode = use_node->input(0)->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(cnode);
       if (!IsSomePrimitive(cnode, J) || !IsValueNode<FuncGraph>(cnode->input(1))) {
         return true;
       }
@@ -1205,10 +1207,10 @@ void HandleAdaSumConcat(const AnfNodePtr &concat_node, const std::vector<bool> &
                         const std::string &target_param,
                         std::unordered_map<std::string, CNodePtr> *rollback_new_last_node_map,
                         std::unordered_map<std::string, CNodePtr> *rollback_origin_last_node_map) {
-  if (border_info[3]) {
+  if (border_info[THIRD_BORDER_INFO_INDEX]) {
     (*rollback_new_last_node_map)[target_param] = concat_node->cast<CNodePtr>();
   }
-  if (border_info[2]) {
+  if (border_info[SECOND_BORDER_INFO_INDEX]) {
     auto manager = concat_node->func_graph()->manager();
     AnfNodeIndexSet concat_node_user_set = manager->node_users()[concat_node];
     for (auto &node_pair : concat_node_user_set) {

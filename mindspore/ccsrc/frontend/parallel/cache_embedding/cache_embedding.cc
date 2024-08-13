@@ -115,10 +115,12 @@ ParamSet FindParamCacheEnable(const FuncGraphPtr &graph) {
   auto parameters = graph->parameters();
   auto params_size = parameters.size();
   for (size_t i = 0; i < params_size; ++i) {
-    auto param = parameters[i]->cast<ParameterPtr>();
-    auto param_info = param->param_info();
-    if (param_info && param_info->cache_enable()) {
-      parameter_cache_enable_set.insert(param);
+    if (parameters[i]->isa<Parameter>()) {
+      auto param = parameters[i]->cast<ParameterPtr>();
+      auto param_info = param->param_info();
+      if (param_info && param_info->cache_enable()) {
+        parameter_cache_enable_set.insert(param);
+      }
     }
   }
   return parameter_cache_enable_set;

@@ -124,6 +124,7 @@ bool IsIgnoreSplitTensor(const CNodePtr &node, int64_t index) {
 }
 
 std::string GetPrimName(const CNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
   auto prim = GetCNodePrimitive(node);
   if (!prim) {
     return node->DebugString();
@@ -197,11 +198,13 @@ std::pair<AnfNodePtr, int64_t> GetRealKernelNode(const AnfNodePtr &node, int64_t
   if (get_item_index != -1 &&
       (IsPrimitiveCNode(node, prim::kPrimMakeTuple) || IsPrimitiveCNode(node, prim::kPrimInsertGradientOf))) {
     auto make_tuple_cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(make_tuple_cnode);
     auto make_tuple_input = make_tuple_cnode->input(LongToSize(get_item_index + 1));
     return GetRealKernelNode(make_tuple_input, -1, call_node, ignore_get_item);
   }
   if (IsControlFlowNode(node)) {
     auto switch_cnode = node->cast<CNodePtr>()->input(0)->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(switch_cnode);
     auto fg = GetValueNode<FuncGraphPtr>(switch_cnode->input(3));
     return GetRealKernelNode(fg->output(), get_item_index, call_node, ignore_get_item);
   }
@@ -257,6 +260,7 @@ AnfNodePtr CheckMakeTupleSplit(const AnfNodePtr &node, const FuncGraphManagerPtr
   AnfNodePtr first_node;
   for (auto &node_user : node_users) {
     auto user_node = node_user.first->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(user_node);
     if (!user_node->has_user_data<OperatorInfo>()) {
       continue;
     }
@@ -588,6 +592,7 @@ Shapes GetNodeShape(const AnfNodePtr &node) {
   }
   if (node->isa<CNode>() && !IsControlFlowNode(node)) {
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     if (cnode->input(0)->isa<CNode>()) {
       if (cnode->size() < 2) {
         MS_LOG(EXCEPTION) << "GetNodeShape: " << node->ToString() << " size is smaller than 2";
@@ -767,6 +772,7 @@ RankList FindCommonMirrorGroup(const FuncGraphPtr &root) {
   std::vector<AnfNodePtr> all_nodes = DeepScopedGraphSearch(ret);
   bool is_first_group = true;
   for (auto &node : all_nodes) {
+    MS_EXCEPTION_IF_NULL(node);
     if (!IsPrimitiveCNode(node, prim::kPrimMirror) && !IsPrimitiveCNode(node, prim::kPrimMirrorMicroStep) &&
         !IsPrimitiveCNode(node, prim::kPrimMirrorMiniStep)) {
       continue;
@@ -901,6 +907,7 @@ std::pair<std::shared_ptr<AnfNode>, int> BFSParallelCareNode(const AnfNodePtr &n
     auto queue_node = visited.front();
     visited.pop();
     cnode = queue_node.first->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     if (IsParallelCareNode(cnode) || IsAutoParallelCareNode(cnode)) {
       return queue_node;
     } else if (IsValueNode<FuncGraph>(cnode->input(0))) {
