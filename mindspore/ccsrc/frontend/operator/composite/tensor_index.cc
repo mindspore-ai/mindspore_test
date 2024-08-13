@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -189,6 +189,7 @@ FuncGraphPtr TensorIndexGetitem::GenerateFuncGraph(const AbstractBasePtrList &ar
   }
   res_graph_ = std::make_shared<FuncGraph>();
   res_graph_->set_flag(FUNC_GRAPH_FLAG_CORE, true);
+  MS_EXCEPTION_IF_NULL(res_graph_->debug_info());
   res_graph_->debug_info()->set_name("TensorIndexGetitem");
   AnfNodePtr data_node = res_graph_->add_parameter();
   AnfNodePtr index_node = res_graph_->add_parameter();
@@ -316,7 +317,7 @@ AnfNodePtr TensorIndex::SequenceIndexToTensor(const AnfNodePtr &data_node, const
         new_idx = res_graph_->NewCNode(
           {NewValueNode(kPrimScalarCast), new_idx, NewValueNode(static_cast<int64_t>(kNumberTypeInt64))});
       }
-      new_sequence_index_node_inputs.emplace_back(new_idx);
+      (void)new_sequence_index_node_inputs.emplace_back(new_idx);
     }
 
     new_index_node = res_graph_->NewCNode(new_sequence_index_node_inputs);
@@ -403,9 +404,12 @@ std::vector<AnfNodePtr> TensorIndex::NormalizeTupleIndex(const AnfNodePtr &data_
   std::vector<AnfNodePtr> normalized_tensors;
   for (size_t i = 0; i < tuple_abs_ptr->size(); i++) {
     const auto &index_abs = tuple_abs_ptr->elements()[i];
+    MS_EXCEPTION_IF_NULL(index_abs);
     auto new_index_node =
       res_graph_->NewCNode({NewValueNode(kPrimTupleGetItem), index_node, NewValueNode(SizeToLong(i))});
-    const TypeId index_type_id = index_abs->BuildType()->type_id();
+    auto type = index_abs->BuildType();
+    MS_EXCEPTION_IF_NULL(type);
+    const TypeId index_type_id = type->type_id();
     AnfNodePtr shape_node = NewCNode({NewValueNode(prim::kPrimShape), data_node}, res_graph_);
     if (CheckTypeIsInstance<TypeId>(index_type_id,
                                     {kNumberTypeInt8, kNumberTypeInt16, kNumberTypeInt32, kNumberTypeInt64})) {
@@ -421,6 +425,8 @@ std::vector<AnfNodePtr> TensorIndex::NormalizeTupleIndex(const AnfNodePtr &data_
       (void)normalized_tensors.emplace_back(new_index_item);
     } else if (index_type_id == kObjectTypeTensorType) {
       auto tensor_abs = dyn_cast<abstract::AbstractTensor>(index_abs);
+      MS_EXCEPTION_IF_NULL(tensor_abs->element());
+      MS_EXCEPTION_IF_NULL(tensor_abs->element()->BuildType());
       if (!CheckTypeIsInstance<TypeId>(
             tensor_abs->element()->BuildType()->type_id(),
             {kNumberTypeInt8, kNumberTypeInt16, kNumberTypeInt32, kNumberTypeInt64, kNumberTypeBool})) {
@@ -449,7 +455,7 @@ std::vector<AnfNodePtr> TensorIndex::NormalizeTupleIndex(const AnfNodePtr &data_
       MS_EXCEPTION(TypeError)
         << "For 'tensor_setitem_by_tuple', the types only support 'Slice', 'Ellipsis', 'None', 'Tensor', "
            "'int', 'List', 'Tuple', 'bool', but got "
-        << index_abs->BuildType()->ToString();
+        << type->ToString();
     }
   }
   // Normalize ellipse index in tuple by transfer_ellipse_slice because the nums of ellipse occupy dims unknown.
@@ -515,6 +521,8 @@ void TensorIndexGetitem::ConstGetStrideInfoFromTuple(const AnfNodePtr &data_node
     auto new_index_node =
       res_graph_->NewCNode({NewValueNode(kPrimTupleGetItem), index_node, NewValueNode(SizeToLong(i))});
     const auto &index_abs = tuple_abs_ptr->elements()[i];
+    MS_EXCEPTION_IF_NULL(index_abs);
+    MS_EXCEPTION_IF_NULL(index_abs->BuildType());
     const TypeId index_type_id = index_abs->BuildType()->type_id();
     if (index_type_id == kMetaTypeNone) {
       (void)begin_strides.emplace_back(NewValueNode(static_cast<int64_t>(0)));
@@ -522,8 +530,10 @@ void TensorIndexGetitem::ConstGetStrideInfoFromTuple(const AnfNodePtr &data_node
       (void)step_strides.emplace_back(NewValueNode(static_cast<int64_t>(1)));
       index_count += 1;
     } else if (index_type_id == kObjectTypeTensorType) {
+      MS_EXCEPTION_IF_NULL(index_abs->BuildValue());
       auto tensor_abs = index_abs->BuildValue()->cast<mindspore::tensor::TensorPtr>();
       int64_t start = 0;
+      MS_EXCEPTION_IF_NULL(tensor_abs);
       if (tensor_abs->data_type() == kNumberTypeInt64) {
         start = *static_cast<int64_t *>(tensor_abs->data_c());
       } else if (tensor_abs->data_type() == kNumberTypeInt32) {
@@ -634,6 +644,7 @@ void TensorIndexGetitem::GetStrideInfoFromTuple(const AnfNodePtr &data_node, con
     auto new_index_node =
       res_graph_->NewCNode({NewValueNode(kPrimTupleGetItem), index_node, NewValueNode(SizeToLong(i))});
     const auto &index_abs = tuple_abs_ptr->elements()[i];
+    MS_EXCEPTION_IF_NULL(index_abs->BuildType());
     const TypeId index_type_id = index_abs->BuildType()->type_id();
     if (index_type_id == kMetaTypeNone) {
       (void)begin_strides.emplace_back(NewValueNode(MakeValue(static_cast<int64_t>(0))));
@@ -794,11 +805,14 @@ void TensorIndexGetitem::GetItemByTuple(const AnfNodePtr &input_data_node, const
   }
   const auto &indices_abs = tuple_abs_ptr->elements();
   if (std::all_of(indices_abs.begin(), indices_abs.end(), [](AbstractBasePtr index_abs) {
-        if (index_abs->BuildType()->type_id() == kObjectTypeTensorType) {
+        MS_EXCEPTION_IF_NULL(index_abs->BuildType());
+        auto type_id = index_abs->BuildType()->type_id();
+        if (type_id == kObjectTypeTensorType) {
+          MS_EXCEPTION_IF_NULL(index_abs->BuildShape());
           auto index_shape = index_abs->BuildShape()->cast<abstract::ShapePtr>()->shape();
           return index_shape.empty();
         }
-        return CheckTypeIsInstance<TypeId>(index_abs->BuildType()->type_id(),
+        return CheckTypeIsInstance<TypeId>(type_id,
                                            {kNumberTypeInt64, kObjectTypeSlice, kMetaTypeEllipsis, kMetaTypeNone});
       })) {
     GetStrideInfoFromTuple(data_node, index_node, tuple_index_types, index_handle_level, has_ellipsis, tuple_abs_ptr,
@@ -890,6 +904,7 @@ AnfNodePtr PreSetitemByTuple::FormatIndex(const abstract::AbstractBasePtr &index
                                           const std::vector<int64_t> &tuple_index_types, int64_t expand_dims_mask,
                                           bool *empty_sequence) {
   AnfNodePtr new_index_node = index_node;
+  MS_EXCEPTION_IF_NULL(index_abs->BuildType());
   const TypeId index_type_id = index_abs->BuildType()->type_id();
   if (CheckTypeIsInstance<TypeId>(index_type_id,
                                   {kNumberTypeInt8, kNumberTypeInt16, kNumberTypeInt32, kNumberTypeInt64})) {
@@ -900,8 +915,11 @@ AnfNodePtr PreSetitemByTuple::FormatIndex(const abstract::AbstractBasePtr &index
                                            expand_dims_mask, empty_sequence);
   } else if (index_type_id == kObjectTypeTensorType) {
     auto tensor_abs = dyn_cast<abstract::AbstractTensor>(index_abs);
-    if (CheckTypeIsInstance<TypeId>(tensor_abs->element()->BuildType()->type_id(),
-                                    {kNumberTypeInt8, kNumberTypeInt16, kNumberTypeInt32, kNumberTypeInt64})) {
+    MS_EXCEPTION_IF_NULL(tensor_abs->element());
+    auto type = tensor_abs->element()->BuildType();
+    MS_EXCEPTION_IF_NULL(type);
+    auto type_id = type->type_id();
+    if (CheckTypeIsInstance<TypeId>(type_id, {kNumberTypeInt8, kNumberTypeInt16, kNumberTypeInt32, kNumberTypeInt64})) {
       auto cast = prim::GetPythonOps("cast", "mindspore.ops.functional");
       ValueNodePtr cast_vnode = NewValueNode(cast);
       new_index_node = res_graph_->NewCNode({cast_vnode, index_node, NewValueNode(kInt64)});
@@ -919,9 +937,8 @@ AnfNodePtr PreSetitemByTuple::FormatIndex(const abstract::AbstractBasePtr &index
         ValueNodePtr select_vnode = NewValueNode(select);
         new_index_node = res_graph_->NewCNode({select_vnode, less_cnode, add_cnode, new_index_node});
       }
-    } else if (tensor_abs->element()->BuildType()->type_id() != kNumberTypeBool) {
-      MS_EXCEPTION(IndexError) << "The tensor element in tuple index must be int or bool type, but got"
-                               << tensor_abs->element()->BuildType();
+    } else if (type_id != kNumberTypeBool) {
+      MS_EXCEPTION(IndexError) << "The tensor element in tuple index must be int or bool type, but got" << type_id;
     }
   }
   return new_index_node;
@@ -967,7 +984,7 @@ void PreSetitemByTuple::RemoveExpandedDims(const AnfNodePtr &data_node, const An
     const auto &index_abs = tuple_abs_ptr->elements()[i];
     AnfNodePtr new_index_node =
       res_graph_->NewCNode({NewValueNode(kPrimTupleGetItem), index_node, NewValueNode(SizeToLong(i))});
-
+    MS_EXCEPTION_IF_NULL(index_abs->BuildType());
     const TypeId index_type_id = index_abs->BuildType()->type_id();
     bool empty_sequence = false;
     new_index_node =
@@ -995,6 +1012,7 @@ void PreSetitemByTuple::RemoveExpandedDims(const AnfNodePtr &data_node, const An
     } else if (index_type_id == kObjectTypeTensorType) {
       (void)normalized_tensors.emplace_back(new_index_node);
       (void)indices_out_list.emplace_back(new_index_node);
+      MS_EXCEPTION_IF_NULL(index_abs->BuildShape());
       auto tensor_shape = index_abs->BuildShape()->cast<abstract::ShapePtr>()->shape();
       if (IsDynamicRank(tensor_shape)) {
         MS_EXCEPTION(IndexError) << "Tensor index in tuple can not be dynamic rank.";
@@ -1150,6 +1168,7 @@ FuncGraphPtr TensorIndexSetitem::GenerateFuncGraph(const AbstractBasePtrList &ar
   }
   res_graph_ = std::make_shared<FuncGraph>();
   res_graph_->set_flag(FUNC_GRAPH_FLAG_CORE, true);
+  MS_EXCEPTION_IF_NULL(res_graph_->debug_info());
   res_graph_->debug_info()->set_name("TensorIndexSetitem");
   AnfNodePtr data_node = res_graph_->add_parameter();
   AnfNodePtr index_node = res_graph_->add_parameter();
@@ -1178,6 +1197,7 @@ AnfNodePtr TensorIndex::ExpandDimsByTupleIndex(const AnfNodePtr &input_data_node
   size_t data_dim = data_shape_.size() + expand_dims_cnt;
   for (size_t i = 0; i < tuple_abs_ptr->size(); i++) {
     const auto &index_abs = tuple_abs_ptr->elements()[i];
+    MS_EXCEPTION_IF_NULL(index_abs->BuildType());
     const TypeId index_type_id = index_abs->BuildType()->type_id();
     if (index_type_id == kMetaTypeNone || index_type_id == kNumberTypeBool) {
       if (!IsDynamicRank(data_shape_)) {
@@ -1205,6 +1225,7 @@ FuncGraphPtr HandleBoolTensor::GenerateFuncGraph(const AbstractBasePtrList &args
   }
   res_graph_ = std::make_shared<FuncGraph>();
   res_graph_->set_flag(FUNC_GRAPH_FLAG_CORE, true);
+  MS_EXCEPTION_IF_NULL(res_graph_->debug_info());
   res_graph_->debug_info()->set_name("HandleBoolTensor");
 
   AnfNodePtr index_node = res_graph_->add_parameter();
@@ -1220,9 +1241,12 @@ FuncGraphPtr HandleBoolTensor::GenerateFuncGraph(const AbstractBasePtrList &args
     const auto &index_abs = tuple_abs_ptr->elements()[i];
     AnfNodePtr new_index_node =
       res_graph_->NewCNode({NewValueNode(kPrimTupleGetItem), index_node, NewValueNode(SizeToLong(i))});
+    MS_EXCEPTION_IF_NULL(index_abs->BuildType());
     const TypeId index_type_id = index_abs->BuildType()->type_id();
     if (index_type_id == kObjectTypeTensorType) {
       auto tensor_abs = dyn_cast<abstract::AbstractTensor>(index_abs);
+      MS_EXCEPTION_IF_NULL(tensor_abs->element());
+      MS_EXCEPTION_IF_NULL(tensor_abs->element()->BuildType());
       if (tensor_abs->element()->BuildType()->type_id() == kNumberTypeBool) {
         auto tensor_shape = index_abs->BuildShape()->cast<abstract::ShapePtr>()->shape();
         if (IsDynamicRank(tensor_shape)) {
@@ -1267,6 +1291,7 @@ FuncGraphPtr PreSetitemByTuple::GenerateFuncGraph(const AbstractBasePtrList &arg
   }
   res_graph_ = std::make_shared<FuncGraph>();
   res_graph_->set_flag(FUNC_GRAPH_FLAG_CORE, true);
+  MS_EXCEPTION_IF_NULL(res_graph_->debug_info());
   res_graph_->debug_info()->set_name("HandleZeroTupleIndex");
   AnfNodePtr data_node = res_graph_->add_parameter();
   AnfNodePtr index_node = res_graph_->add_parameter();

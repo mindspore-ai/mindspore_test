@@ -72,6 +72,7 @@ void ProcessDefault(const std::string &func_name, size_t actual_param_number, co
 void GetTypeInfo(const std::vector<TypePtr> &input_types, std::vector<TypeId> *args_type_id,
                  std::vector<bool> *args_has_tensor) {
   for (const auto &arg_type : input_types) {
+    MS_EXCEPTION_IF_NULL(arg_type);
     if (arg_type->isa<Number>()) {
       (void)args_type_id->emplace_back(arg_type->cast<NumberPtr>()->type_id());
       (void)args_has_tensor->emplace_back(false);
@@ -229,7 +230,7 @@ std::vector<AnfNodePtr> GetNewInputsBySignatures(const FuncGraphPtr &func_graph,
           }
         }
       } else if (sig == SignatureEnumRW::kRWWrite) {
-        write_indices.insert(i);
+        (void)write_indices.insert(i);
       }
       // If sig is SignatureEnumRW::kRWRef, not do anything.
     } else if (sig == SignatureEnumRW::kRWWrite &&

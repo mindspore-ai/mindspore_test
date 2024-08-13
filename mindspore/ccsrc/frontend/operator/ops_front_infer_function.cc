@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2023 Huawei Technologies Co., Ltd
+ * Copyright 2019-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -149,7 +149,9 @@ AbstractBasePtr InferImplTopTypeof(const AnalysisEnginePtr &, const PrimitivePtr
   }
   AbstractBasePtr abs_base = args_abs_list[0];
   MS_EXCEPTION_IF_NULL(abs_base);
-  TypeId type_id = abs_base->BuildType()->type_id();
+  auto type = abs_base->BuildType();
+  MS_EXCEPTION_IF_NULL(type);
+  TypeId type_id = type->type_id();
   return std::make_shared<AbstractType>(TypeIdToType(type_id));
 }
 
@@ -528,10 +530,14 @@ AbstractBasePtr InferImplBroadcastGradientArgs(const AnalysisEnginePtr &, const 
   auto arg_x = CheckArg<AbstractTuple>(op_name, args_abs_list, 0);
   auto arg_y = CheckArg<AbstractTuple>(op_name, args_abs_list, 1);
 
-  auto arg_x_value = arg_x->BuildValue()->cast<ValueTuplePtr>();
+  auto x_value = arg_x->BuildValue();
+  MS_EXCEPTION_IF_NULL(x_value);
+  auto arg_x_value = x_value->cast<ValueTuplePtr>();
   MS_EXCEPTION_IF_NULL(arg_x_value);
 
-  auto arg_y_value = arg_y->BuildValue()->cast<ValueTuplePtr>();
+  auto y_value = arg_y->BuildValue();
+  MS_EXCEPTION_IF_NULL(y_value);
+  auto arg_y_value = y_value->cast<ValueTuplePtr>();
   MS_EXCEPTION_IF_NULL(arg_y_value);
 
   const std::vector<ValuePtr> x_shape = arg_x_value->value();
@@ -776,7 +782,7 @@ AbstractBasePtr InferImplMakeSlice(const AnalysisEnginePtr &, const PrimitivePtr
           MS_EXCEPTION(TypeError) << "The input tensor of the MakeSlice operator must contain only one element,"
                                   << "but " << value->ToString() << " has " << value->DataSize() << " elements.";
         }
-
+        MS_EXCEPTION_IF_NULL(tensor_dtype);
         if (tensor_dtype->isa<Bool>()) {
           auto *bool_value = static_cast<bool *>(value->data_c());
           slice_args.push_back(MakeValue((static_cast<int64_t>(*bool_value)))->ToAbstract());
@@ -822,7 +828,7 @@ AbstractBasePtr InferImplJ(const AnalysisEnginePtr &, const PrimitivePtr &primit
                            const AbstractBasePtrList &args_abs_list) {
   // args: An object of AbstractFunction.
   CheckArgsSize(primitive->name(), args_abs_list, 1);
-  MS_LOG(DEBUG) << "evaluate J: " << args_abs_list[0]->ToString();
+  MS_LOG(DEBUG) << "Evaluate J: " << args_abs_list[0]->ToString();
 
   AbstractFunctionPtr x = dyn_cast<AbstractFunction>(args_abs_list[0]);
   if (x == nullptr) {
@@ -843,7 +849,7 @@ AbstractBasePtr InferImplTaylor(const AnalysisEnginePtr &, const PrimitivePtr &p
                                 const AbstractBasePtrList &args_abs_list) {
   // args: An object of AbstractFunction.
   CheckArgsSize(primitive->name(), args_abs_list, 1);
-  MS_LOG(DEBUG) << "evaluate Taylor: " << args_abs_list[0]->ToString();
+  MS_LOG(DEBUG) << "Evaluate Taylor: " << args_abs_list[0]->ToString();
 
   AbstractFunctionPtr x = dyn_cast<AbstractFunction>(args_abs_list[0]);
   MS_EXCEPTION_IF_NULL(x);
@@ -862,14 +868,14 @@ AbstractBasePtr InferImplReusing(const AnalysisEnginePtr &, const PrimitivePtr &
                                  const AbstractBasePtrList &args_abs_list) {
   // args: An object of AbstractFunction.
   CheckArgsSize(primitive->name(), args_abs_list, 1);
-  MS_LOG(DEBUG) << "evaluate Reusing: " << args_abs_list[0]->ToString();
+  MS_LOG(DEBUG) << "Evaluate Reusing: " << args_abs_list[0]->ToString();
   AbstractFunctionPtr x = dyn_cast<AbstractFunction>(args_abs_list[0]);
   MS_EXCEPTION_IF_NULL(x);
   auto set_graph_no_inline = [](const AbstractFuncAtomPtr &func) {
     auto fg_closure = dyn_cast<FuncGraphAbstractClosure>(func);
     if (fg_closure != nullptr) {
       fg_closure->func_graph()->set_flag(FUNC_GRAPH_FLAG_NO_INLINE, true);
-      MS_LOG(DEBUG) << " Reusing: " << func->ToString()
+      MS_LOG(DEBUG) << "Reusing: " << func->ToString()
                     << " no_inline: " << fg_closure->func_graph()->has_flag(FUNC_GRAPH_FLAG_NO_INLINE);
     }
   };
@@ -951,6 +957,8 @@ void GetStringAndNumberFromAbstract(const std::string &op_name, const AbstractBa
   ValuePtr value_y = scalar_y->BuildValue();
 
   bool is_match = false;
+  MS_EXCEPTION_IF_NULL(value_x);
+  MS_EXCEPTION_IF_NULL(value_y);
   if (value_x->isa<StringImm>()) {
     *str = GetValue<std::string>(value_x);
     if (value_y->isa<Int32Imm>()) {

@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Huawei Technologies Co., Ltd
+ * Copyright 2022-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -343,8 +343,9 @@ FuncGraphPtr VmapGeneralPreprocess::GenerateFuncGraph(const AbstractBasePtrList 
       inputs_size = tuple_elements_num + inputs_size - 1;
       offset = 0;
       AbstractBasePtrList unfold_args_abs_list(arg_tuple_elements.begin(), arg_tuple_elements.end());
-      unfold_args_abs_list.insert(unfold_args_abs_list.end(), args_abs_list.begin() + 2,
-                                  args_abs_list.end());  // the maybe left inputs.
+      constexpr size_t unfold_index = 2;
+      (void)unfold_args_abs_list.insert(unfold_args_abs_list.end(), args_abs_list.begin() + unfold_index,
+                                        args_abs_list.end());  // the maybe left inputs.
       return unfold_args_abs_list;
     }
     return args_abs_list;
@@ -472,8 +473,8 @@ FuncGraphPtr VmapGeneralRule::GenerateFuncGraph(const AbstractBasePtrList &args_
       tuple_elements_num = arg_tuple_elements.size();
       args_size = tuple_elements_num + args_size - 1;
       AbstractBasePtrList unfold_args_abs_list(arg_tuple_elements.begin(), arg_tuple_elements.end());
-      unfold_args_abs_list.insert(unfold_args_abs_list.end(), args_abs_list.begin() + 1,
-                                  args_abs_list.end());  // the maybe left inputs.
+      (void)unfold_args_abs_list.insert(unfold_args_abs_list.end(), args_abs_list.begin() + 1,
+                                        args_abs_list.end());  // the maybe left inputs.
       return unfold_args_abs_list;
     }
 
@@ -526,8 +527,8 @@ FuncGraphPtr VmapGeneralRule::GenerateFuncGraph(const AbstractBasePtrList &args_
       auto tuple_cnode = fg_->NewCNode(tuple_cnode_inputs);
       output_element_cnode_inputs.push_back(NewValueNode(prim_));
       output_element_cnode_inputs.push_back(tuple_cnode);
-      output_element_cnode_inputs.insert(output_element_cnode_inputs.end(), map_input.cbegin() + tuple_elements_num,
-                                         map_input.cend());
+      (void)output_element_cnode_inputs.insert(output_element_cnode_inputs.end(),
+                                               map_input.cbegin() + tuple_elements_num, map_input.cend());
     } else {
       output_element_cnode_inputs.push_back(NewValueNode(prim_));
       (void)output_element_cnode_inputs.insert(output_element_cnode_inputs.cend(), map_input.cbegin(),
