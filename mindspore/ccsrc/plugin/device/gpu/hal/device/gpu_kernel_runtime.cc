@@ -786,7 +786,7 @@ bool GPUKernelRuntime::LaunchKernelDynamic(const session::KernelGraph *graph, bo
       auto inputs = AnfAlgo::GetOrCreateAllInputKernelTensors(kernel);
       auto outputs = AnfAlgo::GetOrCreateAllOutputKernelTensors(kernel);
       if (gpu_kernel->Resize(inputs, outputs) == kernel::KRET_RESIZE_FAILED) {
-        MS_LOG(EXCEPTION) << "Node " << kernel->fullname_with_scope() << " Resize failed.";
+        MS_LOG_WITH_NODE(EXCEPTION, kernel) << "Node " << kernel->fullname_with_scope() << " Resize failed.";
       }
     }
 
@@ -885,7 +885,7 @@ void GPUKernelRuntime::LaunchKernelWithoutMock(const session::KernelGraph *graph
 #ifdef ENABLE_DUMP_IR
       mindspore::RDR::TriggerAll();
 #endif
-      MS_LOG(EXCEPTION) << "Launch kernel failed: " << kernel->fullname_with_scope();
+      MS_LOG_WITH_NODE(EXCEPTION, kernel) << "Launch kernel failed: " << kernel->fullname_with_scope();
     }
 #ifndef ENABLE_SECURITY
     if (profiler_inst->GetEnableFlag() && profiler_inst->GetOpTimeFlag()) {
@@ -919,7 +919,7 @@ bool GPUKernelRuntime::RunOpLaunchKernelDynamic(const session::KernelGraph *grap
       auto inputs = AnfAlgo::GetOrCreateAllInputKernelTensors(kernel);
       auto outputs = AnfAlgo::GetOrCreateAllOutputKernelTensors(kernel);
       if (gpu_kernel->Resize(inputs, outputs) == kernel::KRET_RESIZE_FAILED) {
-        MS_LOG(EXCEPTION) << "Node " << kernel->fullname_with_scope() << " Resize failed.";
+        MS_LOG_WITH_NODE(EXCEPTION, kernel) << "Node " << kernel->fullname_with_scope() << " Resize failed.";
       }
     }
     // alloc kernel res

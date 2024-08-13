@@ -173,9 +173,9 @@ void CheckCNodeInputSize(const CNodePtr &cnode, size_t input_tensor_size) {
   MS_EXCEPTION_IF_NULL(cnode);
   auto real_input_tensor_num = common::AnfAlgo::GetInputTensorNum(cnode);
   if (real_input_tensor_num != input_tensor_size) {
-    MS_LOG(EXCEPTION) << "The input tensor size[" << real_input_tensor_num
-                      << "] of node [" + cnode->DebugString() + "] is not equal to " << input_tensor_size
-                      << trace::DumpSourceLines(cnode);
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "The input tensor size[" << real_input_tensor_num
+                                       << "] of node [" + cnode->DebugString() + "] is not equal to "
+                                       << input_tensor_size << trace::DumpSourceLines(cnode);
   }
 }
 
@@ -1418,7 +1418,8 @@ size_t GetInputNodeIndex(const AnfNodePtr &input, const CNodePtr &user_node) {
   AnfNodePtrList input_list = user_node->inputs();
   auto pos = std::find(input_list.begin(), input_list.end(), input);
   if (pos == input_list.end()) {
-    MS_LOG(EXCEPTION) << input->fullname_with_scope() << " is not the input of " << user_node->fullname_with_scope();
+    MS_LOG_WITH_NODE(EXCEPTION, user_node)
+      << input->fullname_with_scope() << " is not the input of " << user_node->fullname_with_scope();
   }
 
   // The first input is Primitive and needs to be skipped.

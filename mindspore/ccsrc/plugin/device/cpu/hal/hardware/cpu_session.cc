@@ -72,7 +72,7 @@ ParameterPtr CPUSession::CreateNewParameterFromParameter(const AnfNodePtr &anf, 
   MS_EXCEPTION_IF_NULL(anf);
   MS_EXCEPTION_IF_NULL(graph);
   if (!anf->isa<Parameter>()) {
-    MS_LOG(EXCEPTION) << "anf[" << anf->DebugString() << "] is not a parameter";
+    MS_LOG_WITH_NODE(EXCEPTION, anf) << "anf[" << anf->DebugString() << "] is not a parameter";
   }
   auto valid_inputs = graph->MutableValidInputs();
   auto graph_inputs = graph->MutableInputs();
@@ -293,7 +293,7 @@ void KernelNotSupportException(const AnfNodePtr &kernel_node) {
     operator_info << ") ";
   }
   operator_info << "is not support.";
-  MS_LOG(EXCEPTION) << operator_info.str() << trace::DumpSourceLines(kernel_node);
+  MS_LOG_WITH_NODE(EXCEPTION, kernel_node) << operator_info.str() << trace::DumpSourceLines(kernel_node);
 }
 }  // namespace
 
@@ -326,10 +326,11 @@ void CPUSession::BuildKernel(const KernelGraph *kernel_graph) const {
     auto outputs = AnfAlgo::GetOrCreateAllOutputKernelTensors(kernel_node);
     auto ret = cpu_kernel_mod->Init(inputs, outputs);
     if (!ret) {
-      MS_LOG(EXCEPTION) << trace::DumpSourceLines(kernel_node);
+      MS_LOG_WITH_NODE(EXCEPTION, kernel_node) << trace::DumpSourceLines(kernel_node);
     }
     if (cpu_kernel_mod->Resize(inputs, outputs) == static_cast<int>(kernel::KRET_RESIZE_FAILED)) {
-      MS_LOG(EXCEPTION) << "CPU kernel op [" << kernel_node->fullname_with_scope() << "] Resize failed.";
+      MS_LOG_WITH_NODE(EXCEPTION, kernel_node)
+        << "CPU kernel op [" << kernel_node->fullname_with_scope() << "] Resize failed.";
     }
     AnfAlgo::SetKernelMod(cpu_kernel_mod, kernel_node.get());
     MS_LOG(INFO) << "Cpu build success operator[" << kernel_name << "].";

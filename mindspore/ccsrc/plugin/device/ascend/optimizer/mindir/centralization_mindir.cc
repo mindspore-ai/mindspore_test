@@ -56,8 +56,9 @@ std::vector<int64_t> GetReduceMeanInferShape(const CNodePtr &cnode) {
 
   for (size_t i = 0; i < axis_value.size(); i++) {
     if (LongToSize(axis_value[i]) > output_shape.size()) {
-      MS_LOG(EXCEPTION) << "Axis " << axis_value[i] << " is out of range [0, " << output_shape.size() << ")"
-                        << ", node: " << cnode->fullname_with_scope();
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Axis " << axis_value[i] << " is out of range [0, " << output_shape.size()
+                                         << ")"
+                                         << ", node: " << cnode->fullname_with_scope();
     }
     output_shape[axis_value[i]] = 1;
   }

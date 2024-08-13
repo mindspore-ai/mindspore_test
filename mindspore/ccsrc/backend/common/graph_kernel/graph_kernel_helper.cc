@@ -211,10 +211,10 @@ ShapeVector GetShape(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(abstract);
   auto shape = abstract->GetShapeTrack();
   if (shape == nullptr) {
-    MS_LOG(EXCEPTION) << "The shape of node " << node->fullname_with_scope() << " is nullptr";
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "The shape of node " << node->fullname_with_scope() << " is nullptr";
   } else if (!shape->isa<abstract::Shape>()) {
-    MS_LOG(EXCEPTION) << "The shape of node " << node->fullname_with_scope() << " should be of type Shape, but got "
-                      << shape->ToString();
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "The shape of node " << node->fullname_with_scope()
+                                      << " should be of type Shape, but got " << shape->ToString();
   }
   auto shape_vec = shape->cast<abstract::ShapePtr>()->shape();
   if (shape_vec.empty()) {
@@ -242,8 +242,8 @@ std::vector<int64_t> GetReduceAxis(const AnfNodePtr &node) {
       if (value->isa<Int64Imm>()) {
         axis.push_back(GetValue<int64_t>(value));
       } else {
-        MS_LOG(EXCEPTION) << "Element in attribute 'axis' should be of type int64 in node "
-                          << node->fullname_with_scope();
+        MS_LOG_WITH_NODE(EXCEPTION, node)
+          << "Element in attribute 'axis' should be of type int64 in node " << node->fullname_with_scope();
       }
     }
   } else if (v->isa<Int64Imm>()) {
@@ -251,7 +251,8 @@ std::vector<int64_t> GetReduceAxis(const AnfNodePtr &node) {
   } else if (v->isa<tensor::Tensor>()) {
     axis = CheckAndConvertUtils::CheckTensorIntValue("axis", v, "ReduceSum");
   } else {
-    MS_LOG(EXCEPTION) << "Attribute 'axis' should be a list or tuple in node " << node->fullname_with_scope();
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "Attribute 'axis' should be a list or tuple in node "
+                                      << node->fullname_with_scope();
   }
 
   return axis;

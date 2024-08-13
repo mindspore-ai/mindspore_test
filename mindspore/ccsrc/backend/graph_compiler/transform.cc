@@ -307,7 +307,7 @@ void CompileGraph::AddPartial(const CNodePtr &node) {
   auto inputs = node->inputs();
   VectorRef args;
   if (inputs.size() <= 1) {
-    MS_LOG(EXCEPTION) << "The node:" << node->DebugString() << "do not have two input.";
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "The node:" << node->DebugString() << "do not have two input.";
   }
   auto fn = inputs[1];
   if (!IsValueNode<FuncGraph>(fn)) {
@@ -360,7 +360,7 @@ void CompileGraph::AddReturn(const CNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
   VectorRef args;
   if (node->size() <= 1) {
-    MS_LOG(EXCEPTION) << "The node:" << node->DebugString() << "do not have two input.";
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "The node:" << node->DebugString() << "do not have two input.";
   }
   args.emplace_back(Ref(node->input(1)));
   args.emplace_back(height_);

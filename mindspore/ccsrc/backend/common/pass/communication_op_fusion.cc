@@ -381,7 +381,8 @@ static void AdjustAllReduceInputWithLoad(const CNodePtr &cnode) {
       return false;
     }
     if (search_cnode->size() != load_inputs_size) {
-      MS_LOG(EXCEPTION) << "Load CNode should have 3 inputs, but: " << search_cnode->DebugString();
+      MS_LOG_WITH_NODE(EXCEPTION, search_cnode)
+        << "Load CNode should have 3 inputs, but: " << search_cnode->DebugString();
     }
     return search_cnode->input(monad_index)->isa<CNode>();
   });

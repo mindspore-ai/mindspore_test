@@ -301,7 +301,7 @@ BaseRef CreateNodeOutputPlaceholder(const session::KernelWithIndex &node_output_
         return input_tensors[input_idx];
       }
     }
-    MS_LOG(EXCEPTION) << "Parameter: " << node->DebugString() << " has no output addr";
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "Parameter: " << node->DebugString() << " has no output addr";
   }
   (*output_indexes)[node_output_pair].emplace_back(indexes);
   BaseRef output_placeholder = std::make_shared<BaseRef>();
@@ -344,15 +344,17 @@ void CheckInputTensorShape(const tensor::BaseTensorPtr &tensor, const CNodePtr &
   const auto &tensor_shape = tensor->shape();
   const auto input_shape = common::AnfAlgo::GetPrevNodeOutputInferShape(kernel, input_index);
   if (tensor_shape.size() != input_shape.size()) {
-    MS_LOG(EXCEPTION) << "The input tensor's shape size: " << tensor_shape.size()
-                      << " is not equal to expected size: " << input_shape.size() << " for input[" << input_index
-                      << "] of kernel: " << common::AnfAlgo::GetCNodeName(kernel) << trace::DumpSourceLines(kernel);
+    MS_LOG_WITH_NODE(EXCEPTION, kernel) << "The input tensor's shape size: " << tensor_shape.size()
+                                        << " is not equal to expected size: " << input_shape.size() << " for input["
+                                        << input_index << "] of kernel: " << common::AnfAlgo::GetCNodeName(kernel)
+                                        << trace::DumpSourceLines(kernel);
   }
   for (size_t i = 0; i < tensor_shape.size(); i++) {
     if (tensor_shape[i] < 0 || (tensor_shape[i] != input_shape[i] && input_shape[i] >= 0)) {
-      MS_LOG(EXCEPTION) << "The input tensor's shape: " << tensor_shape
-                        << " is not equal to expected shape: " << input_shape << " for input[" << input_index
-                        << "] of kernel: " << common::AnfAlgo::GetCNodeName(kernel) << trace::DumpSourceLines(kernel);
+      MS_LOG_WITH_NODE(EXCEPTION, kernel)
+        << "The input tensor's shape: " << tensor_shape << " is not equal to expected shape: " << input_shape
+        << " for input[" << input_index << "] of kernel: " << common::AnfAlgo::GetCNodeName(kernel)
+        << trace::DumpSourceLines(kernel);
     }
   }
 }
@@ -428,7 +430,7 @@ BackendOpRunInfoPtr SessionBasic::GetSingleOpRunInfo(const CNodePtr &cnode, cons
   MS_EXCEPTION_IF_NULL(primitive);
   const auto &abstract = cnode->abstract();
   if (abstract == nullptr) {
-    MS_LOG(EXCEPTION) << "Abstract is nullptr, node = " << cnode->DebugString();
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Abstract is nullptr, node = " << cnode->DebugString();
   }
   const auto &shape = abstract->BuildShape();
   MS_EXCEPTION_IF_NULL(shape);
@@ -499,13 +501,15 @@ void SessionBasic::GetParameterIndex(const KernelGraph *graph, const std::vector
             parameter_index->emplace(param, index++);
             continue;
           }
-          MS_LOG(EXCEPTION) << "Shape size of input tensor(" << input_shape << ") and parameter(" << param_shape
-                            << ") are different, input index: " << index << ", parameter: " << param->DebugString();
+          MS_LOG_WITH_NODE(EXCEPTION, param)
+            << "Shape size of input tensor(" << input_shape << ") and parameter(" << param_shape
+            << ") are different, input index: " << index << ", parameter: " << param->DebugString();
         }
         for (size_t i = 0; i < input_shape.size(); i += 1) {
           if (input_shape[i] < 0 || (!is_parallel_forward_jit && input_shape[i] != param_shape[i] && !is_dynamic)) {
-            MS_LOG(EXCEPTION) << "Input tensor shape(" << input_shape << ") and parameter shape(" << param_shape
-                              << ") are different, input index: " << index << ", parameter: " << param->DebugString();
+            MS_LOG_WITH_NODE(EXCEPTION, param)
+              << "Input tensor shape(" << input_shape << ") and parameter shape(" << param_shape
+              << ") are different, input index: " << index << ", parameter: " << param->DebugString();
           }
         }
       }
@@ -666,7 +670,7 @@ void SessionBasic::HandleOpOutputs(const AnfNodePtr &kernel, const VectorRef &op
     output_values = common::AnfAlgo::TransformVectorRefToMultiValue(op_outputs);
   }
   if (output_values.size() > op_outputs.size()) {
-    MS_LOG(EXCEPTION) << "Op output contains tuple, node = " << kernel->DebugString();
+    MS_LOG_WITH_NODE(EXCEPTION, kernel) << "Op output contains tuple, node = " << kernel->DebugString();
   }
   size_t out_index = 0;
   for (const auto &output_value : output_values) {
@@ -760,7 +764,7 @@ TensorPtr SessionBasic::GetParameterOutputTensor(const AnfNodePtr &node,
   }
   const auto &iter = parameter_index.find(node);
   if (iter == parameter_index.end()) {
-    MS_LOG(EXCEPTION) << "Can not find parameter input of cnode, parameter = " << node->DebugString();
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "Can not find parameter input of cnode, parameter = " << node->DebugString();
   }
   const size_t index = iter->second;
   if (index >= graph_inputs.size()) {
@@ -874,7 +878,7 @@ void SessionBasic::GetOpInputTensors(const CNodePtr &cnode,
       input_info->input_kernel.insert(kernel_with_index);
       input_info->input_types.emplace_back(tensor->is_parameter() ? InputType::kParameter : InputType::kOpOutput);
     } else {
-      MS_LOG(EXCEPTION) << "Invalid input node, node = " << real_input->DebugString();
+      MS_LOG_WITH_NODE(EXCEPTION, real_input) << "Invalid input node, node = " << real_input->DebugString();
     }
     MS_EXCEPTION_IF_NULL(input_value);
     MS_LOG(DEBUG) << "Get" << i << "th input tensor of " << cnode->fullname_with_scope() << " from "
@@ -931,7 +935,7 @@ void SessionBasic::GetOpInputTensorsFromCNode(const CNodePtr &cnode,
       auto tensor = GetParameterOutputTensor(real_input, parameter_index, graph_inputs);
       input_value = tensor;
     } else {
-      MS_LOG(EXCEPTION) << "Invalid input node, node = " << real_input->DebugString();
+      MS_LOG_WITH_NODE(EXCEPTION, real_input) << "Invalid input node, node = " << real_input->DebugString();
     }
     return input_value;
   };
@@ -964,7 +968,8 @@ tensor::BaseTensorPtr SessionBasic::GetOpInputTensorByIndex(
   MS_EXCEPTION_IF_NULL(cnode);
   MS_EXCEPTION_IF_NULL(input_info);
   if (input_index >= cnode->size() - 1) {
-    MS_LOG(EXCEPTION) << "Input index is out of range:" << cnode->size() << ",cnode:" << cnode->DebugString();
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Input index is out of range:" << cnode->size()
+                                       << ",cnode:" << cnode->DebugString();
   }
 
   const auto &input = cnode->input(input_index + 1);
@@ -982,7 +987,7 @@ tensor::BaseTensorPtr SessionBasic::GetOpInputTensorByIndex(
     input_info->input_kernel.insert(kernel_with_index);
     return tensor;
   } else {
-    MS_LOG(EXCEPTION) << "Invalid input node, node = " << real_input->DebugString();
+    MS_LOG_WITH_NODE(EXCEPTION, real_input) << "Invalid input node, node = " << real_input->DebugString();
   }
 }
 

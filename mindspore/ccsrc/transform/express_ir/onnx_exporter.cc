@@ -606,7 +606,7 @@ const std::shared_ptr<T> GetNodeInput(const CNodePtr &node, size_t i) {
   auto input = GetRealInput(node->input(i));
   auto result = dyn_cast<T>(input);
   if (result == nullptr) {
-    MS_LOG(EXCEPTION) << "Failed to get input " << i << " of node " << node->DebugString();
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "Failed to get input " << i << " of node " << node->DebugString();
   }
   return result;
 }
@@ -616,7 +616,7 @@ const std::shared_ptr<T> GetNodeInputValue(const CNodePtr &node, size_t i) {
   auto input = GetNodeInput<ValueNode>(node, i);
   auto result = dyn_cast<T>(input->value());
   if (result == nullptr) {
-    MS_LOG(EXCEPTION) << "Failed to get a value from input " << i << " of node " << node->DebugString();
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "Failed to get a value from input " << i << " of node " << node->DebugString();
   }
   return result;
 }
@@ -1492,8 +1492,9 @@ void OnnxExporter::SetValueInfoType(const AnfNodePtr &node, onnx::ValueInfoProto
     auto base_shape = tuple_shape->shape().at(static_cast<size_t>(output_index));
     output_shape = dyn_cast<abstract::Shape>(base_shape);
     if (output_shape == nullptr) {
-      MS_LOG(EXCEPTION) << "Expected " << node->ToString() << " to output a tuple of tensors. Instead got "
-                        << base_shape->ToString() << " from output " << output_index;
+      MS_LOG_WITH_NODE(EXCEPTION, node) << "Expected " << node->ToString()
+                                        << " to output a tuple of tensors. Instead got " << base_shape->ToString()
+                                        << " from output " << output_index;
     }
   } else if (shape->isa<abstract::Shape>()) {
     output_shape = dyn_cast<abstract::Shape>(shape);
@@ -1569,7 +1570,8 @@ void OnnxExporter::MatchAndMarkCNode(const FuncGraphPtr &func_graph, const CNode
   });
   if (rule != first_input_merge_rules.end()) {
     if (cnode->IsApply(prim::kPrimTupleGetItem) && GetInt64Value(cnode->input(kTwoNum)) != 0) {
-      MS_LOG(EXCEPTION) << "Multiple outputs for node \"" << cnode->input(1)->ToString() << "\" are not supported";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Multiple outputs for node \"" << cnode->input(1)->ToString()
+                                         << "\" are not supported";
     }
     op_merged_infos[cnode].mode = rule->merge_mode;
     ignore(cnode->input(1));
@@ -1731,7 +1733,7 @@ void OnnxExporter::ExportPrimReduce(const FuncGraphPtr &, const CNodePtr &node,
   } else if (node->IsApply(prim::kPrimReduceMax)) {
     name = "ReduceMax";
   } else {
-    MS_LOG(EXCEPTION) << "Unsupported reduce op: " << node->ToString();
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "Unsupported reduce op: " << node->ToString();
   }
 
   std::vector<int64_t> axes;
@@ -1771,7 +1773,7 @@ void OnnxExporter::ExportPrimReduceAnyOrAll(const FuncGraphPtr &, const CNodePtr
   } else if (node->IsApply(prim::kPrimReduceAll)) {
     target_node_name = "ReduceMin";
   } else {
-    MS_LOG(EXCEPTION) << "Unsupported reduce op: " << node->ToString();
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "Unsupported reduce op: " << node->ToString();
   }
 
   std::string cast_name = GenerateUniqueName();  // Insert cast op
@@ -4648,7 +4650,7 @@ std::string OnnxExporter::GetNodeInputName(const AnfNodePtr &orig_node, std::map
   }
 
   if (node->isa<CNode>() || (node->isa<Parameter>() && !node->cast<ParameterPtr>()->has_default())) {
-    MS_LOG(EXCEPTION) << "Can not find node '" << node->DebugString() << "' in node_map";
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "Can not find node '" << node->DebugString() << "' in node_map";
   }
 
   // for ValueNode or Parameter with default input, create an initializer

@@ -49,7 +49,8 @@ bool IsPreNodeReduce(const FuncGraphPtr &, const AnfNodePtr &node, bool is_tuple
   if (is_tuple_out) {
     auto tuple_output = gk_graph->output()->cast<CNodePtr>();
     if (common::AnfAlgo::GetCNodeName(tuple_output) != prim::kPrimMakeTuple->name()) {
-      MS_LOG(EXCEPTION) << "Expect MakeTuple node, but got " << common::AnfAlgo::GetCNodeName(tuple_output);
+      MS_LOG_WITH_NODE(EXCEPTION, tuple_output)
+        << "Expect MakeTuple node, but got " << common::AnfAlgo::GetCNodeName(tuple_output);
     }
     auto input_node = tuple_output->input(index + 1);
     if (common::AnfAlgo::GetCNodeName(input_node) == prim::kPrimReduceSum->name()) {

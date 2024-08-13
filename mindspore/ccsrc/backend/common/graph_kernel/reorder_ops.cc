@@ -47,7 +47,7 @@ enum CastType { CAST_UP, CAST_DOWN, CAST_OTHER };
 CastType GetCastType(const CNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
   if (!IsPrimitiveCNode(node, prim::kPrimCast)) {
-    MS_LOG(EXCEPTION) << "Expect Cast node, but got " << common::AnfAlgo::GetCNodeName(node);
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "Expect Cast node, but got " << common::AnfAlgo::GetCNodeName(node);
   }
   TypeId input_type = AnfAlgo::GetInputDeviceDataType(node, 0);
   TypeId output_type = AnfAlgo::GetOutputDeviceDataType(node, 0);
@@ -101,7 +101,8 @@ void SetNodeInfo(const CNodePtr &orig_node, const CNodePtr &new_node, const Node
 
   AbstractBasePtr new_abstract{nullptr};
   if (node_io_info.outputs_type.empty()) {
-    MS_LOG(EXCEPTION) << "Can not set empty output type of new node from " << orig_node->fullname_with_scope();
+    MS_LOG_WITH_NODE(EXCEPTION, orig_node)
+      << "Can not set empty output type of new node from " << orig_node->fullname_with_scope();
   }
   if (node_name == "Cast") {
     auto node_input = common::AnfAlgo::GetInputNode(new_node, 0);
@@ -146,7 +147,7 @@ void ReorderOps::SetTypeInsensitiveNodeInputs(const CNodePtr &node, const std::v
 
   auto node_inputs_num = node->size();
   if (node_inputs_num == 0) {
-    MS_LOG(EXCEPTION) << "Inputs num is 0 in node " << node->fullname_with_scope();
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "Inputs num is 0 in node " << node->fullname_with_scope();
   }
 
   // node's inputs at indexes change to new_input_at_indexes
@@ -178,7 +179,7 @@ void ReorderOps::SetTypeInsensitiveNodeInputsInfo(const CNodePtr &node, const st
 
   auto node_inputs_num = node->size();
   if (node_inputs_num == 0) {
-    MS_LOG(EXCEPTION) << "Inputs num is 0 in node " << node->fullname_with_scope();
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "Inputs num is 0 in node " << node->fullname_with_scope();
   }
 
   // node's inputs info at indexes change to input_at_indexes's input or output info

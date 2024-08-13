@@ -51,7 +51,7 @@ AnfNodePtr GetOutput(const FuncGraphPtr &func_graph, size_t i) {
   MS_EXCEPTION_IF_NULL(output_node);
   if (IsPrimitiveCNode(output_node, prim::kPrimMakeTuple)) {
     if (i + 1 >= output_node->size()) {
-      MS_LOG(EXCEPTION) << i << " is out of range of MakeTuple's size " << output_node->size();
+      MS_LOG_WITH_NODE(EXCEPTION, output_node) << i << " is out of range of MakeTuple's size " << output_node->size();
     }
     return output_node->input(i + 1);
   } else {
@@ -104,7 +104,7 @@ OrderedMap<AnfNodePtr, AnfNodePtrList> CollectLinkPaths(const std::map<AnfNodePt
 
     auto iter = topo_indice.find(n);
     if (iter == topo_indice.end()) {
-      MS_LOG(EXCEPTION) << "Cannot find " << n->fullname_with_scope() << " in topo indices!";
+      MS_LOG_WITH_NODE(EXCEPTION, n) << "Cannot find " << n->fullname_with_scope() << " in topo indices!";
     }
     if (iter->second > max_topo_user_index) {
       return VisitType::STOP;
@@ -237,7 +237,7 @@ AnfNodePtrList AutoRecompute::Filter(const AnfNodePtr &source_node, const AnfNod
     auto sub_graph = common::AnfAlgo::GetCNodeFuncGraphPtr(source_node);
     auto out = sub_graph->output();
     if (!IsPrimitiveCNode(out, prim::kPrimMakeTuple)) {
-      MS_LOG(EXCEPTION) << "Expect MakeTuple node, but got " << common::AnfAlgo::GetCNodeName(out);
+      MS_LOG_WITH_NODE(EXCEPTION, out) << "Expect MakeTuple node, but got " << common::AnfAlgo::GetCNodeName(out);
     }
 
     // Find subgraph's input according to edge node.
@@ -798,7 +798,7 @@ bool GraphKernelRecompute::DoRun(const FuncGraphPtr &func_graph, bool use_csr) {
       std::ostringstream oss;
       for (auto &e : c.recompute_edges) {
         if (!IsPrimitiveCNode(e, prim::kPrimTupleGetItem)) {
-          MS_LOG(EXCEPTION) << "The edge should be GetItem but got " << e->fullname_with_scope();
+          MS_LOG_WITH_NODE(EXCEPTION, e) << "The edge should be GetItem but got " << e->fullname_with_scope();
         }
         oss << e->fullname_with_scope() << ", ";
       }

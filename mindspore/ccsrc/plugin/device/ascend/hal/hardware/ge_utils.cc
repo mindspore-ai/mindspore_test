@@ -294,7 +294,7 @@ void SavePrevStepWeight(const std::vector<AnfNodePtr> &weights, aclrtStream stre
       auto ret = CALL_ASCEND_API(aclrtMemcpyAsync, tensor->data_c(), size, out_addr->GetMutablePtr(), size,
                                  ACL_MEMCPY_DEVICE_TO_HOST, stream);
       if (ret != ACL_ERROR_NONE) {
-        MS_LOG(EXCEPTION) << "Call aclrtMemcpyAsync failed, param: " << param->DebugString();
+        MS_LOG_WITH_NODE(EXCEPTION, param) << "Call aclrtMemcpyAsync failed, param: " << param->DebugString();
       }
       tensor->set_copy_done_flag(true);
     }

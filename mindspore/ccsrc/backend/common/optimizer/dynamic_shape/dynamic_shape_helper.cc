@@ -143,8 +143,8 @@ tensor::TensorPtr CreateTensorFromIndexedNode(const std::pair<AnfNodePtr, size_t
       }
     }
   } else {
-    MS_LOG(EXCEPTION) << "For node:" << real_input->fullname_with_scope() << ", abstract(" << abs->ToString()
-                      << ") is invalid.";
+    MS_LOG_WITH_NODE(EXCEPTION, real_input)
+      << "For node:" << real_input->fullname_with_scope() << ", abstract(" << abs->ToString() << ") is invalid.";
   }
 
   MS_LOG(DEBUG) << "Create tensor by node:" << input_node_with_index.first->DebugString()
@@ -160,7 +160,8 @@ tensor::TensorPtr CreateTensorMem(const std::pair<AnfNodePtr, size_t> &input_nod
     auto input_list = reinterpret_cast<std::vector<device::DeviceAddress *> *>(args);
     MS_EXCEPTION_IF_NULL(input_list);
     if (i >= input_list->size() || input_list->at(i) == nullptr) {
-      MS_LOG(EXCEPTION) << "Failed to get device address by input num:" << i << " for node:" << node->DebugString();
+      MS_LOG_WITH_NODE(EXCEPTION, node) << "Failed to get device address by input num:" << i
+                                        << " for node:" << node->DebugString();
     }
     const auto &device_address = input_list->at(i);
     MS_EXCEPTION_IF_NULL(device_address->kernel_tensor());
@@ -258,8 +259,8 @@ tensor::TensorPtr GetDependValueTensor(const AnfNodePtr &node, size_t i,
     return depended_value;
   }
 
-  MS_LOG(EXCEPTION) << "There is no valid data for " << i << " input of " << node->DebugString() << ", "
-                    << node->fullname_with_scope();
+  MS_LOG_WITH_NODE(EXCEPTION, node) << "There is no valid data for " << i << " input of " << node->DebugString() << ", "
+                                    << node->fullname_with_scope();
 }
 
 abstract::AbstractBasePtr MakeNewAbstractByScalar(const tensor::TensorPtr &depended_value) {
@@ -476,8 +477,9 @@ void InferShape(const CNodePtr &cnode, std::map<uint32_t, tensor::TensorPtr> *de
     (void)primitive->AddAttr(kAttrListStartIndex, MakeValue(list_start_index));
     InferShapeForPrimitive(cnode, primitive, args_spec_list, has_py_execute_data);
   } else {
-    MS_LOG(EXCEPTION) << "The first input of the cnode should be either a primitive or a function graph, but get: "
-                      << inputs[0]->fullname_with_scope();
+    MS_LOG_WITH_NODE(EXCEPTION, inputs[0])
+      << "The first input of the cnode should be either a primitive or a function graph, but get: "
+      << inputs[0]->fullname_with_scope();
   }
   MS_LOG(DEBUG) << "InferShape end, node:" << cnode->fullname_with_scope();
 }
@@ -605,7 +607,7 @@ AnfNodePtr GenInitNode(const AnfNodePtr &node) {
     auto inputs = AnfAlgo::GetOrCreateAllInputKernelTensors(cnode);
     auto outputs = AnfAlgo::GetOrCreateAllOutputKernelTensors(cnode);
     if (kernel_mod->Resize(inputs, outputs) == static_cast<int>(kernel::KRET_RESIZE_FAILED)) {
-      MS_LOG(EXCEPTION) << "Node " << cnode->fullname_with_scope() << " Resize failed.";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Node " << cnode->fullname_with_scope() << " Resize failed.";
     }
   };
 

@@ -713,7 +713,7 @@ void FlattenConditionNodeInput(const KernelGraphPtr &graph) {
     auto gather_to_switch = graph->condition_gather_to_switch();
     const auto &iter = gather_to_switch.find(kernel);
     if (iter == gather_to_switch.end()) {
-      MS_LOG(EXCEPTION) << "Failed to get condition switch node for gather:" << kernel->DebugString();
+      MS_LOG_WITH_NODE(EXCEPTION, kernel) << "Failed to get condition switch node for gather:" << kernel->DebugString();
     }
     MS_EXCEPTION_IF_NULL(iter->second);
     const auto &inline_iter = graph->inline_sub_graph_kernels().find(kernel);
@@ -1174,8 +1174,8 @@ bool GeKernelExecutor::LaunchKernel(const CNodePtr &kernel, const vector<KernelT
   // for PyNative Sync Run mode
   auto ret = PySyncRuning(stream);
   if (!ret) {
-    MS_LOG(EXCEPTION) << "Sync run failed, detail: " << CALL_ASCEND_API(aclGetRecentErrMsg)
-                      << trace::DumpSourceLines(kernel);
+    MS_LOG_WITH_NODE(EXCEPTION, kernel) << "Sync run failed, detail: " << CALL_ASCEND_API(aclGetRecentErrMsg)
+                                        << trace::DumpSourceLines(kernel);
   }
   PROFILER_END(start_time, runtime::ProfilerModule::kKernel, runtime::ProfilerEvent::kKernelLaunch,
                kernel->fullname_with_scope(), false);

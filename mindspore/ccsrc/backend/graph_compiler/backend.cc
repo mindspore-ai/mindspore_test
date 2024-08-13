@@ -449,13 +449,13 @@ void RunControlOperator(const std::shared_ptr<GraphCompiler> &graph_compiler,
   MS_EXCEPTION_IF_NULL(cnode);
   const std::vector<AnfNodePtr> &node_inputs = cnode->inputs();
   if (node_inputs.empty()) {
-    MS_LOG(EXCEPTION) << "The inputs of node[" << cnode->fullname_with_scope() << "] is empty";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "The inputs of node[" << cnode->fullname_with_scope() << "] is empty";
   }
 
   const AnfNodePtr &fn = node_inputs.at(0);
   if (!IsValueNode<Primitive>(fn)) {
-    MS_LOG(EXCEPTION) << "The input[0] of kernel[" << kernel->fullname_with_scope()
-                      << "] is not a ValueNode of Primitive";
+    MS_LOG_WITH_NODE(EXCEPTION, kernel) << "The input[0] of kernel[" << kernel->fullname_with_scope()
+                                        << "] is not a ValueNode of Primitive";
   }
 
   PrimitivePtr prim = GetValueNode<PrimitivePtr>(fn);

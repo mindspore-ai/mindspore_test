@@ -55,7 +55,7 @@ size_t GetOutputNum(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
   const auto &type = node->Type();
   if (type == nullptr) {
-    MS_LOG(EXCEPTION) << "Failed to get type in node:" << node->fullname_with_scope();
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "Failed to get type in node:" << node->fullname_with_scope();
   } else if (type->isa<Tuple>()) {
     auto tuple_type = type->cast<TuplePtr>();
     MS_EXCEPTION_IF_NULL(tuple_type);
@@ -781,9 +781,9 @@ void SetCpuRefMapToKernelInfo(const CNodePtr &apply_kernel, const std::vector<Ke
   auto [is_match, index] = match_result;
   if (!is_match) {
     constexpr auto recursive_level = 2;
-    MS_LOG(EXCEPTION) << apply_kernel->fullname_with_scope()
-                      << " does not support this kernel data type: " << build_info->ToString()
-                      << ", node debug name: " << apply_kernel->DebugString(recursive_level);
+    MS_LOG_WITH_NODE(EXCEPTION, apply_kernel)
+      << apply_kernel->fullname_with_scope() << " does not support this kernel data type: " << build_info->ToString()
+      << ", node debug name: " << apply_kernel->DebugString(recursive_level);
   }
 
   auto kernel_info = dynamic_cast<device::KernelInfo *>(apply_kernel->kernel_info());

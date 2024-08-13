@@ -36,8 +36,8 @@ AnfNodePtr BuildConv2DBackpropInput(const PatternMap &m, const AnfNodePtr &) {
   MS_EXCEPTION_IF_NULL(conv_transpose);
 
   if (conv_transpose->inputs().empty()) {
-    MS_LOG(EXCEPTION) << "Cnode inputs should not be empty, cnode: " << node->DebugString()
-                      << trace::DumpSourceLines(conv_transpose);
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "Cnode inputs should not be empty, cnode: " << node->DebugString()
+                                      << trace::DumpSourceLines(conv_transpose);
   }
 
   auto prim = GetValueNode<PrimitivePtr>(conv_transpose->input(kCNodePrimitiveIdx));

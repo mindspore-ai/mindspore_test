@@ -117,7 +117,8 @@ AnfNodePtr CombineOptimizerFusion::FindFirstMonadInput(
   for (const auto &optimizer_node : optimizer_node_list) {
     const auto &iter = nodes_to_topo_orders.find(optimizer_node);
     if (iter == nodes_to_topo_orders.end()) {
-      MS_LOG(EXCEPTION) << "Can not find topo order of node: " << optimizer_node->fullname_with_scope();
+      MS_LOG_WITH_NODE(EXCEPTION, optimizer_node)
+        << "Can not find topo order of node: " << optimizer_node->fullname_with_scope();
     }
     if (iter->second < first_topo_order) {
       first_topo_order = iter->second;
@@ -130,10 +131,12 @@ AnfNodePtr CombineOptimizerFusion::FindFirstMonadInput(
   MS_EXCEPTION_IF_NULL(first_optimizer_cnode);
   const auto &input_nodes = first_optimizer_cnode->inputs();
   if (input_nodes.empty()) {
-    MS_LOG(EXCEPTION) << "The optimizer: " << first_optimizer_cnode->fullname_with_scope() << " has no input";
+    MS_LOG_WITH_NODE(EXCEPTION, first_optimizer_cnode)
+      << "The optimizer: " << first_optimizer_cnode->fullname_with_scope() << " has no input";
   }
   if (!HasAbstractMonad(input_nodes.back())) {
-    MS_LOG(EXCEPTION) << "The last input of " << first_optimizer_cnode->fullname_with_scope() << " is not Monad node.";
+    MS_LOG_WITH_NODE(EXCEPTION, first_optimizer_cnode)
+      << "The last input of " << first_optimizer_cnode->fullname_with_scope() << " is not Monad node.";
   }
   return input_nodes.back();
 }

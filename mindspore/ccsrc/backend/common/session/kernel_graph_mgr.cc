@@ -323,8 +323,8 @@ std::string GetAnfUniqueCacheName(const AnfNodePtr &node, bool must_have_unique_
   MS_EXCEPTION_IF_NULL(node);
   const auto &name = node->user_data<std::string>(kUniqueCacheName);
   if (must_have_unique_name && name == nullptr) {
-    MS_LOG(EXCEPTION) << "The node " << node->DebugString()
-                      << " has not unique name, indicating that it is not exported to mindir.";
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "The node " << node->DebugString()
+                                      << " has not unique name, indicating that it is not exported to mindir.";
   }
   return name != nullptr ? *name : "";
 }
@@ -1020,8 +1020,9 @@ AnfNodePtr KernelGraphMgr::CreateParameterFromTuple(const AnfNodePtr &node, Kern
     size_t output_size = AnfAlgo::GetOutputElementNum(out_node);
     for (size_t i = 0; i < output_size; i++) {
       if (param_index >= parameters.size()) {
-        MS_LOG(EXCEPTION) << "Parameters size:" << parameters.size() << "out of range.Node:" << node->DebugString()
-                          << ",out_node:" << out_node->DebugString();
+        MS_LOG_WITH_NODE(EXCEPTION, out_node)
+          << "Parameters size:" << parameters.size() << "out of range.Node:" << node->DebugString()
+          << ",out_node:" << out_node->DebugString();
       }
       InitInternalOutputParameter(out_node, parameters[param_index++]);
     }
@@ -1032,7 +1033,7 @@ AnfNodePtr KernelGraphMgr::CreateParameterFromTuple(const AnfNodePtr &node, Kern
 ParameterPtr KernelGraphMgr::CreateNewParameterFromParameter(const AnfNodePtr &anf, KernelGraph *graph) {
   MS_EXCEPTION_IF_NULL(anf);
   if (!anf->isa<Parameter>()) {
-    MS_LOG(EXCEPTION) << "Anf[" << anf->DebugString() << "] is not a parameter";
+    MS_LOG_WITH_NODE(EXCEPTION, anf) << "Anf[" << anf->DebugString() << "] is not a parameter";
   }
   MS_EXCEPTION_IF_NULL(graph);
   auto param_value = GetParamDefaultValue(anf);
@@ -1706,7 +1707,7 @@ void KernelGraphMgr::CreateCNodeInputs(const CNodePtr &cnode, KernelGraph *graph
         (void)cnode_inputs->emplace_back(new_value_node);
         continue;
       }
-      MS_LOG(EXCEPTION) << "Unexpected input[" << anf->DebugString() << "]";
+      MS_LOG_WITH_NODE(EXCEPTION, anf) << "Unexpected input[" << anf->DebugString() << "]";
     }
   }
 }
@@ -1745,7 +1746,7 @@ ParameterPtr KernelGraphMgr::CreateNewParameter(const AnfNodePtr &anf, KernelGra
   MS_EXCEPTION_IF_NULL(anf);
   MS_EXCEPTION_IF_NULL(graph);
   if (!anf->isa<Parameter>()) {
-    MS_LOG(EXCEPTION) << "Anf[" << anf->DebugString() << "] is not a parameter";
+    MS_LOG_WITH_NODE(EXCEPTION, anf) << "Anf[" << anf->DebugString() << "] is not a parameter";
   }
 
   auto param_value = GetParamDefaultValue(anf);
@@ -1930,7 +1931,7 @@ KernelGraphPtr KernelGraphMgr::ConstructKernelGraph(const AnfNodePtrList &lst, c
     MS_EXCEPTION_IF_NULL(node);
     MS_LOG(DEBUG) << "Start create new cnode, node = " << node->DebugString();
     if (!node->isa<CNode>()) {
-      MS_LOG(EXCEPTION) << "Node " << node->DebugString() << " is not CNode";
+      MS_LOG_WITH_NODE(EXCEPTION, node) << "Node " << node->DebugString() << " is not CNode";
     }
     auto cnode = node->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(cnode);
@@ -2069,8 +2070,8 @@ void KernelGraphMgr::ConstructKernelGraphInner(const FuncGraphPtr &func_graph,
 #ifdef ENABLE_DUMP_IR
       DumpIR("construct_kernel_graph_fail.ir", func_graph);
 #endif
-      MS_LOG(EXCEPTION) << "Construct func graph " << func_graph->ToString() << " failed."
-                        << trace::DumpSourceLines(node);
+      MS_LOG_WITH_NODE(EXCEPTION, node) << "Construct func graph " << func_graph->ToString() << " failed."
+                                        << trace::DumpSourceLines(node);
     }
   }
 

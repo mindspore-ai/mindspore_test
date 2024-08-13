@@ -39,7 +39,7 @@ namespace mindspore::graphkernel {
 namespace {
 std::set<int64_t> GetUniqReduceAxes(const AnfNodePtr &node, bool is_ascend = false) {
   if (!IsPrimitiveCNode(node, prim::kPrimReduceSum)) {
-    MS_LOG(EXCEPTION) << "Expect ReduceSum node, but got " << common::AnfAlgo::GetCNodeName(node);
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "Expect ReduceSum node, but got " << common::AnfAlgo::GetCNodeName(node);
   }
 
   auto input = node->cast<CNodePtr>()->input(kFirstDataInputIndex);

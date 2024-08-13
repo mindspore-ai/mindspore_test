@@ -111,9 +111,10 @@ CNodePtr InsertTransIdentityForInput(const FuncGraphPtr &func_graph, const CNode
     if (common::AnfAlgo::HasNodeAttr(kAttrInternalSepcialFormat, cnode)) {
       auto special_inputs = common::AnfAlgo::GetNodeAttr<std::vector<int64_t>>(cnode, kAttrInternalSepcialFormat);
       if (special_inputs.size() != trans_input.size()) {
-        MS_LOG(EXCEPTION) << cnode->fullname_with_scope()
-                          << " special_input size must be equal to trans_input size, but got special_inputs = "
-                          << special_inputs << " trans_input = " << trans_input;
+        MS_LOG_WITH_NODE(EXCEPTION, cnode)
+          << cnode->fullname_with_scope()
+          << " special_input size must be equal to trans_input size, but got special_inputs = " << special_inputs
+          << " trans_input = " << trans_input;
       }
       common::AnfAlgo::SetNodeAttr(kAttrInternalSepcialFormat, MakeValue<int64_t>(special_inputs[i]), identity_node);
     }

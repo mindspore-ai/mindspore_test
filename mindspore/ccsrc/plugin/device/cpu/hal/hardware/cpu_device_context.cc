@@ -467,7 +467,7 @@ void CPUKernelExecutor::CreateKernel(const std::vector<CNodePtr> &nodes) const {
     std::vector<KernelTensor *> output_kernel_tensors = AnfAlgo::GetOrCreateAllOutputKernelTensors(node);
     auto ret = cpu_kernel->Init(common::AnfAlgo::GetCNodePrimitive(node), input_kernel_tensors, output_kernel_tensors);
     if (!ret) {
-      MS_LOG(EXCEPTION) << trace::DumpSourceLines(node);
+      MS_LOG_WITH_NODE(EXCEPTION, node) << trace::DumpSourceLines(node);
     }
     if (kernel::CheckResizeCondition(node)) {
       if (cpu_kernel->Resize(input_kernel_tensors, output_kernel_tensors) == kernel::KRET_RESIZE_FAILED) {

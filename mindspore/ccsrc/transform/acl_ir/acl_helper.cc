@@ -395,8 +395,9 @@ KernelType AclHelper::GetKernelInfoByInputs(const CNodePtr &cnode, const std::sh
         }
       }
       if (ms_proto_idx >= dyn_input_sizes.size()) {
-        MS_LOG(EXCEPTION) << "Attribute " << kAttrDynInputSizes << " of " << cnode->fullname_with_scope() << " is "
-                          << dyn_input_sizes << ", of which size is less than " << ms_proto_idx;
+        MS_LOG_WITH_NODE(EXCEPTION, cnode)
+          << "Attribute " << kAttrDynInputSizes << " of " << cnode->fullname_with_scope() << " is " << dyn_input_sizes
+          << ", of which size is less than " << ms_proto_idx;
       }
       ms_real_idx += dyn_input_sizes[ms_proto_idx];
     } else {

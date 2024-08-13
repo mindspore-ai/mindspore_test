@@ -52,8 +52,8 @@ bool WeightCheck(const AnfNodePtr &node) {
 
     for (auto index : iter->second) {
       if (index >= real_inputs.size()) {
-        MS_LOG(EXCEPTION) << "index out of range. node: " << node->DebugString() << ", index: " << index
-                          << real_inputs.size() << trace::DumpSourceLines(node);
+        MS_LOG_WITH_NODE(EXCEPTION, node) << "index out of range. node: " << node->DebugString() << ", index: " << index
+                                          << real_inputs.size() << trace::DumpSourceLines(node);
       }
 
       if (real_inputs[index].first->isa<Parameter>() &&

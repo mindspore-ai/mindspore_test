@@ -184,8 +184,8 @@ void HcomUtil::GetHcomGroup(NotNull<const AnfNodePtr &> anf_node, NotNull<std::s
   if (attr != nullptr) {
     *group = GetValue<std::string>(attr);
   } else {
-    MS_LOG(EXCEPTION) << "Get Hcom Group Attr of Op:" << anf_node->fullname_with_scope() << " failed."
-                      << trace::DumpSourceLines(anf_node);
+    MS_LOG_WITH_NODE(EXCEPTION, anf_node) << "Get Hcom Group Attr of Op:" << anf_node->fullname_with_scope()
+                                          << " failed." << trace::DumpSourceLines(anf_node);
   }
 }
 }  // namespace mindspore

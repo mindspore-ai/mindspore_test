@@ -419,7 +419,8 @@ void MemSwapManager::CacheCurSwapInfoSet(const AnfNodePtr &kernel) {
 void MemSwapManager::AddFirstTimeMovePos(const AnfNodePtr &kernel, size_t index, bool first_time) {
   auto iter = kernel_first_move_cache_map_.find(kernel.get());
   if (iter == kernel_first_move_cache_map_.end()) {
-    MS_LOG(EXCEPTION) << "Can not find first time move pos info of op[" << common::AnfAlgo::GetCNodeName(kernel) << "]";
+    MS_LOG_WITH_NODE(EXCEPTION, kernel) << "Can not find first time move pos info of op["
+                                        << common::AnfAlgo::GetCNodeName(kernel) << "]";
   }
   auto &first_move_list = iter->second;
   if (index >= first_move_list.size()) {
@@ -431,7 +432,8 @@ void MemSwapManager::AddFirstTimeMovePos(const AnfNodePtr &kernel, size_t index,
 bool MemSwapManager::QueryFirstTimeMovePos(const AnfNodePtr &kernel, size_t index) const {
   auto iter = kernel_first_move_cache_map_.find(kernel.get());
   if (iter == kernel_first_move_cache_map_.end()) {
-    MS_LOG(EXCEPTION) << "Can not find first time move pos info of op[" << common::AnfAlgo::GetCNodeName(kernel) << "]";
+    MS_LOG_WITH_NODE(EXCEPTION, kernel) << "Can not find first time move pos info of op["
+                                        << common::AnfAlgo::GetCNodeName(kernel) << "]";
   }
   const auto &first_move_list = iter->second;
   if (index >= first_move_list.size()) {
@@ -477,7 +479,8 @@ KernelExecutionInfo &MemSwapManager::SearchKernelExecutionInfo(const AnfNodePtr 
   MS_EXCEPTION_IF_NULL(kernel);
   auto iter = kernel_execution_info_.find(kernel.get());
   if (iter == kernel_execution_info_.end()) {
-    MS_LOG(EXCEPTION) << "Can not find execution info of op[" << common::AnfAlgo::GetCNodeName(kernel) << "]";
+    MS_LOG_WITH_NODE(EXCEPTION, kernel) << "Can not find execution info of op[" << common::AnfAlgo::GetCNodeName(kernel)
+                                        << "]";
   }
   return const_cast<KernelExecutionInfo &>(iter->second);
 }
@@ -513,8 +516,8 @@ void MemSwapManager::RemoveKernelMemSwapInfo(const AnfNodePtr &kernel, const Mem
   if (mem_swap_info.swap_kind_ == SwapKind::kHostToDevice) {
     auto map_iter = mem_swap_info_map_.find(kernel.get());
     if (map_iter == mem_swap_info_map_.end()) {
-      MS_LOG(EXCEPTION) << "Can not find memory swap information of op[" << common::AnfAlgo::GetCNodeName(kernel)
-                        << "]";
+      MS_LOG_WITH_NODE(EXCEPTION, kernel)
+        << "Can not find memory swap information of op[" << common::AnfAlgo::GetCNodeName(kernel) << "]";
     }
     MemSwapInfoSet &mem_swap_info_set = map_iter->second;
 
@@ -573,14 +576,15 @@ const PerformPair &MemSwapManager::QueryKernelSwapPerform(const AnfNodePtr &kern
   MS_EXCEPTION_IF_NULL(kernel);
   auto iter_kernel = kernel_swap_perform_.find(kernel.get());
   if (iter_kernel == kernel_swap_perform_.end()) {
-    MS_LOG(EXCEPTION) << "Can not find swap performance data of op[" << common::AnfAlgo::GetCNodeName(kernel) << "]";
+    MS_LOG_WITH_NODE(EXCEPTION, kernel) << "Can not find swap performance data of op["
+                                        << common::AnfAlgo::GetCNodeName(kernel) << "]";
   }
 
   auto &perform_map = iter_kernel->second;
   auto iter_output = perform_map.find(output_idx);
   if (iter_output == perform_map.end()) {
-    MS_LOG(EXCEPTION) << "Can not find swap performance data of output[" << output_idx << "] of op["
-                      << common::AnfAlgo::GetCNodeName(kernel) << "]";
+    MS_LOG_WITH_NODE(EXCEPTION, kernel) << "Can not find swap performance data of output[" << output_idx << "] of op["
+                                        << common::AnfAlgo::GetCNodeName(kernel) << "]";
   }
   return iter_output->second;
 }
@@ -589,7 +593,8 @@ const MemSwapInfoSet &MemSwapManager::QueryKernelMemSwapInfo(const AnfNodePtr &k
   MS_EXCEPTION_IF_NULL(kernel);
   auto iter = mem_swap_info_map_.find(kernel.get());
   if (iter == mem_swap_info_map_.end()) {
-    MS_LOG(EXCEPTION) << "Can not find memory swap information of op[" << common::AnfAlgo::GetCNodeName(kernel) << "]";
+    MS_LOG_WITH_NODE(EXCEPTION, kernel) << "Can not find memory swap information of op["
+                                        << common::AnfAlgo::GetCNodeName(kernel) << "]";
   }
   return iter->second;
 }
@@ -614,7 +619,8 @@ const HostAddress &MemSwapManager::QueryKernelHostAddr(const AnfNodePtr &kernel,
   auto &host_addrs = kernel_exec_info.host_addrs_;
   auto iter = host_addrs.find(output_idx);
   if (iter == host_addrs.end()) {
-    MS_LOG(EXCEPTION) << "Can not find host address of op[" << common::AnfAlgo::GetCNodeName(kernel) << "]";
+    MS_LOG_WITH_NODE(EXCEPTION, kernel) << "Can not find host address of op[" << common::AnfAlgo::GetCNodeName(kernel)
+                                        << "]";
   }
   return (iter->second).first;
 }
@@ -624,7 +630,8 @@ void MemSwapManager::AddKernelHostAddrIsDirty(const AnfNodePtr &kernel, size_t o
   auto &host_addrs = kernel_exec_info.host_addrs_;
   auto iter = host_addrs.find(output_idx);
   if (iter == host_addrs.end()) {
-    MS_LOG(EXCEPTION) << "Can not find host memory dirty info of op[" << common::AnfAlgo::GetCNodeName(kernel) << "]";
+    MS_LOG_WITH_NODE(EXCEPTION, kernel) << "Can not find host memory dirty info of op["
+                                        << common::AnfAlgo::GetCNodeName(kernel) << "]";
   }
   (iter->second).second = dirty;
 }
@@ -634,7 +641,8 @@ bool MemSwapManager::QueryKernelHostAddrIsDirty(const AnfNodePtr &kernel, size_t
   auto &host_addrs = kernel_exec_info.host_addrs_;
   auto iter = host_addrs.find(output_idx);
   if (iter == host_addrs.end()) {
-    MS_LOG(EXCEPTION) << "Can not find host memory dirty info of op[" << common::AnfAlgo::GetCNodeName(kernel) << "]";
+    MS_LOG_WITH_NODE(EXCEPTION, kernel) << "Can not find host memory dirty info of op["
+                                        << common::AnfAlgo::GetCNodeName(kernel) << "]";
   }
   return (iter->second).second;
 }

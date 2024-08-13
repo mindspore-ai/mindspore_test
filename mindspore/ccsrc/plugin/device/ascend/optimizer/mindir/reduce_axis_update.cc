@@ -170,9 +170,9 @@ bool ReduceAxisUpdate::CheckMatchedDAG(const PatternMap &, const FuncGraphPtr &g
 
   auto input_num = common::AnfAlgo::GetInputNum(cnode);
   if (input_num < kReduceInputNum) {
-    MS_LOG(EXCEPTION) << "The input tensor size[" << input_num << "] of node ["
-                      << cnode->DebugString() + "] is not equal to " << kReduceInputNum
-                      << trace::DumpSourceLines(cnode);
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "The input tensor size[" << input_num << "] of node ["
+                                       << cnode->DebugString() + "] is not equal to " << kReduceInputNum
+                                       << trace::DumpSourceLines(cnode);
   }
 
   const auto &inputs = cnode->inputs();
