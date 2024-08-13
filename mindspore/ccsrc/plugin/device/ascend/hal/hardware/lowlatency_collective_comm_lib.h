@@ -84,7 +84,7 @@ class EXPORT_WRAPPER LowlatencyCollectiveCommLib : public CollectiveCommunicatio
 };
 }  // namespace ascend
 
-extern "C" EXPORT_WRAPPER CollectiveCommunicationLib *communication_lib_instance();
+extern "C" EXPORT_WRAPPER CollectiveCommunicationLib *lowlatency_communication_lib_instance();
 extern "C" EXPORT_WRAPPER int AllReduce(const LcclPtr &lccl_ptr, void *send_buff, void *recv_buff, size_t count,
                                         HcclDataType data_type, const HcclReduceOp reduce_op, const aclrtStream stream);
 extern "C" EXPORT_WRAPPER int AllGather(const LcclPtr &lccl_ptr, void *send_buff, void *recv_buff, size_t count,

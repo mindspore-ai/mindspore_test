@@ -18,6 +18,7 @@
 
 #include <map>
 #include <set>
+#include <unordered_set>
 #include "mindspore/ops/op_def/ascend_op_name.h"
 #include "mindspore/ops/op_def/other_op_name.h"
 #include "mindspore/ops/op_def/array_op_name.h"
@@ -29,10 +30,12 @@
 #include "runtime/device/kernel_runtime.h"
 #include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm_lib.h"
+#include "plugin/device/ascend/hal/hardware/multi_ascend_collective_comm_lib.h"
 #include "plugin/device/ascend/hal/device/ascend_memory_manager.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
 
 using AscendCollectiveCommLib = mindspore::device::ascend::AscendCollectiveCommLib;
+using MultiAscendCollectiveCommLib = mindspore::device::ascend::MultiAscendCollectiveCommLib;
 namespace {
 constexpr int64_t kComplex64ConvertFloat32Num = 2;
 static std::map<std::string, std::string> kMsOpNameToHcomHcclType = {
@@ -96,7 +99,24 @@ HcclKernel::HcclKernel()
       root_id_(0),
       src_rank_(0),
       dest_rank_(0),
-      comm_(nullptr) {}
+      comm_(nullptr),
+      use_lccl_{false} {}
+
+bool isSupportLccl(const std::string &group_name, const std::string &kernel_name,
+                   const std::unordered_set<std::string> &lccl_enabled_groups) {
+#ifdef ENABLE_INTERNAL_KERNELS
+  bool enable_lccl = device::ascend::EnableLccl();
+  std::set<std::string> support_lccl_op_names = {kAllReduceOpName, kReduceScatterOpName, kBroadcastOpName,
+                                                 kAllGatherOpName, kMatMulAllReduceOpName};
+  if (enable_lccl && lccl_enabled_groups.find(group_name) != lccl_enabled_groups.end() &&
+      support_lccl_op_names.find(kernel_name) != support_lccl_op_names.end()) {
+    return true;
+  } else {
+    return false;
+  }
+#endif
+  return false;
+}
 
 bool HcclKernel::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
   // set source/destination rank
@@ -137,13 +157,18 @@ bool HcclKernel::Init(const std::vector<KernelTensor *> &inputs, const std::vect
 
   if (common::GetEnv(kSimulationLevel).empty() && !common::IsNeedProfileMemory()) {
 #ifdef ENABLE_INTERNAL_KERNELS
-    bool enable_lccl = device::ascend::EnableLccl();
-    if (enable_lccl) {
+    std::unordered_set<std::string> lccl_enabled_groups =
+      MultiAscendCollectiveCommLib::GetInstance().GetLcclEnabledGroups();
+    use_lccl_ = isSupportLccl(group_, kernel_name_, lccl_enabled_groups);
+    if (use_lccl_) {
+      MS_LOG(DEBUG) << "Load LCCL for kernel: " << kernel_name_ << ", in group: " << group_;
       LoadLcclLibrary();
     } else {
+      MS_LOG(DEBUG) << "Load HCCL for kernel: " << kernel_name_ << ", in group: " << group_;
       LoadHcclLibrary();
     }
 #else
+    MS_LOG(DEBUG) << "Load HCCL for kernel: " << kernel_name_ << ", in group: " << group_;
     LoadHcclLibrary();
 #endif
   }

@@ -30,11 +30,9 @@ bool HcomAllReduceScatterKernel::Init(const std::vector<KernelTensor *> &inputs,
     MS_LOG(EXCEPTION) << "Failed to init HcomAllBroadCastKernel";
   }
 #ifdef ENABLE_INTERNAL_KERNELS
-  bool enable_lccl = device::ascend::EnableLccl();
-  if (enable_lccl) {
+  if (use_lccl_) {
     lccl_reduce_scatter_func_ = DlsymFuncObj(ReduceScatter, lowlatency_comm_lib_handle_);
     MS_EXCEPTION_IF_NULL(lccl_reduce_scatter_func_);
-    use_lccl_ = true;
   }
 #endif
   return true;
@@ -54,12 +52,14 @@ bool HcomAllReduceScatterKernel::Launch(const std::vector<KernelTensor *> &input
 
 #ifdef ENABLE_INTERNAL_KERNELS
   if (use_lccl_) {
+    MS_LOG(DEBUG) << "Using LCCL ReduceScatter.";
     auto lccl_result = lccl_reduce_scatter_func_(lccl_ptr_, inputs[0]->device_ptr(), outputs[0]->device_ptr(),
                                                  hccl_count_, hccl_data_type_list_[0], op_type_, stream_ptr);
     if (lccl_result != Lcal::LCAL_SUCCESS) {
       MS_LOG(EXCEPTION) << "LCCL ReduceScatter failed.";
     }
   } else {
+    MS_LOG(DEBUG) << "Using HCCL ReduceScatter.";
     auto hccl_result =
       hccl::HcclAdapter::GetInstance().HcclReduceScatter(inputs[0]->device_ptr(), outputs[0]->device_ptr(), hccl_count_,
                                                          hccl_data_type_list_[0], op_type_, stream_ptr, comm_);
@@ -69,6 +69,7 @@ bool HcomAllReduceScatterKernel::Launch(const std::vector<KernelTensor *> &input
     }
   }
 #else
+  MS_LOG(DEBUG) << "Using HCCL ReduceScatter.";
   auto hccl_result =
     hccl::HcclAdapter::GetInstance().HcclReduceScatter(inputs[0]->device_ptr(), outputs[0]->device_ptr(), hccl_count_,
                                                        hccl_data_type_list_[0], op_type_, stream_ptr, comm_);

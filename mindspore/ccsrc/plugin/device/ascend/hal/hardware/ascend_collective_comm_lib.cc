@@ -347,6 +347,6 @@ bool AscendCollectiveCommLib::ResumeHcclComm() {
 
 using AscendCollectiveCommLib = mindspore::device::ascend::AscendCollectiveCommLib;
 
-CollectiveCommunicationLib *communication_lib_instance() { return &AscendCollectiveCommLib::GetInstance(); }
+CollectiveCommunicationLib *ascend_communication_lib_instance() { return &AscendCollectiveCommLib::GetInstance(); }
 }  // namespace device
 }  // namespace mindspore

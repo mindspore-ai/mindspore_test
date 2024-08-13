@@ -76,6 +76,7 @@ class HcclKernel : public KernelMod {
   std::condition_variable cond_;
   ulong loop_size_{0};
   bool is_graph_mode_{false};
+  bool use_lccl_;
 
 #ifdef ENABLE_INTERNAL_KERNELS
   // The LCCL collective communication library.

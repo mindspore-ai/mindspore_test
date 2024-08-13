@@ -29,11 +29,9 @@ bool HcomAllGatherKernel::Init(const std::vector<KernelTensor *> &inputs, const 
     MS_LOG(EXCEPTION) << "Failed to init HcomAllGatherKernel";
   }
 #ifdef ENABLE_INTERNAL_KERNELS
-  bool enable_lccl = device::ascend::EnableLccl();
-  if (enable_lccl) {
+  if (use_lccl_) {
     lccl_all_gather_func_ = DlsymFuncObj(AllGather, lowlatency_comm_lib_handle_);
     MS_EXCEPTION_IF_NULL(lccl_all_gather_func_);
-    use_lccl_ = true;
   }
 #endif
   return true;
@@ -53,12 +51,14 @@ bool HcomAllGatherKernel::Launch(const std::vector<KernelTensor *> &inputs, cons
 
 #ifdef ENABLE_INTERNAL_KERNELS
   if (use_lccl_) {
+    MS_LOG(DEBUG) << "Using LCCL AllGather.";
     auto lccl_result = lccl_all_gather_func_(lccl_ptr_, inputs[0]->device_ptr(), outputs[0]->device_ptr(), hccl_count_,
                                              hccl_data_type_list_[0], stream_ptr);
     if (lccl_result != Lcal::LCAL_SUCCESS) {
       MS_LOG(EXCEPTION) << "LCCL AllGather failed.";
     }
   } else {
+    MS_LOG(DEBUG) << "Using HCCL AllGather.";
     auto hccl_result = hccl::HcclAdapter::GetInstance().HcclAllGather(
       inputs[0]->device_ptr(), outputs[0]->device_ptr(), hccl_count_, hccl_data_type_list_[0], stream_ptr, comm_);
     if (hccl_result != HCCL_SUCCESS) {
@@ -67,6 +67,7 @@ bool HcomAllGatherKernel::Launch(const std::vector<KernelTensor *> &inputs, cons
     }
   }
 #else
+  MS_LOG(DEBUG) << "Using HCCL AllGather.";
   auto hccl_result = hccl::HcclAdapter::GetInstance().HcclAllGather(
     inputs[0]->device_ptr(), outputs[0]->device_ptr(), hccl_count_, hccl_data_type_list_[0], stream_ptr, comm_);
   if (hccl_result != HCCL_SUCCESS) {

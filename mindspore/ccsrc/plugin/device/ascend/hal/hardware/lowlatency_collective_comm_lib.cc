@@ -109,7 +109,9 @@ int64_t LowlatencyCollectiveCommLib::GetLcocWorkspaceSize(const LcocPtr &lcoc_pt
 
 using LowlatencyCollectiveCommLib = mindspore::device::ascend::LowlatencyCollectiveCommLib;
 
-CollectiveCommunicationLib *communication_lib_instance() { return &LowlatencyCollectiveCommLib::GetInstance(); }
+CollectiveCommunicationLib *lowlatency_communication_lib_instance() {
+  return &LowlatencyCollectiveCommLib::GetInstance();
+}
 
 int AllReduce(const LcclPtr &lccl_ptr, void *send_buff, void *recv_buff, size_t count, HcclDataType data_type,
               const HcclReduceOp reduce_op, const aclrtStream stream) {

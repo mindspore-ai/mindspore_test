@@ -24,7 +24,7 @@ def test_lccl_allreduce():
     Description: msrun lccl all_reduce 8P case.
     Expectation: success
     """
-    os.environ['MS_ENABLE_LCCL'] = str(1)
+    os.environ['MS_ENABLE_LCCL'] = "on"
     context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
     return_code = os.system(
         "msrun --worker_num=8 --local_worker_num=8 --join=True pytest -s test_lccl_allreduce.py")
@@ -38,7 +38,7 @@ def test_lccl_allgather():
     Description: msrun lccl all_gather 8P case.
     Expectation: success
     """
-    os.environ['MS_ENABLE_LCCL'] = str(1)
+    os.environ['MS_ENABLE_LCCL'] = "on"
     context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
     return_code = os.system(
         "msrun --worker_num=8 --local_worker_num=8 --join=True pytest -s test_lccl_allgather.py")
@@ -52,7 +52,7 @@ def test_lccl_reducescatter():
     Description: msrun lccl reduce_scatter 8P case.
     Expectation: success
     """
-    os.environ['MS_ENABLE_LCCL'] = str(1)
+    os.environ['MS_ENABLE_LCCL'] = "on"
     context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
     return_code = os.system("msrun --worker_num=8 --local_worker_num=8 --join=True "
                             "pytest -s test_lccl_reduce_scatter.py")
@@ -66,7 +66,7 @@ def test_lccl_broadcast():
     Description: msrun lccl broadcast 8P case.
     Expectation: success
     """
-    os.environ['MS_ENABLE_LCCL'] = str(1)
+    os.environ['MS_ENABLE_LCCL'] = "on"
     context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
     return_code = os.system(
         "msrun --worker_num=8 --local_worker_num=8 --join=True pytest -s test_lccl_broadcast.py")
@@ -80,7 +80,7 @@ def test_lccl_matmul_allreduce():
     Description: lccl MatMulAllReduce 8P case.
     Expectation: success
     """
-    os.environ['MS_ENABLE_LCCL'] = str(1)
+    os.environ['MS_ENABLE_LCCL'] = "on"
     os.environ['MS_ENABLE_INTERNAL_KERNELS'] = 'on'
     return_code = os.system(
         "msrun --worker_num=8 --local_worker_num=8 --join=True pytest -s test_lccl_matmul_allreduce.py")

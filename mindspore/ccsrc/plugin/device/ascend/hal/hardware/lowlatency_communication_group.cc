@@ -19,6 +19,17 @@
 namespace mindspore {
 namespace device {
 namespace ascend {
+std::vector<int> convertVectorUint32ToInt32(const std::vector<uint32_t> &global_ranks) {
+  std::vector<int> outputs;
+  for (auto &global_rank : global_ranks) {
+    if (global_rank > INT_MAX) {
+      MS_LOG(EXCEPTION) << "The input global rank [" << global_rank << "] exceeds the limitation.";
+    }
+    outputs.push_back(static_cast<int>(global_rank));
+  }
+  return outputs;
+}
+
 LowlatencyCommunicationGroup::LowlatencyCommunicationGroup(const std::string &name,
                                                            const std::vector<uint32_t> &group_ranks,
                                                            uint32_t global_rank, uint32_t local_group_rank,
@@ -28,19 +39,32 @@ LowlatencyCommunicationGroup::LowlatencyCommunicationGroup(const std::string &na
       lccl_comm_(nullptr) {}
 
 bool LowlatencyCommunicationGroup::Initialize(void *root_info) {
+  MS_LOG(WARNING) << "LowlatencyCommunicationGroup::Initialize, root_info: " << root_info;
   if (initialized_) {
     return true;
   }
-  auto ret = aclrtSetDevice(local_group_rank_);
+
+  uint32_t device_id = std::stoi(std::getenv("DEVICE_ID"));
+  auto ret = aclrtSetDevice(device_id);
   if (ret != ACL_RT_SUCCESS) {
     return false;
   }
+  for (auto &element : global_to_group_ranks_) {
+    MS_LOG(WARNING) << "global_to_group_ranks_[" << element.first << "] = " << element.second;
+  }
   uint32_t group_rank = GetGroupRank(global_rank_);
-  lcal_comm_ = std::make_shared<LcalComm>(group_rank, size_);
+
+  // ADDING INPUT GROUP_RANKS
+  std::vector<int> group_ranks_int = convertVectorUint32ToInt32(group_ranks_);
+  lcal_comm_ = std::make_shared<LcalComm>(group_rank, size_, group_ranks_int);
+  MS_EXCEPTION_IF_NULL(lcal_comm_);
   if (lcal_comm_->Init() != LCAL_SUCCESS) {
     return false;
   }
+
   lccl_comm_ = std::make_shared<Lccl>(*(lcal_comm_.get()));
+  MS_EXCEPTION_IF_NULL(lccl_comm_);
+
   initialized_ = true;
   return true;
 }
@@ -54,6 +78,7 @@ bool LowlatencyCommunicationGroup::Finalize() {
 }
 
 void *LowlatencyCommunicationGroup::GenerateRootInfo(size_t *root_info_size) {
+  MS_LOG(WARNING) << "LowlatencyCommunicationGroup::GenerateRootInfo()";
   *root_info_size = sizeof(size_t);
   return root_info_size;
 }

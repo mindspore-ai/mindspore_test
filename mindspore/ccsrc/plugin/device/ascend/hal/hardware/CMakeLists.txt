@@ -23,6 +23,20 @@ if(DEFINED ENV{MS_INTERNAL_KERNEL_HOME})
     target_link_libraries(lowlatency_collective PRIVATE lcal)
 endif()
 
+set(MULTI_ASCEND_COLLECTIVE_SRCS "multi_ascend_collective_comm_lib.cc"
+        "multi_ascend_communication_group.cc"
+        ${CMAKE_SOURCE_DIR}/mindspore/ccsrc/runtime/collective/collective_communication_lib.cc
+        ${CMAKE_SOURCE_DIR}/mindspore/ccsrc/runtime/collective/collective_comm_lib_loader.cc
+        ${CMAKE_SOURCE_DIR}/mindspore/ccsrc/runtime/collective/communication_group.cc)
+set_property(SOURCE ${MULTI_ASCEND_COLLECTIVE_SRCS} PROPERTY COMPILE_DEFINITIONS
+        SUBMODULE_ID=mindspore::SubModuleId::SM_DEVICE)
+add_library(multi_ascend_collective STATIC ${MULTI_ASCEND_COLLECTIVE_SRCS})
+if(DEFINED ENV{MS_INTERNAL_KERNEL_HOME})
+    target_link_libraries(multi_ascend_collective PRIVATE d_collective PRIVATE lowlatency_collective)
+else()
+    target_link_libraries(multi_ascend_collective PRIVATE d_collective)
+endif()
+
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-delete-abstract-non-virtual-dtor")
 endif()
