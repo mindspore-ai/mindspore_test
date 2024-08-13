@@ -15,7 +15,7 @@ import pytest
 import numpy as np
 
 import mindspore as ms
-from mindspore import context, Tensor, Parameter
+from mindspore import context, Tensor, Parameter, Symbol
 from mindspore.ops import operations as P
 from mindspore.parallel.shard import Layout
 from mindspore.common.api import _cell_graph_executor
@@ -324,3 +324,40 @@ def test_layout_for_some_ops():
     assert validator.check_node_inputs_has('GeLU-0', ['Div-0'])
     assert validator.check_node_inputs_has('Transpose-0', ['Sigmoid-0'])
     assert validator.check_node_inputs_has('BiasAdd-0', ['MatMul-0'])
+
+
+def test_layout_for_bias_add():
+    """
+    Feature: config layout for bias add
+    Description: no redistribution
+    Expectation: compile success
+    """
+    class DynamicBiasAddNet(Cell):
+        def __init__(self,):
+            super().__init__()
+            layout = Layout((2, 2, 2), ("dp", "mp", "xp"))
+            layout0 = (layout("dp", "mp", "xp"), layout("xp",))
+            layout1 = (layout("dp", "mp", "xp"),)
+            self.bias_add = P.BiasAdd().shard(layout0)
+            self.gelu = P.GeLU().shard(layout1)
+            self.w = Parameter(Tensor(np.ones([32]), dtype=ms.float32), "w2")
+
+        def construct(self, x, y):
+            out = self.bias_add(x, self.w)
+            out = self.gelu(out)
+            return out
+
+    context.set_auto_parallel_context(device_num=8, global_rank=0, gradients_mean=True, full_batch=True)
+
+    net = DynamicBiasAddNet()
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
+
+    s = Symbol(divisor=2)
+    x = Tensor(shape=[s, s, s], dtype=ms.float32)
+    y = Tensor(shape=[None, None, None], dtype=ms.float32)
+
+    net.set_inputs(x, y)
+
+    phase, _ = compile_net(net, x, y)
+    validator = ParallelValidator(net, phase)
+    assert validator.check_node_inputs_has('GeLU-0', ['BiasAdd-0'])
