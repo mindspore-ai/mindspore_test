@@ -77,6 +77,7 @@ Status AudioParallelLaunch(const std::function<void(size_t, size_t, size_t, size
 template <typename T>
 Status ComplexAngle(const std::shared_ptr<Tensor> &input, std::shared_ptr<Tensor> *output) {
   // check complex
+  RETURN_UNEXPECTED_IF_NULL(output);
   RETURN_IF_NOT_OK(ValidateTensorShape("ComplexAngle", input->IsComplex(), "<..., complex=2>"));
   TensorShape input_shape = input->shape();
   TensorShape out_shape({input_shape[0], input_shape[1], input_shape[2]});
@@ -150,6 +151,9 @@ template <typename T>
 Status Polar(const std::shared_ptr<Tensor> &abs, const std::shared_ptr<Tensor> &angle,
              std::shared_ptr<Tensor> *output) {
   // check shape
+  RETURN_UNEXPECTED_IF_NULL(abs);
+  RETURN_UNEXPECTED_IF_NULL(angle);
+  RETURN_UNEXPECTED_IF_NULL(output);
   if (abs->shape() != angle->shape()) {
     std::string err_msg = "Polar: the shape of input tensor abs and angle should be the same, but got: abs " +
                           abs->shape().ToString() + " and angle " + angle->shape().ToString();
@@ -431,6 +435,8 @@ Status Dct(std::shared_ptr<Tensor> *output, int n_mfcc, int n_mels, NormMode nor
 
 Status RandomMaskAlongAxis(const std::shared_ptr<Tensor> &input, std::shared_ptr<Tensor> *output, int32_t mask_param,
                            float mask_value, int axis, std::mt19937 *rnd) {
+  RETURN_UNEXPECTED_IF_NULL(output);
+  RETURN_UNEXPECTED_IF_NULL(rnd);
   std::uniform_int_distribution<int32_t> mask_width_value(0, mask_param);
   TensorShape input_shape = input->shape();
   int32_t mask_dim_size = axis == 1 ? input_shape[-2] : input_shape[-1];
@@ -950,7 +956,7 @@ Status ReadWaveFile(const std::string &wav_file_dir, std::vector<float> *wavefor
   *sample_rate = header->sample_rate;
   float bytes_per_sample = header->bits_per_sample / 8;
   auto sub_chunk2_size = header->sub_chunk2_size;
-  if (bytes_per_sample == 0) {
+  if (std::fabs(bytes_per_sample) <= std::numeric_limits<float>::epsilon()) {
     in.close();
     delete header;
     RETURN_STATUS_UNEXPECTED("ReadWaveFile: zero division error, bits per sample of the audio can not be zero.");
@@ -1397,6 +1403,8 @@ template <typename T>
 Status Stft(const std::shared_ptr<Tensor> &input, std::shared_ptr<Tensor> *output, int n_fft,
             const std::shared_ptr<Tensor> &win, int win_length, int n_columns, bool normalized, float power,
             bool onesided) {
+  RETURN_UNEXPECTED_IF_NULL(output);
+  RETURN_UNEXPECTED_IF_NULL(win);
   CHECK_FAIL_RETURN_UNEXPECTED(win_length != 0, "Spectrogram: win_length can not be zero.");
   double win_sum = 0.;
   float twice = 2.0;
@@ -1451,7 +1459,8 @@ Status Stft(const std::shared_ptr<Tensor> &input, std::shared_ptr<Tensor> *outpu
       }
     }
   }
-  CHECK_FAIL_RETURN_UNEXPECTED(win_sum != 0, "Window: the total value of window function can not be zero.");
+  CHECK_FAIL_RETURN_UNEXPECTED(std::fabs(win_sum) > std::numeric_limits<double>::epsilon(),
+                               "Window: the total value of window function can not be zero.");
   if (normalized) {
     for (int r = 0; r < input->shape()[0]; r++) {
       for (int i = 0; i < (n_fft / TWO + 1); i++) {
@@ -1469,7 +1478,7 @@ Status Stft(const std::shared_ptr<Tensor> &input, std::shared_ptr<Tensor> *outpu
   std::shared_ptr<Tensor> output_onsided;
   if (!onesided) {
     RETURN_IF_NOT_OK(Onesided<T>(spec_f, &output_onsided, n_fft, n_columns));
-    if (power == 0) {
+    if (std::fabs(power) <= std::numeric_limits<float>::epsilon()) {
       *output = output_onsided;
       return Status::OK();
     }
@@ -1478,7 +1487,7 @@ Status Stft(const std::shared_ptr<Tensor> &input, std::shared_ptr<Tensor> *outpu
     *output = spec_p;
     return Status::OK();
   }
-  if (power == 0) {
+  if (std::fabs(power) <= std::numeric_limits<float>::epsilon()) {
     *output = spec_f;
     return Status::OK();
   }
@@ -1583,6 +1592,7 @@ Status SpectrogramImpl(const std::shared_ptr<Tensor> &input, std::shared_ptr<Ten
 Status Spectrogram(const std::shared_ptr<Tensor> &input, std::shared_ptr<Tensor> *output, int pad, WindowType window,
                    int n_fft, int hop_length, int win_length, float power, bool normalized, bool center,
                    BorderType pad_mode, bool onesided) {
+  RETURN_UNEXPECTED_IF_NULL(output);
   TensorShape input_shape = input->shape();
 
   CHECK_FAIL_RETURN_UNEXPECTED(
@@ -1668,6 +1678,7 @@ Status SpectralCentroidImpl(const std::shared_ptr<Tensor> &input, std::shared_pt
 
 Status SpectralCentroid(const std::shared_ptr<Tensor> &input, std::shared_ptr<Tensor> *output, int sample_rate,
                         int n_fft, int win_length, int hop_length, int pad, WindowType window) {
+  RETURN_UNEXPECTED_IF_NULL(output);
   RETURN_IF_NOT_OK(ValidateLowRank("SpectralCentroid", input, kMinAudioDim, "<..., time>"));
   RETURN_IF_NOT_OK(ValidateTensorNumeric("SpectralCentroid", input));
 
@@ -1683,6 +1694,7 @@ Status SpectralCentroid(const std::shared_ptr<Tensor> &input, std::shared_ptr<Te
 
 Status ComputeDeltas(const std::shared_ptr<Tensor> &input, std::shared_ptr<Tensor> *output, int32_t win_length,
                      const BorderType &mode) {
+  RETURN_UNEXPECTED_IF_NULL(output);
   RETURN_IF_NOT_OK(ValidateLowRank("ComputeDeltas", input, kDefaultAudioDim, "<..., freq, time>"));
   RETURN_IF_NOT_OK(ValidateTensorNumeric("ComputeDeltas", input));
 
@@ -1772,6 +1784,7 @@ Status WindowSumSquare(const Eigen::MatrixXf &window_matrix, Eigen::VectorXf *wi
 template <typename T>
 Status ISTFT(const Eigen::MatrixXcd &stft_matrix, std::shared_ptr<Tensor> *output, int32_t n_fft, int32_t hop_length,
              int32_t win_length, WindowType window_type, bool center, int32_t length) {
+  RETURN_UNEXPECTED_IF_NULL(output);
   // check input
   constexpr int64_t transform_size = 2;
   CHECK_FAIL_RETURN_UNEXPECTED(n_fft == ((stft_matrix.rows() - 1) * transform_size),
@@ -2034,7 +2047,8 @@ Status GriffinLimImpl(const std::shared_ptr<Tensor> &input, std::shared_ptr<Tens
   TensorShape new_shape({(*output)->Size() / shape[-1] / shape[-2], shape[-2], shape[-1]});
   RETURN_IF_NOT_OK((*output)->Reshape(new_shape));
   // power
-  CHECK_FAIL_RETURN_UNEXPECTED(power != 0, "GriffinLim: power can not be zero.");
+  CHECK_FAIL_RETURN_UNEXPECTED(std::fabs(power) > std::numeric_limits<float>::epsilon(),
+                               "GriffinLim: power can not be zero.");
   for (auto itr = (*output)->begin<T>(); itr != (*output)->end<T>(); itr++) {
     *itr = pow(*itr, 1 / power);
   }
@@ -2096,7 +2110,7 @@ Status GriffinLimImpl(const std::shared_ptr<Tensor> &input, std::shared_ptr<Tens
       rebuilt.transposeInPlace();
       angles = rebuilt.array();
 
-      if (momentum != 0) {
+      if (std::fabs(momentum) > std::numeric_limits<float>::epsilon()) {
         tprev = tprev * ((momentum) / (1 + momentum));
         angles = angles.array() - tprev.array();
       }
@@ -2134,6 +2148,8 @@ Status GriffinLimImpl(const std::shared_ptr<Tensor> &input, std::shared_ptr<Tens
 Status GriffinLim(const std::shared_ptr<Tensor> &input, std::shared_ptr<Tensor> *output, int32_t n_fft, int32_t n_iter,
                   int32_t win_length, int32_t hop_length, WindowType window_type, float power, float momentum,
                   int32_t length, bool rand_init, std::mt19937 *rnd) {
+  RETURN_UNEXPECTED_IF_NULL(output);
+  RETURN_UNEXPECTED_IF_NULL(rnd);
   std::shared_ptr<Tensor> input_tensor;
   if (input->type() != DataType::DE_FLOAT64) {
     RETURN_IF_NOT_OK(TypeCast(input, &input_tensor, DataType(DataType::DE_FLOAT32)));
@@ -2238,6 +2254,8 @@ Status InverseMelScale(const std::shared_ptr<Tensor> &input, std::shared_ptr<Ten
                        int32_t n_mels, int32_t sample_rate, float f_min, float f_max, int32_t max_iter,
                        float tolerance_loss, float tolerance_change, float sgd_lr, float sgd_momentum, NormType norm,
                        MelType mel_type, std::mt19937 *rnd) {
+  RETURN_UNEXPECTED_IF_NULL(output);
+  RETURN_UNEXPECTED_IF_NULL(rnd);
   std::shared_ptr<Tensor> input_tensor;
   if (input->type() != DataType::DE_FLOAT64) {
     RETURN_IF_NOT_OK(TypeCast(input, &input_tensor, DataType(DataType::DE_FLOAT32)));
@@ -2377,6 +2395,7 @@ Status Resample(const std::shared_ptr<Tensor> &input, std::shared_ptr<Tensor> *o
 
 Status Resample(const std::shared_ptr<Tensor> &input, std::shared_ptr<Tensor> *output, float orig_freq, float des_freq,
                 ResampleMethod resample_method, int32_t lowpass_filter_width, float rolloff, float beta) {
+  RETURN_UNEXPECTED_IF_NULL(output);
   RETURN_IF_NOT_OK(ValidateLowRank("Resample", input, kMinAudioDim, "<..., time>"));
   RETURN_IF_NOT_OK(ValidateTensorNumeric("Resample", input));
   if (input->type().value() == DataType::DE_FLOAT64) {

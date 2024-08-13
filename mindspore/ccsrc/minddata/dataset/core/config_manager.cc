@@ -105,18 +105,20 @@ Status ConfigManager::LoadFile(const std::string &settingsFile) {
   }
   // Some settings are mandatory, others are not (with default).  If a setting
   // is optional it will set a default value if the config is missing from the file.
+  std::ifstream in(settingsFile, std::ios::in);
   try {
-    std::ifstream in(settingsFile, std::ios::in);
     nlohmann::json js;
     in >> js;
     rc = FromJson(js);
     in.close();
   } catch (const nlohmann::json::type_error &e) {
+    in.close();
     std::ostringstream ss;
     ss << "Client file failed to load:\n" << e.what();
     std::string err_msg = ss.str();
     RETURN_STATUS_UNEXPECTED(err_msg);
   } catch (const std::exception &err) {
+    in.close();
     RETURN_STATUS_UNEXPECTED("Client file failed to load.");
   }
   return rc;

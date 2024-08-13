@@ -766,6 +766,7 @@ Status DataQueueOp::GetDataInfo(DATA_INFO *data_info) {
 
 Status DataQueueOp::GetMbufQueueSize(size_t *queue_size) {
 #ifdef WITH_BACKEND
+  RETURN_UNEXPECTED_IF_NULL(queue_size);
   if (TaskManager::FindMe()->Interrupted()) {
     RETURN_STATUS_ERROR(StatusCode::kMDTDTPushFailure,
                         "DataQueueOp thread had been interrupted, please check for other error messages.");

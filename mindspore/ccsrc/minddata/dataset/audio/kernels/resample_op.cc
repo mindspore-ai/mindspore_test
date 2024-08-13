@@ -22,7 +22,7 @@ namespace dataset {
 // main function call for resample
 Status ResampleOp::Compute(const std::shared_ptr<Tensor> &input, std::shared_ptr<Tensor> *output) {
   IO_CHECK(input, output);
-  if (orig_freq_ == new_freq_) {
+  if (std::fabs(orig_freq_ - new_freq_) <= std::numeric_limits<float>::epsilon()) {
     *output = input;
   } else {
     RETURN_IF_NOT_OK(

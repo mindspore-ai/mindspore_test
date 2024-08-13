@@ -60,7 +60,7 @@ Status MelSpectrogramOperation::ValidateParams() {
   CHECK_FAIL_RETURN_UNEXPECTED(f_min_ <= f_max_,
                                "MelSpectrogram: f_max must be greater than or equal to f_min, but got f_max: " +
                                  std::to_string(f_max_) + ", f_min: " + std::to_string(f_min_));
-  if (f_max_ != 0) {
+  if (std::fabs(f_max_) > std::numeric_limits<float>::epsilon()) {
     RETURN_IF_NOT_OK(ValidateFloatScalarNonNegative("MelSpectrogram", "f_max", f_max_));
   } else {
     CHECK_FAIL_RETURN_UNEXPECTED(f_min_ < (sample_rate_ * HALF),
@@ -77,7 +77,7 @@ Status MelSpectrogramOperation::ValidateParams() {
 std::shared_ptr<TensorOp> MelSpectrogramOperation::Build() {
   win_length_ = win_length_ == 0 ? n_fft_ : win_length_;
   hop_length_ = win_length_ == 0 ? win_length_ / TWO : hop_length_;
-  f_max_ = f_max_ == 0 ? sample_rate_ / TWO : f_max_;
+  f_max_ = std::fabs(f_max_) <= std::numeric_limits<float>::epsilon() ? sample_rate_ / TWO : f_max_;
   std::shared_ptr<MelSpectrogramOp> tensor_op =
     std::make_shared<MelSpectrogramOp>(sample_rate_, n_fft_, win_length_, hop_length_, f_min_, f_max_, pad_, n_mels_,
                                        window_, power_, normalized_, center_, pad_mode_, onesided_, norm_, mel_scale_);
