@@ -110,7 +110,8 @@ Status ReduceMethod::GetAttrs() {
 }
 
 Status ReduceMethod::InferTensorMap() {
-  Shape tensor_map_index, output_tensor_map;
+  Shape tensor_map_index;
+  Shape output_tensor_map;
   std::vector<int64_t> dim_list;
   size_t size = inputs_shape_.at(0).size();
   // such as 4: tensor_map_index [3,2,1,0]
@@ -581,7 +582,8 @@ Status SquareSumAllInfo::InferTensorInfo() {
   Shape input_shape = inputs_shape_.at(0);
   Shape output_shape = outputs_shape_.at(0);
 
-  TensorLayout input_tensor_layout, output_tensor_layout;
+  TensorLayout input_tensor_layout;
+  TensorLayout output_tensor_layout;
   if ((input_tensor_layout.InitFromVector(dev_matrix_shape_, inputs_tensor_map_[0], input_shape) != SUCCESS) ||
       (output_tensor_layout.InitFromVector(dev_matrix_shape_, outputs_tensor_map_[0], output_shape) != SUCCESS)) {
     return FAILED;

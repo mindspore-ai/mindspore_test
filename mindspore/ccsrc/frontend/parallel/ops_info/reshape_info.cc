@@ -590,7 +590,8 @@ Status ReshapeInfo::InferTensorInfo() {
     return SUCCESS;
   }
 
-  TensorLayouts inputs_layout, outputs_layout;
+  TensorLayouts inputs_layout;
+  TensorLayouts outputs_layout;
   if (InferTensorLayout(&inputs_layout, &outputs_layout) != SUCCESS) {
     return FAILED;
   }

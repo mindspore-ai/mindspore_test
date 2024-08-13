@@ -658,7 +658,8 @@ Status ExpandDimsInfo::InferTensorMap() {
 
   // for example: if the dimension of input is 3, and the axis is 2,
   // then the input_tensor_map is [2, 1, 0], the output_tensor_map is [2, 1, -1, 0]
-  Shape input_tensor_map, output_tensor_map;
+  Shape input_tensor_map;
+  Shape output_tensor_map;
   size_t size = inputs_shape_[0].size();
   for (size_t i = 0; i < size; ++i) {
     input_tensor_map.push_back(SizeToLong(size - i - 1));
@@ -698,7 +699,8 @@ Status ExpandDimsInfo::InferMirrorOps() {
     return SUCCESS;
   }
 
-  OperatorVector mirror_op, placeholder_op;
+  OperatorVector mirror_op;
+  OperatorVector placeholder_op;
   mirror_op = CreateMirrorOps(group[0].name(), group[0].GetDevNum());
   mirror_ops_.push_back(mirror_op);
   mirror_ops_.push_back(placeholder_op);
@@ -767,7 +769,8 @@ void SqueezeInfo::InferReplaceOps() {
 Status SqueezeInfo::InferTensorMap() {
   // for example: if the shape of input is [32, 32, 1], and the axis is (2, ),
   // then the input_tensor_map is [2, 1, 0], the output_tensor_map is [2, 1]
-  Shape input_tensor_map, output_tensor_map;
+  Shape input_tensor_map;
+  Shape output_tensor_map;
   if (inputs_shape_.empty()) {
     MS_LOG(ERROR) << name_ << ": The inputs shape is empty";
     return FAILED;

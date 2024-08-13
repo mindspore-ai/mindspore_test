@@ -86,7 +86,8 @@ Status OneHotInfo::InferDevMatrixShape() {
 }
 
 Status OneHotInfo::InferTensorMap() {
-  Shape input_tensor_map_index, output_tensor_map_index;
+  Shape input_tensor_map_index;
+  Shape output_tensor_map_index;
   size_t size = outputs_shape_[0].size();
   if (axis_ == 0) {
     for (size_t i = 0; i < size; ++i) {
