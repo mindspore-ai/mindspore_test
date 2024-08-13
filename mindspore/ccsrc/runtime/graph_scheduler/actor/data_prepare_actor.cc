@@ -647,6 +647,7 @@ TensorPtr DataPrepareActor::FetchInputTensor(const std::vector<TensorPtr> &tenso
     // The tensor needs to be converted to contiguous before being given to the actors.
     // After the view feature is supported in the graph mode, the following code will be deleted.
     DeviceAddressUtils::ConvertContiguousTensorSync(tensor);
+    runtime::DeviceAddressUtils::CreateKernelTensor(tensor);
     return tensor;
   }
 
@@ -662,6 +663,7 @@ TensorPtr DataPrepareActor::FetchInputTensor(const std::vector<TensorPtr> &tenso
   // The tensor needs to be converted to contiguous before being given to the actors.
   // After the view feature is supported in the graph mode, the following code will be deleted.
   DeviceAddressUtils::ConvertContiguousTensorSync(tensor);
+  runtime::DeviceAddressUtils::CreateKernelTensor(tensor);
   return tensor;
 }
 
@@ -685,6 +687,7 @@ TensorPtr DataPrepareActor::FetchInputTensorByArg(const VectorRef &args, size_t 
   // The tensor needs to be converted to contiguous before being given to the actors.
   // After the view feature is supported in the graph mode, the following code will be deleted.
   DeviceAddressUtils::ConvertContiguousTensorSync(tensor);
+  runtime::DeviceAddressUtils::CreateKernelTensor(tensor);
 
   if (tensor != nullptr && tensor->update_value_callback() == nullptr && tensor->is_parameter()) {
     static auto callback = [](const tensor::Tensor *tensor) { tensors_need_reprepare_.insert(tensor); };
