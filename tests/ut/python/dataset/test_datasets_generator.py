@@ -2450,10 +2450,12 @@ def test_generator_with_dynamic_shared_queue():
         return input_data
 
     def batch_func(input_data, batch_info):
-        return input_data
+        return np.array(input_data)
 
     dataset = ds.GeneratorDataset(DynamicDataset(), column_names=["data"], num_parallel_workers=2,
                                   shuffle=False, max_rowsize=-1)
+    dataset = dataset.map(map_func, num_parallel_workers=2, python_multiprocessing=True, max_rowsize=-1)
+    dataset = dataset.map(map_func, num_parallel_workers=2, python_multiprocessing=True, max_rowsize=-1)
     dataset = dataset.map(map_func, num_parallel_workers=2, python_multiprocessing=True, max_rowsize=-1)
     dataset = dataset.batch(2, num_parallel_workers=2, per_batch_map=batch_func,
                             python_multiprocessing=True, max_rowsize=-1)
@@ -2489,9 +2491,11 @@ def test_generator_shared_queue_reuse_with_fixed_shape():
         return input_data
 
     def batch_func(input_data, batch_info):
-        return input_data
+        return np.array(input_data)
 
     dataset = ds.GeneratorDataset(FixedDataset(), column_names=["data"], num_parallel_workers=2, shuffle=False)
+    dataset = dataset.map(map_func, num_parallel_workers=2, python_multiprocessing=True)
+    dataset = dataset.map(map_func, num_parallel_workers=2, python_multiprocessing=True)
     dataset = dataset.map(map_func, num_parallel_workers=2, python_multiprocessing=True)
     dataset = dataset.batch(2, num_parallel_workers=2, per_batch_map=batch_func, python_multiprocessing=True)
 
@@ -2525,9 +2529,11 @@ def test_generator_shared_queue_reuse_with_dynamic_shape():
         return input_data
 
     def batch_func(input_data, batch_info):
-        return input_data
+        return np.array(input_data)
 
     dataset = ds.GeneratorDataset(DynamicDataset(), column_names=["data"], num_parallel_workers=2, shuffle=False)
+    dataset = dataset.map(map_func, num_parallel_workers=2, python_multiprocessing=True)
+    dataset = dataset.map(map_func, num_parallel_workers=2, python_multiprocessing=True)
     dataset = dataset.map(map_func, num_parallel_workers=2, python_multiprocessing=True)
     dataset = dataset.batch(2, num_parallel_workers=2, per_batch_map=batch_func, python_multiprocessing=True)
 

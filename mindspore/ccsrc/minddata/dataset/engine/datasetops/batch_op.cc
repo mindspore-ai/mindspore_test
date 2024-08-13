@@ -530,7 +530,7 @@ Status BatchOp::InvokeBatchMapFunc(TensorTable *input, TensorTable *output, CBat
       // case 1: int, float, str, bytes, np.ndarray, dict
       // case 2: item1, item2, item3, ...
       py::tuple ret_tuple;
-      if (py::isinstance<py::dict>(ret_py_obj)) {
+      if (!py::isinstance<py::tuple>(ret_py_obj)) {
         ret_tuple = py::make_tuple(ret_py_obj);
       } else {
         ret_tuple = py::cast<py::tuple>(ret_py_obj);

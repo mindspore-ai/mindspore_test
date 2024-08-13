@@ -97,16 +97,18 @@ Status GeneratorOp::CreateGeneratorObject() {
   return ret;
 }
 
-// Reentrant init method.
-Status GeneratorOp::Init() {
-  RETURN_IF_NOT_OK(InitSampler());
-
+Status GeneratorOp::Launch() {
   // Launch the python multiprocessing
   if (python_mp_) {
     MS_LOG(DEBUG) << "Launch Python Multiprocessing for GeneratorOp: " << id();
     python_mp_->launch(id());
   }
+  return DatasetOp::Launch();
+}
 
+// Reentrant init method.
+Status GeneratorOp::Init() {
+  RETURN_IF_NOT_OK(InitSampler());
   return CreateGeneratorObject();
 }
 

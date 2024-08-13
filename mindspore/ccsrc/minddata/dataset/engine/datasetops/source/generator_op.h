@@ -97,6 +97,10 @@ class GeneratorOp : public PipelineOp, public RandomAccessOp {
   Status GetNextRowPullMode(TensorRow *const row) override;
 
  protected:
+  /// \brief Launch subprocesses in multiprocessing mode.
+  /// \return Status Status code.
+  Status Launch() override;
+
   /// \brief Gets the implementation status for operator in pull mode
   /// \return implementation status
   ImplementedPullMode PullModeImplementationStatus() const override { return ImplementedPullMode::Implemented; }

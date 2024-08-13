@@ -187,6 +187,16 @@ Status ExecutionTree::Launch() {
   std::ostringstream ss;
   ss << *this;
   MS_LOG(INFO) << "Printing the tree before launch tasks:\n" << ss.str();
+
+  // By default, Python uses fork() to create child processes, which will
+  // inherit all the resources of the parent process, including the state
+  // of locks. So we should create all the child processes first, make sure
+  // the main process is in single-threaded and lock-free, and then create
+  // all the DatasetOp threads.
+  for (auto itr = this->begin(); itr != this->end(); ++itr) {
+    itr->Launch();
+  }
+
   for (auto itr = this->begin(); itr != this->end(); ++itr) {
     // An inlined operator is one that has an output connector size of 0, and it does not
     // require a thread to execute.  Instead, the work of this operator is executed inlined
@@ -194,7 +204,6 @@ Status ExecutionTree::Launch() {
     // the launching tree/user thread.  Do not exec any thread for an inlined op.
     // Set the state of the Operator as running. This only matters in Leaf ops, CacheOp and TakeOp
     itr->state_ = DatasetOp::OpState::kDeOpRunning;
-    itr->Launch();
     if (!itr->inlined()) {
       RETURN_IF_NOT_OK(tg_->CreateAsyncTask(itr->NameWithID(), std::ref(*itr), nullptr, itr->id()));
       // Set if this task group has data queue op
