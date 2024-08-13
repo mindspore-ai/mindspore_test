@@ -22,7 +22,7 @@ from collections import defaultdict
 import numpy as np
 import mindspore as ms
 from mindspore.common import dtype as mstype
-from mindspore.parallel._utils import _is_in_auto_parallel_mode
+from mindspore.parallel._utils import _is_in_auto_parallel_mode, _get_pipeline_stages
 from mindspore.parallel._parallel_serialization import _rank_list_for_transform_parallel_checkpoint, \
     _transform_parallel_checkpoint, _get_device_num_from_strategy, _make_dir, \
     _extract_layout_map, _extract_src_dst_layout_map, _parameter_not_in_local_stage, _extract_pipeline_stage_num, \
@@ -465,31 +465,11 @@ def _sync_params(name, param, layout):
     peer_rank = layout[10]
     sr_tag = layout[11]
 
-    class SharedParameterSyncCell(ms.nn.Cell):
-        """synchronize cell"""
-
-        def __init__(self, param, is_send, peer_rank, sr_tag):
-            super().__init__()
-            self.param = param
-            self.is_send = is_send
-            self.ret = ms.Tensor([0])
-
-            from mindspore.ops import Send, Receive
-            if self.is_send:
-                self.send = Send(sr_tag=sr_tag, dest_rank=peer_rank)
-            else:
-                self.receive = Receive(sr_tag=sr_tag, src_rank=peer_rank, shape=param.shape, dtype=param.dtype)
-
-        def construct(self):
-            if self.is_send:
-                out = self.send(self.param)
-                return ms.ops.functional.depend(self.ret, out)
-
-            self.param = self.receive(self.ret)
-            return ms.ops.functional.depend(self.ret, self.param)
-
-    sync_net = SharedParameterSyncCell(param, is_send, peer_rank, sr_tag)
-    sync_net()
+    from mindspore.ops.operations._inner_ops import Send, Receive
+    if is_send:
+        Send(sr_tag=sr_tag, dest_rank=peer_rank)(param)
+    else:
+        param.assign_value(Receive(sr_tag=sr_tag, src_rank=peer_rank, shape=param.shape, dtype=param.dtype)(param))
 
 
 def sync_pipeline_shared_parameters(net):
@@ -584,6 +564,9 @@ def sync_pipeline_shared_parameters(net):
         msg = ("For 'sync_pipeline_shared_parameters', the argument 'net' should be a Cell, "
                "but got {}.".format(type(net)))
         raise TypeError(msg)
+
+    if _get_pipeline_stages() < 2:
+        return
 
     layout_dict = net.parameter_layout_dict
     if _is_in_auto_parallel_mode() and not layout_dict:
