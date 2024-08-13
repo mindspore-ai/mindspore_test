@@ -105,9 +105,18 @@
 #include "frontend/optimizer/irpass/expand_dump_flag.h"
 #include "frontend/optimizer/irpass/symbol_engine_optimizer.h"
 #include "frontend/optimizer/irpass/add_forward_monad_depend.h"
+#include "pipeline/jit/ps/pass_config.h"
+
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/backend/distributed/ps/util.h"
 #include "include/backend/distributed/ps/ps_context.h"
+#endif
+
+#ifndef REGISTER_PASS_FUNC_IMPL
+#define REGISTER_PASS_FUNC_IMPL(name)                                                                        \
+  namespace {                                                                                                \
+  static auto helper_pass_func_##name = opt::RegisterPassFunc(#name, opt::OptPassConfigLib::PassFunc(name)); \
+  }
 #endif
 
 namespace mindspore {
@@ -141,6 +150,7 @@ bool PyInterpretToExecutePass(const ResourcePtr &resource) {
   UpdateArgsSpec(func_graph, resource);
   return true;
 }
+REGISTER_PASS_FUNC_IMPL(PyInterpretToExecutePass)
 
 bool RewriterBeforeOptAPass(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
@@ -150,6 +160,7 @@ bool RewriterBeforeOptAPass(const ResourcePtr &resource) {
   UpdateArgsSpec(func_graph, resource);
   return true;
 }
+REGISTER_PASS_FUNC_IMPL(RewriterBeforeOptAPass)
 
 bool TransformTopGraphPass(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
@@ -169,6 +180,7 @@ bool TransformTopGraphPass(const ResourcePtr &resource) {
   }
   return true;
 }
+REGISTER_PASS_FUNC_IMPL(TransformTopGraphPass)
 
 bool RewriterAfterOptAPass(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
@@ -178,6 +190,7 @@ bool RewriterAfterOptAPass(const ResourcePtr &resource) {
   UpdateArgsSpec(func_graph, resource);
   return true;
 }
+REGISTER_PASS_FUNC_IMPL(RewriterAfterOptAPass)
 
 bool ConvertAfterRewriterPass(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
@@ -187,6 +200,7 @@ bool ConvertAfterRewriterPass(const ResourcePtr &resource) {
   UpdateArgsSpec(func_graph, resource);
   return true;
 }
+REGISTER_PASS_FUNC_IMPL(ConvertAfterRewriterPass)
 
 bool OrderPyExecuteAfterRewriterPass(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
@@ -196,6 +210,7 @@ bool OrderPyExecuteAfterRewriterPass(const ResourcePtr &resource) {
   UpdateArgsSpec(func_graph, resource);
   return true;
 }
+REGISTER_PASS_FUNC_IMPL(OrderPyExecuteAfterRewriterPass)
 
 FuncGraphPtr PrimBpOptPassStep1(const opt::irpass::OptimizeIRPassLib &irpass, const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
@@ -329,7 +344,7 @@ FuncGraphPtr FinalBpropGraphPass(const ResourcePtr &resource, bool has_control_f
 
 namespace {
 bool ReAutoMonadWrapper(const FuncGraphPtr &root, const opt::OptimizerPtr &) { return ReAutoMonad(root); }
-
+REGISTER_OPT_PASS_FUNC(ReAutoMonadWrapper)
 bool parallel_mode() {
 #if defined(__linux__) && defined(WITH_BACKEND)
   if (ps::PSContext::instance()->is_server() || ps::PSContext::instance()->is_scheduler()) {
@@ -735,7 +750,7 @@ void ReclaimOptimizer() {
 bool OptPassGroup(const ResourcePtr &resource, const std::string &name) {
   MS_EXCEPTION_IF_NULL(resource);
   if (resource->func_graph() == nullptr) {
-    MS_LOG(ERROR) << "Opt passes int64_t error";
+    MS_LOG(ERROR) << "Opt passes error";
     return false;
   }
 
@@ -1279,6 +1294,17 @@ bool AddEmbeddingCachePass(const ResourcePtr &resource) {
 
   return true;
 }
+
+REGISTER_PASS_FUNC_IMPL(CconvPass)
+REGISTER_PASS_FUNC_IMPL(AddCacheEmbeddingPass)
+REGISTER_PASS_FUNC_IMPL(RemoveValueNodeDuplicationsPass)
+REGISTER_PASS_FUNC_IMPL(AddRecomputationPass)
+
+REGISTER_PASS_FUNC_IMPL(EnvironConversionPass)
+REGISTER_PASS_FUNC_IMPL(SliceRecomputeActivationPass)
+REGISTER_PASS_FUNC_IMPL(MicroInterLeavedOrderControlPass)
+REGISTER_PASS_FUNC_IMPL(CommOpAddAttrs)
+REGISTER_PASS_FUNC_IMPL(AddCommOpReusePass)
 
 std::vector<PassItem> kVmPasses = {
   {"py_interpret_to_execute", PyInterpretToExecutePass},

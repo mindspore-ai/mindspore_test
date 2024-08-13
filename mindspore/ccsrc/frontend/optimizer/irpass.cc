@@ -173,7 +173,7 @@ OptimizeIRPassLib::OptimizeIRPassLib() {
   environ_get_depend_swap_ =
     MakeSubstitution(std::make_shared<EnvironGetDependSwap>(), "environ_get_depend_swap", prim::kPrimEnvironGet);
   environ_add_const_eliminate_ = MakeSubstitution(std::make_shared<EnvironAddConstEliminater>(),
-                                                  "environ_add_const_eliminate_", prim::kPrimEnvironAdd);
+                                                  "environ_add_const_eliminate", prim::kPrimEnvironAdd);
   split_environ_get_set_with_tuple_value_ =
     MakeSubstitution(std::make_shared<SplitEnvironGetSetWithTupleValue>(), "split_environ_get_set_with_tuple_value",
                      {prim::kPrimEnvironGet, prim::kPrimEnvironSet});
@@ -218,7 +218,7 @@ OptimizeIRPassLib::OptimizeIRPassLib() {
 
   // inline
   inline_ = MakeSubstitution(std::make_shared<Inliner>(), "inline", IsCNodeGraph);
-  inline_without_move_ = MakeSubstitution(std::make_shared<DirectInliner>(false), "inline", IsCNodeGraph);
+  inline_without_move_ = MakeSubstitution(std::make_shared<DirectInliner>(false), "inline_without_move", IsCNodeGraph);
   replace_applicator_ =
     MakeSubstitution(std::make_shared<ReplaceApplicator>(), "replace_applicator", IsValueNode<FuncGraph>);
   specialize_transform_ =

@@ -13,6 +13,15 @@
 # limitations under the License.
 # ============================================================================
 """
+Name: AUTO_PASSES_OPTIMIZE_PATH
+Function: Whether to do optimize the passes configure.
+Value Range:
+    string: The passes configure file path.
+    Default: '' .empty string. Disable to do optimize the passes.
+"""
+AUTO_PASSES_OPTIMIZE_PATH = ''
+
+"""
 Name: COMPILE_PROFILE
 Function: Whether to do profile and print profile log.
 Value Range:
@@ -275,4 +284,5 @@ __all__ = [
     "DUMP_VALIDATE_BEFORE_RESET_ID",
     "ENABLE_RECOMPUTE_BEFORE_INLINE",
     "STRICT_CHECK_PARENT_CONTEXT",
+    "AUTO_PASSES_OPTIMIZE_PATH",
 ]

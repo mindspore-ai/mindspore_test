@@ -263,6 +263,12 @@ PYBIND11_MODULE(_c_expression, m) {
     .def("check_argument_consistency", &GraphExecutorPy::CheckArgumentsConsistency, "Check equal of arguments.")
     .def("clear_compile_arguments_resource", &GraphExecutorPy::ClearCompileArgumentsResource,
          "Clear resource when phase cached.")
+    .def("set_optimize_config", &GraphExecutorPy::SetOptimizeConfig, py::arg("opt_config") = py::list(),
+         "Set the optimizer config.")
+    .def("get_optimize_config", &GraphExecutorPy::GetOptimizeConfig, "Get the optimize config.")
+    .def("set_config_passes", &GraphExecutorPy::SetConfigPasses, py::arg("passes") = py::list(),
+         "Set the optimizer passes.")
+    .def("get_running_passes", &GraphExecutorPy::GetRunningPasses, "Get the running passes.")
     .def("inc_graph_cell_count", &GraphExecutorPy::IncGraphCellCount, "Increase the count of GraphCell instance.")
     .def("dec_graph_cell_count", &GraphExecutorPy::DecGraphCellCount, "Decrease the count of GraphCell instance.");
 

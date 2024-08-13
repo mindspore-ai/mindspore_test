@@ -345,6 +345,7 @@ void FuncGraphManager::AddFuncGraph(const FuncGraphPtr &func_graph, bool is_root
   if (func_graphs_.contains(func_graph)) {
     return;
   }
+  ChangeVersion();
 
   // Add func_graph as a managed graph.
   AddIntoManaged(func_graph);
@@ -364,6 +365,7 @@ void FuncGraphManager::AddFuncGraph(const FuncGraphPtr &func_graph, bool is_root
 
 // Add all func graphs from the root func graph.
 void FuncGraphManager::AddFuncGraphs(const FuncGraphPtr &source_func_graph) {
+  ChangeVersion();
   MS_EXCEPTION_IF_NULL(source_func_graph);
   todo_.clear();
   todo_.emplace_back(source_func_graph);
@@ -864,6 +866,11 @@ void FuncGraphManager::MoveAllNodes(const FuncGraphPtr &source, const FuncGraphP
 }
 
 void FuncGraphManager::CommitChanges(std::vector<change::ChangePtr> &&changes) {
+  if (changes.empty()) {
+    return;
+  }
+  ChangeVersion();
+
   // Apply changes.
   change::ChangeCounter counter;
   for (auto &change : changes) {
