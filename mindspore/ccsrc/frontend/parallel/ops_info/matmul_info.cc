@@ -1387,8 +1387,10 @@ ReplaceGraphPtr MatMul::replace_graph(const CNodePtr &cnode) {
   }
   bool x_flag = !x_group_list.empty();
   bool w_flag = !w_group_list.empty();
-  AnfNodePtr matmul_left_input, matmul_right_input;
-  AnfNodePtr x_all_gather, w_all_gather;
+  AnfNodePtr matmul_left_input;
+  AnfNodePtr matmul_right_input;
+  AnfNodePtr x_all_gather;
+  AnfNodePtr w_all_gather;
   if (x_flag) {
     OperatorAttrs x_all_gather_attrs;
     Attr x_attr_group = std::make_pair(GROUP, MakeValue(x_group_list[0].name()));

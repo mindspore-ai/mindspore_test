@@ -55,6 +55,8 @@ namespace parallel {
 // max_seq_len, update_seq_len is not able to split.
 // hidden_size is able to split.
 
+constexpr size_t kIndexSix = 6;
+
 Status DecoderKVCacheInfo::CheckStrategy3Dims(const Dimensions &strategy_cache, const Dimensions &strategy_update) {
   if (strategy_cache.at(1) != 1 || strategy_update.at(1) != 1) {
     MS_LOG(ERROR) << name_ << ": Invalid strategy: The seq_len can't be shard, but got"
@@ -79,14 +81,14 @@ Status DecoderKVCacheInfo::CheckStrategy4Dims(const Dimensions &strategy_cache, 
                   << ", strategy_update's strategy: " << strategy_update;
     return FAILED;
   }
-  if (strategy_cache.at(2) != 1 || strategy_update.at(2) != 1) {
+  if (strategy_cache.at(kIndexTwo) != 1 || strategy_update.at(kIndexTwo) != 1) {
     MS_LOG(ERROR) << name_ << ": Invalid strategy: The seq_len can't be shard, but got"
-                  << " cache's seq_len strategy: " << strategy_cache.at(2)
-                  << "; update's seq_len strategy: " << strategy_update.at(2);
+                  << " cache's seq_len strategy: " << strategy_cache.at(kIndexTwo)
+                  << "; update's seq_len strategy: " << strategy_update.at(kIndexTwo);
     return FAILED;
   }
   // hidden_size must be the same strategy.
-  if (strategy_cache.at(3) != strategy_update.at(3)) {
+  if (strategy_cache.at(kIndexThree) != strategy_update.at(kIndexThree)) {
     MS_LOG(ERROR) << name_ << " Invalid strategy: The hidden_size must be shard at the same time, but got"
                   << " strategy_cache's strategy: " << strategy_cache
                   << ", strategy_update's strategy: " << strategy_update;
@@ -121,13 +123,13 @@ Status DecoderKVCacheInfo::CheckStrategy(const StrategyPtr &strategy) {
   }
 
   auto input_strategys = strategy->GetInputDim();
-  auto strategy_cache = input_strategys.at(0);            // (4, 4, 1, 4)
-  auto strategy_update = input_strategys.at(1);           // (4, 4, 1, 4)
-  auto strategy_valid_seq_len = input_strategys.at(2);    // (4)
-  auto strategy_batch_index = input_strategys.at(3);      // (1)
-  auto strategy_seq_len_axis = input_strategys.at(4);     // (1)
-  auto strategy_new_max_seq_len = input_strategys.at(5);  // (1)
-  auto strategy_cur_max_seq_len = input_strategys.at(6);  // (1)
+  auto strategy_cache = input_strategys.at(0);                     // (4, 4, 1, 4)
+  auto strategy_update = input_strategys.at(1);                    // (4, 4, 1, 4)
+  auto strategy_valid_seq_len = input_strategys.at(kIndexTwo);     // (4)
+  auto strategy_batch_index = input_strategys.at(kIndexThree);     // (1)
+  auto strategy_seq_len_axis = input_strategys.at(kIndexFour);     // (1)
+  auto strategy_new_max_seq_len = input_strategys.at(kIndexFive);  // (1)
+  auto strategy_cur_max_seq_len = input_strategys.at(kIndexSix);   // (1)
 
   if (strategy_new_max_seq_len.at(0) != 1) {
     MS_LOG(ERROR) << name_ << ": Invalid strategy: The new_max_seq_len can't be shard, but got"

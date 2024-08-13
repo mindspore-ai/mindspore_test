@@ -31,6 +31,11 @@
 
 namespace mindspore {
 namespace parallel {
+
+constexpr size_t kBatchNormInputsNumTwo = 2;
+constexpr size_t kBatchNormInputsNumFour = 4;
+constexpr size_t kStrategySize = 5;
+
 Status BatchNormInfo::GetAttrs() {
   auto is_training_value = GetScalarValueFromInputsWithCheck<bool>(input_value_, name_, IS_TRAINING);
 
@@ -82,11 +87,11 @@ Status BatchNormInfo::GetAttrs() {
     return FAILED;
   }
 
-  if (inputs_shape_[0].size() != 2 && inputs_shape_[0].size() != 4) {
+  if (inputs_shape_[0].size() != kBatchNormInputsNumTwo && inputs_shape_[0].size() != kBatchNormInputsNumFour) {
     MS_LOG(ERROR) << name_ << ": The size of input[0]'s shape must be 2 or 4, but got " << inputs_shape_[0].size();
     return FAILED;
   }
-  input_is_4d_ = (inputs_shape_[0].size() == 4);
+  input_is_4d_ = (inputs_shape_[0].size() == kBatchNormInputsNumFour);
 
   MS_LOG(INFO) << name_ << ": The is_traing is " << is_training_ << ", epsilon is " << epsilon_ << ", momentum is "
                << momentum_ << ", data format is " << format_;
@@ -103,17 +108,16 @@ Status BatchNormInfo::CheckStrategy(const StrategyPtr &strategy) {
 
   std::vector<Dimensions> stra = strategy->GetInputDim();
 
-  if (stra.size() != 5) {
+  if (stra.size() != kStrategySize) {
     MS_LOG(ERROR) << name_ << ": The size of strategy must be 5, but got " << stra.size();
     return FAILED;
   }
-
-  if ((stra[0].size() != 4) && (stra[0].size() != 2)) {
+  if ((stra[0].size() != kBatchNormInputsNumFour) && (stra[0].size() != kBatchNormInputsNumTwo)) {
     MS_LOG(ERROR) << name_ << ": The size of strategy[0] must be 4 or 2, but got " << stra[0].size();
     return FAILED;
   }
 
-  for (size_t i = 1; i < 5; ++i) {
+  for (size_t i = 1; i < kStrategySize; ++i) {
     if (stra[i].empty()) {
       MS_LOG(ERROR) << name_ << ": The strategy can not be empty, the index is " << i;
       return FAILED;
