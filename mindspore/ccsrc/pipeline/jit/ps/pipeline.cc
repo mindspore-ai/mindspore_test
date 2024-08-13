@@ -96,6 +96,7 @@
 #include "include/common/symbol_engine/symbol_engine_impl.h"
 #include "pipeline/jit/ps/load_mindir.h"
 #include "load_mindir/infer_mindir.h"
+#include "pipeline/jit/ps/pass_config.h"
 
 #ifndef ENABLE_SECURITY
 #include "include/backend/debug/data_dump/dump_json_parser.h"
@@ -1234,6 +1235,12 @@ bool GraphExecutorPy::CompileInner(const py::object &source, const py::tuple &ar
   PhaseManager::GetInstance().set_phase(phase_);
   obj_desc_ = GetObjDesc(source);
   MS_LOG(INFO) << "Start compiling, phase: " << phase_;
+
+  auto root_func_name = obj_desc_;
+  std::replace(root_func_name.begin(), root_func_name.end(), '.', '_');
+  std::replace(root_func_name.begin(), root_func_name.end(), '\'', '_');
+  opt::LoadPassesConfig(root_func_name);
+
   PROF_START(compile_graph);
   MS_LOG(DEBUG) << "source: {" << source_ << "}\nargs: " << py::str(const_cast<py::tuple &>(args))
                 << "\nkwargs: " << py::str(const_cast<py::dict &>(kwargs));
@@ -1283,6 +1290,7 @@ bool GraphExecutorPy::CompileInner(const py::object &source, const py::tuple &ar
   info_[phase_] = executor_info;
   pip->Run();
 
+  opt::SavePassesConfig(root_func_name);
   // Save the compiled graph to MsPipeLine.
   SaveCompiledGraph(phase_);
   if (is_parallel_mode) {
@@ -2030,6 +2038,14 @@ void GraphExecutorPy::KernelBuildServerDir(const py::object &kernel_build_server
   auto ms_context = MsContext::GetInstance();
   ms_context->set_param<std::string>(MS_CTX_KERNEL_BUILD_SERVER_DIR, kernel_build_server_dir_s);
 }
+void GraphExecutorPy::SetOptimizeConfig(const py::list &optimize_cfg) {
+  opt::PassConfigure::Instance().SetOptimizeConfig(optimize_cfg);
+}
+std::string GraphExecutorPy::GetOptimizeConfig() { return opt::PassConfigure::Instance().GetOptimizeConfig(); }
+void GraphExecutorPy::SetConfigPasses(const py::list &passes) {
+  opt::PassConfigure::Instance().SetConfigPasses(passes);
+}
+py::list GraphExecutorPy::GetRunningPasses() { return opt::PassConfigure::Instance().GetRunningPasses(); }
 
 bool InitExecDataset(const std::string &queue_name, int64_t iter_num, int64_t batch_size,
                      const std::vector<TypePtr> &types, const std::vector<std::vector<int64_t>> &shapes,
@@ -2546,6 +2562,7 @@ void ClearResPart1() {
 #endif
   runtime::GraphScheduler::GetInstance().Clear();
   runtime::ProfilerAnalyzer::GetInstance().Clear();
+  opt::PassConfigure::Instance().Clear();
 
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
@@ -2682,6 +2699,7 @@ void ClearSingleton() {
 #endif
   CommManager::Clear();
   expander::ClearAllCache();
+
   MS_LOG(INFO) << "End clear singleton.";
 }
 

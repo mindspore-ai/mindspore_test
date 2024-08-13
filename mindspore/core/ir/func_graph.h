@@ -210,14 +210,24 @@ class MS_CORE_API FuncGraph : public FuncGraphBase, public EffectInfoHolder {
     for (auto &attr : attrs) {
       attrs_[attr.first] = attr.second;
     }
+    FuncGraphManager::ChangeVersion();
   }
   bool has_flag(const std::string &key) const;
-  void set_flag(const std::string &key, bool flag) { attrs_[key] = MakeValue(flag); }
-  void erase_flag(const std::string &key) { (void)attrs_.erase(key); }
+  void set_flag(const std::string &key, bool flag) {
+    attrs_[key] = MakeValue(flag);
+    FuncGraphManager::ChangeVersion();
+  }
+  void erase_flag(const std::string &key) {
+    (void)attrs_.erase(key);
+    FuncGraphManager::ChangeVersion();
+  }
 
   bool has_attr(const std::string &key) const;
   ValuePtr get_attr(const std::string &key) const;
-  void set_attr(const std::string &key, const ValuePtr &value) { attrs_[key] = value; }
+  void set_attr(const std::string &key, const ValuePtr &value) {
+    attrs_[key] = value;
+    FuncGraphManager::ChangeVersion();
+  }
 
   mindspore::HashMap<std::string, FuncGraphTransform> &transforms() { return transforms_; }
   void set_transforms(const mindspore::HashMap<std::string, FuncGraphTransform> &transforms) {
