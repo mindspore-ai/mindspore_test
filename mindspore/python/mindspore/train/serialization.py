@@ -1630,7 +1630,7 @@ def load_param_into_net(net, parameter_dict, strict_load=False, remove_redundanc
         if parallel_mode == "stand_alone":
             raise TypeError(f"The deduplication feature for loading checkpoint can only be used "
                             f"in parallel scenarios, but got {parallel_mode}.")
-        if not net.compile_cache:
+        if not net.compile_cache and not net.parameter_layout_dict:
             raise ValueError("When loading a parameter dict that has removed redundancy, "
                              "the network should be compiled.")
         param_layout = net.parameter_layout_dict
