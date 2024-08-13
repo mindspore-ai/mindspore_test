@@ -110,11 +110,11 @@ class ReceiveBridgeOp : public ParallelOp<TensorRow, TensorRow> {
   Status WorkerEntry(int32_t worker_id) override;  //  In: workerId assigned by tree_
 
  private:
-  SharedMemoryQueue receive_queue_;  // get data from independent process
-  MessageQueue msg_queue_;           // get msg from independent process
   ReceiveInfo receive_info_;         // receive info, including msgrcv and msgsnd status
   int subprocess_pid_;               // the independent dataset process id
   Status err_status_;                // the err status from independent dataset process
+  SharedMemoryQueue receive_queue_;  // get data from independent process
+  MessageQueue msg_queue_;           // get msg from independent process
 
  protected:
   /// \brief Gets the implementation status for operator in pull mode
