@@ -27,15 +27,12 @@ namespace mindspore {
 namespace ops {
 BaseShapePtr IsFiniteFuncImpl::InferShape(const PrimitivePtr &primitive,
                                           const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
-  MS_EXCEPTION_IF_NULL(input_args[kInputIndex0]);
   auto x_shape = CheckAndConvertUtils::ConvertShapePtrToShapeMap(input_args[kInputIndex0]->GetShape())[kShape];
   return std::make_shared<abstract::Shape>(x_shape);
 }
 
 TypePtr IsFiniteFuncImpl::InferType(const PrimitivePtr &primitive,
                                     const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(input_args[kInputIndex0]);
   static const std::set<TypePtr> number_types = {kBool,   kInt8,   kInt16,   kInt32,   kInt64,   kUInt8,   kUInt16,
                                                  kUInt32, kUInt64, kFloat16, kFloat32, kFloat64, kBFloat16};
 

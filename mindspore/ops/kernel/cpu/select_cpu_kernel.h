@@ -48,7 +48,12 @@ class SelectCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelper<S
   bool LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
                     const std::vector<kernel::KernelTensor *> &workspace,
                     const std::vector<kernel::KernelTensor *> &outputs);
-  size_t element_num_{1};
+
+  // Broadcast related.
+  std::vector<size_t> index_list1_{};
+  std::vector<size_t> index_list2_{};
+  std::vector<size_t> index_list3_{};
+  bool is_need_broadcast_{false};
 };
 }  // namespace kernel
 }  // namespace mindspore

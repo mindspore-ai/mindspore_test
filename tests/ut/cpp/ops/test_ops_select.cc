@@ -22,9 +22,9 @@
 
 namespace mindspore {
 namespace ops {
-OP_FUNC_IMPL_TEST_DECLARE(Select, MultiInputOpParams);
+OP_FUNC_IMPL_INFER_TEST_DECLARE(Select, MultiInputOpParams);
 
-OP_FUNC_IMPL_TEST_CASES(
+OP_FUNC_IMPL_INFER_TEST_CASES(
   Select,
   testing::Values(
     MultiInputOpParams{{{2, 3}, {2, 3}, {2, 3}}, {kBool, kFloat32, kFloat32}, {{2, 3}}, {kFloat32}, {}},
