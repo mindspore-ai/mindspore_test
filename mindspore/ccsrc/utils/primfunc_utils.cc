@@ -241,4 +241,26 @@ std::string BuildOpErrorMsg(const OpDefPtr &op_def, const std::vector<std::strin
   ss << "\"" << op_def->name_ << "(" << init_arg_str << ")(" << input_arg_str << ")\".";
   return ss.str();
 }
+
+std::string BuildOpInputsErrorMsg(const OpDefPtr &op_def, const std::string &arg_name, const TypePtr &arg_type) {
+  MS_EXCEPTION_IF_NULL(arg_type);
+  std::stringstream inputs_ss;
+  for (const auto &op_arg : op_def->args_) {
+    if (op_arg.as_init_arg_) {
+      continue;
+    }
+    inputs_ss << op_arg.arg_name_ << "=<";
+    for (const auto &dtype : op_arg.cast_dtype_) {
+      inputs_ss << EnumToString(dtype) << ", ";
+    }
+    inputs_ss << GetRealInputType(op_arg) << ">, ";
+  }
+  constexpr size_t truncate_offset = 2;
+  auto inputs_str = inputs_ss.str();
+  inputs_str = inputs_str.empty() ? "" : inputs_str.replace(inputs_str.end() - truncate_offset, inputs_str.end(), "");
+  std::stringstream ss;
+  ss << "Failed calling " << op_def->name_ << " with \"" << arg_name << "=" << arg_type->ToString() << "\".";
+  ss << "\nThe valid calling should be: \"" << inputs_str << "\".";
+  return ss.str();
+}
 }  // namespace mindspore::ops

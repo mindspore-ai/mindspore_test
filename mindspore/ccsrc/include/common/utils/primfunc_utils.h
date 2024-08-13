@@ -26,6 +26,8 @@ namespace mindspore::ops {
 COMMON_EXPORT bool ValidateArgsType(const AbstractBasePtr &abs_arg, OP_DTYPE type_arg);
 COMMON_EXPORT std::string EnumToString(OP_DTYPE dtype);
 COMMON_EXPORT std::string BuildOpErrorMsg(const OpDefPtr &op_def, const std::vector<std::string> &op_type_list);
+COMMON_EXPORT std::string BuildOpInputsErrorMsg(const OpDefPtr &op_def, const std::string &arg_name,
+                                                const TypePtr &arg_type);
 }  // namespace mindspore::ops
 
 #endif  // MINDSPORE_CCSRC_INCLUDE_COMMON_UTILS_PRIMFUNC_UTILS_H_
