@@ -20,17 +20,17 @@ from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
 import mindspore as ms
 from mindspore import Tensor
-from mindspore import ops, context, mint
+from mindspore import context, ops
 
 
 @test_utils.run_with_cell
 def upsample_nearest_forward_func(x, size=None, scale_factor=None):
-    return mint.nn.functional.interpolate(x, size, scale_factor, "nearest")
+    return ops.function.nn_func.interpolate_ext(x, size, scale_factor, "nearest")
 
 
 @test_utils.run_with_cell
 def upsample_nearest_backward_func(x, size=None, scale_factor=None):
-    return ops.grad(upsample_nearest_forward_func, (0,))(x, size, scale_factor)
+    return ms.grad(upsample_nearest_forward_func, (0,))(x, size, scale_factor)
 
 
 @test_utils.run_with_cell
@@ -39,15 +39,12 @@ def upsample_nearest3d_grad(gradOut, input_size, output_size, scale_factor):
     return op(gradOut, input_size, output_size, scale_factor)
 
 
-@pytest.mark.level3
-@pytest.mark.platform_arm_ascend_training
-@pytest.mark.platform_x86_ascend_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-def test_upsample_nearest_1d(mode):
+def test_upsample_nearest(mode):
     """
-    Feature: UpsampleNearest1D
-    Description: Test cases for UpsampleNearest1D with output_size.
+    Feature: UpsampleNearest1D/2D/3D
+    Description: Test cases for UpsampleNearest1D/2D/3D with output_size.
     Expectation: The result match expected output.
     """
     context.set_context(mode=mode)
@@ -83,19 +80,6 @@ def test_upsample_nearest_1d(mode):
     error = np.ones(shape=expected.shape) * 1.0e-4
     assert np.all(diff < error)
 
-
-@pytest.mark.level3
-@pytest.mark.platform_arm_ascend_training
-@pytest.mark.platform_x86_ascend_training
-@pytest.mark.env_onecard
-@pytest.mark.parametrize("mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-def test_upsample_nearest_2d(mode):
-    """
-    Feature: UpsampleNearest2D
-    Description: Test cases for UpsampleNearest2D operator with output_size.
-    Expectation: The result match expected output.
-    """
-    context.set_context(mode=mode)
     input_tensor = Tensor(
         np.array(
             [[[[0.1, 0.3, 0.5], [0.7, 0.9, 1.1]], [[1.3, 1.5, 1.7], [1.9, 2.1, 2.3]]]]
@@ -135,21 +119,6 @@ def test_upsample_nearest_2d(mode):
     error = np.ones(shape=expected.shape) * 1.0e-4
     assert np.all(diff < error)
 
-
-@pytest.mark.level3
-@pytest.mark.platform_x86_cpu
-@pytest.mark.platform_arm_cpu
-@pytest.mark.platform_x86_gpu_training
-@pytest.mark.platform_arm_ascend910b_training
-@pytest.mark.env_onecard
-@pytest.mark.parametrize("mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-def test_upsample_nearest_3d(mode):
-    """
-    Feature: UpsampleNearest3D
-    Description: Test cases for UpsampleNearest3D operator with output_size.
-    Expectation: The result match expected output.
-    """
-    context.set_context(mode=mode)
     input_tensor = Tensor(
         np.array(
             [[[[[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]], [[0.7, 0.8, 0.9], [1.0, 1.1, 1.2]]]]]
@@ -232,7 +201,7 @@ def test_upsample_nearest_3d(mode):
     assert np.all(diff < error)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_upsample_nearest_1d_size_dynamic():
     """
     Feature: test dynamic by TEST_OP.
@@ -254,7 +223,7 @@ def test_upsample_nearest_1d_size_dynamic():
     )
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_upsample_nearest_1d_scale_factor_dynamic():
     """
     Feature: test dynamic by TEST_OP.
@@ -276,7 +245,7 @@ def test_upsample_nearest_1d_scale_factor_dynamic():
     )
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_upsample_nearest_2d_size_dynamic():
     """
     Feature: test dynamic by TEST_OP.
@@ -298,7 +267,7 @@ def test_upsample_nearest_2d_size_dynamic():
     )
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_upsample_nearest_2d_scale_factor_dynamic():
     """
     Feature: test dynamic by TEST_OP.
@@ -321,7 +290,7 @@ def test_upsample_nearest_2d_scale_factor_dynamic():
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
-          card_mark='onecard', essential_mark='unessential')
+          card_mark='onecard', essential_mark='essential')
 def test_upsample_nearest_3d_size_dynamic():
     """
     Feature: test dynamic by TEST_OP.
@@ -344,7 +313,7 @@ def test_upsample_nearest_3d_size_dynamic():
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
-          card_mark='onecard', essential_mark='unessential')
+          card_mark='onecard', essential_mark='essential')
 def test_upsample_nearest_3d_scale_factor_dynamic():
     """
     Feature: test dynamic by TEST_OP.

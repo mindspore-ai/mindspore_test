@@ -20,17 +20,17 @@ from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
 import mindspore as ms
 from mindspore import Tensor
-from mindspore import ops, context, mint
+from mindspore import ops, context
 
 
 @test_utils.run_with_cell
 def upsample_trilinear3d_forward_func(x, size=None, scale_factor=None, align_corners=False):
-    return mint.nn.functional.interpolate(x, size, scale_factor, "trilinear", align_corners)
+    return ops.function.nn_func.interpolate_ext(x, size, scale_factor, "trilinear", align_corners)
 
 
 @test_utils.run_with_cell
 def upsample_trilinear3d_backward_func(x, size=None, scale_factor=None, align_corners=False):
-    return ops.grad(upsample_trilinear3d_forward_func, (0,))(x, size, scale_factor, align_corners)
+    return ms.grad(upsample_trilinear3d_forward_func, (0,))(x, size, scale_factor, align_corners)
 
 
 @test_utils.run_with_cell
@@ -39,12 +39,7 @@ def upsample_trilinear3d_grad(gradOut, input_size, output_size, scale_factor):
     return op(gradOut, input_size, output_size, scale_factor)
 
 
-@pytest.mark.level3
-@pytest.mark.platform_x86_cpu
-@pytest.mark.platform_x86_gpu_training
-@pytest.mark.platform_arm_ascend_training
-@pytest.mark.platform_x86_ascend_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_upsample_trilinear_3d(mode):
     """
@@ -83,7 +78,7 @@ def test_upsample_trilinear_3d(mode):
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
-          card_mark='onecard', essential_mark='unessential')
+          card_mark='onecard', essential_mark='essential')
 def test_upsample_trilinear_3d_size_dynamic():
     """
     Feature: test dynamic by TEST_OP.
@@ -106,7 +101,7 @@ def test_upsample_trilinear_3d_size_dynamic():
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
-          card_mark='onecard', essential_mark='unessential')
+          card_mark='onecard', essential_mark='essential')
 def test_upsample_trilinear_3d_scale_factor_dynamic():
     """
     Feature: test dynamic by TEST_OP.
@@ -129,7 +124,7 @@ def test_upsample_trilinear_3d_scale_factor_dynamic():
 
 
 @arg_mark(plat_marks=['platform_ascend910b', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'],
-          level_mark='level1', card_mark='onecard', essential_mark='unessential')
+          level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_vmap_upsample_trilinear_3d(mode):
     """

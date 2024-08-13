@@ -31,6 +31,7 @@
 namespace mindspore {
 namespace kernel {
 namespace {
+const double UpsampleLinear1dEps = 1e-7;
 const pyfloat DEFAULT_SCALE_VALUE = -1;
 std::tuple<std::vector<int64_t>, double, bool> UpsampleLinear1DGenerate(const std::vector<KernelTensor *> &inputs,
                                                                         const std::vector<KernelTensor *> &outputs) {
@@ -44,9 +45,14 @@ std::tuple<std::vector<int64_t>, double, bool> UpsampleLinear1DGenerate(const st
 
   bool align_corners = inputs[kIndex3]->GetValueWithCheck<bool>();
 
-  double scales_l = scales[0];
+  // Python float obj would be parsed by float32 number, which should be parsed
+  // to double number according to PyTorch. For example, python scale is 2.6,
+  // but the last scale we got in c++ is 2.5999999046325684,
+  // which caused aclnn verification to fail.
+  double scale_l = scales.at(0) != DEFAULT_SCALE_VALUE ? (static_cast<double>(scales.at(0)) + UpsampleLinear1dEps)
+                                                       : DEFAULT_SCALE_VALUE;
 
-  return std::make_tuple(std::move(output_size), scales_l, align_corners);
+  return std::make_tuple(std::move(output_size), scale_l, align_corners);
 }
 }  // namespace
 
