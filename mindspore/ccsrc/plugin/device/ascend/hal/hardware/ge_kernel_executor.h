@@ -48,7 +48,7 @@ class GeKernelExecutor : public KernelExecutor {
   void CreateKernel(const std::vector<CNodePtr> &nodes) const override;
 
   // Generate 'KernelMod' by operator name.
-  // Note: Only support generage aclnn kernel mod current.
+  // Note: Only support generate aclnn kernel mod current.
   kernel::KernelModPtr CreateKernelMod(const std::string &op_name) const override;
 
   // Adjust kernel graph before run graph, used in Graph Mode.
@@ -58,7 +58,7 @@ class GeKernelExecutor : public KernelExecutor {
   bool LaunchKernel(const CNodePtr &kernel, const std::vector<KernelTensor *> &inputs,
                     const std::vector<KernelTensor *> &workspace, const std::vector<KernelTensor *> &outputs,
                     KernelMod *kernel_mod, void *stream) const override;
-  bool LaunchCallback(CallbackFunc callback_func, size_t stream_id) const;
+  bool LaunchCallback(CallbackFunc callback_func, size_t stream_id, bool is_block = false) const;
 
   // Unify the MindIR, the default behavior uses the common unified MindIR.
   void UnifyMindIR(const KernelGraphPtr &graph) const override;
