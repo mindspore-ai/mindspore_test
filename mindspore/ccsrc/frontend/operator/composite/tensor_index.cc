@@ -780,6 +780,51 @@ void TensorIndex::RemakeTupleIndex(bool has_ellipsis, const std::vector<int64_t>
   }
 }
 
+std::vector<AnfNodePtr> TensorIndex::NormalizeTensorNext(const AnfNodePtr &data_node,
+                                                         const std::vector<AnfNodePtr> &normalized_tensors,
+                                                         const mindspore::HashMap<std::string, ValuePtr> &attrs,
+                                                         const std::vector<int64_t> &tuple_index_types,
+                                                         bool has_ellipsis) {
+  std::vector<AnfNodePtr> new_normalized_tensors;
+  auto tuple_index_info_node = GetTupleIndexInfo(data_node, NewValueNode(SizeToLong(0)), normalized_tensors, attrs);
+  auto broad_cast_shape_node = tuple_index_info_node[kIndex1];
+  auto new_index_shape_node = tuple_index_info_node[kIndex2];
+  auto final_shape_node = tuple_index_info_node[kIndex3];
+  auto broadcast_to = prim::GetPythonOps("broadcast_to", "mindspore.ops.function.array_func");
+  ValueNodePtr broadcast_to_node = NewValueNode(broadcast_to);
+  size_t slice_index_count = 0;
+  auto new_tuple_index_types = tuple_index_types;
+  for (size_t i = 0; i < tuple_index_types.size(); i++) {
+    if (new_tuple_index_types[i] == kMetaTypeEllipsis) {
+      (void)new_tuple_index_types.erase(new_tuple_index_types.begin() + i);
+      (void)new_tuple_index_types.emplace_back(kMetaTypeEllipsis);
+      break;
+    }
+  }
+  for (size_t i = 0; i < normalized_tensors.size(); i++) {
+    AnfNodePtr new_tensor_index = normalized_tensors[i];
+    if (new_tuple_index_types[i] == kObjectTypeTensorType) {
+      auto tensor_index_transfer =
+        prim::GetPythonOps("_tensor_index_transfer", "mindspore.ops.composite.multitype_ops._compile_utils");
+      auto tensor_index_transfer_node = NewValueNode(tensor_index_transfer);
+      new_tensor_index = res_graph_->NewCNodeInOrder(
+        {tensor_index_transfer_node, new_tensor_index, broad_cast_shape_node, final_shape_node, new_index_shape_node});
+    } else {
+      auto new_slice_shape_node = tuple_index_info_node[kIndex4 + slice_index_count];
+      new_tensor_index = NewCNode({MakeReshapeNode(), new_tensor_index, new_slice_shape_node}, res_graph_);
+      new_tensor_index = NewCNode({broadcast_to_node, new_tensor_index, final_shape_node}, res_graph_);
+      slice_index_count += 1;
+    }
+    if (!IsDynamicRank(data_shape_) || !has_ellipsis) {
+      new_tensor_index =
+        res_graph_->NewCNode({MakeExpandDimsNode(), new_tensor_index, NewValueNode(static_cast<int64_t>(-1))});
+    }
+    (void)new_normalized_tensors.emplace_back(new_tensor_index);
+  }
+
+  return new_normalized_tensors;
+}
+
 void TensorIndexGetitem::GetItemByTuple(const AnfNodePtr &input_data_node, const AnfNodePtr &index_node,
                                         const AbstractBasePtr &data, const abstract::AbstractTuplePtr &tuple_abs_ptr) {
   if (tuple_abs_ptr->empty()) {
@@ -825,42 +870,8 @@ void TensorIndexGetitem::GetItemByTuple(const AnfNodePtr &input_data_node, const
 
   mindspore::HashMap<std::string, ValuePtr> attrs(
     {{kAttrTupleIndexTypes, MakeValue(tuple_index_types)}, {kAttrExpandDimsCnt, MakeValue(SizeToLong(0))}});
-  auto tuple_index_info_node = GetTupleIndexInfo(data_node, NewValueNode(SizeToLong(0)), normalized_tensors, attrs);
-  auto broad_cast_shape_node = tuple_index_info_node[kIndex1];
-  auto new_index_shape_node = tuple_index_info_node[kIndex2];
-  auto final_shape_node = tuple_index_info_node[kIndex3];
-  auto broadcast_to = prim::GetPythonOps("broadcast_to", "mindspore.ops.function.array_func");
-  ValueNodePtr broadcast_to_node = NewValueNode(broadcast_to);
-  size_t slice_index_count = 0;
-  std::vector<AnfNodePtr> new_normalized_tensors{};
-  auto new_tuple_index_types = tuple_index_types;
-  for (size_t i = 0; i < tuple_index_types.size(); i++) {
-    if (new_tuple_index_types[i] == kMetaTypeEllipsis) {
-      (void)new_tuple_index_types.erase(new_tuple_index_types.begin() + i);
-      (void)new_tuple_index_types.emplace_back(kMetaTypeEllipsis);
-      break;
-    }
-  }
-  for (size_t i = 0; i < normalized_tensors.size(); i++) {
-    AnfNodePtr new_tensor_index = normalized_tensors[i];
-    if (new_tuple_index_types[i] == kObjectTypeTensorType) {
-      auto tensor_index_transfer =
-        prim::GetPythonOps("_tensor_index_transfer", "mindspore.ops.composite.multitype_ops._compile_utils");
-      auto tensor_index_transfer_node = NewValueNode(tensor_index_transfer);
-      new_tensor_index = res_graph_->NewCNodeInOrder(
-        {tensor_index_transfer_node, new_tensor_index, broad_cast_shape_node, final_shape_node, new_index_shape_node});
-    } else {
-      auto new_slice_shape_node = tuple_index_info_node[kIndex4 + slice_index_count];
-      new_tensor_index = NewCNode({MakeReshapeNode(), new_tensor_index, new_slice_shape_node}, res_graph_);
-      new_tensor_index = NewCNode({broadcast_to_node, new_tensor_index, final_shape_node}, res_graph_);
-      slice_index_count += 1;
-    }
-    if (!IsDynamicRank(data_shape_) || !has_ellipsis) {
-      new_tensor_index =
-        res_graph_->NewCNode({MakeExpandDimsNode(), new_tensor_index, NewValueNode(static_cast<int64_t>(-1))});
-    }
-    (void)new_normalized_tensors.emplace_back(new_tensor_index);
-  }
+  auto new_normalized_tensors =
+    NormalizeTensorNext(data_node, normalized_tensors, attrs, tuple_index_types, has_ellipsis);
   RemakeTupleIndex(has_ellipsis, tuple_index_types, data_node, new_normalized_tensors, not_ellipsis_position_cnt,
                    ellipsis_position);
 }
@@ -1097,42 +1108,8 @@ void TensorIndexSetitem::SetItemByTuple(const AnfNodePtr &input_data_node, const
   } else {
     attrs.insert(attrs.end(), {kAttrTupleIndexInfoType, MakeValue(kSetitemByTuple)});
   }
-  auto tuple_index_info_node = GetTupleIndexInfo(data_node, fancy_position_node, normalized_tensors, attrs);
-  auto broad_cast_shape_node = tuple_index_info_node[kIndex1];
-  auto new_index_shape_node = tuple_index_info_node[kIndex2];
-  auto final_shape_node = tuple_index_info_node[kIndex3];
-  auto broadcast_to = prim::GetPythonOps("broadcast_to", "mindspore.ops.function.array_func");
-  ValueNodePtr broadcast_to_node = NewValueNode(broadcast_to);
-  size_t slice_index_count = 0;
-  std::vector<AnfNodePtr> new_normalized_tensors{};
-  auto new_tuple_index_types = tuple_index_types;
-  for (size_t i = 0; i < tuple_index_types.size(); i++) {
-    if (new_tuple_index_types[i] == kMetaTypeEllipsis) {
-      (void)new_tuple_index_types.erase(new_tuple_index_types.begin() + i);
-      (void)new_tuple_index_types.emplace_back(kMetaTypeEllipsis);
-      break;
-    }
-  }
-  for (size_t i = 0; i < normalized_tensors.size(); i++) {
-    AnfNodePtr new_tensor_index = normalized_tensors[i];
-    if (new_tuple_index_types[i] == kObjectTypeTensorType) {
-      auto tensor_index_transfer =
-        prim::GetPythonOps("_tensor_index_transfer", "mindspore.ops.composite.multitype_ops._compile_utils");
-      auto tensor_index_transfer_node = NewValueNode(tensor_index_transfer);
-      new_tensor_index = res_graph_->NewCNodeInOrder(
-        {tensor_index_transfer_node, new_tensor_index, broad_cast_shape_node, final_shape_node, new_index_shape_node});
-    } else {
-      auto new_slice_shape_node = tuple_index_info_node[kIndex4 + slice_index_count];
-      new_tensor_index = NewCNode({MakeReshapeNode(), new_tensor_index, new_slice_shape_node}, res_graph_);
-      new_tensor_index = NewCNode({broadcast_to_node, new_tensor_index, final_shape_node}, res_graph_);
-      slice_index_count += 1;
-    }
-    if (!IsDynamicRank(data_shape_) || !has_ellipsis) {
-      new_tensor_index =
-        res_graph_->NewCNode({MakeExpandDimsNode(), new_tensor_index, NewValueNode(static_cast<int64_t>(-1))});
-    }
-    (void)new_normalized_tensors.emplace_back(new_tensor_index);
-  }
+  auto new_normalized_tensors =
+    NormalizeTensorNext(data_node, normalized_tensors, attrs, tuple_index_types, has_ellipsis);
   if (IsDynamicRank(data_shape_) && has_ellipsis) {
     auto prim = std::make_shared<Primitive>(kPrimRemakeTupleIndex->name());
     prim->set_attr(kAttrTupleIndexTypes, MakeValue(tuple_index_types));
