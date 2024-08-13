@@ -40,6 +40,7 @@
 #include "utils/check_convert_utils.h"
 #include "utils/log_adapter.h"
 #include "utils/shape_utils.h"
+#include "ops/ops_func_impl/simple_infer.h"
 
 namespace mindspore {
 namespace ops {
@@ -112,5 +113,6 @@ TypePtrList SelectFuncImpl::InferType(const PrimitivePtr &primitive, const Value
   MS_EXCEPTION_IF_NULL(x_tensor);
   return {x_tensor->Dtype()};
 }
+REGISTER_SIMPLE_INFER(kNameSelect, SelectFuncImpl)
 }  // namespace ops
 }  // namespace mindspore
