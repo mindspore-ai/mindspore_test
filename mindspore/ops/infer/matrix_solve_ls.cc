@@ -32,10 +32,11 @@
 #include "mindapi/src/helper.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "infer/matrix_solve_ls.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "utils/check_convert_utils.h"
 #include "utils/convert_utils_base.h"
 #include "utils/log_adapter.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace ops {

@@ -15,7 +15,7 @@
  */
 #include "plugin/device/ascend/optimizer/mindir/quant_dtype_cast_adjust.h"
 
-#include "op_def/framework_op_name.h"
+#include "mindspore/ops/op_def/framework_op_name.h"
 #include "include/common/utils/utils.h"
 #include "utils/ms_context.h"
 #include "include/backend/optimizer/helper.h"

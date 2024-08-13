@@ -17,7 +17,7 @@
 #include "kernel/cpu/pyboost/customize/min.h"
 #include "kernel/cpu/pyboost/customize/max.h"
 #include "kernel/common/pyboost/pyboost_utils.h"
-#include "op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 
 namespace mindspore {
 namespace kernel {

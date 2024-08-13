@@ -20,6 +20,7 @@
 #include "utils/check_convert_utils.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "infer/ops_func_impl/slice_ext.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore::ops {
 BaseShapePtr SliceExtFuncImpl::InferShape(const PrimitivePtr &primitive,

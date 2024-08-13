@@ -17,10 +17,10 @@
 #include "transform/graph_ir/op_declare/math_ops_declare.h"
 #include <string>
 #include <vector>
-#include "op_def/math_ops.h"
-#include "op_def/nn_ops.h"
-#include "op_def/other_ops.h"
-#include "op_def/structure_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
+#include "mindspore/ops/op_def/other_ops.h"
+#include "mindspore/ops/op_def/structure_ops.h"
 
 namespace mindspore::transform {
 // ActsULQ

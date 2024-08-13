@@ -19,7 +19,7 @@
 #include <string>
 #include <memory>
 
-#include "op_def/framework_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "backend/graph_compiler/backend.h"
 #include "backend/graph_compiler/transform.h"
 #include "common/device_common_test.h"

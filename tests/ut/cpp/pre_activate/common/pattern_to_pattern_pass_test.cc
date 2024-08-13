@@ -16,8 +16,8 @@
 
 #include "pattern_to_pattern_pass_utils.h"
 
-#include "op_def/math_op_name.h"
-#include "op_def/other_ops.h"
+#include "mindspore/ops/op_def/math_op_name.h"
+#include "mindspore/ops/op_def/other_ops.h"
 namespace mindspore {
 namespace opt {
 namespace {

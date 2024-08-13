@@ -17,8 +17,8 @@
 #include "transform/graph_ir/op_declare/nn_pooling_ops_declare.h"
 #include <string>
 #include <vector>
-#include "op_def/conv_pool_ops.h"
-#include "op_def/nn_ops.h"
+#include "mindspore/ops/op_def/conv_pool_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
 
 namespace mindspore::transform {
 // MaxPool

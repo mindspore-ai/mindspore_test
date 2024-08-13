@@ -19,9 +19,9 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/common/utils/anfalgo.h"
-#include "op_def/nn_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
 #include "ops_utils/op_utils.h"
-#include "op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
 #include "plugin/device/ascend/optimizer/get_value_helper.h"
 #include "utils/trace_base.h"
 

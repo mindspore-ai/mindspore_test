@@ -30,7 +30,7 @@
 #include "mindapi/src/helper.h"
 #include "mindspore/ops/op_def/conv_pool_ops.h"
 #include "infer/grad/p_s_r_o_i_pooling_grad.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "ops/primitive_c.h"
 #include "utils/check_convert_utils.h"
 #include "utils/convert_utils_base.h"

@@ -27,7 +27,7 @@
 #include "ir/dtype/type.h"
 #include "ir/anf.h"
 #include "ir/primitive.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "kernel/kernel.h"
 #include "utils/ms_context.h"
 #include "abstract/abstract_value.h"

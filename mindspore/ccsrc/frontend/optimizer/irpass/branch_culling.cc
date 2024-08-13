@@ -27,7 +27,7 @@
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "utils/hash_map.h"
 #include "ir/func_graph.h"
 #include "frontend/operator/ops.h"

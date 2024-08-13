@@ -20,7 +20,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/convert_utils.h"
 #include "include/backend/optimizer/helper.h"
-#include "op_def/framework_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 
 namespace mindspore::opt {
 OpAdaptationInfo &OpAdaptationInfo::set_backend_op_name(const std::string &default_op_name) {

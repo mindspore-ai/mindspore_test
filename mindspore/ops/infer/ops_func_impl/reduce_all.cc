@@ -15,7 +15,7 @@
  */
 
 #include "infer/ops_func_impl/reduce_all.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "infer/ops_func_impl/reduce_arithmetic.h"
 #include "ops/ops_func_impl/simple_infer.h"

@@ -25,7 +25,7 @@
 #include "include/common/utils/comm_manager.h"
 #include "mindspore/core/utils/file_utils.h"
 #include "mindspore/core/utils/ms_utils.h"
-#include "op_def/ascend_op_name.h"
+#include "mindspore/ops/op_def/ascend_op_name.h"
 #include "utils/convert_utils_base.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"

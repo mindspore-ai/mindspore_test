@@ -21,11 +21,11 @@
 #include <vector>
 #include <map>
 #include <set>
-#include "op_def/nn_op_name.h"
-#include "op_def/structure_ops.h"
+#include "mindspore/ops/op_def/nn_op_name.h"
+#include "mindspore/ops/op_def/structure_ops.h"
 #include "ops/op_def.h"
-#include "op_def/math_ops.h"
-#include "op_def/array_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/core/utils/anf_utils.h"
 #include "frontend/parallel/auto_parallel/costmodel.h"
 #include "frontend/parallel/graph_util/generate_graph.h"

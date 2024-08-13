@@ -16,7 +16,7 @@
 
 #include "tools/converter/parser/pytorch/pytorch_unaryop_parser.h"
 #include <memory>
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/cxx_api/tile_fusion.h"
 #include "infer/cxx_api/exp_fusion.h"
 #include "infer/tan.h"

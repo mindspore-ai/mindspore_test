@@ -16,7 +16,7 @@
 
 #include "common/common_test.h"
 #define private public
-#include "op_def/math_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
 #include "frontend/parallel/graph_util/graph_splitter.h"
 
 namespace mindspore {

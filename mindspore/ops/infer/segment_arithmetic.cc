@@ -34,7 +34,7 @@
 #include "mindapi/src/helper.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/math_ops.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "ops/primitive_c.h"
 #include "infer/segment_arithmetic.h"
 #include "infer/segment_max.h"

@@ -16,8 +16,8 @@
 
 #include "plugin/device/ascend/optimizer/ir_fusion/parameter_and_transop_fusion.h"
 #include <memory>
-#include "op_def/array_ops.h"
-#include "op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"

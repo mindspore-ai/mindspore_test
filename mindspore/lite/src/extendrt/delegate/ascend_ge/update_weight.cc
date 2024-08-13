@@ -16,7 +16,7 @@
 
 #include "extendrt/delegate/ascend_ge/update_weight.h"
 #include <string>
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "tools/common/string_util.h"
 #include "tools/optimizer/common/gllo_utils.h"

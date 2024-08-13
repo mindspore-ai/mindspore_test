@@ -23,7 +23,7 @@
 #include "mindspore/ops/op_def/lite_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/resize.h"
 #include "infer/random_normal.h"
 #include "infer/roi_align.h"

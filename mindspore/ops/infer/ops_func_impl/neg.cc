@@ -17,6 +17,7 @@
 #include "infer/ops_func_impl/neg.h"
 #include "ops/ops_func_impl/simple_infer.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore::ops {
 TypePtrList NegFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {

@@ -21,8 +21,8 @@
 #include <utility>
 #include "ir/pattern_matcher.h"
 #include "ir/functor.h"
-#include "op_def/array_ops.h"
-#include "op_def/math_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
 #include "ops/op_def.h"
 #include "include/common/utils/utils.h"
 #include "mindspore/core/symbolic_shape/symbol.h"

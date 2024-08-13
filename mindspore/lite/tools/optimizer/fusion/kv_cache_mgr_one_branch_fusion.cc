@@ -25,12 +25,12 @@
 #include "tools/optimizer/common/gllo_utils.h"
 #include "nnacl/op_base.h"
 #include "ops_utils/op_utils.h"
-#include "op_def/array_ops.h"
-#include "op_def/math_ops.h"
-#include "op_def/comparison_ops.h"
-#include "op_def/nn_optimizer_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/op_def/comparison_ops.h"
+#include "mindspore/ops/op_def/nn_optimizer_ops.h"
 #include "infer/cxx_api/kv_cache_mgr.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/make_tuple.h"
 namespace mindspore::opt {
 const BaseRef KVCacheMgrOneBranchFusion::DefinePattern() const {

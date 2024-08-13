@@ -18,9 +18,9 @@
 #include <string>
 #include <vector>
 #include <memory>
-#include "op_def/ascend_op_name.h"
-#include "op_def/random_op_name.h"
-#include "op_def/nn_op_name.h"
+#include "mindspore/ops/op_def/ascend_op_name.h"
+#include "mindspore/ops/op_def/random_op_name.h"
+#include "mindspore/ops/op_def/nn_op_name.h"
 #include "include/backend/optimizer/helper.h"
 #include "kernel/kernel_build_info.h"
 #include "include/common/utils/utils.h"

@@ -21,6 +21,7 @@
 #include "infer/ops_func_impl/masked_select.h"
 #include "ops/ops_frontend_func_impl.h"
 #include "ops/ops_func_impl/simple_infer.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace ops {

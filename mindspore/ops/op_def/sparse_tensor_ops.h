@@ -20,7 +20,7 @@
 #include <memory>
 #include "ir/anf.h"
 #include "ir/primitive.h"
-#include "op_def/sparse_op_name.h"
+#include "mindspore/ops/op_def/sparse_op_name.h"
 #include "utils/hash_map.h"
 
 namespace mindspore {

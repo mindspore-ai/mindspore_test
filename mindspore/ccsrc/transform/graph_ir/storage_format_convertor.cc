@@ -22,16 +22,16 @@
 #include <memory>
 #include <string>
 #include "graph/types.h"
-#include "op_def/conv_pool_ops.h"
+#include "mindspore/ops/op_def/conv_pool_ops.h"
 #include "transform/graph_ir/storage_format_config_factory.h"
 #include "ir/func_graph.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/kernel_info.h"
 #include "transform/graph_ir/transform_util.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
-#include "op_def/framework_op_name.h"
-#include "op_def/framework_ops.h"
-#include "op_def/nn_optimizer_ops.h"
+#include "mindspore/ops/op_def/framework_op_name.h"
+#include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/nn_optimizer_ops.h"
 
 namespace mindspore::transform {
 namespace {

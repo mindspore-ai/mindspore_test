@@ -16,9 +16,9 @@
 #include "plugin/device/ascend/optimizer/ge/add_noop_to_es_grad.h"
 #include <vector>
 #include <memory>
-#include "op_def/nn_ops.h"
-#include "op_def/array_ops.h"
-#include "op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/nn_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "include/common/utils/anfalgo.h"

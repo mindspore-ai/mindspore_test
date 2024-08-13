@@ -15,7 +15,7 @@
  */
 #include "backend/common/graph_kernel/substitute_dropout.h"
 
-#include "op_def/array_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "include/common/utils/utils.h"

@@ -22,8 +22,8 @@
 #include <unordered_set>
 #include "mindspore/core/utils/core_op_utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "op_def/nn_op_name.h"
-#include "op_def/conv_pool_op_name.h"
+#include "mindspore/ops/op_def/nn_op_name.h"
+#include "mindspore/ops/op_def/conv_pool_op_name.h"
 #include "runtime/pynative/op_executor.h"
 #include "runtime/pynative/op_runtime_info.h"
 #include "runtime/device/device_address_utils.h"

@@ -33,12 +33,12 @@
 #include "tools/converter/quantizer/fse_decoder.h"
 #include "tools/converter/adapter/acl/mapper/tbe_op_def.h"
 #include "infer/fse_decode.h"
-#include "op_def/op_name.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/op_name.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/cxx_api/mul_fusion.h"
 #include "infer/cxx_api/add_fusion.h"
 #include "infer/cxx_api/mat_mul_fusion.h"
-#include "op_def/array_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
 #include "ir/dtype.h"
 
 namespace mindspore::lite::quant {

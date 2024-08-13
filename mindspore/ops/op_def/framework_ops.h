@@ -24,7 +24,7 @@
 #include "ir/primitive.h"
 #include "ir/scalar.h"
 #include "ir/value.h"
-#include "op_def/framework_op_name.h"
+#include "mindspore/ops/op_def/framework_op_name.h"
 #include "utils/flags.h"
 #include "utils/hash_map.h"
 

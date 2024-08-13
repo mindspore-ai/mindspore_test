@@ -48,8 +48,8 @@
 #include "ge/ge_graph_compile_summary.h"
 #include "kernel/kernel_build_info.h"
 #include "op_proto/inc/array_ops.h"
-#include "op_def/nn_op_name.h"
-#include "op_def/array_ops.h"
+#include "mindspore/ops/op_def/nn_op_name.h"
+#include "mindspore/ops/op_def/array_ops.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "include/common/utils/compile_cache_context.h"
 using InputNameAndType = std::vector<std::pair<std::string, bool>>;

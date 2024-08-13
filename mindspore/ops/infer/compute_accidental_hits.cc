@@ -20,8 +20,8 @@
 #include <functional>
 #include <map>
 
-#include "op_def/op_name.h"
-#include "op_def/array_ops.h"
+#include "mindspore/ops/op_def/op_name.h"
+#include "mindspore/ops/op_def/array_ops.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "utils/check_convert_utils.h"
 #include "ops/primitive_c.h"

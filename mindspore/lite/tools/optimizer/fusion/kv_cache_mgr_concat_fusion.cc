@@ -18,9 +18,9 @@
 #include "tools/optimizer/fusion/kv_cache_mgr_concat_fusion.h"
 #include <vector>
 #include <memory>
-#include "op_def/array_ops.h"
-#include "op_def/math_ops.h"
-#include "op_def/lite_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "nnacl/op_base.h"
 #include "ops_utils/op_utils.h"

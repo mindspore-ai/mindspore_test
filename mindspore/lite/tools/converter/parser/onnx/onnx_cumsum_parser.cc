@@ -15,7 +15,7 @@
  */
 #include "tools/converter/parser/onnx/onnx_cumsum_parser.h"
 #include <memory>
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 
 namespace mindspore {
 namespace lite {

@@ -23,7 +23,7 @@
 #include "infer/custom.h"
 #include "common/op_attr.h"
 #include "common/check_base.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 
 namespace mindspore {
 namespace lite {

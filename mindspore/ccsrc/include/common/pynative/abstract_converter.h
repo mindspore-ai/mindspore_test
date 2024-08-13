@@ -21,6 +21,7 @@
 #include <string>
 #include <vector>
 #include <utility>
+#include <optional>
 #include "include/common/visible.h"
 #include "include/common/pynative/ring_buffer.h"
 #include "mindspore/core/ir/base_tensor.h"

@@ -19,17 +19,26 @@
 #include <string>
 #include <list>
 #include <algorithm>
-#include "op_def/structure_ops.h"
-#include "op_def/sequence_ops.h"
-#include "op_def/other_ops.h"
-#include "op_def/framework_ops.h"
+#include "mindspore/ops/op_def/structure_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/other_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/trace_base.h"
 #include "utils/hash_map.h"
 #include "utils/os.h"
-#include "include/common/utils/utils.h"
 #include "utils/ms_context.h"
 
 namespace mindspore {
+constexpr auto kValueTrue = "true";
+constexpr auto kAttrDump = "dump";
+
+constexpr auto kAnfPrimitiveIndex = 0;
+constexpr auto kRealInputNodeIndexInTupleGetItem = 1;
+constexpr auto kInputNodeOutputIndexInTupleGetItem = 2;
+constexpr auto kRealInputIndexInDepend = 1;
+constexpr auto kUpdateStateRealInput = 2;
+constexpr auto kTupleGetItemInputSize = 3;
+
 namespace {
 class AbstractMutexManager {
  public:

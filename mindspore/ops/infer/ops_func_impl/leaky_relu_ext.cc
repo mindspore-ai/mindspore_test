@@ -16,9 +16,10 @@
 #include "infer/ops_func_impl/leaky_relu_ext.h"
 #include <set>
 #include "utils/check_convert_utils.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "ops/ops_func_impl/simple_infer.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace ops {

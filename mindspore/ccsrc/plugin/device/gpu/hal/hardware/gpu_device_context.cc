@@ -69,7 +69,7 @@
 #include "plugin/device/gpu/hal/device/gpu_pin_mem_pool.h"
 #include "plugin/device/gpu/hal/device/gpu_device_synchronizer.h"
 #include "include/common/profiler.h"
-#include "op_def/ascend_op_name.h"
+#include "mindspore/ops/op_def/ascend_op_name.h"
 #include "runtime/device/device_address_utils.h"
 #include "runtime/pipeline/task/kernel_task.h"
 #include "runtime/device/move_to.h"

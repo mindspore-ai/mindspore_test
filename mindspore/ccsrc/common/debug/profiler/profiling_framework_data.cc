@@ -21,7 +21,7 @@
 #include <algorithm>
 #include <mutex>
 #include "ir/dtype.h"
-#include "op_def/structure_op_name.h"
+#include "mindspore/ops/op_def/structure_op_name.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"

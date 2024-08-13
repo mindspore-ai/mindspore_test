@@ -18,7 +18,7 @@
 #include "include/registry/register_kernel_interface.h"
 #include "include/registry/register_kernel.h"
 #include "src/litert/cxx_api/kernel_executor/kernel_executor.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/conv2d.h"
 #include "infer/topk.h"
 #include "infer/conv2d_transpose.h"

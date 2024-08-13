@@ -19,7 +19,7 @@
 #include <memory>
 #include <set>
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "tools/optimizer/common/format_utils.h"
 #include "nnacl/op_base.h"
 

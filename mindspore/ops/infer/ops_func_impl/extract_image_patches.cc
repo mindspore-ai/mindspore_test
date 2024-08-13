@@ -17,13 +17,14 @@
 #include "infer/ops_func_impl/extract_image_patches.h"
 #include <string>
 #include <memory>
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "utils/ms_context.h"
 #include "utils/check_convert_utils.h"
 #include "mindapi/base/types.h"
 #include "abstract/dshape.h"
 #include "include/common/utils/utils.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace ops {

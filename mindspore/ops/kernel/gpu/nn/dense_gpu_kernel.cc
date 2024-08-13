@@ -19,7 +19,7 @@
 #include <algorithm>
 #include <utility>
 #include <memory>
-#include "op_def/nn_op_name.h"
+#include "mindspore/ops/op_def/nn_op_name.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/complex.h"
 #include "kernel/gpu/math/matmul/matmul_wrapper.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/cast_impl.cuh"

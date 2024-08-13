@@ -28,7 +28,7 @@
 #include "include/common/utils/convert_utils.h"
 #include "mindspore/ccsrc/include/backend/optimizer/helper.h"
 
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "tools/optimizer/format/to_nhwc_format.h"
 #include "tools/optimizer/graph/decrease_transpose_algo.h"
 

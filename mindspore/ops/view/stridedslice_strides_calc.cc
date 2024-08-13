@@ -16,6 +16,7 @@
 #include "view/stridedslice_strides_calc.h"
 #include <vector>
 #include <memory>
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore::ops {
 constexpr size_t kStridedSliceCalcInputsNumWithoutMask = 4;

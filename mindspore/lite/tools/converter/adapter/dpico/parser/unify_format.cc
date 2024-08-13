@@ -24,7 +24,7 @@
 #include "infer/sgd.h"
 #include "infer/cxx_api/conv2d_fusion.h"
 #include "infer/cxx_api/conv2d_transpose_fusion.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 
 namespace mindspore {
 namespace lite {

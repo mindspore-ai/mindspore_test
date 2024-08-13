@@ -23,7 +23,7 @@
 #include "include/common/thread_pool.h"
 #include "kernel/cpu/cpu_kernel.h"
 #include "mindspore/ops/infer/remake_tuple_index.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 
 namespace mindspore {
 namespace kernel {

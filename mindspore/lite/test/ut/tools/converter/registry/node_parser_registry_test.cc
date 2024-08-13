@@ -22,7 +22,7 @@
 #include "mindapi/ir/func_graph.h"
 #include "mindspore/core/ir/anf.h"
 #include "mindspore/core/ir/func_graph.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "proto/graph.pb.h"
 
 using mindspore::converter::kFmkTypeTf;

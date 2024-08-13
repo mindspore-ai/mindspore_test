@@ -22,7 +22,7 @@
 #include <fstream>
 #include <string>
 #include <random>
-#include "op_def/ascend_op_name.h"
+#include "mindspore/ops/op_def/ascend_op_name.h"
 #include "utils/system/env.h"
 #include "utils/system/file_system.h"
 #include "utils/log_adapter.h"

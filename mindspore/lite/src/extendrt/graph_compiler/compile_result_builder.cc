@@ -23,7 +23,7 @@
 #include "ir/anf.h"
 #include "ir/func_graph.h"
 #include "ir/primitive.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "ops/primitive_c.h"
 #include "src/extendrt/utils/func_graph_utils.h"
 

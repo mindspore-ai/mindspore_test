@@ -22,7 +22,7 @@
 #include <memory>
 #include <string>
 #include <utility>
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "utils/shape_utils.h"
 #include "abstract/dshape.h"
 #include "ir/primitive.h"

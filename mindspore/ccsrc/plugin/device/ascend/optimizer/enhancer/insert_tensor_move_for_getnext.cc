@@ -16,8 +16,8 @@
 #include "plugin/device/ascend/optimizer/enhancer/insert_tensor_move_for_getnext.h"
 #include <vector>
 #include <memory>
-#include "op_def/structure_op_name.h"
-#include "op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/structure_op_name.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"

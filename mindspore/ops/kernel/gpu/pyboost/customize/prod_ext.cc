@@ -18,7 +18,7 @@
 #include "kernel/gpu/pyboost/auto_generate/cast.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "plugin/device/gpu/hal/device/gpu_device_manager.h"
-#include "op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 
 namespace mindspore {
 namespace kernel {

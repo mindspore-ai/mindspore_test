@@ -19,15 +19,15 @@
 #include <utility>
 #include <string>
 #include "ops_utils/op_utils.h"
-#include "op_def/array_ops.h"
-#include "op_def/nn_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "mindspore/ops/op_def/lite_ops.h"
 #include "infer/incre_flash_attention.h"
 #include "infer/prompt_flash_attention.h"
 #include "infer/cxx_api/pad_fusion.h"
 #include "infer/slice.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 
 namespace mindspore::opt {
 namespace {

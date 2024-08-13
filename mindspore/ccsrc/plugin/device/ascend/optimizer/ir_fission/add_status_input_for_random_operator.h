@@ -19,8 +19,8 @@
 #include <set>
 #include <string>
 #include "include/backend/optimizer/optimizer.h"
-#include "op_def/nn_op_name.h"
-#include "op_def/random_op_name.h"
+#include "mindspore/ops/op_def/nn_op_name.h"
+#include "mindspore/ops/op_def/random_op_name.h"
 
 namespace mindspore::opt {
 inline const std::set<std::string> kRandomNodeWhiteList = {kDropoutGenMaskOpName,

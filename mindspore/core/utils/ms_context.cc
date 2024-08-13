@@ -22,7 +22,6 @@
 #include <algorithm>
 #include <utility>
 #include "utils/ms_utils.h"
-#include "include/common/utils/utils.h"
 #include "utils/convert_utils_base.h"
 #include "utils/phase.h"
 
@@ -39,6 +38,11 @@ std::map<std::string, MsBackendPolicy> kPolicyMap = {{"ge", kMsBackendGePrior}, 
                                                      {"ge_only", kMsBackendGeOnly}, {"vm_prior", kMsBackendVmPrior}};
 
 constexpr auto kDeviceTargetSize2 = 2;
+
+constexpr auto kAttrJitLevel = "jit_level";
+constexpr auto kAttrJitLevelO0 = "O0";
+constexpr auto kAttrJitLevelO1 = "O1";
+constexpr auto kAttrJitLevelO2 = "O2";
 }  // namespace
 std::atomic<bool> thread_1_must_end(false);
 

@@ -17,7 +17,7 @@
 #include <memory>
 #include <vector>
 #include <string>
-#include "op_def/array_op_name.h"
+#include "mindspore/ops/op_def/array_op_name.h"
 #include "ir/primitive.h"
 #include "utils/ms_context.h"
 #include "include/common/utils/utils.h"

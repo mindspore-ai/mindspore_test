@@ -30,7 +30,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "src/extendrt/graph_compiler/compile_result_builder.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "src/common/common.h"

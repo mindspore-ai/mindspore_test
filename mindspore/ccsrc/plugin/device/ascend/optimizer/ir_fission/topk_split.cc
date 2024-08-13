@@ -20,7 +20,7 @@
 #include <vector>
 #include <memory>
 #include <set>
-#include "op_def/array_op_name.h"
+#include "mindspore/ops/op_def/array_op_name.h"
 #include "utils/hash_set.h"
 #include "backend/common/pass/const_input_to_attr.h"
 #include "kernel/kernel_build_info.h"

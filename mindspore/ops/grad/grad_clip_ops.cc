@@ -16,8 +16,9 @@
 #include "frontend/expander/bprop/bprop_irbuilder.h"
 #include "frontend/expander/bprop/common_utils.h"
 #include "include/common/utils/utils.h"
-#include "op_def/array_op_name.h"
-#include "op_def/array_ops.h"
+#include "mindspore/ops/op_def/array_op_name.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore::expander::bprop {
 REG_BPROP_BUILDERS_BEGIN(GradClipOps)

@@ -29,8 +29,8 @@
 #include "ir/primitive.h"
 #include "mindapi/base/shape_vector.h"
 #include "mindapi/src/helper.h"
-#include "op_def/nn_ops.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/nn_ops.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "ops_utils/op_utils.h"
 #include "ops/primitive_c.h"
 #include "utils/check_convert_utils.h"
@@ -38,7 +38,7 @@
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
 #include "utils/shape_utils.h"
-#include "op_def/math_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
 
 namespace mindspore {
 namespace ops {

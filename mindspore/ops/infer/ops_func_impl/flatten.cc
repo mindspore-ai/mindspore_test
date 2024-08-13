@@ -19,6 +19,7 @@
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "mindapi/ir/value.h"
 #include "mindapi/ir/primitive.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace ops {

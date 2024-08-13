@@ -19,7 +19,7 @@
 #include <algorithm>
 #include <utility>
 #include <memory>
-#include "op_def/nn_op_name.h"
+#include "mindspore/ops/op_def/nn_op_name.h"
 #include "infer/grad/dense_grad.h"
 
 namespace mindspore {

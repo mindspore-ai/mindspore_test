@@ -19,7 +19,7 @@
 #include "mindapi/base/shared_ptr.h"
 #include "mindapi/ir/value.h"
 #include "mindapi/src/helper.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "ops/primitive_c.h"
 #include "infer/proposal.h"
 #include "utils/log_adapter.h"

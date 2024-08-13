@@ -20,7 +20,7 @@
 #include <memory>
 #include "tools/converter/adapter/acl/mapper/primitive_mapper_register.h"
 #include "tools/converter/adapter/acl/common/utils.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/leaky_relu.h"
 #include "infer/softsign.h"
 #include "infer/softplus.h"

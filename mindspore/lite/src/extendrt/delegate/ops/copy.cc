@@ -19,7 +19,7 @@
 #include "mindapi/ir/common.h"
 #include "mindapi/ir/value.h"
 #include "utils/check_convert_utils.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "ops/primitive_c.h"
 #include "utils/log_adapter.h"
 #include "mindapi/src/helper.h"

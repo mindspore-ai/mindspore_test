@@ -34,7 +34,7 @@
 #include "tools/common/tensor_util.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "infer/cxx_api/mat_mul_fusion.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/cxx_api/conv2d_transpose_fusion.h"
 #include "infer/ops_func_impl/gather.h"
 #include "ops_utils/op_utils.h"
@@ -44,7 +44,7 @@
 #include "ir/anf.h"
 #include "tools/converter/export_model.h"
 #include "tools/converter/parser/parser_utils.h"
-#include "op_def/other_ops.h"
+#include "mindspore/ops/op_def/other_ops.h"
 #include "utils/anf_utils.h"
 #include "mindspore/ops/kernel/cpu/nnacl/op_base.h"
 

@@ -23,10 +23,10 @@
 #include <algorithm>
 #include <utility>
 #include <string>
-#include "op_def/conv_pool_op_name.h"
-#include "op_def/nn_op_name.h"
-#include "op_def/framework_op_name.h"
-#include "op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/conv_pool_op_name.h"
+#include "mindspore/ops/op_def/nn_op_name.h"
+#include "mindspore/ops/op_def/framework_op_name.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
 #include "utils/hash_map.h"
 #include "utils/ms_context.h"
 #include "utils/trace_base.h"

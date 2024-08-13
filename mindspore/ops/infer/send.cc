@@ -20,15 +20,16 @@
 #include "mindapi/base/shared_ptr.h"
 #include "mindapi/ir/value.h"
 #include "mindapi/src/helper.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "ops/primitive_c.h"
 #include "utils/log_adapter.h"
-#include "op_def/other_ops.h"
+#include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "abstract/ops/op_infer.h"
 #include "utils/check_convert_utils.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "utils/ms_context.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace ops {

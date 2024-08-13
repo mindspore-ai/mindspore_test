@@ -34,12 +34,13 @@
 #include "mindapi/ir/value.h"
 #include "mindapi/src/helper.h"
 #include "mindspore/ops/op_def/conv_pool_ops.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "ops/primitive_c.h"
 #include "utils/check_convert_utils.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
 #include "utils/shape_utils.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace ops {

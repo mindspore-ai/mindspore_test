@@ -19,7 +19,7 @@
 #include <vector>
 #include "include/registry/converter_context.h"
 #include "infer/cxx_api/reduce_fusion.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 
 namespace mindspore {
 namespace lite {

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #include "infer/ops_func_impl/cholesky.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace ops {

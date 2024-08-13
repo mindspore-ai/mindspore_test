@@ -21,7 +21,7 @@
 #include "abstract/ops/primitive_infer_map.h"
 #include "mindapi/src/helper.h"
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "infer/sparse_apply_proximal_adagrad.h"
 
 namespace mindspore {

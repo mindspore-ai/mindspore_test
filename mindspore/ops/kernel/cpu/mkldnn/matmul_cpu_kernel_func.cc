@@ -28,7 +28,7 @@
 #include "oneapi/dnnl/dnnl_types.h"
 #include "ops/base_operator.h"
 #include "utils/log_adapter.h"
-#include "op_def/math_op_name.h"
+#include "mindspore/ops/op_def/math_op_name.h"
 
 namespace mindspore {
 namespace kernel {

@@ -23,7 +23,7 @@
 #include "abstract/ops/primitive_infer_map.h"
 #include "abstract/ops/op_infer.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
-#include "op_def/nn_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
 
 namespace mindspore::ops {
 int32_t EmbeddingTableExportFuncImpl::SpecifiedCheckValidation(const PrimitivePtr &primitive,

@@ -16,6 +16,7 @@
 
 #include "backend/common/pass/erase_not_cut_attr.h"
 #include <vector>
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace opt {

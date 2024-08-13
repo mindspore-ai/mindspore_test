@@ -15,7 +15,8 @@
  */
 
 #include "frontend/optimizer/utils.h"
-#include "op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace opt {

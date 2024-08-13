@@ -16,6 +16,7 @@
 
 #include "infer/ops_func_impl/real.h"
 #include <memory>
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace ops {

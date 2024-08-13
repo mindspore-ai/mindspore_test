@@ -16,7 +16,7 @@
 #include "frontend/parallel/silent_check/silent_check.h"
 #include "ir/graph_utils.h"
 #include "ir/func_graph.h"
-#include "op_def/other_ops.h"
+#include "mindspore/ops/op_def/other_ops.h"
 
 namespace mindspore {
 namespace parallel {

@@ -32,7 +32,7 @@
 #include "infer/ops_func_impl/add.h"
 #include "infer/ops_func_impl/sub.h"
 #include "infer/ops_func_impl/sqrt.h"
-#include "op_def/nn_optimizer_ops.h"
+#include "mindspore/ops/op_def/nn_optimizer_ops.h"
 #include "ops/base_operator.h"
 
 namespace mindspore {

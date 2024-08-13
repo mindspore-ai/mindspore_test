@@ -23,7 +23,7 @@
 #include "infer/affine.h"
 #include "src/common/log_adapter.h"
 #include "infer/splice.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "nnacl/op_base.h"
 #include "ops_utils/op_utils.h"

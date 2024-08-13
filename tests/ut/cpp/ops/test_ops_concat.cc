@@ -23,7 +23,7 @@
 #include "ir/primitive.h"
 #include "abstract/abstract_value.h"
 #include "abstract/ops/primitive_infer_map.h"
-#include "op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 
 namespace mindspore::ops {
 struct ConcatParams {

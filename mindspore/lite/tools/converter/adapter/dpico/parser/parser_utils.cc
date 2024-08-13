@@ -29,7 +29,7 @@
 #include "infer/adam.h"
 #include "infer/apply_momentum.h"
 #include "infer/sgd.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "common/check_base.h"
 
 namespace mindspore::lite {

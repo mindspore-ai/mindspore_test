@@ -26,6 +26,7 @@
 #include "infer/scalar_bitwise_and.h"
 #include "infer/scalar_bitwise_or.h"
 #include "utils/check_convert_utils.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace ops {

@@ -29,6 +29,7 @@
 #include "nnacl/op_base.h"
 #include "ops_utils/op_utils.h"
 #include "infer/make_tuple.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace opt {

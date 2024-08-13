@@ -15,7 +15,7 @@
  */
 
 #include "src/litert/cxx_api/kernel_executor/op_converter.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/cxx_api/activation.h"
 #include "infer/cxx_api/add_fusion.h"
 #include "infer/cxx_api/arg_max_fusion.h"

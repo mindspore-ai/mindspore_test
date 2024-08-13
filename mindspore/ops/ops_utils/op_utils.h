@@ -32,6 +32,7 @@
 #include "mindapi/base/shared_ptr.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/op_name.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 #ifndef MS_UNLIKELY
 #ifdef _MSC_VER

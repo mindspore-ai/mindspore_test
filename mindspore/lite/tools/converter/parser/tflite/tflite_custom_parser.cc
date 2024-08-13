@@ -25,7 +25,7 @@
 #include "infer/custom_normalize.h"
 #include "infer/custom_predict.h"
 #include "infer/detection_post_process.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/fft_real.h"
 #include "infer/fft_imag.h"
 #include "infer/mfcc.h"

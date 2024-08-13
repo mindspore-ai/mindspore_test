@@ -29,7 +29,7 @@
 #include "infer/gru.h"
 #include "infer/squeeze.h"
 #include "infer/stack.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "src/common/utils.h"
 #include "tools/common/tensor_util.h"
 #include "include/common/utils/utils.h"

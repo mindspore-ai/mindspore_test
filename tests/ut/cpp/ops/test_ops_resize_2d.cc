@@ -22,7 +22,7 @@
 #include "infer/ops_func_impl/resize_bicubic.h"
 #include "infer/ops_func_impl/resize_bilinear_v2.h"
 #include "infer/ops_func_impl/resize_nearest_neighbor_v2.h"
-#include "op_def/auto_generate/gen_ops_name.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 #include "ir/dtype/type.h"
 #include "abstract/dshape.h"
 #include "utils/tensor_construct_utils.h"

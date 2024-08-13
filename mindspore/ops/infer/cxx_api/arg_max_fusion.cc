@@ -22,7 +22,7 @@
 #include "mindapi/src/helper.h"
 #include "mindspore/ops/op_def/lite_ops.h"
 #include "infer/cxx_api/arg_min_fusion.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "ops/primitive_c.h"
 #include "utils/check_convert_utils.h"
 #include "utils/log_adapter.h"

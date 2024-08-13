@@ -19,10 +19,10 @@
 #include <numeric>
 #include <functional>
 #include <algorithm>
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/unsqueeze.h"
 #include "infer/squeeze.h"
-#include "op_def/auto_generate/gen_ops_name.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 
 namespace mindspore::lite {
 int ShuffleTensorRT::IsSqueezeSupport() {

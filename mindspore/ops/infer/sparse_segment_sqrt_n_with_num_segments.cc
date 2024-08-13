@@ -24,7 +24,7 @@
 #include "abstract/ops/primitive_infer_map.h"
 #include "mindapi/src/helper.h"
 #include "mindspore/ops/op_def/sparse_ops.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "infer/sparse_segment_sqrt_n_with_num_segments.h"
 #include "utils/check_convert_utils.h"
 

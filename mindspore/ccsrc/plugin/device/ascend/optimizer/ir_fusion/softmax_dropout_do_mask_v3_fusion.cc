@@ -15,8 +15,8 @@
  */
 #include "plugin/device/ascend/optimizer/ir_fusion/softmax_dropout_do_mask_v3_fusion.h"
 #include <vector>
-#include "op_def/ascend_op_name.h"
-#include "op_def/nn_ops.h"
+#include "mindspore/ops/op_def/ascend_op_name.h"
+#include "mindspore/ops/op_def/nn_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "ir/primitive.h"

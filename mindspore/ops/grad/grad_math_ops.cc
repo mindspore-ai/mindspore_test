@@ -19,9 +19,10 @@
 #include "frontend/expander/bprop/common_utils.h"
 #include "include/common/utils/utils.h"
 #include "ir/functor.h"
-#include "op_def/math_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
 #include "utils/ms_context.h"
 #include "ops_utils/op_utils.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore::expander::bprop {
 NodePtrList AddnGradFunc(BpropBuilder *ib) {

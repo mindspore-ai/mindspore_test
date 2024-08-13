@@ -20,7 +20,7 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include "op_def/ascend_op_name.h"
+#include "mindspore/ops/op_def/ascend_op_name.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/kernel_graph.h"
 #include "include/backend/optimizer/helper.h"

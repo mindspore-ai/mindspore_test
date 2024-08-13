@@ -27,7 +27,7 @@
 #include "ir/primitive.h"
 #include "mindapi/src/helper.h"
 #include "mindspore/ops/op_def/sparse_ops.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "ops/primitive_c.h"
 #include "infer/sparse_matrix_mul.h"
 #include "utils/log_adapter.h"

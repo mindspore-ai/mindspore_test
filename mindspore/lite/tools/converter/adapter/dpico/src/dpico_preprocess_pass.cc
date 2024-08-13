@@ -19,9 +19,9 @@
 #include "common/anf_util.h"
 #include "common/op_enum.h"
 #include "common/data_transpose_utils.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/cxx_api/add_fusion.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "common/check_base.h"
 #include "common/op_attr.h"
 

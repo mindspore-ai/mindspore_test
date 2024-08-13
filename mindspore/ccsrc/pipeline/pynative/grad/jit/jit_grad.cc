@@ -18,9 +18,9 @@
 
 #include <utility>
 #include "frontend/optimizer/ad/grad.h"
-#include "op_def/structure_op_name.h"
-#include "op_def/framework_op_name.h"
-#include "op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/structure_op_name.h"
+#include "mindspore/ops/op_def/framework_op_name.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
 #include "pipeline/pynative/pynative_utils.h"
 #include "pipeline/pynative/grad/jit/jit_dfunctor.h"
 #include "ir/func_graph_cloner.h"

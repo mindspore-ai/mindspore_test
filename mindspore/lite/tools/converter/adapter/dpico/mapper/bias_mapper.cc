@@ -19,7 +19,7 @@
 #include <utility>
 #include <algorithm>
 #include <vector>
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "common/anf_util.h"
 #include "common/op_attr.h"
 #include "common/op_enum.h"

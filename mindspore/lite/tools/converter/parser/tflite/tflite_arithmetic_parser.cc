@@ -17,7 +17,7 @@
 #include "tools/converter/parser/tflite/tflite_arithmetic_parser.h"
 #include <vector>
 #include <memory>
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/cxx_api/add_fusion.h"
 #include "infer/cxx_api/mul_fusion.h"
 #include "infer/cxx_api/div_fusion.h"

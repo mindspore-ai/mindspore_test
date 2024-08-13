@@ -25,7 +25,7 @@
 #include "include/backend/optimizer/pass.h"
 #include "ir/func_graph.h"
 #include "backend/common/graph_kernel/graph_kernel_helper.h"
-#include "op_def/array_op_name.h"
+#include "mindspore/ops/op_def/array_op_name.h"
 
 namespace mindspore::graphkernel {
 struct Branch {

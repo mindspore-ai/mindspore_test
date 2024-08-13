@@ -20,7 +20,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "infer/lstm.h"
 #include "infer/reshape.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "src/common/utils.h"
 #include "tools/lite_exporter/fetch_content.h"
 #include "tools/common/tensor_util.h"

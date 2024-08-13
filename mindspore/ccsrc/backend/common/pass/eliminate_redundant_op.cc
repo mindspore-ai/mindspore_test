@@ -16,11 +16,11 @@
 #include "backend/common/pass/eliminate_redundant_op.h"
 #include <memory>
 #include <utility>
-#include "op_def/ascend_op_name.h"
-#include "op_def/sequence_ops.h"
-#include "op_def/other_ops.h"
-#include "op_def/array_ops.h"
-#include "op_def/framework_ops.h"
+#include "mindspore/ops/op_def/ascend_op_name.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/other_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/hash_map.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"

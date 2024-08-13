@@ -22,6 +22,7 @@
 #include "infer/ops_func_impl/col2im_ext.h"
 #include "infer/ops_func_impl/col2im_grad.h"
 #include "ops/ops_func_impl/simple_infer.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace ops {

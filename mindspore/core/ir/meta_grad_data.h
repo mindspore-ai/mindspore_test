@@ -23,9 +23,23 @@
 #include <vector>
 #include <string>
 #include "ir/anf.h"
-#include "include/common/utils/utils.h"
 
 namespace mindspore {
+
+// For expander and pynative grad graph
+enum class InputType {
+  // Scala or Constant tensor, no need to grad
+  kConstant = 0,
+  // Weight parameter tensor
+  kParameter,
+  // Net input tensor
+  kInput,
+  // Other op output tensor
+  kOpOutput,
+  // Default
+  kUnkown,
+};
+
 namespace pynative::autograd {
 class Variable;
 }  // namespace pynative::autograd

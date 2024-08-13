@@ -19,7 +19,7 @@
 #include "ir/tensor.h"
 #include "mindapi/base/shape_vector.h"
 #include "mindapi/base/type_id.h"
-#include "op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "ops/test_ops.h"
 #include "common/common_test.h"
 #include "ir/dtype/type.h"

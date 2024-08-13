@@ -28,9 +28,9 @@
 #include "tools/common/tensor_util.h"
 #include "ir/named.h"
 #include "ir/func_graph.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "ops_utils/op_utils.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "nnacl/op_base.h"
 #include "ops/base_operator.h"
 

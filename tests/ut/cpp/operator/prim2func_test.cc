@@ -19,7 +19,7 @@
 
 #include "common/common_test.h"
 
-#include "op_def/arithmetic_ops.h"
+#include "mindspore/ops/op_def/arithmetic_ops.h"
 #include "ir/anf.h"
 #include "ir/dtype.h"
 #include "frontend/operator/prim_to_function.h"

@@ -23,7 +23,7 @@
 #include "mindapi/src/helper.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/sparse_ops.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 
 namespace mindspore {
 namespace ops {

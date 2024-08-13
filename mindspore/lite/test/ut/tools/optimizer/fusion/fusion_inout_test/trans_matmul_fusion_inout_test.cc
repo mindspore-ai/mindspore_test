@@ -20,7 +20,7 @@
 #include "tools/optimizer/common/gllo_utils.h"
 #include "test/ut/tools/optimizer/fusion/fusion_inout_test/matmul_fusion_inout_test.h"
 #include "nnacl/op_base.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 
 namespace mindspore {
 namespace {

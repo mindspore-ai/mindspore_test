@@ -23,7 +23,7 @@
 #include "infer/cxx_api/mul_fusion.h"
 #include "infer/cxx_api/div_fusion.h"
 #include "infer/squared_difference.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 
 namespace mindspore {
 namespace lite {

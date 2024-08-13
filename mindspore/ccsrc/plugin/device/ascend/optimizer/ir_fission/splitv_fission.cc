@@ -15,7 +15,7 @@
  */
 #include "plugin/device/ascend/optimizer/ir_fission/splitv_fission.h"
 #include <memory>
-#include "op_def/array_op_name.h"
+#include "mindspore/ops/op_def/array_op_name.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 

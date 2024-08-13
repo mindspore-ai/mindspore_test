@@ -28,14 +28,14 @@
 #include "include/common/utils/utils.h"
 #include "ir/func_graph.h"
 #include "ir/functor.h"
-#include "op_def/array_op_name.h"
-#include "op_def/comparison_op_name.h"
-#include "op_def/framework_op_name.h"
-#include "op_def/arithmetic_op_name.h"
-#include "op_def/math_ops.h"
-#include "op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/array_op_name.h"
+#include "mindspore/ops/op_def/comparison_op_name.h"
+#include "mindspore/ops/op_def/framework_op_name.h"
+#include "mindspore/ops/op_def/arithmetic_op_name.h"
+#include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
 #include "infer/shape_calc.h"
-#include "op_def/auto_generate/gen_ops_name.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 
 namespace mindspore {
 namespace expander {

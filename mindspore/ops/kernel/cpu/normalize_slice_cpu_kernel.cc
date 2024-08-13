@@ -21,7 +21,7 @@
 #include "plugin/device/cpu/hal/device/cpu_device_address.h"
 #include "utils/ms_utils.h"
 #include "include/common/thread_pool.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "mindspore/ops/infer/normalize_slice.h"
 #include "mindspore/ops/infer/normalize_dim_index.h"
 

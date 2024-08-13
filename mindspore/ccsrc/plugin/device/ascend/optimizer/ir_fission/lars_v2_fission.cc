@@ -15,9 +15,9 @@
  */
 #include "plugin/device/ascend/optimizer/ir_fission/lars_v2_fission.h"
 #include <memory>
-#include "op_def/ascend_op_name.h"
-#include "op_def/nn_op_name.h"
-#include "op_def/math_op_name.h"
+#include "mindspore/ops/op_def/ascend_op_name.h"
+#include "mindspore/ops/op_def/nn_op_name.h"
+#include "mindspore/ops/op_def/math_op_name.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/optimizer/helper.h"

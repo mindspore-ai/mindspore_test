@@ -24,7 +24,7 @@
 #include "utils/tensor_construct_utils.h"
 #include "ir/primitive.h"
 #include "abstract/abstract_value.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "infer/ops_func_impl/shape.h"
 #include "ops/ops_frontend_func_impl.h"
 #include "include/backend/optimizer/helper.h"

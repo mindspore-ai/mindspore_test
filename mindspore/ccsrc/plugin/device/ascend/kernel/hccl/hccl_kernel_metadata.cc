@@ -18,10 +18,10 @@
 #include <memory>
 #include <algorithm>
 #include <set>
-#include "op_def/ascend_op_name.h"
-#include "op_def/other_op_name.h"
-#include "op_def/array_op_name.h"
-#include "op_def/framework_op_name.h"
+#include "mindspore/ops/op_def/ascend_op_name.h"
+#include "mindspore/ops/op_def/other_op_name.h"
+#include "mindspore/ops/op_def/array_op_name.h"
+#include "mindspore/ops/op_def/framework_op_name.h"
 #include "runtime/device/ms_device_shape_transfer.h"
 #include "include/common/utils/utils.h"
 #include "plugin/device/ascend/kernel/hccl/hcom_util.h"

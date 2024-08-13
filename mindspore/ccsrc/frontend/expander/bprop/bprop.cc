@@ -19,9 +19,9 @@
 #include <queue>
 #include <unordered_map>
 
-#include "op_def/sequence_ops.h"
-#include "op_def/array_ops.h"
-#include "op_def/framework_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "include/common/expander/core/infer.h"
 #include "include/common/profiler.h"

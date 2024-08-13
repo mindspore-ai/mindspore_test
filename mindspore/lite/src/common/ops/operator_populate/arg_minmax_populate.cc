@@ -17,7 +17,7 @@
 #include "src/common/ops/operator_populate/utils.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "nnacl/arg_min_max_parameter.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/cxx_api/arg_max_fusion.h"
 #include "infer/cxx_api/arg_min_fusion.h"
 using mindspore::ops::kAxis;

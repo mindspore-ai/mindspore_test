@@ -34,7 +34,7 @@
 #include "include/registry/pass_registry.h"
 #include "infer/custom.h"
 #include "ops_utils/op_utils.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/standard_normal.h"
 #include "infer/tuple_get_item.h"
 #include "cxx_api/model/acl/model_converter.h"
@@ -77,6 +77,7 @@
 #include "tools/optimizer/graph/attr_to_args_pass.h"
 #include "tools/optimizer/fusion/ffn_fusion.h"
 #include "transform/symbol/symbol_utils.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace opt {

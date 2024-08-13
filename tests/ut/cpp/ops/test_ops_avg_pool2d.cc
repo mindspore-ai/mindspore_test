@@ -21,7 +21,7 @@
 #include "ir/base_tensor.h"
 #include "ir/dtype/number.h"
 #include "infer/ops_func_impl/avg_pool2d.h"
-#include "op_def/auto_generate/gen_ops_name.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 #include "ir/dtype/type.h"
 #include "abstract/dshape.h"
 #include "utils/tensor_construct_utils.h"

@@ -17,7 +17,7 @@
 #include <memory>
 
 #include "common/common_test.h"
-#include "op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
 #include "common/py_func_graph_fetcher.h"
 
 #include "ir/anf.h"

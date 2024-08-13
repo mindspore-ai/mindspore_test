@@ -37,7 +37,7 @@
 #include "infer/deprecated_infer/infer_functions.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "include/common/utils/utils.h"
-#include "op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "infer/ops_func_impl/greater_equal.h"
 #include "infer/ops_func_impl/greater.h"
 #include "infer/mod.h"
@@ -45,7 +45,7 @@
 #include "infer/grad/strided_slice_v2_grad.h"
 #include "abstract/abstract_function.h"
 #include "utils/ms_context.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #ifdef _MSC_VER
 #include "include/common/pybind_api/api_register.h"
 #endif

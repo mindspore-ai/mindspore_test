@@ -16,7 +16,7 @@
 #include "plugin/device/ascend/optimizer/mindir/bn_grad_unify_mindir.h"
 #include <vector>
 #include <memory>
-#include "op_def/nn_op_name.h"
+#include "mindspore/ops/op_def/nn_op_name.h"
 #include "ops_utils/op_utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"

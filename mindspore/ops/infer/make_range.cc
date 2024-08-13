@@ -35,6 +35,7 @@
 #include "mindspore/ops/op_def/array_ops.h"
 #include "ops/primitive_c.h"
 #include "utils/log_adapter.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace ops {

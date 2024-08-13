@@ -18,7 +18,7 @@
 #include <unordered_set>
 #include <string>
 #include <algorithm>
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/return.h"
 #include "infer/make_tuple.h"
 #include "infer/tuple_get_item.h"

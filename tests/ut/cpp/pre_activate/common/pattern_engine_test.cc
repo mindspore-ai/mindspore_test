@@ -21,7 +21,7 @@
 #include <algorithm>
 
 #include "common/common_test.h"
-#include "op_def/math_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
 #include "include/backend/optimizer/pattern_engine.h"
 #include "include/backend/optimizer/visitor.h"
 #include "include/backend/optimizer/helper.h"

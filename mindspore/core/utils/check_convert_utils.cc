@@ -35,7 +35,7 @@
 #include "mindapi/base/format.h"
 #include "mindapi/base/type_id.h"
 #include "mindapi/base/types.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "utils/convert_utils_base.h"
 #include "utils/ms_context.h"
 #include "utils/value_utils.h"

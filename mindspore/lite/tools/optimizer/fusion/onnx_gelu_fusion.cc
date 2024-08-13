@@ -19,6 +19,7 @@
 #include <unordered_map>
 #include "mindspore/ops/op_def/lite_ops.h"
 #include "nnacl/op_base.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace opt {

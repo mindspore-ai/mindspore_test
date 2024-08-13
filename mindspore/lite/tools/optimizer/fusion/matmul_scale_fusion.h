@@ -22,7 +22,7 @@
 #include <unordered_map>
 #include "include/backend/optimizer/optimizer.h"
 #include "tools/optimizer/fusion/scale_base_fusion.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 
 namespace mindspore::opt {
 class MatMulScaleFusion : public ScaleBaseFusion {

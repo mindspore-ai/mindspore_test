@@ -17,8 +17,8 @@
 #include <memory>
 #include "plugin/device/ascend/optimizer/common/gllo_utils.h"
 #include "ops_utils/op_utils.h"
-#include "op_def/array_ops.h"
-#include "op_def/nn_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/lite_ops.h"
 #include "infer/incre_flash_attention.h"
 #include "infer/prompt_flash_attention.h"

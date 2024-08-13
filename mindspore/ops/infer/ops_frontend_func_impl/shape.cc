@@ -15,6 +15,7 @@
  */
 
 #include "ops/ops_frontend_func_impl.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore::ops {
 class ShapeFrontendFuncImpl : public OpFrontendFuncImpl {

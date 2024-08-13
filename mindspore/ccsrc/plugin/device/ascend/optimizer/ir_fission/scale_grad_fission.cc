@@ -20,10 +20,10 @@
 #include <vector>
 #include "include/backend/kernel_info.h"
 #include "include/common/utils/anfalgo.h"
-#include "op_def/other_ops.h"
-#include "op_def/sequence_ops.h"
-#include "op_def/math_op_name.h"
-#include "op_def/array_op_name.h"
+#include "mindspore/ops/op_def/other_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/math_op_name.h"
+#include "mindspore/ops/op_def/array_op_name.h"
 
 namespace mindspore {
 namespace opt {

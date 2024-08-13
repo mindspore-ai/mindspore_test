@@ -17,7 +17,7 @@
 
 #include "common/common_test.h"
 #include "common/py_func_graph_fetcher.h"
-#include "op_def/arithmetic_ops.h"
+#include "mindspore/ops/op_def/arithmetic_ops.h"
 
 #include "include/common/debug/draw.h"
 #include "ir/func_graph_cloner.h"

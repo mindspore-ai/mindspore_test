@@ -17,7 +17,7 @@
 #include <memory>
 #include <string>
 
-#include "op_def/array_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
 #include "ir/anf.h"
 #include "ir/func_graph.h"
 #include "include/backend/optimizer/helper.h"

@@ -15,10 +15,10 @@
  */
 
 #include "common/common_test.h"
-#include "op_def/sequence_ops.h"
-#include "op_def/nn_ops.h"
-#include "op_def/math_ops.h"
-#include "op_def/framework_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "ir/param_info.h"
 #include "frontend/operator/ops.h"
 #include "include/backend/kernel_graph.h"

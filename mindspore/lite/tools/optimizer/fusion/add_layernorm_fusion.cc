@@ -20,12 +20,12 @@
 #include <vector>
 #include <string>
 #include <algorithm>
-#include "op_def/nn_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
 #include "infer/cxx_api/activation.h"
-#include "op_def/lite_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
 #include "infer/add_layernorm.h"
 #include "infer/cxx_api/layer_norm_fusion.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "include/common/utils/utils.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/anf_runtime_algorithm.h"

@@ -19,7 +19,7 @@
 #include <vector>
 #include <memory>
 #include "ops_utils/op_utils.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "tools/optimizer/common/format_utils.h"
 #include "tools/lite_exporter/fetch_content.h"

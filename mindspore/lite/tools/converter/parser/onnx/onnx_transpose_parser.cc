@@ -17,7 +17,7 @@
 #include "tools/converter/parser/onnx/onnx_transpose_parser.h"
 #include <memory>
 #include <vector>
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

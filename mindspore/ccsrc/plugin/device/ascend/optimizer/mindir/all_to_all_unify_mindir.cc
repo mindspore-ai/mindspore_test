@@ -17,9 +17,10 @@
 #include "plugin/device/ascend/optimizer/mindir/all_to_all_unify_mindir.h"
 #include <vector>
 #include <string>
-#include "op_def/other_ops.h"
-#include "op_def/array_ops.h"
+#include "mindspore/ops/op_def/other_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
 #include "utils/trace_base.h"
+#include "utils/ms_context.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/comm_manager.h"
 #include "include/backend/optimizer/helper.h"

@@ -31,12 +31,12 @@
 #include "pipeline/jit/pi/graph_capture/abstract_object.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "pipeline/jit/pi/graph_compiler/utils.h"
-#include "op_def/sequence_ops.h"
-#include "op_def/framework_ops.h"
-#include "op_def/structure_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/structure_ops.h"
 #include "mindspore/core/ir/cell.h"
 #include "pybind_api/ir/primitive_py.h"
-#include "op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 
 namespace mindspore {
 namespace pijit {

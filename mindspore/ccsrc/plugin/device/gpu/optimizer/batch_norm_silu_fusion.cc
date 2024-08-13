@@ -19,9 +19,9 @@
 #include <vector>
 #include <string>
 
-#include "op_def/sequence_ops.h"
-#include "op_def/nn_optimizer_ops.h"
-#include "op_def/nn_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/nn_optimizer_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "ir/primitive.h"
@@ -29,7 +29,7 @@
 #include "include/backend/optimizer/helper.h"
 #include "plugin/device/gpu/hal/device/kernel_info_setter.h"
 #include "kernel/graph_kernel_info.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 
 namespace mindspore {
 namespace opt {

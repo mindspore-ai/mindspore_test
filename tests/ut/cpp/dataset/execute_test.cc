@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include "common/common.h"
-#include "op_def/framework_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "include/api/types.h"
 #include "minddata/dataset/core/de_tensor.h"
 #include "minddata/dataset/include/dataset/audio.h"

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include "common/backend_common_test.h"
-#include "op_def/nn_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
 #include "ir/anf.h"
 #include "ir/tensor.h"
 #include "include/common/debug/anf_ir_dump.h"

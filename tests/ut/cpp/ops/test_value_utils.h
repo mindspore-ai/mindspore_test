@@ -22,6 +22,7 @@
 #include "abstract/abstract_value.h"
 #include "ir/dtype/type.h"
 #include "mindapi/base/format.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace ops {

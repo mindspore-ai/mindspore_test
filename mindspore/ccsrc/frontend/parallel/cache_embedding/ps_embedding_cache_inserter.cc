@@ -22,11 +22,11 @@
 #include <utility>
 #include <functional>
 
-#include "op_def/sparse_op_name.h"
-#include "op_def/nn_op_name.h"
-#include "op_def/array_op_name.h"
-#include "op_def/sequence_ops.h"
-#include "op_def/framework_ops.h"
+#include "mindspore/ops/op_def/sparse_op_name.h"
+#include "mindspore/ops/op_def/nn_op_name.h"
+#include "mindspore/ops/op_def/array_op_name.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "ir/func_graph.h"
 #include "abstract/abstract_function.h"
 #include "include/common/utils/anfalgo.h"

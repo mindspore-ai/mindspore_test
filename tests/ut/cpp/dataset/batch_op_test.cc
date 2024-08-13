@@ -16,23 +16,12 @@
 #include <memory>
 #include <string>
 #include "minddata/dataset/core/client.h"
-// #include "minddata/dataset/core/pybind_support.h"
-// #include "minddata/dataset/core/tensor.h"
-// #include "minddata/dataset/core/tensor_shape.h"
-// #include "minddata/dataset/engine/datasetops/batch_op.h"
 #include "minddata/dataset/engine/datasetops/source/tf_reader_op.h"
 #include "common/common.h"
 #include "gtest/gtest.h"
 #include "utils/log_adapter.h"
 #include "securec.h"
 #include "minddata/dataset/util/status.h"
-// #include "pybind11/numpy.h"
-// #include "pybind11/pybind11.h"
-
-// #include "utils/ms_utils.h"
-
-// #include "minddata/dataset/engine/db_connector.h"
-// #include "minddata/dataset/kernels/data/data_utils.h"
 
 namespace common = mindspore::common;
 namespace de = mindspore::dataset;

@@ -17,10 +17,10 @@
 #include <memory>
 #include <vector>
 #include <string>
-#include "op_def/ascend_op_name.h"
-#include "op_def/nn_optimizer_ops.h"
-#include "op_def/math_ops.h"
-#include "op_def/framework_ops.h"
+#include "mindspore/ops/op_def/ascend_op_name.h"
+#include "mindspore/ops/op_def/nn_optimizer_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"

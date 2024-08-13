@@ -24,6 +24,7 @@
 #include <vector>
 #include <map>
 #include <set>
+#include <optional>
 #include "utils/hash_map.h"
 #include "utils/hash_set.h"
 #include "utils/convert_utils_base.h"

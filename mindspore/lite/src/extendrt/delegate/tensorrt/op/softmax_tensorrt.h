@@ -19,7 +19,7 @@
 #include <vector>
 #include <memory>
 #include "src/extendrt/delegate/tensorrt/op/tensorrt_op.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 
 namespace mindspore::lite {
 class SoftMaxTensorRT : public TensorRTOp {

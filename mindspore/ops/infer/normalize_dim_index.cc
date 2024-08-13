@@ -26,6 +26,7 @@
 #include "include/common/utils/utils.h"
 #include "mindapi/src/helper.h"
 #include "mindspore/ops/op_def/structure_ops.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace ops {

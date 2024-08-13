@@ -17,7 +17,7 @@
 #include "tools/converter/adapter/acl/mapper/primitive_mapper_register.h"
 #include "tools/converter/adapter/acl/mapper/resize_bilinear_mapper.h"
 #include "tools/converter/adapter/acl/mapper/tbe_op_def.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 
 namespace mindspore {
 namespace lite {

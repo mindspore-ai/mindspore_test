@@ -17,9 +17,9 @@
 #include "transform/graph_ir/op_declare/nn_training_ops_declare.h"
 #include <string>
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
-#include "op_def/ascend_op_name.h"
-#include "op_def/nn_op_name.h"
-#include "op_def/nn_optimizer_op_name.h"
+#include "mindspore/ops/op_def/ascend_op_name.h"
+#include "mindspore/ops/op_def/nn_op_name.h"
+#include "mindspore/ops/op_def/nn_optimizer_op_name.h"
 
 namespace mindspore::transform {
 // ApplyMomentum

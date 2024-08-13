@@ -22,7 +22,6 @@
 #include "ir/manager.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "common/py_func_graph_fetcher.h"
-// #include "runtime/device/optimizer/pass/insert_trans_op.h"
 #include "plugin/device/ascend/optimizer/format_type/insert_cast.h"
 #include "backend/common/pass/eliminate_redundant_op.h"
 #include "include/backend/optimizer/optimizer.h"

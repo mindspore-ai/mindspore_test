@@ -23,7 +23,7 @@
 #include "infer/tensor_copy.h"
 #include "src/common/log_util.h"
 #include "mindspore/ops/op_def/op_name.h"
-#include "op_def/array_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
 
 namespace mindspore {
 namespace lite {

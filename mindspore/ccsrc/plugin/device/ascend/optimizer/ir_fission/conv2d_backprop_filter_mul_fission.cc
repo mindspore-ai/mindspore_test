@@ -18,8 +18,8 @@
 #include <string>
 #include <vector>
 #include <memory>
-#include "op_def/conv_pool_op_name.h"
-#include "op_def/math_op_name.h"
+#include "mindspore/ops/op_def/conv_pool_op_name.h"
+#include "mindspore/ops/op_def/math_op_name.h"
 #include "backend/common/pass/const_input_to_attr.h"
 #include "include/common/utils/utils.h"
 #include "include/backend/kernel_graph.h"

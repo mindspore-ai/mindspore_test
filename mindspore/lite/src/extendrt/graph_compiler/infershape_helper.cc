@@ -26,8 +26,8 @@
 #include "tools/optimizer/graph/node_infershape.h"
 #include "abstract/dshape.h"
 
-#include "op_def/auto_generate/gen_lite_ops.h"
-#include "op_def/nn_op_name.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/nn_op_name.h"
 #include "infer/adam.h"
 #include "infer/apply_momentum.h"
 #include "infer/batch_to_space.h"

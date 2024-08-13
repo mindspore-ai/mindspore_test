@@ -17,6 +17,7 @@
 #include <vector>
 #include <memory>
 #include "infer/ops_func_impl/prelu_grad.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore::ops {
 BaseShapePtr PReLUGradFuncImpl::InferShape(const PrimitivePtr &primitive,

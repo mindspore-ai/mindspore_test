@@ -25,7 +25,7 @@
 #include "frontend/parallel/step_parallel.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/graph_util/generate_graph.h"
-#include "op_def/other_ops.h"
+#include "mindspore/ops/op_def/other_ops.h"
 
 namespace mindspore {
 namespace parallel {

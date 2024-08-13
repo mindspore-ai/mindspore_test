@@ -17,9 +17,9 @@
 #include "plugin/device/ascend/optimizer/ge/dropout_for_ge.h"
 #include <vector>
 #include <memory>
-#include "op_def/array_op_name.h"
-#include "op_def/sequence_ops.h"
-#include "op_def/nn_ops.h"
+#include "mindspore/ops/op_def/array_op_name.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 

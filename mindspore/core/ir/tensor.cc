@@ -30,11 +30,11 @@
 #include "abstract/abstract_value.h"
 #include "base/complex_storage.h"
 #include "utils/log_adapter.h"
-#include "mindspore/ccsrc/include/common/utils/convert_utils.h"
 #include "utils/shape_utils.h"
 #include "utils/ordered_set.h"
 #include "utils/system/env.h"
 #include "utils/temp_file_manager.h"
+#include "utils/ms_context.h"
 
 namespace mindspore {
 namespace tensor {

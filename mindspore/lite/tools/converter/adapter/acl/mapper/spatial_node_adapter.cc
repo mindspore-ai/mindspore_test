@@ -23,15 +23,15 @@
 #include "base/base.h"
 #include "include/errorcode.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/fused_batch_norm.h"
 #include "infer/cxx_api/layer_norm_fusion.h"
 #include "infer/cxx_api/gegluv2.h"
 #include "infer/instance_norm.h"
 #include "infer/add_layernorm.h"
-#include "op_def/nn_op_name.h"
+#include "mindspore/ops/op_def/nn_op_name.h"
 #include "infer/stack.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "infer/tuple_get_item.h"
 #include "infer/make_tuple.h"
 #include "infer/group_norm_silu.h"
@@ -39,6 +39,7 @@
 #include "tools/converter/adapter/acl/common/utils.h"
 #include "tools/converter/adapter/acl/mapper/tbe_op_def.h"
 #include "include/registry/converter_context.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace lite {

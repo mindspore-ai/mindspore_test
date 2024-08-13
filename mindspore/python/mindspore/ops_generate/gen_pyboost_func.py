@@ -224,7 +224,7 @@ def generate_pyboost_op_source_code(work_path, op_proto, template_paths, convert
             aclnn_name = AclnnUtils.get_aclnn_interface(op_name_str)
             if converter.inplace_process != '':
                 real_output = ''
-            customize_include = f'#include "{K.OP_DEF_AUTO_GENERATE_PATH}/gen_ops_primitive.h"'
+            customize_include = f'#include "{K.MS_OP_DEF_AUTO_GENERATE_PATH}/gen_ops_primitive.h"'
 
             call_impl = call_tpl.replace(aclnn_name=aclnn_name,
                                          call_args=converter.call_args,

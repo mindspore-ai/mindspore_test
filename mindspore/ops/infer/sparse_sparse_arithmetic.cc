@@ -31,7 +31,7 @@
 #include "mindapi/base/shape_vector.h"
 #include "mindapi/src/helper.h"
 #include "mindspore/ops/op_def/sparse_ops.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "ops/primitive_c.h"
 #include "infer/sparse_sparse_arithmetic.h"
@@ -41,6 +41,7 @@
 #include "utils/convert_utils_base.h"
 #include "utils/log_adapter.h"
 #include "utils/shape_utils.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace ops {

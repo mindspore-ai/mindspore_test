@@ -24,7 +24,7 @@
 #include "mindapi/base/types.h"
 #include "ops/primitive_c.h"
 #include "abstract/abstract_value.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "mindspore/core/ops/ops_func_impl/op_func_impl.h"
 
 namespace mindspore {

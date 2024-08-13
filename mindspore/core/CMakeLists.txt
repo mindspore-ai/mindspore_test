@@ -1,9 +1,6 @@
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_BINARY_DIR})
 include_directories(${CMAKE_SOURCE_DIR}/mindspore/core)
-include_directories(${CMAKE_SOURCE_DIR}/mindspore/ops)
-include_directories(${CMAKE_SOURCE_DIR}/mindspore/ccsrc)
-include_directories(${CMAKE_SOURCE_DIR}/mindspore/ccsrc/minddata/dataset)
 
 if("${ENABLE_HIDDEN}" STREQUAL "OFF" AND NOT MSVC)
     string(REPLACE " -Werror " " " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")

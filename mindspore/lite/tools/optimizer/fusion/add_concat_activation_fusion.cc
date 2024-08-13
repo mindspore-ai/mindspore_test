@@ -19,7 +19,7 @@
 #include <memory>
 #include "mindspore/ops/op_def/lite_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/cxx_api/activation.h"
 #include "infer/cxx_api/add_fusion.h"
 #include "tools/optimizer/common/gllo_utils.h"

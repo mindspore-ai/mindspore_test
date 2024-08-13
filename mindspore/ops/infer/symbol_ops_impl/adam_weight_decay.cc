@@ -15,6 +15,7 @@
  */
 #include "mindspore/core/symbolic_shape/operation_builder.h"
 #include "infer/symbol_ops_impl/common.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace symshape {

@@ -23,6 +23,7 @@
 
 #include "ops/base_operator.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace ops {

@@ -15,8 +15,8 @@
  */
 
 #include "backend/common/optimizer/dynamic_shape/dynamic_shape_helper.h"
-#include "op_def/nn_op_name.h"
-#include "op_def/array_op_name.h"
+#include "mindspore/ops/op_def/nn_op_name.h"
+#include "mindspore/ops/op_def/array_op_name.h"
 #include "runtime/device/device_address_utils.h"
 #include "runtime/graph_scheduler/actor/embedding_cache/device_dense_embedding_operation.h"
 namespace mindspore {

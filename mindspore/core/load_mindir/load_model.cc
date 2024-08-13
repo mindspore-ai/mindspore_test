@@ -45,15 +45,44 @@
 #include "utils/ms_utils_secure.h"
 #include "abstract/abstract_function.h"
 #include "load_mindir/infer_mindir.h"
-#include "include/common/debug/common.h"
 #include "proto/mind_ir.pb.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
+#include "utils/ms_context.h"
 
 using std::string;
 using std::vector;
 
 namespace mindspore {
 namespace {
+constexpr auto kReturnPrimNode = "_return_prim_node";
+constexpr auto kReturnNode = "_return_node";
+constexpr auto kKernelGraphTypeName = "KernelGraph";
+
+static const int MAX_DIRECTORY_LENGTH = 1024;
+static const int MAX_FILENAME_LENGTH = 128;
+static const int MAX_OS_FILENAME_LENGTH = 255;
+
+inline std::string ErrnoToString(const int error_number) {
+  std::ostringstream ret_info;
+  ret_info << " Errno: " << error_number;
+#if defined(__APPLE__)
+  char err_info[MAX_FILENAME_LENGTH];
+  (void)strerror_r(error_number, err_info, sizeof(err_info));
+  ret_info << ", ErrInfo: " << err_info;
+#elif defined(SYSTEM_ENV_POSIX)
+  char err_info[MAX_FILENAME_LENGTH];
+  char *ret = strerror_r(error_number, err_info, sizeof(err_info));
+  if (ret != nullptr) {
+    ret_info << ", ErrInfo: " << ret;
+  }
+#elif defined(SYSTEM_ENV_WINDOWS)
+  char err_info[MAX_FILENAME_LENGTH];
+  (void)strerror_s(err_info, sizeof(err_info), error_number);
+  ret_info << ", ErrInfo: " << err_info;
+#endif
+  return ret_info.str();
+}
+
 static constexpr char kConstantValueNode[] = "Constant";
 static constexpr char kQuantParam[] = "quant_param";
 static constexpr char kGraphInputQuantParam[] = "graph_input_quant_param";
