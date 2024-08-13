@@ -303,10 +303,7 @@ void MsContext::SetDeviceTargetFromInner(const std::string &device_target) {
     MS_LOG(INFO) << "ms set context device target:" << device_target;
     seter_(device_target);
   }
-  if (device_target == "Ascend" && !CheckWriteStatus(MS_CTX_MEMORY_OPTIMIZE_LEVEL)) {
-    MS_LOG(INFO) << "Set memory_optimize_level to O1 as default on ascend";
-    int_params_[MS_CTX_MEMORY_OPTIMIZE_LEVEL - MS_CTX_TYPE_INT_BEGIN] = kOptimizeO1;
-  } else if (!CheckWriteStatus(MS_CTX_MEMORY_OPTIMIZE_LEVEL)) {
+  if (!CheckWriteStatus(MS_CTX_MEMORY_OPTIMIZE_LEVEL)) {
     MS_LOG(INFO) << "Set memory_optimize_level to O0 as default on other device";
     int_params_[MS_CTX_MEMORY_OPTIMIZE_LEVEL - MS_CTX_TYPE_INT_BEGIN] = kOptimizeO0;
   }
@@ -664,6 +661,7 @@ void MsContext::InitDigitalTypeDefaultValue() {
   set_param<int>(MS_CTX_COMPUTE_COMMUNICATE_FUSION_LEVEL, 0);
   set_param<int>(MS_CTX_ENABLE_COMPILE_CACHE, -1);
   set_param<int>(MS_CTX_DEBUG_LEVEL, kLevelRelease);
+  set_param<int>(MS_CTX_MEMORY_OPTIMIZE_LEVEL, kOptimizeO0);
   set_param<float>(MS_CTX_MAX_DEVICE_MEMORY, kDefaultMaxDeviceMemory);
   set_param<float>(MS_CTX_MEMPOOL_BLOCK_SIZE, kDefaultMempoolBlockSize);
   //
