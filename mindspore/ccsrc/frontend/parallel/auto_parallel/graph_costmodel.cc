@@ -319,7 +319,8 @@ void CostGraph::BFS(const OperatorInfoPtr &op, const StrategyPtr &op_stra,
 }
 
 // An additional propagation to deal with incontinuous strategy between the ops that share params.
-void CostGraph::ProcessDiffStraParams(const std::map<OperatorInfoPtr, StrategyPtr, OpsPtrCompare> &configured_ops) {
+void CostGraph::ProcessDiffStraParams(
+  const std::map<OperatorInfoPtr, StrategyPtr, OpsPtrCompare> &configured_ops) const {
   for (auto &curr_identity_op : _diff_stra_params) {
     auto succ_edges = curr_identity_op->succ_edges();
     auto is_target = [&](const std::shared_ptr<Edge> &edge) {
@@ -628,7 +629,8 @@ CostPtr CostGraph::SelectCostWithMinTrainingTime(const CostPtrList &cost_list, d
 CostPtrList CostGraph::SelectCostListWithMinTrainingTimeMultiple(const std::vector<CostPtrList> &all_cost_list,
                                                                  double available_memory) const {
   CostPtrList selected_cost_list(all_cost_list.size(), nullptr);
-  double minimum = DBL_MAX, total_memory = 0.0;
+  double minimum = DBL_MAX;
+  double total_memory = 0.0;
   CostPtrList ret(all_cost_list.size(), nullptr);
   // Check whether valid costs exist.
   for (size_t i = 0; i < all_cost_list.size(); ++i) {
@@ -656,7 +658,8 @@ CostPtrList CostGraph::SelectCostListWithMinTrainingTimeMultiple(const std::vect
     const auto alpha = CostModelContext::GetInstance()->costmodel_alpha();
     const auto beta = CostModelContext::GetInstance()->costmodel_beta();
     if (k == all_cost_list.size()) {
-      double tmp_memory = 0.0, tmp_minimum = 0.0;
+      double tmp_memory = 0.0;
+      double tmp_minimum = 0.0;
       for (size_t i = 0; i < selected_cost_list.size(); ++i) {
         MS_EXCEPTION_IF_NULL(selected_cost_list[i]);
         tmp_memory += selected_cost_list[i]->memory_with_reuse_;
@@ -697,7 +700,8 @@ Status CostGraph::SearchStrategyForMultiNodeFinalGraph(const std::vector<Operato
       all_list.push_back(cost_list_1);
     } else if (one_component->GetOperators().size() == 2) {
       MS_LOG(INFO) << "There are 2 operators in a component in the final graph.";
-      OperatorInfoPtr u, v;
+      OperatorInfoPtr u;
+      OperatorInfoPtr v;
       auto first_op = one_component->GetOperators()[0];
       auto second_op = one_component->GetOperators()[1];
       MS_EXCEPTION_IF_NULL(first_op);
@@ -735,6 +739,7 @@ Status CostGraph::SearchStrategyForMultiNodeFinalGraph(const std::vector<Operato
     if (connected_components[k]->GetOperators().size() == 1) {
       auto u = connected_components[k]->GetOperators()[0];
       auto decision_f = selected_cost->decision_ptr_->cast<FinalSingleDecisionPtr>();
+      MS_EXCEPTION_IF_NULL(decision_f);
       u->SetSelectedStrategyAndCost(decision_f->u_strategy_, decision_f->u_cost_);
       MS_LOG(INFO) << "Searching the strategy for the component " << k << " final graph ended.";
     } else if (connected_components[k]->GetOperators().size() == 2) {
@@ -775,7 +780,8 @@ Status CostGraph::SearchStrategyForTwoNodeFinalGraph(const std::vector<OperatorI
     MS_LOG(INFO) << "0 Operator in the final graph.";
     return SUCCESS;
   }
-  OperatorInfoPtr u, v;
+  OperatorInfoPtr u;
+  OperatorInfoPtr v;
   MS_EXCEPTION_IF_NULL(alive_ops[0]);
   MS_EXCEPTION_IF_NULL(alive_ops[1]);
   const auto phase = CostModelContext::GetInstance()->run_phase();
@@ -1045,7 +1051,8 @@ std::pair<std::vector<EdgePtr>, std::vector<EdgePtr>> UpdateEdgesIncidentToNodes
     std::string new_edge_name = op1->name() + OPERATOR_TO_OPERATOR_CONNECTOR + ith_edge->next_operator()->name();
     std::shared_ptr<Edge> new_edge;
     if (ith_edge->is_combined()) {
-      std::vector<size_t> output_indexs, input_indexs;
+      std::vector<size_t> output_indexs;
+      std::vector<size_t> input_indexs;
       output_indexs = ith_edge->prev_op_output_indexs();
       input_indexs = ith_edge->next_op_input_indexs();
       new_edge =
@@ -1247,7 +1254,8 @@ std::shared_ptr<Edge> CostGraph::EliminationOp(const OperatorInfoPtr &op) const 
   auto v = edge_op_v->next_operator();
   std::vector<size_t> output_indexs;
   std::vector<size_t> input_indexs;
-  size_t output_index, input_index;
+  size_t output_index;
+  size_t input_index;
   MS_EXCEPTION_IF_NULL(u);
   MS_EXCEPTION_IF_NULL(v);
   std::string new_edge_name = u->name() + OPERATOR_TO_OPERATOR_CONNECTOR + v->name();
@@ -1291,7 +1299,8 @@ std::shared_ptr<Edge> CostGraph::EliminationEdges(const std::vector<std::shared_
   MS_EXCEPTION_IF_NULL(u);
   MS_EXCEPTION_IF_NULL(v);
   std::string new_edge_name = u->name() + OPERATOR_TO_OPERATOR_CONNECTOR + v->name();
-  std::vector<size_t> output_indexs, input_indexs;
+  std::vector<size_t> output_indexs;
+  std::vector<size_t> input_indexs;
 
   for (auto &edge : edges) {
     MS_EXCEPTION_IF_NULL(edge);
@@ -1682,7 +1691,8 @@ void CostGraph::CreateStarEliminationCostList(std::vector<std::shared_ptr<Edge>>
                                               const StrategyPtr &merged_op_stra, const CostPtrList &merged_op_clist,
                                               CostPtrList *first_succ_node_clist_new) const {
   std::vector<StrategyPtr> succ_nodes_stras(succ_edges.size(), nullptr);
-  CostPtrList succ_edges_costs(succ_edges.size(), nullptr), succ_nodes_costs(succ_edges.size(), nullptr);
+  CostPtrList succ_edges_costs(succ_edges.size(), nullptr);
+  CostPtrList succ_nodes_costs(succ_edges.size(), nullptr);
   std::function<void(size_t)> recursive = [&first_succ_node_stra, &first_succ_node_clist, &first_succ_edge_clist,
                                            &merged_op_stra, &merged_op_clist, &succ_nodes_stras, &succ_edges_costs,
                                            &succ_nodes_costs, &first_succ_node_clist_new, &succ_edges, &recursive,

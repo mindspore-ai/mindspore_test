@@ -221,7 +221,8 @@ double BatchNormCost::GetBackwardCommCost(const std::vector<TensorInfo> &inputs,
                                           int64_t stage_id) const {
   // In backward phase, the communication cost is incurred only when last 4 tensor are Parameter and they does not
   // fully utilize all devices
-  double result = 0.0, tmp_cost = 0.0;
+  double result = 0.0;
+  double tmp_cost = 0.0;
 
   TensorInfo input1 = inputs[1];  // tensor gamma
   CheckGlobalDeviceManager();

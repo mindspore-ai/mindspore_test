@@ -260,7 +260,8 @@ bool IsOperatorsInTwoSeparateLoops(const CNodePtr &a_cnode, const CNodePtr &b_cn
       (ops_in_a_loop_.find(b_op_info->name()) == ops_in_a_loop_.end())) {
     return false;
   }
-  size_t a_loop_index = 0, b_loop_index = 0;
+  size_t a_loop_index = 0;
+  size_t b_loop_index = 0;
   const auto &a_fullname = a_cnode->fullname_with_scope();
   if (!GetLoopIndexFromCNode(a_cnode, &a_loop_index)) {
     MS_LOG(EXCEPTION) << "The operator with fullname_with_scope: " << a_fullname << " was not included in the set.";
@@ -350,6 +351,7 @@ void AddOperatorToIgnoreCandidates(const PrimitivePtr &prim, const OperatorInfoP
 
 bool GenerateStrategiesByOperatorInfoPtr(const OperatorInfoPtr &operator_info) {
   Status retGenStra;
+  MS_EXCEPTION_IF_NULL(operator_info);
   auto attrs = operator_info->attrs();
   if (AttrFound(attrs, STRATEGY_GEN_MODE) && GetValue<std::string>(attrs[STRATEGY_GEN_MODE]) == kDataParallel) {
     MS_LOG(INFO) << "generating batch parallel strategy...";
@@ -726,6 +728,8 @@ void CreateEdgeBetweenTwoOps(const OperatorInfoPtr &prev_op_info, const Operator
                              const CNodePtr &cnode, const CNodePtr &prev_cnode, const PrimitivePtr &prim,
                              const PrimitivePtr &prev_prim, size_t output_index, size_t input_index,
                              size_t *edge_count) {
+  MS_EXCEPTION_IF_NULL(prev_op_info);
+  MS_EXCEPTION_IF_NULL(node_op_info);
   std::string edge_name = prev_op_info->name() + OPERATOR_TO_OPERATOR_CONNECTOR + node_op_info->name();
   // If the edge between these two operators already has been added, then the edge will not be added again.
   if (entire_costgraph->IsEdgeInCostGraph(edge_name, output_index, input_index - 1)) {
@@ -740,6 +744,7 @@ void CreateEdgeBetweenTwoOps(const OperatorInfoPtr &prev_op_info, const Operator
     return;
   }
   const auto stra_follow = CostModelContext::GetInstance()->elementwise_stra_follow();
+  MS_EXCEPTION_IF_NULL(prev_prim);
   bool follow_strategy = (prim->name() == RESHAPE) || (prev_prim->name() == RESHAPE) ||
                          (stra_follow && IsElementWiseOperator(prev_prim->name()));
   if (follow_strategy) {
@@ -783,12 +788,14 @@ static void CreateEdgeAccrossMakeList(const CNodePtr &cnode, const PrimitivePtr 
   const auto &sub_inputs = (*prev_cnode)->inputs();
   for (size_t j = 1; j < sub_inputs.size(); ++j) {
     *prev_cnode = sub_inputs[j]->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(prev_cnode);
     bool bool_result_list = (*prev_cnode == nullptr) || !IsValueNode<Primitive>((*prev_cnode)->input(0)) ||
                             !IsAutoParallelCareNode(*prev_cnode);
     if (bool_result_list) {
       continue;
     }
     *prev_prim_anf_node = (*prev_cnode)->input(0)->cast<ValueNodePtr>();
+    MS_EXCEPTION_IF_NULL(*prev_prim_anf_node);
     *prev_prim = (*prev_prim_anf_node)->value()->cast<PrimitivePtr>();
     auto prev_op_info = (*prev_cnode)->user_data<OperatorInfo>();
     CreateEdgeBetweenTwoOps(prev_op_info, node_op_info, cnode, *prev_cnode, prim, *prev_prim, 0, j, edge_count);
@@ -978,6 +985,7 @@ void AugmentCostGraph(const std::vector<AnfNodePtr> &all_nodes) {
     std::set<std::string> target_without_duplicate;
     for (auto &target : target_set) {
       auto target_cnode = target.first->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(target_cnode);
       // Eliminate the ops without cost.
       if (IsSomePrimitive(target_cnode, SEND)) {
         continue;
@@ -999,6 +1007,7 @@ void AugmentCostGraph(const std::vector<AnfNodePtr> &all_nodes) {
     // Create edges between this TmpIdentityInfo instance and subsequent Operator instances
     for (auto &target : target_set) {
       auto target_cnode = target.first->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(target_cnode);
       auto input_index = target.second;
       auto target_op_info = target_cnode->user_data<OperatorInfo>();
       if (!target_op_info->repeated_num_in_dev_matrix_right() && tmp_identity_ptr->repeated_num_in_dev_matrix_right()) {
@@ -1224,6 +1233,7 @@ std::vector<std::vector<std::string>> RecInputTensorNames(const std::map<std::st
 
 CNodePtr GetInternalOperatorInfo(const CNodePtr &cnode, const ValueNodePtr &prim_anf_node) {
   auto prim = GetValueNode<PrimitivePtr>(prim_anf_node);
+  MS_EXCEPTION_IF_NULL(cnode);
   if (prim->name() == prim::kPrimTupleGetItem->name() || prim->name() == DEPEND) {
     auto prev_cnode = cnode->input(1)->cast<CNodePtr>();
     if (prev_cnode == nullptr || !IsValueNode<Primitive>(prev_cnode->input(0))) {
@@ -1242,12 +1252,14 @@ CNodePtr GetInternalOperatorInfo(const CNodePtr &cnode, const ValueNodePtr &prim
       }
       while (IsPrimitiveCNode(output, prim::kPrimMakeTuple)) {
         auto make_tuple_cnode = output->cast<CNodePtr>();
+        MS_EXCEPTION_IF_NULL(make_tuple_cnode);
         output = make_tuple_cnode->input(out_index + 1);
       }
       prev_cnode = output->cast<CNodePtr>();
     }
-
+    MS_EXCEPTION_IF_NULL(prev_cnode);
     auto prev_prim = prev_cnode->input(0)->cast<ValueNodePtr>()->value()->cast<PrimitivePtr>();
+    MS_EXCEPTION_IF_NULL(prev_prim);
     while (prev_prim->name() == prim::kPrimTupleGetItem->name() || prev_prim->name() == DEPEND) {
       prev_cnode = prev_cnode->input(1)->cast<CNodePtr>();
       if (prev_cnode == nullptr || !IsValueNode<Primitive>(prev_cnode->input(0))) {
