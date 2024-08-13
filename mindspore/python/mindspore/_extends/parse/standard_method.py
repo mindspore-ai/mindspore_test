@@ -3002,7 +3002,7 @@ def tensor_scatter_mul(input_x, indices, updates):
     `indices`, with values from `updates`. When multiple value are given for the same index,
     the output result will be the division of values.
     """
-    return F.tensor_sactter_mul(input_x, indices, updates)
+    return F.tensor_scatter_mul(input_x, indices, updates)
 
 
 def tensor_sactter_div(input_x, indices, updates):
