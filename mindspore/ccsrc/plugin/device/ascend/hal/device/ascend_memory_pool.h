@@ -20,12 +20,13 @@
 #include <memory>
 #include <string>
 #include "utils/hash_map.h"
+#include "include/backend/visible.h"
 #include "include/backend/mem_reuse/mem_dynamic_allocator.h"
 
 namespace mindspore {
 namespace device {
 namespace ascend {
-class AscendMemoryPool : public DynamicMemPoolBestFit {
+class BACKEND_EXPORT AscendMemoryPool : public DynamicMemPoolBestFit {
  public:
   ~AscendMemoryPool() override = default;
   AscendMemoryPool(const AscendMemoryPool &) = delete;

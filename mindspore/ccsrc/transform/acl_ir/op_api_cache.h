@@ -31,9 +31,9 @@ typedef bool (*CanUseCache)(const char *);
 
 constexpr int g_hash_buf_size = 8192;
 constexpr int g_hash_buf_max_size = g_hash_buf_size + 1024;
-extern thread_local char g_hash_buf[g_hash_buf_size];
-extern thread_local int g_hash_offset;
-extern bool cache_unavailable_first_print;
+extern BACKEND_EXPORT thread_local char g_hash_buf[g_hash_buf_size];
+extern BACKEND_EXPORT thread_local int g_hash_offset;
+extern BACKEND_EXPORT bool cache_unavailable_first_print;
 
 inline void UninitCacheThreadLocal() {
   static const auto uninit_cache_thread_local = transform::GetOpApiFunc("UnInitPTACacheThreadLocal");
@@ -79,47 +79,47 @@ inline void MemcpyToBuf(const void *data_expression, size_t size_expression) {
 }
 
 // Old cache hash.
-void GatherInfo(mindspore::kernel::KernelTensor *);
-void GatherInfo(const std::pair<mindspore::kernel::KernelTensor *, bool> &);
-void GatherInfo(const std::vector<mindspore::kernel::KernelTensor *> &);
-void GatherInfo(const device::DeviceAddressPtr &);
+BACKEND_EXPORT void GatherInfo(mindspore::kernel::KernelTensor *);
+BACKEND_EXPORT void GatherInfo(const std::pair<mindspore::kernel::KernelTensor *, bool> &);
+BACKEND_EXPORT void GatherInfo(const std::vector<mindspore::kernel::KernelTensor *> &);
+BACKEND_EXPORT void GatherInfo(const device::DeviceAddressPtr &);
 
-void GatherInfo(const mindspore::tensor::BaseTensorPtr &);
-void GatherInfo(const std::optional<tensor::BaseTensorPtr> &);
-void GatherInfo(const std::vector<tensor::BaseTensorPtr> &);
-void GatherInfo(const mindspore::tensor::TensorPtr &);
-void GatherInfo(const std::optional<tensor::TensorPtr> &);
-void GatherInfo(const std::vector<tensor::TensorPtr> &);
+BACKEND_EXPORT void GatherInfo(const mindspore::tensor::BaseTensorPtr &);
+BACKEND_EXPORT void GatherInfo(const std::optional<tensor::BaseTensorPtr> &);
+BACKEND_EXPORT void GatherInfo(const std::vector<tensor::BaseTensorPtr> &);
+BACKEND_EXPORT void GatherInfo(const mindspore::tensor::TensorPtr &);
+BACKEND_EXPORT void GatherInfo(const std::optional<tensor::TensorPtr> &);
+BACKEND_EXPORT void GatherInfo(const std::vector<tensor::TensorPtr> &);
 
 template <typename T>
-void GatherInfo(const T &value) {
+BACKEND_EXPORT void GatherInfo(const T &value) {
   MemcpyToBuf(&value, sizeof(T));
 }
 
 template <typename T>
-void GatherInfo(std::optional<T> value) {
+BACKEND_EXPORT void GatherInfo(std::optional<T> value) {
   if (value.has_value()) {
     GatherInfo(value.value());
   }
 }
 
-void GatherInfo(const string &);
-void GatherInfo(const std::optional<string> &);
+BACKEND_EXPORT void GatherInfo(const string &);
+BACKEND_EXPORT void GatherInfo(const std::optional<string> &);
 
-void GatherInfo(const ScalarPtr &);
-void GatherInfo(const std::optional<ScalarPtr> &);
+BACKEND_EXPORT void GatherInfo(const ScalarPtr &);
+BACKEND_EXPORT void GatherInfo(const std::optional<ScalarPtr> &);
 
-void GatherInfo(const TypePtr &);
-void GatherInfo(const std::optional<TypePtr> &);
+BACKEND_EXPORT void GatherInfo(const TypePtr &);
+BACKEND_EXPORT void GatherInfo(const std::optional<TypePtr> &);
 
 template <typename T>
-void GatherInfo(const std::vector<T> &values) {
+BACKEND_EXPORT void GatherInfo(const std::vector<T> &values) {
   MemcpyToBuf(values.data(), values.size() * sizeof(T));
 }
 
-inline void GatherInfo(TypeId type_id) { MemcpyToBuf(&type_id, sizeof(int)); }
+BACKEND_EXPORT inline void GatherInfo(TypeId type_id) { MemcpyToBuf(&type_id, sizeof(int)); }
 
-void GatherInfo();
+BACKEND_EXPORT void GatherInfo();
 
 template <typename T, typename... Args>
 void GatherInfo(const T &arg, const Args &... args) {
@@ -148,8 +148,8 @@ void RefreshAddr(const T &arg, const Args &... args) {
   RefreshAddr(args...);
 }
 
-uint64_t calc_hash_id();
-uint64_t gen_hash(const void *key, const int len, const uint32_t seed = 0xdeadb0d7);
+BACKEND_EXPORT uint64_t calc_hash_id();
+BACKEND_EXPORT uint64_t gen_hash(const void *key, const int len, const uint32_t seed = 0xdeadb0d7);
 
 template <typename... Args>
 bool HitCache(const char *aclnn_api, aclOpExecutor **executor, uint64_t *workspace_size, const Args &... args) {

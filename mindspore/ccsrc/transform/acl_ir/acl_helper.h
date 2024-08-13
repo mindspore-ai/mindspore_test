@@ -28,9 +28,9 @@ namespace mindspore {
 namespace transform {
 class GeAdapterInfo;
 typedef enum ErrorAclType { kNormalOp, kUnknownOp, kInValidType, kSpecialOp, kInvalidBuildInfo } ErrorAclType;
-void SetParameterFormat(const AnfNodePtr &node, const std::string &format, std::string *old_foramt);
+BACKEND_EXPORT void SetParameterFormat(const AnfNodePtr &node, const std::string &format, std::string *old_foramt);
 
-class AclHelper {
+class BACKEND_EXPORT AclHelper {
  public:
   // Check is data layout unchanged format.
   static bool CheckDefaultSupportFormat(const string &format);

@@ -199,6 +199,7 @@ enum SubModuleId : int {
   SM_SYMBOLIC_SHAPE,     // symbolic shape
   SM_GRAPH_KERNEL,       // graph kernel fusion
   SM_MINDIO,             // mindio tpp
+  SM_LLM_BOOST,          // llm boost
   NUM_SUBMODUES,         // number of submodules
 };
 
@@ -257,6 +258,7 @@ enum VLogLevel : int {
   VL_API = COMPONENT_START + (SM_API - 1) * COMPONENT_RANGE,                        // 31. MindAPI
   VL_SYMBOLIC_SHAPE = COMPONENT_START + (SM_SYMBOLIC_SHAPE - 1) * COMPONENT_RANGE,  // 32. symbolic shape
   VL_GRAPH_KERNEL = COMPONENT_START + (SM_GRAPH_KERNEL - 1) * COMPONENT_RANGE,      // 33. graph kernel fusion
+  VL_LLM_BOOST = COMPONENT_START + (SM_LLM_BOOST - 1) * COMPONENT_RANGE,            // 34. llm boost
 
   VL_USER_CUSTOM = NUM_ALIGN(COMPONENT_START + (NUM_SUBMODUES - 1) * COMPONENT_RANGE,
                              COMPONENT_START),  // start of user defined vlog level

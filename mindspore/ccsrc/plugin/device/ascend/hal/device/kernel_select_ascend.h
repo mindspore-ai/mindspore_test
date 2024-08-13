@@ -39,8 +39,8 @@ bool IsEnableInternalNode(const AnfNodePtr &node);
 void SetKernelInfoBeforeCreateKernel(const std::vector<CNodePtr> &nodes);
 
 void GenerateKernelBuildInfo(const CNodePtr &kernel, const KernelType &kernel_type);
-bool IsEmptyTupleInput(const CNodePtr &kernel, const size_t i, const TypeId cur_type_id);
-TypeId GetInputDeviceType(const AnfNodePtr &kernel_node, size_t input_idx);
+BACKEND_EXPORT bool IsEmptyTupleInput(const CNodePtr &kernel, const size_t i, const TypeId cur_type_id);
+BACKEND_EXPORT TypeId GetInputDeviceType(const AnfNodePtr &kernel_node, size_t input_idx);
 }  // namespace ascend
 }  // namespace device
 }  // namespace mindspore

@@ -46,7 +46,7 @@
 #include "runtime/hardware/device_context_manager.h"
 #include "include/backend/mem_reuse/mem_dynamic_allocator.h"
 #include "frontend/parallel/tensor_layout/tensor_transform.h"
-
+#include "pipeline/llm_boost/llm_boost_binder.h"
 #include "pybind_api/gil_scoped_long_running.h"
 
 #ifndef ENABLE_SECURITY
@@ -137,6 +137,14 @@ void RegFrameworkPythonProfileRecorder(py::module *m) {
     .def("record_end", &runtime::PythonProfilerRecorder::record_end, "record_end");
 }
 
+void RegLlmBoostBinder(const py::module *m) {
+  (void)py::class_<pipeline::LlmBoostBinder, std::shared_ptr<pipeline::LlmBoostBinder>>(*m, "LlmBoostBinder")
+    .def(py::init<const std::string &, const std::string &>())
+    .def("init", &pipeline::LlmBoostBinder::Init, "init")
+    .def("forward", &pipeline::LlmBoostBinder::Forward, "forward")
+    .def("set_kvcache", &pipeline::LlmBoostBinder::SetKVCache, "set_kvcache")
+    .def("set_weights", &pipeline::LlmBoostBinder::SetWeight, "set_weights");
+}
 }  // namespace profiler
 }  // namespace mindspore
 #endif  // ENABLE_SECURITY
@@ -186,6 +194,7 @@ void RegModule(py::module *m) {
   mindspore::abstract::RegPrimitiveFrontEval();
 #endif
   mindspore::ops::RegOpEnum(m);
+  mindspore::profiler::RegLlmBoostBinder(m);
 }
 
 void RegModuleHelper(py::module *m) {

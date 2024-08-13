@@ -90,7 +90,7 @@ bool EnableLccl();
 
 void InitializeAcl();
 
-std::string GetFormatMode();
+BACKEND_EXPORT std::string GetFormatMode();
 }  // namespace ascend
 }  // namespace device
 }  // namespace mindspore
