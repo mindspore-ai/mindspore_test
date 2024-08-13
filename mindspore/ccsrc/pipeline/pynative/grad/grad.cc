@@ -570,6 +570,12 @@ void GradExecutor::HandleInputArgsForTopCell(const InputArgsInfoPtr &input_args_
       std::make_shared<autograd::FuncGrad>(input_param_values, op_num_in_bprop_graph_ * kContainerRatio,
                                            !top_cell_->is_high_order_top_cell(), is_run_recompute_));
   }
+  if (!top_cell_->is_ir_grad() && !top_cell_->use_dynamic_shape_process()) {
+    pre_top_cell_ = GetAlreadyRunTopCell(top_cell_->already_run_cell_id());
+    if (pre_top_cell_ == nullptr) {
+      pre_top_cell_ = GetPipelineRunTopCell(top_cell_->already_run_cell_id());
+    }
+  }
 }
 
 bool GradExecutor::IsCreateIrGrad() {
@@ -754,6 +760,7 @@ void GradExecutor::MakeNewTopCell(const InputArgsInfoPtr &input_args_info) {
   fg->debug_info()->set_name("pynative_forward_graph");
   auto resource = std::make_shared<pipeline::Resource>();
 
+  pre_top_cell_ = nullptr;
   finded_top_cell_ = nullptr;
   bool new_top_cell_is_pipeline_top_cell = NewTopCellIsPipelineTopCell(input_args_info);
 
@@ -1236,7 +1243,7 @@ py::object GradExecutor::RunGrad(const prim::GradOperationPtr &grad, const py::o
       top_cell_ = finded_top_cell_;
       finded_top_cell_ = nullptr;
     }
-    // Top cell clean must after pipeline forward output replace, because replace_info can not be clear
+    // Top cell clean must after pipeline forward output replace, because replace_info cannot be clear
     AsyncClearTopCell();
     top_cell_->UpdateTopCellInfo(false, false, false);
     return RunGradGraph();
@@ -1792,8 +1799,19 @@ void GradExecutor::MakeNestedCnode(bool has_custom_bprop, const std::vector<Valu
   // If fun grad and ir grad use the same ad grad graph(hit cache), dout will occur wrong by different type(tuple or
   // plant tuple)
   grad_param->graph_cache_key = cur_top_cell_id + std::to_string(top_cell()->is_ir_grad());
-  if (!top_cell()->auto_grad_cell_ptr()->KPynativeWithFProp(grad_param)) {
-    MS_LOG(EXCEPTION) << "Failed to run ad grad for second grad graph ";
+  auto auto_grad_cell_ptr = top_cell()->auto_grad_cell_ptr();
+  if (forward()->enable_async()) {
+    forward()->WaitForwardTask();
+    auto task = [auto_grad_cell_ptr, grad_param]() {
+      if (!auto_grad_cell_ptr->KPynativeWithFProp(grad_param)) {
+        MS_LOG(EXCEPTION) << "Failed to run ad grad for second grad graph ";
+      }
+    };
+    DispatchGradQueueTask(std::move(task));
+  } else {
+    if (!auto_grad_cell_ptr->KPynativeWithFProp(grad_param)) {
+      MS_LOG(EXCEPTION) << "Failed to run ad grad for second grad graph ";
+    }
   }
   top_cell()->set_need_do_final_opt(true);
 }
@@ -1903,6 +1921,7 @@ void GradExecutor::ClearGradRes() {
                       ? 0
                       : pipeline_top_cell_map_[top_cell_->already_run_cell_id()].size());
   top_cell_ = nullptr;
+  pre_top_cell_ = nullptr;
   // Nested grad, get outer top cell if exist
   // Run top cell with bprop, and bprop has grad, after running inner grad, top cell should be restore
   if (!top_cell_stack_.empty()) {
@@ -1950,6 +1969,7 @@ void GradExecutor::ClearRes() {
   grad_operation_.clear();
 
   top_cell_ = nullptr;
+  pre_top_cell_ = nullptr;
   top_input_args_info_ = nullptr;
   std::stack<InputArgsInfoPtr>().swap(input_args_info_stack_);
   std::stack<TopCellInfoPtr>().swap(top_cell_stack_);

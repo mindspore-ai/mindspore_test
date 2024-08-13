@@ -302,7 +302,8 @@ void TopCellInfo::UpdateTopCellForwardTensorInfoInBpropGraph(const std::string &
     }
   } else {
     // Not first run top cell, do update
-    MS_LOG(DEBUG) << "Update top cell forward output tensor info " << op_info;
+    MS_LOG(DEBUG) << "Update top cell forward output tensor info " << op_info << ", output id "
+                  << PyNativeAlgo::Common::GetIdByValue(v);
     UpdateForwardOutputTensorInfo(op_info, v, pre_top_cell->replace_info());
   }
 }

@@ -189,13 +189,16 @@ std::vector<AnfNodePtr> RunOutputReplace(const CNodePtr &forward_node, const Fun
   if (!PyNativeAlgo::GradCommon::IsRealOp(cnode_morph)) {
     return {};
   }
+  MS_EXCEPTION_IF_NULL(forward_node);
+  if (!PyNativeAlgo::GradCommon::HasTensorOutput(forward_node->abstract())) {
+    return {};
+  }
   // Use manager to get the link relation among nodes.
   MS_EXCEPTION_IF_NULL(bprop_graph);
   MS_EXCEPTION_IF_NULL(fprop_graph);
   auto manager = Manage({fprop_graph, bprop_graph}, false);
 
   // Replace output node.
-  MS_EXCEPTION_IF_NULL(forward_node);
   auto ref_size = manager->node_users().at(forward_node).size();
   MS_LOG(DEBUG) << "Ref size: " << ref_size;
   auto output_vnode = GenNewTensor(cnode_morph);
@@ -209,7 +212,7 @@ std::vector<AnfNodePtr> RunOutputReplace(const CNodePtr &forward_node, const Fun
   if (ref_size > 1) {
     cnode_morph->set_forward(output_vnode, "");
     used_forward_nodes.push_back(cnode_morph);
-    MS_LOG(DEBUG) << "node has been used in grad graph: " << cnode_morph->DebugString()
+    MS_LOG(DEBUG) << "Output CNode has been used in grad graph: " << cnode_morph->DebugString()
                   << ", its output value: " << output_vnode->ToString();
   }
   return used_forward_nodes;
@@ -241,9 +244,13 @@ std::vector<AnfNodePtr> RunInputReplace(const FuncGraphPtr &bprop_graph, const F
         !PyNativeAlgo::GradCommon::IsRealOp(input_node)) {
       continue;
     }
+    MS_EXCEPTION_IF_NULL(input_node);
+    if (!PyNativeAlgo::GradCommon::HasTensorOutput(input_node->abstract())) {
+      continue;
+    }
     // Replace forward input node by its output value.
     auto para_ref_size = manager->node_users()[paras[i]].size();
-    CNodePtr cnode_i = input_node->cast<CNodePtr>();
+    auto cnode_i = input_node->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(cnode_i);
     auto output_vnode_i = GenNewTensor(cnode_i);
     MS_EXCEPTION_IF_NULL(output_vnode_i);

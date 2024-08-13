@@ -81,7 +81,7 @@ class GradExecutor {
     MS_EXCEPTION_IF_NULL(jit_);
     return jit_;
   }
-
+  TopCellInfo *pre_top_cell() const { return pre_top_cell_.get(); }
   inline bool TopCellHasNotBeenCreate() const { return top_cell_ == nullptr; }
   inline void set_top_cell(TopCellInfoPtr top_cell) { top_cell_ = std::move(top_cell); }
   inline bool grad_flag() const { return grad_flag_; }
@@ -150,6 +150,7 @@ class GradExecutor {
 
   inline bool is_high_order_top_cell() const { return top_cell_ != nullptr && top_cell_->is_high_order_top_cell(); }
   void ChildAfterFork();
+  void DispatchGradQueueTask(std::function<void(void)> &&task) const;
 
  private:
   ForwardExecutorPtr forward() const;
@@ -225,7 +226,6 @@ class GradExecutor {
   AnfNodePtr GetValueSequenceInput(const ValuePtr &v) const;
   AnfNodePtr CreateTupleGetItemNode(const std::string &obj_id,
                                     const std::pair<AnfNodePtr, std::vector<int64_t>> &out) const;
-  void DispatchGradQueueTask(std::function<void(void)> &&task) const;
   void ResetMetaGradInfoForNewTopCell(const InputArgsInfoPtr &input_args_info) const;
   void ClearBpropTask() const;
 
@@ -260,6 +260,8 @@ class GradExecutor {
   // For top cell nested top cell, import for high-order grad
   std::stack<TopCellInfoPtr> top_cell_stack_;
 
+  // If is not ir_grad top cell, no need find every time
+  TopCellInfoPtr pre_top_cell_;
   // Used for set grad scenario. If top cell set in CheckAlreadyRun, no need find again in RunGrad;
   TopCellInfoPtr finded_top_cell_;
   // Record all top cells that have been run
