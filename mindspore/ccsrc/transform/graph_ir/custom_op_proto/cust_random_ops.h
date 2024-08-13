@@ -39,5 +39,14 @@ REG_CUST_OP(Dropout2D)
   .OUTPUT(mask, TensorType({DT_BOOL}))
   .REQUIRED_ATTR(keep_prob, Float)
   .CUST_OP_END_FACTORY_REG(Dropout2D)
+
+REG_CUST_OP(RandomChoiceWithMask)
+    .INPUT(x, TensorType({DT_BOOL}))
+    .OUTPUT(index, TensorType({DT_INT32}))
+    .OUTPUT(mask, TensorType({DT_BOOL}))
+    .ATTR(count, Int, 0)
+    .ATTR(seed, Int, 0)
+    .ATTR(seed2, Int, 0)
+    .CUST_OP_END_FACTORY_REG(RandomChoiceWithMask)
 }  // namespace ge
 #endif  // MINDSPORE_CCSRC_GRAPH_IR_CUSTOM_OP_PROTO_CUST_RANDOM_OPS_H_

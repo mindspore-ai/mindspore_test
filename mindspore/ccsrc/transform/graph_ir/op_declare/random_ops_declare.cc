@@ -54,12 +54,12 @@ REG_ADPT_DESC(LinSpace, kNameLinSpace, ADPT_DESC(LinSpace))
 REG_ADPT_DESC(LinSpaceD, kLinSpaceDOpName, ADPT_DESC(LinSpace))
 
 // RandomChoiceWithMask
-INPUT_MAP(RandomChoiceWithMask) = {{1, INPUT_DESC(x)}};
-ATTR_MAP(RandomChoiceWithMask) = {{"count", ATTR_DESC(count, AnyTraits<int64_t>())},
-                                  {"seed", ATTR_DESC(seed, AnyTraits<int64_t>())},
-                                  {"seed2", ATTR_DESC(seed2, AnyTraits<int64_t>())}};
-OUTPUT_MAP(RandomChoiceWithMask) = {{0, OUTPUT_DESC(y)}, {1, OUTPUT_DESC(mask)}};
-REG_ADPT_DESC(RandomChoiceWithMask, kNameRandomChoiceWithMask, ADPT_DESC(RandomChoiceWithMask))
+CUST_INPUT_MAP(RandomChoiceWithMask) = {{1, INPUT_DESC(x)}};
+CUST_ATTR_MAP(RandomChoiceWithMask) = {{"count", ATTR_DESC(count, AnyTraits<int64_t>())},
+                                       {"seed", ATTR_DESC(seed, AnyTraits<int64_t>())},
+                                       {"seed2", ATTR_DESC(seed2, AnyTraits<int64_t>())}};
+CUST_OUTPUT_MAP(RandomChoiceWithMask) = {{0, OUTPUT_DESC(index)}, {1, OUTPUT_DESC(mask)}};
+REG_ADPT_DESC(RandomChoiceWithMask, kNameRandomChoiceWithMask, CUST_ADPT_DESC(RandomChoiceWithMask))
 
 // TruncatedNormal
 INPUT_MAP(TruncatedNormal) = {{1, INPUT_DESC(shape)}};

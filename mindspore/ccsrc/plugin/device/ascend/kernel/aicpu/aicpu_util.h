@@ -323,7 +323,6 @@ const std::set<std::string> kCacheKernelOps{kUpdateCache, kCacheSwapTable,      
                                             kDropout2D,   kNonMaxSuppressionV3, kGetNext,      kInitData,    kPrint};
 const std::set<std::string> kCpuKernelBaseOps{kDropoutGenMaskOpName,
                                               kRandomCategorical,
-                                              kRandomChoiceWithMask,
                                               kStandardNormal,
                                               kStandardLaplace,
                                               kUniformInt,

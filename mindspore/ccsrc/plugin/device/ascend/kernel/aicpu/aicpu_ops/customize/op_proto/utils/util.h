@@ -400,6 +400,7 @@ bool IsUnknownRankShape(const std::vector<int64_t> &shape_vec);
  * @return bool: true when shape is [-2] else false
  */
 bool IsUnknownRankShape(const GeShape &input_shape);
+bool IsUnknownRankShape(const Shape &input_shape);
 
 bool IsUnKnownShape(const std::vector<int64_t> &shape_vec);
 

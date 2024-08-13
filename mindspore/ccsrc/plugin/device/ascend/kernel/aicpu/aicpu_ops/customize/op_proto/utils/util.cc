@@ -1320,6 +1320,11 @@ bool IsUnknownRankShape(const std::vector<int64_t> &shape_vec) {
 
 bool IsUnknownRankShape(const GeShape &input_shape) { return input_shape.IsUnknownDimNum(); }
 
+bool IsUnknownRankShape(const Shape &input_shape) {
+  auto dims = input_shape.GetDims();
+  return (dims.size() == 1UL) && (dims[0UL] == UNKNOWN_DIM_NUM);
+}
+
 bool IsUnKnownShape(const std::vector<int64_t> &shape_vec) {
   auto found = find(shape_vec.begin(), shape_vec.end(), -1);
   return found != shape_vec.end();
