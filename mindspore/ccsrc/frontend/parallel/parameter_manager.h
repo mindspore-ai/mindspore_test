@@ -34,6 +34,8 @@ namespace py = pybind11;
 
 namespace mindspore {
 namespace parallel {
+constexpr size_t THIRD_BORDER_INFO_INDEX = 3;
+constexpr size_t SECOND_BORDER_INFO_INDEX = 2;
 constexpr char OBJ[] = "obj";
 constexpr char CLONED_OBJ[] = "cloned_obj";
 constexpr char SLICE_PARAMETER_FN_PATH[] = "mindspore.parallel._utils";

@@ -371,7 +371,12 @@ RankList DeviceManager::FindRankListByHashName(const std::string &hash_name) {
   rank_list_name = rank_list_name + "-";
   for (size_t i = 0; i < rank_list_name.size(); i++) {
     if (rank_list_name[i] == '-') {
-      int64_t rank_id = std::atoi(rank_str.c_str());
+      int64_t rank_id;
+      try {
+        rank_id = std::stoi(rank_str.c_str());
+      } catch (std::invalid_argument &) {
+        MS_LOG(EXCEPTION) << "Invalid rank string for a parameter: " << rank_str;
+      }
       rank_list.push_back(rank_id);
       rank_str = "";
     } else if (rank_list_name[i] <= '9' && rank_list_name[i] >= '0') {
