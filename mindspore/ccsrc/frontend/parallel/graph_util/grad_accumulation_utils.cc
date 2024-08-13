@@ -94,6 +94,7 @@ void TagMicroBatchEnd(const FuncGraphManagerPtr &manager, const std::vector<AnfN
 }
 
 ValuePtr SearchPreNodeMicro(const CNodePtr &cnode) {
+  MS_EXCEPTION_IF_NULL(cnode);
   if (cnode->HasPrimalAttr(MICRO)) {
     return cnode->GetPrimalAttr(MICRO);
   }
@@ -150,6 +151,7 @@ void TagMicroBatchBpEndInCellShare(const FuncGraphPtr &root, const FuncGraphMana
 }
 
 void TagMicroBatchBpEndPrim(const FuncGraphPtr &root) {
+  MS_EXCEPTION_IF_NULL(root);
   FuncGraphPtr parallel_care_graph = nullptr;
   for (auto &fg : root->manager()->func_graphs()) {
     for (auto &node : fg->nodes()) {
@@ -187,6 +189,7 @@ void TagMicroBatchBpEndPrim(const FuncGraphPtr &root) {
 }
 
 void TagMicroBatchBpEnd(const FuncGraphPtr &root) {
+  MS_EXCEPTION_IF_NULL(root);
   AnfNodePtr ret = root->get_return();
   MS_EXCEPTION_IF_NULL(ret);
   std::vector<AnfNodePtr> all_nodes = DeepScopedGraphSearch(ret);
@@ -210,6 +213,7 @@ void TagMicroBatchBpEnd(const FuncGraphPtr &root) {
 void ExtractMicroBatchBorderNodes(const FuncGraphPtr &root,
                                   std::unordered_map<int64_t, std::vector<CNodePtr>> *forward_start,
                                   std::unordered_map<int64_t, std::vector<CNodePtr>> *backward_end) {
+  MS_EXCEPTION_IF_NULL(root);
   AnfNodePtr ret = root->get_return();
   MS_EXCEPTION_IF_NULL(ret);
   std::vector<AnfNodePtr> all_nodes = DeepScopedGraphSearch(ret);
@@ -237,6 +241,7 @@ void ReorderGradAccumulation(const FuncGraphPtr &root,
   if (forward_start.empty() || backward_end.empty()) {
     MS_LOG(EXCEPTION) << "Cannot find grad_accumulation border node.";
   }
+  MS_EXCEPTION_IF_NULL(root);
   auto manager = root->manager();
   for (int64_t micro = 0; micro < ParallelContext::GetInstance()->grad_accumulation_step() - 1; ++micro) {
     if (forward_start.find(micro + 1) == forward_start.end()) {

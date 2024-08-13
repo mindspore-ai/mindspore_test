@@ -71,6 +71,7 @@ AnfNodePtr GetRealInput(const AnfNodePtr &input) {
 // The returned boolean vector should be the same order of the inputs, thus its implementation
 // is closely consistent with ExtractShape() in step_parallel.cc
 std::vector<bool> ExtractInputParameterByNode(const CNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
   std::vector<bool> is_parameter;
   std::vector<AnfNodePtr> node_inputs{node->inputs()};
   // input is a ValueList or ValueTuple, then all inputs are not parameter.
@@ -202,6 +203,7 @@ std::vector<size_t> ExtractInputElementLength(const CNodePtr &node, std::vector<
   std::vector<size_t> inputs_type_len;
   // extract input element length
   for (auto &input : node_inputs) {
+    MS_EXCEPTION_IF_NULL(input);
     if (HasAbstractMonad(input)) {
       continue;
     }
@@ -226,6 +228,7 @@ std::vector<size_t> ExtractInputElementLength(const CNodePtr &node, std::vector<
 }
 
 std::vector<AnfNodePtr> extra_input_for_ifa(CNodePtr node, std::vector<AnfNodePtr> node_input) {
+  MS_EXCEPTION_IF_NULL(node);
   ValueNodePtr anf_node = node->input(0)->cast<ValueNodePtr>();
   if (!anf_node) {
     return node_input;
@@ -368,6 +371,7 @@ bool FindReshape(const CNodePtr &cnode, mindspore::HashSet<std::string> *op_cach
     return false;
   }
   ValueNodePtr prim_anf_node = cnode->input(0)->cast<ValueNodePtr>();
+  MS_EXCEPTION_IF_NULL(prim_anf_node);
   PrimitivePtr prim = GetValueNode<PrimitivePtr>(prim_anf_node);
   MS_EXCEPTION_IF_NULL(prim);
   if (prim->name() == RESHAPE) {
@@ -397,6 +401,7 @@ bool FindReshapePreNodeCrossParam(const AnfNodePtr &node, OperatorInfoPtr *pre_o
     return true;
   }
   auto temp_node = fg_map.begin()->first->first->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(temp_node);
   auto prev_node = temp_node->input(param_index + 1);
   return FindReshapePreNodeStraCosts(prev_node, pre_operator_info, is_prev_param, out_index, ++curr_depth);
 }
@@ -417,6 +422,7 @@ bool FindReshapePreNodeStraCosts(const AnfNodePtr &node, OperatorInfoPtr *pre_op
     return false;
   }
   CNodePtr cnode = node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
   FindPreNodeCrossFuncGraph(&cnode, *out_index);
   if (!IsValueNode<Primitive>(cnode->input(0))) {
     return false;
@@ -428,7 +434,9 @@ bool FindReshapePreNodeStraCosts(const AnfNodePtr &node, OperatorInfoPtr *pre_op
     return true;
   }
   ValueNodePtr prim_anf_node = cnode->input(0)->cast<ValueNodePtr>();
+  MS_EXCEPTION_IF_NULL(prim_anf_node);
   PrimitivePtr prim = prim_anf_node->value()->cast<PrimitivePtr>();
+  MS_EXCEPTION_IF_NULL(prim);
   if (prim->name() == prim::kPrimTupleGetItem->name()) {
     *out_index = GetTupleGetItemIndex(cnode);
     // find tuple_get_item's previous node
@@ -538,6 +546,7 @@ Status TransValueSequeueToVector(const ValuePtr &input_value, std::vector<int64_
     return FAILED;
   }
   ValueSequeuePtr value_seq = input_value->cast<ValueSequeuePtr>();
+  MS_EXCEPTION_IF_NULL(value_seq);
   for (auto &element : value_seq->value()) {
     MS_EXCEPTION_IF_NULL(element);
     if (element->isa<Int64Imm>()) {

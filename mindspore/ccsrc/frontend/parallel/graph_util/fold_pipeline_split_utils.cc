@@ -50,7 +50,7 @@ const std::set<PrimitivePtr> END_NODE_BLACK_LIST = {
   prim::kPrimDepend,    prim::kPrimTupleGetItem, prim::kPrimAdd,    prim::kPrimSoftmaxCrossEntropyWithLogits,
   prim::kPrimMakeTuple, prim::kPrimUpdateState,  prim::kPrimReshape};
 
-int64_t GetSegmentMax(const FuncGraphPtr &root, const std::vector<AnfNodePtr> &forward_end) {
+int64_t GetSegmentMax(const std::vector<AnfNodePtr> &forward_end) {
   int64_t seg_max = 0;
   if (forward_end.empty()) {
     MS_LOG(EXCEPTION) << "Can not find the end node of pipeline, you are advised to use 'PipelineCell' to fix it.";
@@ -81,6 +81,8 @@ std::vector<PipelinePair> GetSubStepPairs(const PipelinePair &fp_or_bp_pair, int
 }
 
 bool CompFuncBySegAscending(const AnfNodePtr &node1, const AnfNodePtr &node2) {
+  MS_EXCEPTION_IF_NULL(node1);
+  MS_EXCEPTION_IF_NULL(node2);
   auto parallel_context = parallel::ParallelContext::GetInstance();
   if (parallel_context->enable_fold_pipeline()) {
     auto get_value_func = [](const AnfNodePtr &node) {
@@ -100,6 +102,8 @@ bool CompFuncBySegAscending(const AnfNodePtr &node1, const AnfNodePtr &node2) {
 }
 
 bool CompFuncBySegDescending(const AnfNodePtr &node1, const AnfNodePtr &node2) {
+  MS_EXCEPTION_IF_NULL(node1);
+  MS_EXCEPTION_IF_NULL(node2);
   auto parallel_context = parallel::ParallelContext::GetInstance();
   if (parallel_context->enable_fold_pipeline()) {
     auto get_value_func = [](const AnfNodePtr &node) {
@@ -119,6 +123,7 @@ bool CompFuncBySegDescending(const AnfNodePtr &node1, const AnfNodePtr &node2) {
 }
 
 void InsertVirtualFoldPipelineEndNode(const AnfNodePtr &temp_node, const FuncGraphManagerPtr &manager) {
+  MS_EXCEPTION_IF_NULL(manager);
   auto end_node = GetPreNode(temp_node);
   MS_EXCEPTION_IF_NULL(end_node);
   auto end_cnode = end_node->cast<CNodePtr>();
@@ -137,6 +142,7 @@ void InsertVirtualFoldPipelineEndNode(const AnfNodePtr &temp_node, const FuncGra
 
 AnfNodePtr FindNodeFirstUser(const FuncGraphPtr &root, const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(root);
+  MS_EXCEPTION_IF_NULL(node);
   auto node_users_map = root->manager()->node_users();
   auto users = node_users_map[node];
   for (auto &temp_user : users) {
@@ -164,6 +170,7 @@ static bool IsInEndNodeBlackListOrParallelBlackList(const CNodePtr &cnode) {
 }
 
 AnfNodePtr GetPreNode(const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
   auto cnode = node->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(cnode);
   std::vector<AnfNodePtr> node_queue = {node};
@@ -238,7 +245,7 @@ void ReorderForBackwardLastSeg(const std::vector<PipelinePair> &pair_vector, con
   MS_EXCEPTION_IF_NULL(manager);
   auto stage_num = g_device_manager->stage_num();
   auto stage_id = g_device_manager->stage_id();
-  int64_t seg_max = GetSegmentMax(root, pair_vector[3].second);
+  int64_t seg_max = GetSegmentMax(pair_vector[3].second);
   MS_LOG(INFO) << "Micro max:" << micro_max << "seg_max" << seg_max;
   int64_t last_seg_index = SizeToLong(pair_vector[2].first.size()) - 1 - micro_max;
   int64_t cur_stage_fwd_max_idx = 2 * (stage_num - stage_id - 1) + 1;
@@ -356,6 +363,7 @@ void ReorderForBackwardOtherSeg(const PipelinePair &backward_start_pair, const P
 
 PipelinePair Deduplicate(const std::vector<AnfNodePtr> &node_vector, const FuncGraphPtr &root, int64_t micro_max,
                          int64_t seg_max, bool is_train) {
+  MS_EXCEPTION_IF_NULL(root);
   std::vector<AnfNodePtr> out_vec_begin;
   std::vector<AnfNodePtr> out_vec_end;
   for (int64_t h = 0; h <= seg_max; ++h) {
@@ -369,6 +377,7 @@ PipelinePair Deduplicate(const std::vector<AnfNodePtr> &node_vector, const FuncG
 
 PipelinePair DeduplicateBySegAscending(const std::vector<AnfNodePtr> &node_vector, const FuncGraphPtr &root,
                                        int64_t micro_max, bool is_train, int64_t seg_max = 0) {
+  MS_EXCEPTION_IF_NULL(root);
   std::vector<AnfNodePtr> out_vec_begin;
   std::vector<AnfNodePtr> out_vec_end;
   for (int64_t h = 0; h <= seg_max; ++h) {
@@ -486,7 +495,7 @@ void FoldPipelineReorder(const FuncGraphPtr &root) {
   GetBorderNode(&forward_start, &forward_end, &backward_start, &backward_end, &forward_params, &backward_params,
                 &allreduce_params, root);
   int64_t micro_max = GetMicroMax(root, forward_end);
-  int64_t seg_max = GetSegmentMax(root, forward_end);
+  int64_t seg_max = GetSegmentMax(forward_end);
   std::vector<int64_t> seg_micro_max{micro_max, seg_max};
 
   auto backward_start_pair = DeduplicateBySegDescending(backward_start, root, micro_max, true, seg_max);
