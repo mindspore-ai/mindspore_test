@@ -30,7 +30,7 @@ Status MonitorSubprocess(int pid) {
     uint32_t uint_status = static_cast<uint32_t>(status);
     if (WIFEXITED(uint_status)) {  // the child is exit normal
       std::string err_msg = "[Monitor] The sub-process: " + std::to_string(pid) +
-                            " exits normally. Status: " + std::to_string(WEXITSTATUS(uint_status)) +
+                            " exits. Status: " + std::to_string(WEXITSTATUS(uint_status)) +
                             ". Errno: " + std::to_string(errno);
       RETURN_STATUS_UNEXPECTED(err_msg);
     } else if (WIFSIGNALED(uint_status)) {  // if the child process was terminated by a signal

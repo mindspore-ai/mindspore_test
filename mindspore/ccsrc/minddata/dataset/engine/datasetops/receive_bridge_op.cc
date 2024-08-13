@@ -101,7 +101,7 @@ Status ReceiveBridgeOp::MonitorIndependentDatasetProcess() {
       // sleep waiting for independent dataset process get the message queue
       sleep(kMonitorInterval * 2);
 
-      MS_LOG(INFO) << "Monitor thread was interrupted.";
+      MS_LOG(INFO) << "Monitor thread get interrupt signal and will exit.";
       break;
     }
 

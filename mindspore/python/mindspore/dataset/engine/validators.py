@@ -1035,6 +1035,7 @@ def check_minddataset(method):
         check_sampler_shuffle_shard_options(param_dict)
 
         check_padding_options(param_dict)
+        check_cache_option(param_dict.get('cache'))
         return method(self, *args, **kwargs)
 
     return new_method

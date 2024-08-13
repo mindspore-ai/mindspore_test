@@ -577,7 +577,10 @@ Status TreeAdapter::LaunchSubprocess() {
     }
     message_queue.MsgSnd(kWorkerErrorMsg);
 
-    (void)SubprocessExit(-1);
+    // waiting for the main process get the message
+    sleep(kMonitorInterval * 2);
+
+    SubprocessExit(-1);
   }
 
   launched_ = true;
@@ -612,7 +615,7 @@ Status TreeAdapter::LaunchSubprocess() {
       // waiting for the main process get the message
       sleep(kMonitorInterval * 2);
 
-      (void)SubprocessExit(-1);
+      SubprocessExit(-1);
     }
 
     // the message queue had been released by main process
@@ -620,7 +623,7 @@ Status TreeAdapter::LaunchSubprocess() {
     if (state == MessageQueue::State::kReleased) {
       MS_LOG(INFO) << log_prefix << ". Message queue had been released by main process.";
 
-      (void)SubprocessExit(0);
+      SubprocessExit(0);
     }
 
     // get message ReceiveBridgeOp finished from main process, indicate that iterator / to_device is finished
@@ -628,7 +631,7 @@ Status TreeAdapter::LaunchSubprocess() {
       MS_LOG(INFO) << log_prefix
                    << ". Got ReceiveBridgeOp finished message from main process. Current process will exit.";
 
-      (void)SubprocessExit(0);
+      SubprocessExit(0);
     }
 
     // the parent had been closed
@@ -636,11 +639,11 @@ Status TreeAdapter::LaunchSubprocess() {
       MS_LOG(INFO) << log_prefix << ". Main process: " << std::to_string(parent_process_id_)
                    << " had been closed. Current process: " << std::to_string(process_id_) << " will exit too.";
 
-      (void)SubprocessExit(0);
+      SubprocessExit(0);
     }
   }
 
-  (void)SubprocessExit(-1);
+  SubprocessExit(-1);
 
   // The process may not run to this point. exit() will cause core, so we use _exit()
   _exit(-1);
@@ -671,6 +674,12 @@ Status TreeAdapter::Launch() {
       RETURN_STATUS_UNEXPECTED("Create an independent dataset process failed.");
     } else if (fpid == 0) {  // in sub-process
       PyOS_AfterFork_Child();
+
+      // set the seed for independent dataset process
+      uint32_t seed = GlobalContext::config_manager()->seed();
+      if (seed != std::mt19937::default_seed) {
+        py::module::import("mindspore.dataset.core.config").attr("set_seed")(seed);
+      }
 
       // release the gil in child process
       MS_LOG(INFO) << "[Independent Dataset Process] Begin release gil. Current Py_IsInitialized: "
@@ -715,17 +724,6 @@ Status TreeAdapter::Launch() {
     MS_LOG(INFO) << "[Main Datast Process] Begin release gil. Current Py_IsInitialized: " << Py_IsInitialized()
                  << ", PyGILState_Check: " << PyGILState_Check();
   }
-#endif
-
-#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__) && !defined(ENABLE_ANDROID)
-  // set num threads of opencv only for main process
-  int32_t thread_num = get_nprocs();
-  if (thread_num == 0) {
-    std::string err_msg = "Invalid thread number, got 0.";
-    RETURN_STATUS_UNEXPECTED(err_msg);
-  }
-  constexpr int32_t max_cv_threads_cnt = 8;
-  cv::setNumThreads(thread_num > max_cv_threads_cnt ? max_cv_threads_cnt : thread_num);
 #endif
 
   RETURN_IF_NOT_OK(tree_->Launch());
