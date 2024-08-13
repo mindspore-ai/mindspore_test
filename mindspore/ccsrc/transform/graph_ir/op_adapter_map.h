@@ -495,6 +495,7 @@ constexpr const char kNameEnvironDestroyAll[] = "EnvironDestroyAll";
 constexpr const char kNameEnvironGet[] = "EnvironGet";
 constexpr const char kNameEnvironSet[] = "EnvironSet";
 constexpr const char kNameNanToNum[] = "NanToNum";
+constexpr const char kNameMoeFinalizeRouting[] = "MoeFinalizeRouting";
 
 class OpAdapterDesc;
 
