@@ -364,7 +364,7 @@ bool TCPComm::Send(MessageBase *msg, size_t *const send_bytes, bool sync) {
     Connection *conn = conn_pool_->FindConnection(destination);
     if (conn == nullptr) {
       MS_LOG(WARNING) << "Can not found remote link and send fail name: " << msg->name.c_str()
-                      << ", from: " << msg->from.Url().c_str() << ", to: " << destination;
+                      << ", remote peer: " << destination;
       DropMessage(msg);
       return false;
     }

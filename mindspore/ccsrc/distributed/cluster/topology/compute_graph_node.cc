@@ -220,6 +220,7 @@ bool ComputeGraphNode::Register() {
 
 bool ComputeGraphNode::Unregister() {
   MS_EXCEPTION_IF_NULL(hb_client_);
+  MS_EXCEPTION_IF_NULL(tcp_client_);
 
   UnregistrationMessage unreg_msg;
   unreg_msg.set_node_id(node_id_);
@@ -229,7 +230,12 @@ bool ComputeGraphNode::Unregister() {
   MS_EXCEPTION_IF_NULL(message);
 
   const uint32_t timeout = 10;
-  MessageBase *response = hb_client_->ReceiveSync(std::move(message), timeout);
+  MessageBase *response = nullptr;
+  if (disable_heartbeat_) {
+    response = tcp_client_->ReceiveSync(std::move(message), timeout);
+  } else {
+    response = hb_client_->ReceiveSync(std::move(message), timeout);
+  }
   if (response == nullptr) {
     return false;
   }

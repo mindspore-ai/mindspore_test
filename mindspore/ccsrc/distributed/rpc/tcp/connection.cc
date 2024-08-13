@@ -75,9 +75,10 @@ void SocketEventHandler(int fd, uint32_t events, void *context) {
       if (kPrintCount++ % kPrintCountInterval == 0) {
         MS_LOG(WARNING) << "Event value fd: " << fd << ", events: " << events << ", state: " << conn->state
                         << ", errcode: " << conn->error_code << ", errno: " << errno << " " << strerror(errno)
-                        << ", to: " << conn->destination.c_str() << ", type:" << conn->recv_message_type
-                        << ", remote: " << conn->is_remote << ", count: " << kPrintCount << ", from: " << conn->source
-                        << ", please check to address: " << conn->destination
+                        << ", remote peer: " << conn->destination.c_str() << ", type:" << conn->recv_message_type
+                        << ", remote: " << conn->is_remote << ", count: " << kPrintCount
+                        << ", this peer: " << conn->source
+                        << ", please check remote peer address: " << conn->destination
                         << " in worker log to find out which worker disconnected.";
         (void)usleep(kPrintTimeInterval);
       }
