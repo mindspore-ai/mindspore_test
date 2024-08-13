@@ -22,6 +22,7 @@
 #include <memory>
 #include <vector>
 #include <utility>
+#include "tools/converter/ops/ops_def.h"
 #include "tools/converter/parser/onnx/onnx_node_parser_registry.h"
 
 namespace mindspore {

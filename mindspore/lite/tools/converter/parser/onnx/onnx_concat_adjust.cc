@@ -18,6 +18,7 @@
 #include <vector>
 #include <memory>
 #include "tools/optimizer/common/gllo_utils.h"
+#include "op_def/auto_generate/gen_ops_primitive.h"
 
 namespace mindspore::lite {
 namespace {

@@ -17,6 +17,9 @@
 #include <string>
 #include "include/errorcode.h"
 #include "tools/optimizer/common/gllo_utils.h"
+#include "op_def/auto_generate/gen_ops_primitive.h"
+#include "op_def/op_name.h"
+#include "op_def/array_ops.h"
 
 namespace mindspore::lite {
 namespace {

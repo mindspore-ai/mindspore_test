@@ -77,7 +77,7 @@ class SubGraphKernelAdapterGraph : public AdapterGraph {
     auto nodes = graph->immutable_nodes();
     auto ret = kernel::KernelExecUtil::TopologicalSortNodes(&nodes, graph->in_nodes());
     if (ret != RET_OK) {
-      MS_LOG(ERROR) << "TopologicalSortNodes failed";
+      MS_LOG(ERROR) << "TopologicalSortNodes failed!";
       return nullptr;
     }
     for (auto node : nodes) {
