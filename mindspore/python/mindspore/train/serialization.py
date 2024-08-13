@@ -61,7 +61,7 @@ from mindspore.ops import Cast
 from mindspore.parallel._cell_wrapper import get_allgather_cell, _single_parameter_broadcast
 from mindspore.parallel._tensor import _load_tensor, _get_tensor_strategy, _get_tensor_slice_index
 from mindspore.parallel._tensor import _reshape_param_data, _reshape_param_data_with_weight
-from mindspore.parallel._utils import _infer_rank_list, _remove_repeated_slices, _is_in_auto_parallel_mode,\
+from mindspore.parallel._utils import _infer_rank_list, _remove_repeated_slices, _is_in_auto_parallel_mode, \
     _get_device_num
 from mindspore.parallel._auto_parallel_context import _get_auto_parallel_context
 from mindspore.parallel._parallel_serialization import _convert_to_list, _convert_to_layout, _build_searched_strategy, \
@@ -259,7 +259,9 @@ def _exec_save(ckpt_file_name, data_list, enc_key=None, enc_mode="AES-GCM", map_
     """Execute the process of saving checkpoint into file."""
     try:
         with _ckpt_mutex:
-            tmp_name = ckpt_file_name.replace(f".{format}", ".tmp")
+            file_name_list = list(os.path.splitext(ckpt_file_name))
+            file_name_list[1] = file_name_list[1].replace(f".{format}", ".tmp")
+            tmp_name = ''.join(file_name_list)
             if os.path.exists(ckpt_file_name):
                 os.chmod(ckpt_file_name, stat.S_IWUSR)
                 os.remove(ckpt_file_name)
