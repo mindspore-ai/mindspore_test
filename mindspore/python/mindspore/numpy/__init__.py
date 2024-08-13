@@ -64,7 +64,7 @@ from mindspore.numpy.logic_ops import (not_equal, less_equal, less, greater_equa
                                        logical_or, logical_xor, in1d, isin, isclose, signbit, sometrue,
                                        array_equal, array_equiv, setdiff1d)
 
-from . import fft
+from mindspore.numpy import fft
 
 mod = remainder
 fabs = absolute

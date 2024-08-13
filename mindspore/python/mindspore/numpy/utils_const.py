@@ -208,7 +208,7 @@ def _check_shape_aligned(shape1, shape2):
 @_primexpr
 def _tile_size(shape, out_shape, ndim):
     """Returns tile_size such that shape*tile_size = out_shape"""
-    size = [1]*ndim
+    size = [1] * ndim
     for idx, (i, j) in enumerate(zip(shape, out_shape)):
         if i != j:
             size[idx] = j
@@ -441,7 +441,7 @@ def _add_unit_axes(shape, ndim, append=False):
 
 
 @constexpr
-def  _check_element_int(lst):
+def _check_element_int(lst):
     """
     Check whether each element in `lst` is an integer.
     """
@@ -508,7 +508,7 @@ def _iota(dtype, num, increasing=True):
         raise ValueError("zero shape Tensor is not currently supported.")
     if increasing:
         return Tensor(list(range(int(num))), dtype)
-    return Tensor(list(range(int(num)-1, -1, -1)), dtype)
+    return Tensor(list(range(int(num) - 1, -1, -1)), dtype)
 
 
 @constexpr
@@ -520,7 +520,7 @@ def _ceil(number):
 @_primexpr
 def _seq_prod(seq1, seq2):
     """Returns the element-wise product of seq1 and seq2."""
-    return tuple(map(lambda x, y: x*y, seq1, seq2))
+    return tuple(map(lambda x, y: x * y, seq1, seq2))
 
 
 @constexpr

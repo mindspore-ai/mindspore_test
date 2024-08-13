@@ -2432,7 +2432,7 @@ def _shape_reduced(shape, axes):
     """Removes dimensions corresponding to argument axes"""
     ndim_orig = F.tuple_len(shape)
     ndim_out = ndim_orig - F.tuple_len(axes)
-    shape_out = [0]*ndim_out
+    shape_out = [0] * ndim_out
     idx_out = 0
     for i in range(ndim_orig):
         if i not in axes:
@@ -2894,9 +2894,9 @@ def kron(a, b):
 
     # scales a by the shape of b
     kron_shape = _seq_prod(shape_a, shape_b)
-    a = F.reshape(a, _add_unit_axes(shape_a, 2*ndim, True))
-    a = F.tile(a, _add_unit_axes(shape_b, 2*ndim, False))
-    a = moveaxis(a, F.make_range(ndim, 2*ndim), F.make_range(1, 2*ndim, 2))
+    a = F.reshape(a, _add_unit_axes(shape_a, 2 * ndim, True))
+    a = F.tile(a, _add_unit_axes(shape_b, 2 * ndim, False))
+    a = moveaxis(a, F.make_range(ndim, 2 * ndim), F.make_range(1, 2 * ndim, 2))
     a = F.reshape(a, kron_shape)
     # scales b by the shape of a
     b = F.tile(b, shape_a)
@@ -3231,7 +3231,7 @@ def cbrt(x, dtype=None):
     def _cbrt(x):
         compute_type = promote_types(x.dtype, "float32")
         x = x.astype(compute_type)
-        # TODO: use P.Sign() once gpu support is added
+        # use P.Sign() once gpu support is added
         abs_x = F.absolute(x)
         sign_x = abs_x / x
         return sign_x * F.tensor_pow(abs_x, 1. / 3.)
@@ -3932,11 +3932,11 @@ def _gradient_along_axis(f, h, axis):
     """compute the gradients of `f` along a given axis, a helper function of gradient."""
     end = f.shape[axis]
     upper_edge = _slice_along_axis(f, axis, 1, 2) - _slice_along_axis(f, axis, 0, 1)
-    lower_edge = _slice_along_axis(f, axis, end-1, end) - _slice_along_axis(f, axis, end-2, end-1)
+    lower_edge = _slice_along_axis(f, axis, end - 1, end) - _slice_along_axis(f, axis, end - 2, end - 1)
     if end <= 2:
         a_grad = concatenate((upper_edge, lower_edge), axis)
     else:
-        middle = (_slice_along_axis(f, axis, 2, end) - _slice_along_axis(f, axis, 0, end-2)) * 0.5
+        middle = (_slice_along_axis(f, axis, 2, end) - _slice_along_axis(f, axis, 0, end - 2)) * 0.5
         a_grad = concatenate((upper_edge, middle, lower_edge), axis)
     return a_grad / h
 
@@ -4099,8 +4099,8 @@ def _min_cost_chain_matmul(dims):
     """
     dims = tuple(dims)
     n = len(dims) - 1
-    m = [[0]*n for _ in range(n)]
-    s = [[0]*n for _ in range(n)]
+    m = [[0] * n for _ in range(n)]
+    s = [[0] * n for _ in range(n)]
     for pos in range(1, n):
         for i in range(n - pos):
             j = i + pos
@@ -4421,7 +4421,7 @@ def interp(x, xp, fp, left=None, right=None):
     x_1 = F.gather_nd(xp, indices_1)
     y_0 = F.gather_nd(fp, indices_0)
     y_1 = F.gather_nd(fp, indices_1)
-    res = (y_0*(x_1 - x) + y_1*(x - x_0))/(x_1 - x_0)
+    res = (y_0 * (x_1 - x) + y_1 * (x - x_0)) / (x_1 - x_0)
     res = F.select(F.equal(x_0, x_1), y_0, res)
 
     idx_0 = _to_tensor([0])
@@ -4739,7 +4739,7 @@ def histogram(a, bins=10, range=None, weights=None, density=False): # pylint: di
         return count, bin_edges
     if density:
         count = F.cast(count, mstype.float32)
-        count = count/diff(bin_edges)/F.reduce_sum(count)
+        count = count / diff(bin_edges) / F.reduce_sum(count)
     return count, bin_edges
 
 
@@ -5152,7 +5152,7 @@ def polyval(p, x):
     shape = F.shape(x)
     exp_p = arange(_type_convert(int, p.size) - 1, -1, -1).astype(mstype.float32)
     var_p = (x.reshape(shape + (1,)))**exp_p
-    return F.reduce_sum(p*var_p, -1)
+    return F.reduce_sum(p * var_p, -1)
 
 
 def polyder(p, m=1):
@@ -5534,7 +5534,7 @@ def _vector_norm(x, _ord, axis, keepdims):
     elif _ord == 0:
         res = P.ReduceSum(keepdims)(F.not_equal(x, 0).astype(mstype.float32), axis)
     else:
-        res = power(P.ReduceSum(keepdims)(power(absolute(x), _ord), axis), 1./_ord)
+        res = power(P.ReduceSum(keepdims)(power(absolute(x), _ord), axis), 1. / _ord)
     return res
 
 
