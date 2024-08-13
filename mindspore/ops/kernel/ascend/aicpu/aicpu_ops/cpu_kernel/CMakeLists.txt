@@ -31,6 +31,11 @@ target_compile_options(mindspore_cpu_kernels PRIVATE
     -fno-common
 )
 
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    # debug version(>1GB) exceeds size limit; and is not useful anyway since it runs on the device side
+    target_compile_options(mindspore_cpu_kernels PRIVATE "$<$<CONFIG:Debug>:-g0>")
+endif()
+
 target_link_libraries(mindspore_cpu_kernels PRIVATE
     -ldl
     -shared
