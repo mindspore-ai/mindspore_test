@@ -1134,6 +1134,7 @@ void MindRTBackendBase::ContiguousArgs(const VectorRef &args, const GraphCompile
     if (utils::isa<tensor::BaseTensorPtr>(arg)) {
       auto value = utils::cast<tensor::BaseTensorPtr>(arg);
       runtime::DeviceAddressUtils::ConvertContiguousTensorSync(value);
+      runtime::DeviceAddressUtils::CreateKernelTensor(value);
     } else if (utils::isa<ValuePtr>(arg)) {
       auto value = utils::cast<ValuePtr>(arg);
       MS_EXCEPTION_IF_NULL(value);
@@ -1149,6 +1150,7 @@ void MindRTBackendBase::ContiguousArgs(const VectorRef &args, const GraphCompile
         }
         auto t = v->cast<tensor::BaseTensorPtr>();
         runtime::DeviceAddressUtils::ConvertContiguousTensorSync(t);
+        runtime::DeviceAddressUtils::CreateKernelTensor(t);
       }
     }
   }
