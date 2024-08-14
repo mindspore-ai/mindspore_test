@@ -515,10 +515,11 @@ class TupleListGetitemDependReorder : public AnfVisitor {
   void Visit(const CNodePtr &cnode) override {
     // {prim::kPrimDepend, X, Y}
     constexpr auto depend_input_size = 3;
-    constexpr auto depend_index_two = 2;
+    constexpr auto depend_index_first = 1;
+    constexpr auto depend_index_second = 2;
     if (IsPrimitiveCNode(cnode, prim::kPrimDepend) && cnode->size() == depend_input_size) {
-      x_ = cnode->input(1);
-      y_ = cnode->input(depend_index_two);
+      x_ = cnode->input(depend_index_first);
+      y_ = cnode->input(depend_index_second);
     }
   }
 

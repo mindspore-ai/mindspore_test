@@ -620,6 +620,8 @@ void ConvertSwitchReplacement::TransformSwitchBranchReplace(const AnfNodePtr &no
 
   auto g1 = GetValueNode<FuncGraphPtr>(true_br);
   auto g2 = GetValueNode<FuncGraphPtr>(false_br);
+  MS_EXCEPTION_IF_NULL(g1);
+  MS_EXCEPTION_IF_NULL(g2);
   auto true_output = g1->output()->abstract();
   auto false_output = g2->output()->abstract();
   auto trans_g1 = internal::TransformGraphCondTrueBranchNodes(g1, cond);

@@ -41,6 +41,7 @@ class ConstOutputEliminater : public AnfVisitor {
     MS_LOG(INFO) << "const output eliminater process";
 
     auto fg = GetValueNode<FuncGraphPtr>(node);
+    MS_EXCEPTION_IF_NULL(fg);
     auto output = fg->output();
     const size_t min_input_size = 3;
     const auto &inputs = output->cast<CNodePtr>()->inputs();
@@ -326,6 +327,7 @@ class ConstOutputEliminater : public AnfVisitor {
         return false;
       }
 
+      MS_EXCEPTION_IF_NULL(user.first->abstract());
       auto tuple = user.first->abstract()->cast<abstract::AbstractTuplePtr>();
       if (!tuple) {
         return false;
