@@ -69,8 +69,19 @@ TypePtrList LinSpaceExtFuncImpl::InferType(const PrimitivePtr &primitive, const 
   }
   const auto &dtype_scalar = dtype->cast<Int64ImmPtr>();
   MS_EXCEPTION_IF_NULL(dtype_scalar);
-  auto type_id = static_cast<TypeId>(dtype_scalar->value());
-  return {TypeIdToType(type_id)};
+  auto dtype_id = static_cast<TypeId>(dtype_scalar->value());
+  static const std::vector<TypeId> valid_types = {kNumberTypeUInt8,    kNumberTypeInt8,      kNumberTypeInt32,
+                                                  kNumberTypeBFloat16, kNumberTypeFloat16,   kNumberTypeFloat32,
+                                                  kNumberTypeFloat64,  kNumberTypeComplex64, kNumberTypeComplex128};
+  bool is_valid_type = std::any_of(valid_types.begin(), valid_types.end(),
+                                   [&dtype_id](const TypeId &type_id) { return dtype_id == type_id; });
+  if (!is_valid_type) {
+    MS_EXCEPTION(TypeError)
+      << "For Linspace, the 'dtype' must be: "
+      << "int8, uint8, int32, float16, float32, float64, bfloat16, complex64 or complex128, but got: "
+      << TypeIdToString(dtype_id) << ".";
+  }
+  return {TypeIdToType(dtype_id)};
 }
 ShapeArray LinSpaceExtFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
   auto steps_opt = GetScalarValue<int64_t>(input_values[kInputIndex2]);
