@@ -19,7 +19,7 @@
 #include <algorithm>
 #include <set>
 #include <vector>
-#include "mindrt/include/mindrt.hpp"
+#include "include/mindrt.hpp"
 #include "src/litert/kernel_exec_util.h"
 #include "src/common/tensor_util.h"
 #include "src/litert/inner_allocator.h"

@@ -27,7 +27,7 @@
 #include "ir/dtype/number.h"
 #include "ir/dtype/tensor_type.h"
 #include "ir/primitive.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "mindspore/ops/op_def/comparison_ops.h"
 #include "infer/ops_func_impl/less_equal.h"
 #include "mindspore/ops/ops_utils/op_utils.h"

@@ -23,7 +23,7 @@
 #include "ir/dtype/type_id.h"
 #include "include/errorcode.h"
 #include "schema/inner/model_generated.h"
-#include "mindspore/core/utils/check_convert_utils.h"
+#include "utils/check_convert_utils.h"
 
 namespace mindspore {
 namespace lite {

@@ -26,7 +26,7 @@
 #include <vector>
 
 #include "include/backend/kernel_graph.h"
-#include "mindspore/core/utils/ms_context.h"
+#include "utils/ms_context.h"
 
 namespace mindspore {
 namespace device {

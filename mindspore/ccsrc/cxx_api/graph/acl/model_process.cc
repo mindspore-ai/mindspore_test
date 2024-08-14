@@ -21,7 +21,7 @@
 #include <memory>
 #include <utility>
 
-#include "mindspore/core/utils/convert_utils_base.h"
+#include "utils/convert_utils_base.h"
 #include "include/api/data_type.h"
 #include "utils/log_adapter.h"
 #include "transform/symbol/acl_base_symbol.h"

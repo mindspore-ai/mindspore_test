@@ -22,7 +22,7 @@
 #include <vector>
 #include <memory>
 #include "mindspore/ops/op_def/sequence_ops.h"
-#include "mindspore/core/ops/op_def.h"
+#include "ops/op_def.h"
 #include "ir/tensor.h"
 #include "include/backend/device_address.h"
 #include "include/backend/kernel_info.h"

@@ -28,7 +28,7 @@
 #include "include/errorcode.h"
 #include "src/common/log_adapter.h"
 #include "include/api/context.h"
-#include "core/base/base.h"
+#include "base/base.h"
 #include "extendrt/delegate/factory.h"
 #include "extendrt/session/lite_graph_executor.h"
 #include "include/backend/kernel_graph.h"

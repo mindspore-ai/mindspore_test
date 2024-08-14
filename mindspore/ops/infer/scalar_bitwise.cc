@@ -20,7 +20,7 @@
 
 #include "abstract/ops/op_infer.h"
 #include "include/common/utils/utils.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "mindspore/ops/op_def/arithmetic_ops.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "infer/scalar_bitwise_and.h"

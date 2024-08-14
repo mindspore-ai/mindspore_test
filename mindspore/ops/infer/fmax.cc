@@ -20,7 +20,7 @@
 #include <string>
 #include "abstract/dshape.h"
 #include "abstract/ops/op_infer.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"

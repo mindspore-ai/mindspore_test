@@ -26,7 +26,7 @@
 #include "src/executor/kernel_exec.h"
 #include "src/litert/lite_mindrt.h"
 #include "src/litert/executor.h"
-#include "mindrt/src/actor/actormgr.h"
+#include "actor/actormgr.h"
 
 namespace mindspore::lite {
 class MindrtExecutor : public Executor {

@@ -24,8 +24,8 @@
 #include "src/common/ops/schema_register.h"
 
 #ifdef PRIMITIVE_WRITEABLE
-#include "mindspore/core/utils/check_convert_utils.h"
-#include "mindspore/core/mindapi/ir/value.h"
+#include "utils/check_convert_utils.h"
+#include "mindapi/ir/value.h"
 #include "schema/inner/model_generated.h"
 #include "schema/inner/ops_types_generated.h"
 #endif

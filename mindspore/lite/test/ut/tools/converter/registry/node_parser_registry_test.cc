@@ -20,8 +20,8 @@
 #include "include/registry/model_parser.h"
 #include "include/registry/model_parser_registry.h"
 #include "mindapi/ir/func_graph.h"
-#include "mindspore/core/ir/anf.h"
-#include "mindspore/core/ir/func_graph.h"
+#include "ir/anf.h"
+#include "ir/func_graph.h"
 #include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "proto/graph.pb.h"
 

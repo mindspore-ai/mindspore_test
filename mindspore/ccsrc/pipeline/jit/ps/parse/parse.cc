@@ -39,7 +39,7 @@
 #include "utils/compile_config.h"
 #include "utils/interpret_node_recorder.h"
 #include "pipeline/jit/ps/debug/trace.h"
-#include "mindspore/core/ir/cell.h"
+#include "ir/cell.h"
 #include "include/common/fallback.h"
 #include "include/common/utils/utils.h"
 #include "include/common/utils/python_adapter.h"

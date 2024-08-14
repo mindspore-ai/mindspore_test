@@ -23,8 +23,8 @@
 #include <memory>
 #include <set>
 #include <map>
-#include "mindspore/core/base/base.h"
-#include "mindspore/core/ir/func_graph.h"
+#include "base/base.h"
+#include "ir/func_graph.h"
 
 namespace mindspore::parallel {
 using Shape = std::vector<int64_t>;

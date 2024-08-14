@@ -19,8 +19,8 @@
 #include <vector>
 #include <string>
 #include <optional>
-#include "mindspore/core/symbolic_shape/symbol.h"
-#include "mindspore/core/abstract/abstract_value.h"
+#include "symbolic_shape/symbol.h"
+#include "abstract/abstract_value.h"
 
 namespace mindspore {
 namespace symshape {

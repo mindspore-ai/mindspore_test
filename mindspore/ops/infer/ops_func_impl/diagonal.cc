@@ -17,7 +17,7 @@
 #include <memory>
 #include <vector>
 
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "infer/ops_func_impl/diagonal.h"
 #include "mindspore/ops/ops_utils/op_utils.h"

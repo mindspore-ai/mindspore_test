@@ -20,8 +20,8 @@
 #include <vector>
 #include <memory>
 #include <unordered_map>
-#include "mindspore/core/ir/dtype/type_id.h"
-#include "mindspore/core/ops/ops_func_impl/op_func_impl.h"
+#include "ir/dtype/type_id.h"
+#include "ops/ops_func_impl/op_func_impl.h"
 namespace mindspore::ops {
 
 enum OP_DTYPE : int64_t {

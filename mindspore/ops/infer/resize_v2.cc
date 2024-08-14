@@ -18,7 +18,7 @@
 #include <set>
 #include <vector>
 #include "include/common/utils/utils.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "mindspore/ops/op_def/image_ops.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"

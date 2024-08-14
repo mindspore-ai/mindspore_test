@@ -20,7 +20,7 @@
 
 #include "mindapi/base/shared_ptr.h"
 #include "mindapi/ir/value.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "ops/base_operator.h"
 #include "mindspore/ops/op_def/op_name.h"
 #include "ops/primitive_c.h"

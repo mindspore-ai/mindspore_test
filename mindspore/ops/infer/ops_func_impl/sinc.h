@@ -18,7 +18,7 @@
 #define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_SINC_H_
 
 #include <vector>
-#include "mindspore/core/ops/ops_func_impl/op_func_impl.h"
+#include "ops/ops_func_impl/op_func_impl.h"
 
 namespace mindspore::ops {
 /// \brief Implementation of InferShape and InferType functions for operator 'Sinc'

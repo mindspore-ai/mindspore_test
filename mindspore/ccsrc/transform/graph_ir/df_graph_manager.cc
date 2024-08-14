@@ -16,7 +16,7 @@
 
 #include <sstream>
 #include <set>
-#include "mindspore/core/utils/file_utils.h"
+#include "utils/file_utils.h"
 #include "transform/graph_ir/df_graph_manager.h"
 #include "transform/graph_ir/aoe_util.h"
 #include "utils/ms_context.h"

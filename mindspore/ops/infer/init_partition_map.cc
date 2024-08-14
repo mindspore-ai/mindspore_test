@@ -18,7 +18,7 @@
 
 #include <memory>
 
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "mindapi/base/macros.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "abstract/abstract_value.h"

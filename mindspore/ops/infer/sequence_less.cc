@@ -16,7 +16,7 @@
 #include <algorithm>
 #include <memory>
 #include <string>
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "infer/list_le.h"
 #include "infer/list_lt.h"
 #include "mindspore/ops/ops_utils/op_utils.h"

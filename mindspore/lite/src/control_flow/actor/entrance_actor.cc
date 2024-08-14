@@ -16,7 +16,7 @@
 
 #include "src/control_flow/actor/entrance_actor.h"
 #include <algorithm>
-#include "mindrt/include/mindrt.hpp"
+#include "include/mindrt.hpp"
 #include "src/common/tensor_util.h"
 #include "src/litert/inner_allocator.h"
 

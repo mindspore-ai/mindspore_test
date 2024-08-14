@@ -27,7 +27,7 @@
 #include "src/common/quant_utils.h"
 #include "tools/converter/quantizer/quant_params.h"
 #include "tools/converter/quantizer/quantize_util.h"
-#include "mindspore/core/ir/quantization_param.h"
+#include "ir/quantization_param.h"
 
 namespace mindspore::lite::quant {
 class FixedBitWeightQuantization {

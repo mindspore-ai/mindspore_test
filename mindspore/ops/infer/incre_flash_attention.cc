@@ -19,7 +19,7 @@
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "utils/check_convert_utils.h"
 #include "ops/primitive_c.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "infer/incre_flash_attention.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
 #include "infer/ops_func_impl/common_infer_fns.h"

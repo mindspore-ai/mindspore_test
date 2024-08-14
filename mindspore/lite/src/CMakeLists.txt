@@ -1,7 +1,7 @@
 add_compile_definitions(USE_ANDROID_LOG)
 
 set(LITE_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-include_directories(${CORE_DIR})
+include_directories(${CORE_INC_DIR})
 include_directories(${OPS_DIR}/kernel/cpu)
 
 set(TOOLS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../tools)
@@ -408,11 +408,11 @@ if(APPLE)
     file(GLOB_RECURSE MINDSPORE_LITE_PUB_HDRS LIST_DIRECTORIES true
             ${CMAKE_CURRENT_SOURCE_DIR}/../../../include/api/*.h)
     file(GLOB MINDSPORE_LITE_PUB_HDRS_IR_HDRS
-            ${CMAKE_CURRENT_SOURCE_DIR}/../../core/ir/dtype/type_id.h)
+            ${CMAKE_CURRENT_SOURCE_DIR}/../../core/include/ir/dtype/type_id.h)
     file(GLOB MINDSPORE_LITE_PUB_HDRS_MINDAPI_HDRS
-            ${CMAKE_CURRENT_SOURCE_DIR}/../../core/mindapi/base/format.h
-            ${CMAKE_CURRENT_SOURCE_DIR}/../../core/mindapi/base/type_id.h
-            ${CMAKE_CURRENT_SOURCE_DIR}/../../core/mindapi/base/types.h
+            ${CMAKE_CURRENT_SOURCE_DIR}/../../core/include/mindapi/base/format.h
+            ${CMAKE_CURRENT_SOURCE_DIR}/../../core/include/mindapi/base/type_id.h
+            ${CMAKE_CURRENT_SOURCE_DIR}/../../core/include/mindapi/base/types.h
             )
 
     if(NOT MSLITE_ENABLE_COREML)

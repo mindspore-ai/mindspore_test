@@ -19,7 +19,7 @@
 
 #include <memory>
 #include <string>
-#include "mindrt/include/actor/actor.h"
+#include "actor/actor.h"
 
 // brief provide an asynchronous programming framework as Actor model
 namespace mindspore {

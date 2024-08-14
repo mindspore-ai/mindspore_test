@@ -17,7 +17,7 @@
 #ifndef MINDSPORE_LITE_EXTENDRT_KERNEL_DEFAULT_CNODE_INFER_MANAGER_H_
 #define MINDSPORE_LITE_EXTENDRT_KERNEL_DEFAULT_CNODE_INFER_MANAGER_H_
 #include <vector>
-#include "mindspore/core/ir/anf.h"
+#include "ir/anf.h"
 #include "src/litert/inner_context.h"
 
 namespace mindspore {

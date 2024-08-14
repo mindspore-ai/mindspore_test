@@ -22,7 +22,7 @@
 #include <string>
 #include "include/backend/optimizer/pass.h"
 #include "include/errorcode.h"
-#include "mindspore/core/ir/manager.h"
+#include "ir/manager.h"
 #include "include/registry/converter_context.h"
 
 using mindspore::converter::FmkType;

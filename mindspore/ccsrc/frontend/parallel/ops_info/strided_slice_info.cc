@@ -31,7 +31,7 @@
 #include "frontend/parallel/step_parallel.h"
 #include "frontend/parallel/tensor_layout/tensor_redistribution.h"
 #include "pipeline/jit/ps/resource.h"
-#include "mindspore/core/symbolic_shape/symbol.h"
+#include "symbolic_shape/symbol.h"
 
 namespace mindspore {
 namespace parallel {

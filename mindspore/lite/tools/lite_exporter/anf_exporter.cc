@@ -24,7 +24,7 @@
 #include <utility>
 #include <vector>
 #include "abstract/abstract_value.h"
-#include "mindspore/core/ir/primitive.h"
+#include "ir/primitive.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/lite_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"

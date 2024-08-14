@@ -27,7 +27,7 @@
 #include "ir/dtype/type.h"
 #include "ir/primitive.h"
 #include "ir/value.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "mindspore/ops/op_def/sparse_tensor_ops.h"
 #include "infer/make_csrtensor.h"
 #include "mindspore/ops/ops_utils/op_utils.h"

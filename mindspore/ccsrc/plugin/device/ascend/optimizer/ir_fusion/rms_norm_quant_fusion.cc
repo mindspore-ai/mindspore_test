@@ -18,7 +18,7 @@
 #include <vector>
 #include <string>
 
-#include "mindspore/core/utils/ms_context.h"
+#include "utils/ms_context.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "include/common/utils/anfalgo.h"
 #include "ir/primitive.h"

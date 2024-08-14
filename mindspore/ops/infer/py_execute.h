@@ -22,7 +22,7 @@
 #include <vector>
 
 #include "mindapi/base/types.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "ops/base_operator.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"

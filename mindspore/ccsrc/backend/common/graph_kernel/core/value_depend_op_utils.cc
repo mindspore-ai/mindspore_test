@@ -23,7 +23,7 @@
 #include "mindspore/ops/op_def/lite_ops.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"
-#include "mindspore/core/ops/op_def.h"
+#include "ops/op_def.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "ops/primitive_c.h"
 #include "utils/anf_utils.h"

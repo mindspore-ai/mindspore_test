@@ -26,7 +26,7 @@
 #include "ir/anf.h"
 #include "ir/primitive.h"
 #include "mindapi/base/shape_vector.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "infer/gpu_convert_to_dynamic_shape.h"
 #include "mindspore/ops/op_def/op_name.h"

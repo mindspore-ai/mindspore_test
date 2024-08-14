@@ -18,7 +18,7 @@
 #include <vector>
 #include <memory>
 #include <string>
-#include "mindrt/include/async/async.h"
+#include "async/async.h"
 #include "utils/log_adapter.h"
 #include "utils/file_utils.h"
 #include "include/backend/debug/profiler/profiling.h"

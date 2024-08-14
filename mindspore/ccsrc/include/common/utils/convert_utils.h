@@ -35,7 +35,7 @@
 #include "ir/func_graph.h"
 #include "ir/kernel_tensor_value.h"
 #include "include/common/visible.h"
-#include "mindspore/core/utils/simple_info.h"
+#include "utils/simple_info.h"
 
 namespace mindspore {
 namespace tensor {

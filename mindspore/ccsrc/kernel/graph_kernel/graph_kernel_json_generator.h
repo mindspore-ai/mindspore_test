@@ -26,7 +26,7 @@
 #include "kernel/oplib/opinfo.h"
 #include "backend/common/graph_kernel/core/graph_kernel_callback.h"
 #include "include/common/utils/convert_utils.h"
-#include "mindspore/core/symbolic_shape/symbol_engine.h"
+#include "symbolic_shape/symbol_engine.h"
 
 namespace mindspore::graphkernel {
 using kernel::OpAttrPtr;

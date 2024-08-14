@@ -24,7 +24,7 @@
 #include <memory>
 #include "include/backend/debug/profiler/profiling.h"
 #include "utils/log_adapter.h"
-#include "mindspore/core/utils/file_utils.h"
+#include "utils/file_utils.h"
 
 namespace mindspore {
 namespace profiler {

@@ -29,7 +29,7 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/api/data_type.h"
-#include "mindspore/core/utils/ms_context.h"
+#include "utils/ms_context.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 
 namespace mindspore {

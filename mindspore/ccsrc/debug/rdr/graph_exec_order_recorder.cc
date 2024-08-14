@@ -16,11 +16,11 @@
 #include "debug/rdr/graph_exec_order_recorder.h"
 #include <fstream>
 #include <utility>
-#include "mindspore/core/ir/anf.h"
-#include "mindspore/core/utils/log_adapter.h"
+#include "ir/anf.h"
+#include "utils/log_adapter.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/debug/rdr/recorder_manager.h"
-#include "mindspore/core/utils/file_utils.h"
+#include "utils/file_utils.h"
 
 namespace mindspore {
 namespace {

@@ -19,7 +19,7 @@
 #include "backend/common/graph_kernel/split_model/split_model.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
 #include "utils/hash_set.h"
-#include "mindspore/core/symbolic_shape/int_symbol.h"
+#include "symbolic_shape/int_symbol.h"
 
 namespace mindspore::graphkernel::inner {
 ReachTable::ReachTable(size_t size) : size_(size), reach_(size, std::vector<bool>(size, false)) {

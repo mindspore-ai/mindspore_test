@@ -33,7 +33,7 @@
 #include "tools/optimizer/common/gllo_utils.h"
 #include "tools/common/node_util.h"
 #include "tools/lite_exporter/fetch_content.h"
-#include "mindspore/core/abstract/utils.h"
+#include "abstract/utils.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 
 namespace mindspore::lite {

@@ -38,7 +38,7 @@
 #include "minddata/dataset/util/queue.h"
 #include "minddata/dataset/util/wait_post.h"
 #ifndef BUILD_LITE
-#include "mindspore/core/utils/file_utils.h"
+#include "utils/file_utils.h"
 namespace platform = mindspore;
 #else
 #include "mindspore/lite/src/common/file_utils.h"

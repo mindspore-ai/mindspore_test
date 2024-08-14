@@ -18,7 +18,7 @@
 #include "runtime/graph_scheduler/actor/data_source_actor.h"
 #include "runtime/graph_scheduler/actor/kernel_actor.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
-#include "mindrt/include/async/async.h"
+#include "async/async.h"
 #include "utils/log_adapter.h"
 
 namespace mindspore {

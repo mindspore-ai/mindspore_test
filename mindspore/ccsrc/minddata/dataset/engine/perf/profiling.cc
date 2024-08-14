@@ -33,7 +33,7 @@
 #endif
 #include "utils/ms_utils.h"
 #ifndef BUILD_LITE
-#include "mindspore/core/utils/file_utils.h"
+#include "utils/file_utils.h"
 namespace platform = mindspore;
 #else
 #include "mindspore/lite/src/common/file_utils.h"

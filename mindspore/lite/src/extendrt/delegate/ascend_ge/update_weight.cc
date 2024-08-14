@@ -20,7 +20,7 @@
 #include "mindspore/ops/op_def/math_ops.h"
 #include "tools/common/string_util.h"
 #include "tools/optimizer/common/gllo_utils.h"
-#include "mindspore/core/ir/manager.h"
+#include "ir/manager.h"
 #include "tools/common/tensor_util.h"
 #include "mindspore/ops/op_def/conv_pool_ops.h"
 namespace mindspore {

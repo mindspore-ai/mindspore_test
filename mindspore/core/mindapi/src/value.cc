@@ -17,7 +17,7 @@
 #include "mindapi/ir/value.h"
 #include "mindapi/ir/type.h"
 #include "mindapi/ir/abstract.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "abstract/abstract_value.h"
 #include "ir/anf.h"
 #include "ir/dtype/type.h"

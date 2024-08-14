@@ -16,8 +16,8 @@
 #include <map>
 #include <algorithm>
 #include <utility>
-#include "mindspore/core/symbolic_shape/operation_builder.h"
-#include "mindspore/core/symbolic_shape/symbol_info.h"
+#include "symbolic_shape/operation_builder.h"
+#include "symbolic_shape/symbol_info.h"
 
 namespace mindspore {
 namespace symshape {

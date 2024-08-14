@@ -24,7 +24,7 @@
 #include <thread>
 
 #include "minddata/dataset/kernels/image/dvpp/utils/AclLiteUtils.h"
-#include "mindspore/core/utils/log_adapter.h"
+#include "utils/log_adapter.h"
 #include "transform/symbol/acl_rt_symbol.h"
 #include "transform/symbol/symbol_utils.h"
 

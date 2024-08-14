@@ -19,7 +19,7 @@
 #include <algorithm>
 #include <cmath>
 #include <memory>
-#include "mindspore/core/ir/dtype/type_id.h"
+#include "ir/dtype/type_id.h"
 #include "src/common/log_adapter.h"
 #include "src/common/log_util.h"
 #include "nnacl/op_base.h"

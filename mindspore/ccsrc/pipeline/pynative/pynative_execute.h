@@ -26,7 +26,7 @@
 #include "pybind11/pybind11.h"
 #include "frontend/operator/composite/composite.h"
 #include "ir/anf.h"
-#include "mindrt/include/fork_utils.h"
+#include "include/fork_utils.h"
 
 namespace mindspore::pynative {
 namespace py = pybind11;

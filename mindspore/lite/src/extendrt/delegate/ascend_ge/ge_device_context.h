@@ -23,7 +23,7 @@
 #include "common/config_infos.h"
 #include "include/api/context.h"
 #include "include/api/status.h"
-#include "mindspore/core/utils/ms_context.h"
+#include "utils/ms_context.h"
 
 namespace mindspore {
 class GeDeviceContext {

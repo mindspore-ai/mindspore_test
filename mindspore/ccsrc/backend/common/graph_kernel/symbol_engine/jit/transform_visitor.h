@@ -23,7 +23,7 @@
 #include <utility>
 #include <vector>
 
-#include "mindspore/core/symbolic_shape/symbol_visitor.h"
+#include "symbolic_shape/symbol_visitor.h"
 #include "backend/common/graph_kernel/symbol_engine/jit/syntax.h"
 #include "backend/common/graph_kernel/symbol_engine/multi_symbol_engine.h"
 

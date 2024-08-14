@@ -29,7 +29,7 @@
 #include "ir/primitive.h"
 #include "ir/scalar.h"
 #include "ir/value.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "ops/base_operator.h"
 #include "infer/list_getitem.h"

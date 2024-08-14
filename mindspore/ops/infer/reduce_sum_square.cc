@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include "infer/reduce_sum_square.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "ops/base_operator.h"
 #include "ops/primitive_c.h"
 #include "utils/log_adapter.h"

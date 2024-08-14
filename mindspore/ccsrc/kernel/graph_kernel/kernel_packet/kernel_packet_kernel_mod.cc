@@ -26,8 +26,8 @@
 #include "kernel/common_utils.h"
 #include "runtime/device/ms_device_shape_transfer.h"
 #include "include/common/utils/convert_utils.h"
-#include "mindspore/core/symbolic_shape/utils.h"
-#include "mindspore/core/symbolic_shape/symbol_engine.h"
+#include "symbolic_shape/utils.h"
+#include "symbolic_shape/symbol_engine.h"
 #include "abstract/abstract_value.h"
 #include "kernel/graph_kernel/kernel_packet/kernel_packet_infer_functor.h"
 

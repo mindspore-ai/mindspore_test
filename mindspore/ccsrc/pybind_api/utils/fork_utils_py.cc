@@ -19,10 +19,10 @@
 #ifdef __linux__
 #include <sys/prctl.h>
 #endif
-#include "mindrt/include/fork_utils.h"
+#include "include/fork_utils.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
-#include "mindrt/src/actor/actormgr.h"
+#include "actor/actormgr.h"
 #include "runtime/pynative/op_executor.h"
 #include "pipeline/pynative/pynative_execute.h"
 #include "pipeline/jit/ps/pipeline.h"

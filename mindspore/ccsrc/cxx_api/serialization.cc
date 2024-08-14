@@ -18,7 +18,7 @@
 #include <sstream>
 #include "cxx_api/graph/graph_data.h"
 #include "utils/log_adapter.h"
-#include "mindspore/core/load_mindir/load_model.h"
+#include "load_mindir/load_model.h"
 #if !defined(_WIN32) && !defined(_WIN64)
 #include "cxx_api/dlutils.h"
 #include "minddata/dataset/include/dataset/execute.h"

@@ -27,7 +27,7 @@
 #include "async/defer.h"
 #include "async/spinlock.h"
 #include "actor/actor.h"
-#include "mindrt/include/mindrt.hpp"
+#include "include/mindrt.hpp"
 
 namespace mindspore {
 template <typename T>

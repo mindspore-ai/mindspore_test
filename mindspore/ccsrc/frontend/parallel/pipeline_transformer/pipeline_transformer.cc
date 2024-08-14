@@ -46,7 +46,7 @@
 #include "include/common/utils/comm_manager.h"
 #include "utils/ms_context.h"
 #include "utils/tensor_construct_utils.h"
-#include "mindspore/core/utils/parallel_node_check.h"
+#include "utils/parallel_node_check.h"
 #include "include/common/debug/anf_ir_dump.h"
 
 namespace mindspore {

@@ -36,7 +36,7 @@
 #include "utils/convert_utils_base.h"
 #include "utils/log_adapter.h"
 #include "utils/shape_utils.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 
 namespace mindspore {
 namespace ops {

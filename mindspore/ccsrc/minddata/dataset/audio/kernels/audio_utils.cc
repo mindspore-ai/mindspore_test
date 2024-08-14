@@ -18,7 +18,7 @@
 
 #include <fstream>
 
-#include "mindspore/core/base/float16.h"
+#include "base/float16.h"
 #include "minddata/dataset/core/type_id.h"
 #include "minddata/dataset/util/random.h"
 #include "utils/file_utils.h"

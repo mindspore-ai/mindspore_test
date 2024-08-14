@@ -34,7 +34,7 @@
 #include "utils/anf_utils.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/debug/anf_dump_utils.h"
-#include "mindspore/core/utils/file_utils.h"
+#include "utils/file_utils.h"
 #include "ir/meta_func_graph.h"
 #include "pipeline/jit/ps/parse/resolve.h"
 #include "frontend/operator/composite/composite.h"

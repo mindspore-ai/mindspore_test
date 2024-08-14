@@ -23,7 +23,7 @@
 #include "utils/check_convert_utils.h"
 #include "ops/ops_func_impl/simple_infer.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
-#include "mindspore/core/utils/ms_context.h"
+#include "utils/ms_context.h"
 
 namespace mindspore {
 namespace ops {

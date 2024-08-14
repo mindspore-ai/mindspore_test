@@ -16,7 +16,7 @@
 
 #include <memory>
 #include "mindapi/ir/tensor.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "ir/tensor.h"
 
 namespace mindspore::api {

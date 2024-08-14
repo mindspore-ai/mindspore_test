@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "mindspore/core/symbolic_shape/operation_builder.h"
+#include "symbolic_shape/operation_builder.h"
 #include "common/common_test.h"
 
 namespace mindspore::symshape::test {

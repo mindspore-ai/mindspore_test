@@ -16,7 +16,7 @@
 
 #include "infer/invert_permutation.h"
 #include <memory>
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "ops/primitive_c.h"
 
 namespace mindspore {

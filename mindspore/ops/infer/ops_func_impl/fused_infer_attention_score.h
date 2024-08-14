@@ -17,7 +17,7 @@
 #ifndef MINDSPORE_CORE_OPS_FUNC_IMPL__FUSED_INFER_ATTENTION_SCORE_H_
 #define MINDSPORE_CORE_OPS_FUNC_IMPL__FUSED_INFER_ATTENTION_SCORE_H_
 #include <vector>
-#include "mindspore/core/ops/ops_func_impl/op_func_impl.h"
+#include "ops/ops_func_impl/op_func_impl.h"
 
 namespace mindspore {
 namespace ops {

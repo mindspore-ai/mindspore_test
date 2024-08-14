@@ -21,7 +21,7 @@
 #include <functional>
 #include <utility>
 
-#include "mindspore/core/ops/ops_func_impl/op_func_impl.h"
+#include "ops/ops_func_impl/op_func_impl.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "mindapi/base/types.h"
 #include "utils/check_convert_utils.h"

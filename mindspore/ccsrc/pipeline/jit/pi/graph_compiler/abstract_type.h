@@ -18,7 +18,7 @@
 
 #include <string>
 #include <memory>
-#include "mindspore/core/abstract/abstract_value.h"
+#include "abstract/abstract_value.h"
 #include "pipeline/jit/pi/graph_compiler/pi_ir/type.h"
 #include "pybind11/stl.h"
 

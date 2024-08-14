@@ -27,7 +27,7 @@
 #include "include/backend/optimizer/helper.h"
 #include "include/backend/optimizer/op_adaptation_info_factory.h"
 #include "pipeline/pynative/pynative_utils.h"
-#include "mindspore/core/utils/core_op_utils.h"
+#include "utils/core_op_utils.h"
 #include "frontend/operator/cc_implementations.h"
 #include "kernel/common/pyboost/op_register.h"
 #include "pipeline/pynative/grad/function/auto_generate/pyboost_native_grad_functions.h"

@@ -20,7 +20,7 @@
 #include <algorithm>
 #include <vector>
 #include <thread>
-#include "mindspore/core/utils/log_adapter.h"
+#include "utils/log_adapter.h"
 #include "cxx_api/model/model_converter_utils/shared_memory.h"
 
 namespace mindspore {

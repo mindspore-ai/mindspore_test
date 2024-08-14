@@ -27,7 +27,7 @@
 #include "ir/dtype/number.h"
 #include "ir/primitive.h"
 #include "ir/value.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "ops/primitive_c.h"
 #include "utils/check_convert_utils.h"

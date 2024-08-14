@@ -22,7 +22,7 @@
 #include "mindspore/ops/infer/reshape_ext.h"
 #include "mindspore/ops/infer/scalar_graph_holder.h"
 #include "mindspore/ops/op_def/array_ops.h"
-#include "mindspore/core/utils/ms_context.h"
+#include "utils/ms_context.h"
 #include "include/common/utils/anfalgo.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
 #include "plugin/device/ascend/optimizer/get_value_helper.h"

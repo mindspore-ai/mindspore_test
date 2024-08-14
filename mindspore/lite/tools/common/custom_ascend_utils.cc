@@ -15,7 +15,7 @@
  */
 #include "mindspore/lite/tools/common/custom_ascend_utils.h"
 #include "mindspore/lite/src/common/log_util.h"
-#include "mindspore/core/utils/ms_utils_secure.h"
+#include "utils/ms_utils_secure.h"
 #include "mindspore/lite/tools/common/func_graph_utils.h"
 #include "mindspore/ops/infer/tuple_get_item.h"
 #include "mindspore/lite/src/common/common.h"

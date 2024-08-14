@@ -37,7 +37,7 @@
 #include "pipeline/jit/ps/base.h"
 #include "frontend/parallel/strategy.h"
 #include "include/common/visible.h"
-#include "mindrt/include/fork_utils.h"
+#include "include/fork_utils.h"
 
 namespace mindspore {
 // namespace to support pipeline structures definition

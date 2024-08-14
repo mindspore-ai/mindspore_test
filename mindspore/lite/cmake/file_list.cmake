@@ -7,63 +7,63 @@ set(API_HEADER
         ${TOP_DIR}/include/api/visible.h
         )
 set(ABSTRACT_HEADER
-        ${CORE_DIR}/abstract/abstract_value.h
-        ${CORE_DIR}/abstract/dshape.h
-        ${CORE_DIR}/abstract/param_validator.h
-        ${CORE_DIR}/abstract/ops/primitive_infer_map.h
-        ${CORE_DIR}/abstract/utils.h
+        ${CORE_INC_DIR}/abstract/abstract_value.h
+        ${CORE_INC_DIR}/abstract/dshape.h
+        ${CORE_INC_DIR}/abstract/param_validator.h
+        ${CORE_INC_DIR}/abstract/ops/primitive_infer_map.h
+        ${CORE_INC_DIR}/abstract/utils.h
         )
-file(GLOB MINDAPI_BASE_HEADER ${CORE_DIR}/mindapi/base/*.h)
-file(GLOB MINDAPI_IR_HEADER ${CORE_DIR}/mindapi/ir/*.h)
+file(GLOB MINDAPI_BASE_HEADER ${CORE_INC_DIR}/mindapi/base/*.h)
+file(GLOB MINDAPI_IR_HEADER ${CORE_INC_DIR}/mindapi/ir/*.h)
 set(BASE_HEADER
-        ${CORE_DIR}/base/base.h
-        ${CORE_DIR}/base/base_ref.h
-        ${CORE_DIR}/base/effect_info.h
-        ${CORE_DIR}/base/float16.h
-        ${CORE_DIR}/base/user_data.h
+        ${CORE_INC_DIR}/base/base.h
+        ${CORE_INC_DIR}/base/base_ref.h
+        ${CORE_INC_DIR}/base/effect_info.h
+        ${CORE_INC_DIR}/base/float16.h
+        ${CORE_INC_DIR}/base/user_data.h
         )
-file(GLOB IR_DTYPE_HEADER ${CORE_DIR}/ir/dtype/*.h)
+file(GLOB IR_DTYPE_HEADER ${CORE_INC_DIR}/ir/dtype/*.h)
 set(IR_HEADER
-        ${CORE_DIR}/ir/anf.h
-        ${CORE_DIR}/ir/device_event.h
-        ${CORE_DIR}/ir/device_sync.h
-        ${CORE_DIR}/ir/dtype.h
-        ${CORE_DIR}/ir/func_graph.h
-        ${CORE_DIR}/ir/func_graph_cloner.h
-        ${CORE_DIR}/ir/graph_utils.h
-        ${CORE_DIR}/ir/kernel_info_dev.h
-        ${CORE_DIR}/ir/manager.h
-        ${CORE_DIR}/ir/meta_tensor.h
-        ${CORE_DIR}/ir/named.h
-        ${CORE_DIR}/ir/param_info.h
-        ${CORE_DIR}/ir/primal_attr.h
-        ${CORE_DIR}/ir/primal_debug_info.h
-        ${CORE_DIR}/ir/primitive.h
-        ${CORE_DIR}/ir/scalar.h
-        ${CORE_DIR}/ir/scope.h
-        ${CORE_DIR}/ir/signature.h
-        ${CORE_DIR}/ir/tensor.h
-        ${CORE_DIR}/ir/value.h
+        ${CORE_INC_DIR}/ir/anf.h
+        ${CORE_INC_DIR}/ir/device_event.h
+        ${CORE_INC_DIR}/ir/device_sync.h
+        ${CORE_INC_DIR}/ir/dtype.h
+        ${CORE_INC_DIR}/ir/func_graph.h
+        ${CORE_INC_DIR}/ir/func_graph_cloner.h
+        ${CORE_INC_DIR}/ir/graph_utils.h
+        ${CORE_INC_DIR}/ir/kernel_info_dev.h
+        ${CORE_INC_DIR}/ir/manager.h
+        ${CORE_INC_DIR}/ir/meta_tensor.h
+        ${CORE_INC_DIR}/ir/named.h
+        ${CORE_INC_DIR}/ir/param_info.h
+        ${CORE_INC_DIR}/ir/primal_attr.h
+        ${CORE_INC_DIR}/ir/primal_debug_info.h
+        ${CORE_INC_DIR}/ir/primitive.h
+        ${CORE_INC_DIR}/ir/scalar.h
+        ${CORE_INC_DIR}/ir/scope.h
+        ${CORE_INC_DIR}/ir/signature.h
+        ${CORE_INC_DIR}/ir/tensor.h
+        ${CORE_INC_DIR}/ir/value.h
         )
 set(UTILS_HEADER
-        ${CORE_DIR}/utils/any.h
-        ${CORE_DIR}/utils/check_convert_utils.h
-        ${CORE_DIR}/utils/compact_set.h
-        ${CORE_DIR}/utils/convert_utils_base.h
-        ${CORE_DIR}/utils/flags.h
-        ${CORE_DIR}/utils/hashing.h
-        ${CORE_DIR}/utils/hash_map.h
-        ${CORE_DIR}/utils/hash_set.h
-        ${CORE_DIR}/utils/info.h
-        ${CORE_DIR}/utils/label.h
-        ${CORE_DIR}/utils/log_adapter.h
-        ${CORE_DIR}/utils/misc.h
-        ${CORE_DIR}/utils/ms_exception.h
-        ${CORE_DIR}/utils/ms_utils.h
-        ${CORE_DIR}/utils/ordered_map.h
-        ${CORE_DIR}/utils/ordered_set.h
-        ${CORE_DIR}/utils/overload.h
-        ${CORE_DIR}/utils/shape_utils.h
-        ${CORE_DIR}/utils/signal.h
-        ${CORE_DIR}/utils/trace_info.h
+        ${CORE_INC_DIR}/utils/any.h
+        ${CORE_INC_DIR}/utils/check_convert_utils.h
+        ${CORE_INC_DIR}/utils/compact_set.h
+        ${CORE_INC_DIR}/utils/convert_utils_base.h
+        ${CORE_INC_DIR}/utils/flags.h
+        ${CORE_INC_DIR}/utils/hashing.h
+        ${CORE_INC_DIR}/utils/hash_map.h
+        ${CORE_INC_DIR}/utils/hash_set.h
+        ${CORE_INC_DIR}/utils/info.h
+        ${CORE_INC_DIR}/utils/label.h
+        ${CORE_INC_DIR}/utils/log_adapter.h
+        ${CORE_INC_DIR}/utils/misc.h
+        ${CORE_INC_DIR}/utils/ms_exception.h
+        ${CORE_INC_DIR}/utils/ms_utils.h
+        ${CORE_INC_DIR}/utils/ordered_map.h
+        ${CORE_INC_DIR}/utils/ordered_set.h
+        ${CORE_INC_DIR}/utils/overload.h
+        ${CORE_INC_DIR}/utils/shape_utils.h
+        ${CORE_INC_DIR}/utils/signal.h
+        ${CORE_INC_DIR}/utils/trace_info.h
         )

@@ -24,9 +24,9 @@
 #include <unordered_map>
 #include <string>
 
-#include "mindspore/core/ir/anf.h"
-#include "mindspore/core/ir/manager.h"
-#include "mindspore/core/mindapi/base/shape_vector.h"
+#include "ir/anf.h"
+#include "ir/manager.h"
+#include "mindapi/base/shape_vector.h"
 
 namespace mindspore {
 namespace opt {

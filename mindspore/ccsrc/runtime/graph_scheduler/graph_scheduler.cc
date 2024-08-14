@@ -34,8 +34,8 @@
 #include "runtime/graph_scheduler/optimizer/multi_actor_fusion.h"
 #include "runtime/hardware/device_context_manager.h"
 #include "include/common/profiler.h"
-#include "mindrt/src/actor/actormgr.h"
-#include "mindrt/include/async/async.h"
+#include "actor/actormgr.h"
+#include "async/async.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/parallel_context.h"
@@ -69,7 +69,7 @@
 #include "include/backend/distributed/cluster/dummy_cluster_context.h"
 #endif
 #include "abstract/ops/primitive_infer_map.h"
-#include "mindspore/core/utils/file_utils.h"
+#include "utils/file_utils.h"
 
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
 #include "utils/numa_interface.h"

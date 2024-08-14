@@ -54,11 +54,9 @@ else
 fi
 
 HEADER_LOCATION="-I${MINDSPORE_HOME}
--I${MINDSPORE_HOME}/mindspore/core
--I${MINDSPORE_HOME}/mindspore/core/ir
+-I${MINDSPORE_HOME}/mindspore/core/include
+-I${MINDSPORE_HOME}/mindspore/core/mindrt
 -I${MINDSPORE_HOME}/mindspore/core/mindrt/include
--I${MINDSPORE_HOME}/mindspore/core/mindrt/src
--I${MINDSPORE_HOME}/mindspore/core/mindrt/
 -I${MINDSPORE_HOME}/mindspore/ccsrc
 -I${MINDSPORE_HOME}/mindspore/lite
 -I${MINDSPORE_HOME}/mindspore/lite/src
@@ -237,16 +235,16 @@ getCommonFile() {
     mindspore/lite/src/litert/kernel/cpu/nnacl/nnacl_manager.h
   )
   mindrt_files_h=()
-  while IFS='' read -r line; do mindrt_files_h+=("$line"); done < <(ls mindspore/core/mindrt/src/actor/*.h)
-  while IFS='' read -r line; do mindrt_files_h+=("$line"); done < <(ls mindspore/core/mindrt/src/thread/*.h)
+  while IFS='' read -r line; do mindrt_files_h+=("$line"); done < <(ls mindspore/core/mindrt/include/actor/*.h)
+  while IFS='' read -r line; do mindrt_files_h+=("$line"); done < <(ls mindspore/core/mindrt/include/thread/*.h)
   others_files_h=(
     mindspore/lite/src/litert/infer_manager.h
     mindspore/ops/kernel/cpu/nnacl/infer/infer_register.h
     mindspore/ops/kernel/cpu/nnacl/nnacl_utils.h
     mindspore/lite/src/common/ops/populate/populate_register.h
     mindspore/ops/kernel/cpu/nnacl/op_base.h
-    mindspore/core/ir/dtype/type_id.h
-    mindspore/core/utils/overload.h
+    mindspore/core/include/ir/dtype/type_id.h
+    mindspore/core/include/utils/overload.h
     mindspore/lite/tools/common/option.h
     mindspore/ops/kernel/cpu/nnacl/intrinsics/ms_simd_instructions.h
     mindspore/ops/kernel/cpu/nnacl/intrinsics/ms_simd_instructions_fp16.h
@@ -258,8 +256,8 @@ getCommonFile() {
     mindspore/ops/kernel/cpu/nnacl/tensor_c_utils.h
     mindspore/ops/kernel/cpu/nnacl/tensorlist_c.h
     mindspore/ops/kernel/cpu/nnacl/tensorlist_c_utils.h
-    mindspore/core/utils/log_adapter.h
-    mindspore/core/ir/api_tensor_impl.h
+    mindspore/core/include/utils/log_adapter.h
+    mindspore/core/include/ir/api_tensor_impl.h
     mindspore/lite/src/litert/cxx_api/tensor/tensor_impl.h
   )
   all_files_h=("${include_h[@]}" "${regist_include_h[@]}" "${src_files_h[@]}" "${common_files_h[@]}"

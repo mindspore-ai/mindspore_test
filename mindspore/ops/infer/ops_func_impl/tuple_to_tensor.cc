@@ -37,7 +37,7 @@
 #include "abstract/param_validator.h"
 #include "base/base.h"
 #include "mindapi/base/shape_vector.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "ops/base_operator.h"

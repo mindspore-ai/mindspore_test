@@ -27,7 +27,7 @@
 #include "async/uuid_base.h"
 #include "async/future.h"
 #include "async/async.h"
-#include "mindrt/include/async/collect.h"
+#include "async/collect.h"
 
 namespace mindspore {
 // OpActor data route.

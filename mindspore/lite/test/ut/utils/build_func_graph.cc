@@ -22,7 +22,7 @@
 #include "infer/make_tuple.h"
 #include "infer/return.h"
 #include "ir/func_graph.h"
-#include "mindspore/core/base/base.h"
+#include "base/base.h"
 #include "tools/optimizer/common/gllo_utils.h"
 
 namespace mindspore {

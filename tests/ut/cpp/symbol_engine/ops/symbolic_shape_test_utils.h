@@ -17,14 +17,14 @@
 #ifndef UT_CPP_SYMBOL_ENGINE_OPS_SYMBOLIC_SHAPE_TEST_UTILS_H_
 #define UT_CPP_SYMBOL_ENGINE_OPS_SYMBOLIC_SHAPE_TEST_UTILS_H_
 
-#include "mindspore/core/symbolic_shape/symbol.h"
+#include "symbolic_shape/symbol.h"
 #include "include/common/symbol_engine/symbol_engine_impl.h"
-#include "mindspore/core/symbolic_shape/int_symbol.h"
+#include "symbolic_shape/int_symbol.h"
 #include "common/common_test.h"
 #include "utils/ms_context.h"
 #include "common/py_func_graph_fetcher.h"
 #include "pipeline/jit/ps/parse/data_converter.h"
-#include "mindspore/core/symbolic_shape/symbol_info.h"
+#include "symbolic_shape/symbol_info.h"
 
 namespace mindspore::symshape::test {
 using IntSymbolInfo = symshape::SymbolInfo;

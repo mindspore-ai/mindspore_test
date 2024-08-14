@@ -18,8 +18,8 @@
 #include <algorithm>
 #include <memory>
 
-#include "mindspore/core/symbolic_shape/symbol_engine.h"
-#include "mindspore/core/symbolic_shape/utils.h"
+#include "symbolic_shape/symbol_engine.h"
+#include "symbolic_shape/utils.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "include/common/utils/anfalgo.h"
 #include "ir/anf.h"

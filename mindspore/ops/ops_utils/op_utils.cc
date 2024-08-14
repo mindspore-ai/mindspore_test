@@ -36,7 +36,7 @@
 #include "ir/value.h"
 #include "ir/kernel_tensor_value.h"
 #include "mindapi/base/type_id.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "mindspore/ops/op_def/op_name.h"
 #include "ops/op_def.h"
 #include "utils/check_convert_utils.h"

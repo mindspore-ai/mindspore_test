@@ -26,7 +26,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/parallel_context.h"
 #include "include/common/utils/utils.h"
-#include "mindspore/core/utils/ms_context.h"
+#include "utils/ms_context.h"
 #include "mindspore/ops/op_def/array_op_name.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/math_op_name.h"

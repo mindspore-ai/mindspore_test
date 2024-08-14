@@ -17,7 +17,7 @@
 #include "kernel/cpu/concat_offset_v1_cpu_kernel.h"
 #include <algorithm>
 #include <utility>
-#include "mindspore/core/utils/check_convert_utils.h"
+#include "utils/check_convert_utils.h"
 #include "plugin/device/cpu/hal/device/cpu_device_address.h"
 
 namespace mindspore {

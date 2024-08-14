@@ -20,7 +20,7 @@
 #include <algorithm>
 #include <vector>
 #include <unordered_set>
-#include "mindspore/core/utils/core_op_utils.h"
+#include "utils/core_op_utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "mindspore/ops/op_def/nn_op_name.h"
 #include "mindspore/ops/op_def/conv_pool_op_name.h"

@@ -21,10 +21,10 @@
 #include <string>
 #include <utility>
 
-#include "mindspore/core/symbolic_shape/symbol.h"
-#include "mindspore/core/symbolic_shape/utils.h"
-#include "mindspore/core/symbolic_shape/operation.h"
-#include "mindspore/core/symbolic_shape/operation_builder.h"
+#include "symbolic_shape/symbol.h"
+#include "symbolic_shape/utils.h"
+#include "symbolic_shape/operation.h"
+#include "symbolic_shape/operation_builder.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {

@@ -21,7 +21,7 @@
 #include <functional>
 #include "proto/aicpu_tensor.pb.h"
 #include "aicpu_sharder/aicpu_sharder.h"
-#include "mindspore/core/mindapi/base/type_id.h"
+#include "mindapi/base/type_id.h"
 
 namespace aicpu {
 namespace {

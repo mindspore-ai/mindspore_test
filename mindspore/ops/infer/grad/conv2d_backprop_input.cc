@@ -21,7 +21,7 @@
 #include <string>
 #include <vector>
 
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "mindspore/ops/op_def/conv_pool_ops.h"
 #include "infer/grad/conv2d_backprop_input.h"
 #include "mindspore/ops/ops_utils/op_utils.h"

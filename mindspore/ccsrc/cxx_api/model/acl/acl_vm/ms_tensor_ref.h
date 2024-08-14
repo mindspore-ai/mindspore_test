@@ -20,7 +20,7 @@
 #include <string>
 #include <vector>
 #include "include/api/types.h"
-#include "mindspore/core/base/base_ref.h"
+#include "base/base_ref.h"
 
 namespace mindspore {
 class MSTensorRef : public BaseRef {

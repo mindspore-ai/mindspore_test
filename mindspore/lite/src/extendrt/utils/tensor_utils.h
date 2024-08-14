@@ -29,7 +29,6 @@
 #include "include/backend/device_address.h"
 #include "common/utils.h"
 #include "common/mutable_tensor_impl.h"
-#include "mindspore/core/ir/tensor.h"
 #include "kernel/kernel.h"
 #include "src/tensor.h"
 #include "infer/tensor.h"

@@ -22,7 +22,7 @@
 #include <vector>
 #include "abstract/abstract_value.h"
 #include "abstract/ops/primitive_infer_map.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "mindspore/ops/op_def/image_ops.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/ops_utils/op_utils.h"

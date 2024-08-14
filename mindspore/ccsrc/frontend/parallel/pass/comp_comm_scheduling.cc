@@ -29,8 +29,8 @@
 #include "mindspore/ccsrc/frontend/parallel/pass/comp_comm_scheduling.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
 #include "mindspore/ccsrc/frontend/parallel/step_parallel.h"
-#include "mindspore/core/utils/misc.h"
-#include "mindspore/core/utils/convert_utils_base.h"
+#include "utils/misc.h"
+#include "utils/convert_utils_base.h"
 
 #include "include/backend/optimizer/helper.h"
 

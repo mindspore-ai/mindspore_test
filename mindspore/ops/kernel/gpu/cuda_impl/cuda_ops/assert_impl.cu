@@ -18,7 +18,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <cuda_runtime.h>
-#include "mindspore/core/mindapi/base/type_id.h"
+#include "mindapi/base/type_id.h"
 #include "include/cuda_fp16.h"
 
 __device__ __forceinline__ void PrintData(float *input, int summarize) {

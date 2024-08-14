@@ -17,7 +17,7 @@
 #include <algorithm>
 #include <memory>
 #include <string>
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "infer/list_equal.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "infer/tuple_equal.h"

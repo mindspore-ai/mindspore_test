@@ -21,7 +21,7 @@
 #include <vector>
 #include <memory>
 #include <utility>
-#include "mindspore/core/utils/ms_context.h"
+#include "utils/ms_context.h"
 #include "proto/node_strategy.pb.h"
 
 namespace mindspore::lite {

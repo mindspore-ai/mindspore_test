@@ -17,7 +17,7 @@
 #include "plugin/device/ascend/hal/hardware/ascend_communication_group.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
 #include "plugin/device/ascend/hal/hccl_adapter/hccl_adapter.h"
-#include "mindspore/core/utils/ms_context.h"
+#include "utils/ms_context.h"
 #include "transform/symbol/acl_rt_symbol.h"
 #include "transform/symbol/acl_symbol.h"
 #include "transform/symbol/symbol_utils.h"

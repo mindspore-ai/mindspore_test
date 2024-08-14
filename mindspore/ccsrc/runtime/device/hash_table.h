@@ -17,6 +17,6 @@
 #define MINDSPORE_CCSRC_RUNTIME_DEVICE_HASH_TABLE_H_
 
 #include "include/common/utils/utils.h"
-#include "mindspore/core/utils/hash_table.h"
+#include "utils/hash_table.h"
 
 #endif  // MINDSPORE_CCSRC_RUNTIME_DEVICE_HASH_TABLE_H_

@@ -23,9 +23,9 @@
 #include <unordered_map>
 #include <vector>
 
-#include "mindspore/core/symbolic_shape/symbol.h"
-#include "mindspore/core/symbolic_shape/operation.h"
-#include "mindspore/core/symbolic_shape/symbol_visitor.h"
+#include "symbolic_shape/symbol.h"
+#include "symbolic_shape/operation.h"
+#include "symbolic_shape/symbol_visitor.h"
 #include "backend/common/graph_kernel/symbol_engine/jit/syntax.h"
 
 namespace mindspore::graphkernel::symshape {

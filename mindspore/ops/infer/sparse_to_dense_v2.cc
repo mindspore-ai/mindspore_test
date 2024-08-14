@@ -17,7 +17,7 @@
 #include "infer/sparse_to_dense_v2.h"
 #include <set>
 #include "abstract/ops/primitive_infer_map.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "mindspore/ops/op_def/sparse_ops.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"

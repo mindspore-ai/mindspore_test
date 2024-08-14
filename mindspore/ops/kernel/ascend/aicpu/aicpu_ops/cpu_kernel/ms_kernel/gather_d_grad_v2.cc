@@ -28,7 +28,7 @@
 #include "Eigen/Core"
 #include "base/bfloat16.h"
 #include "utils/atomic_op.h"
-#include "mindspore/core/utils/ms_utils_secure.h"
+#include "utils/ms_utils_secure.h"
 
 namespace aicpu {
 namespace {

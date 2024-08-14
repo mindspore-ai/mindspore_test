@@ -21,7 +21,7 @@
 #include <set>
 #include <string>
 
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/sparse_ops.h"
 #include "utils/check_convert_utils.h"

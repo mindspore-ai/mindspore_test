@@ -20,7 +20,7 @@
 #ifdef _MSC_VER
 #include <direct.h>  // for _mkdir on windows
 #endif
-#include "mindspore/core/utils/file_utils.h"
+#include "utils/file_utils.h"
 #include "utils/convert_utils_base.h"
 #include "utils/log_adapter.h"
 #include "utils/os.h"

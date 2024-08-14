@@ -25,7 +25,7 @@
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/arithmetic_ops.h"
-#include "mindspore/core/symbolic_shape/operation_builder.h"
+#include "symbolic_shape/operation_builder.h"
 #include "include/common/utils/anfalgo.h"
 #include "backend/common/graph_kernel/core/graph_builder.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"

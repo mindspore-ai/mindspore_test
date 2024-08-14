@@ -37,7 +37,7 @@
 #include "ir/dtype.h"
 #include "ir/tensor.h"
 #include "ir/kernel_tensor_value.h"
-#include "mindspore/core/ops/base_operator.h"
+#include "ops/base_operator.h"
 #include "nlohmann/json.hpp"
 #include "utils/log_adapter.h"
 #include "mindspore/ops/op_def/op_name.h"

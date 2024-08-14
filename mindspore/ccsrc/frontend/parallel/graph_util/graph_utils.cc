@@ -26,8 +26,8 @@
 #include "frontend/parallel/graph_util/generate_graph.h"
 #include "frontend/parallel/graph_util/graph_info.h"
 #include "frontend/parallel/tensor_layout/prime_generator.h"
-#include "mindspore/core/ir/primitive.h"
-#include "mindspore/core/ir/func_graph.h"
+#include "ir/primitive.h"
+#include "ir/func_graph.h"
 #include "include/common/utils/anfalgo.h"
 
 namespace mindspore::parallel {

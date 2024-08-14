@@ -20,7 +20,7 @@
 #include <map>
 #include <utility>
 #include "kernel/gpu/gpu_kernel.h"
-#include "mindspore/core/mindapi/base/types.h"
+#include "mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {

@@ -18,7 +18,7 @@
 #include <functional>
 #include <memory>
 #include "include/curand.h"
-#include "mindspore/core/abstract/utils.h"
+#include "abstract/utils.h"
 
 namespace mindspore {
 namespace kernel {

@@ -14,7 +14,7 @@ include_directories(${3RD_DIR})
 #include ms
 include_directories(${MICRO_DIR})
 include_directories(${TOP_DIR}/)
-include_directories(${TOP_DIR}/mindspore/core/)
+include_directories(${TOP_DIR}/mindspore/core/include)
 include_directories(${NNACL_DIR}/../)
 include_directories(${LITE_DIR})
 

@@ -16,7 +16,7 @@
 
 #include "infer/cxx_api/scale_grad_fusion.h"
 #include <string>
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"

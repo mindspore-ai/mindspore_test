@@ -40,7 +40,7 @@
 #include "utils/ms_context.h"
 #include "ir/tensor.h"
 #ifdef __APPLE__
-#include "mindrt/include/async/spinlock.h"
+#include "async/spinlock.h"
 #endif
 
 namespace mindspore {

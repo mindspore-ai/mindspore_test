@@ -29,7 +29,7 @@
 #include "ir/primitive.h"
 #include "mindapi/base/shared_ptr.h"
 #include "mindapi/ir/value.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/op_def/op_name.h"

@@ -32,7 +32,7 @@
 #include "ir/anf.h"
 #include "ir/dtype/number.h"
 #include "ir/primitive.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/op_name.h"

@@ -15,8 +15,8 @@
  */
 #ifndef MINDSPORE_CORE_SYMBOLIC_SHAPE_SYMBOL_VISITOR_H_
 #define MINDSPORE_CORE_SYMBOLIC_SHAPE_SYMBOL_VISITOR_H_
-#include "mindspore/core/symbolic_shape/symbol.h"
-#include "mindspore/core/symbolic_shape/operation.h"
+#include "symbolic_shape/symbol.h"
+#include "symbolic_shape/operation.h"
 
 namespace mindspore {
 namespace symshape {

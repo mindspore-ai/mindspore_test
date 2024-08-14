@@ -20,7 +20,7 @@
 #include <string>
 #include <vector>
 #include "abstract/ops/primitive_infer_map.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "infer/inplace_add.h"
 #include "infer/inplace_sub.h"

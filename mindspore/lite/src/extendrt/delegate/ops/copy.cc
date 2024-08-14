@@ -22,7 +22,7 @@
 #include "mindspore/ops/op_def/op_name.h"
 #include "ops/primitive_c.h"
 #include "utils/log_adapter.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "src/common/utils.h"
 #include "abstract/ops/op_infer.h"
 #include "abstract/ops/primitive_infer_map.h"

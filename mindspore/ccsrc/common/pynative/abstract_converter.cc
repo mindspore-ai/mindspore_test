@@ -16,7 +16,7 @@
 
 #include "include/common/pynative/abstract_converter.h"
 #include <vector>
-#include "mindspore/core/abstract/abstract_value.h"
+#include "abstract/abstract_value.h"
 
 namespace mindspore {
 namespace pynative {

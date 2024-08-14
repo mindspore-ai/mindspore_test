@@ -73,7 +73,9 @@ set(COMMON_SRC
         )
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../../lite)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../../core)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../../core/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../../core/mindrt)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../../core/mindrt/include)
 
 if(MSLITE_GPU_BACKEND STREQUAL opencl)
     if(ANDROID_NDK_TOOLCHAIN_INCLUDED)

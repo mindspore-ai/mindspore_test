@@ -22,11 +22,11 @@
 #include <vector>
 #include <mutex>
 
-#include "mindspore/core/ir/primitive.h"
+#include "ir/primitive.h"
 #include "kernel/kernel.h"
 #include "acl/acl.h"
 #include "plugin/device/ascend/hal/device/ascend_memory_pool.h"
-#include "mindspore/core/utils/ms_context.h"
+#include "utils/ms_context.h"
 #include "mindspore/ccsrc/runtime/hardware/device_context.h"
 #include "mindspore/ccsrc/runtime/hardware/device_context_manager.h"
 #include "./internal_kernel.h"

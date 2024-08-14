@@ -25,7 +25,7 @@
 #include "include/api/model.h"
 #include "include/api/graph.h"
 #include "include/api/dual_abi_helper.h"
-#include "mindspore/core/base/base.h"
+#include "base/base.h"
 
 namespace mindspore::infer {
 class Serialization {

@@ -21,7 +21,7 @@
 #include <string>
 #include <vector>
 #include "mindapi/base/types.h"
-#include "mindspore/core/ir/anf.h"
+#include "ir/anf.h"
 #include "ops/base_operator.h"
 
 namespace mindspore {

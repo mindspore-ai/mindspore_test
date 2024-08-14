@@ -15,7 +15,7 @@
  */
 
 #include "infer/cxx_api/flash_attention.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "ops/primitive_c.h"
 
 namespace mindspore {

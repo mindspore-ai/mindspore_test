@@ -20,7 +20,7 @@
 #include <memory>
 
 #include "include/common/fallback.h"
-#include "mindspore/core/ir/cell.h"
+#include "ir/cell.h"
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "pipeline/jit/ps/fallback.h"

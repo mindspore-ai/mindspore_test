@@ -19,7 +19,7 @@
 #include "utils/kernel_util.h"
 #include "context/inc/cpu_kernel_utils.h"
 #include "cpu_kernel/utils/fft_helper.h"
-#include "mindspore/core/mindapi/base/types.h"
+#include "mindapi/base/types.h"
 
 namespace {
 const uint32_t kOutputNum = 1;

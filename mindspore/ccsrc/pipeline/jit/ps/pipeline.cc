@@ -92,7 +92,7 @@
 #include "kernel/graph_kernel/graph_kernel_builder_manager.h"
 #include "kernel/graph_kernel_info.h"
 #include "include/backend/data_queue/data_queue_mgr.h"
-#include "mindspore/core/symbolic_shape/symbol_info.h"
+#include "symbolic_shape/symbol_info.h"
 #include "include/common/symbol_engine/symbol_engine_impl.h"
 #include "pipeline/jit/ps/load_mindir.h"
 #include "load_mindir/infer_mindir.h"

@@ -1,10 +1,10 @@
 ## common setting
-include_directories(${CMAKE_SOURCE_DIR}/mindspore/core)
+include_directories(${CMAKE_SOURCE_DIR}/mindspore/core/include)
+include_directories(${CMAKE_SOURCE_DIR}/mindspore/core/mindrt)
+include_directories(${CMAKE_SOURCE_DIR}/mindspore/core/mindrt/include)
 include_directories(${CMAKE_SOURCE_DIR}/mindspore/ops)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_BINARY_DIR})
-include_directories(${CMAKE_SOURCE_DIR}/mindspore/core/mindrt/include)
-include_directories(${CMAKE_SOURCE_DIR}/mindspore/core/mindrt/src)
 
 set(MS_OPS_KERNEL_DIR "${CMAKE_SOURCE_DIR}/mindspore/ops/kernel")
 

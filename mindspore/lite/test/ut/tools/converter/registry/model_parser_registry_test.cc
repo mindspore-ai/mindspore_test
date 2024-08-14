@@ -20,7 +20,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "ut/tools/converter/registry/parser/model_parser_test.h"
 #include "tools/optimizer/common/gllo_utils.h"
-#include "mindspore/core/ir/anf.h"
+#include "ir/anf.h"
 #include "mindapi/ir/func_graph.h"
 
 using mindspore::converter::ConverterParameters;

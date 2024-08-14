@@ -21,7 +21,7 @@
 #include <vector>
 #include "kernel/gpu/cuda_impl/cuda_class/helper_base.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/crop_and_resize_grad_boxes_impl.cuh"
-#include "mindspore/core/mindapi/base/types.h"
+#include "mindapi/base/types.h"
 
 namespace mindspore {
 namespace cukernel {

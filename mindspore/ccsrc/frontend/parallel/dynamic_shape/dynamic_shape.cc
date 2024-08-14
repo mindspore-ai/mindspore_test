@@ -23,9 +23,9 @@
 #include <memory>
 #include "base/base.h"
 
-#include "mindspore/core/symbolic_shape/symbol.h"
-#include "mindspore/core/symbolic_shape/int_symbol.h"
-#include "mindspore/core/symbolic_shape/symbol_info.h"
+#include "symbolic_shape/symbol.h"
+#include "symbolic_shape/int_symbol.h"
+#include "symbolic_shape/symbol_info.h"
 #include "pipeline/jit/ps/action.h"
 #include "include/common/utils/parallel_context.h"
 

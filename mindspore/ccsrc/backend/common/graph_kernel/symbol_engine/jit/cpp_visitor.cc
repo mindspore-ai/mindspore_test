@@ -27,7 +27,7 @@
 #include <string>
 
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
-#include "mindspore/core/symbolic_shape/symbol.h"
+#include "symbolic_shape/symbol.h"
 #include "kernel/framework_utils.h"
 #include "include/common/debug/common.h"
 #include "utils/file_utils.h"

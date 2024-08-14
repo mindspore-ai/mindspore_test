@@ -19,7 +19,7 @@
 #include "abstract/ops/primitive_infer_map.h"
 #include "include/robin_hood.h"
 #include "ir/value.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "utils/log_adapter.h"
 
 namespace mindspore {

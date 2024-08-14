@@ -26,7 +26,7 @@
 #include "utils/log_adapter.h"
 #include "utils/check_convert_utils.h"
 #include "mindspore/ops/op_def/other_ops.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "mindspore/ops/op_def/op_enum.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 

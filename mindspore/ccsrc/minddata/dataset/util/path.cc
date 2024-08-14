@@ -27,7 +27,7 @@
 
 #include "./securec.h"
 #ifndef BUILD_LITE
-#include "mindspore/core/utils/file_utils.h"
+#include "utils/file_utils.h"
 #else
 #include "mindspore/lite/src/common/file_utils.h"
 #endif

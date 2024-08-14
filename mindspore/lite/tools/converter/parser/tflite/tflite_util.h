@@ -27,7 +27,7 @@
 #include "schema/inner/ops_generated.h"
 #include "ir/dtype/type_id.h"
 #include "include/errorcode.h"
-#include "mindspore/core/utils/check_convert_utils.h"
+#include "utils/check_convert_utils.h"
 
 namespace mindspore {
 namespace lite {

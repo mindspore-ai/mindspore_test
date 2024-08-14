@@ -17,7 +17,7 @@
 #define MINDSPORE_CCSRC_PLUGIN_DEVICE_GPU_KERNEL_CUDA_IMPL_CUDA_CLASS_COMMON_H_
 #include <string>
 #include <vector>
-#include "mindspore/core/utils/log_adapter.h"
+#include "utils/log_adapter.h"
 namespace mindspore {
 namespace cukernel {
 inline std::string ConvertVectorToString(const std::vector<int64_t> &value) {

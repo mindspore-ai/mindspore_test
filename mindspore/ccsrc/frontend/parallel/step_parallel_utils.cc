@@ -55,7 +55,7 @@
 #include "utils/ms_context.h"
 #include "utils/symbolic.h"
 #include "utils/trace_base.h"
-#include "mindspore/core/symbolic_shape/int_symbol.h"
+#include "symbolic_shape/int_symbol.h"
 
 namespace mindspore {
 namespace parallel {

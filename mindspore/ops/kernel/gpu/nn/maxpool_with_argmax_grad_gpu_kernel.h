@@ -22,7 +22,7 @@
 #include <string>
 #include <utility>
 #include <map>
-#include "mindspore/core/utils/ms_context.h"
+#include "utils/ms_context.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/maxpool_with_argmax_grad_impl.cuh"

@@ -27,7 +27,7 @@
 #include "minddata/dataset/util/status.h"
 #include "include/api/status.h"
 #ifndef BUILD_LITE
-#include "mindspore/core/utils/file_utils.h"
+#include "utils/file_utils.h"
 #else
 #include "mindspore/lite/src/common/file_utils.h"
 #endif

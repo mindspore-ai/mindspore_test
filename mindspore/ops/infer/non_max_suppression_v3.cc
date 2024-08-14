@@ -27,7 +27,7 @@
 #include "ir/dtype/number.h"
 #include "ir/primitive.h"
 #include "mindapi/base/shape_vector.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "mindspore/ops/op_def/image_ops.h"
 #include "infer/non_max_suppression_v3.h"
 #include "ops/primitive_c.h"

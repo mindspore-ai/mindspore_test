@@ -23,10 +23,10 @@
 #include <unordered_map>
 #include <fstream>
 #include <set>
-#include "mindspore/core/ir/func_graph.h"
+#include "ir/func_graph.h"
 #include "tools/converter/converter_context.h"
 #include "proto/mind_ir.pb.h"
-#include "mindspore/core/utils/system/env.h"
+#include "utils/system/env.h"
 #include "tools/converter/cxx_api/converter_para.h"
 #include "mindspore/lite/tools/converter/quantizer/quant_param_holder.h"
 

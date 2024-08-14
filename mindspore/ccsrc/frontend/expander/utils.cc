@@ -26,7 +26,7 @@
 #include "ops/op_def.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
-#include "mindspore/core/utils/anf_utils.h"
+#include "utils/anf_utils.h"
 #include "frontend/parallel/auto_parallel/costmodel.h"
 #include "frontend/parallel/graph_util/generate_graph.h"
 #include "frontend/operator/ops_front_infer_function.h"

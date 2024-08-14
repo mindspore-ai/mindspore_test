@@ -20,7 +20,7 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "ops/base_operator.h"
 
 namespace mindspore {

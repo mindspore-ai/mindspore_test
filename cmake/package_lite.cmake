@@ -46,7 +46,7 @@ include(${TOP_DIR}/cmake/package_micro.cmake)
 
 function(__install_white_list_ops)
     install(FILES
-            ${TOP_DIR}/mindspore/core/ops/base_operator.h
+            ${TOP_DIR}/mindspore/core/include/ops/base_operator.h
             DESTINATION ${CONVERTER_ROOT_DIR}/include/ops
             COMPONENT ${RUNTIME_COMPONENT_NAME}
             )
@@ -439,12 +439,12 @@ if(PLATFORM_ARM64)
         install(FILES ${TOP_DIR}/mindspore/lite/tools/obfuscator/lib/android-aarch64/libmsdeobfuscator-lite.so
                 DESTINATION ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
     endif()
-    install(FILES ${TOP_DIR}/mindspore/core/ir/dtype/type_id.h DESTINATION ${RUNTIME_INC_DIR}/ir/dtype
+    install(FILES ${TOP_DIR}/mindspore/core/include/ir/dtype/type_id.h DESTINATION ${RUNTIME_INC_DIR}/ir/dtype
             COMPONENT ${RUNTIME_COMPONENT_NAME})
     install(FILES
-            ${TOP_DIR}/mindspore/core/mindapi/base/format.h
-            ${TOP_DIR}/mindspore/core/mindapi/base/type_id.h
-            ${TOP_DIR}/mindspore/core/mindapi/base/types.h
+            ${TOP_DIR}/mindspore/core/include/mindapi/base/format.h
+            ${TOP_DIR}/mindspore/core/include/mindapi/base/type_id.h
+            ${TOP_DIR}/mindspore/core/include/mindapi/base/types.h
             DESTINATION ${RUNTIME_INC_DIR}/mindapi/base
             COMPONENT ${RUNTIME_COMPONENT_NAME})
     install(DIRECTORY ${TOP_DIR}/include/api/ DESTINATION ${RUNTIME_INC_DIR}/api
@@ -695,12 +695,12 @@ elseif(PLATFORM_ARM32)
         install(FILES ${TOP_DIR}/mindspore/lite/tools/obfuscator/lib/android-aarch32/libmsdeobfuscator-lite.so
                 DESTINATION ${RUNTIME_LIB_DIR} COMPONENT ${RUNTIME_COMPONENT_NAME})
     endif()
-    install(FILES ${TOP_DIR}/mindspore/core/ir/dtype/type_id.h DESTINATION ${RUNTIME_INC_DIR}/ir/dtype
+    install(FILES ${TOP_DIR}/mindspore/core/include/ir/dtype/type_id.h DESTINATION ${RUNTIME_INC_DIR}/ir/dtype
             COMPONENT ${RUNTIME_COMPONENT_NAME})
     install(FILES
-            ${TOP_DIR}/mindspore/core/mindapi/base/format.h
-            ${TOP_DIR}/mindspore/core/mindapi/base/type_id.h
-            ${TOP_DIR}/mindspore/core/mindapi/base/types.h
+            ${TOP_DIR}/mindspore/core/include/mindapi/base/format.h
+            ${TOP_DIR}/mindspore/core/include/mindapi/base/type_id.h
+            ${TOP_DIR}/mindspore/core/include/mindapi/base/types.h
             DESTINATION ${RUNTIME_INC_DIR}/mindapi/base
             COMPONENT ${RUNTIME_COMPONENT_NAME})
     install(DIRECTORY ${TOP_DIR}/include/api/ DESTINATION ${RUNTIME_INC_DIR}/api
@@ -793,12 +793,12 @@ elseif(WIN32)
             COMPONENT ${RUNTIME_COMPONENT_NAME})
     install(FILES ${TOP_DIR}/build/mindspore/schema/ops_types_generated.h DESTINATION ${RUNTIME_INC_DIR}/schema
             COMPONENT ${RUNTIME_COMPONENT_NAME})
-    install(FILES ${TOP_DIR}/mindspore/core/ir/dtype/type_id.h DESTINATION ${RUNTIME_INC_DIR}/ir/dtype
+    install(FILES ${TOP_DIR}/mindspore/core/include/ir/dtype/type_id.h DESTINATION ${RUNTIME_INC_DIR}/ir/dtype
             COMPONENT ${RUNTIME_COMPONENT_NAME})
     install(FILES
-            ${TOP_DIR}/mindspore/core/mindapi/base/format.h
-            ${TOP_DIR}/mindspore/core/mindapi/base/type_id.h
-            ${TOP_DIR}/mindspore/core/mindapi/base/types.h
+            ${TOP_DIR}/mindspore/core/include/mindapi/base/format.h
+            ${TOP_DIR}/mindspore/core/include/mindapi/base/type_id.h
+            ${TOP_DIR}/mindspore/core/include/mindapi/base/types.h
             DESTINATION ${RUNTIME_INC_DIR}/mindapi/base
             COMPONENT ${RUNTIME_COMPONENT_NAME})
     install(DIRECTORY ${TOP_DIR}/include/api/ DESTINATION ${RUNTIME_INC_DIR}/api
@@ -844,12 +844,12 @@ else()
             COMPONENT ${RUNTIME_COMPONENT_NAME})
     install(FILES ${TOP_DIR}/mindspore/lite/build/schema/ops_types_generated.h DESTINATION ${RUNTIME_INC_DIR}/schema
             COMPONENT ${RUNTIME_COMPONENT_NAME})
-    install(FILES ${TOP_DIR}/mindspore/core/ir/dtype/type_id.h DESTINATION ${RUNTIME_INC_DIR}/ir/dtype
+    install(FILES ${TOP_DIR}/mindspore/core/include/ir/dtype/type_id.h DESTINATION ${RUNTIME_INC_DIR}/ir/dtype
             COMPONENT ${RUNTIME_COMPONENT_NAME})
     install(FILES
-            ${TOP_DIR}/mindspore/core/mindapi/base/format.h
-            ${TOP_DIR}/mindspore/core/mindapi/base/type_id.h
-            ${TOP_DIR}/mindspore/core/mindapi/base/types.h
+            ${TOP_DIR}/mindspore/core/include/mindapi/base/format.h
+            ${TOP_DIR}/mindspore/core/include/mindapi/base/type_id.h
+            ${TOP_DIR}/mindspore/core/include/mindapi/base/types.h
             DESTINATION ${RUNTIME_INC_DIR}/mindapi/base
             COMPONENT ${RUNTIME_COMPONENT_NAME})
     install(DIRECTORY ${TOP_DIR}/include/api/ DESTINATION ${RUNTIME_INC_DIR}/api
@@ -1069,7 +1069,7 @@ if(MSLITE_ENABLE_KERNEL_EXECUTOR)
     install(FILES
             ${TOP_DIR}/mindspore/ops/op_def/auto_generate/gen_lite_ops.h
             ${TOP_DIR}/mindspore/ops/op_def/auto_generate/gen_ops_name.h
-            ${TOP_DIR}/mindspore/core/ops/base_operator.h
+            ${TOP_DIR}/mindspore/core/include/ops/base_operator.h
             ${TOP_DIR}/mindspore/ops/infer/custom.h
             ${TOP_DIR}/mindspore/ops/infer/conv2d.h
             ${TOP_DIR}/mindspore/ops/infer/conv2d_transpose.h
@@ -1079,19 +1079,19 @@ if(MSLITE_ENABLE_KERNEL_EXECUTOR)
             DESTINATION ${RUNTIME_INC_DIR}/ops
             COMPONENT ${RUNTIME_COMPONENT_NAME})
     install(FILES
-            ${TOP_DIR}/mindspore/core/mindapi/base/format.h
-            ${TOP_DIR}/mindspore/core/mindapi/base/type_id.h
-            ${TOP_DIR}/mindspore/core/mindapi/base/types.h
-            ${TOP_DIR}/mindspore/core/mindapi/base/macros.h
-            ${TOP_DIR}/mindspore/core/mindapi/base/shared_ptr.h
-            ${TOP_DIR}/mindspore/core/mindapi/base/type_traits.h
-            ${TOP_DIR}/mindspore/core/mindapi/base/base.h
+            ${TOP_DIR}/mindspore/core/include/mindapi/base/format.h
+            ${TOP_DIR}/mindspore/core/include/mindapi/base/type_id.h
+            ${TOP_DIR}/mindspore/core/include/mindapi/base/types.h
+            ${TOP_DIR}/mindspore/core/include/mindapi/base/macros.h
+            ${TOP_DIR}/mindspore/core/include/mindapi/base/shared_ptr.h
+            ${TOP_DIR}/mindspore/core/include/mindapi/base/type_traits.h
+            ${TOP_DIR}/mindspore/core/include/mindapi/base/base.h
             DESTINATION ${RUNTIME_INC_DIR}/mindapi/base
             COMPONENT ${RUNTIME_COMPONENT_NAME})
     install(FILES
-            ${TOP_DIR}/mindspore/core/mindapi/ir/common.h
-            ${TOP_DIR}/mindspore/core/mindapi/ir/primitive.h
-            ${TOP_DIR}/mindspore/core/mindapi/ir/value.h
+            ${TOP_DIR}/mindspore/core/include/mindapi/ir/common.h
+            ${TOP_DIR}/mindspore/core/include/mindapi/ir/primitive.h
+            ${TOP_DIR}/mindspore/core/include/mindapi/ir/value.h
             DESTINATION ${RUNTIME_INC_DIR}/mindapi/ir
             COMPONENT ${RUNTIME_COMPONENT_NAME})
     install(FILES ${TOP_DIR}/mindspore/lite/src/litert/cxx_api/kernel_executor/kernel_executor.h DESTINATION

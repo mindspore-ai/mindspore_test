@@ -24,7 +24,7 @@
 #include "include/backend/distributed/ps/ps_context.h"
 #include "distributed/persistent/data.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
-#include "mindspore/core/utils/ms_context.h"
+#include "utils/ms_context.h"
 
 namespace mindspore {
 namespace ps {

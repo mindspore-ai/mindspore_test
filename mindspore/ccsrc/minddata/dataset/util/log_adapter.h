@@ -17,7 +17,7 @@
 #define MINDSPORE_CCSRC_MINDDATA_DATASET_UTIL_LOG_ADAPTER_H_
 
 #if !defined(ENABLE_ANDROID) || defined(ENABLE_MINDDATA_PYTHON)
-#include "mindspore/core/utils/log_adapter.h"
+#include "utils/log_adapter.h"
 #define DATASET_SRC_FILE_NAME FILE_NAME
 #else
 #include "mindspore/lite/src/common/log_adapter.h"

@@ -17,7 +17,7 @@
 #include <memory>
 #include <set>
 #include <string>
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "mindspore/ops/op_def/random_ops.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "infer/standard_normal.h"

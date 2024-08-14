@@ -17,7 +17,7 @@
 #include "include/api/context.h"
 #include "cxx_api/model/acl/model_converter.h"
 #include "utils/log_adapter.h"
-#include "mindspore/core/utils/convert_utils_base.h"
+#include "utils/convert_utils_base.h"
 #include "cxx_api/acl_utils.h"
 #include "transform/symbol/acl_mdl_symbol.h"
 #include "transform/symbol/acl_rt_symbol.h"

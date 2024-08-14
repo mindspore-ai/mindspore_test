@@ -16,7 +16,7 @@
 #ifndef MINDSPORE_CORE_OPS_SYMBOL_OPS_IMPL_MAKE_TUPLE_H_
 #define MINDSPORE_CORE_OPS_SYMBOL_OPS_IMPL_MAKE_TUPLE_H_
 
-#include "mindspore/core/symbolic_shape/operation_builder.h"
+#include "symbolic_shape/operation_builder.h"
 
 namespace mindspore {
 namespace symshape {

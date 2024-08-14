@@ -19,7 +19,7 @@
 
 #include "transform/acl_ir/op_api_cache.h"
 #include "transform/symbol/acl_rt_symbol.h"
-#include "mindspore/core/utils/misc.h"
+#include "utils/misc.h"
 
 namespace mindspore::kernel {
 

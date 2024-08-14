@@ -30,7 +30,7 @@
 #include "include/common/pybind_api/api_register.h"
 #include "pipeline/jit/ps/debug/trace.h"
 #include "frontend/operator/ops.h"
-#include "mindspore/core/utils/ms_context.h"
+#include "utils/ms_context.h"
 #include "pipeline/jit/ps/fallback.h"
 
 namespace mindspore {

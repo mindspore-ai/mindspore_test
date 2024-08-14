@@ -31,7 +31,7 @@
 #include "ir/primitive.h"
 #include "ir/tensor.h"
 #include "mindapi/base/type_id.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 #include "mindspore/ops/op_def/op_name.h"

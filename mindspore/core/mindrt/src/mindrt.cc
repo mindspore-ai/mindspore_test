@@ -15,7 +15,7 @@
  */
 
 #include <atomic>
-#include "src/actor/actormgr.h"
+#include "actor/actormgr.h"
 #include "src/actor/iomgr.h"
 #include "include/mindrt.hpp"
 #include "include/mindrt.h"

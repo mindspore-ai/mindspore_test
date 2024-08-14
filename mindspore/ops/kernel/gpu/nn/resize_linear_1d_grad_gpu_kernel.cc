@@ -15,7 +15,7 @@
  */
 
 #include "kernel/gpu/nn/resize_linear_1d_grad_gpu_kernel.h"
-#include "mindspore/core/abstract/utils.h"
+#include "abstract/utils.h"
 #include "infer/ops_func_impl/resize_linear_1d_grad.h"
 #include "mindapi/base/types.h"
 

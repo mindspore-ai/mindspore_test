@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <functional>
 #include <string>
-#include "mindspore/core/abstract/utils.h"
+#include "abstract/utils.h"
 #include "kernel/common_utils.h"
 #include "plugin/factory/ms_factory.h"
 

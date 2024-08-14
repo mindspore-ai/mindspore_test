@@ -16,7 +16,7 @@
 #include "backend/common/graph_kernel/split_model/area.h"
 #include <algorithm>
 #include <sstream>
-#include "mindspore/core/symbolic_shape/int_symbol.h"
+#include "symbolic_shape/int_symbol.h"
 
 namespace mindspore::graphkernel::inner {
 namespace {

@@ -15,7 +15,7 @@
  */
 
 #include "mindapi/ir/shape.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "abstract/dshape.h"
 
 namespace mindspore::api {

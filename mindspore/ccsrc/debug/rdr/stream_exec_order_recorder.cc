@@ -16,11 +16,11 @@
 #include "debug/rdr/stream_exec_order_recorder.h"
 #include <sstream>
 #include <fstream>
-#include "mindspore/core/utils/log_adapter.h"
+#include "utils/log_adapter.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/utils.h"
 #include "include/common/debug/rdr/recorder_manager.h"
-#include "mindspore/core/utils/file_utils.h"
+#include "utils/file_utils.h"
 
 namespace mindspore {
 std::string Vector2String(const std::vector<uint32_t> &v) {

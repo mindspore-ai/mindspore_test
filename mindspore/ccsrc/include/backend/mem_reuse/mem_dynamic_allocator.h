@@ -37,7 +37,7 @@
 #include "include/common/utils/stream_util.h"
 #include "ir/device_event.h"
 #ifdef __APPLE__
-#include "mindrt/include/async/spinlock.h"
+#include "async/spinlock.h"
 #endif
 
 namespace mindspore {

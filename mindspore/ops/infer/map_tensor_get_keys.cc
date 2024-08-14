@@ -24,7 +24,7 @@
 #include "ir/anf.h"
 #include "ir/dtype/tensor_type.h"
 #include "mindapi/base/shape_vector.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "mindspore/ops/op_def/sparse_tensor_ops.h"
 #include "mindspore/ops/op_def/op_name.h"
 #include "ops/primitive_c.h"

@@ -678,8 +678,8 @@ namespace mindspore::ops {{
 
     lite_ops_cc_head = f"""
 #include "{K.OP_DEF_AUTO_GENERATE_PATH}/gen_lite_ops.h"
-#include "mindapi/src/helper.h"
-#include "mindspore/core/ops/primitive_c.h"
+#include "mindapi/helper.h"
+#include "ops/primitive_c.h"
 #include "ops/base_operator.h"
 #include "abstract/abstract_value.h"
 
@@ -745,7 +745,7 @@ namespace mindspore::ops {{"""
     gen_include = f"""\n
 #include \"{K.MS_OP_DEF_AUTO_GENERATE_PATH}/gen_ops_def.h\""""
     gen_include += f"""
-#include \"mindspore/core/ir/signature.h\""""
+#include \"ir/signature.h\""""
 
     for operator_name, operator_data in yaml_data.items():
         args = operator_data.get('args')

@@ -28,7 +28,7 @@
 #include "schema/inner/model_generated.h"
 #include "ir/dtype/type_id.h"
 #include "ops/primitive_c.h"
-#include "mindspore/core/utils/check_convert_utils.h"
+#include "utils/check_convert_utils.h"
 #include "tools/converter/parser/parser_utils.h"
 #include "ops_utils/op_utils.h"
 

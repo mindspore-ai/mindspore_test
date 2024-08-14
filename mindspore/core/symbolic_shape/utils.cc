@@ -13,16 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "mindspore/core/symbolic_shape/utils.h"
+#include "symbolic_shape/utils.h"
 #include <algorithm>
 #include <utility>
 #include <memory>
 #include <map>
-#include "mindspore/core/symbolic_shape/symbol_info.h"
+#include "symbolic_shape/symbol_info.h"
 #include "ir/kernel_tensor_value.h"
-#include "mindspore/core/utils/check_convert_utils.h"
-#include "mindspore/core/utils/value_utils.h"
-#include "mindspore/core/symbolic_shape/int_symbol.h"
+#include "utils/check_convert_utils.h"
+#include "utils/value_utils.h"
+#include "symbolic_shape/int_symbol.h"
 
 namespace mindspore {
 namespace symshape {

@@ -30,7 +30,7 @@
 #include "include/common/pybind_api/api_register.h"
 #include "include/common/fallback.h"
 #include "pipeline/jit/ps/fallback.h"
-#include "mindspore/core/utils/ms_context.h"
+#include "utils/ms_context.h"
 
 namespace mindspore {
 // namespace to support composite operators definition

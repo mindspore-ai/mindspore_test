@@ -19,7 +19,7 @@
 
 #include <vector>
 #include "mindapi/base/macros.h"
-#include "mindspore/core/ops/ops_func_impl/op_func_impl.h"
+#include "ops/ops_func_impl/op_func_impl.h"
 
 namespace mindspore {
 namespace ops {

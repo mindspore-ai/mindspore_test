@@ -17,7 +17,7 @@
 #include <sys/shm.h>
 #include <sys/stat.h>
 #include <string>
-#include "mindspore/core/utils/log_adapter.h"
+#include "utils/log_adapter.h"
 
 namespace mindspore {
 Status SharedMemory::Create(uint64_t memory_size) {

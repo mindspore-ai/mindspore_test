@@ -21,7 +21,7 @@
 
 #include "abstract/ops/op_infer.h"
 #include "abstract/ops/primitive_infer_map.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/op_name.h"
 #include "infer/sparse_softmax_cross_entropy_with_logits.h"

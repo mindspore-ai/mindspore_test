@@ -17,7 +17,7 @@
 #define MINDSPORE_CCSRC_MINDDATA_MINDRECORD_INCLUDE_COMMON_LOG_ADAPTER_H_
 
 #ifndef ENABLE_ANDROID
-#include "mindspore/core/utils/log_adapter.h"
+#include "utils/log_adapter.h"
 #define MINDRECORD_SRC_FILE_NAME FILE_NAME
 #else
 #include "mindspore/lite/src/common/log_adapter.h"

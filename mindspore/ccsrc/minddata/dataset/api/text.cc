@@ -20,7 +20,7 @@
 
 #include "minddata/dataset/core/type_id.h"
 #include "minddata/dataset/text/ir/kernels/text_ir.h"
-#include "mindspore/core/ir/dtype/type_id.h"
+#include "ir/dtype/type_id.h"
 #include "utils/file_utils.h"
 
 namespace mindspore {
