@@ -8,7 +8,7 @@ mindspore.ops.acosh
     .. math::
         out_i = \cosh^{-1}(input_i)
 
-    .. warning::
+    .. note::
         给定一个输入Tensor `input` ，该函数计算每个元素的反双曲余弦。输入范围为[1, inf]。
 
     参数：
