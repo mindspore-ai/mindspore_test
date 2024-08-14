@@ -516,6 +516,14 @@ void TreeAdapter::SubprocessExit(int exit_code) {
   auto message_queue = dynamic_cast<SendBridgeOp *>(tree_->root().get())->GetMessageQueue();
   auto shared_memmory_queue = dynamic_cast<SendBridgeOp *>(tree_->root().get())->GetSharedMemoryQueue();
 
+  // If the main process is killed, it will cause the SendBridgeOp MsgRcv to hang,
+  // so it is necessary to release the message queue first.
+  // release the message queue
+  message_queue.SetReleaseFlag(true);
+
+  // this will break hung by MsgRcv which is in SendBridgeOp / ReceiveBridgeOp
+  message_queue.ReleaseQueue();
+
   // interrupt all the pipeline thread
   (void)tree_->AllTasks()->interrupt_all();
 
@@ -526,12 +534,6 @@ void TreeAdapter::SubprocessExit(int exit_code) {
     MS_LOG(ERROR) << ret.ToString();
   }
   MS_LOG(INFO) << "[Independent Dataset Process] End waiting for all pipeline threads exit.";
-
-  // release the message queue
-  message_queue.SetReleaseFlag(true);
-
-  // this will break hung by MsgRcv which is in SendBridgeOp / ReceiveBridgeOp
-  message_queue.ReleaseQueue();
 
   // the message queue should be released in main process ReceiveBridgeOp, so just release the shared memory queue
   ret = shared_memmory_queue.ReleaseCurrentShm();
@@ -567,6 +569,9 @@ Status TreeAdapter::LaunchSubprocess() {
   if (ret != Status::OK()) {
     // here should prompt error because it's in subprocess
     MS_LOG(ERROR) << log_prefix << ". Launch failed.";
+
+    // got the first error from pipeline op
+    ret = tree_->AllTasks()->GetTaskErrorIfAny();
 
     // release the message queue
     message_queue.SetReleaseFlag(true);
