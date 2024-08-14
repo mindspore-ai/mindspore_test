@@ -21,7 +21,7 @@
 
 namespace mindspore::parallel {
 int64_t GetTensorSize(const Shape &shape) {
-  int64_t size = std::accumulate(shape.begin(), shape.end(), 1, std::multiplies<int64_t>());
+  int64_t size = std::accumulate(shape.begin(), shape.end(), static_cast<int64_t>(1), std::multiplies<int64_t>());
   return std::abs(size);
 }
 

@@ -65,7 +65,8 @@ class TensorRedistribution {
 
   const AnfNodePtr original_reshape_shape() { return this->original_reshape_shape_; }
   bool is_dynamic_shape() { return this->is_dynamic_shape_; }
-  Status Init(const TensorLayout &from, const TensorLayout &to, const RankList &dev_list);
+  Status Init(const TensorLayout &from, const TensorLayout &to, const RankList &dev_list,
+              bool is_multi_dynamic_axis_reshape = false);
   RedistributionOpListPtr InferTensorRedistributionOperatorList(bool is_cost_model = false);
   std::vector<RedistributionOpListPtr> InferTensorRedistributionOperatorVirtualGraphs();
   RedistributionOpListPtr InferTensorRedistributionOperatorListForMultiDynamicReshape(bool is_cost_model = false);
@@ -87,6 +88,7 @@ class TensorRedistribution {
   TensorLayout from_origin_no_assembled() const { return this->from_origin_no_assembled_; }
   TensorLayout to_origin_no_assembled() const { return this->to_origin_no_assembled_; }
   bool IsAssembledStaticShape() const { return this->is_assembled_static_shape_; }
+  bool IsMultiDynamicAxisReshape() const { return this->is_multi_dynamic_axis_reshape_; }
   RedistributionLayoutTransfer layout_transfer() const { return this->layout_transfer_; }
   AssembledDynamicDimsMapping GetDynamicDimsMapping() const { return this->dynamic_dim_mapping_; }
   void CreateAssembledDynamicMapping(const CNodePtr &cur_cnode, const AnfNodePtr &pre_cnode,
@@ -146,6 +148,7 @@ class TensorRedistribution {
   bool keep_reshape_;
   bool expand_able_ = true;
   bool is_assembled_static_shape_ = false;
+  bool is_multi_dynamic_axis_reshape_ = false;
   bool is_dynamic_shape_ = false;
   ReplacementMemo from_dims_replace_memo_;
   ReplacementMemo to_dims_replace_memo_;

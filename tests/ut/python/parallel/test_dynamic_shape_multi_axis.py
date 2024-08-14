@@ -478,10 +478,165 @@ def test_parallel_dynamic_shape_with_features_022():
     assert validator.check_node_inputs('ScalarMul-5', ['ScalarMul-4', 'TupleGetItem-14'])
     assert validator.check_node_inputs('MakeTuple-7', ['ScalarMul-3', 'ScalarMul-5'])
     assert validator.check_node_inputs('Reshape-2', ['Concat-3', 'MakeTuple-7'])
-    assert validator.check_node_inputs('Shape-2', ['ReLU-0'])
-    assert validator.check_node_inputs('redistribution_op_getitem-4', ['Shape-2', 0])
-    assert validator.check_node_inputs('redistribution_op_getitem-5', ['Shape-2', 1])
-    assert validator.check_node_inputs('ScalarFloorDiv-2', ['redistribution_op_getitem-5', 4])
-    assert validator.check_node_inputs('MakeTuple-8', [1, 'redistribution_op_getitem-4', 'ScalarFloorDiv-2', 2, 2])
-    assert validator.check_node_inputs('Reshape-3', ['ReLU-0', 'MakeTuple-8'])
-    assert validator.check_node_inputs('Reshape-4', ['Concat-4', '(1, -1, 2, 2)'])
+    assert validator.check_node_inputs('Split-6', ['Reshape-2', 0, 2])
+    assert validator.check_node_inputs('TupleGetItem-15', ['Split-6', 0])
+    assert validator.check_node_inputs('Split-7', ['TupleGetItem-15', 1, 4])
+    assert validator.check_node_inputs('TupleGetItem-16', ['Split-7', 0])
+    assert validator.check_node_inputs('ReLU-0', ['TupleGetItem-16'])
+    assert validator.check_node_inputs('AllGather-5', ['ReLU-0'])
+    assert validator.check_node_inputs('AllGather-6', ['AllGather-5'])
+    assert validator.check_node_inputs('Split-8', ['AllGather-6', 0, 4])
+    assert validator.check_node_inputs('Reshape-3', ['Concat-4', (2, -1, 2, 2)])
+    assert validator.check_node_inputs('Split-9', ['Reshape-3', 0, 2])
+    assert validator.check_node_inputs('TupleGetItem-21', ['Split-9', 0])
+    assert validator.check_node_inputs('ReduceMean-0', ['TupleGetItem-21', (2, 3), False])
+    assert validator.check_node_inputs('Split-10', ['ReduceMean-0', 1, 4])
+    assert validator.check_node_inputs('TupleGetItem-22', ['Split-10', 0])
+    assert validator.check_node_inputs('ReLU-1', ['TupleGetItem-22'])
+
+
+def test_reshape_on_shard_shape():
+    """
+    Feature: Test tensor redistribution in dynamic shape.
+    Description: Test const dim in shape op shard.
+    Expectation: Compile success and assertion passed.
+    """
+
+    class AttentionNet2(nn.Cell):
+        def __init__(self, weight, bias, strategy1=None, strategy2=None, strategy3=None, strategy4=None):
+            super(AttentionNet2, self).__init__()
+            self.matmul = P.MatMul().shard(strategy1)
+            self.weight = Parameter(weight, "w1")
+            self.add = P.Add().shard(strategy2)
+            self.bias = Parameter(bias, "bias")
+            self.reshape = P.Reshape()  # .add_prim_attr("skip_redistribution", True)
+            self.transpose = P.Transpose().shard(strategy3)
+            self.realdiv = P.RealDiv().shard(strategy4)
+            self.cast = P.Cast()
+
+        def construct(self, x):
+            out = self.add(x, self.bias)
+            s = P.Shape()(out)
+            out = self.reshape(out, (16 * 8, s[2], s[3]))
+            out = self.transpose(out, (0, 2, 1))
+            out = self.cast(out, mstype.float16)
+            out = self.reshape(out, s)  # failed
+            # out = self.reshape(out, (8, 16, s[2], s[3]))  # ok
+            out = self.realdiv(out, 1.0)
+            return out
+
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", device_num=8, global_rank=0)
+    context.set_context(save_graphs=True)
+    strategy1 = ((1, 1), (1, 8))
+    strategy2 = ((8, 1, 1, 1), (1,))
+    strategy3 = ((8, 1, 1),)
+    strategy4 = ((8, 1, 1, 1), ())
+    weight = Tensor(np.ones([32, 64]), dtype=mstype.float32)
+    bias = Tensor(np.ones([1]), dtype=mstype.float32)
+    net = AttentionNet2(weight, bias, strategy1, strategy2, strategy3, strategy4)
+    input_x = Tensor(shape=[8, 16, None, None], dtype=mstype.float32)
+    net.set_inputs(input_x)
+    phase = compile_net(net, input_x)
+    validator = ParallelValidator(net, phase)
+    assert validator.check_node_inputs('Add-0', ['TupleGetItem-0', 'Load-0'])
+    assert validator.check_node_inputs('Shape-0', ['Add-0'])
+    assert validator.check_node_inputs('TupleGetItem-1', ['Shape-0', 2])
+    assert validator.check_node_inputs('TupleGetItem-2', ['Shape-0', 3])
+    assert validator.check_node_inputs('MakeTuple-1', [16, 'TupleGetItem-1', 'TupleGetItem-2'])
+    assert validator.check_node_inputs('Reshape-0', ['Add-0', 'MakeTuple-1'])
+    assert validator.check_node_inputs('Transpose-0', ['Reshape-0', (0, 2, 1)])
+    assert validator.check_node_inputs('Cast-0', ['Transpose-0', 42])
+    assert validator.check_node_inputs('tuple_getitem_replace_reshape-0', ['Shape-0', 2])
+    assert validator.check_node_inputs('tuple_getitem_replace_reshape-1', ['Shape-0', 3])
+    assert validator.check_node_inputs('Shape-1',
+                                       [8, 16, 'tuple_getitem_replace_reshape-0', 'tuple_getitem_replace_reshape-1'])
+    assert validator.check_node_inputs('Reshape-1', ['Cast-0', 'Shape-1'])
+
+
+def test_parallel_dynamic_shape_with_prime_dim_in_input_in_llava():
+    """
+    Feature: Test tensor redistribution in dynamic shape.
+    Description: Test input with prime 577 in LLaVA.
+    Expectation: Compile success and assertion passed.
+    """
+
+    class PrimeNet(nn.Cell):
+        def __init__(self):
+            super(PrimeNet, self).__init__()
+            self.reshape = P.Reshape()
+            self.relu1 = P.ReLU()
+            self.relu1.shard(((1, 8, 1),))
+            self.relu2 = P.ReLU()
+            self.relu2.shard(((1, 1),))
+
+        def construct(self, x):
+            x = self.relu1(x)
+            x = self.reshape(x, (-1, 1024))
+            x = self.relu2(x)
+            return x
+
+    context.set_context(save_graphs=True,
+                        save_graphs_path="test_parallel_dynamic_shape_with_prime_dim_in_input_in_llava")
+    dataset_shard = (1, 8, 1)
+    context.set_auto_parallel_context(parallel_mode=ParallelMode.SEMI_AUTO_PARALLEL,
+                                      global_rank=0, device_num=8,
+                                      dataset_strategy=(dataset_shard,))
+    net = PrimeNet()
+    model = _VirtualDatasetCell(net)
+    model._virtual_dataset.add_prim_attr("repeat_dim_direct", "right")
+    s = Symbol(divisor=8)
+    input_x = Tensor(shape=[577, s, 64], dtype=mstype.float32)
+    model.set_inputs(input_x)
+    phase = compile_net(model, input_x)
+    validator = ParallelValidator(model, phase)
+    assert validator.check_node_inputs('AllGather-0', ['ReLU-0'])
+    assert validator.check_node_inputs('Split-0', ['AllGather-0', 0, 8])
+    assert validator.check_node_inputs('MakeTuple-1',
+                                       ['TupleGetItem-1', 'TupleGetItem-2', 'TupleGetItem-3', 'TupleGetItem-4',
+                                        'TupleGetItem-5', 'TupleGetItem-6', 'TupleGetItem-7', 'TupleGetItem-8'])
+    assert validator.check_node_inputs('Concat-0', ['MakeTuple-1', 1])
+    assert validator.check_node_inputs('Reshape-0', ['Concat-0', (-1, 1024)])
+    assert validator.check_node_inputs('ReLU-1', ['Reshape-0'])
+
+
+def test_parallel_dynamic_shape_with_prime_dim_in_input_in_videochat():
+    """
+    Feature: Test tensor redistribution in dynamic shape.
+    Description: Test input with prime 768 in VideoChat2.
+    Expectation: Compile success and assertion passed.
+    """
+
+    class PrimeNet(nn.Cell):
+        def __init__(self):
+            super(PrimeNet, self).__init__()
+            self.reshape = P.Reshape()
+            self.relu1 = P.ReLU()
+            self.relu1.shard(((8, 1),))
+            self.relu2 = P.ReLU()
+            self.relu2.shard(((1, 1, 1, 1),))
+
+        def construct(self, x):
+            x = self.relu1(x)
+            x = self.reshape(x, (160, -1, 12, 64))
+            x = self.relu2(x)
+            return x
+
+    context.set_context(save_graphs=True,
+                        save_graphs_path="test_parallel_dynamic_shape_with_prime_dim_in_input_in_videochat")
+    dataset_shard = (8, 1)
+    context.set_auto_parallel_context(parallel_mode=ParallelMode.SEMI_AUTO_PARALLEL,
+                                      global_rank=0, device_num=8,
+                                      dataset_strategy=(dataset_shard,))
+    net = PrimeNet()
+    model = _VirtualDatasetCell(net)
+    model._virtual_dataset.add_prim_attr("repeat_dim_direct", "right")
+    s = Symbol(divisor=8)
+    input_x = Tensor(shape=[s, 768], dtype=mstype.float32)
+    model.set_inputs(input_x)
+    phase = compile_net(model, input_x)
+    validator = ParallelValidator(model, phase)
+    assert validator.check_node_inputs('TupleGetItem-0', ['MakeTuple-0', 0])
+    assert validator.check_node_inputs('ReLU-0', ['TupleGetItem-0'])
+    assert validator.check_node_inputs('Reshape-0', ['ReLU-0', (20, -1, 12, 64)])
+    assert validator.check_node_inputs('AllGather-0', ['Reshape-0'])
+    assert validator.check_node_inputs('ReLU-1', ['AllGather-0'])
