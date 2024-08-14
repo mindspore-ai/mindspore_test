@@ -226,6 +226,7 @@ class ApiCachePool {
     if (uninit_mem_func) {                                                                                        \
       uninit_mem_func(nullptr, false);                                                                            \
     }                                                                                                             \
+    transform::UninitCacheThreadLocal();                                                                          \
     return std::make_tuple(workspace_size, executor, release_func);                                               \
   }                                                                                                               \
   (aclnn_api, aclnn_api + "GetWorkspaceSize", __VA_ARGS__)
@@ -289,6 +290,7 @@ class ApiCachePool {
     if (uninit_mem_func) {                                                                                        \
       uninit_mem_func(nullptr, false);                                                                            \
     }                                                                                                             \
+    transform::UninitCacheThreadLocal();                                                                          \
     return std::make_tuple(workspace_size, executor, release_func, new_hash_id, false);                           \
   }                                                                                                               \
   (aclnn_api, aclnn_api + "GetWorkspaceSize", hash_id, __VA_ARGS__)
@@ -314,9 +316,13 @@ class ApiCachePool {
     int32_t repeat_ret = 0;                                                                                        \
     static const auto aclSetAclOpExecutorRepeatable = reinterpret_cast<transform::_aclSetAclOpExecutorRepeatable>( \
       transform::GetOpApiFunc("aclSetAclOpExecutorRepeatable"));                                                   \
+    static bool first_print = true;                                                                                \
     if (aclSetAclOpExecutorRepeatable == nullptr) {                                                                \
       repeat_ret = -1;                                                                                             \
-      MS_LOG(WARNING) << "aclSetAclOpExecutorRepeatable is nullptr";                                               \
+      if (first_print) {                                                                                           \
+        MS_LOG(WARNING) << "aclSetAclOpExecutorRepeatable is nullptr";                                             \
+      }                                                                                                            \
+      first_print = false;                                                                                         \
     } else {                                                                                                       \
       repeat_ret = aclSetAclOpExecutorRepeatable(executor);                                                        \
       if (repeat_ret != 0) {                                                                                       \

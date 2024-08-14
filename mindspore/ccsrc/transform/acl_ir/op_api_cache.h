@@ -34,6 +34,15 @@ constexpr int g_hash_buf_max_size = g_hash_buf_size + 1024;
 extern thread_local char g_hash_buf[g_hash_buf_size];
 extern thread_local int g_hash_offset;
 
+inline void UninitCacheThreadLocal() {
+  static const auto uninit_cache_thread_local = transform::GetOpApiFunc("UnInitPTACacheThreadLocal");
+  UnInitCacheThreadLocal uninit_cache_thread_local_func =
+    reinterpret_cast<UnInitCacheThreadLocal>(uninit_cache_thread_local);
+  if (uninit_cache_thread_local_func) {
+    uninit_cache_thread_local_func();
+  }
+}
+
 inline void MemcpyToBuf(const void *data_expression, size_t size_expression) {
   if (size_expression == 0) {
     return;
@@ -101,7 +110,7 @@ void GatherInfo(const T &arg, const Args &... args) {
 void RefreshAddr(mindspore::kernel::KernelTensor *);
 void RefreshAddr(const std::pair<mindspore::kernel::KernelTensor *, bool> &);
 void RefreshAddr(const device::DeviceAddressPtr &device_address);
-void RefreshAddr(const mindspore::tensor::TensorPtr &tensor);
+void RefreshAddr(const mindspore::tensor::BaseTensorPtr &tensor);
 inline void RefreshAddr(const std::vector<mindspore::kernel::KernelTensor *> &tensor_list) {
   for (auto tensor : tensor_list) {
     RefreshAddr(tensor);
@@ -144,13 +153,10 @@ bool HitCache(const char *aclnn_api, aclOpExecutor **executor, uint64_t *workspa
   set_hash_key_func(hash_id);
   MS_EXCEPTION_IF_NULL(executor);
   *executor = get_exec_cache_func(hash_id, workspace_size);
-  static const auto uninit_cache_thread_local = transform::GetOpApiFunc("UnInitPTACacheThreadLocal");
-  UnInitCacheThreadLocal uninit_cache_thread_local_func =
-    reinterpret_cast<UnInitCacheThreadLocal>(uninit_cache_thread_local);
-  uninit_cache_thread_local_func();
   if (*executor == nullptr) {
     return false;
   }
+  UninitCacheThreadLocal();
   return true;
 }
 
@@ -191,13 +197,10 @@ bool HitCacheSingle(const char *aclnn_api, aclOpExecutor **executor, uint64_t *w
   set_hash_key_func(*hash_id);
   MS_EXCEPTION_IF_NULL(executor);
   *executor = get_exec_cache_func(*hash_id, workspace_size);
-  static const auto uninit_cache_thread_local = transform::GetOpApiFunc("UnInitPTACacheThreadLocal");
-  UnInitCacheThreadLocal uninit_cache_thread_local_func =
-    reinterpret_cast<UnInitCacheThreadLocal>(uninit_cache_thread_local);
-  uninit_cache_thread_local_func();
   if (*executor == nullptr) {
     return false;
   }
+  UninitCacheThreadLocal();
   return true;
 }
 
