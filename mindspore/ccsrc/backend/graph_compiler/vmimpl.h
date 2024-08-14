@@ -28,6 +28,7 @@
 #include "ir/manager.h"
 #include "ir/tensor.h"
 #include "pybind_api/ir/base_ref_py.h"
+#include "include/backend/visible.h"
 
 namespace mindspore {
 namespace compile {
@@ -179,7 +180,7 @@ class VM : public std::enable_shared_from_this<VM>, public VMImpl {
   FuncGraphPtrToBaseRefMap vars_;
 };
 
-COMMON_EXPORT extern BaseRef RunOperation(const PrimitivePtr &prim, const VectorRef &args);
+BACKEND_EXPORT extern BaseRef RunOperation(const PrimitivePtr &prim, const VectorRef &args);
 
 }  // namespace compile
 }  // namespace mindspore

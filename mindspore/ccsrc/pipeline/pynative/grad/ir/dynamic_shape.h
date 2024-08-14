@@ -56,11 +56,14 @@ struct ValueCompareInfo {
 struct DynamicDetectNodeInfo {
   explicit DynamicDetectNodeInfo(PrimitivePtr op_prim, std::string graph_phase, size_t op_index,
                                  bool is_value_compare = true)
-      : op_prim(std::move(op_prim)), graph_phase(graph_phase), op_index(op_index), is_value_compare(is_value_compare) {}
+      : op_prim(std::move(op_prim)),
+        graph_phase(std::move(graph_phase)),
+        op_index(op_index),
+        is_value_compare(is_value_compare) {}
   DynamicDetectNodeInfo(PrimitivePtr op_prim, std::string graph_phase, size_t op_index,
                         abstract::AbstractBasePtrList input_abs, abstract::AbstractBasePtr out_abs)
       : op_prim(std::move(op_prim)),
-        graph_phase(graph_phase),
+        graph_phase(std::move(graph_phase)),
         op_index(op_index),
         abs_compare_info(std::move(input_abs), std::move(out_abs)) {}
 
