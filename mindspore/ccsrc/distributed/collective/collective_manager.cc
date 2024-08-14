@@ -354,7 +354,6 @@ bool CollectiveManager::CreateCommunicationGroup(const std::string &group_name,
 
   // Timeout limit in seconds to wait finish initializing device communication group.
   int64_t comm_init_timout = GetCommunicatorInitTimeout();
-  MS_LOG(INFO) << "Communicator initializing timeout is " << comm_init_timout << " seconds.";
   // Initialize communication group on the device side in thread with timeout limit.
   ret = ExecuteFuncInThread(init_device_comm_group_func, comm_init_timout, "init_device_comm_group_func",
                             "to initialize communicator for group " + group_name);
@@ -637,7 +636,11 @@ int64_t CollectiveManager::GetCommunicatorInitTimeout() {
   std::string device_type = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
   if (device_type == kAscendDevice) {
     std::string str_comm_init_timeout = common::GetEnv("HCCL_CONNECT_TIMEOUT");
-    return str_comm_init_timeout.empty() ? default_comm_init_timeout : std::stoi(str_comm_init_timeout);
+    MS_LOG(INFO) << "HCCL_CONNECT_TIMEOUT is " << str_comm_init_timeout << " seconds.";
+
+    // For hccl, we wait until hccl api timeout. So we return ten times of HCCL_CONNECT_TIMEOUT on the host side.
+    uint32_t multiple_time = 10;
+    return str_comm_init_timeout.empty() ? default_comm_init_timeout : std::stoi(str_comm_init_timeout) * multiple_time;
   }
   return default_comm_init_timeout;
 }

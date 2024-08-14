@@ -21,7 +21,7 @@
 #include "include/backend/distributed/recovery/recovery_context.h"
 #include "runtime/graph_scheduler/graph_scheduler.h"
 #include "runtime/graph_scheduler/embedding_cache_scheduler.h"
-#include "pipeline/jit/ps/pipeline.h"
+#include "runtime/pynative/op_executor.h"
 
 namespace mindspore {
 namespace distributed {
@@ -54,11 +54,11 @@ bool Initialize() {
       cluster::ClusterContext::instance()->node_role() == kEnvRoleOfScheduler) {
     MS_LOG(INFO) << "Scheduler starts to wait for cluster to exit.";
     (void)cluster::ClusterContext::instance()->Finalize(UINT32_MAX);
-    MS_LOG(INFO) << "Scheduler ends waiting for cluster to exit.";
 
-#if ((!defined _WIN32) && !defined(__APPLE__))
-    pipeline::ClearResAtexit();
-#endif
+    // Release PyNative resources.
+    runtime::OpExecutor::GetInstance().WaitAll();
+    runtime::OpExecutor::GetInstance().WorkerJoin();
+    MS_LOG(INFO) << "Scheduler ends waiting for cluster to exit.";
     exit(0);
     return true;
   }
