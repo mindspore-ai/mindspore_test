@@ -18,6 +18,7 @@
 namespace mindspore::parallel {
 const int MAX_PRIME_RANGE = 1e5 + 1;  // 100,001
 void get_prime_table(Shape *prime_arr, const size_t arr_size) {
+  MS_EXCEPTION_IF_NULL(prime_arr);
   std::vector<bool> is_composite_num(arr_size, false);
   for (size_t i = 2; i <= arr_size; i++) {
     if (!is_composite_num[i]) {

@@ -144,6 +144,7 @@ Status TensorRedistribution::Init(const TensorLayout &from, const TensorLayout &
 
 Status TensorRedistribution::CalculateFromTensorShape(Shape *from_shape, const Array &from_factors,
                                                       const Shape &to_shape, const Array &to_factors) {
+  MS_EXCEPTION_IF_NULL(from_shape);
   if (from_shape->size() != from_factors.GetDimSize() || to_shape.size() != to_factors.GetDimSize()) {
     MS_LOG(ERROR) << "Shape size is not equal to factor size.";
     return Status::FAILED;
@@ -337,6 +338,7 @@ void CalculateToTensorShapeForOneDynamicAxis(const Shape &from_shape, const Shap
 
 Status TensorRedistribution::CalculateToTensorShape(const Shape &from_shape, const Shape &origin_to_shape,
                                                     const Array &to_in_factors, Shape *to_shape) {
+  MS_EXCEPTION_IF_NULL(to_shape);
   MS_LOG(INFO) << "from_shape=" << from_shape << ", origin_to_shape=" << origin_to_shape
                << ", to_in_factors=" << to_in_factors.array();
   // Use forward and backward matching first, if failed, turn to enumeration.
@@ -357,6 +359,8 @@ Status TensorRedistribution::CalculateToTensorShape(const Shape &from_shape, con
 
 Status TensorRedistribution::AssembleStaticTensorShape(const TensorLayout &from_in, const TensorLayout &to_in,
                                                        TensorLayout *new_from_layout, TensorLayout *new_to_layout) {
+  MS_EXCEPTION_IF_NULL(new_from_layout);
+  MS_EXCEPTION_IF_NULL(new_to_layout);
   Shape new_from_shape(from_in.tensor_shape().array());
   Shape original_to_shape = to_in.tensor_shape().array();
   Array from_in_factors;
@@ -690,6 +694,7 @@ void TensorRedistribution::CreateAssembledDynamicMapping(const CNodePtr &cur_cno
 }
 
 void AppendOperatorVecStr(const OperatorVector &vec, std::string *res) {
+  MS_EXCEPTION_IF_NULL(res);
   for (size_t i = 0; i < vec.size(); ++i) {
     res->append(vec.at(i).first);
     if (i != vec.size() - 1) {
@@ -783,6 +788,9 @@ RedistributionOpListPtr TensorRedistribution::InferTensorRedistributionOperatorL
 
 void GetRedistributionOperators(const RedistributionOperatorInfer &operator_infer, OperatorVector *operator_vector,
                                 OutPutInfoVector *output_info_vector, OperatorList *operator_list) {
+  MS_EXCEPTION_IF_NULL(operator_vector);
+  MS_EXCEPTION_IF_NULL(output_info_vector);
+  MS_EXCEPTION_IF_NULL(operator_list);
   for (const auto &op : operator_infer.operator_vector()) {
     (void)operator_vector->emplace_back(op);
   }
@@ -954,6 +962,9 @@ Shape AlignToLayoutShape(const Shape &to_origin_shape, const Shape &to_layout_sh
 
 Status TensorRedistribution::OperatorListIsEmpty(ConstructOperator *constructor, OperatorVector *const operator_vector,
                                                  OutPutInfoVector *const output_info_vector) {
+  MS_EXCEPTION_IF_NULL(constructor);
+  MS_EXCEPTION_IF_NULL(operator_vector);
+  MS_EXCEPTION_IF_NULL(output_info_vector);
   if (from_origin_.base_slice_shape().array() != to_origin_.base_slice_shape().array() || keep_reshape_) {
     reshape_flag_ = true;
     constructor->UpdateTensorShape(from_origin_.base_slice_shape().array());

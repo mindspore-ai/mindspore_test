@@ -107,6 +107,9 @@ bool CheckDynamicShape(const TensorLayout &from_in, const TensorLayout &to_in) {
 
 void UnifyFromAndToShape(Shape *new_from_shape, Shape *new_to_shape, const TensorLayout &from_in,
                          const TensorLayout &to_in, ReplacementMemo *from_dims_replace_memo) {
+  MS_EXCEPTION_IF_NULL(new_from_shape);
+  MS_EXCEPTION_IF_NULL(new_to_shape);
+  MS_EXCEPTION_IF_NULL(from_dims_replace_memo);
   Shape original_from_shape = from_in.tensor_shape().array();
   Shape original_to_shape = to_in.tensor_shape().array();
   for (size_t i = 0; i < new_from_shape->size(); ++i) {
@@ -132,6 +135,7 @@ void UnifyFromAndToShape(Shape *new_from_shape, Shape *new_to_shape, const Tenso
 }
 
 void IntroduceConstraints(const Shape &expected_tgt_shape, Shape *tgt_shape) {
+  MS_EXCEPTION_IF_NULL(tgt_shape);
   // ([80,7,768,16], [-1,-1,3072,-1]) -> [80,7,3072,4]
   // ([20480,768,1,1], [-1, 1024, 12, 64]) -> [20, 1024, 12, 64]
   // Record fix dim index.
@@ -210,6 +214,7 @@ void IntroduceConstraints(const Shape &expected_tgt_shape, Shape *tgt_shape) {
 
 bool ForwardMatching(const Shape &src_shape, const Shape &expected_tgt_shape, Shape *tgt_shape,
                      const Array &tgt_factors) {
+  MS_EXCEPTION_IF_NULL(tgt_shape);
   // Borrow the size from right dim, then borrow the size from left dim.
   // tgt_shape must be inited with value 1 and has fixed size.
   InitShapeVec(src_shape, tgt_shape);
@@ -265,6 +270,7 @@ bool ForwardMatching(const Shape &src_shape, const Shape &expected_tgt_shape, Sh
 }
 
 bool BackwardMatching(const Shape &expected_tgt_shape, Shape *tgt_shape, const Array &tgt_factors) {
+  MS_EXCEPTION_IF_NULL(tgt_shape);
   // Borrow the size from right dim.
   // Then borrow the size from left dim.
   int64_t ori_tensor_size = GetTensorSize(*tgt_shape);
@@ -314,6 +320,7 @@ bool BackwardMatching(const Shape &expected_tgt_shape, Shape *tgt_shape, const A
 bool SolveCombination(const Shape &src_shape_arr, size_t src_index,
                       const std::vector<std::vector<int64_t>> &enum_numbers, size_t offset, int64_t target,
                       std::vector<int64_t> *candidates_values) {
+  MS_EXCEPTION_IF_NULL(candidates_values);
   bool is_last = (enum_numbers.size() - offset - 1) == 0;
   if (src_index < src_shape_arr.size()) {
     constexpr size_t MAX_DIM = 8;
