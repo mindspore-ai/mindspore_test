@@ -1534,7 +1534,7 @@ class SideEffectFinder {
     MS_EXCEPTION_IF_NULL(fg);
     auto manager = fg->manager();
     MS_EXCEPTION_IF_NULL(manager);
-    auto &node_users = manager->node_users();
+    const auto &node_users = manager->node_users();
     auto found = node_users.find(switch_node);
     if (found == node_users.end()) {
       MS_LOG(WARNING) << "Caller not found for " << switch_node->DebugString();
@@ -1726,7 +1726,11 @@ class AutoMonadConverter {
         // If the node has no side effects but 'no_eliminate' flag is set,
         // we save it to no_eliminate_nodes and handle them late.
         if (!info.memory && !info.io && IsNoEliminateNode(cnode)) {
-          (void)no_eliminate_nodes_.emplace_back(cnode);
+          // If the node which mark no_eliminate flag has user, do not use the depend node to mount the graph.
+          bool has_user = CheckNoEliminateNodeHasUsers(cnode);
+          if (!has_user) {
+            (void)no_eliminate_nodes_.emplace_back(cnode);
+          }
         }
       }
       cnode->SetEffectHandled(true);
@@ -1737,6 +1741,26 @@ class AutoMonadConverter {
     if (update_state) {
       AttachMonadToOutput();
     }
+  }
+
+  bool CheckNoEliminateNodeHasUsers(const CNodePtr &cnode) {
+    auto fg = cnode->func_graph();
+    MS_EXCEPTION_IF_NULL(fg);
+    auto manager = fg->manager();
+    MS_EXCEPTION_IF_NULL(manager);
+    const auto &node_users = manager->node_users();
+    auto found = node_users.find(cnode);
+    if (found == node_users.end()) {
+      return false;
+    }
+    for (auto &user : found->second) {
+      auto user_node = dyn_cast<CNode>(user.first);
+      // The stop_gradient user will be eliminated after auto_monad(ClearIsolatedNodes).
+      if (!IsPrimitiveCNode(user_node, prim::kPrimStopGradient)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   // Return true if the given cnode is primitive cnode with 'no_eliminate' flag.
