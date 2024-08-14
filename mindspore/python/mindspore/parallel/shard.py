@@ -20,7 +20,7 @@ from mindspore import log as logger
 from mindspore._c_expression import Shard_
 
 
-class Layout():
+class Layout:
     """
     Parallel layout describes the detailed sharding information.
 
@@ -142,10 +142,10 @@ class Shard(Shard_):
 
     def __call__(self, fn, in_strategy, out_strategy=None, parameter_plan=None, device="Ascend", level=0):
         parallel_mode = ms.context.get_auto_parallel_context("parallel_mode")
-        if parallel_mode not in ["auto_parallel", "semi_auto_parallel"]:
+        if parallel_mode not in ("auto_parallel", "semi_auto_parallel"):
             raise AssertionError(
                 f"Cell shard only supports auto parallel and semi auto parallel.")
-        if ms.context.get_context("device_target") not in ["Ascend", "GPU"]:
+        if ms.context.get_context("device_target") not in ("Ascend", "GPU"):
             raise AssertionError(
                 f"'Shard' now only supports 'Ascend' and 'GPU'")
         if parallel_mode == "auto_parallel" and \

@@ -36,14 +36,17 @@ def _convert_to_list(strategy, rank_id=None):
             dev_mat = list(layout.dev_matrix[0].dim)
             tensor_map = list(layout.tensor_map[0].dim)
             param_split_shape = list(layout.param_split_shape[0].dim)
+            field_size = int(layout.field)
+            shard_stride = int(layout.opt_weight_shard_step)
+            shard_size = int(layout.opt_weight_shard_size)
             pipeline_stage = 0
             origin_param_name = param_name
             if "-" in param_name:
                 pipeline_stage, origin_param_name = param_name.split("-")
                 pipeline_stage = int(pipeline_stage)
             if origin_param_name not in train_map:
-                train_map[origin_param_name] = [dev_mat, tensor_map, param_split_shape, int(layout.field),
-                                                int(layout.opt_weight_shard_step), int(layout.opt_weight_shard_size),
+                train_map[origin_param_name] = [dev_mat, tensor_map, param_split_shape, field_size,
+                                                shard_stride, shard_size,
                                                 [pipeline_stage]]
             else:
                 update_pipeline_stage_list = train_map.get(origin_param_name)[6] + [pipeline_stage]
@@ -53,15 +56,15 @@ def _convert_to_list(strategy, rank_id=None):
                     not_device0_nor_pipeline0 = ((rank_id // stage_device_num) > 0) and (pipeline_stage > 0)
                     if is_device0_and_pipeline0 or not_device0_nor_pipeline0:
                         train_map[origin_param_name] = [dev_mat, tensor_map, param_split_shape,
-                                                        int(layout.field), int(layout.opt_weight_shard_step),
-                                                        int(layout.opt_weight_shard_size), update_pipeline_stage_list]
+                                                        field_size, shard_stride,
+                                                        shard_size, update_pipeline_stage_list]
                     else:
                         train_map.get(origin_param_name)[6] = update_pipeline_stage_list
                 else:
                     if np.all(pipeline_stage <= np.array(update_pipeline_stage_list)):
                         train_map[origin_param_name] = [dev_mat, tensor_map, param_split_shape,
-                                                        int(layout.field), int(layout.opt_weight_shard_step),
-                                                        int(layout.opt_weight_shard_size), update_pipeline_stage_list]
+                                                        field_size, shard_stride,
+                                                        shard_size, update_pipeline_stage_list]
                     else:
                         train_map.get(origin_param_name)[6] = update_pipeline_stage_list
         except BaseException as e:
@@ -453,10 +456,10 @@ def _transform_parallel_checkpoint(rank_id, param_total_dict, param_attr_dict, s
         transform_tensor = ms.Tensor(param_total_dict_copy[rank_id % device_num])
         requires_grad = param_attr_dict[param_name][rank_id % device_num][0]
         layerwise_parallel = param_attr_dict[param_name][rank_id % device_num][1]
-        transform_para = ms.Parameter(transform_tensor, param_name, requires_grad, layerwise_parallel)
+        transform_param = ms.Parameter(transform_tensor, param_name, requires_grad, layerwise_parallel)
         if param_type_dict[param_name][rank_id % device_num] == "BFloat16":
-            transform_para.set_dtype(ms.bfloat16)
-        transform_param_dict[param_name] = transform_para
+            transform_param.set_dtype(ms.bfloat16)
+        transform_param_dict[param_name] = transform_param
     if device_num < 1:
         raise ValueError("None of the parameters in checkpoint file are in either src strategy or "
                          "dst strategy. Please check correctness of strategy files.")
@@ -464,13 +467,13 @@ def _transform_parallel_checkpoint(rank_id, param_total_dict, param_attr_dict, s
     # Handle those parameter like learning_rate, global_step which not in strategy_file.
     for param_name, _ in param_total_dict.items():
         if param_name not in transform_param_dict:
-            transform_para = ms.Parameter(
+            transform_param = ms.Parameter(
                 ms.Tensor(param_total_dict[param_name][rank_id % device_num]), param_name,
                 param_attr_dict[param_name][rank_id % device_num][0],
                 param_attr_dict[param_name][rank_id % device_num][1])
             if param_type_dict[param_name][rank_id % device_num] == "BFloat16":
-                transform_para.set_dtype(ms.bfloat16)
-            transform_param_dict[param_name] = transform_para
+                transform_param.set_dtype(ms.bfloat16)
+            transform_param_dict[param_name] = transform_param
 
     transform_param_list = [{"name": param_name, "data": param_data}
                             for param_name, param_data in transform_param_dict.items()]

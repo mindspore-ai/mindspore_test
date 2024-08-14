@@ -18,6 +18,8 @@ from __future__ import absolute_import
 __all__ = ["parameter_broadcast"]
 
 import numpy as np
+import mindspore as ms
+from mindspore.communication import get_rank, create_group, get_group_size
 
 
 def parameter_broadcast(net, layout, cur_rank=0, initial_rank=0):
@@ -102,13 +104,10 @@ def parameter_broadcast(net, layout, cur_rank=0, initial_rank=0):
         ...         print("step end, cur step num: ", cb_params.cur_step_num, flush=True)
         >>> model.train(1, dataset, callbacks=[LossCallBack()])
     """
-    if not layout:
-        return
-    import mindspore as ms
-    from mindspore import Tensor
-    from mindspore.communication import get_rank, create_group, get_group_size
     from mindspore.train._utils import get_parameter_redundancy, remove_param_redundancy
     from mindspore.nn.wrap.cell_wrapper import AllreduceGraph
+    if not layout:
+        return
     origin_parallel_mode = ms.get_auto_parallel_context("parallel_mode")
     if origin_parallel_mode not in ("semi_auto_parallel", "auto_parallel"):
         return
@@ -143,7 +142,7 @@ def parameter_broadcast(net, layout, cur_rank=0, initial_rank=0):
                 raise ValueError(f"For parameter broadcast, the param: {param} can not be found.")
             real_param = net_param_dict[param]
             if param not in single_params[cur_rank]:
-                real_param.set_data(Tensor(np.zeros(real_param.shape), dtype=real_param.dtype))
+                real_param.set_data(ms.Tensor(np.zeros(real_param.shape), dtype=real_param.dtype))
             allreduce_input.append(real_param)
         if not allreduce_input:
             continue

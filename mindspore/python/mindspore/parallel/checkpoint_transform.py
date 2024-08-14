@@ -464,12 +464,13 @@ def _sync_params(name, param, layout):
     is_send = layout[9]
     peer_rank = layout[10]
     sr_tag = layout[11]
-
-    from mindspore.ops.operations._inner_ops import Send, Receive
     if is_send:
-        Send(sr_tag=sr_tag, dest_rank=peer_rank)(param)
+        ms.ops.Send(sr_tag=sr_tag, dest_rank=peer_rank)(param)
     else:
-        param.assign_value(Receive(sr_tag=sr_tag, src_rank=peer_rank, shape=param.shape, dtype=param.dtype)(param))
+        param.assign_value(ms.ops.Receive(sr_tag=sr_tag,
+                                          src_rank=peer_rank,
+                                          shape=param.shape,
+                                          dtype=param.dtype)(param))
 
 
 def sync_pipeline_shared_parameters(net):
