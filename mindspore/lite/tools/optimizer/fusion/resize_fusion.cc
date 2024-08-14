@@ -182,7 +182,7 @@ int ResizeFusion1::DoFuison(const FuncGraphPtr &func_graph, const AnfNodePtr &no
   }
   MS_CHECK_TRUE_RET(mul_factor_tensor->data_c() != nullptr, lite::RET_ERROR);
   float mul_factor_data2 = (reinterpret_cast<float *>(mul_factor_tensor->data_c()))[0];
-  if (mul_factor_data != mul_factor_data2) {
+  if (lite::FloatCompare(mul_factor_data, mul_factor_data2)) {
     MS_LOG(ERROR) << "two mul factor not equal";
     return lite::RET_ERROR;
   }

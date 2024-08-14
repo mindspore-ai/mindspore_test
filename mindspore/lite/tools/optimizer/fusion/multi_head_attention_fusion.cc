@@ -213,7 +213,8 @@ VectorRef MultiHeadAttentionFusion::DefineEmbedding(const BaseRef &input, const 
 }
 
 VectorRef MultiHeadAttentionFusion::DefineMPWithMaskPattern(bool mask) const {
-  VectorRef k_embedding, v_embedding;
+  VectorRef k_embedding;
+  VectorRef v_embedding;
   auto q_transpose = std::make_shared<CondVar>(std::bind(IsOpType, p1, prim::kPrimTranspose));
   MS_CHECK_TRUE_RET(q_transpose != nullptr, {});
   auto q_embedding = DefineEmbedding(input_q_, weight_q_, bias_q_, reshape_axis_, q_transpose, true);
@@ -268,7 +269,8 @@ VectorRef MultiHeadAttentionFusion::DefineMPWithMaskPattern(bool mask) const {
 }
 
 VectorRef MultiHeadAttentionFusion::DefineMPWithMaskPatternT5() const {
-  VectorRef k_embedding, v_embedding;
+  VectorRef k_embedding;
+  VectorRef v_embedding;
   auto q_transpose = std::make_shared<CondVar>(std::bind(IsOpType, p1, prim::kPrimTranspose), "q_transpose");
   MS_CHECK_TRUE_RET(q_transpose != nullptr, {});
   auto q_embedding = DefineEmbedding(input_q_, weight_q_, bias_q_, reshape_axis_, q_transpose, true, false);
@@ -313,7 +315,8 @@ VectorRef MultiHeadAttentionFusion::DefineMPWithMaskPatternT5() const {
 }
 
 VectorRef MultiHeadAttentionFusion::DefineMPWithMaskPatternT5New(bool transpose, bool no_div_flag) const {
-  VectorRef k_embedding, v_embedding;
+  VectorRef k_embedding;
+  VectorRef v_embedding;
   auto q_transpose = std::make_shared<CondVar>(std::bind(IsOpType, p1, prim::kPrimTranspose), "q_transpose");
   MS_CHECK_TRUE_RET(q_transpose != nullptr, {});
   VectorRef q_embedding;
@@ -353,7 +356,8 @@ VectorRef MultiHeadAttentionFusion::DefineMPWithMaskPatternT5New(bool transpose,
   auto reshape1 = VectorRef({is_reshape1, add2, var1});
   auto is_softmax = std::make_shared<CondVar>(std::bind(IsOpType, p1, prim::kPrimSoftmax), "softmax");
   MS_CHECK_TRUE_RET(is_softmax != nullptr, {});
-  VectorRef softmax, matmul2;
+  VectorRef softmax;
+  VectorRef matmul2;
   if (no_div_flag) {
     softmax = VectorRef({is_softmax, add2});
   } else {
@@ -393,7 +397,8 @@ VectorRef MultiHeadAttentionFusion::DefineMPWithMaskPatternT5New(bool transpose,
 }
 
 VectorRef MultiHeadAttentionFusion::DefineMPWithMaskPatternPA(bool mask) const {
-  VectorRef k_embedding, v_embedding;
+  VectorRef k_embedding;
+  VectorRef v_embedding;
   auto q_transpose = std::make_shared<CondVar>(std::bind(IsOpType, p1, prim::kPrimTranspose));
   MS_CHECK_TRUE_RET(q_transpose != nullptr, {});
   auto q_embedding = DefineEmbedding(input_q_, weight_q_, bias_q_, reshape_axis_, q_transpose, true, true, false);
@@ -409,9 +414,9 @@ VectorRef MultiHeadAttentionFusion::DefineMPWithMaskPatternPA(bool mask) const {
   if (mask) {
     auto is_add = std::make_shared<CondVar>(std::bind(IsOpType, p1, prim::kPrimAddFusion));
     MS_CHECK_TRUE_RET(is_add != nullptr, {});
-    auto mask = DefineMask(mask_);
-    MS_CHECK_TRUE_RET(!mask.empty(), {});
-    auto add = VectorRef({is_add, mask, matmul1});
+    auto internal_mask = DefineMask(mask_);
+    MS_CHECK_TRUE_RET(!internal_mask.empty(), {});
+    auto add = VectorRef({is_add, internal_mask, matmul1});
     auto is_softmax = std::make_shared<CondVar>(std::bind(IsOpType, p1, prim::kPrimSoftmax));
     MS_CHECK_TRUE_RET(is_softmax != nullptr, {});
     softmax = VectorRef({is_softmax, add});
@@ -440,7 +445,8 @@ VectorRef MultiHeadAttentionFusion::DefineMPWithMaskPatternPA(bool mask) const {
 }
 
 VectorRef MultiHeadAttentionFusion::DefineMPPatternSwin(bool flag) const {
-  VectorRef k_embedding, v_embedding;
+  VectorRef k_embedding;
+  VectorRef v_embedding;
   auto q_transpose = std::make_shared<CondVar>(std::bind(IsOpType, p1, prim::kPrimTranspose));
   MS_CHECK_TRUE_RET(q_transpose != nullptr, {});
   auto q_embedding = DefineEmbedding(input_q_, weight_q_, bias_q_, reshape_axis_, q_transpose, false, true, true);
@@ -747,7 +753,7 @@ bool MultiHeadAttentionFusion::CheckPattern(const EquivPtr &equiv, int *head_num
   std::vector<int> out2(out.end() - C2NUM, out.end());
   *head_num = out2.at(0);
   *head_size = out2.at(C1NUM);
-  scale_ = (scale_ == 0.0f) ? 1.0f / sqrtf(*head_size * 1.0f) : scale_;
+  scale_ = (lite::FloatCompare(scale_, 0.0f)) ? 1.0f / sqrtf(*head_size * 1.0f) : scale_;
   return true;
 }
 
@@ -928,7 +934,8 @@ bool MultiHeadAttentionFusion::IsCross(const EquivPtr &equiv) const {
   auto input_q = utils::cast<AnfNodePtr>((*equiv)[input_q_]);
   auto input_v = utils::cast<AnfNodePtr>((*equiv)[input_v_]);
 
-  ShapeVector inputq_shape, inputv_shape;
+  ShapeVector inputq_shape;
+  ShapeVector inputv_shape;
   auto ret = FetchShapeFromAbstract(input_q->abstract(), &inputq_shape);
   MS_CHECK_TRUE_RET(ret == RET_OK, false);
   ret = FetchShapeFromAbstract(input_v->abstract(), &inputv_shape);
@@ -1005,9 +1012,11 @@ CNodePtr MultiHeadAttentionFusion::CreateMaskedMultiHeadAttentionNode(const Func
   bool cross = IsCross(equiv);
   std::vector<AnfNodePtr> redundant;
   auto [weight_o, weight_q_tensor, weight_k_tensor, weight_v_tensor] = GetAttentionNodeWeights(equiv, &redundant);
-  AnfNodePtr bias_q, bias_o;
+  AnfNodePtr bias_q;
+  AnfNodePtr bias_o;
   ParameterPtr c_bias_param;
-  std::shared_ptr<tensor::Tensor> c_bias, bias_q_tensor;
+  std::shared_ptr<tensor::Tensor> c_bias;
+  std::shared_ptr<tensor::Tensor> bias_q_tensor;
   if (!t5_x_) {
     bias_q = utils::cast<AnfNodePtr>((*equiv)[bias_q_]);
     auto bias_k = utils::cast<AnfNodePtr>((*equiv)[bias_k_]);
@@ -1027,15 +1036,18 @@ CNodePtr MultiHeadAttentionFusion::CreateMaskedMultiHeadAttentionNode(const Func
       return nullptr;
     }
   }
-  AnfNodePtr vnode, knode;
-  knode = utils::cast<AnfNodePtr>((*equiv)[k_transpose_]);
+  AnfNodePtr vnode{nullptr};
+  AnfNodePtr knode = utils::cast<AnfNodePtr>((*equiv)[k_transpose_]);
   auto it_vnode = (*equiv).find(v_transpose_);
-  if (it_vnode != (*equiv).end() && !t5_x_) vnode = utils::cast<AnfNodePtr>(it_vnode->second);
+  if (it_vnode != (*equiv).end() && !t5_x_) {
+    vnode = utils::cast<AnfNodePtr>(it_vnode->second);
+  }
   if (!cross && !t5_x_) {
     redundant.push_back(bias_q);
   }
   bool transpose_b = IsTransposeWeight(func_graph, equiv, dense_);
-  tensor::TensorPtr c_weights, q_weight_t;
+  tensor::TensorPtr c_weights;
+  tensor::TensorPtr q_weight_t;
   if (cross) {
     c_weights = ConcatTensors({weight_k_tensor, weight_v_tensor}, true, transpose_b);
     q_weight_t = ConcatTensors({weight_q_tensor}, true, transpose_b);
@@ -1080,7 +1092,7 @@ CNodePtr MultiHeadAttentionFusion::CreateMaskedMultiHeadAttentionNode(const Func
     new_node->set_abstract(old_node->abstract()->Clone());
     ret_node = new_node;
   }
-  RemoveRedundantInput(func_graph, redundant);
+  (void)RemoveRedundantInput(func_graph, redundant);
   return ret_node;
 }
 }  // namespace mindspore::opt

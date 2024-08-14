@@ -133,8 +133,7 @@ bool GroupNormFusion::Init() const {
   return true;
 }
 
-bool GroupNormFusion::CheckPattern(const FuncGraphPtr &func_graph, const EquivPtr &equiv, int *num_groups,
-                                   float *epsilon, bool *affine) const {
+bool GroupNormFusion::CheckPattern(const EquivPtr &equiv, int *num_groups, float *epsilon, bool *affine) const {
   MS_ASSERT(equiv != nullptr);
   MS_ASSERT(epsilon != nullptr);
   MS_ASSERT(num_groups != nullptr);
@@ -275,7 +274,7 @@ const AnfNodePtr GroupNormFusion::Process(const FuncGraphPtr &func_graph, const 
   float epsilon = 0.0f;
   int num_groups = 0;
   bool affine = true;
-  if (!CheckPattern(func_graph, equiv, &num_groups, &epsilon, &affine)) {
+  if (!CheckPattern(equiv, &num_groups, &epsilon, &affine)) {
     return nullptr;
   }
   auto norm_cnode = CreateGroupNormNode(func_graph, equiv, num_groups, epsilon);

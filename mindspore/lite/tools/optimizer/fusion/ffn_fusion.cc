@@ -61,8 +61,12 @@ CNodePtr FFNFusion::CreateFFNFusionNode(const FuncGraphPtr &func_graph, const An
   auto param3 = utils::cast<AnfNodePtr>((*equiv)[matmul2_b_[index]]);
   MS_CHECK_TRUE_RET(param3 != nullptr, nullptr);
 
-  auto none_value_node = NewValueNode(std::make_shared<None>());
-  none_value_node->set_abstract(std::make_shared<abstract::AbstractNone>());
+  auto value_none = std::make_shared<None>();
+  MS_CHECK_TRUE_RET(value_none != nullptr, nullptr);
+  auto none_value_node = NewValueNode(value_none);
+  auto abstract_none = std::make_shared<abstract::AbstractNone>();
+  MS_CHECK_TRUE_RET(abstract_none != nullptr, nullptr);
+  none_value_node->set_abstract(abstract_none);
 
   auto ffn_fusion_cnode =
     func_graph->NewCNode(ffn_fusion_prim_c, {input_node, param1, param3, none_value_node, param2});

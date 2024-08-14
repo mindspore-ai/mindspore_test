@@ -55,7 +55,7 @@ bool KVCacheMgrConcatFusion::Run(const FuncGraphPtr &func_graph) {
       continue;
     }
     auto kv_cache_cnode = node->cast<CNodePtr>();
-    MS_CHECK_TRUE_RET(kv_cache_cnode != nullptr, false);
+    MS_CHECK_TRUE_RET(kv_cache_cnode != nullptr && kv_cache_cnode->size() > kInputIndexThree, false);
     auto concat_cnode = kv_cache_cnode->input(kInputIndexThree)->cast<CNodePtr>();
     MS_CHECK_TRUE_RET(concat_cnode != nullptr, false);
     if (!CheckPrimitiveType(concat_cnode, prim::kPrimConcat)) {

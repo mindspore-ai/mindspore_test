@@ -56,7 +56,7 @@ namespace mindspore::lite {
  *
  *  See the code for other constructors.
  */
-class TensorList : public Tensor {
+class MS_API TensorList : public Tensor {
  public:
   TensorList() { tensor_list_c_ = {false, kObjectTypeTensorType, DEFAULT_FORMAT, 0, kTypeUnknown, -1, nullptr, 0, 0}; }
 
@@ -115,7 +115,7 @@ class TensorList : public Tensor {
 
   int CheckTensorListParam();
 
-  bool IsCompatibleShape(const std::vector<int> &shape);
+  bool IsCompatibleShape(const std::vector<int> &shape) const;
 
   bool IsCompatibleShape(const Tensor *src);
 

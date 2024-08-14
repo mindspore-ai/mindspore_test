@@ -30,10 +30,10 @@ OpParameter *PopulateAttentionParameter(const void *prim) {
     MS_LOG(ERROR) << "malloc AttentionParameter failed.";
     return nullptr;
   }
-  memset(param, 0, sizeof(AttentionParameter));
+  (void)memset(param, 0, sizeof(AttentionParameter));
   param->op_parameter_.type_ = primitive->value_type();
-  param->head_num_ = value->head_num();
-  param->head_size_ = value->head_size();
+  param->head_num_ = static_cast<int>(value->head_num());
+  param->head_size_ = static_cast<int>(value->head_size());
   param->cross_ = value->cross();
   return reinterpret_cast<OpParameter *>(param);
 }

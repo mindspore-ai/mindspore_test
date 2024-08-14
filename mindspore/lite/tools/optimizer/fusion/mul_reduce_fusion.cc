@@ -254,7 +254,7 @@ int MulReduceFusion::GenerateSqueeze(const FuncGraphPtr &func_graph, const CNode
 int MulReduceFusion::GenerateMul(const FuncGraphPtr &func_graph, const CNodePtr &cnode) {
   MS_ASSERT(func_graph != nullptr);
   MS_ASSERT(cnode != nullptr);
-  if (coeff_ == 1.0f) {
+  if (lite::FloatCompare(coeff_, 1.0f)) {
     return lite::RET_OK;
   }
   auto manager = func_graph->manager();

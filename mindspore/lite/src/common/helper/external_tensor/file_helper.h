@@ -23,7 +23,7 @@
 namespace mindspore::infer::helper {
 class FileExternalTensorHelper : public ExternalTensorHelper {
  public:
-  explicit FileExternalTensorHelper(std::string base_path) : base_path_(base_path) {}
+  explicit FileExternalTensorHelper(const std::string &base_path) : base_path_(base_path) {}
 
   void *GetExternalTensorData(const mindspore::schema::ExternalData *external_info) override;
   void SetExternalTensorData(const mindspore::schema::ExternalData *external_info, void *data) override;

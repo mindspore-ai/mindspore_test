@@ -314,10 +314,13 @@ const AnfNodePtr BatchMatMulFusion::Process(const FuncGraphPtr &func_graph, cons
   MS_CHECK_TRUE_RET(func_graph != nullptr, nullptr);
   MS_CHECK_TRUE_RET(node != nullptr, nullptr);
   auto stack_cnode = node->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(stack_cnode != nullptr && stack_cnode->size() > 1, nullptr);
   auto fullconnect_node = stack_cnode->input(1);
+  MS_CHECK_TRUE_RET(fullconnect_node != nullptr, nullptr);
   auto fullconnect_cnode = fullconnect_node->cast<CNodePtr>();
-  MS_CHECK_TRUE_RET(fullconnect_cnode != nullptr, nullptr);
+  MS_CHECK_TRUE_RET(fullconnect_cnode != nullptr && fullconnect_cnode->size() > 1, nullptr);
   auto left_slice_node = fullconnect_cnode->input(1);
+  MS_CHECK_TRUE_RET(left_slice_node != nullptr, nullptr);
   auto left_slice_cnode = left_slice_node->cast<CNodePtr>();
   MS_CHECK_TRUE_RET(left_slice_cnode != nullptr, nullptr);
   if (!CheckCnodeProper(stack_cnode, fullconnect_cnode, left_slice_cnode)) {
@@ -330,9 +333,11 @@ const AnfNodePtr BatchMatMulFusion::Process(const FuncGraphPtr &func_graph, cons
   }
 
   // slice +fullconnect ->batchmatmul
+  MS_CHECK_TRUE_RET(left_slice_cnode->size() > 1, nullptr);
   auto left_matmul_input = left_slice_cnode->input(1);
+  MS_CHECK_TRUE_RET(left_matmul_input != nullptr, nullptr);
   auto right_reshape_node = fullconnect_cnode->input(kInputIndexTwo);
-  MS_ASSERT(right_reshape_node != nullptr);
+  MS_CHECK_TRUE_RET(right_reshape_node != nullptr, nullptr);
   auto matmul_cvalue = BuildMatMulPrim(stack_cnode);
   MS_CHECK_TRUE_RET(matmul_cvalue != nullptr, nullptr);
   auto matmul_value_node = NewValueNode(matmul_cvalue->GetPrim());
@@ -349,7 +354,7 @@ const AnfNodePtr BatchMatMulFusion::Process(const FuncGraphPtr &func_graph, cons
       return node;
     }
     auto prim_matmul = ops::GetOperator<mindspore::ops::MatMulFusion>(matmul_value_node);
-    MS_ASSERT(prim_matmul != nullptr);
+    MS_CHECK_TRUE_RET(prim_matmul != nullptr, nullptr);
     prim_matmul->set_transpose_b(true);
     matmul_inputs.push_back(rmatmul_paramter);
   } else if (ConnectTransposeConcat(right_reshape_node)) {
@@ -366,15 +371,15 @@ const AnfNodePtr BatchMatMulFusion::Process(const FuncGraphPtr &func_graph, cons
     if (IsMarkedTrainOp(right_reshape_cnode)) {
       return nullptr;
     }
-    MS_ASSERT(right_reshape_cnode->size() > 1);
+    MS_CHECK_TRUE_RET(right_reshape_cnode->size() > 1, nullptr);
     auto right_transpose_node = right_reshape_cnode->input(1);
     MS_CHECK_TRUE_RET(right_transpose_node != nullptr, nullptr);
     auto right_transpose_cnode = right_transpose_node->cast<CNodePtr>();
-    MS_CHECK_TRUE_RET(right_transpose_cnode != nullptr, nullptr);
+    MS_CHECK_TRUE_RET(right_transpose_cnode != nullptr && right_transpose_cnode->size() > 1, nullptr);
     auto right_slice_node = right_transpose_cnode->input(1);
     MS_CHECK_TRUE_RET(right_slice_node != nullptr, nullptr);
     auto right_slice_cnode = right_slice_node->cast<CNodePtr>();
-    MS_CHECK_TRUE_RET(right_slice_cnode != nullptr, nullptr);
+    MS_CHECK_TRUE_RET(right_slice_cnode != nullptr && right_slice_cnode->size() > 1, nullptr);
     auto right_matmul_input = right_slice_cnode->input(1);
     matmul_inputs.push_back(right_matmul_input);
   }

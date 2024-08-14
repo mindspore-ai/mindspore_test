@@ -31,6 +31,8 @@ namespace {
 constexpr size_t kFFNAntiquantScaleInputIndex = 10;
 constexpr size_t kFFNWeight1InputIndex = 1;
 constexpr size_t kFFNWeight2InputIndex = 2;
+constexpr size_t kShapeSize2 = 2;
+constexpr size_t kShapeSize3 = 3;
 constexpr char IN_STRATEGY[] = "in_strategy";
 }  // namespace
 namespace opt {
@@ -150,10 +152,10 @@ int FFNAntiquantFusion::GetExpertNumFromAntiQuantModeNodes(const AnfNodePtr &nod
     MS_LOG(ERROR) << "fetch shape failed." << weight_param_node->fullname_with_scope();
     return -1;
   }
-  if (shape.size() == 2) {
+  if (shape.size() == kShapeSize2) {
     MS_LOG(INFO) << "FFN weight shape size is 2 dims, shape is " << shape << ", get expert dim is 1";
     return 1;
-  } else if (shape.size() != 3) {
+  } else if (shape.size() != kShapeSize3) {
     MS_LOG(ERROR) << "Not support weight shape is " << shape;
     return -1;
   }
@@ -164,10 +166,10 @@ int FFNAntiquantFusion::GetExpertNumFromAntiQuantModeNodes(const AnfNodePtr &nod
 // weight in_strategy: MOE: [E, N, H], FFN: [N, H]
 // scale or offset in_strategy: MOE: [E, H], FFN: [1, H]
 std::vector<int64_t> FFNAntiquantFusion::GetScaleZpInStragety(std::vector<int64_t> weight_in_strategy) {
-  if (weight_in_strategy.size() == 2) {
+  if (weight_in_strategy.size() == kShapeSize2) {
     return std::vector<int64_t>{1, weight_in_strategy[1]};
-  } else if (weight_in_strategy.size() == 3) {
-    return std::vector<int64_t>{weight_in_strategy[0], weight_in_strategy[2]};
+  } else if (weight_in_strategy.size() == kShapeSize3) {
+    return std::vector<int64_t>{weight_in_strategy[0], weight_in_strategy[kShapeSize2]};
   }
   MS_LOG(ERROR) << "Only support weight_in_strategy size is 2 or 3, but size is " << weight_in_strategy.size();
   return {};
@@ -215,7 +217,9 @@ CNodePtr FFNAntiquantFusion::NewFFNCNodeWithAntiquantFusion(const FuncGraphPtr &
   auto value = std::make_shared<None>();
   auto value_node = NewValueNode(value);
   MS_EXCEPTION_IF_NULL(value_node);
-  value_node->set_abstract(std::make_shared<abstract::AbstractNone>());
+  auto abstract_none = std::make_shared<abstract::AbstractNone>();
+  MS_EXCEPTION_IF_NULL(abstract_none);
+  value_node->set_abstract(abstract_none);
   func_graph->NewCNode({value_node});
   for (size_t i = ffn_cnode->inputs().size(); i <= kFFNAntiquantScaleInputIndex; i++) {
     ffn_inputs.push_back(value_node);
@@ -227,7 +231,9 @@ CNodePtr FFNAntiquantFusion::NewFFNCNodeWithAntiquantFusion(const FuncGraphPtr &
   ffn_inputs.push_back(weight2_zp_node);
   auto ffn_fusion_cnode = func_graph->NewCNode(ffn_inputs);
   ffn_fusion_cnode->set_fullname_with_scope(ffn_cnode->fullname_with_scope() + "-AntiQuant-Fusion");
-  ffn_fusion_cnode->set_abstract(ffn_cnode->abstract()->Clone());
+  if (ffn_cnode->abstract() != nullptr) {
+    ffn_fusion_cnode->set_abstract(ffn_cnode->abstract()->Clone());
+  }
   return ffn_fusion_cnode;
 }
 

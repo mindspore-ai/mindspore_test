@@ -428,7 +428,7 @@ int Tensor::MallocData(const AllocatorPtr allocator) {
     this->tensor_c_.data_ = malloc(data_size);
   } else {
     this->tensor_c_.data_ = allocator_->Malloc(data_size);
-    allocator_->SetRefCount(this->tensor_c_.data_, 1);
+    (void)allocator_->SetRefCount(this->tensor_c_.data_, 1);
   }
   if (this->tensor_c_.data_ == nullptr) {
     MS_LOG(ERROR) << "Malloc tensor data failed, size=" << data_size;
@@ -541,7 +541,7 @@ Tensor *Tensor::CreateTensor(const std::string &name, TypeId type, const std::ve
     return nullptr;
   }
 
-  if (data != nullptr && data_len != shape_size * data_type_size) {
+  if (data != nullptr && data_len != static_cast<size_t>(shape_size) * data_type_size) {
     MS_LOG(ERROR) << "shape, data type and data len not match.";
     return nullptr;
   }

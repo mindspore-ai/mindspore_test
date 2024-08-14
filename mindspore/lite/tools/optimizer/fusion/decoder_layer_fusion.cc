@@ -121,7 +121,8 @@ VectorRef DecoderLayerFusion::getTuple(bool post_layernorm, bool layernorm_fusio
   auto var1 = std::make_shared<Var>("var1-reshape");
   MS_CHECK_TRUE_RET(var1 != nullptr, {});
   auto reshape1 = VectorRef({is_reshape1, hidden_stats_, var1});
-  VectorRef layer_norm, tuple;
+  VectorRef layer_norm;
+  VectorRef tuple;
   if (!layernorm_fusion) {
     return DefineLayerNorm(reshape1, gamma1_, beta1_, eps1_);
   }
@@ -474,7 +475,7 @@ CNodePtr DecoderLayerFusion::CreateMaskedDecoderLayerFusionNode(const FuncGraphP
   auto input_shape_ptr = base_shape_ptr->cast<abstract::ShapePtr>();
   MS_EXCEPTION_IF_NULL(input_shape_ptr);
   auto input_shape = input_shape_ptr->shape();
-  MS_ASSERT(input_shape != nullptr);
+  MS_CHECK_TRUE_RET(input_shape.size() > 1, nullptr);
   int ffn_hidden_size = (int64_t)input_shape[1];
   auto decoder_layer_prim = CreatePrim(func_graph, equiv, post_layernorm, ffn_hidden_size);
   MS_CHECK_TRUE_RET(decoder_layer_prim != nullptr, nullptr);

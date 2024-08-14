@@ -53,7 +53,7 @@ class HQueue {
       return false;
     }
     for (int32_t i = 0; i < sz; i++) {
-      auto node = new HQNode<T>();
+      auto node = new (std::nothrow) HQNode<T>();
       if (node == nullptr) {
         Clean();
         return false;
