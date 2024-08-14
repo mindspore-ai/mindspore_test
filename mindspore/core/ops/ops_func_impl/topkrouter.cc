@@ -76,10 +76,12 @@ TypePtr TopKRouterFuncImpl::InferType(const PrimitivePtr &primitive,
   auto x_type = input_args[kInputIndex0]->GetType();
   auto capacity_type = input_args[kInputIndex1]->GetType();
   auto expert_num_type = input_args[kInputIndex2]->GetType();
+  auto drop_type_type = input_args[kInputIndex3]->GetType();
 
   (void)CheckAndConvertUtils::CheckTensorTypeValid("x", x_type, valid_types, prim_name);
   (void)CheckAndConvertUtils::CheckTypeValid("capacity", capacity_type, scala_valid_types, prim_name);
   (void)CheckAndConvertUtils::CheckTypeValid("exprt_num", expert_num_type, scala_valid_types, prim_name);
+  (void)CheckAndConvertUtils::CheckTypeValid("drop_type", drop_type_type, scala_valid_types, prim_name);
   std::vector<TypePtr> type_list = {x_type, x_type};
   return std::make_shared<Tuple>(type_list);
 }
