@@ -50,6 +50,9 @@ class OPS_API RandExtFuncImpl : public OnesFuncImpl {
                                          primitive->name());
     return std::make_shared<TensorType>(infer_type);
   }
+
+  // For aclnn GetWorkspace
+  std::set<int64_t> GetValueDependArgIndices() const override { return {kInputIndex1, kInputIndex2}; };
 };
 }  // namespace ops
 }  // namespace mindspore
