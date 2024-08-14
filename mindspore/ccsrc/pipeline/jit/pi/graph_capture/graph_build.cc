@@ -396,6 +396,27 @@ bool GraphBuilder::UnpackElements(ValueNode *node) {
   return true;
 }
 
+bool GraphBuilder::UnpackDict(ValueNode *map) {
+  PyObject *map_object = map->GetVobj()->GetPyObject().ptr();
+  if (map->GetOpcode() == BUILD_MAP) {
+    std::for_each(map->getInputs().begin(), map->getInputs().end(), [this](ValueNode *n) { this->push(n); });
+  } else if (map_object != nullptr) {
+    auto keys = py::reinterpret_steal<py::object>(PyDict_Keys(map_object));
+    // guard dict keys, transform to const key map......
+    Py_ssize_t size = PyList_GET_SIZE(keys.ptr());
+    for (Py_ssize_t i = 0; i < size; ++i) {
+      Instr instr(LOAD_CONST, 0, py::reinterpret_borrow<py::object>(PyList_GET_ITEM(keys.ptr(), i)));
+      this->DoLoadConst(instr);
+      this->push(map);
+      this->DoLoadConst(instr);
+      this->DoGetItem({BINARY_SUBSCR, 0});
+    }
+  } else {
+    return false;
+  }
+  return true;
+}
+
 static void GenUnpackValue(const std::function<void(int, int)> &gen_item, int cnt, int cnt_after, Py_ssize_t size) {
   if (cnt_after != -1) {
     const int end_pos = size - cnt_after;
