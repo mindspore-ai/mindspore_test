@@ -194,6 +194,9 @@ class GraphBuilder {
   // unpack elements
   bool UnpackSequenceElements(ValueNode *);
 
+  // unpack dict items to build map inputs
+  bool UnpackDict(ValueNode *map);
+
   // unpack object elements as LOAD_CONST
   std::vector<ValueNode *> UnpackConstObject(const py::object &);
 

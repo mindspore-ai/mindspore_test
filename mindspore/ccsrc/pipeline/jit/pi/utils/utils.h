@@ -23,6 +23,8 @@
 #include <chrono>
 #include "pybind11/pybind11.h"
 #include "mindspore/core/ir/cell.h"
+#include "pipeline/jit/pi/utils/opcode_declare.h"
+#include "pipeline/jit/pi/python_adapter/py_code.h"
 
 namespace mindspore {
 namespace pijit {
@@ -170,6 +172,159 @@ std::string GetTopModule(const py::object &o);
 py::object GetPyCodeObject(const py::object &any, bool exact_func = false);
 size_t DeviceAvailableMemSize();
 bool CheckConstPyObject(PyObject *cnst);
+
+template <typename T>
+class PackCallStackHelper {
+ public:
+  struct Packed {
+    std::vector<T> args_;
+    std::map<std::string, T> kw_;
+  };
+
+  PackCallStackHelper(int opcode) : opcode_(opcode) {}
+  auto &result() { return result_; }
+
+  template <typename CastKeys, typename CastSequence, typename CastKeyWords>
+  bool Pack(const std::vector<T> &stack_args, CastKeys to_keys, CastSequence to_seq, CastKeyWords to_map) {
+    if (opcode_ == CALL_FUNCTION_EX) {
+      result_.args_ = to_seq(stack_args[0]);
+      result_.kw_ = stack_args.size() >= 1 ? to_map(stack_args.back()) : std::map<std::string, T>();
+      return true;
+    }
+    if (opcode_ != CALL_FUNCTION_KW && opcode_ != CALL_FUNCTION) {
+      return false;
+    }
+    size_t size = stack_args.size();
+    if (opcode_ == CALL_FUNCTION_KW) {
+      std::vector<std::string> keys = to_keys(stack_args.back());
+      size = size - keys.size() - 1;
+      for (size_t i = 0; i < keys.size(); ++i) {
+        result_.kw_[std::move(keys[i])] = stack_args[size + i];
+      }
+    }
+    std::copy(stack_args.begin(), stack_args.begin() + size, std::back_inserter(result_.args_));
+    return true;
+  }
+
+ private:
+  Packed result_;
+  int opcode_;
+};
+
+template <typename E>
+class BindArgumentsHelper {
+ public:
+  struct BindArguments {
+    /**
+     * args contains kw-only arguments, ordered by code.co_varnames
+     * e.g:
+     * def func(a,/,b,*va,c,**kw_va):
+     *    pass
+     * func.__code__.co_varnames = ('a', 'b', 'c', 'va', 'kw_va')
+     * args = [a, b, c, va, kw_va]
+     */
+    std::vector<E> args_;
+    std::vector<E> va_;
+    std::map<std::string, E> kw_va_;
+  };
+  BindArgumentsHelper(PyCodeObject *co) : co_(co) { results_.args_.resize(co->co_argcount + co->co_kwonlyargcount); }
+  auto &results() { return results_; }
+
+ private:
+  PyCodeObject *co_;
+  BindArguments results_;
+
+ public:
+  // return false if arguments not match, not check missing arguments
+  bool Bind(const std::vector<E> &args, const std::map<std::string, E> &kw = {}) {
+    const int argc = args.size();
+    PyCodeWrapper wrapper(co_);
+    const int position_only = wrapper.PositionOnlyArgCount();
+    const int position_argc = std::min(argc, co_->co_argcount);
+    const int parameter_argc = results_.args_.size();
+
+    for (int i = 0; i < position_argc; i++) {
+      results_.args_[i] = args[i];
+    }
+    if (co_->co_flags & CO_VARARGS) {
+      results_.va_ = {args.begin() + position_argc, args.end()};
+    } else if (argc > co_->co_argcount) {
+      MS_LOG(ERROR) << "takes " << co_->co_argcount << " positional arguments but " << argc << " was given";
+      return false;
+    }
+
+    PyObject **begin = &PyTuple_GET_ITEM(co_->co_varnames, 0);
+    PyObject **end = begin + parameter_argc;
+    for (const auto &item : kw) {
+      const auto &k = item.first;
+      const auto &v = item.second;
+      auto iter = std::find_if(begin, end, [&k](PyObject *o) { return k == PyUnicode_AsUTF8(o); });
+      auto index = iter - begin;
+      if (iter == end && (co_->co_flags & CO_VARKEYWORDS) == 0) {
+        MS_LOG(ERROR) << "got an unexpected keyword argument '" << k << "'";
+        return false;
+      }
+      if (iter != end && (index < position_only || results_.args_[index] != E())) {
+        MS_LOG(ERROR) << (index < position_only ? "missing 1 required positional argument: '"
+                                                : "got multiple values for argument '")
+                      << k << "'";
+        return false;
+      }
+      if (iter != end) {
+        results_.args_[index] = v;
+      } else {
+        results_.kw_va_.insert(item);
+      }
+    }
+    return true;
+  }
+
+  // check no defaults arguments
+  bool CheckArguments(size_t start, size_t stop) {
+    auto begin = results_.args_.begin() + start;
+    auto end = results_.args_.begin() + stop;
+    auto iter = std::find(begin, end, E());
+    if (iter == end) {
+      return true;
+    }
+    auto index = iter - results_.args_.begin();
+    MS_LOG(ERROR) << "missing 1 required positional argument at " << index;
+    return false;
+  }
+
+  // return false if missing arguments
+  template <typename Converter>
+  bool ApplyDefault(PyObject *defaults, PyObject *kw_defaults, Converter convert) {
+    defaults = defaults ? defaults : Py_None;
+    kw_defaults = kw_defaults ? kw_defaults : Py_None;
+    bool is_valid_defaults = (defaults == Py_None || PyTuple_Check(defaults));
+    bool is_valid_kw_defaults = (kw_defaults == Py_None || PyDict_Check(kw_defaults));
+    MS_EXCEPTION_IF_CHECK_FAIL(is_valid_defaults && is_valid_kw_defaults, "error arguments");
+    const size_t defaults_size = defaults == Py_None ? 0 : PyTuple_GET_SIZE(defaults);
+    const size_t off = co_->co_argcount - defaults_size;
+    MS_EXCEPTION_IF_CHECK_FAIL(defaults_size <= static_cast<size_t>(co_->co_argcount), "error function defaults");
+    if (!CheckArguments(0, off)) {
+      return false;
+    }
+    auto varnames = co_->co_varnames;
+    for (size_t i = off, argc = results_.args_.size(); i < argc; ++i) {
+      if (results_.args_[i] != E()) {
+        continue;
+      } else if (i - off < defaults_size) {
+        results_.args_[i] = convert(defaults, py::int_(i - off).ptr(), PyTuple_GET_ITEM(defaults, i - off));
+        continue;
+      }
+      auto k = PyTuple_GET_ITEM(varnames, i);
+      auto v = PyDict_GetItem(kw_defaults, k);
+      if (v == nullptr) {
+        MS_LOG(ERROR) << "missing 1 required keyword-only argument: '" << PyUnicode_AsUTF8(k) << "'";
+        return false;
+      }
+      results_.args_[i] = convert(kw_defaults, k, v);
+    }
+    return true;
+  }
+};
 
 class TimeRecorder {
  public:
