@@ -478,6 +478,7 @@ class BeforeOptARewriter : public BaseRewriter {
       return false;
     }
     auto mng = func->manager();
+    MS_EXCEPTION_IF_NULL(mng);
     auto &users = mng->node_users()[node];
     for (auto &user : users) {
       if (user.first->isa<CNode>()) {
@@ -1473,6 +1474,7 @@ class AfterOptARewriter : public BaseRewriter {
       return nullptr;
     }
 
+    MS_EXCEPTION_IF_NULL(node);
     const auto &fg = node->func_graph();
     MS_EXCEPTION_IF_NULL(fg);
     constexpr auto internal_list_input = "__internal_list_input__";
@@ -1845,6 +1847,7 @@ class AfterOptARewriter : public BaseRewriter {
                       << "it is best to set jit_syntax_level to LAX.\n";
       return nullptr;
     }
+    MS_EXCEPTION_IF_NULL(cnode);
     auto fg = cnode->func_graph();
     MS_EXCEPTION_IF_NULL(fg);
 
@@ -1864,7 +1867,7 @@ class AfterOptARewriter : public BaseRewriter {
         (void)kwargs_keys_node.emplace_back(key);
         (void)kwargs_values_node.emplace_back(arg);
       } else {
-        format_list.emplace_back(inputs[i]);
+        (void)format_list.emplace_back(inputs[i]);
       }
     }
     // Construct kwargs node
@@ -1896,6 +1899,7 @@ class AfterOptARewriter : public BaseRewriter {
   }
 
   AnfNodePtr ConvertMakeRange(const CNodePtr &cnode) const {
+    MS_EXCEPTION_IF_NULL(cnode);
     const auto &fg = cnode->func_graph();
     MS_EXCEPTION_IF_NULL(fg);
     if (!CheckInputsHasAnyType(cnode) && !HasPyExecuteInput(cnode)) {
@@ -1919,6 +1923,7 @@ class AfterOptARewriter : public BaseRewriter {
                       << "it is best to set jit_syntax_level to LAX.\n";
       return nullptr;
     }
+    MS_EXCEPTION_IF_NULL(cnode);
     const auto &fg = cnode->func_graph();
     MS_EXCEPTION_IF_NULL(fg);
 
@@ -2141,9 +2146,16 @@ class AfterOptARewriter : public BaseRewriter {
                                const ValueSlicePtr &value_slice) {
     std::vector<AnfNodePtr> key_value_names_list{NewValueNode(prim::kPrimMakeTuple)};
     std::vector<AnfNodePtr> key_value_list{NewValueNode(prim::kPrimMakeTuple)};
-    bool is_start_none = value_slice->start()->isa<None>();
-    bool is_stop_none = value_slice->stop()->isa<None>();
-    bool is_step_none = value_slice->step()->isa<None>();
+    MS_EXCEPTION_IF_NULL(value_slice);
+    auto start = value_slice->start();
+    MS_EXCEPTION_IF_NULL(start);
+    bool is_start_none = start->isa<None>();
+    auto stop = value_slice->stop();
+    MS_EXCEPTION_IF_NULL(stop);
+    bool is_stop_none = stop->isa<None>();
+    auto step = value_slice->step();
+    MS_EXCEPTION_IF_NULL(step);
+    bool is_step_none = step->isa<None>();
     auto start_str = is_start_none ? "None" : "__start__";
     auto stop_str = is_stop_none ? "None" : "__stop__";
     auto step_str = is_step_none ? "None" : "__step__";
@@ -2299,6 +2311,7 @@ class AfterOptARewriter : public BaseRewriter {
     if (!allow_fallback_runtime) {
       return nullptr;
     }
+    MS_EXCEPTION_IF_NULL(cnode);
     const auto &inputs = cnode->inputs();
     std::vector<AbstractBasePtr> inputs_abs;
     for (size_t i = 1; i < inputs.size(); ++i) {
@@ -2346,6 +2359,7 @@ class AfterOptARewriter : public BaseRewriter {
 
   AnfNodePtr ConvertPrimitiveCNode(const CNodePtr &cnode) override {
     // Get primitive from cnode.
+    MS_EXCEPTION_IF_NULL(cnode);
     const auto &prim = GetValueNode<PrimitivePtr>(cnode->input(0));
     if (prim == nullptr) {
       return nullptr;
@@ -2630,7 +2644,7 @@ bool CheckNeedConvertList(const AbstractBasePtr &abs) {
     return false;
   }
   // If abstract has real type/shape, it means the corresponding node is PyExecute.
-  // Do not covert PyExecute node.
+  // Do not convert PyExecute node.
   if (fallback::HasRealType(abs) || fallback::HasRealShape(abs)) {
     return false;
   }
