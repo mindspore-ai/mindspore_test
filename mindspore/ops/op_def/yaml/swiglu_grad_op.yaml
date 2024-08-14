@@ -1,0 +1,15 @@
+#operator swiglu_grad
+swiglu_grad:
+  args:
+    grad_output:
+      dtype: tensor
+    input:
+      dtype: tensor
+    dim:
+      dtype: int
+      default: -1
+  returns:
+    output:
+      dtype: tensor
+  dispatch:
+    enable: True

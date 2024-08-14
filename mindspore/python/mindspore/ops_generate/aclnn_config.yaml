@@ -326,3 +326,6 @@ HistcExt: 'aclnnHistc'
 
 # 553
 LogAddExp: 'aclnnLogAddExp'
+# 679
+Swiglu: 'aclnnSwiGlu'
+SwigluGrad: 'aclnnSwiGluGrad'

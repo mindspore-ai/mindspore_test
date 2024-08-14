@@ -22,38 +22,38 @@
 
 namespace mindspore {
 namespace ops {
-namespace {
-BaseShapePtr SwigluInferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) {
-  MS_EXCEPTION_IF_NULL(primitive);
-  auto op_name = primitive->name();
-  auto x_shape = CheckAndConvertUtils::ConvertShapePtrToShapeMap(input_args[kInputIndex0]->GetShape())[kShape];
-  constexpr size_t kSplitNum = 2;
-  int64_t dim = GetScalarValue<int64_t>(input_args[kInputIndex1]->GetValue()).value();
-  if (IsDynamicRank(x_shape)) {
-    MS_LOG(EXCEPTION) << "For " << op_name << ", dynamic rank is not supported";
+ShapeArray SwigluFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
+  auto &x = input_infos[kInputIndex0];
+  ShapeVector x_shape = x->GetShape();
+  if (MS_LIKELY(x->IsDynamic())) {
+    return {x_shape};
   }
-  const size_t x_rank = x_shape.size();
+  auto rank = SizeToLong(x_shape.size());
+  constexpr size_t kSplitNum = 2;
+  std::optional<int64_t> dim_opt = input_infos[kInputIndex1]->GetScalarValue<int64_t>();
+  if (MS_UNLIKELY(!dim_opt.has_value())) {
+    ShapeVector dyn_output = ShapeVector(rank, abstract::TensorShape::kShapeDimAny);
+    return {dyn_output};
+  }
+  auto dim = dim_opt.value();
+  MS_CHECK_VALUE(dim >= -rank && dim < rank,
+                 CheckAndConvertUtils::FormatCheckInRangeMsg("dim", dim, kIncludeLeft, {-rank, rank}, primitive));
   if (dim < 0) {
-    dim += x_rank;
+    dim += rank;
+  }
+  if (x_shape[dim] % kSplitNum) {
+    MS_EXCEPTION(ValueError)
+      << "For 'Swiglu', the dimension specified by 'dim' must be divisible by 2, but got x_shape[dim]: " << x_shape[dim]
+      << " .";
   }
   x_shape[dim] = x_shape[dim] / kSplitNum;
-  return std::make_shared<abstract::TensorShape>(x_shape);
+  return {x_shape};
 }
 
-TypePtr SwigluInferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) {
-  MS_EXCEPTION_IF_NULL(primitive);
-  return input_args[kInputIndex0]->GetType();
+std::vector<TypeId> SwigluFuncImpl::InferType(const PrimitivePtr &primitive,
+                                              const InferInfoPtrList &input_infos) const {
+  auto type = input_infos[kInputIndex0]->GetType();
+  return {type};
 }
-}  // namespace
-
-BaseShapePtr SwigluFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                        const std::vector<AbstractBasePtr> &input_args) const {
-  return SwigluInferShape(primitive, input_args);
-}
-
-TypePtr SwigluFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
-  return SwigluInferType(primitive, input_args);
-}
-
 }  // namespace ops
 }  // namespace mindspore
