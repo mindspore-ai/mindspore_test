@@ -116,6 +116,7 @@ struct Common {
     }
     return buf.str().erase(buf.str().size() - end_char_size);
   }
+  static void ClearRes();
 };
 
 // Parser python

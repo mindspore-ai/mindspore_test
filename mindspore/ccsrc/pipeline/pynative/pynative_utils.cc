@@ -59,7 +59,7 @@ std::string GetObjIdFromPython(const py::handle &obj) {
   return out.cast<std::string>();
 }
 // for simply infer (simple infer will push abs in bprop queue)
-static AbstractConverter kGradAbstractConverter;
+AbstractConverter kGradAbstractConverter;
 
 std::string GetIdForPyTupleOrList(const py::handle &obj) {
   auto p_list = py::cast<py::tuple>(obj);
@@ -1113,6 +1113,8 @@ ValuePtr Common::CreateTensorByConstantValue(const ValuePtr &value) {
   MS_EXCEPTION_IF_NULL(tensor_ptr);
   return tensor_ptr;
 }
+
+void Common::ClearRes() { kGradAbstractConverter.clear(); }
 
 void AutoGrad::CacheOutputAbstract(const ValuePtr &v, const abstract::AbstractBasePtr &abs) {
   MS_EXCEPTION_IF_NULL(v);

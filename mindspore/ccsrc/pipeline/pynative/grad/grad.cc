@@ -1174,18 +1174,21 @@ void GradExecutor::ErasePipelineTopCell(const std::string &already_run_cell_id, 
                                         bool is_pipeline_ir_top_cell) {
   for (auto &t : pipeline_top_cell_map_) {
     if (already_run_cell_id.find(t.first) == std::string::npos) {
+      MS_LOG(DEBUG) << "Get already run cell id " << already_run_cell_id << ", and pipeline key id " << t.first;
       continue;
     }
 
     // If top cell is pipeline ir top cell and finish backward, skip the first ir top cell
-    auto begin = !is_pipeline_ir_top_cell && !t.second.empty() && t.second.front()->is_finish_backward()
+    auto begin = !is_pipeline_ir_top_cell && !t.second.empty() && !t.second.front()->use_dynamic_shape_process() &&
+                     t.second.front()->is_finish_backward()
                    ? t.second.begin() + 1
                    : t.second.begin();
     auto input_args_id_with_top_cell = std::find_if(
       begin, t.second.end(),
       [input_args_id](const TopCellInfoPtr &pipe_top_cell) { return input_args_id == pipe_top_cell->input_args_id(); });
     if (input_args_id_with_top_cell == t.second.end()) {
-      MS_LOG(DEBUG) << "Can not find top cell with input args id " << input_args_id;
+      MS_LOG(DEBUG) << "Can not find top cell with input args id " << input_args_id << ", is pipeline ir top cell "
+                    << is_pipeline_ir_top_cell;
       continue;
     }
     MS_LOG(DEBUG) << "Erase pipeline top cell " << input_args_id_with_top_cell->get() << " with input args id "
