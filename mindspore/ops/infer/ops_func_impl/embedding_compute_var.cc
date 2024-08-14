@@ -25,7 +25,7 @@
 #include "utils/check_convert_utils.h"
 #include "utils/shape_utils.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 
 namespace mindspore {
 namespace ops {

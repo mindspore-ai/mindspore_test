@@ -16,9 +16,9 @@
 #include <memory>
 
 #include "abstract/abstract_function.h"
-#include "op_def/sequence_ops.h"
-#include "op_def/nn_optimizer_ops.h"
-#include "op_def/framework_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/nn_optimizer_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "common/common_test.h"
 #include "frontend/operator/composite/composite.h"
 #include "frontend/operator/ops.h"

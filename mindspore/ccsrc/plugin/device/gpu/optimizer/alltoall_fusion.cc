@@ -20,8 +20,8 @@
 #include <string>
 #include <algorithm>
 
-#include "op_def/other_ops.h"
-#include "op_def/array_ops.h"
+#include "mindspore/ops/op_def/other_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "ir/primitive.h"

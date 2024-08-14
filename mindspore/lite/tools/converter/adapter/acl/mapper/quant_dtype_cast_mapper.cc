@@ -22,7 +22,7 @@
 #include "tools/converter/quantizer/quantize_util.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "src/common/log_util.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "infer/quant_dtype_cast.h"
 #include "nnacl/op_base.h"
 

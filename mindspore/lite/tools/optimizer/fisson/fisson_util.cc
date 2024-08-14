@@ -22,7 +22,7 @@
 #include "src/common/utils.h"
 #include "infer/split_with_overlap.h"
 #include "tools/common/node_util.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/make_tuple.h"
 #include "tools/optimizer/parallel/spliter.h"
 #include "tools/optimizer/parallel/split_strategy.h"

@@ -17,7 +17,7 @@
 #include "frontend/optimizer/irpass/recompute.h"
 #include <set>
 #include <unordered_map>
-#include "op_def/array_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
 #include "frontend/optimizer/utils.h"
 
 namespace mindspore {

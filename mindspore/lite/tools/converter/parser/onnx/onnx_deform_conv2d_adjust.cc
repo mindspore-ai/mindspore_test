@@ -17,8 +17,8 @@
 #include <vector>
 #include <string>
 #include <memory>
-#include "op_def/auto_generate/gen_lite_ops.h"
-#include "op_def/nn_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
 #include "include/errorcode.h"
 #include "tools/common/tensor_util.h"
 #include "tools/optimizer/common/gllo_utils.h"

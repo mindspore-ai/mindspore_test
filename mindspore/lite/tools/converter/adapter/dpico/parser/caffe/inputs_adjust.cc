@@ -19,7 +19,7 @@
 #include "common/op_enum.h"
 #include "common/anf_util.h"
 #include "common/check_base.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/cxx_api/topk_fusion.h"
 #include "infer/cxx_api/tile_fusion.h"
 #include "infer/cxx_api/reduce_fusion.h"

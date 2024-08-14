@@ -16,7 +16,7 @@
 
 #include "plugin/device/ascend/optimizer/ir_fusion/transpose_transdata_fusion.h"
 #include <memory>
-#include "op_def/array_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"

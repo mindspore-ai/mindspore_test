@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <utility>
 #include "src/extendrt/delegate/tensorrt/tensorrt_utils.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/cxx_api/slice_fusion.h"
 #include "infer/crop.h"
 

@@ -22,7 +22,7 @@
 #include <unordered_set>
 #include <algorithm>
 #include <utility>
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/return.h"
 #include "infer/depend.h"
 #include "common/format_utils.h"

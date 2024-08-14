@@ -19,7 +19,7 @@
 #include "include/registry/converter_context.h"
 #include "common/op_attr.h"
 #include "infer/resize.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 
 namespace mindspore {
 namespace lite {

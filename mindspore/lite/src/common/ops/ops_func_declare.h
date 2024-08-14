@@ -19,7 +19,7 @@
 #ifdef PRIMITIVE_WRITEABLE
 #include <memory>
 #include "schema/inner/model_generated.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/adam.h"
 #include "infer/adder.h"
 #include "infer/all.h"

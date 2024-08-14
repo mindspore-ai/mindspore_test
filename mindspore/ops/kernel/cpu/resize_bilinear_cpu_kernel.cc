@@ -18,7 +18,7 @@
 #include <functional>
 #include <map>
 #include "kernel/ops_utils.h"
-#include "op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "infer/ops_func_impl/resize_bilinear_v2.h"
 #include "plugin/device/cpu/hal/device/cpu_device_address.h"
 

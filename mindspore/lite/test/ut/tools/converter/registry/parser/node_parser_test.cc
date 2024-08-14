@@ -23,7 +23,7 @@
 #include "mindspore/ops/op_def/math_ops.h"
 #include "infer/custom.h"
 #include "infer/cxx_api/add_fusion.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 
 namespace mindspore {
 class AddNodeParserTest : public NodeParserTest {

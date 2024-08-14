@@ -22,7 +22,7 @@
 #include "common/check_base.h"
 #include "common/op_attr.h"
 #include "infer/custom.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "third_party/securec/include/securec.h"
 
 namespace mindspore {

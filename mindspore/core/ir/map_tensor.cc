@@ -21,7 +21,7 @@
 #include "ir/tensor.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_utils_secure.h"
-#include "runtime/device/hash_table.h"
+#include "utils/hash_table.h"
 
 namespace mindspore {
 using device::HashTable;

@@ -32,6 +32,7 @@
 #include "src/common/ops/populate/populate_register.h"
 #include "tools/optimizer/graph/lite_tensor_extractor.h"
 #include "src/litert/infer_manager.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore::graphkernel {
 namespace {

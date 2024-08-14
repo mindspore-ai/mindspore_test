@@ -22,7 +22,7 @@
 #include "ir/anf.h"
 #include "ir/primitive.h"
 #include "ir/value.h"
-#include "op_def/sequence_op_name.h"
+#include "mindspore/ops/op_def/sequence_op_name.h"
 #include "utils/flags.h"
 
 namespace mindspore {

@@ -100,5 +100,4 @@ class MIND_API OperatorRegisterHelper {
   OPERATOR_CREATOR_REG(OpName, ClassName)
 }  // namespace ops
 }  // namespace mindspore
-
 #endif  // MINDSPORE_CORE_OPS_BASE_OPERATOR_

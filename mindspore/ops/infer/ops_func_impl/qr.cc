@@ -22,7 +22,7 @@
 #include "utils/shape_utils.h"
 #include "abstract/dshape.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "infer/ops_func_impl/qr.h"
 
 namespace mindspore::ops {

@@ -28,7 +28,7 @@
 #include "infer/custom.h"
 #include "infer/cxx_api/add_fusion.h"
 #include "ops_utils/op_utils.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "tools/converter/optimizer_manager.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "ut/tools/converter/registry/parser/model_parser_test.h"

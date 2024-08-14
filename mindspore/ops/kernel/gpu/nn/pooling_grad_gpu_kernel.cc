@@ -26,7 +26,7 @@
 #include "mindspore/ccsrc/kernel/format_utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/binary_ops_impl.cuh"
 #include "kernel/gpu/cuda_impl/cuda_ops/avg_pool3d_helper_impl.cuh"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 
 namespace mindspore {
 namespace kernel {

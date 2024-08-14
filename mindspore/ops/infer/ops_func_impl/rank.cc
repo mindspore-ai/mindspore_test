@@ -16,9 +16,10 @@
 
 #include "infer/ops_func_impl/rank.h"
 #include <vector>
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "ops/ops_frontend_func_impl.h"
 #include "utils/check_convert_utils.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore::ops {
 BaseShapePtr RankFuncImpl::InferShape(const PrimitivePtr &primitive,

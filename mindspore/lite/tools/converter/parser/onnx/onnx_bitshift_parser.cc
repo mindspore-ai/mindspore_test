@@ -17,7 +17,7 @@
 #include "tools/converter/parser/onnx/onnx_bitshift_parser.h"
 #include <memory>
 #include <string>
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/left_shift.h"
 
 namespace mindspore {

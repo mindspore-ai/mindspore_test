@@ -15,7 +15,7 @@
  */
 
 #include "common/backend_common_test.h"
-#include "op_def/array_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
 #include "frontend/operator/ops.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "common/py_func_graph_fetcher.h"

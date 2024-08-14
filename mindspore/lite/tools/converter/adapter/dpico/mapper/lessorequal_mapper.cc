@@ -19,7 +19,7 @@
 #include <utility>
 #include <vector>
 #include "common/fetch_content.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "op/cmp_operator.h"
 
 namespace mindspore {

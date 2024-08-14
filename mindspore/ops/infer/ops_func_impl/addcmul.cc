@@ -20,7 +20,7 @@
 #include <string>
 #include <set>
 #include <map>
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "abstract/dshape.h"
 #include "ir/primitive.h"
 #include "mindspore/ops/ops_utils/op_utils.h"

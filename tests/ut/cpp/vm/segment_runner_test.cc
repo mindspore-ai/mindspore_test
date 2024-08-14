@@ -17,9 +17,9 @@
 
 #include "common/common_test.h"
 
-#include "op_def/comparison_ops.h"
-#include "op_def/arithmetic_ops.h"
-#include "op_def/framework_ops.h"
+#include "mindspore/ops/op_def/comparison_ops.h"
+#include "mindspore/ops/op_def/arithmetic_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "common/py_func_graph_fetcher.h"
 #include "ir/manager.h"
 #include "utils/log_adapter.h"

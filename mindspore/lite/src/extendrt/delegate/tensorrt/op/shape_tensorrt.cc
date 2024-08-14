@@ -15,7 +15,7 @@
  */
 
 #include "src/extendrt/delegate/tensorrt/op/shape_tensorrt.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/dynamic_shape.h"
 
 namespace mindspore::lite {

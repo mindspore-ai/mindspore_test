@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <utility>
 #include <memory>
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace symshape {

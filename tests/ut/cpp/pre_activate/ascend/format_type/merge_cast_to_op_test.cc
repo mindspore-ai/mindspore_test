@@ -23,7 +23,7 @@
 #include "kernel/kernel_build_info.h"
 #include "include/backend/optimizer/optimizer.h"
 #include "include/common/utils/anfalgo.h"
-#include "op_def/ascend_op_name.h"
+#include "mindspore/ops/op_def/ascend_op_name.h"
 
 #define private public
 #define protected public

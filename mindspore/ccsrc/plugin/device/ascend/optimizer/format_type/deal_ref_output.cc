@@ -19,12 +19,12 @@
 #include <vector>
 #include <memory>
 #include <string>
-#include "op_def/sequence_ops.h"
-#include "op_def/array_ops.h"
-#include "op_def/framework_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "ops/op_def.h"
 #include "plugin/device/ascend/optimizer/format_type/utils.h"
-#include "op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "kernel/oplib/oplib.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"

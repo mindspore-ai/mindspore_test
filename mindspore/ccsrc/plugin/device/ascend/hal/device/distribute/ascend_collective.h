@@ -23,7 +23,7 @@
 #include "hccl/hccl_types.h"
 #include "include/common/utils/utils.h"
 #include "utils/dlopen_macro.h"
-#include "op_def/ascend_op_name.h"
+#include "mindspore/ops/op_def/ascend_op_name.h"
 
 namespace mindspore {
 namespace device {

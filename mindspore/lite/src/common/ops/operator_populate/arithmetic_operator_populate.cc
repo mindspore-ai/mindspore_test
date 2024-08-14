@@ -16,7 +16,7 @@
 #include "src/common/ops/operator_populate/arithmetic_operator_populate.h"
 #include <memory>
 #include <string>
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/squared_difference.h"
 #include "infer/mod.h"
 #include "infer/cxx_api/add_fusion.h"

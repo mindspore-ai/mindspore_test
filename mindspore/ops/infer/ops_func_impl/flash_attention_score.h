@@ -18,6 +18,7 @@
 
 #include <vector>
 #include "mindspore/core/ops/ops_func_impl/op_func_impl.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace ops {

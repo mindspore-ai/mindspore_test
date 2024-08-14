@@ -30,7 +30,7 @@
 #include "src/extendrt/delegate/tensorrt/tensor_info.h"
 #include "src/common/log_util.h"
 #include "ops/base_operator.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "kernel/kernel.h"
 #include "include/api/types.h"
 #include "mindapi/base/types.h"

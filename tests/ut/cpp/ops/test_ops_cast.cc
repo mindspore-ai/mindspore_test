@@ -25,7 +25,7 @@
 #include "ops/test_value_utils.h"
 #include "ir/primitive.h"
 #include "abstract/abstract_value.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "infer/ops_func_impl/cast.h"
 #include "include/backend/optimizer/helper.h"
 

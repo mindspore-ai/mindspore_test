@@ -29,7 +29,6 @@
 #include "utils/log_adapter.h"
 #include "utils/os.h"
 #include "utils/convert_utils_base.h"
-#include "include/common/debug/common.h"
 
 namespace mindspore {
 namespace system {
@@ -152,116 +151,18 @@ class PosixWriteFile : public WriteFile {
     }
   }
 
-  bool Open(const char *mode) override {
-    if (file_ != nullptr) {
-      MS_LOG(WARNING) << "The File(" << file_name_ << ") already open.";
-      return true;
-    }
-    // check the path
-    if (file_name_.c_str() == nullptr) {
-      MS_LOG(EXCEPTION) << "The file path is null.";
-    }
-    if (file_name_.size() >= PATH_MAX) {
-      MS_LOG(EXCEPTION) << "The file name is too long, file name is " << file_name_ << ".";
-    }
-
-    // open the file
-    file_ = fopen(file_name_.c_str(), mode);
-    if (file_ == nullptr) {
-      MS_LOG(ERROR) << "File(" << file_name_ << ") IO ERROR. " << ErrnoToString(errno);
-      return false;
-    }
-    return true;
-  }
-
-  bool Write(const std::string &data) override {
-    MS_LOG(DEBUG) << "Write data(" << data.size() << ") to file(" << this->file_name_ << ").";
-    size_t r = fwrite(data.data(), 1, data.size(), file_);
-    if (r != data.size()) {
-      MS_LOG(ERROR) << "File(" << file_name_ << ") IO ERROR. " << ErrnoToString(errno);
-      return false;
-    }
-    return true;
-  }
-
-  bool PWrite(const void *buf, size_t nbytes, size_t offset) override {
-    MS_LOG(DEBUG) << "Write data(" << nbytes << ") at offset(" << offset << ")to file(" << file_name_ << ").";
-    return POperate(buf, nullptr, nbytes, offset, false);
-  }
-
-  bool PRead(void *buf, size_t nbytes, size_t offset) override {
-    MS_LOG(DEBUG) << "Read data(" << nbytes << ") at offset(" << offset << ")to file(" << file_name_ << ").";
-    return POperate(nullptr, buf, nbytes, offset, true);
-  }
-
-  bool Trunc(size_t length) override {
-    MS_LOG(DEBUG) << "Trunc file(" << file_name_ << ") to size(" << length << ")";
-    if (length == size_) {
-      return true;
-    }
-    if (ftruncate(fileno(file_), length) != 0) {
-      MS_LOG(ERROR) << "File(" << file_name_ << ") Trunc ERROR. " << ErrnoToString(errno);
-      return false;
-    }
-    size_ = length;
-    return true;
-  }
-
-  size_t Size() override { return size_; }
-
-  bool Close() override {
-    if (file_ == nullptr) {
-      MS_LOG(INFO) << "File(" << file_name_ << ") already close.";
-      return true;
-    }
-    bool result = true;
-    if (fclose(file_) != 0) {
-      MS_LOG(ERROR) << "File(" << file_name_ << ") IO ERROR. " << ErrnoToString(errno);
-      result = false;
-    }
-    file_ = nullptr;
-    return result;
-  }
-
-  bool Flush() override {
-    if (fflush(file_) != 0) {
-      MS_LOG(ERROR) << "File(" << file_name_ << ") IO ERROR. " << ErrnoToString(errno);
-      return false;
-    }
-    return true;
-  }
-
-  bool Sync() override { return Flush(); }
+  bool Open(const char *mode) override;
+  bool Write(const std::string &data) override;
+  bool PWrite(const void *buf, size_t nbytes, size_t offset) override;
+  bool PRead(void *buf, size_t nbytes, size_t offset) override;
+  bool Trunc(size_t length) override;
+  size_t Size() override;
+  bool Close() override;
+  bool Flush() override;
+  bool Sync() override;
 
  private:
-  bool POperate(const void *write_buf, void *read_buf, size_t nbytes, size_t offset, bool read) {
-    size_t left = nbytes;
-    size_t buff_offset = 0;
-    auto fd = fileno(file_);
-    while (left > 0) {
-      size_t length = 0;
-      if (left > kMaxFileRWLength) {
-        length = kMaxFileRWLength;
-      } else {
-        length = left;
-      }
-      left -= length;
-      ssize_t r = 0;
-      if (read && read_buf != nullptr) {
-        auto buff_p = static_cast<uint8_t *>(read_buf) + buff_offset;
-        r = pread(fd, buff_p, length, SizeToLong(offset + buff_offset));
-      } else if (write_buf != nullptr) {
-        auto buff_p = static_cast<const uint8_t *>(write_buf) + buff_offset;
-        r = pwrite(fd, buff_p, length, SizeToLong(offset + buff_offset));
-      }
-      if (r >= 0 && LongToSize(r) != length) {
-        MS_LOG(ERROR) << "File(" << file_name_ << ") IO ERROR. " << ErrnoToString(errno);
-        return false;
-      }
-      buff_offset += length;
-    }
-    return true;
-  }
+  bool POperate(const void *write_buf, void *read_buf, size_t nbytes, size_t offset, bool read);
 
   FILE *file_;
 };

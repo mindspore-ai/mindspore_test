@@ -17,7 +17,7 @@
 #include "tools/converter/parser/tflite/tflite_transpose_parser.h"
 #include <vector>
 #include <memory>
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

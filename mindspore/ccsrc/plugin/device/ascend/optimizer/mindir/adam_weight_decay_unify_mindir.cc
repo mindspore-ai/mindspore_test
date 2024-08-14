@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 #include "plugin/device/ascend/optimizer/mindir/adam_weight_decay_unify_mindir.h"
-#include "op_def/nn_optimizer_ops.h"
-#include "op_def/math_ops.h"
-#include "op_def/framework_ops.h"
+#include "mindspore/ops/op_def/nn_optimizer_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 

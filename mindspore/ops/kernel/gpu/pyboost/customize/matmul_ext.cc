@@ -19,7 +19,7 @@
 #include <memory>
 #include <utility>
 #include <algorithm>
-#include "op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "kernel/common/pyboost/pyboost_utils.h"
 #include "kernel/gpu/pyboost/auto_generate/matmul.h"
 #include "kernel/gpu/pyboost/auto_generate/batch_mat_mul.h"

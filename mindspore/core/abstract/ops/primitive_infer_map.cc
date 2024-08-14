@@ -25,22 +25,19 @@
 #include <iterator>
 
 #include "abstract/utils.h"
-#include "op_def/sparse_ops.h"
-#include "op_def/random_ops.h"
-#include "op_def/conv_pool_ops.h"
-#include "op_def/other_ops.h"
-#include "op_def/nn_ops.h"
-#include "op_def/math_ops.h"
-#include "op_def/image_ops.h"
-#include "op_def/array_ops.h"
-#include "op_def/framework_ops.h"
-#include "ops/ops_frontend_func_impl.h"
-#include "ops/op_def.h"
-#include "include/common/utils/utils.h"
 #include "utils/core_op_utils.h"
 #include "utils/ms_context.h"
+#include "ops/ops_frontend_func_impl.h"
+#include "ops/op_def.h"
 
 namespace mindspore {
+constexpr auto kAttrDynInputSizes = "dyn_input_sizes";
+constexpr auto kAttrMeOpName = "me_op_name";
+constexpr auto kShapeCalcOpName = "ShapeCalc";
+constexpr const char kAttrOnlyDependShape[] = "only_depend_shape";
+constexpr const char kNameAvgPoolGrad[] = "AvgPoolGrad";
+constexpr const char kAttrValueDepend[] = "value_depend";
+
 namespace abstract {
 int64_t GetDependValueSize(const ValuePtr &value) {
   if (value->isa<Int64Imm>()) {
@@ -172,7 +169,7 @@ std::set<int64_t> GetValueDependArgIndices(const CNodePtr &cnode, bool is_proto)
     MS_LOG(DEBUG) << "Not find infer function GetValueDependArgIndices, prim name: " << prim_name;
     // if not found in infer, consider all the non-tensor inputs as value depend args.
     ori = ops::GetInputDependValueList(primitive);
-    if (prim_name == ops::kNameAvgPoolGrad && primitive->HasAttr(kAttrValueDepend)) {
+    if (prim_name == kNameAvgPoolGrad && primitive->HasAttr(kAttrValueDepend)) {
       auto value_depend_vector = GetValue<std::vector<int64_t>>(primitive->GetAttr(kAttrValueDepend));
       ori.clear();
       ori.insert(value_depend_vector.begin(), value_depend_vector.end());

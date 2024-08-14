@@ -20,9 +20,9 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/parallel_context.h"
-#include "op_def/structure_op_name.h"
-#include "op_def/framework_op_name.h"
-#include "op_def/framework_ops.h"
+#include "mindspore/ops/op_def/structure_op_name.h"
+#include "mindspore/ops/op_def/framework_op_name.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 
 namespace mindspore {
 namespace opt {

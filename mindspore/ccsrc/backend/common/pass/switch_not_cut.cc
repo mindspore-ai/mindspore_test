@@ -18,8 +18,8 @@
 #include <memory>
 #include <vector>
 #include <utility>
-#include "op_def/other_ops.h"
-#include "op_def/framework_ops.h"
+#include "mindspore/ops/op_def/other_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/ms_context.h"
 #include "include/common/utils/anfalgo.h"
 

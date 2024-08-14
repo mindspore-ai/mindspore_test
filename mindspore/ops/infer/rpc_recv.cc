@@ -22,7 +22,7 @@
 #include "ir/anf.h"
 #include "mindapi/src/helper.h"
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "ops/primitive_c.h"
 #include "utils/log_adapter.h"
 

@@ -18,7 +18,7 @@
 
 #include "pipeline/jit/ps/static_analysis/order_enforce.h"
 
-#include "op_def/framework_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "common/common_test.h"
 #include "common/py_func_graph_fetcher.h"
 

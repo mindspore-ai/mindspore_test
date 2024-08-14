@@ -637,7 +637,7 @@ def generate_op_prim_opdef(yaml_data):
 #include <memory>
 #include "ir/anf.h"
 #include "ir/primitive.h"
-#include "{K.OP_DEF_AUTO_GENERATE_PATH}/gen_ops_name.h"
+#include "{K.MS_OP_DEF_AUTO_GENERATE_PATH}/gen_ops_name.h"
 #include "mindapi/base/macros.h"
 
 namespace mindspore::prim {{
@@ -743,7 +743,7 @@ def generate_cc_opdef(yaml_data):
     gen_cc_code = f"""\n
 namespace mindspore::ops {{"""
     gen_include = f"""\n
-#include \"{K.OP_DEF_AUTO_GENERATE_PATH}/gen_ops_def.h\""""
+#include \"{K.MS_OP_DEF_AUTO_GENERATE_PATH}/gen_ops_def.h\""""
     gen_include += f"""
 #include \"mindspore/core/ir/signature.h\""""
 

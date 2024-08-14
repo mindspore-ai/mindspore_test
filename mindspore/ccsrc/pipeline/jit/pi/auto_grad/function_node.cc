@@ -23,7 +23,7 @@
 #include <sstream>
 #include <string>
 #include <utility>
-#include "op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
 #include "pipeline/jit/pi/auto_grad/edge.h"
 #include "pipeline/jit/pi/auto_grad/native_backward_function.h"
 #include "utils/ms_utils.h"

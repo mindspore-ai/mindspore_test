@@ -19,13 +19,13 @@
 #include <string>
 #include <vector>
 #include "transform/graph_ir/custom_op_proto/cust_elewise_calculation_ops.h"
-#include "op_def/ascend_op_name.h"
-#include "op_def/array_ops.h"
-#include "op_def/arithmetic_ops.h"
-#include "op_def/framework_ops.h"
-#include "op_def/math_ops.h"
-#include "op_def/nn_optimizer_ops.h"
-#include "op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/ascend_op_name.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/arithmetic_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/op_def/nn_optimizer_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 
 namespace mindspore::transform {
 INPUT_MAP(ClipByValue) = {{1, INPUT_DESC(x)}, {2, INPUT_DESC(clip_value_min)}, {3, INPUT_DESC(clip_value_max)}};

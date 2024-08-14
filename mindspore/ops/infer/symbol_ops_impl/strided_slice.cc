@@ -19,6 +19,7 @@
 #include "mindspore/ops/infer/symbol_ops_impl/scalar_div.h"
 #include "mindspore/ops/infer/symbol_ops_impl/scalar_max.h"
 #include "mindspore/ops/infer/symbol_ops_impl/scalar_min.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace symshape {

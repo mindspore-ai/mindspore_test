@@ -20,8 +20,8 @@
 #include "utils/check_convert_utils.h"
 #include "mindapi/base/types.h"
 #include "ops_utils/op_utils.h"
-#include "op_def/nn_ops.h"
-#include "op_def/auto_generate/gen_ops_name.h"
+#include "mindspore/ops/op_def/nn_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 #include "infer/renorm.h"
 #include "infer/scatter_update.h"
 

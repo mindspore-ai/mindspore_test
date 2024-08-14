@@ -17,6 +17,7 @@
 #include "infer/ops_func_impl/trans_data.h"
 #include "utils/check_convert_utils.h"
 #include "ops_utils/op_utils.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace ops {

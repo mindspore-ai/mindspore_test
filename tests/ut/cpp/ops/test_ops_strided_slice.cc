@@ -17,8 +17,8 @@
 #include <memory>
 #include "common/common_test.h"
 #include "infer/ops_func_impl/strided_slice.h"
-#include "op_def/op_name.h"
-#include "op_def/auto_generate/gen_ops_name.h"
+#include "mindspore/ops/op_def/op_name.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 #include "ir/dtype/type.h"
 #include "abstract/dshape.h"
 #include "utils/tensor_construct_utils.h"

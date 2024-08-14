@@ -19,8 +19,8 @@
 #include <vector>
 #include <functional>
 #include "pipeline/pynative/pynative_utils.h"
-#include "op_def/sequence_ops.h"
-#include "op_def/nn_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
 #include "ops_utils/op_utils.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/common/utils/hook.h"

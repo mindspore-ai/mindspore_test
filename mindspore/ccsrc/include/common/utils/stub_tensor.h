@@ -32,6 +32,7 @@
 #include "mindapi/base/shape_vector.h"
 #include "abstract/abstract_value.h"
 #include "mindspore/core/utils/simple_info.h"
+#include "mindspore/ccsrc/include/common/visible.h"
 
 namespace mindspore {
 namespace stub {

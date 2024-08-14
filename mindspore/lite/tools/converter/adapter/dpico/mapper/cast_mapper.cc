@@ -18,7 +18,7 @@
 #include <memory>
 #include <utility>
 #include <vector>
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "op/cast_operator.h"
 
 namespace mindspore {

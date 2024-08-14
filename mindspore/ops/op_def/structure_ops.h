@@ -22,9 +22,9 @@
 #include <string>
 #include "ir/anf.h"
 #include "ir/primitive.h"
-#include "op_def/structure_op_name.h"
+#include "mindspore/ops/op_def/structure_op_name.h"
 #include "utils/hash_map.h"
-#include "op_def/image_op_name.h"
+#include "mindspore/ops/op_def/image_op_name.h"
 
 namespace mindspore {
 static constexpr char kDoSignaturePrimitivePrefix[] = "S_Prim_";

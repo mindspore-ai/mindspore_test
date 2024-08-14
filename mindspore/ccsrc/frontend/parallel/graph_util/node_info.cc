@@ -20,9 +20,9 @@
 #include <utility>
 #include <algorithm>
 
-#include "op_def/sequence_ops.h"
-#include "op_def/array_ops.h"
-#include "op_def/framework_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "ir/param_info.h"
 #include "ir/meta_tensor.h"
 #include "include/common/utils/python_adapter.h"

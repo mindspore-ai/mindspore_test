@@ -18,7 +18,7 @@
 #include <memory>
 #include <string>
 #include "utils/check_convert_utils.h"
-#include "op_def/array_op_name.h"
+#include "mindspore/ops/op_def/array_op_name.h"
 
 namespace mindspore::ops {
 constexpr size_t kBroadCastToInputsNum = 2;

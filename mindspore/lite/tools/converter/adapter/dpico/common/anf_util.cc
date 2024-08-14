@@ -27,7 +27,7 @@
 #include "common/string_util.h"
 #include "infer/custom.h"
 #include "infer/tuple_get_item.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "common/check_base.h"
 namespace mindspore {
 namespace ops {

@@ -25,7 +25,7 @@
 #include "tools/optimizer/fusion/add_concat_activation_fusion.h"
 #include "nnacl/op_base.h"
 #include "infer/cxx_api/activation.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/cxx_api/add_fusion.h"
 
 namespace mindspore {

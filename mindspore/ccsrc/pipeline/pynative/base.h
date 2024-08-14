@@ -30,6 +30,7 @@
 #include "include/common/utils/stub_tensor.h"
 #include "mindspore/core/utils/simple_info.h"
 #include "ops/op_def.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace pynative {

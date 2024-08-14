@@ -34,6 +34,7 @@
 #include "ir/tensor.h"
 #include "transform/symbol/acl_tdt_symbol.h"
 #include "transform/symbol/symbol_utils.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 #ifndef SECUREC_MEM_MAX_LEN
 #define SECUREC_MEM_MAX_LEN 0x7fffffffUL

@@ -20,10 +20,11 @@
 #include "mindspore/ops/op_def/array_ops.h"
 #include "ir/func_graph.h"
 #include "tools/optimizer/common/gllo_utils.h"
-#include "op_def/op_name.h"
-#include "op_def/other_ops.h"
+#include "mindspore/ops/op_def/op_name.h"
+#include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/lite/tools/optimizer/common/gllo_utils.h"
 #include "mindspore/lite/tools/converter/quantizer/quantize_util.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace {

@@ -16,7 +16,7 @@
 
 #ifndef ENABLE_INTERNAL_KERNELS
 #include "plugin/device/ascend/kernel/internal/internal_kernel_build.h"
-#include "op_def/array_op_name.h"
+#include "mindspore/ops/op_def/array_op_name.h"
 
 namespace mindspore {
 namespace kernel {
@@ -47,8 +47,8 @@ void GetValidKernelBuildInfoWithInternalFormat(const AnfNodePtr &node, std::vect
 #include "include/common/utils/anfalgo.h"
 #include "plugin/factory/ms_factory.h"
 #include "kernel/framework_utils.h"
-#include "op_def/math_op_name.h"
-#include "op_def/nn_op_name.h"
+#include "mindspore/ops/op_def/math_op_name.h"
+#include "mindspore/ops/op_def/nn_op_name.h"
 #include "acl/acl_base.h"
 #include "transform/acl_ir/acl_helper.h"
 

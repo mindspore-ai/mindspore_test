@@ -21,8 +21,8 @@
 #include <memory>
 #include <string>
 #include <utility>
-#include "op_def/array_ops.h"
-#include "op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "kernel/common/pyboost/op_runner.h"
 #include "runtime/pynative/op_runner.h"
 #include "pipeline/pynative/pynative_utils.h"

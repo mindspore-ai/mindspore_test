@@ -21,7 +21,7 @@
 #include <string>
 #include <vector>
 #include "ops/base_operator.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 
 namespace mindspore {
 namespace ops {

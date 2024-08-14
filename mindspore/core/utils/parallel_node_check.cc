@@ -58,6 +58,8 @@ static const std::set<PrimitivePtr> TRIVIAL_NODE_LIST_ = {prim::kPrimCast, prim:
                                                             std::make_shared<Primitive>("AscendAntiQuant")};
 // clang-format on
 
+constexpr size_t kIndex1 = 1;
+
 bool IsInParallelBlackList(const PrimitivePtr &prim) {
   MS_EXCEPTION_IF_NULL(prim);
   return (PARALLEL_BLACK_LIST_.find(prim->name()) != PARALLEL_BLACK_LIST_.end());

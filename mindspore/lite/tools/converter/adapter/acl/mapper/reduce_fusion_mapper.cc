@@ -24,7 +24,7 @@
 #include "tools/optimizer/common/gllo_utils.h"
 #include "src/common/log_util.h"
 #include "ops_utils/op_utils.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/lp_norm.h"
 #include "tools/lite_exporter/fetch_content.h"
 #include "infer/square_sum_v1.h"

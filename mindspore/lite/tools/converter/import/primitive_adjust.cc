@@ -22,9 +22,9 @@
 #include <string>
 #include <algorithm>
 #include "mindspore/ops/op_def/conv_pool_ops.h"
-#include "op_def/nn_op_name.h"
+#include "mindspore/ops/op_def/nn_op_name.h"
 #include "ops_utils/op_utils.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/fused_batch_norm.h"
 #include "infer/cxx_api/conv2d_transpose_fusion.h"
 #include "infer/cxx_api/div_fusion.h"

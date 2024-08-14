@@ -16,9 +16,9 @@
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "src/common/ops/operator_populate/utils.h"
 #include "nnacl/matmul_parameter.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/cxx_api/mat_mul_fusion.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 using mindspore::ops::kActivationType;
 using mindspore::ops::kNameMatMul;
 using mindspore::ops::kNameMatMulFusion;

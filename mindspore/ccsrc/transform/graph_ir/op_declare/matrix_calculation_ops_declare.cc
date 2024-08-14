@@ -17,10 +17,10 @@
 #include "transform/graph_ir/op_declare/matrix_calculation_ops_declare.h"
 #include <string>
 #include <vector>
-#include "op_def/array_op_name.h"
-#include "op_def/ascend_op_name.h"
-#include "op_def/math_op_name.h"
-#include "op_def/math_ops.h"
+#include "mindspore/ops/op_def/array_op_name.h"
+#include "mindspore/ops/op_def/ascend_op_name.h"
+#include "mindspore/ops/op_def/math_op_name.h"
+#include "mindspore/ops/op_def/math_ops.h"
 
 namespace mindspore::transform {
 // TensorScatterUpdate

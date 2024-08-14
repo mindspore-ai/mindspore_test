@@ -31,10 +31,10 @@
 #include "frontend/parallel/graph_util/fold_pipeline_split_utils.h"
 #include "include/common/utils/parallel_context.h"
 #include "ir/value.h"
-#include "op_def/array_ops.h"
-#include "op_def/framework_ops.h"
-#include "op_def/other_ops.h"
-#include "op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/other_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
 #include "utils/parallel_node_check.h"
 
 namespace mindspore {

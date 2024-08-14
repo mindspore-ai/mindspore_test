@@ -21,8 +21,8 @@
 #include "ir/anf.h"
 #include "ir/primitive.h"
 #include "utils/hash_map.h"
-#include "op_def/random_op_name.h"
-#include "op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/random_op_name.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 
 namespace mindspore {
 namespace prim {

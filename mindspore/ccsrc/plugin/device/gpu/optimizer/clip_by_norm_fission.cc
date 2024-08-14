@@ -16,11 +16,11 @@
 
 #include "plugin/device/gpu/optimizer/clip_by_norm_fission.h"
 #include <algorithm>
-#include "op_def/math_op_name.h"
-#include "op_def/comparison_op_name.h"
-#include "op_def/framework_op_name.h"
-#include "op_def/nn_ops.h"
-#include "op_def/array_ops.h"
+#include "mindspore/ops/op_def/math_op_name.h"
+#include "mindspore/ops/op_def/comparison_op_name.h"
+#include "mindspore/ops/op_def/framework_op_name.h"
+#include "mindspore/ops/op_def/nn_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
 #include "ir/anf.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/backend/optimizer/helper.h"

@@ -19,14 +19,15 @@
 #include <numeric>
 #include <vector>
 #include "ops_utils/op_utils.h"
-#include "op_def/array_op_name.h"
-#include "op_def/array_ops.h"
+#include "mindspore/ops/op_def/array_op_name.h"
+#include "mindspore/ops/op_def/array_ops.h"
 #include "frontend/expander/bprop/bprop_irbuilder.h"
 #include "frontend/expander/bprop/common_utils.h"
 #include "include/common/utils/utils.h"
 #include "ir/functor.h"
 #include "utils/check_convert_utils.h"
 #include "utils/ms_context.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore::expander::bprop {
 namespace {

@@ -17,7 +17,7 @@
 #include "plugin/device/ascend/hal/hardware/ge_graph_optimization.h"
 #include <string>
 #include <memory>
-#include "op_def/framework_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "include/common/utils/anfalgo.h"
 #include "backend/common/optimizer/common_backend_optimization.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"

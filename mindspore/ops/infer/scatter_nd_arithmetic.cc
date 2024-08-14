@@ -28,6 +28,7 @@
 #include "infer/scatter_nd_sub.h"
 #include "infer/scatter_nd_update.h"
 #include "utils/check_convert_utils.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace ops {

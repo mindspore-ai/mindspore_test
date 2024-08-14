@@ -26,6 +26,7 @@
 #include "tools/graph_kernel/converter/akg/akg_kernel_builder.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
 #include "tools/graph_kernel/converter/akg/utils.h"
+#include "mindspore/core/utils/ms_context.h"
 
 namespace mindspore::graphkernel {
 SplitSchemerPtr GraphKernelSplitterWithTuning::GetSplitSchema(const std::string &processor) {

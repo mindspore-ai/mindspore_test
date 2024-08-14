@@ -18,7 +18,7 @@
 #include <fstream>
 #include <string>
 #include "extendrt/utils/func_graph_utils.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "infer/tuple_get_item.h"
 #include "infer/make_tuple.h"
 #include "extendrt/delegate/ascend_native/ops/ascend_native_composite.h"

@@ -23,7 +23,7 @@
 #include "runtime/device/device_address_utils.h"
 #include "kernel/common/pyboost/op_runner.h"
 #include "kernel/common/pyboost/customize/op_common.h"
-#include "op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 
 namespace mindspore {
 namespace kernel {

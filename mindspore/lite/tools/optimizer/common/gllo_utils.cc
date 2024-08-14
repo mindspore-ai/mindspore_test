@@ -29,7 +29,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "base/float16.h"
 #include "infer/cxx_api/conv2d_fusion.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/ops_func_impl/gather.h"
 #include "infer/tuple_get_item.h"
 #include "tools/common/tensor_util.h"
@@ -45,6 +45,7 @@
 #include "infer/tensor_copy.h"
 #include "include/common/utils/anfalgo.h"
 #include "tools/optimizer/common/format_utils.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace opt {

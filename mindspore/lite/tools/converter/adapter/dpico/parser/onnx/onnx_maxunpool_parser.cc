@@ -25,7 +25,7 @@
 #include "include/registry/node_parser_registry.h"
 #include "mindapi/base/logging.h"
 #include "third_party/securec/include/securec.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 
 namespace mindspore {
 namespace lite {

@@ -24,9 +24,9 @@
 #include "include/common/utils/parallel_context.h"
 #include "frontend/parallel/ops_info/ops_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
-#include "op_def/sequence_ops.h"
-#include "op_def/other_ops.h"
-#include "op_def/framework_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/other_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/ms_context.h"
 
 namespace mindspore::opt {

@@ -21,7 +21,7 @@
 #include <memory>
 #include <string>
 #include "ir/value.h"
-#include "op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
 #include "pipeline/jit/ps/parse/parse_base.h"
 #include "pipeline/jit/ps/parse/parse.h"
 

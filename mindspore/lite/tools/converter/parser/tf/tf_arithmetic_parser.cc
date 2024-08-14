@@ -21,7 +21,7 @@
 #include "tools/converter/parser/tf/tf_node_parser_registry.h"
 #include "infer/cxx_api/add_fusion.h"
 #include "infer/cxx_api/div_fusion.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/cxx_api/mul_fusion.h"
 #include "infer/cxx_api/sub_fusion.h"
 #include "infer/squared_difference.h"

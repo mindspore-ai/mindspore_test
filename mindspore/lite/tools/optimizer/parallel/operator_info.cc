@@ -18,7 +18,7 @@
 #include "tools/optimizer/parallel/operator_info.h"
 #include <algorithm>
 #include "tools/optimizer/parallel/split_strategy.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/tuple_get_item.h"
 #include "include/common/utils/utils.h"
 #include "include/errorcode.h"

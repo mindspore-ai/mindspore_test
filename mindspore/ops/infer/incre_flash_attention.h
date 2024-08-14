@@ -23,6 +23,7 @@
 #include "ops/primitive_c.h"
 #include "abstract/abstract_value.h"
 #include "mindspore/ops/op_def/op_name.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace ops {

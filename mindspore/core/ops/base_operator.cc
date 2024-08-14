@@ -16,7 +16,7 @@
 
 #include "ops/base_operator.h"
 #include "mindapi/src/helper.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "ops/primitive_c.h"
 
 namespace mindspore {

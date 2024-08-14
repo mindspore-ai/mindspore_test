@@ -15,7 +15,7 @@
  */
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/layer_norm_parameter.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/cxx_api/layer_norm_fusion.h"
 using mindspore::ops::kBeginNormAxis;
 using mindspore::ops::kBeginParamsAxis;

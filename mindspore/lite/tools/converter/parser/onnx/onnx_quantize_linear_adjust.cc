@@ -19,7 +19,7 @@
 #include <utility>
 #include <set>
 #include "ops/primitive_c.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/cxx_api/scale_fusion.h"
 #include "infer/cxx_api/mat_mul_fusion.h"
 #include "tools/converter/ops/ops_def.h"
@@ -28,7 +28,8 @@
 #include "tools/converter/quantizer/quantize_util.h"
 #include "tools/common/node_util.h"
 #include "tools/common/tensor_util.h"
-#include "op_def/array_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore::lite {
 namespace {

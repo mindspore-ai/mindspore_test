@@ -24,9 +24,9 @@
 #include <random>
 #include <tuple>
 
-#include "op_def/ascend_op_name.h"
-#include "op_def/array_op_name.h"
-#include "op_def/framework_op_name.h"
+#include "mindspore/ops/op_def/ascend_op_name.h"
+#include "mindspore/ops/op_def/array_op_name.h"
+#include "mindspore/ops/op_def/framework_op_name.h"
 #include "backend/common/somas/somas_node.h"
 #include "backend/common/somas/somas_solver_pre.h"
 #include "backend/common/somas/somas_stream.h"

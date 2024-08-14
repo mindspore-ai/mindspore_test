@@ -23,12 +23,12 @@
 #include "ir/anf.h"
 #include "mindapi/base/shape_vector.h"
 #include "mindapi/src/helper.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "ops/primitive_c.h"
 #include "utils/check_convert_utils.h"
-#include "op_def/framework_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "ops/base_operator.h"
-#include "op_def/other_ops.h"
+#include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 
 namespace mindspore {

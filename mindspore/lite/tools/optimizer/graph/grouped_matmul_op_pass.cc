@@ -17,10 +17,10 @@
 #include <memory>
 #include <vector>
 #include <string>
-#include "op_def/auto_generate/gen_lite_ops.h"
-#include "op_def/auto_generate/gen_ops_primitive.h"
-#include "op_def/array_ops.h"
-#include "op_def/lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
 #include "infer/tuple_get_item.h"
 #include "infer/make_tuple.h"
 #include "tools/optimizer/graph/grouped_matmul_op_pass.h"

@@ -24,7 +24,7 @@
 #include "mindspore/ops/op_def/lite_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "infer/cxx_api/full_connection.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/cxx_api/slice_fusion.h"
 #include "ops_utils/op_utils.h"
 #include "include/errorcode.h"

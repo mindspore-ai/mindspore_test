@@ -21,7 +21,7 @@
 #include <unordered_map>
 #include "mindspore/ops/op_def/array_ops.h"
 #include "ops_utils/op_utils.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "tools/lite_exporter/fetch_content.h"
 #include "tools/optimizer/common/format_utils.h"
 #include "nnacl/op_base.h"

@@ -16,7 +16,7 @@
 
 #include "tools/converter/parser/pytorch/pytorch_reshape_parser.h"
 #include <memory>
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/squeeze.h"
 #include "infer/unsqueeze.h"
 #include "nnacl/op_base.h"

@@ -19,7 +19,7 @@
 #include <unordered_set>
 #include "src/extendrt/delegate/tensorrt/tensorrt_utils.h"
 #include "src/extendrt/delegate/tensorrt/op/activation_tensorrt.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/cxx_api/sub_fusion.h"
 #include "infer/cxx_api/div_fusion.h"
 #include "infer/cxx_api/reduce_fusion.h"

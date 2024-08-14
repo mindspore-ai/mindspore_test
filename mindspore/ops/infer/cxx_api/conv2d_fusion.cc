@@ -20,7 +20,7 @@
 #include "mindapi/src/helper.h"
 #include "ops/base_operator.h"
 #include "infer/cxx_api/conv2d_fusion.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "ops/primitive_c.h"
 #include "utils/log_adapter.h"
 

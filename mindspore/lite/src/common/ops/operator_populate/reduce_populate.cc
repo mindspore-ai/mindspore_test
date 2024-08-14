@@ -17,7 +17,7 @@
 #include "nnacl/reduce_parameter.h"
 #include "infer/reduce.h"
 #include "infer/cxx_api/reduce_fusion.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 using mindspore::ops::kNameReduce;
 using mindspore::ops::kNameReduceFusion;
 using mindspore::schema::PrimitiveType_ReduceFusion;

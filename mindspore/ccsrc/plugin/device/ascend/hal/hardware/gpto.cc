@@ -41,6 +41,7 @@
 #include "include/backend/optimizer/helper.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/utils.h"
+#include "include/common/debug/common.h"
 #include "plugin/device/ascend/hal/device/ascend_memory_adapter.h"
 
 namespace mindspore {

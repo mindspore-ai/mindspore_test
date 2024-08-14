@@ -18,11 +18,11 @@
 #define MINDSPORE_CORE_BASE_CONV_POOL_OPS_H_
 
 #include <memory>
-#include "op_def/conv_pool_op_name.h"
+#include "mindspore/ops/op_def/conv_pool_op_name.h"
 #include "ir/anf.h"
 #include "ir/primitive.h"
 #include "utils/hash_map.h"
-#include "op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 
 namespace mindspore {
 namespace prim {

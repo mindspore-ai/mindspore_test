@@ -17,7 +17,7 @@
 #include "runtime/graph_scheduler/scheduler_helper.h"
 #include "abstract/abstract_function.h"
 #include "common/common_test.h"
-#include "op_def/comparison_ops.h"
+#include "mindspore/ops/op_def/comparison_ops.h"
 
 namespace mindspore {
 namespace runtime {

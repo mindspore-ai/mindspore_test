@@ -30,7 +30,7 @@
 #include "src/extendrt/delegate/delegate_utils.h"
 #include "src/extendrt/delegate/tensorrt/tensorrt_utils.h"
 #include "src/common/utils.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/cxx_api/topk_fusion.h"
 
 namespace mindspore::lite {

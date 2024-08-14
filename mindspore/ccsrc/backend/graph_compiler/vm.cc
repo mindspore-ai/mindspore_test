@@ -18,7 +18,7 @@
 
 #include "backend/graph_compiler/vm.h"
 #include <algorithm>
-#include "op_def/nn_op_name.h"
+#include "mindspore/ops/op_def/nn_op_name.h"
 #include "backend/graph_compiler/vmimpl.h"
 #include "backend/graph_compiler/backend.h"
 #include "pipeline/jit/ps/parse/data_converter.h"

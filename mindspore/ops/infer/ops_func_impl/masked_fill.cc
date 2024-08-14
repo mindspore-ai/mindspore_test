@@ -17,6 +17,7 @@
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"
 #include "infer/ops_func_impl/masked_fill.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore::ops {
 BaseShapePtr MaskedFillFuncImpl::InferShape(const PrimitivePtr &primitive,

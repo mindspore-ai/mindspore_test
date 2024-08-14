@@ -17,7 +17,7 @@
 #include <string>
 #include <vector>
 #include <memory>
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "ops/primitive_c.h"
 #include "infer/cxx_api/scale_fusion.h"
 #include "infer/cxx_api/mat_mul_fusion.h"

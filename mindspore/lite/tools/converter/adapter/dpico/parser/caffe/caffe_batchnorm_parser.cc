@@ -17,7 +17,7 @@
 #include "parser/caffe/caffe_batchnorm_parser.h"
 #include <cmath>
 #include <memory>
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "common/op_attr.h"
 #include "mindapi/base/format.h"
 

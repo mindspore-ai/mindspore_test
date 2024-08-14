@@ -17,10 +17,10 @@
 #include <memory>
 
 #include "common/common_test.h"
-#include "op_def/sequence_ops.h"
-#include "op_def/math_ops.h"
-#include "op_def/arithmetic_ops.h"
-#include "op_def/framework_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/op_def/arithmetic_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "common/py_func_graph_fetcher.h"
 
 #include "ir/anf.h"

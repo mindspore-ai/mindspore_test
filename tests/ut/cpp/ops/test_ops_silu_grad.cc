@@ -17,7 +17,7 @@
 #include <memory>
 #include "common/common_test.h"
 #include "infer/ops_func_impl/silu_grad.h"
-#include "op_def/auto_generate/gen_ops_name.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 #include "ir/primitive.h"
 #include "abstract/abstract_value.h"
 #include "ops/test_ops.h"

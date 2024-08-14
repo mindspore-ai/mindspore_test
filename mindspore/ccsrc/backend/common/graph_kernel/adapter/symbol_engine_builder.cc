@@ -20,7 +20,7 @@
 #include "include/common/utils/anfalgo.h"
 #include "backend/common/graph_kernel/symbol_engine/multi_symbol_engine.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
-#include "op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 
 namespace mindspore::graphkernel {
 namespace {

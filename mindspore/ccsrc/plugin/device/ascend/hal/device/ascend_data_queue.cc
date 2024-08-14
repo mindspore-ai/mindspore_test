@@ -22,7 +22,7 @@
 #include "include/backend/data_queue/data_queue_mgr.h"
 #include "include/common/utils/python_adapter.h"
 #include "utils/log_adapter.h"
-#include "op_def/structure_op_name.h"
+#include "mindspore/ops/op_def/structure_op_name.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
 #include "runtime/device/kernel_runtime.h"
 #include "runtime/device/kernel_runtime_manager.h"

@@ -24,6 +24,33 @@
 #include <direct.h>
 #endif
 
+namespace {
+static const int MAX_DIRECTORY_LENGTH = 1024;
+static const int MAX_FILENAME_LENGTH = 128;
+static const int MAX_OS_FILENAME_LENGTH = 255;
+
+inline std::string ErrnoToString(const int error_number) {
+  std::ostringstream ret_info;
+  ret_info << " Errno: " << error_number;
+#if defined(__APPLE__)
+  char err_info[MAX_FILENAME_LENGTH];
+  (void)strerror_r(error_number, err_info, sizeof(err_info));
+  ret_info << ", ErrInfo: " << err_info;
+#elif defined(SYSTEM_ENV_POSIX)
+  char err_info[MAX_FILENAME_LENGTH];
+  char *ret = strerror_r(error_number, err_info, sizeof(err_info));
+  if (ret != nullptr) {
+    ret_info << ", ErrInfo: " << ret;
+  }
+#elif defined(SYSTEM_ENV_WINDOWS)
+  char err_info[MAX_FILENAME_LENGTH];
+  (void)strerror_s(err_info, sizeof(err_info), error_number);
+  ret_info << ", ErrInfo: " << err_info;
+#endif
+  return ret_info.str();
+}
+}  // namespace
+
 namespace mindspore {
 namespace system {
 #if defined(SYSTEM_ENV_POSIX)
@@ -101,6 +128,117 @@ bool PosixFileSystem::DeleteDir(const string &dir_name) {
   }
   return true;
 }
+
+bool PosixWriteFile::Open(const char *mode) {
+  if (file_ != nullptr) {
+    MS_LOG(WARNING) << "The File(" << file_name_ << ") already open.";
+    return true;
+  }
+  // check the path
+  if (file_name_.c_str() == nullptr) {
+    MS_LOG(EXCEPTION) << "The file path is null.";
+  }
+  if (file_name_.size() >= PATH_MAX) {
+    MS_LOG(EXCEPTION) << "The file name is too long, file name is " << file_name_ << ".";
+  }
+
+  // open the file
+  file_ = fopen(file_name_.c_str(), mode);
+  if (file_ == nullptr) {
+    MS_LOG(ERROR) << "File(" << file_name_ << ") IO ERROR. " << ErrnoToString(errno);
+    return false;
+  }
+  return true;
+}
+
+bool PosixWriteFile::Write(const std::string &data) {
+  MS_LOG(DEBUG) << "Write data(" << data.size() << ") to file(" << this->file_name_ << ").";
+  size_t r = fwrite(data.data(), 1, data.size(), file_);
+  if (r != data.size()) {
+    MS_LOG(ERROR) << "File(" << file_name_ << ") IO ERROR. " << ErrnoToString(errno);
+    return false;
+  }
+  return true;
+}
+
+bool PosixWriteFile::PWrite(const void *buf, size_t nbytes, size_t offset) {
+  MS_LOG(DEBUG) << "Write data(" << nbytes << ") at offset(" << offset << ")to file(" << file_name_ << ").";
+  return POperate(buf, nullptr, nbytes, offset, false);
+}
+
+bool PosixWriteFile::PRead(void *buf, size_t nbytes, size_t offset) {
+  MS_LOG(DEBUG) << "Read data(" << nbytes << ") at offset(" << offset << ")to file(" << file_name_ << ").";
+  return POperate(nullptr, buf, nbytes, offset, true);
+}
+
+bool PosixWriteFile::Trunc(size_t length) {
+  MS_LOG(DEBUG) << "Trunc file(" << file_name_ << ") to size(" << length << ")";
+  if (length == size_) {
+    return true;
+  }
+  if (ftruncate(fileno(file_), length) != 0) {
+    MS_LOG(ERROR) << "File(" << file_name_ << ") Trunc ERROR. " << ErrnoToString(errno);
+    return false;
+  }
+  size_ = length;
+  return true;
+}
+
+size_t PosixWriteFile::Size() { return size_; }
+
+bool PosixWriteFile::Close() {
+  if (file_ == nullptr) {
+    MS_LOG(INFO) << "File(" << file_name_ << ") already close.";
+    return true;
+  }
+  bool result = true;
+  if (fclose(file_) != 0) {
+    MS_LOG(ERROR) << "File(" << file_name_ << ") IO ERROR. " << ErrnoToString(errno);
+    result = false;
+  }
+  file_ = nullptr;
+  return result;
+}
+
+bool PosixWriteFile::Flush() {
+  if (fflush(file_) != 0) {
+    MS_LOG(ERROR) << "File(" << file_name_ << ") IO ERROR. " << ErrnoToString(errno);
+    return false;
+  }
+  return true;
+}
+
+bool PosixWriteFile::Sync() { return Flush(); }
+
+bool PosixWriteFile::POperate(const void *write_buf, void *read_buf, size_t nbytes, size_t offset, bool read) {
+  size_t left = nbytes;
+  size_t buff_offset = 0;
+  auto fd = fileno(file_);
+  while (left > 0) {
+    size_t length = 0;
+    if (left > kMaxFileRWLength) {
+      length = kMaxFileRWLength;
+    } else {
+      length = left;
+    }
+    left -= length;
+    ssize_t r = 0;
+    if (read && read_buf != nullptr) {
+      auto buff_p = static_cast<uint8_t *>(read_buf) + buff_offset;
+      r = pread(fd, buff_p, length, SizeToLong(offset + buff_offset));
+    } else if (write_buf != nullptr) {
+      auto buff_p = static_cast<const uint8_t *>(write_buf) + buff_offset;
+      r = pwrite(fd, buff_p, length, SizeToLong(offset + buff_offset));
+    }
+    if (r >= 0 && LongToSize(r) != length) {
+      MS_LOG(ERROR) << "File(" << file_name_ << ") IO ERROR. " << ErrnoToString(errno);
+      return false;
+    }
+    buff_offset += length;
+  }
+  return true;
+}
+
 #endif
 
 #if defined(SYSTEM_ENV_WINDOWS)

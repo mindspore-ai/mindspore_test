@@ -16,6 +16,7 @@
 #include "mindspore/ops/infer/symbol_ops_impl/addn.h"
 #include <memory>
 #include "mindspore/ops/infer/symbol_ops_impl/elemwise_binop.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace symshape {

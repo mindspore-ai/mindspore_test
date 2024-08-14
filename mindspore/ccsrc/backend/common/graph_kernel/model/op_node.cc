@@ -34,7 +34,7 @@
 #include "backend/common/graph_kernel/model/node.h"
 #include "backend/operator/ops_backend_infer_function.h"
 #include "utils/log_adapter.h"
-#include "op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 
 namespace mindspore::graphkernel::inner {
 std::vector<int64_t> GetListInt(const ValuePtr &attr_value) {

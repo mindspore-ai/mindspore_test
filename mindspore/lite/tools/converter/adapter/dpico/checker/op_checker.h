@@ -27,7 +27,7 @@
 #include "include/errorcode.h"
 #include "mindapi/ir/anf.h"
 #include "mindapi/base/logging.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 
 using mindspore::lite::RET_ERROR;
 using mindspore::lite::RET_OK;

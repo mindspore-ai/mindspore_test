@@ -16,11 +16,11 @@
 #define USE_DEPRECATED_API
 #include "tools/optimizer/fusion/groupnormsilu_fusion.h"
 #include <memory>
-#include "op_def/array_ops.h"
-#include "op_def/nn_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "mindspore/ops/op_def/lite_ops.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/custom.h"
 #include "infer/group_norm_silu.h"
 

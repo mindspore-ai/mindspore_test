@@ -19,15 +19,16 @@
 #include <set>
 #include <memory>
 #include <vector>
-#include "op_def/math_ops.h"
-#include "op_def/other_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/infer/all_reduce.h"
-#include "op_def/lite_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "nnacl/op_base.h"
 #include "ops_utils/op_utils.h"
 #include "mindspore/ccsrc/frontend/parallel/ops_info/ops_utils.h"
 #include "mindspore/core/ir/anf.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore::opt {
 std::unordered_map<std::string, VectorRef> AntiquantAddMulMatMulAllReduceFusion::DefinePatterns() const {

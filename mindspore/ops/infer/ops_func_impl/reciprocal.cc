@@ -19,6 +19,7 @@
 #include "ops/ops_frontend_func_impl.h"
 #include "infer/ops_func_impl/reciprocal.h"
 #include "utils/ms_context.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore::ops {
 BaseShapePtr ReciprocalFuncImpl::InferShape(const PrimitivePtr &primitive,

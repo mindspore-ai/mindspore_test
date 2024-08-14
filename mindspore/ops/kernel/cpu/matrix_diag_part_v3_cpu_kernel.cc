@@ -22,7 +22,7 @@
 #include <tuple>
 #include <utility>
 #include <vector>
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "mindspore/ops/infer/matrix_diag_part_v3.h"
 #include "mindspore/core/utils/check_convert_utils.h"
 #include "plugin/device/cpu/hal/device/cpu_device_address.h"

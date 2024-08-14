@@ -31,12 +31,13 @@
 #include "mindapi/ir/value.h"
 #include "mindapi/src/helper.h"
 #include "mindspore/ops/op_def/image_ops.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "ops/primitive_c.h"
 #include "infer/sample_distorted_bounding_box_v2.h"
 #include "utils/check_convert_utils.h"
 #include "utils/convert_utils_base.h"
 #include "utils/log_adapter.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace ops {

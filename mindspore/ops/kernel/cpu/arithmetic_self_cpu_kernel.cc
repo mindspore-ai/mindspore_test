@@ -23,18 +23,18 @@
 #include <thread>
 #include <unordered_map>
 #include <utility>
-#include "op_def/array_ops.h"
-#include "op_def/framework_ops.h"
-#include "op_def/lite_ops.h"
-#include "op_def/math_ops.h"
-#include "op_def/nn_ops.h"
-#include "op_def/nn_optimizer_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
+#include "mindspore/ops/op_def/nn_optimizer_ops.h"
 #include "plugin/device/cpu/hal/device/cpu_device_address.h"
 #include "nnacl/fp32/activation_fp32.h"
 #include "nnacl/fp32/arithmetic_self_fp32.h"
 #include "nnacl/fp32/exp_fp32.h"
 #include "ops_utils/op_utils.h"
-#include "op_def/auto_generate/gen_ops_name.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 
 namespace mindspore {
 namespace kernel {

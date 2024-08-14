@@ -23,7 +23,7 @@
 #include "tools/converter/adapter/acl/common/utils.h"
 #include "infer/lstm.h"
 #include "nnacl/op_base.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "src/common/log_util.h"
 namespace mindspore {
 namespace {

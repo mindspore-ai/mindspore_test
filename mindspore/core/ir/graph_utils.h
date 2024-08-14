@@ -80,6 +80,7 @@ MS_CORE_API void SetDumpIRPrivider(const DumpIRPrividerFunction &func);
 using DumpIRStorageFunction = void (*)(const std::string &, const std::string &, const std::string &);
 MS_CORE_API void SetDumpIRStorage(const DumpIRStorageFunction &func);
 constexpr auto kTopoSortCircle = "TopoSortCircle";
+constexpr auto kAttrTopoSortRhsFirst = "topo_sort_rhs_first";
 }  // namespace mindspore
 
 #endif  // MINDSPORE_CORE_IR_GRAPH_UTILS_H_

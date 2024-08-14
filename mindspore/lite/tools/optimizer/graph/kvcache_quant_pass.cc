@@ -16,12 +16,13 @@
 #include <memory>
 #include <vector>
 #include <string>
-#include "op_def/array_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
 #include "tools/converter/adapter/acl/mapper/tbe_op_def.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "tools/converter/quantizer/quantize_util.h"
 #include "mindspore/core/utils/anf_utils.h"
 #include "tools/optimizer/graph/kvcache_quant_pass.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 /* This pass changes the following pattern(s).
 

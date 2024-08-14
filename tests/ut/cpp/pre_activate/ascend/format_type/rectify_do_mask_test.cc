@@ -15,7 +15,7 @@
  */
 
 #include "common/backend_common_test.h"
-#include "op_def/nn_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
 #include "common/common_test.h"
 #include "common/py_func_graph_fetcher.h"
 #include "utils/log_adapter.h"

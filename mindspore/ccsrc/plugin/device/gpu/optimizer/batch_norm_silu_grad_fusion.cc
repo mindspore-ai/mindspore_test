@@ -19,8 +19,8 @@
 #include <vector>
 #include <string>
 
-#include "op_def/nn_optimizer_ops.h"
-#include "op_def/nn_ops.h"
+#include "mindspore/ops/op_def/nn_optimizer_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
 #include "ops_utils/op_utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
@@ -30,7 +30,7 @@
 #include "plugin/device/gpu/hal/device/kernel_info_setter.h"
 #include "utils/ms_context.h"
 #include "kernel/graph_kernel_info.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 
 namespace mindspore {
 namespace opt {

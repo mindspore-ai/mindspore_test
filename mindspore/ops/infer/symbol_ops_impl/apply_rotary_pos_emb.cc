@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #include "mindspore/core/symbolic_shape/operation_builder.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace symshape {

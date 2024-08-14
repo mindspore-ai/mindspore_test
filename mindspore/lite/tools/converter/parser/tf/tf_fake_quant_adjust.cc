@@ -24,6 +24,7 @@
 #include "tools/optimizer/common/gllo_utils.h"
 #include "src/common/utils.h"
 #include "tools/converter/quantizer/quantize_util.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace lite {

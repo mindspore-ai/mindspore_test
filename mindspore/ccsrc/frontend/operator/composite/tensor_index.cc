@@ -25,8 +25,7 @@
 #include "frontend/operator/cc_implementations.h"
 #include "ir/anf.h"
 #include "frontend/optimizer/opt.h"
-#include "op_def/op_name.h"
-#include "op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "mindapi/base/type_id.h"
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
@@ -35,6 +34,7 @@
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/arithmetic_ops.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 // namespace to support composite operators definition

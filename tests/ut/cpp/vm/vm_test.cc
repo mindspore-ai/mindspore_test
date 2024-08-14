@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include "backend/graph_compiler/vm.h"
-#include "op_def/framework_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "common/common_test.h"
 #include "frontend/operator/ops.h"
 #include "backend/graph_compiler/backend.h"

@@ -29,7 +29,7 @@
 #include "tools/optimizer/common/format_utils.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "tools/lite_exporter/fetch_content.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

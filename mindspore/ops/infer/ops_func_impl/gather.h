@@ -20,7 +20,7 @@
 #include <set>
 #include <vector>
 #include "mindspore/core/ops/ops_func_impl/op_func_impl.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 
 namespace mindspore {
 namespace ops {

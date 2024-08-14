@@ -32,6 +32,7 @@
 #include "ops/primitive_c.h"
 #include "utils/anf_utils.h"
 #include "utils/log_adapter.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace ops {

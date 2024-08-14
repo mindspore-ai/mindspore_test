@@ -18,7 +18,7 @@
 #include <memory>
 #include <vector>
 #include "mindspore/ops/ops_utils/op_utils.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "ir/dtype/number.h"
 #include "utils/shape_utils.h"
 #include "utils/convert_utils_base.h"

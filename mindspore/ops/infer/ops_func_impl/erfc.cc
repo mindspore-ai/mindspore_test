@@ -15,6 +15,7 @@
  */
 
 #include "infer/ops_func_impl/erfc.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace ops {

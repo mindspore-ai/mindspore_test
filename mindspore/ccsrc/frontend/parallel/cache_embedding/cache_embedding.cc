@@ -25,12 +25,12 @@
 #include <string>
 #include <algorithm>
 
-#include "op_def/sequence_ops.h"
-#include "op_def/other_ops.h"
-#include "op_def/nn_optimizer_ops.h"
-#include "op_def/nn_ops.h"
-#include "op_def/array_ops.h"
-#include "op_def/framework_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/other_ops.h"
+#include "mindspore/ops/op_def/nn_optimizer_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/hash_map.h"
 #include "utils/hash_set.h"
 #include "include/backend/optimizer/helper.h"

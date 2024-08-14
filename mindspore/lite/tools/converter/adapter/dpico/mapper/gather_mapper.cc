@@ -21,7 +21,7 @@
 #include <algorithm>
 #include "common/fetch_content.h"
 #include "common/op_enum.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "op/gather_operator.h"
 
 namespace mindspore {

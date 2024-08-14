@@ -69,7 +69,7 @@
 #include "include/common/profiler.h"
 #include "plugin/device/cpu/hal/device/cpu_kernel_task.h"
 #include "plugin/device/cpu/hal/device/cpu_device_synchronizer.h"
-#include "op_def/framework_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "kernel/oplib/oplib.h"
 #include "runtime/device/move_to.h"
 

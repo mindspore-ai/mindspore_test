@@ -24,7 +24,7 @@
 #include "tools/lite_exporter/fetch_content.h"
 #include "ir/func_graph.h"
 #include "nnacl/op_base.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 
 namespace mindspore {
 namespace opt {

@@ -22,8 +22,8 @@
 #include <algorithm>
 #include <string>
 #include <queue>
-#include "op_def/math_ops.h"
-#include "op_def/framework_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "frontend/parallel/ops_info/ops_utils.h"
 #include "frontend/parallel/device_manager.h"
 #include "frontend/parallel/pass/pass_utils.h"

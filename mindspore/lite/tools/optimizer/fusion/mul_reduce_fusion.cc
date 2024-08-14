@@ -28,7 +28,7 @@
 #include "infer/cxx_api/mat_mul_fusion.h"
 #include "infer/cxx_api/mul_fusion.h"
 #include "infer/squeeze.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "nnacl/op_base.h"
 
 namespace mindspore {

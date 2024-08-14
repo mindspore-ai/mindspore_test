@@ -18,7 +18,7 @@
 #define MINDSPORE_CORE_BASE_IMAGE_OPS_H_
 
 #include <memory>
-#include "op_def/image_op_name.h"
+#include "mindspore/ops/op_def/image_op_name.h"
 #include "ir/anf.h"
 #include "ir/primitive.h"
 #include "utils/hash_map.h"

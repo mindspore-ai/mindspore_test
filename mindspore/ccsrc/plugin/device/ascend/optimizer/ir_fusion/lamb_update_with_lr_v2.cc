@@ -17,10 +17,10 @@
 #include "plugin/device/ascend/optimizer/ir_fusion/lamb_update_with_lr_v2.h"
 #include <memory>
 #include <algorithm>
-#include "op_def/ascend_op_name.h"
-#include "op_def/comparison_op_name.h"
-#include "op_def/math_ops.h"
-#include "op_def/framework_ops.h"
+#include "mindspore/ops/op_def/ascend_op_name.h"
+#include "mindspore/ops/op_def/comparison_op_name.h"
+#include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "include/common/utils/utils.h"
 #include "plugin/device/ascend/optimizer/ascend_helper.h"
 

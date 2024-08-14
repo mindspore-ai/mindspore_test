@@ -27,6 +27,8 @@
 #include "abstract/ops/primitive_infer_map.h"
 
 namespace mindspore::ops {
+constexpr auto kAttrMeOpName = "me_op_name";
+
 std::set<int64_t> GetInputDependValueList(const PrimitivePtr &op_prim) {
   MS_EXCEPTION_IF_NULL(op_prim);
   std::set<int64_t> depend_list;

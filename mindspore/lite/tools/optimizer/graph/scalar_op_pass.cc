@@ -16,10 +16,10 @@
 #include <memory>
 #include <vector>
 #include <string>
-#include "op_def/auto_generate/gen_lite_ops.h"
-#include "op_def/auto_generate/gen_ops_primitive.h"
-#include "op_def/array_ops.h"
-#include "op_def/lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/lite_ops.h"
 #include "tools/optimizer/graph/scalar_op_pass.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "mindspore/ops/op_def/arithmetic_ops.h"

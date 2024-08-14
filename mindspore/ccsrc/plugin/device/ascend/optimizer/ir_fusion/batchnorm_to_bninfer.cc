@@ -27,9 +27,9 @@
 #include "include/common/utils/utils.h"
 #include "ir/primitive.h"
 #include "mindapi/base/types.h"
-#include "op_def/nn_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
 #include "ops_utils/op_utils.h"
-#include "op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
 #include "utils/ms_context.h"
 
 namespace mindspore {

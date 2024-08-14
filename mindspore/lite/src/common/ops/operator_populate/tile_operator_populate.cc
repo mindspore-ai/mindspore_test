@@ -16,7 +16,7 @@
 #include "src/common/ops/operator_populate/operator_populate_register.h"
 #include "nnacl/base/tile_base.h"
 #include "infer/cxx_api/tile_fusion.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 using mindspore::ops::kNameTileFusion;
 using mindspore::schema::PrimitiveType_TileFusion;
 namespace mindspore {

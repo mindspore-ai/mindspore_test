@@ -20,10 +20,10 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/common/utils/anfalgo.h"
-#include "op_def/array_op_name.h"
-#include "op_def/math_op_name.h"
-#include "op_def/nn_optimizer_ops.h"
-#include "op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/array_op_name.h"
+#include "mindspore/ops/op_def/math_op_name.h"
+#include "mindspore/ops/op_def/nn_optimizer_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
 
 namespace mindspore {
 namespace opt {

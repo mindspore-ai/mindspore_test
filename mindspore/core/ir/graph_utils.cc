@@ -30,7 +30,6 @@
 #include "utils/hash_set.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
-#include "include/common/utils/utils.h"
 
 namespace mindspore {
 namespace {

@@ -19,6 +19,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "nnacl/op_base.h"
 #include "include/common/utils/anfalgo.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 tensor::TensorPtr TensorRtOptimizer::GetParameterValue(const CNodePtr &node, size_t parameter_index) {

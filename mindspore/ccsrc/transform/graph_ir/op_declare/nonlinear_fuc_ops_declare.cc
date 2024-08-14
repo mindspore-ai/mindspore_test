@@ -16,11 +16,11 @@
 
 #include "transform/graph_ir/op_declare/nonlinear_fuc_ops_declare.h"
 
-#include "op_def/ascend_op_name.h"
-#include "op_def/lite_ops.h"
-#include "op_def/math_ops.h"
-#include "op_def/nn_ops.h"
-#include "op_def/nn_optimizer_ops.h"
+#include "mindspore/ops/op_def/ascend_op_name.h"
+#include "mindspore/ops/op_def/lite_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
+#include "mindspore/ops/op_def/nn_optimizer_ops.h"
 
 namespace mindspore::transform {
 // Relu

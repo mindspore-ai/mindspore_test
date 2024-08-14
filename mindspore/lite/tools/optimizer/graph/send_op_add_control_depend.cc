@@ -17,7 +17,7 @@
 #include "tools/optimizer/graph/send_op_add_control_depend.h"
 
 #include <vector>
-#include "op_def/framework_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "include/common/utils/anfalgo.h"
 
 namespace mindspore {

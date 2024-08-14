@@ -27,7 +27,7 @@
 #include "infer/conv2d.h"
 #include "infer/squeeze.h"
 #include "infer/unsqueeze.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "ops/primitive_c.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "nnacl/op_base.h"

@@ -27,10 +27,10 @@
 #include "include/common/utils/parallel_context.h"
 #include "include/common/utils/utils.h"
 #include "mindspore/core/utils/ms_context.h"
-#include "op_def/array_op_name.h"
-#include "op_def/framework_ops.h"
-#include "op_def/math_op_name.h"
-#include "op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/array_op_name.h"
+#include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/math_op_name.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/backend/distributed/ps/ps_context.h"
 #endif

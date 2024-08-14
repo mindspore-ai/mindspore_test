@@ -17,11 +17,11 @@
 #include "transform/graph_ir/op_declare/image_ops_declare.h"
 #include <string>
 #include <vector>
-#include "op_def/image_ops.h"
-#include "op_def/lite_op_name.h"
-#include "op_def/auto_generate/gen_ops_primitive.h"
-#include "op_def/auto_generate/gen_ops_name.h"
-#include "op_def/ascend_op_name.h"
+#include "mindspore/ops/op_def/image_ops.h"
+#include "mindspore/ops/op_def/lite_op_name.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
+#include "mindspore/ops/op_def/ascend_op_name.h"
 
 namespace mindspore::transform {
 // ResizeNearestNeighborV2

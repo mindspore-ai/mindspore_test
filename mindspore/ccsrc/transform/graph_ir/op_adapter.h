@@ -27,9 +27,9 @@
 #include "transform/graph_ir/op_adapter_base.h"
 #include "include/common/utils/utils.h"
 #include "include/common/utils/anfalgo.h"
-#include "op_def/other_ops.h"
-#include "op_def/sequence_ops.h"
-#include "op_def/framework_ops.h"
+#include "mindspore/ops/op_def/other_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "ops_utils/op_utils.h"
 namespace mindspore {
 namespace transform {

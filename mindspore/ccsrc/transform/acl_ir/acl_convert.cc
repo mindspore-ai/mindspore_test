@@ -26,7 +26,7 @@
 #include "ops_utils/op_utils.h"
 #include "include/backend/device_address.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "transform/acl_ir/op_api_util.h"
 #include "transform/symbol/acl_base_symbol.h"
 #include "transform/symbol/acl_rt_symbol.h"

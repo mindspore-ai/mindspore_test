@@ -23,7 +23,7 @@
 #include "ops_utils/op_utils.h"
 #include "nnacl/op_base.h"
 #include "tools/converter/adapter/acl/common/utils.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 
 namespace mindspore {
 namespace lite {

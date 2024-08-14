@@ -23,7 +23,7 @@
 #include <vector>
 #include <unordered_map>
 #include <utility>
-#include "op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
 #include "include/common/utils/anfalgo.h"
 
 namespace mindspore {

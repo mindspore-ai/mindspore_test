@@ -17,7 +17,7 @@
 #include "runtime/graph_scheduler/inline_control_flow_scheduler.h"
 #include <vector>
 #include "runtime/graph_scheduler/scheduler_helper.h"
-#include "op_def/framework_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 
 namespace mindspore {
 namespace runtime {

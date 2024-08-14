@@ -28,7 +28,7 @@
 #include "mindspore/ops/op_def/conv_pool_ops.h"
 #include "infer/conv2d_transpose.h"
 #include "infer/grad/conv2d_backprop_input.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "ops/primitive_c.h"
 #include "utils/check_convert_utils.h"
 #include "utils/convert_utils_base.h"

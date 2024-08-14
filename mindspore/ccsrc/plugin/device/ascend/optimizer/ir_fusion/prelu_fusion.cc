@@ -21,8 +21,8 @@
 #include "include/backend/optimizer/helper.h"
 #include "include/common/utils/utils.h"
 #include "ir/primitive.h"
-#include "op_def/math_ops.h"
-#include "op_def/nn_optimizer_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
+#include "mindspore/ops/op_def/nn_optimizer_ops.h"
 
 namespace mindspore {
 namespace opt {

@@ -28,7 +28,7 @@
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "ops_utils/op_utils.h"
 #include "plugin/device/gpu/hal/device/kernel_info_setter.h"
 

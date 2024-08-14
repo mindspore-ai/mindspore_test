@@ -20,10 +20,10 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "op_def/sequence_ops.h"
-#include "op_def/nn_ops.h"
-#include "op_def/array_ops.h"
-#include "op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "utils/hash_set.h"
 #include "kernel/kernel_build_info.h"
 #include "include/backend/anf_runtime_algorithm.h"

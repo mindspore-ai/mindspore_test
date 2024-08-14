@@ -33,7 +33,7 @@
 #include "src/common/log_util.h"
 #include "tools/converter/parser/parser_utils.h"
 #include "ops_utils/op_utils.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 
 namespace mindspore {
 namespace lite {

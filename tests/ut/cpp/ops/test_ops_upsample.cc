@@ -23,7 +23,7 @@
 #include "infer/ops_func_impl/upsample_nearest3d.h"
 #include "infer/ops_func_impl/upsample_trilinear3d.h"
 #include "infer/ops_func_impl/upsample_bilinear2d.h"
-#include "op_def/auto_generate/gen_ops_name.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 #include "ir/dtype/type.h"
 #include "abstract/dshape.h"
 #include "utils/tensor_construct_utils.h"

@@ -16,12 +16,12 @@
 
 #include "plugin/device/ascend/optimizer/ge/hcom/insert_load_for_allgather.h"
 #include <vector>
-#include "op_def/other_op_name.h"
-#include "op_def/framework_ops.h"
+#include "mindspore/ops/op_def/other_op_name.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "include/common/utils/utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/parallel_context.h"
-#include "op_def/other_ops.h"
+#include "mindspore/ops/op_def/other_ops.h"
 #include "utils/ms_context.h"
 
 namespace mindspore {

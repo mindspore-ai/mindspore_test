@@ -23,6 +23,7 @@
 #include "infer/tuple_le.h"
 #include "infer/tuple_lt.h"
 #include "utils/check_convert_utils.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace ops {

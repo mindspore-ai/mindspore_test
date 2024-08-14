@@ -36,6 +36,8 @@
 #include "ir/dtype/type.h"
 #include "utils/log_adapter.h"
 
+#include "mindspore/core/ir/meta_grad_data.h"
+
 #ifndef MS_UNLIKELY
 #ifdef _MSC_VER
 #define MS_UNLIKELY(x) (x)
@@ -261,7 +263,7 @@ constexpr auto kAttrParallelFusionType = "parallel_fusion_type";
 constexpr auto kAttrParallelTypeInfo = "parallel_type_info";
 constexpr auto kAttrCompositeType = "composite_type";
 constexpr auto kAttrStitch = "stitch";
-constexpr auto kAttrTopoSortRhsFirst = "topo_sort_rhs_first";
+// constexpr auto kAttrTopoSortRhsFirst = "topo_sort_rhs_first";
 constexpr auto kAttrIgnoreSideEffect = "ignore_side_effect";
 constexpr auto kAttrSwitchLayer = "switch_layer";
 constexpr auto kAttrReturn = "return";
@@ -718,19 +720,19 @@ constexpr auto kSyncUserDataHandler = "sync_user_data_handler";
 
 constexpr auto kRealElementsSize = "real_elements_size";
 
-// For expander and pynative grad graph
-enum class InputType {
-  // Scala or Constant tensor, no need to grad
-  kConstant = 0,
-  // Weight parameter tensor
-  kParameter,
-  // Net input tensor
-  kInput,
-  // Other op output tensor
-  kOpOutput,
-  // Default
-  kUnkown,
-};
+// // For expander and pynative grad graph
+// enum class InputType {
+//   // Scala or Constant tensor, no need to grad
+//   kConstant = 0,
+//   // Weight parameter tensor
+//   kParameter,
+//   // Net input tensor
+//   kInput,
+//   // Other op output tensor
+//   kOpOutput,
+//   // Default
+//   kUnkown,
+// };
 
 // Return vec<filename, line number, function name>
 COMMON_EXPORT std::vector<std::tuple<std::string, int, std::string>> GetPythonStack_();

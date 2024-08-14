@@ -20,7 +20,7 @@
 #include <memory>
 #include <functional>
 #include "src/extendrt/delegate/tensorrt/tensorrt_utils.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 
 namespace mindspore::lite {
 REGISTER_TENSORRT_PLUGIN(GatherDPluginCreater);

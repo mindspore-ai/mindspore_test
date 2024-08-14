@@ -21,6 +21,7 @@
 #include "mindspore/core/ops/ops_func_impl/op_func_impl.h"
 #include "utils/check_convert_utils.h"
 #include "infer/ops_func_impl/fft_arithmetic.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace ops {

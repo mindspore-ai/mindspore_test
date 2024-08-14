@@ -17,7 +17,7 @@
 #include "common/format_utils.h"
 #include <set>
 #include <string>
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/tuple_get_item.h"
 #include "infer/depend.h"
 #include "infer/make_tuple.h"

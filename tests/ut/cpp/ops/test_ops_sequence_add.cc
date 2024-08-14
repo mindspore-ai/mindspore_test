@@ -16,7 +16,7 @@
 #include <vector>
 #include <memory>
 #include "common/common_test.h"
-#include "op_def/sequence_op_name.h"
+#include "mindspore/ops/op_def/sequence_op_name.h"
 #include "ir/dtype/type.h"
 #include "abstract/dshape.h"
 #include "utils/tensor_construct_utils.h"

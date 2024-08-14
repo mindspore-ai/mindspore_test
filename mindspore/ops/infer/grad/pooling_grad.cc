@@ -19,7 +19,7 @@
 #include "mindapi/base/shared_ptr.h"
 #include "mindapi/ir/value.h"
 #include "mindapi/src/helper.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "ops/primitive_c.h"
 #include "utils/log_adapter.h"
 #include "abstract/abstract_value.h"
@@ -31,7 +31,8 @@
 #include "ir/primitive.h"
 #include "mindapi/base/shape_vector.h"
 #include "utils/check_convert_utils.h"
-#include "op_def/conv_pool_ops.h"
+#include "mindspore/ops/op_def/conv_pool_ops.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace ops {

@@ -17,7 +17,7 @@
 #include "infer/ops_func_impl/baddbmm.h"
 #include <vector>
 #include <memory>
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 
 namespace mindspore {

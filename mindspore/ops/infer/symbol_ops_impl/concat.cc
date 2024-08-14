@@ -16,6 +16,7 @@
 #include "utils/check_convert_utils.h"
 #include "mindspore/ops/infer/symbol_ops_impl/common.h"
 #include "mindspore/ops/infer/symbol_ops_impl/scalar_add.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {
 namespace symshape {

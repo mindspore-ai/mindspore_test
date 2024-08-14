@@ -15,7 +15,7 @@
  */
 #include "common/common_test.h"
 #include "common/resource.h"
-#include "op_def/math_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
 #include "frontend/parallel/step_parallel.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/step_auto_parallel.h"

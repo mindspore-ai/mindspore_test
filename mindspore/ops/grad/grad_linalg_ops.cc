@@ -18,6 +18,7 @@
 #include "frontend/expander/bprop/bprop_irbuilder.h"
 #include "frontend/expander/bprop/common_utils.h"
 #include "include/common/utils/utils.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore::expander::bprop {
 NodePtr MatrixDiag(BpropBuilder *ib, const NodePtr &x) {

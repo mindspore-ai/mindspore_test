@@ -21,13 +21,13 @@
 #include <string>
 #include <set>
 #include "kernel/framework_utils.h"
-#include "op_def/random_op_name.h"
-#include "op_def/nn_optimizer_op_name.h"
-#include "op_def/sparse_ops.h"
-#include "op_def/conv_pool_ops.h"
-#include "op_def/nn_ops.h"
-#include "op_def/array_ops.h"
-#include "op_def/framework_ops.h"
+#include "mindspore/ops/op_def/random_op_name.h"
+#include "mindspore/ops/op_def/nn_optimizer_op_name.h"
+#include "mindspore/ops/op_def/sparse_ops.h"
+#include "mindspore/ops/op_def/conv_pool_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "kernel/common_utils.h"
 #include "plugin/factory/ms_factory.h"
 #include "kernel/gpu/gpu_kernel.h"
@@ -42,7 +42,7 @@
 #include "utils/ms_context.h"
 #include "utils/ms_utils.h"
 #include "include/common/utils/utils.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "kernel/cpu/cpu_kernel.h"
 
 namespace mindspore {

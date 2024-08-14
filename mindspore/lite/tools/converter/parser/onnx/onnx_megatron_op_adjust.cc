@@ -21,12 +21,13 @@
 #include "infer/all_reduce.h"
 #include "infer/cxx_api/mul_fusion.h"
 #include "infer/cxx_api/mat_mul_fusion.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/where.h"
 #include "include/errorcode.h"
 #include "tools/common/tensor_util.h"
 #include "tools/converter/ops/ops_def.h"
 #include "tools/optimizer/common/gllo_utils.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore::lite {
 namespace {

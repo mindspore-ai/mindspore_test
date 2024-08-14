@@ -31,7 +31,7 @@
 #include "ops/base_operator.h"
 #include "mindspore/core/ir/primitive.h"
 #include "ops/primitive_c.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "schema/ops_generated.h"
 
 namespace mindspore {

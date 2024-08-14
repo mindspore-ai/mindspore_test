@@ -20,7 +20,7 @@
 #include <vector>
 #include <string>
 #include <memory>
-#include "op_def/nn_optimizer_op_name.h"
+#include "mindspore/ops/op_def/nn_optimizer_op_name.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/momentum_impl.cuh"

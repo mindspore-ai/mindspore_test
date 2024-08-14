@@ -18,7 +18,7 @@
 #include <functional>
 #include "src/extendrt/delegate/tensorrt/op/fastgelu_tensorrt.h"
 #include "src/extendrt/delegate/tensorrt/op/cast_tensorrt.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "src/extendrt/delegate/tensorrt/tensorrt_utils.h"
 
 namespace mindspore::lite {

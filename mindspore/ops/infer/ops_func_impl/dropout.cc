@@ -17,7 +17,7 @@
 #include <memory>
 #include "infer/ops_func_impl/dropout.h"
 #include "abstract/dshape.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "utils/check_convert_utils.h"
 #include "utils/convert_utils_base.h"
 #include "utils/log_adapter.h"

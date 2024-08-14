@@ -19,7 +19,7 @@
 #include <vector>
 #include "securec/include/securec.h"
 #include "infer/cxx_api/prelu_fusion.h"
-#include "op_def/auto_generate/gen_lite_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/cxx_api/activation.h"
 #include "nnacl/op_base.h"
 #include "infer/softplus.h"

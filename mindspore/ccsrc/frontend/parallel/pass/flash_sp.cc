@@ -23,11 +23,11 @@
 #include <string>
 #include <algorithm>
 
-#include "op_def/sequence_ops.h"
-#include "op_def/other_ops.h"
-#include "op_def/array_ops.h"
-#include "op_def/framework_ops.h"
-#include "op_def/nn_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/other_ops.h"
+#include "mindspore/ops/op_def/array_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
 #include "infer/make_tuple.h"
 #include "utils/anf_utils.h"
 #include "ir/tensor.h"

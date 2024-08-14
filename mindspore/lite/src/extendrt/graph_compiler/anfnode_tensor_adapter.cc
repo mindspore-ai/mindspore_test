@@ -20,8 +20,9 @@
 #include "ir/anf.h"
 #include "ir/func_graph.h"
 #include "ir/primitive.h"
-#include "op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
 #include "utils/ms_utils_secure.h"
+#include "mindspore/ccsrc/include/common/utils/utils.h"
 
 using ShapePtr = mindspore::abstract::ShapePtr;
 using AbstractBasePtr = mindspore::abstract::AbstractBasePtr;

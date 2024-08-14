@@ -22,7 +22,7 @@
 #include "ops/ops_frontend_func_impl.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 #include "ops_utils/op_utils.h"
-#include "op_def/op_name.h"
+#include "mindspore/ops/op_def/op_name.h"
 #include "ir/dtype.h"
 #include "utils/check_convert_utils.h"
 
