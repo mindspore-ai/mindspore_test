@@ -275,7 +275,7 @@ void RefreshAddr(const device::DeviceAddressPtr &device_address) {
   add_tensor_addr_to_cached_list_func(device_address->GetMutablePtr());
 }
 
-void RefreshAddr(const mindspore::tensor::TensorPtr &tensor) {
+void RefreshAddr(const mindspore::tensor::BaseTensorPtr &tensor) {
   if (tensor == nullptr) {
     return;
   }
