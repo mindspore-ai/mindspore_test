@@ -67,6 +67,7 @@ MS_CORE_API const char *SafeCStr(const std::string &&str);
 
 // Memory dev config.
 const char kAllocConf[] = "MS_ALLOC_CONF";
+const char kAllocAclAllocator[] = "acl_allocator";
 const char kAllocEnableVmm[] = "enable_vmm";
 const char kAllocVmmAlignSize[] = "vmm_align_size";
 const char kAllocMemoryRecycle[] = "memory_recycle";

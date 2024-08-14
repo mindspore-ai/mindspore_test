@@ -18,6 +18,7 @@
 #include "transform/symbol/acl_rt_allocator_symbol.h"
 #include "transform/symbol/symbol_utils.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
+#include "utils/ms_utils.h"
 
 namespace mindspore {
 namespace transform {
@@ -92,10 +93,15 @@ AclAllocatorRegister &AclAllocatorRegister::Instance() {
 }
 
 void AclAllocatorRegister::RegisterAllocator(void *stream) {
+  static const bool is_disable_register = common::IsDisableAlllocConfig(common::kAllocAclAllocator);
+  if (is_disable_register) {
+    return;
+  }
   if (allocator_map_.find(stream) == allocator_map_.end()) {
     const auto &allocator_obj = NewAclAllocator(stream);
     (void)CALL_ASCEND_API(aclrtAllocatorRegister, stream, allocator_obj->allocator_desc());
     allocator_map_[stream] = allocator_obj;
+    MS_LOG(INFO) << "Register AclAllocator";
   }
 }
 }  // namespace transform
