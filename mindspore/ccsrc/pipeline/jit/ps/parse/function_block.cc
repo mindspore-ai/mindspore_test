@@ -491,7 +491,7 @@ AnfNodePtr FunctionBlock::DoResolve(const AnfNodePtr &node, const std::shared_pt
   AnfNodePtr resolved_node = nullptr;
   bool success = ResolveObjectToNode(node, obj, &resolved_node);
   if (!success || resolved_node == nullptr) {
-    MS_LOG(INTERNAL_EXCEPTION) << "Parse Resolve covert failed." << node->DebugString()
+    MS_LOG(INTERNAL_EXCEPTION) << "Parse Resolve convert failed." << node->DebugString()
                                << ", ns: " << name_space->ToString() << ", sym: " << resolve_symbol->ToString();
   }
   // If the constant node is constant of vector of graph, add graph to manager.
@@ -718,7 +718,7 @@ void FunctionBlock::Jump(const FunctionBlockPtr &target_block, const std::vector
                                << trace::GetDebugInfoStr(func_graph_->get_return()->debug_info());
   }
   std::vector<AnfNodePtr> input_nodes;
-  input_nodes.emplace_back(NewValueNode(target_block->func_graph()));
+  (void)input_nodes.emplace_back(NewValueNode(target_block->func_graph()));
   (void)std::copy(args.begin(), args.end(), std::back_inserter(input_nodes));
 
   CNodePtr jump = func_graph_->NewCNodeInOrder(std::move(input_nodes));
@@ -806,14 +806,14 @@ void FunctionBlock::AttachIsolatedNodesBeforeReturn() {
     return;
   }
   std::vector<AnfNodePtr> states;
-  states.emplace_back(NewValueNode(prim::kPrimMakeTuple));
+  (void)states.emplace_back(NewValueNode(prim::kPrimMakeTuple));
   constexpr int recursive_level = 2;
   for (const auto &node : isolated_nodes_) {
     MS_EXCEPTION_IF_NULL(node);
     MS_LOG(DEBUG) << "Adding dependency, node: " << node->DebugString(recursive_level) << " in "
                   << func_graph_->ToString();
     if (node->func_graph() == func_graph_) {
-      states.emplace_back(node);
+      (void)states.emplace_back(node);
     } else {
       MS_LOG(INFO) << "Ignored FV dependency, node: " << node->DebugString(recursive_level) << " in "
                    << func_graph_->ToString();
