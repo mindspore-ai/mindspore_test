@@ -137,8 +137,6 @@ void DebugActor::DebugPostLaunch(const AnfNodePtr &node, const std::vector<Devic
     if (debugger != nullptr) {
       auto kernel_graph = std::dynamic_pointer_cast<session::KernelGraph>(cnode->func_graph());
       debugger->InsertExecutedGraph(kernel_graph);
-      std::string kernel_name = cnode->fullname_with_scope();
-      debugger->SetCurNode(kernel_name);
       bool read_data = CheckReadData(cnode);
       if (read_data) {
         ReadDataAndDump(cnode, input_device_tensors, output_device_tensors, exec_order_, device_context);
@@ -323,7 +321,6 @@ void DebugActor::DebugOnStepEnd(OpContext<DeviceTensor> *const, const AID *, int
     // Reset exec_order for the next step
     exec_order_ = 0;
     debugger->Debugger::PostExecuteGraphDebugger();
-    debugger->Debugger::UpdateStepNumGPU();
   }
 #ifndef ENABLE_SECURITY
   DumpJsonParser::GetInstance().UpdateDumpIter(step_count);

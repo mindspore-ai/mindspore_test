@@ -234,16 +234,6 @@ void GPUDeviceResManager::Destroy() {
 }
 
 void GPUDeviceContext::Destroy() {
-#ifdef ENABLE_DEBUGGER
-  auto debugger = Debugger::GetInstance();
-  if (debugger && debugger->debugger_enabled()) {
-    debugger->SetTrainingDone(true);
-    bool ret = debugger->SendMetadata(false);
-    if (!ret) {
-      MS_LOG(ERROR) << "Failed to SendMetadata when finalize";
-    }
-  }
-#endif
   MS_EXCEPTION_IF_NULL(GetKernelExecutor(false));
   GetKernelExecutor(false)->Destroy();
   device_res_manager_->Destroy();

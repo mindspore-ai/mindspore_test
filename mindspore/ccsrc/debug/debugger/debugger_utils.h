@@ -21,7 +21,6 @@
 #include <vector>
 #include "include/backend/debug/debugger/debugger.h"
 #include "kernel/kernel.h"
-#include "proto/debug_grpc.grpc.pb.h"
 #include "runtime/hardware/device_context.h"
 
 using mindspore::device::DeviceContext;
@@ -54,23 +53,6 @@ void DumpDataViaCallback(const CNodePtr &cnode, const std::vector<device::Device
 
 std::string CheckDatasetSinkMode(const KernelGraphPtr &graph_ptr);
 
-void LoadDataForDebugger(const KernelGraphPtr &graph_ptr);
-
-void SuperKernelE2eDump(const KernelGraphPtr &graph);
-
-// process reply and command type
-DebuggerCommand GetCommand(const debugger::EventReply &reply);
-
-// parse other data out of EventReply
-ProtoVector<debugger::WatchCondition_Parameter> GetParameters(const debugger::EventReply &reply);
-ProtoVector<debugger::WatchNode> GetWatchnodes(const debugger::EventReply &reply);
-std::string GetNodeName(const debugger::EventReply &reply);
-std::string GetRunLevel(const debugger::EventReply &reply);
-debugger::WatchCondition GetWatchcondition(const debugger::EventReply &reply);
-int32_t GetWatchpointID(const debugger::EventReply &reply);
-bool GetWatchpointDelete(const debugger::EventReply &reply);
-ProtoVector<debugger::TensorProto> GetTensors(const debugger::EventReply &reply);
-bool GetMiVersionMatched(const debugger::EventReply &reply);
 // get the full name of a tensor, which is the name used in TensorLoader
 std::string GetTensorFullName(const debugger::TensorProto &tensor);
 }  // namespace mindspore
