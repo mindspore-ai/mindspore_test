@@ -432,6 +432,7 @@ void ResetId(const ResourcePtr &resource) {
   auto need_dump = common::GetCompileConfig("DUMP_VALIDATE_BEFORE_RESET_ID");
   if (context->CanDump(kIntroductory) && need_dump == "1") {
     FuncGraphPtr graph = resource->func_graph();
+    MS_EXCEPTION_IF_NULL(graph);
     DumpIR("validate_before_reset_id.ir", graph, true, kWholeStack);
   }
 #endif
@@ -1637,7 +1638,9 @@ void Pipeline::Run() {
         result = action.second(resource_);
         MS_LOG(INFO) << "Status record: end " << action.first << " action.";
         if (IS_OUTPUT_ON(mindspore::kInfo)) {
-          auto manager = resource_->func_graph()->manager();
+          auto func_graph = resource_->func_graph();
+          MS_EXCEPTION_IF_NULL(func_graph);
+          auto manager = func_graph->manager();
           MS_EXCEPTION_IF_NULL(manager);
           MS_LOG(INFO) << "Extra status record: total func graphs: " << manager->func_graphs().size()
                        << ", total nodes: " << manager->all_nodes().size();
@@ -2290,6 +2293,7 @@ FuncGraphPtr SplitMindIR(const std::string &file_name) {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   auto parallel_context = parallel::ParallelContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(parallel_context);
   parallel_context->Reset();
   parallel_context->set_parallel_mode(parallel::kAutoParallel);
   parallel_context->set_strategy_search_mode(parallel::kRecursiveProgramming);
@@ -2365,6 +2369,7 @@ FuncGraphPtr SplitDynamicMindIR(const std::string &file_name, size_t device_num,
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   auto parallel_context = parallel::ParallelContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(parallel_context);
   parallel_context->Reset();
   parallel_context->set_parallel_mode(parallel::kAutoParallel);
   parallel_context->set_strategy_search_mode(parallel::kRecursiveProgramming);
@@ -2751,11 +2756,12 @@ void FinalizeCluster() {
 void SwapCache(const tensor::TensorPtr &host, const tensor::TensorPtr &device, const tensor::TensorPtr &block_mapping,
                const bool &is_device_to_host) {
   auto block_mapping_shape = block_mapping->shape();
-  if (block_mapping_shape.size() != 2) {
+  const size_t num_two = 2;
+  if (block_mapping_shape.size() != num_two) {
     MS_LOG_EXCEPTION << "The shape size of Cache input mapping tensor should be 2, but got: "
                      << block_mapping_shape.size();
   }
-  if (block_mapping_shape[1] != 2) {
+  if (block_mapping_shape[kIndex1] != num_two) {
     MS_LOG_EXCEPTION << "The second dim of CacheKernel input mapping tensor should be 2, but got: "
                      << block_mapping_shape[0];
   }
@@ -2763,7 +2769,7 @@ void SwapCache(const tensor::TensorPtr &host, const tensor::TensorPtr &device, c
   auto in_shape = device->shape();
   auto type_byte = GetTypeByte(TypeIdToType(host->data_type()));
   size_t block_size_in_bytes = LongToSize(
-    std::accumulate(in_shape.begin() + 1, in_shape.end(), SizeToLong(type_byte), std::multiplies<int64_t>()));
+    std::accumulate(in_shape.begin() + kIndex1, in_shape.end(), SizeToLong(type_byte), std::multiplies<int64_t>()));
 
   uint8_t *host_ptr = reinterpret_cast<uint8_t *>(host->data_c());
   MS_EXCEPTION_IF_NULL(host_ptr);
@@ -2773,9 +2779,9 @@ void SwapCache(const tensor::TensorPtr &host, const tensor::TensorPtr &device, c
   MS_EXCEPTION_IF_NULL(device_ptr);
 
   auto block_mapping_data = reinterpret_cast<int64_t *>(block_mapping->data_c());
-  for (int64_t i = 0; i < block_mapping_shape[0]; i++) {
-    int64_t src_block_num = block_mapping_data[2 * i];
-    int64_t dst_block_num = block_mapping_data[2 * i + 1];
+  for (size_t i = 0; i < LongToSize(block_mapping_shape[0]); i++) {
+    int64_t src_block_num = block_mapping_data[num_two * i];
+    int64_t dst_block_num = block_mapping_data[num_two * i + kIndex1];
     size_t src_block_offset = LongToSize(src_block_num) * block_size_in_bytes;
     size_t dst_block_offset = LongToSize(dst_block_num) * block_size_in_bytes;
 

@@ -304,7 +304,7 @@ FuncGraphPtr FinalBpropGraphPass(const ResourcePtr &resource, bool has_control_f
   opt::OptPassConfig inline_opt = opt::OptPassConfig({
     irpass.inline_,
   });
-  map.emplace_back("ad_inline", inline_opt);
+  (void)map.emplace_back("ad_inline", inline_opt);
 
   opt::OptPassConfig grad_graph_opt = opt::OptPassConfig({
     irpass.tuple_list_get_item_eliminator_,
@@ -835,6 +835,7 @@ bool AssignAddOpt(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(func_graph);
   parallel::AssignAddOpt(func_graph);
   auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
   auto enable_concat_eliminate = ms_context->get_param<bool>(MS_CTX_ENABLE_CONCAT_ELIMINATE_OPT);
   if (!enable_concat_eliminate) {
     return true;
@@ -848,6 +849,7 @@ bool AssignAddOpt(const ResourcePtr &resource) {
 bool PartialUnusedArgsEliminatePass(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
   FuncGraphPtr func_graph = resource->func_graph();
+  MS_EXCEPTION_IF_NULL(func_graph);
   auto opt = opt::irpass::PartialUnusedArgsEliminate();
   auto changed = opt(func_graph);
   if (changed) {
@@ -956,6 +958,7 @@ bool OverlapOptShardInPipelinePass(const ResourcePtr &resource) {
 
 bool BeginEndOverlapInlinePass(const ResourcePtr &resource) {
   auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
   auto is_enable = ms_context->get_param<bool>(MS_CTX_ENABLE_BEGIN_END_INLINE_OPT);
   if (!is_enable) {
     return true;
@@ -1108,6 +1111,7 @@ bool AutoParallelPass(const ResourcePtr &resource) {
 bool AutoParallelSymbolPassWithReNormalize(const ResourcePtr &resource) {
   // 1, auto parallel; 2, dynamic shape
   auto func_graph = resource->func_graph();
+  MS_EXCEPTION_IF_NULL(func_graph);
   if (!parallel::IsParallelDynamicShape(func_graph)) {
     return true;
   }

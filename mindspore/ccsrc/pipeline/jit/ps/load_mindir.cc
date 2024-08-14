@@ -36,6 +36,7 @@ bool InferMindIR(const ResourcePtr &resource) {
 }
 
 std::vector<AnfNodePtr> ArgsNeededToConvert(const PrimitivePtr &prim) {
+  MS_EXCEPTION_IF_NULL(prim);
   auto op_def = mindspore::ops::GetOpDef(prim->name());
   std::vector<AnfNodePtr> prim_init_arg_nodes;
   MS_EXCEPTION_IF_NULL(op_def);
@@ -100,6 +101,7 @@ void ModifyOneFuncGraph(const FuncGraphPtr &func_graph, std::set<FuncGraphPtr> *
       continue;
     }
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     ModifyOneCNode(func_graph, cnode);
     auto &inputs = cnode->inputs();
     for (size_t i = 0; i < inputs.size(); ++i) {
@@ -117,7 +119,7 @@ void ModifyOneFuncGraph(const FuncGraphPtr &func_graph, std::set<FuncGraphPtr> *
 void ModifyGraphs(const FuncGraphPtr &func_graph) {
   std::set<FuncGraphPtr> func_graph_set{};
   std::set<FuncGraphPtr> func_graph_modified{};
-  func_graph_set.insert(func_graph);
+  (void)func_graph_set.insert(func_graph);
   // Check every node in every graph to find nodes needed to convert.
   while (!func_graph_set.empty()) {
     FuncGraphPtr fg = *func_graph_set.cbegin();
@@ -132,6 +134,7 @@ void ModifyGraphs(const FuncGraphPtr &func_graph) {
 bool ModifyGraphGeneratedByMindIR(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
   const auto &func_graph = resource->func_graph();
+  MS_EXCEPTION_IF_NULL(func_graph);
   ModifyGraphs(func_graph);
   return true;
 }

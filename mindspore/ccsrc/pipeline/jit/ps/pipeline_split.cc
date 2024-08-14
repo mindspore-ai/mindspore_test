@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2022 Huawei Technologies Co., Ltd
+ * Copyright 2020-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -117,7 +117,9 @@ static std::set<FuncGraphPtr> FindForwardGraph(const FuncGraphPtr &root, const s
       }
     }
   }
-  auto execution_mode = MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE);
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  auto execution_mode = context->get_param<int>(MS_CTX_EXECUTION_MODE);
   for (auto &node : all_nodes) {
     MS_EXCEPTION_IF_NULL(node);
     if (!node->isa<CNode>()) {
@@ -214,7 +216,9 @@ bool PipelineSplit(const ResourcePtr &res) {
   }
 #endif
   MS_EXCEPTION_IF_NULL(res);
-  auto parallel_mode = parallel::ParallelContext::GetInstance()->parallel_mode();
+  auto parallel_context = parallel::ParallelContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(parallel_context);
+  auto parallel_mode = parallel_context->parallel_mode();
   if (parallel_mode != parallel::kSemiAutoParallel && parallel_mode != parallel::kAutoParallel) {
     MS_LOG(INFO) << "Only auto_parallel and semi_auto_parallel support pipeline split.";
     return true;
@@ -230,14 +234,14 @@ bool PipelineSplit(const ResourcePtr &res) {
   auto world_group = mindspore::parallel::GetWorldGroup();
   uint32_t world_rank_size = 0;
   int64_t device_num = 0;
-  if (!parallel::ParallelContext::GetInstance()->device_num_is_set()) {
+  if (!parallel_context->device_num_is_set()) {
     if (!CommManager::GetInstance().GetRankSize(world_group, &world_rank_size)) {
       MS_LOG(EXCEPTION) << "Get rank size failed";
     }
     device_num = UintToInt(world_rank_size);
     MS_LOG(INFO) << "Get device num from communication model, the device num is  " << device_num;
   } else {
-    device_num = parallel::ParallelContext::GetInstance()->device_num();
+    device_num = parallel_context->device_num();
   }
 
   if (device_num < 1) {
@@ -251,7 +255,7 @@ bool PipelineSplit(const ResourcePtr &res) {
                   << global_rank;
   }
   static const auto gen_mask_not_fusion = (common::GetEnv("GENMASK_NOT_FUSION") == "1");
-  auto stage_num = parallel::ParallelContext::GetInstance()->pipeline_stage_split_num();
+  auto stage_num = parallel_context->pipeline_stage_split_num();
   if (stage_num <= 1) {
     MS_LOG(INFO) << "The parameter 'stage_num' is: " << stage_num << ". No need Pipeline split.";
     auto tmp_transformer = std::make_shared<parallel::PipelineTransformer>(manager, 0, root, global_rank, global_rank);
@@ -269,8 +273,6 @@ bool PipelineSplit(const ResourcePtr &res) {
   if (parallel::ParallelInit() != parallel::SUCCESS) {
     MS_LOG(EXCEPTION) << "parallel init failed.";
   }
-  auto parallel_context = parallel::ParallelContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(parallel_context);
   auto is_pp_interleave = parallel_context->pipeline_interleave();
   if (is_pp_interleave) {
     return PipelineInterleaved(manager, root, stage, gen_mask_not_fusion);
@@ -313,13 +315,16 @@ bool ParallelVirtualDataset(const ResourcePtr &res) {
   }
 #endif
   MS_EXCEPTION_IF_NULL(res);
-  auto parallel_mode = parallel::ParallelContext::GetInstance()->parallel_mode();
+  auto parallel_context = parallel::ParallelContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(parallel_context);
+  auto parallel_mode = parallel_context->parallel_mode();
   if (parallel_mode != parallel::kSemiAutoParallel && parallel_mode != parallel::kAutoParallel) {
     MS_LOG(INFO) << "Only auto_parallel and semi_auto_parallel support it.";
     return true;
   }
 
   auto root = res->func_graph();
+  MS_EXCEPTION_IF_NULL(root);
   AnfNodePtr ret = root->get_return();
 
   // tag dynamic shape graph

@@ -210,6 +210,7 @@ void ExecuteActionForMindRT(const ResourcePtr &resource) {
 }
 
 FuncGraphPtr ConstructGraphForEval(const ValuePtr &func, const abstract::AbstractBasePtrList &args_abs) {
+  MS_EXCEPTION_IF_NULL(func);
   auto func_abs = func->ToAbstract();
   if (!func_abs->isa<abstract::AbstractFunction>()) {
     MS_LOG(EXCEPTION) << "The value : " << func->ToString() << " is not a callable object.";
@@ -464,6 +465,7 @@ bool CheckIgnoreSelfParam(const py::object &input) {
 }
 
 FuncArgSpec GetFuncArgSpec(const FuncGraphPtr &func_graph, const py::object &input) {
+  MS_EXCEPTION_IF_NULL(func_graph);
   auto func = input;
   if (py::hasattr(input, parse::PYTHON_PARSE_METHOD)) {
     auto func_name = py::cast<std::string>(input.attr(parse::PYTHON_PARSE_METHOD));
@@ -587,7 +589,9 @@ void BuildTopGraph(const FuncGraphPtr &func_graph, const py::object &input,
       AnfNodePtrList key_inputs = {NewValueNode(prim::kPrimMakeTuple)};
       AnfNodePtrList value_inputs = {NewValueNode(prim::kPrimMakeTuple)};
       for (const auto &kwonlyarg : arg_spec.kwonlyargs_) {
-        (void)key_inputs.emplace_back(NewValueNode(kwonlyarg->cast<ParameterPtr>()->name()));
+        auto param_kwonlyarg = kwonlyarg->cast<ParameterPtr>();
+        MS_EXCEPTION_IF_NULL(param_kwonlyarg);
+        (void)key_inputs.emplace_back(NewValueNode(param_kwonlyarg->name()));
         (void)value_inputs.emplace_back(kwonlyarg);
       }
       auto make_dict =
@@ -792,6 +796,7 @@ void UpdateCellFuncGraph(const FuncGraphPtr &func_graph, const FuncGraphPtr &reu
   auto params = func_graph->parameters();
   (void)new_node_inputs.insert(new_node_inputs.end(), params.begin(), params.end());
   AnfNodePtr out = func_graph->NewCNodeInOrder(new_node_inputs);
+  MS_EXCEPTION_IF_NULL(func_graph->output());
   out->set_abstract(func_graph->output()->abstract());
   func_graph->set_output(out);
 }
@@ -897,6 +902,7 @@ bool GraphReusingAction(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
   bool cell_reused = false;
   auto func_graph = resource->func_graph();
+  MS_EXCEPTION_IF_NULL(func_graph);
   std::multimap<int, FuncGraphPtr> order_fgs;
   for (auto &fg : func_graph->func_graphs_used_total()) {
     auto order_value = fg->get_attr(FUNC_GRAPH_FLAG_CELL_LAZY_INLINE_ORDER);
@@ -904,7 +910,7 @@ bool GraphReusingAction(const ResourcePtr &resource) {
       continue;
     }
     fg->erase_flag(FUNC_GRAPH_FLAG_CELL_LAZY_INLINE_ORDER);
-    order_fgs.insert(std::make_pair(GetValue<int>(order_value), fg));
+    (void)order_fgs.insert(std::make_pair(GetValue<int>(order_value), fg));
   }
   for (auto it = order_fgs.rbegin(); it != order_fgs.rend(); ++it) {
     MS_LOG(INFO) << "Lazy_inline graph: " << it->second->ToString() << " , order: " << it->first;
@@ -934,6 +940,7 @@ bool GraphReusingAction(const ResourcePtr &resource) {
 
 // Used for excluding the func graphs in VMap.
 bool UsedByVmap(const FuncGraphPtr &func_graph) {
+  MS_EXCEPTION_IF_NULL(func_graph);
   const auto &cnodes_index = func_graph->func_graph_cnodes_index();
   if (cnodes_index.empty()) {
     return false;
@@ -987,8 +994,8 @@ bool PreCConvAction(const ResourcePtr &resource) {
     return true;
   }
   MS_EXCEPTION_IF_NULL(resource);
-  MS_EXCEPTION_IF_NULL(resource->func_graph());
   FuncGraphPtr func_graph = resource->func_graph();
+  MS_EXCEPTION_IF_NULL(func_graph);
   FuncGraphPtr new_fg = LiftingClone(func_graph, false, UsedByVmap);
   resource->set_func_graph(new_fg);
   return GradPartialTransformPass(resource);

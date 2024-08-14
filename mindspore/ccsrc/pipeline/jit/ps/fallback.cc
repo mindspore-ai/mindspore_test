@@ -848,6 +848,7 @@ py::object GetPyObjForFuncGraphAbstractClosure(const AbstractBasePtr &abs) {
 AnfNodePtr GeneratePyInterpretNodeFromMetaFuncGraph(const FuncGraphPtr &func_graph, const AnfNodePtrList &node_inputs,
                                                     const py::object &meta_obj, const TypePtrList &types,
                                                     const std::string &name) {
+  MS_EXCEPTION_IF_NULL(func_graph);
   std::vector<AnfNodePtr> key_value_names_list{NewValueNode(prim::kPrimMakeTuple)};
   std::vector<AnfNodePtr> key_value_list{NewValueNode(prim::kPrimMakeTuple)};
   AnfNodePtr call_node = GeneratePyExecuteNodeForCallObj(func_graph, meta_obj, node_inputs[0], name);
