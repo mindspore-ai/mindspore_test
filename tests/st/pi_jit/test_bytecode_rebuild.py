@@ -287,7 +287,7 @@ def test_graph_parameter_is_closure_variable():
     o2 = fn(x)
 
     match_array(o1.asnumpy(), o2.asnumpy())
-    jcr = get_code_extra(fn)
+    jcr = get_code_extra(fn.__wrapped__)
     assert jcr is not None
     assert jcr['stat'] == 'GRAPH_CALLABLE'
     assert jcr['break_count_'] == 1
@@ -324,7 +324,7 @@ def test_graph_parameter_is_closure_variable_v2():
     o2 = fn(x, y)
 
     match_array(o1.asnumpy(), o2.asnumpy())
-    jcr = get_code_extra(fn)
+    jcr = get_code_extra(fn.__wrapped__)
     assert jcr is not None
     assert jcr['stat'] == 'GRAPH_CALLABLE'
     assert jcr['break_count_'] == 1
@@ -361,7 +361,7 @@ def test_graph_parameter_is_closure_variable_v3():
     assert len(o1) == len(o2)
     for l, r in zip(o1, o2):
         match_array(l.asnumpy(), r.asnumpy())
-    jcr = get_code_extra(fn)
+    jcr = get_code_extra(fn.__wrapped__)
     assert jcr is not None
     assert jcr['stat'] == 'GRAPH_CALLABLE'
     assert jcr['break_count_'] == 1
@@ -428,7 +428,7 @@ def test_graph_parameter_is_closure_variable_v5():
     o2 = fn(x)
 
     match_array(o1.asnumpy(), o2.asnumpy())
-    jcr = get_code_extra(fn)
+    jcr = get_code_extra(fn.__wrapped__)
     assert jcr is not None
     assert jcr['stat'] == 'GRAPH_CALLABLE'
     assert jcr['break_count_'] == 1
