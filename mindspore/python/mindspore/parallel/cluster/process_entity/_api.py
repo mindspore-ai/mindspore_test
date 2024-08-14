@@ -342,10 +342,10 @@ class _ProcessManager:
                 time_out_node_log = re.findall(r"node: .* is timed out", scheduler_log)
 
                 # Filter out node ids of the processes which exit abnormally.
-                def node_id_splitter(id):
-                    return re.split(" is timed out", re.split("node: ", id)[1])[0]
-                for id in time_out_node_log:
-                    time_out_node_ids.append(node_id_splitter(id))
+                def node_id_splitter(node_id):
+                    return re.split(" is timed out", re.split("node: ", node_id)[1])[0]
+                for node_id in time_out_node_log:
+                    time_out_node_ids.append(node_id_splitter(node_id))
             logger.error(f"Time out nodes are {time_out_node_ids}")
 
         os.system(f"grep -rn -E 'ERROR|CRITICAL|Traceback|Error' -C 5 {self.log_dir}")
