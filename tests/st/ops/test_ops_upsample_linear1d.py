@@ -20,23 +20,20 @@ from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
 import mindspore as ms
 from mindspore import Tensor
-from mindspore import ops, context, mint
+from mindspore import context, ops
 
 
 @test_utils.run_with_cell
 def upsample_linear1d_forward_func(x, size=None, scale_factor=None, align_corners=False):
-    return mint.nn.functional.interpolate(x, size, scale_factor, "linear", align_corners)
+    return ops.function.nn_func.interpolate_ext(x, size, scale_factor, "linear", align_corners)
 
 
 @test_utils.run_with_cell
 def upsample_linear1d_backward_func(x, size=None, scale_factor=None, align_corners=False):
-    return ops.grad(upsample_linear1d_forward_func, (0,))(x, size, scale_factor, align_corners)
+    return ms.grad(upsample_linear1d_forward_func, (0,))(x, size, scale_factor, align_corners)
 
 
-@pytest.mark.level3
-@pytest.mark.platform_arm_ascend_training
-@pytest.mark.platform_x86_ascend_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_upsample_linear_1d(mode):
     """
@@ -76,10 +73,7 @@ def test_upsample_linear_1d(mode):
     assert np.all(diff < error)
 
 
-@pytest.mark.level3
-@pytest.mark.platform_arm_ascend_training
-@pytest.mark.platform_x86_ascend_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_upsample_linear_1d_size_dynamic():
     """
     Feature: test dynamic by TEST_OP.
@@ -102,10 +96,7 @@ def test_upsample_linear_1d_size_dynamic():
     )
 
 
-@pytest.mark.level3
-@pytest.mark.platform_arm_ascend_training
-@pytest.mark.platform_x86_ascend_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_upsample_linear_1d_scales_dynamic():
     """
     Feature: test dynamic by TEST_OP.

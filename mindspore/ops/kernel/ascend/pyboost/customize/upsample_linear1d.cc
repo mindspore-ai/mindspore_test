@@ -24,6 +24,7 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
+const double UpsampleLinear1dEps = 1e-7;
 const pyfloat DEFAULT_SCALE_VALUE = -1;
 tensor::BaseTensorPtr UpsampleLinear1DAscendCall(const std::shared_ptr<OpRunner> &op,
                                                  const device::DeviceContext *device_context,
@@ -32,9 +33,14 @@ tensor::BaseTensorPtr UpsampleLinear1DAscendCall(const std::shared_ptr<OpRunner>
                                                  const std::vector<pyfloat> &scales, const bool &align_corners,
                                                  const std::vector<tensor::BaseTensorPtr> &outputs) {
   MS_LOG(DEBUG) << "Call start";
-  double scales_l = scales[0];
+  // Python float obj would be parsed by float32 number, which should be parsed
+  // to double number according to PyTorch. For example, python scale is 2.6,
+  // but the last scale we got in c++ is 2.5999999046325684,
+  // which caused aclnn verification to fail.
+  double scale_l = scales.at(0) != DEFAULT_SCALE_VALUE ? (static_cast<double>(scales.at(0)) + UpsampleLinear1dEps)
+                                                       : DEFAULT_SCALE_VALUE;
   LAUNCH_ACLNN(aclnnUpsampleLinear1d, device_context, op->stream_id(), input_tensor, output_size, align_corners,
-               scales_l, outputs[0]);
+               scale_l, outputs[0]);
   MS_LOG(DEBUG) << "Call end";
   return outputs[0];
 }
