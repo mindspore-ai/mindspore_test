@@ -7,6 +7,9 @@ topkrouter:
       dtype: int
     expert_num:
       dtype: int
+    drop_type:
+      dtype: int
+      default: 0
   returns:
     dispatch_index:
       dtype: tensor
