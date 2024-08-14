@@ -26,6 +26,7 @@
 #include "include/common/debug/anf_ir_dump.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 #include "mindspore/ops/op_def/math_ops.h"
+#include "backend/common/graph_kernel/graph_kernel_flags.h"
 
 namespace mindspore {
 namespace kernel {
@@ -779,6 +780,13 @@ KernelModPtr DvmOpBuild(const AnfNodePtr &anf_node) {
     dvm::SetDeterministic(enable_deterministic);
     init = true;
     MS_LOG(INFO) << "Set dvm deterministic " << (enable_deterministic ? "true" : "false");
+  }
+  static bool tuning_init = false;
+  if (!tuning_init) {
+    bool enable_tuning = graphkernel::GraphKernelFlags::GetInstance().online_tuning > 0 ? true : false;
+    dvm::SetOnlineTuning(enable_tuning);
+    tuning_init = true;
+    MS_LOG(INFO) << "Set dvm online tuning " << (enable_tuning ? "true" : "false");
   }
   MS_EXCEPTION_IF_NULL(anf_node);
   auto scope = anf_node->fullname_with_scope();
