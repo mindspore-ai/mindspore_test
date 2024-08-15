@@ -326,7 +326,7 @@ void DynamicMemPoolBestFit::SetMemPoolBlockSize(size_t available_device_mem_size
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   float mem_block_size = ms_context->get_param<float>(MS_CTX_MEMPOOL_BLOCK_SIZE);
-  if (mem_block_size == kDefaultMempoolBlockSize) {
+  if (std::fabs(mem_block_size - kDefaultMempoolBlockSize) <= std::numeric_limits<float>::epsilon()) {
     return;
   }
 

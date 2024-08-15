@@ -213,8 +213,8 @@ void DebugActor::DebugOnStepBegin(const std::vector<KernelGraphPtr> &graphs,
                                   OpContext<DeviceTensor> *const op_context, const AID *) {
   MS_LOG(INFO) << "Debug on step begin.";
   auto context = MsContext::GetInstance();
-  auto is_kbyk = context->IsKByKExecutorMode();
   MS_EXCEPTION_IF_NULL(context);
+  auto is_kbyk = context->IsKByKExecutorMode();
   std::string backend = context->backend_policy();
   device_ctx_ = device_contexts[0];
   auto profiler = profiler::Profiler::GetInstance(kAscendDevice);
