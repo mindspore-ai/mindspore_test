@@ -296,43 +296,28 @@ class ApiCachePool {
   (aclnn_api, aclnn_api + "GetWorkspaceSize", hash_id, __VA_ARGS__)
 
 // First stage for static graph.
-#define GEN_EXECUTOR_FOR_RESIZE(aclnn_api, ...)                                                                    \
-  [](const std::string &workspace_api_name, const auto &... args) -> auto {                                        \
-    static const auto get_workspace_size_func_ptr = transform::GetOpApiFunc(workspace_api_name.c_str());           \
-    if (get_workspace_size_func_ptr == nullptr) {                                                                  \
-      MS_LOG(EXCEPTION) << workspace_api_name << " not in " << transform::GetOpApiLibName() << ", please check!";  \
-    }                                                                                                              \
-    uint64_t workspace_size = 0;                                                                                   \
-    transform::aclOpExecutor *executor = nullptr;                                                                  \
-    uint64_t *workspace_size_addr = &workspace_size;                                                               \
-    transform::aclOpExecutor **executor_addr = &executor;                                                          \
-    auto converted_params = transform::ConvertTypes(args..., workspace_size_addr, executor_addr);                  \
-    static auto get_workspace_size_func =                                                                          \
-      transform::ConvertToOpApiFunc(converted_params, get_workspace_size_func_ptr);                                \
-    auto workspace_status = transform::call(get_workspace_size_func, converted_params);                            \
-    if (workspace_status != 0) {                                                                                   \
-      MS_LOG(EXCEPTION) << workspace_api_name << " call failed, please check!";                                    \
-    }                                                                                                              \
-    int32_t repeat_ret = 0;                                                                                        \
-    static const auto aclSetAclOpExecutorRepeatable = reinterpret_cast<transform::_aclSetAclOpExecutorRepeatable>( \
-      transform::GetOpApiFunc("aclSetAclOpExecutorRepeatable"));                                                   \
-    static bool first_print = true;                                                                                \
-    if (aclSetAclOpExecutorRepeatable == nullptr) {                                                                \
-      repeat_ret = -1;                                                                                             \
-      if (first_print) {                                                                                           \
-        MS_LOG(WARNING) << "aclSetAclOpExecutorRepeatable is nullptr";                                             \
-      }                                                                                                            \
-      first_print = false;                                                                                         \
-    } else {                                                                                                       \
-      repeat_ret = aclSetAclOpExecutorRepeatable(executor);                                                        \
-      if (repeat_ret != 0) {                                                                                       \
-        MS_LOG(INFO) << workspace_api_name << " don't support cache!";                                             \
-      }                                                                                                            \
-    }                                                                                                              \
-    auto graph_cache = transform::GraphCache(executor, std::move(converted_params));                               \
-    auto process_cache = transform::ProcessCache(graph_cache);                                                     \
-    return std::make_tuple(workspace_size, executor, process_cache, repeat_ret);                                   \
-  }                                                                                                                \
+#define GEN_EXECUTOR_FOR_RESIZE(aclnn_api, ...)                                                                   \
+  [](const std::string &workspace_api_name, const auto &... args) -> auto {                                       \
+    static const auto get_workspace_size_func_ptr = transform::GetOpApiFunc(workspace_api_name.c_str());          \
+    if (get_workspace_size_func_ptr == nullptr) {                                                                 \
+      MS_LOG(EXCEPTION) << workspace_api_name << " not in " << transform::GetOpApiLibName() << ", please check!"; \
+    }                                                                                                             \
+    uint64_t workspace_size = 0;                                                                                  \
+    transform::aclOpExecutor *executor = nullptr;                                                                 \
+    uint64_t *workspace_size_addr = &workspace_size;                                                              \
+    transform::aclOpExecutor **executor_addr = &executor;                                                         \
+    auto converted_params = transform::ConvertTypes(args..., workspace_size_addr, executor_addr);                 \
+    static auto get_workspace_size_func =                                                                         \
+      transform::ConvertToOpApiFunc(converted_params, get_workspace_size_func_ptr);                               \
+    auto workspace_status = transform::call(get_workspace_size_func, converted_params);                           \
+    if (workspace_status != 0) {                                                                                  \
+      MS_LOG(EXCEPTION) << workspace_api_name << " call failed, please check!";                                   \
+    }                                                                                                             \
+    int32_t repeat_ret = transform::SetExecutorRepeatable(workspace_api_name, executor);                          \
+    auto graph_cache = transform::GraphCache(executor, std::move(converted_params));                              \
+    auto process_cache = transform::ProcessCache(graph_cache);                                                    \
+    return std::make_tuple(workspace_size, executor, process_cache, repeat_ret);                                  \
+  }                                                                                                               \
   (aclnn_api + "GetWorkspaceSize", __VA_ARGS__)
 
 // Update tensor for static graph.

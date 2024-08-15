@@ -113,6 +113,7 @@ void Gather(const mindspore::tensor::BaseTensorPtr &tensor) {
 }  // namespace
 thread_local char g_hash_buf[g_hash_buf_size];
 thread_local int g_hash_offset = 0;
+bool cache_unavailable_first_print = true;
 
 typedef void (*AddTensorAddrToCachedList)(void *addr);
 
