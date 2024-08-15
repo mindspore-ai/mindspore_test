@@ -44,6 +44,7 @@ void AddDependForRecomputedAllGatherAndGradientReduceScatter(const FuncGraphPtr 
   std::list<CNodePtr> backward_orders = backward_graph->GetOrderedCnodes();
   std::vector<CNodePtr> backward_origin_nodes_topological(backward_orders.cbegin(), backward_orders.cend());
   auto manager = backward_graph->manager();
+  MS_EXCEPTION_IF_NULL(manager);
   std::unordered_map<std::string, CNodePtr> recomputed_ag_map;
   std::unordered_map<std::string, CNodePtr> grad_rs_map;
   for (const auto &recomputed_allgather : backward_origin_nodes_topological) {
@@ -109,6 +110,7 @@ void OverlapRecomputeAGAndFlashAttentionGrad(const FuncGraphPtr &backward_graph)
   std::list<CNodePtr> backward_orders = backward_graph->GetOrderedCnodes();
   std::vector<CNodePtr> backward_origin_nodes_topological(backward_orders.cbegin(), backward_orders.cend());
   auto manager = backward_graph->manager();
+  MS_EXCEPTION_IF_NULL(manager);
   auto node_users = manager->node_users();
   for (const auto &recomputed_allgather : backward_origin_nodes_topological) {
     if (!IsPrimitiveCNode(recomputed_allgather, prim::kPrimAllGather)) {
@@ -198,6 +200,7 @@ void OverlapRecomputeAllGatherAndFlashAttentionGrad(const FuncGraphPtr &graph) {
     return;
   }
   auto manager = graph->manager();
+  MS_EXCEPTION_IF_NULL(manager);
   for (const auto &each_graph : manager->func_graphs()) {
     if (IsCellReuseForwardGraph(each_graph)) {
       auto forward_graph = each_graph;

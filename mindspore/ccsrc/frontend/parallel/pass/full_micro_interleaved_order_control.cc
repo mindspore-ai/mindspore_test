@@ -154,12 +154,12 @@ void InsertInterleavedNodesDepend(const FuncGraphManagerPtr &manager,
     auto comm_node_b = comm_node_list[1];
     auto next_comm_node_a = next_comm_node_list[0];
     auto next_comm_node_b = next_comm_node_list[1];
-    if (next_comm_node_a->size() < node_size_two || !IsPrimitiveCNode(next_comm_node_a->input(1)) ||
-        comm_node_b->size() < node_size_two || !IsPrimitiveCNode(comm_node_b->input(1))) {
+    if (next_comm_node_a->size() < node_size_two || !IsPrimitiveCNode(next_comm_node_a->input(kIndex1)) ||
+        comm_node_b->size() < node_size_two || !IsPrimitiveCNode(comm_node_b->input(kIndex1))) {
       continue;
     }
-    auto next_comm_node_a_input_node = next_comm_node_a->input(1)->cast<CNodePtr>();
-    auto comm_node_b_input_node = comm_node_b->input(1)->cast<CNodePtr>();
+    auto next_comm_node_a_input_node = next_comm_node_a->input(kIndex1)->cast<CNodePtr>();
+    auto comm_node_b_input_node = comm_node_b->input(kIndex1)->cast<CNodePtr>();
     auto comm_node_a_node_users = manager->node_users()[comm_node_a];
     auto comm_node_b_node_users = manager->node_users()[comm_node_b];
     if (comm_node_a_node_users.empty() || comm_node_b_node_users.empty()) {

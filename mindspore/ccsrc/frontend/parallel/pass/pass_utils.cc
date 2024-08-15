@@ -52,11 +52,11 @@ bool IsDxMatMul(const CNodePtr &matmul_node) {
       continue;
     }
     auto cnode_queue_end = queue_front->cast<CNodePtr>();
-    if (std::find(visited.begin(), visited.end(), cnode_queue_end->input(1)) != visited.end()) {
+    if (std::find(visited.begin(), visited.end(), cnode_queue_end->input(kIndex1)) != visited.end()) {
       continue;
     }
-    cnode_queue.push(cnode_queue_end->input(1));
-    visited.push_back(cnode_queue_end->input(1));
+    cnode_queue.push(cnode_queue_end->input(kIndex1));
+    visited.push_back(cnode_queue_end->input(kIndex1));
   }
   for (const auto &node : res) {
     if (node->isa<Parameter>()) {

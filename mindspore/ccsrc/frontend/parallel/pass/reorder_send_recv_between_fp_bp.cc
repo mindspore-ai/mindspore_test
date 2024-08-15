@@ -55,6 +55,7 @@ void SpreadSendRecvRely(const CNodePtr &input_node, const std::string &unique_id
 void InsertReorderDepend(const FuncGraphPtr &graph, const CNodePtr &input_comm_cnode, const CNodePtr &user_comm_cnode,
                          const std::string &unique_id) {
   auto manager = graph->manager();
+  MS_EXCEPTION_IF_NULL(manager);
   auto input_comm_cnode_users = manager->node_users()[input_comm_cnode];
   for (const auto &input_comm_user_pair : input_comm_cnode_users) {
     if (!IsPrimitiveCNode(input_comm_user_pair.first)) {

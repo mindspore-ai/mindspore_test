@@ -30,7 +30,7 @@ bool IsLazyInlineBackward(const FuncGraphPtr &bg) {
   for (auto &entry : bg->func_graph_cnodes_index()) {
     auto cnode = entry.first->first->cast<CNodePtr>();
     auto index = entry.first->second;
-    if (index == 1 && IsPrimitive(cnode->inputs().at(0), prim::kPrimPartial)) {
+    if (index == 1 && IsPrimitive(cnode->inputs().at(kIndex0), prim::kPrimPartial)) {
       // To find real calling.
       auto fg = cnode->func_graph();
       MS_EXCEPTION_IF_NULL(fg);
@@ -45,8 +45,8 @@ bool IsLazyInlineBackward(const FuncGraphPtr &bg) {
 }
 
 FuncGraphPtr GetAbstractFunc(const CNodePtr &node) {
-  if (node->input(0)->isa<CNode>() && node->input(0)->abstract() != nullptr) {
-    auto abs = node->input(0)->abstract();
+  if (node->input(kIndex0)->isa<CNode>() && node->input(kIndex0)->abstract() != nullptr) {
+    auto abs = node->input(kIndex0)->abstract();
     if (abs->isa<abstract::FuncGraphAbstractClosure>()) {
       const auto &abstract_func_graph = abs->cast<abstract::FuncGraphAbstractClosurePtr>();
       return abstract_func_graph->func_graph();
@@ -97,8 +97,8 @@ bool SkipBeginEndOverlapInline(const FuncGraphPtr &graph, FuncGraphPtr *fg, Func
   std::list<CNodePtr> graph_orders = graph->GetOrderedCnodes();
   for (auto &node : graph_orders) {
     MS_EXCEPTION_IF_NULL(node);
-    if (IsValueNode<FuncGraph>(node->input(0))) {
-      FuncGraphPtr sub_graph = node->input(0)->cast<ValueNodePtr>()->value()->cast<FuncGraphPtr>();
+    if (IsValueNode<FuncGraph>(node->input(kIndex0))) {
+      FuncGraphPtr sub_graph = node->input(kIndex0)->cast<ValueNodePtr>()->value()->cast<FuncGraphPtr>();
       MS_EXCEPTION_IF_NULL(sub_graph);
       if (sub_graph->has_attr(FUNC_GRAPH_FLAG_NO_INLINE)) {
         (void)fg_call->emplace_back(node);
@@ -140,7 +140,7 @@ void BeginEndOverlapInlineOpt(const FuncGraphPtr &graph) {
   for (auto &entry : bg->func_graph_cnodes_index()) {
     auto cnode = entry.first->first->cast<CNodePtr>();
     auto index = entry.first->second;
-    if (index == 1 && IsPrimitive(cnode->inputs().at(0), prim::kPrimPartial)) {
+    if (index == 1 && IsPrimitive(cnode->inputs().at(kIndex0), prim::kPrimPartial)) {
       // The partial node is in the root graph after last micro forward inline
       if (graph == cnode->func_graph()) {
         last_micro_bg_partial_call = cnode;
@@ -158,7 +158,7 @@ void BeginEndOverlapInlineOpt(const FuncGraphPtr &graph) {
   for (auto &entry : bg->func_graph_cnodes_index()) {
     auto cnode = entry.first->first->cast<CNodePtr>();
     auto index = entry.first->second;
-    if (index == 1 && IsPrimitive(cnode->inputs().at(0), prim::kPrimPartial)) {
+    if (index == 1 && IsPrimitive(cnode->inputs().at(kIndex0), prim::kPrimPartial)) {
       // The partial node is in the root graph after first micro forward inline.
       MS_EXCEPTION_IF_NULL(fg);
       if (graph == cnode->func_graph() && cnode != last_micro_bg_partial_call) {

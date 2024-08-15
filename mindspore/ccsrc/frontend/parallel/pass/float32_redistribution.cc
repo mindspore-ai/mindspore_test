@@ -66,8 +66,8 @@ void Float32Redistribution(const FuncGraphPtr &graph) {
         continue;
       }
       MS_LOG(WARNING) << "Force " << node->fullname_with_scope() << " to fp32 comm.";
-      auto pre_cast_node = InsertCastCNode(each_graph, node->input(1), kNumberTypeFloat32);
-      std::vector<AnfNodePtr> reduce_scatter_inputs{node->input(0), pre_cast_node};
+      auto pre_cast_node = InsertCastCNode(each_graph, node->input(kIndex1), kNumberTypeFloat32);
+      std::vector<AnfNodePtr> reduce_scatter_inputs{node->input(kIndex0), pre_cast_node};
       auto new_reduce_scatter = each_graph->NewCNode(reduce_scatter_inputs);
       auto new_reduce_scatter_abstract =
         std::make_shared<abstract::AbstractTensor>(TypeIdToType(kNumberTypeFloat32), node->abstract()->GetShapeTrack());
