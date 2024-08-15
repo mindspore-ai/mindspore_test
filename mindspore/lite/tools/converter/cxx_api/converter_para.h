@@ -109,6 +109,7 @@ struct ConverterPara {
   GraphKernelCfg graphKernelParam;
   // configs parse from config_file
   ConfigInfos config_infos;
+  std::vector<std::string> const_names;
 };
 }  // namespace mindspore
 #endif  // MINDSPORE_LITE_TOOLS_CONVERTER_CXX_API_CONVERTER_PARA_H_

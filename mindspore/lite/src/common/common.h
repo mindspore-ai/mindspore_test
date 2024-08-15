@@ -115,6 +115,8 @@ static const char *const kProvider = "provider";
 static const char *const kAscendProviderGe = "ge";
 static const char *const kParameterAsRefData = "parameter_as_refdata";
 static const char *const kModelCacheMode = "model_cache_mode";
+static const char *const kVariableWeightsFile = "variable_weights_file";
+static const char *const kMaxWeightBatch = "max_weight_batch";
 // ge options
 static const char *const kGeSessionOptionsSection = "ge_session_options";
 static const char *const kGeGraphOptionsSection = "ge_graph_options";
@@ -165,6 +167,8 @@ static const char *const kInnerWeightspace = "inner_weightspace";
 static const char *const kInnerWorkspace = "inner_workspace";
 static const char *const kInnerCalcWorkspaceSize = "inner_calc_workspace_size";
 static const char *const kInnerWeightspaceWorkspace = "inner_weightspace_workspace";
+// for lora
+static const char *const kBundleModel = "bundle_model";
 }  // namespace lite
 }  // namespace mindspore
 #endif  // MINDSPORE_LITE_SRC_COMMON_COMMON_H_

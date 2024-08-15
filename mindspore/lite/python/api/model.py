@@ -128,6 +128,7 @@ class Model(BaseModel):
         super(Model, self).__init__(_c_lite_wrapper.ModelBind())
         self.model_path_ = ""
         self.lora_name_map = {}
+        self.provider = ""
 
     def __str__(self):
         res = f"model_path: {self.model_path_}."
@@ -221,6 +222,7 @@ class Model(BaseModel):
             context = Context()
         check_isinstance("context", context, Context)
         check_isinstance("config_path", config_path, str)
+        self.provider = context.ascend.provider
         if not os.path.exists(model_path):
             raise RuntimeError(
                 f"build_from_file failed, model_path does not exist!")
@@ -315,11 +317,12 @@ class Model(BaseModel):
                 if not isinstance(tensor, Tensor):
                     raise TypeError(f"weights element must be Tensor, but got "
                                     f"{type(tensor)} as index {i}{j}.")
-                if tensor.name in self.lora_name_map:
+                if tensor.name in self.lora_name_map and self.provider == "ge":
                     name = self.lora_name_map[tensor.name]
-                else:
+                    tensor.name = name
+                elif self.provider == "ge":
                     name = _rename_variable_weight(tensor.name)
-                tensor.name = name
+                    tensor.name = name
         return super(Model, self).update_weights(weights)
 
     def predict(self, inputs, outputs=None):

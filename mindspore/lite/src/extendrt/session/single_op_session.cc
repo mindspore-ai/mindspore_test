@@ -96,41 +96,46 @@ void SingleOpInferSession::SetCustomAscendOpAttrs(const kernel::BaseOperatorPtr 
   }
   // set custom op attrs
   auto custom_op = std::dynamic_pointer_cast<ops::Custom>(op);
-  if (custom_op == nullptr) {
-    MS_LOG(ERROR) << "Cast Custom op failed, can't set custom attrs.";
-    return;
-  }
+  CHECK_NULL_RETURN_VOID(custom_op);
   auto dst_prim = custom_op->GetPrim();
-  if (dst_prim == nullptr) {
-    MS_LOG(ERROR) << "Get prim from custom op failed.";
-    return;
-  }
-  auto share_mem = config_infos_["inner_common"];
-  if (share_mem.find("inner_calc_workspace_size") != share_mem.end()) {
-    auto value = share_mem["inner_calc_workspace_size"];
+  CHECK_NULL_RETURN_VOID(dst_prim);
+  auto share_mem = config_infos_[lite::kInnerCommon];
+  if (share_mem.find(lite::kInnerCalcWorkspaceSize) != share_mem.end()) {
+    auto value = share_mem[lite::kInnerCalcWorkspaceSize];
     is_multi_model_sharing_mem_prepare_ = value == "true" ? true : false;
-    dst_prim->AddAttr("inner_calc_workspace_size", MakeValue(is_multi_model_sharing_mem_prepare_));
+    dst_prim->AddAttr(lite::kInnerCalcWorkspaceSize, MakeValue(is_multi_model_sharing_mem_prepare_));
     MS_LOG(INFO) << "inner_calc_workspace_size: " << is_multi_model_sharing_mem_prepare_;
   }
-  if (share_mem.find("inner_sharing_workspace") != share_mem.end()) {
-    auto value = share_mem["inner_sharing_workspace"];
+  if (share_mem.find(lite::kInnerSharingWorkspace) != share_mem.end()) {
+    auto value = share_mem[lite::kInnerSharingWorkspace];
     bool is_inner_sharing_workspace = value == "true" ? true : false;
-    dst_prim->AddAttr("inner_sharing_workspace", MakeValue(is_inner_sharing_workspace));
+    dst_prim->AddAttr(lite::kInnerSharingWorkspace, MakeValue(is_inner_sharing_workspace));
     MS_LOG(INFO) << "is_inner_sharing_workspace: " << is_inner_sharing_workspace;
   }
-  if (share_mem.find("inner_model_path") != share_mem.end()) {
-    auto model_path = share_mem["inner_model_path"];
-    dst_prim->AddAttr("inner_model_path", MakeValue(model_path));
+  if (share_mem.find(lite::kInnerModelPath) != share_mem.end()) {
+    auto model_path = share_mem[lite::kInnerModelPath];
+    dst_prim->AddAttr(lite::kInnerModelPath, MakeValue(model_path));
     MS_LOG(INFO) << "inner_model_path: " << model_path;
   }
-  if (share_mem.find("inner_workspace") != share_mem.end()) {
-    dst_prim->AddAttr("inner_workspace", MakeValue(true));
+  if (share_mem.find(lite::kInnerWorkspace) != share_mem.end()) {
+    auto workspace = share_mem[lite::kInnerWorkspace];
+    bool is_workspace = workspace == "true" ? true : false;
+    dst_prim->AddAttr(lite::kInnerWorkspace, MakeValue(is_workspace));
   }
-  if (share_mem.find("inner_weightspace") != share_mem.end()) {
-    dst_prim->AddAttr("inner_weightspace", MakeValue(true));
+  if (share_mem.find(lite::kInnerWeightspace) != share_mem.end()) {
+    auto weightspace = share_mem[lite::kInnerWeightspace];
+    bool is_weightspace = weightspace == "true" ? true : false;
+    dst_prim->AddAttr(lite::kInnerWeightspace, MakeValue(is_weightspace));
   }
-  if (share_mem.find("inner_weightspace_workspace") != share_mem.end()) {
-    dst_prim->AddAttr("inner_weightspace_workspace", MakeValue(true));
+  if (share_mem.find(lite::kInnerWeightspaceWorkspace) != share_mem.end()) {
+    auto weightspace_workspace = share_mem[lite::kInnerWeightspaceWorkspace];
+    bool is_weightspace_workspace = weightspace_workspace == "true" ? true : false;
+    dst_prim->AddAttr(lite::kInnerWeightspaceWorkspace, MakeValue(is_weightspace_workspace));
+  }
+  if (share_mem.find(lite::kBundleModel) != share_mem.end()) {
+    auto bundle_model = share_mem[lite::kBundleModel];
+    bool is_bundle_model = bundle_model == "true" ? true : false;
+    dst_prim->AddAttr(lite::kBundleModel, MakeValue(is_bundle_model));
   }
   auto ascend_context = config_infos_[lite::kAscendContextSection];
   std::string profiling_path;
@@ -292,6 +297,10 @@ Status SingleOpInferSession::InitInputOutputInfos(const FuncGraphPtr &graph) {
 Status SingleOpInferSession::CompileGraph(FuncGraphPtr graph, const void *data, size_t size, uint32_t *) {
   MS_LOG(INFO) << "SingleOpInferSession::CompileGraph";
   MS_CHECK_TRUE_RET(graph != nullptr, kLiteNullptr);
+  // Get whether the current model is a bundle model for LORA.
+  if (graph->get_attr(lite::kBundleModel) != nullptr) {
+    config_infos_["inner_common"][lite::kBundleModel] = "true";
+  }
   auto nodes = graph->TopoSort(graph->get_return());
   if (nodes.empty()) {
     MS_LOG(ERROR) << "There are no nodes in the graph";
@@ -432,6 +441,47 @@ Status SingleOpInferSession::InitInputOutputData(const std::vector<tensor::Tenso
   return kSuccess;
 }
 
+void DestoryKernelWeights(std::vector<kernel::KernelTensor *> *kernel_weights) {
+  for (auto &w : (*kernel_weights)) {
+    if (w != nullptr) {
+      delete w;
+      w = nullptr;
+    }
+  }
+}
+
+Status SingleOpInferSession::InitVariableWeights(const std::vector<std::shared_ptr<tensor::Tensor>> &weights,
+                                                 std::vector<kernel::KernelTensor *> *kernel_weights) {
+  auto make_kernel_tensor = [](TypeId type_id, const ShapeVector &shape) {
+    auto kernel_tensor = new (std::nothrow) kernel::KernelTensor();
+    if (kernel_tensor == nullptr) {
+      return kernel_tensor;
+    }
+    kernel_tensor->SetType(std::make_shared<TensorType>(TypeIdToType(type_id)));
+    kernel_tensor->SetShape(std::make_shared<abstract::TensorShape>(shape));
+    return kernel_tensor;
+  };
+  for (size_t i = 0; i < weights.size(); i++) {
+    auto &input = weights[i];
+    auto data_type = input->data_type();
+    auto shape = input->shape();
+    auto kernel_tensor = make_kernel_tensor(static_cast<TypeId>(data_type), shape);
+    kernel_tensor->SetData(std::make_shared<kernel::Address>(input->data_c(), input->Size()));
+    auto input_device_address = input->device_address();
+    if (input_device_address != nullptr && input_device_address->GetMutablePtr() != nullptr) {
+      auto device_ptr = input_device_address->GetMutablePtr();
+      kernel_tensor->SetData(std::make_shared<kernel::Address>(device_ptr, input->Size()));
+      kernel_tensor->SetHostData(nullptr);
+    } else {
+      kernel_tensor->SetHostData(std::make_shared<kernel::Address>(input->data_c(), input->Size()));
+      kernel_tensor->SetData(nullptr);
+    }
+    kernel_tensor->set_device_id(input->device_info().device_id_);
+    kernel_weights->push_back(kernel_tensor);
+  }
+  return kSuccess;
+}
+
 Status SingleOpInferSession::RunGraph(uint32_t, const std::vector<tensor::Tensor> &inputs,
                                       std::vector<tensor::Tensor> *outputs) {
   if (outputs == nullptr) {
@@ -546,6 +596,32 @@ MutableTensorImplPtr SingleOpInferSession::GetOutputByTensorName(uint32_t, const
   }
   MS_LOG(ERROR) << "Can't found tensor name " << tensor_name;
   return nullptr;
+}
+
+Status SingleOpInferSession::UpdateWeights(const std::vector<std::vector<std::shared_ptr<tensor::Tensor>>> &weights) {
+  if (kernel_mod_ == nullptr) {
+    MS_LOG(ERROR) << "Model has not been built!";
+    return kLiteError;
+  }
+  if (weights.size() > 1) {
+    MS_LOG(ERROR) << "Only support single weight, current weight num:" << weights.size() << "!";
+    return kLiteError;
+  }
+  std::vector<kernel::KernelTensor *> kernel_weights;
+  auto ret = InitVariableWeights(weights[0], &kernel_weights);
+  if (ret != kSuccess) {
+    DestoryKernelWeights(&kernel_weights);
+    MS_LOG(ERROR) << "InitLoraWeights failed! ret:" << ret << "!";
+    return ret;
+  }
+  std::vector<kernel::KernelTensor *> ignore_datas;
+  if (!kernel_mod_->UpdateWeights(kernel_weights, ignore_datas, ignore_datas, nullptr)) {
+    DestoryKernelWeights(&kernel_weights);
+    MS_LOG(ERROR) << "Failed to launch kernel!";
+    return kLiteError;
+  }
+  DestoryKernelWeights(&kernel_weights);
+  return kSuccess;
 }
 
 MutableTensorImplPtr SingleOpInferSession::GetInputByTensorName(uint32_t, const std::string &tensor_name) {

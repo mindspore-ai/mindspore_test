@@ -99,6 +99,7 @@ constexpr auto kDelRedundantTranspose = "DeleteRedundantTranspose";
 constexpr auto kRemoveUnusedAddNodePass = "RemoveUnusedAddNodePass";
 constexpr auto kAdjustResizeDimsPass = "AdjustResizeDimsPass";
 constexpr auto kCustomOpFlashAttentionFusionForCustom = "FlashAttentionFusionForCustom";
+constexpr auto kCustomOpInsertVariableNodePass = "InsertVariableNodePass";
 constexpr auto kCustomOpFlashAttentionFusion = "FlashAttentionFusion";
 constexpr auto kCustomOpGroupNormSiluFusion = "GroupNormSiluFusion";
 constexpr auto kCustomOpGeGluV2Fusion = "GeGluV2Fusion";
@@ -216,6 +217,10 @@ STATUS PreProcForOnnx(const FuncGraphPtr &func_graph, bool offline) {
   // This modify should do in to format base pass, but many network not work now
   if (ModifyCNodeFormat(func_graph, NCHW) != kSuccess) {
     MS_LOG(ERROR) << "modify cnode format failed.";
+    return lite::RET_ERROR;
+  }
+  if (!lite::RunOptimizerPass(func_graph, {kCustomOpInsertVariableNodePass})) {
+    MS_LOG(ERROR) << "Insert variable node failed!";
     return lite::RET_ERROR;
   }
 
@@ -918,6 +923,7 @@ STATUS AclPassImpl::ConvertGraphToOm(const FuncGraphPtr &func_graph, Buffer *om_
 
   // call interface of cloud
   ModelConverter model_converter;
+  options_->SetConstName(param_->const_names);
   model_converter.set_options(options_);
   *om_data = model_converter.LoadMindIR(func_graph);
   if (om_data->Data() == nullptr || om_data->DataSize() == 0) {

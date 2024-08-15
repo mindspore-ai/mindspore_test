@@ -621,3 +621,13 @@ def test_model_group_add_model_invalid_model_obj_type_error():
         model_group = mslite.ModelGroup(flags=mslite.ModelGroupFlag.SHARE_WEIGHT)
         model_group.add_model("model_path")
     assert "models must be list/tuple, but got" in str(raise_info.value)
+
+# If declare a model and don't build it may cause core dump.
+def test_update_weights():
+    with pytest.raises(RuntimeError) as raise_info:
+        model = mslite.Model()
+        weight = np.zeros((1, 1))
+        tensor = mslite.Tensor(weight)
+        tensor.name = "dummy"
+        model.update_weights([[tensor]])
+    assert "Session is null, please build model first!" in str(raise_info.value)

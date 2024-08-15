@@ -37,6 +37,7 @@ struct AclModelOptions {
   bool share_weightspace = false;
   bool share_workspace = false;
   bool share_weightspace_workspace = false;
+  bool is_bundle_model = false;
   AclModelOptions() : device_id(0) {}
 };
 

@@ -1048,12 +1048,12 @@ ParameterPtr BuildFloat16ValueParameterNode(const FuncGraphPtr &func_graph, cons
   ShapeVector shape = empty_shape ? std::vector<int64_t>{} : std::vector<int64_t>{1};
   auto tensor_info = lite::CreateTensorInfo(&data, sizeof(float16), shape, kNumberTypeFloat16);
   if (tensor_info == nullptr) {
-    MS_LOG(ERROR) << "Create tensor info failed";
+    MS_LOG(ERROR) << "Create tensor info failed!";
     return nullptr;
   }
   auto status = lite::InitParameterFromTensorInfo(param_node, tensor_info);
   if (status != RET_OK) {
-    MS_LOG(ERROR) << "init parameter from tensor info failed";
+    MS_LOG(ERROR) << "init parameter from tensor info failed!";
     return nullptr;
   }
   return param_node;
@@ -1121,6 +1121,41 @@ ParameterPtr BuildFloatVec2DParameterNode(const FuncGraphPtr &func_graph, const 
   std::vector<float> data_1d;
   for (auto pair : data) {
     data_1d.insert(data_1d.end(), pair.begin(), pair.end());
+  }
+
+  auto size = data_1d.size() * sizeof(float);
+  auto tensor_info = lite::CreateTensorInfo(data_1d.data(), size, shape_vector, kNumberTypeFloat32);
+  if (tensor_info == nullptr) {
+    MS_LOG(ERROR) << "Create tensor info failed";
+    return nullptr;
+  }
+  auto status = lite::InitParameterFromTensorInfo(param_node, tensor_info);
+  if (status != RET_OK) {
+    MS_LOG(ERROR) << "init parameter from tensor info failed";
+    return nullptr;
+  }
+  return param_node;
+}
+
+ParameterPtr BuildFloatVec3DParameterNode(const FuncGraphPtr &func_graph,
+                                          const std::vector<std::vector<std::vector<float>>> &data,
+                                          const std::string &node_name) {
+  MS_CHECK_TRUE_RET(func_graph != nullptr, nullptr);
+  auto param_node = func_graph->add_parameter();
+  MS_CHECK_TRUE_RET(param_node != nullptr, nullptr);
+  param_node->set_name(node_name);
+
+  MS_CHECK_TRUE_RET(!data.empty(), nullptr);
+  std::vector<int64_t> shape_vector;
+  shape_vector.push_back(data.size());
+  shape_vector.push_back(data.at(0).size());
+  shape_vector.push_back(data.at(0).at(0).size());
+
+  std::vector<float> data_1d;
+  for (auto layer_1 : data) {
+    for (auto layer_2 : layer_1) {
+      data_1d.insert(data_1d.end(), layer_2.begin(), layer_2.end());
+    }
   }
 
   auto size = data_1d.size() * sizeof(float);
