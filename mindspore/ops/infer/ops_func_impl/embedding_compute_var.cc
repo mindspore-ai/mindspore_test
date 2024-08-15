@@ -15,17 +15,15 @@
  */
 #include "infer/ops_func_impl/embedding_compute_var.h"
 
-#include <vector>
 #include <set>
 #include <memory>
+#include <vector>
 #include <string>
 #include <functional>
 
-#include "utils/ms_context.h"
-#include "utils/check_convert_utils.h"
-#include "utils/shape_utils.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
-#include "mindspore/ops/op_def/op_name.h"
+#include "op_def/op_name.h"
+#include "utils/check_convert_utils.h"
 
 namespace mindspore {
 namespace ops {

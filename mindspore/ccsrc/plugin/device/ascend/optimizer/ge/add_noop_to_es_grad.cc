@@ -32,7 +32,7 @@ bool IsESGradOps(const BaseRef &ref) {
     MS_EXCEPTION_IF_NULL(node);
     const mindspore::HashSet<PrimitivePtr, PrimitiveHasher, PrimitiveEqual> es_grad_prims = {
       prim::kPrimEmbeddingApplyAdam, prim::kPrimEmbeddingApplyAdamW, prim::kPrimEmbeddingApplyAdaGrad,
-      prim::kPrimEmbeddingApplyFtrl};
+      prim::kPrimEmbeddingApplyFtrl, prim::kPrimEmbeddingApplySgd,   prim::kPrimEmbeddingApplyRmsprop};
     if (IsOneOfPrimitiveCNode(node, es_grad_prims)) {
       return true;
     }

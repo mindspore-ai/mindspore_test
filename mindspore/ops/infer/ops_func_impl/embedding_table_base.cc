@@ -17,8 +17,8 @@
 
 #include <set>
 #include <memory>
-#include <functional>
 #include <string>
+#include <functional>
 
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "utils/shape_utils.h"

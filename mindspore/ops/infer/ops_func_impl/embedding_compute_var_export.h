@@ -17,7 +17,6 @@
 #ifndef MINDSPORE_CORE_OPS_FUNC_IMPL_EMBEDDING_COMPUTE_VAR_EXPORT_H_
 #define MINDSPORE_CORE_OPS_FUNC_IMPL_EMBEDDING_COMPUTE_VAR_EXPORT_H_
 
-#include <vector>
 #include "infer/ops_func_impl/embedding_compute_var.h"
 
 namespace mindspore {

@@ -18,20 +18,18 @@
 #define MINDSPORE_CORE_OPS_FUNC_IMPL_EMBEDDING_APPLY_ADAM_H_
 
 #include <vector>
-#include "mindspore/core/ops/ops_func_impl/op_func_impl.h"
+#include "infer/ops_func_impl/embedding_service_optimizer.h"
 
 namespace mindspore {
 namespace ops {
-class OPS_API EmbeddingApplyAdamFuncImpl final : public OpFuncImpl {
+class OPS_API EmbeddingApplyAdamFuncImpl final : public EmbeddingServiceOptimizerFuncImpl {
  public:
-  BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
+  EmbeddingApplyAdamFuncImpl() { embedding_dim_index_ = 10; }
+  ~EmbeddingApplyAdamFuncImpl() = default;
 
-  TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
-
- private:
-  void CheckInputShapes(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const;
-
-  void CheckInputTypes(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const;
+ protected:
+  void CheckInputShapes(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
+  void CheckInputTypes(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
 };
 }  // namespace ops
 }  // namespace mindspore

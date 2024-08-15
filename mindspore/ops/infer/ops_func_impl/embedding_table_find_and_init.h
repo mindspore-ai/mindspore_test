@@ -17,7 +17,6 @@
 #ifndef MINDSPORE_CORE_OPS_FUNC_IMPL_EMBEDDING_TABLE_FIND_AND_INIT_H_
 #define MINDSPORE_CORE_OPS_FUNC_IMPL_EMBEDDING_TABLE_FIND_AND_INIT_H_
 
-#include <vector>
 #include "infer/ops_func_impl/embedding_table_find.h"
 
 namespace mindspore {

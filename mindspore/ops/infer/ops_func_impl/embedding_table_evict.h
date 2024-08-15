@@ -14,25 +14,21 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CORE_OPS_EMBEDDING_APPLY_ADA_GRAD_H
-#define MINDSPORE_CORE_OPS_EMBEDDING_APPLY_ADA_GRAD_H
+#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_EMBEDDING_TABLE_EVICT_H_
+#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_EMBEDDING_TABLE_EVICT_H_
 
-#include <memory>
 #include <vector>
-#include "mindapi/base/types.h"
-#include "ops/base_operator.h"
+#include "ops/ops_func_impl/op_func_impl.h"
 
 namespace mindspore {
 namespace ops {
-constexpr auto kNameEmbeddingApplyAdaGrad = "EmbeddingApplyAdaGrad";
-class OPS_API EmbeddingApplyAdaGrad : public BaseOperator {
+class OPS_API EmbeddingTableEvictFuncImpl final : public OpFuncImpl {
  public:
-  MIND_API_BASE_MEMBER(EmbeddingApplyAdaGrad);
-  EmbeddingApplyAdaGrad() : BaseOperator(kNameEmbeddingApplyAdaGrad) {
-    InitIOName({"var_handle", "lr", "grad", "keys", "global_step"}, {"var_handle"});
-  }
+  BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
+
+  TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
 };
 }  // namespace ops
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CORE_OPS_EMBEDDING_APPLY_ADA_GRAD_H
+#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_EMBEDDING_TABLE_EVICT_H_

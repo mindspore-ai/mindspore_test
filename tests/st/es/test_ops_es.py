@@ -21,6 +21,9 @@ from mindspore import ops, nn
 from mindspore.communication import init, release
 from mindspore.ops.operations.manually_defined import ops_def
 
+
+context.set_context(mode=context.GRAPH_MODE,
+                    device_target="Ascend", jit_config={"jit_level": 'O2'})
 init()
 
 table_id = 0
@@ -93,6 +96,22 @@ def embedding_table_find_and_init_forward_func(table_id_,
     return y
 
 
+class EmbeddingTableEvictNet(nn.Cell):
+    """
+    EmbeddingTableEvictNet
+    """
+
+    def __init__(self):
+        super(EmbeddingTableEvictNet, self).__init__()
+        self.table_id = Tensor(np.array([table_id]), ms.int32)
+        self.global_step = Tensor(1, ms.int32)
+
+    def construct(self):
+        return ops.auto_generate.embedding_table_evict(self.table_id, self.global_step, 1)
+
+
+embedding_table_evict_forward_func = EmbeddingTableEvictNet()
+
 class EsNet(nn.Cell):
     """
     EsNet
@@ -134,9 +153,8 @@ def train():
     """
     train net.
     """
-    context.set_context(mode=context.GRAPH_MODE,
-                        device_target="Ascend", jit_config={"jit_level": 'O0'})
     init_es_net_func(embedding_dim, value_total_len)
+    embedding_table_evict_forward_func()
 
     net = EsNet()
 
