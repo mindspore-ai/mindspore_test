@@ -254,6 +254,7 @@ int FetchFromSequenceValue(const ValueNodePtr &value_node, DataInfo *data_info) 
 
 int SetTensorData(const tensor::TensorPtr &tensor_info, DataInfo *data_info, TypeId data_type, size_t offset,
                   bool copy_data) {
+  MS_CHECK_TRUE_RET(data_info != nullptr, RET_NULL_PTR);
   if (data_type == kObjectTypeTensorType && tensor_info->Size() >= kTensorListMinSize) {
     data_info->data_.resize(tensor_info->Size() - offset);
     if (EOK != common::huge_memcpy(data_info->data_.data(), data_info->data_.size(),

@@ -20,6 +20,7 @@
 #include "nnacl/tensor_c_utils.h"
 
 void *GetOrAllocFp16Data(TensorC *t, ExecEnv *env, bool cast) {
+  NNACL_CHECK_NULL_RETURN_NULL(t);
   if (t->data_type_ == kNumberTypeFloat16) {
     return t->data_;
   }

@@ -23,6 +23,7 @@
 
 int DepthToSpaceResize(KernelBase *self) {
   DepthToSpaceStruct *depth_to_space = (DepthToSpaceStruct *)self;
+  NNACL_CHECK_NULL_RETURN_ERR(depth_to_space);
   DepthToSpaceArgs *args = &depth_to_space->args_;
 
   TensorC *input = self->in_[FIRST_INPUT];
@@ -43,6 +44,7 @@ int DepthToSpaceResize(KernelBase *self) {
 
 int DepthToSpaceCompute(KernelBase *self) {
   DepthToSpaceStruct *depth_to_space = (DepthToSpaceStruct *)self;
+  NNACL_CHECK_NULL_RETURN_ERR(depth_to_space);
   int mode = ((DepthToSpaceParameter *)self->param_)->mode_;
 
   TensorC *input = self->in_[FIRST_INPUT];
