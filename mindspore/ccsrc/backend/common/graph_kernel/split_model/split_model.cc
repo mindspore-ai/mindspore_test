@@ -200,7 +200,7 @@ void SplitModel::FuseAreas(const AreaPtr &dom, const std::vector<AreaPtr> &areas
     }
   } else {
     for (auto a : areas) {
-      for (auto &op : target->ops()) {
+      for (auto &op : a->ops()) {
         node_area_map_[op] = target;
       }
       target->FuseInput(a);
