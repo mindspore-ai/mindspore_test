@@ -17,9 +17,9 @@
 #include <memory>
 #include <string>
 #include <algorithm>
-#include "op_def/array_op_name.h"
-#include "op_def/math_op_name.h"
-#include "op_def/nn_optimizer_op_name.h"
+#include "mindspore/ops/op_def/array_op_name.h"
+#include "mindspore/ops/op_def/math_op_name.h"
+#include "mindspore/ops/op_def/nn_optimizer_op_name.h"
 #include "utils/ms_context.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
 

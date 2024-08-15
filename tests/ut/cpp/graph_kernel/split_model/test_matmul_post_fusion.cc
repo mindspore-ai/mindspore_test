@@ -16,6 +16,7 @@
 #include <vector>
 #include <string>
 
+#include "utils/ms_context.h"
 #include "graph_kernel/common/graph_kernel_common_test_suite.h"
 #include "common/graph_optimizer_test_framework.h"
 #include "backend/common/graph_kernel/model/graph_builder.h"
