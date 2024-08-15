@@ -74,7 +74,8 @@ Status VadOperation::ValidateParams() {
 }
 
 std::shared_ptr<TensorOp> VadOperation::Build() {
-  float measure_duration = measure_duration_ == 0 ? 2.0 / measure_freq_ : measure_duration_;
+  float measure_duration =
+    std::fabs(measure_duration_) <= std::numeric_limits<float>::epsilon() ? 2.0 / measure_freq_ : measure_duration_;
   std::shared_ptr<VadOp> tensor_op = std::make_shared<VadOp>(
     sample_rate_, trigger_level_, trigger_time_, search_time_, allowed_gap_, pre_trigger_time_, boot_time_,
     noise_up_time_, noise_down_time_, noise_reduction_amount_, measure_freq_, measure_duration, measure_smooth_time_,

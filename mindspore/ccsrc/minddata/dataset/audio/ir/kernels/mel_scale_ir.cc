@@ -42,7 +42,7 @@ Status MelScaleOperation::ValidateParams() {
   RETURN_IF_NOT_OK(ValidateIntScalarNonNegative("MelScale", "sample_rate", sample_rate_));
   RETURN_IF_NOT_OK(ValidateIntScalarNonNegative("MelScale", "n_stft", n_stft_));
   CHECK_FAIL_RETURN_UNEXPECTED(n_stft_ != 1, "MelScale: n_stft can not be 1.");
-  if (f_max_ != 0) {
+  if (std::fabs(f_max_) > std::numeric_limits<float>::epsilon()) {
     RETURN_IF_NOT_OK(ValidateFloatScalarNonNegative("MelScale", "f_max", f_max_));
     CHECK_FAIL_RETURN_UNEXPECTED(f_min_ < f_max_, "MelScale: f_max must be greater than f_min.");
   } else {
@@ -54,7 +54,8 @@ Status MelScaleOperation::ValidateParams() {
 }
 
 std::shared_ptr<TensorOp> MelScaleOperation::Build() {
-  float f_max = f_max_ == 0 ? static_cast<float>(sample_rate_) / 2 : f_max_;
+  float f_max =
+    std::fabs(f_max_) <= std::numeric_limits<float>::epsilon() ? static_cast<float>(sample_rate_) / 2 : f_max_;
   std::shared_ptr<MelScaleOp> tensor_op =
     std::make_shared<MelScaleOp>(n_mels_, sample_rate_, f_min_, f_max, n_stft_, norm_, mel_type_);
   return tensor_op;

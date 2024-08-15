@@ -340,9 +340,8 @@ Status DataSchema::ColumnLoad(nlohmann::json column_child_tree, const std::strin
 // Parses a schema json file and populates the columns and meta info.
 Status DataSchema::LoadSchemaFile(const std::string &schema_file_path,
                                   const std::vector<std::string> &columns_to_load) {
+  std::ifstream in(schema_file_path, std::ifstream::in);
   try {
-    std::ifstream in(schema_file_path, std::ifstream::in);
-
     nlohmann::json js;
     in >> js;
     auto s = PreLoadExceptionCheck(js);
@@ -382,6 +381,7 @@ Status DataSchema::LoadSchemaFile(const std::string &schema_file_path,
     }
     in.close();
   } catch (const std::exception &err) {
+    in.close();
     // Catch any exception and convert to Status return code
     RETURN_STATUS_UNEXPECTED("Invalid file, failed to load and parse JSON schema file: " + schema_file_path +
                              ", check syntax with JSON tools.");

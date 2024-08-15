@@ -43,7 +43,7 @@ Status SpectrogramOp::OutputShape(const std::vector<TensorShape> &inputs, std::v
     vec.push_back(n_fft_);
   }
   vec.push_back(n_columns);
-  if (power_ == 0) {
+  if (std::fabs(power_) <= std::numeric_limits<float>::epsilon()) {
     vec.push_back(two);
   }
   (void)outputs.emplace_back(TensorShape(vec));

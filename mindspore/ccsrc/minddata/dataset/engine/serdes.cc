@@ -70,23 +70,23 @@ Status Serdes::SaveToJSON(std::shared_ptr<DatasetNode> node, const std::string &
 
 Status Serdes::SaveJSONToFile(const nlohmann::json &json_string, const std::string &file_name, bool pretty) {
   constexpr int field_width = 4;
+  std::optional<std::string> dir = "";
+  std::optional<std::string> local_file_name = "";
+  FileUtils::SplitDirAndFileName(file_name, &dir, &local_file_name);
+  if (!dir.has_value()) {
+    dir = ".";
+  }
+  auto realpath = FileUtils::GetRealPath(dir.value().c_str());
+  if (!realpath.has_value()) {
+    MS_LOG(ERROR) << "Invalid file, get real path failed, path=" << file_name;
+    RETURN_STATUS_UNEXPECTED("Invalid file, get real path failed, path=" + file_name);
+  }
+
+  std::optional<std::string> whole_path = "";
+  FileUtils::ConcatDirAndFileName(&realpath, &local_file_name, &whole_path);
+
+  std::ofstream file(whole_path.value(), std::ios::out);
   try {
-    std::optional<std::string> dir = "";
-    std::optional<std::string> local_file_name = "";
-    FileUtils::SplitDirAndFileName(file_name, &dir, &local_file_name);
-    if (!dir.has_value()) {
-      dir = ".";
-    }
-    auto realpath = FileUtils::GetRealPath(dir.value().c_str());
-    if (!realpath.has_value()) {
-      MS_LOG(ERROR) << "Invalid file, get real path failed, path=" << file_name;
-      RETURN_STATUS_UNEXPECTED("Invalid file, get real path failed, path=" + file_name);
-    }
-
-    std::optional<std::string> whole_path = "";
-    FileUtils::ConcatDirAndFileName(&realpath, &local_file_name, &whole_path);
-
-    std::ofstream file(whole_path.value(), std::ios::out);
     if (pretty) {
       file << std::setw(field_width);
     }
@@ -95,6 +95,7 @@ Status Serdes::SaveJSONToFile(const nlohmann::json &json_string, const std::stri
 
     ChangeFileMode(whole_path.value(), S_IRUSR | S_IWUSR);
   } catch (const std::exception &err) {
+    file.close();
     RETURN_STATUS_UNEXPECTED("Invalid data, failed to save json string into file: " + file_name +
                              ", error message: " + err.what());
   }

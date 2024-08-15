@@ -67,7 +67,7 @@ Status LFCCOperation::ValidateParams() {
   RETURN_IF_NOT_OK(ValidateIntScalarNonNegative("LFCC", "pad", pad_));
   RETURN_IF_NOT_OK(ValidateFloatScalarNonNegative("LFCC", "power", power_));
   CHECK_FAIL_RETURN_UNEXPECTED(pad_mode_ != BorderType::kEdge, "LFCC: invalid BorderType, kEdge is not supported.");
-  if (f_max_ != 0) {
+  if (std::fabs(f_max_) > std::numeric_limits<float>::epsilon()) {
     RETURN_IF_NOT_OK(ValidateFloatScalarNonNegative("LFCC", "f_max", f_max_));
     CHECK_FAIL_RETURN_UNEXPECTED(
       f_min_ <= f_max_, "LFCC: f_max must be greater than or equal to f_min, but got f_max: " + std::to_string(f_max_) +
@@ -86,7 +86,7 @@ Status LFCCOperation::ValidateParams() {
 std::shared_ptr<TensorOp> LFCCOperation::Build() {
   win_length_ = win_length_ == 0 ? n_fft_ : win_length_;
   hop_length_ = hop_length_ == 0 ? (win_length_ / TWO) : hop_length_;
-  f_max_ = f_max_ == 0 ? floor(sample_rate_ / TWO) : f_max_;
+  f_max_ = std::fabs(f_max_) <= std::numeric_limits<float>::epsilon() ? floor(sample_rate_ / TWO) : f_max_;
   std::shared_ptr<LFCCOp> tensor_op =
     std::make_shared<LFCCOp>(sample_rate_, n_filter_, n_lfcc_, dct_type_, log_lf_, n_fft_, win_length_, hop_length_,
                              f_min_, f_max_, pad_, window_, power_, normalized_, center_, pad_mode_, onesided_, norm_);

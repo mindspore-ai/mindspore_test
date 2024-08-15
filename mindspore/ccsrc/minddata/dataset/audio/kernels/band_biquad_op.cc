@@ -32,10 +32,12 @@ Status BandBiquadOp::Compute(const std::shared_ptr<Tensor> &input, std::shared_p
   double a2 = exp(-2 * PI * bw_Hz / sample_rate_);
   double a1 = -4 * a2 / (1 + a2) * cos(w0);
   CHECK_FAIL_RETURN_UNEXPECTED(
-    a2 != 0, "BandBiquad: zero division error, 'central_freq / Q / sample_rate' got a big negative value.");
+    std::fabs(a2) > std::numeric_limits<double>::epsilon(),
+    "BandBiquad: zero division error, 'central_freq / Q / sample_rate' got a big negative value.");
   double b0 = sqrt(1 - a1 * a1 / (4 * a2)) * (1 - a2);
   if (noise_) {
-    CHECK_FAIL_RETURN_UNEXPECTED(b0 != 0, "BandBiquad: zero division error, 'b0' can not be zero.");
+    CHECK_FAIL_RETURN_UNEXPECTED(std::fabs(b0) > std::numeric_limits<double>::epsilon(),
+                                 "BandBiquad: zero division error, 'b0' can not be zero.");
     double mutl = sqrt(((1 + a2) * (1 + a2) - a1 * a1) * (1 - a2) / (1 + a2)) / b0;
     b0 *= mutl;
   }

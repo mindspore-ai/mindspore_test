@@ -52,6 +52,7 @@ namespace dataset {
 template <typename T>
 Status AmplitudeToDB(const std::shared_ptr<Tensor> &input, std::shared_ptr<Tensor> *output, T multiplier, T amin,
                      T db_multiplier, T top_db) {
+  RETURN_UNEXPECTED_IF_NULL(output);
   TensorShape input_shape = input->shape();
   TensorShape to_shape = input_shape.Rank() == 2
                            ? TensorShape({1, 1, input_shape[-2], input_shape[-1]})
@@ -110,6 +111,7 @@ Status CountThreadNums(size_t input_size, float block_size, size_t *task_num, si
 /// \param input/output: Tensor of shape <..., time>.
 template <typename T>
 Status Angle(const std::shared_ptr<Tensor> &input, std::shared_ptr<Tensor> *output) {
+  RETURN_UNEXPECTED_IF_NULL(output);
   TensorShape shape = input->shape();
   std::vector output_shape = shape.AsVector();
   output_shape.pop_back();
@@ -182,6 +184,7 @@ Status Biquad(const std::shared_ptr<Tensor> &input, std::shared_ptr<Tensor> *out
 /// \return Status code.
 template <typename T>
 Status Contrast(const std::shared_ptr<Tensor> &input, std::shared_ptr<Tensor> *output, T enhancement_amount) {
+  RETURN_UNEXPECTED_IF_NULL(output);
   const float enhancement_zoom = 750.0;
   T enhancement_amount_value = enhancement_amount / enhancement_zoom;
   TensorShape output_shape{input->shape()};
@@ -225,6 +228,7 @@ Status Contrast(const std::shared_ptr<Tensor> &input, std::shared_ptr<Tensor> *o
 /// \return Status code
 template <typename T>
 Status DBToAmplitude(const std::shared_ptr<Tensor> &input, std::shared_ptr<Tensor> *output, T ref, T power) {
+  RETURN_UNEXPECTED_IF_NULL(output);
   std::shared_ptr<Tensor> out;
   RETURN_IF_NOT_OK(Tensor::CreateEmpty(input->shape(), input->type(), &out));
   auto itr_out = out->begin<T>();
@@ -300,6 +304,7 @@ Status Gain(const std::shared_ptr<Tensor> &input, std::shared_ptr<Tensor> *outpu
 template <typename T>
 Status LFilter(const std::shared_ptr<Tensor> &input, std::shared_ptr<Tensor> *output, std::vector<T> a_coeffs,
                std::vector<T> b_coeffs, bool clamp) {
+  RETURN_UNEXPECTED_IF_NULL(output);
   //  pack batch
   TensorShape input_shape = input->shape();
   TensorShape toShape({input->Size() / input_shape[-1], input_shape[-1]});
@@ -411,6 +416,7 @@ Status Linspace(std::shared_ptr<Tensor> *output, T start, T end, int32_t n) {
 template <typename T>
 Status CreateTriangularFilterbank(std::shared_ptr<Tensor> *output, const std::shared_ptr<Tensor> &all_freqs,
                                   const std::shared_ptr<Tensor> &f_pts) {
+  RETURN_UNEXPECTED_IF_NULL(output);
   // calculate the difference between each mel point and each stft freq point in hertz.
   std::vector<T> f_diff;
   auto iter_fpts1 = f_pts->begin<T>();
@@ -476,6 +482,7 @@ Status CreateTriangularFilterbank(std::shared_ptr<Tensor> *output, const std::sh
 template <typename T>
 Status CreateFbanks(std::shared_ptr<Tensor> *output, int32_t n_freqs, float f_min, float f_max, int32_t n_mels,
                     int32_t sample_rate, NormType norm, MelType mel_type) {
+  RETURN_UNEXPECTED_IF_NULL(output);
   // min_log_hz, min_log_mel, logstep and f_sp are the const of the mel value equation.
   const double min_log_hz = 1000.0;
   const double min_log_mel = 1000 / (200.0 / 3);
@@ -613,6 +620,7 @@ Status CreateLinearFbanks(std::shared_ptr<Tensor> *output, int32_t n_freqs, floa
 template <typename T>
 Status MelScale(const std::shared_ptr<Tensor> &input, std::shared_ptr<Tensor> *output, int32_t n_mels,
                 int32_t sample_rate, T f_min, T f_max, int32_t n_stft, NormType norm, MelType mel_type) {
+  RETURN_UNEXPECTED_IF_NULL(output);
   // pack
   TensorShape input_shape = input->shape();
   TensorShape input_reshape({input->Size() / input_shape[-1] / input_shape[-2], input_shape[-2], input_shape[-1]});
@@ -756,6 +764,7 @@ template <typename T>
 Status SGD(const std::shared_ptr<Tensor> &input, std::shared_ptr<Tensor> *output, const std::shared_ptr<Tensor> &grad,
            float lr, float momentum = 0.0, float dampening = 0.0, float weight_decay = 0.0, bool nesterov = false,
            float stat = 0.0) {
+  RETURN_UNEXPECTED_IF_NULL(output);
   size_t elem_num = input->Size();
   std::vector<T> accum(elem_num);
   std::shared_ptr<Tensor> output_param;
@@ -857,6 +866,7 @@ Status MuLawEncoding(const std::shared_ptr<Tensor> &input, std::shared_ptr<Tenso
 /// \return Status code.
 template <typename T>
 Status Overdrive(const std::shared_ptr<Tensor> &input, std::shared_ptr<Tensor> *output, float gain, float color) {
+  RETURN_UNEXPECTED_IF_NULL(output);
   TensorShape input_shape = input->shape();
   // input->2D.
   auto rows = input->Size() / input_shape[-1];
@@ -1194,6 +1204,7 @@ Status GenerateWaveTable(std::shared_ptr<Tensor> *output, const DataType &type, 
 template <typename T>
 Status Phaser(const std::shared_ptr<Tensor> &input, std::shared_ptr<Tensor> *output, int32_t sample_rate, float gain_in,
               float gain_out, float delay_ms, float decay, float mod_speed, bool sinusoidal) {
+  RETURN_UNEXPECTED_IF_NULL(output);
   TensorShape input_shape = input->shape();
   // input convert to 2D (channels,time)
   auto channels = input->Size() / input_shape[-1];
@@ -1373,6 +1384,7 @@ template <typename T>
 Status Flanger(const std::shared_ptr<Tensor> input, std::shared_ptr<Tensor> *output, int32_t sample_rate, float delay,
                float depth, float regen, float width, float speed, float phase, Modulation modulation,
                Interpolation interpolation) {
+  RETURN_UNEXPECTED_IF_NULL(output);
   std::shared_ptr<Tensor> waveform;
   if (input->type() == DataType::DE_FLOAT64) {
     waveform = input;
@@ -1700,6 +1712,8 @@ Status TensorRound(const std::shared_ptr<Tensor> &input, std::shared_ptr<Tensor>
 template <typename T>
 Status ApplyProbabilityDistribution(const std::shared_ptr<Tensor> &input, std::shared_ptr<Tensor> *output,
                                     DensityFunction density_function, std::mt19937 *rnd) {
+  RETURN_UNEXPECTED_IF_NULL(output);
+  RETURN_UNEXPECTED_IF_NULL(rnd);
   int channel_size = input->shape()[0] - 1;
   int time_size = input->shape()[-1] - 1;
   std::uniform_int_distribution<> dis_channel(0, channel_size);
@@ -1793,6 +1807,8 @@ Status AddNoiseShaping(const std::shared_ptr<Tensor> &input, std::shared_ptr<Ten
 template <typename T>
 Status Dither(const std::shared_ptr<Tensor> &input, std::shared_ptr<Tensor> *output, DensityFunction density_function,
               bool noise_shaping, std::mt19937 *rnd) {
+  RETURN_UNEXPECTED_IF_NULL(output);
+  RETURN_UNEXPECTED_IF_NULL(rnd);
   TensorShape shape = input->shape();
   TensorShape new_shape({input->Size() / shape[-1], shape[-1]});
   RETURN_IF_NOT_OK(input->Reshape(new_shape));
@@ -2011,6 +2027,7 @@ Status Vad(const std::shared_ptr<Tensor> &input, std::shared_ptr<Tensor> *output
            T trigger_time, T search_time, T allowed_gap, T pre_trigger_time, T boot_time, T noise_up_time,
            T noise_down_time, T noise_reduction_amount, T measure_freq, T measure_duration, T measure_smooth_time,
            T hp_filter_freq, T lp_filter_freq, T hp_lifter_freq, T lp_lifter_freq) {
+  RETURN_UNEXPECTED_IF_NULL(output);
   const int measure_len_ws = static_cast<int>(sample_rate * measure_duration + 0.5);
   const int measure_len_ns = measure_len_ws;
 
@@ -2131,6 +2148,7 @@ Status Vad(const std::shared_ptr<Tensor> &input, std::shared_ptr<Tensor> *output
 /// \Returns Status code.
 template <typename T>
 Status FlipLastDim(const std::shared_ptr<Tensor> &input, std::shared_ptr<Tensor> *output) {
+  RETURN_UNEXPECTED_IF_NULL(output);
   // Create input copy
   std::shared_ptr<Tensor> res_tensor;
   RETURN_IF_NOT_OK(Tensor::CreateEmpty(input->shape(), input->type(), &res_tensor));

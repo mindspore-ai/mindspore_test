@@ -69,7 +69,7 @@ Status MFCCOperation::ValidateParams() {
   RETURN_IF_NOT_OK(ValidateIntScalarPositive("MFCC", "power", power_));
   RETURN_IF_NOT_OK(ValidateIntScalarNonNegative("MFCC", "n_mels", n_mels_));
   CHECK_FAIL_RETURN_UNEXPECTED(pad_mode_ != BorderType::kEdge, "MFCC: invalid BorderType, kEdge is not supported.");
-  if (f_max_ != 0) {
+  if (std::fabs(f_max_) > std::numeric_limits<float>::epsilon()) {
     RETURN_IF_NOT_OK(ValidateFloatScalarNonNegative("MFCC", "f_max", f_max_));
     CHECK_FAIL_RETURN_UNEXPECTED(f_min_ <= f_max_,
                                  "MFCC: f_max must be greater than or equal to f_min, but got "
@@ -90,7 +90,7 @@ Status MFCCOperation::ValidateParams() {
 std::shared_ptr<TensorOp> MFCCOperation::Build() {
   win_length_ = win_length_ == 0 ? n_fft_ : win_length_;
   hop_length_ = hop_length_ == 0 ? (win_length_ / TWO) : hop_length_;
-  f_max_ = f_max_ == 0 ? (sample_rate_ / TWO) : f_max_;
+  f_max_ = std::fabs(f_max_) <= std::numeric_limits<float>::epsilon() ? (sample_rate_ / TWO) : f_max_;
   std::shared_ptr<MFCCOp> tensor_op = std::make_shared<MFCCOp>(
     sample_rate_, n_mfcc_, dct_type_, log_mels_, n_fft_, win_length_, hop_length_, f_min_, f_max_, pad_, n_mels_,
     window_, power_, normalized_, center_, pad_mode_, onesided_, norm_mel_, norm_, mel_scale_);
