@@ -1096,6 +1096,10 @@ def test_generator_mixed_operator():
     """
     logger.info("Test adding computing operator into user defined dataset.")
 
+    if "MS_INDEPENDENT_DATASET" in os.environ and os.environ["MS_INDEPENDENT_DATASET"].lower() == "true":
+        logger.info("Mixed operator with Tensor and ops is no needed to run in independent dataset mode.")
+        return
+
     # create dataset
     data1 = ds.GeneratorDataset(DatasetGeneratorMixed(), ["col0"], shuffle=False, python_multiprocessing=False)
     assert data1.num_parallel_workers == 1

@@ -499,6 +499,7 @@ def test_dataset_mnistdataset_with_for_loop_iterator():
         for _ in dataset.create_dict_iterator(output_numpy=True):
             numiter += 1
     assert numiter == 60
+    time.sleep(3)
     os.system("ps -ef | grep " + str(os.getpid()))
     process_num2 = subprocess.getoutput("ps -ef | grep " + str(os.getpid()) + " | wc -l")
     assert process_num2 <= process_num

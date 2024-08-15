@@ -250,7 +250,7 @@ TaskGroup *Task::MyTaskGroup() { return task_group_; }
 
 void Task::set_task_group(TaskGroup *vg) { task_group_ = vg; }
 
-Task::~Task() { task_group_ = nullptr; }
+Task::~Task() { ReleaseTaskGroup(); }
 
 Status Task::OverrideInterruptRc(const Status &rc) {
   if (rc == StatusCode::kMDInterrupted && this_thread::is_master_thread()) {
