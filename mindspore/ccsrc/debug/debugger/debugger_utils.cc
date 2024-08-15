@@ -31,6 +31,7 @@
 #include "kernel/kernel.h"
 #include "include/backend/debug/data_dump/tensor_stat_dump.h"
 #include "debug/data_dump/tensor_info_collect.h"
+#include "include/common/debug/common.h"
 
 constexpr int kFailure = 1;
 constexpr auto kInput = "input";
@@ -268,13 +269,13 @@ bool CheckReadData(const CNodePtr &cnode) {
   bool read_data = false;
   auto &dump_json_parser = DumpJsonParser::GetInstance();
   bool dump_enabled = dump_json_parser.DumpEnabledForIter();
-  MS_LOG(DEBUG) << "dump_enabled: " << dump_enabled;
   std::string kernel_name = GetKernelNodeName(cnode);
   if (dump_enabled) {
     if (dump_json_parser.NeedDump(kernel_name)) {
       read_data = true;
     }
   }
+  MS_LOG(DEBUG) << cnode->fullname_with_scope() << " need dump " << read_data;
   return read_data;
 }
 
@@ -293,8 +294,6 @@ void ReadDataAndDump(const CNodePtr &cnode, std::vector<device::DeviceAddress *>
     return;
   }
   auto &dump_json_parser = DumpJsonParser::GetInstance();
-  bool dump_enabled = dump_json_parser.DumpEnabledForIter();
-  MS_LOG(DEBUG) << "dump_enabled: " << dump_enabled;
   auto kernel_graph = std::dynamic_pointer_cast<KernelGraph>(cnode->func_graph());
   MS_EXCEPTION_IF_NULL(kernel_graph);
   auto root_graph_id = kernel_graph->root_graph_id();
@@ -302,7 +301,7 @@ void ReadDataAndDump(const CNodePtr &cnode, std::vector<device::DeviceAddress *>
   uint32_t sample_mode = GetSampleMode();
   uint32_t sample_num = GetSampleNum();
   if (dump_json_parser.InputNeedDump()) {
-    if (DumpJsonParser::GetInstance().IsDeviceCalcStats() && dump_enabled) {
+    if (DumpJsonParser::GetInstance().IsDeviceCalcStats()) {
       datadump::DumpKernelTensorStats(device_context, input_device_tensors, true, cnode, root_graph_id);
     } else {
       bool async_copy = !abnormal_dump;
@@ -311,7 +310,7 @@ void ReadDataAndDump(const CNodePtr &cnode, std::vector<device::DeviceAddress *>
     }
   }
   if (dump_json_parser.OutputNeedDump()) {
-    if (DumpJsonParser::GetInstance().IsDeviceCalcStats() && dump_enabled) {
+    if (DumpJsonParser::GetInstance().IsDeviceCalcStats()) {
       datadump::DumpKernelTensorStats(device_context, output_device_tensors, false, cnode, root_graph_id);
     } else if (!abnormal_dump) {
       LoadOutputs(cnode, output_device_tensors, exec_order, root_graph_id, device_context, trans_flag, sample_mode,
@@ -319,7 +318,7 @@ void ReadDataAndDump(const CNodePtr &cnode, std::vector<device::DeviceAddress *>
     }
   }
   // Dump kernel
-  if (dump_enabled && !DumpJsonParser::GetInstance().IsDeviceCalcStats()) {
+  if (!DumpJsonParser::GetInstance().IsDeviceCalcStats()) {
     MS_EXCEPTION_IF_NULL(kernel_graph);
     auto graph_id = kernel_graph->graph_id();
     // for GPU, nodes are dumped in graph_id directory.
@@ -496,9 +495,6 @@ void DumpDataViaCallback(const CNodePtr &cnode, const std::vector<device::Device
   if (!debugger) {
     return;
   }
-  auto &dump_json_parser = DumpJsonParser::GetInstance();
-  bool dump_enabled = dump_json_parser.DumpEnabledForIter();
-  MS_LOG(DEBUG) << "dump_enabled: " << dump_enabled;
 
   TensorInfoCommForDump tensor_info_comm = GetTensorInfoCommFromCnode(cnode);
   auto stream_id = tensor_info_comm.stream_id;
