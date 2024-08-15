@@ -17,7 +17,7 @@ from __future__ import absolute_import
 import mindspore.ops as ops
 from mindspore.ops.function.array_func import gather_ext as gather, max_ext as max, min_ext as min
 from mindspore.ops.function.nn_func import conv2d_ext as conv2d
-from mindspore.mint.nn.functional import sigmoid, tanh
+from mindspore.mint.nn.functional import sigmoid
 from mindspore.mint.nn import functional
 from mindspore.mint import linalg
 from mindspore.mint import special
@@ -225,7 +225,7 @@ from mindspore.mint import nn, optim
 # 93
 
 # 94
-
+from mindspore.ops.function.math_func import tanh
 # 95
 
 # 96
