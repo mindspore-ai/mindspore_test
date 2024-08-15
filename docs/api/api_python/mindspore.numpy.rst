@@ -118,7 +118,7 @@ Array生成
       [[1. 0.]
        [0. 1.]] 
 
-.. msplatformautosummary::
+.. mscnplatformautosummary::
     :toctree: numpy
     :nosignatures:
     :template: classtemplate_inherited.rst
@@ -240,7 +240,7 @@ Array操作
       [ 0  1  2  3  4 10 11 12 13 14]
    
 
-.. msplatformautosummary::
+.. mscnplatformautosummary::
     :toctree: numpy
     :nosignatures:
     :template: classtemplate_inherited.rst
@@ -316,7 +316,7 @@ Array操作
     output of equal: [ True False False False False]
     output of less: [False  True  True  True  True]
   
-.. msplatformautosummary::
+.. mscnplatformautosummary::
     :toctree: numpy
     :nosignatures:
     :template: classtemplate_inherited.rst
@@ -421,7 +421,7 @@ Array操作
 
       [ 1.         2.7182817  7.389056  20.085537  54.59815  ]
 
-.. msplatformautosummary::
+.. mscnplatformautosummary::
     :toctree: numpy
     :nosignatures:
     :template: classtemplate_inherited.rst
