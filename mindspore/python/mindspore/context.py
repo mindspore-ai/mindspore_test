@@ -1436,7 +1436,7 @@ def set_context(**kwargs):
             If enable_graph_kernel is set to ``True`` , acceleration can be enabled.
             For details of graph kernel fusion, please check
             `Enabling Graph Kernel Fusion
-            <https://www.mindspore.cn/tutorials/experts/en/master/optimize/graph_fusion_engine.html>`_.
+            <https://www.mindspore.cn/docs/en/master/model_train/debug/graph_fusion_engine.html>`_.
         graph_kernel_flags (str):
             Optimization options of graph kernel fusion, and the priority is higher when it conflicts
             with enable_graph_kernel. Only for experienced users.

@@ -60,7 +60,7 @@
 
         教程样例：
             - `Cell与参数 - 自定义Cell反向
-              <https://mindspore.cn/tutorials/zh-CN/master/advanced/modules/layer.html#自定义cell反向>`_
+              <https://mindspore.cn/docs/zh-CN/master/model_train/custom_program/layer.html#自定义cell反向>`_
 
     .. py:method:: cast_inputs(inputs, dst_type)
 

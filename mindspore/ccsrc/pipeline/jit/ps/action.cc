@@ -1625,7 +1625,7 @@ void SetRunMode(const ResourcePtr &resource) {
     MS_LOG(INTERNAL_EXCEPTION) << "Current execution mode is 'kernelbykernel', reason: " << kbk_reason
                                << ", but you're launching job using 'ranktable', which "
                                   "does not support 'kernelbykernel' mode.\n Please refer to link: "
-                                  "https://www.mindspore.cn/tutorials/experts/en/master/parallel/startup_method.html "
+                                  "https://www.mindspore.cn/docs/en/master/model_train/parallel/startup_method.html "
                                   "and use 'Dynamic cluster'(suggested) or 'mpirun' to launch your job.";
   }
 }

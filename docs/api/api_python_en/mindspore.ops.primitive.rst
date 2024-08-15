@@ -618,7 +618,7 @@ Distributed training involves communication operations for data transfer. For mo
 Note that the APIs in the following list need to preset communication environment variables. For Ascend/GPU/CPU devices,
 it is recommended to use the msrun startup method without any third-party or configuration file dependencies.
 Please see the `msrun start up \
-<https://www.mindspore.cn/tutorials/experts/zh-CN/master/parallel/msrun_launcher.html>`_ for more details.
+<https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/msrun_launcher.html>`_ for more details.
 
 .. msplatwarnautosummary::
     :toctree: ops

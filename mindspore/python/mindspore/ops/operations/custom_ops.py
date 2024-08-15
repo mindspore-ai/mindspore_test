@@ -164,7 +164,7 @@ class Custom(ops.PrimitiveWithInfer):
     function if needed. Then these `Custom` objects can be directly used in neural networks.
     Detailed description and introduction of user-defined operators, including correct writing of parameters,
     please refer to `Custom Operators Tutorial
-    <https://www.mindspore.cn/tutorials/experts/en/master/operation/op_custom.html>`_ .
+    <https://www.mindspore.cn/docs/en/master/model_train/custom_program/operation/op_custom.html>`_ .
 
     .. warning::
         - This is an experimental API that is subject to change.
@@ -255,7 +255,7 @@ class Custom(ops.PrimitiveWithInfer):
                  `Quick Start for End-to-End Operator Development
                  <https://www.hiascend.com/document/detail/zh/canncommercial/70RC1/operatordev/Ascendcopdevg/atlas_ascendc_10_0022.html>`_,
                  and for compiling custom operators, you can use the `Offline Compilation of Ascend C Custom Operators
-                 <https://www.mindspore.cn/tutorials/experts/en/master/operation/op_custom_ascendc.html>` tool.
+                 <https://www.mindspore.cn/docs/en/master/model_train/custom_program/operation/op_custom_ascendc.html>` tool.
                  When passing the operator's name into the func parameter, taking AddCustom as an example for the
                  name given in the custom operator implementation, there are several ways to use it:
 

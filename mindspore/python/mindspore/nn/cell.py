@@ -224,7 +224,7 @@ class Cell(Cell_):
 
         Tutorial Examples:
             - `Cell and Parameter - Custom Cell Reverse
-              <https://mindspore.cn/tutorials/en/master/advanced/modules/layer.html#custom-cell-reverse>`_
+              <https://mindspore.cn/docs/en/master/model_train/custom_program/layer.html#custom-cell-reverse>`_
         """
         return self._bprop_debug
 
