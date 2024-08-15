@@ -251,8 +251,7 @@ AnfNodePtr HyperMap::HyperMapDynamicConverter(const FuncGraphPtr &func_graph, co
     (void)ret_inputs.emplace_back(inner_fg->add_parameter());
   }
   auto ret_node = inner_fg->NewCNodeInOrder(ret_inputs);
-  std::vector<AnfNodePtr> inner_ret_inputs = {NewValueNode(std::make_shared<prim::UnpackCall>("unpack_call")),
-                                              NewValueNode(prim_func), ret_node};
+  std::vector<AnfNodePtr> inner_ret_inputs = {NewValueNode(prim::kPrimDoUnpackCall), NewValueNode(prim_func), ret_node};
   auto inner_ret = inner_fg->NewCNodeInOrder(inner_ret_inputs);
   inner_fg->set_output(inner_ret);
   std::vector<AnfNodePtr> final_node_input = {NewValueNode(inner_fg)};

@@ -352,6 +352,7 @@ class AnalysisEngine : public std::enable_shared_from_this<AnalysisEngine> {
  private:
   // Overloaded function.
   EvaluatorPtr _GetEvaluatorFor(const std::shared_ptr<PrimitiveAbstractClosure> &func);
+  EvaluatorPtr _GetEvaluatorFor(const std::shared_ptr<PrimInstanceAbstractClosure> &func);
   EvaluatorPtr _GetEvaluatorFor(const std::shared_ptr<PartialAbstractClosure> &func);
   EvaluatorPtr _GetEvaluatorFor(const std::shared_ptr<FuncGraphAbstractClosure> &func);
   EvaluatorPtr _GetEvaluatorFor(const std::shared_ptr<MetaFuncGraphAbstractClosure> &func);
