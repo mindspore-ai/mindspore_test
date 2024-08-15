@@ -218,7 +218,7 @@ void HandleNodePullDown(const AnfNodePtr &comm_node, const CNodePtr &add_node) {
   auto manager = graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
 
-  AnfNodePtrList new_comm_node_inputs = {comm_node->cast<CNodePtr>()->input(0), add_node};
+  AnfNodePtrList new_comm_node_inputs = {comm_node->cast<CNodePtr>()->input(kIndex0), add_node};
   auto new_comm_node = graph->NewCNode(new_comm_node_inputs);
   new_comm_node->set_abstract(comm_node->abstract());
   auto prim = GetCNodePrimitive(new_comm_node);

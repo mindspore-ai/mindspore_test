@@ -210,10 +210,10 @@ void OverlapOptShardGradInPipeline(const FuncGraphPtr &graph) {
     }
     auto manager = graph->manager();
     for (auto rs : opt_shard_rs) {
-      std::vector<AnfNodePtr> depend_input = {NewValueNode(prim::kPrimDepend), rs->input(1), last_send};
+      std::vector<AnfNodePtr> depend_input = {NewValueNode(prim::kPrimDepend), rs->input(kIndex1), last_send};
       auto depend = graph->NewCNode(depend_input);
       depend->AddPrimalAttr(PP_OPT_SHARD_CONTROL, MakeValue(1));
-      depend->set_abstract(rs->input(1)->abstract());
+      depend->set_abstract(rs->input(kIndex1)->abstract());
       manager->SetEdge(rs, 1, depend);
     }
   }

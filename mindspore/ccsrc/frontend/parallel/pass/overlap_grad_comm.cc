@@ -80,6 +80,7 @@ void InsertDwMatmulDepend(const FuncGraphPtr &backward_graph, const std::vector<
     return;
   }
   auto manager = backward_graph->manager();
+  MS_EXCEPTION_IF_NULL(manager);
   for (size_t i = 0; i + 1 < dw_matmul_list.size(); ++i) {
     auto cur_dw_matmul = dw_matmul_list[i];
     auto next_dw_matmul = dw_matmul_list[i + 1];
@@ -96,6 +97,7 @@ void InsertDependForDxAndGradComm(const FuncGraphPtr &backward_graph, const std:
                                   const std::unordered_map<CNodePtr, CNodePtr> &backward_matmul_dx_dw_map,
                                   const std::unordered_map<CNodePtr, std::vector<CNodePtr>> &dx_grad_comm_map) {
   auto manager = backward_graph->manager();
+  MS_EXCEPTION_IF_NULL(manager);
   std::vector<CNodePtr> matched_dx_list;
   // there are two comm node when opt sharding not fully
   std::vector<std::vector<CNodePtr>> grad_comm_list;
@@ -283,6 +285,7 @@ void OverlapGradComm(const FuncGraphPtr &graph) {
     return;
   }
   auto manager = graph->manager();
+  MS_EXCEPTION_IF_NULL(manager);
   FuncGraphPtr backward_graph = graph;
   for (const auto &each_graph : manager->func_graphs()) {
     if (IsCellReuseForwardGraph(each_graph)) {

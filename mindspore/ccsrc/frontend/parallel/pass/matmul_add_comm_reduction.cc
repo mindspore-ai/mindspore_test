@@ -139,7 +139,7 @@ void FindAllValidAddNode(const FuncGraphPtr &graph, HashMap<AnfNodePtr, std::vec
 
       auto comm_cnode = comm_node->cast<CNodePtr>();
       MS_EXCEPTION_IF_NULL(comm_node);
-      auto pre_prim = GetCNodePrimitive(comm_cnode->input(1));
+      auto pre_prim = GetCNodePrimitive(comm_cnode->input(kIndex1));
       if (pre_prim == nullptr || IsPrimitiveAttrValid(pre_prim, MATMUL_ADD_COMM_BEGIN)) {
         MS_LOG(INFO) << "For matmul comm reduction,  cannot find matmul/batch matmul node, "
                      << "skip cur node: " << input_node->DebugString();
@@ -248,7 +248,7 @@ void HandleNodePullUp(const AnfNodePtr &add_node, const std::vector<AnfNodePtr> 
     // Node After AllReduce pull up
     auto each_node = comm_node_list[index];
     auto each_cnode = each_node->cast<CNodePtr>();
-    auto pre_node = each_cnode->input(1);
+    auto pre_node = each_cnode->input(kIndex1);
     auto pre_prim = GetCNodePrimitive(pre_node);
     if (pre_prim == nullptr || IsPrimitiveAttrValid(pre_prim, MATMUL_ADD_COMM_BEGIN)) {
       MS_LOG(INFO) << "For comm reduction, its pre node does not marked or marked false, skip it.";

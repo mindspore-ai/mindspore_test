@@ -190,10 +190,10 @@ void SliceReuseRecomputedActivationNodes(const FuncGraphPtr &graph) {
       continue;
     }
     auto node = anode->cast<CNodePtr>();
-    if (!IsValueNode<FuncGraph>(node->input(0))) {
+    if (!IsValueNode<FuncGraph>(node->input(kIndex0))) {
       continue;
     }
-    auto recompute_graph = GetValueNode<FuncGraphPtr>(node->input(0));
+    auto recompute_graph = GetValueNode<FuncGraphPtr>(node->input(kIndex0));
     if (!recompute_graph->has_flag("recompute_k_graph")) {
       continue;
     }
@@ -201,7 +201,7 @@ void SliceReuseRecomputedActivationNodes(const FuncGraphPtr &graph) {
       auto anf_node = node->input(i);
       if (IsPrimitiveCNode(anf_node, prim::kPrimDepend)) {
         auto c_depend_node = anf_node->cast<CNodePtr>();
-        anf_node = c_depend_node->input(1);
+        anf_node = c_depend_node->input(kIndex1);
       }
       if (anf_node->isa<Parameter>()) {
         continue;

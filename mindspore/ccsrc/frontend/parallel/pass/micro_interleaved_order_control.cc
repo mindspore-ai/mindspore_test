@@ -165,17 +165,17 @@ void InsertDepend(const FuncGraphManagerPtr &manager, const CNodePtr &comm_node_
                   const CNodePtr &next_comm_node_a) {
   MS_LOG(INFO) << "comm_node_a:" << comm_node_a->fullname_with_scope()
                << ", comm_node_b:" << comm_node_b->fullname_with_scope();
-  if (next_comm_node_a->size() < node_size_two || !IsPrimitiveCNode(next_comm_node_a->input(1)) ||
-      comm_node_b->size() < node_size_two || !IsPrimitiveCNode(comm_node_b->input(1))) {
+  if (next_comm_node_a->size() < node_size_two || !IsPrimitiveCNode(next_comm_node_a->input(kIndex1)) ||
+      comm_node_b->size() < node_size_two || !IsPrimitiveCNode(comm_node_b->input(kIndex1))) {
     return;
   }
-  auto next_comm_node_a_input_node = next_comm_node_a->input(1)->cast<CNodePtr>();
-  auto comm_node_b_input_node = comm_node_b->input(1)->cast<CNodePtr>();
+  auto next_comm_node_a_input_node = next_comm_node_a->input(kIndex1)->cast<CNodePtr>();
+  auto comm_node_b_input_node = comm_node_b->input(kIndex1)->cast<CNodePtr>();
   // comm_node_b_input -> depend -> comm_node_a_output
-  if (IsPrimitiveCNode(comm_node_a->input(1), prim::kPrimMatMul)) {
+  if (IsPrimitiveCNode(comm_node_a->input(kIndex1), prim::kPrimMatMul)) {
     auto comm_id = comm_node_a->UniqueId();
     comm_node_a->AddAttr(INTERLEAVED_OVERLAP_MATMUL, MakeValue(comm_id));
-    comm_node_a->input(1)->cast<CNodePtr>()->AddAttr(INTERLEAVED_OVERLAP_MATMUL, MakeValue(comm_id));
+    comm_node_a->input(kIndex1)->cast<CNodePtr>()->AddAttr(INTERLEAVED_OVERLAP_MATMUL, MakeValue(comm_id));
   }
   std::vector<AnfNodePtr> depend1_inputs{NewValueNode(prim::kPrimDepend), comm_node_a, comm_node_b_input_node};
   auto depend_node1 = comm_node_a->func_graph()->NewCNode(depend1_inputs);
@@ -222,7 +222,7 @@ void InsertDependBetweenInterleavedNodes(const FuncGraphManagerPtr &manager,
       auto next_comm_node_list = micro_interleaved_node_list[i + 1].second;
       auto next_comm_node_a = next_comm_node_list[0];
       // comm_node_b -> next_comm_node_a
-      auto next_comm_node_a_input_node = next_comm_node_a->input(1)->cast<CNodePtr>();
+      auto next_comm_node_a_input_node = next_comm_node_a->input(kIndex1)->cast<CNodePtr>();
       std::vector<AnfNodePtr> depend1_inputs{NewValueNode(prim::kPrimDepend), next_comm_node_a_input_node, comm_node_b};
       auto depend_node1 = comm_node_b->func_graph()->NewCNode(depend1_inputs);
       MS_EXCEPTION_IF_NULL(depend_node1);
@@ -235,7 +235,7 @@ void InsertDependBetweenInterleavedNodes(const FuncGraphManagerPtr &manager,
     }
     // comm_node_a -> comm_node_b
     auto comm_node_a = comm_node_list[0];
-    auto comm_node_b_input_node = comm_node_b->input(1)->cast<CNodePtr>();
+    auto comm_node_b_input_node = comm_node_b->input(kIndex1)->cast<CNodePtr>();
     std::vector<AnfNodePtr> depend2_inputs{NewValueNode(prim::kPrimDepend), comm_node_b_input_node, comm_node_a};
     auto depend_node2 = comm_node_a->func_graph()->NewCNode(depend2_inputs);
     depend_node2->set_abstract(comm_node_b_input_node->abstract()->Clone());
@@ -314,18 +314,18 @@ void InsertDependForBegin(const FuncGraphManagerPtr &manager,
   auto comm_node_list = micro_interleaved_node_list.front().second;
   auto comm_node_a = comm_node_list[0];
   auto comm_node_b = comm_node_list[1];
-  if (!IsPrimitiveCNode(comm_node_b->input(1))) {
+  if (!IsPrimitiveCNode(comm_node_b->input(kIndex1))) {
     return;
   }
-  auto begin = GetInputBorderNode(comm_node_b->input(1)->cast<CNodePtr>());
+  auto begin = GetInputBorderNode(comm_node_b->input(kIndex1)->cast<CNodePtr>());
   if (!begin) {
     return;
   }
-  auto begin_input = begin->input(1);
+  auto begin_input = begin->input(kIndex1);
   if (IsPrimitiveCNode(begin, prim::kPrimTupleGetItem)) {
     begin_input = begin;
   }
-  auto comm_node_a_input_node = comm_node_a->input(1)->cast<CNodePtr>();
+  auto comm_node_a_input_node = comm_node_a->input(kIndex1)->cast<CNodePtr>();
   std::vector<AnfNodePtr> depend2_inputs{NewValueNode(prim::kPrimDepend), begin_input, comm_node_a_input_node};
   auto depend_node2 = comm_node_a_input_node->func_graph()->NewCNode(depend2_inputs);
   depend_node2->AddAttr("micro_interleaved_depend_begin", MakeValue(true));

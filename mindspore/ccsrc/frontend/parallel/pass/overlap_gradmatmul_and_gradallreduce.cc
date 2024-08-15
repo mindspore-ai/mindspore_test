@@ -88,8 +88,8 @@ std::vector<CNodePtr> GetCommInputMatMulNode(const AnfNodePtr &node,
 }
 
 void InsertDepend(const FuncGraphManagerPtr &manager, const CNodePtr &comm_i1, const CNodePtr &matmul_i) {
-  auto comm_i1_input = comm_i1->input(1);
-  auto matmul_i_input = matmul_i->input(1);
+  auto comm_i1_input = comm_i1->input(kIndex1);
+  auto matmul_i_input = matmul_i->input(kIndex1);
   std::vector<AnfNodePtr> depend1_inputs{NewValueNode(prim::kPrimDepend), matmul_i_input, comm_i1_input};
   auto depend_node1 = matmul_i_input->func_graph()->NewCNode(depend1_inputs);
   MS_EXCEPTION_IF_NULL(depend_node1);
@@ -310,7 +310,7 @@ void OverlapGradMatmulAndGradAllreduce(const FuncGraphPtr &graph) {
     return;
   }
   auto manager = graph->manager();
-
+  MS_EXCEPTION_IF_NULL(manager);
   for (const auto &each_graph : manager->func_graphs()) {
     if (IsCellReuseForwardGraph(each_graph)) {
       auto forward_graph = each_graph;

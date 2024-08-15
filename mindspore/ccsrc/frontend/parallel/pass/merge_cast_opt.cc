@@ -66,6 +66,7 @@ void MergeCastOpt(const FuncGraphPtr &graph) {
     return;
   }
   auto manager = graph->manager();
+  MS_EXCEPTION_IF_NULL(manager);
   for (const auto &each_graph : manager->func_graphs()) {
     std::list<CNodePtr> graph_orders = each_graph->GetOrderedCnodes();
     std::vector<CNodePtr> origin_nodes_topological(graph_orders.cbegin(), graph_orders.cend());
