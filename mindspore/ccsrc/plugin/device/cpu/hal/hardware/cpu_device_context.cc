@@ -207,6 +207,7 @@ DeviceAddressPtr CPUDeviceResManager::CreateDeviceAddress(const KernelTensorPtr 
     kernel_tensor->set_device_id(device_context_->device_context_key().device_id_);
   }
   auto device_address = std::make_shared<CPUDeviceAddress>(kernel_tensor);
+  MS_EXCEPTION_IF_NULL(device_address);
 
   const auto &user_data = kernel_tensor->user_data();
   if (user_data != nullptr) {

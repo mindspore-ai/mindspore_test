@@ -500,6 +500,7 @@ void ControlActor::SendOutput(OpContext<DeviceTensor> *const context) {
 }
 namespace {
 CNodePtr CreateRealMakeTuple(const std::vector<DeviceTensor *> &addr_list, const FuncGraphPtr &func_graph) {
+  MS_EXCEPTION_IF_NULL(func_graph);
   std::vector<AnfNodePtr> inputs{NewValueNode(prim::kPrimRealMakeTuple)};
   auto new_cnode = func_graph->NewCNode(inputs);
   std::vector<std::string> formats;
@@ -572,6 +573,7 @@ void ControlActor::MergeDeviceAddress(OpContext<DeviceTensor> *const context,
 
   CheckDeviceAddressConsist(context, addr_list, GetAID().Name());
   MS_EXCEPTION_IF_NULL(addr_list[0]);
+  MS_EXCEPTION_IF_NULL(addr_list[0]->kernel_tensor());
   const auto &total_size = addr_list[0]->GetSize() * addr_list.size();
   ShapeVector total_shape = {SizeToLong(addr_list.size())};
   const auto &shape = addr_list[0]->host_shape();

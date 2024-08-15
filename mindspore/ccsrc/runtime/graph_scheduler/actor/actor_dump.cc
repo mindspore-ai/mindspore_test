@@ -844,6 +844,7 @@ using ActorInputMap = std::map<size_t, std::tuple<std::string, BaseShapePtr, Typ
 void AddInputActorInfo(ActorInputMap *actor_inputs, AbstractActor *input_actor, const AbstractActor *const actor,
                        const ActorInfoMap &actor_info, size_t from_index, size_t to_index) {
   MS_EXCEPTION_IF_NULL(actor_inputs);
+  MS_EXCEPTION_IF_NULL(input_actor);
   MS_EXCEPTION_IF_NULL(actor);
   if (actor_inputs->find(to_index) != actor_inputs->end()) {
     MS_LOG(INFO) << "Invalid index:" << to_index << " for actor:" << actor->GetAID()
@@ -894,6 +895,7 @@ size_t GetFromIndexInHostQueueDataSourceActor(AbstractActor *input_actor, const 
 size_t GetFromIndexInSuperKernelActor(AbstractActor *input_actor, const AbstractActor *const actor,
                                       const DataArrow *const data_arrow) {
   MS_EXCEPTION_IF_NULL(input_actor);
+  MS_EXCEPTION_IF_NULL(actor);
   MS_EXCEPTION_IF_NULL(data_arrow);
   if (input_actor->output_data_arrows().size() != input_actor->output_data_nodes().size()) {
     MS_LOG(INFO) << "For actor:" << input_actor->GetAID()
@@ -939,6 +941,7 @@ size_t GetFromIndexInSuperKernelActor(AbstractActor *input_actor, const Abstract
 void FetchInputActor(std::string input_aid, ActorInputMap *actor_inputs, const AbstractActor *const actor,
                      const ActorInfoMap &actor_info, const DataArrow *const data_arrow) {
   MS_EXCEPTION_IF_NULL(data_arrow);
+  MS_EXCEPTION_IF_NULL(actor);
   size_t to_index = IntToSize(data_arrow->to_input_index_);
   size_t from_index = IntToSize(data_arrow->from_output_index_);
   auto input_actor = FetchActor(input_aid);
@@ -976,6 +979,7 @@ void FetchInputActor(std::string input_aid, ActorInputMap *actor_inputs, const A
 void FetchInputDeviceTensorStore(const AnfNodePtr &key, size_t index, const AbstractActor *const actor,
                                  ActorInputMap *actor_inputs) {
   MS_EXCEPTION_IF_NULL(key);
+  MS_EXCEPTION_IF_NULL(actor);
   MS_EXCEPTION_IF_NULL(actor_inputs);
   std::string input_name = "%";
   if (key->isa<Parameter>()) {
@@ -1011,7 +1015,7 @@ void FetchInputForHostQueueDSActor(AbstractActor *actor, ActorInputMap *actor_in
   MS_EXCEPTION_IF_NULL(ds_actor);
   for (size_t i = 0; i < ds_actor->data_nodes().size(); ++i) {
     const auto &node_pair = ds_actor->data_nodes()[i];
-    if (node_pair.first == nullptr) {
+    if (node_pair.first == nullptr || (!AnfAlgo::OutputAddrExist(node_pair.first, node_pair.second, false))) {
       (*actor_inputs)[i] = {"null", nullptr, nullptr};
       continue;
     }
@@ -1128,6 +1132,7 @@ void DumpActorInfo(AbstractActor *actor, std::ofstream &ofs) {
 }
 
 bool IsTopActorType(AbstractActor *actor) {
+  MS_EXCEPTION_IF_NULL(actor);
   return actor->type() != KernelTransformType::kStackActor && actor->type() != KernelTransformType::kEntranceActor;
 }
 }  // namespace
