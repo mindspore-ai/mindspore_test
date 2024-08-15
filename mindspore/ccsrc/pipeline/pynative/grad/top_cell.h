@@ -161,6 +161,8 @@ class TopCellInfo {
   bool is_finish_backward() const { return is_finish_backward_; }
   inline bool is_pipeline_top_cell() const { return is_pipeline_top_cell_; }
   inline void set_is_pipeline_top_cell(bool is_pipeline_top_cell) { is_pipeline_top_cell_ = is_pipeline_top_cell; }
+  inline bool inner_has_high_order() const { return inner_has_high_order_; }
+  inline void set_inner_has_high_order(bool inner_has_high_order) { inner_has_high_order_ = inner_has_high_order; }
   inline TopCellInfo *shadow_top_cell() const { return shadow_top_cell_; }
   inline void set_shadow_top_cell(TopCellInfo *shadow_top_cell) { shadow_top_cell_ = shadow_top_cell; }
   void SaveTensorIdWithOpInfo(const std::string &op_info, const ValuePtr &v) {
@@ -216,6 +218,8 @@ class TopCellInfo {
 
   // Whether gradient calculation has been completed
   bool is_finish_backward_{false};
+  // Top cell has inner high order, and self is high order
+  bool inner_has_high_order_{false};
   bool is_pipeline_top_cell_{false};
   // When the top cell is no need compile, and it uses ir top cell(actor) for running, this record who is real top cell
   // is running

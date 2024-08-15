@@ -100,8 +100,12 @@ std::string FuncVariable::ToString() const {
 
 std::string IrVariable::ToString() const {
   std::ostringstream buf;
-  buf << "Variable id: " << PyNativeAlgo::Common::GetIdByValue(out_value()) << ", is_need_grad: " << is_need_grad()
-      << ", is_need_propagate: " << is_need_propagate() << ", is_leaf: " << is_leaf();
+  buf << "Variable id: " << PyNativeAlgo::Common::GetIdByValue(out_value());
+  if (auto tensor = out_value()->cast<tensor::BaseTensorPtr>(); tensor != nullptr && tensor->is_parameter()) {
+    buf << ", parameter name: " + tensor->param_info()->name();
+  }
+  buf << ", is_need_grad: " << is_need_grad() << ", is_need_propagate: " << is_need_propagate()
+      << ", is_leaf: " << is_leaf();
   for (size_t i = 0; i < ir_function_node()->next_edges().size(); ++i) {
     auto last_variable = ir_function_node()->next_edges()[i].first;
     auto din = ir_function_node()->next_edges()[i].second;

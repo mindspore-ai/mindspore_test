@@ -127,6 +127,7 @@ class FuncGrad : public AutoGrad {
  private:
   void BackPropagate();
   void BuildForwardLastNode(const ValuePtr &sens_gradient);
+  void WeightNodeNotInGradButHasTensorHook(const FuncVariablePtr &variable, const BackwardNodePtr &fn) const;
   OrderedSet<FuncVariablePtr>::reverse_iterator GetLastNodeReverseIter();
   void ConstructParameterNodes(const ValuePtrList &inputs);
 

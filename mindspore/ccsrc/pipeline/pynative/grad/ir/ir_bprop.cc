@@ -76,7 +76,7 @@ bool ProcessMonadNode(const PrimitivePtr &prim, const CNodePtr &cnode, const Gra
     cnode->set_inputs(inputs);
   }
   MS_EXCEPTION_IF_NULL(grad_param);
-  // Jit graph contain monad op
+  // Jit graph contains monad op
   if (grad_param->is_jit_graph) {
     for (size_t i = 1; i < cnode->size(); ++i) {
       cnode->set_input(i, common::AnfAlgo::VisitKernelWithReturnType(cnode->input(i), 0, false,
@@ -362,22 +362,23 @@ void IrBprop::BackPropagate() {
   MS_LOG(DEBUG) << "Is running recompute grad " << is_run_recompute_;
   for (auto iter = last_node_reverse_iter; iter != ad_param_->variable_adjoint_set_.rend(); ++iter) {
     const auto &variable = *iter;
+    const auto &fn = variable->ir_function_node();
     if (!variable->is_need_propagate() || !variable->is_need_grad()) {
       MS_LOG(DEBUG) << "No need grad, variable is: " << variable->ToString();
+      LeafNodeButHasTensorHook(variable, fn);
       continue;
     }
     if (static_cast<bool>(MS_UNLIKELY(variable->is_fake_bprop()))) {
       MS_LOG(EXCEPTION) << "Illegal primitive " << variable->fake_prim_name() << "'s bprop not defined";
     }
     MS_LOG(DEBUG) << "Begin backpropagate: " << variable->ToString();
-    const auto &fn = variable->ir_function_node();
     // If zeroslike not used in funcgraph, we need replace the zeroslike placeholder with real zeroslike value.
     if (static_cast<bool>(MS_UNLIKELY(PyNativeAlgo::AutoGrad::IsZerosLikeNode(fn->accumulate_dout())))) {
       fn->set_accumulate_dout(PyNativeAlgo::AutoGrad::BuildSpecialNode(
         fn->tape(), variable->out_value(), fn->accumulate_dout()->abstract(), SpecialType::kZerosLikeType));
     }
-    // If register hook by weight, and weight in recompute cell.So, hook will execute, which is not expect.
-    if (!is_run_recompute_) {
+    // If register hook by weight, and weight in recomputed cell.So, hook will execute, which is not expected.
+    if (!is_run_recompute_ || !variable->is_leaf()) {
       fn->set_accumulate_dout(pass_forward_->PassBackwardHook(variable->out_value(), fn->accumulate_dout()));
     }
     // Replace real dout to fake dout, update replace result to eliminate tuplegetitem
@@ -408,7 +409,14 @@ void IrBprop::BackPropagate() {
   MS_LOG(DEBUG) << "End BackPropagate";
 }
 
-OrderedSet<IrVariablePtr>::reverse_iterator IrBprop::GetLastNodeReverseIter() {
+void IrBprop::LeafNodeButHasTensorHook(const IrVariablePtr &variable, const IrFunctionNodePtr &fn) const {
+  if (!variable->is_leaf()) {
+    return;
+  }
+  fn->set_accumulate_dout(pass_forward_->PassBackwardHook(variable->out_value(), fn->accumulate_dout()));
+}
+
+OrderedSet<IrVariablePtr>::reverse_iterator IrBprop::GetLastNodeReverseIter() const {
   for (auto iter = ad_param_->variable_adjoint_set_.rbegin(); iter != ad_param_->variable_adjoint_set_.rend(); ++iter) {
     if (*iter == ad_param_->last_variable_) {
       ad_param_->last_variable_->set_is_need_propagate(true);

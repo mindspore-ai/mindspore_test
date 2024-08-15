@@ -44,7 +44,7 @@ struct IrPassForward {
   // Reverse operation for pass in high grad
   void ReversePassFuncGraph(const FuncGraphPtr &func_graph);
   void ReversePassCNode(const CNodePtr &cnode, ValuePtrList *inputs_value, AnfNodePtrList *cnode_inputs);
-  static inline bool need_reverse_graph() { return need_reverse_graph_; }
+  static bool need_reverse_graph() { return need_reverse_graph_; }
 
  private:
   CNodePtr ConvertConstInputToAttr(const CNodePtr &cnode, bool is_dynamic_shape);

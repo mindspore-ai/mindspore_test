@@ -158,8 +158,10 @@ class IrBprop {
                                const abstract::AbstractBasePtr &out_abs, const tensor::BaseTensorPtr &input_tensor,
                                const AnfNodePtr &din);
 
+  void LeafNodeButHasTensorHook(const IrVariablePtr &variable, const IrFunctionNodePtr &fn) const;
+
   // Get last node variable
-  OrderedSet<IrVariablePtr>::reverse_iterator GetLastNodeReverseIter();
+  OrderedSet<IrVariablePtr>::reverse_iterator GetLastNodeReverseIter() const;
 
   // Used for tuplegetiem elimate
   void AddTupleGetItemUser(const AnfNodePtr &node, const CNodePtr &user, size_t index);

@@ -517,7 +517,7 @@ TopCellInfoPtr GradExecutor::PopTopCellStack() {
     top_cell = top_cell_stack_.top();
   }
   top_cell == nullptr ? MS_LOG(DEBUG) << "Top cell stack has no top cell"
-                      : MS_LOG(DEBUG) << "Top cell stack size " << top_cell_stack_.size();
+                      : MS_LOG(DEBUG) << "After pop, top cell stack size " << top_cell_stack_.size();
   return top_cell;
 }
 
@@ -560,7 +560,8 @@ void GradExecutor::HandleInputArgsForTopCell(const InputArgsInfoPtr &input_args_
   if (IsCreateIrGrad()) {
     top_cell_->set_is_ir_grad(true);
   }
-  if (top_cell_->is_ir_grad()) {
+  // High-order must use ir grad
+  if (top_cell_->is_ir_grad() || top_cell_->is_high_order_top_cell()) {
     top_cell_->set_auto_grad_cell_ptr(
       std::make_shared<autograd::IrGrad>(input_param_values, abs_list, op_num_in_bprop_graph_ * kContainerRatio,
                                          !top_cell_->is_high_order_top_cell(), is_run_recompute_));
@@ -577,7 +578,7 @@ bool GradExecutor::IsCreateIrGrad() {
     // CheckNeedCompileGraph
     if (pipeline_top_cell_map_.find(top_cell_->already_run_cell_id()) == pipeline_top_cell_map_.end()) {
       top_cell_->set_need_compile_graph(true);
-      // If top cell can not find in both already_run_top_cell_ and pipeline_top_cell_map_ can be create new ir
+      // If top cell cannot find in both already_run_top_cell_ and pipeline_top_cell_map_ can be create new ir
       if (!top_cell_->use_dynamic_shape_process()) {
         return true;
       }
@@ -592,8 +593,8 @@ void GradExecutor::InitResourceAndDfBuilder(const InputArgsInfoPtr &input_args_i
   MS_LOG(DEBUG) << "InitResourceAndDfBuilder";
   MS_EXCEPTION_IF_NULL(input_args_info);
   forward()->WaitForwardTask();
-  // We need wait construct bprop task of outer top cell finish, if the main thread runs quickly when it executes
-  // gradnet and clear bprop_queue queue, bprop task of outer top cell may not finish, it will cause not found cnode
+  // We need wait construct bprop task of outer top cell finish if the main thread runs quickly when it executes
+  // gradnet and clear bprop_queue queue, bprop task of outer top cell may not finish; it will cause not found cnode
   // error.
   WaitBpropTask();
   if (input_args_info->is_grad_topest_cell) {
@@ -602,15 +603,13 @@ void GradExecutor::InitResourceAndDfBuilder(const InputArgsInfoPtr &input_args_i
     MakeNewTopCell(input_args_info);
   } else if (input_args_info->is_high_order_top_cell) {
     MS_LOG(DEBUG) << "Nested grad graph existed in construct";
-
-    // High-order inputs are uplevel top cell ops output, so need back up meta grad info too.
+    top_cell_->set_inner_has_high_order(true);
+    // High-order inputs are uplevel top cell ops output, so need back up meta-grad info too.
     for (auto &item : input_args_info->input_arg_value_vec) {
       top_cell_->BackUpValueMetaGradInfo(item);
     }
     ResetMetaGradInfoForNewTopCell(input_args_info);
     MakeNewTopCell(input_args_info);
-    // High-order must use ir grad
-    top_cell_->set_is_ir_grad(true);
   } else if (is_bprop_need_get_forward_graph) {
     MS_LOG(DEBUG) << "Run custom bprop function and make forward graph";
     // Make top cell just for get forward graph, but no need do anything about grad
@@ -629,8 +628,8 @@ void GradExecutor::InitResourceAndDfBuilder(const InputArgsInfoPtr &input_args_i
 }
 
 void GradExecutor::ResetMetaGradInfoForNewTopCell(const InputArgsInfoPtr &input_args_info) const {
-  // To fix the scene that user calls twice forward network with grad flag, and then call grad() interface.
-  // We need to clear last top cell's parameters grad info to avoid influencing construct bprop graph of current top
+  // To fix the scene that user calls twice forward network with a grad flag, and then call grad() interface.
+  // We need to clear last top cell's parameters grad info to avoid influencing construct bprop graph of the current top
   // cell.
   if (top_cell_ != nullptr) {
     MS_LOG(DEBUG) << "Reset meta grad info for top cell " << top_cell_;
@@ -638,10 +637,9 @@ void GradExecutor::ResetMetaGradInfoForNewTopCell(const InputArgsInfoPtr &input_
   }
 
   // To fix the scene like 1. net(x1) 2. x2 = deepcopy(x1), 3. net(x2) 3. grad_net(x2). 4. grad_net(x1)
-  // x1's auto_grad_meta_data will be copy to x2, x2 grad will use the same auto_grad_meta_data and clear x1's variable
-  // and set x2's variable.
-  // When execute grad_net(x1), x1's variable will not found, so we need clear input's auto_grad_meta_data before
-  // execute.
+  // x1's auto_grad_meta_data will be copied to x2, x2 grad will use the same auto_grad_meta_data and clear x1's
+  // variable and set x2's variable. When execute grad_net(x1), x1's variable will not be found, so we need clear
+  // input's auto_grad_meta_data before execute.
   for (auto &item : input_args_info->input_arg_value_vec) {
     top_cell_->ClearValueMetaGradInfo(item);
   }
@@ -760,10 +758,10 @@ void GradExecutor::MakeNewTopCell(const InputArgsInfoPtr &input_args_info) {
   bool new_top_cell_is_pipeline_top_cell = NewTopCellIsPipelineTopCell(input_args_info);
 
   bool new_top_cell_is_pipeline_high_order =
-    input_args_info->is_high_order_top_cell && new_top_cell_is_pipeline_top_cell;
-  // If outer layer top cell is also pipeline top cell, top cell stack maybe empty. Here, need push it to top cell stack
-  // too when running MakeNestedCnode or running bprop function(and brpop function has anoher grad). Because it is need
-  // to known who is outer layer top cell when inner run finished.
+    new_top_cell_is_pipeline_top_cell && input_args_info->is_high_order_top_cell;
+  // If the outer layer top cell is also pipeline top cell, top cell stack maybe empty. Here, need to push it to top
+  // cell stack too when running MakeNestedCnode or running bprop function (and brpop function has another grad).
+  // Because it is necessary to know who is outer layer top cell when inner run finished.
   if (top_cell_ != nullptr && top_cell_->is_pipeline_top_cell() &&
       (new_top_cell_is_pipeline_high_order || top_cell_->grad_is_running())) {
     PushTopCellStack(top_cell_);
@@ -794,8 +792,10 @@ void GradExecutor::MakeNewTopCell(const InputArgsInfoPtr &input_args_info) {
   if (new_top_cell_is_pipeline_top_cell) {
     pipeline_top_cell_map_[input_args_info->already_run_cell_id].emplace_back(top_cell_);
     top_cell_->set_is_pipeline_top_cell(true);
-    // If pipeline top cell is high-order, it need to be manage by stack when run MakeNestedCnode, so push it to stack.
-    if (top_cell_->is_high_order_top_cell()) {
+    // If pipeline top cell is high-order, it needs to be manage by stack when run MakeNestedCnode, so push it to stack.
+    // Or inner top cell is high-order
+    if (top_cell_->is_high_order_top_cell() ||
+        pipeline_top_cell_map_[input_args_info->already_run_cell_id].front()->inner_has_high_order()) {
       PushTopCellStack(top_cell_);
     }
     MS_LOG(DEBUG) << "Create pipeline top cell, input args id " << top_cell_->input_args_id()
@@ -818,20 +818,20 @@ bool GradExecutor::NewTopCellIsPipelineTopCell(const InputArgsInfoPtr &input_arg
     // net.set_grad
     // grad(net)(input1) -> this will generate a element in already_run_top_cell_ and do a complete grad operation;
     // Then, run another net(input1) -> this will think it do upgrade op info because a complete grad operation have
-    // done before; But then run another net(input1) -> this will get pipeline top cell and which should be have 2
+    // done before; But then run another net(input1) -> this will get pipeline top cell and which should have 2
     // elements, and they are need compile ir graph because this is the first step for running pipeline top cell.
     // Then, run grad(net)(input1) -> this will find the matched top cell in already_run_top_cell_ because
-    // already_run_cell_id is matched, but this is not correct because current process is in pipeline top cell now. So,
-    // this will meet a error of auto grad meta.
-    // Erase top cell info from already_run_top_cell_ is need.
+    // already_run_cell_id is matched, but this is not correct because the current process is in pipeline top cell now.
+    // So, this will meet an error of auto grad meta. Erase top cell info from already_run_top_cell_ is a need.
     auto iter = already_run_top_cell_.find(input_args_info->already_run_cell_id);
     if (iter != already_run_top_cell_.end()) {
-      MS_LOG(DEBUG) << "Erase top cell from already run top cell";
-      // Need use ir top cell, current top cell in pipeline_top_cell_map_ is func grad. So, need exchange.
+      MS_LOG(DEBUG) << "Erase top cell " << iter->second << " from already run top cell";
+      // Need to use ir top cell, current top cell in pipeline_top_cell_map_ is func grad. So, need exchange.
       it->second.front() = iter->second;
       it->second.front()->set_need_compile_graph(true);
       already_run_top_cell_.erase(iter);
     }
+    MS_LOG(DEBUG) << "Set top cell " << it->second.front() << " to be the first top cell of pipeline map";
     it->second.front()->set_is_pipeline_top_cell(true);
     return true;
   }
@@ -1048,12 +1048,12 @@ void GradExecutor::ClearPreTopCell(const TopCellInfoPtr &new_top_cell, bool is_n
 void GradExecutor::CheckNeedCompileGraph(const InputArgsInfoPtr &input_args_info) {
   const auto &already_top_cell_id = top_cell()->already_run_cell_id();
   bool is_new_cell_id = false;
-  // Get new cell id for common grad, even for dynamic shapes, first step will come in too.
+  // Get new cell id for common grad, even for dynamic shapes; the first step will come in too.
   if (top_cell_->need_compile_graph()) {
     MS_LOG(DEBUG) << "Cell " << already_top_cell_id << " has never been ran, need compile graph";
-    // net.set_grad.
+    // Net.set_grad.
     // 1. grad(net)(input), top cell id will include grad_operation_;
-    // 2. net(input), grad(net)(input), top cell id not include grad_operation_. But, just only keep one for cccurate
+    // 2. net(input), grad(net)(input), top cell id not include grad_operation_.But just only keep one for cccurate
     // find when call GetTopCell
     auto it = std::find_if(
       already_run_top_cell_.begin(), already_run_top_cell_.end(),
@@ -1077,7 +1077,7 @@ void GradExecutor::CheckNeedCompileGraph(const InputArgsInfoPtr &input_args_info
       return;
     }
   }
-  // Get pipeline top cell in first step, and judge by first top cell have completed a backward run
+  // Get pipeline top cell in the first step, and judge by first top cell has completed a backward run
   if (top_cell_->is_pipeline_top_cell()) {
     MS_EXCEPTION_IF_CHECK_FAIL(!it->second.empty(), "Pipeline top cel map is empty");
     if (!it->second.front()->is_finish_backward()) {
@@ -1257,7 +1257,7 @@ py::object GradExecutor::RunGrad(const prim::GradOperationPtr &grad, const py::o
   auto p_args = GetGradPositionArgs(grad_position, grad->get_by_position_);
   autograd::GradAttr grad_attr(grad->get_all_, grad->get_by_list_, grad->sens_param_, grad->get_by_position_,
                                weight_param_is_tuple);
-  if (top_cell_->is_ir_grad()) {
+  if (top_cell_->is_ir_grad() || top_cell_->is_high_order_top_cell()) {
     GetGradGraph(grad_attr, w_args, p_args);
     return RunGradGraph();
   }
@@ -1871,14 +1871,14 @@ void GradExecutor::ClearGlobalRes() const {
 
 void GradExecutor::ClearGradRes() {
   MS_LOG(DEBUG) << "Top cell run finish " << top_cell_ << " and its shadow top cell " << top_cell_->shadow_top_cell();
-  // Pop current top cell on stack
+  // Pop the current top cell on stack
   if (!top_cell_->is_pipeline_top_cell()) {
     (void)PopTopCellStack();
   }
 
   if (!top_cell_stack_.empty() && top_cell_->is_pipeline_top_cell()) {
     MS_LOG(DEBUG) << "Top cell stack real running top cell " << top_cell_stack_.top();
-    if (top_cell_stack_.top() == top_cell_) {
+    if (top_cell_stack_.top() == top_cell_ || top_cell_->inner_has_high_order()) {
       MS_LOG(DEBUG) << "Pop pipeline top cell " << top_cell_stack_.top() << " from stack with input args id "
                     << top_cell_stack_.top()->input_args_id();
       (void)PopTopCellStack();
@@ -1914,17 +1914,17 @@ void GradExecutor::ClearGradRes() {
 void GradExecutor::ClearPipelineTopCellRes() {
   // Remove pipipe top cell from pipeline top cell map exclude the first one
   if (top_cell_->is_pipeline_top_cell()) {
-    // Run second step and following step
+    // Run the second step and the following step
     if (top_cell_->shadow_top_cell() != nullptr) {
       ErasePipelineTopCell(top_cell_->already_run_cell_id(), top_cell_->shadow_top_cell()->input_args_id(), false);
       top_cell_->set_shadow_top_cell(nullptr);
     } else if (!top_cell_->is_ir_grad()) {
-      // Pipeline top cell exclude the first top cell
+      // Pipeline top cell excludes the first top cell
       ErasePipelineTopCell(top_cell_->already_run_cell_id(), top_cell_->input_args_id(), false);
     }
   } else {
-    // If top cell is not pipeline, because it is stored in pipeline top cell map in first step, here need to do delete
-    // from the map.
+    // If top cell is not pipeline, because it is stored in pipeline top cell map in the first step, here need to do
+    // delete from the map.
     ErasePipelineTopCell(top_cell_->already_run_cell_id(), top_cell_->input_args_id(), true);
   }
   if (top_cell_->grad_first()) {

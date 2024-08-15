@@ -2489,7 +2489,7 @@ void AutoGrad::CheckRecomputeInputs(const GradParamPtr &grad_param) {
 TopCellInfoPtr AutoGrad::FindPreTopcell(const GradExecutor *grad_executor, const OpGradInfoPtr &op_grad_info,
                                         const std::string &op_info, const ValuePtr &value) {
   const auto &cur_top_cell = grad_executor->top_cell();
-  // If top cell is ir grad, which must be first step and pre top cell can not be find
+  // If the top cell is ir grad, which must be the first step, and pre-top cell cannot be found
   if (cur_top_cell->is_ir_grad()) {
     // First run top cell, save op output info for replacement
     cur_top_cell->SaveTensorIdWithOpInfo(op_info, value);
@@ -2503,7 +2503,7 @@ TopCellInfoPtr AutoGrad::FindPreTopcell(const GradExecutor *grad_executor, const
     MS_LOG(DEBUG) << "Current top cell " << cur_top_cell << " is in dynamic process";
     return nullptr;
   }
-  // Not first step
+  // Not the first step
   auto pre_top_cell = grad_executor->GetAlreadyRunTopCell(cur_top_cell->already_run_cell_id());
   if (pre_top_cell == nullptr) {
     pre_top_cell = grad_executor->GetPipelineRunTopCell(cur_top_cell->already_run_cell_id());
