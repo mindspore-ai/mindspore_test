@@ -2,7 +2,7 @@ mindspore.mint.nn.GroupNorm
 =================================
 
 .. py:class:: mindspore.mint.nn.GroupNorm(num_groups, num_channels, eps=1e-5, affine=True, dtype=None)
-    
+
     在mini-batch输入上进行组归一化。
 
     Group Normalization被广泛用于递归神经网络中。适用单个训练用例的mini-batch输入归一化，详见论文 `Group Normalization <https://arxiv.org/pdf/1803.08494.pdf>`_ 。
