@@ -16,16 +16,13 @@
 
 #include "infer/ops_func_impl/embedding_apply_adam.h"
 
-#include <vector>
 #include <set>
 #include <map>
 #include <string>
-#include <memory>
 
-#include "utils/ms_context.h"
 #include "utils/check_convert_utils.h"
-#include "mindspore/ops/op_def/op_name.h"
-#include "mindspore/ops/ops_utils/op_utils.h"
+#include "op_def/op_name.h"
+#include "ops_utils/op_utils.h"
 #include "utils/shape_utils.h"
 
 namespace mindspore {
@@ -76,18 +73,6 @@ void EmbeddingApplyAdamFuncImpl::CheckInputTypes(const PrimitivePtr &primitive,
   type_dict.emplace("beta2", beta2_type);
   type_dict.emplace("epsilon", epsilon_type);
   CheckAndConvertUtils::CheckTensorTypeSame(type_dict, grad_types, prim_name);
-}
-
-BaseShapePtr EmbeddingApplyAdamFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                                    const std::vector<AbstractBasePtr> &input_args) const {
-  CheckInputShapes(primitive, input_args);
-  return std::make_shared<abstract::TensorShape>(ShapeVector{});
-}
-
-TypePtr EmbeddingApplyAdamFuncImpl::InferType(const PrimitivePtr &primitive,
-                                              const std::vector<AbstractBasePtr> &input_args) const {
-  CheckInputTypes(primitive, input_args);
-  return std::make_shared<TensorType>(kInt32);
 }
 }  // namespace ops
 }  // namespace mindspore

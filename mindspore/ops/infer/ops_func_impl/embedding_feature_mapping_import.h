@@ -14,24 +14,23 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CORE_OPS_FUNC_IMPL_EMBEDDING_APPLY_ADA_GRAD_H_
-#define MINDSPORE_CORE_OPS_FUNC_IMPL_EMBEDDING_APPLY_ADA_GRAD_H_
+#ifndef MINDSPORE_CORE_OPS_FUNC_IMPL_EMBEDDING_FEATURE_MAPPING_IMPORT_H_
+#define MINDSPORE_CORE_OPS_FUNC_IMPL_EMBEDDING_FEATURE_MAPPING_IMPORT_H_
 
 #include <vector>
-#include "infer/ops_func_impl/embedding_service_optimizer.h"
+#include "ops/ops_func_impl/op_func_impl.h"
 
 namespace mindspore {
 namespace ops {
-class OPS_API EmbeddingApplyAdaGradFuncImpl final : public EmbeddingServiceOptimizerFuncImpl {
+class OPS_API EmbeddingFeatureMappingImportFuncImpl final : public OpFuncImpl {
  public:
-  EmbeddingApplyAdaGradFuncImpl() { embedding_dim_index_ = 5; }
-  ~EmbeddingApplyAdaGradFuncImpl() = default;
+  BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
 
- protected:
-  void CheckInputShapes(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
-  void CheckInputTypes(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
+  TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
+
+  int32_t CheckValidation(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
 };
 }  // namespace ops
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CORE_OPS_FUNC_IMPL_EMBEDDING_APPLY_ADA_GRAD_H_
+#endif  // MINDSPORE_CORE_OPS_FUNC_IMPL_EMBEDDING_FEATURE_MAPPING_IMPORT_H_

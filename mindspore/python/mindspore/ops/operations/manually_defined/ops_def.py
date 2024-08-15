@@ -1187,7 +1187,7 @@ def to_sequence(val):
     to_sequence
     """
     if isinstance(val, (tuple, list)):
-        return val
+        return tuple(val)
     return (val,)
 
 

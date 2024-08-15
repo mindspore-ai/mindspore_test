@@ -14,27 +14,24 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CORE_OPS_EMBEDDING_APPLY_ADAM_H
-#define MINDSPORE_CORE_OPS_EMBEDDING_APPLY_ADAM_H
+#ifndef MINDSPORE_CORE_OPS_FUNC_IMPL_EMBEDDING_APPLY_SGD_H_
+#define MINDSPORE_CORE_OPS_FUNC_IMPL_EMBEDDING_APPLY_SGD_H_
 
-#include <memory>
 #include <vector>
-#include "mindapi/base/types.h"
-#include "ops/base_operator.h"
+#include "infer/ops_func_impl/embedding_service_optimizer.h"
 
 namespace mindspore {
 namespace ops {
-constexpr auto kNameEmbeddingApplyAdam = "EmbeddingApplyAdam";
-class OPS_API EmbeddingApplyAdam : public BaseOperator {
+class OPS_API EmbeddingApplySgdFuncImpl final : public EmbeddingServiceOptimizerFuncImpl {
  public:
-  MIND_API_BASE_MEMBER(EmbeddingApplyAdam);
-  EmbeddingApplyAdam() : BaseOperator(kNameEmbeddingApplyAdam) {
-    InitIOName(
-      {"var_handle", "beta1_power", "beta2_power", "lr", "beta1", "beta2", "epsilon", "grad", "keys", "global_step"},
-      {"var_handle"});
-  }
+  EmbeddingApplySgdFuncImpl() { embedding_dim_index_ = 5; }
+  ~EmbeddingApplySgdFuncImpl() = default;
+
+ protected:
+  void CheckInputShapes(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
+  void CheckInputTypes(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
 };
 }  // namespace ops
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CORE_OPS_EMBEDDING_APPLY_ADAM_H
+#endif  // MINDSPORE_CORE_OPS_FUNC_IMPL_EMBEDDING_APPLY_SGD_H_
