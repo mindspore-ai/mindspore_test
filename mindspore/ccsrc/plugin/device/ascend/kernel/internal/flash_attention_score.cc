@@ -60,7 +60,12 @@ internal::OpParamPtr InternalFlashAttentionScore::CreateOpParam(const std::vecto
     op_param.mixType = internal::MixParam::MixType::MIX_UNPAD_FLASH_ATTENTION_NZ_ENCODER_NOCACHE;
     op_param.maskType = internal::MixParam::MaskType::MASK_TYPE_NORM;
   } else {
-    op_param.mixType = internal::MixParam::MixType::MIX_UNPAD_DYNAMIC_BATCH_FLASH_ATTENTION;
+    std::string high_precision_env = common::GetEnv("MS_INTERNAL_ENABLE_FA_HIGH_PRECISION");
+    if (!high_precision_env.empty()) {
+      op_param.mixType = internal::MixParam::MixType::MIX_UNPAD_FLASH_ATTENTION_FP32_ND;
+    } else {
+      op_param.mixType = internal::MixParam::MixType::MIX_UNPAD_DYNAMIC_BATCH_FLASH_ATTENTION;
+    }
   }
 
   op_param.headSize = head_num;
