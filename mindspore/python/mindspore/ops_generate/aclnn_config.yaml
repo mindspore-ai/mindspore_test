@@ -275,7 +275,8 @@ LeakyReLUGradExt: 'aclnnLeakyReluBackward'
 # 99
 
 # 100
-
+SeLUExt: 'aclnnSelu'
+SeluGrad: 'aclnnSeluBackward'
 # 109
 ArgMinExt: 'aclnnArgMin'
 

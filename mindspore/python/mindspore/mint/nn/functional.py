@@ -218,7 +218,7 @@ from mindspore.ops.function.math_func import tanh
 # 98
 
 # 99
-
+from mindspore.ops.auto_generate import selu_ext as selu  # pylint: disable=W0611
 # 100
 from mindspore.ops.auto_generate import softshrink  # pylint: disable=W0611
 # 220
