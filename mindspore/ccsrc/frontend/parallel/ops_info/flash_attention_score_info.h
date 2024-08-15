@@ -92,21 +92,29 @@ class FlashAttentionScoreInfo : public OperatorInfo {
   Status CheckStrategyExpected(const StrategyPtr &strategy);
   std::vector<int64_t> GetSplitIdAndRank();
   std::tuple<int64_t, int64_t> GetAttentionMaskAttrs(const int64_t split_id, const int64_t split_num);
+  std::tuple<AnfNodePtr, AnfNodePtr> GetAttentionMaskAttrsByDynamicSeqDim(const AnfNodePtr &query_node,
+                                                                          const AnfNodePtr &key_node,
+                                                                          const int64_t split_id,
+                                                                          const int64_t split_num,
+                                                                          GenerateGraph *gen_g);
+  std::tuple<AnfNodePtr, AnfNodePtr> GetAttentionMaskAttrsByDynamicSeqDim(const CNodePtr &fa_cnode,
+                                                                          const int64_t split_id,
+                                                                          const int64_t split_num);
   void LoadBalanceSplitAlongSeqDim(size_t input_index, GenerateGraph *gen_g, AnfNodePtr *split_node,
                                    AnfNodePtr *keep_node, AnfNodePtr *exchange_node);
   void LoadBalanceExchange(const int64_t all_gather_idx, const Group &group, const AnfNodePtr &input_node,
                            AnfNodePtr *exchange_node, GenerateGraph *gen_g);
   void GetFlashAttentionScoreOpNode(int64_t split_id, int64_t split_num, const AnfNodePtr &q,
                                     const AnfNodePtr &real_shift, const AnfNodePtr &drop_mask,
-                                    const AnfNodePtr &attn_mask, AnfNodePtr *fa_op, GenerateGraph *gen_g);
-  std::vector<std::pair<AnfNodePtr, int64_t>> ReplaceGraphGetInputNodes(const AnfNodePtr &q_split,
-                                                                        const AnfNodePtr &real_shift_split,
-                                                                        const AnfNodePtr &drop_mask_split,
-                                                                        const AnfNodePtr &attn_mask_split,
-                                                                        const AnfNodePtr &flash_attention_score_keep,
-                                                                        const AnfNodePtr &flash_attention_score_target);
+                                    const AnfNodePtr &attn_mask, const AnfNodePtr &q_shape, const AnfNodePtr &k_shape,
+                                    AnfNodePtr *fa_op, GenerateGraph *gen_g);
+  std::vector<std::pair<AnfNodePtr, int64_t>> ReplaceGraphGetInputNodes(
+    const AnfNodePtr &q_split, const AnfNodePtr &real_shift_split, const AnfNodePtr &drop_mask_split,
+    const AnfNodePtr &attn_mask_split, const AnfNodePtr &flash_attention_score_keep,
+    const AnfNodePtr &flash_attention_score_target, const AnfNodePtr &key_shape);
   Status ComputeReplaceGraphForLoadBalance(const CNodePtr &cnode);
   Status ReplaceActualSeqLenForSplitSeqInTnd(const CNodePtr &cnode);
+  void CheckDynamicShape();
   int64_t head_num_ = 1;
   float keep_prob_ = 1.0;
   float scale_value_ = 1.0;
@@ -138,6 +146,9 @@ class FlashAttentionScoreInfo : public OperatorInfo {
   bool kv_split_ = false;
   bool is_attn_mask_compressed_ = false;
   bool need_update_op_attrs_mode_ = false;
+  int64_t q_seq_len_;
+  int64_t kv_seq_len_;
+  bool dynamic_seq_flag_ = false;
   std::vector<bool> is_input_passed_;
   size_t real_input_size_ = 0;
   std::vector<Shape> splittable_inputs_;
