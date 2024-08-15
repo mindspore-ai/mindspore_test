@@ -50,7 +50,8 @@
       DISPATCH_LAUNCH_KERNEL(device_context, aclnn_name, work_ptr->ptr_, ws_size, executor_handle, stream_ptr,       \
                              release_function);                                                                      \
     }                                                                                                                \
-    static auto sync = MsContext::GetInstance()->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_SYNCHRONIZE);                \
+    static auto sync = MsContext::GetInstance()->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_SYNCHRONIZE) ||              \
+                       MsContext::GetInstance()->get_param<std::string>(MS_CTX_DETERMINISTIC) == "ON";               \
     if (sync) {                                                                                                      \
       if (!device::ascend::AscendStreamMng::GetInstance().SyncAllStreams()) {                                        \
         MS_LOG(EXCEPTION) << "SyncStream failed for op " << aclnn_name;                                              \
