@@ -42,14 +42,15 @@ class GradPartialTransform : public AnfVisitor {
     if (value == nullptr || !value->isa<prim::GradOperation>()) {
       return nullptr;
     }
-    auto unpack_graph_node = grad_cnode->input(1);
+    constexpr auto unapck_index = 1;
+    auto unpack_graph_node = grad_cnode->input(unapck_index);
     auto prim = GetCNodePrimitive(unpack_graph_node);
     if (prim == nullptr || !prim->isa<prim::UnpackGraphPrimitive>()) {
       return nullptr;
     }
     auto unpack_graph_cnode = dyn_cast<CNode>(unpack_graph_node);
     MS_EXCEPTION_IF_NULL(unpack_graph_cnode);
-    auto partial_node = unpack_graph_cnode->input(1);
+    auto partial_node = unpack_graph_cnode->input(unapck_index);
     if (!IsPrimitiveCNode(partial_node, prim::kPrimPartial)) {
       return nullptr;
     }

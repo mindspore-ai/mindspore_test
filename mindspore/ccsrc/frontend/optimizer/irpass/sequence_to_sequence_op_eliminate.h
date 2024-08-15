@@ -52,7 +52,7 @@ class ListToTupleEliminator : public AnfVisitor {
         for (size_t i = 0; i < input_abs->size(); ++i) {
           auto item = fg->NewCNode({NewValueNode(prim::kPrimListGetItem), real_node, NewValueNode(SizeToLong(i))});
           item->set_abstract(real_node->abstract());
-          args_.emplace_back(item);
+          (void)args_.emplace_back(item);
         }
         auto new_node = fg->NewCNode(args_);
         new_node->set_abstract(node->abstract());
@@ -82,7 +82,7 @@ class TupleToListEliminator : public AnfVisitor {
         for (size_t i = 0; i < input_abs->size(); ++i) {
           auto item = fg->NewCNode({NewValueNode(prim::kPrimTupleGetItem), real_node, NewValueNode(SizeToLong(i))});
           item->set_abstract(real_node->abstract());
-          args_.emplace_back(item);
+          (void)args_.emplace_back(item);
         }
         auto new_node = fg->NewCNode(args_);
         new_node->set_abstract(node->abstract());

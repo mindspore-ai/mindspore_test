@@ -45,6 +45,7 @@ class SliceToTuple : public AnfVisitor {
       auto make_slice = node->cast<CNodePtr>();
       auto make_tuple_inputs = std::vector<AnfNodePtr>{NewValueNode(prim::kPrimMakeTuple)};
       std::copy(make_slice->inputs().cbegin() + 1, make_slice->inputs().cend(), std::back_inserter(make_tuple_inputs));
+      MS_EXCEPTION_IF_NULL(make_slice->func_graph());
       return make_slice->func_graph()->NewCNode(make_tuple_inputs);
     }
     if (IsPrimitiveCNode(node, prim::kPrimSliceGetItem)) {
@@ -65,6 +66,7 @@ class SliceToTuple : public AnfVisitor {
       auto getitem_tuple_inputs =
         std::vector<AnfNodePtr>{NewValueNode(prim::kPrimTupleGetItem), slice_getitem_slice_input,
                                 NewValueNode(MakeValue<int64_t>(iter->second))};
+      MS_EXCEPTION_IF_NULL(slice_getitem->func_graph());
       return slice_getitem->func_graph()->NewCNode(getitem_tuple_inputs);
     }
     return nullptr;

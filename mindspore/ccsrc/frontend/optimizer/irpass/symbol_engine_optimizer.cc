@@ -296,7 +296,7 @@ bool ShapeOpCse::operator()(const FuncGraphPtr &func_graph, const OptimizerPtr &
         }
       }
       if (!matched) {
-        shape_values.emplace_back(std::make_pair(node, v));
+        (void)shape_values.emplace_back(std::make_pair(node, v));
       }
     }
   }
