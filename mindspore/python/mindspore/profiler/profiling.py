@@ -45,6 +45,7 @@ from mindspore.profiler.common.validator.validate_path import validate_and_norma
 from mindspore.profiler.parser.framework_parser import GpuFrameWorkParser, DynamicFrameWorkParser
 from mindspore.profiler.parser.integrator import Integrator, DeviceTarget
 from mindspore.profiler.parser.ascend_analysis.function_event import CANNEvent
+from mindspore.profiler.parser.ascend_analysis.file_manager import FileManager
 from mindspore.profiler.parser.cpu_gpu_timeline_generator import GpuTimelineGenerator, CpuTimelineGenerator
 from mindspore.profiler.parser.ascend_timeline_generator import AscendTimelineGenerator
 from mindspore.profiler.parser.memory_usage_parser import MemoryUsageParser
@@ -1409,7 +1410,7 @@ class Profiler:
 
         dev_id = self._rank_id if self._device_target == DeviceTarget.ASCEND.value else self._dev_id
         ascend_profiler_output_path = os.path.join(ascend_ms_path, 'ASCEND_PROFILER_OUTPUT')
-        os.makedirs(ascend_profiler_output_path, exist_ok=True)
+        FileManager.make_dir_safety(ascend_profiler_output_path)
 
         source_profiler_info_path = os.path.join(self._output_path, f"profiler_info_{dev_id}.json")
         target_profiler_info_path = os.path.join(ascend_ms_path, f"profiler_info_{dev_id}.json")

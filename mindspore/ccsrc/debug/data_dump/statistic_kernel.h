@@ -33,7 +33,6 @@
 #include "utils/log_adapter.h"
 
 namespace mindspore {
-
 namespace datadump {
 using device::DeviceAddressPtr;
 using kernel::KernelTensor;
@@ -98,7 +97,6 @@ TensorPtr CalMean(const DeviceContext *device_context, KernelTensor *input);
 TensorPtr CalStatistic(const std::string &stat_name, const DeviceContext *device_context, KernelTensor *input);
 
 }  // namespace datadump
-
 }  // namespace mindspore
 
 #endif  // MINDSPORE_CCSRC_DEBUG_STATISTIC_KERNEL_H_

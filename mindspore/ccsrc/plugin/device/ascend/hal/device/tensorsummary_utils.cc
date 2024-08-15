@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 #include "plugin/device/ascend/hal/device/tensorsummary_utils.h"
-#include <string>
 #include <map>
 #include <variant>
-#include "pybind11/pybind11.h"
-#include "ir/tensor.h"
 #include "include/common/utils/python_adapter.h"
+#include "ir/tensor.h"
 #include "plugin/device/ascend/hal/device/mbuf_receive_manager.h"
+#include "pybind11/pybind11.h"
 #include "utils/log_adapter.h"
 
 namespace py = pybind11;
@@ -41,13 +40,18 @@ void SummaryReceiveData(const ScopeAclTdtDataset &dataset, const string &channel
   py::gil_scoped_acquire gil_acquire;
 
   std::string tensor_name = dataset.GetDatasetName();
-  auto suffix = channel_name_suffix.find(channel_name)->second;
-  std::string summary_name = tensor_name + suffix;
+  auto suffix = channel_name_suffix.find(channel_name);
+  if (suffix == channel_name_suffix.end()) {
+    MS_LOG(ERROR) << "Unknown summary channel name: " << channel_name;
+    return;
+  }
+  std::string summary_name = tensor_name + suffix->second;
   MS_LOG(INFO) << "For " << channel_name << "channel, acltdt received Tensor name is " << tensor_name;
 
   for (auto data_elem : dataset.GetDataItems()) {
     if (std::holds_alternative<std::string>(data_elem)) {
       MS_LOG(WARNING) << "Ignore data of string type: " << std::get<std::string>(data_elem);
+      continue;
     }
     auto tensor_ptr = std::get<mindspore::tensor::TensorPtr>(data_elem);
     py::list summary_list = py::list();

@@ -403,8 +403,8 @@ double_t TensorSummary<T>::GetZeroValPercent() const {
   if (num_elements_ == 0) {
     return 0.0;
   }
-
-  return (zero_count_ * 100.0) / num_elements_;
+  const double percentage = 100;
+  return (zero_count_ * percentage) / num_elements_;
 }
 
 template <typename T>

@@ -27,7 +27,6 @@
 #include "utils/log_adapter.h"
 
 namespace mindspore {
-
 namespace datadump {
 using device::DeviceAddressPtr;
 using kernel::KernelTensor;
