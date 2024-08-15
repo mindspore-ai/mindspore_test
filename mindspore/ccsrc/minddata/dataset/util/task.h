@@ -118,6 +118,8 @@ class Task : public IntrpResource {
 
   pid_t GetProcessID() { return process_id_; }
 
+  void ReleaseTaskGroup() { task_group_ = nullptr; }
+
  private:
   mutable std::mutex mux_;
   std::string my_name_;
