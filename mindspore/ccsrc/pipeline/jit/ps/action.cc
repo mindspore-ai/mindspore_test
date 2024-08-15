@@ -574,7 +574,7 @@ void BuildTopGraph(const FuncGraphPtr &func_graph, const py::object &input,
     (void)inputs.emplace_back(resolve_node);
     std::copy(func_graph->parameters().cbegin(), func_graph->parameters().cend(), std::back_inserter(inputs));
   } else {
-    (void)inputs.emplace_back(NewValueNode(std::make_shared<prim::UnpackCall>(parse::NAMED_METAGRAPH_UNPACKCALL)));
+    (void)inputs.emplace_back(NewValueNode(prim::kPrimDoUnpackCall));
     (void)inputs.emplace_back(resolve_node);
     if (!arg_spec.args_.empty()) {
       AnfNodePtrList args_inputs = {NewValueNode(prim::kPrimMakeTuple)};

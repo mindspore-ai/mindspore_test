@@ -320,20 +320,8 @@ class MS_CORE_API PartialAbstractClosure final : public AbstractFuncAtom {
   /// \param[in] node The CNode this PartialAbstractClosure evaluated from.
   void set_node(const AnfNodePtr &node) { node_ = AnfNodeWeakPtr(node); }
 
-  /// \brief Get whether the args need to be appended to the end.
-  ///
-  /// \return Whether the args need to be appended to the end.
-  bool need_append_to_end() const { return need_append_to_end_; }
-
-  /// \brief Set whether the args need to be appended to the end.
-  ///
-  /// \param[in] flag Whether the args need to be appended to the end.
-  void set_need_append_to_end(bool flag) { need_append_to_end_ = flag; }
-
   AbstractFunctionPtr Copy() const override {
-    auto abs = std::make_shared<PartialAbstractClosure>(fn_, args_abs_list_, node_.lock());
-    abs->set_need_append_to_end(need_append_to_end_);
-    return abs;
+    return std::make_shared<PartialAbstractClosure>(fn_, args_abs_list_, node_.lock());
   }
 
   bool operator==(const AbstractFunction &other) const override;
@@ -352,9 +340,56 @@ class MS_CORE_API PartialAbstractClosure final : public AbstractFuncAtom {
   AbstractBasePtrList args_abs_list_;
   // The ANFNode which this PartialAbstractClosure evaluated from.
   AnfNodeWeakPtr node_;
-  bool need_append_to_end_{false};
 };
 using PartialAbstractClosurePtr = std::shared_ptr<PartialAbstractClosure>;
+
+/// \brief PrimInstanceAbstractClosure defines the abstract AbstractFuncAtom interface for creating primitive instance.
+class MS_CORE_API PrimInstanceAbstractClosure final : public AbstractFuncAtom {
+ public:
+  /// \brief Constructor of PrimInstanceAbstractClosure.
+  ///
+  /// \param[in] prim_name The name of primitive.
+  /// \param[in] args_abs_list The parameters for creating primitive instance.
+  /// \param[in] node The CNode which this PrimInstanceAbstractClosure evaluated from.
+  PrimInstanceAbstractClosure(const std::string &prim_name, const AbstractBasePtrList &args_abs_list,
+                              const AnfNodePtr &node)
+      : prim_name_(prim_name), args_abs_list_(args_abs_list), instance_node_(AnfNodePtr(node)) {}
+
+  /// \brief Destructor of PrimInstanceAbstractClosure.
+  ~PrimInstanceAbstractClosure() override = default;
+  MS_DECLARE_PARENT(PrimInstanceAbstractClosure, AbstractFuncAtom)
+
+  /// \brief Get the name of primitive.
+  ///
+  /// \return The name of primitive.
+  std::string prim_name() { return prim_name_; }
+
+  /// \brief Get the arguments.
+  ///
+  /// \return Arguments.
+  const AbstractBasePtrList &args() const { return args_abs_list_; }
+
+  /// \brief Get the node which this PrimInstanceAbstractClosure evaluated from.
+  ///
+  /// \return The node which this PrimInstanceAbstractClosure evaluated from.
+  AnfNodePtr instance_node() const { return instance_node_.lock(); }
+
+  AbstractFunctionPtr Copy() const override {
+    return std::make_shared<PrimInstanceAbstractClosure>(prim_name_, args_abs_list_, instance_node_.lock());
+  }
+
+  bool operator==(const AbstractFunction &other) const override;
+
+  std::size_t hash() const override;
+
+  std::string ToString() const override;
+
+ private:
+  std::string prim_name_;
+  AbstractBasePtrList args_abs_list_;
+  AnfNodeWeakPtr instance_node_;
+};
+using PrimInstanceAbstractClosurePtr = std::shared_ptr<PrimInstanceAbstractClosure>;
 
 /// \brief JTransformedAbstractClosure defines interface for abstract of Function
 /// transformed through the application of J.

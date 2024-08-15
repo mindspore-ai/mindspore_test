@@ -142,19 +142,8 @@ class DoTransPrimitiveFunction : public Primitive {
 
   const PrimitivePtr function() const { return prim_; }
 
-  bool has_given_init_size() const { return has_given_init_size_; }
-
-  void set_given_init_size(size_t args_size) {
-    has_given_init_size_ = true;
-    given_init_size_ = args_size;
-  }
-
-  size_t given_init_size() const { return given_init_size_; }
-
  private:
   PrimitivePtr prim_;
-  size_t given_init_size_;
-  bool has_given_init_size_{false};
 };
 using DoTransPrimitiveFunctionPtr = std::shared_ptr<DoTransPrimitiveFunction>;
 }  // namespace prim

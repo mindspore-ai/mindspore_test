@@ -233,17 +233,18 @@ class DoTransPrimitiveFunctionEvaluator : public TransitionPrimEvaluator {
   PrimitivePtr prim_;
 };
 
-class PartialToEndEvaluator : public TransitionPrimEvaluator {
+class PrimInstanceEvaluator : public TransitionPrimEvaluator {
  public:
-  explicit PartialToEndEvaluator(const AbstractFunctionPtr &primal_func)
-      : TransitionPrimEvaluator("PartialToEndEvaluator"), primal_func_(primal_func) {}
-  ~PartialToEndEvaluator() override = default;
-  MS_DECLARE_PARENT(PartialToEndEvaluator, TransitionPrimEvaluator);
+  explicit PrimInstanceEvaluator(const std::string &prim_name, const AnfNodePtr node)
+      : TransitionPrimEvaluator("PrimInstanceEvaluator"), prim_name_(prim_name), instance_node_(AnfNodePtr(node)) {}
+  ~PrimInstanceEvaluator() override = default;
+  MS_DECLARE_PARENT(PrimInstanceEvaluator, TransitionPrimEvaluator);
   EvalResultPtr EvalPrim(const AnalysisEnginePtr &, const AbstractBasePtrList &args_abs_list, const ConfigPtr &,
                          const AnfNodeConfigPtr &out_conf) override;
 
  private:
-  AbstractFunctionPtr primal_func_;
+  std::string prim_name_;
+  AnfNodeWeakPtr instance_node_;
 };
 
 class ConstexprEvaluator : public TransitionPrimEvaluator {

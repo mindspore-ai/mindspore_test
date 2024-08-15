@@ -356,6 +356,47 @@ std::string PartialAbstractClosure::ToString(bool verbose) const {
   return buffer.str();
 }
 
+bool PrimInstanceAbstractClosure::operator==(const AbstractFunction &other) const {
+  if (!other.isa<PrimInstanceAbstractClosure>()) {
+    return false;
+  }
+  // Avoid to recursively compare.
+  VisitedHistory history(this);
+  if (history.IsVisited()) {
+    return true;
+  }
+  const auto &other_prim = static_cast<const PrimInstanceAbstractClosure &>(other);
+  if (prim_name_ != other_prim.prim_name_) {
+    return false;
+  }
+  return AbstractBasePtrListDeepEqual(args_abs_list_, other_prim.args_abs_list_);
+}
+
+std::size_t PrimInstanceAbstractClosure::hash() const {
+  // Avoid to recursively hashing.
+  VisitedHistory history(this);
+  if (history.IsVisited()) {
+    return 0;
+  }
+  auto hash_value = hash_combine(tid(), std::hash<std::string>()(prim_name_));
+  return hash_combine(hash_value, AbstractBasePtrListHash(args_abs_list_));
+}
+
+std::string PrimInstanceAbstractClosure::ToString() const {
+  // Avoid to recursively ToString.
+  VisitedHistory history(this);
+  if (history.IsVisited()) {
+    return "<recurred>";
+  }
+  std::ostringstream buffer;
+  buffer << "PrimInstanceAbstractClosure{" << prim_name_ << "(";
+  for (const auto &arg : args_abs_list_) {
+    buffer << (arg == nullptr ? "<null>" : arg->ToString()) << ", ";
+  }
+  buffer << ")}";
+  return buffer.str();
+}
+
 bool JTransformedAbstractClosure::operator==(const AbstractFunction &other) const {
   if (!other.isa<JTransformedAbstractClosure>()) {
     return false;

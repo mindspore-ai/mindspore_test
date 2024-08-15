@@ -216,42 +216,6 @@ def test_add_two_scalar():
     func(2.5, 1)
 
 
-def test_primitive_init_keyword_argument():
-    """
-    Feature: DynamicShape.
-    Description: Test keyword argument.
-    Expectation: No exception.
-    """
-    @ms.jit
-    def func(x, arg):
-        return ops.AvgPool(arg, pad_mode="VALID", strides=arg)(x)
-
-    ms.set_context(mode=ms.GRAPH_MODE, jit_syntax_level=ms.STRICT)
-    x = ms.Tensor(np.random.rand(10, 36, 12, 12).astype(np.float32))
-    func(x, 1)
-    func(x, ms.mutable(1))
-
-
-def test_primitive_call_keyword_argument():
-    """
-    Feature: DynamicShape.
-    Description: Test keyword argument.
-    Expectation: Raise TypeError.
-    """
-    @ms.jit
-    def func(x, axis):
-        return ops.Softmax(axis)(x=x)
-
-    ms.set_context(mode=ms.GRAPH_MODE, jit_syntax_level=ms.STRICT)
-    x = ms.Tensor(np.random.rand(10, 36, 12, 12).astype(np.float32))
-    with pytest.raises(TypeError) as info1:
-        func(x, (-1,))
-    assert "only positional arguments as inputs are supported" in str(info1.value)
-    with pytest.raises(TypeError) as info2:
-        func(x, ms.mutable((-1,)))
-    assert "only positional arguments as inputs are supported" in str(info2.value)
-
-
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_acos_unsupported_input_type(mode):
     """
