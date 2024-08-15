@@ -66,9 +66,10 @@ class IrBprop {
 
   // Create bprop_cut cnode in bprop graph
   void BuildBPropCutCNode(const CNodePtr &cnode, const PrimitivePtr &prim, std::vector<CNodePtr> *outputs,
-                          bool is_need_recompute = false);
+                          size_t weight_size = 0, bool is_need_recompute = false);
   // Get parameter from a value
-  AnfNodePtr MapParameter(const ValuePtr &value, const abstract::AbstractBasePtr &abs);
+  AnfNodePtr MapParameter(const ValuePtr &value, const abstract::AbstractBasePtr &abs,
+                          std::vector<std::pair<tensor::BaseTensorPtr, AutoGradMetaDataPtr>> *param_meta_grad_info);
 
   // Create variable for parameter
   ParameterPtr AddParameterNode(const tensor::BaseTensorPtr &tensor, const abstract::AbstractBasePtr &abs);

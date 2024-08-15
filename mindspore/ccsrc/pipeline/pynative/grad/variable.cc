@@ -26,9 +26,12 @@ void BackwardNode::UpdateNextEdges(const ValuePtrList &inputs) {
   for (size_t i = 0; i < inputs.size(); ++i) {
     const auto &value = inputs[i];
     if (value->isa<tensor::BaseTensor>()) {
-      auto tensor = value->cast<tensor::BaseTensorPtr>();
+      const auto &tensor = value->cast<tensor::BaseTensorPtr>();
       auto auto_grad_meta_data = tensor->auto_grad_meta_data();
-      MS_EXCEPTION_IF_NULL(auto_grad_meta_data);
+      // Get scalar tensor
+      if (auto_grad_meta_data == nullptr) {
+        continue;
+      }
       auto variable = auto_grad_meta_data->variable();
       if (variable == nullptr || !variable->is_need_grad()) {
         continue;
@@ -46,10 +49,10 @@ ValuePtrList BackwardNode::PostProcess(const ValuePtrList &gradient_value) {
   ValuePtrList flatten_values = PyNativeAlgo::DataConvert::FlattenTensorSeqInValueSeq(gradient_value, false);
   gradients.reserve(flatten_values.size());
   for (const auto index : gradient_index_) {
-    if (index >= flatten_values.size()) {
+    if (MS_UNLIKELY(index >= flatten_values.size())) {
       MS_LOG(EXCEPTION) << "Inputs gradient index should smaller than flatten_values size!";
     }
-    auto gradient_tensor = flatten_values[index];
+    const auto &gradient_tensor = flatten_values[index];
     (void)gradients.emplace_back(gradient_tensor);
   }
   return gradients;
@@ -88,6 +91,7 @@ std::string FuncVariable::ToString() const {
   for (size_t i = 0; i < func_node()->next_edges().size(); ++i) {
     auto last_variable = func_node()->next_edges()[i].variable;
     auto index = func_node()->next_edges()[i].input_index;
+    MS_EXCEPTION_IF_NULL(last_variable->func_node());
     buf << "Last edge: " << i << ", variable name: " << last_variable->func_node()->name()
         << ", output index: " << index << "\n";
   }

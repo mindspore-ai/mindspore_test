@@ -312,10 +312,10 @@ void Jit::MakeAdjointForJit(const FrontendOpRunInfoPtr &op_run_info, const GradE
   MS_EXCEPTION_IF_NULL(grad_executor);
 
   const auto &top_cell = grad_executor->top_cell();
-  PyNativeAlgo::Common::SetGraphInputAndWeightsInfo(op_run_info, jit_forward_graph, top_cell);
+  PyNativeAlgo::Common::SetGraphInputAndWeightsInfo(op_run_info, jit_forward_graph);
   RecordForwardGraphForJit(op_run_info, grad_executor, jit_forward_graph);
   // Connect grad graph of jit to context.
-  (void)PyNativeAlgo::Common::SetValueGradInfo(op_run_info->real_out, top_cell, InputType::kOpOutput);
+  (void)PyNativeAlgo::Common::SetValueGradInfo(op_run_info->real_out, InputType::kOpOutput);
   MS_EXCEPTION_IF_NULL(jit_forward_graph);
   MS_EXCEPTION_IF_NULL(jit_forward_graph->output()->abstract());
   if (grad_executor->dynamic_shape()->enable_unknown_shape() &&
@@ -324,18 +324,14 @@ void Jit::MakeAdjointForJit(const FrontendOpRunInfoPtr &op_run_info, const GradE
     grad_executor->dynamic_shape()->SaveUnknownShapeAbsFromJit(op_run_info->real_out,
                                                                jit_forward_graph->output()->abstract(), 0);
   }
-  auto op_grad_info = std::make_shared<OpGradInfo>();
-  op_grad_info->input_value = op_run_info->op_grad_info->input_value;
-  op_grad_info->input_abs = op_run_info->op_grad_info->input_abs;
-  op_grad_info->out_value = op_run_info->real_out;
-  op_grad_info->output_size = PyNativeAlgo::Common::GetValueSize(op_grad_info->out_value);
-  op_grad_info->input_value_grad_type = op_run_info->op_grad_info->input_value_grad_type;
+  op_run_info->op_grad_info->output_size = PyNativeAlgo::Common::GetValueSize(op_run_info->op_grad_info->out_value);
   if (jit_forward_graph->output()->abstract()->isa<abstract::AbstractAny>()) {
-    op_grad_info->out_abs = PyNativeAlgo::Common::SetAbstractValueToAnyValue(op_grad_info->out_value->ToAbstract());
+    op_run_info->op_grad_info->out_abs =
+      PyNativeAlgo::Common::SetAbstractValueToAnyValue(op_run_info->op_grad_info->out_value->ToAbstract());
   } else {
-    op_grad_info->out_abs = jit_forward_graph->output()->abstract();
+    op_run_info->op_grad_info->out_abs = jit_forward_graph->output()->abstract();
   }
-  auto grad_param = std::make_shared<GradParam>(op_grad_info, grad_executor->use_dynamic_shape_process());
+  auto grad_param = std::make_shared<GradParam>(op_run_info->op_grad_info, grad_executor->use_dynamic_shape_process());
   grad_param->is_control_flow = compile_info_.is_control_flow_;
 
   grad_param->has_added_v = has_added_v;
@@ -347,7 +343,7 @@ void Jit::MakeAdjointForJit(const FrontendOpRunInfoPtr &op_run_info, const GradE
   grad_param->fg = jit_grad_graph;
   grad_param->source_fg = jit_forward_graph;
   grad_param->graph_cache_key = graph_phase_;
-  grad_param->jit_out_has_dict = JitOutputHasDict(op_grad_info->out_abs);
+  grad_param->jit_out_has_dict = JitOutputHasDict(op_run_info->op_grad_info->out_abs);
   auto auto_grad_cell_ptr = top_cell->auto_grad_cell_ptr();
   KPynativeWithFProp(grad_executor, auto_grad_cell_ptr, grad_param);
   top_cell->set_need_do_final_opt(true);
@@ -395,18 +391,15 @@ void Jit::GradJitInner(const FrontendOpRunInfoPtr &op_run_info, const GradExecut
   }
 
   // Step 2: Check or set set_use_dynamic_shape_process flag
-  auto node_info = std::make_shared<DynamicDetectNodeInfo>(nullptr, op_run_info->op_grad_info->input_abs,
-                                                           op_run_info->base_op_run_info.abstract);
-  node_info->is_graph_node = true;
-  node_info->graph_phase = graph_phase_;
-  grad_executor->dynamic_shape()->CheckNodeDynamic(grad_executor->top_cell(), op_run_info->op_grad_info->input_value,
-                                                   node_info);
+  grad_executor->top_cell()->GetOpInfo(op_run_info, true);
+  grad_executor->dynamic_shape()->CheckNodeDynamic(grad_executor->top_cell(), op_run_info->op_grad_info, graph_phase_);
 
   // Step 3: Update actual output tensors used in grad graph.
   MS_LOG(DEBUG) << "jit actual output value: " << op_run_info->real_out->ToString();
-  grad_executor->top_cell()->GetOpInfo(op_run_info, true);
-  grad_executor->UpdateTopCellForwardTensorInfoInBpropGraph(op_run_info->op_info, op_run_info->real_out,
-                                                            op_run_info->base_op_run_info.stream_id);
+  op_run_info->op_grad_info->out_value = op_run_info->real_out;
+  auto pre_top_cell = PyNativeAlgo::AutoGrad::FindPreTopcell(
+    grad_executor, op_run_info->op_grad_info, op_run_info->op_grad_info->op_info, op_run_info->op_grad_info->out_value);
+  PyNativeAlgo::AutoGrad::UpdateGradOpInfo(grad_executor, op_run_info->op_grad_info, pre_top_cell, true);
 
   // Step 4: Update output tensors of added forward nodes, which are added to return node of jit func graph.
   if (!added_v_is_empty) {
@@ -414,13 +407,18 @@ void Jit::GradJitInner(const FrontendOpRunInfoPtr &op_run_info, const GradExecut
       // If jit is not control flow, the jit is executed by actor under dynamic shape, and valuenode
       // will be updated
       if (!compile_info_.is_control_flow_) {
-        UpdateJitForwardTensorInfoInBpropGraph(op_run_info->op_info + kAddedValue, flatten_v,
+        UpdateJitForwardTensorInfoInBpropGraph(op_run_info->op_grad_info->op_info + kAddedValue, flatten_v,
                                                op_run_info->base_op_run_info.stream_id);
       }
     } else {
       // Static shape will run by replace
-      grad_executor->UpdateTopCellForwardTensorInfoInBpropGraph(op_run_info->op_info + kAddedValue, flatten_v,
-                                                                op_run_info->base_op_run_info.stream_id);
+      pre_top_cell = PyNativeAlgo::AutoGrad::FindPreTopcell(
+        grad_executor, op_run_info->op_grad_info, op_run_info->op_grad_info->op_info + kAddedValue, flatten_v);
+      if (op_run_info->op_grad_info->need_do_forward_output_replace && op_run_info->op_grad_info->used_in_bprop_graph) {
+        MS_EXCEPTION_IF_NULL(pre_top_cell);
+        grad_executor->top_cell()->UpdateTopCellForwardTensorInfoInBpropGraph(
+          op_run_info->op_grad_info->op_info + kAddedValue, flatten_v, pre_top_cell.get());
+      }
     }
   }
 
@@ -438,8 +436,10 @@ void Jit::UpdateJitForwardTensorInfoInBpropGraph(const std::string &op_info, con
     return;
   }
   // Not first run
-  MS_LOG(DEBUG) << "Update jit forward output tensor info " << op_info;
-  UpdateForwardOutputTensorInfo(op_info, v, it->second);
+  if (it->second.op_info_with_tensor_object.find(op_info) != it->second.op_info_with_tensor_object.end()) {
+    MS_LOG(DEBUG) << "Update jit forward output tensor info " << op_info;
+    UpdateForwardOutputTensorInfo(op_info, v, it->second);
+  }
 }
 
 void Jit::SaveForwardOutputTensorInfoInBpropGraph(const FuncGraphPtr &func_graph) {

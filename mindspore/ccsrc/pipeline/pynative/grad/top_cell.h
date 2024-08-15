@@ -54,8 +54,6 @@ struct PyNGraphInfo {
 };
 using GraphInfoPtr = std::shared_ptr<PyNGraphInfo>;
 
-using MetaGradInfoMap = mindspore::OrderedMap<tensor::BaseTensorPtr, AutoGradMetaDataPtr>;
-
 class TopCellInfo {
  public:
   TopCellInfo() = default;
@@ -68,19 +66,12 @@ class TopCellInfo {
         cell_id_(std::move(cellid)),
         already_run_cell_id_(std::move(already_run_cell_id)),
         resource_(std::move(r)),
-        fg_(std::move(fg)) {
-    meta_grad_info_.reserve(reserve_size);
-  }
+        fg_(std::move(fg)) {}
 
   inline bool is_init_kpynative() const { return is_init_kpynative_; }
   inline void set_init_kpynative(bool init) { is_init_kpynative_ = init; }
   inline size_t grad_order() const { return grad_order_; }
-  inline void set_hook_changed(bool hook_changed) { hook_changed_ = hook_changed; }
-  inline void set_sub_cell_hook_changed(const std::string &sub_cell) { (void)sub_cell_hook_changed_.emplace(sub_cell); }
-  inline const CellIdWithBackwardHookOp &cell_backward_hook_op() const { return cell_backward_hook_op_; }
-  void RecordCellBackwardHookOp(const std::string &cell_order, const AnfNodePtr &hook_op);
   void GetOpInfo(const FrontendOpRunInfoPtr &op_run_info, bool is_jit_graph) const;
-  inline void ClearCellHookOp() { cell_backward_hook_op_.clear(); }
   inline bool forward_already_run() const { return forward_already_run_; }
   inline void set_forward_already_run(bool set_forward_already_run) { forward_already_run_ = set_forward_already_run; }
   inline bool need_compile_graph() const { return need_compile_graph_; }
@@ -117,7 +108,6 @@ class TopCellInfo {
   inline const std::string &input_args_id() const { return input_args_id_; }
   const std::string &grad_operation() const { return grad_operation_; }
   void set_grad_operation(const std::string &grad_operation) { grad_operation_ = grad_operation; }
-  inline void CheckSubCellHookChanged() { sub_cell_hook_changed_.clear(); }
   inline void SetGraphInfoMap(const FuncGraphPtr &fg, const GraphInfoPtr &graph_info) {
     graph_info_map_[fg] = graph_info;
   }
@@ -133,7 +123,6 @@ class TopCellInfo {
     auto_grad_cell_ptr_ = std::move(auto_grad_cell_ptr);
   }
   inline size_t op_index() const { return op_index_; }
-  inline void IncreaseOpIndex() { ++op_index_; }
   inline size_t initial_graph_param_size() const { return initial_graph_param_size_; }
   TensorReplaceInfo &replace_info() { return replace_info_; }
   inline InputArgsInfoPtr input_args_info() { return input_args_info_; }
@@ -145,13 +134,11 @@ class TopCellInfo {
   void UpdateTopCellInfo(bool forward_already_run, bool need_compile_graph, bool vm_compile);
   void ClearDeviceMemory() const;
   void Clear();
-  void AddMetaGradInfo(const tensor::BaseTensorPtr &tensor, const AutoGradMetaDataPtr &auto_grad_meta_data);
   void BackUpValueMetaGradInfo(const ValuePtr &value);
   void ClearValueMetaGradInfo(const ValuePtr &value);
   void ClearMetaGradInfo();
   void ResetMetaGradInfo();
   void ResumeMetaGradInfo();
-  const MetaGradInfoMap &param_grad_info() const { return meta_grad_info_; }
   inline bool use_dynamic_shape_process() const { return use_dynamic_shape_process_; }
   inline void set_use_dynamic_shape_process(bool use_dynamic_shape_process) {
     use_dynamic_shape_process_ = use_dynamic_shape_process;
@@ -179,6 +166,8 @@ class TopCellInfo {
   void SaveTensorIdWithOpInfo(const std::string &op_info, const ValuePtr &v) {
     SetIdWithOpInfo(v, op_info, kIndex0, &(replace_info_.id_with_op_info));
   }
+  void CheckBpropCutNode(const PrimitivePtr &op_prim);
+  void UpdateTopCellForwardTensorInfoInBpropGraph(const string &op_info, const ValuePtr &v, TopCellInfo *pre_top_cell);
   void SaveForwardOutputTensorInfoInBpropGraph(const FuncGraphPtr &func_graph);
   void SetLastOutputValueForwardOutputFlag(const ValuePtr &v);
   void ChangeTopCellInfo(const std::vector<BaseShapePtr> &args_new_shape);
@@ -193,7 +182,6 @@ class TopCellInfo {
                                              const std::vector<int64_t> &index_sequence) const;
   void SetUnpackOutputToGraphInfoMap(const std::string &id, const AnfNodePtr &node,
                                      const std::vector<int64_t> &index) const;
-  bool hook_changed_{false};
   bool is_init_kpynative_{false};
   bool forward_already_run_{false};
   bool need_compile_graph_{false};
@@ -234,7 +222,7 @@ class TopCellInfo {
   TopCellInfo *shadow_top_cell_{};
 
   size_t grad_order_{0};
-  size_t op_index_{0};
+  mutable size_t op_index_{0};
 
   // If the bprop graph has control flow, bprop graph parameters size may be change(to large size)
   size_t initial_graph_param_size_{0};
@@ -265,16 +253,8 @@ class TopCellInfo {
 
   OrderedMap<FuncGraphPtr, GraphInfoPtr> graph_info_map_;
 
-  // Record `register hook` or `remove hook` function has been called by sub cell
-  // The record range between the begin and end of top cell.
-  mindspore::HashSet<std::string> sub_cell_hook_changed_;
-  // Record backward hook ops for each cell object.
-  // Each cell object has two backward hook ops.
-  CellIdWithBackwardHookOp cell_backward_hook_op_;
-
   // For forward output replace
   TensorReplaceInfo replace_info_;
-  MetaGradInfoMap meta_grad_info_;
   InputArgsInfoPtr input_args_info_{nullptr};
 };
 using TopCellInfoPtr = std::shared_ptr<TopCellInfo>;

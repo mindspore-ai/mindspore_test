@@ -17,6 +17,7 @@ import numpy as np
 import mindspore.nn as nn
 import mindspore.ops.operations as P
 from mindspore import context
+from mindspore import grad as grad_func
 from mindspore.common.tensor import Tensor
 from mindspore.ops.composite import GradOperation
 from mindspore import ops as OP
@@ -39,16 +40,16 @@ class HookBase(MetaFactory):
         self.grad_input_list = []
         self.grad_output_list = []
 
-    def ms_record_hook(self, cell_id, grad_input, grad_output):
+    def ms_record_hook(self, cell, grad_input, grad_output):
         for grad in grad_input:
-            self.grad_input_list.append(grad)
-        for grad in grad_output:
             self.grad_output_list.append(grad)
+        for grad in grad_output:
+            self.grad_input_list.append(grad)
 
-    def ms_change_grad_double_hook(self, cell_id, grad_input, grad_output):
+    def ms_change_grad_double_hook(self, cell, grad_input, grad_output):
         y = Tensor(np.array([2.0]).astype(np.float32))
         mul = P.Mul()
-        grad = grad_output[0]
+        grad = grad_input[0]
         output = mul(grad, y)
         return (output,)
 
@@ -197,11 +198,11 @@ def _count_unequal_element(data_expected, data_me, rtol, atol):
     assert data_expected.shape == data_me.shape
     total_count = len(data_expected.flatten())
     error = np.abs(data_expected - data_me)
-    greater = np.greater(error, atol + np.abs(data_me)*rtol)
+    greater = np.greater(error, atol + np.abs(data_me) * rtol)
     loss_count = np.count_nonzero(greater)
-    assert (loss_count/total_count) < rtol,\
-        "\ndata_expected_std:{0}\ndata_me_error:{1}\nloss:{2}".\
-        format(data_expected[greater], data_me[greater], error[greater])
+    assert (loss_count / total_count) < rtol, \
+        "\ndata_expected_std:{0}\ndata_me_error:{1}\nloss:{2}". \
+            format(data_expected[greater], data_me[greater], error[greater])
 
 
 def allclose_nparray(data_expected, data_me, rtol, atol, equal_nan=True):
@@ -238,10 +239,10 @@ def pynative_hook_outermost_cell_not_change_grad():
     grad_net.set_train()
     input_ms_grad = grad_net(input_ms, out_ms)
 
-    #input grad
+    # input grad
     input_torch_grad = np.array([[20, 20], [20, 20]])
     allclose_nparray(input_torch_grad, input_ms_grad[0].asnumpy(), 0.001, 0.001)
-    #hook record grad
+    # hook record grad
     torch_net_grad_output = np.array([[10, 10], [10, 10]])
     torch_net_grad_input = np.array([[20, 20], [20, 20]])
     allclose_nparray(torch_net_grad_output, ms_net.grad_input_list[0].asnumpy(), 0.001, 0.001)
@@ -289,7 +290,7 @@ def pynative_hook_mul_change_input_grad():
     grad_net.set_train()
     input_ms_grad = grad_net(input_ms, out_ms)
 
-    #input grad
+    # input grad
     input_torch_grad = np.array([[40, 40], [40, 40]])
     allclose_nparray(input_torch_grad, input_ms_grad[0].asnumpy(), 0.001, 0.001)
 
@@ -308,7 +309,7 @@ def pynative_hook_mul2_change_input_grad():
     grad_net.set_train()
     input_ms_grad = grad_net(input1_ms, input2_ms, out_ms)
 
-    #input grad
+    # input grad
     input1_torch_grad = np.array([384, 2916, 12288])
     input2_torch_grad = np.array([128, 972, 4096])
     allclose_nparray(input1_torch_grad, input_ms_grad[0].asnumpy(), 0.001, 0.001)
@@ -327,7 +328,7 @@ def pynative_hook_outermost_cell_change_grad():
     grad_net.set_train()
     input_ms_grad = grad_net(input_ms, out_ms)
 
-    #input grad
+    # input grad
     out_torch = np.array([[20, 20], [20, 20]])
     input_torch_grad = np.array([[160, 160], [160, 160]])
     allclose_nparray(out_torch, out_ms.asnumpy(), 0.001, 0.001)
@@ -350,7 +351,7 @@ def pynative_hook_outermost_cell_record_grad():
     if ms_net.grad_output_list or ms_net.grad_input_list:
         assert False
 
-    #input grad
+    # input grad
     out_torch = np.array([[1, 1], [1, 1]])
     input_torch_grad = np.array([[5, 5], [5, 5]])
     allclose_nparray(out_torch, out_ms.asnumpy(), 0.001, 0.001)
@@ -373,12 +374,12 @@ def pynative_hook_bprop_outermost_cell_record_grad():
     if len(ms_net.grad_output_list) != len(ms_net.grad_input_list) or not ms_net.grad_output_list:
         assert False
 
-    #input grad
+    # input grad
     out_torch = np.array([[5, 5], [5, 5]])
     input_torch_grad = np.array([[25, 25], [25, 25]])
     allclose_nparray(out_torch, out_ms.asnumpy(), 0.001, 0.001)
     allclose_nparray(input_torch_grad, input_ms_grad[0].asnumpy(), 0.001, 0.001)
-    #hook record grad
+    # hook record grad
     torch_net_grad_output = np.array([[5, 5], [5, 5]])
     torch_net_grad_input = np.array([[25, 25], [25, 25]])
     allclose_nparray(torch_net_grad_output, ms_net.grad_input_list[0].asnumpy(), 0.001, 0.001)
@@ -565,7 +566,7 @@ def test_pynative_hook_child_cell_record_grad_gpu():
     pynative_hook_child_cell_record_grad()
 
 
-def backward_hook(cell_id, grad_input, grad_output):
+def backward_hook(cell, grad_input, grad_output):
     """
     print backward hook
     """
@@ -629,6 +630,7 @@ def hook_wrapper():
         nonlocal cnt
         assert cnt == 0
         cnt = cnt + 1
+
     return hook_fn
 
 
@@ -654,6 +656,6 @@ def test_hookbackward_should_two_zero():
         loss = loss_fn(logits, label)
         return loss, logits
 
-    grad_fn = OP.grad(forward_fn, grad_position=None, weights=net.trainable_params(), has_aux=True)
+    grad_fn = grad_func(forward_fn, grad_position=None, weights=net.trainable_params(), has_aux=True)
     for _ in range(2):
         _, _ = grad_fn(OP.unsqueeze(Tensor(data), dim=0), Tensor(label))

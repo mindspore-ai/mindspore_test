@@ -25,6 +25,7 @@
 #include "pipeline/pynative/pynative_utils.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"
+#include "runtime/pipeline/pipeline.h"
 
 namespace mindspore::pynative::autograd {
 namespace {
@@ -65,14 +66,15 @@ ValuePtrList PaddingGradientInput(const ValuePtr &grad, size_t output_size, size
   return gradients;
 }
 
-VectorRef GeneratePythonArgs(const ValuePtrList &inputs, const ValuePtr &output, bool is_need_recompute) {
+VectorRef GeneratePythonArgs(const OpGradInfoPtr &op_grad_info) {
   VectorRef args;
-  for (const auto &value : inputs) {
-    (void)args.emplace_back(value);
+  size_t input_size = op_grad_info->input_value.size() - op_grad_info->weight_size;
+  for (size_t i = 0; i < input_size; ++i) {
+    (void)args.emplace_back(op_grad_info->input_value[i]);
   }
   // If we not need recompute, we save output.
-  if (!is_need_recompute) {
-    (void)args.emplace_back(output);
+  if (!op_grad_info->is_need_recompute) {
+    (void)args.emplace_back(op_grad_info->out_value);
   }
   return args;
 }
@@ -110,7 +112,7 @@ void SetFlattenTensorGradMetaData(const ValuePtrList &flatten_outs, const Variab
       auto tensor = flatten_outs[i]->cast<tensor::BaseTensorPtr>();
       auto auto_grad_meta_data = tensor->auto_grad_meta_data();
       if (auto_grad_meta_data == nullptr) {
-        MS_LOG(DEBUG) << "tensor has no auto_grad_meta_data";
+        MS_LOG(DEBUG) << "Tensor " << tensor->id() << " has no auto_grad_meta_data";
         auto_grad_meta_data = std::make_shared<AutoGradMetaData>();
         tensor->set_auto_grad_meta_data(auto_grad_meta_data);
       }
@@ -128,9 +130,11 @@ bool IsValidTensorInput(const ValuePtr &v) {
 bool IsNeedComputeGrad(const ValuePtr &input) {
   MS_EXCEPTION_IF_NULL(input);
   if (input->isa<tensor::BaseTensor>()) {
-    auto input_tensor = input->cast<tensor::BaseTensorPtr>();
-    auto auto_grad_meta_data = input_tensor->auto_grad_meta_data();
-    MS_EXCEPTION_IF_NULL(auto_grad_meta_data);
+    const auto &input_tensor = input->cast<tensor::BaseTensorPtr>();
+    const auto &auto_grad_meta_data = input_tensor->auto_grad_meta_data();
+    if (auto_grad_meta_data == nullptr) {
+      return false;
+    }
     auto variable = auto_grad_meta_data->variable();
     if (variable != nullptr && variable->is_need_grad()) {
       return true;
@@ -146,6 +150,20 @@ bool IsNeedComputeGrad(const ValuePtr &input) {
   return false;
 }
 
+NodePtrList GenerateNodeInputs(const OpGradInfoPtr &op_grad_info, const FuncBuilderPtr &emitter) {
+  NodePtrList node_inputs;
+  node_inputs.reserve(op_grad_info->input_value.size() + kSizeFive);
+  for (size_t i = 0; i < op_grad_info->input_value.size(); ++i) {
+    auto func_node = emitter->NewFuncNode(op_grad_info->input_value[i], op_grad_info->input_abs[i],
+                                          op_grad_info->input_value_grad_type[i]);
+    func_node->set_need_compute_grad_out(IsNeedComputeGrad(op_grad_info->input_value[i]));
+    (void)node_inputs.emplace_back(func_node);
+  }
+  (void)node_inputs.emplace_back(
+    emitter->NewFuncNode(op_grad_info->out_value, op_grad_info->out_abs, InputType::kOpOutput));
+  return node_inputs;
+}
+
 ValuePtrList CallBackwardHooks(const ValuePtr &value, ValuePtrList *grad_in) {
   if (value == nullptr) {
     MS_LOG(DEBUG) << "Get null value";
@@ -157,35 +175,46 @@ ValuePtrList CallBackwardHooks(const ValuePtr &value, ValuePtrList *grad_in) {
     MS_LOG(DEBUG) << "Hook just work on tensor, not support value " << value->ToString();
     return *grad_in;
   }
-  auto auto_grad_meta = tensor->auto_grad_meta_data();
-  MS_EXCEPTION_IF_NULL(auto_grad_meta);
-  if (auto_grad_meta->backward_hooks().empty()) {
+  const auto &auto_grad_meta = tensor->auto_grad_meta_data();
+  if (auto_grad_meta == nullptr || auto_grad_meta->backward_hooks().empty()) {
     MS_LOG(DEBUG) << "Get empty backward hooks for tensor id " << tensor->id();
     return *grad_in;
   }
   if (grad_in->size() != kSizeOne) {
     MS_LOG(EXCEPTION) << "Tensor hook just work on one tensor value, not support value sequence";
   }
-  runtime::OpExecutor::GetInstance().WaitAll();
+  runtime::Pipeline::Get().WaitForward();
   for (const auto &hook : auto_grad_meta->backward_hooks()) {
     MS_LOG(DEBUG) << "Run hook id " << hook.first;
     MS_EXCEPTION_IF_NULL(hook.second);
     (*grad_in)[kIndex0] = (*(hook.second))(grad_in->front());
   }
-  runtime::OpExecutor::GetInstance().WaitAll();
+  runtime::Pipeline::Get().WaitForward();
   MS_LOG(DEBUG) << PyNativeAlgo::Common::PrintDebugInfo(*grad_in, "After hook print gradient in: ");
-  auto_grad_meta->ClearBackwardHooks();
   return *grad_in;
+}
+
+void ReleaseResource(const VariablePtr &variable) {
+  const auto &forward = PyNativeAlgo::Common::GetPyNativeExecutor()->forward_executor();
+  if (forward->enable_async()) {
+    const auto task = [variable]() { variable->Release(); };
+    const auto &bprop_queue = runtime::Pipeline::Get().bprop_stage();
+    if (!bprop_queue->Push(new (std::nothrow) BpropTask(std::move(task)))) {
+      bprop_queue->CheckException();
+    }
+  } else {
+    variable->Release();
+  }
 }
 }  // namespace
 
 ValuePtrList FuncBackwardNode::CallBackward(const ValuePtrList &gradients_in) {
+  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunExpanderFunc,
+                                     name(), false);
   MS_LOG(DEBUG) << "Begin CallBackward: " << name();
-  const auto &device_target = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  auto ir_builder = FuncBuilder(name_, device_target, nullptr);
-  auto inputs = PreProcess(gradients_in, &ir_builder);
-  ir_builder.SetInputs(name(), &inputs, &attrs_);
-  const std::vector<NodePtr> cal_grads_node = grad_func()(&ir_builder);
+  PreProcess(gradients_in, emitter_);
+  emitter_->SetInputs(name(), &node_inputs_, &attrs_);
+  const std::vector<NodePtr> cal_grads_node = grad_func()(emitter_.get());
   ValuePtrList cal_grads_values;
   cal_grads_values.reserve(cal_grads_node.size());
   // Binary op grad result may be nulllptr, we need convert to kNone.
@@ -201,31 +230,28 @@ ValuePtrList FuncBackwardNode::CallBackward(const ValuePtrList &gradients_in) {
   return gradients;
 }
 
-NodePtrList FuncBackwardNode::PreProcess(const ValuePtrList &dout, FuncBuilder *emitter) {
-  NodePtrList node_inputs;
-  node_inputs.reserve(op_inputs_.size() + kSizeFive);
-  for (size_t i = 0; i < op_inputs_.size(); ++i) {
-    auto func_node = emitter->NewFuncNode(op_inputs_[i], input_abstract_[i], grad_type_[i]);
-    func_node->set_need_compute_grad_out(IsNeedComputeGrad(op_inputs_[i]));
-    (void)node_inputs.emplace_back(func_node);
-  }
-  (void)node_inputs.emplace_back(emitter->NewFuncNode(op_output_, out_abstract_, InputType::kOpOutput));
-  if (dout.size() == kSizeOne && !op_output_->isa<ValueSequence>()) {
-    (void)node_inputs.emplace_back(emitter->NewFuncNode(dout[kIndex0], out_abstract_, InputType::kOpOutput));
+void FuncBackwardNode::PreProcess(const ValuePtrList &dout, const FuncBuilderPtr &emitter) {
+  const size_t output_index = node_inputs_.size() - kIndex1;
+  const auto &output_node = node_inputs_[output_index];
+  const auto &op_output = output_node->Value();
+  if (dout.size() == kSizeOne && !op_output->isa<ValueSequence>()) {
+    (void)node_inputs_.emplace_back(emitter->NewFuncNode(dout[kIndex0], output_node->abstract(), InputType::kOpOutput));
   } else {
-    (void)node_inputs.emplace_back(
-      emitter->NewFuncNode(std::make_shared<ValueTuple>(dout), out_abstract_, InputType::kOpOutput));
+    (void)node_inputs_.emplace_back(
+      emitter->NewFuncNode(std::make_shared<ValueTuple>(dout), output_node->abstract(), InputType::kOpOutput));
   }
-  return node_inputs;
 }
 
 void FuncBackwardNode::Release() {
-  op_inputs_.clear();
-  op_output_ = nullptr;
+  for (const auto &node : node_inputs_) {
+    node->SetValue(nullptr);
+  }
 }
 
 ValuePtrList HookBackwardNode::CallBackward(const ValuePtrList &grads) {
-  runtime::OpExecutor::GetInstance().WaitAll();
+  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunExpanderFunc,
+                                     name(), false);
+  runtime::Pipeline::Get().WaitForward();
   MS_LOG(DEBUG) << "Begin HookBackwardNode CallBackward ";
   auto gradient = ValueListToValue(grads, out_abstract_);
   const auto &device_target = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
@@ -239,20 +265,25 @@ ValuePtrList HookBackwardNode::CallBackward(const ValuePtrList &grads) {
   if (utils::isa<PyObjectRef>(out)) {
     PyObjectRef py_ref = utils::cast<PyObjectRef>(out);
     auto out_py_tuple = py_ref.object_;
-    ConvertPyObjectToTensor(out_py_tuple, &gradient_values);
+    ConvertPyObjectToCTensor(out_py_tuple, &gradient_values);
   }
   if (gradient_values.empty()) {
     MS_LOG(EXCEPTION) << "Hook fn output is not <PyObjectRef> type!";
   }
   auto gradient_tensors = PostProcess(gradient_values);
   MS_LOG(DEBUG) << "End HookBackwardNode CallBackward";
-  runtime::OpExecutor::GetInstance().WaitAll();
+  runtime::Pipeline::Get().WaitForward();
   return gradient_tensors;
 }
 
-void HookBackwardNode::Release() { args_.clear(); }
+void HookBackwardNode::Release() {
+  prim_ = nullptr;
+  args_.clear();
+}
 
 ValuePtrList GraphBackwardNode::CallBackward(const ValuePtrList &grads) {
+  runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kRunExpanderFunc,
+                                     name(), false);
   MS_LOG(DEBUG) << "Begin GraphBackwardNode CallBackward ";
   MS_LOG(DEBUG) << PyNativeAlgo::Common::PrintDebugInfo(grads, "bprop cut input grads: ");
   auto graph_call_back = PyNativeAlgo::AutoGrad::CreateGraphCallBack(func_graph_, cache_key_, graph_call_condition_);
@@ -307,7 +338,7 @@ FuncGrad::FuncGrad(const ValuePtrList &input_param_values, size_t op_num_in_bpro
     if (!input_param_value->isa<ValueSequence>()) {
       // For hook input
       func_node->set_op_output(input_param_value);
-      PyNativeAlgo::AutoGrad::SetGradInfoForInputs(input_param_value, variable);
+      PyNativeAlgo::AutoGrad::SetGradInfoForInputs(input_param_value, variable, &param_meta_grad_info_);
     } else {
       variable->set_is_need_grad(false);
     }
@@ -315,6 +346,7 @@ FuncGrad::FuncGrad(const ValuePtrList &input_param_values, size_t op_num_in_bpro
     (void)cell_inputs_.emplace_back(input_param_value, variable);
   }
   is_run_recompute_ = is_run_recompute;
+  param_meta_grad_info_.reserve(op_num_in_bprop_graph);
   device_target_ = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
   func_impl_ = std::make_shared<FuncBuilder>("func_emitter", device_target_);
 }
@@ -443,10 +475,11 @@ void FuncGrad::BackPropagate() {
     if (static_cast<bool>(MS_UNLIKELY(variable->is_fake_bprop()))) {
       MS_LOG(EXCEPTION) << "Illegal primitive " << variable->fake_prim_name() << "'s bprop not defined";
     }
-    if (input_buffer.find(fn.get()) == input_buffer.end()) {
+    auto gradient_in_iter = input_buffer.find(fn.get());
+    if (gradient_in_iter == input_buffer.end()) {
       MS_LOG(EXCEPTION) << "Fn not has gradient";
     }
-    auto &gradient_in = input_buffer[fn.get()];
+    auto &gradient_in = gradient_in_iter->second;
     MS_LOG(DEBUG) << PyNativeAlgo::Common::PrintDebugInfo(gradient_in, "Begin print gradient in: ");
     // If register hook by weight, and weight in recompute cell.So, hook will execute, which is not expect.
     if (!is_run_recompute_) {
@@ -484,8 +517,8 @@ void FuncGrad::BackPropagate() {
       last_variable->set_is_need_propagate(true);
     }
     if (variable->is_leaf()) {
+      const auto &grads = input_buffer[fn.get()];
       MS_LOG(DEBUG) << "Get leaf node " << variable->ToString();
-      auto grads = input_buffer[fn.get()];
       if (grads.empty() || grads[0]->isa<None>()) {
         MS_LOG(EXCEPTION) << variable->ToString() << ", " << (grads.empty() ? "grad is empty" : "grad is kNone");
       }
@@ -494,7 +527,7 @@ void FuncGrad::BackPropagate() {
       variable->set_grad(grad_tensor);
     }
     (void)input_buffer.erase(fn.get());
-    variable->Release();
+    ReleaseResource(variable);
   }
   MS_LOG(DEBUG) << "End BackPropagate";
 }
@@ -512,11 +545,14 @@ OrderedSet<FuncVariablePtr>::reverse_iterator FuncGrad::GetLastNodeReverseIter()
 void FuncGrad::ConstructParameterNodes(const ValuePtrList &inputs) {
   for (const auto &value : inputs) {
     if (value->isa<tensor::BaseTensor>()) {
-      auto tensor = value->cast<tensor::BaseTensorPtr>();
-      auto auto_grad_meta_data = tensor->auto_grad_meta_data();
-      MS_EXCEPTION_IF_NULL(auto_grad_meta_data);
-      if (auto_grad_meta_data->variable() != nullptr) {
+      const auto &tensor = value->cast<tensor::BaseTensorPtr>();
+      const auto &auto_grad_meta_data = tensor->auto_grad_meta_data();
+      // Get scalar tensor
+      if (auto_grad_meta_data == nullptr || auto_grad_meta_data->variable() != nullptr) {
         continue;
+      }
+      if (PyNativeAlgo::Common::IsParam(auto_grad_meta_data->input_type())) {
+        param_meta_grad_info_.emplace_back(tensor, auto_grad_meta_data);
       }
       if (auto_grad_meta_data->input_type() == InputType::kParameter &&
           PyNativeAlgo::Common::IsParamRequiresGrad(tensor)) {
@@ -534,9 +570,10 @@ void FuncGrad::ConstructParameterNodes(const ValuePtrList &inputs) {
 BackwardNodePtr FuncGrad::BuildFuncBackwardNode(const PrimitivePtr &prim, const expander::bprop::BpropBuilderFunc &func,
                                                 const ValuePtrList &flatten_inputs, const OpGradInfoPtr &op_grad_info) {
   PyNativeAlgo::AutoGrad::CheckAndSetAbstract(op_grad_info);
-  auto fn = std::make_shared<FuncBackwardNode>(
-    prim->name(), func, prim->attrs(), op_grad_info->input_value, op_grad_info->input_abs, op_grad_info->out_value,
-    op_grad_info->output_size, op_grad_info->out_abs, op_grad_info->input_value_grad_type);
+  auto emitter = std::make_shared<FuncBuilder>(prim->name(), device_target_, nullptr);
+  auto node_inputs = GenerateNodeInputs(op_grad_info, emitter);
+  auto fn = std::make_shared<FuncBackwardNode>(prim->name(), func, emitter, prim->attrs(), node_inputs,
+                                               op_grad_info->output_size);
   fn->UpdateNextEdges(flatten_inputs);
   return fn;
 }
@@ -560,8 +597,7 @@ BackwardNodePtr FuncGrad::BuildCustomBackwardNode(const PrimitivePtr &prim, cons
       MS_LOG(INFO) << "Can not find bprop function for " << prim->name() << ". fn: " << ConvertPyObjToString(fn);
       return BuildFakeBackwardNode(prim, flatten_inputs, op_grad_info);
     }
-    (void)prim_py->AddBackwardHookFn(0, fn);
-    (void)prim_py->AddAttr("custom_op_bprop", MakeValue(true));
+    (void)prim_py->SetHookFn(fn, HookType::kCustomOpBprop);
   }
   return BuildHookBackwardNode(prim, flatten_inputs, op_grad_info);
 }
@@ -570,8 +606,7 @@ BackwardNodePtr FuncGrad::BuildHookBackwardNode(const PrimitivePtr &prim, const 
                                                 const OpGradInfoPtr &op_grad_info) {
   MS_EXCEPTION_IF_NULL(prim);
   auto bprop_cut = PyNativeAlgo::AutoGrad::BuildBpropCutPrim(prim, op_grad_info->is_need_recompute);
-  VectorRef args =
-    GeneratePythonArgs(op_grad_info->input_value, op_grad_info->out_value, op_grad_info->is_need_recompute);
+  VectorRef args = GeneratePythonArgs(op_grad_info);
   auto fn = std::make_shared<HookBackwardNode>(prim->name(), bprop_cut, std::move(args), op_grad_info->output_size,
                                                op_grad_info->out_abs);
   fn->UpdateNextEdges(flatten_inputs);
@@ -680,6 +715,7 @@ ValuePtr FuncGrad::GetWeightGrad(const tensor::BaseTensorPtr &weight) {
   }
   auto variable = auto_grad_meta_data->variable();
   const auto &func_variable = std::dynamic_pointer_cast<FuncVariable>(variable);
+  MS_LOG(DEBUG) << "Get variable " << (variable != nullptr ? variable->ToString() : "is nullptr");
   if (variable != nullptr && variable->is_need_grad()) {
     // If weight used in the forward network, but requires_grad is false, return zero like.
     if (func_variable->grad() == nullptr ||
@@ -690,7 +726,8 @@ ValuePtr FuncGrad::GetWeightGrad(const tensor::BaseTensorPtr &weight) {
     auto weight_grad = func_variable->grad();
     return weight_grad;
   }
-  MS_LOG(INFO) << "parameter does not need grad, tensor: " << PyNativeAlgo::Common::GetIdByValue(weight);
+  MS_LOG(INFO) << "weight not participate in forward calculation, but requires grad, id: "
+               << PyNativeAlgo::Common::GetIdByValue(weight);
   return func_impl_->Zeros(weight);
 }
 
@@ -700,10 +737,6 @@ void FuncGrad::ClearGrads(const tensor::BaseTensorPtrList &weights) {
     input.second->set_grad(nullptr);
   }
   cell_inputs_.clear();
-  // Clear weights grad info
-  for (const auto &weight : weights) {
-    weight->set_auto_grad_meta_data(nullptr);
-  }
 }
 
 ValuePtrList FuncGrad::OnsLike(const ValuePtr &sens) {
@@ -821,6 +854,7 @@ ValuePtr FuncGrad::Finish(const tensor::BaseTensorPtrList &weights, const std::v
     GilReleaseWithCheck gil_release;
     BackPropagate();
   }
+  PyNativeAlgo::Common::DumpGraphIR("func_grad.ir", std::make_shared<FuncGraph>());
   python_adapter::PyAdapterCallback::ProcessUnPairedCellHook(true);
   ValuePtr gradients = GetGrads(weights, grad_position, grad_attr);
   ClearGrads(weights);

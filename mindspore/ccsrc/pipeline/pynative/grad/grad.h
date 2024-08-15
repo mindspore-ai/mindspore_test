@@ -27,7 +27,7 @@
 #include "pipeline/pynative/base.h"
 #include "pipeline/pynative/grad/top_cell.h"
 #include "pipeline/pynative/grad/jit/jit_grad.h"
-#include "runtime/pipeline/async_hqueue.h"
+#include "runtime/pipeline/pipeline.h"
 #include "pipeline/pynative/grad/bprop_task.h"
 #include "pipeline/pynative/grad/ir/dynamic_shape.h"
 #include "pipeline/pynative/grad/variable.h"
@@ -51,9 +51,7 @@ class GradExecutor {
   explicit GradExecutor(const ForwardExecutorPtr &forward_executor = nullptr)
       : forward_executor_(ForwardExecutorWeakPtr(forward_executor)),
         jit_(std::make_shared<Jit>()),
-        dynamic_shape_(std::make_shared<DynamicShape>()),
-        bprop_queue_(std::make_shared<runtime::AsyncHqueue>("bprop_queue")),
-        assist_queue_(std::make_shared<runtime::AsyncHqueue>("assist_queue")) {}
+        dynamic_shape_(std::make_shared<DynamicShape>()) {}
 
   void Init();
   std::function<void(const py::object &, const py::args &)> InitGraph = [this](auto &&PH1, auto &&PH2) {
@@ -94,9 +92,7 @@ class GradExecutor {
   inline void set_is_run_recompute(bool is_run_recompute) { is_run_recompute_ = is_run_recompute; }
   // Construct grad graph for jit
   inline size_t custom_bprop_cell_count() const { return custom_bprop_cell_count_; }
-  inline runtime::AsyncHqueuePtr bprop_queue() const { return bprop_queue_; }
   TopCellIdWithTopCell &already_run_top_cell() { return already_run_top_cell_; }
-  void SetHookChanged(const py::object &cell) const;
   py::object RunGrad(const prim::GradOperationPtr &grad, const py::object &obj, const py::object &weights,
                      const py::object &grad_position, const py::args &args);
   py::object RunGradFunc(const autograd::GradAttr &grad_attr, const std::vector<tensor::BaseTensorPtr> &w_args,
@@ -109,7 +105,7 @@ class GradExecutor {
   void RecordNestedGraph(const FuncGraphPtr &first_grad_fg, const GraphInfoPtr &inner_graph_info,
                          const std::vector<ValuePtr> &forward_args, const ValuePtr &out);
   py::object CheckAlreadyRun(const prim::GradOperationPtr &grad, const py::object &obj, const py::object &weights,
-                             const py::object &grad_hash_id, const py::args &args);
+                             const py::object &grad_position, const py::args &args);
   TopCellInfoPtr GetAlreadyRunTopCell(const std::string &already_run_cell_id) const;
   TopCellInfoPtr GetPipelineRunTopCell(const std::string &already_run_cell_id) const;
   TopCellInfoPtr GetPipelineTopCell(const std::string &already_run_cell_id, const std::string &input_args_id,
@@ -122,8 +118,6 @@ class GradExecutor {
   void ProcessOpGradInfo(const FrontendOpRunInfoPtr &op_run_info) const;
   AnfNodePtr GetInput(const ValuePtr &v, const string &obj_id) const;
   AnfNodePtr GetParamInput(const ValuePtr &v, const std::string &id) const;
-  void UpdateTopCellForwardTensorInfoInBpropGraph(const string &op_info, const ValuePtr &v,
-                                                  const size_t &stream_id) const;
   void ClearRes();
   void AsyncClearTopCell();
   void AsyncClearAutoGradCell(const TopCellInfoPtr &top_cell);
@@ -149,9 +143,9 @@ class GradExecutor {
   inline void set_forward_use_dynamic_shape_process(bool forward_use_dynamic_shape_process) {
     forward_use_dynamic_shape_process_ = forward_use_dynamic_shape_process;
   }
-  inline bool is_cell_has_dynamic_inputs(const std::string &obj_id) const {
-    return dynamic_inputs_cells_.count(obj_id) > 0;
-  }
+  const std::string &hook_cell_id() { return hook_cell_id_; }
+  inline void set_hook_cell_id(const std::string &hook_cell_id) { hook_cell_id_ = hook_cell_id; }
+
   std::string GetAlreadyRunCellId(const std::string &obj_id) const;
 
   inline bool is_high_order_top_cell() const { return top_cell_ != nullptr && top_cell_->is_high_order_top_cell(); }
@@ -168,7 +162,6 @@ class GradExecutor {
   void SaveOutputNodeMap(const std::string &obj_id, const FrontendOpRunInfoPtr &op_run_info,
                          const CNodePtr &cnode) const;
   void DoOpGrad(const FrontendOpRunInfoPtr &op_run_info) const;
-  AnfNodePtr GetRealInputNodeBySkipHook(const AnfNodePtr &input_node) const;
   void SetBpropGraphJitLevel(const py::object &obj) const;
   void ClearGlobalRes() const;
   void ClearGradRes();
@@ -233,7 +226,6 @@ class GradExecutor {
   AnfNodePtr CreateTupleGetItemNode(const std::string &obj_id,
                                     const std::pair<AnfNodePtr, std::vector<int64_t>> &out) const;
   void DispatchGradQueueTask(std::function<void(void)> &&task) const;
-  void DispatchAssistQueueTask(std::function<void(void)> task) const;
   void ResetMetaGradInfoForNewTopCell(const InputArgsInfoPtr &input_args_info) const;
   void ClearBpropTask() const;
 
@@ -244,13 +236,16 @@ class GradExecutor {
   bool save_graphs_{false};
   bool forward_use_dynamic_shape_process_{false};
 
+  // Cell which register hook
+  std::string hook_cell_id_;
+
   uint32_t kernel_graph_id_for_control_flow_{UINT32_MAX};
   size_t custom_bprop_cell_count_{0};
 
   // If grad_order=1, indicate first derivative; grad_order=2, indicate second derivative; ...
   size_t grad_order_{0};
   // if call grad not set_grad first, grad first is true.
-  bool grad_first_{false};
+  bool call_grad_api_first_{false};
 
   // Used for auto grad map reserve
   size_t op_num_in_bprop_graph_{kDefaultContainerSize};
@@ -278,8 +273,6 @@ class GradExecutor {
   ForwardExecutorWeakPtr forward_executor_;
   JitPtr jit_;
   DynamicShapePtr dynamic_shape_{nullptr};
-  runtime::AsyncHqueuePtr bprop_queue_;
-  runtime::AsyncHqueuePtr assist_queue_;
 };
 }  // namespace pynative
 }  // namespace mindspore

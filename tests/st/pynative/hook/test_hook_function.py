@@ -86,8 +86,7 @@ def test_var_hook_grad():
     assert np.allclose(grad_out1[0].asnumpy(), grad_out2[0].asnumpy(), 0.00001, 0.00001)
 
 
-def cell_hook_function(cell_id, grad_input, grad_output):
-    print("cell id:", cell_id)
+def cell_hook_function(cell, grad_input, grad_output):
     print("grad input:", grad_input)
     print("grad output:", grad_output)
 

@@ -31,6 +31,7 @@ namespace pynative {
 namespace bprop_pass {
 namespace {
 constexpr auto kTupleToMakeTuple = "tuple_to_make_tuple";
+constexpr auto kHookType = "hook_type";
 
 mindspore::HashMap<AnfNodePtr, std::vector<std::pair<size_t, AnfNodePtr>>> node_attr_value_;
 
@@ -535,8 +536,8 @@ AnfNodePtr IrPassForward::PassBackwardHook(const ValuePtr &value, const AnfNodeP
     MS_LOG(DEBUG) << "Insert bprop cut fn " << ConvertPyObjToString(hook_fn) << " for tensor " << value->ToString()
                   << " with id " << tensor->id();
     auto bprop_cut = std::make_shared<PrimitivePy>("bprop_cut");
-    bprop_cut->AddAttr("tensor_hook", MakeValue(true));
-    bprop_cut->AddBackwardHookFn(kIndex0, hook_fn);
+    bprop_cut->SetHookFn(hook_fn, HookType::kTensorHook);
+    (void)bprop_cut->AddAttr(kHookType, MakeValue(bprop_cut->HookTypeToString()));
     // Need input out and dout for bprop run, current just make a fake
     AnfNodePtrList inputs{NewValueNode(bprop_cut), grad_node, NewValueNode(MakeValue("FakeOutput")), res};
     res = ir_bprop_->ad_param()->tape_->FuncGraph::NewCNode(inputs);
@@ -547,7 +548,6 @@ AnfNodePtr IrPassForward::PassBackwardHook(const ValuePtr &value, const AnfNodeP
     ir_bprop_->ad_param()->tape_->set_flag(kFlagPyNativeBpropGraphWithBpropCut, true);
     ir_bprop_->set_bprop_graph_run_by_single_op(true);
   }
-  auto_grad_meta->ClearBackwardHooks();
   return res;
 }
 
@@ -735,7 +735,7 @@ void IrPassForward::ReverseCNodeInputs(const CNodePtr &cnode, AnfNodePtrList *cn
     if (t.second->isa<ValueNode>()) {
       auto vnode = t.second->cast<ValueNodePtr>();
       auto v = vnode->value();
-      (void)PyNativeAlgo::Common::SetValueGradInfo(v, nullptr, InputType::kConstant);
+      (void)PyNativeAlgo::Common::SetValueGradInfo(v, InputType::kConstant);
       AddCNodeInputs(cnode, cnode_inputs, t.first, PyNativeAlgo::Common::CreateValueNodeByValue(v, nullptr));
       (void)inputs_value->insert(inputs_value->begin() + SizeToLong(t.first), v);
     } else if (t.second->isa<Parameter>()) {

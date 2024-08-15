@@ -30,9 +30,15 @@ def hook_fn(grad_out):
     return grad_out * 2
 
 
+def hook_fn_2(grad_out):
+    """change gradient"""
+    print("hook_fn print grad_out:", grad_out, flush=True)  # 该梯度是传播到该tensor时，该tensor所对应的梯度
+    return grad_out * 3
+
+
 def hook_test(x, y):
     z = x * y
-    z.register_hook(hook_fn) # 注册函数
+    z.register_hook(hook_fn)  # 注册函数1
     z = z * y
     return z
 
@@ -52,14 +58,41 @@ def test_tensor_backward_hook_with_op_output():
     Expectation: Success
     """
     output = net(ms.Tensor(np.array([1.0, 2.0, 3.0]), ms.float32), ms.Tensor(np.array([1.0, 2.0, 3.0]), ms.float32))
-    print("output:", output)
     assert np.allclose(output[0].asnumpy(), Tensor(np.array([2, 8, 18])).astype(np.float32).asnumpy(), 0.001, 0.001)
     assert np.allclose(output[1].asnumpy(), Tensor(np.array([3, 12, 27])).astype(np.float32).asnumpy(), 0.001, 0.001)
 
 
+def hook_test_multi(x, y):
+    z = x * y
+    z.register_hook(hook_fn)
+    z.register_hook(hook_fn_2)
+    z = z * y
+    return z
+
+
+def net_op_output_multi(x, y):
+    return ms.grad(hook_test_multi, grad_position=(0, 1))(x, y)
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_tensor_backward_hook_with_op_output_register_multi():
+    """
+    Feature: Test tensor backward hook feature
+    Description: test hook
+    Expectation: Success
+    """
+    output = net_op_output_multi(ms.Tensor(np.array([1.0, 2.0, 3.0]), ms.float32),
+                                 ms.Tensor(np.array([1.0, 2.0, 3.0]), ms.float32))
+    assert np.allclose(output[0].asnumpy(), Tensor(np.array([6, 24, 54])).astype(np.float32).asnumpy(), 0.001, 0.001)
+    assert np.allclose(output[1].asnumpy(), Tensor(np.array([7, 28, 63])).astype(np.float32).asnumpy(), 0.001, 0.001)
+
+
 def hook_test_input(x):
     y1 = x ** 2
-    y2 = x +  1
+    y2 = x + 1
     return y1 + y2
 
 
@@ -77,8 +110,36 @@ def test_tensor_backward_hook_with_net_input():
     x.register_hook(hook_fn)
     ms_grad = GradOfFirstInput(hook_test_input, False)
     output = ms_grad(x)
-    print("output:", output)
     assert np.allclose(output[0].asnumpy(), Tensor(np.array([6])).astype(np.float32).asnumpy(), 0.001, 0.001)
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_tensor_backward_hook_with_net_input_register_multi():
+    """
+    Feature: Test tensor backward hook feature
+    Description: test hook
+    Expectation: Success
+    """
+    x = ms.Tensor(np.array([1.0]), ms.float32)
+    handle1 = x.register_hook(hook_fn)
+    handle2 = x.register_hook(hook_fn_2)
+    ms_grad = GradOfFirstInput(hook_test_input, False)
+    output = ms_grad(x)
+    assert np.allclose(output[0].asnumpy(), Tensor(np.array([18])).astype(np.float32).asnumpy(), 0.001, 0.001)
+
+    handle1.remove()
+    ms_grad = GradOfFirstInput(hook_test_input, False)
+    output = ms_grad(x)
+    assert np.allclose(output[0].asnumpy(), Tensor(np.array([9])).astype(np.float32).asnumpy(), 0.001, 0.001)
+
+    handle1.remove()
+    handle2.remove()
+    ms_grad = GradOfFirstInput(hook_test_input, False)
+    output = ms_grad(x)
+    assert np.allclose(output[0].asnumpy(), Tensor(np.array([3])).astype(np.float32).asnumpy(), 0.001, 0.001)
 
 
 class Net(nn.Cell):
@@ -86,8 +147,8 @@ class Net(nn.Cell):
         super(Net, self).__init__()
         self.weight1 = Parameter(Tensor(np.array([1.0, 2.0, 3.0]), ms.float32), name="weight1")
         self.weight2 = Parameter(Tensor(np.array([1.0, 2.0, 3.0]), ms.float32), name="weight2")
-        self.weight1.register_hook(hook_fn)
-        self.weight2.register_hook(hook_fn)
+        self.handle1 = self.weight1.register_hook(hook_fn)
+        self.handle2 = self.weight2.register_hook(hook_fn)
 
     def construct(self, x):
         y = x * self.weight1
@@ -120,6 +181,44 @@ def test_tensor_backward_hook_with_weight():
     assert np.allclose(output[1].asnumpy(), Tensor(np.array([4, 6, 8])).astype(np.float32).asnumpy(), 0.001, 0.001)
 
 
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_tensor_backward_hook_with_weight_register_multi():
+    """
+    Feature: Test tensor backward hook feature
+    Description: test hook
+    Expectation: Success
+    """
+    input_x = Tensor(np.array([1.0, 2.0, 3.0]), ms.float32)
+    net1 = Net()
+    ms_grad = GradOfAllParams(net1, False)
+    output = ms_grad(input_x)
+    assert np.allclose(output[0].asnumpy(), Tensor(np.array([2, 4, 6])).astype(np.float32).asnumpy(), 0.001, 0.001)
+    assert np.allclose(output[1].asnumpy(), Tensor(np.array([2, 4, 6])).astype(np.float32).asnumpy(), 0.001, 0.001)
+
+    # Add multi hook fn
+    handle1 = net1.weight1.register_hook(hook_fn_2)
+    output = ms_grad(input_x)
+    assert np.allclose(output[0].asnumpy(), Tensor(np.array([6, 12, 18])).astype(np.float32).asnumpy(), 0.001, 0.001)
+    assert np.allclose(output[1].asnumpy(), Tensor(np.array([2, 4, 6])).astype(np.float32).asnumpy(), 0.001, 0.001)
+
+    # Remove original hook fn
+    net1.handle1.remove()
+    output = ms_grad(input_x)
+    assert np.allclose(output[0].asnumpy(), Tensor(np.array([3, 6, 9])).astype(np.float32).asnumpy(), 0.001, 0.001)
+    assert np.allclose(output[1].asnumpy(), Tensor(np.array([2, 4, 6])).astype(np.float32).asnumpy(), 0.001, 0.001)
+
+    # remove all hook fn
+    net1.handle1.remove()
+    net1.handle2.remove()
+    handle1.remove()
+    output = ms_grad(input_x)
+    assert np.allclose(output[0].asnumpy(), Tensor(np.array([1, 2, 3])).astype(np.float32).asnumpy(), 0.001, 0.001)
+    assert np.allclose(output[1].asnumpy(), Tensor(np.array([1, 2, 3])).astype(np.float32).asnumpy(), 0.001, 0.001)
+
+
 class NetRemove(nn.Cell):
     def __init__(self):
         super(NetRemove, self).__init__()
@@ -128,7 +227,6 @@ class NetRemove(nn.Cell):
 
     def construct(self, x):
         x = x * self.weight1
-        self.handle.remove()
         return x
 
 
@@ -145,8 +243,17 @@ def test_tensor_backward_hook_handle_remove():
     input_x = Tensor(np.array([1.0, 2.0, 3.0]), ms.float32)
     net_remove = NetRemove()
     ms_grad = GradOfAllParams(net_remove, False)
-    output = ms_grad(input_x)
-    assert np.allclose(output[0].asnumpy(), Tensor(np.array([1, 2, 3])).astype(np.float32).asnumpy(), 0.001, 0.001)
+
+    for i in range(2):
+        if i == 0:
+            output = ms_grad(input_x)
+            assert np.allclose(output[0].asnumpy(), Tensor(np.array([2, 4, 6])).astype(np.float32).asnumpy(), 0.001,
+                               0.001)
+        else:
+            net_remove.handle.remove()
+            output = ms_grad(input_x)
+            assert np.allclose(output[0].asnumpy(), Tensor(np.array([1, 2, 3])).astype(np.float32).asnumpy(), 0.001,
+                               0.001)
 
 
 @arg_mark(plat_marks=['platform_gpu'],

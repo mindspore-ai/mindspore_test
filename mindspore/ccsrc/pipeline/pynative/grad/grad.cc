@@ -16,6 +16,7 @@
 
 #include "pipeline/pynative/grad/grad.h"
 #include <algorithm>
+#include <unordered_set>
 #include "mindspore/ops/op_def/conv_pool_op_name.h"
 #include "mindspore/ops/op_def/nn_op_name.h"
 #include "mindspore/ops/op_def/math_op_name.h"
@@ -272,7 +273,7 @@ std::string GetWeightsObjIdsByWeights(const py::object &weights) {
   };
 
   std::string weights_obj_id;
-  auto append_weights_info = [&weights_obj_id, is_require_grad](const py::object &obj) {
+  auto append_weights_info = [&weights_obj_id, &is_require_grad](const py::object &obj) {
     const auto &v = PyNativeAlgo::DataConvert::PyObjToValue(obj);
     if (is_require_grad(v)) {
       (void)weights_obj_id.append("_").append(PyNativeAlgo::Common::GetIdByValue(v));
@@ -329,14 +330,14 @@ void FreeSpecialOpValue(const std::string &op_name, const FrontendOpRunInfoPtr &
     //    so if y is a valuenode, the dy is useless, we can free x in ahead.
     bool x_is_const_value = PyNativeAlgo::Common::IsConstant(op_run_info->op_grad_info->input_value_grad_type[kIndex0]);
     bool y_is_const_value = PyNativeAlgo::Common::IsConstant(op_run_info->op_grad_info->input_value_grad_type[kIndex1]);
-    if (x_is_const_value && op_run_info->base_op_run_info.expanded_input_values[kIndex1]->isa<tensor::BaseTensor>()) {
-      op_run_info->op_grad_info->input_value[kIndex1] = PyNativeAlgo::Common::CreateFakeValueWithoutDeviceAddress(
-        op_run_info->base_op_run_info.expanded_input_values[kIndex1]);
+    if (x_is_const_value && op_run_info->op_grad_info->input_value[kIndex1]->isa<tensor::BaseTensor>()) {
+      op_run_info->op_grad_info->input_value[kIndex1] =
+        PyNativeAlgo::Common::CreateFakeValueWithoutDeviceAddress(op_run_info->op_grad_info->input_value[kIndex1]);
       MS_LOG(DEBUG) << "Clear device address for inputs[1] of " << op_name;
     }
-    if (y_is_const_value && op_run_info->base_op_run_info.expanded_input_values[kIndex0]->isa<tensor::BaseTensor>()) {
-      op_run_info->op_grad_info->input_value[kIndex0] = PyNativeAlgo::Common::CreateFakeValueWithoutDeviceAddress(
-        op_run_info->base_op_run_info.expanded_input_values[kIndex0]);
+    if (y_is_const_value && op_run_info->op_grad_info->input_value[kIndex0]->isa<tensor::BaseTensor>()) {
+      op_run_info->op_grad_info->input_value[kIndex0] =
+        PyNativeAlgo::Common::CreateFakeValueWithoutDeviceAddress(op_run_info->op_grad_info->input_value[kIndex0]);
       MS_LOG(DEBUG) << "Clear device address for inputs[0] of " << op_name;
     }
   } else if (kDivOp.find(op_name) != kDivOp.end()) {
@@ -348,8 +349,10 @@ void FreeSpecialOpValue(const std::string &op_name, const FrontendOpRunInfoPtr &
   }
 }
 
-void FreeUselessValue(const FrontendOpRunInfoPtr &op_run_info, const TopCellInfoPtr &top_cell) {
+void FreeUselessValue(const FrontendOpRunInfoPtr &op_run_info, const GradParamPtr &grad_param,
+                      const TopCellInfoPtr &top_cell) {
   MS_EXCEPTION_IF_NULL(op_run_info);
+  MS_EXCEPTION_IF_NULL(grad_param);
   MS_EXCEPTION_IF_NULL(top_cell);
   if (top_cell->is_high_order_top_cell()) {
     return;
@@ -362,36 +365,29 @@ void FreeUselessValue(const FrontendOpRunInfoPtr &op_run_info, const TopCellInfo
       op_run_info->op_grad_info->input_value[i] =
         PyNativeAlgo::Common::CreateFakeValueWithoutDeviceAddress(op_run_info->op_grad_info->input_value[i]);
     } else if (i == op_run_info->input_size) {
-      // Process output, free bprop not used output
-      op_run_info->op_grad_info->out_value =
-        PyNativeAlgo::Common::CreateFakeValueWithoutDeviceAddress(op_run_info->op_grad_info->out_value);
+      // current op output tensor used in bprop graph, set used_in_bprop_graph which affect follow op free its inputs
+      if (op_run_info->op_grad_info->used_in_bprop_graph) {
+        PyNativeAlgo::Common::SetOutputUsedInBpropGraph(op_run_info->op_grad_info->out_value);
+      } else {
+        // Process output, free bprop not used output value
+        op_run_info->op_grad_info->out_value =
+          PyNativeAlgo::Common::CreateFakeValueWithoutDeviceAddress(op_run_info->op_grad_info->out_value);
+        grad_param->out_used_in_bporp_graph = false;
+      }
     }
   }
-
   // Free special op memory
   FreeSpecialOpValue(op_run_info->op_grad_info->op_prim->name(), op_run_info, &op_run_info->op_grad_info->out_value);
 }
 
 GradParamPtr CreateOpGradParam(const FrontendOpRunInfoPtr &op_run_info, const TopCellInfoPtr &top_cell) {
   MS_EXCEPTION_IF_NULL(op_run_info);
-  bool out_used_in_bporp_graph = true;
   op_run_info->op_grad_info->out_value = op_run_info->real_out;
-  FreeUselessValue(op_run_info, top_cell);
-
   op_run_info->op_grad_info->out_abs = op_run_info->base_op_run_info.abstract;
-  auto grad_param = std::make_shared<GradParam>(op_run_info->op_grad_info, top_cell->use_dynamic_shape_process());
-  grad_param->out_used_in_bporp_graph = out_used_in_bporp_graph;
-  return grad_param;
-}
 
-void CheckBpropCutNode(const TopCellInfoPtr &top_cell, const PrimitivePtr &op_prim) {
-  MS_EXCEPTION_IF_NULL(op_prim);
-  if (top_cell->has_bprop_cut_op()) {
-    return;
-  }
-  if (op_prim->name() == kHookBackwardName || op_prim->name() == kCellBackwardHookName) {
-    top_cell->set_has_bprop_cut_op(true);
-  }
+  auto grad_param = std::make_shared<GradParam>(op_run_info->op_grad_info, top_cell->use_dynamic_shape_process());
+  FreeUselessValue(op_run_info, grad_param, top_cell);
+  return grad_param;
 }
 
 void CloneParameter(const AnfNodePtr &node, const KernelGraphPtr &new_graph) {
@@ -480,6 +476,16 @@ void SetCustomBpropInputs(const py::object &obj, const InputArgsInfoPtr &input_a
     }
   }
 }
+
+std::string PrintPyObjInfo(const py::object &obj, const std::string &str) {
+  std::ostringstream buf;
+  if (py::isinstance<Cell>(obj)) {
+    buf << str << " run " << obj.cast<CellPtr>()->ToString();
+    return buf.str();
+  }
+  buf << str << " run python function " << py::getattr(obj, "__name__").cast<std::string>();
+  return buf.str();
+}
 }  // namespace
 
 ForwardExecutorPtr GradExecutor::forward() const {
@@ -540,7 +546,7 @@ void GradExecutor::HandleInputArgsForTopCell(const InputArgsInfoPtr &input_args_
     const auto &v = input_value[i];
     auto param_i_abs = PyNativeAlgo::Common::SetAbstractValueToAnyValue(v->ToAbstract());
     if (!top_cell()->is_bprop_need_get_forward_graph()) {
-      (void)PyNativeAlgo::Common::SetValueGradInfo(v, top_cell(), InputType::kInput);
+      (void)PyNativeAlgo::Common::SetValueGradInfo(v, InputType::kInput);
       (void)input_param_values.emplace_back(v);
       (void)abs_list.emplace_back(param_i_abs);
     }
@@ -557,7 +563,7 @@ void GradExecutor::HandleInputArgsForTopCell(const InputArgsInfoPtr &input_args_
   if (top_cell_->is_ir_grad()) {
     top_cell_->set_auto_grad_cell_ptr(
       std::make_shared<autograd::IrGrad>(input_param_values, abs_list, op_num_in_bprop_graph_ * kContainerRatio,
-                                         assist_queue_, !top_cell_->is_high_order_top_cell(), is_run_recompute_));
+                                         !top_cell_->is_high_order_top_cell(), is_run_recompute_));
   } else {
     top_cell_->set_auto_grad_cell_ptr(
       std::make_shared<autograd::FuncGrad>(input_param_values, op_num_in_bprop_graph_ * kContainerRatio,
@@ -649,8 +655,8 @@ void GradExecutor::NewGraphInner(const py::object &obj, const py::args &args) {
 
   const auto input_args_info = GetInputArgsInfo(obj, args, is_bprop_need_get_forward_graph);
   PushInputArgsInfoStack(input_args_info);
-  MS_LOG(DEBUG) << "NewGraphInner start " << args.size() << ", cell_id " << PyNativeAlgo::PyParser::GetIdByPyObj(obj)
-                << ", input args info ptr " << input_args_info.get();
+  MS_LOG(DEBUG) << PrintPyObjInfo(obj, "Begin") << ", NewGraphInner start " << args.size() << ", cell_id "
+                << PyNativeAlgo::PyParser::GetIdByPyObj(obj) << ", input args info ptr " << input_args_info.get();
 
   // Make top graph and init resource
   if (input_args_info->is_grad_topest_cell || input_args_info->is_high_order_top_cell ||
@@ -718,7 +724,8 @@ bool GradExecutor::GetTopCellDynamicFlag(const InputArgsInfoPtr &input_args_info
                     }
                     return false;
                   })) {
-    MS_LOG(DEBUG) << "Get dynamic shape from pipeline top cell with obj_id_with_grad_order " << obj_id_with_grad_order;
+    MS_LOG(DEBUG) << "Get dynamic shape from already run top cell with obj_id_with_grad_order "
+                  << obj_id_with_grad_order;
     return true;
   }
 
@@ -778,10 +785,10 @@ void GradExecutor::MakeNewTopCell(const InputArgsInfoPtr &input_args_info) {
                                                     top_input_args_info_->input_arg_base_shape_vec, true);
   }
   top_cell_->set_has_bprop_cut_op(input_args_info->has_custom_bprop);
-  top_cell_->set_grad_first(grad_first_);
-  grad_first_ = false;
-  MS_LOG(DEBUG) << "New top graph, fg ptr " << fg.get() << ", top cell ptr " << top_cell_.get()
-                << " with input args id " << top_cell_->input_args_id();
+  top_cell_->set_grad_first(call_grad_api_first_);
+  call_grad_api_first_ = false;
+  MS_LOG(DEBUG) << "New top cell, top cell ptr " << top_cell_.get() << ", fg ptr " << fg.get()
+                << ", with input args id " << top_cell_->input_args_id();
 
   if (new_top_cell_is_pipeline_top_cell) {
     pipeline_top_cell_map_[input_args_info->already_run_cell_id].emplace_back(top_cell_);
@@ -852,9 +859,9 @@ void GradExecutor::SetForwardLastNodeInfo(const ValuePtr &v) const {
     auto coo_tensorptr = v->cast<tensor::COOTensorPtr>();
     value = coo_tensorptr->GetValues();
   }
-  (void)PyNativeAlgo::Common::SetValueGradInfo(value, top_cell_, InputType::kConstant);
   // Set last output abstract and will be used for sens
   auto fake_v = PyNativeAlgo::Common::CreateFakeValueWithoutDeviceAddress(value);
+  (void)PyNativeAlgo::Common::SetValueGradInfo(fake_v, InputType::kOpOutput);
   top_cell()->SetLastOutputValueForwardOutputFlag(fake_v);
   if (forward()->enable_async()) {
     auto auto_grad_cell_ptr = top_cell()->auto_grad_cell_ptr();
@@ -871,8 +878,8 @@ void GradExecutor::EndGraphInner(const py::object &obj, const py::object &out, c
   }
   const auto input_args_info = input_args_info_stack_.top();
   MS_EXCEPTION_IF_NULL(input_args_info);
-  MS_LOG(DEBUG) << "EndGraphInner start " << args.size() << ", cell_id " << PyNativeAlgo::PyParser::GetIdByPyObj(obj)
-                << ", input args info ptr " << input_args_info.get();
+  MS_LOG(DEBUG) << PrintPyObjInfo(obj, "End") << ", EndGraphInner start " << args.size() << ", cell_id "
+                << PyNativeAlgo::PyParser::GetIdByPyObj(obj) << ", input args info ptr " << input_args_info.get();
   if (input_args_info->is_grad_topest_cell) {
     grad_flag_ = false;
   }
@@ -886,7 +893,7 @@ void GradExecutor::EndGraphInner(const py::object &obj, const py::object &out, c
   }
   if (!top_cell()->is_bprop_need_get_forward_graph() && need_do_custom_bprop_grad) {
     GetCustomBpropPrim(obj, args, input_args_info);
-    runtime::OpExecutor::GetInstance().WaitAll();
+    runtime::Pipeline::Get().WaitAll();
     input_args_info->out_value = PyNativeAlgo::DataConvert::PyObjToValue(out, false);
     // Recompute need to regardless of non tensor inputs, maybe it is a middle cell and not call EndGraphImpl
     if (input_args_info->is_need_recompute) {
@@ -900,7 +907,7 @@ void GradExecutor::EndGraphInner(const py::object &obj, const py::object &out, c
 
   // Get top cell endgraph
   if (input_args_info->cell_id == top_cell()->cell_id()) {
-    runtime::OpExecutor::GetInstance().WaitAll();
+    runtime::Pipeline::Get().WaitAll();
     if (input_args_info->out_value == nullptr) {
       input_args_info->out_value = PyNativeAlgo::DataConvert::PyObjToValue(out, false);
     }
@@ -913,17 +920,21 @@ void GradExecutor::EndGraphInner(const py::object &obj, const py::object &out, c
 void GradExecutor::EndGraphImpl(const InputArgsInfoPtr &input_args_info) {
   auto out_tensor = ConvertOutputValueToTensor(input_args_info->out_value, !top_cell()->jit_out_has_dict());
   std::vector<std::string> output_tensors_id;
-  PyNativeAlgo::DataConvert::ConvertValueTensorId(out_tensor, &output_tensors_id);
+  PyNativeAlgo::DataConvert::GetTensorIdFromOutputValue(out_tensor, &output_tensors_id);
   top_cell()->set_outputs_ids(std::move(output_tensors_id));
   if (out_tensor != nullptr) {
     input_args_info->out_value = out_tensor;
   }
 
   // If network runs twice, and one of the runs is an empty network, the following judgment will take effect
-  ValuePtrList inputs{input_args_info->out_value};
-  AbstractBasePtrList abs{PyNativeAlgo::Common::SetAbstractValueToAnyValue(input_args_info->out_value->ToAbstract())};
-  auto node_info = std::make_shared<DynamicDetectNodeInfo>(nullptr, abs, nullptr);
-  (void)dynamic_shape()->CheckNodeDynamic(top_cell(), inputs, node_info);
+  if (!top_cell_->use_dynamic_shape_process()) {
+    auto op_grad_info = std::make_shared<OpGradInfo>();
+    op_grad_info->input_value = {input_args_info->out_value};
+    op_grad_info->input_abs = {
+      PyNativeAlgo::Common::SetAbstractValueToAnyValue(input_args_info->out_value->ToAbstract())};
+    op_grad_info->op_index = top_cell_->op_index();
+    dynamic_shape()->CheckNodeDynamic(top_cell_, op_grad_info);
+  }
 
   // Just only dump the last forward graph or bprop forward graph
   if (save_graphs_ || top_cell_->is_bprop_need_get_forward_graph()) {
@@ -933,6 +944,7 @@ void GradExecutor::EndGraphImpl(const InputArgsInfoPtr &input_args_info) {
     PyNativeAlgo::Common::DumpGraphIR("fg.ir", curr_g());
     MS_LOG(DEBUG) << "Save forward graph";
   }
+
   if (top_cell_->is_bprop_need_get_forward_graph()) {
     MS_LOG(DEBUG) << "Run bprop no need do grad";
     return;
@@ -943,16 +955,15 @@ void GradExecutor::EndGraphImpl(const InputArgsInfoPtr &input_args_info) {
 
   if (input_args_info->is_grad_topest_cell) {
     MS_LOG(DEBUG) << "Cur top last cell " << input_args_info->cell_id;
-    top_cell()->ClearCellHookOp();
   }
 
-  top_cell()->CheckSubCellHookChanged();
   // Checkout whether you need to compile graph when each top cell has run finished
   CheckNeedCompileGraph(input_args_info);
   if (!top_cell_->grad_first()) {
     DecreaseGradOrder();
   }
   top_input_args_info_ = input_args_info;
+  forward()->ClearNodeAbsMap();
 }
 
 void GradExecutor::DoGradForCustomBprop(const InputArgsInfoPtr &input_args_info, const std::string &out_id) const {
@@ -963,6 +974,7 @@ void GradExecutor::DoGradForCustomBprop(const InputArgsInfoPtr &input_args_info,
   op_run_info->base_op_run_info.op_name = input_args_info->custom_bprop_prim->name();
   op_run_info->op_grad_info->op_prim = input_args_info->custom_bprop_prim;
   op_run_info->op_grad_info->input_value = input_args_info->input_arg_value_vec;
+  op_run_info->op_grad_info->weight_size = op_run_info->op_grad_info->input_value.size() - input_args_info->input_size;
   op_run_info->op_grad_info->is_need_recompute = input_args_info->is_need_recompute;
   op_run_info->input_size = input_args_info->input_arg_value_vec.size();
   op_run_info->input_value_id = input_args_info->input_arg_id_vec;
@@ -976,17 +988,11 @@ void GradExecutor::DoGradForCustomBprop(const InputArgsInfoPtr &input_args_info,
     (void)op_run_info->op_grad_info->input_abs.emplace_back(
       PyNativeAlgo::Common::SetAbstractValueToAnyValue(value->ToAbstract()));
     op_run_info->op_grad_info->input_value_grad_type[i] =
-      PyNativeAlgo::Common::SetValueGradInfo(value, top_cell(), InputType::kConstant);
+      PyNativeAlgo::Common::SetValueGradInfo(value, InputType::kConstant);
   }
   op_run_info->op_grad_info->output_size = PyNativeAlgo::Common::GetValueSize(op_run_info->real_out);
-  (void)PyNativeAlgo::Common::SetValueGradInfo(op_run_info->real_out, nullptr, InputType::kOpOutput);
+  (void)PyNativeAlgo::Common::SetValueGradInfo(op_run_info->real_out, InputType::kOpOutput);
   DoOpGrad(op_run_info);
-  top_cell()->GetOpInfo(op_run_info, false);
-  UpdateTopCellForwardTensorInfoInBpropGraph(op_run_info->op_info, op_run_info->real_out,
-                                             op_run_info->base_op_run_info.stream_id);
-  auto node_info = std::make_shared<DynamicDetectNodeInfo>(
-    op_run_info->op_grad_info->op_prim, op_run_info->op_grad_info->input_abs, op_run_info->base_op_run_info.abstract);
-  (void)dynamic_shape()->CheckNodeDynamic(top_cell(), op_run_info->op_grad_info->input_value, node_info);
   RecordForwardGraph(op_run_info);
 }
 
@@ -1013,7 +1019,7 @@ void GradExecutor::GetCustomBpropPrim(const py::object &obj, const py::args &arg
       (void)input_args_info->input_arg_value_vec.emplace_back(PyNativeAlgo::DataConvert::PyObjToValue(args[i]));
     }
   }
-  fake_prim->AddBackwardHookFn(0, bprop_func);
+  fake_prim->SetHookFn(bprop_func, HookType::kCellCustomBprop);
 
   (void)fake_prim->AddAttr("cell_id", MakeValue(input_args_info->cell_id));
   (void)fake_prim->AddAttr(parse::CUSTOM_BPROP_NAME, MakeValue(true));
@@ -1168,18 +1174,21 @@ void GradExecutor::ErasePipelineTopCell(const std::string &already_run_cell_id, 
                                         bool is_pipeline_ir_top_cell) {
   for (auto &t : pipeline_top_cell_map_) {
     if (already_run_cell_id.find(t.first) == std::string::npos) {
+      MS_LOG(DEBUG) << "Get already run cell id " << already_run_cell_id << ", and pipeline key id " << t.first;
       continue;
     }
 
     // If top cell is pipeline ir top cell and finish backward, skip the first ir top cell
-    auto begin = !is_pipeline_ir_top_cell && !t.second.empty() && t.second.front()->is_finish_backward()
+    auto begin = !is_pipeline_ir_top_cell && !t.second.empty() && !t.second.front()->use_dynamic_shape_process() &&
+                     t.second.front()->is_finish_backward()
                    ? t.second.begin() + 1
                    : t.second.begin();
     auto input_args_id_with_top_cell = std::find_if(
       begin, t.second.end(),
       [input_args_id](const TopCellInfoPtr &pipe_top_cell) { return input_args_id == pipe_top_cell->input_args_id(); });
     if (input_args_id_with_top_cell == t.second.end()) {
-      MS_LOG(DEBUG) << "Can not find top cell with input args id " << input_args_id;
+      MS_LOG(DEBUG) << "Can not find top cell with input args id " << input_args_id << ", is pipeline ir top cell "
+                    << is_pipeline_ir_top_cell;
       continue;
     }
     MS_LOG(DEBUG) << "Erase pipeline top cell " << input_args_id_with_top_cell->get() << " with input args id "
@@ -1197,7 +1206,7 @@ void GradExecutor::ErasePipelineTopCell(const std::string &already_run_cell_id, 
 py::object GradExecutor::RunGrad(const prim::GradOperationPtr &grad, const py::object &obj, const py::object &weights,
                                  const py::object &grad_position, const py::args &args) {
   // Wait forward task finish.
-  runtime::OpExecutor::GetInstance().WaitAll();
+  runtime::Pipeline::Get().WaitAll();
 
   GetTopCellWithInputArgsRespectTo(grad, obj, args);
   MS_EXCEPTION_IF_NULL(top_cell_);
@@ -1324,7 +1333,7 @@ bool GradExecutor::ReplacePipelineTopCellForwardOutput() {
   UpdatePipelineTopCellFowardTensor(pipeline_ir_top_cell->replace_info(), top_cell_->replace_info());
   pipeline_ir_top_cell->set_shadow_top_cell(top_cell_.get());
   top_cell_ = pipeline_ir_top_cell;
-  MS_LOG(DEBUG) << "Run no need compile ir top cell " << top_cell_;
+  MS_LOG(DEBUG) << "Run no need compile pipeline ir top cell " << top_cell_;
   return true;
 }
 
@@ -1377,8 +1386,8 @@ std::vector<tensor::BaseTensorPtr> GradExecutor::GetWeightsArgs(const py::object
       (void)w_args.emplace_back(tensor);
     }
   } else {
-    MS_LOG(DEBUG) << "No parameter tuple get, try get weights params by input weight";
     if (py::isinstance<py::tuple>(weights) || py::isinstance<py::list>(weights)) {
+      MS_LOG(DEBUG) << "Get weights params by input tuple/list weight";
       auto weights_tuple = py::cast<py::tuple>(weights);
       for (size_t i = 0; i < weights_tuple.size(); ++i) {
         const auto value = PyNativeAlgo::DataConvert::PyObjToValue(weights_tuple[i]);
@@ -1388,12 +1397,14 @@ std::vector<tensor::BaseTensorPtr> GradExecutor::GetWeightsArgs(const py::object
       }
     } else if (!py::isinstance<py::none>(weights)) {
       // Single input
+      MS_LOG(DEBUG) << "Get weights params by single input weight";
       const auto value = PyNativeAlgo::DataConvert::PyObjToValue(weights);
       auto tensor = value->cast<tensor::BaseTensorPtr>();
       (void)w_args.emplace_back(tensor);
       MS_EXCEPTION_IF_NULL(tensor);
       *weight_param_is_tuple = false;
     } else {
+      MS_LOG(DEBUG) << "Get default weight from forward record";
       return GetDefaultWeights();
     }
   }
@@ -1402,7 +1413,7 @@ std::vector<tensor::BaseTensorPtr> GradExecutor::GetWeightsArgs(const py::object
 
 std::vector<tensor::BaseTensorPtr> GradExecutor::GetDefaultWeights() const {
   std::vector<tensor::BaseTensorPtr> w_args;
-  for (const auto &params : top_cell()->param_grad_info()) {
+  for (const auto &params : top_cell()->auto_grad_cell_ptr()->param_meta_grad_info()) {
     const auto &tensor = params.first;
     if (tensor->is_parameter()) {
       (void)w_args.emplace_back(tensor);
@@ -1561,7 +1572,7 @@ bool GradExecutor::NeedIncreaseGradOrder(const std::string &obj_id) {
 }
 
 py::object GradExecutor::CheckAlreadyRun(const prim::GradOperationPtr &grad, const py::object &obj,
-                                         const py::object &weights, const py::object &grad_hash_id,
+                                         const py::object &weights, const py::object &grad_position,
                                          const py::args &args) {
   const auto &obj_id = PyNativeAlgo::PyParser::GetIdByPyObj(obj);
 
@@ -1573,19 +1584,27 @@ py::object GradExecutor::CheckAlreadyRun(const prim::GradOperationPtr &grad, con
   // reason for this design is that if grad(net)(input) calls first and decrease 1 in EndGraphImpl, it will cause
   // matching problems during RunGrad due to the presence of Gradopration information in already_run_cell_id is not the
   // same. Gradopration information include grad order for distinguish high-order.
-  // Use flag: grad_first_ for distinguish this two scenarios. If scenarios 1 is taked, grad_first_ will not take
-  // effect, otherwise, it works.
+  // Use flag: call_grad_api_first_ for distinguish this two scenarios. If scenarios 1 is taked, call_grad_api_first_
+  // will not take effect, otherwise, it works.
   bool neee_increase_grad_order = NeedIncreaseGradOrder(obj_id);
-  // Include weight param size and required grad flag
-  std::string grad_hash_id_str;
-  if (!py::isinstance<py::none>(grad_hash_id)) {
-    grad_hash_id_str = std::string(py::str(grad_hash_id));
+
+  // Include grad position
+  std::string grad_position_str;
+  if (!py::isinstance<py::none>(grad_position)) {
+    grad_position_str = std::string(py::str(grad_position));
   }
 
-  std::string weights_obj_id = GetWeightsObjIdsByWeights(weights);
-  grad_operation_ = std::to_string(static_cast<int>(grad->get_all_)) +
-                    std::to_string(static_cast<int>(grad->get_by_list_)) +
-                    std::to_string(static_cast<int>(grad->sens_param_)) + grad_hash_id_str + weights_obj_id;
+  // Include weights id
+  // Taking the two times derivative of the a same network, the weights in the grad(net, xxx) api, xxx first time passed
+  // as param1, and the second time passed as param2. Except for this difference, everything else is the same.
+  // At this point, the cell id is consistent, and the forward process is also exactly the same. If the weight ID does
+  // not participate in the comparison, it will not be able to distinguish between these two different derivative
+  // calculations
+  const auto &weights_obj_id = GetWeightsObjIdsByWeights(weights);
+
+  // Include grad operation
+  grad_operation_ = std::to_string(grad->get_all_) + std::to_string(grad->get_by_list_) +
+                    std::to_string(grad->sens_param_) + grad_position_str + weights_obj_id;
 
   auto input_args_id = GetInputArgsId(args);
   // Under the condition that the stack is empty (forward process completed or no forward process),
@@ -1624,7 +1643,7 @@ py::object GradExecutor::CheckAlreadyRun(const prim::GradOperationPtr &grad, con
     }
   }
   if (!forward_run) {
-    grad_first_ = true;
+    call_grad_api_first_ = true;
   }
   forward_run ? MS_LOG(DEBUG) << "Top cell have already ran with input args id " << input_args_id
               : MS_LOG(DEBUG) << "Top cell no run before with input args id " << input_args_id;
@@ -1642,7 +1661,7 @@ py::object GradExecutor::RunGradFunc(const autograd::GradAttr &grad_attr,
 
   MS_LOG(DEBUG) << "Eval run begin";
   MS_EXCEPTION_IF_NULL(top_cell_);
-  const auto &auto_grad_cell = std::dynamic_pointer_cast<autograd::FuncGrad>(top_cell_->auto_grad_cell_ptr());
+  auto auto_grad_cell = std::dynamic_pointer_cast<autograd::FuncGrad>(top_cell_->auto_grad_cell_ptr());
   MS_EXCEPTION_IF_NULL(auto_grad_cell);
   top_cell_->set_grad_is_running(true);
   auto grads = auto_grad_cell->Finish(w_args, p_args, grad_attr, sens);
@@ -1652,8 +1671,9 @@ py::object GradExecutor::RunGradFunc(const autograd::GradAttr &grad_attr,
   top_input_args_info_ = top_cell_->input_args_info();
   MS_LOG(DEBUG) << "Eval run end";
 
-  // Clear top cell resource
   top_cell_->ClearMetaGradInfo();
+  // Set auto_grad_cell nullptr to make sure that auto grad cell can async clear.
+  auto_grad_cell = nullptr;
   // Func grad need to use auto grad meta in finish, so clear it after finish.
   AsyncClearAutoGradCell(top_cell_);
   ClearGradRes();
@@ -1713,6 +1733,7 @@ void GradExecutor::MakeNestedCnode(bool has_custom_bprop, const std::vector<Valu
     ClearGradRes();
     return;
   }
+  top_cell_->ClearMetaGradInfo();
   MS_LOG(DEBUG) << "Do high grad";
   // first_grad_fg maybe modified in auto grad, and first_grad_fg can be used multiple times
   auto first_grad_fg = cur_run_bprop_graph;
@@ -1740,7 +1761,7 @@ void GradExecutor::MakeNestedCnode(bool has_custom_bprop, const std::vector<Valu
   op_run_info->requires_grad = true;
   op_run_info->op_grad_info->input_value = forward_args;
   op_run_info->input_size = forward_args.size();
-  auto out_value = PyNativeAlgo::DataConvert::BaseRefToValue(out, true, true);
+  auto out_value = PyNativeAlgo::DataConvert::BaseRefToValue(out, true, true, top_cell_->op_index());
   // Get output values
   if (has_custom_bprop && !out_value->isa<ValueSequence>()) {
     std::vector<ValuePtr> out_v{out_value};
@@ -1750,7 +1771,7 @@ void GradExecutor::MakeNestedCnode(bool has_custom_bprop, const std::vector<Valu
   RecordNestedGraph(first_grad_fg, inner_graph_info, forward_args, out_value);
 
   // Get input values
-  PyNativeAlgo::Common::SetGraphInputAndWeightsInfo(op_run_info, first_grad_fg, top_cell());
+  PyNativeAlgo::Common::SetGraphInputAndWeightsInfo(op_run_info, first_grad_fg);
   auto grad_fg = first_grad_fg;
   if (has_call_graph) {
     auto r = std::make_shared<pipeline::Resource>();
@@ -1761,14 +1782,10 @@ void GradExecutor::MakeNestedCnode(bool has_custom_bprop, const std::vector<Valu
     grad_fg = ad::Grad(first_grad_fg, opt);
     jit()->set_eliminate_forward(true);
   }
-  auto op_grad_info = std::make_shared<OpGradInfo>();
-  op_grad_info->input_value = op_run_info->op_grad_info->input_value;
-  op_grad_info->input_abs = op_run_info->op_grad_info->input_abs;
-  op_grad_info->out_value = out_value;
-  op_grad_info->output_size = PyNativeAlgo::Common::GetValueSize(op_grad_info->out_value);
-  op_grad_info->out_abs = first_grad_fg->output()->abstract();
-  op_grad_info->input_value_grad_type = op_run_info->op_grad_info->input_value_grad_type;
-  auto grad_param = std::make_shared<GradParam>(op_grad_info, use_dynamic_shape_process);
+  op_run_info->op_grad_info->out_value = out_value;
+  op_run_info->op_grad_info->output_size = PyNativeAlgo::Common::GetValueSize(op_run_info->op_grad_info->out_value);
+  op_run_info->op_grad_info->out_abs = first_grad_fg->output()->abstract();
+  auto grad_param = std::make_shared<GradParam>(op_run_info->op_grad_info, use_dynamic_shape_process);
   grad_param->fg = grad_fg;
   grad_param->source_fg = first_grad_fg;
   grad_param->is_control_flow = has_call_graph;
@@ -1936,6 +1953,7 @@ void GradExecutor::ClearRes() {
   top_input_args_info_ = nullptr;
   std::stack<InputArgsInfoPtr>().swap(input_args_info_stack_);
   std::stack<TopCellInfoPtr>().swap(top_cell_stack_);
+  finded_top_cell_ = nullptr;
   already_run_top_cell_.clear();
   pipeline_top_cell_map_.clear();
   dynamic_inputs_cells_.clear();
@@ -1958,17 +1976,18 @@ void GradExecutor::AsyncClearTopCell() {
 
 void GradExecutor::AsyncClearAutoGradCell(const TopCellInfoPtr &top_cell) {
   if (forward()->enable_async()) {
-    auto task = [top_cell] { top_cell->set_auto_grad_cell_ptr(nullptr); };
+    auto task = [top_cell] {
+      top_cell->ClearMetaGradInfo();
+      top_cell->set_auto_grad_cell_ptr(nullptr);
+    };
     DispatchGradQueueTask(std::move(task));
   } else {
+    top_cell->ClearMetaGradInfo();
     top_cell->set_auto_grad_cell_ptr(nullptr);
   }
 }
 
-void GradExecutor::WorkerJoin() {
-  bprop_queue_->WorkerJoin();
-  assist_queue_->WorkerJoin();
-}
+void GradExecutor::WorkerJoin() { runtime::Pipeline::Get().bprop_stage()->WorkerJoin(); }
 
 AnfNodePtr GradExecutor::GetInput(const ValuePtr &v, const string &obj_id) const {
   // Is not a tensor
@@ -2167,19 +2186,6 @@ TopCellInfoPtr GradExecutor::GetTopCell(const std::string &already_run_cell_id, 
   return nullptr;
 }
 
-void GradExecutor::SetHookChanged(const py::object &cell) const {
-  if (top_cell_ == nullptr) {
-    return;
-  }
-  const auto &cell_id = PyNativeAlgo::PyParser::GetIdByPyObj(cell);
-  if (top_cell_->cell_id().find(cell_id) != std::string::npos) {
-    top_cell_->set_hook_changed(true);
-  }
-  if (RequiresGrad()) {
-    top_cell_->set_sub_cell_hook_changed(cell_id);
-  }
-}
-
 void GradExecutor::ProcessOpGradInfo(const FrontendOpRunInfoPtr &op_run_info) const {
   MS_EXCEPTION_IF_NULL(op_run_info);
   RecordForwardGraph(op_run_info);
@@ -2188,18 +2194,6 @@ void GradExecutor::ProcessOpGradInfo(const FrontendOpRunInfoPtr &op_run_info) co
     return;
   }
   DoOpGrad(op_run_info);
-  top_cell()->GetOpInfo(op_run_info, false);
-  UpdateTopCellForwardTensorInfoInBpropGraph(op_run_info->op_info, op_run_info->real_out,
-                                             op_run_info->base_op_run_info.stream_id);
-  DynamicDetectNodeInfoPtr node_info;
-  if (op_run_info->op_grad_info->output_value_simple_info != nullptr) {
-    node_info = std::make_shared<DynamicDetectNodeInfo>(op_run_info->op_grad_info->op_prim);
-  } else {
-    node_info = std::make_shared<DynamicDetectNodeInfo>(
-      op_run_info->op_grad_info->op_prim, op_run_info->op_grad_info->input_abs, op_run_info->op_grad_info->out_abs);
-  }
-  CheckBpropCutNode(top_cell(), op_run_info->op_grad_info->op_prim);
-  (void)dynamic_shape()->CheckNodeDynamic(top_cell(), op_run_info->op_grad_info->input_value, node_info);
 }
 
 void GradExecutor::SaveOutputNodeMap(const std::string &obj_id, const FrontendOpRunInfoPtr &op_run_info,
@@ -2220,102 +2214,21 @@ void GradExecutor::SaveOutputNodeMap(const std::string &obj_id, const FrontendOp
 // Run ad grad for curr op and connect grad graph with previous op
 void GradExecutor::DoOpGrad(const FrontendOpRunInfoPtr &op_run_info) const {
   MS_EXCEPTION_IF_NULL(op_run_info);
+  top_cell()->GetOpInfo(op_run_info, false);
+  auto pre_top_cell = PyNativeAlgo::AutoGrad::FindPreTopcell(this, op_run_info->op_grad_info,
+                                                             op_run_info->op_grad_info->op_info, op_run_info->real_out);
   auto &&grad_param = CreateOpGradParam(op_run_info, top_cell());
   if (forward()->enable_async()) {
     auto auto_grad_cell_ptr = top_cell()->auto_grad_cell_ptr();
-    auto task = [auto_grad_cell_ptr, grad_param]() { (void)auto_grad_cell_ptr->KPynativeOp(grad_param); };
+    auto task = [auto_grad_cell_ptr, grad_param, pre_top_cell, this]() {
+      PyNativeAlgo::AutoGrad::UpdateGradOpInfo(this, grad_param->op_grad_info, pre_top_cell, false);
+      (void)auto_grad_cell_ptr->KPynativeOp(grad_param);
+    };
     DispatchGradQueueTask(std::move(task));
   } else {
+    PyNativeAlgo::AutoGrad::UpdateGradOpInfo(this, grad_param->op_grad_info, pre_top_cell, false);
     (void)top_cell()->auto_grad_cell_ptr()->KPynativeOp(grad_param);
   }
-}
-
-void GradExecutor::UpdateTopCellForwardTensorInfoInBpropGraph(const std::string &op_info, const ValuePtr &v,
-                                                              const size_t &stream_id) const {
-  auto pre_top_cell = GetAlreadyRunTopCell(top_cell()->already_run_cell_id());
-  // The shape of the last two steps is the same, and the pre_top_cell is not empty.
-  // But if a dynamic shape is enabled at this point, you still need to execute SaveTensorIdWithOpInfo.
-  if (pre_top_cell == nullptr || use_dynamic_shape_process()) {
-    // First run top cell, save op output info for replacement
-    pre_top_cell = GetPipelineRunTopCell(top_cell_->already_run_cell_id());
-    if (pre_top_cell == nullptr) {
-      top_cell_->SaveTensorIdWithOpInfo(op_info, v);
-      use_dynamic_shape_process() ? MS_LOG(DEBUG) << "Current top cell is in dynamic process"
-                                  : MS_LOG(DEBUG)
-                                      << "Top cell " << top_cell_->already_run_cell_id() << " run firstly, op info "
-                                      << op_info << ", output id " << PyNativeAlgo::Common::GetIdByValue(v);
-      return;
-    }
-  }
-
-  // In dynamic process, no need replaces
-  if (top_cell_->use_dynamic_shape_process()) {
-    return;
-  }
-
-  // top cell is pipeline top cell
-  if (top_cell_->is_pipeline_top_cell()) {
-    if (pre_top_cell->is_finish_backward()) {
-      // Not first run top cell, do update; Save op_info -> tensor
-      if (!pre_top_cell->is_ir_grad()) {
-        MS_LOG(EXCEPTION) << "Forward repalce top cell must be ir grad";
-      }
-      MS_LOG(DEBUG) << "Store pipeline top cell " << top_cell_->already_run_cell_id() << " with input args id "
-                    << top_cell_->input_args_id() << ", op info " << op_info << ", output id "
-                    << PyNativeAlgo::Common::GetIdByValue(v);
-      StoreForwardOutputWithOpInfo(pre_top_cell->replace_info().op_info_with_tensor_object, op_info, v,
-                                   &top_cell_->replace_info());
-    } else {
-      // The first ir grad is not run before, indicate this is a first step, top cell will run func grad independently
-      MS_LOG(DEBUG) << "Current top cell is pipeline top cell and run firstly, op info " << op_info << ", output id "
-                    << PyNativeAlgo::Common::GetIdByValue(v);
-    }
-  } else {
-    // Not first run top cell, do update
-    MS_LOG(DEBUG) << "Update top cell forward output tensor info " << op_info << ", output id "
-                  << PyNativeAlgo::Common::GetIdByValue(v);
-    UpdateForwardOutputTensorInfo(op_info, v, pre_top_cell->replace_info());
-  }
-}
-
-AnfNodePtr GradExecutor::GetRealInputNodeBySkipHook(const AnfNodePtr &input_node) const {
-  if (input_node == nullptr) {
-    MS_LOG(DEBUG) << "The input node is nullptr.";
-    return input_node;
-  }
-  const auto &cell_backward_hook_op = top_cell()->cell_backward_hook_op();
-  for (const auto &elem : cell_backward_hook_op) {
-    constexpr size_t cell_backward_hook_num = 2;
-    if (elem.second.size() < cell_backward_hook_num) {  // In cell own scope, no need to skip backward hook op.
-      continue;
-    }
-    // The input node is the first backward hook op of another cell, skip the backward hook op.
-    if (IsPrimitiveCNode(input_node, prim::kPrimCellBackwardHook) && input_node == elem.second[0]) {
-      // Single input.
-      auto backward_hook_op = input_node->cast<CNodePtr>();
-      MS_EXCEPTION_IF_NULL(backward_hook_op);
-      return backward_hook_op->input(1);
-    }
-    if (IsPrimitiveCNode(input_node, prim::kPrimTupleGetItem)) {
-      // Multi inputs.
-      auto tuple_get_item = input_node->cast<CNodePtr>();
-      MS_EXCEPTION_IF_NULL(tuple_get_item);
-      auto inp_in_tuple = tuple_get_item->input(1);
-      MS_EXCEPTION_IF_NULL(inp_in_tuple);
-      if (IsPrimitiveCNode(inp_in_tuple, prim::kPrimCellBackwardHook) && inp_in_tuple == elem.second[0]) {
-        constexpr size_t idx = 2;
-        auto idx_node = tuple_get_item->input(idx);
-        MS_EXCEPTION_IF_NULL(idx_node);
-        auto value_node = idx_node->cast<ValueNodePtr>();
-        MS_EXCEPTION_IF_NULL(value_node);
-        auto out_idx = GetValue<int64_t>(value_node->value());
-        auto backward_hook_op = inp_in_tuple->cast<CNodePtr>();
-        MS_EXCEPTION_IF_NULL(backward_hook_op);
-        return backward_hook_op->input(1 + LongToSize(out_idx));
-      }
-    }
-  }
-  return input_node;
 }
 
 CNodePtr GradExecutor::ConstructForwardGraph(const FrontendOpRunInfoPtr &op_run_info) const {
@@ -2323,18 +2236,9 @@ CNodePtr GradExecutor::ConstructForwardGraph(const FrontendOpRunInfoPtr &op_run_
   AnfNodePtrList inputs;
   (void)inputs.emplace_back(NewValueNode(op_run_info->op_grad_info->op_prim));
   for (size_t i = 0; i < op_run_info->input_size; i++) {
-    AnfNodePtr input_node = nullptr;
-    const auto node = GetInput(op_run_info->op_grad_info->input_value[i], op_run_info->input_value_id[i]);
-    input_node = GetRealInputNodeBySkipHook(node);
-    // update abstract
-    if (input_node != nullptr) {
-      (void)inputs.emplace_back(input_node);
-    }
+    (void)inputs.emplace_back(GetInput(op_run_info->op_grad_info->input_value[i], op_run_info->input_value_id[i]));
   }
   const auto &cnode = curr_g()->NewCNodeInOrder(inputs);
-  if (IsPrimitiveCNode(cnode, prim::kPrimCellBackwardHook)) {
-    top_cell()->RecordCellBackwardHookOp(op_run_info->cell_obj_id, cnode);
-  }
   MS_LOG(DEBUG) << "Make CNode for " << op_run_info->base_op_run_info.op_name << ", new cnode is "
                 << cnode->DebugString();
   return cnode;
@@ -2425,45 +2329,36 @@ void GradExecutor::SetTopCellDynamicAttr(const py::object &cell) {
 }
 
 void GradExecutor::DispatchGradQueueTask(std::function<void(void)> &&task) const {
-  if (!bprop_queue_->Push(new (std::nothrow) BpropTask(std::move(task)))) {
-    bprop_queue_->CheckException();
+  const auto &bprop_queue = runtime::Pipeline::Get().bprop_stage();
+  if (!bprop_queue->Push(new (std::nothrow) BpropTask(std::move(task)))) {
+    bprop_queue->CheckException();
   }
 }
 
 void GradExecutor::ClearBpropTask() const {
-  if (bprop_queue_ != nullptr) {
+  const auto &bprop_queue = runtime::Pipeline::Get().bprop_stage();
+  if (bprop_queue != nullptr) {
     GilReleaseWithCheck gil_release;
-    bprop_queue_->Clear();
-    assist_queue_->Clear();
-    bprop_queue_->CheckException();
+    bprop_queue->Clear();
+    bprop_queue->CheckException();
   }
 }
 
 void GradExecutor::WaitBpropTask() const {
-  if (bprop_queue_ != nullptr) {
+  const auto &bprop_queue = runtime::Pipeline::Get().bprop_stage();
+  if (bprop_queue != nullptr) {
     GilReleaseWithCheck gil_release;
-    bprop_queue_->Wait();
-    assist_queue_->Wait();
-    bprop_queue_->CheckException();
-  }
-}
-
-void GradExecutor::DispatchAssistQueueTask(std::function<void(void)> task) const {
-  bool success = assist_queue_->Push(new (std::nothrow) BpropTask(std::move(task)));
-  if (!success) {
-    assist_queue_->CheckException();
+    bprop_queue->Wait();
+    bprop_queue->CheckException();
   }
 }
 
 void GradExecutor::ChildAfterFork() {
   MS_LOG(DEBUG) << "GradExecutor reinitialize after fork.";
-  if (bprop_queue_ != nullptr) {
+  const auto &bprop_queue = runtime::Pipeline::Get().bprop_stage();
+  if (bprop_queue != nullptr) {
     MS_LOG(DEBUG) << "Reinitialize bprop_queue_.";
-    bprop_queue_->ChildAfterFork();
-  }
-  if (assist_queue_ != nullptr) {
-    MS_LOG(DEBUG) << "Reinitialize assist_queue_.";
-    assist_queue_->ChildAfterFork();
+    bprop_queue->ChildAfterFork();
   }
   runtime::PyBoostOpExecute::GetInstance().ClearBackend();
   MS_LOG(DEBUG) << "GradExecutor reinitialize after fork done.";

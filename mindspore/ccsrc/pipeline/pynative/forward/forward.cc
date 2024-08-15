@@ -261,14 +261,6 @@ bool ForwardExecutor::IsVmOp(const std::string &op_name) const {
 
 size_t ForwardExecutor::GetStreamId() const { return GetCurStreamId(device_target_); }
 
-std::string ForwardExecutor::GetCurrentCellObjId() const {
-  if (forward_cell_stack_.empty()) {
-    return "";
-  }
-  auto &cell = forward_cell_stack_.top();
-  return cell->id();
-}
-
 GradExecutorPtr ForwardExecutor::grad() const {
   auto grad_executor = grad_executor_.lock();
   MS_EXCEPTION_IF_NULL(grad_executor);
@@ -286,7 +278,6 @@ void ForwardExecutor::InitOpRunInfo(const FrontendOpRunInfoPtr &op_run_info) {
       grad()->forward_use_dynamic_shape_process() || grad()->use_dynamic_shape_process();
   }
   op_run_info->base_op_run_info.device_target = GetCurrentDeviceTarget(op_run_info->op_grad_info->op_prim);
-  op_run_info->cell_obj_id = GetCurrentCellObjId();
   auto device_context = runtime::OpRunner::GetDeviceContext(op_run_info->base_op_run_info.device_target);
   op_run_info->base_op_run_info.stream_id = device_context->device_res_manager_->GetCurrentStreamId();
 }
@@ -305,18 +296,13 @@ void ForwardExecutor::Init() {
   MS_LOG(DEBUG) << "Init ForwardExecutor";
   compile::SetMindRTEnable();
   python_adapter::set_python_env_flag(true);
-  runtime::OpExecutor::GetInstance().RegisterForwardCallback([this]() {
-    runtime::Pipeline::Get().frontend_stage()->Wait();
-    grad()->WaitBpropTask();
-  });
+  tensor::Tensor::RegisterLazyCallback([]() { runtime::Pipeline::Get().WaitAll(); });
+  op_backend_ = std::make_unique<compile::OpBackend>();
 }
 
 void ForwardExecutor::RefreshForwardCallback() {
 #if defined(_WIN32) || defined(_WIN64)
-  runtime::OpExecutor::GetInstance().RegisterForwardCallback([this]() {
-    runtime::Pipeline::Get().frontend_stage()->Wait();
-    grad()->WaitBpropTask();
-  });
+  tensor::Tensor::RegisterLazyCallback([]() { runtime::Pipeline::Get().WaitAll(); });
 #endif
   // ForwardCallback has been set in ForwardExecutor::Init, no need to refresh anymore.
 }
@@ -355,10 +341,8 @@ void ForwardExecutor::ForwardRunViewKernelTask(const FrontendOpRunInfoPtr &op_ru
     return;
   }
   MS_LOG(DEBUG) << "Start, task_type:" << task_type;
-
-  const auto &cur_mind_rt_backend = GetMindRtBackend(op_run_info->base_op_run_info.device_target);
-  MS_EXCEPTION_IF_NULL(cur_mind_rt_backend);
-  cur_mind_rt_backend->RunViewKernelTask(op_run_info->base_op_run_info, task_type, enable_async);
+  MS_EXCEPTION_IF_NULL(op_backend_);
+  op_backend_->RunViewKernelTask(op_run_info->base_op_run_info, task_type, enable_async);
 
   MS_LOG(DEBUG) << "End";
 }
@@ -668,7 +652,6 @@ FrontendOpRunInfoPtr ForwardExecutor::GenerateOpRunInfo(const py::args &args, bo
   // Obtaining device context may fail in UT
   op_run_info->base_op_run_info.stream_id = GetCurStreamId(op_run_info->base_op_run_info.device_target);
 #endif
-  op_run_info->cell_obj_id = GetCurrentCellObjId();
   return op_run_info;
 }
 
@@ -706,16 +689,11 @@ VectorRef ForwardExecutor::RunOpBackendInner(const FrontendOpRunInfoPtr &op_run_
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   ms_context->set_param<bool>(MS_CTX_ENABLE_PYNATIVE_INFER, true);
+  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
 
   VectorRef outputs;
-  const auto &cur_mind_rt_backend = GetMindRtBackend(backend_op_run_info->base_op_run_info.device_target);
-  MS_EXCEPTION_IF_NULL(cur_mind_rt_backend);
-  bool use_dynamic_shape_process = backend_op_run_info->base_op_run_info.use_dynamic_shape_process;
-  if (use_dynamic_shape_process) {
-    cur_mind_rt_backend->RunOpDynamic(backend_op_run_info, &outputs);
-  } else {
-    cur_mind_rt_backend->RunOp(backend_op_run_info, &outputs);
-  }
+  MS_EXCEPTION_IF_NULL(op_backend_);
+  op_backend_->Run(backend_op_run_info, backend_op_run_info->base_op_run_info.device_target, device_id, &outputs);
 
   if (op_run_info->base_op_run_info.has_dynamic_output ||
       OpCompiler::GetInstance().IsInvalidInferResultOp(op_run_info->base_op_run_info.op_name)) {
@@ -738,29 +716,14 @@ void ForwardExecutor::RunOpBackend(const FrontendOpRunInfoPtr &op_run_info,
   }
 }
 
-compile::MindRTBackendPtr ForwardExecutor::GetMindRtBackend(const string &cur_device_target) {
-  const auto iter = mindrt_backends_.find(cur_device_target);
-  if (iter != mindrt_backends_.end()) {
-    return iter->second;
-  }
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
-  auto backend = std::make_shared<compile::MindRTBackend>("ms", cur_device_target, device_id);
-  MS_EXCEPTION_IF_NULL(backend);
-  mindrt_backends_[cur_device_target] = backend;
-  return backend;
-}
-
 ValuePtr ForwardExecutor::RunOpWithBackendPolicy(const FrontendOpRunInfoPtr &op_run_info,
                                                  const BackendOpRunInfoPtr &backend_op_run_info) {
   MS_EXCEPTION_IF_NULL(op_run_info);
 #ifndef ENABLE_TEST
   if (IsVmOp(op_run_info->base_op_run_info.op_name)) {
     return RunOpInVM(op_run_info);
-  } else {
-    return RunOpInMs(op_run_info, backend_op_run_info);
   }
+  return RunOpInMs(op_run_info, backend_op_run_info);
 #else
   return RunOpInVM(op_run_info);
 #endif
@@ -772,8 +735,8 @@ ValuePtr ForwardExecutor::RunOpInVM(const FrontendOpRunInfoPtr &op_run_info) con
   op_run_info->run_in_vm = true;
   if (op_run_info->requires_grad) {
     for (size_t i = 0; i < op_run_info->input_size; i++) {
-      op_run_info->op_grad_info->input_value_grad_type[i] = PyNativeAlgo::Common::SetValueGradInfo(
-        op_run_info->op_grad_info->input_value[i], nullptr, InputType::kConstant);
+      op_run_info->op_grad_info->input_value_grad_type[i] =
+        PyNativeAlgo::Common::SetValueGradInfo(op_run_info->op_grad_info->input_value[i], InputType::kConstant);
       (void)op_run_info->base_op_run_info.expanded_input_values.emplace_back(op_run_info->op_grad_info->input_value[i]);
     }
   }
@@ -785,7 +748,7 @@ ValuePtr ForwardExecutor::RunOpInVM(const FrontendOpRunInfoPtr &op_run_info) con
     auto result_v = ConstructOutputInVM(result);
     if (op_run_info->requires_grad) {
       op_run_info->op_grad_info->output_size = result.size();
-      (void)PyNativeAlgo::Common::SetValueGradInfo(result_v, nullptr, InputType::kOpOutput);
+      (void)PyNativeAlgo::Common::SetValueGradInfo(result_v, InputType::kOpOutput);
     }
     MS_LOG(DEBUG) << "RunOpInVM end";
     return result_v;
@@ -809,7 +772,7 @@ ValuePtr ForwardExecutor::RunOpInVM(const FrontendOpRunInfoPtr &op_run_info) con
     result_v = std::make_shared<ValueTuple>(std::vector{result_v});
   }
   if (op_run_info->requires_grad) {
-    (void)PyNativeAlgo::Common::SetValueGradInfo(result_v, nullptr, InputType::kOpOutput);
+    (void)PyNativeAlgo::Common::SetValueGradInfo(result_v, InputType::kOpOutput);
   }
   op_run_info->op_grad_info->output_size = PyNativeAlgo::Common::GetValueSize(result_v);
   MS_LOG(DEBUG) << "RunOpInVM end";
@@ -818,87 +781,16 @@ ValuePtr ForwardExecutor::RunOpInVM(const FrontendOpRunInfoPtr &op_run_info) con
 
 bool ForwardExecutor::CellNotSetMixedPrecision(const FrontendOpRunInfoPtr &op_run_info) {
   MS_EXCEPTION_IF_NULL(op_run_info);
-  const auto &cur_cell = forward_cell_stack_.top();
-  MS_EXCEPTION_IF_NULL(cur_cell);
-  MixedPrecisionType mix_type = cur_cell->GetMixedPrecisionType();
-  if (mix_type == kNotSet) {
+  if (mix_precision_type_stack_.empty() || mix_precision_type_stack_.top() == kNotSet) {
     return true;
   }
-  op_run_info->mix_type = mix_type;
+  op_run_info->mix_type = mix_precision_type_stack_.top();
   return false;
 }
 
 void ForwardExecutor::ExecuteLazyTask() const {
   runtime::ProfilerStageRecorder recorder(runtime::ProfilerStage::kWaitPipeline);
-  GilReleaseWithCheck gil_release;
-  runtime::OpExecutor::GetInstance().WaitAll();
-}
-
-void ForwardExecutor::PrintPyObjInfo(const py::object &obj, const std::string &str, bool is_cell) const {
-  if (is_cell) {
-    MS_LOG(DEBUG) << str << " run " << obj.cast<CellPtr>()->ToString();
-    return;
-  }
-  MS_LOG(DEBUG) << str << " run python function " << py::getattr(obj, "__name__").cast<std::string>();
-}
-
-void ForwardExecutor::ProcessBeforeNewGraph(const py::object &obj, const py::args &args) {
-  bool is_cell = py::isinstance<Cell>(obj);
-  if (is_cell) {
-    auto cell = obj.cast<CellPtr>();
-    MS_EXCEPTION_IF_NULL(cell);
-    PushForwardCell(cell);
-    if (!grad()->RequiresGrad()) {
-      if (grad()->is_cell_has_dynamic_inputs(cell->id())) {
-        MS_LOG(DEBUG) << "obj id:" << cell->id() << " set forward use dynamic shape process true";
-        grad()->set_forward_use_dynamic_shape_process(true);
-#ifndef ENABLE_SECURITY
-        ProfilerManager::GetInstance()->SetNetDynamicShapeStatus();
-#endif
-      }
-    } else {
-      PrintPyObjInfo(obj, kBegin, is_cell);
-    }
-  }
-}
-
-void ForwardExecutor::ProcessAfterNewGraph(const py::object &obj) const { grad()->SetTopCellDynamicAttr(obj); }
-
-void ForwardExecutor::ProcessBeforeEndGraph(const py::object &obj, bool is_cell) {
-  if (is_cell) {
-    PopForwardCell();
-  }
-
-  // Do some finishing work before end graph
-  if (IsFirstCell()) {
-    {
-      runtime::ProfilerStageRecorder recorder(runtime::ProfilerStage::kWaitPipeline);
-      GilReleaseWithCheck gil_release;
-      runtime::Pipeline::Get().frontend_stage()->Wait();
-    }
-    // Finish lazy task
-    ExecuteLazyTask();
-    if (!grad()->RequiresGrad()) {
-      ClearNodeAbsMap();
-    }
-    if (grad()->forward_use_dynamic_shape_process()) {
-      MS_LOG(DEBUG) << "first cell run end, set forward use dynamic shape process false";
-      grad()->set_forward_use_dynamic_shape_process(false);
-    }
-  }
-}
-
-void ForwardExecutor::ProcessAfterEndGraph(const py::object &obj, bool is_cell) const {
-  if (IsFirstCell()) {
-#if defined(__APPLE__)
-    ClearNodeAbsMap();
-#else
-    static const auto op_run_info = std::make_shared<FrontendOpRunInfo>();
-    auto forward_task = std::make_shared<FrontendTask>([this](...) { ClearNodeAbsMap(); }, op_run_info);
-    runtime::Pipeline::Get().frontend_stage()->Push(forward_task);
-#endif
-  }
-  PrintPyObjInfo(obj, kEnd, is_cell);
+  runtime::Pipeline::Get().WaitAll();
 }
 
 std::string ForwardExecutor::GetCurrentDeviceTarget(const PrimitivePtr &op_prim) const {
@@ -973,9 +865,8 @@ void ForwardExecutor::CreateInputAddressForViewOp(const tensor::BaseTensorPtr &i
     input_tensor->set_device_address(device_address);
   }
 
-  const auto &cur_mind_rt_backend = GetMindRtBackend(op_run_info->base_op_run_info.device_target);
-  MS_EXCEPTION_IF_NULL(cur_mind_rt_backend);
-  cur_mind_rt_backend->RunAllocMemTask(device_context, input_tensor, EnablePipeline(""), is_cpu_address_exist);
+  MS_EXCEPTION_IF_NULL(op_backend_);
+  op_backend_->RunAllocMemTask(device_context, input_tensor, EnablePipeline(""), is_cpu_address_exist);
 }
 
 device::DeviceAddressPtr ForwardExecutor::TensorContiguousCallback(const DeviceSyncPtr &device_address,
@@ -1053,7 +944,8 @@ ValuePtr ForwardExecutor::RunOpInMsInner(const FrontendOpRunInfoPtr &op_run_info
   bool is_out_sequence = (op_run_info->base_op_run_info.abstract == nullptr ||
                           op_run_info->base_op_run_info.abstract->isa<abstract::AbstractSequence>());
   const auto &result_v =
-    PyNativeAlgo::DataConvert::VectorRefToValue(outputs, op_run_info->requires_grad, is_out_sequence);
+    PyNativeAlgo::DataConvert::VectorRefToValue(outputs, op_run_info->requires_grad, is_out_sequence,
+                                                op_run_info->requires_grad ? grad()->top_cell()->op_index() : 0);
   MS_LOG(DEBUG) << "RunOpInMs end";
   return result_v;
 }
@@ -1064,20 +956,18 @@ void ForwardExecutor::ClearRes() {
     GilReleaseWithCheck gil_release;
     runtime::Pipeline::Get().frontend_stage()->Clear();
   }
-  for (const auto &item : mindrt_backends_) {
-    MS_EXCEPTION_IF_NULL(item.second);
-    item.second->ClearOpExecutorResource();
-  }
+  runtime::OpExecutor::GetInstance().Reset();
+
   init_ = false;
   enable_async_ = false;
   is_jit_compiling_ = false;
   last_target_ = "Unknown";
+  std::stack<MixedPrecisionType>().swap(mix_precision_type_stack_);
   cast_operation()->ClearRes();
   ClearNodeAbsMap();
   infer_operation()->ClearPrimAbsList();
   infer_operation()->ClearConstFlagPrimCache();
-  std::stack<CellPtr>().swap(forward_cell_stack_);
-  mindrt_backends_.clear();
+  op_backend_ = std::make_unique<compile::OpBackend>();
   slice_prim_cache_.clear();
 }
 
@@ -1085,6 +975,7 @@ void ForwardExecutor::ChildAfterFork() {
   MS_LOG(DEBUG) << "ForwardExecutor reinitialize after fork.";
   MS_LOG(DEBUG) << "Reinitialize frontend_queue_.";
   runtime::Pipeline::Get().frontend_stage()->ChildAfterFork();
+  op_backend_ = std::make_unique<compile::OpBackend>();
   MS_LOG(DEBUG) << "ForwardExecutor reinitialize after fork done.";
 }
 }  // namespace pynative

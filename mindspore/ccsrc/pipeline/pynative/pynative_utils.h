@@ -70,7 +70,8 @@ struct Common {
                                   const std::string &device_target, bool is_dynamic_shape,
                                   mindspore::HashSet<size_t> *input_to_attr_index);
   static ValueNodePtr CreateValueNodeByValue(const ValuePtr &v, const abstract::AbstractBasePtr &abs = nullptr);
-  static ValuePtr CreateFakeValueWithoutDeviceAddress(const ValuePtr &value);
+  static void SetOutputUsedInBpropGraph(const ValuePtr &value);
+  static ValuePtr CreateFakeValueWithoutDeviceAddress(const ValuePtr &value, bool is_force_create_fake = false);
   static tensor::TensorPtr CreateFakeTensorWithoutDeviceAddress(const tensor::TensorPtr &tensor);
   static inline bool IsParam(InputType grad_type) {
     return grad_type == InputType::kParameter || grad_type == InputType::kInput;
@@ -80,10 +81,9 @@ struct Common {
   }
   static void ClearDeviceAddress(const ValuePtr &value);
   static inline bool IsConstant(InputType grad_type) { return grad_type == InputType::kConstant; }
-  static InputType SetValueGradInfo(const ValuePtr &value, const TopCellInfoPtr &top_cell, InputType grad_type);
-  static InputType SetTensorGradInfo(const tensor::BaseTensorPtr &tensor, const TopCellInfoPtr &top_cell);
-  static void SetGraphInputAndWeightsInfo(const FrontendOpRunInfoPtr &op_run_info, const FuncGraphPtr &func_graph,
-                                          const TopCellInfoPtr &top_cell);
+  static InputType SetValueGradInfo(const ValuePtr &value, InputType grad_type);
+  static InputType SetTensorGradInfo(const tensor::BaseTensorPtr &tensor);
+  static void SetGraphInputAndWeightsInfo(const FrontendOpRunInfoPtr &op_run_info, const FuncGraphPtr &func_graph);
   static void ProcessTupleParam(const FuncGraphPtr &bprop_graph, size_t position);
   static void ProcessDictParam(const FuncGraphPtr &bprop_graph, size_t position);
   static void FreeFuncGraphForwardNodes(const FuncGraphPtr &func_graph);
@@ -116,6 +116,7 @@ struct Common {
     }
     return buf.str().erase(buf.str().size() - end_char_size);
   }
+  static void ClearRes();
 };
 
 // Parser python
@@ -159,7 +160,7 @@ struct DataConvert {
   static ValuePtr ConvertValueDictToValueTuple(const ValuePtr &v);
   static void PlantTensorTupleToVector(const FrontendOpRunInfoPtr &op_run_info, const ValueSequencePtr &value_seq,
                                        size_t index, const TopCellInfoPtr &top_cell);
-  static void ConvertValueTensorId(const ValuePtr &value, std::vector<std::string> *converted_tensor_id);
+  static void GetTensorIdFromOutputValue(const ValuePtr &value, std::vector<std::string> *converted_tensor_id);
   static void ConvertTupleValueToTensor(const FrontendOpRunInfoPtr &op_run_info, const ValueSequencePtr &value_seq,
                                         size_t index, const TopCellInfoPtr &top_cell);
   static void MarkInputs(const FrontendOpRunInfoPtr &op_run_info, const ValuePtr &v, size_t index,
@@ -216,6 +217,7 @@ struct PyBoost {
     return ret;
   }
   static void DataSyncForGraph(const kernel::pyboost::OpPtr &op, ValuePtrList &&op_inputs);
+  static void MarkPyBoostInputs(const OpGradInfoPtr &op_grad_info, const TopCellInfoPtr &top_cell);
 };
 
 // Used for auto grad, like func_grad and ir grad
@@ -231,8 +233,10 @@ struct AutoGrad {
   static AnfNodePtr BuildSparseTensorNode(const KernelGraphPtr &tape, const ValuePtr &sparse_value,
                                           const AnfNodePtr &dout_value_node);
   static void SetGradMetaData(const ValuePtr &value, const VariablePtr &variable, const ParameterPtr &param = nullptr);
-  static void SetGradInfoForInputs(const ValuePtr &value, const VariablePtr &variable,
-                                   const ParameterPtr &param = nullptr);
+  static void SetGradInfoForInputs(
+    const ValuePtr &value, const VariablePtr &variable,
+    std::vector<std::pair<tensor::BaseTensorPtr, AutoGradMetaDataPtr>> *param_meta_grad_info,
+    const ParameterPtr &param = nullptr);
 
   // Create fake bprop
   static void BuildFakeBpropCNode(const CNodePtr &cnode, std::vector<CNodePtr> *outputs);
@@ -240,6 +244,10 @@ struct AutoGrad {
                                         const GraphCallCondition &graph_call_condition);
   static PrimitivePyPtr BuildBpropCutPrim(const PrimitivePtr &prim, bool is_need_recompute = false);
   static void CheckRecomputeInputs(const GradParamPtr &grad_param);
+  static TopCellInfoPtr FindPreTopcell(const GradExecutor *grad_executor, const OpGradInfoPtr &op_grad_info,
+                                       const std::string &op_info, const ValuePtr &value);
+  static void UpdateGradOpInfo(const GradExecutor *grad_executor, const OpGradInfoPtr &op_grad_info,
+                               const TopCellInfoPtr &pre_top_cell, bool is_jit_graph);
   static void ClearAutoGradStaticCache();
   static void CheckAndSetAbstract(const OpGradInfoPtr &op_grad_info);
   static void CacheOutputAbstract(const ValuePtr &v, const abstract::AbstractBasePtr &abs);

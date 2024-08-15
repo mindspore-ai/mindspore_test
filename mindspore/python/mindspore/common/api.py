@@ -1605,6 +1605,18 @@ class _PyNativeExecutor:
         """
         self._executor.set_is_run_recompute(status)
 
+    def set_cell_use_dynamic_shape_process(self, flag):
+        """
+        Set the dynamic shape flag of eval process.
+
+        Args:
+            flag (bool): Specifying whether using a dynamic process.
+
+        Return:
+            None.
+        """
+        self._executor.set_cell_use_dynamic_shape_process(flag)
+
     def set_dynamic_input(self, obj, *args):
         """
         Set dynamic shape tensor of input arguments.
@@ -1630,27 +1642,19 @@ class _PyNativeExecutor:
         """
         return self._executor.get_dynamic_input(*actual_args)
 
-    def is_first_cell(self):
+    def set_mixed_precision_type(self, mixed_precision_type, is_push=True):
         """
-        The flag of first cell instance.
-
-        Return:
-            bool, specifies whether is the first cell.
-        """
-
-        return self._executor.is_first_cell()
-
-    def set_hook_changed(self, cell):
-        """
-        The flag of registering or removing a hook function on Cell instance.
+        The value of mixed precision type.
 
         Args:
-            cell (Cell): The cell instance.
+            type(MixedPrecisionType): Mix precision type.
+            is_push(bool): If called by __enter__, is push will be True
 
         Return:
             None.
         """
-        self._executor.set_hook_changed(cell)
+
+        return self._executor.set_mixed_precision_type(mixed_precision_type, is_push)
 
     def constant_folding(self, *args):
         """

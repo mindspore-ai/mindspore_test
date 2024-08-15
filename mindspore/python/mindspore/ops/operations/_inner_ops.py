@@ -17,6 +17,7 @@
 from types import FunctionType, MethodType
 from collections.abc import Iterable
 import os
+import weakref
 import numpy as np
 
 from mindspore.common import Tensor
@@ -29,7 +30,7 @@ from mindspore.ops.operations.math_ops import _infer_shape_reduce
 from mindspore.ops.primitive import PrimitiveWithCheck, PrimitiveWithInfer, prim_attr_register, Primitive, \
     _run_op, _check_contains_variable
 from mindspore._c_expression import Tensor as Tensor_
-from mindspore._c_expression import typing
+from mindspore._c_expression import typing, HookType
 from mindspore import _checkparam as validator
 from mindspore.common import dtype as mstype
 from mindspore.common.parameter import Parameter
@@ -1535,7 +1536,7 @@ class CellBackwardHook(PrimitiveWithInfer):
         ...     print(grad)
         ...
         >>> hook = inner.CellBackwardHook()
-        >>> hook_fn_key = hook.register_backward_hook(hook_fn)
+        >>> hook_fn_key = hook.register_backward_hook()
         >>> def hook_test(x, y):
         ...     z = x * y
         ...     z = hook(z)
@@ -1556,12 +1557,14 @@ class CellBackwardHook(PrimitiveWithInfer):
         (Tensor(shape=[], dtype=Float32, value= 4), Tensor(shape=[], dtype=Float32, value= 4))
     """
 
-    def __init__(self, cell_id=""):
+    def __init__(self, cell_id="", cell=None, hook_dict=None):
         """Initialize CellBackwardHook"""
         super(CellBackwardHook, self).__init__(self.__class__.__name__)
         self.cell_id = cell_id
+        self.cell = cell
+        self.hook_dict = weakref.ref(hook_dict)
         self.add_prim_attr("cell_id", cell_id)
-        self.init_attrs["cell_id"] = cell_id
+        self.grad_output = None
 
     def __call__(self, *args):
         return _run_op(self, self.name, args)
@@ -1576,51 +1579,76 @@ class CellBackwardHook(PrimitiveWithInfer):
             return inputs_type[0]
         return inputs_type
 
-    def register_backward_hook(self, hook_fn):
-        r"""
-        This function is used to register backward hook function. Note that this function is only supported in pynative
-        mode.
-
-        Note:
-            The 'hook_fn' must be defined as the following code.
-            `cell_id` is the information of registered cell. `grad_input` is the gradient passed to the cell.
-            `grad_output` is the gradient computed and passed to the next cell or primitive, which may be modified by
-            returning a new output gradient.
-            The 'hook_fn' should have the following signature:
-            hook_fn(cell_id, grad_input, grad_output) -> New output gradient or none.
-            The 'hook_fn' is executed in the python environment.
+    def register_backward_hook(self):
+        """
+        Register the backward hook function.
 
         Args:
-            hook_fn (Function): Python function. Backward hook function.
+            None
 
         Returns:
-            - **key** (int) - The key of 'hook_fn'.
+            None
 
-        Raises:
-            TypeError: If the `hook_fn` is not a function of python.
+        Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
         """
-        if not isinstance(hook_fn, (FunctionType, MethodType)):
-            raise TypeError(f"When using 'register_backward_hook(hook_fn)', the type of 'hook_fn' must be python "
-                            f"function, but got {type(hook_fn)}.")
-        key = self.add_backward_hook_fn(hook_fn)
-        return key
 
-    def remove_backward_hook(self, key):
-        r"""
-        This function is used to remove backward hook function. Note that this operation is only supported in pynative
-        mode.
+        def hook_backward_grad(grad):
+            if self.grad_output is None:
+                self.grad_output = grad
+                # Indicates the first time of call backward hook, and need to wait for the second time call
+                return self.cell_id
+            backward_hook_grad_input = grad
+            if self.hook_dict():
+                backward_hooks = self.hook_dict().values()
+                for hook in backward_hooks:
+                    res = hook(self.cell, backward_hook_grad_input, self.grad_output)
+                    if res is None:
+                        continue
+                    if not isinstance(res, tuple):
+                        res = (res,)
+                    if len(res) != len(grad):
+                        raise TypeError(
+                            "The backward hook return value size is {} not equal to expect grad input size {}".format(
+                                len(res), len(grad)))
+                    backward_hook_grad_input = res
+            self.grad_output = None
+            return backward_hook_grad_input
 
-        Note:
-            The 'key' is the object returned by 'register_backward_hook' function of the same CellBackwardHook
-            operator.
+        self.set_hook_fn(hook_backward_grad, HookType.BackwardHook)
+
+    def register_backward_pre_hook(self):
+        """
+        Register the backward pre hook function.
 
         Args:
-            key (int): The key corresponding to the 'hook_fn'.
+            None
 
         Returns:
-            None.
+            None
+
+        Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
         """
-        self.remove_backward_hook_fn(key)
+
+        def hook_backward_pre_grad(grad):
+            backward_pre_hook_grad = grad
+            if self.hook_dict():
+                backward_pre_hooks = self.hook_dict().values()
+                for hook in backward_pre_hooks:
+                    res = hook(self.cell, backward_pre_hook_grad)
+                    if res is None:
+                        continue
+                    if not isinstance(res, tuple):
+                        res = (res,)
+                    if len(res) != len(grad):
+                        raise TypeError(
+                            "The backward pre hook return value size is {} not equal to expect output size {}".format(
+                                len(res), len(grad)))
+                    backward_pre_hook_grad = res
+            return backward_pre_hook_grad
+
+        self.set_hook_fn(hook_backward_pre_grad, HookType.BackwardPreHook)
 
 
 class Format(PrimitiveWithInfer):
@@ -2497,6 +2525,7 @@ class _MirrorSilentCheck(PrimitiveWithInfer):
     Outputs:
         - **output** (Tensor) - Same shape, type and value as `input`.
     """
+
     @prim_attr_register
     def __init__(self, min_steps=8):
         upper_thresh, sigma_thresh = self.get_thresh()

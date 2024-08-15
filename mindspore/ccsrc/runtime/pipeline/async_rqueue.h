@@ -55,6 +55,8 @@ class BACKEND_EXPORT AsyncRQueue {
   // Add task to the end of the queue.
   void Push(const AsyncTaskPtr &task);
 
+  bool CanPush() const;
+
   // Wait for all async task finish executing.
   void Wait();
 
@@ -89,7 +91,7 @@ class BACKEND_EXPORT AsyncRQueue {
   RingQueue<AsyncTaskPtr, kQueueCapacity> tasks_queue_;
 };
 }  // namespace runtime
-using AsyncRQueuePtr = std::shared_ptr<runtime::AsyncRQueue>;
+using AsyncRQueuePtr = std::unique_ptr<runtime::AsyncRQueue>;
 }  // namespace mindspore
 
 #endif  // MINDSPORE_MINDSPORE_CCSRC_RUNTIME_PYNATIVE_ASYNC_ASYNC_R_QUEUE_H_

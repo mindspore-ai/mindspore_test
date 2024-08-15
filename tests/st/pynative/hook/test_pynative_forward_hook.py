@@ -71,14 +71,14 @@ def forward_hook_fn_with_ms_func(cell, inp, outp):
     return outp
 
 
-def backward_hook_fn(cell_id, grad_inp, grad_outp):
+def backward_hook_fn(cell, grad_inp, grad_outp):
     print("Enter backward hook function.")
-    return grad_outp
+    return grad_inp
 
 
-def backward_hook_fn_inner(cell_id, grad_inp, grad_outp):
+def backward_hook_fn_inner(cell, grad_inp, grad_outp):
     print("Enter backward hook function inner.")
-    return grad_outp
+    return grad_inp
 
 
 class SingleNet(nn.Cell):
@@ -461,11 +461,13 @@ def test_pynative_forward_hook_with_ms_func():
     assert np.allclose(out.asnumpy(), expect_out.asnumpy(), 0.000001, 0.000001)
     grad = grad_op(single_net_msfunc, ParameterTuple(single_net_msfunc.trainable_params()))(inputs)
     expect_grad = grad_op(compare_single_net1, ParameterTuple(compare_single_net1.trainable_params()))(inputs)
+    context.set_context(mode=context.PYNATIVE_MODE)
     assert len(grad) == len(expect_grad)
     assert np.allclose(grad[0][0].asnumpy(), expect_grad[0][0].asnumpy(), 0.000001, 0.000001)
     assert np.allclose(grad[1][0].asnumpy(), expect_grad[1][0].asnumpy(), 0.000001, 0.000001)
     assert np.allclose(grad[1][1].asnumpy(), expect_grad[1][1].asnumpy(), 0.000001, 0.000001)
     assert np.allclose(grad[1][2].asnumpy(), expect_grad[1][2].asnumpy(), 0.000001, 0.000001)
+    context.set_context(mode=context.PYNATIVE_MODE)
 
 
 @arg_mark(plat_marks=['cpu_linux'],
@@ -489,15 +491,18 @@ def test_pynative_forward_hook_in_graph_mode():
     assert np.allclose(out.asnumpy(), expect_out.asnumpy(), 0.000001, 0.000001)
     grad = grad_op(net, ParameterTuple(net.trainable_params()))(inputs)
     expect_grad = grad_op(compare_net, ParameterTuple(compare_net.trainable_params()))(inputs)
+    context.set_context(mode=context.PYNATIVE_MODE)
     assert len(grad) == len(expect_grad)
     assert np.allclose(grad[0][0].asnumpy(), expect_grad[0][0].asnumpy(), 0.000001, 0.000001)
     assert np.allclose(grad[1][0].asnumpy(), expect_grad[1][0].asnumpy(), 0.000001, 0.000001)
+    context.set_context(mode=context.PYNATIVE_MODE)
 
 
-def forward_pre_hook_fn(cell_id, inputs):
+def forward_pre_hook_fn(cell, inputs):
     print("forward inputs:", inputs)
     input_x = inputs[0]
     return input_x
+
 
 class TestHookNet(nn.Cell):
     def __init__(self):
@@ -537,9 +542,12 @@ def test_pynative_forward_hook_delete():
 
 
 test_cell_id = None
+
+
 def forward_pre_hook_input_fn(cell, inputs):
     global test_cell_id
     test_cell_id = id(cell)
+
 
 class TestHookInputNet(nn.Cell):
     def __init__(self):

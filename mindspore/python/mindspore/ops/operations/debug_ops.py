@@ -15,17 +15,17 @@
 """debug_ops"""
 import os
 import stat
-from types import FunctionType, MethodType
 
 import numpy as np
 from mindspore import log as logger
-from mindspore._c_expression import security
+from mindspore._c_expression import security, HookType
 from mindspore._c_expression import Tensor as Tensor_
 from mindspore import _checkparam as validator
 from mindspore.common import dtype as mstype
 from mindspore.common.parameter import Parameter
 from mindspore.common.tensor import Tensor
 from mindspore.ops.primitive import prim_attr_register, Primitive, PrimitiveWithInfer
+from mindspore._checkparam import check_hook_fn
 
 
 SUMMARY_TENSOR_CACHE = []
@@ -499,16 +499,15 @@ class HookBackward(PrimitiveWithInfer):
     def __init__(self, hook_fn, cell_id=""):
         """Initialize HookBackward."""
         super(HookBackward, self).__init__(self.__class__.__name__)
-        if not isinstance(hook_fn, (FunctionType, MethodType)):
-            raise TypeError(f"For '{self.name}', the type of 'hook_fn' must be python function, "
-                            f"but got {type(hook_fn)}.")
+        if not check_hook_fn("HookBackward", hook_fn):
+            return
         if cell_id != "":
             logger.warning(f"The args 'cell_id' of HookBackward will be removed in a future version. If the value of "
                            f"'cell_id' is set, the hook function will not work.")
         self.add_prim_attr("cell_id", cell_id)
         self.init_attrs["cell_id"] = cell_id
         self.cell_id = cell_id
-        self.add_backward_hook_fn(hook_fn)
+        self.set_hook_fn(hook_fn, HookType.HookBackward)
 
     def infer_shape(self, *inputs_shape):
         if len(inputs_shape) == 1:

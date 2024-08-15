@@ -20,10 +20,11 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <unordered_map>
 #include "kernel/common/pyboost/op_runner.h"
 #include "runtime/pynative/op_runner.h"
 #include "runtime/pynative/op_function/func_object.h"
-#include "backend/graph_compiler/backend.h"
+#include "backend/graph_compiler/op_backend.h"
 
 namespace mindspore::runtime {
 using Func = std::function<void(OpRunnerInfo *, VectorRef *)>;
@@ -44,21 +45,18 @@ class PyBoostOpExecute {
   // Api for outside call
   void COMMON_EXPORT RunPyBoostCall(OpRunnerInfo *op_runner_info, VectorRef *op_outputs);
 
+  // Run op by single op graph
+  void COMMON_EXPORT RunOpDeprecated(OpRunnerInfo *op_runner_info, VectorRef *op_outputs);
+
   // Clear backend for fork process.
-  void ClearBackend() { backend_ = nullptr; }
+  void ClearBackend() {}
 
  private:
-  // Run op by single op graph
-  void RunOpDeprecated(OpRunnerInfo *op_runner_info, VectorRef *op_outputs);
-
   // RunOp in VM
   void RunOpInVm(OpRunnerInfo *op_runner_info, VectorRef *op_outputs);
 
-  // Get backend
-  void GetMindRtBackend(const string &cur_device_target);
-
-  compile::MindRTBackendPtr backend_;
-  std::map<std::string, FuncObject> grad_op_func_map_;
+  compile::OpBackend op_backend_;
+  std::unordered_map<std::string, FuncObject> grad_op_func_map_;
 };
 
 class PyBoostGradOpRegistrar {

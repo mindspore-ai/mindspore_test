@@ -20,6 +20,7 @@
 #include "kernel/common/pyboost/op_register.h"
 #include "kernel/common/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
+#include "runtime/pipeline/pipeline.h"
 
 namespace mindspore {
 namespace kernel {
@@ -39,7 +40,7 @@ std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr, tensor::BaseTensorPtr> 
   PyBoostUtils::PrepareOpInputs(device_context, stream_id, input_tensor);
   PyBoostUtils::PrepareOpOutputs(device_context, stream_id, op->outputs());
 
-  runtime::OpExecutor::GetInstance().WaitAll();
+  runtime::Pipeline::Get().WaitForward();
 
   const auto &outputs = op->outputs();
   // Malloc for input tensors

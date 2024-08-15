@@ -21,6 +21,7 @@
 #include <memory>
 #include <utility>
 #include <string>
+#include <vector>
 #include "pybind11/pybind11.h"
 #include "pybind11/pytypes.h"
 #include "ir/tensor.h"
@@ -39,16 +40,18 @@ struct RegisterHook {
   /// \brief Remove a backward hook
   ///
   /// \ void
-  static void RemoveTensorBackwardHook(uint64_t id);
+  static void RemoveTensorBackwardHook(uint64_t handle_id);
 
   /// \brief Update weight meta
   ///
   /// \ void
-  static void UpdateTensorBackwardHook(const AutoGradMetaDataPtr &auto_grad_meta_data, const std::string &id);
+  static void UpdateTensorBackwardHook(const AutoGradMetaDataPtr &auto_grad_meta_data, const std::string &tensor_id);
 
   static void ClearHookMap() { hook_meta_fn_map_.clear(); }
 
   // For store hook
+  inline static uint64_t unique_id_ = 0;
+  static std::map<uint64_t, std::vector<uint64_t>> tensor_id_with_unique_id_;
   static std::map<uint64_t, std::pair<AutoGradMetaDataWeakPtr, TensorBackwardHookPtr>> hook_meta_fn_map_;
 };
 

@@ -24,6 +24,7 @@
 #include "kernel/common/pyboost/op_runner.h"
 #include "kernel/common/pyboost/customize/op_common.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
+#include "runtime/pipeline/pipeline.h"
 
 namespace mindspore {
 namespace kernel {
@@ -38,7 +39,7 @@ tensor::BaseTensorPtr MaskedSelectCPUCustomize(const std::shared_ptr<OpRunner> &
   PyBoostUtils::PrepareOpInputs(device_context, op->stream_id(), input_tensor, mask_tensor);
   // Create device address for output tensors
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
-  runtime::OpExecutor::GetInstance().WaitAll();
+  runtime::Pipeline::Get().WaitForward();
 
   const auto &outputs = op->outputs();
   // Malloc for input tensors

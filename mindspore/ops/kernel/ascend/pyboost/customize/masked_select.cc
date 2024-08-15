@@ -19,6 +19,7 @@
 #include "kernel/common/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
+#include "runtime/pipeline/pipeline.h"
 
 namespace mindspore {
 namespace kernel {
@@ -32,7 +33,7 @@ tensor::BaseTensorPtr MaskedSelectAscendCustomize(const std::shared_ptr<OpRunner
   OpRunner::InferOpOutput(op, input_tensor, mask_tensor);
   PyBoostUtils::PrepareOpInputs(device_context, stream_id, input_tensor, mask_tensor);
   PyBoostUtils::PrepareOpOutputs(device_context, stream_id, op->outputs());
-  runtime::OpExecutor::GetInstance().WaitAll();
+  runtime::Pipeline::Get().WaitForward();
   const auto &outputs = op->outputs();
   // Malloc for input tensors
   PyBoostUtils::MallocOpInputs(device_context, input_tensor, mask_tensor);
@@ -41,10 +42,13 @@ tensor::BaseTensorPtr MaskedSelectAscendCustomize(const std::shared_ptr<OpRunner
   auto return_value =
     LAUNCH_ACLNN_SYNC(aclnnMaskedSelect, device_context, op->stream_id(), input_tensor, mask_tensor, outputs[0]);
   auto &all_acl_tensor = std::get<2>(return_value);
+
   auto output_real_shape = transform::UpdateOutputShape(all_acl_tensor.get<2>());
-  outputs[0]->set_shape(output_real_shape);
-  op->set_output_abs(outputs[0]->ToAbstract());
-  MS_LOG(DEBUG) << "Run device task " << op->primitive()->name() << " end";
+  auto simple_infer_ptr = op->output_value_simple_info();
+  simple_infer_ptr->shape_vector_ = ShapeArray{output_real_shape};
+
+  op->UpdateOutputShape(op->output(kIndex0), output_real_shape);
+  MS_LOG(DEBUG) << "Run device task MaskedSelect end";
   return op->output(0);
 }
 }  // namespace pyboost

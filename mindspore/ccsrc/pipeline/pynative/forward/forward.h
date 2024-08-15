@@ -31,14 +31,13 @@
 #include "runtime/pipeline/async_hqueue.h"
 #include "mindspore/ops/view/view_strides_calculator.h"
 #include "runtime/pipeline/async_rqueue.h"
+#include "backend/graph_compiler/op_backend.h"
 
 namespace mindspore {
 namespace pynative {
 class GradExecutor;
 using GradExecutorPtr = std::shared_ptr<GradExecutor>;
 using GradExecutorWeakPtr = std::weak_ptr<GradExecutor>;
-
-using MindrtBackendMap = std::map<std::string, std::shared_ptr<compile::MindRTBackend>>;
 
 class ForwardExecutor {
  public:
@@ -74,18 +73,13 @@ class ForwardExecutor {
   void ClearRes();
   bool EnablePipeline(const std::string &op_name) const;
   bool enable_async() const;
-  inline const std::string &device_target() const { return device_target_; }
-  const MindrtBackendMap &mindrt_backend() const { return mindrt_backends_; }
-  inline bool IsFirstCell() const { return forward_cell_stack_.empty(); }
-  void PushForwardCell(const CellPtr &cell) { forward_cell_stack_.push(cell); }
-  void PopForwardCell() { forward_cell_stack_.pop(); }
+  const std::string &device_target() const { return device_target_; }
+  void set_mix_precision_type(const MixedPrecisionType mix_precision_type, bool is_push) {
+    is_push ? mix_precision_type_stack_.push(mix_precision_type) : mix_precision_type_stack_.pop();
+    MS_LOG(DEBUG) << "Set mix precision type " << mix_precision_type << ", is push " << is_push;
+  }
   void ExecuteLazyTask() const;
   void Sync();
-  void PrintPyObjInfo(const py::object &obj, const std::string &str, bool is_cell) const;
-  void ProcessBeforeNewGraph(const py::object &obj, const py::args &args);
-  void ProcessAfterNewGraph(const py::object &obj) const;
-  void ProcessBeforeEndGraph(const py::object &obj, bool is_cell);
-  void ProcessAfterEndGraph(const py::object &obj, bool is_cell) const;
   bool CellNotSetMixedPrecision(const FrontendOpRunInfoPtr &op_run_info);
   inline InferOperationPtr infer_operation() const {
     MS_EXCEPTION_IF_NULL(infer_operation_);
@@ -96,7 +90,6 @@ class ForwardExecutor {
 
   void WaitForwardTask();
   bool IsVmOp(const std::string &op_name) const;
-  std::string GetCurrentCellObjId() const;
   std::string GetCurrentDeviceTarget(const PrimitivePtr &op_prim) const;
   void ReInit();
   void ForwardOpGradImpl(const FrontendOpRunInfoPtr &op_run_info) const;
@@ -111,7 +104,6 @@ class ForwardExecutor {
   void ChildAfterFork();
 
  private:
-  compile::MindRTBackendPtr GetMindRtBackend(const string &cur_device_target);
   inline CastOperationPtr cast_operation() const {
     MS_EXCEPTION_IF_NULL(cast_operation_);
     return cast_operation_;
@@ -155,14 +147,14 @@ class ForwardExecutor {
   bool init_{false};
   bool enable_async_{true};
   bool is_jit_compiling_{false};
+  std::stack<MixedPrecisionType> mix_precision_type_stack_;
   std::string device_target_;
   std::string last_target_{"Unknown"};
-  std::stack<CellPtr> forward_cell_stack_;
   GradExecutorWeakPtr grad_executor_;
   CastOperationPtr cast_operation_;
   PyBoostCastOperationPtr pyboost_cast_operation_;
   InferOperationPtr infer_operation_;
-  MindrtBackendMap mindrt_backends_;
+  compile::OpBackendPtr op_backend_{nullptr};
   mindspore::HashMap<std::string, PrimitivePtr> slice_prim_cache_;
 };
 }  // namespace pynative

@@ -62,8 +62,9 @@ COMMON_EXPORT std::pair<ShapeVector, TypePtr> GetStubTensorInfo(const py::handle
 COMMON_EXPORT bool IsGraphOutputValueNodeOrParameter(const AnfNodePtr &output, const py::tuple &args,
                                                      const std::shared_ptr<py::object> &ret_val);
 COMMON_EXPORT ValuePtr ShallowCopyTensorValue(const ValuePtr &value);
-COMMON_EXPORT void ConvertPyObjectToTensor(const py::object &input_object, std::vector<ValuePtr> *tensors);
-COMMON_EXPORT void ConvertCTensorToPyTensor(const py::tuple &input_args, py::tuple *convert_args);
+COMMON_EXPORT ValuePtr ConvertPyObjectToCTensor(const py::object &input_object);
+COMMON_EXPORT void ConvertPyObjectToCTensor(const py::object &input_object, std::vector<ValuePtr> *tensors);
+COMMON_EXPORT py::object ConvertCTensorToPyTensor(const py::object &input_arg);
 COMMON_EXPORT std::string ConvertPyObjToString(const py::object &obj);
 bool IsStubTensor(const py::handle &obj);
 tensor::TensorPtr ConvertStubTensor(const py::handle &obj);

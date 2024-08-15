@@ -17,19 +17,14 @@
 #include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
 #include "kernel/common/pyboost/pyboost_utils.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
+#include "runtime/pipeline/pipeline.h"
 
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-// Unconventional pyboost writing. Please do not refer to this to implement other operators!
-void CustomizeCopyAscend(device::DeviceContext *device_context, const device::DeviceAddressPtr &input_addr,
-                         const device::DeviceAddressPtr &output_addr, const size_t &stream_id) {
-  MS_LOG(DEBUG) << "Call start";
-  MS_EXCEPTION_IF_NULL(input_addr);
-  MS_EXCEPTION_IF_NULL(output_addr);
-
-  runtime::OpExecutor::GetInstance().WaitAll();
-
+namespace {
+void CustomizeCopyAscendInner(device::DeviceContext *device_context, const device::DeviceAddressPtr &input_addr,
+                              const device::DeviceAddressPtr &output_addr, const size_t &stream_id) {
   // The input_addr_list address is malloc before
   // Malloc for output tensors
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "PyNative", "Contiguous", "");
@@ -49,6 +44,28 @@ void CustomizeCopyAscend(device::DeviceContext *device_context, const device::De
 
   // Inplace output need be front
   LAUNCH_ACLNN(aclnnInplaceCopy, device_context, stream_id, output_addr, input_addr);
+  MS_LOG(DEBUG) << "Launch end";
+}
+}  // namespace
+
+// Unconventional pyboost writing. Please do not refer to this to implement other operators!
+void CustomizeCopyAscend(device::DeviceContext *device_context, const device::DeviceAddressPtr &input_addr,
+                         const device::DeviceAddressPtr &output_addr, const size_t &stream_id) {
+  MS_LOG(DEBUG) << "Call start";
+  MS_EXCEPTION_IF_NULL(input_addr);
+  MS_EXCEPTION_IF_NULL(output_addr);
+
+  if (runtime::Pipeline::Get().backend_stage()->CanPush()) {
+    MS_LOG(DEBUG) << "Dispatch inplacecopy to backend queue";
+    PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([device_context, input_addr, output_addr,
+                                                                               stream_id]() {
+      CustomizeCopyAscendInner(device_context, input_addr, output_addr, stream_id);
+    }));
+    return;
+  }
+
+  runtime::Pipeline::Get().WaitForward();
+  CustomizeCopyAscendInner(device_context, input_addr, output_addr, stream_id);
   MS_LOG(DEBUG) << "Launch end";
 }
 }  // namespace pyboost

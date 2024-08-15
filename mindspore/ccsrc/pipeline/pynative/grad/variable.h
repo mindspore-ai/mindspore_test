@@ -24,6 +24,7 @@
 #include "ir/anf.h"
 #include "include/backend/kernel_graph.h"
 #include "pipeline/pynative/grad/function/func_builder.h"
+#include "include/common/profiler.h"
 
 namespace mindspore::pynative::autograd {
 using TensorPtrList = tensor::TensorPtrList;
@@ -258,6 +259,8 @@ class Variable {
   ///
   /// \return void
   void Release() {
+    runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kReleaseResource,
+                                       runtime::ProfilerRecorder::kNoName, false);
     MS_EXCEPTION_IF_NULL(func_node_);
     func_node_->Release();
   }
