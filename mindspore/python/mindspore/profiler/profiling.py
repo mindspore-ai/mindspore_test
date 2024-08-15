@@ -1120,11 +1120,11 @@ class Profiler:
 
     def _gpu_profiler_init(self, kwargs):
         """Gpu profiler init."""
+        self._parse_parameter_for_gpu(kwargs)
         # Setup and start MindData Profiling
         if self._data_process:
             self._md_profiler = cde.GlobalContext.profiling_manager()
             self._md_profiler.init()
-        self._parse_parameter_for_gpu(kwargs)
 
         gpu_profiler = c_expression.Profiler
         self._gpu_profiler = gpu_profiler.get_instance("GPU")
@@ -1137,15 +1137,15 @@ class Profiler:
 
     def _ascend_profiler_init(self, kwargs):
         """Ascend profiler init."""
+        self._parse_parameter_for_ascend(kwargs)
         # Setup and start MindData Profiling
         if self._data_process:
             self._md_profiler = cde.GlobalContext.profiling_manager()
             self._md_profiler.init()
         self._init_time = int(time.time() * 10000000)
         logger.info("Profiling: profiling init time: %d", self._init_time)
-        self._parse_parameter_for_ascend(kwargs)
-        os.environ['DEVICE_ID'] = self._dev_id
 
+        os.environ['DEVICE_ID'] = self._dev_id
         self._ascend_profiling_options = json.dumps(self._construct_profiling_options())
         # Characters longer than 2048 are ignored, resulting in profiling option resolution errors
         if len(self._ascend_profiling_options) > 2048:

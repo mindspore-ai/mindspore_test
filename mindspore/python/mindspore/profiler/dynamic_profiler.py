@@ -490,7 +490,7 @@ if sys.version_info >= (3, 8):
 
 else:
     import mmap
-
+    import stat
 
     class DynamicProfilerMonitor(DynamicProfilerMonitorBase):
         r"""
@@ -586,7 +586,8 @@ else:
             while try_times:
                 try:
                     # Step 1: try to open fd, first time fd not exists.
-                    fd = os.open(self._shm_path, os.O_EXCL | os.O_RDWR)
+                    fd = os.open(self._shm_path, os.O_EXCL | os.O_RDWR,
+                                 stat.S_IWUSR | stat.S_IRUSR | stat.S_IRGRP)
                     f = os.fdopen(fd, 'rb')
                     self._shm = mmap.mmap(f.fileno(), length=DynamicProfilerArgs.SIZE)
                     self._is_create_process = False
@@ -597,7 +598,8 @@ else:
                 except FileNotFoundError:
                     try:
                         # Step 2: only one process can create fd successfully.
-                        fd = os.open(self._shm_path, os.O_CREAT | os.O_EXCL | os.O_RDWR)
+                        fd = os.open(self._shm_path, os.O_CREAT | os.O_EXCL | os.O_RDWR,
+                                     stat.S_IWUSR | stat.S_IRUSR | stat.S_IRGRP)
 
                         # Init mmap file need to write data
                         with os.fdopen(fd, 'wb') as f:
@@ -606,7 +608,8 @@ else:
                             f.write(byte_data)
 
                         # create mmap
-                        fd = os.open(self._shm_path, os.O_EXCL | os.O_RDWR)
+                        fd = os.open(self._shm_path, os.O_EXCL | os.O_RDWR,
+                                     stat.S_IWUSR | stat.S_IRUSR | stat.S_IRGRP)
                         f = os.fdopen(fd, 'rb')
                         self._shm = mmap.mmap(f.fileno(), length=DynamicProfilerArgs.SIZE)
                         self._is_create_process = True
