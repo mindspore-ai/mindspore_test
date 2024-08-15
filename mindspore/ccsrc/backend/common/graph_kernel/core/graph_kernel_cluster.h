@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2022 Huawei Technologies Co., Ltd
+ * Copyright 2021-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,8 +31,9 @@ class Graph;
 using GraphPtr = std::shared_ptr<Graph>;
 class Graph {
   struct Cluster {
-    size_t cluster_id_;        // node_id of the representative.
-    size_t cluster_size_{1};   // size of cluster, composite node is considered as one node.
+    size_t cluster_id_;       // node_id of the representative.
+    size_t cluster_size_{1};  // size of cluster, composite node is considered as one node.
+    size_t max_id_;
     std::set<size_t> inputs_;  // inputs' cluster_id.
     size_t seed_{0};           // visited flag of dfs.
 
@@ -67,6 +68,9 @@ class Graph {
 
   // Get cluster size
   size_t GetSize(size_t cluster_id) { return clusters_[Find(cluster_id)].cluster_size_; }
+
+  // Get max id in cluster
+  size_t GetMaxId(size_t cluster_id) { return clusters_[Find(cluster_id)].max_id_; }
 
   // Get cluster's inputs
   const std::set<size_t> &GetInputs(size_t cluster_id);

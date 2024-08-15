@@ -1,5 +1,5 @@
 /**
- * Copyright 2021-2023 Huawei Technologies Co., Ltd
+ * Copyright 2021-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 #include "backend/common/graph_kernel/core/graph_kernel_cluster.h"
 
+#include <algorithm>
+#include <utility>
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"
@@ -35,7 +37,7 @@
 namespace mindspore::graphkernel {
 Graph::Cluster::Cluster(size_t node_id, const AnfNodePtr &node,
                         const mindspore::HashMap<AnfNodePtr, size_t> &node_idx_map)
-    : cluster_id_(node_id) {
+    : cluster_id_(node_id), max_id_(node_id) {
   auto cnode = node->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(cnode);
   for (const auto &inp : cnode->inputs()) {
@@ -49,6 +51,7 @@ Graph::Cluster::Cluster(size_t node_id, const AnfNodePtr &node,
 
 void Graph::Cluster::Merge(Cluster *other_cluster) {
   other_cluster->cluster_id_ = cluster_id_;
+  max_id_ = std::max(max_id_, other_cluster->max_id_);
   cluster_size_ += other_cluster->cluster_size_;
   inputs_.insert(other_cluster->inputs_.cbegin(), other_cluster->inputs_.cend());
   other_cluster->Clean();
@@ -185,14 +188,19 @@ bool CircleChecker::CheckCircle(size_t basenode) {
     }
     bool has_circle = false;
     std::set<size_t> done;
-    auto vis_func = [this, &has_circle, &done, &visited_circle_nodes](size_t node_id) {
-      if (done.count(node_id) > 0 || acyclic_nodes_.count(node_id) > 0 || visited_circle_nodes.count(node_id) > 0) {
+    auto min = *candidates_.begin();
+    auto vis_func = [this, &has_circle, &done, &visited_circle_nodes, &min](size_t cluster_id) {
+      if (graph_->GetMaxId(cluster_id) < min) {
         return EXCLUDE;
       }
-      (void)done.insert(node_id);
-      if (candidates_.count(node_id) > 0) {
+      if (done.count(cluster_id) > 0 || acyclic_nodes_.count(cluster_id) > 0 ||
+          visited_circle_nodes.count(cluster_id) > 0) {
+        return EXCLUDE;
+      }
+      (void)done.insert(cluster_id);
+      if (candidates_.count(cluster_id) > 0) {
         has_circle = true;
-        circle_nodes_.push_back(node_id);
+        circle_nodes_.push_back(cluster_id);
         return EXCLUDE;
       }
       return FOLLOW;
