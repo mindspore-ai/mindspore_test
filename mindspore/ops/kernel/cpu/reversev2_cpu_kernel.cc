@@ -89,9 +89,12 @@ bool ReverseV2CpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inpu
                                          const std::vector<KernelTensor *> &outputs) {
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kReverseV2InputsNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kReverseV2OutputsNum, kernel_name_);
-
   auto input_data = reinterpret_cast<T *>(inputs[0]->device_ptr());
   auto output_data = reinterpret_cast<T *>(outputs[0]->device_ptr());
+  if (input_shape_.empty()) {
+    *output_data = *input_data;
+    return true;
+  }
   int64_t num_element = 1;
   for (int64_t i = 0; i < input_dims_; ++i) {
     num_element *= input_shape_[i];

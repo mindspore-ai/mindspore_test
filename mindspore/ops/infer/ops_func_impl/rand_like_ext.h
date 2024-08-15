@@ -21,12 +21,15 @@
 #include <set>
 #include "infer/ops_func_impl/eltwise_op.h"
 #include "mindapi/base/macros.h"
+#include "mindspore/ops/op_def/op_name.h"
 
 namespace mindspore::ops {
 class OPS_API RandLikeExtFuncImpl : public EltwiseOpFuncImpl {
  public:
   TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
-  std::set<int64_t> GetValueDependArgIndices() const override { return {1}; };
+
+  // For aclnn GetWorkspace
+  std::set<int64_t> GetValueDependArgIndices() const override { return {kInputIndex1, kInputIndex2}; };
 };
 }  // namespace mindspore::ops
 #endif  // MINDSPORE_CORE_OPS_OP_FUNC_IMPL_RAND_LIKE_EXT_H
