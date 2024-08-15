@@ -31,6 +31,7 @@ class BACKEND_EXPORT Pipeline {
   const AsyncHqueuePtr &bprop_stage() const { return bprop_stage_; }
   const AsyncRQueuePtr &backend_stage() const { return backend_stage_; }
   const AsyncRQueuePtr &launch_stage() const { return launch_stage_; }
+  void SetSpin(bool spin);
 
   void WaitAll();
   // No need to wait bprop queue finish.

@@ -327,6 +327,11 @@ void PyNativeExecutor::ChildAfterFork() {
 }
 
 void PyNativeExecutor::SetAsyncForGraph(bool flag) const {
+  if (!flag) {
+    // Need to wait all tasks finish before disable async.
+    runtime::Pipeline::Get().WaitAll();
+  }
+  runtime::Pipeline::Get().SetSpin(flag);
   runtime::OpExecutor::GetInstance().set_async_for_graph(flag);
 }
 

@@ -45,5 +45,11 @@ void Pipeline::WaitForward() {
   backend_stage_->Wait();
   launch_stage_->Wait();
 }
+
+void Pipeline::SetSpin(bool spin) {
+  frontend_stage_->SetSpin(spin);
+  backend_stage_->SetSpin(spin);
+  launch_stage_->SetSpin(spin);
+}
 }  // namespace runtime
 }  // namespace mindspore

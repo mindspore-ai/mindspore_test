@@ -75,6 +75,8 @@ class BACKEND_EXPORT AsyncRQueue {
   // Reinit resources after fork occurs.
   void ChildAfterFork();
 
+  void SetSpin(bool spin);
+
  protected:
   void WorkerLoop();
   void SetThreadName() const;
