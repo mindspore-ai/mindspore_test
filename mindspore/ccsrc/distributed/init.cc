@@ -22,6 +22,7 @@
 #include "runtime/graph_scheduler/graph_scheduler.h"
 #include "runtime/graph_scheduler/embedding_cache_scheduler.h"
 #include "runtime/pynative/op_executor.h"
+#include "runtime/pipeline/pipeline.h"
 
 namespace mindspore {
 namespace distributed {
@@ -56,7 +57,7 @@ bool Initialize() {
     (void)cluster::ClusterContext::instance()->Finalize(UINT32_MAX);
 
     // Release PyNative resources.
-    runtime::OpExecutor::GetInstance().WaitAll();
+    runtime::Pipeline::Get().WaitAll();
     runtime::OpExecutor::GetInstance().WorkerJoin();
     MS_LOG(INFO) << "Scheduler ends waiting for cluster to exit.";
     exit(0);
