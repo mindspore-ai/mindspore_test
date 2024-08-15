@@ -3,7 +3,7 @@ mindspore.connect_network_with_dataset
 
 .. py:function:: mindspore.connect_network_with_dataset(network, dataset_helper)
 
-    将 `network` 与 `dataset_helper` 中的数据集连接，只支持 `下沉模式 <https://mindspore.cn/tutorials/experts/zh-CN/master/optimize/execution_opt.html>`_，(dataset_sink_mode=True)。
+    将 `network` 与 `dataset_helper` 中的数据集连接，只支持 `下沉模式 <https://mindspore.cn/docs/zh-CN/master/model_train/train_process/train_optimize.html>`_，(dataset_sink_mode=True)。
 
     参数：
         - **network** (Cell) - 数据集的训练网络。

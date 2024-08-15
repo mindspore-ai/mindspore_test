@@ -3168,8 +3168,8 @@ Contributions of any kind are welcome!
 
 - [STABLE] Add dataset operations mapping between TensorFlow.data module and MindSpore.dataset module, [check list](https://www.mindspore.cn/docs/en/r1.7/note/api_mapping/tensorflow_api_mapping.html#tf-data).
 - [STABLE] Python multiprocessing optimization and make processes exit normally.
-- [STABLE] Support [Dataset Autotune](https://www.mindspore.cn/tutorials/experts/en/master/dataset/dataset_autotune.html) for tuning the speed of dataset pipeline automatically.
-- [BETA]  [Dataset Offload](https://www.mindspore.cn/tutorials/experts/en/master/dataset/dataset_offload.html) support new data augmentation operations: RandomColorAdjust, RandomSharpness, TypeCast.
+- [STABLE] Support [Dataset Autotune](https://www.mindspore.cn/docs/en/master/model_train/dataset/dataset_autotune.html) for tuning the speed of dataset pipeline automatically.
+- [BETA]  [Dataset Offload](https://www.mindspore.cn/docs/en/master/model_train/dataset/dataset_offload.html) support new data augmentation operations: RandomColorAdjust, RandomSharpness, TypeCast.
 - Output a single data column when `__getitem__/__next__` methods of GeneratorDataset return a single NumPy object.
 - Use `ulimit -u 10240` to increase the number of threads/processes available to the current user when specify too many processes or threads for loading dataset may cause RuntimeError: can't start new thread.
 
@@ -3775,7 +3775,7 @@ thor(net, learning_rate, damping, momentum, weight_decay=0.0, loss_scale=1.0, ba
 
 ##### Dump Config
 
-Previously, we could only dump tensor data for one or all steps. To make the dump feature easier to use, we changed the dump configuration format and dump structure. View the [New Dump Tutorial](https://www.mindspore.cn/tutorials/experts/en/master/debug/dump.html#dump-introduction).
+Previously, we could only dump tensor data for one or all steps. To make the dump feature easier to use, we changed the dump configuration format and dump structure. View the [New Dump Tutorial](https://www.mindspore.cn/docs/en/master/model_train/debug/dump.html#dump-introduction).
 
 | 1.2.1                                                  | 1.3.0                                                                                       |
 | ------------------------------------------------------ | ------------------------------------------------------------------------------------------- |

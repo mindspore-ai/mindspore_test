@@ -194,7 +194,7 @@
 
         教程样例：
             - `Parameter Server模式
-              <https://www.mindspore.cn/tutorials/experts/zh-CN/master/parallel/parameter_server_training.html>`_
+              <https://www.mindspore.cn/docs/zh-CN/master/model_train/parallel/parameter_server_training.html>`_
 
     .. py:method:: sliced
         :property:
