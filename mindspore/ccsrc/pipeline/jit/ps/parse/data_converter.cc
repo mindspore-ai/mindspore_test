@@ -1356,8 +1356,8 @@ ValuePtr ConvertTensorToSequence(const py::object &obj) {
   auto data = static_cast<TDE *>(GetTensorDataPtr(tensor));
   auto size = tensor->DataSize();
   std::vector<ValuePtr> value_list;
-  for (size_t i = 0; i < size; i++) {
-    value_list.emplace_back(std::make_shared<IMMTYPE>(data[i]));
+  for (size_t i = 0; i < size; ++i) {
+    (void)value_list.emplace_back(std::make_shared<IMMTYPE>(data[i]));
   }
   return std::make_shared<TD>(value_list);
 }
@@ -1420,8 +1420,8 @@ ValuePtr ConvertTensorToSequenceFloat(const py::object &obj) {
   auto data = static_cast<double *>(GetTensorDataPtr(float_tensor));
   auto size = float_tensor->DataSize();
   std::vector<ValuePtr> value_list(size);
-  for (size_t i = 0; i < size; i++) {
-    value_list.emplace_back(ConvertPythonFloatToScalarValue(data[i]));
+  for (size_t i = 0; i < size; ++i) {
+    (void)value_list.emplace_back(ConvertPythonFloatToScalarValue(data[i]));
   }
 
   return std::make_shared<TD>(value_list);
@@ -1447,18 +1447,18 @@ ValuePtr ConvertTensorToSequenceAny(const py::object &obj) {
   std::vector<ValuePtr> value_list(size);
   if (data_type == kNumberTypeInt64) {
     auto data = static_cast<int64_t *>(GetTensorDataPtr(tensor));
-    for (size_t i = 0; i < size; i++) {
-      value_list.emplace_back(std::make_shared<Int64Imm>(data[i]));
+    for (size_t i = 0; i < size; ++i) {
+      (void)value_list.emplace_back(std::make_shared<Int64Imm>(data[i]));
     }
   } else if (data_type == kNumberTypeFloat64) {
     auto data = static_cast<double *>(GetTensorDataPtr(tensor));
-    for (size_t i = 0; i < size; i++) {
-      value_list.emplace_back(ConvertPythonFloatToScalarValue(data[i]));
+    for (size_t i = 0; i < size; ++i) {
+      (void)value_list.emplace_back(ConvertPythonFloatToScalarValue(data[i]));
     }
   } else if (data_type == kNumberTypeBool) {
     auto data = static_cast<bool *>(GetTensorDataPtr(tensor));
-    for (size_t i = 0; i < size; i++) {
-      value_list.emplace_back(std::make_shared<BoolImm>(data[i]));
+    for (size_t i = 0; i < size; ++i) {
+      (void)value_list.emplace_back(std::make_shared<BoolImm>(data[i]));
     }
   } else {
     MS_LOG(ERROR) << "Can not convert Tensor with type " << TypeIdToString(data_type) << " to sequence.";

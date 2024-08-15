@@ -378,7 +378,7 @@ AnfNodePtr TransformFuncValueNode(const FuncGraphManagerPtr &manager, const Func
   return nullptr;
 }
 
-// Resolve the python obj, and if the resovled node is valuenode with graphs, add the graphs to manager.
+// Resolve the python obj, and if the resolved node is valuenode with graphs, add the graphs to manager.
 AnfNodePtr ResolveObjectAndAddToManager(const FuncGraphManagerPtr &manager, const py::object &obj,
                                         const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
@@ -386,7 +386,7 @@ AnfNodePtr ResolveObjectAndAddToManager(const FuncGraphManagerPtr &manager, cons
   AnfNodePtr resolved_node = nullptr;
   bool success = ResolveObjectToNode(node, obj, &resolved_node);
   if (!success) {
-    MS_LOG(INTERNAL_EXCEPTION) << "Parse Resolve covert failed.";
+    MS_LOG(INTERNAL_EXCEPTION) << "Parse Resolve convert failed.";
   }
   if (IsValueNode<FuncGraph>(resolved_node)) {
     auto new_fg = GetValueNode<FuncGraphPtr>(resolved_node);
@@ -600,7 +600,7 @@ AnfNodePtr ResolveSymbol(const FuncGraphManagerPtr &manager, const NameSpacePtr 
       MS_LOG(INFO) << "Top graph's parameter size: " << top_arg_size
                    << " should not be greater than resolved func_graph's parameter size: " << user_arg_size;
     } else {
-      for (int i = 0; i < top_arg_size; i++) {
+      for (int i = 0; i < top_arg_size; ++i) {
         auto param_ptr = top_params[i]->cast<ParameterPtr>();
         MS_EXCEPTION_IF_NULL(param_ptr);
         auto user_param_ptr = resolve_params[i]->cast<ParameterPtr>();
@@ -648,7 +648,9 @@ AnfNodePtr ResolveCellWithAttr(const FuncGraphManagerPtr &manager, const py::obj
       (python_adapter::CallPyModFn(mod, parse::PYTHON_PARSE_CHECK_ATTR_IS_PROPERTY, obj, attr_name)).cast<bool>();
     if (is_property) {
       auto get_attr_cnode = get_attr_node->cast<CNodePtr>();
-      AnfNodePtr node = get_attr_cnode->input(1);
+      MS_EXCEPTION_IF_NULL(get_attr_cnode);
+      constexpr size_t kInputIdx1 = 1;
+      AnfNodePtr node = get_attr_cnode->input(kInputIdx1);
       auto cur_func = get_attr_node->func_graph();
       auto call_func_node = parse::TransPropertyToFunc(cur_func, node, obj, attr_name);
       MS_LOG(DEBUG) << "call_func_node:" << call_func_node->DebugString();

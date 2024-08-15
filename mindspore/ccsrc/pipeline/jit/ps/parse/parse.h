@@ -191,11 +191,11 @@ class Parser {
   AnfNodePtr ParseSuper(const FunctionBlockPtr &block, const py::list &args);
   // Process the if expression.
   AnfNodePtr ParseIfExp(const FunctionBlockPtr &block, const py::object &node);
-  // get vector of getattr node from getattr map.
+  // Get vector of getattr node from getattr map.
   std::vector<AnfNodePtr> GetGetAttrVectotFromMap(const std::string &obj_name, const std::string &attr_name);
-  // get setattr node from setattr map.
+  // Get setattr node from setattr map.
   AnfNodePtr GetSetAttrFromMap(const std::string &obj_name, const std::string &attr_name);
-  // make getattr node using interpret node as target
+  // Make getattr node using interpret node as target
   AnfNodePtr MakeGetAttrWithInterpret(const std::string &obj_name, const std::string &attr_name,
                                       const py::object &getattr_obj, const FuncGraphPtr &cur_fg);
   // Process class type define.
