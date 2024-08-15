@@ -18,13 +18,12 @@ from __future__ import absolute_import
 from __future__ import division
 
 import binascii
-import copy
 import json
 import os
 import shutil
 import stat
-import threading
-from threading import Thread, RLock
+from threading import RLock
+from multiprocessing import Process, active_children
 from collections import defaultdict, OrderedDict
 from io import BytesIO
 
@@ -258,64 +257,63 @@ def _exec_save(ckpt_file_name, data_list, enc_key=None, enc_mode="AES-GCM", map_
                format="ckpt"):
     """Execute the process of saving checkpoint into file."""
     try:
-        with _ckpt_mutex:
-            file_name_list = list(os.path.splitext(ckpt_file_name))
-            file_name_list[1] = file_name_list[1].replace(f".{format}", ".tmp")
-            tmp_name = ''.join(file_name_list)
-            if os.path.exists(ckpt_file_name):
-                os.chmod(ckpt_file_name, stat.S_IWUSR)
-                os.remove(ckpt_file_name)
-            if os.path.exists(tmp_name):
-                os.chmod(tmp_name, stat.S_IWUSR)
-                os.remove(tmp_name)
-            if format == "ckpt":
-                with _ckpt_fs.create(tmp_name, *_ckpt_fs.create_args) as f:
-                    plain_data = None
-                    if enc_key is not None:
-                        plain_data = BytesIO()
+        file_name_list = list(os.path.splitext(ckpt_file_name))
+        file_name_list[1] = file_name_list[1].replace(f".{format}", ".tmp")
+        tmp_name = ''.join(file_name_list)
+        if os.path.exists(ckpt_file_name):
+            os.chmod(ckpt_file_name, stat.S_IWUSR)
+            os.remove(ckpt_file_name)
+        if os.path.exists(tmp_name):
+            os.chmod(tmp_name, stat.S_IWUSR)
+            os.remove(tmp_name)
+        if format == "ckpt":
+            with _ckpt_fs.create(tmp_name, *_ckpt_fs.create_args) as f:
+                plain_data = None
+                if enc_key is not None:
+                    plain_data = BytesIO()
 
-                    crc_num = 0
-                    for name, value in data_list.items():
-                        if name == "random_op":
-                            _write_random_seed(name, value, f)
-                            continue
-                        if value[0] == "mapparameter":
-                            _write_mapparameter(name, value, f, map_param_inc)
-                            continue
-                        if value[0] == "offload_parameter":
-                            new_value = value[1:]
-                            new_value[2] = value[3]
-                            _write_parameter_bytes_data(name, new_value, f, enc_key, plain_data)
-                            _offload_if_config(value[3])
-                            continue
-                        if value[1] == "str":
-                            crc_num = _write_parameter_data(name, value, f, enc_key, plain_data, crc_num, crc_check)
-                            continue
-                        if isinstance(value[2], np.ndarray):
-                            crc_num = _write_parameter_data(name, value, f, enc_key, plain_data, crc_num, crc_check)
-                            continue
-                        if isinstance(value[2], Tensor) and hasattr(value[2], "slice_num") and value[2].slice_num > 1:
-                            _write_hugeparameter(name, value, f)
-                            continue
-
-                        crc_num = _write_parameter_bytes_data(name, value, f, enc_key, plain_data, crc_num, crc_check)
-
-                    if enc_key is not None:
-                        plain_data.seek(0)
-                        max_block_size = ENCRYPT_BLOCK_SIZE * 1024
-                        block_data = plain_data.read(max_block_size)
-                        while block_data:
-                            f.write(_encrypt(block_data, len(block_data), enc_key, len(enc_key), enc_mode))
-                            block_data = plain_data.read(max_block_size)
-                    if crc_check:
-                        f.write('crc_num'.encode() + crc_num.to_bytes(10, byteorder='big'))
-            elif format == "safetensors":
-                save_dict = {}
+                crc_num = 0
                 for name, value in data_list.items():
-                    save_dict[name] = value[2].asnumpy()
-                save_file(save_dict, tmp_name)
-            os.rename(tmp_name, ckpt_file_name)
-            os.chmod(ckpt_file_name, stat.S_IRUSR)
+                    if name == "random_op":
+                        _write_random_seed(name, value, f)
+                        continue
+                    if value[0] == "mapparameter":
+                        _write_mapparameter(name, value, f, map_param_inc)
+                        continue
+                    if value[0] == "offload_parameter":
+                        new_value = value[1:]
+                        new_value[2] = value[3]
+                        _write_parameter_bytes_data(name, new_value, f, enc_key, plain_data)
+                        _offload_if_config(value[3])
+                        continue
+                    if value[1] == "str":
+                        crc_num = _write_parameter_data(name, value, f, enc_key, plain_data, crc_num, crc_check)
+                        continue
+                    if isinstance(value[2], np.ndarray):
+                        crc_num = _write_parameter_data(name, value, f, enc_key, plain_data, crc_num, crc_check)
+                        continue
+                    if isinstance(value[2], Tensor) and hasattr(value[2], "slice_num") and value[2].slice_num > 1:
+                        _write_hugeparameter(name, value, f)
+                        continue
+
+                    crc_num = _write_parameter_bytes_data(name, value, f, enc_key, plain_data, crc_num, crc_check)
+
+                if enc_key is not None:
+                    plain_data.seek(0)
+                    max_block_size = ENCRYPT_BLOCK_SIZE * 1024
+                    block_data = plain_data.read(max_block_size)
+                    while block_data:
+                        f.write(_encrypt(block_data, len(block_data), enc_key, len(enc_key), enc_mode))
+                        block_data = plain_data.read(max_block_size)
+                if crc_check:
+                    f.write('crc_num'.encode() + crc_num.to_bytes(10, byteorder='big'))
+        elif format == "safetensors":
+            save_dict = {}
+            for name, value in data_list.items():
+                save_dict[name] = value[2].asnumpy()
+            save_file(save_dict, tmp_name)
+        os.rename(tmp_name, ckpt_file_name)
+        os.chmod(ckpt_file_name, stat.S_IRUSR)
 
     except BaseException as e:
         logger.critical("Failed to save the checkpoint file %s. Maybe don't have the permission to write files, "
@@ -602,7 +600,7 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
                     data_list[key].append(dims)
                     tensor_type = str(param["data"].dtype)
                     data_list[key].append(tensor_type)
-                    data = param["data"]
+                    data = param["data"] if not async_save else param["data"].asnumpy()
                     data_list[key].append(data)
 
     if os.getenv("AITURBO") == "1":
@@ -610,11 +608,15 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
         ckpt_name = os.path.basename(ckpt_file_name)
         aiturbo.save_ckpt(ckpt_name, global_step_num, data_list_np, crc_check)
     elif async_save:
-        data_copy = copy.deepcopy(data_list)
-        thr = Thread(target=_exec_save,
-                     args=(ckpt_file_name, data_copy, enc_key, enc_mode, map_param_inc, crc_check, format),
-                     name="asyn_save_ckpt")
-        thr.start()
+        if sys.platform.startswith("win"):
+            logger.warning("The Win platform currently does not support asynchronous process saving of ckpt, "
+                           "so serial saving of ckpt is used now.")
+            _exec_save(ckpt_file_name, data_list, enc_key, enc_mode, map_param_inc, crc_check, format)
+        else:
+            process = Process(target=_exec_save,
+                              args=(ckpt_file_name, data_list, enc_key, enc_mode, map_param_inc, crc_check, format),
+                              name="asyn_save_ckpt")
+            process.start()
     else:
         _exec_save(ckpt_file_name, data_list, enc_key, enc_mode, map_param_inc, crc_check, format)
 
@@ -3012,8 +3014,10 @@ def async_ckpt_thread_status():
         >>> ms.async_ckpt_thread_status()
         False
     """
-    thr_list = threading.enumerate()
-    return True in [ele.getName() == "asyn_save_ckpt" for ele in thr_list]
+    for process in active_children():
+        if process.name == "asyn_save_ckpt":
+            return True
+    return False
 
 
 def _check_predict_strategy(predict_strategy):
