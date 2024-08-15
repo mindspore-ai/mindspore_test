@@ -79,6 +79,10 @@ const std::set<TypePtr> all_types = {kBool,    kInt,     kInt8,    kInt16,     k
 std::vector<int64_t> CalBroadCastShape(const std::vector<int64_t> &x_shape, const std::vector<int64_t> &y_shape,
                                        const std::string &op_name, const std::string &op_x_name = "input1",
                                        const std::string &op_y_name = "input2");
+OPS_API std::vector<int64_t> CalBroadCastShapeV2(const std::vector<int64_t> &x_shape,
+                                                 const std::vector<int64_t> &y_shape, const std::string &op_name,
+                                                 const std::string &op_x_name = "input1",
+                                                 const std::string &op_y_name = "input2");
 abstract::ShapePtr BroadCastInferShape(const std::string &op_name,
                                        const std::vector<abstract::AbstractBasePtr> &input_args);
 bool IsBroadcastable(const std::vector<int64_t> &x_shape, const std::vector<int64_t> &y_shape);

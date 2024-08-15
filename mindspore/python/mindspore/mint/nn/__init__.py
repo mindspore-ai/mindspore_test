@@ -234,6 +234,11 @@ from mindspore.nn.layer import HSwish as Hardswish
 # 238
 from mindspore.nn.loss import L1LossExt as L1Loss
 
+# 257
+
+# 258
+from mindspore.ops.function.nn_func import mse_loss_ext
+
 
 class BCEWithLogitsLoss(Cell):
     r"""
@@ -383,6 +388,82 @@ class Mish(Cell):
 
     def construct(self, input):
         return F.mish(input)
+
+
+class MSELoss(Cell):
+    r"""
+    Calculates the mean squared error between the predicted value and the label value.
+
+    For simplicity, let :math:`x` and :math:`y` be 1-dimensional Tensor with length :math:`N`,
+    the unreduced loss (i.e. with argument reduction set to 'none') of :math:`x` and :math:`y` is given as:
+
+    .. math::
+        \ell(x, y) = L = \{l_1,\dots,l_N\}^\top, \quad \text{with} \quad l_n = (x_n - y_n)^2.
+
+    where :math:`N` is the batch size. If `reduction` is not ``'none'``, then:
+
+    .. math::
+        \ell(x, y) =
+        \begin{cases}
+            \operatorname{mean}(L), & \text{if reduction} = \text{'mean';}\\
+            \operatorname{sum}(L),  & \text{if reduction} = \text{'sum'.}
+        \end{cases}
+
+    Args:
+        reduction (str, optional): Apply specific reduction method to the output: ``'none'`` , ``'mean'`` ,
+            ``'sum'`` . Default: ``'mean'`` .
+
+            - ``'none'``: no reduction will be applied.
+            - ``'mean'``: compute and return the mean of elements in the output.
+            - ``'sum'``: the output elements will be summed.
+
+    Inputs:
+        - **logits** (Tensor) - The predicted value of the input. Tensor of any dimension.
+        The data type needs to be consistent with the `labels`. It should also be broadcastable with the `labels`.
+        - **labels** (Tensor) - The input label. Tensor of any dimension.
+        The data type needs to be consistent with the `logits`. It should also be broadcastable with the `logits`.
+
+    Outputs:
+        Tensor, loss of type float. If `reduction` is ``'mean'`` or ``'sum'``, the shape of output is tensor scalar.
+        If reduction is ``'none'``, the shape of output is the broadcasted shape of **logits** and **labels** .
+
+    Raises:
+        ValueError: If `reduction` is not one of ``'mean'``, ``'sum'`` or ``'none'``.
+        ValueError: If `logits` and `labels` are not broadcastable.
+        TypeError: If `logits` and `labels` are in different data type.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import Tensor, nn
+        >>> import numpy as np
+        >>> # Case 1: logits.shape = labels.shape = (3,)
+        >>> loss = nn.MSELoss()
+        >>> logits = Tensor(np.array([1, 2, 3]), mindspore.float32)
+        >>> labels = Tensor(np.array([1, 1, 1]), mindspore.float32)
+        >>> output = loss(logits, labels)
+        >>> print(output)
+        1.6666667
+        >>> # Case 2: logits.shape = (3,), labels.shape = (2, 3)
+        >>> loss = nn.MSELoss(reduction='none')
+        >>> logits = Tensor(np.array([1, 2, 3]), mindspore.float32)
+        >>> labels = Tensor(np.array([[1, 1, 1], [1, 2, 2]]), mindspore.float32)
+        >>> output = loss(logits, labels)
+        >>> print(output)
+        [[0. 1. 4.]
+         [0. 0. 1.]]
+    """
+
+    def __init__(self, reduction='mean'):
+        super(MSELoss, self).__init__()
+        self.mse_loss = mse_loss_ext
+        self.reduction = reduction
+
+    def construct(self, input, target):
+        out = self.mse_loss(input, target, self.reduction)
+        return out
 
 
 __all__ = [
@@ -598,4 +679,7 @@ __all__ = [
     'L1Loss',
     # 267
     'Mish',
+    # 258
+    'MSELoss'
+    # 259
 ]

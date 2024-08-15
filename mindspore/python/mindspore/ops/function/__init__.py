@@ -511,6 +511,7 @@ from .nn_func import (
     prelu,
     mirror_pad,
     nll_loss,
+    mse_loss_ext,
     smooth_l1_loss,
     l1_loss,
     threshold,

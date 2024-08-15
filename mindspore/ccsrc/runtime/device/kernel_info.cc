@@ -140,7 +140,7 @@ bool KernelInfo::SetWorkspaceAddr(const DeviceAddressPtr &output_address, size_t
     }
   }
   if (index >= workspace_address_list_.size()) {
-    for(size_t i = 0; i < index - workspace_address_list_.size() + 1; i++){
+    for (size_t i = 0; i < index - workspace_address_list_.size() + 1; i++) {
       workspace_address_list_.emplace_back(nullptr);
     }
   }

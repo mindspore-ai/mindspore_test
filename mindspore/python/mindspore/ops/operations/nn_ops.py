@@ -33,7 +33,7 @@ from mindspore.ops.primitive import prim_attr_register
 from mindspore.run_check._check_version import AscendEnvChecker
 from ..auto_generate import (CeLU, Flatten, LogSoftmax, LogSoftmaxExt, ReLU, ReLU6, Dense, Tanh,
                              Elu, Sigmoid, Softmax, SoftplusExt, HSwish, HSigmoid, AvgPool, BiasAdd,
-                             NLLLoss, OneHot, GeLU, FastGeLU, PReLU, RmsNorm, IncreFlashAttention,
+                             NLLLoss, OneHot, GeLU, FastGeLU, PReLU, RmsNorm, IncreFlashAttention, MSELossExt,
                              GridSampler3D, GridSampler2D, LayerNorm, LayerNormExt, HShrink, AdamWeightDecay, Dropout,
                              ApplyRotaryPosEmb, PagedAttention, PagedAttentionMask, ReshapeAndCache,
                              FlashAttentionScore, Embedding, UpsampleNearest1D, UpsampleNearest2D,

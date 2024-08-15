@@ -299,6 +299,7 @@ Loss Functions
     :template: classtemplate.rst
 
     mindspore.mint.nn.BCEWithLogitsLoss
+    mindspore.mint.nn.MSELoss
 
 mindspore.mint.nn.functional
 -----------------------------
@@ -395,6 +396,7 @@ Loss Functions
     mindspore.mint.nn.functional.binary_cross_entropy
     mindspore.mint.nn.functional.binary_cross_entropy_with_logits
     mindspore.mint.nn.functional.l1_loss
+    mindspore.mint.nn.functional.mse_loss
 
 Vision functions
 ^^^^^^^^^^^^^^^^^^

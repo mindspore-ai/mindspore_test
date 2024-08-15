@@ -1,0 +1,19 @@
+#operator mse_loss_ext
+mse_loss_ext:
+    args:
+        input:
+            dtype: tensor
+        target:
+            dtype: tensor
+        reduction:
+            dtype: int
+            arg_handler: str_to_enum
+            default: "'mean'"
+    returns:
+        loss: 
+            dtype: tensor
+    class:
+        name: MSELossExt
+    dispatch:
+        enable: True
+        Ascend: MSELossExtAscend

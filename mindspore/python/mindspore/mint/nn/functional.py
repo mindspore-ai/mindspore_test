@@ -231,13 +231,17 @@ from mindspore.ops.function.nn_func import hardswish  # pylint: disable=W0611
 from mindspore.ops.auto_generate import mish_ext as mish  # pylint: disable=W0611
 # 238
 from mindspore.ops.auto_generate import l1_loss_ext as l1_loss  # pylint: disable=W0611
+
+# 257
+
+# 258
+from mindspore.ops.function.nn_func import mse_loss_ext as mse_loss
+# 259
+
 # 323
 
 # 324
 from mindspore.ops.auto_generate import elu_ext as elu
-
-
-# 325
 
 
 def binary_cross_entropy_with_logits(input, target, weight=None, reduction='mean', pos_weight=None):
@@ -582,4 +586,11 @@ __all__ = [
     # 324
     'elu',
     # 325
+
+    # 257
+
+    # 258
+    'mse_loss',
+    # 259
+
 ]
