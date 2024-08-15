@@ -1180,6 +1180,7 @@ class Parser:
         return SYNTAX_SUPPORTED
 
     def check_lambda(self, src):
+        """Check if the lamda expressions is correct."""
         obj_type = get_obj_type(self.fn)
         if (obj_type != RESOLVE_TYPE_FUNCTION or src[:4] == "def ") and is_lambda_function(self.fn):
             logger.debug("fn is lambda: %r", self.fn)
@@ -1242,6 +1243,7 @@ class Parser:
         return None, None
 
     def get_name_from_namespace(self, value):
+        """Get the name of value from namespace"""
         try:
             value_str = value.__name__
             logger.debug(
