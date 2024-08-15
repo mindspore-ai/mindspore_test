@@ -67,6 +67,7 @@ Status ForwardRasterizeInfer::Infer(std::vector<mindspore::MSTensor> *inputs, st
     }
     auto attr_name = param->attr()->Get(i)->name()->str();
     auto attr_val = param->attr()->Get(i)->data();
+    MS_CHECK_TRUE_RET(attr_val != nullptr, kLiteNullptr);
     std::string attr_val_str(attr_val->begin(), attr_val->end());
     if (attr_name == "h") {
       height = std::stoi(attr_val_str);

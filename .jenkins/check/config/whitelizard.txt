@@ -309,10 +309,10 @@ mindspore/mindspore/python/mindspore/common/api.py:_convert_python_data
 mindspore/mindspore/ops/kernel/cpu/nnacl/fp32/matmul_avx512_mask_fp32.c:GemmRowxColMaskKernelFp32
 mindspore/mindspore/ops/kernel/cpu/crop_and_resize_cpu_kernel.cc:mindspore::kernel::CropAndResizeCpuKernelMod::LaunchKernel
 mindspore/mindspore/ccsrc/plugin/device/cpu/hal/device/cpu_device_address.cc:mindspore::device::cpu::CPUDeviceAddress::SyncHostToDevice
-mindspore/mindspore/ops/kernel/cpu/cast_cpu_kernel.cc:mindspore::kernel::Cast  
+mindspore/mindspore/ops/kernel/cpu/cast_cpu_kernel.cc:mindspore::kernel::Cast
 mindspore/mindspore/ccsrc/pybind_api/ir/tensor_py.cc:mindspore::tensor::GetPyTypeFormat
 mindspore/mindspore/core/ir/dtype/type.cc:mindspore::NormalizeTypeId
-mindspore/mindspore/ops/infer/sparse_to_dense_v2.cc:mindspore::ops::SparseToDenseV2InferShape  
+mindspore/mindspore/ops/infer/sparse_to_dense_v2.cc:mindspore::ops::SparseToDenseV2InferShape
 mindspore/mindspore/ops/infer/ops_func_impl/div.cc:mindspore::ops::DivFrontendFuncImpl::InferValue
 mindspore/mindspore/ops/kernel/gpu/math/cumprod_gpu_kernel.cc:mindspore::kernel::CumProdGpuKernelMod::GetFuncList
 mindspore/mindspore/ops/kernel/cpu/cumprod_cpu_kernel.cc:mindspore::kernel::CumProdCpuKernelMod::GetFuncList
@@ -333,8 +333,8 @@ mindspore/mindspore/ops/kernel/ascend/aicpu/aicpu_ops/cpu_kernel/ms_kernel/batch
 mindspore/mindspore/ops/kernel/ascend/aicpu/aicpu_ops/cpu_kernel/ms_kernel/batch_norm_grad_grad.cc:aicpu::BatchNormGradGradCpuKernel::TrainingComputeNCHW
 mindspore/mindspore/ops/kernel/ascend/aicpu/aicpu_ops/cpu_kernel/ms_kernel/avgpool.cc:aicpu::AvgPoolCpuKernel::RealCompute
 mindspore/mindspore/ops/kernel/ascend/aicpu/aicpu_ops/cpu_kernel/ms_kernel/bias_add.cc:aicpu::BiasAddCpuKernel::Compute
-mindspore/mindspore/ops/kernel/ascend/aicpu/aicpu_ops/cpu_kernel/ms_kernel/resize_bicubic.cc:aicpu::interpolate_with_caching                      
-mindspore/mindspore/ops/kernel/ascend/aicpu/aicpu_ops/cpu_kernel/ms_kernel/multinomial.cc:aicpu::Generate     
+mindspore/mindspore/ops/kernel/ascend/aicpu/aicpu_ops/cpu_kernel/ms_kernel/resize_bicubic.cc:aicpu::interpolate_with_caching
+mindspore/mindspore/ops/kernel/ascend/aicpu/aicpu_ops/cpu_kernel/ms_kernel/multinomial.cc:aicpu::Generate
 mindspore/mindspore/ops/kernel/ascend/aicpu/aicpu_ops/cpu_kernel/ms_kernel/matrix_set_diag_v3.cc:aicpu::MatrixSetDiagV3CpuKernel::DoCompute
 mindspore/mindspore/ops/kernel/ascend/aicpu/aicpu_ops/cpu_kernel/ms_kernel/max_unpool_2d.cc:aicpu::MaxUnpool2DCpuKernel::MaxUnpool2DCompute
 mindspore/mindspore/ops/kernel/ascend/aicpu/aicpu_ops/cpu_kernel/ms_kernel/sparse_addmm.cc:aicpu::SparseAddmmCpuKernel::SparseAddmmCompute
@@ -462,3 +462,5 @@ mindspore/mindspore/python/mindspore/train/dataset_helper.py:connect_network_wit
 mindspore/mindspore/ccsrc/frontend/parallel/tensor_layout/layout_utils.cc:mindspore::parallel::IntroduceConstraints
 mindspore/mindspore/ccsrc/frontend/parallel/tensor_layout/tensor_redistribution.cc:mindspore::parallel::TensorRedistribution::CalculateFromTensorShape
 g
+
+mindspore/mindspore/lite/providers/nnie/src/custom_infer.cc:mindspore::nnie::CustomInterface::Infer

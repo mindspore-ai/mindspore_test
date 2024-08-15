@@ -87,6 +87,10 @@ int GetCustomShape(const mindspore::schema::Custom *op, const std::string &attr,
 
 Status CustomInterface::Infer(std::vector<mindspore::MSTensor> *inputs, std::vector<mindspore::MSTensor> *outputs,
                               const mindspore::schema::Primitive *primitive) {
+  if ((inputs == nullptr) || (outputs == nullptr) || (primitive == nullptr)) {
+    LOGE("inputs, outputs or primitive is null");
+    return kLiteError;
+  }
   if (inputs->empty()) {
     LOGE("Inputs size 0");
     return kLiteError;
@@ -101,6 +105,10 @@ Status CustomInterface::Infer(std::vector<mindspore::MSTensor> *inputs, std::vec
   }
 
   auto op = primitive->value_as_Custom();
+  if ((op == nullptr) || (op->attr() == nullptr)) {
+    LOGE("op or its attr is null");
+    return kLiteError;
+  }
   if (op->attr()->size() < 1) {
     LOGE("There are at least 1 attribute of Custom");
     return kLiteError;
