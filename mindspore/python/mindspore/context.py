@@ -1491,6 +1491,7 @@ def set_context(**kwargs):
             if enable_compile_cache is still set to ``True`` and the network scripts are not changed,
             the compile cache is loaded. Note that only limited automatic detection for the changes of
             python scripts is supported by now, which means that there is a correctness risk. Default: ``False`` .
+            Currently, do not support the graph which is larger than 2G after compiled.
             This is an experimental prototype that is subject to change and/or deletion.
         compile_cache_path (str): Path to save the compile cache. Default: ``"."``.
             If the specified directory does not exist, the system will automatically create the directory.
