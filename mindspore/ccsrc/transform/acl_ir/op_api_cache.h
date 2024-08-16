@@ -33,6 +33,7 @@ constexpr int g_hash_buf_size = 8192;
 constexpr int g_hash_buf_max_size = g_hash_buf_size + 1024;
 extern thread_local char g_hash_buf[g_hash_buf_size];
 extern thread_local int g_hash_offset;
+extern bool cache_unavailable_first_print;
 
 inline void UninitCacheThreadLocal() {
   static const auto uninit_cache_thread_local = transform::GetOpApiFunc("UnInitPTACacheThreadLocal");
@@ -41,6 +42,25 @@ inline void UninitCacheThreadLocal() {
   if (uninit_cache_thread_local_func) {
     uninit_cache_thread_local_func();
   }
+}
+
+inline int32_t SetExecutorRepeatable(const std::string &workspace_api_name, aclOpExecutor *executor) {
+  int32_t repeat_ret = 0;
+  static const auto aclSetAclOpExecutorRepeatable = reinterpret_cast<transform::_aclSetAclOpExecutorRepeatable>(
+    transform::GetOpApiFunc("aclSetAclOpExecutorRepeatable"));
+  if (aclSetAclOpExecutorRepeatable == nullptr) {
+    repeat_ret = -1;
+    if (cache_unavailable_first_print) {
+      MS_LOG(WARNING) << "The aclSetAclOpExecutorRepeatable is unavailable, which results in aclnn cache miss.";
+    }
+    cache_unavailable_first_print = false;
+  } else {
+    repeat_ret = aclSetAclOpExecutorRepeatable(executor);
+    if (repeat_ret != 0) {
+      MS_LOG(INFO) << workspace_api_name << " don't support cache!";
+    }
+  }
+  return repeat_ret;
 }
 
 inline void MemcpyToBuf(const void *data_expression, size_t size_expression) {
