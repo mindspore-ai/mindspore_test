@@ -167,7 +167,7 @@ int InternalKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const s
     }
   }
 
-  if ((op_type_ == "PagedAttention" && llm_manager.enable_multi_level_seq_length_) || op_type_ == "MatMul" ||
+  if ((op_type_ == "PagedAttention" && llm_manager.enable_llm_seq_length()) || op_type_ == "MatMul" ||
       op_type_ == "QuantBatchMatmul" || op_type_ == "QuantLinearSparse") {
     MS_LOG(INFO) << "Update multi_level_seq_length for Internal Op: " << op_type_;
     auto param = CreateOpParam(inputs, outputs);

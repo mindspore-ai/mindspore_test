@@ -846,45 +846,46 @@ void RecordGraphInputs(const std::vector<TensorPtr> &host_tensors) {
   }
 }
 
-void UpdateLLMMaxSequenceLength(const std::vector<TensorPtr> &host_tensors, bool &isDyn) {
+void UpdateLLMMaxSequenceLength(const std::vector<TensorPtr> &host_tensors, bool *isDyn) {
   auto &llm_manager = LLMManager::GetInstance();
-  auto seq_length_idx = llm_manager.get_seq_length_graph_input_index();
-  // seq_length_idx >= 0 means enable multi-level seq length
-  if (seq_length_idx < 0) {
-    return;
-  }
-  auto seq_length_tensor = host_tensors[seq_length_idx];
-  auto seq_length_values = static_cast<int32_t *>(seq_length_tensor->data_ptr()->data());
-  auto seq_length_values_num = seq_length_tensor->data().nbytes() / sizeof(int32_t);
-  std::vector<int32_t> batch_seq_length;
-  int32_t max_seq_length = 0;
-  for (size_t i = 0; i < seq_length_values_num; i++) {
-    auto v = seq_length_values[i];
-    if (v > max_seq_length) {
-      max_seq_length = v;
+  auto batch_valid_length_idx = llm_manager.get_batch_valid_length_graph_input_index();
+  // batch_valid_length_idx >= 0 means enable multi-level seq length
+  if (batch_valid_length_idx >= 0) {
+    auto seq_length_tensor = host_tensors[batch_valid_length_idx];
+    auto seq_length_values = static_cast<int32_t *>(seq_length_tensor->data_ptr()->data());
+    auto seq_length_values_num = seq_length_tensor->data().nbytes() / sizeof(int32_t);
+    std::vector<int32_t> batch_valid_length;
+    int32_t max_batch_valid_length = 0;
+    for (size_t i = 0; i < seq_length_values_num; i++) {
+      auto v = seq_length_values[i];
+      if (v > max_batch_valid_length) {
+        max_batch_valid_length = v;
+      }
+      batch_valid_length.emplace_back(v);
     }
-    batch_seq_length.emplace_back(v);
+    if (llm_manager.update_round_up_max_batch_valid_length(max_batch_valid_length)) {
+      MS_LOG(INFO) << "Current round_up_max_seq_length is "
+                   << llm_manager.get_current_round_up_max_batch_valid_length();
+      *isDyn = true;
+    }
+    llm_manager.set_current_batch_valid_length(batch_valid_length);
+    MS_LOG(INFO) << "Current batch_seq_length is " << llm_manager.get_current_batch_valid_length();
   }
-  if (llm_manager.update_round_up_max_seq_length(max_seq_length)) {
-    isDyn = true;
-  }
-  llm_manager.set_current_batch_seq_length(batch_seq_length);
-  MS_LOG(INFO) << "Current round_up_max_seq_length is " << llm_manager.get_current_round_up_max_seq_length();
 
-  auto query_length_idx = llm_manager.get_query_length_graph_input_index();
-  // seq_length_idx >= 0 means enable multi-level seq length
-  if (query_length_idx < 0) {
-    return;
+  auto query_seq_length_idx = llm_manager.get_query_seq_length_graph_input_index();
+  // query_seq_length_idx >= 0 means enable multi-level seq length
+  if (query_seq_length_idx >= 0) {
+    auto seq_length_tensor = host_tensors[query_seq_length_idx];
+    auto seq_length_values = static_cast<int32_t *>(seq_length_tensor->data_ptr()->data());
+    auto seq_length_values_num = seq_length_tensor->data().nbytes() / sizeof(int32_t);
+    std::vector<int32_t> query_seq_length;
+    for (size_t i = 0; i < seq_length_values_num; i++) {
+      auto v = seq_length_values[i];
+      query_seq_length.emplace_back(v);
+    }
+    llm_manager.set_current_query_seq_length(query_seq_length);
+    MS_LOG(INFO) << "Current query_seq_length is " << llm_manager.get_current_query_seq_length();
   }
-  auto query_length_tensor = host_tensors[query_length_idx];
-  auto query_length_values = static_cast<int32_t *>(query_length_tensor->data_ptr()->data());
-  auto query_length_values_num = query_length_tensor->data().nbytes() / sizeof(int32_t);
-  std::vector<int32_t> batch_query_length;
-  for (size_t i = 0; i < query_length_values_num; i++) {
-    auto v = query_length_values[i];
-    batch_query_length.emplace_back(v);
-  }
-  llm_manager.set_current_batch_query_length(batch_query_length);
 }
 
 void DataPrepareActor::PrepareDataForHostTensorQueueNew(const VectorRef &args, OpContext<DeviceTensor> *const context) {
@@ -960,7 +961,7 @@ void DataPrepareActor::PrepareDataForHostTensorQueueNew(const VectorRef &args, O
   static const bool enable_infer_boost = ms_context->IsEnableInferBoost();
   if (enable_infer_boost && has_dynamic_shape_ && EnableKbkSubGraphExecute()) {
     RecordGraphInputs(host_tensors);
-    UpdateLLMMaxSequenceLength(host_tensors, isDyn);
+    UpdateLLMMaxSequenceLength(host_tensors, &isDyn);
     ActorDispatcher::set_enable_static_shape(!isDyn);
 
     const auto &phase = PhaseManager::GetInstance().phase();
