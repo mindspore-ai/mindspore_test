@@ -21,6 +21,7 @@ namespace mindspore {
 namespace symshape {
 namespace ops {
 void InferShapeOp::SetPositive(const ListSymbol *list) {
+  MS_EXCEPTION_IF_NULL(list);
   for (auto &s : list->symbols()) {
     auto list_s = s->as_noexcept<ListSymbol>();
     if (list_s != nullptr) {
@@ -52,7 +53,6 @@ SymbolPtr Accumulate(const SymbolPtrList &symbols, const OperationEmitter &e) {
   int64_t constv = std::is_same_v<OP, ScalarAdd> ? 0 : 1;
   for (size_t i = 0; i < symbols.size(); i++) {
     auto s = symbols[i]->as_sptr<IntSymbol>();
-    MS_EXCEPTION_IF_NULL(s);
     if (s->HasData()) {
       if (std::is_same_v<OP, ScalarAdd>) {
         constv += s->value();

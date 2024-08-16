@@ -72,8 +72,7 @@ SymbolPtr StridedSlice::Eval() {
     end_mask_ = static_cast<size_t>(input_as<IntSymbol>(kIndex5)->value());
     ellipsis_mask_ = static_cast<size_t>(input_as<IntSymbol>(kIndex6)->value());
     if (ellipsis_mask_ != 0) {
-      MS_LOG(DEBUG) << "StridedSlice infershape operation does not support ellipsis_mask yet.";
-      return nullptr;
+      MS_EXCEPTION(NotSupportError) << "StridedSlice infershape operation does not support ellipsis_mask yet.";
     }
     new_axis_mask_ = static_cast<size_t>(input_as<IntSymbol>(kIndex7)->value());
     shrink_axis_mask_ = static_cast<size_t>(input_as<IntSymbol>(kIndex8)->value());
@@ -191,9 +190,7 @@ SymbolPtr StridedSlice::ComputeInferShape(const ListSymbol *x_shape, const ListS
       // unknown +/- of stride.
       slicing_len = GenVInt();
     }
-    if (slicing_len == nullptr) {
-      return nullptr;
-    }
+    MS_EXCEPTION_IF_NULL(slicing_len);
     (void)res_shape.emplace_back(std::move(slicing_len));
   }
   return ResultIntList(std::move(res_shape));

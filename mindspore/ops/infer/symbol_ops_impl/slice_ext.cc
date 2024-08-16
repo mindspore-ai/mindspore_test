@@ -38,8 +38,7 @@ SymbolPtr SliceExt::Eval() {
   auto step = input_as_sptr<IntSymbol>(kIndex4);
   if (!step->EqualsTo(kSym1)) {
     // only support step is 1
-    MS_LOG(DEBUG) << "InferSymbolicShape of SliceExt only support step=1";
-    return nullptr;
+    MS_EXCEPTION(NotSupportError) << "InferSymbolicShape of SliceExt only support step=1";
   }
   if (!x->HasData()) {
     return GenVList();
