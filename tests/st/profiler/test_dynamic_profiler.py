@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 import os
+import json
 import shutil
 import tempfile
 from tests.mark_utils import arg_mark
@@ -27,28 +28,50 @@ def cleanup():
         shutil.rmtree(cache_path)
 
 
-class TestProfiler:
+class TestDynamicProfilerMonitor:
+    data_path = tempfile.mkdtemp(prefix='profiler_data', dir='/tmp')
+    cfg_dir = tempfile.mkdtemp(prefix='dyn_prof_cfg', dir='/tmp')
+    cfg_path = os.path.join(cfg_dir, 'profiler_config.json')
 
-    def setup(self):
-        """Run begin each test case start."""
+    @classmethod
+    def setup_class(cls):
+        """Run begin all test case start."""
         cleanup()
-        self.data_path = tempfile.mkdtemp(prefix='profiler_data', dir='/tmp')
 
-    def teardown(self):
+    @staticmethod
+    def teardown():
         """Run after each test case end."""
         cleanup()
-        if os.path.exists(self.data_path):
-            shutil.rmtree(self.data_path)
+        if os.path.exists(TestDynamicProfilerMonitor.data_path):
+            shutil.rmtree(TestDynamicProfilerMonitor.data_path)
+        if os.path.exists(TestDynamicProfilerMonitor.cfg_dir):
+            shutil.rmtree(TestDynamicProfilerMonitor.cfg_dir)
 
     @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
     def test_ascend_profiler(self):
+        data_cfg = {
+            "start_step": 10,
+            "stop_step": 10,
+            "aicore_metrics": -1,
+            "profiler_level": 1,
+            "profile_framework": -1,
+            "analyse_mode": -1,
+            "profile_memory": False,
+            "parallel_strategy": False,
+            "data_process": False,
+            "data_simplification": True,
+            "is_valid": False
+        }
+
+        with open(self.cfg_path, 'w') as f:
+            json.dump(data_cfg, f, indent=4)
+
         rank_id = int(os.getenv('RANK_ID')) if os.getenv('RANK_ID') else 0
         status = os.system(
             f"""
-               python ./run_net_with_dynamic_profiler.py --target=Ascend --mode=0 --output_path={self.data_path};
+               python ./run_net_with_dynamic_profiler.py --cfg_path={self.cfg_dir} --output_path={self.data_path}
             """
         )
         assert status == 0
-        for i in range(5, 16, 5):
-            profiler_path = os.path.join(self.data_path, str(i), str(rank_id), 'profiler')
-            assert os.path.exists(profiler_path)
+        profiler_path = os.path.join(self.data_path, f"rank{rank_id}_start10_stop10")
+        assert os.path.exists(profiler_path)
