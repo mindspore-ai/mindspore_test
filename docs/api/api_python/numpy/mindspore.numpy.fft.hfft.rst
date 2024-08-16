@@ -1,7 +1,7 @@
 mindspore.numpy.fft.hfft
 ========================
 
-.. py:function:: mindspore.numpy.fft.hfft(a, n=None, axis=-1, norm=None):
+.. py:function:: mindspore.numpy.fft.hfft(a, n=None, axis=-1, norm=None)
 
     计算 Hermitian 对称的 `a` 信号的一维离散傅里叶变换。
 

@@ -3,7 +3,7 @@ mindspore.mint.split
 
 .. py:function:: mindspore.mint.split(tensor, split_size_or_sections, dim=0)
 
-    根据指定的轴将输入Tensor切分成块.
+    根据指定的轴将输入Tensor切分成块。
 
     参数：
         - **tensor** (Tensor) - 要被切分的Tensor。

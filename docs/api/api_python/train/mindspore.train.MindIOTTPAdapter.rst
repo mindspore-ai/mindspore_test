@@ -3,8 +3,7 @@ mindspore.train.MindIOTTPAdapter
 
 .. py:class:: mindspore.train.MindIOTTPAdapter(controller_ip, controller_port, ckpt_save_path)
 
-    该回调用于开启 `MindIO的TTP特性 <https://www.hiascend.com/document/detail/zh/mindx-dl/60rc1/mindio/mindiottp/mindiottp001.html>`_，
-    该CallBack会嵌入训练的流程，完成TTP 的初始化、上报、异常处理等操作。
+    该回调用于开启 `MindIO的TTP特性 <https://www.hiascend.com/document/detail/zh/mindx-dl/60rc1/mindio/mindiottp/mindiottp001.html>`_，该CallBack会嵌入训练的流程，完成TTP 的初始化、上报、异常处理等操作。
 
     .. note::
         该特性仅支持Ascend GE LazyInline 模式，且满足 pipeline 流水并行大于1的要求。

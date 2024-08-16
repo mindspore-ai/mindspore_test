@@ -2,7 +2,7 @@ mindspore.numpy.bitwise_xor
 ===========================
 
 .. py:function:: mindspore.numpy.bitwise_xor(x1, x2, dtype=None)
-        
+
     逐元素计算两个数组的按位异或运算。 计算输入数组中整数的二进制表示的按位异或。 此函数实现了C/Python中的操作符 ^ 。
     
     .. note::
