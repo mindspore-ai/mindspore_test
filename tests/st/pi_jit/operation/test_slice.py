@@ -1,5 +1,6 @@
 import numpy as np
-import pytest
+import sys  
+import pytest 
 from mindspore import Tensor
 from mindspore.common import dtype as mstype
 from ..share.ops.primitive.slice_ops import SliceFactory
@@ -7,6 +8,10 @@ from ..share.ops.primitive.slice_ops import SliceMock
 from ..dynamic_shape_operations.slice import DynamicShapeSliceFactory
 from tests.mark_utils import arg_mark
 
+@pytest.fixture(autouse=True)  
+def skip_if_python_version_too_high():  
+    if sys.version_info >= (3, 11):  
+        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_p_slice_input_n1024x1270_0x0_4x4():

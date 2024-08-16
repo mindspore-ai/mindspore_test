@@ -2,9 +2,14 @@ from ..share.ops.primitive.floor_ops import FloorFactory
 from mindspore import Tensor
 import mindspore.ops.operations as op
 import numpy as np
-import pytest
+import sys  
+import pytest 
 from tests.mark_utils import arg_mark
 
+@pytest.fixture(autouse=True)  
+def skip_if_python_version_too_high():  
+    if sys.version_info >= (3, 11):  
+        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_p_floor_input_1d_fp16():

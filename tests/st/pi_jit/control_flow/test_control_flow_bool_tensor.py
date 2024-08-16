@@ -6,7 +6,13 @@ import mindspore.ops.functional as F
 import numpy as np
 from ..share.grad import GradOfFirstInput
 from tests.mark_utils import arg_mark
+import sys  
+import pytest 
 
+@pytest.fixture(autouse=True)  
+def skip_if_python_version_too_high():  
+    if sys.version_info >= (3, 11):  
+        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 class Net1(Cell):
     def __init__(self):

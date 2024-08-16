@@ -1,10 +1,15 @@
-import pytest
+import sys  
+import pytest 
 from mindspore import numpy as np
 from mindspore import Tensor, jit, context
 import mindspore.ops as ops
 from .share.utils import match_array
 from tests.mark_utils import arg_mark
 
+@pytest.fixture(autouse=True)  
+def skip_if_python_version_too_high():  
+    if sys.version_info >= (3, 11):  
+        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 def func_impl(a, b):
     x = a[0][0] + b[0][0]

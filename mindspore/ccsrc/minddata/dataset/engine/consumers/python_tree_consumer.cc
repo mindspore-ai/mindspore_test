@@ -20,7 +20,7 @@
 
 namespace mindspore::dataset {
 namespace consumers_util {
-Status GetNextAsPythonList(TreeConsumer *consumer, const py::list *out) {
+Status GetNextAsPythonList(TreeConsumer *consumer, py::list *out) {
   RETURN_UNEXPECTED_IF_NULL(out);
   std::vector<TensorPtr> row;
   {
@@ -48,15 +48,13 @@ Status GetNextAsPythonDict(TreeConsumer *consumer, const py::dict *out) {
 }
 }  // namespace consumers_util
 
-Status PythonIteratorConsumer::GetNextAsList(const py::list *out) {
-  return consumers_util::GetNextAsPythonList(this, out);
-}
+Status PythonIteratorConsumer::GetNextAsList(py::list *out) { return consumers_util::GetNextAsPythonList(this, out); }
 
 Status PythonIteratorConsumer::GetNextAsDict(const py::dict *out) {
   return consumers_util::GetNextAsPythonDict(this, out);
 }
 
-Status PythonPullBasedIteratorConsumer::GetNextAsList(const py::list *out) {
+Status PythonPullBasedIteratorConsumer::GetNextAsList(py::list *out) {
   return consumers_util::GetNextAsPythonList(this, out);
 }
 
