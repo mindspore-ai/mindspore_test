@@ -25,6 +25,7 @@
 #include "ir/value.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/structure_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "pipeline/jit/ps/resource.h"
 #include "pipeline/jit/ps/static_analysis/prim.h"
@@ -63,7 +64,7 @@ TEST_F(TestCompilerFailureMode, test_create_abnormal_node) {
     AbstractBasePtrList abs_list{abs, abs, abs};
     AbstractBasePtr res = EvalGraph(fg, abs_list);
   } catch (std::runtime_error const &err) {
-    ASSERT_TRUE(std::string(err.what()).find("the inputs number should be 2") != std::string::npos);
+    ASSERT_TRUE(std::string(err.what()).find("the inputs number should be 2 but got 3") != std::string::npos);
   }
 }
 
@@ -84,7 +85,8 @@ TEST_F(TestCompilerFailureMode, test_graph_cycle) {
   try {
     AbstractBasePtr res = EvalGraph(fg1, {});
   } catch (std::runtime_error const &err) {
-    ASSERT_TRUE(std::string(err.what()).find("Exceed function call depth limit 1000") != std::string::npos);
+    ASSERT_TRUE(std::string(err.what()).find("Please check the code if it's has the infinite recursion") !=
+                std::string::npos);
   }
 }
 
@@ -95,7 +97,8 @@ TEST_F(TestCompilerFailureMode, test_side_effect_abnormal_graph) {
   FuncGraphPtr fg = std::make_shared<FuncGraph>();
   AnfNodePtr param0 = fg->add_parameter();
   AnfNodePtr param1 = fg->add_parameter();
-  CNodePtr cnode = fg->NewCNode({NewValueNode(prim::kPrimAssign), param0, NewValueNode(kUMonad), param1});
+  prim::DoSignaturePrimitivePtr do_sign = std::make_shared<prim::DoSignaturePrimitive>("Assign", prim::kPrimAssign);
+  CNodePtr cnode = fg->NewCNode({NewValueNode(do_sign), NewValueNode(kUMonad), param0, param1});
   fg->set_output(cnode);
 
   try {
@@ -104,7 +107,7 @@ TEST_F(TestCompilerFailureMode, test_side_effect_abnormal_graph) {
     AbstractBasePtr tensor_abs = std::make_shared<abstract::AbstractTensor>(kInt32, std::vector<int64_t>({1}));
     AbstractBasePtr res = EvalGraph(fg, {param_abs, tensor_abs});
   } catch (std::runtime_error const &err) {
-    ASSERT_TRUE(std::string(err.what()).find("doesn't implement") != std::string::npos);
+    ASSERT_TRUE(std::string(err.what()).find("Failed calling Assign with \"variable=UMonad\"") != std::string::npos);
   }
 }
 
@@ -137,17 +140,21 @@ TEST_F(TestCompilerFailureMode, test_side_effect_incorrect_inputs_number) {
 TEST_F(TestCompilerFailureMode, test_irpass_abnormal) {
   FuncGraphPtr fg = std::make_shared<FuncGraph>();
   AnfNodePtr param0 = fg->add_parameter();
-  CNodePtr cnode = fg->NewCNode({NewValueNode(prim::kPrimMul), param0, NewValueNode(MakeValue(1.01))});
+  AnfNodePtr param1 = NewValueNode(MakeValue(0));
+  AnfNodePtr param2 = NewValueNode(MakeValue(1));
+  CNodePtr cnode = fg->NewCNode({NewValueNode(prim::kPrimSplit), param0, param1, param2});
   fg->set_output(cnode);
 
-  auto mgr = Manage(fg);
-  mgr->Replace(cnode, param0);
-  // Incorrect use "x * 1 = x"
-  tensor::TensorPtr tensor = std::make_shared<tensor::Tensor>(10, kFloat32);
-  AbstractBasePtr abs = abstract::FromValue(tensor, false);
-  AbstractBasePtr res = EvalGraph(fg, {abs});
-  auto res_data = reinterpret_cast<float *>(GetValue<tensor::TensorPtr>(res->BuildValue())->data_c());
-  ASSERT_TRUE(*res_data == 10);
+  try {
+    auto mgr = Manage(fg);
+    mgr->Replace(param1, param0);
+    auto x_abs = std::make_shared<abstract::AbstractTensor>(kInt32, std::vector<int64_t>{3});
+    AbstractBasePtr res = EvalGraph(fg, {x_abs});
+  } catch (std::runtime_error const &err) {
+    ASSERT_TRUE(std::string(err.what())
+                  .find("For Operator[Split], axis's type 'Tensor[Int32]' does not match expected type 'int'") !=
+                std::string::npos);
+  }
 }
 
 /// Feature: Failure mode for compiler.
