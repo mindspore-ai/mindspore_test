@@ -28,8 +28,6 @@ namespace mindspore {
 namespace ops {
 template <typename T>
 void ImpleNeg(void *origin, void *target, size_t size) {
-  MS_EXCEPTION_IF_NULL(origin);
-  MS_EXCEPTION_IF_NULL(target);
   auto origin_data = reinterpret_cast<T *>(origin);
   auto target_data = reinterpret_cast<T *>(target);
   for (size_t i = 0; i < size; ++i) {

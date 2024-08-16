@@ -29,9 +29,6 @@ namespace mindspore {
 namespace ops {
 template <typename T>
 void EqualImpl(void *x1, void *x2, void *result, size_t size) {
-  MS_EXCEPTION_IF_NULL(x1);
-  MS_EXCEPTION_IF_NULL(x2);
-  MS_EXCEPTION_IF_NULL(result);
   T *x1_data = static_cast<T *>(x1);
   T *x2_data = static_cast<T *>(x2);
   auto result_data = static_cast<bool *>(result);
@@ -42,9 +39,6 @@ void EqualImpl(void *x1, void *x2, void *result, size_t size) {
 
 template <typename T>
 void EqualFloatImpl(void *x1, void *x2, void *result, size_t size) {
-  MS_EXCEPTION_IF_NULL(x1);
-  MS_EXCEPTION_IF_NULL(x2);
-  MS_EXCEPTION_IF_NULL(result);
   T *x1_data = static_cast<T *>(x1);
   T *x2_data = static_cast<T *>(x2);
   auto result_data = static_cast<bool *>(result);
@@ -80,8 +74,6 @@ class EqualFrontendFuncImpl : public OpFrontendFuncImpl {
     }
     auto x1_tensor = x1->cast<tensor::TensorPtr>();
     auto x2_tensor = x2->cast<tensor::TensorPtr>();
-    MS_EXCEPTION_IF_NULL(x1_tensor);
-    MS_EXCEPTION_IF_NULL(x2_tensor);
 
     auto x1_shape = input_args[kIndex0]->GetShape()->GetShapeVector();
     auto x2_shape = input_args[kIndex1]->GetShape()->GetShapeVector();

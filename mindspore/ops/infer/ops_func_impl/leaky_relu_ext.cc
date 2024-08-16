@@ -32,7 +32,6 @@ TypePtr LeakyReLUExtFuncImpl::InferType(const PrimitivePtr &primitive,
                                         const std::vector<AbstractBasePtr> &input_args) const {
   static const std::set<TypePtr> valid_types = {kFloat16, kFloat32, kFloat64, kBFloat16};
   auto input_type = input_args[kIndex0]->GetType();
-  MS_EXCEPTION_IF_NULL(input_type);
   (void)CheckAndConvertUtils::CheckTensorTypeValid("input_x", input_type, valid_types, primitive->name());
   return input_type;
 }
