@@ -951,7 +951,6 @@ class TupleParaNet(Cell):
         return paralist[0]
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_tuple_parameter():
     """
     Feature: Contrtol flow inline.
