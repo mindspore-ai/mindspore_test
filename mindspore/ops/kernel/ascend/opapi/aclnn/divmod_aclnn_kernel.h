@@ -34,7 +34,7 @@ class DivModAscend : public AclnnKernelMod {
 
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
-  int64_t mode_;
+  int64_t mode_ = 0;
 };
 }  // namespace kernel
 }  // namespace mindspore

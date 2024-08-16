@@ -34,9 +34,9 @@ class SortExtAscend : public AclnnKernelMod {
 
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE();
-  int64_t dim;
-  bool descending;
-  bool stable;
+  int64_t dim = 0;
+  bool descending = false;
+  bool stable = false;
 };
 }  // namespace kernel
 }  // namespace mindspore

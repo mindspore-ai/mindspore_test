@@ -24,14 +24,10 @@ namespace mindspore {
 namespace ops {
 BaseShapePtr RsqrtFuncImpl::InferShape(const PrimitivePtr &primitive,
                                        const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(input_args[0]);
-  MS_EXCEPTION_IF_NULL(input_args[0]->GetShape());
-  return input_args[0]->GetShape()->Clone();
+  return input_args[kIndex0]->GetShape()->Clone();
 }
 
 TypePtr RsqrtFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(input_args[0]);
-  MS_EXCEPTION_IF_NULL(input_args[0]->GetType());
   auto input_type = input_args[kIndex0]->GetType();
   auto input_type_id = input_type->cast<TensorTypePtr>()->element()->type_id();
   static const std::set<TypeId> int_or_bool = {kNumberTypeUInt8,  kNumberTypeInt8,   kNumberTypeUInt16,
@@ -42,7 +38,7 @@ TypePtr RsqrtFuncImpl::InferType(const PrimitivePtr &primitive, const std::vecto
   if (is_int_or_bool) {
     return std::make_shared<TensorType>(kFloat32);
   } else {
-    return input_type->Clone();
+    return input_type;
   }
 }
 TypePtrList RsqrtFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {

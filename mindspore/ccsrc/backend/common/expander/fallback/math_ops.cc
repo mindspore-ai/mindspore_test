@@ -100,7 +100,7 @@ REG_FALLBACK_BUILDER("MatMulExt").SetBody(BODYFUNC(ib) {
   ShapeVector shape_out = ops::InferShapeRem(shape_backbone, shape1_orig, shape2_orig, transpose_b);
   input = Expand(ib, input, 2);
   other = Expand(ib, other, 2);
-  NodePtr ret;
+  NodePtr ret{nullptr};
   if (Rank(other) == 2) {
     if (Rank(input) > 2) {
       int64_t new_shape_dim0 = 1;
