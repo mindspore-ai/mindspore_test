@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/optimizer/ir_fusion/matmul_allreduce_fusion.h"
 #include <set>
 #include <vector>
 #include "mindspore/ops/op_def/nn_ops.h"
@@ -35,8 +34,89 @@
 #include "mindspore/core/ir/anf.h"
 #include "utils/phase.h"
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
+#include "plugin/device/ascend/optimizer/ir_fusion/matmul_allreduce_fusion.h"
 
 namespace mindspore::opt {
+enum MC2FusionLevel { kMC2NotFusion = 0, kMC2FusionForward = 1, kMC2FusionBackward = 2, kMC2FusionFull = 3 };
+template <typename T>
+T GetInputValueFromCNode(const CNodePtr &cnode, size_t index) {
+  MS_EXCEPTION_IF_NULL(cnode);
+  auto inputs = cnode->inputs();
+  if (index >= inputs.size()) {
+    MS_LOG(EXCEPTION) << "The input index (" << index << ") is exceed of inputs size (" << inputs.size() << ").";
+  }
+  auto input_node = inputs[index];
+  MS_EXCEPTION_IF_NULL(input_node);
+  if (!input_node->isa<ValueNode>()) {
+    MS_LOG(EXCEPTION) << "The " << index << "-th input is not a value node.";
+  }
+  auto value = input_node->cast<ValueNodePtr>()->value();
+  MS_EXCEPTION_IF_NULL(value);
+  return GetValue<T>(value);
+}
+
+ShapeVector GetShape(const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
+  auto base_shape = node->abstract()->GetShape();
+  if (base_shape->isa<abstract::Shape>()) {
+    auto shape_ptr = base_shape->cast<abstract::ShapePtr>();
+    MS_EXCEPTION_IF_NULL(shape_ptr);
+    return shape_ptr->shape();
+  }
+  return {};
+}
+
+bool IsForwardNode(const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
+  if (!node->isa<CNode>()) {
+    return false;
+  }
+  auto cnode = node->cast<CNodePtr>();
+  return !(cnode->HasPrimalAttr(kPrimalAttrForwardUniqueId) || cnode->HasAttr(kAttrDuplicated));
+}
+
+bool IsRecomputeNode(const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
+  if (!node->isa<CNode>()) {
+    return false;
+  }
+  auto cnode = node->cast<CNodePtr>();
+  return cnode->HasAttr(kAttrDuplicated);
+}
+
+bool IsBpropNode(const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
+  if (!node->isa<CNode>()) {
+    return false;
+  }
+  return node->fullname_with_scope().find("Gradients") == 0;
+}
+
+bool IsKbkAclnnMode() {
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+
+  bool is_k_by_k_mode = ms_context->IsKByKExecutorMode();
+  bool enable_lccl = device::ascend::EnableLccl();
+  //  When lccl communication is not enabled in the kbk scenario
+  return is_k_by_k_mode && !enable_lccl;
+}
+
+bool IsNodesDTypeSameAndValid(const std::vector<AnfNodePtr> &nodes, const std::vector<TypeId> &valid_types) {
+  if (nodes.empty()) {
+    return true;
+  }
+  std::vector<TypeId> types;
+  for (const auto &node : nodes) {
+    (void)types.emplace_back(common::AnfAlgo::GetOutputInferDataType(node, kIndex0));
+  }
+  if (std::find(valid_types.begin(), valid_types.end(), types[0]) == valid_types.end()) {
+    return false;
+  }
+  auto type0 = types[0];
+  return std::all_of(types.begin() + 1, types.end(), [&type0](TypeId type) { return type == type0; });
+}
+
 const BaseRef MatMulAllReduceFusion::DefinePattern() const {
   auto matmul_input_1 = std::make_shared<Var>();
   MS_CHECK_TRUE_RET(matmul_input_1 != nullptr, {});
@@ -86,9 +166,27 @@ AnfNodePtr MatMulAllReduceFusion::CreateMatMulAllReduceNode(const FuncGraphPtr &
   auto input_y_node = matmul_cnode->input(kIndex2);
   MS_ASSERT(input_y_node != nullptr);
 
-  const std::set<TypeId> support_dtype = {kNumberTypeFloat16, kNumberTypeFloat32, kNumberTypeBFloat16};
-  if (!CheckSupportDataType(input_x_node, support_dtype)) {
-    return nullptr;
+  if (IsKbkAclnnMode()) {
+    auto is_trans_a = GetInputValueFromCNode<bool>(matmul_cnode, kIndex3);
+    // current only support b tans
+    MS_CHECK_TRUE_RET(!is_trans_a, {});
+
+    // X1 supports two or three dimensions, and X2 supports only two dimensions
+    MS_CHECK_TRUE_RET(GetShape(input_x_node).size() == kSizeTwo || GetShape(input_x_node).size() == kSizeThree, {});
+    MS_CHECK_TRUE_RET(GetShape(input_y_node).size() == kSizeTwo, {});
+
+    auto reduce_op = allreduce_prim->GetAttr(kAttrNameOp);
+    // current only support "sum"
+    MS_CHECK_TRUE_RET(reduce_op->isa<StringImm>() && reduce_op->cast<StringImmPtr>()->value() == "sum", {});
+
+    //  Currently, the aclnn scenario under kbk only supports f16 and bf16
+    std::vector<TypeId> valid_type_list = {kFloat16->type_id(), kBFloat16->type_id()};
+    MS_CHECK_TRUE_RET(IsNodesDTypeSameAndValid({input_x_node, input_y_node}, valid_type_list), {});
+  } else {
+    const std::set<TypeId> support_dtype = {kNumberTypeFloat16, kNumberTypeFloat32, kNumberTypeBFloat16};
+    if (!CheckSupportDataType(input_x_node, support_dtype)) {
+      return nullptr;
+    }
   }
 
   auto matmul_allreduce_prim_c = CreateMatMulAllReducePrim(allreduce_prim, matmul_cnode);
@@ -103,23 +201,50 @@ AnfNodePtr MatMulAllReduceFusion::CreateMatMulAllReduceNode(const FuncGraphPtr &
 const AnfNodePtr MatMulAllReduceFusion::Process(const mindspore::FuncGraphPtr &func_graph,
                                                 const mindspore::AnfNodePtr &node,
                                                 const mindspore::EquivPtr &equiv) const {
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  if (!ms_context->IsEnableInferBoost()) {
-    return nullptr;
-  }
+  if (IsKbkAclnnMode()) {
+    auto ms_context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(ms_context);
+    auto mc2_fusion_level = ms_context->get_param<int>(MS_CTX_COMPUTE_COMMUNICATE_FUSION_LEVEL);
+    if (mc2_fusion_level != kMC2NotFusion && mc2_fusion_level != kMC2FusionForward &&
+        mc2_fusion_level != kMC2FusionBackward && mc2_fusion_level != kMC2FusionFull) {
+      MS_LOG(DEBUG) << "In KBK mode MC2 fusion level is " << mc2_fusion_level << ", only support 0, 1, 2, 3.";
+      return nullptr;
+    }
+    if (mc2_fusion_level == kMC2NotFusion) {
+      MS_LOG(DEBUG) << "MC2 fusion level is 0, not enable fusion.";
+      return nullptr;
+    }
 
-  auto phase = PhaseManager::GetInstance().phase();
-  bool enable_lccl = device::ascend::EnableLccl();
-  if (!enable_lccl || phase.rfind(kPhaseNamePrefill) == std::string::npos) {
-    return nullptr;
-  }
+    if (mc2_fusion_level == kMC2FusionForward && !IsForwardNode(node)) {
+      MS_LOG(DEBUG) << "MC2 fusion level is " << kMC2FusionForward << ", only apply to forward node. Skip node "
+                    << node->fullname_with_scope();
+      return nullptr;
+    }
+    if (mc2_fusion_level == kMC2FusionBackward && !(IsBpropNode(node) || IsRecomputeNode(node))) {
+      MS_LOG(DEBUG) << "MC2 fusion level is " << kMC2FusionBackward << ", only apply to backward node. Skip node "
+                    << node->fullname_with_scope();
+      return nullptr;
+    }
 
-  auto enable_op_list = ms_context->ms_internal_enable_custom_kernel_list();
-  bool enable_matmul_allreduce =
-    (std::find(enable_op_list.begin(), enable_op_list.end(), kMatMulAllReduceOpName) != enable_op_list.end());
-  if (!enable_matmul_allreduce) {
-    return nullptr;
+  } else {
+    auto ms_context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(ms_context);
+    if (!ms_context->IsEnableInferBoost()) {
+      return nullptr;
+    }
+
+    auto phase = PhaseManager::GetInstance().phase();
+    bool enable_lccl = device::ascend::EnableLccl();
+    if (!enable_lccl || phase.rfind(kPhaseNamePrefill) == std::string::npos) {
+      return nullptr;
+    }
+
+    auto enable_op_list = ms_context->ms_internal_enable_custom_kernel_list();
+    bool enable_matmul_allreduce =
+      (std::find(enable_op_list.begin(), enable_op_list.end(), kMatMulAllReduceOpName) != enable_op_list.end());
+    if (!enable_matmul_allreduce) {
+      return nullptr;
+    }
   }
 
   if (func_graph == nullptr || node == nullptr) {

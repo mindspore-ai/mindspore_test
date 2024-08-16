@@ -70,6 +70,7 @@
 #include "plugin/device/ascend/optimizer/ir_fusion/inference_swiglu_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion/inference_qbmm_add_fusion.h"
 #include "plugin/device/ascend/optimizer/ir_fusion/inference_qbmm_allreduce_add_fusion.h"
+#include "plugin/device/ascend/hal/common/ascend_utils.h"
 #include "utils/phase.h"
 
 namespace mindspore {
@@ -142,9 +143,12 @@ void GetBackendCommonUnifyMindIRPassManager(PassManagerPtr *unify_mindir_pm) {
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::AvgPoolGradForGE>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::FlashAttentionFusionV1>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::FlashAttentionFusionV2>());
-  if (!is_kbk_mode) {
-    (*unify_mindir_pm)->AddPass(std::make_shared<opt::MatmulReduceScatterFusion>());
-    (*unify_mindir_pm)->AddPass(std::make_shared<opt::AllGatherMatmulFusion>());
+  (*unify_mindir_pm)->AddPass(std::make_shared<opt::MatmulReduceScatterFusion>());
+  (*unify_mindir_pm)->AddPass(std::make_shared<opt::AllGatherMatmulFusion>());
+  // kbk aclnn
+  bool enable_lccl = device::ascend::EnableLccl();
+  if (is_kbk_mode && !enable_lccl) {
+    (*unify_mindir_pm)->AddPass(std::make_shared<opt::MatMulAllReduceFusion>());
   }
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::CentralizationMindIR>());
 #ifdef ENABLE_INTERNAL_KERNELS

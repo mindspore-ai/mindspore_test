@@ -21,6 +21,7 @@
 #include <functional>
 #include "ir/tensor.h"
 #include "transform/acl_ir/acl_helper.h"
+#include "plugin/device/ascend/hal/hardware/ascend_collective_comm_lib.h"
 
 namespace mindspore {
 namespace kernel {
@@ -50,6 +51,10 @@ std::vector<size_t> AclnnKernelMod::GetLaunchIgnoredInputAddressIdx() const {
     return launch_ignored_input_addr_idx.at(kernel_name_);
   }
   return {};
+}
+
+std::string AclnnKernelMod::GetCommName(const std::string &group) {
+    return device::ascend::AscendCollectiveCommLib::GetInstance().HcclInnerCommName(group);
 }
 
 }  // namespace kernel

@@ -303,6 +303,13 @@ class AclnnKernelMod : public KernelMod {
     return result;
   }
 
+    template <typename T>
+    T GetRequiredAttr(const std::string &attr_name) {
+     auto attr_value = primitive_->GetAttr(attr_name);
+     return GetValue<T>(attr_value);
+        }
+    std::string GetCommName(const std::string &group);
+
   aclOpExecutor *executor_{nullptr};
   CallBackFunc release_func_{nullptr};
   std::string op_type_;
