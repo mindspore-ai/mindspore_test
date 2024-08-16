@@ -443,6 +443,7 @@ void ResetId(const ResourcePtr &resource) {
       const auto &cnode = node->cast<CNodePtr>();
       MS_EXCEPTION_IF_NULL(cnode);
       cnode->set_fullname_with_scope("");
+      (void)cnode->fullname_with_scope();
     }
   }
 }
