@@ -22,6 +22,7 @@ from mindspore.common import dtype as mstype
 from mindspore.ops import auto_generate as gen
 from mindspore.experimental.optim.optimizer import Optimizer
 from mindspore import _checkparam as validator
+from mindspore import mint
 
 _optim_adamw_opt = C.MultitypeFuncGraph("optim_adamw_opt")
 hyper_map = C.HyperMap()
@@ -29,10 +30,21 @@ hyper_map = C.HyperMap()
 
 @_optim_adamw_opt.register("Function", "Float", "Float", "Float", "Float", "Float", "Tensor", "Bool", "Bool", "Tensor",
                            "Tensor", "Tensor", "Tensor", "Tensor")
-def _run_optim_adamw_opt(opt, beta1, beta2, lr, eps, weight_decay, step, amsgrad, maximize, parameters, grads, exp_avg,
-                         exp_avg_sq, max_exp_avg_sq):
+def _run_optim_adamw_amsgrad_opt(opt, beta1, beta2, lr, eps, weight_decay, step, amsgrad, maximize, parameters, grads,
+                                 exp_avg, exp_avg_sq, max_exp_avg_sq):
     """Apply adamw optimizer to the weight parameter."""
     success = True
+    opt(parameters, exp_avg, exp_avg_sq, max_exp_avg_sq, P.Cast()(grads, F.dtype(parameters)), step, lr, beta1, beta2,
+        weight_decay, eps, amsgrad, maximize)
+    return success
+
+@_optim_adamw_opt.register("Function", "Float", "Float", "Float", "Float", "Float", "Tensor", "Bool", "Bool", "Tensor",
+                           "Tensor", "Tensor", "Tensor")
+def _run_optim_adamw_opt(opt, beta1, beta2, lr, eps, weight_decay, step, amsgrad, maximize, parameters, grads, exp_avg,
+                         exp_avg_sq):
+    """Apply adamw optimizer to the weight parameter."""
+    success = True
+    max_exp_avg_sq = mint.zeros_like(exp_avg)
     opt(parameters, exp_avg, exp_avg_sq, max_exp_avg_sq, P.Cast()(grads, F.dtype(parameters)), step, lr, beta1, beta2,
         weight_decay, eps, amsgrad, maximize)
     return success
@@ -160,7 +172,6 @@ class AdamW(Optimizer):
 
         self.exp_avg = self.parameters.clone(prefix="exp_avg", init='zeros')
         self.exp_avg_sq = self.parameters.clone(prefix="exp_avg_sq", init='zeros')
-        self.max_exp_avg_sq = self.parameters.clone(prefix="max_exp_avg_sq", init='zeros')
         self.state_step = Parameter(Tensor([-1], mstype.float32), "state_step")
         self.increase_tensor = Tensor(1, mstype.float32)
         self.assignadd = P.AssignAdd()
@@ -177,9 +188,17 @@ class AdamW(Optimizer):
             lr = group.get("lr")
             grads = tuple(gradients[start_id: end_id])
 
-            self.hyper_map(F.partial(_optim_adamw_opt, self.adamw_opt, beta1, beta2, float(lr),
-                                     group.get("eps"), group.get("weight_decay"), self.state_step,
-                                     group.get("amsgrad"), maximize),
-                           self.parameters[start_id: end_id], grads, self.exp_avg[start_id: end_id],
-                           self.exp_avg_sq[start_id: end_id], self.max_exp_avg_sq[start_id: end_id])
+            if group.get("amsgrad"):
+                self.hyper_map(F.partial(_optim_adamw_opt, self.adamw_opt, beta1, beta2, float(lr),
+                                         group.get("eps"), group.get("weight_decay"), self.state_step,
+                                         group.get("amsgrad"), maximize),
+                               self.parameters[start_id: end_id], grads, self.exp_avg[start_id: end_id],
+                               self.exp_avg_sq[start_id: end_id], group.get("max_exp_avg_sq"))
+            else:
+                self.hyper_map(F.partial(_optim_adamw_opt, self.adamw_opt, beta1, beta2, float(lr),
+                                         group.get("eps"), group.get("weight_decay"), self.state_step,
+                                         group.get("amsgrad"), maximize),
+                               self.parameters[start_id: end_id], grads, self.exp_avg[start_id: end_id],
+                               self.exp_avg_sq[start_id: end_id])
+
         return True
