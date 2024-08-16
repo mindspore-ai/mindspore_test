@@ -1887,31 +1887,8 @@ void KernelGraphMgr::SetReturnNode(const AnfNodePtr &node, KernelGraph *graph) {
       for (size_t i = 0; i < tuple_input_num - 1; i++) {
         auto input = common::AnfAlgo::GetInputNode(make_tuple, i);
         MS_EXCEPTION_IF_NULL(input);
-        auto node_abs = input->abstract();
-        MS_EXCEPTION_IF_NULL(node_abs);
-        if (node_abs->isa<abstract::AbstractSequence>()) {
-          MS_EXCEPTION_IF_CHECK_FAIL(
-            i == 0, "Input index: " + std::to_string(i) + " is a make tuple, input node: " + input->DebugString());
-          MS_LOG(DEBUG) << "Flatten the make tuple, input node: " << input->DebugString()
-                        << ", output num: " << AnfUtils::GetOutputTensorNum(input);
-          // flatten the make tuple
-          for (size_t j = 0; j < AnfUtils::GetOutputTensorNum(input); j++) {
-            auto idx = NewValueNode(SizeToLong(j));
-            MS_EXCEPTION_IF_NULL(idx);
-            auto imm = std::make_shared<Int64Imm>(j);
-            idx->set_abstract(std::make_shared<abstract::AbstractScalar>(imm));
-            auto getitem = graph->NewCNode({NewValueNode(prim::kPrimTupleGetItem), input, idx});
-            std::vector<TypeId> types = {common::AnfAlgo::GetOutputInferDataType(input, j)};
-            auto shapes = {common::AnfAlgo::GetOutputInferShape(input, j)};
-            common::AnfAlgo::SetOutputInferTypeAndShape(types, shapes, getitem.get());
-            param_begin++;
-            multi_tuple++;
-            (void)make_tuple_inputs.emplace_back(getitem);
-          }
-        } else {
-          param_begin++;
-          (void)make_tuple_inputs.emplace_back(input);
-        }
+        param_begin++;
+        (void)make_tuple_inputs.emplace_back(input);
       }
       // skip partial graph
       for (size_t i = kFirstIndex; i < partial_input_num; i++) {
