@@ -2531,7 +2531,7 @@ def nanmax(a, axis=None, dtype=None, keepdims=False):
     if not isinstance(keepdims, int):
         _raise_type_error("integer argument expected, got", keepdims)
     nan_mask = _isnan(a)
-    a = F.select(nan_mask, full(F.shape(a), -sys.maxsize - 1, F.dtype(a)), a)
+    a = F.select(nan_mask, P.FillV2()(F.shape(a), Tensor(-sys.maxsize - 1, F.dtype(a))), a)
     reduce_fn = _reduce_max_keepdims if keepdims else _reduce_max_default
     return _reduce(a, reduce_fn, axis=axis, keepdims=keepdims, dtype=dtype)
 
@@ -2581,7 +2581,7 @@ def nanmin(a, axis=None, dtype=None, keepdims=False):
     if not isinstance(keepdims, int):
         _raise_type_error("integer argument expected, got", keepdims)
     nan_mask = _isnan(a)
-    a = F.select(nan_mask, full(F.shape(a), sys.maxsize, F.dtype(a)), a)
+    a = F.select(nan_mask, P.FillV2()(F.shape(a), Tensor(sys.maxsize, F.dtype(a))), a)
     reduce_fn = _reduce_min_keepdims if keepdims else _reduce_min_default
     return _reduce(a, reduce_fn, axis=axis, keepdims=keepdims, dtype=dtype)
 
