@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2021 Huawei Technologies Co., Ltd
+ * Copyright 2020-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "plugin/device/ascend/optimizer/enhancer/split_inputs_for_reduce_scatter.h"
+#include "backend/common/pass/split_inputs_for_reduce_scatter.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
@@ -33,9 +33,26 @@ std::vector<AnfNodePtr> SplitInputsForReduceScatter::InsertSplitForInput(const F
     MS_LOG(EXCEPTION) << "The rank size can not be zero.";
   }
   for (size_t i = 0; i < inputs_size; i++) {
-    std::vector<AnfNodePtr> split_inputs{NewValueNode(std::make_shared<Primitive>(prim::kPrimSplitVD->name()))};
+    std::vector<AnfNodePtr> split_inputs{NewValueNode(std::make_shared<Primitive>(prim::kPrimSplit->name()))};
     split_inputs.push_back(common::AnfAlgo::GetInputNode(node, i));
-    auto split = NewCNode(split_inputs, func_graph);
+
+    // Add axis and output number nodes as the second and third input of Split.
+    auto axis_abs = std::make_shared<abstract::AbstractScalar>(std::make_shared<Int64Imm>(kIndex0), kInt64);
+    ValueNodePtr axis_node = std::make_shared<ValueNode>(MakeValue<int64_t>(kIndex0));
+    axis_node->set_abstract(axis_abs);
+    axis_node = func_graph->cast<KernelGraphPtr>()->NewValueNode(axis_node);
+    func_graph->cast<KernelGraphPtr>()->AddValueNodeToGraph(axis_node);
+    split_inputs.push_back(axis_node);
+
+    auto output_num_abs = std::make_shared<abstract::AbstractScalar>(std::make_shared<Int64Imm>(rank_size_t), kInt64);
+    ValueNodePtr output_num_node = std::make_shared<ValueNode>(MakeValue<int64_t>(rank_size_t));
+    output_num_node->set_abstract(output_num_abs);
+    output_num_node = func_graph->cast<KernelGraphPtr>()->NewValueNode(output_num_node);
+    func_graph->cast<KernelGraphPtr>()->AddValueNodeToGraph(output_num_node);
+    split_inputs.push_back(output_num_node);
+
+    // Create Split node.
+    auto split = func_graph->NewCNode(split_inputs);
     MS_EXCEPTION_IF_NULL(split);
     std::vector<TypeId> dtypes(rank_size, common::AnfAlgo::GetPrevNodeOutputInferDataType(node, i));
 
@@ -51,9 +68,8 @@ std::vector<AnfNodePtr> SplitInputsForReduceScatter::InsertSplitForInput(const F
     common::AnfAlgo::SetNodeAttr("split_dim", MakeValue(0L), split);
     common::AnfAlgo::SetNodeAttr("num_split", MakeValue(rank_size), split);
     common::AnfAlgo::SetNodeAttr("size_splits", MakeValue(size_splits), split);
-    kernel_select_->SelectKernel(split);
     std::vector<AnfNodePtr> new_outputs;
-    CreateMultipleOutputsOfAnfNode(func_graph, split, AnfAlgo::GetOutputTensorNum(split), &new_outputs);
+    CreateMultipleOutputsOfAnfNode(func_graph, split, rank_size_t, &new_outputs);
     for (size_t j = 0; j < new_outputs.size(); j++) {
       split_outputs.push_back(new_outputs[j]);
     }
@@ -79,8 +95,7 @@ AnfNodePtr SplitInputsForReduceScatter::RearrangeInputsForReduceScatter(const Fu
   MS_EXCEPTION_IF_NULL(reduce_scatter);
   reduce_scatter->set_abstract(node->abstract());
   common::AnfAlgo::CopyNodeAttrs(node, reduce_scatter);
-  common::AnfAlgo::SetNodeAttr(kAttrFusion, MakeValue(1L), reduce_scatter);
-  kernel_select_->SelectKernel(reduce_scatter);
+  common::AnfAlgo::SetNodeAttr(kAttrFusion, MakeValue(static_cast<int64_t>(1)), reduce_scatter);
   return reduce_scatter;
 }
 

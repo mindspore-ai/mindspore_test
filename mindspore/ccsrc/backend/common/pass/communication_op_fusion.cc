@@ -41,48 +41,17 @@ constexpr auto kAttrCommZone = "comm_fusion_zone";
 constexpr size_t kAlignSize = 2 << 9;
 constexpr int64_t kDefaultThresholdMb2Byte = 262144;
 
-kernel::KernelBuildInfoPtr GenerateKernelBuildInfo(const CommunicationOpInfo &communication_op_info, size_t start_index,
-                                                   size_t end_index) {
-  if (end_index >= communication_op_info.communication_op_nodes.size()) {
-    MS_LOG(EXCEPTION) << "end index out of communication_op_nodes size";
+size_t GetOutputTensorMemSize(const AnfNodePtr &node, size_t output_index) {
+  MS_EXCEPTION_IF_NULL(node);
+  if (output_index >= AnfUtils::GetOutputTensorNum(node)) {
+    MS_EXCEPTION(ArgumentError) << "output index [" << output_index << "] large than the output size ["
+                                << AnfUtils::GetOutputTensorNum(node) << "] of node!";
   }
-  std::vector<std::string> inputs_device_format;
-  std::vector<std::string> outputs_device_format;
-  std::vector<TypeId> inputs_device_type;
-  std::vector<TypeId> outputs_device_type;
-  kernel::KernelBuildInfo::KernelBuildInfoBuilder builder;
-  for (size_t idx = start_index; idx <= end_index; ++idx) {
-    auto cnode = communication_op_info.communication_op_nodes[idx];
-    int64_t rank_size = 1;
-    if (common::AnfAlgo::HasNodeAttr(kAttrRankSize, cnode) &&
-        common::AnfAlgo::GetCNodeName(cnode) == kAllGatherOpName) {
-      rank_size = common::AnfAlgo::GetNodeAttr<int64_t>(cnode, kAttrRankSize);
-    }
-    if (rank_size == 0) {
-      MS_LOG(EXCEPTION) << "Rank size should not be zero.";
-    }
-    MS_EXCEPTION_IF_NULL(cnode);
-    size_t input_num = common::AnfAlgo::GetInputTensorNum(cnode);
-    for (size_t input_index = 0; input_index < input_num; ++input_index) {
-      inputs_device_format.push_back(AnfAlgo::GetInputFormat(cnode, input_index));
-      inputs_device_type.push_back(AnfAlgo::GetInputDeviceDataType(cnode, input_index));
-    }
-    for (int64_t rank_index = 0; rank_index < rank_size; ++rank_index) {
-      size_t output_num = AnfAlgo::GetOutputTensorNum(cnode);
-      for (size_t output_index = 0; output_index < output_num; ++output_index) {
-        outputs_device_format.push_back(AnfAlgo::GetOutputFormat(cnode, output_index));
-        outputs_device_type.push_back(AnfAlgo::GetOutputDeviceDataType(cnode, output_index));
-      }
-    }
-    builder.SetFusionType(AnfAlgo::GetFusionType(cnode));
-    builder.SetProcessor(AnfAlgo::GetProcessor(cnode));
-    builder.SetKernelType(AnfAlgo::GetKernelType(cnode));
-  }
-  builder.SetInputsFormat(inputs_device_format);
-  builder.SetOutputsFormat(outputs_device_format);
-  builder.SetInputsDeviceType(inputs_device_type);
-  builder.SetOutputsDeviceType(outputs_device_type);
-  return builder.Build();
+  TypeId output_type_id = common::AnfAlgo::GetOutputInferDataType(node, output_index);
+  size_t type_size = GetTypeByte(TypeIdToType(output_type_id));
+  auto shape = common::AnfAlgo::GetOutputInferShape(node, output_index);
+  size_t tensor_size = type_size * SizeOf(shape);
+  return tensor_size;
 }
 
 std::string GetFusionGroupKey(const AnfNodePtr &node) {
@@ -315,7 +284,7 @@ void CommunicationOpFusion::GetAllReduceSplitSegment(const std::vector<CNodePtr>
     }
     size_t accumulate = 0;
     for (size_t j = start_index; j <= index; ++j) {
-      auto tensor_size = AnfAlgo::GetOutputTensorMemSize(nodes[j], 0);
+      auto tensor_size = GetOutputTensorMemSize(nodes[j], 0);
       if (accumulate + tensor_size > LongToSize(threshold)) {
         real_segment_index.push_back(j);
         accumulate = 0;
@@ -498,8 +467,8 @@ AnfNodePtr CommunicationOpFusion::CreateFusedCommunicationOp(const FuncGraphPtr 
         shape[0] /= rank_size;
       }
       shapes.push_back(shape);
-      size_t tensor_size = AnfAlgo::GetOutputTensorMemSize(input_node, 0);
-      TypeId output_type = AnfAlgo::GetOutputDeviceDataType(input_node, 0);
+      size_t tensor_size = GetOutputTensorMemSize(input_node, 0);
+      TypeId output_type = common::AnfAlgo::GetOutputInferDataType(input_node, 0);
       size_t type_size = GetTypeByte(TypeIdToType(output_type));
       if (type_size == 0) {
         MS_LOG(EXCEPTION) << "Divisor 'type_size' should not be 0.";
@@ -509,8 +478,6 @@ AnfNodePtr CommunicationOpFusion::CreateFusedCommunicationOp(const FuncGraphPtr 
     }
   }
   common::AnfAlgo::SetOutputInferTypeAndShape(dtypes, shapes, fused_node.get());
-  auto kernel_build_info = GenerateKernelBuildInfo(communication_op_info, start_index, end_index);
-  AnfAlgo::SetSelectKernelBuildInfo(kernel_build_info, fused_node.get());
   const std::vector<std::string> kHcclFusionAttrs = {
     kAttrFusion, kAttrGroup, kAttrGroupBack, kAttrSrTag,        kAttrDestRank,           kAttrSrcRank,
     kAttrDType,  kAttrOp,    kAttrRankSize,  kAttrGroupRankIds, kAttrReuseCommunication, kAttrSegment};
@@ -553,10 +520,8 @@ bool CommunicationOpFusion::DoFusion(const FuncGraphPtr &func_graph, const Commu
     }
     auto kernel_graph = func_graph->cast<KernelGraphPtr>();
     MS_EXCEPTION_IF_NULL(kernel_graph);
-    auto graph_id = kernel_graph->graph_id();
     AnfNodePtr new_communication_op =
       CreateFusedCommunicationOp(func_graph, communication_op_info, start_index, end_index);
-    AnfAlgo::SetGraphId(graph_id, new_communication_op.get());
     // replace old communication op with new communication op
     for (auto idx = start_index; idx <= end_index; ++idx) {
       std::vector<AnfNodePtr> tuple_getitem_input;
@@ -637,7 +602,7 @@ bool CommunicationOpFusion::Run(const FuncGraphPtr &func_graph) {
       if (candidate_groups.find(key) == candidate_groups.end()) {
         CommunicationOpInfo communication_op_info;
         candidate_groups[key] = communication_op_info;
-        communication_op_info.group_name = group_name;
+        candidate_groups[key].group_name = group_name;
       }
       candidate_groups[key].communication_op_nodes.push_back(node->cast<CNodePtr>());
       candidate_groups[key].input_grad_size.push_back(input_grad_size_num);

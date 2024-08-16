@@ -53,9 +53,9 @@ void ParallelContext::Reset() {
   parallel_mode_ = kStandalone;
   parameter_broadcast_ = false;
   parameter_broadcast_is_set_ = false;
-  enable_all_reduce_fusion_ = true;
-  enable_all_gather_fusion_ = true;
-  enable_reduce_scatter_fusion_ = true;
+  enable_all_reduce_fusion_ = false;
+  enable_all_gather_fusion_ = false;
+  enable_reduce_scatter_fusion_ = false;
   strategy_json_config_file_type_ = "";
   strategy_json_config_file_path_ = "";
   strategy_json_config_file_mode_ = "";

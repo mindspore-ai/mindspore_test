@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2020-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,15 +19,13 @@
 #include <memory>
 #include <vector>
 #include "include/backend/optimizer/optimizer.h"
-#include "plugin/device/ascend/optimizer/ascend_helper.h"
 
 namespace mindspore {
 namespace opt {
-class SplitInputsForReduceScatter : public PatternProcessPass {
+class BACKEND_EXPORT SplitInputsForReduceScatter : public PatternProcessPass {
  public:
   explicit SplitInputsForReduceScatter(bool multigraph = true)
-      : PatternProcessPass("split_inputs_for_reduce_scatter", multigraph),
-        kernel_select_(std::make_shared<KernelSelect>()) {}
+      : PatternProcessPass("split_inputs_for_reduce_scatter", multigraph) {}
   ~SplitInputsForReduceScatter() override = default;
   const BaseRef DefinePattern() const override;
   const AnfNodePtr Process(const FuncGraphPtr &func_graph, const AnfNodePtr &node, const EquivPtr &) const override;
@@ -37,7 +35,6 @@ class SplitInputsForReduceScatter : public PatternProcessPass {
                                              const std::vector<AnfNodePtr> &inputs, int64_t rank_size) const;
   std::vector<AnfNodePtr> InsertSplitForInput(const FuncGraphPtr &func_graph, const CNodePtr &node,
                                               int64_t rank_size) const;
-  KernelSelectPtr kernel_select_;
 };
 }  // namespace opt
 }  // namespace mindspore

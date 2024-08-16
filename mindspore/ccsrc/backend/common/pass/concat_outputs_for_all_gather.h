@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2021 Huawei Technologies Co., Ltd
+ * Copyright 2020-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,21 +21,17 @@
 #include <string>
 #include <tuple>
 #include "include/backend/optimizer/optimizer.h"
-#include "plugin/device/ascend/optimizer/ascend_helper.h"
 
 namespace mindspore {
 namespace opt {
 constexpr int64_t kConcatInputDivisor = 63;
 
-using OutputInfo =
-  std::tuple<std::vector<TypeId>, std::vector<ShapeVector>, std::vector<std::string>, std::vector<TypeId>>;
+using OutputInfo = std::tuple<std::vector<TypeId>, std::vector<ShapeVector>>;
 
-class ConcatOutputsForAllGather : public PatternProcessPass {
+class BACKEND_EXPORT ConcatOutputsForAllGather : public PatternProcessPass {
  public:
   explicit ConcatOutputsForAllGather(bool multigraph = true)
-      : PatternProcessPass("concat_outputs_for_all_gather", multigraph),
-        inputs_divisor_(kConcatInputDivisor),
-        kernel_select_(std::make_shared<KernelSelect>()) {}
+      : PatternProcessPass("concat_outputs_for_all_gather", multigraph), inputs_divisor_(kConcatInputDivisor) {}
   ~ConcatOutputsForAllGather() override = default;
   const BaseRef DefinePattern() const override;
   const AnfNodePtr Process(const FuncGraphPtr &func_graph, const AnfNodePtr &node, const EquivPtr &) const override;
@@ -47,7 +43,6 @@ class ConcatOutputsForAllGather : public PatternProcessPass {
   CNodePtr CreateNewConcat(const FuncGraphPtr &func_graph, const std::vector<AnfNodePtr> &concat_input_nodes,
                            const OutputInfo &concat_input_info, size_t begin_index, int64_t offset) const;
   int64_t inputs_divisor_;
-  KernelSelectPtr kernel_select_;
 };
 }  // namespace opt
 }  // namespace mindspore
