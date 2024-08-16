@@ -67,6 +67,7 @@
 #include "include/common/debug/anf_ir_dump.h"
 #endif
 #include "include/common/profiler.h"
+#include "include/common/utils/parallel_context.h"
 #include "plugin/device/cpu/hal/device/cpu_kernel_task.h"
 #include "plugin/device/cpu/hal/device/cpu_device_synchronizer.h"
 #include "mindspore/ops/op_def/framework_ops.h"
@@ -305,6 +306,14 @@ void CPUKernelExecutor::OptimizeMindIR(const KernelGraphPtr &graph) const {
   // Match MatMul+BiasAdd+ReLU first, if no match, then match MatMul+BiasAdd
   pm->AddPass(std::make_shared<opt::MatMulBiasAddReluFusionCPU>("matmul_biasadd_relu_fusion_cpu"));
   pm->AddPass(std::make_shared<opt::DynamicSequenceOpsAdaptation>());
+
+  // Do communication op fusion before InsertTensorMoveForCommunication pass.
+  // So these passes are before kernel select process, no need to generate kernel build info in them.
+  if (parallel::ParallelContext::GetInstance()->enable_all_reduce_fusion()) {
+    MS_LOG(INFO) << "Parallel comm_fusion of AllReduce is enabled.";
+    pm->AddPass(std::make_shared<opt::AllReduceFusion>());
+  }
+
   optimizer->AddPassManager(pm);
   (void)optimizer->Optimize(graph);
   graph->SetExecOrderByDefault();
@@ -317,7 +326,6 @@ void CPUKernelExecutor::OptimizeGraphImpl(const KernelGraphPtr &graph) const {
   pm->AddPass(std::make_shared<opt::InsertTypeTransformOp>("insert_type_transform_op"));
   pm->AddPass(std::make_shared<opt::FlattenValueSequenceInPyExecute>("flatten_value_sequence_in_pyexecute"));
   pm->AddPass(std::make_shared<opt::InsertFormatTransformOpCPU>("insert_format_transform_op_cpu"));
-  pm->AddPass(std::make_shared<opt::AllReduceFusion>());
   pm->AddPass(std::make_shared<opt::InsertCastCPU>("insert_cast"));
   pm->AddPass(std::make_shared<opt::EraseVisitAttr>());
   pm->AddPass(std::make_shared<opt::InsertTensorMoveForCommunication>());
