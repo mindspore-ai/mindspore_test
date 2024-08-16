@@ -89,9 +89,9 @@ if [ "X${mode}" == "Xall" ]; then
   find mindspore/{ccsrc,core,lite} -type f -name "*" | grep "\.h$\|\.cc$\|\.c$" > "${CHECK_LIST_FILE}" || true
 elif [ "X${mode}" == "Xchanged" ]; then
   # --diff-filter=ACMRTUXB will ignore deleted files in commit
-  git diff --diff-filter=ACMRTUXB --name-only | grep "mindspore/ccsrc\|mindspore/core\|mindspore/lite" | grep "\.h$\|\.cc$\|\.c$" > "${CHECK_LIST_FILE}" || true
+  git diff --diff-filter=ACMRTUXB --name-only | grep "mindspore/ops\|mindspore/ccsrc\|mindspore/core\|mindspore/lite" | grep "\.h$\|\.cc$\|\.c$" > "${CHECK_LIST_FILE}" || true
 else  # "X${mode}" == "Xlastcommit"
-  git diff --diff-filter=ACMRTUXB --name-only HEAD~ HEAD | grep "mindspore/ccsrc\|mindspore/core\|mindspore/lite" | grep "\.h$\|\.cc$\|\.c$" > "${CHECK_LIST_FILE}" || true
+  git diff --diff-filter=ACMRTUXB --name-only HEAD~ HEAD | grep "mindspore/ops\|mindspore/ccsrc\|mindspore/core\|mindspore/lite" | grep "\.h$\|\.cc$\|\.c$" > "${CHECK_LIST_FILE}" || true
 fi
 
 CHECK_RESULT_FILE=__code_format_check_result__
