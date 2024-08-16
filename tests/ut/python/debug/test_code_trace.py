@@ -107,6 +107,34 @@ def test_resnet50_code_trace():
 
 
 @security_off_wrap
+def test_resnet50_node_fullname():
+    """
+    Feature: Code Trace.
+    Description: Test ResNet50 code trace.
+    Expectation: success.
+    """
+
+    save_graph_path = "test_resnet50_node_fullname"
+    context.set_context(save_graphs=1, save_graphs_path=save_graph_path)
+    predict = Tensor(np.ones([32, 3, 224, 224]), dtype=mindspore.float32)
+    label = Tensor(np.ones([32]), dtype=mindspore.int32)
+    dataset = DatasetResNet(predict, label, 2)
+
+    net = resnet50()
+    loss = SoftmaxCrossEntropyWithLogits(sparse=True, reduction='mean')
+    opt = Momentum(filter(lambda x: x.requires_grad, net.get_parameters()), 0.1, 0.9)
+    model = Model(net, loss, opt)
+    model.train(1, dataset, dataset_sink_mode=False)
+
+    analyzer = CodeTraceAnalyzer(net, save_graph_path, "validate")
+    res = analyzer.check_fullname("ApplyMomentum-op", 160)
+    if not res:
+        raise ValueError("fullname of ApplyMomentum is changed by ir print")
+
+    shutil.rmtree(save_graph_path)
+
+
+@security_off_wrap
 def test_code_trace1():
     """
     Feature: Code Trace.
