@@ -15,12 +15,13 @@
  */
 #include "backend/common/graph_kernel/kernel_packet/kernel_packet_engine.h"
 #include "utils/anf_utils.h"
+#include "include/common/utils/anfalgo.h"
 
 namespace mindspore {
 namespace graphkernel {
 namespace packet {
 void CloneAllAbstracts(const FuncGraphPtr &func_graph) {
-  auto nodes = TopoSort(func_graph->get_return(), SuccDeeperSimple, AlwaysInclude);
+  auto nodes = TopoSort(func_graph->get_return(), SuccDeeperWithAttrGraph, AlwaysInclude);
   for (auto &node : nodes) {
     auto old_abs = node->abstract();
     if (old_abs == nullptr) {
@@ -38,6 +39,16 @@ void KernelPacketEngine::SetBaseNodeDepend(const CNodePtr &basenode) {
   for (size_t i = 1; i < basenode->size(); i++) {
     if (basenode->input(i)->isa<CNode>()) {
       depend_status_map_[basenode->input(i)].value = true;
+    }
+  }
+}
+
+void KernelPacketEngine::PreBuildQuerySubgraphDependStatus(const CNodePtr &cnode, const FuncGraphPtr &sub_fg,
+                                                           size_t begin_input_index) {
+  SymbolEngineImpl::PreBuildQuerySubgraphDependStatus(cnode, sub_fg, begin_input_index);
+  for (auto &param : sub_fg->parameters()) {
+    if (IsDependValue(param)) {
+      support_infer_ = false;
     }
   }
 }

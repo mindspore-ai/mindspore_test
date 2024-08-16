@@ -149,12 +149,13 @@ void GEGraphOptimization::OptimizeACLGraphAfterKernelSelect(const KernelGraphPtr
     graph->SetExecOrderByDefault();
   }
   opt::GEBackendOptimizeACLAfterKernelSelect(graph);
-  for (auto &child_graph : graph->child_graph_order()) {
-    OptimizeACLGraphAfterKernelSelect(child_graph.lock(), memo);
-  }
-  if (!graph->is_from_single_op() && graphkernel::GraphKernelFlags::GetInstance().IsEnableKernelPacket()) {
+  if (!graph->is_from_single_op() && graphkernel::GraphKernelFlags::GetInstance().IsEnableKernelPacket() &&
+      common::AnfAlgo::IsDynamicGraph(graph)) {
     graphkernel::KernelPacketOptimize(graph);
     graph->SetExecOrderByDefault();
+  }
+  for (auto &child_graph : graph->child_graph_order()) {
+    OptimizeACLGraphAfterKernelSelect(child_graph.lock(), memo);
   }
   MS_LOG(DEBUG) << "Status record: end optimize acl graph after kernel select. graph id: " << graph->graph_id();
 }

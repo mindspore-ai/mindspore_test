@@ -107,7 +107,7 @@ def test_shape_cast(data_type):
     helper(Net, (dyn, dyn), (x, y))
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_stridedslice():
     """
     Feature: KernelPacket
@@ -131,6 +131,27 @@ def test_stridedslice():
     x_dyn = Tensor(shape=[32, None], dtype=ms.float32)
     input_x = Tensor(np.random.random([32, 16]), dtype=ms.float32)
     helper(SdNet, (x_dyn,), (input_x,))
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_matmul_only_shape():
+    """
+    Feature: KernelPacket
+    Description: test kernelpacket to fuse the only-shape-depended ops.
+    Expectation: success
+    """
+    class Net(nn.Cell):
+        def construct(self, p1, p2, p3, p4):
+            m = ops.matmul(p1, p2)
+            a = ops.add(m, p3)
+            return ops.reshape(p4, ops.shape(a))
+    p_dyn = Tensor(shape=[None, None], dtype=ms.float32)
+    p1 = Tensor(np.random.random([1, 16]), dtype=ms.float32)
+    p2 = Tensor(np.random.random([16, 8]), dtype=ms.float32)
+    p3 = Tensor(np.random.random([32, 1]), dtype=ms.float32)
+    p4 = Tensor(np.random.random([64, 4]), dtype=ms.float32)
+    ms.set_context(graph_kernel_flags="--enable_cluster_ops_only=Add")
+    helper(Net, (p_dyn, p_dyn, p_dyn, p_dyn), (p1, p2, p3, p4))
 
 
 class GradNet(nn.Cell):
@@ -165,7 +186,7 @@ def test_concat_grad():
     helper(lambda: GradNet(Net()), (dyn, dyn), (x, y))
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_stridedslice_grad():
     """
     Feature: KernelPacket

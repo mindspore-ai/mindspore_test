@@ -36,6 +36,8 @@ class KernelPacketEngine : public SymbolEngineImpl {
   static std::shared_ptr<KernelPacketEngine> Build(const FuncGraphPtr &func_graph);
 
  protected:
+  void PreBuildQuerySubgraphDependStatus(const CNodePtr &cnode, const FuncGraphPtr &sub_fg,
+                                         size_t begin_input_index) override;
   void SetBaseNodeDepend(const CNodePtr &basenode);
 };
 }  // namespace packet

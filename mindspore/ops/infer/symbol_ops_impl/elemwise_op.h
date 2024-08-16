@@ -13,25 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CORE_OPS_SYMBOL_OPS_IMPL_SCALAR_EQ_H_
-#define MINDSPORE_CORE_OPS_SYMBOL_OPS_IMPL_SCALAR_EQ_H_
+#ifndef MINDSPORE_CORE_OPS_SYMBOL_OPS_IMPL_ELEMWISE_OP_H_
+#define MINDSPORE_CORE_OPS_SYMBOL_OPS_IMPL_ELEMWISE_OP_H_
 
 #include "mindspore/ops/infer/symbol_ops_impl/common.h"
 
 namespace mindspore {
 namespace symshape {
 namespace ops {
-class OPS_API ScalarEq : public ScalarIntOp {
+class OPS_API ElemwiseBinop : public InferShapeOp {
  public:
-  using ScalarIntOp::ScalarIntOp;
-  ScalarEq(const SymbolPtr &a, const SymbolPtr &b) : ScalarIntOp({a, b}) {}
-  ~ScalarEq() override = default;
-  MS_DECLARE_PARENT(ScalarEq, ScalarIntOp)
+  using InferShapeOp::InferShapeOp;
+  ElemwiseBinop(const SymbolPtr &lhs, const SymbolPtr &rhs) : InferShapeOp({lhs, rhs}) {}
+  ~ElemwiseBinop() override = default;
+  MS_DECLARE_PARENT(ElemwiseBinop, InferShapeOp)
+
+  static SymbolPtrList Process(const SymbolPtrList &lhs, const SymbolPtrList &rhs, const OperationEmitter &e,
+                               size_t shift = 0);
+
  protected:
   SymbolPtr Eval() override;
-  void EvalOnRun() override { output_as<BoolSymbol>()->SetValue(AsInt(input(0)) == AsInt(input(1))); }
 };
 }  // namespace ops
 }  // namespace symshape
 }  // namespace mindspore
-#endif  // MINDSPORE_CORE_OPS_SYMBOL_OPS_IMPL_SCALAR_EQ_H_
+#endif  // MINDSPORE_CORE_OPS_SYMBOL_OPS_IMPL_ELEMWISE_OP_H_

@@ -26,6 +26,14 @@ REG_SYMBOL_OP_BUILDER("LayerNormGrad")
     auto gamma = b->GetInputShape(kIndex4);
     return ListSymbol::Make({x, gamma, gamma});
   });
+REG_SYMBOL_OP_BUILDER("LayerNormGradExt")
+  .SetShapeDepend({DependOn::kNone, DependOn::kShape, DependOn::kNone, DependOn::kNone, DependOn::kNone,
+                   DependOn::kShape})
+  .SetShapeFunc([](OperationBuilder *b) {
+    auto x = b->GetInputShape(kIndex1);
+    auto gamma = b->GetInputShape(kIndex5);
+    return ListSymbol::Make({x, gamma, gamma});
+  });
 }  // namespace ops
 }  // namespace symshape
 }  // namespace mindspore

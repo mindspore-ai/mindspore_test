@@ -760,6 +760,8 @@ COMMON_EXPORT size_t GetSystemFreeDiskSize(const std::string &path);
 COMMON_EXPORT bool IsEnableRefMode();
 COMMON_EXPORT bool IsMemoryPoolRecycle();
 
+COMMON_EXPORT AnfNodeWeakPtrList SuccDeeperWithAttrGraph(const AnfNodePtr &node);
+
 // copy once flag, and reset copy flag when step end
 COMMON_EXPORT bool SkipOrResetCopyAction(bool need_reset = false);
 // only sync once flag

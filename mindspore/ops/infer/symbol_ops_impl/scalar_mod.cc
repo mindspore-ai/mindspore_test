@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,17 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CORE_OPS_SYMBOL_OPS_IMPL_SWITCH_H_
-#define MINDSPORE_CORE_OPS_SYMBOL_OPS_IMPL_SWITCH_H_
-
-#include "mindspore/ops/infer/symbol_ops_impl/common.h"
+#include "mindspore/ops/infer/symbol_ops_impl/scalar_mod.h"
 
 namespace mindspore {
 namespace symshape {
 namespace ops {
-constexpr auto kControlFlowJoin = "ControlFlowJoin";
-OPS_API SymbolPtr JoinIntSymbol(const SymbolPtr &s1, const SymbolPtr &s2, const OpPtr &op = nullptr);
+SymbolPtr ScalarMod::Eval() {
+  auto lhs = input_as<IntSymbol>(0);
+  auto rhs = input_as<IntSymbol>(1);
+  if (lhs->HasData() && rhs->HasData()) {
+    return GenInt(lhs->value() % rhs->value());
+  }
+  if ((lhs->HasData() && lhs->value() == 0) || (rhs->HasData() && rhs->value() == 1)) {
+    return GenInt(0);
+  }
+  return GenVInt();
+}
+REG_SYMBOL_OP_BUILDER("ScalarMod").SetValueDependN<DependOn::kValue, 2>().SetValueFuncWith<ScalarMod>();
 }  // namespace ops
 }  // namespace symshape
 }  // namespace mindspore
-#endif  // MINDSPORE_CORE_OPS_SYMBOL_OPS_IMPL_SWITCH_H_

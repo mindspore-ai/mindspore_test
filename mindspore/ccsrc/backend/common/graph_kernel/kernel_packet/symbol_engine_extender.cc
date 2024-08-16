@@ -19,7 +19,6 @@
 #include <algorithm>
 #include <memory>
 #include <functional>
-#include <vector>
 #include <utility>
 #include "utils/anf_utils.h"
 #include "mindspore/ops/op_def/framework_ops.h"
@@ -29,8 +28,8 @@
 #include "mindspore/core/symbolic_shape/operation_builder.h"
 #include "include/common/utils/anfalgo.h"
 #include "backend/common/graph_kernel/core/graph_builder.h"
-#include "backend/common/graph_kernel/kernel_packet/kernel_packet_engine.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
+#include "backend/common/graph_kernel/kernel_packet/kernel_packet_engine.h"
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "backend/common/pass/insert_type_transform_op.h"
@@ -60,7 +59,27 @@ inline bool IsDeviceOp(const AnfNodePtr &node) {
   return false;
 }
 
-bool SymbolEngineExtender::CheckBaseNode(const AnfNodePtr &node) {
+bool IsOnlyOneUser(const AnfNodePtr &node) {
+  auto mng = node->func_graph()->manager();
+  if (mng == nullptr) {
+    return false;
+  }
+  return mng->node_users()[node].size() == 1;
+}
+
+std::vector<DependOn> GetInferShapeDepend(const CNodePtr &node) {
+  if (common::AnfAlgo::HasNodeAttr(FUNC_GRAPH_ATTR_GRAPH_KERNEL, node) &&
+      common::AnfAlgo::HasNodeAttr(kAttrFuncGraph, node)) {
+    return std::vector<DependOn>(node->size() - 1, DependOn::kShape);
+  }
+  return symshape::GetShapeDepends(GetCNodePrimitive(node), node->size() - 1);
+}
+
+std::vector<DependOn> GetInferValueDepend(const CNodePtr &node) {
+  return symshape::GetValueDepends(GetCNodePrimitive(node), node->size() - 1);
+}
+
+bool SymbolEngineExtender::CheckBaseNode(const AnfNodePtr &node) const {
   if (GetCNodePrimitive(node) == nullptr) {
     return false;
   }
@@ -91,73 +110,67 @@ bool SymbolEngineExtender::IsValidNode(const CNodePtr &node) const {
   return IsPrimitiveCNode(node, prim::kPrimTupleGetItem);
 }
 
-void SymbolEngineExtender::FindShapeDependHostNode(const CNodePtr &node, HashSet<AnfNodePtr> *visited,
-                                                   HashSet<AnfNodePtr> *valid_nodes) {
-  if (!visited->insert(node).second) {
-    return;
-  }
-  if (!IsValidNode(node)) {
-    return;
-  }
-  auto prim = GetCNodePrimitive(node);
-  MS_EXCEPTION_IF_NULL(prim);
-  auto depends = symshape::GetShapeDepends(prim, node->size() - 1);
-  if (depends.empty()) {
-    MS_LOG(DEBUG) << "The node " << node->fullname_with_scope() << " shape depend status is empty.";
-    return;
-  }
-  MS_LOG(DEBUG) << "Add " << node->fullname_with_scope() << " into candidates.";
-  (void)valid_nodes->insert(node);
-  for (size_t i = 0; i < depends.size(); i++) {
-    auto inp = node->input(i + 1)->cast<CNodePtr>();
-    if (inp == nullptr) {
-      continue;
-    }
-    // assume that building shape for host op does not depend input value again.
-    if (depends[i] == DependOn::kShape && IsHostOp(inp)) {
-      FindShapeDependHostNode(inp, visited, valid_nodes);
-    }
-  }
-}
-
-void SymbolEngineExtender::FindValueDependNode(const CNodePtr &node, HashSet<AnfNodePtr> *visited,
-                                               HashSet<AnfNodePtr> *valid_nodes) {
-  if (!visited->insert(node).second) {
-    return;
-  }
-  if (!IsValidNode(node)) {
-    return;
-  }
-  auto prim = GetCNodePrimitive(node);
-  MS_EXCEPTION_IF_NULL(prim);
-  auto depends = symshape::GetValueDepends(prim, node->size() - 1);
-  // always try to fuse host op, if the node does not support symbolic value, the whole packet will be dropped.
-  // only fuse device op when it supports building symbolic value.
-  if (depends.empty() && !IsHostOp(node)) {
-    MS_LOG(DEBUG) << "The " << node->fullname_with_scope() << " is not host op and value depend status is empty.";
-    return;
-  }
-  MS_LOG(DEBUG) << "Add " << node->fullname_with_scope() << " into candidates.";
-  (void)valid_nodes->insert(node);
+void SymbolEngineExtender::SearchInputs(const CNodePtr &node, const std::vector<DependOn> &depends, size_t depth) {
   for (size_t i = 0; i < depends.size(); i++) {
     auto inp = node->input(i + 1)->cast<CNodePtr>();
     if (inp == nullptr) {
       continue;
     }
     if (depends[i] == DependOn::kValue) {
-      FindValueDependNode(inp, visited, valid_nodes);
+      MS_LOG(DEBUG) << "Depth-" << depth << ": The input[" << i << "] (" << node->fullname_with_scope()
+                    << ") is value-depended op.";
+      FindValueDependNode(inp, depth + 1);
     } else if (IsHostOp(inp)) {
-      MS_LOG(DEBUG) << "The input[" << i << "] is host op.";
-      FindShapeDependHostNode(inp, visited, valid_nodes);
+      MS_LOG(DEBUG) << "Depth-" << depth << ": The input[" << i << "] (" << node->fullname_with_scope()
+                    << ") is shape-depended host op.";
+      FindShapeDependNode(inp, depth + 1);
+    } else if (IsOnlyOneUser(inp)) {
+      MS_LOG(DEBUG) << "Depth-" << depth << ": The input[" << i << "] (" << node->fullname_with_scope()
+                    << ") is only-shape-depended device op.";
+      FindShapeDependNode(inp, depth + 1);
     }
   }
 }
 
-void SymbolEngineExtender::RemoveWildGetitem(HashSet<AnfNodePtr> *valid_nodes) const {
-  for (auto iter = valid_nodes->begin(); iter != valid_nodes->end();) {
+void SymbolEngineExtender::FindShapeDependNode(const CNodePtr &node, size_t depth) {
+  if (!visited_.insert(node).second) {
+    return;
+  }
+  if (!IsValidNode(node)) {
+    return;
+  }
+  auto depends = GetInferShapeDepend(node);
+  if (depends.empty()) {
+    MS_LOG(DEBUG) << "The node " << node->fullname_with_scope() << " shape depend status is empty.";
+    return;
+  }
+  MS_LOG(DEBUG) << "Depth-" << depth << ": Add " << node->fullname_with_scope() << " into candidates.";
+  (void)valid_nodes_.insert(node);
+  SearchInputs(node, depends, depth);
+}
+
+void SymbolEngineExtender::FindValueDependNode(const CNodePtr &node, size_t depth) {
+  if (!visited_.insert(node).second) {
+    return;
+  }
+  if (!IsValidNode(node)) {
+    return;
+  }
+  auto depends = GetInferValueDepend(node);
+  if (depends.empty()) {
+    MS_LOG(DEBUG) << "The " << node->fullname_with_scope() << " value depend status is empty.";
+    return;
+  }
+  MS_LOG(DEBUG) << "Depth-" << depth << ": Add " << node->fullname_with_scope() << " into candidates.";
+  (void)valid_nodes_.insert(node);
+  SearchInputs(node, depends, depth);
+}
+
+void SymbolEngineExtender::RemoveWildGetitem() {
+  for (auto iter = valid_nodes_.begin(); iter != valid_nodes_.end();) {
     if (IsPrimitiveCNode(*iter, prim::kPrimTupleGetItem)) {
-      if (valid_nodes->count((*iter)->cast<CNodePtr>()->input(1)) == 0) {
-        iter = valid_nodes->erase(iter);
+      if (valid_nodes_.count((*iter)->cast<CNodePtr>()->input(1)) == 0) {
+        iter = valid_nodes_.erase(iter);
         continue;
       }
     }
@@ -166,35 +179,32 @@ void SymbolEngineExtender::RemoveWildGetitem(HashSet<AnfNodePtr> *valid_nodes) c
 }
 
 AnfNodePtrList SymbolEngineExtender::FindCandidates(const CNodePtr &base_node) {
-  HashSet<AnfNodePtr> visited;
-  HashSet<AnfNodePtr> valid_nodes;
   auto depends = symshape::GetShapeDepends(GetCNodePrimitive(base_node), base_node->size() - 1);
   if (depends.empty()) {
     return {};
   }
   // use dfs to find the clusterable nodes.
   for (size_t i = 0; i < depends.size(); i++) {
-    auto inp = base_node->input(i + 1);
-    if (!inp->isa<CNode>()) {
+    auto inp = base_node->input(i + 1)->cast<CNodePtr>();
+    if (inp == nullptr) {
       continue;
     }
     if (depends[i] == DependOn::kValue) {
       MS_LOG(DEBUG) << "The input[" << i << "] " << inp->fullname_with_scope() << " is value-depended.";
-      FindValueDependNode(inp->cast<CNodePtr>(), &visited, &valid_nodes);
+      FindValueDependNode(inp, 1);
     } else if (IsHostOp(inp)) {
-      MS_LOG(DEBUG) << "The input[" << i << "] " << inp->fullname_with_scope()
-                    << " is not value-depended, but it's a host op.";
-      FindValueDependNode(inp->cast<CNodePtr>(), &visited, &valid_nodes);
+      MS_LOG(DEBUG) << "The input[" << i << "] " << inp->fullname_with_scope() << " is a host op.";
+      FindValueDependNode(inp, 1);
     }
   }
-  if (valid_nodes.empty()) {
+  if (valid_nodes_.empty()) {
     return {};
   }
-  (void)valid_nodes.insert(base_node);
-  // when the TupleGetItem's input is not in valid_nodes, remove the TupleGetItem.
-  RemoveWildGetitem(&valid_nodes);
-  return TopoSort(base_node, SuccIncoming, [&valid_nodes](const AnfNodePtr &node) -> IncludeType {
-    return valid_nodes.count(node) > 0 ? FOLLOW : EXCLUDE;
+  (void)valid_nodes_.insert(base_node);
+  // when the TupleGetItem's input is not in valid nodes, remove the TupleGetItem.
+  RemoveWildGetitem();
+  return TopoSort(base_node, SuccIncoming, [this](const AnfNodePtr &node) -> IncludeType {
+    return valid_nodes_.count(node) > 0 ? FOLLOW : EXCLUDE;
   });
 }
 
@@ -264,6 +274,8 @@ bool SymbolEngineExtender::ExtendNode(const AnfNodePtr &node, const FuncGraphPtr
   MS_EXCEPTION_IF_NULL(cnode);
 
   auto nodes = FindCandidates(cnode);
+  visited_.clear();
+  valid_nodes_.clear();
   if (nodes.size() <= 1) {
     return false;
   }
@@ -278,7 +290,7 @@ bool SymbolEngineExtender::ExtendNode(const AnfNodePtr &node, const FuncGraphPtr
   ProcessNopNode(fg, &inputs);
   auto symbol_engine = KernelPacketEngine::Build(fg);
   if (!symbol_engine->SupportInfer()) {
-    MS_LOG(DEBUG) << "Symbol engine doesn't support infer shape from node: " << node->fullname_with_scope();
+    MS_LOG(INFO) << "Symbol engine doesn't support infer shape from node: " << node->fullname_with_scope();
     return false;
   }
   auto new_cnode = CreatePacketNode(main_fg, fg, inputs);
@@ -286,7 +298,7 @@ bool SymbolEngineExtender::ExtendNode(const AnfNodePtr &node, const FuncGraphPtr
     MS_LOG(DEBUG) << "The node " << new_cnode->DebugString() << " is not dynamic shape";
     return false;
   }
-  auto fuse_op_name = GkUtils::ExtractGraphKernelName(nodes, "", "extend");
+  auto fuse_op_name = GkUtils::ExtractGraphKernelName(nodes, "", "packet");
   fg->set_attr(kAttrKernelPacketNode, MakeValue(fuse_op_name));
   fg->set_attr("only_depend_shape", FindOnlyDependShapeInputs(fg));
   new_cnode->AddAttr(kAttrToPrim, MakeValue(AnfUtils::GetCNodeName(node) + "_packet"));
@@ -296,7 +308,6 @@ bool SymbolEngineExtender::ExtendNode(const AnfNodePtr &node, const FuncGraphPtr
 }
 
 bool SymbolEngineExtender::Run(const FuncGraphPtr &func_graph) {
-  // Find the manager for the FuncGraph.
   auto mng = func_graph->manager();
   MS_EXCEPTION_IF_NULL(mng);
   // Find all cnodes.
@@ -308,9 +319,13 @@ bool SymbolEngineExtender::Run(const FuncGraphPtr &func_graph) {
   });
 
   bool changed = false;
-  // Process each subgraph.
+  std::reverse(cnodes.begin(), cnodes.end());
   for (auto cnode : cnodes) {
     if (!CheckBaseNode(cnode)) {
+      continue;
+    }
+    // the node is fused.
+    if (mng->node_users()[cnode].empty()) {
       continue;
     }
     if (ExtendNode(cnode, func_graph)) {

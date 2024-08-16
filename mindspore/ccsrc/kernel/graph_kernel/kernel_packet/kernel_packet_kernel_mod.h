@@ -40,7 +40,6 @@ class BACKEND_EXPORT KernelPacketInitializer {
 /// \brief Kernel Mod of subgraph into which host ops are clustered
 class BACKEND_EXPORT KernelPacketKernelMod : public KernelMod {
  public:
-  friend class KernelPacketInfer;
   friend class KernelPacketInitializer;
 
   KernelPacketKernelMod() = default;
@@ -54,6 +53,15 @@ class BACKEND_EXPORT KernelPacketKernelMod : public KernelMod {
               const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;
 
   std::vector<KernelAttr> GetOpSupport() override;
+
+  class InferResultSetter {
+   public:
+    explicit InferResultSetter(KernelPacketKernelMod *kernel_mod) : kernel_mod_ptr_(kernel_mod) {}
+    void CacheHostValue(size_t i, const ValuePtr &v) { kernel_mod_ptr_->host_value_cache_[i] = v; }
+
+   protected:
+    KernelPacketKernelMod *kernel_mod_ptr_;
+  };
 
  protected:
   virtual bool CopyHostToDevice(void *dst, const void *src, size_t size, void *stream) = 0;

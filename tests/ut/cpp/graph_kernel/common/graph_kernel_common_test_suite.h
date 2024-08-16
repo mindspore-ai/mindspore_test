@@ -18,15 +18,26 @@
 
 #include "common/common_test.h"
 #include "common/graph_optimizer_test_framework.h"
+#include "mindspore/core/utils/ms_context.h"
 
 namespace mindspore::graphkernel::test {
 using mindspore::test::ConstructGraph;
-using mindspore::test::RunPass;
+void RunPass(const FuncGraphPtr &graph, const std::vector<opt::PassPtr> &passes);
 
 class GraphKernelCommonTestSuite : public UT::Common {
  public:
   GraphKernelCommonTestSuite(){};
   virtual ~GraphKernelCommonTestSuite() = default;
+
+  size_t pass_stage_ = 0;
+  void RunPass(const FuncGraphPtr &graph, const std::vector<opt::PassPtr> &passes);
+
+  void SetGraphKernelFlags(const std::string &flags);
+  void SetDeviceTarget(const std::string &device);
+
+  AnfNodePtrList GetAllNodes(const FuncGraphPtr &fg);
+  CNodePtrList GetAllCNodes(const FuncGraphPtr &fg);
+  CNodePtrList GetAllGKNodes(const FuncGraphPtr &fg);
 };
 }  // namespace mindspore::graphkernel::test
 #endif  // TESTS_UT_CPP_GRAPH_KERNEL_COMMON_GRAPH_KERNEL_TEST_SUITE_H_

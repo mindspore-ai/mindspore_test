@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,17 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "mindspore/ops/infer/symbol_ops_impl/addn.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "mindspore/core/symbolic_shape/operation_builder.h"
 
 namespace mindspore {
 namespace symshape {
 namespace ops {
-REG_SYMBOL_OP_BUILDER("Select")
-  .SetShapeDepend({DependOn::kShape, DependOn::kShape, DependOn::kShape})
-  .SetShapeFunc([](OperationBuilder *b) {
-    return AddnBuildShape(b, {b->GetInputShape(kIndex0), b->GetInputShape(kIndex1), b->GetInputShape(kIndex2)});
-  });
+REG_SYMBOL_OP_BUILDER("Sort").SetShapeDepend({DependOn::kShape}).SetShapeFunc([](OperationBuilder *b) -> SymbolPtr {
+  auto x_shape = b->GetInputShape(0);
+  return ListSymbol::Make({x_shape, x_shape});
+});
 }  // namespace ops
 }  // namespace symshape
 }  // namespace mindspore

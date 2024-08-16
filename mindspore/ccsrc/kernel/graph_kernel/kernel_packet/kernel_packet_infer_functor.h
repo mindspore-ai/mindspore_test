@@ -26,7 +26,7 @@ namespace kernel {
 class BACKEND_EXPORT KernelPacketInfer : public graphkernel::SymbolEngineInfer {
  public:
   KernelPacketInfer(const std::string &name, const FuncGraphPtr &fg, KernelPacketKernelMod *kernelmod)
-      : SymbolEngineInfer(name, fg->symbol_engine(), fg->output()->abstract()), kernel_mod_ptr_(kernelmod) {}
+      : SymbolEngineInfer(name, fg->symbol_engine(), fg->output()->abstract()), kernel_mod_holder_(kernelmod) {}
   ~KernelPacketInfer() override = default;
   MS_DECLARE_PARENT(KernelPacketInfer, SymbolEngineInfer)
   BaseShapePtr InferShape(const AbstractBasePtrList &args) override;
@@ -36,7 +36,7 @@ class BACKEND_EXPORT KernelPacketInfer : public graphkernel::SymbolEngineInfer {
  protected:
   void SaveSymbolicValue();
   std::vector<AbstractBasePtr> inner_inputs_abstract_;
-  KernelPacketKernelMod *kernel_mod_ptr_;
+  KernelPacketKernelMod::InferResultSetter kernel_mod_holder_;
 };
 
 }  // namespace kernel

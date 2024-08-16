@@ -13,16 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CORE_OPS_SYMBOL_OPS_IMPL_ADDN_H_
-#define MINDSPORE_CORE_OPS_SYMBOL_OPS_IMPL_ADDN_H_
 
-#include "mindspore/core/symbolic_shape/operation_builder.h"
+#include "symbol_engine/math_info/symbol_test_utils.h"
 
-namespace mindspore {
-namespace symshape {
-namespace ops {
-SymbolPtr AddnBuildShape(OperationBuilder *b, const SymbolPtrList &symbols);
-}  // namespace ops
-}  // namespace symshape
-}  // namespace mindspore
-#endif  // MINDSPORE_CORE_OPS_SYMBOL_OPS_IMPL_ADDN_H_
+namespace mindspore::symshape::test {
+void SymbolHelper::InitSymbolEngine() {
+  if (symbol_engine_ != nullptr) {
+    return;
+  }
+  symbol_engine_ = std::make_shared<InnerSymbolEngine>();
+  symbol_engine_->emitter_ = std::make_unique<OperationEmitter>(&symbol_engine_->ops_);
+}
+}  // namespace mindspore::symshape::test

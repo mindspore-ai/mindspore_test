@@ -17,9 +17,11 @@
 #define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_GRAPH_KERNEL_KERNEL_PACKET_SYMBOL_ENGINE_EXTENDER_H_
 
 #include <string>
+#include <vector>
 #include "utils/hash_set.h"
 #include "include/backend/optimizer/pass.h"
 #include "include/backend/optimizer/optimizer.h"
+#include "mindspore/core/symbolic_shape/operation_builder.h"
 
 namespace mindspore::graphkernel::packet {
 // Extend kernel to a bigger subgraph using a symbol engine,
@@ -31,17 +33,21 @@ class SymbolEngineExtender : public opt::Pass {
   bool Run(const FuncGraphPtr &func_graph) override;
 
  protected:
-  bool CheckBaseNode(const AnfNodePtr &node);
+  bool CheckBaseNode(const AnfNodePtr &node) const;
   AnfNodePtrList FindCandidates(const CNodePtr &base_node);
+  void SearchInputs(const CNodePtr &node, const std::vector<symshape::DependOn> &depends, size_t depth);
+  void FindShapeDependNode(const CNodePtr &node, size_t depth);
+  void FindValueDependNode(const CNodePtr &node, size_t depth);
   bool ExtendNode(const AnfNodePtr &node, const FuncGraphPtr &main_fg);
-  void FindValueDependNode(const CNodePtr &node, HashSet<AnfNodePtr> *visited, HashSet<AnfNodePtr> *valid_nodes);
-  void FindShapeDependHostNode(const CNodePtr &node, HashSet<AnfNodePtr> *visited, HashSet<AnfNodePtr> *valid_nodes);
+  void RemoveWildGetitem();
   ValuePtr FindOnlyDependShapeInputs(const FuncGraphPtr &fg) const;
-  void RemoveWildGetitem(HashSet<AnfNodePtr> *valid_nodes) const;
   bool IsValidNode(const CNodePtr &node) const;
   CNodePtr CreatePacketNode(const FuncGraphPtr &main_fg, const FuncGraphPtr &sub_fg,
                             const AnfNodePtrList &inputs) const;
   void ProcessNopNode(const FuncGraphPtr &fg, AnfNodePtrList *inputs) const;
+
+  HashSet<AnfNodePtr> visited_;
+  HashSet<AnfNodePtr> valid_nodes_;
 };
 }  // namespace mindspore::graphkernel::packet
 #endif  // MINDSPORE_CCSRC_BACKEND_OPTIMIZER_GRAPH_KERNEL_KERNEL_PACKET_SYMBOL_ENGINE_EXTENDER_H_

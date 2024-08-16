@@ -74,12 +74,11 @@ SymbolPtr Conv2D::CalcForPadValid(const SymbolPtr &x, const SymbolPtr &kernel, c
 
 SymbolPtr Conv2D::CalcForPadding(const SymbolPtr &x_shape, const SymbolPtr &kernel, const SymbolPtr &padding,
                                  const SymbolPtr &stride, const SymbolPtr &dilation) {
-  //    `[(x + padding - kernel - (kernel - 1) * (dilation - 1)) / stride] + 1`, [] is to floor.
-  // => `[(x + padding - kernel * (dilation - 1) - 1) / stride] + 1`.
+  // `[(x + padding - (kernel - 1) * dilation - 1) / stride] + 1`, [] is to floor.
   OperatorScope h(emitter(), OperatorScope::DivType::FLOOR_DIV);
   auto v1 = h(kSym1);
   auto x = h(x_shape);
-  return ((x + padding - kernel * (dilation - v1) - v1) / stride) + v1;
+  return ((x + padding - (kernel - v1) * dilation - v1) / stride) + v1;
 }
 
 SymbolPtr Conv2D::Eval() {
