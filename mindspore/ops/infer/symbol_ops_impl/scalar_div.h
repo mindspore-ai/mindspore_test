@@ -32,6 +32,9 @@ class OPS_API ScalarDiv : public ScalarIntOp {
   SymbolPtr Eval() override;
   void EvalOnRun() override { output_as<IntSymbol>()->SetValue(DivWithCheck(AsInt(input(0)), AsInt(input(1)))); }
   inline int64_t DivWithCheck(int64_t x, int64_t y) const {
+    if (y == 0) {
+      MS_EXCEPTION(ValueError) << "For operation 'SalarDiv', the denominator can not be zero.";
+    }
     if (x % y != 0) {
       MS_LOG(EXCEPTION) << "For operation 'ScalarDiv', the 'x' should be divisible by 'y', but got " << x << "/" << y;
     }
@@ -50,6 +53,9 @@ class OPS_API ScalarFloorDiv : public ScalarIntOp {
   SymbolPtr Eval() override;
   void EvalOnRun() override { output_as<IntSymbol>()->SetValue(FloorDiv(AsInt(input(0)), AsInt(input(1)))); }
   inline int64_t FloorDiv(int64_t x, int64_t y) const {
+    if (y == 0) {
+      MS_EXCEPTION(ValueError) << "For operation 'ScalarFloorDiv', the denominator can not be zero.";
+    }
     return DoubleToLong(std::floor(LongToDouble(x) / LongToDouble(y)));
   }
 };
@@ -64,6 +70,9 @@ class OPS_API ScalarCeilDiv : public ScalarIntOp {
   SymbolPtr Eval() override;
   void EvalOnRun() override { output_as<IntSymbol>()->SetValue(CeilDiv(AsInt(input(0)), AsInt(input(1)))); }
   inline int64_t CeilDiv(int64_t x, int64_t y) const {
+    if (y == 0) {
+      MS_EXCEPTION(ValueError) << "For operation 'ScalarCeilDiv', the denominator can not be zero.";
+    }
     return DoubleToLong(std::ceil(LongToDouble(x) / LongToDouble(y)));
   }
 };

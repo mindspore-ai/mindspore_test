@@ -1271,7 +1271,7 @@ std::vector<pyfloat> CheckAndConvertUtils::CheckListOrTupleFloat(const std::stri
     });
     if (is_correct) {
       const auto &arr_value = GetArrayValue<pyfloat>(abs);
-      if (arr_value->HasUnknownValue()) {
+      if (!arr_value.has_value() || arr_value->HasUnknownValue()) {
         MS_EXCEPTION(ValueError) << "For primitive[" << prim_name << "], there are unknown values in the " << arg_name
                                  << ", please handle this case before calling this function.";
       }
@@ -1347,7 +1347,7 @@ std::vector<int64_t> CheckAndConvertUtils::CheckIntOrTupleInt(const std::string 
                               << abs->ToString();
     } else if (type_list.front()->type_id() == kNumberTypeInt64) {
       const auto &arr_value = GetArrayValue<int64_t>(abs);
-      if (arr_value->HasUnknownValue()) {
+      if (!arr_value.has_value() || arr_value->HasUnknownValue()) {
         MS_EXCEPTION(ValueError) << "For primitive[" << prim_name << "], there are unknown values in the " << arg_name
                                  << ", please handle this case before calling this function.";
       }
@@ -1429,6 +1429,10 @@ std::vector<int64_t> CheckAndConvertUtils::CheckTupleInt(const std::string &arg_
   } else if (attr->isa<KernelTensorValue>()) {
     // to_do: check type of the KernelTensorValue is int64
     auto data_opt = GetArrayValue<int64_t>(attr);
+    if (!data_opt.has_value()) {
+      MS_EXCEPTION(TypeError) << "For primitive[" << prim_name << "], the " << arg_name
+                              << " must be a tuple with all Int elements, but got " << attr->type_name();
+    }
     const auto &data_array = data_opt.value();
     result = data_array.ToVector();
   } else {
@@ -1455,6 +1459,10 @@ std::vector<int64_t> CheckAndConvertUtils::CheckListInt(const std::string &arg_n
   } else if (attr->isa<KernelTensorValue>()) {
     // to_do: check type of the KernelTensorValue is int64
     auto data_opt = GetArrayValue<int64_t>(attr);
+    if (!data_opt.has_value()) {
+      MS_EXCEPTION(TypeError) << "For primitive[" << prim_name << "], the " << arg_name
+                              << " must be a list with all Int elements, but got " << attr->ToString();
+    }
     const auto &data_array = data_opt.value();
     result = data_array.ToVector();
   } else {

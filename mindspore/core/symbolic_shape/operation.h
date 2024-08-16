@@ -33,7 +33,7 @@ class MS_CORE_API Operation : public Base {
   virtual ~Operation() = default;
   MS_DECLARE_PARENT(Operation, Base)
 
-  bool Build();
+  void Build();
   inline void Run() {
     MS_LOG(DEBUG) << "Running operation " << ToString();
     MS_EXCEPTION_IF_NULL(output_);

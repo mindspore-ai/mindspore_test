@@ -85,6 +85,7 @@ REG_SYMBOL_OP_BUILDER("Stack")
   .SetShapeDependN<DependOn::kShape>()
   .SetShapeFunc([](OperationBuilder *b) -> SymbolPtr {
     auto axis = b->GetAttr(kAttrAxis);
+    MS_EXCEPTION_IF_NULL(axis);
     if (b->input_num() == 1 && b->GetInput(0)->isa<abstract::AbstractSequence>()) {
       return b->Emit(std::make_shared<Stack>(b->GetInputShape(0), axis));
     }

@@ -34,6 +34,11 @@ SymbolPtr UnsortedSegmentSum::Eval() {
   if (!x->HasData() || !seg_ids->HasData()) {
     return GenVList();
   }
+  if (x->size() < seg_ids->size()) {
+    MS_EXCEPTION(ValueError)
+      << "For Operation 'UnsortedSegmentSum', the input shape rank should not less than seg_ids rank, but got "
+      << x->size() << " vs " << seg_ids->size();
+  }
   DoNotEvalOnRun();
   SymbolPtrList result{input(kIndex2)};
   result.reserve(x->size() - seg_ids->size() + 1);

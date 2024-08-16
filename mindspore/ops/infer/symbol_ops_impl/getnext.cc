@@ -75,6 +75,7 @@ REG_SYMBOL_OP_BUILDER("GetNext").SetShapeFunc([](OperationBuilder *b) -> SymbolP
     return nullptr;
   }
   MS_EXCEPTION_IF_NULL(symbols_attr);
+  MS_EXCEPTION_IF_NULL(b->out_abstract());
   auto abs_seq = b->out_abstract()->cast_ptr<abstract::AbstractSequence>();
   MS_EXCEPTION_IF_NULL(abs_seq);
   auto out = BuildSymbolicShapeBySymbolInfo(abs_seq->elements(), ParseSymbolInfo(symbols_attr));

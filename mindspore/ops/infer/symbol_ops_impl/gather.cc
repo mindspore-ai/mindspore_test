@@ -63,6 +63,7 @@ REG_SYMBOL_OP_BUILDER("Gather")
     auto indices = b->GetInputShape(kIndex1);
     auto axis = b->GetInputValue(kIndex2);
     auto batch_dims = b->GetInputOrAttr(kIndex3, kAttrBatchDims);
+    MS_EXCEPTION_IF_NULL(batch_dims);
     return b->Emit(std::make_shared<Gather>(params, indices, axis, batch_dims));
   });
 

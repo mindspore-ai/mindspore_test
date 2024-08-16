@@ -18,20 +18,20 @@
 
 namespace mindspore {
 namespace symshape {
-bool Operation::Build() {
-  MS_EXCEPTION_IF_CHECK_FAIL(output_ == nullptr, "The operation is built.");
+void Operation::Build() {
   MS_LOG(DEBUG) << "Building operation " << ToString();
+  MS_EXCEPTION_IF_CHECK_FAIL(output_ == nullptr, "The operation is built.");
   output_ = Eval();
-  if (output_ == nullptr) {
-    return false;
-  }
+  // Eval function can not result in nullptr,
+  // if not support yet, please throw an exception (the framework will catch t and print an INFO log)
+  // or check in operation builder function to return a nullptr.
+  MS_EXCEPTION_IF_CHECK_FAIL(output_ != nullptr, "Build failed for " + ToString());
   if (!output_->CanUpdate()) {
     need_eval_ = false;
   }
   UpdateMathInfo();
   MS_LOG(DEBUG) << "Build result of [" << name() << "]: " << output_->ToString() << ". need_eval=" << need_eval();
   is_building_ = false;
-  return true;
 }
 
 bool Operation::EqualsTo(const OpPtr &other) {
@@ -66,11 +66,7 @@ std::string Operation::DumpText() const {
 
 SymbolPtr Operation::Emitter::Emit(const OpPtr &op) const {
   op->SetEmitter(this);
-  auto result = op->Build();
-  if (!result) {
-    MS_LOG(INFO) << "Failed to build op " << op->ToString();
-    return nullptr;
-  }
+  op->Build();
   op->SetEmitter(nullptr);
   if (ops_ != nullptr && op->need_eval()) {
     const_cast<Emitter *>(this)->Cse(op);
