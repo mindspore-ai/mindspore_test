@@ -22,6 +22,7 @@
 #include "mindapi/src/helper.h"
 #include "infer/incre_flash_attention.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "infer/ops_func_impl/common_infer_fns.h"
 
 namespace mindspore {
 namespace ops {
@@ -51,11 +52,6 @@ ShapeValueDType GetDimension(const std::vector<ShapeValueDType> &dimensions, con
     }
   }
   return baseValue;
-}
-
-bool IsOptionalInputNone(const AbstractBasePtr &input) {
-  MS_EXCEPTION_IF_NULL(input);
-  return input->GetType()->type_id() == kMetaTypeNone;
 }
 
 void CheckInputsShape(const AbstractBasePtr &input, const std::vector<ShapeValueDType> &expect_shape,

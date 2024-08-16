@@ -61,6 +61,7 @@ static const char k310PKey[] = "Ascend310P";
 // the first vector is input_idx, the second is output_idx
 static const std::unordered_map<std::string, std::vector<std::vector<size_t> > > kNzFormatOpsList = {
   {kMatMulOpName, {{0, 1}, {0}}},
+  {"QuantLinearSparse", {{0}, {0}}},
   {"QuantBatchMatmul", {{0, 1}, {0}}},
   {kPagedAttentionOpName, {{0, 1, 2}, {0}}},
   {kFlashAttentionScoreOpName, {{0, 1, 2, 6}, {3}}},

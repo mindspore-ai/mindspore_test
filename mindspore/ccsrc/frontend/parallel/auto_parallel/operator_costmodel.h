@@ -213,6 +213,7 @@ using ZerosLikeCost = CastCost;
 using OnesLikeCost = CastCost;
 using RangeCost = CastCost;
 using SplitCost = CastCost;
+using QuantLinearSparseCost = CastCost;
 using ScatterUpdateCost = CastCost;
 using RandomDistributeCost = CastCost;
 using FillV2Cost = CastCost;

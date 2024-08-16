@@ -65,6 +65,7 @@ static std::map<std::string, int> ms_op_key_to_internel_op_id = {
   {"FusedMatMulElemBinary", internal::OpId::MatMul},
   {"FusedMatMulElemUnary", internal::OpId::MatMul},
   {"MatMul", internal::OpId::MatMul},
+  {"QuantLinearSparse", internal::OpId::QuantLinearSparse},
   {"QuantBatchMatmul", internal::OpId::MatMul},
   {"MatmulSplitOut2", internal::OpId::MatmulQkv},
   {"MatmulSplitOut3", internal::OpId::MatmulQkv},

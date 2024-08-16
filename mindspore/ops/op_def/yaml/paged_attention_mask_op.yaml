@@ -11,8 +11,15 @@ paged_attention_mask:
       dtype: tensor
     context_lens:
       dtype: tensor
+    antiquant_scale:
+      dtype: tensor
+      default: None
+    antiquant_offset:
+      dtype: tensor
+      default: None
     alibi_mask:
       dtype: tensor
+      default: None
     head_num:
       dtype: int
       prim_init: True
@@ -26,3 +33,5 @@ paged_attention_mask:
   returns:
     attention_out:
       dtype: tensor
+  function:
+    disable: True

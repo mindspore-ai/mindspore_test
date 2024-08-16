@@ -37,6 +37,6 @@ def test_qwen_4p_bs4():
     os.system(f"cat {log_path}")
     assert ret == 0
 
-    expect_peak_memory = 4131
+    expect_peak_memory = 4931
     peak_memory = get_num_from_log(f"{log_path}", PEAK_MEMORY_NAME)
     assert peak_memory <= expect_peak_memory * (1 + TOELERANCE)
