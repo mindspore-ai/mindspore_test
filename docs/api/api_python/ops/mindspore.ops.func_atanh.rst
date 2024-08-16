@@ -9,11 +9,10 @@ mindspore.ops.atanh
         out_i = \tanh^{-1}(input_{i})
 
     参数：
-        - **input** (Tensor) - Tensor的shape为 :math:`(N,*)` ，其中 :math:`*` 表示任意数量的附加维度。数据类型支持：float16、float32。
+        - **input** (Tensor) - Tensor的shape为 :math:`(N,*)` ，其中 :math:`*` 表示任意数量的附加维度。
 
     返回：
-        Tensor的数据类型与输入相同。
+        Tensor，shape与 `input` 相同。当输入数据类型为bool、int8、uint8、int16、int32、int64时，返回值数据类型为float32。否则，返回值数据类型与输入数据类型相同。
 
     异常：
         - **TypeError** - 如果 `input` 不是Tensor。
-        - **TypeError** - 如果 `input` 的数据类型不是float16或float32。
