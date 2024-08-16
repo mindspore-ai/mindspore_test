@@ -19,6 +19,7 @@ import pytest
 from mindspore import Tensor, context, ops
 from mindspore.nn import Cell
 from mindspore import dtype as mstype
+from mindspore.common.api import _pynative_executor
 from tests.mark_utils import arg_mark
 
 
@@ -253,8 +254,10 @@ def test_itemset_with_number():
 
     with pytest.raises(IndexError):
         net(input_3d_ms, value_np_1)
+        _pynative_executor.sync()
     with pytest.raises(IndexError):
         net(input_3d_ms, value_np_2)
+        _pynative_executor.sync()
 
 
 class TensorItemSetByItemWithNumber(Cell):
@@ -307,20 +310,28 @@ def test_itemset_by_number_with_number():
 
     with pytest.raises(IndexError):
         net(input_1d_ms, index_np_2, value_np_1)
+        _pynative_executor.sync()
     with pytest.raises(IndexError):
         net(input_1d_ms, index_np_2, value_np_2)
+        _pynative_executor.sync()
     with pytest.raises(TypeError):
         net(input_1d_ms, index_np_4, value_np_1)
+        _pynative_executor.sync()
     with pytest.raises(TypeError):
         net(input_1d_ms, index_np_4, value_np_2)
+        _pynative_executor.sync()
     with pytest.raises(IndexError):
         net(input_3d_ms, index_np_3, value_np_1)
+        _pynative_executor.sync()
     with pytest.raises(IndexError):
         net(input_3d_ms, index_np_3, value_np_2)
+        _pynative_executor.sync()
     with pytest.raises(TypeError):
         net(input_3d_ms, index_np_4, value_np_1)
+        _pynative_executor.sync()
     with pytest.raises(TypeError):
         net(input_3d_ms, index_np_4, value_np_2)
+        _pynative_executor.sync()
 
 
 def test_itemset_by_tuple_with_number():
@@ -352,24 +363,34 @@ def test_itemset_by_tuple_with_number():
 
     with pytest.raises(IndexError):
         net(input_1d_ms, index_np_2, value_np_1)
+        _pynative_executor.sync()
     with pytest.raises(IndexError):
         net(input_1d_ms, index_np_2, value_np_2)
+        _pynative_executor.sync()
     with pytest.raises(IndexError):
         net(input_3d_ms, index_np_1, value_np_1)
+        _pynative_executor.sync()
     with pytest.raises(IndexError):
         net(input_3d_ms, index_np_1, value_np_2)
+        _pynative_executor.sync()
     with pytest.raises(IndexError):
         net(input_3d_ms, index_np_2, value_np_1)
+        _pynative_executor.sync()
     with pytest.raises(IndexError):
         net(input_3d_ms, index_np_2, value_np_2)
+        _pynative_executor.sync()
     with pytest.raises(IndexError):
         net(input_3d_ms, index_np_4, value_np_1)
+        _pynative_executor.sync()
     with pytest.raises(IndexError):
         net(input_3d_ms, index_np_4, value_np_2)
+        _pynative_executor.sync()
     with pytest.raises(IndexError):
         net(input_3d_ms, index_np_5, value_np_1)
+        _pynative_executor.sync()
     with pytest.raises(IndexError):
         net(input_3d_ms, index_np_5, value_np_2)
+        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu'],
