@@ -610,8 +610,13 @@ bool HasSwitchNode(const FuncGraphPtr &func_graph) {
 }
 
 bool IsNodeValid(const AnfNodePtr &node) {
-  if (node != nullptr && common::AnfAlgo::IsNodeOutputDynamicShape(node)) {
+  if (node == nullptr) {
+    return false;
+  } else if (common::AnfAlgo::IsNodeOutputDynamicShape(node)) {
     MS_LOG(INFO) << "Disable switch inline for dynamic shape node:" << node->DebugString();
+    return false;
+  } else if (node->isa<CNode>() && common::AnfAlgo::IsTypeTransformOp(common::AnfAlgo::GetCNodeName(node))) {
+    MS_LOG(INFO) << "Disable switch inline for backoff node:" << node->DebugString();
     return false;
   } else if (common::AnfAlgo::CheckPrimitiveType(node, prim::kPrimPartial)) {
     const auto &cnode = node->cast<CNodePtr>();

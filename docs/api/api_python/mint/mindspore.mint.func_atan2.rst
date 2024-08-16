@@ -15,7 +15,9 @@ mindspore.mint.atan2
         - **other** (Tensor, Number.number) - 输入Tensor或常数，shape与 `input` 相同，或能与 `input` 的shape广播。
 
     返回：
-        Tensor，与广播后的输入shape相同，和 `input` 数据类型相同。
+        Tensor，与广播后的输入shape相同。
+        当输入类型为bool、int8、uint8、int16、int32、int64时，返回值类型为float32。
+        否则，返回值类型与输入类型相同。
 
     异常：
         - **TypeError** - `input` 或 `other` 不是Tensor或常数。

@@ -51,7 +51,7 @@ class SoftShrinkCpuKernelMod : public NativeCpuKernelMod, public MatchKernelHelp
                     const std::vector<kernel::KernelTensor *> &workspace,
                     const std::vector<kernel::KernelTensor *> &outputs);
   size_t size_ = 1;
-  float lambd_ = 0;
+  float lambd = 0.5;
 };
 }  // namespace kernel
 }  // namespace mindspore

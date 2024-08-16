@@ -173,7 +173,7 @@ from mindspore.ops.functional import logical_not
 # 67
 from mindspore.ops.functional import logical_or
 # 68
-
+from mindspore.ops.functional import logical_xor
 # 69
 from mindspore.ops.functional import less_equal, le
 # 70
@@ -256,13 +256,17 @@ from mindspore.ops.function.math_func import arcsin_ext as arcsin
 from mindspore.ops.function.math_func import asinh_ext as asinh
 from mindspore.ops.function.math_func import arcsinh_ext as arcsinh
 # 174
-
+from mindspore.ops.function.math_func import atan_ext as atan
+from mindspore.ops.function.math_func import arctan_ext as arctan
 # 175
-
+from mindspore.ops.function.math_func import atanh
+from mindspore.ops.function.math_func import arctanh
 # 176
 from mindspore.ops.function.math_func import atan2_ext as atan2
 from mindspore.ops.function.math_func import arctan2_ext as arctan2
 
+# 204
+from mindspore.ops.auto_generate import erfc
 # 208
 from mindspore.ops.function.array_func import eye
 from mindspore.ops.function.random_func import rand_ext as rand
@@ -271,12 +275,14 @@ from mindspore.ops.function.random_func import rand_like_ext as rand_like
 from mindspore.ops.auto_generate import floor
 # 231
 from mindspore.ops.function.math_func import inverse_ext as inverse
-
+# 275
+from mindspore.ops.function.math_func import remainder_ext as remainder
 # 285
 from mindspore.ops.function.array_func import scatter_add_ext as scatter_add
 
 
 # 301
+from mindspore.ops.function.math_func import tan
 
 
 def add(input, other, *, alpha=1):
@@ -1124,7 +1130,7 @@ __all__ = [
     # 67
     'logical_or',
     # 68
-
+    'logical_xor',
     # 69
     'less_equal',
     'le',
@@ -1209,13 +1215,16 @@ __all__ = [
     'asinh',
     'arcsinh',
     # 174
-
+    'atan',
+    'arctan',
     # 175
-
+    'atanh',
+    'arctanh',
     # 176
     'atan2',
     'arctan2',
-
+    # 204
+    'erfc',
     # 208
     'eye',
 
@@ -1227,10 +1236,12 @@ __all__ = [
     'floor',
     # 231
     'inverse',
+    # 275
+    'remainder',
     # 285
     'scatter_add',
     # 301
-
+    'tan',
     # 304
 
     # 305

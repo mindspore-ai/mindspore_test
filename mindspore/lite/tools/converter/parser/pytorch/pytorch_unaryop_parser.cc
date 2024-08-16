@@ -19,7 +19,7 @@
 #include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/cxx_api/tile_fusion.h"
 #include "infer/cxx_api/exp_fusion.h"
-#include "infer/tan.h"
+#include "infer/ops_func_impl/tan.h"
 #include "infer/eltwise.h"
 #include "nnacl/op_base.h"
 

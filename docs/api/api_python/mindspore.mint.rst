@@ -82,10 +82,14 @@ Tensor
     mindspore.mint.arccosh
     mindspore.mint.arcsin
     mindspore.mint.arcsinh
+    mindspore.mint.arctan
     mindspore.mint.arctan2
+    mindspore.mint.arctanh
     mindspore.mint.asin
     mindspore.mint.asinh
+    mindspore.mint.atan
     mindspore.mint.atan2
+    mindspore.mint.atanh
     mindspore.mint.bitwise_and
     mindspore.mint.bitwise_or
     mindspore.mint.bitwise_xor
@@ -97,6 +101,7 @@ Tensor
     mindspore.mint.div
     mindspore.mint.divide
     mindspore.mint.erf
+    mindspore.mint.erfc
     mindspore.mint.erfinv
     mindspore.mint.exp
     mindspore.mint.floor
@@ -104,11 +109,13 @@ Tensor
     mindspore.mint.logical_and
     mindspore.mint.logical_not
     mindspore.mint.logical_or
+    mindspore.mint.logical_xor
     mindspore.mint.mul
     mindspore.mint.neg
     mindspore.mint.negative
     mindspore.mint.pow
     mindspore.mint.reciprocal
+    mindspore.mint.remainder
     mindspore.mint.roll
     mindspore.mint.rsqrt
     mindspore.mint.sigmoid
@@ -118,6 +125,7 @@ Tensor
     mindspore.mint.sqrt
     mindspore.mint.square
     mindspore.mint.sub
+    mindspore.mint.tan
     mindspore.mint.tanh
 
 Reduction运算
@@ -206,6 +214,15 @@ mindspore.mint.nn
     mindspore.mint.nn.Fold
     mindspore.mint.nn.Unfold
 
+归一化层
+^^^^^^^^^^^^^^^^^^
+.. mscnplatwarnautosummary::
+    :toctree: mint
+    :nosignatures:
+    :template: classtemplate.rst
+
+    mindspore.mint.nn.GroupNorm
+
 非线性激活层 (加权和，非线性)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -217,6 +234,8 @@ mindspore.mint.nn
     mindspore.mint.nn.Hardshrink
     mindspore.mint.nn.Hardsigmoid
     mindspore.mint.nn.Hardswish
+    mindspore.mint.nn.ReLU
+    mindspore.mint.nn.Softshrink
 
 线性层
 ^^^^^^^^^^^^^^^^^^
@@ -305,6 +324,7 @@ mindspore.mint.nn.functional
     mindspore.mint.nn.functional.silu
     mindspore.mint.nn.functional.softmax
     mindspore.mint.nn.functional.softplus
+    mindspore.mint.nn.functional.softshrink
     mindspore.mint.nn.functional.tanh
 
 线性函数
@@ -386,7 +406,7 @@ mindspore.mint.linalg
 mindspore.mint.special
 ----------------------
 
-三角函数
+逐元素运算
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. mscnplatwarnautosummary::
@@ -394,4 +414,5 @@ mindspore.mint.special
     :nosignatures:
     :template: classtemplate.rst
 
+    mindspore.mint.special.erfc
     mindspore.mint.special.sinc

@@ -16,7 +16,9 @@ atan2_ext:
                 its shape is able to broadcast with `input`.
 
         Returns:
-            Tensor, the shape is the same as the one after broadcasting, and the data type is same as `input`.
+            Tensor, the shape is the same as the one after broadcasting.
+            The dtype of output is float32 when dtype of `input` is in
+            [bool, int8, uint8, int16, int32, int64]. Otherwise output has the same dtype as `input`.
 
         Raises:
             TypeError: If `input` or `other` is not a Tensor or scalar.

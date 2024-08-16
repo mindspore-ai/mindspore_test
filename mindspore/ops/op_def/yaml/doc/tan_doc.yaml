@@ -1,0 +1,30 @@
+tan:
+    description: |
+        Computes tangent of `input` element-wise.
+    
+        .. math::
+    
+            out_i = \tan(input_i)
+    
+        Args:
+            input (Tensor): The input Tensor, valid for any dimensions.
+    
+        Returns:
+            Tensor, has the same shape as `input`.
+            The dtype of output is float32 when dtype of `input` is in
+            [bool, int8, uint8, int16, int32, int64]. Otherwise output has the same dtype as `input`.
+    
+        Raises:
+            TypeError: If `input` is not a Tensor.
+    
+        Supported Platforms:
+            ``Ascend`` ``GPU`` ``CPU``
+    
+        Examples:
+            >>> import mindspore
+            >>> import numpy as np
+            >>> from mindspore import Tensor, ops
+            >>> input = Tensor(np.array([-1.0, 0.0, 1.0]), mindspore.float32)
+            >>> output = ops.tan(input)
+            >>> print(output)
+            [-1.5574077 0. 1.5574077]

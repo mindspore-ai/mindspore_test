@@ -32,7 +32,8 @@ from mindspore.ops.composite.multitype_ops import _constexpr_utils as const_util
 from mindspore.ops.primitive import constexpr, _primexpr
 from mindspore.ops.operations._inner_ops import TileSize
 from mindspore.ops.auto_generate import Cummin, BatchMatMul, lin_space_ext_op, Norm, BitwiseAndScalar, BitwiseAndTensor,\
-    BitwiseOrScalar, BitwiseOrTensor, BitwiseXorScalar, BitwiseXorTensor
+    BitwiseOrScalar, BitwiseOrTensor, BitwiseXorScalar, BitwiseXorTensor, RemainderTensorTensor, RemainderTensorScalar,\
+    RemainderScalarTensor
 from mindspore.ops import auto_generate
 from mindspore.ops.operations.math_ops import STFT
 from mindspore.ops.operations.math_ops import LuUnpack
@@ -47,8 +48,8 @@ from mindspore.ops.auto_generate import (minimum, maximum, mul, sin, sinc, sinh,
                                          floor, floor_divide, floor_mod, gcd, greater, greater_equal, less, less_equal,
                                          log, log1p, neg, not_equal, pow, round, isfinite, argmax_ext, mean_ext_op,
                                          sum_ext_op, prod_ext_op, all, matrix_inverse_ext, atan2_ext, sign, acos_ext,
-                                         acosh_ext, asin_ext, asinh_ext, median_ext_op, median_dim_op, xlogy_op,
-                                         xlogy_scalar_other_op, xlogy_scalar_self_op)
+                                         acosh_ext, asin_ext, asinh_ext, atan_ext, tan, median_ext_op, median_dim_op,
+                                         xlogy_op, xlogy_scalar_other_op, xlogy_scalar_self_op)
 from mindspore.ops.auto_generate.gen_ops_def import add_ext, sub_ext, bmm_ext
 from mindspore.ops.auto_generate import tanh
 from mindspore.nn import layer
@@ -224,7 +225,6 @@ scalar_to_tensor_ = P.ScalarToTensor()
 shape_ = P.Shape()
 sign_ = P.Sign()
 sparse_segment_mean_ = SparseSegmentMean()
-tan_ = P.Tan()
 tanh_ = P.Tanh()
 tensor_round_ = P.Round()
 tile_ = P.Tile()
@@ -246,7 +246,9 @@ bitwise_xor_tensor_ = BitwiseXorTensor()
 #####################################
 # Element-wise Operation Functions.
 #####################################
-
+remainder_tensor_tensor_ = RemainderTensorTensor()
+remainder_tensor_scalar_ = RemainderTensorScalar()
+remainder_scalar_tensor_ = RemainderScalarTensor()
 
 def addn(x):
     """
@@ -1569,38 +1571,6 @@ def t(input):
     return input
 
 
-def tan(input):
-    r"""
-    Computes tangent of `input` element-wise.
-
-    .. math::
-
-        out_i = \tan(input_i)
-
-    Args:
-        input (Tensor): The input Tensor, valid for any dimensions.
-
-    Returns:
-        Tensor, has the same shape as `input`.
-
-    Raises:
-        TypeError: If `input` is not a Tensor.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input = Tensor(np.array([-1.0, 0.0, 1.0]), mindspore.float32)
-        >>> output = ops.tan(input)
-        >>> print(output)
-        [-1.5574081 0. 1.5574081]
-    """
-    return tan_(input)
-
-
 def xlogy(input, other):
     r"""
     Computes the first input tensor multiplied by the logarithm of second input tensor element-wise.
@@ -1774,6 +1744,16 @@ def arctan(input):
         [0.7853982 0.       ]
     """
     return atan_(input)
+
+
+def arctan_ext(input):
+    r"""
+    Alias for :func:`mindspore.ops.atan_ext`.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+    """
+    return atan_ext(input)
 
 
 def arctan2(input, other):
@@ -9175,6 +9155,53 @@ def remainder(input, other):
     return out
 
 
+def remainder_ext(input, other):
+    r"""
+    Computes the remainder of `input` divided by `other` element-wise. The result has the same sign as the divisor and
+    its absolute value is less than that of `other`.
+
+    Supports broadcasting to a common shape and implicit type promotion.
+
+    .. math::
+
+        remainder(input, other) = input - input.div(other, rounding\_mode="floor") * other
+
+    Note:
+        Complex inputs are not supported. At least one input need to be tensor, but not both are bool tensors.
+
+    Args:
+        input (Union[Tensor, numbers.Number]): The dividend.
+        other (Union[Tensor, numbers.Number]): The divisor.
+
+    Returns:
+        Tensor, with dtype promoted and shape broadcasted.
+
+    Raises:
+        TypeError: If `input` and `other` are not of types: (tensor, tensor), (tensor, number) or (number, tensor).
+        ValueError: If `input` and `other` are not broadcastable.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import Tensor, ops
+        >>> x = Tensor(np.array([-4.0, 5.0, 6.0]).astype(np.float32))
+        >>> y = Tensor(np.array([3.0, 2.0, 3.0]).astype(np.float64))
+        >>> output = ops.remainder_ext(x, y)
+        >>> print(output)
+        [2.  1.  0.]
+    """
+
+    if isinstance(input, Tensor) and isinstance(other, Tensor):
+        return remainder_tensor_tensor_(input, other)
+    if isinstance(input, Tensor) and isinstance(other, numbers.Number):
+        return remainder_tensor_scalar_(input, other)
+    if isinstance(input, numbers.Number) and isinstance(other, Tensor):
+        return remainder_scalar_tensor_(input, other)
+    raise TypeError(f"For 'remainder', inputs should either be two tensors, or a tensor and a scalar.")
+
+
 def accumulate_n(x):
     r"""
     Computes accumulation of all input tensors element-wise.
@@ -10184,10 +10211,6 @@ def logical_xor(input, other):
         >>> print(output)
         [False True]
     """
-    if isinstance(input, Tensor) and input.dtype != mstype.bool_:
-        input = input.astype(mstype.bool_)
-    if isinstance(other, Tensor) and other.dtype != mstype.bool_:
-        other = other.astype(mstype.bool_)
     return logical_xor_(input, other)
 
 

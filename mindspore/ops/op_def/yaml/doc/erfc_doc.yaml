@@ -10,15 +10,19 @@ erfc:
         input (Tensor): The input tensor of the complementary error function, :math:`x` in the above formula. 
             Supported dtypes:
 
-            - Ascend: float16, float32.
+            - Ascend: float16, float32, float64, int64, bool, bfloat16.
             - GPU/CPU: float16, float32, float64.
 
     Returns:
-        Tensor, has the same shape and dtype as `input`.
+        Tensor.
+        The dtype of output is float32 when dtype of `input` is in
+        [bool, int64]. Otherwise output has the same dtype as the `input`.
 
-    Raises:
-        TypeError: If `input` is not a Tensor.
-        TypeError: If dtype of `input` is not float16, float32 or float64.
+    :raise TypeError: If `input` is not a Tensor.
+    :raise TypeError: If dtype of `input` is not the following:
+    
+            * Ascend: float16, float32, float64, int64, bool, bfloat16.
+            * GPU/CPU: float16, float32, float64.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -30,4 +34,4 @@ erfc:
         >>> x = Tensor(np.array([-1, 0, 1, 2, 3]), mindspore.float32)
         >>> output = ops.erfc(x)
         >>> print(output)
-        [1.8427168e+00 1.0000000e+00 1.5728319e-01 4.6912432e-03 2.2351742e-05]
+        [1.8427008e+00 1.0000000e+00 1.5729921e-01 4.6777348e-03 2.2090497e-05]

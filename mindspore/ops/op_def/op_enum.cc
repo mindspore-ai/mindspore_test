@@ -175,11 +175,14 @@ REG_STRING_TO_ENUM_COMMON(grid_sampler_padding_mode, StrToGridSamplerPaddingMode
 REG_STRING_TO_ENUM_COMMON(k_v_cache_align_mode,
                           StrToEnumMap{{"LEFT", KVCacheAlignMode::LEFT}, {"RIGHT", KVCacheAlignMode::RIGHT}})
 
+// FAS input_layout
 REG_STRING_TO_ENUM_COMMON(fas_input_layout_mode, StrToEnumMap{{"BSH", FASInputLayoutMode::BSH},
                                                               {"BNSD", FASInputLayoutMode::BNSD},
                                                               {"SBH", FASInputLayoutMode::SBH},
                                                               {"BSND", FASInputLayoutMode::BSND},
-                                                              {"TND", FASInputLayoutMode::TND}})
+                                                              {"TND", FASInputLayoutMode::TND},
+                                                              {"NSD", FASInputLayoutMode::NSD},
+                                                              {"SH", FASInputLayoutMode::SH}})
 }  // namespace
 
 int64_t StringToEnumImpl(const std::string &op_name, const std::string &arg_name, const std::string &enum_string) {

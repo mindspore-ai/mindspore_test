@@ -16,12 +16,12 @@
 
 #include "kernel/gpu/nn/soft_shrink_gpu_kernel.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/soft_shrink_impl.cuh"
-#include "mindspore/ops/infer/soft_shrink.h"
 
 namespace mindspore {
 namespace kernel {
-#define SOFT_SHRINK_GPU_REGISTER(DT, T) \
-  KernelAttr().AddInputAttr(DT).AddOutputAttr(DT), &SoftShrinkGpuKernelMod::LaunchKernel<T>
+#define SOFT_SHRINK_GPU_REGISTER(DT, T)                                                                \
+  KernelAttr().AddInputAttr(DT).AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32).AddOutputAttr(DT), \
+    &SoftShrinkGpuKernelMod::LaunchKernel<T>
 
 template <typename T>
 bool SoftShrinkGpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
@@ -30,7 +30,7 @@ bool SoftShrinkGpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor
   T *input_addr = GetDeviceAddress<T>(inputs, kIndex0);
   T *output_addr = GetDeviceAddress<T>(outputs, kIndex0);
   auto status =
-    SoftShrink(size_, input_addr, lambd_, output_addr, device_id_, reinterpret_cast<cudaStream_t>(cuda_stream_));
+    SoftShrink(size_, input_addr, lambd, output_addr, device_id_, reinterpret_cast<cudaStream_t>(cuda_stream_));
   CHECK_CUDA_STATUS(status, kernel_name_);
   return true;
 }
@@ -41,8 +41,6 @@ bool SoftShrinkGpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
     MS_LOG(ERROR) << "For '" << kernel_name_ << "' got empty inputs or outputs, which is invalid.";
     return false;
   }
-
-  lambd_ = GetValue<float>(primitive_->GetAttr("lambd"));
 
   if (auto ret = MatchKernelFunc(kernel_name_, inputs, outputs); !ret) {
     return ret;
@@ -59,6 +57,7 @@ int SoftShrinkGpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
 
   auto in_shape = inputs[kIndex0]->GetShapeVector();
   size_ = std::accumulate(in_shape.begin(), in_shape.end(), size_t(1), std::multiplies<size_t>());
+  lambd = inputs[kIndex1]->GetValueWithCheck<float>();
   return KRET_OK;
 }
 

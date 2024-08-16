@@ -220,7 +220,7 @@ from mindspore.ops.function.math_func import tanh
 # 99
 
 # 100
-
+from mindspore.ops.auto_generate import softshrink  # pylint: disable=W0611
 # 220
 from mindspore.ops.function.nn_func import hardshrink  # pylint: disable=W0611
 # 221

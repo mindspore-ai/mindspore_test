@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_ERFC_H_
-#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_ERFC_H_
+#ifndef MINDSPORE_OPS_INFER_OPS_FUNC_IMPL_ERFC_H_
+#define MINDSPORE_OPS_INFER_OPS_FUNC_IMPL_ERFC_H_
 
 #include <vector>
 #include "mindspore/core/ops/ops_func_impl/op_func_impl.h"
@@ -26,8 +26,11 @@ class OPS_API ErfcFuncImpl : public OpFuncImpl {
  public:
   BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
   TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
+  // simply infer
+  ShapeArray InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const override;
+  TypePtrList InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const override;
 };
 }  // namespace ops
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_ERFC_H_
+#endif  // MINDSPORE_OPS_INFER_OPS_FUNC_IMPL_ERFC_H_

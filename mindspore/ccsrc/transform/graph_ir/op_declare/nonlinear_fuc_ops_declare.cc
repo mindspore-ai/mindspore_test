@@ -241,13 +241,15 @@ REG_ADPT_DESC(HardShrinkGrad, kHardShrinkGradOpName, ADPT_DESC(HardShrinkGrad))
 
 // SoftShrink
 INPUT_MAP(SoftShrink) = {{1, INPUT_DESC(input_x)}};
-ATTR_MAP(SoftShrink) = {{"lambd", ATTR_DESC(lambd, AnyTraits<float>())}};
+ATTR_MAP(SoftShrink) = EMPTY_ATTR_MAP;
+INPUT_ATTR_MAP(SoftShrink) = {{2, ATTR_DESC(lambd, AnyTraits<float>())}};
 OUTPUT_MAP(SoftShrink) = {{0, OUTPUT_DESC(output_y)}};
 REG_ADPT_DESC(SoftShrink, prim::kPrimSoftShrink->name(), ADPT_DESC(SoftShrink))
 
 // SoftShrinkGrad
 INPUT_MAP(SoftShrinkGrad) = {{1, INPUT_DESC(input_grad)}, {2, INPUT_DESC(input_x)}};
-ATTR_MAP(SoftShrinkGrad) = {{"lambd", ATTR_DESC(lambd, AnyTraits<float>())}};
+ATTR_MAP(SoftShrinkGrad) = EMPTY_ATTR_MAP;
+INPUT_ATTR_MAP(SoftShrinkGrad) = {{3, ATTR_DESC(lambd, AnyTraits<float>())}};
 OUTPUT_MAP(SoftShrinkGrad) = {{0, OUTPUT_DESC(output_y)}};
 REG_ADPT_DESC(SoftShrinkGrad, prim::kPrimSoftShrinkGrad->name(), ADPT_DESC(SoftShrinkGrad))
 

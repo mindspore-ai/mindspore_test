@@ -30,23 +30,16 @@ namespace kernel {
 void GatherDGradAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                          const std::vector<KernelTensor *> &outputs) {
   dim_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex1]);
-  GetWorkspaceForResize(inputs[kIndex0], dim_, inputs[kIndex2], inputs[kIndex3], outputs[kIndex0]);
-  SetWorkspaceForInplaceZero(outputs[kIndex0]);
+  ClearOpsWorkSpaceList();
+  GetWorkspaceForResizeInplaceZero(outputs[kIndex0]);
+  GetWorkspaceForResizeScatterAdd(inputs[kIndex0], dim_, inputs[kIndex2], inputs[kIndex3], outputs[kIndex0]);
 }
 
 bool GatherDGradAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                                const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
-  auto dim = transform::ConvertKernelTensor<int64_t>(inputs[kIndex1]);
-
-  void *ws_addr = zero_ws_size_ != 0 ? workspace.back()->device_ptr() : nullptr;
-  transform::aclOpExecutor *executor;
-  std::function<void()> release_func;
-  std::tie(std::ignore, executor, release_func, std::ignore, std::ignore) =
-    GEN_EXECUTOR_BOOST(inplace_zero_str_, zero_hash_id_, outputs[kIndex0]);
-  RUN_OP_API_ASYNC(inplace_zero_str_, ws_addr, zero_ws_size_, executor, stream_ptr, release_func);
-
-  RunOp(stream_ptr, workspace, outputs[kIndex0], dim, inputs[kIndex2], inputs[kIndex3], outputs[kIndex0]);
+  RunOpInplaceZero(stream_ptr, workspace, outputs[kIndex0]);
+  RunOpScatterAdd(stream_ptr, workspace, outputs[kIndex0], dim_, inputs[kIndex2], inputs[kIndex3], outputs[kIndex0]);
   return true;
 }
 

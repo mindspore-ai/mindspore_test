@@ -94,7 +94,7 @@
 #include "infer/squared_difference.h"
 #include "infer/stack.h"
 #include "infer/switch.h"
-#include "infer/tan.h"
+#include "infer/ops_func_impl/tan.h"
 #include "infer/tensor_list_from_tensor.h"
 #include "infer/tensor_list_get_item.h"
 #include "infer/tensor_list_reserve.h"

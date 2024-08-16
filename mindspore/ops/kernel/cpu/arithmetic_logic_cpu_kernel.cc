@@ -80,7 +80,10 @@ class ArithLogicCpuTypeFunc : public CpuKernelFunc {
                                    {kLess, &ArithLogicCpuTypeFunc<T>::Less},
                                    {kNotEqual, &ArithLogicCpuTypeFunc<T>::NotEqual}};
     } else {
-      arithmetic_logic_func_map = {{kNotEqual, &ArithLogicCpuTypeFunc<T>::NotEqual}};
+      arithmetic_logic_func_map = {{kNotEqual, &ArithLogicCpuTypeFunc<T>::NotEqual},
+                                   {kLogicalAnd, &ArithLogicCpuTypeFunc<T>::LogicalAnd},
+                                   {kLogicalOr, &ArithLogicCpuTypeFunc<T>::LogicalOr},
+                                   {kLogicalXor, &ArithLogicCpuTypeFunc<T>::LogicalXor}};
     }
     if (arithmetic_logic_func_map.find(kernel_name_) == arithmetic_logic_func_map.end()) {
       MS_LOG(EXCEPTION) << "For 'ArithmeticLogic', only supports operators in "
@@ -329,18 +332,50 @@ void ArithLogicCpuTypeFunc<T>::NotEqual(const T *input1, const T *input2, bool *
 }
 
 template <typename T>
+inline bool ComplexLogicalAnd(const T &a, const T &b) {
+  return (a.real() && b.real()) && (a.imag() && b.imag());
+}
+
+template <typename T>
 void ArithLogicCpuTypeFunc<T>::LogicalAnd(const T *input1, const T *input2, bool *out) {
-  BinaryOp(input1, input2, out, std::logical_and<T>());
+  if constexpr (!((std::is_same_v<T, complex64>) || (std::is_same_v<T, complex128>))) {
+    BinaryOp(input1, input2, out, std::logical_and<T>());
+  } else {
+    BinaryOp(input1, input2, out, ComplexLogicalAnd<T>);
+  }
+}
+
+template <typename T>
+inline bool ComplexLogicalOr(const T &a, const T &b) {
+  return (a.real() || b.real()) || (a.imag() || b.imag());
 }
 
 template <typename T>
 void ArithLogicCpuTypeFunc<T>::LogicalOr(const T *input1, const T *input2, bool *out) {
-  BinaryOp(input1, input2, out, std::logical_or<T>());
+  if constexpr (!((std::is_same_v<T, complex64>) || (std::is_same_v<T, complex128>))) {
+    BinaryOp(input1, input2, out, std::logical_or<T>());
+  } else {
+    BinaryOp(input1, input2, out, ComplexLogicalOr<T>);
+  }
+}
+
+template <typename T>
+inline bool LogicalXorCalc(const T &a, const T &b) {
+  if constexpr ((std::is_same_v<T, complex64>) || (std::is_same_v<T, complex128>)) {
+    double threshold = 0.0;
+    auto input1 = std::abs(a) > threshold;
+    auto input2 = std::abs(b) > threshold;
+    return input1 != input2;
+  } else {
+    auto input1 = static_cast<bool>(a);
+    auto input2 = static_cast<bool>(b);
+    return input1 != input2;
+  }
 }
 
 template <typename T>
 void ArithLogicCpuTypeFunc<T>::LogicalXor(const T *input1, const T *input2, bool *out) {
-  BinaryOp(input1, input2, out, std::not_equal_to<T>());
+  BinaryOp(input1, input2, out, LogicalXorCalc<T>);
 }
 
 template <typename T>
@@ -556,7 +591,14 @@ static std::map<std::string, std::vector<std::pair<KernelAttr, ArithLogicCpuFunc
     {KernelAttr().AddInputAttr(kNumberTypeFloat32).AddInputAttr(kNumberTypeFloat32).AddOutputAttr(kNumberTypeBool),
      SpecializeArithLogFunc<float>},
     {KernelAttr().AddInputAttr(kNumberTypeFloat64).AddInputAttr(kNumberTypeFloat64).AddOutputAttr(kNumberTypeBool),
-     SpecializeArithLogFunc<double>}}},
+     SpecializeArithLogFunc<double>},
+    {KernelAttr().AddInputAttr(kNumberTypeComplex64).AddInputAttr(kNumberTypeComplex64).AddOutputAttr(kNumberTypeBool),
+     SpecializeArithLogFunc<complex64>},
+    {KernelAttr()
+       .AddInputAttr(kNumberTypeComplex128)
+       .AddInputAttr(kNumberTypeComplex128)
+       .AddOutputAttr(kNumberTypeBool),
+     SpecializeArithLogFunc<complex128>}}},
   {kLogicalOr,
    {{KernelAttr().AddInputAttr(kNumberTypeBool).AddInputAttr(kNumberTypeBool).AddOutputAttr(kNumberTypeBool),
      SpecializeArithLogFunc<bool>},
@@ -581,10 +623,46 @@ static std::map<std::string, std::vector<std::pair<KernelAttr, ArithLogicCpuFunc
     {KernelAttr().AddInputAttr(kNumberTypeFloat32).AddInputAttr(kNumberTypeFloat32).AddOutputAttr(kNumberTypeBool),
      SpecializeArithLogFunc<float>},
     {KernelAttr().AddInputAttr(kNumberTypeFloat64).AddInputAttr(kNumberTypeFloat64).AddOutputAttr(kNumberTypeBool),
-     SpecializeArithLogFunc<double>}}},
+     SpecializeArithLogFunc<double>},
+    {KernelAttr().AddInputAttr(kNumberTypeComplex64).AddInputAttr(kNumberTypeComplex64).AddOutputAttr(kNumberTypeBool),
+     SpecializeArithLogFunc<complex64>},
+    {KernelAttr()
+       .AddInputAttr(kNumberTypeComplex128)
+       .AddInputAttr(kNumberTypeComplex128)
+       .AddOutputAttr(kNumberTypeBool),
+     SpecializeArithLogFunc<complex128>}}},
   {kLogicalXor,
    {{KernelAttr().AddInputAttr(kNumberTypeBool).AddInputAttr(kNumberTypeBool).AddOutputAttr(kNumberTypeBool),
-     SpecializeArithLogFunc<bool>}}}};
+     SpecializeArithLogFunc<bool>},
+    {KernelAttr().AddInputAttr(kNumberTypeInt8).AddInputAttr(kNumberTypeInt8).AddOutputAttr(kNumberTypeBool),
+     SpecializeArithLogFunc<int8_t>},
+    {KernelAttr().AddInputAttr(kNumberTypeInt16).AddInputAttr(kNumberTypeInt16).AddOutputAttr(kNumberTypeBool),
+     SpecializeArithLogFunc<int16_t>},
+    {KernelAttr().AddInputAttr(kNumberTypeInt32).AddInputAttr(kNumberTypeInt32).AddOutputAttr(kNumberTypeBool),
+     SpecializeArithLogFunc<int>},
+    {KernelAttr().AddInputAttr(kNumberTypeInt64).AddInputAttr(kNumberTypeInt64).AddOutputAttr(kNumberTypeBool),
+     SpecializeArithLogFunc<int64_t>},
+    {KernelAttr().AddInputAttr(kNumberTypeUInt8).AddInputAttr(kNumberTypeUInt8).AddOutputAttr(kNumberTypeBool),
+     SpecializeArithLogFunc<uint8_t>},
+    {KernelAttr().AddInputAttr(kNumberTypeUInt16).AddInputAttr(kNumberTypeUInt16).AddOutputAttr(kNumberTypeBool),
+     SpecializeArithLogFunc<uint16_t>},
+    {KernelAttr().AddInputAttr(kNumberTypeUInt32).AddInputAttr(kNumberTypeUInt32).AddOutputAttr(kNumberTypeBool),
+     SpecializeArithLogFunc<uint32_t>},
+    {KernelAttr().AddInputAttr(kNumberTypeUInt64).AddInputAttr(kNumberTypeUInt64).AddOutputAttr(kNumberTypeBool),
+     SpecializeArithLogFunc<uint64_t>},
+    {KernelAttr().AddInputAttr(kNumberTypeFloat16).AddInputAttr(kNumberTypeFloat16).AddOutputAttr(kNumberTypeBool),
+     SpecializeArithLogFunc<float16>},
+    {KernelAttr().AddInputAttr(kNumberTypeFloat32).AddInputAttr(kNumberTypeFloat32).AddOutputAttr(kNumberTypeBool),
+     SpecializeArithLogFunc<float>},
+    {KernelAttr().AddInputAttr(kNumberTypeFloat64).AddInputAttr(kNumberTypeFloat64).AddOutputAttr(kNumberTypeBool),
+     SpecializeArithLogFunc<double>},
+    {KernelAttr().AddInputAttr(kNumberTypeComplex64).AddInputAttr(kNumberTypeComplex64).AddOutputAttr(kNumberTypeBool),
+     SpecializeArithLogFunc<complex64>},
+    {KernelAttr()
+       .AddInputAttr(kNumberTypeComplex128)
+       .AddInputAttr(kNumberTypeComplex128)
+       .AddOutputAttr(kNumberTypeBool),
+     SpecializeArithLogFunc<complex128>}}}};
 }  // namespace
 
 bool ArithmeticLogicCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,

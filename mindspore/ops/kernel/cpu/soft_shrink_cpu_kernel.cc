@@ -15,13 +15,13 @@
  */
 
 #include "kernel/cpu/soft_shrink_cpu_kernel.h"
-#include "mindspore/ops/infer/soft_shrink.h"
 #include "kernel/cpu/nnacl/fp32/activation_fp32.h"
 
 namespace mindspore {
 namespace kernel {
-#define SOFT_SHRINK_CPU_REGISTER(DT, T) \
-  KernelAttr().AddInputAttr(DT).AddOutputAttr(DT), &SoftShrinkCpuKernelMod::LaunchKernel<T>
+#define SOFT_SHRINK_CPU_REGISTER(DT, T)                                                                \
+  KernelAttr().AddInputAttr(DT).AddInputAttr(kObjectTypeNumber, kNumberTypeFloat32).AddOutputAttr(DT), \
+    &SoftShrinkCpuKernelMod::LaunchKernel<T>
 
 template <typename T>
 bool SoftShrinkCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
@@ -35,7 +35,7 @@ bool SoftShrinkCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor
     auto task = [input, output, this](size_t start, size_t end) {
       auto input_tmp = input + start;
       auto output_tmp = output + start;
-      (void)SoftShrink(input_tmp, (end - start), output_tmp, this->lambd_);
+      (void)SoftShrink(input_tmp, (end - start), output_tmp, lambd);
     };
     ParallelLaunchAutoSearch(task, size_, this, &parallel_search_info_);
     return true;
@@ -44,8 +44,8 @@ bool SoftShrinkCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor
   /* common soft shrink */
   T *input_addr = reinterpret_cast<T *>(inputs.at(kIndex0)->device_ptr());
   T *output_addr = reinterpret_cast<T *>(outputs.at(kIndex0)->device_ptr());
-  T pos_lamdb = static_cast<T>(lambd_);
-  T neg_lambd = static_cast<T>(-1 * pos_lamdb);
+  T pos_lamdb = lambd;
+  T neg_lambd = -(lambd);
   auto task = [input_addr, output_addr, pos_lamdb, neg_lambd](size_t start, size_t end) {
     for (size_t i = start; i < end; i++) {
       if (input_addr[i] > pos_lamdb) {
@@ -68,8 +68,6 @@ bool SoftShrinkCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
     return false;
   }
 
-  lambd_ = GetValue<float>(primitive_->GetAttr(ops::kLambd));
-
   if (auto ret = MatchKernelFunc(kernel_name_, inputs, outputs); !ret) {
     return ret;
   }
@@ -84,6 +82,7 @@ int SoftShrinkCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
   }
   auto in_shape = inputs[kIndex0]->GetShapeVector();
   size_ = std::accumulate(in_shape.begin(), in_shape.end(), size_t(1), std::multiplies<size_t>());
+  lambd = inputs[kIndex1]->GetValueWithCheck<float>();
   return KRET_OK;
 }
 

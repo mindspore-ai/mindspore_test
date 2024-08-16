@@ -29,31 +29,24 @@ namespace kernel {
 
 void EmbeddingAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                        const std::vector<KernelTensor *> &outputs) {
-  GetWorkspaceForResize(inputs[kIndex1], inputs[kIndex0], outputs[kIndex0]);
+  ClearOpsWorkSpaceList();
   auto max_norm_opt = inputs[kIndex3]->GetValue<float>();
   if (max_norm_opt.has_value()) {
-    auto max_norm = max_norm_opt.value();
-    norm_type_ = static_cast<double>(transform::ConvertKernelTensor<float>(inputs[kIndex4]));
-    max_norm_ = static_cast<double>(max_norm);
-    SetWorkspaceForRenorm(inputs[1], inputs[0], max_norm_, norm_type_);
     do_renorm_ = true;
+    max_norm_ = static_cast<double>(max_norm_opt.value());
+    norm_type_ = static_cast<double>(transform::ConvertKernelTensor<float>(inputs[kIndex4]));
+    GetWorkspaceForResizeEmbeddingRenorm(inputs[1], inputs[0], max_norm_, norm_type_);
   }
+  GetWorkspaceForResizeEmbedding(inputs[kIndex1], inputs[kIndex0], outputs[kIndex0]);
 }
 
 bool EmbeddingAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                              const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
   if (do_renorm_) {
-    MS_EXCEPTION_IF_NULL(workspace.back());
-    void *ws_addr = renorm_ws_size_ != 0 ? workspace.back()->device_ptr() : nullptr;
-    transform::aclOpExecutor *executor;
-    std::function<void()> release_func;
-    std::tie(std::ignore, executor, release_func, std::ignore, std::ignore) = GEN_EXECUTOR_BOOST(
-      embedding_renorm_name_, renorm_hash_id_, inputs[kIndex1], inputs[kIndex0], max_norm_, norm_type_);
-    RUN_OP_API_ASYNC(embedding_renorm_name_, ws_addr, renorm_ws_size_, executor, stream_ptr, release_func);
+    RunOpEmbeddingRenorm(stream_ptr, workspace, inputs[kIndex1], inputs[kIndex0], max_norm_, norm_type_);
   }
-
-  RunOp(stream_ptr, workspace, inputs[kIndex1], inputs[kIndex0], outputs[kIndex0]);
+  RunOpEmbedding(stream_ptr, workspace, inputs[kIndex1], inputs[kIndex0], outputs[kIndex0]);
   return true;
 }
 

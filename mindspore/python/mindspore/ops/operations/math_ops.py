@@ -2562,15 +2562,15 @@ class Sign(Primitive):
 
 class Tan(Primitive):
     r"""
-    Computes tangent of `x` element-wise.
+    Computes tangent of `input` element-wise.
 
     Refer to :func:`mindspore.ops.tan` for more details.
 
     Inputs:
-        - **x** (Tensor) - Input tensor of any dimension.
+        - **input** (Tensor) - Input tensor of any dimension.
 
     Outputs:
-        Tensor, has the same shape as `x`.
+        Tensor, has the same shape as `input`.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -2589,7 +2589,7 @@ class Tan(Primitive):
     @prim_attr_register
     def __init__(self):
         """Initialize Tan"""
-        self.init_prim_io_names(inputs=['x'], outputs=['y'])
+        self.init_prim_io_names(inputs=['input'], outputs=['output'])
 
 
 class SquareSumAll(Primitive):

@@ -23,7 +23,6 @@
 #include "mindspore/core/ops/ops_func_impl/op_func_impl.h"
 
 namespace mindspore::ops {
-/// \brief Implementation of InferShape and InferType functions for operator 'Arange'
 class OPS_API ArangeFuncImpl : public OpFuncImpl {
  public:
   BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;

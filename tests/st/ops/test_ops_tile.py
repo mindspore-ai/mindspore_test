@@ -22,6 +22,7 @@ import mindspore as ms
 from mindspore import Tensor, ops
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.st.utils import test_utils
+from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 from tests.mark_utils import arg_mark
 
 ms.context.set_context(ascend_config={"precision_mode": "force_fp32"})
@@ -38,7 +39,7 @@ def tile_forward_func(x, multiplies):
 
 @test_utils.run_with_cell
 def tile_backward_func(x, multiplies):
-    return ops.grad(tile_forward_func, (0,))(x, multiplies)
+    return ops.grad(tile_forward_func, (0,))(x, multiplies) # pylint: disable=not-callable
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
@@ -230,3 +231,70 @@ def test_tile_dynamic_len(mode, is_fwd):
         grads = backward_cell(x, ms.mutable(mul))
         bwd_expect = np.ones((2, 3, 4, 5)).astype(np.float32) * 4.0
         assert np.allclose(grads.asnumpy(), bwd_expect)
+
+
+def ops_tile_binary_case_compare(input_binary_data, output_binary_data, dims):
+    output = tile_forward_func(Tensor(input_binary_data[0]), dims)
+    assert np.allclose(output.asnumpy(), output_binary_data[0])
+    grads = tile_backward_func(Tensor(input_binary_data[0]), dims)
+    assert np.allclose(grads.asnumpy(), output_binary_data[1])
+
+
+@ops_binary_cases(OpsBinaryCase(input_info=[((3, 32), np.float32)],
+                                output_info=[((1, 3, 81920), np.float32), ((3, 32), np.float32)],
+                                extra_info='SDv1'))
+def ops_tile_binary_case1(input_binary_data=None, output_binary_data=None):
+    ops_tile_binary_case_compare(input_binary_data, output_binary_data, (1, 1, 2560))
+
+
+@ops_binary_cases(OpsBinaryCase(input_info=[((3, 32), np.float32)],
+                                output_info=[((1, 3, 327680), np.float32), ((3, 32), np.float32)],
+                                extra_info='SDv1'))
+def ops_tile_binary_case2(input_binary_data=None, output_binary_data=None):
+    ops_tile_binary_case_compare(input_binary_data, output_binary_data, (1, 1, 10240))
+
+
+@ops_binary_cases(OpsBinaryCase(input_info=[((3, 32), np.float32)],
+                                output_info=[((1, 3, 655360), np.float32), ((3, 32), np.float32)],
+                                extra_info='SDv1'))
+def ops_tile_binary_case3(input_binary_data=None, output_binary_data=None):
+    ops_tile_binary_case_compare(input_binary_data, output_binary_data, (1, 1, 20480))
+
+
+@ops_binary_cases(OpsBinaryCase(input_info=[((3, 32), np.float32)],
+                                output_info=[((1, 3, 1310720), np.float32), ((3, 32), np.float32)],
+                                extra_info='SDv1'))
+def ops_tile_binary_case4(input_binary_data=None, output_binary_data=None):
+    ops_tile_binary_case_compare(input_binary_data, output_binary_data, (1, 1, 40960))
+
+
+@ops_binary_cases(OpsBinaryCase(input_info=[((64, 32), np.float32)],
+                                output_info=[((1, 64, 114688), np.float32), ((64, 32), np.float32)],
+                                extra_info='SD5B'))
+def ops_tile_binary_case5(input_binary_data=None, output_binary_data=None):
+    ops_tile_binary_case_compare(input_binary_data, output_binary_data, (1, 1, 3584))
+
+@ops_binary_cases(OpsBinaryCase(input_info=[((64, 32), np.float32)],
+                                output_info=[((1, 64, 1835008), np.float32), ((64, 32), np.float32)],
+                                extra_info='SD5B'))
+def ops_tile_binary_case6(input_binary_data=None, output_binary_data=None):
+    ops_tile_binary_case_compare(input_binary_data, output_binary_data, (1, 1, 57344))
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b', 'platform_gpu'], level_mark='level1',
+          card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize("mode", [ms.context.GRAPH_MODE, ms.context.PYNATIVE_MODE])
+def test_tile_binary_cases(mode):
+    """
+    Feature: Ops
+    Description: test op tile.
+    Expectation: expect correct result.
+    """
+    ms.context.set_context(mode=mode)
+
+    ops_tile_binary_case1()
+    ops_tile_binary_case2()
+    ops_tile_binary_case3()
+    ops_tile_binary_case4()
+    ops_tile_binary_case5()
+    ops_tile_binary_case6()

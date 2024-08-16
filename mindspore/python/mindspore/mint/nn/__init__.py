@@ -45,6 +45,7 @@ from mindspore.nn.extend.layer.normalization import *
 # 10
 
 # 11
+from mindspore.nn.layer import ReLU
 
 # 12
 
@@ -103,6 +104,7 @@ from mindspore.nn.extend.basic import Linear
 # 39
 
 # 40
+from mindspore.mint.nn.layer.normalization import GroupNorm
 
 # 41
 
@@ -223,7 +225,7 @@ from mindspore.nn.extend.basic import Linear
 # 99
 from mindspore.nn.layer import AvgPool2dExt as AvgPool2d
 # 100
-
+from mindspore.nn.layer import SoftShrink as Softshrink
 # 220
 from mindspore.nn.layer import HShrink as Hardshrink
 # 221
@@ -333,6 +335,7 @@ __all__ = [
     # 10
 
     # 11
+    'ReLU',
 
     # 12
 
@@ -391,6 +394,7 @@ __all__ = [
     # 39
 
     # 40
+    'GroupNorm',
 
     # 41
 

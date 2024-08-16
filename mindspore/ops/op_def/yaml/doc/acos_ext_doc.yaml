@@ -11,7 +11,9 @@ acos_ext:
                 :math:`(N,*)`, where :math:`*` means any number of additional dimensions.
 
         Returns:
-            Tensor, has the same shape and dtype as `input`.
+            Tensor, has the same shape as `input`.
+            The dtype of output is float32 when dtype of `input` is in
+            [bool, int8, uint8, int16, int32, int64]. Otherwise output has the same dtype as `input`.
 
         Raises:
             TypeError: If `input` is not a Tensor.

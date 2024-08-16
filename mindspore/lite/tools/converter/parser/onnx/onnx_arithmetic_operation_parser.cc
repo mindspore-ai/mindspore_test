@@ -23,7 +23,7 @@
 #include "infer/cxx_api/div_fusion.h"
 #include "infer/cxx_api/sub_fusion.h"
 #include "infer/cxx_api/exp_fusion.h"
-#include "infer/tan.h"
+#include "infer/ops_func_impl/tan.h"
 #include "infer/cxx_api/pow_fusion.h"
 #include "infer/eltwise.h"
 #include "infer/mod.h"

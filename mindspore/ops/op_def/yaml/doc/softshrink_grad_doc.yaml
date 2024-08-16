@@ -1,0 +1,26 @@
+softshrink_grad:
+    description: |
+        Computes gradients for SoftShrinkGrad operation.
+
+        Args:
+            input_grad (Tensor): the gradients of loss to output of SoftShrink function. Supported dtypes:
+
+                - Ascend: float16, float32, bfloat16.
+                - CPU/GPU: float16, float32.
+            input_x (Tensor): Must be the input `input` of the forward operator SoftSHrink. Supported dtypes:
+
+                - Ascend: float16, float32, bfloat16.
+                - CPU/GPU: float16, float32.
+            lambd (float): the lambda value for the Softshrink formulation. Default: ``0.5`` .
+
+        Returns:
+            backprops, a Tensor with the same shape and data type as `input_x`.
+
+        Rasise:
+            ValueError: If `lambd` is not a float.
+            ValueError: If shape of `input_grad` is not the same as `input_x`.
+            TypeError: If dtype of `input_grad` is not the same as `input_x`.
+            TypeError: If dtype of `input_grad` or `input_x` is not float16, float32 or bfloat16.
+
+        Supported Platforms:
+            ``Ascend`` ``GPU`` ``CPU``

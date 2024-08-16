@@ -24,21 +24,6 @@
 
 namespace mindspore {
 namespace kernel {
-class InplaceZero {
- public:
-  void SetWorkspaceForInplaceZero(const KernelTensor *input, std::vector<size_t> *workspace_sizes);
-  void SetZeroKernelTensor(KernelTensor *kernel_tensor, void *device_ptr, void *stream_ptr);
-  bool IsWorkSpaceSize();
-
- private:
-  const std::string inplace_zero_str_{"aclnnInplaceZero"};
-  bool zero_ws_size_{0};
-  uint64_t zero_hash_id_{0};
-  std::unordered_set<uint64_t> cache_hash_;
-  static constexpr size_t kWsSizeIndex = 0;
-  static constexpr size_t kHashIdIndex = 3;
-};
-
 class MaskedSelectGradAclnnKernelMod : public AclnnKernelMod {
  public:
   MaskedSelectGradAclnnKernelMod() : AclnnKernelMod("aclnnInplaceMaskedScatter") {}
@@ -49,8 +34,8 @@ class MaskedSelectGradAclnnKernelMod : public AclnnKernelMod {
   void GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
 
  private:
-  InplaceZero inplace_zero_;
-  DEFINE_GET_WORKSPACE_FOR_RESIZE()
+  DEFINE_GET_WORKSPACE_FOR_OPS(aclnnInplaceMaskedScatter, InplaceMaskedScatter)
+  DEFINE_GET_WORKSPACE_FOR_OPS(aclnnInplaceZero, InplaceZero)
 };
 }  // namespace kernel
 }  // namespace mindspore

@@ -23,6 +23,7 @@
 #include "utils/ms_context.h"
 #include "ops_utils/op_utils.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "mindspore/ops/op_def/op_enum.h"
 
 namespace mindspore::expander::bprop {
 NodePtrList AddnGradFunc(BpropBuilder *ib) {
@@ -1141,6 +1142,19 @@ REG_BPROP_BUILDER("Atan").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   return {dx};
 });
 
+REG_BPROP_BUILDER("AtanExt").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto dout = ib->GetInput(kIndex2);
+  auto x_dtype_id = ib->GetDtypeId(x);
+  NodePtr dx;
+  if (x_dtype_id == kNumberTypeComplex64 || x_dtype_id == kNumberTypeComplex128) {
+    MS_EXCEPTION(TypeError) << "For 'Atan', gradient not support for complex type currently.";
+  } else {
+    dx = ib->Div(dout, ib->Add(ib->Square(x), ib->Tensor(1, ib->GetDtype(x))));
+  }
+  return {dx};
+});
+
 REG_BPROP_BUILDER("AtanGrad").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto out = ib->GetInput(kIndex2);
@@ -1172,10 +1186,9 @@ REG_BPROP_BUILDER("Erf").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
 REG_BPROP_BUILDER("Erfc").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto dout = ib->GetInput(kIndex2);
-  auto half_root_pi =
-    ib->Cast(ib->RealDiv(ib->Tensor(2, ib->GetDtype(x)), (ib->Sqrt(ib->Tensor(pi, ib->GetDtype(x))))), ib->GetDtype(x));
-  auto x_square = ib->Square(x);
-  auto dx = ib->Mul(dout, (ib->Mul((ib->Neg(half_root_pi)), (ib->Exp(ib->Neg(x_square))))));
+  auto half_root_pi = ib->Tensor(-2 / sqrt(pi), ib->GetDtype(x));
+  auto x_square = ib->Emit("Square", {x});
+  auto dx = ib->Mul((ib->Mul(dout, half_root_pi)), (ib->Exp(ib->Emit("Neg", {x_square}))));
   return {dx};
 });
 
@@ -1392,17 +1405,16 @@ REG_BPROP_BUILDER("AddN").SetUnusedInputs({i0, i1}).SetBody(AddnGradFunc);
 
 REG_BPROP_BUILDER("AccumulateNV2").SetUnusedInputs({i0, i1}).SetBody(AddnGradFunc);
 
-REG_BPROP_BUILDER("Tan").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("Tan").SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
+  auto out = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex2);
   auto x_dtype_id = ib->GetDtypeId(x);
   NodePtr dx;
   if (x_dtype_id == kNumberTypeComplex64 || x_dtype_id == kNumberTypeComplex128) {
     MS_EXCEPTION(TypeError) << "For 'Tan', gradient not support for complex type currently.";
   } else {
-    auto cosx = ib->Cos(x);
-    auto secx2 = ib->Square(ib->Reciprocal(cosx));
-    dx = secx2 * dout;
+    dx = dout * ib->Add(ib->Tensor(1, ib->GetDtype(x)), ib->Square(out));
   }
   return {dx};
 });
@@ -1431,9 +1443,7 @@ REG_BPROP_BUILDER("Atanh").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   if (x_dtype_id == kNumberTypeComplex64 || x_dtype_id == kNumberTypeComplex128) {
     MS_EXCEPTION(TypeError) << "For 'Atanh', gradient not support for complex type currently.";
   } else {
-    auto one = ib->Tensor(1, x_dtype);
-    auto tmp = one - ib->Pow(x, ib->Tensor(2, x_dtype));
-    dx = ib->Div(one, tmp) * dout;
+    dx = ib->Div(dout, ib->Sub(ib->Tensor(1, ib->GetDtype(x)), ib->Square(x)));
   }
   return {dx};
 });
@@ -1684,6 +1694,24 @@ REG_BPROP_BUILDER("FloorMod").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
     bc_dy = ib->Cast(bc_dy, ib->GetDtype(y));
   }
   return {BinopGradCommon(ib, x, y, bc_dx, bc_dy)};
+});
+
+REG_BPROP_BUILDER("RemainderTensorScalar").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
+  auto other = ib->GetInput(kIndex1);
+  auto dout = ib->GetInput(kIndex3);
+  return {dout, ib->OutZeros(other)};
+});
+
+REG_BPROP_BUILDER("RemainderTensorTensor").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto other = ib->GetInput(kIndex1);
+  auto dout = ib->GetInput(kIndex3);
+  NodePtr d_input = dout;
+  NodePtr d_other = nullptr;
+  if (other->need_compute_grad_out()) {
+    d_other = (-dout) * (ib->DivMod(input, other, ops::RoundingMode::FLOOR));
+  }
+  return {BinopGradCommon(ib, input, other, d_input, d_other)};
 });
 
 REG_BPROP_BUILDER("TruncateDiv").SetUnusedInputs({i0, i1, i2, i3}).SetBody(ReturnZeros);

@@ -82,10 +82,14 @@ Pointwise Operations
     mindspore.mint.arccosh
     mindspore.mint.arcsin
     mindspore.mint.arcsinh
+    mindspore.mint.arctan
     mindspore.mint.arctan2
+    mindspore.mint.arctanh
     mindspore.mint.asin
     mindspore.mint.asinh
+    mindspore.mint.atan
     mindspore.mint.atan2
+    mindspore.mint.atanh
     mindspore.mint.bitwise_and
     mindspore.mint.bitwise_or
     mindspore.mint.bitwise_xor
@@ -97,6 +101,7 @@ Pointwise Operations
     mindspore.mint.div
     mindspore.mint.divide
     mindspore.mint.erf
+    mindspore.mint.erfc
     mindspore.mint.erfinv
     mindspore.mint.exp
     mindspore.mint.floor
@@ -104,11 +109,13 @@ Pointwise Operations
     mindspore.mint.logical_and
     mindspore.mint.logical_not
     mindspore.mint.logical_or
+    mindspore.mint.logical_xor
     mindspore.mint.mul
     mindspore.mint.neg
     mindspore.mint.negative
     mindspore.mint.pow
     mindspore.mint.reciprocal
+    mindspore.mint.remainder
     mindspore.mint.roll
     mindspore.mint.rsqrt
     mindspore.mint.sigmoid
@@ -118,6 +125,7 @@ Pointwise Operations
     mindspore.mint.sqrt
     mindspore.mint.square
     mindspore.mint.sub
+    mindspore.mint.tan
     mindspore.mint.tanh
 
 Reduction Operations
@@ -207,6 +215,16 @@ Convolution Layers
     mindspore.mint.nn.Fold
     mindspore.mint.nn.Unfold
 
+Normalization Layers
+^^^^^^^^^^^^^^^^^^^^
+
+.. msplatwarnautosummary::
+    :toctree: mint
+    :nosignatures:
+    :template: classtemplate.rst
+
+    mindspore.mint.nn.GroupNorm
+
 Non-linear Activations (weighted sum, nonlinearity)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -218,6 +236,8 @@ Non-linear Activations (weighted sum, nonlinearity)
     mindspore.mint.nn.Hardshrink
     mindspore.mint.nn.Hardsigmoid
     mindspore.mint.nn.Hardswish
+    mindspore.mint.nn.ReLU
+    mindspore.mint.nn.Softshrink
 
 Linear Layers
 ^^^^^^^^^^^^^^^^^^
@@ -306,6 +326,7 @@ Non-linear activation functions
     mindspore.mint.nn.functional.silu
     mindspore.mint.nn.functional.softmax
     mindspore.mint.nn.functional.softplus
+    mindspore.mint.nn.functional.softshrink
     mindspore.mint.nn.functional.tanh
 
 Linear functions
@@ -387,7 +408,7 @@ Inverses
 mindspore.mint.special
 ----------------------
 
-Sinc
+Pointwise Operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. msplatwarnautosummary::
@@ -395,4 +416,5 @@ Sinc
     :nosignatures:
     :template: classtemplate.rst
 
+    mindspore.mint.special.erfc
     mindspore.mint.special.sinc

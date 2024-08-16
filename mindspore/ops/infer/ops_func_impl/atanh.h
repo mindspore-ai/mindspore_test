@@ -17,13 +17,19 @@
 #ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_ATANH_H_
 #define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_ATANH_H_
 
-#include "mindapi/base/macros.h"
-#include "infer/ops_func_impl/eltwise_op.h"
+#include <vector>
+#include "mindspore/core/ops/ops_func_impl/op_func_impl.h"
 
-namespace mindspore {
-namespace ops {
-class OPS_API AtanhFuncImpl : public EltwiseOpFuncImpl {};
-}  // namespace ops
-}  // namespace mindspore
+namespace mindspore::ops {
+/// \brief Implementation of InferShape and InferType functions for operator 'Asinh'
+class OPS_API AtanhFuncImpl : public OpFuncImpl {
+ public:
+  BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
+  TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
+  // simply infer
+  ShapeArray InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const override;
+  TypePtrList InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const override;
+};
+}  // namespace mindspore::ops
 
 #endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_ATANH_H_

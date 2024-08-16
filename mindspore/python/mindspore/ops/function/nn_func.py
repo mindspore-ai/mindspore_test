@@ -52,6 +52,7 @@ from mindspore.ops.auto_generate.gen_ops_prim import embedding_op, Convolution, 
     MaxPoolWithMask
 from mindspore.common.generator import default_generator
 from mindspore.ops.auto_generate import hardshrink, hardsigmoid, hardswish
+from mindspore.ops.auto_generate import softshrink
 
 abs_ = P.Abs()
 add_ = P.Add()
@@ -3056,54 +3057,6 @@ def softmin(x, axis=-1, *, dtype=None):
         x = ops.cast(x, dtype)
     softmax_ = _get_cache_prim(P.Softmax)(axis)
     return softmax_(-1 * x)
-
-
-def softshrink(x, lambd=0.5):
-    r"""
-    Applies the Softshrink function element-wise.
-
-    .. math::
-        \text{SoftShrink}(x) =
-        \begin{cases}
-        x - \lambda, & \text{ if } x > \lambda \\
-        x + \lambda, & \text{ if } x < -\lambda \\
-        0, & \text{ otherwise }
-        \end{cases}
-
-    SoftShrink Activation Function Graph:
-
-    .. image:: ../images/Softshrink.png
-        :align: center
-
-    Args:
-        x (Tensor): The input of soft shrink with data type of float16 or float32.
-        lambd (float): The :math:`\lambda` must be no less than zero. Default: ``0.5`` .
-
-    Returns:
-        Tensor, has the same shape and data type as `x`.
-
-    Raises:
-        TypeError: If `lambd` is not a float.
-        TypeError: If `x` is not a Tensor.
-        TypeError: If dtype of `x` is neither float16 nor float32.
-        ValueError: If `lambd` is less than 0.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import mindspore
-        >>> from mindspore import Tensor
-        >>> from mindspore import ops
-        >>> import numpy as np
-        >>> x = Tensor(np.array([[ 0.5297,  0.7871,  1.1754], [ 0.7836,  0.6218, -1.1542]]), mindspore.float32)
-        >>> output = ops.softshrink(x)
-        >>> print(output)
-        [[ 0.02979  0.287    0.676  ]
-         [ 0.2837   0.1216  -0.6543 ]]
-    """
-    soft_shrink_op = _get_cache_prim(P.SoftShrink)(lambd)
-    return soft_shrink_op(x)
 
 
 def soft_shrink(input, lambd=0.5):

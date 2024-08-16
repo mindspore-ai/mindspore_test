@@ -34,35 +34,10 @@ class EmbeddingAscend : public AclnnKernelMod {
   void GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
 
  private:
-  DEFINE_GET_WORKSPACE_FOR_RESIZE()
+  DEFINE_GET_WORKSPACE_FOR_OPS(aclnnEmbedding, Embedding)
+  DEFINE_GET_WORKSPACE_FOR_OPS(aclnnEmbeddingRenorm, EmbeddingRenorm)
 
-  void SetWorkspaceForRenorm(const KernelTensor *weight, const KernelTensor *input, double max_norm, double norm_type) {
-    renorm_hash_id_ = transform::CalcOpApiHash(embedding_renorm_name_, weight, input, max_norm, norm_type);
-    if (cache_hash_.count(renorm_hash_id_) == 0) {
-      auto return_value = GEN_EXECUTOR_CUST(embedding_renorm_name_, weight, input, max_norm, norm_type);
-      UpdateRenormWorkspace(std::get<kWsSizeIndex>(return_value), false);
-    } else {
-      auto return_value =
-        GEN_EXECUTOR_BOOST(embedding_renorm_name_, renorm_hash_id_, weight, input, max_norm, norm_type);
-      UpdateRenormWorkspace(std::get<kWsSizeIndex>(return_value), true, std::get<kHashIdIndex>(return_value));
-    }
-  }
-
-  inline void UpdateRenormWorkspace(uint64_t ws_size, bool boost, uint64_t new_hash_id = 0) {
-    renorm_ws_size_ = ws_size;
-    if (renorm_ws_size_ != 0) {
-      workspace_size_list_.emplace_back(ws_size);
-    }
-
-    if (boost) {
-      renorm_hash_id_ = new_hash_id;
-    }
-  }
-
-  const std::string embedding_renorm_name_{"aclnnEmbeddingRenorm"};
   bool do_renorm_{false};
-  bool renorm_ws_size_{0};
-  uint64_t renorm_hash_id_{0};
   double max_norm_{0};
   double norm_type_{0};
 };
