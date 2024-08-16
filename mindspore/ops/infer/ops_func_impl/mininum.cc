@@ -31,7 +31,7 @@ TypePtr MinimumFuncImpl::InferType(const PrimitivePtr &primitive,
   (void)types.emplace("x", input_args[kInputIndex0]->GetType());
   (void)types.emplace("y", input_args[kInputIndex1]->GetType());
   (void)CheckAndConvertUtils::CheckTensorTypeSame(types, common_valid_types_with_bool, primitive->name());
-  return types["x"]->Clone();
+  return types["x"];
 }
 
 }  // namespace ops

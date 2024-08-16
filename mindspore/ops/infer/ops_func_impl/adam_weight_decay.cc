@@ -48,15 +48,11 @@ namespace mindspore {
 namespace ops {
 BaseShapePtr AdamWeightDecayFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                  const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
   const int64_t adam_weight_decay_size = 10;
   auto input_real_num = SizeToLong(CheckAndConvertUtils::GetRemoveMonadAbsNum(input_args));
   MS_CHECK_VALUE(input_real_num == adam_weight_decay_size,
                  CheckAndConvertUtils::FormatCheckIntegerMsg("input number", input_real_num, kEqual,
                                                              adam_weight_decay_size, primitive));
-  for (const auto &item : input_args) {
-    MS_EXCEPTION_IF_NULL(item);
-  }
   auto var_shape_ptr = input_args[kInputIndex0]->GetShape();
   auto var_shape = var_shape_ptr->GetShapeVector();
   auto m_shape_ptr = input_args[kInputIndex0]->GetShape();
@@ -80,16 +76,12 @@ BaseShapePtr AdamWeightDecayFuncImpl::InferShape(const PrimitivePtr &primitive,
 
 TypePtr AdamWeightDecayFuncImpl::InferType(const PrimitivePtr &prim,
                                            const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(prim);
   auto prim_name = prim->name();
   const int64_t adam_weight_decay_size = 10;
   auto input_real_num = SizeToLong(CheckAndConvertUtils::GetRemoveMonadAbsNum(input_args));
   MS_CHECK_VALUE(
     input_real_num == adam_weight_decay_size,
     CheckAndConvertUtils::FormatCheckIntegerMsg("input number", input_real_num, kEqual, adam_weight_decay_size, prim));
-  for (const auto &item : input_args) {
-    MS_EXCEPTION_IF_NULL(item);
-  }
   auto var_type = input_args[kInputIndex0]->GetType();
   auto m_type = input_args[kInputIndex1]->GetType();
   auto v_type = input_args[kInputIndex2]->GetType();
