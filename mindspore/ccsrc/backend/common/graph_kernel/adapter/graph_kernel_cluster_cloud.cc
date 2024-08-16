@@ -86,6 +86,35 @@ bool DvmSliceSupported(const AnfNodePtr &node, TypeId node_output_type) {
   return (dvm_float_types.find(node_output_type) != dvm_float_types.end() || node_output_type == kNumberTypeInt32);
 }
 
+bool DvmMatMulSupported(const AnfNodePtr &node, TypeId node_output_type) {
+  constexpr int64_t MAX_GM_STRIDE = UINT16_MAX;
+  constexpr int64_t MAX_K = UINT16_MAX >> 1;
+  if (common::AnfAlgo::IsDynamicShape(node)) {
+    return false;
+  }
+  if (node_output_type != kNumberTypeFloat16 && node_output_type != kNumberTypeBFloat16) {
+    return false;
+  }
+  auto cnode = node->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(cnode);
+  auto a_shape = GetShape(cnode->input(kIndex1));
+  auto b_shape = GetShape(cnode->input(kIndex2));
+  auto output_vector = GetShape(node);
+  int64_t k =
+    GetValue<bool>(GetCNodePrimitive(node)->GetAttr("transpose_a")) ? a_shape[a_shape.size() - 2] : a_shape.back();
+  if (k > MAX_K) {
+    return false;
+  }
+  if (a_shape.back() > MAX_GM_STRIDE || b_shape.back() > MAX_GM_STRIDE || output_vector.back() > MAX_GM_STRIDE ||
+      output_vector.back() == 1) {
+    return false;
+  }
+  if (IsPrimitiveCNode(node, prim::kPrimBatchMatMul) && output_vector.size() > kSizeFour) {
+    return false;
+  }
+  return true;
+}
+
 bool DvmSupported(const AnfNodePtr &node) {
   // check format
   if (!CheckFormat(node)) {
@@ -139,7 +168,7 @@ bool DvmSupported(const AnfNodePtr &node) {
   static std::vector<PrimitivePtr> matmul_ops{prim::kPrimMatMul, prim::kPrimBatchMatMul};
   if (std::any_of(matmul_ops.begin(), matmul_ops.end(),
                   [&node](const PrimitivePtr &prim) { return IsPrimitiveCNode(node, prim); })) {
-    return node_output_type == kNumberTypeFloat16 || node_output_type == kNumberTypeBFloat16;
+    return DvmMatMulSupported(node, node_output_type);
   }
   if (IsPrimitiveCNode(node, prim::kPrimTranspose)) {
     // for bf16, extra cast will be inserted, to do: move ConvertBFloat16 after garph kernel split

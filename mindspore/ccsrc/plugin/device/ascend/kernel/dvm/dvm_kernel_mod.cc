@@ -86,7 +86,10 @@ void DvmKernelMod::CodeGen(const std::vector<ShapeVector> &inputs_shape,
       output_size_list_[i] *= LongToSize(sh);
     }
   }
-  kernel_.CodeGen();
+  size_t workspace_size = kernel_.CodeGen();
+  if (workspace_size) {
+    workspace_size_list_ = {workspace_size};
+  }
   if (dump_kernel_) {
     dump_buf_ << "[dvm kernel] " << op_name_ << " " << op_fullname_ << "\n";
     dump_buf_ << kernel_.Dump() << "\n";
@@ -116,7 +119,10 @@ BaseShapePtr DvmKernelMod::InferShape(const AbstractBasePtrList &inputs_abs) {
   }
 
   // re-codegen by new input shape
-  kernel_.CodeGen();
+  size_t workspace_size = kernel_.CodeGen();
+  if (workspace_size) {
+    workspace_size_list_ = {workspace_size};
+  }
   // update output shape
   UpdateOutputShapes();
 
@@ -205,10 +211,12 @@ bool SingleDvmKernelMod::Launch(const std::vector<KernelTensor *> &inputs, const
   }
   if (profiler::Profiler::GetInstance(kAscendDevice)->GetEnableFlag()) {
     auto ret = kernel_.MsProfLaunch(op_name_.c_str(), op_fullname_.c_str(), reloc_table_, inputs_addr_.data(),
-                                    outputs_addr_.data(), nullptr, stream_ptr);
+                                    outputs_addr_.data(), workspace.empty() ? nullptr : workspace.back()->device_ptr(),
+                                    stream_ptr);
     return ret == 0;
   }
-  auto ret = kernel_.Launch(reloc_table_, inputs_addr_.data(), outputs_addr_.data(), nullptr, stream_ptr);
+  auto ret = kernel_.Launch(reloc_table_, inputs_addr_.data(), outputs_addr_.data(),
+                            workspace.empty() ? nullptr : workspace.back()->device_ptr(), stream_ptr);
   return ret == 0;
 }
 

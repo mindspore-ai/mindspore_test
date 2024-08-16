@@ -154,6 +154,11 @@ class BACKEND_EXPORT GraphKernelFlags {
   bool enable_dynamic_shape_fusion{false};
 
   /**
+   * Disable Matmul post fusion in graph kernel fusion strategy, default is false.
+   */
+  bool disable_matmul_post_fusion{false};
+
+  /**
    * Optimization level, value from 0 to 3.
    * 0: Disable GraphKernel
    * 1: Enable GraphKernel with basic features only.

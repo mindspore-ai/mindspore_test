@@ -25,6 +25,7 @@
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
+#include "mindspore/ops/op_def/math_ops.h"
 
 namespace mindspore {
 namespace kernel {
@@ -68,6 +69,18 @@ ShapeVector GetAxisList(const AnfNodePtr &axis_input) {
   }
   return result;
 }
+
+std::vector<int64_t> GetMatMulPadShape(const AnfNodePtr &node) {
+  constexpr int64_t ALIGN_256 = 256;
+  constexpr int64_t ALIGN_128 = 128;
+  constexpr int64_t ALIGN_32 = 32;
+  auto shape = CheckAndConvertUtils::ConvertShapePtrToShapeMap(node->Shape())[kShape];
+  if (shape.back() % ALIGN_128 == 0 || (shape.back() <= ALIGN_256 && shape.back() % ALIGN_32 == 0)) {
+    return {};
+  }
+  return std::vector<int64_t>{ALIGN_256 - shape.back() % ALIGN_256};
+}
+
 static std::unordered_map<std::string, std::pair<OpType, int>> op_type_map = {
   {"Abs", {OP_UNARY, dvm::UnaryOpType::kAbs}},
   {"Exp", {OP_UNARY, dvm::UnaryOpType::kExp}},
@@ -340,7 +353,32 @@ class OpBuilder {
     }
     auto transpose_a = GetValue<bool>(prim->GetAttr(kTransposeA));
     auto transpose_b = GetValue<bool>(prim->GetAttr(kTransposeB));
-    auto op = kernel_->MatMul(GetInput(node->input(1)), GetInput(node->input(2)), transpose_a, transpose_b);
+    dvm::NDObject *mix_fusion[kSizeTwo];
+    bool pad_fusion = false;
+    for (size_t i = 0; i < kSizeTwo; i++) {
+      auto input_node = node->input(i + 1);
+      auto pad_shape = GetMatMulPadShape(input_node);
+      shapes_ref_source_->push_back(pad_shape);
+      pad_shape_ref_[i] = std::make_shared<dvm::ShapeRef>(shapes_ref_source_->back());
+      if (!pad_shape.empty()) {
+        pad_fusion = true;
+        kernel_->StageSwitch(dvm::KernelType::kStaticShape);
+        auto load = kernel_->Copy(GetInput(input_node));
+        mix_fusion[i] = kernel_->StagePadStore(load, pad_shape_ref_[i].get());
+      }
+    }
+    if (pad_fusion) {
+      kernel_->StageSwitch(dvm::KernelType::kStaticMix);
+    }
+    for (size_t i = 0; i < kSizeTwo; i++) {
+      auto input_node = node->input(i + 1);
+      if (pad_shape_ref_[i]->size) {
+        mix_fusion[i] = kernel_->StageLoad(mix_fusion[i]);
+      } else {
+        mix_fusion[i] = GetInput(input_node);
+      }
+    }
+    auto op = kernel_->MatMul(mix_fusion[0], mix_fusion[1], transpose_a, transpose_b);
     EmitOp(node, op);
   }
 
@@ -492,6 +530,7 @@ class OpBuilder {
   std::unordered_map<AnfNodePtr, dvm::NDObject *> ops_map_;
   std::unordered_map<AnfNodePtr, ShapeRefPtr> *shapes_ref_;
   std::vector<ShapeVector> *shapes_ref_source_;
+  ShapeRefPtr pad_shape_ref_[kSizeTwo];
   static std::unordered_map<dvm::DType, TypeId> v_type_map;
   static std::unordered_map<TypeId, dvm::DType> ms_type_map;
   bool empty_input_{false};
@@ -617,7 +656,7 @@ class SingleDvmKernelBuilder : public DvmKernelBuilder {
     if (outputs.size() > 1) {
       nodes.pop_back();  // exclude maketuple
     }
-    auto kernel_type = GetKernelType(nodes);
+    auto kernel_type = GetKernelType(&nodes);
     kernel_mod_ = std::make_shared<SingleDvmKernelMod>(kernel_type, kernel_name_, kernel_full_name_);
     auto inputs_type = AnfAlgo::GetAllInputDeviceTypes(node_);
     auto outputs_type = AnfAlgo::GetAllOutputDeviceTypes(node_);
@@ -652,23 +691,22 @@ class SingleDvmKernelBuilder : public DvmKernelBuilder {
   }
 
  private:
-  dvm::KernelType GetKernelType(const std::vector<AnfNodePtr> &nodes) {
-    std::unordered_set<std::string> cube_ops = {ops::kNameMatMul, ops::kNameBatchMatMul};
-    for (const auto &node : nodes) {
-      if (node->isa<CNode>()) {
-        auto cnode = node->cast<CNodePtr>();
-        auto prim = GetCNodePrimitive(cnode);
-        MS_EXCEPTION_IF_NULL(prim);
-        auto prim_name = prim->name();
-        if (cube_ops.find(prim_name) != cube_ops.end()) {
-          // dynamic shapes will be supported in the future
-          MS_EXCEPTION_IF_CHECK_FAIL(!is_dynamic_,
-                                     "Currently, dvm only supports static shape for for MatMul/BatchMatMul");
-          return dvm::KernelType::kStaticMix;
+  dvm::KernelType GetKernelType(std::vector<AnfNodePtr> *nodes) {
+    auto iter = std::find_if(nodes->begin(), nodes->end(), [](const AnfNodePtr &node) {
+      return IsPrimitiveCNode(node, prim::kPrimMatMul) || IsPrimitiveCNode(node, prim::kPrimBatchMatMul);
+    });
+    if (iter != nodes->end()) {
+      auto cnode = (*iter)->cast<CNodePtr>();
+      std::rotate(nodes->begin(), iter, iter + 1);
+      for (size_t i = 0; i < kSizeTwo; i++) {
+        if (!GetMatMulPadShape(cnode->input(i + 1)).empty()) {
+          return dvm::KernelType::kStaticStages;
         }
       }
+      return dvm::KernelType::kStaticMix;
+    } else {
+      return is_dynamic_ ? dvm::KernelType::kDynShape : dvm::KernelType::kStaticShape;
     }
-    return is_dynamic_ ? dvm::KernelType::kDynShape : dvm::KernelType::kStaticShape;
   }
 };
 

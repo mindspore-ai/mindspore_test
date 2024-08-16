@@ -22,38 +22,6 @@
 #include "mindspore/core/symbolic_shape/int_symbol.h"
 
 namespace mindspore::graphkernel::inner {
-namespace {
-uint64_t FindIoNum(const std::vector<AreaPtr> *areas) {
-  std::unordered_map<PrimOpPtr, uint64_t> degree;
-  std::unordered_set<PrimOpPtr> visited;
-  uint64_t io_num = 0;
-  for (auto a = areas->begin(); a != areas->end(); ++a) {
-    for (auto op : (*a)->ops()) {
-      visited.insert(op);
-      for (auto o : op->inputs()) {
-        if (auto prim = o->As<PrimOp>(); prim) {
-          degree[prim]++;
-        }
-      }
-    }
-  }
-  for (auto op : visited) {
-    auto iter = degree.find(op);
-    if (iter == degree.end()) {  // is output node
-      io_num++;
-    }
-    io_num++;
-    for (auto o : op->inputs()) {
-      if (auto prim = o->As<PrimOp>(); prim && visited.find(prim) != visited.end()) {  // is not input node
-        io_num--;
-        break;
-      }
-    }
-  }
-  return io_num;
-}
-}  // namespace
-
 ReachTable::ReachTable(size_t size) : size_(size), reach_(size, std::vector<bool>(size, false)) {
   for (size_t i = 0; i < size_; ++i) {
     reach_[i][i] = true;
@@ -123,6 +91,7 @@ AreaPtr SplitModel::NewArea(const PrimOpPtr &op, bool is_output) {
   (void)areas_.emplace_back(new_area);
   node_area_map_[op] = new_area;
   SetDefaultAreaMode(new_area);
+  UpdateAreaOutput(new_area);
   return new_area;
 }
 
@@ -201,20 +170,8 @@ void SplitModel::LimitAreaSize(const AreaPtr &dom, std::vector<AreaPtr> *areas) 
   for (auto a = areas->begin(); a != areas->end(); ++a) {
     dom_size += (*a)->size();
   }
-  if (GraphKernelFlags::GetInstance().kernel_generator == "DVM") {
-    const uint64_t MAX_DVM_SIZE = 96;
-    max_size = std::min(MAX_DVM_SIZE, max_size);
-    if (dom_size <= max_size) {
-      uint64_t io_num = FindIoNum(areas);
-      max_size = max_size >= io_num ? max_size - io_num : 0;
-      if (dom_size <= max_size) {
-        return;
-      }
-    }
-  } else {
-    if (dom_size <= max_size) {
-      return;
-    }
+  if (dom_size <= max_size) {
+    return;
   }
   // fuse the smaller area in priority
   std::sort(areas->begin(), areas->end(),
@@ -231,20 +188,29 @@ void SplitModel::FuseAreas(const AreaPtr &dom, const std::vector<AreaPtr> &areas
     return;
   }
   auto target = dom;
-  for (auto a : areas) {
-    if (direction == FuseDirection::BACKWARD) {
+  if (direction == FuseDirection::BACKWARD) {
+    for (auto a : areas) {
       // always use back node to fuse the front node.
       std::swap(target, a);
+      target->FuseInput(a);
+      reach_table_->FuseArea(target->id(), a->id());
     }
-    for (auto &op : a->ops()) {
+    for (auto &op : target->ops()) {
       node_area_map_[op] = target;
     }
-    target->FuseInput(a);
-    reach_table_->FuseArea(target->id(), a->id());
+  } else {
+    for (auto a : areas) {
+      for (auto &op : a->ops()) {
+        node_area_map_[op] = target;
+      }
+      target->FuseInput(a);
+      reach_table_->FuseArea(target->id(), a->id());
+    }
   }
   if (target->pattern() > NodePattern::RESHAPE) {
     target->SetMode(AreaMode::COMPOSITE);
   }
+  UpdateAreaOutput(target);
 }
 
 bool SplitModel::RunOnePattern(const FusePatternPtr &pattern) {
@@ -286,6 +252,20 @@ void SplitModel::RunFusePatterns() {
       iter = areas_.erase(iter);
     } else {
       ++iter;
+    }
+  }
+}
+
+void SplitModel::UpdateAreaOutput(const AreaPtr &area) const {
+  auto &area_outputs = area->area_outputs();
+  area_outputs.clear();
+  for (auto &ops : area->ops()) {
+    for (auto &[user, _] : ops->users()) {
+      auto iter = node_area_map_.find(user->shared_from_this());
+      if (iter == node_area_map_.end() || iter->second.get() != area.get()) {
+        (void)area_outputs.emplace_back(ops);
+        break;
+      }
     }
   }
 }
