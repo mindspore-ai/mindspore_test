@@ -88,9 +88,9 @@ static const uint32_t kExecuteInterval = 3;
 constexpr char kEnvTopoTimeOut[] = "MS_TOPO_TIMEOUT";
 static const size_t kDefaultTopoTimeOut = 30 * 60;
 
-// The timeout(second) window for heartbeat from compute graph node to meta server. Default: 300 seconds.
+// The timeout(second) window for heartbeat from compute graph node to meta server. Default: 15 seconds.
 constexpr char kEnvNodeTimeOut[] = "MS_NODE_TIMEOUT";
-static const size_t kDefaultNodeTimeout = 300;
+static const size_t kDefaultNodeTimeout = 15;
 
 constexpr char kEnvRetryIntervalLower[] = "MS_RETRY_INTERVAL_LOWER";
 static const size_t kDefaultRetryInterLower = 3;

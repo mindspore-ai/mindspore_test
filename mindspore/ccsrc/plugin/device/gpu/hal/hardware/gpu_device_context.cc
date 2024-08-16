@@ -74,6 +74,7 @@
 #include "runtime/pipeline/task/kernel_task.h"
 #include "runtime/device/move_to.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
+#include "include/common/utils/parallel_context.h"
 
 namespace mindspore {
 namespace device {
@@ -505,10 +506,7 @@ void GPUKernelExecutor::OptimizeGraphWithDeviceInfo(const KernelGraphPtr &graph)
     }
   }
 
-  pm->AddPass(std::make_shared<opt::AllReduceFusion>());
   pm->AddPass(std::make_shared<opt::AdjustDependForParallelOptimizerRecomputeAllGather>());
-  pm->AddPass(std::make_shared<opt::AllGatherFusion>());
-  pm->AddPass(std::make_shared<opt::ConcatOutputsForAllGather>());
   pm->AddPass(std::make_shared<opt::GetitemTuple>());
   pm->AddPass(std::make_shared<opt::ReducePrecisionFusion>("reduce_precision"));
   pm->AddPass(std::make_shared<opt::InsertTensorMoveForCommunication>());
@@ -547,6 +545,18 @@ void GPUKernelExecutor::FuseOperators(const KernelGraphPtr &graph) const {
     pm->AddPass(std::make_shared<opt::NeighborExchangeV2Fusion>());
     pm->AddPass(std::make_shared<opt::NeighborExchangeV2GradFusion>());
     pm->AddPass(std::make_shared<opt::BiasDropoutAddFusion>());
+
+    // Do communication op fusion before InsertTensorMoveForCommunication pass.
+    // So these passes are before kernel select process, no need to generate kernel build info in them.
+    if (parallel::ParallelContext::GetInstance()->enable_all_reduce_fusion()) {
+      MS_LOG(INFO) << "Parallel comm_fusion of AllReduce is enabled.";
+      pm->AddPass(std::make_shared<opt::AllReduceFusion>());
+    }
+    if (parallel::ParallelContext::GetInstance()->enable_all_gather_fusion()) {
+      MS_LOG(INFO) << "Parallel comm_fusion of AllGather is enabled.";
+      pm->AddPass(std::make_shared<opt::AllGatherFusion>());
+      pm->AddPass(std::make_shared<opt::ConcatOutputsForAllGather>());
+    }
   }
   pm->AddPass(std::make_shared<opt::DynamicSequenceOpsAdaptation>());
   optimizer->AddPassManager(pm);

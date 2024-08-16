@@ -75,8 +75,8 @@ void ConnectedEventHandler(int fd, uint32_t events, void *context) {
   }
 
   if (!conn->enable_ssl) {
-    MS_LOG(WARNING) << "Connection from " << conn->source << " to " << conn->destination << "is successfully created "
-                    << strerror(errno);
+    MS_LOG(WARNING) << "Connection from " << conn->source << " to " << conn->destination
+                    << " is successfully created. System errno: " << strerror(errno);
     conn->socket_operation->ConnEstablishedEventHandler(fd, events, context);
   }
   return;
