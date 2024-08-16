@@ -99,16 +99,35 @@ class CustomOOC():
                     f"Install path [{self.args.install_path}] is not valid path, please check your set"
                     f" --install_path is set correctly")
 
+    def copy_compile_project(self):
+        """create compile project by template"""
+        template_path = "../latest/tools/op_project_templates/ascendc/"
+        sample_path = "../latest/tools/msopgen/template/operator_demo_projects/ascendc_operator_sample"
+        customize_dir = os.path.join(self.args.ascend_cann_package_path, template_path, "customize")
+        common_dir = os.path.join(self.args.ascend_cann_package_path, template_path, "common")
+        sample_dir = os.path.join(self.args.ascend_cann_package_path, sample_path)
+
+        if os.path.isdir(customize_dir) and os.path.isdir(common_dir):
+            shutil.copytree(customize_dir, self.custom_project)
+            for item in os.listdir(common_dir):
+                src_item_path = os.path.join(common_dir, item)
+                dst_item_path = os.path.join(self.custom_project, "/cmake/util/", item)
+                if os.path.isfile(src_item_path):
+                    shutil.copy2(src_item_path, dst_item_path)
+        elif os.path.isdir(sample_dir):
+            shutil.copytree(sample_dir, self.custom_project)
+
+        if not os.path.isdir(self.custom_project):
+            raise ValueError(
+                "Create custom project failed, there is no template {} and sample project {}".format(common_dir,
+                                                                                                     sample_dir))
+
     def generate_compile_project(self):
-        """generate compile project by msopgen"""
+        """generate compile project"""
         if os.path.exists(self.custom_project) and os.path.isdir(self.custom_project):
             shutil.rmtree(self.custom_project)
-        sample_path = "../latest/tools/msopgen/template/operator_demo_projects/ascendc_operator_sample"
-        src_dir = os.path.join(self.args.ascend_cann_package_path, sample_path)
-        if not os.path.isdir(src_dir):
-            raise ValueError("There is no the path {}".format(src_dir))
+        self.copy_compile_project()
 
-        shutil.copytree(src_dir, self.custom_project)
         os.chmod(self.custom_project, 0o700)
         for root, dirs, files in os.walk(self.custom_project):
             for d in dirs:
