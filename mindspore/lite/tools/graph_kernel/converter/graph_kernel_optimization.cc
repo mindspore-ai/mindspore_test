@@ -114,8 +114,6 @@ GkPassManagerPtr GraphKernelOptimizer::Cluster() const {
   // Combine supported parallel ops that with common inputs
   pm->Add(std::make_shared<GraphKernelOpCombiner>(), OptLevel_3);
 
-  pm->Add(std::make_shared<ConvTuningExpander>(), OptLevel_1, is_cpu);
-
   // Cluster basic kernels and composite kernels
   pm->Add(std::make_shared<GraphKernelClusterLite>(), OptLevel_1);
 
@@ -219,6 +217,10 @@ void GraphKernelOptimizer::Run(const FuncGraphPtr &func_graph) {
   }
   is_cpu = (device == "CPU");
   is_ascend = (device == "Ascend");
+  if (is_cpu && common::AnfAlgo::IsDynamicGraph(func_graph)) {
+    MS_LOG(INFO) << "skip cpu dynamic graph";
+    return;
+  }
 
   auto optimizer = std::make_shared<GraphOptimizer>("graph_kernel_optimizer");
   optimizer->AddPassManager(PreProcess());

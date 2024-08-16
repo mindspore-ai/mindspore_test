@@ -219,28 +219,8 @@ std::vector<PrimitivePtr> GraphKernelExpanderLite::InitOpList() {
     {kCPUDevice, OpLevel_1, prim::kPrimStridedSlice},
     {kCPUDevice, OpLevel_1, prim::kPrimScaleFusion}};
   const auto &flags = GraphKernelFlags::GetInstance();
-  auto conv_tuning_op_list = ConvTuningExpanderOps();
-  if (DisableConvTuning()) {
-    // when disable conv tuning, we use all expander op list
-    std::transform(conv_tuning_op_list.begin(), conv_tuning_op_list.end(), std::back_inserter(expand_ops_with_level),
-                   [](const PrimitivePtr &p) { return std::make_tuple(kCPUDevice, OpLevel_1, p); });
-  }
   auto valid_op_list = GkUtils::GetValidOps(expand_ops_with_level, flags.fusion_ops_level, flags.enable_expand_ops_only,
                                             flags.enable_expand_ops, flags.disable_expand_ops);
-  if (!DisableConvTuning()) {
-    // When enable conv tuning, we move conv related expanders to conv tuning pass. They may be added by flag.
-    std::vector<std::string> conv_tuning_op_name(conv_tuning_op_list.size());
-    std::transform(conv_tuning_op_list.begin(), conv_tuning_op_list.end(), std::back_inserter(conv_tuning_op_name),
-                   [](const PrimitivePtr &p) { return p->name(); });
-    for (auto iter = valid_op_list.begin(); iter != valid_op_list.end();) {
-      if (std::find(conv_tuning_op_name.begin(), conv_tuning_op_name.end(), (*iter)->name()) !=
-          conv_tuning_op_name.end()) {
-        iter = valid_op_list.erase(iter);
-      } else {
-        ++iter;
-      }
-    }
-  }
   return valid_op_list;
 }
 
@@ -275,10 +255,7 @@ ExpanderPtr GraphKernelExpanderLite::InitExpander(const AnfNodePtr &node) {
     {prim::kPrimReduceMean->name(), {DependValueDeco::GetCreator({1}), FixFormatDeco::Creator}},
     {prim::kPrimConcat->name(), {FixFormatDeco::Creator}},
     {prim::kPrimStridedSlice->name(), {FixFormatDeco::Creator}},
-    {prim::kPrimConv2DFusion->name(), {SubstituteConv2D::Creator}},
     {prim::kPrimMatMulFusion->name(), {MatmulPackB::Creator}},
-    {prim::kPrimAvgPoolFusion->name(), {PoolLayoutDeco::Creator}},
-    {prim::kPrimMaxPoolFusion->name(), {PoolLayoutDeco::Creator}},
     {prim::kPrimTile->name(), {{DependValueDeco::GetCreator({1})}, UseInputFormatDeco::Creator}},
   };
   auto iter = creators.find(GetCNodePrimitive(node)->name());
