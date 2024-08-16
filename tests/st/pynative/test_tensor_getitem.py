@@ -1124,7 +1124,7 @@ def test_tensor_assign_bool_index_1():
 
 
 @arg_mark(plat_marks=['cpu_linux'],
-          level_mark='level0',
+          level_mark='level1',
           card_mark='onecard',
           essential_mark='essential')
 def test_tensor_assign_bool_index_exception():
