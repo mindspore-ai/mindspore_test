@@ -722,6 +722,11 @@ static void SplitTensor(const AnfNodePtr &node, const CNodePtr &next_node, int64
       }
     }
   }
+  auto prim = GetValueNode<PrimitivePtr>(next_node->input(0));
+  if (prim == nullptr) {
+    return;
+  }
+  (void)prim->AddAttr(KEEP_ALIVE, MakeValue(true));
 }
 
 static void SplitTensorList(const AnfNodePtr &node, const CNodePtr &next_node, int index) {
@@ -804,6 +809,11 @@ static void SplitTensorList(const AnfNodePtr &node, const CNodePtr &next_node, i
   }
   CNodePtr make_tuple = func_graph->NewCNode(make_tuple_inputs);
   (void)manager->Replace(node, make_tuple);
+  auto prim = GetValueNode<PrimitivePtr>(next_node->input(0));
+  if (prim == nullptr) {
+    return;
+  }
+  (void)prim->AddAttr(KEEP_ALIVE, MakeValue(true));
 }
 
 static void StepSplitTensor(const AnfNodePtr &node, const FuncGraphManagerPtr &manager) {
@@ -2033,6 +2043,8 @@ static void ExtractStrategyAndInit(const CNodePtr &cnode, const PrimitivePtr &pr
       in_strategy = GenerateStandAloneStra(op_info);
     }
     CheckStrategyAndShape(in_strategy, op_info);
+  } else if (CheckLayoutForDynamicShape(in_tensor_layouts, out_tensor_layouts, op_info) != SUCCESS) {
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "check layout for dynamic shape failed";
   }
   if (op_info->Init(in_strategy, out_strategy, in_tensor_layouts, out_tensor_layouts) == FAILED) {
     MS_LOG(EXCEPTION) << "Failure:operator " << prim->name() << " init failed" << trace::DumpSourceLines(cnode);

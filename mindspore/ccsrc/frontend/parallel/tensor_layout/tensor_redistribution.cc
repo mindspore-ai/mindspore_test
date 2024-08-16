@@ -109,11 +109,15 @@ Status TensorRedistribution::Init(const TensorLayout &from, const TensorLayout &
   if (!is_multi_dynamic_axis_reshape && this->is_dynamic_shape_) {
     // Dynamic info of func_graph should be considered.
     MS_LOG(INFO) << "LayoutTransfer inited with dynamic shape.";
+    TensorLayout new_from;
+    TensorLayout new_to;
     Status ret = this->AssembleStaticTensorShape(this->from_origin_no_assembled_, this->to_origin_no_assembled_,
-                                                 &this->from_origin_, &this->to_origin_);
+                                                 &new_from, &new_to);
     if (ret != Status::SUCCESS) {
       return ret;
     }
+    this->from_origin_ = new_from;
+    this->to_origin_ = new_to;
     this->is_assembled_static_shape_ = true;
   }
   const Shape from_origin_shape = from_origin_.tensor_shape().array();

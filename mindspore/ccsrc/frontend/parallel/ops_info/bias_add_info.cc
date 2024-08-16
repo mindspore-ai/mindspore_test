@@ -143,16 +143,10 @@ Status BiasAddInfo::CheckInputLayout() {
 
 Status BiasAddInfo::InferOutputTensorInfo() {
   auto in_layout0 = inputs_tensor_info_[kIndex0].tensor_layout();
-  // output layout should be the same as input layout 0
-  if (in_layout0.tensor_shape_before().array() != outputs_shape_[kIndex0]) {
-    MS_LOG(ERROR) << "The infer output shape " << in_layout0.tensor_shape_before().array()
-                  << " dose not match the output shape " << outputs_shape_[kIndex0];
-    return FAILED;
-  }
 
   TensorLayout output_tensor_layout;
   output_tensor_layout.InitFromExtendVector(in_layout0.device_arrangement_origin().array(),
-                                            in_layout0.tensor_map_before(), in_layout0.tensor_shape_before().array());
+                                            in_layout0.tensor_map_before(), outputs_shape_[0]);
 
   TensorInfo output_tensor_info(output_tensor_layout);
   outputs_tensor_info_.push_back(output_tensor_info);

@@ -64,6 +64,7 @@ class PipelineTransformer {
 
   AnfNodePtr GetArgumentsByParameter(const AnfNodePtr &parameter);
   void RemoveMonadNode();
+  void BroadCastGraphStage(const FuncGraphPtr &fg);
   bool HasNoUpdateParameter();
   AnfNodePtr CreateTupleZeroTensor(const AnfNodePtr &node, size_t index);
   std::vector<AnfNodePtr> GetLoadNodeByParam(const AnfNodePtr &param) const;

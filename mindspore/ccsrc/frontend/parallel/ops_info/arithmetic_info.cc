@@ -398,14 +398,6 @@ TensorLayout ArithmeticBase::InferOutputLayout() {
   Shapes tensormap0 = in_layout0.tensor_map_before();
   Shapes tensormap1 = in_layout1.tensor_map_before();
 
-  Shapes input_shapes = InferExpandShape();
-  Shape input_a_shape = input_shapes.at(0);
-  Shape input_b_shape = input_shapes.at(1);
-
-  for (size_t i = 0; i < input_a_shape.size(); ++i) {
-    input_a_shape[i] = (input_a_shape[i] == 1) ? input_b_shape[i] : input_a_shape[i];
-  }
-
   Shapes output_tensormap;
   Shape map_none_shape(1, MAP_NONE);
   size_t len_diff = 0;
@@ -427,7 +419,7 @@ TensorLayout ArithmeticBase::InferOutputLayout() {
 
   TensorLayout output_tensor_layout;
   output_tensor_layout.InitFromExtendVector(in_layout0.device_arrangement_origin().array(), output_tensormap,
-                                            input_a_shape);
+                                            outputs_shape_[0]);
   return output_tensor_layout;
 }
 

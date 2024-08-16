@@ -348,6 +348,22 @@ void PipelineInterleave::Coloring() {
   }
 }
 
+void PipelineInterleave::BroadCastGraphStage(const FuncGraphPtr &fg) {
+  if (fg == root_ || fg == main_graph_ || fg == shared_cell_) {
+    return;
+  }
+  auto stage = fg->stage();
+  auto value_nodes = fg->value_nodes();
+  for (const auto &value_pair : value_nodes) {
+    auto node = value_pair.first;
+    if (IsValueNode<FuncGraph>(node)) {
+      auto sub_graph = GetValueNode<FuncGraphPtr>(node);
+      sub_graph->set_stage(stage);
+      BroadCastGraphStage(sub_graph);
+    }
+  }
+}
+
 void PipelineInterleave::BroadCastColoring() {
   auto need_coloring = true;
   while (need_coloring) {
@@ -409,6 +425,13 @@ void PipelineInterleave::BroadCastColoring() {
         }
       }
     }
+  }
+  for (auto &fg : manager_->func_graphs()) {
+    auto stage = fg->stage();
+    if (stage < 0) {
+      continue;
+    }
+    BroadCastGraphStage(fg);
   }
 }
 
@@ -577,11 +600,15 @@ void PipelineInterleave::InsertSendReceive(const AnfNodePtr &node, const AnfNode
   Attr attr_shape = std::make_pair(SHAPE, shape_type_pair.first);
   Attr attr_dtype = std::make_pair(DTYPE, shape_type_pair.second);
   auto send_prim = GetCNodePrimitive(send);
+  auto rank_list = g_device_manager->GetDeviceListBetweenStage();
+  send_prim->set_attr(DST_GLOBAL_RANK, MakeValue(rank_list[user_stage]));
   send_prim->set_attr(DTYPE, shape_type_pair.second);
   OperatorAttrs attrs_recv = {attr_tag, attr_rank, attr_shape, attr_dtype, attr_group, attr_group_back};
   auto recv_op = CreateOpInstance(attrs_recv, RECEIVE, RECEIVE);
   std::vector<AnfNodePtr> recv_input = {NewValueNode(recv_op), send};
   auto recv = graph->NewCNode(recv_input);
+  auto recv_prim = GetCNodePrimitive(recv);
+  recv_prim->set_attr(SRC_GLOBAL_RANK, MakeValue(rank_list[node_stage]));
   recv->set_abstract(node->abstract());
   recv->set_user_data<NodeStageInfo>(user_node_stage_info);
   recv->AddPrimalAttr(CHUNK, MakeValue(user_node_stage_info->chunk()));
@@ -959,24 +986,20 @@ void PipelinePostProcess::Init(const std::vector<AnfNodePtr> &nodes) {
     auto chunk = GetValue<int64_t>(cnode->GetPrimalAttr(CHUNK));
     chunk_num_ = (chunk + 1) > chunk_num_ ? (chunk + 1) : chunk_num_;
   }
-  auto value_nodes = main_graph_->value_nodes();
-  for (auto value_pair = value_nodes.cbegin(); value_pair != value_nodes.cend(); ++value_pair) {
-    auto node = (*value_pair).first;
-    if (!IsValueNode<FuncGraph>(node)) {
+  auto main_graph_nodes = TopoSort(main_graph_->get_return(), SuccDeeperSimple);
+  for (const auto &node : main_graph_nodes) {
+    if (!node->isa<CNode>()) {
       continue;
     }
-    auto fg = GetValueNode<FuncGraphPtr>(node);
+    auto cnode = node->cast<CNodePtr>();
+    if (!IsValueNode<FuncGraph>(cnode->input(0))) {
+      continue;
+    }
+    auto fg = GetValueNode<FuncGraphPtr>(cnode->input(0));
     if (fg != shared_cell_) {
       continue;
     }
-    auto node_users = manager_->node_users()[node];
-    for (auto &node_user : node_users) {
-      auto user = node_user.first;
-      if (user->func_graph() == main_graph_) {
-        shared_cell_users_.emplace_back(user);
-      }
-    }
-    break;
+    shared_cell_users_.emplace_back(cnode);
   }
 }
 
