@@ -1,4 +1,4 @@
-# Copyright 2022-2023 Huawei Technologies Co., Ltd
+# Copyright 2022-2024 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,13 +16,13 @@
 1. This file is an abstraction of the dataset loading class. It contains
 some basic dataset operations(skip, filter, map, batch, ...).
 2. Specific dataset loading classes can be found in datasets_vision.py, datasets_text.py,
-datasets_audio.py, datasets_standard_format.py and dataets_user_defined.py files.
+datasets_audio.py, datasets_standard_format.py and datasets_user_defined.py files.
     datasets_vision.py: contains vision dataset loading classes.
     datasets_text.py: contains text dataset loading classes.
     datasets_audio.py: contains audio dataset loading classes.
     datasets_standard_format.py: contains standard format loading classes which
                                  any other kinds of datasets can be converted to.
-    dataets_user_defined.py: contains basic classes that help users to define
+    datasets_user_defined.py: contains basic classes that help users to define
                              flexible ways to load dataset.
 """
 import atexit
@@ -598,10 +598,10 @@ class Dataset:
                   name as the input columns, i.e., the columns will be replaced.
 
                 - python_multiprocessing (bool, optional): Parallelize Python function `per_batch_map` with
-                  multi-processing or multi-threading mode, ``True`` means multi-processing,
-                  ``False`` means multi-threading If `per_batch_map` is a I/O bound task, use
-                  multi-threading mode. If `per_batch_map` is a CPU bound task, it is recommended to use
-                  multi-processing mode. Default: ``False`` , use python multi-threading mode.
+                  multiprocessing or multithreading mode, ``True`` means multiprocessing,
+                  ``False`` means multithreading If `per_batch_map` is a I/O bound task, use
+                  multithreading mode. If `per_batch_map` is a CPU bound task, it is recommended to use
+                  multiprocessing mode. Default: ``False`` , use python multithreading mode.
 
                 - max_rowsize(Union[int, list[int]], optional): Maximum size of row in MB that is used for shared memory
                   allocation to copy data between processes, the total occupied shared memory will increase as
@@ -611,7 +611,7 @@ class Dataset:
                   ``input_columns`` and ``output_columns`` use this value as the unit to create shared memory.
                   If it is a list, the first element represents the ``input_columns`` use this value as the unit to
                   create shared memory, and the second element represents ``output_columns`` use this value as the unit
-                  to create shared memory. Default: 16.
+                  to create shared memory. Default: ``None`` , allocate shared memory dynamically.
 
         Returns:
             Dataset, a new dataset with the above operation applied.
@@ -905,7 +905,7 @@ class Dataset:
                   ``input_columns`` and ``output_columns`` use this value as the unit to create shared memory.
                   If it is a list, the first element represents the ``input_columns`` use this value as the unit to
                   create shared memory, and the second element represents ``output_columns`` use this value as the unit
-                  to create shared memory. Default: 16.
+                  to create shared memory. Default: ``None`` , allocate shared memory dynamically.
 
                 - cache (DatasetCache, optional): Use tensor caching service to speed up dataset processing.
                   Default: ``None``, which means no cache is used.
@@ -989,8 +989,8 @@ class Dataset:
             num_parallel_workers = 1
             logger.warning(
                 "Input 'operations' of 'map' includes network computing operators like in mindspore.nn, mindspore.ops, "
-                "mindspore.numpy module and etc, which do not support multi-thread compiling, recommend to replace it "
-                "with python implemented operator like numpy etc. Here decrease 'num_parallel_workers' into 1.")
+                "mindspore.numpy module and etc, which do not support multithreading compiling, recommend to replace "
+                "it with python implemented operator like numpy etc. Here decrease 'num_parallel_workers' into 1.")
 
         return MapDataset(self, operations, input_columns, output_columns, num_parallel_workers, **kwargs)
 
@@ -1523,8 +1523,8 @@ class Dataset:
             2. Before calling the function, do not use batch operation, repeat operation or data augmentation operations
                with random attribute in map operation.
             3. When array dimension is variable, one-dimensional arrays or
-               multi-dimensional arrays with variable dimension 0 are supported.
-            4. MindRecord does not support multi-dimensional string or multi-dimensional bytes.
+               multidimensional arrays with variable dimension 0 are supported.
+            4. MindRecord does not support multidimensional string or multidimensional bytes.
 
         Args:
             file_name (str): Path to dataset file.
@@ -2174,7 +2174,7 @@ class TextBaseDataset(Dataset):
                 Japanese or Chinese character sets, and 1.0 for other languages with small character sets
                 like English or Latin.
             model_type(SentencePieceModel): Model type. Choose from unigram (default), bpe, char, or word.
-                The input sentence must be pretokenized when using word type.
+                The input sentence must be pre-tokenized when using word type.
             params(dict): Any extra optional parameters of sentencepiece library according to your raw data
 
         Returns:
@@ -2251,7 +2251,7 @@ class TextBaseDataset(Dataset):
                 Japanese or Chinese character sets, and 1.0 for other languages with small character sets
                 like English or Latin.
             model_type(SentencePieceModel): Model type. Choose from unigram (default), bpe, char, or word.
-                The input sentence must be pretokenized when using word type.
+                The input sentence must be pre-tokenized when using word type.
             params(dict): Any extra optional parameters of sentencepiece library according to your raw data
 
         Returns:
@@ -2629,12 +2629,12 @@ class BatchDataset(UnionBaseDataset):
             ``input_columns`` and ``output_columns`` use this value as the unit to create shared memory.
             If it is a list, the first element represents the ``input_columns`` use this value as the unit to
             create shared memory, and the second element represents ``output_columns`` use this value as the unit
-            to create shared memory. Default: 16.
+            to create shared memory. Default: ``None`` , allocate shared memory dynamically.
 
     """
 
     def __init__(self, input_dataset, batch_size, drop_remainder=False, num_parallel_workers=None, per_batch_map=None,
-                 input_columns=None, output_columns=None, python_multiprocessing=False, max_rowsize=16):
+                 input_columns=None, output_columns=None, python_multiprocessing=False, max_rowsize=None):
         super().__init__(children=input_dataset, num_parallel_workers=num_parallel_workers)
 
         if BatchDataset._is_ancestor_of_repeat(input_dataset):
@@ -2655,7 +2655,9 @@ class BatchDataset(UnionBaseDataset):
 
         self.python_multiprocessing = python_multiprocessing
         self.process_pool = None
-        if isinstance(max_rowsize, int):
+        if max_rowsize is None:
+            self.max_rowsize = [-1, -1]
+        elif isinstance(max_rowsize, int):
             self.max_rowsize = [max_rowsize * self.batch_size] * 2 if max_rowsize != -1 else [max_rowsize, max_rowsize]
         else:
             self.max_rowsize = [max_rowsize[0] * self.batch_size, max_rowsize[1] * self.batch_size]
@@ -3078,7 +3080,7 @@ class Pipe:
     Class to handle communication between the master process and the worker processes.
     """
 
-    def __init__(self, warning_ctl, shared_memory=False, max_rowsize=16):
+    def __init__(self, warning_ctl, shared_memory=False, max_rowsize=(-1, -1)):
         self.shared_memory = shared_memory
         self.eof = multiprocessing.Event()
         if self.shared_memory:
@@ -3184,7 +3186,7 @@ class _MPWorker(multiprocessing.Process):
     Worker process for multiprocessing.
     """
 
-    def __init__(self, operations, warning_ctl, max_rowsize=16, worker_id=0):
+    def __init__(self, operations, warning_ctl, max_rowsize=(-1, -1), worker_id=0):
         shared_memory = get_enable_shared_mem()
         self.pipe = Pipe(warning_ctl, shared_memory=shared_memory, max_rowsize=max_rowsize)
         self.check_interval = get_multiprocessing_timeout_interval()
@@ -3216,14 +3218,6 @@ class _MPWorker(multiprocessing.Process):
                     logger.warning("Please `pip install py-spy` to get the stacks of the stuck process.")
             try:
                 res = self.pipe.master_receive()
-                # Because there is no need to copy when creating Tensors in the C++layer, it reduces the time
-                # from np.ndarray to C++Tensor creation. However, when using shared memory in multiple processes,
-                # the address of the shared memory will always be passed to subsequent nodes in the dataset pipeline,
-                # and the shared memory will also be written by the current node, causing dirty data to be accessed
-                # by subsequent nodes in the pipeline. So make a memory copy here to solve the problem of
-                # shared memory being contaminated.
-                if get_enable_shared_mem():
-                    res = copy.deepcopy(res)
             except queue.Empty:
                 continue
             if res is None:
@@ -3286,7 +3280,7 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
             self.origin_hook(ex_type, value, tb)
             self.mp_pool_exit_preprocess()
 
-    def __init__(self, op_name, num_parallel_workers, operations, max_rowsize=16):
+    def __init__(self, op_name, num_parallel_workers, operations, max_rowsize=(-1, -1)):
         super(_PythonMultiprocessing, self).__init__()
         self.op_name = op_name
         self.num_parallel_workers = num_parallel_workers
@@ -3327,10 +3321,10 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
                 if child_pid == 0:
                     break
         except OSError:
-            # waitpid may be failed for some reasons so we ignore this error
+            # waitpid may fail for some reason, so we ignore this error
             pass
 
-    # Dataset need watch_dog thread to monitoring fork multi-processing,
+    # Dataset need watch_dog thread to monitoring fork multiprocessing,
     # and thread can't be a member function otherwise python won't collect and release resources.
     @staticmethod
     def _watch_dog(eot, workers):
@@ -3465,7 +3459,7 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
             op_id: ID for operation to have Python multiprocessing pool launched
 
         Returns:
-            Python multiprocssing pool is launched.
+            Python multiprocessing pool is launched.
         """
         self.python_threads_to_workers = {}
         self.op_id = op_id
@@ -3678,12 +3672,13 @@ class MapDataset(UnionBaseDataset):
             ``python_multiprocessing`` is set to True. If it is an int value, it represents ``input_columns`` and
             ``output_columns`` use this value as the unit to create shared memory. If it is a list, the first element
             represents the ``input_columns`` use this value as the unit to create shared memory, and the second element
-            represents ``output_columns`` use this value as the unit to create shared memory. Default: 16.
+            represents ``output_columns`` use this value as the unit to create shared memory. Default: ``None`` ,
+            allocate shared memory dynamically.
         offload (bool, optional): Flag to indicate whether offload is used. Default: ``None``.
     """
 
     def __init__(self, input_dataset, operations=None, input_columns=None, output_columns=None,
-                 num_parallel_workers=None, python_multiprocessing=False, cache=None, callbacks=None, max_rowsize=16,
+                 num_parallel_workers=None, python_multiprocessing=False, cache=None, callbacks=None, max_rowsize=None,
                  offload=None):
         super().__init__(children=input_dataset, num_parallel_workers=num_parallel_workers, cache=cache)
         self.operations = to_list(operations)
@@ -3709,7 +3704,9 @@ class MapDataset(UnionBaseDataset):
         self.process_pool = None
 
         self.callbacks = to_list(callbacks)
-        if isinstance(max_rowsize, int):
+        if max_rowsize is None:
+            self.max_rowsize = [-1, -1]
+        elif isinstance(max_rowsize, int):
             self.max_rowsize = [max_rowsize] * 2
         else:
             self.max_rowsize = max_rowsize
