@@ -20,11 +20,14 @@
 #include <vector>
 #include <utility>
 #include <unordered_map>
+#include <fstream>
+#include "nlohmann/json.hpp"
 #include "utils/ms_exception.h"
 #include "proto/topology.pb.h"
 #include "include/backend/distributed/ps/ps_context.h"
 #include "include/backend/distributed/rpc/tcp/constants.h"
 #include "include/backend/distributed/recovery/recovery_context.h"
+#include "include/backend/distributed/collective/collective_manager.h"
 #include "distributed/recovery/file_configuration.h"
 #include "distributed/cluster/topology/meta_server_node.h"
 #include "utils/convert_utils_base.h"
@@ -40,6 +43,13 @@ constexpr char kRecoveryFileName[] = "recovery.dat";
 constexpr char kHostName[] = "host_name";
 constexpr char kRole[] = "role";
 constexpr char kRankId[] = "rank_id";
+constexpr char kDeviceId[] = "device_id";
+
+// The keys for parsed information of rank table file.
+constexpr char kRankTableServerList[] = "server_list";
+constexpr char kRankTableDevice[] = "device";
+constexpr char kRankTablePodIp[] = "pod_ip";
+constexpr char kRankTableRankId[] = "rank_id";
 
 MetaServerNode::~MetaServerNode() {
   try {
@@ -194,6 +204,7 @@ MessageBase *const MetaServerNode::ProcessRegister(MessageBase *const message) {
   const auto &host_name = registration.host_name();
   const auto &host_ip = registration.host_ip();
   const auto &role = registration.role();
+  const auto &device_id = registration.device_id();
   std::unique_lock<std::shared_mutex> lock(nodes_mutex_);
   if (nodes_.find(node_id) == nodes_.end()) {
     uint32_t rank_id;
@@ -221,11 +232,13 @@ MessageBase *const MetaServerNode::ProcessRegister(MessageBase *const message) {
     node_info->host_ip = host_ip;
     node_info->role = role;
     node_info->rank_id = rank_id;
+    node_info->device_id = device_id;
     node_info->state = NodeState::kRegistered;
     (void)time(&(node_info->last_update));
     nodes_[node_id] = node_info;
     MS_LOG(WARNING) << "The new node: " << node_id << "(role: " << role << ")"
-                    << ", rank id: " << rank_id << ", hostname: " << node_info->host_name << ", ip: " << host_ip
+                    << ", rank id: " << rank_id << ", device id: " << node_info->device_id
+                    << ", hostname: " << node_info->host_name << ", ip: " << host_ip
                     << " is registered successfully. Currently registered node number: " << nodes_.size()
                     << ", expected node number: " << total_node_num_;
     (void)TransitionToInitialized();
@@ -507,8 +520,11 @@ void MetaServerNode::UpdateTopoState() {
 
 bool MetaServerNode::TransitionToInitialized() {
   if (nodes_.size() == total_node_num_) {
-    // After all nodes are successfully registered, reassign rank ids so they could be continuous.
-    ReassignNodeRank();
+    // If RANK_TABLE_FILE is set, reassign rank ids based on provided rank table file.
+    if (!ReassignNodeRankFromRanktablefile()) {
+      // After all nodes are successfully registered, reassign rank ids so they could be continuous.
+      ReassignNodeRank();
+    }
 
     // Assign port range for each node after cluster is initialized.
     AssignPortRange();
@@ -595,6 +611,7 @@ bool MetaServerNode::Recovery() {
       node_info->host_name = iter.value().at(kHostName);
       node_info->role = iter.value().at(kRole);
       node_info->rank_id = iter.value().at(kRankId);
+      node_info->device_id = iter.value().at(kDeviceId);
       node_info->state = NodeState::kRegistered;
       nodes_[node_id] = node_info;
     }
@@ -625,6 +642,7 @@ bool MetaServerNode::Persist() {
     node_state[kHostName] = iter->second->host_name;
     node_state[kRole] = iter->second->role;
     node_state[kRankId] = iter->second->rank_id;
+    node_state[kDeviceId] = iter->second->device_id;
     node_states[node_id] = node_state;
   }
 
@@ -680,6 +698,88 @@ bool MetaServerNode::CheckRankIdValidation(const std::string &node_id, const std
   return true;
 }
 
+bool MetaServerNode::ReassignNodeRankFromRanktablefile() {
+  std::string rank_table_file_path = common::GetEnv("RANK_TABLE_FILE");
+  if (!rank_table_file_path.empty()) {
+    MS_LOG(INFO) << "Start reassigning rank ids for nodes according to rank table file, json file path: "
+                 << rank_table_file_path;
+    std::ifstream jsonFile(rank_table_file_path, std::ifstream::in);
+    if (!jsonFile.is_open()) {
+      MS_LOG(WARNING)
+        << "Failed to open rank table file. Won't reassign rank id based on rank table file. This may be because the "
+           "path of rank table file is incorrect or the access of json file is not permitted.";
+      return false;
+    }
+
+    nlohmann::json rank_table_file_data;
+    try {
+      rank_table_file_data = nlohmann::json::parse(jsonFile);
+      if (rank_table_file_data.is_null()) {
+        MS_LOG(WARNING) << "Failed to read data from rank table file. Won't reassign rank id based on rank table file.";
+        return false;
+      }
+
+      std::map<std::string, std::vector<std::string>> mapped_rank_id;
+      for (const auto &server_list : rank_table_file_data[kRankTableServerList]) {
+        if (server_list.find(kRankTablePodIp) == server_list.end()) {
+          MS_LOG(WARNING) << "Cannot find key 'pod_ip' in 'server_list' from rank table file. Won't reassign rank id "
+                             "based on rank table file.";
+          return false;
+        }
+        std::string pod_ip = server_list[kRankTablePodIp];
+        for (const auto &device : server_list[kRankTableDevice]) {
+          std::string rank_id = device[kRankTableRankId];
+          (void)mapped_rank_id[pod_ip].push_back(rank_id);
+        }
+      }
+
+      std::map<std::string, uint32_t> mapped_local_rank_size;
+      for (auto &n : nodes_) {
+        std::shared_ptr<NodeInfo> &node_info = n.second;
+        mapped_local_rank_size[node_info->host_ip] = mapped_local_rank_size[node_info->host_ip] + 1;
+      }
+
+      for (auto &n : nodes_) {
+        std::shared_ptr<NodeInfo> &node_info = n.second;
+        const std::string &role = node_info->role;
+        uint32_t device_id = node_info->device_id;
+        if (device_id == UINT32_MAX) {
+          MS_LOG(WARNING) << "Device id is set incorrectly in the scenario where importing rank table file. Won't "
+                             "reassign rank id based on rank table file.";
+          return false;
+        }
+        if (mapped_rank_id.find(node_info->host_ip) == mapped_rank_id.end()) {
+          MS_LOG(WARNING) << "Current node's HOST_IP cannot be found in rank table file. Won't reassign rank id based "
+                             "on rank table file.";
+          return false;
+        } else {
+          if (mapped_local_rank_size[node_info->host_ip] != mapped_rank_id[node_info->host_ip].size()) {
+            MS_LOG(WARNING) << "Current node's DEVICE_ID [" << mapped_local_rank_size[node_info->host_ip]
+                            << "] is not equal to total number of devices ["
+                            << mapped_rank_id[node_info->host_ip].size()
+                            << "] in rank table file. Won't reassign rank id based on rank table file.";
+            return false;
+          } else {
+            std::string new_rank = mapped_rank_id[node_info->host_ip][device_id];
+            MS_LOG(WARNING) << "Reassign rank id from rank table file, node id: " << node_info->node_id
+                            << ", role: " << role << ", with host ip: " << node_info->host_ip
+                            << ", device id: " << node_info->device_id << ", old rank id: " << node_info->rank_id
+                            << ", new rank id: " << new_rank;
+            node_info->rank_id = std::stoi(new_rank);
+            (void)metadata_.insert(std::make_pair(role + node_info->node_id, std::to_string(node_info->rank_id)));
+          }
+        }
+      }
+    } catch (const std::exception &e) {
+      MS_LOG(WARNING) << "Rank table file is incorrect. Won't reassign rank id based on rank table file. Json error: "
+                      << e.what();
+      return false;
+    }
+    return true;
+  }
+  return false;
+}
+
 void MetaServerNode::ReassignNodeRank() {
   if (std::all_of(nodes_.begin(), nodes_.end(), [](const auto &node) { return common::IsStrNumeric(node.first); })) {
     MS_LOG(WARNING) << "Rank ids are already set by numeric node ids. No need to reassign them.";
@@ -691,7 +791,7 @@ void MetaServerNode::ReassignNodeRank() {
     return;
   }
 
-  MS_LOG(INFO) << "Start sorting and reassiging rank ids for nodes according to node ips and node ids.";
+  MS_LOG(INFO) << "Start sorting and reassigning rank ids for nodes according to node ips and node ids.";
   std::map<std::string, std::map<NodeKey, uint32_t>> node_ranks;
   for (auto &n : nodes_) {
     std::shared_ptr<NodeInfo> &node_info = n.second;

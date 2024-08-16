@@ -212,6 +212,7 @@ class _ProcessManager:
             raise ValueError(f"Simulation level is set, worker_num must be 1, but got {self.worker_num}.")
 
         for i in range(self.local_worker_num):
+            os.environ["DEVICE_ID"] = str(i)
             node_id, log_name = self._get_node_id_and_log_path(i)
             if node_id is None:
                 logger.warning(f"Rank ids will be assigned automatically, "

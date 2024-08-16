@@ -160,7 +160,8 @@ class BACKEND_EXPORT CollectiveManager {
   // The global rank id of this process. Normally this range is 0 to `total process number - 1`.
   uint32_t global_rank_id_;
 
-  // The local rank id of this process within the same node. This is usually used as device id.
+  // The local rank id of this process within the same node. This is usually used as device id if rank id is not
+  // reassigned from rank table file
   uint32_t local_rank_id_;
 
   // The global rank size. Normally this is equal to `total process number`.

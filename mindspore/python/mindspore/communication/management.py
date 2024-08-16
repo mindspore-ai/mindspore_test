@@ -102,7 +102,8 @@ def _set_envs():
     os.environ["RANK_ID"] = str(get_rank())
     if os.getenv("RANK_SIZE") is None:
         os.environ["RANK_SIZE"] = str(get_group_size())
-    os.environ["DEVICE_ID"] = str(get_local_rank())
+    if os.getenv("DEVICE_ID") is None:
+        os.environ["DEVICE_ID"] = str(get_local_rank())
 
 
 def init(backend_name=None):
