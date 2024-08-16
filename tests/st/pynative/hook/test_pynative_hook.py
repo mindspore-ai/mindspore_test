@@ -26,6 +26,7 @@ from mindspore.nn import WithLossCell
 from mindspore.ops import composite as C
 from mindspore.ops import operations as P
 from mindspore.common.initializer import TruncatedNormal
+from mindspore.common.api import _pynative_executor
 from tests.mark_utils import arg_mark
 
 grad_all = C.GradOperation(get_all=True)
@@ -215,6 +216,7 @@ def test_pynative_custom_bprop_and_cell_ms_cell_change_shape():
     ms_cell.bprop_debug = True
     with pytest.raises(ValueError) as ex:
         grad_all(ms_cell)(Tensor(1, mstype.float32))
+        _pynative_executor.sync()
     assert "should have the same shape as the 0th arg" in str(ex.value)
 
 
