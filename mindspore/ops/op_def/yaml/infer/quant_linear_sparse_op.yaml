@@ -5,9 +5,9 @@ quant_linear_sparse:
       dtype: tensor
     weight:
       dtype: tensor
-    deqScale:
+    deq_scale:
       dtype: tensor
-    compressIdx:
+    compress_idx:
       dtype: tensor
     bias:
       dtype: tensor
