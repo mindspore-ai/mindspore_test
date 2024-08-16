@@ -2,7 +2,7 @@ mindspore.numpy.cumprod
 =======================
 
 .. py:function:: mindspore.numpy.cumprod(a, axis=None, dtype=None)
-    
+
     返回沿给定 `axis` 的元素的累计乘积。
 
     .. note::

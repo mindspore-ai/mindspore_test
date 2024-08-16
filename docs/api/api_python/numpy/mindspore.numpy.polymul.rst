@@ -1,4 +1,5 @@
 mindspore.numpy.polymul
+=========================
 
 .. py:function:: mindspore.numpy.polymul(a1, a2)
 

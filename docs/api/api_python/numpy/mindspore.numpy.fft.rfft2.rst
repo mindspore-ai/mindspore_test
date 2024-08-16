@@ -2,7 +2,7 @@ mindspore.numpy.fft.rfft2
 =========================
 
 .. py:function:: mindspore.numpy.fft.rfft2(a, s=None, axes=(-2, -1), norm=None)
-    
+
     计算实数输入 `a` 的二维离散傅里叶变换。
 
     请参阅 :func:`mindspore.ops.rfft2` 以获取更多详细信息。 区别在于 `a` 对应于 `input` ， `axes` 对应于 `dim` 。
