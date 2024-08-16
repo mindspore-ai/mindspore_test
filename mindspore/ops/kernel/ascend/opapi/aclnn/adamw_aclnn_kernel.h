@@ -36,11 +36,11 @@ class AdamWAscend : public AclnnKernelMod {
 
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
-  float lr_;
-  float beta1_;
-  float beta2_;
-  float decay_;
-  float eps_;
+  float lr_ = 0;
+  float beta1_ = 0;
+  float beta2_ = 0;
+  float decay_ = 0;
+  float eps_ = 0;
   bool amsgrad_{false};
   bool maximize_{false};
 };

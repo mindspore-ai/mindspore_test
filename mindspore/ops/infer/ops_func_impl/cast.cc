@@ -31,7 +31,6 @@ BaseShapePtr CastFuncImpl::InferShape(const PrimitivePtr &primitive,
 }
 
 TypePtr CastFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
   const auto prim_name = primitive->name();
   (void)CheckAndConvertUtils::CheckTypeValid("x", input_args[kIndex0]->GetType(),
                                              common_valid_types_with_complex_and_bool, prim_name);
