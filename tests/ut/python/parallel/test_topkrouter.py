@@ -30,8 +30,8 @@ class TopKRouterNet(Cell):
         super().__init__()
         self.topkrouter = P._inner_ops.TopKRouter().shard(strategy)
 
-    def construct(self, x, capacity, expert_num):
-        out = self.topkrouter(x, capacity, expert_num)
+    def construct(self, x, capacity, expert_num, drop_type):
+        out = self.topkrouter(x, capacity, expert_num, drop_type)
         return out
 
 
@@ -47,10 +47,11 @@ def test_topkrouter():
     x = Parameter(Tensor(np.ones([2, 16, 2]), dtype=ms.int32), "x")
     capacity = 3
     expert_num = 4
-    net.set_inputs(x, capacity, expert_num)
-    phase = compile_net(net, x, capacity, expert_num)
+    net.set_inputs(x, capacity, expert_num, 0)
+    phase = compile_net(net, x, capacity, expert_num, 0)
     validator = ParallelValidator(net, phase)
     assert validator.check_parameter_shape("x", [1, 16, 2])
+
 
 
 def test_topkrouter_strategy_error():
@@ -65,7 +66,7 @@ def test_topkrouter_strategy_error():
     x = Parameter(Tensor(np.ones([2, 16, 2]), dtype=ms.int32), "x")
     capacity = 3
     expert_num = 4
-    net.set_inputs(x, capacity, expert_num)
+    net.set_inputs(x, capacity, expert_num, 0)
     with pytest.raises(RuntimeError):
-        compile_net(net, x, capacity, expert_num)
+        compile_net(net, x, capacity, expert_num, 0)
     

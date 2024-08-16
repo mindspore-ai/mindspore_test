@@ -360,7 +360,8 @@ CUST_OUTPUT_MAP(GenerateEodMask) = {{0, OUTPUT_DESC(position_ids)}};
 REG_ADPT_DESC(GenerateEodMask, prim::kPrimGenerateEodMask->name(), CUST_ADPT_DESC(GenerateEodMask));
 
 // TopKRouter
-CUST_INPUT_MAP(TopKRouter) = {{1, INPUT_DESC(x)}, {2, INPUT_DESC(capacity)}, {3, INPUT_DESC(expert_num)}};
+CUST_INPUT_MAP(TopKRouter) = {
+  {1, INPUT_DESC(x)}, {2, INPUT_DESC(capacity)}, {3, INPUT_DESC(expert_num)}, {4, INPUT_DESC(drop_type)}};
 CUST_ATTR_MAP(TopKRouter) = EMPTY_ATTR_MAP;
 CUST_OUTPUT_MAP(TopKRouter) = {{0, OUTPUT_DESC(dispatch_index)}, {1, OUTPUT_DESC(combine_index)}};
 REG_ADPT_DESC(TopKRouter, prim::kPrimTopKRouter->name(), CUST_ADPT_DESC(TopKRouter));
