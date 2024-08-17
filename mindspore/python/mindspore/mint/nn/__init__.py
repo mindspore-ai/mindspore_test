@@ -19,6 +19,7 @@ Predefined building blocks or computing units to construct neural networks.
 """
 from __future__ import absolute_import
 import mindspore.ops as ops
+from mindspore.mint.nn import functional as F
 from mindspore.nn.cell import Cell
 from mindspore.nn import EmbeddingExt as Embedding, MaxPool2dExt as MaxPool2d, LayerNormExt as LayerNorm, Linear
 
@@ -311,6 +312,40 @@ class BCEWithLogitsLoss(Cell):
         return out
 
 
+class Mish(Cell):
+    r"""
+    Computes MISH (A Self Regularized Non-Monotonic Neural Activation Function)
+    of input tensors element-wise.
+
+    Refer to :func:`mindspore.mint.nn.functional.mish` for more details.
+
+    Mish Activation Function Graph:
+
+    .. image:: ../images/Mish.png
+        :align: center
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import Tensor, mint
+        >>> import numpy as np
+        >>> x = Tensor(np.array([[-1.1, 4.0, -8.0], [2.0, -5.0, 9.0]]), mindspore.float32)
+        >>> mish = mint.nn.Mish()
+        >>> output = mish(x)
+        >>> print(output)
+        [[-3.0764845e-01 3.9974124e+00 -2.6832507e-03]
+         [ 1.9439589e+00 -3.3576239e-02 8.9999990e+00]]
+    """
+    def __init__(self):
+        """Initialize Mish."""
+        super(Mish, self).__init__()
+
+    def construct(self, input):
+        return F.mish(input)
+
+
 __all__ = [
     # 1
     'BCEWithLogitsLoss',
@@ -521,4 +556,6 @@ __all__ = [
     'Hardsigmoid',
     # 222
     'Hardswish',
+    # 267
+    'Mish',
 ]

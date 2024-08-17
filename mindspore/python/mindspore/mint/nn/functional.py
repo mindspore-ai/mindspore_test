@@ -227,6 +227,8 @@ from mindspore.ops.function.nn_func import hardshrink  # pylint: disable=W0611
 from mindspore.ops.function.nn_func import hardsigmoid  # pylint: disable=W0611
 # 222
 from mindspore.ops.function.nn_func import hardswish  # pylint: disable=W0611
+# 267
+from mindspore.ops.auto_generate import mish_ext as mish  # pylint: disable=W0611
 # 323
 
 # 324

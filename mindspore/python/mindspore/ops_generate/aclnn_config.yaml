@@ -307,5 +307,8 @@ MatrixInverseExt: 'aclnnInverse'
 
 # 256
 MedianExt: 'aclnnMedian'
+# 267
+MishExt: 'aclnnMish'
+MishGradExt: 'aclnnMishBackward'
 
 # 301

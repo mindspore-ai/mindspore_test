@@ -1,0 +1,14 @@
+#operator mish_grad_ext
+mish_grad_ext:
+    args:
+        dout:
+            dtype: tensor
+        x:
+            dtype: tensor
+    returns:
+        output:
+            dtype: tensor
+    function:
+        disable: True
+    dispatch:
+        enable: True

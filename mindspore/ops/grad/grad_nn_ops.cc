@@ -1679,6 +1679,13 @@ REG_BPROP_BUILDER("Mish").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   return {dx};
 });
 
+REG_BPROP_BUILDER("MishExt").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto dout = ib->GetInput(kIndex2);
+  auto dx = ib->Emit("MishGradExt", {dout, x});
+  return {dx};
+});
+
 REG_BPROP_BUILDER("SeLU").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
   auto scale = 1.0507009873554805;
   auto out = ib->GetInput(kIndex1);
