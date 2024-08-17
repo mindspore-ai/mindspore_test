@@ -23,9 +23,13 @@ namespace mindspore {
 namespace ops {
 BaseShapePtr SplitFuncImpl::InferShape(const PrimitivePtr &primitive,
                                        const std::vector<AbstractBasePtr> &input_args) const {
+  MS_EXCEPTION_IF_NULL(primitive);
+  MS_EXCEPTION_IF_NULL(input_args[0]);
   auto prim_name = primitive->name();
   auto x_shape_ptr = input_args[0]->GetShape();
+  MS_EXCEPTION_IF_NULL(x_shape_ptr);
   auto x_shape = x_shape_ptr->GetShapeVector();
+  MS_EXCEPTION_IF_NULL(input_args[2]);
   auto output_num_ptr = input_args[2]->GetValue();
   auto output_num_opt = GetScalarValue<int64_t>(output_num_ptr);
 
@@ -43,6 +47,7 @@ BaseShapePtr SplitFuncImpl::InferShape(const PrimitivePtr &primitive,
   }
 
   auto rank = SizeToLong(x_shape.size());
+  MS_EXCEPTION_IF_NULL(input_args[1]);
   auto axis_ptr = input_args[1]->GetValue();
   auto axis_opt = GetScalarValue<int64_t>(axis_ptr);
   if (MS_UNLIKELY(!axis_opt.has_value())) {
@@ -75,6 +80,9 @@ BaseShapePtr SplitFuncImpl::InferShape(const PrimitivePtr &primitive,
 }
 
 TypePtr SplitFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
+  MS_EXCEPTION_IF_NULL(primitive);
+  MS_EXCEPTION_IF_NULL(input_args[0]);
+  MS_EXCEPTION_IF_NULL(input_args[2]);
   const auto &prim_name = primitive->name();
   const auto &infer_type = input_args[0]->GetType();
   MS_EXCEPTION_IF_NULL(infer_type);
@@ -100,6 +108,9 @@ TypePtr SplitFuncImpl::InferType(const PrimitivePtr &primitive, const std::vecto
 
 int32_t SplitFuncImpl::CheckValidation(const PrimitivePtr &primitive,
                                        const std::vector<AbstractBasePtr> &input_args) const {
+  MS_EXCEPTION_IF_NULL(primitive);
+  MS_EXCEPTION_IF_NULL(input_args[0]);
+  MS_EXCEPTION_IF_NULL(input_args[2]);
   auto op_name = primitive->name();
   int32_t check_status = OP_CHECK_SUCCESS;
   // Check output_num valid.
@@ -116,6 +127,7 @@ int32_t SplitFuncImpl::CheckValidation(const PrimitivePtr &primitive,
   }
   // Check axis valid.
   auto x_shape_ptr = input_args[0]->GetShape();
+  MS_EXCEPTION_IF_NULL(x_shape_ptr);
   auto x_shape = x_shape_ptr->GetShapeVector();
   // Skip to check axis valid if input is dynamic rank.
   if (IsDynamicRank(x_shape)) {
@@ -123,6 +135,7 @@ int32_t SplitFuncImpl::CheckValidation(const PrimitivePtr &primitive,
   }
   auto rank = SizeToLong(x_shape.size());
   MS_CHECK_VALUE(rank > 0, CheckAndConvertUtils::FormatCheckIntegerMsg("rank", rank, kGreaterEqual, 1, primitive));
+  MS_EXCEPTION_IF_NULL(input_args[1]);
   auto axis_ptr = input_args[1]->GetValue();
   auto axis_opt = GetScalarValue<int64_t>(axis_ptr);
 
