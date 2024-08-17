@@ -2047,6 +2047,13 @@ void ExtractInformation(const std::vector<AnfNodePtr> &all_nodes) {
       continue;
     }
 
+    if (CheckShardingPropagation()) {
+      auto find_iter = cnode->attrs().find(OP_INFO_CREATED);
+      if (find_iter != cnode->attrs().end()) {
+        continue;
+      }
+    }
+
     SetVirtualDatasetStrategy(cnode);
     ValueNodePtr prim_anf_node = cnode->input(0)->cast<ValueNodePtr>();
     PrimitivePtr prim = GetValueNode<PrimitivePtr>(prim_anf_node);
@@ -3815,8 +3822,12 @@ bool StepParallel(const FuncGraphPtr &root, const opt::OptimizerPtr &optimizer) 
       MS_EXCEPTION_IF_NULL(ret_after);
       all_nodes = TopoSort(ret_after, SuccDeeperSimple);
     }
-
     // extract shape and strategy, set operator_info
+    ExtractInformation(all_nodes);
+  }
+
+  if (CheckShardingPropagation()) {
+    // To create opInfo for step parallel generated op
     ExtractInformation(all_nodes);
   }
 

@@ -1311,17 +1311,6 @@ Status OperatorInfo::Init(const StrategyPtr &in_strategy, const StrategyPtr &out
 }
 
 Status OperatorInfo::InitForCostModel(const StrategyPtr &in_strategy, const StrategyPtr &out_strategy) {
-  std::vector<std::shared_ptr<TensorLayout>> in_tensor_layouts;
-  std::vector<std::shared_ptr<TensorLayout>> out_tensor_layouts;
-  Status status =
-    ExtractUserConfigLayout(attrs_, inputs_shape_, outputs_shape_, &in_tensor_layouts, &out_tensor_layouts);
-  if (status != SUCCESS) {
-    MS_LOG(EXCEPTION) << "Failure:operator " << name_ << " extract configured layout failed.";
-  }
-  if (!in_tensor_layouts.empty()) {
-    out_tensor_layouts = {};
-    return InitWithTensorLayout(in_tensor_layouts, out_tensor_layouts);
-  }
   if (InitForCostModelWithAutoRepeatCalc(in_strategy, out_strategy) != SUCCESS) {
     ReportError(name_ + " : Init for cost model failed.");
     return FAILED;
@@ -2179,7 +2168,8 @@ Status GenerateStrategiesWithBroadcast(int64_t stage_id, const Shapes &inputs_sh
 }
 
 Status OperatorInfo::SetCostUnderStrategyBase(const StrategyPtr &strategy) {
-  if (InitForCostModel(strategy, nullptr) == FAILED) {
+  StrategyPtr out_strategy = out_strategy_;
+  if (InitForCostModel(strategy, out_strategy) == FAILED) {
     MS_LOG(DEBUG) << name_ << ": Initialization under the strategy failed.";
     return FAILED;
   }
@@ -2262,19 +2252,13 @@ StrategyPtr OperatorInfo::GetStrategyFromSWCByOutputLayout(const TensorLayout &o
   return nullptr;
 }
 
-bool OperatorInfo::IsReshape() const {
-  if (name_.find(RESHAPEINFO) != std::string::npos) {
-    return true;
-  }
-  return false;
-}
+bool OperatorInfo::IsReshape() const { return name_.find(RESHAPEINFO) != std::string::npos; }
 
-bool OperatorInfo::IsTmpIdentity() const {
-  if (name_.find(IDENTITY_INFO) != std::string::npos) {
-    return true;
-  }
-  return false;
-}
+bool OperatorInfo::IsVirtualOutput() const { return name_.find(VIRTUALOUTPUTINFO) != std::string::npos; }
+
+bool OperatorInfo::IsConcat() const { return name_.find(CONCATINFO) != std::string::npos; }
+
+bool OperatorInfo::IsTmpIdentity() const { return name_.find(IDENTITY_INFO) != std::string::npos; }
 
 // Keep at most (1.0 / epsilon) number of available strategies for each operator.
 void OperatorInfo::ApproximateStrategies() {

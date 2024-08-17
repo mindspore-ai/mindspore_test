@@ -414,11 +414,13 @@ bool FindReshapePreNodeStraCosts(const AnfNodePtr &node, OperatorInfoPtr *pre_op
     return FindReshapePreNodeCrossParam(node, pre_operator_info, is_prev_param, out_index, curr_depth);
   }
   if (!node->isa<CNode>()) {
+    MS_LOG(WARNING) << "Reshape's previous node found is not a cnode";
     return false;
   }
   CNodePtr cnode = node->cast<CNodePtr>();
   FindPreNodeCrossFuncGraph(&cnode, *out_index);
   if (!IsValueNode<Primitive>(cnode->input(0))) {
+    MS_LOG(WARNING) << "Reshape's previous node doesn't have value";
     return false;
   }
   auto node_op_info = cnode->user_data<OperatorInfo>();
@@ -496,6 +498,12 @@ void FindReshapeNextNodeStraCosts(const CNodePtr &cnode,
       *is_next_reshape = true;
       continue;
     }
+
+    if (IsPrimitiveCNode(use_apply, prim::kPrimMakeTuple)) {
+      MS_LOG(INFO) << "FindNextLayout prim is MakeTuple, stop searching.";
+      continue;
+    }
+
     ValueNodePtr prim_anf_node = use_apply->input(0)->cast<ValueNodePtr>();
     MS_EXCEPTION_IF_NULL(prim_anf_node);
     PrimitivePtr node_prim = prim_anf_node->value()->cast<PrimitivePtr>();
@@ -516,6 +524,8 @@ void FindReshapeNextNodeStraCosts(const CNodePtr &cnode,
 
     FindReshapeNextNodeStraCosts(use_apply, next_ops_index, is_next_reshape, ++curr_depth);
   }
+
+  return;
 }
 
 void SetUserAttrs(const mindspore::HashMap<std::string, ValuePtr> &origin_prim_attrs, const PrimitivePtr &self_prim) {

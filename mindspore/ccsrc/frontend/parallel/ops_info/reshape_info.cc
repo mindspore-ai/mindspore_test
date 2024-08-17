@@ -31,6 +31,7 @@
 #include "frontend/parallel/auto_parallel/graph_costmodel.h"
 #include "utils/log_adapter.h"
 #include "mindspore/core/ops/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ccsrc/frontend/parallel/step_parallel_utils.h"
 
 namespace mindspore {
 namespace parallel {
@@ -833,7 +834,8 @@ int64_t ReshapeInfo::GetSWCIndexByOutputLayoutWithZeroComm(const TensorLayout &o
     }
   }
   if (index_computation.empty()) {
-    MS_LOG(WARNING) << "There in no available strategy for zero communication cost for reshape: " << name();
+    MS_LOG(WARNING) << "There is no available strategy for zero communication cost for reshape: " << name()
+                    << ", which may cause error.";
     return -1;
   }
   if (index_computation.size() > 1) {
@@ -854,7 +856,8 @@ int64_t ReshapeInfo::GetSWCIndexByOutputLayoutWithMiniComm(const TensorLayout &o
     }
   }
   if (index_comm.empty()) {
-    MS_LOG(ERROR) << "There in no available strategy for zero communication cost for reshape: " << name();
+    MS_LOG(WARNING) << "There is no available strategy for zero communication cost for reshape: " << name()
+                    << ", which may cause error.";
     return -1;
   }
   if (index_comm.size() > 1) {
@@ -876,7 +879,8 @@ int64_t ReshapeInfo::GetSWCIndexByInputLayoutWithZeroComm(const TensorLayout &in
     }
   }
   if (index_computation.empty()) {
-    MS_LOG(WARNING) << "There in no available strategy for zero communication cost for reshape: " << name();
+    MS_LOG(WARNING) << "There is no available strategy for zero communication cost for reshape: " << name()
+                    << ", which may cause error.";
     return -1;
   }
   if (index_computation.size() > 1) {
@@ -897,7 +901,8 @@ int64_t ReshapeInfo::GetSWCIndexByInputLayoutWithMiniComm(const TensorLayout &in
     }
   }
   if (index_comm.empty()) {
-    MS_LOG(ERROR) << "There in no available strategy for zero communication cost for reshape: " << name();
+    MS_LOG(WARNING) << "There is no available strategy for zero communication cost for reshape: " << name()
+                    << ", which may cause error.";
     return -1;
   }
   if (index_comm.size() > 1) {
