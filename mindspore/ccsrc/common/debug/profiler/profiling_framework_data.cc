@@ -20,13 +20,6 @@
 #include <utility>
 #include <algorithm>
 #include <mutex>
-#include "ir/dtype.h"
-#include "op_def/structure_op_name.h"
-#include "include/backend/anf_runtime_algorithm.h"
-#include "include/common/utils/anfalgo.h"
-#include "include/common/utils/utils.h"
-#include "utils/ms_context.h"
-#include "nlohmann/json.hpp"
 #include "include/backend/debug/profiler/profiling.h"
 
 namespace mindspore {
@@ -160,10 +153,10 @@ void ProfilingFrameworkData::RecordHostProfile(std::shared_ptr<ProfilerData> dat
   } else if (data->op_name_ != "flow") {
     op_name = kProfilerModuleString.at(data->module_) + "::" + kProfilerEventString.at(data->event_) + "::" + op_name;
   }
-  OpRangeData report =
-    OpRangeData(data->start_time_, data->end_time_, 0, 0, data->tid_, data->tid_, data->tid_, false, op_name,
-                std::move(stack_vec), data->flow_id_, ProfilingFrameworkData::Device_Id, step);
-  ProfilingDataDumper::GetInstance().Report(std::make_unique<OpRangeData>(report));
+  std::unique_ptr<OpRangeData> report = std::make_unique<OpRangeData>(
+    data->start_time_, data->end_time_, 0, 0, data->tid_, data->tid_, data->tid_, false, op_name, std::move(stack_vec),
+    data->flow_id_, ProfilingFrameworkData::Device_Id, step);
+  ProfilingDataDumper::GetInstance().Report(std::move(report));
 }
 #else
 void ProfilingFrameworkData::RecordHostProfile(std::shared_ptr<ProfilerData> data, uint64_t step) {

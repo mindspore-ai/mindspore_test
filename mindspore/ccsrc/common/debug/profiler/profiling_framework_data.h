@@ -35,62 +35,13 @@ using mindspore::runtime::kProfilerModuleString;
 using mindspore::runtime::kProfilerStageString;
 using mindspore::runtime::ProfilerData;
 
-enum class COMMON_EXPORT OpRangeDataType {
-  OP_RANGE_DATA = 1,
-  IS_ASYNC = 2,
-  NAME = 3,
-  INPUT_DTYPES = 4,
-  INPUT_SHAPE = 5,
-  STACK = 6,
-  MODULE_HIERARCHY = 7,
-  EXTRA_ARGS = 8,
-  RESERVED = 30,
-};
-
-struct COMMON_EXPORT OpRangeData : BaseReportData {
-  int64_t start_ns{0};
-  int64_t end_ns{0};
-  int64_t sequence_number{0};
-  uint64_t process_id{0};
-  uint64_t start_thread_id{0};
-  uint64_t end_thread_id{0};
-  uint64_t forward_thread_id{0};
-  bool is_async{false};
-  std::string name;
-  std::vector<std::string> input_dtypes;
-  std::vector<std::vector<int64_t>> input_shapes;
-  std::vector<std::string> stack;
-  std::vector<std::string> module_hierarchy;
-  uint64_t flow_id{0};
-  uint64_t step{0};
-  // std::unordered_map<std::string, c10::IValue> extra_args;
-  OpRangeData(int64_t start_ns, int64_t end_ns, int64_t sequence_number, uint64_t process_id, uint64_t start_thread_id,
-              uint64_t end_thread_id, uint64_t forward_thread_id, bool is_async, std::string name,
-              std::vector<std::string> stack, uint64_t flow_id, int32_t device_id, uint64_t step)
-      : BaseReportData(device_id, "op_range_" + std::to_string(device_id)),
-        start_ns(start_ns),
-        end_ns(end_ns),
-        sequence_number(sequence_number),
-        process_id(process_id),
-        start_thread_id(start_thread_id),
-        end_thread_id(end_thread_id),
-        forward_thread_id(forward_thread_id),
-        is_async(is_async),
-        name(std::move(name)),
-        stack(std::move(stack)),
-        flow_id(flow_id),
-        step(step) {}
-  std::vector<uint8_t> encode();
-  void preprocess();
-};
-
 class COMMON_EXPORT ProfilingFrameworkData {
  public:
   static void RecordHostProfile(std::shared_ptr<ProfilerData> data, uint64_t step = 0);
 
   inline static std::map<std::string, uint64_t> kernel_launch_begin_;
-  inline static int32_t Device_Id = 0;
-  inline static bool added = false;
+  inline static int32_t Device_Id{0};
+  inline static bool added{false};
 };
 }  // namespace ascend
 }  // namespace profiler
