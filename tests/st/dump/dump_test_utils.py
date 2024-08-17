@@ -148,7 +148,7 @@ async_dump_dict_acl_assign_ops_by_regex = {
     }
 }
 
-def generate_dump_json(dump_path, json_file_name, test_key, net_name='Net'):
+def generate_dump_json(dump_path, json_file_name, test_key, net_name='Net', overflow_number=0):
     """
     Util function to generate dump configuration json file.
     """
@@ -180,11 +180,12 @@ def generate_dump_json(dump_path, json_file_name, test_key, net_name='Net'):
         data = e2e_dump_dict
         data["common_dump_settings"]["path"] = dump_path
         data["e2e_dump_settings"]["trans_flag"] = True
-    elif test_key == "test_e2e_dump_trans_true_op_debug_mode":
+    elif test_key in ["test_e2e_dump_trans_true_op_debug_mode", "test_e2e_dump_set_overflow_number"]:
         data = e2e_dump_dict
         data["common_dump_settings"]["path"] = dump_path
         data["e2e_dump_settings"]["trans_flag"] = True
         data["common_dump_settings"]["op_debug_mode"] = 3
+        data["common_dump_settings"]["overflow_number"] = overflow_number
     elif test_key == "test_e2e_dump_save_kernel_args_true":
         data = e2e_dump_dict
         data["common_dump_settings"]["path"] = dump_path
@@ -235,7 +236,7 @@ def generate_dump_json(dump_path, json_file_name, test_key, net_name='Net'):
         json.dump(data, f)
 
 
-def generate_dump_json_with_overflow(dump_path, json_file_name, test_key, op):
+def generate_dump_json_with_overflow(dump_path, json_file_name, test_key, op, overflow_number=0):
     """
     Util function to generate dump configuration json file.
     """
@@ -246,7 +247,7 @@ def generate_dump_json_with_overflow(dump_path, json_file_name, test_key, op):
             raise ValueError("Common_dump_settings should be dict, but got %s." % type(common_dump_settings))
         common_dump_settings["path"] = dump_path
         common_dump_settings["op_debug_mode"] = op
-    elif test_key == "test_async_dump_npy":
+    elif test_key in ["test_async_dump_npy", "test_ge_dump_npy"]:
         data = async_dump_dict
         common_dump_settings = data.get("common_dump_settings", "")
         if not isinstance(common_dump_settings, dict):
@@ -254,6 +255,7 @@ def generate_dump_json_with_overflow(dump_path, json_file_name, test_key, op):
         common_dump_settings["path"] = dump_path
         common_dump_settings["op_debug_mode"] = op
         common_dump_settings["file_format"] = "npy"
+        common_dump_settings["overflow_number"] = overflow_number
     else:
         raise ValueError(
             "Failed to generate dump json file. Overflow only support in async dump")
@@ -424,7 +426,7 @@ def check_iteration(iteration_id, num_iteration):
 
 
 def check_ge_dump_structure(dump_path, num_iteration, device_num=1, check_overflow=False, saved_data=None,
-                            check_data=True):
+                            check_data=True, check_overflow_num=False, overflow_number=0):
     overflow_num = 0
     for _ in range(3):
         if not os.listdir(dump_path):
@@ -463,3 +465,5 @@ def check_ge_dump_structure(dump_path, num_iteration, device_num=1, check_overfl
     assert device_path_num == device_num
     if check_overflow:
         assert overflow_num
+    if check_overflow_num:
+        assert overflow_num == overflow_number

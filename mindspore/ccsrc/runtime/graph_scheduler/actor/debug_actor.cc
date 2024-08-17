@@ -35,6 +35,7 @@
 #include "utils/file_utils.h"
 #include "include/backend/debug/profiler/profiling.h"
 #include "op_def/nn_op_name.h"
+#include "debug/data_dump/overflow_counter.h"
 
 namespace mindspore {
 namespace runtime {
@@ -181,7 +182,15 @@ void DebugActor::AscendKbkDump(const CNodePtr &cnode, const std::vector<DeviceTe
         MS_LOG(ERROR) << "Sync stream error! The node input will be dumped";
       }
     } else if (op_debug_mode == DumpJsonParser::DUMP_BOTH_OVERFLOW && dump_json_parser.DumpEnabledForIter()) {
-      auto is_overflow = CheckOverflow(device_context, output_device_tensors);
+      uint32_t set_overflow_num = dump_json_parser.overflow_number();
+      uint32_t overflow_count = OverflowCounter::GetInstance().getCount();
+      bool is_overflow = false;
+      if (set_overflow_num == 0) {
+        is_overflow = CheckOverflow(device_context, output_device_tensors);
+      } else if (overflow_count < set_overflow_num) {
+        is_overflow = CheckOverflow(device_context, output_device_tensors);
+        OverflowCounter::GetInstance().addCount();
+      }
       if (is_overflow) {
         read_data = CheckReadData(cnode);
       }
