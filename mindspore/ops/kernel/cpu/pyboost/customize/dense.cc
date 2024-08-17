@@ -20,7 +20,7 @@
 #include "kernel/cpu/pyboost/auto_generate/transpose.h"
 #include "kernel/cpu/pyboost/auto_generate/contiguous.h"
 #include "kernel/cpu/pyboost/auto_generate/matmul_ext.h"
-#include "kernel/cpu/pyboost/auto_generate/add_ext.h"
+#include "kernel/cpu/pyboost/auto_generate/add.h"
 
 namespace mindspore {
 namespace kernel {
@@ -58,9 +58,8 @@ void DenseCPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr 
   auto output = matmul_op->Call(input_tensor, contiguous_op->Call(transpose_op->Call(weight_tensor, perm)));
 
   if (bias_tensor.has_value()) {
-    auto alpha = std::make_shared<FP32Imm>(1.0);
-    auto add_op = CREATE_PYBOOST_OP(AddExt, device_name);
-    output = add_op->Call(output, bias_tensor.value(), alpha);
+    auto add_op = CREATE_PYBOOST_OP(Add, device_name);
+    output = add_op->Call(output, bias_tensor.value());
   }
   op->set_outputs({output});
   MS_LOG(DEBUG) << "Dense Launch end";
