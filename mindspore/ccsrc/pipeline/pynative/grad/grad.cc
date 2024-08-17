@@ -990,7 +990,6 @@ void GradExecutor::DoGradForCustomBprop(const InputArgsInfoPtr &input_args_info,
     op_run_info->op_grad_info->input_value_grad_type[i] =
       PyNativeAlgo::Common::SetValueGradInfo(value, InputType::kConstant);
   }
-  op_run_info->op_grad_info->output_size = PyNativeAlgo::Common::GetValueSize(op_run_info->real_out);
   (void)PyNativeAlgo::Common::SetValueGradInfo(op_run_info->real_out, InputType::kOpOutput);
   DoOpGrad(op_run_info);
   RecordForwardGraph(op_run_info);
@@ -1783,7 +1782,6 @@ void GradExecutor::MakeNestedCnode(bool has_custom_bprop, const std::vector<Valu
     jit()->set_eliminate_forward(true);
   }
   op_run_info->op_grad_info->out_value = out_value;
-  op_run_info->op_grad_info->output_size = PyNativeAlgo::Common::GetValueSize(op_run_info->op_grad_info->out_value);
   op_run_info->op_grad_info->out_abs = first_grad_fg->output()->abstract();
   auto grad_param = std::make_shared<GradParam>(op_run_info->op_grad_info, use_dynamic_shape_process);
   grad_param->fg = grad_fg;
