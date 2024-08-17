@@ -30,6 +30,7 @@
 #include "transform/symbol/acl_prof_symbol.h"
 #include "transform/symbol/acl_rt_symbol.h"
 #include "transform/symbol/symbol_utils.h"
+#include "common/debug/profiler/profiling_python.h"
 
 using mindspore::device::ascend::ErrorManagerAdapter;
 using mindspore::profiler::ascend::MemoryProfiling;
@@ -44,6 +45,7 @@ constexpr auto kAclProfStepStartTag = 60000;
 constexpr auto kAclProfStepEndTag = 60001;
 }  // namespace
 
+using mindspore::profiler::PythonTracer;
 std::map<std::string, aclprofAicoreMetrics> kAicMetrics{{"ArithmeticUtilization", ACL_AICORE_ARITHMETIC_UTILIZATION},
                                                         {"PipeUtilization", ACL_AICORE_PIPE_UTILIZATION},
                                                         {"Memory", ACL_AICORE_MEMORY_BANDWIDTH},
@@ -221,19 +223,22 @@ void AscendProfiler::Start() {
 
   profiler::ascend::ParallelStrategy::GetInstance()->SaveParallelStrategyToFile();
   std::string op_range_dir = profile_data_path_ + "/FRAMEWORK";
-  uint32_t global_rank_id_ = 0;
   device::DeviceContextKey host_key = {"CPU", 0};
   auto host_ctx_ = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(host_key);
   MS_EXCEPTION_IF_NULL(host_ctx_);
   auto host_comm_lib_instance_ = host_ctx_->device_res_manager_->collective_comm_lib();
   if (host_comm_lib_instance_ != nullptr) {
-    global_rank_id_ = host_comm_lib_instance_->global_rank_id();
+    rank_id_ = host_comm_lib_instance_->global_rank_id();
   } else if (!common::GetEnv("RANK_ID").empty()) {
-    global_rank_id_ = static_cast<int32_t>(std::atoi(common::GetEnv("RANK_ID").c_str()));
+    rank_id_ = static_cast<int32_t>(std::atoi(common::GetEnv("RANK_ID").c_str()));
   }
-  ProfilingFrameworkData::Device_Id = global_rank_id_;
-  ProfilingDataDumper::GetInstance().Init(op_range_dir);
+  ProfilingFrameworkData::Device_Id = rank_id_;
+  ProfilingDataDumper::GetInstance().Init(op_range_dir, rank_id_);
   ProfilingDataDumper::GetInstance().Start();
+  pybind11::gil_scoped_acquire gil;
+  if (host_stack_) {
+    PythonTracer::call(Command::kStartOne, rank_id_);
+  }
   StepProfilingEnable(true);
 }
 
@@ -246,7 +251,6 @@ void AscendProfiler::Stop() {
          "before call Profiler.Stop function.";
   }
 
-  ProfilingDataDumper::GetInstance().Stop();
   aclError aclRet = CALL_ASCEND_API(aclprofStop, acl_config_);
   if (aclRet != ACL_SUCCESS) {
     MS_LOG(EXCEPTION) << "Failed to call aclprofStop function. error_code : " << static_cast<int>(aclRet);
@@ -263,7 +267,9 @@ void AscendProfiler::Stop() {
     auto &&ms_context = MsContext::GetInstance();
     ms_context->set_param<bool>(MS_CTX_ENABLE_PROF_MEM, false);
   }
+  PythonTracer::call(Command::kStop, rank_id_);
 
+  ProfilingDataDumper::GetInstance().Stop();
   StepProfilingEnable(false);
 }
 

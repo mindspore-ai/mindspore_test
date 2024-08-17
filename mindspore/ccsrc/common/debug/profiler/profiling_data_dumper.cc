@@ -18,12 +18,6 @@
 #include <mutex>
 #include <utility>
 #include "kernel/kernel.h"
-#include "mindspore/ops/op_def/structure_op_name.h"
-#include "include/backend/anf_runtime_algorithm.h"
-#include "include/common/utils/anfalgo.h"
-#include "include/common/utils/utils.h"
-#include "utils/ms_context.h"
-#include "nlohmann/json.hpp"
 #include "include/backend/debug/profiler/profiling.h"
 
 namespace mindspore {
@@ -235,16 +229,20 @@ void RingBuffer<T>::Reset() {
 
 ProfilingDataDumper::ProfilingDataDumper() : path_(""), start_(false), init_(false) {}
 
-ProfilingDataDumper::~ProfilingDataDumper() { UnInit(); }
+ProfilingDataDumper::~ProfilingDataDumper() {
+  Flush();
+  UnInit();
+}
 
 ProfilingDataDumper &ProfilingDataDumper::GetInstance() {
   static ProfilingDataDumper instance;
   return instance;
 }
 
-void ProfilingDataDumper::Init(const std::string &path, size_t capacity) {
+void ProfilingDataDumper::Init(const std::string &path, int32_t rank_id, size_t capacity) {
   MS_LOG(INFO) << "init profiling data dumper, capacity: " << capacity;
   path_ = path;
+  rank_id_ = rank_id;
   data_chunk_buf_.Init(capacity);
   init_.store(true);
 }
@@ -306,10 +304,20 @@ void ProfilingDataDumper::GatherAndDumpData() {
 
 void ProfilingDataDumper::Flush() {
   MS_LOG(INFO) << "data_chunk_buf_.Size: " << data_chunk_buf_.Size();
+  if (data_chunk_buf_.Size() == 0) {
+    return;
+  }
+  uint64_t start_time = profiler::GetClockSyscnt();
+
   while (data_chunk_buf_.Size() > 0) {
     GatherAndDumpData();
   }
   data_chunk_buf_.Reset();
+  uint64_t end_time = profiler::GetClockSyscnt();
+  auto tid = LongToUlong(syscall(SYS_gettid));
+  std::unique_ptr<OpRangeData> report =
+    std::make_unique<OpRangeData>(start_time, end_time, tid, "Profiler_SaveDate", rank_id_);
+  Report(std::move(report));
 }
 
 void ProfilingDataDumper::Report(std::unique_ptr<BaseReportData> data) {
@@ -436,7 +444,7 @@ ProfilingDataDumper &ProfilingDataDumper::GetInstance() {
   MS_LOG(INTERNAL_EXCEPTION) << "profiler not support cpu windows.";
 }
 
-void ProfilingDataDumper::Init(const std::string &path, size_t capacity) {
+void ProfilingDataDumper::Init(const std::string &path, int32_t rank_id, size_t capacity) {
   MS_LOG(INTERNAL_EXCEPTION) << "profiler not support cpu windows.";
 }
 
