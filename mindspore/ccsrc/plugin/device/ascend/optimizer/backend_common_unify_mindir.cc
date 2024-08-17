@@ -38,6 +38,7 @@
 #include "plugin/device/ascend/optimizer/mindir/space_batch_nd_attr_update.h"
 #include "plugin/device/ascend/optimizer/mindir/bn_grad_unify_mindir.h"
 #include "plugin/device/ascend/optimizer/mindir/all_to_all_unify_mindir.h"
+#include "plugin/device/ascend/optimizer/mindir/all_to_all_v_unify_mindir.h"
 #include "plugin/device/ascend/optimizer/mindir/neighbor_exchange_v2_unify_mindir.h"
 #include "plugin/device/ascend/optimizer/mindir/quant_dtype_cast_adjust.h"
 #include "plugin/device/ascend/optimizer/mindir/fse_decode_adjust.h"
@@ -122,6 +123,7 @@ void GetBackendCommonUnifyMindIRPassManager(PassManagerPtr *unify_mindir_pm) {
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::NeighborExchangeV2UnifyMindIR>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::NeighborExchangeV2GradUnifyMindIR>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::AllToAllUnifyMindIR>());
+  (*unify_mindir_pm)->AddPass(std::make_shared<opt::AlltoAllVUnifyMindIR>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::QuantDTypeCastAdjust>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::FSEDecodeAdjust>());
   // batchnorm

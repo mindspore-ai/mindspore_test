@@ -1290,7 +1290,7 @@ void SetFAInputs(const AnfNodePtr &query_node, const AnfNodePtr &key_node, const
   }
 }
 
-CNodePtr CreateReplaceRingAttentionGraphByAllToAllv(const FuncGraphManagerPtr &manager,
+CNodePtr CreateReplaceRingAttentionGraphByAlltoAllV(const FuncGraphManagerPtr &manager,
                                                     const std::vector<CNodePtr> &origin_nodes_topological,
                                                     const CNodePtr &fa_score_node, FSPInfo *fsp_info, int fa_index) {
   std::vector<AnfNodePtr> fa_inputs;
@@ -1492,7 +1492,7 @@ void CreateAndReplaceRingAttentionFAScore(const FuncGraphManagerPtr &manager,
     cnode = CreateReplaceRingAttentionGraphBySendRecv(manager, origin_nodes_topological, fa_score_node, fsp_info, i,
                                                       tmp_param);
   } else {
-    cnode = CreateReplaceRingAttentionGraphByAllToAllv(manager, origin_nodes_topological, fa_score_node, fsp_info, i);
+    cnode = CreateReplaceRingAttentionGraphByAlltoAllV(manager, origin_nodes_topological, fa_score_node, fsp_info, i);
   }
   MS_EXCEPTION_IF_NULL(cnode);
   (void)manager->Replace(fa_score_node, cnode);

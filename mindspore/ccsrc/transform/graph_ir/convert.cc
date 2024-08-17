@@ -4015,7 +4015,7 @@ void DfGraphConvertor::ConvertHcomFusionId(const CNodePtr &node) {
   op_cache_[node.get()] = op;
 }
 
-void DfGraphConvertor::ConvertAllToAllv(const CNodePtr &node) {
+void DfGraphConvertor::ConvertAlltoAllVGE(const CNodePtr &node) {
   OpAdapterPtr adpt = FindAdapter(node, training_);
   if (adpt == nullptr) {
     return;
@@ -4220,7 +4220,7 @@ bool DfGraphConvertor::CheckCNode(const std::string &name, const CNodePtr node) 
       {prim::kPrimReduceScatter->name(), &DfGraphConvertor::ConvertHcclNode},
       {prim::kPrimSend->name(), &DfGraphConvertor::ConvertHcclNode},
       {prim::kPrimReceive->name(), &DfGraphConvertor::ConvertHcclNode},
-      {prim::kPrimAllToAllv->name(), &DfGraphConvertor::ConvertAllToAllv},
+      {prim::kPrimAlltoAllVGE->name(), &DfGraphConvertor::ConvertAlltoAllVGE},
       {prim::kPrimUniformReal->name(), &DfGraphConvertor::ConvertUniformReal},
       {prim::kPrimMatmulReduceScatter->name(), &DfGraphConvertor::ConvertHcclNode},
       {prim::kPrimAllGatherMatmul->name(), &DfGraphConvertor::ConvertHcclNode},

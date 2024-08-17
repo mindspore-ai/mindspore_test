@@ -46,7 +46,6 @@ bool IsCommOps(const AnfNodePtr &node) {
                                                      prim::kPrimReduceScatter,
                                                      prim::kPrimAlltoAll,
                                                      prim::kPrimAllSwap,
-                                                     prim::kPrimAllToAllv,
                                                      prim::kPrimNeighborExchange,
                                                      prim::kPrimNeighborExchangeV2,
                                                      prim::kPrimNeighborExchangeV2Grad,

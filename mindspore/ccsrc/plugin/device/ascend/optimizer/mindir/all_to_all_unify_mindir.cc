@@ -47,7 +47,7 @@ void ChangePrimitiveToAllToAllV(const AnfNodePtr &node) {
 
   auto prim = GetValueNode<PrimitivePtr>(neighbor_exchange->input(kCNodePrimitiveIdx));
   MS_EXCEPTION_IF_NULL(prim);
-  prim->Named::operator=(Named(kAllToAllvOpName));
+  prim->Named::operator=(Named(kAlltoAllVOpName));
 }
 
 uint32_t GetRankSize(const std::string &group) {
@@ -92,7 +92,7 @@ CNodePtr AllToAllUnifyMindIR::CreateSplitNode(const KernelGraphPtr &graph, const
   return split;
 }
 
-CNodePtr NeighborExchangeUnifyMindIR::CreateAllToAllvNode(const FuncGraphPtr &graph,
+CNodePtr NeighborExchangeUnifyMindIR::CreateAlltoAllVNode(const FuncGraphPtr &graph,
                                                           const CNodePtr &neighbor_exchange) const {
   std::string group = common::AnfAlgo::GetNodeAttr<std::string>(neighbor_exchange, kAttrGroup);
   std::vector<uint32_t> group_rank_ids =
@@ -112,7 +112,7 @@ CNodePtr NeighborExchangeUnifyMindIR::CreateAllToAllvNode(const FuncGraphPtr &gr
     MS_LOG(INTERNAL_EXCEPTION) << "The node " << tuple_input->DebugString()
                                << " should have at least one output, but got 0." << trace::DumpSourceLines(tuple_input);
   }
-  std::vector<AnfNodePtr> all_to_all_v_input = {NewValueNode(std::make_shared<Primitive>(kAllToAllvOpName))};
+  std::vector<AnfNodePtr> all_to_all_v_input = {NewValueNode(std::make_shared<Primitive>(kAlltoAllVOpName))};
   (void)all_to_all_v_input.insert(all_to_all_v_input.end(), split_outputs.begin(), split_outputs.end());
   auto all_to_all_v = NewCNode(all_to_all_v_input, graph);
   MS_EXCEPTION_IF_NULL(all_to_all_v);
@@ -127,21 +127,11 @@ CNodePtr NeighborExchangeUnifyMindIR::CreateAllToAllvNode(const FuncGraphPtr &gr
   common::AnfAlgo::SetNodeAttr(kAttrRecvRankIds, MakeValue<std::vector<int64_t>>(recv_rank_ids), all_to_all_v);
   common::AnfAlgo::SetNodeAttr(kAttrGroup, MakeValue<std::string>(group), all_to_all_v);
   common::AnfAlgo::SetNodeAttr(kAttrGroupRankIds, MakeValue<std::vector<uint32_t>>(group_rank_ids), all_to_all_v);
-
-  auto neighbor_exchange_prim = GetCNodePrimitive(neighbor_exchange);
-  MS_EXCEPTION_IF_NULL(neighbor_exchange_prim);
-  if (neighbor_exchange_prim->HasAttr(parallel::COMM_REUSE) &&
-      GetValue<bool>(neighbor_exchange_prim->GetAttr(parallel::COMM_REUSE))) {
-    auto all_to_all_v_prim = GetCNodePrimitive(all_to_all_v);
-    MS_EXCEPTION_IF_NULL(all_to_all_v_prim);
-    (void)all_to_all_v_prim->AddAttr(parallel::COMM_REUSE, MakeValue(true));
+  if (common::AnfAlgo::HasNodeAttr(parallel::COMM_REUSE, neighbor_exchange)) {
+    common::AnfAlgo::CopyNodeAttr(parallel::COMM_REUSE, neighbor_exchange, all_to_all_v);
   }
-
-  if (neighbor_exchange_prim->HasAttr("FLASH_INDEX")) {
-    auto flash_index = GetValue<std::string>(neighbor_exchange_prim->GetAttr("FLASH_INDEX"));
-    auto all_to_all_v_prim = GetCNodePrimitive(all_to_all_v);
-    MS_EXCEPTION_IF_NULL(all_to_all_v_prim);
-    (void)all_to_all_v_prim->AddAttr("FLASH_INDEX", MakeValue<std::string>(flash_index));
+  if (common::AnfAlgo::HasNodeAttr("FLASH_INDEX", neighbor_exchange)) {
+    common::AnfAlgo::CopyNodeAttr("FLASH_INDEX", neighbor_exchange, all_to_all_v);
   }
   return all_to_all_v;
 }
@@ -152,10 +142,6 @@ CNodePtr AllToAllUnifyMindIR::CreateSplitNodeWithSplitDim(const KernelGraphPtr &
   int64_t split_count = common::AnfAlgo::GetNodeAttr<int64_t>(all_to_all, kAttrSplitCount);
   int64_t split_dim = common::AnfAlgo::GetNodeAttr<int64_t>(all_to_all, kAttrSplitDim);
 
-  if (all_to_all->size() <= kAllToAllInputIdx) {
-    MS_LOG_WITH_NODE(EXCEPTION, all_to_all)
-      << "Inputs should not be empty for cnode " << all_to_all->DebugString() << trace::DumpSourceLines(all_to_all);
-  }
   auto all_to_all_input = all_to_all->input(kAllToAllInputIdx);
   return CreateSplitNode(graph, all_to_all, all_to_all_input, split_count, split_dim);
 }
@@ -167,7 +153,7 @@ CNodePtr AllToAllUnifyMindIR::CreateSplitNodeWithDim0(const KernelGraphPtr &grap
   return CreateSplitNode(graph, all_to_all, input_node, split_count, 0);
 }
 
-CNodePtr AllToAllUnifyMindIR::CreateAllToAllvNode(const KernelGraphPtr &graph, const CNodePtr &all_to_all,
+CNodePtr AllToAllUnifyMindIR::CreateAlltoAllVNode(const KernelGraphPtr &graph, const CNodePtr &all_to_all,
                                                   const CNodePtr &split) const {
   MS_EXCEPTION_IF_NULL(graph);
   MS_EXCEPTION_IF_NULL(all_to_all);
@@ -184,7 +170,7 @@ CNodePtr AllToAllUnifyMindIR::CreateAllToAllvNode(const KernelGraphPtr &graph, c
     MS_LOG(INTERNAL_EXCEPTION) << "The node " << split->DebugString() << " should have at least one output, but got 0."
                                << trace::DumpSourceLines(split);
   }
-  std::vector<AnfNodePtr> new_ata_input = {NewValueNode(std::make_shared<Primitive>(kAllToAllvOpName))};
+  std::vector<AnfNodePtr> new_ata_input = {NewValueNode(std::make_shared<Primitive>(kAlltoAllVOpName))};
   (void)new_ata_input.insert(new_ata_input.end(), split_outputs.begin(), split_outputs.end());
   auto new_ata = NewCNode(new_ata_input, graph);
   MS_EXCEPTION_IF_NULL(new_ata);
@@ -204,39 +190,29 @@ CNodePtr AllToAllUnifyMindIR::CreateAllToAllvNode(const KernelGraphPtr &graph, c
   common::AnfAlgo::SetNodeAttr(kAttrRecvRankIds, MakeValue<std::vector<int64_t>>(rank_ids), new_ata);
   common::AnfAlgo::SetNodeAttr(kAttrGroup, MakeValue<std::string>(group), new_ata);
   common::AnfAlgo::SetNodeAttr(kAttrGroupRankIds, MakeValue<std::vector<uint32_t>>(group_rank_ids), new_ata);
-  auto all_to_all_prim = GetCNodePrimitive(all_to_all);
-  MS_EXCEPTION_IF_NULL(all_to_all_prim);
-  if (all_to_all_prim->HasAttr(parallel::COMM_REUSE) &&
-      GetValue<bool>(all_to_all_prim->GetAttr(parallel::COMM_REUSE))) {
-    auto new_ata_prim = GetCNodePrimitive(new_ata);
-    MS_EXCEPTION_IF_NULL(new_ata_prim);
-    (void)new_ata_prim->AddAttr(parallel::COMM_REUSE, MakeValue(true));
+  if (common::AnfAlgo::HasNodeAttr(parallel::COMM_REUSE, all_to_all)) {
+    common::AnfAlgo::CopyNodeAttr(parallel::COMM_REUSE, all_to_all, new_ata);
   }
-  MS_LOG(INFO) << "Create AllToAllv success, split count " << split_count << ", rank size " << rank_size;
+  MS_LOG(INFO) << "Create AlltoAllV success, split count " << split_count << ", rank size " << rank_size;
   return new_ata;
 }
 
 CNodePtr AllToAllUnifyMindIR::CreateAllToAllNode(const KernelGraphPtr &graph, const CNodePtr &all_to_all,
-                                                 const CNodePtr &concat) const {
+                                                 const AnfNodePtr &all_to_all_input) const {
   MS_EXCEPTION_IF_NULL(graph);
   MS_EXCEPTION_IF_NULL(all_to_all);
-  MS_EXCEPTION_IF_NULL(concat);
+  MS_EXCEPTION_IF_NULL(all_to_all_input);
   int64_t split_count = common::AnfAlgo::GetNodeAttr<int64_t>(all_to_all, kAttrSplitCount);
   std::string group = common::AnfAlgo::GetNodeAttr<std::string>(all_to_all, kAttrGroup);
   std::vector<AnfNodePtr> new_ata_input = {NewValueNode(std::make_shared<Primitive>(kAllToAllOpName))};
-  (void)new_ata_input.insert(new_ata_input.end(), concat);
+  (void)new_ata_input.insert(new_ata_input.end(), all_to_all_input);
   auto new_ata = NewCNode(new_ata_input, graph);
   MS_EXCEPTION_IF_NULL(new_ata);
   new_ata->set_scope(all_to_all->scope());
-  new_ata->set_abstract(concat->abstract());
+  new_ata->set_abstract(all_to_all_input->abstract());
   common::AnfAlgo::CopyNodeAttr(kAttrGroup, all_to_all, new_ata);
-  auto all_to_all_prim = GetCNodePrimitive(all_to_all);
-  MS_EXCEPTION_IF_NULL(all_to_all_prim);
-  if (all_to_all_prim->HasAttr(parallel::COMM_REUSE) &&
-      GetValue<bool>(all_to_all_prim->GetAttr(parallel::COMM_REUSE))) {
-    auto new_ata_prim = GetCNodePrimitive(new_ata);
-    MS_EXCEPTION_IF_NULL(new_ata_prim);
-    (void)new_ata_prim->AddAttr(parallel::COMM_REUSE, MakeValue(true));
+  if (common::AnfAlgo::HasNodeAttr(parallel::COMM_REUSE, all_to_all)) {
+    common::AnfAlgo::CopyNodeAttr(parallel::COMM_REUSE, all_to_all, new_ata);
   }
   common::AnfAlgo::SetNodeAttr(kAttrIrUnified, MakeValue(true), new_ata);
   uint32_t rank_size = GetRankSize(group);
@@ -312,7 +288,7 @@ const AnfNodePtr NeighborExchangeUnifyMindIR::Process(const FuncGraphPtr &graph,
     ChangePrimitiveToAllToAllV(node);
     return node;
   }
-  auto all_to_all_v = CreateAllToAllvNode(graph, neighbor_exchange);
+  auto all_to_all_v = CreateAlltoAllVNode(graph, neighbor_exchange);
   return all_to_all_v;
 }
 
@@ -335,21 +311,34 @@ const AnfNodePtr AllToAllUnifyMindIR::Process(const FuncGraphPtr &graph, const A
   if (GetBoolAttr(all_to_all, kAttrIrUnified)) {
     return nullptr;
   }
+  if (all_to_all->size() <= kAllToAllInputIdx) {
+    MS_LOG_WITH_NODE(EXCEPTION, all_to_all) << "Inputs should not be empty for cnode "
+                                            << all_to_all->fullname_with_scope() << trace::DumpSourceLines(all_to_all);
+  }
   auto kernel_graph = graph->cast<KernelGraphPtr>();
   MS_EXCEPTION_IF_NULL(kernel_graph);
   auto ms_context = MsContext::GetInstance();
   bool is_kbk = ms_context->IsKByKExecutorMode() || ms_context->get_param<bool>(MS_CTX_ENABLE_TASK_SINK) == false;
   AnfNodePtr ret_node = nullptr;
   if (is_kbk) {
-    auto split = CreateSplitNodeWithSplitDim(kernel_graph, all_to_all);
-    auto concat_dim0 = CreateConcatNodeWithDim0(kernel_graph, all_to_all, split);
-    auto new_ata = CreateAllToAllNode(kernel_graph, all_to_all, concat_dim0);
-    auto split_dim0 = CreateSplitNodeWithDim0(kernel_graph, all_to_all, new_ata);
-    auto concat = CreateConcatNodeWithConcatDim(kernel_graph, all_to_all, split_dim0);
-    ret_node = concat;
+    int64_t split_dim = common::AnfAlgo::GetNodeAttr<int64_t>(all_to_all, kAttrSplitDim);
+    int64_t concat_dim = common::AnfAlgo::GetNodeAttr<int64_t>(all_to_all, kAttrConcatDim);
+    AnfNodePtr all_to_all_input = all_to_all->input(kAllToAllInputIdx);
+    if (split_dim != 0) {
+      auto split = CreateSplitNodeWithSplitDim(kernel_graph, all_to_all);
+      auto concat_dim0 = CreateConcatNodeWithDim0(kernel_graph, all_to_all, split);
+      all_to_all_input = concat_dim0;
+    }
+    auto new_ata = CreateAllToAllNode(kernel_graph, all_to_all, all_to_all_input);
+    ret_node = new_ata;
+    if (concat_dim != 0) {
+      auto split_dim0 = CreateSplitNodeWithDim0(kernel_graph, all_to_all, new_ata);
+      auto concat = CreateConcatNodeWithConcatDim(kernel_graph, all_to_all, split_dim0);
+      ret_node = concat;
+    }
   } else {
     auto split = CreateSplitNodeWithSplitDim(kernel_graph, all_to_all);
-    auto new_ata = CreateAllToAllvNode(kernel_graph, all_to_all, split);
+    auto new_ata = CreateAlltoAllVNode(kernel_graph, all_to_all, split);
     auto concat = CreateConcatNodeWithConcatDim(kernel_graph, all_to_all, new_ata);
     ret_node = concat;
   }

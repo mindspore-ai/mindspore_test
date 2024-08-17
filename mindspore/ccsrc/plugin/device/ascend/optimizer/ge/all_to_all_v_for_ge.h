@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,34 +20,27 @@
 #include <vector>
 #include "include/backend/optimizer/optimizer.h"
 
-/* This pass adapts AllToAllv node to GE prototype
- * let rank size is 4:
- *                          I1 I2 I3 I4
- *                          |  |  |  |
- *                         [Reshape * 4]
- *  I1 I2 I3 I4              \  |  |  /
- *  |  |  |  |                [Concat]
- *  [AllToAllv]      ->          |
- *  |  |  |  |             [AllToAllv(for GE)]
- *  O1 O2 O3 O4                  |
- *                            [Split]
- *                            / | | \
- *                         [Reshape * 4]
- *                          |  |  |  |
- *                          O1 O2 O3 O4
+/* This pass adapts AlltoAllV node to GE prototype
+ *                       sendcount  recvcount
+ *     input           input  |senddispl| recvdispl
+ *       |                 \  |    |    |  /
+ *  [AlltoAllV]      ->      [AlltoAllVGE]
+ *       |                        |
+ *     output                   output
  */
 
 namespace mindspore {
 namespace opt {
-class AllToAllvForGE : public PatternProcessPass {
+class AlltoAllVForGE : public PatternProcessPass {
  public:
-  explicit AllToAllvForGE(bool multigraph = true) : PatternProcessPass("all_to_all_v_for_ge", multigraph) {}
-  ~AllToAllvForGE() override = default;
+  explicit AlltoAllVForGE(bool multigraph = true) : PatternProcessPass("all_to_all_v_for_ge", multigraph) {}
+  ~AlltoAllVForGE() override = default;
   const BaseRef DefinePattern() const override;
   const AnfNodePtr Process(const FuncGraphPtr &, const AnfNodePtr &, const EquivPtr &) const override;
 
  private:
   std::vector<std::string> MustExistPrimitiveName() const override;
+  CNodePtr CreateAlltoAllVForGENode(const FuncGraphPtr &graph, const CNodePtr &origin_node) const;
 };
 }  // namespace opt
 }  // namespace mindspore
