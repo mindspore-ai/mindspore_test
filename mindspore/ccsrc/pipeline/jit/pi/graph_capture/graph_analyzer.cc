@@ -787,18 +787,11 @@ void MindGraphAnalyzer::Analyze() {
   need_interpret_ = !graph_->GetSideEffect()->IsEmpty() || !GetCaptureInfo().outputs_optimize_.operations.empty();
 }
 
-inline bool IsSequence(const AObject::Type &type) { return type == AObject::kTypeTuple || type == AObject::kTypeList; }
-
 bool IsValidOutput(AObject *vobj) {
   if (vobj == nullptr) {
     return false;
   }
-  auto type = vobj->GetType();
-  if (!IsSequence(type)) {
-    return vobj->IsMindSporeSupportedType();
-  }
-  auto tuple = static_cast<const AbstractTuple *>(vobj);
-  return std::all_of(tuple->begin(), tuple->end(), [](AObject *element) { return IsValidOutput(element); });
+  return vobj->IsMindSporeSupportedType();
 }
 
 inline bool IsValidOutput(const ValueNode *node) { return node != nullptr && IsValidOutput(node->GetVobj()); }

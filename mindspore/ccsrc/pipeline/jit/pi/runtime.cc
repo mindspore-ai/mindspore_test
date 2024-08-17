@@ -514,6 +514,10 @@ static void GraphCapture(JitCompileResults *jcr) {
   // dump DFG
   if (conf.GetBoolConfig(GraphJitConfig::kPrintAfterAll)) {
     g->DumpDFG();
+    if (conf.GetBoolConfig(GraphJitConfig::kTraceFlag)) {
+      const auto &debug_str = analyzer->GetCaptureInfo().ToString();
+      PY_PRINT_F("*** Dump One Stage ByteCode Collection After CodeGen *** \n%s", debug_str.c_str());
+    }
   }
 
   py::object new_code = MakeCodeFromCodeGen(g, analyzer, jcr->origin_frame().Globals().ptr());
@@ -523,10 +527,6 @@ static void GraphCapture(JitCompileResults *jcr) {
   }
 
   if (conf.GetBoolConfig(GraphJitConfig::kPrintAfterAll)) {
-    if (conf.GetBoolConfig(GraphJitConfig::kTraceFlag)) {
-      const auto &debug_str = analyzer->GetCaptureInfo().ToString();
-      PY_PRINT_F("*** Dump One Stage ByteCode Collection After CodeGen *** \n%s", debug_str.c_str());
-    }
     Utils::DisFuncObject(new_code.ptr());
     GRAPH_JIT_LOG_F("\n\n");
   }
