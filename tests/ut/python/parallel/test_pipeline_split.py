@@ -548,13 +548,13 @@ class TestPipelineSplitWithNoOptimizer:
     def teardown_method(self):
         shutil.rmtree(self.output_path)
 
-    def cat_fp16_from_ir(self, pattern, target_count):
+    def cat_fp16_from_ir(self, pattern, target_count, ir='*_validate*.ir'):
         """
         This function will check the float16 count with the golden one.
         :param pattern: The match pattern for the specific count
         :param target_count: The gold float16 count in the Ir files
         """
-        ir_files = glob.glob(os.path.join(self.output_path, 'rank_0', '*_validate*.ir'))
+        ir_files = glob.glob(os.path.join(self.output_path, 'rank_0', ir))
         assert len(ir_files) == 1
         appear_count = 0
         with open(ir_files[0], 'r') as fp:
@@ -653,6 +653,25 @@ class TestPipelineSplitWithNoOptimizer:
         run_pipeline_split_function(pipeline_net, micro_batch_interleaved=1)
         self.cat_fp16_from_ir(pattern='(<Tensor[Float32], (32, 64)>) -> (<Tensor[Float32], (32, 64)>)',
                               target_count=2)
+
+    def test_pipeline_parallel_optimizer_cannot_split_lazy_inline(self):
+        """
+        Feature: Test Pipeline with Mirror Operator, when enabled the micro batch interleave.
+        Description: When using fp16 computation, there should be only one mirror operator for one parameter.
+        Expectation: the number of the float16 tensor is not equal to 16, 16 is obtained by manually checked graph.
+                     the number of the Mirror is not equal to 2, 2 is obtained by manually checked graph.
+        """
+        context.set_auto_parallel_context(device_num=256, global_rank=0, pipeline_stages=2,
+                                          enable_parallel_optimizer=True,
+                                          parallel_optimizer_config={"parallel_optimizer_threshold": 0,
+                                                                     "optimizer_weight_shard_size": 64})
+        context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
+        strategy1 = ((32, 4), (4, 1))
+        strategy2 = ((128, 1), (1, 1))
+        pipeline_net = PipelineSplitLazyInline(strategy1, strategy2, dtype=ms.float16)
+        run_pipeline_split_function(pipeline_net, micro_batch_interleaved=1)
+        self.cat_fp16_from_ir(pattern='with_mirror_operator: Bool(1)',
+                              target_count=2, ir="*step_parallel_end*")
 
 def test_pipeline_split_stage0_device_num_48():
     """

@@ -1527,7 +1527,8 @@ static void InsertAllGatherOp(const FuncGraphPtr &root, const std::string &group
   if (param_ptr->user_data<TensorLayout>()) {
     auto opt_shard_mirror_group = param_ptr->user_data<TensorLayout>()->opt_shard_mirror_group();
     is_with_mirror = !opt_shard_mirror_group.empty();
-    if (!param_ptr->param_info()->parallel_optimizer()) {
+    if (!param_ptr->param_info()->parallel_optimizer() ||
+        param_ptr->user_data<TensorLayout>()->opt_shard_slice_shape().empty()) {
       auto mirror_group = mirror_group_list(param_ptr->user_data<TensorLayout>());
       is_with_mirror = mirror_group.size() > 1;
     }
