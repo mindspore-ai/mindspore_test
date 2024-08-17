@@ -131,14 +131,15 @@ class FuncGrad : public AutoGrad {
   void ConstructParameterNodes(const ValuePtrList &inputs);
 
   BackwardNodePtr BuildFuncBackwardNode(const PrimitivePtr &prim, const expander::bprop::BpropBuilderFunc &func,
-                                        const ValuePtrList &flatten_inputs, const OpGradInfoPtr &op_grad_info);
+                                        const ValuePtrList &flatten_inputs, const OpGradInfoPtr &op_grad_info,
+                                        size_t flatten_output_size);
   BackwardNodePtr BuildCustomBackwardNode(const PrimitivePtr &prim, const ValuePtrList &flatten_inputs,
-                                          const OpGradInfoPtr &op_grad_info);
+                                          const OpGradInfoPtr &op_grad_info, size_t flatten_output_size);
   BackwardNodePtr BuildHookBackwardNode(const PrimitivePtr &prim, const ValuePtrList &flatten_inputs,
-                                        const OpGradInfoPtr &op_grad_info);
+                                        const OpGradInfoPtr &op_grad_info, size_t flatten_output_size);
   BackwardNodePtr BuildFakeBackwardNode(const PrimitivePtr &prim, const ValuePtrList &flatten_inputs,
-                                        const OpGradInfoPtr &op_grad_info);
-  BackwardNodePtr BuildGraphBackwardNode(const GradParamPtr &grad_param);
+                                        const OpGradInfoPtr &op_grad_info, size_t flatten_output_size);
+  BackwardNodePtr BuildGraphBackwardNode(const GradParamPtr &grad_param, size_t flatten_output_size);
   ValuePtr GetGrads(const tensor::BaseTensorPtrList &weights, const std::vector<size_t> &grad_position,
                     const GradAttr &grad_attr);
   ValuePtr GetInputGrads(bool grad_all_inputs, bool get_by_position, const std::vector<size_t> &grad_position);

@@ -1067,30 +1067,6 @@ void Common::FreeFuncGraphForwardNodes(const FuncGraphPtr &func_graph) {
   func_graph->ClearUsedForwardNodes();
 }
 
-size_t Common::GetValueSize(const ValuePtr &v) {
-  MS_EXCEPTION_IF_NULL(v);
-  if (v->isa<tensor::BaseTensor>() || v->isa<Scalar>()) {
-    return 1;
-  }
-  if (v->isa<ValueSequence>()) {
-    auto seq = v->cast<ValueSequencePtr>();
-    size_t output_size = 0;
-    for (const auto &val : seq->value()) {
-      output_size += GetValueSize(val);
-    }
-    return output_size;
-  }
-  if (v->isa<ValueDictionary>()) {
-    const auto &v_dict = v->cast<ValueDictionaryPtr>();
-    size_t output_size = 0;
-    for (const auto &val : v_dict->value()) {
-      output_size += GetValueSize(val.second);
-    }
-    return output_size;
-  }
-  return 0;
-}
-
 ValuePtr Common::CreateTensorByConstantValue(const ValuePtr &value) {
   MS_EXCEPTION_IF_NULL(value);
   MS_EXCEPTION_IF_NULL(value);
@@ -1770,7 +1746,6 @@ void PyBoost::DoGrad(const kernel::pyboost::OpPtr &op, const FrontendOpRunInfoPt
 
   const auto &pynative_executor = Common::GetPyNativeExecutor();
   const auto &forward = pynative_executor->forward_executor();
-  op_run_info->op_grad_info->output_size = op->outputs().size();
   if (op->output_value_simple_info() == nullptr) {
     op_run_info->op_grad_info->input_abs = op->input_abs();
     op_run_info->base_op_run_info.abstract = op->output_abs();

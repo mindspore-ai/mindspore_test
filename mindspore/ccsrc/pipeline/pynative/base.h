@@ -77,9 +77,6 @@ struct OpGradInfo {
   bool need_do_forward_output_replace{true};
   // If recompute, we record weight_size.
   size_t weight_size{0};
-  // op output size
-  size_t output_size;
-
   // op index
   size_t op_index;
   std::string op_info;
