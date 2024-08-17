@@ -639,7 +639,8 @@ Status ConvertReshapeInputs(const OperatorParams &params,
     (void)new_node_input->emplace_back(val);
     return SUCCESS;
   }
-  if (use_origin_shape && tensor_redistribution_from_cnode->original_reshape_shape() != nullptr) {
+  if ((use_origin_shape || tensor_redistribution_from_cnode->IsMultiDynamicAxisReshape()) &&
+      tensor_redistribution_from_cnode->original_reshape_shape() != nullptr) {
     // Only reshape in user's code should be in this branch.
     // original_reshape_shape could be ValueNode, MakeTuple, Shape.
     (void)new_node_input->emplace_back(tensor_redistribution_from_cnode->original_reshape_shape());
