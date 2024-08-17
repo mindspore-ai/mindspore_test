@@ -107,7 +107,9 @@ OpParameter *PopulateConvParameter(const void *prim) {
   param->group_ = static_cast<int>(value->group());
   param->stride_h_ = static_cast<int>(*(stride->begin()));
   param->stride_w_ = static_cast<int>(*(stride->begin() + 1));
-  if (pad_list == nullptr || pad_list->size() < kMinShapeSizeFour) {
+  bool padding_need_init =
+    pad_list == nullptr || pad_list->size() < kMinShapeSizeFour || value->pad_mode() == schema::PadMode_SAME;
+  if (padding_need_init) {
     param->pad_u_ = 0;
     param->pad_d_ = 0;
     param->pad_l_ = 0;

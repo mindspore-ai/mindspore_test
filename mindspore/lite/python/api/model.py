@@ -306,8 +306,15 @@ class Model(BaseModel):
             - `Dynamic Weight Update
               <https://www.mindspore.cn/lite/docs/en/master/use/cloud_infer/runtime_python.html#update-weights>`_
         """
-        for weight in weights:
-            for tensor in weight:
+        if not isinstance(weights, list):
+            raise TypeError("weights must be list, but got {}".format(type(weights)))
+        for i, weight in enumerate(weights):
+            if not isinstance(weight, list):
+                raise TypeError("weight must be list, but got {}".format(type(weight)))
+            for j, tensor in enumerate(weight):
+                if not isinstance(tensor, Tensor):
+                    raise TypeError(f"weights element must be Tensor, but got "
+                                    f"{type(tensor)} as index {i}{j}.")
                 if tensor.name in self.lora_name_map:
                     name = self.lora_name_map[tensor.name]
                 else:

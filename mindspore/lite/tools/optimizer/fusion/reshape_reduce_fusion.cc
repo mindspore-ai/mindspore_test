@@ -265,13 +265,13 @@ void ReshapeReduceFusion::FuseReshapeWithReduce(const FuncGraphPtr &func_graph, 
 void ReshapeReduceFusion::FuseReduceWithReshape(const FuncGraphPtr &func_graph, const CNodePtr &reduce) {
   MS_ASSERT(reduce != nullptr);
   auto reduce_prim = GetCNodePrimitive(reduce);
-  MS_ASSERT(reduce_prim != nullptr);
+  MS_CHECK_TRUE_RET_VOID(reduce_prim != nullptr);
   (void)reduce_prim->AddAttr(ops::kKeepDims, MakeValue(true));
   if (reshape_->abstract() != nullptr) {
     reduce->set_abstract(reshape_->abstract()->Clone());
   }
   auto manager = func_graph->manager();
-  MS_ASSERT(manager != nullptr);
+  MS_CHECK_TRUE_RET_VOID(manager != nullptr);
   (void)manager->Replace(reshape_, reduce);
 }
 }  // namespace opt

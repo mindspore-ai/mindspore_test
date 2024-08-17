@@ -79,6 +79,7 @@ bool ReduceSameOpInHorizon::CheckCNodeIsEqual(const CNodePtr &left, const CNodeP
     if (utils::isa<ValueNode>(left_input) && utils::isa<ValueNode>(right_input)) {
       auto left_value_node = left_input->cast<ValueNodePtr>();
       auto right_value_node = right_input->cast<ValueNodePtr>();
+      MS_CHECK_TRUE_RET(left_value_node != nullptr && right_value_node != nullptr, false);
       left_value = left_value_node->value();
       right_value = right_value_node->value();
     }

@@ -216,7 +216,7 @@ bool MulAddFusion::CopyNodeFormat(CNodePtr node, mindspore::ops::PrimitiveCPtr p
     MS_CHECK_TRUE_RET(value != nullptr, false);
     if (value->isa<mindspore::Int64Imm>()) {
       auto format = GetValue<int64_t>(value);
-      prim->AddAttr(mindspore::ops::kFormat, MakeValue(format));
+      (void)prim->AddAttr(mindspore::ops::kFormat, MakeValue(format));
     }
   }
   return true;

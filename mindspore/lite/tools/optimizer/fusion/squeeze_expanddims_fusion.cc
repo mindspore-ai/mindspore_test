@@ -112,7 +112,7 @@ const AnfNodePtr SqueezeExpandDimsFusion::Process(const FuncGraphPtr &func_graph
   auto squeeze_cnode = expanddims_cnode->input(SECOND_INPUT)->cast<CNodePtr>();
   auto manage = Manage(func_graph);
   MS_CHECK_TRUE_RET(manage != nullptr, nullptr);
-  manage->Replace(expanddims_cnode, squeeze_cnode->input(SECOND_INPUT));
+  (void)manage->Replace(expanddims_cnode, squeeze_cnode->input(SECOND_INPUT));
   return nullptr;
 }
 }  // namespace mindspore::opt

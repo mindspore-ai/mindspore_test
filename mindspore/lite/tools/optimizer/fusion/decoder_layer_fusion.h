@@ -113,7 +113,7 @@ class DecoderLayerFusion : public MultiplePatternProcessPass {
   mutable bool is_layernorm_fusion_{false};
   mutable bool is_layernorm_{false};
   mutable ActType act_type_{ActType::ActType_No};
-  mutable bool layer_norm_;
+  mutable bool layer_norm_{false};
 };
 }  // namespace opt
 }  // namespace mindspore

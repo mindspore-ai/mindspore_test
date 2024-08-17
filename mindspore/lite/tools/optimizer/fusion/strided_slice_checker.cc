@@ -57,7 +57,7 @@ int StridedSliceChecker::GetBegin(const CNodePtr &strided_slice, std::vector<int
     return lite::RET_NULL_PTR;
   }
   auto prim = GetCNodePrimitive(strided_slice);
-  MS_CHECK_TRUE_MSG(prim != nullptr, false, "Strided_slice's prim is a nullptr.");
+  MS_CHECK_TRUE_MSG(prim != nullptr, lite::RET_NULL_PTR, "Strided_slice's prim is a nullptr.");
   auto begin_mask = prim->GetAttr(ops::kBeginMask) != nullptr ? GetValue<int64_t>(prim->GetAttr(ops::kBeginMask)) : 0;
   lite::DataInfo data;
   auto ret = GetConstTensor(strided_slice, ops::kInputIndex2, &data);
@@ -69,6 +69,10 @@ int StridedSliceChecker::GetBegin(const CNodePtr &strided_slice, std::vector<int
     return lite::RET_ERROR;
   }
   auto num = std::accumulate(data.shape_.begin(), data.shape_.end(), 1, std::multiplies<>());
+  if (num > 0 && data.data_ptr_ == nullptr) {
+    MS_LOG(ERROR) << "Get Strided_slice's begin failed, node name is " << strided_slice->fullname_with_scope();
+    return lite::RET_ERROR;
+  }
   for (int i = 0; i < num; ++i) {
     bool begin_ineffective = (begin_mask & (1 << i));
     int cur_begin = begin_ineffective ? 0 : static_cast<int *>(data.data_ptr_)[i];
@@ -83,7 +87,7 @@ int StridedSliceChecker::GetEnd(const CNodePtr &strided_slice, std::vector<int> 
     return lite::RET_NULL_PTR;
   }
   auto prim = GetCNodePrimitive(strided_slice);
-  MS_CHECK_TRUE_MSG(prim != nullptr, false, "Strided_slice's prim is a nullptr.");
+  MS_CHECK_TRUE_MSG(prim != nullptr, lite::RET_NULL_PTR, "Strided_slice's prim is a nullptr.");
   auto end_mask = prim->GetAttr(ops::kEndMask) != nullptr ? GetValue<int64_t>(prim->GetAttr(ops::kEndMask)) : 0;
   lite::DataInfo data;
   auto ret = GetConstTensor(strided_slice, ops::kInputIndex3, &data);
@@ -114,6 +118,9 @@ bool StridedSliceChecker::CheckStepIsOne(const CNodePtr &strided_slice) {
   auto status = GetConstTensor(strided_slice, ops::kInputIndex4, &data);
   if (status != lite::RET_OK) {
     return false;
+  }
+  if (data.data_ptr_ == nullptr) {
+    return true;
   }
   auto num = std::accumulate(data.shape_.begin(), data.shape_.end(), 1, std::multiplies<>());
   std::vector<int> temp(num, 1);
