@@ -456,7 +456,7 @@ Status ReshapeInfo::ComputeReplaceOp() {
       tensor_redistribution->set_original_reshape_shape(nullptr);
       redistribution_oplist_ptr = tensor_redistribution->InferTensorRedistributionOperatorList();
     }
-    if (!is_generating_costs_ && !tensor_redistribution->IsAssembledStaticShape()) {
+    if (!is_generating_costs_ && !is_multi_dynamic_reshape && !tensor_redistribution->IsAssembledStaticShape()) {
       redistribution_oplist_ptr = TensorTransform::GetInstance()->OptimizeTensorRedistributionOperatorList(
         redistribution_oplist_ptr, tensor_redistribution->input_shape());
     }
