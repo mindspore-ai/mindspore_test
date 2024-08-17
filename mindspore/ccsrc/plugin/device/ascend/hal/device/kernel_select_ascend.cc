@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,6 +68,7 @@ std::string KernelSelectDebugString(const kernel::KernelBuildInfo *build_info,
   output_buffer << build_info->ToString() << std::endl;
   output_buffer << "candidate build info list: " << std::endl;
   for (const auto &info : kernel_info_list) {
+    MS_EXCEPTION_IF_NULL(info);
     output_buffer << info->ToString() << std::endl;
   }
   return output_buffer.str();
@@ -206,6 +207,7 @@ void SetTensorDeviceInfo(const CNodePtr &kernel_node) {
 
 std::string TryBackoffCpu(const KernelGraphPtr &graph, const CNodePtr &node,
                           const std::pair<std::string, ExceptionType> &failure_info) {
+  MS_EXCEPTION_IF_NULL(graph);
   // The Pynative_mode and task_sink does not support the backoff ability.
   if (!AnfAlgo::IsNodeSupportKernelSelectBackoff(node, graph)) {
     return failure_info.first;
@@ -398,6 +400,7 @@ bool IsDynamicTuple(const CNodePtr &kernel, bool is_acl, size_t output_num) {
 
 bool IsEmptyTupleInput(const CNodePtr &kernel, const size_t i, const TypeId cur_type_id) {
   auto input_node = common::AnfAlgo::GetPrevNodeOutput(kernel, i).first;
+  MS_EXCEPTION_IF_NULL(input_node);
   if (input_node->isa<ValueNode>()) {
     auto value_node = input_node->cast<ValueNodePtr>();
     if (cur_type_id == kTypeUnknown && value_node->value() != nullptr && value_node->value()->isa<ValueTuple>() &&
@@ -452,8 +455,8 @@ void GenerateKernelBuildInfo(const CNodePtr &kernel, const KernelType &kernel_ty
       MS_LOG(INFO) << "Node " << kernel->fullname_with_scope() << " output is real tuple";
       output_object_type = cnode_output_object_type;
       output_num = 1;
-      auto output_format = output_formats[kFirstItem];
-      auto output_reshape_type = output_reshape_types[kFirstItem];
+      auto output_format = output_formats.at(kFirstItem);
+      auto output_reshape_type = output_reshape_types.at(kFirstItem);
       output_formats.clear();
       output_reshape_types.clear();
       output_formats.emplace_back(output_format);
