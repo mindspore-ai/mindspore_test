@@ -24,28 +24,65 @@ bool HcomAlltoAllVKernel::Init(const std::vector<KernelTensor *> &inputs, const 
     MS_LOG(ERROR) << "HcclKernel Init failed.";
     return false;
   }
-  auto send_numel_list = GetValue<std::vector<int64_t>>(primitive_->GetAttr("send_numel_list"));
-  auto recv_numel_list = GetValue<std::vector<int64_t>>(primitive_->GetAttr("recv_numel_list"));
+  auto send_numel_list = GetValue<std::vector<int64_t>>(primitive_->GetAttr(kAttrSendNumelList));
+  auto recv_numel_list = GetValue<std::vector<int64_t>>(primitive_->GetAttr(kAttrRecvNumelList));
+  auto send_offset_list = primitive_->HasAttr(kAttrSendOffsetList)
+                            ? GetValue<std::vector<int64_t>>(primitive_->GetAttr(kAttrSendOffsetList))
+                            : std::vector<int64_t>{};
+  auto recv_offset_list = primitive_->HasAttr(kAttrRecvOffsetList)
+                            ? GetValue<std::vector<int64_t>>(primitive_->GetAttr(kAttrRecvOffsetList))
+                            : std::vector<int64_t>{};
+  if (!send_offset_list.empty() && send_offset_list.size() != send_numel_list.size()) {
+    MS_LOG(ERROR) << "Size of " << kAttrSendOffsetList << " should be equal to size of " << kAttrSendNumelList
+                  << " for AlltoAllV, but got " << kAttrSendOffsetList << " size[" << send_offset_list.size()
+                  << "] and " << kAttrSendNumelList << " size[" << send_numel_list.size() << "].";
+    return false;
+  }
+  if (!recv_offset_list.empty() && recv_offset_list.size() != recv_numel_list.size()) {
+    MS_LOG(ERROR) << "Size of " << kAttrRecvOffsetList << " should be equal to size of " << kAttrRecvNumelList
+                  << " for AlltoAllV, but got " << kAttrRecvOffsetList << " size[" << recv_offset_list.size()
+                  << "] and " << kAttrRecvNumelList << " size[" << recv_numel_list.size() << "].";
+    return false;
+  }
   uint64_t offset = 0;
   for (size_t i = 0; i < send_numel_list.size(); i++) {
-    auto count = static_cast<uint64_t>(send_numel_list[i]);
+    auto count = LongToSize(send_numel_list[i]);
     params_.sendcounts.push_back(count);
-    params_.sdispls.push_back(offset);
-    offset += count;
+    if (send_offset_list.empty()) {
+      params_.sdispls.push_back(offset);
+      offset += count;
+    } else {
+      params_.sdispls.push_back(LongToSize(send_offset_list[i]));
+    }
   }
   offset = 0;
   for (size_t i = 0; i < recv_numel_list.size(); i++) {
-    auto count = static_cast<uint64_t>(recv_numel_list[i]);
+    auto count = LongToSize(recv_numel_list[i]);
     params_.recvcounts.push_back(count);
-    params_.rdispls.push_back(offset);
-    offset += count;
+    if (recv_offset_list.empty()) {
+      params_.rdispls.push_back(offset);
+      offset += count;
+    } else {
+      params_.rdispls.push_back(LongToSize(recv_offset_list[i]));
+    }
+  }
+
+  if (hccl_data_type_list_.empty()) {
+    auto recv_type = GetValue<TypePtr>(primitive_->GetAttr(kAttrRecvType));
+    if (recv_type == nullptr) {
+      MS_LOG(ERROR) << "AlltoAllV got empty data type list and recv_type attr.";
+      return false;
+    }
+    data_type_ = HcomUtil::ConvertHcclType(recv_type->type_id());
+  } else {
+    data_type_ = hccl_data_type_list_[0];
   }
   return true;
 }
 
 int HcomAlltoAllVKernel::Resize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
   output_size_list_.clear();
-  auto recv_numel_list = GetValue<std::vector<int64_t>>(primitive_->GetAttr("recv_numel_list"));
+  auto recv_numel_list = GetValue<std::vector<int64_t>>(primitive_->GetAttr(kAttrRecvNumelList));
   int64_t output_numel = 0;
   ShapeVector shape;
   for (size_t i = 0; i < recv_numel_list.size(); i++) {
@@ -59,33 +96,36 @@ int HcomAlltoAllVKernel::Resize(const std::vector<KernelTensor *> &inputs, const
   if (!HcomUtil::GetHcclOpSize(GetHcclDataType(), shape, &size)) {
     MS_LOG(INTERNAL_EXCEPTION) << "GetHcclOpOutputSize failed";
   }
-  output_size_list_.push_back(size);
+  if (output_numel != 0) {  // may be empty output when AlltoAllV is from NeighborExchangeV2
+    output_size_list_.push_back(size);
+  }
   return KRET_OK;
 }
 
 bool HcomAlltoAllVKernel::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &,
                                  const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
-  if (inputs.empty() || outputs.empty() || hccl_data_type_list_.empty()) {
-    MS_LOG(ERROR) << "Invalid hccl AlltoAllV input, output or data type size (" << inputs.size() << ", "
-                  << outputs.size() << ", " << hccl_data_type_list_.size() << ").";
+  if (inputs.empty()) {
+    MS_LOG(ERROR) << "Invalid hccl AlltoAllV input size (" << inputs.size() << ").";
     return false;
   }
 
   MS_EXCEPTION_IF_NULL(stream_ptr);
 
   auto send_tensor = inputs[0];
-  auto recv_tensor = outputs[0];
   MS_EXCEPTION_IF_NULL(send_tensor);
-  MS_EXCEPTION_IF_NULL(recv_tensor);
-
   auto send_buf = send_tensor->device_ptr();
-  auto recv_buf = recv_tensor->device_ptr();
   MS_EXCEPTION_IF_NULL(send_buf);
-  MS_EXCEPTION_IF_NULL(recv_buf);
-  auto hccl_result = hccl::HcclAdapter::GetInstance().HcclAllToAllv(send_buf, recv_buf, params_,
-                                                                    hccl_data_type_list_[0], stream_ptr, comm_);
+  void *recv_buf = nullptr;
+  if (!outputs.empty()) {  // may be empty output when AlltoAllV is from NeighborExchangeV2
+    auto recv_tensor = outputs[0];
+    MS_EXCEPTION_IF_NULL(recv_tensor);
+    recv_buf = recv_tensor->device_ptr();
+    MS_EXCEPTION_IF_NULL(recv_buf);
+  }
+  auto hccl_result =
+    hccl::HcclAdapter::GetInstance().HcclAlltoAllV(send_buf, recv_buf, params_, data_type_, stream_ptr, comm_);
   if (hccl_result != HCCL_SUCCESS) {
-    MS_LOG(ERROR) << "HcclAllToAllv failed, ret:" << hccl_result;
+    MS_LOG(ERROR) << "HcclAlltoAllV failed, ret:" << hccl_result;
     return false;
   }
   return true;

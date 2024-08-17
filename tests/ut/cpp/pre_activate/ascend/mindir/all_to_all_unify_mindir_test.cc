@@ -49,7 +49,7 @@ TEST_F(TestAllToAllUnifyMindIr, test_neighbor_exchange) {
   bool has_all_to_all_v_node = false;
   for (const auto &n : TopoSort(func_graph->get_return())) {
     ASSERT_FALSE(IsPrimitiveCNode(n, prim::kPrimNeighborExchange));
-    if (IsPrimitiveCNode(n, prim::kPrimAllToAllv)) {
+    if (IsPrimitiveCNode(n, prim::kPrimAlltoAllV)) {
       has_all_to_all_v_node = true;
     }
   }
@@ -69,7 +69,7 @@ TEST_F(TestAllToAllUnifyMindIr, test_all_to_all) {
   bool has_split_v_node = false;
   for (const auto &n : TopoSort(func_graph->get_return())) {
     ASSERT_FALSE(IsPrimitiveCNode(n, prim::kPrimAlltoAll));
-    if (IsPrimitiveCNode(n, prim::kPrimAllToAllv)) {
+    if (IsPrimitiveCNode(n, prim::kPrimAlltoAllV)) {
       has_all_to_all_v_node = true;
     }
     if (IsPrimitiveCNode(n, prim::kPrimConcatD)) {

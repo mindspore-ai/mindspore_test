@@ -32,7 +32,7 @@ class NeighborExchangeUnifyMindIR : public PatternProcessPass {
   const AnfNodePtr Process(const FuncGraphPtr &, const AnfNodePtr &, const EquivPtr &) const override;
 
  private:
-  CNodePtr CreateAllToAllvNode(const FuncGraphPtr &graph, const CNodePtr &neighbor_exchange) const;
+  CNodePtr CreateAlltoAllVNode(const FuncGraphPtr &graph, const CNodePtr &neighbor_exchange) const;
   std::vector<std::string> MustExistPrimitiveName() const override;
 };
 
@@ -42,7 +42,7 @@ class NeighborExchangeUnifyMindIR : public PatternProcessPass {
  *                          |
  *     Input         [Split(split_dim)]
  *       |               / | | \
- *   [AlltoAll]  ->     [AllToAllv]
+ *   [AlltoAll]  ->     [AlltoAllV]
  *       |               \  |  |  /
  *     Output        [Concat(concat_dim)]
  *                           |
@@ -75,8 +75,9 @@ class AllToAllUnifyMindIR : public PatternProcessPass {
   CNodePtr CreateSplitNodeWithSplitDim(const KernelGraphPtr &graph, const CNodePtr &all_to_all) const;
   CNodePtr CreateSplitNodeWithDim0(const KernelGraphPtr &graph, const CNodePtr &all_to_all,
                                    const CNodePtr &input_node) const;
-  CNodePtr CreateAllToAllvNode(const KernelGraphPtr &graph, const CNodePtr &all_to_all, const CNodePtr &split) const;
-  CNodePtr CreateAllToAllNode(const KernelGraphPtr &graph, const CNodePtr &all_to_all, const CNodePtr &concat) const;
+  CNodePtr CreateAlltoAllVNode(const KernelGraphPtr &graph, const CNodePtr &all_to_all, const CNodePtr &split) const;
+  CNodePtr CreateAllToAllNode(const KernelGraphPtr &graph, const CNodePtr &all_to_all,
+                              const AnfNodePtr &all_to_all_input) const;
   CNodePtr CreateConcatNode(const KernelGraphPtr &graph, const CNodePtr &all_to_all, const CNodePtr &input_node,
                             int64_t split_count, int64_t concat_dim) const;
   CNodePtr CreateConcatNodeWithConcatDim(const KernelGraphPtr &graph, const CNodePtr &all_to_all,

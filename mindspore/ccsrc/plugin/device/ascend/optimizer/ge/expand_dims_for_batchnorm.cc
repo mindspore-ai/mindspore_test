@@ -105,7 +105,7 @@ bool ExpandInputDims(const FuncGraphPtr &graph, const CNodePtr &bn_node, size_t 
 
   // Replace the first input of bn with reshape
   AnfNodePtr input_node = common::AnfAlgo::GetInputNode(bn_node, index);
-  CNodePtr reshape_node = mindspore::common::CreateReshapeNode(graph, input_node, new_shape);
+  CNodePtr reshape_node = CreateReshapeNode(graph, input_node, new_shape);
   manager->SetEdge(bn_node, index + 1, reshape_node);
 
   MS_LOG(INFO) << "Expand input dims for node " << bn_node->fullname_with_scope() << ", input index: " << index
@@ -129,7 +129,7 @@ bool ExpandInputDims(const FuncGraphPtr &graph, const CNodePtr &bn_node, const E
 
 void ExpandSingleOutputDims(const FuncGraphPtr &graph, const CNodePtr &bn_node, const FuncGraphManagerPtr &manager) {
   auto bn_output_shape = common::AnfAlgo::GetOutputInferShape(bn_node, kIndex0);
-  CNodePtr reshape_node = mindspore::common::CreateReshapeNode(graph, bn_node, bn_output_shape);
+  CNodePtr reshape_node = CreateReshapeNode(graph, bn_node, bn_output_shape);
   (void)manager->Replace(bn_node, reshape_node);
 
   MS_LOG(INFO) << "Expand single output dims for node " << bn_node->fullname_with_scope()
@@ -154,7 +154,7 @@ void ExpandMultiOutputDims(const FuncGraphPtr &graph, const CNodePtr &bn_node, c
     }
 
     auto get_item_output_shape = common::AnfAlgo::GetOutputInferShape(user, kIndex0);
-    CNodePtr reshape_node = mindspore::common::CreateReshapeNode(graph, user, get_item_output_shape);
+    CNodePtr reshape_node = CreateReshapeNode(graph, user, get_item_output_shape);
     (void)manager->Replace(user, reshape_node);
 
     MS_LOG(INFO) << "Expand output dims for node " << bn_node->fullname_with_scope()

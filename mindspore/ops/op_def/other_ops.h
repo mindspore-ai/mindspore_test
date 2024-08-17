@@ -62,7 +62,8 @@ GVAR_DEF(PrimitivePtr, kPrimNeighborExchangeV2, std::make_shared<Primitive>("Nei
 GVAR_DEF(PrimitivePtr, kPrimNeighborExchangeV2Grad, std::make_shared<Primitive>("NeighborExchangeV2Grad"));
 GVAR_DEF(PrimitivePtr, kPrimAlltoAll, std::make_shared<Primitive>("AlltoAll"));
 GVAR_DEF(PrimitivePtr, kPrimAllToAll, std::make_shared<Primitive>("AllToAll"));
-GVAR_DEF(PrimitivePtr, kPrimAllToAllv, std::make_shared<Primitive>("AllToAllv"));
+GVAR_DEF(PrimitivePtr, kPrimAlltoAllV, std::make_shared<Primitive>("AlltoAllV"));
+GVAR_DEF(PrimitivePtr, kPrimAlltoAllVGE, std::make_shared<Primitive>("AlltoAllVGE"));
 GVAR_DEF(PrimitivePtr, kPrimAllGather, std::make_shared<Primitive>("AllGather"));
 GVAR_DEF(PrimitivePtr, kPrimAllSwap, std::make_shared<Primitive>("_AllSwap"));
 GVAR_DEF(PrimitivePtr, kPrimReduceScatter, std::make_shared<Primitive>("ReduceScatter"));
@@ -78,7 +79,6 @@ GVAR_DEF(PrimitivePtr, kPrimVirtualPipelineEnd, std::make_shared<Primitive>("_Vi
 GVAR_DEF(PrimitivePtr, kPrimMirrorMicroStep, std::make_shared<Primitive>("_MirrorMicroStepOperator"));
 GVAR_DEF(PrimitivePtr, kPrimVirtualConverterBegin, std::make_shared<Primitive>("_VirtualConverterBegin"));
 GVAR_DEF(PrimitivePtr, kPrimVirtualConverterEnd, std::make_shared<Primitive>("_VirtualConverterEnd"));
-GVAR_DEF(PrimitivePtr, kPrimAlltoAllV, std::make_shared<Primitive>("AlltoAllV"));
 
 // Quant ops
 GVAR_DEF(PrimitivePtr, kPrimBatchNormFold, std::make_shared<Primitive>("BatchNormFold"));

@@ -196,6 +196,9 @@ BACKEND_EXPORT CNodePtr CreateMakeTupleNode(const FuncGraphPtr &func_graph,
 BACKEND_EXPORT ValueNodePtr CreateShapeValueNode(const FuncGraphPtr &func_graph, const std::vector<int64_t> &shape,
                                                  bool to_tensor = false);
 
+BACKEND_EXPORT CNodePtr CreateReshapeNode(const FuncGraphPtr &graph, const AnfNodePtr &input_node,
+                                          const ShapeVector &shape);
+
 BACKEND_EXPORT CNodePtr AddCastNode(const FuncGraphPtr &func_graph, const TypeId dst_type, const CNodePtr &node,
                                     const bool is_input, const size_t input_index = 0);
 

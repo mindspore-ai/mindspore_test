@@ -89,7 +89,7 @@ class HcclAdapter {
                       const aclrtStream stream, HcclComm comm) const;
   HcclResult HcclRecv(void *recv_buf, uint64_t count, HcclDataType dataType, uint32_t srcRank, const aclrtStream stream,
                       HcclComm comm) const;
-  HcclResult HcclAllToAllv(void *send_buf, void *recv_buf, hccl::HcclAllToAllVParams params, HcclDataType dataType,
+  HcclResult HcclAlltoAllV(void *send_buf, void *recv_buf, hccl::HcclAllToAllVParams params, HcclDataType dataType,
                            const aclrtStream stream, HcclComm comm) const;
   HcclResult HcclAllToAll(void *send_buf, void *recv_buf, hccl::HcclAllToAllParams params, HcclDataType dataType,
                           const aclrtStream stream, HcclComm comm) const;
@@ -99,7 +99,7 @@ class HcclAdapter {
 
   // for enqueue op
   HcclResult HcclExecEnqueueOp(const ::HcomOperation &op_info, const HExecCallBack &callback) const;
-  HcclResult HcclExecAllToAllv(const ::HcomAllToAllVParams &params, const HExecCallBack &callback) const;
+  HcclResult HcclExecAlltoAllV(const ::HcomAllToAllVParams &params, const HExecCallBack &callback) const;
 
   // Return whether using CM to initialize HCCL.
   bool UseHcclCM() const;
