@@ -45,6 +45,10 @@ if(NOT ENABLE_SECURITY)
         )
     if(NOT CMAKE_SYSTEM_NAME MATCHES "Windows")
         list(APPEND _DEBUG_SRC_LIST
+            "${CMAKE_CURRENT_SOURCE_DIR}/hooker/hook_debugger.cc"
+            "${CMAKE_CURRENT_SOURCE_DIR}/hooker/adapter.cc"
+            "${CMAKE_CURRENT_SOURCE_DIR}/hooker/acl_data_adapter.cc"
+            "${CMAKE_CURRENT_SOURCE_DIR}/hooker/hook_dynamic_loader.cc"
             "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/e2e_dump.cc"
             "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/statistic_kernel.cc"
             "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/tensor_statistic.cc"
