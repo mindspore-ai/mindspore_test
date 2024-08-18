@@ -73,12 +73,13 @@ template <typename S, typename T>
 bool SearchSortedCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
                                             const std::vector<kernel::KernelTensor *> &outputs) {
   CheckParam<S, T>(inputs, outputs);
-  auto sequence = reinterpret_cast<S *>(inputs[0]->device_ptr());
-  auto values = reinterpret_cast<S *>(inputs[1]->device_ptr());
-  auto output = reinterpret_cast<T *>(outputs[0]->device_ptr());
-  size_t elem_num = inputs[1]->size() / sizeof(S);
+  auto sequence = reinterpret_cast<S *>(inputs[kIndex0]->device_ptr());
+  auto values = reinterpret_cast<S *>(inputs[kIndex1]->device_ptr());
+  auto output = reinterpret_cast<T *>(outputs[kIndex0]->device_ptr());
+  size_t elem_num = inputs[kIndex1]->size() / sizeof(S);
   size_t seq_dim = sequence_shape_.size();
-  size_t search_repeat = static_cast<size_t>(values_shape_.back());
+  const size_t scalar_size = 1;
+  size_t search_repeat = values_shape_.empty() ? scalar_size : static_cast<size_t>(values_shape_.back());
 
   auto task = [this, &sequence, &values, &output, seq_dim, search_repeat](size_t start, size_t end) {
     for (size_t i = start; i < end; i++) {
