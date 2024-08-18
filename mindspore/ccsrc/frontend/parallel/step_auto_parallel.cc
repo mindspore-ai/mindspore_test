@@ -36,6 +36,7 @@
 #include "frontend/parallel/auto_parallel/rec_core/rec_partition.h"
 #include "frontend/parallel/graph_util/graph_info.h"
 #include "frontend/parallel/graph_util/node_info.h"
+#include "frontend/parallel/graph_util/grad_accumulation_utils.h"
 #include "frontend/parallel/ops_info/reshape_info.h"
 #include "frontend/parallel/ops_info/tmp_identity_info.h"
 #include "frontend/parallel/parameter_manager.h"
@@ -190,6 +191,9 @@ bool StepAutoParallel(const FuncGraphPtr &root, const opt::OptimizerPtr &) {
     MS_LOG(EXCEPTION)
       << "The recursive auto parallel strategy searching mode requires the device num be the power of 2.";
   }
+
+  // set grad accumulation step
+  SetGradAccumulationStep(all_nodes);
   // mark the forward cnodes, parallel only care these nodes
   MarkForwardCNode(root);
 
@@ -287,6 +291,47 @@ void InitCostGraph() {
   entire_costgraph->Init();
   configured_stra_ops_.clear();
   ignore_candidate_.clear();
+}
+
+void SetLayoutToOperater(const OperatorInfoPtr &operator_info, mindspore::HashMap<std::string, ValuePtr> attrs) {
+  StrategyPtr strategyPtr;
+  std::vector<std::shared_ptr<TensorLayout>> in_tensor_layouts;
+  std::vector<std::shared_ptr<TensorLayout>> out_tensor_layouts;
+  if (ExtractUserConfigLayout(attrs, operator_info->inputs_shape(), operator_info->outputs_shape(), &in_tensor_layouts,
+                              &out_tensor_layouts) != SUCCESS) {
+    MS_LOG(EXCEPTION) << "Failure:operator " << operator_info->name() << " extract configured layout failed";
+  }
+  Strategies in_strategy;
+  (void)std::transform(in_tensor_layouts.begin(), in_tensor_layouts.end(), std::back_inserter(in_strategy),
+                       [](const auto &layout) { return layout->get_in_layout_strategy(); });
+  MS_LOG(INFO) << "Converted strategies from in_tensor_layouts: " << in_strategy;
+  StrategyPtr in_strategy_ptr = NewStrategy(0, in_strategy);
+  operator_info->set_strategy(in_strategy_ptr);
+  operator_info->SetCostUnderStrategy(in_strategy_ptr);
+  operator_info->set_config_by_layout(true);
+  (void)configured_stra_ops_.emplace(operator_info, in_strategy_ptr);
+  if (OutLayoutFound(attrs)) {
+    Strategies out_strategy;
+    (void)std::transform(out_tensor_layouts.begin(), out_tensor_layouts.end(), std::back_inserter(out_strategy),
+                         [](const auto &layout) { return layout->get_out_layout_strategy(); });
+    MS_LOG(INFO) << "Converted strategies from out_tensor_layouts: " << out_strategy;
+    StrategyPtr out_strategy_ptr = NewStrategy(0, out_strategy);
+    operator_info->set_out_strategy(out_strategy_ptr);
+  }
+}
+
+void SetOutStrategyToOperator(const OperatorInfoPtr &operator_info, const PrimitivePtr &prim,
+                              mindspore::HashMap<std::string, ValuePtr> attrs) {
+  // In this case, when attrs has out_strategy, the out_strategy will be set to operator
+  StrategyPtr strategyPtr;
+  if (!OutStrategyFound(attrs)) {
+    return;
+  }
+  strategyPtr = parallel::ExtractStrategy(attrs[OUT_STRATEGY]);
+  if (strategyPtr == nullptr) {
+    return;
+  }
+  operator_info->set_out_strategy(strategyPtr);
 }
 
 void SetStrategyToOperator(const OperatorInfoPtr &operator_info, const PrimitivePtr &prim,
@@ -420,6 +465,15 @@ OperatorInfoPtr CreateTheOperatorInfo(const PrimitivePtr &prim, const CNodePtr &
   // if strategy is set to load from checkpoint, it is prefer to load strategy from checkpoint .
   auto attrs = prim->attrs();
   if (ParallelContext::GetInstance()->strategy_search_mode() != kRecursiveProgramming) {
+    // If the user input layout (mindspore.Layout instance), convert layout to strategy, then set to the operator_info.
+    if (LayoutFound(attrs)) {
+      SetLayoutToOperater(operator_info, attrs);
+      return operator_info;
+    }
+    // If the user input strategy (tuple-like), set the strategy to the operator_info.
+    if (OutStrategyFound(attrs)) {
+      SetOutStrategyToOperator(operator_info, prim, attrs);
+    }
     if ((StrategyFound(attrs) && prim->name() != CAST) || load_strategy_from_ckpt) {
       SetStrategyToOperator(operator_info, prim, attrs, is_last_nodes, stra_map, strategy_key_name);
       return operator_info;
@@ -1054,7 +1108,8 @@ void ReshapeCostCompute(const std::vector<AnfNodePtr> &all_nodes) {
     auto operator_info = cnode->user_data<OperatorInfo>();
     bool is_prev_param = false;
     if (!FindReshapePreNodeStraCosts(pre_node, &pre_operator_info, &is_prev_param, &out_index, 0)) {
-      MS_LOG(EXCEPTION) << "FindReshapePreNodeStraCosts for reshape failed";
+      MS_LOG(WARNING) << "FindReshapePreNodeStraCosts for reshape failed";
+      continue;
     }
     // 如果是双递归的话枚举reshape和前向算子的策略
     if (ParallelContext::GetInstance()->strategy_search_mode() == kRecursiveProgramming) {
@@ -1192,11 +1247,20 @@ Status ParallelStrategySearch(const std::vector<AnfNodePtr> &all_nodes, const Fu
     MS_LOG(EXCEPTION) << "Init selected strategy failed.";
   }
 
-  // print the selected strategy
   for (auto &op : entire_costgraph->GetOperators()) {
+    // print the selected strategy
     StrategyPtr s_strategy = op->selected_strategy();
     if (s_strategy != nullptr) {
       MS_LOG(INFO) << op->name() << ": The strategy is: " << s_strategy->ToString();
+    }
+    // Clear strategy if set strategy using layout
+    if (op->is_config_by_layout()) {
+      op->clear_strategy();
+      op->clear_out_strategy();
+    }
+    // Label the cnodes of the op if they were already created
+    for (const auto cnode : op->cnodes()) {
+      cnode->AddAttr(OP_INFO_CREATED, MakeValue(true));
     }
   }
   // Remove some operatorInfo from the CNODEs

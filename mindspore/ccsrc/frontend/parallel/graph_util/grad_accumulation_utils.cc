@@ -40,6 +40,22 @@ constexpr char GRAD_ACCU_FORWARD_BEGIN[] = "grad_accu_forward_begin";
 constexpr char GRAD_ACCU_FORWARD_END[] = "grad_accu_forward_end";
 constexpr char GRAD_ACCU_BACKWARD_END[] = "grad_accu_backward_end";
 constexpr char FIRST_PARAMETER_CNODE[] = "first_parameter_cnode";
+
+void SetGradAccumulationStep(const std::vector<AnfNodePtr> &all_nodes) {
+  for (const auto &node : all_nodes) {
+    if (!IsPrimitiveCNode(node, prim::kPrimStridedSlice)) {
+      continue;
+    }
+    auto slice_cnode = node->cast<CNodePtr>();
+    auto slice_prim = GetCNodePrimitive(slice_cnode);
+    if (!slice_prim->HasAttr(GRAD_ACCU_NUM)) {
+      continue;
+    }
+    auto accu_step = GetValue<int64_t>(slice_prim->GetAttr(GRAD_ACCU_NUM));
+    ParallelContext::GetInstance()->set_grad_accumulation_step(accu_step);
+  }
+}
+
 void TagMicroBatchStart(const FuncGraphManagerPtr &manager, const std::vector<AnfNodePtr> &all_nodes) {
   auto node_users_map = manager->node_users();
   for (const auto &node : all_nodes) {

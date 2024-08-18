@@ -122,7 +122,7 @@ class Layout():
             raise ValueError("The tensor_map of layout is None")
         interleaved_parallel = "interleaved_parallel" in self._alias_name
         return {"device_matrix": self._device_shape, "tensor_map": self._tensor_map,
-                "interleaved_parallel": interleaved_parallel}
+                "interleaved_parallel": interleaved_parallel, "alias_name": self._alias_name}
 
 
 

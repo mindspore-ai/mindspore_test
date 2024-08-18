@@ -231,6 +231,8 @@ class OperatorInfo {
   StrategyPtr GetStrategyFromSWCByInputLayout(const TensorLayout &input_layout, size_t input_index);
   StrategyPtr GetStrategyFromSWCByOutputLayout(const TensorLayout &output_layout, size_t output_index);
   bool IsReshape() const;
+  bool IsVirtualOutput() const;
+  bool IsConcat() const;
   bool IsTmpIdentity() const;
 
   void set_swc_index(int64_t swc, int64_t depth);
@@ -267,6 +269,10 @@ class OperatorInfo {
   StrategyPtr out_strategy() const { return out_strategy_; }
   void set_out_strategy(const StrategyPtr &strategy) { out_strategy_ = strategy; }
   void set_strategy(const StrategyPtr &strategy) { strategy_ = strategy; }
+  void clear_strategy() { strategy_ = nullptr; }
+  void clear_out_strategy() { out_strategy_ = nullptr; }
+  void set_config_by_layout(bool is_config_by_layout) { is_config_by_layout_ = is_config_by_layout; }
+  bool is_config_by_layout() { return is_config_by_layout_; }
   void set_refkey_parameter_name(std::string p_name) { refkey_parameter_name_ = std::move(p_name); }
   const std::string &refkey_parameter_name() const { return refkey_parameter_name_; }
   // When the output of a Parameter (require_grad) being used by multiple operators, the Parameter's cost is calculated
@@ -436,6 +442,7 @@ class OperatorInfo {
   int64_t stage_device_size_ = 0;
   bool infer_attrs_completed_ = false;
   bool is_layout_config_ = false;
+  bool is_config_by_layout_ = false;
   bool is_dynamic_shape_ = false;
   bool is_dynamic_rank_ = false;
   Shapes strategy_from_layout_;

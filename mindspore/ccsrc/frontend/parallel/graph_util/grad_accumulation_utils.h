@@ -26,6 +26,7 @@
 
 namespace mindspore {
 namespace parallel {
+void SetGradAccumulationStep(const std::vector<AnfNodePtr> &all_nodes);
 void TagMicroBatchStart(const FuncGraphManagerPtr &manager, const std::vector<AnfNodePtr> &all_nodes);
 void TagMicroBatchEnd(const FuncGraphManagerPtr &manager, const std::vector<AnfNodePtr> &all_nodes);
 void TagMicroBatchBpEndInCellShare(const FuncGraphPtr &root, const FuncGraphManagerPtr &manager);

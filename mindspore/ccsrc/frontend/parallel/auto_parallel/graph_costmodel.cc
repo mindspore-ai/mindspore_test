@@ -115,6 +115,10 @@ void CostGraph::StrategyPropagate(const std::map<OperatorInfoPtr, StrategyPtr, O
   }
 }
 
+bool CheckStrategyIsNull(StrategyPtr sp) { return sp == nullptr; }
+
+bool CheckSwcIndexInvalid(int64_t swc_index) { return swc_index == -1; }
+
 bool CheckVisitedEdgeConsistency(const EdgePtr &edge) {
   MS_EXCEPTION_IF_NULL(edge);
   auto prev_op = edge->prev_operator();
@@ -216,13 +220,25 @@ void BFSPreNode(
   if (configured_ops.find(prev_op) != configured_ops.end()) {
     return;
   }
-  visited->at(prev_op) = true;
   if (prev_op->IsReshape()) {
+    if (curr_op->IsVirtualOutput() || curr_op->IsConcat()) {
+      MS_LOG(INFO) << "virtualoutput or concat pre reshape, no need set strategy.";
+      visited->at(prev_op) = true;
+      return;
+    }
     auto swc_index = edge->GetReshapeSWCIndexByNextOpStrategy(curr_op->selected_strategy());
+    if (CheckSwcIndexInvalid(swc_index)) {
+      MS_LOG(WARNING) << "No available strategy found at edge: " << edge->edge_name() << " for: " << prev_op->name();
+      return;
+    }
     (void)next_level->emplace(std::make_pair(prev_op, std::make_pair(nullptr, swc_index)), curr_depth + 1);
     prev_op->set_swc_index(swc_index, curr_depth + 1);
   } else if (curr_op->IsReshape()) {
     auto prev_stra = edge->GetPrevOpStrategyByReshapeSWCIndex(curr_op->swc_index());
+    if (CheckStrategyIsNull(prev_stra)) {
+      MS_LOG(WARNING) << "No available strategy found at edge: " << edge->edge_name() << " for: " << prev_op->name();
+      return;
+    }
     (void)next_level->emplace(std::make_pair(prev_op, std::make_pair(prev_stra, -1)), curr_depth + 1);
     prev_op->SetSelectedStrategy(prev_stra, LongToSize(curr_depth + 1));
     prev_op->ClearStrategyCost();
@@ -243,6 +259,8 @@ void BFSPreNode(
       MS_LOG(EXCEPTION) << "Failure: operator " << prev_op->name() << " SetCostUnderStrategy failed";
     }
   }
+  visited->at(prev_op) = true;
+  return;
 }
 
 void BFSNextNode(
@@ -268,32 +286,57 @@ void BFSNextNode(
   if (configured_ops.find(next_op) != configured_ops.end()) {
     return;
   }
-  visited->at(next_op) = true;
   if (curr_op->IsReshape()) {
+    MS_EXCEPTION_IF_NULL(next_op);
+    if (next_op->IsVirtualOutput() || next_op->IsConcat()) {
+      MS_LOG(INFO) << "virtualoutput or concat after reshape, no need set strategy.";
+      visited->at(next_op) = true;
+      return;
+    }
     auto stra = edge->GetNextOpStrategyByReshapeSWCIndex(curr_op->swc_index());
+    if (CheckStrategyIsNull(stra)) {
+      MS_LOG(WARNING) << "No available strategy found at edge: " << edge->edge_name() << " for: " << curr_op->name();
+      return;
+    }
     (void)next_level->emplace(std::make_pair(next_op, std::make_pair(stra, -1)), curr_depth + 1);
     next_op->SetSelectedStrategy(stra, LongToSize(curr_depth + 1));
     next_op->ClearStrategyCost();
     if (next_op->SetCostUnderStrategy(stra) != SUCCESS) {
       MS_LOG(EXCEPTION) << "Failure: operator " << next_op->name() << " SetCostUnderStrategy failed";
     }
-  } else if (next_op->IsReshape()) {
+    visited->at(next_op) = true;
+    return;
+  }
+  if (next_op->IsReshape()) {
     auto swc_index = edge->GetReshapeSWCIndexByPrevOpStrategy(curr_op->selected_strategy());
+    if (CheckSwcIndexInvalid(swc_index)) {
+      MS_LOG(WARNING) << "No available strategy found at edge: " << edge->edge_name() << " for: " << next_op->name();
+      return;
+    }
     (void)next_level->emplace(std::make_pair(next_op, std::make_pair(nullptr, swc_index)), curr_depth + 1);
     next_op->set_swc_index(swc_index, curr_depth + 1);
+    visited->at(next_op) = true;
+    return;
+  }
+
+  StrategyPtr next_op_stra;
+  if (curr_op->out_strategy() != nullptr) {
+    next_op_stra = edge->GetNextOpStrategyByOutStrategy(curr_op->out_strategy());
   } else {
-    const auto &next_op_stra = edge->GetNextOpStrategyByPrevOpStrategyWithMiniComm(curr_op->selected_strategy());
+    next_op_stra = edge->GetNextOpStrategyByPrevOpStrategyWithMiniComm(curr_op->selected_strategy());
     if (next_op_stra == nullptr) {
       MS_LOG(INFO) << "The strategy is: " << curr_op->selected_strategy()->ToString();
       MS_LOG(EXCEPTION) << next_op->name() << "'s strategy is null in the edge: " << edge->edge_name();
     }
-    (void)next_level->emplace(std::make_pair(next_op, std::make_pair(next_op_stra, -1)), curr_depth + 1);
-    next_op->SetSelectedStrategy(next_op_stra, LongToSize(curr_depth + 1));
-    next_op->ClearStrategyCost();
-    if (next_op->SetCostUnderStrategy(next_op_stra) != SUCCESS) {
-      MS_LOG(EXCEPTION) << "Failure: operator " << next_op->name() << " SetCostUnderStrategy failed";
-    }
   }
+  (void)next_level->emplace(std::make_pair(next_op, std::make_pair(next_op_stra, -1)), curr_depth + 1);
+  next_op->SetSelectedStrategy(next_op_stra, LongToSize(curr_depth + 1));
+  next_op->ClearStrategyCost();
+  if (next_op->SetCostUnderStrategy(next_op_stra) != SUCCESS) {
+    MS_LOG(EXCEPTION) << "Failure: operator " << next_op->name() << " SetCostUnderStrategy failed";
+  }
+  visited->at(next_op) = true;
+  return;
 }
 
 void CostGraph::BFS(const OperatorInfoPtr &op, const StrategyPtr &op_stra,
@@ -1855,7 +1898,7 @@ Status CostGraph::InitSelectedStrategy() {
       continue;
     }
     StrategyPtr out_strategy = nullptr;
-    if (op->type() == MATMUL && op->out_strategy() != nullptr) {
+    if (op->out_strategy() != nullptr) {
       out_strategy = op->out_strategy();
     }
     auto result_op = op->InitSelectedStrategy(op->selected_strategy(), out_strategy);
