@@ -265,6 +265,9 @@ from mindspore.ops.function.math_func import arctanh
 from mindspore.ops.function.math_func import atan2_ext as atan2
 from mindspore.ops.function.math_func import arctan2_ext as arctan2
 
+# 177
+from mindspore.ops.function.math_func import round
+
 # 204
 from mindspore.ops.auto_generate import erfc
 # 208
@@ -1227,6 +1230,10 @@ __all__ = [
     # 176
     'atan2',
     'arctan2',
+
+    # 177
+    'round',
+
     # 204
     'erfc',
     # 208

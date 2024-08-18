@@ -916,6 +916,22 @@ def get_isclose_vmap_rule(prim, axis_size):
 
     return vmap_rule
 
+@vmap_rules_getters.register(P.Round)
+def get_round_vmap_rule(prim, axis_size):
+    """VmapRule for round."""
+    if isinstance(prim, str):
+        prim = Primitive(prim)
+
+    def vmap_rule(x_bdim, decimal_bdim):
+        var, x_dim = x_bdim
+        decimal_var, decimal_dim = decimal_bdim
+        if decimal_dim is not None:
+            _raise_value_error("The decimal should be None")
+        out = prim(var, decimal_var)
+        return out, x_dim
+
+    return vmap_rule
+
 get_assign_vmap_rule = vmap_rules_getters.register(P.AssignAdd)(get_assign_vmap_rule)
 get_assign_vmap_rule = vmap_rules_getters.register(P.AssignSub)(get_assign_vmap_rule)
 
@@ -949,7 +965,6 @@ get_unop_vmap_rule = vmap_rules_getters.register(P.Reciprocal)(get_unop_vmap_rul
 get_unop_vmap_rule = vmap_rules_getters.register(P.Inv)(get_unop_vmap_rule)
 get_unop_vmap_rule = vmap_rules_getters.register(P.Invert)(get_unop_vmap_rule)
 get_unop_vmap_rule = vmap_rules_getters.register(P.Rint)(get_unop_vmap_rule)
-get_unop_vmap_rule = vmap_rules_getters.register(P.Round)(get_unop_vmap_rule)
 get_unop_vmap_rule = vmap_rules_getters.register(P.Rsqrt)(get_unop_vmap_rule)
 get_unop_vmap_rule = vmap_rules_getters.register("Sigmoid")(get_unop_vmap_rule)
 get_unop_vmap_rule = vmap_rules_getters.register(P.Sqrt)(get_unop_vmap_rule)

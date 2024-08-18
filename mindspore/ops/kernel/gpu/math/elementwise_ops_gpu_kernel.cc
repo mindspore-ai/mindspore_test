@@ -156,10 +156,6 @@ std::map<std::string, std::vector<std::pair<KernelAttr, ElementwiseOpsGpuKernel:
       REGISTER_UNARY_BOOL_TYPE(ElwiseOpType::kTrunc)}},
     {"Floor", {REGISTER_UNARY_FLOAT_TYPE(ElwiseOpType::kFloor)}},
     {"Ceil", {REGISTER_UNARY_FLOAT_TYPE(ElwiseOpType::kCeil)}},
-    {"Round",
-     {REGISTER_UNARY_FLOAT_TYPE(ElwiseOpType::kRound),
-      {ADD_UNARY_SAME_TYPE(ElwiseOpType::kRound, kNumberTypeInt32, int32_t)},
-      {ADD_UNARY_SAME_TYPE(ElwiseOpType::kRound, kNumberTypeInt64, int64_t)}}},
     {"OnesLike",
      {REGISTER_UNARY_ALL_INT_TYPE(ElwiseOpType::kOnesLike), REGISTER_UNARY_FLOAT_TYPE(ElwiseOpType::kOnesLike),
       REGISTER_UNARY_COMPLEX_TYPE(ElwiseOpType::kOnesLike), REGISTER_UNARY_BOOL_TYPE(ElwiseOpType::kOnesLike)}},
@@ -345,7 +341,6 @@ MS_ELEWISE_KERNEL_FACTORY_REG_BY_CREATOR(Softsign);
 MS_ELEWISE_KERNEL_FACTORY_REG_BY_CREATOR(Trunc);
 MS_ELEWISE_KERNEL_FACTORY_REG_BY_CREATOR(Floor);
 MS_ELEWISE_KERNEL_FACTORY_REG_BY_CREATOR(Ceil);
-MS_ELEWISE_KERNEL_FACTORY_REG_BY_CREATOR(Round);
 MS_ELEWISE_KERNEL_FACTORY_REG_BY_CREATOR(OnesLike);
 MS_ELEWISE_KERNEL_FACTORY_REG_BY_CREATOR(Rint);
 MS_ELEWISE_KERNEL_FACTORY_REG_BY_CREATOR(LogicalNot);

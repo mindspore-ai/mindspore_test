@@ -118,6 +118,7 @@ Pointwise Operations
     mindspore.mint.reciprocal
     mindspore.mint.remainder
     mindspore.mint.roll
+    mindpsore.mint.round
     mindspore.mint.rsqrt
     mindspore.mint.sigmoid
     mindspore.mint.sin
@@ -423,4 +424,5 @@ Pointwise Operations
 
     mindspore.mint.special.erfc
     mindspore.mint.special.log1p
+    mindspore.mint.special.round
     mindspore.mint.special.sinc

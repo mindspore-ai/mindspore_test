@@ -1,7 +1,7 @@
-mindspore.ops.round
-====================
+mindspore.mint.special.round
+============================
 
-.. py:function:: mindspore.ops.round(input, *, decimals=None)
+.. py:function:: mindspore.mint.special.round(input)
 
     对输入数据进行四舍五入到最接近的整数数值。
 
@@ -13,9 +13,6 @@ mindspore.ops.round
 
     参数：
         - **input** (Tensor) - 输入Tensor。
-
-    关键字参数：
-        - **decimals** (int, 可选) - 要舍入到的小数位数（默认值：None）。如果为负数，则指定小数点左侧的位数。支持输入单元素Tensor转换为int。
 
     返回：
         Tensor，shape和数据类型与输入 `input` 相同。
