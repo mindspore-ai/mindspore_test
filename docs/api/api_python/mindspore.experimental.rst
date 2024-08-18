@@ -77,3 +77,15 @@ LRScheduler类
     mindspore.experimental.optim.lr_scheduler.ReduceLROnPlateau
     mindspore.experimental.optim.lr_scheduler.SequentialLR
     mindspore.experimental.optim.lr_scheduler.StepLR
+
+实验性EmbeddingService
+----------------------------
+
+.. mscnautosummary::
+    :toctree: experimental/es
+    :nosignatures:
+    :template: classtemplate.rst
+
+    mindspore.experimental.es.EmbeddingService
+    mindspore.experimental.es.EsEmbeddingLookup
+    mindspore.experimental.es.ESEmbeddingSmallTableLookup
