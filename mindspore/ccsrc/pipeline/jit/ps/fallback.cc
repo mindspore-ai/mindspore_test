@@ -473,21 +473,35 @@ py::object GeneratePyObj(const abstract::AbstractBasePtr &abs) {
   MS_EXCEPTION_IF_NULL(abs);
   if (abs->isa<abstract::AbstractList>()) {
     auto abs_list = abs->cast<abstract::AbstractListPtr>();
+    if (abs_list->dynamic_len()) {
+      return py::object();
+    }
     if (HasObjInExtraInfoHolder(abs_list)) {
       return GetObjFromExtraInfoHolder(abs_list);
     }
     py::list ret = py::list(abs_list->size());
     const auto &elements = abs_list->elements();
     for (size_t i = 0; i < elements.size(); ++i) {
-      ret[i] = GeneratePyObj(elements[i]);
+      auto element = GeneratePyObj(elements[i]);
+      if (element.ptr() == nullptr) {
+        return py::object();
+      }
+      ret[i] = element;
     }
     return ret;
   } else if (abs->isa<abstract::AbstractTuple>()) {
     auto abs_tuple = abs->cast<abstract::AbstractTuplePtr>();
+    if (abs_tuple->dynamic_len()) {
+      return py::object();
+    }
     py::tuple ret = py::tuple(abs_tuple->size());
     const auto &elements = abs_tuple->elements();
     for (size_t i = 0; i < elements.size(); ++i) {
-      ret[i] = GeneratePyObj(elements[i]);
+      auto element = GeneratePyObj(elements[i]);
+      if (element.ptr() == nullptr) {
+        return py::object();
+      }
+      ret[i] = element;
     }
     return ret;
   } else if (abs->isa<abstract::AbstractDictionary>()) {
@@ -496,9 +510,16 @@ py::object GeneratePyObj(const abstract::AbstractBasePtr &abs) {
     const auto &key_value_pairs = abs_dict->elements();
     for (size_t i = 0; i < key_value_pairs.size(); ++i) {
       py::object key = GeneratePyObj(key_value_pairs[i].first);
+      if (key.ptr() == nullptr) {
+        return py::object();
+      }
       // The key should be unique.
       key = py::isinstance<py::none>(key) ? py::str(std::to_string(i)) : key;
-      ret[key] = GeneratePyObj(key_value_pairs[i].second);
+      auto element = GeneratePyObj(key_value_pairs[i].second);
+      if (element.ptr() == nullptr) {
+        return py::object();
+      }
+      ret[key] = element;
     }
     return ret;
   }

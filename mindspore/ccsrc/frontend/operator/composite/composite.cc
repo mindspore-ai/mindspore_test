@@ -18,6 +18,7 @@
 
 #include "frontend/operator/composite/composite.h"
 #include <algorithm>
+#include <string>
 #include <tuple>
 #include <regex>
 #include "mindspore/ops/op_def/structure_ops.h"
@@ -219,10 +220,59 @@ AnfNodePtr HyperMap::HyperMapConverter(const FuncGraphPtr &func_graph, const Anf
   return NewValueNode(empty_tuple_value);
 }
 
+AnfNodePtr HyperMap::HyperMapDynamicConverter(const FuncGraphPtr &func_graph, const AnfNodePtr &fn_arg,
+                                              const ArgsPairList &arg_map, const TypePtr &type) const {
+  TypeId type_id = type->type_id();
+  TypePtr element_type;
+  if (type_id == kObjectTypeList) {
+    element_type = type->cast<ListPtr>()->dynamic_element_type();
+  } else {
+    element_type = type->cast<TuplePtr>()->dynamic_element_type();
+  }
+  MS_EXCEPTION_IF_NULL(element_type);
+  if (element_type->isa<Tuple>() || element_type->isa<List>() || element_type->isa<Dictionary>()) {
+    MS_EXCEPTION(TypeError) << "The Hypermap does not support scenarios involving nested dynamic " << type_id
+                            << ", where the internal elements are " << element_type;
+  }
+  auto inner_fg = std::make_shared<FuncGraph>();
+  auto func_input = inner_fg->add_parameter();
+  const std::string module = "mindspore._extends.parse.standard_method";
+  std::string func_name;
+  std::vector<AnfNodePtr> ret_inputs;
+  if (type_id == kObjectTypeList) {
+    func_name = "hypermap_dynamic_list";
+  } else {
+    func_name = "hypermap_dynamic_tuple";
+  }
+  py::function fn = python_adapter::GetPyFn(module, func_name);
+  auto prim_func = parse::ParsePythonCode(fn);
+  ret_inputs.insert(ret_inputs.end(), {NewValueNode(prim::kPrimMakeTuple), func_input});
+  for (auto e : arg_map) {
+    ret_inputs.push_back(inner_fg->add_parameter());
+  }
+  auto ret_node = inner_fg->NewCNodeInOrder(ret_inputs);
+  std::vector<AnfNodePtr> inner_ret_inputs = {NewValueNode(std::make_shared<prim::UnpackCall>("unpack_call")),
+                                              NewValueNode(prim_func), ret_node};
+  auto inner_ret = inner_fg->NewCNodeInOrder(inner_ret_inputs);
+  inner_fg->set_output(inner_ret);
+  std::vector<AnfNodePtr> final_node_input = {NewValueNode(inner_fg)};
+  if (fn_leaf_ == nullptr) {
+    final_node_input.push_back(fn_arg);
+  } else {
+    final_node_input.push_back(NewValueNode(fn_leaf_));
+  }
+  (void)std::transform(arg_map.begin(), arg_map.end(), std::back_inserter(final_node_input),
+                       [](const std::pair<AnfNodePtr, TypePtr> &item) { return item.first; });
+  return func_graph->NewCNodeInOrder(final_node_input);
+}
+
 AnfNodePtr HyperMap::FullMake(const std::shared_ptr<List> &type, const FuncGraphPtr &func_graph,
                               const AnfNodePtr &fn_arg, const ArgsPairList &arg_map) const {
   MS_EXCEPTION_IF_NULL(func_graph);
   MS_EXCEPTION_IF_NULL(type);
+  if (type->dynamic_len()) {
+    return HyperMapDynamicConverter(func_graph, fn_arg, arg_map, type);
+  }
   size_t size = type->elements().size();
   CheckArgsInSequence<List>(arg_map, kObjectTypeList, size);
   // Cannot use shared_from_base() also known as this, as it will make a reference cycle on
@@ -234,6 +284,9 @@ AnfNodePtr HyperMap::FullMake(const std::shared_ptr<Tuple> &type, const FuncGrap
                               const AnfNodePtr &fn_arg, const ArgsPairList &arg_map) const {
   MS_EXCEPTION_IF_NULL(func_graph);
   MS_EXCEPTION_IF_NULL(type);
+  if (type->dynamic_len()) {
+    return HyperMapDynamicConverter(func_graph, fn_arg, arg_map, type);
+  }
   size_t size = type->elements().size();
   CheckArgsInSequence<Tuple>(arg_map, kObjectTypeTuple, size);
   // Cannot use shared_from_base() also known as this, as it will make a reference cycle on
