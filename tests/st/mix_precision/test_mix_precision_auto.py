@@ -87,7 +87,6 @@ class Net_FP16(nn.Cell):
         self.cast = ops.Cast()
 
     def construct(self, x):
-        x = self.cast(x, ms.float16)
         x = self.relu(x)
         x = self.cast(x, ms.float32)
         x = self.bn1(x)
@@ -95,7 +94,6 @@ class Net_FP16(nn.Cell):
         x = self.conv(x)
         x = self.cast(x, ms.float32)
         x = self.bn2(x)
-        x = self.cast(x, ms.float16)
         x = self.relu(x)
         x = self.mean(x, (2, 3))
         return x
@@ -214,7 +212,6 @@ def func_for_amp_fp16(x, in_c, out_c):
     x = ops.cast(x, ms.float32)
     x = ops.BiasAdd()(x, ops.ones((out_c), ms.float32))
     x = bn2(x)
-    x = ops.cast(x, ms.float16)
     x = ops.relu(x)
     x = ops.ReduceMean(keep_dims=False)(x, (2, 3))
     return x
@@ -313,7 +310,6 @@ class SubNet_FP16(nn.Cell):
         x = self.conv(x)
         x = ops.cast(x, ms.float32)
         x = self.bn(x)
-        x = ops.cast(x, ms.float16)
         x = self.relu(x)
         return x
 
@@ -440,6 +436,45 @@ def test_auto_mix_precision_recompute(mode):
     grad_net = ops.GradOperation()(net)
     grad_val = grad_net(Tensor(input_data))
     _ = grad_val.asnumpy()
+
+
+class NetWithToFloat(nn.Cell):
+
+    def __init__(self, in_c, out_c):
+        super().__init__()
+        self.conv = nn.Conv2d(in_channels=in_c,
+                              out_channels=out_c,
+                              kernel_size=3,
+                              stride=1,
+                              has_bias=False,
+                              pad_mode='same',
+                              weight_init='ones',
+                              bias_init='ones')
+        self.conv.to_float(ms.float32)
+
+    def construct(self, x):
+        x = self.conv(x)
+        return x
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+          essential_mark='unessential')
+@pytest.mark.parametrize("mode", (context.GRAPH_MODE, context.PYNATIVE_MODE))
+def test_auto_mix_precision_with_to_float(mode):
+    """
+    Feature: auto mixed precision auto mode.
+    Description: test amp auto mode using network with to_float.
+    Expectation: success.
+    """
+    context.set_context(mode=mode)
+    input_data = np.random.randn(32, 3, 224, 224).astype(np.float16)
+    input_data = Tensor(input_data)
+
+    # net with amp should run success
+    net = NetWithToFloat(3, 10)
+    net = auto_mixed_precision(net, amp_level="auto", dtype=ms.float16)
+    out = net(input_data)
+    assert out.dtype == ms.float32
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')

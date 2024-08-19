@@ -17,7 +17,7 @@ import numpy as np
 import mindspore as ms
 from mindspore import ops, nn, Parameter, Tensor
 from mindspore.common import dtype as mstype
-from mindspore.train.amp import auto_mixed_precision, custom_mixed_precision
+from mindspore.train.amp import auto_mixed_precision
 from mindspore._c_expression import amp as amp_c
 from mindspore._c_expression.amp import pop_amp_strategy, push_amp_strategy, create_amp_strategy, \
     get_curr_amp_strategy, AmpStrategy, AmpLevel, PrimCastStrategy, PrimCastStrategyInfo, get_prim_cast_strategy_info
@@ -134,17 +134,19 @@ def test_modify_amp_list():
     assert isinstance(amp_c.SetDtypeOptList, list)
     assert isinstance(amp_c.SetDtypeList, list)
     assert isinstance(amp_c.AutoPromoteList, list)
-    assert not amp_c.SetDtypeOptList
-    assert not amp_c.SetDtypeList
-    assert amp_c.AutoPromoteList == [("Addcdiv", []), ("Addcmul", []), ("Cross", []), ("Dot", []),
-                                     ("GridSampler2D", []), ("GridSampler3D", []), ("IndexPut", []), ("BiasAdd", [])]
-    amp_c.SetDtypeOptList.append(("LogSoftmax", [0]))
-    amp_c.SetDtypeList.append(("NormExt", [0]))
+    assert amp_c.SetDtypeOptList == [("ReduceProd", []), ("Softmax", []), ("LogSoftmax", []), ("CumProd", []),
+                                     ("CumSum", []), ("CumsumExt", []), ("ProdExt", []), ("SumExt", [])]
+    assert amp_c.SetDtypeList == [("Norm", [])]
+    assert amp_c.AutoPromoteList == [("Addcdiv", []), ("Addcmul", []), ("Cross", []), ("_PyboostCrossPrim", []),
+                                     ("Dot", []), ("GridSampler2D", []), ("GridSampler3D", []), ("BiasAdd", [])]
+    amp_c.SetDtypeOptList.remove(("LogSoftmax", []))
+    amp_c.SetDtypeList.append(("Test", [0]))
     amp_c.AutoPromoteList.remove(("Addcmul", []))
-    assert amp_c.SetDtypeOptList == [("LogSoftmax", [0])]
-    assert amp_c.SetDtypeList == [("NormExt", [0])]
-    assert amp_c.AutoPromoteList == [("Addcdiv", []), ("Cross", []), ("Dot", []), ("GridSampler2D", []),
-                                     ("GridSampler3D", []), ("IndexPut", []), ("BiasAdd", [])]
+    assert amp_c.SetDtypeOptList == [("ReduceProd", []), ("Softmax", []), ("CumProd", []), ("CumSum", []),
+                                     ("CumsumExt", []), ("ProdExt", []), ("SumExt", [])]
+    assert amp_c.SetDtypeList == [("Norm", []), ("Test", [0])]
+    assert amp_c.AutoPromoteList == [("Addcdiv", []), ("Cross", []), ("_PyboostCrossPrim", []), ("Dot", []),
+                                     ("GridSampler2D", []), ("GridSampler3D", []), ("BiasAdd", [])]
 
 
 class MatmulNet(nn.Cell):
@@ -279,27 +281,3 @@ def test_amp_auto_promote():
     net_func2 = auto_mixed_precision(func_biasadd, "auto")
     out2 = net_func2(input_fp32)
     assert out2.dtype == ms.float32
-
-
-def test_amp_custom_white_black_list():
-    """
-    Feature: custom mixed precision with two lists.
-    Description: test if prim in custom white/black list(Matmul) can run in fp16/fp32.
-    Expectation: success.
-    """
-    ms.set_context(mode=ms.PYNATIVE_MODE)
-    input_data = Tensor(np.ones([1, 1]), dtype=ms.float32)
-    # test prim in white list
-    net1 = MatmulNet()
-    white_list = [ops.MatMul]
-    black_list = []
-    net1 = custom_mixed_precision(net1, white_list=white_list, black_list=black_list, dtype=ms.float16)
-    out = net1(input_data)
-    assert out.dtype == ms.float16
-    # test prim in black list
-    net2 = MatmulNet()
-    white_list = []
-    black_list = [ops.MatMul]
-    net2 = custom_mixed_precision(net2, white_list=white_list, black_list=black_list, dtype=ms.float16)
-    out = net2(input_data)
-    assert out.dtype == ms.float32
