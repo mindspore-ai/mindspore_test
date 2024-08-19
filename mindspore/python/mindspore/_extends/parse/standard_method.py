@@ -2466,6 +2466,7 @@ def list_func(data):
         ret = ret + F.make_list(i)
     return ret
 
+
 def tuple_func(data):
     """Implementation of `tuple`."""
     if isinstance(data, (CSRTensor, COOTensor, RowTensorInner)):
