@@ -31,7 +31,8 @@ from mindspore.parallel._tensor import _get_tensor_strategy, _construct_from_to_
     _get_needed_rank_transform_operator_map_by_layouts, \
     _generate_transform_operator_stack, _apply_tensor_transform_operators, _construct_tensor_layout_for_opt_shard, \
     _extract_layout_item
-from mindspore.parallel._parallel_serialization import _build_searched_strategy, _load_protobuf_strategy
+from mindspore.parallel._parallel_serialization import _build_searched_strategy, _load_protobuf_strategy, \
+    _convert_to_list
 
 from safetensors.numpy import save_file, load_file
 from safetensors import safe_open
@@ -284,8 +285,6 @@ def safetensors_to_ckpt(file_path, save_path=None, name_map=None, file_name_rege
 
 def _check_transform_safetensors(src_safetensors_dir, ckpt_prefix, src_strategy_file, dst_strategy_file):
     """check _transform_safetensors input"""
-    if not os.path.isdir(src_safetensors_dir):
-        raise NotADirectoryError("src_safetensors_dir {} is not a directory.".format(src_safetensors_dir))
     if not isinstance(ckpt_prefix, str):
         raise TypeError("The ckpt_prefix should be a str.")
     if src_strategy_file and os.path.dirname(src_strategy_file) and not os.path.exists(
@@ -377,25 +376,34 @@ def _transform_stage_safetensors(src_strategy_dict, dst_strategy_dict, ckpt_pref
     if process_num > len(needed_rank_list_map):
         ms.log.warning("The value of process_num cannot be greater than that of needed_rank_list_map.")
         process_num = len(needed_rank_list_map)
-    if process_num <= 1:
-        _transform_safetensors_single(needed_rank_list_map, all_safetensor_files_map, src_stage_device_num,
-                                      dst_stage_device_num, src_strategy_dict, dst_strategy_dict,
-                                      origin_src_strategy_list,
-                                      origin_dst_strategy_list, ckpt_prefix, dst_safetensors_dir, output_format,
-                                      _transform_param_list)
-    else:
-        _transform_safetensors_with_parallel(needed_rank_list_map, all_safetensor_files_map, src_stage_device_num,
-                                             dst_stage_device_num, src_strategy_dict, dst_strategy_dict,
-                                             origin_src_strategy_list, origin_dst_strategy_list, ckpt_prefix,
-                                             dst_safetensors_dir, process_num, output_format,
-                                             _transform_param_list)
+    dst_stage_num = _extract_pipeline_stage_num(dst_strategy_dict)
+    if len(needed_rank_list_map) == 1 and dst_stage_num > 1:
+        process_num = dst_stage_num
+    _transform_safetensors_with_parallel(needed_rank_list_map, all_safetensor_files_map, src_stage_device_num,
+                                         dst_stage_device_num, src_strategy_dict, dst_strategy_dict,
+                                         origin_src_strategy_list, origin_dst_strategy_list, ckpt_prefix,
+                                         dst_safetensors_dir, process_num, output_format,
+                                         _transform_param_list)
 
 
 def _distribute_files_by_size(all_safetensor_files_map, needed_rank_list_map, process_num):
     """
     Distributes files across multiple processes based on file size to balance the processing load.
     """
+    if process_num == 1:
+        return [needed_rank_list_map]
     # Calculate the size of each file.
+    # if src==1, dst pp>1, split for pp number.
+    if len(needed_rank_list_map) == 1:
+        src_rank = next(iter(needed_rank_list_map.keys()))
+        dst_list = next(iter(needed_rank_list_map.values()))
+        size = len(dst_list) // process_num
+        split_list = [dst_list[i:i + size] for i in range(0, len(dst_list), size)]
+        part_list_dict = [dict() for _ in range(process_num)]
+        for index in range(process_num):
+            part_list_dict[index][src_rank] = split_list[index]
+        return part_list_dict
+
     rank_size = dict()
     for rank_id, file_name in all_safetensor_files_map.items():
         tmp_size = os.path.getsize(file_name) / 1024 / 1024
@@ -443,12 +451,23 @@ def _transform_safetensors_with_parallel(needed_rank_list_map, all_safetensor_fi
     Transforms safetensors files to a specified format using parallel processing.
     """
     part_list_dict = _distribute_files_by_size(all_safetensor_files_map, needed_rank_list_map, process_num)
+
+    # cal param name for every pipeline, save in pipe_param_list.
+    pipe_num = _extract_pipeline_stage_num(dst_strategy_dict)
+    pipe_param_list = [None for _ in range(max(pipe_num, process_num))]
+    if len(needed_rank_list_map) == 1 and pipe_num > 1:
+        pipe_param_list = [[] for _ in range(pipe_num)]
+        layout_map = _convert_to_list(dst_strategy_dict)
+
+        for name, layout in layout_map.items():
+            pipe_param_list[layout[6][0]].append(name)
+
     processes = []
     for i in range(process_num):
         p = mp.Process(target=_transform_safetensors_single, args=(
             part_list_dict[i], all_safetensor_files_map, src_stage_device_num, dst_stage_device_num,
             src_strategy_dict, dst_strategy_dict, origin_src_strategy_list, origin_dst_strategy_list,
-            ckpt_prefix, dst_safetensors_dir, output_format, _transform_param_list))
+            ckpt_prefix, dst_safetensors_dir, output_format, _transform_param_list, pipe_param_list[i]))
         p.start()
         processes.append(p)
     for p in processes:
@@ -459,7 +478,8 @@ def _transform_safetensors_single(needed_rank_list_map, all_safetensor_files_map
                                   dst_stage_device_num,
                                   src_strategy_dict, dst_strategy_dict, origin_src_strategy_list,
                                   origin_dst_strategy_list,
-                                  ckpt_prefix, dst_safetensors_dir, output_format, _transform_param_list):
+                                  ckpt_prefix, dst_safetensors_dir, output_format,
+                                  _transform_param_list, pipe_param_list=None):
     """
     Transforms safetensors files to a specified format without using parallel processing.
     """
@@ -469,7 +489,17 @@ def _transform_safetensors_single(needed_rank_list_map, all_safetensor_files_map
         needed_rank_list = needed_rank_list_key.split("-")
         for needed_rank in needed_rank_list:
             print(f"loading safetensors from rank {needed_rank}...")
-            saftensor_dict = load_file(all_safetensor_files_map.get(int(needed_rank)))
+            if pipe_param_list:
+                saftensor_dict = dict()
+                with safe_open(all_safetensor_files_map.get(int(needed_rank)), framework="np") as f:
+                    for param_name in pipe_param_list:
+                        if param_name not in f.keys():
+                            # param not in ckpt file, check reason
+                            continue
+                        output = f.get_tensor(param_name)
+                        saftensor_dict[param_name] = output
+            else:
+                saftensor_dict = load_file(all_safetensor_files_map.get(int(needed_rank)))
             for param_name, param in saftensor_dict.items():
                 src_rank = int(needed_rank) % src_stage_device_num
                 param_total_dict[param_name][src_rank] = param
@@ -634,6 +664,8 @@ def _collect_safetensor_files(src_safetensors_dir, format='safetensors'):
     """
     Collects all safetensors files from the specified directory and its subdirectories.
     """
+    if os.path.isfile(src_safetensors_dir) and format == 'safetensors' and src_safetensors_dir.endswith('safetensors'):
+        return {0: src_safetensors_dir}
     safetensors_rank_dir_list = os.path.join(src_safetensors_dir, "rank_[0-9]*")
     all_safetensor_files_map = {}
     for safetensor_dir in glob.glob(safetensors_rank_dir_list):

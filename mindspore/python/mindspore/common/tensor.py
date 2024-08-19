@@ -51,7 +51,7 @@ def _check_input_data_type(input_data):
                     np.float16, np.float32, np.float64, np.bool_, np.str_, np.complex64, np.complex128)
     if isinstance(input_data, np.ndarray) and input_data.dtype not in valid_dtypes and \
             input_data.dtype.kind != 'U' and input_data.dtype.kind != 'S' and \
-            input_data.dtype.kind != 'T':  # Support dtype np.str_ and npy_bfloat16
+            not (input_data.dtype.kind == 'V' and input_data.dtype.char == 'E'):  # Support np.str_ and np.bfloat16
         new_line = '\n'
         for index, x in np.ndenumerate(input_data):
             if np.array(x).dtype not in valid_dtypes:
