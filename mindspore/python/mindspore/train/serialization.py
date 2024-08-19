@@ -1281,12 +1281,21 @@ def load_checkpoint(ckpt_file_name, net=None, strict_load=False, filter_prefix=N
         import aiturbo
         ckpt_path = os.path.dirname(ckpt_file_name)
         ckpt_name = os.path.basename(ckpt_file_name)
-        np_dict = aiturbo.load_ckpt(ckpt_path, ckpt_name, rank_id)
+        np_dict = aiturbo.load_ckpt(ckpt_path, ckpt_name, rank_id, crc_check)
         for key, value in np_dict.items():
+            if crc_check and len(value) != 2:
+                raise ValueError(f"When loading a checkpoint from AITurbo, if CRC check is enabled, "
+                                 f"the length of the value must be 2, but got {len(value)}.")
             if isinstance(value, str):
-                parameter_dict[key] = value
+                if crc_check and value[1] != binascii.crc32(np.array(value[0]).tobytes()):
+                    raise ValueError(f"When loading a checkpoint from AITurbo, the value of the string has not "
+                                     f"passed the CRC check and has been corrupted.")
+                parameter_dict[key] = value[0]
             else:
-                parameter_dict[key] = Parameter(Tensor(value), name=key)
+                if crc_check and value[1] != binascii.crc32(value[0].tobytes()):
+                    raise ValueError(f"When loading a checkpoint from AITurbo, the value of the parameter has not "
+                                     f"passed the CRC check and has been corrupted.")
+                parameter_dict[key] = Parameter(Tensor(value[0]), name=key)
     else:
         _load_into_param_dict(ckpt_file_name, parameter_dict, specify_prefix, filter_prefix, choice_func, dec_key,
                               dec_mode, crc_check, format)
