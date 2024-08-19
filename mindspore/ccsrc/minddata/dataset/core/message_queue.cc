@@ -55,15 +55,21 @@ void MessageQueue::ReleaseQueue() {
 
 Status MessageQueue::GetOrCreateMessageQueueID() {
   msg_queue_id_ = msgget(key_, kMsgQueuePermission);
-  if (msg_queue_id_ < 0 && state_ != State::kReleased) {
-    // create message queue id
-    int msg_queue_id_ = msgget(key_, IPC_CREAT | kMsgQueuePermission);
-    if (msg_queue_id_ < 0) {
-      RETURN_STATUS_UNEXPECTED("Create send message by key: " + std::to_string(key_) +
-                               " failed. Errno: " + std::to_string(errno));
+  if (msg_queue_id_ < 0) {
+    if (state_ != State::kReleased) {
+      // create message queue id
+      int msg_queue_id_ = msgget(key_, IPC_CREAT | kMsgQueuePermission);
+      if (msg_queue_id_ < 0) {
+        RETURN_STATUS_UNEXPECTED("Create send message by key: " + std::to_string(key_) +
+                                 " failed. Errno: " + std::to_string(errno));
+      }
+      MS_LOG(INFO) << "Create send message queue id: " << std::to_string(msg_queue_id_)
+                   << " by key: " << std::to_string(key_) << " success.";
+    } else {
+      RETURN_STATUS_UNEXPECTED("Message queue key: " + std::to_string(key_) + " had been released. " +
+                               "Maybe got error from independent dataset process, you can enable INFO log " +
+                               "to view detailed error messages.");
     }
-    MS_LOG(INFO) << "Create send message queue id: " << std::to_string(msg_queue_id_)
-                 << " by key: " << std::to_string(key_) << " success.";
   }
   state_ = State::kRunning;
   return Status::OK();
