@@ -240,6 +240,16 @@ from mindspore.nn.loss import L1LossExt as L1Loss
 from mindspore.ops.function.nn_func import mse_loss_ext
 
 
+# 674
+from mindspore.mint.nn.layer.normalization import BatchNorm1d
+
+# 675
+from mindspore.mint.nn.layer.normalization import BatchNorm2d
+
+# 676
+from mindspore.mint.nn.layer.normalization import BatchNorm3d
+
+
 class BCEWithLogitsLoss(Cell):
     r"""
     Adds sigmoid activation function to `input` as logits, and uses this logits to compute binary cross entropy
@@ -680,6 +690,12 @@ __all__ = [
     # 267
     'Mish',
     # 258
-    'MSELoss'
+    'MSELoss',
     # 259
+    # 674
+    'BatchNorm1d',
+    # 675
+    'BatchNorm2d',
+    # 676
+    'BatchNorm3d',
 ]
