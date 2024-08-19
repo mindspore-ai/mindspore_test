@@ -53,7 +53,15 @@ class SideEffectData {
   void Track(PyObject *ptr, ValueNode *node) { (ptr ? (void)id_map_[ptr].insert(node) : (void)0); }
   void UnTrack(PyObject *ptr, ValueNode *node) { (ptr ? (void)id_map_[ptr].erase(node) : (void)0); }
 
-  // record replaced node
+  /**
+   * record replaced node
+   * NOTE: avoid this case:
+   *    old_node.assign(new_node)
+   *    old_node.assign(other)
+   *    new_node.assign(other)
+   * if replace 'old_node' by 'new_node', how to identify old_node.assign and new_node.assign ?
+   * old_node must be unreached after replace and record. new_node is a new temporary node
+   */
   void RecordModifiedAndReplacedNode(ValueNode *src_node, ValueNode *new_node);
 
   // merge attr modify operations
@@ -102,10 +110,14 @@ class SideEffect {
   SideEffect() = default;
 
   const auto &data() const { return data_; }
+  const auto &nodes() const { return nodes_; }
   void set_data(const std::shared_ptr<SideEffectData> &data) { data_ = data; }
 
   // check the node is a side-effect record
   bool IsRecord(ValueNode *node) const { return nodes_.empty() ? false : nodes_.find(node) != nodes_.end(); }
+
+  // return true if a record can't be reorder
+  bool NeedTrack(ValueNode *node);
 
   // check record is empty
   bool IsEmpty() const { return nodes_.empty(); }
@@ -167,7 +179,7 @@ class SideEffect {
 };
 
 // return the self node, if return nullptr, unsupported to handle side-effect
-ValueNode *GetSelfFromListAppendCall(ValueNode *call_node, bool *is_method_descriptor = nullptr);
+ValueNode *GetSelfFromKnownMethod(ValueNode *call_node, bool *is_method_descriptor = nullptr);
 
 }  // namespace pijit
 }  // namespace mindspore

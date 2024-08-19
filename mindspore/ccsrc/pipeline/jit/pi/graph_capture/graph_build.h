@@ -211,6 +211,9 @@ class GraphBuilder {
   // transform list set item to make a new list
   ValueNode *TransformListSetItem(ValueNode *list, ValueNode *key, ValueNode *val);
 
+  // make a tensor copy operation
+  ValueNode *MakeTensorCopy(ValueNode *tensor);
+
   ValueNode *ReplaceMergeOp(int opcode, const std::vector<ValueNode *> &inputs);
 
   bool ClassInstantiationFold(CallNode *, AObject::Type);
