@@ -417,6 +417,15 @@ class ListFunc : public MetaFuncGraph {
   friend bool operator==(const ListFunc &lhs, const ListFunc &rhs) { return lhs.name_ == rhs.name_; }
 };
 using ListFuncPtr = std::shared_ptr<ListFunc>;
+
+class ForHalfUnrollLess : public MetaFuncGraph {
+ public:
+  ForHalfUnrollLess() : MetaFuncGraph("ForHalfUnrollLess") {}
+  ~ForHalfUnrollLess() override = default;
+  MS_DECLARE_PARENT(ForHalfUnrollLess, MetaFuncGraph)
+  FuncGraphPtr GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) override;
+  friend bool operator==(const ForHalfUnrollLess &lhs, const ForHalfUnrollLess &rhs) { return lhs.name_ == rhs.name_; }
+};
 }  // namespace prim
 }  // namespace mindspore
 

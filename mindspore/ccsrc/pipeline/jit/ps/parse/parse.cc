@@ -3243,9 +3243,9 @@ FunctionBlockPtr Parser::ParseForRepeat(const FunctionBlockPtr &block, const py:
   // Create loop variable 'i'
   ParameterPtr loop_var = header_block->func_graph()->add_parameter();
   // Create loop condition 'i < len(xs)'
-  std::string less_module_name = "mindspore.ops.composite.multitype_ops.less_impl";
-  ValuePtr less_op = prim::GetPythonOps("less", less_module_name);
-  CNodePtr cond_node = header_block->func_graph()->NewCNodeInOrder({NewValueNode(less_op), loop_var, scalar_len});
+  CNodePtr cond_node = header_block->func_graph()->NewCNodeInOrder(
+    {NewValueNode(std::make_shared<prim::ForHalfUnrollLess>()), loop_var, scalar_len});
+  header_block->func_graph()->set_flag(FUNC_GRAPH_FLAG_ROLLED_HEADER, true);
 
   // Generate the body of the for statement
   FunctionBlockPtr body_block = MakeFunctionBlock(std::make_shared<TraceForBody>(block->func_graph()->debug_info()));
@@ -3324,9 +3324,6 @@ FunctionBlockPtr Parser::ParseForRepeat(const FunctionBlockPtr &block, const py:
       MS_LOG(DEBUG) << "Record rolled body call: {CNode: " << rolled_body_call->DebugString(recursive_level)
                     << ", rolled_graph: " << rolled_body_block->ToString() << "}";
     }
-    auto rolled_body_func_graph = rolled_body_block->func_graph();
-    rolled_body_func_graph->set_flag(FUNC_GRAPH_FLAG_NO_INLINE, true);
-    rolled_body_func_graph->set_flag(FUNC_GRAPH_FLAG_IGNORE_VALUE, true);
   }
 
   header_block->Mature();
