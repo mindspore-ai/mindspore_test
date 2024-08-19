@@ -67,6 +67,8 @@
 #include "include/backend/debug/profiler/profiling.h"
 #include "frontend/optimizer/fallback_rewriter.h"
 #include "pipeline/jit/ps/load_mindir.h"
+#include "pipeline/jit/ps/pass_config.h"
+
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/backend/distributed/cluster/cluster_context.h"
 #include "include/backend/distributed/ps/ps_context.h"
@@ -910,12 +912,14 @@ bool GraphReusingAction(const ResourcePtr &resource) {
       continue;
     }
     fg->erase_flag(FUNC_GRAPH_FLAG_CELL_LAZY_INLINE_ORDER);
-    (void)order_fgs.insert(std::make_pair(GetValue<int>(order_value), fg));
+    if (!fg->has_attr(FUNC_GRAPH_FLAG_NO_INLINE)) {
+      cell_reused = true;
+    }
+    order_fgs.insert(std::make_pair(GetValue<int>(order_value), fg));
   }
   for (auto it = order_fgs.rbegin(); it != order_fgs.rend(); ++it) {
     MS_LOG(INFO) << "Lazy_inline graph: " << it->second->ToString() << " , order: " << it->first;
     GeneralizeReusingGraph(it->second, func_graph);
-    cell_reused = true;
   }
   if (!cell_reused) {
     return true;
@@ -1160,7 +1164,7 @@ bool OptimizeAction(const ResourcePtr &resource, const std::vector<PassItem> &pa
     (void)profiler::CollectHostInfo(kCompiler, kOptimize, pass.first, 0, 0, 0);
     auto profile_context = MsProfile::GetProfile()->Step(pass.first);
     auto pass_func = [&pass, &resource, &counter]() {
-      MS_LOG(DEBUG) << "Pass " << pass.first << " start ...";
+      MS_LOG(INFO) << "Pass " << pass.first << " start ...";
       auto result = pass.second(resource);
       if (!result) {
         MS_LOG(INTERNAL_EXCEPTION) << "Pass running to end, failed in pass:" << pass.first;
@@ -1185,7 +1189,7 @@ bool OptimizeAction(const ResourcePtr &resource, const std::vector<PassItem> &pa
       }
 #endif
       counter++;
-      MS_LOG(DEBUG) << "Pass " << pass.first << " end.";
+      MS_LOG(INFO) << "Pass " << pass.first << " end.";
     };
     ProfileExecute(profile_context, pass_func);
     (void)profiler::CollectHostInfo(kCompiler, kOptimize, pass.first, 0, 0, 1);
@@ -1213,7 +1217,15 @@ bool VmOptimizeAction(const ResourcePtr &resource) {
     }));
   }
 #endif
-  auto ret = OptimizeAction(resource, kVmPasses);
+  bool ret;
+  auto custom_passes = opt::PassConfigure::Instance().GetPasses();
+  if (custom_passes.empty()) {
+    ret = OptimizeAction(resource, kVmPasses);
+  } else {
+    MS_LOG(INFO) << "Use custom passes, size: " << custom_passes.size();
+    ret = OptimizeAction(resource, custom_passes);
+  }
+
   TraceManager::CloseParserDebugInfoFlag();
   return ret;
 }
@@ -1925,9 +1937,6 @@ static std::vector<ActionItem> CommonPipeline(bool trace_flag) {
         (void)actions.emplace_back(std::make_pair(kCombineLikeGraphs, CombineLikeGraphs));
       }
 
-      // Make the reusable cell to be the reusable function graph
-      (void)actions.emplace_back(std::make_pair(kGraphReusing, GraphReusingAction));
-
       // Pre-Lift the func graphs.
       (void)actions.emplace_back(std::make_pair(kPreCConv, PreCConvAction));
     }
@@ -1938,9 +1947,7 @@ static std::vector<ActionItem> CommonPipeline(bool trace_flag) {
   // Auto-monad for side-effects handling.
   (void)actions.emplace_back(std::make_pair(kAutoMonad, AutoMonadAction));
 
-  if (boost_infer) {
-    (void)actions.emplace_back(std::make_pair(kGraphReusing, GraphReusingAction));
-  }
+  (void)actions.emplace_back(std::make_pair(kGraphReusing, GraphReusingAction));
 
   // Do data structure simplifications and inline.
   (void)actions.emplace_back(std::make_pair(kInline, OptInlineAction));

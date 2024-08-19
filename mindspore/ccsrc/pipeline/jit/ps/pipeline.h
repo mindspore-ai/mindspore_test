@@ -99,6 +99,7 @@ class GraphExecutorPy : public std::enable_shared_from_this<GraphExecutorPy> {
 #ifndef ENABLE_SECURITY
   py::bytes GetOptimizeGraphProto(const std::string &phase);
 #endif
+
   void SetJitConfig(const py::dict &jit_config);
   compile::VmEvalFuncPtr GetVmEvalFunc(const std::string &phase);
   bool HasCompiled(const std::string &phase) const;
@@ -134,6 +135,10 @@ class GraphExecutorPy : public std::enable_shared_from_this<GraphExecutorPy> {
     compile_cache_dep_files_ = compile_cache_dep_files;
   }
   void set_weights_values(const py::dict &weights) { weights_ = weights; }
+  void SetOptimizeConfig(const py::list &optimize_cfg);
+  std::string GetOptimizeConfig();
+  void SetConfigPasses(const py::list &passes);
+  py::list GetRunningPasses();
 #ifdef ENABLE_DEBUGGER
   void TerminateDebugger();
 #endif

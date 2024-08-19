@@ -38,6 +38,9 @@
 
 namespace mindspore {
 namespace opt {
+bool FilterPass(const std::string &pass_key);
+void UpdateRunningPasses(const std::string &pass_key);
+
 using OptimizeGraphFunc = std::function<bool(const FuncGraphPtr &func_graph, const OptimizerPtr &optimizer)>;
 
 class OptPassConfig {
@@ -105,6 +108,21 @@ class Optimizer : public std::enable_shared_from_this<Optimizer> {
         traverse_nodes_first_(traverse_nodes_first),
         is_first_order_j_(true) {}
   virtual ~Optimizer() = default;
+
+  bool operator()(const pipeline::ResourcePtr &resource) {
+    MS_EXCEPTION_IF_NULL(resource);
+    if (resource->func_graph() == nullptr) {
+      MS_LOG(ERROR) << "Opt passes error";
+      return false;
+    }
+
+    auto func_graph = resource->func_graph();
+    MS_LOG(DEBUG) << "Start " << name_ << " func graph:" << func_graph->ToString() << ", "
+                  << func_graph->get_return()->DebugString(true);
+    auto new_func_graph = step(func_graph, true, resource);
+    resource->set_func_graph(new_func_graph);
+    return true;
+  }
 
   void Init(const OptPassGroupMap &passes, bool run_only_once) {
     run_only_once_ = run_only_once;
@@ -180,9 +198,14 @@ class Optimizer : public std::enable_shared_from_this<Optimizer> {
     }
   }
 
-  FuncGraphPtr step(FuncGraphPtr func_graph, bool use_profile = true) {
+  FuncGraphPtr step(FuncGraphPtr func_graph, bool use_profile = true, pipeline::ResourceBasePtr res = nullptr) {
     if (!is_enable_) {
       return func_graph;
+    }
+
+    if (res) {
+      MS_LOG(INFO) << "Run at the custom passes.";
+      resource_ = res;
     }
     // Optimizer step counter;
     int counter = 1;
@@ -232,11 +255,21 @@ class Optimizer : public std::enable_shared_from_this<Optimizer> {
             }
           };
           auto profiler_pass_name = name_ + ".r" + std::to_string(counter) + "." + pass_names_[i];
+          if (FilterPass(profiler_pass_name)) {
+            continue;
+          }
+
           (void)profiler::CollectHostInfo(pipeline::kCompiler, pipeline::kOptimize, profiler_pass_name, 0, 0, 0);
           MS_LOG(INFO) << "Start " << name_ << ".r" << std::to_string(counter) << "." << pass_names_[i];
+          auto last_version = FuncGraphManager::version();
           use_profile ? ProfileExecute(MsProfile::GetProfile()->Step(pass_names_[i]), opt_func) : opt_func();
-          MS_LOG(INFO) << "End " << name_ << ".r" << std::to_string(counter) << "." << pass_names_[i];
+          auto current_changed = (FuncGraphManager::version() != last_version);
+          MS_LOG(INFO) << "End " << name_ << ".r" << std::to_string(counter) << "." << pass_names_[i]
+                       << (current_changed ? ".changed" : ".unchanged");
           (void)profiler::CollectHostInfo(pipeline::kCompiler, pipeline::kOptimize, profiler_pass_name, 0, 0, 1);
+          if (current_changed) {
+            UpdateRunningPasses(profiler_pass_name);
+          }
 #ifdef ENABLE_DUMP_IR
           DumpStep(func_graph, counter, i);
 #endif

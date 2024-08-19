@@ -1,6 +1,7 @@
 file(GLOB_RECURSE _PIPELINE_SRC_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     "pipeline.cc"
     "resource.cc"
+    "pass_config.cc"
     "pass.cc"
     "action.cc"
     "validator.cc"

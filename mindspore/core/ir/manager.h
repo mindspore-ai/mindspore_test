@@ -361,6 +361,8 @@ class MS_CORE_API FuncGraphManager : public std::enable_shared_from_this<FuncGra
   std::shared_ptr<ParentComputer> func_graph_parent_;
 
   void ProcessEdgeRemove(const AnfNodePtr &node, int index, const AnfNodePtr &input);
+  static int64_t version() { return version_; }
+  static void ChangeVersion() { version_++; }
 
  private:
   // Erase OneGraph From Manager
@@ -392,6 +394,7 @@ class MS_CORE_API FuncGraphManager : public std::enable_shared_from_this<FuncGra
 
   bool is_manage_{false};
   bool drop_unused_graph_{false};
+  inline static int64_t version_{0};
 };
 
 class MS_CORE_API FuncGraphTransaction {
