@@ -37,6 +37,11 @@ tensor::BaseTensorPtr RoundAscendCustomize(const std::shared_ptr<OpRunner> &op,
       decimals_imm = GetValue<int64_t>(decimals.value());
   }
 
+  auto type = input_tensor->Dtype();
+  if ((type == kInt32 || type == kInt64) && decimals_imm != 0) {
+      MS_LOG(EXCEPTION) << "For input tensor type " << type << ", the decimals should be zero";
+  }
+
   // Async
   PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>([op, input_tensor, decimals_imm]() {
       auto device_context = op->device_context();

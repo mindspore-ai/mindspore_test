@@ -34,6 +34,11 @@ void RoundAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
     decimals_ = decimals_opt.value();
   }
 
+  auto dtype_id = inputs[kIndex0]->dtype_id();
+  if ((dtype_id == kNumberTypeInt32 || dtype_id == kNumberTypeInt64) && decimals_ != 0) {
+      MS_LOG(EXCEPTION) << "For input tensor type " << inputs[kIndex0]->GetType() << ", the decimals should be zero";
+  }
+
   GetWorkspaceForResize(inputs[kIndex0], decimals_, outputs[kIndex0]);
 }
 
