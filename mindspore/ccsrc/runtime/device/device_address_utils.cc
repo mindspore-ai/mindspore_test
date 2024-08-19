@@ -611,8 +611,8 @@ vector<device::DeviceAddressPtr> DeviceAddressUtils::CreateGraphOutputDeviceAddr
     const auto &cache_output_address = edge->origin_address_;
 
     auto real_abstract = out_abstract;
-    if (out_abstract->isa<abstract::AbstractTuple>()) {
-      auto abstract_tuple = out_abstract->cast<abstract::AbstractTuplePtr>();
+    if (out_abstract->isa<abstract::AbstractSequence>()) {
+      auto abstract_tuple = out_abstract->cast<abstract::AbstractSequencePtr>();
       if (i >= abstract_tuple->elements().size()) {
         MS_LOG(EXCEPTION) << "abstract_tuple size is " << abstract_tuple->elements().size() << " ,but get index is"
                           << i;
