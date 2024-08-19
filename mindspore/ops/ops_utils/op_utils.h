@@ -33,6 +33,7 @@
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/op_name.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "mindapi/base/types.h"
 
 #ifndef MS_UNLIKELY
 #ifdef _MSC_VER
@@ -270,5 +271,10 @@ static inline TypePtr PromoteType(TypePtr a, TypePtr b, const std::string &op_na
 void CheckTensorScalarRank(const PrimitivePtr &primitive, const AbstractBasePtr input_arg, const std::string &arg_name);
 bool IsFloatType(TypePtr type);
 bool IsIntegralType(TypePtr type, bool include_bool);
+OPS_API std::vector<int64_t> CalBroadCastShapeV3(const std::vector<int64_t> &x_shape,
+                                                 const std::vector<int64_t> &y_shape);
+OPS_API int ConvertReductionForAclnn(Reduction reduction);
+OPS_API size_t CalOutputSize(const std::vector<int64_t> &output_shape, const size_t &type_size);
+OPS_API ValueTuplePtr ConvertShapeVectorToValueTuple(const ShapeVector &shape_vector);
 }  // namespace mindspore::ops
 #endif  // MINDSPORE_CORE_OPS_OP_UTILS_H

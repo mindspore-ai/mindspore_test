@@ -111,7 +111,6 @@ std::string Dtype2ShortType(const std::string &dtype);
 BACKEND_EXPORT size_t GetDtypeNbyte(const std::string &dtype);
 BACKEND_EXPORT bool IsSameShape(const ShapeVector &shape_a, const ShapeVector &shape_b);
 BACKEND_EXPORT bool CheckShapesSame(const ShapeArray &shape_array);
-BACKEND_EXPORT int ConvertReductionForAclnn(Reduction reduction);
 std::string GetProcessorStr(const AnfNodePtr &anf_node);
 template <typename T>
 struct AsymmetricFunc {

@@ -14,7 +14,6 @@
 # ============================================================================
 import pytest
 import numpy as np
-from mindspore import ops
 from mindspore.mint.nn.functional import l1_loss
 import mindspore as ms
 import tests.st.utils.test_utils as test_utils
@@ -50,7 +49,7 @@ def l1_loss_forward_func(inputx, target, reduction="mean"):
 
 @test_utils.run_with_cell
 def l1_loss_backward_func(inputx, target, reduction="mean"):
-    grad_op = ops.grad(l1_loss_forward_func, (0, 1, 2))
+    grad_op = ms.grad(l1_loss_forward_func, (0, 1, 2))
     return grad_op(inputx, target, reduction)
 
 

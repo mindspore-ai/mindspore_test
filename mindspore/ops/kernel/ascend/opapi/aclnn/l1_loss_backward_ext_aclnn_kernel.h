@@ -23,8 +23,6 @@
 
 namespace mindspore {
 namespace kernel {
-using TensorParams = transform::TensorParams;
-
 class L1LossBackwardExtAclnnKernelMod : public AclnnKernelMod {
  public:
   L1LossBackwardExtAclnnKernelMod() : AclnnKernelMod("aclnnL1LossBackward") {}
@@ -33,10 +31,19 @@ class L1LossBackwardExtAclnnKernelMod : public AclnnKernelMod {
   void GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
               const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;
-  int64_t reduction_{1};
 
  private:
-  DEFINE_GET_WORKSPACE_FOR_RESIZE()
+  DEFINE_GET_WORKSPACE_FOR_OPS(aclnnExpand, ExpandInput)
+  DEFINE_GET_WORKSPACE_FOR_OPS(aclnnExpand, ExpandTarget)
+  DEFINE_GET_WORKSPACE_FOR_OPS(aclnnL1LossBackward, L1LossBackwardExt)
+
+  KernelTensor input_expand_;
+  KernelTensor target_expand_;
+
+  std::vector<size_t> expand_indices_{};
+  ShapeVector broadcast_shape_{};
+
+  int64_t reduction_{1};
 };
 
 }  // namespace kernel
