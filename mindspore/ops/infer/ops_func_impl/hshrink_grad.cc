@@ -32,19 +32,13 @@ namespace ops {
 
 BaseShapePtr HShrinkGradFuncImpl::InferShape(const PrimitivePtr &primitive,
                                              const std::vector<AbstractBasePtr> &input_args) const {
-  // Get input tensor shape.
-  MS_EXCEPTION_IF_NULL(input_args[kInputIndex1]);
   auto in_shape = input_args[kInputIndex1]->GetShape();
-  MS_EXCEPTION_IF_NULL(in_shape);
-
   return in_shape->Clone();
 }
 
 TypePtr HShrinkGradFuncImpl::InferType(const PrimitivePtr &primitive,
                                        const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(input_args[kInputIndex1]);
   auto x_type = input_args[kInputIndex1]->GetType();
-  MS_EXCEPTION_IF_NULL(x_type);
   const std::set<TypePtr> valid_types = {kFloat16, kFloat32, kBFloat16};
   std::map<std::string, TypePtr> types;
   (void)types.emplace("gradients", input_args[kInputIndex0]->GetType());
@@ -54,7 +48,6 @@ TypePtr HShrinkGradFuncImpl::InferType(const PrimitivePtr &primitive,
 }
 
 TypePtrList HShrinkGradFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  MS_EXCEPTION_IF_NULL(primitive);
   const auto &gradients_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
   MS_EXCEPTION_IF_NULL(gradients_tensor);
   const auto &features_tensor = input_values[kIndex1]->cast<tensor::BaseTensorPtr>();

@@ -28,7 +28,6 @@
 namespace mindspore::ops {
 BaseShapePtr QrFuncImpl::InferShape(const PrimitivePtr &primitive,
                                     const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(input_args[kInputIndex0]->GetShape());
   auto input_shape = input_args[kInputIndex0]->GetShape()->GetShapeVector();
   auto full_matrices_opt = GetScalarValue<bool>(input_args[kInputIndex1]->GetValue());
   if (IsDynamicRank(input_shape) || !full_matrices_opt.has_value()) {
@@ -69,7 +68,6 @@ BaseShapePtr QrFuncImpl::InferShape(const PrimitivePtr &primitive,
 
 TypePtr QrFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
   auto input_type = input_args[kInputIndex0]->GetType();
-  MS_EXCEPTION_IF_NULL(input_type);
   return std::make_shared<Tuple>(std::vector<TypePtr>{input_type, input_type});
 }
 }  // namespace mindspore::ops

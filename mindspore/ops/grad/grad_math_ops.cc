@@ -29,7 +29,10 @@ namespace mindspore::expander::bprop {
 NodePtrList AddnGradFunc(BpropBuilder *ib) {
   auto dout = ib->GetInput(kIndex2);
   auto x_abs = ib->GetInput(kIndex0)->abstract();
-  auto x_len = x_abs->cast<abstract::AbstractSequencePtr>()->elements().size();
+  MS_EXCEPTION_IF_NULL(x_abs);
+  auto x_seq_ptr = x_abs->cast<abstract::AbstractSequencePtr>();
+  MS_EXCEPTION_IF_NULL(x_seq_ptr);
+  auto x_len = x_seq_ptr->elements().size();
   NodePtrList result(x_len, dout);
   if (x_abs->isa<abstract::AbstractList>()) {
     return {ib->MakeList(result)};

@@ -29,24 +29,18 @@ namespace ops {
 
 BaseShapePtr HShrinkFuncImpl::InferShape(const PrimitivePtr &primitive,
                                          const std::vector<AbstractBasePtr> &input_args) const {
-  // Get input tensor shape.
-  MS_EXCEPTION_IF_NULL(input_args[kInputIndex0]);
   auto in_shape = input_args[kInputIndex0]->GetShape();
-  MS_EXCEPTION_IF_NULL(in_shape);
-
   return in_shape->Clone();
 }
 
 TypePtr HShrinkFuncImpl::InferType(const PrimitivePtr &primitive,
                                    const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(input_args[kInputIndex0]);
   auto x_type = input_args[kInputIndex0]->GetType();
-  MS_EXCEPTION_IF_NULL(x_type);
   const std::set<TypePtr> valid_types = {kFloat16, kFloat32, kBFloat16};
   auto tensor_type = x_type->cast<TensorTypePtr>();
   auto real_type = tensor_type->element();
   (void)CheckAndConvertUtils::CheckSubClass("input_x", real_type, valid_types, primitive->name());
-  return x_type->Clone();
+  return x_type;
 }
 
 TypePtrList HShrinkFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {

@@ -37,7 +37,6 @@ class LinSpaceExtAscend : public AclnnKernelMod {
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
   int64_t steps_;
-  TypeId dtype_;
   ScalarPtr start_;
   ScalarPtr end_;
 };

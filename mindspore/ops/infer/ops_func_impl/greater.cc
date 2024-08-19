@@ -30,9 +30,6 @@ namespace mindspore {
 namespace ops {
 BaseShapePtr GreaterFuncImpl::InferShape(const PrimitivePtr &primitive,
                                          const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
-  MS_EXCEPTION_IF_NULL(input_args[kIndex0]);
-  MS_EXCEPTION_IF_NULL(input_args[kIndex1]);
   return BroadCastInferShape(primitive->name(), input_args);
 }
 TypePtrList GreaterFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {

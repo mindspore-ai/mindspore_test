@@ -79,9 +79,6 @@ BaseShapePtr LinSpaceFuncImpl::InferShape(const PrimitivePtr &primitive,
 
 TypePtr LinSpaceFuncImpl::InferType(const PrimitivePtr &primitive,
                                     const std::vector<AbstractBasePtr> &input_args) const {
-  // Valid types: kFloat32, kFloat64.
-  MS_EXCEPTION_IF_NULL(input_args[kInputIndex0]);
-  MS_EXCEPTION_IF_NULL(input_args[kInputIndex1]);
   auto start_dtype = input_args[kInputIndex0]->GetType();
   auto stop_dtype = input_args[kInputIndex1]->GetType();
   std::map<std::string, TypePtr> type_dict = {
@@ -89,7 +86,7 @@ TypePtr LinSpaceFuncImpl::InferType(const PrimitivePtr &primitive,
     {"stop type", stop_dtype},
   };
   (void)CheckAndConvertUtils::CheckTensorTypeSame(type_dict, {kFloat32, kFloat64}, primitive->name());
-  return start_dtype->Clone();
+  return start_dtype;
 }
 }  // namespace ops
 }  // namespace mindspore

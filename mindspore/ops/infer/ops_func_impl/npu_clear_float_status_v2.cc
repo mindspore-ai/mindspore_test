@@ -28,7 +28,7 @@ namespace mindspore {
 namespace ops {
 BaseShapePtr NPUClearFloatStatusV2FuncImpl::InferShape(const PrimitivePtr &primitive,
                                                        const std::vector<AbstractBasePtr> &input_args) const {
-  auto input_shape = CheckAndConvertUtils::ConvertShapePtrToShapeMap(input_args[0]->GetShape())[kShape];
+  auto input_shape = CheckAndConvertUtils::ConvertShapePtrToShapeMap(input_args[kIndex0]->GetShape())[kShape];
   // dynamic rank
   if (IsDynamicRank(input_shape)) {
     return std::make_shared<abstract::Shape>(ShapeVector{abstract::Shape::kShapeRankAny});
@@ -43,8 +43,9 @@ BaseShapePtr NPUClearFloatStatusV2FuncImpl::InferShape(const PrimitivePtr &primi
     MS_EXCEPTION(ValueError) << "Input_x must be a 1-dimensional tensor, but got " << std::to_string(input_shape.size())
                              << "-dimensional tensor.";
   }
-  if (input_shape[0] != normal_shape_len) {
-    MS_EXCEPTION(ValueError) << "The first dimension of input_x must be 8, but got " << std::to_string(input_shape[0]);
+  if (input_shape[kIndex0] != normal_shape_len) {
+    MS_EXCEPTION(ValueError) << "The first dimension of input_x must be 8, but got "
+                             << std::to_string(input_shape[kIndex0]);
   }
   std::vector<int64_t> output_shape = {normal_shape_len};
   return std::make_shared<abstract::Shape>(output_shape);
@@ -54,7 +55,7 @@ TypePtr NPUClearFloatStatusV2FuncImpl::InferType(const PrimitivePtr &primitive,
                                                  const std::vector<AbstractBasePtr> &input_args) const {
   std::map<std::string, TypePtr> types;
   std::set<TypePtr> valid_types = {kInt32};
-  TypePtr input_x_type = input_args[0]->GetType();
+  TypePtr input_x_type = input_args[kIndex0]->GetType();
   (void)types.emplace("input_x", input_x_type);
   (void)CheckAndConvertUtils::CheckTensorTypeSame(types, valid_types, primitive->name());
   return kInt32;
