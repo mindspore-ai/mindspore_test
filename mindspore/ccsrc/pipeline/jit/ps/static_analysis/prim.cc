@@ -3180,7 +3180,9 @@ EvalResultPtr MakeListEvaluator::EvalPrim(const AnalysisEnginePtr &, const Abstr
   MS_LOG(DEBUG) << "Generate python object for new value node.";
   if (fallback::EnableFallbackListDictInplace()) {
     py::object py_list_obj = fallback::GeneratePyObj(abs);
-    fallback::AttachPyObjToAbs(abs, py_list_obj, true);
+    if (py_list_obj.ptr() != nullptr) {
+      fallback::AttachPyObjToAbs(abs, py_list_obj, true);
+    }
   }
   auto res = std::make_shared<EvalResult>(abs, std::make_shared<AttrValueMap>());
   evaluator_cache_mgr_->SetValue(args_abs_list, res);

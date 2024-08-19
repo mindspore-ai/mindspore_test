@@ -28,11 +28,11 @@ def split_forward_func(x, axis, output_num):
 
 def split_forward_func_dynamic(x, axis, output_num):
     result = split(x, axis, output_num)
-    return result[0]
+    return result
 
 @test_utils.run_with_cell
 def split_backward_func(x, axis, output_num):
-    return ops.grad(split_forward_func, (0,))(x, axis, output_num)
+    return ops.grad(split_forward_func, (0,))(x, axis, output_num) # pylint: disable=not-callable
 
 def split_dyn_shape_func(x, axis=0, output_num=2):
     return ops.Split(axis, output_num)(x)
