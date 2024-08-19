@@ -1177,6 +1177,9 @@ bool AscendDeviceAddress::LoadMemToHost(const std::string &tensor_name, int exec
   mindspore::tensor::TensorPtr out_tensor = std::make_shared<tensor::Tensor>(host_type, host_shape);
   MS_EXCEPTION_IF_NULL(out_tensor);
   size_t host_size = LongToSize(out_tensor->data().nbytes());
+  if (host_type == kNumberTypeInt4) {
+    host_size = out_tensor->DataSize() / 2;
+  }
   if (host_size == 0) {
     MS_LOG(INFO) << "Tensor size is 0 for tensor: " << tensor_name;
     return true;
@@ -1206,7 +1209,7 @@ bool AscendDeviceAddress::LoadMemToHost(const std::string &tensor_name, int exec
   MS_LOG(INFO) << "E2E tensor name is " << tensor_name;
   tensor_data->SetTensor(out_tensor);
   tensor_data->SetDataPtr(static_cast<char *>(out_tensor->data_c()));
-  tensor_data->SetByteSize(LongToSize(out_tensor->data().nbytes()));
+  tensor_data->SetByteSize(host_size);
   tensor_data->SetType(host_type);
   tensor_data->SetShape(out_tensor->shape());
   tensor_data->SetRootGraphId(root_graph_id);

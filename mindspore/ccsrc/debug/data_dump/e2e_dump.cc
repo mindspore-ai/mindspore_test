@@ -173,10 +173,6 @@ void E2eDump::DumpOutputImpl(const CNodePtr &node, bool trans_flag, const std::s
     std::string file_path = dump_path + '/' + op_type + '.' + op_name + '.' + std::to_string(task_id) + '.' +
                             std::to_string(stream_id) + '.' + std::to_string(timestamp) + ".output." +
                             std::to_string(j);
-    if (DumpJsonParser::GetInstance().IsStatisticDump() && IsMindRTKernelByKernel()) {
-      TensorStatDump stat_dump(op_type, op_name, task_id, stream_id, timestamp, false, j, j);
-      (void)stat_dump.DumpTensorStatsToFile(node_name, dump_path, debugger);
-    }
     if (DumpJsonParser::GetInstance().IsTensorDump()) {
       if (IsMindRTKernelByKernel()) {
         DumpMemFromTensorLoaderToFile(debugger, file_path, node_name, j);
@@ -185,6 +181,10 @@ void E2eDump::DumpOutputImpl(const CNodePtr &node, bool trans_flag, const std::s
         GetDumpIntShape(node, j, NOT_NULL(&int_shapes), trans_flag);
         DumpMemToFile(file_path, *addr, int_shapes, type, trans_flag);
       }
+    }
+    if (DumpJsonParser::GetInstance().IsStatisticDump() && IsMindRTKernelByKernel()) {
+      TensorStatDump stat_dump(op_type, op_name, task_id, stream_id, timestamp, false, j, j);
+      (void)stat_dump.DumpTensorStatsToFile(node_name, dump_path, debugger);
     }
   }
 }
@@ -335,10 +335,6 @@ void E2eDump::DumpInputImpl(const CNodePtr &node, bool trans_flag, const std::st
                             std::to_string(stream_id) + '.' + std::to_string(timestamp) + ".input." + std::to_string(j);
     auto addr = AnfAlgo::GetOutputAddr(input, index);
     MS_EXCEPTION_IF_NULL(addr);
-    if (DumpJsonParser::GetInstance().IsStatisticDump() && IsMindRTKernelByKernel()) {
-      TensorStatDump stat_dump(op_type, op_name, task_id, stream_id, timestamp, true, j, slot);
-      (void)stat_dump.DumpTensorStatsToFile(node_name, dump_path, debugger);
-    }
     if (DumpJsonParser::GetInstance().IsTensorDump()) {
       if (IsMindRTKernelByKernel()) {
         DumpMemFromTensorLoaderToFile(debugger, file_path, node_name, slot);
@@ -347,6 +343,10 @@ void E2eDump::DumpInputImpl(const CNodePtr &node, bool trans_flag, const std::st
         GetDumpIntShape(input, index, NOT_NULL(&int_shapes), trans_flag);
         DumpMemToFile(file_path, *addr, int_shapes, type, trans_flag);
       }
+    }
+    if (DumpJsonParser::GetInstance().IsStatisticDump() && IsMindRTKernelByKernel()) {
+      TensorStatDump stat_dump(op_type, op_name, task_id, stream_id, timestamp, true, j, slot);
+      (void)stat_dump.DumpTensorStatsToFile(node_name, dump_path, debugger);
     }
   }
 }

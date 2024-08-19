@@ -40,6 +40,44 @@ using mindspore::runtime::DeviceTensorStore;
 namespace mindspore {
 static std::vector<std::string> g_overflow_operators;
 
+void SplitInt8(const void *int4_data, void *int8_data, size_t data_len) {
+  int8_t *src_data = static_cast<int8_t *>(const_cast<void *>(int4_data));
+  int8_t *dst_data = static_cast<int8_t *>(int8_data);
+  for (size_t i = 0; i < data_len; ++i) {
+    int8_t s = *src_data;
+    int8_t t = s & 0xf;
+    // keep the sign bit not change
+    int8_t sign_bit = (t & 0x08) >> 3;
+    if (sign_bit == 1) {
+      t = t | 0xf0;
+    } else if (sign_bit == 0) {
+      t = t & 0x0f;
+    } else {
+      MS_LOG(ERROR) << "Error occur.";
+    }
+    if (t < -8 || t > 7) {
+      MS_LOG(ERROR) << "Error occurred when convert int4 to int8 data.";
+    }
+    *dst_data = t;
+    ++dst_data;
+    t = s >> 4;
+    sign_bit = (t & 0x08) >> 3;
+    if (sign_bit == 1) {
+      t = t | 0xf0;
+    } else if (sign_bit == 0) {
+      t = t & 0x0f;
+    } else {
+      MS_LOG(ERROR) << "Error occur.";
+    }
+    if (t < -8 || t > 7) {
+      MS_LOG(ERROR) << "Error occurred when convert int4 to int8 data.";
+    }
+    *dst_data = t;
+    ++dst_data;
+    ++src_data;
+  }
+}
+
 uint32_t ConvertPhysicalDeviceId(uint32_t device_id) {
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);

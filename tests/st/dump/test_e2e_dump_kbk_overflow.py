@@ -71,7 +71,7 @@ def run_trans_flag(test_name):
             dump_data_path = os.path.join(dump_path, 'rank_0', 'Net', '0', '0')
             assert os.path.exists(dump_data_path)
             # tensor data in host format.
-            output_name = "Conv2D.Default_Conv2D-op*.output.0.DefaultFormat.npy"
+            output_name = "Conv2D.Default_Conv2D-op*.output.0.DefaultFormat.*.npy"
             output_path = glob.glob(os.path.join(dump_data_path, output_name))[0]
             real_path = os.path.realpath(output_path)
             output = np.load(real_path)
