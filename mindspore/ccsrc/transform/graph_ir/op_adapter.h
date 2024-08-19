@@ -218,7 +218,16 @@ class OpAdapter : public BaseOpAdapter {
 
       MS_LOG(INFO) << "create_dyn_output for node:" << anf->fullname_with_scope() << ", type:" << type->ToString()
                    << ", num:" << num;
-      dyn_output_map_.begin()->second.create_dyn_output(op, static_cast<unsigned int>(num));
+      if (dyn_output_map_.size() > 1) {
+        for (auto &[idx, output_desc] : dyn_output_map_) {
+          // To Do
+          // Now, the output num of each dynamic output should be one.
+          MS_LOG(INFO) << "ES, create_dyn_output for node:" << anf->fullname_with_scope() << ", idx:" << idx;
+          output_desc.create_dyn_output(op, static_cast<unsigned int>(1));
+        }
+      } else {
+        dyn_output_map_.begin()->second.create_dyn_output(op, static_cast<unsigned int>(num));
+      }
     }
     return op;
   }
@@ -237,7 +246,16 @@ class OpAdapter : public BaseOpAdapter {
     // set dynamic output num if op use DYNAMIC_OUTPUT
     if ((op != nullptr) && (!dyn_output_map_.empty())) {
       MS_LOG(DEBUG) << "create_dyn_output for node:" << op->GetName() << ", num:" << dyn_output_size;
-      dyn_output_map_.begin()->second.create_dyn_output(op, static_cast<unsigned int>(dyn_output_size));
+      if (dyn_output_map_.size() > 1) {
+        for (auto &[idx, output_desc] : dyn_output_map_) {
+          // To Do
+          // Now, the output num of each dynamic output should be one.
+          MS_LOG(INFO) << "ES, create_dyn_output for node:" << op->GetName() << ", idx:" << idx;
+          output_desc.create_dyn_output(op, static_cast<unsigned int>(1));
+        }
+      } else {
+        dyn_output_map_.begin()->second.create_dyn_output(op, static_cast<unsigned int>(dyn_output_size));
+      }
     }
   }
 
