@@ -695,12 +695,8 @@ Status TreeAdapter::Launch() {
       if (PyGILState_Check()) {
         MS_LOG(ERROR) << "[Independent Dataset Process] PyGILState_Check: " << PyGILState_Check()
                       << ", it should be 0.";
-	_exit(-1);
+        _exit(-1);
       }
-
-      auto pid = getpid();
-      auto ppid = getppid();
-      auto tid = std::this_thread::get_id();
 
       prctl(PR_SET_NAME, "independent_dataset_process");  // set the thread name
 
