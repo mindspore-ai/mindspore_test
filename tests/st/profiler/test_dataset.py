@@ -116,7 +116,7 @@ def test_ascend_dataset_profiler():
     """
     ms.set_context(mode=ms.GRAPH_MODE, device_target="Ascend")
     with tempfile.TemporaryDirectory() as tmpdir:
-        profiler = Profiler(output_path=tmpdir)
+        profiler = Profiler(output_path=tmpdir, data_process=True)
         other_method_dataset()
         profiler.analyse()
         assert len(glob.glob(f"{tmpdir}/profiler*/dataset_iterator_profiling_*.txt")) == 1

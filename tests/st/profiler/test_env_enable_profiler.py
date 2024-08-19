@@ -127,7 +127,7 @@ class TestEnvEnableProfiler:
         if sys.platform != 'linux':
             return
         status = os.system(
-            """export MS_PROFILER_OPTIONS='{"start":true}';
+            """export MS_PROFILER_OPTIONS='{"start":true, "data_process":true}';
                python ./run_net.py --target=CPU --mode=0;
             """
         )
@@ -141,7 +141,7 @@ class TestEnvEnableProfiler:
         if root_status and not cuda_status:
             return
         status = os.system(
-            """export MS_PROFILER_OPTIONS='{"start":true, "profile_memory":true, "sync_enable":true}';
+            """export MS_PROFILER_OPTIONS='{"start":true, "profile_memory":true, "sync_enable":true, "data_process":true}';
                python ./run_net.py --target=GPU --mode=0;
             """
         )
@@ -160,7 +160,7 @@ class TestEnvEnableProfiler:
         if root_status and not cuda_status:
             return
         status = os.system(
-            """export MS_PROFILER_OPTIONS='{"start":true, "sync_enable":true}';
+            """export MS_PROFILER_OPTIONS='{"start":true, "sync_enable":true, "data_process":true}';
                python ./run_net.py --target=GPU --mode=1;
             """
         )
@@ -170,7 +170,7 @@ class TestEnvEnableProfiler:
     @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
     def test_ascend_profiler(self):
         status = os.system(
-            """export MS_PROFILER_OPTIONS='{"start":true, "profile_memory":true}';
+            """export MS_PROFILER_OPTIONS='{"start":true, "profile_memory":true, "data_process":true}';
                python ./run_net.py --target=Ascend --mode=0;
             """
         )
@@ -180,7 +180,7 @@ class TestEnvEnableProfiler:
     @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
     def test_host_profiler_none(self):
         status = os.system(
-            """export MS_PROFILER_OPTIONS='{"start":true, "profile_memory":true, "profile_framework":null}';
+            """export MS_PROFILER_OPTIONS='{"start":true, "profile_memory":true, "profile_framework":null, "data_process":true}';
                python ./run_net.py --target=Ascend --mode=0;
             """
         )
@@ -190,7 +190,7 @@ class TestEnvEnableProfiler:
     @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
     def test_host_profiler_time(self):
         status = os.system(
-            """export MS_PROFILER_OPTIONS='{"start":true, "profile_memory":true, "profile_framework":"time"}';
+            """export MS_PROFILER_OPTIONS='{"start":true, "profile_memory":true, "profile_framework":"time", "data_process":true}';
                python ./run_net.py --target=Ascend --mode=0;
             """
         )
@@ -200,7 +200,7 @@ class TestEnvEnableProfiler:
     @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
     def test_host_profiler_memory(self):
         status = os.system(
-            """export MS_PROFILER_OPTIONS='{"start":true, "profile_memory":true, "profile_framework":"memory"}';
+            """export MS_PROFILER_OPTIONS='{"start":true, "profile_memory":true, "profile_framework":"memory", "data_process":true}';
                python ./run_net.py --target=Ascend --mode=0;
             """
         )

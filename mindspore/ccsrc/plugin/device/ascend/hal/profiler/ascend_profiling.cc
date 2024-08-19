@@ -123,10 +123,10 @@ void AscendProfiler::Init(const std::string &profiling_path, uint32_t device_id,
       MS_LOG(EXCEPTION) << "Failed to set pcie profiling config. error_code : " << static_cast<int>(pcieRet);
     }
   }
-  if (options["host_stack"] == "on") {
-    host_stack_ = true;
+  if (options["with_stack"] == "on") {
+    with_stack_ = true;
   } else {
-    host_stack_ = false;
+    with_stack_ = false;
   }
   uint32_t device_list[1] = {device_id_};
   uint32_t device_num = 1;
