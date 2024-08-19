@@ -1121,6 +1121,20 @@ ValueNode *GraphBuilder::TransformListSetItem(ValueNode *map, ValueNode *key, Va
   return pop();
 }
 
+ValueNode *GraphBuilder::MakeTensorCopy(ValueNode *tensor) {
+  py::object prim_cast = Utils::GetModuleAttr("mindspore.ops.functional", "cast", false, true);
+  push(NewValueNode(AObject::Convert(prim_cast), LOAD_CONST, -1, {}));
+  push(tensor);
+  push(tensor);
+  DoAttrAccess({LOAD_ATTR, 0, "dtype"});
+  DoCall({CALL_FUNCTION, 2});
+  ValueNode *node = pop();
+  if (!trace_flag()) {  // one stage can't use same object
+    node->SetVobj(tensor->GetVobj());
+  }
+  return node;
+}
+
 bool GraphBuilder::DoSetItem(ValueNode *map, ValueNode *key, ValueNode *value) {
   // only support constant key
   if (!this->graph_->GuardValueNode(key)) {
@@ -1142,6 +1156,14 @@ bool GraphBuilder::DoSetItem(ValueNode *map, ValueNode *key, ValueNode *value) {
   } else if (type == AObject::kTypeDict) {
     is_new_var = map->GetOpcode() == BUILD_MAP && replace_map.find(map) == replace_map.end();
     new_node = TransformDictSetItem(map, key, value, false);
+  } else if (type == AObject::kTypeTensor) {
+    push(map);
+    DoAttrAccess({LOAD_ATTR, 0, "__setitem__"});
+    push(key);
+    push(value);
+    bool success = DoCall({CALL_FUNCTION, 2});
+    pop();
+    return success;
   }
   // failed transform, restore side-effect
   if (new_node == nullptr) {
@@ -2830,6 +2852,8 @@ py::object GraphBuilder::ResolveCallable(CallNode *call_node, StopTraceReason *s
   if (WhiteListFuncCheckAndInfer(call_node, callable_info)) {
     if (call_node->GetInlineReason() == InlineReason::kInlineFunc_Type_Unsupported) {
       *stop_reason = StopTraceReason::kStopTraceFunc_Type_Unsupported;
+    } else {
+      graph_->GuardInlinedFunc(call_node);
     }
     return py::object();
   }
@@ -3708,6 +3732,9 @@ static void SetGradFuncInfo(CallNode *call_node) {
 void GraphBuilder::DumpDFG() { GRAPH_JIT_LOG_F("%s", graph_->ToString().c_str()); }
 
 LocationPtr MindGraphBuilder::GetLocation(CallNode *call_node) const {
+  if (graph_ == nullptr || graph_->GetCodeObj() == nullptr) {
+    return std::make_shared<Location>("anonymous", 0, 0, 0, 0, "", std::vector<std::string>());
+  }
   auto file_name = py::cast<std::string>(graph_->GetCodeObj()->co_filename);
   auto line_no = call_node->GetLineNo();
   std::vector<std::string> comments;
@@ -4136,6 +4163,18 @@ py::object MindGraphBuilder::GetPyObject(ValueNode *node) {
   return AbstractWrapper::ConvertToPyObject(node->abstract_wrapper());
 }
 
+static bool MindFGForbiddenConvertFunc(const py::handle &func) {
+  auto ptr = func.ptr();
+  if (PyMethod_Check(ptr)) {
+    ptr = PyMethod_GET_FUNCTION(ptr);
+  }
+  if (!PyFunction_Check(ptr)) {
+    return false;
+  }
+  auto qualname = py::handle(ptr).attr("__qualname__").cast<std::string>();
+  return qualname == "Tensor.__setitem__";
+}
+
 py::object MindGraphBuilder::ResolveCallable(CallNode *call_node, StopTraceReason *stop_reason) {
   py::object callable_info = GetPyObject(call_node->input(0));
   *stop_reason = StopTraceReason::kStopTraceInfer_Fail;
@@ -4150,6 +4189,8 @@ py::object MindGraphBuilder::ResolveCallable(CallNode *call_node, StopTraceReaso
     return py::object();
   }
   MS_LOG(INFO) << "trace_flag for: " << py::str(callable_info);
+
+  bool forbidden_convert = MindFGForbiddenConvertFunc(callable_info);
   if (FGBuilder()->CanConstantFoldFunc(callable_info)) {
     const auto &res = GetInputsObject(call_node);
     if (res.first) {
@@ -4164,7 +4205,7 @@ py::object MindGraphBuilder::ResolveCallable(CallNode *call_node, StopTraceReaso
   std::vector<ValueNode *> args;
   const auto &call_node_inputs = call_node->getInputs();
   (void)std::copy(call_node_inputs.begin() + 1, call_node_inputs.end(), std::back_inserter(args));
-  auto method = FGBuilder()->ConvertMethod(callable_info);
+  auto method = forbidden_convert ? py::object() : FGBuilder()->ConvertMethod(callable_info);
   if (method.ptr() != nullptr) {
     MS_LOG(INFO) << "convert method :" << py::str(callable_info) << " to " << py::str(method);
     callable_info = method;
@@ -4172,7 +4213,7 @@ py::object MindGraphBuilder::ResolveCallable(CallNode *call_node, StopTraceReaso
       args = GetNewArgs(call_node, AObject::Convert(callable_info.ptr()));
     }
   }
-  auto func = FGBuilder()->ConvertFunction(callable_info);
+  auto func = forbidden_convert ? py::object() : FGBuilder()->ConvertFunction(callable_info);
   if (func.ptr() != nullptr) {
     MS_LOG(INFO) << "convert function:" << py::str(callable_info) << " to " << py::str(func);
     callable_info = func;

@@ -20,6 +20,7 @@ from mindspore._c_expression import get_code_extra
 import dis
 import mindspore
 import types
+import numpy
 from tests.mark_utils import arg_mark
 
 @pytest.fixture(autouse=True)
@@ -325,3 +326,78 @@ def test_object_consistency2():
 
     assert res1 == res2
     assert l == [a, 1, 2, 1]
+
+
+@pytest.mark.level0
+@pytest.mark.platform_x86_cpu
+@pytest.mark.env_onecard
+@pytest.mark.parametrize("assign_fn", [Tensor.assign_value,
+                                       mindspore.ops.assign,
+                                       lambda x, v: x.__setitem__(slice(None), v)
+                                       ])
+def test_tensor_assign(assign_fn):
+    """
+    Feature: Test side-effect
+    Description: Test side-effect rollback. Test side-effect restore
+    Expectation: No exception
+    """
+    @jit(mode="PIJit")
+    def func(x, y, assign, rand):
+        a = x + y
+        if rand:
+            # break at here, test side-effect rollback
+            rand = rand(2)
+            y = y + 1
+        x = assign(x, y)
+        b = x + y
+        return a, b, rand
+
+    x = mindspore.Parameter(Tensor([1]), name="x")
+    y = mindspore.Parameter(Tensor([2]), name="y")
+    a1, b1, rand1 = func(x, y, assign_fn, None)
+    a2, b2, rand2 = func(x, y, assign_fn, numpy.random.rand)
+
+    assert x.value() == Tensor(3)
+    assert a1 == Tensor([3]) and b1 == Tensor([4])
+    assert a2 == Tensor([4]) and b2 == Tensor([6])
+    assert rand1 is None and isinstance(rand2, numpy.ndarray)
+
+
+@pytest.mark.level0
+@pytest.mark.platform_x86_cpu
+@pytest.mark.env_onecard
+@pytest.mark.parametrize("assign_fn", [Tensor.assign_value,
+                                       mindspore.ops.assign,
+                                       lambda x, v: x.__setitem__(slice(None), v)
+                                       ])
+def test_tensor_consistency(assign_fn):
+    """
+    Feature: Test side-effect
+    Description: Test the modification of same object from multiple source. Test no return value side-effect
+    Expectation: No exception
+    """
+    if assign_fn is Tensor.assign_value:
+        pytest.skip("MakeTensorCopy, at do call, parameter handle, func graph builder use parameter as constant value")
+
+    if assign_fn.__name__ == "<lambda>":
+        pytest.skip("sub graph side-effect value can't return to top graph")
+
+    @jit(mode="PIJit")
+    def func(assign, x, y, x1, y1):
+        a = x + y
+        assign(x, y)
+        assign(x, x1)
+        assign(y, y1)
+        b = x + y
+        return a, b
+
+    x = mindspore.Parameter(Tensor([1]), name="x")
+    y = mindspore.Parameter(Tensor([2]), name="y")
+    x1 = Tensor([3])
+    y1 = Tensor([4])
+    a1, b1 = func(assign_fn, x, y, x1, y1)
+    a2, b2 = func(assign_fn, x, y, x1, y1)
+
+    assert x.value() == x1 and y.value() == y1
+    assert a1 == Tensor([3]) and b1 == Tensor([7])
+    assert a2 == Tensor([7]) and b2 == Tensor([7])

@@ -27,14 +27,16 @@ from mindspore.ops.composite.base import GradOperation, _Grad
 from mindspore.ops._primitive_cache import _get_cache_prim
 from mindspore.common.api import jit
 from mindspore.common.tensor import Tensor
-from mindspore.common._register_for_tensor import Registry, tensor_operator_registry
-from mindspore._c_expression import MetaFuncGraph_, function_id, Primitive_, PrimitiveFunction_
+from mindspore.common._register_for_tensor import Registry
+from mindspore._c_expression import MetaFuncGraph_, function_id
 from mindspore._c_expression import Tensor as Tensor_
 from mindspore._extends.parse.resources import convert_object_map
 from mindspore import _checkparam as validator
 from mindspore import Parameter, ParameterTuple
 from mindspore.common.initializer import Zero
 from mindspore.ops.function import array_func
+from mindspore.ops import operations as P
+from mindspore.ops import functional as F
 
 
 def _get_after_grad_code():
@@ -96,30 +98,13 @@ def _get_pijit_constexpr_code():
     return codes
 
 
-def _get_ms_api():
-    """Get ms api"""
-    target_types = Cell, types.FunctionType, Primitive_, PrimitiveFunction_
-    results = []
-    from mindspore.ops import operations as P
-    from mindspore.ops import functional as F
-    from mindspore.ops import composite as C
-    mods = P, F, C
-    for mod in mods:
-        for i in mod.__all__:
-            f = getattr(mod, i)
-            if isinstance(f, target_types):
-                results.append(f)
-    for f in tensor_operator_registry.values():
-        if isinstance(f, target_types):
-            results.append(f)
-    return results
-
-
 psjit_code = _get_psjit_code()
 constexpr_code = _get_constexpr_code()
 primexpr_code = _get_primexpr_code()
 
 primitive_key = id(Primitive.__call__)
+primitive_assign_key = id(P.Assign.__call__)
+
 constexpr_key = id(constexpr_code)
 primexpr_key = id(primexpr_code)
 meta_func_graph_key = id(MetaFuncGraph_)
@@ -158,6 +143,9 @@ FUNC_KEY_LIST_POP = 19  # list.pop
 FUNC_KEY_LIST_REMOVE = 20  # list.remove
 FUNC_KEY_LIST_REVERSE = 21  # list.reverse
 FUNC_KEY_DICT_ITEMS = 22  # dict.items
+FUNC_KEY_PRIMITIVE_ASSIGN = 23  # mindspore.ops.assign, Primitive("Assign")
+FUNC_KEY_TENSOR_SETITEM = 24  # Tensor.__setitem__
+FUNC_KEY_TENSOR_ASSIGN_VALUE = 25  # Tensor.assign_value
 
 # Initialized only once. This map will initialize by c++ when start pijit.
 # key is customer if fuzzy match. (Primitive, constexpr, primexpr, MetaFuncGraph)
@@ -178,6 +166,12 @@ _func_map = {
     id(psjit_code): FUNC_KEY_PSJIT_CODE,
     id(_get_cache_prim): FUNC_KEY_GET_CACHE_PRIM,
     id(Registry.get): FUNC_KEY_REGISTRY_GET,
+
+    # tensor side-effect
+    primitive_assign_key: FUNC_KEY_PRIMITIVE_ASSIGN,
+    id(F.assign): FUNC_KEY_PRIMITIVE_ASSIGN,
+    id(Tensor.assign_value): FUNC_KEY_TENSOR_ASSIGN_VALUE,
+    id(Tensor.__setitem__): FUNC_KEY_TENSOR_SETITEM,
 
     # Tensor method
     id(Tensor.astype): FUNC_KEY_TENSOR_ASTYPE,

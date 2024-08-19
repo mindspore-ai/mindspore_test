@@ -255,7 +255,7 @@ bool GraphAnalyzer::TryToCapture(AbstractNode *n) {
   if (IsNonLocalValue(v)) {
     return true;
   }
-  if (graph_->GetSideEffect()->IsRecord(v)) {
+  if (graph_->GetSideEffect()->IsRecord(v) && !graph_->GetSideEffect()->NeedTrack(v)) {
     return true;
   }
   bool is_side_effect = IsSideEffect(v);
@@ -453,6 +453,9 @@ bool GraphAnalyzer::AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes) {
     auto capturedLocals = info_.captured_.operations;
     if (std::find(capturedLocals.begin(), capturedLocals.end(), node) == capturedLocals.end()) {
       continue;
+    }
+    if (ProduceInterpretValue(node)) {
+      continue;  // try to construct this value in python
     }
 
     if (!HasTensorOperation()) {
@@ -890,7 +893,10 @@ void MindGraphAnalyzer::CollectCapturedAndInterpret() {
   std::copy(outputs_optimize_inputs.begin(), outputs_optimize_inputs.end(), inserter);
 
   // remove side-effect node
-  auto is_remove = [this](ValueNode *node) { return this->graph_->GetSideEffect()->IsRecord(node); };
+  auto is_remove = [this](ValueNode *node) {
+    const auto &rec = this->graph_->GetSideEffect();
+    return rec->IsRecord(node) && !rec->NeedTrack(node);
+  };
   auto *ops = &GetCaptureInfo().captured_.operations;
   ops->erase(std::remove_if(ops->begin(), ops->end(), is_remove), ops->end());
   ops = &GetCaptureInfo().interpret_.operations;
@@ -955,6 +961,25 @@ void MindGraphAnalyzer::CollectGraphInputs() {
   }
   captured_.inputs.insert(captured_.inputs.end(), graph_inputs.globals.begin(), graph_inputs.globals.end());
   MS_EXCEPTION_IF_CHECK_FAIL(inputs_count == captured_.inputs.size(), "error parameters");
+}
+
+void MindGraphAnalyzer::ResetSideEffectRecord() const {
+  // side-effect rollback, adapter later
+  // sub-graph side-effect rollback, adapter later
+  int break_bci = graph_->GetStopTraceBci();
+  if (break_bci == -1 || graph_->GetSideEffect()->IsEmpty()) {
+    return;
+  }
+  const auto &nodes = graph_->GetSideEffect()->nodes();
+  for (const auto &pair : nodes) {
+    Graph *g = pair.first->GetGraph();
+    if (g != nullptr && g != graph_) {
+      MS_LOG(ERROR) << "function " << PyCodeWrapper(g->GetCodeObj()).Name()
+                    << " has side-effect but not implement side-effect rollback";
+      return;
+    }
+  }
+  this->GraphAnalyzer::ResetSideEffectRecord();
 }
 
 }  // namespace pijit
