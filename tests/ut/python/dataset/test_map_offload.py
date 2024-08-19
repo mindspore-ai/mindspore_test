@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+import os
 import numpy as np
 import pytest
 
@@ -25,6 +26,25 @@ pytestmark = pytest.mark.forked
 
 DATA_DIR = "../data/dataset/testPK/data"
 BATCH_SIZE = 2
+
+
+def test_disable_offload_in_independent_mode():
+    """
+    Feature: Disable offload in independent mode.
+    Description: Test offload is disable in independent mode.
+    Expectation: Exception raised to notify feature not supported.
+    """
+    os.environ["MS_INDEPENDENT_DATASET"] = "True"
+    with pytest.raises(RuntimeError) as err:
+        ds.config.set_auto_offload(True)
+    assert "Dataset Offload is not supported in Dataset Independent mode" in str(err.value)
+
+    with pytest.raises(RuntimeError) as err:
+        dataset_0 = ds.ImageFolderDataset(DATA_DIR)
+        dataset_0 = dataset_0.map(operations=[C.Decode()], input_columns="image")
+        dataset_0 = dataset_0.map(operations=[C.HWC2CHW()], input_columns="image", offload=True)
+    assert "Dataset Offload is not supported in Dataset Independent mode" in str(err.value)
+    os.environ["MS_INDEPENDENT_DATASET"] = "False"
 
 
 def test_offload():

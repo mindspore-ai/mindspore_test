@@ -71,6 +71,15 @@ TreeAdapter::TreeAdapter(UsageFlag usage)
   parent_process_id_ = -1;
   process_id_ = getpid();
   sub_process_id_ = -1;
+
+  std::string env_independent_dataset = common::GetEnv("MS_INDEPENDENT_DATASET");
+  transform(env_independent_dataset.begin(), env_independent_dataset.end(), env_independent_dataset.begin(), ::tolower);
+
+  if (env_independent_dataset == "true") {
+    independent_dataset_ = true;
+  } else {
+    independent_dataset_ = false;
+  }
 #endif
 }
 
@@ -319,20 +328,7 @@ Status TreeAdapter::Build(const std::shared_ptr<DatasetNode> &root_ir, int64_t i
 
 #if !defined(__APPLE__) && !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && \
   !defined(ANDROID)
-  std::string env_independent_dataset = common::GetEnv("MS_INDEPENDENT_DATASET");
-  transform(env_independent_dataset.begin(), env_independent_dataset.end(), env_independent_dataset.begin(), ::tolower);
-  bool independent_dataset = false;
-  if (env_independent_dataset == "true") {
-    independent_dataset = true;
-    MS_LOG(INFO) << "Environment MS_INDEPENDENT_DATASET is true, dataset will be ran in subprocess.";
-  } else if (env_independent_dataset == "false" || env_independent_dataset == "") {
-    independent_dataset = false;
-    MS_LOG(INFO) << "Environment MS_INDEPENDENT_DATASET is false, dataset will be ran in main process.";
-  } else {
-    MS_LOG(WARNING) << "Environment MS_INDEPENDENT_DATASET: " << env_independent_dataset
-                    << " is configured wrong, dataset will be ran in main process.";
-  }
-  if (independent_dataset) {
+  if (independent_dataset_) {
     MS_LOG(INFO) << "The original execution tree: " << *tree_;
 
     // add the SendBridgeOp and ReceiveBridgeOp to the tree
@@ -371,12 +367,28 @@ Status TreeAdapter::Build(const std::shared_ptr<DatasetNode> &root_ir, int64_t i
 }
 
 Status TreeAdapter::Compile(const std::shared_ptr<DatasetNode> &input_ir, int32_t num_epochs, int64_t global_step,
-                            int64_t dataset_size) {
+                            int64_t dataset_size, bool independent_dataset) {
   RETURN_UNEXPECTED_IF_NULL(input_ir);
   RETURN_IF_NOT_OK(CollectPipelineInfoStart("Pipeline", "Compile"));
   input_ir_ = input_ir;
   tree_state_ = kCompileStateIRGraphBuilt;
   MS_LOG(INFO) << "Input plan:" << '\n' << *input_ir << '\n';
+
+#if !defined(__APPLE__) && !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && \
+  !defined(ANDROID)
+  // update the independent dataset flag
+  // MS_INDEPENDENT_DATASET : parameter -> flag
+  //         true               true       true
+  //         true               false      false
+  //         false              true       false
+  //         false              false      false
+  independent_dataset_ = independent_dataset && independent_dataset_;
+  if (independent_dataset_ == true) {
+    MS_LOG(INFO) << "Environment MS_INDEPENDENT_DATASET is true, dataset will be ran in subprocess.";
+  } else {
+    MS_LOG(INFO) << "Environment MS_INDEPENDENT_DATASET is false, dataset will be ran in main process.";
+  }
+#endif
 
   // Clone the input IR tree and insert under the root node
   // Create a root node to host the new copy of the input IR tree
@@ -499,21 +511,38 @@ Status TreeAdapter::GetNext(TensorRow *row) {
 
 #if !defined(__APPLE__) && !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && \
   !defined(ANDROID)
-void TreeAdapter::SubprocessDaemonLoop() {
-  const int log_interval = 10;
-  while (true) {
-    MS_LOG(INFO) << "[Independent Dataset Process] Process: " << std::to_string(process_id_)
-                 << " will become a daemon, doing nothing but looping "
-                 << "and waiting for the main process: " << std::to_string(parent_process_id_) << " to exit.";
-    sleep(log_interval);
+void TreeAdapter::SubprocessExit(int exit_code) {
+  // get the newest message queue and shared memory queue
+  auto message_queue = dynamic_cast<SendBridgeOp *>(tree_->root().get())->GetMessageQueue();
+  auto shared_memmory_queue = dynamic_cast<SendBridgeOp *>(tree_->root().get())->GetSharedMemoryQueue();
 
-    // the parent had been closed
-    if (getppid() != parent_process_id_) {
-      MS_LOG(INFO) << "[Independent Dataset Process] Main process: " << std::to_string(parent_process_id_)
-                   << " had been closed. Current process: " << std::to_string(process_id_) << " will exit too.";
-      exit(0);
-    }
+  // If the main process is killed, it will cause the SendBridgeOp MsgRcv to hang,
+  // so it is necessary to release the message queue first.
+  // release the message queue
+  message_queue.SetReleaseFlag(true);
+
+  // this will break hung by MsgRcv which is in SendBridgeOp / ReceiveBridgeOp
+  message_queue.ReleaseQueue();
+
+  // interrupt all the pipeline thread
+  (void)tree_->AllTasks()->interrupt_all();
+
+  // wait all the thread exit
+  MS_LOG(INFO) << "[Independent Dataset Process] Begin waiting for all pipeline threads exit.";
+  auto ret = tree_->AllTasks()->join_all(Task::WaitFlag::kBlocking);
+  if (ret != Status::OK()) {
+    MS_LOG(ERROR) << ret.ToString();
   }
+  MS_LOG(INFO) << "[Independent Dataset Process] End waiting for all pipeline threads exit.";
+
+  // the message queue should be released in main process ReceiveBridgeOp, so just release the shared memory queue
+  ret = shared_memmory_queue.ReleaseCurrentShm();
+  if (ret != Status::OK()) {
+    MS_LOG(ERROR) << ret.ToString();
+  }
+
+  // independent will exit
+  _exit(exit_code);
 }
 
 Status TreeAdapter::LaunchSubprocess() {
@@ -530,22 +559,35 @@ Status TreeAdapter::LaunchSubprocess() {
   std::stringstream ss;
   ss << tid;
 
+  std::string log_prefix = "[Independent Dataset Process] Process pid: " + std::to_string(process_id_) +
+                           ", parent pid: " + std::to_string(parent_process_id_) + ", thread id: " + ss.str();
+
   // execute the detached dataset in the sub-process
-  MS_LOG(INFO) << "[Independent Dataset Process] Process pid: " << std::to_string(process_id_)
-               << ", parent pid: " << std::to_string(parent_process_id_) << ", thread id: " << ss.str()
-               << " is started successfully.";
+  MS_LOG(INFO) << log_prefix << " is started successfully.";
 
   auto ret = tree_->Launch();
   if (ret != Status::OK()) {
     // here should prompt error because it's in subprocess
-    MS_LOG(ERROR) << "[Independent Dataset Process] Process pid: " << std::to_string(process_id_) << ", launch failed.";
+    MS_LOG(ERROR) << log_prefix << ". Launch failed.";
 
-    // send the INDEPENDENT ERROR flag to main process
+    // got the first error from pipeline op
+    ret = tree_->AllTasks()->GetTaskErrorIfAny();
+
+    // release the message queue
+    message_queue.SetReleaseFlag(true);
+
+    // send the INDEPENDENT error message to main process
+    if (message_queue.SerializeStatus(ret) != Status::OK()) {
+      MS_LOG(EXCEPTION) << log_prefix << " serialize Status failed.";
+    }
     message_queue.MsgSnd(kWorkerErrorMsg);
 
-    // Infinite loop
-    SubprocessDaemonLoop();
+    // waiting for the main process get the message
+    sleep(kMonitorInterval * 2);
+
+    SubprocessExit(-1);
   }
+
   launched_ = true;
 
   // The the subprocess should be alive
@@ -555,41 +597,61 @@ Status TreeAdapter::LaunchSubprocess() {
   while (!tree_->isFinished()) {
     time_t end = time(nullptr);
     if (difftime(end, start) > main_thread_log_interval) {
-      MS_LOG(INFO) << "[Independent Dataset Process] Process pid: " << std::to_string(process_id_)
-                   << ", parent pid: " << std::to_string(parent_process_id_) << ", thread id: " << ss.str()
-                   << " is alive. Its status is normal. Sleeping ...";
+      MS_LOG(INFO) << log_prefix << " is alive. Its status is normal. Sleeping ...";
       start = time(nullptr);
     }
 
     sleep(main_thread_sleep_interval);
 
     // got error from dataset pipeline
-    if (tree_->AllTasks()->GetTaskErrorIfAny() != Status::OK()) {
-      MS_LOG(ERROR) << "[Independent Dataset Process] Process pid: " << std::to_string(process_id_)
-                    << ", parent pid: " << std::to_string(parent_process_id_) << ", thread id: " << ss.str()
-                    << ". Got error info in independent dataset pipeline. Process will exit.";
+    ret = tree_->AllTasks()->GetTaskErrorIfAny();
+    if (ret != Status::OK()) {
+      MS_LOG(INFO) << log_prefix << ". Got error info in independent dataset pipeline.";
 
-      // send the INDEPENDENT ERROR flag to main process
+      // release the message queue
+      message_queue.SetReleaseFlag(true);
+
+      // send the INDEPENDENT error message to main process
+      if (message_queue.SerializeStatus(ret) != Status::OK()) {
+        MS_LOG(EXCEPTION) << log_prefix << " serialize Status failed.";
+      }
       message_queue.MsgSnd(kWorkerErrorMsg);
-      break;
+
+      // waiting for the main process get the message
+      sleep(kMonitorInterval * 2);
+
+      SubprocessExit(-1);
     }
 
     // the message queue had been released by main process
     MessageQueue::State state = dynamic_cast<SendBridgeOp *>(tree_->root().get())->MessageQueueState();
     if (state == MessageQueue::State::kReleased) {
-      MS_LOG(INFO) << "[Independent Dataset Process] Process pid: " << std::to_string(process_id_)
-                   << ", parent pid: " << std::to_string(parent_process_id_) << ", thread id: " << ss.str()
-                   << ". Message queue had been released by main process. Process will exit.";
-      tree_->AllTasks()->interrupt_all();
-      break;
+      MS_LOG(INFO) << log_prefix << ". Message queue had been released by main process.";
+
+      SubprocessExit(0);
+    }
+
+    // get message ReceiveBridgeOp finished from main process, indicate that iterator / to_device is finished
+    if (message_queue.MsgRcv(kMasterReceiveBridgeOpFinishedMsg, IPC_NOWAIT) > 0) {
+      MS_LOG(INFO) << log_prefix
+                   << ". Got ReceiveBridgeOp finished message from main process. Current process will exit.";
+
+      SubprocessExit(0);
+    }
+
+    // the parent had been closed
+    if (getppid() != parent_process_id_) {
+      MS_LOG(INFO) << log_prefix << ". Main process: " << std::to_string(parent_process_id_)
+                   << " had been closed. Current process: " << std::to_string(process_id_) << " will exit too.";
+
+      SubprocessExit(0);
     }
   }
 
-  // Infinite loop
-  SubprocessDaemonLoop();
+  SubprocessExit(-1);
 
-  // The process may not run to this point
-  return Status::OK();
+  // The process may not run to this point. exit() will cause core, so we use _exit()
+  _exit(-1);
 }
 #endif
 
@@ -598,17 +660,7 @@ Status TreeAdapter::Launch() {
 
 #if !defined(__APPLE__) && !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && \
   !defined(ANDROID)
-  std::string env_independent_dataset = common::GetEnv("MS_INDEPENDENT_DATASET");
-  transform(env_independent_dataset.begin(), env_independent_dataset.end(), env_independent_dataset.begin(), ::tolower);
-  bool independent_dataset = false;
-  if (env_independent_dataset == "true") {
-    independent_dataset = true;
-    MS_LOG(INFO) << "Environment MS_INDEPENDENT_DATASET is true, dataset will be ran in subprocess.";
-  } else if (env_independent_dataset == "false" || env_independent_dataset == "") {
-    independent_dataset = false;
-    MS_LOG(INFO) << "Environment MS_INDEPENDENT_DATASET is false, dataset will be ran in main process.";
-  }
-  if (independent_dataset) {
+  if (independent_dataset_) {
     // move the send_tree_ to tree_ and launch it
     tree_ = std::move(send_tree_);
 
@@ -618,12 +670,21 @@ Status TreeAdapter::Launch() {
     GilAcquireWithCheck gil_acquire_with_check;
     PyOS_BeforeFork();
 
+    // ignore the SIGCHLD, the independent dataset process will exit successful without to be a defunct status
+    signal(SIGCHLD, SIG_IGN);
+
     // launch the sub-process to detach dataset with send
     pid_t fpid = fork();
     if (fpid < 0) {  // fork sub-process failed
       RETURN_STATUS_UNEXPECTED("Create an independent dataset process failed.");
     } else if (fpid == 0) {  // in sub-process
       PyOS_AfterFork_Child();
+
+      // set the seed for independent dataset process
+      uint32_t seed = GlobalContext::config_manager()->seed();
+      if (seed != std::mt19937::default_seed) {
+        py::module::import("mindspore.dataset.core.config").attr("set_seed")(seed);
+      }
 
       // release the gil in child process
       MS_LOG(INFO) << "[Independent Dataset Process] Begin release gil. Current Py_IsInitialized: "
@@ -632,12 +693,12 @@ Status TreeAdapter::Launch() {
       MS_LOG(INFO) << "[Independent Dataset Process] End release gil. Current Py_IsInitialized: " << Py_IsInitialized()
                    << ", PyGILState_Check: " << PyGILState_Check();
       if (PyGILState_Check()) {
-        MS_LOG(EXCEPTION) << "[Independent Dataset Process] PyGILState_Check: " << PyGILState_Check()
-                          << ", it should be 0.";
+        MS_LOG(ERROR) << "[Independent Dataset Process] PyGILState_Check: " << PyGILState_Check()
+                      << ", it should be 0.";
+        _exit(-1);
       }
 
       prctl(PR_SET_NAME, "independent_dataset_process");  // set the thread name
-      prctl(PR_SET_PDEATHSIG, SIGTERM);                   // if the main process exit, the subprocess will exit too.
 
       // launch the independent dataset process
       RETURN_IF_NOT_OK(LaunchSubprocess());
@@ -664,17 +725,6 @@ Status TreeAdapter::Launch() {
     MS_LOG(INFO) << "[Main Datast Process] Begin release gil. Current Py_IsInitialized: " << Py_IsInitialized()
                  << ", PyGILState_Check: " << PyGILState_Check();
   }
-#endif
-
-#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__) && !defined(ENABLE_ANDROID)
-  // set num threads of opencv only for main process
-  int32_t thread_num = get_nprocs();
-  if (thread_num == 0) {
-    std::string err_msg = "Invalid thread number, got 0.";
-    RETURN_STATUS_UNEXPECTED(err_msg);
-  }
-  constexpr int32_t max_cv_threads_cnt = 8;
-  cv::setNumThreads(thread_num > max_cv_threads_cnt ? max_cv_threads_cnt : thread_num);
 #endif
 
   RETURN_IF_NOT_OK(tree_->Launch());

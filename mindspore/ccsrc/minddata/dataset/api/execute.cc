@@ -20,6 +20,10 @@
 #include <fstream>
 #include <locale>
 #include <string>
+#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__) && !defined(ENABLE_ANDROID)
+#include <sys/sysinfo.h>
+#include <opencv2/core/utility.hpp>
+#endif
 
 #include "minddata/dataset/core/de_tensor.h"
 #include "minddata/dataset/core/tensor_row.h"
@@ -66,6 +70,17 @@ struct Execute::ExtraInfo {
 };
 
 Status Execute::InitResource(MapTargetDevice device_type, uint32_t device_id) {
+#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__) && !defined(ENABLE_ANDROID)
+  // set num threads of opencv for eager mode
+  int32_t thread_num = get_nprocs();
+  if (thread_num == 0) {
+    std::string err_msg = "Invalid thread number, got 0.";
+    RETURN_STATUS_UNEXPECTED(err_msg);
+  }
+  constexpr int32_t max_cv_threads_cnt = 8;
+  cv::setNumThreads(thread_num > max_cv_threads_cnt ? max_cv_threads_cnt : thread_num);
+#endif
+
   if (device_type == MapTargetDevice::kAscend310) {
     MS_LOG(INFO) << "InitResource for Ascend310";
 #if defined(WITH_BACKEND) || defined(ENABLE_ACL)

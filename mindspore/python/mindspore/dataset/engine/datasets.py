@@ -72,7 +72,7 @@ from .validators import check_batch, check_shuffle, check_map, check_filter, che
     check_rename, check_device_send, check_take, check_output_shape, check_project, \
     check_sync_wait, check_zip_dataset, check_add_column, check_concat, check_split, check_bucket_batch_by_length, \
     check_save, check_tuple_iterator, check_dict_iterator, check_schema, check_to_device_send, check_padded_batch, \
-    check_total_batch
+    check_total_batch, check_sync_update
 from ..core.config import get_callback_timeout, _init_device_info, get_enable_shared_mem, get_num_parallel_workers, \
     get_enable_watchdog, get_seed, set_seed, get_debug_mode, get_multiprocessing_timeout_interval, _get_debug_hook_list
 from ..core.datatypes import mstype_to_detype
@@ -1893,6 +1893,7 @@ class Dataset:
             return self.children[0].is_sync()
         return False
 
+    @check_sync_update
     def sync_update(self, condition_name, num_batch=None, data=None):
         """
         Release a blocking condition and trigger callback with given data.
@@ -3155,6 +3156,7 @@ def _worker_loop(operations, pipe, worker_id):
     # that the random results of each process are different.
     if get_seed() != 5489:
         set_seed(get_seed() + worker_id)
+
     while not _main_process_already_exit():
         _ignore_sigint()
 
@@ -3445,6 +3447,12 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
         while _PythonMultiprocessing.is_process_alive(ppid):
             if quit_signal.is_set():
                 return
+
+            # independent dataset mode, the subprocess of GeneratorDataset / map / batch should exit when
+            # independent dataset process have exit
+            if os.getppid() != ppid:
+                break
+
             time.sleep(0.1)
 
         _PythonMultiprocessing._terminate_processes(workers)
