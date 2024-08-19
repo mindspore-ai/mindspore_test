@@ -244,7 +244,7 @@ SymbolPtr ShapeCalcValueBuilder(OperationBuilder *b) {
       inputs.push_back(b->GetInputShape(i));
     }
   }
-
+  MS_EXCEPTION_IF_NULL(b->out_abstract());
   auto out_hint = BuildSymbolicValue(b->out_abstract());
   return b->Emit(std::make_shared<FunctorOperation>(functor, std::move(inputs), out_hint));
 }
