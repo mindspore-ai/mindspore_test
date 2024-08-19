@@ -1,0 +1,37 @@
+trace_ext:
+  description: |
+    Returns a new tensor that is the sum of the `input` main trace.
+
+    Note:
+        Input must be tensor.
+
+    Args:
+        input (Tensor): 2-D Tensor.
+
+    Returns:
+        Tensor, when the data type of `input` is integer or bool, its data type is int64, otherwise it is the same as `input`, and size equals to 1.
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+        ValueError: If the dimension of `input` is not equal to 2.
+        TypeError:  If the dtype of `input` is not one of float16, float32, float64, bool, uint8, int8, int16, int32, int64, complex64, complex128, bfloat16.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, ops
+        >>> input = Tensor(np.array([[10, 11, 12], [13, 14, 15], [16, 17, 18]]), mindspore.float32)
+        >>> output = ops.trace_ext(input)
+        >>> print(output)
+        42.0
+        >>> input = Tensor(np.arange(1, 13).reshape(3, 4), mindspore.float32)
+        >>> output = ops.trace_ext(input)
+        >>> print(output)
+        18.0
+        >>> input = Tensor(np.arange(12, 0, -1).reshape(4, 3), mindspore.float32)
+        >>> output = ops.trace_ext(input)
+        >>> print(output)
+        24.0

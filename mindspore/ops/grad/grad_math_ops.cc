@@ -2085,6 +2085,46 @@ REG_BPROP_BUILDER("TraceV2").SetUnusedInputs({i5}).SetBody(BODYFUNC(ib) {
   return {dx, ib->OutZeros(offset), ib->OutZeros(axis1), ib->OutZeros(axis2), ib->OutZeros(dtype)};
 });
 
+DEF_PURE_SHAPE_CALC(g_trace_ext_shapecalc)
+  .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
+    auto input_shape = inputs.at(kIndex0);
+    return {input_shape};
+  })
+  .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &unknown_inputs) -> std::vector<int64_t> {
+    if (IsDynamicRank(inputs.at(kIndex0))) {
+      return {-1};
+    }
+    return {SizeToLong(inputs.at(kIndex0).size())};
+  });
+
+REG_BPROP_BUILDER("TraceExt").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto out = ib->GetInput(kIndex1);
+  auto dout = ib->GetInput(kIndex2);
+  auto shape = ib->GetShape(x);
+  auto dtype_id = ib->GetDtypeId(out);
+  NodePtr eye = nullptr;
+  TypeId eye_dtype_id = kTypeUnknown;
+  if (dtype_id == kNumberTypeBFloat16) {
+    eye_dtype_id = kNumberTypeFloat32;
+  } else {
+    eye_dtype_id = dtype_id;
+  }
+  if (IsDynamicShape(shape) || IsDynamicRank(shape)) {
+    auto shapes = ib->ShapeCalc(g_trace_ext_shapecalc, {x});
+    eye = ib->Emit(
+      "Eye", {ib->TupleGetItem(shapes[0], 0), ib->TupleGetItem(shapes[0], 1), ib->Value<int64_t>(eye_dtype_id)});
+  } else {
+    eye = ib->Emit("Eye", {ib->Value(shape[0]), ib->Value(shape[1]), ib->Value<int64_t>(eye_dtype_id)});
+  }
+  auto dx = ib->Mul(eye, dout);
+  if (dtype_id == kNumberTypeBFloat16) {
+    dx = ib->Cast(dx, kBFloat16);
+    return {dx};
+  }
+  return {dx};
+});
+
 REG_BPROP_BUILDER("Erfinv").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
   auto out = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex2);

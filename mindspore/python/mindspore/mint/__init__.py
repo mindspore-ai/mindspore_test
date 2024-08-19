@@ -286,6 +286,8 @@ from mindspore.ops.function.array_func import scatter_add_ext as scatter_add
 # 301
 from mindspore.ops.function.math_func import tan
 
+from mindspore.ops.auto_generate import trace_ext as trace
+
 
 def add(input, other, *, alpha=1):
     r"""
@@ -1246,6 +1248,7 @@ __all__ = [
     'scatter_add',
     # 301
     'tan',
+    'trace',
     # 304
 
     # 305
