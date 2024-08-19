@@ -20,3 +20,4 @@ mindspore.numpy.minimum
 
     异常：
         - **TypeError** - 如果输入类型不是上述指定类型。
+        - **ValueError** - 如果 `x1` 和 `x2` 不能被广播。

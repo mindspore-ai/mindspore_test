@@ -14,5 +14,8 @@ mindspore.numpy.sign
         - **x** (Union[int, float, list, tuple, Tensor]) - 输入值。
         - **dtype** (mindspore.dtype, 可选) - 默认值： `None` 。覆盖输出Tensor的dtype。
 
+    返回：
+        `x` 的符号，当 `x` 是标量时，可以是一个tensor或者标量。
+
     异常：
         - **TypeError** - 如果输入的 dtype 不在给定类型中或输入不能转换为Tensor。
