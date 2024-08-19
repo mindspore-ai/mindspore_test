@@ -237,7 +237,7 @@ def test_ascend_kbyk_profiler():
     data_path = tempfile.mkdtemp(prefix='profiler_data', dir='/tmp')
     profiler_path = os.path.join(data_path, 'profiler/')
     try:
-        _train_with_profiler(data_path=data_path, device_target="Ascend", profile_memory=False, host_stack=True)
+        _train_with_profiler(data_path=data_path, device_target="Ascend", profile_memory=False, with_stack=True)
         _check_d_profiling_file(profiler_path, rank_id)
         _check_host_profiling_file(profiler_path, rank_id)
         _check_kbyk_profiling_file(profiler_path, rank_id)
@@ -252,7 +252,7 @@ def _check_kbyk_profiling_file(profiler_path, rank_id):
 
 
 def _train_with_profiler(device_target, profile_memory, data_path, context_mode=context.GRAPH_MODE,
-                         only_profile_host=False, profile_framework='all', host_stack=True):
+                         only_profile_host=False, profile_framework='all', with_stack=True):
     context.set_context(mode=context_mode, device_target=device_target)
     ds_train = create_dataset(os.path.join(mnist_path, "train"))
     if ds_train.get_dataset_size() == 0:
@@ -260,10 +260,11 @@ def _train_with_profiler(device_target, profile_memory, data_path, context_mode=
     if only_profile_host:
         profiler = Profiler(output_path=data_path, op_time=False,
                             parallel_strategy=False, aicore_metrics=-1, data_process=False,
-                            profile_framework=profile_framework, host_stack=host_stack, data_simplification=False)
+                            profile_framework=profile_framework, with_stack=with_stack, data_simplification=False)
     else:
         profiler = Profiler(profile_memory=profile_memory, output_path=data_path,
-                            profile_framework=profile_framework, host_stack=host_stack, data_simplification=False)
+                            profile_framework=profile_framework, with_stack=with_stack, data_simplification=False,
+                            data_process=True)
     lenet = LeNet5()
     loss = nn.SoftmaxCrossEntropyWithLogits(sparse=True, reduction="mean")
     optim = Momentum(lenet.trainable_params(), learning_rate=0.1, momentum=0.9)
@@ -353,7 +354,7 @@ def test_ascend_pynative_profiler():
     profiler_path = os.path.join(data_path, 'profiler/')
     try:
         _train_with_profiler(data_path=data_path, device_target='Ascend', profile_memory=False,
-                             context_mode=context.PYNATIVE_MODE, host_stack=True)
+                             context_mode=context.PYNATIVE_MODE, with_stack=True)
         _check_pynative_timeline_host_data(profiler_path, rank_id)
     finally:
         if os.path.exists(data_path):

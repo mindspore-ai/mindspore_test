@@ -30,7 +30,7 @@ class GpuProfiler(ProfilerInterface):
             output_path: str = "./data",
             op_time: bool = True,
             sync_enable: bool = True,
-            data_process: bool = True,
+            data_process: bool = False,
             profile_framework: bool = "all",
             **kwargs
     ) -> None:
