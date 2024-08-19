@@ -23,6 +23,7 @@
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
 #include "backend/common/graph_kernel/adapter/graph_kernel_expander_cloud.h"
 #include "include/backend/anf_runtime_algorithm.h"
+#include "graph_kernel/expander/base.h"
 
 namespace mindspore::graphkernel::test {
 namespace {
@@ -44,34 +45,15 @@ struct RmsNormGradParams {
   TypePtr rstd_type;
   TypePtr gamma_type;
 };
-
-void CompareShapeAndType(const AnfNodePtr &node, size_t output_idx, const ShapeVector &expect_shape,
-                         const TypeId &expect_type) {
-  auto cb = graphkernel::Callback::Instance();
-  MS_EXCEPTION_IF_NULL(cb);
-  auto output_shape = cb->GetOutputShape(node, output_idx);
-  auto output_type = cb->GetOutputType(node, output_idx);
-  if (output_shape != expect_shape || output_type != expect_type) {
-    MS_LOG(ERROR) << "output[" << output_idx << "] compare failed";
-    MS_LOG(ERROR) << "expect shape: " << expect_shape << " data type: " << TypeIdToString(expect_type);
-    MS_LOG(ERROR) << "output shape: " << output_shape << " data type: " << TypeIdToString(output_type);
-    ASSERT_TRUE(false);
-  }
-}
 }  // namespace
 
 /// Feature: Test graph kernel RmsNorm expander
 /// Description: RmsNorm will expanded
 /// Expectation: After expand, the output shape and data type of sub graph should match expect
-class TestRmsNormExpander : public GraphKernelCommonTestSuite, public testing::WithParamInterface<RmsNormParams> {
+class TestRmsNormExpander : public TestGraphKernelExpander, public testing::WithParamInterface<RmsNormParams> {
   void SetUp() override {
-    auto context = MsContext::GetInstance();
-    MS_EXCEPTION_IF_NULL(context);
-    context->set_param<std::string>(MS_CTX_DEVICE_TARGET, kAscendDevice);
-
-    std::map<std::string, std::string> jit_config;
-    jit_config["graph_kernel_flags"] = "--enable_expand_ops=RmsNorm";
-    graphkernel::GraphKernelFlags::SaveJitConfig(jit_config);
+    SetDeviceTarget(kAscendDevice);
+    SetGraphKernelFlags("--enable_expand_ops=RmsNorm");
   }
 };
 
@@ -108,8 +90,7 @@ TEST_P(TestRmsNormExpander, rms_norm) {
 /// Feature: Test graph kernel RmsNormGrad expander
 /// Description: RmsNormGrad will expanded
 /// Expectation: After expand, the output shape and data type of sub graph should match expect
-class TestRmsNormGradExpander : public GraphKernelCommonTestSuite,
-                                public testing::WithParamInterface<RmsNormGradParams> {
+class TestRmsNormGradExpander : public TestGraphKernelExpander, public testing::WithParamInterface<RmsNormGradParams> {
   void SetUp() override {
     auto context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(context);

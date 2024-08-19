@@ -141,4 +141,13 @@ REG_EXPANDER_FUNC("SiLUGrad").SetBody(BODYFUNC(ib) {
   auto result = ib->Sub(ib->Add(sigmod, out), ib->Mul(sigmod, out));
   return {ib->Mul(result, dout)};
 });
+
+REG_EXPANDER_FUNC("Addcmul").SetBody(BODYFUNC(ib) {
+  const auto &input_data = ib->input(kIndex0);
+  const auto &x1 = ib->input(kIndex1);
+  const auto &x2 = ib->input(kIndex2);
+  const auto &value = ib->input(kIndex3);
+  auto result = ib->Add(input_data, ib->Mul(value, ib->Mul(x1, x2)));
+  return {result};
+});
 }  // namespace mindspore::graphkernel::expander
