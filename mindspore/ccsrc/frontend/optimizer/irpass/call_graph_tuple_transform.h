@@ -77,6 +77,9 @@ class GraphSequenceTransform : public AnfVisitor {
       return nullptr;
     }
     auto fg = GetValueNode<FuncGraphPtr>(node);
+    if (fg->has_flag(FUNC_GRAPH_FLAG_ROLLED_HEADER)) {
+      return nullptr;
+    }
     if (!FuncGraphHasConstantSequenceInput(fg)) {
       return nullptr;
     }
@@ -103,6 +106,10 @@ class PartialSequenceArgTransform : public AnfVisitor {
     }
     auto partial = node->cast<CNodePtr>();
     const auto &partial_inputs = partial->inputs();
+    if (IsValueNode<FuncGraph>(partial_inputs[1]) &&
+        GetValueNode<FuncGraphPtr>(partial_inputs[1])->has_flag(FUNC_GRAPH_FLAG_ROLLED_HEADER)) {
+      return nullptr;
+    }
     const auto &fg = partial->func_graph();
     constexpr auto kPartialFirstArgIndex = 2;
     // Put ValueNode<kPrimPartial> and ValueNode<FuncGraph> into new_inputs.
@@ -132,6 +139,10 @@ class CallSequenceArgTransform : public AnfVisitor {
 
     auto call_node = node->cast<CNodePtr>();
     const auto &call_inputs = call_node->inputs();
+    if (IsValueNode<FuncGraph>(call_inputs[0]) &&
+        GetValueNode<FuncGraphPtr>(call_inputs[0])->has_flag(FUNC_GRAPH_FLAG_ROLLED_HEADER)) {
+      return nullptr;
+    }
     const auto &fg = call_node->func_graph();
     MS_EXCEPTION_IF_NULL(fg);
     // Put ValueNode<FuncGraph> into inputs.
