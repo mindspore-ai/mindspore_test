@@ -48,12 +48,73 @@ class CustomNet(Cell):
         return res
 
 
+class CustomNetAddPrefix(Cell):
+    def __init__(self, func, out_shape, bprop):
+        super(CustomNetAddPrefix, self).__init__()
+        aclnn_ref_info = CustomRegOp("Mul") \
+            .input(0, "x", "required") \
+            .input(1, "y", "required") \
+            .output(0, "z", "required") \
+            .dtype_format(DataType.F16_Default, DataType.F16_Default, DataType.F16_Default) \
+            .target("Ascend") \
+            .get_op_info()
+
+        self.custom_mul = ops.Custom(func, out_shape, lambda x, _: x, func_type="aot", bprop=bprop,
+                                     reg_info=aclnn_ref_info)
+        self.add = P.Add()
+        self.sub = P.Sub()
+
+    def construct(self, x, y, z):
+        res = self.add(x, y)
+        res = self.custom_mul(res, y)
+        res = self.sub(res, z)
+        return res
+
+
+class CustomNetAclOp(Cell):
+    def __init__(self, func, out_shape, bprop):
+        super(CustomNetAclOp, self).__init__()
+        aclnn_ref_info = CustomRegOp("Mul") \
+            .input(0, "x", "required") \
+            .input(1, "y", "required") \
+            .output(0, "z", "required") \
+            .dtype_format(DataType.F16_Default, DataType.F16_Default, DataType.F16_Default) \
+            .target("Ascend") \
+            .get_op_info()
+
+        self.custom_mul = ops.Custom(func, out_shape, lambda x, _: x, func_type="aot", bprop=bprop,
+                                     reg_info=aclnn_ref_info)
+        self.custom_mul.add_prim_attr("custom_aclop", True)
+        self.add = P.Add()
+        self.sub = P.Sub()
+
+    def construct(self, x, y, z):
+        res = self.add(x, y)
+        res = self.custom_mul(res, y)
+        res = self.sub(res, z)
+        return res
+
+
+class BaseNet(Cell):
+    def __init__(self):
+        super(BaseNet, self).__init__()
+        self.add = P.Add()
+        self.sub = P.Sub()
+        self.mul = P.Mul()
+
+    def construct(self, x, y, z):
+        res = self.add(x, y)
+        res = self.mul(res, y)
+        res = self.sub(res, z)
+        return res
+
+
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-def test_custom_add_aclnn(context_mode):
+def test_custom_mul_aclnn(context_mode):
     """
     Feature: Custom op testcase
-    Description: test case for aclnnAddCustom op with func_type="aclnn"
+    Description: test case for mul by custom
     Expectation: the result match with numpy result
     """
     context.set_context(mode=context_mode, save_graphs=False, save_graphs_path="./graphs",
@@ -69,10 +130,10 @@ def test_custom_add_aclnn(context_mode):
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
-def test_custom_add_aclnn_dynamic(context_mode):
+def test_custom_mul_aclnn_dynamic(context_mode):
     """
     Feature: Custom op testcase
-    Description: test case for aclnnAddCustom op in Dynamic Shape
+    Description: test case for mul by custom in dynamic shape
     Expectation: the result match with numpy result
     """
     context.set_context(mode=context_mode, save_graphs=False, save_graphs_path="./graphs",
@@ -84,5 +145,86 @@ def test_custom_add_aclnn_dynamic(context_mode):
     net = CustomNet("aclnnMul", lambda x, _: x, None)
     expect_out = (x + y) * y - z
     net.set_inputs(dyn_x, Tensor(y), Tensor(z))
+    out = net(Tensor(x), Tensor(y), Tensor(z))
+    assert np.allclose(out.asnumpy(), expect_out, 0.001, 0.001)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+def test_custom_mul_aclnn_add_prefix(context_mode):
+    """
+    Feature: Custom op testcase
+    Description: test case for adding prefix
+    Expectation: the result match with numpy result
+    """
+    context.set_context(mode=context_mode, save_graphs=False, save_graphs_path="./graphs",
+                        jit_config={"jit_level": "O0"})
+    x = np.ones([8, 2048]).astype(np.float16)
+    y = np.ones([8, 2048]).astype(np.float16)
+    z = np.random.rand(8, 2048).astype(np.float16)
+    net = CustomNetAddPrefix("Mul", lambda x, _: x, None)
+    expect_out = (x + y) * y - z
+    out = net(Tensor(x), Tensor(y), Tensor(z))
+    assert np.allclose(out.asnumpy(), expect_out, 0.001, 0.001)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+def test_custom_mul_aclnn_infer_cpp(context_mode):
+    """
+    Feature: Custom op testcase
+    Description: test case for inferring shape by cpp
+    Expectation: the result match with numpy result
+    """
+    context.set_context(mode=context_mode, save_graphs=False, save_graphs_path="./graphs",
+                        jit_config={"jit_level": "O0"})
+    x = np.ones([8, 2048]).astype(np.float16)
+    y = np.ones([8, 2048]).astype(np.float16)
+    z = np.random.rand(8, 2048).astype(np.float16)
+    net = CustomNetAddPrefix("./infer_file/custom_cpp_infer.cc:Mul", None, None)
+    expect_out = (x + y) * y - z
+    out = net(Tensor(x), Tensor(y), Tensor(z))
+    assert np.allclose(out.asnumpy(), expect_out, 0.001, 0.001)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+def test_custom_mul_aclnn_bprop(context_mode):
+    """
+    Feature: Custom op testcase
+    Description: test case for custom mul backpropagation.
+    Expectation: the result match with numpy result
+    """
+
+    def bprop(x, y, out, dout):
+        return dout, dout
+
+    context.set_context(mode=context_mode, save_graphs=False, save_graphs_path="./graphs",
+                        jit_config={"jit_level": "O0"})
+    x = np.ones([8, 2048]).astype(np.float16)
+    y = np.ones([8, 2048]).astype(np.float16)
+    z = np.random.rand(8, 2048).astype(np.float16)
+    net = CustomNetAddPrefix("Mul", lambda x, _: x, bprop)
+    base_net = BaseNet()
+    dx = ops.GradOperation()(net)(Tensor(x), Tensor(y), Tensor(z))
+    expect_dx = ops.GradOperation()(base_net)(Tensor(x), Tensor(y), Tensor(z))
+    assert np.allclose(dx.asnumpy(), expect_dx.asnumpy(), 0.001, 0.001)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE])
+def test_custom_mul_aclop(context_mode):
+    """
+    Feature: Custom op testcase
+    Description: test case for Adding prefix
+    Expectation: the result match with numpy result
+    """
+    context.set_context(mode=context_mode, save_graphs=False, save_graphs_path="./graphs",
+                        jit_config={"jit_level": "O0"})
+    x = np.ones([8, 2048]).astype(np.float16)
+    y = np.ones([8, 2048]).astype(np.float16)
+    z = np.random.rand(8, 2048).astype(np.float16)
+    net = CustomNetAclOp("Mul", lambda x, _: x, None)
+    expect_out = (x + y) * y - z
     out = net(Tensor(x), Tensor(y), Tensor(z))
     assert np.allclose(out.asnumpy(), expect_out, 0.001, 0.001)

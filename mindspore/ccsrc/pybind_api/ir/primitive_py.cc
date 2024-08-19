@@ -31,10 +31,12 @@
 #include "utils/check_convert_utils.h"
 #include "pipeline/pynative/pynative_execute.h"
 #include "include/common/profiler.h"
+#include "mindspore/ops/op_def/other_op_name.h"
 
 namespace mindspore {
 namespace {
 constexpr auto kCellIDAttrName = "cell_id";
+constexpr auto kCustomOpNameAttrName = "custom_op_name";
 constexpr auto kIsRecomputeAttr = "is_recompute";
 
 static uint64_t MakeId() {
@@ -99,6 +101,15 @@ std::map<HookType, std::string> hook_type_with_str = {
   {HookType::kBackwardHook, "BackwardHook"},
   {HookType::kUnknown, "Unknown"},
 };
+
+py::tuple UnfoldPyArgs(const py::tuple &py_args) {
+  auto input0 = py::cast<py::tuple>(py_args[0]);
+  py::list list = py::cast<py::list>(input0);
+  for (size_t i = 1; i < py_args.size(); i++) {
+    list.append(py_args[i]);
+  }
+  return py::cast<py::tuple>(list);
+}
 }  // namespace
 
 std::unordered_map<std::string, py::function> PrimitivePy::unpair_backward_hook_grad_{};
@@ -369,7 +380,10 @@ BaseRef PrimitivePy::RunCellCustomBpropFunction(const py::tuple &py_args) const 
   }
 }
 
-BaseRef PrimitivePy::RunCustomOpBpropFunction(const py::tuple &py_args) const {
+BaseRef PrimitivePy::RunCustomOpBpropFunction(const py::tuple &ori_py_args) const {
+  auto is_custom_node = this->HasAttr(kCustomOpNameAttrName) &&
+                        GetValue<std::string>(this->GetAttr(kCustomOpNameAttrName)) == kCustomOpName;
+  py::tuple py_args = is_custom_node ? UnfoldPyArgs(ori_py_args) : ori_py_args;
   py::tuple converted_args = ConvertCTensorToPyTensor(py_args);
   MS_LOG(DEBUG) << "Get convert args size " << converted_args.size() << ", args are "
                 << ConvertPyObjToString(converted_args);

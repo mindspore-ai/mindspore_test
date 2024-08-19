@@ -61,7 +61,7 @@ enum class HookType {
   kUnknown,
 };
 
-class PrimitivePy : public Primitive {
+class PYBOOST_API PrimitivePy : public Primitive {
  public:
   explicit PrimitivePy(const std::string &name);
   PrimitivePy(const PrimitivePy &prim_py);
@@ -81,7 +81,7 @@ class PrimitivePy : public Primitive {
   void SetHookFn(const py::function &hook_fn, HookType hook_type);
   BaseRef RunHookFunction(const VectorRef &args) const;
   BaseRef RunCellCustomBpropFunction(const py::tuple &py_args) const;
-  BaseRef RunCustomOpBpropFunction(const py::tuple &py_args) const;
+  BaseRef RunCustomOpBpropFunction(const py::tuple &ori_py_args) const;
   BaseRef RunCellHookFunction(const py::tuple &py_args) const;
   BaseRef RunVariableHookFunction(const py::tuple &py_args) const;
   BaseRef RunComputeFunction(const VectorRef &args) const override;

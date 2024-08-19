@@ -26,3 +26,12 @@ extern "C" std::vector<int64_t> aclnnAddCustomInferShape(int *ndims, int64_t **s
   }
   return output_shape;
 }
+
+extern "C" std::vector<int64_t> MulInferShape(int *ndims, int64_t **shapes, AotExtra *extra) {
+  std::vector<int64_t> output_shape;
+  auto input0_size = ndims[0];
+  for (size_t i = 0; i < input0_size; i++) {
+    output_shape.push_back(shapes[0][i]);
+  }
+  return output_shape;
+}

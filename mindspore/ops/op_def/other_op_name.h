@@ -57,6 +57,7 @@ constexpr auto kAlltoAllVGEOpName = "AlltoAllVGE";
 constexpr auto kBarrierOpName = "Barrier";
 constexpr auto kMatMulAllReduceOpName = "MatMulAllReduce";
 constexpr auto kBatchISendIRecvOpName = "BatchISendIRecv";
+constexpr auto kCustomOpName = "Custom";
 }  // namespace mindspore
 
 #endif  // MINDSPORE_CORE_BASE_OTHER_OP_NAME_H_

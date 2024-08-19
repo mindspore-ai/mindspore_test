@@ -38,6 +38,7 @@ class CustomNet(Cell):
 
         self.custom_add = ops.Custom("AddCustom", lambda x, _: x, lambda x, _: x, func_type="aot",
                                      reg_info=aclop_ref_info)
+        self.custom_add.add_prim_attr("custom_aclop", True)
         self.add = P.Add()
         self.sub = P.Sub()
 
@@ -49,11 +50,11 @@ class CustomNet(Cell):
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level4', card_mark='onecard', essential_mark='unessential')
-@pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+@pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE])
 def test_custom_add_aclop(context_mode):
     """
     Feature: Custom op testcase
-    Description: test case for AddCustom op with func_type="aclop"
+    Description: test case for AddCustom
     Expectation: the result match with numpy result
     """
     context.set_context(jit_level='O0')
@@ -69,7 +70,7 @@ def test_custom_add_aclop(context_mode):
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level4', card_mark='onecard', essential_mark='unessential')
-@pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+@pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE])
 def test_custom_add_aclop_dynamic(context_mode):
     """
     Feature: Custom op testcase
@@ -94,10 +95,10 @@ def test_custom_add_aclop_dynamic(context_mode):
 def test_custom_add_aclop_graph():
     """
     Feature: Custom op testcase
-    Description: test case for AddCustom op with func_type="aclop"  in graph mode
+    Description: test case for AddCustom op in graph mode
     Expectation: the result match with numpy result
     """
-
+    context.set_context(jit_level='O2')
     context.set_context(mode=context.GRAPH_MODE, save_graphs=False, save_graphs_path="./graphs")
     x = np.ones([8, 2048]).astype(np.float16)
     y = np.ones([8, 2048]).astype(np.float16)
