@@ -63,3 +63,31 @@ if(${debug_files_size} GREATER 0)
   endif()
   add_dependencies(_mindspore_debug_obj proto_input)
 endif()
+
+set(_DUMP_CONTROL_SRC_LIST
+    "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/dump_control.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/data_dump/dump_control_py.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/utils.cc"
+)
+if(NOT CMAKE_SYSTEM_NAME MATCHES "Windows")
+    set_property(SOURCE ${_DUMP_CONTROL_SRC_LIST} PROPERTY COMPILE_DEFINITIONS
+                SUBMODULE_ID=mindspore::SubModuleId::SM_OFFLINE_DEBUG)
+    add_library(_data_dump SHARED ${_DUMP_CONTROL_SRC_LIST})
+    target_link_libraries(_data_dump PUBLIC
+                mindspore::pybind11_module
+                mindspore_core
+                mindspore_ops
+                mindspore::ssl mindspore::crypto
+    )
+    set_target_properties(_data_dump PROPERTIES
+                PREFIX "${PYTHON_MODULE_PREFIX}"
+                SUFFIX "${PYTHON_MODULE_EXTENSION}"
+    )
+    if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
+        set_target_properties(_data_dump PROPERTIES MACOSX_RPATH ON)
+        set_target_properties(_data_dump PROPERTIES INSTALL_RPATH @loader_path/lib)
+    else()
+        set_target_properties(_data_dump PROPERTIES INSTALL_RPATH $ORIGIN/lib)
+        target_link_options(_data_dump PRIVATE -Wl,-init,common_log_init)
+    endif()
+endif()
