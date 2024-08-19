@@ -145,6 +145,7 @@ KernelTensor::KernelTensor(const KernelTensor &other) {
   device_synchronizer_ = other.device_synchronizer_;
   host_shape_ = other.host_shape_;
   user_data_ = other.user_data_;
+  hete_info_ = other.hete_info_;
 }
 
 inline void KernelTensor::CheckHostInfoValid() {

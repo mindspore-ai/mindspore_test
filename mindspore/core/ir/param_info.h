@@ -136,6 +136,9 @@ class ParamInfo {
   std::string storage_format() const { return storage_format_; }
   void set_storage_format(const std::string &storage_format) { storage_format_ = storage_format; }
 
+  std::string device() const { return device_; }
+  void set_device(const std::string &device) { device_ = device; }
+
  private:
   std::string name_{"Parameter"};
   bool requires_grad_{true};
@@ -172,6 +175,8 @@ class ParamInfo {
   std::vector<int64_t> quant_shape_;
   // Used to ignore unused param
   bool ignore_device_addr_{false};
+  // Used to identify paramters storaged on cpu or disk
+  std::string device_;
 };
 }  // namespace mindspore
 #endif  // MINDSPORE_CORE_IR_PARAM_INFO_H_

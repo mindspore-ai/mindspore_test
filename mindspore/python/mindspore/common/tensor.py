@@ -205,7 +205,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
     """
     delta_seed = 0
 
-    def __init__(self, input_data=None, dtype=None, shape=None, init=None, internal=False, const_arg=False):
+    def __init__(self, input_data=None, dtype=None, shape=None, init=None, internal=False, const_arg=False, device=None):
         self.init_finished = False
         if isinstance(input_data, (Tensor, Tensor_)) and dtype is not None:
             logger.info("It is suggested to use 'Tensor.astype()' to convert the dtype of a Tensor.")
@@ -263,6 +263,15 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
                     else:
                         Tensor_.__init__(self, input_data)
                     validator.check_value_type('const_arg', const_arg, bool, 'Tensor')
+
+        self._device = device
+        if self._device is None:
+            if isinstance(input_data, Tensor):
+                self._device = input_data.device
+            else:
+                self._device = "Cpu" if context.get_context('device_target') == "CPU" else "Npu"
+        if self._device not in ("Cpu", "Npu"):
+            raise ValueError(f"device should be 'Cpu' or 'Npu', but got ${self._device}.")
 
         self.const_arg = const_arg
         self.virtual_flag = False
@@ -746,6 +755,22 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         if self.ndim <= 1:
             return self
         return self.transpose()
+
+
+    @property
+    def device(self):
+        """
+        Return the device
+        Examples:
+            >>> from mindspore import Tensor, Parameter
+            >>> import numpy as np
+            >>> x = Tensor(np.array([[1, 2], [3, 4]], dtype=np.float32))
+            >>> y = x.move_to("Cpu")
+            >>> print(y.device)
+            "Cpu"
+        """
+        return self._device
+
 
     @staticmethod
     def from_numpy(array):
@@ -4731,7 +4756,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         Copy Tensor to target device synchronously or asynchronously, default synchronously. only support PyNative mode.
 
         Args:
-            to (str): a string type value, one of ``"Ascend"``, ``"GPU"``, ``"CPU"``.
+            to (str): a string type value, one of ``"NPU"``, ``"GPU"``, ``"CPU"``.
             blocking (bool): a bool type value, using synchronous copy or asynchronous copy.
                 Default: ``True`` , synchronous copy.
 
@@ -4740,7 +4765,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
 
         Raises:
             ValueError: If the type of `blocking` is not bool type.
-            ValueError: If the value of `to` is not one of ``"Ascend"``, ``"GPU"``, ``"CPU"``.
+            ValueError: If the value of `to` is not one of ``"NPU"``, ``"GPU"``, ``"CPU"``.
             ValueError: If the run mode is not PyNative mode.
 
         Supported Platforms:
@@ -4752,6 +4777,13 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             >>> x = ms.Tensor([1, 2, 3], ms.int64)
             >>> new_tensor = x.move_to("CPU")
         """
+        if to == "Ascend":
+            to = "Npu"
+            logger.warning("'Ascend' is deprecated and will be removed in future version. "
+                           "For 'Tensor.move_to', please set the argument 'to' "
+                           "to 'CPU', 'GPU' or 'NPU',if you set it to 'Ascend', it will be automatically "
+                           "changed to 'NPU'.")
+
         if not isinstance(blocking, bool):
             raise ValueError(f"The type of 'blocking' must be bool, but got {blocking}")
         if to not in ("Ascend", "GPU", "CPU"):
@@ -4759,7 +4791,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         mode = context.get_context("mode")
         if mode != context.PYNATIVE_MODE:
             raise ValueError(f"The method of 'move_to' only supported in pynative mode, but got: {mode}.")
-        return Tensor(Tensor_.move_to(self, to, blocking))
+        return Tensor(Tensor_.move_to(self, to, blocking), device="Cpu" if to == "CPU" else "Npu")
 
 
     def _offload(self):

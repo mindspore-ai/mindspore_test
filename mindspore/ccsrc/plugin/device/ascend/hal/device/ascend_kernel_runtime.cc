@@ -692,6 +692,18 @@ void AscendKernelRuntime::CreateDefaultStream() {
   MS_LOG(INFO) << "Create ascend backward Receive communication stream, stream id: " << backward_recv_stream_id;
   backward_recv_stream_ = AscendStreamMng::GetInstance().GetStream(backward_recv_stream_id);
   MS_EXCEPTION_IF_NULL(backward_recv_stream_);
+
+  size_t swap_in_stream_id;
+  AscendStreamMng::GetInstance().CreateStream(&swap_in_stream_id);
+  MS_LOG(INFO) << "Create swap in stream, stream id: " << swap_in_stream_id;
+  swap_in_steam_ = AscendStreamMng::GetInstance().GetStream(swap_in_stream_id);
+  MS_EXCEPTION_IF_NULL(swap_in_steam_);
+
+  size_t swap_out_stream_id;
+  AscendStreamMng::GetInstance().CreateStream(&swap_out_stream_id);
+  MS_LOG(INFO) << "Create swap out stream, stream id: " << swap_out_stream_id;
+  swap_out_steam_ = AscendStreamMng::GetInstance().GetStream(swap_out_stream_id);
+  MS_EXCEPTION_IF_NULL(swap_out_steam_);
 }
 
 bool AscendKernelRuntime::InitDevice() {

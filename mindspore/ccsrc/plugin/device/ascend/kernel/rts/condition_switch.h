@@ -30,7 +30,6 @@ class ConditionSwitchKernel : public RtKernel {
   bool Init(const AnfNodePtr &anf_node) override;
   bool Launch(const std::vector<KernelTensor *> &, const std::vector<KernelTensor *> &,
               const std::vector<KernelTensor *> &, void *) override;
-  std::vector<KernelAttr> GetOpSupport() override { MS_LOG(EXCEPTION) << "This interface is not support in RtKernel."; }
 };
 
 MS_REG_RTKERNEL(conditionswitch, ConditionSwitchKernel);

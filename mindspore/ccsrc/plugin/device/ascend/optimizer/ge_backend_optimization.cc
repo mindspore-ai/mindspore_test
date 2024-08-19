@@ -26,6 +26,7 @@
 #include "include/common/debug/dump_proto.h"
 #include "include/backend/optimizer/optimizer.h"
 #include "backend/common/pass/add_parallel_group_id_attr.h"
+#include "backend/common/pass/insert_move_to.h"
 #include "include/backend/debug/profiler/profiling.h"
 #include "plugin/device/ascend/optimizer/ge/all_to_all_v_for_ge.h"
 #include "plugin/device/ascend/optimizer/ge/maketuple_depend_remover.h"
@@ -273,11 +274,13 @@ void GEAfterInlineOptimize(const KernelGraphPtr &kernel_graph) {
     DumpIR(file_name, kernel_graph);
   }
 #endif
+  kernel_graph->SetExecOrderByDefault();
   auto optimizer = std::make_shared<opt::GraphOptimizer>();
   auto after_inline_pm = std::make_shared<PassManager>("after_inline_pm");
   after_inline_pm->AddPass(std::make_shared<DropoutGenMaskFusion>());
   after_inline_pm->AddPass(std::make_shared<CommonSubexpressionElimination>());
   after_inline_pm->AddPass(std::make_shared<EliminateMaketupleGetitem>());
+  after_inline_pm->AddPass(std::make_shared<InsertMoveTo>());
   optimizer->AddPassManager(after_inline_pm);
   (void)optimizer->Optimize(kernel_graph);
   kernel_graph->SetExecOrderByDefault();

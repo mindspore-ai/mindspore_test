@@ -91,6 +91,15 @@ def _get_unique_parameter_key():
     return _GLOBAL_PARAMETER_KEY
 
 
+def _gen_offload_file_path(offload_dir):
+    offload_dir = os.path.relpath(offload_dir)
+    if not os.path.exists(offload_dir):
+        os.makedirs(offload_dir)
+    offload_file_path = offload_dir + "/" + str(_get_global_rank()) + "_" + str(
+        _get_unique_parameter_key()) + "_" + str(time.time()) + ".data"
+    return offload_file_path
+
+
 def _offload_if_config(data):
     """
     Offload parameter(data size > 512) to file when enable memory offload and offload parameter to disk.
@@ -111,11 +120,7 @@ def _offload_if_config(data):
     offload_file_path = data.offload_file_path()
     if offload_file_path is None or offload_file_path == "":
         offload_dir = offload_context.get("offload_path", "./offload")
-        offload_dir = os.path.relpath(offload_dir)
-        if not os.path.exists(offload_dir):
-            os.makedirs(offload_dir)
-        offload_file_path = offload_dir + "/" + str(_get_global_rank()) + "_" + str(
-            _get_unique_parameter_key()) + "_" + str(time.time()) + ".data"
+        offload_file_path = _gen_offload_file_path(offload_dir)
     data.offload(offload_file_path)
 
 
@@ -274,6 +279,7 @@ class Parameter(Tensor_):
             # At embedding cache scenes, we need limit the size of memory for parameter.
             # And save out range data to persistent storage to support TB-Level size parameter.
             slice_num_of_persistent_data = get_slice_num(default_input.dtype, default_input.shape)
+            self.param_info.device = default_input.device
             if slice_num_of_persistent_data > 1:
                 data_shape = list(default_input.shape)
                 slice_first_dim = math.ceil(data_shape[0] / slice_num_of_persistent_data)

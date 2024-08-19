@@ -21,6 +21,7 @@
 #endif
 #include "plugin/device/ascend/hal/hardware/ge_utils.h"
 #include <utility>
+
 #include "plugin/device/cpu/hal/device/cpu_memory_manager.h"
 #include "plugin/device/ascend/hal/device/ascend_memory_manager.h"
 #include "plugin/device/ascend/hal/device/ascend_device_address.h"
@@ -30,17 +31,22 @@
 #include "plugin/device/ascend/hal/device/ascend_pin_mem_pool.h"
 #include "plugin/device/cpu/hal/device/cpu_device_synchronizer.h"
 #include "include/transform/graph_ir/utils.h"
+#include "include/common/utils/offload_context.h"
 #include "graph/types.h"
 #include "transform/symbol/acl_rt_symbol.h"
 #include "transform/symbol/symbol_utils.h"
 #include "transform/acl_ir/op_api_util.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
+#include "utils/file_utils.h"
 #include "graph/def_types.h"
 #include "runtime/device/move_to.h"
 
 namespace mindspore {
 namespace device {
 namespace ascend {
+
+constexpr char kSwapFileSuffix[] = ".data";
+
 std::string GetCurrentDir() {
 #ifndef _WIN32
   Dl_info dl_info;
@@ -111,6 +117,21 @@ void GeDeviceResManager::Destroy() {
     mem_manager_ = nullptr;
   }
 }
+std::string GetSwapFileName(uint32_t device_id) {
+  static size_t swap_file_index = 0;
+  std::string file_dir;
+  const auto &offload_context = OffloadContext::GetInstance();
+  if (offload_context != nullptr) {
+    const auto real_dir = FileUtils::GetRealPath(offload_context->offload_path().c_str());
+    if (!real_dir.has_value()) {
+      MS_LOG(EXCEPTION) << "Invalid offload path[" << offload_context->offload_path()
+                        << "]. Please check offload_path configuration.";
+    }
+    file_dir = real_dir.value() + "/";
+  }
+  return file_dir + std::to_string(device_id) + "_" + std::to_string(swap_file_index++) + "_" +
+         std::to_string(Common::GetTimeStamp()) + kSwapFileSuffix;
+}
 
 bool GeDeviceResManager::AllocateMemory(DeviceAddress *const &address, uint32_t stream_id) const {
   MS_EXCEPTION_IF_NULL(address);
@@ -135,6 +156,29 @@ bool GeDeviceResManager::AllocateMemory(DeviceAddress *const &address, uint32_t 
     stream_id = address->stream_id();
   }
 
+  const auto &hete_info = address->kernel_tensor()->heterogeneous_info();
+  if (swap_manager_ != nullptr && hete_info != nullptr) {
+    if (hete_info->need_alloc_hete_res_ == kernel::NeedAllocateHeteRes::NeedHostMem) {
+      if (hete_info->host_ptr_ != nullptr) {
+        MS_LOG(ERROR) << "Memory leak detected!";
+        return false;
+      }
+      auto host_ptr = swap_manager_->AllocHostMemory(address->GetSize());
+      hete_info->host_ptr_ = host_ptr;
+      address->set_from_mem_pool(true);
+      return true;
+    }
+    if (hete_info->need_alloc_hete_res_ == kernel::NeedAllocateHeteRes::NeedDiskFile) {
+      if (!hete_info->file_name_.empty()) {
+        MS_LOG(ERROR) << "Memory leak detected!";
+        return false;
+      }
+      auto file_name = GetSwapFileName(device_context_->device_context_key_.device_id_);
+      swap_manager_->CreateFile(file_name, address->GetSize());
+      hete_info->file_name_ = file_name;
+      return true;
+    }
+  }
   if (swap_manager_ != nullptr) {
     device_ptr = swap_manager_->AllocDeviceMemory(address->GetSize(), stream_id);
   } else {
@@ -165,6 +209,23 @@ void *GeDeviceResManager::AllocateMemory(size_t size, uint32_t stream_id) const 
 size_t GeDeviceResManager::GetMaxUsedMemorySize() const {
   MS_EXCEPTION_IF_NULL(mem_manager_);
   return mem_manager_->GetMaxUsedMemorySize();
+}
+
+void GeDeviceResManager::FreeMemory(DeviceAddress *const &address) const {
+  const auto &hete_info = address->kernel_tensor()->heterogeneous_info();
+  if (hete_info != nullptr && swap_manager_ != nullptr) {
+    if (hete_info->host_ptr_ != nullptr) {
+      swap_manager_->FreeHostMemory(hete_info->host_ptr_);
+      hete_info->host_ptr_ = nullptr;
+    }
+    if (!hete_info->file_name_.empty()) {
+      swap_manager_->DeleteFile(hete_info->file_name_);
+      hete_info->file_name_ = "";
+    }
+  }
+  if (address->GetPtr() != nullptr) {
+    DeviceResManager::FreeMemory(address);
+  }
 }
 
 void GeDeviceResManager::FreeMemory(void *ptr) const {

@@ -340,6 +340,16 @@ struct AddressCommon {
 };
 using AddressCommonPtr = std::shared_ptr<AddressCommon>;
 
+enum class NeedAllocateHeteRes : int64_t { NoNeedHeteRes = 0, NeedHostMem = 1, NeedDiskFile = 2 };
+
+struct HeterogeneousInfo {
+  void *host_ptr_;
+  std::string file_name_;
+  std::optional<size_t> aio_token_;
+  NeedAllocateHeteRes need_alloc_hete_res_{NeedAllocateHeteRes::NoNeedHeteRes};
+};
+using HeterogeneousInfoPtr = std::shared_ptr<HeterogeneousInfo>;
+
 // KernelTensor is used to express input and output parameters of kernels.
 // KernelTensor is a generalized Tensor semantics, which can represent not only Tensor, but also the meta-information
 // of Scalar, Tuple, List and other data structures. It saves the shape, type, value and format information required by
@@ -623,6 +633,10 @@ class BACKEND_EXPORT KernelTensor : public AbstractBase {
     device_synchronizer_ = device_synchronizer;
   }
 
+  HeterogeneousInfoPtr heterogeneous_info() const { return hete_info_; }
+
+  void set_heterogeneous_info(HeterogeneousInfoPtr hete_info) { hete_info_ = hete_info; }
+
   // Clone a new KernelTensor from this.
   std::shared_ptr<KernelTensor> CloneKernelTensor() { return std::make_shared<KernelTensor>(*this); }
 
@@ -711,6 +725,9 @@ class BACKEND_EXPORT KernelTensor : public AbstractBase {
 
   // address basic info
   AddressCommonPtr address_common_{nullptr};
+
+  // heterogeneous info
+  HeterogeneousInfoPtr hete_info_{nullptr};
 };
 using KernelTensorPtr = std::shared_ptr<KernelTensor>;
 

@@ -736,6 +736,11 @@ constexpr auto kRealElementsSize = "real_elements_size";
 //   kUnkown,
 // };
 
+// MoveTo dst string
+constexpr auto kToNup = "Npu";
+constexpr auto kToCpu = "Cpu";
+constexpr auto kToDisk = "Disk";
+
 // Return vec<filename, line number, function name>
 COMMON_EXPORT std::vector<std::tuple<std::string, int, std::string>> GetPythonStack_();
 COMMON_EXPORT std::string GetPythonStackStr_();

@@ -33,6 +33,7 @@ class RtKernel : public KernelMod {
   RtKernel();
   ~RtKernel() override;
   virtual bool Init(const AnfNodePtr &anf_node);
+  std::vector<KernelAttr> GetOpSupport() override { MS_LOG(EXCEPTION) << "This interface is not support in RtKernel."; }
 };
 
 using RTKernelPtr = std::shared_ptr<RtKernel>;

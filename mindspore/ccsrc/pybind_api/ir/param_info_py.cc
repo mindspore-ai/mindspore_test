@@ -45,6 +45,7 @@ void RegParamInfo(const py::module *m) {
     .def_property("is_quant_int4", &ParamInfo::is_quant_int4, &ParamInfo::set_is_quant_int4)
     .def_property("quant_shape", &ParamInfo::quant_shape, &ParamInfo::set_quant_shape)
     .def_property("storage_format", &ParamInfo::storage_format, &ParamInfo::set_storage_format)
+    .def_property("device", &ParamInfo::device, &ParamInfo::set_device)
     .def(py::pickle(
       [](const ParamInfo &p) {  // __getstate__
         return py::make_tuple(p.name(), p.requires_grad(), p.layerwise_parallel());

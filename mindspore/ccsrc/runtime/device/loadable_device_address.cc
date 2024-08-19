@@ -461,9 +461,22 @@ void *LoadableDeviceAddress::GetOffloadPtr() const {
 // Return whether DeviceAddress has a valid ptr.
 bool LoadableDeviceAddress::IsPtrValid() const {
   std::lock_guard<std::recursive_mutex> lock(ptr_mutex_);
-  return GetDevicePtr() != nullptr || (loadable_mem_ != nullptr && (loadable_mem_->offload_ptr_ != nullptr ||
-                                                                    loadable_mem_->storage_info_.host_ptr_ != nullptr ||
-                                                                    !loadable_mem_->storage_info_.file_name_.empty()));
+  if (GetDevicePtr() != nullptr) {
+    return true;
+  }
+  const auto &hete_info = kernel_tensor_->heterogeneous_info();
+  if (hete_info != nullptr) {
+    if (hete_info->host_ptr_ != nullptr || !hete_info->file_name_.empty()) {
+      return true;
+    }
+  }
+  if (loadable_mem_ != nullptr) {
+    if (loadable_mem_->offload_ptr_ != nullptr || loadable_mem_->storage_info_.host_ptr_ != nullptr ||
+        !loadable_mem_->storage_info_.file_name_.empty()) {
+      return true;
+    }
+  }
+  return false;
 }
 
 // Load first if data is offloaded and return the device ptr.

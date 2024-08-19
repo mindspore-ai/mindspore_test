@@ -784,7 +784,7 @@ class TruncatedNormal(Initializer):
         _assignment(arr, tmp)
 
 
-def initializer(init, shape=None, dtype=mstype.float32):
+def initializer(init, shape=None, dtype=mstype.float32, device=None):
     """
     Create and initialize a tensor.
 
@@ -856,7 +856,7 @@ def initializer(init, shape=None, dtype=mstype.float32):
     elif isinstance(init, numbers.Number):
         init = Constant(init)
     shape = shape if shape is not None else init.shape
-    init_obj = Tensor(dtype=dtype, shape=shape, init=init)
+    init_obj = Tensor(dtype=dtype, shape=shape, init=init, device=device)
     return init_obj
 
 

@@ -18,6 +18,7 @@
 #include <utility>
 #include <algorithm>
 #include <deque>
+#include "backend/common/pass/insert_move_to.h"
 #include "include/common/utils/parallel_context.h"
 #include "include/common/profiler.h"
 #include "mindspore/ops/op_def/array_ops.h"

@@ -568,8 +568,42 @@ void KernelActor::SendMemoryAllocReq(OpContext<DeviceTensor> *const context) {
       output_device_tensors_[out_in.first]->set_ptr(ptr);
     }
   }
+  if (IsOneOfPrimitiveCNode(kernel_, {prim::kPrimMoveTo, prim::kPrimMoveAssign})) {
+    for (auto &device_tensor : memory_alloc_list_) {
+      MS_EXCEPTION_IF_NULL(device_tensor);
+      // Unused device address need skip to reduce memory use.
+      if (device_tensor->IsNotNeedAlloc()) {
+        continue;
+      }
+      if (device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
+        device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, GetAID().Name(), device::tracker::MemType::kKernel,
+                                                       device_tensor->GetSize(), device_tensor);
+      }
 
-  MemoryManagerActor::GetInstance()->AllocateMemory(&memory_alloc_list_, device_contexts_[0], context, GetAID());
+      try {
+        // Allocate memory through the device context.
+        device::DynamicMemAllocatorDebugInfo::SetDebugInfo(GetAID().Name(), device::AllocatorType::kKernelOutput);
+        if (!device_contexts_[0]->device_res_manager_->AllocateMemory(device_tensor, kDefaultStreamIndex)) {
+          SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(GraphExecutionStrategy::kPipeline, *context, *device_contexts_[0],
+                                                      GetAID().Name(), device_tensor->GetSize());
+          return;
+        }
+      } catch (const std::exception &e) {
+        SET_OPCONTEXT_MEMORY_ALLOC_FAIL_BY_STRATEGY(GraphExecutionStrategy::kPipeline, *context, *device_contexts_[0],
+                                                    GetAID().Name(), device_tensor->GetSize());
+        return;
+      }
+
+      if (common::IsNeedProfileMemory()) {
+        auto output_address = reinterpret_cast<std::uintptr_t>(device_tensor);
+        MS_LOG(WARNING) << "Need Profile Memory, alloc type: MemoryManagerActor, device address class ptr: "
+                        << output_address << ", device address size: " << device_tensor->GetSize()
+                        << ", device address addr: " << device_tensor->GetPtr();
+      }
+    }
+  } else {
+    MemoryManagerActor::GetInstance()->AllocateMemory(&memory_alloc_list_, device_contexts_[0], context, GetAID());
+  }
 
   if (ActorDispatcher::enable_trace_dynamic_memory()) {
     if (IsRunningFailed(context)) {

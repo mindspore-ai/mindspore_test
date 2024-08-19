@@ -14,25 +14,25 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_RTS_CONDITION_GATHER_H
-#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_RTS_CONDITION_GATHER_H
-#include <memory>
-#include <vector>
+#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_RTS_MOVE_ASSIGN_H
+#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_RTS_MOVE_ASSIGN_H
+
 #include "plugin/device/ascend/kernel/rts/rt_kernel.h"
+#include "plugin/device/ascend/kernel/rts/move_to.h"
 
 namespace mindspore {
 namespace kernel {
-class ConditionGatherKernel : public RtKernel {
+class MoveAssign : public MoveTo {
  public:
-  ConditionGatherKernel() = default;
-  ~ConditionGatherKernel() override;
-  bool Init(const AnfNodePtr &anf_node) override;
-  bool Launch(const std::vector<KernelTensor *> &, const std::vector<KernelTensor *> &,
-              const std::vector<KernelTensor *> &, void *) override;
-};
+  MoveAssign() = default;
+  ~MoveAssign() override {}
 
-MS_REG_RTKERNEL(conditiongather, ConditionGatherKernel);
+  bool Init(const AnfNodePtr &anf_node) override;
+  bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
+              const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;
+};
+MS_REG_RTKERNEL(moveassign, MoveAssign);
 }  // namespace kernel
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_RTS_CONDITION_GATHER_H
+#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_RTS_MOVE_ASSIGN_H

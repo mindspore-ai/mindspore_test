@@ -132,6 +132,7 @@ class BACKEND_EXPORT SwapManager {
   std::queue<const DeviceAddress *> swapping_tensors_file_;
   IOHandlePtr io_handle_;
 };
+using SwapManagerPtr = std::shared_ptr<SwapManager>;
 }  // namespace device
 }  // namespace mindspore
 

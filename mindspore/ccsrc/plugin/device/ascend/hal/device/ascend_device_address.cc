@@ -910,9 +910,12 @@ void AscendDeviceAddress::ClearDeviceMemory() {
 
 void AscendDeviceAddress::CopyDeviceToHost(void *dst, uint64_t size) const {
   MS_EXCEPTION_IF_NULL(dst);
-  if (mem_offloaded()) {
-    MS_EXCEPTION_IF_NULL(loadable_mem_->offload_ptr_);
-    SyncMemory(dst, loadable_mem_->offload_ptr_, size, ACL_MEMCPY_HOST_TO_HOST);
+  if (kernel_tensor_->heterogeneous_info() != nullptr) {
+    if (kernel_tensor_->heterogeneous_info()->host_ptr_ == nullptr) {
+      // TODO tranghuikang
+      MS_LOG(EXCEPTION) << "Copy from file to host is not supported yet.";
+    }
+    SyncMemory(dst, kernel_tensor_->heterogeneous_info()->host_ptr_, size, ACL_MEMCPY_HOST_TO_HOST);
   } else {
     MS_EXCEPTION_IF_NULL(GetDevicePtr());
     SyncMemory(dst, GetDevicePtr(), size, ACL_MEMCPY_DEVICE_TO_HOST);
@@ -922,10 +925,12 @@ void AscendDeviceAddress::CopyDeviceToHost(void *dst, uint64_t size) const {
 void AscendDeviceAddress::CopyHostToDevice(const void *src, uint64_t size,
                                            const tensor::TensorDataPtr &tensor_data) const {
   MS_EXCEPTION_IF_NULL(src);
-
-  if (mem_offloaded()) {
-    MS_EXCEPTION_IF_NULL(loadable_mem_->offload_ptr_);
-    SyncMemory(loadable_mem_->offload_ptr_, src, size, ACL_MEMCPY_HOST_TO_HOST, tensor_data);
+  if (kernel_tensor_->heterogeneous_info() != nullptr) {
+    if (kernel_tensor_->heterogeneous_info()->host_ptr_ == nullptr) {
+      // TODO tranghuikang
+      MS_LOG(EXCEPTION) << "Copy from host to file is not supported yet.";
+    }
+    SyncMemory(kernel_tensor_->heterogeneous_info()->host_ptr_, src, size, ACL_MEMCPY_HOST_TO_HOST, tensor_data);
   } else {
     MS_EXCEPTION_IF_NULL(GetDevicePtr());
     if (type_id() == kObjectTypeString) {

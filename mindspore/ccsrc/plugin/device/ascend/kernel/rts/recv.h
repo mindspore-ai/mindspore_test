@@ -32,7 +32,6 @@ class RecvKernel : public RtKernel {
   bool Init(const AnfNodePtr &anf_node) override;
   bool Launch(const std::vector<KernelTensor *> &, const std::vector<KernelTensor *> &,
               const std::vector<KernelTensor *> &, void *stream_ptr) override;
-  std::vector<KernelAttr> GetOpSupport() override { MS_LOG(EXCEPTION) << "This interface is not support in RtKernel."; }
 
  private:
   uint32_t event_id_{0};

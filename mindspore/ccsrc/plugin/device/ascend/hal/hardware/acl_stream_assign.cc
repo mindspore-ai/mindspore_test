@@ -26,6 +26,7 @@
 #include "include/common/utils/utils.h"
 #include "mindspore/ops/op_def/ascend_op_name.h"
 #include "mindspore/ops/op_def/framework_op_name.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "frontend/parallel/ops_info/ops_utils.h"
 #include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
 
@@ -134,6 +135,12 @@ void AclStreamAssign::AssignStream(const NotNull<KernelGraphPtr> &kernel_graph,
     if (common::AnfAlgo::IsCommunicationOp(node)) {
       AddStreamIdForCommunicationOp(node, is_pp_interleave);
       enable_multi_stream = true;
+    } else if (IsPrimitiveCNode(node, prim::kPrimMoveTo)) {
+      AnfAlgo::SetStreamId(kSwapInStreamIndex, node.get());
+      common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kSwapInStreamIndex), node);
+    } else if (IsPrimitiveCNode(node, prim::kPrimMoveAssign)) {
+      AnfAlgo::SetStreamId(kSwapOutStreamIndex, node.get());
+      common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kSwapOutStreamIndex), node);
     } else {
       AnfAlgo::SetStreamId(kDefaultStreamIndex, node.get());
       common::AnfAlgo::SetNodeAttr(kAttrStreamId, MakeValue(kDefaultStreamIndex), node);

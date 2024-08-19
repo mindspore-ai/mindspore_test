@@ -23,5 +23,7 @@ constexpr auto kForwardSendStreamIndex = 2;
 constexpr auto kBackwardSendStreamIndex = 3;
 constexpr auto kForwardReceiveStreamIndex = 4;
 constexpr auto kBackwardReceiveStreamIndex = 5;
+constexpr auto kSwapInStreamIndex = 7;
+constexpr auto kSwapOutStreamIndex = 8;
 }  // namespace mindspore
 #endif
