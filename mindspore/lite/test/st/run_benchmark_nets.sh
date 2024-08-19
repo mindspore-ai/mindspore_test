@@ -31,6 +31,7 @@ done
 
 cur_path=$(pwd)
 echo "cur_path is "$cur_path
+export MSLITE_OPST_PATH=${cur_path}
 # This value could not be set to ON.
 fail_not_return="OFF"
 level=${level:-"level0"}

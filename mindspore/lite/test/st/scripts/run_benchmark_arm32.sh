@@ -79,6 +79,7 @@ file_name=$(ls ${x86_path}/*-linux-x64.tar.gz)
 IFS="-" read -r -a file_name_array <<< "$file_name"
 version=${file_name_array[2]}
 
+export MSLITE_PACKAGE_PATH=${x86_path}/mindspore-lite-${version}-linux-x64/
 # Set models config filepath
 config_folder="config_level0"
 if [[ ${level} = "level1" ]]; then
