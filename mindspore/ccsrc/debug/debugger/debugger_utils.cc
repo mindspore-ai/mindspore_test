@@ -500,8 +500,12 @@ void DumpDataViaCallback(const CNodePtr &cnode, const std::vector<device::Device
   auto stream_id = tensor_info_comm.stream_id;
 
   std::vector<TensorInfoForDump> tensor_info_list;
-  PrepareInputDataViaCallback(cnode, input_device_tensors, &tensor_info_list);
-  PrepareOutputDataViaCallback(cnode, output_device_tensors, &tensor_info_list);
+  if (DumpJsonParser::GetInstance().InputNeedDump()) {
+    PrepareInputDataViaCallback(cnode, input_device_tensors, &tensor_info_list);
+  }
+  if (DumpJsonParser::GetInstance().OutputNeedDump()) {
+    PrepareOutputDataViaCallback(cnode, output_device_tensors, &tensor_info_list);
+  }
 
   LaunchDumpCallback(tensor_info_list, device_context, stream_id, tensor_info_comm);
 }
