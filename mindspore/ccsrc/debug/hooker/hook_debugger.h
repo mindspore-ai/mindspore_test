@@ -25,14 +25,19 @@ namespace mindspore {
 namespace hooker {
 class HookDebugger {
  public:
-  HookDebugger() = default;
+  HookDebugger() : is_enabled_(IsHookerEnabled()) {
+    if (is_enabled_) {
+      MS_LOG(INFO) << "Dump Hook is enabled.";
+    } else {
+      MS_LOG(WARNING) << "Dump Hook is not enabled, please set MS_HOOK_ENABLE.";
+    }
+  }
 
   ~HookDebugger() = default;
 
   static HookDebugger &GetInstance();
 
   HookDebugger(const HookDebugger &) = delete;
-
   HookDebugger &operator=(const HookDebugger &) = delete;
 
   bool IsHookerEnabled();
@@ -41,6 +46,9 @@ class HookDebugger {
                        bool is_dataset_sink, bool is_kbyk);
 
   void HookOnStepEnd();
+
+ private:
+  bool is_enabled_ = false;
 };
 }  // namespace hooker
 }  // namespace mindspore

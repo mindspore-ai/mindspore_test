@@ -29,8 +29,7 @@ bool HookDebugger::IsHookerEnabled() { return common::GetEnv(kMSHookEnable) == k
 
 void HookDebugger::HookOnStepBegin(uint32_t device_id, const std::vector<KernelGraphPtr> &graphs, int step_count,
                                    bool is_dataset_sink, bool is_kbyk) {
-  if (!IsHookerEnabled()) {
-    MS_LOG(WARNING) << "Dump Hook is not enabled, please set MS_HOOK_ENABLE";
+  if (!is_enabled_) {
     return;
   }
 
@@ -59,8 +58,7 @@ void HookDebugger::HookOnStepBegin(uint32_t device_id, const std::vector<KernelG
 }
 
 void HookDebugger::HookOnStepEnd() {
-  if (!IsHookerEnabled()) {
-    MS_LOG(WARNING) << "Dump Hook is not enabled, please set MS_HOOK_ENABLE";
+  if (!is_enabled_) {
     return;
   }
 
