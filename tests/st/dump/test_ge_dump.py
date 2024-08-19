@@ -23,7 +23,7 @@ import csv
 
 import mindspore
 import mindspore.nn as nn
-from mindspore import Tensor
+from mindspore import Tensor, _data_dump, Callback, dataset, Model
 from mindspore.ops import operations as P
 from mindspore.nn import Cell
 from mindspore.nn import Dense
@@ -715,3 +715,79 @@ def test_acl_dump_with_diagnostic_path():
         check_ge_dump_structure_acl(dump_path, 0, 1)
         del os.environ['MINDSPORE_DUMP_CONFIG']
         del os.environ['MS_DIAGNOSTIC_DATA_PATH']
+
+class StopAtStep(Callback):
+    """
+    Start profiling base on step.
+
+    Args:
+        start_step (int): The start step number.
+        stop_step (int): The stop step number.
+    """
+    def __init__(self, start_step, stop_step):
+        super(StopAtStep, self).__init__()
+        self.start_step = start_step
+        self.stop_step = stop_step
+        # pylint: disable=W0212
+        _data_dump._dump_set_dynamic()
+
+    def on_train_step_begin(self, run_context):
+        cb_params = run_context.original_args()
+        step_num = cb_params.cur_step_num
+        if step_num == self.start_step:
+            # pylint: disable=W0212
+            _data_dump._dump_start()
+
+    def on_train_step_end(self, run_context):
+        cb_params = run_context.original_args()
+        step_num = cb_params.cur_step_num
+        if step_num == self.stop_step:
+            # pylint: disable=W0212
+            _data_dump._dump_stop()
+
+class Net1(nn.Cell):
+    """The test net"""
+    def __init__(self):
+        super(Net1, self).__init__()
+        self.fc = nn.Dense(2, 2)
+
+    def construct(self, x_):
+        return self.fc(x_)
+
+def generator():
+    for _ in range(3):
+        yield (np.ones([2, 2]).astype(np.float32), np.ones([2]).astype(np.int32))
+
+def run_dynamic_acl_dump_flag(test_name):
+    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
+    context.set_context(jit_level="O2")
+    if sys.platform != 'linux':
+        return
+    with tempfile.TemporaryDirectory(dir='/tmp') as tmp_dir:
+        dump_path = os.path.join(tmp_dir, 'acl_dump')
+        dump_config_path = os.path.join(tmp_dir, 'acl_dump.json')
+        generate_dump_json(dump_path, dump_config_path, test_name)
+        os.environ['MINDSPORE_DUMP_CONFIG'] = dump_config_path
+        dynamic_data_dump = StopAtStep(2, 3)
+        if os.path.isdir(dump_path):
+            shutil.rmtree(dump_path)
+        network = Net1()
+        optimizer = nn.Momentum(network.trainable_params(), 1, 0.9)
+        loss = nn.SoftmaxCrossEntropyWithLogits(sparse=True)
+        data = dataset.GeneratorDataset(generator, ["data", "label"])
+        model = Model(network, loss, optimizer)
+        model.train(3, data, callbacks=[dynamic_data_dump], dataset_sink_mode=False)
+        dump_data_path = os.path.join(dump_path, '2')
+        assert os.path.exists(dump_data_path)
+        del os.environ['MINDSPORE_DUMP_CONFIG']
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@security_off_wrap
+def test_acl_dynamic_dump():
+    """
+    Feature: acl dump  when the MS_DIANOSTIC_DATA_PATH is set.
+    Description: Test acl dump when path is not set (set to empty) in dump json file and
+     MS_DIAGNOSTIC_DATA_PATH is set.
+    Expectation: Data is expected to be dumped into MS_DIAGNOSTIC_DATA_PATH/debug_dump.
+    """
+    run_dynamic_acl_dump_flag('test_acl_dump')

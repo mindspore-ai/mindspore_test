@@ -19,9 +19,8 @@ import tempfile
 import glob
 import shutil
 import numpy as np
-
 import mindspore.nn as nn
-from mindspore import context
+from mindspore import context, _data_dump, Callback, dataset, Model
 from mindspore.common.tensor import Tensor
 from mindspore.common.initializer import TruncatedNormal
 from mindspore.common.parameter import ParameterTuple
@@ -142,3 +141,78 @@ def test_ascend_kernel_by_kernel_lenet():
     context.set_context(jit_level='O0')
     context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
     run_trans_flag("test_e2e_dump_lenet")
+
+class Net(nn.Cell):
+    """The test net"""
+    def __init__(self):
+        super(Net, self).__init__()
+        self.fc = nn.Dense(2, 2)
+
+    def construct(self, x_):
+        return self.fc(x_)
+
+class StopAtStep(Callback):
+    """
+    Start profiling base on step.
+
+    Args:
+        start_step (int): The start step number.
+        stop_step (int): The stop step number.
+    """
+    def __init__(self, start_step, stop_step):
+        super(StopAtStep, self).__init__()
+        self.start_step = start_step
+        self.stop_step = stop_step
+        # pylint: disable=W0212
+        _data_dump._dump_set_dynamic()
+
+    def on_train_step_begin(self, run_context):
+        cb_params = run_context.original_args()
+        step_num = cb_params.cur_step_num
+        if step_num == self.start_step:
+            # pylint: disable=W0212
+            _data_dump._dump_start()
+
+    def on_train_step_end(self, run_context):
+        cb_params = run_context.original_args()
+        step_num = cb_params.cur_step_num
+        if step_num == self.stop_step:
+            # pylint: disable=W0212
+            _data_dump._dump_stop()
+
+def generator():
+    for _ in range(3):
+        yield (np.ones([2, 2]).astype(np.float32), np.ones([2]).astype(np.int32))
+
+def run_kbk_data_dump_dynamic(test_name):
+    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
+    context.set_context(jit_level='O0')
+    if sys.platform != 'linux':
+        return
+    with tempfile.TemporaryDirectory(dir='/tmp') as tmp_dir:
+        dump_path = os.path.join(tmp_dir, test_name)
+        dump_config_path = os.path.join(tmp_dir, '{}.json'.format(test_name))
+        generate_dump_json(dump_path, dump_config_path, test_name)
+        os.environ['MINDSPORE_DUMP_CONFIG'] = dump_config_path
+        if os.path.isdir(dump_path):
+            shutil.rmtree(dump_path)
+        network = Net()
+        dynamic_data_dump = StopAtStep(2, 3)
+        optimizer = nn.Momentum(network.trainable_params(), 1, 0.9)
+        loss = nn.SoftmaxCrossEntropyWithLogits(sparse=True)
+        data = dataset.GeneratorDataset(generator, ["data", "label"])
+        model = Model(network, loss, optimizer)
+        model.train(3, data, callbacks=[dynamic_data_dump], dataset_sink_mode=False)
+        dump_data_path = os.path.join(dump_path, 'rank_0', 'Net', '0', '2')
+        assert os.path.exists(dump_data_path)
+        del os.environ['MINDSPORE_DUMP_CONFIG']
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@security_off_wrap
+def test_kbk_dynamic_data_dump():
+    """
+    Feature: Ascend kernel by kernel dump with lenet5.
+    Description: Test kernel by kernel dump in Ascend with trans_flag is configured to true.
+    Expectation: Dump files has tensor data in host format (4 dimensions).
+    """
+    run_kbk_data_dump_dynamic("test_e2e_dump_lenet")

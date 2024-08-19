@@ -97,9 +97,9 @@ class DebugActor : public ActorBase {
 
   // class members
   uint32_t exec_order_ = 0;
-  int step_count = 0;
-  bool dump_flag = false;
-  int is_dataset_sink = 0;
+  int step_count_ = 0;
+  bool dump_flag_ = false;
+  int is_dataset_sink_ = 0;
 
   bool profile_started_ = false;
   DeviceContext *device_ctx_ = nullptr;
