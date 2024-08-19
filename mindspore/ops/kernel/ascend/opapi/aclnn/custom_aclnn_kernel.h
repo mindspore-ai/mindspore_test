@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CUSTOM_ACLNN_KERNEL_MOD_H_
-#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CUSTOM_ACLNN_KERNEL_MOD_H_
+#ifndef MINDSPORE_OPS_KERNEL_ASCEND_OPAPI_CUSTOM_ACLNN_KERNEL_MOD_H_
+#define MINDSPORE_OPS_KERNEL_ASCEND_OPAPI_CUSTOM_ACLNN_KERNEL_MOD_H_
 #include <vector>
 #include <string>
 #include <utility>
@@ -25,18 +25,6 @@
 
 namespace mindspore {
 namespace kernel {
-constexpr size_t kTensorNum1 = 1;
-constexpr size_t kTensorNum2 = 2;
-constexpr size_t kTensorNum3 = 3;
-constexpr size_t kTensorNum4 = 4;
-constexpr size_t kTensorNum5 = 5;
-constexpr size_t kTensorNum6 = 6;
-constexpr size_t kTensorNum7 = 7;
-constexpr size_t kTensorNum8 = 8;
-constexpr size_t kTensorNum9 = 9;
-constexpr size_t kTensorNum10 = 10;
-constexpr size_t kTensorNum11 = 11;
-constexpr size_t kTensorNum12 = 12;
 
 template <size_t N>
 class CustomAclnnKernelMod : public AclnnKernelMod {
@@ -45,7 +33,7 @@ class CustomAclnnKernelMod : public AclnnKernelMod {
   ~CustomAclnnKernelMod() = default;
   void GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                         const std::vector<KernelTensor *> &outputs) override {
-    const auto &res_tuple = this->GetKernelTuple<N>(inputs, outputs);
+    const auto &res_tuple = GetKernelTuple<N>(inputs, outputs);
     std::apply([this](const auto &... args) { GetWorkspaceForResize(args...); }, res_tuple);
   }
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
@@ -57,7 +45,7 @@ class CustomAclnnKernelMod : public AclnnKernelMod {
  private:
   template <typename... Ts>
   void CallRun(void *stream_ptr, const std::vector<KernelTensor *> &workspace, const std::vector<Ts> &... vecs) {
-    const auto &res_tuple = this->GetKernelTuple<N>(vecs...);
+    const auto &res_tuple = GetKernelTuple<N>(vecs...);
     std::apply(
       [this, stream_ptr, &workspace](const auto &... args) { return this->RunOp(stream_ptr, workspace, args...); },
       res_tuple);
@@ -66,45 +54,7 @@ class CustomAclnnKernelMod : public AclnnKernelMod {
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
 
-inline std::shared_ptr<AclnnKernelMod> GetCustomAclNNKernelMod(const AnfNodePtr &anf_node) {
-  auto primitive = GetCNodePrimitive(anf_node);
-  auto op_type = GetValue<std::string>(primitive->GetAttr("reg_op_name"));
-  auto arg_num = AnfUtils::GetInputTensorNum(anf_node) + AnfUtils::GetOutputTensorNum(anf_node);
-  MS_EXCEPTION_IF_NULL(anf_node);
-  MS_LOG(INFO) << "Kernel " << anf_node->fullname_with_scope() << " is a custom op, op type : " << op_type
-               << ", arg num : " << arg_num;
-  switch (arg_num) {
-    case kTensorNum1:
-      return std::make_shared<CustomAclnnKernelMod<kTensorNum1>>(op_type);
-    case kTensorNum2:
-      return std::make_shared<CustomAclnnKernelMod<kTensorNum2>>(op_type);
-    case kTensorNum3:
-      return std::make_shared<CustomAclnnKernelMod<kTensorNum3>>(op_type);
-    case kTensorNum4:
-      return std::make_shared<CustomAclnnKernelMod<kTensorNum4>>(op_type);
-    case kTensorNum5:
-      return std::make_shared<CustomAclnnKernelMod<kTensorNum5>>(op_type);
-    case kTensorNum6:
-      return std::make_shared<CustomAclnnKernelMod<kTensorNum6>>(op_type);
-    case kTensorNum7:
-      return std::make_shared<CustomAclnnKernelMod<kTensorNum7>>(op_type);
-    case kTensorNum8:
-      return std::make_shared<CustomAclnnKernelMod<kTensorNum8>>(op_type);
-    case kTensorNum9:
-      return std::make_shared<CustomAclnnKernelMod<kTensorNum9>>(op_type);
-    case kTensorNum10:
-      return std::make_shared<CustomAclnnKernelMod<kTensorNum10>>(op_type);
-    case kTensorNum11:
-      return std::make_shared<CustomAclnnKernelMod<kTensorNum11>>(op_type);
-    case kTensorNum12:
-      return std::make_shared<CustomAclnnKernelMod<kTensorNum12>>(op_type);
-    default:
-      MS_LOG(ERROR) << "Aclnn custom only support arg nums between 0 and 12, but get: " << arg_num;
-  }
-  return nullptr;
-}
-
 }  // namespace kernel
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_CUSTOM_ACLNN_KERNEL_MOD_H_
+#endif  // MINDSPORE_OPS_KERNEL_ASCEND_OPAPI_CUSTOM_ACLNN_KERNEL_MOD_H_
