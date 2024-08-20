@@ -50,7 +50,8 @@ from mindspore.ops.auto_generate import (minimum, maximum, mul, sin, sinc, sinh,
                                          log, log1p, neg, not_equal, pow, round_op, isfinite, argmax_ext, mean_ext_op,
                                          sum_ext_op, prod_ext_op, all, matrix_inverse_ext, atan2_ext, sign, acos_ext,
                                          acosh_ext, asin_ext, asinh_ext, atan_ext, tan, median_ext_op, median_dim_op,
-                                         xlogy_op, xlogy_scalar_other_op, xlogy_scalar_self_op, trunc, histc_ext)
+                                         xlogy_op, xlogy_scalar_other_op, xlogy_scalar_self_op, trunc, histc_ext,
+                                         bincount_ext)
 
 
 
@@ -448,7 +449,6 @@ def bincount(input, weights=None, minlength=0):
             raise ValueError('for bincount `input` and `weights` must have the same length')
         idx_mapping *= weights
     return reduce_sum_(idx_mapping.astype(mstype.float32), 1).ravel()
-
 
 def bucketize(input, boundaries, *, right=False):
     r"""

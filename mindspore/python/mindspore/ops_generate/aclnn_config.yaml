@@ -321,6 +321,9 @@ MishGradExt: 'aclnnMishBackward'
 # 301
 TrilExt: 'aclnnTril'
 
+# 520
+BincountExt: 'aclnnBincount'
+
 # 538
 HistcExt: 'aclnnHistc'
 

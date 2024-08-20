@@ -346,6 +346,8 @@ from mindspore.ops.function.array_func import reshape
 
 # 304
 from mindspore.ops.function.array_func import tril_ext as tril
+# 520
+from mindspore.ops.function.math_func import bincount_ext as bincount
 
 # 305
 from mindspore.ops import triu
@@ -1517,6 +1519,9 @@ __all__ = [
 
     # 305
     'triu',
+
+    # 520
+    'bincount',
 
     # 538
     'histc',
