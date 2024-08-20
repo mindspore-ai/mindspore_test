@@ -664,6 +664,7 @@ void MsContext::InitDigitalTypeDefaultValue() {
   set_param<int>(MS_CTX_SAVE_CKPT_STEPS, 0);
   set_param<int>(MS_CTX_LAST_TRIGGERED_STEP, 0);
   set_param<int>(MS_CTX_COMPUTE_COMMUNICATE_FUSION_LEVEL, 0);
+  set_param<int>(MS_CTX_DATASET_BROADCAST_OPT_LEVEL, 0);
   set_param<int>(MS_CTX_ENABLE_COMPILE_CACHE, -1);
   set_param<int>(MS_CTX_DEBUG_LEVEL, kLevelRelease);
   set_param<int>(MS_CTX_MEMORY_OPTIMIZE_LEVEL, kOptimizeO0);

@@ -24,6 +24,8 @@ namespace parallel {
 // Automatically insert duplicated recomputed nodes.
 void OverlapOptShardInPipeline(const FuncGraphPtr &graph);
 void OverlapOptShardGradInPipeline(const FuncGraphPtr &graph);
+bool is_allgather_comm_ops(const AnfNodePtr &node);
+bool is_first_receive(const AnfNodePtr &node);
 }  // namespace parallel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_FRONTEND_PARALLEL_PASS_OVERLAP_OPT_SHARD_IN_PIPELINE_H_
