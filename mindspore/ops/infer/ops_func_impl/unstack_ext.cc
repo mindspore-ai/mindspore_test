@@ -69,7 +69,7 @@ BaseShapePtr UnstackExtFuncImpl::InferShape(const PrimitivePtr &primitive,
   }
 
   auto element_size = LongToSize(input_shape[axis]);
-  abstract::BaseShapePtrList out_shapes;
+  abstract::BaseShapePtrList out_shapes{};
   out_shapes.reserve(element_size);
   for (size_t i = 0; i < element_size; ++i) {
     out_shapes.push_back(std::make_shared<abstract::TensorShape>(element_shape));
