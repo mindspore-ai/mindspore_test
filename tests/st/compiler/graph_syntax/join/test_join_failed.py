@@ -148,7 +148,7 @@ def test_switch_layer_join_failed():
     with pytest.raises(TypeError) as ex:
         net(data, idx)
     assert "Cannot join the return values of different branches" in str(ex.value)
-    assert "return self.relu(x)" in str(ex.value)
+    assert "return self.relu(input)" in str(ex.value)
     assert "return self.softmax(input)" in str(ex.value)
     assert "return x, Tensor(10)" in str(ex.value)
     assert "return x**2" in str(ex.value)
