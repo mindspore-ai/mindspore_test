@@ -30,9 +30,9 @@ class InternalPagedAttention : public InternalKernelMod {
  protected:
   internal::OpParamPtr CreateOpParam(const std::vector<KernelTensor *> &inputs,
                                      const std::vector<KernelTensor *> &outputs);
-  uint64_t GenTilingCacheKey(const std::vector<KernelTensor *> &inputs,
-                                                     const std::vector<KernelTensor *> &outputs);
-  int32_t max_seq_len_{32768};
+  uint64_t GenTilingCacheKey(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
+  std::vector<int32_t> q_seq_len_;
+  std::vector<int32_t> kv_seq_len_;
 };
 }  // namespace kernel
 }  // namespace mindspore
