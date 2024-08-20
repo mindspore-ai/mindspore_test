@@ -17,7 +17,7 @@ mindspore.train.FlopsUtilizationCollector
     异常：
         - **TypeError** - `data_size` 不是正整数。
         - **TypeError** - `full_flops` 不是布尔类型。
-        - **AssertionError** - 不是静态图或者不是静态shape。
+        - **AssertionError** - 训练模式不是静态图或者不是静态shape。
 
     .. py:method:: epoch_begin(run_context)
 
