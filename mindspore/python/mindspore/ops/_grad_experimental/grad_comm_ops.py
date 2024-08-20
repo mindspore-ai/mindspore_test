@@ -34,7 +34,7 @@ from mindspore.ops.operations.comm_ops import (AllGather, _MiniStepAllGather, _H
                                                _MicroStepAllGather, Reduce, CollectiveGather, CollectiveScatter)
 from mindspore.ops._grad_experimental.grad_base import bprop_getters
 from mindspore.ops.operations import _grad_ops as G
-
+import mindspore as ms
 
 @bprop_getters.register(AllReduce)
 def get_bprop_all_reduce(self):
@@ -187,6 +187,9 @@ def get_bprop_mirror_micro_step_operator(self):
     group = self.group
     dev_num = self.dev_num
     mean_flag = self.mean_flag
+    param_name = " "
+    if 'mirror_user_id' in self.get_attr_dict():
+        param_name = self.get_attr_dict()['mirror_user_id']
     scale = 1 / dev_num
 
     all_reduce = AllReduce(group=group)
@@ -197,7 +200,6 @@ def get_bprop_mirror_micro_step_operator(self):
     if hasattr(self, 'parameter'):
         parameter = self.parameter
         all_reduce.add_prim_attr("parameter", parameter)
-
     if self.instance_name:
         instance_name = "grad_mirror" + self.instance_name
         all_reduce.set_prim_instance_name(instance_name)
@@ -208,8 +210,14 @@ def get_bprop_mirror_micro_step_operator(self):
         assign.add_prim_attr("parameter_micro", 0)
     out_tensor = Tensor(1.0, mstype.float16)
     opt_shard = _get_enable_parallel_optimizer()
+    ln_print = P.Print()
+    reduce_sum = P.ReduceSum(keep_dims=False)
+    square = P.Square()
+    dump_local_norm = ms.get_auto_parallel_context("dump_local_norm")
 
     def bprop(x, z, out, dout):
+        if dump_local_norm:
+            z = F.depend(z, ln_print("dump local norm: ", param_name, reduce_sum(square((z)))))
         real_grad = z
         assign_out = dout
         if issubclass_(F.typeof(dout), mstype.tensor_type):
@@ -310,6 +318,9 @@ def get_bprop_micro_step_all_gather(self):
     """Generate bprop for _MicroStepAllGather"""
     fusion = self.get_attr_dict()["fusion"]
     mean_flag = self.get_attr_dict()["mean_flag"]
+    param_name = " "
+    if 'mirror_user_id' in self.get_attr_dict():
+        param_name = self.get_attr_dict()['mirror_user_id']
     do_mirror = False
     if self.group != "":
         do_mirror = self.get_attr_dict()["do_mirror"]
@@ -325,6 +336,10 @@ def get_bprop_micro_step_all_gather(self):
     dtype = P.DType()
     out_tensor = Tensor(1.0, mstype.float16)
     with_mirror_operator = self.get_attr_dict()["with_mirror_operator"]
+    ln_print = P.Print()
+    reduce_sum = P.ReduceSum(keep_dims=False)
+    square = P.Square()
+    dump_local_norm = ms.get_auto_parallel_context("dump_local_norm")
 
     def bprop(x, z, out, dout):
         if with_mirror_operator:
@@ -335,6 +350,8 @@ def get_bprop_micro_step_all_gather(self):
                 real_grad = F.tensor_mul(real_grad, scale)
             return (real_grad, cast(out_tensor, dtype(z)))
         z = F.depend(z, dout)
+        if dump_local_norm:
+            z = F.depend(z, ln_print("dump local norm: ", param_name, reduce_sum(square((z)))))
         if not do_mirror:
             return (z, cast(out_tensor, dtype(z)))
         real_grad = reduce_scatter(z)
@@ -530,6 +547,10 @@ def get_bprop_mirror_operator(self):
     group = self.get_attr_dict()['group']
     dev_num = self.get_attr_dict()['dev_num']
     mean_flag = self.get_attr_dict()['mean_flag']
+    param_name = " "
+    if 'mirror_user_id' in self.get_attr_dict():
+        param_name = self.get_attr_dict()['mirror_user_id']
+
     dev_num_r = 1.0
     if dev_num > 1:
         dev_num_r = 1.0 / dev_num
@@ -537,9 +558,14 @@ def get_bprop_mirror_operator(self):
         all_gather = AllGather(group=group)
         mul = P.Mul()
         cast = P.Cast()
+        ln_print = P.Print()
+        reduce_sum = P.ReduceSum(keep_dims=False)
+        square = P.Square()
+        dump_local_norm = ms.get_auto_parallel_context("dump_local_norm")
 
         fusion = self.get_attr_dict()["fusion"]
         all_reduce.add_prim_attr("fusion", fusion)
+        parameter = " "
         if hasattr(self, 'parameter'):
             parameter = self.parameter
             all_reduce.add_prim_attr("parameter", parameter)
@@ -549,6 +575,9 @@ def get_bprop_mirror_operator(self):
             all_reduce.set_prim_instance_name(instance_name)
 
     def bprop(x, out, dout):
+        if dump_local_norm:
+            dout = F.depend(dout, ln_print("dump local norm: ", param_name, reduce_sum(square((dout)))))
+
         if dev_num == 1:
             return (dout,)
         if mean_flag:

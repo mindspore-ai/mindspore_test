@@ -21,3 +21,4 @@ mindspore.reset_auto_parallel_context
     - pipeline_stages：1。
     - auto_pipeline：False。
     - fusion_threshold：64。
+    - dump_local_norm: False。
