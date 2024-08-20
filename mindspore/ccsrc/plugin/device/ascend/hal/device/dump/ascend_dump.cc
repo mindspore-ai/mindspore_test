@@ -484,7 +484,7 @@ int32_t DumpDataCallBack(const DumpChunk *dump_chunk, int32_t size) {
   uint32_t set_overflow_num = DumpJsonParser::GetInstance().overflow_number();
   uint32_t overflow_count = OverflowCounter::GetInstance().getCount();
   if (isLastChunk == 1) {
-    if (set_overflow_num == 0 || overflow_count < set_overflow_num) {
+    if (set_overflow_num == 0 || overflow_count <= set_overflow_num) {
       // construct dump data object
       toolkit::dumpdata::DumpData dump_data;
       std::vector<char> data_buf;
@@ -497,15 +497,24 @@ int32_t DumpDataCallBack(const DumpChunk *dump_chunk, int32_t size) {
       auto file_base_name = file_name.substr(separator + 1);
       if (file_base_name.rfind("Opdebug.Node_OpDebug.") == 0) {
         // save overflow data
-        AscendAsyncDump::DumpOpDebugToFile(file_name, dump_data, data_buf.data());
-      } else {
-        AscendAsyncDump::DumpTensorToFile(file_name, dump_data, data_buf.data());
-        if (overflow_count < set_overflow_num) {
+        if (overflow_count <= set_overflow_num) {
           OverflowCounter::GetInstance().addCount();
         }
+        overflow_count = OverflowCounter::GetInstance().getCount();
+        if (overflow_count == set_overflow_num + 1 && set_overflow_num != 0) {
+          manager.ClearDumpDataBuilder(file_name);
+          return 0;
+        }
+        AscendAsyncDump::DumpOpDebugToFile(file_name, dump_data, data_buf.data());
+      } else {
+        if (overflow_count == set_overflow_num + 1 && set_overflow_num != 0) {
+          manager.ClearDumpDataBuilder(file_name);
+          return 0;
+        }
+        AscendAsyncDump::DumpTensorToFile(file_name, dump_data, data_buf.data());
       }
-      manager.ClearDumpDataBuilder(file_name);
     }
+    manager.ClearDumpDataBuilder(file_name);
   }
   return 0;
 }
