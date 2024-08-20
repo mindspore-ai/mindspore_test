@@ -78,12 +78,22 @@ void SumExtCPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr
       PyBoostUtils::CastTensor(input_tensor, out_dtype, op->device_context()->device_context_key_.device_name_);
   }
 
-  const auto skip_mode = std::make_shared<BoolImm>(false);
-
-  // Set new input abstract for ReduceSum
-  std::vector<AbstractBasePtr> new_input_abs{act_tensor->ToAbstract(), act_axis->ToAbstract(), keep_dims->ToAbstract(),
-                                             skip_mode->ToAbstract()};
-  SumExtCPUCall(op, act_tensor, act_axis, keep_dims, skip_mode, new_input_abs);
+  if (act_tensor->data_type() == kNumberTypeFloat16) {
+    const auto &device_name = op->device_context()->device_context_key_.device_name_;
+    // Increase the precision to float32 for calculation
+    const auto &cast_input_tensor = PyBoostUtils::CastTensor(act_tensor, kNumberTypeFloat32, device_name);
+    const auto &sum_ext_op = CREATE_PYBOOST_OP(SumExt, device_name);
+    const auto &cast_output_tensor = sum_ext_op->Call(cast_input_tensor, axis, keep_dims, std::nullopt);
+    // After calculation, reduce the precision to float16
+    const auto &output_tensor = PyBoostUtils::CastTensor(cast_output_tensor, kNumberTypeFloat16, device_name);
+    op->set_outputs({output_tensor});
+  } else {
+    const auto skip_mode = std::make_shared<BoolImm>(false);
+    // Set new input abstract for ReduceSum
+    std::vector<AbstractBasePtr> new_input_abs{act_tensor->ToAbstract(), act_axis->ToAbstract(),
+                                               keep_dims->ToAbstract(), skip_mode->ToAbstract()};
+    SumExtCPUCall(op, act_tensor, act_axis, keep_dims, skip_mode, new_input_abs);
+  }
 }
 }  // namespace pyboost
 }  // namespace kernel
