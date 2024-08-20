@@ -186,86 +186,6 @@ bool GraphBuilder::DoOtherBytecode(const Instr &instr) {
   return false;
 }
 
-bool GraphBuilder::DoBuildWithUnpackHelper(const Instr &instr, Py_ssize_t i, ValueNode *iterable,
-                                           std::vector<ValueNode *> *result_elements) {
-  int opcode = instr.op();
-  if (opcode == BUILD_MAP_UNPACK || opcode == BUILD_MAP_UNPACK_WITH_CALL) {
-    if (iterable->GetOpcode() == BUILD_MAP) {
-      result_elements->insert(result_elements->end(), iterable->getInputs().begin(), iterable->getInputs().end());
-    } else if (iterable->GetVobj()->GetPyObject().ptr() != nullptr) {
-      PyObject *map_object = iterable->GetVobj()->GetPyObject().ptr();
-      auto keys = py::reinterpret_steal<py::object>(PyDict_Keys(map_object));
-      Py_ssize_t key_size = PyList_GET_SIZE(keys.ptr());
-      for (Py_ssize_t j = 0; i < key_size; ++i) {
-        Instr instr_get_key(LOAD_CONST, 0, py::reinterpret_borrow<py::object>(PyList_GET_ITEM(keys.ptr(), j)));
-        this->DoLoadConst(instr_get_key);
-        this->push(iterable);
-        this->DoLoadConst(instr_get_key);
-        this->DoGetItem({BINARY_SUBSCR, 0});
-      }
-      std::vector<ValueNode *> elements = {frame_.GetStacks().end() - key_size * 2, frame_.GetStacks().end()};
-      popn(key_size * 2);
-      result_elements->insert(result_elements->end(), elements.begin(), elements.end());
-    } else {
-      MS_LOG(DEBUG) << "DoBuildWithUnpack iterable->GetVobj()->GetPyObject().ptr() == nullptr" << std::endl;
-      return false;
-    }
-  } else {
-    AObject *seq = iterable->GetVobj();
-    PyObject *o = (seq == nullptr) ? nullptr : seq->GetPyObject().ptr();
-    Py_ssize_t size = (o == nullptr) ? -1 : PyObject_Size(o);
-    if (size == -1) {
-      PyErr_Clear();
-      MS_LOG(DEBUG) << "DoBuildWithUnpack size == -1" << std::endl;
-      return false;
-    }
-    push(iterable);
-    if (DoUnpack({UNPACK_SEQUENCE, static_cast<int>(size)})) {
-      std::vector<ValueNode *> elements(frame_.GetStacks().end() - size, frame_.GetStacks().end());
-      result_elements->insert(result_elements->end(), elements.rbegin(), elements.rend());
-      popn(size);
-    } else {
-      pop();
-      MS_LOG(DEBUG) << "DoBuildWithUnpack DoUnpack failed" << std::endl;
-      return false;
-    }
-  }
-  return true;
-}
-
-bool GraphBuilder::DoBuildWithUnpack(const Instr &instr) {
-  int opcode = instr.op();
-  int iterable_count = instr.arg();
-  std::vector<ValueNode *> iterables(frame_.GetStacks().end() - iterable_count, frame_.GetStacks().end());
-  std::vector<ValueNode *> result_elements;
-  for (int i = 0; i < iterable_count; i++) {
-    auto iterable = iterables[i];
-    auto op = iterable->GetOpcode();
-    if (op == BUILD_LIST || op == BUILD_TUPLE || op == BUILD_SET) {
-      result_elements.insert(result_elements.end(), iterable->getInputs().begin(), iterable->getInputs().end());
-      continue;
-    }
-    if (!DoBuildWithUnpackHelper(instr, i, iterable, &result_elements)) {
-      return false;
-    }
-  }
-  popn(iterable_count);
-  for (auto ele : result_elements) {
-    push(ele);
-  }
-  int result_element_count = result_elements.size();
-  if (opcode == BUILD_TUPLE_UNPACK || opcode == BUILD_TUPLE_UNPACK_WITH_CALL) {
-    DoBuildOp({BUILD_TUPLE, result_element_count});
-  } else if (opcode == BUILD_LIST_UNPACK) {
-    DoBuildOp({BUILD_LIST, result_element_count});
-  } else if (opcode == BUILD_SET_UNPACK) {
-    DoBuildOp({BUILD_SET, result_element_count});
-  } else if (opcode == BUILD_MAP_UNPACK || opcode == BUILD_MAP_UNPACK_WITH_CALL) {
-    DoBuildOp({BUILD_MAP, result_element_count / 2});
-  }
-  return true;
-}
-
 bool GraphBuilder::ReplaceAll(ValueNode *old_node, ValueNode *new_node, bool *is_referenced) {
   static const std::set<int> ref_op = {
     BUILD_TUPLE, BUILD_LIST, BUILD_SET, BUILD_MAP, BUILD_CONST_KEY_MAP,
@@ -442,17 +362,22 @@ static void GenUnpackValue(const std::function<void(int, int)> &gen_item, int cn
   }
 }
 
-Py_ssize_t GetUnpackSize(ValueNode *iterable, int cnt, int cnt_after) {
+Py_ssize_t GetIterableSize(const ValueNode *iterable) {
   int op = iterable->GetOpcode();
-  Py_ssize_t total_args = cnt + cnt_after + 1;
-  Py_ssize_t size;
   if (op == BUILD_LIST || op == BUILD_TUPLE) {
-    size = iterable->getInputs().size();
-  } else {
-    AObject *seq = iterable->GetVobj();
-    PyObject *o = (seq == nullptr) ? nullptr : seq->GetPyObject().ptr();
-    size = (o == nullptr) ? -1 : PyObject_Size(o);
+    return iterable->getInputs().size();
   }
+
+  AObject *seq = iterable->GetVobj();
+  if (seq == nullptr) {
+    return -1;
+  }
+  return PyObject_Size(seq->GetPyObject().ptr());
+}
+
+Py_ssize_t GetUnpackSize(ValueNode *iterable, int cnt, int cnt_after) {
+  Py_ssize_t total_args = cnt + cnt_after + 1;
+  Py_ssize_t size = GetIterableSize(iterable);
   if (size == -1 || (cnt_after == -1 && cnt != size) || total_args > size + 1) {
     PyErr_Clear();
     return -1;
@@ -500,6 +425,57 @@ bool GraphBuilder::DoUnpack(const Instr &instr) {
     DoBuildOp({BUILD_LIST, j - i});
   };
   GenUnpackValue(gen_item, cnt, cnt_after, size);
+  return true;
+}
+
+bool GraphBuilder::DoBuildWithUnpack(const Instr &instr) {
+  static const std::map<int, int> build_op_map = {{BUILD_LIST_UNPACK, BUILD_LIST},
+                                                  {BUILD_SET_UNPACK, BUILD_SET},
+                                                  {BUILD_TUPLE_UNPACK, BUILD_TUPLE},
+                                                  {BUILD_TUPLE_UNPACK_WITH_CALL, BUILD_TUPLE}};
+  int opcode = instr.op();
+  MS_EXCEPTION_IF_CHECK_FAIL(build_op_map.find(opcode) != build_op_map.end(), "Invalid opcode for DoBuildWithUnpack.");
+  const std::vector<ValueNode *> iterables(frame_.GetStacks().end() - instr.arg(), frame_.GetStacks().end());
+  popn(instr.arg());
+  int elements_cnt = 0;
+  std::for_each(iterables.rbegin(), iterables.rend(), [this, &elements_cnt](auto node) {
+    int size = GetIterableSize(node);
+    MS_EXCEPTION_IF_CHECK_FAIL(size > 0, "Invalid unpack object.");
+    push(node);
+    DoUnpack({UNPACK_SEQUENCE, size});
+    elements_cnt += size;
+  });
+  const std::vector<ValueNode *> elements(frame_.GetStacks().end() - elements_cnt, frame_.GetStacks().end());
+  popn(elements_cnt);
+  std::for_each(elements.rbegin(), elements.rend(), [this](auto node) { push(node); });
+  DoBuildOp({build_op_map.at(opcode), elements_cnt});
+  return true;
+}
+
+bool GraphBuilder::DoBuildMapWithUnpack(const Instr &instr) {
+  const std::vector<ValueNode *> iterables(frame_.GetStacks().end() - instr.arg(), frame_.GetStacks().end());
+  popn(instr.arg());
+  std::vector<ValueNode *> stack_items;
+  std::for_each(iterables.rbegin(), iterables.rend(), [this, &stack_items](auto node) {
+    if (node->GetOpcode() == BUILD_MAP) {
+      std::for_each(node->getInputs().begin(), node->getInputs().end(),
+                    [&stack_items](ValueNode *input) { stack_items.push_back(input); });
+    } else {
+      PyObject *key = nullptr;
+      PyObject *value = nullptr;
+      Py_ssize_t pos = 0;
+      std::vector<ValueNode *> keys_values;
+      while (PyDict_Next(node->GetVobj()->GetPyObject().ptr(), &pos, &key, &value)) {
+        DoLoadConst({LOAD_CONST, -1, py::reinterpret_borrow<py::object>(key)});
+        keys_values.push_back(pop());
+        DoLoadConst({LOAD_CONST, -1, py::reinterpret_borrow<py::object>(value)});
+        keys_values.push_back(pop());
+      }
+      stack_items.insert(stack_items.end(), keys_values.rbegin(), keys_values.rend());
+    }
+  });
+  std::for_each(stack_items.rbegin(), stack_items.rend(), [this](auto node) { push(node); });
+  DoBuildOp({BUILD_MAP, static_cast<int>(stack_items.size() / 2)});
   return true;
 }
 
@@ -2157,9 +2133,6 @@ bool CheckSupportCreateInstance(CallNode *call_node) {
   static const std::set<PyTypeObject *> limit_create_instance_type = {
     &PyList_Type, &PyTuple_Type, &PySet_Type, &PyFrozenSet_Type, &PyDict_Type, &PyUnicode_Type, &PyEnum_Type,
   };
-  if (call_node->getInputs().size() == 1) {
-    return true;
-  }
   if (call_node->getInputs().size() != 2) {
     return false;
   }
