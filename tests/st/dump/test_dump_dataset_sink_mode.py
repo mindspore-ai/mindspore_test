@@ -22,7 +22,7 @@ from mindspore.nn import SoftmaxCrossEntropyWithLogits, Accuracy
 from mindspore.common import set_seed
 from mindspore.common.initializer import Normal
 import mindspore.dataset as ds
-from dump_test_utils import generate_dump_json, check_ge_dump_structure
+from dump_test_utils import generate_dump_json, check_ge_dump_structure_acl
 from tests.mark_utils import arg_mark
 from tests.security_utils import security_off_wrap
 
@@ -81,6 +81,7 @@ def train_net(epoch_size, repeat_size, sink_mode):
 def run_async_dump(test_name):
     """Run lenet with async dump."""
     context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
+    context.set_context(jit_level="O2")
     with tempfile.TemporaryDirectory(dir='/tmp') as tmp_dir:
         dump_path = os.path.join(tmp_dir, 'async_dump')
         dump_config_path = os.path.join(tmp_dir, 'async_dump.json')
@@ -92,7 +93,7 @@ def run_async_dump(test_name):
         for _ in range(3):
             if not os.path.exists(dump_path):
                 time.sleep(2)
-        check_ge_dump_structure(dump_path, 1, 1)
+        check_ge_dump_structure_acl(dump_path, 0, 1)
         del os.environ['MINDSPORE_DUMP_CONFIG']
 
 

@@ -32,7 +32,7 @@ from mindspore.nn import Momentum
 from mindspore.nn import TrainOneStepCell
 from mindspore.nn import WithLossCell
 from dump_test_utils import generate_dump_json, generate_dump_json_with_overflow, generate_statistic_dump_json, \
-    check_ge_dump_structure, check_saved_data, check_overflow_file
+    check_ge_dump_structure, check_ge_dump_structure_acl
 from tests.mark_utils import arg_mark
 from tests.security_utils import security_off_wrap
 
@@ -57,60 +57,6 @@ class NetMul(nn.Cell):
 
 x = np.array([[1, 2, 3], [4, 5, 6]]).astype(np.float32)
 y = np.array([[7, 8, 9], [10, 11, 12]]).astype(np.float32)
-
-
-def check_aclnn_dump(abs_device_path):
-    files = os.listdir(abs_device_path)
-    for every_file in files:
-        abs_path = os.path.join(abs_device_path, every_file)
-        assert os.path.isfile(abs_path)
-    assert len(files) == 4
-
-
-def check_acldump_wholegraph(abs_device_path, check_overflow=False, saved_data=None):
-    overflow_num = 0
-    model_names = os.listdir(abs_device_path)
-    for model_name in model_names:
-        model_path = os.path.join(abs_device_path, model_name)
-        assert os.path.isdir(model_path)
-        model_ids = os.listdir(model_path)
-        for model_id in model_ids:
-            model_id_path = os.path.join(model_path, model_id)
-            assert os.path.isdir(model_id_path)
-            iteration_ids = os.listdir(model_id_path)
-            for iteration_id in iteration_ids:
-                iteration_path = os.path.join(model_id_path, iteration_id)
-                assert os.path.isdir(iteration_path)
-                check_saved_data(iteration_path, saved_data)
-                overflow_num = check_overflow_file(iteration_path, overflow_num, check_overflow)
-    if check_overflow:
-        assert overflow_num
-
-
-def check_ge_dump_structure_acl(dump_path, num_iteration, device_num=1, check_overflow=False, saved_data=None,
-                                is_kbk=False):
-    for _ in range(3):
-        if not os.path.exists(dump_path):
-            time.sleep(2)
-    assert os.path.isdir(dump_path)
-    iteration_path = os.path.join(dump_path, str(num_iteration))
-    assert os.path.isdir(iteration_path)
-    dump_device_num = 0
-    sub_paths = os.listdir(iteration_path)
-    for sub_path in sub_paths:
-        time_path = os.path.join(iteration_path, sub_path)
-        assert os.path.isdir(time_path)
-        device_paths = os.listdir(time_path)
-        dump_device_num += len(device_paths)
-        for device_path in device_paths:
-            assert device_path.isdigit()
-            abs_device_path = os.path.join(time_path, device_path)
-            assert os.path.isdir(abs_device_path)
-            if not is_kbk:
-                check_acldump_wholegraph(abs_device_path, check_overflow, saved_data)
-            else:
-                check_aclnn_dump(abs_device_path)
-    assert dump_device_num == device_num
 
 
 def run_ge_dump(test_name):

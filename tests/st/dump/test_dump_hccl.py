@@ -17,8 +17,7 @@ import sys
 import tempfile
 import shutil
 from tests.mark_utils import arg_mark
-from dump_test_utils import generate_dump_json
-from test_ge_dump import check_ge_dump_structure_acl
+from dump_test_utils import generate_dump_json, check_ge_dump_structure_acl
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='allcards', essential_mark='essential')
