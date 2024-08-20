@@ -372,8 +372,7 @@ class Splitter {
     if (!split_schemer_->Split(ori_sub_func_graph)) {
       return false;
     }
-    if (common::GetEnv("MS_DEV_USE_OLD_REBUILD") == "on") {
-      MS_LOG(WARNING) << "Use old rebuild plan";
+    if (rebuild_plan_ == "0") {
       return RebuildGraphWithAreaGraph();
     }
     return RebuildGraph();
@@ -387,7 +386,16 @@ class Splitter {
   }
 
   Splitter(const CNodePtr &main_cnode, const SplitSchemerPtr &split_schemer)
-      : main_func_graph_(main_cnode->func_graph()), old_subgraph_cnode_(main_cnode), split_schemer_(split_schemer) {}
+      : main_func_graph_(main_cnode->func_graph()),
+        old_subgraph_cnode_(main_cnode),
+        split_schemer_(split_schemer),
+        rebuild_plan_(common::GetEnv("MS_DEV_GRAPH_KERNEL_SPLITTER_REBUILDER")) {
+    if (rebuild_plan_ == "0") {
+      MS_LOG(WARNING) << "splitter use old rebuild plan";
+    } else if (rebuild_plan_ == "1") {
+      MS_LOG(WARNING) << "Toposort old rebuild plan";
+    }
+  }
   ~Splitter() = default;
 
  private:
@@ -401,8 +409,7 @@ class Splitter {
     if (area_graph == nullptr) {
       return false;
     }
-    if (common::GetEnv("MS_DEV_GRAPH_KERNEL_TOPOSORT") == "on") {
-      MS_LOG(WARNING) << "Toposort old rebuild plan";
+    if (rebuild_plan_ == "1") {
       auto node_idx_map = GetTopoSortMap(GetCNodeFuncGraph(old_subgraph_cnode_));
       area_graph->SortTraitors(node_idx_map);
     }
@@ -420,7 +427,7 @@ class Splitter {
   void RebuildGraph(const std::vector<size_t> &cnodes_group_id) {
     BindFuncGraph();
     RecoverParameter();
-    if (common::GetEnv("MS_DEV_GRAPH_KERNEL_TOPOSORT") == "on") {
+    if (rebuild_plan_ == "1") {
       SortParameters(cnodes_group_id);
     }
     SetSplitNodeName(cnodes_group_id);
@@ -658,7 +665,8 @@ class Splitter {
   std::vector<AnfNodePtr> maingraph_nodes_;    // The nodes in main graph finally, include "call" and inlined node
   SplitSchemerPtr split_schemer_;
   mindspore::HashMap<ParameterPtr, AnfNodePtr> param_to_main_graph_node_map_;
-};  // namespace
+  std::string rebuild_plan_;
+};
 
 class CppCostModelSplitSchemer : public CommonSplitSchemer {
  public:
@@ -721,7 +729,6 @@ bool GraphKernelSplitter::TrySplit(const CNodePtr &sub_root_cnode) {
   return result;
 }
 
-namespace {
 void SetKernelInfo(const FuncGraphPtr &func_graph) {
   auto nodes = TopoSort(func_graph->get_return());
   for (auto iter = nodes.cbegin(); iter != nodes.cend(); ++iter) {
@@ -737,7 +744,6 @@ void SetKernelInfo(const FuncGraphPtr &func_graph) {
     }
   }
 }
-}  // namespace
 
 bool GraphKernelSplitter::Run(const FuncGraphPtr &func_graph) {
   MS_EXCEPTION_IF_NULL(func_graph);
@@ -757,7 +763,7 @@ bool GraphKernelSplitter::Run(const FuncGraphPtr &func_graph) {
       changed = TrySplit(node) || changed;
     }
   }
-  if (changed && common::GetEnv("MS_DEV_USE_OLD_REBUILD") != "on") {
+  if (changed) {
     SetKernelInfo(func_graph);
   }
   mng->RemoveRoots();
