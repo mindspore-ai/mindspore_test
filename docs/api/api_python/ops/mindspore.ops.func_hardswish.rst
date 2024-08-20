@@ -3,7 +3,7 @@ mindspore.ops.hardswish
 
 .. py:function:: mindspore.ops.hardswish(input)
 
-    逐元素计算Hard Swish。输入是一个Tensor，具有任何有效的shape。
+    Hard Swish激活函数。输入是一个Tensor，具有任何有效的shape。
 
     Hard Swish定义如下：
 

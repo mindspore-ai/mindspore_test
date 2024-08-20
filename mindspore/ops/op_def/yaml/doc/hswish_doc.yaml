@@ -1,6 +1,6 @@
 hswish:
     description: |
-        Applies hswish-type activation element-wise. The input is a Tensor with any valid shape.
+        Hard Swish activation function. The input is a Tensor with any valid shape.
 
         Hard swish is defined as:
 
