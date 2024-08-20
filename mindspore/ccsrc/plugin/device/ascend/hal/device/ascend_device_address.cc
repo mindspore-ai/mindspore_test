@@ -1130,7 +1130,7 @@ int64_t AscendDeviceAddress::GetGroupsWithCache() const {
   return groups_;
 }
 
-bool AscendDeviceAddress::CallAclrtMemcpy(void *dst, size_t host_size, const void *src, size_t src_size) {
+bool AscendDeviceAddress::CallAclrtMemcpy(void *dst, size_t dst_size, const void *src, size_t src_size) {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   auto device_id = ms_context->get_param<uint32_t>(MS_CTX_DEVICE_ID);
@@ -1138,7 +1138,7 @@ bool AscendDeviceAddress::CallAclrtMemcpy(void *dst, size_t host_size, const voi
   MS_EXCEPTION_IF_NULL(runtime_instance);
   runtime_instance->SetContext();
 
-  auto ret = CALL_ASCEND_API(aclrtMemcpy, dst, host_size, src, src_size, ACL_MEMCPY_DEVICE_TO_HOST);
+  auto ret = CALL_ASCEND_API(aclrtMemcpy, dst, dst_size, src, dst_size, ACL_MEMCPY_DEVICE_TO_HOST);
   if (ret != ACL_ERROR_NONE) {
     MS_LOG(WARNING) << "AclrtMemcpy failed, error code: " << ret;
   }
