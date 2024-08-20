@@ -2265,7 +2265,8 @@ class Cell(Cell_):
             - The 'hook_fn' should have the following signature:
               hook_fn(cell, grad_output) -> New grad_output gradient or None.
             - The 'hook_fn' is executed in the python environment. In order to prevent running failed when switching to
-              graph mode, it is not recommended to write it in the `construct` function of Cell object. In the pynative
+              graph mode, it is not recommended to write it in the `construct` function of Cell object.
+            - In the pynative
               mode, if the `register_backward_pre_hook` function is called in the `construct` function of the Cell
               object, a hook function will be added at each run time of Cell object.
 
