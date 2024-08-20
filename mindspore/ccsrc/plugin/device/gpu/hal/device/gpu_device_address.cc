@@ -253,6 +253,7 @@ bool GPUDeviceAddress::AsyncHostToDevice(size_t size, const void *host_ptr) cons
   }
   auto device_context = GetDeviceContext();
   MS_ERROR_IF_NULL(device_context);
+  MS_ERROR_IF_NULL(device_context->device_res_manager_);
   auto stream_id = device_context->device_res_manager_->GetCurrentStreamId();
   auto stream = device_context->device_res_manager_->GetStream(stream_id);
   if (stream == nullptr) {
@@ -280,6 +281,7 @@ bool GPUDeviceAddress::AsyncDeviceToHost(size_t size, void *host_ptr) const {
   }
   auto device_context = GetDeviceContext();
   MS_ERROR_IF_NULL(device_context);
+  MS_ERROR_IF_NULL(device_context->device_res_manager_);
   auto stream_id = device_context->device_res_manager_->GetCurrentStreamId();
   auto stream = device_context->device_res_manager_->GetStream(stream_id);
   if (stream == nullptr) {

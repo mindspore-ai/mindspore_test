@@ -35,6 +35,7 @@ MultiStreamControllerPtr &MultiStreamController::GetInstance() {
 }
 
 void MultiStreamController::Refresh(const DeviceContext *device_context) {
+  MS_EXCEPTION_IF_NULL(device_context);
   auto stream_size = device_context->device_res_manager_->QueryStreamSize();
   MS_LOG(INFO) << "Stream manager initialize, device_context : " << device_context << ", stream_size : " << stream_size
                << ".";
