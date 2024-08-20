@@ -575,6 +575,37 @@ REG_BPROP_BUILDER("BiasAdd").SetUnusedInputs({i0, i1, i3}).SetBody(BODYFUNC(ib) 
   return {dx, grad_bias, ib->OutZeros(format)};
 });
 
+REG_BPROP_BUILDER("AddLayerNormV2").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
+  // x1, x2, gamma, beta, epsilon, additionalOut, (y, mean, rstd, x), (dy, dmean, drstd, dx)
+  auto x1 = ib->GetInput(kIndex0);
+  auto x2 = ib->GetInput(kIndex1);
+  auto gamma = ib->GetInput(kIndex2);
+  auto epsilon = ib->GetInput(kIndex4);
+  auto additionalOut = ib->GetInput(kIndex5);
+  auto additional_out_opt = GetScalarValue<bool>(additionalOut->BuildValue());
+  auto out = ib->GetInput(kIndex6);
+  auto dout = ib->GetInput(kIndex7);
+  auto rstd = ib->TupleGetItem(out, kIndex2);
+  auto mean = ib->TupleGetItem(out, kIndex1);
+  auto dy = ib->TupleGetItem(dout, kIndex0);
+  auto sum_optional = ib->TupleGetItem(dout, kIndex3);
+  if (!additional_out_opt.has_value()) {
+    auto true_branch = [&sum_optional](Emitter *e) -> NodePtrList { return {sum_optional}; };
+    auto false_branch = [&dy](Emitter *e) -> NodePtrList { return {e->ZerosLike(dy)}; };
+    auto additional_out_true = ib->Equal(additionalOut, ib->Value<bool>(true));
+    sum_optional = ib->Conditional(additional_out_true, true_branch, false_branch);
+  } else {
+    if (!additional_out_opt.value()) {
+      sum_optional = ib->ZerosLike(dy);
+    }
+  }
+  auto grad_out = ib->Emit("AddLayerNormGrad", {dy, x1, x2, rstd, mean, gamma, sum_optional});
+  auto dx = ib->TupleGetItem(grad_out, kIndex0);
+  auto dgamma = ib->TupleGetItem(grad_out, kIndex1);
+  auto dbeta = ib->TupleGetItem(grad_out, kIndex2);
+  return {dx, dx, dgamma, dbeta, ib->OutZeros(epsilon), ib->OutZeros(additionalOut)};
+});
+
 DEF_PURE_SHAPE_CALC(g_dense_shapecalc0)
   .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
     auto &x_shape = inputs.at(kIndex0);

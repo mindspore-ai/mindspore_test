@@ -44,7 +44,7 @@ from mindspore.common.api import _function_forbid_reuse
 from mindspore.ops.auto_generate import log_softmax, dense, prelu, celu, relu, fast_gelu, silu, elu, sigmoid, relu6, \
     softmax_impl
 from mindspore.ops.auto_generate import group_norm_op, rms_norm, layer_norm_ext_op, batch_norm_ext_op, mse_loss_ext
-from mindspore.ops.auto_generate import (reflection_pad_1d_op, reflection_pad_2d_op,
+from mindspore.ops.auto_generate import (reflection_pad_1d_op, reflection_pad_2d_op, add_layernorm_v2_op,
                                          reflection_pad_3d_op,  # pylint: disable=W0611
                                          replication_pad_1d_op, replication_pad_2d_op, replication_pad_3d_op,
                                          constant_pad_nd_op, dropout_ext_op, reverse_v2_impl, avg_pool2d_op)
@@ -6240,6 +6240,10 @@ def layer_norm(input, normalized_shape, weight=None, bias=None, eps=1e-5):
     return layer_norm_ext_op(input, normalized_shape, weight, bias, eps)[0]
 
 
+def add_layer_norm(x1, x2, gamma, beta, epsilon=1e-5, additional_output=False):
+    return add_layernorm_v2_op(x1, x2, gamma, beta, epsilon, additional_output)
+
+
 def group_norm(input, num_groups, weight=None, bias=None, eps=1e-5):
     r"""Group Normalization over a mini-batch of inputs.
 
@@ -8443,6 +8447,7 @@ __all__ = [
     'triplet_margin_loss',
     'channel_shuffle',
     'hardsigmoid',
+    'add_layer_norm',
     'group_norm',
     'rms_norm',
 ]

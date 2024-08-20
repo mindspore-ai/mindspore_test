@@ -1,0 +1,26 @@
+#operator AddLayerNormGrad
+add_layer_norm_grad:
+  args:
+    dy:
+      dtype: tensor
+    x1:
+      dtype: tensor
+    x2:
+      dtype: tensor
+    rstd:
+      dtype: tensor
+    mean:
+      dtype: tensor
+    gamma:
+      dtype: tensor
+    dsumOptional:
+      dtype: tensor
+  returns:
+    dx:
+      dtype: tensor
+    dgamma:
+      dtype: tensor
+    dbeta:
+      dtype: tensor
+  dispatch:
+    enable: True
