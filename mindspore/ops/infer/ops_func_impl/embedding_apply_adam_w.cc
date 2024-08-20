@@ -16,27 +16,18 @@
 
 #include "infer/ops_func_impl/embedding_apply_adam_w.h"
 
-#include <vector>
 #include <set>
+#include <vector>
 #include <map>
 #include <string>
-#include <memory>
 
-#include "utils/ms_context.h"
 #include "utils/check_convert_utils.h"
-#include "mindspore/ops/op_def/op_name.h"
-#include "mindspore/ops/ops_utils/op_utils.h"
+#include "op_def/op_name.h"
+#include "ops_utils/op_utils.h"
 #include "utils/shape_utils.h"
 
 namespace mindspore {
 namespace ops {
-namespace {
-constexpr size_t kGradIndex = 8;
-constexpr size_t kKeysIndex = 9;
-constexpr size_t kMaxGradNormIndex = 10;
-constexpr size_t kEmbeddingDimIndex = 11;
-constexpr size_t kAmsgradIndex = 12;
-}  // namespace
 void EmbeddingApplyAdamWFuncImpl::CheckInputShapes(const PrimitivePtr &primitive,
                                                    const std::vector<AbstractBasePtr> &input_args) const {
   CheckTensorScalarRank(primitive, input_args[kInputIndex0], "var_handle");
@@ -47,6 +38,7 @@ void EmbeddingApplyAdamWFuncImpl::CheckInputShapes(const PrimitivePtr &primitive
   CheckTensorScalarRank(primitive, input_args[kInputIndex5], "beta1");
   CheckTensorScalarRank(primitive, input_args[kInputIndex6], "beta2");
   CheckTensorScalarRank(primitive, input_args[kInputIndex7], "epsilon");
+  CheckTensorScalarRank(primitive, input_args[kInputIndex11], "global_step");
 }
 
 void EmbeddingApplyAdamWFuncImpl::CheckInputTypes(const PrimitivePtr &primitive,
@@ -83,18 +75,6 @@ void EmbeddingApplyAdamWFuncImpl::CheckInputTypes(const PrimitivePtr &primitive,
   type_dict.emplace("epsilon", epsilon_type);
 
   CheckAndConvertUtils::CheckTensorTypeSame(type_dict, grad_types, prim_name);
-}
-
-BaseShapePtr EmbeddingApplyAdamWFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                                     const std::vector<AbstractBasePtr> &input_args) const {
-  CheckInputShapes(primitive, input_args);
-  return std::make_shared<abstract::TensorShape>(ShapeVector{});
-}
-
-TypePtr EmbeddingApplyAdamWFuncImpl::InferType(const PrimitivePtr &primitive,
-                                               const std::vector<AbstractBasePtr> &input_args) const {
-  CheckInputTypes(primitive, input_args);
-  return std::make_shared<TensorType>(kInt32);
 }
 }  // namespace ops
 }  // namespace mindspore

@@ -3,7 +3,7 @@ rm -rf ./*.log
 CURDIR=$(pwd)
 
 HOST_IP_STR=$(ifconfig -a | grep inet | grep -v 127.0.0.1 | grep -v inet6 | awk '{print $2}' | tr -d "addr:")
-HOST_IPS=("$HOST_IP_STR")
+IFS=" " read -r -a HOST_IPS <<< "${HOST_IP_STR}"
 HOST_IP=${HOST_IPS[-1]}
 
 DEVICE_IP=$(cat /etc/hccn.conf | grep -E 'address_0')

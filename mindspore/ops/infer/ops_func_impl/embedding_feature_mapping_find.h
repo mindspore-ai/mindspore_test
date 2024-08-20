@@ -14,25 +14,21 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CORE_OPS_EMBEDDING_APPLY_FTRL_H
-#define MINDSPORE_CORE_OPS_EMBEDDING_APPLY_FTRL_H
+#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_EMBEDDING_FEATURE_MAPPING_FIND_H_
+#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_EMBEDDING_FEATURE_MAPPING_FIND_H_
 
-#include <memory>
 #include <vector>
-#include "mindapi/base/types.h"
-#include "ops/base_operator.h"
+#include "ops/ops_func_impl/op_func_impl.h"
 
 namespace mindspore {
 namespace ops {
-constexpr auto kNameEmbeddingApplyFtrl = "EmbeddingApplyFtrl";
-class OPS_API EmbeddingApplyFtrl : public BaseOperator {
+class OPS_API EmbeddingFeatureMappingFindFuncImpl final : public OpFuncImpl {
  public:
-  MIND_API_BASE_MEMBER(EmbeddingApplyFtrl);
-  EmbeddingApplyFtrl() : BaseOperator(kNameEmbeddingApplyFtrl) {
-    InitIOName({"var_handle", "lr", "lr_power", "lambda1", "lambda2", "grad", "keys"}, {"var_handle"});
-  }
+  BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
+
+  TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
 };
 }  // namespace ops
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CORE_OPS_EMBEDDING_APPLY_FTRL_H
+#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_EMBEDDING_FEATURE_MAPPING_FIND_H_

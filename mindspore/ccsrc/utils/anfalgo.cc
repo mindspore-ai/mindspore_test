@@ -2483,7 +2483,10 @@ bool AnfAlgo::IsNoOuputNode(const AnfNodePtr &node) {
     prim::kPrimEmbeddingTableImport,
     prim::kPrimEmbeddingComputeVarExport,
     prim::kPrimEmbeddingComputeVarImport,
-    prim::kPrimEmbeddingTableExport};
+    prim::kPrimEmbeddingTableExport,
+    prim::kPrimEmbeddingTableEvict,
+    prim::kPrimEmbeddingFeatureMappingExport,
+    prim::kPrimEmbeddingFeatureMappingInsert};
   if (IsOneOfPrimitiveCNode(node, no_output_prims)) {
     return true;
   }

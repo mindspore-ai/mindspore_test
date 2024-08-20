@@ -16,32 +16,28 @@
 
 #include "infer/ops_func_impl/embedding_apply_ftrl.h"
 
-#include <vector>
 #include <set>
 #include <map>
 #include <string>
-#include <memory>
 
-#include "utils/ms_context.h"
 #include "utils/check_convert_utils.h"
-#include "mindspore/ops/op_def/op_name.h"
-#include "mindspore/ops/ops_utils/op_utils.h"
+#include "op_def/op_name.h"
+#include "ops_utils/op_utils.h"
 #include "utils/shape_utils.h"
 
 namespace mindspore {
 namespace ops {
-BaseShapePtr EmbeddingApplyFtrlFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                                    const std::vector<AbstractBasePtr> &input_args) const {
+void EmbeddingApplyFtrlFuncImpl::CheckInputShapes(const PrimitivePtr &primitive,
+                                                  const std::vector<AbstractBasePtr> &input_args) const {
   CheckTensorScalarRank(primitive, input_args[kInputIndex0], "var_handle");
   CheckTensorScalarRank(primitive, input_args[kInputIndex1], "lr");
   CheckTensorScalarRank(primitive, input_args[kInputIndex2], "lr_power");
   CheckTensorScalarRank(primitive, input_args[kInputIndex3], "lambda1");
   CheckTensorScalarRank(primitive, input_args[kInputIndex4], "lambda2");
-  return std::make_shared<abstract::TensorShape>(ShapeVector{});
 }
 
-TypePtr EmbeddingApplyFtrlFuncImpl::InferType(const PrimitivePtr &primitive,
-                                              const std::vector<AbstractBasePtr> &input_args) const {
+void EmbeddingApplyFtrlFuncImpl::CheckInputTypes(const PrimitivePtr &primitive,
+                                                 const std::vector<AbstractBasePtr> &input_args) const {
   MS_EXCEPTION_IF_NULL(primitive);
   const auto &prim_name = primitive->name();
 
@@ -64,8 +60,6 @@ TypePtr EmbeddingApplyFtrlFuncImpl::InferType(const PrimitivePtr &primitive,
   auto lambda2_type = input_args[kInputIndex4]->GetType();
   type_dict.emplace("lambda2", lambda2_type);
   CheckAndConvertUtils::CheckTensorTypeSame(type_dict, grad_types, prim_name);
-
-  return std::make_shared<TensorType>(kInt32);
 }
 }  // namespace ops
 }  // namespace mindspore

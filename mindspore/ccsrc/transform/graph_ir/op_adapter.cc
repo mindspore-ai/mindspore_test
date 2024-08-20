@@ -485,10 +485,13 @@ std::vector<OutHandler> OpAdapterImpl::getNormalOutputs(const OperatorPtr &op) c
   std::transform(output_map_.begin(), output_map_.end(), std::back_inserter(handles),
                  [&op](const auto &item) { return OutHandler(op, item.second.name); });
   if (!dyn_output_map_.empty()) {
-    auto dyn_output_name = dyn_output_map_.begin()->second.name;
-    auto dyn_output_size = op->GetDynamicOutputNum(dyn_output_name);
-    for (int i = 0; i < dyn_output_size; i++) {
-      handles.emplace_back(OutHandler(op, dyn_output_name + std::to_string(i)));
+    for (auto &[i, dyn_out_desc] : dyn_output_map_) {
+      MS_LOG(INFO) << "OpAdpator(" << op->GetName() << ", fectch output handle " << i << " from dyn_output_map.";
+      auto dyn_output_name = dyn_out_desc.name;
+      auto dyn_output_size = op->GetDynamicOutputNum(dyn_output_name);
+      for (int i = 0; i < dyn_output_size; i++) {
+        handles.emplace_back(OutHandler(op, dyn_output_name + std::to_string(i)));
+      }
     }
   }
   return handles;
@@ -582,9 +585,13 @@ Status OpAdapterImpl::UpdateMultiOutputDesc(const OperatorPtr &op, const abstrac
   if (is_custom_op) {
     output_size = GetCustomOpOutputSize(std::dynamic_pointer_cast<CustomOperator>(op));
   } else {
-    output_size = output_map_.empty()
-                    ? static_cast<size_t>(op->GetDynamicOutputNum(dyn_output_map_.begin()->second.name))
-                    : output_map_.size();
+    if (!output_map_.empty()) {
+      output_size = output_map_.size();
+    } else {
+      for (auto &it : dyn_output_map_) {
+        output_size += static_cast<size_t>(op->GetDynamicOutputNum(it.second.name));
+      }
+    }
   }
 
   if (output_size == 0) {
@@ -639,7 +646,17 @@ Status OpAdapterImpl::UpdateMultiOutputDesc(const OperatorPtr &op, const abstrac
       if (it != output_map_.end()) {
         it->second.update_out_desc(op, *desc);
       } else if (!dyn_output_map_.empty()) {
-        dyn_output_map_.begin()->second.update_dyn_output_desc(op, static_cast<unsigned int>(i), *desc);
+        if (dyn_output_map_.size() > 1) {
+          auto iterator = dyn_output_map_.find(i);
+          if (iterator == dyn_output_map_.end()) {
+            MS_LOG(EXCEPTION) << "Failed to find dyn_out_desc for " << op->GetName();
+          }
+          // Now, the output num of each dynamic output should be one.
+          MS_LOG(INFO) << "Es, Op: " << op->GetName() << ", update_dyn_output_desc[" << i << "].";
+          iterator->second.update_dyn_output_desc(op, static_cast<unsigned int>(0), *desc);
+        } else {
+          dyn_output_map_.begin()->second.update_dyn_output_desc(op, static_cast<unsigned int>(i), *desc);
+        }
       }
     }
   }

@@ -14,45 +14,43 @@
  * limitations under the License.
  */
 
-#include "infer/ops_func_impl/embedding_apply_ada_grad.h"
+#include "infer/ops_func_impl/embedding_apply_sgd.h"
 
 #include <set>
-#include <string>
+#include <vector>
 
 #include "utils/check_convert_utils.h"
-#include "op_def/op_name.h"
 #include "ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace ops {
-void EmbeddingApplyAdaGradFuncImpl::CheckInputShapes(const PrimitivePtr &primitive,
-                                                     const std::vector<AbstractBasePtr> &input_args) const {
-  CheckTensorScalarRank(primitive, input_args[kInputIndex0], "var_handle");
-  CheckTensorScalarRank(primitive, input_args[kInputIndex1], "lr");
-  CheckTensorScalarRank(primitive, input_args[kInputIndex4], "global_step");
+void EmbeddingApplySgdFuncImpl::CheckInputShapes(const PrimitivePtr &primitive,
+                                                 const std::vector<AbstractBasePtr> &input_args) const {
+  CheckTensorScalarRank(primitive, input_args[kIndex0], "var_handle");
+  CheckTensorScalarRank(primitive, input_args[kIndex1], "lr");
+  CheckTensorScalarRank(primitive, input_args[kIndex4], "global_step");
 }
 
-void EmbeddingApplyAdaGradFuncImpl::CheckInputTypes(const PrimitivePtr &primitive,
-                                                    const std::vector<AbstractBasePtr> &input_args) const {
+void EmbeddingApplySgdFuncImpl::CheckInputTypes(const PrimitivePtr &primitive,
+                                                const std::vector<AbstractBasePtr> &input_args) const {
   MS_EXCEPTION_IF_NULL(primitive);
-  const std::string &prim_name = primitive->name();
+  const auto &prim_name = primitive->name();
 
-  auto var_handle_type = input_args[kInputIndex0]->GetType();
+  auto var_handle_type = input_args[kIndex0]->GetType();
   (void)CheckAndConvertUtils::CheckTensorTypeValid("var_handle", var_handle_type, {kInt32}, prim_name);
 
   const std::set<TypePtr> valid_types = {kFloat16, kFloat32};
-  auto lr_type = input_args[kInputIndex1]->GetType();
+  auto lr_type = input_args[kIndex1]->GetType();
   (void)CheckAndConvertUtils::CheckTensorTypeValid("lr", lr_type, valid_types, prim_name);
 
-  auto grad_type = input_args[kInputIndex2]->GetType();
+  auto grad_type = input_args[kIndex2]->GetType();
   (void)CheckAndConvertUtils::CheckTensorTypeValid("grad", grad_type, valid_types, prim_name);
 
-  auto keys_type = input_args[kInputIndex3]->GetType();
+  auto keys_type = input_args[kIndex3]->GetType();
   (void)CheckAndConvertUtils::CheckTensorTypeValid("keys", keys_type, {kInt64}, prim_name);
 
-  auto global_step_type = input_args[kInputIndex4]->GetType();
-  const std::set<TypePtr> global_types = {kInt32, kInt64};
-  (void)CheckAndConvertUtils::CheckTensorTypeValid("global_step", global_step_type, global_types, prim_name);
+  auto global_step_type = input_args[kIndex4]->GetType();
+  (void)CheckAndConvertUtils::CheckTensorTypeValid("global_step", global_step_type, {kInt32, kInt64}, prim_name);
 }
 }  // namespace ops
 }  // namespace mindspore

@@ -40,6 +40,14 @@ DECLARE_OP_USE_OUTPUT(EmbeddingTableFind)
 DECLARE_OP_ADAPTER(EmbeddingTableFindAndInit)
 DECLARE_OP_USE_OUTPUT(EmbeddingTableFindAndInit)
 
+// EmbeddingApplySgd
+DECLARE_OP_ADAPTER(EmbeddingApplySgd)
+DECLARE_OP_USE_OUTPUT(EmbeddingApplySgd)
+
+// EmbeddingApplyRmsprop
+DECLARE_OP_ADAPTER(EmbeddingApplyRmsprop)
+DECLARE_OP_USE_OUTPUT(EmbeddingApplyRmsprop)
+
 // EmbeddingApplyFtrl
 DECLARE_OP_ADAPTER(EmbeddingApplyFtrl)
 DECLARE_OP_USE_OUTPUT(EmbeddingApplyFtrl)
@@ -71,4 +79,37 @@ DECLARE_OP_USE_OUTPUT(EmbeddingTableExport)
 // FakeRemoteLookupUniqued
 DECLARE_OP_ADAPTER(FakeRemoteLookupUniqued)
 DECLARE_OP_USE_OUTPUT(FakeRemoteLookupUniqued)
+
+// EmbeddingTableEvict
+DECLARE_OP_ADAPTER(EmbeddingTableEvict)
+DECLARE_OP_USE_OUTPUT(EmbeddingTableEvict)
+
+// EmbeddingFeatureMappingV2
+DECLARE_OP_ADAPTER(EmbeddingFeatureMappingV2)
+DECLARE_OP_USE_OUTPUT(EmbeddingFeatureMappingV2)
+
+// EmbeddingFeatureMappingTableSize
+DECLARE_OP_ADAPTER(EmbeddingFeatureMappingTableSize)
+DECLARE_OP_USE_OUTPUT(EmbeddingFeatureMappingTableSize)
+
+// EmbeddingFeatureMappingFind
+DECLARE_OP_ADAPTER(EmbeddingFeatureMappingFind)
+DECLARE_OP_USE_DYN_OUTPUT(EmbeddingFeatureMappingFind)
+
+// EmbeddingFeatureMappingExport
+DECLARE_OP_ADAPTER(EmbeddingFeatureMappingExport)
+DECLARE_OP_USE_DYN_INPUT(EmbeddingFeatureMappingExport)
+
+// EmbeddingFeatureMappingFileSize
+DECLARE_OP_ADAPTER(EmbeddingFeatureMappingFileSize)
+DECLARE_OP_USE_OUTPUT(EmbeddingFeatureMappingFileSize)
+
+// EmbeddingFeatureMappingImport
+DECLARE_OP_ADAPTER(EmbeddingFeatureMappingImport)
+DECLARE_OP_USE_DYN_OUTPUT(EmbeddingFeatureMappingImport)
+
+// EmbeddingFeatureMappingInsert
+DECLARE_OP_ADAPTER(EmbeddingFeatureMappingInsert)
+DECLARE_OP_USE_DYN_INPUT(EmbeddingFeatureMappingInsert)
+
 #endif  // MINDSPORE_CCSRC_TRANSFORM_GRAPH_IR_OP_DECLARE_NN_OTHER_OPS_DECLARE_H_

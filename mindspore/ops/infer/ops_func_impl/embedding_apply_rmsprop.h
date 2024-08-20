@@ -14,24 +14,24 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CORE_OPS_FUNC_IMPL_EMBEDDING_APPLY_ADA_GRAD_H_
-#define MINDSPORE_CORE_OPS_FUNC_IMPL_EMBEDDING_APPLY_ADA_GRAD_H_
+#ifndef MINDSPORE_CORE_OPS_FUNC_IMPL_EMBEDDING_APPLY_RMSPROP_H_
+#define MINDSPORE_CORE_OPS_FUNC_IMPL_EMBEDDING_APPLY_RMSPROP_H_
 
 #include <vector>
 #include "infer/ops_func_impl/embedding_service_optimizer.h"
 
 namespace mindspore {
 namespace ops {
-class OPS_API EmbeddingApplyAdaGradFuncImpl final : public EmbeddingServiceOptimizerFuncImpl {
+class OPS_API EmbeddingApplyRmspropFuncImpl final : public EmbeddingServiceOptimizerFuncImpl {
  public:
-  EmbeddingApplyAdaGradFuncImpl() { embedding_dim_index_ = 5; }
-  ~EmbeddingApplyAdaGradFuncImpl() = default;
+  EmbeddingApplyRmspropFuncImpl() { embedding_dim_index_ = 8; }
+  ~EmbeddingApplyRmspropFuncImpl() = default;
 
  protected:
   void CheckInputShapes(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
   void CheckInputTypes(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
-};
+};  // namespace ops
 }  // namespace ops
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CORE_OPS_FUNC_IMPL_EMBEDDING_APPLY_ADA_GRAD_H_
+#endif  // MINDSPORE_CORE_OPS_FUNC_IMPL_EMBEDDING_APPLY_RMSPROP_H_

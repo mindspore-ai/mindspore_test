@@ -56,21 +56,20 @@ NodePtr ApplyAdam(BpropBuilder *ib, const std::vector<NodePtr> &nodes, const std
   auto backward_int_params = GetValue<std::vector<std::vector<int64_t>>>(ib->GetAttr("backward_int_params"));
   assert(backward_int_params.size() == kIndex4);
   auto global_step = ib->Tensor(backward_int_params[0][0], kInt32);
-  const auto &mask_zero = backward_int_params[1];
-  const auto &padding_key = backward_int_params[2];
-  const auto &padding_key_mask = backward_int_params[3];
+  auto mask_zero = ib->Value(backward_int_params[1]);
+  auto padding_key = ib->Value(backward_int_params[2]);
+  auto padding_key_mask = ib->Value(backward_int_params[3]);
+  auto embedding_dim = ib->EmitValue(ib->GetAttr("embedding_dim"));
+  auto completion_key = ib->EmitValue(ib->GetAttr("completion_key"));
+  auto completion_key_mask = ib->EmitValue(ib->GetAttr("completion_key_mask"));
+  auto _embedding_dim = ib->EmitValue(ib->GetAttr("_embedding_dim"));
+  auto _max_key_num = ib->EmitValue(ib->GetAttr("_max_key_num"));
 
-  auto dx = ib->Emit("EmbeddingApplyAdam",
-                     {table_id, beta1_power, beta2_power, lr, beta1, beta2, epsilon, dout, keys, global_step},
-                     {{"embedding_dim", ib->GetAttr("embedding_dim")},
-                      {"mask_zero", MakeValue(mask_zero)},
-                      {"padding_key", MakeValue(padding_key)},
-                      {"padding_key_mask", MakeValue(padding_key_mask)},
-                      {"completion_key", ib->GetAttr("completion_key")},
-                      {"completion_key_mask", ib->GetAttr("completion_key_mask")},
-                      {"_embedding_dim", ib->GetAttr("_embedding_dim")},
-                      {"_max_key_num", ib->GetAttr("_max_key_num")},
-                      {"_process_node_engine_id", MakeValue("PS")}});
+  auto dx = ib->Emit(
+    "EmbeddingApplyAdam",
+    {table_id, beta1_power, beta2_power, lr, beta1, beta2, epsilon, dout, keys, global_step, embedding_dim, mask_zero,
+     padding_key, padding_key_mask, completion_key, completion_key_mask, _embedding_dim, _max_key_num},
+    {{"_process_node_engine_id", MakeValue("PS")}});
   return dx;
 }
 
@@ -91,19 +90,18 @@ NodePtr ApplyFtrl(BpropBuilder *ib, const std::vector<NodePtr> &nodes, const std
   auto backward_int_params = GetValue<std::vector<std::vector<int64_t>>>(ib->GetAttr("backward_int_params"));
   assert(backward_int_params.size() == kIndex4);
   auto global_step = ib->Tensor(backward_int_params[0][0], kInt32);
-  const auto &mask_zero = backward_int_params[1];
-  const auto &padding_key = backward_int_params[2];
-  const auto &padding_key_mask = backward_int_params[3];
-  auto dx = ib->Emit("EmbeddingApplyFtrl", {table_id, lr, lr_power, lambda1, lambda2, dout, keys, global_step},
-                     {{"embedding_dim", ib->GetAttr("embedding_dim")},
-                      {"mask_zero", MakeValue(mask_zero)},
-                      {"padding_key", MakeValue(padding_key)},
-                      {"padding_key_mask", MakeValue(padding_key_mask)},
-                      {"completion_key", ib->GetAttr("completion_key")},
-                      {"completion_key_mask", ib->GetAttr("completion_key_mask")},
-                      {"_embedding_dim", ib->GetAttr("_embedding_dim")},
-                      {"_max_key_num", ib->GetAttr("_max_key_num")},
-                      {"_process_node_engine_id", MakeValue("PS")}});
+  auto mask_zero = ib->Value(backward_int_params[1]);
+  auto padding_key = ib->Value(backward_int_params[2]);
+  auto padding_key_mask = ib->Value(backward_int_params[3]);
+  auto embedding_dim = ib->EmitValue(ib->GetAttr("embedding_dim"));
+  auto completion_key = ib->EmitValue(ib->GetAttr("completion_key"));
+  auto completion_key_mask = ib->EmitValue(ib->GetAttr("completion_key_mask"));
+  auto _embedding_dim = ib->EmitValue(ib->GetAttr("_embedding_dim"));
+  auto _max_key_num = ib->EmitValue(ib->GetAttr("_max_key_num"));
+  auto dx = ib->Emit("EmbeddingApplyFtrl",
+                     {table_id, lr, lr_power, lambda1, lambda2, dout, keys, global_step, embedding_dim, mask_zero,
+                      padding_key, padding_key_mask, completion_key, completion_key_mask, _embedding_dim, _max_key_num},
+                     {{"_process_node_engine_id", MakeValue("PS")}});
   return dx;
 }
 
@@ -128,26 +126,29 @@ NodePtr ApplyAdamW(BpropBuilder *ib, const std::vector<NodePtr> &nodes, const st
   auto backward_int_params = GetValue<std::vector<std::vector<int64_t>>>(ib->GetAttr("backward_int_params"));
   assert(backward_int_params.size() == kIndex6);
   auto global_step = ib->Tensor(backward_int_params[0][0], kInt32);
-  const auto &amsgrad = backward_int_params[1];
-  const auto &maximize = backward_int_params[2];
-  const auto &mask_zero = backward_int_params[3];
-  const auto &padding_key = backward_int_params[4];
-  const auto &padding_key_mask = backward_int_params[5];
+  auto amsgrad = ib->Value(backward_int_params[1]);
+  auto maximize = ib->Value(backward_int_params[2]);
+  auto mask_zero = ib->Value(backward_int_params[3]);
+  auto padding_key = ib->Value(backward_int_params[4]);
+  auto padding_key_mask = ib->Value(backward_int_params[5]);
+  auto embedding_dim = ib->EmitValue(ib->GetAttr("embedding_dim"));
+  auto completion_key = ib->EmitValue(ib->GetAttr("completion_key"));
+  auto completion_key_mask = ib->EmitValue(ib->GetAttr("completion_key_mask"));
+  auto _embedding_dim = ib->EmitValue(ib->GetAttr("_embedding_dim"));
+  auto _max_key_num = ib->EmitValue(ib->GetAttr("_max_key_num"));
 
-  auto dx = ib->Emit("EmbeddingApplyAdamW",
-                     {table_id, beta1_power, beta2_power, lr, weight_decay, beta1, beta2, epsilon, dout, keys,
-                      max_grad_norm, global_step},
-                     {{"embedding_dim", ib->GetAttr("embedding_dim")},
-                      {"amsgrad", MakeValue(amsgrad)},
-                      {"maximize", MakeValue(maximize)},
-                      {"mask_zero", MakeValue(mask_zero)},
-                      {"padding_key", MakeValue(padding_key)},
-                      {"padding_key_mask", MakeValue(padding_key_mask)},
-                      {"completion_key", ib->GetAttr("completion_key")},
-                      {"completion_key_mask", ib->GetAttr("completion_key_mask")},
-                      {"_embedding_dim", ib->GetAttr("_embedding_dim")},
-                      {"_max_key_num", ib->GetAttr("_max_key_num")},
-                      {"_process_node_engine_id", MakeValue("PS")}});
+  auto dx = ib->Emit("EmbeddingApplyAdamW", {table_id,       beta1_power,
+                                             beta2_power,    lr,
+                                             weight_decay,   beta1,
+                                             beta2,          epsilon,
+                                             dout,           keys,
+                                             max_grad_norm,  global_step,
+                                             embedding_dim,  amsgrad,
+                                             maximize,       mask_zero,
+                                             padding_key,    padding_key_mask,
+                                             completion_key, completion_key_mask,
+                                             _embedding_dim, _max_key_num},
+                     {{"_process_node_engine_id", MakeValue("PS")}});
   return dx;
 }
 
@@ -159,25 +160,88 @@ NodePtr ApplyAdaGrad(BpropBuilder *ib, const std::vector<NodePtr> &nodes, const 
   auto grad_dtype = ib->GetDtype(dout);
 
   auto backward_float_params = GetValue<std::vector<float>>(ib->GetAttr("backward_float_params"));
+  assert(backward_float_params.size() == kIndex1);
   auto lr = ib->Tensor(backward_float_params.at(0), grad_dtype);
 
   auto backward_int_params = GetValue<std::vector<std::vector<int64_t>>>(ib->GetAttr("backward_int_params"));
   assert(backward_int_params.size() == kIndex4);
   auto global_step = ib->Tensor(backward_int_params[0][0], kInt32);
-  const auto &mask_zero = backward_int_params[1];
-  const auto &padding_key = backward_int_params[2];
-  const auto &padding_key_mask = backward_int_params[3];
+  auto mask_zero = ib->Value(backward_int_params[1]);
+  auto padding_key = ib->Value(backward_int_params[2]);
+  auto padding_key_mask = ib->Value(backward_int_params[3]);
+  auto embedding_dim = ib->EmitValue(ib->GetAttr("embedding_dim"));
+  auto completion_key = ib->EmitValue(ib->GetAttr("completion_key"));
+  auto completion_key_mask = ib->EmitValue(ib->GetAttr("completion_key_mask"));
+  auto _embedding_dim = ib->EmitValue(ib->GetAttr("_embedding_dim"));
+  auto _max_key_num = ib->EmitValue(ib->GetAttr("_max_key_num"));
 
-  auto dx = ib->Emit("EmbeddingApplyAdaGrad", {table_id, lr, dout, keys, global_step},
-                     {{"embedding_dim", ib->GetAttr("embedding_dim")},
-                      {"mask_zero", MakeValue(mask_zero)},
-                      {"padding_key", MakeValue(padding_key)},
-                      {"padding_key_mask", MakeValue(padding_key_mask)},
-                      {"completion_key", ib->GetAttr("completion_key")},
-                      {"completion_key_mask", ib->GetAttr("completion_key_mask")},
-                      {"_embedding_dim", ib->GetAttr("_embedding_dim")},
-                      {"_max_key_num", ib->GetAttr("_max_key_num")},
-                      {"_process_node_engine_id", MakeValue("PS")}});
+  auto dx = ib->Emit("EmbeddingApplyAdaGrad",
+                     {table_id, lr, dout, keys, global_step, embedding_dim, mask_zero, padding_key, padding_key_mask,
+                      completion_key, completion_key_mask, _embedding_dim, _max_key_num},
+                     {{"_process_node_engine_id", MakeValue("PS")}});
+  return dx;
+}
+
+NodePtr ApplySgd(BpropBuilder *ib, const std::vector<NodePtr> &nodes, const std::string &prim_name) {
+  auto &table_id = nodes[kIndex0];
+  auto &dout = nodes[kIndex1];
+  auto &keys = nodes[kIndex2];
+
+  auto grad_dtype = ib->GetDtype(dout);
+
+  auto backward_float_params = GetValue<std::vector<float>>(ib->GetAttr("backward_float_params"));
+  assert(backward_float_params.size() == kIndex1);
+  auto lr = ib->Tensor(backward_float_params[0], grad_dtype);
+
+  auto backward_int_params = GetValue<std::vector<std::vector<int64_t>>>(ib->GetAttr("backward_int_params"));
+  assert(backward_int_params.size() == kIndex4);
+  auto global_step = ib->Tensor(backward_int_params[0][0], kInt32);
+  auto mask_zero = ib->Value(backward_int_params[1]);
+  auto padding_key = ib->Value(backward_int_params[2]);
+  auto padding_key_mask = ib->Value(backward_int_params[3]);
+  auto embedding_dim = ib->EmitValue(ib->GetAttr("embedding_dim"));
+  auto completion_key = ib->EmitValue(ib->GetAttr("completion_key"));
+  auto completion_key_mask = ib->EmitValue(ib->GetAttr("completion_key_mask"));
+  auto _embedding_dim = ib->EmitValue(ib->GetAttr("_embedding_dim"));
+  auto _max_key_num = ib->EmitValue(ib->GetAttr("_max_key_num"));
+
+  auto dx = ib->Emit("EmbeddingApplySgd",
+                     {table_id, lr, dout, keys, global_step, embedding_dim, mask_zero, padding_key, padding_key_mask,
+                      completion_key, completion_key_mask, _embedding_dim, _max_key_num},
+                     {{"_process_node_engine_id", MakeValue("PS")}});
+  return dx;
+}
+
+NodePtr ApplyRmsprop(BpropBuilder *ib, const std::vector<NodePtr> &nodes, const std::string &prim_name) {
+  auto &table_id = nodes[kIndex0];
+  auto &dout = nodes[kIndex1];
+  auto &keys = nodes[kIndex2];
+
+  auto grad_dtype = ib->GetDtype(dout);
+
+  auto backward_float_params = GetValue<std::vector<float>>(ib->GetAttr("backward_float_params"));
+  assert(backward_float_params.size() == kIndex4);
+  auto lr = ib->Tensor(backward_float_params[kIndex0], grad_dtype);
+  auto rho = ib->Tensor(backward_float_params[kIndex1], grad_dtype);
+  auto momentum = ib->Tensor(backward_float_params[kIndex2], grad_dtype);
+  auto epsilon = ib->Tensor(backward_float_params[kIndex3], grad_dtype);
+
+  auto backward_int_params = GetValue<std::vector<std::vector<int64_t>>>(ib->GetAttr("backward_int_params"));
+  assert(backward_int_params.size() == kIndex4);
+  auto global_step = ib->Tensor(backward_int_params[kIndex0][kIndex0], kInt32);
+  auto mask_zero = ib->Value(backward_int_params[kIndex1]);
+  auto padding_key = ib->Value(backward_int_params[kIndex2]);
+  auto padding_key_mask = ib->Value(backward_int_params[kIndex3]);
+  auto embedding_dim = ib->EmitValue(ib->GetAttr("embedding_dim"));
+  auto completion_key = ib->EmitValue(ib->GetAttr("completion_key"));
+  auto completion_key_mask = ib->EmitValue(ib->GetAttr("completion_key_mask"));
+  auto _embedding_dim = ib->EmitValue(ib->GetAttr("_embedding_dim"));
+  auto _max_key_num = ib->EmitValue(ib->GetAttr("_max_key_num"));
+
+  auto dx = ib->Emit("EmbeddingApplyRmsprop",
+                     {table_id, lr, rho, momentum, epsilon, dout, keys, global_step, embedding_dim, mask_zero,
+                      padding_key, padding_key_mask, completion_key, completion_key_mask, _embedding_dim, _max_key_num},
+                     {{"_process_node_engine_id", MakeValue("PS")}});
   return dx;
 }
 
@@ -185,7 +249,8 @@ NodePtr FakeRemoteAndTableFindInitBackwardFunc(BpropBuilder *ib, const std::vect
                                                const std::string &prim_name) {
   using BackwardFunc = std::function<NodePtr(BpropBuilder *, const std::vector<NodePtr> &, const std::string &)>;
   static std::unordered_map<std::string, BackwardFunc> backward_func_map = {
-    {"adam", ApplyAdam}, {"adamw", ApplyAdamW}, {"adagrad", ApplyAdaGrad}, {"ftrl", ApplyFtrl}};
+    {"adam", ApplyAdam}, {"adamw", ApplyAdamW}, {"adagrad", ApplyAdaGrad},
+    {"ftrl", ApplyFtrl}, {"sgd", ApplySgd},     {"rmsprop", ApplyRmsprop}};
 
   const auto &backward_mode = GetValue<std::string>(ib->GetAttr("backward_mode"));
   auto it = backward_func_map.find(backward_mode);
