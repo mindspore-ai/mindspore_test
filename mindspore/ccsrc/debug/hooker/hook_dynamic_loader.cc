@@ -15,7 +15,39 @@
  */
 
 #include "debug/hooker/hook_dynamic_loader.h"
+#include <sys/stat.h>
 #include "utils/log_adapter.h"
+
+bool IsValidPath(const char *path) {
+  struct stat fileStat;
+
+  // check if exists
+  if (stat(path, &fileStat) != 0) {
+    MS_LOG(ERROR) << "File does not exist or cannot be accessed.";
+    return false;
+  }
+
+  // check if softlink
+  if (S_ISLNK(fileStat.st_mode)) {
+    MS_LOG(ERROR) << "File is a symbolic link, which is not allowed.";
+    return false;
+  }
+
+  // check if regular
+  if (!S_ISREG(fileStat.st_mode)) {
+    MS_LOG(ERROR) << "File is not a regular file.";
+    return false;
+  }
+
+  // check if endswith so
+  std::string filePath(path);
+  if (filePath.substr(filePath.find_last_of(".")) != ".so") {
+    MS_LOG(ERROR) << "File is not a .so file.";
+    return false;
+  }
+
+  return true;
+}
 
 HookDynamicLoader &HookDynamicLoader::GetInstance() {
   static HookDynamicLoader instance;
@@ -38,6 +70,18 @@ bool HookDynamicLoader::LoadLibrary() {
     MS_LOG(WARNING) << "HOOK_TOOL_PATH is not set!";
     return false;
   }
+
+  char *realPath = realpath(libPath, nullptr);
+  if (!realPath) {
+    MS_LOG(WARNING) << "Failed to resolve realpath for the library.";
+    return false;
+  }
+
+  if (!IsValidPath(realPath)) {
+    MS_LOG(WARNING) << "Library path validation failed.";
+    return false;
+  }
+
   std::lock_guard<std::mutex> lock(mutex_);
   if (handle_) {
     MS_LOG(WARNING) << "Hook library already loaded!";

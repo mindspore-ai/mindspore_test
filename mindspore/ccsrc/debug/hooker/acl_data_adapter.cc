@@ -19,6 +19,10 @@
 #include <vector>
 #include <memory>
 #include "utils/log_adapter.h"
+#include "utils/ms_utils.h"
+
+constexpr uint32_t kAllKernelNames = 0;
+constexpr uint32_t kIsKbyK = 1;
 
 namespace mindspore {
 namespace hooker {
@@ -34,8 +38,11 @@ void AclDataAdapter::AdaptOnStepBegin(uint32_t device_id, int step_count_num, st
   if (func_ptr != nullptr) {
     auto hooker = reinterpret_cast<HookBeginPtr>(func_ptr);
     MS_LOG(INFO) << "Hook on step begin start.";
-    hooker(device_id, step_count_num, all_kernel_names,
-           is_kbyk);  // check if need dump & is_init, generate dump path dir and then init&enable dump
+    std::map<uint32_t, void *> param_list{};
+    TO_MAP(all_kernel_names, kAllKernelNames, param_list);
+    TO_MAP(is_kbyk, kIsKbyK, param_list);
+    // check if need dump & is_init, generate dump path dir and then init&enable dump
+    hooker(device_id, step_count_num, param_list);
   }
 }
 
@@ -48,12 +55,16 @@ void AclDataAdapter::AdaptOnStepEnd() {
   auto func_ptr = loader.GetHooker(kHookEnd);
   if (func_ptr != nullptr) {
     auto hooker = reinterpret_cast<HookEndPtr>(func_ptr);
+    std::map<uint32_t, void *> param_list{};
     MS_LOG(INFO) << "Hook on step end start.";
-    hooker();
+    hooker(param_list);
   }
 }
 
 AclDataAdapter::AclDataAdapter() {
+  if (common::GetEnv(kMSHookEnable) != kEnable) {
+    return;
+  }
   auto &loader = HookDynamicLoader::GetInstance();
   isLoaded = loader.LoadLibrary();
 }

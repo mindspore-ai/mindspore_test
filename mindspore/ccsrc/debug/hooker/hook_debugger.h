@@ -18,9 +18,6 @@
 #include "debug/debugger/debugger_utils.h"
 #include "include/backend/debug/data_dump/dump_utils.h"
 
-constexpr auto kMSHookEnable = "MS_HOOK_ENABLE";
-constexpr auto kEnable = "on";
-
 namespace mindspore {
 namespace hooker {
 class HookDebugger {

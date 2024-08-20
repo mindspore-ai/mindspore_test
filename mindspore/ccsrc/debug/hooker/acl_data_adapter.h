@@ -19,12 +19,14 @@
 
 #include <string>
 #include <vector>
+#include <map>
 #include "debug/hooker/adapter.h"
 #include "debug/hooker/hook_dynamic_loader.h"
 
-using HookBeginPtr = void (*)(uint32_t device_id, int step_count_num, std::vector<std::string> all_kernel_names,
-                              bool is_kbyk);
-using HookEndPtr = void (*)();
+#define TO_MAP(var, id, map) map[id] = static_cast<void *>(&var);
+
+using HookBeginPtr = void (*)(uint32_t device_id, int step_count_num, std::map<uint32_t, void *> ext_args);
+using HookEndPtr = void (*)(std::map<uint32_t, void *> ext_args);
 
 namespace mindspore {
 namespace hooker {
@@ -40,7 +42,7 @@ class AclDataAdapter : public Adapter {
   ~AclDataAdapter() {}
 
  private:
-  bool isLoaded;
+  bool isLoaded = false;
 };
 
 }  // namespace hooker
