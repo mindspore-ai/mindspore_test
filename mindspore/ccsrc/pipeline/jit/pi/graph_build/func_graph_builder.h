@@ -60,8 +60,7 @@ class FuncGraphBuilder {
   /// \param[in] inputs_obj The input python objects.
   ///
   /// \return The abstract wrapper  of the infer result.
-  AbstractWrapperPtr AddNode(const py::object &callable_obj,
-                             const std::vector<AbstractWrapperPtr> &inputs_abstract_wrapper);
+  AbstractWrapperPtr AddNode(const py::object &callable_obj, const AbstractWrapperPtrList &inputs_abstract_wrapper);
 
   /// \brief Add a cnode to the graph.
   ///
@@ -69,8 +68,7 @@ class FuncGraphBuilder {
   /// \param[in] inputs_obj The input python objects.
   ///
   /// \return The abstract wrapper of the infer result.
-  AbstractWrapperPtr AddNode(const ValuePtr &callable_value,
-                             const std::vector<AbstractWrapperPtr> &inputs_abstract_wrapper);
+  AbstractWrapperPtr AddNode(const ValuePtr &callable_value, const AbstractWrapperPtrList &inputs_abstract_wrapper);
 
   /// \brief Add a python object to graph.
   ///
@@ -85,8 +83,7 @@ class FuncGraphBuilder {
   /// \param[in] inputs_abstract_wrapper The abstract wrapper for inputs.
   ///
   /// \return The python object of the infer result.
-  AbstractWrapperPtr AddMultiNode(const std::string &name,
-                                  const std::vector<AbstractWrapperPtr> &inputs_abstract_wrapper);
+  AbstractWrapperPtr AddMultiNode(const std::string &name, const AbstractWrapperPtrList &inputs_abstract_wrapper);
 
   /// \brief Add an output node to the graph.
   ///
@@ -160,10 +157,10 @@ class FuncGraphBuilder {
   AbstractWrapperPtr AddLocalVariable(const py::object &obj);
 
   AbstractWrapperPtr BuildGradNetNode(const ValuePtr &callable_value, const py::object &callable_obj,
-                                      const std::vector<AbstractWrapperPtr> &inputs_abstract_wrapper);
+                                      const AbstractWrapperPtrList &inputs_abstract_wrapper);
 
   AbstractWrapperPtr BuildGradNode(const AbstractWrapperPtr &key, const FuncGraphPtr &forward_fg,
-                                   const std::vector<AbstractWrapperPtr> &inputs, bool need_unpack);
+                                   const AbstractWrapperPtrList &inputs, bool need_unpack);
 
   AbstractWrapperPtr AddTopGraphArgInput(const py::object &object);
 
@@ -182,11 +179,10 @@ class FuncGraphBuilder {
 
   AnfNodePtr ConvertParameterTupleToNode(const py::object &input_obj);
 
-  AbstractWrapperPtr AddFgCallNode(const FuncGraphPtr &fg,
-                                   const std::vector<AbstractWrapperPtr> &inputs_abstract_wrapper);
+  AbstractWrapperPtr AddNodeWithAbstract(const ValuePtr &value, const AbstractWrapperPtrList &inputs_abstract_wrapper,
+                                         const AbstractBasePtr &abstract);
 
-  bool GetInputNodesAndAbstracts(const ValuePtr &callable_value,
-                                 const std::vector<AbstractWrapperPtr> &inputs_abstract_wrapper,
+  bool GetInputNodesAndAbstracts(const ValuePtr &callable_value, const AbstractWrapperPtrList &inputs_abstract_wrapper,
                                  std::vector<AnfNodePtr> *input_node_list,
                                  std::vector<AbstractBasePtr> *input_abs_list);
 
@@ -201,12 +197,14 @@ class FuncGraphBuilder {
   static AbstractBasePtr GetAbstractOf(const AnfNodePtr &node);
 
   AbstractWrapperPtr TryToAddNode(const ValuePtr &callable_value,
-                                  const std::vector<AbstractWrapperPtr> &inputs_abstract_wrapper);
+                                  const AbstractWrapperPtrList &inputs_abstract_wrapper);
 
   static bool CheckInvalidCellListDictMethod(const py::object &obj);
 
   AbstractWrapperPtr HandleGrad(const AbstractWrapperPtr &key, const FuncGraphPtr &forward_fg,
-                                const std::vector<AbstractWrapperPtr> &inputs, bool need_unpack);
+                                const AbstractWrapperPtrList &inputs, bool need_unpack);
+
+  AbstractBasePtr FetchFuncGraphOutputAbstract(const ValuePtr &value) const;
 
   FuncGraphPtr graph_{nullptr};
   bool has_set_output_{false};

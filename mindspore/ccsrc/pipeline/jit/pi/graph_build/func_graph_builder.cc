@@ -96,12 +96,13 @@ bool NeedBroaden(const py::object &obj, const ValuePtr &value) {
 
 TypeId GetTypeIdFromClassName(const std::string &class_name) {
   static HashMap<std::string, TypeId> class_name_to_type_ids = {
-    {"Tensor", kObjectTypeTensorType},  {"list", kObjectTypeList},
-    {"tuple", kObjectTypeTuple},        {"int", kNumberTypeInt},
-    {"float", kNumberTypeFloat},        {"CellList", kObjectTypeList},
-    {"CellDict", kObjectTypeDictionary}};
+    {"Tensor", kObjectTypeTensorType},   {"list", kObjectTypeList},
+    {"tuple", kObjectTypeTuple},         {"int", kNumberTypeInt},
+    {"float", kNumberTypeFloat},         {"CellList", kObjectTypeList},
+    {"CellDict", kObjectTypeDictionary}, {"dict", kObjectTypeDictionary}};
   auto iter = class_name_to_type_ids.find(class_name);
   if (iter == class_name_to_type_ids.end()) {
+    MS_LOG(INFO) << "Failed to convert class name: " << class_name << " to type id.";
     return kTypeUnknown;
   }
   return iter->second;
@@ -461,12 +462,20 @@ AbstractWrapperPtr FuncGraphBuilder::AddSubGraphInput(const AbstractWrapperPtr a
   return ret_abstract_wrapper;
 }
 
-AbstractWrapperPtr FuncGraphBuilder::AddNode(const py::object &callable_obj,
-                                             const std::vector<AbstractWrapperPtr> &inputs_abstract_wrapper) {
-  if (!CheckCallable(callable_obj)) {
-    MS_LOG(INFO) << "The python obj " << py::str(callable_obj) << " is not callable.";
+AbstractBasePtr FuncGraphBuilder::FetchFuncGraphOutputAbstract(const ValuePtr &value) const {
+  if (value == nullptr || !value->isa<FuncGraph>()) {
     return nullptr;
   }
+  auto fg = value->cast<FuncGraphPtr>();
+  auto fg_output = fg->output();
+  if (fg_output == nullptr) {
+    return nullptr;
+  }
+  return fg_output->abstract();
+}
+
+AbstractWrapperPtr FuncGraphBuilder::AddNode(const py::object &callable_obj,
+                                             const AbstractWrapperPtrList &inputs_abstract_wrapper) {
   auto callable_value = ConvertPyObjToValue(callable_obj);
   if (callable_value == nullptr) {
     MS_LOG(INFO) << "Convert python object " << py::str(callable_obj) << " to value failed.";
@@ -483,6 +492,7 @@ AbstractWrapperPtr FuncGraphBuilder::AddNode(const py::object &callable_obj,
   if (FunctionShouldBeParseInAst(callable_obj)) {
     return TryToAddNode(callable_value, inputs_abstract_wrapper);
   }
+
   return AddNode(callable_value, inputs_abstract_wrapper);
 }
 
@@ -503,7 +513,7 @@ AbstractWrapperPtr FuncGraphBuilder::AddAttrPythonObject(const py::object &objec
 }
 
 bool FuncGraphBuilder::GetInputNodesAndAbstracts(const ValuePtr &callable_value,
-                                                 const std::vector<AbstractWrapperPtr> &inputs_abstract_wrapper,
+                                                 const AbstractWrapperPtrList &inputs_abstract_wrapper,
                                                  std::vector<AnfNodePtr> *input_node_list,
                                                  std::vector<AbstractBasePtr> *input_abs_list) {
   input_node_list->reserve(inputs_abstract_wrapper.size() + 1);
@@ -631,7 +641,7 @@ AbstractBasePtr FuncGraphBuilder::DoInferAndCheck(const ValuePtr &callable_value
 }
 
 AbstractWrapperPtr FuncGraphBuilder::BuildGradNetNode(const ValuePtr &callable_value, const py::object &callable_obj,
-                                                      const std::vector<AbstractWrapperPtr> &inputs_abstract_wrapper) {
+                                                      const AbstractWrapperPtrList &inputs_abstract_wrapper) {
   const std::string grad_prefix = "MetaFuncGraph-grad";
   const std::string fake_node_key_prefix = "FakeNodeKey";
   std::vector<AnfNodePtr> input_node_list;
@@ -655,7 +665,7 @@ AbstractWrapperPtr FuncGraphBuilder::BuildGradNetNode(const ValuePtr &callable_v
   auto output_py_obj = py::str(fake_node_key_prefix + " " + grad_prefix + " " + ss.str());
 
   auto abs = abstract::ToAbstract(MakeValue(ConvertPyObjToValue(output_py_obj)));
-  abs->set_user_data(kGradNetInputs, std::make_shared<std::vector<AbstractWrapperPtr>>(inputs_abstract_wrapper));
+  abs->set_user_data(kGradNetInputs, std::make_shared<AbstractWrapperPtrList>(inputs_abstract_wrapper));
   abs->set_user_data(kGradFuncPyObject, std::make_shared<py::object>(callable_obj));
   fake_node->set_abstract(abs);
 
@@ -666,7 +676,7 @@ AbstractWrapperPtr FuncGraphBuilder::BuildGradNetNode(const ValuePtr &callable_v
 }
 
 AbstractWrapperPtr FuncGraphBuilder::BuildGradNode(const AbstractWrapperPtr &key, const FuncGraphPtr &forward_fg,
-                                                   const std::vector<AbstractWrapperPtr> &inputs, bool need_unpack) {
+                                                   const AbstractWrapperPtrList &inputs, bool need_unpack) {
   AbstractWrapperPtr ret;
   try {
     MS_LOG_TRY_CATCH_SCOPE;
@@ -687,7 +697,7 @@ AbstractWrapperPtr FuncGraphBuilder::BuildGradNode(const AbstractWrapperPtr &key
 //     return grad_result_node
 //   final node for evaluated: fg(other_inputs, forward_inputs)
 AbstractWrapperPtr FuncGraphBuilder::HandleGrad(const AbstractWrapperPtr &key, const FuncGraphPtr &forward_fg,
-                                                const std::vector<AbstractWrapperPtr> &inputs, bool need_unpack) {
+                                                const AbstractWrapperPtrList &inputs, bool need_unpack) {
   auto fake_node = ReadLocalVariable(key);
   if (fake_node == nullptr || !fake_node->isa<CNode>()) {
     MS_LOG(INFO) << "Failed to find corresponding fake GradOperation node for key: " << key;
@@ -704,7 +714,7 @@ AbstractWrapperPtr FuncGraphBuilder::HandleGrad(const AbstractWrapperPtr &key, c
     return nullptr;
   }
 
-  auto pre_wrapper = *(fake_node_abstract->user_data<std::vector<AbstractWrapperPtr>>(kGradNetInputs));
+  auto pre_wrapper = *(fake_node_abstract->user_data<AbstractWrapperPtrList>(kGradNetInputs));
   std::vector<AnfNodePtr> fake_node_inputs;
   for (auto e : pre_wrapper) {
     auto cur_node = GetNodeByWrapper(e);
@@ -783,7 +793,7 @@ AbstractWrapperPtr FuncGraphBuilder::HandleGrad(const AbstractWrapperPtr &key, c
 }
 
 AbstractWrapperPtr FuncGraphBuilder::TryToAddNode(const ValuePtr &callable_value,
-                                                  const std::vector<AbstractWrapperPtr> &inputs_abstract_wrapper) {
+                                                  const AbstractWrapperPtrList &inputs_abstract_wrapper) {
   // Collect the input nodes and input abstracts.
   std::vector<AnfNodePtr> input_node_list;
   std::vector<AbstractBasePtr> input_abs_list;
@@ -818,19 +828,21 @@ AbstractWrapperPtr FuncGraphBuilder::TryToAddNode(const ValuePtr &callable_value
 }
 
 AbstractWrapperPtr FuncGraphBuilder::AddNode(const ValuePtr &callable_value,
-                                             const std::vector<AbstractWrapperPtr> &inputs_abstract_wrapper) {
+                                             const AbstractWrapperPtrList &inputs_abstract_wrapper) {
   if (!callable_value->ToAbstract()->isa<abstract::AbstractFunction>()) {
     MS_LOG(INFO) << "The value " << callable_value->ToString() << " is not callable.";
     return nullptr;
   }
-  if (callable_value->isa<FuncGraph>()) {
-    return AddFgCallNode(callable_value->cast<FuncGraphPtr>(), inputs_abstract_wrapper);
+
+  auto ret_abs = FetchFuncGraphOutputAbstract(callable_value);
+  if (ret_abs != nullptr) {
+    return AddNodeWithAbstract(callable_value, inputs_abstract_wrapper, ret_abs);
   }
   return TryToAddNode(callable_value, inputs_abstract_wrapper);
 }
 
 AbstractWrapperPtr FuncGraphBuilder::AddMultiNode(const std::string &name,
-                                                  const std::vector<AbstractWrapperPtr> &inputs_abstract_wrapper) {
+                                                  const AbstractWrapperPtrList &inputs_abstract_wrapper) {
   const std::string mod_str = "mindspore.ops.composite.multitype_ops";
   py::module mod = py::module::import(mod_str.c_str());
   if (!py::hasattr(mod, name.c_str())) {
@@ -924,28 +936,30 @@ void FuncGraphBuilder::ClearNodeAbstract() {
   }
 }
 
-AbstractWrapperPtr FuncGraphBuilder::AddFgCallNode(const FuncGraphPtr &fg,
-                                                   const std::vector<AbstractWrapperPtr> &inputs_abstract_wrapper) {
-  std::vector<AnfNodePtr> input_node_list;
-  input_node_list.reserve(inputs_abstract_wrapper.size() + 1);
+AbstractWrapperPtr FuncGraphBuilder::AddNodeWithAbstract(const ValuePtr &value,
+                                                         const AbstractWrapperPtrList &inputs_abstract_wrapper,
+                                                         const AbstractBasePtr &abstract) {
+  AbstractWrapperPtr ret;
+  try {
+    MS_LOG_TRY_CATCH_SCOPE;
+    std::vector<AnfNodePtr> input_node_list;
+    input_node_list.reserve(inputs_abstract_wrapper.size() + 1);
 
-  (void)input_node_list.emplace_back(NewValueNode(fg));
-  for (const auto &input_wrapper : inputs_abstract_wrapper) {
-    auto node = GetNodeByWrapper(input_wrapper);
-    MS_EXCEPTION_IF_NULL(node);
-    (void)input_node_list.emplace_back(node);
+    (void)input_node_list.emplace_back(NewValueNode(value));
+    for (const auto &input_wrapper : inputs_abstract_wrapper) {
+      auto node = GetNodeByWrapper(input_wrapper);
+      MS_EXCEPTION_IF_NULL(node);
+      (void)input_node_list.emplace_back(node);
+    }
+
+    auto new_node = graph_->NewCNodeInOrder(input_node_list);
+    new_node->set_abstract(abstract);
+    ret = std::make_shared<AbstractWrapper>(abstract);
+    (void)key_to_node_.emplace(ret, new_node);
+  } catch (const std::exception &e) {
+    MS_LOG(INFO) << "Failed to add node with abstract. The exception:\n" << e.what();
   }
-
-  auto new_node = graph_->NewCNodeInOrder(input_node_list);
-  auto fg_output = fg->output();
-  MS_EXCEPTION_IF_NULL(fg_output);
-  auto fg_output_abs = fg_output->abstract();
-  MS_EXCEPTION_IF_NULL(fg_output_abs);
-  new_node->set_abstract(fg_output_abs);
-
-  auto ret_abstract_wrapper = std::make_shared<AbstractWrapper>(new_node->abstract());
-  (void)key_to_node_.emplace(ret_abstract_wrapper, new_node);
-  return ret_abstract_wrapper;
+  return ret;
 }
 
 bool FuncGraphBuilder::CheckCallable(const py::object &obj) {
