@@ -3,7 +3,7 @@ mindspore.nn.HSwish
 
 .. py:class:: mindspore.nn.HSwish
 
-    逐元素计算Hard Swish。
+    逐元素计算Hard Swish激活函数。
 
     Hard Swish定义如下：
 

@@ -1166,7 +1166,7 @@ class PReLU(Cell):
 
 class HSwish(Cell):
     r"""
-    Applies hswish-type activation element-wise.
+    Applies Hard Swish activation function element-wise.
 
     Hard swish is defined as:
 
@@ -1218,9 +1218,9 @@ class HSwish(Cell):
 
 class HSigmoid(Cell):
     r"""
-    Applies Hard sigmoid activation function element-wise.
+    Applies Hard Sigmoid activation function element-wise.
 
-    Hard sigmoid is defined as:
+    Hard Sigmoid is defined as:
 
     .. math::
         \text{Hardsigmoid}(input) =
