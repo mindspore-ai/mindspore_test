@@ -133,6 +133,7 @@ void RegMsContext(const py::module *m) {
     .value("enable_grad_comm_opt", MsCtxParam::MS_CTX_ENABLE_GRAD_COMM_OPT)
     .value("enable_opt_shard_comm_opt", MsCtxParam::MS_CTX_ENABLE_OPT_SHARD_COMM_OPT)
     .value("compute_communicate_fusion_level", MsCtxParam::MS_CTX_COMPUTE_COMMUNICATE_FUSION_LEVEL)
+    .value("dataset_broadcast_opt_level", MsCtxParam::MS_CTX_DATASET_BROADCAST_OPT_LEVEL)
     .value("debug_level", MsCtxParam::MS_CTX_DEBUG_LEVEL)
     .value("interleaved_matmul_comm", MsCtxParam::MS_CTX_INTERLEAVED_MATMUL_COMM)
     .value("interleaved_layernorm_comm", MsCtxParam::MS_CTX_INTERLEAVED_LAYERNORM_COMM)

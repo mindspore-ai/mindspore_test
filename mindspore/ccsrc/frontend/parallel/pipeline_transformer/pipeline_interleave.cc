@@ -110,10 +110,11 @@ void PipelineInterleave::CreateSendReceiveGroup() {
   auto rank_list = g_device_manager->GetDeviceListBetweenStage();
   auto dev_list = g_device_manager->CreateDeviceListByRankList(rank_list);
   Group forward_send_group;
-  if (g_device_manager->CreateGroup(rank_list, &forward_send_group) != SUCCESS) {
+  auto forward_send_group_name = g_device_manager->GenerateGroupNameByRanks(rank_list) + SEND;
+  if (g_device_manager->CreateGroup(forward_send_group_name, dev_list, &forward_send_group) != SUCCESS) {
     MS_LOG(EXCEPTION) << "Create forward Send communication group failed, the rank list is: " << rank_list;
   }
-  group_.emplace_back(forward_send_group.name());
+  group_.emplace_back(forward_send_group_name);
 
   Group backward_send_group;
   auto backward_send_group_name = forward_send_group.name() + BACKWARD;

@@ -67,3 +67,5 @@ https://ffmpeg.org/releases/ffmpeg-%SOFTWARE_VERSION%.tar.gz
 https://tools.mindspore.cn/libs/ffmpeg/ffmpeg-%SOFTWARE_VERSION%.tar.gz
 https://mindspore.cn*/r2.3.1/*
 https://www.mindspore.cn*/r2.3.1/*
+https://www.mindspore.cn*/master/*
+https://mindspore.cn*/master/*
