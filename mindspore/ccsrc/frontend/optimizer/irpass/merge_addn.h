@@ -200,6 +200,16 @@ class AddNZeroFilter : public AnfVisitor {
     return fg->NewCNode({addn, make_tuple});
   }
 
+  bool IsReshapeZeros(const AnfNodePtr &node) {
+    if (IsPrimitiveCNode(node, prim::kPrimReshape)) {
+      auto cnode = node->cast<CNodePtr>();
+      if (IsPrimitiveCNode(cnode->input(1), prim::kPrimZerosLike)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   void Visit(const CNodePtr &cnode) override {
     if (!IsPrimitiveCNode(cnode, prim::kPrimMakeTuple)) {
       return;
@@ -211,7 +221,7 @@ class AddNZeroFilter : public AnfVisitor {
     // {kPrimMakeTuple, X1, X2, ...}
     filtered_Xs_.push_back(NewValueNode(prim::kPrimMakeTuple));
     for (auto &x : Xs_) {
-      if (!IsPrimitiveCNode(x, prim::kPrimZerosLike)) {
+      if (!IsPrimitiveCNode(x, prim::kPrimZerosLike) && !IsReshapeZeros(x)) {
         filtered_Xs_.push_back(x);
       } else {
         has_zero_like_ = true;
