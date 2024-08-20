@@ -75,9 +75,21 @@ void ProdExtCPUCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPt
       PyBoostUtils::CastTensor(input_tensor, out_dtype, op->device_context()->device_context_key_.device_name_);
   }
 
-  // Set new input abstract for ReduceProd
-  std::vector<AbstractBasePtr> new_input_abs{act_tensor->ToAbstract(), act_axis->ToAbstract(), keep_dims->ToAbstract()};
-  ProdExtCPUCall(op, act_tensor, act_axis, keep_dims, new_input_abs);
+  if (act_tensor->data_type() == kNumberTypeFloat16) {
+    const auto &device_name = op->device_context()->device_context_key_.device_name_;
+    // Increase the precision to float32 for calculation
+    const auto &cast_input_tensor = PyBoostUtils::CastTensor(act_tensor, kNumberTypeFloat32, device_name);
+    const auto &prod_ext_op = CREATE_PYBOOST_OP(ProdExt, device_name);
+    const auto &cast_output_tensor = prod_ext_op->Call(cast_input_tensor, axis, keep_dims, std::nullopt);
+    // After calculation, reduce the precision to float16
+    const auto &output_tensor = PyBoostUtils::CastTensor(cast_output_tensor, kNumberTypeFloat16, device_name);
+    op->set_outputs({output_tensor});
+  } else {
+    // Set new input abstract for ReduceProd
+    std::vector<AbstractBasePtr> new_input_abs{act_tensor->ToAbstract(), act_axis->ToAbstract(),
+                                               keep_dims->ToAbstract()};
+    ProdExtCPUCall(op, act_tensor, act_axis, keep_dims, new_input_abs);
+  }
 }
 }  // namespace pyboost
 }  // namespace kernel
