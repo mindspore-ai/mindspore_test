@@ -31,17 +31,17 @@ class NewProfiler:
             op_time: bool = True,
             profile_communication: bool = False,
             profile_memory: bool = False,
-            parallel_strategy: bool = True,
+            parallel_strategy: bool = False,
             start_profile: bool = True,
             aicore_metrics: int = 0,
             l2_cache: bool = False,
             hbm_ddr: bool = False,
             pcie: bool = False,
             sync_enable: bool = True,
-            data_process: bool = True,
+            data_process: bool = False,
             timeline_limit: int = 500,
             profile_framework: str = "all",
-            host_stack: bool = False,
+            with_stack: bool = False,
             data_simplification: bool = True,
             **kwargs) -> None:
 
@@ -61,7 +61,7 @@ class NewProfiler:
             data_process=data_process,
             timeline_limit=timeline_limit,
             profile_framework=profile_framework,
-            host_stack=host_stack,
+            with_stack=with_stack,
             data_simplification=data_simplification
         )
 
@@ -69,7 +69,7 @@ class NewProfiler:
 
         self._cpu_profiler = PROFILERS.get_modules().get(DeviceTarget.CPU.value)(
             op_time=self._prof_context.op_time,
-            host_stack=self._prof_context.host_stack,
+            with_stack=self._prof_context.with_stack,
             data_process=self._prof_context.data_process,
             output_path=self._prof_context.output_path,
             profile_memory=self._prof_context.profile_memory,

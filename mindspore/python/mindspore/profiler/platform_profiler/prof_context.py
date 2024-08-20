@@ -28,17 +28,17 @@ class ProfContext:
         self._op_time = kwargs.get("op_time", True)
         self._profile_communication = kwargs.get("profile_communication", False)
         self._profile_memory = kwargs.get("profile_memory", False)
-        self._parallel_strategy = kwargs.get("parallel_strategy", True)
+        self._parallel_strategy = kwargs.get("parallel_strategy", False)
         self._start_profile = kwargs.get("start_profile", True)
         self._aicore_metrics = kwargs.get("aicore_metrics", 0)
         self._l2_cache = kwargs.get("l2_cache", False)
         self._hbm_ddr = kwargs.get("hbm_ddr", False)
         self._pcie = kwargs.get("pcie", False)
         self._sync_enable = kwargs.get("sync_enable", True)
-        self._data_process = kwargs.get("data_process", True)
+        self._data_process = kwargs.get("data_process", False)
         self._timeline_limit = kwargs.get("timeline_limit", 500)
         self._profile_framework = kwargs.get("profile_framework", "all")
-        self._host_stack = kwargs.get("host_stack", False)
+        self._with_stack = kwargs.get("with_stack", False)
         self._data_simplification = kwargs.get("data_simplification", True)
 
         self._dev_id = None
@@ -107,8 +107,8 @@ class ProfContext:
         return self._profile_framework
 
     @property
-    def host_stack(self):
-        return self._host_stack
+    def with_stack(self):
+        return self._with_stack
 
     @property
     def data_simplification(self):
