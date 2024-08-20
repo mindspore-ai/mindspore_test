@@ -3289,6 +3289,31 @@ void SplitNotParallelCareOpsInterleaved(const FuncGraphPtr &root) {
       }
     }
   }
+  auto new_all_nodes = TopoSort(ret_after, SuccDeeperSimple);
+  auto new_node_users = manager->node_users();
+  for (const auto &node : new_all_nodes) {
+    if (!IsPrimitiveCNode(node, prim::kPrimVirtualConverterEnd)) {
+      continue;
+    }
+    auto end_cnode = node->cast<CNodePtr>();
+    auto end_users = new_node_users.at(node);
+    auto func_graph = node->func_graph();
+    for (const auto &end_user : end_users) {
+      if (!IsPrimitiveCNode(end_user.first, prim::kPrimCast)) {
+        continue;
+      }
+      auto cast_cnode = end_user.first->cast<CNodePtr>();
+      std::vector<AnfNodePtr> new_end_inputs = {end_cnode->input(kIndex0)};
+      for (size_t i = 1; i < end_cnode->size(); ++i) {
+        std::vector<AnfNodePtr> new_cast_inputs = {cast_cnode->input(kIndex0), end_cnode->input(i),
+                                                   cast_cnode->input(kIndex2)};
+        auto new_cast = func_graph->NewCNode(new_cast_inputs);
+        new_end_inputs.push_back(new_cast);
+      }
+      auto new_end = func_graph->NewCNode(new_end_inputs);
+      (void)manager->Replace(cast_cnode, new_end);
+    }
+  }
 }
 
 int64_t SendRecvInterleavedAxis(const CNodePtr &send_recv) {

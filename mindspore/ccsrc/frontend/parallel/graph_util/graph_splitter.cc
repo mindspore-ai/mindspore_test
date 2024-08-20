@@ -96,11 +96,6 @@ CNodePtr CreateTupleGetItemNode(const FuncGraphPtr &func_graph, const AnfNodePtr
                                 size_t item_index) {
   MS_EXCEPTION_IF_NULL(func_graph);
   MS_EXCEPTION_IF_NULL(node_with_tuple_output);
-  const auto &tuple_abstract = node_with_tuple_output->abstract();
-  MS_EXCEPTION_IF_NULL(tuple_abstract);
-  if (!tuple_abstract->isa<abstract::AbstractTuple>()) {
-    MS_LOG(EXCEPTION) << "Only create TupleGetItem for tuple output.";
-  }
 
   auto item_index_value_node = NewValueNode(MakeValue(UlongToLong(item_index)));
   MS_EXCEPTION_IF_NULL(item_index_value_node);
@@ -109,6 +104,13 @@ CNodePtr CreateTupleGetItemNode(const FuncGraphPtr &func_graph, const AnfNodePtr
                                                    item_index_value_node};
   CNodePtr tuple_get_item_node = func_graph->NewCNode(tuple_get_item_inputs);
   MS_EXCEPTION_IF_NULL(tuple_get_item_node);
+  const auto &tuple_abstract = node_with_tuple_output->abstract();
+  if (!tuple_abstract) {
+    return tuple_get_item_node;
+  }
+  if (!tuple_abstract->isa<abstract::AbstractTuple>()) {
+    MS_LOG(EXCEPTION) << "Only create TupleGetItem for tuple output.";
+  }
   tuple_get_item_node->set_abstract(tuple_abstract->cast<abstract::AbstractTuplePtr>()->elements()[item_index]);
   return tuple_get_item_node;
 }
@@ -124,6 +126,9 @@ CNodePtr CreateMakeTupleNode(const FuncGraphPtr &func_graph, const AnfNodePtrLis
   AbstractBasePtrList abstract_list;
   (void)std::for_each(tuple_inputs.cbegin(), tuple_inputs.cend(),
                       [&](const auto &input) { (void)abstract_list.emplace_back(input->abstract()); });
+  if (std::find_if(abstract_list.begin(), abstract_list.end(), [](auto abs) { return !abs; }) != abstract_list.end()) {
+    return make_tuple_node;
+  }
   make_tuple_node->set_abstract(std::make_shared<abstract::AbstractTuple>(abstract_list));
   return make_tuple_node;
 }
