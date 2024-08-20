@@ -32,7 +32,7 @@
 #include "plugin/device/cpu/hal/device/cpu_device_synchronizer.h"
 #include "include/transform/graph_ir/utils.h"
 #include "include/common/utils/offload_context.h"
-#include "graph/types.h"
+#include "include/common/debug/common.h"
 #include "transform/symbol/acl_rt_symbol.h"
 #include "transform/symbol/symbol_utils.h"
 #include "transform/acl_ir/op_api_util.h"

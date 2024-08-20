@@ -16,23 +16,25 @@
 
 #include "move_to_utils.h"
 
-#include "ops/framework_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 
 namespace mindspore {
 namespace opt {
 constexpr size_t kFirstTensorIdx = 1;
 
 CNodePtr MoveToUtils::InsertMoveTo(const KernelGraphPtr &kernel_graph, const MoveToInfo &info) {
-  // data previous node o   o to ValueNode                         to ValueNode   control previous node
-  //                     \ /                                                  o   o
-  //                      o MoveTo                                             \ /
-  //                       \                             data previous node o   o Depend
-  //                        o data following node                            \ /
-  //                                                        original input o  o MoveTo
-  //                                                                       \ / \
-  //                                                                 Depend o   o data following node
-  //                                                                       /
-  //                                                                      o control following node
+/*
+  data previous node o   o to ValueNode                         to ValueNode   control previous node
+                      \ /                                                  o   o
+                       o MoveTo                                             \ /
+                        \                             data previous node o   o Depend
+                         o data following node                            \ /
+                                                         original input o  o MoveTo
+                                                                        \ / \
+                                                                  Depend o   o data following node
+                                                                        /
+                                                                       o control following node
+*/
 
   MS_EXCEPTION_IF_NULL(kernel_graph);
   MS_EXCEPTION_IF_NULL(info.to_);
@@ -86,15 +88,17 @@ CNodePtr MoveToUtils::InsertMoveTo(const KernelGraphPtr &kernel_graph, const Mov
 }
 
 CNodePtr MoveToUtils::InsertMoveAssign(const KernelGraphPtr &kernel_graph, const MoveAssignInfo &info) {
-  //         value  o   o  control previous node
-  //                 \ /
-  //     parameter o  o  o to ValueNode
-  //                \ | /
-  // origin input o   o MoveAssign
-  //              \ /
-  //               o Depend
-  //               |
-  //               o control following node
+  /*
+           value  o   o  control previous node
+                   \ /
+       parameter o  o  o to ValueNode
+                  \ | /
+   origin input o   o MoveAssign
+                \ /
+                 o Depend
+                 |
+                 o control following node
+  */
   MS_EXCEPTION_IF_NULL(kernel_graph);
   MS_EXCEPTION_IF_NULL(info.to_);
   MS_EXCEPTION_IF_NULL(info.parameter_);

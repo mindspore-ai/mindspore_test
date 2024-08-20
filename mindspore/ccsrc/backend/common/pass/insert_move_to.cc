@@ -17,12 +17,12 @@
 #include "backend/common/pass/insert_move_to.h"
 
 #include "backend/common/pass/move_to_utils.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/optimizer/helper.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/offload_context.h"
-#include "ops/framework_ops.h"
 
 namespace mindspore {
 namespace opt {
@@ -143,7 +143,7 @@ void InsertMoveTo::InsertParamMoveAssign(const ParameterPtr &parameter, const Of
 
 bool InsertMoveTo::HandleParameter() {
   CollectOffloadedParameter();
-  if (offload_parameter_.empty()) {
+  if (offloaded_parameters_.empty()) {
     return false;
   }
   if (auto_offload_ || !offload_parameter_.empty()) {
