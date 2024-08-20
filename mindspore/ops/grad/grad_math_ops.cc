@@ -102,6 +102,30 @@ inline NodePtr SelectScalar(BpropBuilder *ib, const NodePtr &cond, const NodePtr
   }
 }
 
+NodePtr MaybeMultiply(BpropBuilder *ib, const TypePtr &input_type, const NodePtr &t, const NodePtr &s,
+                             const std::string &arg_name) {
+  bool is_one = false;
+  auto s_ptr = s->BuildValue();
+  MS_EXCEPTION_IF_NULL(s_ptr);
+  if (!s_ptr->isa<ValueAny>()) {
+    auto s_type = ib->GetDtypeId(s);
+    if (s_type == kNumberTypeInt64) {
+      auto s_value = GetValue<int64_t>(s_ptr);
+      is_one = s_value == 1;
+    } else if (s_type == kNumberTypeFloat32) {
+      auto s_value = GetValue<float>(s_ptr);
+      is_one = s_value == 1.0;
+    } else if (s_type == kNumberTypeBool) {
+      auto s_value = GetValue<bool>(s_ptr);
+      is_one = s_value == True;
+    } else {
+      MS_EXCEPTION(TypeError) << "For Baddbmm grad " << arg_name << "'s type is wrong!";
+    }
+  }
+  auto out = is_one ? t : ib->Mul(ib->ScalarToTensor(s, input_type), t);
+  return out;
+}
+
 NodePtrList MinimumMaximumGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr &y, const NodePtr &dout,
                                bool is_minimum) {
   NodePtr grad_x = nullptr;
@@ -3147,24 +3171,38 @@ REG_BPROP_BUILDER("Baddbmm").SetUnusedInputs({}).SetBody(BODYFUNC(ib) {
   auto beta = ib->GetInput(kIndex3);
   auto alpha = ib->GetInput(kIndex4);
   auto dout = ib->GetInput(kIndex6);
-  NodePtr input_grad;
+  NodePtr input_grad{nullptr};
+  auto input_type = ib->GetDtype(input);
   if (input->need_compute_grad_out()) {
-    auto beta_tensor = ib->ScalarToTensor(beta);
-    input_grad = ib->Mul(beta_tensor, dout);
-    auto dout_shape = ib->GetShape(dout);
-    auto input_shape = ib->GetShape(input);
-    if (input_shape != dout_shape) {
-      auto bc_axis = ib->BroadcastGradientArgs(input, dout);
-      input_grad = ib->Reshape(ib->ReduceSum(input_grad, bc_axis[0], false, true), input_shape);
+    input_grad = MaybeMultiply(ib, input_type, dout, beta, "beta");
+    auto input_shape = ib->Shape(input);
+    auto bc_axis = ib->BroadcastGradientArgs(input, dout);
+    auto bc_axis_shape_ptr = bc_axis[kIndex0]->GetShape();
+    if (bc_axis_shape_ptr->isa<abstract::DynamicSequenceShape>()) {
+      auto true_branch = [&input_grad, &bc_axis, &input_shape](Emitter *e) -> NodePtrList { return {input_grad}; };
+      auto false_branch = [&input_grad, &bc_axis, &input_shape](Emitter *e) -> NodePtrList {
+        return {e->Reshape(e->Emit("SumExt", {input_grad, bc_axis[kIndex0], e->Value(false), e->EmitValue(kNone)}),
+                           input_shape)};
+      };
+      auto cond = ib->Equal(ib->Emit("sequence_len", {bc_axis[kIndex0]}), ib->Value<int64_t>(0));
+      input_grad = ib->Conditional(cond, true_branch, false_branch);
+    } else {
+      auto bc_axis_shape = bc_axis_shape_ptr->cast<abstract::TupleShapePtr>();
+      MS_EXCEPTION_IF_NULL(bc_axis_shape);
+      if (bc_axis_shape->size() > 0) {
+        input_grad = ib->Reshape(
+          ib->Emit("SumExt", {input_grad, bc_axis[kIndex0], ib->Value(false), ib->EmitValue(kNone)}), input_shape);
+      }
     }
   } else {
     input_grad = ib->OutZeros(input);
   }
-  auto alpha_tensor = ib->ScalarToTensor(alpha);
-  auto batch1_grad = batch1->need_compute_grad_out() ? ib->Mul(alpha_tensor, ib->BatchMatMul(dout, batch2, false, true))
-                                                     : ib->OutZeros(batch1);
-  auto batch2_grad = batch2->need_compute_grad_out() ? ib->Mul(alpha_tensor, ib->BatchMatMul(batch1, dout, true, false))
-                                                     : ib->OutZeros(batch2);
+  auto batch1_grad = batch1->need_compute_grad_out()
+                       ? MaybeMultiply(ib, input_type, ib->BatchMatMul(dout, batch2, false, true), alpha, "alpha")
+                       : ib->OutZeros(batch1);
+  auto batch2_grad = batch2->need_compute_grad_out()
+                       ? MaybeMultiply(ib, input_type, ib->BatchMatMul(batch1, dout, true, false), alpha, "alpha")
+                       : ib->OutZeros(batch2);
   return {input_grad, batch1_grad, batch2_grad, ib->OutZeros(beta), ib->OutZeros(alpha)};
 });
 

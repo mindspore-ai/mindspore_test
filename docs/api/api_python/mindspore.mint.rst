@@ -186,6 +186,7 @@ BLAS和LAPACK运算
     :nosignatures:
     :template: classtemplate.rst
 
+    mindspore.mint.baddbmm
     mindspore.mint.bmm
     mindspore.mint.inverse
     mindspore.mint.matmul

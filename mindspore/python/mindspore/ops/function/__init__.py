@@ -363,6 +363,7 @@ from .math_func import (
     matmul,
     inner,
     baddbmm,
+    baddbmm_ext,
     cummin,
     cummax,
     cumsum,

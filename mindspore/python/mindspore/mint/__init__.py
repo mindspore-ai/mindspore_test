@@ -135,7 +135,7 @@ from mindspore.ops.function.math_func import bitwise_or_ext as bitwise_or
 # 48
 from mindspore.ops.function.math_func import bitwise_xor_ext as bitwise_xor
 # 49
-
+from mindspore.ops.function.math_func import baddbmm_ext as baddbmm
 # 50
 from mindspore.ops.functional import tile
 # 51
@@ -1109,7 +1109,7 @@ __all__ = [
     # 48
     'min',
     # 49
-
+    'baddbmm',
     # 50
     'tile',
     # 51

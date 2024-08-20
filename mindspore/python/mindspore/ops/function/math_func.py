@@ -8628,7 +8628,7 @@ def baddbmm(input, batch1, batch2, beta=1, alpha=1):
     return y
 
 
-def baddbmm_ext(input, batch1, batch2, beta=1, alpha=1):
+def baddbmm_ext(input, batch1, batch2, *, beta=1, alpha=1):
     r"""
     The result is the sum of the input and a batch matrix-matrix product of matrices in batch1 and batch2.
     The formula is defined as follows:
@@ -8641,33 +8641,29 @@ def baddbmm_ext(input, batch1, batch2, beta=1, alpha=1):
             :math:`(C, T, H)` Tensor, input must be broadcastable with :math:`(C, W, H)` Tensor.
         batch1 (Tensor): :math:`batch1` in the above formula. Must be 3-D Tensor, dtype is same as input.
         batch2 (Tensor): :math:`batch2` in the above formula. Must be 3-D Tensor, dtype is same as input.
+
+    Keyword Args:
         beta (Union[float, int], optional): multiplier for input. Default: ``1`` .
         alpha (Union[float, int], optional): multiplier for :math:`batch1 @ batch2`. Default: ``1`` .
-            Arguments beta and alpha must be integers when inputs of type not FloatTensor, otherwise they should
-            be a real number.
 
     Returns:
         Tensor, has the same dtype as input, shape will be :math:`(C, W, H)`.
 
     Raises:
-        TypeError: The type of `input`, `batch1`, `batch2` is not Tensor.
-        TypeError: The types of `input`, `batch1`, `batch2` are different.
-        TypeError: For inputs of type FloatTensor or DoubleTensor, \
-                    arguments beta and alpha not be real numbers, otherwise not be integers.
-        TypeError: For Baddbmm, attributes alpha and beta are not real numbers
+        TypeError: If the type of `input`, `batch1`, `batch2` is not Tensor.
+        TypeError: If the types of `input`, `batch1`, `batch2` are different.
         ValueError: If `batch1` and `batch2` are not 3-D tensors.
 
     Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
+        ``Ascend``
 
     Examples:
         >>> import numpy as np
         >>> from mindspore import Tensor, ops
-        >>> from mindspore.ops.function.math_func import baddbmm_ext
         >>> input = Tensor(np.ones([1, 3, 3]).astype(np.float32))
         >>> batch1 = Tensor(np.ones([1, 3, 4]).astype(np.float32))
         >>> batch2 = Tensor(np.ones([1, 4, 3]).astype(np.float32))
-        >>> output = baddbmm_ext(input, batch1, batch2)
+        >>> output = ops.baddbmm_ext(input, batch1, batch2)
         >>> print(output)
         [[[5. 5. 5.]
           [5. 5. 5.]
@@ -12178,6 +12174,7 @@ __all__ = [
     'accumulate_n',
     'iou',
     'baddbmm',
+    'baddbmm_ext',
     'bmm',
     'trapz',
     'cholesky',
