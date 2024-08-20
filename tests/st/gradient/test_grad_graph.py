@@ -1356,3 +1356,67 @@ def test_func_grad_varargs_single_call():
     output = GradNetWrtX(MatMulNet())(x, y)
     expect = np.array([[1.41, 1.6, 6.6], [1.41, 1.6, 6.6]]).astype(np.float32)
     assert np.allclose(output.asnumpy(), expect)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_grad_real_inputs_complex_outputs():
+    """
+    Features: Support automatic differentiation for complex number.
+    Description: Test the imag bprop with real inputs and complex outputs.
+    Expectation: The gradient result is correct.
+    """
+
+    class ImagNet(nn.Cell):
+        def __init__(self):
+            super(ImagNet, self).__init__()
+            self.imag = ops.Imag()
+
+        def construct(self, x):
+            return self.imag(x)
+
+    class GradNetWrtX(nn.Cell):
+        def __init__(self, net):
+            super(GradNetWrtX, self).__init__()
+            self.net = net
+            self.grad_op = ops.GradOperation()
+
+        def construct(self, x):
+            gradient_function = self.grad_op(self.net)
+            return gradient_function(x)
+
+    x = Tensor([[0.5, 0.6, 0.4], [1.2, 1.3, 1.1]], dtype=mstype.float32)
+    output = GradNetWrtX(ImagNet())(x)
+    expect = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]).astype(np.float32)
+    assert np.allclose(output.asnumpy(), expect)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_grad_complex_inputs_complex_outputs():
+    """
+    Features: Support automatic differentiation for complex number.
+    Description: Test the imag bprop with complex inputs and complex outputs.
+    Expectation: The gradient result is correct.
+    """
+
+    class ImagNet(nn.Cell):
+        def __init__(self):
+            super(ImagNet, self).__init__()
+            self.imag = ops.Imag()
+
+        def construct(self, x):
+            return self.imag(x)
+
+    class GradNetWrtX(nn.Cell):
+        def __init__(self, net):
+            super(GradNetWrtX, self).__init__()
+            self.net = net
+            self.grad_op = ops.GradOperation()
+
+        def construct(self, x):
+            gradient_function = self.grad_op(self.net)
+            return gradient_function(x)
+
+    x = Tensor(np.asarray(np.complex(1.3 + 0.4j)), mstype.complex64)
+    output = GradNetWrtX(ImagNet())(x)
+    expect = np.asarray(np.complex(1j), dtype=np.complex64)
+    assert np.allclose(output.asnumpy(), expect)

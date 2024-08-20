@@ -18,6 +18,8 @@ import mindspore as ms
 from mindspore.common.tensor import Tensor
 from mindspore.ops import Primitive
 from mindspore.ops import functional as F
+from mindspore.ops import operations as P
+from mindspore.ops._grad_experimental.grad_base import bprop_getters
 from tests.ut.python.model.resnet import resnet50
 
 
@@ -287,3 +289,74 @@ def test_resnet_construct(x):
     # not right model to import
     network = resnet50()
     return network.construct(x)
+
+
+@bprop_getters.register("Imag")
+def get_bprop_imag(self):
+    """Generate bprop for Imag"""
+
+    complex_op = P.Complex()
+    zeros_like = P.ZerosLike()
+
+    def bprop(x, out, dout):
+        zero = zeros_like(dout)
+        return (complex_op(zero, dout),)
+
+    return bprop
+
+
+@bprop_getters.register("Add")
+def get_bprop_add(self):
+    """Generate bprop for Add"""
+
+    def bprop(x, y, out, dout):
+        return dout, dout
+
+    return bprop
+
+
+class FnDict:
+    def __init__(self):
+        self.fnDict = {}
+
+    def __call__(self, fn):
+        self.fnDict[fn.__name__] = fn
+
+    def __getitem__(self, name):
+        return self.fnDict[name]
+
+
+# pylint: disable=unused-variable
+def get_test_ad_fn(tag):
+    """ get_test_cconv_fn """
+    fns = FnDict()
+    imag = P.Imag()
+    zeros_like = P.ZerosLike()
+    complex_op = P.Complex()
+    real = P.Real()
+
+    @fns
+    def imag_forward(x):
+        return imag(x)
+
+    @fns
+    def imag_bprop_complex_input_complex_output(x, dout):
+        zeros = zeros_like(dout)
+        res = complex_op(zeros, dout)
+        return res
+
+    @fns
+    def imag_bprop_real_input_complex_output(x, dout):
+        zeros = zeros_like(dout)
+        res = complex_op(zeros, dout)
+        return real(res)
+
+    @fns
+    def add_forward(x, y):
+        return F.add(x, y)
+
+    @fns
+    def add_bprop(x, y, dout):
+        return dout
+
+    return fns[tag]

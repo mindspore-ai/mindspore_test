@@ -27,6 +27,7 @@
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/math_ops.h"
 #include "abstract/abstract_value.h"
 #include "pipeline/jit/ps/fallback.h"
 #include "pipeline/jit/ps/action.h"
@@ -536,6 +537,29 @@ AnfNodePtr InsertUnpackGraph(const CNodePtr &origin_cnode, const ValuePtr &value
   auto new_cnode = fg->NewCNodeBefore(meta_user, new_cnode_inputs);
   return new_cnode;
 }
+
+bool IsComplexType(const AbstractBasePtr &abs) {
+  MS_EXCEPTION_IF_NULL(abs);
+  auto type = abs->BuildType();
+  MS_EXCEPTION_IF_NULL(type);
+  if (!type->isa<TensorType>()) {
+    return false;
+  }
+  type = type->cast_ptr<TensorType>()->element();
+  MS_EXCEPTION_IF_NULL(type);
+  return type->type_id() == kNumberTypeComplex64 || type->type_id() == kNumberTypeComplex128;
+}
+
+EvalResultPtr InsertRealOp(const CNodePtr &cnode, const AnfNodeConfigPtr &conf) {
+  auto fg = cnode->func_graph();
+  MS_EXCEPTION_IF_NULL(fg);
+  auto new_cnode = fg->NewCNode(cnode->inputs());
+  auto real_op = fg->NewCNode({NewValueNode(prim::kPrimReal), new_cnode});
+  auto eng = conf->engine();
+  MS_EXCEPTION_IF_NULL(eng);
+  auto new_conf = eng->MakeConfig(real_op, conf->context(), conf->func_graph());
+  return eng->ForwardConfig(conf, new_conf);
+}
 }  // namespace
 
 EvalResultPtr PrimitiveEvalCache::Get(const PrimitivePtr &prim, const AbstractBasePtrList &args) const {
@@ -911,6 +935,47 @@ EvalResultPtr AnalysisEngine::ConvertClassTypeToFunc(const CNodePtr &cnode, cons
   return eng->ForwardConfig(conf, fn_conf);
 }
 
+AbstractBasePtr AnalysisEngine::ObtainEvalResult(const AnfNodePtr &node, const AnfNodeConfigPtr &conf) {
+  auto config = MakeConfig(node, conf->context(), conf->func_graph());
+  auto eval_result = config->ObtainEvalResult();
+  MS_EXCEPTION_IF_NULL(eval_result);
+  auto abs = eval_result->abstract();
+  MS_EXCEPTION_IF_NULL(abs);
+  return abs;
+}
+
+bool AnalysisEngine::IsRealToComplexGradient(const CNodePtr &cnode, const AnfNodeConfigPtr &conf) {
+  if (!IsPrimitiveCNode(cnode, prim::kPrimTupleGetItem)) {
+    return false;
+  }
+  if (!cnode->HasAttr(kAttrCheckComplex) || !GetValue<bool>(cnode->GetAttr(kAttrCheckComplex))) {
+    return false;
+  }
+  auto sequence_abs =
+    ObtainEvalResult(cnode->input(kRealInputNodeIndexInTupleGetItem), conf)->cast<AbstractSequencePtr>();
+  if (sequence_abs == nullptr) {
+    return false;
+  }
+  if (sequence_abs->dynamic_len()) {
+    auto element_abs = sequence_abs->dynamic_len_element_abs();
+    if (element_abs == nullptr) {
+      MS_LOG(DEBUG) << "Getitem can not get element from an empty dynamic length sequence.";
+      return false;
+    }
+    return IsComplexType(element_abs);
+  }
+  auto index_abs = ObtainEvalResult(cnode->input(kInputNodeOutputIndexInTupleGetItem), conf)->cast<AbstractScalarPtr>();
+  if (index_abs == nullptr) {
+    return false;
+  }
+  auto idx = GetValue<int64_t>(index_abs->GetValue());
+  auto elements_size = sequence_abs->elements().size();
+  if (idx >= SizeToLong(elements_size)) {
+    MS_EXCEPTION(IndexError) << "The tuple_getitem index should be less than " << elements_size << ", but got " << idx;
+  }
+  return IsComplexType(sequence_abs->elements()[idx]);
+}
+
 EvalResultPtr AnalysisEngine::EvalCNode(const CNodePtr &cnode, const AnfNodeConfigPtr &conf) {
   MS_EXCEPTION_IF_NULL(conf);
   MS_EXCEPTION_IF_NULL(cnode);
@@ -956,6 +1021,12 @@ EvalResultPtr AnalysisEngine::EvalCNode(const CNodePtr &cnode, const AnfNodeConf
       AnfNodeConfigPtr new_conf = eng->MakeConfig(new_cnode, conf->context(), conf->func_graph());
       return eng->ForwardConfig(conf, new_conf);
     }
+  }
+
+  // Handle bprob ops which input dtype is real number and output dtype is complex number. Also see the function
+  // comments of `ComplexPreprocess` in dfunctor.cc.
+  if (IsRealToComplexGradient(cnode, conf)) {
+    return InsertRealOp(cnode, conf);
   }
 
   auto func = dyn_cast_ptr<AbstractFunction>(possible_func);
