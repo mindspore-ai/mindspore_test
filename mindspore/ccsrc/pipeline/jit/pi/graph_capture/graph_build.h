@@ -21,6 +21,7 @@
 #include <utility>
 #include <memory>
 #include <string>
+#include "pipeline/jit/pi/python_adapter/py_frame.h"
 #include "pipeline/jit/pi/graph_capture/graph.h"
 #include "pipeline/jit/pi/graph_build/func_graph_builder.h"
 #include "utils/convert_utils_base.h"
@@ -48,7 +49,7 @@ class GraphBuilder {
   static const char *ID___call__;
   static const char *ID_construct;
 
-  explicit GraphBuilder(const PyFrameObject *f);
+  explicit GraphBuilder(const PyFrameWrapper &f);
   GraphBuilder(GraphBuilder *r, GraphBuilder *p, PyCodeObject *co, PyObject *globals)
       : root_(r), parent_(p), graph_(NewGraph(co, globals)), frame_(), current_block_(nullptr) {}
   explicit GraphBuilder(GraphBuilder *r) : root_(r), parent_(nullptr), graph_(nullptr), current_block_(nullptr) {}
@@ -58,7 +59,7 @@ class GraphBuilder {
     }
     graph_pool_.clear();
   }
-  static GraphBuilderPtr Creator(const PyFrameObject *f, bool trace_flag) {
+  static GraphBuilderPtr Creator(const PyFrameWrapper &f, bool trace_flag) {
     return trace_flag ? std::static_pointer_cast<GraphBuilder>(std::make_shared<MindGraphBuilder>(f))
                       : std::make_shared<GraphBuilder>(f);
   }
@@ -112,7 +113,7 @@ class GraphBuilder {
    * \param callable_node The value node of callable object
    * \param frame FrameStates to place closure node
    */
-  void ResolveClosure(const py::object &func_info, ValueNode *callable_node, FrameStates *frame);
+  void ResolveClosure(const py::object &func_info, CallNode *call_node, FrameStates *frame);
 
   std::pair<PyObject *, ValueNode *> SearchSelfPyObject(PyCodeObject *co);
   bool HandleSuper(const Instr &instr, AObject *super);
@@ -231,11 +232,14 @@ class GraphBuilder {
   bool TraceRunForIterSequence(int jump_bci, bool is_range_type);
   bool TraceRunForIterEnumerate(int jump_bci);
   bool TraceRunForIterZip(int jump_bci);
+  bool TraceRunForIterDictItems(int jump_bci);
 
   // bytecode operations
   bool TraceRunControl(const Instr &instr);
   bool TraceRunForIter(const Instr &instr);
   bool DoUnpack(const Instr &instr);
+  bool DoBuildWithUnpackHelper(const Instr &instr, Py_ssize_t i, ValueNode *iterable, std::vector<ValueNode *> *);
+  bool DoBuildWithUnpack(const Instr &instr);
   bool DoCall(const Instr &instr);
   bool DoNop(const Instr &instr);
   bool DoReturn(const Instr &instr);
@@ -291,7 +295,7 @@ class GraphBuilder {
 
 class MindGraphBuilder : public GraphBuilder {
  public:
-  explicit MindGraphBuilder(const PyFrameObject *f);
+  explicit MindGraphBuilder(const PyFrameWrapper &f);
   MindGraphBuilder(GraphBuilder *r, GraphBuilder *p, PyCodeObject *co, PyObject *globals)
       : GraphBuilder(r, p, co, globals) {
     std::vector<std::string> comments;
@@ -304,14 +308,14 @@ class MindGraphBuilder : public GraphBuilder {
   }
   bool trace_flag() { return true; }
   mindspore::FuncGraphBuilderPtr FGBuilder() const { return fg_builder_; }
-  bool FGAddInputs(const std::vector<py::object> &args);
-  py::object FGAddNode(CallNode *call_node, const py::object &callable_info, const std::vector<py::object> &args,
-                       StopTraceReason *stop_reason);
+  bool FGAddTopInputs(int args_count, bool has_vargs, bool has_kwargs);
+  bool FGAddInputs(const std::vector<ValueNode *> &args);
+  py::object FGAddNode(CallNode *call_node, const py::object &callable_info,
+                       const std::vector<AbstractWrapperPtr> &args, StopTraceReason *stop_reason);
   void FGAddOutput(bool is_top_graph);
   StopTraceReason BuildSubGraph(CallNode *call_node, int depth, const py::object &func,
                                 const GraphBuilderPtr &subgraph) override;
   py::object ResolveCallable(CallNode *call_node, StopTraceReason *stop_reason) override;
-  bool WhiteListFuncCheckAndInfer(CallNode *, const py::object &f) override;
 
   LocationPtr GetLocation(CallNode *call_node) const;
 
@@ -333,15 +337,19 @@ class MindGraphBuilder : public GraphBuilder {
   bool HandleCallClass(CallNode *call_node) override;
 
  private:
-  std::vector<py::object> GetNewArgs(CallNode *call_node, AObject *vobj = nullptr);
-  bool AllConstantArgs(const std::vector<py::object> &args, const py::object &callable_info, CallNode *call_node);
+  std::vector<AbstractWrapperPtr> HandleInputArgs(const std::vector<ValueNode *> args);
+  std::vector<ValueNode *> GetNewArgs(CallNode *call_node, AObject *vobj = nullptr);
+  bool IsGradCallable(ValueNode *node);
+  py::object ResolveGradCall(CallNode *call_node, StopTraceReason *stop_reason);
 
-  py::object HandleGetShapeOfDynamicLengthTensor(const py::object &object);
+  AbstractWrapperPtr HandleGetShapeOfDynamicLengthTensor(const AbstractWrapperPtr &abstract_wrapper);
+  std::pair<bool, std::vector<py::object>> GetInputsObject(CallNode *call_node);
+  py::object GetPyObject(ValueNode *node);
 
   mindspore::FuncGraphBuilderPtr fg_builder_{nullptr};
   std::string co_name_;
-  AObject *HandleMultiOp(const Instr &instr, const std::vector<ValueNode *> &p, bool is_compare);
-  AObject *HandleBuildOp(const Instr &instr, const std::vector<ValueNode *> &p);
+  AbstractWrapperPtr HandleMultiOp(const Instr &instr, const std::vector<ValueNode *> &p, bool is_compare);
+  AbstractWrapperPtr HandleBuildOp(const Instr &instr, const std::vector<ValueNode *> &p);
 };
 }  // namespace pijit
 }  // namespace mindspore

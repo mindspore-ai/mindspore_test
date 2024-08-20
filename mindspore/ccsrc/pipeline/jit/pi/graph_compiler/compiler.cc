@@ -177,8 +177,8 @@ class SkipBoostInferScope {
 };
 }  // namespace
 
-CallableGraph Compiler::Compile(const PyFunctionObject &func, const PyFrameObject &frame, const std::string &phase) {
-  const PyCodeObject *code = frame.f_code;
+CallableGraph Compiler::Compile(const PyFunctionObject &func, const PyFrameWrapper &frame, const std::string &phase) {
+  const PyCodeObject *code = frame.GetCode().ptr();
   std::string name = py::cast<std::string>(code->co_name);
   MS_EXCEPTION_IF_CHECK_FAIL(!phase.empty(), "Phase name should not be empty for function " + name + ".");
 
@@ -204,7 +204,8 @@ CallableGraph Compiler::Compile(const PyFunctionObject &func, const PyFrameObjec
   if (IntToSize(code->co_flags) & CO_VARARGS) {
     arg_cnt++;
   }
-  py::list locals = py::reinterpret_steal<py::list>(PyDict_Values(frame.f_locals));
+  py::dict f_locals = frame.Locals();
+  py::list locals = py::reinterpret_steal<py::list>(PyDict_Values(f_locals.ptr()));
   py::tuple args = py::reinterpret_steal<py::tuple>(PyList_AsTuple(PyList_GetSlice(locals.ptr(), 0, arg_cnt)));
   py::dict kwargs =
     (IntToSize(code->co_flags) & CO_VARKEYWORDS) == 0x0 ? py::dict() : py::cast<py::dict>(locals[arg_cnt]);

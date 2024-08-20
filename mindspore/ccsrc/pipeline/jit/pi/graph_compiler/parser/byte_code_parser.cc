@@ -19,6 +19,7 @@
 #include <string>
 #include <utility>
 #include "pipeline/jit/pi/graph_compiler/pi_ir/debug_info.h"
+#include "pipeline/jit/pi/python_adapter/py_code.h"
 #include "utils/log_adapter.h"
 
 namespace mindspore {
@@ -453,8 +454,10 @@ void ByteCodeParser::ParseWhile(const InstrPtr &cond, const py::list &body) {
 
 void ByteCodeParser::GeneratePostionalParameters() {
   MS_LOG(DEBUG) << "Generate function postional parameters ...";
+  PyCodeWrapper co(const_cast<PyCodeObject *>(&code_));
+  py::tuple vars = co.VarNames();
   for (size_t index = 0; index < (size_t)code_.co_argcount; index++) {
-    std::string name = py::cast<std::string>(PyTuple_GET_ITEM(code_.co_varnames, index));
+    std::string name = py::cast<std::string>(vars[index]);
     ir::ParameterPtr param = std::make_shared<ir::Parameter>(index, name);
     // Set arg as positional parameter
     param->SetCategory(ir::Parameter::POSITIONAL);
@@ -475,7 +478,10 @@ void ByteCodeParser::GenerateVariableParameter() {
   MS_LOG(DEBUG) << "Generate function variable parameter ...";
   // Arguments order : { postional args, keyword only args, variable arg, keyword arg }
   auto index = code_.co_argcount + code_.co_kwonlyargcount;
-  std::string name = py::cast<std::string>(PyTuple_GET_ITEM(code_.co_varnames, index));
+
+  PyCodeWrapper co(const_cast<PyCodeObject *>(&code_));
+  py::tuple vars = co.VarNames();
+  std::string name = py::cast<std::string>(vars[index]);
   // Parameters order : { postional parameters, keyword only parameters, variable parameter, keyword parameter }
   ir::ParameterPtr param = std::make_shared<ir::Parameter>(code_.co_argcount, name);
   // set arg as var arg
@@ -509,7 +515,10 @@ void ByteCodeParser::GenerateKeywordParameter() {
   MS_LOG(DEBUG) << "Generate function keyword parameter ...";
   auto index = code_.co_argcount + code_.co_kwonlyargcount;
   index += (func_->HasVarArg() ? 1 : 0);
-  std::string name = py::cast<std::string>(PyTuple_GET_ITEM(code_.co_varnames, index));
+
+  PyCodeWrapper co(const_cast<PyCodeObject *>(&code_));
+  py::tuple vars = co.VarNames();
+  std::string name = py::cast<std::string>(vars[index]);
   ir::ParameterPtr param = std::make_shared<ir::Parameter>(index, name);
   // set arg as kw arg
   param->SetCategory(ir::Parameter::KEYWORD);
@@ -824,7 +833,9 @@ void ByteCodeParser::ParseContainsOp(const InstrPtr &instr) {
 }
 
 void ByteCodeParser::ParseLoadFast(const InstrPtr &instr) {
-  auto name = py::cast<py::object>(PyTuple_GET_ITEM(code_.co_varnames, instr->GetArg()));
+  PyCodeWrapper co(const_cast<PyCodeObject *>(&code_));
+  py::tuple vars = co.VarNames();
+  auto name = py::cast<py::object>(vars[instr->GetArg()]);
   ir::ValuePtr value = std::make_shared<ir::Value>(name, name.cast<std::string>(), ir::kScopeLocal);
   ir::NodePtr node = std::make_shared<ir::LoadValueNode>(instr->GetOpCode(), value);
   node->SetDebugInfo(GetNodeDebugInfo(instr));
@@ -832,16 +843,32 @@ void ByteCodeParser::ParseLoadFast(const InstrPtr &instr) {
 }
 
 void ByteCodeParser::ParseStoreName(const InstrPtr &instr) {
+  PyCodeWrapper co_wrapper(const_cast<PyCodeObject *>(&code_));
+  auto co = &code_;
+  py::tuple names = co_wrapper.FastLocalNames();
+
   ir::OpCode op_code = instr->GetOpCode();
-  bool is_free_var = (instr->GetArg() > PyTuple_GET_SIZE(code_.co_cellvars));
-  auto names = (op_code == STORE_FAST)
-                 ? code_.co_varnames
-                 : (op_code == STORE_DEREF) ? (is_free_var ? code_.co_freevars : code_.co_cellvars) : code_.co_names;
-  int index = is_free_var ? instr->GetArg() - PyTuple_GET_SIZE(code_.co_cellvars) : instr->GetArg();
-  py::object name = py::cast<py::object>(PyTuple_GET_ITEM(names, index));
-  auto scope = (op_code == STORE_FAST)
-                 ? ir::kScopeLocal
-                 : (op_code == STORE_DEREF) ? (is_free_var ? ir::kScopeFreeVar : ir::kScopeCellVar) : ir::kScopeName;
+  py::object name;
+  ir::Scope scope;
+  if (op_code == STORE_FAST) {
+    name = names[instr->GetArg()];
+    scope = ir::kScopeLocal;
+  } else if (op_code == STORE_DEREF) {
+#if IS_PYTHON_3_11_PLUS
+    bool is_free = instr->GetArg() >= (co->co_nlocalsplus - co_wrapper.FreeVarsSize());
+    int name_index = instr->GetArg();
+#else
+    bool is_free = instr->GetArg() >= co_wrapper.CellVarsSize();
+    int name_index = instr->GetArg() + co->co_nlocals;
+#endif
+    name = names[name_index];
+    scope = is_free ? ir::kScopeFreeVar : ir::kScopeCellVar;
+  } else {
+    names = py::cast<py::tuple>(code_.co_names);
+    name = names[instr->GetArg()];
+    scope = ir::kScopeName;
+  }
+
   ir::ValuePtr value = std::make_shared<ir::Value>(name, name.cast<std::string>(), scope);
   auto top = PopStack();
   ir::NodePtr node = std::make_shared<ir::StoreNode>(op_code, top, value);
@@ -879,10 +906,7 @@ void ByteCodeParser::ParseCallFunction(const InstrPtr &instr) {
     // the number of parameters is 2 when flag is 1
     // Otherwise, the number of parameters is 1
     MS_EXCEPTION_IF_CHECK_FAIL((size == 0 || size == 1), "The flag of CALL_FUNCTION_EX must be 0 or 1.");
-    size = 1;
-    if (IntToSize(size) & 0x1) {
-      size += 1;
-    }
+    size++;
   }
   // The tuple of keys occupies a position
   if (instr->GetOpCode() == CALL_FUNCTION_KW) {
@@ -901,18 +925,26 @@ void ByteCodeParser::ParseCallFunction(const InstrPtr &instr) {
 }
 
 void ByteCodeParser::ParseLoadClosure(const InstrPtr &instr) {
-  int cell_var_size = PyTuple_GET_SIZE(code_.co_cellvars);
+  PyCodeWrapper co(const_cast<PyCodeObject *>(&code_));
+  py::tuple locals_names = co.FastLocalNames();
+#if IS_PYTHON_3_11_PLUS
+  int free_offset = co.ptr()->co_nlocalsplus - co.FreeVarsSize();
+  int names_offset = 0;
+#else
+  int free_offset = co.CellVarsSize();
+  int names_offset = co.ptr()->co_nlocals;
+#endif
+
   int index = instr->GetArg();
   ir::NodePtr opnd;
   // if index is less than the length of co_cellvars, then closure is co_cellvars[index]
   // else closure is co_freevars[index - len(co_cellvars)]
-  if (cell_var_size > index) {
-    auto name = py::cast<py::object>(PyTuple_GET_ITEM(code_.co_cellvars, index));
+  if (index < free_offset) {
+    auto name = py::cast<py::object>(locals_names[index + names_offset]);
     opnd = std::make_shared<ir::Value>(name, name.cast<std::string>(), ir::kScopeCellVar);
   } else {
-    index -= cell_var_size;
-    auto name = py::cast<std::string>(PyTuple_GET_ITEM(code_.co_freevars, index));
-    opnd = std::make_shared<ir::Value>(clousre_[index], name, ir::kScopeClousre);
+    auto name = py::cast<std::string>(locals_names[index + names_offset]);
+    opnd = std::make_shared<ir::Value>(clousre_[index - free_offset], name, ir::kScopeClousre);
   }
   ir::NodePtr node = std::make_shared<ir::LoadValueNode>(instr->GetOpCode(), opnd);
   node->SetDebugInfo(GetNodeDebugInfo(instr));
@@ -1009,13 +1041,32 @@ void ByteCodeParser::ParseDeleteSubscr(const InstrPtr &instr) {
 }
 
 void ByteCodeParser::ParseDeleteName(const InstrPtr &instr) {
-  auto names = (instr->GetOpCode() == DELETE_FAST)
-                 ? code_.co_varnames
-                 : (instr->GetOpCode() == DELETE_DEREF) ? code_.co_cellvars : code_.co_names;
-  py::object name = py::cast<py::object>(PyTuple_GET_ITEM(names, instr->GetArg()));
-  auto scope = (instr->GetOpCode() == DELETE_FAST)
-                 ? ir::kScopeLocal
-                 : (instr->GetOpCode() == DELETE_DEREF) ? ir::kScopeCellVar : ir::kScopeName;
+  PyCodeWrapper co_wrapper(const_cast<PyCodeObject *>(&code_));
+  auto co = &code_;
+  py::tuple names = co_wrapper.FastLocalNames();
+
+  ir::OpCode op_code = instr->GetOpCode();
+  py::object name;
+  ir::Scope scope;
+  if (op_code == DELETE_FAST) {
+    name = names[instr->GetArg()];
+    scope = ir::kScopeLocal;
+  } else if (op_code == DELETE_DEREF) {
+#if IS_PYTHON_3_11_PLUS
+    bool is_free = instr->GetArg() >= (co->co_nlocalsplus - co_wrapper.FreeVarsSize());
+    int name_index = instr->GetArg();
+#else
+    bool is_free = instr->GetArg() >= co_wrapper.CellVarsSize();
+    int name_index = instr->GetArg() + co->co_nlocals;
+#endif
+    name = names[name_index];
+    scope = is_free ? ir::kScopeFreeVar : ir::kScopeCellVar;
+  } else {
+    names = py::cast<py::tuple>(code_.co_names);
+    name = names[instr->GetArg()];
+    scope = ir::kScopeName;
+  }
+
   ir::NodePtr opnd = std::make_shared<ir::Value>(name, scope);
   ir::NodePtr node = std::make_shared<ir::DeleteNode>(instr->GetOpCode(), opnd);
   node->SetDebugInfo(GetNodeDebugInfo(instr));

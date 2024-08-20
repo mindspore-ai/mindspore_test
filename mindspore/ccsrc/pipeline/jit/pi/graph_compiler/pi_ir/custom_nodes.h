@@ -18,7 +18,8 @@
 
 #include <memory>
 #include <string>
-#include "pipeline/jit/pi/pydef.h"
+#include "pipeline/jit/pi/python_adapter/pydef.h"
+#include "pipeline/jit/pi/utils/opcode_declare.h"
 #include "pipeline/jit/pi/graph_compiler/pi_ir/operation.h"
 
 namespace mindspore {

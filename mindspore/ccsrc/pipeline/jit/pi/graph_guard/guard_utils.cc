@@ -24,6 +24,7 @@
 #include "pipeline/jit/pi/graph_guard/strategy.h"
 #include "pipeline/jit/pi/graph_guard/guard.h"
 #include "pipeline/jit/pi/graph_guard/infer.h"
+#include "pipeline/jit/pi/python_adapter/pydef.h"
 
 namespace mindspore {
 namespace pijit {
@@ -1684,7 +1685,7 @@ class CellData : public ItemData {
     if (ItemData::operator==(obj)) {
       const CellData &other = static_cast<const CellData &>(obj);
       for (size_t i = 0; i < listK_.size(); ++i) {
-        if (*(listK_[i]) == *(other.listK_[i]) && *(listV_[i]) == *(other.listV_[i])) {
+        if (i < other.listK_.size() && *(listK_[i]) == *(other.listK_[i]) && *(listV_[i]) == *(other.listV_[i])) {
           continue;
         } else {
           return false;
@@ -1912,7 +1913,7 @@ class EqGuard : public GuardItem {
     last_ = obj->GetObject();
   }
 
-  virtual bool Check(const PyFrameObject *frame, std::map<size_t, PyObject *> *cache, bool perf) {
+  virtual bool Check(const EvalFrameObject *frame, std::map<size_t, PyObject *> *cache, bool perf) {
     if (var_->IsConst()) {
       return true;
     }
@@ -2015,7 +2016,7 @@ class TypeGuard : public GuardItem {
     }
   }
 
-  virtual bool Check(const PyFrameObject *frame, std::map<size_t, PyObject *> *cache, bool perf) {
+  virtual bool Check(const EvalFrameObject *frame, std::map<size_t, PyObject *> *cache, bool perf) {
     if (var_->IsConst() || is_const_) {
       return true;
     }
@@ -2103,7 +2104,7 @@ class IdGuard : public GuardItem {
     refId_ = obj->GetObject();
   }
 
-  virtual bool Check(const PyFrameObject *frame, std::map<size_t, PyObject *> *cache, bool perf) {
+  virtual bool Check(const EvalFrameObject *frame, std::map<size_t, PyObject *> *cache, bool perf) {
     if (var_->IsConst()) {
       return true;
     }
@@ -2173,7 +2174,7 @@ class ReprGuard : public GuardItem {
 
   virtual ~ReprGuard() { Py_XDECREF(refRepr_); }
 
-  virtual bool Check(const PyFrameObject *frame, std::map<size_t, PyObject *> *cache, bool perf) {
+  virtual bool Check(const EvalFrameObject *frame, std::map<size_t, PyObject *> *cache, bool perf) {
     if (var_->IsConst()) {
       return true;
     }
@@ -2281,7 +2282,7 @@ class AttrGuard : public GuardItem {
 
   ~AttrGuard() = default;
 
-  virtual bool Check(const PyFrameObject *frame, std::map<size_t, PyObject *> *cache, bool perf) {
+  virtual bool Check(const EvalFrameObject *frame, std::map<size_t, PyObject *> *cache, bool perf) {
     if (var_->IsConst()) {
       return true;
     }

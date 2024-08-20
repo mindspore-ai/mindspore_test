@@ -17,7 +17,7 @@
 #include <set>
 #include <vector>
 #include <functional>
-#include "pipeline/jit/pi/pydef.h"
+#include "pipeline/jit/pi/python_adapter/pydef.h"
 #include "pipeline/jit/pi/graph_capture/node.h"
 #include "pipeline/jit/pi/graph_capture/graph.h"
 
@@ -46,18 +46,22 @@ void ConstantInfo::set_value(const py::object &op) {
 }
 
 std::string ConstantInfo::ToString() const {
+  auto Limit = [](const std::string &s) {
+    constexpr size_t limit = 120;
+    return s.size() < limit ? s : s.substr(0, limit) + "...";
+  };
   std::stringstream s;
   if (type() != nullptr) {
     s << "type=" << (type()->tp_name ? type()->tp_name : "<unnamed>") << ", ";
   }
   if (value().ptr() != nullptr) {
-    s << "value=" << std::string(py::str(value().ptr())) << ", ";
+    s << "value=" << Limit(py::str(value().ptr())) << ", ";
   }
   if (len() != -1) {
     s << "len=" << len() << ", ";
   }
   for (const auto &i : attrs_) {
-    s << i.first << "=" << std::string(py::str(i.second.ptr())) << ", ";
+    s << i.first << "=" << Limit(py::str(i.second.ptr())) << ", ";
   }
   return s.str();
 }
@@ -425,7 +429,9 @@ void ConstantInfo::CollectBuiltinFuncConstantInfo(CallNode *node) {
   if (PyInstanceMethod_Check(func)) {
     func = PyInstanceMethod_GET_FUNCTION(func);
   }
-  MS_EXCEPTION_IF_CHECK_FAIL(PyCFunction_Check(func), "must be builtin function or method");
+  if (!PyCFunction_Check(func)) {
+    return;
+  }
   PyCFunction cfunc = PyCFunction_GET_FUNCTION(func);
 
   auto iter = GetConstantBuiltinFuncMap().find(cfunc);

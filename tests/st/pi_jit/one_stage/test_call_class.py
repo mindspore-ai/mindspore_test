@@ -45,9 +45,7 @@ def test_create_tensor():
     context.set_context(mode=context.PYNATIVE_MODE)
 
     expect = fn()
-
-    jit(fn, mode="PIJit", jit_config=cfg)
-    actual = fn()
+    actual = jit(fn, mode="PIJit", jit_config=cfg)()
 
     match_array(actual.asnumpy(), expect.asnumpy())
     assert_executed_by_graph_mode(fn)
@@ -68,9 +66,7 @@ def test_create_tensor_list():
     context.set_context(mode=context.PYNATIVE_MODE)
 
     expect = fn()
-
-    jit(fn, mode="PIJit", jit_config=cfg)
-    actual = fn()
+    actual = jit(fn, mode="PIJit", jit_config=cfg)()
 
     assert isinstance(actual, list)
     assert len(actual) == 2

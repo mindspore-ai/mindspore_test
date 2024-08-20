@@ -82,12 +82,9 @@ class SideEffect {
  public:
   enum Type {
     kDefault,
-    kSetAttr,
     kSetGlobal,
-    kListSetItem,
-    kDictSetItem,
-    kListAppend,
-    kDictPop,
+    kBuiltinFunction,
+    kBuiltinMethod,
   };
 
   struct CacheResult {
@@ -114,7 +111,7 @@ class SideEffect {
   bool IsEmpty() const { return nodes_.empty(); }
 
   // return false if unsupported the side-effect
-  bool Record(ValueNode *side_effect_node, Type type = Type::kDefault);
+  bool Record(ValueNode *side_effect_node, Type type = Type::kDefault, std::string name = "");
 
   // generate the code to restore side-effect
   void Restore(CodeGenerator *cg) const;
@@ -132,17 +129,23 @@ class SideEffect {
   const std::set<ValueNode *> &GetRequiredNodes() const;
 
  private:
+  struct Entry {
+    ValueNode *node_;
+    Type type_;
+    size_t order_;
+    std::string method_name_;
+  };
   // add nodes to required
   void AddKeepAlive(const std::vector<ValueNode *> &inputs) { keep_alive_.insert(inputs.begin(), inputs.end()); }
 
   // get required node of the side-effect node
-  std::vector<ValueNode *> GetKeepAlive(ValueNode *node, Type type) const;
+  std::vector<ValueNode *> GetKeepAlive(const Entry &) const;
 
   // if side-effect is function call, check it's supported
-  bool RecordFuncCall(ValueNode *node, Type type);
+  bool CheckCallRecord(ValueNode *node, Type type, const std::string &name);
 
   // restore a side-effect node
-  void RestoreEntry(CodeGenerator *cg, ValueNode *node, Type type) const;
+  void RestoreEntry(CodeGenerator *cg, const Entry &) const;
 
   // restore attribute
   void RestoreAttrs(CodeGenerator *cg) const;
@@ -151,12 +154,7 @@ class SideEffect {
   void RestoreGlobal(CodeGenerator *cg) const;
 
   // restore list, dict, or other specialized object function call
-  void RestoreSpecializeEntry(CodeGenerator *cg, ValueNode *node, Type type) const;
-
-  struct Entry {
-    Type type_;
-    size_t order_;
-  };
+  void RestoreBuiltinMethod(CodeGenerator *cg, const Entry &) const;
 
   // shared from other side-effect recorder
   std::shared_ptr<SideEffectData> data_;

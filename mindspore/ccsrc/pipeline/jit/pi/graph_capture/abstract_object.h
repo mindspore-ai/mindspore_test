@@ -23,6 +23,7 @@
 #include <memory>
 #include "pybind11/pybind11.h"
 #include "pipeline/jit/pi/utils/mempool.h"
+#include "pipeline/jit/pi/graph_capture/abstract_wrapper.h"
 #include "utils/convert_utils_base.h"
 
 namespace py = pybind11;
@@ -109,6 +110,7 @@ class AbstractObjectBase {
   static Type GetPyType(PyObject *op);
   static Type GetPyType(PyTypeObject *tp);
   static Type GetMsType(PyTypeObject *tp);
+  static AObject *Convert(const AbstractWrapperPtr &wrapper);
   static AObject *Convert(const py::object &o) { return Convert(o.ptr()); }
   static AObject *Convert(PyObject *o) { return MakeAObject(GetPyType(o), o ? Py_TYPE(o) : nullptr, o); }
   static AObject *MakeAObject(Type real_type) { return MakeAObject(real_type, nullptr, nullptr); }
@@ -133,7 +135,7 @@ class AbstractObjectBase {
   static int BinaryIs(AObject *l, AObject *r);
 
   static const char *GetTypeDesc(AObject::Type type);
-  static std::string ToString(PyObject *);
+  static std::string ToString(PyObject *, bool print_type = true, size_t limit = SIZE_MAX);
 
  protected:
   static AObject *MakeAObject(Type type, PyTypeObject *tp, PyObject *op, RecMap *rec = nullptr);
@@ -156,6 +158,7 @@ class AbstractObject : public AbstractObjectBase {
   AObject *GetAttr(const std::string &name) override;
   AObject *GetItem(AObject *key);
   bool SetAttr(const std::string &n, AObject *v) override;
+  std::string ToString() const override;
 
  protected:
   py::object value_;
@@ -169,7 +172,6 @@ class AbstractType : public AbstractObject {
     this->SetTypeObject(&PyType_Type);
   }
   virtual ~AbstractType() {}
-  std::string ToString() const override { return std::string(py::str(value_.ptr())); }
   bool IsMindSporeSupportedType() override { return false; }
 
   Type GetTypeType() const { return type_type_; }
@@ -312,6 +314,7 @@ class AbstractDict : public AbstractSequence {
   py::dict dict_;
   Type k_type_;
   Type v_type_;
+  BoolCache ms_support_;
   bool element_valid_;
   bool modify_;
 };

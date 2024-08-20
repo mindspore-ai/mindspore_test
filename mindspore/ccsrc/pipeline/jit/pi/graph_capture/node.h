@@ -28,6 +28,8 @@
 #include "pipeline/jit/pi/graph_capture/constant_info.h"
 #include "pipeline/jit/pi/utils/utils.h"
 #include "pipeline/jit/pi/graph_guard/trace.h"
+#include "pipeline/jit/pi/graph_capture/abstract_wrapper.h"
+#include "pipeline/jit/pi/utils/opcode_declare.h"
 
 namespace mindspore {
 namespace pijit {
@@ -84,6 +86,10 @@ class InstrNode : public AbstractNode {
   int bci() const { return bci_; }
   void set_bci(int i) { bci_ = i; }
 
+  AbstractWrapperPtr abstract_wrapper() const { return abstract_wrapper_; }
+  void set_abstract_wrapper(const AbstractWrapperPtr &abstract_wrapper) { abstract_wrapper_ = abstract_wrapper; }
+  bool has_abstract_wrapper() const { return abstract_wrapper_ != nullptr; }
+
  protected:
   InstrNode(Type t, int op, int arg) : AbstractNode(t), op_(op), arg_(arg), line_(-1) {}
 
@@ -93,6 +99,7 @@ class InstrNode : public AbstractNode {
   int arg_;
   int line_ = -1;
   std::string name_;
+  AbstractWrapperPtr abstract_wrapper_ = nullptr;
 };
 
 class ValueNode : public InstrNode {
@@ -152,22 +159,25 @@ class ValueNode : public InstrNode {
 // simulate PyCellObject, oparg is index
 class CellVarNode : public ValueNode {
  public:
-  explicit CellVarNode(Type t) : ValueNode(t, nullptr, -1, CO_CELL_NOT_AN_ARG), val_(nullptr) {}
-  void SetFromParam(int i) { SetOparg(i); }
-  int GetFromParam() const { return GetOparg(); }
-  void SetIndex(int i) { return SetOpcode(i); }
-  int GetIndex() const { return GetOpcode(); }
+  explicit CellVarNode(Type t)
+      : ValueNode(t, nullptr, LOAD_CLOSURE, 0), val_(nullptr), from_param_(CO_CELL_NOT_AN_ARG) {}
+
+  // If the cell contains an argument, then this should be the argument index. Plz refer to PyCodeObject.co_cell2arg.
+  // If not an argument, then this index should be CO_CELL_NOT_AN_ARG.
+  void SetFromParam(int i) { from_param_ = i; }
+  int GetFromParam() const { return from_param_; }
+  // The object stored in this cell
   auto GetValue() const { return val_; }
   void SetValue(ValueNode *v) { val_ = v; }
   const auto &GetCellOper() const { return cell_oper_; }
   auto &GetCellOper() { return cell_oper_; }
   void AddCellOper(ValueNode *i) { cell_oper_.push_back(i); }
   virtual ~CellVarNode() {}
-  std::string ToString() const override;
 
  private:
   ValueNode *val_;
   std::vector<ValueNode *> cell_oper_;  // record cell operation
+  int from_param_;
 };
 
 class ParamNode : public ValueNode {

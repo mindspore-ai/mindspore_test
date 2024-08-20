@@ -34,6 +34,7 @@ from mindspore._extends.parse.resources import convert_object_map
 from mindspore import _checkparam as validator
 from mindspore import Parameter, ParameterTuple
 from mindspore.common.initializer import Zero
+from mindspore.ops.function import array_func
 
 
 def _get_after_grad_code():
@@ -153,6 +154,10 @@ FUNC_KEY_PSJIT_CONVERTMAP = 15 # "mindspore._extends.parse.resources.convert_obj
 FUNC_KEY_GRAPH_CELL = 16  # "mindspore.nn.cell.GraphCell"
 FUNC_KEY_MS_API = 17  # mindspore common api
 FUNC_KEY_MAPPING_GET = 18 # collections.abc.Mapping.get
+FUNC_KEY_LIST_POP = 19  # list.pop
+FUNC_KEY_LIST_REMOVE = 20  # list.remove
+FUNC_KEY_LIST_REVERSE = 21  # list.reverse
+FUNC_KEY_DICT_ITEMS = 22  # dict.items
 
 # Initialized only once. This map will initialize by c++ when start pijit.
 # key is customer if fuzzy match. (Primitive, constexpr, primexpr, MetaFuncGraph)
@@ -162,6 +167,8 @@ FUNC_KEY_MAPPING_GET = 18 # collections.abc.Mapping.get
 _func_map = {
     # special function
     pijit_constexpr_key: FUNC_KEY_PIJIT_CONSTEXPR,
+    id(getattr(array_func, "_get_max_type")): FUNC_KEY_PIJIT_CONSTEXPR,
+    id(Cell.__getattr__): FUNC_KEY_PIJIT_CONSTEXPR,
     pijit_forbidden_key: FUNC_KEY_PIJIT_FORBIDDEN,
     primitive_key: FUNC_KEY_PRIMITIVE,
     constexpr_key: FUNC_KEY_CONSTEXPR,
@@ -181,6 +188,7 @@ _func_map = {
     function_id(len): FUNC_KEY_BUILTIN_FUNC,
     function_id(abs): FUNC_KEY_BUILTIN_FUNC,
     function_id(max): FUNC_KEY_BUILTIN_FUNC,
+    function_id(min): FUNC_KEY_BUILTIN_FUNC,
     function_id(all): FUNC_KEY_BUILTIN_FUNC,
     function_id(any): FUNC_KEY_BUILTIN_FUNC,
     function_id(hash): FUNC_KEY_BUILTIN_FUNC,
@@ -232,7 +240,11 @@ _func_map = {
     function_id(str.format_map): FUNC_KEY_BUILTIN_FUNC,
     function_id(str.__format__): FUNC_KEY_BUILTIN_FUNC,
     function_id(list.append): FUNC_KEY_LIST_APPEND,
+    function_id(list.pop): FUNC_KEY_LIST_POP,
+    function_id(list.remove): FUNC_KEY_LIST_REMOVE,
+    function_id(list.reverse): FUNC_KEY_LIST_REVERSE,
     function_id(dict.pop): FUNC_KEY_DICT_POP,
+    function_id(dict.items): FUNC_KEY_DICT_ITEMS,
 
     # instancemethod
     function_id(Tensor_._flatten_tensors): FUNC_KEY_BUILTIN_FUNC,  # pylint: disable=protected-access
@@ -255,7 +267,9 @@ _func_map = {
     # other builtin function
     function_id(collections.abc.Mapping.get): FUNC_KEY_MAPPING_GET,
     function_id(math.log): FUNC_KEY_BUILTIN_FUNC,
-
+    function_id(math.floor): FUNC_KEY_BUILTIN_FUNC,
+    function_id(math.isinf): FUNC_KEY_BUILTIN_FUNC,
+    function_id(math.isnan): FUNC_KEY_BUILTIN_FUNC,
     function_id(numpy.isinf): FUNC_KEY_BUILTIN_FUNC,
     function_id(numpy.isnan): FUNC_KEY_BUILTIN_FUNC,
     function_id(numpy.abs): FUNC_KEY_BUILTIN_FUNC,

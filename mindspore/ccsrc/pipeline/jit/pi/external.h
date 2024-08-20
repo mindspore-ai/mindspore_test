@@ -26,6 +26,7 @@ py::bool_ pi_jit_disable();
 py::bool_ pi_jit_should_compile(const py::object &func, const py::object &tag, const py::object &signature);
 py::object get_code_extra(const py::object &);
 void update_pijit_default_config(const py::kwargs &conf);
+void PIJitSetContext(py::args, py::kwargs);
 size_t FunctionId(const py::object &callable);
 }  // namespace mindspore
 

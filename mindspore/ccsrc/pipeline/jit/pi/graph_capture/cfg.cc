@@ -224,9 +224,8 @@ void CFG::GenerateCFG() {
 }
 
 void CFG::BuildInst() {
-  PyObject *bytes = pycode_->co_code;
-  const _Py_CODEUNIT *bytecode_ = reinterpret_cast<_Py_CODEUNIT *>(PyBytes_AsString(bytes));
-  int size = (PyBytes_GET_SIZE(bytes)) / PY_BCSIZE;
+  const _Py_CODEUNIT *bytecode_ = _PyCode_CODE(pycode_);
+  int size = _PyCode_NBYTES(pycode_) / sizeof(_Py_CODEUNIT);
   int exarg = 0;
   std::map<int, std::vector<Instr *>> succ_jump;
   for (int bci = 0; bci < size; ++bci) {
