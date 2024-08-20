@@ -13,24 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_KERNEL_ADDRMSNORMQUANT_H_
-#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_KERNEL_ADDRMSNORMQUANT_H_
+#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_ACME_ADD_RMS_NORM_QUANT_H_
+#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_ACME_ADD_RMS_NORM_QUANT_H_
 
+#include <string>
 #include <vector>
+#include <utility>
 
-#include "plugin/device/ascend/kernel/internal/internal_kernel_mod.h"
+#include "plugin/device/ascend/kernel/internal/acme_kernel_mod.h"
+#include "acme/include/acme.h"
 
 namespace mindspore {
 namespace kernel {
-class InternalAddRmsNormQuant : public InternalKernelMod {
- public:
-  InternalAddRmsNormQuant() : InternalKernelMod("AddRmsNormQuantV2") {}
-  ~InternalAddRmsNormQuant() = default;
+DECLARE_ACME_KERNEL_MOD(AddRmsNormQuant)
 
- protected:
-  internal::OpParamPtr CreateOpParam(const std::vector<KernelTensor *> &inputs,
-                                     const std::vector<KernelTensor *> &outputs);
-};
 }  // namespace kernel
 }  // namespace mindspore
-#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_KERNEL_ADDRMSNORMQUANT_H_
+#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_ACME_ADD_RMS_NORM_QUANT_H_

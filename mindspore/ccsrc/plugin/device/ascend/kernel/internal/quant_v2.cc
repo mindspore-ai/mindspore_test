@@ -29,7 +29,5 @@ internal::OpParamPtr InternalQuantV2::CreateOpParam(const std::vector<KernelTens
 }
 
 MS_INTERNAL_KERNEL_FACTORY_REG(QuantV2, InternalQuantV2);
-REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(QuantV2, INPUT_NUM_3, INDEX_0, INDEX_1, INDEX_2);
-REG_MS_TO_INTERNAL_OUT_TENSOR_IDX_MAP(QuantV2, OUTPUT_NUM_1, INDEX_0);
 }  // namespace kernel
 }  // namespace mindspore
