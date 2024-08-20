@@ -825,6 +825,17 @@ void RegMetaTensor(const py::module *m) {
                                  >>> data.strides
                                  (4, 4)
                              )mydelimiter")
+  .def_property_readonly("_device", Tensor::device, R"mydelimiter(
+                             Get the device where the tensor is sotred.
+
+                             Returns:
+                                 string, the device string where the tensor is stored.
+
+                             Examples:
+                                 >>> data = mindspore.Tensor(np.ones((2, 1), np.int32))
+                                 >>> data.device
+                                 Cpu
+                             )mydelimiter")
     .def("_flatten_tensors", Tensor::FlattenTensors, py::arg("fusion_size") = 0)
     .def("setitem_index_info", TensorIndex::SetItemIndexInfo)
     .def("getitem_index_info", TensorIndex::GetItemIndexInfo)

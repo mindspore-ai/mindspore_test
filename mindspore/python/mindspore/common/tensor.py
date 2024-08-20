@@ -264,14 +264,8 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
                         Tensor_.__init__(self, input_data)
                     validator.check_value_type('const_arg', const_arg, bool, 'Tensor')
 
-        self._device = device
-        if self._device is None:
-            if isinstance(input_data, Tensor):
-                self._device = input_data.device
-            else:
-                self._device = "Cpu" if context.get_context('device_target') == "CPU" else "Npu"
-        if self._device not in ("Cpu", "Npu"):
-            raise ValueError(f"device should be 'Cpu' or 'Npu', but got ${self._device}.")
+        if device is not None and device != "Cpu":
+            raise ValueError(f"Only 'Cpu' is supported for device, but got ${device}.")
 
         self.const_arg = const_arg
         self.virtual_flag = False

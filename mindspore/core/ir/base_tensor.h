@@ -993,6 +993,11 @@ class MS_CORE_API BaseTensor : public MetaTensor {
   /// \return storage offset.
   const int64_t storage_offset() const;
 
+  /// \brief Get tensor's device string.
+  ///
+  /// \return Which device is this tensor stored.
+  std::string device() const;
+
   void set_need_pipeline_sync(bool need_pipeline_sync) { need_pipeline_sync_ = need_pipeline_sync; }
 
   /// \brief Execute lazy task.

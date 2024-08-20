@@ -249,7 +249,7 @@ class Parameter(Tensor_):
             Parameter, (data, self.name, self.requires_grad, self.layerwise_parallel))
 
     def __init__(self, default_input, name=None, requires_grad=True, layerwise_parallel=False, parallel_optimizer=True,
-                 storage_format=""):
+                 storage_format="", device=None):
         self.param_info = ParamInfo()
         self.init_in_server = False
         self.name = name
@@ -279,7 +279,6 @@ class Parameter(Tensor_):
             # At embedding cache scenes, we need limit the size of memory for parameter.
             # And save out range data to persistent storage to support TB-Level size parameter.
             slice_num_of_persistent_data = get_slice_num(default_input.dtype, default_input.shape)
-            self.param_info.device = default_input.device
             if slice_num_of_persistent_data > 1:
                 data_shape = list(default_input.shape)
                 slice_first_dim = math.ceil(data_shape[0] / slice_num_of_persistent_data)
@@ -302,6 +301,10 @@ class Parameter(Tensor_):
                             f" 'numpy.ndarray', 'list']. But got type {type(default_input)}.")
         self.param_info.parameter_shape = self.shape
         self.param_info.storage_format = storage_format
+        if device is not None:
+            if device != "Cpu":
+                raise ValueError(f"Only 'Cpu' is supported for device, but got ${device}.")
+            self.param_info.device = device
 
         import mindspore.ops.operations.other_ops as other_ops
         self.load = other_ops.Load()

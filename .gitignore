@@ -123,6 +123,7 @@ mindspore/python/mindspore/ops_generate/inner_ops.yaml
 mindspore/python/mindspore/ops_generate/inner_ops_doc.yaml
 mindspore/ops/kernel/ascend/opapi/aclnn_kernel_register_auto.cc
 mindspore/ops/kernel/ascend/opapi/aclnn_auto_gen/
+mindspore/ccsrc/plugin/device/ascend/kernel/opapi/
 
 # ascendc compile
 mindspore/ccsrc/plugin/device/ascend/kernel/ascendc/build_out/

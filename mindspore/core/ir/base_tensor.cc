@@ -34,6 +34,10 @@
 
 namespace mindspore {
 namespace tensor {
+
+constexpr auto kNpuDevice = "Npu";
+constexpr auto kCpuDevice = "Cpu";
+
 static std::string MakeId() {
   // Use atomic to make id generator thread safe.
   static std::atomic<uint64_t> last_id{1};
@@ -291,6 +295,14 @@ const int64_t BaseTensor::storage_offset() const {
   const auto &storage = storage_info();
   return storage == nullptr ? 0 : SizeToLong(storage->storage_offset);
 }
+
+std::string BaseTensor::device() const {
+  if (sync_status_ == kNoNeedSync) {
+    return device_sync_ == nullptr ? kCpuDevice : kNpuDevice;
+  }
+  return (sync_status_ == kNeedSyncDeviceToHost || sync_status_ == kNeedSyncDeviceToHostImmediately) ? kNpuDevice : kCpuDevice;
+}
+
 
 void BaseTensor::set_device_address(const DeviceSyncPtr &device_sync, bool need_update_ref_count) {
   device_sync_ = device_sync;
