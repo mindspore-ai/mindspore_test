@@ -27,10 +27,7 @@ namespace mindspore {
 namespace ops {
 namespace {
 BaseShapePtr Resize2DInferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) {
-  MS_EXCEPTION_IF_NULL(primitive);
-  MS_EXCEPTION_IF_NULL(input_args.at(0));
-  auto image_shape = input_args[0]->GetShape();
-  MS_EXCEPTION_IF_NULL(image_shape);
+  auto image_shape = input_args[kIndex0]->GetShape();
   const auto &image_shape_vec = image_shape->GetShapeVector();
 
   const int64_t image_rank = 4;
@@ -65,11 +62,8 @@ BaseShapePtr Resize2DInferShape(const PrimitivePtr &primitive, const std::vector
 }
 
 int32_t Resize2DCheckValidation(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) {
-  MS_EXCEPTION_IF_NULL(primitive);
-  MS_EXCEPTION_IF_NULL(input_args[2]);
-  MS_EXCEPTION_IF_NULL(input_args[3]);
-  auto align_corners_opt = GetScalarValue<bool>(input_args[2]->GetValue());
-  auto half_pixel_centers_opt = GetScalarValue<bool>(input_args[3]->GetValue());
+  auto align_corners_opt = GetScalarValue<bool>(input_args[kIndex2]->GetValue());
+  auto half_pixel_centers_opt = GetScalarValue<bool>(input_args[kIndex3]->GetValue());
   if (MS_UNLIKELY(!align_corners_opt.has_value() || !half_pixel_centers_opt.has_value())) {
     return OP_CHECK_RETRY;
   }
@@ -93,8 +87,7 @@ BaseShapePtr Resize2DBaseFuncImpl::InferShape(const PrimitivePtr &primitive,
 
 TypePtr Resize2DBaseFuncImpl::InferType(const PrimitivePtr &primitive,
                                         const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(input_args[0]->GetType());
-  return input_args[0]->GetType()->Clone();
+  return input_args[kIndex0]->GetType();
 }
 
 int32_t Resize2DBaseFuncImpl::CheckValidation(const PrimitivePtr &primitive,

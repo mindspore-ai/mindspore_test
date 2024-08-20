@@ -23,8 +23,6 @@ namespace mindspore {
 namespace ops {
 BaseShapePtr ReshapeAndCacheFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                  const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
-
   auto op_name = primitive->name();
   auto ordinary_input_num = CheckAndConvertUtils::GetRemoveUMonadAbsNum(input_args);
   (void)CheckAndConvertUtils::CheckInteger("inputs num", SizeToLong(ordinary_input_num), kEqual,

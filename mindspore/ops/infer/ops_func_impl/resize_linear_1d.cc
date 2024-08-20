@@ -23,9 +23,7 @@ namespace mindspore {
 namespace ops {
 BaseShapePtr ResizeLinear1DFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                 const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(input_args[0]);
-  auto x_shape = input_args[0]->GetShape();
-  MS_EXCEPTION_IF_NULL(x_shape);
+  auto x_shape = input_args[kIndex0]->GetShape();
   auto x_shape_vec = x_shape->GetShapeVector();
 
   const int64_t image_rank = 3;
@@ -58,8 +56,7 @@ BaseShapePtr ResizeLinear1DFuncImpl::InferShape(const PrimitivePtr &primitive,
 
 TypePtr ResizeLinear1DFuncImpl::InferType(const PrimitivePtr &primitive,
                                           const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(input_args[0]->GetType());
-  return input_args[0]->GetType()->Clone();
+  return input_args[kIndex0]->GetType();
 }
 }  // namespace ops
 }  // namespace mindspore

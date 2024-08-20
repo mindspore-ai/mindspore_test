@@ -15,18 +15,18 @@
  */
 #include "infer/ops_func_impl/resize_bilinear_grad.h"
 
+#include "mindspore/ops/ops_utils/op_utils.h"
+
 namespace mindspore {
 namespace ops {
 BaseShapePtr ResizeBilinearGradFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                     const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(input_args[1]->GetShape());
-  return input_args[1]->GetShape()->Clone();
+  return input_args[kIndex1]->GetShape()->Clone();
 }
 
 TypePtr ResizeBilinearGradFuncImpl::InferType(const PrimitivePtr &primitive,
                                               const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(input_args[1]->GetType());
-  return input_args[1]->GetType()->Clone();
+  return input_args[kIndex1]->GetType();
 }
 }  // namespace ops
 }  // namespace mindspore
