@@ -67,6 +67,14 @@ class CodeTraceAnalyzer:
                 raise ValueError(f"{fn} must be a Function")
             self.extra_fns.append(fn)
 
+    def check_fullname(self, op_name, number):
+        self._read_ir_content()
+        for i in range(number):
+            if re.search(op_name + str(i), self.ir_content):
+                continue
+            return False
+        return True
+
     def analyze(self):
         """Start to analyze the code trace accuracy and return the accuracy."""
         if self.analyzed:
