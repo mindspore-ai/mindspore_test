@@ -355,7 +355,11 @@ void DumpTensorToFile(std::string file_path, mindspore::tensor::TensorPtr out_te
                       size_t host_size, ShapeVector host_shape) {
   if (host_type == kNumberTypeInt4) {
     auto int8_tensor = std::make_shared<tensor::Tensor>(TypeId::kNumberTypeInt8, host_shape);
-    SplitInt8(out_tensor->data_c(), int8_tensor->data_c(), host_size);
+    bool split_succeed =
+      SplitInt8ToInt4x2(out_tensor->data_c(), host_size, int8_tensor->data_c(), int8_tensor->DataSize());
+    if (!split_succeed) {
+      return;
+    }
     DumpJsonParser::DumpToFile(file_path, int8_tensor->data_c(), int8_tensor->Size(), int8_tensor->shape_c(),
                                static_cast<TypeId>(int8_tensor->data_type_c()));
   } else if (host_type == TypeId::kNumberTypeBFloat16) {
@@ -413,6 +417,8 @@ void LaunchDumpCallback(const std::vector<TensorInfoForDump> &tensor_info_list, 
                                                                       tensor_info.device_ptr, device_size);
       MS_LOG(DEBUG) << "Callback aclrtmemcpy for " << file_path << ". result is: " << ret_rt_memcpy << file_path;
 
+      // Tensor must be saved before statistic. Because the tensor would be changed in DumpTensorStatsToFile when data
+      // type is int4, if tensor saved after statistic, the tensor value would be wrong.
       if (dump_tensor) {
         DumpTensorToFile(file_path, out_tensor, host_type, host_size, host_shape);
       }
