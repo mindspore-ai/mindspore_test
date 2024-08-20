@@ -2840,6 +2840,8 @@ ValueNode *GetBoundSelf(CallNode *call_node) {
       self = func_val;
       break;
     case AObject::kTypeCFunction:
+      self = GetSelfFromKnownMethod(call_node);
+      break;
     case AObject::kTypeFunction:
       break;
     default:
@@ -4059,9 +4061,8 @@ std::pair<bool, std::vector<py::object>> MindGraphBuilder::GetInputsObject(CallN
 
 BindArgumentsHelper<ValueNode *> MindGraphBuilder::PackInputsForFunc(const py::object &obj, int op_code,
                                                                      const std::vector<ValueNode *> &inputs,
-                                                                     bool eliminate_sens) {
+                                                                     ValueNode *self_node, bool eliminate_sens) {
   auto func_info = obj;
-  bool is_cell_object = py::isinstance<Cell>(func_info);
   func_info = FindPyFunc(AObject::Convert(func_info));
   PyCodeObject *co = reinterpret_cast<PyCodeObject *>(PyFunction_GET_CODE(func_info.ptr()));
   BindArgumentsHelper<ValueNode *> bind_helper(co);
@@ -4121,10 +4122,9 @@ BindArgumentsHelper<ValueNode *> MindGraphBuilder::PackInputsForFunc(const py::o
       args.pop_back();
     }
   }
-  if (is_cell_object) {
-    auto forward_self_node = NewValueNode(AObject::Convert(obj), LOAD_CONST, -1, {});
+  if (self_node != nullptr) {
     auto &args = pack_helper.result().args_;
-    args.insert(args.begin(), forward_self_node);
+    args.insert(args.begin(), self_node);
   }
 #if !IS_PYTHON_3_11_PLUS
   if (!bind_helper.Bind(pack_helper.result().args_, pack_helper.result().kw_)) {
@@ -4154,8 +4154,10 @@ std::pair<FuncGraphPtr, BindArgumentsHelper<ValueNode *>> MindGraphBuilder::Buil
   auto func_info = forward_node->GetVobj()->GetPyObject();
   MS_EXCEPTION_IF_NULL(func_info.ptr());
 
+  auto self_node =
+    py::isinstance<Cell>(func_info) ? NewValueNode(AObject::Convert(func_info), LOAD_CONST, -1, {}) : nullptr;
   BindArgumentsHelper<ValueNode *> bind_helper =
-    PackInputsForFunc(func_info, call_node->GetOpcode(), call_node->getInputs(), has_sense);
+    PackInputsForFunc(func_info, call_node->GetOpcode(), call_node->getInputs(), self_node, has_sense);
 
   auto bind_arguments_result = bind_helper.results();
   const auto &bind_args = bind_arguments_result.args_;
@@ -4336,11 +4338,41 @@ static bool MindFGForbiddenConvertFunc(const py::handle &func) {
   if (PyMethod_Check(ptr)) {
     ptr = PyMethod_GET_FUNCTION(ptr);
   }
-  if (!PyFunction_Check(ptr)) {
+  const auto &qualname_obj = py::getattr(func, "__qualname__", py::object());
+  if (qualname_obj.ptr() == nullptr) {
     return false;
   }
-  auto qualname = py::handle(ptr).attr("__qualname__").cast<std::string>();
-  return qualname == "Tensor.__setitem__";
+  const auto &qualname = qualname_obj.cast<std::string>();
+  // forbidden_list includes two kinds of operation:
+  //   1. function with side effect such as list.__setitem__.
+  //   2. function return iterator, such as enumerate.
+  static std::vector<std::string> forbidden_list = {
+    "Tensor.__setitem__", "list.append",      "list.pop",  "list.insert", "list.clear", "list.reverse",
+    "list.__setitem__",   "dict.__setitem__", "enumerate", "zip",         "map",        "filter"};
+  return std::any_of(forbidden_list.begin(), forbidden_list.end(),
+                     [&qualname](const std::string &name) { return qualname == name; });
+}
+
+std::pair<bool, py::object> MindGraphBuilder::ConvertBuiltInMethodOrFunction(const py::object &callable_info) const {
+  auto new_callable_info = callable_info;
+  bool should_parse_in_ast = false;
+  bool forbidden_convert = MindFGForbiddenConvertFunc(callable_info);
+  if (forbidden_convert) {
+    return std::pair<bool, py::object>(should_parse_in_ast, new_callable_info);
+  }
+  auto method = FGBuilder()->ConvertMethod(new_callable_info);
+  if (method.ptr() != nullptr) {
+    MS_LOG(INFO) << "convert method :" << py::str(callable_info) << " to " << py::str(method);
+    new_callable_info = method;
+    should_parse_in_ast = should_parse_in_ast || PyMethod_Check(method.ptr()) || PyFunction_Check(method.ptr());
+  }
+  auto func = FGBuilder()->ConvertFunction(new_callable_info);
+  if (func.ptr() != nullptr) {
+    MS_LOG(INFO) << "convert function:" << py::str(callable_info) << " to " << py::str(func);
+    new_callable_info = func;
+    should_parse_in_ast = should_parse_in_ast || PyMethod_Check(func.ptr()) || PyFunction_Check(func.ptr());
+  }
+  return std::pair<bool, py::object>(should_parse_in_ast, new_callable_info);
 }
 
 py::object MindGraphBuilder::ResolveCallable(CallNode *call_node, StopTraceReason *stop_reason) {
@@ -4358,7 +4390,6 @@ py::object MindGraphBuilder::ResolveCallable(CallNode *call_node, StopTraceReaso
   }
   MS_LOG(INFO) << "trace_flag for: " << py::str(callable_info);
 
-  bool forbidden_convert = MindFGForbiddenConvertFunc(callable_info);
   if (FGBuilder()->CanConstantFoldFunc(callable_info)) {
     const auto &res = GetInputsObject(call_node);
     if (res.first) {
@@ -4370,23 +4401,28 @@ py::object MindGraphBuilder::ResolveCallable(CallNode *call_node, StopTraceReaso
     }
   }
 
-  std::vector<ValueNode *> args;
-  const auto &call_node_inputs = call_node->getInputs();
-  (void)std::copy(call_node_inputs.begin() + 1, call_node_inputs.end(), std::back_inserter(args));
-  auto method = forbidden_convert ? py::object() : FGBuilder()->ConvertMethod(callable_info);
-  if (method.ptr() != nullptr) {
-    MS_LOG(INFO) << "convert method :" << py::str(callable_info) << " to " << py::str(method);
-    callable_info = method;
-    if (!PyFunction_Check(callable_info.ptr())) {  // prim getnewargs here, func getnewargs in subgraph
-      args = GetNewArgs(call_node, AObject::Convert(callable_info.ptr()));
-    }
-  }
-  auto func = forbidden_convert ? py::object() : FGBuilder()->ConvertFunction(callable_info);
-  if (func.ptr() != nullptr) {
-    MS_LOG(INFO) << "convert function:" << py::str(callable_info) << " to " << py::str(func);
-    callable_info = func;
+  auto convert_result = ConvertBuiltInMethodOrFunction(callable_info);
+  callable_info = convert_result.second;
+  bool should_parse_in_ast = convert_result.first;
+
+  if (should_parse_in_ast) {
+    MS_LOG(INFO) << "Should be parsed by ast for object: " << py::str(callable_info);
+    std::vector<ValueNode *> args;
+    auto self_node = GetBoundSelf(call_node);
+    BindArgumentsHelper<ValueNode *> bind_helper =
+      PackInputsForFunc(callable_info, call_node->GetOpcode(), call_node->getInputs(), self_node);
+    auto bind_arguments_result = bind_helper.results();
+    const auto &bind_args = bind_arguments_result.args_;
+    const auto &bind_vargs = bind_arguments_result.va_;
+    // TODO(LiangZhibo): need to handle kwargs scene.
+    (void)std::copy(bind_args.begin(), bind_args.end(), std::back_inserter(args));
+    (void)std::copy(bind_vargs.begin(), bind_vargs.end(), std::back_inserter(args));
+    return FGAddNode(call_node, callable_info, HandleInputArgs(args), stop_reason);
   }
   if (FGBuilder()->CheckCallable(callable_info)) {
+    std::vector<ValueNode *> args;
+    const auto &call_node_inputs = call_node->getInputs();
+    (void)std::copy(call_node_inputs.begin() + 1, call_node_inputs.end(), std::back_inserter(args));
     if (PyFunction_Check(callable_info.ptr())) {
       args = GetNewArgs(call_node);
     }

@@ -649,7 +649,7 @@ bool InferDictItems(CallNode *call_node, GraphBuilder *unused = nullptr) {
       return false;
     }
     auto mind_builder = static_cast<MindGraphBuilder *>(unused);
-    std::vector<AbstractWrapperPtr> inputs_wrapper = {wrapper};
+    AbstractWrapperPtrList inputs_wrapper = {wrapper};
     auto ret = mind_builder->FGBuilder()->AddNode(prim::kPrimDictItems, inputs_wrapper);
     if (ret == nullptr) {
       MS_LOG(INFO) << "Handle dict items failed for node: " << call_node->ToString();
@@ -1066,7 +1066,7 @@ bool InferTensorSetItem(CallNode *call_node, GraphBuilder *parent) {
   auto meta = py::module::import(kMeTaModule).attr("setitem").cast<mindspore::MetaFuncGraphPtr>();
 
   auto fg = dynamic_cast<MindGraphBuilder *>(parent);
-  std::vector<AbstractWrapperPtr> args{self->abstract_wrapper()};
+  AbstractWrapperPtrList args{self->abstract_wrapper()};
   for (size_t i = 1 + is_not_method; i < call_node->getInputs().size(); ++i) {
     args.push_back(call_node->input(i)->abstract_wrapper());
   }

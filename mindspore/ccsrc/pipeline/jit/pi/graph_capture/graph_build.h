@@ -343,8 +343,8 @@ class MindGraphBuilder : public GraphBuilder {
   mindspore::FuncGraphBuilderPtr FGBuilder() const { return fg_builder_; }
   bool FGAddTopInputs(int args_count, bool has_vargs, bool has_kwargs);
   bool FGAddInputs(const std::vector<ValueNode *> &args);
-  py::object FGAddNode(CallNode *call_node, const py::object &callable_info,
-                       const std::vector<AbstractWrapperPtr> &args, StopTraceReason *stop_reason);
+  py::object FGAddNode(CallNode *call_node, const py::object &callable_info, const AbstractWrapperPtrList &args,
+                       StopTraceReason *stop_reason);
   void FGAddOutput(bool is_top_graph);
   StopTraceReason BuildSubGraph(CallNode *call_node, int depth, const py::object &func,
                                 const GraphBuilderPtr &subgraph) override;
@@ -370,7 +370,7 @@ class MindGraphBuilder : public GraphBuilder {
   bool HandleCallClass(CallNode *call_node) override;
 
  private:
-  std::vector<AbstractWrapperPtr> HandleInputArgs(const std::vector<ValueNode *> args);
+  AbstractWrapperPtrList HandleInputArgs(const std::vector<ValueNode *> args);
   std::vector<ValueNode *> GetNewArgs(CallNode *call_node, AObject *vobj = nullptr);
   bool IsGradCallable(ValueNode *node);
   py::object ResolveGradCall(CallNode *call_node, StopTraceReason *stop_reason);
@@ -386,12 +386,12 @@ class MindGraphBuilder : public GraphBuilder {
 
   BindArgumentsHelper<ValueNode *> PackInputsForFunc(const py::object &obj, int op_code,
                                                      const std::vector<ValueNode *> &inputs,
-                                                     bool eliminate_sens = false);
+                                                     ValueNode *self_node = nullptr, bool eliminate_sens = false);
 
   std::pair<FuncGraphPtr, BindArgumentsHelper<ValueNode *>> BuildForwardGraph(CallNode *call_node);
-  std::vector<AbstractWrapperPtr> HandleInputsForGrad(CallNode *call_node,
-                                                      BindArgumentsHelper<ValueNode *> forward_inputs);
+  AbstractWrapperPtrList HandleInputsForGrad(CallNode *call_node, BindArgumentsHelper<ValueNode *> forward_inputs);
   void HandleCustomBProp(const FuncGraphPtr &graph, const py::object &obj) const;
+  std::pair<bool, py::object> ConvertBuiltInMethodOrFunction(const py::object &callable_info) const;
 };
 }  // namespace pijit
 }  // namespace mindspore
