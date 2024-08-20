@@ -63,6 +63,19 @@ REG_BPROP_BUILDER("GpuConvertToDynamicShape").SetUnusedInputs({i0, i1}).SetBody(
   return {dout};
 });
 
+REG_BPROP_BUILDER("RotaryPositionEmbedding").SetUnusedInputs({i4}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto cos = ib->GetInput(kIndex1);
+  auto sin = ib->GetInput(kIndex2);
+  auto mode = ib->GetInput(kIndex3);
+  auto dout = ib->GetInput(kIndex5);
+  auto grad_out = ib->Emit("RotaryPositionEmbeddingGrad", {dout, cos, sin, x, mode});
+  auto dx = ib->TupleGetItem(grad_out, 0);
+  auto dcos = ib->TupleGetItem(grad_out, 1);
+  auto dsin = ib->TupleGetItem(grad_out, 2);
+  return {dx, dcos, dsin, ib->OutZeros(mode)};
+});
+
 REG_BPROP_BUILDER("_DynamicLossScale").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
   auto loss_scale = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex3);

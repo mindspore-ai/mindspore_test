@@ -1,0 +1,17 @@
+#operator RotaryPositionEmbedding
+rotary_position_embedding:
+  args:
+    x:
+      dtype: tensor
+    cos:
+      dtype: tensor
+    sin:
+      dtype: tensor
+    mode:
+      dtype: int
+      default: 0
+  returns:
+    y:
+      dtype: tensor
+  dispatch:
+    enable: True

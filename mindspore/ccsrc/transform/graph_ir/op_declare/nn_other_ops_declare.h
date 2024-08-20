@@ -116,4 +116,11 @@ DECLARE_OP_USE_DYN_OUTPUT(EmbeddingFeatureMappingImport)
 DECLARE_OP_ADAPTER(EmbeddingFeatureMappingInsert)
 DECLARE_OP_USE_DYN_INPUT(EmbeddingFeatureMappingInsert)
 
+// RotaryPositionEmbedding
+DECLARE_OP_ADAPTER(RotaryPositionEmbedding)
+DECLARE_OP_USE_OUTPUT(RotaryPositionEmbedding)
+
+// RotaryPositionEmbeddingGrad
+DECLARE_OP_ADAPTER(RotaryPositionEmbeddingGrad)
+DECLARE_OP_USE_OUTPUT(RotaryPositionEmbeddingGrad)
 #endif  // MINDSPORE_CCSRC_TRANSFORM_GRAPH_IR_OP_DECLARE_NN_OTHER_OPS_DECLARE_H_
