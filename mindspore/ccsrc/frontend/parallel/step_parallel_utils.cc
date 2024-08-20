@@ -1798,6 +1798,10 @@ void AddNodeFusionInfo(const CNodePtr &node, const CNodePtr &comm_node, const st
                        const std::string &param_name, int32_t fusion_id) {
   auto comm_id = MakeValue<std::string>(param_name);
   comm_node->AddPrimalAttr(kPrimalAttrMirrorUserId, comm_id);
+  auto prim = GetCNodePrimitive(comm_node);
+  if (prim) {
+    prim->AddAttr(kPrimalAttrMirrorUserId, comm_id);
+  }
   if (GetValueNode<PrimitivePtr>(comm_node->input(0))->HasAttr(GROUP)) {
     auto comm_group = GetValue<std::string>(GetValueNode<PrimitivePtr>(comm_node->input(0))->GetAttr(GROUP));
     std::string fusion_key = backward_comm_name + "_" + comm_group + "_" + std::to_string(fusion_id);
@@ -1808,6 +1812,10 @@ void AddNodeFusionInfo(const CNodePtr &node, const CNodePtr &comm_node, const st
         node->AddAttr(kRelatedCommNodeId, MakeValue<std::string>(comm_node->UniqueId()));
       }
       node->AddPrimalAttr(kPrimalAttrMirrorUserId, comm_id);
+      prim = GetCNodePrimitive(node);
+      if (prim) {
+        prim->AddAttr(kPrimalAttrMirrorUserId, comm_id);
+      }
       return;
     }
     auto next_nodes = GetOutputNodesWithFilter(node, [&](const AnfNodePtr &anode) {
@@ -1827,6 +1835,10 @@ void AddNodeFusionInfo(const CNodePtr &node, const CNodePtr &comm_node, const st
         next_cnode->AddAttr(kRelatedCommNodeId, MakeValue<std::string>(comm_node->UniqueId()));
       }
       next_cnode->AddPrimalAttr(kPrimalAttrMirrorUserId, comm_id);
+      prim = GetCNodePrimitive(next_cnode);
+      if (prim) {
+        prim->AddAttr(kPrimalAttrMirrorUserId, comm_id);
+      }
     }
   }
 }
@@ -1835,6 +1847,10 @@ void AddNodeMirrorInfo(const CNodePtr &cnode, const std::string &param_name) {
   auto comm_id = MakeValue<std::string>(param_name);
   if (IsParallelCareNode(cnode)) {
     cnode->AddPrimalAttr(kPrimalAttrMirrorUserId, comm_id);
+    auto prim = GetCNodePrimitive(cnode);
+    if (prim) {
+      prim->AddAttr(kPrimalAttrMirrorUserId, comm_id);
+    }
     return;
   }
   auto next_nodes = GetOutputNodesWithFilter(cnode, [&](const AnfNodePtr &anode) {
@@ -1849,6 +1865,10 @@ void AddNodeMirrorInfo(const CNodePtr &cnode, const std::string &param_name) {
     }
     auto next_node = pair.first->cast<CNodePtr>();
     next_node->AddPrimalAttr(kPrimalAttrMirrorUserId, comm_id);
+    auto prim = GetCNodePrimitive(next_node);
+    if (prim) {
+      prim->AddAttr(kPrimalAttrMirrorUserId, comm_id);
+    }
   }
 }
 
