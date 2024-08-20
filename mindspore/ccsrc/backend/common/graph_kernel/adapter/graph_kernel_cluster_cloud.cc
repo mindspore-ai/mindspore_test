@@ -88,7 +88,6 @@ bool DvmSliceSupported(const AnfNodePtr &node, TypeId node_output_type) {
 
 bool DvmMatMulSupported(const AnfNodePtr &node, TypeId node_output_type) {
   constexpr int64_t MAX_GM_STRIDE = UINT16_MAX;
-  constexpr int64_t MAX_K = UINT16_MAX >> 1;
   if (common::AnfAlgo::IsDynamicShape(node)) {
     return false;
   }
@@ -99,17 +98,12 @@ bool DvmMatMulSupported(const AnfNodePtr &node, TypeId node_output_type) {
   MS_EXCEPTION_IF_NULL(cnode);
   auto a_shape = GetShape(cnode->input(kIndex1));
   auto b_shape = GetShape(cnode->input(kIndex2));
-  auto output_vector = GetShape(node);
-  int64_t k =
-    GetValue<bool>(GetCNodePrimitive(node)->GetAttr("transpose_a")) ? a_shape[a_shape.size() - 2] : a_shape.back();
-  if (k > MAX_K) {
+  auto c_shape = GetShape(node);
+  if (a_shape.back() > MAX_GM_STRIDE || b_shape.back() > MAX_GM_STRIDE || c_shape.back() > MAX_GM_STRIDE ||
+      c_shape.back() == 1) {
     return false;
   }
-  if (a_shape.back() > MAX_GM_STRIDE || b_shape.back() > MAX_GM_STRIDE || output_vector.back() > MAX_GM_STRIDE ||
-      output_vector.back() == 1) {
-    return false;
-  }
-  if (IsPrimitiveCNode(node, prim::kPrimBatchMatMul) && output_vector.size() > kSizeFour) {
+  if (IsPrimitiveCNode(node, prim::kPrimBatchMatMul) && c_shape.size() > kSizeFour) {
     return false;
   }
   return true;
