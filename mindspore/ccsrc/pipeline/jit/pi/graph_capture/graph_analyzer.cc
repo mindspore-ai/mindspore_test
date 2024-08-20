@@ -819,13 +819,18 @@ bool MindGraphAnalyzer::AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes) 
       continue;
     }
 
+    // The node has been added to the output
+    if (std::find(outputs.begin(), outputs.end(), node) != outputs.end()) {
+      continue;
+    }
+
+    // This value is defined out of the graph
     if (std::find(values.begin(), values.end(), node) != values.end()) {
       continue;
     }
 
     // add output for func_graph
-    if (IsValidOutput(node) && std::find(outputs.begin(), outputs.end(), node) == outputs.end() &&
-        func_graph_builder->AddOutput(node->abstract_wrapper(), true)) {
+    if (IsValidOutput(node) && func_graph_builder->AddOutput(node->abstract_wrapper(), true)) {
       MS_LOG(INFO) << "Add graph output : " << node->ToString();
       GetCaptureInfo().captured_.outputs.push_back(node);
       continue;
