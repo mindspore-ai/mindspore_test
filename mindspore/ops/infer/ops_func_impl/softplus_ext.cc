@@ -27,18 +27,14 @@ namespace mindspore {
 namespace ops {
 BaseShapePtr SoftplusExtFuncImpl::InferShape(const PrimitivePtr &primitive,
                                              const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(input_args[0]);
-  MS_EXCEPTION_IF_NULL(input_args[0]->GetShape());
-  return input_args[0]->GetShape()->Clone();
+  return input_args[kInputIndex0]->GetShape()->Clone();
 }
 
 TypePtr SoftplusExtFuncImpl::InferType(const PrimitivePtr &primitive,
                                        const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
   auto prim_name = primitive->name();
-  MS_EXCEPTION_IF_NULL(input_args[0]);
   std::set<TypePtr> valid_index_types = {kFloat16, kFloat32, kFloat64, kBFloat16};
-  auto x_type = input_args[0]->GetType();
+  auto x_type = input_args[kInputIndex0]->GetType();
   (void)CheckAndConvertUtils::CheckTensorTypeValid("x", x_type, valid_index_types, prim_name);
   return x_type;
 }

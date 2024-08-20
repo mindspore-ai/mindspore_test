@@ -38,7 +38,7 @@ class NonZeroExtFrontendFuncImpl : public OpFrontendFuncImpl {
       out_tuple->CheckAndConvertToDynamicLenSequence();
       return out_tuple;
     }
-    abstract::AbstractBasePtrList abs_list;
+    abstract::AbstractBasePtrList abs_list{};
     auto output_shape = ShapeVector({abstract::Shape::kShapeDimAny});
     for (int i = 0; i < x_rank; i++) {
       abs_list.push_back(std::make_shared<abstract::AbstractTensor>(kInt64, output_shape));
