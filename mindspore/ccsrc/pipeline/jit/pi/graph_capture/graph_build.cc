@@ -2157,6 +2157,9 @@ bool CheckSupportCreateInstance(CallNode *call_node) {
   static const std::set<PyTypeObject *> limit_create_instance_type = {
     &PyList_Type, &PyTuple_Type, &PySet_Type, &PyFrozenSet_Type, &PyDict_Type, &PyUnicode_Type, &PyEnum_Type,
   };
+  if (call_node->getInputs().size() == 1) {
+    return true;
+  }
   if (call_node->getInputs().size() != 2) {
     return false;
   }
@@ -4739,6 +4742,11 @@ bool MindGraphBuilder::DoBinaryMul(const Instr &instr) {
   auto r = pop();
   auto l = pop();
   auto o = HandleMultiOp(instr, {l, r}, false);
+  if (o == nullptr) {
+    push(l);
+    push(r);
+    return GraphBuilder::DoBinaryMul(instr);
+  }
   auto v = NewValueNode(AObject::Convert(o), instr, {l, r});
   v->set_abstract_wrapper(o);
   push(v);
