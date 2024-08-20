@@ -104,7 +104,6 @@ class TensorRedistribution {
                                   const Array &to_factors);
   Status AssembleStaticTensorShape(const TensorLayout &from_in, const TensorLayout &to_in,
                                    TensorLayout *new_from_layout, TensorLayout *new_to_layout);
-  void UnifyAssembledMapping();
   void UnifyAssembledMappingWithSqueezedFromShape();
   void UnifyAssembledMappingWithSameSize(const std::set<int64_t> &index_mapping);
   void UnifyAssembledMappingWithDiffSize(const std::set<int64_t> &index_mapping);
