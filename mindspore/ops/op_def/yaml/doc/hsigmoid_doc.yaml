@@ -1,8 +1,8 @@
 hsigmoid:
     description: |
-        Hard sigmoid activation function. Calculates the output according to the input elements.
+        Hard Sigmoid activation function. Calculates the output according to the input elements.
 
-        Hard sigmoid is defined as:
+        Hard Sigmoid is defined as:
 
         .. math::
             \text{Hardswish}(input) =
