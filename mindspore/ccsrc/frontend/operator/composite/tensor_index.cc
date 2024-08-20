@@ -938,7 +938,7 @@ AnfNodePtr PreSetitemByTuple::FormatIndex(const abstract::AbstractBasePtr &index
         new_index_node = res_graph_->NewCNode({select_vnode, less_cnode, add_cnode, new_index_node});
       }
     } else if (type_id != kNumberTypeBool) {
-      MS_EXCEPTION(IndexError) << "The tensor element in tuple index must be int or bool type, but got" << type_id;
+      MS_EXCEPTION(IndexError) << "The tensor element in tuple index must be int or bool type, but got " << type;
     }
   }
   return new_index_node;
