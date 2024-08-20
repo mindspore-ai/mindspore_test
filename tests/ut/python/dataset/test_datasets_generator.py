@@ -2544,6 +2544,50 @@ def test_generator_shared_queue_reuse_with_dynamic_shape():
     assert count == 30
 
 
+def test_generator_shared_queue_reuse_with_empty_numpy():
+    """
+    Feature: GeneratorDataset
+    Description: Test shared memory reuse with empty numpy and multiple columns
+    Expectation: The dataset is processed as expected
+    """
+
+    data = [(np.random.random((15, 25)), np.random.random((22, 13)), np.random.random((17, 23))),  # (data, data, data)
+            (np.array([]), np.random.random((29, 77)), np.random.random((64, 18))),  # (empty, data, data)
+            (np.random.random((7, 16)), np.array([]), np.random.random((9, 51))),  # (data, empty, data)
+            (np.random.random((3, 111)), np.random.random((5, 27)), np.array([])),  # (data, data, empty)
+            (np.array([]), np.array([]), np.random.random((37, 26))),  # (empty, empty, data)
+            (np.array([]), np.random.random((58, 76)), np.array([])),  # (empty, data, empty)
+            (np.random.random((91, 43)), np.array([]), np.array([])),  # (data, empty, empty)
+            (np.array([]), np.array([]), np.array([]))]  # (empty, empty, empty)
+
+    class DynamicDataset:
+        def __init__(self):
+            self.data = data
+
+        def __getitem__(self, index):
+            return self.data[index]
+
+        def __len__(self):
+            return len(self.data)
+
+    def map_func(input_data):
+        return input_data
+
+    dataset = ds.GeneratorDataset(DynamicDataset(), column_names=["data1", "data2", "data3"],
+                                  num_parallel_workers=2, shuffle=False)
+    dataset = dataset.map(map_func, python_multiprocessing=True)
+    dataset = dataset.map(map_func, python_multiprocessing=True)
+    dataset = dataset.map(map_func, python_multiprocessing=True)
+
+    count = 0
+    num_columns = 3
+    for sample in dataset.create_tuple_iterator(output_numpy=True, num_epochs=1):
+        for i in range(num_columns):
+            np.testing.assert_array_equal(sample[i], data[count][i])
+        count += 1
+    assert count == 8
+
+
 def test_generator_with_invalid_max_row_size():
     """
     Feature: GeneratorDataset
@@ -2650,6 +2694,7 @@ if __name__ == "__main__":
     test_generator_single_input_4()
     test_generator_single_input_5()
     test_generator_single_input_6()
+    test_generator_one_dimensional_numpy_input()
     test_generator_with_seed_5489_when_dist()
     test_generator_with_set_seed_when_dist()
     test_generator_with_single_numpy()
@@ -2662,5 +2707,8 @@ if __name__ == "__main__":
     test_generator_with_next_and_dataset_size_when_iter()
     test_generator_multiprocessing_with_fixed_handle()
     test_generator_with_dynamic_shared_queue()
+    test_generator_shared_queue_reuse_with_fixed_shape()
+    test_generator_shared_queue_reuse_with_dynamic_shape()
+    test_generator_shared_queue_reuse_with_empty_numpy()
     test_generator_with_invalid_max_row_size()
     test_generator_with_generator_object_iterated_multi_times()

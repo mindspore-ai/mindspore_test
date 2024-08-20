@@ -122,7 +122,7 @@ class _SharedQueue(multiprocessing.queues.Queue):
                     if isinstance(column, types.GeneratorType):
                         raise TypeError("Cannot pickle {} object, please verify pyfunc return with numpy array"
                                         .format(type(column)))
-                    if isinstance(column, np.ndarray) and self.dynamic_shm:
+                    if self.dynamic_shm and isinstance(column, np.ndarray) and column.nbytes > 0:
                         shm = self.shm_list[self.seg_pos]
                         fd = self.fd_list[self.seg_pos]
                         dest = np.ndarray(column.shape, column.dtype, buffer=shm.buf(), offset=start_bytes)
