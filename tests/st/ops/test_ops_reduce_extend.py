@@ -18,7 +18,6 @@ import mindspore as ms
 import mindspore.ops.function as F
 import mindspore.common.dtype as mstype
 from mindspore import nn
-from mindspore import ops
 from mindspore import Tensor
 from mindspore.ops.function import prod
 from mindspore.ops.function.math_func import mean_ext as mean
@@ -86,12 +85,12 @@ def sum_forward_func(x, axis=None, keep_dims=False, dtype=None):
 
 @test_utils.run_with_cell
 def mean_backward_func(x, axis=None, keep_dims=False, dtype=None):
-    return ops.grad(mean_forward_func, (0))(x, axis, keep_dims, dtype)
+    return ms.grad(mean_forward_func, (0))(x, axis, keep_dims, dtype)
 
 
 @test_utils.run_with_cell
 def sum_backward_func(x, axis=None, keep_dims=False, dtype=None):
-    return ops.grad(sum_forward_func, (0))(x, axis, keep_dims, dtype)
+    return ms.grad(sum_forward_func, (0))(x, axis, keep_dims, dtype)
 
 
 @arg_mark(plat_marks=['platform_ascend910b', 'platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows',
@@ -108,8 +107,8 @@ def test_mean_normal(keep_dims, in_dtype, out_dtype, context_mode):
     Expectation: expect correct result.
     """
     ms.context.set_context(mode=context_mode)
-    axis = (0, -1)
-    x = generate_random_input((2, 3, 4, 5), mstype.dtype_to_nptype(in_dtype))
+    axis = (0, 1, 2, 3)
+    x = generate_random_input((64, 4, 64, 64), mstype.dtype_to_nptype(in_dtype))
     output = mean_forward_func(Tensor(x), axis, keep_dims, out_dtype)
     expect = generate_expect_forward_output("mean", x, axis, keep_dims, mstype.dtype_to_nptype(out_dtype))
     np.testing.assert_equal(output.dtype, out_dtype)
