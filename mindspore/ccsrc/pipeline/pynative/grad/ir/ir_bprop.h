@@ -69,7 +69,7 @@ class IrBprop {
                           size_t weight_size = 0, bool is_need_recompute = false);
   // Get parameter from a value
   AnfNodePtr MapParameter(const ValuePtr &value, const abstract::AbstractBasePtr &abs,
-                          std::vector<std::pair<tensor::BaseTensorPtr, AutoGradMetaDataPtr>> *param_meta_grad_info);
+                          OrderedMap<tensor::BaseTensorPtr, AutoGradMetaDataPtr> *param_meta_grad_info);
 
   // Create variable for parameter
   ParameterPtr AddParameterNode(const tensor::BaseTensorPtr &tensor, const abstract::AbstractBasePtr &abs);

@@ -229,9 +229,8 @@ void IrBprop::BuildBPropCutCNode(const CNodePtr &cnode, const PrimitivePtr &prim
   bprop_graph_run_by_single_op_ = true;
 }
 
-AnfNodePtr IrBprop::MapParameter(
-  const ValuePtr &value, const abstract::AbstractBasePtr &abs,
-  std::vector<std::pair<tensor::BaseTensorPtr, AutoGradMetaDataPtr>> *param_meta_grad_info) {
+AnfNodePtr IrBprop::MapParameter(const ValuePtr &value, const abstract::AbstractBasePtr &abs,
+                                 MetaGradInfoList *param_meta_grad_info) {
   if (value->isa<tensor::BaseTensor>()) {
     const auto &tensor = value->cast<tensor::BaseTensorPtr>();
     const auto &auto_grad_meta_data = tensor->auto_grad_meta_data();
@@ -242,7 +241,7 @@ AnfNodePtr IrBprop::MapParameter(
       param->set_abstract(abs);
       return param;
     }
-    param_meta_grad_info->emplace_back(tensor, auto_grad_meta_data);
+    (*param_meta_grad_info)[tensor] = auto_grad_meta_data;
     set_bprop_graph_run_by_single_op(auto_grad_meta_data->is_register_hook());
     if (auto_grad_meta_data->input_type() == InputType::kParameter &&
         PyNativeAlgo::Common::IsParamRequiresGrad(tensor)) {

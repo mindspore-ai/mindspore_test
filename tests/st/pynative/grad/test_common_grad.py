@@ -20,6 +20,7 @@ import mindspore.nn as nn
 from mindspore import context
 from mindspore.common import Tensor
 from mindspore.common.api import jit
+import mindspore.mint.nn.functional as Func
 from mindspore.common.parameter import Parameter, ParameterTuple
 from mindspore.ops import operations as P
 from mindspore.ops import GradOperation
@@ -509,3 +510,52 @@ def test_pynative_requires_grad_case2():
     output = GradOperation(get_all=True, get_by_list=True)(net, [net.p1])(x)
     assert (output[1][0].asnumpy() == np.array([0.0], dtype=np.float32)).all()
     assert len(output[1]) == 1
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_kwargs_with_no_sens():
+    """
+    Feature: Test kwargs with no sens.
+    Description: Run kwargs with no sens.
+    Expectation: No exception.
+    """
+    inputs = Tensor([1., 2., 3.])
+    kwargs = {"approximate": "tanh"}
+    grad_fn = GradOperation(get_all=True, sens_param=False)(Func.gelu)
+    grad_fn(inputs, **kwargs)
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_kwargs_with_sens_not_in_kwargs():
+    """
+    Feature: Test kwargs with no sens.
+    Description: Run kwargs with no sens.
+    Expectation: No exception.
+    """
+    inputs = Tensor([1., 2., 3.])
+    gradiente_inputs = Tensor([1., 2., 3.])
+    kwargs = {"approximate": "tanh"}
+    grad_fn = GradOperation(get_all=True, sens_param=True)(Func.gelu)
+    grad_fn(inputs, gradiente_inputs, **kwargs)
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_kwargs_with_sens_in_kwargs():
+    """
+    Feature: Test kwargs with sens.
+    Description: Run kwargs with sens.
+    Expectation: No exception.
+    """
+    inputs = Tensor([1., 2., 3.])
+    kwargs = {'sens': Tensor([1., 2., 3.]), "approximate": "tanh"}
+    grad_fn = GradOperation(get_all=True, sens_param=True)(Func.gelu)
+    grad_fn(inputs, **kwargs)

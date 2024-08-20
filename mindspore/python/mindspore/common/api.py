@@ -1463,23 +1463,22 @@ class _PyNativeExecutor:
         """
         self._executor.end_graph(obj, output, *args, *(kwargs.values()))
 
-    def check_run(self, grad, obj, weights, grad_hash_id, *args, **kwargs):
+    def check_run(self, grad, obj, weights, grad_hash_id, *args):
         """
         Whether the forward graph need to construct.
 
         Args:
             grad (GradOperation): The gradoperation object.
             obj (Function/Cell): The function or cell instance.
-            grad_hash_id (tuple): The id of objects which contribute to cache of compiled graph in pynative mode.
+            grad_hash_id (tuple): The id of objects, which contributes to cache of compiled graph in pynative mode.
             args (tuple): Function or cell input arguments.
-            kwargs (dict): keyword arguments.
 
         Return:
-            bool, specifies whether the forward graph need to construct.
+            bool, specifies whether the forward graph needs to construct.
         """
-        return self._executor.check_run(grad, obj, weights, grad_hash_id, *args, *(kwargs.values()))
+        return self._executor.check_run(grad, obj, weights, grad_hash_id, *args)
 
-    def grad(self, obj, grad, weights, grad_position, *args, **kwargs):
+    def grad(self, obj, grad, weights, grad_position, *args):
         """
         Get grad graph.
 
@@ -1490,12 +1489,11 @@ class _PyNativeExecutor:
             grad_position (Union(int, tuple[int])): If int, get the gradient with respect to single input.
               If tuple, get the gradients with respect to selected inputs. 'grad_position' begins with 0. Default: 0.
             args (tuple): Function or cell input arguments.
-            kwargs (dict): keyword arguments.
 
         Return:
             None.
         """
-        return self._executor.grad(grad, obj, weights, grad_position, *args, *(kwargs.values()))
+        return self._executor.grad(grad, obj, weights, grad_position, *args)
 
     def clear_res(self):
         """

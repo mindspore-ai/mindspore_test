@@ -1336,6 +1336,7 @@ void PyParser::PrintTypeCastError(const ops::OpDefPtr &op_def, const py::list &o
   for (size_t index = 0; index < op_inputs.size(); ++index) {
     (void)op_type_list.emplace_back(BuilidPyInputTypeString(op_inputs[index]));
   }
+  PyNativeExecutor::GetInstance()->ClearRes();
   MS_EXCEPTION(TypeError) << ops::BuildOpErrorMsg(op_def, op_type_list);
 }
 
@@ -2362,16 +2363,15 @@ void AutoGrad::SetGradMetaData(const ValuePtr &value, const VariablePtr &variabl
   }
 }
 
-void AutoGrad::SetGradInfoForInputs(
-  const ValuePtr &value, const VariablePtr &variable,
-  std::vector<std::pair<tensor::BaseTensorPtr, AutoGradMetaDataPtr>> *param_meta_grad_info, const ParameterPtr &param) {
+void AutoGrad::SetGradInfoForInputs(const ValuePtr &value, const VariablePtr &variable,
+                                    autograd::MetaGradInfoList *param_meta_grad_info, const ParameterPtr &param) {
   if (value->isa<tensor::BaseTensor>()) {
     const auto &input_tensor = value->cast<tensor::BaseTensorPtr>();
     const auto &auto_grad_meta_data = input_tensor->auto_grad_meta_data();
     MS_EXCEPTION_IF_NULL(auto_grad_meta_data);
     auto_grad_meta_data->set_variable(variable);
     auto_grad_meta_data->set_parameter(param);
-    param_meta_grad_info->emplace_back(input_tensor, auto_grad_meta_data);
+    (*param_meta_grad_info)[input_tensor] = auto_grad_meta_data;
   } else if (value->isa<tensor::COOTensor>()) {
     const auto &coo_tensor = value->cast<tensor::COOTensorPtr>();
     const auto &indices_tensor = coo_tensor->GetIndices();

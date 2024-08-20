@@ -656,7 +656,8 @@ void GradExecutor::NewGraphInner(const py::object &obj, const py::args &args) {
   const auto input_args_info = GetInputArgsInfo(obj, args, is_bprop_need_get_forward_graph);
   PushInputArgsInfoStack(input_args_info);
   MS_LOG(DEBUG) << PrintPyObjInfo(obj, "Begin") << ", NewGraphInner start " << args.size() << ", cell_id "
-                << PyNativeAlgo::PyParser::GetIdByPyObj(obj) << ", input args info ptr " << input_args_info.get();
+                << PyNativeAlgo::PyParser::GetIdByPyObj(obj) << ", is custom bprop "
+                << input_args_info->has_custom_bprop << ", input args info ptr " << input_args_info.get();
 
   // Make top graph and init resource
   if (input_args_info->is_grad_topest_cell || input_args_info->is_high_order_top_cell ||
@@ -879,7 +880,8 @@ void GradExecutor::EndGraphInner(const py::object &obj, const py::object &out, c
   const auto input_args_info = input_args_info_stack_.top();
   MS_EXCEPTION_IF_NULL(input_args_info);
   MS_LOG(DEBUG) << PrintPyObjInfo(obj, "End") << ", EndGraphInner start " << args.size() << ", cell_id "
-                << PyNativeAlgo::PyParser::GetIdByPyObj(obj) << ", input args info ptr " << input_args_info.get();
+                << PyNativeAlgo::PyParser::GetIdByPyObj(obj) << ", is custom bprop "
+                << input_args_info->has_custom_bprop << ", input args info ptr " << input_args_info.get();
   if (input_args_info->is_grad_topest_cell) {
     grad_flag_ = false;
   }
@@ -1582,10 +1584,10 @@ py::object GradExecutor::CheckAlreadyRun(const prim::GradOperationPtr &grad, con
   // be affected and get forward_run is true.
   // scenarios 2. If grad(net)(input) calls first, then increase 1 before MakeNewTopCell and decrease 1 in Rungrad. The
   // reason for this design is that if grad(net)(input) calls first and decrease 1 in EndGraphImpl, it will cause
-  // matching problems during RunGrad due to the presence of Gradopration information in already_run_cell_id is not the
-  // same. Gradopration information include grad order for distinguish high-order.
-  // Use flag: call_grad_api_first_ for distinguish this two scenarios. If scenarios 1 is taked, call_grad_api_first_
-  // will not take effect, otherwise, it works.
+  // matching problems during RunGrad due to the presence of GradOperation information in already_run_cell_id is not the
+  // same. GradOperation information includes grad order for distinguish high-order.
+  // Use a flag: call_grad_api_first_ for distinguish these two scenarios. If scenarios 1 are taken,
+  // call_grad_api_first_ will not take effect, otherwise, it works.
   bool neee_increase_grad_order = NeedIncreaseGradOrder(obj_id);
 
   // Include grad position

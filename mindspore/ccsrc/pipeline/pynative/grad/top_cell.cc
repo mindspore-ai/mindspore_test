@@ -78,7 +78,7 @@ void TopCellInfo::ClearDeviceMemory() const {
       continue;
     }
     if (!device_address->from_persistent_mem() && !tensor->is_parameter() && !IsOutputTensor(tensor)) {
-      // Parameters can not be cleaned up. In the case of Parameter(Tensor(xxx).view(xxx), requires_grad=False),
+      // Parameters cannot be cleaned up. In the case of Parameter(Tensor(xxx).view(xxx), requires_grad=False),
       // the param will be converted to value node into bprop graph. Tensor will be zero after cleaning.
       MS_LOG(DEBUG) << "Clear device address for tensor: " << tensor->id() << ", device address " << device_address
                     << ", device ptr " << device_address->GetPtr();
@@ -94,7 +94,7 @@ void TopCellInfo::BackUpValueMetaGradInfo(const ValuePtr &value) {
     auto tensor_value = value->cast<tensor::BaseTensorPtr>();
     auto auto_grad_meta_data = tensor_value->auto_grad_meta_data();
     if (auto_grad_meta_data != nullptr) {
-      auto_grad_cell_ptr_->param_meta_grad_info().emplace_back(tensor_value, auto_grad_meta_data);
+      auto_grad_cell_ptr_->param_meta_grad_info()[tensor_value] = auto_grad_meta_data;
     }
   } else if (value->isa<ValueSequence>()) {
     const auto &value_seq = value->cast<ValueSequencePtr>();
@@ -309,16 +309,15 @@ void TopCellInfo::UpdateTopCellForwardTensorInfoInBpropGraph(const std::string &
 
 void TopCellInfo::SaveForwardOutputTensorInfoInBpropGraph(const FuncGraphPtr &func_graph) {
   initial_graph_param_size_ = func_graph->parameters().size();
-  if (has_bprop_cut_op()) {
+  if (has_bprop_cut_op_) {
     MS_LOG(DEBUG) << "Top cell has bprop cut, no need to save forward output tensor info";
     const auto &value_node_list = func_graph->value_nodes();
     for (const auto &elem : value_node_list) {
       PyNativeAlgo::DataConvert::TransformValueNodeBaseTensorToTensor(elem.first->cast<ValueNodePtr>());
     }
-    return;
   }
   MS_LOG(DEBUG) << "Save top cell forward output tensor info";
-  SaveForwardOutputTensorInfo(func_graph, !use_dynamic_shape_process_, &replace_info_);
+  SaveForwardOutputTensorInfo(func_graph, !use_dynamic_shape_process_ && !has_bprop_cut_op_, &replace_info_);
 }
 
 void TopCellInfo::SetLastOutputValueForwardOutputFlag(const ValuePtr &value) {

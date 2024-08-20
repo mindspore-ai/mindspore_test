@@ -592,7 +592,7 @@ void IrGrad::UpdateSensParameter(const ValuePtr &value) {
     if (auto_grad_meta_data->input_type() == InputType::kParameter && variable == nullptr) {
       (void)ir_bprop_->AddParameterNode(sens_tensor,
                                         PyNativeAlgo::Common::SetAbstractValueToAnyValue(sens_tensor->ToAbstract()));
-      param_meta_grad_info_.emplace_back(sens_tensor, auto_grad_meta_data);
+      param_meta_grad_info_[sens_tensor] = auto_grad_meta_data;
     }
   } else if (value->isa<ValueSequence>()) {
     const auto &value_seq = value->cast<ValueSequencePtr>()->value();
