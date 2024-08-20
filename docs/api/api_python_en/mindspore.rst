@@ -93,237 +93,344 @@ DataType
 
   * **Type conversion rules**
 
-    When some inputs of an operator are required to have the same target type, type promotion will be automatically performed according to the type conversion rules.
+    When some inputs of an operator are required to have the same target type, type promotion will be automatically performed according to the type conversion rules. If these inputs have types of different sizes and categories (where ``complex > float > int > bool`` ), they will be promoted a type with sufficient size and category.
 
-    Based on the input types ``Input1`` and ``Input2``, the output type ``Output`` will be obtained. In the same way, when the input types are ``Input2`` and ``Input1``, the output type ``Output`` will also be obtained.
+    For the type conversion rules between Tensor and Tensor, please refer to the following table. The first row and the first column in the table both represent the types of the input ``Tensor``, and the corresponding position in the table represents the type of the output ``Tensor``. ``-`` indicates that no type promotion will be performed.
 
-    For the type conversion rules between Tensor and Tensor, please refer to the following table.
+    For convenience of description, ``bool_`` is used in the table to refer to ``mindspore.bool_``, ``int8`` is used to refer to ``mindspore.int8``, and so on.
 
-    +------------------------------+----------------------------------+----------------------------------+
-    | Input1 (Tensor)              |  Input2 (Tensor)                 |  Output (Tensor)                 |
-    +==============================+==================================+==================================+
-    | ``mindspore.bool_``          |  ``mindspore.int8``              |  ``mindspore.int8``              |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.int16``             |  ``mindspore.int16``             |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.int32``             |  ``mindspore.int32``             |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.int64``             |  ``mindspore.int64``             |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.uint8``             |  ``mindspore.uint8``             |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.uint16``            |  ``mindspore.uint16``            |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.uint32``            |  ``mindspore.uint32``            |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.uint64``            |  ``mindspore.uint64``            |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.float16``           |  ``mindspore.float16``           |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.bfloat16``          |  ``mindspore.bfloat16``          |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.float32``           |  ``mindspore.float32``           |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.float64``           |  ``mindspore.float64``           |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.complex64``         |  ``mindspore.complex64``         |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.complex128``        |  ``mindspore.complex128``        |
-    +------------------------------+----------------------------------+----------------------------------+
-    | ``mindspore.int8``           |  ``mindspore.int16``             |  mindspore.int16``               |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.int32``             |  ``mindspore.int32``             |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.int64``             |  ``mindspore.int64``             |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.uint8``             |  ``mindspore.int16``             |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.float16``           |  ``mindspore.float16``           |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.bfloat16``          |  ``mindspore.bfloat16``          |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.float32``           |  ``mindspore.float32``           |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.float64``           |  ``mindspore.float64``           |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.complex64``         |  ``mindspore.complex64``         |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.complex128``        |  ``mindspore.complex128``        |
-    +------------------------------+----------------------------------+----------------------------------+
-    | ``mindspore.int16``          |  ``mindspore.int32``             |  ``mindspore.int32``             |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.int64``             |  ``mindspore.int64``             |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.uint8``             |  ``mindspore.int16``             |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.float16``           |  ``mindspore.float16``           |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.bfloat16``          |  ``mindspore.bfloat16``          |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.float32``           |  ``mindspore.float32``           |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.float64``           |  ``mindspore.float64``           |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.complex64``         |  ``mindspore.complex64``         |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.complex128``        |  ``mindspore.complex128``        |
-    +------------------------------+----------------------------------+----------------------------------+
-    | ``mindspore.int32``          |  ``mindspore.int64``             |  ``mindspore.int64``             |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.uint8``             |  ``mindspore.int32``             |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.float16``           |  ``mindspore.float16``           |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.bfloat16``          |  ``mindspore.bfloat16``          |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.float32``           |  ``mindspore.float32``           |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.float64``           |  ``mindspore.float64``           |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.complex64``         |  ``mindspore.complex64``         |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.complex128``        |  ``mindspore.complex128``        |
-    +------------------------------+----------------------------------+----------------------------------+
-    | ``mindspore.int64``          |  ``mindspore.uint8``             |  ``mindspore.int64``             |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.float16``           |  ``mindspore.float16``           |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.bfloat16``          |  ``mindspore.bfloat16``          |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.float32``           |  ``mindspore.float32``           |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.float64``           |  ``mindspore.float64``           |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.complex64``         |  ``mindspore.complex64``         |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.complex128``        |  ``mindspore.complex128``        |
-    +------------------------------+----------------------------------+----------------------------------+
-    | ``mindspore.uint8``          |  ``mindspore.float16``           |  ``mindspore.float16``           |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.bfloat16``          |  ``mindspore.bfloat16``          |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.float32``           |  ``mindspore.float32``           |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.float64``           |  ``mindspore.float64``           |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.complex64``         |  ``mindspore.complex64``         |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.complex128``        |  ``mindspore.complex128``        |
-    +------------------------------+----------------------------------+----------------------------------+
-    | ``mindspore.float16``        |  ``mindspore.bfloat16``          |  ``mindspore.float32``           |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.float32``           |  ``mindspore.float32``           |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.float64``           |  ``mindspore.float64``           |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.complex64``         |  ``mindspore.complex64``         |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.complex128``        |  ``mindspore.complex128``        |
-    +------------------------------+----------------------------------+----------------------------------+
-    | ``mindspore.bfloat16``       |  ``mindspore.float32``           |  ``mindspore.float32``           |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.float64``           |  ``mindspore.float64``           |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.complex64``         |  ``mindspore.complex64``         |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.complex128``        |  ``mindspore.complex128``        |
-    +------------------------------+----------------------------------+----------------------------------+
-    | ``mindspore.float32``        |  ``mindspore.float64``           |  ``mindspore.float64``           |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.complex64``         |  ``mindspore.complex64``         |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.complex128``        |  ``mindspore.complex128``        |
-    +------------------------------+----------------------------------+----------------------------------+
-    | ``mindspore.float64``        |  ``mindspore.complex64``         |  ``mindspore.complex128``        |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.complex128``        |  ``mindspore.complex128``        |
-    +------------------------------+----------------------------------+----------------------------------+
-    | ``mindspore.complex64``      |  ``mindspore.complex128``        |  ``mindspore.complex128``        |
-    +------------------------------+----------------------------------+----------------------------------+
+    .. list-table::
+        :widths: 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20
+        :header-rows: 1
 
-    For the type conversion rules between Number and Tensor, please refer to the following table. Number includes ``bool`` (True/False), ``int`` (such as 1), ``float`` (such as 1.0).
+        * - Tensor and Tensor
+          - **bool_**
+          - **int8**
+          - **int16**
+          - **int32**
+          - **int64**
+          - **uint8**
+          - **uint16**
+          - **uint32**
+          - **uint64**
+          - **float16**
+          - **bfloat16**
+          - **float32**
+          - **float64**
+          - **complex64**
+          - **complex128**
+        * - **bool_**
+          - ``bool_``
+          - ``int8``
+          - ``int16``
+          - ``int32``
+          - ``int64``
+          - ``uint8``
+          - ``uint16``
+          - ``uint32``
+          - ``uint64``
+          - ``float16``
+          - ``bfloat16``
+          - ``float32``
+          - ``float64``
+          - ``complex64``
+          - ``complex128``
+        * - **int8**
+          - ``int8``
+          - ``int8``
+          - ``int16``
+          - ``int32``
+          - ``int64``
+          - ``int16``
+          - ``-``
+          - ``-``
+          - ``-``
+          - ``float16``
+          - ``bfloat16``
+          - ``float32``
+          - ``float64``
+          - ``complex64``
+          - ``complex128``
+        * - **int16**
+          - ``int16``
+          - ``int16``
+          - ``int16``
+          - ``int32``
+          - ``int64``
+          - ``int16``
+          - ``-``
+          - ``-``
+          - ``-``
+          - ``float16``
+          - ``bfloat16``
+          - ``float32``
+          - ``float64``
+          - ``complex64``
+          - ``complex128``
+        * - **int32**
+          - ``int32``
+          - ``int32``
+          - ``int32``
+          - ``int32``
+          - ``int64``
+          - ``int32``
+          - ``-``
+          - ``-``
+          - ``-``
+          - ``float16``
+          - ``bfloat16``
+          - ``float32``
+          - ``float64``
+          - ``complex64``
+          - ``complex128``
+        * - **int64**
+          - ``int64``
+          - ``int64``
+          - ``int64``
+          - ``int64``
+          - ``int64``
+          - ``int64``
+          - ``-``
+          - ``-``
+          - ``-``
+          - ``float16``
+          - ``bfloat16``
+          - ``float32``
+          - ``float64``
+          - ``complex64``
+          - ``complex128``
+        * - **uint8**
+          - ``uint8``
+          - ``int16``
+          - ``int16``
+          - ``int32``
+          - ``int64``
+          - ``uint8``
+          - ``-``
+          - ``-``
+          - ``-``
+          - ``float16``
+          - ``bfloat16``
+          - ``float32``
+          - ``float64``
+          - ``complex64``
+          - ``complex128``
+        * - **uint16**
+          - ``uint16``
+          - ``-``
+          - ``-``
+          - ``-``
+          - ``-``
+          - ``-``
+          - ``uint16``
+          - ``-``
+          - ``-``
+          - ``-``
+          - ``-``
+          - ``-``
+          - ``-``
+          - ``-``
+          - ``-``
+        * - **uint32**
+          - ``uint32``
+          - ``-``
+          - ``-``
+          - ``-``
+          - ``-``
+          - ``-``
+          - ``-``
+          - ``uint32``
+          - ``-``
+          - ``-``
+          - ``-``
+          - ``-``
+          - ``-``
+          - ``-``
+          - ``-``
+        * - **uint64**
+          - ``uint64``
+          - ``-``
+          - ``-``
+          - ``-``
+          - ``-``
+          - ``-``
+          - ``-``
+          - ``-``
+          - ``uint64``
+          - ``-``
+          - ``-``
+          - ``-``
+          - ``-``
+          - ``-``
+          - ``-``
+        * - **float16**
+          - ``float16``
+          - ``float16``
+          - ``float16``
+          - ``float16``
+          - ``float16``
+          - ``float16``
+          - ``-``
+          - ``-``
+          - ``-``
+          - ``float16``
+          - ``float32``
+          - ``float32``
+          - ``float64``
+          - ``complex64``
+          - ``complex128``
+        * - **bfloat16**
+          - ``bfloat16``
+          - ``bfloat16``
+          - ``bfloat16``
+          - ``bfloat16``
+          - ``bfloat16``
+          - ``bfloat16``
+          - ``-``
+          - ``-``
+          - ``-``
+          - ``float32``
+          - ``bfloat16``
+          - ``float32``
+          - ``float64``
+          - ``complex64``
+          - ``complex128``
+        * - **float32**
+          - ``float32``
+          - ``float32``
+          - ``float32``
+          - ``float32``
+          - ``float32``
+          - ``float32``
+          - ``-``
+          - ``-``
+          - ``-``
+          - ``float32``
+          - ``float32``
+          - ``float32``
+          - ``float64``
+          - ``complex64``
+          - ``complex128``
+        * - **float64**
+          - ``float64``
+          - ``float64``
+          - ``float64``
+          - ``float64``
+          - ``float64``
+          - ``float64``
+          - ``-``
+          - ``-``
+          - ``-``
+          - ``float64``
+          - ``float64``
+          - ``float64``
+          - ``float64``
+          - ``complex128``
+          - ``complex128``
+        * - **complex64**
+          - ``complex64``
+          - ``complex64``
+          - ``complex64``
+          - ``complex64``
+          - ``complex64``
+          - ``complex64``
+          - ``-``
+          - ``-``
+          - ``-``
+          - ``complex64``
+          - ``complex64``
+          - ``complex64``
+          - ``complex128``
+          - ``complex64``
+          - ``complex128``
+        * - **complex128**
+          - ``complex128``
+          - ``complex128``
+          - ``complex128``
+          - ``complex128``
+          - ``complex128``
+          - ``complex128``
+          - ``-``
+          - ``-``
+          - ``-``
+          - ``complex128``
+          - ``complex128``
+          - ``complex128``
+          - ``complex128``
+          - ``complex128``
+          - ``complex128``
 
-    +------------------------------+----------------------------------+----------------------------------+
-    | Input1 (Number)              |  Input2 (Tensor)                 |  Output (Tensor)                 |
-    +==============================+==================================+==================================+
-    | ``bool``                     |  ``mindspore.bool_``             |  ``mindspore.bool_``             |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.int8``              |  ``mindspore.int8``              |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.int16``             |  ``mindspore.int16``             |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.int32``             |  ``mindspore.int32``             |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.int64``             |  ``mindspore.int64``             |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.uint8``             |  ``mindspore.uint8``             |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.uint16``            |  ``mindspore.uint16``            |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.uint32``            |  ``mindspore.uint32``            |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.uint64``            |  ``mindspore.uint64``            |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.float16``           |  ``mindspore.float16``           |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.bfloat16``          |  ``mindspore.bfloat16``          |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.float32``           |  ``mindspore.float32``           |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.float64``           |  ``mindspore.float64``           |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.complex64``         |  ``mindspore.complex64``         |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.complex128``        |  ``mindspore.complex128``        |
-    +------------------------------+----------------------------------+----------------------------------+
-    | ``int``                      |  ``mindspore.bool_``             |  ``mindspore.int64``             |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.int8``              |  ``mindspore.int8``              |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.int16``             |  ``mindspore.int16``             |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.int32``             |  ``mindspore.int32``             |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.int64``             |  ``mindspore.int64``             |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.uint8``             |  ``mindspore.uint8``             |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.float16``           |  ``mindspore.float16``           |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.bfloat16``          |  ``mindspore.bfloat16``          |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.float32``           |  ``mindspore.float32``           |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.float64``           |  ``mindspore.float64``           |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.complex64``         |  ``mindspore.complex64``         |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.complex128``        |  ``mindspore.complex128``        |
-    +------------------------------+----------------------------------+----------------------------------+
-    | ``float``                    |  ``mindspore.bool_``             |  ``mindspore.float32``           |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.int8``              |  ``mindspore.float32``           |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.int16``             |  ``mindspore.float32``           |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.int32``             |  ``mindspore.float32``           |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.int64``             |  ``mindspore.float32``           |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.uint8``             |  ``mindspore.float32``           |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.float16``           |  ``mindspore.float16``           |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.bfloat16``          |  ``mindspore.bfloat16``          |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.float32``           |  ``mindspore.float32``           |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.float64``           |  ``mindspore.float64``           |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.complex64``         |  ``mindspore.complex64``         |
-    |                              +----------------------------------+----------------------------------+
-    |                              |  ``mindspore.complex128``        |  ``mindspore.complex128``        |
-    +------------------------------+----------------------------------+----------------------------------+
+
+    For the type conversion rules between Number and Tensor, please refer to the following table. The first row in the table indicates the type of the input ``Number``, and the first column indicates the types of input ``Tensor``. The corresponding position in the table represents the type of the output ``Tensor``. ``-`` indicates that no type promotion will be performed.
+
+    .. list-table::
+        :widths: 20 20 20 20
+        :header-rows: 1
+
+        * - Number and Tensor
+          - **bool**
+          - **int**
+          - **float**
+        * - **bool_**
+          - ``bool_``
+          - ``int64``
+          - ``float32``
+        * - **int8**
+          - ``int8``
+          - ``int8``
+          - ``float32``
+        * - **int16**
+          - ``int16``
+          - ``int16``
+          - ``float32``
+        * - **int32**
+          - ``int32``
+          - ``int32``
+          - ``float32``
+        * - **int64**
+          - ``int64``
+          - ``int64``
+          - ``float32``
+        * - **uint8**
+          - ``uint8``
+          - ``uint8``
+          - ``float32``
+        * - **uint16**
+          - ``uint16``
+          - ``-``
+          - ``-``
+        * - **uint32**
+          - ``uint32``
+          - ``-``
+          - ``-``
+        * - **uint64**
+          - ``uint64``
+          - ``-``
+          - ``-``
+        * - **float16**
+          - ``float16``
+          - ``float16``
+          - ``float16``
+        * - **bfloat16**
+          - ``bfloat16``
+          - ``bfloat16``
+          - ``bfloat16``
+        * - **float32**
+          - ``float32``
+          - ``float32``
+          - ``float32``
+        * - **float64**
+          - ``float64``
+          - ``float64``
+          - ``float64``
+        * - **complex64**
+          - ``complex64``
+          - ``complex64``
+          - ``complex64``
+        * - **complex128**
+          - ``complex128``
+          - ``complex128``
+          - ``complex128``
 
 .. class:: mindspore.common.np_dtype
 
