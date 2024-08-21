@@ -36,7 +36,6 @@ BaseShapePtr ScalarToTensorFuncImpl::InferShape(const PrimitivePtr &primitive,
 
 TypePtr ScalarToTensorFuncImpl::InferType(const PrimitivePtr &primitive,
                                           const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
   auto op_name = primitive->name();
   const int64_t input_len = 2;
   (void)CheckAndConvertUtils::CheckInteger("input number", SizeToLong(input_args.size()), kGreaterEqual, input_len,

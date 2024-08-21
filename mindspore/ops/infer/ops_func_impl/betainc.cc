@@ -74,7 +74,7 @@ TypePtr BetaincFuncImpl::InferType(const PrimitivePtr &primitive,
   (void)args_type.emplace("b", b_type);
   (void)args_type.emplace("x", x_type);
   (void)CheckAndConvertUtils::CheckTensorTypeSame(args_type, valid_types, primitive->name());
-  return a_type->Clone();
+  return a_type;
 }
 }  // namespace ops
 }  // namespace mindspore

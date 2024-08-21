@@ -23,7 +23,6 @@ namespace ops {
 class OnesFrontendFuncImpl : public OpFrontendFuncImpl {
  public:
   ValuePtr InferValue(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override {
-    MS_EXCEPTION_IF_NULL(primitive);
     auto shape_value = GetArrayValue<int64_t>(input_args[kInputIndex0]);
     if (!shape_value.has_value() || shape_value.value().HasUnknownValue()) {
       return nullptr;
@@ -33,9 +32,8 @@ class OnesFrontendFuncImpl : public OpFrontendFuncImpl {
       MS_LOG(EXCEPTION) << "For '" << primitive->name() << "', the output elements num can not larger than " << INT_MAX
                         << "(INT_MAX), but got " << SizeOf(out_shape);
     }
-    TypePtr out_type;
+    TypePtr out_type = nullptr;
     auto dtype_type = input_args[kInputIndex1]->GetType();
-    MS_EXCEPTION_IF_NULL(dtype_type);
     if (dtype_type->isa<TypeNone>()) {
       out_type = kFloat32;
     } else {
@@ -44,7 +42,6 @@ class OnesFrontendFuncImpl : public OpFrontendFuncImpl {
       auto val = GetValue<int64_t>(dtype_ptr);
       out_type = TypeIdToType(static_cast<TypeId>(val));
     }
-    MS_EXCEPTION_IF_NULL(out_type);
     return TensorConstructUtils::CreateOnesTensor(out_type, out_shape);
   }
 };

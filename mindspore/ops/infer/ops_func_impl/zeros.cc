@@ -51,7 +51,6 @@ BaseShapePtr ZerosFuncImpl::InferShape(const PrimitivePtr &primitive,
 TypePtr ZerosFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
   auto prim_name = primitive->name();
   auto dtype_type = input_args[kInputIndex1]->GetType();
-  MS_EXCEPTION_IF_NULL(dtype_type);
   if (dtype_type->isa<TypeNone>()) {
     return kFloat32;
   }

@@ -102,7 +102,6 @@ class RealDivFrontendFuncImpl : public OpFrontendFuncImpl {
     auto data_size = x_tensor->DataSize();
     auto type_id = x_tensor->data_type();
     auto result_tensor = std::make_shared<tensor::Tensor>(type_id, x_shape);
-    MS_EXCEPTION_IF_NULL(result_tensor);
     auto result_datac = result_tensor->data_c();
     auto iter = func_map.find(type_id);
     if (iter != func_map.end()) {

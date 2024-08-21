@@ -120,7 +120,7 @@ BaseShapePtr ScatterNdFuncImpl::InferShape(const PrimitivePtr &prim,
       if (shape_tuple.IsValueUnknown(i)) {
         output_shape.emplace_back(abstract::Shape::kShapeDimAny);
       } else {
-        if (!(shape_tuple[i] > 0)) {
+        if (shape_tuple[i] <= 0) {
           MS_EXCEPTION(ValueError) << "For 'ScatterNd', the input [shape] should be a tuple with all positive item. "
                                       "But got: "
                                    << shape_tuple.ToString();
@@ -154,7 +154,7 @@ TypePtr ScatterNdFuncImpl::InferType(const PrimitivePtr &prim, const std::vector
   MS_EXCEPTION_IF_NULL(input_args[kInputIndex1]);
   MS_EXCEPTION_IF_NULL(input_args[kInputIndex1]->GetType());
   auto dtype = input_args[kInputIndex1]->GetType();
-  return dtype->Clone();
+  return dtype;
 }
 }  // namespace ops
 }  // namespace mindspore

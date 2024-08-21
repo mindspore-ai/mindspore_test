@@ -66,7 +66,7 @@ bool OnesGpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
       cudaMemcpyAsync(dev_value, &host_value, sizeof(T), cudaMemcpyHostToDevice, cuda_stream_),
       "Memcpy slice data from host to device failed.");
   }
-  auto status = FillV2(outputs[kIndex0]->size(), dev_value, output_ptr, device_id_, cuda_stream_);
+  auto status = FillV2(outputs[kIndex0]->size() / sizeof(T), dev_value, output_ptr, device_id_, cuda_stream_);
   CHECK_CUDA_STATUS(status, kernel_name_);
   CHECK_CUDA_RET_WITH_EXCEPT_NOTRACE(cudaFree(dev_value), "Free slice data failed.");
   return true;

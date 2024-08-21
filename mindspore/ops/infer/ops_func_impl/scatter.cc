@@ -37,7 +37,7 @@ TypePtr ScatterFuncImpl::InferType(const PrimitivePtr &primitive,
   (void)types.emplace("src", src_type);
   (void)CheckAndConvertUtils::CheckTypeSame(types, primitive->name());
 
-  return input_args[kIndex0]->GetType()->Clone();
+  return input_args[kIndex0]->GetType();
 }
 }  // namespace ops
 }  // namespace mindspore

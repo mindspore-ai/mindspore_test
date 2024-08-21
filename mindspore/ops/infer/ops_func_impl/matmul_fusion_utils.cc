@@ -20,7 +20,6 @@ namespace mindspore {
 namespace ops {
 BaseShapePtr MatmulFusionUtils::InferenceMultiMatmulInferShape(const PrimitivePtr &primitive,
                                                                const std::vector<AbstractBasePtr> &input_args) {
-  MS_EXCEPTION_IF_NULL(primitive);
   auto op_name = primitive->name();
   auto x_shape = CheckAndConvertUtils::ConvertShapePtrToShapeMap(input_args[kInputIndex0]->GetShape())[kShape];
   auto w_shape = CheckAndConvertUtils::ConvertShapePtrToShapeMap(input_args[kInputIndex1]->GetShape())[kShape];
@@ -52,13 +51,13 @@ BaseShapePtr MatmulFusionUtils::InferenceMultiMatmulInferShape(const PrimitivePt
     (n_len_list.size() == kSize2 || n_len_list.size() == kSize3),
     CheckAndConvertUtils::FormatCommMsg("For '" + primitive->name() + "', attr 'n_lens' must have 2 or 3 value."));
 
-  ShapeVector output_0_shape = {b, s, n_len_list[0]};
-  ShapeVector output_1_shape = {b, s, n_len_list[1]};
+  ShapeVector output_0_shape = {b, s, n_len_list[kIndex0]};
+  ShapeVector output_1_shape = {b, s, n_len_list[kIndex1]};
   std::vector<BaseShapePtr> shape_lists;
   (void)shape_lists.emplace_back(std::make_shared<abstract::TensorShape>(output_0_shape));
   (void)shape_lists.emplace_back(std::make_shared<abstract::TensorShape>(output_1_shape));
   if (n_len_list.size() == kSize3) {
-    ShapeVector output_2_shape = {b, s, n_len_list[2]};
+    ShapeVector output_2_shape = {b, s, n_len_list[kIndex2]};
     (void)shape_lists.emplace_back(std::make_shared<abstract::TensorShape>(output_2_shape));
   }
   return std::make_shared<abstract::TupleShape>(shape_lists);
@@ -66,7 +65,6 @@ BaseShapePtr MatmulFusionUtils::InferenceMultiMatmulInferShape(const PrimitivePt
 
 TuplePtr MatmulFusionUtils::InferenceMultiMatmulInferType(const PrimitivePtr &primitive,
                                                           const std::vector<AbstractBasePtr> &input_args) {
-  MS_EXCEPTION_IF_NULL(primitive);
   auto x_type = input_args[kInputIndex0]->GetType();
   if (x_type == kInt8 && input_args[kInputIndex1]->GetType() == kInt8) {
     x_type = kFloat16;

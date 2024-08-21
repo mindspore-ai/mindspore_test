@@ -27,7 +27,7 @@ TypePtr OnesLikeExtFuncImpl::InferType(const PrimitivePtr &primitive,
   auto prim_name = primitive->name();
   auto dtype_type = input_args[kInputIndex1]->GetType();
   if (dtype_type->isa<TypeNone>()) {
-    return input_args[kInputIndex0]->GetType()->Clone();
+    return input_args[kInputIndex0]->GetType();
   }
   auto dtype_ptr = input_args[kInputIndex1]->GetValue();
   if (!dtype_ptr->isa<Int64Imm>()) {

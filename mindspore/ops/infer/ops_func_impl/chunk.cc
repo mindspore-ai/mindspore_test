@@ -29,7 +29,10 @@ int64_t GetChunksNum(const ValuePtr &chunks_value, const std::string &prim_name)
   if (MS_UNLIKELY(!chunks_opt.has_value())) {
     MS_LOG(EXCEPTION) << "For " << prim_name << ", the chunk is a unknown variable, which is not supported now.";
   }
-  return chunks_opt.value();
+  int64_t chunks = chunks_opt.value();
+  MS_EXCEPTION_IF_CHECK_FAIL(
+    chunks > 0, "For Chunk, the value of [chunks] must be greater than 0, but got: " + std::to_string(chunks));
+  return chunks;
 }
 
 int64_t GetInputTensorRank(const ShapeVector &input_shape, const std::string &prim_name) {
@@ -54,7 +57,6 @@ int64_t GetChunksDim(const ValuePtr &dim_value, const ShapeVector &input_shape, 
 
 BaseShapePtr ChunkFuncImpl::InferShape(const PrimitivePtr &primitive,
                                        const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
   auto prim_name = primitive->name();
   const auto &input_shape_ptr = input_args[kIndex0]->GetShape();
   const auto &input_shape = input_shape_ptr->GetShapeVector();
@@ -106,7 +108,6 @@ BaseShapePtr ChunkFuncImpl::InferShape(const PrimitivePtr &primitive,
 }
 
 TypePtr ChunkFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
   auto prim_name = primitive->name();
   const auto &input_shape_ptr = input_args[kIndex0]->GetShape();
   const auto &input_shape = input_shape_ptr->GetShapeVector();

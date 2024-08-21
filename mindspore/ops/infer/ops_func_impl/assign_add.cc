@@ -51,7 +51,7 @@ BaseShapePtr AssignAddFuncImpl::InferShape(const PrimitivePtr &primitive,
     }
   }
 
-  return variable_shape_ptr->Clone();
+  return variable_shape_ptr;
 }
 
 TypePtr AssignAddFuncImpl::InferType(const PrimitivePtr &primitive,
