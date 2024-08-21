@@ -1015,15 +1015,15 @@ void SetPrimalAttr(CNodePtr *node, const std::string &flash_index, std::string f
 void GetCurrentCommNode(int64_t rank_ring_index, CNodePtr *latest_send_qkv, CNodePtr *latest_recv_qkv,
                         CNodePtr *latest_send_oml, CNodePtr *latest_recv_oml, std::string *comm_order_str, size_t pos,
                         size_t step, size_t inner_step, size_t sp_num, const AnfNodePtr &query_node,
-                        const std::vector<CNodePtr> &send_kv_node, RankList spRankList, const AnfNodePtr &cur_q,
+                        const std::vector<CNodePtr> &send_kv_node, RankList spRankList,
                         const AnfNodePtr &send_softmax_max, const AnfNodePtr &send_softmax_sum,
                         const AnfNodePtr &send_attn_out, const AnfNodePtr &tmp_param, Shape q_shape, Shape kv_shape,
-                        const std::string &flash_index_str) {
+                        const std::string &flash_index_str, AnfNodePtr *cur_q) {
   std::stringstream comm_order;
   if (rank_ring_index % kIndex2 == 0) {  // send first
     auto cur_send_qkv_node = GetCurrentSendQKVNode(pos, step, inner_step, sp_num, query_node, send_kv_node, spRankList,
-                                                   g_device_manager->world_group(), cur_q, q_shape, kv_shape);
-    auto depend_node = (cur_send_qkv_node == nullptr ? cur_q : cur_send_qkv_node);
+                                                   g_device_manager->world_group(), *cur_q, q_shape, kv_shape);
+    auto depend_node = (cur_send_qkv_node == nullptr ? *cur_q : cur_send_qkv_node);
     auto cur_recv_qkv_node = GetCurrentRecvQKVNode(pos, step, inner_step, sp_num, spRankList, q_shape, kv_shape,
                                                    g_device_manager->world_group(), depend_node, tmp_param);
     (*latest_send_qkv) = cur_send_qkv_node;
@@ -1034,7 +1034,7 @@ void GetCurrentCommNode(int64_t rank_ring_index, CNodePtr *latest_send_qkv, CNod
     } else if (cur_send_qkv_node != nullptr) {
       depend_node = cur_send_qkv_node;
     } else {
-      depend_node = cur_q;
+      depend_node = *cur_q;
     }
     auto cur_send_oml_node =
       GetCurrentSendOMLNode(pos, step, inner_step, sp_num, spRankList, send_softmax_max, send_softmax_sum,
@@ -1043,6 +1043,7 @@ void GetCurrentCommNode(int64_t rank_ring_index, CNodePtr *latest_send_qkv, CNod
                                                    g_device_manager->world_group(), depend_node, tmp_param);
     (*latest_recv_oml) = cur_recv_oml_node;
     (*latest_send_oml) = cur_send_oml_node;
+    *cur_q = CreateDepends(*cur_q, {cur_send_qkv_node, cur_recv_qkv_node, cur_send_oml_node, cur_recv_oml_node});
     if (cur_send_qkv_node != nullptr) {
       comm_order << "0_";
     }
@@ -1057,8 +1058,8 @@ void GetCurrentCommNode(int64_t rank_ring_index, CNodePtr *latest_send_qkv, CNod
     }
   } else {  // recv first
     auto cur_recv_qkv_node = GetCurrentRecvQKVNode(pos, step, inner_step, sp_num, spRankList, q_shape, kv_shape,
-                                                   g_device_manager->world_group(), cur_q, tmp_param);
-    auto depend_node = (cur_recv_qkv_node == nullptr ? cur_q : cur_recv_qkv_node);
+                                                   g_device_manager->world_group(), *cur_q, tmp_param);
+    auto depend_node = (cur_recv_qkv_node == nullptr ? *cur_q : cur_recv_qkv_node);
     auto cur_send_qkv_node = GetCurrentSendQKVNode(pos, step, inner_step, sp_num, query_node, send_kv_node, spRankList,
                                                    g_device_manager->world_group(), depend_node, q_shape, kv_shape);
     (*latest_send_qkv) = cur_send_qkv_node;
@@ -1069,7 +1070,7 @@ void GetCurrentCommNode(int64_t rank_ring_index, CNodePtr *latest_send_qkv, CNod
     } else if (cur_recv_qkv_node != nullptr) {
       depend_node = cur_recv_qkv_node;
     } else {
-      depend_node = cur_q;
+      depend_node = *cur_q;
     }
     auto cur_send_oml_node =
       GetCurrentSendOMLNode(pos, step, inner_step, sp_num, spRankList, send_softmax_max, send_softmax_sum,
@@ -1078,6 +1079,7 @@ void GetCurrentCommNode(int64_t rank_ring_index, CNodePtr *latest_send_qkv, CNod
                                                    g_device_manager->world_group(), depend_node, tmp_param);
     (*latest_send_oml) = cur_send_oml_node;
     (*latest_recv_oml) = cur_recv_oml_node;
+    *cur_q = CreateDepends(*cur_q, {cur_recv_qkv_node, cur_send_qkv_node, cur_send_oml_node, cur_recv_oml_node});
     if (cur_recv_qkv_node != nullptr) {
       comm_order << "1_";
     }
@@ -1221,6 +1223,16 @@ CNodePtr CreateReplaceFlashSPGraph(const FuncGraphManagerPtr &manager,
         cur_q = CreateDepend(cur_q, tmp_param);
       }
 
+      std::string comm_order_str;
+      std::string ss_result = GetFlashIndexString(fa_index, actual_step);
+      GetCurrentCommNode(rank_ring_index, &latest_send_qkv, &latest_recv_qkv, &latest_send_oml, &latest_recv_oml,
+                         &comm_order_str, pos, step, inner_step, sp_num, query_node, send_kv_node, spRankList,
+                         send_softmax_max, send_softmax_sum, send_attn_out, tmp_param, q_shape, kv_shape, ss_result,
+                         &cur_q);
+      if (latest_recv_qkv != nullptr) {
+        recv_qkv_tensor = latest_recv_qkv;
+      }
+
       fa_inputs[ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputQueryIndex] = cur_q;
       fa_inputs[ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputKeyIndex] = cur_k;
       fa_inputs[ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputValueIndex] = cur_v;
@@ -1229,22 +1241,13 @@ CNodePtr CreateReplaceFlashSPGraph(const FuncGraphManagerPtr &manager,
       fa_inputs[ops::FlashAttentionScoreInputIndex::kFlashAttentionScoreInputAttnMaskIndex] = cur_attn_mask;
       local_fa_node = NewFlashAttentionScoreNode(fa_inputs, fa_index, actual_step, true);
       common::AnfAlgo::CopyNodeAttrs(fa_score_node, local_fa_node);
+      local_fa_node->AddPrimalAttr("comm_order", MakeValue<std::string>(comm_order_str));
+      local_fa_node->AddPrimalAttr("sp_num", MakeValue<int64_t>(sp_num));
       latest_fa_op = local_fa_node;
+
       auto cur_softmax_max = NewTupleGetItemNode(local_fa_node, kIndex0);
       auto cur_softmax_sum = NewTupleGetItemNode(local_fa_node, kIndex1);
       auto cur_attn_out = NewTupleGetItemNode(local_fa_node, kIndex3);
-
-      std::string comm_order_str;
-      std::string ss_result = GetFlashIndexString(fa_index, actual_step);
-      GetCurrentCommNode(rank_ring_index, &latest_send_qkv, &latest_recv_qkv, &latest_send_oml, &latest_recv_oml,
-                         &comm_order_str, pos, step, inner_step, sp_num, query_node, send_kv_node, spRankList, cur_q,
-                         send_softmax_max, send_softmax_sum, send_attn_out, tmp_param, q_shape, kv_shape, ss_result);
-      local_fa_node->AddPrimalAttr("comm_order", MakeValue<std::string>(comm_order_str));
-      local_fa_node->AddPrimalAttr("sp_num", MakeValue<int64_t>(sp_num));
-
-      if (latest_recv_qkv != nullptr) {
-        recv_qkv_tensor = latest_recv_qkv;
-      }
       HandleFAResult(actual_step, &acc_attention, &history_max, &history_sum, &cur_attn_out, &cur_softmax_max,
                      &cur_softmax_sum, &send_softmax_max, &send_softmax_sum, &send_attn_out, &latest_send_oml,
                      &latest_recv_oml, &latest_fa_op, fa_b, fa_s1, fa_n1, fa_h1, fa_index, q_shape, pos, sp_num,
@@ -1372,6 +1375,44 @@ CNodePtr CreateReplaceRingAttentionGraphByAlltoAllV(const FuncGraphManagerPtr &m
   return attention_results;
 }
 
+void CreateCommNodeForRA(const AnfNodePtr &query_node, const AnfNodePtr &value_node, const CNodePtr &last_fa_node,
+                         const CNodePtr &last_send_node, const CNodePtr &last_recv_node,
+                         const AnfNodePtr &tmp_param_node, int64_t pos, int64_t send_rank_id, int64_t recv_rank_id,
+                         int fa_index, TypeId output_type_id, size_t step, const Shape &kv_shape, AnfNodePtr *key_node,
+                         CNodePtr *send_node, CNodePtr *recv_node) {
+  std::vector<AnfNodePtr> kv_nodes = {*key_node, value_node};
+  auto kv_tuple = NewMakeTupleNode(kv_nodes);
+  auto kv_concat_tuple = NewConcatNode(kv_tuple, 0);
+  CNodePtr tmp_param;
+  if (tmp_param_node != nullptr) {
+    tmp_param = NewReluNode(tmp_param_node, kv_concat_tuple);
+  }
+  auto neigh_shape = kv_shape;
+  neigh_shape[kIndex0] = neigh_shape[kIndex0] * kIndex2;
+  if (pos % kIndex2 == kIndex0) {
+    kv_concat_tuple = CreateDepends(kv_concat_tuple, {last_fa_node, last_send_node, last_recv_node});
+    *send_node =
+      NewSendNode(kv_concat_tuple, 0, send_rank_id, neigh_shape, output_type_id, g_device_manager->world_group());
+    auto depend_node = (tmp_param == nullptr ? *send_node : CreateDepend(tmp_param, *send_node));
+    *recv_node =
+      NewReceiveNode(depend_node, 0, recv_rank_id, neigh_shape, output_type_id, g_device_manager->world_group());
+    *key_node = CreateDepends(*key_node, {kv_concat_tuple, *recv_node});
+  } else {
+    auto depend_node = (tmp_param == nullptr
+                          ? query_node
+                          : CreateDepends(tmp_param, {kv_concat_tuple, last_fa_node, last_send_node, last_recv_node}));
+    *recv_node =
+      NewReceiveNode(depend_node, 0, recv_rank_id, neigh_shape, output_type_id, g_device_manager->world_group());
+    *send_node = NewSendNode(CreateDepend(kv_concat_tuple, *recv_node), 0, send_rank_id, neigh_shape, output_type_id,
+                             g_device_manager->world_group());
+    *key_node = CreateDepends(*key_node, {kv_concat_tuple, *send_node});
+  }
+  (*send_node)->AddPrimalAttr(RING_ATTENTION_INDEX, MakeValue<std::string>(GetFlashIndexString(fa_index, step)));
+  (*recv_node)->AddPrimalAttr(RING_ATTENTION_INDEX, MakeValue<std::string>(GetFlashIndexString(fa_index, step)));
+  (*send_node)->AddPrimalAttr(RING_ATTENTION_POS, MakeValue<int64_t>(pos));
+  (*recv_node)->AddPrimalAttr(RING_ATTENTION_POS, MakeValue<int64_t>(pos));
+}
+
 CNodePtr CreateReplaceRingAttentionGraphBySendRecv(const FuncGraphManagerPtr &manager,
                                                    const std::vector<CNodePtr> &origin_nodes_topological,
                                                    const CNodePtr &fa_score_node, FSPInfo *fsp_info, int fa_index,
@@ -1409,31 +1450,31 @@ CNodePtr CreateReplaceRingAttentionGraphBySendRecv(const FuncGraphManagerPtr &ma
   }
   CNodePtr local_fa_node, kv_received_tuple, softmax_max, softmax_sum, softmax_out, attention_output;
   CNodePtr history_max, history_sum, acc_attention, last_fa_node, last_comm_node, send_node, recv_node;
+  CNodePtr last_send_node;
+  CNodePtr last_recv_node;
   AnfNodePtr actual_mask;
   for (size_t i = 0; i < sp_num; ++i) {
     if (i > 0) {
-      last_fa_node = CreateDepends(last_fa_node, {send_node, recv_node});
-      query_node = CreateDepends(query_node, {last_fa_node, send_node, recv_node});
-      recv_node = CreateDepends(recv_node, {last_fa_node, send_node});
-      auto kv_split = NewSplitNode(recv_node, kIndex0, kIndex2);
+      last_recv_node = CreateDepends(last_recv_node, {last_fa_node, last_send_node});
+      auto kv_split = NewSplitNode(last_recv_node, kIndex0, kIndex2);
       key_node = NewTupleGetItemNode(kv_split, kIndex0);
       value_node = NewTupleGetItemNode(kv_split, kIndex1);
     }
-    std::vector<AnfNodePtr> kv_nodes = {key_node, value_node};
-    auto kv_tuple = NewMakeTupleNode(kv_nodes);
-    auto kv_concat = NewConcatNode(kv_tuple, 0);
-    auto kv_concat_tuple = kv_concat;
-    CNodePtr tmp_param;
-    if (i != sp_num - 1 && tmp_param_node != nullptr) {
-      tmp_param = NewReluNode(tmp_param_node, kv_concat_tuple);
-      query_node = CreateDepend(query_node, tmp_param);
+
+    if (i != sp_num - kIndex1) {
+      CreateCommNodeForRA(query_node, value_node, last_fa_node, last_send_node, last_recv_node, tmp_param_node, pos,
+                          send_rank_id, recv_rank_id, fa_index, output_type_id, i, kv_shape, &key_node, &send_node,
+                          &recv_node);
     }
-    query_node = CreateDepend(query_node, kv_concat_tuple);
+
+    key_node = CreateDepends(key_node, {last_fa_node, last_send_node, last_recv_node});
     SetFAInputs(query_node, key_node, value_node, attn_node, operator_info, eod_masks, sp_num, i, pos,
                 Shape{fa_s1, fa_s2}, &fa_inputs);
     local_fa_node = NewFlashAttentionScoreNode(fa_inputs, fa_index, i, false);
     common::AnfAlgo::CopyNodeAttrs(fa_score_node, local_fa_node);
     last_fa_node = local_fa_node;
+    last_send_node = send_node;
+    last_recv_node = recv_node;
 
     softmax_max = NewTupleGetItemNode(local_fa_node, kIndex0);
     softmax_sum = NewTupleGetItemNode(local_fa_node, kIndex1);
@@ -1447,30 +1488,8 @@ CNodePtr CreateReplaceRingAttentionGraphBySendRecv(const FuncGraphManagerPtr &ma
                             fa_b, fa_s1, fa_n1, fa_h1, input_layout, fa_index, i);
       last_fa_node = acc_attention;
     }
-    if (i != sp_num - kIndex1) {
-      auto neigh_shape = kv_shape;
-      neigh_shape[kIndex0] = neigh_shape[kIndex0] * kIndex2;
-      if (pos % kIndex2 == kIndex0) {
-        kv_concat_tuple = CreateDepend(kv_concat_tuple, query_node);
-        send_node =
-          NewSendNode(kv_concat_tuple, 0, send_rank_id, neigh_shape, output_type_id, g_device_manager->world_group());
-        auto depend_node = (tmp_param == nullptr ? send_node : CreateDepend(tmp_param, send_node));
-        recv_node =
-          NewReceiveNode(depend_node, 0, recv_rank_id, neigh_shape, output_type_id, g_device_manager->world_group());
-      } else {
-        auto depend_node = (tmp_param == nullptr ? query_node : CreateDepend(tmp_param, query_node));
-        recv_node =
-          NewReceiveNode(depend_node, 0, recv_rank_id, neigh_shape, output_type_id, g_device_manager->world_group());
-        send_node = NewSendNode(CreateDepend(kv_concat_tuple, recv_node), 0, send_rank_id, neigh_shape, output_type_id,
-                                g_device_manager->world_group());
-      }
-      send_node->AddPrimalAttr(RING_ATTENTION_INDEX, MakeValue<std::string>(GetFlashIndexString(fa_index, i)));
-      recv_node->AddPrimalAttr(RING_ATTENTION_INDEX, MakeValue<std::string>(GetFlashIndexString(fa_index, i)));
-      send_node->AddPrimalAttr(RING_ATTENTION_POS, MakeValue<int64_t>(pos));
-      recv_node->AddPrimalAttr(RING_ATTENTION_POS, MakeValue<int64_t>(pos));
-    }
   }
-  acc_attention = CreateDepends(acc_attention, {send_node, recv_node});
+  acc_attention = CreateDepends(acc_attention, {last_send_node, last_recv_node});
   acc_attention = NewCastNode(acc_attention, output_type_id);
   softmax_out = NewTupleGetItemNode(local_fa_node, kIndex2);
   std::vector<AnfNodePtr> output_tuple = {history_max, history_sum, softmax_out, acc_attention};
