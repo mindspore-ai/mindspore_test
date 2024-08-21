@@ -270,6 +270,9 @@ bool FuncGraphBuilder::CheckGraphOutput(const AbstractBasePtr &abs) {
   if (abs == nullptr) {
     return false;
   }
+  if (abs->isa<abstract::AbstractNamedTuple>()) {
+    return false;
+  }
   if (abs->isa<abstract::AbstractSequence>()) {
     const auto elements = abs->cast<abstract::AbstractSequencePtr>()->elements();
     return std::all_of(elements.begin(), elements.end(),

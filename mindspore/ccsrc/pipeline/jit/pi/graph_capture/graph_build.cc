@@ -1087,7 +1087,12 @@ bool GraphBuilder::DoAttrAccess(const Instr &instr) {
     } else if (cache_result.cache_value_ != nullptr) {
       push(cache_result.cache_value_);
     } else {
-      push(HandleGetattr(o, instr));
+      ValueNode *node = HandleGetattr(o, instr);
+      if (node == nullptr) {
+        graph_->StopTraceAt(cur_bci_, StopTraceReason::kTrace_Fail);
+        return false;
+      }
+      push(node);
       auto attr = DoMixedPrecisionAttrAccess(instr, o, seek(0));
       if (attr) {
         seek(0) = attr;
@@ -2574,6 +2579,18 @@ std::string GetModuleName(const py::object &object) {
     module_name = PyUnicode_AsUTF8(mod);
   }
   return std::string(module_name);
+}
+
+bool HasPyObj(const ValueNode *node) {
+  if (node == nullptr) {
+    MS_LOG(DEBUG) << "ValueNode is null";
+    return false;
+  }
+  if (node->GetVobj() != nullptr && node->GetVobj()->GetPyObject().ptr() != nullptr) {
+    return true;
+  }
+  MS_LOG(DEBUG) << "ValueNode's python object is null, node: " << node->ToString();
+  return false;
 }
 }  // namespace
 
@@ -4883,7 +4900,22 @@ py::object MindGraphBuilder::HandleConstantFoldFunc(const std::vector<py::object
   return py::object();
 }
 
+namespace {
+// Check if it is a scenario of creating namedtuple.
+bool IsMakeNamedtuple(const CallNode *call_node);
+// Check if it is a scenario of getting element from namedtuple.
+bool IsNamedtupleGetElem(const ValueNode *node, const std::string &name);
+// Create AObject for namedtuple.
+AbstractNamedTuple *MakeNamedtupleAObj(const CallNode *call_node);
+// Convert abstract::AbstractTuple to abstract::AbstractNamedTuple.
+abstract::AbstractNamedTuplePtr ConvertToAbstractNamedTuple(const AbstractBasePtr &abstract,
+                                                            const AbstractNamedTuple *namedtuple_aobj);
+}  // namespace
+
 ValueNode *MindGraphBuilder::HandleCallClass(CallNode *call_node) {
+  if (IsMakeNamedtuple(call_node)) {
+    return HandleMakeNamedtuple(call_node);
+  }
   ValueNode *node = GraphBuilder::HandleCallClass(call_node);
   if (node == nullptr) {
     MS_LOG(INFO) << "Failed to handle call class";
@@ -4901,6 +4933,155 @@ ValueNode *MindGraphBuilder::HandleCallClass(CallNode *call_node) {
   }
   return node;
 }
+
+namespace {
+bool IsMakeNamedtuple(const CallNode *call_node) {
+  AObject *callable = call_node->input(0)->GetVobj();
+  if (callable == nullptr || callable->GetType() != AObject::kTypeType) {
+    return false;
+  }
+  auto *abstract_type = static_cast<AbstractType *>(callable);
+  return abstract_type->GetTypeType() == AObject::kTypeNamedTuple;
+}
+}  // namespace
+
+// Do create namedtuple logic. Return node if success, else nullptr.
+ValueNode *MindGraphBuilder::HandleMakeNamedtuple(CallNode *call_node) {
+  MS_LOG(DEBUG) << "Start make namedtuple";
+  AbstractNamedTuple *namedtuple_aobj = MakeNamedtupleAObj(call_node);
+  if (namedtuple_aobj == nullptr) {
+    return nullptr;
+  }
+  AbstractWrapperPtr abs_wrapper = MakeNamedtupleInGraph(call_node, namedtuple_aobj);
+  if (abs_wrapper == nullptr || abs_wrapper->abstract() == nullptr) {
+    return nullptr;
+  }
+  call_node->set_abstract_wrapper(abs_wrapper);
+  call_node->SetVobj(namedtuple_aobj);
+  return call_node;
+}
+
+namespace {
+AbstractNamedTuple *MakeNamedtupleAObj(const CallNode *call_node) {
+  AObject *callable = call_node->input(0)->GetVobj();
+  MS_EXCEPTION_IF_NULL(callable);
+  auto *abstract_type = static_cast<AbstractType *>(callable);
+  // 1.create namedtuple python object
+  const auto &params = call_node->getInputs();
+  if (std::any_of(params.begin() + 1, params.end(), [](auto *node) { return !HasPyObj(node); })) {
+    MS_LOG(INFO) << "Create namedtuple failed, has null argument";
+    return nullptr;
+  }
+  std::vector<py::object> args;
+  std::transform(params.begin() + 1, params.end(), std::back_inserter(args),
+                 [](ValueNode *n) { return n->GetVobj()->GetPyObject(); });
+  py::object namedtuple = abstract_type->BuildInstance(args, call_node->GetOpcode());
+  if (namedtuple.ptr() == nullptr) {
+    MS_LOG(INFO) << "Create namedtuple python object failed";
+    return nullptr;
+  }
+  // 2.create AbstractNamedTuple
+  AObject *aobj = AObject::Convert(namedtuple);
+  if (aobj == nullptr || aobj->GetType() != AObject::kTypeNamedTuple) {
+    MS_LOG(INFO) << "Create AbstractNamedTuple AObject failed";
+    return nullptr;
+  }
+  return static_cast<AbstractNamedTuple *>(aobj);
+}
+}  // namespace
+
+AbstractWrapperPtr MindGraphBuilder::MakeNamedtupleInGraph(const CallNode *call_node,
+                                                           const AbstractNamedTuple *namedtuple_aobj) {
+  // 1.Collect all the tuple elements.
+  std::vector<AbstractWrapperPtr> elems;
+  bool succ = CollectNamedtupleElements(call_node, namedtuple_aobj, &elems);
+  if (!succ) {
+    return nullptr;
+  }
+  // 2.There is no primitive for making namedtuple, so we use MakeTuple to create tuple (not namedtuple) in graph.
+  const AbstractWrapperPtr &abs_wrapper = fg_builder_->AddNode(prim::kPrimMakeTuple, elems);
+  if (abs_wrapper == nullptr || abs_wrapper->abstract() == nullptr) {
+    return nullptr;
+  }
+  // 3.MakeTuple primitive's output is AbstractTuple, we must convert it to AbstractNamedTuple manually.
+  abstract::AbstractNamedTuplePtr new_abs = ConvertToAbstractNamedTuple(abs_wrapper->abstract(), namedtuple_aobj);
+  if (new_abs == nullptr) {
+    return nullptr;
+  }
+  AnfNodePtr node = fg_builder_->ReadLocalVariable(abs_wrapper);
+  MS_EXCEPTION_IF_NULL(node);
+  node->set_abstract(new_abs);
+  AbstractWrapperPtr new_abs_wrapper = std::make_shared<AbstractWrapper>(new_abs);
+  fg_builder_->UpdateNodesMap(new_abs_wrapper, node);
+  return new_abs_wrapper;
+}
+
+bool MindGraphBuilder::CollectNamedtupleElements(const CallNode *call_node, const AbstractNamedTuple *namedtuple_aobj,
+                                                 std::vector<AbstractWrapperPtr> *elems) {
+  // 1.Get the __new__ method of namedtuple
+  PyTypeObject *type_obj = namedtuple_aobj->GetTypeObject();
+  auto type_pyobj = py::reinterpret_borrow<py::object>(reinterpret_cast<PyObject *>(type_obj));
+  py::object new_method = py::getattr(type_pyobj, "__new__");
+  if (new_method.ptr() == nullptr || !PyFunction_Check(new_method.ptr())) {
+    MS_LOG(INFO) << "Failed to get __new__ method from namedtuple " << namedtuple_aobj->type_name();
+    return false;
+  }
+  // 2.Collect ValueNodes of the namedtuple elements
+  std::vector<ValueNode *> element_nodes;
+  ValueNode *cls_node = call_node->getInputs()[0];
+  try {
+    // This method throws an exception when arguments matching fails, so try-catch is required.
+    BindArgumentsHelper<ValueNode *> args_helper =
+      PackInputsForFunc(new_method, call_node->GetOpcode(), call_node->getInputs(), cls_node);
+    // The __new__ method of namedtuple does not have variable-length arguments, so we just ignore va_ and kw_va_.
+    const std::vector<ValueNode *> &args = args_helper.results().args_;
+    // The first argument is cls_node, it is not the data element of namedtuple, so we remove it.
+    (void)std::copy(args.begin() + 1, args.end(), std::back_inserter(element_nodes));
+  } catch (std::exception &e) {
+    MS_LOG(INFO) << "Failed to process __new__ method's arguments. Type name: " << namedtuple_aobj->type_name();
+    return false;
+  }
+  // 3.Convert ValueNode to AbstractWrapper
+  for (ValueNode *node : element_nodes) {
+    if (!node->has_abstract_wrapper()) {
+      // The ValueNode of namedtuple's default argument doesn't have abstract wrapper.
+      const AbstractWrapperPtr &abs_wrapper = fg_builder_->AddLocalVariable(node->GetVobj()->GetPyObject());
+      if (abs_wrapper == nullptr || abs_wrapper->abstract() == nullptr) {
+        return false;
+      }
+      node->set_abstract_wrapper(abs_wrapper);
+    }
+    elems->push_back(node->abstract_wrapper());
+  }
+  return true;
+}
+
+namespace {
+abstract::AbstractNamedTuplePtr ConvertToAbstractNamedTuple(const AbstractBasePtr &abstract,
+                                                            const AbstractNamedTuple *namedtuple_aobj) {
+  MS_EXCEPTION_IF_NULL(abstract);
+  AbstractBasePtrList abstract_keys;
+  for (const std::string &key : namedtuple_aobj->keys()) {
+    ValuePtr converted_key = nullptr;
+    bool succ = parse::ConvertData(py::str(key), &converted_key);
+    if (!succ) {
+      MS_LOG(INFO) << "Failed to convert namedtuple's key to ValuePtr: " << key;
+      return nullptr;
+    }
+    abstract_keys.push_back(converted_key->ToAbstract());
+  }
+
+  auto abstract_tuple = abstract->cast<abstract::AbstractTuplePtr>();
+  MS_EXCEPTION_IF_NULL(abstract_tuple);
+  auto abstract_namedtuple = std::make_shared<abstract::AbstractNamedTuple>(namedtuple_aobj->type_name(), abstract_keys,
+                                                                            abstract_tuple->elements());
+  // The type stored in the user_data will be used to create the namedtuple python object.
+  PyTypeObject *namedtuple_type = namedtuple_aobj->GetTypeObject();
+  auto type = py::reinterpret_borrow<py::object>(reinterpret_cast<PyObject *>(namedtuple_type));
+  abstract_namedtuple->set_user_data(kPijitNamedtupleType, std::make_shared<py::object>(type));
+  return abstract_namedtuple;
+}
+}  // namespace
 
 // Fix dynamic shape tensor get shape issue.
 // Guard and Renormalize strategy should be refactored later.
@@ -4923,6 +5104,9 @@ AbstractWrapperPtr MindGraphBuilder::HandleGetShapeOfDynamicLengthTensor(const A
 }
 
 ValueNode *MindGraphBuilder::HandleGetattr(ValueNode *target_node, const Instr &instr) {
+  if (IsNamedtupleGetElem(target_node, instr.name())) {
+    return HandleNamedtupleGetElem(instr, target_node);
+  }
   auto attr_node = NewValueNode(target_node->get_attr(instr.name()), instr, {target_node});
   MS_EXCEPTION_IF_NULL(attr_node);
   ValueNode *graph_attr_node = nullptr;
@@ -4975,6 +5159,37 @@ ValueNode *MindGraphBuilder::HandleGetattr(ValueNode *target_node, const Instr &
     graph_->GuardValueNode(graph_attr_node, GuardLevel::GDeduce);
   }
   return graph_attr_node;
+}
+
+namespace {
+// Check if it is a scenario of getting element from namedtuple.
+// For example: `Point = namedtuple('Point', ['x', 'y']); p = Point(1, 2)`, only `p.x` or `p.y` is getting element.
+// While `p.index()`, `p.count()`, or any other attributes or methods are not (they should fallback to getattr logic).
+bool IsNamedtupleGetElem(const ValueNode *node, const std::string &name) {
+  if (node != nullptr && node->GetVobj() != nullptr && node->GetVobj()->GetType() == AObject::kTypeNamedTuple) {
+    auto *namedtuple_aobj = static_cast<AbstractNamedTuple *>(node->GetVobj());
+    return namedtuple_aobj->HasKey(name);
+  }
+  return false;
+}
+}  // namespace
+
+ValueNode *MindGraphBuilder::HandleNamedtupleGetElem(const Instr &instr, ValueNode *node) {
+  MS_LOG(DEBUG) << "Do namedtuple getattr '" << instr.name() << "'";
+  // Convert namedtuple's getattr by name to tuple's getitem by index.
+  auto *namedtuple_aobj = static_cast<AbstractNamedTuple *>(node->GetVobj());
+  int idx = namedtuple_aobj->GetIndexOfKey(instr.name());
+  MS_EXCEPTION_IF_CHECK_FAIL(idx >= 0, "Can not find attribute '" + instr.name());
+
+  const AbstractWrapperPtr &abs = FGTupleGetItem(node->abstract_wrapper(), idx);
+
+  if (abs == nullptr || abs->abstract() == nullptr) {
+    MS_LOG(INFO) << "Failed to do namedtuple getitem, idx=" << idx << ", node: " << node->ToString();
+    return nullptr;
+  }
+  ValueNode *ret = NewValueNode(AObject::Convert(abs), instr, {node});
+  ret->set_abstract_wrapper(abs);
+  return ret;
 }
 
 AbstractWrapperPtr MindGraphBuilder::HandleMultiOp(const Instr &instr, const std::vector<ValueNode *> &p,

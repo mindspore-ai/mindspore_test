@@ -110,6 +110,13 @@ def assert_executed_by_graph_mode(func, call_count: int = None):
     if call_count is not None:
         assert jcr['code']['call_count_'] == call_count
 
+def assert_no_graph_break(func, call_count: int = None):
+    jcr = get_code_extra(getattr(func, "__wrapped__", func))
+    assert jcr is not None
+    assert jcr['stat'] == 'GRAPH_CALLABLE'
+    assert jcr['break_count_'] == 0
+    if call_count is not None:
+        assert jcr['code']['call_count_'] == call_count
 
 def pi_jit_with_config(function=None, jit_config=None):
     wrap_func = PIJitCaptureContext(jit_config)

@@ -140,7 +140,6 @@ class GraphAnalyzer {
   bool AnalyzeRecursive(Graph *g);
   bool AnalyzeCall(CallNode *);
   bool TryToCapture(AbstractNode *value);
-  bool HandleSideEffectNodeForCapture(AbstractNode *capture_node);
   bool AddToCaptured(ValueNode *value);
   bool HandleCallableToGraph(AObject *f);
   void CleanCapturedValue();
@@ -164,6 +163,7 @@ class MindGraphAnalyzer : public GraphAnalyzer {
 
  private:
   ValueNode *MutateSequenceNode(ValueNode *node);
+  ValueNode *MutateNamedtupleNode(ValueNode *tuple_node, ValueNode *namedtuple_node);
   std::pair<ValueNode *, ValueNode *> MutateDictNode(ValueNode *node);
   std::map<ValueNode *, std::vector<ValueNode *>> maybe_update_nodes_;
 };
