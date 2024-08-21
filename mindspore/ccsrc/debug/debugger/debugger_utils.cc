@@ -348,6 +348,23 @@ inline std::shared_ptr<TensorData> PrepareStatTensorData(mindspore::tensor::Tens
   return tensor_data;
 }
 
+void DumpTensorToFile(std::string file_path, mindspore::tensor::TensorPtr out_tensor, TypeId host_type,
+                      size_t host_size, ShapeVector host_shape) {
+  if (host_type == kNumberTypeInt4) {
+    auto int8_tensor = std::make_shared<tensor::Tensor>(TypeId::kNumberTypeInt8, host_shape);
+    SplitInt8(out_tensor->data_c(), int8_tensor->data_c(), host_size);
+    DumpJsonParser::DumpToFile(file_path, int8_tensor->data_c(), int8_tensor->Size(), int8_tensor->shape_c(),
+                               static_cast<TypeId>(int8_tensor->data_type_c()));
+  } else if (host_type == TypeId::kNumberTypeBFloat16) {
+    std::shared_ptr<tensor::Tensor> float32_tensor =
+      std::make_shared<tensor::Tensor>(*out_tensor, TypeId::kNumberTypeFloat32);
+    DumpJsonParser::DumpToFile(file_path, float32_tensor->data_c(), float32_tensor->Size(), float32_tensor->shape_c(),
+                               static_cast<TypeId>(float32_tensor->data_type_c()));
+  } else {
+    DumpJsonParser::DumpToFile(file_path, out_tensor->data_c(), host_size, host_shape, host_type);
+  }
+}
+
 void LaunchDumpCallback(const std::vector<TensorInfoForDump> &tensor_info_list, const DeviceContext *device_context,
                         uint32_t stream_id, const TensorInfoCommForDump &tensor_info_comm) {
   bool dump_tensor = DumpJsonParser::GetInstance().IsTensorDump();
@@ -394,14 +411,7 @@ void LaunchDumpCallback(const std::vector<TensorInfoForDump> &tensor_info_list, 
       MS_LOG(DEBUG) << "Callback aclrtmemcpy for " << file_path << ". result is: " << ret_rt_memcpy << file_path;
 
       if (dump_tensor) {
-        if (host_type == kNumberTypeInt4) {
-          auto int8_tensor = std::make_shared<tensor::Tensor>(TypeId::kNumberTypeInt8, host_shape);
-          SplitInt8(out_tensor->data_c(), int8_tensor->data_c(), host_size);
-          DumpJsonParser::DumpToFile(file_path, int8_tensor->data_c(), int8_tensor->Size(), int8_tensor->shape_c(),
-                                     static_cast<TypeId>(int8_tensor->data_type_c()));
-        } else {
-          DumpJsonParser::DumpToFile(file_path, out_tensor->data_c(), host_size, host_shape, host_type);
-        }
+        DumpTensorToFile(file_path, out_tensor, host_type, host_size, host_shape);
       }
 
       if (dump_host_stat) {
