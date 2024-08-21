@@ -3112,7 +3112,7 @@ def softplus(input, beta=1, threshold=20):  # pylint:disable=redefined-outer-nam
         [0.7443967 0.79813886 30. 25.]
     """
     if beta == 0:
-        raise ValueError("The value of 'beta' cannot be 0.")
+        raise ValueError("For 'softplus', the value of 'beta' cannot be 0.")
     scaling_input = beta * input
     op_output = (1 / beta) * softplus_(scaling_input)
     return ops.select(input * beta > threshold, input, op_output)
