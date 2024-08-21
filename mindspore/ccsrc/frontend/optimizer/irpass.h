@@ -95,6 +95,8 @@ class OptimizeIRPassLib {
 
   SubstitutionPtr switch_partial_eliminater_;
   SubstitutionPtr switch_layer_partial_eliminater_;
+  SubstitutionPtr loop_unroll_before_grad_;
+  SubstitutionPtr loop_unroll_after_grad_;
 
   // AddN
   SubstitutionPtr merge_addn_;

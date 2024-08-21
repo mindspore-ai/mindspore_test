@@ -70,6 +70,7 @@
 #include "frontend/optimizer/irpass/const_output_eliminate.h"
 #include "frontend/optimizer/irpass/slice_to_tuple.h"
 #include "frontend/optimizer/irpass/j_node_and_user_rematch.h"
+#include "frontend/optimizer/irpass/loop_unroll.h"
 
 namespace mindspore {
 namespace opt {
@@ -199,6 +200,12 @@ OptimizeIRPassLib::OptimizeIRPassLib() {
     MakeSubstitution(std::make_shared<SwitchPartialEliminater>(), "eliminate_switch_partial_", IsCNodeDup);
   switch_layer_partial_eliminater_ =
     MakeSubstitution(std::make_shared<SwitchLayerPartialEliminater>(), "eliminate_switch_layer_partial_", IsCNodeDup);
+
+  // Loop unroll
+  loop_unroll_before_grad_ =
+    MakeSubstitution(std::make_shared<LoopUnrollBeforeGrad>(), "loop_unroll_before_grad", prim::kPrimScan);
+  loop_unroll_after_grad_ =
+    MakeSubstitution(std::make_shared<LoopUnrollAfterGrad>(), "loop_unroll_after_grad", prim::kPrimScan);
 
   // Addn
   merge_addn_ = MakeSubstitution(std::make_shared<MergeAddN>(), "merge_addn", prim::kPrimAddN);
