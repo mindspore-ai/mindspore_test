@@ -1496,9 +1496,11 @@ CNodePtr KernelGraphMgr::CreateNewCNode(const CNodePtr &cnode, KernelGraph *grap
       (void)GetChildGraph(graph, fn);
     }
   }
+  auto fullname = cnode->fullname_with_scope();
   if (need_control_flow_sink || need_backend_inline) {
     auto new_cnode = CreateNewCNode(cnode, graph);
     MS_EXCEPTION_IF_NULL(new_cnode);
+    new_cnode->set_fullname_with_scope(fullname);
     FlattenTuple(new_cnode);
     if (need_backend_inline) {
       new_cnode->AddPrimalAttr(kAttrNeedInline, MakeValue(true));
@@ -1512,6 +1514,7 @@ CNodePtr KernelGraphMgr::CreateNewCNode(const CNodePtr &cnode, KernelGraph *grap
   GetNewCNodeInputs(cnode, graph, &cnode_inputs, other_graph_cnode);
   TraceGuard trace_guard(std::make_shared<TraceCopy>(cnode->debug_info()));
   auto new_cnode = graph->NewCNodeWithInfos(cnode_inputs, cnode);
+  new_cnode->set_fullname_with_scope(fullname);
   return new_cnode;
 }
 
