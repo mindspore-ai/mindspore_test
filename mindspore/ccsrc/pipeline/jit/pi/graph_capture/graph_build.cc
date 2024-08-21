@@ -4076,8 +4076,6 @@ py::object MindGraphBuilder::ResolveGradCall(CallNode *call_node, StopTraceReaso
   if (forward_fg == nullptr) {
     MS_LOG(INFO) << "Build forward fg failed.";
     return py::object();
-  } else {
-    DumpIR("tmp_forward.ir", forward_fg);
   }
 
   if (py::isinstance<Cell>(forward_net_object)) {
