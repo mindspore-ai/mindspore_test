@@ -744,7 +744,6 @@ AbstractWrapperPtr FuncGraphBuilder::HandleGrad(const AbstractWrapperPtr &key, c
   }
   auto grad_result_node = fg->NewCNodeInOrder(grad_result_node_inputs);
   fg->set_output(grad_result_node);
-  DumpIR("tmp_grad_fg.ir", fg);
   std::vector<AnfNodePtr> final_node_input = {NewValueNode(fg)};
   std::vector<AbstractBasePtr> final_node_abs;
   for (size_t i = 1; i < fake_node_inputs.size(); ++i) {
