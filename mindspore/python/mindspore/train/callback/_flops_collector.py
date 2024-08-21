@@ -65,6 +65,7 @@ class FlopsUtilizationCollector(Callback):
     Raises:
         TypeError: If data_size is not positive int.
         TypeError: If full_flops is not bool.
+        AssertionError: If the training mode is not a static graph or not a static shape.
 
     Examples:
         >>> import numpy as np
