@@ -38,6 +38,8 @@ class NormalFloatFloatAscend : public AclnnKernelMod {
 
   float mean_;
   float std_;
+  int64_t seed_;
+  int64_t offset_;
 };
 }  // namespace kernel
 }  // namespace mindspore

@@ -18,7 +18,9 @@
 #define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_NORMAL_FLOAT_FLOAT_H_
 
 #include <vector>
+#include <set>
 #include "ops/ops_func_impl/op_func_impl.h"
+#include "op_def/op_name.h"
 
 namespace mindspore {
 namespace ops {
@@ -26,6 +28,8 @@ class OPS_API NormalFloatFloatFuncImpl : public OpFuncImpl {
  public:
   BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
   TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
+  // For aclnn GetWorkspace
+  std::set<int64_t> GetValueDependArgIndices() const override { return {kInputIndex3, kInputIndex4}; };
 };
 }  // namespace ops
 }  // namespace mindspore

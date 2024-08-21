@@ -52,8 +52,8 @@ void UniformExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &input
                                         const std::vector<KernelTensor *> &outputs) {
   a_ = GetDoubleFromTensor(inputs[kIndex1]);
   b_ = GetDoubleFromTensor(inputs[kIndex2]);
-  seed_ = 0;
-  offset_ = 0;
+  seed_ = static_cast<uint64_t>(transform::ConvertKernelTensor<int64_t>(inputs[kIndex3]));
+  offset_ = static_cast<uint64_t>(transform::ConvertKernelTensor<int64_t>(inputs[kIndex4]));
 
   GetWorkspaceForResize(inputs[kIndex0], a_, b_, seed_, offset_);
 }
@@ -66,8 +66,6 @@ bool UniformExtAscend::Launch(const std::vector<KernelTensor *> &inputs, const s
   if (status != ACL_ERROR_NONE) {
     MS_LOG(EXCEPTION) << "UniformExtAscend Launch and call rtMemcpyAsync failed, ret = 0x" << status;
   }
-  seed_ = static_cast<uint64_t>(transform::ConvertKernelTensor<int64_t>(inputs[kIndex3]));
-  offset_ = static_cast<uint64_t>(transform::ConvertKernelTensor<int64_t>(inputs[kIndex4]));
   RunOp(stream_ptr, workspace, outputs[kIndex0], a_, b_, seed_, offset_);
   return true;
 }
