@@ -13,12 +13,12 @@
 # limitations under the License.
 # ============================================================================
 """Record profiler information"""
-import json
 import os
 import stat
 
 from mindspore.version import __version__ as ms_version
-from mindspore.profiler.common.validator.validate_path import validate_and_normalize_path
+from mindspore.profiler.parser.ascend_analysis.file_manager import FileManager
+from mindspore import log as logger
 
 
 class ProfilerInfo:
@@ -131,11 +131,29 @@ class ProfilerInfo:
         return ProfilerInfo._profiler_info_dict
 
     @staticmethod
+    def set_profiling_options(profiling_options):
+        """Set profiling options to profiler info dict"""
+        ProfilerInfo._profiler_info_dict["profiling_options"] = profiling_options
+
+    @staticmethod
     def save(output_path):
         """Save the profiler info to file."""
         ProfilerInfo._file_path = os.path.join(output_path, ProfilerInfo._file_name)
-        ProfilerInfo._file_path = validate_and_normalize_path(ProfilerInfo._file_path)
-        with os.fdopen(os.open(ProfilerInfo._file_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600),
-                       'w') as json_file:
-            json.dump(ProfilerInfo._profiler_info_dict, json_file)
+        FileManager.create_json_file(output_path, ProfilerInfo._profiler_info_dict, ProfilerInfo._file_name, indent=4)
+        os.chmod(ProfilerInfo._file_path, stat.S_IREAD | stat.S_IWRITE)
+
+    @staticmethod
+    def load_profiler_info_dict(input_path):
+        """Load the profiler info from input path."""
+        ProfilerInfo._file_path = os.path.join(input_path, ProfilerInfo._file_name)
+        try:
+            load_info_dict = FileManager.read_json_file(ProfilerInfo._file_path)
+        except RuntimeError as err:
+            logger.warning(f"Cannot read file: {ProfilerInfo._file_path}, Error: {err}")
+            return
+        if not load_info_dict:
+            msg = f"Offline analysis failed load the ProfilerInfo._profiler_info_dict from: {ProfilerInfo._file_path}"
+            logger.warning(msg)
+            return
+        ProfilerInfo._profiler_info_dict = load_info_dict
         os.chmod(ProfilerInfo._file_path, stat.S_IREAD | stat.S_IWRITE)
