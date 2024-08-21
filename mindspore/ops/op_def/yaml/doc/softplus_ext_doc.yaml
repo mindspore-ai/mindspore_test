@@ -14,8 +14,8 @@ softplus_ext:
             input (Tensor): Tensor of any dimension. Supported dtypes: 
 
                 - Ascend: float16, float32, bfloat16.
-            beta (number.Number, optional): Scaling parameters in the softplus function. Default: ``1`` .
-            threshold (number.Number, optional): For numerical stability, the softplus function is converted 
+            beta (numbers.Number, optional): Scaling parameters in the softplus function. Default: ``1`` .
+            threshold (numbers.Number, optional): For numerical stability, the softplus function is converted 
                 to a threshold parameter of a linear function. Default: ``20`` .
     
         Returns:

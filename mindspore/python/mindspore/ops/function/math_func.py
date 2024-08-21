@@ -680,8 +680,8 @@ def subtract(input, other, *, alpha=1):
         output[i] = input[i] - alpha * other[i]
 
     Args:
-        input (Union[Tensor, number.Number]): Tensor or Number involved in subtraction.
-        other (Union[Tensor, number.Number]): Tensor or Number involved in subtraction.
+        input (Union[Tensor, numbers.Number]): Tensor or Number involved in subtraction.
+        other (Union[Tensor, numbers.Number]): Tensor or Number involved in subtraction.
 
     Keyword Args:
         alpha (Number): The multiplier for :math:`other`. Default: ``1`` .
@@ -690,7 +690,7 @@ def subtract(input, other, *, alpha=1):
         Tensor, has the same shape and dtype as input tensors.
 
     Raises:
-        TypeError: `input` or `other` is neither Tensor nor number.Number.
+        TypeError: `input` or `other` is neither Tensor nor numbers.Number.
         TypeError: Both `input` and `other` are not Tensor.
 
     Supported Platforms:
@@ -1590,11 +1590,11 @@ def xlogy(input, other):
         - On Ascend, the data type of `input` and `other` must be float16 or float32.
 
     Args:
-        input (Union[Tensor, number.Number, bool]): The first input is a number.Number or
+        input (Union[Tensor, numbers.Number, bool]): The first input is a numbers.Number or
             a bool or a tensor whose data type is
             `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_ or
             `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_.
-        other (Union[Tensor, number.Number, bool]): The second input is a number.Number or
+        other (Union[Tensor, numbers.Number, bool]): The second input is a numbers.Number or
             a bool when the first input is a tensor or a tensor whose data type is number or bool\_.
             When the first input is Scalar, the second input must be a Tensor whose data type is number or bool\_.
 
@@ -1603,7 +1603,7 @@ def xlogy(input, other):
         and the data type is the one with higher precision or higher digits among the two inputs.
 
     Raises:
-        TypeError: If `input` and `other` is not a number.Number or a bool or a Tensor.
+        TypeError: If `input` and `other` is not a numbers.Number or a bool or a Tensor.
         TypeError: If dtype of `input` and `other` is not in [float16, float32, float64, complex64, complex128].
         ValueError: If `input` could not be broadcast to a tensor with shape of `other`.
 
@@ -1641,11 +1641,11 @@ def xlogy_ext(input, other):
     When the inputs are two tensors, the shapes of them could be broadcast.
 
     Args:
-        input (Union[Tensor, number.Number, bool]): The first input is a number.Number or
+        input (Union[Tensor, numbers.Number, bool]): The first input is a numbers.Number or
             a bool or a tensor whose data type is
             `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_ or
             `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_.
-        other (Union[Tensor, number.Number, bool]): The second input is a number.Number or
+        other (Union[Tensor, numbers.Number, bool]): The second input is a numbers.Number or
             a bool or a tensor whose data type is number or bool\_ when the first input is a tensor.
             When the first input is Scalar, the second input must be a Tensor whose data type is number or bool\_.
 
@@ -1654,7 +1654,7 @@ def xlogy_ext(input, other):
         and the data type is the one with higher precision or higher digits among the two inputs.
 
     Raises:
-        TypeError: If `input` and `other` is not a number.Number or a bool or a Tensor.
+        TypeError: If `input` and `other` is not a numbers.Number or a bool or a Tensor.
         ValueError: If `input` could not be broadcast to a tensor with shape of `other`.
 
     Supported Platforms:
@@ -1948,7 +1948,7 @@ def bitwise_and_ext(input, other):
 
     Args:
         input (Tensor): The input tensor.
-        other (Tensor, Number.number): The input tensor or scalar. It has the same shape
+        other (Tensor, numbers.Number): The input tensor or scalar. It has the same shape
             with `input` or its shape is able to broadcast with `input`.
 
     Returns:
@@ -2028,7 +2028,7 @@ def bitwise_or_ext(input, other):
 
     Args:
         input (Tensor): The input tensor.
-        other (Tensor, Number.number): The input tensor or scalar. It has the same shape
+        other (Tensor, numbers.Number): The input tensor or scalar. It has the same shape
             with `input` or its shape is able to broadcast with `input`.
 
     Returns:
@@ -2108,7 +2108,7 @@ def bitwise_xor_ext(input, other):
 
     Args:
         input (Tensor): The input tensor.
-        other (Tensor, Number.number): The input tensor or scalar. It has the same shape
+        other (Tensor, numbers.Number): The input tensor or scalar. It has the same shape
             with `input` or its shape is able to broadcast with `input`.
 
     Returns:
@@ -3232,12 +3232,12 @@ def le(input, other):
         - When the inputs are one tensor and one scalar, the scalar could only be a constant.
 
     Args:
-        input (Union[Tensor, number.Number, bool]): The first input is a number.Number or
+        input (Union[Tensor, numbers.Number, bool]): The first input is a numbers.Number or
             a bool or a tensor whose data type is
             `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_ or
             `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_.
-        other (Union[Tensor, number.Number, bool]): The second input, when the first input is a Tensor,
-            the second input should be a number.Number or bool value, or a Tensor whose data type is number or bool\_.
+        other (Union[Tensor, numbers.Number, bool]): The second input, when the first input is a Tensor,
+            the second input should be a numbers.Number or bool value, or a Tensor whose data type is number or bool\_.
             When the first input is Scalar, the second input must be a Tensor whose data type is number or bool\_.
 
     Returns:
@@ -3282,12 +3282,12 @@ def gt(input, other):
           in another input by copying the value of the dimension.
 
     Args:
-        input (Union[Tensor, number.Number, bool]): The first input is a number.Number or
+        input (Union[Tensor, numbers.Number, bool]): The first input is a numbers.Number or
             a bool or a tensor whose data type is
             `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_ or
             `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_ .
-        other (Union[Tensor, number.Number, bool]): The second input, when the first input is a Tensor,
-            the second input should be a number.Number or bool value, or a Tensor whose data type is number or bool\_.
+        other (Union[Tensor, numbers.Number, bool]): The second input, when the first input is a Tensor,
+            the second input should be a numbers.Number or bool value, or a Tensor whose data type is number or bool\_.
             When the first input is Scalar, the second input must be a Tensor whose data type is number or bool\_.
 
     Returns:
@@ -4465,7 +4465,7 @@ def var(input, axis=None, ddof=0, keepdims=False):
         the supported device is Ascend, GPU and CPU.
 
     Args:
-        input (Tensor[Number]): Input Tensor with a dtype of number.Number, its shape should be :math:`(N, *)`
+        input (Tensor[Number]): Input Tensor with a dtype of numbers.Number, its shape should be :math:`(N, *)`
             where :math:`*` means any number of additional dims.
         axis (Union[int, tuple(int)], optional): The dimensions to reduce. Only constant value is allowed.
             Must be in the range [-rank(`input`), rank(`input`)). Default: ``None`` , reduce all dimensions.
@@ -4523,7 +4523,7 @@ def var_mean(input, axis=None, ddof=0, keepdims=False):
         the supported device is Ascend, GPU and CPU.
 
     Args:
-        input (Tensor[Number]): Input Tensor with a dtype of number.Number, its shape should be :math:`(N, *)`
+        input (Tensor[Number]): Input Tensor with a dtype of numbers.Number, its shape should be :math:`(N, *)`
             where :math:`*` means any number of additional dims.
         axis (Union[int, tuple(int)], optional): The dimensions to reduce. Only constant value is allowed.
             Must be in the range [-rank(`input`), rank(`input`)). Default: ``None`` , reduce all dimensions.
@@ -4596,7 +4596,7 @@ def std(input, axis=None, ddof=0, keepdims=False):
         the supported device is Ascend, GPU and CPU.
 
     Args:
-        input (Tensor[Number]): Input Tensor with a dtype of number.Number, its shape should be :math:`(N, *)`
+        input (Tensor[Number]): Input Tensor with a dtype of numbers.Number, its shape should be :math:`(N, *)`
             where :math:`*` means any number of additional dims.
         axis (Union[int, tuple(int)], optional): The dimensions to reduce. Only constant value is allowed.
             Must be in the range [-rank(`input`), rank(`input`)). Default: ``None`` , reduce all dimensions.
@@ -4654,7 +4654,7 @@ def std_mean(input, axis=None, ddof=0, keepdims=False):
         the supported device is Ascend, GPU and CPU.
 
     Args:
-        input (Tensor[Number]): Input Tensor with a dtype of number.Number, its shape should be :math:`(N, *)`
+        input (Tensor[Number]): Input Tensor with a dtype of numbers.Number, its shape should be :math:`(N, *)`
             where :math:`*` means any number of additional dims.
         axis (Union[int, tuple(int)], optional): Specifies the dimensions from which to calculate the standard
             deviation and mean. Only constant value is allowed. Must be in the range [-rank(`input`), rank(`input`)).
@@ -8880,8 +8880,8 @@ def xdivy(x, y):
         When `x` and `y` are both of datatype complex, they should be both complex64 or complex128 at the same time.
 
     Args:
-        x (Union[Tensor, Number, bool]):  Tensor of datatype number.Number or bool, or it can be a bool or number.
-        y (Union[Tensor, Number, bool]): Tensor of datatype number.Number or bool, or it can be a bool or number.
+        x (Union[Tensor, Number, bool]):  Tensor of datatype numbers.Number or bool, or it can be a bool or number.
+        y (Union[Tensor, Number, bool]): Tensor of datatype numbers.Number or bool, or it can be a bool or number.
             `x` and `y` can not be both bool at the same time.
 
     Returns:

@@ -9,7 +9,7 @@ mindspore.mint.sqrt
         out_{i} = \sqrt{input_{i}}
 
     参数：
-        - **input** (Tensor) - 输入Tensor，数据类型为number.Number。
+        - **input** (Tensor) - 输入Tensor，数据类型为numbers.Number。
 
     返回：
         Tensor，具有与 `input` 相同的shape。

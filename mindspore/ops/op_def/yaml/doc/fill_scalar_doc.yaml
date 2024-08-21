@@ -4,7 +4,7 @@ fill_scalar:
 
         Args:
             size (Union(tuple[int], list[int])): The specified shape of output tensor.
-            fill_value (number.Number): Value to fill the returned tensor. Complex numbers are not supported for now.
+            fill_value (numbers.Number): Value to fill the returned tensor. Complex numbers are not supported for now.
 
         Keyword Args:
             dtype (mindspore.dtype): The specified type of output tensor. `bool_` and `number` are supported, for

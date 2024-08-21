@@ -9,8 +9,8 @@
         output[i] = input[i] - alpha * other[i]
 
     参数：
-        - **input** (Union[Tensor, number.Number]) - 参与减法的Tensor或者Number。
-        - **other** (Union[Tensor, number.Number]) - 参与减法的Tensor或者Number。
+        - **input** (Union[Tensor, numbers.Number]) - 参与减法的Tensor或者Number。
+        - **other** (Union[Tensor, numbers.Number]) - 参与减法的Tensor或者Number。
 
     关键字参数：
         - **alpha** (Number) - :math:`other` 的乘数。默认值： ``1`` 。
@@ -19,5 +19,5 @@
         Tensor，shape与广播后的shape相同，数据类型为输入中精度较高的类型。
 
     异常：
-        - **TypeError** - `input` 或 `other` 不是Tensor、number.Number。
+        - **TypeError** - `input` 或 `other` 不是Tensor、numbers.Number。
         - **TypeError** - `input` 和 `other` 都不是Tensor。

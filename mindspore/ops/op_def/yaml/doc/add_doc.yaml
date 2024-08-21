@@ -16,11 +16,11 @@ add:
             - When the input is a Tensor, the dimension should be greater than or equal to 1.
 
         Args:
-            input (Union[Tensor, number.Number, bool]): The first input is a number.Number or
+            input (Union[Tensor, numbers.Number, bool]): The first input is a numbers.Number or
                 a bool or a tensor whose data type is
                 `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_ or
                 `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_.
-            other (Union[Tensor, number.Number, bool]): The second input, is a number.Number or
+            other (Union[Tensor, numbers.Number, bool]): The second input, is a numbers.Number or
                 a bool or a tensor whose data type is
                 `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_ or
                 `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_.
@@ -30,7 +30,7 @@ add:
             and the data type is the one with higher precision or higher digits among the two inputs.
 
         Raises:
-            TypeError: If `input` and `other` is not one of the following: Tensor, number.Number, bool.
+            TypeError: If `input` and `other` is not one of the following: Tensor, numbers.Number, bool.
 
         Supported Platforms:
             ``Ascend`` ``GPU`` ``CPU``

@@ -300,24 +300,25 @@ def add(input, other, *, alpha=1):
           consistent.
 
     Args:
-        input (Union[Tensor, number.Number, bool]): The first input is a number.Number or
+        input (Union[Tensor, numbers.Number, bool]): The first input is a numbers.Number or
             a bool or a tensor whose data type is
             `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_ or
             `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_.
-        other (Union[Tensor, number.Number, bool]): The second input, is a number.Number or
+        other (Union[Tensor, numbers.Number, bool]): The second input, is a numbers.Number or
             a bool or a tensor whose data type is
             `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_ or
             `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_.
 
     Keyword Args:
-        alpha (number.Number): A scaling factor applied to `other`, default 1.
+        alpha (numbers.Number): A scaling factor applied to `other`, default 1.
 
     Returns:
         Tensor with a shape that is the same as the broadcasted shape of the input `input` and `other`,
         and the data type is the one with higher precision or higher digits among the two inputs and alpha.
 
     Raises:
-        TypeError: If the type of `input`, `other`, or `alpha` is not one of the following: Tensor, number.Number, bool.
+        TypeError: If the type of `input`, `other`, or `alpha` is not one of the following:
+            Tensor, numbers.Number, bool.
         TypeError: If `alpha` is of type float but `input` and `other` are not of type float.
         TypeError: If `alpha` is of type bool but `input` and `other` are not of type bool.
 
@@ -862,7 +863,7 @@ def sqrt(input):
         out_{i} = \sqrt{input_{i}}
 
     Args:
-        input (Tensor): The input tensor with a dtype of number.Number.
+        input (Tensor): The input tensor with a dtype of numbers.Number.
 
     Returns:
         Tensor, has the same shape as the `input`.
@@ -900,24 +901,25 @@ def sub(input, other, *, alpha=1):
           consistent.
 
     Args:
-        input (Union[Tensor, number.Number, bool]): The first input is a number.Number or
+        input (Union[Tensor, numbers.Number, bool]): The first input is a numbers.Number or
             a bool or a tensor whose data type is
             `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_ or
             `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_.
-        other (Union[Tensor, number.Number, bool]): The second input, is a number.Number or
+        other (Union[Tensor, numbers.Number, bool]): The second input, is a numbers.Number or
             a bool or a tensor whose data type is
             `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_ or
             `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_.
 
     Keyword Args:
-        alpha (number.Number): A scaling factor applied to `other`, default 1.
+        alpha (numbers.Number): A scaling factor applied to `other`, default 1.
 
     Returns:
         Tensor with a shape that is the same as the broadcasted shape of the input `input` and `other`,
         and the data type is the one with higher precision or higher digits among the two inputs and alpha.
 
     Raises:
-        TypeError: If the type of `input`, `other`, or `alpha` is not one of the following: Tensor, number.Number, bool.
+        TypeError: If the type of `input`, `other`, or `alpha` is not one of the following:
+            Tensor, numbers.Number, bool.
         TypeError: If `alpha` is of type float but `input` and `other` are not of type float.
         TypeError: If `alpha` is of type bool but `input` and `other` are not of type bool.
 

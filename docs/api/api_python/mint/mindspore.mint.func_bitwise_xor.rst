@@ -10,7 +10,7 @@ mindspore.mint.bitwise_xor
 
     参数：
         - **input** (Tensor) - 输入Tensor。
-        - **other** (Tensor, Number.number) - 输入Tensor或常量，shape与 `input` 相同，或能与 `input` 的shape广播。
+        - **other** (Tensor, numbers.Number) - 输入Tensor或常量，shape与 `input` 相同，或能与 `input` 的shape广播。
 
     返回：
         Tensor，与广播后的输入shape相同，和 `input` 数据类型相同。

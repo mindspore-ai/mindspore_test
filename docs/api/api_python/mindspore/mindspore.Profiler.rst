@@ -51,19 +51,6 @@ mindspore.Profiler
     异常：
         - **RuntimeError** - 当CANN的版本与MindSpore版本不匹配时，生成的ascend_job_id目录结构MindSpore无法解析。
 
-    .. py:method:: analyse(offline_path=None, pretty=False, step_list=None, mode="sync")
-
-        收集和分析训练的性能数据，支持在训练中和训练后调用。样例如上所示。
-
-        参数：
-            - **offline_path** (Union[str, None], 可选) - 需要使用离线模式进行分析的数据路径。离线模式用于非正常退出场景。对于在线模式，此参数应设置为 ``None`` 。默认值： ``None`` 。
-            - **pretty** (bool, 可选) - 对json文件进行格式化处理。此参数默认值为 ``False``，即不进行格式化。
-            - **step_list** (list, 可选) - 只分析指定step的性能数据。此参数默认值为 ``None``，即进行全解析。
-            - **mode** (str, 可选) - 解析模式，同步解析或异步解析，可选参数为["sync", "async"], 默认值为 ``"sync"``。
-
-              - "sync": 同步模式解析性能数据，会阻塞当前进程。
-              - "async": 异步模式，另起一个子进程解析性能数据，不会阻塞当前进程。由于解析进程会额外占用CPU资源，请根据实际资源情况开启该模式。
-
     .. py:method:: add_metadata(key, value)
 
         上报自定义metadata键值对数据。
@@ -79,6 +66,19 @@ mindspore.Profiler
         参数：
             - **key** (str) - metadata键值对的key。
             - **value** (str) - metadata键值对的value，格式为json字符串。
+
+    .. py:method:: analyse(offline_path=None, pretty=False, step_list=None, mode="sync")
+
+        收集和分析训练的性能数据，支持在训练中和训练后调用。样例如上所示。
+
+        参数：
+            - **offline_path** (Union[str, None], 可选) - 需要使用离线模式进行分析的数据路径。离线模式用于非正常退出场景。对于在线模式，此参数应设置为 ``None`` 。默认值： ``None`` 。
+            - **pretty** (bool, 可选) - 对json文件进行格式化处理。此参数默认值为 ``False``，即不进行格式化。
+            - **step_list** (list, 可选) - 只分析指定step的性能数据。此参数默认值为 ``None``，即进行全解析。
+            - **mode** (str, 可选) - 解析模式，同步解析或异步解析，可选参数为["sync", "async"], 默认值为 ``"sync"``。
+
+              - "sync": 同步模式解析性能数据，会阻塞当前进程。
+              - "async": 异步模式，另起一个子进程解析性能数据，不会阻塞当前进程。由于解析进程会额外占用CPU资源，请根据实际资源情况开启该模式。
 
     .. py:method:: offline_analyse(path: str, pretty=False, step_list=None)
         :classmethod:

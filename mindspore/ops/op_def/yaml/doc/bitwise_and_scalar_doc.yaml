@@ -4,7 +4,7 @@ bitwise_and_scalar:
 
         Inputs:
             - **input** (Tensor) - The input tensor must be of integral or Boolean types.
-            - **other** (number.Number) - The second input scalar with same type as the `input`.
+            - **other** (numbers.Number) - The second input scalar with same type as the `input`.
 
         Outputs:
             Tensor, has the same type as the `input`.

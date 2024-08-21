@@ -14,8 +14,8 @@ mindspore.mint.remainder
         输入不支持复数类型。至少一个输入为tensor，且不能都为布尔型tensor。
 
     参数：
-        - **input** (Union[Tensor, number.Number]) - 除数。
-        - **other** (Union[Tensor, number.Number]) - 被除数。
+        - **input** (Union[Tensor, numbers.Number]) - 除数。
+        - **other** (Union[Tensor, numbers.Number]) - 被除数。
 
     返回：
         Tensor，经过隐式类型提升和广播。

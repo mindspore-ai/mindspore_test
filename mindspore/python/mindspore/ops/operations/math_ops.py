@@ -1039,12 +1039,12 @@ class Sub(_MathBinaryOp):
           consistent.
 
     Inputs:
-        - **x** (Union[Tensor, number.Number, bool]) - The first input is a number.Number or
+        - **x** (Union[Tensor, numbers.Number, bool]) - The first input is a numbers.Number or
           a bool or a tensor whose data type is
           `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_ or
           `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_.
-        - **y** (Union[Tensor, number.Number, bool]) - The second input, when the first input is a Tensor,
-          the second input should be a number.Number or bool value, or a Tensor whose data type is number or bool.
+        - **y** (Union[Tensor, numbers.Number, bool]) - The second input, when the first input is a Tensor,
+          the second input should be a numbers.Number or bool value, or a Tensor whose data type is number or bool.
 
     Outputs:
         Tensor, the shape is the same as the two inputs after broadcasting,
@@ -1438,11 +1438,11 @@ class DivNoNan(Primitive):
         \end{cases}
 
     Inputs:
-        - **x1** (Union[Tensor, number.Number, bool]) - The first input is a number.Number or
+        - **x1** (Union[Tensor, numbers.Number, bool]) - The first input is a numbers.Number or
           a bool or a tensor whose data type is
           `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_ or
           `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_.
-        - **x2** (Union[Tensor, number.Number, bool]) - The second input is a number.Number or
+        - **x2** (Union[Tensor, numbers.Number, bool]) - The second input is a numbers.Number or
           a bool when the first input is a bool or a tensor whose data type is number or bool\_.
           When the first input is Scalar, the second input must be a Tensor whose data type is number or bool\_.
 
@@ -1451,7 +1451,7 @@ class DivNoNan(Primitive):
         and the data type is the one with higher precision or higher digits among the two inputs.
 
     Raises:
-        TypeError: If `x1` and `x2` is not a number.Number or a bool or a Tensor.
+        TypeError: If `x1` and `x2` is not a numbers.Number or a bool or a Tensor.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``

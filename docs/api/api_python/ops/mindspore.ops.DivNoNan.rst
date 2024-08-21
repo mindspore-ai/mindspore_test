@@ -17,11 +17,11 @@ mindspore.ops.DivNoNan
         \end{cases}
 
     输入：
-        - **x1** (Union[Tensor, number.Number, bool]) - 第一个输入是number.Number、bool或者Tensor，数据类型为 `number <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.dtype.html#mindspore.dtype>`_ 。
-        - **x2** (Union[Tensor, number.Number, bool]) - 当第一个输入是bool或数据类型为number或bool\_的Tensor时，第二个输入是number.Number或bool。当第一个输入是Scalar时，第二个输入必须是数据类型为number或bool\_的Tensor。
+        - **x1** (Union[Tensor, numbers.Number, bool]) - 第一个输入是numbers.Number、bool或者Tensor，数据类型为 `number <https://www.mindspore.cn/docs/zh-CN/master/api_python/mindspore/mindspore.dtype.html#mindspore.dtype>`_ 。
+        - **x2** (Union[Tensor, numbers.Number, bool]) - 当第一个输入是bool或数据类型为number或bool\_的Tensor时，第二个输入是numbers.Number或bool。当第一个输入是Scalar时，第二个输入必须是数据类型为number或bool\_的Tensor。
 
     输出：
         Tensor，shape与广播后的shape相同，数据类型为两个输入中精度较高或数位较高的类型。
 
     异常：
-        - **TypeError** - 如果 `x1` 和 `x2` 不是number.Number、bool或Tensor。
+        - **TypeError** - 如果 `x1` 和 `x2` 不是numbers.Number、bool或Tensor。

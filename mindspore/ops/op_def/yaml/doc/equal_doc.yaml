@@ -26,7 +26,7 @@ equal:
         Tensor, the shape is the same as the one after broadcasting, and the data type is bool.
 
     Raises:
-        TypeError: If neither `input` nor `other` is a Tensor or number.Number.
+        TypeError: If neither `input` nor `other` is a Tensor or numbers.Number.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
