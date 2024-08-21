@@ -99,7 +99,7 @@ def test_hypermap_in_dynamic_tuple_tuple():
         tuple_c = ((1, 2), (1, 2))
         mutable_d = mutable(3)
         hypermap_in_dynamic(tuple_a, tuple_b, tuple_c, mutable_d)
-    assert "The Hypermap does not support scenarios involving nested dynamic" in str(raise_info.value)
+    assert "The HyperMap does not support scenarios involving nested dynamic" in str(raise_info.value)
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_hypermap_in_dynamic_list_list():
@@ -114,4 +114,4 @@ def test_hypermap_in_dynamic_list_list():
         tuple_c = [[1, 2], [1, 2]]
         mutable_d = mutable(3)
         hypermap_in_dynamic(tuple_a, tuple_b, tuple_c, mutable_d)
-    assert "The Hypermap does not support scenarios involving nested dynamic" in str(raise_info.value)
+    assert "The HyperMap does not support scenarios involving nested dynamic" in str(raise_info.value)
