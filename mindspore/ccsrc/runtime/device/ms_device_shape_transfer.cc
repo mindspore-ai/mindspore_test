@@ -286,7 +286,7 @@ ShapeVector GetRuntimePaddingShape(const AnfNodePtr &node, size_t index) {
                    << node->fullname_with_scope() << ", debug name:" << node->DebugString();
       return {0};
     }
-    auto tensor = node_value->cast<tensor::TensorPtr>();
+    auto tensor = node_value->cast<tensor::BaseTensorPtr>();
     if (tensor == nullptr) {
       MS_LOG(INTERNAL_EXCEPTION) << " The node[ " << node->DebugString() << "]'s cannot convert ";
     }
