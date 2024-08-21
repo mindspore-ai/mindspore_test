@@ -14,7 +14,6 @@
 # ============================================================================
 """Profiling api file."""
 import os
-import re
 import shutil
 import stat
 import time
@@ -23,8 +22,8 @@ from json import JSONDecodeError
 import glob
 import csv
 import socket
+import multiprocessing
 from enum import Enum
-from multiprocessing import Process
 from typing import List
 from sys import getsizeof
 import numpy as np
@@ -67,7 +66,8 @@ from mindspore.profiler.parser.ascend_communicate_generator import AscendCommuni
 from mindspore.profiler.parser.ascend_memory_generator import AscendMemoryGenerator
 from mindspore.profiler.parser.ascend_integrate_generator import AscendIntegrateGenerator
 from mindspore.profiler.parser.ascend_analysis.file_manager import FileManager
-
+from mindspore.profiler.parser.ascend_analysis.path_manager import PathManager
+from mindspore.profiler.parser.ascend_analysis.constant import Constant
 
 INIT_OP_NAME = 'Default/InitDataSetQueue'
 
@@ -114,7 +114,6 @@ ALWAYS_VALID_PARAM = [
     'start', 'start_profile', 'output_path', 'data_process', 'parallel_strategy', 'l2_cache',
     'hbm_ddr', 'pcie', 'ascend_job_id', 'op_time', 'profile_framework', 'profiler_level'
 ]
-
 
 ANALYSIS_ASYNC_MODE = 'async'
 ANALYSIS_SYNC_MODE = 'sync'
@@ -629,7 +628,7 @@ class Profiler:
             return str(rank_id), str(dev_id)
 
     @classmethod
-    def offline_analyse(cls, path: str, pretty=False, step_list=None):
+    def offline_analyse(cls, path: str, pretty=False, step_list=None, data_simplification=True):
         """
         Analyze training performance data offline, which is invoked after performance data collection is completed.
 
@@ -639,35 +638,45 @@ class Profiler:
             pretty (bool, optional): Whether to pretty json files. Default: ``False``.
             step_list (list, optional): A list of steps that need to be analyzed. Default: ``None``.
                 By default, all steps will be analyzed.
+            data_simplification: Whether to open data simplification. Default: ``True``.
 
         Examples:
             >>> from mindspore import Profiler
             >>> Profiler.offline_analyse("./profiling_path")
         """
-        profiler_path = os.path.join(path, "profiler")
-        if not os.path.exists(profiler_path):
-            raise ProfilerPathErrorException(f'There must be a profiler folder in the data path: {path}.')
-
-        rank_set = set()
-        sub_dirs = os.listdir(os.path.realpath(profiler_path))
-        for sub_dir in sub_dirs:
-            sub_path = os.path.join(profiler_path, sub_dir)
-            if os.path.isdir(sub_path) and re.match(r"^PROF_\d+_\d+_[a-zA-Z0-9]+", sub_dir):
-                rank = cls._get_prof_rank(sub_path)
-                rank_set.add(rank)
-        if not rank_set:
-            return
-
-        process_list = []
-        for rank_id in rank_set:
-            profiler = cls(analyse_only=True, rank_id=rank_id)
-            process = Process(target=profiler.analyse,
-                              args=(path, pretty, step_list))
-            process.start()
-            process_list.append(process)
-
-        for process in process_list:
-            process.join()
+        real_path = os.path.realpath(path)
+        PathManager.check_input_directory_path(real_path)
+        profiler_parent_path_list = PathManager.get_profiler_parent_path_list(real_path)
+        if not profiler_parent_path_list:
+            raise ProfilerPathErrorException(f'The provided path "{path}" must have a "profiler" directory for '
+                                             f'single-device profiler data, or multiple subdirectories each containing '
+                                             f'a "profiler" directory for multi-device profiler data. ')
+        # get rank id
+        rank_list = []
+        for parent_path in profiler_parent_path_list:
+            profiler_path = os.path.join(parent_path, Constant.PROFILER_DIR)
+            cann_path = PathManager.get_cann_path(profiler_path)
+            rank = cls._get_prof_rank(cann_path)
+            if int(rank) < 0:
+                logger.error(f"Unable to get a valid rank ID in the cann path directory: {cann_path}")
+            rank_list.append(rank)
+        # start offline analyse
+        if len(profiler_parent_path_list) == 1:
+            PathManager.check_directory_path_writeable(profiler_parent_path_list[0])
+            profiler = cls(analyse_only=True, rank_id=rank_list[0], data_simplification=data_simplification)
+            profiler.analyse(profiler_parent_path_list[0], pretty, step_list)
+        else:
+            # Multiprocess Parsing
+            multiprocessing.set_start_method("fork", force=True)
+            process_number = min(Constant.DEFAULT_PROCESS_NUMBER, len(profiler_parent_path_list))
+            pool = multiprocessing.Pool(processes=process_number)
+            for idx, profiler_parent_path in enumerate(profiler_parent_path_list):
+                PathManager.check_directory_path_writeable(profiler_parent_path)
+                profiling_parser = cls(analyse_only=True, rank_id=rank_list[idx],
+                                       data_simplification=data_simplification)
+                pool.apply_async(profiling_parser.analyse, args=(profiler_parent_path, pretty, step_list))
+            pool.close()
+            pool.join()
 
     def op_analyse(self, op_name, device_id=None):
         """
