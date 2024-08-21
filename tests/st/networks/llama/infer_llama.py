@@ -15,10 +15,8 @@
 import sys
 import os
 import argparse
-# import glob
 import pandas as pd
 import numpy as np
-from mindspore import Profiler
 from mindspore import set_seed
 
 workspace = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -163,11 +161,6 @@ def run_llama_4p_bs4(args):
     for output in outputs:
         assert (EXPECT_RES == output).all()
 
-    profiler_path = os.path.join(os.path.dirname(
-        os.path.abspath(__file__)), "predict_profiler")
-    os.system(f"rm -rf {profiler_path}")
-    profiler = Profiler(start_profile=False, output_path=profiler_path, data_simplification=False)
-    profiler.start()
     inputs_ids = generate_input_ids(8, 12)
     outputs = model.generate(inputs_ids,
                              max_length=20,
@@ -177,16 +170,6 @@ def run_llama_4p_bs4(args):
 
     for output in outputs:
         assert (EXPECT_RES == output).all()
-
-    profiler.stop()
-    profiler.analyse()
-
-    # profiler_file = glob.glob(os.path.join(os.path.join(
-    #     profiler_path, "**"), "op_statistic_*.csv"), recursive=True)[0]
-    # expect_total_time = 17690
-    # total_time = get_total_time_from_profiler_file(profiler_file)
-    # print(f"total_time: {total_time}")
-    # assert total_time <= expect_total_time * (1 + TOELERANCE)
 
 
 def run_llama_4p_bs4_bf16(args):
