@@ -111,7 +111,7 @@ std::pair<AnfNodePtr, size_t> TsaAtomicAddToFirstTensor::GetOrCreateNewTsaFirstN
   std::string parameter_format;
   TypeId parameter_type;
   if (utils::isa<ValueNodePtr>(kernel_with_index.first)) {
-    auto tensor = GetValueNode<tensor::TensorPtr>(kernel_with_index.first);
+    auto tensor = GetValueNode<tensor::BaseTensorPtr>(kernel_with_index.first);
     MS_EXCEPTION_IF_NULL(tensor);
     parameter_format = kOpFormat_DEFAULT;
     parameter_type = tensor->data_type();

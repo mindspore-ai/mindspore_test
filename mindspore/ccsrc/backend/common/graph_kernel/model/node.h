@@ -107,18 +107,18 @@ class BACKEND_EXPORT Node : public NodeBase, public std::enable_shared_from_this
 
 class BACKEND_EXPORT ConstTensorNode : public Node {
  public:
-  explicit ConstTensorNode(const tensor::TensorPtr &data)
+  explicit ConstTensorNode(const tensor::BaseTensorPtr &data)
       : Node({data->DataSize() == 1 ? DShape({1}) : data->shape(), data->data_type(), kOpFormat_DEFAULT}),
         data_(data) {}
   ~ConstTensorNode() = default;
 
   NType NodeType() override { return NType::Tensor; }
   std::string ToString() const override { return data_->data().ToString(data_->data_type(), data_->shape(), false); }
-  const tensor::TensorPtr data() const { return data_; }
+  const tensor::BaseTensorPtr data() const { return data_; }
   abstract::AbstractBasePtr ToAbstract() const override { return data_->ToAbstract(); }
 
  protected:
-  tensor::TensorPtr data_;
+  tensor::BaseTensorPtr data_;
 };
 
 class ConstScalarNode : public Node {

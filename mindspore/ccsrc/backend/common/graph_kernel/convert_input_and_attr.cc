@@ -168,12 +168,12 @@ void ConvertFrontEndToGraphKernel::AddConstInputToAttr(const CNodePtr &cnode, co
     return;
   }
 
-  if (!value->isa<tensor::Tensor>()) {
+  if (!value->isa<tensor::BaseTensor>()) {
     primitive->AddAttr(arg_name, value);
     return;
   }
   auto value_vector = CheckAndConvertUtils::CheckTensorIntValue(arg_name, value, primitive->name());
-  auto tensor = value->cast<tensor::TensorPtr>();
+  auto tensor = value->cast<tensor::BaseTensorPtr>();
   auto tensor_shape = tensor->shape_c();
   MS_LOG(DEBUG) << cnode->ToString() << " 's input[" << input_index << "] is tensor.";
   if (tensor_shape.empty()) {

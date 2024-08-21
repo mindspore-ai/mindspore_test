@@ -308,10 +308,10 @@ FuncGraphPtr GkUtils::LiteGraph2AnfGraph(const inner::LiteGraphPtr &lite_graph, 
   return func_graph;
 }
 
-tensor::TensorPtr InputValue2Tensor(ValuePtr input_value) {
+tensor::BaseTensorPtr InputValue2Tensor(ValuePtr input_value) {
   // input value of a cnode can be one of tensor, valuesequence and int,
   // in order to emit litegraph node by gb.Value, convert the type of value to tensor anyway
-  tensor::TensorPtr input_tensor = nullptr;
+  tensor::BaseTensorPtr input_tensor = nullptr;
   if (input_value->isa<Int32Imm>() || input_value->isa<Int64Imm>()) {
     auto input_num = AnfUtils::GetIntValue(input_value);
     input_tensor = std::make_shared<tensor::Tensor>(input_num);
@@ -321,8 +321,8 @@ tensor::TensorPtr InputValue2Tensor(ValuePtr input_value) {
     (void)std::transform(input_seq.begin(), input_seq.end(), std::back_inserter(input_vec),
                          [](auto v) { return AnfUtils::GetIntValue(v); });
     input_tensor = std::make_shared<tensor::Tensor>(input_vec);
-  } else if (input_value->isa<tensor::Tensor>()) {
-    input_tensor = input_value->cast<tensor::TensorPtr>();
+  } else if (input_value->isa<tensor::BaseTensor>()) {
+    input_tensor = input_value->cast<tensor::BaseTensorPtr>();
   } else if (input_value->isa<BoolImm>()) {
     auto input_bool = GetValue<bool>(input_value);
     input_tensor = std::make_shared<tensor::Tensor>(input_bool);

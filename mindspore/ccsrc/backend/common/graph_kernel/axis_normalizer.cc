@@ -59,7 +59,7 @@ bool AxisNormalizer::AxisProcess(ValuePtr axis, const size_t rank, ShapeVector *
         diff = diff || (v1 != v2);
       }
     }
-  } else if (axis->isa<tensor::Tensor>()) {
+  } else if (axis->isa<tensor::BaseTensor>()) {
     auto raw_axis_vec = CheckAndConvertUtils::CheckTensorIntValue("axis", axis, "ReduceOp");
     if (raw_axis_vec.empty()) {
       diff = true;
@@ -72,7 +72,7 @@ bool AxisNormalizer::AxisProcess(ValuePtr axis, const size_t rank, ShapeVector *
         axis_vec->push_back(v2);
       }
       // if tensor shape is empty, create a new 1-d tensor
-      auto axis_tensor = axis->cast<tensor::TensorPtr>();
+      auto axis_tensor = axis->cast<tensor::BaseTensorPtr>();
       diff = axis_tensor->shape_c().empty() || raw_axis_vec != *axis_vec;
     }
   }

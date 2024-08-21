@@ -52,8 +52,8 @@ void InferByDeviceInfo::InferOp(const NodePtr &node, const PrimitivePtr &prim, c
 void InferByDeviceInfo::SetValue(const NodePtr &node) {
   auto v = node->GetValue();
   node->as<AnfNodePtr>()->set_abstract(v->ToAbstract());
-  if (v->isa<tensor::Tensor>()) {
-    auto tensor = v->cast<tensor::TensorPtr>();
+  if (v->isa<tensor::BaseTensor>()) {
+    auto tensor = v->cast<tensor::BaseTensorPtr>();
     inner_node_cache_[node] = std::make_shared<inner::ConstTensorNode>(tensor);
     Callback::Instance()->SetBasicNodeKernelInfo(node->as<AnfNodePtr>(),
                                                  {{tensor->shape(), tensor->data_type(), kOpFormat_DEFAULT}});
@@ -78,8 +78,8 @@ void InferByDeviceInfo::HandleInputs(const NodePtrList &inputs) {
       MS_EXCEPTION_IF_NULL(anfnode->abstract());
       value = anfnode->abstract()->BuildValue();
     }
-    if (value != nullptr && value->isa<tensor::Tensor>()) {
-      auto tensor = value->cast<tensor::TensorPtr>();
+    if (value && value->isa<tensor::BaseTensor>()) {
+      auto tensor = value->cast<tensor::BaseTensorPtr>();
       auto &t = inner_node_cache_[inp] = std::make_shared<inner::ConstTensorNode>(tensor);
       t->shape = tensor->shape();
       t->format = cb->GetOutputFormat(anfnode, 0);

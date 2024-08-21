@@ -77,7 +77,7 @@ bool ValueDependOpUtils::IsConstInput(const AnfNodePtr &node) {
           if (value->isa<ValueAny>()) {
             return false;
           }
-          auto tensor = value->cast<tensor::TensorPtr>();
+          auto tensor = value->cast<tensor::BaseTensorPtr>();
           if (tensor != nullptr && tensor->data().const_data() == nullptr) {
             return false;
           }
@@ -126,12 +126,12 @@ bool ValueDependOpUtils::AddConstInputToAttr(const CNodePtr &cnode, const HashSe
         MS_LOG(DEBUG) << input_vec[i].arg_name_ << "'s Value is ValueAny.";
         return false;
       }
-      if (!value->isa<tensor::Tensor>()) {
+      if (!value->isa<tensor::BaseTensor>()) {
         primitive->set_attr(input_vec[i].arg_name_, value);
         continue;
       }
       auto value_vector = CheckAndConvertUtils::CheckTensorIntValue(input_vec[i].arg_name_, value, primitive->name());
-      auto tensor = value->cast<tensor::TensorPtr>();
+      auto tensor = value->cast<tensor::BaseTensorPtr>();
       auto tensor_shape = tensor->shape_c();
       if (tensor_shape.empty()) {
         primitive->set_attr(input_vec[i].arg_name_, MakeValue(value_vector[0]));
