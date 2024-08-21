@@ -1,9 +1,10 @@
 approvers:
-- jxlang910 #
 - zhidanliu
+- liu-siming-hw
+- yyuse
 
 reviewers:
 - shu-kun-zhang
 - emmmmtang
-- liu-siming-hw
 - owensec
+- jxlang910 #
