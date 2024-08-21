@@ -3218,10 +3218,10 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
 
     def uniform(self, from_=0., to=1., generator=None):
         r"""
-        Generates random numbers in the half-open interval [from_, to).
+        Generates random numbers in the half-open interval [from\_, to).
 
         Args:
-            from_ (number): The lower bound of the interval.
+            from\_ (number): The lower bound of the interval.
             to (number): The upper bound of the interval.
             generator (Generator, optional): The random seed. Default: None.
 
