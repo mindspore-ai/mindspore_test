@@ -1,14 +1,13 @@
-﻿mindspore.ops.scatter
+mindspore.mint.scatter
 =======================================
 
-.. py:function:: mindspore.ops.scatter(input, axis, index, src)
+.. py:function:: mindspore.mint.scatter(input, dim, index, src)
 
     根据指定索引将 `src` 中的值更新到 `input` 中返回输出。
-    有关更多详细信息，请参阅 :func:`mindspore.ops.tensor_scatter_elements` 。
 
     参数：
         - **input** (Tensor) - 输入Tensor。 `input` 的秩必须至少为1。
-        - **axis** (int) - 要进行更新操作的轴。取值范围是[-r, r)，其中r是 `input` 的秩。
+        - **dim** (int) - 要进行更新操作的轴。取值范围是[-r, r)，其中r是 `input` 的秩。
         - **index** (Tensor) - 输入Tensor的索引，数据类型为int32或int64的。其rank必须和 `input` 一致。取值范围是[-s, s)，这里的s是 `input` 在 `axis` 指定轴的size。
         - **src** (Tensor, float) - 指定对 `input` 进行更新操作的数据。可以为Tensor，此时其数据类型必须与输入 `input` 的数据类型相同，shape必须与 `index` 相同。
           也可以是个float类型的标量。

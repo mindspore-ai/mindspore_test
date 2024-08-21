@@ -100,6 +100,13 @@ StrToEnumMap StrToReductionMap = {{"SUM", Reduction::REDUCTION_SUM},
                                   {"UPDATE", Reduction::UPDATE}};
 REG_STRING_TO_ENUM_COMMON(reduction, StrToReductionMap)
 
+// Reduce
+StrToEnumMap StrToReduceMap = {{"NONE", Reduce::REDUCE_NONE},
+                               {"ADD", Reduce::ADD},
+                               {"MULTIPLY", Reduce::MULTIPLY},
+                               {"UPDATE", Reduce::REDUCE_UPDATE}};
+REG_STRING_TO_ENUM_SPECIAL(reduce, StrToReduceMap)
+
 // Activation
 StrToEnumMap StrToActivationMap = {{"NO_ACTIVATION", ActivationType::NO_ACTIVATION},
                                    {"RELU", ActivationType::RELU},

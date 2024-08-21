@@ -682,14 +682,54 @@ REG_FALLBACK_BUILDER("Scatter").SetBody(BODYFUNC(ib) {
   if (!IsValueKnown(dim_val) || !IsValueKnown(reduce_val)) {
     MS_EXCEPTION(ValueError) << "For `TensorScatterElements` op, the `dim` and `reduce` must currently be a constant!";
   }
-  std::unordered_map<int64_t, std::string> reduce_val_string{{0, "none"}, {1, "add"}};
+  auto idx_shape = ib->GetShape(index);
+  if (IsShapeNone(idx_shape)) {
+    return {input};
+  }
+  std::unordered_map<int64_t, std::string> reduce_to_string{
+    {Reduce::REDUCE_NONE, "none"}, {Reduce::ADD, "add"}, {Reduce::MULTIPLY, "mul"}};
   auto reduce_val_int = GetValue<int64_t>(reduce_val);
-  const auto iter = reduce_val_string.find(reduce_val_int);
-  if (iter == reduce_val_string.end()) {
+  const auto iter = reduce_to_string.find(reduce_val_int);
+  if (iter == reduce_to_string.end()) {
     MS_EXCEPTION(ValueError) << "For `Scatter` op, fail to convert `reduce` val `" << reduce_val_int << "` to string!";
   }
   auto reduce_string = iter->second;
   auto out = ib->Emit("TensorScatterElements", {input, index, src},
+                      {{"reduction", MakeValue<string>(reduce_string)}, {"axis", dim_val}});
+  return {out};
+});
+
+REG_FALLBACK_BUILDER("ScatterValue").SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto dim = ib->GetInput(kIndex1);
+  auto index = ib->GetInput(kIndex2);
+  auto src = ib->GetInput(kIndex3);
+  auto reduce = ib->GetInput(kIndex4);
+  auto dim_val = dim->BuildValue();
+  auto reduce_val = reduce->BuildValue();
+  if (!IsValueKnown(dim_val) || !IsValueKnown(reduce_val)) {
+    MS_EXCEPTION(ValueError) << "For `TensorScatterElements` op, the `dim` and `reduce` must currently be a constant!";
+  }
+  auto idx_shape = ib->GetShape(index);
+  if (IsShapeNone(idx_shape)) {
+    return {input};
+  }
+  NodePtr expand_shape = nullptr;
+  if (IsDynamic(idx_shape)) {
+    expand_shape = ib->Emit("Shape", {index});
+  } else {
+    expand_shape = ib->Value(idx_shape);
+  }
+  std::unordered_map<int64_t, std::string> reduce_to_string{
+    {Reduce::REDUCE_NONE, "none"}, {Reduce::ADD, "add"}, {Reduce::MULTIPLY, "mul"}};
+  auto reduce_val_int = GetValue<int64_t>(reduce_val);
+  const auto iter = reduce_to_string.find(reduce_val_int);
+  if (iter == reduce_to_string.end()) {
+    MS_EXCEPTION(ValueError) << "For `Scatter` op, fail to convert `reduce` val `" << reduce_val_int << "` to string!";
+  }
+  auto reduce_string = iter->second;
+  auto src_tensor = ib->Emit("BroadcastTo", {ib->ScalarToTensor(src, input->dtype()), expand_shape});
+  auto out = ib->Emit("TensorScatterElements", {input, index, src_tensor},
                       {{"reduction", MakeValue<string>(reduce_string)}, {"axis", dim_val}});
   return {out};
 });

@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_OPS_INFER_OPS_FUNC_IMPL_SCATTER_H_
-#define MINDSPORE_OPS_INFER_OPS_FUNC_IMPL_SCATTER_H_
+#ifndef MINDSPORE_OPS_INFER_OPS_FUNC_IMPL_SCATTER_VALUE_H_
+#define MINDSPORE_OPS_INFER_OPS_FUNC_IMPL_SCATTER_VALUE_H_
 
 #include <vector>
 #include "ops/ops_func_impl/op_func_impl.h"
 
 namespace mindspore {
 namespace ops {
-class OPS_API ScatterFuncImpl : public OpFuncImpl {
+class OPS_API ScatterValueFuncImpl : public OpFuncImpl {
  public:
   BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
   TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
@@ -30,4 +30,4 @@ class OPS_API ScatterFuncImpl : public OpFuncImpl {
 }  // namespace ops
 }  // namespace mindspore
 
-#endif  // MINDSPORE_OPS_INFER_OPS_FUNC_IMPL_SCATTER_H_
+#endif  // MINDSPORE_OPS_INFER_OPS_FUNC_IMPL_SCATTER_VALUE_H_

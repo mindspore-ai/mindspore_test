@@ -43,6 +43,7 @@ Indexing, Slicing, Joining, Mutating Operations
     mindspore.mint.index_select
     mindspore.mint.masked_select
     mindspore.mint.permute
+    mindspore.mint.scatter
     mindspore.mint.scatter_add
     mindspore.mint.split
     mindspore.mint.narrow
