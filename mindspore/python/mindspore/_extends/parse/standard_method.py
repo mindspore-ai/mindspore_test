@@ -2453,7 +2453,7 @@ def tuple_func(data):
 
 
 def ms_zip(*data):
-    """Implementation of `tuple`."""
+    """Packs elements in the corresponding positions in multiple sequences into tuples."""
     x = ()
     for i in data:
         if isinstance(i, Tensor):
