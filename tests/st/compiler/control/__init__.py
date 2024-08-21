@@ -80,3 +80,4 @@ from tests.st.compiler.control.test_tensor_in_list import *
 from tests.st.compiler.control.test_while import *
 from tests.st.compiler.control.test_while_grad import *
 from tests.st.compiler.control.test_while_mindir import *
+from tests.st.compiler.control.test_unroll_loop_ops import *

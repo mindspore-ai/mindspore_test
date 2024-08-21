@@ -528,6 +528,7 @@ OptPassGroupMap GetOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass) {
      {"cell_reuse_recompute_pass", opt::OptPassConfig(opt::irpass::AddRecomputeNodes)},
      {"cell_reuse_handle_not_recompute_node_pass", cell_reuse_handle_not_recompute_node_pass},
      {"before_grad", before_grad},
+     {"loop_unroll", opt::OptPassConfig({irpass.loop_unroll_before_grad_})},
      {"meta_fg_expand", opt::OptPassConfig(opt::irpass::ExpandMetaFg())},
      {"receive_attached", opt::OptPassConfig(parallel::IsolatedNodeAttach)},
      {"after_resolve", after_resolve_pass},
@@ -993,6 +994,18 @@ bool HandleGroupInfoPass(const ResourcePtr &resource) {
   return true;
 }
 
+bool LoopUnrollPass(const ResourcePtr &resource) {
+  MS_EXCEPTION_IF_NULL(resource);
+  FuncGraphPtr func_graph = resource->func_graph();
+  MS_EXCEPTION_IF_NULL(func_graph);
+  opt::irpass::OptimizeIRPassLib irpass;
+  opt::OptPassConfig loop_unroll_pass = opt::OptPassConfig({irpass.loop_unroll_after_grad_});
+  OptPassGroupMap map({{"loop_unroll", loop_unroll_pass}});
+  auto loop_unroll_ = opt::Optimizer::MakeOptimizer("loop_unroll_optimizer", resource, map);
+  (void)loop_unroll_->step(func_graph, false);
+  return true;
+}
+
 bool OverlapRecomputeAndGradModelParallel(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
   parallel::OverlapRecomputeAndGradModelParallel(resource->func_graph());
@@ -1270,6 +1283,7 @@ std::vector<PassItem> kVmPasses = {
   {"opt_b", OptPassBGroup},
   {"optimize_parallel_all_gather_comm", OptimizeParallelAllGatherCommPass},
   {"cconv", CconvPass},
+  {"loop_unroll", LoopUnrollPass},
   {"opt_after_cconv", OptPassAfterCconvGroup},
   {"remove_dup_value", RemoveValueNodeDuplicationsPass},
   {"tuple_transform", OptPassTransformGraphGroup},

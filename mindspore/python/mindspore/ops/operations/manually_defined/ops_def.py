@@ -18,6 +18,7 @@ from __future__ import division
 
 import numbers
 import math
+import types
 import numpy as np
 from mindspore.ops import signature as sig
 from mindspore.ops.primitive import Primitive, prim_attr_register, prim_arg_register, PrimitiveWithInfer
@@ -2014,3 +2015,165 @@ def flash_attention_score(query, key, value, head_num, real_shift=None, drop_mas
                                                    inner_precise, input_layout, sparse_mode)
     return rank_op(query, key, value, real_shift, drop_mask, padding_mask, attn_mask, prefix, actual_seq_qlen,
                    actual_seq_kvlen)[3]
+
+
+class WhileLoop(Primitive):
+    """
+    Provide a useful op for reducing compilation times of while loop
+
+    Inputs:
+        - **cond_func** (Function) - The condition function.
+        - **loop_func** (Function) - The loop function, take one argument
+                                      and return value has the same type with input argument
+        - **init_val** (Union[Tensor, Number, Str, Bool, List, Tuple, Dict]) - The initial value.
+
+    Outputs:
+        Union[Tensor, Number, Str, Bool, List, Tuple, Dict] The final result of the while loop,
+        has same type with input 'init_val'.
+
+    Raises:
+        TypeError: If `cond_func` is not a function.
+        TypeError: If `loop_func` is not a function.
+        ValueError: If `loop_func` cannot take `init_val` as input or
+                    has different output type with `init_val`
+
+    Examples:
+        >>> while_loop = ops.WhileLoop()
+        >>> def loop_while_fun(init_val):
+        ...     val = init_val
+        ...     val = val + 1
+        ...     return val
+        >>> init_state = 10
+        >>> result = while_loop(lambda x : x < 100, loop_while_fun, init_state)
+    """
+
+    @prim_attr_register
+    def __init__(self):
+        """Initialize WhileLoop."""
+
+    def __call__(self, cond_func, loop_func, init_val):
+        validator.check_value_type("cond_func", cond_func, [types.FunctionType], "WhileLoop")
+        validator.check_value_type("loop_func", loop_func, [types.FunctionType], "WhileLoop")
+        val = init_val
+        try:
+            while cond_func(val):
+                val = loop_func(val)
+        except Exception as e:
+            raise ValueError("Invalid loop body, please make sure the loop_func can take \
+                             `init_val` as argument, and the return value has the same type \
+                             with `init_val`, error info: {}".format(e))
+        return val
+
+
+class Scan(Primitive):
+    """
+    Scan a function over an array while the processing of the current element
+    depends on the execution result of the previous element
+
+    Inputs:
+        - **loop_func** (Function) - The loop function.
+        - **init** (Union[Tensor, Number, Str, Bool, List, Tuple, Dict]) - An initial loop carry value
+        - **xs** (Union(Tuple, List, Dict, None)) - The value over which to scan
+        - **length** (Optional) Int - The size of xs
+        - **unroll** (Optional) Bool - The flag for whether unroll in compile process
+
+    Outputs:
+        Tuple(Union[Tensor, Number, Str, Bool, List, Tuple, Dict], List). Output of scan loop,
+        a tuple with two elements, the first element has same type with init argument,
+        and the second is a list.
+
+    Raises:
+        TypeError: If `loop_func` is not a function.
+        TypeError: If `xs` is not in Union(Tuple, List, Dict, None)
+        TypeError: If `length` is not an int
+        TypeError: If `unroll` is not a bool
+        ValueError: If `loop_func` cannot take `init` and element of `xs` as inputs.
+        ValueError: If the return value of `loop_func` is not a tuple with two elements,
+                    and the first element has the same type as `init`
+
+    Examples:
+        >>> scan_op = ops.Scan()
+        >>> def cumsum(res, el):
+        ...     return res, res + el
+        ...
+        >>> a = [1, 2, 3, 4]
+        >>> result_init = 0
+        >>> result = scan_op(cumsum, result_init, a)
+    """
+
+    @prim_attr_register
+    def __init__(self):
+        """Initialize Scan."""
+
+    def __call__(self, loop_func, init, xs, length=None, unroll=True):
+        validator.check_value_type("loop_func", loop_func, [types.FunctionType], "Scan")
+        validator.check_value_type("xs", xs, [list, tuple, dict, None], "Scan")
+        if xs is None:
+            validator.check_value_type("length", length, [int], "Scan")
+            xs = [None] * length
+        carry = init
+        length = len(xs)
+        if not length:
+            return init, []
+        try:
+            carry, y = loop_func(carry, xs[0])
+            ys = [y]
+            i = 1
+            while i < length:
+                carry, y = loop_func(carry, xs[i])
+                ys.append(y)
+                i = i + 1
+        except Exception as e:
+            raise ValueError("Invalid loop_func, please check input arguments and \
+                                return value, error info: {}".format(e))
+        return carry, ys
+
+
+class ForiLoop(Primitive):
+    """
+    Provide a useful op for loop from lower to upper
+
+    Inputs:
+        - **lower** (Union[int, Tensor]) - The start index of loop.
+        - **upper** (Union[int, Tensor]) - The end index of loop.
+        - **loop_func** (Function) - The loop function, takes two arguments.
+        - **init_val** (Union[Tensor, Number, Str, Bool, List, Tuple, Dict]) - The init value.
+        - **unroll** (Optional) Bool - The flag for whether unroll in compile process,
+                            only works for certain loop times
+
+    Outputs:
+        Union[Tensor, Number, Str, Bool, List, Tuple, Dict] The final result of the loop,
+        has same type with input 'init_val'.
+
+    Raises:
+        TypeError: If `lower` is not an int or a Tensor.
+        TypeError: If `upper` is not an int or a Tensor.
+        TypeError: If `loop_func` is not a function.
+        ValueError: If `loop_func` cannot take index and `init_val` as inputs or
+                    has different output type with `init_val`
+
+    Examples:
+        >>> fori_loop = ops.ForiLoop()
+        >>> def cumsum(index, res):
+        ...     return index + res
+        ...
+        >>> result_init = 0
+        >>> result = fori_loop(0, 4, cumsum, result_init)
+    """
+
+    @prim_attr_register
+    def __init__(self):
+        """Initialize ForiLoop."""
+
+    def __call__(self, lower, upper, loop_func, init_val, unroll=True):
+        validator.check_value_type("lower", lower, [int, Tensor], "ForiLoop")
+        validator.check_value_type("upper", upper, [int, Tensor], "ForiLoop")
+        validator.check_value_type("loop_func", loop_func, [types.FunctionType], "ForiLoop")
+        val = init_val
+        try:
+            for i in range(lower, upper):
+                val = loop_func(i, val)
+        except Exception as e:
+            raise ValueError("Invalid loop_func, please check input arguments and \
+                             return value, error info: {}".format(e))
+        return val
