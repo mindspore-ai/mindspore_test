@@ -75,6 +75,7 @@ class Opcode {
   bool HasConst() const;
   bool CanDelete(int oparg = 0) const;
   bool MayDelete(int oparg = 0) const;
+  bool IsExcMatch(int oparg = 0) const;
 
   bool IsCall() const { return class_ == Class::kCall; }
   bool IsBinaryMath() const { return class_ == Class::kBinaryMath; }

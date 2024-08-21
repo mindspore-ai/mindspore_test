@@ -437,7 +437,8 @@ static auto HandleUnsupportedSyntax(JitCompileResults *jcr, const GraphBuilderPt
     return false;
   }
   int break_op = g->GetGraph()->GetCFG()->instr_pool()[break_bci]->op();
-  bool unsupported = break_op == WITH_CLEANUP_START || break_op == WITH_CLEANUP_FINISH || break_op == END_FINALLY;
+  bool unsupported =
+    break_op == WITH_CLEANUP_START || break_op == WITH_CLEANUP_FINISH || break_op == END_FINALLY || break_op == RERAISE;
   if (g->StackSize() > 0 || unsupported) {
     // something happened in with syntax
     jcr->code()->SetGuard(std::make_shared<OptGuard>());

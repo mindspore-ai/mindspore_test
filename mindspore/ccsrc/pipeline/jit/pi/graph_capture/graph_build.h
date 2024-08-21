@@ -34,9 +34,10 @@ using GraphBuilderPtr = std::shared_ptr<GraphBuilder>;
 using MindGraphBuilderPtr = std::shared_ptr<MindGraphBuilder>;
 
 struct TryBlock {
-  int type;       /*what kind of block this is (SETUP_SETUP, SETUP_FINALLY, SETUP_EXCEPT)*/
-  int bci;        /*where to jump to find handler*/
-  int checkpoint; /*the handler to be rolled back*/
+  int type;         /*what kind of block this is (SETUP_SETUP, SETUP_FINALLY, SETUP_EXCEPT)*/
+  int bci;          /*where to jump to find handler*/
+  std::string name; /*entry of block name,which equal with instr name*/
+  int checkpoint;   /*the handler to be rolled back*/
   // int level;   /* value stack level to pop toe*/
   bool IsFinallyBlock; /*record current block is in exception block or finally block*/
 };
@@ -82,12 +83,18 @@ class GraphBuilder {
   static py::object FindPyFunc(AObject *vobj);
   static py::object GetFuncInfo(ValueNode *func_node);
 
+  // Exception
+  ValueNode *&peekExc(int p) { return excFrame_.Peek(p); }
+  void pushExc(ValueNode *v) { excFrame_.Push(v); }
+  ValueNode *popExc() { return excFrame_.Pop(); }
+  int excStackSize() { return excFrame_.Size(); }
+
   // TryBlockStack operation
   TryBlock &PeekStack(int p);
   void PushStack(TryBlock tb) { tryBlockStacks_.push_back(tb); }
   int StackSize() { return tryBlockStacks_.size(); }
   std::vector<TryBlock> &GetTryBlockStacks() { return tryBlockStacks_; }
-  TryBlock &PopStack();
+  TryBlock PopStack();
 
   // loop analyze
   void HandleLoop();
@@ -277,10 +284,24 @@ class GraphBuilder {
   bool DoFormatValue(const Instr &instr);
   bool DoImport(const Instr &instr);
   bool DoYieldValue(const Instr &instr);
-  bool DoException(const Instr &instr);
   bool DoWith(const Instr &instr);
   bool DoOtherBytecode(const Instr &instr);
   bool NotImplementBytecode(const Instr &instr);
+  bool DoRaise(const Instr &instr);
+  bool DoSetupFinally(const Instr &instr);
+  bool DoWithCleanUpStart(const Instr &instr);
+  bool DoWithCleanUpFinish(const Instr &instr);
+  bool DoBeginFinally(const Instr &instr);
+  bool DoPopFinally(const Instr &instr);
+  bool DoEndFinally(const Instr &instr);
+  bool DoCallFinally(const Instr &instr);
+  bool DoSetupExc(const Instr &instr);
+  bool DoRaiseVarage(const Instr &instr);
+  bool DoPopExc(const Instr &instr);
+  bool DoExcMatch(const Instr &instr);
+  bool DoLoadAssertError(const Instr &instr);
+  bool DoPopStack(const Instr &instr);
+  bool DoRaiseVarags(const Instr &instr);
 
   const auto &root() const { return root_; }
   const auto &frame() const { return frame_; }
@@ -295,6 +316,7 @@ class GraphBuilder {
   int cur_bci_ = 0;
   bool no_grad_;
   std::vector<TryBlock> tryBlockStacks_{};
+  FrameStates excFrame_;
 
   static const std::unordered_map<int, bool (GraphBuilder::*)(const Instr &)> bytecode_meth_map_;
 

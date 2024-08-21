@@ -78,6 +78,7 @@ class FrameStates {
     }
   }
   void Push(ValueNode *i) { stack.push_back(i); }
+  int Size() { return stack.size(); }
 
   void Rot(int i) {
     MS_ASSERT((int)stack.size() - i >= 0);
