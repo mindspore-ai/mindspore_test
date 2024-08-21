@@ -17,11 +17,18 @@
 #define MINDSPORE_CCSRC_COMMON_GRAPH_KERNEL_CORE_EXPANDER_H_
 #include <vector>
 #include <memory>
+#include <map>
+#include <string>
 #include "ir/func_graph.h"
 #include "include/backend/visible.h"
 #include "backend/common/graph_kernel/core/graph_kernel_callback.h"
 
 namespace mindspore::graphkernel {
+// For some ops, the output number of the original cnode is different from the output number of subgraph.
+// The common reason is: the output of Assign must be an output of graph kernel,
+// but the parameter be assigned is unnecessary to be an output of the original cnode.
+// These ops are recorded in output_num_inconsistent_ops
+const std::map<std::string, std::vector<size_t>> output_num_inconsistent_ops = {{"ApplyMomentum", {1}}};
 class BACKEND_EXPORT Expander {
  public:
   /**
