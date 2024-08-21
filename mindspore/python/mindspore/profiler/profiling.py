@@ -413,8 +413,8 @@ class Profiler:
             If set to True, only the delivery of profiler and the original performance data in the PROF_XXX
             directory are retained to save disk space.
             Default value: ``True`` .
-        with_stack (bool, optional): (Ascend) Whether to collect frame host call stack data.
-            Default value: ``False`` .
+        with_stack (bool, optional): (Ascend) Whether to collect frame host call stack data on the Python side. This
+            data is presented in the form of a flame graph in the timeline. Default value: ``False`` .
 
     Raises:
         RuntimeError: When the version of CANN does not match the version of MindSpore,

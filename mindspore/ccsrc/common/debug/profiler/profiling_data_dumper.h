@@ -39,7 +39,7 @@
 namespace mindspore {
 namespace profiler {
 namespace ascend {
-constexpr uint32_t kDefaultRingBuffer = 1000 * 1000;
+constexpr uint32_t kDefaultRingBuffer = 2000 * 1000;
 constexpr uint32_t kBatchMaxLen = 5 * 1024 * 1024;  // 5 MB
 constexpr uint32_t kMaxWaitTimeUs = 100 * 1000;
 constexpr uint32_t kMaxWaitTimes = 10;
