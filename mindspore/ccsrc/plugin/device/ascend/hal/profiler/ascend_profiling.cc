@@ -236,7 +236,7 @@ void AscendProfiler::Start() {
   ProfilingDataDumper::GetInstance().Init(op_range_dir, rank_id_);
   ProfilingDataDumper::GetInstance().Start();
   pybind11::gil_scoped_acquire gil;
-  if (host_stack_) {
+  if (with_stack_) {
     PythonTracer::call(Command::kStartOne, rank_id_);
   }
   StepProfilingEnable(true);
