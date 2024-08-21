@@ -156,14 +156,21 @@ const std::unordered_map<int, bool (GraphBuilder::*)(const Instr &)> GraphBuilde
   {JUMP_FORWARD, &GraphBuilder::TraceRunControl},
   {JUMP_ABSOLUTE, &GraphBuilder::TraceRunControl},
   {YIELD_VALUE, &GraphBuilder::DoYieldValue},
-  {POP_BLOCK, &GraphBuilder::DoException},
-  {SETUP_WITH, &GraphBuilder::DoException},
-  {SETUP_FINALLY, &GraphBuilder::DoException},
-  {BEGIN_FINALLY, &GraphBuilder::DoException},
-  {WITH_CLEANUP_START, &GraphBuilder::DoException},
-  {WITH_CLEANUP_FINISH, &GraphBuilder::DoException},
-  {END_FINALLY, &GraphBuilder::DoException},
-  {SETUP_EXCEPT, &GraphBuilder::DoException},
+  {POP_BLOCK, &GraphBuilder::DoPopStack},
+  {SETUP_WITH, &GraphBuilder::DoWith},
+  {SETUP_FINALLY, &GraphBuilder::DoSetupFinally},
+  {WITH_CLEANUP_START, &GraphBuilder::DoWithCleanUpStart},
+  {WITH_CLEANUP_FINISH, &GraphBuilder::DoWithCleanUpFinish},
+  {END_FINALLY, &GraphBuilder::DoEndFinally},
+  {SETUP_EXCEPT, &GraphBuilder::DoSetupExc},
+  {LOAD_ASSERTION_ERROR, &GraphBuilder::DoLoadAssertError},
+  {POP_EXCEPT, &GraphBuilder::DoPopExc},
+  {RERAISE, &GraphBuilder::DoRaise},
+  {RAISE_VARARGS, &GraphBuilder::DoRaiseVarags},
+  {JUMP_IF_NOT_EXC_MATCH, &GraphBuilder::DoExcMatch},
+  {BEGIN_FINALLY, &GraphBuilder::DoBeginFinally},
+  {POP_FINALLY, &GraphBuilder::DoPopFinally},
+  {CALL_FINALLY, &GraphBuilder::DoCallFinally},
   {BUILD_TUPLE_UNPACK, &GraphBuilder::DoBuildWithUnpack},
   {BUILD_TUPLE_UNPACK_WITH_CALL, &GraphBuilder::DoBuildWithUnpack},
   {BUILD_LIST_UNPACK, &GraphBuilder::DoBuildWithUnpack},
@@ -649,85 +656,203 @@ bool GraphBuilder::DoWith(const Instr &instr) {
     MS_LOG(ERROR) << "function '__enter__' runs failed here, it should be successful!";
     return false;
   }
-  PushStack(TryBlock{SETUP_WITH, instr.extra_jump()->bci(), instr.bci(), false});
+  PushStack(TryBlock{SETUP_WITH, instr.extra_jump()->bci(), instr.name(), instr.bci(), false});
   cur_bci_++;
   return true;
 }
 
-bool GraphBuilder::DoException(const Instr &instr) {
-#if (PY_MAJOR_VERSION == 3) && (PY_MINOR_VERSION > 10)
-  return false;
-#else
-  int opCode = instr.op();
-  if (opCode == SETUP_WITH) {
-    return DoWith(instr);
-  } else if (opCode == POP_BLOCK) {
-    PopStack();
-    return true;
-  } else if (opCode == SETUP_FINALLY) {
-    /*
-      ByteCode like this in python3.9
-      0 SETUP_FINALLY    xxx
-      1 SETUP_FINALLY    xxx
-      the first SETUP_FINALLY points to finally block, the second points to exception block
-    */
-    if (graph_->Config().GetBoolConfig(GraphJitConfig::kSkipException)) {
-      graph_->StopTraceAt(cur_bci_, StopTraceReason::kStopTraceSkip_Exception);
-      return false;
-    }
-    if (StackSize() == 0 || GetTryBlockStacks().back().type != SETUP_FINALLY) {
-      PushStack(TryBlock{SETUP_FINALLY, instr.extra_jump()->bci(), instr.bci(), true});
-    } else {
-      assert(StackSize() > 0 || GetTryBlockStacks().back().type == SETUP_FINALLY);
-      PushStack(TryBlock{SETUP_FINALLY, instr.extra_jump()->bci(), instr.bci(), false});
-    }
-    cur_bci_++;
-    return true;
-  } else if (opCode == WITH_CLEANUP_START) {
-    /* python3.7 only */
-    ValueNode *exc = seek(0);
-    ValueNode *exit_func = seek(1);
-    if (exc->GetVobj()->GetType() != AObject::kTypeNone) {
-      return false;
-    }
-    if (exit_func->GetName() != "__exit__") {
-      MS_LOG(ERROR) << "it should call function '__exit__' here!";
-      return false;
-    }
-    // run exit func
-    push(exc);
-    push(exc);
-    if (!DoCall({CALL_FUNCTION, 3})) {
-      MS_LOG(ERROR) << "function '__exit__' runs failed here, it should be successful!";
-      return false;
-    }
-    push(exc);
-    return true;
-  } else if (opCode == WITH_CLEANUP_FINISH) {
-    auto exc = pop();
-    (void)pop();
-    push(exc);
-    return true;
-  } else if (opCode == BEGIN_FINALLY) {
-    auto n = NewValueNode(AObject::Convert(Py_None), LOAD_CONST, 0);
-    push(n);
-    return true;
-  } else if (opCode == END_FINALLY) {
-    (void)pop();
-    return true;
-  } else if (opCode == SETUP_EXCEPT) {
-    if (graph_->Config().GetBoolConfig(GraphJitConfig::kSkipException)) {
-      graph_->StopTraceAt(cur_bci_, StopTraceReason::kStopTraceSkip_Exception);
-      return false;
-    }
-    PushStack(TryBlock{SETUP_EXCEPT, instr.extra_jump()->bci(), instr.bci(), false});
-    cur_bci_++;
-    return true;
-  } else {
-    MS_LOG(INTERNAL_EXCEPTION) << "parser got an error instruction " << instr.ToString();
+bool GraphBuilder::DoPopFinally(const mindspore::pijit::Instr &instr) {
+  auto preserveTOS = instr.arg();
+  if (preserveTOS) {
+    auto res = pop();
+    pop();
+    push(res);
   }
-  return false;
-#endif
+  return true;
+}
+
+bool GraphBuilder::DoRaiseVarags(const mindspore::pijit::Instr &instr) {
+  int oparg = instr.arg();
+  if (oparg != 1) {
+    return false;
+  }
+  auto exc = pop();
+  pushExc(exc);
+  return DoRaise(instr);
+}
+
+bool GraphBuilder::DoRaise(const mindspore::pijit::Instr &instr) {
+  auto exc = peekExc(0);
+
+  if (StackSize() < 1) {
+    return false;
+  }
+
+  auto tryBlock = PopStack();
+  while (tryBlock.name == "EXCEPT_HANDLER") {
+    popn(3);
+    if (StackSize() < 1) {
+      return false;
+    }
+    tryBlock = PopStack();
+  }
+
+  if (tryBlock.type != SETUP_FINALLY && tryBlock.type != SETUP_EXCEPT) {
+    return false;
+  }
+
+  // Push a dummy block stack entry of EXCEPT_HANDLER
+  // https://github.com/python/cpython/blob/3.10/Python/ceval.c#L1456
+  PushStack(TryBlock{0, 0, "EXCEPT_HANDLER", 0, false});
+  auto noneNode = NewValueNode(AObject::Convert(Py_None), LOAD_CONST, 0, {});
+  if (excStackSize() >= 2) {
+    auto old_exc = peekExc(1);
+    push(noneNode);
+    push(old_exc);
+    push(old_exc);
+  } else {
+    push(noneNode);
+    push(noneNode);
+    push(noneNode);
+  }
+
+  push(noneNode);  // traceback
+  push(exc);       // value
+  push(exc);       // type
+
+  cur_bci_ = tryBlock.bci - 1;
+  return true;
+}
+
+bool GraphBuilder::DoSetupExc(const mindspore::pijit::Instr &instr) {
+  if (graph_->Config().GetBoolConfig(GraphJitConfig::kSkipException)) {
+    graph_->StopTraceAt(cur_bci_, StopTraceReason::kStopTraceSkip_Exception);
+    return false;
+  }
+  PushStack(TryBlock{SETUP_EXCEPT, instr.extra_jump()->bci(), instr.name(), instr.bci(), false});
+  cur_bci_++;
+  return true;
+}
+
+bool GraphBuilder::DoPopExc(const mindspore::pijit::Instr &instr) {
+  if (StackSize() < 1) {
+    MS_LOG(ERROR) << "try block stack size is 0.";
+    return false;
+  }
+  if (PeekStack(0).name != "EXCEPT_HANDLER") {
+    MS_LOG(ERROR) << "Top of the try block stack is not EXCEPT_HANDLER.";
+    return false;
+  }
+  PopStack();
+  popExc();
+  return true;
+}
+
+bool GraphBuilder::DoExcMatch(const mindspore::pijit::Instr &instr) {
+  auto expectedExcType = pop();
+  auto gotExcInstance = pop();
+
+  auto expectedErrs = expectedExcType->GetVobj()->GetPyObject().ptr();
+  auto gotErr = gotExcInstance->GetVobj()->GetPyObject().ptr();
+  if (!PyTuple_Check(expectedErrs) && !PyExceptionClass_Check(expectedErrs)) {
+    MS_LOG(ERROR) << "unsupported except types: " << Py_TYPE(expectedErrs);
+    return false;
+  }
+
+  auto res = PyErr_GivenExceptionMatches(gotErr, expectedErrs);
+  if (res == 0) {
+    cur_bci_ = instr.extra_jump()->bci();  // 没有匹配上，跳到目标bci
+  } else {
+    cur_bci_++;  // 匹配到对应类型，fallthrough
+  }
+  return true;
+}
+
+bool GraphBuilder::DoPopStack(const mindspore::pijit::Instr &instr) {
+  PopStack();
+  return true;
+}
+
+bool GraphBuilder::DoSetupFinally(const mindspore::pijit::Instr &instr) {
+  /*
+        ByteCode like this in python3.9
+        0 SETUP_FINALLY    xxx
+        1 SETUP_FINALLY    xxx
+        the first SETUP_FINALLY points to finally block, the second points to exception block
+      */
+  if (graph_->Config().GetBoolConfig(GraphJitConfig::kSkipException)) {
+    graph_->StopTraceAt(cur_bci_, StopTraceReason::kStopTraceSkip_Exception);
+    return false;
+  }
+  if (StackSize() == 0 || GetTryBlockStacks().back().type != SETUP_FINALLY) {
+    PushStack(TryBlock{SETUP_FINALLY, instr.extra_jump()->bci(), instr.name(), instr.bci(), true});
+  } else {
+    PushStack(TryBlock{SETUP_FINALLY, instr.extra_jump()->bci(), instr.name(), instr.bci(), false});
+  }
+  cur_bci_++;
+  return true;
+}
+
+bool GraphBuilder::DoWithCleanUpFinish(const mindspore::pijit::Instr &instr) {
+  auto exc = pop();
+  (void)pop();
+  push(exc);
+  return true;
+}
+
+bool GraphBuilder::DoWithCleanUpStart(const mindspore::pijit::Instr &instr) {
+  /* python3.7 only */
+  ValueNode *exc = seek(0);
+  ValueNode *exit_func = seek(1);
+  if (exc->GetVobj()->GetType() != AObject::kTypeNone) {
+    return false;
+  }
+  if (exit_func->GetName() != "__exit__") {
+    MS_LOG(ERROR) << "it should call function '__exit__' here!";
+    return false;
+  }
+  // run exit func
+  push(exc);
+  push(exc);
+  if (!DoCall({CALL_FUNCTION, 3})) {
+    MS_LOG(ERROR) << "function '__exit__' runs failed here, it should be successful!";
+    return false;
+  }
+  push(exc);
+  return true;
+}
+
+bool GraphBuilder::DoBeginFinally(const mindspore::pijit::Instr &instr) {
+  auto noneNode = NewValueNode(AObject::Convert(Py_None), LOAD_CONST, 0, {});
+  push(noneNode);
+  return true;
+}
+
+bool GraphBuilder::DoEndFinally(const mindspore::pijit::Instr &instr) {
+  auto tos = pop();
+  if (PyLong_Check(tos->GetVobj()->GetPyObject().ptr())) {
+    cur_bci_ = tos->bci();
+  }
+
+  if (PyExceptionInstance_Check(tos->GetVobj()->GetPyObject().ptr()) ||
+      PyExceptionClass_Check(tos->GetVobj()->GetPyObject().ptr())) {
+    push(tos);
+    return DoRaise(instr);
+  }
+  return true;
+}
+
+bool GraphBuilder::DoLoadAssertError(const mindspore::pijit::Instr &instr) {
+  auto assertionError = NewValueNode(AObject::Convert(PyExc_AssertionError), LOAD_CONST, 0, {});
+  push(assertionError);
+  return true;
+}
+
+bool GraphBuilder::DoCallFinally(const mindspore::pijit::Instr &instr) {
+  auto callFinalBci = NewValueNode(AObject::Convert(py::int_(0)), LOAD_CONST, 0, {});
+  push(callFinalBci);
+  cur_bci_ += instr.arg() / 2;
+  return true;
 }
 
 TryBlock &GraphBuilder::PeekStack(int p) {
@@ -735,9 +860,9 @@ TryBlock &GraphBuilder::PeekStack(int p) {
   return tryBlockStacks_[tryBlockStacks_.size() - p - 1];
 }
 
-TryBlock &GraphBuilder::PopStack() {
+TryBlock GraphBuilder::PopStack() {
   MS_ASSERT(tryBlockStacks_.size() > 0);
-  auto &tb = tryBlockStacks_[tryBlockStacks_.size() - 1];
+  auto tb = tryBlockStacks_[tryBlockStacks_.size() - 1];
   tryBlockStacks_.pop_back();
   return tb;
 }
@@ -1957,6 +2082,9 @@ bool CheckSupportCreateInstance(CallNode *call_node) {
   PyTypeObject *tp = reinterpret_cast<PyTypeObject *>(static_cast<AbstractType *>(cls_info)->GetPyObject().ptr());
   if (tp == nullptr) {
     return false;
+  }
+  if (PyExceptionClass_Check(tp)) {
+    return true;
   }
   if (support_create_instance_type.find(tp) != support_create_instance_type.end()) {
     return true;
@@ -4493,7 +4621,19 @@ bool MindGraphBuilder::DoCompare(const Instr &instr) {
     push(v);
     return true;
   }
+  if (opcode.IsExcMatch(oparg)) {
+    auto expectedErrs = r->GetVobj()->GetPyObject().ptr();
+    auto gotErr = l->GetVobj()->GetPyObject().ptr();
+    if (!PyTuple_Check(expectedErrs) && !PyExceptionClass_Check(expectedErrs)) {
+      MS_LOG(ERROR) << "unsupported except types: " << Py_TYPE(expectedErrs);
+      return false;
+    }
 
+    auto res = PyErr_GivenExceptionMatches(gotErr, expectedErrs);
+    auto v = NewValueNode(AObject::Convert(res ? Py_True : Py_False), instr, {l, r});
+    push(v);
+    return true;
+  }
   auto o = HandleMultiOp(instr, {l, r}, true);
   auto v = NewValueNode(AObject::Convert(o), instr, {l, r});
   v->set_abstract_wrapper(o);
