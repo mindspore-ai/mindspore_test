@@ -31,7 +31,8 @@ from mindspore.ops.operations.comm_ops import (AllGather, _MiniStepAllGather, _H
                                                _GetTensorSlice, _MirrorOperator, _MirrorMiniStepOperator, ReduceOp,
                                                ReduceScatter, _HostReduceScatter, _VirtualDiv, _VirtualAdd, _AllSwap,
                                                _VirtualAssignAdd, _VirtualAccuGrad, _MirrorMicroStepOperator,
-                                               _MicroStepAllGather, Reduce, CollectiveGather, CollectiveScatter)
+                                               _MicroStepAllGather, Reduce, CollectiveGather, CollectiveScatter,
+                                               _VirtualAssignKvCache)
 from mindspore.ops._grad_experimental.grad_base import bprop_getters
 from mindspore.ops.operations import _grad_ops as G
 import mindspore as ms
@@ -175,6 +176,23 @@ def get_bprop_virtual_assign_add(self):
         if reduce_scatter:
             dout = reduce_scatter(dout)
         return F.depend((cast(out_tensor, dtype(x)), cast(out_tensor, dtype(y))), assign_add(y, dout))
+
+    return bprop
+
+
+@bprop_getters.register(_VirtualAssignKvCache)
+def get_bprop_virtual_assign_kv_cache(self):
+    """Generate bprop for VirtualAssignAdd."""
+    assign = P.Assign()
+    cast = P.Cast()
+    dtype = P.DType()
+    out_tensor = Tensor(0.0, mstype.float16)
+
+    def bprop(x, y, kv_equal, out, dout):
+        dout_update = dout + y
+        update_kv = F.select(kv_equal, F.broadcast_to(cast(out_tensor, dtype(y)), F.shape(y)), dout_update)
+        return F.depend((dout_update, cast(out_tensor, dtype(y)),
+                         cast(out_tensor, dtype(kv_equal))), assign(y, update_kv))
 
     return bprop
 
