@@ -25,10 +25,10 @@ mindspore.mint.nn.functional.selu
         :align: center
 
     参数：
-        - **input** (Tensor) - 任意维度的Tensor，数据类型为int8、int32、float16、float32、bfloat16。
+        - **input** (Tensor) - 任意维度的Tensor，数据类型为float16、float32、bfloat16。
 
     返回：
         Tensor，数据类型和shape与 `input` 的相同。
 
     异常：
-        - **TypeError** - `input` 的数据类型不是int8、int32、float16、float32、bfloat16。
+        - **TypeError** - `input` 的数据类型不是float16、float32、bfloat16。

@@ -315,30 +315,12 @@ class SELU(Cell):
     r"""
     Activation function SELU (Scaled exponential Linear Unit).
 
-    The activation function is defined as:
+    Refer to :func:`mindspore.mint.nn.functional.selu` for more details.
 
-    .. math::
-        E_{i} =
-        scale *
-        \begin{cases}
-        x_{i}, &\text{if } x_{i} \geq 0; \cr
-        \text{alpha} * (\exp(x_i) - 1), &\text{otherwise.}
-        \end{cases}
+    SELU Activation Function Graph:
 
-    where :math:`alpha` and :math:`scale` are pre-defined constants(:math:`alpha=1.67326324`
-    and :math:`scale=1.05070098`).
-
-    See more details in `Self-Normalizing Neural Networks <https://arxiv.org/abs/1706.02515>`_.
-
-    Args:
-        - **input** (Tensor) - Tensor of any dimension.
-          The data type is int8, int32, float16, float32, bfloat16.
-
-    Returns:
-        Tensor, with the same type and shape as the `input`.
-
-    Raises:
-        TypeError: If dtype of `input` is not int8, int32, float16, float32, bfloat16.
+    .. image:: ../images/SeLU.png
+        :align: center
 
     Supported Platforms:
         ``Ascend``

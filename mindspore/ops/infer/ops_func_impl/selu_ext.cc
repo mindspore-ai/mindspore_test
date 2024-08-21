@@ -29,7 +29,7 @@ BaseShapePtr SeLUExtFuncImpl::InferShape(const PrimitivePtr &primitive,
 TypePtr SeLUExtFuncImpl::InferType(const PrimitivePtr &primitive,
                                    const std::vector<AbstractBasePtr> &input_args) const {
   auto x_type = input_args[kIndex0]->GetType();
-  const std::set<TypePtr> valid_types = {kInt8, kInt32, kFloat16, kFloat32, kFloat64, kBFloat16};
+  const std::set<TypePtr> valid_types = {kFloat16, kFloat32, kBFloat16};
   auto tensor_type = x_type->cast<TensorTypePtr>();
   auto real_type = tensor_type->element();
   (void)CheckAndConvertUtils::CheckSubClass("input", real_type, valid_types, primitive->name());
@@ -37,7 +37,7 @@ TypePtr SeLUExtFuncImpl::InferType(const PrimitivePtr &primitive,
 }
 TypePtrList SeLUExtFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
   const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
-  const std::set<TypePtr> valid_types = {kInt8, kInt32, kFloat16, kFloat32, kBFloat16};
+  const std::set<TypePtr> valid_types = {kFloat16, kFloat32, kBFloat16};
   const auto &input_type = x_tensor->Dtype();
   (void)CheckAndConvertUtils::CheckSubClass("input", input_type, valid_types, primitive->name());
   return {input_type};

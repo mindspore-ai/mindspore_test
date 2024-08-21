@@ -24,8 +24,6 @@ namespace ops {
 OP_FUNC_IMPL_INFER_TEST_DECLARE(SeLUExt, EltwiseOpParams);
 OP_FUNC_IMPL_INFER_TEST_CASES(SeLUExt, testing::Values(EltwiseOpParams{{3, 2, 3}, kFloat32, {3, 2, 3}, kFloat32},
                                                        EltwiseOpParams{{3, 2, 3}, kFloat16, {3, 2, 3}, kFloat16},
-                                                       EltwiseOpParams{{3, 2, -1}, kBFloat16, {3, 2, -1}, kBFloat16},
-                                                       EltwiseOpParams{{-1, -1}, kInt8, {-1, -1}, kInt8},
-                                                       EltwiseOpParams{{-2}, kInt32, {-2}, kInt32}));
+                                                       EltwiseOpParams{{3, 2, -1}, kBFloat16, {3, 2, -1}, kBFloat16}));
 }  // namespace ops
 }  // namespace mindspore

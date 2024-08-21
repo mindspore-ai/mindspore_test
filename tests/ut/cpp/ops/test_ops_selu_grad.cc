@@ -26,8 +26,6 @@ OP_FUNC_IMPL_INFER_TEST_CASES(
   SeluGrad,
   testing::Values(MultiInputOpParams{{{1, 3}, {1, 3}}, {kFloat32, kFloat32}, {{1, 3}}, {kFloat32}, {}},
                   MultiInputOpParams{{{1, 3}, {1, 3}}, {kFloat16, kFloat16}, {{1, 3}}, {kFloat16}, {}},
-                  MultiInputOpParams{{{-1, 3}, {-1, 3}}, {kBFloat16, kBFloat16}, {{-1, 3}}, {kBFloat16}, {}},
-                  MultiInputOpParams{{{-1, 2, 3}, {-1, 2, 3}}, {kInt8, kInt8}, {{-1, 2, 3}}, {kInt8}, {}},
-                  MultiInputOpParams{{{-2}, {-2}}, {kInt32, kInt32}, {{-2}}, {kInt32}, {}}));
+                  MultiInputOpParams{{{-1, 3}, {-1, 3}}, {kBFloat16, kBFloat16}, {{-1, 3}}, {kBFloat16}, {}}));
 }  // namespace ops
 }  // namespace mindspore

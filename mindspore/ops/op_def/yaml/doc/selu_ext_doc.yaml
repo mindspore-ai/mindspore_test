@@ -17,15 +17,20 @@ selu_ext:
 
       See more details in `Self-Normalizing Neural Networks <https://arxiv.org/abs/1706.02515>`_.
 
+      SELU Activation Function Graph:
+
+      .. image:: ../images/SeLU.png
+          :align: center
+
       Args:
           - **input** (Tensor) - Tensor of any dimension.
-            The data type is int8, int32, float16, float32, bfloat16(only 910B).
+            The data type is float16, float32, bfloat16.
 
       Returns:
           Tensor, with the same type and shape as the `input`.
 
       Raises:
-          TypeError: If dtype of `input` is not int8, int32, float16, float32, bfloat16.
+          TypeError: If dtype of `input` is not float16, float32, bfloat16.
 
       Supported Platforms:
           ``Ascend``
