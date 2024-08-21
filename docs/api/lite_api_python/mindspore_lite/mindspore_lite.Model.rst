@@ -68,6 +68,16 @@ mindspore_lite.Model
         返回：
             list[Tensor]，模型的输入Tensor列表。
 
+    .. py:method:: get_model_info(key)
+
+        获取模型信息。
+
+        参数：
+            - **key** (str) - 获取模型信息关键字，当前支持user_info、input_shape、dynamic_dims、user_info为用户信息，input_shape为模型输入shape，dynamic_dims为动态分档模型支持的尺寸。
+        
+        异常：
+            - **TypeError** - key不是str类型。
+
     .. py:method:: get_outputs()
 
         获取模型的所有输出Tensor信息。
@@ -117,16 +127,6 @@ mindspore_lite.Model
             - **TypeError** - `dims` 是list类型，元素是list类型，但元素的元素不是int类型。
             - **ValueError** -  `inputs` 的size不等于 `dims` 的size。
             - **RuntimeError** - 调整输入形状的大小失败。
-
-    .. py:method:: get_model_info(key)
-
-        获取模型信息。
-
-        参数：
-            - **key** (str) - 获取模型信息关键字，当前支持user_info、input_shape、dynamic_dims、user_info为用户信息，input_shape为模型输入shape，dynamic_dims为动态分档模型支持的尺寸。
-        
-        异常：
-            - key不是str类型。
 
     .. py:method:: update_weights(weights)
 
