@@ -290,7 +290,7 @@ class GraphBuilder {
   Graph *graph_;
   FrameStates frame_;
   Block *current_block_;
-  int cur_bci_;
+  int cur_bci_ = 0;
   std::vector<TryBlock> tryBlockStacks_{};
 
   static const std::unordered_map<int, bool (GraphBuilder::*)(const Instr &)> bytecode_meth_map_;

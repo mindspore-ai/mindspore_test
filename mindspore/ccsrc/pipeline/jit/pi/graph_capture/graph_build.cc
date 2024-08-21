@@ -583,6 +583,8 @@ bool GraphBuilder::DoCellAccess(const Instr &instr) {
     push(frame_.Closure(oparg));
   } else if (opcode == LOAD_DEREF) {
     MS_EXCEPTION_IF_NULL(frame_.Closure(oparg)->GetValue());
+    // This ValueNode was pre-created in the GraphBuilder constructor, with its bci set to 0.
+    // As far as we know, there's no need to modify the ValueNode's bci to be current bytecode's bci.
     push(frame_.Closure(oparg)->GetValue());
   } else if (opcode == STORE_DEREF) {
     value = pop();
@@ -1717,6 +1719,7 @@ GraphBuilder::GraphBuilder(const PyFrameWrapper &f)
     if (cell_contents == nullptr) {
       n->SetValue(&ValueNode::kUnboundLocal);
     } else {
+      // The bci of this ValueNode is set to 0.
       ValueNode *param = NewValueNode(AObject::Convert(cell_contents), LOAD_DEREF, oparg);
       graph_->GetTracedNodes().push_back(param);
       param->SetGraph(graph_);
