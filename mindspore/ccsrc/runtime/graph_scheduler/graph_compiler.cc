@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <functional>
 #include <list>
+#include <regex>
 #include "runtime/graph_scheduler/graph_scheduler.h"
 #include "runtime/device/device_address_utils.h"
 #include "runtime/pynative/op_executor.h"
@@ -418,6 +419,48 @@ GraphId CompileAnyTypeInputGraph(const KernelGraphPtr &graph, const AnfNodePtrLi
   DeviceAddressUtils::CreateGraphOutputDeviceAddress(device_context, graph);
   return graph->graph_id();
 }
+
+void ResetNodeId(const std::vector<KernelGraphPtr> &graphs) {
+  static mindspore::HashMap<std::string, int> node_ids;
+  for (const auto &graph : graphs) {
+    MS_EXCEPTION_IF_NULL(graph);
+    if (graph->memory_managed_by_ge()) {
+      continue;
+    }
+
+#ifdef ENABLE_DUMP_IR
+    auto context = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(context);
+    bool save_graphs = context->CanDump(kIntroductory);
+    if (save_graphs) {
+      std::string file_name = "graph_build_before_reset_id_" + std::to_string(graph->graph_id()) + ".ir";
+      DumpIR(file_name, graph, true, kWholeStack);
+    }
+#endif
+    const auto &all_nodes = TopoSort(graph->get_return(), SuccDeeperSimple);
+    constexpr size_t name_scope_id = 1;
+    constexpr size_t name_suffix_id = 3;
+    for (const auto &node : all_nodes) {
+      if (node != nullptr && node->isa<CNode>()) {
+        const auto &cnode = node->cast<CNodePtr>();
+        MS_EXCEPTION_IF_NULL(cnode);
+        const auto &fullname = cnode->fullname_with_scope();
+        const std::regex opname_regex("(.*)\\-op(\\d*)(.*)");  // scope&prim + -op + opid + suffix
+        std::smatch opname_match;
+        if (std::regex_match(fullname, opname_match, opname_regex)) {
+          std::string id_prefix = opname_match[name_scope_id].str() + "-op";
+          if (node_ids.find(id_prefix) == node_ids.end()) {
+            node_ids[id_prefix] = 0;
+          } else {
+            node_ids[id_prefix]++;
+          }
+          cnode->set_fullname_with_scope(id_prefix + std::to_string(node_ids[id_prefix]) +
+                                         opname_match[name_suffix_id].str());
+        }
+      }
+    }
+  }
+}
 }  // namespace
 
 GraphId GraphCompiler::CompileGraph(const GraphSegmentPtr &segment,
@@ -498,8 +541,9 @@ GraphId GraphCompiler::CompileGraph(const KernelGraphPtr &kernel_graph,
   }
 
   kernel_graph->set_front_outputs(outputs);
-
   kernel_graph->set_root_graph_id(graph_id);
+
+  ResetNodeId({kernel_graph});
   session_->DumpGraphs({kernel_graph});
 
   // The kernel_graph is not compiled yet in PyNative Mode.
@@ -558,6 +602,7 @@ GraphId GraphCompiler::CompileDynamicGraph(const KernelGraphPtr &kernel_graph, c
 
   GraphId graph_id = kernel_graph->graph_id();
   kernel_graph->set_root_graph_id(graph_id);
+  ResetNodeId({kernel_graph});
   session_->DumpGraphs({kernel_graph});
 
   MS_LOG(INFO) << "Status record: end compile kernel_graph. kernel_graph id: " << graph_id;
@@ -661,8 +706,8 @@ GraphId GraphCompiler::CompileWholeGraphForGraphRunMode(const FuncGraphPtr &func
     CompileCacheContext::GetInstance().Clear();
   }
 
+  ResetNodeId(all_graphs);
   // dump all graphs.
-  // for ascend mindRT.
   session_->DumpGraphs(all_graphs);
 
   if (!func_graph->has_flag(kFlagPyNativeRunInGraph)) {
