@@ -55,6 +55,7 @@ constexpr char kKeepInputUnchanged[] = "keep_input_unchanged";
 
 constexpr char kPipeline1F1B[] = "1f1b";
 constexpr char kPipelineGpipe[] = "gpipe";
+constexpr char kPipelineSeqpipe[] = "seqpipe";
 
 constexpr char kFusionAuto[] = "auto";
 constexpr char kFusionSize[] = "size";

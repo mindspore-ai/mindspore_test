@@ -68,17 +68,18 @@ CNodePtr GetCellBySend(const AnfNodePtr &node) {
   return fg_cnode;
 }
 
-void InterleavedScheduler::GetBackwardBorderNode(const CNodePtr &cnode) {
+void PipelineScheduler::GetBackwardBorderNode(const CNodePtr &cnode) {
   auto chunk = GetValue<int64_t>(cnode->GetPrimalAttr(CHUNK));
   auto micro = GetValue<int64_t>(cnode->GetPrimalAttr(MICRO));
-  Border border = {cnode, chunk, micro};
-  Border border_cell = {nullptr, chunk, micro};
+  int64_t seq_chunk = cnode->HasPrimalAttr(SEQ_CHUNK) ? GetValue<int64_t>(cnode->GetPrimalAttr(SEQ_CHUNK)) : 0;
+  Border border = {cnode, chunk, micro, seq_chunk};
+  Border border_cell = {nullptr, chunk, micro, seq_chunk};
   if (cnode->HasPrimalAttr(kPrimalAttrForwardNodeName)) {
     if (cnode->HasPrimalAttr(PIPELINE_BEGIN)) {
       auto bwd_cell = GetCellBySend(cnode);
       MS_EXCEPTION_IF_NULL(bwd_cell);
       if (stage_ == stage_num_ - 1 && chunk == chunk_num_ - 1) {
-        Border bwd_begin = {bwd_cell, chunk, micro};
+        Border bwd_begin = {bwd_cell, chunk, micro, seq_chunk};
         bwd_begin_.emplace_back(bwd_begin);
         border_cell.border = bwd_cell;
         bwd_cell_.emplace_back(border_cell);
@@ -89,7 +90,7 @@ void InterleavedScheduler::GetBackwardBorderNode(const CNodePtr &cnode) {
       auto bwd_cell = GetCellByReceive(cnode, manager_);
       MS_EXCEPTION_IF_NULL(bwd_cell);
       if (stage_ == 0 && chunk == 0) {
-        Border bwd_end = {bwd_cell, chunk, micro};
+        Border bwd_end = {bwd_cell, chunk, micro, seq_chunk};
         bwd_end_.emplace_back(bwd_end);
       }
       border_cell.border = bwd_cell;
@@ -101,7 +102,8 @@ void InterleavedScheduler::GetBackwardBorderNode(const CNodePtr &cnode) {
     }
   }
 }
-void InterleavedScheduler::GetChunkNumMicroSize(const std::vector<AnfNodePtr> &all_nodes) {
+
+void PipelineScheduler::GetChunkNumMicroSize(const std::vector<AnfNodePtr> &all_nodes) {
   for (auto &node : all_nodes) {
     if (!IsPrimitiveCNode(node, prim::kPrimSend) && !IsPrimitiveCNode(node, prim::kPrimReceive)) {
       continue;
@@ -117,8 +119,8 @@ void InterleavedScheduler::GetChunkNumMicroSize(const std::vector<AnfNodePtr> &a
   }
 }
 
-void InterleavedScheduler::GetBorderNode() {
-  auto all_nodes = DeepScopedGraphSearch(root_->get_return());
+void PipelineScheduler::GetBorderNode() {
+  auto all_nodes = TopoSort(root_->get_return(), SuccDeeperSimple);
   GetChunkNumMicroSize(all_nodes);
   for (auto &node : all_nodes) {
     if (!IsPrimitiveCNode(node, prim::kPrimSend) && !IsPrimitiveCNode(node, prim::kPrimReceive)) {
@@ -131,8 +133,10 @@ void InterleavedScheduler::GetBorderNode() {
     }
     auto chunk = GetValue<int64_t>(cnode->GetPrimalAttr(CHUNK));
     auto micro = GetValue<int64_t>(cnode->GetPrimalAttr(MICRO));
-    Border border = {cnode, chunk, micro};
-    Border border_cell = {nullptr, chunk, micro};
+    int64_t seq_chunk = cnode->HasPrimalAttr(SEQ_CHUNK) ? GetValue<int64_t>(cnode->GetPrimalAttr(SEQ_CHUNK)) : 0;
+    Border border = {cnode, chunk, micro, seq_chunk};
+    Border border_cell = {nullptr, chunk, micro, seq_chunk};
+
     if (cnode->HasPrimalAttr(kPrimalAttrForwardNodeName)) {
       GetBackwardBorderNode(cnode);
       continue;
@@ -141,7 +145,7 @@ void InterleavedScheduler::GetBorderNode() {
       auto fwd_cell = GetCellByReceive(cnode, manager_);
       MS_EXCEPTION_IF_NULL(fwd_cell);
       if (stage_ == stage_num_ - 1 && chunk == chunk_num_ - 1) {
-        Border fwd_end = {fwd_cell, chunk, micro};
+        Border fwd_end = {fwd_cell, chunk, micro, seq_chunk};
         fwd_end_.emplace_back(fwd_end);
       }
       border_cell.border = fwd_cell;
@@ -153,7 +157,7 @@ void InterleavedScheduler::GetBorderNode() {
       auto fwd_cell = GetCellBySend(cnode);
       MS_EXCEPTION_IF_NULL(fwd_cell);
       if (stage_ == 0 && chunk == 0) {
-        Border fwd_begin = {fwd_cell, chunk, micro};
+        Border fwd_begin = {fwd_cell, chunk, micro, seq_chunk};
         fwd_begin_.emplace_back(fwd_begin);
         border_cell.border = fwd_cell;
         fwd_cell_.emplace_back(border_cell);
@@ -206,7 +210,7 @@ static bool SortFuncBetweenMicro(const BorderPair &b_i, const BorderPair &b_j, i
   return micro_i < micro_j;
 }
 
-void PipelineScheduler::ControlOrder(const Border &b_prior, const Border &b_last) {
+void PipelineScheduler::ControlOrder(const Border &b_prior, const Border &b_last, const std::string &tags) {
   auto node_prior = b_prior.border;
   auto node_last = b_last.border;
   if (node_prior == node_last) {
@@ -215,7 +219,7 @@ void PipelineScheduler::ControlOrder(const Border &b_prior, const Border &b_last
   std::vector<AnfNodePtr> depend_input = {NewValueNode(prim::kPrimDepend), node_last->input(1), node_prior};
   auto depend_node = root_->NewCNode(depend_input);
   depend_node->set_abstract(node_last->input(1)->abstract());
-  depend_node->AddPrimalAttr("pipeline_control", MakeValue(true));
+  depend_node->AddPrimalAttr(tags, MakeValue(true));
   manager_->SetEdge(node_last, 1, depend_node);
 }
 
@@ -776,5 +780,10 @@ void InterleavedScheduler::Reorder() {
   ParameterReorder(sorted_fwd_begin, sorted_bwd_end);
   OptimizerShardCommReorder();
 }
+SchedulerRegisterAction PipelineScheduler1F1B(parallel::kPipeline1F1B, [](const FuncGraphManagerPtr &manager,
+                                                                          const FuncGraphPtr &root, int64_t stage,
+                                                                          int64_t stage_num) {
+  return std::make_shared<parallel::InterleavedScheduler>(manager, root, stage, stage_num);
+});
 }  // namespace parallel
 }  // namespace mindspore

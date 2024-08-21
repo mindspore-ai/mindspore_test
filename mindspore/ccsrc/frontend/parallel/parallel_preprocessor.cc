@@ -156,6 +156,7 @@ static void MicroBatchPreProcess(const FuncGraphPtr &root, const FuncGraphManage
   if (pipeline_stages > 1) {
     HandleMicroBatch(all_nodes, manager);
     ParameterStartNode(all_nodes, manager);
+    BroadCastSeqChunk(root);
     LastStageEndNode(all_nodes, manager, root);
     return;
   }
