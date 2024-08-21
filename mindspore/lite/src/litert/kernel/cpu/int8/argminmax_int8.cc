@@ -86,6 +86,7 @@ int ArgMinMaxInt8CPUKernel::Prepare() {
   compute_param_->topk_ = param->topk_;
   compute_param_->out_value_ = param->out_value_;
   compute_param_->keep_dims_ = param->keep_dims_;
+  compute_param_->get_max_ = (param->op_parameter_.type_ == PrimType_ArgMinFusion ? false : true);
 
   if (!InferShapeDone()) {
     return RET_OK;
