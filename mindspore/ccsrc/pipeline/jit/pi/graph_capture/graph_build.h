@@ -346,7 +346,7 @@ class MindGraphBuilder : public GraphBuilder {
     TraceGuard trace_guard(location);
     fg_builder_ = std::make_shared<FuncGraphBuilder>();
   }
-  bool trace_flag() { return true; }
+  bool trace_flag() override { return true; }
   mindspore::FuncGraphBuilderPtr FGBuilder() const { return fg_builder_; }
   void FGAddNode(CallNode *call_node, const py::object &callable_info, const AbstractWrapperPtrList &args,
                  StopTraceReason *stop_reason);
@@ -405,6 +405,12 @@ class MindGraphBuilder : public GraphBuilder {
   AbstractWrapperPtr HandleGetShapeOfDynamicLengthTensor(const AbstractWrapperPtr &abstract_wrapper);
   std::pair<bool, std::vector<py::object>> GetConstantInputsObject(CallNode *call_node);
   py::object GetPyObject(ValueNode *node);
+
+  ValueNode *HandleMakeNamedtuple(CallNode *call_node);
+  AbstractWrapperPtr MakeNamedtupleInGraph(const CallNode *call_node, const AbstractNamedTuple *namedtuple_aobj);
+  bool CollectNamedtupleElements(const CallNode *call_node, const AbstractNamedTuple *namedtuple_aobj,
+                                 std::vector<AbstractWrapperPtr> *elems);
+  ValueNode *HandleNamedtupleGetElem(const Instr &instr, ValueNode *node);
 
   AbstractWrapperPtr HandleMultiOp(const Instr &instr, const std::vector<ValueNode *> &p, bool is_compare);
   AbstractWrapperPtr HandleBuildOp(const Instr &instr, const std::vector<ValueNode *> &p);

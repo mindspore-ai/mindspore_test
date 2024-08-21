@@ -28,6 +28,8 @@
 namespace py = pybind11;
 
 namespace mindspore {
+constexpr auto kPijitNamedtupleType = "pijit_namedtuple_type";
+
 class AbstractWrapper;
 using AbstractWrapperPtr = std::shared_ptr<AbstractWrapper>;
 using AbstractWrapperPtrList = std::vector<AbstractWrapperPtr>;

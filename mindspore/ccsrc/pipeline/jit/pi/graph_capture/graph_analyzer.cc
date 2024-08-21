@@ -767,6 +767,12 @@ void MindGraphAnalyzer::Analyze() {
   need_interpret_ = !graph_->GetSideEffect()->IsEmpty() || !GetCaptureInfo().outputs_optimize_.operations.empty();
 }
 
+inline bool IsScalar(const AbstractBasePtr &abstract) {
+  // The abstract of InterpretedObject is also AbstractScalar (type is External), we need to exclude it.
+  return abstract->isa<abstract::AbstractScalar>() &&
+         !abstract->cast<abstract::AbstractScalarPtr>()->GetType()->isa<External>();
+}
+
 // check whether the node can be added to the output of the graph
 // or can be added to the output of the graph through transformation
 // support : none, scalar, tensor, tuple, list, dict, and combination during them
@@ -785,9 +791,8 @@ inline bool IsValidGraphOutput(const AbstractBasePtr &abstract) {
       return IsValidGraphOutput(elem.first) && IsValidGraphOutput(elem.second);
     });
   }
-  return abstract->isa<abstract::AbstractNone>() || abstract->isa<abstract::AbstractScalar>() ||
-         abstract->isa<abstract::AbstractTensor>() || abstract->isa<abstract::AbstractRowTensor>() ||
-         abstract->isa<abstract::AbstractMapTensor>();
+  return abstract->isa<abstract::AbstractNone>() || IsScalar(abstract) || abstract->isa<abstract::AbstractTensor>() ||
+         abstract->isa<abstract::AbstractRowTensor>() || abstract->isa<abstract::AbstractMapTensor>();
 }
 
 inline bool IsValidOutput(const ValueNode *node) {
@@ -923,7 +928,7 @@ ValueNode *MindGraphAnalyzer::MutateSequenceNode(ValueNode *node) {
     func_graph_builder->AddLocalVariableNode(item_abstract_wrapper, graph_item);
     auto bc_index = graph_->NewValueNode(AObject::Convert(py::int_(index)), LOAD_CONST, -1, {});
     bc_index->set_abstract_wrapper(std::make_shared<AbstractWrapper>(MakeValue(index)->ToAbstract()));
-    auto bc_item = graph_->NewValueNode(nullptr, BINARY_SUBSCR, 0, {node, bc_index});
+    auto bc_item = graph_->NewValueNode(AObject::Convert(item_abstract_wrapper), BINARY_SUBSCR, 0, {node, bc_index});
     bc_item->set_abstract_wrapper(item_abstract_wrapper);
     AddNodeWithoutDuplicate(&GetCaptureInfo(), bc_index, true);
     AddNodeWithoutDuplicate(&GetCaptureInfo(), bc_item, true);
@@ -931,6 +936,12 @@ ValueNode *MindGraphAnalyzer::MutateSequenceNode(ValueNode *node) {
     maybe_update_nodes_[bc_item].push_back(mutated_node);
   }
   ReplaceSequenceNoneElementWithConst(mutated_node, graph_);
+
+  if (abstract->isa<abstract::AbstractNamedTuple>()) {
+    AddNodeWithoutDuplicate(&GetCaptureInfo(), mutated_node, true);
+    mutated_node = MutateNamedtupleNode(mutated_node, node);
+  }
+
   if (maybe_update_nodes_.find(node) != maybe_update_nodes_.end()) {
     auto update_nodes = maybe_update_nodes_.at(node);
     std::for_each(update_nodes.begin(), update_nodes.end(), [node, mutated_node](ValueNode *element) {
@@ -938,6 +949,27 @@ ValueNode *MindGraphAnalyzer::MutateSequenceNode(ValueNode *node) {
     });
   }
   GetCaptureInfo().replaced_nodes_[node] = mutated_node;
+  return mutated_node;
+}
+
+ValueNode *MindGraphAnalyzer::MutateNamedtupleNode(ValueNode *tuple_node, ValueNode *namedtuple_node) {
+  MS_LOG(DEBUG) << "Start mutate namedtuple node, origin namedtuple node: " << namedtuple_node->ToString()
+                << ", tuple node: " << tuple_node->ToString();
+  MS_EXCEPTION_IF_NULL(namedtuple_node->GetVobj());
+  // Delete the abstract wrapper, then it will be executed in pynative.
+  tuple_node->set_abstract_wrapper(nullptr);
+  // Add LOAD_CONST of namedtuple._make() method. It will be executed in pynative.
+  PyTypeObject *namedtuple_type = namedtuple_node->GetVobj()->GetTypeObject();
+  MS_EXCEPTION_IF_NULL(namedtuple_type);
+  auto type = py::reinterpret_borrow<py::object>(reinterpret_cast<PyObject *>(namedtuple_type));
+  py::object make_method = py::getattr(type, "_make");
+  auto method_node = graph_->NewValueNode(AObject::Convert(make_method), LOAD_CONST, -1, {});
+
+  // Create namedtuple, it will be executed in pynative.
+  ValueNode *mutated_node = graph_->NewCallNode(CALL_FUNCTION, 1, {method_node, tuple_node});
+
+  AddNodeWithoutDuplicate(&GetCaptureInfo(), method_node, true);
+  maybe_update_nodes_[tuple_node].push_back(mutated_node);
   return mutated_node;
 }
 

@@ -240,6 +240,25 @@ class AbstractTuple : public AbstractSequence {
   bool modify_;
 };
 
+class AbstractNamedTuple : public AbstractObject {
+ public:
+  AbstractNamedTuple(const py::object &o, PyTypeObject *tp);
+  ~AbstractNamedTuple() override = default;
+
+  static bool IsNamedTuple(PyTypeObject *tp);
+
+  bool HasKey(const std::string &name) const { return std::find(keys_.begin(), keys_.end(), name) != keys_.end(); }
+  int GetIndexOfKey(const std::string &name) const;
+
+  const std::string &type_name() const { return type_name_; }
+  const std::vector<std::string> &keys() const { return keys_; }
+  size_t Size() const { return keys_.size(); }
+
+ private:
+  std::string type_name_;
+  std::vector<std::string> keys_;
+};
+
 class AbstractList : public AbstractTuple {
  public:
   explicit AbstractList(const py::object &l, RecMap *m) : AbstractTuple(kTypeList, l, m) {}

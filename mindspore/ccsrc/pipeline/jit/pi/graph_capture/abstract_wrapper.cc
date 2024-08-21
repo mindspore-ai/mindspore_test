@@ -31,7 +31,6 @@ namespace mindspore {
 constexpr auto kAdapterFlag = "adapter_flag";
 constexpr auto kTensorModule = "mindspore.common";
 constexpr auto kInnerOpsModule = "mindspore.ops.operations._inner_ops";
-using PyTensorConverter = std::function<py::object(const py::object &)>;
 
 namespace {
 py::object ConvertCppTensorToPyTensor(const py::object &cpp_tensor) {
@@ -169,6 +168,9 @@ py::object ConvertToPyObjInner(const AbstractBasePtr &abs) {
   return py_obj;
 }
 
+// Create namedtuple python object.
+py::object ConvertToPyNamedtuple(const abstract::AbstractNamedTuplePtr &abstract);
+
 py::object ConvertToPyObj(const AbstractBasePtr &abs) {
   MS_EXCEPTION_IF_NULL(abs);
   if (abs->isa<abstract::AbstractList>()) {
@@ -183,6 +185,8 @@ py::object ConvertToPyObj(const AbstractBasePtr &abs) {
       ret[i] = tmp;
     }
     return ret;
+  } else if (abs->isa<abstract::AbstractNamedTuple>()) {
+    return ConvertToPyNamedtuple(abs->cast<abstract::AbstractNamedTuplePtr>());
   } else if (abs->isa<abstract::AbstractTuple>()) {
     auto abs_tuple = abs->cast<abstract::AbstractTuplePtr>();
     py::tuple ret = py::tuple(abs_tuple->size());
@@ -215,6 +219,53 @@ py::object ConvertToPyObj(const AbstractBasePtr &abs) {
     return ret;
   }
   return ConvertToPyObjInner(abs);
+}
+
+py::object ConvertToPyNamedtuple(const abstract::AbstractNamedTuplePtr &abstract) {
+  auto sz = abstract->key().size();
+  MS_EXCEPTION_IF_CHECK_FAIL(abstract->elements().size() == sz, "keys.size and elements.size not equal!");
+  // Collect namedtuple's elements into a tuple.
+  py::tuple values(sz);
+  for (size_t i = 0; i < sz; ++i) {
+    values[i] = ConvertToPyObj(abstract->elements()[i]);
+    if (values[i].ptr() == nullptr) {
+      MS_LOG(INFO) << "Failed to convert elements[" << i << "] to python obj";
+      return py::object();
+    }
+  }
+
+  if (abstract->has_user_data(kPijitNamedtupleType)) {
+    std::shared_ptr<py::object> namedtuple_type = abstract->user_data<py::object>(kPijitNamedtupleType);
+    MS_EXCEPTION_IF_NULL(namedtuple_type);
+    py::object make_method = py::getattr(*namedtuple_type, "_make");
+    if (make_method.ptr() == nullptr || !PyMethod_Check(make_method.ptr())) {
+      MS_LOG(INFO) << "Failed to get _make() method of namedtuple " << py::str(*namedtuple_type);
+      return py::object();
+    }
+    try {
+      py::object namedtuple = make_method(values);
+      if (namedtuple.ptr() == nullptr) {
+        MS_LOG(INFO) << "Failed to create namedtuple, _make() method return null";
+      }
+      return namedtuple;
+    } catch (py::error_already_set &e) {
+      MS_LOG(INFO) << "Failed to create namedtuple, python error occur: " << e.what();
+      if (PyErr_Occurred()) {
+        PyErr_Clear();
+      }
+      return py::object();
+    }
+  } else {
+    // This situation should not occur.
+    MS_LOG(INFO) << "Cannot find namedtuple type in abstract";
+    py::tuple keys(sz);
+    for (size_t i = 0; i < sz; ++i) {
+      keys[i] = ConvertToPyObj(abstract->key()[i]);
+    }
+    py::module mod = python_adapter::GetPyModule(parse::PYTHON_MOD_PARSE_MODULE);
+    py::str sub_class_name = py::str(abstract->sub_class_name());
+    return python_adapter::CallPyModFn(mod, parse::PYTHON_MOD_CONVERT_TO_NAMEDTUPLE, sub_class_name, keys, values);
+  }
 }
 }  // namespace
 

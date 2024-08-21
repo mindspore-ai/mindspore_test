@@ -231,9 +231,10 @@ AbstractObjectBase::Type AbstractObjectBase::GetPyType(PyTypeObject *tp) {
    * sub-class int, float, list, tuple, str, is mindspore unsupported
    */
   switch (tp->tp_flags & fast_type_mask) {
+    case Py_TPFLAGS_TUPLE_SUBCLASS:
+      return AbstractNamedTuple::IsNamedTuple(tp) ? kTypeNamedTuple : kTypeAnyValue;
     case Py_TPFLAGS_LONG_SUBCLASS:
     case Py_TPFLAGS_LIST_SUBCLASS:
-    case Py_TPFLAGS_TUPLE_SUBCLASS:
     case Py_TPFLAGS_UNICODE_SUBCLASS:
     case Py_TPFLAGS_DICT_SUBCLASS:
       return kTypeAnyValue;
@@ -368,6 +369,9 @@ AObject *AbstractObjectBase::MakeAObject(AObject::Type type, PyTypeObject *tp, P
       break;
     case kTypeTuple:
       res = Resource::Current()->pool()->New<AbstractTuple>(h, m);
+      break;
+    case kTypeNamedTuple:
+      res = Resource::Current()->pool()->New<AbstractNamedTuple>(h, tp);
       break;
     case kTypeDict:
       res = Resource::Current()->pool()->New<AbstractDict>(h, m);
@@ -1469,6 +1473,39 @@ py::object AbstractDict::GetPyObject() {
   }
   Update();
   return value_;
+}
+
+AbstractNamedTuple::AbstractNamedTuple(const py::object &o, PyTypeObject *tp)
+    : AbstractObject(kTypeNamedTuple, o), type_name_(tp->tp_name), keys_() {
+  type_object_ = tp;
+  PyObject *fields = PyObject_GetAttrString(reinterpret_cast<PyObject *>(tp), "_fields");
+  if (fields == nullptr || !PyTuple_Check(fields)) {
+    MS_LOG(INFO) << type_name_ << "._fields is not a tuple";
+    return;
+  }
+  for (Py_ssize_t i = 0; i < PyTuple_GET_SIZE(fields); ++i) {
+    const auto &name = py::cast<std::string>(PyTuple_GET_ITEM(fields, i));
+    keys_.push_back(name);
+  }
+}
+
+bool AbstractNamedTuple::IsNamedTuple(PyTypeObject *tp) {
+  // Currently, a subclass that extends namedtuple is not supported, so we add the restrict:
+  // PyTuple_GET_SIZE(tp->tp_bases) == 1
+  if (PyType_IsSubtype(tp, &PyTuple_Type) && PyTuple_GET_SIZE(tp->tp_bases) == 1) {
+    auto *obj = reinterpret_cast<PyObject *>(tp);
+    return py::hasattr(obj, "_fields") && py::hasattr(obj, "_make");
+  }
+  return false;
+}
+
+int AbstractNamedTuple::GetIndexOfKey(const std::string &name) const {
+  for (size_t i = 0; i < keys_.size(); ++i) {
+    if (keys_[i] == name) {
+      return SizeToInt(i);
+    }
+  }
+  return -1;
 }
 
 py::object AbstractTensor::GetTensor(bool sync) {
