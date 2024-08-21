@@ -33,14 +33,21 @@ class TraceEventManager:
         return x_event
 
     @classmethod
-    def create_m_event(cls, pid: int, tid_list: set) -> List:
+    def create_i_event(cls, event: BaseEvent) -> Dict:
+        """Create a i event."""
+        event = {"name": event.name, "ph": "i", "ts": str(event.ts),
+                 "pid": event.pid, "tid": event.tid, "args": event.args}
+        return event
+
+    @classmethod
+    def create_m_event(cls, pid: int, tid_list: set, process_index: int) -> List:
         """Create some metadata event."""
         # framework sidee trace information display format: MindSpore(pid pid_value): CPU
         event_list = [
             # process information
             {"ph": "M", "name": Constant.PROCESS_NAME, "pid": pid, "tid": 0, "args": {"name": "MindSpore"}},
             {"ph": "M", "name": Constant.PROCESS_LABEL, "pid": pid, "tid": 0, "args": {"labels": "CPU"}},
-            {"ph": "M", "name": Constant.PROCESS_SORT, "pid": pid, "tid": 0, "args": {"sort_index": 0}},
+            {"ph": "M", "name": Constant.PROCESS_SORT, "pid": pid, "tid": 0, "args": {"sort_index": process_index}},
         ]
         for tid in tid_list:
             sort_index = tid

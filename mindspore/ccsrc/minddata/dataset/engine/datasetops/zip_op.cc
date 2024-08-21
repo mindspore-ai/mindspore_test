@@ -127,7 +127,7 @@ Status ZipOp::operator()() { RETURN_STATUS_UNEXPECTED("[Internal ERROR] ZipOp is
 
 Status ZipOp::GetNextRow(TensorRow *row) {
   RETURN_UNEXPECTED_IF_NULL(row);
-  RETURN_IF_NOT_OK(CollectOpInfoStart(this->NameWithID(), "GetFromPreviousOp"));
+  uint64_t start_time = GetSyscnt();
   int32_t skip_child = -1;
   RETURN_IF_NOT_OK(getNextZippedRow(row, &skip_child, false));
   if (row->eoe()) {
@@ -135,7 +135,8 @@ Status ZipOp::GetNextRow(TensorRow *row) {
     MS_LOG(DEBUG) << "Zip operator is now draining child inputs.";
     RETURN_IF_NOT_OK(drainPipeline(skip_child, false));
   }
-  RETURN_IF_NOT_OK(CollectOpInfoEnd(this->NameWithID(), "GetFromPreviousOp", {{"TensorRowFlags", row->FlagName()}}));
+  RETURN_IF_NOT_OK(
+    CollectOpInfoEnd(this->NameWithID(), "GetFromPreviousOp", start_time, {{"TensorRowFlags", row->FlagName()}}));
   return Status::OK();
 }
 

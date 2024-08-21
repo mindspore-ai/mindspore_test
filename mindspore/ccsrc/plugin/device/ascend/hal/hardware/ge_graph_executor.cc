@@ -60,8 +60,9 @@ namespace device {
 namespace ascend {
 namespace {
 const std::set<std::string> kIgnoreGEShapeOps = {kSoftMarginLossOpName};
-constexpr int kCollectHostInfoStart = 0;
-constexpr int kCollectHostInfoEnd = 1;
+mindspore::HashMap<std::string, size_t> feature_memorys;
+mindspore::HashMap<std::string, size_t> streams;
+constexpr size_t kNeedRecycleOutput = 5;
 
 void GetMeRetDataType(const AbstractBasePtr &cnode_data, std::vector<TypeId> *me_types) {
   MS_EXCEPTION_IF_NULL(cnode_data);
@@ -657,7 +658,7 @@ bool GeGraphExecutor::CompileGraph(const FuncGraphPtr &graph, const std::map<str
   MS_EXCEPTION_IF_NULL(graph);
 
   auto graph_name = GetGraphName(graph);
-  profiler::CollectHostInfo("Ascend", "CompileGraph", "GeCompileGraph_" + graph_name, 1, 0, kCollectHostInfoStart);
+  uint64_t start_time = profiler::GetClockSyscnt();
 
   // cppcheck-suppress unreadVariable
   ContextReset reset_context(device_context_);
@@ -665,7 +666,9 @@ bool GeGraphExecutor::CompileGraph(const FuncGraphPtr &graph, const std::map<str
   MS_EXCEPTION_IF_NULL(kg);
   if (IsEnableRefMode()) {
     auto ret = CompileGraph(kg, compile_options);
-    profiler::CollectHostInfo("Ascend", "CompileGraph", "GeCompileGraph_" + graph_name, 1, 0, kCollectHostInfoEnd);
+
+    (void)profiler::CollectHostInfo("Ascend", "CompileGraph", "GeCompileGraph_" + graph_name, start_time,
+                                    profiler::GetClockSyscnt(), 1);
     InitGEFixMemory(kg, 0);
     return ret;
   } else {
@@ -680,7 +683,8 @@ bool GeGraphExecutor::CompileGraph(const FuncGraphPtr &graph, const std::map<str
       std::set<KernelGraphPtr> memo;
       GEGraphOptimization::GetInstance().OptimizeGEGraph(kg, &memo);
       if (!BuildFakeGraph(kg)) {
-        profiler::CollectHostInfo("Ascend", "CompileGraph", "GeCompileGraph_" + graph_name, 1, 0, kCollectHostInfoEnd);
+        (void)profiler::CollectHostInfo("Ascend", "CompileGraph", "GeCompileGraph_" + graph_name, start_time,
+                                        profiler::GetClockSyscnt(), 1);
         return false;
       }
     } else {
@@ -696,7 +700,8 @@ bool GeGraphExecutor::CompileGraph(const FuncGraphPtr &graph, const std::map<str
     // copy init weight to device
     RunGEInitGraph(kg);
     RevertOriginShape(kg, origin_shape);
-    profiler::CollectHostInfo("Ascend", "CompileGraph", "GeCompileGraph_" + graph_name, 1, 0, kCollectHostInfoEnd);
+    (void)profiler::CollectHostInfo("Ascend", "CompileGraph", "GeCompileGraph_" + graph_name, start_time,
+                                    profiler::GetClockSyscnt(), 1);
     return true;
   }
 }
@@ -973,11 +978,12 @@ bool GeGraphExecutor::RunGraph(const FuncGraphPtr &graph, const std::vector<tens
                                const std::map<string, string> & /* compile_options */) {
   MS_EXCEPTION_IF_NULL(graph);
   auto graph_name = GetGraphName(graph);
-  profiler::CollectHostInfo("Ascend", "RunGraph", "GeRunGraph_" + graph_name, 1, 0, kCollectHostInfoStart);
+  uint64_t start_time = profiler::GetClockSyscnt();
   DoAsyncCkpt(graph);
   if (IsEnableRefMode()) {
     if (!RunGraphRefMode(graph, inputs)) {
-      profiler::CollectHostInfo("Ascend", "RunGraph", "GeRunGraph_" + graph_name, 1, 0, kCollectHostInfoEnd);
+      (void)profiler::CollectHostInfo("Ascend", "CompileGraph", "GeRunGraph_" + graph_name, start_time,
+                                      profiler::GetClockSyscnt(), 1);
       return false;
     }
   } else {
@@ -1026,7 +1032,8 @@ bool GeGraphExecutor::RunGraph(const FuncGraphPtr &graph, const std::vector<tens
       MS_LOG(DEBUG) << "Run graph finish, outputs size is: " << ge_outputs.size();
       if (ret == transform::Status::NOT_FOUND) {
         MS_LOG(WARNING) << "The Graph[" << graph_name << "] is not found, skip run it.";
-        profiler::CollectHostInfo("Ascend", "RunGraph", "GeRunGraph_" + graph_name, 1, 0, kCollectHostInfoEnd);
+        (void)profiler::CollectHostInfo("Ascend", "RunGraph", "GeRunGraph_" + graph_name, start_time,
+                                        profiler::GetClockSyscnt(), 1);
         return true;
       } else if (ret != transform::Status::SUCCESS) {
         MS_LOG(EXCEPTION) << "Exec graph failed";
@@ -1052,7 +1059,8 @@ bool GeGraphExecutor::RunGraph(const FuncGraphPtr &graph, const std::vector<tens
     ConfigManager::GetInstance().ResetConfig();
     ConfigManager::GetInstance().ResetIterNum();
   }
-  profiler::CollectHostInfo("Ascend", "RunGraph", "GeRunGraph_" + graph_name, 1, 0, kCollectHostInfoEnd);
+  (void)profiler::CollectHostInfo("Ascend", "RunGraph", "GeRunGraph_" + graph_name, start_time,
+                                  profiler::GetClockSyscnt(), 1);
   MS_LOG(INFO) << "GE run graph end.";
   return true;
 }

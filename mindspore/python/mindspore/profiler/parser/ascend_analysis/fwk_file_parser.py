@@ -15,6 +15,8 @@
 """MindSpore framework oprange file parser"""
 
 import os
+import stat
+import csv
 from typing import List
 from collections import defaultdict
 
@@ -31,13 +33,14 @@ class FwkFileParser:
     """Framework-side operator file parser."""
 
     _op_range = "FRAMEWORK/op_range_{}"
-    _op_range_struct_size = 73
+    _op_range_struct_size = 74
 
     def __init__(self, source_path: str, rank_id: int):
         """
             source_path: The path of PROF_* directory
         """
         self.rank_id = rank_id
+        self._prof_root = None
         self._op_range_path = None
         self.__init_framework_path(source_path)
 
@@ -48,7 +51,7 @@ class FwkFileParser:
             op_range_bytes = FileManager.read_file_content(self._op_range_path, "rb")
             op_range_list = TLVDecoder.decode(op_range_bytes, MindSporeOpEvent, self._op_range_struct_size)
         else:
-            logger.error("Failed to find op_range data.")
+            logger.warning("Failed to find op_range data. skip parse host profiler data.")
         if step_list and isinstance(step_list, list):
             first_step = min(op.step for op in op_range_list)
             step_list = [step - 1 + first_step for step in step_list]
@@ -61,16 +64,60 @@ class FwkFileParser:
             mindspore_op_data = self.get_op_range_data()
         tid_map = defaultdict(set)
         fwk_x_event_list = []
+        link_event_dict = defaultdict(list)
+        fwk_launch_op = defaultdict(list)
+        dataset_op_data = []
 
         for mindspore_op in mindspore_op_data:
             if mindspore_op.name == Constant.FLOW_OP:
+                link_event_dict[mindspore_op.flow_id].insert(0, mindspore_op)
                 continue
+            if mindspore_op.flow_id != Constant.INVALID_FLOW_ID:
+                link_event_dict[mindspore_op.flow_id].append(mindspore_op)
+
+            if 'KernelLaunch' in mindspore_op.name or 'LaunchTask' in mindspore_op.name:
+                fwk_launch_op[mindspore_op.tid].append(mindspore_op)
+
+            if mindspore_op.name.split('::')[0] == 'Dataset':
+                dataset_op_data.append(mindspore_op)
+
             tid_map[mindspore_op.pid].add(mindspore_op.tid)
-            fwk_x_event_list.append(TraceEventManager.create_x_event(mindspore_op, "cpu_op"))
+            if mindspore_op.dur > 0:
+                fwk_x_event_list.append(TraceEventManager.create_x_event(mindspore_op, "cpu_op"))
+            else:
+                fwk_x_event_list.append(TraceEventManager.create_i_event(mindspore_op))
+
         fwk_m_event_list = []
         for pid, tid_set in tid_map.items():
-            fwk_m_event_list.extend(TraceEventManager.create_m_event(pid, tid_set))
-        return fwk_x_event_list + fwk_m_event_list
+            fwk_m_event_list.extend(TraceEventManager.create_m_event(pid, tid_set, pid))
+
+        self.calculate_dataset_item(dataset_op_data)
+
+        return fwk_x_event_list + fwk_m_event_list, link_event_dict, fwk_launch_op
+
+    def calculate_dataset_item(self, dataset_op_data: List[MindSporeOpEvent]):
+        """
+        Get the summary data of dataset op by parsing the dataset_op_data.
+        """
+        self._prof_root = validate_and_normalize_path(self._prof_root)
+        dataset_file = os.path.join(self._prof_root, f'dataset_{self.rank_id}.csv')
+        summary_data = defaultdict(list)
+        for op_data in dataset_op_data:
+            _, event, stage = op_data.name.split('::')
+            key = event + '::' + stage + '::' + op_data.custom_info
+            summary_data[key].append(op_data.dur)
+
+        flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+        modes = stat.S_IWUSR | stat.S_IRUSR
+        with os.fdopen(os.open(dataset_file, flags, modes), 'w', newline='') as fw:
+            csv_writer = csv.writer(fw)
+            csv_writer.writerow(['Operation', 'Stage', 'Occurrences', 'Avg. time (us)', 'Custom Info'])
+            for k, v in summary_data.items():
+                event, stage, custom_info = k.split('::')
+                count = len(v)
+                average_execution = round(float(sum(v) / count), 2)
+                csv_writer.writerow([event, stage, count, average_execution, custom_info])
+        os.chmod(dataset_file, modes)
 
     def __init_framework_path(self, source_path: str):
         """Init the oprange data path."""
@@ -80,6 +127,5 @@ class FwkFileParser:
         device_name = os.path.basename(source_path)
         if not device_name.startswith("device") and not os.path.isdir(source_path):
             raise RuntimeError("Input source_path is invalid!")
-        prof_path = os.path.dirname(source_path)
-        prof_root = os.path.dirname(prof_path)
-        self._op_range_path = os.path.join(prof_root, self._op_range.format(self.rank_id))
+        self._prof_root = os.path.dirname(os.path.dirname(source_path))
+        self._op_range_path = os.path.join(self._prof_root, self._op_range.format(self.rank_id))

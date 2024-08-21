@@ -75,6 +75,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "kernel/oplib/oplib.h"
 #include "runtime/device/move_to.h"
+#include "include/backend/debug/profiler/profiling.h"
 
 namespace mindspore {
 namespace device {
@@ -503,7 +504,7 @@ void SetKernelInfoBeforeCreateKernel(const std::vector<CNodePtr> &nodes) {
 
 void CPUKernelExecutor::SetOperatorInfo(const KernelGraphPtr &graph) const {
   MS_EXCEPTION_IF_NULL(graph);
-  (void)profiler::CollectHostInfo(kModelNameCPU, kEventOptimizeGraph, kStageSetKernelInfo, 1, 0, 0);
+  uint64_t start_time = profiler::GetClockSyscnt();
   bool do_expand = false;
   auto mng = graph->manager();
   if (mng == nullptr) {
@@ -538,7 +539,8 @@ void CPUKernelExecutor::SetOperatorInfo(const KernelGraphPtr &graph) const {
     (void)graphkernel::BindValueToGraph().Run(graph);
     graph->SetExecOrderByDefault();
   }
-  (void)profiler::CollectHostInfo(kModelNameCPU, kEventOptimizeGraph, kStageSetKernelInfo, 1, 0, 1);
+  (void)profiler::CollectHostInfo(kModelNameCPU, kEventOptimizeGraph, kStageSetKernelInfo, start_time,
+                                  profiler::GetClockSyscnt(), 1);
 }
 
 kernel::KernelModPtr CPUKernelExecutor::CreateKernelMod(const std::string &op_name) const {

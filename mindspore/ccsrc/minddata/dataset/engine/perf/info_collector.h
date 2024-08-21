@@ -27,16 +27,12 @@ enum InfoLevel : uint8_t { kDeveloper = 0, kUser = 1 };
 enum InfoType : uint8_t { kAll = 0, kMemory = 1, kTime = 2 };
 enum TimeType : uint8_t { kStart = 0, kEnd = 1, kStamp = 2 };
 
-Status CollectPipelineInfoStart(const std::string &event, const std::string &stage,
-                                const std::map<std::string, std::string> &custom_info = {});
+uint64_t GetSyscnt();
 
-Status CollectPipelineInfoEnd(const std::string &event, const std::string &stage,
+Status CollectPipelineInfoEnd(const std::string &event, const std::string &stage, const uint64_t &start_time,
                               const std::map<std::string, std::string> &custom_info = {});
 
-Status CollectOpInfoStart(const std::string &event, const std::string &stage,
-                          const std::map<std::string, std::string> &custom_info = {});
-
-Status CollectOpInfoEnd(const std::string &event, const std::string &stage,
+Status CollectOpInfoEnd(const std::string &event, const std::string &stage, const uint64_t &start_time,
                         const std::map<std::string, std::string> &custom_info = {});
 }  // namespace mindspore::dataset
 #endif  // MINDSPORE_CCSRC_MINDDATA_DATASET_ENGINE_PERF_INFO_COLLECTOR_H_

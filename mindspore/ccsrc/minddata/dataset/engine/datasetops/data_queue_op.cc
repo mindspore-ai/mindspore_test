@@ -439,7 +439,7 @@ Status DataQueueOp::WaitForAscendQueue(size_t batch_data_len) {
   const double max_queue_memory = 2.;
   const size_t max_queue_size = 100;
   const int64_t send_interval = 1000;
-  RETURN_IF_NOT_OK(CollectOpInfoStart(this->NameWithID(), "WaitForAscend"));
+  uint64_t start_time = GetSyscnt();
   while ((row_memory + CalMbufQueueMemory(queue_size) >= max_queue_memory || queue_size >= max_queue_size) &&
          queue_size != 0) {
     RETURN_IF_INTERRUPTED();
@@ -449,7 +449,7 @@ Status DataQueueOp::WaitForAscendQueue(size_t batch_data_len) {
     queue_size = ascend_data_queue_->QueryQueueSize();
     std::this_thread::sleep_for(std::chrono::microseconds(send_interval));
   }
-  RETURN_IF_NOT_OK(CollectOpInfoEnd(this->NameWithID(), "WaitForAscend"));
+  RETURN_IF_NOT_OK(CollectOpInfoEnd(this->NameWithID(), "WaitForAscend", start_time));
   return Status::OK();
 }
 
@@ -529,7 +529,7 @@ Status DataQueueOp::SendDataToAscend() {
         is_break_loop = true;
         continue;
       }
-      RETURN_IF_NOT_OK(CollectOpInfoStart(this->NameWithID(), "PushToAscend"));
+      uint64_t start_time = GetSyscnt();
       if (!enable_prefetch_cache_pipeline_) {
 #ifdef ENABLE_DUMP_IR
         if (ascend_data_queue_->QueueType() == "Ascend_MBUF") {
@@ -547,7 +547,8 @@ Status DataQueueOp::SendDataToAscend() {
         RETURN_IF_NOT_OK(md_channel_info_->RecordPushFirstEndTime());
       }
 #endif
-      RETURN_IF_NOT_OK(CollectOpInfoEnd(this->NameWithID(), "PushToAscend", {{"TensorRowFlags", curr_row.FlagName()}}));
+      RETURN_IF_NOT_OK(
+        CollectOpInfoEnd(this->NameWithID(), "PushToAscend", start_time, {{"TensorRowFlags", curr_row.FlagName()}}));
       PrintEndInfoWhenFirstBatch(&first_push_flag_);
 #ifndef ENABLE_SECURITY
       ProfilingRecorder(is_profiling_enable, profiling_node, send_batch, tdt_cost, &batch_start_time, &end_time,
@@ -589,10 +590,10 @@ Status DataQueueOp::SendDataToAscend() {
 #endif
     }
 
-    RETURN_IF_NOT_OK(CollectOpInfoStart(this->NameWithID(), "PushToAscend"));
+    uint64_t start_time = GetSyscnt();
     // send epoch end flag: ACL_TENSOR_DATA_END_OF_SEQUENCE to tdt
     RETURN_IF_NOT_OK(SendEpochEndToAscend(curr_row, is_profiling_enable, &tdt_cost, &is_break_loop));
-    RETURN_IF_NOT_OK(CollectOpInfoEnd(this->NameWithID(), "PushToAscend",
+    RETURN_IF_NOT_OK(CollectOpInfoEnd(this->NameWithID(), "PushToAscend", start_time,
                                       {{"TensorRowFlags", TensorRow(TensorRow::kFlagEOE).FlagName()}}));
     UpdateRepeatAndEpochCounter();
 #ifndef ENABLE_SECURITY
@@ -895,13 +896,13 @@ Status DataQueueOp::PushDataToGPU() {
       md_channel_info_->RecordPushStartTime();
 #endif
       // Data prefetch only when PS mode enables cache.
-      RETURN_IF_NOT_OK(CollectOpInfoStart(this->NameWithID(), "PushToGPU"));
+      uint64_t start_time = GetSyscnt();
       if (!enable_prefetch_cache_pipeline_) {
         RETURN_IF_NOT_OK(RetryPushData(items, is_profiling_enable, &push_cost));
       } else {
         PushDataToGPUCacheQueue(std::move(items));
       }
-      RETURN_IF_NOT_OK(CollectOpInfoEnd(this->NameWithID(), "PushToGPU", {{"TensorRowFlags", "Data"}}));
+      RETURN_IF_NOT_OK(CollectOpInfoEnd(this->NameWithID(), "PushToGPU", start_time, {{"TensorRowFlags", "Data"}}));
 #ifndef ENABLE_SECURITY
       ProfilingRecorder(is_profiling_enable, profiling_node, send_batch, push_cost, &batch_start_time, &end_time,
                         gpu_connector_->capacity(), gpu_connector_->size());

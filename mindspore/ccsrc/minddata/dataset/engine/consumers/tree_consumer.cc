@@ -189,7 +189,7 @@ Status IteratorConsumer::Init(const std::shared_ptr<DatasetNode> &root, int64_t 
 
 Status IteratorConsumer::GetNextAsVector(std::vector<TensorPtr> *const out) {
   RETURN_UNEXPECTED_IF_NULL(out);
-  RETURN_IF_NOT_OK(CollectPipelineInfoStart("IteratorConsumer", "GetNextAsVector"));
+  uint64_t start_time = GetSyscnt();
   out->clear();
   TensorRow res;
   RETURN_IF_NOT_OK(tree_adapter_->GetNext(&res));
@@ -197,7 +197,7 @@ Status IteratorConsumer::GetNextAsVector(std::vector<TensorPtr> *const out) {
   // Return empty vector if there's no data
   if (res.empty()) {
     RETURN_IF_NOT_OK(
-      CollectPipelineInfoEnd("IteratorConsumer", "GetNextAsVector", {{"TensorRowFlags", res.FlagName()}}));
+      CollectPipelineInfoEnd("IteratorConsumer", "GetNextAsVector", start_time, {{"TensorRowFlags", res.FlagName()}}));
     return Status::OK();
   }
 
@@ -221,13 +221,13 @@ Status IteratorConsumer::GetNextAsVector(std::vector<TensorPtr> *const out) {
   std::sort(to_keep_indices.begin(), to_keep_indices.end());
   (void)std::transform(to_keep_indices.begin(), to_keep_indices.end(), std::back_inserter(*out),
                        [&res](const auto &it) { return std::move(res[it]); });
-  RETURN_IF_NOT_OK(CollectPipelineInfoEnd("IteratorConsumer", "GetNextAsVector"));
+  RETURN_IF_NOT_OK(CollectPipelineInfoEnd("IteratorConsumer", "GetNextAsVector", start_time));
   return Status::OK();
 }
 
 Status IteratorConsumer::GetNextAsMap(std::unordered_map<std::string, TensorPtr> *const out_map) {
   RETURN_UNEXPECTED_IF_NULL(out_map);
-  RETURN_IF_NOT_OK(CollectPipelineInfoStart("IteratorConsumer", "GetNextAsMap"));
+  uint64_t start_time = GetSyscnt();
 
   out_map->clear();
   TensorRow res;
@@ -235,7 +235,8 @@ Status IteratorConsumer::GetNextAsMap(std::unordered_map<std::string, TensorPtr>
 
   // Return empty map if there's no data
   if (res.empty()) {
-    RETURN_IF_NOT_OK(CollectPipelineInfoEnd("IteratorConsumer", "GetNextAsMap", {{"TensorRowFlags", res.FlagName()}}));
+    RETURN_IF_NOT_OK(
+      CollectPipelineInfoEnd("IteratorConsumer", "GetNextAsMap", start_time, {{"TensorRowFlags", res.FlagName()}}));
     return Status::OK();
   }
 
@@ -255,13 +256,13 @@ Status IteratorConsumer::GetNextAsMap(std::unordered_map<std::string, TensorPtr>
     err_msg += "\"" + std::string(kDftMetaColumnPrefix) + "\"";
     RETURN_STATUS_UNEXPECTED(err_msg);
   }
-  RETURN_IF_NOT_OK(CollectPipelineInfoEnd("IteratorConsumer", "GetNextAsMap"));
+  RETURN_IF_NOT_OK(CollectPipelineInfoEnd("IteratorConsumer", "GetNextAsMap", start_time));
   return Status::OK();
 }
 
 Status IteratorConsumer::GetNextAsOrderedPair(std::vector<std::pair<std::string, std::shared_ptr<Tensor>>> *const vec) {
   CHECK_FAIL_RETURN_UNEXPECTED(vec != nullptr && vec->empty(), "vec is null or non-empty.");
-  RETURN_IF_NOT_OK(CollectPipelineInfoStart("IteratorConsumer", "GetNextAsOrderedPair"));
+  uint64_t start_time = GetSyscnt();
 
   TensorRow curr_row;
 
@@ -269,8 +270,8 @@ Status IteratorConsumer::GetNextAsOrderedPair(std::vector<std::pair<std::string,
 
   // Return empty pair if there's no data
   if (curr_row.empty()) {
-    RETURN_IF_NOT_OK(
-      CollectPipelineInfoEnd("IteratorConsumer", "GetNextAsOrderedPair", {{"TensorRowFlags", curr_row.FlagName()}}));
+    RETURN_IF_NOT_OK(CollectPipelineInfoEnd("IteratorConsumer", "GetNextAsOrderedPair", start_time,
+                                            {{"TensorRowFlags", curr_row.FlagName()}}));
     return Status::OK();
   }
 
@@ -299,7 +300,7 @@ Status IteratorConsumer::GetNextAsOrderedPair(std::vector<std::pair<std::string,
 
   std::transform(column_order_.begin(), column_order_.end(), std::back_inserter(*vec),
                  [curr_row](const auto &col) { return std::make_pair(col.second, curr_row[col.first]); });
-  RETURN_IF_NOT_OK(CollectPipelineInfoEnd("IteratorConsumer", "GetNextAsOrderedPair"));
+  RETURN_IF_NOT_OK(CollectPipelineInfoEnd("IteratorConsumer", "GetNextAsOrderedPair", start_time));
   return Status::OK();
 }
 
@@ -480,7 +481,7 @@ Status SaveToDisk::ValidateParams() {
 }
 
 Status SaveToDisk::Save() {
-  RETURN_IF_NOT_OK(CollectPipelineInfoStart("SaveToDisk", "Save"));
+  uint64_t start_time = GetSyscnt();
   std::vector<std::string> file_names;
   if (num_files_ == 1) {
     file_names.push_back(dataset_path_);
@@ -544,7 +545,7 @@ Status SaveToDisk::Save() {
 
   RETURN_IF_NOT_OK(mr_writer->Commit());
   RETURN_IF_NOT_OK(mindrecord::ShardIndexGenerator::Finalize(file_names));
-  RETURN_IF_NOT_OK(CollectPipelineInfoEnd("SaveToDisk", "Save"));
+  RETURN_IF_NOT_OK(CollectPipelineInfoEnd("SaveToDisk", "Save", start_time));
   return Status::OK();
 }
 
@@ -873,13 +874,13 @@ Status SaveToDisk::TransformTensor(const unsigned char *src, const TensorShape &
 Status BuildVocabConsumer::Init(const std::shared_ptr<DatasetNode> &root) { return tree_adapter_->Compile(root, 1); }
 
 Status BuildVocabConsumer::Start() {
-  RETURN_IF_NOT_OK(CollectPipelineInfoStart("BuildVocabConsumer", "Start"));
+  uint64_t start_time = GetSyscnt();
   // Getting one row would trigger building the vocab
   TensorRow row;
   RETURN_IF_NOT_OK(tree_adapter_->GetNext(&row));
   // The returned row would EOE which is an empty row
   CHECK_FAIL_RETURN_UNEXPECTED(row.empty(), "BuildVocab: The fetched row from BuildVocab should be an EOE.");
-  RETURN_IF_NOT_OK(CollectPipelineInfoEnd("BuildVocabConsumer", "Start"));
+  RETURN_IF_NOT_OK(CollectPipelineInfoEnd("BuildVocabConsumer", "Start", start_time));
   return Status::OK();
 }
 Status DatasetSizeGetter::GetDatasetSize(int64_t *size, bool estimate) {

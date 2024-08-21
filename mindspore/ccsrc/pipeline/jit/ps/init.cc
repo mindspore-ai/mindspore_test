@@ -106,13 +106,11 @@ void RegProfilerManager(const py::module *m) {
 }
 
 // level: 0, for developer user, 1, for general user;
-// profile_framework: 0, all host info, 1, host memory, 2, host time;
-// start_end: 0, start flag, 1, end flag, 2, no distinguish start and end.
 // Default parameter for host profile meaning: for developer user, collect both time and memory, record timestamp.
 void RegHostProfile(py::module *m) {
-  m->def("_collect_host_info", &CollectHostInfo, py::arg("module_name"), py::arg("event"), py::arg("stage"),
-         py::arg("level") = py::int_(0), py::arg("profile_framework") = py::int_(0),
-         py::arg("start_end") = py::int_(PROFILER_RECORD_STAMP), py::arg("custom_info") = py::dict())
+  m->def("collect_host_info", &CollectHostInfo, py::arg("module"), py::arg("event"), py::arg("stage"),
+         py::arg("start_time") = py::int_(0), py::arg("end_time") = py::int_(0), py::arg("level") = py::int_(0),
+         py::arg("custom_info") = py::dict())
     .def("get_clock_time", &GetClockTime)
     .def("get_clock_syscnt", &GetClockSyscnt);
 }

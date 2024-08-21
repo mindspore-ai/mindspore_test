@@ -37,7 +37,7 @@ from mindspore.common.tensor import Tensor
 from mindspore.common.parameter import Parameter
 from mindspore.common.generator import Generator
 from mindspore.common.api import _cell_graph_executor
-from mindspore._c_expression import _collect_host_info
+from mindspore._c_expression import collect_host_info, get_clock_syscnt
 
 _cur_dir = os.getcwd()
 SAVE_DIR = _cur_dir
@@ -576,7 +576,7 @@ class ModelCheckpoint(Callback):
                                  "string that does not contain '/', but got {}.".format(self._prefix))
         if self._directory_func:
             self._directory = self._directory_func(cb_params)
-        _collect_host_info("Callback", "ModelCheckpoint", "step_end", level=1)
+        collect_host_info("Callback", "ModelCheckpoint", "step_end", start_time=get_clock_syscnt(), level=1)
         # In disaster recovery scenario, the training process may be rolled back to the last step where
         # the ckpt was successfully saved, so the _last_triggered_step should be updated.
         if _get_recovery_context("enable_recovery") and cb_params.last_save_ckpt_step is not None:
@@ -601,7 +601,7 @@ class ModelCheckpoint(Callback):
             run_context (RunContext): Context of the train running.
         """
         cb_params = run_context.original_args()
-        _collect_host_info("Callback", "ModelCheckpoint", "end", level=1)
+        collect_host_info("Callback", "ModelCheckpoint", "end", start_time=get_clock_syscnt(), level=1)
         _to_save_last_ckpt = True
 
         self._save_ckpt(cb_params, _to_save_last_ckpt)

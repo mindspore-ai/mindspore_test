@@ -232,11 +232,13 @@ class Optimizer : public std::enable_shared_from_this<Optimizer> {
             }
           };
           auto profiler_pass_name = name_ + ".r" + std::to_string(counter) + "." + pass_names_[i];
-          (void)profiler::CollectHostInfo(pipeline::kCompiler, pipeline::kOptimize, profiler_pass_name, 0, 0, 0);
+          uint64_t start_time = profiler::GetClockSyscnt();
           MS_LOG(INFO) << "Start " << name_ << ".r" << std::to_string(counter) << "." << pass_names_[i];
           use_profile ? ProfileExecute(MsProfile::GetProfile()->Step(pass_names_[i]), opt_func) : opt_func();
           MS_LOG(INFO) << "End " << name_ << ".r" << std::to_string(counter) << "." << pass_names_[i];
-          (void)profiler::CollectHostInfo(pipeline::kCompiler, pipeline::kOptimize, profiler_pass_name, 0, 0, 1);
+          (void)profiler::CollectHostInfo(pipeline::kCompiler, pipeline::kOptimize, profiler_pass_name, start_time,
+                                          profiler::GetClockSyscnt(), 0);
+
 #ifdef ENABLE_DUMP_IR
           DumpStep(func_graph, counter, i);
 #endif

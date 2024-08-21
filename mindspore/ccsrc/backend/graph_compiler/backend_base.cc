@@ -229,9 +229,10 @@ MindRTBackendBase::MindRTBackendBase(const std::string &backend_name, const std:
   const auto &device_context =
     device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({device_name, device_id});
   MS_EXCEPTION_IF_NULL(device_context);
-  (void)profiler::CollectHostInfo(kModelNameRuntime, kEventDeviceInit, kStageDeviceInit, 1, 0, 0);
+  uint64_t start_time = profiler::GetClockSyscnt();
   device_context->Initialize();
-  (void)profiler::CollectHostInfo(kModelNameRuntime, kEventDeviceInit, kStageDeviceInit, 1, 0, 1);
+  (void)profiler::CollectHostInfo(kModelNameRuntime, kEventDeviceInit, kStageDeviceInit, start_time,
+                                  profiler::GetClockSyscnt(), 1);
   device_id_ = device_context->device_context_key().device_id_;
 #ifdef ENABLE_DEBUGGER
   SetDebuggerInit();
@@ -492,7 +493,7 @@ const ActorInfo &MindRTBackendBase::CompileGraphs(const FuncGraphPtr &func_graph
   MS_EXCEPTION_IF_NULL(graph_compiler_);
   MS_EXCEPTION_IF_NULL(func_graph);
   MS_LOG(INFO) << "Status record: start compile function graph: " << func_graph->ToString();
-  (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageCompileGraphs, 1, 0, 0);
+  uint64_t start_time = profiler::GetClockSyscnt();
   PROF_START(compile_backend_graph);
 
   const auto &device_context =
@@ -572,7 +573,8 @@ const ActorInfo &MindRTBackendBase::CompileGraphs(const FuncGraphPtr &func_graph
   }
 
   PROF_END(compile_backend_graph);
-  (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageCompileGraphs, 1, 0, 1);
+  (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageCompileGraphs, start_time,
+                                  profiler::GetClockSyscnt(), 1);
   MS_LOG(INFO) << "Status record: end compile function graph: " << func_graph->ToString()
                << ", produce actor: " << actor_info;
   return actor_info;
@@ -896,11 +898,12 @@ void MindRTBackendBase::CompileSubGraph(const FuncGraphPtr &func_graph, device::
 void MindRTBackendBase::CompileGraph(const FuncGraphPtr &func_graph, device::RunMode run_mode) {
   MS_EXCEPTION_IF_NULL(func_graph);
   if (!func_graph->has_flag(kFlagIsPyNativeBpropKernelGraph)) {
-    (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageGraphPartition, 1, 0, 0);
+    uint64_t start_time = profiler::GetClockSyscnt();
     // Split graph to segments.
     MS_EXCEPTION_IF_NULL(graph_partition_);
     const auto &segments = graph_partition_->Partition(func_graph);
-    (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageGraphPartition, 1, 0, 1);
+    (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageGraphPartition, start_time,
+                                    profiler::GetClockSyscnt(), 1);
     MS_LOG(INFO) << "Compile graph: " << func_graph->ToString() << ", Split segments size: " << segments.size();
 
     // Foreach the segments to compile graph.
@@ -1212,7 +1215,7 @@ void MindRTBackendBase::RunGraph(const ActorInfo &actor_info, const VectorRef &a
   }
 
   MS_LOG(INFO) << "Status record: start run actor: " << actor_info;
-  (void)profiler::CollectHostInfo(kModelNameRuntime, kEventRunGraph, kStageRunGraph, 1, 0, 0);
+  uint64_t start_time_ = profiler::GetClockSyscnt();
   std::vector<std::vector<tensor::TensorPtr>> input_tensors;
   if (graph_compiler_info.exist_flatten_concat_) {
     input_tensors = GetRunGraphInputs(graph_compiler_info, args);
@@ -1252,7 +1255,8 @@ void MindRTBackendBase::RunGraph(const ActorInfo &actor_info, const VectorRef &a
   }
   // Close abstract_lock for dynamic_shape
   AnfUtils::CloseAbstractLock();
-  (void)profiler::CollectHostInfo(kModelNameRuntime, kEventRunGraph, kStageRunGraph, 1, 0, 1);
+  (void)profiler::CollectHostInfo(kModelNameRuntime, kEventRunGraph, kStageRunGraph, start_time_,
+                                  profiler::GetClockSyscnt(), 1);
   MS_LOG(INFO) << "Status record: end run actor: " << actor_info;
 }
 
