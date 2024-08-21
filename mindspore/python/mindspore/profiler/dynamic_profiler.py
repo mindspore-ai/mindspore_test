@@ -59,7 +59,7 @@ class DynamicProfilerArgs:
                  profiler_level: int = -1,
                  profile_framework: int = -1,
                  analyse_mode: int = -1,
-                 profile_memory: bool = False,
+                 profile_communication: bool = False,
                  parallel_strategy: bool = False,
                  data_process: bool = False,
                  data_simplification: bool = True,
@@ -71,11 +71,58 @@ class DynamicProfilerArgs:
         self._profiler_level = profiler_level
         self._profile_framework = profile_framework
         self._analyse_mode = analyse_mode
-        self._profile_memory = profile_memory
+        self._profile_communication = profile_communication
         self._parallel_strategy = parallel_strategy
         self._data_process = data_process
         self._data_simplification = data_simplification
         self._is_valid = is_valid
+        self._check_params_type()
+
+    def _check_params_type(self):
+        """ check params type."""
+        if not isinstance(self._start_step, int):
+            logger.warning("start_step should be int type, start_step will be reset to -1.")
+            self._start_step = -1
+
+        if not isinstance(self._stop_step, int):
+            logger.warning("stop_step should be int type, stop_step will be reset to -1.")
+            self._stop_step = -1
+
+        if not isinstance(self._aicore_metrics, int):
+            logger.warning("aicore_metrics should be int type, aicore_metrics will be reset to -1.")
+            self._aicore_metrics = -1
+
+        if not isinstance(self._profiler_level, int):
+            logger.warning("profiler_level should be int type, profiler_level will be reset to -1.")
+            self._profiler_level = -1
+
+        if not isinstance(self._profile_framework, int):
+            logger.warning("profile_framework should be int type, profile_framework will be reset to -1.")
+            self._profile_framework = -1
+
+        if not isinstance(self._analyse_mode, int):
+            logger.warning("analyse_mode should be int type, analyse_mode will be reset to -1.")
+            self._analyse_mode = -1
+
+        if not isinstance(self._profile_communication, bool):
+            logger.warning("profile_communication should be bool type, profile_communication will be reset to False.")
+            self._profile_communication = False
+
+        if not isinstance(self._parallel_strategy, bool):
+            logger.warning("parallel_strategy should be bool type, parallel_strategy will be reset to False.")
+            self._parallel_strategy = False
+
+        if not isinstance(self._data_process, bool):
+            logger.warning("data_process should be bool type, data_process will be reset to False.")
+            self._data_process = False
+
+        if not isinstance(self._data_simplification, bool):
+            logger.warning("data_simplification should be bool type, data_simplification will be reset to True.")
+            self._data_simplification = True
+
+        if not isinstance(self._is_valid, bool):
+            logger.warning("is_valid should be bool type, is_valid will be reset to False.")
+            self._is_valid = False
 
     @property
     def start_step(self):
@@ -105,7 +152,12 @@ class DynamicProfilerArgs:
     @property
     def vars(self):
         """ get all values in DynamicProfilerArgs."""
-        return {key[1:]: value for key, value in self.__dict__.items()}
+        not_supported_args = ['_is_valid']
+        res = {}
+        for key, value in self.__dict__.items():
+            if key not in not_supported_args:
+                res[key.replace('_', '', 1)] = value
+        return res
 
     @property
     def args(self):
@@ -116,7 +168,7 @@ class DynamicProfilerArgs:
         res = {}
         for key, value in self.__dict__.items():
             if key not in not_supported_args:
-                res[key[1:]] = value
+                res[key.replace('_', '', 1)] = value
         return res
 
     @classmethod
@@ -313,7 +365,8 @@ class DynamicProfilerMonitorBase(Callback):
         if self._rank_id == 0:
             if not os.path.exists(self._cfg_json_path):
                 logger.warning("cfg_path is not exist, create default cfg json")
-                FileManager.create_json_file(self._cfg_path, DynamicProfilerArgs().vars, "profiler_config.json", 4)
+                FileManager.create_json_file(self._cfg_path, DynamicProfilerArgs().vars,
+                                             "profiler_config.json", indent=4)
         else:
             logger.info("rank_id is not 0, skip init cfg json")
         print_msg(f"Init config json file: {self._cfg_json_path}")
