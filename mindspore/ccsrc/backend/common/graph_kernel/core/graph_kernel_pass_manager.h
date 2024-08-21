@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2022 Huawei Technologies Co., Ltd
+ * Copyright 2019-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@
 
 namespace mindspore::graphkernel {
 using opt::PassManager;
-class GraphKernelPassManager : public PassManager {
+class BACKEND_EXPORT GraphKernelPassManager : public PassManager {
  public:
   GraphKernelPassManager(size_t stage, const std::string &name)
       : PassManager(name, true), stage_(stage), flags_(GraphKernelFlags::GetInstance()) {}
@@ -39,6 +39,7 @@ class GraphKernelPassManager : public PassManager {
   bool Run(const FuncGraphPtr &func_graph) const override;
 
  protected:
+  bool RunPass(const FuncGraphPtr &func_graph, size_t pass_id, const opt::PassPtr &pass) const override;
   std::string GetPassFullname(size_t pass_id, const opt::PassPtr &pass) const override;
 
   size_t stage_;
