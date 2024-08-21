@@ -21,9 +21,10 @@ import mindspore.dataset as ds
 from mindspore import nn, ops, Tensor
 from mindspore import context
 from mindspore.train import Callback
-from mindspore.nn.layer.embedding_service import EmbeddingService
-from mindspore.nn.layer.embedding_service_layer import EsEmbeddingLookup
+from mindspore.experimental.es.embedding_service import EmbeddingService
+from mindspore.experimental.es.embedding_service_layer import EsEmbeddingLookup, ESEmbeddingSmallTableLookup
 from mindspore.communication import init, release, get_rank
+from mindspore.common.initializer import TruncatedNormal
 
 
 class Net(nn.Cell):
@@ -32,17 +33,20 @@ class Net(nn.Cell):
     """
 
     def __init__(self, embedding_dim, max_feature_count, table_id_dict=None, es_initializer=None,
-                 es_counter_filter=None, es_padding_key=None, es_completion_key=None):
+                 es_counter_filter=None, es_padding_key=None, es_completion_key=None, small_table_to_variable=None):
         super(Net, self).__init__()
-        self.table_id = table_id_dict["test"]
-        self.embedding_dim = [embedding_dim]
-        self.embedding = EsEmbeddingLookup(self.table_id, es_initializer[self.table_id],
-                                           embedding_dim=self.embedding_dim,
-                                           max_key_num=max_feature_count, optimizer_mode="adam",
-                                           optimizer_params=[0.0, 0.0],
-                                           es_filter=es_counter_filter[self.table_id],
-                                           es_padding_key=es_padding_key[self.table_id],
-                                           es_completion_key=es_completion_key[self.table_id])
+        if small_table_to_variable:
+            self.embedding = ESEmbeddingSmallTableLookup("small_table_name", 0, 1, small_table_to_variable)
+        else:
+            self.table_id = table_id_dict["test"]
+            self.embedding_dim = [embedding_dim]
+            self.embedding = EsEmbeddingLookup(self.table_id, es_initializer[self.table_id],
+                                               embedding_dim=self.embedding_dim,
+                                               max_key_num=max_feature_count, optimizer_mode="adam",
+                                               optimizer_params=[0.0, 0.0],
+                                               es_filter=es_counter_filter[self.table_id],
+                                               es_padding_key=es_padding_key[self.table_id],
+                                               es_completion_key=es_completion_key[self.table_id])
         self.w = ms.Parameter(Tensor([1.5], ms.float32), name="w", requires_grad=True)
 
     def construct(self, keys, actual_keys_input=None, unique_indices=None, key_count=None):
@@ -177,17 +181,42 @@ def train():
     if rank == 0:
         save_embedding_path = os.path.join(os.getcwd(), "embedding")
         save_ckpt_path = os.path.join(os.getcwd(), "ckpt")
-        print("After get path is: ", save_embedding_path, save_ckpt_path, flush=True)
-        es.embedding_table_export(save_embedding_path)
-        es.embedding_ckpt_export(save_ckpt_path)
+        print("Big embedding table: ", save_embedding_path, save_ckpt_path, net.trainable_params(), flush=True)
+        es.embedding_table_export(save_embedding_path, net.trainable_params())
+        es.embedding_ckpt_export(save_ckpt_path, net.trainable_params())
         if os.path.exists("embedding_0.test.bin") and os.path.exists("ckpt_0.test.bin") and \
                 os.path.exists("ckpt_0.test.meta"):
-            print("Succ do export embedding and ckpt.", flush=True)
+            print("Succ do export big table embedding and ckpt.", flush=True)
         else:
             raise ValueError("Fail do export!!!!")
 
         es.embedding_ckpt_import(save_ckpt_path)
-        print("Succ do import embedding.", flush=True)
+        print("Succ do big embedding table import.", flush=True)
+
+    small_table = es.embedding_init(name="small_table_name", init_vocabulary_size=vocab_size,
+                                    embedding_dim=embedding_dim, initializer=TruncatedNormal(sigma=0.02),
+                                    embedding_type="data_parallel",
+                                    multihot_lens=vocab_size, allow_merge=False)
+    if not small_table:
+        raise ValueError("Small table must init first!")
+    small_table_to_variable = es.init_table()
+    if not small_table_to_variable:
+        raise ValueError("Should init parameter for each small table!")
+    if small_table_to_variable:
+        feature_id = Tensor([1], ms.int64)
+        net = Net(embedding_dim=embedding_dim, max_feature_count=feature_length,
+                  small_table_to_variable=small_table_to_variable)
+        net(feature_id)
+        if rank == 0:
+            save_embedding_path = os.path.join(os.getcwd(), "embedding")
+            save_ckpt_path = os.path.join(os.getcwd(), "ckpt")
+            print("small embedding table: ", save_embedding_path, save_ckpt_path, net.trainable_params(), flush=True)
+            es.embedding_table_export(save_embedding_path, net.trainable_params())
+            es.embedding_ckpt_export(save_ckpt_path, net.trainable_params())
+            if os.path.exists("embedding_small_table_name.bin") and os.path.exists("ckpt_small_table_name.bin"):
+                print("Succ do export small table embedding and ckpt.", flush=True)
+            else:
+                raise ValueError("Fail do export!!!!")
 
     release()
 

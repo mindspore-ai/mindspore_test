@@ -19,8 +19,10 @@ import mindspore as ms
 from mindspore import nn, ops, Tensor, Parameter
 from mindspore.ops.auto_generate import init_partition_map, init_embedding_hashmap, embedding_table_find_and_init,\
     embedding_table_find, fake_remote_lookup_uniqued
-from mindspore.ops.operations.manually_defined import EmbeddingTableImport, EmbeddingTableExport, \
-    EmbeddingComputeVarImport, EmbeddingComputeVarExport
+from mindspore.ops.auto_generate import EmbeddingTableImport, EmbeddingTableExport, \
+    EmbeddingComputeVarImport, EmbeddingComputeVarExport, EmbeddingTableEvict, EmbeddingFeatureMappingV2, \
+        EmbeddingFeatureMappingTableSize, EmbeddingFeatureMappingFind, EmbeddingFeatureMappingExport, \
+            EmbeddingFeatureMappingFileSize, EmbeddingFeatureMappingImport, EmbeddingFeatureMappingInsert
 
 
 class CounterFilter:
@@ -55,12 +57,14 @@ def _get_backward_float_params(optimizer_mode):
           [beta1_power, beta2_power, lr, weight_decay, beta1, beta2, epsilon]
         - when the backward_mode is 'adagrad', it means [lr,]
     """
-    if optimizer_mode == "adagrad":
+    if optimizer_mode == "adagrad" or optimizer_mode == "sgd":
         return [0.001]
     if optimizer_mode == "adam":
         return [0.9, 0.99, 0.001, 0.9, 0.999, 1e-08]
     if optimizer_mode == "ftrl":
         return [0.001, -0.5, 0.0, 0.0]
+    if optimizer_mode == "rmsprop":
+        return [0.001, 0.9, 0.1, 1e-08]
     # adamw
     return [0.9, 0.99, 0.001, 0.01, 0.9, 0.999, 1e-08]
 
@@ -99,6 +103,9 @@ class ESInitLayer(nn.Cell):
         self.default_value = None
 
     def construct(self):
+        """
+        ESInitLayer construct: init embedding hashmap
+        """
         init_partition = init_partition_map(self.ps_num_tensor,
                                             self.ps_ids_tensor,
                                             _embedding_dim=self.embedding_dim,
@@ -145,9 +152,34 @@ class ESInitLayer(nn.Cell):
 
 
 class EsEmbeddingLookup(nn.Cell):
+    r"""
+    Look up a PS embedding.
+
+    .. warning::
+        This is an experimental EmbeddingService API that is subject to change.
+
+    Args:
+        table_id (int): The table id.
+        es_initializer (EsInitializer): The EsInitialize object for PS embedding with table_id,
+            which can be None when the inference is performed.
+        embedding_dim (int): The embedding dim of keys for PS embedding with table_id.
+        max_key_num (int): The num of keys when lookup.
+        optimizer_mode (str): The type of optimizer.
+        optimizer_params (tuple[float]): The parameters of optimizer.
+        es_filter (CounterFilter): The option of counter filter for PS embedding with table_id.
+        es_padding_key (PaddingParamsOption): The option of padding key for PS embedding with table_id.
+        es_completion_key (CompletionKeyOption): The option of completion key for PS embedding with table_id.
+
+    Inputs:
+            - **keys** (Tensor): The keys of each feature in PS embedding.
+            - **actual_keys_input** (Tensor): Tensor composed of all unique elements of keys.
+            - **unique_indices** (Tensor): The index value of each element in keys to actual_keys_input .
+            - **key_count** (Tensor): The count of each element in the actual_keys_input to keys.
+
+    Supported Platforms:
+        ``Atlas A2 training series products``
     """
-    EsEmbeddingLookup.
-    """
+
     def __init__(self, table_id, es_initializer, embedding_dim, max_key_num, optimizer_mode=None,
                  optimizer_params=None, es_filter=None, es_padding_key=None, es_completion_key=None):
         super(EsEmbeddingLookup, self).__init__()
@@ -193,7 +225,7 @@ class EsEmbeddingLookup(nn.Cell):
             self.mask_zero = 0
             self.padding_key = 0
             self.padding_key_mask = 1
-        if self.optimizer_mode in ["adam", "ftrl", "adagrad"]:
+        if self.optimizer_mode in ["adam", "ftrl", "adagrad", "sgd", "rmsprop"]:
             self.backward_int_params = ([self.global_step], [self.mask_zero],
                                         [self.padding_key], [self.padding_key_mask])
         else:
@@ -211,6 +243,9 @@ class EsEmbeddingLookup(nn.Cell):
         self.max_grad_norm = Tensor([1.0], ms.float32)
 
     def construct(self, keys, actual_keys_input=None, unique_indices=None, key_count=None):
+        """
+        Using the corresponding query method to calculate the PS embedding for each key.
+        """
         origin_shape = None
         if len(keys.shape) != 1:
             origin_shape = keys.shape
@@ -227,11 +262,9 @@ class EsEmbeddingLookup(nn.Cell):
                 key_count = keys
         if self.training:
             if use_host_unique:
-                output = fake_remote_lookup_uniqued(table_id=self.table_id,
-                                                    keys=keys,
+                output = fake_remote_lookup_uniqued(table_id=self.table_id, keys=keys,
                                                     actual_keys_num=actual_keys_input,
-                                                    unique_indices=unique_indices,
-                                                    key_count=key_count,
+                                                    unique_indices=unique_indices, key_count=key_count,
                                                     max_grad_norm=self.max_grad_norm,
                                                     embedding_dim=self.embedding_dim,
                                                     initializer_mode=self.es_initializer.initializer_mode,
@@ -250,8 +283,7 @@ class EsEmbeddingLookup(nn.Cell):
                                                     default_value=self.default_value,
                                                     optimizer_mode=self.optimizer_mode,
                                                     optimizer_params=self.optimizer_params,
-                                                    _max_key_num=self.max_key_num,
-                                                    _table_id=self._table_id,
+                                                    _max_key_num=self.max_key_num, _table_id=self._table_id,
                                                     _use_counter_filter=use_counter_filter,
                                                     backward_mode=self.optimizer_mode,
                                                     backward_int_params=self.backward_int_params,
@@ -280,8 +312,7 @@ class EsEmbeddingLookup(nn.Cell):
                                                        default_value=self.default_value,
                                                        optimizer_mode=self.optimizer_mode,
                                                        optimizer_params=self.optimizer_params,
-                                                       _max_key_num=self.max_key_num,
-                                                       _table_id=self._table_id,
+                                                       _max_key_num=self.max_key_num, _table_id=self._table_id,
                                                        _use_counter_filter=use_counter_filter,
                                                        backward_mode=self.optimizer_mode,
                                                        backward_int_params=self.backward_int_params,
@@ -290,14 +321,10 @@ class EsEmbeddingLookup(nn.Cell):
                                                        completion_key_mask=self.completion_key_mask,
                                                        parameter=self.b)
         else:
-            output = embedding_table_find(self.table_id, keys,
-                                          embedding_dim=self.embedding_dim,
+            output = embedding_table_find(self.table_id, keys, embedding_dim=self.embedding_dim,
                                           default_value=self.default_value,
-                                          _max_key_num=self.max_key_num,
-                                          _table_id=self._table_id,
+                                          _max_key_num=self.max_key_num, _table_id=self._table_id,
                                           _use_counter_filter=use_counter_filter)
-        # input 20480 2 ->41960
-        # output 41960 embedding_dim -> 20480 2 embedding_dim
         if origin_shape is not None:
             output = self.reshape(output, origin_shape + (-1,))
         return output
@@ -350,6 +377,29 @@ class ESEmbeddingTableExport(nn.Cell):
         return y
 
 
+class ESIncrementalEmbeddingTableExport(nn.Cell):
+    """
+    ESIncrementalEmbeddingTableExport.
+    """
+    def __init__(self, embedding_dim_list, value_total_len_list, table_name_list, table_id_list,
+                 file_path, steps_to_live_list):
+        super(ESIncrementalEmbeddingTableExport, self).__init__()
+        self.op = EmbeddingTableExport(
+            embedding_dim_list,
+            value_total_len_list,
+            table_name=table_name_list,
+            steps_to_live_list=steps_to_live_list,
+            export_mode="new",
+            only_var_flag=True)
+        self.file_path = Tensor(np.array(file_path))
+        self.ps_id_tensor = Tensor(0, ms.int32)
+        self.table_id_tensor = Tensor(table_id_list, ms.int32)
+
+    def construct(self):
+        y = self.op(self.file_path, self.ps_id_tensor, self.table_id_tensor)
+        return y
+
+
 class ESEmbeddingCKPTImport(nn.Cell):
     """
     ESEmbeddingCKPTImport.
@@ -391,3 +441,135 @@ class ESEmbeddingTableImport(nn.Cell):
     def construct(self):
         y = self.op(self.file_path, self.ps_id_tensor, self.table_id_tensor)
         return y
+
+
+class ESEmbeddingTableEvict(nn.Cell):
+    """
+    ESEmbeddingTableEvict.
+    """
+    def __init__(self, var_handle, global_step, steps_to_live):
+        super(ESEmbeddingTableEvict, self).__init__()
+        self.op = EmbeddingTableEvict()
+        self.var_handle = Tensor(var_handle, ms.int32)
+        self.global_step = global_step
+        self.steps_to_live = steps_to_live
+
+    def construct(self):
+        y = self.op(self.var_handle, self.global_step, self.steps_to_live)
+        return y
+
+
+class ESEmbeddingFeatureMappingExport(nn.Cell):
+    """
+    ESEmbeddingFeatureMappingExport.
+    """
+    def __init__(self, file_path, export_value, var, var_name, small_table_embedding_dim):
+        super(ESEmbeddingFeatureMappingExport, self).__init__()
+        self.embedding_feature_mapping_table_size = EmbeddingFeatureMappingTableSize()
+        self.embedding_feature_mapping_find = EmbeddingFeatureMappingFind()
+        self.embedding_feature_mapping_export = EmbeddingFeatureMappingExport()
+        self.file_path = file_path
+        self.export_value = export_value
+        self.gather = ops.Gather()
+        self.var = Tensor(var, ms.float32)
+        self.var_name = Tensor(np.array([var_name]))
+        self.small_table_embedding_dim = [small_table_embedding_dim]
+
+    def construct(self):
+        """
+        ESEmbeddingFeatureMappingExport construct: export feature mapping for data_parallel embedding.
+        """
+        feature_size = self.embedding_feature_mapping_table_size(self.var_name)
+        feature_id, offset_id = self.embedding_feature_mapping_find(self.var_name, feature_size, 1)
+        values = self.gather(self.var, offset_id, 0)
+        if self.export_value:
+            embed_values = values
+        else:
+            embed_values = Tensor([0], ms.float32)
+        feature_mapping_export = self.embedding_feature_mapping_export(self.file_path, self.var_name,
+                                                                       embed_values, self.small_table_embedding_dim,
+                                                                       [feature_id], [offset_id])
+        return feature_mapping_export
+
+
+class ESEmbeddingFeatureMappingImport(nn.Cell):
+    """
+    ESEmbeddingFeatureMappingImport.
+    """
+    def __init__(self, file_path, small_table_name, small_table_embedding_dim):
+        super(ESEmbeddingFeatureMappingImport, self).__init__()
+        self.embedding_feature_mapping_file_size = EmbeddingFeatureMappingFileSize()
+        self.embedding_feature_mapping_import = EmbeddingFeatureMappingImport()
+        self.embedding_feature_mapping_insert = EmbeddingFeatureMappingInsert()
+        self.file_path = file_path
+        self.small_table_name = Tensor(np.array([small_table_name]))
+        self.small_table_embedding_dim = [small_table_embedding_dim]
+
+    def construct(self):
+        """
+        ESEmbeddingFeatureMappingImport construct: import feature mapping for data_parallel embedding.
+        """
+        feature_size = self.embedding_feature_mapping_file_size(self.file_path,
+                                                                self.small_table_name,
+                                                                self.small_table_embedding_dim,
+                                                                True)
+        feature_id, offset_id = self.embedding_feature_mapping_import(self.file_path,
+                                                                      self.small_table_name,
+                                                                      feature_size,
+                                                                      self.small_table_embedding_dim,
+                                                                      True, 1)
+        feature_mapping_insert = self.embedding_feature_mapping_insert(self.small_table_name, 1,
+                                                                       [feature_id], [offset_id])
+        return feature_mapping_insert
+
+
+class ESEmbeddingSmallTableLookup(nn.Cell):
+    r"""
+    Look up a data_parallel embedding.
+
+    .. warning::
+        This is an experimental EmbeddingService API that is subject to change.
+
+    Args:
+        name (str): The data_parallel embedding name.
+        rank_id (int): The rank id when look up data_parallel embedding key.
+        rank_size (int): The rank size when look up data_parallel embedding key.
+        small_table_to_variable (dict[str, parameter]): The dict to restore data_parallel embedding information:
+            key is table name, value is parameter.
+
+    Inputs:
+        - **ids_list** (Tensor) - The keys of each feature in data_parallel embedding.
+
+    Supported Platforms:
+        ``Atlas A2 training series products``
+    """
+
+    def __init__(self, name, rank_id, rank_size, small_table_to_variable):
+        super(ESEmbeddingSmallTableLookup, self).__init__()
+        self.small_table_to_variable = small_table_to_variable[name]
+        self.small_table_to_variable.feature_name = name
+        self.allgather = ops.AllGather()
+        self.gather = ops.Gather()
+        self.embedding_feature_mapping_v2 = EmbeddingFeatureMappingV2()
+        self.name = name
+        self.rank_id = rank_id
+        self.rank_size = rank_size
+
+    def construct(self, ids_list):
+        """
+        Using the EmbeddingFeatureMappingV2 method to mapping hash key to non hash key, and then get embedding value.
+        """
+        hash_key_shape = ids_list.shape
+        if self.rank_size > 1 and (hash_key_shape[0] is not None):
+            hash_key = self.allgather(ids_list)
+            non_hash_key = self.embedding_feature_mapping_v2(self.name, hash_key, [1], [1])
+            recovery_matrix = []
+            for i in range(hash_key_shape[0]):
+                recovery_matrix.append(self.rank_id * hash_key_shape[0] + i)
+            local_non_hash_keys = self.gather(non_hash_key, recovery_matrix)
+        else:
+            hash_key = ids_list
+            local_non_hash_keys = self.embedding_feature_mapping_v2(self.name, hash_key, [1], [1])
+
+        embedding = self.gather(self.small_table_to_variable, local_non_hash_keys, 0)
+        return embedding
