@@ -64,7 +64,7 @@ void LaunchMul::ObtainMulInputsAddr() {
   MS_EXCEPTION_IF_NULL(parallel_context);
   auto device_num = parallel_context->device_num();
   if (device_num == 0) {
-    MS_LOG(ERROR) << "device num can't be zero";
+    MS_LOG(EXCEPTION) << "device num can't be zero";
   }
   input2_value_ = 1.0f / device_num;
   auto size = abstract::TypeIdSize(dtype_);

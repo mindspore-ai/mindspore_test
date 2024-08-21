@@ -312,6 +312,7 @@ void UpdateGetNextNode(const AnfNodePtr &data_kernel) {
   auto ret = buf_mgr.Open(queue_name);
   MS_EXCEPTION_IF_CHECK_FAIL(ret == device::DataQueueStatus::SUCCESS, "Open dynamic data queue failed");
   auto data_queue = buf_mgr.GetDataQueue(queue_name);
+  MS_EXCEPTION_IF_NULL(data_queue);
   std::vector<device::DataQueueItem> data;
   RetryPeakItemFromDataQueue(data_kernel, data_queue, &data);
   UpdateGetNextWithDataQueueItems(data_kernel, data);
