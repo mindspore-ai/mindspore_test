@@ -315,9 +315,11 @@ void ProfilingDataDumper::Flush() {
   data_chunk_buf_.Reset();
   uint64_t end_time = profiler::GetClockSyscnt();
   auto tid = LongToUlong(syscall(SYS_gettid));
-  std::unique_ptr<OpRangeData> report =
+  std::unique_ptr<OpRangeData> save_data =
     std::make_unique<OpRangeData>(start_time, end_time, tid, "Profiler_SaveDate", rank_id_);
-  Report(std::move(report));
+  data_chunk_buf_.Push(std::move(save_data));
+  GatherAndDumpData();
+  data_chunk_buf_.Reset();
 }
 
 void ProfilingDataDumper::Report(std::unique_ptr<BaseReportData> data) {
