@@ -38,6 +38,7 @@ Status DvppDecodeResizeJpegOp::Compute(const std::shared_ptr<DeviceTensor> &inpu
       RETURN_STATUS_UNEXPECTED(error);
     }
     DvppDataInfo *ResizeOut = AclAdapter::GetInstance().GetResizedDeviceData(processor_.get());
+    RETURN_UNEXPECTED_IF_NULL(ResizeOut);
     const TensorShape dvpp_shape({1, 1, 1});
     const DataType dvpp_data_type(DataType::DE_UINT8);
     RETURN_IF_NOT_OK(mindspore::dataset::DeviceTensor::CreateEmpty(dvpp_shape, dvpp_data_type, output));
@@ -97,6 +98,7 @@ Status DvppDecodeResizeJpegOp::Compute(const std::shared_ptr<Tensor> &input, std
     // Third part end where we execute the core function of dvpp
     auto *ret_ptr = static_cast<unsigned char *>(AclAdapter::GetInstance().GetMemoryData(process.get()));
     DvppDataInfo *ResizeOut = AclAdapter::GetInstance().GetResizedDeviceData(process.get());
+    RETURN_UNEXPECTED_IF_NULL(ResizeOut);
     dsize_t dvpp_length = ResizeOut->dataSize;
     const TensorShape dvpp_shape({dvpp_length, 1, 1});
     const DataType dvpp_data_type(DataType::DE_UINT8);

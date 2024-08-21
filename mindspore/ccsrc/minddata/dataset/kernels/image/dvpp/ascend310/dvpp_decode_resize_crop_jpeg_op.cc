@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2023 Huawei Technologies Co., Ltd
+ * Copyright 2020-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ Status DvppDecodeResizeCropJpegOp::Compute(const std::shared_ptr<DeviceTensor> &
       RETURN_STATUS_UNEXPECTED(error);
     }
     DvppDataInfo *CropOut = AclAdapter::GetInstance().GetCropedDeviceData(processor_.get());
+    RETURN_UNEXPECTED_IF_NULL(CropOut);
 
     const TensorShape dvpp_shape({1, 1, 1});
     const DataType dvpp_data_type(DataType::DE_UINT8);
@@ -101,6 +102,7 @@ Status DvppDecodeResizeCropJpegOp::Compute(const std::shared_ptr<Tensor> &input,
     // Third part end where we execute the core function of dvpp
     auto *ret_ptr = static_cast<unsigned char *>(AclAdapter::GetInstance().GetMemoryData(processor.get()));
     DvppDataInfo *CropOut = AclAdapter::GetInstance().GetCropedDeviceData(processor.get());
+    RETURN_UNEXPECTED_IF_NULL(CropOut);
     uint32_t dvpp_length = CropOut->dataSize;
     const TensorShape dvpp_shape({dvpp_length, 1, 1});
     const DataType dvpp_data_type(DataType::DE_UINT8);
