@@ -165,8 +165,8 @@ const std::unordered_map<int, bool (GraphBuilder::*)(const Instr &)> GraphBuilde
   {BUILD_TUPLE_UNPACK_WITH_CALL, &GraphBuilder::DoBuildWithUnpack},
   {BUILD_LIST_UNPACK, &GraphBuilder::DoBuildWithUnpack},
   {BUILD_SET_UNPACK, &GraphBuilder::DoBuildWithUnpack},
-  {BUILD_MAP_UNPACK, &GraphBuilder::DoBuildWithUnpack},
-  {BUILD_MAP_UNPACK_WITH_CALL, &GraphBuilder::DoBuildWithUnpack},
+  {BUILD_MAP_UNPACK, &GraphBuilder::DoBuildMapWithUnpack},
+  {BUILD_MAP_UNPACK_WITH_CALL, &GraphBuilder::DoBuildMapWithUnpack},
 };
 
 bool GraphBuilder::DoOtherBytecode(const Instr &instr) {
@@ -4112,11 +4112,6 @@ bool MindGraphBuilder::DoBinaryMul(const Instr &instr) {
   auto r = pop();
   auto l = pop();
   auto o = HandleMultiOp(instr, {l, r}, false);
-  if (o == nullptr) {
-    push(l);
-    push(r);
-    return GraphBuilder::DoBinaryMul(instr);
-  }
   auto v = NewValueNode(AObject::Convert(o), instr, {l, r});
   v->set_abstract_wrapper(o);
   push(v);
