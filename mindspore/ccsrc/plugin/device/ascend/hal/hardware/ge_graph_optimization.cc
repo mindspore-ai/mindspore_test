@@ -176,12 +176,13 @@ void GEGraphOptimization::OptimizeACLGraphAfterInline(const KernelGraphPtr &grap
 void GEGraphOptimization::UnifyMindIR(const KernelGraphPtr &graph) {
   MS_EXCEPTION_IF_NULL(graph);
   MS_LOG(INFO) << "Status record: start unify mindir. graph id: " << graph->graph_id();
-  profiler::CollectHostInfo("Ascend", "Graph Optimization", "UnifyMindIR", 0, 0, 0);
+  uint64_t start_time = profiler::GetClockSyscnt();
   PROF_START(unify_mindir);
   opt::CommonUnifyMindIR(graph);
   opt::GEUnifyMindIR(graph);
   PROF_END(unify_mindir);
-  profiler::CollectHostInfo("Ascend", "Graph Optimization", "UnifyMindIR", 0, 0, 1);
+  (void)profiler::CollectHostInfo("Ascend", "Graph Optimization", "UnifyMindIR", start_time, profiler::GetClockSyscnt(),
+                                  0);
   MS_LOG(INFO) << "Status record: end unify mindir. graph id: " << graph->graph_id();
 }
 

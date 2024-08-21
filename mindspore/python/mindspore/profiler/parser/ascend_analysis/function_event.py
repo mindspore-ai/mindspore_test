@@ -35,7 +35,7 @@ class BaseEvent(ABC):
         self.pid: int = 0
         self.tid: int = 0
         self.ts: Decimal = Decimal(0)
-        self.end_us: Decimal = Decimal(0)
+        self.te: Decimal = Decimal(0)
         self.dur: float = 0.0
         self.args: Dict = {}
         self.parent: Optional[BaseEvent] = None
@@ -56,7 +56,7 @@ class CANNEvent(BaseEvent):
         self.pid = self._orig_data.get("pid", 0)
         self.tid = self._orig_data.get("tid", 0)
         self.dur = self._orig_data.get("dur", 0.0)
-        self.end_us = self.ts + Decimal(str(self.dur))
+        self.te = self.ts + Decimal(str(self.dur))
         self.name = self._orig_data.get("name", "")
         self.id = self._orig_data.get("id", 0)
         self.args = self._orig_data.get("args", {})
@@ -75,16 +75,32 @@ class CANNEvent(BaseEvent):
 
     def is_x_event(self) -> bool:
         """Determine whether the event x event or not."""
-        return self._orig_data.get("ph") == "X"
+        return self._orig_data.get("ph") == Constant.COMPLETE_EVENT
+
+    def get_sort_index(self):
+        """get the process sort index"""
+        if self.args.get('name', '') == 'Ascend Hardware':
+            return Constant.ASCEND_HARDWARE
+        if self.args.get('name', '') == 'CANN':
+            return Constant.CANN
+        if self.args.get('name', '') == 'HCCL':
+            return Constant.HCCL
+        if self.args.get('name', '') == 'Overlap Analysis':
+            return Constant.OVERLAP
+        return Constant.OTHERWISE
 
     def to_json(self):
         """Cast to trace event."""
         if self.ph == Constant.META_EVENT:
-            res = {'name': self.name, 'pid': self.pid, 'tid': self.tid,
-                   'args': self.args, 'ph': self.ph}
-            if self.cat:
-                res.update({'cat': self.cat})
-            return res
+            if self.name == Constant.PROCESS_NAME:
+                return [{'name': self.name, 'pid': self.pid, 'tid': self.tid,
+                         'args': self.args, 'ph': self.ph},
+                        {'name': Constant.PROCESS_SORT, 'pid': self.pid, 'tid': self.tid,
+                         'args': {'sort_index': self.get_sort_index()}, 'ph': self.ph}]
+            if self.name == Constant.PROCESS_SORT:
+                return None
+            return {'name': self.name, 'pid': self.pid, 'tid': self.tid,
+                    'args': self.args, 'ph': self.ph}
 
         if self.ph == Constant.COMPLETE_EVENT:
             if self.parent is not None:
@@ -102,8 +118,7 @@ class CANNEvent(BaseEvent):
         if self.ph == Constant.END_FLOW:
             return {"ph": self.ph, "name": self.name, "id": self.id, "pid": self.pid,
                     "tid": self.tid, "ts": str(self.ts), "cat": self.cat, 'bp': "e"}
-        return {'name': self.name, 'pid': self.pid, 'tid': self.tid,
-                'ts': str(self.ts), 'args': self.args, 'ph': self.ph}
+        return None
 
 
 class MindSporeOpEnum(Enum):
@@ -117,7 +132,8 @@ class MindSporeOpEnum(Enum):
     FORWORD_THREAD_ID = 6
     FLOW_ID = 7
     STEP_ID = 8
-    IS_ASYNC = 9
+    LEVEL = 9
+    IS_ASYNC = 10
 
 
 class MindSporeOpEvent(BaseEvent):
@@ -129,21 +145,24 @@ class MindSporeOpEvent(BaseEvent):
     """
     _tlv_type_dict = {
         Constant.OP_NAME: 3, Constant.INPUT_SHAPES: 5, Constant.INPUT_DTYPES: 4,
-        Constant.CALL_STACK: 6, Constant.MODULE_HIERARCHY: 7, Constant.FLOPS: 8
+        Constant.CALL_STACK: 6, Constant.MODULE_HIERARCHY: 7, Constant.FLOPS: 8,
+        Constant.CUSTOM_INFO: 9
     }
-    _fix_data_format = "<3q6Q?"
+    _fix_data_format = "<3q6Qb?"
 
     def _init_params(self):
         """Initialize the attribute value of MindSporeOpEvent."""
         fix_size_data = struct.unpack(self._fix_data_format, self._orig_data.get(Constant.FIX_SIZE_BYTES))
-        self.pid = int(fix_size_data[MindSporeOpEnum.PROCESS_ID.value])
+        self.pid = Constant.MINDSPORE
         self.tid = int(fix_size_data[MindSporeOpEnum.START_THREAD_ID.value])
         self.name = str(self._orig_data.get(self._tlv_type_dict.get(Constant.OP_NAME), ""))
-        self.ts = ProfilerInfoParser.get_local_time(fix_size_data[MindSporeOpEnum.START_NS.value])
-        self.end_us = ProfilerInfoParser.get_local_time(fix_size_data[MindSporeOpEnum.END_NS.value])
-        self.dur = self.end_us - self.ts
+        self.ts = ProfilerInfoParser.get_local_time(fix_size_data[MindSporeOpEnum.START_NS.value])  # unit is us
+        self.te = ProfilerInfoParser.get_local_time(fix_size_data[MindSporeOpEnum.END_NS.value])  # unit is us
+        self.dur = self.te - self.ts
         self.flow_id = int(fix_size_data[MindSporeOpEnum.FLOW_ID.value])
         self.step = int(fix_size_data[MindSporeOpEnum.STEP_ID.value])
+        self.level = int(fix_size_data[MindSporeOpEnum.LEVEL.value])
+        self.custom_info = ""
         self.args = self.__get_args(fix_size_data)
 
     def __get_args(self, fix_size_data) -> Dict:
@@ -156,6 +175,11 @@ class MindSporeOpEvent(BaseEvent):
                 continue
             if type_name in set([Constant.INPUT_SHAPES, Constant.INPUT_DTYPES, Constant.CALL_STACK]):
                 args[type_name] = self._orig_data.get(type_id).replace("|", "\r\n")
+            elif type_name == Constant.CUSTOM_INFO and self._orig_data.get(type_id):
+                pairs = self._orig_data.get(type_id).split(';')
+                custom_info = {pair.split(':')[0]: pair.split(':')[1] for pair in pairs}
+                args[type_name] = custom_info
+                self.custom_info = custom_info.__str__()
             else:
                 args[type_name] = self._orig_data.get(type_id)
         return args

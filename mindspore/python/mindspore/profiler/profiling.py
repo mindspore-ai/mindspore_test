@@ -20,7 +20,6 @@ import time
 import json
 from json import JSONDecodeError
 import glob
-import csv
 import socket
 import multiprocessing
 from enum import Enum
@@ -163,148 +162,6 @@ def _calculate_dataset_item(row, execution_time_map, ts_map):
     else:
         logger.warning("Can not map the start time for item: %s.", row)
 
-
-def _calculate_dataset_execution_time(input_file, output_file):
-    r"""
-    Parse the host info into timeline file, so as to show on UI.
-
-    Args:
-        input_file: the original host_info file, in csv format.
-        output_file: the output file, in csv format.
-    """
-    input_file = validate_and_normalize_path(input_file)
-    # execution_time_map is used to store the ExecutionCalculator for each stage.
-    execution_time_map = {}
-    # ts_map is used to store the start time of each event_stage_tid_pid.
-    ts_map = {}
-    with open(input_file, 'r') as f:
-        for row in csv.DictReader(f):
-            try:
-                module_name = row['module_name']
-                if module_name != 'Dataset':
-                    continue
-                _calculate_dataset_item(row, execution_time_map, ts_map)
-            except KeyError as e:
-                logger.error("Error occur when analyse line: %s, Details is: %s", row, e)
-                continue
-    if ts_map:
-        logger.warning("Only start time is record for these items:")
-        for k, v in ts_map.items():
-            logger.warning("event_stage_tid_pid: %s, time: %d us.", k, v)
-    output_file = validate_and_normalize_path(output_file)
-    flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
-    modes = stat.S_IWUSR | stat.S_IRUSR
-    with os.fdopen(os.open(output_file, flags, modes), 'w') as f:
-        csv_writer = csv.writer(f)
-        csv_writer.writerow(['Operation', 'Stage', 'Occurrences', 'Avg. time (us)', 'Custom Info'])
-        for _, v in execution_time_map.items():
-            csv_writer.writerow([v.event, v.stage, v.count, v.average_execution, v.custom_info])
-    os.chmod(output_file, modes)
-    logger.info('Successfully calculate the execution time and write it to file: %s.', output_file)
-
-
-def _extract_timeline_item(row, time_line, ts_map):
-    """Process one row, try to extract a timeline item."""
-    start_end = row['start_end']
-    event_stage_tid_pid = row['event'] + '_' + row['stage'] + '_' + row['tid'] + '_' + row['pid']
-    # map start and end, put the mapped event into timeline.
-    if start_end == '1' and event_stage_tid_pid in ts_map:
-        title = row['event'] + '::' + row['stage']
-        event = {'name': title, 'cat': row['module_name']}
-        ts_end = int(row['time_stamp(us)'])
-        ts = ts_map[event_stage_tid_pid]
-        event['ts'] = ts
-        event['dur'] = ts_end - ts
-        event['ph'] = 'X'
-        event['pid'] = row['pid']
-        event['tid'] = row['tid']
-        event['args'] = {'parent_pid': row['parent_pid']}
-        time_line.append(event)
-        del ts_map[event_stage_tid_pid]
-    elif start_end == '0':
-        ts = int(row['time_stamp(us)'])
-        ts_map[event_stage_tid_pid] = ts
-    # Put the instance event into timeline.
-    elif start_end == '2':
-        title = row['event'] + '::' + row['stage']
-        event = {
-            'name': title, 'cat': row['module_name'], 'ts': int(row['time_stamp(us)']), 'ph': 'i',
-            'pid': row['pid'], 'tid': row['tid'], 'args': {'parent_pid': row['parent_pid']}
-        }
-        time_line.append(event)
-    else:
-        logger.warning("Can not map the start time for item: %s.", row)
-
-
-def _parse_host_info(input_file, output_timeline_file, output_memory_file, is_develop_user=True):
-    r"""
-    Parse the host info into timeline file, so as to show on UI.
-
-    Args:
-        input_file: the original host_info file, in csv format.
-        output_timeline_file: the output timeline file, in json format.
-        output_memory_file: the output memory_usage file, in csv format.
-        is_develop_user: some data only shown to develop users, other users no need to analyse it.
-    """
-    input_file = validate_and_normalize_path(input_file)
-    time_line = []
-    # ts_map is used to store the start time of each event_stage_tid_pid
-    ts_map = {}
-    memory_header = [
-        'tid', 'pid', 'parent_pid', 'module_name', 'event', 'stage', 'level', 'start_end', 'custom_info',
-        'memory_usage(kB)', 'time_stamp(us)'
-    ]
-    memory_info = []
-    with open(input_file, 'r') as f:
-        for row in csv.DictReader(f):
-            try:
-                level = row['level']
-                if level == '0' and not is_develop_user:
-                    continue
-                if int(row['time_stamp(us)']) > 0:
-                    _extract_timeline_item(row, time_line, ts_map)
-                if int(row['memory_usage(kB)']) > 0:
-                    memory_info.append(row)
-            except KeyError as e:
-                logger.error("Error occur when analyse line: %s, Details is: %s", row, e)
-                continue
-    if memory_info:
-        with os.fdopen(os.open(output_memory_file, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), 'w') as csv_file:
-            csv_writer = csv.DictWriter(csv_file, fieldnames=memory_header)
-            csv_writer.writeheader()
-            for item in memory_info:
-                csv_writer.writerow(item)
-        os.chmod(output_memory_file, stat.S_IREAD | stat.S_IWRITE)
-    else:
-        logger.warning("No memory_usage is record in file: %s", input_file)
-
-    if ts_map:
-        logger.warning("Only start time is record for these items:")
-        for k, v in ts_map.items():
-            logger.warning("event_stage_tid_pid: %s, time: %d us.", k, v)
-            last_dash = k.rfind('_')
-            if last_dash == -1:
-                logger.error("Can't find pid in the event_stage_tid_pid string: %s", k)
-                continue
-            second_last_dash = k.rfind('_', 0, last_dash - 1)
-            if second_last_dash == -1:
-                logger.error("Can't find tid in the event_stage_tid_pid string: %s", k)
-                continue
-            pid = k[last_dash + 1:]
-            tid = k[second_last_dash + 1: last_dash]
-            title = k[:second_last_dash]
-            unfinished_timeline = {'name': title, 'pid': pid, 'tid': tid, 'ph': 'B', 'ts': int(v)}
-            time_line.append(unfinished_timeline)
-
-    if time_line:
-        timeline_file = validate_and_normalize_path(output_timeline_file)
-        with os.fdopen(os.open(timeline_file, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), 'w') as json_file:
-            json.dump(time_line, json_file)
-        os.chmod(timeline_file, stat.S_IREAD | stat.S_IWRITE)
-    else:
-        logger.warning("No valid time_stamp is record in file: %s", input_file)
-
-
 def _ascend_graph_msprof_generator(mindstudio_profiler_output, model_iteration_dict):
     """Executing the msprof export mode."""
     try:
@@ -400,13 +257,11 @@ class Profiler:
         timeline_limit (int, optional): (Ascend/GPU) Set the maximum storage size of the timeline file (unit M).
             When using this parameter, `op_time` must be set to True. Default value: ``500`` .
         profile_framework (str, optional): (Ascend/GPU) The host information to collect, it must be one of
-            ["all", "time", "memory", None], When is not set to None, a subdirectory host_info will be generated in the
-            specified profiler directory, which stores the collected memory and time files on the Host side.
-            Default: "all".
+            ["all", "time", None], When is not set to None, it would collect the host profiler data.
+            Default: None.
 
-            - "all": Record both host timestamp and host memory usage.
-            - "time": Only record host timestamp.
-            - "memory": Only record host memory usage.
+            - "all": Only record host timestamp.
+            - "time": The same as "all".
             - None: Not record host information.
         data_simplification (bool, optional): (Ascend only) Whether to remove FRAMEWORK data and other redundant data.
             If set to True, only the delivery of profiler and the original performance data in the PROF_XXX
@@ -515,7 +370,7 @@ class Profiler:
         self._sync_enable = True
         self._stop_time = 0
         self._dynamic_status = False
-        self._profile_framework = "all"
+        self._profile_framework = None
         self._msprof_enable = os.getenv("PROFILER_SAMPLECONFIG")
         self.profiler_level = None
         self._pretty_json = False
@@ -812,7 +667,6 @@ class Profiler:
             self._ascend_graph_analyse(offline_path=offline_path)
             ProfilerInfo.set_analyse_end_time(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
             ProfilerInfo.save(self._output_path)
-            _offline_parse(offline_path)
             return
         if self._msprof_enable:
             return
@@ -832,18 +686,16 @@ class Profiler:
         ProfilerInfo.set_analyse_start_time(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
         if self._device_target and self._device_target == DeviceTarget.CPU.value:
             self._cpu_analyse()
+            if self._profile_framework:
+                logger.warning("The parameter 'profile_framework' is not support for CPU, so there no host profiler "
+                               "data.")
 
         if self._device_target and self._device_target == DeviceTarget.GPU.value:
             self._gpu_analyse()
 
         elif self._device_target and self._device_target == DeviceTarget.ASCEND.value:
             self._ascend_analyse()
-        if self._profile_framework:
-            if self._device_target != DeviceTarget.CPU.value:
-                self._host_info_analyse()
-            else:
-                logger.warning("The parameter 'profile_framework' is not support for CPU, so there no host_info"
-                               " directory in the output path.")
+
         logger.info("Profiling: all the data have been analyzed.")
         ProfilerInfo.set_analyse_end_time(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
         ProfilerInfo.save(self._output_path)
@@ -910,8 +762,8 @@ class Profiler:
             self._ascend_graph_start()
         ProfilerInfo.set_profiling_start_time(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
         ProfilerInfo.set_system_cnt(c_expression.get_clock_syscnt())
-        ProfilerInfo.set_system_time(int(c_expression.get_clock_time() * 1e3)) # cast us to ns
-        if self._with_stack:
+        ProfilerInfo.set_system_time(int(c_expression.get_clock_time())) # ns
+        if self._profile_framework:
             _framework_profiler_enable_mi()
 
     def stop(self):
@@ -1079,7 +931,7 @@ class Profiler:
         self._profile_communication = options.get('profile_communication')
         self._op_time = options.get('op_time')
         self._device_target = context.get_context("device_target").lower()
-        self._profile_framework = options.get('profile_framework', 'all')
+        self._profile_framework = options.get('profile_framework', None)
         self._profiler_manager = c_expression.ProfilerManager.get_instance()
         self._cpu_profiler = c_expression.Profiler.get_instance("CPU")
         if self._data_process:
@@ -2065,11 +1917,11 @@ class Profiler:
                 "[Profiler]The 'timeline_limit' parameter must be greater than 0, it will be set to 500.")
             timeline_limit = 500
         self._timeline_size_limit_byte = timeline_limit * 1024 * 1024
-        self._profile_framework = kwargs.pop("profile_framework", "all")
-        if self._profile_framework not in ["memory", "time", "all", None]:
-            logger.warning(f"For '{self.__class__.__name__}', the parameter profile_framework must be one of ['memory',"
+        self._profile_framework = kwargs.pop("profile_framework", None)
+        if self._profile_framework not in ["time", "all", None]:
+            logger.warning(f"For '{self.__class__.__name__}', the parameter profile_framework must be one of ["
                            f" 'time', 'all', None], but got {self._profile_framework}, it will be set to 'all'.")
-            self._profile_framework = "all"
+            self._profile_framework = None
         if not isinstance(self._data_simplification, bool):
             logger.warning(f"For '{self.__class__.__name__}', the parameter data_simplification must be bool, "
                            f"but got type {type(self._data_simplification)}, it will be set to True.")
@@ -2085,50 +1937,3 @@ class Profiler:
             logger.warning(f"For '{self.__class__.__name__}', the parameter with_stack must be bool, but got "
                            f"type {type(self._with_stack)}, it will be set to False.")
             self._with_stack = False
-
-    def _host_info_analyse(self):
-        """
-        Read data from the csv file, and write it into timeline file, so the timeline can be show on tracing tool.
-        """
-        logger.info("Profiling HostInfo start.")
-        host_dir = os.path.join(self._output_path, 'host_info')
-        host_dir = validate_and_normalize_path(host_dir)
-        if not os.path.exists(host_dir):
-            logger.warning("Host info directory: %s not exist.", host_dir)
-            return
-        csv_file_name = 'host_info_' + str(self._rank_id) + '.csv'
-        json_file_name = 'timeline_' + str(self._rank_id) + '.json'
-        memory_file_name = 'host_memory_' + str(self._rank_id) + '.csv'
-        dataset_file_name = 'dataset_' + str(self._rank_id) + '.csv'
-        host_info_file = os.path.join(self._output_path, 'host_info', csv_file_name)
-        timeline_file = os.path.join(self._output_path, 'host_info', json_file_name)
-        memory_file = os.path.join(self._output_path, 'host_info', memory_file_name)
-        dataset_execution_file = os.path.join(self._output_path, 'host_info', dataset_file_name)
-        _parse_host_info(host_info_file, timeline_file, memory_file)
-        _calculate_dataset_execution_time(host_info_file, dataset_execution_file)
-        logger.info("Profile HostInfo finished.")
-
-
-def _offline_parse(offline_path):
-    """Parse data in abnormal scenario, only support for host_info at present."""
-    logger.info("Profiling HostInfo offline start.")
-    host_dir = os.path.join(offline_path, 'profiler', 'host_info')
-    host_dir = validate_and_normalize_path(host_dir)
-    if not os.path.exists(host_dir):
-        logger.warning("Host info directory: %s not exist.", host_dir)
-        return
-    files = os.listdir(host_dir)
-    for file in files:
-        if not file.startswith("host_info_") or not file.endswith(".csv"):
-            continue
-        rank_id = file.split('_')[-1].split('.')[0]
-        if not rank_id.isdigit():
-            logger.info("Cannot get rank_id from file: %s, skip it", file)
-            return
-        host_info_file = os.path.join(host_dir, file)
-        timeline_file = os.path.join(host_dir, f'timeline_{rank_id}.json')
-        memory_file = os.path.join(host_dir, f'host_memory_{rank_id}.csv')
-        dataset_execution_file = os.path.join(host_dir, f'dataset_{rank_id}.csv')
-        _parse_host_info(host_info_file, timeline_file, memory_file)
-        _calculate_dataset_execution_time(host_info_file, dataset_execution_file)
-    logger.info("Profile HostInfo offline finished.")

@@ -275,11 +275,12 @@ void UseCacheToCompileGraphImpl(const KernelGraphPtr &graph, const DeviceContext
   MS_EXCEPTION_IF_NULL(device_context);
 
   auto &compile_cache_context = CompileCacheContext::GetInstance();
-  (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageCreateKernel, 1, 0, 0);
+  uint64_t start_time = profiler::GetClockSyscnt();
   compile_cache_context.SetFusionOpBuildInfoFlag(true);
   device_context->GetKernelExecutor(false)->CreateKernel(graph->execution_order());
   compile_cache_context.SetFusionOpBuildInfoFlag(false);
-  (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageCreateKernel, 1, 0, 1);
+  (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageCreateKernel, start_time,
+                                  profiler::GetClockSyscnt(), 1);
   // Kernels that are not supported by other device can be backed off and rebuilt on the CPU.
 #ifdef WITH_BACKEND
   if (!graph->is_from_single_op()) {
@@ -430,10 +431,11 @@ GraphId GraphCompiler::CompileGraph(const GraphSegmentPtr &segment,
   auto nodes = segment->nodes_;
   auto device_target = device_context->GetDeviceType();
   // Generate kernel graph.
-  (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageConstructKernelGraph, 1, 0, 0);
+  uint64_t start_time = profiler::GetClockSyscnt();
   auto kernel_graph =
     session_->ConstructKernelGraph(nodes, io_nodes.second, device_target, true, IsEnableZeroCopy(run_in_pynative));
-  (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageConstructKernelGraph, 1, 0, 1);
+  (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageConstructKernelGraph, start_time,
+                                  profiler::GetClockSyscnt(), 1);
   SetGraphDependency(kernel_graph, segment);
   return CompileGraph(kernel_graph, io_nodes, device_context, run_mode, run_in_pynative);
 }
@@ -529,7 +531,8 @@ GraphId GraphCompiler::CompileDynamicGraph(const GraphSegmentPtr &segment, const
   auto nodes = segment->nodes_;
   auto device_target = device_context->GetDeviceType();
   // Generate kernel graph.
-  (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageConstructKernelGraph, 1, 0, 0);
+  (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageConstructKernelGraph,
+                                  profiler::GetClockSyscnt(), 0, 1);
   const auto &kernel_graph = session_->ConstructKernelGraph(nodes, outputs, device_target, true, false);
   return CompileDynamicGraph(kernel_graph, device_context);
 }
@@ -704,18 +707,20 @@ GraphId GraphCompiler::CompileGraphImpl(const KernelGraphPtr &graph, const Devic
 #endif
     MS_EXCEPTION_IF_NULL(device_context->GetKernelExecutor(false));
     // Execute optimization pass.
-    (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageOptimizeGraph, 1, 0, 0);
+    uint64_t start_time = profiler::GetClockSyscnt();
     PROF_START(OptimizeGraph);
     device_context->GetKernelExecutor(false)->OptimizeGraph(graph);
     PROF_END(OptimizeGraph);
-    (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageOptimizeGraph, 1, 0, 1);
+    (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageOptimizeGraph, start_time,
+                                    profiler::GetClockSyscnt(), 1);
     // Generate 'KernelMod' for all kernels and set 'KernelMod' into kernel,
     // 'KernelMod' is real executive object of kernel.
-    (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageCreateKernel, 1, 0, 0);
+    start_time = profiler::GetClockSyscnt();
     PROF_START(CreateKernel);
     device_context->GetKernelExecutor(false)->CreateKernel(graph->execution_order());
     PROF_END(CreateKernel);
-    (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageCreateKernel, 1, 0, 1);
+    (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageCreateKernel, start_time,
+                                    profiler::GetClockSyscnt(), 1);
 
     // Kernels that are not supported by other device can be backed off and rebuilt on the CPU.
 #ifdef WITH_BACKEND

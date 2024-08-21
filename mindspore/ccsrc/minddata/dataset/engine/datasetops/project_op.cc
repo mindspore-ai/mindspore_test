@@ -51,7 +51,7 @@ void ProjectOp::Print(std::ostream &out, bool show_all) const {
 // Gets a row from the child operator and projects the buffer.
 Status ProjectOp::GetNextRow(TensorRow *row) {
   RETURN_UNEXPECTED_IF_NULL(row);
-  RETURN_IF_NOT_OK(CollectOpInfoStart(this->NameWithID(), "GetFromPreviousOp"));
+  uint64_t start_time = GetSyscnt();
   RETURN_IF_NOT_OK(child_[0]->GetNextRow(row));
   if (!row->eoe() && !row->eof()) {
     *row = Project(*row);
@@ -59,7 +59,8 @@ Status ProjectOp::GetNextRow(TensorRow *row) {
   if (row->eoe()) {
     UpdateRepeatAndEpochCounter();
   }
-  RETURN_IF_NOT_OK(CollectOpInfoEnd(this->NameWithID(), "GetFromPreviousOp", {{"TensorRowFlags", row->FlagName()}}));
+  RETURN_IF_NOT_OK(
+    CollectOpInfoEnd(this->NameWithID(), "GetFromPreviousOp", start_time, {{"TensorRowFlags", row->FlagName()}}));
   return Status::OK();
 }
 

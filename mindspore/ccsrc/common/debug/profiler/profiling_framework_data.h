@@ -37,7 +37,7 @@ using mindspore::runtime::ProfilerData;
 
 class COMMON_EXPORT ProfilingFrameworkData {
  public:
-  static void RecordHostProfile(std::shared_ptr<ProfilerData> data, uint64_t step = 0);
+  static void RecordHostProfile(std::shared_ptr<ProfilerData> data);
 
   inline static std::map<std::string, uint64_t> kernel_launch_begin_;
   inline static int32_t Device_Id{0};

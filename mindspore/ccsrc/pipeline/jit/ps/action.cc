@@ -72,6 +72,8 @@
 #include "include/backend/distributed/ps/ps_context.h"
 #include "include/backend/distributed/ps/util.h"
 #endif
+#include "common/debug/profiler/profiling_framework_data.h"
+#include "include/common/profiler.h"
 
 namespace mindspore {
 namespace pipeline {
@@ -1110,21 +1112,23 @@ bool TypeInferenceAction(const ResourcePtr &resource) {
   // Check isolated side-effect nodes.
   engine->set_check_side_effect(true);
   // Analyze
-  (void)profiler::CollectHostInfo(kCompiler, kTypeInference, kAbstractAnalyze, 0, 0, 0);
+  uint64_t start_time = profiler::GetClockSyscnt();
   AnalysisResult result;
   {
     MsProfileStatGuard stat_guard("type_inference.infer");
     result = AbstractAnalyze(resource->engine(), resource->func_graph(), GetArgsAbs(resource), resource->is_load());
   }
-  (void)profiler::CollectHostInfo(kCompiler, kTypeInference, kAbstractAnalyze, 0, 0, 1);
+  (void)profiler::CollectHostInfo(kCompiler, kTypeInference, kAbstractAnalyze, start_time, profiler::GetClockSyscnt(),
+                                  0);
   // Specialize
-  (void)profiler::CollectHostInfo(kCompiler, kTypeInference, kProgramSpecialize, 0, 0, 0);
+  start_time = profiler::GetClockSyscnt();
   FuncGraphPtr new_fg;
   {
     MsProfileStatGuard stat_guard("type_inference.specialize");
     new_fg = ProgramSpecialize(resource->engine(), result.context->func_graph(), result.context);
   }
-  (void)profiler::CollectHostInfo(kCompiler, kTypeInference, kProgramSpecialize, 0, 0, 1);
+  (void)profiler::CollectHostInfo(kCompiler, kTypeInference, kProgramSpecialize, start_time, profiler::GetClockSyscnt(),
+                                  0);
   // Update the top func graph with the specialized graph.
   parse::Parser::UpdateTopFuncGraph(new_fg);
   resource->set_func_graph(new_fg);
@@ -1150,7 +1154,7 @@ bool OptimizeAction(const ResourcePtr &resource, const std::vector<PassItem> &pa
   size_t counter = 0;
   for (auto &pass : passes) {
     ProcessStatus::GetInstance().RecordStart(pass.first);
-    (void)profiler::CollectHostInfo(kCompiler, kOptimize, pass.first, 0, 0, 0);
+    uint64_t start_time = profiler::GetClockSyscnt();
     auto profile_context = MsProfile::GetProfile()->Step(pass.first);
     auto pass_func = [&pass, &resource, &counter]() {
       MS_LOG(DEBUG) << "Pass " << pass.first << " start ...";
@@ -1181,7 +1185,7 @@ bool OptimizeAction(const ResourcePtr &resource, const std::vector<PassItem> &pa
       MS_LOG(DEBUG) << "Pass " << pass.first << " end.";
     };
     ProfileExecute(profile_context, pass_func);
-    (void)profiler::CollectHostInfo(kCompiler, kOptimize, pass.first, 0, 0, 1);
+    (void)profiler::CollectHostInfo(kCompiler, kOptimize, pass.first, start_time, profiler::GetClockSyscnt(), 0);
     ProcessStatus::GetInstance().RecordEnd();
   }
 
@@ -1625,7 +1629,7 @@ void SetRunMode(const ResourcePtr &resource) {
     MS_LOG(INTERNAL_EXCEPTION) << "Current execution mode is 'kernelbykernel', reason: " << kbk_reason
                                << ", but you're launching job using 'ranktable', which "
                                   "does not support 'kernelbykernel' mode.\n Please refer to link: "
-                                  "https://www.mindspore.cn/tutorials/experts/en/master/parallel/startup_method.html "
+                                  "https://www.mindspore.cn/ "
                                   "and use 'Dynamic cluster'(suggested) or 'mpirun' to launch your job.";
   }
 }

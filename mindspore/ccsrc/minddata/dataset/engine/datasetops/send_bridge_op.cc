@@ -116,12 +116,13 @@ Status SendBridgeOp::WorkerEntry(int32_t worker_id) {
 
   send_info_.normal_row_.sample_ = 0;
 
-  RETURN_IF_NOT_OK(CollectOpInfoStart(this->NameWithID(), "SendBridgeGet"));
+  uint64_t start_time = GetSyscnt();
   TensorRow in_row;
   // Fetch next data from parent node
   RETURN_IF_NOT_OK(worker_in_queues_[static_cast<const int>(worker_id)]->PopFront(&in_row));
-  RETURN_IF_NOT_OK(CollectOpInfoEnd(this->NameWithID(), "SendBridgeGet", {{"TensorRowFlags", in_row.FlagName()}}));
-  RETURN_IF_NOT_OK(CollectOpInfoStart(this->NameWithID(), "SendBridgeProcess"));
+  RETURN_IF_NOT_OK(
+    CollectOpInfoEnd(this->NameWithID(), "SendBridgeGet", start_time, {{"TensorRowFlags", in_row.FlagName()}}));
+  start_time = GetSyscnt();
 
   uint64_t *current_sample = nullptr;
   SendBridgeOp::RowStep *current_step = nullptr;
@@ -182,17 +183,19 @@ Status SendBridgeOp::WorkerEntry(int32_t worker_id) {
     *current_step = SendBridgeOp::RowStep::kAfterReceiveMsg;
 
     RETURN_IF_NOT_OK(
-      CollectOpInfoEnd(this->NameWithID(), "SendBridgeProcess", {{"TensorRowFlags", in_row.FlagName()}}));
-    RETURN_IF_NOT_OK(CollectOpInfoStart(this->NameWithID(), "SendBridgeGet"));
+      CollectOpInfoEnd(this->NameWithID(), "SendBridgeProcess", start_time, {{"TensorRowFlags", in_row.FlagName()}}));
+    start_time = GetSyscnt();
 
     // Fetch next data from parent node
     RETURN_IF_NOT_OK(worker_in_queues_[static_cast<const int>(worker_id)]->PopFront(&in_row));
 
-    RETURN_IF_NOT_OK(CollectOpInfoEnd(this->NameWithID(), "SendBridgeGet", {{"TensorRowFlags", in_row.FlagName()}}));
-    RETURN_IF_NOT_OK(CollectOpInfoStart(this->NameWithID(), "SendBridgeProcess"));
+    RETURN_IF_NOT_OK(
+      CollectOpInfoEnd(this->NameWithID(), "SendBridgeGet", start_time, {{"TensorRowFlags", in_row.FlagName()}}));
+    start_time = GetSyscnt();
   }
 
-  RETURN_IF_NOT_OK(CollectOpInfoEnd(this->NameWithID(), "SendBridgeProcess", {{"TensorRowFlags", in_row.FlagName()}}));
+  RETURN_IF_NOT_OK(
+    CollectOpInfoEnd(this->NameWithID(), "SendBridgeProcess", start_time, {{"TensorRowFlags", in_row.FlagName()}}));
   return Status::OK();
 }
 

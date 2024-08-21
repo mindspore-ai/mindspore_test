@@ -151,14 +151,12 @@ def test_gpu_profiler():
     Expectation: No exception.
     """
     device_id = int(os.getenv('DEVICE_ID')) if os.getenv('DEVICE_ID') else 0
-    rank_id = int(os.getenv('RANK_ID')) if os.getenv('RANK_ID') else 0
     data_path = tempfile.mkdtemp(prefix='profiler_data', dir='/tmp')
     profiler_path = os.path.join(data_path, 'profiler/')
     try:
         _train_with_profiler(data_path=data_path, device_target="GPU", profile_memory=False,
                              context_mode=context.GRAPH_MODE)
         _check_gpu_profiling_file(profiler_path, device_id)
-        _check_host_profiling_file(profiler_path, rank_id)
     finally:
         if os.path.exists(data_path):
             shutil.rmtree(data_path)
@@ -172,14 +170,12 @@ def test_gpu_profiler_pynative():
     Expectation: No exception.
     """
     device_id = int(os.getenv('DEVICE_ID')) if os.getenv('DEVICE_ID') else 0
-    rank_id = int(os.getenv('RANK_ID')) if os.getenv('RANK_ID') else 0
     data_path = tempfile.mkdtemp(prefix='profiler_data', dir='/tmp')
     profiler_path = os.path.join(data_path, 'profiler/')
     try:
         _train_with_profiler(data_path=data_path, device_target="GPU", profile_memory=False,
                              context_mode=context.PYNATIVE_MODE)
         _check_gpu_profiling_file(profiler_path, device_id)
-        _check_host_profiling_file(profiler_path, rank_id)
     finally:
         if os.path.exists(data_path):
             shutil.rmtree(data_path)
@@ -207,7 +203,7 @@ def test_ascend_profiler():
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
-@pytest.mark.parametrize("profile_framework", ['all', 'time', 'memory', None])
+@pytest.mark.parametrize("profile_framework", ['all', 'time', None])
 def test_host_profiler(profile_framework):
     """
     Feature: profiling support ascend kbyk mode.
@@ -324,22 +320,11 @@ def _check_cpu_profiling_file(profiler_path, device_id):
 
 
 def _check_host_profiling_file(profiler_path, rank_id, profile_framework='all'):
-    host_dir = os.path.join(profiler_path, 'host_info')
-    if profile_framework is None:
-        assert not os.path.exists(host_dir)
-        return
+    dataset_csv = os.path.join(profiler_path, f'dataset_{rank_id}.csv')
     if profile_framework in ['all', 'time']:
-        timeline_file = os.path.join(host_dir, f'timeline_{rank_id}.json')
-        assert os.path.isfile(timeline_file)
-    csv_file = os.path.join(host_dir, f'host_info_{rank_id}.csv')
-    assert os.path.exists(csv_file)
-    with open(csv_file, 'r') as f:
-        f_reader = csv.reader(f)
-        header = next(f_reader)
-        assert header == ['tid', 'pid', 'parent_pid', 'module_name', 'event', 'stage', 'level', 'start_end',
-                          'custom_info', 'memory_usage(kB)', 'time_stamp(us)']
-        for row in f_reader:
-            assert len(row) == 11
+        assert os.path.isfile(dataset_csv)
+    else:
+        assert not os.path.exists(dataset_csv)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')

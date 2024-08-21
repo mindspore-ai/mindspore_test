@@ -15,7 +15,6 @@
 import os
 import sys
 import shutil
-import csv
 from tests.mark_utils import arg_mark
 
 
@@ -40,11 +39,11 @@ class CheckProfilerFiles:
         self.device_target = device_target
         if device_target == "Ascend":
             self._check_d_profiling_file()
+            self._check_host_profiling_file(profile_framework=profile_framework)
         elif device_target == "GPU":
             self._check_gpu_profiling_file()
         else:
             self._check_cpu_profiling_file()
-        self._check_host_profiling_file(profile_framework=profile_framework)
 
     def _check_gpu_profiling_file(self):
         """Check gpu profiling file."""
@@ -87,24 +86,11 @@ class CheckProfilerFiles:
             assert os.path.isfile(file)
 
     def _check_host_profiling_file(self, profile_framework='all'):
-        host_dir = os.path.join(self.profiler_path, 'host_info')
-        if profile_framework is None:
-            assert not os.path.exists(host_dir)
-            return
-        timeline_file = os.path.join(host_dir, f'timeline_{self.rank_id}.json')
+        dataset_csv = os.path.join(self.profiler_path, f'dataset_{self.rank_id}.csv')
         if profile_framework in ['all', 'time']:
-            assert os.path.isfile(timeline_file)
+            assert os.path.isfile(dataset_csv)
         else:
-            assert not os.path.exists(timeline_file)
-        csv_file = os.path.join(host_dir, f'host_info_{self.rank_id}.csv')
-        assert os.path.isfile(csv_file)
-        with open(csv_file, 'r') as f:
-            f_reader = csv.reader(f)
-            header = next(f_reader)
-            assert header == ['tid', 'pid', 'parent_pid', 'module_name', 'event', 'stage', 'level', 'start_end',
-                              'custom_info', 'memory_usage(kB)', 'time_stamp(us)']
-            for row in f_reader:
-                assert len(row) == 11
+            assert not os.path.exists(dataset_csv)
 
 
 class TestEnvEnableProfiler:
@@ -195,14 +181,4 @@ class TestEnvEnableProfiler:
             """
         )
         CheckProfilerFiles(self.device_id, self.rank_id, self.profiler_path, "Ascend", "time")
-        assert status == 0
-
-    @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
-    def test_host_profiler_memory(self):
-        status = os.system(
-            """export MS_PROFILER_OPTIONS='{"start":true, "profile_memory":true, "profile_framework":"memory", "data_process":true}';
-               python ./run_net.py --target=Ascend --mode=0;
-            """
-        )
-        CheckProfilerFiles(self.device_id, self.rank_id, self.profiler_path, "Ascend", "memory")
         assert status == 0

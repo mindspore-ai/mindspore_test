@@ -126,7 +126,7 @@ void GEBackendOptimization(const KernelGraphPtr &kernel_graph) {
 void GEBackendOptimizeACL(const KernelGraphPtr &kernel_graph) {
   MS_EXCEPTION_IF_NULL(kernel_graph);
   MS_LOG(DEBUG) << "Status record: start ascend backend optimize acl pass. graph id: " << kernel_graph->graph_id();
-  profiler::CollectHostInfo("Ascend", "Graph Optimization", "BackendOptimization_OptimizeACL", 0, 0, 0);
+  uint64_t start_time = profiler::GetClockSyscnt();
   PROF_START(ascend_backend_optimize_acl);
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
@@ -164,7 +164,8 @@ void GEBackendOptimizeACL(const KernelGraphPtr &kernel_graph) {
   }
 #endif
   PROF_END(ascend_backend_optimize_acl);
-  profiler::CollectHostInfo("Ascend", "Graph Optimization", "BackendOptimization_OptimizeACL", 0, 0, 1);
+  (void)profiler::CollectHostInfo("Ascend", "Graph Optimization", "BackendOptimization_OptimizeACL", start_time,
+                                  profiler::GetClockSyscnt(), 0);
   MS_LOG(DEBUG) << "Status record: end ascend backend optimize acl pass. graph id: " << kernel_graph->graph_id();
 }
 
@@ -172,8 +173,7 @@ void GEBackendOptimizeACLAfterKernelSelect(const KernelGraphPtr &kernel_graph) {
   MS_EXCEPTION_IF_NULL(kernel_graph);
   MS_LOG(DEBUG) << "Status record: start ascend backend optimize acl pass after kernel select. graph id: "
                 << kernel_graph->graph_id();
-  profiler::CollectHostInfo("Ascend", "Graph Optimization", "BackendOptimization_OptimizeACLAfterKernelSelect", 0, 0,
-                            0);
+  uint64_t start_time = profiler::GetClockSyscnt();
   PROF_START(ascend_backend_optimize_acl_after_kernel_select);
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
@@ -210,13 +210,13 @@ void GEBackendOptimizeACLAfterKernelSelect(const KernelGraphPtr &kernel_graph) {
   }
 #endif
   PROF_END(ascend_backend_optimize_acl_after_kernel_select);
-  profiler::CollectHostInfo("Ascend", "Graph Optimization", "BackendOptimization_OptimizeACLAfterKernelSelect", 0, 0,
-                            1);
+  (void)profiler::CollectHostInfo("Ascend", "Graph Optimization", "BackendOptimization_OptimizeACLAfterKernelSelect",
+                                  start_time, profiler::GetClockSyscnt(), 0);
   MS_LOG(DEBUG) << "Status record: end ascend backend optimize acl pass. graph id: " << kernel_graph->graph_id();
 }
 
 void GEUnifyMindIR(const KernelGraphPtr &kernel_graph) {
-  profiler::CollectHostInfo("GE", "Graph Optimization", "BackendOptimization_UnifyMindIR", 0, 0, 0);
+  uint64_t start_time = profiler::GetClockSyscnt();
   MS_EXCEPTION_IF_NULL(kernel_graph);
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
@@ -237,11 +237,12 @@ void GEUnifyMindIR(const KernelGraphPtr &kernel_graph) {
     DumpIR(file_name, kernel_graph);
   }
 #endif
-  profiler::CollectHostInfo("GE", "Graph Optimization", "BackendOptimization_UnifyMindIR", 0, 0, 1);
+  (void)profiler::CollectHostInfo("GE", "Graph Optimization", "BackendOptimization_UnifyMindIR", start_time,
+                                  profiler::GetClockSyscnt(), 0);
 }
 
 void GEAfterInlineOptimize(const KernelGraphPtr &kernel_graph) {
-  profiler::CollectHostInfo("GE", "Graph Optimization", "BackendOptimization_AfterInline", 0, 0, 0);
+  uint64_t start_time = profiler::GetClockSyscnt();
   MS_EXCEPTION_IF_NULL(kernel_graph);
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
@@ -267,11 +268,12 @@ void GEAfterInlineOptimize(const KernelGraphPtr &kernel_graph) {
     DumpIR(file_name, kernel_graph);
   }
 #endif
-  profiler::CollectHostInfo("GE", "Graph Optimization", "BackendOptimization_AfterInline", 0, 0, 1);
+  (void)profiler::CollectHostInfo("GE", "Graph Optimization", "BackendOptimization_AfterInline", start_time,
+                                  profiler::GetClockSyscnt(), 0);
 }
 
 void GEDynamicUnifyMindIR(const FuncGraphPtr &func_graph) {
-  profiler::CollectHostInfo("GE", "GE Dynamic Shape Unify MindIR", "GEBackend_Dynamic_UnifyMindIR", 0, 0, 0);
+  uint64_t start_time = profiler::GetClockSyscnt();
   MS_EXCEPTION_IF_NULL(func_graph);
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
@@ -298,7 +300,8 @@ void GEDynamicUnifyMindIR(const FuncGraphPtr &func_graph) {
     DumpIR(file_name, func_graph);
   }
 #endif
-  profiler::CollectHostInfo("GE", "GE Dynamic Shape Unify MindIR", "GEBackend_Dynamic_UnifyMindIR", 0, 0, 1);
+  (void)profiler::CollectHostInfo("GE", "GE Dynamic Shape Unify MindIR", "GEBackend_Dynamic_UnifyMindIR", start_time,
+                                  profiler::GetClockSyscnt(), 0);
 }
 
 PassManagerPtr GetGEUnifyMindIRPassManager() {
