@@ -1,7 +1,6 @@
 approvers:
 - zh_qh #
 - ginfung
-- chenfei52
 - liangzhibo
 
 reviewers:
@@ -25,7 +24,6 @@ files:
     - zjun3021
     - zh_qh
     - ginfung
-    - chenfei52
     - liangzhibo
 
   "base_tensor.*":
@@ -35,7 +33,6 @@ files:
     - zjun3021
     - zh_qh
     - ginfung
-    - chenfei52
     - liangzhibo
 
   "meta_tensor.*":
@@ -45,7 +42,6 @@ files:
     - zjun3021
     - zh_qh
     - ginfung
-    - chenfei52
     - liangzhibo
 
   "meta_grad_data.h":
@@ -55,7 +51,6 @@ files:
     - zjun3021
     - zh_qh
     - ginfung
-    - chenfei52
     - liangzhibo
 
   "tensor_storage_info.h":
@@ -65,5 +60,4 @@ files:
     - zjun3021
     - zh_qh
     - ginfung
-    - chenfei52
     - liangzhibo
