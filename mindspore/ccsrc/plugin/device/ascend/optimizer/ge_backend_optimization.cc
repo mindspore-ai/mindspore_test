@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -250,6 +250,7 @@ void GEUnifyMindIR(const KernelGraphPtr &kernel_graph) {
 #endif
   auto optimizer = std::make_shared<opt::GraphOptimizer>();
   optimizer->AddPassManager(GetGEUnifyMindIRPassManager());
+  optimizer->AddPassManager(GetGEFusionGroupPassManager());
   (void)optimizer->Optimize(kernel_graph);
   kernel_graph->SetExecOrderByDefault();
 #ifdef ENABLE_DUMP_IR
@@ -328,5 +329,7 @@ PassManagerPtr GetGEUnifyMindIRPassManager() {
   GetBackendCommonUnifyMindIRPassManager(&unify_mindir_pm);
   return unify_mindir_pm;
 }
+
+PassManagerPtr GetGEFusionGroupPassManager() { return GetBackendFusionGroupPassManager(); }
 }  // namespace opt
 }  // namespace mindspore

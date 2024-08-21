@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 #include "plugin/device/ascend/optimizer/backend_common_unify_mindir.h"
+#include <limits>
 #include <memory>
+#include <sstream>
 #include <string>
 
 #include "include/common/debug/anf_ir_dump.h"
@@ -73,6 +75,8 @@
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
 #include "plugin/device/ascend/optimizer/ir_fusion_infer/matmul_elemwise_fusion.h"
 #include "utils/phase.h"
+#include "backend/common/graph_kernel/core/graph_kernel_pass_manager.h"
+#include "backend/common/graph_kernel/graph_kernel_flags.h"
 
 namespace mindspore {
 namespace opt {
@@ -143,8 +147,6 @@ void GetBackendCommonUnifyMindIRPassManager(PassManagerPtr *unify_mindir_pm) {
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::SyncBnGradSplit>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::AdaptiveMaxPool2DGeFusion>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::AvgPoolGradForGE>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::FlashAttentionFusionV1>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::FlashAttentionFusionV2>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::MatmulReduceScatterFusion>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::AllGatherMatmulFusion>());
   // kbk aclnn
@@ -153,28 +155,44 @@ void GetBackendCommonUnifyMindIRPassManager(PassManagerPtr *unify_mindir_pm) {
     (*unify_mindir_pm)->AddPass(std::make_shared<opt::MatMulAllReduceFusion>());
   }
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::CentralizationMindIR>());
+}
+
+PassManagerPtr GetBackendFusionGroupPassManager() {
+  auto pm = std::make_shared<graphkernel::GraphKernelPassManager>(std::numeric_limits<size_t>::max(), "fusion_group");
+  pm->Add(std::make_shared<opt::FlashAttentionFusionV1>(), graphkernel::OptLevel_0);
+  pm->Add(std::make_shared<opt::FlashAttentionFusionV2>(), graphkernel::OptLevel_0);
+
 #ifdef ENABLE_INTERNAL_KERNELS
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::AddLayernormFusion>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::AddLayernormV3Fusion>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::AddLayernormExtFusion>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::InferenceSwiGLUFusion>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::InferenceMatmulSplitFusion>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::AddLayernormFusion>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::ShapeReshapeFusion>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::ShapeReshapeFusion2>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::AddRmsNormQuantFusion>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::RmsNormQuantFusion>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::AddRmsNormFusion>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::AddCastRmsNormCastFusion>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::MatMulAllReduceFusion>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::SplitConcatFusion>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::MatmulElemBiasaddFusion>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::MatmulElemAddFusion>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::MatmulElemReluFusion>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::MatmulElemGeluFusion>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::QbmmAddFusion>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::QbmmAllReduceAddFusion>());
+  pm->Add(std::make_shared<opt::AddLayernormFusion>(), graphkernel::OptLevel_0);
+  pm->Add(std::make_shared<opt::AddLayernormV3Fusion>(), graphkernel::OptLevel_0);
+  pm->Add(std::make_shared<opt::AddLayernormExtFusion>(), graphkernel::OptLevel_0);
+  pm->Add(std::make_shared<opt::InferenceSwiGLUFusion>(), graphkernel::OptLevel_0);
+  pm->Add(std::make_shared<opt::InferenceMatmulSplitFusion>(), graphkernel::OptLevel_0);
+  pm->Add(std::make_shared<opt::ShapeReshapeFusion>(), graphkernel::OptLevel_0);
+  pm->Add(std::make_shared<opt::ShapeReshapeFusion2>(), graphkernel::OptLevel_0);
+  pm->Add(std::make_shared<opt::AddRmsNormQuantFusion>(), graphkernel::OptLevel_0);
+  pm->Add(std::make_shared<opt::RmsNormQuantFusion>(), graphkernel::OptLevel_0);
+  pm->Add(std::make_shared<opt::AddRmsNormFusion>(), graphkernel::OptLevel_0);
+  pm->Add(std::make_shared<opt::AddCastRmsNormCastFusion>(), graphkernel::OptLevel_0);
+  pm->Add(std::make_shared<opt::MatMulAllReduceFusion>(), graphkernel::OptLevel_0);
+  pm->Add(std::make_shared<opt::SplitConcatFusion>(), graphkernel::OptLevel_0);
+  pm->Add(std::make_shared<opt::MatmulElemBiasaddFusion>(), graphkernel::OptLevel_0);
+  pm->Add(std::make_shared<opt::MatmulElemAddFusion>(), graphkernel::OptLevel_0);
+  pm->Add(std::make_shared<opt::MatmulElemReluFusion>(), graphkernel::OptLevel_0);
+  pm->Add(std::make_shared<opt::MatmulElemGeluFusion>(), graphkernel::OptLevel_0);
+  pm->Add(std::make_shared<opt::QbmmAddFusion>(), graphkernel::OptLevel_0);
+  pm->Add(std::make_shared<opt::QbmmAllReduceAddFusion>(), graphkernel::OptLevel_0);
 #endif  // ENABLE_INTERNAL_KERNELS
+
+  auto passes = pm->Passes();
+  std::ostringstream ss;
+  for (size_t i = 0; i < passes.size() - 1; ++i) {
+    ss << passes[i]->name() << ",";
+  }
+  ss << passes.back()->name();
+  MS_LOG(INFO) << "graph kernel passes: " << ss.str() << ".";
+
+  return pm;
 }
 
 void AscendUnfoldInputsForSpecialNodes(const KernelGraphPtr &kernel_graph) {
