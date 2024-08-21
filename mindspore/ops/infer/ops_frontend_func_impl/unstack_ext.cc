@@ -60,7 +60,7 @@ AbstractBasePtr InferOutputForRankKnown(const PrimitivePtr &primitive, const Sha
     }
   }
 
-  abstract::AbstractBasePtrList out_tensors;
+  abstract::AbstractBasePtrList out_tensors{};
   out_tensors.reserve(element_size);
   for (size_t i = 0; i < element_size; ++i) {
     out_tensors.push_back(std::make_shared<abstract::AbstractTensor>(element_type, element_shape));

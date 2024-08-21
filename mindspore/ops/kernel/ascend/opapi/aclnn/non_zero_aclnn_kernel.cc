@@ -36,13 +36,13 @@ bool NonZeroAscend::Launch(const std::vector<KernelTensor *> &inputs, const std:
   MS_EXCEPTION_IF_NULL(stream_ptr);
   auto res = GEN_EXECUTOR_CUST(op_type_, inputs[kIndex0], outputs[kIndex0]);
   UpdateWorkspace(res);
-  executor_ = std::get<1>(res);
-  auto &all_tensor = std::get<2>(res);
+  executor_ = std::get<kIndex1>(res);
+  auto &all_tensor = std::get<kIndex2>(res);
   RunOpSync(stream_ptr, workspace);
 
   // Update output shape.
   outputs_shape_.resize(1);
-  outputs_shape_[kIndex0] = transform::UpdateOutputShape(all_tensor.get<1>());
+  outputs_shape_[kIndex0] = transform::UpdateOutputShape(all_tensor.get<kIndex1>());
   return true;
 }
 void NonZeroAscend::UpdateOutputShapeAndSize(const std::vector<KernelTensor *> &,
