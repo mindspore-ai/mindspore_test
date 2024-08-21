@@ -19,6 +19,7 @@
 #include <cinttypes>
 #include <algorithm>
 #include <chrono>
+#include <list>
 #include <map>
 #include <unordered_map>
 #include <memory>
@@ -2484,6 +2485,9 @@ static LossNodeInfo FindLossCNode(const FuncGraphPtr &func_graph) {
 
   // return -> make_tuple
   if (current_prim->name() == MAKE_TUPLE) {
+    loss_node_info.has_make_tuple = true;
+    loss_node_info.dout_index = -1;
+    loss_node_info.loss_node = pre_cnode;
     return loss_node_info;
   }
 
@@ -2730,8 +2734,31 @@ static std::vector<std::pair<CNodePtr, LossNodeInfo>> GetSensLossPairs(const Fun
       MS_LOG(WARNING) << "Can not find the loss cnode";
       continue;
     }
-    std::pair<CNodePtr, LossNodeInfo> sens_loss_pair = std::make_pair(sens_cnode, loss_node_info);
-    sens_loss_pairs.push_back(sens_loss_pair);
+
+    if (loss_node_info.has_make_tuple) {
+      auto sens_cnode_input = sens_cnode->input(kIndex1)->cast<CNodePtr>();
+      if (IsPrimitiveCNode(sens_cnode_input, prim::kPrimMakeTuple)) {
+        sens_cnode = sens_cnode_input;
+        MS_LOG(INFO) << "Change sens cnode to its input, which is primitive MakeTuple";
+      } else {
+        MS_LOG_WITH_NODE(EXCEPTION, sens_cnode_input)
+          << "Can not find the loss cnode for multi output, find node is " << sens_cnode_input->DebugString();
+      }
+      auto loss_cnode = loss_node_info.loss_node;
+      if (sens_cnode->size() != loss_cnode->size()) {
+        MS_LOG_WITH_NODE(EXCEPTION, sens_cnode) << "for multi output, sens cnode size is not equal to loss cnode size";
+      }
+      for (size_t i = 1; i < sens_cnode->size(); ++i) {
+        auto sens_input_cnode = sens_cnode->input(i)->cast<CNodePtr>();
+        auto loss_input_cnode = loss_cnode->input(i)->cast<CNodePtr>();
+        LossNodeInfo real_loss_node_info;
+        real_loss_node_info.loss_node = loss_input_cnode;
+        real_loss_node_info.dout_index = 0;
+        (void)sens_loss_pairs.emplace_back(std::make_pair(sens_cnode, real_loss_node_info));
+      }
+    } else {
+      (void)sens_loss_pairs.emplace_back(std::make_pair(sens_cnode, loss_node_info));
+    }
   }
   return sens_loss_pairs;
 }
