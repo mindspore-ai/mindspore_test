@@ -49,11 +49,12 @@ bool DisableRunOpAsync(const OpCompilerInfoPtr &op_compiler_info, const session:
 #endif
 }
 
-void WaitBackendQueue() {
+void WaitTasksFinish() {
   runtime::ProfilerRecorder profiler(runtime::ProfilerModule::kPynative, runtime::ProfilerEvent::kWaitTaskFinish,
                                      runtime::kDefaultOpName);
   GilReleaseWithCheck gil_release;
   runtime::Pipeline::Get().backend_stage()->Wait();
+  runtime::Pipeline::Get().launch_stage()->Wait();
 }
 
 }  // namespace
@@ -117,7 +118,7 @@ void OpBackend::RunOpImpl(bool single_op_cache_hit, const OpCompilerInfoPtr &op_
 
   MS_LOG(DEBUG) << "Async exec disabled, op: " << op_run_info->base_op_run_info.op_name;
   if (!op_executor.RunQueueEmpty()) {
-    WaitBackendQueue();
+    WaitTasksFinish();
   }
   if (!single_op_cache_hit) {
     pynative::OpCompiler::GetInstance().KernelBuild(op_compiler_info, device_context, false);
@@ -172,7 +173,7 @@ void OpBackend::RunOpImplDynamic(bool single_op_cache_hit, const OpCompilerInfoP
   MS_LOG(DEBUG) << "Async exec disabled, op: " << op_run_info->base_op_run_info.op_name;
   auto &op_executor = runtime::OpExecutor::GetInstance();
   if (!op_executor.RunQueueEmpty()) {
-    WaitBackendQueue();
+    WaitTasksFinish();
   }
   auto input_tensors = runtime::OpRunner::GetTensorWithoutValueMask(op_run_info);
   runtime::DynamicOpRunner::UpdateInputDeviceAddress(op_compiler_info, input_tensors, true);
@@ -593,7 +594,7 @@ void ViewBackend::RunViewKernelTask(const pynative::BaseOpRunInfo &base_op_run_i
     RunViewKernelTaskAsyncImpl(task_type, device_context, input_addr_list, output_addr_list,
                                base_op_run_info.stream_id);
   } else {
-    WaitBackendQueue();
+    WaitTasksFinish();
     runtime::OpRunner::LaunchKernelTask(task_type, device_context, input_addr_list, output_addr_list,
                                         base_op_run_info.stream_id);
   }
@@ -602,7 +603,7 @@ void ViewBackend::RunViewKernelTask(const pynative::BaseOpRunInfo &base_op_run_i
 void ViewBackend::RunAllocMemTask(DeviceContext *device_context, const tensor::BaseTensorPtr &tensor, bool enable_async,
                                   bool is_cpu_address_exist) const {
   if (!enable_async) {
-    WaitBackendQueue();
+    WaitTasksFinish();
     return AllocateMemForTensor(tensor, device_context, is_cpu_address_exist);
   }
   auto alloc_mem_func = [this, device_context, tensor, is_cpu_address_exist]() {
