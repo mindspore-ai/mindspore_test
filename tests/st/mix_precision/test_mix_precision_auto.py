@@ -513,3 +513,27 @@ def test_amp_nested_func():
     # Graph mode
     out_graph = ms.jit(func)(x, y)
     assert out_graph[0].dtype == ms.float16 and out_graph[1].dtype == ms.float32
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_amp_jit_func():
+    """
+    Feature: auto mixed precision auto mode.
+    Description: test amp auto mode using jit function.
+    Expectation: success.
+    """
+    @ms.jit
+    def graph_func(x, y):
+        return ops.matmul(x, y)
+
+    def pynative_func(x, y):
+        return ops.matmul(x, y)
+
+    def func(x, y):
+        return graph_func(x, y), pynative_func(x, y)
+
+    func = auto_mixed_precision(func, amp_level="auto", dtype=ms.float16)
+    x = ms.Tensor(np.ones([1, 2]), ms.float32)
+    y = ms.Tensor(np.ones([2,]), ms.float32)
+    out_graph, out_pynative = func(x, y)
+    assert out_graph.dtype == ms.float16 and out_pynative.dtype == ms.float16
