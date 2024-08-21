@@ -119,7 +119,7 @@ std::string StrategyToString(const Strategies &strategy) {
 }
 
 Status OperatorInfo::CheckOutputStrategy(const StrategyPtr &out_strategy) {
-  if (out_strategy) {
+  if (out_strategy && name_.find("ShardIdentity") == std::string::npos) {
     MS_LOG(ERROR) << name_ << ": It does not support to set output strategy now, please modify the shard set";
     return FAILED;
   }
