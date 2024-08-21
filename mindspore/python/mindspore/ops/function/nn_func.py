@@ -545,7 +545,7 @@ def avg_pool2d_ext(input, kernel_size, stride=None, padding=0, ceil_mode=False, 
             stride (Union[int, tuple[int], list[int]], optional): The distance of kernel moving.
                 Can be a single number or a tuple :math:`(sH, sW)` . Default: ``None``,
                 where its value is equal to `kernel_size`.
-            padding (Union(int, tuple[int], list[int]), optional): Implicit zero padding to be added on both sides.
+            padding (Union[int, tuple[int], list[int]], optional): Implicit zero padding to be added on both sides.
                 Can be a single number or a tuple :math:`(padH, padW)` . Default: ``0``.
             ceil_mode (bool, optional): If True, apply ceil instead of floor to compute the output shape.
                 Default: ``False``.
