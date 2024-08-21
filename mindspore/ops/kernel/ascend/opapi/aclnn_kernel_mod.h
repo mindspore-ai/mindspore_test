@@ -65,13 +65,13 @@ using CacheTuple = std::tuple<uint64_t, aclOpExecutor *, ProcessCache, size_t>;
         hash_map_[hash_id_##FUNC_NAME##_] = hash_cache_.begin();                                                     \
       } else {                                                                                                       \
         hash_id_##FUNC_NAME##_ = 0;                                                                                  \
-        cache(true, {});                                                                                             \
+        cache(true, {}, false);                                                                                      \
       }                                                                                                              \
     }                                                                                                                \
     if (hash_cache_.size() > capacity_) {                                                                            \
       hash_map_.erase(std::get<0>(hash_cache_.back()));                                                              \
       auto release_func = std::get<2>(hash_cache_.back());                                                           \
-      release_func(true, {});                                                                                        \
+      release_func(true, {}, false);                                                                                 \
       hash_cache_.pop_back();                                                                                        \
     }                                                                                                                \
                                                                                                                      \
@@ -134,13 +134,13 @@ using CacheTuple = std::tuple<uint64_t, aclOpExecutor *, ProcessCache, size_t>;
         hash_map_[hash_id_] = hash_cache_.begin();                                                              \
       } else {                                                                                                  \
         hash_id_ = 0;                                                                                           \
-        cache(true, {});                                                                                        \
+        cache(true, {}, false);                                                                                 \
       }                                                                                                         \
     }                                                                                                           \
     if (hash_cache_.size() > capacity_) {                                                                       \
       hash_map_.erase(std::get<0>(hash_cache_.back()));                                                         \
       auto release_func = std::get<2>(hash_cache_.back());                                                      \
-      release_func(true, {});                                                                                   \
+      release_func(true, {}, false);                                                                            \
       hash_cache_.pop_back();                                                                                   \
     }                                                                                                           \
                                                                                                                 \

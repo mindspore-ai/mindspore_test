@@ -45,10 +45,11 @@ tensor::BaseTensorPtr NonZeroAscendCustomize(const std::shared_ptr<OpRunner> &op
   // Malloc for output tensors
   PyBoostUtils::MallocOpOutputs(device_context, outputs);
   auto return_values = LAUNCH_ACLNN_SYNC(aclnnNonzero, device_context, op->stream_id(), input_tensor, outputs[0]);
-  auto &all_acl_tensor = std::get<2>(return_values);
+  const auto &cache_func_ptr = std::get<2>(return_values);
+  auto all_acl_tensor = cache_func_ptr(false, {}, true);
 
   // update shape
-  auto output_real_shape = transform::UpdateOutputShape(all_acl_tensor.get<1>());
+  auto output_real_shape = all_acl_tensor[1];
   // when case:1D-0D tensor,needs to update shape {-1,1} to {0,1}
   if (output_real_shape[0] == -1) {
     output_real_shape[0] = 0;
