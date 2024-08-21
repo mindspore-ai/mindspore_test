@@ -37,6 +37,7 @@ HostCacheModel::~HostCacheModel() {
 }
 MSTensor *SchemaTensorToMSTensor(lite::SchemaTensorWrapper *schema_tensor_wrapper,
                                  mindspore::schema::Tensor *schema_tensor) {
+  MS_CHECK_TRUE_RET(schema_tensor_wrapper != nullptr && schema_tensor != nullptr, nullptr);
   std::vector<int64_t> shape;
   for (size_t j = 0; j < schema_tensor->dims()->size(); j++) {
     shape.push_back(schema_tensor->dims()->data()[j]);

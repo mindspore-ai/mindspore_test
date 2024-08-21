@@ -414,6 +414,7 @@ Status ModelPool::SetWorkersNum(const std::shared_ptr<RunnerConfig> &runner_conf
 }
 
 Status ModelPool::SetWorkersNumaId(std::vector<int> *numa_node_id) {
+  MS_CHECK_TRUE_RET(numa_node_id != nullptr, kLiteNullptr);
   if (!numa_available_) {
     MS_LOG(WARNING) << "numa is not available.";
     numa_node_id->resize(workers_num_, kInvalidNumaId);

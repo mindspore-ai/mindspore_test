@@ -57,6 +57,7 @@ Status DecryptModel(const std::string &cropto_lib_path, const void *model_buf, s
     MS_LOG(ERROR) << "model_buf is nullptr.";
     return kLiteError;
   }
+  MS_CHECK_TRUE_RET(decrypt_len != nullptr, kLiteNullptr);
   *decrypt_len = 0;
   *decrypt_buffer = lite::Decrypt(cropto_lib_path, decrypt_len, reinterpret_cast<const Byte *>(model_buf), model_size,
                                   dec_key.key, dec_key.len, dec_mode);

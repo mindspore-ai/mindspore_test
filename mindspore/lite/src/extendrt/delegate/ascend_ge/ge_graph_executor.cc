@@ -205,6 +205,7 @@ GeGraphExecutor::~GeGraphExecutor() {
 }
 
 bool GeGraphExecutor::SetGeTensorShape(GeTensor *ge_tensor, ShapeVector shape) {
+  MS_CHECK_TRUE_RET(ge_tensor != nullptr, RET_ERROR);
   auto ge_desc = ge_tensor->GetTensorDesc();
   ge::Shape new_ge_shape(shape);
   ge_desc.Update(new_ge_shape);
@@ -283,6 +284,7 @@ bool GeGraphExecutor::InitOutputDeviceTensor(const FuncGraphPtr &anf_graph, uint
 }
 
 void GeGraphExecutor::SetRefShape(std::vector<int64_t> *ref_shape, bool dyn, std::string tensor_name) {
+  MS_CHECK_TRUE_RET_VOID(ref_shape != nullptr);
   if (!dyn_kv_cache_info_.dynamic_kv_cache) {
     return;
   }
@@ -315,6 +317,8 @@ void GeGraphExecutor::SetRefShape(std::vector<int64_t> *ref_shape, bool dyn, std
 }
 
 void GeGraphExecutor::UpdateOutputShapeInfo(std::vector<::ge::Tensor> *ge_outputs) {
+  MS_CHECK_TRUE_RET_VOID(ge_outputs != nullptr);
+  MS_CHECK_TRUE_RET_VOID(ge_outputs->size() >= outputs_buffer_infos_.size());
   MS_LOG(INFO) << "Update output dtype and shape.";
   for (size_t i = 0; i < outputs_buffer_infos_.size(); i++) {
     auto &output_info = outputs_buffer_infos_[i];
@@ -597,6 +601,7 @@ void GeGraphExecutor::GetGeSessionOptions(std::map<std::string, std::string> *ge
 }
 
 bool GeGraphExecutor::SetModelCacheDir(std::map<std::string, std::string> *session_options_ptr) {
+  MS_CHECK_TRUE_RET(session_options_ptr != nullptr, false);
   auto &ge_options = *session_options_ptr;
   auto build_cache_dir = "model_build_cache_" + std::to_string(GetRankID());
   if (lite::CreateDir(build_cache_dir) != RET_OK) {
@@ -609,6 +614,7 @@ bool GeGraphExecutor::SetModelCacheDir(std::map<std::string, std::string> *sessi
 }
 
 bool GeGraphExecutor::SetOfflineBuildModelCacheDir(std::map<std::string, std::string> *session_options_ptr) {
+  MS_CHECK_TRUE_RET(session_options_ptr != nullptr, false);
   std::string build_cache_dir;
   auto &ge_options = *session_options_ptr;
   bool build_cache_enabled = false;
@@ -1017,6 +1023,7 @@ bool GeGraphExecutor::InitRefDataDeviceTensor() {
 
 bool GeGraphExecutor::InitInOutDeviceBuffer(const std::string &name, const ShapeVector &shape, TypeId dtype,
                                             InOutBufferInfo *buffer_info) {
+  MS_CHECK_TRUE_RET(buffer_info != nullptr, false);
   auto &info = *buffer_info;
   auto desc = transform::TransformUtil::GetGeTensorDesc(shape, dtype, kOpFormat_NCHW);
   if (desc == nullptr) {
@@ -1198,6 +1205,7 @@ bool GeGraphExecutor::UpdateWeights(const std::vector<std::vector<std::shared_pt
 
 transform::DfGraphPtr GeGraphExecutor::CreateGeGraphOnline(const FuncGraphPtr &anf_graph,
                                                            std::map<std::string, std::string> *ge_options_ptr) {
+  MS_CHECK_TRUE_RET(ge_options_ptr != nullptr, nullptr);
   std::vector<std::string> extra_variables_names = {};
   if (enable_update_weight_ && update_weight_ptr_ != nullptr) {
     auto ret = update_weight_ptr_->CreateAddOpNodeForGraph(anf_graph);
@@ -1869,6 +1877,7 @@ std::vector<tensor::Tensor> GeGraphExecutor::GetInputInfos(uint32_t graph_id) {
 }
 
 tensor::TensorPtr GeGraphExecutor::ConvertGeTensorNoCopy(::ge::Tensor *ge_tensor_ptr, uint32_t graph_id, size_t idx) {
+  MS_CHECK_TRUE_RET(ge_tensor_ptr != nullptr, nullptr);
   auto &ge_tensor = *ge_tensor_ptr;
   auto ge_tensor_desc = ge_tensor.GetTensorDesc();
   auto me_shape = transform::TransformUtil::ConvertGeShape(ge_tensor_desc.GetShape());

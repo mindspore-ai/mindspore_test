@@ -72,6 +72,7 @@ uint8_t *GeMemoryManager::MallocHostMemory(const std::string &purpose, size_t si
 }
 
 bool GeMemoryManager::MemcpyHost2Device(void *dst_addr, size_t dst_max_size, const void *src_addr, size_t src_size) {
+  MS_CHECK_TRUE_RET(dst_addr != nullptr && src_addr != nullptr, false);
   auto ret = CALL_ASCEND_API(aclrtMemcpy, dst_addr, dst_max_size, src_addr, src_size, ACL_MEMCPY_HOST_TO_DEVICE);
   if (ret != ACL_ERROR_NONE) {
     MS_LOG(ERROR) << "Call aclrtMemcpy data from host to device failed, dst size: " << dst_max_size
