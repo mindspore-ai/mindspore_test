@@ -370,9 +370,9 @@ bool DumpJsonParser::GetIterDumpFlag() const { return e2e_dump_enabled_ && IsDum
 
 bool DumpJsonParser::DumpEnabledForIter() const {
   const auto &dump_control = DumpControl::GetInstance();
-  if (dump_control.GetDynamicSwitch()) {
-    MS_LOG(INFO) << (dump_control.GetDumpSwitch() ? "Dynamic switch is on, dump for every iteration." : "Dump is end.");
-    return dump_control.GetDumpSwitch() && (e2e_dump_enabled_ || async_dump_enabled_);
+  if (dump_control.dynamic_switch()) {
+    MS_LOG(INFO) << (dump_control.dump_switch() ? "Dynamic switch is on, dump for every iteration." : "Dump is end.");
+    return dump_control.dump_switch() && (e2e_dump_enabled_ || async_dump_enabled_);
   }
   return (e2e_dump_enabled_ || async_dump_enabled_) && IsDumpIter(cur_dump_iter_);
 }
