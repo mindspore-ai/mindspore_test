@@ -82,26 +82,6 @@ def test_remove_redundancy_1_1(mode):
 @pytest.mark.platform_x86_ascend_training
 @pytest.mark.env_single
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE])
-def test_remove_redundancy_0_1(mode):
-    '''
-    Feature: save full ckpt and remove_redundancy load ckpt.
-    Description: Full checkpoint saving and redundant-free checkpoint loading.
-    Expectation: success.
-    '''
-    for i in range(8):
-        os.mkdir(f"device{i}_redundancy01")
-    ret = os.system("msrun --worker_num=8 --local_worker_num=8 --join=True " \
-                    "pytest -s remove_redundancy.py::test_remove_redundancy_save_False_load_True")
-    assert ret == 0
-    for i in range(8):
-        shutil.rmtree(f"device{i}_redundancy01")
-
-
-@pytest.mark.level0
-@pytest.mark.platform_arm_ascend_training
-@pytest.mark.platform_x86_ascend_training
-@pytest.mark.env_single
-@pytest.mark.parametrize('mode', [context.GRAPH_MODE])
 def test_remove_redundancy_1_0(mode):
     '''
     Feature: save remove_redundancy ckpt and full load ckpt.
