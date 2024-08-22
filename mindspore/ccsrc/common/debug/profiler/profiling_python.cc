@@ -1,5 +1,5 @@
 /**
- * Copyright 2025 Huawei Technologies Co., Ltd
+ * Copyright 2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -147,7 +147,7 @@ void PythonTracer::recordCCall(TraceContext *ctx, PyFrameObject *frame, PyObject
   call_syscnt_.push(profiler::GetClockSyscnt());
 }
 
-void PythonTracer::recordReturn(TraceContext *ctx, PyFrameObject *frame, TraceTag tag) {
+void PythonTracer::recordReturn(TraceContext *ctx, PyFrameObject *frame, PyObject *arg, TraceTag tag) {
   if (call_syscnt_.empty()) {
     MS_LOG(WARNING) << "python stack is empty";
     return;
@@ -156,21 +156,25 @@ void PythonTracer::recordReturn(TraceContext *ctx, PyFrameObject *frame, TraceTa
   uint64_t end_time = profiler::GetClockSyscnt();
   uint64_t start_time = call_syscnt_.top();
   call_syscnt_.pop();
-
-  std::string py_class_name;
-  auto f_code = reinterpret_cast<PyObject *>(frame->f_code);
-  if (f_code == module_call_code_) {
-    PyFrame_FastToLocals(frame);
-    auto f_locals = reinterpret_cast<PyObject *>(frame->f_locals);
-    if (f_locals != nullptr) {
-      auto module_class = PyDict_GetItemString(f_locals, "self");
-      py_class_name =
-        "nn.Cell." + py::cast<std::string>(py::str(py::handle(module_class).attr("__class__").attr("__name__"))) + ".";
+  std::string op_name;
+  if (tag == TraceTag::kPy_Return) {
+    std::string py_class_name;
+    auto f_code = reinterpret_cast<PyObject *>(frame->f_code);
+    if (f_code == module_call_code_) {
+      PyFrame_FastToLocals(frame);
+      auto f_locals = reinterpret_cast<PyObject *>(frame->f_locals);
+      if (f_locals != nullptr) {
+        auto module_class = PyDict_GetItemString(f_locals, "self");
+        py_class_name = "nn.Cell." +
+                        py::cast<std::string>(py::str(py::handle(module_class).attr("__class__").attr("__name__"))) +
+                        ".";
+      }
     }
+    op_name = py::cast<std::string>(frame->f_code->co_filename) + "(" + std::to_string(frame->f_code->co_firstlineno) +
+              "):" + py_class_name + py::cast<std::string>(frame->f_code->co_name);
+  } else if (arg != nullptr) {
+    op_name = py::repr(arg);
   }
-  std::string op_name = py::cast<std::string>(frame->f_code->co_filename) + "(" +
-                        std::to_string(frame->f_code->co_firstlineno) + "):" + py_class_name +
-                        py::cast<std::string>(frame->f_code->co_name);
   uint32_t index;
   auto iter = op_map_.find(op_name);
   if (iter != op_map_.end()) {
@@ -199,12 +203,12 @@ int PythonTracer::pyProfileFn(PyObject *obj, PyFrameObject *frame, int what, PyO
 
     case PyTrace_EXCEPTION:
     case PyTrace_RETURN:
-      PythonTracer::singleton().recordReturn(ctx, frame, TraceTag::kPy_Return);
+      PythonTracer::singleton().recordReturn(ctx, frame, arg, TraceTag::kPy_Return);
       break;
 
     case PyTrace_C_EXCEPTION:
     case PyTrace_C_RETURN:
-      PythonTracer::singleton().recordReturn(ctx, frame, TraceTag::kC_Return);
+      PythonTracer::singleton().recordReturn(ctx, frame, arg, TraceTag::kC_Return);
       break;
 
     default:
@@ -255,7 +259,7 @@ void PythonTracer::recordCCall(TraceContext *ctx, PyFrameObject *frame, PyObject
   MS_LOG(INTERNAL_EXCEPTION) << "profiler not support cpu windows.";
 }
 
-void PythonTracer::recordReturn(TraceContext *ctx, PyFrameObject *frame, TraceTag tag) {
+void PythonTracer::recordReturn(TraceContext *ctx, PyFrameObject *frame, PyObject *arg, TraceTag tag) {
   MS_LOG(INTERNAL_EXCEPTION) << "profiler not support cpu windows.";
 }
 

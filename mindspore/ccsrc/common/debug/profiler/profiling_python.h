@@ -1,5 +1,5 @@
 /**
- * Copyright 2025 Huawei Technologies Co., Ltd
+ * Copyright 2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,7 +96,7 @@ class COMMON_EXPORT PythonTracer final {
   void clear();
   void recordPyCall(TraceContext *ctx, PyFrameObject *frame);
   void recordCCall(TraceContext *ctx, PyFrameObject *frame, PyObject *arg);
-  void recordReturn(TraceContext *ctx, PyFrameObject *frame, TraceTag tag);
+  void recordReturn(TraceContext *ctx, PyFrameObject *frame, PyObject *arg, TraceTag tag);
   void trackModule(PyFrameObject *frame);
   void reportPythonModuleCallDataToNpuProfiler(PyObject *mod_class, uint64_t idx);
   void reportPythonFuncCallDataToNpuProfiler(const RawEvent &event);
