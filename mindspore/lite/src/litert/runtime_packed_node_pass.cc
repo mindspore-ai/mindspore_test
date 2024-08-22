@@ -66,6 +66,10 @@ void PackedNodePass::Run(Model *model, const std::vector<Tensor *> &tensors) {
     flatbuffers::FlatBufferBuilder fbb(kFlatbuffersBuilderInitSize);
 
     auto custom_attr = custom->attr();
+    if (custom_attr == nullptr) {
+      MS_LOG(ERROR) << "Custom attribute is nullptr!";
+      return;
+    }
     std::map<std::string, std::string> attr_map;
     for (uint32_t i = 0; i < custom_attr->size(); ++i) {
       auto attr = custom_attr->Get(i);
