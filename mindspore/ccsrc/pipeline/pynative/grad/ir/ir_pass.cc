@@ -539,7 +539,7 @@ AnfNodePtr IrPassForward::PassBackwardHook(const ValuePtr &value, const AnfNodeP
     bprop_cut->SetHookFn(hook_fn, HookType::kTensorHook);
     (void)bprop_cut->AddAttr(kHookType, MakeValue(bprop_cut->HookTypeToString()));
     // Need input out and dout for bprop run, current just make a fake
-    AnfNodePtrList inputs{NewValueNode(bprop_cut), grad_node, NewValueNode(MakeValue("FakeOutput")), res};
+    AnfNodePtrList inputs{NewValueNode(bprop_cut), res};
     res = ir_bprop_->ad_param()->tape_->FuncGraph::NewCNode(inputs);
     // Need update after execute
     res->set_abstract(grad_node->abstract());

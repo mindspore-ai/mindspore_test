@@ -1090,6 +1090,13 @@ ValuePtr Common::CreateTensorByConstantValue(const ValuePtr &value) {
   return tensor_ptr;
 }
 
+bool Common::IsHookNeedSaveInputs(const PrimitivePyPtr &prim) {
+  if (prim->hook_type() == HookType::kCustomOpBprop || prim->hook_type() == HookType::kCellCustomBprop) {
+    return true;
+  }
+  return false;
+}
+
 void Common::ClearRes() { kGradAbstractConverter.clear(); }
 
 void AutoGrad::CacheOutputAbstract(const ValuePtr &v, const abstract::AbstractBasePtr &abs) {

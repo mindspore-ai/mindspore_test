@@ -199,22 +199,23 @@ void IrBprop::BuildBPropCutCNode(const CNodePtr &cnode, const PrimitivePtr &prim
   size_t origin_input_size = cnode->size() - kOutAndDoutNum - weight_size;
   // Create gradient outputs cnode
   AnfNodePtrList inputs{NewValueNode(bprop_cut)};
-  for (size_t i = 1; i < origin_input_size; ++i) {
-    (void)inputs.emplace_back(cnode->input(i));
-  }
-  if (!is_need_recompute) {
-    // If not recompute, we should add out as bprop input.
-    (void)inputs.emplace_back(cnode->input(cnode->size() - kOutAndDoutNum));
+  if (PyNativeAlgo::Common::IsHookNeedSaveInputs(bprop_cut)) {
+    for (size_t i = 1; i < origin_input_size; ++i) {
+      (void)inputs.emplace_back(cnode->input(i));
+    }
+    if (!is_need_recompute) {
+      // If not recompute, we should add out as bprop input.
+      (void)inputs.emplace_back(cnode->input(cnode->size() - kOutAndDoutNum));
+    }
   }
   (void)inputs.emplace_back(cnode->input(cnode->size() - 1));
-
   auto bprop_cut_cnode = ad_param_->tape_->FuncGraph::NewCNode(inputs);
   AbstractBasePtrList abs_list;
   // Only add last input dout to user.
   AddUser(cnode->input(cnode->size() - 1), bprop_cut_cnode, bprop_cut_cnode->size() - 1);
   for (size_t i = 1; i < cnode->size() - kOutAndDoutNum; ++i) {
     // Input may be parameter, we need add to user map.
-    if (i < origin_input_size) {
+    if (i < origin_input_size && PyNativeAlgo::Common::IsHookNeedSaveInputs(bprop_cut)) {
       AddUser(cnode->input(i), bprop_cut_cnode, i);
     }
     auto din = ad_param_->tape_->FuncGraph::NewCNode(

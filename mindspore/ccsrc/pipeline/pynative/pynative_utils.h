@@ -115,6 +115,7 @@ struct Common {
     }
     return buf.str().erase(buf.str().size() - end_char_size);
   }
+  static bool IsHookNeedSaveInputs(const PrimitivePyPtr &prim);
   static void ClearRes();
 };
 
