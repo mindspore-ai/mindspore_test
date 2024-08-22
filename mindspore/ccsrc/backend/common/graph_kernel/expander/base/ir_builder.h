@@ -238,6 +238,10 @@ class IrBuilderRegistry {
         name_, [func, name = this->name_]() { return std::make_unique<DefaultIrBuilder>(func, name); });
       return *this;
     }
+    RegHelper &SetRealOutputIndices(const std::vector<size_t> &&output_indices) {
+      IrBuilderRegistry::Instance().RegOutputIndices(name_, output_indices);
+      return *this;
+    }
 
     ~RegHelper() = default;
 
@@ -247,6 +251,10 @@ class IrBuilderRegistry {
   };
 
   bool HasOp(const std::string &name) const { return creator_map_.count(name) > 0; }
+  bool IsOutputNumInconsistent(const std::string &name) { return output_num_inconsistent_ops_.count(name) > 0; }
+  const HashMap<std::string, std::vector<size_t>> &GetOutputNumInconsistentOps() {
+    return output_num_inconsistent_ops_;
+  }
   std::unique_ptr<IrBuilder> GetOp(const std::string &name) const {
     auto iter = creator_map_.find(name);
     return (iter != creator_map_.end() ? iter->second() : nullptr);
@@ -257,7 +265,15 @@ class IrBuilderRegistry {
   ~IrBuilderRegistry() = default;
 
   void Reg(const std::string &name, const CreatorFunc &func) { creator_map_[name] = func; }
+  void RegOutputIndices(const std::string &name, const std::vector<size_t> &output_indices) {
+    output_num_inconsistent_ops_[name] = output_indices;
+  }
   HashMap<std::string, CreatorFunc> creator_map_;
+  // For some ops, the output number of the original cnode is different from the output number of subgraph.
+  // The common reason is: the output of Assign must be an output of graph kernel,
+  // but the parameter be assigned is unnecessary to be an output of the original cnode.
+  // These ops are recorded in output_num_inconsistent_ops_
+  HashMap<std::string, std::vector<size_t>> output_num_inconsistent_ops_;
 };
 
 #define JOIN(x, y) x##y

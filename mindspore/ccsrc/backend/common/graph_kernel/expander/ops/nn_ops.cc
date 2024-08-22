@@ -105,7 +105,7 @@ REG_EXPANDER_FUNC("SoftmaxBackward").SetBody(BODYFUNC(ib) {
   return {result};
 });
 
-REG_EXPANDER_FUNC("ApplyMomentum").SetBody(BODYFUNC(ib) {
+REG_EXPANDER_FUNC("ApplyMomentum").SetRealOutputIndices({1}).SetBody(BODYFUNC(ib) {
   auto weight = ib->input(kIndex0);
   auto accumulate = ib->input(kIndex1);
   auto lr = ib->input(kIndex2);

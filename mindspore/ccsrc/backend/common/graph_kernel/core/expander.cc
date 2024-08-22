@@ -94,7 +94,8 @@ AnfNodePtr DefaultExpander::Run(const AnfNodePtr &node) {
 
 FuncGraphPtr DefaultExpander::ExpandToGraph(const CNodePtr &node) {
   auto name = AnfUtils::GetCNodeName(node);
-  auto ib = expander::IrBuilderRegistry::Instance().GetOp(name);
+  auto &ib_registry = expander::IrBuilderRegistry::Instance();
+  auto ib = ib_registry.GetOp(name);
   if (ib == nullptr) {
     MS_LOG(INFO) << "irbuilder not found: " << node->fullname_with_scope();
     return nullptr;
@@ -110,20 +111,20 @@ FuncGraphPtr DefaultExpander::ExpandToGraph(const CNodePtr &node) {
     return nullptr;
   }
   auto cb = Callback::Instance();
-  if (output_num_inconsistent_ops.find(name) == output_num_inconsistent_ops.end()) {
+  if (!ib_registry.IsOutputNumInconsistent(name)) {
     for (size_t i = 0; i < outputs.size(); i++) {
       if (!IsOutputInfoIdentical(outputs, node, i, i, cb)) {
-        MS_LOG(INFO) << "Expanding node: " << node->fullname_with_scope() << "failed, because output " << i
-                     << "has a different shape/dtype/format from the corresponding output of the original cnode.";
+        MS_LOG(INFO) << "Expanding node: " << node->fullname_with_scope() << " failed, because output " << i
+                     << " has a different shape/dtype/format from the corresponding output of the original cnode.";
         return nullptr;
       }
     }
   } else {
-    auto real_output_indices = output_num_inconsistent_ops.at(name);
+    auto real_output_indices = ib_registry.GetOutputNumInconsistentOps().at(name);
     for (size_t i = 0; i < real_output_indices.size(); i++) {
       if (!IsOutputInfoIdentical(outputs, node, i, real_output_indices[i], cb)) {
-        MS_LOG(INFO) << "Expanding node: " << node->fullname_with_scope() << "failed, because output " << i
-                     << "has a different shape/dtype/format from the corresponding output of the original cnode.";
+        MS_LOG(INFO) << "Expanding node: " << node->fullname_with_scope() << " failed, because output " << i
+                     << " has a different shape/dtype/format from the corresponding output of the original cnode.";
         return nullptr;
       }
     }
