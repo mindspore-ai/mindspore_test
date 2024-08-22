@@ -42,6 +42,7 @@ struct TryBlock {
 };
 
 bool CheckSupportCreateInstance(CallNode *call_node);
+ValueNode *GetSelfFromMethod(ValueNode *method);
 class GraphBuilder {
  public:
   static const char *ID___self__;

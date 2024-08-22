@@ -37,6 +37,7 @@ class AbstractWrapper {
   explicit AbstractWrapper(const AbstractBasePtr &abstract) : abstract_(abstract) {}
   std::string ToString() const;
   AbstractBasePtr abstract() const { return abstract_; }
+  bool IsConstant() const;
 
   static py::object ConvertToPyObject(const AbstractWrapperPtr &wrapper);
   static py::object ConvertToPyObject(const AbstractBasePtr &abstract);

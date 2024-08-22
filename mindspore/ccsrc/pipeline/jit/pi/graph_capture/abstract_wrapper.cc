@@ -264,4 +264,12 @@ bool AbstractWrapper::MarkObjectPiJItShouldCompile(const py::object &object) {
   }
   return pi_jit_should_compile(mark_object, py::dict(), py::none());
 }
+
+bool AbstractWrapper::IsConstant() const {
+  if (abstract_ == nullptr) {
+    MS_LOG(DEBUG) << "Failed to find abstract in wrapper.";
+    return false;
+  }
+  return abstract_->BuildValue() != kValueAny;
+}
 }  // namespace mindspore

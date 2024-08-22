@@ -20,10 +20,12 @@ from tests.mark_utils import arg_mark
 import mindspore
 from mindspore import nn, ops, jit, Tensor, _no_grad, context, Parameter
 
+
 @pytest.fixture(autouse=True)
 def skip_if_python_version_too_high():
     if sys.version_info >= (3, 11):
         pytest.skip("Skipping tests on Python 3.11 and higher.")
+
 
 class GradNet(nn.Cell):
     def __init__(self):
@@ -38,18 +40,6 @@ class GradNet(nn.Cell):
         z = m * y
         return z
 
-model_py = GradNet()
-
-@jit(mode="PIJit", jit_config={"compile_with_try": False})
-def test_network(x):
-    """
-    Feature: JIT grad function
-    Description: replace no grad with StopGradient
-    Expectation: success to compile
-    """
-    grad_fn = ops.grad(model_py)
-    gradients = grad_fn(x)
-    return gradients
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('input', [Tensor([2], mindspore.float32)])
@@ -60,6 +50,15 @@ def test_network_func(input):
     Expectation: no error
     TEST_SUMMARY: match the result with pynative
     """
+    model_py = GradNet()
+
+    @jit(mode="PIJit", jit_config={"compile_with_try": False})
+    def test_network(x):
+        grad_fn = ops.grad(model_py)
+        gradients = grad_fn(x)
+        return gradients
+
+    context.set_context(mode=context.PYNATIVE_MODE)
     gradient_jit = test_network(input)
     gradient_py = ops.grad(model_py)(input)
     match_array(gradient_jit, gradient_py, error=0, err_msg=str(gradient_jit))

@@ -535,27 +535,50 @@ static bool InferMSConstexpr(CallNode *call_node, GraphBuilder *unused = nullptr
 }
 
 static bool GuardBuiltinFunc(CallNode *call_node) {
-  if (call_node->input(0)->GetVobj() == nullptr) {
+  auto func_node = call_node->input(0);
+  MS_EXCEPTION_IF_NULL(func_node);
+  if (func_node->GetVobj() == nullptr) {
     return false;
   }
-  PyObject *func = call_node->input(0)->GetVobj()->GetPyObject().ptr();
+  PyObject *func = func_node->GetVobj()->GetPyObject().ptr();
   if (PyMethod_Check(func)) {
     auto self = PyMethod_GET_SELF(func);
-    if (IsTensorType<true>(Py_TYPE(self)) && !CheckTensorDataInitialized(py::cast<py::object>(self))) {
-      // fake value
-      return false;
-    }
-  }
-  Graph *graph = call_node->GetGraph();
-  for (auto i : call_node->getInputs()) {
-    if (i->GetVobj() && i->GetVobj()->GetType() == AObject::kTypeTensor) {
-      AbstractTensor *tensor = static_cast<AbstractTensor *>(i->GetVobj());
-      if (!tensor->IsStubTensor() && !CheckTensorDataInitialized(tensor->GetPyObject())) {
-        // fake value
+    if (IsTensorType<true>(Py_TYPE(self))) {
+      auto self_node = GetSelfFromMethod(func_node);
+      if (self_node == nullptr) {
+        MS_LOG(WARNING) << "failed to find self value node for call node" << call_node->ToString();
+        return false;
+      }
+      auto self_node_wrapper = self_node->abstract_wrapper();
+      if (self_node_wrapper == nullptr) {
+        MS_LOG(WARNING) << "Failed to find wrapper for tensor self, node: " << call_node->ToString();
+        return false;
+      }
+      if (!self_node_wrapper->IsConstant()) {
+        MS_LOG(INFO) << "The tensor self is variable, fail to guard built-in function call node: "
+                     << call_node->ToString();
         return false;
       }
     }
   }
+  const auto &call_node_inputs = call_node->getInputs();
+  for (size_t i = 1; i < call_node_inputs.size(); ++i) {
+    auto cur_input = call_node_inputs[i];
+    MS_EXCEPTION_IF_NULL(cur_input);
+    auto cur_input_wrapper = cur_input->abstract_wrapper();
+    if (cur_input_wrapper == nullptr) {
+      MS_LOG(WARNING) << "Failed to find wrapper for cur_input " << cur_input->ToString()
+                      << ", failed to guard built-in function call node";
+      return false;
+    }
+    if (!cur_input_wrapper->IsConstant()) {
+      MS_LOG(INFO) << "Failed to guard built-in function call node since input " << cur_input->ToString()
+                   << " is not constant.";
+      return false;
+    }
+  }
+  Graph *graph = call_node->GetGraph();
+  MS_EXCEPTION_IF_NULL(graph);
   return graph->GuardValueNode(call_node);
 }
 
