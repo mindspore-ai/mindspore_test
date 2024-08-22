@@ -23,9 +23,9 @@ namespace py = pybind11;
 namespace mindspore {
 
 PYBIND11_MODULE(_data_dump, m) {
-  m.def("_dump_set_dynamic", []() { DumpControl::GetInstance()._dump_set_dynamic(); });
-  m.def("_dump_start", []() { DumpControl::GetInstance()._dump_start(); });
-  m.def("_dump_stop", []() { DumpControl::GetInstance()._dump_stop(); });
+  m.def("_dump_set_dynamic", []() { DumpControl::GetInstance().SetDynamicDump(); });
+  m.def("_dump_start", []() { DumpControl::GetInstance().DynamicDumpStart(); });
+  m.def("_dump_stop", []() { DumpControl::GetInstance().DynamicDumpStop(); });
 }
 
 }  // namespace mindspore

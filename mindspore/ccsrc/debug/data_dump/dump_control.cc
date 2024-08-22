@@ -19,14 +19,14 @@
 
 namespace mindspore {
 
-void DumpControl::_dump_start() {
+void DumpControl::DynamicDumpStart() {
   if (!dynamic_switch_) {
     MS_LOG(WARNING) << "dump_start before dump_set_dynamic-Warning: dump_set_dynamic has not been set!";
   }
   dump_switch_ = true;
 }
 
-void DumpControl::_dump_stop() {
+void DumpControl::DynamicDumpStop() {
   if (!dynamic_switch_) {
     MS_LOG(WARNING) << "dump_stop before dump_set_dynamic-Warning: dump_set_dynamic has not been set!";
   }

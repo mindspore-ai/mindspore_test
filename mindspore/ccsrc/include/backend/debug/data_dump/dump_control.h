@@ -39,12 +39,12 @@ class BACKEND_EXPORT DumpControl {
     return *dump_instance_;
   }
   ~DumpControl() = default;
-  bool GetDynamicSwitch() const { return dynamic_switch_; }
-  bool GetDumpSwitch() const { return dump_switch_; }
+  bool dynamic_switch() const { return dynamic_switch_; }
+  bool dump_switch() const { return dump_switch_; }
 
-  void _dump_set_dynamic() { dynamic_switch_ = true; }
-  void _dump_start();
-  void _dump_stop();
+  void SetDynamicDump() { dynamic_switch_ = true; }
+  void DynamicDumpStart();
+  void DynamicDumpStop();
 
  private:
   DumpControl() = default;
