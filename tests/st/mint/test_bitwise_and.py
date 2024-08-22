@@ -18,6 +18,7 @@ import mindspore as ms
 from mindspore import ops, mint, Tensor, jit, JitConfig, context
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.st.utils import test_utils
+from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 from tests.mark_utils import arg_mark
 
 
@@ -38,7 +39,7 @@ def bitwise_and_backward_func(x, y):
     return ops.grad(bitwise_and_forward_func, 0)(x, y)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("mode", ['pynative', 'KBK'])
 def test_bitwise_and_forward_backward(mode):
     """
@@ -119,3 +120,32 @@ def test_bitwise_and_dynamic_shape_tensor():
     y2 = Tensor(y2, dtype=ms.int64)
     TEST_OP(bitwise_and_forward_func, [[x, y], [x2, y2]], '',
             disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
+
+
+def mint_bitwise_and_binary_compare(input_binary_data, output_binary_data):
+    output = bitwise_and_forward_func(Tensor(input_binary_data[0]), Tensor(input_binary_data[1]))
+    assert np.allclose(output.asnumpy(), output_binary_data[0], 1e-04, 1e-04)
+
+
+@ops_binary_cases(OpsBinaryCase(input_info=[((3, 4, 1024, 4, 1), np.int32), ((3, 4, 1024, 4, 1), np.int32)],
+                                output_info=[((3, 4, 1024, 4, 1), np.int32)],
+                                extra_info='auto_drive'))
+def mint_bitwise_and_binary_case1(input_binary_data=None, output_binary_data=None):
+    mint_bitwise_and_binary_compare(input_binary_data, output_binary_data)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize("mode", ['pynative', 'KBK'])
+def test_bitwise_and_binary_cases(mode):
+    """
+    Feature: Ops
+    Description: test mint bitwise_and
+    Expectation: expect correct result.
+    """
+
+    if mode == 'pynative':
+        context.set_context(mode=ms.PYNATIVE_MODE)
+    elif mode == 'KBK':
+        context.set_context(mode=ms.GRAPH_MODE, jit_level='O0')
+
+    mint_bitwise_and_binary_case1()

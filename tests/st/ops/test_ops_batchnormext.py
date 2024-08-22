@@ -16,12 +16,14 @@
 
 import pytest
 import numpy as np
+import mindspore as ms
 
 from mindspore import Tensor, context
 from mindspore import ops
 from mindspore.ops.function.nn_func import batch_norm_ext
 from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 from tests.mark_utils import arg_mark
 
 
@@ -33,7 +35,7 @@ def batch_norm_forward_func(x, scale, bias, mean, var, training=False, momentum=
 
 @test_utils.run_with_cell
 def batch_norm_backward_func(x, scale, bias, mean, var, is_train=False, momentum=0.1, eps=1e-5):
-    return ops.grad(batch_norm_forward_func, 0)(x, scale, bias, mean, var, is_train, momentum, eps)
+    return ms.grad(batch_norm_forward_func, 0)(x, scale, bias, mean, var, is_train, momentum, eps)
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -132,3 +134,40 @@ def test_bn_dyn():
             [[Tensor(input_x1), scale1, bias1, mean1, variance1, training1, momentum1, eps1],
              [Tensor(input_x2), scale2, bias2, mean2, variance2, training2, momentum2, eps2]],
             '', disable_input_check=True, disable_yaml_check=True, disable_mode=['GRAPH_MODE'])
+
+
+def ops_batchnormext_binary_compare(input_binary_data, output_binary_data):
+    inputx = Tensor(input_binary_data[0])
+    scale = Tensor(input_binary_data[1])
+    bias = Tensor(input_binary_data[2])
+    mean = Tensor(input_binary_data[3])
+    var = Tensor(input_binary_data[4])
+    training = True
+    momentum = 0.1
+    eps = 1e-05
+
+    output = batch_norm_forward_func(inputx, scale, bias, mean, var, training, momentum, eps)
+    assert np.allclose(output.asnumpy(), output_binary_data[0], 1e-04, 1e-04)
+    output = batch_norm_backward_func(inputx, scale, bias, mean, var, training, momentum, eps)
+    assert np.allclose(output.asnumpy(), output_binary_data[1], 1e-04, 1e-04)
+
+
+@ops_binary_cases(OpsBinaryCase(input_info=[((6, 32, 352, 640), np.float32), ((32,), np.float32), ((32,), np.float32),
+                                            ((32,), np.float32), ((32,), np.float32)],
+                                output_info=[((6, 32, 352, 640), np.float32), ((6, 32, 352, 640), np.float32)],
+                                extra_info='auto_drive'))
+def ops_batchnormext_binary_case1(input_binary_data=None, output_binary_data=None):
+    ops_batchnormext_binary_compare(input_binary_data, output_binary_data)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@pytest.mark.parametrize("mode", [context.GRAPH_MODE, context.PYNATIVE_MODE])
+def test_batchnormext_binary_cases(mode):
+    """
+    Feature: Ops
+    Description: test op batchnormext
+    Expectation: expect correct result.
+    """
+    context.set_context(mode=mode)
+
+    ops_batchnormext_binary_case1()

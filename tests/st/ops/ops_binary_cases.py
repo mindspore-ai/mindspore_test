@@ -56,13 +56,13 @@ class OpsBinaryCase:
         for idx, data in enumerate(input_binary_data):
             if data.shape != self.input_info[idx][0] or data.dtype != self.input_info[idx][1]:
                 raise ValueError(f'shape or dtype of input_binary_data[{idx}] is not equal to input_info[{idx}], ' \
-                                 f'but got shape {data.shape} and {self.input_info[idx][0]} ' \
-                                 f'and type {data.dtype} and {self.input_info[idx][1]}.')
+                                 f'but got binary shape {data.shape} and input_info shape {self.input_info[idx][0]}, ' \
+                                 f'and got binary dtype {data.dtype} and input_info dtype {self.input_info[idx][1]}.')
         for idx, data in enumerate(output_binary_data):
             if data.shape != self.output_info[idx][0] or data.dtype != self.output_info[idx][1]:
                 raise ValueError(f'shape or dtype of output_binary_data[{idx}] is not equal to output_info[{idx}], ' \
-                                 f'but got shape {data.shape} and {self.output_info[idx][0]} ' \
-                                 f'and type {data.dtype} and {self.output_info[idx][1]}.')
+                                 f'but got binary shape {data.shape} and out_info shape {self.output_info[idx][0]}, ' \
+                                 f'and got binary dtype {data.dtype} and out_info dtype {self.output_info[idx][1]}.')
 
 
 def ops_binary_cases(ops_case, *, binary_data_path=None, debug_info=False):
