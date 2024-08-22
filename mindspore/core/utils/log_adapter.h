@@ -219,6 +219,7 @@ enum VLogLevel : int {
   VL_ANALYZER = COMPONENT_START + (SM_ANALYZER - 1) * COMPONENT_RANGE,                    // 1. static analyzer
   VL_COMMON = COMPONENT_START + (SM_COMMON - 1) * COMPONENT_RANGE,                        // 2. common
   VL_DEBUG = COMPONENT_START + (SM_DEBUG - 1) * COMPONENT_RANGE,                          // 3. debug
+  VL_DUMP = VL_DEBUG,                                                                     // tag is 10300, for dump
   VL_OFFLINE_DEBUG = COMPONENT_START + (SM_OFFLINE_DEBUG - 1) * COMPONENT_RANGE,          // 4. offline debug
   VL_DEVICE = COMPONENT_START + (SM_DEVICE - 1) * COMPONENT_RANGE,                        // 5. device
   VL_GE_ADPT = COMPONENT_START + (SM_GE_ADPT - 1) * COMPONENT_RANGE,                      // 6. ge adapter

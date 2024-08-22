@@ -19,6 +19,7 @@
 
 #include <vector>
 #include <string>
+#include <map>
 
 #include "include/backend/device_address.h"
 
@@ -47,6 +48,7 @@ class TensorInfoForDump {
   size_t device_size;
   device::DeviceAddress *device_tensor;
   const void *device_ptr;
+  std::map<std::string, device::DeviceAddressPtr> stat_results;
 };
 
 class TensorInfoCommForDump {
