@@ -61,11 +61,10 @@ MeanCalculator::MeanCalculator() : mean(0.0), count(0) {}
 
 void MeanCalculator::ProcessElement(double value) {
   count += 1;
-  double delta = value - mean;
-  mean += delta / count;
+  mean += value;
 }
 
-double MeanCalculator::GetMean() const { return mean; }
+double MeanCalculator::GetMean() const { return mean / count; }
 
 VarianceAndMeanCalculator::VarianceAndMeanCalculator() : mean(0.0), count(0), m2(0.0) {}
 
@@ -156,6 +155,7 @@ void TensorSummary<T>::TensorStatistics(DbgDataType dtype_value) {
 
   // Aggregate results of all chunks
   num_elements_ = 0;  // Let current tensor weight 0 in the aggregation
+  double sum = 0;
   for (unsigned int i = 0; i < summary_future_vec.size(); i++) {
     summary_future_vec[i].wait();
     summary_future_vec[i].get();
@@ -163,8 +163,7 @@ void TensorSummary<T>::TensorStatistics(DbgDataType dtype_value) {
     num_elements_ += cur_summary.num_elements_;
     min_ = std::min(min_, cur_summary.min_);
     max_ = std::max(max_, cur_summary.max_);
-    double avg_delta = cur_summary.avg_ - avg_;
-    avg_ += avg_delta * (cur_summary.num_elements_ / num_elements_);
+    sum += cur_summary.avg_ * cur_summary.num_elements_;
     neg_zero_count_ += cur_summary.neg_zero_count_;
     pos_zero_count_ += cur_summary.pos_zero_count_;
     neg_inf_count_ += cur_summary.neg_inf_count_;
@@ -174,6 +173,7 @@ void TensorSummary<T>::TensorStatistics(DbgDataType dtype_value) {
     zero_count_ += cur_summary.zero_count_;
     l2_calc_.ProcessElement(cur_summary.l2_calc_);
   }
+  avg_ = sum / num_elements_;
 }
 
 /*

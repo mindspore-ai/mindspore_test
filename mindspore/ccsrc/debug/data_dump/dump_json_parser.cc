@@ -140,7 +140,8 @@ void DumpJsonParser::CheckE2eSetting() {
   MS_EXCEPTION_IF_NULL(context);
   if (e2e_dump_enabled()) {
     if (!context->IsKByKExecutorMode()) {
-      MS_LOG(WARNING) << "E2e dump only support kernel by kernel mode on Ascend platform.";
+      MS_LOG(WARNING) << "e2e_dump_settings does not support Ascend O2 mode. Do not use e2e_dump_settings or use "
+                         "Ascend O0/O1 mode instead";
     }
     CheckStatCalcModeVaild();
   } else {
