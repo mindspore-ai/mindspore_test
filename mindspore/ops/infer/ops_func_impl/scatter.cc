@@ -19,8 +19,10 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include "op_def/auto_generate/gen_ops_name.h"
 #include "utils/check_convert_utils.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ops/ops_func_impl/simple_infer.h"
 
 namespace mindspore {
 namespace ops {
@@ -60,5 +62,33 @@ TypePtr ScatterFuncImpl::InferType(const PrimitivePtr &primitive,
 
   return input_args[kIndex0]->GetType();
 }
+
+ShapeArray ScatterFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
+  const auto &input_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  MS_EXCEPTION_IF_NULL(input_tensor);
+  const auto &src_tensor = input_values[kIndex3]->cast<tensor::BaseTensorPtr>();
+  MS_EXCEPTION_IF_NULL(src_tensor);
+  const auto &input_shape = input_tensor->shape();
+  const auto &src_shape = src_tensor->shape();
+  MS_EXCEPTION_IF_CHECK_FAIL(!IsShapeNone(input_shape) && !IsShapeNone(src_shape),
+                             "For Scatter, [input] or [src] got empty tensor, which is not allowed.");
+  return {input_shape};
+}
+
+TypePtrList ScatterFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
+  const auto &input_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  MS_EXCEPTION_IF_NULL(input_tensor);
+  const auto &src_tensor = input_values[kIndex3]->cast<tensor::BaseTensorPtr>();
+  MS_EXCEPTION_IF_NULL(src_tensor);
+  const auto &input_type = input_tensor->Dtype();
+  const auto &src_type = src_tensor->Dtype();
+  std::map<std::string, TypePtr> types;
+  (void)types.emplace("input", input_type);
+  (void)types.emplace("src", src_type);
+  (void)CheckAndConvertUtils::CheckTypeSame(types, primitive->name());
+  return {input_type};
+}
+
+REGISTER_SIMPLE_INFER(kNameScatter, ScatterFuncImpl)
 }  // namespace ops
 }  // namespace mindspore

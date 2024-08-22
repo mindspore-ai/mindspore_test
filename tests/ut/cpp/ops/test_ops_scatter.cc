@@ -50,11 +50,20 @@ TEST_P(TestScatter, scatter_dyn_shape) {
   auto expect_shape = std::make_shared<abstract::Shape>(param.out_shape);
   auto expect_type = std::make_shared<TensorType>(param.out_dtype);
   DoFuncImplInferAndCompare<ScatterFuncImpl>(kNameScatter, input_args, expect_shape, expect_type);
+
+  // simple infer
+  auto x_val = std::make_shared<tensor::Tensor>(param.x_dtype->type_id(), param.x_shape);
+  auto dim_val = CreateScalar<int64_t>(0);
+  auto index_val = std::make_shared<tensor::Tensor>(param.index_dtype->type_id(), param.index_shape);
+  auto src_val = std::make_shared<tensor::Tensor>(param.src_dtype->type_id(), param.src_shape);
+  auto reduce_val = std::make_shared<Int64Imm>(static_cast<int64_t>(Reduce::REDUCE_NONE));
+  DoFuncImplSimpleInferAndCompare<ScatterFuncImpl>(
+      kNameScatter, {x_val, dim_val, index_val, src_val, reduce_val}, {param.out_shape}, {param.out_dtype});
 }
 
 auto scatter_cases = testing::Values(
   /* static */
-  ScatterParams{{4, 5, 6}, kFloat64, {2, 3, 4}, kInt64, {3, 4, 5}, kFloat64, {4, 5, 6}, kFloat64},
+  ScatterParams{{4, 5, 6}, kFloat64, {3, 4, 5}, kInt64, {3, 4, 5}, kFloat64, {4, 5, 6}, kFloat64},
   /* -1 */
   ScatterParams{{-1, 3, -1}, kFloat32, {3, 3, 3}, kInt64, {3, 3, 3}, kFloat32, {-1, 3, -1}, kFloat32},
   /* -2 */

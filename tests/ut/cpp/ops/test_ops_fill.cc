@@ -54,7 +54,7 @@ TEST_P(TestFillScalar, fill_scalar_dyn_shape) {
 
   DoFuncImplInferAndCompare<FillScalarFuncImpl>(
       kNameFillScalar, {in_shape, fill_abs, dtype_abs}, expect_shape, expect_type);
-  // skip the dynamic length input case
+  // skip the dynamic sequence input input case
   if (shape_dim != 0) {
     DoFuncImplSimpleInferAndCompare<FillScalarFuncImpl>(
         kNameFillScalar, {param.shape_value, param.fill_value, param.dtype_value}, {param.output_shape}, {param.output_dtype});

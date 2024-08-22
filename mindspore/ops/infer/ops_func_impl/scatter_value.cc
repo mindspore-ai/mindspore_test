@@ -17,7 +17,9 @@
 #include "infer/ops_func_impl/scatter_value.h"
 #include <memory>
 #include <utility>
+#include "op_def/auto_generate/gen_ops_name.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "ops/ops_func_impl/simple_infer.h"
 
 namespace mindspore {
 namespace ops {
@@ -27,6 +29,8 @@ BaseShapePtr ScatterValueFuncImpl::InferShape(const PrimitivePtr &primitive,
   auto indices_shape_ptr = input_args[kIndex2]->GetShape();
   const auto &input_shape = input_shape_ptr->GetShapeVector();
   const auto &indices_shape = indices_shape_ptr->GetShapeVector();
+  MS_EXCEPTION_IF_CHECK_FAIL(!IsShapeNone(input_shape),
+                             "For ScatterValue, [input] got empty tensor, which is not allowed.");
   if (IsDynamicRank(input_shape) && !IsDynamicRank(indices_shape)) {
     auto rank = indices_shape.size();
     ShapeVector output_shape(rank, abstract::Shape::kShapeDimAny);
@@ -39,5 +43,23 @@ TypePtr ScatterValueFuncImpl::InferType(const PrimitivePtr &primitive,
                                         const std::vector<AbstractBasePtr> &input_args) const {
   return input_args[kIndex0]->GetType();
 }
+
+ShapeArray ScatterValueFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
+  const auto &input_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  MS_EXCEPTION_IF_NULL(input_tensor);
+  const auto &input_shape = input_tensor->shape();
+  MS_EXCEPTION_IF_CHECK_FAIL(!IsShapeNone(input_shape),
+                             "For ScatterValue, [input] got empty tensor, which is not allowed.");
+  return {input_shape};
+}
+
+TypePtrList ScatterValueFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
+  const auto &input_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  MS_EXCEPTION_IF_NULL(input_tensor);
+  const auto &input_type = input_tensor->Dtype();
+  return {input_type};
+}
+
+REGISTER_SIMPLE_INFER(kNameScatterValue, ScatterValueFuncImpl)
 }  // namespace ops
 }  // namespace mindspore

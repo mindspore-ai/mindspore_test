@@ -4,6 +4,15 @@ mindspore.mint.scatter
 .. py:function:: mindspore.mint.scatter(input, dim, index, src)
 
     根据指定索引将 `src` 中的值更新到 `input` 中返回输出。
+    对于一个3D的Tensor, 输出形式如下所示：
+
+    .. code-block::
+
+        output[index[i][j][k]][j][k] = src[i][j][k]  # if dim == 0
+
+        output[i][index[i][j][k]][k] = src[i][j][k]  # if dim == 1
+
+        output[i][j][index[i][j][k]] = src[i][j][k]  # if dim == 2
 
     参数：
         - **input** (Tensor) - 输入Tensor。 `input` 的秩必须至少为1。

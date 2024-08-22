@@ -1040,6 +1040,15 @@ def fix(x):
 def scatter(input, dim, index, src):
     """
     Update the value in `src` to `input` according to the specified index.
+    For a 3-D tensor, the output will be:
+
+    .. code-block::
+
+        output[index[i][j][k]][j][k] = src[i][j][k]  # if dim == 0
+
+        output[i][index[i][j][k]][k] = src[i][j][k]  # if dim == 1
+
+        output[i][j][index[i][j][k]] = src[i][j][k]  # if dim == 2
 
     Args:
         input (Tensor): The target tensor. The rank of `input` must be at least 1.
@@ -1047,7 +1056,8 @@ def scatter(input, dim, index, src):
         index (Tensor): The index to do update operation whose data type must be mindspore.int32 or
             mindspore.int64. Same rank as `input` . And accepted range is [-s, s) where s is the size along axis.
         src (Tensor, float): The tensor doing the update operation with `input` , has the same data type as
-            `input`, and the shape of `src` should be equal to the shape of `index`, or the float number to scatter.
+            `input`, and the shape of `src` should be equal to the shape of `index`. Also can be a float number to
+            scatter.
 
     Returns:
         Tensor, has the same shape and type as `input` .

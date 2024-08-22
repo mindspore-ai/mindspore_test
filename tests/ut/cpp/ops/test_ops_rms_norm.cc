@@ -23,7 +23,7 @@
 #include "ir/primitive.h"
 #include "abstract/abstract_value.h"
 #include "ops/test_ops.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
+#include "op_def/auto_generate/gen_ops_name.h"
 #include "ops/test_ops_cmp_utils.h"
 
 namespace mindspore {
@@ -59,15 +59,24 @@ TEST_P(TestRmsNorm, rms_norm_dyn_shape) {
   auto expect_shape = std::make_shared<abstract::TupleShape>(std::vector<abstract::BaseShapePtr>{y_shape, rstd_shape});
   auto expect_type = std::make_shared<Tuple>(std::vector<TypePtr>{y_type, std::make_shared<TensorType>(kFloat32)});
   DoFuncImplInferAndCompare<RmsNormFuncImpl>(kNameRmsNorm, input_args, expect_shape, expect_type);
+
+  // simple infer
+  auto x_val = std::make_shared<tensor::Tensor>(param.x_type->type_id(), param.x_shape);
+  auto gamma_val = std::make_shared<tensor::Tensor>(param.gamma_type->type_id(), param.gamma_shape);
+  auto expect_shapes = {param.y_shape, param.rstd_shape};
+  auto expect_types = {param.y_type, kFloat32};
+  DoFuncImplSimpleInferAndCompare<RmsNormFuncImpl>(kNameRmsNorm, {x_val, gamma_val, eps_val}, expect_shapes, expect_types);
 }
 
 INSTANTIATE_TEST_CASE_P(
   TestRmsNorm, TestRmsNorm,
   testing::Values(TestRmsNormParams{{-1, -1, -1}, kFloat32, {-2}, kFloat32, {-1, -1, -1}, kFloat32, {-1, -1, -1}},
+                  TestRmsNormParams{{-1, -1, -1}, kFloat32, {-1, 3}, kFloat32, {-1, -1, 3}, kFloat32, {-1, 1, 1}},
                   TestRmsNormParams{{2, 3, 4}, kFloat16, {-1, -1}, kFloat16, {2, 3, 4}, kFloat16, {2, 1, 1}},
                   TestRmsNormParams{{2, 3, 4}, kFloat32, {-1, 4}, kFloat32, {2, 3, 4}, kFloat32, {2, 1, 1}},
                   TestRmsNormParams{{-2}, kFloat32, {-1, 5}, kFloat32, {-2}, kFloat32, {-2}},
                   TestRmsNormParams{{-2}, kFloat16, {-2}, kFloat16, {-2}, kFloat16, {-2}},
+                  TestRmsNormParams{{2, 3, 4}, kFloat32, {3, 4}, kFloat32, {2, 3, 4}, kFloat32, {2, 1, 1}},
                   TestRmsNormParams{{2, 3, 4}, kFloat32, {}, kFloat32, {2, 3, 4}, kFloat32, {2, 3, 4}}));
 }  // namespace ops
 }  // namespace mindspore

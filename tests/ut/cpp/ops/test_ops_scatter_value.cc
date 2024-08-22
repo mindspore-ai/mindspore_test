@@ -48,6 +48,15 @@ TEST_P(TestScatterValue, scatter_value_dyn_shape) {
   auto expect_shape = std::make_shared<abstract::Shape>(param.out_shape);
   auto expect_type = std::make_shared<TensorType>(param.out_dtype);
   DoFuncImplInferAndCompare<ScatterValueFuncImpl>(kNameScatterValue, input_args, expect_shape, expect_type);
+
+  // simple infer
+  auto x_val = std::make_shared<tensor::Tensor>(param.x_dtype->type_id(), param.x_shape);
+  auto dim_val = CreateScalar<int64_t>(0);
+  auto index_val = std::make_shared<tensor::Tensor>(param.index_dtype->type_id(), param.index_shape);
+  auto src_val = CreateScalar<float>(2.0);
+  auto reduce_val = std::make_shared<Int64Imm>(static_cast<int64_t>(Reduce::REDUCE_NONE));
+  DoFuncImplSimpleInferAndCompare<ScatterValueFuncImpl>(
+      kNameScatterValue, {x_val, dim_val, index_val, src_val, reduce_val}, {param.out_shape}, {param.out_dtype});
 }
 
 auto scatter_value_cases = testing::Values(

@@ -3362,7 +3362,8 @@ def scatter(input, axis, index, src):
         index (Tensor): The index to do update operation whose data type must be mindspore.int32 or
             mindspore.int64. Same rank as `input` . And accepted range is [-s, s) where s is the size along axis.
         src (Tensor, float): The tensor doing the update operation with `input` , has the same data type as
-            `input`, and the shape of `src` should be equal to the shape of `index`, or the float number to scatter.
+            `input`, and the shape of `src` should be equal to the shape of `index`. Also can be a float number to
+            scatter.
 
     Returns:
         Tensor, has the same shape and type as `input` .
