@@ -706,8 +706,9 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
 
         Examples:
             >>> from mindspore import Tensor
+            >>> from mindspore import dtype as mstype
             >>> import numpy as np
-            >>> x = Tensor(np.array([[1, 2], [3, 4]]))
+            >>> x = Tensor(np.array([[1, 2], [3, 4]]), dtype=mstype.int64)
             >>> output = x.strides
             >>> print(output)
             (16, 8)
