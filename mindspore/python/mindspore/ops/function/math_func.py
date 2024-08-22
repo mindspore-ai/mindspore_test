@@ -8764,7 +8764,7 @@ def any(input, axis=None, keep_dims=False):
         The `axis` with tensor type is only used for compatibility with older versions and is not recommended.
 
     Args:
-        input (Tensor): Input Tensor, has the shape :math:`(N, *)` where :math:`*` means,
+        input (Tensor): Input Tensor(bool),has the shape :math:`(N, *)` where :math:`*` means,
             any number of additional dimensions.
         axis (Union[int, tuple(int), list(int), Tensor], optional): The dimensions to reduce.
             Suppose the rank of `input` is r, `axis` must be in the range [-rank(input), rank(input)).
@@ -8786,7 +8786,7 @@ def any(input, axis=None, keep_dims=False):
 
     Raises:
         TypeError: If `keep_dims` is not a bool.
-        TypeError: If `input` is not a Tensor.
+        TypeError: If `input` is not a Tensor(bool).
         TypeError: If `axis` is not one of the following: int, tuple, list or Tensor.
 
     Supported Platforms:
