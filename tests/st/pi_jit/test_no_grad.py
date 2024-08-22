@@ -18,7 +18,7 @@ import pytest
 from .share.utils import match_array
 from tests.mark_utils import arg_mark
 import mindspore
-from mindspore import ops, jit, Tensor, _no_grad, context, Parameter
+from mindspore import nn, ops, jit, Tensor, _no_grad, context, Parameter
 
 @pytest.fixture(autouse=True)
 def skip_if_python_version_too_high():
