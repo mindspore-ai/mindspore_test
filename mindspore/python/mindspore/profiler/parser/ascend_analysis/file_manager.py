@@ -16,11 +16,12 @@
 import csv
 import json
 import os.path
-from typing import List
+from typing import List, Dict, Optional
 
 from mindspore import log as logger
 from mindspore.profiler.common.validator.validate_path import validate_and_normalize_path
 from mindspore.profiler.parser.ascend_analysis.constant import Constant
+from mindspore.profiler.parser.ascend_analysis.path_manager import PathManager
 
 
 class FileManager:
@@ -67,13 +68,33 @@ class FileManager:
             raise RuntimeError(msg) from err
 
     @classmethod
+    def read_json_file(cls, file_path: str) -> Optional[Dict]:
+        """Read json file and return dict data"""
+        if not os.path.isfile(file_path):
+            return {}
+        file_size = os.path.getsize(file_path)
+        if file_size <= 0:
+            return {}
+        if file_size > Constant.MAX_FILE_SIZE:
+            msg = f"The file size exceeds the preset value, please check the file: {file_path}"
+            logger.warning(msg)
+            return {}
+        try:
+            PathManager.check_directory_path_readable(file_path)
+            with open(file_path, 'r', encoding='utf-8') as json_file:
+                data = json.load(json_file)
+                return data
+        except Exception as err:
+            raise RuntimeError(f"Failed to read the file: {file_path}") from err
+
+    @classmethod
     def create_json_file(cls, output_path: str, json_data: List, file_name: str, indent: int = None) -> None:
         """Create json file with least authority"""
         if not json_data:
             return
         cls.make_dir_safety(output_path)
         file_path = os.path.join(output_path, file_name)
-        flags = os.O_WRONLY | os.O_CREAT
+        flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
         with os.fdopen(os.open(file_path, flags, cls.DATA_FILE_AUTHORITY), 'w') as fp:
             json.dump(json_data, fp, ensure_ascii=False, indent=indent)
 

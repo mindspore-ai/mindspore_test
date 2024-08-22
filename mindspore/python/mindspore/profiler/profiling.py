@@ -797,6 +797,8 @@ class Profiler:
 
         ProfilerInfo.set_parallel_info(parallel_mode, stage_num)
         if offline_path:
+            # Loads the ProfilerInfo data, avoid overwriting the data collection prof_info_x.json.
+            ProfilerInfo.load_profiler_info_dict(os.path.join(offline_path, "profiler"))
             ProfilerInfo.set_analyse_start_time(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
             self._ascend_graph_analyse(offline_path=offline_path)
             ProfilerInfo.set_analyse_end_time(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
@@ -1189,7 +1191,7 @@ class Profiler:
             "profiler_level": self.profiler_level.value if self.profiler_level else self.DISABLE_STATUS,
             "with_stack": "on" if self._with_stack else "off"
         }
-
+        ProfilerInfo.set_profiling_options(profiling_options)
         return profiling_options
 
     def _parse_parameter_for_gpu(self, kwargs):
