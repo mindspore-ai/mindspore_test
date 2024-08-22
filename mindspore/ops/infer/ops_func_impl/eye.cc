@@ -43,7 +43,6 @@ BaseShapePtr EyeFuncImpl::InferShape(const PrimitivePtr &primitive,
 }
 
 ShapeArray EyeFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  MS_EXCEPTION_IF_NULL(primitive);
   int64_t n = abstract::Shape::kShapeDimAny;
   int64_t m = abstract::Shape::kShapeDimAny;
   auto n_ptr = GetScalarValue<int64_t>(input_values[0]);
@@ -77,7 +76,6 @@ TypePtr EyeFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<
 
 int32_t EyeFuncImpl::CheckValidation(const PrimitivePtr &primitive,
                                      const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
   auto prim_name = primitive->name();
   auto n_ptr = GetScalarValue<int64_t>(input_args[kInputIndex0]->GetValue());
   auto m_ptr = GetScalarValue<int64_t>(input_args[kInputIndex1]->GetValue());

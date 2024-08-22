@@ -70,7 +70,6 @@ std::vector<int64_t> CheckInputsShapePart1(const string &op_name, const std::vec
 
 BaseShapePtr ApplyCamePart1FuncImpl::InferShape(const PrimitivePtr &primitive,
                                                 const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
   auto op_name = primitive->name();
   CheckAndConvertUtils::CheckInputArgs(input_args, kEqual, kInputsNumPart1, op_name);
   size_t expect_rank = 2;

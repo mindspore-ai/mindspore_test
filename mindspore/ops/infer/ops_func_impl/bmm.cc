@@ -32,9 +32,6 @@ BaseShapePtr BmmFuncImpl::InferShape(const PrimitivePtr &primitive,
   auto input_shape_ptr = input_args[kInputIndex0]->GetShape();
   auto mat2_shape_ptr = input_args[kInputIndex1]->GetShape();
 
-  MS_EXCEPTION_IF_NULL(input_shape_ptr);
-  MS_EXCEPTION_IF_NULL(mat2_shape_ptr);
-
   auto input_shape = input_shape_ptr->GetShapeVector();
   auto mat2_shape = mat2_shape_ptr->GetShapeVector();
   if (input_shape.size() != kShape3dDims) {

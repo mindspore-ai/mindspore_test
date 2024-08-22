@@ -29,7 +29,7 @@ BaseShapePtr MaxFuncImpl::InferShape(const PrimitivePtr &primitive,
 }
 
 TypePtr MaxFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
-  return input_args[0]->GetType();
+  return input_args[kIndex0]->GetType();
 }
 TypePtrList MaxFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
   const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();

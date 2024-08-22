@@ -33,8 +33,8 @@ class EyeAscend : public AclnnKernelMod {
   void GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
 
  private:
-  int64_t n_row;
-  int64_t m_col;
+  int64_t n_row = 0;
+  int64_t m_col = 0;
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
 }  // namespace kernel

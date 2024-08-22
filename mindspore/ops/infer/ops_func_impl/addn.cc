@@ -71,11 +71,11 @@ BaseShapePtr AddNFuncImpl::InferShape(const PrimitivePtr &primitive,
   const auto &prim_name = primitive->name();
   AbstractBasePtrList elements = input_args;
   // If called from the backend, the input_args[0] is a KernelTensor, not AbstractSequence
-  if (input_args.size() == 1 && input_args[0]->isa<abstract::AbstractSequence>()) {
-    elements = input_args[0]->cast<abstract::AbstractSequencePtr>()->elements();
+  if (input_args.size() == 1 && input_args[kInputIndex0]->isa<abstract::AbstractSequence>()) {
+    elements = input_args[kInputIndex0]->cast<abstract::AbstractSequencePtr>()->elements();
   }
   (void)CheckAndConvertUtils::CheckInteger("input num", SizeToLong(elements.size()), kGreaterEqual, 1, prim_name);
-  auto shape_0 = elements[0]->GetShape();
+  auto shape_0 = elements[kInputIndex0]->GetShape();
   ShapeVector output_shape;
   for (size_t i = 0; i < elements.size(); ++i) {
     auto shape = elements[i]->GetShape();
@@ -106,8 +106,8 @@ TypePtr AddNFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector
   MS_EXCEPTION_IF_NULL(primitive);
   const auto &prim_name = primitive->name();
   AbstractBasePtrList elements = input_args;
-  if (input_args.size() == 1 && input_args[0]->isa<abstract::AbstractSequence>()) {
-    elements = input_args[0]->cast<abstract::AbstractSequencePtr>()->elements();
+  if (input_args.size() == 1 && input_args[kInputIndex0]->isa<abstract::AbstractSequence>()) {
+    elements = input_args[kInputIndex0]->cast<abstract::AbstractSequencePtr>()->elements();
   }
   (void)CheckAndConvertUtils::CheckInteger("concat element num", SizeToLong(elements.size()), kGreaterEqual, 1,
                                            prim_name);
@@ -115,19 +115,18 @@ TypePtr AddNFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector
   (void)types.emplace("element_0", elements[0]->GetType());
   for (size_t i = 0; i < elements.size(); ++i) {
     if (elements[i]->IsSameTypeId(abstract::AbstractUndetermined::kTypeId)) {
-      return elements[0]->GetType()->Clone();
+      return elements[kInputIndex0]->GetType();
     }
     std::string element_i = "element_" + std::to_string(i);
     (void)types.emplace(element_i, elements[i]->GetType());
   }
   std::set<TypePtr> valid_types = common_valid_types_with_complex_and_bool;
   (void)CheckAndConvertUtils::CheckTensorTypeSame(types, valid_types, prim_name);
-  return elements[0]->GetType()->Clone();
+  return elements[kInputIndex0]->GetType();
 }
 
 AbstractBasePtr AddNFuncImpl::AddNInfer(const abstract::AnalysisEnginePtr &, const PrimitivePtr &primitive,
                                         const std::vector<AbstractBasePtr> &input_args) {
-  MS_EXCEPTION_IF_NULL(primitive);
   auto prim_name = primitive->name();
   CheckAndConvertUtils::CheckInputArgs(input_args, kGreaterEqual, 1, prim_name);
   auto infer_type = InferType(primitive, input_args);
