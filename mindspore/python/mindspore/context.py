@@ -1751,7 +1751,7 @@ def set_context(**kwargs):
               - ``"O0"``: Except for optimizations that may affect functionality, all other optimizations are turned
                 off, adopt KernelByKernel execution mode.
               - ``"O1"``: Using commonly used optimizations and automatic operator fusion optimizations,
-                adopt KernelByKernel execution mode.
+                adopt KernelByKernel execution mode. This optimization level is experimental and is being improved.
               - ``"O2"``: Ultimate performance optimization, adopt Sink execution mode.
 
             - infer_boost (str): Used to control the infer mode. Default: ``"off"`` . The value range is as follows:
