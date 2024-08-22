@@ -232,10 +232,9 @@ struct AutoGrad {
   static AnfNodePtr BuildSparseTensorNode(const KernelGraphPtr &tape, const ValuePtr &sparse_value,
                                           const AnfNodePtr &dout_value_node);
   static void SetGradMetaData(const ValuePtr &value, const VariablePtr &variable, const ParameterPtr &param = nullptr);
-  static void SetGradInfoForInputs(
-    const ValuePtr &value, const VariablePtr &variable,
-    std::vector<std::pair<tensor::BaseTensorPtr, AutoGradMetaDataPtr>> *param_meta_grad_info,
-    const ParameterPtr &param = nullptr);
+  static void SetGradInfoForInputs(const ValuePtr &value, const VariablePtr &variable,
+                                   autograd::MetaGradInfoList *param_meta_grad_info,
+                                   const ParameterPtr &param = nullptr);
 
   // Create fake bprop
   static void BuildFakeBpropCNode(const CNodePtr &cnode, std::vector<CNodePtr> *outputs);

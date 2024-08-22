@@ -376,8 +376,8 @@ class GradOperation(GradOperation_):
 
             @_wrap_func
             def after_grad(*args, **kwargs):
-                self._pynative_forward_run(fn, grad_, weights, args, kwargs)
-                out = _pynative_executor.grad(fn, grad_, weights, self.grad_position, *args, **kwargs)
+                run_args = self._pynative_forward_run(fn, grad_, weights, *args, **kwargs)
+                out = _pynative_executor.grad(fn, grad_, weights, self.grad_position, *run_args)
                 out = _grads_divided_by_device_num_if_recomputation(out)
                 return out
         else:
@@ -398,28 +398,39 @@ class GradOperation(GradOperation_):
         self.weights_id = weights_id
         return self.grad_fn
 
-    def _pynative_forward_run(self, fn, grad, weights, args, kwargs):
-        """ Pynative forward run to build grad graph. """
-        new_kwargs = kwargs
+    def _pynative_forward_run(self, fn, grad, weights, *args, **kwargs):
+        """ PyNative forward run to build grad graph. """
+        sens = None
         if self.sens_param:
-            if 'sens' not in kwargs.keys():
-                args = args[:-1]
+            if 'sens' in kwargs.keys():
+                sens = kwargs.pop('sens')
             else:
-                new_kwargs = kwargs.copy()
-                new_kwargs.pop('sens')
+                # default use args last elem as sens
+                sens = args[-1]
+                args = args[:-1]
+        run_args = args
+        if kwargs:
+            run_args = args + tuple(kwargs.values())
+
+        # check run exclude sens
         if isinstance(fn, (FunctionType, MethodType)):
-            if not _pynative_executor.check_run(grad, fn, weights, None, *args, **new_kwargs):
+            if not _pynative_executor.check_run(grad, fn, weights, None, *run_args):
                 _pynative_executor.set_grad_flag(True)
-                _pynative_executor.new_graph(fn, *args, **new_kwargs)
-                output = fn(*args, **new_kwargs)
-                _pynative_executor.end_graph(fn, output, *args, **new_kwargs)
+                _pynative_executor.new_graph(fn, *args, **kwargs)
+                output = fn(*args, **kwargs)
+                _pynative_executor.end_graph(fn, output, *args, **kwargs)
         else:
-            # Check if fn have run already
-            if not _pynative_executor.check_run(grad, fn, weights, None, *args, **new_kwargs):
+            # Check if fn has run already
+            if not _pynative_executor.check_run(grad, fn, weights, None, *run_args):
                 requires_grad = fn.requires_grad
                 fn.requires_grad = True
-                fn(*args, **new_kwargs)
+                fn(*args, **kwargs)
                 fn.requires_grad = requires_grad
+
+        # If it has sens, keep sens as the last element
+        if sens is not None:
+            run_args += (sens,) if sens is not isinstance(run_args, tuple) else sens
+        return run_args
 
 
 class _TaylorOperation(TaylorOperation_):
@@ -603,8 +614,8 @@ class _Grad(GradOperation_):
 
             @_wrap_func
             def after_grad(*args, **kwargs):
-                res = self._pynative_forward_run(fn, grad_, weights, args, kwargs)
-                out = _pynative_executor.grad(fn, grad_, weights, grad_position, *args, **kwargs)
+                run_args, res = self._pynative_forward_run(fn, grad_, weights, *args, **kwargs)
+                out = _pynative_executor.grad(fn, grad_, weights, grad_position, *run_args)
                 out = _grads_divided_by_device_num_if_recomputation(out)
                 if self.return_ids and out:
                     out = _combine_with_ids(grad_position, weights, out)
@@ -639,34 +650,49 @@ class _Grad(GradOperation_):
         self.weights_id = weights_id
         return self.grad_fn
 
-    def _pynative_forward_run(self, fn, grad, weights, args, kwargs):
-        """ Pynative forward runs to build grad graph. """
-        new_kwargs = kwargs
-        outputs = ()
+    def _pynative_forward_run(self, fn, grad, weights, *args, **kwargs):
+        """ PyNative forward runs to build grad graph. """
+        sens = None
         if self.sens_param:
             if 'sens' in kwargs.keys():
-                new_kwargs = kwargs.copy()
-                new_kwargs.pop('sens')
+                sens = kwargs.pop('sens')
             else:
+                # default use args last elem as sens
+                sens = args[-1]
                 args = args[:-1]
+        run_args = args
+        if kwargs:
+            run_args = args + tuple(kwargs.values())
+
+        # check run exclude sens
+        outputs = ()
+        run_forward = False
         if isinstance(fn, (FunctionType, MethodType)):
-            if not _pynative_executor.check_run(grad, fn, weights, self.grad_position, *args, **new_kwargs):
+            if not _pynative_executor.check_run(grad, fn, weights, self.grad_position, *run_args):
                 _pynative_executor.set_grad_flag(True)
-                _pynative_executor.new_graph(fn, *args, **new_kwargs)
-                outputs = fn(*args, **new_kwargs)
-                _pynative_executor.end_graph(fn, outputs, *args, **new_kwargs)
-                return outputs
+                _pynative_executor.new_graph(fn, *args, **kwargs)
+                outputs = fn(*args, **kwargs)
+                _pynative_executor.end_graph(fn, outputs, *args, **kwargs)
+                run_forward = True
         else:
             # Check if fn has run already.
-            if not _pynative_executor.check_run(grad, fn, weights, self.grad_position, *args, **new_kwargs):
+            if not _pynative_executor.check_run(grad, fn, weights, self.grad_position, *run_args):
                 requires_grad = fn.requires_grad
                 fn.requires_grad = True
-                outputs = fn(*args, **new_kwargs)
+                outputs = fn(*args, **kwargs)
                 fn.requires_grad = requires_grad
-                return outputs
+                run_forward = True
+        # If it has sens, keep sens as the last element
+        if sens is not None:
+            run_args += (sens,) if sens is not isinstance(run_args, tuple) else sens
+
+        # Normal run grad
+        if run_forward:
+            return run_args, outputs
+
         if (self.get_value or self.has_aux) and not outputs:
-            outputs = fn(*args, **new_kwargs)
-        return outputs
+            outputs = fn(*args, **kwargs)
+        return run_args, outputs
 
 
 class _Vmap(VmapOperation_):

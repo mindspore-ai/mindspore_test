@@ -27,7 +27,7 @@
 #include "pipeline/pynative/grad/ir/ir_bprop.h"
 
 namespace mindspore::pynative::autograd {
-using MetaGradInfoList = std::vector<std::pair<tensor::BaseTensorPtr, AutoGradMetaDataPtr>>;
+using MetaGradInfoList = OrderedMap<tensor::BaseTensorPtr, AutoGradMetaDataPtr>;
 
 class AutoGrad {
  public:

@@ -554,7 +554,7 @@ void FuncGrad::ConstructParameterNodes(const ValuePtrList &inputs) {
         continue;
       }
       if (PyNativeAlgo::Common::IsParam(auto_grad_meta_data->input_type())) {
-        param_meta_grad_info_.emplace_back(tensor, auto_grad_meta_data);
+        param_meta_grad_info_[tensor] = auto_grad_meta_data;
       }
       if (auto_grad_meta_data->input_type() == InputType::kParameter &&
           PyNativeAlgo::Common::IsParamRequiresGrad(tensor)) {
