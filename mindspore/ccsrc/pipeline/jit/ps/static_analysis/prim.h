@@ -26,6 +26,7 @@
 
 #include "utils/hash_map.h"
 #include "pipeline/jit/ps/static_analysis/evaluator.h"
+#include "pipeline/jit/ps/static_analysis/prim_to_function.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "ops/op_def.h"
 #include "ops/ops_frontend_func_impl.h"
@@ -80,7 +81,7 @@ using StandardPrimEvaluatorPtr = std::shared_ptr<StandardPrimEvaluator>;
 
 class PythonPrimEvaluator final : public TrivialPrimEvaluator {
  public:
-  explicit PythonPrimEvaluator(const PrimitivePyPtr primitive)
+  explicit PythonPrimEvaluator(const PrimitivePyPtr &primitive)
       : TrivialPrimEvaluator("PythonPrimEvaluator"), prim_py_(primitive) {}
   ~PythonPrimEvaluator() override = default;
   MS_DECLARE_PARENT(PythonPrimEvaluator, TrivialPrimEvaluator);
@@ -101,14 +102,20 @@ using PrimitiveImpl = ValuePtr (*)(const ValuePtrList &);
 
 class UniformPrimEvaluator final : public TrivialPrimEvaluator {
  public:
-  UniformPrimEvaluator(const FunctionPtr func_desc, PrimitiveImpl impl, bool eval_value, const TypePtr specify_out_type)
+  UniformPrimEvaluator(const PrimitivePtr &primitive, const PrimitiveImpl &impl, bool eval_value,
+                       const TypePtr &specify_out_type)
       : TrivialPrimEvaluator("UniformPrimEvaluator"),
+        prim_(primitive),
         impl_(impl),
         eval_value_(eval_value),
-        func_desc_(func_desc),
-        nargs_(func_desc_->args().size()),
-        return_value_type_(func_desc_->retval()),
         specify_out_type_(specify_out_type) {
+    FunctionPtr func = nullptr;
+    (void)prim::PrimToFunction::GetInstance().GetFunction(primitive, &func);
+    MS_EXCEPTION_IF_NULL(func);
+    func_desc_ = func;
+    nargs_ = func->args().size();
+    return_value_type_ = func->retval();
+
     for (size_t i = 0; i < nargs_; ++i) {
       const TypePtr &type = func_desc_->args()[i];
       type_map_[type].push_back(i);
@@ -131,16 +138,19 @@ class UniformPrimEvaluator final : public TrivialPrimEvaluator {
     return args_abs_list;
   }
 
+  std::string ToString() const override { return identifier_ + "_" + prim_->name(); }
+
  protected:
   bool inplace_prim() const override { return false; }
 
  private:
+  PrimitivePtr prim_;
   PrimitiveImpl impl_;
   bool eval_value_;
-  const FunctionPtr func_desc_;
-  const std::size_t nargs_;
-  const TypePtr return_value_type_;
-  const TypePtr specify_out_type_;
+  FunctionPtr func_desc_;
+  std::size_t nargs_;
+  TypePtr return_value_type_;
+  TypePtr specify_out_type_;
   mindspore::HashMap<TypePtr, std::vector<size_t>, TypeHashById, TypeEqualById> type_map_;
 };
 
