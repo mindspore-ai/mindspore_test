@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2023 Huawei Technologies Co., Ltd
+ * Copyright 2019-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -675,6 +675,33 @@ constexpr char KV_CACHE_MGR[] = "KVCacheMgr";
 constexpr char GROUPED_MATMUL[] = "GroupedMatmul";
 constexpr char TUPLE_GETITEM_OP[] = "TupleGetItem";
 constexpr char CONVOLUTION[] = "Convolution";
+constexpr char FFTSHIFT[] = "FFTShift";
+constexpr char IFFTSHIFT[] = "IFFTShift";
+constexpr char FFT[] = "FFT";
+constexpr char IFFT[] = "IFFT";
+constexpr char FFT2[] = "FFT2";
+constexpr char IFFT2[] = "IFFT2";
+constexpr char FFTN[] = "FFTN";
+constexpr char IFFTN[] = "IFFTN";
+constexpr char RFFT[] = "RFFT";
+constexpr char IRFFT[] = "IRFFT";
+constexpr char RFFT2[] = "RFFT2";
+constexpr char IRFFT2[] = "IRFFT2";
+constexpr char RFFTN[] = "RFFTN";
+constexpr char IRFFTN[] = "IRFFTN";
+constexpr char HFFT[] = "HFFT";
+constexpr char IHFFT[] = "IHFFT";
+constexpr char HFFT2[] = "HFFT2";
+constexpr char IHFFT2[] = "IHFFT2";
+constexpr char HFFTN[] = "HFFTN";
+constexpr char IHFFTN[] = "IHFFTN";
+constexpr char DCT[] = "DCT";
+constexpr char IDCT[] = "IDCT";
+constexpr char DCTN[] = "DCTN";
+constexpr char IDCTN[] = "IDCTN";
+constexpr char SOLVE_TRIANGULAR[] = "SolveTriangular";
+constexpr char TRACEV2[] = "TraceV2";
+constexpr char LSTSQV2[] = "LstsqV2";
 
 // pipeline
 constexpr size_t PIPELINE_FUSTION_OFFSET = 100;
