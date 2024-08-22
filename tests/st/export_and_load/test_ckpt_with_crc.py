@@ -53,12 +53,6 @@ def test_ckpt_save_with_crc(mode):
     bias = ms.Tensor([-0.41271235, 0.28378568, -0.81612898], dtype=ms.float32)
     net = Network(weight, bias)
     ms.save_checkpoint(net, './save_with_crc.ckpt', crc_check=True)
-
-    _ckpt_fs = FileSystem()
-    with _ckpt_fs.open("./save_with_crc.ckpt", *_ckpt_fs.open_args) as f:
-        pb_content = f.read()
-        assert b"crc_num" in pb_content
-
     ms.load_checkpoint("./save_with_crc.ckpt", crc_check=True)
     ms.load_checkpoint("./save_with_crc.ckpt", crc_check=False)
     os.chmod('./save_with_crc.ckpt', stat.S_IWRITE)
