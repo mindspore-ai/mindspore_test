@@ -415,9 +415,9 @@ def auto_mixed_precision(network, amp_level="O0", dtype=mstype.float16):
     When `amp_level` is set to ``O3``, all cells will be converted to low precision.
 
     When `amp_level` is set to ``auto``, operators in `auto_whitelist` will be converted to lower precision
-    operations, operators in `auto_blacklist` will be converted to full precision, operators in `promote_list`
-    will be converted to the higher accuracy float type of the operator inputs, and operators not listed will run in the
-    type defined by their inputs.
+    operations, operators in `auto_blacklist` will be converted to full precision  operations, operators in
+    `promote_list` will be converted to the higher accuracy float type of the operator inputs, and operators
+    not listed will run in the type defined by their inputs.
 
     Operators in `auto_whitelist` are:
 
@@ -447,8 +447,8 @@ def auto_mixed_precision(network, amp_level="O0", dtype=mstype.float16):
         - If interfaces like `Model` and `build_train_network` is used to train the network which is converted by
           mixed-precision interfaces such as `custom_mixed_precision` and `auto_mixed_precision`, `amp_level`
           need to be configured to ``O0`` to avoid the duplicated accuracy conversion.
-        - When `amp_level` is set to ``auto``, the output of the network may be lower precision, and manual cast may
-          be needed to avoid type mismatch errors in loss function.
+        - When `amp_level` is set to ``auto``, the output of the network may be lower precision. In this case, you
+          may need to manually convert the type to avoid type inconsistency errors of the loss function.
         - When `amp_level` is set to ``auto``, and cells in the network are configured with `to_float`, the accuracy
           specified by `to_float` takes effect first.
 
