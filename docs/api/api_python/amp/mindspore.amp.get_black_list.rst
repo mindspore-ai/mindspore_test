@@ -3,7 +3,7 @@ mindspore.amp.get_black_list
 
 .. py:function:: mindspore.amp.get_black_list()
 
-    提供用于自动混合精度 `amp_level` ``O2`` 等级的内置黑名单的拷贝。
+    提供用于自动混合精度 `amp_level` 为 ``O2`` 等级的内置黑名单的拷贝。
 
     当前的内置黑名单内容为：
 
