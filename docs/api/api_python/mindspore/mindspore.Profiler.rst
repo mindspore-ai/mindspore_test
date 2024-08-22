@@ -9,9 +9,9 @@ mindspore.Profiler
         - **output_path** (str, 可选) - 表示输出数据的路径。默认值： ``"./data"`` 。
         - **profiler_level** (ProfilerLevel, 可选) -（仅限Ascend）表示采集性能数据级别。默认值：``None`` 。
 
-          - Profiler.Level0: 最精简的采集性能数据级别，采集计算类算子的耗时数据和通信类大算子的基础数据。
-          - Profiler.Level1: 在Level0的基础上额外采集CANN层中AscendCL数据、AICORE性能数据以及通信类小算子数据。
-          - Profiler.Level2: 在Level1的基础上额外采集CANN层中GE和Runtime数据。
+          - ProfilerLevel.Level0: 最精简的采集性能数据级别，采集计算类算子的耗时数据和通信类大算子的基础数据。
+          - ProfilerLevel.Level1: 在Level0的基础上额外采集CANN层中AscendCL数据、AICORE性能数据以及通信类小算子数据。
+          - ProfilerLevel.Level2: 在Level1的基础上额外采集CANN层中GE和Runtime数据。
 
         - **op_time** (bool, 可选) -（Ascend/GPU）表示是否收集算子性能数据，默认值： ``True`` 。
         - **profile_communication** (bool, 可选) -（仅限Ascend）表示是否在多设备训练中收集通信性能数据。当值为 ``True`` 时，收集这些数据。在单卡训练中，该参数的设置无效。使用此参数时， `op_time` 必须设置成 ``True`` 。默认值： ``False`` 。
@@ -51,6 +51,22 @@ mindspore.Profiler
     异常：
         - **RuntimeError** - 当CANN的版本与MindSpore版本不匹配时，生成的ascend_job_id目录结构MindSpore无法解析。
 
+    .. py:method:: add_metadata(key: str, value: str)
+
+        上报自定义metadata键值对数据。
+
+        参数：
+            - **key** (str) - metadata键值对的key。
+            - **value** (str) - metadata键值对的value。
+
+    .. py:method:: add_metadata_json(key: str, value: str)
+
+        上报自定义metadata键值对value为json字符串数据。
+
+        参数：
+            - **key** (str) - metadata键值对的key。
+            - **value** (str) - metadata键值对的value，格式为json字符串。
+
     .. py:method:: analyse(offline_path=None, pretty=False, step_list=None, mode="sync")
 
         收集和分析训练的性能数据，支持在训练中和训练后调用。样例如上所示。
@@ -63,22 +79,6 @@ mindspore.Profiler
 
               - "sync": 同步模式解析性能数据，会阻塞当前进程。
               - "async": 异步模式，另起一个子进程解析性能数据，不会阻塞当前进程。由于解析进程会额外占用CPU资源，请根据实际资源情况开启该模式。
-
-    .. py:method:: add_metadata(key, value)
-
-        上报自定义metadata键值对数据。
-
-        参数：
-            - **key** (str) - metadata键值对的key。
-            - **value** (str) - metadata键值对的value。
-
-    .. py:method:: add_metadata_json(key, value)
-
-        上报自定义metadata键值对value为json字符串数据。
-
-        参数：
-            - **key** (str) - metadata键值对的key。
-            - **value** (str) - metadata键值对的value，格式为json字符串。
 
     .. py:method:: offline_analyse(path: str, pretty=False, step_list=None)
         :classmethod:

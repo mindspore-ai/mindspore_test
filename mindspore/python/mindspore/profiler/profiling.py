@@ -351,11 +351,11 @@ class Profiler:
         output_path (str, optional): Output data path. Default: ``"./data"`` .
         profiler_level (ProfilerLevel, optional): (Ascend only) The level of profiling. Default: ``None``.
 
-            - Profiler.Level0: Leanest level of profiling data collection, collects information about the elapsed
+            - ProfilerLevel.Level0: Leanest level of profiling data collection, collects information about the elapsed
               time of the computational operators on the NPU and communication large operator information.
-            - Profiler.Level1: Collect more CANN layer AscendCL data and AICore performance metrics and communication
-              mini operator information based on Level0.
-            - Profiler.Level2: Collect GE and Runtime information in CANN layer on top of Level1
+            - ProfilerLevel.Level1: Collect more CANN layer AscendCL data and AICore performance metrics and
+              communication mini operator information based on Level0.
+            - ProfilerLevel.Level2: Collect GE and Runtime information in CANN layer on top of Level1
 
         op_time (bool, optional): (Ascend/GPU) Whether to collect operators performance data. Default value: ``True``.
         profile_communication (bool, optional): (Ascend only) Whether to collect communication performance data in
@@ -992,7 +992,6 @@ class Profiler:
             >>> profiler.add_metadata("test_key", "test_value")
             >>> # Profiler end
             >>> profiler.analyse()
-            >>>
         """
         if not isinstance(key, str) or not isinstance(value, str):
             logger.warning("The key and value of metadata must be string. Skip this metadata.")
@@ -1017,14 +1016,14 @@ class Profiler:
             value (str): The json str format value to the metadata.
 
         Examples:
+            >>> import json
             >>> from mindspore import Profiler
             >>> # Profiler init.
             >>> profiler = Profiler()
             >>> # Call Profiler add_metadata_json
-            >>> profiler.add_metadata_json("test_key", "{'k1': 'v1', 'k2': 'v2'}")
-            >>> # Profiler end
+            >>> profiler.add_metadata_json("test_key", json.dumps({"key1": 1, "key2": 2}))
+            >>> # Profiler end, metadata will be saved in profiler_metadata.json
             >>> profiler.analyse()
-            >>>
         """
         if not isinstance(key, str) or not isinstance(value, str):
             logger.warning("The key and value of metadata must be string. Skip this metadata.")
