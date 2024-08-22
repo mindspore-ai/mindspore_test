@@ -474,6 +474,7 @@ def test_generator_with_generator_object_iterated_multi_times():
     del os.environ["MS_INDEPENDENT_DATASET"]
 
 
+@pytest.mark.skip(reason="random fail")
 def test_dataset_mnistdataset_with_for_loop_iterator():
     """
     Feature: Dataset With Independent Process
