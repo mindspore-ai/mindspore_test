@@ -86,8 +86,7 @@ SymbolPtr ControlFlowJoin::ShapeJoin(const SymbolPtr &tb, const SymbolPtr &fb) {
 
   if (auto tb_list = tb->as_noexcept<ListSymbol>(); tb_list != nullptr) {
     auto fb_list = fb->as<ListSymbol>();
-    MS_EXCEPTION_IF_NULL(fb_list);
-    if (tb_list->size() != fb_list->size()) {
+    if (tb_list->size() != fb_list->size() || !tb_list->HasData() || !fb_list->HasData()) {
       return GenVList();
     }
     SymbolPtrList result(tb_list->size());
