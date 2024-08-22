@@ -324,7 +324,6 @@ void Jit::MakeAdjointForJit(const FrontendOpRunInfoPtr &op_run_info, const GradE
     grad_executor->dynamic_shape()->SaveUnknownShapeAbsFromJit(op_run_info->real_out,
                                                                jit_forward_graph->output()->abstract(), 0);
   }
-  op_run_info->op_grad_info->output_size = PyNativeAlgo::Common::GetValueSize(op_run_info->op_grad_info->out_value);
   if (jit_forward_graph->output()->abstract()->isa<abstract::AbstractAny>()) {
     op_run_info->op_grad_info->out_abs =
       PyNativeAlgo::Common::SetAbstractValueToAnyValue(op_run_info->op_grad_info->out_value->ToAbstract());

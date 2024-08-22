@@ -363,18 +363,20 @@ bool FuncGrad::KPynativeOp(const GradParamPtr &grad_param) {
   auto flatten_inputs = PyNativeAlgo::DataConvert::FlattenTensorSeqInValueSeq(grad_param->op_grad_info->input_value);
   ConstructParameterNodes(flatten_inputs);
   BackwardNodePtr fn = nullptr;
+  auto flatten_outputs = PyNativeAlgo::DataConvert::FlattenTensorSeqInValue(grad_param->op_grad_info->out_value);
+  size_t flatten_output_size = flatten_outputs.size();
   bool is_custom_prim =
     IsPrimitiveEquals(prim, prim::kPrimHookBackward) || IsPrimitiveEquals(prim, prim::kPrimCellBackwardHook);
   if (!is_custom_prim) {
     auto handle = expander::bprop::BpropIRBuilderFactory::Instance().GetBuilder(prim->name());
     if (handle != nullptr) {
-      fn = BuildFuncBackwardNode(prim, handle->func, flatten_inputs, grad_param->op_grad_info);
+      fn = BuildFuncBackwardNode(prim, handle->func, flatten_inputs, grad_param->op_grad_info, flatten_output_size);
     } else {
-      fn = BuildCustomBackwardNode(prim, flatten_inputs, grad_param->op_grad_info);
+      fn = BuildCustomBackwardNode(prim, flatten_inputs, grad_param->op_grad_info, flatten_output_size);
     }
   } else {
     PyNativeAlgo::AutoGrad::CheckRecomputeInputs(grad_param);
-    fn = BuildHookBackwardNode(prim, flatten_inputs, grad_param->op_grad_info);
+    fn = BuildHookBackwardNode(prim, flatten_inputs, grad_param->op_grad_info, flatten_output_size);
   }
   auto variable = std::make_shared<FuncVariable>(fn, false);
   if (isa<FakeBackwardNode>(fn)) {
@@ -384,8 +386,7 @@ bool FuncGrad::KPynativeOp(const GradParamPtr &grad_param) {
   variable->set_is_custom_op_variable(is_custom_prim);
 
   (void)variable_set_.insert(variable);
-  SetFlattenTensorGradMetaData(PyNativeAlgo::DataConvert::FlattenTensorSeqInValue(grad_param->op_grad_info->out_value),
-                               variable);
+  SetFlattenTensorGradMetaData(flatten_outputs, variable);
   MS_LOG(DEBUG) << "End update next edge for " << variable->ToString();
   return true;
 }
@@ -422,15 +423,16 @@ bool FuncGrad::KPynativeWithFProp(const GradParamPtr &grad_param) {
   if (!grad_by_value_) {
     MS_LOG(EXCEPTION) << "High grad not support pyboost call";
   }
-  auto fn = BuildGraphBackwardNode(grad_param);
+  auto flatten_outputs = PyNativeAlgo::DataConvert::FlattenTensorSeqInValue(grad_param->op_grad_info->out_value);
+  size_t flatten_output_size = flatten_outputs.size();
+  auto fn = BuildGraphBackwardNode(grad_param, flatten_output_size);
   auto variable = std::make_shared<FuncVariable>(fn, false);
   (void)variable_set_.insert(variable);
-  SetFlattenTensorGradMetaData(PyNativeAlgo::DataConvert::FlattenTensorSeqInValue(grad_param->op_grad_info->out_value),
-                               variable);
+  SetFlattenTensorGradMetaData(flatten_outputs, variable);
   return true;
 }
 
-BackwardNodePtr FuncGrad::BuildGraphBackwardNode(const GradParamPtr &grad_param) {
+BackwardNodePtr FuncGrad::BuildGraphBackwardNode(const GradParamPtr &grad_param, size_t flatten_output_size) {
   MS_EXCEPTION_IF_NULL(grad_param);
   if (ir_bprop_ == nullptr) {
     ir_bprop_ = std::make_unique<IrBprop>(std::make_shared<AdParam>(), device_target_, grad_by_value_);
@@ -448,9 +450,9 @@ BackwardNodePtr FuncGrad::BuildGraphBackwardNode(const GradParamPtr &grad_param)
                        std::back_inserter(input_args), [](const ValuePtr &v) { return v; });
   PyNativeAlgo::Common::DumpGraphIR("call_graph.ir", bprop_graph);
   auto fn = std::make_shared<GraphBackwardNode>(
-    bprop_graph->ToString(), bprop_graph, input_args, grad_param->op_grad_info->out_value,
-    grad_param->op_grad_info->output_size, grad_param->graph_cache_key, grad_param->is_control_flow,
-    grad_param->is_jit_graph, grad_param->use_dynamic_shape_process, grad_param->jit_out_has_dict);
+    bprop_graph->ToString(), bprop_graph, input_args, grad_param->op_grad_info->out_value, flatten_output_size,
+    grad_param->graph_cache_key, grad_param->is_control_flow, grad_param->is_jit_graph,
+    grad_param->use_dynamic_shape_process, grad_param->jit_out_has_dict);
   auto flatten_inputs = PyNativeAlgo::DataConvert::FlattenTensorSeqInValueSeq(grad_param->op_grad_info->input_value);
   ConstructParameterNodes(flatten_inputs);
   fn->UpdateNextEdges(flatten_inputs);
@@ -568,18 +570,19 @@ void FuncGrad::ConstructParameterNodes(const ValuePtrList &inputs) {
 }
 
 BackwardNodePtr FuncGrad::BuildFuncBackwardNode(const PrimitivePtr &prim, const expander::bprop::BpropBuilderFunc &func,
-                                                const ValuePtrList &flatten_inputs, const OpGradInfoPtr &op_grad_info) {
+                                                const ValuePtrList &flatten_inputs, const OpGradInfoPtr &op_grad_info,
+                                                size_t flatten_output_size) {
   PyNativeAlgo::AutoGrad::CheckAndSetAbstract(op_grad_info);
   auto emitter = std::make_shared<FuncBuilder>(prim->name(), device_target_, nullptr);
   auto node_inputs = GenerateNodeInputs(op_grad_info, emitter);
-  auto fn = std::make_shared<FuncBackwardNode>(prim->name(), func, emitter, prim->attrs(), node_inputs,
-                                               op_grad_info->output_size);
+  auto fn =
+    std::make_shared<FuncBackwardNode>(prim->name(), func, emitter, prim->attrs(), node_inputs, flatten_output_size);
   fn->UpdateNextEdges(flatten_inputs);
   return fn;
 }
 
 BackwardNodePtr FuncGrad::BuildCustomBackwardNode(const PrimitivePtr &prim, const ValuePtrList &flatten_inputs,
-                                                  const OpGradInfoPtr &op_grad_info) {
+                                                  const OpGradInfoPtr &op_grad_info, size_t flatten_output_size) {
   MS_EXCEPTION_IF_NULL(prim);
   MS_LOG(DEBUG) << "Try build custom bprop: " << prim->name();
   {
@@ -587,7 +590,7 @@ BackwardNodePtr FuncGrad::BuildCustomBackwardNode(const PrimitivePtr &prim, cons
     auto prim_py = prim->cast<PrimitivePyPtr>();
     if (prim_py == nullptr) {
       MS_LOG(DEBUG) << "Prim is not PrimitivePy, can not find python bprop";
-      return BuildFakeBackwardNode(prim, flatten_inputs, op_grad_info);
+      return BuildFakeBackwardNode(prim, flatten_inputs, op_grad_info, flatten_output_size);
     }
     py::function fn = prim_py->GetBpropFunction();
     if (py::isinstance<py::none>(fn)) {
@@ -595,28 +598,28 @@ BackwardNodePtr FuncGrad::BuildCustomBackwardNode(const PrimitivePtr &prim, cons
     }
     if (!fn || py::isinstance<py::none>(fn)) {
       MS_LOG(INFO) << "Can not find bprop function for " << prim->name() << ". fn: " << ConvertPyObjToString(fn);
-      return BuildFakeBackwardNode(prim, flatten_inputs, op_grad_info);
+      return BuildFakeBackwardNode(prim, flatten_inputs, op_grad_info, flatten_output_size);
     }
     (void)prim_py->SetHookFn(fn, HookType::kCustomOpBprop);
   }
-  return BuildHookBackwardNode(prim, flatten_inputs, op_grad_info);
+  return BuildHookBackwardNode(prim, flatten_inputs, op_grad_info, flatten_output_size);
 }
 
 BackwardNodePtr FuncGrad::BuildHookBackwardNode(const PrimitivePtr &prim, const ValuePtrList &flatten_inputs,
-                                                const OpGradInfoPtr &op_grad_info) {
+                                                const OpGradInfoPtr &op_grad_info, size_t flatten_output_size) {
   MS_EXCEPTION_IF_NULL(prim);
   auto bprop_cut = PyNativeAlgo::AutoGrad::BuildBpropCutPrim(prim, op_grad_info->is_need_recompute);
   VectorRef args = GeneratePythonArgs(op_grad_info);
-  auto fn = std::make_shared<HookBackwardNode>(prim->name(), bprop_cut, std::move(args), op_grad_info->output_size,
+  auto fn = std::make_shared<HookBackwardNode>(prim->name(), bprop_cut, std::move(args), flatten_output_size,
                                                op_grad_info->out_abs);
   fn->UpdateNextEdges(flatten_inputs);
   return fn;
 }
 
 BackwardNodePtr FuncGrad::BuildFakeBackwardNode(const PrimitivePtr &prim, const ValuePtrList &flatten_inputs,
-                                                const OpGradInfoPtr &op_grad_info) {
+                                                const OpGradInfoPtr &op_grad_info, size_t flatten_output_size) {
   MS_EXCEPTION_IF_NULL(prim);
-  auto fn = std::make_shared<FakeBackwardNode>(prim->name(), op_grad_info->output_size);
+  auto fn = std::make_shared<FakeBackwardNode>(prim->name(), flatten_output_size);
   fn->UpdateNextEdges(flatten_inputs);
   return fn;
 }

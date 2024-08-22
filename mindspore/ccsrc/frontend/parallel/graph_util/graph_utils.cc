@@ -212,14 +212,7 @@ CNodePtr CreateSplit(const std::vector<AnfNodePtr> &inputs, const FuncGraphPtr &
   return split;
 }
 
-CNodePtr CreateCast(const AnfNodePtr &cast_input, const ValueNodePtr &dest_type, const FuncGraphPtr &func_graph) {
-  MS_EXCEPTION_IF_NULL(func_graph);
-  auto cast_prim = NewValueNode(prim::kPrimScalarCast);
-  auto cast = func_graph->NewCNode({cast_prim, cast_input, dest_type});
-  return cast;
-}
-
-AnfNodePtr CreateDiv(const AnfNodePtr &input_node, int64_t divisor, const FuncGraphPtr &func_graph, bool to_long,
+AnfNodePtr CreateDiv(const AnfNodePtr &input_node, int64_t divisor, const FuncGraphPtr &func_graph,
                      const std::string &inst_name) {
   MS_EXCEPTION_IF_NULL(input_node);
   MS_EXCEPTION_IF_NULL(func_graph);
@@ -236,15 +229,11 @@ AnfNodePtr CreateDiv(const AnfNodePtr &input_node, int64_t divisor, const FuncGr
   inputs[INDEX_ONE] = input_node;
   inputs[INDEX_TWO] = CreatInt64Imm(divisor);
   auto div = func_graph->NewCNode(inputs);
-  if (to_long) {
-    auto type_id = NewValueNode(MakeValue(static_cast<int64_t>(kInt64->type_id())));
-    return CreateCast(div, type_id, func_graph);
-  }
   return div;
 }
 
 CNodePtr CreateMul(const AnfNodePtr &input_node, const int64_t factor, const FuncGraphPtr &func_graph,
-                   bool to_long = false, const std::string &inst_name = "") {
+                   const std::string &inst_name = "") {
   MS_EXCEPTION_IF_NULL(input_node);
   MS_EXCEPTION_IF_NULL(func_graph);
   MS_EXCEPTION_IF_ZERO("mul_factor", factor);
@@ -257,10 +246,6 @@ CNodePtr CreateMul(const AnfNodePtr &input_node, const int64_t factor, const Fun
   inputs[INDEX_ONE] = input_node;
   inputs[INDEX_TWO] = CreatInt64Imm(factor);
   auto mul = func_graph->NewCNode(inputs);
-  if (to_long) {
-    auto type_id = NewValueNode(MakeValue(static_cast<int64_t>(kInt64->type_id())));
-    return CreateCast(mul, type_id, func_graph);
-  }
   return mul;
 }
 
@@ -325,13 +310,13 @@ void MatchingAccordingToPrime(const Shape &shape_vec, const AssembledDynamicDims
                      << ", dim=" << dim;
         if (dim_value_in_graph > dim) {
           int64_t divisor = dim_value_in_graph / dim;
-          AnfNodePtr div_op = CreateDiv(tuple_getitem, divisor, func_graph, false, instance_name);
+          AnfNodePtr div_op = CreateDiv(tuple_getitem, divisor, func_graph, instance_name);
           (void)shape_input->emplace_back(div_op);
           found = true;
           break;
         } else if (dim_value_in_graph < dim) {
           int64_t divisor = dim / dim_value_in_graph;
-          AnfNodePtr mul_op = CreateMul(tuple_getitem, divisor, func_graph, false, instance_name);
+          AnfNodePtr mul_op = CreateMul(tuple_getitem, divisor, func_graph, instance_name);
           (void)shape_input->emplace_back(mul_op);
           found = true;
           break;
@@ -381,14 +366,14 @@ void MatchingAccordingToIndex(const Shape &shape_vec, const AssembledDynamicDims
       if (dim_value_in_graph > dim) {
         int64_t divisor = dim_value_in_graph / dim;
         AnfNodePtr div_op =
-          CreateDiv(tuple_getitem_input_pair.second, divisor, func_graph, true, "assemble_dynamic_shape_op");
+          CreateDiv(tuple_getitem_input_pair.second, divisor, func_graph, "assemble_dynamic_shape_op");
         (void)shape_input->emplace_back(div_op);
         continue;
       }
       if (dim_value_in_graph < dim) {
         int64_t divisor = dim / dim_value_in_graph;
         AnfNodePtr mul_op =
-          CreateMul(tuple_getitem_input_pair.second, divisor, func_graph, true, "assemble_dynamic_shape_op");
+          CreateMul(tuple_getitem_input_pair.second, divisor, func_graph, "assemble_dynamic_shape_op");
         (void)shape_input->emplace_back(mul_op);
         continue;
       }
@@ -639,7 +624,8 @@ Status ConvertReshapeInputs(const OperatorParams &params,
     (void)new_node_input->emplace_back(val);
     return SUCCESS;
   }
-  if (use_origin_shape && tensor_redistribution_from_cnode->original_reshape_shape() != nullptr) {
+  if ((use_origin_shape || tensor_redistribution_from_cnode->IsMultiDynamicAxisReshape()) &&
+      tensor_redistribution_from_cnode->original_reshape_shape() != nullptr) {
     // Only reshape in user's code should be in this branch.
     // original_reshape_shape could be ValueNode, MakeTuple, Shape.
     (void)new_node_input->emplace_back(tensor_redistribution_from_cnode->original_reshape_shape());
@@ -919,143 +905,6 @@ CNodePtr InsertNode(const Operator &op, const CNodePtr &node, size_t index, cons
   return new_node;
 }
 
-bool IsRootNode(const CNodePtr &cnode, const AnfNodePtr &root_node) {
-  // cnode is TupleGetItem.
-  // if first input of op is shape, and the shape first input is the same with reshape.
-  // sometimes the reshape first input maybe is not same with shape first input.
-  auto first_input_of_tuple_getitem = cnode->input(1)->cast<CNodePtr>();
-  if (!IsTargetOp(first_input_of_tuple_getitem, SHAPE_OP)) {
-    return false;
-  }
-  auto first_input_of_shape = first_input_of_tuple_getitem->input(1);
-  if (first_input_of_shape == root_node) {
-    return True;
-  } else {
-    MS_LOG(WARNING) << "Shape's first input is not same with root node.";
-  }
-  return True;
-}
-
-std::pair<CNodePtr, int64_t> FindPreviousNodeAndSkipTupleGetItem(const CNodePtr &current, int32_t depth = 0) {
-  // current is TupleGetItem
-  if (depth == MAX_RECURSIVE_DEPTH) {
-    return {nullptr, -1};
-  }
-  auto prev = current->input(1);
-  auto cnode = prev->cast<CNodePtr>();
-  if (IsTupleGetItem(cnode)) {
-    return FindPreviousNodeAndSkipTupleGetItem(cnode, depth + 1);
-  }
-  int64_t index = GetTupleGetItemIndex(current);
-  return {cnode, index};
-}
-
-bool ModifyGraph(const CNodePtr &current_cnode, const CNodePtr &previous_tuple_getitem_cnode, size_t input_index) {
-  /**
-   * This function must be called after IsRootNode() called and IsRootNode() return True.
-   *
-   * TupleGetItem(tensor, index)
-   * ->
-   * ScalarMul(scalar)
-   * ->
-   * current_cnode
-   */
-  int64_t index = GetTupleGetItemIndex(previous_tuple_getitem_cnode);
-  auto root_node = previous_tuple_getitem_cnode->input(1)->cast<CNodePtr>()->input(1)->cast<CNodePtr>();
-  if (IsTupleGetItem(root_node)) {
-    // keep search the previous node.
-    auto output = FindPreviousNodeAndSkipTupleGetItem(root_node);
-    root_node = output.first;
-  }
-  // Get tensor layout from root_node.
-  if (!root_node->has_user_data<OperatorInfo>()) {
-    // Default/TupleGetItem-op0 has no operator info.
-    MS_LOG(INFO) << root_node->fullname_with_scope() << " has no operator info.";
-    return True;
-  }
-  OperatorInfoPtr distribute_operator = GetDistributeOperator(root_node);
-  MS_EXCEPTION_IF_NULL(distribute_operator);
-  std::vector<TensorInfo> root_tensor_info = distribute_operator->outputs_tensor_info();
-  if (root_tensor_info.size() != 1) {
-    MS_LOG(ERROR) << "Outputs number cannot be larger than 1.";
-    return False;
-  }
-  TensorInfo tensor_info = root_tensor_info[0];
-  Map tensor_map = tensor_info.tensor_layout().tensor_map();
-  Arrangement dev_arr = tensor_info.tensor_layout().device_arrangement();
-  if (LongToSize(index) >= tensor_map.GetDimSize()) {
-    MS_LOG(ERROR) << "Index cannot be larger than tensor_map size.";
-    return False;
-  }
-  int64_t scalar = dev_arr.GetDimByReverseIdx(tensor_map.GetDimByIdx(index));
-  // Create ValueNode for scalar->Create Mul Cnode->Modify inputs and edges
-  Operator scalar_mul_op = CreateScalarMulOp(scalar);
-  InsertNode(scalar_mul_op,                 // to be inserted op
-             current_cnode,                 // current node
-             input_index,                   // input index of current_node
-             previous_tuple_getitem_cnode,  // insert scalar_mul_op between previous and current
-             current_cnode->func_graph(),   // current func_graph
-             "instance_name", "", nullptr);
-  MS_LOG(DEBUG) << tensor_info.tensor_layout().ToString() << ", " << previous_tuple_getitem_cnode->fullname_with_scope()
-                << " index: " << index << ", scalar: " << scalar;
-  return True;
-}
-
-Status UpdateShapeToRootPath(const CNodePtr &cnode, const AnfNodePtr &root_node, int32_t depth = 0) {
-  MS_EXCEPTION_IF_NULL(cnode);
-  if (depth == MAX_RECURSIVE_DEPTH) {
-    return REACH_MAX_RECURSIVE_DEPTH;
-  }
-  auto value_node = cnode->input(0)->cast<ValueNodePtr>();
-  auto prim = value_node->value()->cast<PrimitivePtr>();
-  for (size_t i = 1; i < cnode->inputs().size(); ++i) {
-    auto input = cnode->input(i)->cast<CNodePtr>();
-    if (input == nullptr) {
-      continue;
-    }
-    if (IsTupleGetItem(input) && IsRootNode(input, root_node)) {
-      // Modify this graph path.
-      if (!ModifyGraph(cnode, input, i)) {
-        MS_LOG(ERROR) << "Failed to modify graph.";
-        return Status::FAILED;
-      }
-      return Status::SUCCESS;
-    }
-    // Keep traceback.
-    Status ret = UpdateShapeToRootPath(input, root_node, depth + 1);
-    if (ret != Status::SUCCESS) {
-      return Status::FAILED;
-    }
-  }
-  return Status::SUCCESS;
-}
-
-Status UpdatePartialShape(const CNodePtr &cnode) {
-  // Traceback shape_of_reshape input of Reshape Op.
-  MS_EXCEPTION_IF_NULL(cnode);
-  MS_EXCEPTION_IF_CHECK_FAIL(cnode->inputs().size() == RESHAPE_INPUT_SIZE,
-                             "Reshape op must have " + std::to_string(RESHAPE_INPUT_SIZE) + " inputs.");
-  // Step1. Get second input of Reshape op which represent shape_of_reshape.
-  // Step2. Visit shape_of_reshape and trace back to dynamic axis.
-  auto input_of_reshape = cnode->input(RESHAPE_INPUT_SIZE - 2);
-  auto shape_of_reshape = cnode->input(RESHAPE_INPUT_SIZE - 1);
-  auto shape_cnode = shape_of_reshape->cast<CNodePtr>();  // MakeTuple
-  if (shape_cnode == nullptr) {
-    return Status::SUCCESS;
-  }
-  for (const auto &input : shape_cnode->inputs()) {
-    auto cnode_input = input->cast<CNodePtr>();
-    if (cnode_input == nullptr) {
-      continue;
-    }
-    if (UpdateShapeToRootPath(cnode_input, input_of_reshape) != Status::SUCCESS) {
-      MS_LOG(ERROR) << "Update " << cnode->fullname_with_scope() << " previous shape failed.";
-      return Status::FAILED;
-    }
-  }
-  return Status::SUCCESS;
-}
-
 CNodePtr FindPreviousCareNode(const CNodePtr &current, int32_t depth = 0) {
   if (depth == MAX_RECURSIVE_DEPTH) {
     return nullptr;
@@ -1285,75 +1134,6 @@ Status UpdateShapeNode(const CNodePtr &cnode, const FuncGraphPtr &func_graph) {
         UpdateTupleGetItemShapeValue(shape_user, tensor_info, func_graph) != Status::SUCCESS) {
       MS_LOG(EXCEPTION) << "Update tuple get item shape value failed.";
     }
-  }
-  return Status::SUCCESS;
-}
-
-Status UpdateMakeTupleShapeValue(const CNodePtr &make_tuple, const std::map<size_t, int64_t> &factor_mapping,
-                                 const FuncGraphPtr &func_graph) {
-  for (size_t i = 1; i < make_tuple->inputs().size(); ++i) {
-    if (factor_mapping.find(i - 1) == factor_mapping.end()) {
-      continue;
-    }
-    auto make_tuple_input = make_tuple->input(i);
-    if (make_tuple_input->isa<ValueNode>()) {
-      auto val_node = make_tuple_input->cast<ValueNodePtr>();
-      MS_EXCEPTION_IF_NULL(val_node->value());
-      auto dim_value = GetValue<int64_t>(val_node->value());
-      if (dim_value == -1) {
-        continue;
-      }
-    }
-    Operator scalar_div_op = CreateScalarDivOp(factor_mapping.at(i - 1));
-    // TODO(liuchongming): If make_tuple_input is mul op, then consider merge the two op.
-    auto div_cnode = InsertNode(scalar_div_op,     // to be inserted op
-                                make_tuple,        // current node
-                                i,                 // tuple_getitem_user[i] = scalar_div_op
-                                make_tuple_input,  // insert scalar_div_op between previous and current
-                                func_graph,        // current func_graph
-                                "segment_partial_shape", "", nullptr);
-    Operator cast_op = CreateScalarCastOp(kInt64);
-    (void)InsertNode(cast_op,     // to be inserted op
-                     make_tuple,  // current node
-                     i,           // tuple_getitem_user[i] = cast_op
-                     div_cnode,   // div_cnode->scalar_div_op->make_tuple
-                     func_graph,  // current func_graph
-                     "segment_partial_shape", "", nullptr);
-  }
-  return Status::SUCCESS;
-}
-
-Status SegmentEntireShapeToPartialForDynamic(const CNodePtr &reshape_node, const FuncGraphPtr &func_graph) {
-  MS_EXCEPTION_IF_NULL(reshape_node);
-  // reshape_node is Reshape node.
-  // Step1. Get reshape_node's user tensor layout.
-  // Step2. Shard reshape_node's second input (only for TupleGetItem).
-  auto tensor_redistribution = GetTensorRedistributionFromCNode(reshape_node);
-  if (tensor_redistribution == nullptr) {
-    MS_LOG(WARNING) << "Cannot find layout in " << reshape_node->fullname_with_scope();
-    return Status::FAILED;
-  }
-  if (!tensor_redistribution->is_dynamic_shape()) {
-    MS_LOG(INFO) << reshape_node->fullname_with_scope() << " is static shape.";
-    return Status::SUCCESS;
-  }
-  TensorLayout out_layout = tensor_redistribution->to_origin_no_assembled();
-  auto tensor_map = out_layout.tensor_map();
-  auto dev_mat = out_layout.device_arrangement();
-  std::map<size_t, int64_t> factor_mapping;
-  for (size_t i = 0; i < tensor_map.array().size(); ++i) {
-    if (tensor_map.GetDimByIdx(i) != -1) {
-      factor_mapping.insert({i, dev_mat.GetDimByReverseIdx(tensor_map.GetDimByIdx(i))});
-    }
-  }
-  auto shape_input = reshape_node->input(INDEX_TWO);
-  if (!shape_input->isa<CNode>()) {
-    MS_LOG(DEBUG) << "Reshape's second input is not a CNode.";
-    return Status::SUCCESS;
-  }
-  auto shape_input_cnode = shape_input->cast<CNodePtr>();
-  if (IsTargetOp(shape_input_cnode, MAKE_TUPLE)) {
-    UpdateMakeTupleShapeValue(shape_input_cnode, factor_mapping, func_graph);
   }
   return Status::SUCCESS;
 }

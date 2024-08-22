@@ -234,7 +234,7 @@ std::string GenerateIDForGraph(const std::vector<DeviceTensor *> &device_tensors
     }
     id = id + "index_" + std::to_string(index) + "_";
     const auto &device_tensor = device_tensors[index];
-    if (device_tensor == nullptr) {
+    if (device_tensor == nullptr || device_tensor->kernel_tensor() == nullptr) {
       MS_LOG(EXCEPTION) << "Empty device tensor index:" << index;
     }
     if (device_tensor->user_data() == nullptr) {

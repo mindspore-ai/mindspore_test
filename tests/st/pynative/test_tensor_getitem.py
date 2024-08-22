@@ -255,6 +255,7 @@ def test_item_by_none():
 
     with pytest.raises(ValueError):
         net(input_3d_ms)
+        _pynative_executor.sync()
 
 
 class TensorItemByItem(Cell):
@@ -287,15 +288,19 @@ def test_item_by_int():
 
     with pytest.raises(TypeError):
         net(input_1d_ms, index_np_2)
+        _pynative_executor.sync()
 
     with pytest.raises(IndexError):
         net(input_1d_ms, index_np_3)
+        _pynative_executor.sync()
 
     with pytest.raises(TypeError):
         net(input_3d_ms, index_np_2)
+        _pynative_executor.sync()
 
     with pytest.raises(IndexError):
         net(input_3d_ms, index_np_4)
+        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['cpu_linux'],
@@ -322,15 +327,19 @@ def test_item_by_tuple():
 
     with pytest.raises(ValueError):
         net(input_1d_ms, index_np_2)
+        _pynative_executor.sync()
 
     with pytest.raises(ValueError):
         net(input_3d_ms, index_np_2)
+        _pynative_executor.sync()
 
     with pytest.raises(IndexError):
         net(input_3d_ms, index_np_4)
+        _pynative_executor.sync()
 
     with pytest.raises(ValueError):
         net(input_3d_ms, index_np_5)
+        _pynative_executor.sync()
 
 
 class TensorSetItemByMixedTensors_0(Cell):
@@ -453,6 +462,7 @@ def test_getitem_by_mixed_tensor_exception():
     net1 = TensorGetItemByMixedTensorsIndexError()
     with pytest.raises(ValueError):
         net1(input_ms, index_0, index_1)
+        _pynative_executor.sync()
 
 
 class TensorSetItemByOneTensorWithNumber(Cell):
@@ -666,6 +676,7 @@ def test_setitem_by_tensors_with_tensor_error():
     net = TensorSetItemByTensorsWithTensorNumberError()
     with pytest.raises(IndexError):
         net(index_0, index_1, index_2, index_3, value)
+        _pynative_executor.sync()
 
 
 class TensorSetItemByTensorsWithTupleOfNumber(Cell):
@@ -765,6 +776,7 @@ def test_setitem_by_tensor_with_tuple_of_tensor_error():
     value_1_ms = Tensor(value_1, mstype.float32)
     with pytest.raises(ValueError):
         net(index_0_ms, index_1_ms, index_2_ms, value_0_ms, value_1_ms)
+        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['cpu_linux'],
@@ -1142,27 +1154,37 @@ def test_tensor_assign_bool_index_exception():
     net2 = TensorAssignWithBoolTensorIndex2()
     with pytest.raises(ValueError):
         net1(Ta, Td, Tc, u_tensor)
+        _pynative_executor.sync()
     with pytest.raises(IndexError):
         net1(Ta, u_tensor, Tc, u_tensor)
+        _pynative_executor.sync()
     with pytest.raises(ValueError):
         net1(Ta, Tb, Td, u_tensor)
+        _pynative_executor.sync()
     with pytest.raises(IndexError):
         net1(Ta, Tb, Ta, u_tensor)
+        _pynative_executor.sync()
     with pytest.raises(ValueError):
         net1(Ta, Tb, Tc, u_tensor_error)
+        _pynative_executor.sync()
     # net1(Ta, u_tensor, Tc, u_tensor_error, u_scalar)
     with pytest.raises(ValueError):
         net2(Ta, u_tensor_error)
+        _pynative_executor.sync()
     net3 = TensorAssignWithBoolTensorIndexError()
     with pytest.raises(ValueError):
         net3(Ta, Tb, Tc, u_tensor)
+        _pynative_executor.sync()
     with pytest.raises(ValueError):
         net3(Ta, Tb, Tc, u_scalar)
+        _pynative_executor.sync()
     net4 = TensorAssignWithBoolTensorIndex2Error()
     with pytest.raises(ValueError):
         net4(Ta, u_tensor)
+        _pynative_executor.sync()
     with pytest.raises(ValueError):
         net4(Ta, u_scalar)
+        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['cpu_linux'],
@@ -1183,6 +1205,7 @@ def test_tensor_slice_reduce_out_of_bounds_neg():
     net = NetWork()
     with pytest.raises(IndexError) as ex:
         net(input_tensor)
+        _pynative_executor.sync()
     assert "index -7 is out of bounds for dimension with size 6" in str(ex.value)
 
 
@@ -1204,6 +1227,7 @@ def test_tensor_slice_reduce_out_of_bounds_positive():
     net = NetWork()
     with pytest.raises(IndexError) as ex:
         net(input_tensor)
+        _pynative_executor.sync()
     assert "index 6 is out of bounds for dimension with size 6" in str(ex.value)
 
 

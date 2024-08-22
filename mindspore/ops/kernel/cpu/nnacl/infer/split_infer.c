@@ -34,11 +34,13 @@ int UpdateSplitSize(const TensorC *const *inputs, size_t inputs_size, SplitParam
   }
   if (param->split_count_ == 0) {
     const TensorC *input = inputs[0];
-    if (input->shape_[param->split_dim_] % param->num_split_ != 0) {
-      return NNACL_ERR;
-    }
+    int32_t split_chunk_size = UP_DIV(input->shape_[param->split_dim_], param->num_split_);
     for (int i = 0; i < param->num_split_; ++i) {
-      param->split_sizes_[i] = input->shape_[param->split_dim_] / param->num_split_;
+      if (i != param->num_split_ - 1) {
+        param->split_sizes_[i] = split_chunk_size;
+      } else {
+        param->split_sizes_[i] = input->shape_[param->split_dim_] - split_chunk_size * i;
+      }
     }
   }
   return NNACL_OK;

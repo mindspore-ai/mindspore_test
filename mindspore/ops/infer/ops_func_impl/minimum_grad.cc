@@ -33,11 +33,9 @@ TypePtr MinimumGradFuncImpl::InferType(const PrimitivePtr &primitive,
                                        const std::vector<AbstractBasePtr> &input_args) const {
   auto x1_type = input_args[kInputIndex0]->GetType();
   auto x2_type = input_args[kInputIndex1]->GetType();
-  MS_EXCEPTION_IF_NULL(x1_type);
-  MS_EXCEPTION_IF_NULL(x2_type);
   std::vector<TypePtr> type_tuple;
-  type_tuple.push_back(x1_type->Clone());
-  type_tuple.push_back(x2_type->Clone());
+  type_tuple.push_back(x1_type);
+  type_tuple.push_back(x2_type);
   (void)abstract::CheckDtypeSame(primitive->name(), x1_type, x2_type);
   (void)CheckAndConvertUtils::CheckTensorTypeValid("x1", x1_type, common_valid_types, primitive->name());
   return std::make_shared<Tuple>(type_tuple);

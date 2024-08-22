@@ -9,7 +9,7 @@ mindspore.numpy.unwrap
         对于相邻元素之差的绝对值与pi的差值很小时，由于舍入误差的差异，解卷绕可能会与NumPy不同。
 
     参数：
-        - **p** (Union[int, float, bool, list, tuple, Tensor) - 输入数组。
+        - **p** (Union[int, float, bool, list, tuple, Tensor]) - 输入数组。
         - **discont** (float, 可选) - 值之间的最大不连续性，默认值： ``pi`` 。
         - **axis** (int, 可选) - 解卷绕操作所沿的轴。 默认值： ``-1`` 。
         
@@ -17,4 +17,4 @@ mindspore.numpy.unwrap
         Tensor。
 
     异常：
-        **ValueError** - 如果轴超出范围。
+        - **ValueError** - 如果轴超出范围。

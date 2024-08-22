@@ -1,7 +1,7 @@
 ﻿mindspore.dataset.GeneratorDataset
 ===================================
 
-.. py:class:: mindspore.dataset.GeneratorDataset(source, column_names=None, column_types=None, schema=None, num_samples=None, num_parallel_workers=1, shuffle=None, sampler=None, num_shards=None, shard_id=None, python_multiprocessing=True, max_rowsize=6)
+.. py:class:: mindspore.dataset.GeneratorDataset(source, column_names=None, column_types=None, schema=None, num_samples=None, num_parallel_workers=1, shuffle=None, sampler=None, num_shards=None, shard_id=None, python_multiprocessing=True, max_rowsize=None)
 
     自定义Python数据源，通过迭代该数据源构造数据集。生成的数据集的列名和列类型取决于用户定义的Python数据源。
 

@@ -89,7 +89,6 @@ struct Common {
   static void FreeFuncGraphForwardNodes(const FuncGraphPtr &func_graph);
   static tensor::BaseTensorPtr ConvertToContiguousTensor(const tensor::BaseTensorPtr &tensor, bool requires_grad);
   static ValuePtr ConvertToContiguousValue(const ValuePtr &v, bool requires_grad);
-  static size_t GetValueSize(const ValuePtr &v);
   static ValuePtr CreateTensorByConstantValue(const ValuePtr &value);
 
   template <typename T>

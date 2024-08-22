@@ -20,6 +20,8 @@ namespace mindspore {
 namespace symshape {
 SymbolPtr OperationBuilder::BuildShape(const PrimitivePtr &prim, const AbstractBasePtrList &input_args,
                                        const AbstractBasePtr &out) {
+  MS_EXCEPTION_IF_NULL(prim);
+  MS_EXCEPTION_IF_NULL(out);
   is_building_shape_ = true;
   prim_ = prim;
   input_args_ = &input_args;
@@ -32,6 +34,8 @@ SymbolPtr OperationBuilder::BuildShape(const PrimitivePtr &prim, const AbstractB
 
 SymbolPtr OperationBuilder::BuildValue(const PrimitivePtr &prim, const AbstractBasePtrList &input_args,
                                        const AbstractBasePtr &out) {
+  MS_EXCEPTION_IF_NULL(prim);
+  MS_EXCEPTION_IF_NULL(out);
   is_building_shape_ = false;
   prim_ = prim;
   input_args_ = &input_args;
@@ -43,6 +47,7 @@ SymbolPtr OperationBuilder::BuildValue(const PrimitivePtr &prim, const AbstractB
 }
 
 SymbolPtr OperationBuilder::GetShape(const AbstractBasePtr &abs) const {
+  MS_EXCEPTION_IF_NULL(abs);
   auto real_shape = abs->GetSymbolicShape();
   if (real_shape != nullptr) {
     return real_shape;
@@ -56,6 +61,7 @@ SymbolPtr OperationBuilder::GetShape(const AbstractBasePtr &abs) const {
 }
 
 SymbolPtr OperationBuilder::GetValue(const AbstractBasePtr &abs) const {
+  MS_EXCEPTION_IF_NULL(abs);
   SymbolPtr smbl = abs->GetSymbolicValue();
   if (smbl != nullptr) {
     return smbl;

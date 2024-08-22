@@ -111,6 +111,7 @@ abstract::AbstractSequencePtr GenerateAbstractSequence(const BaseShapePtr &base_
   for (size_t it = 0; it < shape_seq->size(); ++it) {
     auto element_shape = (*shape_seq)[it];
     auto element_type = type_elements[it];
+    MS_EXCEPTION_IF_NULL(element_type);
     bool is_external = element_type->isa<External>();
     bool is_tensor_or_scalar = element_type->isa<Number>() || element_type->isa<TensorType>();
     if (!is_external && is_tensor_or_scalar) {

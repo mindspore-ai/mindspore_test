@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <utility>
 #include <memory>
+#include <map>
 #include "mindspore/core/symbolic_shape/symbol_info.h"
 #include "ir/kernel_tensor_value.h"
 #include "mindspore/core/utils/check_convert_utils.h"
@@ -27,11 +28,12 @@ namespace mindspore {
 namespace symshape {
 namespace {
 SymbolPtr GenValueByTensorShape(const ShapeVector &shape, const TypePtr &type_ptr) {
+  MS_EXCEPTION_IF_NULL(type_ptr);
   if (IsDynamic(shape)) {
     return ListSymbol::Make();
   }
   if (shape.size() > 1) {
-    MS_LOG(WARNING) << "Symbolic value only support 0-D or 1-D value, but got the shape: " << shape;
+    MS_LOG(INFO) << "Symbolic value only support 0-D or 1-D value, but got the shape: " << shape;
     return ListSymbol::Make();
   }
   if (shape.size() == 0) {
@@ -55,6 +57,8 @@ SymbolPtr GenValueByTensorShape(const ShapeVector &shape, const TypePtr &type_pt
 }
 
 SymbolPtr GenValueByShape(const BaseShapePtr &baseshape, const TypePtr &type_ptr) {
+  MS_EXCEPTION_IF_NULL(baseshape);
+  MS_EXCEPTION_IF_NULL(type_ptr);
   if (baseshape->isa<abstract::NoShape>()) {
     return GenValueByTensorShape({}, type_ptr);
   }
@@ -113,6 +117,7 @@ SymbolPtr KernelTensorValueToSymbol(const ValuePtr &v, bool to_scalar) {
 }
 
 SymbolPtr ConstValueToSymbol(const ValuePtr &v, bool to_scalar) {
+  MS_EXCEPTION_IF_NULL(v);
   if (v->isa<KernelTensorValue>()) {
     return KernelTensorValueToSymbol(v, to_scalar);
   }
@@ -148,11 +153,14 @@ SymbolPtr ConstValueToSymbol(const ValuePtr &v, bool to_scalar) {
 }
 
 SymbolPtr BuildSymbolicValue(const AbstractBasePtr &abstract) {
+  MS_EXCEPTION_IF_NULL(abstract);
   auto value_ptr = abstract->GetValue();
+  MS_EXCEPTION_IF_NULL(value_ptr);
   if (value_ptr->isa<ValueAny>()) {
     return GenValueByShape(abstract->GetShape(), abstract->GetType());
   }
   auto shape = abstract->GetShape();
+  MS_EXCEPTION_IF_NULL(shape);
   if (shape->isa<abstract::TensorShape>() && shape->cast_ptr<abstract::TensorShape>()->shape().empty()) {
     return ConstValueToSymbol(value_ptr, true);
   }
@@ -160,15 +168,14 @@ SymbolPtr BuildSymbolicValue(const AbstractBasePtr &abstract) {
 }
 
 ShapeVector ToShape(const Symbol *symbol) {
+  MS_EXCEPTION_IF_NULL(symbol);
   if (!symbol->HasData()) {
     return {abstract::Shape::kShapeRankAny};
   }
   auto *list = symbol->as<ListSymbol>();
-  MS_EXCEPTION_IF_NULL(list);
   ShapeVector shape(list->size());
   (void)std::transform(list->symbols().cbegin(), list->symbols().cend(), shape.begin(), [](const SymbolPtr &s) {
     auto int_smbl = s->as<IntSymbol>();
-    MS_EXCEPTION_IF_NULL(int_smbl);
     if (!int_smbl->HasData()) {
       return abstract::Shape::kShapeDimAny;
     }
@@ -198,9 +205,13 @@ SymbolPtr IntValues2Symbol(const std::vector<int64_t> &shape, const OpPtr &op) {
   return ListSymbol::Make(std::move(result), op);
 }
 
-int64_t AsInt(const Symbol *s) { return s->as<IntSymbol>()->value(); }
+int64_t AsInt(const Symbol *s) {
+  MS_EXCEPTION_IF_NULL(s);
+  return s->as<IntSymbol>()->value();
+}
 
 std::set<int64_t> NormAxis(const ListSymbol *axis, size_t rank) {
+  MS_EXCEPTION_IF_NULL(axis);
   std::set<int64_t> result;
   for (auto &item : axis->symbols()) {
     result.insert(NormAxis(AsInt(item), rank));
@@ -218,6 +229,7 @@ std::string SymbolListToStr(const SymbolPtrList &slist, const std::string &pre, 
     } else {
       oss << ", ";
     }
+    MS_EXCEPTION_IF_NULL(s);
     oss << (raw_str ? s->ToRawString() : s->ToString());
   }
   oss << post;

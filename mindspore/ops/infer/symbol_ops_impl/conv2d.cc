@@ -127,8 +127,7 @@ SymbolPtr Conv2D::Eval() {
     out_w =
       CalcForPadding(x->item(w_axis), kernel->item(kIndex1), padding_w, stride->item(kIndex1), dilation->item(kIndex1));
   } else {
-    MS_LOG(DEBUG) << "The pad_mode " << pad_mode << " is not supported now.";
-    return nullptr;
+    MS_EXCEPTION(NotSupportError) << "The pad_mode " << pad_mode << " is not supported.";
   }
   DoNotEvalOnRun();
   return GenOutput(out_n, out_h, out_w);
@@ -139,12 +138,19 @@ REG_SYMBOL_OP_BUILDER("Conv2D")
   .SetShapeFunc([](OperationBuilder *b) -> SymbolPtr {
     auto x = b->GetInputShape(kIndex0);
     auto out_channel = b->GetInputOrAttr(kIndex3, "out_channel");
+    MS_EXCEPTION_IF_NULL(out_channel);
     auto kernel_size = b->GetInputOrAttr(kIndex4, "kernel_size");
+    MS_EXCEPTION_IF_NULL(kernel_size);
     auto pad_mode = b->GetInputOrAttr(kIndex6, "pad_mode");
+    MS_EXCEPTION_IF_NULL(pad_mode);
     auto padding = b->GetInputOrAttr(kIndex7, "pad");
+    MS_EXCEPTION_IF_NULL(padding);
     auto stride = b->GetInputOrAttr(kIndex8, "stride");
+    MS_EXCEPTION_IF_NULL(stride);
     auto dilation = b->GetInputOrAttr(kIndex9, "dilation");
+    MS_EXCEPTION_IF_NULL(dilation);
     auto format = b->GetInputOrAttr(kIndex11, "format");
+    MS_EXCEPTION_IF_NULL(format);
     return b->Emit(std::make_shared<Conv2D>(x, out_channel, kernel_size, pad_mode, padding, stride, dilation, format));
   });
 }  // namespace ops

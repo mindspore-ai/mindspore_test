@@ -79,7 +79,8 @@ class TestCase():
         result = subprocess.run(command, shell=True, stderr=subprocess.STDOUT)
         assert result.returncode == 0
 
-    @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+    @arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level1', card_mark='onecard',
+              essential_mark='unessential')
     def test_custom_add_aclnn(self):
         """
         Feature: Custom op testcase

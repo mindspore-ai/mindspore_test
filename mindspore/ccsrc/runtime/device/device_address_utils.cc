@@ -156,6 +156,7 @@ void DeviceAddressUtils::CreateDeviceAddressByMapTensorNode(const DeviceContext 
                                                             size_t index) {
   MS_EXCEPTION_IF_NULL(node);
   const auto &abstract_base = AnfAlgo::GetNodeAbstractByIndex(node, index);
+  MS_EXCEPTION_IF_NULL(abstract_base);
   if (!abstract_base->isa<abstract::AbstractMapTensor>()) {
     MS_LOG(EXCEPTION) << "Parameter:" << node->DebugString() << " is not a map tensor type.";
   }
@@ -338,6 +339,7 @@ device::DeviceAddressPtrList DeviceAddressUtils::CreateDeviceAddressForTensorVal
 }
 
 mindspore::HashSet<mindspore::AnfNodePtr> FetchValueNodesNeedDevicePtr(const KernelGraphPtr &graph) {
+  MS_EXCEPTION_IF_NULL(graph);
   mindspore::HashSet<mindspore::AnfNodePtr> nodes;
   auto topo_nodes = TopoSort(graph->get_return());
   for (auto const &n : topo_nodes) {
@@ -428,6 +430,7 @@ void DeviceAddressUtils::CreateValueNodeDeviceAddress(const DeviceContext *devic
             continue;
           }
 #endif
+          MS_EXCEPTION_IF_NULL(address);
           address->UpdateFlag(device::kDeviceAddressFlagIgnoreDevicePtr);
           MS_LOG(DEBUG) << "Find node " << value_node->DebugString() << " has init args";
         }
@@ -591,6 +594,7 @@ size_t DeviceAddressUtils::GetTensorDeviceSize(const DeviceContext *device_conte
 
 vector<device::DeviceAddressPtr> DeviceAddressUtils::CreateGraphOutputDeviceAddress(
   const OpCompilerInfoPtr &op_compiler_info, const abstract::AbstractBasePtr &out_abstract, size_t stream_id) {
+  MS_EXCEPTION_IF_NULL(op_compiler_info);
   auto device_context = op_compiler_info->device_context_;
   const auto &output_edges = op_compiler_info->simple_graph_->outputs_;
   size_t output_num = output_edges.size();
@@ -600,6 +604,7 @@ vector<device::DeviceAddressPtr> DeviceAddressUtils::CreateGraphOutputDeviceAddr
 
   for (size_t i = 0; i < output_num; ++i) {
     const auto &edge = output_edges[i];
+    MS_EXCEPTION_IF_NULL(edge);
     const auto &address = edge->address_;
     if (address != nullptr) {
       MS_LOG(DEBUG) << "Already have output device address for ref output";
@@ -611,8 +616,8 @@ vector<device::DeviceAddressPtr> DeviceAddressUtils::CreateGraphOutputDeviceAddr
     const auto &cache_output_address = edge->origin_address_;
 
     auto real_abstract = out_abstract;
-    if (out_abstract->isa<abstract::AbstractTuple>()) {
-      auto abstract_tuple = out_abstract->cast<abstract::AbstractTuplePtr>();
+    if (out_abstract->isa<abstract::AbstractSequence>()) {
+      auto abstract_tuple = out_abstract->cast<abstract::AbstractSequencePtr>();
       if (i >= abstract_tuple->elements().size()) {
         MS_LOG(EXCEPTION) << "abstract_tuple size is " << abstract_tuple->elements().size() << " ,but get index is"
                           << i;
@@ -1340,6 +1345,7 @@ void DeviceAddressUtils::GetCrossStreamAddressInfoFromInput(
   MS_EXCEPTION_IF_NULL(device_address);
   if (op_stream_id != device_address->stream_id()) {
     // Device address is cross stream.
+    MS_EXCEPTION_IF_NULL(cross_stream_addresses);
     (void)cross_stream_addresses->emplace_back(device_address->stream_id(), device_address->GetMutablePtr());
   }
 }
@@ -1349,6 +1355,7 @@ void DeviceAddressUtils::GetCrossStreamAddressInfoFromInput(
   const mindspore::kernel::KernelTensor *tensor) {
   MS_EXCEPTION_IF_NULL(tensor);
   if (op_stream_id != tensor->stream_id()) {
+    MS_EXCEPTION_IF_NULL(cross_stream_addresses);
     (void)cross_stream_addresses->emplace_back(tensor->stream_id(), tensor->device_ptr());
   }
 }
@@ -1358,6 +1365,7 @@ void DeviceAddressUtils::GetCrossStreamAddressInfoFromInput(
   const device::DeviceAddressPtr &device_address) {
   MS_EXCEPTION_IF_NULL(device_address);
   if (op_stream_id != device_address->stream_id()) {
+    MS_EXCEPTION_IF_NULL(cross_stream_addresses);
     (void)cross_stream_addresses->emplace_back(device_address->stream_id(), device_address->GetMutablePtr());
   }
 }

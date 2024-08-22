@@ -78,11 +78,10 @@ def test_relu_net(mode):
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level1',
           card_mark='onecard', essential_mark='unessential')
-@pytest.mark.env_onecard
-def test_mint_group_norm_dyn():
+def test_mint_relu_dyn():
     """
-    Feature: Dynamic shape of GroupNorm.
-    Description: test GroupNorm with dynamic rank/shape.
+    Feature: Dynamic shape of relu.
+    Description: test relu with dynamic rank/shape.
     Expectation: success.
     """
     in1 = Tensor(np.random.randn(1, 2, 4, 4).astype(np.float32))

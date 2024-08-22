@@ -38,7 +38,7 @@ class NonZeroAscend : public AclnnKernelMod {
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 
  protected:
-  std::vector<ShapeVector> outputs_shape_;
+  std::vector<ShapeVector> outputs_shape_{0};
 };
 }  // namespace kernel
 }  // namespace mindspore

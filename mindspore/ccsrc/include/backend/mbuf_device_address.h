@@ -17,6 +17,7 @@
 #define MINDSPORE_MBUF_DEVICE_ADDRESS_H
 
 #include <string>
+#include <memory>
 #include "include/backend/device_address.h"
 
 namespace mindspore {
@@ -24,6 +25,16 @@ namespace device {
 class MbufDeviceAddress : public device::DeviceAddress {
  public:
   MbufDeviceAddress(void *ptr, size_t size) : DeviceAddress(ptr, size) {}
+  MbufDeviceAddress(void *ptr, size_t size, const ShapeVector &shape, TypeId type, const std::string &device_name,
+                    uint32_t device_id)
+      : DeviceAddress(ptr, size) {
+    auto tensor_shape = std::make_shared<abstract::TensorShape>();
+    tensor_shape->SetShapeVector(shape);
+    auto tensor_type = std::make_shared<TensorType>(TypeIdToType(type));
+    kernel_tensor_ = std::make_shared<KernelTensor>(tensor_shape, tensor_type, nullptr, ptr, size, "DefaultFormat",
+                                                    type, shape, device_name, device_id, nullptr);
+    address_common_ = kernel_tensor_->address_common();
+  }
   void SetData(void *data) { set_ptr(data); }
 
   bool SyncDeviceToHost(const ShapeVector &shape, size_t size, TypeId type, void *host_ptr) const override {

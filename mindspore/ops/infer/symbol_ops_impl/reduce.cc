@@ -59,7 +59,7 @@ bool Reduce::GetAxisSet(const SymbolPtr &axis, int64_t rank, bool skip_mode, Has
 
 SymbolPtr Reduce::DynEval(size_t rank, bool keep_dims, SymbolPtr axis) {
   if (!is_building()) {
-    MS_LOG_EXCEPTION << "at runtime, there should not be unknown symbols";
+    MS_LOG(EXCEPTION) << "at runtime, there should not be unknown symbols";
   }
   size_t res_len = rank;
   if (keep_dims) {

@@ -545,7 +545,7 @@ def avg_pool2d_ext(input, kernel_size, stride=None, padding=0, ceil_mode=False, 
             stride (Union[int, tuple[int], list[int]], optional): The distance of kernel moving.
                 Can be a single number or a tuple :math:`(sH, sW)` . Default: ``None``,
                 where its value is equal to `kernel_size`.
-            padding (Union(int, tuple[int], list[int]), optional): Implicit zero padding to be added on both sides.
+            padding (Union[int, tuple[int], list[int]], optional): Implicit zero padding to be added on both sides.
                 Can be a single number or a tuple :math:`(padH, padW)` . Default: ``0``.
             ceil_mode (bool, optional): If True, apply ceil instead of floor to compute the output shape.
                 Default: ``False``.
@@ -3111,6 +3111,8 @@ def softplus(input, beta=1, threshold=20):  # pylint:disable=redefined-outer-nam
         >>> print(output)
         [0.7443967 0.79813886 30. 25.]
     """
+    if beta == 0:
+        raise ValueError("The value of 'beta' cannot be 0.")
     scaling_input = beta * input
     op_output = (1 / beta) * softplus_(scaling_input)
     return ops.select(input * beta > threshold, input, op_output)

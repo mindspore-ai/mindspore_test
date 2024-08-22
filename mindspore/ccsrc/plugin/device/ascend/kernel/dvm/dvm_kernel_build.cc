@@ -26,6 +26,7 @@
 #include "include/common/debug/anf_ir_dump.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 #include "mindspore/ops/op_def/math_ops.h"
+#include "backend/common/graph_kernel/graph_kernel_flags.h"
 
 namespace mindspore {
 namespace kernel {
@@ -70,17 +71,6 @@ ShapeVector GetAxisList(const AnfNodePtr &axis_input) {
   return result;
 }
 
-std::vector<int64_t> GetMatMulPadShape(const AnfNodePtr &node) {
-  constexpr int64_t ALIGN_256 = 256;
-  constexpr int64_t ALIGN_128 = 128;
-  constexpr int64_t ALIGN_32 = 32;
-  auto shape = CheckAndConvertUtils::ConvertShapePtrToShapeMap(node->Shape())[kShape];
-  if (shape.back() % ALIGN_128 == 0 || (shape.back() <= ALIGN_256 && shape.back() % ALIGN_32 == 0)) {
-    return {};
-  }
-  return std::vector<int64_t>{ALIGN_256 - shape.back() % ALIGN_256};
-}
-
 static std::unordered_map<std::string, std::pair<OpType, int>> op_type_map = {
   {"Abs", {OP_UNARY, dvm::UnaryOpType::kAbs}},
   {"Exp", {OP_UNARY, dvm::UnaryOpType::kExp}},
@@ -122,9 +112,18 @@ static std::unordered_map<std::string, std::pair<OpType, int>> op_type_map = {
 TypeId GetValueNodeType(const AnfNodePtr &node) {
   auto valuenode = node->cast<ValueNodePtr>();
   MS_EXCEPTION_IF_NULL(valuenode);
-  auto input_tensor = valuenode->value()->cast<tensor::TensorPtr>();
-  MS_EXCEPTION_IF_NULL(input_tensor);
-  auto type_id = input_tensor->data_type();
+  auto value = valuenode->value();
+  MS_EXCEPTION_IF_NULL(value);
+  TypeId type_id = TypeId::kTypeUnknown;
+  if (value->isa<tensor::Tensor>()) {
+    auto input_tensor = value->cast<tensor::TensorPtr>();
+    MS_EXCEPTION_IF_NULL(input_tensor);
+    type_id = input_tensor->data_type();
+  } else if (value->isa<Scalar>()) {
+    auto value_type = value->type();
+    MS_EXCEPTION_IF_NULL(value_type);
+    type_id = value_type->type_id();
+  }
   if (type_id != TypeId::kNumberTypeFloat32 && type_id != TypeId::kNumberTypeFloat16 &&
       type_id != TypeId::kNumberTypeInt32) {
     MS_LOG_WITH_NODE(EXCEPTION, node) << "Data type of scalar value input only supports float, but got: "
@@ -353,32 +352,7 @@ class OpBuilder {
     }
     auto transpose_a = GetValue<bool>(prim->GetAttr(kTransposeA));
     auto transpose_b = GetValue<bool>(prim->GetAttr(kTransposeB));
-    dvm::NDObject *mix_fusion[kSizeTwo];
-    bool pad_fusion = false;
-    for (size_t i = 0; i < kSizeTwo; i++) {
-      auto input_node = node->input(i + 1);
-      auto pad_shape = GetMatMulPadShape(input_node);
-      shapes_ref_source_->push_back(pad_shape);
-      pad_shape_ref_[i] = std::make_shared<dvm::ShapeRef>(shapes_ref_source_->back());
-      if (!pad_shape.empty()) {
-        pad_fusion = true;
-        kernel_->StageSwitch(dvm::KernelType::kStaticShape);
-        auto load = kernel_->Copy(GetInput(input_node));
-        mix_fusion[i] = kernel_->StagePadStore(load, pad_shape_ref_[i].get());
-      }
-    }
-    if (pad_fusion) {
-      kernel_->StageSwitch(dvm::KernelType::kStaticMix);
-    }
-    for (size_t i = 0; i < kSizeTwo; i++) {
-      auto input_node = node->input(i + 1);
-      if (pad_shape_ref_[i]->size) {
-        mix_fusion[i] = kernel_->StageLoad(mix_fusion[i]);
-      } else {
-        mix_fusion[i] = GetInput(input_node);
-      }
-    }
-    auto op = kernel_->MatMul(mix_fusion[0], mix_fusion[1], transpose_a, transpose_b);
+    auto op = kernel_->MatMul(GetInput(node->input(kIndex1)), GetInput(node->input(kIndex2)), transpose_a, transpose_b);
     EmitOp(node, op);
   }
 
@@ -530,7 +504,6 @@ class OpBuilder {
   std::unordered_map<AnfNodePtr, dvm::NDObject *> ops_map_;
   std::unordered_map<AnfNodePtr, ShapeRefPtr> *shapes_ref_;
   std::vector<ShapeVector> *shapes_ref_source_;
-  ShapeRefPtr pad_shape_ref_[kSizeTwo];
   static std::unordered_map<dvm::DType, TypeId> v_type_map;
   static std::unordered_map<TypeId, dvm::DType> ms_type_map;
   bool empty_input_{false};
@@ -696,13 +669,7 @@ class SingleDvmKernelBuilder : public DvmKernelBuilder {
       return IsPrimitiveCNode(node, prim::kPrimMatMul) || IsPrimitiveCNode(node, prim::kPrimBatchMatMul);
     });
     if (iter != nodes->end()) {
-      auto cnode = (*iter)->cast<CNodePtr>();
       std::rotate(nodes->begin(), iter, iter + 1);
-      for (size_t i = 0; i < kSizeTwo; i++) {
-        if (!GetMatMulPadShape(cnode->input(i + 1)).empty()) {
-          return dvm::KernelType::kStaticStages;
-        }
-      }
       return dvm::KernelType::kStaticMix;
     } else {
       return is_dynamic_ ? dvm::KernelType::kDynShape : dvm::KernelType::kStaticShape;
@@ -822,6 +789,13 @@ KernelModPtr DvmOpBuild(const AnfNodePtr &anf_node) {
     dvm::SetDeterministic(enable_deterministic);
     init = true;
     MS_LOG(INFO) << "Set dvm deterministic " << (enable_deterministic ? "true" : "false");
+  }
+  static bool tuning_init = false;
+  if (!tuning_init) {
+    bool enable_tuning = graphkernel::GraphKernelFlags::GetInstance().online_tuning > 0 ? true : false;
+    dvm::SetOnlineTuning(enable_tuning);
+    tuning_init = true;
+    MS_LOG(INFO) << "Set dvm online tuning " << (enable_tuning ? "true" : "false");
   }
   MS_EXCEPTION_IF_NULL(anf_node);
   auto scope = anf_node->fullname_with_scope();

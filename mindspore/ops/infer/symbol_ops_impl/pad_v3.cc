@@ -40,9 +40,8 @@ SymbolPtr PadV3::Eval() {
     return GenVList();
   }
   if (padding->size() % kNum2 != 0 || padding->size() > input->size() * kNum2) {
-    MS_LOG(INFO) << "For 'PadV3', the padding size should be even number and less-equal to " << (input->size() * kNum2)
-                 << ", but got " << padding->size();
-    return nullptr;
+    MS_LOG(INTERNAL_EXCEPTION) << "For 'PadV3', the padding size should be even number and less-equal to "
+                               << (input->size() * kNum2) << ", but got " << padding->size();
   }
   DoNotEvalOnRun();
 

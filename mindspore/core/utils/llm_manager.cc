@@ -32,37 +32,61 @@ void LLMManager::init() {
     return;
   }
 
-  auto llm_seq_length_idx_env = common::GetEnv("MS_LLM_SEQ_LENGTH_INDEX");
-  if (!llm_seq_length_idx_env.empty()) {
-    seq_length_graph_input_index_ = stoi(llm_seq_length_idx_env);
-    enable_multi_level_seq_length_ = true;
-    MS_LOG(INFO) << "LLM Manager init: enable multi_level_seq_length with graph input index: "
-                 << seq_length_graph_input_index_;
+  auto llm_batch_valid_length_idx_env = common::GetEnv("MS_LLM_SEQ_LENGTH_INDEX");
+  if (!llm_batch_valid_length_idx_env.empty()) {
+    batch_valid_length_graph_input_index_ = stoi(llm_batch_valid_length_idx_env);
+    enable_llm_seq_length_ = true;
+    MS_LOG(INFO) << "LLM Manager init: enable batch_valid_length with graph input index: "
+                 << batch_valid_length_graph_input_index_;
   }
 
-  auto llm_seq_length_level_size = common::GetEnv("MS_LLM_SEQ_LENGTH_LEVEL_SIZE");
-  if (!llm_seq_length_level_size.empty()) {
-    seq_length_level_size_ = stoi(llm_seq_length_level_size);
+  auto llm_query_length_idx_env = common::GetEnv("MS_LLM_QUERY_LENGTH_INDEX");
+  if (!llm_query_length_idx_env.empty()) {
+    query_seq_length_graph_input_index_ = stoi(llm_query_length_idx_env);
+    enable_llm_seq_length_ = true;
+    MS_LOG(INFO) << "LLM Manager init: enable query_seq_length with graph input index: "
+                 << query_seq_length_graph_input_index_;
+  }
+
+  auto seq_length_level_size = common::GetEnv("MS_LLM_SEQ_LENGTH_LEVEL_SIZE");
+  if (!seq_length_level_size.empty()) {
+    seq_length_level_size_ = stoi(seq_length_level_size);
   }
   MS_LOG(INFO) << "LLM Manager init: use seq_length_level_size: " << seq_length_level_size_;
 
   inited_ = true;
 }
 
-bool LLMManager::update_round_up_max_seq_length(int32_t max_seq_lenght) {
-  if (!enable_multi_level_seq_length_) {
+bool LLMManager::update_round_up_max_batch_valid_length(int32_t max_seq_length) {
+  if (!enable_llm_seq_length_) {
     return false;
   }
 
-  auto round_up_max_seq_length = ((max_seq_lenght / seq_length_level_size_) + 1) * seq_length_level_size_;
-  if (current_round_up_max_seq_length_ != round_up_max_seq_length) {
-    current_round_up_max_seq_length_ = round_up_max_seq_length;
+  auto round_up_max_seq_length = ((max_seq_length / seq_length_level_size_) + 1) * seq_length_level_size_;
+  if (current_round_up_max_batch_valid_length != round_up_max_seq_length) {
+    current_round_up_max_batch_valid_length = round_up_max_seq_length;
     return true;
   }
   return false;
 }
 
-int32_t LLMManager::get_current_round_up_max_seq_length() { return current_round_up_max_seq_length_; }
+int32_t LLMManager::get_current_round_up_max_batch_valid_length() { return current_round_up_max_batch_valid_length; }
 
-int32_t LLMManager::LLMManager::get_seq_length_graph_input_index() { return seq_length_graph_input_index_; }
+int32_t LLMManager::get_batch_valid_length_graph_input_index() { return batch_valid_length_graph_input_index_; }
+
+int32_t LLMManager::get_query_seq_length_graph_input_index() { return query_seq_length_graph_input_index_; }
+
+tensor::TensorDataPtr LLMManager::get_graph_input(const std::string &name) {
+  auto it = graph_inputs_map_.find(name);
+  if (it == graph_inputs_map_.end()) {
+    return nullptr;
+  }
+  return it->second;
+}
+
+void LLMManager::add_graph_input(const std::string &name, tensor::TensorDataPtr tensor) {
+  graph_inputs_map_[name] = tensor;
+}
+
+void LLMManager::reset_graph_inputs() { graph_inputs_map_.clear(); }
 }  // namespace mindspore

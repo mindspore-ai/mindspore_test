@@ -39,7 +39,7 @@ BaseShapePtr NonZeroExtFuncImpl::InferShape(const PrimitivePtr &primitive,
   // x_num is the multiply of shape elements
   auto x_num = std::accumulate(x_shape.begin(), x_shape.end(), int64_t(1), std::multiplies<int64_t>());
   // tuple nums is the rank of input tensor
-  abstract::BaseShapePtrList out_shapes;
+  abstract::BaseShapePtrList out_shapes{};
   out_shapes.reserve(x_rank);
 
   for (int i = 0; i < x_rank; i++) {
@@ -63,8 +63,8 @@ TypePtr NonZeroExtFuncImpl::InferType(const PrimitivePtr &primitive,
 
 int32_t NonZeroExtFuncImpl::CheckValidation(const PrimitivePtr &primitive,
                                             const std::vector<AbstractBasePtr> &input_args) const {
-  std::set valid_types = {kBool,   kInt8,   kInt16,   kInt32,   kInt64,   kUInt8, kUInt16,
-                          kUInt32, kUInt64, kFloat16, kFloat32, kFloat64, kFloat, kBFloat16};
+  const std::set valid_types = {kBool,   kInt8,   kInt16,   kInt32,   kInt64,   kUInt8, kUInt16,
+                                kUInt32, kUInt64, kFloat16, kFloat32, kFloat64, kFloat, kBFloat16};
   auto tensor_type = input_args[kInputIndex0]->GetType();
   (void)CheckAndConvertUtils::CheckTensorTypeValid("x", tensor_type, valid_types, primitive->name());
   return OP_CHECK_SUCCESS;

@@ -32,6 +32,7 @@ TypePtr BinaryCrossEntropyFuncImpl::InferType(const PrimitivePtr &primitive,
                                               const std::vector<abstract::AbstractBasePtr> &input_args) const {
   MS_EXCEPTION_IF_NULL(input_args[kInputIndex0]);
   auto input_type = input_args[kInputIndex0]->GetType();
+  (void)CheckAndConvertUtils::CheckTypeValid("input", input_type, valid_types_, primitive->name());
   return input_type;
 }
 
@@ -71,6 +72,8 @@ TypePtrList BinaryCrossEntropyFuncImpl::InferType(const PrimitivePtr &primitive,
                                                   const ValuePtrList &input_values) const {
   const auto &input_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
   MS_EXCEPTION_IF_NULL(input_tensor);
+  auto input_type = input_tensor->Dtype();
+  (void)CheckAndConvertUtils::CheckTypeValid("input", input_type, valid_types_, primitive->name());
   return {input_tensor->Dtype()};
 }
 

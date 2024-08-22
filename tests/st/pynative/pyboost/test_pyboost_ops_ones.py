@@ -18,6 +18,7 @@ import mindspore as ms
 from mindspore import ops
 from mindspore import Tensor, context
 from mindspore.ops.auto_generate.gen_ops_def import ones
+from mindspore.common.api import _pynative_executor
 import test_utils
 from tests.mark_utils import arg_mark
 
@@ -138,6 +139,7 @@ def test_ones_forward_dynamic_rank(context_mode):
     with pytest.raises((TypeError, ValueError)):
         size = Tensor(np.array([[2, 3], [4, 5]]).astype(np.int64))
         _ = test_cell(size, ms.int32)
+        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux'],
@@ -191,3 +193,4 @@ def test_ones_backward_dynamic_rank(context_mode):
     with pytest.raises((TypeError, ValueError)):
         size = Tensor(np.array([[2, 3], [4, 5]]).astype(np.int64))
         _ = test_cell(size, ms.int32)
+        _pynative_executor.sync()
