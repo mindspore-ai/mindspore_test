@@ -67,7 +67,7 @@ Status MessageQueue::GetOrCreateMessageQueueID() {
                    << " by key: " << std::to_string(key_) << " success.";
     } else {
       RETURN_STATUS_UNEXPECTED("Message queue key: " + std::to_string(key_) + " had been released. " +
-                               "Maybe got error from independent dataset process, you can enable INFO log " +
+                               "There may be an error in the independent dataset process, you can enable INFO log " +
                                "to view detailed error messages.");
     }
   }

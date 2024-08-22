@@ -80,6 +80,12 @@ TreeAdapter::TreeAdapter(UsageFlag usage)
   } else {
     independent_dataset_ = false;
   }
+
+  if (independent_dataset_ && GlobalContext::config_manager()->get_debug_mode()) {
+    MS_LOG(WARNING) << "The independent dataset process mode does not support debugging. "
+                    << "The independent dataset process mode will be disabled.";
+    independent_dataset_ = false;
+  }
 #endif
 }
 
