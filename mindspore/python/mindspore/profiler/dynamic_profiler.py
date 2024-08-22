@@ -386,8 +386,8 @@ if sys.version_info >= (3, 8):
         This class to enable the dynamic profile monitoring of MindSpore neural networks.
 
         Args:
-            cfg_path (str): Dynamic profile config json directory. The requirement is a shared path
-                that can be accessed by all nodes
+            cfg_path (str): Dynamic profile json config file directory. The requirement is a shared path
+                that can be accessed by all nodes.
             output_path (str, optional): Output data path. Default: ``"./dyn_profile_data"`` .
             poll_interval (int, optional): The polling period of the monitoring process, in seconds.
                 Default value: ``2``.
@@ -497,8 +497,8 @@ else:
         This class to enable the dynamic profile monitoring of MindSpore neural networks.
 
         Args:
-            cfg_path (str): Dynamic profile config json directory. The requirement is a shared path
-                that can be accessed by all nodes
+            cfg_path (str): Dynamic profile json config file directory. The requirement is a shared path
+                that can be accessed by all nodes.
             output_path (str, optional): Output data path. Default: ``"./dyn_profile_data"`` .
             poll_interval (int, optional): The polling period of the monitoring process, in seconds.
                 Default value: ``2``.
