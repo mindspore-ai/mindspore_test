@@ -63,11 +63,16 @@ ParameterPtr ConstructGraph::NewTensorInput(const std::string &name, const TypeP
 }
 
 ParameterPtr ConstructGraph::NewTupleInput(const std::string &name,
-                                           const std::vector<std::pair<TypePtr, ShapeVector>> &pairs) {
+                                           const std::vector<std::pair<TypePtr, ShapeVector>> &pairs, bool use_scalar) {
   AbstractBasePtrList list;
   for (const auto &[type, shape] : pairs) {
-    auto abs = std::make_shared<abstract::AbstractTensor>(type, shape);
-    list.emplace_back(std::move(abs));
+    if (use_scalar && shape.empty()) {
+      auto abs = std::make_shared<abstract::AbstractScalar>(type);
+      list.emplace_back(std::move(abs));
+    } else {
+      auto abs = std::make_shared<abstract::AbstractTensor>(type, shape);
+      list.emplace_back(std::move(abs));
+    }
   }
   auto abs = std::make_shared<abstract::AbstractTuple>(std::move(list), nullptr);
   return NewInput(name, abs);

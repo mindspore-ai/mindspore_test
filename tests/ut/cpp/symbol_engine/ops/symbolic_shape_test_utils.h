@@ -69,6 +69,8 @@ class TestSymbolEngine : public UT::Common {
   void TearDown() override { helper_ = nullptr; }
 
   std::shared_ptr<SymbolEngineImplTestHelper> helper_{nullptr};
+
+  void SaveIR(const FuncGraphPtr &fg, const std::string &name = "");
 };
 }  // namespace mindspore::symshape::test
 #endif  // UT_CPP_SYMBOL_ENGINE_OPS_SYMBOLIC_SHAPE_TEST_UTILS_H_

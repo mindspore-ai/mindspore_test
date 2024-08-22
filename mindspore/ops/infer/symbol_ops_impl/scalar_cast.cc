@@ -20,23 +20,35 @@
 namespace mindspore {
 namespace symshape {
 namespace ops {
-REG_SYMBOL_OP_BUILDER("ScalarCast")
-  .SetValueDepend({DependOn::kValue})
-  .SetValueFunc([](OperationBuilder *b) -> SymbolPtr {
-    auto s = b->GetInputValue(kIndex0);
-    auto output_type = b->out_abstract()->GetType()->generic_type_id();
-    switch (output_type) {
-      case kNumberTypeInt:
-      case kNumberTypeUInt:
-        return b->Emit(std::make_shared<ScalarCast<IntSymbol>>(s));
-      case kNumberTypeFloat:
-        return b->Emit(std::make_shared<ScalarCast<FloatSymbol>>(s));
-      case kNumberTypeBool:
-        return b->Emit(std::make_shared<ScalarCast<BoolSymbol>>(s));
-      default:
-        return nullptr;
-    }
-  });
+SymbolPtr ScalarCastBuilder(OperationBuilder *b) {
+  auto s = b->GetInputValue(kIndex0);
+  auto tid = AsInt(b->GetInputValue(kIndex1));
+  switch (tid) {
+    case kNumberTypeInt:
+    case kNumberTypeInt8:
+    case kNumberTypeInt16:
+    case kNumberTypeInt32:
+    case kNumberTypeInt64:
+    case kNumberTypeUInt:
+    case kNumberTypeUInt8:
+    case kNumberTypeUInt16:
+    case kNumberTypeUInt32:
+    case kNumberTypeUInt64:
+      return b->Emit(std::make_shared<ScalarCast<IntSymbol>>(s));
+    case kNumberTypeFloat:
+    case kNumberTypeFloat16:
+    case kNumberTypeFloat32:
+    case kNumberTypeFloat64:
+      return b->Emit(std::make_shared<ScalarCast<FloatSymbol>>(s));
+    case kNumberTypeBool:
+      return b->Emit(std::make_shared<ScalarCast<BoolSymbol>>(s));
+    default:
+      return nullptr;
+  }
+}
+
+REG_SYMBOL_OP_BUILDER("ScalarCast").SetValueDependN<DependOn::kValue, 2>().SetValueFunc(ScalarCastBuilder);
+REG_SYMBOL_OP_BUILDER("ScalarToTensor").SetValueDependN<DependOn::kValue, 2>().SetValueFunc(ScalarCastBuilder);
 }  // namespace ops
 }  // namespace symshape
 }  // namespace mindspore

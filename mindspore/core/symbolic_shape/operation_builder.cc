@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #include "mindspore/core/symbolic_shape/operation_builder.h"
+#include <functional>
 #include "mindspore/core/symbolic_shape/utils.h"
 
 namespace mindspore {
@@ -43,7 +44,14 @@ SymbolPtr OperationBuilder::BuildValue(const PrimitivePtr &prim, const AbstractB
   if (symbol_builder_info_.build_value_func == nullptr) {
     return nullptr;
   }
-  return symbol_builder_info_.build_value_func(this);
+  MS_EXCEPTION_IF_NULL(out);
+  auto sym = symbol_builder_info_.build_value_func(this);
+  if (sym != nullptr && out_abstract() != nullptr && !CheckOutputValue(sym)) {
+    MS_LOG(INFO) << "The dtype of output symbol does not match the abstract, " << sym->ToString() << " vs "
+                 << out->ToString();
+    return nullptr;
+  }
+  return sym;
 }
 
 SymbolPtr OperationBuilder::GetShape(const AbstractBasePtr &abs) const {
@@ -116,6 +124,34 @@ SymbolPtr OperationBuilder::Emit(const OpPtr &op) const {
   auto ret = emitter_->Emit(op);
   op->SetOutAbstract(nullptr);
   return ret;
+}
+
+bool OperationBuilder::CheckOutputValue(const SymbolPtr &v) const {
+  auto type = this->out_abstract()->GetType();
+  auto type_id = type->generic_type_id();
+  if (type->isa<TensorType>()) {
+    type_id = type->cast<TensorTypePtr>()->element()->generic_type_id();
+  }
+  std::function<bool(const SymbolPtr &)> check;
+  check = [&check, type_id](const SymbolPtr &s) -> bool {
+    if (s->is<ListSymbol>()) {
+      auto list = s->as<ListSymbol>();
+      return std::all_of(list->symbols().begin(), list->symbols().end(), check);
+    }
+    switch (type_id) {
+      case kNumberTypeInt:
+      case kNumberTypeUInt:
+        return s->is<IntSymbol>();
+      case kNumberTypeFloat:
+        return s->is<FloatSymbol>();
+      case kNumberTypeBool:
+        return s->is<BoolSymbol>();
+      default:
+        break;
+    }
+    return true;
+  };
+  return check(v);
 }
 
 SymbolPtr TransparentInput(OperationBuilder *b) {

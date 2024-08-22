@@ -29,7 +29,8 @@ class ConstructGraph {
   const std::shared_ptr<session::KernelGraph> &GetGraph() const;
   ParameterPtr NewScalarInput(const std::string &name, const TypePtr &type);
   ParameterPtr NewTensorInput(const std::string &name, const TypePtr &type, const ShapeVector &shape);
-  ParameterPtr NewTupleInput(const std::string &name, const std::vector<std::pair<TypePtr, ShapeVector>> &pairs);
+  ParameterPtr NewTupleInput(const std::string &name, const std::vector<std::pair<TypePtr, ShapeVector>> &pairs,
+                             bool use_scalar = false);
   ParameterPtr NewListInput(const std::string &name, const std::vector<std::pair<TypePtr, ShapeVector>> &pairs);
 
   ValueNodePtr NewValueNode(const ValuePtr &value);

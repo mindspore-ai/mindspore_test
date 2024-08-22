@@ -91,20 +91,25 @@ def test_reducesum():
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('data_type', [ms.float16, ms.float32])
-def test_shape_cast(data_type):
+def test_fuse_host_ops(data_type):
     """
     Feature: KernelPacket
     Description: test kernelpacket with host-device ops
     Expectation: success
     """
     class Net(nn.Cell):
-        def construct(self, x, y):
+        def construct(self, x, y, z):
+            # Shape-RealTupleGetItem-ScalarPow-ScalarToTensor-Mul
             t = ops.shape(x)[-1] ** 0.5
-            return t * y
+            # Shape-RealTupleGetItem-ScalarDiv-ScalarToTensor-Mul
+            sy = ops.shape(y)
+            t2 = sy[0] / sy[1]
+            return t * z + t2 * z
     dyn = Tensor(shape=[None, None], dtype=data_type)
     x = Tensor(np.random.random([32, 32]), dtype=data_type)
-    y = Tensor(np.random.random([16, 16]), dtype=data_type)
-    helper(Net, (dyn, dyn), (x, y))
+    y = Tensor(np.random.random([20, 15]), dtype=data_type)
+    z = Tensor(np.random.random([16, 16]), dtype=data_type)
+    helper(Net, (dyn, dyn, dyn), (x, y, z))
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')

@@ -25,9 +25,6 @@ REG_SYMBOL_OP_BUILDER("AllToAll").SetShapeDepend({DependOn::kShape}).SetShapeFun
 REG_SYMBOL_OP_BUILDER("Assign").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("AssignAdd").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("BiasAdd").SetShapeDepend({DependOn::kShape, DependOn::kNone}).SetShapeFunc(TransparentInput);
-REG_SYMBOL_OP_BUILDER("BroadcastTo")
-  .SetShapeDepend({DependOn::kNone, DependOn::kValue})
-  .SetShapeFunc(TransValueToShape);
 REG_SYMBOL_OP_BUILDER("Cast").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("ClampScalar")
   .SetShapeDepend({DependOn::kShape, DependOn::kNone, DependOn::kNone})
@@ -42,9 +39,6 @@ REG_SYMBOL_OP_BUILDER("Cos").SetShapeDepend({DependOn::kShape}).SetShapeFunc(Tra
 REG_SYMBOL_OP_BUILDER("CudnnUniformReal").SetShapeDepend({DependOn::kValue}).SetShapeFunc(TransValueToShape);
 REG_SYMBOL_OP_BUILDER("CumSum").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("DropoutGrad").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
-REG_SYMBOL_OP_BUILDER("DynamicBroadcastTo")
-  .SetShapeDepend({DependOn::kNone, DependOn::kValue})
-  .SetShapeFunc(TransValueToShape);
 REG_SYMBOL_OP_BUILDER("Erf").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("Exp").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("FastGeLU").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
@@ -103,7 +97,6 @@ REG_SYMBOL_OP_BUILDER("ZerosLike").SetShapeDepend({DependOn::kShape}).SetShapeFu
 // infer symbolic value.
 REG_SYMBOL_OP_BUILDER("Shape").SetValueDepend({DependOn::kShape}).SetValueFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("TensorShape").SetValueDepend({DependOn::kShape}).SetValueFunc(TransparentInput);
-REG_SYMBOL_OP_BUILDER("ScalarToTensor").SetValueDepend({DependOn::kValue}).SetValueFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("TensorToTuple").SetValueDepend({DependOn::kValue}).SetValueFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("TupleToTensor").SetValueDepend({DependOn::kValue}).SetValueFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("ListToTuple").SetValueDepend({DependOn::kValue}).SetValueFunc(TransparentInput);

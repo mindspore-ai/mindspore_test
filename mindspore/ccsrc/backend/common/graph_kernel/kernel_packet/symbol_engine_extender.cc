@@ -289,7 +289,7 @@ bool SymbolEngineExtender::ExtendNode(const AnfNodePtr &node, const FuncGraphPtr
   }
   ProcessNopNode(fg, &inputs);
   auto symbol_engine = KernelPacketEngine::Build(fg);
-  if (!symbol_engine->SupportInfer()) {
+  if (symbol_engine == nullptr || !symbol_engine->SupportInfer()) {
     MS_LOG(INFO) << "Symbol engine doesn't support infer shape from node: " << node->fullname_with_scope();
     return false;
   }
