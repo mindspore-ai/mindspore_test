@@ -84,6 +84,11 @@ class AnfNodeConfig final : public Config {
       // Non-FuncGraph ValueNodes will always get a DummyContext since `fg` is null.
       context_ = context->FindOwnOrParentContext(fg.get());
       if (context_ == nullptr) {
+        if (common::GetCompileConfig("STRICT_CHECK_PARENT_CONTEXT") != "1") {
+          MS_LOG(INFO) << "Failed to find context for: " << fg->ToString() << ", use dummy context instead.";
+          context_ = AnalysisContext::DummyContext();
+          return;
+        }
         FuncGraphPtr parent_graph = fg->parent();
 #ifdef ENABLE_DUMP_IR
         const auto no_parent = parent_graph == nullptr;
@@ -323,6 +328,8 @@ class AnalysisEngine : public std::enable_shared_from_this<AnalysisEngine> {
   const PrimEvaluatorMap &PrimConstructors() const { return prim_constructors_; }
 
   FuncGraphPtr root_func_graph() const { return root_func_graph_.lock(); }
+  FuncGraphPtr root_func_graph_backup() const { return root_func_graph_backup_.lock(); }
+  void set_root_func_graph_backup(const FuncGraphPtr &fg) { root_func_graph_backup_ = FuncGraphWeakPtr(fg); }
   AnalysisContextPtr root_context() const { return root_context_; }
   void set_root_context(const AnalysisContextPtr &context) { root_context_ = context; }
 
@@ -369,6 +376,7 @@ class AnalysisEngine : public std::enable_shared_from_this<AnalysisEngine> {
   std::unordered_set<EvaluatorArgs, EvaluatorArgsHasher, EvaluatorArgsEqual> continued_evals_;
   // Root or top func_graph for static analysis;
   FuncGraphWeakPtr root_func_graph_;
+  FuncGraphWeakPtr root_func_graph_backup_;
   AnalysisContextPtr root_context_{nullptr};
 
   AnalysisContextPtr Run(const FuncGraphPtr &func_graph, const AnalysisContextPtr &context,
