@@ -43,7 +43,9 @@ static std::vector<std::string> g_overflow_operators;
 bool SplitInt8ToInt4x2(const void *int4_data, size_t in_data_len, void *int8_data, size_t out_data_len) {
   if (in_data_len * 2 != out_data_len) {
     MS_LOG(ERROR) << "The input data length and output data length is not match, input data length: " << in_data_len
-                  << ", output data length: " << out_data_len;
+                  << ", output data length: " << out_data_len
+                  << ". If sample_mode is set to 1, then sample_num must set to Integer multiples of 2 to save tensor "
+                     "with int4 data type.";
     return false;
   }
   int8_t *src_data = static_cast<int8_t *>(const_cast<void *>(int4_data));

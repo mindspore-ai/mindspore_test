@@ -394,7 +394,8 @@ void LaunchDumpCallback(const std::vector<TensorInfoForDump> &tensor_info_list, 
 
       uint64_t timestamp = Common::GetTimeStamp();
       std::string file_path = tensor_info_comm.file_path_prefix + '.' + std::to_string(timestamp) + '.' +
-                              tensor_info.io + '.' + std::to_string(tensor_info.io_index) + '.' + tensor_info.format;
+                              tensor_info.io + '.' + std::to_string(tensor_info.io_index) + '.' + tensor_info.format +
+                              "." + TypeIdToString(host_type);
 
       auto host_shape = tensor_info.host_shape;
       mindspore::tensor::TensorPtr out_tensor = std::make_shared<tensor::Tensor>(host_type, host_shape);
