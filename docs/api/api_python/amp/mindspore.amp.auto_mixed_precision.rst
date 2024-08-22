@@ -22,22 +22,15 @@ mindspore.amp.auto_mixed_precision
 
     `auto_whitelist` 名单里的算子包括：
 
-    ``Conv2D``, ``Conv3D``, ``Conv2DTranspose``, ``Conv3DTranspose``, ``Convolution``, ``MatMul``, ``MatMulExt``,
-    ``BatchMatMul``, ``BatchMatMulExt``, ``PReLU``, ``Einsum``, ``Dense``, ``Addmm``
+    ``Conv2D`` 、 ``Conv3D`` 、 ``Conv2DTranspose`` 、 ``Conv3DTranspose`` 、 ``Convolution`` 、 ``MatMul`` 、 ``MatMulExt`` 、 ``BatchMatMul`` 、 ``BatchMatMulExt`` 、 ``PReLU`` 、 ``Einsum`` 、 ``Dense`` 、 ``Addmm``
 
     `auto_blacklist` 名单里的算子包括：
 
-    ``Pow``, ``ACos``, ``Asin``, ``Cosh``, ``Erfinv``, ``Exp``, ``Expm1``, ``Log``, ``Log1p``, ``Reciprocal``,
-    ``Rsqrt``, ``Sinh``, ``Tan``, ``Softplus``, ``SoftplusExt``, ``LayerNorm``, ``LayerNormExt``, ``BatchNorm``,
-    ``GroupNorm``, ``KLDivLoss``, ``SmoothL1Loss``, ``MultilabelMarginLoss``, ``SoftMarginLoss``,
-    ``TripletMarginLoss``, ``MultiMarginLoss``, ``BCEWithLogitsLoss``, ``Pdist``, ``Cdist``, ``Renorm``,
-    ``ReduceProd``, ``Softmax``, ``LogSoftmax``, ``CumProd``, ``CumSum``, ``CumsumExt``, ``ProdExt``, ``SumExt``,
-    ``Norm``
+    ``Pow`` 、 ``ACos`` 、 ``Asin`` 、 ``Cosh`` 、 ``Erfinv`` 、 ``Exp`` 、 ``Expm1`` 、 ``Log`` 、 ``Log1p`` 、 ``Reciprocal`` 、 ``Rsqrt`` 、 ``Sinh`` 、 ``Tan`` 、 ``Softplus`` 、 ``SoftplusExt`` 、 ``LayerNorm`` 、 ``LayerNormExt`` 、 ``BatchNorm`` 、 ``GroupNorm`` 、 ``KLDivLoss`` 、 ``SmoothL1Loss`` 、 ``MultilabelMarginLoss`` 、 ``SoftMarginLoss`` 、 ``TripletMarginLoss`` 、 ``MultiMarginLoss`` 、 ``BCEWithLogitsLoss`` 、 ``Pdist`` 、 ``Cdist`` 、 ``Renorm`` 、 ``ReduceProd`` 、 ``Softmax`` 、 ``LogSoftmax`` 、 ``CumProd`` 、 ``CumSum`` 、 ``CumsumExt`` 、 ``ProdExt`` 、 ``SumExt`` 、 ``Norm``
 
     `promote_list` 名单里的算子包括：
 
-    ``Addcdiv``, ``Addcmul``, ``Cross``, ``_PyboostCrossPrim``, ``Dot``, ``GridSampler2D``, ``GridSampler3D``,
-    ``BiasAdd``
+    ``Addcdiv`` 、 ``Addcmul`` 、 ``Cross`` 、 ``_PyboostCrossPrim`` 、 ``Dot`` 、 ``GridSampler2D`` 、 ``GridSampler3D`` 、 ``BiasAdd``
 
     关于自动混合精度的详细介绍，请参考 `自动混合精度 <https://www.mindspore.cn/tutorials/zh-CN/master/beginner/mixed_precision.html>`_ 。
 
