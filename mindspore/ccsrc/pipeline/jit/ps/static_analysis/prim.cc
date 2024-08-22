@@ -33,7 +33,6 @@
 #include "frontend/operator/composite/do_signature.h"
 #include "frontend/operator/ops.h"
 #include "frontend/operator/ops_front_infer_function.h"
-#include "frontend/operator/prim_to_function.h"
 #include "frontend/operator/composite/unpack_call.h"
 #include "include/common/fallback.h"
 #include "include/common/utils/convert_utils.h"
@@ -58,6 +57,7 @@
 #include "pipeline/jit/ps/resource.h"
 #include "pipeline/jit/ps/static_analysis/evaluator.h"
 #include "pipeline/jit/ps/static_analysis/builtin_prim.h"
+#include "pipeline/jit/ps/static_analysis/prim_to_function.h"
 #include "pipeline/jit/ps/static_analysis/static_analysis.h"
 #include "utils/check_convert_utils.h"
 #include "utils/hash_set.h"
@@ -1380,7 +1380,6 @@ EvalResultPtr StandardPrimEvaluator::EvalPrim(const AnalysisEnginePtr &engine, c
 EvalResultPtr PythonPrimEvaluator::EvalPrim(const AnalysisEnginePtr &engine, const AbstractBasePtrList &args) {
   // Consider all primitive implemented python infer() real use the tuple/list arguments.
   CheckSequenceArgumentForPythonPrimitive(prim_py_, args);
-
   // Ensure input arguments are evaluated.
   auto res_abstract = EvalUndeterminedArgs(args);
   if (res_abstract != nullptr) {
@@ -1510,12 +1509,8 @@ EvaluatorPtr InitStandardPrimEvaluator(PrimitivePtr primitive, const StandardPri
 
 EvaluatorPtr InitUniformPrimEvaluator(const PrimitivePtr &primitive, PrimitiveImpl prim_impl, bool eval_value,
                                       const TypePtr &specify_out_type) {
-  FunctionPtr func = nullptr;
-  (void)prim::PrimToFunction::GetInstance().GetFunction(primitive, &func);
-  MS_EXCEPTION_IF_NULL(func);
-
   EvaluatorPtr uniform_primitive_evaluator =
-    std::make_shared<UniformPrimEvaluator>(func, prim_impl, eval_value, specify_out_type);
+    std::make_shared<UniformPrimEvaluator>(primitive, prim_impl, eval_value, specify_out_type);
   return uniform_primitive_evaluator;
 }
 

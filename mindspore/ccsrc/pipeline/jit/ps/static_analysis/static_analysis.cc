@@ -636,8 +636,8 @@ AnalysisResult AnalysisEngine::Run(const FuncGraphPtr &func_graph, const Abstrac
 
 AnalysisContextPtr AnalysisEngine::Run(const FuncGraphPtr &func_graph, const AnalysisContextPtr &context,
                                        const ConfigPtrList &args_conf_list) {
-  auto evaluator = std::make_shared<FuncGraphEvaluator>(func_graph, context);
-  (void)evaluator->Run(shared_from_this(), args_conf_list, nullptr);
+  auto eval = std::make_shared<FuncGraphEvaluator>(func_graph, context);
+  (void)eval->Run(shared_from_this(), args_conf_list, nullptr);
   return root_context_;
 }
 
@@ -656,7 +656,7 @@ EvalResultPtr ObtainEvalResultFromCache(const AnfNodeConfigPtr &conf) {
 
 EvalResultPtr AnalysisEngine::ObtainEvalResultWithCache(const AnfNodeConfigPtr &conf) {
   MS_EXCEPTION_IF_NULL(conf);
-  auto result = ObtainEvalResultFromCache(conf);
+  EvalResultPtr result = ObtainEvalResultFromCache(conf);
   if (result != nullptr) {
     return result;
   }
@@ -667,8 +667,7 @@ EvalResultPtr AnalysisEngine::ObtainEvalResultWithCache(const AnfNodeConfigPtr &
 
 EvalResultPtr AnalysisEngine::ObtainEvalResultWithoutCache(const AnfNodeConfigPtr &conf) {
   MS_EXCEPTION_IF_NULL(conf);
-  EvalResultPtr result = nullptr;
-  result = Eval(conf);
+  EvalResultPtr result = Eval(conf);
   if (result == nullptr) {
     MS_LOG(INTERNAL_EXCEPTION) << "Evaluate for NodeConfig " << conf->ToString() << " get nullptr";
   }
@@ -979,17 +978,14 @@ bool AnalysisEngine::IsRealToComplexGradient(const CNodePtr &cnode, const AnfNod
   return IsComplexType(sequence_abs->elements()[idx]);
 }
 
-EvalResultPtr AnalysisEngine::EvalCNode(const CNodePtr &cnode, const AnfNodeConfigPtr &conf) {
-  MS_EXCEPTION_IF_NULL(conf);
-  MS_EXCEPTION_IF_NULL(cnode);
-
+EvalResultPtr AnalysisEngine::EvalCNodeMiscellaneous(const CNodePtr &cnode, const AnfNodeConfigPtr &conf,
+                                                     const AbstractBasePtr &possible_func) {
   // Handle the interpreted node call here.
   const auto &interpreted_eval_result = InterpretedNodeCall(cnode, conf);
   if (interpreted_eval_result != nullptr) {
     return interpreted_eval_result;
   }
 
-  AbstractBasePtr possible_func = GetCNodeOperatorAbstract(cnode, conf->context(), conf->func_graph());
   MS_EXCEPTION_IF_NULL(possible_func->BuildType());
   if (possible_func->IsSameTypeId(AbstractUndetermined::kTypeId)) {
     MS_LOG(DEBUG) << "EvalCNode eval Undetermined";
@@ -1010,7 +1006,6 @@ EvalResultPtr AnalysisEngine::EvalCNode(const CNodePtr &cnode, const AnfNodeConf
       return ConvertCallPyObjCallFunc(cnode, possible_func, conf);
     }
   }
-
   if (possible_func->isa<AbstractAny>()) {
     return ConvertToPyInterpretCall(cnode, conf);
   }
@@ -1030,6 +1025,19 @@ EvalResultPtr AnalysisEngine::EvalCNode(const CNodePtr &cnode, const AnfNodeConf
   // comments of `ComplexPreprocess` in dfunctor.cc.
   if (IsRealToComplexGradient(cnode, conf)) {
     return InsertRealOp(cnode, conf);
+  }
+
+  return nullptr;
+}
+
+EvalResultPtr AnalysisEngine::EvalCNode(const CNodePtr &cnode, const AnfNodeConfigPtr &conf) {
+  MS_EXCEPTION_IF_NULL(conf);
+  MS_EXCEPTION_IF_NULL(cnode);
+
+  AbstractBasePtr possible_func = GetCNodeOperatorAbstract(cnode, conf->context(), conf->func_graph());
+  auto res = EvalCNodeMiscellaneous(cnode, conf, possible_func);
+  if (res != nullptr) {
+    return res;
   }
 
   auto func = dyn_cast_ptr<AbstractFunction>(possible_func);
@@ -1066,7 +1074,7 @@ EvalResultPtr AnalysisEngine::EvalCNode(const CNodePtr &cnode, const AnfNodeConf
   });
 
   // Run evaluators.
-  auto eval_result = ExecuteEvaluators(evaluators, conf, args_conf_list);
+  EvalResultPtr eval_result = ExecuteEvaluators(evaluators, conf, args_conf_list);
   // Check if func graph contains isolated side-effect, and sync.
   if (check_side_effect()) {
     func->Visit([&contains_side_effect](const AbstractFuncAtomPtr &possible_func) {
@@ -1785,7 +1793,7 @@ EvalResultPtr AnalysisEngine::ExecuteMultipleEvaluators(const std::vector<Evalua
     auto it = std::find(eval_trace_.crbegin(), eval_trace_.crend(), current_inf);
     if (it == eval_trace_.crend()) {
       eval_trace_.push_back(current_inf);
-      auto eval_result = eval->Run(shared_from_this(), args_conf_list, out_conf);
+      EvalResultPtr eval_result = eval->Run(shared_from_this(), args_conf_list, out_conf);
       MS_EXCEPTION_IF_NULL(eval_result);
       auto eval_abstract = eval_result->abstract();
       MS_EXCEPTION_IF_NULL(eval_abstract);
@@ -1797,7 +1805,7 @@ EvalResultPtr AnalysisEngine::ExecuteMultipleEvaluators(const std::vector<Evalua
       }
     } else {
       bool continue_flag = false;
-      auto latest_entry = HandleNestedRecursion(evaluators, eval, args_abs_list, it, &continue_flag);
+      auto latest_eval = HandleNestedRecursion(evaluators, eval, args_abs_list, it, &continue_flag);
       if (continue_flag) {
         MS_EXCEPTION_IF_NULL(current_inf.evaluator_);
         MS_LOG(DEBUG) << "The continued_evals_ insert " << current_inf.evaluator_.get() << "/"
@@ -1807,12 +1815,12 @@ EvalResultPtr AnalysisEngine::ExecuteMultipleEvaluators(const std::vector<Evalua
       }
 
       // Try to travel the latest undetermined.
-      if (latest_entry != eval_trace_.rbegin()->evaluator_) {
+      if (latest_eval != eval_trace_.rbegin()->evaluator_) {
         MS_LOG(DEBUG) << "Direct run evaluator " << eval.get() << "/" << eval->ToString();
-        auto eval_result = latest_entry->Run(shared_from_this(), args_conf_list, out_conf);
+        EvalResultPtr eval_result = latest_eval->Run(shared_from_this(), args_conf_list, out_conf);
         MS_EXCEPTION_IF_NULL(eval_result);
         MS_EXCEPTION_IF_NULL(eval_result->abstract());
-        MS_LOG(DEBUG) << "End direct evaluator " << latest_entry->ToString()
+        MS_LOG(DEBUG) << "End direct evaluator " << latest_eval->ToString()
                       << ", return out_abs: " << eval_result->abstract()->ToString();
         possible_parent_fg->set_flag(kFuncGraphFlagUndetermined, false);
         return eval_result;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "frontend/operator/prim_to_function.h"
+#include "pipeline/jit/ps/static_analysis/prim_to_function.h"
 
 #include "mindspore/ops/op_def/arithmetic_ops.h"
 #include "mindspore/ops/op_def/comparison_ops.h"

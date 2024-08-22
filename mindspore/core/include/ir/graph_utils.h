@@ -75,10 +75,26 @@ std::vector<FuncGraphPtr> BroadFirstSearchGraphUsed(const FuncGraphPtr &root,
 
 MS_CORE_API CNodePtr BroadFirstSearchFirstOf(const std::vector<CNodePtr> &roots, const MatchFunc &match_predicate);
 
+namespace ud_chain {
+constexpr auto kNodeUserKey = "__NODE_USER__";
+
+struct UserData {
+  AnfNodePtrList nodes;
+
+  static inline std::string key;
+  static inline void set_key(const std::string &new_key) { key = new_key; }
+};
+
+MS_CORE_API void Preprocess(const FuncGraphPtr &func_graph);
+MS_CORE_API AnfNodePtrList GetUsers(const AnfNodePtr &node);
+MS_CORE_API void Replace(const AnfNodePtr &old_node, const AnfNodePtr &new_node);
+}  // namespace ud_chain
+
 using DumpIRPrividerFunction = void (*)(std::ostringstream &, const FuncGraphPtr &, bool, int, bool);
 MS_CORE_API void SetDumpIRPrivider(const DumpIRPrividerFunction &func);
 using DumpIRStorageFunction = void (*)(const std::string &, const std::string &, const std::string &);
 MS_CORE_API void SetDumpIRStorage(const DumpIRStorageFunction &func);
+
 constexpr auto kTopoSortCircle = "TopoSortCircle";
 constexpr auto kAttrTopoSortRhsFirst = "topo_sort_rhs_first";
 }  // namespace mindspore

@@ -361,6 +361,19 @@ class AnalysisEngine : public std::enable_shared_from_this<AnalysisEngine> {
   EvaluatorPtr _GetEvaluatorFor(const std::shared_ptr<ShardTransformedAbstractClosure> &func);
   EvaluatorPtr _GetEvaluatorFor(const std::shared_ptr<VmapTransformedAbstractClosure> &func);
 
+  AnalysisContextPtr Run(const FuncGraphPtr &func_graph, const AnalysisContextPtr &context,
+                         const ConfigPtrList &args_conf_list);
+  EvalResultPtr Eval(const AnfNodeConfigPtr &conf);
+  EvalResultPtr EvalCNodeMiscellaneous(const CNodePtr &cnode, const AnfNodeConfigPtr &conf,
+                                       const AbstractBasePtr &possible_func);
+  EvalResultPtr ExecuteEvaluators(const std::vector<EvaluatorPtr> &evaluators, const AnfNodeConfigPtr &out_conf,
+                                  const ConfigPtrList &args_conf_list);
+  EvalResultPtr ExecuteMultipleEvaluators(const std::vector<EvaluatorPtr> &evaluators, const AnfNodeConfigPtr &out_conf,
+                                          const ConfigPtrList &args_conf_list);
+  EvalResultPtr ExecuteMultipleEvaluatorsMultiThread(const std::vector<EvaluatorPtr> &evaluators,
+                                                     const AnfNodeConfigPtr &out_conf,
+                                                     const ConfigPtrList &args_conf_list);
+
   EvaluatorPtr HandleNestedRecursion(const std::vector<EvaluatorPtr> &evaluators, const EvaluatorPtr &eval,
                                      const AbstractBasePtrList &args_abs_list, const EvalTraceRevIter &it,
                                      bool *continue_flag);

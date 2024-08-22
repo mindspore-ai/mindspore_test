@@ -21,7 +21,6 @@
 
 #include <vector>
 #include <string>
-#include <map>
 #include <set>
 #include <memory>
 #include <utility>
@@ -86,9 +85,9 @@ class FunctionBlock : public std::enable_shared_from_this<FunctionBlock> {
   AnfNodePtr HandleNamespaceSymbol(const std::string &var_name);
   AnfNodePtr MakeInterpret(const std::string &script_text, const AnfNodePtr &global_dict_node,
                            const AnfNodePtr &local_dict_node, const AnfNodePtr &orig_node);
-  const std::map<ParameterPtr, std::set<AnfNodePtr>> &phi_args() const { return phi_args_; }
+  const mindspore::HashMap<ParameterPtr, std::set<AnfNodePtr>> &phi_args() const { return phi_args_; }
   void FindIsolatedNodes();
-  void ConvertUnusedNodesToIsolated(const std::pair<std::string, std::pair<AnfNodePtr, bool>> var);
+  void ConvertUnusedNodesToIsolated(const std::string &var_name, const AnfNodePtr &node, bool is_used);
   void AddIsolatedNode(const AnfNodePtr &target);
   void AttachIsolatedNodesBeforeReturn();
   const std::vector<FunctionBlock *> &prev_blocks() const { return prev_blocks_; }
@@ -122,7 +121,8 @@ class FunctionBlock : public std::enable_shared_from_this<FunctionBlock> {
     }
   }
 
-  std::tuple<std::map<std::string, AnfNodePtr>, std::map<std::string, AnfNodePtr>> local_py_params() {
+  std::tuple<mindspore::HashMap<std::string, AnfNodePtr>, mindspore::HashMap<std::string, AnfNodePtr>>
+  local_py_params() {
     return {local_py_params_keys_, local_py_params_values_};
   }
 
@@ -143,7 +143,8 @@ class FunctionBlock : public std::enable_shared_from_this<FunctionBlock> {
   }
 
   // Update local parameters from previous block.
-  void UpdateLocalPyParam(const std::map<std::string, AnfNodePtr> &keys, std::map<std::string, AnfNodePtr> values) {
+  void UpdateLocalPyParam(const mindspore::HashMap<std::string, AnfNodePtr> &keys,
+                          mindspore::HashMap<std::string, AnfNodePtr> values) {
     if (keys.size() != values.size()) {
       MS_LOG(INTERNAL_EXCEPTION) << "keys size should be equal to values size.";
     }
@@ -187,20 +188,20 @@ class FunctionBlock : public std::enable_shared_from_this<FunctionBlock> {
   std::vector<FunctionBlock *> prev_blocks_;
 
   // Store args and variable's node, use a bool flag to indicate if the variable is used.
-  std::map<std::string, std::pair<AnfNodePtr, bool>> assigned_vars_;
+  mindspore::HashMap<std::string, std::pair<AnfNodePtr, bool>> assigned_vars_;
 
   // Store the attribute that has been changed.
-  std::map<std::string, std::pair<AnfNodePtr, bool>> changed_non_param_attrs_;
+  mindspore::HashMap<std::string, std::pair<AnfNodePtr, bool>> changed_non_param_attrs_;
 
   // Map the parameter node to variable, it can be resolved if the block's predecessors are processed
-  std::map<ParameterPtr, std::string> phi_nodes_;
+  mindspore::HashMap<ParameterPtr, std::string> phi_nodes_;
 
   // Jumps map the successor block and the function call that perform jump
   // Refer to comments in Parser::func_block_list_ that how to break the cyclic reference
-  std::map<FunctionBlock *, CNodePtr> jumps_;
+  mindspore::HashMap<FunctionBlock *, CNodePtr> jumps_;
 
   // Keep all removable phis which will be removed in one pass.
-  std::map<ParameterPtr, std::set<AnfNodePtr>> phi_args_;
+  mindspore::HashMap<ParameterPtr, std::set<AnfNodePtr>> phi_args_;
 
   // Hold declared global variables in function
   std::set<std::string> global_vars_;
@@ -211,8 +212,8 @@ class FunctionBlock : public std::enable_shared_from_this<FunctionBlock> {
   // Collect all python symbols in the block.
   // We treat both global symbols and local symbols declared previously as global symbols.
   py::dict global_py_params_;
-  std::map<std::string, AnfNodePtr> local_py_params_keys_;
-  std::map<std::string, AnfNodePtr> local_py_params_values_;
+  mindspore::HashMap<std::string, AnfNodePtr> local_py_params_keys_;
+  mindspore::HashMap<std::string, AnfNodePtr> local_py_params_values_;
 
   // Isolated nodes.
   OrderedSet<AnfNodePtr> isolated_nodes_;
