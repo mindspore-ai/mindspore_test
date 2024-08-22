@@ -4338,24 +4338,30 @@ class ScanEvaluator : public Evaluator {
     // -->     ys.append(y)
     // --> return init, ys
     // Get condition and loop func graph
-    auto [loop_func, init_value, xs_abs, length_value, user_unroll] = GenerateScanArgs(args_abs_list);
-    auto loop_func_node = loop_func->cast<abstract::FuncGraphAbstractClosurePtr>()->func_graph();
-    constexpr size_t loop_func_expect_input_size = 2;
-    auto loop_func_params = loop_func_node->get_inputs();
-    auto loop_func_input_size = loop_func_params.size();
-    if (loop_func_input_size != loop_func_expect_input_size) {
-      MS_EXCEPTION(ValueError) << "For `Scan` op, loop_func expects two arguments, but got: " << loop_func_input_size;
-    }
-    MS_EXCEPTION_IF_NULL(loop_func_node);
-    loop_func_node->set_manager(manager);
+    auto [loop_func, init_value, xs_abs, length_value, user_unroll, is_standard_input] =
+      GenerateScanArgs(args_abs_list);
+    auto init_node = cnode->input(kIndex2);
     // Process Empty xs array
     if (!length_value) {
-      AbstractBasePtrList empty_eles = {};
-      auto empty_list = std::make_shared<AbstractList>(empty_eles);
-      AbstractBasePtrList eles = {init_value, empty_list};
-      auto result_abs = std::make_shared<AbstractTuple>(eles);
-      return std::make_shared<EvalResult>(result_abs, std::make_shared<AttrValueMap>());
+      AnfNodePtr empty_list = cur_graph->NewCNodeInOrder({NewValueNode(prim::kPrimMakeList)});
+      AnfNodePtr zero_loop_output =
+        cur_graph->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), init_node, empty_list});
+      AnfNodeConfigPtr fn_conf = engine->MakeConfig(zero_loop_output, out_conf->context(), out_conf->func_graph());
+      return engine->ForwardConfig(out_conf, fn_conf);
     }
+    // Standardlize scan's input arguments
+    if (user_unroll && !is_standard_input) {
+      MS_LOG(DEBUG) << "Standardlize Scan op";
+      AnfNodePtrList inputs = {cnode->inputs().begin(), cnode->inputs().begin() + 4};
+      (void)inputs.emplace_back(NewValueNode(length_value));
+      (void)inputs.emplace_back(NewValueNode(user_unroll));
+      AnfNodePtr standard_scan_node = cur_graph->NewCNodeInOrder(inputs);
+      AnfNodeConfigPtr fn_conf = engine->MakeConfig(standard_scan_node, out_conf->context(), out_conf->func_graph());
+      return engine->ForwardConfig(out_conf, fn_conf);
+    }
+
+    auto [xs_node, getitem_op] = CheckXsNode(cnode->input(kIndex3), xs_abs, length_value, cur_graph);
+    auto loop_func_node = CheckLoopFunc(loop_func);
     AnfNodePtr result_node = nullptr;
     AbstractBasePtr loop_result_abs = EvaluateLoopFunction(engine, loop_func, init_value, xs_abs);
     if (loop_result_abs->BuildValue()->ContainsValueAny()) {
@@ -4367,11 +4373,11 @@ class ScanEvaluator : public Evaluator {
         return CreateScanEvalResult(loop_result_abs, length_value, args_abs_list);
       }
       MS_LOG(DEBUG) << "`Scan` op will be translated into a loop function call in type inference action";
-      result_node = RepeatLoop(cur_graph, cnode, loop_func_node, init_value, xs_abs, length_value, manager);
+      result_node = RepeatLoop(cur_graph, loop_func_node, init_node, xs_node, getitem_op, length_value, manager);
     } else {
       // Unroll the loop
       MS_LOG(DEBUG) << "`Scan` op can be calculated in type inference action";
-      result_node = UnrollLoop(cur_graph, cnode, loop_func_node, init_value, xs_abs, length_value);
+      result_node = UnrollLoop(cur_graph, loop_func_node, init_node, length_value, xs_node, getitem_op);
     }
     AnfNodeConfigPtr fn_conf = engine->MakeConfig(result_node, out_conf->context(), out_conf->func_graph());
     return engine->ForwardConfig(out_conf, fn_conf);
@@ -4382,12 +4388,13 @@ class ScanEvaluator : public Evaluator {
   }
 
  private:
-  std::tuple<AbstractFunctionPtr, AbstractBasePtr, AbstractBasePtr, int64_t, bool> GenerateScanArgs(
+  std::tuple<AbstractFunctionPtr, AbstractBasePtr, AbstractBasePtr, int64_t, bool, bool> GenerateScanArgs(
     const AbstractBasePtrList &args_abs_list) {
     // CNode: {kPrimScan, f[func], init, xs, length[int64_t], unroll[bool]}
     auto loop_func = CheckArg<AbstractFunction>("scan", args_abs_list, kIndex0);
     // Parse keywords args
     std::map<std::string, AbstractBasePtr> args_map;
+    bool is_standard_input = true;
     (void)std::for_each(args_abs_list.begin() + kIndex2, args_abs_list.end(), [&args_map](const AbstractBasePtr &abs) {
       if (abs->isa<AbstractKeywordArg>()) {
         auto keyword = abs->cast<AbstractKeywordArgPtr>();
@@ -4395,15 +4402,17 @@ class ScanEvaluator : public Evaluator {
       }
     });
     // Get input argument with default value
-    auto GetArgsAbs = [&args_abs_list, &args_map](const AbstractBasePtr &default_abs, const std::string &name,
-                                                  const size_t index) {
+    auto GetArgsAbs = [&args_abs_list, &args_map, &is_standard_input](const AbstractBasePtr &default_abs,
+                                                                      const std::string &name, const size_t index) {
       auto iter = args_map.find(name);
       if (iter != args_map.end()) {
+        is_standard_input = false;
         return iter->second;
       }
       if (index < args_abs_list.size() && !args_abs_list[index]->isa<AbstractKeywordArg>()) {
         return args_abs_list[index];
       }
+      is_standard_input = false;
       return default_abs;
     };
     auto length_abs = GetArgsAbs(std::make_shared<AbstractNone>(), "length", kIndex3);
@@ -4415,7 +4424,7 @@ class ScanEvaluator : public Evaluator {
                               << args_abs_list[kIndex4]->ToString();
     }
     return std::make_tuple(loop_func, args_abs_list[kIndex1], args_abs_list[kIndex2], length_value,
-                           GetValue<bool>(unroll));
+                           GetValue<bool>(unroll), is_standard_input);
   }
 
   int64_t GetLengthValue(const AbstractBasePtr &xs_abs, const AbstractBasePtr &length_abs) {
@@ -4425,11 +4434,9 @@ class ScanEvaluator : public Evaluator {
     size_t xs_size = 0;
     if (xs_abs->isa<AbstractSequence>()) {
       xs_size = xs_abs->cast<AbstractSequencePtr>()->size();
-    } else if (xs_abs->isa<AbstractDictionary>()) {
-      xs_size = xs_abs->cast<AbstractDictionaryPtr>()->size();
     } else if (!xs_abs->isa<AbstractNone>()) {
       MS_EXCEPTION(TypeError) << "For `Scan` op, expect abstract of argument [xs] to be AbstractTuple, "
-                              << "AbstractList, AbstractDictionary or AbstractNone, but got: " << xs_abs->ToString();
+                              << "AbstractList or AbstractNone, but got: " << xs_abs->ToString();
     }
     auto xs_size_value = SizeToLong(xs_size);
     if (length_abs->isa<AbstractNone>()) {
@@ -4462,6 +4469,42 @@ class ScanEvaluator : public Evaluator {
       }
     }
     return std::make_shared<abstract::AbstractNone>();
+  }
+
+  std::tuple<AnfNodePtr, PrimitivePtr> CheckXsNode(const AnfNodePtr &xs_node, const AbstractBasePtr &xs_abs,
+                                                   const int64_t length_value, const FuncGraphPtr &cur_graph) {
+    std::map<TypeId, PrimitivePtr> getitem_op_map = {{kObjectTypeTuple, prim::kPrimTupleGetItem},
+                                                     {kObjectTypeList, prim::kPrimListGetItem},
+                                                     {kMetaTypeNone, prim::kPrimTupleGetItem}};
+    MS_EXCEPTION_IF_NULL(xs_node);
+    AnfNodePtr processed_array = xs_node;
+    auto type = xs_abs->GetType();
+    MS_EXCEPTION_IF_NULL(type);
+    auto type_id = type->type_id();
+    auto iter = getitem_op_map.find(type_id);
+    if (iter == getitem_op_map.end()) {
+      MS_LOG(EXCEPTION) << "`Scan` op has invalid xs argument";
+    }
+    PrimitivePtr getitem_op = iter->second;
+    // Process None xs_node
+    if (type_id == kMetaTypeNone) {
+      std::vector<AnfNodePtr> xs_nodes(length_value + 1, NewValueNode(static_cast<int64_t>(0)));
+      xs_nodes[kIndex0] = NewValueNode(prim::kPrimMakeTuple);
+      processed_array = cur_graph->NewCNodeInOrder(xs_nodes);
+    }
+    return std::make_tuple(processed_array, getitem_op);
+  }
+
+  FuncGraphPtr CheckLoopFunc(const AbstractFunctionPtr &loop_func) {
+    const FuncGraphPtr &loop_func_node = loop_func->cast<abstract::FuncGraphAbstractClosurePtr>()->func_graph();
+    constexpr size_t loop_func_expect_input_size = 2;
+    auto loop_func_params = loop_func_node->get_inputs();
+    auto loop_func_input_size = loop_func_params.size();
+    if (loop_func_input_size != loop_func_expect_input_size) {
+      MS_EXCEPTION(ValueError) << "For `Scan` op, loop_func expects two arguments, but got: " << loop_func_input_size;
+    }
+    MS_EXCEPTION_IF_NULL(loop_func_node);
+    return loop_func_node;
   }
 
   AbstractBasePtr EvaluateLoopFunction(AnalysisEnginePtr engine, const AbstractFunctionPtr &loop_func,
@@ -4498,22 +4541,13 @@ class ScanEvaluator : public Evaluator {
     return eval_result;
   }
 
-  AnfNodePtr UnrollLoop(const FuncGraphPtr &cur_graph, const CNodePtr &cnode, const FuncGraphPtr &loop_func_node,
-                        const AbstractBasePtr &init_value, const AbstractBasePtr &xs_abs, int64_t length_value) {
-    auto init_node = cnode->input(kIndex2);
-    auto xs_node = cnode->input(kIndex3);
-    // Process None xs_node
-    auto type_id = xs_abs->GetType()->type_id();
-    if (type_id == kMetaTypeNone) {
-      std::vector<AnfNodePtr> xs_nodes(length_value + 1, NewValueNode(static_cast<int64_t>(0)));
-      xs_nodes[kIndex0] = NewValueNode(prim::kPrimMakeList);
-      xs_node = cur_graph->NewCNodeInOrder(xs_nodes);
-    }
+  AnfNodePtr UnrollLoop(const FuncGraphPtr &cur_graph, const FuncGraphPtr &loop_func_node, const AnfNodePtr &init_node,
+                        int64_t length_value, const AnfNodePtr &xs_node, const PrimitivePtr &getitem_op) {
     AnfNodePtrList ys_result{NewValueNode(prim::kPrimMakeList)};
     AnfNodePtr loop_init = init_node;
     for (int64_t i = 0; i < length_value; ++i) {
-      auto item = cur_graph->NewCNodeInOrder(
-        {NewValueNode(prim::kPrimListGetItem), xs_node, NewValueNode(static_cast<int64_t>(i))});
+      auto item =
+        cur_graph->NewCNodeInOrder({NewValueNode(getitem_op), xs_node, NewValueNode(static_cast<int64_t>(i))});
       auto func_output = cur_graph->NewCNodeInOrder({NewValueNode(loop_func_node), loop_init, item});
       loop_init = cur_graph->NewCNodeInOrder(
         {NewValueNode(prim::kPrimTupleGetItem), func_output, NewValueNode(static_cast<int64_t>(0))});
@@ -4525,25 +4559,9 @@ class ScanEvaluator : public Evaluator {
     return cur_graph->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), loop_init, loop_ys});
   }
 
-  AnfNodePtr RepeatLoop(const FuncGraphPtr &cur_graph, const CNodePtr &cnode, const FuncGraphPtr &loop_func_node,
-                        const AbstractBasePtr &init_value, const AbstractBasePtr &xs_abs, int64_t length_value,
+  AnfNodePtr RepeatLoop(const FuncGraphPtr &cur_graph, const FuncGraphPtr &loop_func_node, const AnfNodePtr &init_node,
+                        const AnfNodePtr &xs_node, const PrimitivePtr &getitem_op, int64_t length_value,
                         const FuncGraphManagerPtr &manager) {
-    // Handle xs, if xs = None, init xs to a list of size length_value
-    std::map<TypeId, PrimitivePtr> getitem_op_map = {{kObjectTypeTuple, prim::kPrimTupleGetItem},
-                                                     {kObjectTypeList, prim::kPrimListGetItem},
-                                                     {kObjectTypeDictionary, prim::kPrimDictGetItem},
-                                                     {kMetaTypeNone, prim::kPrimTupleGetItem}};
-    auto type_id = xs_abs->GetType()->type_id();
-    auto iter = getitem_op_map.find(type_id);
-    PrimitivePtr getitem_op = iter->second;
-    auto init_node = cnode->input(kIndex2);
-    auto xs_node = cnode->input(kIndex3);
-    if (type_id == kMetaTypeNone) {
-      MS_LOG(DEBUG) << "The parameter xs of the `Scan` op has a value of None";
-      AnfNodePtrList xs_nodes{std::size_t(length_value + 1), NewValueNode(static_cast<int64_t>(0))};
-      xs_nodes[kIndex0] = NewValueNode(prim::kPrimMakeTuple);
-      xs_node = cur_graph->NewCNodeInOrder(xs_nodes);
-    }
     // Build alternative func graph for scan op
     auto scan_func_graph = std::make_shared<FuncGraph>();
     scan_func_graph->debug_info()->set_name("scan");
