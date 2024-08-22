@@ -609,6 +609,7 @@ static bool GuardIsInstance(CallNode *call_node) {
 bool InferBuiltinFuncOrMethod(CallNode *call_node, GraphBuilder *unused = nullptr) {
   Graph *sub_graph = call_node->GetSubGraph();
   (void)JustCallAndSetRes(call_node);
+  call_node->SetInlineReason(InlineReason::kInlineFunc_Type_Unsupported);
   ConstantInfo::CollectBuiltinFuncConstantInfo(call_node);
   if (call_node->IsConstantValue()) {
     return CallNodeReturnConst(call_node, sub_graph, call_node->GetVobj());
