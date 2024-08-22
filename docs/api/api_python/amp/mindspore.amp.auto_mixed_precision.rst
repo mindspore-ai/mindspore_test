@@ -47,6 +47,7 @@ mindspore.amp.auto_mixed_precision
           过 `custom_mixed_precision` 和 `auto_mixed_precision` 等混合精度接口转换后的网络，则需要将 `amp_level` 配置
           为 ``O0`` 以避免重复的精度转换。
         - 当 `amp_level` 配置为 ``auto`` 时，网络输出的类型可能是低精度类型，此时可能需要手动转换类型以避免loss函数出现类型不一致的报错。
+        - 当 `amp_level` 配置为 ``auto`` ，而网络里的Cell配置了 `to_float` 时， `to_float` 指定的精度优先生效。
 
     .. warning::
         ``auto`` 等级的 `amp_level` 是实验性API，后续可能修改或删除。
