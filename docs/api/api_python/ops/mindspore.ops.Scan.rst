@@ -11,7 +11,7 @@ mindspore.ops.Scan
     输入：
         - **loop_func** (Function) - 循环体函数
         - **init** (Union[Tensor, Number, Str, Bool, List, Tuple, Dict]) - 循环的初始值
-        - **xs** (Union(Tuple, List, Dict, None)) - 用于执行循环扫描的数组
+        - **xs** (Union(Tuple, List, None)) - 用于执行循环扫描的数组
         - **length** (Optional) Int - 数组xs的长度
         - **unroll** (Optional) Bool - 是否在编译阶段展开
 

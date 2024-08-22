@@ -35,109 +35,94 @@ namespace mindspore {
 namespace opt {
 namespace irpass {
 // LoopUnroll for ops.Scan
-class LoopUnrollBase : public OptimizerCaller {
+class LoopUnrollBase : public AnfVisitor {
  public:
   explicit LoopUnrollBase(bool need_check_primJ, bool need_process)
       : need_check_primJ_(need_check_primJ), need_process_(need_process) {}
   ~LoopUnrollBase() override = default;
+
   AnfNodePtr operator()(const OptimizerPtr &, const AnfNodePtr &node) override {
-    PatternNode<AnfNodePtr> loop_func;
-    PatternNode<AnfNodePtr> init;
-    PatternNode<AnfNodePtr> xs;
-    PatternNode<AnfNodePtr> length;
-    PatternNode<AnfNodePtr> unroll;
-    auto LoopUnrollLambda = [&node, &loop_func, &init, &xs, &length, &unroll]() -> AnfNodePtr {
-      auto loop_func_node = loop_func.GetNode(node);
-      auto init_node = init.GetNode(node);
-      auto xs_node = xs.GetNode(node);
-      auto length_node = length.GetNode(node);
-      auto unroll_node = unroll.GetNode(node);
+    if (!NeedProcessScan(node)) {
+      return nullptr;
+    }
+    CNodePtr scan_cnode = node->cast<CNodePtr>();
+    const auto &inputs = scan_cnode->inputs();
+    const size_t input_size = inputs.size();
+    constexpr size_t expect_input_size = 6;
+    MS_EXCEPTION_IF_CHECK_FAIL(input_size == expect_input_size, "Scan op has invalid input size.");
+    auto loop_func_node = inputs[kIndex1];
+    auto init_node = inputs[kIndex2];
+    auto xs_node = inputs[kIndex3];
+    auto length_node = inputs[kIndex4];
+    auto fg = node->func_graph();
+    MS_EXCEPTION_IF_NULL(fg);
+    auto f_node = GetValueNode<FuncGraphPtr>(loop_func_node);
+    MS_EXCEPTION_IF_NULL(f_node);
+
+    bool is_none_node = IsValueNode<None>(xs_node);
+    auto length_value_ptr = GetValueNode<Int64ImmPtr>(length_node);
+    MS_EXCEPTION_IF_NULL(length_value_ptr);
+    int64_t length_value = length_value_ptr->value();
+    auto xs_abs = xs_node->abstract();
+    MS_EXCEPTION_IF_NULL(xs_abs);
+    PrimitivePtr getitem_op = prim::kPrimTupleGetItem;
+    if (xs_abs->isa<abstract::AbstractList>()) {
+      getitem_op = prim::kPrimListGetItem;
+    }
+
+    // Generate Loop FuncGraph for a single unrolled funcgraph call
+    auto loop_unroll_fg = std::make_shared<FuncGraph>();
+    AnfNodePtr loop_init = init_node;
+    AnfNodePtr func_output = nullptr;
+    AnfNodePtrList ys_result{NewValueNode(prim::kPrimMakeList)};
+    for (int64_t i = 0; i < length_value; ++i) {
+      AnfNodePtrList loop_inputs{{NewValueNode(f_node), loop_init}};
+      if (is_none_node) {
+        (void)loop_inputs.emplace_back(NewValueNode(static_cast<int64_t>(0)));
+      } else {
+        auto item =
+          loop_unroll_fg->NewCNodeInOrder({NewValueNode(getitem_op), xs_node, NewValueNode(static_cast<int64_t>(i))});
+        (void)loop_inputs.emplace_back(item);
+      }
+      func_output = loop_unroll_fg->NewCNodeInOrder(loop_inputs);
+      loop_init = loop_unroll_fg->NewCNodeInOrder(
+        {NewValueNode(prim::kPrimTupleGetItem), func_output, NewValueNode(static_cast<int64_t>(0))});
+      auto new_y = loop_unroll_fg->NewCNodeInOrder(
+        {NewValueNode(prim::kPrimTupleGetItem), func_output, NewValueNode(static_cast<int64_t>(1))});
+      (void)ys_result.emplace_back(new_y);
+    }
+    auto loop_ys = loop_unroll_fg->NewCNodeInOrder(ys_result);
+    auto output = loop_unroll_fg->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), loop_init, loop_ys});
+    loop_unroll_fg->set_output(output);
+    return fg->NewCNodeInOrder({NewValueNode(loop_unroll_fg)});
+  }
+
+  bool NeedProcessScan(const AnfNodePtr &node) {
+    CNodePtr cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
+    // For pass after automatic differentiation
+    if (need_process_) {
+      return true;
+    }
+    // For pass before automatic differentiation, check kPrimJ for the first time
+    if (need_check_primJ_) {
       auto fg = node->func_graph();
       MS_EXCEPTION_IF_NULL(fg);
-      auto f_node = GetValueNode<FuncGraphPtr>(loop_func_node);
-      MS_EXCEPTION_IF_NULL(f_node);
-      // Unroll Directly
-      bool is_none_node = IsValueNode<None>(xs_node);
-      int64_t length_value = 0;
-      if (IsValueNode<KeywordArg>(length_node)) {
-        auto length_keyword_value = GetValueNode<KeywordArgPtr>(length_node)->get_value();
-        MS_EXCEPTION_IF_NULL(length_keyword_value);
-        auto length_int_ptr = length_keyword_value->cast<Int64ImmPtr>();
-        MS_EXCEPTION_IF_NULL(length_int_ptr);
-        length_value = length_int_ptr->value();
-      } else {
-        length_value = GetValueNode<Int64ImmPtr>(length_node)->value();
-      }
-      std::map<TypeId, PrimitivePtr> getitem_op_map = {{kObjectTypeTuple, prim::kPrimTupleGetItem},
-                                                       {kObjectTypeList, prim::kPrimListGetItem},
-                                                       {kObjectTypeDictionary, prim::kPrimDictGetItem},
-                                                       {kMetaTypeNone, prim::kPrimTupleGetItem}};
-      auto xs_abs = xs_node->abstract();
-      MS_EXCEPTION_IF_NULL(xs_abs);
-      MS_EXCEPTION_IF_NULL(xs_abs->GetType());
-      auto type_id = xs_abs->GetType()->type_id();
-      auto iter = getitem_op_map.find(type_id);
-      PrimitivePtr getitem_op = iter->second;
-
-      // Generate Loop FuncGraph for a single unrolled funcgraph call
-      auto loop_unroll_fg = std::make_shared<FuncGraph>();
-      AnfNodePtr loop_init = init_node;
-      AnfNodePtr func_output = nullptr;
-      AnfNodePtrList ys_result{NewValueNode(prim::kPrimMakeList)};
-      for (int64_t i = 0; i < length_value; ++i) {
-        AnfNodePtrList loop_inputs{{NewValueNode(f_node), loop_init}};
-        if (is_none_node) {
-          (void)loop_inputs.emplace_back(NewValueNode(static_cast<int64_t>(0)));
-        } else {
-          auto item =
-            loop_unroll_fg->NewCNodeInOrder({NewValueNode(getitem_op), xs_node, NewValueNode(static_cast<int64_t>(i))});
-          (void)loop_inputs.emplace_back(item);
+      auto manager = fg->manager();
+      MS_EXCEPTION_IF_NULL(manager);
+      const auto &nodes = manager->all_nodes();
+      for (auto &cur_node : nodes) {
+        if (IsPrimitiveCNode(cur_node, prim::kPrimJ)) {
+          MS_LOG(DEBUG) << "Need Process loop unroll before automatic differentiation pass.";
+          set_need_check_primJ();
+          return true;
         }
-        func_output = loop_unroll_fg->NewCNodeInOrder(loop_inputs);
-        loop_init = loop_unroll_fg->NewCNodeInOrder(
-          {NewValueNode(prim::kPrimTupleGetItem), func_output, NewValueNode(static_cast<int64_t>(0))});
-        auto new_y = loop_unroll_fg->NewCNodeInOrder(
-          {NewValueNode(prim::kPrimTupleGetItem), func_output, NewValueNode(static_cast<int64_t>(1))});
-        (void)ys_result.emplace_back(new_y);
       }
-      auto loop_ys = loop_unroll_fg->NewCNodeInOrder(ys_result);
-      auto output = loop_unroll_fg->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), loop_init, loop_ys});
-      loop_unroll_fg->set_output(output);
-      return fg->NewCNodeInOrder({NewValueNode(loop_unroll_fg)});
-    };
-
-    auto CheckNeedProcessScan = [this](const AnfNodePtr &node) -> bool {
-      CNodePtr cnode = node->cast<CNodePtr>();
-      MS_EXCEPTION_IF_NULL(cnode);
-      // For pass after automatic differentiation
-      if (need_process_) {
-        return true;
-      }
-      // For pass before automatic differentiation, check kPrimJ for the first time
-      if (need_check_primJ_) {
-        auto fg = node->func_graph();
-        MS_EXCEPTION_IF_NULL(fg);
-        auto manager = fg->manager();
-        MS_EXCEPTION_IF_NULL(manager);
-        const auto &nodes = manager->all_nodes();
-        for (auto &cur_node : nodes) {
-          if (IsPrimitiveCNode(cur_node, prim::kPrimJ)) {
-            MS_LOG(DEBUG) << "Need Process loop unroll before automatic differentiation pass.";
-            set_need_check_primJ();
-            return true;
-          }
-        }
-        MS_LOG(DEBUG) << "Need Process loop unroll after automatic differentiation pass.";
-        set_need_check_primJ();
-        return false;
-      }
-
+      MS_LOG(DEBUG) << "Need Process loop unroll after automatic differentiation pass.";
+      set_need_check_primJ();
       return false;
-    };
-    MATCH_REPLACE_LAMBDA_IF(node, PPrimitive(prim::kPrimScan, loop_func, init, xs, length, unroll), LoopUnrollLambda,
-                            CheckNeedProcessScan(node));
-
-    return nullptr;
+    }
+    return false;
   }
 
  private:
