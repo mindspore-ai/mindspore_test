@@ -58,7 +58,7 @@ class FFTWithSizeCpuKernelMod : public NativeCpuKernelMod {
   bool inverse_;
   bool onesided_;
   int64_t signal_ndim_;
-  std::string normalized_;
+  int64_t normalized_;
   std::vector<int64_t> raw_checked_signal_size_;
   std::vector<int64_t> x_shape_;
 };

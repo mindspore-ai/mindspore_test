@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 #include "kernel/cpu/fft_with_size_cpu_kernel.h"
+
 #include <algorithm>
-#include "ops_utils/op_utils.h"
+
 #include "kernel/kernel.h"
+#include "op_def/op_enum.h"
+#include "ops_utils/op_utils.h"
 
 #define FFTWITHSIZE_SWITCH_DIM_CALCULATE(T1, T2, real, inverse)                                                    \
   if (signal_ndim_ == 1) {                                                                                         \
@@ -100,17 +103,17 @@ int FFTWithSizeCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
   return KRET_OK;
 }
 
-double Getnormalized(int64_t element_num, const std::string &normalized, bool is_reverse) {
+double Getnormalized(int64_t element_num, const int64_t &normalized, bool is_reverse) {
   double result = 1.0;
   if (!is_reverse) {
-    if (normalized == "forward") result = 1.0 / element_num;
-    if (normalized == "backward") result = 1.0;
-    if (normalized == "ortho") result = 1.0 / sqrt(static_cast<double>(element_num));
+    if (normalized == NormMode::FORWARD) result = 1.0 / element_num;
+    if (normalized == NormMode::BACKWARD) result = 1.0;
+    if (normalized == NormMode::ORTHO) result = 1.0 / sqrt(static_cast<double>(element_num));
   }
   if (is_reverse) {
-    if (normalized == "forward") result = 1.0 * element_num;
-    if (normalized == "backward") result = 1.0;
-    if (normalized == "ortho") result = 1.0 * sqrt(static_cast<double>(element_num));
+    if (normalized == NormMode::FORWARD) result = 1.0 * element_num;
+    if (normalized == NormMode::BACKWARD) result = 1.0;
+    if (normalized == NormMode::ORTHO) result = 1.0 * sqrt(static_cast<double>(element_num));
   }
   return result;
 }
@@ -143,7 +146,7 @@ inline Eigen::DSizes<Eigen::DenseIndex, signal_ndim + 1> GetFlatShape(const std:
 }
 
 template <typename T1, typename T2, int signal_ndim, bool is_real, bool is_inverse>
-bool FFTWithSizeCompute(T1 *input_x, T2 *output_y, bool onesided, std::string normalized,
+bool FFTWithSizeCompute(T1 *input_x, T2 *output_y, bool onesided, int64_t normalized,
                         const vector<int64_t> &checked_signal_size, const vector<int64_t> &x_shape) {
   Eigen::DSizes<Eigen::DenseIndex, signal_ndim + 1> tensor_shape = GetFlatShape<signal_ndim>(x_shape, x_shape.size());
   Eigen::TensorMap<Eigen::Tensor<T1, signal_ndim + 1, Eigen::RowMajor>, Eigen::RowMajor> in(&input_x[0], tensor_shape);
