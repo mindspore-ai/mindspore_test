@@ -51,8 +51,9 @@ class GraphBuilder {
 
   explicit GraphBuilder(const PyFrameWrapper &f);
   GraphBuilder(GraphBuilder *r, GraphBuilder *p, PyCodeObject *co, PyObject *globals)
-      : root_(r), parent_(p), graph_(NewGraph(co, globals)), frame_(), current_block_(nullptr) {}
-  explicit GraphBuilder(GraphBuilder *r) : root_(r), parent_(nullptr), graph_(nullptr), current_block_(nullptr) {}
+      : root_(r), parent_(p), graph_(NewGraph(co, globals)), frame_(), current_block_(nullptr), no_grad_(r->no_grad_) {}
+  explicit GraphBuilder(GraphBuilder *r)
+      : root_(r), parent_(nullptr), graph_(nullptr), current_block_(nullptr), no_grad_(r->no_grad_) {}
   ~GraphBuilder() {
     for (auto i : graph_pool_) {
       delete i;
@@ -291,6 +292,7 @@ class GraphBuilder {
   FrameStates frame_;
   Block *current_block_;
   int cur_bci_ = 0;
+  bool no_grad_;
   std::vector<TryBlock> tryBlockStacks_{};
 
   static const std::unordered_map<int, bool (GraphBuilder::*)(const Instr &)> bytecode_meth_map_;
@@ -298,6 +300,7 @@ class GraphBuilder {
   ValueNode *GetCallFunctionNode(ValueNode *node, PyObject *dst_dtype);
   bool DoMixedPrecisionLocalAccess(const Instr &instr, ValueNode *node);
   ValueNode *DoMixedPrecisionAttrAccess(const Instr &instr, ValueNode *node, ValueNode *attr);
+  bool ResolveNoGrad(CallNode *call_node, StopTraceReason *stop_reason);
 };
 
 class MindGraphBuilder : public GraphBuilder {
