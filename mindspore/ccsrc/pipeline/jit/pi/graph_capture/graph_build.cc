@@ -32,6 +32,7 @@
 #include "pipeline/jit/pi/capture_context.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "pipeline/jit/pi/graph_compiler/utils.h"
+#include "pipeline/jit/pi/utils/utils.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/structure_ops.h"
@@ -158,6 +159,7 @@ const std::unordered_map<int, bool (GraphBuilder::*)(const Instr &)> GraphBuilde
   {POP_BLOCK, &GraphBuilder::DoException},
   {SETUP_WITH, &GraphBuilder::DoException},
   {SETUP_FINALLY, &GraphBuilder::DoException},
+  {BEGIN_FINALLY, &GraphBuilder::DoException},
   {WITH_CLEANUP_START, &GraphBuilder::DoException},
   {WITH_CLEANUP_FINISH, &GraphBuilder::DoException},
   {END_FINALLY, &GraphBuilder::DoException},
@@ -653,7 +655,7 @@ bool GraphBuilder::DoWith(const Instr &instr) {
 }
 
 bool GraphBuilder::DoException(const Instr &instr) {
-#if (PY_MAJOR_VERSION == 3) && (PY_MINOR_VERSION == 8)
+#if (PY_MAJOR_VERSION == 3) && (PY_MINOR_VERSION > 10)
   return false;
 #else
   int opCode = instr.op();
@@ -705,6 +707,10 @@ bool GraphBuilder::DoException(const Instr &instr) {
     auto exc = pop();
     (void)pop();
     push(exc);
+    return true;
+  } else if (opCode == BEGIN_FINALLY) {
+    auto n = NewValueNode(AObject::Convert(Py_None), LOAD_CONST, 0);
+    push(n);
     return true;
   } else if (opCode == END_FINALLY) {
     (void)pop();
@@ -1692,11 +1698,22 @@ bool GraphBuilder::DoByteCode(const Instr &instr) {
   if (cur_bci_ < current_block_->begin_ci() || cur_bci_ >= current_block_->end_ci()) {
     current_block_ = graph_->GetCFG()->GetBlockByBci(cur_bci_);
   }
+  if (no_grad_) {
+    Opcode opcode(instr.op());
+    if (opcode == STORE_FAST) {
+      py::object func = Utils::GetModuleAttr("mindspore.ops.operations", "StopGradient")();
+      auto n = NewValueNode(AObject::Convert(func.ptr()), LOAD_CONST, 0);
+      push(n);
+      DoLocalAccess({LOAD_FAST, instr.arg()});
+      DoCall({CALL_FUNCTION, 1});
+      DoLocalAccess({STORE_FAST, instr.arg()});
+    }
+  }
   return true;
 }
 
 GraphBuilder::GraphBuilder(const PyFrameWrapper &f)
-    : root_(this), parent_(nullptr), graph_(nullptr), current_block_(nullptr) {
+    : root_(this), parent_(nullptr), graph_(nullptr), current_block_(nullptr), no_grad_(false) {
   auto co_wrapper = f.GetCode();
   PyCodeObject *co = co_wrapper.ptr();
   int argc = co_wrapper.ArgCount();
@@ -2844,6 +2861,21 @@ bool GraphBuilder::HandleCallParameters(const py::object &func_info, CallNode *c
 
 static void SetGradFuncInfo(mindspore::pijit::CallNode *call_node);
 
+bool GraphBuilder::ResolveNoGrad(CallNode *call_node, StopTraceReason *stop_reason) {
+  AObject *callable = call_node->input(0)->GetVobj();
+  py::object callable_info = callable->GetPyObject();
+  bool is_nograd_enter = IsNoGradEnterFunc(callable_info);
+  bool is_nograd_exit = IsNoGradExitFunc(callable_info);
+  if (is_nograd_enter || is_nograd_exit) {
+    call_node->SetVobj(AObject::Convert(Py_True));
+    call_node->SetSubGraph(nullptr);
+    *stop_reason = StopTraceReason::kNonStopTrace;
+    no_grad_ = is_nograd_enter;
+    return true;
+  }
+  return false;
+}
+
 py::object GraphBuilder::ResolveCallable(CallNode *call_node, StopTraceReason *stop_reason) {
   AObject *callable = call_node->input(0)->GetVobj();
   py::object callable_info;
@@ -2863,6 +2895,10 @@ py::object GraphBuilder::ResolveCallable(CallNode *call_node, StopTraceReason *s
       SetGradFuncInfo(call_node);
       *stop_reason = StopTraceReason::kNonStopTrace;
     }
+    return py::object();
+  }
+
+  if (ResolveNoGrad(call_node, stop_reason)) {
     return py::object();
   }
 

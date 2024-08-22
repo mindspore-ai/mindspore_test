@@ -334,6 +334,14 @@ bool IsNumpyObject(PyObject *op) {
   return tp->tp_name ? strncmp(tp->tp_name, numpy, sizeof(numpy) - 1) == 0 : false;
 }
 
+bool IsNoGradEnterFunc(const py::object &handle) {
+  return std::string(py::str(handle)).find("_no_grad.__enter__") != std::string::npos;
+}
+
+bool IsNoGradExitFunc(const py::object &handle) {
+  return std::string(py::str(handle)).find("_no_grad.__exit__") != std::string::npos;
+}
+
 std::string GetTopModule(const py::object &o) {
   PyObject *mod = PyObject_GetAttrString(o.ptr(), "__module__");
   const char *module_name = "";
