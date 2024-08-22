@@ -28,7 +28,10 @@ class Net(nn.Cell):
         return output
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_repeat_elements(mode):
     """
@@ -45,3 +48,7 @@ def test_repeat_elements(mode):
     out = net(x, 2, -2)
     expect_out = np.array([[0, 1, 2], [0, 1, 2], [3, 4, 5], [3, 4, 5]])
     assert np.allclose(out.asnumpy(), expect_out)
+    x = ms.Tensor(np.random.randn(1, 2, 3, 4, 5, 6, 7, 8), ms.float32)
+    with pytest.raises(ValueError,
+                       match="For repeat_elements, the rank of x should be less than or equal to 7, but got 8."):
+        _ = net(x, 1, 0)

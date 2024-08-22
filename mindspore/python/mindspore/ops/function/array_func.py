@@ -6514,6 +6514,14 @@ def _cal_reshape(x_shape, rep, axis):
     return tuple(x_reshape)
 
 
+@_primexpr
+def _check_rank_range(x_rank, limit, arg_name, op_name):
+    if x_rank > limit:
+        raise ValueError(
+            f"For {op_name}, the rank of {arg_name} should be less than or equal to {limit}, but got {x_rank}.")
+    return x_rank
+
+
 def repeat_interleave(input, repeats, axis=None):
     """
     Repeat elements of a tensor along an axis, like `numpy.repeat`.
@@ -6599,9 +6607,13 @@ def repeat_elements(x, rep, axis=0):
     """
     Repeat elements of a tensor along an axis, like `numpy.repeat` .
 
+    Note:
+        It is recommended to use :func:'mindspore.mint.repeat_interleave', the dimension of input 'x' can support
+        a maximum of 8, and get better performance.
+
     Args:
-        x (Tensor): The tensor to repeat values for. Must be of type: float16,
-            float32, int8, uint8, int16, int32, or int64.
+        x (Tensor): The tensor to repeat values for. Must be of type: float16, float32, int8, uint8, int16, int32,
+            or int64. The rank of `x` must be less than or equal to 7.
         rep (int): The number of times to repeat, must be positive.
         axis (int): The axis along which to repeat. Default: 0.
 
@@ -6609,6 +6621,9 @@ def repeat_elements(x, rep, axis=0):
         One tensor with values repeated along the specified axis. If x has shape
         :math:`(s1, s2, ..., sn)` and axis is i, the output will have shape :math:`(s1, s2, ..., si * rep, ..., sn)`.
         The output type will be the same as the type of `x`.
+
+    Raises:
+        ValueError: If the rank of `x` is greater than 7.
 
     Supported Platforms:
         ``Ascend`` ``GPU`` ``CPU``
@@ -6636,6 +6651,7 @@ def repeat_elements(x, rep, axis=0):
     rep = _check_positive_int(rep, "rep", "repeat_elements")
     axis = _check_is_int(axis, "axis", "repeat_elements")
     x_rank = rank_(x)
+    x_rank = _check_rank_range(x_rank, 7, "x", "repeat_elements")
     axis = _check_axis_range(axis, x_rank, "axis", "repeat_elements")
     axis = axis + x.ndim if axis < 0 else axis
     expand_axis = axis + 1
