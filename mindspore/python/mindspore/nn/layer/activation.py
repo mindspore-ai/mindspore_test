@@ -1381,10 +1381,11 @@ class SoftShrink(Cell):
         :align: center
 
     Args:
-        lambd (number, optional): The threshold :math:`\lambda` defined by the Hard Shrink formula. Default: ``0.5`` .
+        lambd (number, optional): The threshold :math:`\lambda` defined by the Soft Shrink formula.
+            It should be greater than or equal to 0, default: ``0.5`` .
 
     Inputs:
-        - **input** (Tensor) - The input of Hard Shrink. Supported dtypes:
+        - **input** (Tensor) - The input of Soft Shrink. Supported dtypes:
 
           - Ascend: float16, float32, bfloat16.
           - CPU/GPU: float16, float32.
