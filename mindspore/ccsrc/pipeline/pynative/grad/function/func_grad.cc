@@ -198,10 +198,7 @@ void ReleaseResource(const VariablePtr &variable) {
   const auto &forward = PyNativeAlgo::Common::GetPyNativeExecutor()->forward_executor();
   if (forward->enable_async()) {
     const auto task = [variable]() { variable->Release(); };
-    const auto &bprop_queue = runtime::Pipeline::Get().bprop_stage();
-    if (!bprop_queue->Push(new (std::nothrow) BpropTask(std::move(task)))) {
-      bprop_queue->CheckException();
-    }
+    runtime::Pipeline::Get().bprop_stage()->Push(std::make_shared<BpropTask>(task));
   } else {
     variable->Release();
   }

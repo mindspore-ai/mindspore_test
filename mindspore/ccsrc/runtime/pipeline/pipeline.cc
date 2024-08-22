@@ -27,7 +27,7 @@ Pipeline &Pipeline::Get() {
 
 Pipeline::Pipeline()
     : frontend_stage_(std::make_unique<AsyncRQueue>("frontend_queue", runtime::kThreadWaitLevel::kLevelFrontend)),
-      bprop_stage_(std::make_unique<AsyncHqueue>("bprop_queue")),
+      bprop_stage_(std::make_unique<AsyncRQueue>("bprop_queue", kThreadWaitLevel::kLevelGrad)),
       backend_stage_(std::make_unique<AsyncRQueue>("backend_queue", kThreadWaitLevel::kLevelBackend)),
       launch_stage_(std::make_unique<AsyncRQueue>("launch_queue", kThreadWaitLevel::kLevelDevice)) {}
 

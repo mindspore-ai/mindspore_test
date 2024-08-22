@@ -39,8 +39,8 @@ constexpr auto kQueueCapacity = 1024;
 enum kThreadWaitLevel : int {
   kLevelUnknown = 0,
   kLevelPython,
-  kLevelGrad,
   kLevelFrontend,
+  kLevelGrad,
   kLevelBackend,
   kLevelDevice,
 };
