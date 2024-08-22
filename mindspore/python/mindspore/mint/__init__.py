@@ -211,7 +211,7 @@ from mindspore.mint import nn, optim
 # 86
 
 # 87
-
+from mindspore.ops.auto_generate import trunc
 # 88
 
 # 89
@@ -983,6 +983,14 @@ def zeros(size, *, dtype=None):
          [0. 0.]]
     """
     return ops.auto_generate.zeros(size, dtype)
+
+def fix(x):
+    """
+    Alias for mindspore.mint.trunc()
+
+    For more details, see func:`mindspore.mint.trunc`.
+    """
+    return trunc(x)
 
 
 __all__ = [

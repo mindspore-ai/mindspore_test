@@ -49,7 +49,10 @@ from mindspore.ops.auto_generate import (minimum, maximum, mul, sin, sinc, sinh,
                                          log, log1p, neg, not_equal, pow, round_op, isfinite, argmax_ext, mean_ext_op,
                                          sum_ext_op, prod_ext_op, all, matrix_inverse_ext, atan2_ext, sign, acos_ext,
                                          acosh_ext, asin_ext, asinh_ext, atan_ext, tan, median_ext_op, median_dim_op,
-                                         xlogy_op, xlogy_scalar_other_op, xlogy_scalar_self_op)
+                                         xlogy_op, xlogy_scalar_other_op, xlogy_scalar_self_op, trunc)
+
+
+
 from mindspore.ops.auto_generate.gen_ops_def import add_ext, sub_ext, bmm_ext
 from mindspore.ops.auto_generate import tanh
 from mindspore.nn import layer
@@ -3072,34 +3075,6 @@ def truncate_mod(x, y):
         [ 2  1 -1]
     """
     return truncate_mod_(x, y)
-
-
-def trunc(input):
-    r"""
-    Returns a new tensor with the truncated integer values of the elements of the input tensor.
-
-    Args:
-        input (Tensor): The input tensor.
-
-    Returns:
-        Tensor, the same shape and data type as the input.
-
-    Raises:
-        TypeError: If `input` is not a Tensor.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([3.4742, 0.5466, -0.8008, -3.9079]),mindspore.float32)
-        >>> output = ops.trunc(x)
-        >>> print(output)
-        [3. 0. 0. -3.]
-    """
-    return trunc_(input)
 
 
 def ldexp(x, other):

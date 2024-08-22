@@ -40,7 +40,7 @@ from ..auto_generate import (Add, Addcdiv, Addcmul, ReduceMean, ReduceSum, Reduc
                              LinSpace, MatrixDeterminant, LogMatrixDeterminant, Erfinv, Conj,
                              Real, Complex, Angle, MatrixExp, CholeskyInverse, Trace, Cholesky, Cross,
                              FFTWithSize, NextAfter, NanToNum, Eig, Qr, Roll, Maximum, Div, DivMod, CumProd,
-                             CumSum, Less, LessEqual, AssignAdd, IsFinite, IsClose, TanhGrad, Xlogy)
+                             CumSum, Less, LessEqual, AssignAdd, IsFinite, IsClose, TanhGrad, Xlogy, Trunc)
 
 
 def _infer_shape_reduce(x, axis, keep_dims, prim_name):
@@ -3600,37 +3600,6 @@ class Imag(Primitive):
     @prim_attr_register
     def __init__(self):
         """Initialize Imag"""
-        self.init_prim_io_names(inputs=['input'], outputs=['output'])
-
-
-class Trunc(Primitive):
-    """
-    Returns a new tensor with the truncated integer values of the elements of input.
-
-    Refer to :func:`mindspore.ops.trunc` for more details.
-
-    Inputs:
-        - **input_x** (Tensor) - Input tensor of any dimension.
-
-    Outputs:
-        Tensor, the same shape and data type as `input_x`.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([3.4742, 0.5466, -0.8008, -3.9079]), mindspore.float32)
-        >>> output = ops.Trunc()(x)
-        >>> print(output)
-        [ 3.  0. -0. -3.]
-    """
-
-    @prim_attr_register
-    def __init__(self):
-        """Initialize Trunc"""
         self.init_prim_io_names(inputs=['input'], outputs=['output'])
 
 

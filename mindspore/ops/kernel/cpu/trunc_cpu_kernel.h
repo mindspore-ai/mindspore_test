@@ -21,7 +21,7 @@
 #include <utility>
 #include <memory>
 #include <map>
-#include "mindspore/ops/infer/trunc.h"
+#include "mindspore/ops/infer/ops_func_impl/trunc.h"
 #include "kernel/cpu/cpu_kernel.h"
 #include "plugin/factory/ms_factory.h"
 

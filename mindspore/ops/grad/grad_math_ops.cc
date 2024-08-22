@@ -1995,7 +1995,12 @@ REG_BPROP_BUILDER("Hypot").SetBody(BODYFUNC(ib) {
   return {result_dx1, result_dx2};
 });
 
-REG_BPROP_BUILDER("Trunc").SetUnusedInputs({i0, i1, i2}).SetBody(ReturnZeros);
+REG_BPROP_BUILDER("Trunc").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto dout = ib->GetInput(kIndex2);
+  auto zeros = ib->Emit("ZerosLikeExt", {dout, ib->Value(static_cast<int64_t>(ib->GetDtypeId(x)))});
+  return {zeros};
+});
 
 REG_BPROP_BUILDER("Ger").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   auto input_x = ib->GetInput(kIndex0);

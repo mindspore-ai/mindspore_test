@@ -105,6 +105,7 @@ Tensor
     mindspore.mint.erfinv
     mindspore.mint.exp
     mindspore.mint.expm1
+    mindspore.mint.fix
     mindspore.mint.floor
     mindspore.mint.log
     mindspore.mint.log1p
@@ -131,6 +132,7 @@ Tensor
     mindspore.mint.tan
     mindspore.mint.tanh
     mindspore.mint.xlogy
+    mindspore.mint.trunc
 
 Reduction运算
 ^^^^^^^^^^^^^^^^^^^^^
