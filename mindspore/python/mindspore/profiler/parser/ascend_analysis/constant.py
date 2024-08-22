@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 """Constant value for ascend profiling parser."""
+import os
 
 
 class Constant:
@@ -25,6 +26,7 @@ class Constant:
     COMPLETE_EVENT = 'X'
     FLOW_OP = "flow"
     INVALID_FLOW_ID = 18446744073709551615
+    DEFAULT_PROCESS_NUMBER = os.cpu_count() // 2
 
     # file authority
     MAX_FILE_SIZE = 1024 * 1024 * 1024 * 10
@@ -51,3 +53,7 @@ class Constant:
     PROCESS_SORT = "process_sort_index"
     THREAD_NAME = "thread_name"
     THREAD_SORT = "thread_sort_index"
+
+    # dir name
+    FRAMEWORK_DIR = "FRAMEWORK"
+    PROFILER_DIR = "profiler"
