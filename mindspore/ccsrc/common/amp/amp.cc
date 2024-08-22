@@ -21,11 +21,13 @@
 namespace mindspore {
 namespace amp {
 static std::stack<AmpStrategyPtr> g_AmpStrategyStack;
-PrimArgList g_SetDtypeOptList = {};
-PrimArgList g_SetDtypeList = {};
-PrimArgList g_AutoPromoteList = {PrimArg("Addcdiv", {}),  PrimArg("Addcmul", {}),       PrimArg("Cross", {}),
-                                 PrimArg("Dot", {}),      PrimArg("GridSampler2D", {}), PrimArg("GridSampler3D", {}),
-                                 PrimArg("IndexPut", {}), PrimArg("BiasAdd", {})};
+PrimArgList g_SetDtypeOptList = {PrimArg("ReduceProd", {}), PrimArg("Softmax", {}), PrimArg("LogSoftmax", {}),
+                                 PrimArg("CumProd", {}),    PrimArg("CumSum", {}),  PrimArg("CumsumExt", {}),
+                                 PrimArg("ProdExt", {}),    PrimArg("SumExt", {})};
+PrimArgList g_SetDtypeList = {PrimArg("Norm", {})};
+PrimArgList g_AutoPromoteList = {PrimArg("Addcdiv", {}),           PrimArg("Addcmul", {}), PrimArg("Cross", {}),
+                                 PrimArg("_PyboostCrossPrim", {}), PrimArg("Dot", {}),     PrimArg("GridSampler2D", {}),
+                                 PrimArg("GridSampler3D", {}),     PrimArg("BiasAdd", {})};
 
 PrimCastStrategyInfo GetPrimCastStrategyInfo(const AmpStrategyPtr &amp_strategy, const std::string &op_name) {
   PrimCastStrategyInfo strategy_info = {PrimCastStrategy::Ignore, kFloat32, {}};

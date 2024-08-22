@@ -27,6 +27,7 @@
 namespace mindspore {
 namespace amp {
 // prim_name and arg indexes which need to be casted, e.g. (prim0, [arg0, arg1, ...])
+// arg indexes empty means all float args need to be casted
 using PrimArg = std::pair<std::string, std::vector<uint8_t>>;
 using PrimArgList = std::vector<PrimArg>;
 
