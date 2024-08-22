@@ -313,6 +313,10 @@ bool OpProto::IsAttrOptionalTypeByName(const std::string &name) const {
       (name.find_first_of("_") == 0 || name == "num" || name == "table_actual_size")) {
     return true;
   }
+  // NOTE: delete the if statement when CANN supporting OutfeedEnqueueOpV2 second stage wait
+  if (name_ == "OutfeedEnqueueOpV2") {
+    return true;
+  }
   MS_LOG(WARNING) << "CANN op " << name_ << " cannot find attr " << name;
   return true;
 }
