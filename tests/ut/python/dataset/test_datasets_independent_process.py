@@ -257,11 +257,10 @@ def test_dataset_with_independent_process_train_and_eval():
 
 def print_psutil(name):
     print("============== {} =============".format(name), flush=True)
-    os.system("ps -ef | grep python")
+    os.system("ps -ef | grep pytest")
 
 
-# TODO: release subporcess cause two stage pipelien hung
-def skip_test_dataset_with_independent_process_two_stage_pipeline():
+def test_dataset_with_independent_process_two_stage_pipeline():
     """
     Feature: Dataset With Independent Process
     Description: Test dataset in independent process with two stage pipeline
@@ -323,12 +322,12 @@ def skip_test_dataset_with_independent_process_two_stage_pipeline():
 
     assert second_dataset.get_dataset_size() == 10
     print_psutil("after dataset_size")
-    # TODO: hung with output_shapes & output_types
-    ## assert second_dataset.output_shapes() == [[64, 64, 3], [1]]
-    ## print_psutil("after shapes")
 
-    ## assert second_dataset.output_types() == [np.float32, np.float32]
-    ## print_psutil("after types")
+    assert second_dataset.output_shapes() == [[64, 64, 3], [1]]
+    print_psutil("after shapes")
+
+    assert second_dataset.output_types() == [np.float32, np.float32]
+    print_psutil("after types")
 
     assert second_dataset.get_col_names() == ["data", "label"]
     print_psutil("after col_names")
