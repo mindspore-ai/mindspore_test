@@ -449,6 +449,8 @@ def auto_mixed_precision(network, amp_level="O0", dtype=mstype.float16):
           need to be configured to ``O0`` to avoid the duplicated accuracy conversion.
         - When `amp_level` is set to ``auto``, the output of the network may be lower precision, and manual cast may
           be needed to avoid type mismatch errors in loss function.
+        - When `amp_level` is set to ``auto``, and cells in the network are configured with `to_float`, the accuracy
+          specified by `to_float` takes effect first.
 
     .. warning::
         ``auto`` level of `amp_level` is an experimental API that is subject to change or deletion.
