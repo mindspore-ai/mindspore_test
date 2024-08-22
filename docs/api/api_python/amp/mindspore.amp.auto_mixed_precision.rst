@@ -59,6 +59,6 @@ mindspore.amp.auto_mixed_precision
         - **dtype** (Type) - 低精度计算时使用的数据类型，可以是 ``mstype.float16`` 或 ``mstype.bfloat16`` 。默认值： ``mstype.float16`` 。
 
     异常：
-        - **TypeError** - `network` 不是Cell。
+        - **TypeError** - `network` 不是Cell或函数。
         - **ValueError** - `amp_level` 不在支持范围内。
         - **ValueError** - `dtype` 既不是 ``mstype.float16`` 也不是 ``mstype.bfloat16`` 。
