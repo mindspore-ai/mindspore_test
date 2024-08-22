@@ -52,7 +52,7 @@ def test_ge_graph_mode_with_jit_level_o2():
     Description: Graph Mode jit_level==O2 with GE.
     Expectation: Run ok.
     """
-    context.set_context(device_target="Ascend", mode=context.GRAPH_MODE)
+    context.set_context(device_target="Ascend", mode=context.GRAPH_MODE, jit_config={"jit_level": "O2"})
     inputs = Tensor(np.ones((3, 3), np.float32))
     net = NetOuter()
     net.set_jit_config(JitConfig(jit_level="O2"))
@@ -67,7 +67,7 @@ def test_ge_graph_mode_without_jit_level():
     Description: Graph Mode jit_level==None with GE.
     Expectation: Run by ge_device_context without jit_level.
     """
-    context.set_context(device_target="Ascend", mode=context.GRAPH_MODE)
+    context.set_context(device_target="Ascend", mode=context.GRAPH_MODE, jit_config={"jit_level": "O0"})
     inputs = Tensor(np.ones((3, 3), np.float32))
     net = NetOuter()
     output = net(inputs, inputs)
