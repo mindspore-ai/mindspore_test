@@ -105,7 +105,9 @@ Status LayerNormInfo::CheckStrategy(const StrategyPtr &strategy) {
   // check input strategy
   for (size_t i = begin_norm_axis_; i < input_strategy.size(); ++i) {
     if (input_strategy[i] != NO_SPLIT_STRATEGY) {
-      MS_LOG(ERROR) << name_ << ": Invalid input strategy " << ShapeToString(input_strategy);
+      MS_LOG(ERROR) << name_
+                    << ": The dimensions starting form begin_norm_axis cannot be split, the begin_norm_axis is "
+                    << begin_norm_axis_ << ", but the strategy of first input is " << ShapeToString(input_strategy);
       return FAILED;
     }
   }
@@ -119,7 +121,9 @@ Status LayerNormInfo::CheckStrategy(const StrategyPtr &strategy) {
   size_t gamma_diff = input_strategy.size() - gamma_strategy.size();
   for (size_t j = 0; j < gamma_strategy.size(); ++j) {
     if (gamma_strategy[j] != input_strategy[gamma_diff + j]) {
-      MS_LOG(ERROR) << name_ << ": Invalid gamma strategy " << ShapeToString(gamma_strategy);
+      MS_LOG(ERROR) << name_
+                    << ": The strategies of input and gamma must be right aligned, but the strategy of input is "
+                    << ShapeToString(input_strategy) << ", the strategy of gamma is " << ShapeToString(gamma_strategy);
       return FAILED;
     }
   }
@@ -127,7 +131,9 @@ Status LayerNormInfo::CheckStrategy(const StrategyPtr &strategy) {
   size_t beta_diff = input_strategy.size() - beta_strategy.size();
   for (size_t k = 0; k < beta_strategy.size(); ++k) {
     if (beta_strategy[k] != input_strategy[beta_diff + k]) {
-      MS_LOG(ERROR) << name_ << ": Invalid beta strategy " << ShapeToString(beta_strategy);
+      MS_LOG(ERROR) << name_
+                    << ": The strategies of input and beta must be right aligned, but the strategy of input is "
+                    << ShapeToString(input_strategy) << ", the strategy of beta is " << ShapeToString(beta_strategy);
       return FAILED;
     }
   }
@@ -333,22 +339,27 @@ Status LayerNormInfo::CheckInputLayout() {
   const std::vector<int64_t> np_split_map = {-1};
   for (size_t i = begin_norm_axis_; i < in_layout.tensor_map_before().size(); ++i) {
     if (in_layout.tensor_map_before()[i] != np_split_map) {
-      MS_LOG(ERROR) << "Layernorm Invalid input layout " << in_layout.tensor_map_before();
+      MS_LOG(ERROR) << name_
+                    << ": The dimensions starting form begin_norm_axis cannot be split, but the tensor map of input is "
+                    << ShapesToString(in_layout.tensor_map_before());
       return FAILED;
     }
   }
 
   // check gamma and beta layout
   if (gamma_layout.tensor_map_before() != beta_layout.tensor_map_before()) {
-    MS_LOG(ERROR) << "The tensor map of gamma " << gamma_layout.tensor_map_before()
-                  << " dose not equal to tensor map of beta " << beta_layout.tensor_map_before();
+    MS_LOG(ERROR) << name_ << ": The tensor map of gamma " << ShapesToString(gamma_layout.tensor_map_before())
+                  << " dose not equal to tensor map of beta " << ShapesToString(beta_layout.tensor_map_before());
     return FAILED;
   }
 
   size_t gamma_diff = in_layout.tensor_map_before().size() - gamma_layout.tensor_map_before().size();
   for (size_t j = 0; j < gamma_layout.tensor_map_before().size(); ++j) {
     if (gamma_layout.tensor_map_before()[j] != in_layout.tensor_map_before()[gamma_diff + j]) {
-      MS_LOG(ERROR) << "Layernorm Invalid gamma layout " << gamma_layout.tensor_map_before();
+      MS_LOG(ERROR) << name_
+                    << ": The strategies of input and gamma must be right aligned, but the tensor map of input is "
+                    << ShapesToString(in_layout.tensor_map_before()) << ", the tensor map of gamma is "
+                    << ShapesToString(gamma_layout.tensor_map_before());
       return FAILED;
     }
   }
@@ -356,7 +367,10 @@ Status LayerNormInfo::CheckInputLayout() {
   size_t beta_diff = in_layout.tensor_map_before().size() - beta_layout.tensor_map_before().size();
   for (size_t j = 0; j < beta_layout.tensor_map_before().size(); ++j) {
     if (beta_layout.tensor_map_before()[j] != in_layout.tensor_map_before()[beta_diff + j]) {
-      MS_LOG(ERROR) << "Layernorm Invalid beta layout " << beta_layout.tensor_map_before();
+      MS_LOG(ERROR) << name_
+                    << ": The strategies of input and beta must be right aligned, but the tensor map of input is "
+                    << ShapesToString(in_layout.tensor_map_before()) << ", the tensor map of beta is "
+                    << ShapesToString(beta_layout.tensor_map_before());
       return FAILED;
     }
   }

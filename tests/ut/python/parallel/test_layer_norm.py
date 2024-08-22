@@ -1,4 +1,4 @@
-# Copyright 2020 Huawei Technologies Co., Ltd
+# Copyright 2020-2024 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,9 +28,9 @@ def setup_function():
 
 
 class Net(Cell):
-    def __init__(self, mul_weight, strategy1=None, strategy2=None, strategy3=None):
+    def __init__(self, mul_weight, strategy1=None, strategy2=None, strategy3=None, begin_norm_axis=2):
         super().__init__()
-        self.begin_norm_axis = 2
+        self.begin_norm_axis = begin_norm_axis
         self.begin_params_axis = 1
         self.mul = P.Mul().shard(strategy1)
         self.layer_norm = P.LayerNorm(begin_norm_axis=self.begin_norm_axis,
@@ -115,5 +115,20 @@ def test_layer_norm_wrong_strategy():
     strategy2 = ((1, 2, 1, 2), (2, 1, 2), (2, 1, 2))
     strategy3 = ((2, 2, 4, 1), (2, 2, 4, 1))
     net = Net(_w, strategy1, strategy2, strategy3)
+    with pytest.raises(RuntimeError):
+        compile_net(net)
+
+
+def test_layer_norm_error_strategy():
+    """
+    Feature: error strategy
+    Description:
+    Expectation: compile failed
+    """
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", device_num=16, global_rank=0)
+    strategy1 = ((2, 8, 1, 1), (2, 8, 1, 1))
+    strategy2 = ((2, 8, 1, 1), (8, 1, 1), (8, 1, 1))
+    strategy3 = ((2, 8, 1, 1), (2, 8, 1, 1))
+    net = Net(_w, strategy1, strategy2, strategy3, begin_norm_axis=1)
     with pytest.raises(RuntimeError):
         compile_net(net)
