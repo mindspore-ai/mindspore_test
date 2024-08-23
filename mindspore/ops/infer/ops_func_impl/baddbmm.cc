@@ -24,7 +24,6 @@ namespace mindspore {
 namespace ops {
 BaseShapePtr BaddbmmFuncImpl::InferShape(const PrimitivePtr &primitive,
                                          const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
   if (input_args.size() != kSize5) {
     MS_LOG(EXCEPTION) << "input args size should be 5, but got " << input_args.size();
   }

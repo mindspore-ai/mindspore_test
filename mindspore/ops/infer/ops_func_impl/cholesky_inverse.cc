@@ -20,9 +20,7 @@ namespace mindspore {
 namespace ops {
 BaseShapePtr CholeskyInverseFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                  const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(input_args[kIndex0]);
   auto x_shape = input_args[kIndex0]->GetShape();
-  MS_EXCEPTION_IF_NULL(x_shape);
   auto const &x_shape_list = x_shape->GetShapeVector();
   // support dynamic rank
   if (IsDynamicRank(x_shape_list)) {
@@ -66,9 +64,7 @@ BaseShapePtr CholeskyInverseFuncImpl::InferShape(const PrimitivePtr &primitive,
 
 TypePtr CholeskyInverseFuncImpl::InferType(const PrimitivePtr &primitive,
                                            const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(input_args[kIndex0]);
   auto x_type = input_args[kIndex0]->GetType();
-  MS_EXCEPTION_IF_NULL(x_type);
   return x_type;
 }
 }  // namespace ops

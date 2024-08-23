@@ -28,14 +28,15 @@ class EyeFrontendFuncImpl : public OpFrontendFuncImpl {
   ValuePtr InferValue(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override {
     auto n_ptr = GetScalarValue<int64_t>(input_args[kInputIndex0]->GetValue());
     auto m_ptr = GetScalarValue<int64_t>(input_args[kInputIndex1]->GetValue());
+    constexpr int number_zero = 0;
     if (n_ptr.has_value() && m_ptr.has_value()) {
       auto n = n_ptr.value();
       auto m = m_ptr.value();
-      if (m == 0 || n == 0) {
+      if (m == number_zero || n == number_zero) {
         MS_EXCEPTION_IF_NULL(primitive);
         auto prim_name = primitive->name();
-        MS_CHECK_VALUE(n >= 0, prim_name + " error: n value can not be negative.");
-        MS_CHECK_VALUE(m >= 0, prim_name + " error: m value can not be negative.");
+        MS_CHECK_VALUE(n >= number_zero, prim_name + " error: n value can not be negative.");
+        MS_CHECK_VALUE(m >= number_zero, prim_name + " error: m value can not be negative.");
 
         auto dtype_ptr = GetScalarValue<int64_t>(input_args[kInputIndex2]->GetValue());
         MS_CHECK_VALUE(dtype_ptr.has_value(), prim_name + " error: dtype input should has valid value.");

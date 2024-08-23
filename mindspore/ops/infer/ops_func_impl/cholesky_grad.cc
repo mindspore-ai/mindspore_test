@@ -24,12 +24,8 @@ namespace mindspore {
 namespace ops {
 BaseShapePtr CholeskyGradFuncImpl::InferShape(const PrimitivePtr &primitive,
                                               const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(input_args[kIndex0]);
-  MS_EXCEPTION_IF_NULL(input_args[kIndex1]);
   auto grad_shape = input_args[kIndex0]->GetShape();
   auto x_shape = input_args[kIndex1]->GetShape();
-  MS_EXCEPTION_IF_NULL(grad_shape);
-  MS_EXCEPTION_IF_NULL(x_shape);
   const auto grad_shape_vec = grad_shape->GetShapeVector();
   const auto x_shape_vec = x_shape->GetShapeVector();
   if (MS_UNLIKELY((IsDynamic(grad_shape_vec) && !IsDynamic(x_shape_vec)) ||
