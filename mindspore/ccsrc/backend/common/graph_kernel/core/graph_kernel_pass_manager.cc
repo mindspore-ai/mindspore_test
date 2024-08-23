@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2022 Huawei Technologies Co., Ltd
+ * Copyright 2019-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,10 @@
  */
 #include "backend/common/graph_kernel/core/graph_kernel_pass_manager.h"
 
+#include <chrono>
 #include <iomanip>
+#include <limits>
+#include <ratio>
 
 #include "utils/log_adapter.h"
 
@@ -28,7 +31,8 @@ void GraphKernelPassManager::Add(const opt::PassPtr &pass, unsigned int pass_lev
     // the config format can be "stage_id.pass_id" or "stage_name.pass_name"
     return std::find(pass_list.begin(), pass_list.end(),
                      std::to_string(this->stage_) + "." + std::to_string(pass_id)) != pass_list.end() ||
-           std::find(pass_list.begin(), pass_list.end(), this->name_ + "." + pass_name) != pass_list.end();
+           std::find(pass_list.begin(), pass_list.end(), this->name_ + "." + pass_name) != pass_list.end() ||
+           std::find(pass_list.begin(), pass_list.end(), pass_name) != pass_list.end();
   };
   bool enable = supported_device && flags_.opt_level >= pass_level;
   if (enable) {
@@ -43,7 +47,14 @@ void GraphKernelPassManager::Add(const opt::PassPtr &pass, unsigned int pass_lev
 }
 
 std::string GraphKernelPassManager::GetPassFullname(size_t pass_id, const opt::PassPtr &pass) const {
-  return "stage" + std::to_string(stage_) + "_" + name() + "_" + std::to_string(pass_id) + "_" + pass->name();
+  const size_t fusion_stage = std::numeric_limits<size_t>::max();
+  std::string full_name = "";
+  if (stage_ != fusion_stage) {
+    full_name += "stage" + std::to_string(stage_) + "_";
+  }
+  full_name += name() + "_" + std::to_string(pass_id) + "_" + pass->name();
+
+  return full_name;
 }
 
 bool GraphKernelPassManager::Run(const FuncGraphPtr &func_graph) const {
@@ -59,9 +70,18 @@ bool GraphKernelPassManager::Run(const FuncGraphPtr &func_graph) const {
           << GetPassFullname(i, passes_[i]);
       DumpPassIR(func_graph, oss.str());
     } else {
-      MS_LOG(INFO) << "pass " << GetPassFullname(i, passes_[i]) << " is disabled.";
+      MS_LOG(INFO) << "graph kernel pass " << GetPassFullname(i, passes_[i]) << " is disabled.";
     }
   }
+  return changed;
+}
+
+bool GraphKernelPassManager::RunPass(const FuncGraphPtr &func_graph, size_t pass_id, const opt::PassPtr &pass) const {
+  auto start_time = std::chrono::steady_clock::now();
+  bool changed = pass->Run(func_graph);
+  auto stop_time = std::chrono::steady_clock::now();
+  std::chrono::duration<double, std::micro> cost = stop_time - start_time;
+  MS_LOG(INFO) << "Run graph kernel pass " + GetPassFullname(pass_id, pass) + " in " << cost.count() << " us";
   return changed;
 }
 }  // namespace mindspore::graphkernel
