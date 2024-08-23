@@ -364,7 +364,9 @@ TensorLayout GetTensorInLayout(const AnfNodePtr &pre_node, std::vector<int> get_
   if (get_item_index.size() != 1) {
     // If does not have outputes_tensor_info_new, the outputs only have one tensor info
     // thus the get item index must only have one value
-    MS_LOG(EXCEPTION) << "The get_item_index size is not 1, the size is " << get_item_index.size();
+    auto all_minus_one = std::any_of(get_item_index.begin(), get_item_index.end(), [](int i) { return i == -1; });
+    MS_LOG(INFO) << "The get_item_index size is not 1, the size is " << get_item_index.size() << ", the last item is "
+                 << get_item_index[get_item_index.size() - 1] << ", all_minus_one is " << all_minus_one;
   }
   if (get_item_index[get_item_index.size() - 1] != -1) {
     if (get_item_index[get_item_index.size() - 1] >= SizeToInt(distribute_operator->outputs_tensor_info().size())) {
