@@ -21,15 +21,9 @@
         - **eval_indexes** (list) - 在定义 `eval_network` 的情况下使用。如果 `eval_indexes` 为默认值None，`Model` 会将 `eval_network` 的所有输出传给 `metrics` 。如果配置 `eval_indexes` ，必须包含三个元素，分别为损失值、预测值和标签在 `eval_network` 输出中的位置，此时，损失值将传给损失评价函数，预测值和标签将传给其他评价函数。推荐使用评价函数的 :func:`mindspore.train.Metric.set_indexes` 代替 `eval_indexes` 。默认值： ``None`` 。
         - **amp_level** (str) - `mindspore.amp.build_train_network <https://www.mindspore.cn/docs/zh-CN/master/api_python/amp/mindspore.amp.build_train_network.html>`_ 的可选参数 `level` ， `level` 为混合精度等级，该参数支持["O0", "O1", "O2", "O3", "auto"]。默认值： ``"O0"`` 。
 
-          - "O0": 不变化。
-          - "O1": 将白名单中的算子转为float16，剩余算子保持float32。白名单中的算子如下列表：[Conv1d, Conv2d, Conv3d, Conv1dTranspose, Conv2dTranspose, Conv3dTranspose, Dense, LSTMCell, RNNCell, GRUCell, MatMul, BatchMatMul, PReLU, ReLU, Ger]。
-          - "O2": 将网络精度转为float16，BatchNorm保持float32精度，使用动态调整损失缩放系数（loss scale）的策略。
-          - "O3": 将网络精度（包括BatchNorm）转为float16，不使用损失缩放策略。
-          - "auto": 为不同处理器设置专家推荐的混合精度等级，如在GPU上设为"O2"，在Ascend上设为"O3"。该设置方式可能在部分场景下不适用，建议用户根据具体的网络模型自定义设置 `amp_level` 。
+          `amp_level` 的详细配置信息可参考 :func:`mindspore.amp.auto_mixed_precision` 。
 
-          在GPU上建议使用"O2"，在Ascend上建议使用"O3"。
           通过 `kwargs` 设置 `keep_batchnorm_fp32` ，可修改BatchNorm的精度策略， `keep_batchnorm_fp32` 必须为bool类型；通过 `kwargs` 设置 `loss_scale_manager` 可修改损失缩放策略，`loss_scale_manager` 必须为 :class:`mindspore.amp.LossScaleManager` 的子类，
-          关于 `amp_level` 详见 `mindpore.amp.build_train_network` 。
 
         - **boost_level** (str) - `mindspore.boost` 的可选参数，为boost模式训练等级。支持["O0", "O1", "O2"]。默认值： ``"O0"`` 。
 

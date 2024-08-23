@@ -201,6 +201,7 @@ void BaseFuncGraphEvaluator::EnterStackFrame(const AnalysisEnginePtr &engine, co
   MS_EXCEPTION_IF_NULL(evaluator);
   auto new_context = new_stack_frame->current_context();
   trace::TraceGraphEvalEnter(new_context, call_conf);
+  PushGraphAmpStrategy(new_stack_frame->func_graph());
 
   // Increase & Check the func graph call depth.
   // Don't check it if the user set no_recursive flag.
@@ -229,6 +230,7 @@ void BaseFuncGraphEvaluator::LeaveStackFrame(const AnalysisEnginePtr &, const St
   // Leave current func graph.
   auto current_context = current_stack_frame->current_context();
   trace::TraceGraphEvalLeave(current_context);
+  PopGraphAmpStrategy();
 
   // Decrease the func graph call depth.
   DecreaseFunctionCallDepth();
@@ -355,6 +357,34 @@ AbstractBasePtr BaseFuncGraphEvaluator::LaunchRecursiveEval(const AnalysisEngine
   return abstract;
 }
 
+void BaseFuncGraphEvaluator::PushGraphAmpStrategy(const FuncGraphPtr &fg) {
+  MS_EXCEPTION_IF_NULL(fg);
+  if (fg->has_flag(GRAPH_FLAG_MIX_PRECISION_FP32) || fg->has_flag(GRAPH_FLAG_MIX_PRECISION_FP16) ||
+      fg->has_flag(GRAPH_FLAG_MIX_PRECISION_BF16)) {
+    // When funcgraph has set to_float, follows to_float strategy rather than amp strategy.
+    fg->set_amp_strategy(std::make_shared<amp::AmpStrategy>());
+  } else {
+    amp::AmpStrategyPtr fg_amp_strategy = fg->amp_strategy();
+    amp::AmpStrategyPtr parent_amp_strategy = GetCurrentGraphAmpStrategy();
+    if (parent_amp_strategy != nullptr && (fg_amp_strategy == nullptr || !parent_amp_strategy->IsEnable())) {
+      // Pass amp strategy of parent func_graph to fg.
+      fg->set_amp_strategy(parent_amp_strategy);
+    }
+  }
+  amp_strategy_stack_.push(fg->amp_strategy());
+}
+
+void BaseFuncGraphEvaluator::PopGraphAmpStrategy() {
+  if (amp_strategy_stack_.empty()) {
+    MS_LOG(INTERNAL_EXCEPTION) << "amp_strategy_stack_ is empty when trying to pop the amp strategy.";
+  }
+  amp_strategy_stack_.pop();
+}
+
+amp::AmpStrategyPtr BaseFuncGraphEvaluator::GetCurrentGraphAmpStrategy() {
+  return amp_strategy_stack_.empty() ? nullptr : amp_strategy_stack_.top();
+}
+
 EvalResultPtr BaseFuncGraphEvaluator::Eval(AnalysisEnginePtr engine, const AbstractBasePtrList &args_abs_list,
                                            const AnfNodeConfigPtr &out_conf) {
   auto eval_result = evaluator_cache_mgr_->GetValue(args_abs_list);
@@ -389,6 +419,7 @@ EvalResultPtr BaseFuncGraphEvaluator::Eval(AnalysisEnginePtr engine, const Abstr
   MS_EXCEPTION_IF_NULL(parent_context_);
   auto context = NewContext(parent_context_, fg, args_abs_list);
   trace::TraceGraphEvalEnter(context, out_conf);
+  PushGraphAmpStrategy(fg);
 
   std::size_t nargs = fg->parameters().size();
   if (args_abs_list.size() != nargs) {
@@ -455,6 +486,7 @@ EvalResultPtr BaseFuncGraphEvaluator::Eval(AnalysisEnginePtr engine, const Abstr
   SyncFuncGraphSideEffectFlag(fg);
 
   trace::TraceGraphEvalLeave(context);
+  PopGraphAmpStrategy();
   // Decrease the func graph call depth.
   DecreaseFunctionCallDepth();
   MS_LOG(DEBUG) << this << "(" << type_name() << "/" << ToString()

@@ -25,6 +25,7 @@
 #include <stack>
 #include <unordered_map>
 
+#include "ir/dtype/amp.h"
 #include "utils/ms_context.h"
 #include "pipeline/jit/ps/static_analysis/static_analysis.h"
 #include "pipeline/jit/ps/static_analysis/async_eval_result.h"
@@ -216,19 +217,25 @@ class BaseFuncGraphEvaluator : public Evaluator {
   virtual void SyncFuncGraphSideEffectFlag(const FuncGraphPtr &func_graph) = 0;
 
  protected:
+  amp::AmpStrategyPtr GetCurrentGraphAmpStrategy();
   AnalysisContextPtr parent_context_;
 
  private:
-  // As evaluator can be recursively called, so use a vector to simulate a stack of flags.
-  std::vector<bool> always_eval_flags_;
+  void PushGraphAmpStrategy(const FuncGraphPtr &fg);
+  void PopGraphAmpStrategy();
   AbstractBasePtr LaunchRecursiveEval(const AnalysisEnginePtr &engine, const FuncGraphPtr &fg,
                                       const AnalysisContextPtr &context) const;
   // Add functions for stack frame routine.
   AbstractBasePtr LaunchStackFrame(const AnalysisEnginePtr &engine, const FuncGraphPtr &fg,
                                    const AnalysisContextPtr &context);
-  static void EnterStackFrame(const AnalysisEnginePtr &engine, const StackFramePtr &current_stack_frame,
-                              const StackFramePtr &new_stack_frame);
-  static void LeaveStackFrame(const AnalysisEnginePtr &, const StackFramePtr &current_stack_frame);
+  void EnterStackFrame(const AnalysisEnginePtr &engine, const StackFramePtr &current_stack_frame,
+                       const StackFramePtr &new_stack_frame);
+  void LeaveStackFrame(const AnalysisEnginePtr &, const StackFramePtr &current_stack_frame);
+
+  // As evaluator can be recursively called, so use a vector to simulate a stack of flags.
+  std::vector<bool> always_eval_flags_;
+  // Stack of amp strategy for funcgraphs.
+  std::stack<amp::AmpStrategyPtr> amp_strategy_stack_;
 };
 
 class FuncGraphEvaluator : public BaseFuncGraphEvaluator {

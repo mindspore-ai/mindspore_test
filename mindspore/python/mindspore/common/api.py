@@ -38,6 +38,7 @@ from mindspore.common.tensor import Tensor as PythonTensor
 from mindspore.common.sparse_tensor import CSRTensor as PythonCSRTensor
 from mindspore.common.sparse_tensor import COOTensor as PythonCOOTensor
 from mindspore.common.sparse_tensor import RowTensor as PythonRowTensor
+from mindspore._c_expression.amp import get_curr_amp_strategy
 from mindspore._c_expression import GraphExecutor_, Tensor, CSRTensor, RowTensor, COOTensor, \
     PyNativeExecutor_, verify_inputs_signature, init_exec_dataset, _set_dataset_mode_config, init_pipeline, \
     _ms_memory_recycle, _bind_device_ctx
@@ -945,6 +946,12 @@ def jit(fn=None, mode="PSJit", input_signature=None, hash_args=None, jit_config=
             # only the function or cell instance wrapped by shard will fall into this branch
             if _is_pynative_parallel() and func.__name__ == _PYNATIVE_PARALLEL_FUNC_NAME:
                 process_obj = hash_args
+            # Handle auto mixed precision strategy.
+            if not hasattr(func, "amp_strategy"):
+                if isinstance(func, types.MethodType):
+                    setattr(func.__func__, "amp_strategy", get_curr_amp_strategy())
+                else:
+                    setattr(func, "amp_strategy", get_curr_amp_strategy())
             out = _MindsporeFunctionExecutor(func, hash_obj, dyn_args, process_obj, jit_config)(*args, **kwargs)
             return out
 
