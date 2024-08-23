@@ -607,7 +607,7 @@ def save_checkpoint(save_obj, ckpt_file_name, integrated_save=True,
                     data_list[key].append(data)
 
     if os.getenv("AITURBO") == "1":
-        import aiturbo
+        from aiturbo.checkpoint import aiturbo_mindspore as aiturbo
         ckpt_name = os.path.basename(ckpt_file_name)
         aiturbo.save_ckpt(ckpt_name, global_step_num, data_list_np, crc_check)
     elif async_save:
@@ -1281,7 +1281,7 @@ def load_checkpoint(ckpt_file_name, net=None, strict_load=False, filter_prefix=N
 
     if os.getenv("AITURBO") == "1":
         rank_id = get_rank()
-        import aiturbo
+        from aiturbo.checkpoint import aiturbo_mindspore as aiturbo
         ckpt_path = os.path.dirname(ckpt_file_name)
         ckpt_name = os.path.basename(ckpt_file_name)
         np_dict = aiturbo.load_ckpt(ckpt_path, ckpt_name, rank_id, crc_check)

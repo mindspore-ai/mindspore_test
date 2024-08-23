@@ -525,8 +525,8 @@ class ModelCheckpoint(Callback):
         self._aiturbo_init_flag = os.getenv("AITURBO") == "1"
         # get existing checkpoint files
         if self._aiturbo_init_flag:
-            import aiturbo
-            self._manager = aiturbo.CheckpointShmManager()
+            from aiturbo.checkpoint.aiturbo_mindspore_ckpt import CheckpointShmManager
+            self._manager = CheckpointShmManager()
         else:
             self._manager = CheckpointManager()
         if not callable(directory) and not callable(prefix):
@@ -547,7 +547,7 @@ class ModelCheckpoint(Callback):
         """
         cb_params = run_context.original_args()
         if self._aiturbo_init_flag:
-            import aiturbo
+            from aiturbo.checkpoint import aiturbo_mindspore as aiturbo
             ckpt_storage_path = self._directory
             rank_id = get_rank()
             stage_num = _get_auto_parallel_context("pipeline_stages")
@@ -566,7 +566,7 @@ class ModelCheckpoint(Callback):
                           "stage_layout": param_redundancy_dict}
                 single_params = remove_param_redundancy(param_redundancy_dict)
                 single_params = {device_id: list(params) for device_id, params in single_params.items()}
-                aiturbo.init(ckpt_storage_path, rank_id, layout, single_params, self._config.enable_redundance, dp)
+                aiturbo.init(ckpt_storage_path, rank_id, layout, single_params, not self._config.enable_redundance, dp)
             self._aiturbo_init_flag = False
         if self._prefix_func:
             self._prefix = self._prefix_func(cb_params)
