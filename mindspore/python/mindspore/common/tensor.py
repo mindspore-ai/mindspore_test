@@ -1344,6 +1344,19 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         """
         return tensor_operator_registry.get('addmm')(self, mat1, mat2, beta=beta, alpha=alpha)
 
+    def addmm_(self, mat1, mat2, *, beta=1, alpha=1):
+        r"""
+        For details, please refer to :func:`mindspore.ops.addmm`.
+
+        .. note::
+            The output results are directly updated in the Tensor.
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        """
+        return tensor_operator_registry.get('inplace_addmm')(self, mat1, mat2, beta=beta, alpha=alpha)
+
     def addr(self, vec1, vec2, beta=1, alpha=1):
         r"""
         For details, please refer to :func:`mindspore.ops.addr`.
