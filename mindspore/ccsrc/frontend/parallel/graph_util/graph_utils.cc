@@ -507,6 +507,7 @@ Status ConvertStridedSliceInputs(const OperatorParams &params,
       int64_t value = GetValue<int64_t>(param.first.second);
       MS_LOG(INFO) << "STRIDEDSLICE: param=" << param.first.first << ", param.second=" << value;
       AnfNodePtr val = NewValueNode(value);
+      val->set_abstract(param.first.second->ToAbstract());
       (void)new_node_input->emplace_back(val);
       continue;
     }
@@ -520,6 +521,7 @@ Status ConvertStridedSliceInputs(const OperatorParams &params,
     }
     AnfNodePtr val = NewValueNode(shape_vec);
     MS_ERROR_IF_NULL_W_RET_VAL(val, FAILED);
+    val->set_abstract(param.first.second->ToAbstract());
     (void)new_node_input->emplace_back(val);
   }
   return SUCCESS;
@@ -778,6 +780,7 @@ std::vector<AnfNodePtr> CreateInput(const Operator &op, const AnfNodePtr &pre_no
     for (const auto &param : params) {
       AnfNodePtr val = NewValueNode(param.first.second);
       MS_EXCEPTION_IF_NULL(val);
+      val->set_abstract(param.first.second->ToAbstract());
       int64_t position = param.second;
       (void)new_node_input.insert(new_node_input.cbegin() + position - 1, val);
     }
