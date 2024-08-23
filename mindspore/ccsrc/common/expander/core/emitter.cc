@@ -239,7 +239,6 @@ NodePtr Emitter::BroadcastTo(const NodePtr &x, const NodePtr &y) {
   if (IsDynamic(x->shape()) || IsDynamic(y->shape())) {
     return Emit("BroadcastTo", {x, Shape(y)});
   }
-
   return x->shape() == y->shape() ? x : Emit("BroadcastTo", {x, Shape(y)});
 }
 

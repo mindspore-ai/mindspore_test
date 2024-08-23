@@ -246,7 +246,7 @@ class COMMON_EXPORT Emitter {
     return Emit("DynamicBroadcastTo", {value_tensor, shape});
   }
 
-  NodePtr Shape(const NodePtr &node, bool tensor = false) {
+  virtual NodePtr Shape(const NodePtr &node, bool tensor = false) {
     auto shape = node->shape();
     if (tensor) {
       return IsDynamic(shape) ? Emit("TensorShape", {node}) : Tensor(shape);

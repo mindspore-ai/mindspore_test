@@ -36,6 +36,7 @@ class FuncBuilder : public BpropBuilder {
   ~FuncBuilder() override = default;
   NodePtr EmitOp(const PrimitivePtr &prim, const NodePtrList &inputs) override;
   NodePtr EmitValue(const ValuePtr &value) override;
+  NodePtr Shape(const NodePtr &node, bool tensor = false) override;
   NodePtrList ShapeCalc(const ShapeCalcBaseFunctorPtr &functor, const NodePtrList &inputs) override;
   NodePtrList ShapeCalc(const ShapeCalcBaseFunctorPtr &functor, const NodePtrList &inputs,
                         const std::vector<int64_t> &value_depend) override;
@@ -46,6 +47,8 @@ class FuncBuilder : public BpropBuilder {
   NodePtr Cast(const NodePtr &node, const TypePtr &type) override;
   NodePtr Reshape(const NodePtr &node, const NodePtr &shape) override;
   NodePtr Transpose(const NodePtr &node, const NodePtr &perm) override;
+  // The second element y is a target tensor, not target shape!
+  NodePtr BroadcastTo(const NodePtr &x, const NodePtr &y) override;
   NodePtr MatMul(const NodePtr &a, const NodePtr &b, bool transpose_a, bool transpose_b) override;
   NodePtr MatMulExt(const NodePtr &a, const NodePtr &b) override;
   NodePtr Add(const NodePtr &lhs, const NodePtr &rhs) override;
@@ -59,10 +62,8 @@ class FuncBuilder : public BpropBuilder {
   NodePtr Greater(const NodePtr &lhs, const NodePtr &rhs, const TypePtr &dst_type) override;
   NodePtr LessEqual(const NodePtr &input, const NodePtr &other, const TypePtr &dst_type) override;
   NodePtr Less(const NodePtr &input, const NodePtr &other, const TypePtr &dst_type) override;
-  // to do
-  NodePtr Log(const NodePtr &input);
   NodePtr Concat(const NodePtr &tensors, const NodePtr &axis) override;
-
+  // Here is auto generate.
   NodePtr Abs(const NodePtr &input) override;
   NodePtr AdamW(const NodePtr &var, const NodePtr &m, const NodePtr &v, const NodePtr &max_v, const NodePtr &gradient,
                 const NodePtr &step, const NodePtr &lr, const NodePtr &beta1, const NodePtr &beta2,
@@ -101,7 +102,6 @@ class FuncBuilder : public BpropBuilder {
   NodePtr BCEWithLogitsLoss(const NodePtr &input, const NodePtr &target, const NodePtr &weight,
                             const NodePtr &posWeight, const NodePtr &reduction) override;
   NodePtr BatchMatMulExt(const NodePtr &input, const NodePtr &mat2) override;
-  NodePtr BroadcastTo(const NodePtr &input, const NodePtr &shape) override;
   NodePtr Ceil(const NodePtr &input) override;
   NodePtr Chunk(const NodePtr &input, const NodePtr &chunks, const NodePtr &dim) override;
   NodePtr ClampScalar(const NodePtr &input, const NodePtr &min, const NodePtr &max) override;

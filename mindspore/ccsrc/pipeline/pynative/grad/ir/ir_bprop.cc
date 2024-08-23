@@ -234,7 +234,10 @@ AnfNodePtr IrBprop::MapParameter(const ValuePtr &value, const abstract::Abstract
   if (value->isa<tensor::BaseTensor>()) {
     const auto &tensor = value->cast<tensor::BaseTensorPtr>();
     const auto &auto_grad_meta_data = tensor->auto_grad_meta_data();
-    MS_EXCEPTION_IF_NULL(auto_grad_meta_data);
+    if (auto_grad_meta_data == nullptr) {
+      MS_LOG(DEBUG) << "The tensor is a constant value, not a parameter!";
+      return PyNativeAlgo::Common::CreateValueNodeByValue(tensor, abs);
+    }
     const auto &param = auto_grad_meta_data->parameter();
     if (param != nullptr) {
       // In dynamic shape scenario, abs my be need change

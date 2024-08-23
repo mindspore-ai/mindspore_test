@@ -250,6 +250,15 @@ NodePtr FuncBuilder::EmitValue(const ValuePtr &value) {
   return node;
 }
 
+NodePtr FuncBuilder::Shape(const NodePtr &node, bool tensor) {
+  auto shape = node->shape();
+  if (tensor) {
+    return Tensor(shape);
+  } else {
+    return Value(shape);
+  }
+}
+
 NodePtrList FuncBuilder::ShapeCalc(const ShapeCalcBaseFunctorPtr &functor, const NodePtrList &inputs) {
   size_t input_size = inputs.size();
   ShapeArray const_args;
@@ -352,6 +361,10 @@ NodePtr FuncBuilder::Transpose(const NodePtr &node, const NodePtr &perm) {
     }
   }
   return node;
+}
+
+NodePtr FuncBuilder::BroadcastTo(const NodePtr &x, const NodePtr &y) {
+  return x->shape() == y->shape() ? x : NativeFunc::BroadcastTo(x, Shape(y));
 }
 
 NodePtr FuncBuilder::MatMul(const NodePtr &a, const NodePtr &b, bool transpose_a, bool transpose_b) {
@@ -530,10 +543,6 @@ NodePtr FuncBuilder::BCEWithLogitsLoss(const NodePtr &input, const NodePtr &targ
 
 NodePtr FuncBuilder::BatchMatMulExt(const NodePtr &input, const NodePtr &mat2) {
   return NativeFunc::BatchMatMulExt(input, mat2);
-}
-
-NodePtr FuncBuilder::BroadcastTo(const NodePtr &input, const NodePtr &shape) {
-  return NativeFunc::BroadcastTo(input, shape);
 }
 
 NodePtr FuncBuilder::Ceil(const NodePtr &input) { return NativeFunc::Ceil(input); }
