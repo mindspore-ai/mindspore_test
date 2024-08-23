@@ -512,6 +512,23 @@ bool SuperKernelActor::CopyHeterogeneousOutput(OpContext<DeviceTensor> *const co
   return true;
 }
 
+void SuperKernelActor::UpdateOutputAddress(
+  const std::vector<std::pair<size_t, std::vector<size_t>>> &kernel_inputs_to_actor_outputs,
+  const KernelActorPtr &kernel_actor) {
+  for (const auto &pair : kernel_inputs_to_actor_outputs) {
+    size_t kernel_input_index = pair.first;
+    DeviceTensor *real_input = kernel_actor->input_device_tensors_[kernel_input_index];
+    MS_EXCEPTION_IF_NULL(real_input);
+
+    const std::vector<size_t> &actor_output_indices = pair.second;
+    for (auto actor_output_index : actor_output_indices) {
+      auto data = output_data_[actor_output_index].first.get();
+      MS_EXCEPTION_IF_NULL(data);
+      data->data_ = real_input;
+    }
+  }
+}
+
 bool SuperKernelActor::LaunchAllKernels(OpContext<DeviceTensor> *const context) {
   size_t kernel_num = kernel_actors_.size();
   for (size_t i = 0; i < kernel_num; i++) {
@@ -538,6 +555,13 @@ bool SuperKernelActor::LaunchAllKernels(OpContext<DeviceTensor> *const context) 
       if (IsRunningFailed(context)) {
         return false;
       }
+    }
+
+    // Update output device address for Parameter as graph output case.
+    const auto &input_to_output_iter = kernel_input_to_actor_output_indices_.find(kernel.get());
+    if (input_to_output_iter != kernel_input_to_actor_output_indices_.end()) {
+      const auto &kernel_inputs_to_actor_outputs = input_to_output_iter->second;
+      UpdateOutputAddress(kernel_inputs_to_actor_outputs, kernel_actor);
     }
 
     // 2. Allocate somas memory or cached memory for this kernel.
@@ -1088,6 +1112,16 @@ void SuperKernelActor::AnalyseNodesDependence() {
                   device_tensor_store_keys_map.emplace(item.first, item.second);
                 });
 
+  size_t actor_output_num = output_data_nodes_.size();
+  HashMap<AnfNodePtr, std::vector<size_t>> output_node_to_actor_output_index;
+  output_node_to_actor_output_index.reserve(actor_output_num);
+  for (size_t i = 0; i < actor_output_num; i++) {
+    MS_EXCEPTION_IF_NULL(output_data_nodes_[i]);
+    if (output_data_nodes_[i]->isa<Parameter>()) {
+      output_node_to_actor_output_index[output_data_nodes_[i]].push_back(i);
+    }
+  }
+
   const auto &execution_order = graph_->execution_order();
   size_t kernel_num = execution_order.size();
   for (size_t i = 0; i < kernel_num; i++) {
@@ -1139,6 +1173,11 @@ void SuperKernelActor::AnalyseNodesDependence() {
           (void)kernel_actor->device_tensor_store_keys_.emplace_back(j, device_tensor_store_key_iter->second);
         } else {
           kernel_input_to_graph_input_indices_[kernel.get()].emplace_back(j, input_node_idx);
+        }
+
+        auto output_idx_iter = output_node_to_actor_output_index.find(input_node_with_idx.first);
+        if (output_idx_iter != output_node_to_actor_output_index.end()) {
+          kernel_input_to_actor_output_indices_[kernel.get()].emplace_back(j, output_idx_iter->second);
         }
       }
     }

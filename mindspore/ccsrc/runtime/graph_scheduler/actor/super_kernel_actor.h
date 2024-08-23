@@ -125,6 +125,9 @@ class SuperKernelActor : public DebugAwareActor {
   // Handle copy output for different device type kernel.
   bool CopyHeterogeneousOutput(OpContext<DeviceTensor> *const context, const KernelActorPtr &kernel_actor) const;
 
+  void UpdateOutputAddress(const std::vector<std::pair<size_t, std::vector<size_t>>> &kernel_inputs_to_actor_outputs,
+                           const KernelActorPtr &kernel_actor);
+
   // Launch all kernels by execution order in kernel graph: graph_.
   bool LaunchAllKernels(OpContext<DeviceTensor> *const context);
 
@@ -156,6 +159,8 @@ class SuperKernelActor : public DebugAwareActor {
   mindspore::HashMap<AnfNodePtr, KernelActor *> cnode_to_kernel_actor_;
   std::vector<KernelActorPtr> kernel_actors_;
   mindspore::HashMap<AnfNode *, std::vector<std::pair<size_t, size_t>>> kernel_input_to_graph_input_indices_;
+  mindspore::HashMap<AnfNode *, std::vector<std::pair<size_t, std::vector<size_t>>>>
+    kernel_input_to_actor_output_indices_;
   SomasInfo *somas_info_;
 
   AID kernel_async_infer_aid_;

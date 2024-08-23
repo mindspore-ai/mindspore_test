@@ -321,11 +321,21 @@ bool CheckKbkSubGraphExecConditon(const std::vector<KernelGraphPtr> &graphs) {
     }
   }
 
-  // Note: Kbk sub graph mode doesn't support 'RpcAcor' currently.
+  auto IsFallBackKernel = [](const CNodePtr &kernel) {
+    MS_EXCEPTION_IF_NULL(kernel);
+    return common::AnfAlgo::GetCNodeName(kernel) == "PyExecute";
+  };
+
+  // Note: Kbk sub graph mode doesn't support 'RpcSend, RpcRecv, ConditionSwitch, ConditionGather, PyExecute' currently.
+  auto IsKernelNotSupportKbkSubGraphMode = [&](const CNodePtr &kernel) {
+    MS_EXCEPTION_IF_NULL(kernel);
+    return (IsRpcActor(kernel) || IsInnerControlFlowActor(kernel) || IsFallBackKernel(kernel));
+  };
+
   for (const auto &graph : graphs) {
     MS_EXCEPTION_IF_NULL(graph);
     if (std::any_of(graph->execution_order().begin(), graph->execution_order().end(),
-                    [](const CNodePtr &kernel) { return IsRpcActor(kernel); })) {
+                    [&](const CNodePtr &kernel) { return IsKernelNotSupportKbkSubGraphMode(kernel); })) {
       return false;
     }
   }
