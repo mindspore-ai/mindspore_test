@@ -30,7 +30,10 @@ class Net(nn.Cell):
 
 
 def get_output(y_backprop, x, y, enable_graph_kernel=False):
-    context.set_context(enable_graph_kernel=enable_graph_kernel)
+    if enable_graph_kernel:
+        context.set_context(jit_level='O1')
+    else:
+        context.set_context(jit_level='O0')
     net = Net()
     output = net(y_backprop, x, y)
     return output
@@ -70,3 +73,4 @@ def test_ascend():
     context.set_context(jit_level='O0')
     context.set_context(mode=context.GRAPH_MODE)
     relu_grad_test((4, 3), (4, 3), np.float32)
+    relu_grad_test((4, 3), (4, 3), np.float16)

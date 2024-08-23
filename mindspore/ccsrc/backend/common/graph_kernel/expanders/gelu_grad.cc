@@ -35,9 +35,13 @@ class GeLUGrad : public OpDesc {
     // y' is 0.5 * (1.0 + tanh(tanh_para)) + 0.5 * x * (1.0 - tanh(tanh_para) * tanh(para)) * mul_right
     // tanh_para is 'sqrt(2.0 / pi) * (x + 0.044715 * x * x * x)'
     // mul_right is 'sqrt(2.0 / pi) * (1 + 3 * 0.044715 * x * x)'
-    const auto &input_dy = inputs[0];
-    const auto &input_x = inputs[1];
-
+    auto input_dy = inputs[0];
+    auto input_x = inputs[1];
+    auto dtype = input_x->type;
+    if (dtype != kNumberTypeFloat32) {
+      input_dy = gb.Cast(input_dy, kNumberTypeFloat32);
+      input_x = gb.Cast(input_x, kNumberTypeFloat32);
+    }
     // create const var
     auto const_csvalue = gb.Tensor(cs_value, input_dy->type);
     auto const_csvalue_sqrt_two_div_pi = gb.Tensor(cs_sqrt_two_div_pi, input_dy->type);
@@ -71,7 +75,9 @@ class GeLUGrad : public OpDesc {
 
     auto result_tmp = gb.Add(half_mul_tanh_res_add_one, mul_final);
     auto result = gb.Mul(input_dy, result_tmp);
-
+    if (dtype != kNumberTypeFloat32) {
+      result = gb.Cast(result, dtype);
+    }
     return {result};
   }
 };

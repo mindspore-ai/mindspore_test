@@ -28,10 +28,10 @@ class Net(nn.Cell):
 
 
 def fuse(shape1, shape2, dtype):
+    context.set_context(jit_level='O1')
     np.random.seed(1)
     i0 = Tensor(np.random.uniform(1, 2, shape1).astype(dtype))
     i1 = Tensor(np.random.uniform(1, 2, shape2).astype(dtype))
-    context.set_context(enable_graph_kernel=True)
     profiler = Profiler()
     net_obj = Net()
     output = net_obj(i0, i1)
@@ -46,6 +46,5 @@ def test_dvm_profiling():
     Description: ascend test case, use graph_kernel execute ops.
     Expectation: Timeline generated successfully.
     """
-    context.set_context(jit_level='O0')
     context.set_context(mode=context.GRAPH_MODE)
     fuse((32, 1024), (32, 1024), np.float16)

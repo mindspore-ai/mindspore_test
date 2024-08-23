@@ -39,8 +39,12 @@ class Net(nn.Cell):
 
 
 def get_output(net, i0, i1, enable_graph_kernel=False):
-    context.set_context(enable_graph_kernel=enable_graph_kernel,
-                        graph_kernel_flags="--enable_cluster_ops=Slice,StridedSlice")
+    if enable_graph_kernel:
+        context.set_context(jit_level='O1')
+        context.set_context(
+            graph_kernel_flags="--enable_cluster_ops=Slice,StridedSlice")
+    else:
+        context.set_context(jit_level='O0')
     net_obj = net()
     output = net_obj(i0, i1)
     return output
@@ -69,6 +73,5 @@ def test_slice_dvm(dtype):
     Description: ascend test case, use graph_kernel execute ops.
     Expectation: the result match with close graph_kernel result
     """
-    context.set_context(jit_level='O0')
     context.set_context(mode=context.GRAPH_MODE)
     fuse(dtype)
