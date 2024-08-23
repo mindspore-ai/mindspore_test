@@ -14,6 +14,7 @@
 # ============================================================================
 import itertools
 import math
+import pytest
 
 import numpy as np
 from PIL import Image
@@ -177,6 +178,7 @@ def train(batch_size, lr, momentum, epochs, dataset_sink_mode):
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.skip(reason="Only aclnn Conv support dynamic attrs")
 def test_dummy_train_without_sink():
     """
     Feature: Training when the inputs is dynamic shape on GE backend without dataset sinked
