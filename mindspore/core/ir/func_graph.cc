@@ -937,7 +937,7 @@ bool FuncGraph::CheckSideEffect(const AnfNodePtr &input) {
   // Process {Depend -> StopGradient -> MakeTuple(call function, ...)}.
   if (input->isa<CNode>()) {
     auto fn_input = input->cast<CNodePtr>()->input(0);
-    if (IsValueNode<prim::UnpackCall>(fn_input)) {
+    if (IsValueNode<prim::UnpackCall>(fn_input) || IsPrimitive(fn_input, prim::kPrimDoUnpackCall)) {
       fn_input = input->cast<CNodePtr>()->input(1);
     }
     if (IsValueNode<FuncGraph>(fn_input)) {

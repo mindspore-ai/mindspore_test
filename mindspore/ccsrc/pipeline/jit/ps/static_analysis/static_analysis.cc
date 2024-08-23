@@ -507,9 +507,10 @@ AnfNodePtr InsertUnpackGraph(const CNodePtr &origin_cnode, const ValuePtr &value
 
   bool need_unpack_args = false;
   if (index == 1) {
-    // The meta_fg user node should be UnpackCall.
+    // The meta_fg user node should be UnpackCall or DoUnpackCall.
     auto input0_value = GetValueWithoutDoSignature(meta_user->input(0));
-    if (input0_value == nullptr || !input0_value->isa<prim::UnpackCall>()) {
+    if (input0_value == nullptr ||
+        !(input0_value->isa<prim::UnpackCall>() || IsPrimitive(meta_user->input(0), prim::kPrimDoUnpackCall))) {
       return nullptr;
     }
     need_unpack_args = true;
@@ -1287,6 +1288,11 @@ EvaluatorPtr AnalysisEngine::_GetEvaluatorFor(const std::shared_ptr<PrimitiveAbs
   }
 }
 
+EvaluatorPtr AnalysisEngine::_GetEvaluatorFor(const std::shared_ptr<PrimInstanceAbstractClosure> &func) {
+  MS_EXCEPTION_IF_NULL(func);
+  return std::make_shared<PrimInstanceEvaluator>(func->prim_name(), func->instance_node());
+}
+
 EvaluatorPtr AnalysisEngine::_GetEvaluatorFor(const std::shared_ptr<FuncGraphAbstractClosure> &func) {
   MS_EXCEPTION_IF_NULL(func);
   auto [iter, is_new] = evaluators_.emplace(func, nullptr);
@@ -1349,13 +1355,8 @@ EvaluatorPtr AnalysisEngine::_GetEvaluatorFor(const std::shared_ptr<PartialAbstr
   if (iter != constructors_app_.end()) {
     return iter->second;
   }
-  EvaluatorPtr partial_evaluator = nullptr;
-  if (func->need_append_to_end()) {
-    partial_evaluator = std::make_shared<PartialToEndEvaluator>(primal_func);
-  } else {
-    auto primal_evaluator = GetEvaluatorFor(primal_func);
-    partial_evaluator = std::make_shared<PartialAppEvaluator>(primal_evaluator, func->args());
-  }
+  auto primal_evaluator = GetEvaluatorFor(primal_func);
+  EvaluatorPtr partial_evaluator = std::make_shared<PartialAppEvaluator>(primal_evaluator, func->args());
   auto result = constructors_app_.emplace(std::move(part_pair), std::move(partial_evaluator));
   return result.first->second;
 }
@@ -1366,6 +1367,9 @@ EvaluatorPtr AnalysisEngine::GetEvaluatorFor(const AbstractFunctionPtr &func) {
 
   if (func->isa<PrimitiveAbstractClosure>()) {
     return _GetEvaluatorFor(std::static_pointer_cast<PrimitiveAbstractClosure>(func));
+  }
+  if (func->isa<PrimInstanceAbstractClosure>()) {
+    return _GetEvaluatorFor(std::static_pointer_cast<PrimInstanceAbstractClosure>(func));
   }
   if (func->isa<FuncGraphAbstractClosure>()) {
     return _GetEvaluatorFor(std::static_pointer_cast<FuncGraphAbstractClosure>(func));

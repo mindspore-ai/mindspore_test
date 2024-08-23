@@ -1833,7 +1833,7 @@ CNodePtr MakeUnpackCall(const FuncGraphPtr &func_graph, const AnfNodePtr &call_f
                         const std::vector<AnfNodePtr> &packed_arguments) {
   MS_EXCEPTION_IF_NULL(func_graph);
   std::vector<AnfNodePtr> unpack_call_nodes;
-  auto unpack_call_op = NewValueNode(std::make_shared<prim::UnpackCall>(NAMED_METAGRAPH_UNPACKCALL));
+  auto unpack_call_op = NewValueNode(prim::kPrimDoUnpackCall);
   unpack_call_nodes.push_back(unpack_call_op);
   unpack_call_nodes.push_back(call_function_node);
   (void)std::transform(packed_arguments.begin(), packed_arguments.end(), std::back_inserter(unpack_call_nodes),

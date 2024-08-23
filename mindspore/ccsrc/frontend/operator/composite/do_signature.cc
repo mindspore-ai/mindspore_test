@@ -188,6 +188,9 @@ void CheckPrimInputType(const ValuePtr &function, const AbstractBasePtrList &arg
     if (!op_arg.arg_handler_.empty()) {
       continue;
     }
+    if (abs->isa<abstract::AbstractKeywordArg>()) {
+      continue;
+    }
     if (abstract::ValidateArgSpecialType(prim_name, abs, op_arg)) {
       continue;
     }
