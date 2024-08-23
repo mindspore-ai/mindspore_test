@@ -1569,7 +1569,8 @@ bool IrExportBuilder::SetTypeToAttributeProto_irs(const ValuePtr &value, mind_ir
       return false;
     }
   } else {
-    MS_LOG(EXCEPTION) << "Unsupported type: " << value->type_name();
+    MS_LOG(ERROR) << "Unsupported type: " << value->type_name() << ", value: " << value->ToString();
+    return false;
   }
   return true;
 }
@@ -1668,6 +1669,11 @@ bool IrExportBuilder::SetSequenceToAttributeProto(const ValueSequencePtr &value,
     if (item->isa<ValueSequence>()) {
       if (!SetSequenceToAttributeProto(item->cast<ValueSequencePtr>(), attr_values)) {
         MS_LOG(ERROR) << "Set sequence to AttributeProto failed.";
+        return false;
+      }
+    } else if (item->isa<ValueDictionary>()) {
+      if (!SetDictToAttributeProto(item->cast<ValueDictionaryPtr>(), attr_values)) {
+        MS_LOG(ERROR) << "Set dictionary to AttributeProto failed.";
         return false;
       }
     } else {
