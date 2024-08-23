@@ -255,11 +255,11 @@ class Profiler:
             Default value: ``False`` .
         timeline_limit (int, optional): (Ascend/GPU) Set the maximum storage size of the timeline file (unit M).
             When using this parameter, `op_time` must be set to True. Default value: ``500`` .
-        profile_framework (str, optional): (Ascend/GPU) The host information to collect, it must be one of
+        profile_framework (str, optional): (Ascend) The host information to collect, it must be one of
             ["all", "time", None], When is not set to None, it would collect the host profiler data.
             Default: None.
 
-            - "all": Only record host timestamp.
+            - "all": Record host timestamp.
             - "time": The same as "all".
             - None: Not record host information.
         data_simplification (bool, optional): (Ascend only) Whether to remove FRAMEWORK data and other redundant data.
@@ -1887,7 +1887,7 @@ class Profiler:
         self._profile_framework = kwargs.pop("profile_framework", None)
         if self._profile_framework not in ["time", "all", None]:
             logger.warning(f"For '{self.__class__.__name__}', the parameter profile_framework must be one of ["
-                           f" 'time', 'all', None], but got {self._profile_framework}, it will be set to 'all'.")
+                           f" 'time', 'all', None], but got {self._profile_framework}, it will be set to None.")
             self._profile_framework = None
 
         if not isinstance(self._data_simplification, bool):

@@ -125,8 +125,8 @@ def parse_pubilc_args(options):
     if options.get("profile_framework") not in ["time", "all", None]:
         logger.warning(
             "The 'profile_framework' parameter of the environment variable MS_PROFILE_OPTIONS must be one of ["
-            " 'time', 'all', null], but got %s, it will be set to 'all'.", options.get("profile_framework"))
-        options['profile_framework'] = "all"
+            " 'time', 'all', null], but got %s, it will be set to None.", options.get("profile_framework"))
+        options['profile_framework'] = None
     return options
 
 
@@ -197,7 +197,7 @@ def combine_profile_options(profiling_options):
         "timeline_limit": profiling_options.get("timeline_limit", 500),
         "parallel_strategy": profiling_options.get("parallel_strategy", False),
         'op_time': profiling_options.get("op_time", True),
-        'profile_framework': profiling_options.get("profile_framework", "all"),
+        'profile_framework': profiling_options.get("profile_framework", None),
         'with_stack': profiling_options.get("with_stack", False)
     }
     combine_options = parse_profiling_args(config_options)
@@ -251,7 +251,7 @@ def profiler_check_env():
              sync_enable=config.get("sync_enable", False),
              op_time=config.get("op_time", False),
              timeline_limit=config.get("timeline_limit", 500),
-             profile_framework=config.get("profile_framework", "all"),
+             profile_framework=config.get("profile_framework", None),
              with_stack=config.get("with_stack", False))
 
 

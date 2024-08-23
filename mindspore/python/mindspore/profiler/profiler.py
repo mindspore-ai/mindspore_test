@@ -40,7 +40,7 @@ class NewProfiler:
             sync_enable: bool = True,
             data_process: bool = False,
             timeline_limit: int = 500,
-            profile_framework: str = "all",
+            profile_framework: str = None,
             with_stack: bool = False,
             data_simplification: bool = True,
             **kwargs) -> None:

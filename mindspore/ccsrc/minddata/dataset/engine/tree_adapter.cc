@@ -319,7 +319,7 @@ Status TreeAdapter::SplitBySendReceiveOp() {
 
 Status TreeAdapter::Build(const std::shared_ptr<DatasetNode> &root_ir, int64_t init_epoch) {
   RETURN_UNEXPECTED_IF_NULL(root_ir);
-  uint64_t start_time_0 = GetSyscnt();
+  uint64_t start_time = GetSyscnt();
   // Create ExecutionTree
   tree_ = std::make_unique<ExecutionTree>();
 
@@ -368,14 +368,14 @@ Status TreeAdapter::Build(const std::shared_ptr<DatasetNode> &root_ir, int64_t i
   // After the tree is prepared, the col_name_id_map can safely be obtained
   column_name_map_ = tree_->root()->column_name_id_map();
 #endif
-  RETURN_IF_NOT_OK(CollectPipelineInfoEnd("Pipeline", "Build", start_time_0));
+  RETURN_IF_NOT_OK(CollectPipelineInfo("Pipeline", "Build", start_time));
   return Status::OK();
 }
 
 Status TreeAdapter::Compile(const std::shared_ptr<DatasetNode> &input_ir, int32_t num_epochs, int64_t global_step,
                             int64_t dataset_size, bool independent_dataset) {
   RETURN_UNEXPECTED_IF_NULL(input_ir);
-  uint64_t start_time_0 = GetSyscnt();
+  uint64_t start_time = GetSyscnt();
   input_ir_ = input_ir;
   tree_state_ = kCompileStateIRGraphBuilt;
   MS_LOG(INFO) << "Input plan:" << '\n' << *input_ir << '\n';
@@ -433,7 +433,7 @@ Status TreeAdapter::Compile(const std::shared_ptr<DatasetNode> &input_ir, int32_
   int64_t init_epoch = dataset_size != -1 ? global_step / dataset_size : 0;
   RETURN_IF_NOT_OK(Build(root_ir_, init_epoch));
   tree_state_ = kCompileStateReady;
-  RETURN_IF_NOT_OK(CollectPipelineInfoEnd("Pipeline", "Compile", start_time_0));
+  RETURN_IF_NOT_OK(CollectPipelineInfo("Pipeline", "Compile", start_time));
   return Status::OK();
 }
 
@@ -464,7 +464,7 @@ Status TreeAdapter::CheckTreeIfNull() {
 Status TreeAdapter::GetNext(TensorRow *row) {
   RETURN_IF_NOT_OK(CheckTreeIfNull());
   RETURN_UNEXPECTED_IF_NULL(row);
-  uint64_t start_time_0 = GetSyscnt();
+  uint64_t build_start_time = GetSyscnt();
   row->clear();  // make sure row is empty
 
   // When cur_db_ is a nullptr, it means this is the first call to get_next, launch ExecutionTree
@@ -489,7 +489,7 @@ Status TreeAdapter::GetNext(TensorRow *row) {
     }
 #endif
     RETURN_IF_NOT_OK(
-      CollectPipelineInfoEnd("Pipeline", "GetNext", start_time_0, {{"TensorRowFlags", row->FlagName()}}));
+      CollectPipelineInfo("Pipeline", "GetNext", build_start_time, {{"TensorRowFlags", row->FlagName()}}));
     return Status::OK();
   }
   if (row->eof()) {
@@ -512,7 +512,7 @@ Status TreeAdapter::GetNext(TensorRow *row) {
     tracing_->Record(CONNECTOR_DEPTH, cur_connector_capacity_, cur_batch_num_, cur_connector_size_, end_time);
   }
 #endif
-  RETURN_IF_NOT_OK(CollectPipelineInfoEnd("Pipeline", "GetNext", start_time_0, {{"TensorRowFlags", row->FlagName()}}));
+  RETURN_IF_NOT_OK(CollectPipelineInfo("Pipeline", "GetNext", build_start_time, {{"TensorRowFlags", row->FlagName()}}));
   return Status::OK();
 }
 

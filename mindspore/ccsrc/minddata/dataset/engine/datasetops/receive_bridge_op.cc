@@ -263,7 +263,7 @@ Status ReceiveBridgeOp::WorkerEntry(int32_t worker_id) {
   // Fetch next data from parent node
   RETURN_IF_NOT_OK(worker_in_queues_[static_cast<const int>(worker_id)]->PopFront(&in_row));
   RETURN_IF_NOT_OK(
-    CollectOpInfoEnd(this->NameWithID(), "ReceiveBridgeGet", start_time, {{"TensorRowFlags", in_row.FlagName()}}));
+    CollectOpInfo(this->NameWithID(), "ReceiveBridgeGet", start_time, {{"TensorRowFlags", in_row.FlagName()}}));
   start_time = GetSyscnt();
 
   // Now that init work is done, drop into the main fetching loop.
@@ -272,8 +272,8 @@ Status ReceiveBridgeOp::WorkerEntry(int32_t worker_id) {
   while (true) {
     // Handle special logic where row carries a ctrl flag.
     if (in_row.Flags() != TensorRow::kFlagNone) {
-      RETURN_IF_NOT_OK(CollectOpInfoEnd(this->NameWithID(), "ReceiveBridgeProcess", start_time,
-                                        {{"TensorRowFlags", in_row.FlagName()}}));
+      RETURN_IF_NOT_OK(
+        CollectOpInfo(this->NameWithID(), "ReceiveBridgeProcess", start_time, {{"TensorRowFlags", in_row.FlagName()}}));
       if (in_row.quit()) {
         break;
       }
@@ -285,7 +285,7 @@ Status ReceiveBridgeOp::WorkerEntry(int32_t worker_id) {
     // Fetch next data from parent node
     RETURN_IF_NOT_OK(worker_in_queues_[static_cast<const int>(worker_id)]->PopFront(&in_row));
     RETURN_IF_NOT_OK(
-      CollectOpInfoEnd(this->NameWithID(), "ReceiveBridgeGet", start_time, {{"TensorRowFlags", in_row.FlagName()}}));
+      CollectOpInfo(this->NameWithID(), "ReceiveBridgeGet", start_time, {{"TensorRowFlags", in_row.FlagName()}}));
     start_time = GetSyscnt();
   }
 
