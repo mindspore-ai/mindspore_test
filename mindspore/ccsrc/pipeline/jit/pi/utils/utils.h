@@ -191,7 +191,7 @@ class PackCallStackHelper {
   bool Pack(const std::vector<T> &stack_args, CastKeys to_keys, CastSequence to_seq, CastKeyWords to_map) {
     if (opcode_ == CALL_FUNCTION_EX) {
       result_.args_ = to_seq(stack_args[0]);
-      result_.kw_ = stack_args.size() >= 1 ? to_map(stack_args.back()) : std::map<std::string, T>();
+      result_.kw_ = stack_args.size() > 1 ? to_map(stack_args[1]) : std::map<std::string, T>();
       return true;
     }
     if (opcode_ != CALL_FUNCTION_KW && opcode_ != CALL_FUNCTION) {

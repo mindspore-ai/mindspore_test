@@ -409,7 +409,7 @@ bool GraphBuilder::UnpackElements(ValueNode *node) {
 }
 
 bool GraphBuilder::UnpackDict(ValueNode *map) {
-  PyObject *map_object = map->GetVobj()->GetPyObject().ptr();
+  PyObject *map_object = map->GetVobj() ? map->GetVobj()->GetPyObject().ptr() : nullptr;
   if (map->GetOpcode() == BUILD_MAP) {
     std::for_each(map->getInputs().begin(), map->getInputs().end(), [this](ValueNode *n) { this->push(n); });
   } else if (map_object != nullptr) {
@@ -4165,14 +4165,7 @@ BindArgumentsHelper<ValueNode *> MindGraphBuilder::PackInputsForFunc(const py::o
     return res;
   };
   PackCallStackHelper<ValueNode *> pack_helper(op_code);
-
-  std::vector<ValueNode *> inputs_for_pack;
-  if (is_cell_object) {
-    auto forward_self_node = NewValueNode(AObject::Convert(obj), LOAD_CONST, -1, {});
-    inputs_for_pack.push_back(forward_self_node);
-  }
-  (void)std::copy(inputs.begin() + 1, inputs.end(), std::back_inserter(inputs_for_pack));
-  if (!pack_helper.Pack(inputs_for_pack, cast_keys, cast_seq, cast_map)) {
+  if (!pack_helper.Pack({inputs.begin() + 1, inputs.end()}, cast_keys, cast_seq, cast_map)) {
     MS_LOG(EXCEPTION) << "Pack helper pack failed.";
   }
   if (eliminate_sens) {
@@ -4185,6 +4178,11 @@ BindArgumentsHelper<ValueNode *> MindGraphBuilder::PackInputsForFunc(const py::o
       auto &args = result.args_;
       args.pop_back();
     }
+  }
+  if (is_cell_object) {
+    auto forward_self_node = NewValueNode(AObject::Convert(obj), LOAD_CONST, -1, {});
+    auto &args = pack_helper.result().args_;
+    args.insert(args.begin(), forward_self_node);
   }
 #if !IS_PYTHON_3_11_PLUS
   if (!bind_helper.Bind(pack_helper.result().args_, pack_helper.result().kw_)) {
