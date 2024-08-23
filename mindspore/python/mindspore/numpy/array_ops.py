@@ -401,6 +401,8 @@ def concatenate(arrays, axis=0):
         >>> print(x.shape)
         (1, 2, 4)
     """
+    if arrays is None:
+        _raise_type_error('expect Union[Tensor, tuple(Tensor), list(Tensor)], but got None')
     if isinstance(arrays, Tensor):
         # if only one tensor is provided, it is treated as a tuple along the
         # first dimension. For example, a tensor of shape (3,4,5) will be treated
