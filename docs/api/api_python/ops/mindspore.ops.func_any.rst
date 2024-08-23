@@ -9,7 +9,7 @@ mindspore.ops.any
         Tensor类型的 `axis` 仅用作兼容旧版本，不推荐使用。
 
     参数：
-        - **input** (Tensor) - 输入Tensor，shape是 :math:`(N, *)` ，其中 :math:`*` 表示任意数量的附加维度。
+        - **input** (Tensor) - 输入Tensor(bool)，shape是 :math:`(N, *)` ，其中 :math:`*` 表示任意数量的附加维度。
         - **axis** (Union[int, tuple(int), list(int), Tensor], 可选) - 要减少的维度。只允许常量值。假设 `input` 的秩为r，取值范围[-r,r)。默认值： ``None`` ，缩小所有维度。
         - **keep_dims** (bool, 可选) - 如果为 ``True`` ，则保留缩小的维度，大小为1。否则移除维度。默认值： ``False`` 。
 
@@ -23,5 +23,5 @@ mindspore.ops.any
 
     异常：
         - **TypeError** - `keep_dims` 不是bool类型。
-        - **TypeError** - `input` 不是Tensor。
+        - **TypeError** - `input` 不是Tensor(bool)。
         - **TypeError** - `axis` 不是以下数据类型之一：int、tuple、list或Tensor。
