@@ -264,13 +264,13 @@ int QuantDTypeCastCPUKernel::Run() {
   auto ret = ParallelLaunch(this->ms_context_, QuantDTypeCastRun, this, thread_n_num_);
   if (ret != RET_OK) {
     MS_LOG(ERROR) << "Scale error error_code[" << ret << "]";
-    if (src_dtype == TypeId::kNumberTypeInt8 && dst_dtype == TypeId::kNumberTypeUInt8) {
+    if (src_dtype == TypeId::kNumberTypeInt8 && dst_dtype == TypeId::kNumberTypeInt8) {
       delete[](float32_ptr_);
       float32_ptr_ = nullptr;
     }
     return RET_ERROR;
   }
-  if (src_dtype == TypeId::kNumberTypeInt8 && dst_dtype == TypeId::kNumberTypeUInt8) {
+  if (src_dtype == TypeId::kNumberTypeInt8 && dst_dtype == TypeId::kNumberTypeInt8) {
     delete[](float32_ptr_);
     float32_ptr_ = nullptr;
   }
