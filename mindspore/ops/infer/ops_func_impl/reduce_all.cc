@@ -24,19 +24,23 @@ namespace mindspore {
 namespace ops {
 BaseShapePtr ReduceAllFuncImpl::InferShape(const PrimitivePtr &primitive,
                                            const std::vector<AbstractBasePtr> &input_args) const {
-  if (input_args[kInputIndex1]->GetType()->isa<TypeNone>()) {
-    auto keep_dims_value = input_args[kInputIndex2]->GetValue();
-    auto keep_dims_opt = GetScalarValue<bool>(keep_dims_value);
-    if (MS_UNLIKELY(!keep_dims_opt.has_value())) {
-      return std::make_shared<abstract::Shape>(ShapeVector({abstract::Shape::kShapeRankAny}));
+  if (kInputIndex1 < input_args.size()) {
+    MS_EXCEPTION_IF_NULL(input_args[kInputIndex1]);
+    MS_EXCEPTION_IF_NULL(input_args[kInputIndex1]->GetType());
+    if (input_args[kInputIndex1]->GetType()->isa<TypeNone>()) {
+      auto keep_dims_value = input_args[kInputIndex2]->GetValue();
+      auto keep_dims_opt = GetScalarValue<bool>(keep_dims_value);
+      if (MS_UNLIKELY(!keep_dims_opt.has_value())) {
+        return std::make_shared<abstract::Shape>(ShapeVector({abstract::Shape::kShapeRankAny}));
+      }
+      auto keep_dims = keep_dims_opt.value();
+      auto x_shape = input_args[kInputIndex0]->GetShape()->GetShapeVector();
+      if (IsDynamicRank(x_shape)) {
+        return std::make_shared<abstract::Shape>(x_shape);
+      }
+      return keep_dims ? std::make_shared<abstract::Shape>(ShapeVector(x_shape.size(), 1))
+                       : std::make_shared<abstract::Shape>(ShapeVector({}));
     }
-    auto keep_dims = keep_dims_opt.value();
-    auto x_shape = input_args[kInputIndex0]->GetShape()->GetShapeVector();
-    if (IsDynamicRank(x_shape)) {
-      return std::make_shared<abstract::Shape>(x_shape);
-    }
-    return keep_dims ? std::make_shared<abstract::Shape>(ShapeVector(x_shape.size(), 1))
-                     : std::make_shared<abstract::Shape>(ShapeVector({}));
   }
 
   return ReduceInferShape(primitive, input_args);
