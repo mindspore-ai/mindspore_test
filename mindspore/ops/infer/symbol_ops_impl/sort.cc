@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "mindspore/core/symbolic_shape/operation_builder.h"
+#include "symbolic_shape/operation_builder.h"
 
 namespace mindspore {
 namespace symshape {

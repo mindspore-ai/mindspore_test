@@ -18,7 +18,7 @@
 
 #include "mindapi/base/shared_ptr.h"
 #include "mindapi/ir/value.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "infer/grad/de_conv2d_grad_filter.h"
 #include "mindspore/ops/op_def/op_name.h"
 #include "ops/primitive_c.h"

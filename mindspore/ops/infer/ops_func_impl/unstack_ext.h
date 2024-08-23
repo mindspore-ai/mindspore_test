@@ -18,7 +18,7 @@
 #define MINDSPORE_CORE_OPS_OP_FUNC_IMPL_UNSTACK_EXT_H
 
 #include <vector>
-#include "mindspore/core/ops/ops_func_impl/op_func_impl.h"
+#include "ops/ops_func_impl/op_func_impl.h"
 #include "mindapi/base/macros.h"
 
 namespace mindspore {

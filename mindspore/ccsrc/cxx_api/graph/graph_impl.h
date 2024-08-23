@@ -24,7 +24,7 @@
 #include "include/api/graph.h"
 #include "cxx_api/graph/graph_data.h"
 #include "include/common/utils/utils.h"
-#include "mindspore/core/base/base_ref_utils.h"
+#include "base/base_ref_utils.h"
 #include "include/backend/kernel_graph.h"
 #include "backend/common/session/session_basic.h"
 #include "backend/graph_compiler/backend.h"

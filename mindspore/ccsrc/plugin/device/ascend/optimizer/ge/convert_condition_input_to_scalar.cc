@@ -18,7 +18,7 @@
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "include/common/utils/anfalgo.h"
-#include "mindspore/core/ir/value.h"
+#include "ir/value.h"
 
 namespace mindspore {
 namespace opt {

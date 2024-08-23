@@ -17,7 +17,7 @@
 #include "kernel/cpu/fftnbase_cpu_kernel.h"
 #include "ops_utils/op_utils.h"
 #include "kernel/kernel.h"
-#include "mindspore/core/mindapi/base/types.h"
+#include "mindapi/base/types.h"
 #include "utils/fft_helper.h"
 
 #define FFTN_INPUT_DIM_CASE(T1, T2)                                                                        \

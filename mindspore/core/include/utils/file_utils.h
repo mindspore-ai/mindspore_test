@@ -21,7 +21,7 @@
 #include <string>
 #include <fstream>
 #include <optional>
-#include "mindspore/core/utils/ms_utils.h"
+#include "utils/ms_utils.h"
 #include "mindapi/base/macros.h"
 #include "utils/log_adapter.h"
 #include "utils/os.h"

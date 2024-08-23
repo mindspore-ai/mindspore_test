@@ -19,7 +19,7 @@
 
 #include <vector>
 #include <set>
-#include "mindspore/core/ops/ops_func_impl/op_func_impl.h"
+#include "ops/ops_func_impl/op_func_impl.h"
 
 namespace mindspore {
 namespace ops {
@@ -29,6 +29,7 @@ class OPS_API BinaryCrossEntropyFuncImpl : public OpFuncImpl {
   TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
   ShapeArray InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const override;
   TypePtrList InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const override;
+
  private:
   const std::set<TypePtr> valid_types_{kFloat16, kFloat32, kBFloat16};
 };

@@ -59,9 +59,9 @@ MS_LITE:
     mindspore/lite/
     cmake/package_lite.cmake
     mindspore/core/mindrt/src/thread/parallel_thread_pool_manager.cc
-    mindspore/core/mindrt/src/thread/parallel_thread_pool_manager.h
+    mindspore/core/mindrt/include/thread/parallel_thread_pool_manager.h
     mindspore/core/mindrt/src/thread/parallel_threadpool.cc
-    mindspore/core/mindrt/src/thread/parallel_threadpool.h
+    mindspore/core/mindrt/include/thread/parallel_threadpool.h
 MS_CLOUD_UT:
     tests/ut
 MS_CLOUD_UT_CPP:

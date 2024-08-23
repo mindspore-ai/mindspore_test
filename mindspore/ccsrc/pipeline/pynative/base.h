@@ -28,7 +28,7 @@
 #include "pybind_api/ir/primitive_py.h"
 #include "abstract/abstract_value.h"
 #include "include/common/utils/stub_tensor.h"
-#include "mindspore/core/utils/simple_info.h"
+#include "utils/simple_info.h"
 #include "ops/op_def.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
 

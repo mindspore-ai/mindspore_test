@@ -37,7 +37,7 @@
 #include "abstract/dshape.h"
 #include "abstract/utils.h"
 #include "utils/shape_utils.h"
-#include "mindspore/core/symbolic_shape/symbol.h"
+#include "symbolic_shape/symbol.h"
 
 namespace mindspore {
 namespace abstract {

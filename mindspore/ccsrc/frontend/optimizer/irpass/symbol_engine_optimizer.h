@@ -20,7 +20,7 @@
 #include "ir/func_graph.h"
 #include "frontend/optimizer/anf_visitor.h"
 #include "frontend/optimizer/optimizer.h"
-#include "mindspore/core/symbolic_shape/symbol.h"
+#include "symbolic_shape/symbol.h"
 
 namespace mindspore {
 namespace opt {

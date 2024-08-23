@@ -17,7 +17,7 @@
 #include "kernel/gpu/nn/maxpool_with_argmax_grad_gpu_kernel.h"
 #include <functional>
 #include <memory>
-#include "mindspore/core/abstract/utils.h"
+#include "abstract/utils.h"
 
 namespace mindspore {
 namespace kernel {

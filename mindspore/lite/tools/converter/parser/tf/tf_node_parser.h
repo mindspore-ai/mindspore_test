@@ -24,7 +24,7 @@
 #include "tools/converter/parser/tf/tf_util.h"
 #include "proto/graph.pb.h"
 #include "ops/primitive_c.h"
-#include "mindspore/core/utils/check_convert_utils.h"
+#include "utils/check_convert_utils.h"
 #include "nnacl/op_base.h"
 #include "tools/converter/parser/parser_utils.h"
 #include "ops_utils/op_utils.h"

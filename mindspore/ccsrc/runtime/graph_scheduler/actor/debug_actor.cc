@@ -19,7 +19,7 @@
 #include <memory>
 #include <string>
 #include "runtime/graph_scheduler/actor/debug_aware_actor.h"
-#include "mindrt/include/async/async.h"
+#include "async/async.h"
 #include "utils/log_adapter.h"
 #ifndef ENABLE_SECURITY
 #include "debug/data_dump/cpu_e2e_dump.h"

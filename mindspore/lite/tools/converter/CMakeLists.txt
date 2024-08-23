@@ -261,7 +261,6 @@ if(MSLITE_ENABLE_MINDRT)
     add_compile_definitions(ENABLE_MINDRT)
     include_directories(${CORE_DIR}/mindrt)
     include_directories(${CORE_DIR}/mindrt/include)
-    include_directories(${CORE_DIR}/mindrt/src/)
 
     set(LITE_SRC
             ${LITE_SRC}

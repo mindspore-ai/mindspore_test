@@ -19,7 +19,7 @@
 #include <mutex>
 #include "include/common/symbol_engine/symbol_engine_impl.h"
 #include "kernel/graph_kernel/kernel_packet/kernel_packet_kernel_mod.h"
-#include "mindspore/core/symbolic_shape/utils.h"
+#include "symbolic_shape/utils.h"
 
 namespace mindspore::kernel {
 BaseShapePtr KernelPacketInfer::InferShape(const AbstractBasePtrList &args) {

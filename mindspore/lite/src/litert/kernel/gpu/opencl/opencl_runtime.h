@@ -23,7 +23,7 @@
 #include <string>
 #include <utility>
 #include <type_traits>
-#include "dtype/type_id.h"
+#include "ir/dtype/type_id.h"
 #include "src/common/log_adapter.h"
 #include "src/litert/kernel/gpu/opencl/opencl_wrapper.h"
 #include "src/litert/kernel/gpu/opencl/opencl_allocator.h"

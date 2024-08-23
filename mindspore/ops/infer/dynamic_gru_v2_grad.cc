@@ -33,7 +33,7 @@
 #include "ir/primitive.h"
 #include "mindapi/base/shape_vector.h"
 #include "mindapi/base/type_id.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "infer/dynamic_gru_v2_grad.h"
 #include "mindspore/ops/op_def/op_name.h"

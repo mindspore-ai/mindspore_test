@@ -25,7 +25,7 @@
 #include <set>
 #include <unordered_set>
 #include <map>
-#include "mindrt/include/actor/op_actor.h"
+#include "actor/op_actor.h"
 #include "runtime/graph_scheduler/actor/actor_common.h"
 #include "runtime/graph_scheduler/device_tensor_store.h"
 #include "runtime/graph_scheduler/device_tensor_copy_store.h"

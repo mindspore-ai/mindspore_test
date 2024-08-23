@@ -20,9 +20,9 @@
 #include <sstream>
 
 #include "utils/hash_map.h"
-#include "mindspore/core/ir/dtype.h"
-#include "mindspore/core/utils/log_adapter.h"
-#include "mindspore/core/utils/convert_utils_base.h"
+#include "ir/dtype.h"
+#include "utils/log_adapter.h"
+#include "utils/convert_utils_base.h"
 
 namespace mindspore {
 namespace {

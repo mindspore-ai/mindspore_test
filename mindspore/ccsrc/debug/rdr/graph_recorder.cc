@@ -18,13 +18,13 @@
 #include <utility>
 #include <optional>
 
-#include "mindspore/core/base/base.h"
-#include "mindspore/core/utils/log_adapter.h"
+#include "base/base.h"
+#include "utils/log_adapter.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "include/common/debug/anf_dump_utils.h"
 #include "include/common/debug/dump_proto.h"
 #include "include/common/debug/rdr/recorder_manager.h"
-#include "mindspore/core/utils/file_utils.h"
+#include "utils/file_utils.h"
 
 namespace mindspore {
 namespace protobuf {

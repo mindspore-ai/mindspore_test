@@ -29,7 +29,7 @@
 #include "include/common/utils/utils.h"
 #include "frontend/parallel/step_parallel.h"
 #include "frontend/parallel/tensor_layout/shared_parameter.h"
-#include "mindspore/core/utils/file_utils.h"
+#include "utils/file_utils.h"
 
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/backend/distributed/cluster/cluster_context.h"

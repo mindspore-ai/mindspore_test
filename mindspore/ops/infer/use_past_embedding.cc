@@ -16,7 +16,7 @@
  */
 
 #include "infer/use_past_embedding.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "ops/primitive_c.h"
 

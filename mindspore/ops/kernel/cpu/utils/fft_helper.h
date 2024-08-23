@@ -23,7 +23,7 @@
 #include <algorithm>
 #include <numeric>
 #include <functional>
-#include "mindspore/core/mindapi/base/types.h"
+#include "mindapi/base/types.h"
 
 namespace mindspore {
 namespace kernel {

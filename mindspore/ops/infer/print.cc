@@ -28,7 +28,7 @@
 #include "mindapi/base/shape_vector.h"
 #include "mindapi/base/shared_ptr.h"
 #include "mindapi/ir/value.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "ops/primitive_c.h"
 #include "utils/log_adapter.h"

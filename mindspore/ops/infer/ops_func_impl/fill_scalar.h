@@ -19,7 +19,7 @@
 
 #include <set>
 #include <vector>
-#include "mindspore/core/ops/ops_func_impl/op_func_impl.h"
+#include "ops/ops_func_impl/op_func_impl.h"
 #include "infer/ops_func_impl/fill.h"
 #include "ops/base_operator.h"
 #include "mindspore/ops/op_def/op_name.h"

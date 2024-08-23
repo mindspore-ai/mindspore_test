@@ -16,7 +16,7 @@
  */
 
 #include "infer/decoder_layer.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "ops/primitive_c.h"

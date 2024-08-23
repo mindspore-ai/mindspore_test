@@ -18,7 +18,7 @@
 #include <map>
 #include <memory>
 #include <algorithm>
-#include "mindspore/core/utils/convert_utils_base.h"
+#include "utils/convert_utils_base.h"
 #include "mindspore/ops/infer/matrix_diag_part_v3.h"
 namespace mindspore {
 namespace kernel {

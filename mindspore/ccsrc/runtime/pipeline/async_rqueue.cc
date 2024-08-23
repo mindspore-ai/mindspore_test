@@ -22,7 +22,6 @@
 #endif
 #include "utils/log_adapter.h"
 #include "utils/ms_exception.h"
-#include "mindrt/include/fork_utils.h"
 #include "include/common/profiler.h"
 
 #include "utils/profile.h"

@@ -18,7 +18,7 @@
 #include <set>
 #include <utility>
 #include <memory>
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"
 

@@ -25,7 +25,7 @@
 #include "runtime/hardware/device_context_manager.h"
 #include "runtime/device/auto_mem_offload.h"
 #include "runtime/device/device_address_utils.h"
-#include "mindrt/include/async/async.h"
+#include "async/async.h"
 #include "utils/log_adapter.h"
 #include "utils/phase.h"
 #include "utils/llm_manager.h"

@@ -30,7 +30,7 @@
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/pass/pass_utils.h"
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "mindspore/core/utils/convert_utils_base.h"
+#include "utils/convert_utils_base.h"
 #include "mindspore/ccsrc/pipeline/jit/ps/static_analysis/static_analysis.h"
 
 namespace mindspore {

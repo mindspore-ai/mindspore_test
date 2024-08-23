@@ -35,7 +35,7 @@
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
 #include "transform/acl_ir/acl_adapter_info.h"
 #include "transform/acl_ir/ge_adapter_info.h"
-#include "mindspore/core/utils/core_op_utils.h"
+#include "utils/core_op_utils.h"
 
 namespace mindspore {
 namespace transform {

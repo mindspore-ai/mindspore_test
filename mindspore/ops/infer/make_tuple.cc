@@ -23,7 +23,7 @@
 #include "abstract/ops/primitive_infer_map.h"
 #include "base/base.h"
 #include "ir/anf.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "ops/primitive_c.h"
 #include "infer/real_maketuple.h"

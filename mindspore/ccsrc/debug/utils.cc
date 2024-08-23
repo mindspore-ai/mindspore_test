@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include "debug/utils.h"
-#include "mindspore/core/utils/log_adapter.h"
+#include "utils/log_adapter.h"
 
 namespace mindspore {
 

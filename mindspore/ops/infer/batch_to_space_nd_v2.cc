@@ -30,7 +30,7 @@
 #include "ir/anf.h"
 #include "ir/primitive.h"
 #include "ir/tensor.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/op_name.h"
 #include "mindspore/ops/ops_utils/op_utils.h"

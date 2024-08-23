@@ -23,7 +23,7 @@
 #include <chrono>
 #include "pybind11/pybind11.h"
 #include "pipeline/jit/pi/pydef.h"
-#include "mindspore/core/ir/cell.h"
+#include "ir/cell.h"
 
 namespace mindspore {
 namespace pijit {

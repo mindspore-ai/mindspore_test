@@ -19,7 +19,7 @@
 #include <sstream>
 #include <utility>
 #include "include/common/debug/rdr/recorder_manager.h"
-#include "mindspore/core/utils/file_utils.h"
+#include "utils/file_utils.h"
 
 namespace mindspore {
 namespace {

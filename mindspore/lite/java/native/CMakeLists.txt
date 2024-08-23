@@ -106,7 +106,9 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../src)##for common/log_adapter.h
 include_directories(${LITE_DIR}) ## lite include
 include_directories(${TOP_DIR}) ## api include
-include_directories(${TOP_DIR}/mindspore/core/) ## core include
+include_directories(${TOP_DIR}/mindspore/core/include) ## core include
+include_directories(${TOP_DIR}/mindspore/core/mindrt) ## core include
+include_directories(${TOP_DIR}/mindspore/core/mindrt/include) ## core include
 include_directories(${LITE_DIR}/build) ## flatbuffers
 include_directories(${TOP_DIR}/mindspore/ops/kernel/cpu)
 
@@ -147,7 +149,7 @@ endif()
 
 if(USE_GLOG)
     set_property(SOURCE ${JNI_SRC} PROPERTY COMPILE_DEFINITIONS
-            LOG_HDR_FILE_REL_PATH="mindspore/lite/java/native/../../../../mindspore/core/utils/log_adapter.h")
+            LOG_HDR_FILE_REL_PATH="mindspore/lite/java/native/../../../../mindspore/core/include/utils/log_adapter.h")
     include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../../../third_party/securec/include)
     include_directories(${CMAKE_BINARY_DIR}/jni_include)
     add_definitions(-DUSE_GLOG)
@@ -196,7 +198,8 @@ if(SUPPORT_TRAIN)
 
     if(USE_GLOG)
         set_property(SOURCE ${JNI_SRC} PROPERTY COMPILE_DEFINITIONS
-                LOG_HDR_FILE_REL_PATH="mindspore/lite/java/native/../../../../mindspore/core/utils/log_adapter.h")
+                LOG_HDR_FILE_REL_PATH=
+                "mindspore/lite/java/native/../../../../mindspore/core/include/utils/log_adapter.h")
         include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../../../third_party/securec/include)
         include_directories(${CMAKE_BINARY_DIR}/jni_include)
         add_definitions(-DUSE_GLOG)

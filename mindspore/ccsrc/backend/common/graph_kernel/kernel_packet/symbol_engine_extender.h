@@ -21,7 +21,7 @@
 #include "utils/hash_set.h"
 #include "include/backend/optimizer/pass.h"
 #include "include/backend/optimizer/optimizer.h"
-#include "mindspore/core/symbolic_shape/operation_builder.h"
+#include "symbolic_shape/operation_builder.h"
 
 namespace mindspore::graphkernel::packet {
 // Extend kernel to a bigger subgraph using a symbol engine,

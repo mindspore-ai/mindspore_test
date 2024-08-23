@@ -29,7 +29,7 @@
 #include "src/common/utils.h"
 #include "src/common/log_util.h"
 #include "ops/base_operator.h"
-#include "mindspore/core/ir/primitive.h"
+#include "ir/primitive.h"
 #include "ops/primitive_c.h"
 #include "mindspore/ops/op_def/op_name.h"
 #include "schema/ops_generated.h"

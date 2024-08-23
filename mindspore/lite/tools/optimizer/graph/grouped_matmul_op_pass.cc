@@ -26,10 +26,10 @@
 #include "tools/optimizer/graph/grouped_matmul_op_pass.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "tools/optimizer/graph/lite_tensor_extractor.h"
-#include "mindspore/core/abstract/ops/primitive_infer_map.h"
-#include "mindspore/core/utils/anf_utils.h"
+#include "abstract/ops/primitive_infer_map.h"
+#include "utils/anf_utils.h"
 #include "mindspore/ops/op_def/math_ops.h"
-#include "mindspore/core/ops/op_def.h"
+#include "ops/op_def.h"
 #include "extendrt/utils/func_graph_utils.h"
 #include "include/common/utils/anfalgo.h"
 

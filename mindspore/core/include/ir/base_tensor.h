@@ -39,7 +39,7 @@
 #include "ir/meta_grad_data.h"
 #include "ir/tensor_data.h"
 #include "utils/ms_utils_secure.h"
-#include "mindspore/core/base/complex_storage.h"
+#include "base/complex_storage.h"
 #include "utils/temp_file_manager.h"
 #include "utils/system/env.h"
 

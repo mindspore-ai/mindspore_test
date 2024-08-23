@@ -28,7 +28,7 @@
 #include "async/status.h"
 #include "async/uuid_generator.h"
 #include "async/future_base.h"
-#include "mindrt/include/mindrt.hpp"
+#include "include/mindrt.hpp"
 
 namespace mindspore {
 template <typename T>

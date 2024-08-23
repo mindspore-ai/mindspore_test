@@ -25,7 +25,7 @@
 #include <map>
 #include <utility>
 #include "mindspore/ops/infer/ctc_greedy_decoder.h"
-#include "mindspore/core/abstract/utils.h"
+#include "abstract/utils.h"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"
 #include "kernel/gpu/kernel_constants.h"

@@ -27,7 +27,7 @@
 #include "minddata/dataset/kernels/image/dvpp/acl_adapter.h"
 #include "minddata/dataset/kernels/tensor_op.h"
 #include "minddata/dataset/util/status.h"
-#include "mindspore/core/utils/log_adapter.h"
+#include "utils/log_adapter.h"
 
 namespace mindspore {
 namespace dataset {

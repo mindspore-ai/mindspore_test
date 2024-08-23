@@ -18,7 +18,7 @@
 #include <utility>
 #include <algorithm>
 #include "src/litert/lite_mindrt.h"
-#include "mindrt/include/mindrt.hpp"
+#include "include/mindrt.hpp"
 #include "src/litert/kernel_exec_util.h"
 #include "src/common/tensor_util.h"
 #include "src/common/common.h"

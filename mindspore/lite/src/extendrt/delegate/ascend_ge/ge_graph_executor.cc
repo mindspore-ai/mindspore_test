@@ -29,7 +29,7 @@
 #include "src/common/common.h"
 #include "src/common/file_utils.h"
 #include "cxx_api/acl_utils.h"
-#include "mindspore/core/utils/ms_utils_secure.h"
+#include "utils/ms_utils_secure.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "tools/optimizer/graph/remove_load_pass.h"
 #include "src/extendrt/utils/func_graph_utils.h"

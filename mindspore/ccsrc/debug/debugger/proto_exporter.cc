@@ -30,7 +30,7 @@
 #include "utils/symbolic.h"
 #include "utils/trace_base.h"
 #include "include/backend/debug/data_dump/e2e_dump.h"
-#include "mindspore/core/utils/file_utils.h"
+#include "utils/file_utils.h"
 #include "utils/anf_utils.h"
 #include "debug/debugger/debugger_utils.h"
 

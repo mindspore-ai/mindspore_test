@@ -20,7 +20,7 @@
 #include <vector>
 #include <set>
 #include "mindspore/ops/op_def/op_name.h"
-#include "mindspore/core/ops/ops_func_impl/op_func_impl.h"
+#include "ops/ops_func_impl/op_func_impl.h"
 
 namespace mindspore::ops {
 /// \brief Implementation of InferShape and InferType functions for operator 'Range'

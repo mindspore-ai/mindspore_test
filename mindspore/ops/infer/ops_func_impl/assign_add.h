@@ -17,7 +17,7 @@
 #define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_ASSIGN_ADD_H_
 
 #include <vector>
-#include "mindspore/core/ops/ops_func_impl/op_func_impl.h"
+#include "ops/ops_func_impl/op_func_impl.h"
 
 namespace mindspore::ops {
 class OPS_API AssignAddFuncImpl : public OpFuncImpl {

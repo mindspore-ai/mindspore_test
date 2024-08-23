@@ -1,5 +1,5 @@
+include_directories(${CMAKE_SOURCE_DIR}/mindspore/core/mindrt)
 include_directories(${CMAKE_SOURCE_DIR}/mindspore/core/mindrt/include)
-include_directories(${CMAKE_SOURCE_DIR}/mindspore/core/mindrt/src)
 
 file(GLOB_RECURSE GRAPH_SCHEDULER_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.cc")
 

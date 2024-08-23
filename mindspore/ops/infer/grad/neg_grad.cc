@@ -16,7 +16,7 @@
 
 #include "infer/grad/neg_grad.h"
 
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "ops/primitive_c.h"
 #include "utils/log_adapter.h"
 

@@ -19,7 +19,7 @@
 #include "abstract/ops/primitive_infer_map.h"
 #include "mindapi/base/shared_ptr.h"
 #include "mindapi/ir/value.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "mindspore/ops/op_def/lite_ops.h"
 #include "infer/cxx_api/arg_min_fusion.h"
 #include "mindspore/ops/op_def/op_name.h"

@@ -27,7 +27,7 @@
 #include "base/base.h"
 #include "ir/anf.h"
 #include "ir/primitive.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "ops/primitive_c.h"

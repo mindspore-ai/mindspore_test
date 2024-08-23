@@ -19,7 +19,7 @@
 #include <memory>
 #include <vector>
 #include <string>
-#include "mindspore/core/ir/primitive.h"
+#include "ir/primitive.h"
 #include "kernel/kernel.h"
 
 namespace mindspore::hccl {

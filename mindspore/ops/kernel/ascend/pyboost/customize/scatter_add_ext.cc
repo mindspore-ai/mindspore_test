@@ -21,7 +21,7 @@
 #include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
 #include "kernel/common/pyboost/pyboost_utils.h"
 #include "runtime/device/device_address_utils.h"
-#include "mindspore/core/ir/base_tensor.h"
+#include "ir/base_tensor.h"
 
 namespace mindspore {
 namespace kernel {

@@ -1,5 +1,5 @@
+include_directories(${CMAKE_SOURCE_DIR}/mindspore/core/mindrt)
 include_directories(${CMAKE_SOURCE_DIR}/mindspore/core/mindrt/include)
-include_directories(${CMAKE_SOURCE_DIR}/mindspore/core/mindrt/src)
 
 file(GLOB_RECURSE _GRAPH_COMPILER_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.cc")
 set_property(SOURCE ${_GRAPH_COMPILER_SRC_LIST} PROPERTY COMPILE_DEFINITIONS SUBMODULE_ID=mindspore::SubModuleId::SM_VM)

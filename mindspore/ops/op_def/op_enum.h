@@ -28,7 +28,7 @@ namespace ops {
 OPS_API int64_t StringToEnumImpl(const std::string &op_name, const std::string &arg_name,
                                  const std::string &enum_string);
 
-// Only the current mindspore/core/mindapi/base/types.h and other files do not have
+// Only the current mindspore/core/include/mindapi/base/types.h and other files do not have
 // corresponding enumerations and then add new enumerations.
 // The `enum` is used here instead of `enum class` because the current backend enum is
 // represented by `int`. The `enum` is more convenient than `enum class` compare with int.

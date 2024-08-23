@@ -30,7 +30,7 @@
 #include "ir/anf.h"
 #include "ir/dtype.h"
 #include "ops/op_def.h"
-#include "mindspore/core/utils/flags.h"
+#include "utils/flags.h"
 #include "mindspore/ops/op_def/arithmetic_ops.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 

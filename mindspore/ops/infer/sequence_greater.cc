@@ -18,7 +18,7 @@
 #include <memory>
 #include <string>
 
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "infer/list_greater.h"
 #include "mindspore/ops/ops_utils/op_utils.h"

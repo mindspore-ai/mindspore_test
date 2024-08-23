@@ -20,7 +20,7 @@
 #include <vector>
 #include <unordered_map>
 #include <string>
-#include "mindspore/core/ops/ops_func_impl/op_func_impl.h"
+#include "ops/ops_func_impl/op_func_impl.h"
 #include "mindapi/base/macros.h"
 
 namespace mindspore {

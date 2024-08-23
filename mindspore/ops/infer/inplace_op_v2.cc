@@ -31,7 +31,7 @@
 #include "ir/dtype/number.h"
 #include "ir/primitive.h"
 #include "mindapi/base/macros.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "ops/base_operator.h"
 #include "infer/inplace_update_v2.h"

@@ -16,7 +16,7 @@
 
 #include <algorithm>
 #include "mindapi/ir/func_graph.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "ir/anf.h"
 #include "ir/value.h"
 #include "ir/func_graph.h"

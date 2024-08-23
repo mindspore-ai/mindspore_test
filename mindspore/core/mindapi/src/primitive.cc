@@ -15,7 +15,7 @@
  */
 
 #include "mindapi/ir/primitive.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "ir/primitive.h"
 #include "ir/value.h"
 

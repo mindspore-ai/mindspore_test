@@ -19,7 +19,7 @@
 #include <set>
 #include "include/common/utils/utils.h"
 #include "mindapi/ir/type.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "mindspore/ops/op_def/conv_pool_ops.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "utils/check_convert_utils.h"

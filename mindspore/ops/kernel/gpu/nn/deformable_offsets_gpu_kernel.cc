@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <mindspore/core/abstract/utils.h>
+#include "kernel/gpu/nn/deformable_offsets_gpu_kernel.h"
+
 #include <memory>
 #include <utility>
 #include <algorithm>
 #include "abstract/utils.h"
-#include "kernel/gpu/nn/deformable_offsets_gpu_kernel.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/deformable_offsets_impl.cuh"
 
 namespace mindspore {

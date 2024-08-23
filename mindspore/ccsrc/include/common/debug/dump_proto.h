@@ -43,8 +43,8 @@
 #include "frontend/parallel/tensor_layout/tensor_layout.h"
 #endif
 #include "abstract/abstract_function.h"
-#include "mindspore/core/utils/file_utils.h"
-#include "mindspore/core/utils/system/env.h"
+#include "utils/file_utils.h"
+#include "utils/system/env.h"
 #include "ir/functor.h"
 
 namespace mindspore {

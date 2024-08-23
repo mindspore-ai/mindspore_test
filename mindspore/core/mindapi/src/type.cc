@@ -16,7 +16,7 @@
 
 #include "mindapi/ir/type.h"
 #include "mindapi/ir/value.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "ir/dtype.h"
 #include "ir/dtype/type.h"
 #include "ir/dtype/tensor_type.h"

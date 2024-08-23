@@ -27,7 +27,7 @@
 #include "ir/dtype/tensor_type.h"
 #include "ir/primitive.h"
 #include "mindapi/base/shape_vector.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "mindspore/ops/op_def/math_ops.h"
 #include "infer/float_status.h"
 #include "mindspore/ops/op_def/op_name.h"

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "mindspore/core/abstract/utils.h"
+#include "abstract/utils.h"
 #include "kernel/gpu/sparse/sparse_to_dense_v2_gpu_kernel.h"
 
 namespace mindspore {

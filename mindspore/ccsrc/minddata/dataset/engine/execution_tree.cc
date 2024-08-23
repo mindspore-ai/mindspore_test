@@ -24,7 +24,7 @@
 #include "minddata/dataset/engine/perf/info_collector.h"
 #include "minddata/dataset/util/task_manager.h"
 #ifdef WITH_BACKEND
-#include "mindspore/core/utils/numa_interface.h"
+#include "utils/numa_interface.h"
 #include "utils/ms_context.h"
 #endif
 

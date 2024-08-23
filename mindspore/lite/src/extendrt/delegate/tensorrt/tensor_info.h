@@ -21,7 +21,7 @@
 #include <vector>
 #include <memory>
 #include "include/api/kernel.h"
-#include "core/ir/tensor.h"
+#include "ir/tensor.h"
 
 namespace mindspore::lite {
 class TensorInfoImpl;

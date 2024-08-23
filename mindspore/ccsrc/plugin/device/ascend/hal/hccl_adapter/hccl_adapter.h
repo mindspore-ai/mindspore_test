@@ -23,7 +23,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
-#include "mindspore/core/ir/anf.h"
+#include "ir/anf.h"
 #include "hccl/hccl_types.h"
 #include "include/common/utils/parallel_context.h"
 #include "kernel/kernel.h"

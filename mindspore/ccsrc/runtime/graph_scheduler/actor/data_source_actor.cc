@@ -20,10 +20,10 @@
 #include "runtime/graph_scheduler/actor/output_actor.h"
 #include "runtime/graph_scheduler/actor/recorder_actor.h"
 #include "runtime/graph_scheduler/actor/debug_actor.h"
-#include "mindrt/include/async/async.h"
+#include "async/async.h"
 #include "utils/log_adapter.h"
 #include "kernel/common_utils.h"
-#include "mindspore/core/utils/ms_context.h"
+#include "utils/ms_context.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 
 namespace mindspore {
@@ -340,8 +340,8 @@ void HostQueueDataSourceActor::OnMemoryAllocFinish(OpContext<DeviceTensor> *cons
       }
 
       if (enable_async_copy) {
-        MS_LOG(INFO) << "Index :" << i << ", data_node_with_indexs_[i].first : "
-                     << data_node_with_indexs_[i].first->DebugString();
+        MS_LOG(INFO) << "Index :" << i
+                     << ", data_node_with_indexs_[i].first : " << data_node_with_indexs_[i].first->DebugString();
         if (!device_tensor->AsyncHostToDevice(LongToSize(host_tensor->data().nbytes()), host_tensor->data_type(),
                                               host_tensor->data_ptr()->data())) {
           SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), "SyncHostToDevice failed.");

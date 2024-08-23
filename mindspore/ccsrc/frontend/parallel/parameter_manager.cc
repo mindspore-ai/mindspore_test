@@ -49,7 +49,7 @@
 #include "utils/ms_context.h"
 #include "utils/symbolic.h"
 #include "pipeline/jit/ps/pipeline.h"
-#include "mindspore/core/utils/parallel_node_check.h"
+#include "utils/parallel_node_check.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 

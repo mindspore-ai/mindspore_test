@@ -19,8 +19,8 @@
 #include <set>
 #include <vector>
 #include <string>
-#include "mindspore/core/base/base.h"
-#include "mindspore/core/ir/anf.h"
+#include "base/base.h"
+#include "ir/anf.h"
 #include "frontend/parallel/status.h"
 #include "frontend/parallel/tensor_layout/tensor_redistribution.h"
 #include "frontend/parallel/ops_info/operator_info.h"

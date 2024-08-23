@@ -24,7 +24,7 @@
 #include "ir/anf.h"
 #include "mindapi/base/shared_ptr.h"
 #include "mindapi/ir/value.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "mindspore/ops/op_def/conv_pool_ops.h"
 #include "infer/conv2d_transpose.h"
 #include "infer/grad/conv2d_backprop_input.h"

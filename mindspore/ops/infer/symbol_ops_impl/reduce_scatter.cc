@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "mindspore/core/symbolic_shape/operation_builder.h"
+#include "symbolic_shape/operation_builder.h"
 #include "mindspore/ops/infer/symbol_ops_impl/scalar_div.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
 

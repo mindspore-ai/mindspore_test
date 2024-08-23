@@ -20,7 +20,7 @@
 #include <string>
 #include <vector>
 
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "mindspore/ops/op_def/conv_pool_ops.h"
 #include "infer/grad/conv3d_backprop_filter.h"
 #include "infer/grad/conv3d_backprop_input.h"

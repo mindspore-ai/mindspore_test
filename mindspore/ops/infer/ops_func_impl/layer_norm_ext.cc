@@ -20,7 +20,7 @@
 #include "abstract/dshape.h"
 #include "abstract/ops/op_infer.h"
 #include "mindapi/base/shape_vector.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "utils/check_convert_utils.h"
 #include "mindspore/ops/op_def/op_name.h"

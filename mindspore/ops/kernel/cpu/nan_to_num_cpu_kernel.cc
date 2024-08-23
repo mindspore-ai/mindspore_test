@@ -15,7 +15,7 @@
  */
 
 #include "kernel/cpu/nan_to_num_cpu_kernel.h"
-#include "mindspore/core/base/float16.h"
+#include "base/float16.h"
 
 using std::isinf;
 using std::isnan;

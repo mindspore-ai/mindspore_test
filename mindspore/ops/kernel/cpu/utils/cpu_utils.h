@@ -20,7 +20,7 @@
 #include <cmath>
 #include <utility>
 
-#include "mindspore/core/base/float16.h"
+#include "base/float16.h"
 
 namespace mindspore {
 namespace kernel {

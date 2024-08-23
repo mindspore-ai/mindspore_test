@@ -17,7 +17,7 @@
 #include <set>
 #include "mindspore/lite/src/extendrt/cxx_api/dlutils.h"
 #include "mindspore/lite/src/extendrt/cxx_api/file_utils.h"
-#include "mindspore/core/load_mindir/load_model.h"
+#include "load_mindir/load_model.h"
 #include "extendrt/cxx_api/llm_engine/llm_engine_plugin.h"
 #include "mindspore/lite/src/common/common.h"
 #include "mindspore/lite/tools/common/custom_ascend_utils.h"

@@ -35,7 +35,7 @@ def gen_h(op_name, aclnn_name, op_yaml, kernelmod_h_path, need_update_shape):
 #ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_{op_name.upper()}_ACLNN{auto_gen.upper()}_KERNEL_MOD_H_
 #define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_{op_name.upper()}_ACLNN{auto_gen.upper()}_KERNEL_MOD_H_
 #include <vector>
-#include "mindspore/core/ops/base_operator.h"
+#include "ops/base_operator.h"
 #include "{MS_OPS_KERNEL_PATH}/ascend/opapi/aclnn_kernel_mod.h"
 #include "transform/acl_ir/acl_convert.h"
 """

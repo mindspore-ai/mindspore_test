@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "mindspore/core/ops/op_def.h"
+#include "ops/op_def.h"
 
 namespace mindspore::ops {
 ${extern_variable}

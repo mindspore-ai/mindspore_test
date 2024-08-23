@@ -25,8 +25,8 @@
 #include "mindspore/ops/op_def/math_ops.h"
 #include "ops/op_def.h"
 #include "include/common/utils/utils.h"
-#include "mindspore/core/symbolic_shape/symbol.h"
-#include "mindspore/core/symbolic_shape/utils.h"
+#include "symbolic_shape/symbol.h"
+#include "symbolic_shape/utils.h"
 #include "include/common/symbol_engine/symbol_engine_impl.h"
 
 namespace mindspore {

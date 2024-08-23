@@ -35,7 +35,7 @@
 #include "utils/log_adapter.h"
 #include "utils/convert_utils_base.h"
 #include "include/common/visible.h"
-#include "mindrt/include/async/spinlock.h"
+#include "async/spinlock.h"
 
 namespace mindspore {
 namespace runtime {

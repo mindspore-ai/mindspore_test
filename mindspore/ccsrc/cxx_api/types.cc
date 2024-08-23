@@ -17,8 +17,8 @@
 #include <fstream>
 #include <numeric>
 #include "securec/include/securec.h"
-#include "mindspore/core/ir/api_tensor_impl.h"
-#include "mindspore/core/utils/convert_utils_base.h"
+#include "ir/api_tensor_impl.h"
+#include "utils/convert_utils_base.h"
 #include "utils/file_utils.h"
 
 namespace mindspore {

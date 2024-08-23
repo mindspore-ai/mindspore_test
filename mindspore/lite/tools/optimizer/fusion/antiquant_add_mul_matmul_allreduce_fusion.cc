@@ -27,7 +27,7 @@
 #include "nnacl/op_base.h"
 #include "ops_utils/op_utils.h"
 #include "mindspore/ccsrc/frontend/parallel/ops_info/ops_utils.h"
-#include "mindspore/core/ir/anf.h"
+#include "ir/anf.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore::opt {

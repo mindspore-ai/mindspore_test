@@ -21,7 +21,7 @@
 #include <utility>
 #include <functional>
 #include <memory>
-#include "mindspore/core/base/base.h"
+#include "base/base.h"
 
 namespace mindspore {
 namespace symshape {

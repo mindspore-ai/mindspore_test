@@ -16,7 +16,7 @@
 
 #include <set>
 
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "mindspore/ops/op_def/image_ops.h"
 #include "infer/non_max_suppression_with_overlaps.h"
 

@@ -36,7 +36,7 @@
 #include "ir/dtype/type.h"
 #include "utils/log_adapter.h"
 
-#include "mindspore/core/ir/meta_grad_data.h"
+#include "ir/meta_grad_data.h"
 
 #ifndef MS_UNLIKELY
 #ifdef _MSC_VER

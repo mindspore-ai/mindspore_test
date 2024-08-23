@@ -21,7 +21,7 @@
 #include <string>
 #include <utility>
 #include "kernel/ops_utils.h"
-#include "mindspore/core/abstract/utils.h"
+#include "abstract/utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/upsample_nearest_3d_grad_impl.cuh"
 #include "utils/log_adapter.h"
 

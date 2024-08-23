@@ -26,7 +26,7 @@
 #include <map>
 #include <memory>
 #include "utils/hash_map.h"
-#include "mindrt/include/actor/op_actor.h"
+#include "actor/op_actor.h"
 #include "include/backend/device_address.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"

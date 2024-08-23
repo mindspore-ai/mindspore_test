@@ -24,7 +24,7 @@
 #include <optional>
 #include "include/common/visible.h"
 #include "include/common/pynative/ring_buffer.h"
-#include "mindspore/core/ir/base_tensor.h"
+#include "ir/base_tensor.h"
 
 namespace mindspore {
 namespace pynative {

@@ -15,7 +15,7 @@
  */
 
 #include "infer/init_dataset_queue.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "ops/primitive_c.h"
 
 namespace mindspore {

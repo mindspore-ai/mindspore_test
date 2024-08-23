@@ -28,7 +28,7 @@
 #include "utils/parallel_node_check.h"
 #include "ir/func_graph.h"
 #include "include/common/utils/parallel_context.h"
-#include "mindspore/core/utils/ms_utils.h"
+#include "utils/ms_utils.h"
 
 namespace mindspore {
 namespace parallel {

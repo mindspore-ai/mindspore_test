@@ -19,7 +19,7 @@
 #include "cxx_api/factory.h"
 #include "cxx_api/akg_kernel_register.h"
 #include "utils/log_adapter.h"
-#include "mindspore/core/base/base_ref_utils.h"
+#include "base/base_ref_utils.h"
 #include "backend/common/session/session_basic.h"
 #include "backend/common/session/executor_manager.h"
 #include "runtime/device/kernel_runtime_manager.h"

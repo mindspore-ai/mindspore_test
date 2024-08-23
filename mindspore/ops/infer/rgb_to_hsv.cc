@@ -17,7 +17,7 @@
 #include "infer/rgb_to_hsv.h"
 #include <set>
 #include "abstract/ops/primitive_infer_map.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "mindspore/ops/op_def/image_ops.h"
 
 namespace mindspore {

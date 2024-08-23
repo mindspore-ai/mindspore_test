@@ -17,9 +17,9 @@
 #include <sys/stat.h>
 #include <fstream>
 #include <utility>
-#include "mindspore/core/utils/log_adapter.h"
+#include "utils/log_adapter.h"
 #include "include/common/debug/rdr/recorder_manager.h"
-#include "mindspore/core/utils/file_utils.h"
+#include "utils/file_utils.h"
 
 namespace mindspore {
 void StringRecorder::Export() {

@@ -28,7 +28,7 @@
 #include "ir/dtype/number.h"
 #include "ir/primitive.h"
 #include "ir/value.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "mindspore/ops/op_def/conv_pool_ops.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "ops/primitive_c.h"

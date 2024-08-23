@@ -109,7 +109,7 @@
 
 // Typecast between mindspore::DataType and dataset::DataType
 #include "minddata/dataset/core/type_id.h"
-#include "mindspore/core/ir/dtype/type_id.h"
+#include "ir/dtype/type_id.h"
 
 namespace mindspore {
 namespace dataset {

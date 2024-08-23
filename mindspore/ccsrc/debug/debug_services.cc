@@ -41,7 +41,7 @@
 #include "debug/debugger/tensor_summary.h"
 #include "utils/file_utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
-#include "mindspore/core/utils/ms_utils.h"
+#include "utils/ms_utils.h"
 #include "include/backend/debug/data_dump/dump_json_parser.h"
 
 namespace mindspore {

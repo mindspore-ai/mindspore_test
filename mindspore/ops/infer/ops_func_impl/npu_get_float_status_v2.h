@@ -18,7 +18,7 @@
 #define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_NPU_GET_FLOAT_STATUS_V2_H_
 #include <memory>
 #include <vector>
-#include "mindspore/core/ops/ops_func_impl/op_func_impl.h"
+#include "ops/ops_func_impl/op_func_impl.h"
 
 namespace mindspore {
 namespace ops {

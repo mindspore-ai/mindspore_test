@@ -20,7 +20,7 @@
 #include <algorithm>
 #include <map>
 #include <vector>
-#include "mindspore/core/utils/check_convert_utils.h"
+#include "utils/check_convert_utils.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/resize_nearest_neighbor_grad_impl.cuh"
 #include "kernel/gpu/gpu_kernel.h"
 #include "kernel/gpu/gpu_kernel_factory.h"

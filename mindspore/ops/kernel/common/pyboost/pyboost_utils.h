@@ -26,7 +26,7 @@
 #include "mindspore/ops/view/view_strides_calculator.h"
 #include "runtime/device/device_address_utils.h"
 #include "kernel/common/pyboost/pyboost_kernel_extra_func.h"
-#include "mindspore/core/utils/simple_info.h"
+#include "utils/simple_info.h"
 #include "include/common/pynative/abstract_converter.h"
 
 namespace mindspore {

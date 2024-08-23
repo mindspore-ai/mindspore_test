@@ -16,7 +16,7 @@
 #include "extendrt/cxx_api/llm_engine/llm_engine_plugin.h"
 #include <algorithm>
 #include "mindspore/lite/src/extendrt/cxx_api/dlutils.h"
-#include "mindspore/core/load_mindir/load_model.h"
+#include "load_mindir/load_model.h"
 #include "mindspore/ccsrc/transform/graph_ir/transform_util.h"
 #include "mindspore/lite/src/extendrt/utils/tensor_utils.h"
 #include "mindspore/lite/src/common/common.h"

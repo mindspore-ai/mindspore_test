@@ -26,7 +26,7 @@
 #include "include/errorcode.h"
 #include "src/common/log_adapter.h"
 #include "ops/primitive_c.h"
-#include "mindspore/core/utils/check_convert_utils.h"
+#include "utils/check_convert_utils.h"
 #include "tools/converter/parser/parser_utils.h"
 
 namespace mindspore {

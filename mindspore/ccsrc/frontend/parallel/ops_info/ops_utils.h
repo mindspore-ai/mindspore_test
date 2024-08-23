@@ -17,7 +17,7 @@
 #ifndef MINDSPORE_CCSRC_FRONTEND_PARALLEL_OPS_INFO_OPS_UTILS_H_
 #define MINDSPORE_CCSRC_FRONTEND_PARALLEL_OPS_INFO_OPS_UTILS_H_
 
-#include "mindspore/core/utils/log_adapter.h"
+#include "utils/log_adapter.h"
 
 namespace mindspore {
 namespace parallel {

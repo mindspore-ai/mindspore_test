@@ -23,7 +23,7 @@
 #include "include/api/types.h"
 #include "include/api/status.h"
 #include "extendrt/cxx_api/llm_engine/llm_engine.h"
-#include "mindspore/core/base/base.h"
+#include "base/base.h"
 #include "extendrt/cxx_api/llm_engine/llm_engine_plugin.h"
 
 namespace mindspore {

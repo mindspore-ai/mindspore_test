@@ -20,7 +20,7 @@
 #include <set>
 #include "src/common/log_adapter.h"
 #include "include/errorcode.h"
-#include "core/base/base.h"
+#include "base/base.h"
 #include "src/extendrt/delegate/tensorrt/tensor_info.h"
 
 namespace mindspore::lite {

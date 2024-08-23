@@ -36,7 +36,7 @@
 #include "mindapi/base/shared_ptr.h"
 #include "mindapi/base/type_id.h"
 #include "mindapi/ir/value.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "mindspore/ops/op_def/op_name.h"

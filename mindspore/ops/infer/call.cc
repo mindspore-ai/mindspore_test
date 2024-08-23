@@ -15,7 +15,7 @@
  */
 
 #include "infer/call.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "ops/primitive_c.h"
 #include "utils/log_adapter.h"
 

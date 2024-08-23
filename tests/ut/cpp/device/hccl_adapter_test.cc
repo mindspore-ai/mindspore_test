@@ -19,7 +19,7 @@
 #include "plugin/device/ascend/hal/hccl_adapter/all_to_all_v_calc_param.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
-#include "mindspore/core/ir/dtype/type_id.h"
+#include "ir/dtype/type_id.h"
 
 namespace mindspore::hccl {
 namespace {

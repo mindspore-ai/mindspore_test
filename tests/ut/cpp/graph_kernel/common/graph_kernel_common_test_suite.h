@@ -18,7 +18,7 @@
 
 #include "common/common_test.h"
 #include "common/graph_optimizer_test_framework.h"
-#include "mindspore/core/utils/ms_context.h"
+#include "utils/ms_context.h"
 
 namespace mindspore::graphkernel::test {
 using mindspore::test::ConstructGraph;

@@ -41,7 +41,7 @@
 #include "ir/func_graph_transform.h"
 #include "ir/func_graph_base.h"
 #include "abstract/abstract_value.h"
-#include "mindspore/core/symbolic_shape/symbol_engine.h"
+#include "symbolic_shape/symbol_engine.h"
 
 namespace mindspore {
 using BaseRefCounterMap = OrderedMap<BaseRef, int, BaseRefHash>;

@@ -24,7 +24,7 @@
 #include <functional>
 #include "cxx_api/factory.h"
 #include "acl/acl_rt.h"
-#include "mindspore/core/load_mindir/infer_mindir.h"
+#include "load_mindir/infer_mindir.h"
 #include "cxx_api/model/acl/acl_vm/ms_tensor_ref.h"
 #include "cxx_api/model/acl/acl_vm/acl_vm.h"
 

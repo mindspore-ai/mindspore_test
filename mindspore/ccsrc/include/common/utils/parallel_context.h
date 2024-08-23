@@ -28,7 +28,7 @@
 #include "include/common/utils/convert_utils.h"
 #include "utils/info.h"
 #include "include/common/visible.h"
-#include "mindspore/core/symbolic_shape/symbol_info.h"
+#include "symbolic_shape/symbol_info.h"
 
 namespace mindspore::parallel {
 constexpr char kStandalone[] = "stand_alone";

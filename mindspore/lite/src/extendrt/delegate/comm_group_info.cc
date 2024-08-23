@@ -24,7 +24,7 @@
 #include "include/common/utils/convert_utils.h"
 #include "utils/log_adapter.h"
 #include "include/common/debug/common.h"
-#include "mindspore/core/utils/file_utils.h"
+#include "utils/file_utils.h"
 namespace mindspore::lite {
 bool CommGroupInfo::CheckPath(const std::string path) const {
   if (path.size() > PATH_MAX) {

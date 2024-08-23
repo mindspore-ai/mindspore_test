@@ -24,7 +24,7 @@
 #include "utils/shape_utils.h"
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "ops/primitive_c.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {

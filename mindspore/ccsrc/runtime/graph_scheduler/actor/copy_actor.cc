@@ -16,7 +16,7 @@
 
 #include "runtime/graph_scheduler/actor/copy_actor.h"
 #include "runtime/graph_scheduler/actor/memory_manager_actor.h"
-#include "mindrt/include/async/async.h"
+#include "async/async.h"
 #include "utils/log_adapter.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 

@@ -21,7 +21,7 @@
 #include "mindspore/ops/op_def/op_name.h"
 #include "ops/primitive_c.h"
 #include "utils/log_adapter.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 
 namespace mindspore {
 namespace ops {

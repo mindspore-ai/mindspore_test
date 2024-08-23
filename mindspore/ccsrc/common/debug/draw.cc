@@ -25,7 +25,7 @@
 #include "ir/graph_utils.h"
 #include "ir/tensor.h"
 #include "include/common/debug/anf_dump_utils.h"
-#include "mindspore/core/utils/file_utils.h"
+#include "utils/file_utils.h"
 
 namespace mindspore {
 // namespace to support debug utils

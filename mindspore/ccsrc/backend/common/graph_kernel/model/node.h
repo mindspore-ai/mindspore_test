@@ -28,7 +28,7 @@
 #include "utils/shape_utils.h"
 #include "include/common/utils/utils.h"
 #include "include/backend/visible.h"
-#include "mindspore/core/symbolic_shape/symbol.h"
+#include "symbolic_shape/symbol.h"
 
 namespace mindspore::graphkernel::inner {
 enum class NType {

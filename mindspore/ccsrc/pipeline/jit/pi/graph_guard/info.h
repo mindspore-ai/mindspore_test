@@ -20,7 +20,7 @@
 #include <memory>
 #include <vector>
 #include "pybind11/pybind11.h"
-#include "mindspore/core/base/base.h"
+#include "base/base.h"
 
 namespace py = pybind11;
 

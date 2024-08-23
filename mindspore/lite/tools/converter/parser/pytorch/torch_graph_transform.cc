@@ -22,7 +22,7 @@
 #include "torch/csrc/jit/passes/inliner.h"
 #include "torch/csrc/jit/passes/remove_mutation.h"
 #include "torch/csrc/jit/passes/normalize_ops.h"
-#include "mindspore/core/utils/log_adapter.h"
+#include "utils/log_adapter.h"
 #include "mindspore/lite/tools/converter/parser/pytorch/pytorch_node_parser.h"
 
 namespace torch {

@@ -32,7 +32,7 @@
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
 #include "plugin/device/ascend/hal/profiler/parallel_strategy_profiling.h"
 #include "cxx_api/graph/acl/acl_env_guard.h"
-#include "mindspore/core/utils/singleton.h"
+#include "utils/singleton.h"
 #include "utils/ms_context.h"
 #include "plugin/device/ascend/hal/device/tensorsummary_utils.h"
 #include "plugin/device/ascend/hal/device/tensordump_utils.h"

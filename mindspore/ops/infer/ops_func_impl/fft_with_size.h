@@ -18,7 +18,7 @@
 #define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_FFT_WITH_SIZE_H_
 
 #include <vector>
-#include "mindspore/core/ops/ops_func_impl/op_func_impl.h"
+#include "ops/ops_func_impl/op_func_impl.h"
 #include "mindspore/ops/op_def/op_name.h"
 
 namespace mindspore {

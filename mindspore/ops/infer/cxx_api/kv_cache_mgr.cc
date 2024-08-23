@@ -17,7 +17,7 @@
 #include "infer/cxx_api/kv_cache_mgr.h"
 #include <set>
 #include "ops_utils/op_utils.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "utils/check_convert_utils.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "mindspore/ops/op_def/lite_ops.h"

@@ -25,7 +25,7 @@
 #include "src/extendrt/delegate/tensorrt/tensorrt_context.h"
 #include "src/extendrt/delegate/tensorrt/tensor_info.h"
 #include "src/extendrt/delegate/tensorrt/cuda_impl/cublas_utils.h"
-#include "mindspore/core/ir/dtype/type_id.h"
+#include "ir/dtype/type_id.h"
 #include "schema/ops_generated.h"
 #include "nnacl/pack.h"
 #include "include/api/context.h"

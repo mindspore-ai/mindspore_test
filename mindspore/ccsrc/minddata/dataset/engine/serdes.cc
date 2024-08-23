@@ -22,7 +22,7 @@
 #include "include/common/utils/utils.h"
 #include "minddata/dataset/core/pybind_support.h"
 #ifndef BUILD_LITE
-#include "mindspore/core/utils/file_utils.h"
+#include "utils/file_utils.h"
 #else
 #include "mindspore/lite/src/common/file_utils.h"
 #endif

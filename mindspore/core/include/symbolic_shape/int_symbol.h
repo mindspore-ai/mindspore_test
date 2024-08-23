@@ -18,8 +18,8 @@
 
 #include <memory>
 #include <string>
-#include "mindspore/core/symbolic_shape/symbol.h"
-#include "mindspore/core/symbolic_shape/math_info.h"
+#include "symbolic_shape/symbol.h"
+#include "symbolic_shape/math_info.h"
 
 namespace mindspore {
 namespace symshape {

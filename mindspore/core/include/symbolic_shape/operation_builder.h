@@ -20,9 +20,9 @@
 #include <memory>
 #include <utility>
 #include <unordered_map>
-#include "mindspore/core/ir/primitive.h"
-#include "mindspore/core/symbolic_shape/symbol.h"
-#include "mindspore/core/symbolic_shape/operation.h"
+#include "ir/primitive.h"
+#include "symbolic_shape/symbol.h"
+#include "symbolic_shape/operation.h"
 
 namespace mindspore {
 namespace symshape {

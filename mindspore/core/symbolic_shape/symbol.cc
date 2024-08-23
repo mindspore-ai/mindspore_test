@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-#include "mindspore/core/symbolic_shape/symbol.h"
+#include "symbolic_shape/symbol.h"
 #include <utility>
-#include "mindspore/core/symbolic_shape/utils.h"
-#include "mindspore/core/symbolic_shape/int_symbol.h"
+#include "symbolic_shape/utils.h"
+#include "symbolic_shape/int_symbol.h"
 
 namespace mindspore {
 namespace symshape {

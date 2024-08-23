@@ -22,7 +22,7 @@
 #include "runtime/graph_scheduler/actor/output_actor.h"
 #include "runtime/graph_scheduler/actor/memory_manager_actor.h"
 #include "runtime/graph_scheduler/actor/debug_actor.h"
-#include "mindrt/include/async/async.h"
+#include "async/async.h"
 #include "utils/phase.h"
 #include "utils/log_adapter.h"
 

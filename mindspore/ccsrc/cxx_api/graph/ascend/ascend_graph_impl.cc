@@ -21,7 +21,7 @@
 #include "cxx_api/utils.h"
 #include "cxx_api/acl_utils.h"
 #include "utils/log_adapter.h"
-#include "mindspore/core/base/base_ref_utils.h"
+#include "base/base_ref_utils.h"
 #include "backend/common/session/executor_manager.h"
 #include "runtime/device/kernel_runtime_manager.h"
 #include "include/common/utils/python_adapter.h"

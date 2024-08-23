@@ -21,7 +21,7 @@
 #include <string>
 #include <sstream>
 #include "utils/log_adapter.h"
-#include "mindspore/core/mindapi/base/type_id.h"
+#include "mindapi/base/type_id.h"
 
 namespace mindspore {
 MS_CORE_API extern const int RET_SUCCESS;

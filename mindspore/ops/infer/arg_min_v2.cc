@@ -27,7 +27,7 @@
 #include "ir/dtype/number.h"
 #include "ir/primitive.h"
 #include "mindapi/base/shape_vector.h"
-#include "mindapi/src/helper.h"
+#include "mindapi/helper.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "infer/arg_min_v2.h"
 #include "mindspore/ops/ops_utils/op_utils.h"

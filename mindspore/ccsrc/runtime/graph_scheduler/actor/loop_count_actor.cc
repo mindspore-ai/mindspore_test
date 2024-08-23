@@ -23,7 +23,7 @@
 #include "runtime/graph_scheduler/actor/debug_actor.h"
 #include "runtime/graph_scheduler/actor/profiler_actor.h"
 #include "runtime/graph_scheduler/actor/control_flow/entrance_actor.h"
-#include "mindrt/include/async/async.h"
+#include "async/async.h"
 #include "utils/log_adapter.h"
 #include "runtime/device/stream_synchronizer.h"
 #include "include/backend/distributed/recovery/recovery_context.h"

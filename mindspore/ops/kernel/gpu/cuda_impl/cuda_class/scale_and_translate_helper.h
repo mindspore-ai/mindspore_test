@@ -21,7 +21,7 @@
 #include <vector>
 #include "kernel/gpu/cuda_impl/cuda_class/helper_base.h"
 #include "kernel/gpu/cuda_impl/cuda_ops/scale_and_translate_impl.cuh"
-#include "mindspore/core/mindapi/base/types.h"
+#include "mindapi/base/types.h"
 
 namespace mindspore {
 namespace cukernel {

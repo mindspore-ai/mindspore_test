@@ -23,7 +23,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/other_ops.h"
-#include "mindspore/core/utils/convert_utils_base.h"
+#include "utils/convert_utils_base.h"
 #include "frontend/parallel/step_parallel.h"
 #include "include/common/debug/anf_ir_dump.h"
 

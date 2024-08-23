@@ -25,7 +25,7 @@
 #include "src/extendrt/delegate/parameter_cache/gpu/gpu_cache_mem.h"
 #include "src/extendrt/delegate/parameter_cache/lfu_cache.h"
 #include "src/extendrt/delegate/parameter_cache/factory_mgr_base.h"
-#include "core/utils/convert_utils_base.h"
+#include "utils/convert_utils_base.h"
 
 namespace {
 constexpr size_t kEmbeddingTensorShapeSize = 2;
