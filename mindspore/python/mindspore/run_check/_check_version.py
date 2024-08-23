@@ -340,6 +340,27 @@ class AscendEnvChecker(EnvChecker):
             os.environ[env_name] = env_value
         return True
 
+    def check_custom_version(self):
+        """custom op version check"""
+        if not Path(self.fwk_version).is_file():
+            return True
+
+        cur_version = self._read_version(self.fwk_version)
+        custom_version_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                           "../lib/plugin/ascend/custom_ascendc_ops/version.info")
+        with open(custom_version_path, 'r') as f:
+            all_info = f.readlines()
+            for line in all_info:
+                full_version = line.strip().split("=")[1]
+                compile_version = '.'.join(full_version.split('.')[0:2])
+        if cur_version == compile_version:
+            return True
+
+        logger.warning(
+            f"The version {compile_version} used for compiling the custom operator does not match "
+            f"Ascend AI software package version {cur_version} in the current environment.")
+        return False
+
     def check_env(self):
         self._check_env()
 

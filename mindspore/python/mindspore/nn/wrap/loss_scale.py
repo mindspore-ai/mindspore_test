@@ -33,6 +33,7 @@ from mindspore.ops.operations.nn_ops import AllFinite
 from mindspore.common import dtype as mstype
 from mindspore.common.api import jit
 from mindspore._c_expression import MSContext
+from mindspore.run_check._check_version import AscendEnvChecker
 
 _grad_scale = C.MultitypeFuncGraph("grad_scale")
 reciprocal = P.Reciprocal()
@@ -48,6 +49,7 @@ def tensor_grad_scale_row_tensor(scale, grad):
     return RowTensorInner(grad.indices,
                           grad.values * F.cast(reciprocal(scale), F.dtype(grad.values)),
                           grad.dense_shape)
+
 
 _grad_overflow = C.MultitypeFuncGraph("_grad_overflow")
 grad_overflow = P.FloatStatus()
@@ -355,6 +357,7 @@ class TrainOneStepWithLossScaleCell(TrainOneStepCell):
         >>> train_network.set_sense_scale(scaling_sens)
         >>> output = train_network(inputs, label)
     """
+
     def __init__(self, network, optimizer, scale_sense):
         super(TrainOneStepWithLossScaleCell, self).__init__(network, optimizer, sens=None)
         self.hyper_map = C.HyperMap()
@@ -382,6 +385,11 @@ class TrainOneStepWithLossScaleCell(TrainOneStepCell):
             self.enable_allfinite = False
         elif global_jit_config:
             self.enable_allfinite = global_jit_config["jit_level"] == "O0" or global_jit_config["jit_level"] == "O1"
+
+        if self.ascend_910bc_target:
+            checker = AscendEnvChecker(None)
+            if not checker.check_custom_version():
+                self.enable_allfinite = False
 
         if isinstance(scale_sense, Cell):
             self.loss_scaling_manager = scale_sense
@@ -613,6 +621,7 @@ class _TrainGradAccuWithLossScaleCell(TrainOneStepCell):
         optimizer (Optimizer): Optimizer for updating the weights.
         scale_sense (Cell): Cell to do the loss scale.
     """
+
     def __init__(self, network, optimizer, scale_sense):
         super(_TrainGradAccuWithLossScaleCell, self).__init__(network, optimizer, sens=None)
         self.network = network

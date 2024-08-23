@@ -35,3 +35,10 @@ endif()
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/op_kernel)
   add_subdirectory(op_kernel)
 endif()
+
+add_custom_target(gen_version_info ALL
+        COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/cmake/util/gen_version_info.sh
+        ${ASCEND_CANN_PACKAGE_PATH} ${CMAKE_CURRENT_BINARY_DIR})
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/version.info
+        DESTINATION ${PKG_PATH}/${vendor_name}/)
