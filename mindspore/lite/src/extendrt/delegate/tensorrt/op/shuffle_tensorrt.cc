@@ -335,11 +335,19 @@ int ShuffleTensorRT::AddBroadcastToOp(nvinfer1::IShuffleLayer *shuffle_layer) {
     auto eq_one =
       ctx_->network()->addElementWise(*shape_tensor, *one_tensor, nvinfer1::ElementWiseOperation::kEQUAL)->getOutput(0);
     auto int_eq_one = TRTTensorCast(ctx_, eq_one, nvinfer1::DataType::kINT32, op_name_ + "_cast_int_one");
+    if (int_eq_one == nullptr) {
+      MS_LOG(ERROR) << "int_eq_one is nullptr!";
+      return RET_ERROR;
+    }
     auto x = ctx_->network()->addElementWise(*int_eq_one, *input, nvinfer1::ElementWiseOperation::kPROD)->getOutput(0);
     auto zero_tensor = ctx_->ConvertTo1DTensor(0);
     auto not_eq_one =
       ctx_->network()->addElementWise(*zero_tensor, *int_eq_one, nvinfer1::ElementWiseOperation::kEQUAL)->getOutput(0);
     auto int_not_eq_one = TRTTensorCast(ctx_, not_eq_one, nvinfer1::DataType::kINT32, op_name_ + "_cast_int_not_one");
+    if (int_not_eq_one == nullptr) {
+      MS_LOG(ERROR) << "int_not_eq_one is nullptr!";
+      return RET_ERROR;
+    }
     auto y = ctx_->network()
                ->addElementWise(*int_not_eq_one, *shape_tensor, nvinfer1::ElementWiseOperation::kPROD)
                ->getOutput(0);

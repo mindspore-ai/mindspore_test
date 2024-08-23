@@ -47,6 +47,7 @@ int NMSwithmaskTensorRT::AddInnerOp(TensorRTContext *ctx) {
   if (in_tensors_[0].DataType() == DataType::kNumberTypeFloat16) {
     in_tensor = TRTTensorCast(ctx, in_tensor, nvinfer1::DataType::kFLOAT, op_name_ + "_cast_in");
   }
+  CHECK_NULL_RETURN(in_tensor);
   auto input1_dims = in_tensor->getDimensions();
   if (input1_dims.nbDims != INPUT_SIZE2 || input1_dims.d[1] != INPUT_SIZE5) {
     MS_LOG(ERROR) << "input tensor is invalid";

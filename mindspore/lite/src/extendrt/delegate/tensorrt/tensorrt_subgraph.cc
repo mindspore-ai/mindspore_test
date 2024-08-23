@@ -438,6 +438,10 @@ int TensorRTSubGraph::MarkOutputs() {
                                  [=](const TensorInfo &input) { return input.Name() == output_name; });
     if (input_it != inputs_.end()) {
       nvinfer1::ITensor *trt_tensor = SetTensorRTNetworkInput(*input_it, GetInputIndexByName(input_it->Name()));
+      if (trt_tensor == nullptr) {
+        MS_LOG(ERROR) << "trt_tensor is nullptr!";
+        return RET_ERROR;
+      }
       ctx_->network()->markOutput(*trt_tensor);
       continue;
     }
