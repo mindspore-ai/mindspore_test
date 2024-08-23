@@ -141,6 +141,10 @@ AnfNodePtr ConcatOpPass::ConvertMakeTupleInputToPlantInputs(const FuncGraphPtr &
   std::vector<AnfNodePtr> plant_inputs;
   std::vector<int64_t> dyn_input_sizes;
   plant_inputs.push_back(common::AnfAlgo::GetCNodePrimitiveNode(cnode_ptr));
+  if (cnode_ptr->empty()) {
+    MS_LOG(ERROR) << "Node " << cnode_ptr->fullname_with_scope() << " input_size is 0";
+    return nullptr;
+  }
   size_t input_num = cnode_ptr->size() - 1;
   for (size_t i = 0; i < input_num; ++i) {
     auto input_node = common::AnfAlgo::GetInputNode(cnode_ptr, i);

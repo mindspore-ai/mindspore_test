@@ -138,12 +138,12 @@ STATUS FindAreaSurroundedByTranspose(const FuncGraphPtr &func_graph, const CNode
       continue;
     }
     if (in_nodes->find(cur_node) == in_nodes->end()) {
-      middle_nodes->insert(cur_node);
+      (void)middle_nodes->insert(cur_node);
       // insert pre nodes.
       auto origin_inputs = cur_node->inputs();
       lite::RemoveIfDepend(cur_node);
       if (CheckIsAllInputsParam(cur_node)) {
-        in_nodes->insert(cur_node);
+        (void)in_nodes->insert(cur_node);
       } else {
         DealWithInputNodes(func_graph, cur_node, in_nodes, not_trans_in_nodes, middle_nodes, &queue_nodes,
                            &is_pre_nodes);

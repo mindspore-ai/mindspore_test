@@ -554,17 +554,17 @@ STATUS ToFormatBase::RunPassOneNode(const FuncGraphPtr &func_graph, const CNodeP
   node_infer_shape_ = std::make_shared<NodeInferShape>(fmk_type_, train_flag_);
   if (node_infer_shape_ == nullptr) {
     MS_LOG(ERROR) << "create NodeInferShape object failed.";
-    return false;
+    return RET_ERROR;
   }
   manager_ = Manage(func_graph, true);
   if (manager_ == nullptr) {
     MS_LOG(ERROR) << "manager is nullptr.";
-    return false;
+    return RET_ERROR;
   }
   auto status = NodeConvWeightFormatTrans(func_graph, cnode);
   if (status != lite::RET_OK) {
     MS_LOG(ERROR) << "Conv2D weight FormatTrans failed: " << status;
-    return false;
+    return RET_ERROR;
   }
   status = HandleGraphNode(func_graph, cnode);
   if (status != lite::RET_OK && status != lite::RET_NO_CHANGE) {

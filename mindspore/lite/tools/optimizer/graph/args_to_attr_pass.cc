@@ -91,6 +91,10 @@ bool ArgsToAttrPass::Run(const FuncGraphPtr &func_graph) {
     }
 
     auto new_node = func_graph->NewCNode(dst_prim, new_node_inputs);
+    if (new_node == nullptr) {
+      MS_LOG(ERROR) << "new cnode failed.";
+      return false;
+    }
     new_node->set_abstract(node->abstract());
     new_node->set_fullname_with_scope(node->fullname_with_scope());
 

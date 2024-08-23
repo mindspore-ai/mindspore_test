@@ -72,8 +72,11 @@ int ReplaceUpdateStateWithMonad(const FuncGraphPtr &func_graph, const CNodePtr &
 
   // find monad input node, using monad node replace UpdateState node
   auto manager = func_graph->manager();
-  MS_ASSERT(manager != nullptr);
-  manager->Replace(cnode, monad_input);
+  MS_CHECK_TRUE_MSG(manager != nullptr, lite::RET_ERROR, "manager is nullptr");
+  if (!manager->Replace(cnode, monad_input)) {
+    MS_LOG(ERROR) << "replace node failed.";
+    return lite::RET_ERROR;
+  }
   return lite::RET_OK;
 }
 
@@ -113,11 +116,17 @@ int ProcessInputIsMonad(const FuncGraphPtr &func_graph, const CNodePtr &cnode) {
     return lite::RET_NO_CHANGE;
   }
   auto manager = func_graph->manager();
-  MS_ASSERT(manager != nullptr);
+  MS_CHECK_TRUE_MSG(manager != nullptr, lite::RET_ERROR, "manager is nullptr");
   if (!utils::isa<CNode>(not_must_monad) || CheckIsAllInputsParam(not_must_monad)) {
-    manager->Replace(cnode, must_monad);
+    if (!manager->Replace(cnode, must_monad)) {
+      MS_LOG(ERROR) << "replace node failed.";
+      return lite::RET_ERROR;
+    }
   } else {
-    manager->Replace(cnode, not_must_monad);
+    if (!manager->Replace(cnode, not_must_monad)) {
+      MS_LOG(ERROR) << "replace node failed.";
+      return lite::RET_ERROR;
+    }
   }
   return lite::RET_OK;
 }
@@ -141,7 +150,7 @@ int ProcessDependencyWithTwoNodes(const FuncGraphPtr &func_graph, const CNodePtr
     MS_CHECK_TRUE_MSG(post_node != nullptr, RET_ERROR, "post_node is nullptr");
   }
   auto manager = func_graph->manager();
-  MS_ASSERT(manager != nullptr);
+  MS_CHECK_TRUE_MSG(manager != nullptr, lite::RET_ERROR, "manager is nullptr");
   auto node_users = manager->node_users()[pre_node];
   auto iter =
     std::find_if(node_users.begin(), node_users.end(),
@@ -159,7 +168,10 @@ int ProcessDependencyWithTwoNodes(const FuncGraphPtr &func_graph, const CNodePtr
   auto depend_node = func_graph->NewCNode(depend_prim_c, {post_node, pre_node});
   MS_CHECK_TRUE_MSG(depend_node != nullptr, lite::RET_ERROR, "NewCNode Failed");
   depend_node->set_fullname_with_scope(cnode->fullname_with_scope());
-  manager->Replace(cnode, depend_node);
+  if (!manager->Replace(cnode, depend_node)) {
+    MS_LOG(ERROR) << "replace node failed.";
+    return lite::RET_ERROR;
+  }
   return lite::RET_OK;
 }
 
@@ -178,12 +190,18 @@ int ProcessInputHaveDependency(const FuncGraphPtr &func_graph, const CNodePtr &c
   auto make_tuple_prim = NewValueNode(make_tuple_prim_c);
   MS_CHECK_TRUE_MSG(make_tuple_prim != nullptr, lite::RET_ERROR, "NewCNode Failed");
   auto manager = func_graph->manager();
-  MS_ASSERT(manager != nullptr);
+  MS_CHECK_TRUE_MSG(manager != nullptr, lite::RET_ERROR, "manager is nullptr");
   if (CheckPrimitiveType(cnode->input(0), prim::kPrimTranspose)) {
-    manager->Replace(cnode->input(0)->cast<CNodePtr>()->input(0), make_tuple_prim);
+    if (!manager->Replace(cnode->input(0)->cast<CNodePtr>()->input(0), make_tuple_prim)) {
+      MS_LOG(ERROR) << "replace node failed.";
+      return lite::RET_ERROR;
+    }
     return RET_OK;
   }
-  manager->Replace(cnode->input(0), make_tuple_prim);
+  if (!manager->Replace(cnode->input(0), make_tuple_prim)) {
+    MS_LOG(ERROR) << "replace node failed.";
+    return lite::RET_ERROR;
+  }
   return lite::RET_OK;
 }
 }  // namespace
@@ -298,7 +316,10 @@ int RemoveRedundantOpPass::RemoveDropoutOp(const AnfNodePtr &anf_node, const Fun
   }
   if (!utils::isa<abstract::AbstractTuplePtr>(anf_node->abstract())) {
     MS_LOG(DEBUG) << "dropout output size is one.";
-    manager->Replace(anf_node, cnode->input(1));
+    if (!manager->Replace(anf_node, cnode->input(1))) {
+      MS_LOG(ERROR) << "replace node failed.";
+      return lite::RET_ERROR;
+    }
   } else {
     auto node_users = manager->node_users()[anf_node];
     for (auto &node_user : node_users) {
@@ -317,7 +338,10 @@ int RemoveRedundantOpPass::RemoveDropoutOp(const AnfNodePtr &anf_node, const Fun
         MS_LOG(DEBUG) << "dropout's second output is useful.";
         continue;
       }
-      manager->Replace(node, cnode->input(1));
+      if (!manager->Replace(node, cnode->input(1))) {
+        MS_LOG(ERROR) << "replace node failed.";
+        return lite::RET_ERROR;
+      }
     }
   }
   return lite::RET_OK;
@@ -387,7 +411,7 @@ int RemoveRedundantOpPass::RemoveInvalidPadOp(const AnfNodePtr &anf_node, const 
           break;
         }
       }
-      if (is_invalid == false) {
+      if (!is_invalid) {
         break;
       }
     }
@@ -440,7 +464,10 @@ int RemoveRedundantOpPass::FlattenMakeTuple(const FuncGraphPtr &func_graph, cons
         MS_CHECK_TRUE_MSG(new_cnode != nullptr, RET_ERROR, "Failed to create New node.");
         new_cnode->set_abstract(cnode->abstract());
         new_cnode->set_fullname_with_scope(cnode->fullname_with_scope() + "_flatten");
-        manager->Replace(cnode, new_cnode);
+        if (!manager->Replace(cnode, new_cnode)) {
+          MS_LOG(ERROR) << "replace node failed.";
+          return lite::RET_ERROR;
+        }
       }
     } else if (opt::CheckPrimitiveType(cnode, prim::kPrimTupleGetItem)) {
       auto real_node = opt::GetTupleGetItemRealInput(cnode);
@@ -451,7 +478,10 @@ int RemoveRedundantOpPass::FlattenMakeTuple(const FuncGraphPtr &func_graph, cons
       auto real_node_as_cnode = real_node->cast<CNodePtr>();
       if (real_node_as_cnode && CheckPrimitiveType(real_node, prim::kPrimMakeTuple)) {
         auto idx = opt::GetTupleGetItemOutIndex(cnode);
-        manager->Replace(cnode, real_node_as_cnode->input(idx));
+        if (!manager->Replace(cnode, real_node_as_cnode->input(idx))) {
+          MS_LOG(ERROR) << "replace node failed.";
+          return lite::RET_ERROR;
+        }
       }
     }
   }
@@ -478,7 +508,10 @@ int RemoveRedundantOpPass::RemoveUmonad(const FuncGraphPtr &func_graph, const Fu
     auto depend_dst = cnode->input(kIndex2);
     auto depend_dst_as_cnode = depend_dst->cast<CNodePtr>();
     if (depend_dst_as_cnode && opt::CheckPrimitiveType(depend_dst_as_cnode, prim::kPrimUpdateState)) {
-      manager->Replace(cnode, depend_src);
+      if (!manager->Replace(cnode, depend_src)) {
+        MS_LOG(ERROR) << "replace node failed.";
+        return lite::RET_ERROR;
+      }
     }
   }
   return RET_OK;

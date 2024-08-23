@@ -84,7 +84,7 @@ static inline ValuePtr GetFirstVal(const tensor::TensorPtr &tensor) {
 bool MiniaturizationPass::Run(const FuncGraphPtr &func_graph) {
   auto node_list = TopoSort(func_graph->get_return());
   auto manager = Manage(func_graph, true);
-  MS_ASSERT(manager != nullptr);
+  MS_CHECK_TRUE_RET(manager != nullptr, false);
   bool changed = false;
   // this pass replace the tensor that has large data size and same value with fill ops
   for (auto &node : node_list) {

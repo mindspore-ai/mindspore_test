@@ -81,7 +81,7 @@ bool ClipConvertActivationPass::Run(const FuncGraphPtr &graph) {
         max = *reinterpret_cast<float *>(max_tensor_info->data_c());
       }
     }
-    bool is_relu6 = min == 0 && max == kValueThreshold6;
+    bool is_relu6 = lite::FloatCompare(min, 0.0f) && lite::FloatCompare(max, kValueThreshold6);
     bool is_relu = lite::FloatCompare(min) && lite::FloatCompare(max, FLT_MAX);
     if (only_relu_ && !(is_relu6 || is_relu)) {
       return false;

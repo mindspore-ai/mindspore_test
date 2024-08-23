@@ -36,7 +36,7 @@ constexpr size_t kInputNumber = 2;
 
 bool InputAndOutputVariablePass::Run(const FuncGraphPtr &graph) {
   MS_LOG(INFO) << "Start to run input and output variable pass";
-  MS_ASSERT(graph != nullptr);
+  MS_CHECK_TRUE_RET(graph != nullptr, false);
   auto parameters = graph->parameters();
   if (parameters.size() < static_cast<size_t>(inputs_variable_index_.back()) + 1) {
     MS_LOG(ERROR) << "the size of parameters is" << parameters.size() << " is less than "
@@ -113,8 +113,10 @@ bool InputAndOutputVariablePass::Run(const FuncGraphPtr &graph) {
     abstract_list.emplace_back(assign_nodes[i]->abstract());
   }
   auto new_make_tuple = graph->NewCNode(new_make_tuple_inputs);
+  MS_CHECK_TRUE_RET(new_make_tuple != nullptr, false);
   new_make_tuple->set_abstract(std::make_shared<abstract::AbstractTuple>(abstract_list));
   auto depend_cnode = graph->NewCNode(depend_prim, {output_1, new_make_tuple});
+  MS_CHECK_TRUE_RET(depend_cnode != nullptr, false);
   depend_cnode->set_abstract(output_1->abstract());
   graph->set_output(depend_cnode);
   MS_LOG(INFO) << "Run input and output variable pass success";
