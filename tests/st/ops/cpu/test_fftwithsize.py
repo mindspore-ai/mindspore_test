@@ -187,3 +187,21 @@ def test_fftwithsize_exception():
     ms.context.set_context(pynative_synchronize=True)
     with pytest.raises(ValueError, match="For 'FFTWithSize', the last dimension of the input cannot be 1"):
         fft_forward_func(x, signal_ndim, inverse, real)
+
+
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
+@pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+@pytest.mark.parametrize('norm', ['backward', 'forward', 'ortho'])
+def test_fft_with_size_irfft_norm(mode, norm):
+    """
+    Feature: irfft function.
+    Description: ensure the CPU accuracy of irfft.
+    Expectation: The result match to the expect value.
+    """
+    ms.context.set_context(mode=mode)
+    x = np.arange(1 * 2 * 3 * 3, dtype=np.complex128).reshape(1, 2, 3, 3)
+    ms_x = ms.Tensor(x)
+    output = fft_forward_func(ms_x, 3, True, True, norm=norm)
+    expect = np.fft.irfftn(x, s=(2, 3, 4), norm=norm)
+    assert np.allclose(output.asnumpy(), expect)
