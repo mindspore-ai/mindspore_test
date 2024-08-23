@@ -6,10 +6,6 @@ import dis
 from tests.mark_utils import arg_mark
 import sys
 import pytest
-from mindspore import _c_expression
-
-_c_expression.update_pijit_default_config(print_after_all=True)
-_c_expression.update_pijit_default_config(print_bb=True)
 
 
 @pytest.fixture(autouse=True)
