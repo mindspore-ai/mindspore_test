@@ -194,8 +194,8 @@ void TileInfo::UpdateDynamicMultiples(const AnfNodePtr &multiples_input_node) {
 
   MS_EXCEPTION_IF_NULL(multiples_input_node);
   if (!IsPrimitiveCNode(multiples_input_node, prim::kPrimMakeTuple)) {
-    MS_LOG(EXCEPTION) << "The dynamic input only support MakeTuple cnode, but got "
-                      << multiples_input_node->fullname_with_scope();
+    MS_LOG_WITH_NODE(EXCEPTION, multiples_input_node)
+      << "The dynamic input only support MakeTuple cnode, but got " << multiples_input_node->fullname_with_scope();
   }
 
   auto make_tuple_cnode = multiples_input_node->cast<CNodePtr>();
@@ -215,8 +215,8 @@ void TileInfo::UpdateDynamicMultiples(const AnfNodePtr &multiples_input_node) {
         continue;
       }
       if (origin_multiple_ele % strategy[i - 1] != 0) {
-        MS_LOG(EXCEPTION) << name_ << ": the origin shape is " << origin_multiple_ele
-                          << ", can not be div by shard size " << strategy[i - 1];
+        MS_LOG_WITH_NODE(EXCEPTION, make_tuple_cnode) << name_ << ": the origin shape is " << origin_multiple_ele
+                                                      << ", can not be div by shard size " << strategy[i - 1];
       }
       int64_t replace_multiple = origin_multiple_ele / strategy[i - 1];
       MS_LOG(INFO) << name_ << ": replace multiple from " << origin_multiple_ele << " to " << replace_multiple
@@ -232,7 +232,7 @@ void TileInfo::UpdateMultiples() {
   for (auto &cnode : cnodes_) {
     MS_EXCEPTION_IF_NULL(cnode);
     if (cnode->size() != 3) {
-      MS_LOG(EXCEPTION) << name_ << ": The size of tile cnode's inputs must be 3";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << ": The size of tile cnode's inputs must be 3";
     }
 
     if (IsValueNode<ValueTuple>(cnode->input(2))) {
@@ -255,7 +255,7 @@ void TileInfo::ReplaceNodeInputOrAttrs() { UpdateMultiples(); }
 
 std::shared_ptr<Strategies> TileInfo::GenerateBatchStrategies() {
   if (InferAttrs() != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Infer attrs failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Infer attrs failed";
   }
   Shapes multiples_shape = {full_multiples_};
   split_flag_list_ = {true};
@@ -286,7 +286,7 @@ std::vector<StrategyPtr> TileInfo::GenerateOpStrategies(int64_t stage_id) {
   }
   Shapes tmp_inputs_shape = {full_multiples_};
   if (GenerateStrategiesForIndependentInputs(stage_id, tmp_inputs_shape, splittable_inputs, &sp_vector) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": generate strategies failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": generate strategies failed";
   }
 
   return sp_vector;

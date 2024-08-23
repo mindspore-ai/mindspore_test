@@ -184,7 +184,7 @@ size_t GetLengthOfDataType(const TypePtr &type) {
 size_t GetInputsTypeLen(const AnfNodePtr &input) {
   MS_EXCEPTION_IF_NULL(input);
   if (!input->isa<CNode>() && !input->isa<Parameter>() && !IsValueNode<tensor::Tensor>(input)) {
-    MS_LOG(EXCEPTION) << "The input node is not a cnode or parameter or tensor";
+    MS_LOG_WITH_NODE(EXCEPTION, input) << "The input node is not a cnode or parameter or tensor";
   }
 
   size_t input_type_len = 0;
@@ -194,7 +194,7 @@ size_t GetInputsTypeLen(const AnfNodePtr &input) {
     auto input_element_type = type->cast<mindspore::TensorTypePtr>()->element();
     input_type_len = GetLengthOfDataType(input_element_type);
   } else {
-    MS_LOG(EXCEPTION) << "Unknown type: " << type->type_name();
+    MS_LOG_WITH_NODE(EXCEPTION, input) << "Unknown type: " << type->type_name();
   }
   return input_type_len;
 }
@@ -212,7 +212,7 @@ std::vector<size_t> ExtractInputElementLength(const CNodePtr &node, std::vector<
       MS_EXCEPTION_IF_NULL(func_graph);
       std::vector<AnfNodePtr> parameters = FindParameterByRefKeyNode(input, func_graph);
       if (parameters.size() != 1) {
-        MS_LOG(EXCEPTION) << "Find parameter by ref key node failed";
+        MS_LOG_WITH_NODE(EXCEPTION, input) << "Find parameter by ref key node failed";
       }
       inputs_type_len.push_back(GetInputsTypeLen(parameters[0]));
     } else if (input->isa<CNode>() || input->isa<Parameter>() || IsValueNode<tensor::Tensor>(input)) {
@@ -296,7 +296,7 @@ std::vector<TypePtr> ExtractOutputTypeByNode(const CNodePtr &node) {
         auto ele_element_type = ele->cast<mindspore::TensorTypePtr>()->element();
         outputs_type.push_back(ele_element_type);
       } else {
-        MS_LOG(EXCEPTION) << "Unknown type: " << primary_output_type->type_name();
+        MS_LOG_WITH_NODE(EXCEPTION, node) << "Unknown type: " << primary_output_type->type_name();
       }
     }
   } else {
@@ -305,7 +305,7 @@ std::vector<TypePtr> ExtractOutputTypeByNode(const CNodePtr &node) {
       auto element_type = primary_output_type->cast<mindspore::TensorTypePtr>()->element();
       outputs_type.push_back(element_type);
     } else {
-      MS_LOG(EXCEPTION) << "Unknown type: " << primary_output_type->type_name();
+      MS_LOG_WITH_NODE(EXCEPTION, node) << "Unknown type: " << primary_output_type->type_name();
     }
   }
   return outputs_type;
@@ -444,7 +444,7 @@ bool FindReshapePreNodeStraCosts(const AnfNodePtr &node, OperatorInfoPtr *pre_op
     // find tuple_get_item's previous node
     auto pre_node = cnode->input(1);
     if (!pre_node->isa<CNode>()) {
-      MS_LOG(EXCEPTION) << "tuple get item's second input is not a cnode";
+      MS_LOG_WITH_NODE(EXCEPTION, pre_node) << "tuple get item's second input is not a cnode";
     }
     CNodePtr pre_cnode = pre_node->cast<CNodePtr>();
     FindPreNodeCrossFuncGraph(&pre_cnode, *out_index);
@@ -574,7 +574,7 @@ Status TransValueSequeueToVector(const ValuePtr &input_value, std::vector<int64_
 const AnfNodePtr RealInputNode(const CNodePtr cnode, size_t index) {
   MS_EXCEPTION_IF_NULL(cnode);
   if (cnode->size() <= index) {
-    MS_LOG(EXCEPTION) << "cnode inputs size: " << cnode->size() << " is less equal index: " << index;
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "cnode inputs size: " << cnode->size() << " is less equal index: " << index;
   }
   auto input0 = cnode->input(index);
   if (!IsPrimitiveCNode(input0)) {
@@ -623,7 +623,8 @@ AnfNodePtr RefParameterToActualNode(const AnfNodePtr &node,
   auto sub_graph_parameters = sub_func_graph->parameters();
   auto curr_param_iter = std::find(sub_graph_parameters.begin(), sub_graph_parameters.end(), node);
   if (curr_param_iter == sub_graph_parameters.end()) {
-    MS_LOG(EXCEPTION) << "Cannot find param " << node_param_ptr->DebugString() << " in current sub_graph";
+    MS_LOG_WITH_NODE(EXCEPTION, node_param_ptr)
+      << "Cannot find param " << node_param_ptr->DebugString() << " in current sub_graph";
   }
   size_t curr_param_index = static_cast<size_t>(curr_param_iter - sub_graph_parameters.begin());
   for (const auto &node_pair : call_cnodes_map) {

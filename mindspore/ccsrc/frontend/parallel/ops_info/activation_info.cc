@@ -132,7 +132,7 @@ Status ActivationBase::ComputeReplaceGraphForInterleaved(const CNodePtr &cnode) 
 ReplaceGraphPtr ActivationBase::replace_graph(const CNodePtr &cnode) {
   if (inputs_tensor_info_[kIndex0].tensor_layout().IsInterleavedParallel()) {
     if (ComputeReplaceGraphForInterleaved(cnode) != SUCCESS) {
-      MS_LOG(EXCEPTION) << name_ << " splitting micro interleaved failed.";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << " splitting micro interleaved failed.";
     }
     return replace_graph_;
   }
@@ -151,15 +151,15 @@ Status ActivationOther::GetAttrs() {
 std::vector<StrategyPtr> Activation::GenerateOpStrategies(int64_t stage_id) {
   std::vector<StrategyPtr> sp_vector;
   if ((inputs_shape_.size() != ACTIVATION_INPUTS_SIZE)) {
-    MS_LOG(EXCEPTION) << name_ << " : Inputs shape size(" << inputs_shape_.size() << ") or outputs shape size("
-                      << outputs_shape_.size() << "is wrong.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << " : Inputs shape size(" << inputs_shape_.size()
+                                        << ") or outputs shape size(" << outputs_shape_.size() << "is wrong.";
   }
 
   Shape input0_split(inputs_shape_[0].size(), 1);
   Shapes splittable_inputs = {input0_split};
 
   if (GenerateStrategiesForIndependentInputs(stage_id, inputs_shape_, splittable_inputs, &sp_vector) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << " : Generate strategies for independent inputs() failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << " : Generate strategies for independent inputs() failed.";
   }
 
   return sp_vector;
@@ -171,7 +171,7 @@ std::vector<StrategyPtr> DropoutInfo::GenerateOpStrategies(int64_t stage_id) {
 
   std::vector<StrategyPtr> sp_vector;
   if (GenerateStrategiesForIndependentInputs(stage_id, inputs_shape_, splittable_inputs, &sp_vector) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << " : Generate strategies for independent inputs() failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << " : Generate strategies for independent inputs() failed.";
   }
   return sp_vector;
 }
@@ -324,7 +324,7 @@ Status Softmax::SetCostUnderStrategy(const StrategyPtr &strategy) { return SetCo
 
 std::vector<StrategyPtr> Softmax::GenerateOpStrategies(int64_t stage_id) {
   if ((inputs_shape_.size() != ACTIVATION_INPUTS_SIZE)) {
-    MS_LOG(EXCEPTION) << name_ << " : Inputs shape size or outputs shape size is wrong.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << " : Inputs shape size or outputs shape size is wrong.";
   }
 
   Shape input0_split;
@@ -341,7 +341,7 @@ std::vector<StrategyPtr> Softmax::GenerateOpStrategies(int64_t stage_id) {
 
   std::vector<StrategyPtr> sp_vector;
   if (GenerateStrategiesForIndependentInputs(stage_id, inputs_shape_, splittable_inputs, &sp_vector) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << " : Generate strategies for independent inputs failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << " : Generate strategies for independent inputs failed.";
   }
   return sp_vector;
 }
@@ -431,7 +431,7 @@ Status CumOpBase::CheckStrategy(const StrategyPtr &strategy) {
 std::vector<StrategyPtr> CumOpBase::GenerateOpStrategies(int64_t stage_id) {
   Shape input0_split(inputs_shape_[0].size(), 1);
   if (axis_ < 0 || LongToSize(axis_) >= inputs_shape_[0].size()) {
-    MS_LOG(EXCEPTION) << "Wrong axis value: " << axis_;
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << "Wrong axis value: " << axis_;
   }
   // Currently, CumSum does not support the sharding strategies which splits axis.
   input0_split[LongToSize(axis_)] = 0;
@@ -439,7 +439,7 @@ std::vector<StrategyPtr> CumOpBase::GenerateOpStrategies(int64_t stage_id) {
 
   std::vector<StrategyPtr> sp_vector;
   if (GenerateStrategiesForIndependentInputs(stage_id, inputs_shape_, splittable_inputs, &sp_vector) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << " : Generate strategies for independent inputs() failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << " : Generate strategies for independent inputs() failed.";
   }
   return sp_vector;
 }

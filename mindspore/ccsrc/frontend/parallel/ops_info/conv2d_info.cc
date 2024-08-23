@@ -456,7 +456,7 @@ std::vector<int64_t> Conv2DInfo::GetAdjacentRankIdsAndBiases(int64_t rank_id, in
   DeviceMatrix dev_matrix(rank_id, stage_device_list_, dev_matrix_shape_);
   RankList group_devices;
   if (dev_matrix.GetDevicesAlongDim(index_in_dev_matrix, &group_devices) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Get device along dim failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Get device along dim failed";
   }
 
   if (group_devices.size() <= 1) {
@@ -467,14 +467,16 @@ std::vector<int64_t> Conv2DInfo::GetAdjacentRankIdsAndBiases(int64_t rank_id, in
   }
 
   if (group_devices.size() != LongToSize(dimension_shard_num)) {
-    MS_LOG(EXCEPTION) << name_ << ": The devices' size of " << dimension << "th dimension is " << group_devices.size()
-                      << ", but the shard num of this dimension is " << dimension_shard_num;
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": The devices' size of " << dimension << "th dimension is "
+                                        << group_devices.size() << ", but the shard num of this dimension is "
+                                        << dimension_shard_num;
   }
 
   std::vector<int64_t>::iterator it = std::find(group_devices.begin(), group_devices.end(), rank_id);
   if (it == group_devices.end()) {
-    MS_LOG(EXCEPTION) << name_ << ": Can not find the current rank in device list of " << dimension
-                      << "th dimension, the current rank is " << rank_id << ", the device list is " << group_devices;
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Can not find the current rank in device list of " << dimension
+                                        << "th dimension, the current rank is " << rank_id << ", the device list is "
+                                        << group_devices;
   }
 
   int64_t left_or_top_rank_id = -1;
@@ -663,24 +665,26 @@ void Conv2DInfo::CheckHDimensionOverlapSizeNonNegative() {
 
   int64_t h_first_rank_bottom_size = ComputeOverlapBottomSizeByRankBias(0);
   if (h_first_rank_bottom_size < 0) {
-    MS_LOG(EXCEPTION) << name_ << ": The bottom overlap size of 2th dimension rank bias 0 must be positive, but it is "
-                      << h_first_rank_bottom_size;
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_)
+      << name_ << ": The bottom overlap size of 2th dimension rank bias 0 must be positive, but it is "
+      << h_first_rank_bottom_size;
   }
 
   for (int64_t h_rank_bias = 1; h_rank_bias < h_dimension_shard_num_ - 1; ++h_rank_bias) {
     auto top_size = ComputeOverlapTopSizeByRankBias(h_rank_bias);
     auto bottom_size = ComputeOverlapBottomSizeByRankBias(h_rank_bias);
     if (top_size < 0 || bottom_size < 0) {
-      MS_LOG(EXCEPTION) << name_ << ": The overlap size of 2th dimension rank bias " << h_rank_bias
-                        << " must be positive, but top overlap size is " << top_size << ", bottom overlap size is "
-                        << bottom_size;
+      MS_LOG_WITH_NODE(EXCEPTION, cnode_)
+        << name_ << ": The overlap size of 2th dimension rank bias " << h_rank_bias
+        << " must be positive, but top overlap size is " << top_size << ", bottom overlap size is " << bottom_size;
     }
   }
 
   int64_t h_last_rank_top_size = ComputeOverlapTopSizeByRankBias(h_dimension_shard_num_ - 1);
   if (h_last_rank_top_size < 0) {
-    MS_LOG(EXCEPTION) << name_ << ": The top overlap size of 2th dimension last rank bias must be positive, but it is "
-                      << h_last_rank_top_size;
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_)
+      << name_ << ": The top overlap size of 2th dimension last rank bias must be positive, but it is "
+      << h_last_rank_top_size;
   }
 }
 
@@ -691,24 +695,26 @@ void Conv2DInfo::CheckWDimensionOverlapSizeNonNegative() {
   }
   int64_t w_first_rank_right_size = ComputeOverlapRightSizeByRankBias(0);
   if (w_first_rank_right_size < 0) {
-    MS_LOG(EXCEPTION) << name_ << ": The right overlap size of 3th dimension rank bias 0 must be positive, but it is "
-                      << w_first_rank_right_size;
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_)
+      << name_ << ": The right overlap size of 3th dimension rank bias 0 must be positive, but it is "
+      << w_first_rank_right_size;
   }
 
   for (int64_t w_rank_bias = 1; w_rank_bias < w_dimension_shard_num_ - 1; ++w_rank_bias) {
     auto left_size = ComputeOverlapLeftSizeByRankBias(w_rank_bias);
     auto right_size = ComputeOverlapRightSizeByRankBias(w_rank_bias);
     if (left_size < 0 || right_size < 0) {
-      MS_LOG(EXCEPTION) << name_ << ": The overlap size of 3th dimension rank bias " << w_rank_bias
-                        << " must be positive, but left overlap size is " << left_size << ", right overlap size is "
-                        << right_size;
+      MS_LOG_WITH_NODE(EXCEPTION, cnode_)
+        << name_ << ": The overlap size of 3th dimension rank bias " << w_rank_bias
+        << " must be positive, but left overlap size is " << left_size << ", right overlap size is " << right_size;
     }
   }
 
   int64_t w_last_rank_left_size = ComputeOverlapLeftSizeByRankBias(w_dimension_shard_num_ - 1);
   if (w_last_rank_left_size < 0) {
-    MS_LOG(EXCEPTION) << name_ << ": The left overlap size of 3th dimension last rank bias must be positive, but it is "
-                      << w_last_rank_left_size;
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_)
+      << name_ << ": The left overlap size of 3th dimension last rank bias must be positive, but it is "
+      << w_last_rank_left_size;
   }
 }
 
@@ -868,26 +874,28 @@ void Conv2DInfo::InferCommunicationAttrs() {
 
   for (auto &send_len : send_lens_) {
     if (send_len < 0) {
-      MS_LOG(EXCEPTION) << name_ << ": Send len less than 0 is not supported, but it is " << send_len;
+      MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Send len less than 0 is not supported, but it is " << send_len;
     }
   }
 
   for (auto &recv_len : recv_lens_) {
     if (recv_len < 0) {
-      MS_LOG(EXCEPTION) << name_ << ": Recv len less than 0 is not supported, but it is " << recv_len;
+      MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Recv len less than 0 is not supported, but it is " << recv_len;
     }
   }
 
   int64_t h_slice_shape = input_slice_shape_[2];
   if (send_top_len > h_slice_shape || send_bottom_len > h_slice_shape || recv_top_len > h_slice_shape ||
       recv_bottom_len > h_slice_shape) {
-    MS_LOG(EXCEPTION) << name_ << ": The send or recv len larger than slice shape of 2th dimension " << h_slice_shape;
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": The send or recv len larger than slice shape of 2th dimension "
+                                        << h_slice_shape;
   }
 
   int64_t w_slice_shape = input_slice_shape_[3];
   if (send_left_len > w_slice_shape || send_right_len > w_slice_shape || recv_left_len > w_slice_shape ||
       recv_right_len > w_slice_shape) {
-    MS_LOG(EXCEPTION) << name_ << ": The send or recv len larger than slice shape of 3th dimension " << w_slice_shape;
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": The send or recv len larger than slice shape of 3th dimension "
+                                        << w_slice_shape;
   }
 }
 
@@ -945,7 +953,7 @@ std::string Conv2DInfo::ReplaceNodeName() const {
     return CONV2D_TRANSPOSE;
   }
 
-  MS_LOG(EXCEPTION) << "Invalid name: " << name_;
+  MS_LOG_WITH_NODE(EXCEPTION, cnode_) << "Invalid name: " << name_;
 }
 
 AnfNodePtr Conv2DInfo::GenerateConv2DNode(const AnfNodePtr &new_input, const CNodePtr &cnode) {
@@ -955,14 +963,14 @@ AnfNodePtr Conv2DInfo::GenerateConv2DNode(const AnfNodePtr &new_input, const CNo
   // conv2d
   if (name_.find(CONV2D_INFO) != std::string::npos) {
     if (cnode->size() < 3) {
-      MS_LOG(EXCEPTION) << name_ << ": The size of cnode is invalid: " << cnode->size();
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << ": The size of cnode is invalid: " << cnode->size();
     }
     return gen_g_.PushBack({gen_g_.NewOpInst(node_name, conv2d_attrs), new_input, cnode->input(2)});
   }
 
   // conv2dtranspose
   if (cnode->size() < 4) {
-    MS_LOG(EXCEPTION) << name_ << ": The size of cnode is invalid: " << cnode->size();
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << ": The size of cnode is invalid: " << cnode->size();
   }
   return gen_g_.PushBack({gen_g_.NewOpInst(node_name, conv2d_attrs), new_input, cnode->input(2), cnode->input(3)});
 }
@@ -972,7 +980,7 @@ void Conv2DInfo::ComputeReplaceGraph(const CNodePtr &cnode) {
   MS_EXCEPTION_IF_NULL(graph);
 
   if (gen_g_.Init(cnode) != SUCCESS) {
-    MS_LOG(EXCEPTION) << "GenerateGraph Init failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "GenerateGraph Init failed";
   }
 
   auto neighbor_exchange_v2_attrs = CreateNeighborExchangeV2Attrs();
@@ -1053,22 +1061,23 @@ std::vector<StrategyPtr> Conv2DInfo::GenerateOpStrategies(int64_t stage_id) {
     tmp_shape.pop_back();
     tmp_shape.push_back(inputs_shape_[1][0]);
   } else {
-    MS_LOG(EXCEPTION) << name_ << ": It does not support to generate strategies";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": It does not support to generate strategies";
   }
   Shapes tmp_inputs_shape = {tmp_shape};
   if (GenerateStrategiesForIndependentInputs(stage_id, tmp_inputs_shape, splittable_input, &sp_vector) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Generate strategies failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Generate strategies failed";
   }
 
   // set the inputs' strategies
   for (auto &sp : sp_vector) {
     if ((sp == nullptr) || sp->GetInputDim().empty()) {
-      MS_LOG(EXCEPTION) << name_ << ": The strategy is null or empty";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": The strategy is null or empty";
     }
     Strategies replace_strategy;
     Dimensions tmp_strategy = sp->GetInputDim()[0];
     if (tmp_strategy.size() != 5) {
-      MS_LOG(EXCEPTION) << name_ << ": The size of first tmp strategy must be 5, but got " << tmp_strategy.size();
+      MS_LOG_WITH_NODE(EXCEPTION, cnode_)
+        << name_ << ": The size of first tmp strategy must be 5, but got " << tmp_strategy.size();
     }
 
     Dimensions input0_strategy;
@@ -1304,11 +1313,11 @@ void Conv2DBackpropInputInfo::UpdateOutShape() {
   auto cnode = cnode_;
   MS_EXCEPTION_IF_NULL(cnode);
   if (cnode->size() != 4) {
-    MS_LOG(EXCEPTION) << name_ << ": The size of cnode's inputs must be 4, but got " << cnode->size();
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << ": The size of cnode's inputs must be 4, but got " << cnode->size();
   }
 
   if (!IsValueNode<ValueTuple>(cnode->input(3))) {
-    MS_LOG(EXCEPTION) << name_ << ": The cnode's input[3] is not value node";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << ": The cnode's input[3] is not value node";
   }
 
   auto func_graph = cnode->func_graph();

@@ -206,7 +206,7 @@ ReplaceGraphPtr CropAndResizeInfo::replace_graph(const CNodePtr &cnode) {
   auto strategies = strategy_->GetInputDim();
   auto x_strategy = strategies.at(0);
   if (x_strategy[0] != 1 && ComputeReplaceGraph(cnode) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": ComputeReplaceGraph failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << ": ComputeReplaceGraph failed.";
   }
   return replace_graph_;
 }
@@ -221,7 +221,7 @@ std::vector<StrategyPtr> CropAndResizeInfo::GenerateOpStrategies(int64_t stage_i
   std::vector<StrategyPtr> sub_sp_vector;
   if (GenerateStrategiesForIndependentInputs(stage_id, sub_inputs_shape, splittable_inputs, &sub_sp_vector) !=
       SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Generate strategies for independent inputs() failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Generate strategies for independent inputs() failed.";
   }
   (void)std::transform(sub_sp_vector.begin(), sub_sp_vector.end(), std::back_inserter(sp_vector),
                        [stage_id](const StrategyPtr &sp) {

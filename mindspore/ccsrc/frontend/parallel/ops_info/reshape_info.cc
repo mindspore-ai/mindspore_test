@@ -112,8 +112,9 @@ std::vector<int64_t> ReshapeInfo::GetInputShape(const AnfNodePtr &shape_input_no
     origin_dst_shape = GetValue<std::vector<int64_t>>(input_value_[1]);
     MS_LOG(INFO) << name_ << ": the input value is Shape op, dst shape is " << origin_dst_shape;
   } else {
-    MS_LOG(EXCEPTION) << name_ << ": input shape must be either Tuple or MakeTuple cnode or Shape op, but got "
-                      << shape_input_node->fullname_with_scope();
+    MS_LOG_WITH_NODE(EXCEPTION, shape_input_node)
+      << name_ << ": input shape must be either Tuple or MakeTuple cnode or Shape op, but got "
+      << shape_input_node->fullname_with_scope();
   }
   return origin_dst_shape;
 }
@@ -238,8 +239,9 @@ bool DstShapeIsConstant(const AnfNodePtr &shape_input_node) {
     return false;
   }
 
-  MS_LOG(EXCEPTION) << "The dst shape must be either Tuple or MakeTuple cnode or Shape op, but got "
-                    << shape_input_node->fullname_with_scope();
+  MS_LOG_WITH_NODE(EXCEPTION, shape_input_node)
+    << "The dst shape must be either Tuple or MakeTuple cnode or Shape op, but got "
+    << shape_input_node->fullname_with_scope();
 }
 
 void ReshapeInfo::ChangeDynamicDstShapeForSkipRedistribution(const AnfNodePtr &shape_input_node) {
@@ -263,7 +265,8 @@ void ReshapeInfo::ChangeDynamicDstShapeForSkipRedistribution(const AnfNodePtr &s
                     << ", the input shape is " << inputs_shape_[0] << ", the output shape is " << outputs_shape_[0];
     Shape input_shape = inputs_shape_[0];
     if (input_shape.size() != out_strategy.size()) {
-      MS_LOG(EXCEPTION) << name_ << ": the size of input shape is not equal to the size of out_strategy";
+      MS_LOG_WITH_NODE(EXCEPTION, make_tuple_cnode)
+        << name_ << ": the size of input shape is not equal to the size of out_strategy";
     }
     int64_t constant_shard_num = 1;
     for (size_t i = 0; i < input_shape.size(); ++i) {
@@ -290,8 +293,8 @@ void ReshapeInfo::ChangeDynamicDstShapeForSkipRedistribution(const AnfNodePtr &s
         }
       }
     }
-    MS_LOG(EXCEPTION) << name_ << ": do not support this scenes, the output shape is  " << outputs_shape_[0]
-                      << ", the out strategy is " << out_strategy;
+    MS_LOG_WITH_NODE(EXCEPTION, make_tuple_cnode) << name_ << ": do not support this scenes, the output shape is  "
+                                                  << outputs_shape_[0] << ", the out strategy is " << out_strategy;
   }
 
   // common reshape, handle the constant part of the dst shape, div by the corresponding out_strategy
@@ -306,8 +309,8 @@ void ReshapeInfo::ChangeDynamicDstShapeForSkipRedistribution(const AnfNodePtr &s
       auto origin_shape_ele = GetValue<int64_t>(value_node);
       if (origin_shape_ele > 0) {
         if (origin_shape_ele % out_strategy[i - 1] != 0) {
-          MS_LOG(EXCEPTION) << name_ << ": the origin shape is " << origin_shape_ele
-                            << ", can not be div by shard size " << out_strategy[i - 1];
+          MS_LOG_WITH_NODE(EXCEPTION, input_node) << name_ << ": the origin shape is " << origin_shape_ele
+                                                  << ", can not be div by shard size " << out_strategy[i - 1];
         }
         int64_t replace_shape = origin_shape_ele / out_strategy[i - 1];
         auto replace_value_ptr = MakeValue(replace_shape);
@@ -322,7 +325,7 @@ TensorRedistributionPtr ReshapeInfo::ReshapeRedistribution() {
   TensorRedistributionPtr tensor_redistribution = this->CreateReshapeTensorRedistribution(!is_generating_costs_, true);
   RankList dev_list = stage_device_list();
   if (tensor_redistribution->Init(input_layout_, output_layout_, dev_list) == FAILED) {
-    MS_LOG(EXCEPTION) << name_ << ": tensor_redistribution init failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": tensor_redistribution init failed.";
   }
   return tensor_redistribution;
 }
@@ -740,7 +743,7 @@ void ReshapeInfo::SetCostForReshape(const mindspore::parallel::StrategyPtr &stra
 
 std::vector<StrategyPtr> ReshapeInfo::GenerateOpStrategies(int64_t stage_id) {
   if (inputs_shape_.empty()) {
-    MS_LOG(EXCEPTION) << name_ << ": Inputs shape size or is empty";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Inputs shape size or is empty";
   }
   Shape input0_split;
   (void)input0_split.insert(input0_split.cend(), inputs_shape_[0].size(), 1);
@@ -748,7 +751,7 @@ std::vector<StrategyPtr> ReshapeInfo::GenerateOpStrategies(int64_t stage_id) {
   // strategy used only in the input node is parameter,
   // in other case, use the input node's output_layout as input_layout.
   if (GenerateStrategiesForIndependentInputs(stage_id, inputs_shape_, splittable_inputs, &sp_vector_) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": GenerateStrategiesForIndependentInputs failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": GenerateStrategiesForIndependentInputs failed.";
   }
 
   return sp_vector_;
@@ -949,7 +952,7 @@ bool ReshapeInfo::CheckStrategyConsistencyByInputLayout(int64_t swc_index, const
 
 TensorLayout ReshapeInfo::GetInputLayoutBySWCIndex(int64_t swc_index) const {
   if (swc_index == -1 || swc_index >= SizeToLong(strategy_cost_.size())) {
-    MS_LOG(EXCEPTION) << "The strategy_index: " << swc_index << " is out of range.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << "The strategy_index: " << swc_index << " is out of range.";
   }
   const auto &swc = strategy_cost_[LongToSize(swc_index)];
   return std::move(swc->inputs_ptr[0].tensor_layout());
@@ -957,7 +960,7 @@ TensorLayout ReshapeInfo::GetInputLayoutBySWCIndex(int64_t swc_index) const {
 
 TensorLayout ReshapeInfo::GetOutputLayoutBySWCIndex(int64_t swc_index) const {
   if (swc_index == -1 || swc_index >= SizeToLong(strategy_cost_.size())) {
-    MS_LOG(EXCEPTION) << "The strategy_index: " << swc_index << " is out of range.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << "The strategy_index: " << swc_index << " is out of range.";
   }
   const auto &swc = strategy_cost_[LongToSize(swc_index)];
   return std::move(swc->outputs_ptr[0].tensor_layout());

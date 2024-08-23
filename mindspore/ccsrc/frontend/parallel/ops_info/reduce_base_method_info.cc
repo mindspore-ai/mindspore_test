@@ -84,7 +84,7 @@ std::vector<int64_t> ReduceBaseMethod::reduce_dim() {
   std::vector<int64_t> dim_list{};
   auto axis_opt = GetArrayValueFromInputs<int64_t>(input_value_, name_, kNameAxis);
   if (!axis_opt.has_value()) {
-    MS_LOG(EXCEPTION) << "For " << name_ << ", failed to get value for " << kNameAxis << ".";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << "For " << name_ << ", failed to get value for " << kNameAxis << ".";
   }
 
   auto axis_value = axis_opt.value();
@@ -111,7 +111,7 @@ Status ReduceBaseMethod::GetAttrs() {
   // get attr cross_batch and keep_dims
   auto keep_dims_opt = GetScalarValueFromInputs<bool>(input_value_, name_, kNameKeepDims);
   if (!keep_dims_opt.has_value()) {
-    MS_LOG(EXCEPTION) << "For " << name_ << ", failed to get value for " << kNameKeepDims << ".";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << "For " << name_ << ", failed to get value for " << kNameKeepDims << ".";
   }
   keepdims_ = keep_dims_opt.value();
 
@@ -265,8 +265,8 @@ std::vector<int64_t> SumExtInfo::reduce_dim() {
   auto prim_name = GetPrimNameFromInfoName(name_);
   auto idx = ops::GetInputIndexByName(prim_name, kNameDim);
   if (input_value_.size() <= idx || input_value_[idx] == nullptr) {
-    MS_LOG(EXCEPTION) << "For " << name_ << ", the input_value_ is less than " << idx
-                      << ", or input_value_[idx] == nullptr.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << "For " << name_ << ", the input_value_ is less than " << idx
+                                        << ", or input_value_[idx] == nullptr.";
   }
   std::vector<int64_t> axis_value;
   if (input_value_[idx]->isa<None>()) {
@@ -274,7 +274,7 @@ std::vector<int64_t> SumExtInfo::reduce_dim() {
   } else {
     auto axis_opt = GetArrayValueFromInputs<int64_t>(input_value_, name_, kNameDim);
     if (!axis_opt.has_value()) {
-      MS_LOG(EXCEPTION) << "For " << name_ << ", failed to get value for " << kNameDim << ".";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode_) << "For " << name_ << ", failed to get value for " << kNameDim << ".";
     }
     axis_value = axis_opt.value();
   }
@@ -301,7 +301,7 @@ Status SumExtInfo::GetAttrs() {
   // get attr cross_batch and keep_dims
   auto keep_dims_opt = GetScalarValueFromInputs<bool>(input_value_, name_, kNameKeepDim);
   if (!keep_dims_opt.has_value()) {
-    MS_LOG(EXCEPTION) << "For " << name_ << ", failed to get value for " << kNameKeepDim << ".";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << "For " << name_ << ", failed to get value for " << kNameKeepDim << ".";
   }
   keepdims_ = keep_dims_opt.value();
 

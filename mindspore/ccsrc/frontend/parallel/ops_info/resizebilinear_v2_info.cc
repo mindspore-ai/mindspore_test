@@ -186,7 +186,7 @@ std::vector<StrategyPtr> ResizeBilinearV2Info::GenerateOpStrategies(int64_t stag
 
   std::vector<StrategyPtr> sp_vector;
   if (GenerateStrategiesForIndependentInputs(stage_id, inputs_shape_, splittable_inputs, &sp_vector) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << " : Generate strategies for independent inputs() failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << " : Generate strategies for independent inputs() failed.";
   }
   return sp_vector;
 }
@@ -284,7 +284,7 @@ void ResizeBilinearV2Info::InferScale() {
   origin_out_w_shape_ = outputs_shape_[0][3];
 
   if (origin_out_w_shape_ == 1) {
-    MS_LOG(EXCEPTION) << name_ << ": Do not support that the w dimension of output shape is 1";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Do not support that the w dimension of output shape is 1";
   }
 
   if (align_corners_) {
@@ -305,8 +305,9 @@ int64_t ResizeBilinearV2Info::InferOverlapLeftSizeByRankBias(int64_t rank_bias) 
   int64_t local_left_boundary = rank_bias * origin_in_w_shape_ / w_dimension_shard_num_;
 
   if (map_left_boundary > local_left_boundary) {
-    MS_LOG(EXCEPTION) << name_ << ": Invalid left overlap, the rank bias is " << rank_bias << ", the map boundary is "
-                      << map_left_boundary << ", the local boundary is " << local_left_boundary;
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Invalid left overlap, the rank bias is " << rank_bias
+                                        << ", the map boundary is " << map_left_boundary << ", the local boundary is "
+                                        << local_left_boundary;
   }
   return local_left_boundary - map_left_boundary;
 }
@@ -323,8 +324,9 @@ int64_t ResizeBilinearV2Info::InferOverlapRightSizeByRankBias(int64_t rank_bias)
   }
 
   if (map_right_boundary < local_right_boundary) {
-    MS_LOG(EXCEPTION) << name_ << ": Invalid right overlap, the rank bias is " << rank_bias << ", the map boundary is "
-                      << map_right_boundary << ", the local boundary is " << local_right_boundary;
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Invalid right overlap, the rank bias is " << rank_bias
+                                        << ", the map boundary is " << map_right_boundary << ", the local boundary is "
+                                        << local_right_boundary;
   }
 
   return map_right_boundary - local_right_boundary;
@@ -449,7 +451,7 @@ void ResizeBilinearV2Info::InferReplaceGraph(const CNodePtr &cnode) {
 
   GenerateGraph gen_g = GenerateGraph(attrs_);
   if (gen_g.Init(cnode) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Init generator graph failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Init generator graph failed";
   }
 
   auto neighbor_exchange_v2_attrs = CreateNeighborExchangeV2Attrs();
@@ -472,7 +474,7 @@ ReplaceGraphPtr ResizeBilinearV2Info::replace_graph(const CNodePtr &cnode) {
   }
 
   if (InferRankBias() != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": infer rank bias failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << ": infer rank bias failed";
   }
 
   InferScale();
@@ -533,7 +535,7 @@ std::vector<StrategyPtr> ResizeNearestNeighborInfo::GenerateOpStrategies(int64_t
 
   std::vector<StrategyPtr> sp_vector;
   if (GenerateStrategiesForIndependentInputs(stage_id, inputs_shape_, splittable_inputs, &sp_vector) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": generate strategies failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": generate strategies failed";
   }
 
   return sp_vector;

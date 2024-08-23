@@ -375,8 +375,8 @@ int64_t FusedInferAttentionScoreInfo::GetSplitIdAndRank() {
   }
   auto iter = std::find(group_devices.begin(), group_devices.end(), rank);
   if (iter == group_devices.end()) {
-    MS_LOG(EXCEPTION) << "PromptFlashAttention S1 sequence parallel get split id failed. "
-                      << "rank " << rank << " not in group " << group_devices;
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << "PromptFlashAttention S1 sequence parallel get split id failed. "
+                                        << "rank " << rank << " not in group " << group_devices;
   }
   int64_t split_id = iter - group_devices.begin();
   return split_id;
@@ -453,7 +453,8 @@ std::tuple<int64_t, int64_t> FusedInferAttentionScoreInfo::GetAttentionMaskAttrs
       new_next_tokens = LongAddNew(new_next_tokens, -(split_num - split_id - 1) * (q_seq_length / split_num));
       break;
     default:
-      MS_LOG(EXCEPTION) << "Invalid sparse mode " << sparse_mode_ << ", sparse mode should be one of [0, 2, 3, 4].";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode_)
+        << "Invalid sparse mode " << sparse_mode_ << ", sparse mode should be one of [0, 2, 3, 4].";
   }
   return std::make_tuple(new_pre_tokens, new_next_tokens);
 }
@@ -694,7 +695,8 @@ Status FusedInferAttentionScoreInfo::ComputeReplaceGraphForSplitKVSeq(const CNod
 ReplaceGraphPtr FusedInferAttentionScoreInfo::replace_graph(const CNodePtr &cnode) {
   if (is_ifa_ && softmax_lse_flag_ && sp_ != 1 && !IsPrimitiveCNode(cnode, prim::kPrimMakeTuple)) {
     if (ComputeReplaceGraphForSplitKVSeq(cnode) != SUCCESS) {
-      MS_LOG(EXCEPTION) << name_ << ": FusedInferFlashAttentionScore sequence parallel get replace graph failed";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode)
+        << name_ << ": FusedInferFlashAttentionScore sequence parallel get replace graph failed";
     }
   }
   return replace_graph_;

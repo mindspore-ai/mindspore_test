@@ -44,7 +44,7 @@ Status SelfDefineShardInfo::UnreachableError() {
 Status SelfDefineShardInfo::SetCostUnderStrategy(const StrategyPtr &strategy) { return UnreachableError(); }
 
 std::vector<StrategyPtr> SelfDefineShardInfo::GenerateOpStrategies(int64_t stage_id) {
-  MS_LOG(EXCEPTION) << "For self define shard op " << name_ << ", it should not reach this function";
+  MS_LOG_WITH_NODE(EXCEPTION, cnode_) << "For self define shard op " << name_ << ", it should not reach this function";
 }
 
 Status SelfDefineShardInfo::CheckLayout(const NewShapes &in_shapes, const std::vector<TensorInfoBasePtr> &tensor_info,

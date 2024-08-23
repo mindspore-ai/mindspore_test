@@ -90,7 +90,7 @@ AnfNodePtr CreateOutputNode(const FuncGraphPtr &func_graph, const AnfNodePtr &or
       MS_EXCEPTION_IF_NULL(element);
       auto tensor_abstract = element->cast<abstract::AbstractTensorPtr>();
       if (!tensor_abstract) {
-        MS_LOG(EXCEPTION) << "Only support to replace tuple with all tensor elements.";
+        MS_LOG_WITH_NODE(EXCEPTION, origin_output) << "Only support to replace tuple with all tensor elements.";
       }
       auto fake_tensor = std::make_shared<tensor::Tensor>(tensor_abstract->element()->BuildType()->type_id(),
                                                           tensor_abstract->shape()->shape());
@@ -147,7 +147,8 @@ void PsEmbeddingCacheInserter::GetCacheEnableParameters() {
   for (size_t i = 0; i < params_size; ++i) {
     MS_EXCEPTION_IF_NULL(parameters[i]);
     if (!parameters[i]->isa<Parameter>()) {
-      MS_LOG(EXCEPTION) << "The node with name: " << parameters[i]->fullname_with_scope() << "is not a Parameter.";
+      MS_LOG_WITH_NODE(EXCEPTION, parameters[i])
+        << "The node with name: " << parameters[i]->fullname_with_scope() << "is not a Parameter.";
     }
 
     ParameterPtr param = parameters[i]->cast<ParameterPtr>();
@@ -347,7 +348,7 @@ FuncGraphPtr PsEmbeddingCacheInserter::ConstructUpdateEmbeddingSubGraph(const Pa
   MS_EXCEPTION_IF_NULL(update_values);
   auto emb_shape = common::AnfAlgo::GetOutputInferShape(param, 0);
   if (emb_shape.empty()) {
-    MS_LOG(EXCEPTION) << "Embedding table shape is empty.";
+    MS_LOG_WITH_NODE(EXCEPTION, param) << "Embedding table shape is empty.";
   }
   ShapeVector update_values_shape = emb_shape;
   const int64_t dynamic_dim = -1;
@@ -390,8 +391,8 @@ CNodePtr PsEmbeddingCacheInserter::CreateEmbeddingLookupKernel(const FuncGraphPt
   // Sparse format is true meaning embedding table implements in the form of hash, false means the form of tensor.
   if (!distributed::EmbeddingCacheTableManager::GetInstance().is_sparse_format()) {
     if (!common::AnfAlgo::HasNodeAttr(kAttrOffset, dyn_cast<CNode>(origin_embedding_lookup_node))) {
-      MS_LOG(EXCEPTION) << "Can not find offset attr of kernel: "
-                        << origin_embedding_lookup_node->fullname_with_scope();
+      MS_LOG_WITH_NODE(EXCEPTION, origin_embedding_lookup_node)
+        << "Can not find offset attr of kernel: " << origin_embedding_lookup_node->fullname_with_scope();
     }
     int64_t offset = common::AnfAlgo::GetNodeAttr<int64_t>(origin_embedding_lookup_node, kAttrOffset);
     ValueNodePtr offset_value_node = NewValueNode(offset);
@@ -599,7 +600,7 @@ void PsEmbeddingCacheInserter::BuildDenseEmbeddingStorages() {
 
     const std::vector<int64_t> &slice_shape = param_info->parameter_shape();
     if (slice_shape.size() != kEmbeddingTableDims) {
-      MS_LOG(EXCEPTION)
+      MS_LOG_WITH_NODE(EXCEPTION, param)
         << "When build embedding storage, Embedding table should be 2 dims for embedding cache mode, but got: "
         << slice_shape.size() << " dims, param name: " << param->name() << ", param key: " << key;
     }
@@ -609,7 +610,8 @@ void PsEmbeddingCacheInserter::BuildDenseEmbeddingStorages() {
     auto shape = common::AnfAlgo::GetOutputInferShape(param, 0);
     auto iter = shapes_to_nodes_.find(shape);
     if (iter == shapes_to_nodes_.end()) {
-      MS_LOG(EXCEPTION) << "Can not find cnode for parameter(key[" << key << "]) with shape: " << shape;
+      MS_LOG_WITH_NODE(EXCEPTION, param) << "Can not find cnode for parameter(key[" << key
+                                         << "]) with shape: " << shape;
     }
     AnfNodePtr node = iter->second;
     const size_t output_index0 = 0;
@@ -644,7 +646,7 @@ void PsEmbeddingCacheInserter::BuildSparseEmbeddingStorages() {
     const auto &abstract_base = common::AnfAlgo::FrontendGetNodeAbstractByIndex(param, 0);
     MS_EXCEPTION_IF_NULL(abstract_base);
     if (!abstract_base->isa<abstract::AbstractMapTensor>()) {
-      MS_LOG(EXCEPTION) << "Parameter:" << param->DebugString() << " is not a map tensor type.";
+      MS_LOG_WITH_NODE(EXCEPTION, param) << "Parameter:" << param->DebugString() << " is not a map tensor type.";
     }
     const auto &abstract = abstract_base->cast<abstract::AbstractMapTensorPtr>();
     MS_EXCEPTION_IF_NULL(abstract);

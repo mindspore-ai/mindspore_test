@@ -121,7 +121,7 @@ Status GatherNdInfo::SetCostUnderStrategy(const StrategyPtr &strategy) { return 
 
 std::vector<StrategyPtr> GatherNdInfo::GenerateOpStrategies(int64_t stage_id) {
   if (inputs_shape_.empty()) {
-    MS_LOG(EXCEPTION) << name_ << ": The inputs shape is empty";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": The inputs shape is empty";
   }
 
   // to generate the indices' strategy
@@ -132,13 +132,13 @@ std::vector<StrategyPtr> GatherNdInfo::GenerateOpStrategies(int64_t stage_id) {
 
   std::vector<StrategyPtr> sp_vector;
   if (GenerateStrategiesForIndependentInputs(stage_id, tmp_inputs_shape, splittable_input, &sp_vector) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Generate strategies failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Generate strategies failed";
   }
 
   // the others strategies are equal to the first input's strategy
   for (auto &sp : sp_vector) {
     if ((sp == nullptr) || sp->GetInputDim().empty()) {
-      MS_LOG(EXCEPTION) << name_ << ": The strategy is null or empty";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": The strategy is null or empty";
     }
     Strategies tmp_strategy;
     Dimensions indices_strategy = sp->GetInputDim()[0];

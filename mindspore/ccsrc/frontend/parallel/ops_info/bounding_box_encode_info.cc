@@ -71,7 +71,7 @@ std::vector<StrategyPtr> BoundingBoxEncodeInfo::GenerateOpStrategies(int64_t sta
   Shape input0_shape = inputs_shape_[0];
   Shape input1_shape = inputs_shape_[1];
   if (input0_shape != input1_shape) {
-    MS_LOG(EXCEPTION) << "The shape of inputs must be equal.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << "The shape of inputs must be equal.";
   }
   int64_t input0_length = input0_shape[0];
   CheckGlobalDeviceManager();
@@ -90,7 +90,7 @@ std::vector<StrategyPtr> BoundingBoxEncodeInfo::GenerateOpStrategies(int64_t sta
   }
 
   if (sp_vector.empty()) {
-    MS_LOG(EXCEPTION) << name_ << ": No available strategy.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": No available strategy.";
   }
   return sp_vector;
 }

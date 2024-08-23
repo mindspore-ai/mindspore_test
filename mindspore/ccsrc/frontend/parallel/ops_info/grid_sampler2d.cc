@@ -147,7 +147,7 @@ std::vector<StrategyPtr> GridSampler2DInfo::GenerateOpStrategies(int64_t stage_i
   std::vector<StrategyPtr> sp_vector;
   if (GenerateStrategiesForIndependentInputs(stage_id, {inputs_shape_.at(0)}, splittable_inputs, &sp_vector) !=
       SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << " : Generate strategies for independent inputs() failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << " : Generate strategies for independent inputs() failed.";
   }
   for (auto &sp : sp_vector) {
     Strategies tmp_strategy;

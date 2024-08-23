@@ -68,7 +68,8 @@ static ParameterUsersInfo FindRefKeyNodeUsers(const RefKeyPair &ref_key_pair, bo
   }
 
   if (refkeys.size() > 1) {
-    MS_LOG(EXCEPTION) << "CNode: " << cnode->fullname_with_scope() << "'s inputs have more than 1 RefKeys";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "CNode: " << cnode->fullname_with_scope()
+                                       << "'s inputs have more than 1 RefKeys";
   }
   MS_EXCEPTION_IF_NULL(cnode->func_graph());
   auto cnode_func_graph = cnode->func_graph();
@@ -448,7 +449,8 @@ void SliceParameterObj(const ParameterPtr &parameter, const TensorLayoutPtr &ten
   auto cloned_py_obj = GetPyParameterObj(param_info, CLONED_OBJ);
   if (!py::isinstance<py::none>(cloned_py_obj)) {
     if (!py::isinstance<py::list>(cloned_py_obj)) {
-      MS_LOG(EXCEPTION) << "parameter: " << parameter->DebugString() << " doesn't have correct cloned obj";
+      MS_LOG_WITH_NODE(EXCEPTION, parameter)
+        << "parameter: " << parameter->DebugString() << " doesn't have correct cloned obj";
     }
     auto obj_list = py::cast<py::list>(cloned_py_obj);
     for (size_t i = 0; i < obj_list.size(); ++i) {
@@ -535,7 +537,8 @@ static void SliceCacheParameterObj(const ParameterPtr &parameter, const py::dict
   auto cloned_py_obj = GetPyParameterObj(param_info, CLONED_OBJ);
   if (!py::isinstance<py::none>(cloned_py_obj)) {
     if (!py::isinstance<py::list>(cloned_py_obj)) {
-      MS_LOG(EXCEPTION) << "parameter: " << parameter->DebugString() << " doesn't have correct cloned obj";
+      MS_LOG_WITH_NODE(EXCEPTION, parameter)
+        << "parameter: " << parameter->DebugString() << " doesn't have correct cloned obj";
     }
     auto obj_list = py::cast<py::list>(cloned_py_obj);
     for (size_t i = 0; i < obj_list.size(); ++i) {
@@ -695,8 +698,9 @@ void SetClonedTensorShapeForOptimizer(const FuncGraphPtr &root) {
                    << " is cloned, the be cloned parameter is: " << cloned_from_parameter->name()
                    << ", clone index is:  " << cloned_index;
     } else {
-      MS_LOG(EXCEPTION) << "The parameter: " << cloned_parameter->name() << " is cloned, cloned index is  "
-                        << cloned_index << ", but not found the be cloned parameter";
+      MS_LOG_WITH_NODE(EXCEPTION, cloned_parameter)
+        << "The parameter: " << cloned_parameter->name() << " is cloned, cloned index is  " << cloned_index
+        << ", but not found the be cloned parameter";
     }
   }
 }
@@ -757,8 +761,8 @@ static std::pair<AnfNodePtr, bool> FindParameterByValueNode(const AnfNodePtr &no
   if (IsValueNode<RefKey>(node)) {
     std::vector<AnfNodePtr> param_v = FindParameterByRefKeyNode(node, func_graph);
     if (param_v.size() != 1) {
-      MS_LOG(EXCEPTION) << "FindParameterByRefKeyNode failed, return vector size must be 1, real is  "
-                        << param_v.size();
+      MS_LOG_WITH_NODE(EXCEPTION, node) << "FindParameterByRefKeyNode failed, return vector size must be 1, real is  "
+                                        << param_v.size();
     }
     auto param_ptr = param_v[0]->user_data<parallel::TensorLayout>();
     if (param_ptr && !param_ptr->opt_shard_group().empty() && param_ptr->opt_shard_mirror_group().empty() &&
@@ -783,7 +787,8 @@ AnfNodePtr RefParameterToActualParameter(const AnfNodePtr &node) {
   auto sub_graph_parameters = sub_func_graph->parameters();
   auto curr_param_iter = std::find(sub_graph_parameters.begin(), sub_graph_parameters.end(), node);
   if (curr_param_iter == sub_graph_parameters.end()) {
-    MS_LOG(EXCEPTION) << "Cannot find param " << node_param_ptr->DebugString() << " in current sub_graph";
+    MS_LOG_WITH_NODE(EXCEPTION, node_param_ptr)
+      << "Cannot find param " << node_param_ptr->DebugString() << " in current sub_graph";
   }
   size_t curr_param_index = static_cast<size_t>(curr_param_iter - sub_graph_parameters.begin());
   for (const auto &node_pair : call_cnodes_map) {
@@ -808,7 +813,7 @@ AnfNodePtr RefParameterToActualParameter(const AnfNodePtr &node) {
 static std::pair<AnfNodePtr, bool> FindParameterByParameter(const AnfNodePtr &node,
                                                             const std::string &name = ALL_REDUCE) {
   if (!node->isa<Parameter>()) {
-    MS_LOG(EXCEPTION) << "The node is not a parameter, node:" << node->DebugString();
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "The node is not a parameter, node:" << node->DebugString();
   }
   auto node_param_ptr = node->cast<ParameterPtr>();
   if (node_param_ptr->has_default()) {
@@ -1123,7 +1128,7 @@ void HandleAdasumSlice(const AnfNodePtr &stridedslice_node1, const std::shared_p
   ReplaceAdaSumStridedSliceValue(stridedslice_cnode1, target_param_layout, slice_expand_ratio);
   auto squeeze_node = RealInputNode(stridedslice_cnode1, 1);
   if (!IsPrimitiveCNode(squeeze_node, prim::kPrimSqueeze)) {
-    MS_LOG(EXCEPTION) << "The stridedslice input node should be squeeze in adasum";
+    MS_LOG_WITH_NODE(EXCEPTION, squeeze_node) << "The stridedslice input node should be squeeze in adasum";
   }
   auto squeeze_cnode = squeeze_node->cast<CNodePtr>();
   FuncGraphManagerPtr manager = squeeze_node->func_graph()->manager();
@@ -1308,7 +1313,7 @@ void HandleMirrorInAdaSum(
     CNodePtr mirror_cnode = node->cast<CNodePtr>();
     auto param_node_pair = FindParameter(mirror_cnode->input(1), node->func_graph());
     if (!param_node_pair.first) {
-      MS_LOG(EXCEPTION) << "Mirror input is not a param";
+      MS_LOG_WITH_NODE(EXCEPTION, mirror_cnode) << "Mirror input is not a param";
     }
     auto param_ptr = param_node_pair.first->cast<ParameterPtr>();
     std::string param_name = param_ptr->name();

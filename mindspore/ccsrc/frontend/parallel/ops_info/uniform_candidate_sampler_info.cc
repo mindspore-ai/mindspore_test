@@ -166,7 +166,7 @@ std::vector<StrategyPtr> UniformCandidateSamplerInfo::GenerateOpStrategies(int64
 
   std::vector<StrategyPtr> sp_vector;
   if (GenerateStrategiesForIndependentInputs(stage_id, inputs_shape_, splittable_input, &sp_vector) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Generate strategies failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Generate strategies failed";
   }
 
   return sp_vector;
@@ -174,7 +174,7 @@ std::vector<StrategyPtr> UniformCandidateSamplerInfo::GenerateOpStrategies(int64
 
 std::shared_ptr<Strategies> UniformCandidateSamplerInfo::GenerateBatchStrategies() {
   if (GetAttrs() != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Get attr failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Get attr failed";
   }
   CheckGlobalDeviceManager();
   Dimensions input_strategy(inputs_shape_[0].size(), 1);
@@ -188,7 +188,7 @@ ReplaceGraphPtr UniformCandidateSamplerInfo::replace_graph(const CNodePtr &cnode
   // Only when the axis-1 is sharded, we need to modify the attribute
   if (input_strategy.size() == 2 && input_strategy[1] > 1) {
     if (ComputeReplaceGraph(cnode) != SUCCESS) {
-      MS_LOG(EXCEPTION) << name_ << ": ComputeReplaceGraph failed.";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << ": ComputeReplaceGraph failed.";
     }
   }
   return replace_graph_;

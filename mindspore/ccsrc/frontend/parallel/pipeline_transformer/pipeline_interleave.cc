@@ -140,7 +140,7 @@ void PipelineInterleave::CreateSendReceiveGroup() {
 
 ValuePtr PipelineInterleave::SetMicroBatch(const AnfNodePtr &node, int64_t micro_size, size_t batch_axis) const {
   if (!IsPrimitiveCNode(node, prim::kPrimStridedSlice)) {
-    MS_LOG(EXCEPTION) << "Can't find MicroBatch information.";
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "Can't find MicroBatch information.";
   }
   auto cnode = node->cast<CNodePtr>();
 
@@ -152,7 +152,8 @@ ValuePtr PipelineInterleave::SetMicroBatch(const AnfNodePtr &node, int64_t micro
     auto input_shape = input_tmp.at(0);
     auto slice_batch_size = input_shape.at(batch_axis);  // betch shape
     if (slice_batch_size == 0) {
-      MS_LOG(EXCEPTION) << "slice_batch_size should be a positive integer, but got " << slice_batch_size;
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << "slice_batch_size should be a positive integer, but got "
+                                         << slice_batch_size;
     }
     micro = tuple.at(batch_axis) * micro_size / slice_batch_size;  // micro-index
   } else {
@@ -160,7 +161,7 @@ ValuePtr PipelineInterleave::SetMicroBatch(const AnfNodePtr &node, int64_t micro
     // if micro is not 1: stridedslice --> maketuple --> scalarmul --> micro
     // if micro is 1: stridedslice --> maketuple --> scalarfloordiv
     if (!IsPrimitiveCNode(cnode->input(2), prim::kPrimMakeTuple)) {
-      MS_LOG(EXCEPTION) << "The begin of stridedslice is not constant value, and not make tuple";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << "The begin of stridedslice is not constant value, and not make tuple";
     }
     auto make_tuple_cnode = cnode->input(2)->cast<CNodePtr>();
     if (IsPrimitiveCNode(make_tuple_cnode->input(1), prim::kPrimScalarMul)) {
@@ -170,8 +171,8 @@ ValuePtr PipelineInterleave::SetMicroBatch(const AnfNodePtr &node, int64_t micro
     } else if (IsPrimitiveCNode(make_tuple_cnode->input(1), prim::kPrimScalarFloorDiv)) {
       micro = 1;
     } else {
-      MS_LOG(EXCEPTION) << "Can not find the micro info, the input op of make tuple is "
-                        << GetCNodePrimitive(make_tuple_cnode->input(1))->name();
+      MS_LOG_WITH_NODE(EXCEPTION, make_tuple_cnode) << "Can not find the micro info, the input op of make tuple is "
+                                                    << GetCNodePrimitive(make_tuple_cnode->input(1))->name();
     }
   }
 
@@ -1106,7 +1107,7 @@ std::vector<AnfNodePtr> PipelinePostProcess::PartitionChunkGraph(const FuncGraph
     auto temp_sends = GenerateMainGraphSend(sends, new_usr, micro, index);
     if (temp_sends.empty()) {
       if (stage_ != stage_num_ - 1) {
-        MS_LOG(EXCEPTION) << "Some wrong with PipelineParallel.";
+        MS_LOG_WITH_NODE(EXCEPTION, new_usr) << "Some wrong with PipelineParallel.";
       }
       manager_->Replace(usr, new_usr);
     }
@@ -1365,7 +1366,8 @@ bool IsolatedNodeAttach(const FuncGraphPtr &root, const opt::OptimizerPtr &optim
         grad_graph = grad_node->func_graph();
       } else {
         if (grad_graph != grad_node->func_graph()) {
-          MS_LOG(EXCEPTION) << "Got Wrong Grad graph when attached Receive's grad, Maybe don't use lazy inline.";
+          MS_LOG_WITH_NODE(EXCEPTION, cnode)
+            << "Got Wrong Grad graph when attached Receive's grad, Maybe don't use lazy inline.";
         }
       }
       std::vector<AnfNodePtr> new_get_item_input = {NewValueNode(prim::kPrimTupleGetItem), grad_node,

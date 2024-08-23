@@ -122,10 +122,10 @@ std::vector<StrategyPtr> DynamicQuantExtInfo::GenerateOpStrategies(int64_t stage
 
   std::vector<StrategyPtr> sp_vector;
   if (GenerateStrategiesForIndependentInputs(stage_id, tmp_inputs_shape, splittable_input, &sp_vector) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Generate strategies failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Generate strategies failed";
   }
   if (sp_vector.empty()) {
-    MS_LOG(EXCEPTION) << name_ << ": No available strategy";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": No available strategy";
   }
 
   return sp_vector;
@@ -133,7 +133,7 @@ std::vector<StrategyPtr> DynamicQuantExtInfo::GenerateOpStrategies(int64_t stage
 
 std::shared_ptr<Strategies> DynamicQuantExtInfo::GenerateBatchStrategies() {
   if (GetAttrs() != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Get attr failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Get attr failed";
   }
   Dimensions input_strategy_x(inputs_shape_[0].size(), 1);
   Dimensions input_strategy_smooth_scales(inputs_shape_[1].size(), 1);

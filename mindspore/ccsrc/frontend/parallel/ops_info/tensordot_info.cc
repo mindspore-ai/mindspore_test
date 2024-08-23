@@ -308,7 +308,7 @@ Status TensorDotInfo::InferTensorMap() {
 
 std::shared_ptr<Strategies> TensorDotInfo::GenerateBatchStrategies() {
   if (GetAttrs() != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Get attr failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Get attr failed";
   }
   Dimensions input_a_strategy(inputs_shape_[0].size(), 1);
   Dimensions input_b_strategy(inputs_shape_[1].size(), 1);
@@ -336,7 +336,7 @@ std::shared_ptr<Strategies> TensorDotInfo::GenerateBatchStrategies() {
       input_b_strategy[IntToSize(axes_tuple_tuple_[1][relevant_index])] = stage_device_size_;
     }
   } else {
-    MS_LOG(EXCEPTION) << name_ << ": Now do not support TUPLE_TYPE";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Now do not support TUPLE_TYPE";
   }
 
   Strategies strategy = {input_a_strategy, input_b_strategy};

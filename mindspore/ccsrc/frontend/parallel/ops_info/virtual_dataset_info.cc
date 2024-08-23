@@ -161,7 +161,7 @@ ShapeBasePtr VirtualDatasetInfo::ObtainTensorMap(const ShapeBasePtr &stra, const
         tensor_map_index.push_back(dev_mat_size - 1 - slice_dim);
       }
     } else {
-      MS_LOG(EXCEPTION) << name_ << ": The dataset shard strategy only support shard in one dim.";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": The dataset shard strategy only support shard in one dim.";
     }
   }
   return std::make_shared<ShapeValue>(tensor_map_index);

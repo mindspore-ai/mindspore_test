@@ -124,10 +124,10 @@ std::vector<StrategyPtr> WKVInfo::GenerateOpStrategies(int64_t stage_id) {
   (void)splitable_inputs.insert(splitable_inputs.end(), wkv_insert_num, splitable_status);
   std::vector<StrategyPtr> sp_vector;
   if (GenerateStrategiesForDependentInputs(stage_id, inputs_shape_, splitable_inputs, &sp_vector) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Generate strategies for dependent inputs() failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Generate strategies for dependent inputs() failed.";
   }
   if (sp_vector.empty()) {
-    MS_LOG(EXCEPTION) << name_ << ": No valid strategy.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": No valid strategy.";
   }
   return sp_vector;
 }

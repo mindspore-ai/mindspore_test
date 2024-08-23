@@ -357,7 +357,7 @@ Symbols GetNodeSymbol(const AnfNodePtr &node) {
       }
       list_symbol.push_back(tmp);
     } else {
-      MS_LOG(EXCEPTION) << "invalid symbol for " << node->fullname_with_scope();
+      MS_LOG_WITH_NODE(EXCEPTION, node) << "invalid symbol for " << node->fullname_with_scope();
     }
   }
 

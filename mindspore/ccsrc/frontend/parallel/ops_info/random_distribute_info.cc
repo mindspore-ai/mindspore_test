@@ -103,10 +103,10 @@ std::vector<StrategyPtr> RandomDistributeInfo::GenerateOpStrategies(int64_t stag
 
   std::vector<StrategyPtr> sp_vector;
   if (GenerateStrategiesForIndependentInputs(stage_id, inputs_shape_, splittable_inputs, &sp_vector) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Generate strategies for independent inputs() failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Generate strategies for independent inputs() failed.";
   }
   if (sp_vector.empty()) {
-    MS_LOG(EXCEPTION) << name_ << ": No available strategy.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": No available strategy.";
   }
   return sp_vector;
 }

@@ -170,7 +170,7 @@ std::vector<StrategyPtr> UnsortedSegmentOpInfo::GenerateOpStrategies(int64_t sta
   std::vector<StrategyPtr> sp_vector;
   if (GenerateStrategiesForIndependentInputs(stage_id, {inputs_shape_.at(0)}, splittable_inputs, &sp_vector) !=
       SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << " : Generate strategies for independent inputs() failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << " : Generate strategies for independent inputs() failed.";
   }
   for (auto &sp : sp_vector) {
     Strategies tmp_strategy;
@@ -216,11 +216,11 @@ Status UnsortedSegmentOpInfo::SetCostUnderStrategy(const StrategyPtr &strategy) 
 
 std::shared_ptr<Strategies> UnsortedSegmentOpInfo::GenerateBatchStrategies() {
   if (inputs_shape_.size() != UNSORTEDSEGMENTOP_INPUTS_SIZE) {
-    MS_LOG(EXCEPTION) << name_ << ": inputs shape size must be " << UNSORTEDSEGMENTOP_INPUTS_SIZE << ", but is "
-                      << inputs_shape_.size();
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": inputs shape size must be " << UNSORTEDSEGMENTOP_INPUTS_SIZE
+                                        << ", but is " << inputs_shape_.size();
   }
   if (GetAttrs() != SUCCESS) {
-    MS_LOG(EXCEPTION) << "GetAttrs failed!";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << "GetAttrs failed!";
   }
 
   Dimensions strategy_a, strategy_b;
@@ -246,7 +246,7 @@ ReplaceGraphPtr UnsortedSegmentMinInfo::replace_graph(const CNodePtr &cnode) {
   // 1. the two input shapes are same, and the strategy is not all ones
   if (std::any_of(input_id_strategy.begin(), input_id_strategy.end(), [](const int64_t &shard) { return shard > 1; })) {
     if (ComputeReplaceGraph(cnode) != SUCCESS) {
-      MS_LOG(EXCEPTION) << name_ << ": ComputeReplaceGraph failed.";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << ": ComputeReplaceGraph failed.";
     }
   }
   return replace_graph_;
@@ -283,7 +283,7 @@ ReplaceGraphPtr UnsortedSegmentMaxInfo::replace_graph(const CNodePtr &cnode) {
   // 1. the two input shapes are same, and the strategy is not all ones
   if (std::any_of(input_id_strategy.begin(), input_id_strategy.end(), [](const int64_t &shard) { return shard > 1; })) {
     if (ComputeReplaceGraph(cnode) != SUCCESS) {
-      MS_LOG(EXCEPTION) << name_ << ": ComputeReplaceGraph failed.";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << ": ComputeReplaceGraph failed.";
     }
   }
   return replace_graph_;

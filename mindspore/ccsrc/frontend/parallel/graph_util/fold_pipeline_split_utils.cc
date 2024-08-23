@@ -186,7 +186,7 @@ AnfNodePtr GetPreNode(const AnfNodePtr &node) {
     }
     (void)node_queue.insert(node_queue.end(), cur_node->inputs().begin() + 1, cur_node->inputs().end());
   }
-  MS_LOG(EXCEPTION) << "Get Pipeline End node failed.";
+  MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Get Pipeline End node failed.";
 }
 
 static bool ComputeLastSegForwardEndIdx(const PipelinePair &forward_start, size_t curr_idx, int64_t micro_max,

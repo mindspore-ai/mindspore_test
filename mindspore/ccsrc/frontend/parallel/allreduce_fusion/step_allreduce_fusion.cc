@@ -80,7 +80,7 @@ bool StepAllreduceFusion(const FuncGraphPtr &root, const opt::OptimizerPtr &opti
   for (size_t i = 0; i < comm_ops.size(); i++) {
     if (fusionlist[i]) {
       if (allcomm_fusion.ProcessCommOpsFusion(ret, comm_ops[i]) != SUCCESS) {
-        MS_LOG(EXCEPTION) << "Process" << comm_ops[i] << "Fusion failed";
+        MS_LOG_WITH_NODE(EXCEPTION, ret) << "Process" << comm_ops[i] << "Fusion failed";
       }
     }
   }

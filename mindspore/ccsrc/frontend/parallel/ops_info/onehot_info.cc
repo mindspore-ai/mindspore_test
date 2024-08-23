@@ -223,14 +223,14 @@ std::vector<StrategyPtr> OneHotInfo::GenerateOpStrategies(int64_t stage_id) {
   Shapes splittable_inputs = {input0_split, {}, {}};
   std::vector<StrategyPtr> sp_vector;
   if (inputs_shape_.size() != 3) {
-    MS_LOG(EXCEPTION) << name_ << ": inputs_shape_ size must be 3, but is " << inputs_shape_.size();
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": inputs_shape_ size must be 3, but is " << inputs_shape_.size();
   }
   if (outputs_shape_.size() != 1) {
-    MS_LOG(EXCEPTION) << name_ << ": outputs_shape_ size must be 1, but is " << outputs_shape_.size();
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": outputs_shape_ size must be 1, but is " << outputs_shape_.size();
   }
   if (GenerateStrategiesForIndependentInputs(stage_id, {outputs_shape_.at(0), inputs_shape_.at(1), inputs_shape_.at(2)},
                                              splittable_inputs, &sp_vector) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": GenerateStrategies failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": GenerateStrategies failed.";
   }
 
   return sp_vector;

@@ -125,7 +125,8 @@ CNodePtr NewSplitCNodeAndSetAbstract(const FuncGraphPtr &func_graph, const AnfNo
   MS_EXCEPTION_IF_NULL(input_node);
   auto input_node_shape = BaseShapeToShape(AnfAlgo::GetOutputDetailShape(input_node, 0));
   if (output_num == 0) {
-    MS_LOG(EXCEPTION) << "The input 'output_num' must be a positive integer, but got " << output_num;
+    MS_LOG_WITH_NODE(EXCEPTION, input_node)
+      << "The input 'output_num' must be a positive integer, but got " << output_num;
   }
   if (LongToSize(axis) >= input_node_shape.size() || input_node_shape[axis] % output_num != 0) {
     return nullptr;

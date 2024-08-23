@@ -155,7 +155,7 @@ Status SliceInfo::InferMirrorOps() {
 // Note: if the batch dimension is not fully fetched, the batch strategy may not work.
 std::shared_ptr<Strategies> SliceInfo::GenerateBatchStrategies() {
   if (GetAttrs() != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << "generate batch parallel strategies failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << "generate batch parallel strategies failed.";
   }
   split_flag_list_ = {true};
   bool no_fully_fetch = ((begin_[0] != 0) || (size_[0] < inputs_shape_[0][0]));
@@ -179,7 +179,7 @@ std::vector<StrategyPtr> SliceInfo::GenerateOpStrategies(int64_t stage_id) {
 
   std::vector<StrategyPtr> sp_vector;
   if (GenerateStrategiesForIndependentInputs(stage_id, inputs_shape_, splittable_inputs, &sp_vector) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": generate strategies failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": generate strategies failed";
   }
 
   return sp_vector;
@@ -190,7 +190,7 @@ ReplaceGraphPtr SliceInfo::replace_graph(const CNodePtr &cnode) {
   auto input_strategy = input_dim.at(0);
   if (std::any_of(input_strategy.begin(), input_strategy.end(), [](const int64_t &shard) { return shard > 1; })) {
     if (ComputeReplaceGraph(cnode) != SUCCESS) {
-      MS_LOG(EXCEPTION) << name_ << ": InferReplaceOp failed.";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << ": InferReplaceOp failed.";
     }
   }
   return replace_graph_;
@@ -345,7 +345,7 @@ Status SliceExtInfo::InferMirrorOps() {
 // Note: if the batch dimension is not fully fetched, the batch strategy may not work.
 std::shared_ptr<Strategies> SliceExtInfo::GenerateBatchStrategies() {
   if (GetAttrs() != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << "generate batch parallel strategies failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << "generate batch parallel strategies failed.";
   }
   split_flag_list_ = {dim_ != 0};
   return GenerateBatchStrategiesBySplitFlag(inputs_shape_, split_flag_list_);
@@ -355,8 +355,8 @@ Status SliceExtInfo::SetCostUnderStrategy(const StrategyPtr &strategy) { return 
 
 std::vector<StrategyPtr> SliceExtInfo::GenerateOpStrategies(int64_t stage_id) {
   if (LongToSize(dim_) >= inputs_shape_.size()) {
-    MS_LOG(EXCEPTION) << name_ << ": The dim is out of range, dim: " << dim_
-                      << ", first input shape size: " << inputs_shape_.size();
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": The dim is out of range, dim: " << dim_
+                                        << ", first input shape size: " << inputs_shape_.size();
   }
   Shape input_split(inputs_shape_[0].size(), 1);
   input_split[dim_] = 0;
@@ -365,7 +365,7 @@ std::vector<StrategyPtr> SliceExtInfo::GenerateOpStrategies(int64_t stage_id) {
 
   std::vector<StrategyPtr> sp_vector;
   if (GenerateStrategiesForIndependentInputs(stage_id, inputs_shape_, splittable_inputs, &sp_vector) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": generate strategies failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": generate strategies failed";
   }
 
   return sp_vector;

@@ -453,7 +453,8 @@ AnfNodePtr FoldPipelineTransformer::HandleParameterGraph(const AnfNodePtr &node,
   auto use_cnode = use_node->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(use_cnode);
   if (!IsValueNode<FuncGraph>(use_cnode->input(0))) {
-    MS_LOG(EXCEPTION) << "Parameter must be used by a graph, but got: " << use_cnode->DebugString();
+    MS_LOG_WITH_NODE(EXCEPTION, use_cnode)
+      << "Parameter must be used by a graph, but got: " << use_cnode->DebugString();
   }
   auto use_graph = GetValueNode<FuncGraphPtr>(use_cnode->input(0));
   auto use_parameter_list = use_graph->parameters();
@@ -568,8 +569,8 @@ void FoldPipelineTransformer::CutBorderForNode(const FuncGraphPtr &graph, const 
       continue;
     }
     if (node_stage > user_node_stage && node_segment == user_node_segment) {
-      MS_LOG(EXCEPTION) << "Within a segment, node_stage: " << node_stage
-                        << " must be smaller than user_node_stage: " << user_node_stage;
+      MS_LOG_WITH_NODE(EXCEPTION, user_node) << "Within a segment, node_stage: " << node_stage
+                                             << " must be smaller than user_node_stage: " << user_node_stage;
     }
   }
 }

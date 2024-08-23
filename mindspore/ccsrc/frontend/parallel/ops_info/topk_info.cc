@@ -209,7 +209,7 @@ std::vector<StrategyPtr> TopKInfo::GenerateOpStrategies(int64_t stage_id) {
 
   std::vector<StrategyPtr> sp_vector;
   if (GenerateStrategiesForIndependentInputs(stage_id, tmp_inputs_shape, splittable_input, &sp_vector) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Generate strategies failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Generate strategies failed";
   }
 
   return sp_vector;
@@ -230,10 +230,10 @@ std::vector<StrategyPtr> TopkExtInfo::GenerateOpStrategies(int64_t stage_id) {
 
   std::vector<StrategyPtr> sp_vector;
   if (GenerateStrategiesForIndependentInputs(stage_id, tmp_inputs_shape, splittable_input, &sp_vector) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Generate strategies failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Generate strategies failed";
   }
   if (sp_vector.empty()) {
-    MS_LOG(EXCEPTION) << name_ << ": No available strategy";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": No available strategy";
   }
 
   return sp_vector;
@@ -241,7 +241,7 @@ std::vector<StrategyPtr> TopkExtInfo::GenerateOpStrategies(int64_t stage_id) {
 
 std::shared_ptr<Strategies> TopkExtInfo::GenerateBatchStrategies() {
   if (GetAttrs() != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Get attr failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Get attr failed";
   }
   Dimensions input_strategy(inputs_shape_[0].size(), 1);
   // dim can't split

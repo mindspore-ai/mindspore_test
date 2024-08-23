@@ -504,11 +504,11 @@ ReplaceGraphPtr StridedSliceInfo::replace_graph(const CNodePtr &cnode) {
   }
 
   if (!begin_is_constant && !IsPrimitiveCNode(cnode->input(STRIDE_SLICE_CNODE_BEGIN_INDEX), prim::kPrimMakeTuple)) {
-    MS_LOG(EXCEPTION) << name_ << ": the begin is not constant value, and it is not make tuple";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << ": the begin is not constant value, and it is not make tuple";
   }
 
   if (!end_is_constant && !IsPrimitiveCNode(cnode->input(STRIDE_SLICE_CNODE_END_INDEX), prim::kPrimMakeTuple)) {
-    MS_LOG(EXCEPTION) << name_ << ": the end is not constant value, and it is not make tuple";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << ": the end is not constant value, and it is not make tuple";
   }
 
   // need to handle the constant part of begin/end
@@ -532,7 +532,7 @@ ReplaceGraphPtr StridedSliceInfo::replace_graph(const CNodePtr &cnode) {
 // Note: if the batch dimension is not fully fetched, the batch strategy may not work.
 std::shared_ptr<Strategies> StridedSliceInfo::GenerateBatchStrategies() {
   if (GetAttrs() != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << "generate batch parallel strategies failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << "generate batch parallel strategies failed.";
   }
   split_flag_list_ = {true};
 
@@ -557,7 +557,7 @@ std::vector<StrategyPtr> StridedSliceInfo::GenerateOpStrategies(int64_t stage_id
 
   std::vector<StrategyPtr> sp_vector;
   if (GenerateStrategiesForIndependentInputs(stage_id, inputs_shape_, splittable_inputs, &sp_vector) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": generate strategies failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": generate strategies failed";
   }
 
   return sp_vector;

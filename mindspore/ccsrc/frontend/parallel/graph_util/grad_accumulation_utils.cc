@@ -93,7 +93,7 @@ void TagMicroBatchEnd(const FuncGraphManagerPtr &manager, const std::vector<AnfN
       continue;
     }
     if (ParallelContext::GetInstance()->grad_accumulation_step() > 1 && !end_cnode->HasPrimalAttr(MICRO)) {
-      MS_LOG(EXCEPTION) << "Cannot find micro attribute for forward_end nodes";
+      MS_LOG_WITH_NODE(EXCEPTION, end_cnode) << "Cannot find micro attribute for forward_end nodes";
     }
     for (size_t i = 0; i < end_cnode->size(); ++i) {
       auto temp_node = GetRealKernelNode(end_cnode->input(i), -1, nullptr).first;
@@ -150,7 +150,7 @@ void TagMicroBatchBpEndInCellShare(const FuncGraphPtr &root, const FuncGraphMana
 
     auto micro = SearchPreNodeMicro(cnode);
     if (!micro) {
-      MS_LOG(EXCEPTION) << "Cannot find micro info in cell share for node:" << node->DebugString();
+      MS_LOG_WITH_NODE(EXCEPTION, node) << "Cannot find micro info in cell share for node:" << node->DebugString();
     }
     const auto &users = node_users_map[node];
     for (const auto &user : users) {
@@ -220,7 +220,7 @@ void TagMicroBatchBpEnd(const FuncGraphPtr &root) {
     }
     auto micro = SearchPreNodeMicro(cnode->cast<CNodePtr>());
     if (!micro) {
-      MS_LOG(EXCEPTION) << "Cannot find micro info for node:" << node->DebugString();
+      MS_LOG_WITH_NODE(EXCEPTION, node) << "Cannot find micro info for node:" << node->DebugString();
     }
     cnode->AddPrimalAttr(GRAD_ACCU_BACKWARD_END, micro);
   }

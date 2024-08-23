@@ -219,13 +219,13 @@ static void SetInputLayout(const FuncGraphPtr &func_graph, const AnfNodePtr &in_
   size_t in_strategy_size = 0;
   if (!IsValueNode<ValueTuple>(in_strategy_tuple) ||
       !CheckLayout(in_strategy_tuple, &need_default_strategy, &in_strategy_size)) {
-    MS_LOG(EXCEPTION) << "in_strategy should be a two-dimension tuple";
+    MS_LOG_WITH_NODE(EXCEPTION, in_strategy) << "in_strategy should be a two-dimension tuple";
   }
   std::vector<AnfNodePtr> input_nodes;
   GetInputNodes(func_graph, &input_nodes);
   if (input_nodes.size() != in_strategy_size) {
-    MS_LOG(EXCEPTION) << "Input numbers: " << input_nodes.size()
-                      << " is not equal to in_strategy numbers: " << in_strategy_size;
+    MS_LOG_WITH_NODE(EXCEPTION, in_strategy)
+      << "Input numbers: " << input_nodes.size() << " is not equal to in_strategy numbers: " << in_strategy_size;
   }
   std::vector<std::vector<int64_t>> input_strategy;
   if (need_default_strategy) {
@@ -234,7 +234,7 @@ static void SetInputLayout(const FuncGraphPtr &func_graph, const AnfNodePtr &in_
     input_strategy = GetValue<std::vector<std::vector<int64_t>>>(in_strategy_tuple->value());
   }
   if (!CheckDeviceNum(input_strategy, device_num)) {
-    MS_LOG(EXCEPTION) << "check device number failed";
+    MS_LOG_WITH_NODE(EXCEPTION, in_strategy) << "check device number failed";
   }
 
   FuncGraphManagerPtr manager = func_graph->manager();
@@ -249,15 +249,16 @@ static void SetInputLayout(const FuncGraphPtr &func_graph, const AnfNodePtr &in_
     // its check.
     auto param_shape = common::AnfAlgo::GetOutputInferShape(parameter, 0);
     if (!CheckDeviceNum(input_strategy, device_num)) {
-      MS_LOG(EXCEPTION) << "check device number failed";
+      MS_LOG_WITH_NODE(EXCEPTION, parameter) << "check device number failed";
     }
     if (!input_strategy[i].empty() && param_shape.size() != input_strategy[i].size()) {
-      MS_LOG(EXCEPTION) << "Input dimension: " << param_shape.size()
-                        << " is not equal to in_strategy dimension: " << input_strategy[i].size() << " at index " << i;
+      MS_LOG_WITH_NODE(EXCEPTION, parameter)
+        << "Input dimension: " << param_shape.size()
+        << " is not equal to in_strategy dimension: " << input_strategy[i].size() << " at index " << i;
     }
     if (!CheckShapeStrategy(input_strategy[i], param_shape)) {
-      MS_LOG(EXCEPTION) << "Check conformance between input strategy " << input_strategy[i] << "and tensor shape "
-                        << param_shape << "failed";
+      MS_LOG_WITH_NODE(EXCEPTION, parameter) << "Check conformance between input strategy " << input_strategy[i]
+                                             << "and tensor shape " << param_shape << "failed";
     }
 
     auto to_insert_nodes_set = manager->node_users()[parameter];
@@ -270,8 +271,8 @@ static void SetInputLayout(const FuncGraphPtr &func_graph, const AnfNodePtr &in_
     }
 
     if (to_insert_nodes_set.empty()) {
-      MS_LOG(EXCEPTION) << "For input: \"" << parameter->fullname_with_scope()
-                        << "\", failed to find node to insert strategy.";
+      MS_LOG_WITH_NODE(EXCEPTION, parameter)
+        << "For input: \"" << parameter->fullname_with_scope() << "\", failed to find node to insert strategy.";
     }
     for (auto &node : to_insert_nodes_set) {
       auto to_insert_cnode = node.first->cast<CNodePtr>();
@@ -361,10 +362,10 @@ void CheckVmap(AnfNodePtr node) {
   AnfNodePtr value_node = cnode->input(1);
   auto func_graph = GetValueNode<FuncGraphPtr>(value_node);
   if (func_graph == nullptr) {
-    MS_LOG(INTERNAL_EXCEPTION) << "Unexpected meta function graph node:" << cnode->DebugString();
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, cnode) << "Unexpected meta function graph node:" << cnode->DebugString();
   }
   if (parallel::IsEmbedShardNode(func_graph)) {
-    MS_LOG(EXCEPTION)
+    MS_LOG_WITH_NODE(EXCEPTION, cnode)
       << "The usage of vmap nested shard (e.g vmap(shard)) is not supported currently. Current FuncGraph: "
       << func_graph->ToString();
   }
@@ -391,8 +392,8 @@ static bool SetStrategyForShard(const FuncGraphPtr &root, const std::vector<AnfN
         continue;
       }
       if (IsEmbedShardNode(func_graph) && execution_mode == kPynativeMode) {
-        MS_LOG(EXCEPTION) << "Nested use of shard (e.g shard(shard(...), ...) is not supported in "
-                          << "PyNative mode currently, | FuncGraph: " << func_graph->ToString();
+        MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Nested use of shard (e.g shard(shard(...), ...) is not supported in "
+                                           << "PyNative mode currently, | FuncGraph: " << func_graph->ToString();
       }
       // get input nodes
       std::vector<AnfNodePtr> input_nodes;

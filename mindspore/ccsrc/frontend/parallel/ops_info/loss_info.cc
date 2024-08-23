@@ -123,7 +123,7 @@ std::vector<StrategyPtr> SoftmaxCrossEntropyWithLogitsInfo::GenerateOpStrategies
   Shapes splittable_inputs = {input0_split, input0_split};
   std::vector<StrategyPtr> sp_vector;
   if (GenerateStrategiesWithBroadcast(stage_id, inputs_shape_, splittable_inputs, &sp_vector) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << " : Generate strategies failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << " : Generate strategies failed.";
   }
 
   return sp_vector;

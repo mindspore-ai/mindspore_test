@@ -269,11 +269,13 @@ bool IsOperatorsInTwoSeparateLoops(const CNodePtr &a_cnode, const CNodePtr &b_cn
   size_t b_loop_index = 0;
   const auto &a_fullname = a_cnode->fullname_with_scope();
   if (!GetLoopIndexFromCNode(a_cnode, &a_loop_index)) {
-    MS_LOG(EXCEPTION) << "The operator with fullname_with_scope: " << a_fullname << " was not included in the set.";
+    MS_LOG_WITH_NODE(EXCEPTION, a_cnode) << "The operator with fullname_with_scope: " << a_fullname
+                                         << " was not included in the set.";
   }
   const auto &b_fullname = b_cnode->fullname_with_scope();
   if (!GetLoopIndexFromCNode(b_cnode, &b_loop_index)) {
-    MS_LOG(EXCEPTION) << "The operator with fullname_with_scope: " << b_fullname << " was not included in the set.";
+    MS_LOG_WITH_NODE(EXCEPTION, b_cnode) << "The operator with fullname_with_scope: " << b_fullname
+                                         << " was not included in the set.";
   }
   if (a_loop_index == b_loop_index) {
     return false;
@@ -462,7 +464,7 @@ OperatorInfoPtr CreateTheOperatorInfo(const PrimitivePtr &prim, const CNodePtr &
   if (use_sp_and_dataset) {
     const auto &swc_vec = operator_info->GetStrategyCost();
     if (swc_vec.empty()) {
-      MS_LOG(EXCEPTION) << "No available strategy for: " << operator_info->name();
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << "No available strategy for: " << operator_info->name();
     }
     MS_EXCEPTION_IF_NULL(swc_vec[0]->strategy_ptr);
     (void)configured_stra_ops_.emplace(operator_info, swc_vec[0]->strategy_ptr);
@@ -551,9 +553,9 @@ Status ConstructCostGraphNodesByUniqueId(const std::vector<AnfNodePtr> &all_node
       if (single_loop && is_in_loop && (loop_to_ops[loop_index] < operators_in_forloop.size())) {
         const auto &current_op_ptr = operators_in_forloop[loop_to_ops[loop_index]];
         if (IsFindWrong(current_op_ptr, prim->name())) {
-          MS_LOG(EXCEPTION) << "The OperatorInfo: " << current_op_ptr->name()
-                            << " does not match the Prim: " << prim->name()
-                            << ". The fullname_with_scope: " << cnode->fullname_with_scope();
+          MS_LOG_WITH_NODE(EXCEPTION, cnode)
+            << "The OperatorInfo: " << current_op_ptr->name() << " does not match the Prim: " << prim->name()
+            << ". The fullname_with_scope: " << cnode->fullname_with_scope();
         }
         loop_to_ops[loop_index]++;
         cnode->set_user_data<OperatorInfo>(current_op_ptr);
@@ -590,9 +592,10 @@ Status ConstructCostGraphNodesByUniqueId(const std::vector<AnfNodePtr> &all_node
       }
     } else {
       // Two CNODEs' UniqueIds should not be equal
-      MS_LOG(EXCEPTION) << "The CNode with UniqueId: " << cnode->UniqueId()
-                        << " and UniqueIdThroughCopy: " << cnode->UniqueIdThroughCopy()
-                        << " is set OperatorInfo: " << search_cnode->second->name() << ", Primitive: " << prim->name();
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << "The CNode with UniqueId: " << cnode->UniqueId()
+                                         << " and UniqueIdThroughCopy: " << cnode->UniqueIdThroughCopy()
+                                         << " is set OperatorInfo: " << search_cnode->second->name()
+                                         << ", Primitive: " << prim->name();
     }
   }
 
@@ -605,11 +608,11 @@ Status ConstructCostGraphNodesByUniqueId(const std::vector<AnfNodePtr> &all_node
 
 void SetOperatorToCNode(const OperatorInfoPtr &current_op_ptr, const PrimitivePtr &prim, const CNodePtr &cnode) {
   if (current_op_ptr == nullptr) {
-    MS_LOG(EXCEPTION) << "Find " << prim->name() << " from CostGraph failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Find " << prim->name() << " from CostGraph failed.";
   } else {
     if (IsFindWrong(current_op_ptr, prim->name())) {
-      MS_LOG(EXCEPTION) << "The OperatorInfo: " << current_op_ptr->name()
-                        << " does not match the Prim: " << prim->name();
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << "The OperatorInfo: " << current_op_ptr->name()
+                                         << " does not match the Prim: " << prim->name();
     }
 
     // Needed by rec_parser
@@ -669,9 +672,9 @@ Status ConstructCostGraphNodesByUniqueIdTC(const std::vector<AnfNodePtr> &all_no
       if (is_op_created) {
         const auto &current_op_ptr = operators_in_forloop[loop_to_ops[loop_index]];
         if (IsFindWrong(current_op_ptr, prim->name())) {
-          MS_LOG(EXCEPTION) << "The OperatorInfo: " << current_op_ptr->name()
-                            << " does not match the Prim: " << prim->name()
-                            << ". The fullname_with_scope: " << cnode->fullname_with_scope();
+          MS_LOG_WITH_NODE(EXCEPTION, cnode)
+            << "The OperatorInfo: " << current_op_ptr->name() << " does not match the Prim: " << prim->name()
+            << ". The fullname_with_scope: " << cnode->fullname_with_scope();
         }
         loop_to_ops[loop_index]++;
         cnode->set_user_data<OperatorInfo>(current_op_ptr);
@@ -728,18 +731,19 @@ void PreProcessPreCastForSP(const OperatorInfoPtr &prev_op_info, const OperatorI
   if ((configured_stra_ops_.find(node_op_info) != configured_stra_ops_.end())) {
     const auto next_op_stra = configured_stra_ops_[node_op_info];
     if (edge_ptr->InitEdgeCost() != SUCCESS) {
-      MS_LOG(EXCEPTION) << "Edge cost initialization failed";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Edge cost initialization failed";
     }
     const auto cast_stra = edge_ptr->GetPrevOpStrategyByNextOpStrategyWithMiniComm(next_op_stra);
     if (cast_stra == nullptr) {
-      MS_LOG(EXCEPTION) << "No available strategy for: " << prev_op_info->name();
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << "No available strategy for: " << prev_op_info->name();
     }
     prev_op_info->ClearStrategyCost();
     if (prev_op_info->SetCostUnderStrategy(cast_stra) != SUCCESS) {
-      MS_LOG(EXCEPTION) << "Failure: operator " << prev_op_info->name() << " SetCostUnderStrategy failed";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Failure: operator " << prev_op_info->name()
+                                         << " SetCostUnderStrategy failed";
     }
     if (edge_ptr->InitEdgeCost() != SUCCESS) {
-      MS_LOG(EXCEPTION) << "Edge cost re-initialization failed.";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Edge cost re-initialization failed.";
     }
     MS_LOG(INFO) << "Set strategy for: " << prev_op_info->name() << " under the strategy of: " << node_op_info->name();
     (void)configured_stra_ops_.emplace(prev_op_info, cast_stra);
@@ -782,7 +786,7 @@ void CreateEdgeBetweenTwoOps(const OperatorInfoPtr &prev_op_info, const Operator
   // Init costs for this edge
   if (ParallelContext::GetInstance()->strategy_search_mode() != kRecursiveProgramming) {
     if (!use_sp && edge_ptr->InitEdgeCost() != SUCCESS) {
-      MS_LOG(EXCEPTION) << "Edge cost initialization failed";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Edge cost initialization failed";
     }
   }
   node_op_info->AddPrevEdge(edge_ptr);
@@ -871,7 +875,7 @@ static void ConstructCNodeCostGraphEdges(const mindspore::CNodePtr &cnode, const
           break;
         }
         if (!IsAutoParallelCareNode(prev_cnode) && !IsValueNode<FuncGraph>(prev_cnode->input(0))) {
-          MS_LOG(EXCEPTION) << "Did not create OperatorInfo for : " << prev_prim->name();
+          MS_LOG_WITH_NODE(EXCEPTION, prev_node) << "Did not create OperatorInfo for : " << prev_prim->name();
         }
         is_before_tuple_get_item = true;
       } else if (prev_prim->name() == kMakeTupleOpName) {
@@ -948,11 +952,11 @@ std::pair<OperatorInfoPtr, bool> CreateIdentityOp(const std::string &parameter_n
     MS_EXCEPTION_IF_NULL(target_parameter);
     AbstractBasePtr abstract = target_parameter->abstract();
     if (abstract == nullptr) {
-      MS_LOG(EXCEPTION) << "Failure: abstract is nullptr";
+      MS_LOG_WITH_NODE(EXCEPTION, target_parameter) << "Failure: abstract is nullptr";
     }
     auto input_shape = dyn_cast<abstract::Shape>(abstract->GetShapeTrack());
     if (input_shape == nullptr) {
-      MS_LOG(EXCEPTION) << "Failure: input_shape is nullptr";
+      MS_LOG_WITH_NODE(EXCEPTION, target_parameter) << "Failure: input_shape is nullptr";
     }
     Shape shape = input_shape->shape();
     Shapes inputs_shape = {shape};
@@ -971,22 +975,24 @@ std::pair<OperatorInfoPtr, bool> CreateIdentityOp(const std::string &parameter_n
     MS_EXCEPTION_IF_NULL(casted_target_parameter);
     is_parameter.push_back(ParameterRequireGrad(casted_target_parameter));
     if (tmp_identity_ptr->set_is_parameter(is_parameter) != SUCCESS) {
-      MS_LOG(EXCEPTION) << "Setting parameter for TmpIdentityInfo failed";
+      MS_LOG_WITH_NODE(EXCEPTION, target_parameter) << "Setting parameter for TmpIdentityInfo failed";
     }
     auto node_type = target_parameter->Type();
     if (node_type->isa<mindspore::TensorType>()) {
       auto input_element_type = node_type->cast<mindspore::TensorTypePtr>()->element();
       std::vector<size_t> type_length = {GetLengthOfDataType(input_element_type)};
       if (tmp_identity_ptr->SetInputAndOutputTypeLength(type_length, type_length) != SUCCESS) {
-        MS_LOG(EXCEPTION) << "Setting input and output type length for TmpIdentityInfo failed";
+        MS_LOG_WITH_NODE(EXCEPTION, target_parameter)
+          << "Setting input and output type length for TmpIdentityInfo failed";
       }
     } else {
-      MS_LOG(EXCEPTION) << "Unknown type: " << node_type->type_name();
+      MS_LOG_WITH_NODE(EXCEPTION, target_parameter) << "Unknown type: " << node_type->type_name();
     }
 
     // Generate strategies for this TmpIdentityInfo instance;
     if (tmp_identity_ptr->GenerateStrategies(0) != SUCCESS) {
-      MS_LOG(EXCEPTION) << "Strategy search for Operator failed : " << tmp_identity_ptr->name();
+      MS_LOG_WITH_NODE(EXCEPTION, target_parameter)
+        << "Strategy search for Operator failed : " << tmp_identity_ptr->name();
     }
   }
   return std::make_pair(tmp_identity_ptr, new_identity);
@@ -1050,7 +1056,7 @@ void AugmentCostGraph(const std::vector<AnfNodePtr> &all_nodes) {
       bool use_sp = (ParallelContext::GetInstance()->strategy_search_mode() == kShardingPropagation) ||
                     (ParallelContext::GetInstance()->sharding_propagation());
       if (!use_sp && edge_ptr->InitEdgeCost() != SUCCESS) {
-        MS_LOG(EXCEPTION) << "Edge cost initialization failed";
+        MS_LOG_WITH_NODE(EXCEPTION, node) << "Edge cost initialization failed";
       }
       target_op_info->AddPrevEdge(edge_ptr);
       tmp_identity_ptr->AddSuccEdge(edge_ptr);
@@ -1128,7 +1134,7 @@ void ReshapeCostCompute(const std::vector<AnfNodePtr> &all_nodes) {
     if (ParallelContext::GetInstance()->strategy_search_mode() != kRecursiveProgramming) {
       if (reshape_info->GenerateStrategyCosts(pre_stra_costs, next_costs_index, out_index, is_prev_param,
                                               is_next_reshape) != SUCCESS) {
-        MS_LOG(EXCEPTION) << "Reshape generate strategy costs failed";
+        MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Reshape generate strategy costs failed";
       }
     }
   }
@@ -1397,7 +1403,8 @@ void CalculateMicroBatchSize(const std::shared_ptr<Graph> &graph, const FuncGrap
     graph->micro_batch_size = total_batch_size / data_user_size;
     MS_LOG(INFO) << "In the pipeline scenario, the micro_batch_size of each stage is " << graph->micro_batch_size;
   } else {
-    MS_LOG(EXCEPTION) << "Data user size equals to 0, which could not be divided by the total batch size";
+    MS_LOG_WITH_NODE(EXCEPTION, virtual_dataset_)
+      << "Data user size equals to 0, which could not be divided by the total batch size";
   }
 }
 

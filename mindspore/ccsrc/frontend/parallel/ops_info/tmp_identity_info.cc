@@ -53,14 +53,14 @@ Status TmpIdentityInfo::SetCostUnderStrategy(const StrategyPtr &strategy) { retu
 
 std::vector<StrategyPtr> TmpIdentityInfo::GenerateOpStrategies(int64_t stage_id) {
   if ((inputs_shape_.size() != 1) || (outputs_shape_.size() != 1)) {
-    MS_LOG(EXCEPTION) << name_ << ": Inputs shape size or outputs shape size is wrong, " << inputs_shape_.size() << ", "
-                      << outputs_shape_.size();
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Inputs shape size or outputs shape size is wrong, "
+                                        << inputs_shape_.size() << ", " << outputs_shape_.size();
   }
   Shape input0_split(inputs_shape_[0].size(), 1);
   Shapes splittable_inputs = {input0_split};
   std::vector<StrategyPtr> sp_vector;
   if (GenerateStrategiesForIndependentInputs(stage_id, inputs_shape_, splittable_inputs, &sp_vector) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": GenerateStrategiesForIndependentInputs failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": GenerateStrategiesForIndependentInputs failed.";
   }
 
   return sp_vector;

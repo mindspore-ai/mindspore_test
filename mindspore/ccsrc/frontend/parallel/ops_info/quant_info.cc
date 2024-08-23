@@ -86,12 +86,12 @@ std::vector<StrategyPtr> FakeQuantPerLayerInfo::GenerateOpStrategies(int64_t sta
 
   std::vector<StrategyPtr> sp_vector;
   if (GenerateStrategiesForIndependentInputs(stage_id, tmp_inputs_shape, splittable_inputs, &sp_vector) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Generate strategies for dependent inputs() failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Generate strategies for dependent inputs() failed.";
   }
 
   for (auto &sp : sp_vector) {
     if ((sp == nullptr) || sp->GetInputDim().empty()) {
-      MS_LOG(EXCEPTION) << name_ << ": The strategy is null or empty";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": The strategy is null or empty";
     }
     Dimensions first_input_strategy = sp->GetInputDim()[0];
     Strategies tmp_strategy = {first_input_strategy, {1}, {1}};
@@ -187,12 +187,12 @@ std::vector<StrategyPtr> FakeQuantPerChannelInfo::GenerateOpStrategies(int64_t s
 
   std::vector<StrategyPtr> sp_vector;
   if (GenerateStrategiesForIndependentInputs(stage_id, tmp_inputs_shape, splittable_inputs, &sp_vector) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Generate strategies for dependent inputs() failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Generate strategies for dependent inputs() failed.";
   }
 
   for (auto &sp : sp_vector) {
     if ((sp == nullptr) || sp->GetInputDim().empty()) {
-      MS_LOG(EXCEPTION) << name_ << ": The strategy is null or empty";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": The strategy is null or empty";
     }
     Strategies tmp_strategy;
     Dimensions first_input_strategy = sp->GetInputDim()[0];
@@ -289,7 +289,7 @@ Status MinMaxUpdatePerLayerInfo::InferForwardGroup() {
 
 ReplaceGraphPtr MinMaxUpdatePerLayerInfo::replace_graph(const CNodePtr &cnode) {
   if (InferForwardGroup() != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Create group failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << ": Create group failed";
   }
 
   if (forward_group_.empty()) {
@@ -299,7 +299,7 @@ ReplaceGraphPtr MinMaxUpdatePerLayerInfo::replace_graph(const CNodePtr &cnode) {
 
   GenerateGraph gen_g = GenerateGraph(attrs_);
   if (gen_g.Init(cnode) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << "GenerateGraph Init failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << "GenerateGraph Init failed";
   }
 
   auto quant_op = gen_g.PushBack({gen_g.NewOpInst(op_name_, op_attrs_), gen_g.virtual_input_node(),
@@ -414,12 +414,12 @@ std::vector<StrategyPtr> MinMaxUpdatePerChannelInfo::GenerateOpStrategies(int64_
 
   std::vector<StrategyPtr> sp_vector;
   if (GenerateStrategiesForIndependentInputs(stage_id, tmp_inputs_shape, splittable_inputs, &sp_vector) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Generate strategies for dependent inputs() failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Generate strategies for dependent inputs() failed.";
   }
 
   for (auto &sp : sp_vector) {
     if ((sp == nullptr) || sp->GetInputDim().empty()) {
-      MS_LOG(EXCEPTION) << name_ << ": The strategy is null or empty";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": The strategy is null or empty";
     }
     Strategies tmp_strategy;
     Dimensions first_input_strategy = sp->GetInputDim()[0];

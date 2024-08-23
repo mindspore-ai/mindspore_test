@@ -284,7 +284,7 @@ Status MatmulDDSInfo::ComputeReplaceGraph(const CNodePtr &cnode) {
 
 ReplaceGraphPtr MatmulDDSInfo::replace_graph(const CNodePtr &cnode) {
   if (ComputeReplaceGraph(cnode) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": ComputeReplaceGraph failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << ": ComputeReplaceGraph failed.";
   }
   return replace_graph_;
 }
@@ -297,13 +297,13 @@ std::vector<StrategyPtr> MatmulDDSInfo::GenerateOpStrategies(int64_t stage_id) {
 
   std::vector<StrategyPtr> sp_vector;
   if (GenerateStrategiesForIndependentInputs(stage_id, tmp_inputs_shape, splittable_input, &sp_vector) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Generate strategies failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Generate strategies failed";
   }
 
   // the others strategies are set by the first input's strategy
   for (auto &sp : sp_vector) {
     if ((sp == nullptr) || sp->GetInputDim().empty()) {
-      MS_LOG(EXCEPTION) << name_ << ": The strategy is null or empty";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": The strategy is null or empty";
     }
     Strategies tmp_strategy;
     Dimensions q_strategy = sp->GetInputDim()[0];

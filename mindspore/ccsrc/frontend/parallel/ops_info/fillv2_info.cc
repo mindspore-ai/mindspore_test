@@ -78,10 +78,10 @@ std::vector<StrategyPtr> FillV2Info::GenerateOpStrategies(int64_t stage_id) {
   Shapes splittable_inputs = {input0_split, input1_split};
   std::vector<StrategyPtr> sp_vector;
   if (GenerateStrategiesForIndependentInputs(stage_id, fake_inputs_shape_, splittable_inputs, &sp_vector) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Generate strategies for independent inputs() failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Generate strategies for independent inputs() failed.";
   }
   if (sp_vector.empty()) {
-    MS_LOG(EXCEPTION) << name_ << ": No available strategy.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": No available strategy.";
   }
   return sp_vector;
 }
@@ -89,8 +89,8 @@ std::vector<StrategyPtr> FillV2Info::GenerateOpStrategies(int64_t stage_id) {
 void FillV2Info::ReplaceDynamicInput(const CNodePtr &cnode, const Shape &strategy) {
   auto dynamic_node = cnode->input(kIndex1);
   if (!IsPrimitiveCNode(dynamic_node, prim::kPrimMakeTuple)) {
-    MS_LOG(EXCEPTION) << name_ << "The dynamic input must be MakeTuple cnode, but got "
-                      << dynamic_node->fullname_with_scope();
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << "The dynamic input must be MakeTuple cnode, but got "
+                                       << dynamic_node->fullname_with_scope();
     return;
   }
 
@@ -108,8 +108,8 @@ void FillV2Info::ReplaceDynamicInput(const CNodePtr &cnode, const Shape &strateg
     if (value_node != nullptr && value_node->isa<Int64Imm>()) {
       auto origin_ele = GetValue<int64_t>(value_node);
       if (origin_ele % strategy[i - 1] != 0) {
-        MS_LOG(EXCEPTION) << name_ << ": the origin shape is " << origin_ele << ", can not be div by shard size "
-                          << strategy[i - 1];
+        MS_LOG_WITH_NODE(EXCEPTION, cnode)
+          << name_ << ": the origin shape is " << origin_ele << ", can not be div by shard size " << strategy[i - 1];
       }
       int64_t replace_shape = origin_ele / strategy[i - 1];
       MS_LOG(INFO) << name_ << ": replace shape from " << origin_ele << " to " << replace_shape << ", the index is "
@@ -166,11 +166,12 @@ Shape FillV2Info::GetShapeFromTensor(const tensor::TensorPtr &shape_tensor) {
   MS_EXCEPTION_IF_NULL(shape_tensor);
   auto dim = shape_tensor->DataDim();
   if (IntToSize(dim) != kDim1) {
-    MS_LOG(EXCEPTION) << name_ << ": The rank of 'input_shape' must be 1, but got rank " << dim;
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": The rank of 'input_shape' must be 1, but got rank " << dim;
   }
   auto size = shape_tensor->DataSize();
   if (size <= 0) {
-    MS_LOG(EXCEPTION) << name_ << ": The size of 'input_shape' must be greater than 0, but got size " << size;
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": The size of 'input_shape' must be greater than 0, but got size "
+                                        << size;
   }
   auto dtype = shape_tensor->data_type();
   auto data = shape_tensor->data_c();
@@ -184,15 +185,15 @@ Shape FillV2Info::GetShapeFromTensor(const tensor::TensorPtr &shape_tensor) {
     Shape shape(shape_data, shape_data + size);
     return shape;
   }
-  MS_LOG(EXCEPTION) << name_ << ": The dtype of 'input_shape' must be int32 or int64, but got type "
-                    << TypeIdToString(dtype);
+  MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": The dtype of 'input_shape' must be int32 or int64, but got type "
+                                      << TypeIdToString(dtype);
 }
 
 void FillV2Info::ResetInputsShape() {
   auto input_value_shape = input_value_[0];
   if (input_value_shape == nullptr) {
-    MS_LOG(EXCEPTION) << name_ << ": The value of input 'shape' must be a constant. "
-                      << "If you pass this value via construct, try to define its value in __init__";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": The value of input 'shape' must be a constant. "
+                                        << "If you pass this value via construct, try to define its value in __init__";
   }
   MS_EXCEPTION_IF_NULL(input_value_shape);
   if (input_value_shape->isa<tensor::Tensor>()) {
@@ -206,8 +207,8 @@ void FillV2Info::ResetInputsShape() {
     (void)is_parameter_.insert(is_parameter_.begin(), false);
     return;
   }
-  MS_LOG(EXCEPTION) << name_ << ": The type of input 'shape' must be Tensor or Tuple, but got "
-                    << input_value_shape->type()->ToString();
+  MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": The type of input 'shape' must be Tensor or Tuple, but got "
+                                      << input_value_shape->type()->ToString();
 }
 
 REGISTER(FillV2Info);

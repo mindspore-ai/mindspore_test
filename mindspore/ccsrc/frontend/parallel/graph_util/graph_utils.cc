@@ -148,7 +148,8 @@ std::vector<AnfNodePtr> CreateMirrorInput(const FuncGraphPtr &root, const Operat
     auto parameters = root->parameters();
     grad_accu = GetAccuGrad(parameters, weight_name);
     if (!grad_accu && op_name == MICRO_STEP_ALL_GATHER) {
-      MS_LOG(EXCEPTION) << "You should define `accu_grads` when use " << op_name << " parameter:" << weight_name;
+      MS_LOG_WITH_NODE(EXCEPTION, node) << "You should define `accu_grads` when use " << op_name
+                                        << " parameter:" << weight_name;
     }
   }
 
@@ -805,7 +806,7 @@ std::vector<AnfNodePtr> ReplaceOpInput(const Operator &replace_op, const std::st
     if (node->size() == 1) {
       return ConvertToRealInputs(replace_op.first, instance_name, AnfNodePtrList{}, arg_replace_op.first);
     }
-    MS_LOG(EXCEPTION) << "Failure: " << node->ToString() << " size is smaller than 2";
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "Failure: " << node->ToString() << " size is smaller than 2";
   }
   std::vector<AnfNodePtr> replace_input = {node->input(1)};
 
@@ -830,7 +831,7 @@ std::vector<AnfNodePtr> ReplaceOpInput(const Operator &replace_op, const std::st
     for (auto &param : params) {
       AnfNodePtr val = NewValueNode(param.first.second);
       if (val == nullptr) {
-        MS_LOG(EXCEPTION) << "Failure:val is nullptr";
+        MS_LOG_WITH_NODE(EXCEPTION, val) << "Failure:val is nullptr";
       }
       int64_t position = param.second;
       (void)replace_input.insert(replace_input.cbegin() + position - 1, val);
@@ -936,8 +937,8 @@ Status GetDistributeOperatorFromCNode(const CNodePtr &cnode, TensorInfo *tensor_
     return Status::FAILED;
   }
   if (!target_cnode->has_user_data<OperatorInfo>()) {
-    MS_LOG(EXCEPTION) << "Found " << cnode->fullname_with_scope() << " previous node is "
-                      << target_cnode->fullname_with_scope() << " and it has no operator info.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Found " << cnode->fullname_with_scope() << " previous node is "
+                                       << target_cnode->fullname_with_scope() << " and it has no operator info.";
   }
 
   OperatorInfoPtr distribute_operator = GetDistributeOperator(target_cnode);
@@ -1120,10 +1121,10 @@ Status UpdateShapeNode(const CNodePtr &cnode, const FuncGraphPtr &func_graph) {
     if (IsReshapeOp(shape_user)) {
       std::vector<Shape> input_shapes = GetNodeShape(input_of_shape);
       if (input_shapes.size() != 1) {
-        MS_LOG(EXCEPTION) << "Shape's input size is illegal.";
+        MS_LOG_WITH_NODE(EXCEPTION, shape_user) << "Shape's input size is illegal.";
       }
       if (UpdateReshapeShapeValue(shape_user, cnode, input_shapes[0], tensor_info, func_graph) != Status::SUCCESS) {
-        MS_LOG(EXCEPTION) << "Update reshape shape value failed.";
+        MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Update reshape shape value failed.";
       }
       continue;
     }
@@ -1135,7 +1136,7 @@ Status UpdateShapeNode(const CNodePtr &cnode, const FuncGraphPtr &func_graph) {
                                "Only support TupleGetItem here, but got " + GetPrimName(shape_user));
     if (IsTupleGetItem(shape_user) &&
         UpdateTupleGetItemShapeValue(shape_user, tensor_info, func_graph) != Status::SUCCESS) {
-      MS_LOG(EXCEPTION) << "Update tuple get item shape value failed.";
+      MS_LOG_WITH_NODE(EXCEPTION, shape_user) << "Update tuple get item shape value failed.";
     }
   }
   return Status::SUCCESS;

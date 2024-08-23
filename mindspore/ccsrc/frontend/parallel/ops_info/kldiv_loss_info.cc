@@ -83,10 +83,10 @@ std::vector<StrategyPtr> KLDivLossInfo::GenerateOpStrategies(int64_t stage_id) {
   Shapes splittable_inputs(inputs_shape_.size(), splittable_input);
   std::vector<StrategyPtr> sp_vector;
   if (GenerateStrategiesForDependentInputs(stage_id, inputs_shape_, splittable_inputs, &sp_vector) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Generate strategies for dependent inputs() failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Generate strategies for dependent inputs() failed.";
   }
   if (sp_vector.empty()) {
-    MS_LOG(EXCEPTION) << name_ << ": No available strategy.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": No available strategy.";
   }
   return sp_vector;
 }

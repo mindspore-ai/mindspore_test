@@ -145,7 +145,7 @@ std::string Conv3DInfo::ReplaceNodeName() const {
     return CONV3D;
   }
 
-  MS_LOG(EXCEPTION) << "Invalid name: " << name_;
+  MS_LOG_WITH_NODE(EXCEPTION, cnode_) << "Invalid name: " << name_;
 }
 
 OperatorAttrs Conv3DInfo::CreateConv3DAttrs() {
@@ -174,7 +174,7 @@ AnfNodePtr Conv3DInfo::GenerateConv3DNode(const AnfNodePtr &new_input, const CNo
   auto node_name = ReplaceNodeName();
 
   if (cnode->size() < 3) {
-    MS_LOG(EXCEPTION) << name_ << ": The size of cnode is invalid: " << cnode->size();
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << ": The size of cnode is invalid: " << cnode->size();
   }
   return gen_g_.PushBack({gen_g_.NewOpInst(node_name, conv3d_attrs), new_input, cnode->input(2)});
 }
@@ -188,7 +188,7 @@ void Conv3DInfo::ComputeReplaceGraph(const CNodePtr &cnode) {
   MS_EXCEPTION_IF_NULL(graph);
 
   if (gen_g_.Init(cnode) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": GenerateGraph Init failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << ": GenerateGraph Init failed";
   }
 
   // transpose-1
@@ -198,7 +198,7 @@ void Conv3DInfo::ComputeReplaceGraph(const CNodePtr &cnode) {
   // reshape-1
   auto s = input_slice_shape_;
   if (s.size() != 5) {
-    MS_LOG(EXCEPTION) << name_ << ": The size of input slice shape must be 5, but got " << s.size();
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << ": The size of input slice shape must be 5, but got " << s.size();
   }
   Shape s1 = {s[4] * s[0], s[1], s[2], s[3]};
   auto reshape_1 = gen_g_.PushBack({gen_g_.NewOpInst(RESHAPE), transpose_1, CreateTuple(s1)});

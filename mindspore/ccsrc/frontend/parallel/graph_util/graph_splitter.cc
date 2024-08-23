@@ -141,7 +141,8 @@ AnfNodePtr CreateReplacedOutputNode(const FuncGraphPtr &func_graph, const AnfNod
     auto kernel_with_index = common::AnfAlgo::VisitKernelWithReturnType(origin_output, kIndex0);
     auto real_output = kernel_with_index.first;
     if (!IsPrimitiveCNode(real_output, prim::kPrimMakeTuple)) {
-      MS_LOG(EXCEPTION) << "Tuple output is not a MakeTuple node: " << real_output->DebugString();
+      MS_LOG_WITH_NODE(EXCEPTION, real_output)
+        << "Tuple output is not a MakeTuple node: " << real_output->DebugString();
     }
     AnfNodePtrList tuple_inputs;
     auto tuple_elements = origin_output->abstract()->cast<abstract::AbstractTuplePtr>()->elements();
@@ -158,7 +159,7 @@ AnfNodePtr CreateReplacedOutputNode(const FuncGraphPtr &func_graph, const AnfNod
       MS_EXCEPTION_IF_NULL(element);
       auto tensor_abstract = element->cast<abstract::AbstractTensorPtr>();
       if (!tensor_abstract) {
-        MS_LOG(EXCEPTION) << "Only support to replace tuple with all tensor elements.";
+        MS_LOG_WITH_NODE(EXCEPTION, tuple_input) << "Only support to replace tuple with all tensor elements.";
       }
       auto fake_tensor = std::make_shared<tensor::Tensor>(tensor_abstract->element()->BuildType()->type_id(),
                                                           tensor_abstract->shape()->shape());
@@ -271,7 +272,7 @@ CNodePtr CreateRecvNode(const FuncGraphPtr &func_graph, const InterProcessOpEdge
     } else if (HasAbstractIOMonad(src_node)) {
       monad_value = kIOMonad;
     } else {
-      MS_LOG(EXCEPTION) << "The src_node is PrimUpdateState must have monad abstract.";
+      MS_LOG_WITH_NODE(EXCEPTION, src_node) << "The src_node is PrimUpdateState must have monad abstract.";
     }
     auto monad_input = NewValueNode(monad_value);
     MS_EXCEPTION_IF_NULL(monad_input);
@@ -586,8 +587,8 @@ void HandleHungNodes(const FuncGraphPtr &func_graph, const NodeLabels &node_labe
   const auto &origin_output = func_graph->output();
   MS_EXCEPTION_IF_NULL(origin_output);
   if (node_labels.count(origin_output) == 0) {
-    MS_LOG(EXCEPTION) << "The origin output node " << origin_output->fullname_with_scope()
-                      << " should have corresponding operator label.";
+    MS_LOG_WITH_NODE(EXCEPTION, origin_output) << "The origin output node " << origin_output->fullname_with_scope()
+                                               << " should have corresponding operator label.";
   }
   AnfNodePtr replaced_output = nullptr;
   if (node_labels.at(origin_output) != process_label) {
@@ -766,7 +767,7 @@ void ParameterServerMode::ProcessForSplitOptimizer() {
                                   ? common::AnfAlgo::GetNodeAttr<std::string>(ps_optimizer, kAttrGradientType)
                                   : kDenseGradient;
     if (kGradTypeToAccumOpName.count(gradient_type) == 0) {
-      MS_LOG(EXCEPTION) << "The gradient type " << gradient_type << " is invalid.";
+      MS_LOG_WITH_NODE(EXCEPTION, ps_optimizer) << "The gradient type " << gradient_type << " is invalid.";
     }
 
     const std::string &opt_device_target = GetCNodeTarget(ps_optimizer);
@@ -850,7 +851,7 @@ std::pair<CNodePtr, CNodePtr> ParameterServerMode::CreateNodesForGradAccumulatio
   MS_EXCEPTION_IF_NULL(gradient_input);
 
   if (kGradTypeToAccumOpName.count(gradient_type) == 0) {
-    MS_LOG(EXCEPTION) << "The gradient type " << gradient_type << " is invalid.";
+    MS_LOG_WITH_NODE(EXCEPTION, gradient_input) << "The gradient type " << gradient_type << " is invalid.";
   }
   const std::string &accum_node_name = kGradTypeToAccumOpName.at(gradient_type);
   CNodePtr grad_accum_node = CreateNodeWithInterProcessEdgeOnPServer(accum_node_name, gradient_input,
@@ -902,8 +903,9 @@ CNodePtr ParameterServerMode::CreateNodeWithInterProcessEdgeOnPServer(const std:
                                                                       size_t index_of_real_input,
                                                                       uint32_t total_inputs_number) {
   if (index_of_real_input >= total_inputs_number) {
-    MS_LOG(EXCEPTION) << "The index of real input for " << many_to_one_node_name << " " << index_of_real_input
-                      << " is greater or equal to worker number " << total_inputs_number;
+    MS_LOG_WITH_NODE(EXCEPTION, real_input)
+      << "The index of real input for " << many_to_one_node_name << " " << index_of_real_input
+      << " is greater or equal to worker number " << total_inputs_number;
   }
 
   // Step 1: Create multiple inputs of new node including extra nodes.
@@ -1237,7 +1239,7 @@ void EmbeddingCacheMode::AddEmbeddingCacheOps() const {
 OperatorLabel EmbeddingCacheMode::GetNodeLabel(const AnfNodePtr &node) const {
   MS_EXCEPTION_IF_NULL(node);
   if (!node->isa<CNode>()) {
-    MS_LOG(EXCEPTION) << "Only CNode has distributed split label.";
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "Only CNode has distributed split label.";
   }
 
   CNodePtr cnode = node->cast<CNodePtr>();
@@ -1425,7 +1427,8 @@ OperatorLabel GraphSplitter::RecursiveSetTupeGetItemLabel(const CNodePtr &tuple_
     if (NodeHasLabel(tuple_get_item_node)) {
       return node_labels_[tuple_get_item_node];
     } else {
-      MS_LOG(EXCEPTION) << "TupeGetItem node " << tuple_get_item_node->fullname_with_scope() << " has no lebel.";
+      MS_LOG_WITH_NODE(EXCEPTION, tuple_get_item_node)
+        << "TupeGetItem node " << tuple_get_item_node->fullname_with_scope() << " has no lebel.";
     }
   }
 
@@ -1705,7 +1708,7 @@ void GraphSplitter::EliminateDataSyncNode() {
     MS_EXCEPTION_IF_NULL(cnode);
     if (common::AnfAlgo::GetCNodeName(cnode) == distributed::kDataSyncSrcOpName) {
       if (cnode->size() != kSizeThree) {
-        MS_LOG(EXCEPTION) << "Node DataSyncSrc's input number should be 3, but got " << cnode->size();
+        MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Node DataSyncSrc's input number should be 3, but got " << cnode->size();
       }
       // The first input is parameter and the second input is side effect node.
       auto param_node = cnode->inputs()[kIndex1];
@@ -1728,7 +1731,7 @@ void GraphSplitter::EliminateDataSyncNode() {
       (void)func_graph_->manager()->Replace(cnode, load_node_replace_data_sync_src);
     } else if (common::AnfAlgo::GetCNodeName(cnode) == distributed::kDataSyncDstOpName) {
       if (cnode->size() != kSizeTwo) {
-        MS_LOG(EXCEPTION) << "Node DataSyncDst's input number should be 2, but got " << cnode->size();
+        MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Node DataSyncDst's input number should be 2, but got " << cnode->size();
       }
       auto input_node = cnode->inputs()[kIndex1];
       MS_EXCEPTION_IF_NULL(input_node);
@@ -1761,7 +1764,7 @@ void GraphSplitter::EliminateControlEdgeNode() {
       (void)func_graph_->manager()->Replace(cnode, fake_value_node);
     } else if (common::AnfAlgo::GetCNodeName(cnode) == distributed::kControlDstOpName) {
       if (cnode->size() != kSizeTwo) {
-        MS_LOG(EXCEPTION) << "Node DataSyncDst's input number should be 2, but got " << cnode->size();
+        MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Node DataSyncDst's input number should be 2, but got " << cnode->size();
       }
       auto input_node = cnode->inputs()[kIndex1];
       MS_EXCEPTION_IF_NULL(input_node);
@@ -1788,7 +1791,7 @@ void GraphSplitter::DumpDistributedGraph(const InterProcessOpEdgesInfo &comm_edg
 OperatorLabel GraphSplitter::GetSplitLabel(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
   if (!node->isa<CNode>()) {
-    MS_LOG(EXCEPTION) << "Only CNode has distributed split label.";
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "Only CNode has distributed split label.";
   }
   CNodePtr cnode = node->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(cnode);
@@ -1871,8 +1874,9 @@ InterProcessEdgeLabel GraphSplitter::GenerateEdgeLabel(const AnfNodePtr &src_nod
   }
   if (!src_node_edge_label.empty() && !dst_node_edge_label.empty()) {
     if (src_node_edge_label != dst_node_edge_label) {
-      MS_LOG(EXCEPTION) << "The edge label name of src node and dst node should be same."
-                        << src_node->fullname_with_scope() << "->" << dst_node->fullname_with_scope();
+      MS_LOG_WITH_NODE(EXCEPTION, src_node)
+        << "The edge label name of src node and dst node should be same." << src_node->fullname_with_scope() << "->"
+        << dst_node->fullname_with_scope();
     }
   }
   InterProcessEdgeLabel edge_label;
@@ -1951,8 +1955,9 @@ InOutDegreeList GraphSplitter::GenerateInOutDegreeList(const std::vector<SplitGr
 
     auto segment_first_node = nodes[0];
     if (node_labels_[segment_first_node] != segment.label) {
-      MS_LOG(EXCEPTION) << "Node label " << node_labels_[segment_first_node].to_string()
-                        << " is not the same as segment label " << segment.label.to_string();
+      MS_LOG_WITH_NODE(EXCEPTION, segment_first_node)
+        << "Node label " << node_labels_[segment_first_node].to_string() << " is not the same as segment label "
+        << segment.label.to_string();
     }
 
     // Prepare for adding Depend between in-degree and out-degree of this segment because the execution order should
@@ -2046,8 +2051,9 @@ void GraphSplitter::AddDependencyBetweenSegments(const InOutDegreeList &in_out_d
         // Connect fused send nodes to the output so they will not be optimized out.
         AnfNodePtr origin_output = func_graph_->output();
         if (node_labels_.count(origin_output) == 0) {
-          MS_LOG(EXCEPTION) << "The origin output node " << origin_output->fullname_with_scope()
-                            << " should have corresponding operator label.";
+          MS_LOG_WITH_NODE(EXCEPTION, origin_output)
+            << "The origin output node " << origin_output->fullname_with_scope()
+            << " should have corresponding operator label.";
         }
 
         // If the output is not on this process, replace it with a fake output node.
@@ -2094,8 +2100,9 @@ void GraphSplitter::EliminateExtraNodes(const InterProcessOpEdgesInfo &comm_edge
     OperatorLabel send_label = node_labels_[send_node];
     OperatorLabel recv_label = node_labels_[recv_node];
     if (send_label == recv_label) {
-      MS_LOG(EXCEPTION) << "The Send and Recv must have different label. But got Send: " << send_label.to_string()
-                        << ", Recv: " << recv_label.to_string();
+      MS_LOG_WITH_NODE(EXCEPTION, send_node)
+        << "The Send and Recv must have different label. But got Send: " << send_label.to_string()
+        << ", Recv: " << recv_label.to_string();
     }
 
     if (recv_label == this_process_label_) {
@@ -2164,8 +2171,8 @@ void GraphSplitter::AddSendRecvDependency(const InterProcessOpEdgesInfo &in_degr
     AnfNodePtrList rpc_send_list;
     for (const auto &send_src_node : depended_nodes) {
       if (src_nodes_to_send_nodes.count(send_src_node) == 0) {
-        MS_LOG(EXCEPTION) << "Send src node " << send_src_node->fullname_with_scope()
-                          << " has no corresponding RpcSend nodes.";
+        MS_LOG_WITH_NODE(EXCEPTION, send_src_node)
+          << "Send src node " << send_src_node->fullname_with_scope() << " has no corresponding RpcSend nodes.";
       }
       const AnfNodePtrSet &rpc_send_nodes = src_nodes_to_send_nodes.at(send_src_node);
       for (const auto &rpc_send : rpc_send_nodes) {
@@ -2216,8 +2223,8 @@ void GraphSplitter::AddDependencyForSend(const FusedInterProcessOpPairMap &fused
   // Connect fused send nodes to the output so they will not be optimized out.
   AnfNodePtr origin_output = func_graph_->output();
   if (node_labels_.count(origin_output) == 0) {
-    MS_LOG(EXCEPTION) << "The origin output node " << origin_output->fullname_with_scope()
-                      << " should have corresponding operator label.";
+    MS_LOG_WITH_NODE(EXCEPTION, origin_output) << "The origin output node " << origin_output->fullname_with_scope()
+                                               << " should have corresponding operator label.";
   }
 
   // If the output is not on this process, replace it with a fake output node.
@@ -2239,8 +2246,9 @@ void GraphSplitter::AddDependencyForSend(const FusedInterProcessOpPairMap &fused
 
 bool GraphSplitter::IsNodesWithSameLabel(const AnfNodePtr &node1, const AnfNodePtr &node2) {
   if (node_labels_.count(node1) == 0 || node_labels_.count(node2) == 0) {
-    MS_LOG(EXCEPTION) << "Either 'node1': " << node1->fullname_with_scope()
-                      << " or 'node2': " << node2->fullname_with_scope() << " is not marked with split label.";
+    MS_LOG_WITH_NODE(EXCEPTION, node1) << "Either 'node1': " << node1->fullname_with_scope()
+                                       << " or 'node2': " << node2->fullname_with_scope()
+                                       << " is not marked with split label.";
   }
   return node_labels_[node1] == node_labels_[node2];
 }

@@ -98,17 +98,17 @@ std::vector<StrategyPtr> LinSpaceInfo::GenerateOpStrategies(int64_t stage_id) {
 
   std::vector<StrategyPtr> sp_vector;
   if (GenerateStrategiesForIndependentInputs(stage_id, splittable_shapes, splittable_inputs, &sp_vector) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Generate strategies for independent inputs() failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Generate strategies for independent inputs() failed.";
   }
   if (sp_vector.empty()) {
-    MS_LOG(EXCEPTION) << name_ << ": No available strategy.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": No available strategy.";
   }
   return sp_vector;
 }
 
 std::shared_ptr<Strategies> LinSpaceInfo::GenerateBatchStrategies() {
   if (InferAttrs() != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Infer attrs failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Infer attrs failed";
   }
 
   int64_t dev_num = g_device_manager->stage_device_num();
@@ -118,7 +118,7 @@ std::shared_ptr<Strategies> LinSpaceInfo::GenerateBatchStrategies() {
 
 ReplaceGraphPtr LinSpaceInfo::replace_graph(const CNodePtr &cnode) {
   if (split_num_ > 1 && ComputeReplaceGraph(cnode) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": ComputeReplaceGraph failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << ": ComputeReplaceGraph failed.";
   }
   return replace_graph_;
 }
@@ -219,7 +219,7 @@ Status LinSpaceExtInfo::GetAttrs() {
 
 std::shared_ptr<Strategies> LinSpaceExtInfo::GenerateBatchStrategies() {
   if (InferAttrs() != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Infer attrs failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Infer attrs failed";
   }
 
   int64_t dev_num = g_device_manager->stage_device_num();

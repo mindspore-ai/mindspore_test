@@ -71,7 +71,7 @@ bool GetLoopIndexFromCNode(const CNodePtr &cnode, size_t *loop_index) {
   const auto &cnode_fullname = cnode->fullname_with_scope();
   if (std::regex_search(cnode_fullname, result, pattern)) {
     if (result.length() < 2) {
-      MS_LOG(EXCEPTION) << "Wrong format of fullname_with_scope: " << cnode_fullname;
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Wrong format of fullname_with_scope: " << cnode_fullname;
     }
     *loop_index = IntToSize(std::atoi(result[1].str().c_str()));
     return true;

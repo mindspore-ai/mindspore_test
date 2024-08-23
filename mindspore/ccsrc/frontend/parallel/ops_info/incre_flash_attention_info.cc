@@ -79,8 +79,8 @@ void IncreFlashAttentionInfo::SetOptinalInputs() {
     }
   }
   if (atten_mask_rank_ > kRank4 || padding_mask_rank_ > kRank4) {
-    MS_LOG(EXCEPTION) << "atten_mask or padding_mask got unexpected ranks: " << atten_mask_rank_ << " and "
-                      << padding_mask_rank_ << ". Expecting ranks not greater than 4.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << "atten_mask or padding_mask got unexpected ranks: " << atten_mask_rank_
+                                        << " and " << padding_mask_rank_ << ". Expecting ranks not greater than 4.";
   }
 
   Shape atten_mask_tensor_map(atten_mask_rank_, -1);
@@ -313,10 +313,10 @@ std::vector<StrategyPtr> IncreFlashAttentionInfo::GenerateOpStrategies(int64_t s
 
   std::vector<StrategyPtr> strategy_vector;
   if (GenerateStrategiesForDependentInputs(stage_id, inputs_shape_, splitable_inputs, &strategy_vector) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Generate strategies for dependent inputs() failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Generate strategies for dependent inputs() failed.";
   }
   if (strategy_vector.empty()) {
-    MS_LOG(EXCEPTION) << name_ << ": No valid strategy.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": No valid strategy.";
   }
   return strategy_vector;
 }

@@ -1020,13 +1020,13 @@ std::vector<StrategyPtr> MatMulBase::GenerateOpStrategies(int64_t stage_id) {
   Shapes tmp_inputs_shape = {tmp_shape};
 
   if (GenerateStrategiesForIndependentInputs(stage_id, tmp_inputs_shape, splittable_input, &sp_vector) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Generate strategies failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Generate strategies failed";
   }
 
   // set the inputs' strategies
   for (auto &sp : sp_vector) {
     if ((sp == nullptr) || sp->GetInputDim().empty()) {
-      MS_LOG(EXCEPTION) << name_ << ": The strategy is null or empty";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": The strategy is null or empty";
     }
     Strategies replace_strategy;
     Dimensions tmp_strategy = sp->GetInputDim()[0];  // [A, B, C, D, E]
@@ -1048,8 +1048,9 @@ std::vector<StrategyPtr> MatMulBase::GenerateOpStrategies(int64_t stage_id) {
     }
 
     if (mat_a_strategy.size() != mat_a_shape.size()) {
-      MS_LOG(EXCEPTION) << name_ << ": The size of mat_a_shape and mat_a_strategy must be equal, the mat_a_shape is "
-                        << mat_a_shape << ", but the mat_a_strategy is " << mat_a_strategy;
+      MS_LOG_WITH_NODE(EXCEPTION, cnode_)
+        << name_ << ": The size of mat_a_shape and mat_a_strategy must be equal, the mat_a_shape is " << mat_a_shape
+        << ", but the mat_a_strategy is " << mat_a_strategy;
     }
 
     // broadcast
@@ -1165,14 +1166,14 @@ AnfNodePtr MatMul::GetInputOutputNodeForNDTP(const CNodePtr &cnode, const AnfNod
   std::vector<Group> x_group_list;
   if (all_gather_dim0 != -1) {
     if (CreateGroupByDimWithDevMatrix(&device_matrix, all_gather_dim0, &x_group_list) != SUCCESS) {
-      MS_LOG(EXCEPTION) << name_ << "Create group failed";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << "Create group failed";
     }
   }
   bool x_flag = !x_group_list.empty();
   std::vector<Group> z_group_list;  // 3D TP z dimension communication group
   if (all_gather_dim1 != -1) {
     if (CreateGroupByDimWithDevMatrix(&device_matrix, all_gather_dim1, &z_group_list) != SUCCESS) {
-      MS_LOG(EXCEPTION) << name_ << "Create group failed";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << "Create group failed";
     }
   }
   bool z_flag = !z_group_list.empty();
@@ -1321,7 +1322,7 @@ AnfNodePtr MatMul::ComputePostMatMulGraph(const CNodePtr &cnode, GenerateGraph *
                                     input_layout.device_arrangement_origin().array());
   if (reduce_scatter_dim != -1) {
     if (CreateGroupByDimWithDevMatrix(&device_matrix, reduce_scatter_dim, &reduce_scatter_group_list) != SUCCESS) {
-      MS_LOG(EXCEPTION) << name_ << "Create group failed";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << "Create group failed";
     }
   }
   bool reduce_scatter_flag = !reduce_scatter_group_list.empty();
@@ -1410,7 +1411,7 @@ Status MatMul::ComputeReplaceGraphForInterleaved(const CNodePtr &cnode) {
 ReplaceGraphPtr MatMul::replace_graph(const CNodePtr &cnode) {
   if (inputs_tensor_info_[kIndex0].tensor_layout().IsInterleavedParallel()) {
     if (ComputeReplaceGraphForInterleaved(cnode) != SUCCESS) {
-      MS_LOG(EXCEPTION) << name_ << " splitting micro interleaved failed.";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << " splitting micro interleaved failed.";
     }
     return replace_graph_;
   }
@@ -1427,16 +1428,16 @@ ReplaceGraphPtr MatMul::replace_graph(const CNodePtr &cnode) {
 
   GenerateGraph gen_g = GenerateGraph(attrs_);
   if (gen_g.Init(cnode) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << "GenerateGraph Init failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << "GenerateGraph Init failed";
   }
 
   std::vector<Group> x_group_list;
   std::vector<Group> w_group_list;
   if (CreateGroupByDim(1, &x_group_list) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << "Create group failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << "Create group failed";
   }
   if (CreateGroupByDim(0, &w_group_list) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << "Create group failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << "Create group failed";
   }
   bool x_flag = !x_group_list.empty();
   bool w_flag = !w_group_list.empty();

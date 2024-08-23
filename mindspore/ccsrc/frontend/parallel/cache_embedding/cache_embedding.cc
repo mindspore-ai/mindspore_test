@@ -75,11 +75,11 @@ bool CheckHostCacheParamSize(const ParamSet &parameter_cache_enable_set) {
     auto host_param_info = host_param->param_info();
     auto cache_shape = host_param_info->cache_shape();
     if (cache_shape.empty()) {
-      MS_LOG(EXCEPTION) << "The value of cache_shape is empty.";
+      MS_LOG_WITH_NODE(EXCEPTION, host_param) << "The value of cache_shape is empty.";
     }
     auto tmp_cache_size = cache_shape[0];
     if ((host_size != 0 && tmp_host_size != host_size) || (cache_size != 0 && tmp_cache_size != cache_size)) {
-      MS_LOG(EXCEPTION)
+      MS_LOG_WITH_NODE(EXCEPTION, host_param)
         << "If EmbeddingLookup are cache enable, vocab_size and vocab_cache_size of different cells must be the same.";
     }
     cache_size = tmp_cache_size;
@@ -97,7 +97,7 @@ void ReplaceCacheParams(const FuncGraphPtr &graph, const ParamMap &map) {
   MS_EXCEPTION_IF_NULL(manager);
   for (auto &ele : map) {
     if (!manager->Replace(ele.second, ele.first)) {
-      MS_LOG(EXCEPTION) << "host param: " << ele.second->name() << ", replace node failed.";
+      MS_LOG_WITH_NODE(EXCEPTION, ele.second) << "host param: " << ele.second->name() << ", replace node failed.";
     }
   }
 }
@@ -191,8 +191,8 @@ void BindAndInitCacheTensor(const ParamMap &param_pair_list, const ParameterPtr 
     auto host_shape = host_tensor->shape_c();
     auto cache_shape = cache_tensor->shape_c();
     if (host_shape.size() != 2 && cache_shape.size() != 2 && host_shape[1] != cache_shape[1]) {
-      MS_LOG(EXCEPTION) << "Got host shape and cache shape invalid."
-                        << "host shape:" << host_shape << ", cache shape:" << cache_shape;
+      MS_LOG_WITH_NODE(EXCEPTION, hashmap) << "Got host shape and cache shape invalid."
+                                           << "host shape:" << host_shape << ", cache shape:" << cache_shape;
     }
     auto host_data_max_size = static_cast<size_t>(host_tensor->Size());
     auto cache_data_max_size = static_cast<size_t>(cache_tensor->Size());
@@ -421,7 +421,7 @@ void CreateControlDepend(const FuncGraphPtr &main_graph, const AnfNodePtr &prior
   AnfNodePtrList cd_inputs = {NewValueNode(prim::kPrimDepend), behind_node, prior_node};
   auto depend_cnode = main_graph->NewCNode(cd_inputs);
   if (!manager->Replace(behind_node, depend_cnode)) {
-    MS_LOG(EXCEPTION) << behind_node->DebugString() << ", replace node failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, behind_node) << behind_node->DebugString() << ", replace node failed.";
   }
 }
 
@@ -452,7 +452,8 @@ CNodePtrList FindSparseGatherV2WithCache(const CNodePtrList &cnodes, const Param
         if (param_set.find(param_node) != param_set.end()) {
           sparse_gather_v2_with_cache.push_back(cnodes[i]);
         } else {
-          MS_LOG(EXCEPTION) << "EmbeddingLookup can't not support cache and no cache in the same graph.";
+          MS_LOG_WITH_NODE(EXCEPTION, cnodes[i])
+            << "EmbeddingLookup can't not support cache and no cache in the same graph.";
         }
       }
     }
@@ -464,7 +465,7 @@ CNodePtrList FindSparseGatherV2WithCache(const CNodePtrList &cnodes, const Param
   auto indices = sparse_gather_v2_with_cache[0]->input(2);
   for (auto &ele : sparse_gather_v2_with_cache) {
     if (ele->input(2) != indices) {
-      MS_LOG(EXCEPTION) << "SparseGatherV2 which with cache param  have different indices!.";
+      MS_LOG_WITH_NODE(EXCEPTION, ele) << "SparseGatherV2 which with cache param  have different indices!.";
     }
   }
   return sparse_gather_v2_with_cache;
@@ -480,8 +481,8 @@ AnfNodePtr FindGatherV2FromSparseGatherV2(const FuncGraphPtr &graph, const AnfNo
     }
   }
   if (gatherv2_nodes.size() != 1) {
-    MS_LOG(EXCEPTION) << "SparseGatherV2 with cache can only used by one of gatherv2, but got "
-                      << gatherv2_nodes.size();
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "SparseGatherV2 with cache can only used by one of gatherv2, but got "
+                                      << gatherv2_nodes.size();
   }
   return gatherv2_nodes[0];
 }
@@ -518,7 +519,7 @@ void RemoveOriginParamFromSet(const CNodePtr &unique_node, AnfSet *no_ref_params
       }
     }
   }
-  MS_LOG(EXCEPTION) << "Can not find any parameter that use by Unique.";
+  MS_LOG_WITH_NODE(EXCEPTION, unique_node) << "Can not find any parameter that use by Unique.";
 }
 
 AnfNodePtr CreateOutputNodeParam(const FuncGraphPtr &graph, const AnfNodePtr &ori_input, const std::string &name) {
@@ -576,7 +577,7 @@ AnfNodePtr FindCNodeOutput(const FuncGraphPtr &graph, const AnfNodePtr &node, in
       }
     }
   }
-  MS_LOG(EXCEPTION) << "Can't not find " << node->DebugString() << ", outputs:" << index;
+  MS_LOG_WITH_NODE(EXCEPTION, node) << "Can't not find " << node->DebugString() << ", outputs:" << index;
 }
 
 void ReplaceNoRefToParams(const FuncGraphPtr &graph, const AnfMap &no_ref_pipe_param_map,
@@ -593,7 +594,7 @@ void ReplaceNoRefToParams(const FuncGraphPtr &graph, const AnfMap &no_ref_pipe_p
       CreateControlDepend(graph, user_node.first, assign_status);
     }
     if (!manager->Replace(ele.first, ele.second)) {
-      MS_LOG(EXCEPTION) << "pipe param: " << ele.first->DebugString() << ", replace node failed.";
+      MS_LOG_WITH_NODE(EXCEPTION, ele.first) << "pipe param: " << ele.first->DebugString() << ", replace node failed.";
     }
   }
 
@@ -604,7 +605,8 @@ void ReplaceNoRefToParams(const FuncGraphPtr &graph, const AnfMap &no_ref_pipe_p
     CreateControlDepend(graph, user_node.first, dynamic_assgin_status);
   }
   if (!manager->Replace(sparse_gatherv2_indices, cache_idx_param)) {
-    MS_LOG(EXCEPTION) << "cache idx param: " << cache_idx_param->DebugString() << ", replace node failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, cache_idx_param)
+      << "cache idx param: " << cache_idx_param->DebugString() << ", replace node failed.";
   }
 }
 
@@ -616,7 +618,7 @@ void CacheEmbeddingForTrain(const FuncGraphPtr &graph, bool is_pipe, const CNode
   size_t cnodes_size = cnodes.size();
   auto cache_host_params_map = AddCacheParameters(graph, param_cache_enable_set);
   if (cache_host_params_map.empty()) {
-    MS_LOG(EXCEPTION) << "host's cache parameter map is empty!";
+    MS_LOG_WITH_NODE(EXCEPTION, unique_node) << "host's cache parameter map is empty!";
   }
   auto param_set = MapKeysToSet(cache_host_params_map);
   ReplaceCacheParams(graph, cache_host_params_map);
@@ -635,7 +637,7 @@ void CacheEmbeddingForTrain(const FuncGraphPtr &graph, bool is_pipe, const CNode
   auto cache_idx = map_cache_idx_node_outputs[0];
   if (!is_pipe) {
     if (!manager->Replace(sparse_gatherv2_with_cache[0]->input(2), cache_idx)) {
-      MS_LOG(EXCEPTION) << "MapCacheIdx output[0] replace node failed";
+      MS_LOG_WITH_NODE(EXCEPTION, cache_idx) << "MapCacheIdx output[0] replace node failed";
     }
     for (auto &ele : node_pair_list) {
       for (auto &gather_op : sparse_gatherv2_with_cache) {
@@ -662,15 +664,15 @@ void CacheEmbeddingForTrain(const FuncGraphPtr &graph, bool is_pipe, const CNode
   }
   MS_EXCEPTION_IF_NULL(return_node);
   if (!IsPrimitiveCNode(return_node, prim::kPrimReturn)) {
-    MS_LOG(EXCEPTION) << "The last cnode after sorting, not return cnode.";
+    MS_LOG_WITH_NODE(EXCEPTION, return_node) << "The last cnode after sorting, not return cnode.";
   }
   if (return_node->size() < 2) {
-    MS_LOG(EXCEPTION) << "Number of return node inputs should be greater than or equal to 2.";
+    MS_LOG_WITH_NODE(EXCEPTION, return_node) << "Number of return node inputs should be greater than or equal to 2.";
   }
 
   auto depend_node = CreateDepend(graph, invalid_nodes, return_node->input(1));
   if (!manager->Replace(return_node->input(1), depend_node)) {
-    MS_LOG(EXCEPTION) << "Depend replace node failed";
+    MS_LOG_WITH_NODE(EXCEPTION, depend_node) << "Depend replace node failed";
   }
 }
 
@@ -689,7 +691,7 @@ void CacheEmbeddingForEval(const FuncGraphPtr &graph, const CNodePtrList &cnodes
     auto gatherv2 = FindGatherV2FromSparseGatherV2(graph, anf_ele);
     auto embedding_lookup = CreateEmbeddingLookup(graph, ele->input(1), indices);
     if (!manager->Replace(gatherv2, embedding_lookup)) {
-      MS_LOG(EXCEPTION) << "Depend replace node failed";
+      MS_LOG_WITH_NODE(EXCEPTION, embedding_lookup) << "Depend replace node failed";
     }
   }
 }
@@ -711,7 +713,7 @@ void AddCacheEmbedding(const FuncGraphPtr &graph, bool is_pipe) {
   }
   for (auto &node : cnodes) {
     if (IsPrimitiveCNode(node, prim::kPrimNPUAllocFloatStatus)) {
-      MS_LOG(EXCEPTION) << "Cache embedding haven't support loss scale yet.";
+      MS_LOG_WITH_NODE(EXCEPTION, node) << "Cache embedding haven't support loss scale yet.";
     }
   }
   auto unique_cache_enable = FindUniqueCacheEnable(cnodes);
