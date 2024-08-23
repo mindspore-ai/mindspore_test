@@ -15,14 +15,12 @@
 import argparse
 import sys
 import os
-# import glob
 import pandas as pd
 import numpy as np
 
 workspace = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(workspace, "mindformers"))
 from mindspore import set_seed
-from mindspore import Profiler
 from mindformers.tools.register import MindFormerConfig
 from mindformers import LlamaConfig, TransformerOpParallelConfig, LlamaForCausalLM, build_context
 
@@ -172,28 +170,14 @@ def run_baichuan_4p_bs4(args):
     for output in outputs:
         assert (EXPECT_RES == output).all()
 
-    profiler_path = os.path.join(os.path.dirname(
-        os.path.abspath(__file__)), "predict_profiler")
-    os.system(f"rm -rf {profiler_path}")
-    profiler = Profiler(start_profile=False, output_path=profiler_path, data_simplification=False)
-    profiler.start()
     inputs_ids = generate_input_ids(8, 12)
     outputs = model.generate(inputs_ids,
                              max_length=20,
                              do_sample=False)
     EXPECT_RES = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 33069,
                            7065, 94742, 69391, 27691, 50605, 71209, 44256], dtype=np.int32)
-    profiler.stop()
-    profiler.analyse()
     for output in outputs:
         assert (EXPECT_RES == output).all()
-
-    # profiler_file = glob.glob(os.path.join(os.path.join(
-    #     profiler_path, "**"), "op_statistic_*.csv"), recursive=True)[0]
-    # expect_total_time = 23340
-    # total_time = get_total_time_from_profiler_file(profiler_file)
-    # print(f"total_time: {total_time}")
-    # assert total_time <= expect_total_time * (1 + TOELERANCE)
 
 
 if __name__ == "__main__":
