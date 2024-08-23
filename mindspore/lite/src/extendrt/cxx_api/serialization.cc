@@ -126,6 +126,8 @@ Key::Key(const char *dec_key, size_t key_len) {
 
 Status Serialization::Load(const void *model_data, size_t data_size, ModelType model_type, Graph *graph,
                            const Key &dec_key, const std::vector<char> &dec_mode) {
+  MS_CHECK_TRUE_RET(model_data != nullptr, kLiteNullptr);
+  MS_CHECK_TRUE_RET(graph != nullptr, kLiteNullptr);
   std::stringstream err_msg;
   if (graph == nullptr) {
     err_msg << "Output args graph is nullptr.";
@@ -177,6 +179,7 @@ Status Serialization::Load(const void *model_data, size_t data_size, ModelType m
 }
 
 Status Serialization::Load(const std::vector<char> &file, ModelType model_type, Graph *graph) {
+  MS_CHECK_TRUE_RET(graph != nullptr, kLiteNullptr);
   return Load(file, model_type, graph, Key{}, StringToChar(kDecModeAesGcm));
 }
 
