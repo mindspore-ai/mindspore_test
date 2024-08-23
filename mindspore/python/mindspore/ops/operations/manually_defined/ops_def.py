@@ -2073,7 +2073,7 @@ class Scan(Primitive):
     Inputs:
         - **loop_func** (Function) - The loop function.
         - **init** (Union[Tensor, Number, Str, Bool, List, Tuple, Dict]) - An initial loop carry value
-        - **xs** (Union(Tuple, List, Dict, None)) - The value over which to scan
+        - **xs** (Union(Tuple, List, None)) - The value over which to scan
         - **length** (Optional) Int - The size of xs
         - **unroll** (Optional) Bool - The flag for whether unroll in compile process
 
@@ -2084,7 +2084,7 @@ class Scan(Primitive):
 
     Raises:
         TypeError: If `loop_func` is not a function.
-        TypeError: If `xs` is not in Union(Tuple, List, Dict, None)
+        TypeError: If `xs` is not in Union(Tuple, List, None)
         TypeError: If `length` is not an int
         TypeError: If `unroll` is not a bool
         ValueError: If `loop_func` cannot take `init` and element of `xs` as inputs.
@@ -2107,7 +2107,7 @@ class Scan(Primitive):
 
     def __call__(self, loop_func, init, xs, length=None, unroll=True):
         validator.check_value_type("loop_func", loop_func, [types.FunctionType], "Scan")
-        validator.check_value_type("xs", xs, [list, tuple, dict, None], "Scan")
+        validator.check_value_type("xs", xs, [list, tuple, None], "Scan")
         if xs is None:
             validator.check_value_type("length", length, [int], "Scan")
             xs = [None] * length
