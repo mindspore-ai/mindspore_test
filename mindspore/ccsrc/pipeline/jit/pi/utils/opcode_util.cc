@@ -49,6 +49,13 @@ bool Opcode::HasFree() const { return flag_ & kHasFree; }
 bool Opcode::HasConst() const { return flag_ & kHasConst; }
 bool Opcode::CanDelete(int oparg) const { return (flag_ & kCanDel) || CheckIsOp(oparg); }
 bool Opcode::MayDelete(int oparg) const { return (flag_ & kMayDel) || CanDelete(oparg); }
+bool Opcode::IsExcMatch(int oparg) const {
+#if (PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION < 9)
+  return oparg == PyCmp_EXC_MATCH;
+#else
+  return false;
+#endif
+}
 bool Opcode::CheckIsOp(int oparg, bool *invert) const {
 #if (PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION < 9)
   if (invert != nullptr) {

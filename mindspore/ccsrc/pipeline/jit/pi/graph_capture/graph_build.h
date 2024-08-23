@@ -34,14 +34,16 @@ using GraphBuilderPtr = std::shared_ptr<GraphBuilder>;
 using MindGraphBuilderPtr = std::shared_ptr<MindGraphBuilder>;
 
 struct TryBlock {
-  int type;       /*what kind of block this is (SETUP_SETUP, SETUP_FINALLY, SETUP_EXCEPT)*/
-  int bci;        /*where to jump to find handler*/
-  int checkpoint; /*the handler to be rolled back*/
+  int type;         /*what kind of block this is (SETUP_SETUP, SETUP_FINALLY, SETUP_EXCEPT)*/
+  int bci;          /*where to jump to find handler*/
+  std::string name; /*entry of block name,which equal with instr name*/
+  int checkpoint;   /*the handler to be rolled back*/
   // int level;   /* value stack level to pop toe*/
   bool IsFinallyBlock; /*record current block is in exception block or finally block*/
 };
 
 bool CheckSupportCreateInstance(CallNode *call_node);
+ValueNode *GetSelfFromMethod(ValueNode *method);
 class GraphBuilder {
  public:
   static const char *ID___self__;
@@ -51,8 +53,9 @@ class GraphBuilder {
 
   explicit GraphBuilder(const PyFrameWrapper &f);
   GraphBuilder(GraphBuilder *r, GraphBuilder *p, PyCodeObject *co, PyObject *globals)
-      : root_(r), parent_(p), graph_(NewGraph(co, globals)), frame_(), current_block_(nullptr) {}
-  explicit GraphBuilder(GraphBuilder *r) : root_(r), parent_(nullptr), graph_(nullptr), current_block_(nullptr) {}
+      : root_(r), parent_(p), graph_(NewGraph(co, globals)), frame_(), current_block_(nullptr), no_grad_(r->no_grad_) {}
+  explicit GraphBuilder(GraphBuilder *r)
+      : root_(r), parent_(nullptr), graph_(nullptr), current_block_(nullptr), no_grad_(r->no_grad_) {}
   ~GraphBuilder() {
     for (auto i : graph_pool_) {
       delete i;
@@ -80,12 +83,18 @@ class GraphBuilder {
   static py::object FindPyFunc(AObject *vobj);
   static py::object GetFuncInfo(ValueNode *func_node);
 
+  // Exception
+  ValueNode *&peekExc(int p) { return excFrame_.Peek(p); }
+  void pushExc(ValueNode *v) { excFrame_.Push(v); }
+  ValueNode *popExc() { return excFrame_.Pop(); }
+  int excStackSize() { return excFrame_.Size(); }
+
   // TryBlockStack operation
   TryBlock &PeekStack(int p);
   void PushStack(TryBlock tb) { tryBlockStacks_.push_back(tb); }
   int StackSize() { return tryBlockStacks_.size(); }
   std::vector<TryBlock> &GetTryBlockStacks() { return tryBlockStacks_; }
-  TryBlock &PopStack();
+  TryBlock PopStack();
 
   // loop analyze
   void HandleLoop();
@@ -194,6 +203,9 @@ class GraphBuilder {
   // unpack elements
   bool UnpackSequenceElements(ValueNode *);
 
+  // unpack dict items to build map inputs
+  bool UnpackDict(ValueNode *map);
+
   // unpack object elements as LOAD_CONST
   std::vector<ValueNode *> UnpackConstObject(const py::object &);
 
@@ -207,6 +219,9 @@ class GraphBuilder {
 
   // transform list set item to make a new list
   ValueNode *TransformListSetItem(ValueNode *list, ValueNode *key, ValueNode *val);
+
+  // make a tensor copy operation
+  ValueNode *MakeTensorCopy(ValueNode *tensor);
 
   ValueNode *ReplaceMergeOp(int opcode, const std::vector<ValueNode *> &inputs);
 
@@ -269,28 +284,46 @@ class GraphBuilder {
   bool DoFormatValue(const Instr &instr);
   bool DoImport(const Instr &instr);
   bool DoYieldValue(const Instr &instr);
-  bool DoException(const Instr &instr);
   bool DoWith(const Instr &instr);
   bool DoOtherBytecode(const Instr &instr);
   bool NotImplementBytecode(const Instr &instr);
+  bool DoRaise(const Instr &instr);
+  bool DoSetupFinally(const Instr &instr);
+  bool DoWithCleanUpStart(const Instr &instr);
+  bool DoWithCleanUpFinish(const Instr &instr);
+  bool DoBeginFinally(const Instr &instr);
+  bool DoPopFinally(const Instr &instr);
+  bool DoEndFinally(const Instr &instr);
+  bool DoCallFinally(const Instr &instr);
+  bool DoSetupExc(const Instr &instr);
+  bool DoRaiseVarage(const Instr &instr);
+  bool DoPopExc(const Instr &instr);
+  bool DoExcMatch(const Instr &instr);
+  bool DoLoadAssertError(const Instr &instr);
+  bool DoPopStack(const Instr &instr);
+  bool DoRaiseVarags(const Instr &instr);
 
   const auto &root() const { return root_; }
   const auto &frame() const { return frame_; }
 
  protected:
+  GraphBuilderPtr sub_graph = nullptr;
   GraphBuilder *root_;
   GraphBuilder *parent_;
   Graph *graph_;
   FrameStates frame_;
   Block *current_block_;
-  int cur_bci_;
+  int cur_bci_ = 0;
+  bool no_grad_;
   std::vector<TryBlock> tryBlockStacks_{};
+  FrameStates excFrame_;
 
   static const std::unordered_map<int, bool (GraphBuilder::*)(const Instr &)> bytecode_meth_map_;
 
   ValueNode *GetCallFunctionNode(ValueNode *node, PyObject *dst_dtype);
   bool DoMixedPrecisionLocalAccess(const Instr &instr, ValueNode *node);
   ValueNode *DoMixedPrecisionAttrAccess(const Instr &instr, ValueNode *node, ValueNode *attr);
+  bool ResolveNoGrad(CallNode *call_node, StopTraceReason *stop_reason);
 };
 
 class MindGraphBuilder : public GraphBuilder {
@@ -350,6 +383,15 @@ class MindGraphBuilder : public GraphBuilder {
   std::string co_name_;
   AbstractWrapperPtr HandleMultiOp(const Instr &instr, const std::vector<ValueNode *> &p, bool is_compare);
   AbstractWrapperPtr HandleBuildOp(const Instr &instr, const std::vector<ValueNode *> &p);
+
+  BindArgumentsHelper<ValueNode *> PackInputsForFunc(const py::object &obj, int op_code,
+                                                     const std::vector<ValueNode *> &inputs,
+                                                     bool eliminate_sens = false);
+
+  std::pair<FuncGraphPtr, BindArgumentsHelper<ValueNode *>> BuildForwardGraph(CallNode *call_node);
+  std::vector<AbstractWrapperPtr> HandleInputsForGrad(CallNode *call_node,
+                                                      BindArgumentsHelper<ValueNode *> forward_inputs);
+  void HandleCustomBProp(const FuncGraphPtr &graph, const py::object &obj) const;
 };
 }  // namespace pijit
 }  // namespace mindspore

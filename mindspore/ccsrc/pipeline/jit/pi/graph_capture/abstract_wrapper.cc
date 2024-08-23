@@ -18,11 +18,13 @@
 #include <utility>
 #include <memory>
 
+#include "ir/cell.h"
 #include "include/common/utils/python_adapter.h"
 #include "include/common/utils/convert_utils_py.h"
 #include "abstract/abstract_function.h"
 #include "pipeline/jit/ps/parse/resolve.h"
 #include "pipeline/jit/pi/pi_jit_config.h"
+#include "pipeline/jit/pi/external.h"
 
 namespace mindspore {
 constexpr auto kAdapterFlag = "adapter_flag";
@@ -228,5 +230,46 @@ std::string AbstractWrapper::ToString() const {
     return "AbstractWrapper: NULL";
   }
   return "AbstractWrapper: " + abstract_->ToString();
+}
+
+py::object AbstractWrapper::FetchPythonObject(const AbstractWrapperPtr &wrapper) {
+  if (wrapper == nullptr || wrapper->abstract() == nullptr) {
+    MS_LOG(INFO) << "Wrapper is NUll, can not get python object.";
+    return py::object();
+  }
+  auto abs = wrapper->abstract();
+  auto val = abs->BuildValue();
+  if (!val->isa<parse::InterpretedObject>()) {
+    MS_LOG(INFO) << "Failed to get python object from abstract " << abs->ToString();
+    return py::object();
+  }
+  return py::cast<py::object>(val->cast<parse::InterpretedObjectPtr>()->obj());
+}
+
+// TODO(LiangZhibo): Add config.
+bool AbstractWrapper::MarkObjectPiJItShouldCompile(const py::object &object) {
+  if (object.ptr() == nullptr) {
+    MS_LOG(INFO) << "Can not mark NULL python object to pi_jit_should_compile";
+    return false;
+  }
+  py::object mark_object;
+  if (py::isinstance<mindspore::Cell>(object.ptr())) {
+    mark_object = py::reinterpret_steal<py::object>(PyObject_GetAttrString(object.ptr(), "construct"));
+  } else if (PyMethod_Check(object.ptr())) {
+    mark_object = py::reinterpret_borrow<py::object>(PyMethod_GET_FUNCTION(object.ptr()));
+  } else if (PyInstanceMethod_Check(object.ptr())) {
+    mark_object = py::reinterpret_borrow<py::object>(PyInstanceMethod_GET_FUNCTION(object.ptr()));
+  } else {
+    mark_object = object;
+  }
+  return pi_jit_should_compile(mark_object, py::dict(), py::none());
+}
+
+bool AbstractWrapper::IsConstant() const {
+  if (abstract_ == nullptr) {
+    MS_LOG(DEBUG) << "Failed to find abstract in wrapper.";
+    return false;
+  }
+  return abstract_->BuildValue() != kValueAny;
 }
 }  // namespace mindspore

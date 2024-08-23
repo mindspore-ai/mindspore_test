@@ -437,7 +437,8 @@ static auto HandleUnsupportedSyntax(JitCompileResults *jcr, const GraphBuilderPt
     return false;
   }
   int break_op = g->GetGraph()->GetCFG()->instr_pool()[break_bci]->op();
-  bool unsupported = break_op == WITH_CLEANUP_START || break_op == WITH_CLEANUP_FINISH || break_op == END_FINALLY;
+  bool unsupported =
+    break_op == WITH_CLEANUP_START || break_op == WITH_CLEANUP_FINISH || break_op == END_FINALLY || break_op == RERAISE;
   if (g->StackSize() > 0 || unsupported) {
     // something happened in with syntax
     jcr->code()->SetGuard(std::make_shared<OptGuard>());
@@ -514,6 +515,10 @@ static void GraphCapture(JitCompileResults *jcr) {
   // dump DFG
   if (conf.GetBoolConfig(GraphJitConfig::kPrintAfterAll)) {
     g->DumpDFG();
+    if (conf.GetBoolConfig(GraphJitConfig::kTraceFlag)) {
+      const auto &debug_str = analyzer->GetCaptureInfo().ToString();
+      PY_PRINT_F("*** Dump One Stage ByteCode Collection After CodeGen *** \n%s", debug_str.c_str());
+    }
   }
 
   py::object new_code = MakeCodeFromCodeGen(g, analyzer, jcr->origin_frame().Globals().ptr());
@@ -523,10 +528,6 @@ static void GraphCapture(JitCompileResults *jcr) {
   }
 
   if (conf.GetBoolConfig(GraphJitConfig::kPrintAfterAll)) {
-    if (conf.GetBoolConfig(GraphJitConfig::kTraceFlag)) {
-      const auto &debug_str = analyzer->GetCaptureInfo().ToString();
-      PY_PRINT_F("*** Dump One Stage ByteCode Collection After CodeGen *** \n%s", debug_str.c_str());
-    }
     Utils::DisFuncObject(new_code.ptr());
     GRAPH_JIT_LOG_F("\n\n");
   }

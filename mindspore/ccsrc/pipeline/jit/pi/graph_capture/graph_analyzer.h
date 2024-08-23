@@ -115,7 +115,7 @@ class GraphAnalyzer {
   void OptimizeSideEffectRecord() const;
 
   // rollback
-  void ResetSideEffectRecord() const;
+  virtual void ResetSideEffectRecord() const;
 
   void AddToEscaped(ValueNode *value);
   // UD analyze
@@ -155,6 +155,7 @@ class MindGraphAnalyzer : public GraphAnalyzer {
   void UpdateCapturedOrder();
   void CollectCapturedAndInterpret() override;
   bool AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes) override;
+  void ResetSideEffectRecord() const override;
   GraphBuilderPtr graph_builder_ = nullptr;
 };
 }  // namespace pijit

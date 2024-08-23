@@ -306,6 +306,127 @@ def test_base_grad_operation_6():
 @pytest.mark.level0
 @pytest.mark.platform_x86_gpu_training
 @pytest.mark.env_onecard
+def test_base_grad_operation_with_keywords_args():
+    """
+    Feature: One stage GradOperation
+    Description: Test One stage GradOperation with no graph break
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        def construct(self, x, y):
+            ret = x + y
+            return ret
+
+    class GradNet(nn.Cell):
+        def __init__(self, net, ):
+            super(GradNet, self).__init__()
+            self.net = net
+            self.grad_op = GradOperation(False, False, False)
+
+        def construct(self, x, y):
+            grad_ret = self.grad_op(self.net)(x=x, y=y)
+            return grad_ret
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    net = Net()
+    grad_net = GradNet(net)
+    a = Tensor([1, 1, 1])
+    b = Tensor([2, 2, 2])
+    jit_mode_pi_disable()
+    pynative_res = grad_net(a, b)
+    jit_mode_pi_enable()
+    pijit_res = jit(GradNet.construct, mode="PIJit")(grad_net, a, b)
+    jcr = get_code_extra(GradNet.construct)
+    assert jcr["break_count_"] == 0
+    assert np.allclose(pynative_res.asnumpy(), pijit_res.asnumpy())
+    jit_mode_pi_disable()
+
+
+@pytest.mark.skip(reason="pynative handle kwargs failed")
+@pytest.mark.level0
+@pytest.mark.platform_x86_gpu_training
+@pytest.mark.env_onecard
+def test_base_grad_operation_with_keywords_args_2():
+    """
+    Feature: One stage GradOperation
+    Description: Test One stage GradOperation with no graph break
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        def construct(self, x, y):
+            ret = x * y
+            return ret
+
+    class GradNet(nn.Cell):
+        def __init__(self, net, ):
+            super(GradNet, self).__init__()
+            self.net = net
+            self.sense = Tensor([5, 5, 5])
+            self.grad_op = GradOperation(False, False, False)
+
+        def construct(self, x, y):
+            grad_ret = self.grad_op(self.net)(y=y, x=x)
+            return grad_ret
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    net = Net()
+    grad_net = GradNet(net)
+    a = Tensor([1, 1, 1])
+    b = Tensor([2, 2, 2])
+    jit_mode_pi_disable()
+    pynative_res = grad_net(a, b)
+    jit_mode_pi_enable()
+    pijit_res = jit(GradNet.construct, mode="PIJit")(grad_net, a, b)
+    jcr = get_code_extra(GradNet.construct)
+    assert jcr["break_count_"] == 0
+    assert np.allclose(pynative_res.asnumpy(), pijit_res.asnumpy())
+    jit_mode_pi_disable()
+
+
+@pytest.mark.skip(reason="tmp skip")
+@pytest.mark.level0
+@pytest.mark.platform_x86_gpu_training
+@pytest.mark.env_onecard
+def test_base_grad_operation_with_vargs():
+    """
+    Feature: One stage GradOperation
+    Description: Test One stage GradOperation with no graph break
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        def construct(self, *args):
+            ret = args[0] * args[1]
+            return ret
+
+    class GradNet(nn.Cell):
+        def __init__(self, net, ):
+            super(GradNet, self).__init__()
+            self.net = net
+            self.sense = Tensor([5, 5, 5])
+            self.grad_op = GradOperation(False, False, False)
+
+        def construct(self, x, y):
+            grad_ret = self.grad_op(self.net)(x, y)
+            return grad_ret
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    net = Net()
+    grad_net = GradNet(net)
+    a = Tensor([[1, 1], [2, 2]])
+    b = Tensor([4, 5])
+    jit_mode_pi_disable()
+    pynative_res = grad_net(a, b)
+    jit_mode_pi_enable()
+    pijit_res = jit(GradNet.construct, mode="PIJit")(grad_net, a, b)
+    jcr = get_code_extra(GradNet.construct)
+    assert jcr["break_count_"] == 0
+    assert np.allclose(pynative_res.asnumpy(), pijit_res.asnumpy())
+    jit_mode_pi_disable()
+
+
+@pytest.mark.level0
+@pytest.mark.platform_x86_gpu_training
+@pytest.mark.env_onecard
 def test_functional_grad():
     """
     Feature: One stage GradOperation

@@ -27,17 +27,18 @@ constexpr auto kDelAttr = "delattr";
 constexpr auto kSetItem = "__setitem__";
 constexpr auto kDelItem = "__delitem__";
 
-ValueNode *GetSelfFromListAppendCall(ValueNode *call_node, bool *is_method_descriptor) {
+ValueNode *GetSelfFromKnownMethod(ValueNode *call_node, bool *is_method_descriptor) {
   ValueNode *method_node = call_node->input(0);
   PyObject *method_object = method_node->GetVobj()->GetPyObject().ptr();
   ValueNode *self = nullptr;
-  if (Py_IS_TYPE(method_object, &PyMethodDescr_Type)) {
+  bool is_not_method = PyFunction_Check(method_object) || Py_IS_TYPE(method_object, &PyMethodDescr_Type);
+  if (is_not_method) {
     self = call_node->input(1);
   } else if (method_node->GetOpcode() == LOAD_ATTR) {
     self = method_node->input(0);
   }
   if (is_method_descriptor != nullptr) {
-    *is_method_descriptor = Py_IS_TYPE(method_object, &PyMethodDescr_Type);
+    *is_method_descriptor = is_not_method;
   }
   return self;
 }
@@ -116,6 +117,22 @@ SideEffect::CacheResult SideEffect::LoadGlobal(const std::string &module_name, c
 
 const std::set<ValueNode *> &SideEffect::GetRequiredNodes() const { return keep_alive_; }
 
+bool SideEffect::NeedTrack(ValueNode *node) {
+  auto iter = nodes_.find(node);
+  if (iter == nodes_.end()) {
+    return false;
+  }
+  int op = node->GetOpcode();
+  if (op == STORE_SUBSCR) {
+    return node->input(1)->GetVobj()->GetType() == AObject::kTypeTensor;
+  } else if (Opcode(op).IsCall() && iter->second.method_name_ == kSetItem) {
+    auto self = GetSelfFromKnownMethod(node);
+    MS_EXCEPTION_IF_NULL(self);
+    return self->GetVobj()->GetType() == AObject::kTypeTensor;
+  }
+  return false;
+}
+
 bool SideEffect::Record(ValueNode *node, Type type, std::string name) {
   int opcode = node->GetOpcode();
   if (opcode == STORE_ATTR || opcode == DELETE_ATTR) {
@@ -161,7 +178,7 @@ bool SideEffect::CheckCallRecord(ValueNode *node, SideEffect::Type type, const s
     return true;
   }
   // check list.append, dict.pop, list.__setitem__, dict.__setitem__
-  if (type == kBuiltinMethod && GetSelfFromListAppendCall(node) != nullptr) {
+  if (type == kBuiltinMethod && GetSelfFromKnownMethod(node) != nullptr) {
     return true;
   }
   return false;
@@ -173,7 +190,7 @@ std::vector<ValueNode *> SideEffect::GetKeepAlive(const Entry &e) const {
   int opcode = node->GetOpcode();
   std::vector<ValueNode *> alive = node->getInputs();
   if (Opcode(opcode).IsCall() && type >= kBuiltinMethod) {
-    alive[0] = GetSelfFromListAppendCall(node);  // replace function
+    alive[0] = GetSelfFromKnownMethod(node);  // replace function
   }
   auto erase_iter = alive.begin();
   for (auto iter = erase_iter; iter != alive.end(); ++iter) {
@@ -324,13 +341,13 @@ void SideEffect::RestoreBuiltinMethod(CodeGenerator *cg, const Entry &e) const {
   const std::string &method_name = e.method_name_;
   auto node = e.node_;
   bool is_method_descriptor = false;
-  auto self = GetSelfFromListAppendCall(node, &is_method_descriptor);
+  auto self = GetSelfFromKnownMethod(node, &is_method_descriptor);
   cg->LoadValue(GetSource(self));
   cg->AddInstr(std::make_unique<Instr>(LOAD_METHOD, 0, method_name));
   for (size_t i = 1 + is_method_descriptor; i < node->getInputs().size(); ++i) {
     cg->LoadValue(GetSource(node->input(i)));
   }
-  cg->NewInstr(CALL_METHOD, node->getInputs().size() - 1);
+  cg->NewInstr(CALL_METHOD, node->getInputs().size() - 1 - is_method_descriptor);
   cg->NewInstr(POP_TOP);
 }
 

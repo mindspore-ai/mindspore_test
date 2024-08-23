@@ -142,8 +142,7 @@ static void PrintPyObject(std::ostream *out_s, const py::handle &obj, bool print
         << "'";
       break;
     case AObject::kTypeBoundMethod:
-      s << "<bound method "
-        << PyUnicode_AsUTF8(reinterpret_cast<PyFunctionObject *>(PyMethod_GET_FUNCTION(op))->func_qualname) << " of "
+      s << "<bound method " << AbstractObjectBase::ToString(PyMethod_GET_FUNCTION(op)) << " of "
         << AbstractObjectBase::ToString(PyMethod_GET_SELF(op), print_type) << ">";
       break;
     case AObject::kTypeNNCellList:
@@ -1035,30 +1034,7 @@ bool AbstractTuple::IsMindSporeSupportedType() {
   return true;
 }
 
-bool AbstractDict::IsMindSporeSupportedType() {
-  if (ms_support_ != kBoolUnknown) {
-    return ms_support_ == kBoolTrue;
-  }
-  ms_support_ = kBoolFalse;
-  if (kMsSupportedType.find(k_type_) != kMsSupportedType.end() &&
-      kMsSupportedType.find(v_type_) != kMsSupportedType.end()) {
-    ms_support_ = kBoolTrue;
-    return true;
-  }
-  if (!this->IsElementValid()) {
-    return false;
-  }
-  for (auto i : *this) {
-    if (!i) {
-      return false;
-    }
-    if (!i->IsMindSporeSupportedType()) {
-      return false;
-    }
-  }
-  ms_support_ = kBoolTrue;
-  return true;
-}
+bool AbstractDict::IsMindSporeSupportedType() { return false; }
 
 std::string AbstractTuple::ToString() const {
   std::stringstream s;

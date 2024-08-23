@@ -1349,19 +1349,6 @@ static int FindWithBlockEnd(int start_bci, const CFG *cfg) {
   return list[tar - 1]->extra_jump() ? list[tar - 1]->extra_jump()->bci() - 1 : list.back()->bci();
 }
 
-// finally block has two copies in bytecodes, only test for Python3.9
-static int FindFinallyBlockEnd(int raise_block, int normal_block, const CFG *cfg) {
-  const auto &list = cfg->instr_pool();
-  MS_EXCEPTION_IF_CHECK_FAIL(normal_block < SizeToInt(list.size()) && list[normal_block]->op() == POP_BLOCK,
-                             "can't find finally block");
-  auto i = normal_block + 1;
-  auto j = raise_block;
-  for (; list[i]->op() == list[j]->op(); ++i, ++j) {
-  }
-  // only python3.9, list[i]->op() == JUMP_FORWARD && list[j]->op() == RERAISE;
-  return j;
-}
-
 static int FindTryBlockEnd(int start, const CFG *cfg) {
   const auto &list = cfg->instr_pool();
   Instr *tar = list[start]->extra_jump();
@@ -1379,33 +1366,26 @@ static int FindTryBlockEnd(int start, const CFG *cfg) {
     }
     return res;
   }
-  // finally block has two copies in bytecodes, first is normally and end with JUMP_FORWARD, second is end with RERAISE
-  int reraise_finally_block_start = tar->bci();
-  if (start + 1 < SizeToInt(list.size()) && list[start + 1]->op() != SETUP_FINALLY) {
-    // Handle try without exception scene.
-    res = start;
+
+  int tryForwordBci = tar->bci() - 1;
+  if (list[tryForwordBci]->op() != JUMP_FORWARD) {
+    return list.back()->bci();
+  }
+  int finallyOrElseBci = list[tryForwordBci]->extra_jump()->bci();
+  if (list.size() < static_cast<unsigned int>(finallyOrElseBci)) {
+    return list.back()->bci();
+  }
+  int precedFinallyOrElseOp = list[finallyOrElseBci - 1]->op();
+  int precedFinallyOrElseOp2 = list[finallyOrElseBci - 2]->op();
+  if (precedFinallyOrElseOp == RERAISE && precedFinallyOrElseOp2 == JUMP_FORWARD) {
+    // try/except/else 无finally的场景
+    return list[finallyOrElseBci - 2]->extra_jump()->bci();
+  } else if (precedFinallyOrElseOp == RERAISE) {
+    // try/except/else/finally
+    return finallyOrElseBci;
   } else {
-    MS_EXCEPTION_IF_CHECK_FAIL(start + 1 < SizeToInt(list.size()) && list[start + 1]->op() == SETUP_FINALLY,
-                               "can't find finally block");
-    res = IntToSize(list[start + 1]->extra_jump()->bci());
-    while (res < list.size() && list[res]->op() != RERAISE) {
-      res = list[res + 2]->extra_jump()->bci();
-    }
+    return list.back()->bci();
   }
-  /*
-    In the current situation:
-      try：
-        ...
-      else:
-        ...
-      finally:
-        ...
-      this codes have a else block, wo should find byteCode 'POP_BLOCK'
-  */
-  while (res < list.size() && list[res]->op() != POP_BLOCK) {
-    res++;
-  }
-  return FindFinallyBlockEnd(reraise_finally_block_start, res, cfg);
 }
 
 static bool FindBlock(int start_bci, const CFG *cfg, int *end_bci, int *stack_effect) {
