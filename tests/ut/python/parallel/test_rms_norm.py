@@ -139,6 +139,31 @@ def test_rms_norm_wrong_strategy():
     with pytest.raises(RuntimeError):
         compile_net(net, _x, _b)
 
+def test_rms_norm_hybrid_parallel_split_norm_axis():
+    """
+    Feature: test RmsNorm hybrid parallel with split norm axis
+    Description: test RmsNorm hybrid parallel
+    Expectation: compile success
+    """
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", device_num=16, global_rank=0)
+    strategy1 = ((2, 8, 1), (2, 8, 1))
+    strategy2 = ((2, 8, 1), (8, 1))
+    strategy3 = ((2, 8, 1), (2, 8, 1))
+    net = Net(_w, strategy1, strategy2, strategy3)
+    compile_net(net, _x, _b)
+
+def test_rms_norm_hybrid_parallel_split_twice_norm_axis():
+    """
+    Feature: test RmsNorm hybrid parallel with split norm axis twice
+    Description: test RmsNorm hybrid parallel
+    Expectation: compile success
+    """
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", device_num=16, global_rank=0)
+    strategy1 = ((1, 8, 2), (1, 8, 2))
+    strategy2 = ((1, 8, 2), (8, 2))
+    strategy3 = ((1, 8, 2), (1, 8, 2))
+    net = Net(_w, strategy1, strategy2, strategy3)
+    compile_net(net, _x, _b)
 
 _x_2d = Tensor(np.ones([16, 64]), dtype=ms.float32)
 _w_2d = Tensor(np.ones([16, 64]), dtype=ms.float32)
@@ -171,15 +196,42 @@ def test_rms_norm_auto_parallel_2d():
     compile_net(net, _x_2d, _b_2d)
 
 
-def test_rms_norm_wrong_strategy_2d():
+def test_rms_norm_split_norm_axis_2d():
     """
-    Feature: test RmsNorm different input length strategy with invalid axis
-    Description: test RmsNorm different input length strategy with invalid axis
-    Expectation: compile failed
+    Feature: test RmsNorm same input length strategy with splitting norm axis
+    Description: test RmsNorm same input length strategy with splitting norm axis
+    Expectation: compile success
     """
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", device_num=16, global_rank=0)
     strategy1 = ((2, 8), (2, 8))
     strategy2 = ((2, 8), (8,))
+    strategy3 = ((2, 8), (2, 8))
+    net = Net(_w_2d, strategy1, strategy2, strategy3)
+    compile_net(net, _x_2d, _b_2d)
+
+def test_rms_norm_wrong_split_norm_axis_2d():
+    """
+    Feature: test RmsNorm different input length strategy with splitting norm axis
+    Description: test RmsNorm different input length strategy with splitting norm axis
+    Expectation: compile fail
+    """
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", device_num=16, global_rank=0)
+    strategy1 = ((2, 8), (2, 8))
+    strategy2 = ((2, 8), (2, 8))
+    strategy3 = ((2, 8), (2, 8))
+    net = Net(_w_2d, strategy1, strategy2, strategy3)
+    with pytest.raises(RuntimeError):
+        compile_net(net, _x_2d, _b_2d)
+
+def test_rms_norm_split_norm_axis_2d_stra_mismatch():
+    """
+    Feature: test RmsNorm wrong strategy with splitting norm axis
+    Description: test RmsNorm wrong strategy with splitting norm axis
+    Expectation: compile success
+    """
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", device_num=16, global_rank=0)
+    strategy1 = ((2, 8), (2, 8))
+    strategy2 = ((2, 8), (2,))
     strategy3 = ((2, 8), (2, 8))
     net = Net(_w_2d, strategy1, strategy2, strategy3)
     with pytest.raises(RuntimeError):

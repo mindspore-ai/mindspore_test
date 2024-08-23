@@ -498,6 +498,25 @@ def test_interleaved_with_rmsnorm():
         NetWithLoss(NetWithRmsNorm(w, bias, bias, matmul_layout, add_layout, activation_layout, rmsnorm_layout)))
     _ = compile_net(net, x)
 
+def test_interleaved_with_rmsnorm_split_norm_axis():
+    """
+    Feature: test micro interleaved split norm
+    Description: dev_num is 8.
+    Expectation: compile success
+    """
+
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", device_num=8, global_rank=0)
+    layout = Layout((2, 4, 2), ("dp", "mp", "interleaved_parallel"))
+    matmul_layout = (layout(("dp", "interleaved_parallel"), "None"), layout("None", "mp"))
+    add_layout = (layout(("dp", "interleaved_parallel"), "mp"), layout("mp"))
+    activation_layout = (layout(("dp", "interleaved_parallel"), "mp"),)
+    rmsnorm_layout = (layout(("dp", "interleaved_parallel"), "mp"), layout("mp"))
+    x = Tensor(np.ones([1024, 1024]), dtype=ms.float32)
+    w = Tensor(np.ones([1024, 1024]), dtype=ms.float32)
+    bias = Tensor(np.ones([1024,]), dtype=ms.float32)
+    net = GradWrap(
+        NetWithLoss(NetWithRmsNorm(w, bias, bias, matmul_layout, add_layout, activation_layout, rmsnorm_layout)))
+    _ = compile_net(net, x)
 
 def test_interleaved_with_layernorm():
     """

@@ -52,15 +52,9 @@ Status RmsNormInfo::CheckStrategy(const StrategyPtr &strategy) {
   // check input strategy
   for (size_t i = begin_norm_axis_; i < input_strategy.size(); ++i) {
     if (input_strategy[i] != NO_SPLIT_STRATEGY) {
-      MS_LOG(ERROR) << name_ << ": Invalid input strategy " << ShapeToString(input_strategy);
-      return FAILED;
-    }
-  }
-  for (size_t i = 0; i < gamma_strategy.size(); ++i) {
-    if (gamma_strategy[i] != NO_SPLIT_STRATEGY) {
-      MS_LOG(ERROR) << name_
-                    << ": Invalid gamma strategy. Gamma can not be split, but got: " << ShapeToString(gamma_strategy);
-      return FAILED;
+      norm_axis_splitted_ = true;
+      MS_LOG(WARNING) << "The RmsNorm big Kernel is disabled to support the "
+                      << "splitting after begin_norm_axis";
     }
   }
   // check gamma  strategy
@@ -251,9 +245,10 @@ Status RmsNormInfo::CheckInputLayout() {
   const std::vector<int64_t> np_split_map = {-1};
   for (size_t i = begin_norm_axis_; i < in_layout.tensor_map_before().size(); ++i) {
     if (in_layout.tensor_map_before()[i] != np_split_map) {
-      MS_LOG(ERROR) << "RmsNorm Invalid input layout " << in_layout.tensor_map_before() << ", " << i
-                    << "th tensor map input layout must be " << np_split_map;
-      return FAILED;
+      norm_axis_splitted_ = true;
+      MS_LOG(WARNING) << "RmsNorm input layout " << in_layout.tensor_map_before() << ", " << i
+                      << "th tensor map input layout is split. The RmsNorm big Kernel is disabled to support the "
+                      << "splitting after begin_norm_axis";
     }
   }
 
@@ -285,6 +280,127 @@ Status RmsNormInfo::CheckOutputLayout() {
   return SUCCESS;
 }
 
+std::string RmsNormInfo::CreateCommGroupFromRankList(const RankList &rank_list) {
+  Group comm_group;
+  if (g_device_manager->CreateGroup(rank_list, &comm_group) != SUCCESS) {
+    MS_LOG(EXCEPTION) << "Create comm group failed in rms";
+  }
+  std::string group_name = comm_group.name();
+  return group_name;
+}
+
+RankList RmsNormInfo::GetAllReduceRankList() {
+  auto in_layout = inputs_tensor_info_[kIndex0].tensor_layout();
+  RankList reduce_rank_list;
+  std::vector<int64_t> dims;
+  if (!inputs_tensor_map_.empty()) {
+    // strategy is set.
+    MS_LOG(INFO) << "Rmsnorm input device_arrangement:" << dev_matrix_shape_
+                 << ". Input tensor_map:" << inputs_tensor_map_;
+    Shape in_tensor_map = inputs_tensor_map_[RMS_NORM_INPUT_INDEX];
+    for (size_t i = begin_norm_axis_; i < in_tensor_map.size(); ++i) {
+      dims.push_back(SizeToLong(dev_matrix_shape_.size() - kIndex1 - in_tensor_map[i]));
+    }
+    auto device_matrix =
+      DeviceMatrix(g_device_manager->global_rank(), g_device_manager->GetDeviceListInThisStage(), dev_matrix_shape_);
+    device_matrix.GetDevicesAlongMultiDim(dims, &reduce_rank_list);
+  } else if (!in_layout.tensor_map_before().empty()) {
+    // layout is set.
+    MS_LOG(INFO) << "Rmsnorm in_layout device_arrangement:" << in_layout.device_arrangement_origin().array()
+                 << ". In_layout tensor_map:" << in_layout.tensor_map_before();
+    for (size_t i = begin_norm_axis_; i < in_layout.tensor_map_before().size(); ++i) {
+      auto tensor_map_i = in_layout.tensor_map_before()[i];
+      for (size_t j = 0; j < tensor_map_i.size(); ++j) {
+        dims.push_back(SizeToLong(in_layout.device_arrangement_origin().array().size() - kIndex1 - tensor_map_i[j]));
+      }
+    }
+    auto device_matrix = DeviceMatrix(g_device_manager->global_rank(), g_device_manager->GetDeviceListInThisStage(),
+                                      in_layout.device_arrangement_origin().array());
+    device_matrix.GetDevicesAlongMultiDim(dims, &reduce_rank_list);
+  } else {
+    MS_LOG(EXCEPTION) << "RmsNorm input tensor map is empty.";
+  }
+  return reduce_rank_list;
+}
+
+AnfNodePtr RmsNormInfo::GetInputOutputNodeForSplitNormAxis(const CNodePtr &cnode,
+                                                           const AnfNodePtr &square_actual_input_node,
+                                                           GenerateGraph *gen_g,
+                                                           std::vector<std::pair<AnfNodePtr, int64_t>> *input_nodes) {
+  MS_LOG(INFO) << "Start to get nodes for split NormAxis RmsNorm.";
+  MS_EXCEPTION_IF_NULL(gen_g);
+  AnfNodePtr square;
+  AnfNodePtr input_tuple_get_item;
+  if (square_actual_input_node == nullptr) {
+    square = gen_g->PushBack({gen_g->NewOpInst(SQUARE), gen_g->virtual_input_node()});
+    input_nodes->push_back(std::make_pair(square, kIndex1));
+  } else {
+    auto input_tuple = gen_g->PushBack({gen_g->NewOpInst(MAKE_TUPLE_OP), square_actual_input_node});
+    input_tuple_get_item = gen_g->PushBack({gen_g->NewOpInst(TUPLE_GETITEM), input_tuple, CreatInt64Imm(kIndex0)});
+    square = gen_g->PushBack({gen_g->NewOpInst(SQUARE), input_tuple_get_item});
+  }
+  MS_EXCEPTION_IF_NULL(square);
+
+  std::vector<int64_t> reduce_mean_axis;
+  Shape gamma_shape = inputs_shape_[RMS_NORM_GAMMA_INDEX];
+  reduce_mean_axis.resize(gamma_shape.size());
+  for (size_t i = 0; i < gamma_shape.size(); ++i) {
+    reduce_mean_axis[i] = SizeToLong(begin_norm_axis_ + i);
+  }
+  MS_LOG(INFO) << "Rmsnorm reduce_mean_axis: " << reduce_mean_axis;
+
+  Attr attr_reduce_keep_dims = std::make_pair("keep_dims", MakeValue(true));
+  OperatorAttrs reduce_mean_attrs = {attr_reduce_keep_dims};
+  AnfNodePtr reduce_mean = gen_g->PushBack({gen_g->NewOpInst(REDUCE_MEAN, reduce_mean_attrs), square,
+                                            parallel::CreateTuple(reduce_mean_axis), NewValueNode(MakeValue(true))});
+  MS_EXCEPTION_IF_NULL(reduce_mean);
+
+  // new all reduce
+  auto reduce_rank_list = GetAllReduceRankList();
+  std::string group_name = CreateCommGroupFromRankList(reduce_rank_list);
+  MS_LOG(INFO) << "Rmsnorm allreduce group: " << group_name;
+  OperatorAttrs all_reduce_op_attrs;
+  Attr attr_op = std::make_pair(OP, MakeValue(REDUCE_OP_SUM));
+  all_reduce_op_attrs.push_back(attr_op);
+  Attr attr_group = std::make_pair(GROUP, MakeValue(group_name));
+  all_reduce_op_attrs.push_back(attr_group);
+  AnfNodePtr allreduce = gen_g->PushBack({gen_g->NewOpInst(ALL_REDUCE, all_reduce_op_attrs), reduce_mean});
+  MS_EXCEPTION_IF_NULL(allreduce);
+
+  // new div
+  size_t group_rank_size = reduce_rank_list.size();
+  mindspore::tensor::TensorPtr tensor_ptr =
+    std::make_shared<mindspore::tensor::Tensor>(static_cast<float>(group_rank_size));
+  ValuePtr scale_value = MakeValue(tensor_ptr);
+  AnfNodePtr real_div_node =
+    gen_g->PushBack({gen_g->NewOpInst(DIV), allreduce, NewValueNode(scale_value)->cast<AnfNodePtr>()});
+
+  auto pre_node_eps = cnode->input(kIndex3);  // eps
+  MS_EXCEPTION_IF_NULL(pre_node_eps);
+  float eps_number = GetValue<float>(pre_node_eps->cast<ValueNodePtr>()->value());
+  mindspore::tensor::TensorPtr eps_tensor_ptr =
+    std::make_shared<mindspore::tensor::Tensor>(static_cast<float>(eps_number));
+  AnfNodePtr add_eps = gen_g->PushBack({gen_g->NewOpInst(ADD), real_div_node, NewValueNode(MakeValue(eps_tensor_ptr))});
+  MS_EXCEPTION_IF_NULL(add_eps);
+  AnfNodePtr rsqrt = gen_g->PushBack({gen_g->NewOpInst(RSQRT), add_eps});
+  MS_EXCEPTION_IF_NULL(rsqrt);
+  AnfNodePtr mul1;
+  if (square_actual_input_node == nullptr) {
+    mul1 = gen_g->PushBack({gen_g->NewOpInst(MUL), rsqrt, gen_g->virtual_input_node()});
+    input_nodes->push_back(std::make_pair(mul1, kIndex1));
+  } else {
+    mul1 = gen_g->PushBack({gen_g->NewOpInst(MUL), rsqrt, input_tuple_get_item});
+  }
+  MS_EXCEPTION_IF_NULL(mul1);
+  AnfNodePtr mul2 = gen_g->PushBack({gen_g->NewOpInst(MUL), mul1, gen_g->virtual_input_node()});
+  MS_EXCEPTION_IF_NULL(mul2);
+  input_nodes->push_back(std::make_pair(mul2, kIndex2));
+  AnfNodePtr make_tuple = gen_g->PushBack({gen_g->NewOpInst(MAKE_TUPLE_OP), mul2, rsqrt});
+  MS_EXCEPTION_IF_NULL(make_tuple);
+  MS_LOG(INFO) << "Success to get nodes for split NormAxis RmsNorm.";
+  return make_tuple;
+}
+
 Status RmsNormInfo::ComputeReplaceGraphForInterleaved(const CNodePtr &cnode) {
   GenerateGraph gen_g = GenerateGraph(attrs_);
   if (gen_g.Init(cnode) != SUCCESS) {
@@ -300,10 +416,15 @@ Status RmsNormInfo::ComputeReplaceGraphForInterleaved(const CNodePtr &cnode) {
   std::vector<std::pair<AnfNodePtr, int64_t>> input_nodes = {std::make_pair(virtual_converter_begin, 1)};
   for (int64_t i = 0; i < interleaved_num; ++i) {
     auto tuple_get_item = gen_g.PushBack({gen_g.NewOpInst(TUPLE_GETITEM), virtual_converter_begin, CreatInt64Imm(i)});
-    auto rmsnorm = gen_g.PushBack(
-      {gen_g.NewOpInst(prim_name_), tuple_get_item, gen_g.virtual_input_node(), CreateFP32Imm(DEFAULT_EPS)});
-    input_nodes.push_back(std::make_pair(rmsnorm, kIndexTwo));
-    virtual_converter_end_inputs_vector.push_back(rmsnorm);
+    AnfNodePtr output_node;
+    if (norm_axis_splitted_) {
+      output_node = GetInputOutputNodeForSplitNormAxis(cnode, tuple_get_item, &gen_g, &input_nodes);
+    } else {
+      output_node = gen_g.PushBack(
+        {gen_g.NewOpInst(prim_name_), tuple_get_item, gen_g.virtual_input_node(), CreateFP32Imm(DEFAULT_EPS)});
+      input_nodes.push_back(std::make_pair(output_node, kIndexTwo));
+    }
+    virtual_converter_end_inputs_vector.push_back(output_node);
   }
   Attr input_nums_attr = {"input_nums", MakeValue(interleaved_num)};
   OperatorAttrs virtual_converter_end_attrs = {input_nums_attr};
@@ -317,10 +438,33 @@ Status RmsNormInfo::ComputeReplaceGraphForInterleaved(const CNodePtr &cnode) {
   return SUCCESS;
 }
 
+Status RmsNormInfo::ComputeReplaceGraphForSplitNormAxis(const CNodePtr &cnode) {
+  if (!norm_axis_splitted_) {
+    return FAILED;
+  }
+  GenerateGraph gen_g = GenerateGraph(attrs_);
+  if (gen_g.Init(cnode) != SUCCESS) {
+    MS_LOG(ERROR) << name_ << "GenerateGraph Init failed";
+    return FAILED;
+  }
+  std::vector<std::pair<AnfNodePtr, int64_t>> input_nodes = {};
+  AnfNodePtr output_node = GetInputOutputNodeForSplitNormAxis(cnode, nullptr, &gen_g, &input_nodes);
+  replace_graph_ = std::make_shared<std::pair<std::vector<std::pair<AnfNodePtr, int64_t>>, AnfNodePtr>>(
+    std::make_pair(input_nodes, output_node));
+  MS_LOG(INFO) << "Replace graph for RmsNorm success";
+  return SUCCESS;
+}
+
 ReplaceGraphPtr RmsNormInfo::replace_graph(const CNodePtr &cnode) {
   if (inputs_tensor_info_[kIndex0].tensor_layout().IsInterleavedParallel()) {
     if (ComputeReplaceGraphForInterleaved(cnode) != SUCCESS) {
       MS_LOG(EXCEPTION) << name_ << " splitting micro interleaved failed.";
+    }
+    return replace_graph_;
+  }
+  if (norm_axis_splitted_) {
+    if (ComputeReplaceGraphForSplitNormAxis(cnode) != SUCCESS) {
+      MS_LOG(EXCEPTION) << name_ << " splitting norm axis for rmsnorm failed.";
     }
     return replace_graph_;
   }
@@ -336,14 +480,15 @@ Status RmsNormInfo::InferOutputLayout() {
   rstd_tensor_layout = output_tensor_layout;
   std::vector<Shape> rstd_extended_tensor_map;
   Shape rstd_tensor_shape;
-
+  const std::vector<int64_t> np_split_map = {-1};
   for (size_t i = 0; i < rstd_tensor_layout.tensor_shape_before().array().size(); ++i) {
     auto map_dim = input_layout.tensor_map_before()[i];
     auto shp_dim = input_layout.tensor_shape_before().array()[i];
-    rstd_extended_tensor_map.push_back(map_dim);
     if (i < begin_norm_axis_) {
+      rstd_extended_tensor_map.push_back(map_dim);
       rstd_tensor_shape.push_back(shp_dim);
     } else {
+      rstd_extended_tensor_map.push_back(np_split_map);
       rstd_tensor_shape.push_back(1);
     }
   }
@@ -352,6 +497,8 @@ Status RmsNormInfo::InferOutputLayout() {
 
   output_infer_tensor_layout_ = output_tensor_layout;
   rstd_infer_tensor_layout_ = rstd_tensor_layout;
+  MS_LOG(INFO) << "output_tensor_layout" << output_tensor_layout.ToString();
+  MS_LOG(INFO) << "rstd_tensor_layout" << rstd_tensor_layout.ToString();
 
   return SUCCESS;
 }

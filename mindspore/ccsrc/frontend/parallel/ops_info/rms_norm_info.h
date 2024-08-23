@@ -20,9 +20,11 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include <utility>
 #include "utils/hash_map.h"
 #include "ir/value.h"
 #include "frontend/parallel/auto_parallel/operator_costmodel.h"
+#include "frontend/parallel/graph_util/generate_graph.h"
 #include "frontend/parallel/ops_info/operator_info.h"
 #include "frontend/parallel/strategy.h"
 
@@ -61,10 +63,17 @@ class RmsNormInfo : public OperatorInfo {
   Status CheckInputLayout() override;
   Status CheckOutputLayout() override;
   Status InferOutputLayout();
+  std::string CreateCommGroupFromRankList(const RankList &rank_list);
+  RankList GetAllReduceRankList();
+  AnfNodePtr GetInputOutputNodeForSplitNormAxis(const CNodePtr &cnode, const AnfNodePtr &square_actual_input_node,
+                                                GenerateGraph *gen_g,
+                                                std::vector<std::pair<AnfNodePtr, int64_t>> *input_nodes);
   Status ComputeReplaceGraphForInterleaved(const CNodePtr &cnode);
+  Status ComputeReplaceGraphForSplitNormAxis(const CNodePtr &cnode);
 
  private:
   size_t begin_norm_axis_;
+  bool norm_axis_splitted_ = false;
   TensorLayout output_infer_tensor_layout_;
   TensorLayout rstd_infer_tensor_layout_;
   Shape input_shape_;
