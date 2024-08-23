@@ -215,6 +215,8 @@ void AsyncRQueue::ChildAfterFork() {
     MS_LOG(DEBUG) << "Release and recreate worker_.";
     (void)worker_.release();
     worker_ = std::make_unique<std::thread>(&AsyncRQueue::WorkerLoop, this);
+    thread_id_to_wait_level_.clear();
+    current_level_ = kThreadWaitLevel::kLevelUnknown;
   }
   MS_LOG(DEBUG) << "AsyncQueue reinitialize after fork done.";
 }

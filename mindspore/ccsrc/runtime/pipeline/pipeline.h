@@ -28,7 +28,7 @@ class BACKEND_EXPORT Pipeline {
   static Pipeline &Get();
 
   const AsyncRQueuePtr &frontend_stage() const { return frontend_stage_; }
-  const AsyncHqueuePtr &bprop_stage() const { return bprop_stage_; }
+  const AsyncRQueuePtr &bprop_stage() const { return bprop_stage_; }
   const AsyncRQueuePtr &backend_stage() const { return backend_stage_; }
   const AsyncRQueuePtr &launch_stage() const { return launch_stage_; }
 
@@ -44,7 +44,7 @@ class BACKEND_EXPORT Pipeline {
   // Infer and create output tensor.
   AsyncRQueuePtr frontend_stage_;
   // Bprop tasks.
-  AsyncHqueuePtr bprop_stage_;
+  AsyncRQueuePtr bprop_stage_;
   // Malloc and free.
   AsyncRQueuePtr backend_stage_;
   // Launch kernel.

@@ -2329,10 +2329,7 @@ void GradExecutor::SetTopCellDynamicAttr(const py::object &cell) {
 }
 
 void GradExecutor::DispatchGradQueueTask(std::function<void(void)> &&task) const {
-  const auto &bprop_queue = runtime::Pipeline::Get().bprop_stage();
-  if (!bprop_queue->Push(new (std::nothrow) BpropTask(std::move(task)))) {
-    bprop_queue->CheckException();
-  }
+  runtime::Pipeline::Get().bprop_stage()->Push(std::make_shared<BpropTask>(task));
 }
 
 void GradExecutor::ClearBpropTask() const {
@@ -2340,7 +2337,6 @@ void GradExecutor::ClearBpropTask() const {
   if (bprop_queue != nullptr) {
     GilReleaseWithCheck gil_release;
     bprop_queue->Clear();
-    bprop_queue->CheckException();
   }
 }
 
@@ -2349,7 +2345,6 @@ void GradExecutor::WaitBpropTask() const {
   if (bprop_queue != nullptr) {
     GilReleaseWithCheck gil_release;
     bprop_queue->Wait();
-    bprop_queue->CheckException();
   }
 }
 
