@@ -94,8 +94,8 @@ NodePtr MinOrMaxOpGrad(BpropBuilder *ib, const NodePtr &x, const NodePtr &out, c
 
 DEF_PURE_SHAPE_CALC(g_gather_drop_negative)
   .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
-    auto is_pos = inputs.at(1);
-    auto gather_rank = inputs.at(0).size();
+    auto is_pos = inputs.at(kIndex1);
+    auto gather_rank = inputs.at(kIndex0).size();
     auto is_pos_rank = is_pos.size();
     std::vector<int64_t> res_shape(is_pos.begin(), is_pos.end());
     if (gather_rank > is_pos_rank) {
@@ -107,8 +107,8 @@ DEF_PURE_SHAPE_CALC(g_gather_drop_negative)
     return {res_shape};
   })
   .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &unknown_inputs) -> std::vector<int64_t> {
-    auto gather = inputs.at(0);
-    auto is_pos = inputs.at(1);
+    auto gather = inputs.at(kIndex0);
+    auto is_pos = inputs.at(kIndex1);
     if (!unknown_inputs.empty() || IsDynamicRank(gather) || IsDynamicRank(is_pos)) {
       return {-1};
     }
@@ -321,17 +321,17 @@ ShapeArray GatherReshapeShapeFunc(const ShapeArray &inputs) {
   constexpr size_t inputs_num = 5;
   MS_EXCEPTION_IF_CHECK_FAIL(inputs.size() == inputs_num, "inputs num should equal to 5.");
 
-  auto values_shape = inputs.at(0);
-  auto indices_shape = inputs.at(1);
-  auto x_shape = inputs.at(2);
-  auto axis = inputs.at(3);
+  auto values_shape = inputs.at(kIndex0);
+  auto indices_shape = inputs.at(kIndex1);
+  auto x_shape = inputs.at(kIndex2);
+  auto axis = inputs.at(kIndex3);
   MS_EXCEPTION_IF_CHECK_FAIL(axis.size() == 1, "axis should be a scalar.");
   auto axis_value = axis[0];
   if (axis_value < 0) {
     axis_value += SizeToLong(x_shape.size());
   }
 
-  auto batch_dims = inputs.at(4);
+  auto batch_dims = inputs.at(kIndex4);
   MS_EXCEPTION_IF_CHECK_FAIL(batch_dims.size() == 1, "batch_dims should be a scalar.");
   auto batch_dims_value = batch_dims[0];
 
@@ -368,10 +368,10 @@ std::vector<int64_t> GatherReshapeInferFunc(const ShapeArray &inputs, const Hash
   constexpr size_t inputs_num = 5;
   MS_EXCEPTION_IF_CHECK_FAIL(inputs.size() == inputs_num, "inputs num should equal to 5.");
 
-  auto values = inputs.at(0);
-  auto indices = inputs.at(1);
-  auto params_grad = inputs.at(2);
-  auto batch_dims = inputs.at(4);
+  auto values = inputs.at(kIndex0);
+  auto indices = inputs.at(kIndex1);
+  auto params_grad = inputs.at(kIndex2);
+  auto batch_dims = inputs.at(kIndex4);
 
   constexpr size_t return_num = 4;
   if (!invalid_indices.empty() || IsDynamicRank(values) || IsDynamicRank(indices) || IsDynamicRank(params_grad) ||
@@ -411,7 +411,7 @@ class CalBatchGatherShapeCalc : public ShapeCalcFunctor {
     batch_dims_ = GetValue<int64_t>(values->value()[1]);
   }
   ShapeArray Calc(const ShapeArray &inputs) const override {
-    auto x_shp = inputs.at(0);
+    auto x_shp = inputs.at(kIndex0);
     int64_t batch_size = 1;
     for (int64_t i = 0; i < batch_dims_; i++) {
       batch_size *= x_shp[i];
@@ -438,7 +438,7 @@ class ResizeNearestNeighborV2ShapeCalc : public ShapeCalcFunctor {
   void FromValue(const ValuePtr &value) override { is_nchw_ = GetValue<bool>(value); }
 
   ShapeArray Calc(const ShapeArray &inputs) const override {
-    auto x_shape = inputs.at(0);
+    auto x_shape = inputs.at(kIndex0);
     ShapeVector grad_in_size = (is_nchw_ ? GetShapeByRange(x_shape, 2, 4) : GetShapeByRange(x_shape, 1, 3));
     if (grad_in_size.size() != i2) {
       MS_LOG(EXCEPTION) << "For ResizeNearestNeighborV2Grad, size's rank should be 2, but got " << grad_in_size.size();
@@ -691,7 +691,7 @@ class SortShapeCalc1 : public ShapeCalcFunctor {
     return {{k}, transposition, invert_perm};
   }
   std::vector<int64_t> Infer(const ShapeArray &inputs, const HashSet<size_t> &unknown_inputs) const override {
-    auto x = inputs.at(0);
+    auto x = inputs.at(kIndex0);
     if (!unknown_inputs.empty() || IsDynamicRank(x)) {
       return {1, -1, -1};
     }
@@ -985,7 +985,7 @@ REG_BPROP_BUILDER("Sort").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   if (k->abstract()->isa<abstract::AbstractSequence>()) {
     if (k->input_type() == InputType::kConstant) {
       auto value = GetIntList(k);
-      k = ib->Tensor(value.at(0), kInt64);
+      k = ib->Tensor(value.at(kIndex0), kInt64);
     } else {
       k = ib->TupleGetItem(k, 0);
     }
@@ -1175,7 +1175,7 @@ DEF_PURE_SHAPE_CALC(g_resize_nearest_neighbor)
     return {res};
   })
   .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &unknown_inputs) -> std::vector<int64_t> {
-    auto x = inputs.at(0);
+    auto x = inputs.at(kIndex0);
     if (!unknown_inputs.empty() || IsDynamicRank(x)) {
       return {-1};
     }
@@ -1789,7 +1789,7 @@ DEF_PURE_SHAPE_CALC(g_transpose)
     return {res_perm};
   })
   .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &unknown_inputs) -> std::vector<int64_t> {
-    auto x = inputs.at(0);
+    auto x = inputs.at(kIndex0);
     if (!unknown_inputs.empty() || IsDynamicRank(x)) {
       return {-1};
     }
@@ -1848,10 +1848,10 @@ REG_BPROP_BUILDER("Chunk").SetUnusedInputs({i0, i1, i2, i3}).SetBody(BODYFUNC(ib
 
 DEF_PURE_SHAPE_CALC(g_slice_ext)
   .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
-    auto x_shape = inputs.at(0);
-    auto axis = inputs.at(1);
-    auto begin = inputs.at(2);
-    auto end = inputs.at(3);
+    auto x_shape = inputs.at(kIndex0);
+    auto axis = inputs.at(kIndex1);
+    auto begin = inputs.at(kIndex2);
+    auto end = inputs.at(kIndex3);
 
     MS_EXCEPTION_IF_CHECK_FAIL(axis.size() == 1, "axis should be a scalar.");
     auto axis_value = axis[0];
@@ -1873,15 +1873,15 @@ DEF_PURE_SHAPE_CALC(g_slice_ext)
     return {begin_shape, end_shape};
   })
   .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &unknown_inputs) -> std::vector<int64_t> {
-    auto x = inputs.at(0);
-    auto axis = inputs.at(1);
-    auto begin = inputs.at(2);
-    auto end = inputs.at(3);
+    auto x = inputs.at(kIndex0);
+    auto axis = inputs.at(kIndex1);
+    auto begin = inputs.at(kIndex2);
+    auto end = inputs.at(kIndex3);
     if (!unknown_inputs.empty() || IsDynamicRank(x) || IsDynamicRank(axis) || IsDynamicRank(begin) ||
         IsDynamicRank(end)) {
       return {-1, -1};
     }
-    auto size = SizeToLong(inputs.at(0).size());
+    auto size = SizeToLong(inputs.at(kIndex0).size());
     return {size, size};
   });
 
@@ -1903,7 +1903,7 @@ REG_BPROP_BUILDER("SliceExt").SetUnusedInputs({i5}).SetBody(BODYFUNC(ib) {
 DEF_PURE_SHAPE_CALC(g_tile)
   .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
     // {x_shape, dims}
-    auto r_shape = TileShape(inputs.at(1), inputs.at(0));
+    auto r_shape = TileShape(inputs.at(kIndex1), inputs.at(kIndex0));
     ShapeVector axis;
     size_t axis_sz = r_shape.size() / 2;
     axis.reserve(axis_sz);
@@ -1913,8 +1913,8 @@ DEF_PURE_SHAPE_CALC(g_tile)
     return {r_shape, axis};
   })
   .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &unknown_inputs) -> std::vector<int64_t> {
-    auto x = inputs.at(0);
-    auto dims = inputs.at(1);
+    auto x = inputs.at(kIndex0);
+    auto dims = inputs.at(kIndex1);
     if (!unknown_inputs.empty() || IsDynamicRank(x) || IsDynamicRank(dims)) {
       return {-1, -1};
     }
@@ -2270,7 +2270,7 @@ REG_BPROP_BUILDER("MaskedSelect").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   auto dx_shape = ib->GetShape(dx);
   if (x_shape != dx_shape) {
     return BinopGradCommon(ib, x, mask, dx, dmask);
-  } else{
+  } else {
     return {dx, dmask};
   }
 });
@@ -2317,7 +2317,7 @@ REG_BPROP_BUILDER("Col2ImExt").SetUnusedInputs({i0, i1, i6}).SetBody(BODYFUNC(ib
 
 DEF_PURE_SHAPE_CALC(g_im2col_ext)
   .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
-    auto input_shape = inputs.at(0);
+    auto input_shape = inputs.at(kIndex0);
     std::vector<int64_t> output_size{input_shape.begin() + input_shape.size() - 2, input_shape.end()};
     return {output_size};
   })
@@ -2351,18 +2351,18 @@ REG_BPROP_BUILDER("Col2ImGrad").SetUnusedInputs({i0, i1, i6}).SetBody(BODYFUNC(i
 
 REG_BPROP_BUILDER("ExtractVolumePatches").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
   auto ksize = GetValue<std::vector<int64_t>>(ib->GetAttr("kernel_size"));
-  auto ksize_d = ksize.at(2);
-  auto ksize_h = ksize.at(3);
-  auto ksize_w = ksize.at(4);
+  auto ksize_d = ksize.at(kIndex2);
+  auto ksize_h = ksize.at(kIndex3);
+  auto ksize_w = ksize.at(kIndex4);
   auto x = ib->GetInput(kIndex0);
   auto out = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex2);
   auto x_shape = ib->GetShape(x);
-  auto x_n = x_shape.at(0);
-  auto x_c = x_shape.at(1);
-  auto x_d = x_shape.at(2);
-  auto x_h = x_shape.at(3);
-  auto x_w = x_shape.at(4);
+  auto x_n = x_shape.at(kIndex0);
+  auto x_c = x_shape.at(kIndex1);
+  auto x_d = x_shape.at(kIndex2);
+  auto x_h = x_shape.at(kIndex3);
+  auto x_w = x_shape.at(kIndex4);
   auto x_indices_num = 1 + ((x_d * x_h) * x_w);
   auto x_idx = ib->Tensor(Range(1, x_indices_num), kFloat16);
   x_idx = ib->Reshape(x_idx, {1, 1, x_d, x_h, x_w});
@@ -2373,9 +2373,9 @@ REG_BPROP_BUILDER("ExtractVolumePatches").SetUnusedInputs({i0, i1}).SetBody(BODY
   x_idx_patched = ib->Transpose(x_idx_patched, {0, 2, 3, 4, 1});
   x_idx_patched = ib->Cast(x_idx_patched, kInt32);
   auto out_shape = ib->GetShape(out);
-  auto out_d = out_shape.at(2);
-  auto out_h = out_shape.at(3);
-  auto out_w = out_shape.at(4);
+  auto out_d = out_shape.at(kIndex2);
+  auto out_h = out_shape.at(kIndex3);
+  auto out_w = out_shape.at(kIndex4);
   auto out_indices_num = ((((out_d * out_h) * out_w) * ksize_d) * ksize_h) * ksize_w;
   auto out_idx = ib->Tensor(Range(0, out_indices_num), kInt32);
   out_idx = ib->Reshape(out_idx, {1, out_d, out_h, out_w, (ksize_d * ksize_h) * ksize_w});
@@ -2567,8 +2567,8 @@ REG_BPROP_BUILDER("Expand").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
 
 DEF_PURE_SHAPE_CALC(g_segment_mean)
   .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
-    auto x_rank = inputs.at(0).size();
-    auto segment_ids_shape = inputs.at(1);
+    auto x_rank = inputs.at(kIndex0).size();
+    auto segment_ids_shape = inputs.at(kIndex1);
     ShapeVector ones_shape(segment_ids_shape.begin(), segment_ids_shape.end());
     if (x_rank < 1) {
       MS_LOG(EXCEPTION) << "For SegmentMean's gradient, the rank of input x should be greater or equal to one, but got "
@@ -2579,8 +2579,8 @@ DEF_PURE_SHAPE_CALC(g_segment_mean)
     return {ones_shape};
   })
   .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &unknown_inputs) -> std::vector<int64_t> {
-    auto x = inputs.at(0);
-    auto segment_ids = inputs.at(1);
+    auto x = inputs.at(kIndex0);
+    auto segment_ids = inputs.at(kIndex1);
     if (!unknown_inputs.empty() || IsDynamicRank(x) || IsDynamicRank(segment_ids)) {
       return {-1};
     }

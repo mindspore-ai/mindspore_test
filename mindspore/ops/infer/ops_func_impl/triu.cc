@@ -35,13 +35,12 @@ BaseShapePtr TriuFuncImpl::InferShape(const PrimitivePtr &primitive,
 }
 
 TypePtr TriuFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
   auto input_type = input_args[kInputIndex0]->GetType();
   if (!CheckAndConvertUtils::IsScalar(input_args[kInputIndex1])) {
     MS_EXCEPTION(TypeError) << "For '" << primitive->name() << "', 'diagonal' must be a scalar type, but got type: "
                             << input_args[kInputIndex1]->GetType()->ToString();
   }
-  return input_type->Clone();
+  return input_type;
 }
 }  // namespace ops
 }  // namespace mindspore

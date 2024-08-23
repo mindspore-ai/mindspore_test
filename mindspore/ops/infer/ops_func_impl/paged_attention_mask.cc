@@ -23,7 +23,6 @@ namespace mindspore {
 namespace ops {
 BaseShapePtr PagedAttentionMaskFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                     const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
   CheckAndConvertUtils::CheckInputArgs(input_args, kEqual, kPagedAttentionMaskInputsNum, primitive->name());
 
   auto query_shape_ptr = input_args[kPagedAttentionMaskInputQueryIndex]->GetShape();

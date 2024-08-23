@@ -65,16 +65,12 @@ int32_t ReverseV2FuncImpl::CheckValidation(const PrimitivePtr &primitive,
 
 BaseShapePtr ReverseV2FuncImpl::InferShape(const PrimitivePtr &primitive,
                                            const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(input_args[0]);
-  MS_EXCEPTION_IF_NULL(input_args[0]->GetShape());
-  return input_args[0]->GetShape()->Clone();
+  return input_args[kIndex0]->GetShape()->Clone();
 }
 
 TypePtr ReverseV2FuncImpl::InferType(const PrimitivePtr &primitive,
                                      const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(input_args[0]);
-  MS_EXCEPTION_IF_NULL(input_args[0]->GetType());
-  return input_args[0]->GetType()->Clone();
+  return input_args[kIndex0]->GetType();
 }
 TypePtrList ReverseV2FuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
   const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();

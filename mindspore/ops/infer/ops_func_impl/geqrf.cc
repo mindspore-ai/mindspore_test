@@ -32,10 +32,7 @@ namespace ops {
 BaseShapePtr GeqrfFuncImpl::InferShape(const PrimitivePtr &primitive,
                                        const std::vector<AbstractBasePtr> &input_args) const {
   // Get input tensor shape.
-  MS_EXCEPTION_IF_NULL(primitive);
-  MS_EXCEPTION_IF_NULL(input_args[kInputIndex0]);
   BaseShapePtr base_shape = input_args[kInputIndex0]->GetShape();
-  MS_EXCEPTION_IF_NULL(base_shape);
   const auto &a_shape = base_shape->GetShapeVector();
 
   if (IsDynamicRank(a_shape)) {
@@ -74,10 +71,7 @@ BaseShapePtr GeqrfFuncImpl::InferShape(const PrimitivePtr &primitive,
 }
 
 TypePtr GeqrfFuncImpl::InferType(const PrimitivePtr &prim, const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(input_args[kInputIndex0]);
   auto type = input_args[kInputIndex0]->GetType();
-  MS_EXCEPTION_IF_NULL(type);
-
   std::vector<TypePtr> type_tuple = {type, type};
   return std::make_shared<Tuple>(type_tuple);
 }
