@@ -23,6 +23,8 @@
 #include <vector>
 #include <set>
 #include <string>
+#include <fstream>
+#include <iostream>
 
 #include "acl/acl.h"
 #include "utils/dlopen_macro.h"
@@ -100,6 +102,10 @@ class AscendVmmAdapter {
       return false;
     }
 
+    if (!CheckVmmDriverVersion()) {
+      return false;
+    }
+
     // Not open vmm by default in PyNative mode
     bool is_enable_vmm = ctx->get_param<int>(MS_CTX_EXECUTION_MODE) != kPynativeMode;
     MS_LOG(INFO) << "VMM is " << (is_enable_vmm ? "enabled" : "disabled") << " by default.";
@@ -130,6 +136,63 @@ class AscendVmmAdapter {
       MS_LOG(EXCEPTION) << "The string has extra characters, " << str;
     }
     return num;
+  }
+  static bool CheckVmmDriverVersion() {
+    // Get driver version
+    constexpr auto ascend_install_info = "/etc/ascend_install.info";
+    const std::string DRIVER_INSTALL_PATH_PARAM = "Driver_Install_Path_Param=";
+    std::string driver_path = "/usr/local/Ascend";
+
+    std::ifstream ascend_install_file(ascend_install_info);
+    if (!ascend_install_file.is_open()) {
+      MS_LOG(WARNING) << "Open file " << ascend_install_info << " failed.";
+    } else {
+      std::string line;
+      while (std::getline(ascend_install_file, line)) {
+        size_t pos = line.find(DRIVER_INSTALL_PATH_PARAM);
+        if (pos != std::string::npos) {
+          // Extract the path after "Driver_Install_Path_Param="
+          driver_path = line.substr(pos + DRIVER_INSTALL_PATH_PARAM.length());
+          MS_LOG(INFO) << "Driver path is " << driver_path;
+          break;
+        }
+      }
+    }
+
+    auto splitString = [](const std::string &str, char delimiter) -> std::vector<std::string> {
+      std::vector<std::string> tokens;
+      std::string token;
+      std::istringstream tokenStream(str);
+      while (std::getline(tokenStream, token, delimiter)) {
+        tokens.push_back(token);
+      }
+      return tokens;
+    };
+
+    auto driver_version_info = driver_path + "/driver/version.info";
+    const std::string DRIVER_VERSION_PARAM = "Version=";
+    std::ifstream driver_version_file(driver_version_info);
+    if (!driver_version_file.is_open()) {
+      MS_LOG(WARNING) << "Open file " << driver_version_info << " failed.";
+    } else {
+      std::string line;
+      while (std::getline(driver_version_file, line)) {
+        size_t pos = line.find(DRIVER_VERSION_PARAM);
+        if (pos != std::string::npos) {
+          // Extract the version after "Version="
+          std::string driver_version = line.substr(pos + DRIVER_VERSION_PARAM.length());
+          auto split_version = splitString(driver_version, '.');
+          MS_LOG(INFO) << "Driver version is " << driver_version << ", major version is " << split_version[0];
+          if (split_version[0] < "24") {
+            MS_LOG(WARNING) << "Driver version is less than 24.0.0, vmm is disabled by default, drvier_version: "
+                            << driver_version;
+            return false;
+          }
+          break;
+        }
+      }
+    }
+    return true;
   }
 };
 }  // namespace ascend

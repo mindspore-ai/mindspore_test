@@ -540,6 +540,12 @@ const size_t DynamicMemPoolBestFit::FreeIdleMemsByEagerFree() {
     std::cout << "Total eager free memory : " << free_size << ", real free : " << real_free_size
               << ", not free size: " << (free_size - real_free_size) << "." << std::endl;
   }
+  if (real_free_size > kGBToByte) {
+    // If free size is more than 1G, add log.
+    MS_LOG(WARNING) << "Eager free count : " << eager_free_count_ << ", free memory : " << free_size
+                    << ", real free : " << real_free_size << ", not free size: " << (free_size - real_free_size)
+                    << ", may cause performance issues.";
+  }
   MS_LOG(INFO) << "Eager free count : " << eager_free_count_ << ", free memory : " << free_size
                << ", real free : " << real_free_size << ", not free size: " << (free_size - real_free_size) << ".";
   return real_free_size;
