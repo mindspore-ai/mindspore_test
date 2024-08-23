@@ -80,6 +80,7 @@ const char kRuntimeInline[] = "inline";
 const char kRuntimeSwitchInline[] = "switch_inline";
 const char kRuntimeMultiStream[] = "multi_stream";
 const char kRuntimePipeline[] = "pipeline";
+const char kRuntimeKbkSubGraphMode[] = "kbk_sub_graph_mode";
 const char kRuntimeView[] = "view";
 const char kRuntimeInsertTensorMove[] = "insert_tensormove";
 const char kRuntimeAllfinite[] = "all_finite";

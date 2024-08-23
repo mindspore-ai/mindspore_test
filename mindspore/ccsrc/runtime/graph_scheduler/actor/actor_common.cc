@@ -274,9 +274,8 @@ void ResetTraceMemoryStatus() {
 }
 
 bool EnableKbkSubGraphExecute() {
-  static const char kEnableKbkSubGraphExecutedEnv[] = "MS_ENABLE_KBK_SUBGRAPH_EXECUTE";
-  static bool disable_sub_graph_execute_mode = common::GetEnv(kEnableKbkSubGraphExecutedEnv) == "0";
-  if (disable_sub_graph_execute_mode) {
+  static bool disable_sub_graph_mode = common::IsDisableRuntimeConfig(common::kRuntimeKbkSubGraphMode);
+  if (disable_sub_graph_mode) {
     return false;
   }
 
@@ -292,11 +291,7 @@ bool EnableKbkSubGraphExecute() {
     return false;
   }
 
-  // Only support sub graph execution mode for inference.
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  static const bool enable_internal_kernels = ms_context->IsEnableInferBoost();
-  return enable_internal_kernels;
+  return true;
 }
 
 bool EnableRuntimePipeline() {
