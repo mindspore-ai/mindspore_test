@@ -310,6 +310,11 @@ void GraphKernelFlags::Refresh() {
   if (IsEnableGraphKernel()) {
     MS_LOG(INFO) << "graph_kernel_flags = \"" << flags_cache_ << "\", all flags: " << DumpAllFlags();
   }
+  // if set MS_DEV_RUNTIME_CONF, will print jit_level, reuse this env to print graph kernel flag
+  static std::string is_enable_runtime_cfg = common::GetEnv(common::kRuntimeConf);
+  if (!is_enable_runtime_cfg.empty()) {
+    std::cout << "graph_kernel_flags = \"" << flags_cache_ << "\"" << std::endl;
+  }
 }
 
 void GraphKernelFlags::RegisterFlags(std::map<std::string, std::string> *flag_map) {
@@ -407,6 +412,12 @@ void GraphKernelFlags::RegisterFlags(std::map<std::string, std::string> *flag_ma
       << "For Graph Kernel Fusion, the flag '--enable_auto_tensor_inplace' set in 'graph_kernel_flags' is "
          "not supported on Ascend and will be turned off now";
     enable_auto_tensor_inplace = false;
+  }
+  if (is_ascend && enable_parallel_fusion) {
+    std::cout
+      << "[WARNING] The flag '--enable_parallel_fusion' set in 'graph_kernel_flags' will enable parallel fusion, "
+         "which is an experimental feature, please check if 'graph_kernel_flags' is purposely set."
+      << std::endl;
   }
 }
 
