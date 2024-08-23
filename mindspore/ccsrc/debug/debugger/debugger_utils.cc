@@ -23,6 +23,7 @@
 #include "debug/data_dump/device_statistic/kernel_launcher.h"
 #include "debug/data_dump/tensor_info_collect.h"
 #include "debug/data_dump/tensor_statistic.h"
+#include "debug/data_dump/overflow_counter.h"
 #include "debug/utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/debug/common/csv_writer.h"
@@ -49,6 +50,9 @@ using AnfAlgo = mindspore::session::AnfRuntimeAlgorithm;
 namespace mindspore {
 using mindspore::TensorInfoCommForDump;
 using mindspore::TensorInfoForDump;
+
+inline mindspore::tensor::TensorPtr DeviceAddress2Tensor(device::DeviceAddressPtr device_addr, const void *src);
+inline string TensorToString(mindspore::tensor::TensorPtr tensor);
 
 /*
  * Feature group: Dump, Online debugger.
@@ -368,16 +372,59 @@ void DumpTensorToFile(std::string file_path, mindspore::tensor::TensorPtr out_te
   }
 }
 
+device::DeviceAddressPtr HandleOverflow(const std::vector<TensorInfoForDump> &tensor_info_list,
+                                        const DeviceContext *device_context, uint32_t stream_id,
+                                        const TensorInfoCommForDump &tensor_info_comm, uint32_t set_overflow_num) {
+  device::DeviceAddressPtr overflow_result;
+  if (OverflowCounter::GetInstance().getCount() >= set_overflow_num && set_overflow_num != 0) {
+    return overflow_result;
+  }
+
+  std::vector<KernelTensor *> kernel_tensors;
+  for (const auto &tensor_info : tensor_info_list) {
+    if (tensor_info.io == kOutput) {
+      kernel_tensors.push_back(tensor_info.device_tensor->kernel_tensor().get());
+    }
+  }
+
+  overflow_result = datadump::CalCheckOverflowAsync(device_context, kernel_tensors, stream_id);
+  return overflow_result;
+}
+
+bool ProcessOverflow(const device::DeviceAddressPtr &overflow_result, uint32_t set_overflow_num) {
+  const void *add = (overflow_result) ? overflow_result->GetPtr() : nullptr;
+  mindspore::tensor::TensorPtr my_overflow = DeviceAddress2Tensor(overflow_result, add);
+  bool is_overflow = (TensorToString(my_overflow) == "True");
+  if (is_overflow && (set_overflow_num == 0 || OverflowCounter::GetInstance().getCount() < set_overflow_num)) {
+    OverflowCounter::GetInstance().addCount();
+  }
+  return is_overflow;
+}
+
 void LaunchDumpCallback(const std::vector<TensorInfoForDump> &tensor_info_list, const DeviceContext *device_context,
                         uint32_t stream_id, const TensorInfoCommForDump &tensor_info_comm) {
   bool dump_tensor = DumpJsonParser::GetInstance().IsTensorDump();
+  bool overflow_flag = (DumpJsonParser::GetInstance().op_debug_mode() == DumpJsonParser::DUMP_BOTH_OVERFLOW);
+  uint32_t set_overflow_num = DumpJsonParser::GetInstance().overflow_number();
+  device::DeviceAddressPtr overflow_result;
+
+  if (overflow_flag) {
+    overflow_result = HandleOverflow(tensor_info_list, device_context, stream_id, tensor_info_comm, set_overflow_num);
+  }
+
   bool dump_host_stat =
     (DumpJsonParser::GetInstance().IsStatisticDump() && !DumpJsonParser::GetInstance().IsDeviceCalcStats());
   if (!dump_tensor && !dump_host_stat) {
     return;
   }
   device::CallbackFunc callback_func = [tensor_info_list, device_context, stream_id, tensor_info_comm, dump_tensor,
-                                        dump_host_stat]() {
+                                        dump_host_stat, overflow_flag, set_overflow_num, overflow_result]() {
+    if (overflow_flag) {
+      bool is_overflow = ProcessOverflow(overflow_result, set_overflow_num);
+      if (!is_overflow) {
+        return;
+      }
+    }
     for (const auto &tensor_info : tensor_info_list) {
       MS_EXCEPTION_IF_NULL(tensor_info.device_tensor);
 

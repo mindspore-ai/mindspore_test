@@ -17,6 +17,7 @@
 #ifndef MINDSPORE_CCSRC_DEBUG_DEVICE_STATISTIC_KERNEL_LAUNCHER_H_
 #define MINDSPORE_CCSRC_DEBUG_DEVICE_STATISTIC_KERNEL_LAUNCHER_H_
 #include <string>
+#include <vector>
 #include "debug/data_dump/device_statistic/kernel_factory.h"
 
 namespace mindspore {
@@ -25,6 +26,8 @@ namespace datadump {
 TensorPtr CalStatistic(const std::string &, const DeviceContext *, KernelTensor *, const std::uint32_t);
 
 DeviceAddressPtr CalStatisticAsync(const std::string &, const DeviceContext *, KernelTensor *, const std::uint32_t);
+
+DeviceAddressPtr CalCheckOverflowAsync(const DeviceContext *, vector<KernelTensor *>, const std::uint32_t);
 }  // namespace datadump
 
 }  // namespace mindspore

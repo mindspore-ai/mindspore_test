@@ -44,5 +44,11 @@ DeviceAddressPtr CalStatisticAsync(const std::string &stat_name, const DeviceCon
   }
 }
 
+DeviceAddressPtr CalCheckOverflowAsync(const DeviceContext *device_context, vector<KernelTensor *> inputs,
+                                       const uint32_t stream_id) {
+  auto kernel = KernelFactory::Instance().CreateKernel(KCheckOverflow, device_context, stream_id);
+  return kernel->LaunchKernelAsync(inputs);
+}
+
 }  // namespace datadump
 }  // namespace mindspore
