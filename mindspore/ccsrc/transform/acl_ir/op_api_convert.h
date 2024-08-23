@@ -243,6 +243,9 @@ inline aclTensor *ConvertType(const mindspore::kernel::KernelTensor *tensor) {
     default:
       format = ACL_FORMAT_ND;
   }
+  if (tensor->format() == FRACTAL_NZ) {
+    format = ACL_FORMAT_FRACTAL_NZ;
+  }
 
   aclTensor *acl_tensor = nullptr;
   const auto &storage_info = tensor->tensor_storage_info();
