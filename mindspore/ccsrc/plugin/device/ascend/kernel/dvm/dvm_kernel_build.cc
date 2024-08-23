@@ -315,14 +315,6 @@ class OpBuilder {
     auto keep_dims_attr = prim->GetAttr(kAttrKeepDims);
     MS_EXCEPTION_IF_NULL(keep_dims_attr);
     auto keep_dims = GetValue<bool>(keep_dims_attr);
-    if (op_type == dvm::ReduceOpType::kSum) {
-      auto skip_mode_attr = prim->GetAttr(kAttrSkipMode);
-      MS_EXCEPTION_IF_NULL(skip_mode_attr);
-      auto skip_mode = GetValue<bool>(skip_mode_attr);
-      if (skip_mode == true) {
-        MS_LOG_WITH_NODE(EXCEPTION, node) << node->fullname_with_scope() << " skip_mode == True is unsupported.";
-      }
-    }
     auto shape_ref = CacheAxis(node, node->input(2));
     auto op = kernel_->Reduce(op_type, GetInput(node->input(1)), shape_ref, keep_dims);
     EmitOp(node, op);
