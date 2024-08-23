@@ -66,5 +66,5 @@ INPUT_MAP(HcomAllToAllV) = {{1, INPUT_DESC(send_data)},
                             {5, INPUT_DESC(recv_displacements)}};
 OUTPUT_MAP(HcomAllToAllV) = {{0, OUTPUT_DESC(recv_data)}};
 ATTR_MAP(HcomAllToAllV) = {};
-REG_ADPT_DESC(HcomAllToAllV, kNameAllToAllv, ADPT_DESC(HcomAllToAllV));
+REG_ADPT_DESC(HcomAllToAllV, kNameAlltoAllVGE, ADPT_DESC(HcomAllToAllV));
 }  // namespace mindspore::transform

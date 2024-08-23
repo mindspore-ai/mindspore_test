@@ -177,7 +177,7 @@ void HcclKernel::CalLoopSize() {
   if (kernel_name_ == kReduceScatterOpName && fusion >= 1) {
     loop_size_ = hccl_kernel_output_shape_list_.size();
   }
-  if (kernel_name_ == kAllToAllvOpName || kernel_name_ == kAllToAllOpName) {
+  if (kernel_name_ == kAlltoAllVOpName || kernel_name_ == kAllToAllOpName) {
     loop_size_ = hccl_kernel_output_shape_list_.size();
   }
   // For MatMulAllReduce, output number is 1.

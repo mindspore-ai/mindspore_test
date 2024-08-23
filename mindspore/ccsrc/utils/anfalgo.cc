@@ -1242,7 +1242,7 @@ bool AnfAlgo::IsCommunicationOp(const AnfNodePtr &node) {
     kAllReduceOpName,       kAllGatherOpName,       kBroadcastOpName, kReduceScatterOpName,     kSendOpName,
     kReceiveOpName,         kAlltoAllOpName,        kAllToAllOpName,  kAllToAllvOpName,         kMuxReceiveOpName,
     kMuxSendOpName,         kReduceOpName,          kBarrierOpName,   kCollectiveScatterOpName, kCollectiveGatherOpName,
-    kMatMulAllReduceOpName, kBatchISendIRecvOpName, kAlltoAllVOpName};
+    kMatMulAllReduceOpName, kBatchISendIRecvOpName, kAlltoAllVOpName, kAlltoAllVGEOpName};
   MS_EXCEPTION_IF_NULL(node);
   if (!node->isa<CNode>()) {
     return false;

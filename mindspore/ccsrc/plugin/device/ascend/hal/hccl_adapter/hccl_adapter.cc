@@ -541,7 +541,7 @@ HcclResult HcclAdapter::HcclExecEnqueueOp(const ::HcomOperation &op_info, const 
   return hccl_exec_enqueue_op_(op_info, callback);
 }
 
-HcclResult HcclAdapter::HcclExecAllToAllv(const ::HcomAllToAllVParams &params, const HExecCallBack &callback) const {
+HcclResult HcclAdapter::HcclExecAlltoAllV(const ::HcomAllToAllVParams &params, const HExecCallBack &callback) const {
   CheckExcutionMode();
   CHECK_SYMBOL_NULL(hccl_exec_enqueue_all_to_all_v_);
   return hccl_exec_enqueue_all_to_all_v_(params, callback);
@@ -552,7 +552,7 @@ bool HcclAdapter::UseHcclCM() const {
   return false;
 }
 
-HcclResult HcclAdapter::HcclAllToAllv(void *send_buf, void *recv_buf, hccl::HcclAllToAllVParams params,
+HcclResult HcclAdapter::HcclAlltoAllV(void *send_buf, void *recv_buf, hccl::HcclAllToAllVParams params,
                                       HcclDataType dataType, aclrtStream stream, HcclComm hccl_comm) const {
   CheckExcutionMode();
   CHECK_SYMBOL_NULL(launch_hccl_all_to_allv_);

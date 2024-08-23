@@ -40,7 +40,7 @@ std::string GetKernelFormat(const CNodePtr &kernel_node, size_t index) {
   MS_EXCEPTION_IF_NULL(kernel_node);
   auto op_name = common::AnfAlgo::GetCNodeName(kernel_node);
   auto parallel_context_instance = parallel::ParallelContext::GetInstance();
-  static const std::set<std::string> kCommOpName = {kReceiveOpName,         kSendOpName,       kAllToAllvOpName,
+  static const std::set<std::string> kCommOpName = {kReceiveOpName,         kSendOpName,       kAlltoAllVOpName,
                                                     kAllToAllOpName,        kMuxReceiveOpName, kBarrierOpName,
                                                     kBatchISendIRecvOpName, kAlltoAllVOpName,  kAllGatherOpName};
   MS_EXCEPTION_IF_NULL(parallel_context_instance);

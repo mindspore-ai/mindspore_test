@@ -39,6 +39,7 @@ class HcomAlltoAllVKernel : public HcclKernel {
   int Resize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
 
  protected:
+  HcclDataType data_type_ = {};
   hccl::HcclAllToAllVParams params_ = {};
 };
 
