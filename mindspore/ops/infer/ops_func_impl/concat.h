@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 #ifndef MINDSPORE_CORE_OPS_OP_FUNC_IMPL_CONCAT_H
 #define MINDSPORE_CORE_OPS_OP_FUNC_IMPL_CONCAT_H
 
-#include <memory>
 #include <vector>
 #include <set>
 #include "mindapi/base/macros.h"
@@ -34,8 +33,7 @@ class OPS_API ConcatFuncImpl : public OpFuncImpl {
   bool GeneralInferRegistered() const override { return true; }
   std::set<int64_t> GetValueDependArgIndices() const override { return {1}; }
 };
-class OPS_API ConcatViewFuncImpl : public ConcatFuncImpl {};
 
-using ConcatFuncImplPtr = std::shared_ptr<ConcatFuncImpl>;
+class OPS_API ConcatViewFuncImpl : public ConcatFuncImpl {};
 }  // namespace mindspore::ops
 #endif  // MINDSPORE_CORE_OPS_OP_FUNC_IMPL_CONCAT_H

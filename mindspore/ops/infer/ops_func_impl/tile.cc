@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -109,7 +109,7 @@ ShapeArray TileFuncImpl::InferShape(const PrimitivePtr &primitive, const InferIn
       continue;
     }
 
-    inferred_shape.push_back(dims[i] * x_shape[i]);
+    inferred_shape.push_back(LongMulWithOverflowCheck(dims[i], x_shape[i]));
   }
   return {inferred_shape};
 }

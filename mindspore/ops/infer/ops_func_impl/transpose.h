@@ -18,7 +18,6 @@
 #define MINDSPORE_CORE_OPS_OP_FUNC_IMPL_TRANSPOSE_H
 
 #include <set>
-#include <memory>
 #include <vector>
 #include "ops/ops_func_impl/op_func_impl.h"
 
@@ -34,7 +33,5 @@ class OPS_API TransposeFuncImpl : public OpFuncImpl {
 };
 
 class OPS_API TransposeViewFuncImpl : public TransposeFuncImpl {};
-
-using TransposeFuncImplPtr = std::shared_ptr<TransposeFuncImpl>;
 }  // namespace mindspore::ops
 #endif  // MINDSPORE_CORE_OPS_OP_FUNC_IMPL_TRANSPOSE_H

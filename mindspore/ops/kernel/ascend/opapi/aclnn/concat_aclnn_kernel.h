@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 #define MINDSPORE_CCSRC_PLUGIN_DEVICE_ASCEND_KERNEL_OPAPI_ACLNN_CONCAT_ACLNN_KERNEL_H_
 #include <vector>
 #include <utility>
-#include "kernel/kernel.h"
+
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
 
 namespace mindspore {
