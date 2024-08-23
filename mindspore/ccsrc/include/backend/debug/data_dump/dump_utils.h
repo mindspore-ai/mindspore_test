@@ -36,9 +36,10 @@ constexpr size_t kValueNodeOutputIndex = 0;
  * Feature group: Dump.
  * Target device group: Ascend.
  * Runtime category: MindRT.
- * Description: Convert int4 data_type into int8 data_type. The int4_data is 2 int4 data stored in 1 int8 data.
+ * Description: Convert int4 data_type into int8 data_type. The int4_data is 2 int4 data stored in 1 int8 data. After
+ * split, the int8_data is 1 int4 data stored int 1 int8 data.
  */
-BACKEND_EXPORT void SplitInt8(const void *int4_data, void *int8_data, size_t data_len);
+BACKEND_EXPORT bool SplitInt8ToInt4x2(const void *int4_data, size_t in_data_len, void *int8_data, size_t out_data_len);
 
 /*
  * Feature group: Dump.

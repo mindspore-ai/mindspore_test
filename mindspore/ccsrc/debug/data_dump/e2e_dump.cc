@@ -173,6 +173,8 @@ void E2eDump::DumpOutputImpl(const CNodePtr &node, bool trans_flag, const std::s
     std::string file_path = dump_path + '/' + op_type + '.' + op_name + '.' + std::to_string(task_id) + '.' +
                             std::to_string(stream_id) + '.' + std::to_string(timestamp) + ".output." +
                             std::to_string(j);
+    // Tensor must be saved before statistic. Because the tensor would be changed in DumpTensorStatsToFile when data
+    // type is int4, if tensor saved after statistic, the tensor value would be wrong.
     if (DumpJsonParser::GetInstance().IsTensorDump()) {
       if (IsMindRTKernelByKernel()) {
         DumpMemFromTensorLoaderToFile(debugger, file_path, node_name, j);

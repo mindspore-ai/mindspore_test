@@ -155,16 +155,20 @@ std::unique_ptr<ITensorSummary> GetSummaryPtr(const std::shared_ptr<TensorData> 
  * Description: Returns TensorStat for the given tensor based on the base_summary_ptr.
  */
 DebugServices::TensorStat DebugServices::GetTensorStatistics(const std::shared_ptr<TensorData> &tensor) {
+  TensorStat empty_tensor_stat_data;
   if (tensor == nullptr) {
     MS_LOG(WARNING) << "Tensor is nullptr, returning empty tensor statistics.";
-    TensorStat empty_tensor_stat_data;
     return empty_tensor_stat_data;
   }
   std::unique_ptr<ITensorSummary> base_summary_ptr;
   void *previous_tensor_ptr = nullptr;
   if (tensor->GetType() == DbgDataType::DT_INT4) {
     auto tensor_int8 = std::make_shared<tensor::Tensor>(TypeId::kNumberTypeInt8, tensor->GetShape());
-    SplitInt8(tensor->GetDataPtr(), tensor_int8->data_c(), tensor->GetByteSize());
+    bool split_succeed =
+      SplitInt8ToInt4x2(tensor->GetDataPtr(), tensor->GetByteSize(), tensor_int8->data_c(), tensor_int8->DataSize());
+    if (!split_succeed) {
+      return empty_tensor_stat_data;
+    }
     tensor->SetTensor(tensor_int8);
     tensor->SetDataPtr(static_cast<char *>(tensor_int8->data_c()));
     base_summary_ptr =
@@ -174,7 +178,6 @@ DebugServices::TensorStat DebugServices::GetTensorStatistics(const std::shared_p
   }
   if (base_summary_ptr == nullptr) {
     MS_LOG(WARNING) << "base_summary_ptr is nullptr, returning empty tensor statistics.";
-    TensorStat empty_tensor_stat_data;
     return empty_tensor_stat_data;
   }
   std::string md5 = "";

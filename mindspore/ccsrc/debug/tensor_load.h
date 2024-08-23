@@ -99,7 +99,11 @@ class TensorLoader {
                                           static_cast<TypeId>(float32_tensor->data_type_c()));
       } else if (type_string == "int4") {
         auto int8_tensor = std::make_shared<tensor::Tensor>(TypeId::kNumberTypeInt8, node->GetShape());
-        SplitInt8(node->GetDataPtr(), int8_tensor->data_c(), node->GetByteSize());
+        bool split_succeed =
+          SplitInt8ToInt4x2(node->GetDataPtr(), node->GetByteSize(), int8_tensor->data_c(), int8_tensor->DataSize());
+        if (!split_succeed) {
+          return false;
+        }
         return DumpJsonParser::DumpToFile(path, int8_tensor->data_c(), int8_tensor->Size(), int8_tensor->shape_c(),
                                           static_cast<TypeId>(int8_tensor->data_type_c()));
       }

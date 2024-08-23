@@ -310,7 +310,11 @@ bool AscendAsyncDump::DumpTensorDataIfNeeded(const dump_data_t &dump_tensor_info
     } else if (dump_tensor_info.trans_buf->data_type_c() == TypeId::kNumberTypeInt4) {
       auto tensor_int8 =
         std::make_shared<tensor::Tensor>(TypeId::kNumberTypeInt8, dump_tensor_info.trans_buf->shape_c());
-      SplitInt8(dump_tensor_info.trans_buf->data_c(), tensor_int8->data_c(), dump_tensor_info.trans_buf->Size());
+      bool split_succeed = SplitInt8ToInt4x2(dump_tensor_info.trans_buf->data_c(), dump_tensor_info.trans_buf->Size(),
+                                             tensor_int8->data_c(), tensor_int8->DataSize());
+      if (!split_succeed) {
+        return false;
+      }
       trans_buf = tensor_int8;
     } else {
       trans_buf = dump_tensor_info.trans_buf;
@@ -321,7 +325,11 @@ bool AscendAsyncDump::DumpTensorDataIfNeeded(const dump_data_t &dump_tensor_info
     trans_buf = std::make_shared<tensor::Tensor>(*bfloat16_tensor, TypeId::kNumberTypeFloat32);
   } else if (dump_tensor_info.data_type == TypeId::kNumberTypeInt4) {
     auto tensor_int8 = std::make_shared<tensor::Tensor>(TypeId::kNumberTypeInt8, dump_tensor_info.host_shape);
-    SplitInt8(dump_tensor_info.data_ptr, tensor_int8->data_c(), dump_tensor_info.data_size);
+    bool split_succeed = SplitInt8ToInt4x2(dump_tensor_info.data_ptr, dump_tensor_info.data_size, tensor_int8->data_c(),
+                                           tensor_int8->DataSize());
+    if (!split_succeed) {
+      return false;
+    }
     trans_buf = tensor_int8;
   }
   bool dump_succ = false;

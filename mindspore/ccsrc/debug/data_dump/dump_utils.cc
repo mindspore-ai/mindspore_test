@@ -40,10 +40,17 @@ using mindspore::runtime::DeviceTensorStore;
 namespace mindspore {
 static std::vector<std::string> g_overflow_operators;
 
-void SplitInt8(const void *int4_data, void *int8_data, size_t data_len) {
+bool SplitInt8ToInt4x2(const void *int4_data, size_t in_data_len, void *int8_data, size_t out_data_len) {
+  if (in_data_len * 2 != out_data_len) {
+    MS_LOG(ERROR) << "The input data length and output data length is not match, input data length: " << in_data_len
+                  << ", output data length: " << out_data_len
+                  << ". If sample_mode is set to 1, then sample_num must set to Integer multiples of 2 to save tensor "
+                     "with int4 data type.";
+    return false;
+  }
   int8_t *src_data = static_cast<int8_t *>(const_cast<void *>(int4_data));
   int8_t *dst_data = static_cast<int8_t *>(int8_data);
-  for (size_t i = 0; i < data_len; ++i) {
+  for (size_t i = 0; i < in_data_len; ++i) {
     int8_t s = *src_data;
     int8_t t = s & 0xf;
     // keep the sign bit not change
@@ -54,9 +61,11 @@ void SplitInt8(const void *int4_data, void *int8_data, size_t data_len) {
       t = t & 0x0f;
     } else {
       MS_LOG(ERROR) << "Error occur.";
+      return false;
     }
     if (t < -8 || t > 7) {
       MS_LOG(ERROR) << "Error occurred when convert int4 to int8 data.";
+      return false;
     }
     *dst_data = t;
     ++dst_data;
@@ -68,14 +77,17 @@ void SplitInt8(const void *int4_data, void *int8_data, size_t data_len) {
       t = t & 0x0f;
     } else {
       MS_LOG(ERROR) << "Error occur.";
+      return false;
     }
     if (t < -8 || t > 7) {
       MS_LOG(ERROR) << "Error occurred when convert int4 to int8 data.";
+      return false;
     }
     *dst_data = t;
     ++dst_data;
     ++src_data;
   }
+  return true;
 }
 
 uint32_t ConvertPhysicalDeviceId(uint32_t device_id) {
