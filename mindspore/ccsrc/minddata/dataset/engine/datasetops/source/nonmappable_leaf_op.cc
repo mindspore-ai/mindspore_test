@@ -125,10 +125,11 @@ Status NonMappableLeafOp::WorkerEntry(int32_t worker_id) {
   TaskManager::FindMe()->Post();
 
   std::unique_ptr<FilenameBlock> io_block;
-  RETURN_IF_NOT_OK(CollectOpInfoStart(this->NameWithID(), "WorkerGet"));
+  uint64_t start_time = GetSyscnt();
   RETURN_IF_NOT_OK(PopIoBlockQueue(worker_id, &io_block));
-  RETURN_IF_NOT_OK(CollectOpInfoEnd(this->NameWithID(), "WorkerGet", {{"TensorRowFlags", io_block->FlagName()}}));
-  RETURN_IF_NOT_OK(CollectOpInfoStart(this->NameWithID(), "WorkerProcess"));
+  RETURN_IF_NOT_OK(
+    CollectOpInfoEnd(this->NameWithID(), "WorkerGet", start_time, {{"TensorRowFlags", io_block->FlagName()}}));
+  start_time = GetSyscnt();
 
   while (!io_block->eof()) {
     if (!io_block->eoe()) {
@@ -138,22 +139,24 @@ Status NonMappableLeafOp::WorkerEntry(int32_t worker_id) {
         int64_t start_offset = io_block->GetStartOffset();
         int64_t end_offset = io_block->GetEndOffset();
         RETURN_IF_NOT_OK(LoadFile(filename, start_offset, end_offset, worker_id));
-        RETURN_IF_NOT_OK(
-          CollectOpInfoEnd(this->NameWithID(), "WorkerProcess", {{"TensorRowFlags", io_block->FlagName()}}));
+        RETURN_IF_NOT_OK(CollectOpInfoEnd(this->NameWithID(), "WorkerProcess", start_time,
+                                          {{"TensorRowFlags", io_block->FlagName()}}));
         MS_LOG(DEBUG) << Name() << " operator worker " << worker_id << " loaded file " << filename << ".";
       }
     } else {
       TensorRow eoe = TensorRow(TensorRow::kFlagEOE);
       RETURN_IF_NOT_OK(
-        CollectOpInfoEnd(this->NameWithID(), "WorkerProcess", {{"TensorRowFlags", io_block->FlagName()}}));
+        CollectOpInfoEnd(this->NameWithID(), "WorkerProcess", start_time, {{"TensorRowFlags", io_block->FlagName()}}));
       RETURN_IF_NOT_OK(jagged_rows_connector_->Add(worker_id, std::move(eoe)));
     }
-    RETURN_IF_NOT_OK(CollectOpInfoStart(this->NameWithID(), "WorkerGet"));
+    start_time = GetSyscnt();
     RETURN_IF_NOT_OK(PopIoBlockQueue(worker_id, &io_block));
-    RETURN_IF_NOT_OK(CollectOpInfoEnd(this->NameWithID(), "WorkerGet", {{"TensorRowFlags", io_block->FlagName()}}));
-    RETURN_IF_NOT_OK(CollectOpInfoStart(this->NameWithID(), "WorkerProcess"));
+    RETURN_IF_NOT_OK(
+      CollectOpInfoEnd(this->NameWithID(), "WorkerGet", start_time, {{"TensorRowFlags", io_block->FlagName()}}));
+    start_time = GetSyscnt();
   }
-  RETURN_IF_NOT_OK(CollectOpInfoEnd(this->NameWithID(), "WorkerProcess", {{"TensorRowFlags", io_block->FlagName()}}));
+  RETURN_IF_NOT_OK(
+    CollectOpInfoEnd(this->NameWithID(), "WorkerProcess", start_time, {{"TensorRowFlags", io_block->FlagName()}}));
   return Status::OK();
 }
 

@@ -1128,7 +1128,7 @@ void GraphExecutorPy::ParallelPostProcess(const std::string &phase, bool use_com
 void GraphExecutorPy::CleanCompileRes(const ResourcePtr &resource) {
   MS_LOG(INFO) << "Clean compile resource start";
   ProcessStatus::GetInstance().RecordStart(kPipelineClean);
-  (void)profiler::CollectHostInfo(kCompiler, kPipelineClean, kPipelineClean, 0, 0, 0);
+  uint64_t start_time = profiler::GetClockSyscnt();
   abstract::AnalysisContext::ClearContext();
   ClearCompileArgumentsResource();
   ad::PrimBpropOptimizer::GetPrimBpropOptimizerInst().Clear();
@@ -1142,7 +1142,7 @@ void GraphExecutorPy::CleanCompileRes(const ResourcePtr &resource) {
     parallel::g_device_manager = nullptr;
   }
   FuncGraphLoopBreaker::Inst().CleanMetaFuncGraphs();
-  (void)profiler::CollectHostInfo(kCompiler, kPipelineClean, kPipelineClean, 0, 0, 1);
+  (void)profiler::CollectHostInfo(kCompiler, kPipelineClean, kPipelineClean, start_time, profiler::GetClockSyscnt(), 0);
   ProcessStatus::GetInstance().RecordEnd();
   CompileCacheContext::GetInstance().Clear();
   parse::Parser::CleanParserResource();
@@ -1250,7 +1250,7 @@ bool GraphExecutorPy::CompileInner(const py::object &source, const py::tuple &ar
   auto actions = GetActions(resource, phase_, use_vm, false, false);
   std::shared_ptr<Pipeline> pip = std::make_shared<Pipeline>(resource, actions);
 
-  (void)profiler::CollectHostInfo(kCompiler, kCreateBackend, kCreateBackend, 0, 0, 0);
+  uint64_t start_time = profiler::GetClockSyscnt();
   if (pip->NeedCreateBackend()) {
     // Create backend asynchronously.
     resource->SetBackendAsync([]() {
@@ -1262,7 +1262,7 @@ bool GraphExecutorPy::CompileInner(const py::object &source, const py::tuple &ar
       return backend;
     });
   }
-  (void)profiler::CollectHostInfo(kCompiler, kCreateBackend, kCreateBackend, 0, 0, 1);
+  (void)profiler::CollectHostInfo(kCompiler, kCreateBackend, kCreateBackend, start_time, profiler::GetClockSyscnt(), 0);
 
   // Get the parameters items and add the value to args_abs.
   abstract::AbstractBasePtrList args_abs;
@@ -1454,9 +1454,10 @@ bool GraphExecutorPy::Compile(const py::object &source, const py::tuple &args, c
       ProcessStatus::GetInstance().RecordStart(kCompiler);
       std::map<std::string, std::string> custom_info;
       custom_info["phase"] = py::cast<std::string>(phase);
-      (void)profiler::CollectHostInfo(kCompiler, kCompiler, kCompiler, 1, 0, 0, custom_info);
+      uint64_t start_time = profiler::GetClockSyscnt();
       res = CompileInner(source, args, kwargs, phase, use_vm);
-      (void)profiler::CollectHostInfo(kCompiler, kCompiler, kCompiler, 1, 0, 1, custom_info);
+      (void)profiler::CollectHostInfo(kCompiler, kCompiler, kCompiler, start_time, profiler::GetClockSyscnt(), 1,
+                                      custom_info);
       ProcessStatus::GetInstance().RecordEnd();
       ProcessStatus::GetInstance().Print();
     },
@@ -1630,7 +1631,7 @@ void Pipeline::Run() {
       dump_time.Record(action.first, GetTime(), true);
 #endif
       ProcessStatus::GetInstance().RecordStart(action.first);
-      (void)profiler::CollectHostInfo(kCompiler, action.first, action.first, 0, 0, 0);
+      uint64_t start_time = profiler::GetClockSyscnt();
       bool result = true;
       ProfileExecute(MsProfile::GetProfile()->Step(action.first), [&result, &action, this]() {
         MS_LOG(INFO) << "Status record: start " << action.first << " action.";
@@ -1643,7 +1644,7 @@ void Pipeline::Run() {
                        << ", total nodes: " << manager->all_nodes().size();
         }
       });
-      (void)profiler::CollectHostInfo(kCompiler, action.first, action.first, 0, 0, 1);
+      (void)profiler::CollectHostInfo(kCompiler, action.first, action.first, start_time, profiler::GetClockSyscnt(), 0);
       ProcessStatus::GetInstance().RecordEnd();
       if (!result) {
         MS_LOG(INTERNAL_EXCEPTION) << "Pipeline running to end, failed in step:" << action.first;

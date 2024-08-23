@@ -26,6 +26,7 @@ from mindspore.profiler.parser.base_timeline_generator import BaseTimelineGenera
 from mindspore.profiler.parser.integrator import DeviceTarget
 from mindspore.profiler.parser.ascend_analysis.fwk_cann_parser import FwkCANNParser
 from mindspore.profiler.common.util import get_newest_file
+from mindspore.profiler.parser.ascend_analysis.constant import Constant
 
 
 class AscendTimelineGenerator(BaseTimelineGenerator):
@@ -33,9 +34,6 @@ class AscendTimelineGenerator(BaseTimelineGenerator):
     _timeline_display_filename = 'ascend_timeline_display_{}.json'
     _timeline_summary_filename = 'ascend_timeline_summary_{}.json'
     _cluster_analyse_filename = 'ascend_cluster_analyse_{}_{}_{}_{}.csv'
-    top_scope_name = ('Default', 'Gradients', 'recompute_Default')
-    scope_index = 1
-    cpu_index = 2
 
     def __init__(self, profiling_dir, source_path, mindstudio_profiler_output, rank_id, rank_size, mode,
                  step_list=None):
@@ -161,10 +159,6 @@ class AscendTimelineGenerator(BaseTimelineGenerator):
         else:
             msprof_timeline = self._parse_msprof_data(get_newest_file(file_list_msprof))
 
-        # get Ascend Hardware for scope
-        scope_data = self._parse_ascend_hardware_scope(msprof_timeline)
-        all_scope_data.extend(scope_data)
-
         # get cpu op
         cpu_op_file_name = fr'{self._profiling_dir}/cpu_op_execute_timestamp_{self._rank_id}.txt'
         file_list = glob.glob(cpu_op_file_name)
@@ -175,19 +169,23 @@ class AscendTimelineGenerator(BaseTimelineGenerator):
             timeline_data.extend(cpu_timeline)
             all_scope_data.extend(scope_data)
 
-        # parse scope info
-        scope_timeline = self._parse_scope_info(all_scope_data)
-        timeline_data.extend(scope_timeline)
-
         oprange_name = self._op_range_name.format(self._rank_id)
         fwk_file_path = fr'{self._profiling_dir}/{self._framework_dir}/{oprange_name}'
         if os.path.exists(fwk_file_path):
             # It is faster not to submit to the pool
             result = self._parse_fwk_device_data(msprof_timeline)
+            all_scope_data.extend(result.get('scope_data', []))
             timeline_data.extend(result.get("trace_data", []))
             self._kernel_events = result.get("kernels", [])
         else:
+            # get Ascend Hardware for scope
+            scope_data = self._parse_ascend_hardware_scope(msprof_timeline)
+            all_scope_data.extend(scope_data)
             timeline_data.extend(msprof_timeline)
+
+        # parse scope info
+        scope_timeline = self._parse_scope_info(all_scope_data)
+        timeline_data.extend(scope_timeline)
 
         logger.info("All timeline data parse complete.")
         self._timeline_data = timeline_data
@@ -196,16 +194,16 @@ class AscendTimelineGenerator(BaseTimelineGenerator):
     def parse_cpu_timeline(self, file_list):
         """Load cpu operator data from file"""
         ms_to_us = 1e3
-        ps_to_ns = 1e-3
-        new_pid = int(f'{self.cpu_index}{self._rank_id}')
+        ns_to_us = 1e-3
+        new_pid = Constant.CPU_OP
         process_list = [{"name": "process_name",
                          "pid": new_pid,
                          "args": {
-                             "name": f"CPU OP Rank{self._rank_id}"
+                             "name": f"CPU OP"
                          },
                          "ph": "M"
                          }, {"name": "process_sort_index", "pid": new_pid,
-                             "args": {"sort_index": self.cpu_index}, "ph": "M"}
+                             "args": {"sort_index": new_pid}, "ph": "M"}
                         ]
         tid_set = set()
         thread_list = []
@@ -221,11 +219,14 @@ class AscendTimelineGenerator(BaseTimelineGenerator):
                         time_arr = op_list[-1]
                         time_arr = time_arr.split(" ")
                         for time in time_arr:
-                            ts, dur, tid = time.split(",")
-                            ts = Decimal(ts).quantize(Decimal('0.000')) * Decimal(ps_to_ns).quantize(Decimal('0.000'))
+                            ts, dur, tid = time.split(",")   # origin unit of ts is ns and dur is ms.
+                            ts = Decimal(ts).quantize(Decimal('0.000')) * Decimal(ns_to_us).quantize(
+                                Decimal('0.000'))  # cast to us
+                            dur = Decimal(dur).quantize(Decimal('0.000')) * Decimal(ms_to_us).quantize(
+                                Decimal('0.000'))  # cast to us
 
-                            if op_full_name and op_full_name.startswith(self.top_scope_name):
-                                te = ts + Decimal(dur).quantize(Decimal('0.000'))
+                            if op_full_name and op_full_name.startswith(Constant.TOP_SCOPE_NAMES):
+                                te = ts + dur
                                 scope_data.append((op_full_name.split('/')[:-1], ts, te))
 
                             if int(tid) not in tid_set:
@@ -261,7 +262,8 @@ class AscendTimelineGenerator(BaseTimelineGenerator):
         fwkcann_parser = FwkCANNParser(self._source_path, cann_kernel_data, self._rank_id, self._step_list)
         fwk_link_data = fwkcann_parser.generate_trace_data()
         kernels = fwkcann_parser.kernels
-        result = {"trace_data": fwk_link_data, "kernels": kernels}
+        scope_data = fwkcann_parser.scope_data_with_flow + fwkcann_parser.scope_data_without_flow
+        result = {"trace_data": fwk_link_data, "kernels": kernels, "scope_data": scope_data}
         return result
 
     def _parse_msprof_data(self, file_list):
@@ -298,7 +300,7 @@ class AscendTimelineGenerator(BaseTimelineGenerator):
                     continue
 
                 op_full_name = event.get('name')
-                if op_full_name and op_full_name.startswith(self.top_scope_name):
+                if op_full_name and op_full_name.startswith(Constant.TOP_SCOPE_NAMES):
                     ts = Decimal(event.get('ts')).quantize(Decimal('0.000'))
                     te = ts + Decimal(event.get('dur')).quantize(Decimal('0.000'))
                     scope_data.append((op_full_name.split('/')[:-1], ts, te))
@@ -313,18 +315,18 @@ class AscendTimelineGenerator(BaseTimelineGenerator):
         """Parse scope info of op"""
         if not scope_data:
             return []
-        new_pid = int(f'{self.scope_index}{self._rank_id}')
+        new_pid = Constant.SCOPE_LAYLER
         scope_data.sort(key=lambda x: x[1])
         process_list = [
             {"name": "process_name",
              "pid": new_pid,
              "args": {
-                 "name": f"Scope Layer Rank{self._rank_id}"
+                 "name": f"Scope Layer"
              },
              "ph": "M"},
             {"name": "process_sort_index",
              "pid": new_pid,
-             "args": {"sort_index": self.scope_index},
+             "args": {"sort_index": new_pid},
              "ph": "M"}
         ]
 

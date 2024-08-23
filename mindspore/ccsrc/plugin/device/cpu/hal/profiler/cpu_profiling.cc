@@ -164,7 +164,7 @@ void CPUProfiler::OpDataProducerBegin(const std::string op_name, const uint32_t 
   if (!GetEnableFlag() || !GetOpTimeFlag()) {
     return;
   }
-  op_time_start_ = GetHostMonoTimeStamp();
+  op_time_start_ = GetHostMonoTimeStamp();  // ns
   op_time_mono_start_ = GetHostMonoTimeStamp();
   SetRunTimeData(op_name, pid);
   RecordGpuOneStepStartEndInfo();

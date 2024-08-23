@@ -76,9 +76,10 @@ Status TakeOp::CommonGetNextRow(TensorRow *row, bool is_pull_mode) {
 
 Status TakeOp::GetNextRow(TensorRow *row) {
   RETURN_UNEXPECTED_IF_NULL(row);
-  RETURN_IF_NOT_OK(CollectOpInfoStart(this->NameWithID(), "GetFromPreviousOp"));
+  uint64_t start_time = GetSyscnt();
   RETURN_IF_NOT_OK(CommonGetNextRow(row, false));
-  RETURN_IF_NOT_OK(CollectOpInfoEnd(this->NameWithID(), "GetFromPreviousOp", {{"TensorRowFlags", row->FlagName()}}));
+  RETURN_IF_NOT_OK(
+    CollectOpInfoEnd(this->NameWithID(), "GetFromPreviousOp", start_time, {{"TensorRowFlags", row->FlagName()}}));
   return Status::OK();
 }
 

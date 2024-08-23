@@ -150,7 +150,7 @@ void ExecutionTree::PrintNode(std::ostream &out, const std::shared_ptr<DatasetOp
 
 // Start the execution of the tree
 Status ExecutionTree::Launch() {
-  RETURN_IF_NOT_OK(CollectPipelineInfoStart("Pipeline", "Launch"));
+  uint64_t start_time = GetSyscnt();
   // opencv limit too many threads
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__) && !defined(ENABLE_ANDROID)
 #ifdef WITH_BACKEND
@@ -205,7 +205,7 @@ Status ExecutionTree::Launch() {
   }
 
   tree_state_ = kDeTStateExecuting;
-  RETURN_IF_NOT_OK(CollectPipelineInfoEnd("Pipeline", "Launch"));
+  RETURN_IF_NOT_OK(CollectPipelineInfoEnd("Pipeline", "Launch", start_time));
   return Status::OK();
 }
 

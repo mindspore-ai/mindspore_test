@@ -128,7 +128,7 @@ def train_with_profiler():
     loss = nn.SoftmaxCrossEntropyWithLogits(sparse=True, reduction="mean")
     optim = Momentum(lenet.trainable_params(), learning_rate=0.1, momentum=0.9)
 
-    profiler = Profiler(output_path=output_path, l2_cache=True, data_process=True)
+    profiler = Profiler(output_path=output_path, l2_cache=True, data_process=True, profile_framework='all')
     model = Model(lenet, loss_fn=loss, optimizer=optim, metrics={'acc': Accuracy()})
     model.train(1, ds_train, dataset_sink_mode=True)
     profiler.analyse(mode=ANALYSIS_ASYNC_MODE)

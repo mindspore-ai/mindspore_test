@@ -584,7 +584,7 @@ ActorSet *GraphScheduler::Transform(const GraphCompilerInfo &graph_compiler_info
   };
   // cppcheck-suppress unreadVariable
   ScopeCleaner cleaner(this);
-  (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageGraphTransform, 1, 0, 0);
+  uint64_t start_time_0 = profiler::GetClockSyscnt();
   MS_LOG(INFO) << "Graph(" << graph_compiler_info.name_
                << ") transforms actor begin, strategy:" << kGraphExecutionStrategyStr.at(graph_compiler_info.strategy_);
   if (graph_compiler_info.graphs_.size() == 0 && graph_compiler_info.control_nodes_.size() <= 1) {
@@ -603,23 +603,26 @@ ActorSet *GraphScheduler::Transform(const GraphCompilerInfo &graph_compiler_info
     graph_compiler_info.strategy_ = GraphExecutionStrategy::kPipeline;
   }
   PersistDeviceTensor(graph_compiler_info);
-  (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageBuild, 1, 0, 0);
+  uint64_t start_time_1 = profiler::GetClockSyscnt();
   const auto &actor_set = Build(graph_compiler_info);
-  (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageBuild, 1, 0, 1);
+  (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageBuild, start_time_1,
+                                  profiler::GetClockSyscnt(), 1);
   MS_EXCEPTION_IF_NULL(actor_set);
   CacheGraphOutputToActor(graph_compiler_info);
   UpdateDeviceAddressByRefInternalParameter(graph_compiler_info);
-  (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageLink, 1, 0, 0);
+  start_time_1 = profiler::GetClockSyscnt();
   Link(actor_set.get(), graph_compiler_info);
-  (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageLink, 1, 0, 1);
+  (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageLink, start_time_1,
+                                  profiler::GetClockSyscnt(), 1);
   DumpActor(actor_set.get(), graph_compiler_info);
   if (graph_compiler_info.strategy_ == GraphExecutionStrategy::kPipeline) {
     SchedulerHelper::CheckActorValid(actor_set.get());
   }
 
-  (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageOptimize, 1, 0, 0);
+  start_time_1 = profiler::GetClockSyscnt();
   Optimize(actor_set, graph_compiler_info);
-  (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageOptimize, 1, 0, 1);
+  (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageOptimize, start_time_1,
+                                  profiler::GetClockSyscnt(), 1);
   DumpFinalActor(actor_set.get(), graph_compiler_info);
   MS_LOG(INFO) << "Graph(" << graph_compiler_info.name_ << ") transforms actor end.";
 
@@ -665,7 +668,8 @@ ActorSet *GraphScheduler::Transform(const GraphCompilerInfo &graph_compiler_info
   }
 
   actor_set->all_actors_ = SchedulerHelper::CollectActors(actor_set.get());
-  (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageGraphTransform, 1, 0, 1);
+  (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageGraphTransform, start_time_0,
+                                  profiler::GetClockSyscnt(), 1);
   return actor_set.get();
 }
 

@@ -24,7 +24,6 @@ from mindspore.profiler.parser.ascend_analysis.fwk_file_parser import FwkFilePar
 from mindspore.profiler.parser.ascend_analysis.trace_event_manager import TraceEventManager
 from mindspore.profiler.parser.ascend_analysis.msprof_timeline_parser import MsprofTimelineParser
 from mindspore.profiler.parser.ascend_analysis.profiler_info_parser import ProfilerInfoParser
-from mindspore.profiler.parser.ascend_analysis.constant import Constant
 
 
 class FwkCANNParser:
@@ -36,11 +35,15 @@ class FwkCANNParser:
         source_path = validate_and_normalize_path(source_path)
         ProfilerInfoParser.init_source_path(source_path)
         ProfilerInfoParser.init_rank_id(rank_id)
+
         fwk_parser = FwkFileParser(source_path, rank_id)
-        msprof_timeline_parser = MsprofTimelineParser(msprof_data)
         self._fwk_data = fwk_parser.get_op_range_data(step_list)
-        self._fwk_json = fwk_parser.get_fwk_trace_data(self._fwk_data)
-        self._start_flow_to_npu_dict, self._device_most_json = msprof_timeline_parser.get_acl_to_npu_data()
+        self._fwk_json, self._link_event_dict, self._fwk_launch_op = fwk_parser.get_fwk_trace_data(self._fwk_data)
+
+        msprof_timeline_parser = MsprofTimelineParser(msprof_data)
+        self._start_flow_to_npu_dict, self._device_mostly_json, self.scope_data_without_flow \
+            = msprof_timeline_parser.get_acl_to_npu_data()
+        self.scope_data_with_flow = []
         self.rank_id: int = rank_id
         self.kernels: List[CANNEvent] = []
 
@@ -51,18 +54,12 @@ class FwkCANNParser:
         """
         fwk_flow_json = self.__link_msop_self()
         device_flow_and_x_json = self.__link_msop_kernel()
-        return self._fwk_json + fwk_flow_json + self._device_most_json + device_flow_and_x_json
+        return self._fwk_json + fwk_flow_json + self._device_mostly_json + device_flow_and_x_json
 
     def __link_msop_self(self):
         """Create flow between framework-side multi-level pipeline task."""
-        link_event_dict = defaultdict(list)
-        for op_data in self._fwk_data:
-            if op_data.name == Constant.FLOW_OP:
-                link_event_dict[op_data.flow_id].insert(0, op_data)
-            elif op_data.flow_id != Constant.INVALID_FLOW_ID:
-                link_event_dict[op_data.flow_id].append(op_data)
         flow_json = []
-        for op_data_list in link_event_dict.values():
+        for op_data_list in self._link_event_dict.values():
             if len(op_data_list) != 2:
                 logger.info('Only alow 2 op_data have the same flow_id. but got %s', len(op_data_list))
                 continue
@@ -70,22 +67,18 @@ class FwkCANNParser:
                                                                              op_data_list[1]))
         return flow_json
 
-    def __link_msop_kernel(self) -> List:
+    def __link_msop_kernel(self):
         """Associate the frame-side operator with the device-side kernel"""
         trace_data_json = []
-        op_data_by_tid = defaultdict(list)
         acl_to_npu_by_tid = {}
-        for host_data in self._fwk_data:
-            if 'KernelLaunch' in host_data.name or 'LaunchTask' in host_data.name:
-                op_data_by_tid[host_data.tid].append(host_data)
         for (cann_op_tid, cann_op_ts), event_list in self._start_flow_to_npu_dict.items():
             acl_to_npu_by_tid.setdefault(cann_op_tid, defaultdict(list))[cann_op_ts].extend(event_list)
 
-        if op_data_by_tid.keys() != acl_to_npu_by_tid.keys():
+        if self._fwk_launch_op and acl_to_npu_by_tid and self._fwk_launch_op.keys() != acl_to_npu_by_tid.keys():
             logger.warning("Failed to create link between mindspore operator and kernels.")
 
         for device_tid in acl_to_npu_by_tid:
-            host_data_sorted = sorted(op_data_by_tid.get(device_tid, []), key=lambda x: x.ts)
+            host_data_sorted = sorted(self._fwk_launch_op.get(device_tid, []), key=lambda x: x.ts)
             op_idx = 0
 
             for ts, device_data_list in sorted(acl_to_npu_by_tid.get(device_tid).items(), key=lambda x: x[0]):
@@ -94,10 +87,20 @@ class FwkCANNParser:
                 for device_data in device_data_list:
                     if status:
                         device_data.parent = host_data_sorted[op_idx]
-                        trace_data_json.extend(TraceEventManager.create_mindspore_to_npu_flow(host_data_sorted[op_idx],
+                        trace_data_json.extend(TraceEventManager.create_mindspore_to_npu_flow(device_data.parent,
                                                                                               device_data))
                         self.kernels.append(device_data)
-                    trace_data_json.append(device_data.to_json())
+
+                    scope_layer = MsprofTimelineParser.parse_ascend_hardware_scope(device_data)
+
+                    if scope_layer is not None:
+                        self.scope_data_with_flow.append(scope_layer)
+
+                    event_json = device_data.to_json()
+                    if event_json and isinstance(event_json, list):
+                        trace_data_json.extend(event_json)
+                    elif event_json and isinstance(event_json, dict):
+                        trace_data_json.append(event_json)
 
         return trace_data_json
 
@@ -124,7 +127,7 @@ class FwkCANNParser:
         while right > left:
             if op_list[left].ts - FwkCANNParser._time_padding_diff > ts:
                 return left, False
-            if op_list[left].end_us < ts:
+            if op_list[left].te < ts:
                 left += 1
             else:
                 return left, True

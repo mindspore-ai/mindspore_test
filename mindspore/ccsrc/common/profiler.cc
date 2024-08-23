@@ -240,10 +240,7 @@ void ProfilerAnalyzer::RecordData(const ProfilerDataPtr &data) noexcept {
   }
   if (mi_profiler_enable_) {
 #if defined(ENABLE_DEBUGGER)
-    auto ascend_profiler = mindspore::profiler::Profiler::GetInstance(kAscendDevice);
-    if (ascend_profiler != nullptr && ascend_profiler->EnableHostStack()) {
-      profiler::ascend::ProfilingFrameworkData::RecordHostProfile(data, step_);
-    }
+    profiler::ascend::ProfilingFrameworkData::RecordHostProfile(data);
 #endif
   }
 #endif

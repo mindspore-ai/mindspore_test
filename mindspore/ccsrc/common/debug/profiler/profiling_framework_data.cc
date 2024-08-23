@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <mutex>
 #include "include/backend/debug/profiler/profiling.h"
+#include "include/common/profiler.h"
 
 namespace mindspore {
 namespace profiler {
@@ -86,6 +87,18 @@ inline void EncodeStrArrayData(const uint16_t type, const std::vector<std::strin
   EncodeStrData(type, rst, result);
 }
 
+inline void EncodeStrMapData(const uint16_t type, const std::map<std::string, std::string> &data_map,
+                             const std::unique_ptr<std::vector<uint8_t>> &result) {
+  std::string rst = std::accumulate(data_map.begin(), data_map.end(), std::string(""),
+                                    [](const std::string &r, const std::pair<const std::string, std::string> &element) {
+                                      return r + element.first + ":" + element.second + ";";
+                                    });
+  if (!rst.empty()) {
+    rst.pop_back();
+  }
+  EncodeStrData(type, rst, result);
+}
+
 void OpRangeData::preprocess() {
   const std::string delim = "|";
   const std::string remove_ms = "site-packages/mindspore";
@@ -108,9 +121,8 @@ std::vector<uint8_t> OpRangeData::encode() {
   preprocess();
   std::unique_ptr<std::vector<uint8_t>> result = std::make_unique<std::vector<uint8_t>>();
   EncodeFixedData<int64_t>({start_ns, end_ns, sequence_number}, result);
-  EncodeFixedData<uint64_t>({process_id, start_thread_id, end_thread_id, forward_thread_id}, result);
-  EncodeFixedData<uint64_t>({flow_id}, result);
-  EncodeFixedData<uint64_t>({step}, result);
+  EncodeFixedData<uint64_t>({process_id, start_thread_id, end_thread_id, forward_thread_id, flow_id, step}, result);
+  EncodeFixedData<int8_t>({level}, result);
   result->push_back(is_async);
   EncodeStrData(static_cast<uint16_t>(OpRangeDataType::NAME), name, result);
   if (!input_dtypes.empty()) {
@@ -121,6 +133,9 @@ std::vector<uint8_t> OpRangeData::encode() {
   }
   if (!stack.empty()) {
     EncodeStrArrayData(static_cast<uint16_t>(OpRangeDataType::STACK), stack, result);
+  }
+  if (!custom_info.empty()) {
+    EncodeStrMapData(static_cast<uint16_t>(OpRangeDataType::CUSTOM_INFO), custom_info, result);
   }
   if (!module_hierarchy.empty()) {
     EncodeStrArrayData(static_cast<uint16_t>(OpRangeDataType::MODULE_HIERARCHY), module_hierarchy, result);
@@ -139,27 +154,32 @@ std::vector<uint8_t> OpRangeData::encode() {
 }
 
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && !defined(ANDROID) && !defined(__APPLE__)
-void ProfilingFrameworkData::RecordHostProfile(std::shared_ptr<ProfilerData> data, uint64_t step) {
-  auto ascend_profiler = Profiler::GetInstance(kAscendDevice);
-  MS_EXCEPTION_IF_NULL(ascend_profiler);
-  if (!ascend_profiler->EnableHostStack()) {
+void ProfilingFrameworkData::RecordHostProfile(std::shared_ptr<ProfilerData> data) {
+  auto profiler_manager = profiler::ProfilerManager::GetInstance();
+  MS_EXCEPTION_IF_NULL(profiler_manager);
+
+  if (!profiler_manager->GetProfilingEnableFlag() || !profiler_manager->EnableCollectHost()) {
+    MS_LOG(DEBUG) << "Profiler or profile_framework is not enabled, no need to record Host info.";
     return;
   }
   std::vector<std::string> stack_vec;
   stack_vec.push_back(data->py_stack_);
   std::string op_name = data->op_name_;
-  if (data->is_stage_) {
+  if (data->is_graph_data_) {
+    op_name = data->module_graph_ + "::" + data->event_graph_ + "::" + data->op_name_;
+  } else if (data->is_stage_) {
     op_name = kProfilerStageString.at(data->stage_);
   } else if (data->op_name_ != "flow") {
     op_name = kProfilerModuleString.at(data->module_) + "::" + kProfilerEventString.at(data->event_) + "::" + op_name;
   }
+  auto &instance = runtime::ProfilerAnalyzer::GetInstance();
   std::unique_ptr<OpRangeData> report = std::make_unique<OpRangeData>(
     data->start_time_, data->end_time_, 0, 0, data->tid_, data->tid_, data->tid_, false, op_name, std::move(stack_vec),
-    data->flow_id_, ProfilingFrameworkData::Device_Id, step);
+    data->flow_id_, ProfilingFrameworkData::Device_Id, instance.step(), data->level_, data->custom_info_);
   ProfilingDataDumper::GetInstance().Report(std::move(report));
 }
 #else
-void ProfilingFrameworkData::RecordHostProfile(std::shared_ptr<ProfilerData> data, uint64_t step) {
+void ProfilingFrameworkData::RecordHostProfile(std::shared_ptr<ProfilerData> data) {
   MS_LOG(INTERNAL_EXCEPTION) << "profiler not support cpu windows.";
 }
 #endif
