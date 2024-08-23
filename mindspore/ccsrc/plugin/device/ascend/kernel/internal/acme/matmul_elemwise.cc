@@ -21,16 +21,17 @@
 
 namespace mindspore {
 namespace kernel {
-
+namespace {
 constexpr auto matmul_elemwise_fusion_relu_str = "relu";
 constexpr auto matmul_elemwise_fusion_gelu_str = "gelu";
 constexpr auto matmul_elemwise_fusion_biasadd_str = "bias_add";
 constexpr auto matmul_elemwise_fusion_biasadd_fastgelu_str = "bias_add_fastgelu";
+}  // namespace
 
-acme::AcmeOpPtr AcmeFusedMatMulElemUnary::CreateKernel(const acme::InputsImmutableInfoList &inputs,
-                                                       const acme::OutputsImmutableInfoList &outputs,
-                                                       const std::vector<KernelTensor *> &ms_inputs,
-                                                       const std::vector<KernelTensor *> &ms_outputs) {
+acme::AcmeOpPtr AcmeFusedMatmulElemBase::CreateKernel(const acme::InputsImmutableInfoList &inputs,
+                                                      const acme::OutputsImmutableInfoList &outputs,
+                                                      const std::vector<KernelTensor *> &ms_inputs,
+                                                      const std::vector<KernelTensor *> &ms_outputs) {
   acme::MatmulParam param;
   param.transpose_a = primitive_->HasAttr("is_trans_a") ? GetValue<bool>(primitive_->GetAttr("is_trans_a")) : false;
   param.transpose_b = primitive_->HasAttr("is_trans_b") ? GetValue<bool>(primitive_->GetAttr("is_trans_b")) : false;
@@ -41,23 +42,7 @@ acme::AcmeOpPtr AcmeFusedMatMulElemUnary::CreateKernel(const acme::InputsImmutab
     param.with_relu = true;
   } else if (elemwise_type == matmul_elemwise_fusion_gelu_str) {
     param.with_gelu = true;
-  }
-  param.enable_shuffle = false;  // the real definition is in acme
-  param.enable_dequant = false;
-  return acme::CreateMatmulOp(inputs, outputs, param, acme::kAcmeMatMulOpName);
-}
-
-acme::AcmeOpPtr AcmeFusedMatMulElemBinary::CreateKernel(const acme::InputsImmutableInfoList &inputs,
-                                                        const acme::OutputsImmutableInfoList &outputs,
-                                                        const std::vector<KernelTensor *> &ms_inputs,
-                                                        const std::vector<KernelTensor *> &ms_outputs) {
-  acme::MatmulParam param;
-  param.transpose_a = primitive_->HasAttr("is_trans_a") ? GetValue<bool>(primitive_->GetAttr("is_trans_a")) : false;
-  param.transpose_b = primitive_->HasAttr("is_trans_b") ? GetValue<bool>(primitive_->GetAttr("is_trans_b")) : false;
-  auto value_str = primitive_->GetAttr("ElemwiseType");
-  MS_EXCEPTION_IF_NULL(value_str);
-  std::string elemwise_type = GetValue<std::string>(value_str);
-  if (elemwise_type == matmul_elemwise_fusion_biasadd_str) {
+  } else if (elemwise_type == matmul_elemwise_fusion_biasadd_str) {
     param.with_bias = true;
   } else if (elemwise_type == matmul_elemwise_fusion_biasadd_fastgelu_str) {
     param.with_bias_fastgelu = true;
@@ -67,13 +52,20 @@ acme::AcmeOpPtr AcmeFusedMatMulElemBinary::CreateKernel(const acme::InputsImmuta
   return acme::CreateMatmulOp(inputs, outputs, param, acme::kAcmeMatMulOpName);
 }
 
-MS_ACME_KERNEL_FACTORY_REG(FusedMatMulElemBinary, acme::kAcmeMatMulOpName, AcmeFusedMatMulElemBinary);
-REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(FusedMatMulElemBinary, INPUT_NUM_3, INDEX_0, INDEX_1, INDEX_2);
-REG_MS_TO_INTERNAL_OUT_TENSOR_IDX_MAP(FusedMatMulElemBinary, OUTPUT_NUM_1, INDEX_0);
+uint64_t AcmeFusedMatmulElemBase::GenerateTilingKey(const std::vector<KernelTensor *> &inputs) {
+  auto value_str = primitive_->GetAttr("ElemwiseType");
+  MS_EXCEPTION_IF_NULL(value_str);
+  std::string elemwise_type = GetValue<std::string>(value_str);
+  return AcmeTilingCache::GenerateKey(kernel_name_, inputs, elemwise_type);
+}
 
-MS_ACME_KERNEL_FACTORY_REG(FusedMatMulElemUnary, acme::kAcmeMatMulOpName, AcmeFusedMatMulElemUnary);
-REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(FusedMatMulElemUnary, INPUT_NUM_2, INDEX_0, INDEX_1);
-REG_MS_TO_INTERNAL_OUT_TENSOR_IDX_MAP(FusedMatMulElemUnary, OUTPUT_NUM_1, INDEX_0);
+MS_ACME_KERNEL_FACTORY_REG(FusedMatmulElemBinary, acme::kAcmeMatMulOpName, AcmeFusedMatmulElemBinary);
+REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(FusedMatmulElemBinary, INPUT_NUM_3, INDEX_0, INDEX_1, INDEX_2);
+REG_MS_TO_INTERNAL_OUT_TENSOR_IDX_MAP(FusedMatmulElemBinary, OUTPUT_NUM_1, INDEX_0);
+
+MS_ACME_KERNEL_FACTORY_REG(FusedMatmulElemUnary, acme::kAcmeMatMulOpName, AcmeFusedMatmulElemUnary);
+REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(FusedMatmulElemUnary, INPUT_NUM_2, INDEX_0, INDEX_1);
+REG_MS_TO_INTERNAL_OUT_TENSOR_IDX_MAP(FusedMatmulElemUnary, OUTPUT_NUM_1, INDEX_0);
 
 }  // namespace kernel
 }  // namespace mindspore

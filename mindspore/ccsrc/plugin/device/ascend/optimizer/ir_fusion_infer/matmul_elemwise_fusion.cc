@@ -27,6 +27,10 @@
 
 namespace mindspore {
 namespace opt {
+namespace {
+constexpr auto kFusedMatmulElemUnaryOpName = "FusedMatmulElemUnary";
+constexpr auto kFusedMatmulElemBinaryOpName = "FusedMatmulElemBinary";
+}  // namespace
 const BaseRef MatmulElemFusionBase::DefinePattern() const {
   auto x = std::make_shared<Var>();
   auto w = std::make_shared<Var>();
@@ -78,9 +82,9 @@ const AnfNodePtr MatmulElemFusionBase::Process(const FuncGraphPtr &func_graph, c
   // create op
   PrimitivePtr matmul_elemwise_prim = nullptr;
   if (elewise_input_num_ == kUnaryInputNum) {
-    matmul_elemwise_prim = prim::kPrimFusedMatMulElemUnary->Clone();
+    matmul_elemwise_prim = std::make_shared<Primitive>(kFusedMatmulElemUnaryOpName);
   } else if (elewise_input_num_ == kBinaryInputNum) {
-    matmul_elemwise_prim = prim::kPrimFusedMatMulElemBinary->Clone();
+    matmul_elemwise_prim = std::make_shared<Primitive>(kFusedMatmulElemBinaryOpName);
   }
   MS_CHECK_TRUE_RET(matmul_elemwise_prim, {});
 
@@ -108,7 +112,7 @@ const AnfNodePtr MatmulElemFusionBase::Process(const FuncGraphPtr &func_graph, c
   }
   MS_EXCEPTION_IF_NULL(matmul_elemwise_cnode);
 
-  matmul_elemwise_cnode->set_fullname_with_scope(elemwise_node->fullname_with_scope() + "_matmul_elemwise");
+  matmul_elemwise_cnode->set_scope(elemwise_node->scope());
   if (node->abstract() != nullptr) {
     matmul_elemwise_cnode->set_abstract(elemwise_node->abstract()->Clone());
   }

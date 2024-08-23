@@ -84,5 +84,20 @@ TuplePtr MatmulFusionUtils::InferenceMultiMatmulInferType(const PrimitivePtr &pr
   }
 }
 
+TypePtr MatmulFusionUtils::FusedMatMulElemInferType(const PrimitivePtr &primitive,
+                                                    const std::vector<AbstractBasePtr> &input_args,
+                                                    const int input_num) {
+  auto op_name = primitive->name();
+  (void)CheckAndConvertUtils::CheckInteger("input number", SizeToLong(input_args.size()), kEqual, input_num, op_name);
+  auto x = CheckAndConvertUtils::CheckArgsType(op_name, input_args, 0, kObjectTypeTensorType);
+  auto x_tensor_type = x->GetType()->cast<TensorTypePtr>();
+  MS_EXCEPTION_IF_NULL(x_tensor_type);
+  TypePtr x_type = x_tensor_type->element();
+  if (x_type->type_id() == TypeId::kNumberTypeInt8) {
+    return kFloat16;
+  }
+  return x_type;
+}
+
 }  // namespace ops
 }  // namespace mindspore

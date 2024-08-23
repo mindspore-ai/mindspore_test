@@ -202,6 +202,7 @@ constexpr auto kAllGatherMatmulOpName = "AllGatherMatmul";
 constexpr auto kFusedMatMulElemUnaryOpName = "FusedMatMulElemUnary";
 constexpr auto kFusedMatMulElemBinaryOpName = "FusedMatMulElemBinary";
 constexpr auto kQuantBatchMatmulAllReduceOpName = "QuantBatchMatmulAllReduce";
+constexpr auto kSilentCheckOpName = "SilentCheck";
 }  // namespace mindspore
 
 #endif  // MINDSPORE_CORE_BASE_MATH_OP_NAME_H_
