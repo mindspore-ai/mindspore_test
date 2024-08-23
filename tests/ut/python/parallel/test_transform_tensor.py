@@ -304,16 +304,52 @@ def test_construct_tensor_layout_for_opt_shard():
     """
     dev_matrix = (2, 2, 2)
     tensor_map = (2, 1, -1)
-    opt_shard_step = 4
-    opt_shard_size = 2
+    opt_shard_step = 1
+    opt_shard_size = -1
     origin_full_tensor_shape = (16, 16, 16)
     new_dev_matrix, new_tensor_map, new_shape = _construct_tensor_layout_for_opt_shard(dev_matrix, tensor_map,
                                                                                        opt_shard_step, opt_shard_size,
                                                                                        origin_full_tensor_shape)
-    assert new_dev_matrix == [2, 2, 2, 1]
-    assert new_tensor_map == [2, 3, 1, -1]
+    assert new_dev_matrix == [2, 2, 2]
+    assert new_tensor_map == [2, 0, 1, -1]
     assert new_shape == [2, 8, 16, 16]
 
+
+def test_construct_tensor_layout_for_opt_shard_dim0():
+    """
+    Feature: construct tensor layout for optimizer shard.
+    Description: construct tensor layout for optimizer shard, and sharding not in first dim.
+    Expectation: assert no error.
+    """
+    dev_matrix = (2, 2, 2)
+    tensor_map = (2, 1, -1)
+    opt_shard_step = 1
+    opt_shard_size = 2
+    origin_full_tensor_shape = (16, 32, 8)
+    new_dev_matrix, new_tensor_map, new_shape = _construct_tensor_layout_for_opt_shard(dev_matrix, tensor_map,
+                                                                                       opt_shard_step, opt_shard_size,
+                                                                                       origin_full_tensor_shape)
+    assert new_dev_matrix == [2, 2, 2]
+    assert new_tensor_map == [2, 0, 1, -1]
+    assert new_shape == [2, 8, 32, 8]
+
+def test_construct_tensor_layout_for_opt_shard_dim1():
+    """
+    Feature: construct tensor layout for optimizer shard.
+    Description: construct tensor layout for optimizer shard, and sharding not in first dim.
+    Expectation: assert no error.
+    """
+    dev_matrix = (2, 2, 2)
+    tensor_map = (2, 0, -1)
+    opt_shard_step = 2
+    opt_shard_size = 2
+    origin_full_tensor_shape = (16, 32, 8)
+    new_dev_matrix, new_tensor_map, new_shape = _construct_tensor_layout_for_opt_shard(dev_matrix, tensor_map,
+                                                                                       opt_shard_step, opt_shard_size,
+                                                                                       origin_full_tensor_shape)
+    assert new_dev_matrix == [2, 2, 2]
+    assert new_tensor_map == [2, 1, 0, -1]
+    assert new_shape == [2, 8, 32, 8]
 
 def test_construct_from_to_tensor_layout():
     """
