@@ -705,8 +705,11 @@ void MsContext::SetMsInternalEnableCustomKernelList() {
   const std::string kDefaultEnabledOpList =
     "MatMul,RmsNorm,Add,Sub,FlashAttentionScore,PagedAttention,AddRmsNorm,AddLayerNorm,MatMulAllReduce,"
     "InferenceMatmulSplit,AddRmsNormQuantV2,InferenceSwiGLU,QbmmAllReduceAdd,QbmmAdd";
+  const std::string k310pDefaultEnabledOpList = "QbmmAllReduceAdd,QbmmAdd";
   auto internal_op_boost_env = common::GetEnv("MS_ENABLE_INTERNAL_BOOST");
   bool is_enable_internal_op = true;
+  bool is_310p = ascend_soc_version() == "ascend310p";
+
   if (internal_op_boost_env == "off") {
     is_enable_internal_op = false;
   }
@@ -714,6 +717,9 @@ void MsContext::SetMsInternalEnableCustomKernelList() {
   std::set<std::string> enable_fusion_list;
   if (is_enable_internal_op) {
     SplitString(kDefaultEnabledOpList, ',', &enable_fusion_list);
+  }
+  if (is_310p) {
+    SplitString(k310pDefaultEnabledOpList, ',', &enable_fusion_list);
   }
 
   std::string env = common::GetEnv("MS_INTERNAL_ENABLE_CUSTOM_KERNEL_LIST");
