@@ -391,9 +391,7 @@ def test_concat_axis_using_default_value():
     assert_executed_by_graph_mode(fn)
 
 
-@pytest.mark.level0
-@pytest.mark.platform_x86_cpu
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_concat_axis_using_custom_value():
     """
     Feature: One stage basic operation.
