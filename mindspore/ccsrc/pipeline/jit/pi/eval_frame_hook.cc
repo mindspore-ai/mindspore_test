@@ -59,8 +59,8 @@ bool ApplyCaptureContext(PyThreadState *tstate, EvalFrameObject *ef, PyObject **
   auto c = GetJitCompileResults(co);
   if (c == nullptr) {
     if (ctx->IsSkip(f)) {
-      SetJitCompileResults(co, &JitCompileResults::skip_);
-      c = &JitCompileResults::skip_;
+      SetJitCompileResults(co, JitCompileResults::get_skip_jcr());
+      c = JitCompileResults::get_skip_jcr();
       MS_LOG(DEBUG) << "skip code " << py::str(reinterpret_cast<PyObject *>(co));
     } else {
       py::object code = py::cast<py::object>(reinterpret_cast<PyObject *>(co));
