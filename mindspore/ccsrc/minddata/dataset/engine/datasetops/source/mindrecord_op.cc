@@ -148,23 +148,23 @@ Status MindRecordOp::WorkerEntry(int32_t worker_id) {
   uint64_t start_time = GetSyscnt();
   RETURN_IF_NOT_OK(worker_in_queues_[worker_id]->PopFront(&io_block));
   RETURN_IF_NOT_OK(
-    CollectOpInfoEnd(this->NameWithID(), "WorkerGet", start_time, {{"TensorRowFlags", io_block->FlagName()}}));
+    CollectOpInfo(this->NameWithID(), "WorkerGet", start_time, {{"TensorRowFlags", io_block->FlagName()}}));
   start_time = GetSyscnt();
 
   while (io_block != nullptr) {
     if (io_block->wait()) {
       RETURN_IF_NOT_OK(
-        CollectOpInfoEnd(this->NameWithID(), "WorkerProcess", start_time, {{"TensorRowFlags", io_block->FlagName()}}));
+        CollectOpInfo(this->NameWithID(), "WorkerProcess", start_time, {{"TensorRowFlags", io_block->FlagName()}}));
       RETURN_IF_NOT_OK(worker_out_queues_[worker_id]->EmplaceBack(TensorRow(TensorRow::TensorRowFlags::kFlagWait)));
       RETURN_IF_NOT_OK(TaskManager::FindMe()->Wait());  // wait for auto tune update workers successful
       TaskManager::FindMe()->Clear();
     } else if (io_block->eoe()) {
       RETURN_IF_NOT_OK(
-        CollectOpInfoEnd(this->NameWithID(), "WorkerProcess", start_time, {{"TensorRowFlags", io_block->FlagName()}}));
+        CollectOpInfo(this->NameWithID(), "WorkerProcess", start_time, {{"TensorRowFlags", io_block->FlagName()}}));
       RETURN_IF_NOT_OK(worker_out_queues_[worker_id]->EmplaceBack(TensorRow(TensorRow::TensorRowFlags::kFlagEOE)));
     } else if (io_block->eof()) {
       RETURN_IF_NOT_OK(
-        CollectOpInfoEnd(this->NameWithID(), "WorkerProcess", start_time, {{"TensorRowFlags", io_block->FlagName()}}));
+        CollectOpInfo(this->NameWithID(), "WorkerProcess", start_time, {{"TensorRowFlags", io_block->FlagName()}}));
       RETURN_IF_NOT_OK(worker_out_queues_[worker_id]->EmplaceBack(TensorRow(TensorRow::TensorRowFlags::kFlagEOF)));
     } else {
       // load TensorRow
@@ -178,8 +178,8 @@ Status MindRecordOp::WorkerEntry(int32_t worker_id) {
             shard_reader_->Close();
           }
         }
-        RETURN_IF_NOT_OK(CollectOpInfoEnd(this->NameWithID(), "WorkerProcess", start_time,
-                                          {{"TensorRowFlags", IOBlock(IOBlock::kFlagQuit).FlagName()}}));
+        RETURN_IF_NOT_OK(CollectOpInfo(this->NameWithID(), "WorkerProcess", start_time,
+                                       {{"TensorRowFlags", IOBlock(IOBlock::kFlagQuit).FlagName()}}));
         return Status::OK();  // empty key is a quit signal for workers
       }
 
@@ -192,13 +192,13 @@ Status MindRecordOp::WorkerEntry(int32_t worker_id) {
       }
       RETURN_IF_NOT_OK(GetRowFromReader(&fetched_row, row_id, worker_id));
       RETURN_IF_NOT_OK(
-        CollectOpInfoEnd(this->NameWithID(), "WorkerProcess", start_time, {{"TensorRowFlags", io_block->FlagName()}}));
+        CollectOpInfo(this->NameWithID(), "WorkerProcess", start_time, {{"TensorRowFlags", io_block->FlagName()}}));
       RETURN_IF_NOT_OK(worker_out_queues_[worker_id]->EmplaceBack(std::move(fetched_row)));
     }
     start_time = GetSyscnt();
     RETURN_IF_NOT_OK(worker_in_queues_[worker_id]->PopFront(&io_block));
     RETURN_IF_NOT_OK(
-      CollectOpInfoEnd(this->NameWithID(), "WorkerGet", start_time, {{"TensorRowFlags", io_block->FlagName()}}));
+      CollectOpInfo(this->NameWithID(), "WorkerGet", start_time, {{"TensorRowFlags", io_block->FlagName()}}));
     start_time = GetSyscnt();
   }
   RETURN_STATUS_UNEXPECTED("[Internal ERROR] Unexpected nullptr received in worker.");

@@ -29,10 +29,10 @@ enum TimeType : uint8_t { kStart = 0, kEnd = 1, kStamp = 2 };
 
 uint64_t GetSyscnt();
 
-Status CollectPipelineInfoEnd(const std::string &event, const std::string &stage, const uint64_t &start_time,
-                              const std::map<std::string, std::string> &custom_info = {});
+Status CollectPipelineInfo(const std::string &event, const std::string &stage, const uint64_t &start_time,
+                           const std::map<std::string, std::string> &custom_info = {});
 
-Status CollectOpInfoEnd(const std::string &event, const std::string &stage, const uint64_t &start_time,
-                        const std::map<std::string, std::string> &custom_info = {});
+Status CollectOpInfo(const std::string &event, const std::string &stage, const uint64_t &start_time,
+                     const std::map<std::string, std::string> &custom_info = {});
 }  // namespace mindspore::dataset
 #endif  // MINDSPORE_CCSRC_MINDDATA_DATASET_ENGINE_PERF_INFO_COLLECTOR_H_

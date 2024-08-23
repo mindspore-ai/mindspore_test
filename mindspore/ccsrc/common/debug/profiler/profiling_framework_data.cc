@@ -159,7 +159,6 @@ void ProfilingFrameworkData::RecordHostProfile(std::shared_ptr<ProfilerData> dat
   MS_EXCEPTION_IF_NULL(profiler_manager);
 
   if (!profiler_manager->GetProfilingEnableFlag() || !profiler_manager->EnableCollectHost()) {
-    MS_LOG(DEBUG) << "Profiler or profile_framework is not enabled, no need to record Host info.";
     return;
   }
   std::vector<std::string> stack_vec;

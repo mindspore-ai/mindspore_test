@@ -136,7 +136,7 @@ Status ZipOp::GetNextRow(TensorRow *row) {
     RETURN_IF_NOT_OK(drainPipeline(skip_child, false));
   }
   RETURN_IF_NOT_OK(
-    CollectOpInfoEnd(this->NameWithID(), "GetFromPreviousOp", start_time, {{"TensorRowFlags", row->FlagName()}}));
+    CollectOpInfo(this->NameWithID(), "GetFromPreviousOp", start_time, {{"TensorRowFlags", row->FlagName()}}));
   return Status::OK();
 }
 

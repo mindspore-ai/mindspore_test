@@ -205,7 +205,7 @@ Status ExecutionTree::Launch() {
   }
 
   tree_state_ = kDeTStateExecuting;
-  RETURN_IF_NOT_OK(CollectPipelineInfoEnd("Pipeline", "Launch", start_time));
+  RETURN_IF_NOT_OK(CollectPipelineInfo("Pipeline", "Launch", start_time));
   return Status::OK();
 }
 

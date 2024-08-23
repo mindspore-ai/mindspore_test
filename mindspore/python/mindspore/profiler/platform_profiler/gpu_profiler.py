@@ -31,7 +31,7 @@ class GpuProfiler(ProfilerInterface):
             op_time: bool = True,
             sync_enable: bool = True,
             data_process: bool = False,
-            profile_framework: bool = "all",
+            profile_framework: str = None,
             **kwargs
     ) -> None:
         super().__init__()

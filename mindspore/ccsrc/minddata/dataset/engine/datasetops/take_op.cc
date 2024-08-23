@@ -79,7 +79,7 @@ Status TakeOp::GetNextRow(TensorRow *row) {
   uint64_t start_time = GetSyscnt();
   RETURN_IF_NOT_OK(CommonGetNextRow(row, false));
   RETURN_IF_NOT_OK(
-    CollectOpInfoEnd(this->NameWithID(), "GetFromPreviousOp", start_time, {{"TensorRowFlags", row->FlagName()}}));
+    CollectOpInfo(this->NameWithID(), "GetFromPreviousOp", start_time, {{"TensorRowFlags", row->FlagName()}}));
   return Status::OK();
 }
 

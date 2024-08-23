@@ -303,34 +303,34 @@ Status BatchOp::WorkerEntry(int32_t workerId) {
 
   uint64_t start_time = GetSyscnt();
   RETURN_IF_NOT_OK(worker_in_queues_[workerId]->PopFront(&table_pair));
-  RETURN_IF_NOT_OK(CollectOpInfoEnd(this->NameWithID(), "WorkerGet", start_time));
+  RETURN_IF_NOT_OK(CollectOpInfo(this->NameWithID(), "WorkerGet", start_time));
   start_time = GetSyscnt();
 
   while (table_pair.second.ctrl_ != BatchCtrl::kQuit) {
     if (table_pair.second.ctrl_ == BatchCtrl::kNoCtrl) {
       TensorRow batched_tensor_row;
       RETURN_IF_NOT_OK(MakeBatchedRow(std::move(table_pair), &batched_tensor_row));
-      RETURN_IF_NOT_OK(CollectOpInfoEnd(this->NameWithID(), "WorkerProcess", start_time));
+      RETURN_IF_NOT_OK(CollectOpInfo(this->NameWithID(), "WorkerProcess", start_time));
       RETURN_IF_NOT_OK(worker_out_queues_[workerId]->EmplaceBack(std::move(batched_tensor_row)));
     } else if (table_pair.second.ctrl_ == BatchCtrl::kEOE) {
-      RETURN_IF_NOT_OK(CollectOpInfoEnd(this->NameWithID(), "WorkerProcess", start_time));
+      RETURN_IF_NOT_OK(CollectOpInfo(this->NameWithID(), "WorkerProcess", start_time));
       RETURN_IF_NOT_OK(worker_out_queues_[workerId]->EmplaceBack(TensorRow(TensorRow::TensorRowFlags::kFlagEOE)));
     } else if (table_pair.second.ctrl_ == BatchCtrl::kEOF) {
-      RETURN_IF_NOT_OK(CollectOpInfoEnd(this->NameWithID(), "WorkerProcess", start_time));
+      RETURN_IF_NOT_OK(CollectOpInfo(this->NameWithID(), "WorkerProcess", start_time));
       RETURN_IF_NOT_OK(worker_out_queues_[workerId]->EmplaceBack(TensorRow(TensorRow::TensorRowFlags::kFlagEOF)));
     } else if (table_pair.second.ctrl_ == BatchCtrl::kWait) {
-      RETURN_IF_NOT_OK(CollectOpInfoEnd(this->NameWithID(), "WorkerProcess", start_time));
+      RETURN_IF_NOT_OK(CollectOpInfo(this->NameWithID(), "WorkerProcess", start_time));
       RETURN_IF_NOT_OK(worker_out_queues_[workerId]->EmplaceBack(TensorRow(TensorRow::TensorRowFlags::kFlagWait)));
       RETURN_IF_NOT_OK(TaskManager::FindMe()->Wait());  // wait for auto tune update workers successful
       TaskManager::FindMe()->Clear();
     }
     start_time = GetSyscnt();
     RETURN_IF_NOT_OK(worker_in_queues_[workerId]->PopFront(&table_pair));
-    RETURN_IF_NOT_OK(CollectOpInfoEnd(this->NameWithID(), "WorkerGet", start_time));
+    RETURN_IF_NOT_OK(CollectOpInfo(this->NameWithID(), "WorkerGet", start_time));
     start_time = GetSyscnt();
   }
-  RETURN_IF_NOT_OK(CollectOpInfoEnd(this->NameWithID(), "WorkerProcess", start_time,
-                                    {{"TensorRowFlags", TensorRow(TensorRow::kFlagQuit).FlagName()}}));
+  RETURN_IF_NOT_OK(CollectOpInfo(this->NameWithID(), "WorkerProcess", start_time,
+                                 {{"TensorRowFlags", TensorRow(TensorRow::kFlagQuit).FlagName()}}));
 
 #ifdef ENABLE_PYTHON
   // batch operation with per_batch_map use global executor in Python Layer to run transform in eager mode

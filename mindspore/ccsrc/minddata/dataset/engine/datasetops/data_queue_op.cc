@@ -449,7 +449,7 @@ Status DataQueueOp::WaitForAscendQueue(size_t batch_data_len) {
     queue_size = ascend_data_queue_->QueryQueueSize();
     std::this_thread::sleep_for(std::chrono::microseconds(send_interval));
   }
-  RETURN_IF_NOT_OK(CollectOpInfoEnd(this->NameWithID(), "WaitForAscend", start_time));
+  RETURN_IF_NOT_OK(CollectOpInfo(this->NameWithID(), "WaitForAscend", start_time));
   return Status::OK();
 }
 
@@ -548,7 +548,7 @@ Status DataQueueOp::SendDataToAscend() {
       }
 #endif
       RETURN_IF_NOT_OK(
-        CollectOpInfoEnd(this->NameWithID(), "PushToAscend", start_time, {{"TensorRowFlags", curr_row.FlagName()}}));
+        CollectOpInfo(this->NameWithID(), "PushToAscend", start_time, {{"TensorRowFlags", curr_row.FlagName()}}));
       PrintEndInfoWhenFirstBatch(&first_push_flag_);
 #ifndef ENABLE_SECURITY
       ProfilingRecorder(is_profiling_enable, profiling_node, send_batch, tdt_cost, &batch_start_time, &end_time,
@@ -593,8 +593,8 @@ Status DataQueueOp::SendDataToAscend() {
     uint64_t start_time = GetSyscnt();
     // send epoch end flag: ACL_TENSOR_DATA_END_OF_SEQUENCE to tdt
     RETURN_IF_NOT_OK(SendEpochEndToAscend(curr_row, is_profiling_enable, &tdt_cost, &is_break_loop));
-    RETURN_IF_NOT_OK(CollectOpInfoEnd(this->NameWithID(), "PushToAscend", start_time,
-                                      {{"TensorRowFlags", TensorRow(TensorRow::kFlagEOE).FlagName()}}));
+    RETURN_IF_NOT_OK(CollectOpInfo(this->NameWithID(), "PushToAscend", start_time,
+                                   {{"TensorRowFlags", TensorRow(TensorRow::kFlagEOE).FlagName()}}));
     UpdateRepeatAndEpochCounter();
 #ifndef ENABLE_SECURITY
     RecordProfilingData(is_profiling_enable, true, &connector_size, &connector_capacity, &send_batch);
@@ -901,7 +901,7 @@ Status DataQueueOp::PushDataToGPU() {
       } else {
         PushDataToGPUCacheQueue(std::move(items));
       }
-      RETURN_IF_NOT_OK(CollectOpInfoEnd(this->NameWithID(), "PushToGPU", start_time, {{"TensorRowFlags", "Data"}}));
+      RETURN_IF_NOT_OK(CollectOpInfo(this->NameWithID(), "PushToGPU", start_time, {{"TensorRowFlags", "Data"}}));
 #ifndef ENABLE_SECURITY
       ProfilingRecorder(is_profiling_enable, profiling_node, send_batch, push_cost, &batch_start_time, &end_time,
                         gpu_connector_->capacity(), gpu_connector_->size());

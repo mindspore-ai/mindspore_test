@@ -32,7 +32,7 @@ class CpuProfiler(ProfilerInterface):
             data_process: bool = False,
             output_path: str = "./data",
             profile_memory: bool = False,
-            profile_framework: str = "all",
+            profile_framework: str = None,
             **kwargs
     ) -> None:
         super().__init__()
