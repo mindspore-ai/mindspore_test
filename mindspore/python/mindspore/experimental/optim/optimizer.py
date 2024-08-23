@@ -143,7 +143,7 @@ class Optimizer(Cell):
         self.lrs.append(lr)
         param_group["lr"] = lr
         param_group["weight_decay"] = weight_decay
-        if "amsgrad" in param_group and param_group.get("amsgrad"):
+        if "amsgrad" in param_group and param_group.get("amsgrad") and hasattr(self, 'max_v_group'):
             param_items = ParameterTuple(tuple(param_group.get("params")))
             param_group["max_exp_avg_sq"] = param_items.clone(prefix="max_exp_avg_sq", init='zeros')
         self.param_groups.append(param_group)

@@ -168,6 +168,7 @@ class AdamW(Optimizer):
         defaults = dict(lr=lr, betas=betas, eps=eps,
                         weight_decay=weight_decay, amsgrad=amsgrad,
                         maximize=maximize)
+        self.max_v_group = True
         super(AdamW, self).__init__(params, defaults)
 
         self.exp_avg = self.parameters.clone(prefix="exp_avg", init='zeros')
