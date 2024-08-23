@@ -63,7 +63,9 @@ void MathInfo::SetDivisorRemainder(int64_t d, int64_t r) {
   div_rem_.first = d;
   r = (r % d + d) % d;  // keep remainder in range [0, d)
   div_rem_.second = r;
-  range_.first = std::max(range_.first, d + r);
+  if (range_.second > d + r) {
+    range_.first = std::max(range_.first, d + r);
+  }
 }
 
 void MathInfo::UpdateExprRoot() const {

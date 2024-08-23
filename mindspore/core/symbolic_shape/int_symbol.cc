@@ -83,6 +83,22 @@ void IntSymbol::UpdateImpl(const SymbolPtr &s) {
   has_data_ = true;
 }
 
+void IntSymbol::SetPositive() {
+  if (has_data_) {
+    // in some case, there is item "0" in shape.
+    if (value_ < 0) {
+      MS_LOG(INTERNAL_EXCEPTION) << "The symbol " << ToString() << " can not be set to positive.";
+    }
+    return;
+  }
+  if (is_less_equal(0)) {
+    MS_LOG(INTERNAL_EXCEPTION) << "The symbol " << ToString() << " can not be set to positive.";
+  }
+  if (!is_positive()) {
+    SetRangeMin(1);
+  }
+}
+
 bool IntSymbol::operator==(const Symbol &s) const {
   if (this == &s) {
     return true;

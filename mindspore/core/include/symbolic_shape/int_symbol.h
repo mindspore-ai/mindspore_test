@@ -72,6 +72,8 @@ class MS_CORE_API IntSymbol final : public ScalarSymbol {
     SetRangeMin(minv);
     SetRangeMax(maxv);
   }
+  /// \brief Set the symbol to positive, exception will be throw if the symbol is always negative.
+  void SetPositive();
   /// \brief Set the divisor and remainder value of symbol, the symbol is "d * N + r", for N is positive integer.
   void SetDivisorRemainder(int64_t d, int64_t r) { math_info_.SetDivisorRemainder(d, r); }
 

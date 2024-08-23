@@ -29,9 +29,7 @@ void InferShapeOp::SetPositive(const ListSymbol *list) {
     } else {
       auto int_s = s->as_noexcept<IntSymbol>();
       MS_EXCEPTION_IF_NULL(int_s);
-      if (!int_s->is_positive()) {
-        int_s->SetRangeMin(1);
-      }
+      int_s->SetPositive();
     }
   }
 }
@@ -48,7 +46,7 @@ SymbolPtr TransValueToShape(OperationBuilder *b) {
 }
 
 template <typename OP>
-SymbolPtr Accumulate(const SymbolPtrList &symbols, const OperationEmitter &e) {
+void Accumulate(const SymbolPtrList &symbols, const OperationEmitter &e, SymbolPtr *out_var, int64_t *out_const) {
   SymbolPtr vars = nullptr;
   int64_t constv = std::is_same_v<OP, ScalarAdd> ? 0 : 1;
   for (size_t i = 0; i < symbols.size(); i++) {
@@ -65,13 +63,15 @@ SymbolPtr Accumulate(const SymbolPtrList &symbols, const OperationEmitter &e) {
       vars = e.Emit(std::make_shared<OP>(vars, s));
     }
   }
-  if (vars == nullptr) {
-    return IntSymbol::Make(constv);
+  if (out_const != nullptr) {
+    *out_const = constv;
   }
-  return e.Emit(std::make_shared<OP>(vars, IntSymbol::Make(constv)));
+  if (out_var != nullptr) {
+    *out_var = vars;
+  }
 }
-template SymbolPtr Accumulate<ScalarAdd>(const SymbolPtrList &, const OperationEmitter &);
-template SymbolPtr Accumulate<ScalarMul>(const SymbolPtrList &, const OperationEmitter &);
+template void Accumulate<ScalarAdd>(const SymbolPtrList &, const OperationEmitter &, SymbolPtr *, int64_t *);
+template void Accumulate<ScalarMul>(const SymbolPtrList &, const OperationEmitter &, SymbolPtr *, int64_t *);
 }  // namespace ops
 }  // namespace symshape
 }  // namespace mindspore

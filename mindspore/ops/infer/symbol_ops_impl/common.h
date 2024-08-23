@@ -60,9 +60,34 @@ class OPS_API ScalarIntOp : public InferValueOp {
 /// \note This function will set the input value symbol to positive.
 SymbolPtr TransValueToShape(OperationBuilder *b);
 
-/// \brief accumulate int symbols, only support ScalarAdd or ScalarMul
+/// \brief accumulate int symbols, only support ScalarAdd or ScalarMul.
+/// This interface accumulates variable and constant symbols separately, and then accumulates them together.
+
+/// \brief Accumulate int symbols
+/// \tparam OP operation, only support ScalarAdd or ScalarMul
+/// \param symbols the symbols to be accumulated
+/// \param e the OperationEmitter
+/// \param[out] out_var accumulated variable symbols
+/// \param[out] out_const accumulated const symbols
 template <typename OP>
-SymbolPtr Accumulate(const SymbolPtrList &symbols, const OperationEmitter &e);
+void Accumulate(const SymbolPtrList &symbols, const OperationEmitter &e, SymbolPtr *out_var, int64_t *out_const);
+
+/// \brief Accumulate int symbols.
+///        This interface accumulates variable and constant symbols separately, and then accumulates them together.
+/// \tparam OP operation, only support ScalarAdd or ScalarMul
+/// \param symbols the symbols to be accumulated
+/// \param e the OperationEmitter
+/// \return result to accumulate all symbols
+template <typename OP>
+SymbolPtr Accumulate(const SymbolPtrList &symbols, const OperationEmitter &e) {
+  SymbolPtr vars;
+  int64_t constv;
+  Accumulate<OP>(symbols, e, &vars, &constv);
+  if (vars == nullptr) {
+    return IntSymbol::Make(constv);
+  }
+  return e.Emit(std::make_shared<OP>(vars, IntSymbol::Make(constv)));
+}
 }  // namespace ops
 }  // namespace symshape
 }  // namespace mindspore

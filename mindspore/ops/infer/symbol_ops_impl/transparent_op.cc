@@ -72,6 +72,7 @@ REG_SYMBOL_OP_BUILDER("SigmoidGrad").SetShapeDepend({DependOn::kShape}).SetShape
 REG_SYMBOL_OP_BUILDER("SiLU").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("SiLUGrad").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("Sin").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
+REG_SYMBOL_OP_BUILDER("SliceGrad").SetShapeDepend({DependOn::kNone, DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("Softmax").SetShapeDepend({DependOn::kShape}).SetShapeFunc(TransparentInput);
 REG_SYMBOL_OP_BUILDER("SoftmaxBackward")
   .SetShapeDepend({DependOn::kNone, DependOn::kShape})

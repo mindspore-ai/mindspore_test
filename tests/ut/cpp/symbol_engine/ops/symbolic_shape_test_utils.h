@@ -72,5 +72,43 @@ class TestSymbolEngine : public UT::Common {
 
   void SaveIR(const FuncGraphPtr &fg, const std::string &name = "");
 };
+
+class OperationTestHelper {
+ public:
+  OperationTestHelper() { emitter_ = std::make_unique<OperationEmitter>(&ops_list_); }
+  ~OperationTestHelper() { emitter_->Clean(); }
+  const OperationEmitter &emitter() { return *emitter_; }
+  SymbolPtr Emit(const OpPtr &op) { return emitter_->Emit(op); }
+  void Infer(const std::vector<std::pair<ListSymbolPtr, ShapeVector>> &real_shape);
+
+  void DumpText();
+  std::unique_ptr<OperationEmitter> emitter_ = nullptr;
+  OpPtrList ops_list_;
+};
+
+class TestOperation : public UT::Common {
+ public:
+  void SetUp() override { helper_ = std::make_shared<OperationTestHelper>(); }
+  void TearDown() override {
+    helper_->DumpText();
+    helper_ = nullptr;
+  }
+  // gen const-len list
+  ListSymbolPtr GenList(const SymbolPtrList &s) { return ListSymbol::Make(s); }
+  // gen dyn-len list
+  ListSymbolPtr GenVList() { return ListSymbol::Make(); }
+  // gen const int
+  IntSymbolPtr GenInt(int64_t x) { return IntSymbol::Make(x); }
+  // gen variable int
+  IntSymbolPtr GenVInt() { return IntSymbol::Make(); }
+  // gen positive variable int
+  IntSymbolPtr GenPVInt(int64_t divisor = 1, int64_t remainder = 0) {
+    auto sym = IntSymbol::Make();
+    sym->SetRangeMin(1);
+    sym->SetDivisorRemainder(divisor, remainder);
+    return sym;
+  }
+  std::shared_ptr<OperationTestHelper> helper_{nullptr};
+};
 }  // namespace mindspore::symshape::test
 #endif  // UT_CPP_SYMBOL_ENGINE_OPS_SYMBOLIC_SHAPE_TEST_UTILS_H_
