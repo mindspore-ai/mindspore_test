@@ -1147,13 +1147,9 @@ void KernelActor::ProcessMultiStreamBeforeKernelLaunch(OpContext<DeviceTensor> *
     return;
   }
 
-  if (stream_id == kDefaultStreamIndex) {
-    return;
-  }
-
   std::vector<KernelTensor *> cross_stream_kernel_tensors;
   for (const auto &input_kernel_tensor : input_kernel_tensors_) {
-    if (input_kernel_tensor->stream_id() == stream_id && input_kernel_tensor->stream_id() == kDefaultStreamIndex) {
+    if (input_kernel_tensor->stream_id() == stream_id) {
       continue;
     }
     if (input_kernel_tensor->task_id_on_stream() == nullptr) {
@@ -1215,19 +1211,23 @@ void KernelActor::ProcessMultiStreamBeforeKernelLaunch(OpContext<DeviceTensor> *
 void KernelActor::ProcessMultiStreamAfterKernelLaunch(OpContext<DeviceTensor> *const context) {
   auto stream_id = kernel_info_->stream_id();
   if (stream_id != kDefaultStreamIndex) {
+    for (const auto &input_kernel_tensor : input_kernel_tensors_) {
+      if (input_kernel_tensor->stream_id() == kernel_info_->stream_id()) {
+        cross_stream_addresses_.emplace_back(kDefaultStreamIndex, input_kernel_tensor->device_ptr());
+      }
+    }
     for (const auto &output_kernel_tensor : output_kernel_tensors_) {
       cross_stream_addresses_.emplace_back(kDefaultStreamIndex, output_kernel_tensor->device_ptr());
     }
-  }
-
-  // Record event.
-  if (!cross_stream_addresses_.empty()) {
-    MS_LOG(DEBUG) << "Record event for kernel : " << kernel_->fullname_with_scope()
-                  << ", addresses size : " << cross_stream_addresses_.size() << ".";
-    // Record event on stream.
-    auto device_context = device_contexts_[0];
-    auto multi_stream_controller = device::MultiStreamController::GetInstance();
-    multi_stream_controller->RecordEvent(device_context, *task_id_on_stream_, stream_id, cross_stream_addresses_);
+    // Record event.
+    if (!cross_stream_addresses_.empty()) {
+      MS_LOG(DEBUG) << "Record event for kernel : " << kernel_->fullname_with_scope()
+                    << ", addresses size : " << cross_stream_addresses_.size() << ".";
+      // Record event on stream.
+      auto device_context = device_contexts_[0];
+      auto multi_stream_controller = device::MultiStreamController::GetInstance();
+      multi_stream_controller->RecordEvent(device_context, *task_id_on_stream_, stream_id, cross_stream_addresses_);
+    }
   }
 }
 
