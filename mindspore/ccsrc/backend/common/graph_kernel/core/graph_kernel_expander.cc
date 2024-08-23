@@ -16,7 +16,10 @@
 
 #include "backend/common/graph_kernel/core/graph_kernel_expander.h"
 
+#include <string>
+
 #include "utils/anf_utils.h"
+#include "backend/common/graph_kernel/expander/base/ir_builder.h"
 #include "backend/common/graph_kernel/core/graph_builder.h"
 #include "backend/common/graph_kernel/core/graph_kernel_utils.h"
 #include "include/common/utils/anfalgo.h"
@@ -45,19 +48,11 @@ AnfNodePtr GraphKernelExpander::CreateExpandedNode(const CNodePtr &node, const s
   return graph_kernel_node;
 }
 
-static const std::map<std::string, std::vector<size_t>> ops = {{"ApplyMomentum", {1}}};
-
-bool IsOuputNumInconsistent(const AnfNodePtr &node) {
-  auto prim_name = GetCNodePrimitive(node)->name();
-  if (ops.find(prim_name) != ops.end()) {
-    return true;
-  }
-  return false;
-}
-
 void ReplaceNodeWithTupleGetItem(const AnfNodePtr &node, const AnfNodePtr &newnode, const FuncGraphPtr &func_graph,
                                  const FuncGraphManagerPtr &mng) {
-  const auto &output_indices = ops.at(GetCNodePrimitive(node)->name());
+  auto &ib_registry = expander::IrBuilderRegistry::Instance();
+  const std::string &name = GetCNodePrimitive(node)->name();
+  const auto &output_indices = ib_registry.GetOutputNumInconsistentOps().at(name);
   if (output_indices.size() == 1) {
     auto idx = MakeValue(SizeToLong(output_indices[0]));
     AnfNodePtrList inputs{NewValueNode(prim::kPrimTupleGetItem), newnode, NewValueNode(idx)};
@@ -106,7 +101,8 @@ bool GraphKernelExpander::DoExpand(const FuncGraphPtr &func_graph) {
     }
     // For some ops, the output number of expander is different from the original cnode. In this case, a TupleGetItem is
     // needed to insure that later cnodes have correct input
-    if (IsOuputNumInconsistent(node)) {
+    const std::string &name = GetCNodePrimitive(node)->name();
+    if (expander::IrBuilderRegistry::Instance().IsOutputNumInconsistent(name)) {
       ReplaceNodeWithTupleGetItem(node, newnode, func_graph, mng);
     } else {
       mng->Replace(node, newnode);

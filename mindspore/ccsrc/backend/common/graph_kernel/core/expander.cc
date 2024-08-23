@@ -59,6 +59,27 @@ AnfNodePtr DependValueDeco::Run(const AnfNodePtr &node) {
   return decorated_->Run(cnode);
 }
 
+// check whether the res_idx-th output of subgraph has same shape, dtype, and format
+// as the ori_idx-th output of the original node
+bool IsOutputInfoIdentical(const expander::NodePtrList &outputs, const CNodePtr &node, size_t res_idx, size_t ori_idx,
+                           const CallbackPtr &cb) {
+  const auto &res_shape = outputs[res_idx]->GetShape();
+  const auto &res_dtype = outputs[res_idx]->GetDtype()->type_id();
+  const auto &res_format = outputs[res_idx]->GetFormat();
+  const auto &ori_shape = cb->GetOutputShape(node, ori_idx);
+  const auto &ori_dtype = cb->GetOutputType(node, ori_idx);
+  const auto &ori_format = cb->GetOutputFormat(node, ori_idx);
+  bool is_format_identical = (res_format == ori_format);
+  if ((res_format == kOpFormat_DEFAULT && ori_format == kOpFormat_NCHW) ||
+      (res_format == kOpFormat_NCHW && ori_format == kOpFormat_DEFAULT)) {
+    is_format_identical = true;
+  }
+  if (res_shape == ori_shape && res_dtype == ori_dtype && is_format_identical) {
+    return true;
+  }
+  return false;
+}
+
 AnfNodePtr DefaultExpander::Run(const AnfNodePtr &node) {
   auto cnode = node->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(cnode);
@@ -73,7 +94,8 @@ AnfNodePtr DefaultExpander::Run(const AnfNodePtr &node) {
 
 FuncGraphPtr DefaultExpander::ExpandToGraph(const CNodePtr &node) {
   auto name = AnfUtils::GetCNodeName(node);
-  auto ib = expander::IrBuilderRegistry::Instance().GetOp(name);
+  auto &ib_registry = expander::IrBuilderRegistry::Instance();
+  auto ib = ib_registry.GetOp(name);
   if (ib == nullptr) {
     MS_LOG(INFO) << "irbuilder not found: " << node->fullname_with_scope();
     return nullptr;
@@ -87,6 +109,25 @@ FuncGraphPtr DefaultExpander::ExpandToGraph(const CNodePtr &node) {
   auto outputs = ib->Expand();
   if (outputs.empty()) {
     return nullptr;
+  }
+  auto cb = Callback::Instance();
+  if (!ib_registry.IsOutputNumInconsistent(name)) {
+    for (size_t i = 0; i < outputs.size(); i++) {
+      if (!IsOutputInfoIdentical(outputs, node, i, i, cb)) {
+        MS_LOG(INFO) << "Expanding node: " << node->fullname_with_scope() << " failed, because output " << i
+                     << " has a different shape/dtype/format from the corresponding output of the original cnode.";
+        return nullptr;
+      }
+    }
+  } else {
+    auto real_output_indices = ib_registry.GetOutputNumInconsistentOps().at(name);
+    for (size_t i = 0; i < real_output_indices.size(); i++) {
+      if (!IsOutputInfoIdentical(outputs, node, i, real_output_indices[i], cb)) {
+        MS_LOG(INFO) << "Expanding node: " << node->fullname_with_scope() << " failed, because output " << i
+                     << " has a different shape/dtype/format from the corresponding output of the original cnode.";
+        return nullptr;
+      }
+    }
   }
   if (outputs.size() > 1) {
     fg->set_output(e->MakeTuple(outputs)->as<AnfNodePtr>());
