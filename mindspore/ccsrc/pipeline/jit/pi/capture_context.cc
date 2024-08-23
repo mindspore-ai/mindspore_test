@@ -30,7 +30,7 @@ CaptureContext *CaptureContext::GetInstance() {
   return &instance;
 }
 
-void CaptureContext::RegisterSkipCode(PyCodeObject *co) { SetJitCompileResults(co, &JitCompileResults::skip_); }
+void CaptureContext::RegisterSkipCode(PyCodeObject *co) { SetJitCompileResults(co, JitCompileResults::get_skip_jcr()); }
 
 bool CaptureContext::IsSkip(const PyFrameWrapper &f) const {
   PyObject *globals = f.Globals().ptr();

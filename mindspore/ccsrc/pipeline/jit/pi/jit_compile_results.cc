@@ -19,11 +19,15 @@ namespace mindspore {
 namespace pijit {
 
 static Py_tss_t *tss_ = nullptr;
-JitCompileResults JitCompileResults::skip_;
+
+JitCompileResults *JitCompileResults::get_skip_jcr() {
+  static JitCompileResults skip(true);
+  return &skip;
+}
 
 void JitCompileResults::FreeCallback(void *ptr) {
   // maybe nullptr if other module use _PyEval_RequestCodeExtraIndex
-  if (ptr == nullptr || ptr == &skip_) {
+  if (ptr == nullptr || ptr == get_skip_jcr()) {
     return;
   }
   JitCompileResults *c = reinterpret_cast<JitCompileResults *>(ptr);
@@ -50,27 +54,25 @@ Py_ssize_t JitCompileResults::InitIndex() {
   return index;
 }
 
-JitCompileResults::JitCompileResults() {
-  this->stat_ = JitCompileResults::NEVER_COMPILE;
+JitCompileResults::JitCompileResults(bool skip)
+    : stat_(JitCompileResults::NEVER_COMPILE), compile_count_(0), break_count_(0) {
+  if (skip) {
+    return;
+  }
   this->codehub_ = std::make_shared<OptCodeHub>();
   this->tbs_ = std::make_shared<Traceback>();
   this->conf_ = std::make_shared<GraphJitConfig>();
-  this->compile_count_ = 0;
-  this->break_count_ = 0;
 }
 
 JitCompileResults::~JitCompileResults() {
-  for (auto &oc : this->codehub()->GetOptTarget(OptOption::CreateOptionByPoint(this))) {
-    PyCodeObject *co = oc->GetPythonCode();
-    if (co != nullptr && Py_REFCNT(co) != 1) {
-      MS_LOG(ERROR) << "code handler not only one" << std::string(py::str(reinterpret_cast<PyObject *>(co)));
-    }
-  }
   this->code_ = nullptr;
   this->codehub_.reset();
 }
 
-void JitCompileResults::set_stat(JitCompileResults::State s) { this->stat_ = s; }
+void JitCompileResults::set_stat(JitCompileResults::State s) {
+  MS_EXCEPTION_IF_CHECK_FAIL(this != get_skip_jcr(), "can't change the skip marker stat");
+  this->stat_ = s;
+}
 
 JitCompileResults *JitCompileResults::Create(PyCodeObject *co) {
   Py_ssize_t index = InitIndex();
@@ -80,7 +82,7 @@ JitCompileResults *JitCompileResults::Create(PyCodeObject *co) {
   PyObject *code = reinterpret_cast<PyObject *>(co);
   JitCompileResults *c = nullptr;
   if (!_PyCode_GetExtra(code, index, reinterpret_cast<void **>(&c))) {
-    if (c != nullptr) {
+    if (c != nullptr && c != get_skip_jcr()) {
       return c;
     }
     c = new JitCompileResults();

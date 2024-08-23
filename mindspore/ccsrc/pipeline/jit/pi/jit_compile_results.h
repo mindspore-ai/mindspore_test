@@ -97,7 +97,7 @@ class JitCompileResults {
  public:
   static JitCompileResults *Create(PyCodeObject *code);
   static Py_ssize_t InitIndex();
-  static JitCompileResults skip_;
+  static JitCompileResults *get_skip_jcr();
 
  private:
   static void FreeCallback(void *);
@@ -132,7 +132,7 @@ class JitCompileResults {
   int IncCodeCount() { return compile_count_++; }
 
  private:
-  JitCompileResults();
+  explicit JitCompileResults(bool skip = false);
   ~JitCompileResults();
 
   PyFrameWrapper compile_frame_;
