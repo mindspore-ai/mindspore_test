@@ -1356,10 +1356,9 @@ ValuePtr FuncBuilder::FillZeros(const ValuePtr &value, const abstract::AbstractB
     } else {
       MS_LOG(DEBUG) << "None value abstract got None abstract!";
     }
-  } else if (value->isa<ValueSequence>()) {
+  } else if (value->isa<ValueSequence>() && abs->isa<abstract::AbstractSequence>()) {
     auto seq = value->cast<ValueSequencePtr>();
     auto abs_list = abs->cast<abstract::AbstractSequencePtr>();
-    MS_EXCEPTION_IF_NULL(abs_list);
     std::vector<ValuePtr> value_list;
     value_list.reserve(seq->value().size());
     for (size_t i = 0; i < seq->value().size(); ++i) {
@@ -1369,6 +1368,22 @@ ValuePtr FuncBuilder::FillZeros(const ValuePtr &value, const abstract::AbstractB
       (void)value_list.emplace_back(convert);
     }
     convert_value = std::make_shared<ValueTuple>(value_list);
+  } else if (abs->isa<abstract::AbstractDictionary>()) {
+    auto seq = value->cast<ValueSequencePtr>();
+    MS_EXCEPTION_IF_NULL(seq);
+    auto abs_list = abs->cast<abstract::AbstractDictionaryPtr>();
+    MS_EXCEPTION_IF_NULL(abs_list);
+    std::vector<ValuePtr> val_list;
+    val_list.reserve(seq->value().size());
+    MS_EXCEPTION_IF_CHECK_FAIL(seq->value().size() == abs_list->elements().size(),
+                               "Value size should be same as abs size!");
+    for (size_t i = 0; i < seq->value().size(); ++i) {
+      const auto &val = seq->value()[i];
+      const auto &temp_abs = abs_list->elements()[i].second;
+      auto convert = FillZeros(val, temp_abs);
+      (void)val_list.emplace_back(convert);
+    }
+    convert_value = std::make_shared<ValueTuple>(val_list);
   }
   return convert_value;
 }

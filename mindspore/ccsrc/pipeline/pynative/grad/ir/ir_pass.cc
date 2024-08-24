@@ -783,6 +783,36 @@ void IrPassForward::ReversePassCNode(const CNodePtr &cnode, ValuePtrList *inputs
   ReverseConstantToAttrNode(cnode, inputs_value, cnode_inputs);
 }
 
+void IrPassForward::PassForHookOp(const OpGradInfoPtr &op_grad_info) {
+  // C++ dict object will hold python object in its user_data.
+  py::gil_scoped_acquire gil_acquire;
+  for (size_t i = 0; i < op_grad_info->input_value.size(); ++i) {
+    const auto val = op_grad_info->input_value[i];
+    if (val->isa<ValueDictionary>()) {
+      op_grad_info->input_value[i] = PyNativeAlgo::DataConvert::ConvertValueDictToValueTuple(val);
+      op_grad_info->input_abs[i] =
+        PyNativeAlgo::Common::SetAbstractValueToAnyValue(op_grad_info->input_value[i]->ToAbstract());
+    }
+  }
+  if (op_grad_info->out_value->isa<ValueDictionary>()) {
+    op_grad_info->out_value = PyNativeAlgo::DataConvert::ConvertValueDictToValueTuple(op_grad_info->out_value);
+    op_grad_info->out_abs = PyNativeAlgo::Common::SetAbstractValueToAnyValue(op_grad_info->out_value->ToAbstract());
+  } else if (op_grad_info->out_value->isa<ValueSequence>()) {
+    auto val_seq = op_grad_info->out_value->cast<ValueSequencePtr>();
+    std::vector<ValuePtr> out_seq;
+    out_seq.reserve(val_seq->size());
+    for (const auto &val : val_seq->value()) {
+      if (val->isa<ValueDictionary>()) {
+        (void)out_seq.emplace_back(PyNativeAlgo::DataConvert::ConvertValueDictToValueTuple(val));
+      } else {
+        (void)out_seq.emplace_back(val);
+      }
+    }
+    op_grad_info->out_value = std::make_shared<ValueTuple>(out_seq);
+    op_grad_info->out_abs = PyNativeAlgo::Common::SetAbstractValueToAnyValue(op_grad_info->out_value->ToAbstract());
+  }
+}
+
 CNodePtr IrPassForward::PassForDin(const CNodePtr &cnode, const std::string &op_name, bool is_dynamic_shape) {
   // If you want add a pass here, please take care of high grad
   MS_EXCEPTION_IF_NULL(ir_bprop_);

@@ -102,6 +102,7 @@ class IrBprop {
   inline void set_bprop_graph_run_by_single_op(bool bprop_graph_run_by_single_op) {
     bprop_graph_run_by_single_op_ = bprop_graph_run_by_single_op_ || bprop_graph_run_by_single_op;
   }
+  inline bprop_pass::PyNativePassForwardPtr pass_forward() { return pass_forward_; }
 
  private:
   // Get bprop graph by ad::grad

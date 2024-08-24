@@ -235,7 +235,13 @@ bool IrGrad::KPynativeOp(const GradParamPtr &grad_param) {
     MS_LOG(DEBUG) << "Prim " << prim->name() << " does not need to do op grad.";
     return true;
   }
-
+  // Custom forward cnode no need record in bprop graph, because it is a flag cnode for run python. So just create
+  // bprop_cut grad op is ok
+  bool is_custom_prim =
+    IsPrimitiveEquals(prim, prim::kPrimHookBackward) || IsPrimitiveEquals(prim, prim::kPrimCellBackwardHook);
+  if (is_custom_prim) {
+    ir_bprop()->pass_forward()->PassForHookOp(grad_param->op_grad_info);
+  }
   auto cloned_value = grad_param->op_grad_info->out_value;
   if (grad_param->op_grad_info->out_value->isa<ValueSequence>()) {
     cloned_value = ShallowCopyTensorValue(grad_param->op_grad_info->out_value);
@@ -249,10 +255,6 @@ bool IrGrad::KPynativeOp(const GradParamPtr &grad_param) {
                                              grad_param->op_grad_info->out_abs, SpecialType::kZerosLikeType);
   auto fn = std::make_shared<IrFunctionNode>(ad_param()->tape_, dout);
   auto variable_adjoint = std::make_shared<IrVariable>(fn, cloned_value);
-  // Custom forward cnode no need record in bprop graph, because it is a flag cnode for run python. So just create
-  // bprop_cut grad op is ok
-  bool is_custom_prim =
-    IsPrimitiveEquals(prim, prim::kPrimHookBackward) || IsPrimitiveEquals(prim, prim::kPrimCellBackwardHook);
   AnfNodePtr k_node = nullptr;
   if (!grad_by_value_ && !is_custom_prim) {
     k_node = BuildKNode(NewValueNode(prim), grad_param, true);
@@ -399,7 +401,8 @@ void IrGrad::UpdateOutputNodeOfTopCell(const ValuePtr &sens_out) {
                                      runtime::ProfilerEvent::kPyNativeGradUpdateSens,
                                      runtime::ProfilerRecorder::kNoName, true);
   MS_EXCEPTION_IF_NULL(sens_out);
-  MS_LOG(DEBUG) << "Real output of top cell is " << PyNativeAlgo::Common::GetIdByValue(sens_out);
+  MS_LOG(DEBUG) << "Real output of top cell is " << PyNativeAlgo::Common::GetIdByValue(sens_out) << " "
+                << sens_out->ToString();
   ad_param()->sens_value_ = sens_out;
   UpdateSensParameter(ad_param()->sens_value_);
 }
