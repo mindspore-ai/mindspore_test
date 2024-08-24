@@ -66,7 +66,7 @@ from mindspore.dataset.debug import DebugHook
 
 from mindspore.dataset.engine import samplers
 from .iterators import DictIterator, TupleIterator, DummyIterator, check_iterator_cleanup, _set_iterator_cleanup, \
-    ITERATORS_LIST, _unset_iterator_cleanup
+    ITERATORS_LIST, _unset_iterator_cleanup, _cleanup_the_iterators_if_created
 from .queue import _SharedQueue, _Queue
 from .validators import check_batch, check_shuffle, check_map, check_filter, check_repeat, check_skip, check_zip, \
     check_rename, check_device_send, check_take, check_output_shape, check_project, \
@@ -1741,6 +1741,7 @@ class Dataset:
         return self._col_names
 
     @check_output_shape
+    @_cleanup_the_iterators_if_created
     def output_shapes(self, estimate=False):
         """
         Get the shapes of output data.
@@ -1792,6 +1793,7 @@ class Dataset:
             self.saved_output_shapes = output_shapes
         return output_shapes
 
+    @_cleanup_the_iterators_if_created
     def output_types(self):
         """
         Get the types of output data.
@@ -1826,6 +1828,7 @@ class Dataset:
             del self.runtime_context
         return self.saved_output_types
 
+    @_cleanup_the_iterators_if_created
     def get_dataset_size(self):
         """
         Return the number of batches in an epoch.

@@ -12,6 +12,7 @@ mindspore/mindspore/lite/tools/optimizer/fusion/flash_attention_fusion.cc:mindsp
 mindspore/mindspore/ccsrc/minddata/dataset/engine/datasetops/source/csv_op.cc:mindspore::dataset::CsvOp::CsvParser::InitCsvParser
 mindspore/mindspore/ccsrc/minddata/dataset/engine/datasetops/data_queue_op.cc:mindspore::dataset::DataQueueOp::SendDataToAscend
 mindspore/mindspore/ccsrc/minddata/dataset/audio/kernels/audio_utils.h:mindspore::dataset::Vad
+mindspore/mindspore/python/mindspore/mindrecord/filewriter.py:write_raw_data, _parallel_commit
 mindspore/mindspore/lite/tools/converter/graphdef_transform.cc:mindspore::lite::GraphDefTransform::Transform
 mindspore/mindspore/lite/providers/nnie_proposal/src/proposal.cc:mindspore::proposal::Rpn
 mindspore/mindspore/lite/tools/converter/config_parser/config_file_parser.cc:mindspore::lite::ConfigFileParser::SetParamByConfigfile

@@ -19,6 +19,7 @@ import json
 import os
 import signal
 import weakref
+from functools import wraps
 import numpy as np
 
 import mindspore._c_dataengine as cde
@@ -56,6 +57,34 @@ def _cleanup():
         itr = itr_ref()
         if itr is not None:
             itr.release()
+
+
+def _cleanup_the_iterators_if_created(method):
+    """Release the iterators which is new created by the method"""
+
+    @wraps(method)
+    def wrapper(self, *args, **kwargs):
+        original_iterators = deepcopy(ITERATORS_LIST)
+
+        result = method(self, *args, **kwargs)
+
+        # it is used to attribute function like: dataset_size / output_shapes / output_types and
+        # it is a GeneratorDataset with two stage pipeline. The first pipeline will create a new iterator
+        # which need to be released after dataset_size / output_shapes / output_types end.
+        # 1. find the iterators which are started by dataset_size / output_shapes / output_types with two stage pipeline
+        iterators_to_be_released = []
+        for index, item in enumerate(ITERATORS_LIST):
+            if item not in original_iterators:
+                iterators_to_be_released.append(index)
+
+        # 2. release the iterators
+        for index in reversed(iterators_to_be_released):
+            itr = ITERATORS_LIST[index]()
+            if itr is not None:
+                itr.release()
+
+        return result
+    return wrapper
 
 
 class Iterator:
