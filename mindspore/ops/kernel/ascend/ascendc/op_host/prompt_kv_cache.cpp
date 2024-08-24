@@ -372,6 +372,7 @@ class PromptKvCache : public OpDef {
       .AddConfig("ascend910")
       .AddConfig("ascend910b")
       .AddConfig("ascend310p")
+      .AddConfig("ascend910c")
       .SetCheckSupport(optiling::CheckSupported);
   }
 };

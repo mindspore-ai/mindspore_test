@@ -48,6 +48,29 @@ class AddCustomAclnnNet(Cell):
         return res
 
 
+class AddCustomAclnnAddPrefix(Cell):
+    def __init__(self, func, out_shape, bprop):
+        super(AddCustomAclnnAddPrefix, self).__init__()
+        aclnn_ref_info = CustomRegOp("AddCustom") \
+            .input(0, "x", "required") \
+            .input(1, "y", "required") \
+            .output(0, "z", "required") \
+            .dtype_format(DataType.F16_Default, DataType.F16_Default, DataType.F16_Default) \
+            .target("Ascend") \
+            .get_op_info()
+
+        self.custom_add = ops.Custom(func, out_shape, lambda x, _: x, func_type="aot", bprop=bprop,
+                                     reg_info=aclnn_ref_info)
+        self.add = P.Add()
+        self.sub = P.Sub()
+
+    def construct(self, x, y, z):
+        res = self.add(x, y)
+        res = self.custom_add(res, y)
+        res = self.sub(res, z)
+        return res
+
+
 class BaseNet(Cell):
     def __init__(self):
         super(BaseNet, self).__init__()
@@ -66,7 +89,7 @@ class BaseNet(Cell):
 def test_custom_add_aclnn(context_mode):
     """
     Feature: Custom op testcase
-    Description: test case for aclnnAddCustom op with func_type="aclnn"
+    Description: test case for "aclnnAddCustom"
     Expectation: the result match with numpy result
     """
     context.set_context(mode=context_mode, save_graphs=False, save_graphs_path="./graphs",
@@ -82,10 +105,29 @@ def test_custom_add_aclnn(context_mode):
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level4', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
+def test_custom_add_aclnn_add_prefix(context_mode):
+    """
+    Feature: Custom op testcase
+    Description: test case for "AddCustom"
+    Expectation: the result match with numpy result
+    """
+    context.set_context(mode=context_mode, save_graphs=False, save_graphs_path="./graphs",
+                        jit_config={"jit_level": "O0"})
+    x = np.ones([8, 2048]).astype(np.float16)
+    y = np.ones([8, 2048]).astype(np.float16)
+    z = np.random.rand(8, 2048).astype(np.float16)
+    net = AddCustomAclnnAddPrefix("AddCustom", lambda x, _: x, None)
+    expect_out = x + y + y - z
+    out = net(Tensor(x), Tensor(y), Tensor(z))
+    assert np.allclose(out.asnumpy(), expect_out, 0.001, 0.001)
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level4', card_mark='onecard', essential_mark='unessential')
+@pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_custom_add_aclnn_dynamic(context_mode):
     """
     Feature: Custom op testcase
-    Description: test case for aclnnAddCustom op in Dynamic Shape
+    Description: test case for aclnnAddCustom op in dynamic shape
     Expectation: the result match with numpy result
     """
     context.set_context(mode=context_mode, save_graphs=False, save_graphs_path="./graphs",
@@ -106,7 +148,7 @@ def test_custom_add_aclnn_dynamic(context_mode):
 def test_custom_add_aclnn_cpp_infer(context_mode):
     """
     Feature: Custom op testcase
-    Description: test case for aclnnAddCustom op with func_type="aclnn", infer shape by cpp.
+    Description: test case for aclnnAddCustom, infer shape by cpp.
     Expectation: the result match with numpy result
     """
     context.set_context(mode=context_mode, save_graphs=False, save_graphs_path="./graphs",
@@ -114,7 +156,7 @@ def test_custom_add_aclnn_cpp_infer(context_mode):
     x = np.ones([8, 2048]).astype(np.float16)
     y = np.ones([8, 2048]).astype(np.float16)
     z = np.random.rand(8, 2048).astype(np.float16)
-    net = AddCustomAclnnNet("./infer_file/add_custom_infer.cc:aclnnAddCustom", None, None)
+    net = AddCustomAclnnNet("./infer_file/custom_cpp_infer.cc:aclnnAddCustom", None, None)
     expect_out = x + y + y - z
     out = net(Tensor(x), Tensor(y), Tensor(z))
     assert np.allclose(out.asnumpy(), expect_out, 0.001, 0.001)

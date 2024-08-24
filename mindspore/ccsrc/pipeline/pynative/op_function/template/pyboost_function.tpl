@@ -14,7 +14,7 @@ py::object ${func_name}_Base(const PrimitivePtr &prim, const py::list &args) {
     op_run_info->source_type = converter.source_type();
     DispatchOp(
       std::make_shared<FrontendTask>(
-        [${op_args}](const FrontendOpRunInfoPtr &op_run_info) {
+        [${op_args}, prim](const FrontendOpRunInfoPtr &op_run_info) {
           MS_LOG(DEBUG) << "Run frontend task ${func_name} start";
           auto old_stream_id = kernel::pyboost::PyBoostUtils::cur_stream_id();
           kernel::pyboost::PyBoostUtils::set_cur_stream_id(op_run_info->base_op_run_info.stream_id);
@@ -24,6 +24,7 @@ py::object ${func_name}_Base(const PrimitivePtr &prim, const py::list &args) {
 
           // Create op
           auto op = CREATE_PYBOOST_OP(${op_name}, op_run_info->base_op_run_info.device_target);
+          op->set_primitive(prim);
 
           // Do mixed precision and implicit cast
           static const std::vector<std::vector<size_t>> same_type_table{${same_type}};

@@ -18,7 +18,7 @@
 #endif
 
 #include "include/common/utils/utils.h"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "pybind_api/ir/primitive_py.h"
 #include "pipeline/jit/ps/static_analysis/prim.h"
 #include "abstract/ops/primitive_infer_map.h"

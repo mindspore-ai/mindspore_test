@@ -29,6 +29,7 @@
 #include "abstract/ops/primitive_infer_map.h"
 #include "ops/op_def.h"
 #include "ops/ops_frontend_func_impl.h"
+#include "mindapi/base/macros.h"
 
 namespace mindspore {
 namespace abstract {
@@ -297,8 +298,8 @@ bool IsSubtype(const AbstractBasePtr x, const TypePtr model);
 void ClearPrimEvaluatorMap();
 
 py::dict ConvertAbstractToPython(const AbstractBasePtr &abs_base, bool only_convert_value = false);
-py::tuple PreparePyInputs(const AbstractBasePtrList &args);
-AbstractBasePtr PyInferRes2Abstract(const PrimitivePyPtr &prim_py, const py::dict &output);
+MS_CORE_API py::tuple PreparePyInputs(const AbstractBasePtrList &args);
+MS_CORE_API AbstractBasePtr PyInferRes2Abstract(const PrimitivePyPtr &prim_py, const py::dict &output);
 
 // Get the __init__() arguments of the PrimitivePy object.
 AnfNodePtrList GetPrimitiveInitArgs(const PrimitivePyPtr &prim_py, const ops::OpDef *op_def);

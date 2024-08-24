@@ -310,7 +310,8 @@ KernelWithIndex VisitKernelWithReturnTypeForTupleGetItem(const AnfNodePtr &anf_n
     return common::AnfAlgo::VisitKernelWithReturnType(make_tuple_inputs[make_tuple_input_index], index, skip_nop_node,
                                                       return_types);
   }
-  if (common::AnfAlgo::IsCallNode(item_with_index_tmp.first) || item_with_index_tmp.first->isa<Parameter>()) {
+  if (common::AnfAlgo::IsCallNode(item_with_index_tmp.first) || item_with_index_tmp.first->isa<Parameter>() ||
+      IsPrimitiveCNode(item_with_index_tmp.first, prim::kPrimBpropCut)) {
     size_t real_index = item_with_index_tmp.second;
     if (abs == nullptr) {
       abs = item_with_index_tmp.first->abstract();

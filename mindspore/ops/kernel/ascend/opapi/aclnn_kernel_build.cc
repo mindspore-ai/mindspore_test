@@ -19,6 +19,7 @@
 #include "kernel/ascend/opapi/aclnn_kernel_build.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
 #include "kernel/ascend/opapi/aclnn/custom_aclnn_kernel.h"
+#include "kernel/ascend/opapi/aclnn/custom_aclnn_utils.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "plugin/factory/ms_factory.h"
@@ -35,7 +36,7 @@ KernelModPtr AclnnOpBuild(const AnfNodePtr &anf_node) {
   std::string opname = common::AnfAlgo::GetCNodeName(anf_node);
   MS_LOG(DEBUG) << "aclnn op [" << opname << "]";
   std::shared_ptr<AclnnKernelMod> kernel_ptr;
-  kernel_ptr = IsPrimitiveCNode(anf_node, prim::kPrimCustom) ? GetCustomAclNNKernelMod(anf_node)
+  kernel_ptr = IsPrimitiveCNode(anf_node, prim::kPrimCustom) ? GetCustomAclnnKernelMod(anf_node)
                                                              : Factory<AclnnKernelMod>::Instance().Create(opname);
   if (kernel_ptr == nullptr) {
     MS_LOG(ERROR) << "aclnn can't find Kernel[" << opname << "]";
