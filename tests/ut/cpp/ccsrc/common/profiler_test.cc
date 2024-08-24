@@ -31,13 +31,20 @@ class TestProfiler : public UT::Common {
 
 std::vector<ProfilerDataPtr> GenProfilerData(bool shuffle) {
   std::vector<ProfilerDataPtr> profiler_data_vec{
-    std::make_shared<ProfilerData>(ProfilerModule::kDefault, ProfilerEvent::kDefault, "op_test1", false, 0ull, 10ull),
-    std::make_shared<ProfilerData>(ProfilerModule::kDefault, ProfilerEvent::kDefault, "op_test1", false, 5ull, 15ull),
-    std::make_shared<ProfilerData>(ProfilerModule::kDefault, ProfilerEvent::kDefault, "op_test1", false, 10ull, 15ull),
-    std::make_shared<ProfilerData>(ProfilerModule::kDefault, ProfilerEvent::kDefault, "op_test1", false, 15ull, 20ull),
-    std::make_shared<ProfilerData>(ProfilerModule::kDefault, ProfilerEvent::kDefault, "op_test1", false, 25ull, 30ull),
-    std::make_shared<ProfilerData>(ProfilerModule::kDefault, ProfilerEvent::kDefault, "op_test2", false, 20ull, 30ull),
-    std::make_shared<ProfilerData>(ProfilerModule::kDefault, ProfilerEvent::kDefault, "op_test2", false, 35ull, 60ull),
+    std::make_shared<ProfilerData>(ProfilerModule::kDefault, ProfilerEvent::kDefault, "op_test1", "op_test1", false,
+                                   0ull, 10ull),
+    std::make_shared<ProfilerData>(ProfilerModule::kDefault, ProfilerEvent::kDefault, "op_test1", "op_test1", false,
+                                   5ull, 15ull),
+    std::make_shared<ProfilerData>(ProfilerModule::kDefault, ProfilerEvent::kDefault, "op_test1", "op_test1", false,
+                                   10ull, 15ull),
+    std::make_shared<ProfilerData>(ProfilerModule::kDefault, ProfilerEvent::kDefault, "op_test1", "op_test1", false,
+                                   15ull, 20ull),
+    std::make_shared<ProfilerData>(ProfilerModule::kDefault, ProfilerEvent::kDefault, "op_test1", "op_test1", false,
+                                   25ull, 30ull),
+    std::make_shared<ProfilerData>(ProfilerModule::kDefault, ProfilerEvent::kDefault, "op_test2", "op_test2", false,
+                                   20ull, 30ull),
+    std::make_shared<ProfilerData>(ProfilerModule::kDefault, ProfilerEvent::kDefault, "op_test2", "op_test2", false,
+                                   35ull, 60ull),
     std::make_shared<ProfilerData>(ProfilerStage::kDefault, 0ull, 40ull),
     std::make_shared<ProfilerData>(ProfilerStage::kDefault, 20ull, 50ull)};
   if (shuffle) {
