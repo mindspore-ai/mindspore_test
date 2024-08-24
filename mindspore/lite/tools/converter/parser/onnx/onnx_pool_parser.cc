@@ -27,6 +27,15 @@ namespace lite {
 namespace {
 constexpr size_t kNumShapeSize2 = 2;
 constexpr size_t kNumShapeSize4 = 4;
+bool CheckDilations(const onnx::AttributeProto &onnx_node_attr) {
+  for (int i = 0; i < onnx_node_attr.ints_size(); ++i) {
+    if (onnx_node_attr.ints(i) != 1) {
+      MS_LOG(ERROR) << "Pool op only support dilations=<1, 1> now!";
+      return false;
+    }
+  }
+  return true;
+}
 }  // namespace
 
 PrimitiveCPtr OnnxAvgPoolParser::Parse(const onnx::GraphProto &onnx_graph, const onnx::NodeProto &onnx_node) {
@@ -72,18 +81,13 @@ PrimitiveCPtr OnnxAvgPoolParser::Parse(const onnx::GraphProto &onnx_graph, const
       }
     }
     if (attribute_name == "ceil_mode") {
-      if (onnx_node_attr.i() == 0) {
-        round_mode = mindspore::RoundMode::FLOOR;
-      } else {
-        round_mode = mindspore::RoundMode::CEIL;
-      }
+      round_mode = (onnx_node_attr.i() == 0) ? mindspore::RoundMode::FLOOR : mindspore::RoundMode::CEIL;
     }
     if (attribute_name == ops::kCountIncludePad) {
       bool include = onnx_node_attr.i() == 0 ? false : true;
       (void)prim->AddAttr(ops::kCountIncludePad, api::MakeValue(include));
     }
-    if (attribute_name == "dilations") {
-      MS_LOG(ERROR) << "pooling op not support dilations now";
+    if (attribute_name == "dilations" && !CheckDilations(onnx_node_attr)) {
       return nullptr;
     }
   }
@@ -98,12 +102,7 @@ PrimitiveCPtr OnnxAvgPoolParser::Parse(const onnx::GraphProto &onnx_graph, const
     pads = {0, 0, 0, 0};
   }
   prim->set_pad(pads);
-  if (onnx_node.op_type() == "GlobalAveragePool") {
-    prim->set_global(true);
-  } else {
-    prim->set_global(false);
-  }
-
+  prim->set_global(onnx_node.op_type() == "GlobalAveragePool");
   int fmk_type = converter::FmkType::kFmkTypeOnnx;
   (void)prim_c->AddAttr(ops::kFmkType, MakeValue(fmk_type));
   return prim->GetPrim();

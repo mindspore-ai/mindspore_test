@@ -23,6 +23,7 @@
 #include "nnacl/custom_is_inf_parameter.h"
 #include "nnacl/scatter_nd_parameter.h"
 #include "nnacl/conv3d_parameter.h"
+#include "nnacl/grid_sampler_parameter.h"
 
 using mindspore::schema::PrimitiveType_Custom;
 
@@ -144,6 +145,32 @@ OpParameter *CreateCustomConv3DParameter(const schema::Custom *value) {
   return reinterpret_cast<OpParameter *>(param);
 }
 
+OpParameter *CreateGridSamplerParameter(const schema::Custom *value) {
+  auto *param = static_cast<GridSamplerParameter *>(malloc(sizeof(GridSamplerParameter)));
+  if (param == nullptr) {
+    MS_LOG(ERROR) << "malloc GridSamplerParameter failed.";
+    return nullptr;
+  }
+  memset(param, 0, sizeof(GridSamplerParameter));
+  if (!GetDataFromPrim(&param->interpolation_mode_, sizeof(int64_t), value, 0)) {
+    MS_LOG(ERROR) << "Get interpolation_mode from prim failed.";
+    free(param);
+    return nullptr;
+  }
+  if (!GetDataFromPrim(&param->padding_mode_, sizeof(int64_t), value, 1)) {
+    MS_LOG(ERROR) << "Get padding_mode from prim failed.";
+    free(param);
+    return nullptr;
+  }
+  if (!GetDataFromPrim(&param->align_corners_, sizeof(bool), value, Index2)) {
+    MS_LOG(ERROR) << "Get interpolation_mode from prim failed.";
+    free(param);
+    return nullptr;
+  }
+  param->op_parameter_.type_ = PrimType_Inner_GridSampler;
+  return reinterpret_cast<OpParameter *>(param);
+}
+
 OpParameter *PopulateCustomParameter(const void *prim) {
   MS_CHECK_TRUE_RET(prim != nullptr, nullptr);
   auto primitive = static_cast<const schema::Primitive *>(prim);
@@ -191,6 +218,8 @@ OpParameter *PopulateCustomParameter(const void *prim) {
     return CreateCustomIsInfParameter();
   } else if (type == "Conv3D") {
     return CreateCustomConv3DParameter(value);
+  } else if (type == "GridSampler") {
+    return CreateGridSamplerParameter(value);
   } else {
     MS_LOG(WARNING) << "Unsupported custom type: " << type;
   }

@@ -70,6 +70,64 @@ std::unique_ptr<schema::PrimitiveT> MSOp2SchemaOp(const mindspore::ops::Conv3D *
   prim->value.type = schema::PrimitiveType_Custom;
   return prim;
 }
+
+std::unique_ptr<schema::PrimitiveT> MSOp2SchemaOp(const mindspore::ops::GridSampler2D *op) {
+  auto schema_op = std::make_unique<schema::CustomT>();
+  if (schema_op == nullptr) {
+    return nullptr;
+  }
+  schema_op->type = "GridSampler";
+  if (op->GetAttr("interpolation_mode") != nullptr) {
+    auto attr = std::make_unique<schema::AttributeT>();
+    if (attr == nullptr) {
+      return nullptr;
+    }
+    attr->name = "interpolation_mode";
+    auto interpolation_mode = op->get_interpolation_mode();
+    std::vector<uint8_t> container(sizeof(int64_t));
+    if (memcpy_s(container.data(), container.size(), &interpolation_mode, sizeof(int64_t)) != EOK) {
+      MS_LOG(ERROR) << "GridSampler2D: DeepCopy interpolation_mode failed.";
+      return nullptr;
+    }
+    attr->data = container;
+    schema_op->attr.emplace_back(std::move(attr));
+  }
+  if (op->GetAttr("padding_mode") != nullptr) {
+    auto attr = std::make_unique<schema::AttributeT>();
+    if (attr == nullptr) {
+      return nullptr;
+    }
+    attr->name = "padding_mode";
+    auto padding_mode = op->get_padding_mode();
+    std::vector<uint8_t> container(sizeof(int64_t));
+    if (memcpy_s(container.data(), container.size(), &padding_mode, sizeof(int64_t)) != EOK) {
+      MS_LOG(ERROR) << "GridSampler2D: DeepCopy padding_mode failed.";
+      return nullptr;
+    }
+    attr->data = container;
+    schema_op->attr.emplace_back(std::move(attr));
+  }
+  if (op->GetAttr("align_corners") != nullptr) {
+    auto attr = std::make_unique<schema::AttributeT>();
+    if (attr == nullptr) {
+      return nullptr;
+    }
+    attr->name = "align_corners";
+    auto align_corners = op->get_align_corners();
+    std::vector<uint8_t> container(1);
+    container[0] = align_corners;
+    attr->data = container;
+    schema_op->attr.emplace_back(std::move(attr));
+  }
+
+  auto prim = std::make_unique<schema::PrimitiveT>();
+  if (prim == nullptr) {
+    return nullptr;
+  }
+  prim->value.value = schema_op.release();
+  prim->value.type = schema::PrimitiveType_Custom;
+  return prim;
+}
 }  // namespace ops
 
 template <typename T>
@@ -299,6 +357,7 @@ REG_MINDSPORE_OPERATOR(SparseReshape)
 REG_MINDSPORE_OPERATOR(SparseSegmentSum)
 REG_MINDSPORE_OPERATOR(AdamWeightDecay)
 REG_MINDSPORE_OPERATOR(Conv3D)
+REG_MINDSPORE_OPERATOR(GridSampler2D)
 }  // namespace lite
 }  // namespace mindspore
 
