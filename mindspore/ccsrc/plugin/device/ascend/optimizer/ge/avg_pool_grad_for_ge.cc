@@ -84,8 +84,8 @@ CNodePtr AvgPoolGradForGE::CreateTensorShapeNode(const FuncGraphPtr &func_graph,
   MS_EXCEPTION_IF_NULL(prim);
   AnfNodePtrList inputs = {NewValueNode(prim), node};
   CNodePtr tensor_shape_node = func_graph->NewCNode(inputs);
-  tensor_shape_node->set_scope(grad_node->scope());
   MS_EXCEPTION_IF_NULL(tensor_shape_node);
+  tensor_shape_node->set_scope(grad_node->scope());
   auto abs = InferAbstract(prim, {node});
   MS_EXCEPTION_IF_NULL(abs);
   tensor_shape_node->set_abstract(abs);
