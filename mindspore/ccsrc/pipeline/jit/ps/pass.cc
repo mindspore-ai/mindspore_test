@@ -52,6 +52,7 @@
 #include "frontend/parallel/shard/shard.h"
 #include "frontend/parallel/pass/optimize_parallel_allgather_comm.h"
 #include "frontend/parallel/pass/label_micro_interleaved_index.h"
+#include "frontend/parallel/pass/dataset_reader_optimizer.h"
 #include "frontend/parallel/pass/label_fine_grained_interleaved_index.h"
 #include "frontend/parallel/pass/reorder_send_recv_between_fp_bp.h"
 #include "frontend/parallel/pass/micro_interleaved_order_control.h"
@@ -1050,6 +1051,34 @@ bool CconvPass(const ResourcePtr &resource) {
   return true;
 }
 
+bool ControlDataBroadcastOrderPass(const ResourcePtr &resource) {
+  MS_EXCEPTION_IF_NULL(resource);
+  auto graph = resource->func_graph();
+  parallel::ControlOptShardCommAndDataBroadcastOrder(graph);
+  parallel::ControlPipelineCommAndDataBroadcastOrder(graph);
+  return true;
+}
+
+bool DatasetRepeatReaderOptPass(const ResourcePtr &resource) {
+  MS_EXCEPTION_IF_NULL(resource);
+  auto root = resource->func_graph();
+  auto manager = resource->manager();
+  auto parallel_context = parallel::ParallelContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(parallel_context);
+  auto parallel_mode = parallel_context->parallel_mode();
+  if (parallel_mode != parallel::kSemiAutoParallel && parallel_mode != parallel::kAutoParallel) {
+    MS_LOG(INFO) << "Only auto_parallel and semi_auto_parallel support dataset repeat optimizer.";
+    return true;
+  }
+  auto dataset_opt = std::make_shared<parallel::DatasetReaderOptimizer>(manager, root);
+  if (!dataset_opt->Init()) {
+    return true;
+  }
+  dataset_opt->BroadcastDataset();
+  dataset_opt->BroadcastReorder();
+  return true;
+}
+
 bool PipelineSplitPass(const ResourcePtr &resource) { return PipelineSplit(resource); }
 
 bool ParallelVirtualDatasetPass(const ResourcePtr &resource) { return ParallelVirtualDataset(resource); }
@@ -1277,6 +1306,7 @@ std::vector<PassItem> kVmPasses = {
   {"add_comm_op_reuse_tag", AddCommOpReusePass},
   {"overlap_opt_shard_in_pipeline", OverlapOptShardInPipelinePass},
   {"overlap_opt_shard_grad_in_pipeline", OverlapOptShardGradInPipelinePass},
+  {"control_data_broadcast_order", ControlDataBroadcastOrderPass},
   {"grouped_pairwise_exchange_alltoall", GroupedPairwiseExchangeAllToAllPass},
   {"overlap_recompute_and_grad_model_parallel", OverlapRecomputeAndGradModelParallel},
   {"overlap_grad_matmul_and_grad_allreduce", OverlapGradMatmulAndGradAllreduce},

@@ -800,7 +800,9 @@ class _Context:
                             "compute_communicate_fusion_level":
                                 (ms_ctx_param.compute_communicate_fusion_level, int),
                             "enable_flash_attention_load_balance":
-                                (ms_ctx_param.enable_flash_attention_load_balance, bool)}
+                                (ms_ctx_param.enable_flash_attention_load_balance, bool),
+                            "dataset_broadcast_opt_level":
+                                (ms_ctx_param.dataset_broadcast_opt_level, int)}
             with open(speedup_config_real_path, 'r') as f:
                 speedup_config = json.load(f)
                 for key, value in speedup_config.items():
@@ -1606,6 +1608,16 @@ def set_context(**kwargs):
                 - 2: Apply fusion to backward nodes.
 
                 - 3: Apply fusion to all nodes.
+              - dataset_broadcast_opt_level (int): Optimize the scenario that the dataset repeated reading.
+                Default: ``0``.
+
+                - 0: Disable this optimize.
+
+                - 1: Optimize dataset reader between pipeline stage.
+
+                - 2: Optimize dataset reader within pipeline stage.
+
+                - 3: Optimize dataset reader with all scenes.
               - bias_add_comm_swap (bool): Enable node execution order swap communication operators and add operators
                 if ``True``. Only 1-dimension bias node is supported. Default: ``False``.
             - host_scheduling_max_threshold(int): The max threshold to control whether the dynamic shape process is
