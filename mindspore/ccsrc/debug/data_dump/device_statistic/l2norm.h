@@ -29,12 +29,11 @@ inline const std::set<TypeId> norm_supported_dtype{kNumberTypeBFloat16, kNumberT
 
 class NormStatisticKernel : public MeanStatisticKernel {
  public:
-  explicit NormStatisticKernel(const DeviceContext *device_context, const std::uint32_t stream_id)
-      : MeanStatisticKernel(device_context, ops::kNameNorm, norm_supported_dtype, stream_id) {}
+  explicit NormStatisticKernel(const DeviceContext *device_context)
+      : MeanStatisticKernel(device_context, ops::kNameNorm, norm_supported_dtype) {}
 
  protected:
-  DeviceAddressPtr GetScalar(float scalar = 2.0);
-  vector<DeviceAddressPtr> GetExtraInputsDeviceAddress(KernelTensor *input) override;
+  vector<KernelTensorPtr> GetExtraInputsDeviceAddress(KernelTensor *input) override;
 };
 
 }  // namespace datadump

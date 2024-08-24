@@ -48,7 +48,7 @@ class TensorInfoForDump {
   size_t device_size;
   device::DeviceAddress *device_tensor;
   const void *device_ptr;
-  std::map<std::string, device::DeviceAddressPtr> stat_results;
+  std::map<std::string, vector<device::DeviceAddressPtr>> stat_results;
 };
 
 class TensorInfoCommForDump {

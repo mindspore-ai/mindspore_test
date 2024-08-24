@@ -31,21 +31,15 @@ inline const std::set<TypeId> mean_supported_dtype = {
 
 class MeanStatisticKernel : public StatisticKernel {
  public:
-  explicit MeanStatisticKernel(const DeviceContext *device_context, const uint32_t stream_id)
-      : StatisticKernel(device_context, ops::kNameMeanExt, mean_supported_dtype, stream_id) {}
+  explicit MeanStatisticKernel(const DeviceContext *device_context)
+      : StatisticKernel(device_context, ops::kNameMeanExt, mean_supported_dtype) {}
 
-  explicit MeanStatisticKernel(const DeviceContext *device_context, string kernel_name,
-                               const std::set<TypeId> &dtype_id, const uint32_t stream_id)
-      : StatisticKernel(device_context, kernel_name, dtype_id, stream_id) {}
-
-  DeviceAddressPtr GetAxisDeviceAddress(size_t dim);
-  DeviceAddressPtr GetKeepDimsDeviceAddress();
-
-  DeviceAddressPtr GetDtypeDeviceAddress(const TypeId);
-  DeviceAddressPtr GetOutputDeviceAddress(const TypeId) override;
+  explicit MeanStatisticKernel(const DeviceContext *device_context, const string &kernel_name,
+                               const std::set<TypeId> &dtype_id)
+      : StatisticKernel(device_context, kernel_name, dtype_id) {}
 
  protected:
-  vector<DeviceAddressPtr> GetExtraInputsDeviceAddress(KernelTensor *input) override;
+  vector<KernelTensorPtr> GetExtraInputsDeviceAddress(KernelTensor *input) override;
 };
 
 }  // namespace datadump

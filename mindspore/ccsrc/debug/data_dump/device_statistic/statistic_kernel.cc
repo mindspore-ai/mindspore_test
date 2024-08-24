@@ -81,17 +81,18 @@ DeviceAddressPtr StatisticKernel::GetOutputDeviceAddress(TypeId dtype_id) {
   return GenerateDeviceAddress(UnitSizeInBytes(dtype_id), dtype_id, shape_vec);
 }
 
-vector<DeviceAddressPtr> StatisticKernel::GetExtraInputsDeviceAddress(KernelTensor *) {
-  return vector<DeviceAddressPtr>();
+vector<KernelTensorPtr> StatisticKernel::GetExtraInputsDeviceAddress(KernelTensor *) {
+  return vector<KernelTensorPtr>();
 }
 
-DeviceAddressPtr StatisticKernel::LaunchKernelAsync(KernelTensor *input) {
+vector<DeviceAddressPtr> StatisticKernel::LaunchKernelAsync(KernelTensor *input, const uint32_t stream_id) {
   MS_EXCEPTION_IF_NULL(input);
-
+  stream_id_ = stream_id;
   vector<KernelTensor *> inputs{input};
   auto extra_inputs = GetExtraInputsDeviceAddress(input);
+  vector<DeviceAddressPtr> res;
   std::transform(extra_inputs.begin(), extra_inputs.end(), std::back_inserter(inputs),
-                 [](const auto &extra_input) { return extra_input->kernel_tensor().get(); });
+                 [](const auto &extra_input) { return extra_input.get(); });
   auto output_addr = GetOutputDeviceAddress(input->dtype_id());
   vector<KernelTensor *> outputs{output_addr->kernel_tensor().get()};
 
@@ -101,6 +102,8 @@ DeviceAddressPtr StatisticKernel::LaunchKernelAsync(KernelTensor *input) {
   void *stream_ptr = device_context_->device_res_manager_->GetStream(stream_id_);
   MS_EXCEPTION_IF_NULL(stream_ptr);
   auto workspace_addr = GetWorkSpaceDeviceAddress(inputs, outputs);
+  res.emplace_back(workspace_addr);
+  res.emplace_back(output_addr);
   vector<KernelTensor *> workspace;
   if (workspace_addr) {
     workspace.emplace_back(workspace_addr->kernel_tensor().get());
@@ -111,7 +114,7 @@ DeviceAddressPtr StatisticKernel::LaunchKernelAsync(KernelTensor *input) {
   if (!ret) {
     MS_LOG(EXCEPTION) << "Device cal statistic, launch " << kernel_name_ << "error";
   }
-  return output_addr;
+  return res;
 }
 
 }  // namespace datadump

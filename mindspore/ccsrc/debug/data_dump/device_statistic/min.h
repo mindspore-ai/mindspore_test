@@ -32,8 +32,8 @@ inline const std::set<TypeId> min_supported_dtype{
 
 class MinStatisticKernel : public StatisticKernel {
  public:
-  explicit MinStatisticKernel(const DeviceContext *device_context, const std::uint32_t stream_id)
-      : StatisticKernel(device_context, ops::kNameMin, min_supported_dtype, stream_id) {}
+  explicit MinStatisticKernel(const DeviceContext *device_context)
+      : StatisticKernel(device_context, ops::kNameMin, min_supported_dtype) {}
 };
 
 }  // namespace datadump

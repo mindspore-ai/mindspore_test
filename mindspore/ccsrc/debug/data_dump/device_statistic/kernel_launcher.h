@@ -25,7 +25,8 @@ namespace mindspore {
 namespace datadump {
 TensorPtr CalStatistic(const std::string &, const DeviceContext *, KernelTensor *, const std::uint32_t);
 
-DeviceAddressPtr CalStatisticAsync(const std::string &, const DeviceContext *, KernelTensor *, const std::uint32_t);
+vector<DeviceAddressPtr> CalStatisticAsync(const std::string &, const DeviceContext *, KernelTensor *,
+                                           const std::uint32_t);
 
 DeviceAddressPtr CalCheckOverflowAsync(const DeviceContext *, vector<KernelTensor *>, const std::uint32_t);
 }  // namespace datadump

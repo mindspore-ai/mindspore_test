@@ -46,7 +46,8 @@ vector<KernelTensor *> CheckOverflowKernel::CheckInputs(vector<KernelTensor *> i
   return check_kernel_tensors;
 }
 
-DeviceAddressPtr CheckOverflowKernel::LaunchKernelAsync(vector<KernelTensor *> inputs) {
+DeviceAddressPtr CheckOverflowKernel::LaunchKernelAsync(vector<KernelTensor *> inputs, const std::uint32_t stream_id) {
+  stream_id_ = stream_id;
   vector<KernelTensor *> selected_inputs = CheckInputs(inputs);
   if (selected_inputs.empty()) {
     return nullptr;
