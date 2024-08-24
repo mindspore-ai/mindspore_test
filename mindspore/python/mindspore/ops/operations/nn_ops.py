@@ -30,6 +30,7 @@ from mindspore.ops.primitive import Primitive
 from mindspore.ops.primitive import PrimitiveWithInfer
 from mindspore.ops.primitive import PrimitiveWithCheck
 from mindspore.ops.primitive import prim_attr_register
+from mindspore.run_check._check_version import AscendEnvChecker
 from ..auto_generate import (CeLU, Flatten, LogSoftmax, ReLU, ReLU6, Dense, Tanh,
                              Elu, Sigmoid, Softmax, SoftplusExt, HSwish, HSigmoid, AvgPool, BiasAdd,
                              NLLLoss, OneHot, GeLU, FastGeLU, PReLU, RmsNorm,
@@ -567,8 +568,6 @@ class SeLU(Primitive):
     def __init__(self):
         """Initialize SeLU"""
         self.init_prim_io_names(inputs=['input_x'], outputs=['output'])
-
-
 
 
 class FusedBatchNorm(Primitive):
@@ -9628,8 +9627,15 @@ class AllFinite(Primitive):
     r"""
     Check all gradients is finite.
     """
+
     @prim_attr_register
     def __init__(self):
         """Initialize"""
         self.init_prim_io_names(inputs=['gradients'],
                                 outputs=["is_finite"])
+        if context.get_context("device_target") == "Ascend":
+            checker = AscendEnvChecker(None)
+            if not checker.check_custom_version():
+                raise RuntimeError(
+                    "The version of Ascend AI software package installed "
+                    "in the current environment does not support AllFinite.")

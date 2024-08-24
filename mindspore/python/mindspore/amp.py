@@ -21,6 +21,7 @@ from mindspore.common import mutable
 from mindspore.ops._primitive_cache import _get_cache_prim
 from mindspore.ops.operations.math_ops import NPUGetFloatStatusV2, NPUClearFloatStatusV2
 from mindspore.ops.operations.nn_ops import AllFinite
+from mindspore.run_check._check_version import AscendEnvChecker
 from mindspore import _checkparam as validator
 from mindspore._c_expression import MSContext
 from .common import dtype as mstype
@@ -31,9 +32,8 @@ from .common.api import jit_class, jit
 from .common.parameter import Parameter
 from .common.tensor import Tensor
 from .train.loss_scale_manager import DynamicLossScaleManager, LossScaleManager, FixedLossScaleManager
-from .train.amp import build_train_network, auto_mixed_precision, custom_mixed_precision,\
+from .train.amp import build_train_network, auto_mixed_precision, custom_mixed_precision, \
     get_white_list, get_black_list
-
 
 _hypermap = ops.HyperMap()
 _partial = ops.Partial()
@@ -62,6 +62,10 @@ def _gpu_target():
 @constexpr
 def _enable_all_finite():
     """check whether enable all finite"""
+    if _ascend_target():
+        checker = AscendEnvChecker(None)
+        if not checker.check_custom_version():
+            return False
     runtime_conf = os.environ.get('MS_DEV_RUNTIME_CONF')
     global_jit_config = context.get_jit_config()
     if runtime_conf is not None and ("all_finite:True" in runtime_conf or "all_finite:true" in runtime_conf):
@@ -105,7 +109,7 @@ def _all_finite(inputs, check_overflow_mode, enable_allfinite):
     """all finite check"""
     if _ascend_target():
         if (_ascend_910a_target()) or \
-           (_ascend_910bc_target() and check_overflow_mode == "SATURATION_MODE"):
+                (_ascend_910bc_target() and check_overflow_mode == "SATURATION_MODE"):
             status = Tensor([0] * 8, mstype.int32)
             status = ops.depend(status, inputs)
             get_status = _get_cache_prim(NPUGetFloatStatusV2)()(status)
@@ -200,6 +204,7 @@ class LossScaler(ABC):
         >>>
         >>> loss_scaler = MyLossScaler(1024)
     """
+
     @abstractmethod
     def scale(self, inputs):
         """
@@ -262,6 +267,7 @@ class StaticLossScaler(LossScaler):
         (Tensor(shape=[2], dtype=Float16, value= [ 1.4648e-03,  9.7656e-04]),
         Tensor(shape=[1], dtype=Float16, value= [ 1.1721e-03]))
     """
+
     def __init__(self, scale_value):
         scale_value = validator.check_value_type("scale_value", scale_value, [float, int])
         if scale_value < 1.0:
@@ -340,6 +346,7 @@ class DynamicLossScaler(LossScaler):
         >>> print(loss_scaler.scale_value.asnumpy())
         512.0
     """
+
     def __init__(self, scale_value, scale_factor, scale_window):
         scale_value = validator.check_value_type("scale_value", scale_value, [float, int])
         if scale_value < 1.0:
@@ -410,6 +417,7 @@ class DynamicLossScaler(LossScaler):
         counter = ((self.counter + 1) % self.scale_window) * grads_finite
         ops.assign(self.counter, counter)
         return True
+
 
 __all__ = [
     "DynamicLossScaleManager", "LossScaleManager", "FixedLossScaleManager",
