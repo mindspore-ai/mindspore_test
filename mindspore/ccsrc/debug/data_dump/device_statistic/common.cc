@@ -24,6 +24,7 @@ const char KStatMax[] = "max";
 const char KStatMin[] = "min";
 const char KStatMean[] = "avg";
 const char KStatL2Norm[] = "l2norm";
+const char KCheckOverflow[] = "overflow";
 
 void WarningOnce(const std::string &device_name, const std::string &type_name, const std::string &statistic_name) {
   static std::set<std::string> warning_once;

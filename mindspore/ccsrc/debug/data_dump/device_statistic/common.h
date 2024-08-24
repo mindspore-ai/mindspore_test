@@ -31,6 +31,7 @@ extern const char KStatMax[];
 extern const char KStatMin[];
 extern const char KStatMean[];
 extern const char KStatL2Norm[];
+extern const char KCheckOverflow[];
 
 void WarningOnce(const std::string &device_name, const std::string &type_name, const std::string &statistic_name);
 void WarningOnceCategory(const std::string &name);
