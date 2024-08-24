@@ -93,7 +93,6 @@ void CheckBatchMatmulInputWhetherCanBeBroadcast(const std::string &name, const S
   }
 
   // todo: delete after broadcast shape is supported on cpu/gpu
-  #if !(defined(ENABLE_TEST) || defined(ENABLE_TESTCASES))
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
   std::string device_target = context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET);
@@ -110,7 +109,6 @@ void CheckBatchMatmulInputWhetherCanBeBroadcast(const std::string &name, const S
       }
     }
   }
-  #endif
 
   size_t min_size = std::min(x_batch.size(), y_batch.size());
   for (int64_t i = 0; i < SizeToLong(min_size); ++i) {
@@ -185,7 +183,12 @@ TypePtr BatchMatMulFuncImpl::InferType(const PrimitivePtr &prim, const std::vect
   (void)types.emplace("w", input_args[1]->GetType());
   (void)CheckAndConvertUtils::CheckTensorTypeSame(types, valid_types, prim->name());
   TypePtr x_type = input_args[0]->GetType();
-  if (x_type->type_id() == TypeId::kNumberTypeInt8 || x_type->ToString() == "Tensor[Int8]") {
+
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  std::string device_target = context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+  if ((x_type->type_id() == TypeId::kNumberTypeInt8 || x_type->ToString() == "Tensor[Int8]") &&
+      device_target == kAscendDevice) {
     x_type = std::make_shared<TensorType>(kInt32);
   }
   if (prim->HasAttr("cast_type")) {

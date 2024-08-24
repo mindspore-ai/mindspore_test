@@ -181,21 +181,6 @@ test_case_check_ops = [
     ('BatchMatMul', {
         'block': NetBatchMatMul(),
         'desc_inputs': [Tensor(np.ones(shape=[3, 1, 5])), Tensor(np.ones(shape=[3, 5, 4]))]}),
-    ('BatchMatMul_broadcast_1', {
-        'block': NetBatchMatMul(),
-        'desc_inputs': [Tensor(np.ones(shape=[3, 1, 5])), Tensor(np.ones(shape=[5, 4]))]}),
-    ('BatchMatMul_broadcast_2', {
-        'block': NetBatchMatMul(),
-        'desc_inputs': [Tensor(np.ones(shape=[3, 1, 5])), Tensor(np.ones(shape=[1, 5, 4]))]}),
-    ('BatchMatMul_broadcast_3', {
-        'block': NetBatchMatMul(),
-        'desc_inputs': [Tensor(np.ones(shape=[2, 1, 1, 5])), Tensor(np.ones(shape=[1, 2, 5, 4]))]}),
-    ('BatchMatMul_broadcast_4', {
-        'block': NetBatchMatMul(),
-        'desc_inputs': [Tensor(np.ones(shape=[2, 2, 1, 1, 5])), Tensor(np.ones(shape=[1, 2, 5, 4]))]}),
-    ('BatchMatMul_broadcast_5', {
-        'block': NetBatchMatMul(),
-        'desc_inputs': [Tensor(np.ones(shape=[3, 1, 5])), Tensor(np.ones(shape=[1, 3, 5, 4]))]}),
 ]
 
 test_case_lists = [test_case_check_ops]

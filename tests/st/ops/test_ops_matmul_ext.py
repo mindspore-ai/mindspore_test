@@ -139,7 +139,8 @@ def test_ops_dynamic():
     TEST_OP(matmul, [[x1, y1], [x2, y2]], '', disable_yaml_check=True)
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend', 'cpu_linux'], level_mark='level0',
+          card_mark='onecard', essential_mark='unessential')
 def test_mix_dynamic_shape():
     """
     Feature: ops.matmul
