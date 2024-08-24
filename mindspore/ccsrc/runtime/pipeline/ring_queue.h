@@ -40,6 +40,8 @@ class RingQueue {
 
     buffer_[current_tail] = value;
     tail_.store(next_tail, std::memory_order_release);
+
+    cond_var_.notify_one();
   }
 
   void Dequeue() {
@@ -55,17 +57,28 @@ class RingQueue {
   const T &Head() {
     std::size_t current_head = head_.load(std::memory_order_acquire);
     while (current_head == tail_.load(std::memory_order_acquire)) {
+      // spin_ is always true unless manually set it to false.
+      if (!spin_) {
+        std::unique_lock<std::mutex> lock(mutex_);
+        cond_var_.wait(lock, [this, current_head]() { return current_head != tail_.load(std::memory_order_acquire); });
+      }
     }
     return buffer_[current_head];
   }
 
   bool IsEmpty() const { return head_.load(std::memory_order_acquire) == tail_.load(std::memory_order_acquire); }
 
+  void set_spin(bool spin) { spin_ = spin; }
+
  private:
   std::array<T, Capacity> buffer_;
   // CPU cache line size is 64.
   alignas(64) std::atomic<std::size_t> head_;
   alignas(64) std::atomic<std::size_t> tail_;
+  // disable spin and wait for activate.
+  bool spin_{true};
+  std::condition_variable cond_var_;
+  std::mutex mutex_;
 };
 }  // namespace mindspore
 
