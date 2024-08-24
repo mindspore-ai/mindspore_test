@@ -47,6 +47,9 @@ class CustomAscendKernelMod : public kernel::KernelMod {
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
               const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;
 
+  bool UpdateWeights(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
+                     const std::vector<KernelTensor *> &outputs, void *stream_ptr);
+
   std::vector<KernelAttr> GetOpSupport() override { return {}; }
 
  private:

@@ -137,5 +137,4 @@ Status ModelImpl::Finalize() {
   MS_LOG(ERROR) << "Finalize is only support for mindspore_lite's ascend backend.";
   return kLiteError;
 }
-
 }  // namespace mindspore

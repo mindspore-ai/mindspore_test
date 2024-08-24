@@ -146,6 +146,8 @@
 #include "tools/optimizer/fusion/groupnormsilu_fusion.h"
 #include "tools/optimizer/fusion/adjust_resize_dims_pass.h"
 #include "tools/optimizer/graph/adjust_quant_matmul_pass.h"
+#include "tools/converter/converter_funcgraph.h"
+#include "tools/optimizer/graph/add_variable_node_pass.h"
 
 using std::string;
 namespace mindspore::lite {
@@ -690,7 +692,6 @@ int AnfTransform::RunPass(const FuncGraphPtr &old_graph, const std::shared_ptr<C
     MS_LOG(ERROR) << "Run elimination of redundant pass failed.";
     return RET_ERROR;
   }
-
   if (!param->no_fusion) {
     status = RunFusionPass(old_graph, param);
     if (status != RET_OK) {
@@ -822,6 +823,7 @@ bool AnfTransform::StoreBuiltinPass(const std::shared_ptr<ConverterPara> &param)
                                                           param->aclModelOptionCfgParam.enable_custom_fusion_pattern,
                                                           param->aclModelOptionCfgParam.disable_custom_fusion_pattern),
      false},
+    {"InsertVariableNodePass", std::make_shared<opt::InsertVariableNodePass>(param), false},
     {"MakeListPass", std::make_shared<opt::MakeListPass>(), true},
     {"FlashAttentionFusion", std::make_shared<opt::FlashAttentionFusion>(param->aclModelOptionCfgParam.op_attrs_map),
      false},

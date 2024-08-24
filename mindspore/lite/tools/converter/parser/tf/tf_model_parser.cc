@@ -1130,7 +1130,7 @@ bool TFModelParser::IsEmptyTfFunction(const CNodePtr &anf_node, std::string bran
         auto &input_arg = tf_sub_signature.input_arg(index);
         if (input_arg.name() == node_def.input(0)) {
           auto output_name = node_def.name();
-          transform(output_name.begin(), output_name.end(), output_name.begin(), ::tolower);
+          std::transform(output_name.begin(), output_name.end(), output_name.begin(), ::tolower);
           if (output_name == tf_sub_signature_output_name &&
               ineffective_if_op_map_.find(anf_node) == ineffective_if_op_map_.end()) {
             ineffective_if_op_map_[anf_node] = index + C2NUM;

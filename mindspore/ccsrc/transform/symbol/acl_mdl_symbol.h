@@ -49,6 +49,21 @@ ORIGIN_METHOD(aclmdlSetDump, aclError, const char *)
 ORIGIN_METHOD(aclmdlSetDynamicBatchSize, aclError, uint32_t, aclmdlDataset *, size_t, uint64_t)
 ORIGIN_METHOD(aclmdlUnload, aclError, uint32_t)
 ORIGIN_METHOD(aclmdlQuerySizeFromMem, aclError, const void *, size_t, size_t *, size_t *)
+ORIGIN_METHOD(aclmdlBundleGetModelId, aclError, uint32_t, size_t, uint32_t *)
+ORIGIN_METHOD(aclmdlBundleLoadFromMem, aclError, const void *, size_t, uint32_t *)
+ORIGIN_METHOD(aclmdlBundleUnload, aclError, uint32_t)
+ORIGIN_METHOD(aclmdlLoadFromMemWithMem, aclError, const void *, size_t, uint32_t *, void *, size_t, void *, size_t)
+ORIGIN_METHOD(aclmdlSetDatasetTensorDesc, aclError, aclmdlDataset *, aclTensorDesc *, size_t)
+ORIGIN_METHOD(aclmdlGetInputFormat, aclFormat, const aclmdlDesc *, size_t)
+ORIGIN_METHOD(aclmdlGetDatasetTensorDesc, aclTensorDesc *, const aclmdlDataset *, size_t)
+ORIGIN_METHOD(aclmdlSetInputDynamicDims, aclError, uint32_t, aclmdlDataset *, size_t, const aclmdlIODims *)
+ORIGIN_METHOD(aclmdlGetOutputFormat, aclFormat, const aclmdlDesc *, size_t)
+ORIGIN_METHOD(aclmdlGetInputDimsV2, aclError, const aclmdlDesc *, size_t, aclmdlIODims *)
+ORIGIN_METHOD(aclmdlGetDynamicHW, aclError, const aclmdlDesc *, size_t, aclmdlHW *)
+ORIGIN_METHOD(aclmdlGetInputDynamicDims, aclError, const aclmdlDesc *, size_t, aclmdlIODims *, size_t)
+ORIGIN_METHOD(aclmdlGetInputDynamicGearCount, aclError, const aclmdlDesc *, size_t, size_t *)
+ORIGIN_METHOD(aclmdlGetDynamicBatch, aclError, const aclmdlDesc *, aclmdlBatch *)
+ORIGIN_METHOD(aclmdlSetDynamicHWSize, aclError, uint32_t, aclmdlDataset *, size_t, uint64_t, uint64_t)
 
 extern aclmdlAddDatasetBufferFunObj aclmdlAddDatasetBuffer_;
 extern aclmdlCreateDatasetFunObj aclmdlCreateDataset_;
@@ -78,6 +93,21 @@ extern aclmdlSetDumpFunObj aclmdlSetDump_;
 extern aclmdlSetDynamicBatchSizeFunObj aclmdlSetDynamicBatchSize_;
 extern aclmdlUnloadFunObj aclmdlUnload_;
 extern aclmdlQuerySizeFromMemFunObj aclmdlQuerySizeFromMem_;
+extern aclmdlBundleGetModelIdFunObj aclmdlBundleGetModelId_;
+extern aclmdlBundleLoadFromMemFunObj aclmdlBundleLoadFromMem_;
+extern aclmdlBundleUnloadFunObj aclmdlBundleUnload_;
+extern aclmdlLoadFromMemWithMemFunObj aclmdlLoadFromMemWithMem_;
+extern aclmdlSetDatasetTensorDescFunObj aclmdlSetDatasetTensorDesc_;
+extern aclmdlGetInputFormatFunObj aclmdlGetInputFormat_;
+extern aclmdlGetDatasetTensorDescFunObj aclmdlGetDatasetTensorDesc_;
+extern aclmdlSetInputDynamicDimsFunObj aclmdlSetInputDynamicDims_;
+extern aclmdlGetOutputFormatFunObj aclmdlGetOutputFormat_;
+extern aclmdlGetInputDimsV2FunObj aclmdlGetInputDimsV2_;
+extern aclmdlGetDynamicHWFunObj aclmdlGetDynamicHW_;
+extern aclmdlGetInputDynamicDimsFunObj aclmdlGetInputDynamicDims_;
+extern aclmdlGetInputDynamicGearCountFunObj aclmdlGetInputDynamicGearCount_;
+extern aclmdlGetDynamicBatchFunObj aclmdlGetDynamicBatch_;
+extern aclmdlSetDynamicHWSizeFunObj aclmdlSetDynamicHWSize_;
 
 void LoadAclMdlApiSymbol(const std::string &ascend_path);
 }  // namespace transform

@@ -106,6 +106,11 @@ AclModelOptionsPtr CustomAscendKernelMod::GenAclOptions() {
     auto val = GetValue<bool>(weightspace_workspace_key);
     acl_options_ptr->share_weightspace_workspace = val;
   }
+  auto bundle_model = primitive_->GetAttr(lite::kBundleModel);
+  if (bundle_model != nullptr) {
+    auto val = GetValue<bool>(bundle_model);
+    acl_options_ptr->is_bundle_model = val;
+  }
   // set device id
   uint32_t device_count;
   if (CALL_ASCEND_API(aclrtGetDeviceCount, &device_count) != ACL_ERROR_NONE) {
@@ -263,6 +268,20 @@ bool CustomAscendKernelMod::Launch(const std::vector<KernelTensor *> &, const st
   UpdateOutputKernelTensorInfo();
   if (!model_infer_->Inference(inputs_, outputs_)) {
     MS_LOG(ERROR) << "Custom kernel execute failed.";
+    return false;
+  }
+  return true;
+}
+
+bool CustomAscendKernelMod::UpdateWeights(const std::vector<KernelTensor *> &kernel_weights,
+                                          const std::vector<KernelTensor *> &, const std::vector<KernelTensor *> &,
+                                          void *stream_ptr) {
+  if (!load_model_) {
+    MS_LOG(ERROR) << "Init custom ascend kernel has been not ready!";
+    return false;
+  }
+  if (!model_infer_->UpdateWeights(kernel_weights)) {
+    MS_LOG(ERROR) << "Update weights failed!";
     return false;
   }
   return true;

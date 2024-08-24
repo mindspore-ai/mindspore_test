@@ -182,6 +182,20 @@ bool ModelInfer::Inference(const std::vector<KernelTensor *> &inputs, const std:
   return true;
 }
 
+bool ModelInfer::UpdateWeights(const std::vector<KernelTensor *> &inputs) {
+  aclError rt_ret = CALL_ASCEND_API(aclrtSetCurrentContext, context_);
+  if (rt_ret != ACL_ERROR_NONE) {
+    MS_LOG(ERROR) << "Set the ascend device context failed, ret = " << rt_ret;
+    return false;
+  }
+  auto ret = model_process_.UpdateWeights(inputs);
+  if (!ret) {
+    MS_LOG(ERROR) << "Update weights failed!";
+    return ret;
+  }
+  return true;
+}
+
 std::vector<Format> ModelInfer::GetInputFormat() { return model_process_.GetInputFormat(); }
 const std::vector<ShapeVector> ModelInfer::GetOutputShape() { return model_process_.GetOutputShape(); }
 const std::vector<ShapeVector> ModelInfer::GetInputShape() { return model_process_.GetInputShape(); }

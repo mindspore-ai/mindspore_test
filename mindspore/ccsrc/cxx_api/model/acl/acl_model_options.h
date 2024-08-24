@@ -56,8 +56,9 @@ class MS_API AclModelOptions {
     aoe_tuning_options_map_ = tuning_options;
   }
   std::map<std::string, std::string> GetAoeGlobalOptionsMap() const { return aoe_global_options_map_; }
-
   static std::string GetSocName();
+  std::vector<std::string> GetConstName() const { return const_names_; }
+  void SetConstName(const std::vector<std::string> &const_names) { const_names_ = const_names; }
 
  private:
   std::string output_node_;  // todo: at convert.cc::BuildGraph(), no atc options
@@ -84,6 +85,7 @@ class MS_API AclModelOptions {
   std::string om_file_path_;
   std::string aoe_mode_;
   std::string dump_model_name_;
+  std::vector<std::string> const_names_;
 };
 }  // namespace mindspore
 

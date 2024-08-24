@@ -24,6 +24,7 @@ namespace lite {
 int ParseConfigFile(const std::string &config_file_path,
                     std::map<std::string, std::map<std::string, std::string>> *maps,
                     std::map<int, std::map<std::string, std::string>> *model_param_infos);
+int ReadFileToIfstream(const std::string &file_path, std::ifstream *ifstream);
 }  // namespace lite
 }  // namespace mindspore
 

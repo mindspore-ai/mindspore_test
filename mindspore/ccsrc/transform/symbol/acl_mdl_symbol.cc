@@ -47,6 +47,21 @@ aclmdlSetDumpFunObj aclmdlSetDump_ = nullptr;
 aclmdlSetDynamicBatchSizeFunObj aclmdlSetDynamicBatchSize_ = nullptr;
 aclmdlUnloadFunObj aclmdlUnload_ = nullptr;
 aclmdlQuerySizeFromMemFunObj aclmdlQuerySizeFromMem_ = nullptr;
+aclmdlBundleGetModelIdFunObj aclmdlBundleGetModelId_ = nullptr;
+aclmdlBundleLoadFromMemFunObj aclmdlBundleLoadFromMem_ = nullptr;
+aclmdlBundleUnloadFunObj aclmdlBundleUnload_ = nullptr;
+aclmdlLoadFromMemWithMemFunObj aclmdlLoadFromMemWithMem_ = nullptr;
+aclmdlSetDatasetTensorDescFunObj aclmdlSetDatasetTensorDesc_ = nullptr;
+aclmdlGetInputFormatFunObj aclmdlGetInputFormat_ = nullptr;
+aclmdlGetDatasetTensorDescFunObj aclmdlGetDatasetTensorDesc_ = nullptr;
+aclmdlSetInputDynamicDimsFunObj aclmdlSetInputDynamicDims_ = nullptr;
+aclmdlGetOutputFormatFunObj aclmdlGetOutputFormat_ = nullptr;
+aclmdlGetInputDimsV2FunObj aclmdlGetInputDimsV2_ = nullptr;
+aclmdlGetDynamicHWFunObj aclmdlGetDynamicHW_ = nullptr;
+aclmdlGetInputDynamicDimsFunObj aclmdlGetInputDynamicDims_ = nullptr;
+aclmdlGetInputDynamicGearCountFunObj aclmdlGetInputDynamicGearCount_ = nullptr;
+aclmdlGetDynamicBatchFunObj aclmdlGetDynamicBatch_ = nullptr;
+aclmdlSetDynamicHWSizeFunObj aclmdlSetDynamicHWSize_ = nullptr;
 
 void LoadAclMdlApiSymbol(const std::string &ascend_path) {
   std::string aclmdl_plugin_path = ascend_path + "lib64/libascendcl.so";
@@ -83,6 +98,21 @@ void LoadAclMdlApiSymbol(const std::string &ascend_path) {
   aclmdlSetDump_ = DlsymAscendFuncObj(aclmdlSetDump, handler);
   aclmdlSetDynamicBatchSize_ = DlsymAscendFuncObj(aclmdlSetDynamicBatchSize, handler);
   aclmdlUnload_ = DlsymAscendFuncObj(aclmdlUnload, handler);
+  aclmdlBundleGetModelId_ = DlsymAscendFuncObj(aclmdlBundleGetModelId, handler);
+  aclmdlBundleLoadFromMem_ = DlsymAscendFuncObj(aclmdlBundleLoadFromMem, handler);
+  aclmdlBundleUnload_ = DlsymAscendFuncObj(aclmdlBundleUnload, handler);
+  aclmdlLoadFromMemWithMem_ = DlsymAscendFuncObj(aclmdlLoadFromMemWithMem, handler);
+  aclmdlSetDatasetTensorDesc_ = DlsymAscendFuncObj(aclmdlSetDatasetTensorDesc, handler);
+  aclmdlGetInputFormat_ = DlsymAscendFuncObj(aclmdlGetInputFormat, handler);
+  aclmdlGetDatasetTensorDesc_ = DlsymAscendFuncObj(aclmdlGetDatasetTensorDesc, handler);
+  aclmdlSetInputDynamicDims_ = DlsymAscendFuncObj(aclmdlSetInputDynamicDims, handler);
+  aclmdlGetOutputFormat_ = DlsymAscendFuncObj(aclmdlGetOutputFormat, handler);
+  aclmdlGetInputDimsV2_ = DlsymAscendFuncObj(aclmdlGetInputDimsV2, handler);
+  aclmdlGetDynamicHW_ = DlsymAscendFuncObj(aclmdlGetDynamicHW, handler);
+  aclmdlGetInputDynamicDims_ = DlsymAscendFuncObj(aclmdlGetInputDynamicDims, handler);
+  aclmdlGetInputDynamicGearCount_ = DlsymAscendFuncObj(aclmdlGetInputDynamicGearCount, handler);
+  aclmdlGetDynamicBatch_ = DlsymAscendFuncObj(aclmdlGetDynamicBatch, handler);
+  aclmdlSetDynamicHWSize_ = DlsymAscendFuncObj(aclmdlSetDynamicHWSize, handler);
   MS_LOG(INFO) << "Load acl mdl api success!";
 }
 }  // namespace transform

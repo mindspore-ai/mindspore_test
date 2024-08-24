@@ -59,6 +59,7 @@ class SingleOpInferSession : public InferSession {
   MutableTensorImplPtr GetInputByTensorName(uint32_t graph_id, const std::string &name) override;
   void SetConfigInfo(const ConfigInfos &config_infos) { config_infos_ = config_infos; }
   void SetCustomAscendOpAttrs(const kernel::BaseOperatorPtr &op);
+  Status UpdateWeights(const std::vector<std::vector<std::shared_ptr<tensor::Tensor>>> &weights);
 
  protected:
   Status OnNewInputShapes(const std::vector<ShapeVector> &new_shapes);
@@ -67,6 +68,8 @@ class SingleOpInferSession : public InferSession {
   Status InitInputOutputInfos(const FuncGraphPtr &graph);
   void SetBackOutputIfDynamic(std::vector<tensor::Tensor> *outputs);
   Status InitInputOutputData(const std::vector<tensor::Tensor> &inputs, std::vector<tensor::Tensor> *outputs);
+  Status InitVariableWeights(const std::vector<std::shared_ptr<tensor::Tensor>> &weights,
+                             std::vector<kernel::KernelTensor *> *kernel_weights);
 
   std::vector<MutableTensorImplPtr> inputs_;
   std::vector<std::string> input_names_;

@@ -762,6 +762,11 @@ class BACKEND_EXPORT KernelMod {
                       const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
     return true;
   }
+  // UpdateWeights() is for update lora weights.
+  virtual bool UpdateWeights(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
+                             const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
+    return true;
+  }
 
   // Some kernels, e.g., Unique, can only get its output shape after its computing finished.
   virtual bool IsNeedUpdateOutputShapeAndSize() { return false; }

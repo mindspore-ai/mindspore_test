@@ -676,9 +676,9 @@ MSTensor ModelImpl::GetOutputByTensorName(const std::string &name) {
 }
 
 Status ModelImpl::UpdateWeights(const std::vector<std::vector<MSTensor>> &weights) {
+  MS_CHECK_TRUE_MSG(session_ != nullptr, kLiteError, "Session is null, please build model first!");
   size_t weights_size = weights.size();
   std::vector<std::vector<mindspore::tensor::TensorPtr>> new_weights(weights_size);
-
   for (size_t i = 0; i < weights_size; ++i) {
     new_weights[i] = TensorUtils::MSTensorToTensorPtr(weights[i]);
   }

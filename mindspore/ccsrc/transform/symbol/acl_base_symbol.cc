@@ -32,6 +32,9 @@ aclSetTensorFormatFunObj aclSetTensorFormat_ = nullptr;
 aclSetTensorPlaceMentFunObj aclSetTensorPlaceMent_ = nullptr;
 aclSetTensorShapeFunObj aclSetTensorShape_ = nullptr;
 aclrtGetSocNameFunObj aclrtGetSocName_ = nullptr;
+aclUpdateDataBufferFunObj aclUpdateDataBuffer_ = nullptr;
+aclGetDataBufferAddrFunObj aclGetDataBufferAddr_ = nullptr;
+aclGetTensorDescSizeFunObj aclGetTensorDescSize_ = nullptr;
 
 void LoadAclBaseApiSymbol(const std::string &ascend_path) {
   std::string aclbase_plugin_path = "lib64/libascendcl.so";
@@ -53,6 +56,9 @@ void LoadAclBaseApiSymbol(const std::string &ascend_path) {
   aclSetTensorPlaceMent_ = DlsymAscendFuncObj(aclSetTensorPlaceMent, base_handler);
   aclSetTensorShape_ = DlsymAscendFuncObj(aclSetTensorShape, base_handler);
   aclrtGetSocName_ = DlsymAscendFuncObj(aclrtGetSocName, base_handler);
+  aclUpdateDataBuffer_ = DlsymAscendFuncObj(aclUpdateDataBuffer, base_handler);
+  aclGetDataBufferAddr_ = DlsymAscendFuncObj(aclGetDataBufferAddr, base_handler);
+  aclGetTensorDescSize_ = DlsymAscendFuncObj(aclGetTensorDescSize, base_handler);
   MS_LOG(INFO) << "Load acl base api success!";
 }
 

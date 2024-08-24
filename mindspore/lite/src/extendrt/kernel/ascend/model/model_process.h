@@ -55,6 +55,7 @@ class ModelProcess {
   bool Load(const void *om_data, size_t om_data_size);
   bool UnLoad();
   bool PredictFromHost(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
+  bool UpdateWeights(const std::vector<KernelTensor *> &inputs);
 
   // override this method to avoid request/reply data copy
   void SetIsDevice(bool is_device) { is_run_on_device_ = is_device; }
@@ -103,6 +104,9 @@ class ModelProcess {
   void FreeResourceOutput(std::vector<AclTensorInfo> *acl_tensor_info, const std::vector<KernelTensor *> &outputs);
   aclError AclrtMemcpy(void *dst, size_t destMax, const void *src, size_t count, aclrtMemcpyKind kind);
   bool PrepareMutiModelShare(const void *om_data, size_t om_data_size);
+  bool InitUpdateWeightBuffer(const std::vector<KernelTensor *> &kernel_inputs);
+  bool CreateWeightsInput(const std::vector<KernelTensor *> &inputs);
+  void DestoryUpdateWeightBuffer();
 
   AclModelOptionsPtr options_;
   uint32_t model_id_ = UINT32_MAX;
@@ -111,12 +115,17 @@ class ModelProcess {
   aclmdlDesc *model_desc_ = nullptr;
   aclmdlDataset *inputs_ = nullptr;
   aclmdlDataset *outputs_ = nullptr;
+  aclmdlDataset *weight_inputs_ = nullptr;
+  aclmdlDataset *weight_outputs_ = nullptr;
+  aclmdlDesc *model_weight_desc_ = nullptr;
 
   bool loaded_ = false;
+  bool inited_weights_ = false;
 
   size_t data_input_num_ = 0;
   std::vector<AclTensorInfo> input_infos_;
   std::vector<AclTensorInfo> output_infos_;
+  std::vector<AclTensorInfo> weight_input_infos_;
 
   AclDynamicShapeOptions dynamic_shape_options_;
   DynShapeProcess dyn_shape_proc_;
@@ -131,6 +140,8 @@ class ModelProcess {
   std::set<void *> dyn_out_sys_buf_addr_;
   bool is_sharing_workspace_ = false;
   int32_t device_id_ = 0;
+  uint32_t infer_id_ = 0;
+  uint32_t update_id_ = 0;
 };
 }  // namespace acl
 }  // namespace mindspore::kernel
