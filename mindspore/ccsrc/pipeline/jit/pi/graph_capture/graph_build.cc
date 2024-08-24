@@ -4125,6 +4125,7 @@ BindArgumentsHelper<ValueNode *> MindGraphBuilder::PackInputsForFunc(const py::o
     auto &args = pack_helper.result().args_;
     args.insert(args.begin(), forward_self_node);
   }
+#if !IS_PYTHON_3_11_PLUS
   if (!bind_helper.Bind(pack_helper.result().args_, pack_helper.result().kw_)) {
     MS_LOG(EXCEPTION) << "Bind helper bind args failed.";
   }
@@ -4136,6 +4137,7 @@ BindArgumentsHelper<ValueNode *> MindGraphBuilder::PackInputsForFunc(const py::o
   if (!bind_helper.ApplyDefault(defaults, kw_defaults, convert)) {
     MS_LOG(EXCEPTION) << "Bind helper apply default failed.";
   }
+#endif
   return bind_helper;
 }
 
