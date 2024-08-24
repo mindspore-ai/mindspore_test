@@ -3362,6 +3362,8 @@ class _PythonMultiprocessing(cde.PythonMultiprocessingRuntime):
                                 "main process will exit. If this is not an artificial operation, you can use "
                                 "ds.config.set_enable_watchdog(False) to block this error.")
                 os.kill(os.getpid(), signal.SIGTERM)
+            # sleep to release GIL
+            time.sleep(1)
 
         # release the workers
         del workers
