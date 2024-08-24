@@ -161,7 +161,21 @@ Status BroadcastToInfo::ComputeReplaceGraph(const CNodePtr &cnode) {
     return FAILED;
   }
 
-  if (!is_dynamic_shape_) {  // static shape
+  MS_EXCEPTION_IF_NULL(cnode_);
+  auto dst_shape_node = cnode_->input(DST_SHAPE_INDEX);
+  // case 1: static shape
+  // case 2: dynamic shape and dst_shape_node is value node
+  // dynamic shape:
+  // 1) dst shape is value node:
+  //    a) shape value is -1, no need to handle it
+  //    b) shape value is > 0, use slice shape
+  //    c) dst_shape.size() > input_shape.size(), right align
+  // 2) dst shape is make_tuple node:
+  //    a) shape value is -1, no need to handle it
+  //    b) shape value is > 0, use slice shape
+  //    c) shape value is dynamic, insert div-op to compute slice shape
+  //    c) dst_shape.size() > input_shape.size(), right align
+  if (!is_dynamic_shape_ || IsValueNode<ValueList>(dst_shape_node) || IsValueNode<ValueTuple>(dst_shape_node)) {
     Shape to_shape = outputs_tensor_info_[0].slice_shape();
     auto new_broadcast_to =
       gen_g.PushBack({gen_g.NewOpInst(BROADCAST_TO), gen_g.virtual_input_node(), CreateTuple(to_shape)});
@@ -171,9 +185,9 @@ Status BroadcastToInfo::ComputeReplaceGraph(const CNodePtr &cnode) {
     return SUCCESS;
   }
 
-  // dynamic shape
+  // case 3: dynamic shape and dst_shape_node is make_tuple
   if (!IsPrimitiveCNode(cnode->input(DST_SHAPE_INDEX), prim::kPrimMakeTuple)) {
-    MS_LOG(EXCEPTION) << name_ << ": the dst shape is not make tuple";
+    MS_LOG(EXCEPTION) << name_ << ": the dst shape is not make tuple and not list";
   }
 
   ChangeMakeTupleConstant(cnode, DST_SHAPE_INDEX);
