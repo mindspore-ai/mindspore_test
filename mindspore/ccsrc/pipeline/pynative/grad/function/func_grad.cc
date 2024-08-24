@@ -66,15 +66,17 @@ ValuePtrList PaddingGradientInput(const ValuePtr &grad, size_t output_size, size
   return gradients;
 }
 
-VectorRef GeneratePythonArgs(const OpGradInfoPtr &op_grad_info) {
+VectorRef GeneratePythonArgs(const OpGradInfoPtr &op_grad_info, const PrimitivePyPtr &prim) {
   VectorRef args;
   size_t input_size = op_grad_info->input_value.size() - op_grad_info->weight_size;
-  for (size_t i = 0; i < input_size; ++i) {
-    (void)args.emplace_back(op_grad_info->input_value[i]);
-  }
-  // If we not need recompute, we save output.
-  if (!op_grad_info->is_need_recompute) {
-    (void)args.emplace_back(op_grad_info->out_value);
+  if (PyNativeAlgo::Common::IsHookNeedSaveInputs(prim)) {
+    for (size_t i = 0; i < input_size; ++i) {
+      (void)args.emplace_back(op_grad_info->input_value[i]);
+    }
+    // If we not need recompute, we save output.
+    if (!op_grad_info->is_need_recompute) {
+      (void)args.emplace_back(op_grad_info->out_value);
+    }
   }
   return args;
 }
@@ -606,7 +608,7 @@ BackwardNodePtr FuncGrad::BuildHookBackwardNode(const PrimitivePtr &prim, const 
                                                 const OpGradInfoPtr &op_grad_info, size_t flatten_output_size) {
   MS_EXCEPTION_IF_NULL(prim);
   auto bprop_cut = PyNativeAlgo::AutoGrad::BuildBpropCutPrim(prim, op_grad_info->is_need_recompute);
-  VectorRef args = GeneratePythonArgs(op_grad_info);
+  VectorRef args = GeneratePythonArgs(op_grad_info, bprop_cut);
   auto fn = std::make_shared<HookBackwardNode>(prim->name(), bprop_cut, std::move(args), flatten_output_size,
                                                op_grad_info->out_abs);
   fn->UpdateNextEdges(flatten_inputs);

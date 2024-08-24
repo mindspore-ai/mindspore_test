@@ -438,9 +438,9 @@ BaseRef PrimitivePy::RunCellHookFunction(const py::tuple &py_args) const {
 }
 
 BaseRef PrimitivePy::RunVariableHookFunction(const py::tuple &py_args) const {
-  constexpr size_t grad_output_index = 2;
-  if (py_args.size() != kSizeThree) {
-    MS_LOG(EXCEPTION) << "Bprop cut run must in the following format: input, output and dout";
+  constexpr size_t grad_output_index = 0;
+  if (py_args.size() != kSizeOne) {
+    MS_LOG(EXCEPTION) << "Bprop cut run must in the following format: dout";
   }
   py::object grad_output = py_args[grad_output_index];
   grad_output = ConvertCTensorToPyTensor(grad_output);
