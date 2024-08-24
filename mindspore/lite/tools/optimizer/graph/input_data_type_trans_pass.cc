@@ -71,7 +71,7 @@ STATUS CastDataType(const FuncGraphPtr &graph, const AnfNodePtr &node, TypeId in
 STATUS InOutDTypeTransPass::HandleGraphInput(const FuncGraphPtr &graph) {
   MS_ASSERT(graph != nullptr);
   auto manager = graph->manager();
-  MS_ASSERT(manager != nullptr);
+  MS_CHECK_TRUE_RET(manager != nullptr, RET_ERROR);
   auto graph_inputs = graph->get_inputs();
   for (const auto &input : graph_inputs) {
     TypeId input_data_type;
@@ -126,7 +126,7 @@ STATUS InOutDTypeTransPass::HandleGraphOutput(const FuncGraphPtr &graph) {
 }
 
 bool InOutDTypeTransPass::Run(const FuncGraphPtr &graph) {
-  MS_ASSERT(graph != nullptr);
+  MS_CHECK_TRUE_RET(graph != nullptr, false);
   auto manager = Manage(graph, true);
   if (manager == nullptr) {
     MS_LOG(ERROR) << "manager is nullptr.";

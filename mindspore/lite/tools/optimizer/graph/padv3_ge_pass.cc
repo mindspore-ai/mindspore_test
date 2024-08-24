@@ -126,6 +126,7 @@ const CNodePtr PadV3GePass::CreateConcatNode(const FuncGraphPtr &func_graph,
   MS_CHECK_TRUE_RET(concat_prim_c != nullptr, nullptr);
 
   auto concat_cnode = func_graph->NewCNode(concat_prim_c, {make_tuple_cnode});
+  MS_CHECK_TRUE_RET(concat_prim_c != nullptr, nullptr);
   auto concat_abstract =
     abstract::MakeAbstract(std::make_shared<abstract::Shape>(ShapeVector({input_num})), TypeIdToType(kNumberTypeInt32));
   concat_cnode->set_abstract(concat_abstract);

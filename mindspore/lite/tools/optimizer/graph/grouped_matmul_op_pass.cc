@@ -269,7 +269,7 @@ STATUS GroupedMatmulOpPass::RunInsertSizeAttrPass(const FuncGraphPtr &func_graph
 }
 
 bool GroupedMatmulOpPass::Run(const FuncGraphPtr &func_graph) {
-  MS_ASSERT(func_graph != nullptr);
+  MS_CHECK_TRUE_RET(func_graph != nullptr, false);
   auto manager = func_graph->manager();
   MS_CHECK_TRUE_RET(manager != nullptr, false);
   auto status = RunInsertSizeAttrPass(func_graph, manager);

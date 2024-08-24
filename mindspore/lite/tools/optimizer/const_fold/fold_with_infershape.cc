@@ -66,7 +66,7 @@ int ConstFoldWithInferShape::HandleCommonFold(const FuncGraphPtr &func_graph, st
     for (size_t i = 0; i < cnode->size(); ++i) {
       if (IsValueNode<FuncGraph>(cnode->input(i))) {
         auto sub_graph = GetValueNode<FuncGraphPtr>(cnode->input(i));
-        MS_ASSERT(sub_graph != nullptr);
+        MS_CHECK_TRUE_RET(sub_graph != nullptr, lite::RET_ERROR);
         if (HandleCommonFold(sub_graph, has_visited) != lite::RET_OK) {
           MS_LOG(ERROR) << "do subgraph const-fold failed.";
           return lite::RET_ERROR;
