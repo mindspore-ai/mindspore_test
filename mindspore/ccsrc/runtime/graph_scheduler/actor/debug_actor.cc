@@ -42,10 +42,16 @@ namespace mindspore {
 namespace runtime {
 void DebugActor::ACLDump(uint32_t device_id, const std::vector<KernelGraphPtr> &graphs, bool is_kbyk) {
   std::vector<std::string> all_kernel_names;
+  std::vector<std::string> set_dump_names;
   for (const auto &graph : graphs) {
     auto all_kernels = graph->execution_order();
-    std::for_each(all_kernels.begin(), all_kernels.end(),
-                  [&](const auto &k) { all_kernel_names.push_back(k->fullname_with_scope()); });
+    std::for_each(all_kernels.begin(), all_kernels.end(), [&](const auto &k) {
+      all_kernel_names.push_back(k->fullname_with_scope());
+      auto dump_flag = common::AnfAlgo::GetDumpFlag(k);
+      if (dump_flag.has_value() && dump_flag.value().compare("true") == 0) {
+        set_dump_names.push_back(k->fullname_with_scope());
+      }
+    });
   }
 
   auto step_count_num = 0;
@@ -76,7 +82,16 @@ void DebugActor::ACLDump(uint32_t device_id, const std::vector<KernelGraphPtr> &
     auto registered_dumper = datadump::DataDumperRegister::Instance().GetDumperForBackend(device::DeviceType::kAscend);
     if (registered_dumper != nullptr) {
       registered_dumper->Initialize();
-      registered_dumper->EnableDump(device_id, step_count_num, is_init, all_kernel_names);
+      if (DumpJsonParser::GetInstance().dump_mode() ==
+          static_cast<uint32_t>(mindspore::DumpJsonParser::JsonDumpMode::DUMP_KERNELS_WITH_FLAG)) {
+        if (set_dump_names.empty()) {
+          MS_LOG(WARNING) << "[set dump] There is no target with dump flag.";
+          set_dump_names.push_back("NoSetDumpTarget");
+        }
+        registered_dumper->EnableDump(device_id, step_count_num, is_init, set_dump_names);
+      } else {
+        registered_dumper->EnableDump(device_id, step_count_num, is_init, all_kernel_names);
+      }
     }
   }
 }

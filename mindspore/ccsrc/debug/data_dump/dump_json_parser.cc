@@ -144,10 +144,6 @@ void DumpJsonParser::CheckE2eSetting() {
                          "Ascend O0/O1 mode instead";
     }
     CheckStatCalcModeVaild();
-  } else {
-    if (dump_mode_ == static_cast<uint32_t>(DUMP_KERNELS_WITH_FLAG)) {
-      MS_LOG(EXCEPTION) << "Cell dump only support e2e dump mode. Please set dump_mode to 0 or 1.";
-    }
   }
 }
 
