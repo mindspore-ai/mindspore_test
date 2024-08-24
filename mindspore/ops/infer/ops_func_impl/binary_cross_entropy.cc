@@ -30,7 +30,6 @@ namespace mindspore {
 namespace ops {
 TypePtr BinaryCrossEntropyFuncImpl::InferType(const PrimitivePtr &primitive,
                                               const std::vector<abstract::AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(input_args[kInputIndex0]);
   auto input_type = input_args[kInputIndex0]->GetType();
   (void)CheckAndConvertUtils::CheckTypeValid("input", input_type, valid_types_, primitive->name());
   return input_type;
@@ -38,9 +37,6 @@ TypePtr BinaryCrossEntropyFuncImpl::InferType(const PrimitivePtr &primitive,
 
 BaseShapePtr BinaryCrossEntropyFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                     const std::vector<abstract::AbstractBasePtr> &input_args) const {
-  for (const auto &item : input_args) {
-    MS_EXCEPTION_IF_NULL(item);
-  }
   auto input_shape_ptr = input_args[kInputIndex0]->GetShape();
   auto target_shape_ptr = input_args[kInputIndex1]->GetShape();
   if (!input_shape_ptr->isa<abstract::NoShape>() && !target_shape_ptr->isa<abstract::NoShape>()) {

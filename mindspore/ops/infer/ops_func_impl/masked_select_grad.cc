@@ -27,15 +27,11 @@ namespace mindspore {
 namespace ops {
 BaseShapePtr MaskedSelectGradFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                   const std::vector<AbstractBasePtr> &input_args) const {
-  for (const auto &item : input_args) {
-    MS_EXCEPTION_IF_NULL(item);
-  }
   return BroadCastInferShape(primitive->name(), input_args);
 }
 
 TypePtr MaskedSelectGradFuncImpl::InferType(const PrimitivePtr &primitive,
                                             const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(input_args[kIndex0]);
   return input_args[kIndex0]->GetType()->Clone();
 }
 

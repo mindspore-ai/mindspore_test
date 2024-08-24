@@ -58,9 +58,6 @@ size_t CalCrossDimFromDefaultValue(const ShapeVector &input_shape, const ShapeVe
 
 BaseShapePtr CrossFuncImpl::InferShape(const PrimitivePtr &primitive,
                                        const std::vector<AbstractBasePtr> &input_args) const {
-  for (const auto &item : input_args) {
-    MS_EXCEPTION_IF_NULL(item);
-  }
   auto input_shape_ptr = input_args[kInputIndex0]->GetShape();
   auto other_shape_ptr = input_args[kInputIndex1]->GetShape();
   // support dynamic rank
@@ -81,7 +78,6 @@ BaseShapePtr CrossFuncImpl::InferShape(const PrimitivePtr &primitive,
 }
 
 TypePtr CrossFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(input_args[kIndex0]);
   auto input_type = input_args[kIndex0]->GetType();
   return input_type;
 }
