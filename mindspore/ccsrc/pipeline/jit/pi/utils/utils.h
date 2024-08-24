@@ -257,8 +257,7 @@ class BindArgumentsHelper {
       MS_LOG(ERROR) << "takes " << co_->co_argcount << " positional arguments but " << argc << " was given";
       return false;
     }
-
-    PyObject **begin = &PyTuple_GET_ITEM(co_->co_varnames, 0);
+    PyObject **begin = &PyTuple_GET_ITEM(PyCodeWrapper(co_).VarNames().ptr(), 0);
     PyObject **end = begin + parameter_argc;
     for (const auto &item : kw) {
       const auto &k = item.first;
@@ -311,7 +310,7 @@ class BindArgumentsHelper {
     if (!CheckArguments(0, off)) {
       return false;
     }
-    auto varnames = co_->co_varnames;
+    auto varnames = PyCodeWrapper(co_).VarNames().ptr();
     for (size_t i = off, argc = results_.args_.size(); i < argc; ++i) {
       if (results_.args_[i] != E()) {
         continue;
