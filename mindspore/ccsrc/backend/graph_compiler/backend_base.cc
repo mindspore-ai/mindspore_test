@@ -56,6 +56,9 @@
 #include "backend/common/graph_kernel/graph_kernel_flags.h"
 #include "include/common/symbol_engine/symbol_engine_impl.h"
 
+#include "include/common/utils/compile_cache_context.h"
+#include "include/common/debug/common.h"
+
 namespace mindspore {
 namespace compile {
 bool Backend::GetCond(const BaseRef &c, bool *value) {
@@ -266,6 +269,7 @@ void MindRTBackendBase::ProcessNotSupportCnode(const FuncGraphPtr &func_graph,
 }
 
 namespace {
+constexpr auto kControlNodeJsonSuffix = ".json";
 int64_t GetTupleGetItemOutIndex(const CNodePtr &tuple_get_item) {
   MS_EXCEPTION_IF_NULL(tuple_get_item);
   if (tuple_get_item->size() != kTupleGetItemInputSize) {
@@ -487,18 +491,320 @@ void BuildSymbolEngine(const FuncGraphPtr &func_graph, device::RunMode run_mode)
   (void)symshape::SymbolEngineImpl::Build(func_graph);
   MS_LOG(INFO) << "Status record: end build symbol engine for function graph: " << func_graph->ToString();
 }
+
+std::string GetUniqueNodeId(const AnfNodePtr &node, bool must_have_unique_name = true) {
+  MS_EXCEPTION_IF_NULL(node);
+  const auto &name = node->user_data<std::string>(kUniqueCacheName);
+  if (must_have_unique_name && name == nullptr) {
+    MS_LOG(EXCEPTION) << "The node " << node->DebugString()
+                      << " has not unique name, indicating that it is not exported to mindir.";
+  }
+  return name != nullptr ? *name : "node is nullptr";
+}
 }  // namespace
 
 bool MindRTBackendBase::CompileGraphsByKbkCache(const FuncGraphPtr &func_graph, DeviceContext *device_context) {
-  // try to use kbk compile cache
-  std::pair<bool, GraphId> res = graph_compiler_->CompileGraphForKernelRunModeUseCache(func_graph, device_context);
-  if (res.first) {
-    MS_LOG(WARNING) << "Use backend compile cache.";
-    graph_id_to_device_context_[res.second] = device_context;
+  MS_EXCEPTION_IF_NULL(graph_compiler_);
+  try {
+    MS_LOG(INFO) << "Status record: Start load backend kernel graph.";
+    if (!graph_compiler_->CompileGraphForKernelRunModeUseCache(func_graph, device_context)) {
+      return false;
+    }
+    if (!LoadBackendInfo()) {
+      return false;
+    }
+    MS_LOG(INFO) << "Status record: End load backend kernel graph.";
+    return true;
+  } catch (std::exception &e) {
+    MS_LOG(WARNING) << "Fail to load compile cache, error info:" << e.what();
+    return false;
+  }
+}
+
+bool MindRTBackendBase::CacheCompileGraphs() {
+  MS_EXCEPTION_IF_NULL(graph_compiler_);
+  std::vector<KernelGraphPtr> graphs;
+  for (const auto &pair : graph_id_to_device_context_) {
+    (void)graphs.emplace_back(graph_compiler_->Fetch(pair.first));
+  }
+  MS_LOG(INFO) << "Status record: Start cache backend kernel graph.";
+  graph_compiler_->CacheGraphKbk(graphs);
+  bool is_dump_control_node_cache = DumpBackendInfo();
+  if (is_dump_control_node_cache) {
+    MS_LOG(INFO) << "Dump control node cache success.";
+  } else {
+    MS_LOG(INFO) << "Dump control node cache failed.";
+    return false;
+  }
+  MS_LOG(INFO) << "Status record: End cache backend kernel graph.";
+  return true;
+}
+
+bool MindRTBackendBase::DumpBackendInfo() {
+  MS_LOG(DEBUG) << "Start dump control node";
+  auto &context = CompileCacheContext::GetInstance();
+  auto func_graph = context.FrontGraph();
+  if (func_graph == nullptr) {
+    MS_LOG(WARNING) << "The front graph to be cached is null, backend graph cache Missed.";
+    context.Clear();
+    return false;
+  }
+
+  auto cache_path = context.GetBackendGraphCachePath(func_graph);
+  auto json_path = cache_path + kControlNodeJsonSuffix;
+  MS_LOG(DEBUG) << "Json path:" << json_path;
+
+  nlohmann::json existing_data_json;
+  std::ifstream json_stream(json_path);
+  if (!json_stream.is_open()) {
+    MS_LOG(ERROR) << "Load json file: " << json_path << " error, backend graph cache Missed.";
+    context.Clear();
+    return false;
+  }
+  json_stream >> existing_data_json;
+  json_stream.close();
+
+  nlohmann::json new_data_json;
+  std::vector<nlohmann::json> kernel_graph_to_device_context_json;
+
+  // Save graph_id_to_device_context_;
+  for (const auto &graph_id_to_device_context : graph_id_to_device_context_) {
+    nlohmann::json kernel_graph_json;
+    MS_EXCEPTION_IF_NULL(graph_id_to_device_context.second);
+    const auto &graph_id = graph_id_to_device_context.first;
+    MS_EXCEPTION_IF_NULL(graph_id_to_device_context.second);
+    const auto &device_id = graph_id_to_device_context.second->device_context_key().device_id_;
+    const auto &device_name = graph_id_to_device_context.second->device_context_key().device_name_;
+    kernel_graph_json[kGraphId] = graph_id;
+    kernel_graph_json[kKernelGraphToDeviceId] = device_id;
+    kernel_graph_json[kKernelGraphToDeviceName] = device_name;
+    kernel_graph_to_device_context_json.push_back(kernel_graph_json);
+  }
+
+  // Collect all funcgraph valuenode.
+  std::map<FuncGraphPtr, AnfNodePtr> func_graph_to_value_node;
+  MS_EXCEPTION_IF_NULL(root_graph_);
+  const auto &all_value_nodes = TopoSort(root_graph_->get_return(), SuccDeeperSimple);
+  for (const auto &node : all_value_nodes) {
+    MS_EXCEPTION_IF_NULL(node);
+    if (node->isa<ValueNode>() && AnfAlgo::NodeValueIsFuncGraph(node)) {
+      const auto &sub_graph = GetValueNode<FuncGraphPtr>(node);
+      MS_EXCEPTION_IF_NULL(sub_graph);
+      func_graph_to_value_node[sub_graph] = node;
+      MS_LOG(DEBUG) << "Add funcgraph:" << sub_graph->ToString() << " to node:" << node->DebugString();
+    }
+  }
+
+  // Save func_graph_to_kernel_graph_ids_.
+  std::vector<nlohmann::json> func_graph_to_kernel_graph_ids_json;
+  for (const auto &pair : func_graph_to_kernel_graph_ids_) {
+    nlohmann::json sub_func_graph_id;
+    const auto &sub_graph = pair.first;
+    MS_EXCEPTION_IF_NULL(sub_graph);
+    if (sub_graph == root_graph_) {
+      sub_func_graph_id[kFuncGraphPtrId] = kIsRootGraph;
+    } else {
+      const auto &iter = func_graph_to_value_node.find(sub_graph);
+      if (iter != func_graph_to_value_node.end()) {
+        sub_func_graph_id[kFuncGraphPtrId] = GetUniqueNodeId(iter->second, true);
+      } else {
+        MS_LOG(WARNING) << "Failed to get valuenode for funcgraph:" << sub_graph->ToString();
+      }
+    }
+    sub_func_graph_id[kSubFuncGraphId] = pair.second;
+    func_graph_to_kernel_graph_ids_json.push_back(sub_func_graph_id);
+  }
+
+  // Save control node.
+  std::vector<nlohmann::json> control_node_json;
+  for (const auto &control_node : control_nodes_) {
+    MS_EXCEPTION_IF_NULL(control_node);
+    const auto &control_node_id = GetUniqueNodeId(control_node, true);
+    MS_LOG(DEBUG) << " control_node: " << control_node->ToString() << " control_node_id: " << control_node_id;
+    control_node_json.push_back(control_node_id);
+  }
+
+  new_data_json[kKernelGraphToDeviceContext] = kernel_graph_to_device_context_json;
+  new_data_json[kFuncGraphToKernelGraphIds] = func_graph_to_kernel_graph_ids_json;
+  new_data_json[kControlNodeId] = control_node_json;
+  if (output_node_ != nullptr) {
+    new_data_json[kOutputNodeId] = GetUniqueNodeId(output_node_, true);
+  }
+  new_data_json[kDeviceName] = device_name_;
+  new_data_json[kDeviceId] = device_id_;
+  new_data_json[kMsExcutionMode] = ms_execution_mode_;
+  existing_data_json[kControlNodeCache] = new_data_json;
+  context.Clear();
+  return Common::SaveStringToFile(json_path, existing_data_json.dump());
+}
+
+bool MindRTBackendBase::LoadBackendInfo() {
+  MS_LOG(INFO) << "Use compile cache to load control node cache, be ware of correctness risks.";
+  auto &context = CompileCacheContext::GetInstance();
+  auto func_graph = context.FrontGraph();
+  if (func_graph == nullptr) {
+    MS_LOG(EXCEPTION) << "The frontend graph to be cached is null";
+    return false;
+  }
+  auto cache_path = context.GetBackendGraphCachePath(func_graph);
+  auto json_path = cache_path + kControlNodeJsonSuffix;
+  MS_LOG(DEBUG) << "Json path: " << json_path;
+
+  nlohmann::json data_json;
+  std::ifstream json_stream(json_path);
+  if (!json_stream.is_open()) {
+    MS_LOG(ERROR) << "Load json file: " << json_path << " error, backend graph cache missed.";
+    return false;
+  }
+  json_stream >> data_json;
+  if (!data_json.contains(kControlNodeCache)) {
+    MS_LOG(WARNING) << "No control node info in control cache json file.";
     return true;
   }
-  return false;
+
+  auto control_node_json = data_json[kControlNodeCache];
+  try {
+    // Load device context.
+    if (control_node_json.contains(kKernelGraphToDeviceContext)) {
+      const auto &kernel_graph_json = control_node_json[kKernelGraphToDeviceContext];
+      for (const auto &kernelgraph : kernel_graph_json) {
+        const auto &graph_id = kernelgraph[kGraphId].get<GraphId>();
+        const auto &graph_device_id = kernelgraph[kKernelGraphToDeviceId].get<GraphId>();
+        const auto &graph_device_name = kernelgraph[kKernelGraphToDeviceName].get<std::string>();
+        const auto &device_context =
+          device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext({graph_device_name, graph_device_id});
+        MS_EXCEPTION_IF_NULL(device_context);
+        graph_id_to_device_context_[graph_id] = device_context;
+      }
+    }
+
+    // Load funcgraph to kernel graph id.
+    if (control_node_json.contains(kFuncGraphToKernelGraphIds)) {
+      const auto &func_graph_to_kernel_graph_ids_json = control_node_json[kFuncGraphToKernelGraphIds];
+      for (const auto &sub_func_graph_ids_json : func_graph_to_kernel_graph_ids_json) {
+        std::vector<std::vector<GraphId>> sub_graph_ids;
+        const auto &sub_func_graph_id_json = sub_func_graph_ids_json[kSubFuncGraphId];
+        for (const auto &graph_ids_json : sub_func_graph_id_json) {
+          std::vector<GraphId> graph_ids;
+          (void)(std::transform(graph_ids_json.begin(), graph_ids_json.end(), std::back_inserter(graph_ids),
+                                [](const nlohmann::json &graph_id) { return graph_id.get<GraphId>(); }));
+          sub_graph_ids.push_back(graph_ids);
+        }
+
+        const auto &sub_graph_name = sub_func_graph_ids_json[kFuncGraphPtrId].get<std::string>();
+        FuncGraphPtr target_graph = nullptr;
+        if (sub_graph_name == kIsRootGraph) {
+          target_graph = root_graph_;
+        } else {
+          const auto &value_node = context.FindFrontNodeByFrontName(sub_graph_name);
+          if (value_node != nullptr) {
+            target_graph = GetValueNode<FuncGraphPtr>(value_node);
+          }
+        }
+        if (target_graph == nullptr) {
+          MS_LOG(WARNING) << "Failed to get funcgraph by name:" << sub_graph_name;
+          continue;
+        }
+        MS_LOG(DEBUG) << "Target graph: " << target_graph->ToString() << " sub_graph_ids: " << sub_graph_ids;
+        func_graph_to_kernel_graph_ids_.insert(std::make_pair(target_graph, sub_graph_ids));
+      }
+    }
+
+    // Load control node.
+    const auto &control_nodes_ids_json = control_node_json[kControlNodeId];
+    for (const auto &control_node_id : control_nodes_ids_json) {
+      const auto &control_node = context.FindFrontNodeByFrontName(control_node_id.get<std::string>());
+      MS_LOG(DEBUG) << "control_node_id: " << control_node_id << " control_node: " << control_node->DebugString();
+      if (control_node == nullptr) {
+        MS_LOG(ERROR) << "Fail to find front control node by control_node_id: " << control_node_id << ".";
+      }
+      control_nodes_.emplace_back(control_node);
+    }
+    if (!control_node_json[kOutputNodeId].is_null()) {
+      output_node_ = context.FindFrontNodeByFrontName(control_node_json[kOutputNodeId]);
+    }
+    device_name_ = control_node_json[kDeviceName];
+    device_id_ = control_node_json[kDeviceId].get<int32_t>();
+    ms_execution_mode_ = control_node_json[kMsExcutionMode].get<int>();
+    json_stream.close();
+    if (CompileCacheEnable()) {
+      context.Clear();
+    }
+    MS_LOG(INFO) << "Load control node cache success. Json path: " << json_path;
+  } catch (std::exception &e) {
+    json_stream.close();
+    MS_LOG(EXCEPTION) << "Fail to load control node cache. Json path: " << json_path << " error info:" << e.what();
+    return false;
+  }
+  return true;
 }
+
+namespace {
+bool EnableKBKCompileCache(const FuncGraphPtr &func_graph, const device::DeviceType &device_type) {
+  if (!CompileCacheEnable()) {
+    MS_LOG(INFO) << "Disable backend compile cache by front config.";
+    return false;
+  }
+  if (!common::IsEnableRuntimeConfig(common::kRuntimeCache)) {
+    MS_LOG(INFO) << "Disable backend compile cache by backend config.";
+    return false;
+  }
+  auto &context = CompileCacheContext::GetInstance();
+  if (context.FrontGraph() != func_graph) {
+    MS_LOG(INFO) << "Disable backend compile cache by invalid funcgraph:"
+                 << (func_graph == nullptr ? " null" : func_graph->ToString())
+                 << "and context graph:" << (context.FrontGraph() == nullptr ? " null" : func_graph->ToString()) << ".";
+    return false;
+  }
+  if (device_type != device::DeviceType::kAscend) {
+    MS_LOG(INFO) << "Disable backend compile cache by invalid backend type:" << device_type;
+    return false;
+  }
+  if (!context.UseCompileCache()) {
+    MS_LOG(INFO) << "Disable backend compile cache by context no cache";
+    return false;
+  }
+  auto context_ptr = MsContext::GetInstance();
+  if (context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
+    MS_LOG(INFO) << "Disable backend compile cache by no graph execution mode.";
+    return false;
+  }
+  MS_LOG(INFO) << "Enable backend compile cache.";
+  return true;
+}
+
+bool ExportCompileCacheKBK(const FuncGraphPtr &func_graph, const device::DeviceType &device_type) {
+  MS_EXCEPTION_IF_NULL(func_graph);
+  if (!CompileCacheEnable()) {
+    MS_LOG(WARNING) << "Compile cache: disable by front compile cache config.";
+    return false;
+  }
+  if (!common::IsEnableRuntimeConfig(common::kRuntimeCache)) {
+    MS_LOG(INFO) << "Compile cache: disable by backend compile cache config.";
+    return false;
+  }
+  auto &context = CompileCacheContext::GetInstance();
+  if (context.FrontGraph() != func_graph) {
+    MS_LOG(INFO) << "Compile cache: disable by funcgraph:" << func_graph->ToString() << " context front graph:"
+                 << (context.FrontGraph() == nullptr ? "null" : context.FrontGraph()->ToString());
+    return false;
+  }
+  if (device_type != device::DeviceType::kAscend) {
+    MS_LOG(INFO) << "Compile cache: disable by device type:" << device_type;
+    return false;
+  }
+  if (context.UseCompileCache()) {
+    MS_LOG(INFO) << "Compile cache: disable by compile cache context.";
+    return false;
+  }
+  auto context_ptr = MsContext::GetInstance();
+  if (context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
+    MS_LOG(INFO) << "Compile cache: disable by not graph execution mode.";
+    return false;
+  }
+  return true;
+}
+}  // namespace
 
 const ActorInfo &MindRTBackendBase::CompileGraphs(const FuncGraphPtr &func_graph) {
   WaitTaskFinish();
@@ -540,9 +846,13 @@ const ActorInfo &MindRTBackendBase::CompileGraphs(const FuncGraphPtr &func_graph
   func_graph_to_kernel_graph_ids_.clear();
   control_nodes_.clear();
 
-  bool use_kbk_compile_cache = CompileGraphsByKbkCache(func_graph, device_context);
-
-  if (!use_kbk_compile_cache) {
+  bool load_compile_cache = false;
+  if (EnableKBKCompileCache(func_graph, device_context->GetDeviceType())) {
+    PROF_START(Load_backend_compile_cache);
+    load_compile_cache = CompileGraphsByKbkCache(func_graph, device_context);
+    PROF_END(Load_backend_compile_cache);
+  }
+  if (!load_compile_cache) {
     // Current only ascend do need do checkout in PartitionGraph
     bool all_support = device_context->PartitionGraph(func_graph);
     PROF_START(CompileSubGraph);
@@ -562,19 +872,20 @@ const ActorInfo &MindRTBackendBase::CompileGraphs(const FuncGraphPtr &func_graph
       CompileSubGraph(func_graph);
     }
     PROF_END(CompileSubGraph);
+  }
 
-    std::vector<KernelGraphPtr> graphs;
-    for (const auto &pair : graph_id_to_device_context_) {
-      (void)graphs.emplace_back(graph_compiler_->Fetch(pair.first));
+  if (ExportCompileCacheKBK(func_graph, device_context->GetDeviceType()) && !load_compile_cache) {
+    PROF_START(save_backend_compile_cache);
+    bool is_success = CacheCompileGraphs();
+    PROF_END(save_backend_compile_cache);
+    if (!is_success) {
+      MS_LOG(WARNING) << "Failed to cache backend graph.";
     }
-    MS_LOG(WARNING) << "Start cache backend kernel graph.";
-    graph_compiler_->CacheGraphKbk(graphs);
-    MS_LOG(WARNING) << "End cache backend kernel graph.";
   }
 
   // Construct the graph compiler info.
   auto graph_compiler_info = ConstructGraphCompilerInfo(root_graph);
-  MS_LOG(WARNING) << "Status record: construct the graph compiler info.";
+  MS_LOG(INFO) << "Status record: construct the graph compiler info.";
   MS_EXCEPTION_IF_NULL(graph_compiler_info);
   if ((ms_execution_mode_ == kGraphMode ||
        (ms_execution_mode_ == kPynativeMode && pynative::GraphAdapter::IsPynativeGeGraphSink(root_graph_))) &&

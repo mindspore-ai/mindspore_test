@@ -684,6 +684,10 @@ void DataPrepareActor::PrepareDataForDeviceTensorStore(const std::vector<std::ve
       const auto &real_device_context = device::FetchRealDeviceContext(input_node, device_context);
       MS_EXCEPTION_IF_NULL(real_device_context);
       const auto &front_node = AnfAlgo::FetchFrontNodeByBackendNode(input_node, *graph);
+      MS_LOG(DEBUG) << "Backend input node:" << input_node->DebugString()
+                    << " front node:" << (front_node == nullptr ? "null" : front_node->DebugString())
+                    << " backend is weight:" << IsPersistentDeviceTensor(input_node)
+                    << " front is weight:" << parser->IsRootGraphPersistentDeviceTensor(front_node);
       if (IsPersistentDeviceTensor(input_node) && parser->IsRootGraphPersistentDeviceTensor(front_node)) {
         std::vector<TensorPtr> graph_tensors = input_tensors.empty() ? std::vector<TensorPtr>() : input_tensors[i];
         TensorPtr input_tensor = FetchInputTensor(graph_tensors, j, args, {front_node, 0});
@@ -1192,12 +1196,13 @@ void DataPrepareActor::PrepareDataForWeightNode(const AnfNodePtr &backend_node, 
     auto param_info = param_node->param_info();
     bool used = !param_info->ignore_device_addr();
     if (!used) {
-      MS_LOG(DEBUG) << backend_node->DebugString()
-                    << " the Parameter is never used by real kernel in graphs, skip to allocate.";
+      MS_LOG(WARNING) << backend_node->DebugString()
+                      << " the Parameter is never used by real kernel in graphs, skip to allocate.";
       return;
     }
   }
   if (tensor == nullptr) {
+    MS_LOG(WARNING) << "Host tensor is empty for node:" << backend_node->DebugString();
     return;
   }
 

@@ -1210,6 +1210,10 @@ bool IrExportBuilder::BuildCNode(const CNodePtr &node, mind_ir::GraphProto *cons
   node_proto->set_domain(node->fullname_with_scope());
   AnfNodePtr op = node->input(0);
   std::string type_name = GetOpTypeName(op);
+  if (IsValueNode<FuncGraph>(node->input(0))) {
+    node->input(0)->set_user_data<std::string>(kUniqueCacheName,
+                                               std::make_shared<std::string>(GetUniqueNodeName(node->input(0))));
+  }
   if (type_name.empty()) {
     MS_LOG(ERROR) << "Get op type name for " << op->DebugString() << " failed.";
     return false;

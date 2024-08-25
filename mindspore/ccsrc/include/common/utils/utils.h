@@ -728,6 +728,28 @@ constexpr auto kSomasWorkspaceResult = "somas_workspace_result";
 constexpr auto kSomasWholeBlockSize = "somas_whole_block_size";
 constexpr auto kSomasMergedBlocksMap = "somas_merged_blocks_map";
 
+// Backend compile cache.
+constexpr auto kKernelGraphToDeviceContext = "kernel_graph_to_device_context";
+constexpr auto kGrahpId = "graph_id";
+constexpr auto kKernelGraphToDeviceId = "kernel_graph_to_device_id";
+constexpr auto kKernelGraphToDeviceName = "kernel_graph_to_device_name";
+constexpr auto kFuncGraphToKernelGraphIds = "func_graph_to_kernel_graph_ids";
+constexpr auto kFuncGraphPtrId = "sub_func_graph_ptr_id";
+constexpr auto kSubFuncGraphId = "sub_func_graph_ids";
+constexpr auto kControlNodeId = "control_node_id";
+constexpr auto kOutputNodeId = "output_node_id";
+constexpr auto kDeviceName = "device_name";
+constexpr auto kDeviceId = "device_id";
+constexpr auto kIsRootGraph = "CompileCacheFuncGraph";
+constexpr auto kMsExcutionMode = "ms_excution_mode";
+constexpr auto kControlNodeCache = "ControlNodeCache";
+constexpr auto kTupleBackendFrontAnfIndex = "tuple_backend_front_anf_index_map";
+constexpr auto kKernelGraphNum = "kernel_graph_num";
+constexpr auto kBackendFrontAnfExt = "backend_front_anf_ext";
+constexpr auto kBackendAddTensorMove = "backend_add_tensor_move";
+constexpr auto kIncludeNotCutAttrAnf = "include_not_cut_attr_anf";
+constexpr auto kIncludeRealBackendAttrAnf = "include_real_backend_flag_anf";
+
 // recompute and parallel
 constexpr auto kRecomputeInsert = "recompute_insert";
 constexpr auto kAddedRecomputeDependAttr = "added_recompute_depend";

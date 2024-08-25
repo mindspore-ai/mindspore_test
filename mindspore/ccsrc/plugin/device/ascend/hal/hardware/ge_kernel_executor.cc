@@ -950,8 +950,13 @@ void GeKernelExecutor::CreateKernel(const std::vector<CNodePtr> &nodes) const {
   if (!ret) {
     MS_LOG(EXCEPTION) << "Kernel build error.";
   }
-  GEGraphOptimization::GetInstance().OptimizeACLGraphAfterCreateKernel(kernel_graph);
-  OptimizeExecutionOrder(NOT_NULL(func_graph));
+
+  if (!kernel_graph->is_from_cache()) {
+    GEGraphOptimization::GetInstance().OptimizeACLGraphAfterCreateKernel(kernel_graph);
+    OptimizeExecutionOrder(NOT_NULL(func_graph));
+  } else {
+    MS_LOG(INFO) << "Skip optimize after create kernel for:" << kernel_graph->ToString();
+  }
   PROF_END(create_kernel);
   (void)profiler::CollectHostInfo("Ascend", "CreateKernel", "CreateGeKernel", start_time, profiler::GetClockSyscnt(),
                                   1);

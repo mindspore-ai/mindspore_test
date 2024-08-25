@@ -143,8 +143,7 @@ class GraphCompiler {
 
   // Construct kernel graph from function graph and compile kernel graph in Graph mode,
   // the detailed implementation of compiling graph is in 'CompileGraphImpl'.
-  std::pair<bool, GraphId> CompileGraphForKernelRunModeUseCache(const FuncGraphPtr &func_graph,
-                                                                const DeviceContext *device_context);
+  bool CompileGraphForKernelRunModeUseCache(const FuncGraphPtr &func_graph, const DeviceContext *device_context);
 
   // Cache kernel kernel graph if export_kbk_compile_cache_ is true.
   void CacheGraphKbk(const std::vector<KernelGraphPtr> &graph);

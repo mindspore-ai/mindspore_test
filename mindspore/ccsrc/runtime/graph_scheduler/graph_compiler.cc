@@ -120,46 +120,6 @@ bool UseCacheToCompileGraph(const FuncGraphPtr &func_graph, const device::Device
   return true;
 }
 
-bool UseCacheToCompileGraphKBK(const FuncGraphPtr &func_graph, const device::DeviceType &device_type) {
-  if (!CompileCacheEnable()) {
-    return false;
-  }
-  if (!common::IsEnableRuntimeConfig(common::kRuntimeCache)) {
-    return false;
-  }
-  auto &context = CompileCacheContext::GetInstance();
-  if (context.FrontGraph() != func_graph) {
-    return false;
-  }
-  if (device_type != device::DeviceType::kAscend) {
-    return false;
-  }
-  if (!context.UseCompileCache()) {
-    return false;
-  }
-  return true;
-}
-
-bool ExportCompileCacheKBK(const FuncGraphPtr &func_graph, const device::DeviceType &device_type) {
-  if (!CompileCacheEnable()) {
-    return false;
-  }
-  if (!common::IsEnableRuntimeConfig(common::kRuntimeCache)) {
-    return false;
-  }
-  auto &context = CompileCacheContext::GetInstance();
-  if (context.FrontGraph() != func_graph) {
-    return false;
-  }
-  if (device_type != device::DeviceType::kAscend) {
-    return false;
-  }
-  if (context.UseCompileCache()) {
-    return false;
-  }
-  return true;
-}
-
 bool ExportCompileCache(const FuncGraphPtr &func_graph, const device::DeviceType &device_type) {
   if (!EnableBackendCompileCache(func_graph, device_type)) {
     return false;
@@ -496,15 +456,6 @@ void RecursiveSetRunMode(const KernelGraphPtr &graph, std::set<KernelGraphPtr> *
     RecursiveSetRunMode(child_graph_ptr, memo);
   }
 }
-
-bool UpdateCacheFlag(const FuncGraphPtr &func_graph, const DeviceContext *device_context) {
-  MS_EXCEPTION_IF_NULL(func_graph);
-  MS_EXCEPTION_IF_NULL(device_context);
-  if (ExportCompileCacheKBK(func_graph, device_context->GetDeviceType())) {
-    return true;
-  }
-  return false;
-}
 }  // namespace
 
 GraphId GraphCompiler::CompileGraph(const GraphSegmentPtr &segment,
@@ -723,24 +674,20 @@ KernelGraphPtr GraphCompiler::ConstructKernelGraphForGraphRunMode(const FuncGrap
   return root_graph;
 }
 
-void GraphCompiler::CacheGraphKbk(const std::vector<KernelGraphPtr> &graphs) {
-  if (export_kbk_compile_cache_) {
-    session_->CacheKernelGraph(graphs);
-  }
-}
+void GraphCompiler::CacheGraphKbk(const std::vector<KernelGraphPtr> &graphs) { session_->CacheKernelGraph(graphs); }
 
-std::pair<bool, GraphId> GraphCompiler::CompileGraphForKernelRunModeUseCache(const FuncGraphPtr &func_graph,
-                                                                             const DeviceContext *device_context) {
+bool GraphCompiler::CompileGraphForKernelRunModeUseCache(const FuncGraphPtr &func_graph,
+                                                         const DeviceContext *device_context) {
   MS_EXCEPTION_IF_NULL(session_);
   MS_EXCEPTION_IF_NULL(func_graph);
-  const auto &context = MsContext::GetInstance();
-  if (!UseCacheToCompileGraphKBK(func_graph, device_context->GetDeviceType())) {
-    export_kbk_compile_cache_ = UpdateCacheFlag(func_graph, device_context);
-    return {false, 0};
-  }
   MS_LOG(INFO) << "Status record: start use cache to compile graph kbk.";
   std::vector<KernelGraphPtr> all_graphs;
-  KernelGraphPtr graph = session_->ConstructKernelGraph(&all_graphs);
+  auto graphs = session_->ConstructKernelGraph(&all_graphs);
+  if (graphs.empty()) {
+    MS_LOG(ERROR) << "Invalid compile cache for:" << func_graph->ToString();
+    return false;
+  }
+  const auto &context = MsContext::GetInstance();
   auto post_compile = [this, device_context, context](const KernelGraphPtr &graph) {
     use_cache_to_compile_graph_ = true;
     // Create event before create kernelmod
@@ -772,10 +719,8 @@ std::pair<bool, GraphId> GraphCompiler::CompileGraphForKernelRunModeUseCache(con
     graph->UpdateInternalParameter();
     // Set device target for parameter affinity.
     AnfAlgo::SetParameterDeviceTarget(graph);
-
     // Create device address for all anf nodes of graph.
     CreateDeviceAddress(graph, device_context);
-
 #ifdef ENABLE_DUMP_IR
     // Dump .pb graph after graph optimization.
     if (context->CanDump(kIntroductory)) {
@@ -784,12 +729,18 @@ std::pair<bool, GraphId> GraphCompiler::CompileGraphForKernelRunModeUseCache(con
 #endif
     graph->EnableRuntimeCache();
   };
-  post_compile(graph);
-  if (CompileCacheEnable()) {
-    CompileCacheContext::GetInstance().Clear();
+  if (func_graph->func_graphs_used_total().empty() || graphs.size() == 1) {
+    MS_LOG(INFO) << "Compie Single backend graph for:" << func_graph->ToString();
+    post_compile(graphs[0]);
+  } else {
+    MS_LOG(INFO) << "Compie multi backend graph for:" << func_graph->ToString();
+    for (const auto &graph : graphs) {
+      MS_EXCEPTION_IF_NULL(graph);
+      post_compile(graph);
+    }
   }
-  MS_LOG(INFO) << "Status record: end use cache to compile graph kbk. graph id: " << graph->graph_id();
-  return {true, graph->graph_id()};
+  MS_LOG(INFO) << "Status record: end use cache to compile graph kbk for: " << func_graph->ToString();
+  return true;
 }
 
 GraphId GraphCompiler::CompileWholeGraphForGraphRunMode(const FuncGraphPtr &func_graph,
@@ -804,7 +755,11 @@ GraphId GraphCompiler::CompileWholeGraphForGraphRunMode(const FuncGraphPtr &func
   KernelGraphPtr root_graph;
   bool need_return_ahead = false;
   if (UseCacheToCompileGraph(func_graph, device_target)) {
-    root_graph = session_->ConstructKernelGraph(&all_graphs);
+    const auto &graphs = session_->ConstructKernelGraph(&all_graphs);
+    if (graphs.empty()) {
+      MS_LOG(EXCEPTION) << "Failed to construct kernel graph for:" << func_graph->ToString();
+    }
+    root_graph = graphs[0];
     use_cache_to_compile_graph_ = true;
   } else {
     root_graph = ConstructKernelGraphForGraphRunMode(func_graph, device_context, &all_graphs, &need_return_ahead);
@@ -818,9 +773,6 @@ GraphId GraphCompiler::CompileWholeGraphForGraphRunMode(const FuncGraphPtr &func
   }
   if (!func_graph->has_flag(kFlagPyNativeRunInGraph)) {
     graph_id = CompileGraphImpl(root_graph, device_context);
-  }
-  if (CompileCacheEnable()) {
-    CompileCacheContext::GetInstance().Clear();
   }
 
   // dump all graphs.
