@@ -19,6 +19,10 @@
 #include "src/litert/pass/format_pass/eliminate_transpose.h"
 #include "src/litert/kernel_exec_util.h"
 
+namespace {
+constexpr size_t kPackConstDim = 4;
+}
+
 namespace mindspore::lite::pass {
 int TransFullyFusion(kernel::SubGraphKernel *subgraph, kernel::KernelExec *trans_kernel0,
                      kernel::KernelExec *trans_kernel1) {
@@ -85,8 +89,8 @@ int TransHeadTailFusion(kernel::SubGraphKernel *subgraph, kernel::KernelExec *tr
 }
 
 int PackConstData(Tensor *tensor, const TransInfoPair &pre_trans) {
-  if (tensor->shape().size() != 4) {
-    MS_LOG(ERROR) << "Pack const data only valid for 4 dims tensor.";
+  if (tensor->shape().size() != kPackConstDim) {
+    MS_LOG(ERROR) << "Pack const data only valid for " << kPackConstDim << " dims tensor.";
     return RET_OK;
   }
   auto allocator = tensor->allocator();
