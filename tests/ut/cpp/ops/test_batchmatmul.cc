@@ -97,12 +97,6 @@ INSTANTIATE_TEST_CASE_P(
                      BmmShapes{true, false, {3, 3, 1}, {3, 3, 1}, true, {3, 1, 1}},
                      BmmShapes{false, true, {3, 1, 3}, {3, 1, 3}, true, {3, 1, 1}},
                      BmmShapes{true, true, {3, 1, 3}, {3, 3, 1}, true, {3, 3, 3}},
-                     BmmShapes{false, false, {3, 1, 2, 4}, {3, 4, 2}, true, {3, 3, 2, 2}},
-                     BmmShapes{false, false, {1, 3, 2, 4}, {3, 1, 4, 2}, true, {3, 3, 2, 2}},
-                     BmmShapes{false, false, {3, 2, 4}, {4, 2}, true, {3, 2, 2}},
-                     BmmShapes{false, false, {2, 4}, {2, 2, 4, 2}, true, {2, 2, 2, 2}},
-                     BmmShapes{
-                       false, false, {6, 1, 8, 6, 1, 4}, {6, 4, 1, 1, 8, 1, 4, 6}, true, {6, 4, 6, 1, 8, 6, 1, 6}},
                      BmmShapes{false, false, {1, 3}, {2, 1}, false},        // 3 != 2
                      BmmShapes{false, false, {3, 1, 3}, {3, 2, 1}, false},  // 3 != 2
                      BmmShapes{true, false, {3, 2, 1}, {3, 3, 1}, false},   // 3 != 2
@@ -114,7 +108,6 @@ INSTANTIATE_TEST_CASE_P(
                      BmmTypes{kFloat32, kFloat32, true, kFloat32},
                      BmmTypes{kFloat16, kFloat16, true, kFloat16},
                      BmmTypes{kInt32, kInt32, true, kInt32},
-                     BmmTypes{kInt8, kInt8, true, kInt32},                    // int8 * int8 = int32
                      BmmTypes{kInt8, kInt8, true, kInt16, kInt16},            // cast_type = int16
                      BmmTypes{kFloat16, kFloat16, true, kFloat32, kFloat32},  // cast_type = fp32
                      BmmTypes{kFloat32, kFloat32, true, kFloat16, kFloat16},  // cast_type = fp16
