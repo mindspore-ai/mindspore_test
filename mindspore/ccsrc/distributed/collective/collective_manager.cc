@@ -209,15 +209,28 @@ bool CollectiveManager::InitializeDummyCommLib() {
   dummy_comm_lib_instance_ = std::make_shared<device::DummyCollectiveCommunicationLib>();
   comm_lib_instance_ = dummy_comm_lib_instance_.get();
   MS_EXCEPTION_IF_NULL(comm_lib_instance_);
-  RETURN_IF_FALSE_WITH_LOG(comm_lib_instance_->Initialize(0, 1, local_rank_id_),
+
+  // Get global rank id, global rank size and local rank(device id).
+  if (!common::GetEnv(kEnvRankSize).empty()) {
+    global_rank_size_ = LongToUint(std::strtol(common::GetEnv(kEnvRankSize).c_str(), nullptr, kDecimalBase));
+  } else {
+    global_rank_size_ = kDefaultRankSize;
+  }
+  if (!common::GetEnv(kEnvRankId).empty()) {
+    global_rank_id_ = LongToUint(std::strtol(common::GetEnv(kEnvRankId).c_str(), nullptr, kDecimalBase));
+  } else {
+    global_rank_id_ = kDefaultRankId;
+  }
+  local_rank_id_ = global_rank_id_ % kDefaultLocalRankSize;
+
+  RETURN_IF_FALSE_WITH_LOG(comm_lib_instance_->Initialize(global_rank_id_, global_rank_size_, local_rank_id_),
                            "Failed to initialize dummy communication library.");
-  global_rank_id_ = comm_lib_instance_->global_rank_id();
-  global_rank_size_ = comm_lib_instance_->global_rank_size();
   for (uint32_t i = 0; i < global_rank_size_; i++) {
     global_group_ranks_.push_back(i);
   }
   MS_LOG(WARNING) << "Initializing dummy collective communication with rank size: " << global_rank_size_
-                  << ", rank id: " << global_rank_id_ << ". Real rank size: 1.";
+                  << ", rank id: " << global_rank_id_ << ", local rank id: " << local_rank_id_
+                  << ". Real rank size: 1.";
 
   std::string device_type = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
   // If this is Ascend backend and uses host collective(OpenMPI or Dynamic Cluster/msrun), initialize dummy ascend
@@ -225,11 +238,13 @@ bool CollectiveManager::InitializeDummyCommLib() {
   if (device_type == kAscendDevice) {
     MS_LOG(WARNING) << "Initialize dummy Ascend collective communication lib.";
     RETURN_IF_FALSE_WITH_LOG(InitDeviceCommLib(), "Failed to initialize dummy device communication library on Ascend.");
+
+    MS_EXCEPTION_IF_NULL(device_comm_lib_instance_);
+    // Create dummy device global communication group.
+    auto group_name = device_comm_lib_instance_->global_group_name();
+    RETURN_IF_FALSE_WITH_LOG(CreateCommunicationGroup(group_name, global_group_ranks_),
+                             "Failed to create group " + group_name);
   }
-  // Create dummy device global communication group.
-  auto group_name = device_comm_lib_instance_->global_group_name();
-  RETURN_IF_FALSE_WITH_LOG(CreateCommunicationGroup(group_name, global_group_ranks_),
-                           "Failed to create group " + group_name);
 
   inited_ = true;
   finalized_ = false;
@@ -610,9 +625,9 @@ bool CollectiveManager::AssignLocalRank() {
 }
 
 bool CollectiveManager::CreateSimulationGroup(const std::string &group_name, const std::vector<uint32_t> &group_ranks) {
-  // Set local rank id to 0 and local group size to 8 in simulation mode. These two values should not affect compiling.
-  uint32_t local_rank = 0;
-  uint32_t local_rank_size = 8;
+  // Set local group size to 8 in simulation mode.
+  uint32_t local_rank_size = kDefaultLocalRankSize;
+  uint32_t local_rank = global_rank_id_ % local_rank_size;
   MS_LOG(WARNING) << "Create dummy communication group with group name: " << group_name
                   << ", group ranks: " << group_ranks << ". Real group size: 1.";
   RETURN_IF_FALSE_WITH_LOG(

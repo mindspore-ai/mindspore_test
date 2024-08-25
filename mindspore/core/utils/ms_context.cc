@@ -104,6 +104,7 @@ void MsContext::SetDeviceId() {
   auto env_device = common::GetEnv("DEVICE_ID");
   if (!env_device.empty()) {
     try {
+      MS_LOG(INFO) << "Set MS_CTX_DEVICE_ID by env DEVICE_ID to: " << env_device;
       uint32_t device_id = UlongToUint(std::stoul(env_device));
       set_param<uint32_t>(MS_CTX_DEVICE_ID, device_id);
     } catch (std::invalid_argument &e) {

@@ -24,9 +24,6 @@
 
 namespace mindspore {
 namespace device {
-constexpr int kDecimalBase = 10;
-constexpr int kDefaultLocalRankSize = 8;
-
 DummyCollectiveCommunicationLib::DummyCollectiveCommunicationLib() {
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
@@ -43,17 +40,8 @@ bool DummyCollectiveCommunicationLib::Initialize(uint32_t global_rank, uint32_t 
     return true;
   }
 
-  if (!common::GetEnv(kEnvRankSize).empty()) {
-    global_rank_size_ = LongToUint(std::strtol(common::GetEnv(kEnvRankSize).c_str(), nullptr, kDecimalBase));
-  } else {
-    global_rank_size_ = global_rank_size;
-  }
-
-  if (!common::GetEnv(kEnvRankId).empty()) {
-    global_rank_id_ = LongToUint(std::strtol(common::GetEnv(kEnvRankId).c_str(), nullptr, kDecimalBase));
-  } else {
-    global_rank_id_ = global_rank;
-  }
+  global_rank_size_ = global_rank_size;
+  global_rank_id_ = global_rank;
   local_rank_id_ = local_rank_id;
   initialized_ = true;
   finalized_ = false;
