@@ -100,6 +100,21 @@ device::StorageInfo GetStorageInfo(const TensorPtr &host_tensor, const DeviceTen
   return {offload_ptr, ""};
 }
 
+void SetStorageInfo(const TensorPtr &host_tensor, const DeviceTensorPtr &device_tensor,
+                    const DeviceContext *device_context, const AnfNodePtr &node) {
+  const auto storage_info = GetStorageInfo(host_tensor, device_tensor, device_context);
+  const auto hete_info = device_tensor->kernel_tensor()->heterogeneous_info();
+  const bool is_param_offload =
+    hete_info != nullptr && hete_info->need_alloc_hete_res_ != kernel::NeedAllocateHeteRes::NoNeedHeteRes;
+  if (!is_param_offload) {
+    device_tensor->SetStorageInfo(storage_info);
+  } else {
+    MS_LOG(INFO) << "No need sync for heterogeneous device tensor, node name: " << node->fullname_with_scope();
+    hete_info->host_ptr_ = storage_info.host_ptr_;
+    hete_info->file_name_ = storage_info.file_name_;
+  }
+}
+
 void UpdateTracker(const std::string &task_name, const AnfNodePtr &node, const std::string &graph_str,
                    device::tracker::MemType mem_type, const DeviceTensorPtr &device_tensor) {
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, task_name, node->fullname_with_scope(), graph_str);
@@ -171,7 +186,7 @@ void SyncTensorData(const TensorPtr &host_tensor, const DeviceTensorPtr &device_
       host_shape = real_host_tensor->shape();
     }
     if (taken_over_by_swap_manager) {
-      device_tensor->SetStorageInfo(GetStorageInfo(real_host_tensor, device_tensor, device_context));
+      SetStorageInfo(real_host_tensor, device_tensor, device_context, node);
     } else if (!device_tensor->SyncHostToDevice(host_shape, host_tensor_size, host_tensor_type,
                                                 real_host_tensor->device_info().host_format_,
                                                 real_host_tensor->data_ptr())) {

@@ -89,6 +89,7 @@ void MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_te
     if (!MoveToD2H(src_tensor, src_device_ptr, dst_tensor, blocking)) {
       MS_LOG(EXCEPTION) << "Move tensor to " << to << "failed.";
     }
+    dst_tensor->set_sync_status(kNeedSyncHostToDevice);
     return;
   }
   // H2D src_device_ptr: CPU; dst_device_ptr: GPU/ASCEND.
@@ -115,6 +116,7 @@ void MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_te
   auto dst_device_ptr = std::dynamic_pointer_cast<device::DeviceAddress>(dst_addr);
   MS_EXCEPTION_IF_NULL(dst_device_ptr);
   MoveToH2D(src_tensor, src_device_ptr, dst_device_ptr, blocking);
+  dst_tensor->set_sync_status(kNeedSyncDeviceToHost);
 }
 }  // namespace device
 }  // namespace mindspore

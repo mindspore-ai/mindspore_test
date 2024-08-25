@@ -1,7 +1,7 @@
 mindspore.Tensor
 ================
 
-.. py:class:: mindspore.Tensor(input_data=None, dtype=None, shape=None, init=None, internal=False, const_arg=False)
+.. py:class:: mindspore.Tensor(input_data=None, dtype=None, shape=None, init=None, internal=False, const_arg=False, device=None)
 
     张量，即存储多维数组（n-dimensional array）的数据结构。
 
@@ -18,6 +18,7 @@ mindspore.Tensor
         - **init** (Initializer) - 用于在并行模式中延迟Tensor的数据的初始化，如果指定该参数，则 `dtype` 和 `shape` 也必须被指定。默认值： ``None`` 。
         - **internal** (bool) - Tensor是否由框架创建。如果为 ``True`` ，表示Tensor是由框架创建的，如果为 ``False`` ，表示Tensor是由用户创建的。默认值： ``False`` 。
         - **const_arg** (bool) - 指定该Tensor作为网络输入时是否为常量。默认值： ``False`` 。
+        - **device** (str) - 该参数为保留参数，不需要用户配置。默认值： ``None`` 。
 
     输出：
         Tensor。

@@ -389,6 +389,22 @@ TensorPtr TensorPy::MakePersistentDataTensorOfNumpy(const py::array &input, cons
   return std::make_shared<Tensor>(dtype, shape, tensor_data);
 }
 
+void TensorPy::SetUserData(const Tensor &tensor, const py::str &key, const py::object &value) {
+  const std::string name = key.cast<std::string>();
+  const auto &primitive_data = std::make_shared<TensorPyUserData>();
+  primitive_data->obj = value;
+  const_cast<Tensor &>(tensor).set_user_data<TensorPyUserData>(name, primitive_data);
+}
+
+py::object TensorPy::GetUserData(const Tensor &tensor, const py::str &key) {
+  const std::string name = key.cast<std::string>();
+  const auto primitive_data = tensor.user_data<TensorPyUserData>(name);
+  if (primitive_data == nullptr) {
+    return py::none();
+  }
+  return primitive_data->obj;
+}
+
 static std::vector<ssize_t> GetStrides(const std::vector<ssize_t> &shape, ssize_t item_size) {
   std::vector<ssize_t> strides;
   strides.reserve(shape.size());
@@ -1024,6 +1040,8 @@ void RegMetaTensor(const py::module *m) {
                                   >>> data = mindspore.Tensor(np.ones((1, 2), np.float32))
                                   >>> ret = data.move_to("CPU")
                               )mydelimiter")
+    .def("_set_user_data", &TensorPy::SetUserData)
+    .def("_get_user_data", &TensorPy::GetUserData)
     .def("set_cast_dtype", &Tensor::set_cast_dtype, py::arg("dtype") = nullptr)
     .def("data_sync", &Tensor::data_sync)
     .def("wait_pipeline", &Tensor::ExecuteLazyTask)

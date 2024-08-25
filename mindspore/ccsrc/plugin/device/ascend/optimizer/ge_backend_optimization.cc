@@ -62,6 +62,7 @@
 #include "plugin/device/ascend/optimizer/ge/remove_tensor_to_scalar_or_tuple_ops.h"
 #include "plugin/device/ascend/optimizer/ge/scalar_ops_output_unify_mindir.h"
 #include "plugin/device/ascend/optimizer/ge/ge_convert_const_input_to_tensor_input.h"
+#include "plugin/device/ascend/optimizer/heterogeneous/insert_move_to.h"
 #include "backend/common/pass/insert_type_transform_op.h"
 #include "backend/common/pass/insert_tensor_move_for_communication.h"
 #include "plugin/device/ascend/optimizer/enhancer/eliminate_maketuple_getitem.h"
@@ -273,11 +274,13 @@ void GEAfterInlineOptimize(const KernelGraphPtr &kernel_graph) {
     DumpIR(file_name, kernel_graph);
   }
 #endif
+  kernel_graph->SetExecOrderByDefault();
   auto optimizer = std::make_shared<opt::GraphOptimizer>();
   auto after_inline_pm = std::make_shared<PassManager>("after_inline_pm");
   after_inline_pm->AddPass(std::make_shared<DropoutGenMaskFusion>());
   after_inline_pm->AddPass(std::make_shared<CommonSubexpressionElimination>());
   after_inline_pm->AddPass(std::make_shared<EliminateMaketupleGetitem>());
+  after_inline_pm->AddPass(std::make_shared<InsertMoveTo>());
   optimizer->AddPassManager(after_inline_pm);
   (void)optimizer->Optimize(kernel_graph);
   kernel_graph->SetExecOrderByDefault();

@@ -568,7 +568,6 @@ void KernelActor::SendMemoryAllocReq(OpContext<DeviceTensor> *const context) {
       output_device_tensors_[out_in.first]->set_ptr(ptr);
     }
   }
-
   MemoryManagerActor::GetInstance()->AllocateMemory(&memory_alloc_list_, device_contexts_[0], context, GetAID());
 
   if (ActorDispatcher::enable_trace_dynamic_memory()) {

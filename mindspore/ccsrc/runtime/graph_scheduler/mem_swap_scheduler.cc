@@ -351,6 +351,12 @@ std::vector<std::vector<MemSwapActorPtr>> MemSwapScheduler::Build(const GraphCom
   if (!ms_context->get_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD)) {
     return swap_actors;
   }
+  const auto &offload_context = OffloadContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(offload_context);
+  if (offload_context->specific_param_offload()) {
+    MS_LOG(INFO) << "Offload strategy will not be generated when any parameter's device is set.";
+    return swap_actors;
+  }
   for (size_t i = 0; i < graph_compiler_info.graphs_.size(); ++i) {
     const auto device_context = graph_compiler_info.device_contexts_[i];
     const auto &graph = graph_compiler_info.graphs_[i];

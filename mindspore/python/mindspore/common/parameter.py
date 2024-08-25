@@ -91,6 +91,15 @@ def _get_unique_parameter_key():
     return _GLOBAL_PARAMETER_KEY
 
 
+def _gen_offload_file_path(offload_dir):
+    offload_dir = os.path.relpath(offload_dir)
+    if not os.path.exists(offload_dir):
+        os.makedirs(offload_dir)
+    offload_file_path = offload_dir + "/" + str(_get_global_rank()) + "_" + str(
+        _get_unique_parameter_key()) + "_" + str(time.time()) + ".data"
+    return offload_file_path
+
+
 def _offload_if_config(data):
     """
     Offload parameter(data size > 512) to file when enable memory offload and offload parameter to disk.
@@ -111,11 +120,7 @@ def _offload_if_config(data):
     offload_file_path = data.offload_file_path()
     if offload_file_path is None or offload_file_path == "":
         offload_dir = offload_context.get("offload_path", "./offload")
-        offload_dir = os.path.relpath(offload_dir)
-        if not os.path.exists(offload_dir):
-            os.makedirs(offload_dir)
-        offload_file_path = offload_dir + "/" + str(_get_global_rank()) + "_" + str(
-            _get_unique_parameter_key()) + "_" + str(time.time()) + ".data"
+        offload_file_path = _gen_offload_file_path(offload_dir)
     data.offload(offload_file_path)
 
 
@@ -191,6 +196,12 @@ class Parameter(Tensor_):
         storage_format (str): Only Ascend device target is supported. It is used to specify the format of the weight
             loaded to the device. By default, the format is not changed. The optional values are ``"FRACTAL_NZ"`` ,
             ``"NC1HWC0"`` , ``"FRACTAL_Z"`` , etc. Default: ``""`` .
+        device(str): Only Ascend device target is supported. It is used to specify the device which the parameter is
+            stored. By default, the parameter will be stored on NPU while computing. When the device is specified as
+            ``"CPU"``, the parameter will be loaded into the device when it needs to be used, and unloaded to the CPU
+            after use. It takes effext only when `memory_offload` is``"ON"``, `jit_level` is not ``"O2"`` and
+            `memory_optimize_level` is ``O0``in `mindspore.set_context()`. Less device memory is needed when device is
+            specified as ``"CPU"``.
 
     Examples:
         >>> import numpy as np
@@ -244,7 +255,7 @@ class Parameter(Tensor_):
             Parameter, (data, self.name, self.requires_grad, self.layerwise_parallel))
 
     def __init__(self, default_input, name=None, requires_grad=True, layerwise_parallel=False, parallel_optimizer=True,
-                 storage_format=""):
+                 storage_format="", device=None):
         self.param_info = ParamInfo()
         self.init_in_server = False
         self.name = name
@@ -296,6 +307,10 @@ class Parameter(Tensor_):
                             f" 'numpy.ndarray', 'list']. But got type {type(default_input)}.")
         self.param_info.parameter_shape = self.shape
         self.param_info.storage_format = storage_format
+        if device is not None:
+            if device != "CPU":
+                raise ValueError(f"Only 'CPU' is supported for device, but got ${device}.")
+            self._set_user_data("parameter_device", device)
 
         import mindspore.ops.operations.other_ops as other_ops
         self.load = other_ops.Load()
@@ -616,6 +631,9 @@ class Parameter(Tensor_):
             shape = self.shape if self.slice_num == 1 else self.param_info.origin_shape
             dtype = self.dtype
             x.set_data(initializer(init, shape=shape, dtype=dtype))
+        device = self._get_user_data("parameter_device")
+        if device is not None:
+            x._set_user_data("parameter_device", device)
         return x
 
     @property

@@ -312,7 +312,7 @@ class BACKEND_EXPORT DeviceResManager {
   // Return collective communication object for caller to access
   CollectiveCommunicationLib *collective_comm_lib() const { return collective_comm_lib_; }
 
-  std::shared_ptr<SwapManager> swap_manager() const { return swap_manager_; }
+  std::shared_ptr<SwapManager> swap_manager() const;
 
   std::shared_ptr<MemoryManager> mem_manager() const { return mem_manager_; }
 

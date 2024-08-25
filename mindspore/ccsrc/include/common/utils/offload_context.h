@@ -70,6 +70,9 @@ class COMMON_EXPORT OffloadContext {
   void set_hbm_ratio(float hbm_ratio);
   float hbm_ratio() const { return hbm_ratio_; }
 
+  void set_specific_param_offload(bool specific_param_offload);
+  bool specific_param_offload() const { return specific_param_offload_; }
+
  private:
   OffloadContext();
   std::string offload_param_;
@@ -86,6 +89,7 @@ class COMMON_EXPORT OffloadContext {
   bool cpu_size_configured_;
   float cpu_ratio_;
   float hbm_ratio_;
+  bool specific_param_offload_;
 };
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_INCLUDE_COMMON_UTILS_OFFLOAD_CONTEXT_H_
