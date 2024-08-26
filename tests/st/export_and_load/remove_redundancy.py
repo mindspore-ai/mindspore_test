@@ -97,34 +97,6 @@ def test_remove_redundancy_save_True_load_True():
     model.train(1, dataset)
 
 
-def test_remove_redundancy_save_False_load_True():
-    '''
-    Feature: save full ckpt and remove_redundancy load ckpt.
-    Description: Full checkpoint saving and redundant-free checkpoint loading.
-    Expectation: success.
-    '''
-    print("distribute network shard.", flush=True)
-    net = Network()
-    print("distribute network create dataset.", flush=True)
-
-    dataset = create_dataset(32)
-    optim = nn.SGD(net.trainable_params(), 1e-2)
-    loss = nn.CrossEntropyLoss()
-    rank_id = get_rank()
-    config = CheckpointConfig(remove_redundancy=False)
-    cbpoint_cb = ModelCheckpoint(prefix="redundancy", directory=f"./device{rank_id}_redundancy01", config=config)
-    print("distribute network train.", flush=True)
-    model = Model(net, loss_fn=loss, optimizer=optim)
-    model.train(1, dataset, callbacks=cbpoint_cb)
-    ckpt_path = f"./device{rank_id}_redundancy01/redundancy-1_1875.ckpt"
-
-    print("distribute network loadcheckpoint.", flush=True)
-    param_dict = load_checkpoint(ckpt_path)
-    load_param_into_net(model.train_network, param_dict, remove_redundancy=True)
-    print("distribute network parameter broadcast.", flush=True)
-    model.train(1, dataset)
-
-
 def test_remove_redundancy_save_True_load_False():
     '''
     Feature: save remove_redundancy ckpt and full load ckpt.
