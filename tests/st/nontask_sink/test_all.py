@@ -176,6 +176,8 @@ def test_entry_hccl_allreduce_fusion_by_attr():
     Description: msrun allreduce fusion test case.
     Expectation: success
     """
+    os.environ['ASCEND_GLOBAL_LOG_LEVEL'] = str(1)
+    os.environ['ASCEND_SLOG_PRINT_TO_STDOUT'] = str(1)
     return_code = os.system("rm -rf rank* && msrun --worker_num=8 --local_worker_num=8 --join=True "
                             "pytest -s test_comm_fusion.py::test_hccl_allreduce_fusion_by_attr")
     assert return_code == 0
