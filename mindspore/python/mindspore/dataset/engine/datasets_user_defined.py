@@ -205,7 +205,9 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
                 " The existing pool will be terminated first."
             logger.warning(message)
             self._abort_watchdog()
+            self._stop_subprocess()
             self.reset()
+            self.workers = []
 
         self.ppid = os.getpid()
         self.pids = []
@@ -259,6 +261,7 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
             else:
                 worker = _GeneratorWorkerMt(self.dataset, self.eof, worker_id)
                 worker.daemon = True
+                self.need_join = True
             self.workers.append(worker)
         if self.multi_process and platform.system().lower() != 'windows':
             self._launch_cleanup_worker()
@@ -272,6 +275,8 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
 
     def _check_and_start_process(self):
         """Check the idx_queue and start the process"""
+        if self.workers is None:
+            raise RuntimeError("The GeneratorDataset subprocess worker maybe killed or exit abnormally.")
         for w in self.workers:
             # Check whether the queue of the subprocess is empty.
             if not w.queue_empty():
@@ -406,14 +411,48 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
                     exitpriority=-5
                 )
 
+    def _release_fd(self):
+        """Release the file descriptor by subprocess"""
+        # release the file descriptor handle
+        check_interval = get_multiprocessing_timeout_interval()
+        for w in self.workers:
+            try:
+                subprocess_file_descriptor = w.sentinel
+                st = time.time()
+                while _PythonMultiprocessing.is_process_alive(w.pid):
+                    time.sleep(0.01)  # sleep 10ms, waiting for the subprocess exit
+                    if time.time() - st > check_interval:
+                        logger.warning("Waiting for the subprocess worker [{}] to exit.".format(w.pid))
+                        st += check_interval
+            except ValueError as e:
+                if "process object is closed" in str(e):
+                    continue
+                raise e
+            try:
+                if w.is_alive():
+                    os.close(subprocess_file_descriptor)
+            except OSError as e:
+                # Maybe the file descriptor had been released, so ignore the 'Bad file descriptor'
+                if "Bad file descriptor" not in str(e):
+                    raise e
+            except AttributeError:  # maybe occur "'NoneType' object has no attribute 'maxsize'"
+                pass
+
     def _stop_subprocess(self):
-        """Only the main process can call join."""
+        """Only the main process can call join. All the sub-process / sub-thread will be stopped."""
         if self.need_join is True and self.ppid == os.getpid():
+            # the sub-process / sub-thread will stop by self.eof.set()
             if hasattr(self, 'eof') and self.eof is not None:
-                self.eof.set()
+                try:
+                    self.eof.set()
+                except AttributeError:  # maybe occur "'NoneType' object has no attribute 'maxsize'"
+                    pass
+
             # close the watch dog first
             self._abort_watchdog()
             self.need_join = False
+
+            # waiting for the sub-process stop
             for w in self.workers:
                 if self.multi_process is True and hasattr(w, '_closed') and w._closed is False:  # pylint: disable=W0212
                     try:
@@ -431,28 +470,8 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
                         # Block all errors when join
                         continue
 
-            # release the file descriptor handle
-            check_interval = get_multiprocessing_timeout_interval()
-            for w in self.workers:
-                try:
-                    subprocess_file_descriptor = w.sentinel
-                    st = time.time()
-                    while _PythonMultiprocessing.is_process_alive(w.pid):
-                        time.sleep(0.01)  # sleep 10ms, waiting for the subprocess exit
-                        if time.time() - st > check_interval:
-                            logger.warning("Waiting for the subprocess worker [{}] to exit.".format(w.pid))
-                            st += check_interval
-                except ValueError as e:
-                    if "process object is closed" in str(e):
-                        continue
-                    raise e
-                try:
-                    if w.is_alive():
-                        os.close(subprocess_file_descriptor)
-                except OSError as e:
-                    # Maybe the file descriptor had been released, so ignore the 'Bad file descriptor'
-                    if "Bad file descriptor" not in str(e):
-                        raise e
+            if self.multi_process is True:
+                self._release_fd()
 
             self.workers.clear()
             self.workers = None
