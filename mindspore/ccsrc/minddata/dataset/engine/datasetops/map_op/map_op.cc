@@ -351,8 +351,7 @@ Status MapOp::WorkerEntry(int32_t worker_id) {
   uint64_t start_time = GetSyscnt();
   // Fetch next data row and map job list
   RETURN_IF_NOT_OK(FetchNextWork(worker_id, &in_row, &job_list));
-  RETURN_IF_NOT_OK(
-    CollectOpInfoEnd(this->NameWithID(), "WorkerGet", start_time, {{"TensorRowFlags", in_row.FlagName()}}));
+  RETURN_IF_NOT_OK(CollectOpInfo(this->NameWithID(), "WorkerGet", start_time, {{"TensorRowFlags", in_row.FlagName()}}));
   start_time = GetSyscnt();
 
   // Now that init work is done, drop into the main fetching loop.
@@ -362,7 +361,7 @@ Status MapOp::WorkerEntry(int32_t worker_id) {
     // Handle special logic where row carries a ctrl flag.
     if (in_row.Flags() != TensorRow::kFlagNone) {
       RETURN_IF_NOT_OK(
-        CollectOpInfoEnd(this->NameWithID(), "WorkerProcess", start_time, {{"TensorRowFlags", in_row.FlagName()}}));
+        CollectOpInfo(this->NameWithID(), "WorkerProcess", start_time, {{"TensorRowFlags", in_row.FlagName()}}));
       if (in_row.quit()) {
         break;
       }
@@ -381,7 +380,7 @@ Status MapOp::WorkerEntry(int32_t worker_id) {
       RETURN_IF_NOT_OK(WorkerCompute(in_row, &out_row, job_list));
 #endif
       RETURN_IF_NOT_OK(
-        CollectOpInfoEnd(this->NameWithID(), "WorkerProcess", start_time, {{"TensorRowFlags", in_row.FlagName()}}));
+        CollectOpInfo(this->NameWithID(), "WorkerProcess", start_time, {{"TensorRowFlags", in_row.FlagName()}}));
       // Push the row onto the connector for next operator to consume.
       RETURN_IF_NOT_OK(worker_out_queues_[worker_id]->EmplaceBack(std::move(out_row)));
     }
@@ -389,7 +388,7 @@ Status MapOp::WorkerEntry(int32_t worker_id) {
     // Fetch next data row and map job list
     RETURN_IF_NOT_OK(FetchNextWork(worker_id, &in_row, &job_list));
     RETURN_IF_NOT_OK(
-      CollectOpInfoEnd(this->NameWithID(), "WorkerGet", start_time, {{"TensorRowFlags", in_row.FlagName()}}));
+      CollectOpInfo(this->NameWithID(), "WorkerGet", start_time, {{"TensorRowFlags", in_row.FlagName()}}));
     start_time = GetSyscnt();
   }
 

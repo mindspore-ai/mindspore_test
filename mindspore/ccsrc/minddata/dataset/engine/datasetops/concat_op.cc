@@ -193,7 +193,7 @@ Status ConcatOp::SampleInSequence(TensorRow *row, bool is_pipeline_mode) {
   Status s = is_pipeline_mode ? child_[cur_child_]->GetNextRow(row) : child_[cur_child_]->GetNextRowPullMode(row);
   RETURN_IF_NOT_OK(s);
   RETURN_IF_NOT_OK(
-    CollectOpInfoEnd(this->NameWithID(), "GetFromPreviousOp", start_time, {{"TensorRowFlags", row->FlagName()}}));
+    CollectOpInfo(this->NameWithID(), "GetFromPreviousOp", start_time, {{"TensorRowFlags", row->FlagName()}}));
 
   if (!row->eoe() && !row->eof()) {
     if (!verified_) {
@@ -228,7 +228,7 @@ Status ConcatOp::SampleInSequence(TensorRow *row, bool is_pipeline_mode) {
       s = is_pipeline_mode ? child_[i]->GetNextRow(row) : child_[i]->GetNextRowPullMode(row);
       RETURN_IF_NOT_OK(s);
       RETURN_IF_NOT_OK(
-        CollectOpInfoEnd(this->NameWithID(), "GetFromPreviousOp", start_time, {{"TensorRowFlags", row->FlagName()}}));
+        CollectOpInfo(this->NameWithID(), "GetFromPreviousOp", start_time, {{"TensorRowFlags", row->FlagName()}}));
       CHECK_FAIL_RETURN_UNEXPECTED(row->eof(), "[Internal ERROR] Row must be an EOF.");
     }
   }
@@ -245,7 +245,7 @@ Status ConcatOp::SampleInGlobal(TensorRow *row, bool is_pipeline_mode) {
   Status s = is_pipeline_mode ? child_[child_id]->GetNextRow(row) : child_[child_id]->GetNextRowPullMode(row);
   RETURN_IF_NOT_OK(s);
   RETURN_IF_NOT_OK(
-    CollectOpInfoEnd(this->NameWithID(), "GetFromPreviousOp", start_time, {{"TensorRowFlags", row->FlagName()}}));
+    CollectOpInfo(this->NameWithID(), "GetFromPreviousOp", start_time, {{"TensorRowFlags", row->FlagName()}}));
 
   if (!row->eoe() && !row->eof()) {
     // normal case, but reduce total sample numbers for without replacement sampling
@@ -268,7 +268,7 @@ Status ConcatOp::SampleInGlobal(TensorRow *row, bool is_pipeline_mode) {
         s = is_pipeline_mode ? child_[c]->GetNextRow(&eoe) : child_[c]->GetNextRowPullMode(&eoe);
         RETURN_IF_NOT_OK(s);
         RETURN_IF_NOT_OK(
-          CollectOpInfoEnd(this->NameWithID(), "GetFromPreviousOp", start_time, {{"TensorRowFlags", eoe.FlagName()}}));
+          CollectOpInfo(this->NameWithID(), "GetFromPreviousOp", start_time, {{"TensorRowFlags", eoe.FlagName()}}));
         // for those variable dataset size, we cannot support currently
         CHECK_FAIL_RETURN_UNEXPECTED(
           eoe.eoe(),
@@ -293,7 +293,7 @@ Status ConcatOp::SampleInGlobal(TensorRow *row, bool is_pipeline_mode) {
         s = is_pipeline_mode ? child_[i]->GetNextRow(row) : child_[i]->GetNextRowPullMode(row);
         RETURN_IF_NOT_OK(s);
         RETURN_IF_NOT_OK(
-          CollectOpInfoEnd(this->NameWithID(), "GetFromPreviousOp", start_time, {{"TensorRowFlags", row->FlagName()}}));
+          CollectOpInfo(this->NameWithID(), "GetFromPreviousOp", start_time, {{"TensorRowFlags", row->FlagName()}}));
         CHECK_FAIL_RETURN_UNEXPECTED(row->eof(), "[Internal ERROR] Row must be an EOF.");
       }
     }

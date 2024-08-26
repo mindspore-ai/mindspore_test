@@ -39,7 +39,7 @@ class NpuProfiler(ProfilerInterface):
             pcie: bool = False,
             data_process: bool = False,
             timeline_limit: int = 500,
-            profile_framework: str = "all",
+            profile_framework: str = None,
             **kwargs
     ) -> None:
         super().__init__()

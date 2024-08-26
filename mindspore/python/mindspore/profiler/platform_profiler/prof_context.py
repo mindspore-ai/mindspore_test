@@ -37,7 +37,7 @@ class ProfContext:
         self._sync_enable = kwargs.get("sync_enable", True)
         self._data_process = kwargs.get("data_process", False)
         self._timeline_limit = kwargs.get("timeline_limit", 500)
-        self._profile_framework = kwargs.get("profile_framework", "all")
+        self._profile_framework = kwargs.get("profile_framework", None)
         self._with_stack = kwargs.get("with_stack", False)
         self._data_simplification = kwargs.get("data_simplification", True)
 

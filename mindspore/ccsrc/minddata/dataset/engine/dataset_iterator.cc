@@ -185,8 +185,8 @@ Status ChildIterator::FetchNextTensorRow(TensorRow *out_row) {
 
   uint64_t start_time = GetSyscnt();
   RETURN_IF_NOT_OK(current_op_->child(child_idx_)->GetNextRow(out_row));
-  RETURN_IF_NOT_OK(CollectOpInfoEnd(current_op_->NameWithID(), "GetFromPreviousOp", start_time,
-                                    {{"TensorRowFlags", out_row->FlagName()}}));
+  RETURN_IF_NOT_OK(CollectOpInfo(current_op_->NameWithID(), "GetFromPreviousOp", start_time,
+                                 {{"TensorRowFlags", out_row->FlagName()}}));
 
   // If an eoe is picked up here, we simply return an empty vector and it's up to the
   // caller to decide what it wants to do next.TensorRow

@@ -27,8 +27,8 @@ uint64_t GetSyscnt() {
   return time_cnt;
 }
 
-Status CollectPipelineInfoEnd(const std::string &event, const std::string &stage, const uint64_t &start_time,
-                              const std::map<std::string, std::string> &custom_info) {
+Status CollectPipelineInfo(const std::string &event, const std::string &stage, const uint64_t &start_time,
+                           const std::map<std::string, std::string> &custom_info) {
 #if !defined(ENABLE_SECURITY) && !defined(ENABLE_ANDROID)
   (void)profiler::CollectHostInfo("Dataset", event, stage, start_time, profiler::GetClockSyscnt(), InfoLevel::kUser,
                                   custom_info);
@@ -36,8 +36,8 @@ Status CollectPipelineInfoEnd(const std::string &event, const std::string &stage
   return Status::OK();
 }
 
-Status CollectOpInfoEnd(const std::string &event, const std::string &stage, const uint64_t &start_time,
-                        const std::map<std::string, std::string> &custom_info) {
+Status CollectOpInfo(const std::string &event, const std::string &stage, const uint64_t &start_time,
+                     const std::map<std::string, std::string> &custom_info) {
 #if !defined(ENABLE_SECURITY) && !defined(ENABLE_ANDROID)
   (void)profiler::CollectHostInfo("Dataset", event, stage, start_time, profiler::GetClockSyscnt(),
                                   InfoLevel::kDeveloper, custom_info);

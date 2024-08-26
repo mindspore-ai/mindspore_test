@@ -84,7 +84,7 @@ class BACKEND_EXPORT ProfilerManager {
  private:
   inline static std::shared_ptr<ProfilerManager> profiler_manager_inst_ = std::make_shared<ProfilerManager>();
   bool is_dynamic_shape_net_ = 0;
-  std::string profile_framework_ = "all";
+  std::string profile_framework_ = "NULL";
 };
 
 class BACKEND_EXPORT Profiler {
