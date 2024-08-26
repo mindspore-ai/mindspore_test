@@ -43,6 +43,7 @@ const int32_t RECURSION_LIMIT = 1000;
 
 struct LossNodeInfo {
   bool has_tuple_getitem = false;
+  bool has_make_tuple = false;
   int64_t dout_index = 0;  // now don't support the sens is a tuple
   CNodePtr loss_node = nullptr;
 };
