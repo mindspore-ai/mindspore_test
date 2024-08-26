@@ -241,6 +241,9 @@ mindspore.mint.nn
     :nosignatures:
     :template: classtemplate.rst
 
+    mindspore.mint.nn.BatchNorm1d
+    mindspore.mint.nn.BatchNorm2d
+    mindspore.mint.nn.BatchNorm3d
     mindspore.mint.nn.GroupNorm
 
 非线性激活层 (加权和，非线性)

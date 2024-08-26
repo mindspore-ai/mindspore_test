@@ -243,6 +243,9 @@ Normalization Layers
     :nosignatures:
     :template: classtemplate.rst
 
+    mindspore.mint.nn.BatchNorm1d
+    mindspore.mint.nn.BatchNorm2d
+    mindspore.mint.nn.BatchNorm3d
     mindspore.mint.nn.GroupNorm
 
 Non-linear Activations (weighted sum, nonlinearity)
