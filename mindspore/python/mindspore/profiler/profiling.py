@@ -494,7 +494,7 @@ class Profiler:
             pretty (bool, optional): Whether to pretty json files. Default: ``False``.
             step_list (list, optional): A list of steps that need to be analyzed. Default: ``None``.
                 By default, all steps will be analyzed.
-            data_simplification: Whether to open data simplification. Default: ``True``.
+            data_simplification (bool, optional): Whether to enable data simplification. Default: ``True``.
 
         Examples:
             >>> from mindspore import Profiler
