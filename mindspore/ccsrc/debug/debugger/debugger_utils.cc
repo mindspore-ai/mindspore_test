@@ -15,6 +15,7 @@
  */
 
 #include "debug/debugger/debugger_utils.h"
+#include <algorithm>
 #include <memory>
 #include <set>
 #include <string>
@@ -440,9 +441,11 @@ void LaunchDumpCallback(const std::vector<TensorInfoForDump> &tensor_info_list, 
       }
 
       uint64_t timestamp = Common::GetTimeStamp();
+      std::string type_str = TypeIdToString(host_type);
+      transform(type_str.begin(), type_str.end(), type_str.begin(), tolower);
       std::string file_path = tensor_info_comm.file_path_prefix + '.' + std::to_string(timestamp) + '.' +
                               tensor_info.io + '.' + std::to_string(tensor_info.io_index) + '.' + tensor_info.format +
-                              "." + TypeIdToString(host_type);
+                              "." + type_str;
 
       auto host_shape = tensor_info.host_shape;
       mindspore::tensor::TensorPtr out_tensor = std::make_shared<tensor::Tensor>(host_type, host_shape);

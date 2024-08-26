@@ -298,10 +298,12 @@ bool AscendAsyncDump::DumpTensorDataIfNeeded(const dump_data_t &dump_tensor_info
   if (!DumpJsonParser::GetInstance().IsTensorDump()) {
     return true;
   }
+  std::string type_str = TypeIdToString(dump_tensor_info.data_type);
+  transform(type_str.begin(), type_str.end(), type_str.begin(), tolower);
   // dump_path: dump_dir/op_type.op_name.task_id.stream_id.timestamp
   std::ostringstream dump_path_ss;
   dump_path_ss << dump_tensor_info.dump_file_path << "." << dump_tensor_info.in_out_str << "." << dump_tensor_info.slot
-               << "." << dump_tensor_info.format << "." << TypeIdToString(dump_tensor_info.data_type);
+               << "." << dump_tensor_info.format << "." << type_str;
   std::string dump_path_slot = dump_path_ss.str();
   std::shared_ptr<tensor::Tensor> trans_buf = nullptr;
   if (dump_tensor_info.trans_buf) {
