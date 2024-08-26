@@ -15,6 +15,7 @@
  */
 #include "kernel/ascend/opapi/aclnn/view/concat_view.h"
 #include <memory>
+#include <functional>
 #include "kernel/ascend/opapi/aclnn/view/view_utils.h"
 #include "runtime/device/kernel_runtime.h"
 
@@ -27,10 +28,12 @@ void ConcatView::UpdateOutputTensorInfo(const std::vector<KernelTensor *> &input
   size_t offset = 0;
   auto input_type = inputs[0]->dtype_id();
   auto type_size = GetTypeByte(TypeIdToType(input_type));
-  for (size_t i = 0; i < input_num; ++i) {
+  auto ori_shape = outputs[0]->GetShapeVector();
+  auto ori_size = std::accumulate(ori_shape.begin(), ori_shape.end(), 1, std::multiplies<int64_t>()) * type_size;
+  for (size_t i = 0; i < input_num - 1; ++i) {
     ops::OldTensorInfoPtr old_info = GetOldTensorInfo(inputs[i]);
     auto new_storage_info = std::make_shared<TensorStorageInfo>(
-      inputs[i]->GetShapeVector(), old_info->ori_strides, offset, old_info->ori_shape, old_info->ori_strides, true);
+      inputs[i]->GetShapeVector(), old_info->ori_strides, offset, ori_shape, old_info->ori_strides, true, ori_size);
     inputs[i]->set_tensor_storage_info(new_storage_info);
     offset += inputs[i]->size() / type_size;
   }

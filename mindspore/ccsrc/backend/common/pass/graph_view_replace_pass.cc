@@ -36,6 +36,20 @@ namespace opt {
 using mindspore::ops::op_enabled_aclnn;
 static const std::set<std::string> op_reverse = {kConcatOpName};
 static const std::set<std::string> multi_out = {kSplitOpName};
+constexpr size_t kAlignSize = 512;
+
+size_t GetOutputMemSize(const AnfNodePtr &node, size_t output_index) {
+  MS_EXCEPTION_IF_NULL(node);
+  if (output_index >= AnfUtils::GetOutputTensorNum(node)) {
+    MS_EXCEPTION(ArgumentError) << "output index [" << output_index << "] large than the output size ["
+                                << AnfUtils::GetOutputTensorNum(node) << "] of node!";
+  }
+  TypeId output_typeid = common::AnfAlgo::GetOutputInferDataType(node, output_index);
+  size_t type_size = GetTypeByte(TypeIdToType(output_typeid));
+  auto shape = common::AnfAlgo::GetOutputInferShape(node, output_index);
+  size_t tensor_size = type_size * SizeOf(shape);
+  return tensor_size;
+}
 
 bool IsNodeBoundary(const FuncGraphPtr &func_graph, const AnfNodePtr &node) {
   if (func_graph->output() == nullptr) {
@@ -55,7 +69,7 @@ bool IsOutSuit(const AnfNodePtr &node, const mindspore::FuncGraphManagerPtr &man
   for (const auto user : users) {
     auto out = user.first;
     if (!out->cast<CNodePtr>()) {
-      continue;
+      return false;
     }
     // Out is not aclnn kernel: OPAPI_KERNEL
     auto out_name = AnfUtils::GetCNodeName(out);
@@ -71,13 +85,30 @@ bool CheckReverseOp(const CNodePtr &cnode) {
   if (!op_reverse.count(kernel_name)) {
     return true;
   }
+  // not support dynamic shape
+  if (common::AnfAlgo::IsDynamicShape(cnode)) {
+    return false;
+  }
   // check all input is matmul
   auto inputs = cnode->inputs();
   if (inputs.empty()) {
     return false;
   }
-  for (size_t i = 1; i < inputs.size(); ++i) {
-    if (inputs[i]->isa<CNode>() && AnfUtils::GetCNodeName(inputs[i]) != kMatMulOpName) {
+  // check axis is 0
+  auto axis = GetValue<int64_t>(inputs[inputs.size() - 1]->cast<ValueNodePtr>()->value());
+  if (axis != 0) {
+    return false;
+  }
+  for (size_t i = 1; i < inputs.size() - 1; ++i) {
+    if (!inputs[i]->isa<CNode>()) {
+      return false;
+    }
+    if (AnfUtils::GetCNodeName(inputs[i]) != kMatMulOpName) {
+      return false;
+    }
+    // checkout input size aligned 512
+    auto input_size = GetOutputMemSize(cnode, 0);
+    if (input_size % kAlignSize != 0) {
       return false;
     }
   }
@@ -89,15 +120,37 @@ bool CheckMultiOut(const CNodePtr &cnode, const mindspore::FuncGraphManagerPtr &
   if (!multi_out.count(kernel_name)) {
     return true;
   }
+  // not support dynamic shape
+  if (common::AnfAlgo::IsDynamicShape(cnode)) {
+    return false;
+  }
+  auto inputs = cnode->inputs();
+  if (inputs.empty()) {
+    return false;
+  }
+  // check axis is 0  Split(x, axis, out_num)
+  size_t axis_pos = inputs.size() - kIndex2;
+  if (axis_pos < 1) {
+    return false;
+  }
+  auto axis = GetValue<int64_t>(inputs[axis_pos]->cast<ValueNodePtr>()->value());
+  if (axis != 0) {
+    return false;
+  }
   auto users = manager->node_users()[cnode];
   // skip tuple getitem
   for (auto out : users) {
     auto out_node = out.first;
     auto out_user = manager->node_users()[out_node];
+    // check out size aligned 512
+    size_t out_size = GetOutputMemSize(out_node, 0);
+    if (out_size % kAlignSize != 0) {
+      return false;
+    }
     for (auto out_out : out_user) {
       auto out_out_node = out_out.first;
       if (!out_out_node->cast<CNodePtr>()) {
-        continue;
+        return false;
       }
       // need check optype when make it common : GetKernelType(out_out_node) != OPAPI_KERNEL
       auto name = AnfUtils::GetCNodeName(out_out_node);

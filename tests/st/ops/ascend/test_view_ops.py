@@ -36,7 +36,7 @@ class Net(nn.Cell):
 class NetSplit(nn.Cell):
     def __init__(self):
         super(NetSplit, self).__init__()
-        self.split = P.Split(1, 2)
+        self.split = P.Split(0, 2)
         self.matmul = P.MatMul()
 
     def construct(self, x):
@@ -89,12 +89,12 @@ def test_split_view():
     Description: test the Transpose kernel, with view operation.
     Expectation: the output is same with numpy
     """
-    x = np.random.rand(128, 256).astype(np.float32) / 10
+    x = np.random.rand(256, 128).astype(np.float32) / 10
 
     net = NetSplit()
     out = net(Tensor(x))
 
-    a, b = np.split(x, 2, 1)
+    a, b = np.split(x, 2, 0)
     out_np = np.matmul(a, b)
     assert np.allclose(out.asnumpy(), out_np, rtol=10e-4, atol=10e-4)
 
@@ -108,9 +108,9 @@ def test_concat_view():
     Description: test the Concat kernel, with view operation.
     Expectation: the output is same with numpy
     """
-    x = np.random.rand(4, 4).astype(np.float32) / 10
-    y = np.random.rand(4, 4).astype(np.float32) / 10
-    z = np.random.rand(4, 4).astype(np.float32) / 10
+    x = np.random.rand(16, 16).astype(np.float32) / 10
+    y = np.random.rand(16, 16).astype(np.float32) / 10
+    z = np.random.rand(16, 16).astype(np.float32) / 10
 
     net = NetCat()
     out = net(Tensor(x), Tensor(y), Tensor(z))

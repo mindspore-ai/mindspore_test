@@ -35,13 +35,15 @@ struct TensorStorageInfo {
         ori_strides(std::move(ori_strides)),
         is_contiguous(is_contiguous) {}
   TensorStorageInfo(std::vector<int64_t> new_shape, std::vector<int64_t> new_strides, size_t new_storage_offset,
-                    std::vector<int64_t> ori_shape, std::vector<int64_t> ori_strides, bool is_contiguous)
+                    std::vector<int64_t> ori_shape, std::vector<int64_t> ori_strides, bool is_contiguous,
+                    size_t ori_size = 0)
       : shape(std::move(new_shape)),
         strides(std::move(new_strides)),
         storage_offset(std::move(new_storage_offset)),
         ori_shape(std::move(ori_shape)),
         ori_strides(std::move(ori_strides)),
-        is_contiguous(is_contiguous) {}
+        is_contiguous(is_contiguous),
+        ori_size(ori_size) {}
 
   template <typename T>
   std::string VectorToString(const std::vector<T> &values) {
@@ -76,6 +78,7 @@ struct TensorStorageInfo {
   std::vector<int64_t> ori_shape;
   std::vector<int64_t> ori_strides;
   bool is_contiguous{false};
+  size_t ori_size{0};
 };
 using TensorStorageInfoPtr = std::shared_ptr<TensorStorageInfo>;
 using TensorStorageInfoPtrList = std::vector<TensorStorageInfoPtr>;

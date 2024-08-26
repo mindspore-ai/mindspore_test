@@ -225,7 +225,14 @@ class DeviceAddress : public mindspore::DeviceSync {
       }
     }
   }
-  size_t GetSize() const { return size(); }
+  size_t GetSize() const {
+    auto kt = kernel_tensor();
+    if (kt && kt->tensor_storage_info() && kt->tensor_storage_info()->is_contiguous &&
+        (kt->tensor_storage_info()->ori_size != 0)) {
+      return kt->tensor_storage_info()->ori_size;
+    }
+    return size();
+  }
   void SetSize(size_t size) { address_common_->size_ = size; }
 
   std::string format() const { return kernel::GetFormatFromEnumToStr(address_common_->format_); }

@@ -311,7 +311,6 @@ class ApiCachePool {
     auto converted_params = transform::ConvertTypes(args..., workspace_size_addr, executor_addr); \
     auto graph_cache = transform::GraphCache(executor, std::move(converted_params));              \
     auto process_cache = transform::ProcessCache(graph_cache);                                    \
-    return std::make_tuple(workspace_size, executor, process_cache, 0);                           \
   }
 
 // First stage for static graph.
