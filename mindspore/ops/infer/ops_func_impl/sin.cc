@@ -30,7 +30,9 @@ BaseShapePtr SinFuncImpl::InferShape(const PrimitivePtr &primitive,
 
 TypePtr SinFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
   auto input_type = input_args[kIndex0]->GetType();
-  auto input_type_id = input_type->cast<TensorTypePtr>()->element()->type_id();
+  auto input_tensor_type = input_type->cast<TensorTypePtr>();
+  MS_EXCEPTION_IF_NULL(input_tensor_type);
+  auto input_type_id = input_tensor_type->element()->type_id();
   static const std::vector<TypeId> int_or_bool = {kNumberTypeUInt8, kNumberTypeInt8,  kNumberTypeInt16,
                                                   kNumberTypeInt32, kNumberTypeInt64, kNumberTypeBool};
   bool is_int_or_bool = std::any_of(int_or_bool.begin(), int_or_bool.end(),
@@ -38,7 +40,7 @@ TypePtr SinFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<
   if (is_int_or_bool) {
     return std::make_shared<TensorType>(kFloat32);
   } else {
-    return input_type->Clone();
+    return input_type;
   }
 }
 TypePtrList SinFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {

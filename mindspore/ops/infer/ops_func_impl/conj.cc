@@ -23,19 +23,14 @@ namespace mindspore {
 namespace ops {
 BaseShapePtr ConjFuncImpl::InferShape(const PrimitivePtr &primitive,
                                       const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(input_args[kIndex0]);
-  auto x_shape = input_args[kIndex0]->GetShape();
-  MS_EXCEPTION_IF_NULL(x_shape);
-  return x_shape->Clone();
+  return input_args[kIndex0]->GetShape()->Clone();
 }
 
 TypePtr ConjFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
   // Valid types: common_valid_types_with_complex.
-  MS_EXCEPTION_IF_NULL(input_args[kIndex0]);
   auto x_type = input_args[kIndex0]->GetType();
-  MS_EXCEPTION_IF_NULL(x_type);
   (void)CheckAndConvertUtils::CheckTensorTypeValid("input", x_type, common_valid_types_with_complex, primitive->name());
-  return x_type->Clone();
+  return x_type;
 }
 }  // namespace ops
 }  // namespace mindspore

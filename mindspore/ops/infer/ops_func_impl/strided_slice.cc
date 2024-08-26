@@ -154,9 +154,7 @@ int64_t ComputeSlicingLength(int64_t start_pos, int64_t end_pos, int64_t strides
 
 SliceInfo GetSliceInfo(const AbstractBasePtr &input_arg, const std::string &arg_name) {
   SliceInfo slice_info;
-  MS_EXCEPTION_IF_NULL(input_arg);
   auto slice_shape = input_arg->GetShape();
-  MS_EXCEPTION_IF_NULL(slice_shape);
   if (slice_shape->isa<abstract::DynamicSequenceShape>()) {
     slice_info.is_rank_unknown = true;
     return slice_info;
@@ -214,7 +212,6 @@ SliceInfo GetSliceInfo(const AbstractBasePtr &input_arg, const std::string &arg_
 }
 
 int64_t GetMaskValue(const AbstractBasePtr &input_arg, const std::string &arg_name) {
-  MS_EXCEPTION_IF_NULL(input_arg);
   auto mask_opt = GetScalarValue<int64_t>(input_arg->GetValue());
   if (MS_UNLIKELY(!mask_opt.has_value())) {
     MS_EXCEPTION(ValueError) << "For 'StridedSlice'," << arg_name << " mask must be constant value.";
@@ -293,7 +290,6 @@ void EllipsisInferShape(const PrimitivePtr &primitive, const ShapeVector &x_shap
   if (!has_ellipsis) {
     return;
   }
-  MS_EXCEPTION_IF_NULL(primitive);
   size_t x_rank = x_shape.size();
   size_t slice_len = begin_v.size();
   (void)CheckAndConvertUtils::CheckInteger("infer", SizeToLong(mask_info.new_axis_pos.size()), kGreaterEqual,
@@ -428,7 +424,6 @@ MaskInfo GetAllMask(const std::vector<AbstractBasePtr> &input_args, const size_t
 
 BaseShapePtr StridedSliceFuncImpl::InferShape(const PrimitivePtr &primitive,
                                               const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
   ShapeVector ret_in_shape;
   const int64_t cor_input_num = 9;
   auto input_len = SizeToLong(input_args.size());
@@ -471,7 +466,6 @@ BaseShapePtr StridedSliceFuncImpl::InferShape(const PrimitivePtr &primitive,
 
 TypePtr StridedSliceFuncImpl::InferType(const PrimitivePtr &primitive,
                                         const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
   const size_t x_index = 0;
   auto x_type = input_args[x_index]->GetType();
   return x_type->Clone();

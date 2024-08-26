@@ -38,7 +38,7 @@ BaseShapePtr LogSoftmaxGradFuncImpl::InferShape(const PrimitivePtr &primitive,
 
 TypePtr LogSoftmaxGradFuncImpl::InferType(const PrimitivePtr &primitive,
                                           const std::vector<AbstractBasePtr> &input_args) const {
-  return input_args[kIndex1]->GetType()->Clone();
+  return input_args[kIndex1]->GetType();
 }
 
 int32_t LogSoftmaxGradFuncImpl::CheckValidation(const PrimitivePtr &primitive,

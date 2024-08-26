@@ -23,18 +23,15 @@ namespace mindspore {
 namespace ops {
 BaseShapePtr CosFuncImpl::InferShape(const PrimitivePtr &primitive,
                                      const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(input_args[kIndex0]);
-  auto input_shape = input_args[kIndex0]->GetShape();
-  MS_EXCEPTION_IF_NULL(input_shape);
-  return input_shape->Clone();
+  return input_args[kIndex0]->GetShape()->Clone();
 }
 
 TypePtr CosFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
   // Valid types: kFloat16, kFloat32, kFloat64, kComplex64, kComplex128.
-  MS_EXCEPTION_IF_NULL(input_args[kIndex0]);
   auto input_type = input_args[kIndex0]->GetType();
-  MS_EXCEPTION_IF_NULL(input_type);
-  auto input_type_id = input_type->cast<TensorTypePtr>()->element()->type_id();
+  auto input_tensor_type = input_type->cast<TensorTypePtr>();
+  MS_EXCEPTION_IF_NULL(input_tensor_type);
+  auto input_type_id = input_tensor_type->element()->type_id();
   static const std::vector<TypeId> int_or_bool = {kNumberTypeUInt8, kNumberTypeInt8,  kNumberTypeInt16,
                                                   kNumberTypeInt32, kNumberTypeInt64, kNumberTypeBool};
   bool is_int_or_bool = std::any_of(int_or_bool.begin(), int_or_bool.end(),
@@ -42,7 +39,7 @@ TypePtr CosFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<
   if (is_int_or_bool) {
     return std::make_shared<TensorType>(kFloat32);
   } else {
-    return input_type->Clone();
+    return input_type;
   }
 }
 TypePtrList CosFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {

@@ -33,8 +33,7 @@ BaseShapePtr SolveTriangularFuncImpl::InferShape(const PrimitivePtr &primitive,
   auto a_shape = input_args[kInputIndex0]->GetShape()->GetShapeVector();
   auto b_shape = input_args[kInputIndex1]->GetShape()->GetShapeVector();
   if (IsDynamic(a_shape) || IsDynamic(b_shape)) {
-    auto b_shape_ptr = input_args[kInputIndex1]->GetShape()->Clone();
-    return b_shape_ptr->Clone();
+    return input_args[kInputIndex1]->GetShape()->Clone();
   }
 
   constexpr size_t square_size = 2;
@@ -71,19 +70,16 @@ BaseShapePtr SolveTriangularFuncImpl::InferShape(const PrimitivePtr &primitive,
                              << ". Please make sure that the shape of `a` and `b` be like [a, b, c, ..., N, N] X [a, "
                                 "b, c, ..., N, M] or [a, b, c, ..., N, N] X [a, b, c, ..., N].";
   }
-  auto b_shape_ptr = input_args[kInputIndex1]->GetShape()->Clone();
-  return b_shape_ptr->Clone();
+  return input_args[kInputIndex1]->GetShape()->Clone();
 }
 
 TypePtr SolveTriangularFuncImpl::InferType(const PrimitivePtr &primitive,
                                            const std::vector<AbstractBasePtr> &input_args) const {
   auto op_name = primitive->name();
-  MS_EXCEPTION_IF_NULL(input_args[kInputIndex0]);
   auto input_a_type = input_args[kInputIndex0]->GetType();
   auto a_type_ptr = input_a_type->cast<TensorTypePtr>();
   MS_EXCEPTION_IF_NULL(a_type_ptr);
   auto input_a_type_id = a_type_ptr->element()->type_id();
-  MS_EXCEPTION_IF_NULL(input_args[kInputIndex1]);
   auto input_b_type = input_args[kInputIndex1]->GetType();
   auto b_type_ptr = input_b_type->cast<TensorTypePtr>();
   MS_EXCEPTION_IF_NULL(b_type_ptr);
@@ -111,7 +107,7 @@ TypePtr SolveTriangularFuncImpl::InferType(const PrimitivePtr &primitive,
                 [&input_a_type_id](const TypeId &type_id) { return input_a_type_id == type_id; });
   if (is_type_to_float64) return std::make_shared<TensorType>(kFloat64);
 
-  return input_a_type->Clone();
+  return input_a_type;
 }
 }  // namespace ops
 }  // namespace mindspore

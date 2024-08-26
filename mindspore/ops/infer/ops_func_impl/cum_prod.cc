@@ -35,9 +35,7 @@ BaseShapePtr CumProdFuncImpl::InferShape(const PrimitivePtr &primitive,
   }
   auto rank = SizeToLong(x_shape_vec.size());
   (void)CheckAndConvertUtils::CheckInteger("rank of 'x'", rank, kGreaterThan, 0, primitive->name());
-  auto axis_ptr = input_args[kIndex1];
-  MS_EXCEPTION_IF_NULL(axis_ptr);
-  auto axis = axis_ptr->GetValue();
+  auto axis = input_args[kIndex1]->GetValue();
   auto axis_opt = GetScalarValue<int64_t>(axis);
   if (axis_opt.has_value()) {
     auto axis_value = axis_opt.value();
@@ -50,8 +48,7 @@ BaseShapePtr CumProdFuncImpl::InferShape(const PrimitivePtr &primitive,
 
 TypePtr CumProdFuncImpl::InferType(const PrimitivePtr &primitive,
                                    const std::vector<AbstractBasePtr> &input_args) const {
-  auto x_type = input_args[kInputIndex0]->GetType();
-  return x_type->Clone();
+  return input_args[kInputIndex0]->GetType();
 }
 
 class OPS_API CumProdFrontendFuncImpl : public OpFrontendFuncImpl {

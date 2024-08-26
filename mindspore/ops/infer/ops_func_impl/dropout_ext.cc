@@ -25,6 +25,7 @@ namespace mindspore {
 namespace ops {
 int64_t CalMaskShape(const PrimitivePtr &primitive, const ShapeVector &shape_vec) {
   constexpr int64_t kDropoutGenMaskMaskConvertLen = 128;
+  constexpr int64_t kUint8OfDropoutGenMaskMaskConvertLen = 16;
   int64_t count = 1;
   for (size_t i = 0; i < shape_vec.size(); i++) {
     auto dim_value = shape_vec[i];
@@ -44,7 +45,7 @@ int64_t CalMaskShape(const PrimitivePtr &primitive, const ShapeVector &shape_vec
   if ((count % kDropoutGenMaskMaskConvertLen) != 0) {
     n128s++;
   }
-  int64_t bytes_count = n128s * 16;
+  int64_t bytes_count = n128s * kUint8OfDropoutGenMaskMaskConvertLen;
 
   return bytes_count;
 }
