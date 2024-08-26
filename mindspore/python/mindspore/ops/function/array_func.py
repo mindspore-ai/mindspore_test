@@ -724,7 +724,7 @@ def fill(type, shape, value):  # pylint: disable=redefined-outer-name
             `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_ and
             `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_ .
         shape (Union(Tensor, tuple[int])): The specified shape of output tensor.
-        value (Union(Tensor, number.Number, bool)): Value to fill the returned tensor.
+        value (Union(Tensor, numbers.Number, bool)): Value to fill the returned tensor.
 
     Returns:
         Tensor.
@@ -758,7 +758,7 @@ def full(size, fill_value, *, dtype=None):  # pylint: disable=redefined-outer-na
 
     Args:
         size (Union(tuple[int], list[int])): The specified shape of output tensor.
-        fill_value (number.Number): Value to fill the returned tensor. Complex numbers are not supported for now.
+        fill_value (numbers.Number): Value to fill the returned tensor. Complex numbers are not supported for now.
 
     Keyword Args:
         dtype (mindspore.dtype): The specified type of output tensor. `bool_` and `number` are supported, for details,
@@ -803,7 +803,7 @@ def full_ext(size, fill_value, *, dtype=None):  # pylint: disable=redefined-oute
 
     Args:
         size (Union(tuple[int], list[int])): The specified shape of output tensor.
-        fill_value (Union(number.Number, Tensor)): Value to fill the returned tensor. It can be a Scalar number, a 0-D
+        fill_value (Union(numbers.Number, Tensor)): Value to fill the returned tensor. It can be a Scalar number, a 0-D
             Tensor, or a 1-D Tensor with only one element.
 
     Keyword Args:

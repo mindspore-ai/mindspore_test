@@ -14,19 +14,19 @@ sub:
               consistent.
 
         Args:
-            input (Union[Tensor, number.Number, bool]): The first input is a number.Number or
+            input (Union[Tensor, numbers.Number, bool]): The first input is a numbers.Number or
                 a bool or a tensor whose data type is
                 `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_ or
                 `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_.
-            other (Union[Tensor, number.Number, bool]): The second input, when the first input is a Tensor,
-                the second input should be a number.Number or bool value, or a Tensor whose data type is number or bool.
+            other (Union[Tensor, numbers.Number, bool]): The second input, when the first input is a Tensor,
+                the second input should be a numbers.Number or bool value, or a Tensor whose data type is number or bool.
 
         Returns:
             Tensor with a shape that is the same as the broadcasted shape of the input `input` and `other`,
             and the data type is the one with higher precision or higher digits among the two inputs.
 
         Raises:
-            TypeError: If `input` and `other` are not number.Number or bool or Tensor.
+            TypeError: If `input` and `other` are not numbers.Number or bool or Tensor.
 
         Supported Platforms:
             ``Ascend`` ``GPU`` ``CPU``

@@ -23,4 +23,4 @@ mindspore.ops.floor_divide
         Tensor，输出的shape与广播后的shape相同，数据类型取两个输入中精度较高或数字较高的。
 
     异常：
-        - **TypeError** - 如果 `input` 和 `other` 不是以下之一: Tensor，number.Number或bool。
+        - **TypeError** - 如果 `input` 和 `other` 不是以下之一: Tensor，numbers.Number或bool。

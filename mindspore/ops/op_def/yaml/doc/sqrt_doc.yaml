@@ -7,7 +7,7 @@ sqrt:
             out_{i} = \sqrt{x_{i}}
     
         Args:
-            x (Tensor): The input tensor with a dtype of number.Number.
+            x (Tensor): The input tensor with a dtype of numbers.Number.
         
         Returns:
             Tensor, has the same shape as the `x`.

@@ -13,11 +13,11 @@ div:
               consistent.
     
         Inputs:
-            - **x** (Union[Tensor, number.Number, bool]) - The first input is a number.Number or
+            - **x** (Union[Tensor, numbers.Number, bool]) - The first input is a numbers.Number or
               a bool or a tensor whose data type is
               `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_ or
               `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_.
-            - **y** (Union[Tensor, number.Number, bool]) - The second input is a number.Number or
+            - **y** (Union[Tensor, numbers.Number, bool]) - The second input is a numbers.Number or
               a bool or a tensor whose data type is 
               `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_ or
               `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_.
