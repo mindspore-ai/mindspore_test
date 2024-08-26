@@ -669,7 +669,7 @@ def where(condition, x=None, y=None):
 
     Note:
         As nonzero is not supported, both `x` and `y` must be provided Tensor
-    input.
+        input.
 
     Args:
         condition (Tensor): where True, yield `x`, otherwise yield `y`.
