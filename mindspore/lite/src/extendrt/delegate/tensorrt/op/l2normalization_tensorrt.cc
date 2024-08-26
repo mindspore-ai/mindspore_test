@@ -62,7 +62,10 @@ int L2NormalizationTensorRT::AddInnerOp(TensorRTContext *ctx) {
   if (input_tensor->getType() != nvinfer1::DataType::kFLOAT) {
     ep = TRTTensorCast(ctx, ep, input_tensor->getType(), op_name_ + "_cast_epsilon");
   }
-
+  if (ep == nullptr) {
+    MS_LOG(ERROR) << "ep is nullptr!";
+    return RET_ERROR;
+  }
   auto norm = ctx->network()->addElementWise(*sum, *ep, nvinfer1::ElementWiseOperation::kMAX)->getOutput(0);
   norm = ctx->network()->addUnary(*norm, nvinfer1::UnaryOperation::kSQRT)->getOutput(0);
   auto div_layer = ctx->network()->addElementWise(*input_tensor, *norm, nvinfer1::ElementWiseOperation::kDIV);

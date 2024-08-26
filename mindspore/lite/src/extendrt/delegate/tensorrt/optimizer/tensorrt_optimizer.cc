@@ -43,6 +43,10 @@ tensor::TensorPtr TensorRtOptimizer::GetParameterValue(const CNodePtr &node, siz
 
 std::vector<int32_t> TensorRtOptimizer::GetParameterIntValue(const CNodePtr &node, size_t parameter_index) {
   auto tensor = GetParameterValue(node, parameter_index);
+  if (tensor == nullptr) {
+    MS_LOG(ERROR) << "tensor is nullptr!";
+    return {};
+  }
   auto elem_num = tensor->ElementsNum();
   if (elem_num < 1) {
     return {};
@@ -71,6 +75,10 @@ std::vector<int32_t> TensorRtOptimizer::GetParameterIntValue(const CNodePtr &nod
 
 std::vector<float> TensorRtOptimizer::GetParameterFloatValue(const CNodePtr &node, size_t parameter_index) {
   auto tensor = GetParameterValue(node, parameter_index);
+  if (tensor == nullptr) {
+    MS_LOG(ERROR) << "tensor is nullptr!";
+    return {};
+  }
   auto elem_num = tensor->ElementsNum();
   if (elem_num < 1) {
     return {};

@@ -127,6 +127,7 @@ int ResizeTensorRT::SetOutputDims(TensorRTContext *ctx, nvinfer1::ITensor *resiz
         auto nchw = concat_layer->getOutput(0);
         CHECK_NULL_RETURN(nchw);
         nchw = TRTTensorCast(ctx, nchw, nvinfer1::DataType::kINT32, op_name_ + "_input_nchw_to_int32");
+        CHECK_NULL_RETURN(nchw);
         resize_layer->setInput(1, *nchw);
       }
     } else {

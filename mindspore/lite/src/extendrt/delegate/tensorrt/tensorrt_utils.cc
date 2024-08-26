@@ -518,6 +518,10 @@ nvinfer1::ITensor *TRTTensorCast(TensorRTContext *ctx, nvinfer1::ITensor *trt_te
     auto plugin = std::make_shared<CastPlugin>(name, data_type);
     nvinfer1::ITensor *inputTensors[] = {trt_tensor};
     nvinfer1::IPluginV2Layer *cast_layer = ctx->network()->addPluginV2(inputTensors, 1, *plugin);
+    if (cast_layer == nullptr) {
+      MS_LOG(ERROR) << "cast_layer is nullptr!";
+      return nullptr;
+    }
     cast_layer->setName(name.c_str());
     nvinfer1::ITensor *cast_out = cast_layer->getOutput(0);
     cast_out->setName((name + "_output").c_str());
