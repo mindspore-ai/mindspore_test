@@ -85,12 +85,12 @@ def is_third_party(func_obj):
     # A module without __file__ attribute (normally to be a c++ lib) is considered to be third party module.
     if not hasattr(module, '__file__'):
         return True
-    module_path = os.path.abspath(module.__file__)
+    module_path = os.path.realpath(module.__file__)
     for path in _ignore_third_party_paths:
         if module_path.startswith(path):
             return False
     # Python builtin modules are treated as third-party libraries.
-    python_builtin_dir = os.path.abspath(os.path.dirname(os.__file__))
+    python_builtin_dir = os.path.realpath(os.path.dirname(os.__file__))
     if module_path.startswith(python_builtin_dir):
         return True
     # Check if module is under user workspace directory.
@@ -106,7 +106,7 @@ def is_third_party(func_obj):
 
 def get_top_level_module_path(module_path):
     """Get the path of the top level package of the current working directory."""
-    module_abspath = os.path.abspath(module_path)
+    module_abspath = os.path.realpath(module_path)
     upper_path = os.path.abspath(os.path.dirname(module_abspath))
     if module_abspath == upper_path:
         return module_abspath

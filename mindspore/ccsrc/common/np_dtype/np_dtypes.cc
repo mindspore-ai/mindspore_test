@@ -114,6 +114,10 @@ int NpTypeDescr<double>::np_type_num = NPY_ULONG;
 template <>
 int NpTypeDescr<long double>::np_type_num = NPY_LONGDOUBLE;
 
+inline bool IsFloatEqual(const float &a, const float &b) {
+  return (std::fabs(a - b) <= std::numeric_limits<float>::epsilon());
+}
+
 // Check if object is specific numpy custom type.
 template <typename T>
 bool PyType_CheckType(PyObject *object) {
@@ -317,20 +321,20 @@ struct Divide {
   T operator()(T a, T b) { return a / b; }
 };
 inline std::pair<float, float> divmod(float a, float b) {
-  if (b == 0.0f) {
+  if (IsFloatEqual(b, 0.0f)) {
     float nan = std::numeric_limits<float>::quiet_NaN();
     return {nan, nan};
   }
   float mod = std::fmod(a, b);
   float div = (a - mod) / b;
-  if (mod == 0.0f) {
+  if (IsFloatEqual(mod, 0.0f)) {
     mod = std::copysign(0.0f, b);
   } else if ((b < 0.0f) != (mod < 0.0f)) {
     mod += b;
     div -= 1.0f;
   }
   float floor_div;
-  if (div != 0.0f) {
+  if (!IsFloatEqual(div, 0.0f)) {
     floor_div = std::floor(div);
     if (div - floor_div > 0.5f) {
       floor_div += 1.0f;
@@ -484,7 +488,7 @@ struct LogAddExp {
   T operator()(T a, T b) {
     float x = static_cast<float>(a);
     float y = static_cast<float>(b);
-    if (x == y) {
+    if (IsFloatEqual(x, y)) {
       return T(x + std::log(2.0f));
     }
     float out = std::numeric_limits<float>::quiet_NaN();
@@ -501,7 +505,7 @@ struct LogAddExp2 {
   T operator()(T a, T b) {
     float x = static_cast<float>(a);
     float y = static_cast<float>(b);
-    if (x == y) {
+    if (IsFloatEqual(x, y)) {
       return T(x + 1.0f);
     }
     float out = std::numeric_limits<float>::quiet_NaN();

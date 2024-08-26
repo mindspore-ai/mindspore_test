@@ -74,9 +74,9 @@ class OnRequestExit(Callback):
         if self.save_ckpt or self.save_mindir:
             file_name = Validator.check_isinstance('file_name', file_name, str)
             directory = Validator.check_isinstance('directory', directory, str)
-            os.makedirs(os.path.abspath(directory), exist_ok=True)
-            self.train_file_path = os.path.abspath(os.path.join(directory, f"{file_name}_train"))
-            self.eval_file_path = os.path.abspath(os.path.join(directory, f"{file_name}_eval"))
+            os.makedirs(os.path.realpath(directory), exist_ok=True)
+            self.train_file_path = os.path.realpath(os.path.join(directory, f"{file_name}_train"))
+            self.eval_file_path = os.path.realpath(os.path.join(directory, f"{file_name}_eval"))
         self.sig = Validator.check_isinstance('sig', sig, int)
         if hasattr(signal, "SIGKILL") and self.sig == signal.SIGKILL:
             raise ValueError("Not support send exit request by signal SIGKILL.")
