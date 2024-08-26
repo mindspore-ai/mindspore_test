@@ -1594,6 +1594,15 @@ ValuePtr MSANFModelParser::ObtainValueInSequenceForm(const mind_ir::AttributePro
         (void)vec.emplace_back(sequence_value);
         break;
       }
+      case mind_ir::AttributeProto_AttributeType_DICT: {
+        auto dict_value = ObtainValueInDictionaryForm(elem_attr_proto);
+        if (dict_value == nullptr) {
+          MS_LOG(ERROR) << "Failed to get the dict value";
+          return nullptr;
+        }
+        (void)vec.emplace_back(dict_value);
+        break;
+      }
       default: {
         // For string and scalar.
         auto scalar_value = ParseAttrInScalarForm(elem_attr_proto, 0);

@@ -62,6 +62,53 @@ TEST_F(TestLoadExport, DISABLED_test_export_attr) {
   ASSERT_TRUE(GetValue<bool>(test_primal_attr));
 }
 
+/// Feature: MindIR node attribute export and load.
+/// Description: Node attribute export and load.
+/// Expectation: success.
+TEST_F(TestLoadExport, test_export_attr_contain_dict) {
+  auto func_graph = getPyFun.CallAndParseRet("export_test", "add_node_attr_test");
+  tensor::TensorPtr t = std::make_shared<tensor::Tensor>(kFloat32->type_id(), std::vector<int64_t>{1, 2, 3});
+
+  // Renormalize func_graph to infer and set shape and type information.
+  std::vector<FuncGraphPtr> graphs{func_graph};
+  FuncGraphManagerPtr manager = std::make_shared<FuncGraphManager>(graphs);
+  manager->AddFuncGraph(func_graph);
+  pipeline::ResourcePtr resource_ = std::make_shared<pipeline::Resource>();
+  auto graph = pipeline::Renormalize(resource_, func_graph, {t->ToAbstract()});
+
+  auto export_return_node = graph->output();
+  auto export_relu = export_return_node->cast<CNodePtr>();
+  std::vector<std::pair<ValuePtr, ValuePtr>> key_values;
+  key_values.emplace_back(std::make_pair(MakeValue("a"), MakeValue<int64_t>(1)));
+  key_values.emplace_back(std::make_pair(MakeValue("b"), MakeValue(std::vector<int64_t>{1, 2, 3})));
+  auto dict = std::make_shared<ValueDictionary>(key_values);
+  auto tuple = std::make_shared<ValueTuple>(std::vector<ValuePtr>{MakeValue<int64_t>(2), dict});
+  export_relu->AddPrimalAttr("TestPrimalAttr", tuple);
+
+  auto model_string = GetBinaryProtoString(graph);
+  ASSERT_NE(model_string, "");
+  MindIRLoader mindir_loader;
+  FuncGraphPtr dstgraph_ptr = mindir_loader.LoadMindIR(model_string.c_str(), model_string.size());
+  ASSERT_NE(dstgraph_ptr, nullptr);
+  auto return_node = dstgraph_ptr->output();
+  auto load_relu = return_node->cast<CNodePtr>();
+  ASSERT_TRUE(load_relu->HasPrimalAttr("TestPrimalAttr"));
+  auto test_primal_attr = load_relu->GetPrimalAttr("TestPrimalAttr");
+  auto value_tuple = test_primal_attr->cast<ValueTuplePtr>();
+  ASSERT_NE(value_tuple, nullptr);
+  ASSERT_EQ(value_tuple->size(), 2);
+  ASSERT_EQ(GetValue<int64_t>(value_tuple->value()[0]), 2);
+  auto value_dict = value_tuple->value()[1]->cast<ValueDictionaryPtr>();
+  ASSERT_NE(value_dict, nullptr);
+  auto dict_key_values = value_dict->value();
+  ASSERT_EQ(dict_key_values.size(), 2);
+  ASSERT_EQ(GetValue<std::string>(dict_key_values[0].first), "a");
+  ASSERT_EQ(GetValue<int64_t>(dict_key_values[0].second), 1);
+  ASSERT_EQ(GetValue<std::string>(dict_key_values[1].first), "b");
+  std::vector<int64_t> expect{1, 2, 3};
+  ASSERT_EQ(GetValue<std::vector<int64_t>>(dict_key_values[1].second), expect);
+}
+
 /// Feature: MindIR export abstract scalar.
 /// Description: abstract scalar export and load.
 /// Expectation: success.
