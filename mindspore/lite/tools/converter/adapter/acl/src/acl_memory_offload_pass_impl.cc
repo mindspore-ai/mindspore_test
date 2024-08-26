@@ -54,6 +54,7 @@ FuncGraphPtr AclMemoryOffloadPassImpl::CreateSingleOpFuncGraph(const CNodePtr &c
     new_inputs.push_back(om_parameter);
   }
   auto newnode = dstGraph->NewCNode(prim, new_inputs);
+  MS_CHECK_TRUE_MSG(newnode != nullptr, nullptr, "create new cnode failed.");
 
   newnode->set_abstract(cnode->abstract());
   newnode->set_forward(cnode->forward().first, cnode->forward().second);
@@ -64,7 +65,6 @@ FuncGraphPtr AclMemoryOffloadPassImpl::CreateSingleOpFuncGraph(const CNodePtr &c
   newnode->set_primal_debug_infos(cnode->primal_debug_infos());
   newnode->set_fused_debug_infos(cnode->fused_debug_infos());
 
-  MS_CHECK_TRUE_MSG(newnode != nullptr, nullptr, "create new cnode failed.");
   return dstGraph;
 }
 

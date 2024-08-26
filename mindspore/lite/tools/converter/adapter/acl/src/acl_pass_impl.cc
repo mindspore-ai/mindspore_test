@@ -121,7 +121,7 @@ const std::set<std::string> kSocVersionForAscendCFA = {"Ascend910B1", "Ascend910
                                                        "Ascend910B3", "Ascend910B4", "Ascend310P3"};
 
 STATUS ModifyCNodeFormat(const FuncGraphPtr &func_graph, Format format) {
-  MS_ASSERT(func_graph != nullptr);
+  CHECK_NULL_RETURN(func_graph);
   auto node_list = TopoSort(func_graph->get_return());
   for (auto &node : node_list) {
     if (!utils::isa<CNodePtr>(node)) {
@@ -142,6 +142,7 @@ STATUS ModifyCNodeFormat(const FuncGraphPtr &func_graph, Format format) {
 }
 
 STATUS PreProcForMindIr(const FuncGraphPtr &func_graph, bool offline) {
+  CHECK_NULL_RETURN(func_graph);
   auto value = func_graph->get_attr(ops::kFormat);
   if (value == nullptr || GetValue<int64_t>(value) == mindspore::NCHW) {
     return lite::RET_OK;
@@ -160,6 +161,7 @@ STATUS PreProcForMindIr(const FuncGraphPtr &func_graph, bool offline) {
 }
 
 STATUS PreProcForTF(const FuncGraphPtr &func_graph, bool offline) {
+  CHECK_NULL_RETURN(func_graph);
   if (offline) {
     if (!lite::RunOptimizerPass(func_graph, {kInferShapePass})) {
       MS_LOG(ERROR) << "Infer shape pass failed.";
@@ -188,6 +190,7 @@ STATUS PreProcForTF(const FuncGraphPtr &func_graph, bool offline) {
 }
 
 STATUS PreProcForCaffe(const FuncGraphPtr &func_graph, bool offline) {
+  CHECK_NULL_RETURN(func_graph);
   if (offline) {
     if (!lite::RunOptimizerPass(func_graph, {kInferShapePass})) {
       MS_LOG(ERROR) << "Infer shape pass failed.";
@@ -202,6 +205,7 @@ STATUS PreProcForCaffe(const FuncGraphPtr &func_graph, bool offline) {
 }
 
 STATUS PreProcForOnnx(const FuncGraphPtr &func_graph, bool offline) {
+  CHECK_NULL_RETURN(func_graph);
   if (offline) {
     if (!lite::RunOptimizerPass(func_graph, {kInferShapePass})) {
       MS_LOG(ERROR) << "Infer shape pass failed.";
@@ -272,6 +276,8 @@ STATUS AclPassImpl::RemoveSingleInputConcatNode(const FuncGraphPtr &func_graph) 
 }
 
 STATUS AclPassImpl::CommonPass(const FuncGraphPtr &func_graph) {
+  CHECK_NULL_RETURN(func_graph);
+  CHECK_NULL_RETURN(param_);
   if (param_->provider == "ge") {
     MS_LOG(INFO) << "The provider is GE. It will dont run common pass.";
     return lite::RET_OK;
@@ -305,8 +311,8 @@ STATUS AclPassImpl::CommonPass(const FuncGraphPtr &func_graph) {
 // To:
 //   MakeTuple(arg1, arg2, ...)
 static AnfNodePtr ConvertMakeListToMakeTuple(const CNodePtr &node) {
-  MS_EXCEPTION_IF_NULL(node);
-  MS_EXCEPTION_IF_NULL(node->func_graph());
+  MS_CHECK_TRUE_RET(node != nullptr, nullptr);
+  MS_CHECK_TRUE_RET(node->func_graph() != nullptr, nullptr);
 
   std::vector<AnfNodePtr> inputs;
   inputs.reserve(node->size());
@@ -321,8 +327,8 @@ static AnfNodePtr ConvertMakeListToMakeTuple(const CNodePtr &node) {
 // To:
 //   TupleGetItem(list, key)
 static AnfNodePtr ConvertListGetItemToTupleGetItem(const CNodePtr &node) {
-  MS_EXCEPTION_IF_NULL(node);
-  MS_EXCEPTION_IF_NULL(node->func_graph());
+  MS_CHECK_TRUE_RET(node != nullptr, nullptr);
+  MS_CHECK_TRUE_RET(node->func_graph() != nullptr, nullptr);
 
   // Inputs should be [list_getitem, list, item]
   constexpr size_t expect_inputs_size = 3;
@@ -344,8 +350,8 @@ static AnfNodePtr ConvertListGetItemToTupleGetItem(const CNodePtr &node) {
 // To:
 //   TupleSetItem(list, index, item)
 static AnfNodePtr ConvertListSetItemToTupleSetItem(const CNodePtr &node) {
-  MS_EXCEPTION_IF_NULL(node);
-  MS_EXCEPTION_IF_NULL(node->func_graph());
+  MS_CHECK_TRUE_RET(node != nullptr, nullptr);
+  MS_CHECK_TRUE_RET(node->func_graph() != nullptr, nullptr);
 
   // Inputs should be [list_setitem, list, index, item]
   const size_t expect_inputs_size = 4;
@@ -378,8 +384,8 @@ static AnfNodePtr ConvertMakeListPrimitiveCNode(const CNodePtr &cnode, const Pri
 
 static constexpr size_t kMaxSeqRecursiveDepth = 6;
 static ValuePtr ConvertValueSequenceToValueTuple(const ValuePtr &value, size_t depth, bool *need_convert) {
-  MS_EXCEPTION_IF_NULL(need_convert);
-  MS_EXCEPTION_IF_NULL(value);
+  MS_CHECK_TRUE_RET(need_convert != nullptr, nullptr);
+  MS_CHECK_TRUE_RET(value != nullptr, nullptr);
   if (depth > kMaxSeqRecursiveDepth) {
     MS_LOG(EXCEPTION) << "List nesting is not allowed more than " << kMaxSeqRecursiveDepth << " levels.";
   }

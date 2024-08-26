@@ -26,7 +26,7 @@
 namespace mindspore::lite {
 namespace {
 CNodePtr NewReshapeOpNode(const FuncGraphPtr &func_graph, const AnfNodePtr &input_node, const AnfNodePtr &shape_node) {
-  MS_ASSERT(func_graph != nullptr && input_node != nullptr && shape_node != nullptr);
+  MS_CHECK_TRUE_RET((func_graph != nullptr) && (input_node != nullptr) && (shape_node != nullptr), nullptr);
   auto reshape_prim = std::make_shared<ops::Reshape>();
   if (reshape_prim == nullptr) {
     MS_LOG(ERROR) << "create reshape failed.";
@@ -79,7 +79,7 @@ CNodePtr NewShapeOpNode(const FuncGraphPtr &func_graph, const AnfNodePtr &input_
  *
  */
 bool OnnxDeformConv2dAdjust::Adjust(const FuncGraphPtr &func_graph) {
-  MS_ASSERT(func_graph != nullptr);
+  MS_CHECK_TRUE_RET(func_graph, false);
   auto cnodes = func_graph->GetOrderedCnodes();
   for (auto &cnode : cnodes) {
     if (!opt::CheckPrimitiveType(cnode, prim::kPrimDeformableConv2d)) {

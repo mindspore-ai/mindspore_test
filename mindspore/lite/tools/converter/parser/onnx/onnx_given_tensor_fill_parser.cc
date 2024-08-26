@@ -28,7 +28,7 @@ namespace lite {
 namespace {
 STATUS ParseInt8GivenIntTensorFill(const onnx::NodeProto &onnx_node, PrimitiveCPtr prim,
                                    const std::vector<int> &shape) {
-  MS_ASSERT(prim != nullptr);
+  CHECK_NULL_RETURN(prim);
   int data_count = 1;
   for (size_t i = 0; i < shape.size(); i++) {
     MS_CHECK_GE(shape.at(i), 0, RET_ERROR);
