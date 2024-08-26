@@ -13,6 +13,7 @@ mindspore.reshard
         - 自动并行模式（auto_parallel）下，如果搜索模式（search_mode）不为"sharding_propagation"，则报错。
         - 半自动并行模式（semi_auto_parallel）下，会自动设置为"auto_parallel"且搜索模式自动设置为
           "sharding_propagation"。
+        - 通过mindspore.Layout类型配reshard的策略时，暂不支持配多维切分、多副本切分。
 
     参数：
         - **tensor** (Tensor) - 待设置切分策略的张量。
