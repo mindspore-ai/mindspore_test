@@ -80,9 +80,14 @@ int HcomReceiveKernel::ReceiveShapeForDynamic() {
       primitive_->HasAttr(kAttrSrcGlobalRank) ? GetValue<int64_t>(primitive_->GetAttr(kAttrSrcGlobalRank)) : src_rank_;
     std::string inter_process_edge_name = std::to_string(src_global_rank) + "_" + std::to_string(dst_rank) + "_tag_" +
                                           std::to_string(sr_tag) + "_rpc_addr";  // rpc addr
-    MS_LOG(INFO) << "Start server for recv actor. Server address: " << server_url
-                 << ", remote function id: " << kRemoteFuncId
-                 << ", inter-process edge name: " << inter_process_edge_name;
+    if (primitive_->HasAttr("RING_ATTENTION_INDEX")) {
+      inter_process_edge_name =
+        inter_process_edge_name + "_" + GetValue<std::string>(primitive_->GetAttr("RING_ATTENTION_INDEX"));
+    }
+
+    MS_LOG(ERROR) << "Start server for recv actor. Server address: " << server_url
+                  << ", remote function id: " << kRemoteFuncId
+                  << ", inter-process edge name: " << inter_process_edge_name;
     distributed::cluster::topology::ActorAddress recv_actor_addresss;
     recv_actor_addresss.set_actor_id(inter_process_edge_name);
     recv_actor_addresss.set_ip(ip);
@@ -181,7 +186,7 @@ MessageBase *HcomReceiveKernel::HandleMessage(MessageBase *const msg) {
   // Delete msg manually. Please refer to mindspore/ccsrc/distributed/rpc/tcp/connection.cc::473 for the reason.
   delete msg;
 
-  std::lock_guard<std::mutex> lock(mtx_);
+  std::unique_lock<std::mutex> lock(mtx_);
   recv_shape_ = recv_shape;
   has_received_msg_ = true;
   cv_.notify_all();

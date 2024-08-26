@@ -66,7 +66,9 @@ int HcomSendKernel::SendShapeForDynamic() {
       primitive_->HasAttr(kAttrDstGlobalRank) ? GetValue<int64_t>(primitive_->GetAttr(kAttrDstGlobalRank)) : dest_rank_;
     std::string server_url_key = std::to_string(src_rank) + "_" + std::to_string(dst_global_rank) + "_tag_" +
                                  std::to_string(sr_tag) + "_rpc_addr";  // rpc addr
-
+    if (primitive_->HasAttr("RING_ATTENTION_INDEX")) {
+      server_url_key = server_url_key + "_" + GetValue<std::string>(primitive_->GetAttr("RING_ATTENTION_INDEX"));
+    }
     auto node = distributed::cluster::ClusterContext::instance()->node();
     MS_EXCEPTION_IF_NULL(node);
     auto cgn = std::dynamic_pointer_cast<distributed::cluster::topology::ComputeGraphNode>(node);
@@ -80,6 +82,7 @@ int HcomSendKernel::SendShapeForDynamic() {
     auto actor_route_table_proxy =
       std::make_shared<mindspore::distributed::cluster::ActorRouteTableProxy>(cgn, int_hccl_timeout * 1000);
     MS_EXCEPTION_IF_NULL(actor_route_table_proxy);
+    MS_LOG(INFO) << "before lookup: " << server_url_key;
     auto peer_actor_address = actor_route_table_proxy->LookupRoute(server_url_key);
     server_url_ = peer_actor_address.ip() + ":" + std::to_string(peer_actor_address.port());
 
@@ -88,7 +91,7 @@ int HcomSendKernel::SendShapeForDynamic() {
     if (!client_->Connect(server_url_, retry_count)) {
       MS_LOG(EXCEPTION) << "Failed to connect to server of actor, server_url: " << server_url_;
     }
-    MS_LOG(INFO) << "server key is " << server_url_key << ", server url is " << server_url_;
+    MS_LOG(INFO) << "after lookup, server key is " << server_url_key << ", server url is " << server_url_;
   }
 
   // rpc 4. send shape
@@ -105,7 +108,7 @@ int HcomSendKernel::SendShapeForDynamic() {
   message->to = AID("", server_url_);
   message->body = msg_str;  // use body to send
 
-  MS_LOG(DEBUG) << "send msg is " << msg_str;
+  MS_LOG(INFO) << "send msg is " << msg_str;
 
   client_->SendAsync(std::move(message));
 
@@ -161,7 +164,6 @@ int HcomSendKernel::Resize(const std::vector<KernelTensor *> &inputs, const std:
   if (!is_dynamic_shape_) {
     return KRET_OK;
   }
-
   SendShapeForDynamic();
   return KRET_OK;
 }
