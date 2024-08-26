@@ -40,7 +40,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "include/common/utils/comm_manager.h"
 #include "utils/ms_context.h"
-#include "utils/parallel_node_check.h"
+#include "frontend/parallel/parallel_node_check.h"
 
 namespace mindspore {
 namespace parallel {

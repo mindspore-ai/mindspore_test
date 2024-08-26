@@ -35,7 +35,6 @@
 #include "mindapi/base/format.h"
 #include "mindapi/base/type_id.h"
 #include "mindapi/base/types.h"
-#include "mindspore/ops/op_def/op_name.h"
 #include "utils/convert_utils_base.h"
 #include "utils/ms_context.h"
 #include "utils/value_utils.h"
@@ -102,28 +101,33 @@ AttrConverterPair DataFormatConverter(DataFormatToEnumMap, DataFormatToStrMap);
 AttrConverterPair PadModeConverter(PadModToEnumMap, PadModToStrMap);
 AttrConverterPair PadModeUpperConverter(PadModToEnumUpperMap, PadModToStrUpperMap);
 AttrConverterPair ReductionConverter(ReductionToEnumMap, ReductionToStrMap);
-
+namespace {
+constexpr auto kFormat = "format";
+constexpr auto kPadMode = "pad_mode";
+constexpr auto kDataFormat = "data_format";
+constexpr auto kReduction = "reduction";
+}  // namespace
 static std::map<std::string, AttrConverterPair> FormatAndPadAttrMap = {
-  {ops::kFormat, DataFormatConverter},
-  {ops::kPadMode, PadModeConverter},
+  {kFormat, DataFormatConverter},
+  {kPadMode, PadModeConverter},
 };
 
 static std::map<std::string, AttrConverterPair> FormatAndPadUpperAttrMap = {
-  {ops::kFormat, DataFormatConverter},
-  {ops::kPadMode, PadModeUpperConverter},
+  {kFormat, DataFormatConverter},
+  {kPadMode, PadModeUpperConverter},
 };
 
 static std::map<std::string, AttrConverterPair> DataFormatMap = {
-  {ops::kFormat, DataFormatConverter},
+  {kFormat, DataFormatConverter},
 };
 
 static std::map<std::string, AttrConverterPair> FormatAndDataFormatMap = {
-  {ops::kFormat, DataFormatConverter},
-  {ops::kDataFormat, DataFormatConverter},
+  {kFormat, DataFormatConverter},
+  {kDataFormat, DataFormatConverter},
 };
 
 static std::map<std::string, AttrConverterPair> ReductionMap = {
-  {ops::kReduction, ReductionConverter},
+  {kReduction, ReductionConverter},
 };
 
 static std::map<std::string, std::map<std::string, AttrConverterPair>> PrimAttrConvertMap = {
@@ -310,7 +314,7 @@ void CheckAndConvertUtils::GetFormatStringVal(const PrimitivePtr &prim, std::str
     MS_LOG(DEBUG) << "Prim or format is nullptr.";
     return;
   }
-  auto value_ptr = prim->GetAttr(ops::kFormat);
+  auto value_ptr = prim->GetAttr(kFormat);
   if (value_ptr == nullptr) {
     MS_LOG(DEBUG) << "Val is nullptr! op type = " << prim->name();
     return;

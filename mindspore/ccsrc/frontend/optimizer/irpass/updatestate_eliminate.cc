@@ -28,7 +28,7 @@
 #include "frontend/optimizer/irpass.h"
 #include "frontend/optimizer/optimizer_caller.h"
 #include "frontend/optimizer/anf_visitor.h"
-#include "ir/pattern_matcher.h"
+#include "frontend/optimizer/pattern_matcher.h"
 
 namespace mindspore::opt::irpass {
 namespace {

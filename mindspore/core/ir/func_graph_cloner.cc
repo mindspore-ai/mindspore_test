@@ -21,12 +21,10 @@
 #include "abstract/abstract_function.h"
 #include "ir/graph_utils.h"
 #include "ir/manager.h"
-#include "mindspore/ops/op_def/framework_ops.h"
-#include "mindspore/ops/op_def/sequence_ops.h"
+#include "ir/core_ops_primitive.h"
 #include "utils/convert_utils_base.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
-#include "utils/parallel_node_check.h"
 #include "utils/profile.h"
 #include "utils/trace_base.h"
 

@@ -25,7 +25,7 @@
 #include <string>
 
 #include "utils/hash_map.h"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "ir/core_ops_primitive.h"
 #include "ir/anf.h"
 #include "ir/func_graph.h"
 #include "abstract/abstract_value.h"

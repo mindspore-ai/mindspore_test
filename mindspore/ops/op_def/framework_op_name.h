@@ -16,6 +16,7 @@
 
 #ifndef MINDSPORE_CORE_BASE_FRAMEWORK_OP_NAME_H_
 #define MINDSPORE_CORE_BASE_FRAMEWORK_OP_NAME_H_
+#include "ir/core_ops_name.h"
 namespace mindspore {
 constexpr auto kGatherOpName = "Gather";
 
@@ -27,15 +28,9 @@ constexpr auto kNoRepeatNGramOpName = "NoRepeatNGram";
 constexpr auto kSearchSortedOpName = "SearchSorted";
 
 // Meta Function Graph
-constexpr auto kJOpName = "J";
-constexpr auto kVmapOpName = "Vmap";
-constexpr auto kTaylorOpName = "Taylor";
 
 // Others
-constexpr auto kLoadOpName = "Load";
-constexpr auto kDependOpName = "Depend";
 constexpr auto kidentityOpName = "identity";
-constexpr auto kEnvironCreateOpName = "EnvironCreate";
 constexpr auto kEnvironSetOpName = "EnvironSet";
 constexpr auto kEnvironGetOpName = "EnvironGet";
 constexpr auto kEnvironAddOpName = "EnvironAdd";
@@ -44,16 +39,12 @@ constexpr auto kEnvironDestroyAllOpName = "EnvironDestroyAll";
 constexpr auto kMutableOpName = "mutable";
 constexpr auto kGetGradOpName = "GetGrad";
 constexpr auto kSetSizeOpName = "SetSize";
-constexpr auto kIsInstanceOpName = "isinstance";
 constexpr auto kStringUpperOpName = "StringUpper";
 constexpr auto kStringLowerOpName = "StringLower";
 constexpr auto kHookBackwardName = "HookBackward";
 constexpr auto kCellBackwardHookName = "CellBackwardHook";
 
 // Framework
-constexpr auto kUpdateStateOpName = "UpdateState";
-constexpr auto kReturnOpName = "Return";
-constexpr auto kSwitchOpName = "Switch";
 constexpr auto kSelectOpName = "Select";
 constexpr auto kCallOpName = "call";
 constexpr auto kMemCpyAsyncOpName = "memcpy_async";
@@ -63,7 +54,6 @@ constexpr auto kPyExecuteOpName = "PyExecute";
 constexpr auto kPyInterpretOpName = "PyInterpret";
 constexpr auto kPushOpName = "Push";
 constexpr auto kQuantDTypeCastOpName = "QuantDTypeCast";
-constexpr auto kRpcRecvOpName = "RpcRecv";
 constexpr auto kRpcSendOpName = "RpcSend";
 constexpr auto kTensorMoveOpName = "TensorMove";
 constexpr auto kCheckValidOpName = "CheckValid";

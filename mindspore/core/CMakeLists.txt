@@ -134,7 +134,6 @@ set(CORE_SRC_LIST
         ${CMAKE_CURRENT_SOURCE_DIR}/abstract/utils.cc
         )
 add_library(mindspore_core SHARED ${CORE_OBJECT_LIST})
-add_dependencies(mindspore_core generated_code)
 
 if(ENABLE_NATIVE_PROTOBUF)
     target_link_libraries(mindspore_core PRIVATE ${PROTOBUF_LIB})

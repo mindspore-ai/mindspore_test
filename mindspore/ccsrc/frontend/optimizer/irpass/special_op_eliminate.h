@@ -29,7 +29,7 @@
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "ir/pattern_matcher.h"
+#include "frontend/optimizer/pattern_matcher.h"
 #include "frontend/optimizer/anf_visitor.h"
 #include "frontend/operator/ops.h"
 #include "frontend/optimizer/irpass.h"

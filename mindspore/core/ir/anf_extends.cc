@@ -18,7 +18,6 @@
 
 #include <sstream>
 
-#include "mindspore/ops/op_def/structure_ops.h"
 #include "utils/hash_map.h"
 #include "ir/visitor.h"
 #include "ir/func_graph.h"

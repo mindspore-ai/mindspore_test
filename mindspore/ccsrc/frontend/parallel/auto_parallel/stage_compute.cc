@@ -25,7 +25,7 @@
 
 #include "mindspore/ops/op_def/array_ops.h"
 #include "frontend/parallel/step_parallel.h"
-#include "utils/parallel_node_check.h"
+#include "frontend/parallel/parallel_node_check.h"
 #include "ir/func_graph.h"
 #include "include/common/utils/parallel_context.h"
 #include "utils/ms_utils.h"

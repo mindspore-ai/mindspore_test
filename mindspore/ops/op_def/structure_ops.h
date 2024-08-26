@@ -25,9 +25,9 @@
 #include "mindspore/ops/op_def/structure_op_name.h"
 #include "utils/hash_map.h"
 #include "mindspore/ops/op_def/image_op_name.h"
+#include "ir/core_ops_primitive.h"
 
 namespace mindspore {
-static constexpr char kDoSignaturePrimitivePrefix[] = "S_Prim_";
 namespace prim {
 // String
 GVAR_DEF(PrimitivePtr, kPrimStringEq, std::make_shared<Primitive>(kStringEqOpName));
@@ -90,10 +90,6 @@ GVAR_DEF(PrimitivePtr, kPrimGetTupleIndexInfo, std::make_shared<Primitive>("GetT
 // Debug ops
 GVAR_DEF(PrimitivePtr, kPrimAssert, std::make_shared<Primitive>("Assert"));
 #ifndef ENABLE_SECURITY
-GVAR_DEF(PrimitivePtr, kPrimScalarSummary, std::make_shared<Primitive>("ScalarSummary"));
-GVAR_DEF(PrimitivePtr, kPrimImageSummary, std::make_shared<Primitive>("ImageSummary"));
-GVAR_DEF(PrimitivePtr, kPrimTensorSummary, std::make_shared<Primitive>("TensorSummary"));
-GVAR_DEF(PrimitivePtr, kPrimHistogramSummary, std::make_shared<Primitive>("HistogramSummary"));
 GVAR_DEF(PrimitivePtr, kPrimHistogramFixedWidth, std::make_shared<Primitive>("HistogramFixedWidth"));
 GVAR_DEF(PrimitivePtr, kPrimTensorDump, std::make_shared<Primitive>(kTensorDump));
 #endif
@@ -115,22 +111,6 @@ GVAR_DEF(PrimitivePtr, kPrimGetNext, std::make_shared<Primitive>(kGetNextOpName)
 GVAR_DEF(PrimitivePtr, kPrimGetNextFromQueue, std::make_shared<Primitive>(kGetNextFromQueueOpName));
 GVAR_DEF(PrimitivePtr, kPrimDynamicGetNextV2, std::make_shared<Primitive>(kDynamicGetNextV2OpName));
 GVAR_DEF(PrimitivePtr, kPrimDynamicGetNextAscend, std::make_shared<Primitive>(kDynamicGetNextAscendOpName));
-
-class DoSignaturePrimitive : public Primitive {
- public:
-  explicit DoSignaturePrimitive(const std::string &name, const ValuePtr &function)
-      : Primitive(kDoSignaturePrimitivePrefix + name), function_(function) {}
-
-  ~DoSignaturePrimitive() override = default;
-
-  MS_DECLARE_PARENT(DoSignaturePrimitive, Primitive)
-
-  const ValuePtr function() const { return function_; }
-
- private:
-  ValuePtr function_;
-};
-using DoSignaturePrimitivePtr = std::shared_ptr<DoSignaturePrimitive>;
 
 class DoTransPrimitiveFunction : public Primitive {
  public:

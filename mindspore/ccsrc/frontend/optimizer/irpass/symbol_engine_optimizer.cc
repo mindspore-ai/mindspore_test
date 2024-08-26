@@ -19,7 +19,7 @@
 #include <vector>
 #include <memory>
 #include <utility>
-#include "ir/pattern_matcher.h"
+#include "frontend/optimizer/pattern_matcher.h"
 #include "ir/functor.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/math_ops.h"

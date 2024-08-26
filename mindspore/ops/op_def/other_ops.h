@@ -22,12 +22,12 @@
 #include "ir/primitive.h"
 #include "mindspore/ops/op_def/other_op_name.h"
 #include "utils/hash_map.h"
+#include "ir/core_ops_primitive.h"
 
 namespace mindspore {
 namespace prim {
 GVAR_DEF(PrimitivePtr, kPrimInnerAbs, std::make_shared<Primitive>(kInnerAbsOpName));
 GVAR_DEF(PrimitivePtr, kPrimInnerRound, std::make_shared<Primitive>("inner_round"));
-GVAR_DEF(PrimitivePtr, kPrimDynamicLossScale, std::make_shared<Primitive>("_DynamicLossScale"));
 GVAR_DEF(PrimitivePtr, kPrimScaleGrad, std::make_shared<Primitive>("ScaleGrad"));
 GVAR_DEF(PrimitivePtr, kPrimPopulationCount, std::make_shared<Primitive>("PopulationCount"));
 GVAR_DEF(PrimitivePtr, kPrimOpaquePredicate, std::make_shared<Primitive>("OpaquePredicate"));

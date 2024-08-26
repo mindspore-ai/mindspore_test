@@ -20,9 +20,11 @@
 #include "ir/primitive.h"
 
 namespace mindspore {
-MS_CORE_API bool IsInParallelBlackList(const PrimitivePtr &);
-MS_CORE_API bool IsInAllGatherNodeList(const CNodePtr &);
-MS_CORE_API bool IsInTrivialNodeList(const CNodePtr &);
-MS_CORE_API bool IsParallelConsiderCNode(const CNodePtr &);
+namespace parallel {
+bool IsInParallelBlackList(const PrimitivePtr &);
+bool IsInAllGatherNodeList(const CNodePtr &);
+bool IsInTrivialNodeList(const CNodePtr &);
+bool IsParallelConsiderCNode(const CNodePtr &);
+}  // namespace parallel
 }  // namespace mindspore
 #endif  // MINDSPORE_CORE_UTILS_PARALLEL_NODE_CHECK_H_

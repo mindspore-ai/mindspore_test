@@ -25,11 +25,12 @@
 #include <utility>
 
 #include "ir/visitor.h"
-#include "mindspore/ops/op_def/math_ops.h"
 #include "ir/func_graph.h"
 #include "utils/shape_utils.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 
 namespace mindspore {
+namespace opt {
 ///
 ///  Base class for all recognizable patterns.
 ///  We implement an Expression Template approach using static polymorphism based on
@@ -896,6 +897,7 @@ BIN_OPERATION_PATTERN(operator-, prim::kPrimSub, false);
       }                                                                   \
     }                                                                     \
   } while (0)
+}  // namespace opt
 }  // namespace mindspore
 
 #endif  // MINDSPORE_CORE_IR_PATTERN_MATCHER_H_

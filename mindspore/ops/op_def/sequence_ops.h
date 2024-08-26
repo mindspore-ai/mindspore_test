@@ -24,6 +24,7 @@
 #include "ir/value.h"
 #include "mindspore/ops/op_def/sequence_op_name.h"
 #include "utils/flags.h"
+#include "ir/core_ops_primitive.h"
 
 namespace mindspore {
 namespace prim {
@@ -50,8 +51,6 @@ GVAR_DEF(PrimitivePtr, kPrimDictInplaceSetItem,
                                                                                  MakeValue(true)}})));
 
 // Tuple
-GVAR_DEF(PrimitivePtr, kPrimMakeTuple, std::make_shared<Primitive>(kMakeTupleOpName));
-GVAR_DEF(PrimitivePtr, kPrimTupleGetItem, std::make_shared<Primitive>(kTupleGetItemOpName));
 GVAR_DEF(PrimitivePtr, kPrimTupleSetItem, std::make_shared<Primitive>(kTupleSetItemOpName));
 GVAR_DEF(PrimitivePtr, kPrimTupleLessThan, std::make_shared<Primitive>(kTupleLtOpName));
 GVAR_DEF(PrimitivePtr, kPrimTupleLessEqual, std::make_shared<Primitive>(kTupleLeOpName));
@@ -66,10 +65,8 @@ GVAR_DEF(PrimitivePtr, kPrimListGreaterThan, std::make_shared<Primitive>("list_g
 GVAR_DEF(PrimitivePtr, kPrimTupleEqual, std::make_shared<Primitive>(kTupleEqualOpName));
 
 // List
-GVAR_DEF(PrimitivePtr, kPrimListGetItem, std::make_shared<Primitive>(kListGetItemOpName));
 GVAR_DEF(PrimitivePtr, kPrimListSetItem, std::make_shared<Primitive>(kListSetItemOpName));
 GVAR_DEF(PrimitivePtr, kPrimListGreaterEqual, std::make_shared<Primitive>("list_greater_equal"));
-GVAR_DEF(PrimitivePtr, kPrimMakeList, std::make_shared<Primitive>(kMakeListNewOpName));
 GVAR_DEF(PrimitivePtr, kPrimListLessThan, std::make_shared<Primitive>(kListLtOpName));
 GVAR_DEF(PrimitivePtr, kPrimListLessEqual, std::make_shared<Primitive>(kListLeOpName));
 GVAR_DEF(PrimitivePtr, kPrimListEqual, std::make_shared<Primitive>(kListEqualOpName));

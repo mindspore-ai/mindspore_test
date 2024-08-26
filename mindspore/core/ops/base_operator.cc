@@ -16,11 +16,13 @@
 
 #include "ops/base_operator.h"
 #include "mindapi/helper.h"
-#include "mindspore/ops/op_def/op_name.h"
 #include "ops/primitive_c.h"
 
 namespace mindspore {
 namespace ops {
+namespace {
+constexpr auto kBatchRank = "batch_rank";
+}
 MIND_API_BASE_IMPL(BaseOperator, PrimitiveC, api::Primitive);
 BaseOperator::BaseOperator(const std::string &name) : api::Primitive(std::make_shared<PrimitiveC>(name)) {}
 
