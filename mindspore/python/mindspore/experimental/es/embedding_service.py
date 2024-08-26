@@ -243,17 +243,23 @@ class EmbeddingService:
             max_feature_count (int): The count of keys when look up for PS.
             initializer (Initializer): The initialization strategy for the PS embedding, default is ``Uniform``.
             embedding_type (str): The embedding type, configurable parameters ["PS", "data_parallel"],
-                "PS" means initializing PS embedding, "data_parallel" means initializing data_parallel embedding.
+                ``"PS"`` means initializing PS embedding, ``"data_parallel"`` means initializing data_parallel
+                embedding, and default is ``"PS"``.
             ev_option (EmbeddingVariableOption): Properties of the PS embedding,
                 is a EmbeddingVariableOption obj which returned by embedding_variable_option function.
+                Default is ``None``.
             multihot_lens (int): The param only use when allow_merge is enabled, and not support now.
+                Default is ``None``.
             optimizer (str): The type of optimizer in the train mode for PS embedding,
-                cannot be shared among each PS embedding, and currently only Adam, Ftrl, SGD and RMSProp are supported.
-            allow_merge (bool): Whether to enable merge data_parallel embeddings, currently only be False.
+                cannot be shared among each PS embedding, and currently only ``"Adam"``, ``"Ftrl"``, ``"SGD"`` and
+                ``"RMSProp"`` are supported, and default is ``None``.
+            allow_merge (bool): Whether to enable merge data_parallel embeddings, currently only be False,
+                and default is ``False``.
             optimizer_param (float): The "initialize accumulator value" param of optimizer which configured by user,
-                representing the init value of moment accumulator.
+                representing the init value of moment accumulator, and default is ``None``.
             mode (str): Run mode, configurable parameters ["train", "predict", "export"],
-                "train" means train mode, "predict" means predict mode, "export" mean export mode.
+                ``"train"`` means train mode, ``"predict"`` means predict mode, ``"export"`` mean export mode,
+                and default is ``"train"``.
 
         Returns:
             - data_parallel embedding - a dict that contain data_parallel embedding information.
@@ -338,8 +344,8 @@ class EmbeddingService:
 
         Args:
             padding_key (int): The value for padding key, must be a genuine and legal hash key.
-            mask (bool): Whether to update padding key. If set to false, it will not be updated.
-            mask_zero (bool): Whether to update padding key when key is 0.
+            mask (bool): Whether to update padding key. If set to false, it will not be updated. Default is ``True``.
+            mask_zero (bool): Whether to update padding key when key is 0. Default is ``False``.
 
         Returns:
             PaddingParamsOption object.
@@ -361,7 +367,8 @@ class EmbeddingService:
 
         Args:
             completion_key (int): The value for completion key.
-            mask (bool): Whether to update completion key. If set to false, it will not be updated.
+            mask (bool): Whether to update completion key. If set to false, it will not be updated,
+                and default is ``True``.
 
         Returns:
             CompletionKeyOption object.
@@ -389,9 +396,9 @@ class EmbeddingService:
         Args:
             filter_freq (int): The frequency threshold value for feature admission.
             default_key (int): The key that number of occurrences does not reach the threshold,
-                return value of default key as the corresponding value when look up embedding.
+                return value of default key as the corresponding value when look up embedding, and default is ``None``.
             default_value (int/float): The key that number of occurrences does not reach the threshold,
-                return default value which length value is embedding dim.
+                return default value which length value is embedding dim, and default is ``None``.
 
         Returns:
             CounterFilter object.
@@ -452,13 +459,13 @@ class EmbeddingService:
         Set variable option for PS embedding.
 
         Args:
-            filter_option (CounterFilter): The option of counter filter.
-            padding_option (PaddingParamsOption): The option of padding key.
-            evict_option (EvictOption): The option evict.
-            completion_option (CompletionKeyOption): The option of completion key.
-            storage_option (None): Reserved option, currently not supported.
-            feature_freezing_option (None): Reserved option, currently not supported.
-            communication_option (None): Reserved option, currently not supported.
+            filter_option (CounterFilter): The option of counter filter. Default is ``None``.
+            padding_option (PaddingParamsOption): The option of padding key. Default is ``None``.
+            evict_option (EvictOption): The option evict. Default is ``None``.
+            completion_option (CompletionKeyOption): The option of completion key. Default is ``None``.
+            storage_option (None): Reserved option, currently not supported. Default is ``None``.
+            feature_freezing_option (None): Reserved option, currently not supported. Default is ``None``.
+            communication_option (None): Reserved option, currently not supported. Default is ``None``.
 
         Returns:
             EmbeddingVariableOption object, used as the ev_option parameter for embedding_init.
@@ -496,7 +503,7 @@ class EmbeddingService:
             Need to call embedding_variable_option to set evict_option for each PS embedding before export.
 
         Args:
-            file_path (str): The path to export embedding ckpt, and the last character cannot be '/'.
+            file_path (str): The path to export embedding ckpt, and the last character cannot be ``"/"``.
             trainable_var (list[parameter]): The list of data_parallel embedding parameter.
 
         Returns:
@@ -547,7 +554,7 @@ class EmbeddingService:
             This function can only be executed by rank 0.
 
         Args:
-            file_path (str): The path to export embedding table, and the last character cannot be '/'.
+            file_path (str): The path to export embedding table, and the last character cannot be ``"/"``.
             trainable_var (list[parameter]): The list of data_parallel embedding parameter.
 
         Returns:
@@ -595,7 +602,7 @@ class EmbeddingService:
             This function can only be executed by rank 0.
 
         Args:
-            file_path (str): The path to incremental export embedding table, and the last character cannot be '/'.
+            file_path (str): The path to incremental export embedding table, and the last character cannot be ``"/"``.
 
         Returns:
             The output of EmbeddingTableExport op.
@@ -618,7 +625,7 @@ class EmbeddingService:
         Import embedding and ckpt file from file path.
 
         Args:
-            file_path (str): The path to import embedding and ckpt, and the last character cannot be '/'.
+            file_path (str): The path to import embedding and ckpt, and the last character cannot be ``"/"``.
 
         Returns:
             The output of EmbeddingComputeVarImport operator and data_parallel embedding import result.
@@ -655,7 +662,7 @@ class EmbeddingService:
         Import embedding file from file path.
 
         Args:
-            file_path (str): The path to import embedding table, and the last character cannot be '/'.
+            file_path (str): The path to import embedding table, and the last character cannot be ``"/"``.
 
         Returns:
             The output of EmbeddingTableImport operator and data_parallel embedding import result.
