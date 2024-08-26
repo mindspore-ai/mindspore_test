@@ -27,16 +27,44 @@ class TestCheckMsUtils : public UT::Common {
 // Description: Check function of IsEnableRuntimeConfig and IsDisableRuntimeConfig in ms_utils.cc
 // Expectation: Get right runtime config.
 TEST_F(TestCheckMsUtils, test_read_runtime_config) {
-  int ret = common::SetEnv("MS_DEV_RUNTIME_CONF", "inline:true,compile_statistic:True,memoty_statistic:false");
-  ASSERT_EQ(ret, 0);
+  const char* test_configs1[] = {
+    "inline:true,compile_statistic:True,memoty_statistic:false",
+    "'inline:true,compile_statistic:True,memoty_statistic:false'",
+    "\"inline:true,compile_statistic:True,memoty_statistic:false\"",
+  };
 
-  ASSERT_TRUE(common::IsEnableRuntimeConfig("inline"));
-  ASSERT_TRUE(common::IsEnableRuntimeConfig("compile_statistic"));
-  ASSERT_FALSE(common::IsEnableRuntimeConfig("memoty_statistic"));
-  ASSERT_TRUE(common::IsDisableRuntimeConfig("memoty_statistic"));
-  ASSERT_FALSE(common::IsEnableRuntimeConfig("switch_inline"));
-  ASSERT_FALSE(common::IsDisableRuntimeConfig("switch_inline"));
-  
-  (void)common::SetEnv("MS_DEV_RUNTIME_CONF", "");
+  const char* test_configs2[] = {
+    "all_finite:true, memoty_statistic:True, inline:false",
+    "all_finite:true; memoty_statistic:True; inline:false",
+    "all_finite:true;memoty_statistic:True;inline:false"
+  };
+
+  for(const auto &config : test_configs1) {
+    int ret = common::SetEnv("MS_DEV_RUNTIME_CONF", config);
+    ASSERT_EQ(ret, 0);
+
+    ASSERT_TRUE(common::IsEnableRuntimeConfig("inline"));
+    ASSERT_TRUE(common::IsEnableRuntimeConfig("compile_statistic"));
+    ASSERT_FALSE(common::IsEnableRuntimeConfig("memoty_statistic"));
+    ASSERT_TRUE(common::IsDisableRuntimeConfig("memoty_statistic"));
+    ASSERT_FALSE(common::IsEnableRuntimeConfig("switch_inline"));
+    ASSERT_FALSE(common::IsDisableRuntimeConfig("switch_inline"));
+
+    (void)common::ResetConfig("MS_DEV_RUNTIME_CONF");
+  }
+
+   // Second group of tests
+  for(const auto &config : test_configs2) {
+     int ret = common::SetEnv("MS_DEV_RUNTIME_CONF", config);
+     ASSERT_EQ(ret, 0);
+
+    ASSERT_TRUE(common::IsEnableRuntimeConfig("all_finite"));
+    ASSERT_TRUE(common::IsEnableRuntimeConfig("memoty_statistic"));
+    ASSERT_FALSE(common::IsEnableRuntimeConfig("inline"));
+    ASSERT_TRUE(common::IsDisableRuntimeConfig("inline"));
+    ASSERT_FALSE(common::IsEnableRuntimeConfig("pipeline"));
+    ASSERT_FALSE(common::IsDisableRuntimeConfig("pipeline"));
+    (void)common::ResetConfig("MS_DEV_RUNTIME_CONF");
+  }
 }
 }  // namespace mindspore
