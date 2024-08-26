@@ -164,11 +164,13 @@ class EsEmbeddingLookup(nn.Cell):
             which can be None when the inference is performed.
         embedding_dim (int): The embedding dim of keys for PS embedding with table_id.
         max_key_num (int): The num of keys when lookup.
-        optimizer_mode (str): The type of optimizer.
-        optimizer_params (tuple[float]): The parameters of optimizer.
-        es_filter (CounterFilter): The option of counter filter for PS embedding with table_id.
+        optimizer_mode (str): The type of optimizer. Default is ``None``.
+        optimizer_params (tuple[float]): The parameters of optimizer. Default is ``None``.
+        es_filter (CounterFilter): The option of counter filter for PS embedding with table_id. Default is ``None``.
         es_padding_key (PaddingParamsOption): The option of padding key for PS embedding with table_id.
+            Default is ``None``.
         es_completion_key (CompletionKeyOption): The option of completion key for PS embedding with table_id.
+            Default is ``None``.
 
     Inputs:
             - **keys** (Tensor): The keys of each feature in PS embedding.
