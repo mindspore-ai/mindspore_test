@@ -745,7 +745,7 @@ bool EnableKBKCompileCache(const FuncGraphPtr &func_graph, const device::DeviceT
     MS_LOG(INFO) << "Disable backend compile cache by front config.";
     return false;
   }
-  if (!common::IsEnableRuntimeConfig(common::kRuntimeCache)) {
+  if (common::IsDisableRuntimeConfig(common::kRuntimeCache)) {
     MS_LOG(INFO) << "Disable backend compile cache by backend config.";
     return false;
   }
@@ -779,7 +779,7 @@ bool ExportCompileCacheKBK(const FuncGraphPtr &func_graph, const device::DeviceT
     MS_LOG(WARNING) << "Compile cache: disable by front compile cache config.";
     return false;
   }
-  if (!common::IsEnableRuntimeConfig(common::kRuntimeCache)) {
+  if (common::IsDisableRuntimeConfig(common::kRuntimeCache)) {
     MS_LOG(INFO) << "Compile cache: disable by backend compile cache config.";
     return false;
   }
