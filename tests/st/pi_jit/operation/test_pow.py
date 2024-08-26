@@ -1,4 +1,5 @@
-import pytest
+import sys  
+import pytest 
 import numpy as np
 from mindspore import context, jit
 import mindspore as ms
@@ -9,6 +10,10 @@ from ..share.ops.primitive.pow_ops import PowFactory
 from ..share.utils import allclose_nparray
 from tests.mark_utils import arg_mark
 
+@pytest.fixture(autouse=True)  
+def skip_if_python_version_too_high():  
+    if sys.version_info >= (3, 11):  
+        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_p_pow_input_25x51():

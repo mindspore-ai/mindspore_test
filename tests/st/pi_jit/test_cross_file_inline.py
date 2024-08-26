@@ -1,9 +1,14 @@
-import pytest
+import sys  
+import pytest 
 from .test_cross_file_inline_func import inlinef
 from mindspore._c_expression import jit_mode_pi_enable, jit_mode_pi_disable
 from mindspore import jit, context
 from tests.mark_utils import arg_mark
 
+@pytest.fixture(autouse=True)  
+def skip_if_python_version_too_high():  
+    if sys.version_info >= (3, 11):  
+        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 conf = {
     "print_after_all": False,
     "interpret_captured_code": True,

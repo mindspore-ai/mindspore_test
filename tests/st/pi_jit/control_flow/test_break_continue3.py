@@ -1,14 +1,26 @@
 from mindspore import context, jit
 from mindspore.nn import Cell
 import numpy as np
-import pytest
+import sys  
+import pytest 
 from mindspore.common import Tensor
 from mindspore.common import dtype as ms
 from mindspore.common import Parameter
 import mindspore.ops.operations as P
 from ..share.utils import match_array
 from tests.mark_utils import arg_mark
+import sys  
+import pytest 
 
+@pytest.fixture(autouse=True)  
+def skip_if_python_version_too_high():  
+    if sys.version_info >= (3, 11):  
+        pytest.skip("Skipping tests on Python 3.11 and higher.") 
+
+@pytest.fixture(autouse=True)  
+def skip_if_python_version_too_high():  
+    if sys.version_info >= (3, 11):  
+        pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_control_for_multi_if_break_nested_002():

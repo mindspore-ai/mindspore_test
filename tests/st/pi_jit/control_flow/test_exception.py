@@ -2,10 +2,15 @@ from mindspore import Tensor
 from mindspore.ops import operations as P
 from mindspore import jit
 from mindspore._c_expression import get_code_extra
-import pytest
-import sys
+import sys  
+import pytest 
 from tests.mark_utils import arg_mark
 
+@pytest.fixture(autouse=True)  
+def skip_if_python_version_too_high():  
+    if sys.version_info >= (3, 11):  
+        pytest.skip("Skipping tests on Python 3.11 and higher.") 
+        
 SYS_VER = (sys.version_info.major, sys.version_info.minor)
 if SYS_VER != (3, 7) and SYS_VER != (3, 9):
     pytest.skip(reason="not implement for python" + str(SYS_VER), allow_module_level=True)
