@@ -16,7 +16,6 @@
 
 #include "kernel/format_utils.h"
 #include <algorithm>
-#include <map>
 #include "utils/log_adapter.h"
 
 namespace mindspore {

@@ -15,7 +15,6 @@
  */
 
 #include "kernel/philox_random.h"
-#include <stdint.h>
 #include <random>
 
 namespace mindspore {

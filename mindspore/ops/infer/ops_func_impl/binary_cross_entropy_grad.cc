@@ -28,14 +28,12 @@ namespace mindspore {
 namespace ops {
 TypePtr BinaryCrossEntropyGradFuncImpl::InferType(const PrimitivePtr &primitive,
                                                   const std::vector<abstract::AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(input_args[kInputIndex1]);
   auto input_type = input_args[kInputIndex1]->GetType();
   return input_type;
 }
 
 BaseShapePtr BinaryCrossEntropyGradFuncImpl::InferShape(
   const PrimitivePtr &primitive, const std::vector<abstract::AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(input_args[kInputIndex1]);
   auto input_shape_ptr = input_args[kInputIndex1]->GetShape();
 
   return input_shape_ptr->Clone();

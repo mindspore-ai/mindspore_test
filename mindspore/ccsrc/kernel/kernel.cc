@@ -17,8 +17,6 @@
 #include "kernel/kernel.h"
 
 #include <algorithm>
-#include <functional>
-#include <iterator>
 #include <numeric>
 #include <set>
 

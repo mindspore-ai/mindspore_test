@@ -41,9 +41,6 @@ BaseShapePtr MaskedSelectFrontendInferShape(const PrimitivePtr &primitive,
 
 BaseShapePtr MaskedSelectFuncImpl::InferShape(const PrimitivePtr &primitive,
                                               const std::vector<AbstractBasePtr> &input_args) const {
-  for (const auto &item : input_args) {
-    MS_EXCEPTION_IF_NULL(item);
-  }
   auto input_shape_ptr = input_args[kInputIndex0]->GetShape();
   auto mask_shape_ptr = input_args[kInputIndex1]->GetShape();
   // support dynamic rank

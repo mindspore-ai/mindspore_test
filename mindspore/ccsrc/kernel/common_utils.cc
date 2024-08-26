@@ -18,29 +18,17 @@
 #include <algorithm>
 #include <bitset>
 #include <cmath>
-#include <fstream>
 #include <iostream>
-#include <map>
-#include <set>
 #include <thread>
-#include <tuple>
 #include <unordered_map>
 #include <utility>
 #include <vector>
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
-#include "ir/graph_utils.h"
 #include "kernel/oplib/oplib.h"
 #include "kernel/format_utils.h"
 #include "mindapi/base/type_id.h"
 #include "mindspore/ccsrc/include/common/debug/common.h"
-#include "nlohmann/json.hpp"
-#include "mindspore/ops/op_def/array_op_name.h"
-#include "mindspore/ops/op_def/conv_pool_op_name.h"
-#include "mindspore/ops/op_def/framework_ops.h"
-#include "mindspore/ops/op_def/math_op_name.h"
-#include "mindspore/ops/op_def/nn_ops.h"
-#include "mindspore/ops/op_def/sequence_ops.h"
 #include "utils/anf_utils.h"
 
 namespace mindspore {
