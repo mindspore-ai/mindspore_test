@@ -30,6 +30,8 @@ class OPS_API UniformExtFuncImpl : public OpFuncImpl {
   TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
   ShapeArray InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const override;
   TypePtrList InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const override;
+  // For aclnn GetWorkspace
+  std::set<int64_t> GetValueDependArgIndices() const override { return {kInputIndex3, kInputIndex4}; };
 };
 }  // namespace ops
 }  // namespace mindspore

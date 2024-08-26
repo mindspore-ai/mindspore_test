@@ -29,10 +29,10 @@ namespace kernel {
 void NormalFloatTensorAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                                const std::vector<KernelTensor *> &outputs) {
   mean_ = transform::ConvertKernelTensor<float>(inputs[kIndex0]);
-  constexpr int64_t seed_stub = 0;
-  constexpr int64_t offset_stub = 0;
+  seed_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex2]);
+  offset_ = transform::ConvertKernelTensor<int64_t>(inputs[kIndex3]);
 
-  GetWorkspaceForResize(mean_, inputs[kIndex1], seed_stub, offset_stub, outputs[kIndex0]);
+  GetWorkspaceForResize(mean_, inputs[kIndex1], seed_, offset_, outputs[kIndex0]);
 }
 
 bool NormalFloatTensorAscend::Launch(const std::vector<KernelTensor *> &inputs,
@@ -40,9 +40,7 @@ bool NormalFloatTensorAscend::Launch(const std::vector<KernelTensor *> &inputs,
                                      const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
 
-  auto seed = transform::ConvertKernelTensor<int64_t>(inputs[kIndex2]);
-  auto offset = transform::ConvertKernelTensor<int64_t>(inputs[kIndex3]);
-  RunOp(stream_ptr, workspace, mean_, inputs[kIndex1], seed, offset, outputs[kIndex0]);
+  RunOp(stream_ptr, workspace, mean_, inputs[kIndex1], seed_, offset_, outputs[kIndex0]);
   return true;
 }
 

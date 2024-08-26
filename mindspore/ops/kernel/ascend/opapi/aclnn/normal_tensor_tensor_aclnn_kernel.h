@@ -34,6 +34,8 @@ class NormalTensorTensorAscend : public AclnnKernelMod {
 
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
+  int64_t seed_;
+  int64_t offset_;
 };
 }  // namespace kernel
 }  // namespace mindspore

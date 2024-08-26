@@ -23,8 +23,8 @@ void DropoutExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &input
                                         const std::vector<KernelTensor *> &outputs) {
   MS_EXCEPTION_IF_NULL(primitive_);
   p_value_ = static_cast<double>(inputs[kIndex1]->GetValueWithCheck<float>());
-  seed_value_ = 0;
-  offset_value_ = 0;
+  seed_value_ = inputs[kIndex2]->GetValueWithCheck<int64_t>();
+  offset_value_ = inputs[kIndex3]->GetValueWithCheck<int64_t>();
   dtype_value_ = inputs[kIndex0]->dtype_id();
   GetWorkspaceForResizeGenMask(inputs[kIndex0]->GetShapeVector(), p_value_, seed_value_, offset_value_, dtype_value_,
                                outputs[kIndex1]);
@@ -34,8 +34,6 @@ void DropoutExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &input
 bool DropoutExtAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                               const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
-  seed_value_ = inputs[kIndex2]->GetValueWithCheck<int64_t>();
-  offset_value_ = inputs[kIndex3]->GetValueWithCheck<int64_t>();
   RunOpGenMask(stream_ptr, workspace, inputs[kIndex0]->GetShapeVector(), p_value_, seed_value_, offset_value_,
                dtype_value_, outputs[kIndex1]);
 
