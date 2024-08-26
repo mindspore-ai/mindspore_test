@@ -66,6 +66,12 @@ int CustomMaskedFillCPUKernel::Run() {
   auto fill_value = value_data[0];
 
   auto data_num = input->ElementsNum();
+  auto output_data_num = output->ElementsNum();
+  if (output_data_num < data_num) {
+    MS_LOG(ERROR) << "The element num of output " << output_data_num << " is less than input element num " << data_num
+                  << "!";
+    return RET_ERROR;
+  }
   auto input_data = reinterpret_cast<float *>(input->data());
   auto mask_data = reinterpret_cast<bool *>(mask->data());
   auto output_data = reinterpret_cast<float *>(output->data());
