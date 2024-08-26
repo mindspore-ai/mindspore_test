@@ -205,7 +205,9 @@ void DebugActor::AscendKbkDump(const CNodePtr &cnode, const std::vector<DeviceTe
         is_overflow = CheckOverflow(device_context, output_device_tensors);
       } else if (overflow_count < set_overflow_num) {
         is_overflow = CheckOverflow(device_context, output_device_tensors);
-        OverflowCounter::GetInstance().addCount();
+        if (is_overflow) {
+          OverflowCounter::GetInstance().addCount();
+        }
       }
       if (is_overflow) {
         read_data = CheckReadData(cnode);
