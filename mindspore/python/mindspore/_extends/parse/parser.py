@@ -931,7 +931,7 @@ class ThirdPartyLibraryChecker:
     """
     def __init__(self):
         self.user_workspace_dir = self.get_top_level_module_path(os.getcwd())
-        self.python_builtin_dir = os.path.abspath(os.path.dirname(os.__file__))
+        self.python_builtin_dir = os.path.realpath(os.path.dirname(os.__file__))
 
     @staticmethod
     def get_jit_modules():
@@ -963,8 +963,8 @@ class ThirdPartyLibraryChecker:
 
     def get_top_level_module_path(self, module_path):
         """Get the path of the top level package of the current working directory."""
-        module_abspath = os.path.abspath(module_path)
-        upper_path = os.path.abspath(os.path.dirname(module_abspath))
+        module_abspath = os.path.realpath(module_path)
+        upper_path = os.path.realpath(os.path.dirname(module_abspath))
         if module_abspath == upper_path:
             return module_abspath
         # Check whether __init__.py exists in the upper directory.
@@ -990,7 +990,7 @@ class ThirdPartyLibraryChecker:
         # A modules without __file__ attribute is considered to be in user workspace.
         if not hasattr(module, '__file__'):
             return False
-        module_path = os.path.abspath(module.__file__)
+        module_path = os.path.realpath(module.__file__)
         # Python builtin modules are treated as third-party libraries.
         if module_path.startswith(self.python_builtin_dir):
             logger.debug(f"Found python builtin module '{module.__name__}', which is a third-party module.")
