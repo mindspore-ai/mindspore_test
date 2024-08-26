@@ -69,6 +69,10 @@ void BatchNormExtShapeCheck(const PrimitivePtr &primitive, const std::vector<Abs
     }
   }
 
+  if (input_args[kInputIndex3]->GetType()->isa<TypeNone>()
+    || input_args[kInputIndex4]->GetType()->isa<TypeNone>()) {
+    return;
+  }
   auto mean_shape = input_args[kInputIndex3]->GetShape()->GetShapeVector();
   auto variance_shape = input_args[kInputIndex4]->GetShape()->GetShapeVector();
   MS_CHECK_VALUE(mean_shape.size() == 1, CheckAndConvertUtils::FormatCheckIntegerMsg(

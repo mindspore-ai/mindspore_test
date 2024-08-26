@@ -152,9 +152,9 @@ class _BatchNorm(_NormBase):
             input,
             self.running_mean
             if not self.training or self.track_running_stats
-            else Tensor(np.zeros(self.num_features), dtype=self.dtype),
+            else None,
             self.running_var if not self.training or self.track_running_stats
-            else Tensor(np.ones(self.num_features), dtype=self.dtype),
+            else None,
             self.weight,
             self.bias,
             bn_training,

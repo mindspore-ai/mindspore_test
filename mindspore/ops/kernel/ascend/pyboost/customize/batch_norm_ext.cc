@@ -26,7 +26,8 @@ namespace kernel {
 namespace pyboost {
 void BatchNormExtAscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &input_tensor,
                                  const BaseTensorPtr &weight_tensor, const BaseTensorPtr &bias_tensor,
-                                 const BaseTensorPtr &mean_tensor, const BaseTensorPtr &variance_tensor,
+                                 const std::optional<BaseTensorPtr> &mean_tensor,
+                                 const std::optional<BaseTensorPtr> &variance_tensor,
                                  const BoolImmPtr &training, const FP32ImmPtr &momentum, const FP32ImmPtr &epsilon) {
   MS_LOG(DEBUG) << "Call aclnnBatchNorm start";
   // Convert ValuePtr to c++ scalar
