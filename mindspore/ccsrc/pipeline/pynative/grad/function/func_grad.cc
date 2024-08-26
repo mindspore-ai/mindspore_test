@@ -29,6 +29,8 @@
 
 namespace mindspore::pynative::autograd {
 namespace {
+constexpr char kInput[] = "input";
+
 ValuePtr Add(const ValuePtr &input, const ValuePtr &other, const FuncBuilderPtr &func_impl) {
   if (input->isa<None>()) {
     MS_EXCEPTION_IF_NULL(other);
@@ -166,38 +168,51 @@ NodePtrList GenerateNodeInputs(const OpGradInfoPtr &op_grad_info, const FuncBuil
   return node_inputs;
 }
 
-ValuePtrList CallBackwardHooks(const ValuePtr &value, ValuePtrList *grad_in) {
+AutoGradMetaData *HasTensorHook(const ValuePtr &value) {
   if (value == nullptr) {
     MS_LOG(DEBUG) << "Get null value";
-    return *grad_in;
+    return nullptr;
   }
-  MS_EXCEPTION_IF_NULL(grad_in);
   auto tensor = value->cast<tensor::BaseTensorPtr>();
   if (tensor == nullptr) {
     MS_LOG(DEBUG) << "Hook just work on tensor, not support value " << value->ToString();
-    return *grad_in;
+    return nullptr;
   }
   const auto &auto_grad_meta = tensor->auto_grad_meta_data();
   if (auto_grad_meta == nullptr || auto_grad_meta->backward_hooks().empty()) {
     MS_LOG(DEBUG) << "Get empty backward hooks for tensor id " << tensor->id();
-    return *grad_in;
+    return nullptr;
   }
+  return auto_grad_meta.get();
+}
+
+void RunTensorHook(ValuePtrList *grad_in, AutoGradMetaData *auto_grad_meta) {
+  MS_EXCEPTION_IF_NULL(grad_in);
+  MS_EXCEPTION_IF_NULL(auto_grad_meta);
   if (grad_in->size() != kSizeOne) {
     MS_LOG(EXCEPTION) << "Tensor hook just work on one tensor value, not support value sequence";
   }
   runtime::Pipeline::Get().WaitForward();
   for (const auto &hook : auto_grad_meta->backward_hooks()) {
-    MS_LOG(DEBUG) << "Run hook id " << hook.first;
+    MS_LOG(DEBUG) << "Run hook id T" << hook.first;
     MS_EXCEPTION_IF_NULL(hook.second);
     (*grad_in)[kIndex0] = (*(hook.second))(grad_in->front());
   }
   runtime::Pipeline::Get().WaitForward();
   MS_LOG(DEBUG) << PyNativeAlgo::Common::PrintDebugInfo(*grad_in, "After hook print gradient in: ");
-  return *grad_in;
+}
+
+void CallBackwardHooks(const ValuePtr &value, ValuePtrList *grad_in) {
+  MS_EXCEPTION_IF_NULL(grad_in);
+  auto auto_grad_meta = HasTensorHook(value);
+  if (auto_grad_meta == nullptr) {
+    return;
+  }
+  RunTensorHook(grad_in, auto_grad_meta);
 }
 
 void ReleaseResource(const VariablePtr &variable) {
-  const auto &forward = PyNativeAlgo::Common::GetPyNativeExecutor()->forward_executor();
+  const auto &forward = PyNativeExecutor::forward_executor();
   if (forward->enable_async()) {
     const auto task = [variable]() { variable->Release(); };
     runtime::Pipeline::Get().bprop_stage()->Push(std::make_shared<BpropTask>(task));
@@ -331,7 +346,7 @@ FuncGrad::FuncGrad(const ValuePtrList &input_param_values, size_t op_num_in_bpro
   MS_LOG(DEBUG) << "Start FuncGrad, input size: " << input_param_values.size();
   for (size_t i = 0; i < input_param_values.size(); ++i) {
     const auto &input_param_value = input_param_values[i];
-    auto func_node = std::make_shared<BackwardNode>("input" + std::to_string(i));
+    auto func_node = std::make_shared<BackwardNode>(kInput + std::to_string(i));
     auto variable = std::make_shared<FuncVariable>(func_node, true);
 
     if (!input_param_value->isa<ValueSequence>()) {
@@ -471,6 +486,7 @@ void FuncGrad::BackPropagate() {
     MS_LOG(DEBUG) << "Begin calculate op: " << fn->name() << " gradients!";
     if (!variable->is_need_propagate() || !variable->is_need_grad()) {
       MS_LOG(DEBUG) << "No need grad, variable is: " << variable->ToString();
+      WeightNodeNotInGradButHasTensorHook(variable, fn);
       continue;
     }
     if (static_cast<bool>(MS_UNLIKELY(variable->is_fake_bprop()))) {
@@ -482,9 +498,9 @@ void FuncGrad::BackPropagate() {
     }
     auto &gradient_in = gradient_in_iter->second;
     MS_LOG(DEBUG) << PyNativeAlgo::Common::PrintDebugInfo(gradient_in, "Begin print gradient in: ");
-    // If register hook by weight, and weight in recompute cell.So, hook will execute, which is not expect.
-    if (!is_run_recompute_) {
-      gradient_in = CallBackwardHooks(fn->op_output(), &gradient_in);
+    // If register hook by weight, and weight in recomputed cell.So, hook will execute, which is not expect.
+    if (!is_run_recompute_ || !variable->is_leaf()) {
+      CallBackwardHooks(fn->op_output(), &gradient_in);
     }
     auto gradient_out = fn->CallBackward(gradient_in);
     MS_LOG(DEBUG) << PyNativeAlgo::Common::PrintDebugInfo(gradient_out, "Begin print gradient out: ");
@@ -494,7 +510,7 @@ void FuncGrad::BackPropagate() {
     for (size_t i = 0; i < fn->next_edges().size(); ++i) {
       const auto &next_edge = fn->next_edges()[i];
       const auto &last_variable = next_edge.variable;
-      // If network not calculate inputs grad, some op will be pruning, we need skip this op.
+      // If network not calculates input grad, some op will be pruning, we need skip this op.
       if (!last_variable->is_need_grad()) {
         MS_LOG(DEBUG) << "variable is not need grad, " << last_variable->ToString();
         continue;
@@ -543,27 +559,50 @@ OrderedSet<FuncVariablePtr>::reverse_iterator FuncGrad::GetLastNodeReverseIter()
   return variable_set_.rend();
 }
 
+void FuncGrad::WeightNodeNotInGradButHasTensorHook(const FuncVariablePtr &variable, const BackwardNodePtr &fn) const {
+  if (!variable->is_leaf() || !HasTensorHook(fn->op_output())) {
+    return;
+  }
+  const auto &v = fn->op_output();
+  MS_EXCEPTION_IF_NULL(v);
+  if (!v->isa<tensor::BaseTensor>()) {
+    return;
+  }
+  auto tensor = v->cast<tensor::BaseTensorPtr>();
+  ValuePtrList grad_in{};
+  if (variable->grad() == nullptr) {
+    grad_in.emplace_back(func_impl_->Zeros(v));
+  } else {
+    grad_in.emplace_back(variable->grad());
+  }
+  RunTensorHook(&grad_in, tensor->auto_grad_meta_data().get());
+  auto grad_tensor = grad_in.front()->cast<tensor::BaseTensorPtr>();
+  MS_EXCEPTION_IF_NULL(grad_tensor);
+  variable->set_grad(grad_tensor);
+}
+
 void FuncGrad::ConstructParameterNodes(const ValuePtrList &inputs) {
   for (const auto &value : inputs) {
-    if (value->isa<tensor::BaseTensor>()) {
-      const auto &tensor = value->cast<tensor::BaseTensorPtr>();
-      const auto &auto_grad_meta_data = tensor->auto_grad_meta_data();
-      // Get scalar tensor
-      if (auto_grad_meta_data == nullptr || auto_grad_meta_data->variable() != nullptr) {
-        continue;
-      }
-      if (PyNativeAlgo::Common::IsParam(auto_grad_meta_data->input_type())) {
-        param_meta_grad_info_[tensor] = auto_grad_meta_data;
-      }
-      if (auto_grad_meta_data->input_type() == InputType::kParameter &&
-          PyNativeAlgo::Common::IsParamRequiresGrad(tensor)) {
-        auto fn = std::make_shared<BackwardNode>("parameter");
-        fn->set_op_output(value);
-        auto variable = std::make_shared<FuncVariable>(fn, true);
-        auto_grad_meta_data->set_variable(variable);
-        (void)variable_set_.insert(variable);
-        weights_used_in_graph_.emplace_back(tensor);
-      }
+    if (!value->isa<tensor::BaseTensor>()) {
+      continue;
+    }
+    const auto &tensor = value->cast<tensor::BaseTensorPtr>();
+    const auto &auto_grad_meta_data = tensor->auto_grad_meta_data();
+    // Get scalar tensor
+    if (auto_grad_meta_data == nullptr || auto_grad_meta_data->variable() != nullptr) {
+      continue;
+    }
+    if (PyNativeAlgo::Common::IsParam(auto_grad_meta_data->input_type())) {
+      param_meta_grad_info_[tensor] = auto_grad_meta_data;
+    }
+    if (auto_grad_meta_data->input_type() == InputType::kParameter &&
+        PyNativeAlgo::Common::IsParamRequiresGrad(tensor)) {
+      auto fn = std::make_shared<BackwardNode>(tensor->param_info()->name());
+      fn->set_op_output(value);
+      auto variable = std::make_shared<FuncVariable>(fn, true);
+      auto_grad_meta_data->set_variable(variable);
+      (void)variable_set_.insert(variable);
+      weights_used_in_graph_.emplace_back(tensor);
     }
   }
 }

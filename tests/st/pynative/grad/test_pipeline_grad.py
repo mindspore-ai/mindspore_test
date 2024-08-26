@@ -163,7 +163,7 @@ def test_network_pipeline_grad_first():
           level_mark='level0',
           card_mark='onecard',
           essential_mark='essential')
-def test_network_pipeline_with_high_grad():
+def test_network_pipeline_with_grad_first_high_grad():
     """
     Feature: Test pipeline_grad
     Description: Net is grad by pipeline
@@ -197,6 +197,58 @@ def test_network_pipeline_with_high_grad():
         assert np.allclose(output3[0].asnumpy(), Tensor(np.array([7, 8, 9])).astype(np.float32).asnumpy(), 0.001, 0.001)
         assert np.allclose(output3[1].asnumpy(), Tensor(np.array([-3.5, -4, -4.5])).astype(np.float32).asnumpy(), 0.001,
                            0.001)
+
+
+class HighNet(nn.Cell):
+    def __init__(self):
+        super(HighNet, self).__init__()
+        self.weight1 = Parameter(Tensor(np.array([2.0, 2.0, 2.0]), ms.float32), name="weight1")
+        self.weight2 = Parameter(Tensor(np.array([3.0, 3.0, 3.0]), ms.float32), name="weight2")
+        self.net = Net()
+        self.ms_grad = GradOfAllParams(self.net, False)
+
+    def construct(self, x):
+        x = x / self.weight1
+        x = x * self.weight2
+        x = self.ms_grad(x)
+        return x
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_network_pipeline_with_set_grad_high_grad():
+    """
+    Feature: Test pipeline_grad with high grad
+    Description: Net is grad by pipeline
+    Expectation: Success
+    """
+    net = HighNet()
+    net.set_grad()
+    ms_grad = GradOfAllInputs(net, False)
+
+    for _ in range(2):
+        input_1 = Tensor(np.array([2.0, 4.0, 6.0]), ms.float32)
+        input_2 = Tensor(np.array([6.0, 10.0, 12.0]), ms.float32)
+        input_3 = Tensor(np.array([14.0, 16.0, 18.0]), ms.float32)
+
+        net(input_1)
+        net(input_2)
+
+        output1 = ms_grad(input_1)
+        net(input_3)
+        output2 = ms_grad(input_2)
+        output3 = ms_grad(input_3)
+
+        assert np.allclose(output1[0].asnumpy(),
+                           Tensor(np.array([-3.75e-1, -3.75e-1, -3.75e-1])).astype(np.float32).asnumpy(), 0.001, 0.001)
+
+        assert np.allclose(output2[0].asnumpy(),
+                           Tensor(np.array([-3.75e-1, -3.75e-1, -3.75e-1])).astype(np.float32).asnumpy(), 0.001, 0.001)
+
+        assert np.allclose(output3[0].asnumpy(),
+                           Tensor(np.array([-3.75e-1, -3.75e-1, -3.75e-1])).astype(np.float32).asnumpy(), 0.001, 0.001)
 
 
 class OneInputBprop(nn.Cell):

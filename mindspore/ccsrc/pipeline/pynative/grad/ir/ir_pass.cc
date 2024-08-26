@@ -32,6 +32,7 @@ namespace bprop_pass {
 namespace {
 constexpr auto kTupleToMakeTuple = "tuple_to_make_tuple";
 constexpr auto kHookType = "hook_type";
+constexpr auto kParamName = "param";
 
 mindspore::HashMap<AnfNodePtr, std::vector<std::pair<size_t, AnfNodePtr>>> node_attr_value_;
 
@@ -538,8 +539,11 @@ AnfNodePtr IrPassForward::PassBackwardHook(const ValuePtr &value, const AnfNodeP
     auto bprop_cut = std::make_shared<PrimitivePy>("bprop_cut");
     bprop_cut->SetHookFn(hook_fn, HookType::kTensorHook);
     (void)bprop_cut->AddAttr(kHookType, MakeValue(bprop_cut->HookTypeToString()));
-    // Need input out and dout for bprop run, current just make a fake
+    // Just use dout for bprop run
     AnfNodePtrList inputs{NewValueNode(bprop_cut), res};
+    if (tensor->is_parameter()) {
+      (void)bprop_cut->AddAttr(kParamName, MakeValue(tensor->param_info()->name()));
+    }
     res = ir_bprop_->ad_param()->tape_->FuncGraph::NewCNode(inputs);
     // Need update after execute
     res->set_abstract(grad_node->abstract());

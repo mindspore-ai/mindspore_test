@@ -376,7 +376,7 @@
             - PyNative模式下，如果在Cell对象的 `construct` 函数中调用 `register_backward_pre_hook(hook_fn)` ，那么Cell对象每次运行都将增加一个 `hook_fn` 。
 
         参数：
-            - **hook_fn** (function) - 捕获Cell对象信息和反向输入，输出梯度的 `hook_fn` 函数。
+            - **hook_fn** (function) - 捕获Cell对象信息和反向输入梯度的 `hook_fn` 函数。
 
         返回：
             返回与 `hook_fn` 函数对应的 `handle` 对象。可通过调用 `handle.remove()` 来删除添加的 `hook_fn` 函数。

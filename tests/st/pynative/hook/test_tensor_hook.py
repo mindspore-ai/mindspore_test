@@ -268,3 +268,52 @@ def test_tensor_hook_with_reduce_scatter():
     """
     return_code = os.system("mpirun --allow-run-as-root -n 8 pytest -s test_tensor_hook_reduce_scatter.py")
     assert return_code == 0
+
+
+not_in_grad = 1
+
+
+def tensor_hook_fn2(grad):
+    global not_in_grad
+    not_in_grad += 1
+
+
+class NetWithParameterNotInGrad(nn.Cell):
+    def __init__(self):
+        super(NetWithParameterNotInGrad, self).__init__()
+        self.weight1 = Parameter(Tensor(np.array([1.0, 2.0, 3.0]), ms.float32), name="weight1")
+        self.weight2 = Parameter(Tensor(np.array([1.0, 2.0, 3.0]), ms.float32), name="weight2")
+        self.handle1 = self.weight1.register_hook(tensor_hook_fn2)
+        self.handle2 = self.weight2.register_hook(tensor_hook_fn2)
+
+    def construct(self, x):
+        y = x * self.weight1
+        z = x * self.weight2
+        print(z)
+        y = y * self.weight1
+        return y
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_tensor_backward_hook_with_weight_not_in_grad():
+    """
+    Feature: Test tensor hook feature
+    Description: test hook
+    Expectation: Success
+    """
+    input_x = Tensor(np.array([1.0, 2.0, 3.0]), ms.float32)
+    net1 = NetWithParameterNotInGrad()
+    ms_grad = GradOfAllParams(net1, False)
+    # Ir grad
+    ms_grad(input_x)
+    global not_in_grad
+    assert not_in_grad == 3
+
+    # Func grad
+    net1.set_inputs()
+    not_in_grad = 1
+    ms_grad(input_x)
+    assert not_in_grad == 3
