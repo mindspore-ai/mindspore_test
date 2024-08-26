@@ -379,9 +379,8 @@ void DumpTensorToFile(std::string file_path, mindspore::tensor::TensorPtr out_te
 device::DeviceAddressPtr HandleOverflow(const std::vector<TensorInfoForDump> &tensor_info_list,
                                         const DeviceContext *device_context, uint32_t stream_id,
                                         const TensorInfoCommForDump &tensor_info_comm, uint32_t set_overflow_num) {
-  device::DeviceAddressPtr overflow_result;
   if (OverflowCounter::GetInstance().getCount() >= set_overflow_num && set_overflow_num != 0) {
-    return overflow_result;
+    return nullptr;
   }
 
   std::vector<KernelTensor *> kernel_tensors;
@@ -390,9 +389,7 @@ device::DeviceAddressPtr HandleOverflow(const std::vector<TensorInfoForDump> &te
       kernel_tensors.push_back(tensor_info.device_tensor->kernel_tensor().get());
     }
   }
-
-  overflow_result = datadump::CalCheckOverflowAsync(device_context, kernel_tensors, stream_id);
-  return overflow_result;
+  return datadump::CalCheckOverflowAsync(device_context, kernel_tensors, stream_id);
 }
 
 bool ProcessOverflow(const device::DeviceAddressPtr &overflow_result, uint32_t set_overflow_num) {
@@ -401,6 +398,8 @@ bool ProcessOverflow(const device::DeviceAddressPtr &overflow_result, uint32_t s
   bool is_overflow = (TensorToString(my_overflow) == "True");
   if (is_overflow && (set_overflow_num == 0 || OverflowCounter::GetInstance().getCount() < set_overflow_num)) {
     OverflowCounter::GetInstance().addCount();
+  } else {
+    is_overflow = false;
   }
   return is_overflow;
 }
