@@ -54,7 +54,7 @@ class CustomOOC():
 
     def __init__(self, args):
         self.args = args
-        script_path = os.path.abspath(__file__)
+        script_path = os.path.realpath(__file__)
         dir_path, _ = os.path.split(script_path)
         self.current_path = dir_path
         self.custom_project = os.path.join(dir_path, "CustomProject")

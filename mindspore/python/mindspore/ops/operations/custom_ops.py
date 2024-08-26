@@ -559,7 +559,7 @@ class Custom(ops.PrimitiveWithInfer):
             raise TypeError(
                 "{}, 'func' should be like 'file_name:func_name', but got {}".format(
                     self.log_prefix, self.func))
-        file_path = os.path.abspath(file_name_list[0])
+        file_path = os.path.realpath(file_name_list[0])
         if os.environ.get('MS_CUSTOM_AOT_WHITE_LIST') is None:
             if Custom.custom_aot_warning:
                 logger.info("{}, no white list is set and it might cause problems. "
@@ -567,7 +567,7 @@ class Custom(ops.PrimitiveWithInfer):
                             .format(self.log_prefix))
                 Custom.custom_aot_warning = False
         else:
-            legal_path = os.path.abspath(os.environ.get('MS_CUSTOM_AOT_WHITE_LIST'))
+            legal_path = os.path.realpath(os.environ.get('MS_CUSTOM_AOT_WHITE_LIST'))
             if legal_path not in file_path:
                 raise TypeError(
                     "{}, the legal path for the file is {}, but the file is {}".format(

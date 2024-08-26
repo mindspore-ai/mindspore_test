@@ -27,6 +27,7 @@ namespace kernel {
 KernelModPtr HostOpBuild(const std::shared_ptr<AnfNode> &anf_node) {
   MS_EXCEPTION_IF_NULL(anf_node);
   auto prim = common::AnfAlgo::GetCNodePrimitive(anf_node);
+  MS_EXCEPTION_IF_NULL(prim);
   MS_LOG(INFO) << "Build host op [" << prim->name() << "]";
 
   auto kernel_mod_ptr = HostKernelFactory::Get(prim->name());

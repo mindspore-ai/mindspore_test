@@ -721,8 +721,8 @@ void GeGraphExecutor::InitGraphInfo(const FuncGraphPtr &graph) {
 }
 
 void GeGraphExecutor::BuildInputDataGeTensor(const KernelGraphPtr &kernel_graph) {
-  MS_LOG(INFO) << "Start BuildInputDataGeTensor, kernel graph: " << kernel_graph->ToString();
   MS_EXCEPTION_IF_NULL(kernel_graph);
+  MS_LOG(INFO) << "Start BuildInputDataGeTensor, kernel graph: " << kernel_graph->ToString();
   std::vector<GeTensor> ge_inputs;
   std::vector<DeviceAddress *> device_addrs;
   std::vector<std::pair<AnfNodeWeakPtr, size_t>> need_update_input;
@@ -766,8 +766,8 @@ void GeGraphExecutor::BuildInputDataGeTensor(const KernelGraphPtr &kernel_graph)
 }
 
 void GeGraphExecutor::BuildOutputDataGeTensor(const KernelGraphPtr &kernel_graph) {
-  MS_LOG(INFO) << "Start BuildOutputDataGeTensor, kernel graph: " << kernel_graph->ToString();
   MS_EXCEPTION_IF_NULL(kernel_graph);
+  MS_LOG(INFO) << "Start BuildOutputDataGeTensor, kernel graph: " << kernel_graph->ToString();
   std::vector<GeTensor> ge_outputs;
   std::vector<DeviceAddress *> device_addrs;
   std::vector<std::pair<AnfNodeWeakPtr, size_t>> graph_outputs;
@@ -1009,8 +1009,8 @@ bool GeGraphExecutor::CompileGraph(const KernelGraphPtr &graph,
 
 void GeGraphExecutor::AddRefCorrespondPairs(const KernelGraphPtr &graph,
                                             const std::vector<std::pair<uint32_t, uint32_t>> &io_indexes) const {
-  MS_LOG(INFO) << "Start convert io_indexes to ref_map, kernel graph: " << graph->ToString();
   MS_EXCEPTION_IF_NULL(graph);
+  MS_LOG(INFO) << "Start convert io_indexes to ref_map, kernel graph: " << graph->ToString();
 
   std::map<session::AnfWithOutIndex, session::AnfWithOutIndex> ref_out_in_map = {};
   auto graph_inputs_all = graph->parameters();
