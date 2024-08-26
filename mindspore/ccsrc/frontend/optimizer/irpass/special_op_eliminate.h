@@ -448,6 +448,7 @@ class PynativeEliminater : public OptimizerCaller {
       MS_LOG(DEBUG) << "Start FillZero Tensor";
       auto tensor = value->cast<tensor::TensorPtr>();
       auto out_t = TensorConstructUtils::CreateZerosTensor(tensor->Dtype(), tensor->shape());
+      MS_EXCEPTION_IF_NULL(out_t);
       char *data = reinterpret_cast<char *>(out_t->data_c());
       std::fill(data, data + out_t->data().nbytes(), 0);
       out = out_t;

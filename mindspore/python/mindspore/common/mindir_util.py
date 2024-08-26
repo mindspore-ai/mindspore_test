@@ -90,7 +90,7 @@ def save_mindir(model, file_name):
     if not file_name.endswith('.mindir'):
         file_name += ".mindir"
 
-    current_path = os.path.abspath(file_name)
+    current_path = os.path.realpath(file_name)
     dirname = os.path.dirname(current_path)
     os.makedirs(dirname, exist_ok=True)
     if os.path.exists(file_name):

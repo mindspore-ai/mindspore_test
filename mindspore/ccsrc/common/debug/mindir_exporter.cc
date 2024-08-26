@@ -180,6 +180,7 @@ bool IrExportBuilder::BuildPrimitives() {
 
     // Set primitive attributes
     for (const auto &attr : prim->attrs()) {
+      MS_EXCEPTION_IF_NULL(attr.second);
       MS_LOG(DEBUG) << "attr: " << attr.first << " " << attr.second->DumpText() << " " << attr.second->type_name();
       auto iter = g_export_attr_blacklist.find(attr.first);
       if (iter != g_export_attr_blacklist.end()) {
