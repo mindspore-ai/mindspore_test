@@ -483,6 +483,10 @@ class BACKEND_EXPORT KernelGraph : public FuncGraph {
   const std::map<AnfWithOutIndex, AnfWithOutIndex> &front_node_to_graph_output_map() const {
     return front_node_to_graph_output_map_;
   }
+  // add out front node pairs to graph_output_to_front_node_map_
+  void AddOutFrontPairs(const AnfWithOutIndex &out_pair, const AnfWithOutIndex &front_pair);
+  // add front out node pairs to front_node_to_graph_output_map_
+  void AddFrontOutPairs(const AnfWithOutIndex &front_pair, const AnfWithOutIndex &out_pair);
 
   // The interface to set/get the graph GIL flag.
   void set_is_need_gil(bool flag) { is_need_gil_ = flag; }

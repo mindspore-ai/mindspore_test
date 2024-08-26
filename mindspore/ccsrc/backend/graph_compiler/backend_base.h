@@ -169,6 +169,7 @@ class BACKEND_EXPORT MindRTBackendBase : public Backend {
   void CompileSubGraph(const FuncGraphPtr &func_graph, device::RunMode run_mode = device::RunMode::kUnknown);
   void ProcessNotSupportCnode(const FuncGraphPtr &func_graph, const device::DeviceType &old_target,
                               const device::DeviceType &new_target) const;
+  bool CompileGraphsByKbkCache(const FuncGraphPtr &func_graph, DeviceContext *device_context);
 };
 }  // namespace compile
 }  // namespace mindspore

@@ -1126,6 +1126,10 @@ void GeKernelExecutor::PreprocessBeforeRun(const FuncGraphPtr &graph) const {
                                   profiler::GetClockSyscnt(), 1);
 }
 
+void GeKernelExecutor::CreateEventForCache(const KernelGraphPtr &kernel_graph) const {
+  AclStreamAssign::GetInstance().CreateEvent(NOT_NULL(kernel_graph));
+}
+
 bool GeKernelExecutor::PySyncRuning(void *stream) const {
   MS_EXCEPTION_IF_NULL(res_manager_);
   auto ms_context = MsContext::GetInstance();

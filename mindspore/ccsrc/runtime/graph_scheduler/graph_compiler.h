@@ -141,6 +141,14 @@ class GraphCompiler {
   // the detailed implementation of compiling graph is in 'CompileGraphImpl'.
   GraphId CompileWholeGraphForGraphRunMode(const FuncGraphPtr &func_graph, const DeviceContext *device_context);
 
+  // Construct kernel graph from function graph and compile kernel graph in Graph mode,
+  // the detailed implementation of compiling graph is in 'CompileGraphImpl'.
+  std::pair<bool, GraphId> CompileGraphForKernelRunModeUseCache(const FuncGraphPtr &func_graph,
+                                                                const DeviceContext *device_context);
+
+  // Cache kernel kernel graph if export_kbk_compile_cache_ is true.
+  void CacheGraphKbk(const std::vector<KernelGraphPtr> &graph);
+
   // Get graph by graph id, if not exist return nullptr, used in Graph mode.
   KernelGraphPtr Fetch(GraphId graph_id) const;
 
@@ -224,6 +232,7 @@ class GraphCompiler {
   session::SessionPtr session_;
   bool use_cache_to_compile_graph_ = false;
   bool export_compile_cache_ = false;
+  bool export_kbk_compile_cache_ = false;
 };
 
 }  // namespace runtime

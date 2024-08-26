@@ -158,6 +158,32 @@ void AclStreamAssign::AssignStream(const NotNull<KernelGraphPtr> &kernel_graph,
   }
 }
 
+void AclStreamAssign::CreateEvent(const NotNull<KernelGraphPtr> &kernel_graph) {
+  std::map<uint32_t, CNodePtr> event_send_map;
+  std::map<uint32_t, CNodePtr> event_recv_map;
+  auto nodes = kernel_graph->execution_order();
+  for (auto &node : nodes) {
+    MS_EXCEPTION_IF_NULL(node);
+    auto name = common::AnfAlgo::GetCNodeName(node);
+    if (name == kStreamRecvOpName) {
+      auto event_id = common::AnfAlgo::GetNodeAttr<uint32_t>(node, kAttrEventId);
+      event_recv_map[event_id] = node;
+    }
+    if (name == kStreamSendOpName) {
+      auto event_id = common::AnfAlgo::GetNodeAttr<uint32_t>(node, kAttrEventId);
+      event_send_map[event_id] = node;
+    }
+  }
+  auto &resource_manager = AscendStreamMng::GetInstance();
+  for (auto iter : event_send_map) {
+    auto event = resource_manager.ApplyRtEvent();
+    auto send_node = iter.second;
+    common::AnfAlgo::SetNodeAttr(kAttrRecordEvent, MakeValue(reinterpret_cast<uintptr_t>(event)), send_node);
+    auto recv_node = event_recv_map.find(iter.first)->second;
+    common::AnfAlgo::SetNodeAttr(kAttrWaitEvent, MakeValue(reinterpret_cast<uintptr_t>(event)), recv_node);
+  }
+}
+
 void AclStreamAssign::GenKernelIoExecInfoMap(
   const NotNull<KernelGraphPtr> &kernel_graph,
   mindspore::HashMap<CNodePtr, NodeIoExecInfoPtr> *kernel_io_exec_info_map) const {

@@ -402,6 +402,9 @@ class BACKEND_EXPORT KernelExecutor {
   // Adjust kernel graph before run graph.
   virtual void PreprocessBeforeRun(const FuncGraphPtr &graph) const {}
 
+  // Create event for graph from cache.
+  virtual void CreateEventForCache(const KernelGraphPtr &kernel_graph) const {}
+
   // Launch a kernel via 'KernelMod' of the kernel, use KernelTensor input type.
   virtual bool LaunchKernel(const CNodePtr &kernel, const std::vector<KernelTensor *> &inputs,
                             const std::vector<KernelTensor *> &workspace, const std::vector<KernelTensor *> &outputs,

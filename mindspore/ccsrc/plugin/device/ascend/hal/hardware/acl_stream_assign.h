@@ -59,6 +59,7 @@ class AclStreamAssign {
 
   void AssignStream(const NotNull<KernelGraphPtr> &kernel_graph,
                     const std::vector<std::pair<CNodePtr, CNodePtr>> &sched_events);
+  void CreateEvent(const NotNull<KernelGraphPtr> &kernel_graph);
 
  private:
   AclStreamAssign() = default;

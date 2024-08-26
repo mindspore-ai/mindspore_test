@@ -120,6 +120,46 @@ bool UseCacheToCompileGraph(const FuncGraphPtr &func_graph, const device::Device
   return true;
 }
 
+bool UseCacheToCompileGraphKBK(const FuncGraphPtr &func_graph, const device::DeviceType &device_type) {
+  if (!CompileCacheEnable()) {
+    return false;
+  }
+  if (!common::IsEnableRuntimeConfig(common::kRuntimeCache)) {
+    return false;
+  }
+  auto &context = CompileCacheContext::GetInstance();
+  if (context.FrontGraph() != func_graph) {
+    return false;
+  }
+  if (device_type != device::DeviceType::kAscend) {
+    return false;
+  }
+  if (!context.UseCompileCache()) {
+    return false;
+  }
+  return true;
+}
+
+bool ExportCompileCacheKBK(const FuncGraphPtr &func_graph, const device::DeviceType &device_type) {
+  if (!CompileCacheEnable()) {
+    return false;
+  }
+  if (!common::IsEnableRuntimeConfig(common::kRuntimeCache)) {
+    return false;
+  }
+  auto &context = CompileCacheContext::GetInstance();
+  if (context.FrontGraph() != func_graph) {
+    return false;
+  }
+  if (device_type != device::DeviceType::kAscend) {
+    return false;
+  }
+  if (context.UseCompileCache()) {
+    return false;
+  }
+  return true;
+}
+
 bool ExportCompileCache(const FuncGraphPtr &func_graph, const device::DeviceType &device_type) {
   if (!EnableBackendCompileCache(func_graph, device_type)) {
     return false;
@@ -456,6 +496,15 @@ void RecursiveSetRunMode(const KernelGraphPtr &graph, std::set<KernelGraphPtr> *
     RecursiveSetRunMode(child_graph_ptr, memo);
   }
 }
+
+bool UpdateCacheFlag(const FuncGraphPtr &func_graph, const DeviceContext *device_context) {
+  MS_EXCEPTION_IF_NULL(func_graph);
+  MS_EXCEPTION_IF_NULL(device_context);
+  if (ExportCompileCacheKBK(func_graph, device_context->GetDeviceType())) {
+    return true;
+  }
+  return false;
+}
 }  // namespace
 
 GraphId GraphCompiler::CompileGraph(const GraphSegmentPtr &segment,
@@ -674,6 +723,75 @@ KernelGraphPtr GraphCompiler::ConstructKernelGraphForGraphRunMode(const FuncGrap
   return root_graph;
 }
 
+void GraphCompiler::CacheGraphKbk(const std::vector<KernelGraphPtr> &graphs) {
+  if (export_kbk_compile_cache_) {
+    session_->CacheKernelGraph(graphs);
+  }
+}
+
+std::pair<bool, GraphId> GraphCompiler::CompileGraphForKernelRunModeUseCache(const FuncGraphPtr &func_graph,
+                                                                             const DeviceContext *device_context) {
+  MS_EXCEPTION_IF_NULL(session_);
+  MS_EXCEPTION_IF_NULL(func_graph);
+  const auto &context = MsContext::GetInstance();
+  if (!UseCacheToCompileGraphKBK(func_graph, device_context->GetDeviceType())) {
+    export_kbk_compile_cache_ = UpdateCacheFlag(func_graph, device_context);
+    return {false, 0};
+  }
+  MS_LOG(INFO) << "Status record: start use cache to compile graph kbk.";
+  std::vector<KernelGraphPtr> all_graphs;
+  KernelGraphPtr graph = session_->ConstructKernelGraph(&all_graphs);
+  auto post_compile = [this, device_context, context](const KernelGraphPtr &graph) {
+    use_cache_to_compile_graph_ = true;
+    // Create event before create kernelmod
+    device_context->GetKernelExecutor(false)->CreateEventForCache(graph);
+    PROF_START(CreateKernel);
+    device_context->GetKernelExecutor(false)->CreateKernel(graph->execution_order());
+    PROF_END(CreateKernel);
+#ifdef WITH_BACKEND
+    if (!graph->is_from_single_op()) {
+      auto cpu_device_context = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
+        {kCPUDevice, device_context->device_context_key().device_id_});
+      MS_EXCEPTION_IF_NULL(cpu_device_context);
+      auto cpu_executor =
+        dynamic_cast<device::cpu::CPUKernelExecutor *>(cpu_device_context->GetKernelExecutor(false).get());
+      MS_EXCEPTION_IF_NULL(cpu_executor);
+      cpu_executor->RebuildKernelSelectBackoffOp(graph->execution_order());
+    }
+#endif
+    // dynamic shape pass of graphmode
+    if (graph->is_dynamic_shape()) {
+      auto profiler_manage_inst = profiler::ProfilerManager::GetInstance();
+      MS_EXCEPTION_IF_NULL(profiler_manage_inst);
+      profiler_manage_inst->SetNetDynamicShapeStatus();
+    }
+    // need save somas info
+    // PROF_START(PreprocessBeforeRun);
+    // device_context->GetKernelExecutor(false)->PreprocessBeforeRun(graph);
+    // PROF_END(PreprocessBeforeRun);
+    graph->UpdateInternalParameter();
+    // Set device target for parameter affinity.
+    AnfAlgo::SetParameterDeviceTarget(graph);
+
+    // Create device address for all anf nodes of graph.
+    CreateDeviceAddress(graph, device_context);
+
+#ifdef ENABLE_DUMP_IR
+    // Dump .pb graph after graph optimization.
+    if (context->CanDump(kIntroductory)) {
+      DumpIRProto(graph, "after_opt_" + std::to_string(graph->graph_id()));
+    }
+#endif
+    graph->EnableRuntimeCache();
+  };
+  post_compile(graph);
+  if (CompileCacheEnable()) {
+    CompileCacheContext::GetInstance().Clear();
+  }
+  MS_LOG(INFO) << "Status record: end use cache to compile graph kbk. graph id: " << graph->graph_id();
+  return {true, graph->graph_id()};
+}
+
 GraphId GraphCompiler::CompileWholeGraphForGraphRunMode(const FuncGraphPtr &func_graph,
                                                         const DeviceContext *device_context) {
   MS_EXCEPTION_IF_NULL(session_);
@@ -809,7 +927,7 @@ GraphId GraphCompiler::CompileGraphImpl(const KernelGraphPtr &graph, const Devic
   }
 
   if (export_compile_cache_) {
-    session_->CacheKernelGraph(graph);
+    session_->CacheKernelGraph({graph});
   }
   // Adjust kernel graph before run graph.
   PROF_START(PreprocessBeforeRun);

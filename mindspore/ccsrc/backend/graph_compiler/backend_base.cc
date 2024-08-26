@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2023 Huawei Technologies Co., Ltd
+ * Copyright 2019-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -489,6 +489,17 @@ void BuildSymbolEngine(const FuncGraphPtr &func_graph, device::RunMode run_mode)
 }
 }  // namespace
 
+bool MindRTBackendBase::CompileGraphsByKbkCache(const FuncGraphPtr &func_graph, DeviceContext *device_context) {
+  // try to use kbk compile cache
+  std::pair<bool, GraphId> res = graph_compiler_->CompileGraphForKernelRunModeUseCache(func_graph, device_context);
+  if (res.first) {
+    MS_LOG(WARNING) << "Use backend compile cache.";
+    graph_id_to_device_context_[res.second] = device_context;
+    return true;
+  }
+  return false;
+}
+
 const ActorInfo &MindRTBackendBase::CompileGraphs(const FuncGraphPtr &func_graph) {
   WaitTaskFinish();
   MS_EXCEPTION_IF_NULL(graph_compiler_);
@@ -529,30 +540,41 @@ const ActorInfo &MindRTBackendBase::CompileGraphs(const FuncGraphPtr &func_graph
   func_graph_to_kernel_graph_ids_.clear();
   control_nodes_.clear();
 
-  // Current only ascend do need do checkout in PartitionGraph
-  bool all_support = device_context->PartitionGraph(func_graph);
-  PROF_START(CompileSubGraph);
-  if (all_support) {
-    if (run_mode == device::RunMode::kGraphMode && pynative::GraphAdapter::PyNativeEnableTaskSink(func_graph)) {
-      auto graph_id = graph_compiler_->CompileWholeGraphForGraphRunMode(func_graph, device_context);
-      graph_id_to_device_context_[graph_id] = device_context;
+  bool use_kbk_compile_cache = CompileGraphsByKbkCache(func_graph, device_context);
+
+  if (!use_kbk_compile_cache) {
+    // Current only ascend do need do checkout in PartitionGraph
+    bool all_support = device_context->PartitionGraph(func_graph);
+    PROF_START(CompileSubGraph);
+    if (all_support) {
+      if (run_mode == device::RunMode::kGraphMode && pynative::GraphAdapter::PyNativeEnableTaskSink(func_graph)) {
+        auto graph_id = graph_compiler_->CompileWholeGraphForGraphRunMode(func_graph, device_context);
+        graph_id_to_device_context_[graph_id] = device_context;
+      } else {
+        BuildSymbolEngine(func_graph, run_mode);
+        CompileSubGraph(func_graph);
+      }
     } else {
-      // Build symbol engine for root graph before partition graph
+      if (NeedCheckMultiTarget(func_graph, ms_execution_mode_)) {
+        ProcessNotSupportCnode(func_graph, device_context->GetDeviceType(), mindspore::device::DeviceType::kCPU);
+      }
       BuildSymbolEngine(func_graph, run_mode);
       CompileSubGraph(func_graph);
     }
-  } else {
-    if (NeedCheckMultiTarget(func_graph, ms_execution_mode_)) {
-      ProcessNotSupportCnode(func_graph, device_context->GetDeviceType(), mindspore::device::DeviceType::kCPU);
+    PROF_END(CompileSubGraph);
+
+    std::vector<KernelGraphPtr> graphs;
+    for (const auto &pair : graph_id_to_device_context_) {
+      (void)graphs.emplace_back(graph_compiler_->Fetch(pair.first));
     }
-    // Build symbol engine for root graph before partition graph
-    BuildSymbolEngine(func_graph, run_mode);
-    CompileSubGraph(func_graph);
+    MS_LOG(WARNING) << "Start cache backend kernel graph.";
+    graph_compiler_->CacheGraphKbk(graphs);
+    MS_LOG(WARNING) << "End cache backend kernel graph.";
   }
-  PROF_END(CompileSubGraph);
 
   // Construct the graph compiler info.
   auto graph_compiler_info = ConstructGraphCompilerInfo(root_graph);
+  MS_LOG(WARNING) << "Status record: construct the graph compiler info.";
   MS_EXCEPTION_IF_NULL(graph_compiler_info);
   if ((ms_execution_mode_ == kGraphMode ||
        (ms_execution_mode_ == kPynativeMode && pynative::GraphAdapter::IsPynativeGeGraphSink(root_graph_))) &&
@@ -579,7 +601,7 @@ const ActorInfo &MindRTBackendBase::CompileGraphs(const FuncGraphPtr &func_graph
   MS_LOG(INFO) << "Status record: end compile function graph: " << func_graph->ToString()
                << ", produce actor: " << actor_info;
   return actor_info;
-}
+}  // namespace compile
 
 namespace {
 void DoUnifyMindIRPass(const FuncGraphPtr &graph, const std::shared_ptr<opt::GraphOptimizer> &optimizer) {
@@ -871,7 +893,6 @@ void MindRTBackendBase::UnifyMindIR(const FuncGraphPtr &root_graph) const {
 }
 
 void MindRTBackendBase::CompileSubGraph(const FuncGraphPtr &func_graph, device::RunMode run_mode) {
-  MS_EXCEPTION_IF_NULL(func_graph);
   auto root_graph = func_graph;
   if (!func_graph->has_flag(kFlagIsPyNativeBpropKernelGraph)) {
     root_graph = WrapPrimitives(func_graph);
@@ -1615,7 +1636,6 @@ std::shared_ptr<GraphCompilerInfo> MindRTBackendBase::ConstructGraphCompilerInfo
     }
     ++graph_index;
   }
-
   auto parser = std::make_shared<ControlNodeParser>();
   const auto &root_output =
     common::AnfAlgo::VisitKernelWithReturnType(root_graph->output(), 0, false, {prim::kPrimTupleGetItem}).first;

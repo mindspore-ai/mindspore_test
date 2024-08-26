@@ -55,6 +55,9 @@ class GeKernelExecutor : public KernelExecutor {
   // Adjust kernel graph before run graph, used in Graph Mode.
   void PreprocessBeforeRun(const FuncGraphPtr &graph) const override;
 
+  // Create event for graph from cache.
+  void CreateEventForCache(const KernelGraphPtr &kernel_graph) const override;
+
   // Launch a kernel via 'KernelMod' of the kernel.
   bool LaunchKernel(const CNodePtr &kernel, const std::vector<KernelTensor *> &inputs,
                     const std::vector<KernelTensor *> &workspace, const std::vector<KernelTensor *> &outputs,

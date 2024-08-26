@@ -295,6 +295,10 @@ void LoadAnfKernelInfoFromJson(const nlohmann::json &kernel_infos_json) {
     }
     kernel_info->set_graph_id(kernel_info_value[kGraphId]);
     kernel_info->set_feature_map_flag(kernel_info_value[kIsFeatureMap]);
+    kernel_info->set_stream_id(kernel_info_value[kAttrStreamId]);
+    kernel_info->set_stream_distinction_label(kernel_info_value[kStreamDistinctionLabel]);
+    kernel_info->SetSomasResult(std::move(kernel_info_value[kSomasOutputResult]),
+                                std::move(kernel_info_value[kSomasWorkspaceResult]));
     node->set_kernel_info(kernel_info);
     LoadAnfSelectKernelBuildInfo(kernel_info_value, node);
 
@@ -339,6 +343,18 @@ nlohmann::json SaveAnfToAnfMap(const HashMap<AnfNodePtr, AnfNodePtr> &save_map) 
       continue;
     }
     ret[first_name] = second_name;
+  }
+  return ret;
+}
+
+nlohmann::json SaveAnfToStringMap(const HashMap<AnfNodePtr, std::string> &save_map) {
+  nlohmann::json ret;
+  for (const auto &i : save_map) {
+    const auto &first_name = GetAnfUniqueCacheName(i.first, false);
+    if (first_name.empty()) {
+      continue;
+    }
+    ret[first_name] = i.second;
   }
   return ret;
 }
@@ -424,6 +440,28 @@ nlohmann::json SaveGraphsId(const HashMap<uint32_t, std::weak_ptr<session::Kerne
   return ret_json;
 }
 
+std::vector<nlohmann::json> SaveVecPair(const std::vector<std::pair<size_t, size_t>> &vec) {
+  std::vector<nlohmann::json> ret_json;
+  for (auto &i : vec) {
+    nlohmann::json iter_json;
+    iter_json.push_back(i.first);
+    iter_json.push_back(i.second);
+    ret_json.push_back(iter_json);
+  }
+  return ret_json;
+}
+
+std::vector<nlohmann::json> SaveMapPair(const std::map<size_t, size_t> &m) {
+  std::vector<nlohmann::json> ret_json;
+  for (auto &i : m) {
+    nlohmann::json iter_json;
+    iter_json.push_back(i.first);
+    iter_json.push_back(i.second);
+    ret_json.push_back(iter_json);
+  }
+  return ret_json;
+}
+
 std::vector<nlohmann::json> SavePrevOutputs(const std::map<size_t, std::pair<AnfNodeWeakPtr, size_t>> &save_map) {
   std::vector<nlohmann::json> ret_json;
   for (const auto &i : save_map) {
@@ -459,64 +497,69 @@ void SaveKernelInfoRuntimeCache(KernelInfoDevice *kernel_info, nlohmann::json *c
   }
 }
 
-nlohmann::json SaveAnfKernelInfo(const AnfNodePtr &node) {
-  nlohmann::json single_json;
-  if (AnfUtils::IsRealKernel(node)) {
-    single_json[kOriginDataFormat] = AnfAlgo::GetOriginDataFormat(node);
+void SaveKernelBuildInfo(const AnfNodePtr &node, nlohmann::json *const single_json) {
+  if (AnfUtils::IsRealKernel(node) &&
+      (dynamic_cast<device::KernelInfo *>(node->kernel_info())->select_kernel_build_info() != nullptr)) {
+    (*single_json)[kOriginDataFormat] = AnfAlgo::GetOriginDataFormat(node);
     const auto &input_formats = AnfAlgo::GetAllInputFormats(node);
     if (!input_formats.empty()) {
-      single_json[kAllInputFormat] = input_formats;
+      (*single_json)[kAllInputFormat] = input_formats;
     }
     const auto &output_formats = AnfAlgo::GetAllOutputFormats(node);
     if (!output_formats.empty()) {
-      single_json[kAllOutputFormat] = output_formats;
+      (*single_json)[kAllOutputFormat] = output_formats;
     }
     const auto &input_device_types = AnfAlgo::GetAllInputDeviceTypes(node);
     if (!input_device_types.empty()) {
-      single_json[kAllInputDeviceType] = input_device_types;
+      (*single_json)[kAllInputDeviceType] = input_device_types;
     }
     const auto &output_device_types = AnfAlgo::GetAllOutputDeviceTypes(node);
     if (!output_device_types.empty()) {
-      single_json[kAllOutputDeviceType] = output_device_types;
+      (*single_json)[kAllOutputDeviceType] = output_device_types;
     }
   }
   if (AnfAlgo::HasSelectKernelBuildInfo(node)) {
     auto kernel_type = AnfAlgo::GetKernelType(node);
-    single_json[kKernelType] = kernel_type;
+    (*single_json)[kKernelType] = kernel_type;
     auto op_type = AnfAlgo::GetOpType(node);
-    single_json[kOpType] = op_type;
-    single_json[kCoreType] = AnfAlgo::GetCoreType(node);
-    single_json[kOpPattern] = AnfAlgo::GetOpPattern(node);
+    (*single_json)[kOpType] = op_type;
+    (*single_json)[kCoreType] = AnfAlgo::GetCoreType(node);
+    (*single_json)[kOpPattern] = AnfAlgo::GetOpPattern(node);
     const auto &input_reshape_types_json = AnfAlgo::GetAllInputReshapeType(node);
     if (!input_reshape_types_json.empty()) {
-      single_json[kAllInputReshapeType] = input_reshape_types_json;
+      (*single_json)[kAllInputReshapeType] = input_reshape_types_json;
     }
     const auto &output_reshape_types_json = AnfAlgo::GetAllOutputReshapeType(node);
     if (!output_reshape_types_json.empty()) {
-      single_json[kAllOutputReshapeType] = output_reshape_types_json;
+      (*single_json)[kAllOutputReshapeType] = output_reshape_types_json;
     }
     const auto &input_kernel_object_types_json = AnfAlgo::GetInputKernelObjectTypes(node);
     if (!input_kernel_object_types_json.empty()) {
-      single_json[kInputKernelObjectTypes] = input_kernel_object_types_json;
+      (*single_json)[kInputKernelObjectTypes] = input_kernel_object_types_json;
     }
     const auto &output_kernel_object_types_json = AnfAlgo::GetOutputKernelObjectTypes(node);
     if (!output_kernel_object_types_json.empty()) {
-      single_json[kOutputKernelObjectTypes] = output_kernel_object_types_json;
+      (*single_json)[kOutputKernelObjectTypes] = output_kernel_object_types_json;
     }
     const auto &output_elements_kernel_object_types_json = AnfAlgo::GetOutputElementsKernelObjectTypes(node);
     if (!output_elements_kernel_object_types_json.empty()) {
-      single_json[kOutputElementsKernelObjectTypes] = output_elements_kernel_object_types_json;
+      (*single_json)[kOutputElementsKernelObjectTypes] = output_elements_kernel_object_types_json;
     }
 
     const auto &output_desc_json = AnfAlgo::GetOutputDataDesc(node);
     if (!output_desc_json.empty()) {
-      single_json[kOutputDataDesc] = output_desc_json;
+      (*single_json)[kOutputDataDesc] = output_desc_json;
     }
-    single_json[kFusionType] = AnfAlgo::GetFusionType(node);
-    single_json[kProcessor] = AnfAlgo::GetProcessor(node);
-    single_json[kKernelBuildInfoValid] = AnfAlgo::GetValid(node);
-    single_json[kHasSelectKernelBuildInfo] = true;
+    (*single_json)[kFusionType] = AnfAlgo::GetFusionType(node);
+    (*single_json)[kProcessor] = AnfAlgo::GetProcessor(node);
+    (*single_json)[kKernelBuildInfoValid] = AnfAlgo::GetValid(node);
+    (*single_json)[kHasSelectKernelBuildInfo] = true;
   }
+}
+
+nlohmann::json SaveAnfKernelInfo(const AnfNodePtr &node) {
+  nlohmann::json single_json;
+  SaveKernelBuildInfo(node, &single_json);
   const auto &kernel_info = node->kernel_info();
   MS_EXCEPTION_IF_NULL(kernel_info);
   const auto &device_kernel_info = dynamic_cast<device::KernelInfo *>(kernel_info);
@@ -532,6 +575,11 @@ nlohmann::json SaveAnfKernelInfo(const AnfNodePtr &node) {
   single_json[kGraphId] = graph_id;
   const auto &is_feature_map = device_kernel_info->is_feature_map();
   single_json[kIsFeatureMap] = is_feature_map;
+  uint32_t stream_id = device_kernel_info->stream_id();
+  single_json[kAttrStreamId] = stream_id;
+  single_json[kStreamDistinctionLabel] = device_kernel_info->stream_distinction_label();
+  single_json[kSomasOutputResult] = SaveVecPair(device_kernel_info->somas_output_result());
+  single_json[kSomasWorkspaceResult] = SaveVecPair(device_kernel_info->somas_workspace_result());
 
   if (node->isa<CNode>() && common::AnfAlgo::HasNodeAttr(kAttrIsUBFusionOp, node->cast<CNodePtr>()) &&
       common::AnfAlgo::GetNodeAttr<bool>(node->cast<CNodePtr>(), kAttrIsUBFusionOp)) {
@@ -577,6 +625,17 @@ nlohmann::json SaveBackendParamToFrontendParamIndex(const KernelGraphPtr &kernel
 void SaveNodesKernelInfoAndParamsName(const KernelGraphPtr &kg, const std::vector<AnfNodePtr> &isolated_nodes,
                                       nlohmann::json *const kg_json) {
   std::vector<AnfNodePtr> nodes = TopoSort(kg->get_return(), SuccIncoming, AlwaysInclude);
+  // add node in graphkernel attributes.
+  for (auto node : kg->execution_order()) {
+    auto prim = GetCNodePrimitive(node);
+    for (auto attr : prim->attrs()) {
+      if (attr.first == "func_graph") {
+        auto g = attr.second->cast<FuncGraphPtr>();
+        AnfNodePtrList n = g->TopoSort(g->get_return());
+        nodes.insert(nodes.end(), n.begin(), n.end());
+      }
+    }
+  }
   nlohmann::json kernels_info_json;
   (void)(nodes.insert(nodes.end(), isolated_nodes.begin(), isolated_nodes.end()));
   const auto &params = kg->parameters();
@@ -596,7 +655,7 @@ void SaveNodesKernelInfoAndParamsName(const KernelGraphPtr &kg, const std::vecto
       param_unique_name_to_name[name] = param->name();
     }
     if (node->kernel_info() == nullptr) {
-      MS_LOG(WARNING) << "The node " << node->DebugString() << " has not kernel_info.";
+      MS_LOG(INFO) << "The node " << node->DebugString() << " has not kernel_info.";
       continue;
     }
     const auto &kernel_info_json = SaveAnfKernelInfo(node);
@@ -622,6 +681,28 @@ std::vector<nlohmann::json> SaveSummaryNodes(const std::map<std::string, std::pa
     ret_json.push_back(iter_json);
   }
   return ret_json;
+}
+
+void AddKernelGraphItems(nlohmann::json *const kg_json, const KernelGraphPtr &kg) {
+  (*kg_json)[kEnableMultiStream] = kg->enable_multi_stream();
+  (*kg_json)[kSomasWholeBlockSize] = kg->somas_whole_block_size();
+  (*kg_json)[kSomasMergedBlocksMap] = SaveMapPair(kg->somas_merged_blocks_map());
+  const auto &graph_output_map_json = SaveAnfIndexToAnfIndexMap(kg->graph_output_map());
+  if (!graph_output_map_json.empty()) {
+    (*kg_json)[kGraphOutputToFrontNodeMap] = graph_output_map_json;
+  }
+  const auto &front_node_to_graph_output_map_json = SaveAnfIndexToAnfIndexMap(kg->front_node_to_graph_output_map());
+  if (!front_node_to_graph_output_map_json.empty()) {
+    (*kg_json)[kFrontNodeToGraphOutputMap] = front_node_to_graph_output_map_json;
+  }
+  const auto &inline_sub_graph_kernels_json = SaveAnfToStringMap(kg->inline_sub_graph_kernels());
+  if (!inline_sub_graph_kernels_json.empty()) {
+    (*kg_json)[kInlineSubGraphKernelsMap] = inline_sub_graph_kernels_json;
+  }
+  const auto &condition_gather_to_switch_json = SaveAnfToAnfMap(kg->condition_gather_to_switch());
+  if (!condition_gather_to_switch_json.empty()) {
+    (*kg_json)[kConditionGatherToSwitchMap] = condition_gather_to_switch_json;
+  }
 }
 
 nlohmann::json GenKernelGraphJson(const KernelGraphPtr &kg, const std::vector<AnfNodePtr> &isolated_nodes) {
@@ -715,6 +796,7 @@ nlohmann::json GenKernelGraphJson(const KernelGraphPtr &kg, const std::vector<An
     kg_json[kCorrespondFrontendGraph] = front_graph->ToString();
   }
   kg_json[kBackendParamToFrontendParamIndex] = SaveBackendParamToFrontendParamIndex(kg, front_graph);
+  AddKernelGraphItems(&kg_json, kg);
   return kg_json;
 }
 
@@ -1339,8 +1421,11 @@ CNodePtr KernelGraphMgr::CreateSwitchInput(const CNodePtr &cnode, const AnfNodeP
   return partial_node;
 }
 
-void KernelGraphMgr::CacheKernelGraph(const KernelGraphPtr &kg) {
-  MS_EXCEPTION_IF_NULL(kg);
+void KernelGraphMgr::CacheKernelGraph(const std::vector<KernelGraphPtr> &kgs) {
+  if (kgs.empty() || kgs[0] == nullptr) {
+    MS_LOG(EXCEPTION) << "Invalid kernel graphs for cache.";
+  }
+  const auto &kg = kgs[0];
   auto &context = CompileCacheContext::GetInstance();
   auto fg = context.FrontGraph();
   if (!fg) {
@@ -1928,6 +2013,9 @@ KernelGraphPtr KernelGraphMgr::ConstructKernelGraph(const AnfNodePtrList &lst, c
   std::vector<std::weak_ptr<KernelGraph>> child_graph_order;
   auto graph = NewKernelGraph();
   MS_EXCEPTION_IF_NULL(graph);
+  if ((!lst.empty()) && lst[0] != nullptr && lst[0]->func_graph() != nullptr) {
+    front_backend_graph_map_[lst[0]->func_graph().get()] = graph;
+  }
   // Set the zero copy flag in subgraph sink mode.
   if (is_enable_zero_copy) {
     MS_LOG(INFO) << "Set zero copy flag for graph:" << graph->ToString();
@@ -2139,11 +2227,13 @@ void HandleGraphInputsOutputs(const nlohmann::json &graph_json, KernelGraph *gra
                           [](const auto &val) { return val; }));
     *mutable_valid_inputs = valid_inputs;
   }
-  const auto &front_graph_name = graph_json[kCorrespondFrontendGraph];
-  const auto &front_graph_node = context.FindFrontNodeByFrontName(front_graph_name);
-  FuncGraphPtr front_graph = GetValueNode<FuncGraphPtr>(front_graph_node);
-  MS_EXCEPTION_IF_NULL(front_graph);
-  graph->FrontBackendMapAdd(front_graph->get_return(), graph->get_return());
+  if (graph_json.contains(kCorrespondFrontendGraph)) {
+    const auto &front_graph_name = graph_json[kCorrespondFrontendGraph];
+    const auto &front_graph_node = context.FindFrontNodeByFrontName(front_graph_name);
+    FuncGraphPtr front_graph = GetValueNode<FuncGraphPtr>(front_graph_node);
+    MS_EXCEPTION_IF_NULL(front_graph);
+    graph->FrontBackendMapAdd(front_graph->get_return(), graph->get_return());
+  }
 }
 
 void HandleGraphSimpleAttr(const nlohmann::json &graph_json, KernelGraph *graph) {
@@ -2162,6 +2252,14 @@ void HandleGraphSimpleAttr(const nlohmann::json &graph_json, KernelGraph *graph)
   graph->set_is_from_single_op(graph_json[kIsFromSingleOp]);
   graph->set_subgraph_multi_call(graph_json[kHasSubgraphMultiCall]);
   graph->set_label_num(graph_json[kLabelNum]);
+  graph->set_enable_multi_stream(graph_json[kEnableMultiStream]);
+  if (graph->MutableSomasInfo() != nullptr) {
+    auto somas_info = graph->MutableSomasInfo();
+    somas_info->whole_block_size_ = graph_json[kSomasWholeBlockSize];
+    for (auto block : graph_json[kSomasMergedBlocksMap]) {
+      somas_info->merged_blocks_map_[block.at(0)] = block.at(1);
+    }
+  }
 #ifndef ENABLE_SECURITY
   // set summary_node of graph
   graph->set_summary_node_exist(graph_json[kSummaryNodeExist]);
@@ -2235,19 +2333,74 @@ void HandleAttrAboutOtherGraph(const mindspore::HashMap<GraphId, std::shared_ptr
   }
 }
 
+void HandleSwitchInlineMaps(const nlohmann::json &graph_json, KernelGraph *graph) {
+  auto &context = CompileCacheContext::GetInstance();
+  if (graph_json.contains(kGraphOutputToFrontNodeMap)) {
+    const auto &out_fornt_map_json = graph_json[kGraphOutputToFrontNodeMap];
+    for (const auto &iter : out_fornt_map_json) {
+      const auto &first_name = iter.at(0);
+      const auto &first_index = iter.at(kIndexOne);
+      const auto &second_name = iter.at(kIndexTwo);
+      const auto &second_index = iter.at(kIndexThree);
+      auto first_node = context.FindBackNodeByBackName(first_name);
+      MS_EXCEPTION_IF_NULL(first_node);
+      auto second_node = context.FindFrontNodeByFrontName(second_name);
+      MS_EXCEPTION_IF_NULL(second_node);
+      graph->AddOutFrontPairs(AnfWithOutIndex(first_node, first_index), AnfWithOutIndex(second_node, second_index));
+    }
+  }
+  if (graph_json.contains(kFrontNodeToGraphOutputMap)) {
+    const auto &front_out_map_json = graph_json[kFrontNodeToGraphOutputMap];
+    for (const auto &iter : front_out_map_json) {
+      const auto &first_name = iter.at(0);
+      const auto &first_index = iter.at(kIndexOne);
+      const auto &second_name = iter.at(kIndexTwo);
+      const auto &second_index = iter.at(kIndexThree);
+      auto first_node = context.FindFrontNodeByFrontName(first_name);
+      MS_EXCEPTION_IF_NULL(first_node);
+      auto second_node = context.FindBackNodeByBackName(second_name);
+      MS_EXCEPTION_IF_NULL(second_node);
+      graph->AddFrontOutPairs(AnfWithOutIndex(first_node, first_index), AnfWithOutIndex(second_node, second_index));
+    }
+  }
+  if (graph_json.contains(kConditionGatherToSwitchMap)) {
+    const auto &condition_gather_switch_json = graph_json[kConditionGatherToSwitchMap];
+    for (const auto &[gather_name, switch_name] : condition_gather_switch_json.items()) {
+      auto gather_node = context.FindBackNodeByBackName(gather_name);
+      auto switch_node = context.FindBackNodeByBackName(switch_name);
+      if (!gather_node || !switch_node) {
+        MS_LOG(EXCEPTION) << "The backend node of " << gather_name << " or " << switch_name << " is nullptr.";
+      }
+      graph->AddConditionGatherSwitchPair(gather_node, switch_node);
+    }
+  }
+  if (graph_json.contains(kInlineSubGraphKernelsMap)) {
+    const auto &inline_subgraph_kernels_json = graph_json[kInlineSubGraphKernelsMap];
+    for (const auto &[node_name, graph_name] : inline_subgraph_kernels_json.items()) {
+      auto node = context.FindBackNodeByBackName(node_name);
+      if (!node) {
+        MS_LOG(EXCEPTION) << "The backend node of " << node_name << " is nullptr.";
+      }
+      graph->AddInlineSubgraphKernel(node, graph_name);
+    }
+  }
+}
+
 void HandleGraphComplexAttr(const mindspore::HashMap<GraphId, std::shared_ptr<KernelGraph>> &graphs,
                             const nlohmann::json &graph_json, KernelGraph *graph) {
   MS_EXCEPTION_IF_NULL(graph);
   MS_LOG(INFO) << "Handle graph " << graph->ToString() << " complex attr.";
   auto &context = CompileCacheContext::GetInstance();
   std::vector<CNodePtr> execution_order;
-  const auto &execution_order_json = graph_json[kExecutionOrder];
-  for (const auto &order : execution_order_json) {
-    auto node = context.FindBackNodeByBackName(order);
-    MS_EXCEPTION_IF_NULL(node);
-    execution_order.push_back(node->cast<CNodePtr>());
+  if (graph_json.contains(kExecutionOrder)) {
+    const auto &execution_order_json = graph_json[kExecutionOrder];
+    for (const auto &order : execution_order_json) {
+      auto node = context.FindBackNodeByBackName(order);
+      MS_EXCEPTION_IF_NULL(node);
+      execution_order.push_back(node->cast<CNodePtr>());
+    }
+    graph->set_execution_order(execution_order);
   }
-  graph->set_execution_order(execution_order);
   if (graph_json.contains(kCommSubGraphIds)) {
     const auto &comm_sub_grpah_ids_json = graph_json[kCommSubGraphIds];
     for (const auto &iter : comm_sub_grpah_ids_json) {
@@ -2314,48 +2467,54 @@ void HandleGraphComplexAttr(const mindspore::HashMap<GraphId, std::shared_ptr<Ke
     graph->set_summary_nodes(summary_nodes);
   }
 #endif
+  HandleSwitchInlineMaps(graph_json, graph);
   MS_LOG(INFO) << "Handle graph " << graph->ToString() << " complex attr success.";
 }
 
 bool KernelGraphMgr::ParseKernelGraphNodesAndAttrs(const nlohmann::json &model_json) {
-  auto &context = CompileCacheContext::GetInstance();
   for (auto &[graph_name, graph_json] : model_json.items()) {
     MS_LOG(DEBUG) << "Parse graph " << graph_name << " nodes and attrs.";
-    KernelGraphPtr graph = graphs_.at(graph_json[kGraphId]);
-    MS_EXCEPTION_IF_NULL(graph);
-    HandleGraphInputsOutputs(graph_json, graph.get());
-    const auto &back_to_front = graph_json[kBackendFrontAnf];
-    for (const auto &[back_node_name, front_node_name] : back_to_front.items()) {
-      auto back_node = context.FindBackNodeByBackName(back_node_name);
-      if (!back_node) {
-        MS_LOG(EXCEPTION) << "The backend node is nullptr, its unique name is " << back_node_name;
-      }
-      auto front_node = context.FindFrontNodeByFrontName(front_node_name);
-      if (!front_node) {
-        MS_LOG(EXCEPTION) << "The frontend node is nullptr, its unique name is " << front_node_name;
-      }
-      if (graph->FrontendNodeExistInFrontBackendMap(front_node)) {
-        if (graph->BackendNodeExistInFrontBackendMap(back_node)) {
-          continue;
-        }
-        auto old_back_node = graph->GetBackendAnfByFrontAnf(front_node);
-        graph->FrontBackendMapAdd(old_back_node, back_node);
-      } else {
-        graph->FrontBackendMapAdd(front_node, back_node);
-      }
-    }
-    HandleGraphSimpleAttr(graph_json, graph.get());
-    HandleGraphComplexAttr(graphs_, graph_json, graph.get());
-
-    FuncGraphManagerPtr manager = MakeManager({graph});
-    if (manager) {
-      manager->AddFuncGraph(graph);
-      graph->set_manager(manager);
-    }
-    graph->SetInputNodes();
-    SetInputNodeUsage(graph, manager);
-    graph->SetOptimizerFlag();
+    ParseSingleKernelGraphNodesAndAttrs(graph_json);
   }
+  return true;
+}
+
+bool KernelGraphMgr::ParseSingleKernelGraphNodesAndAttrs(const nlohmann::json &graph_json) {
+  auto &context = CompileCacheContext::GetInstance();
+  KernelGraphPtr graph = graphs_.at(graph_json[kGraphId]);
+  MS_EXCEPTION_IF_NULL(graph);
+  HandleGraphInputsOutputs(graph_json, graph.get());
+  const auto &back_to_front = graph_json[kBackendFrontAnf];
+  for (const auto &[back_node_name, front_node_name] : back_to_front.items()) {
+    auto back_node = context.FindBackNodeByBackName(back_node_name);
+    if (!back_node) {
+      MS_LOG(EXCEPTION) << "The backend node is nullptr, its unique name is " << back_node_name;
+    }
+    auto front_node = context.FindFrontNodeByFrontName(front_node_name);
+    if (!front_node) {
+      MS_LOG(EXCEPTION) << "The frontend node is nullptr, its unique name is " << front_node_name;
+    }
+    if (graph->FrontendNodeExistInFrontBackendMap(front_node)) {
+      if (graph->BackendNodeExistInFrontBackendMap(back_node)) {
+        continue;
+      }
+      auto old_back_node = graph->GetBackendAnfByFrontAnf(front_node);
+      graph->FrontBackendMapAdd(old_back_node, back_node);
+    } else {
+      graph->FrontBackendMapAdd(front_node, back_node);
+    }
+  }
+  HandleGraphSimpleAttr(graph_json, graph.get());
+  HandleGraphComplexAttr(graphs_, graph_json, graph.get());
+
+  FuncGraphManagerPtr manager = MakeManager({graph});
+  if (manager) {
+    manager->AddFuncGraph(graph);
+    graph->set_manager(manager);
+  }
+  graph->SetInputNodes();
+  SetInputNodeUsage(graph, manager);
+  graph->SetOptimizerFlag();
   return true;
 }
 
@@ -2810,7 +2969,7 @@ void CopyCNodeInfo(const FuncGraphPtr &func_graph, const uint32_t &target_graph_
       common::AnfAlgo::SetNodeAttr(kAttrOriFusionName, MakeValue(ori_full_name), new_node);
     }
     common::AnfAlgo::SetNodeAttr(kAttrNeedInline, MakeValue(ori_node->fullname_with_scope()), new_node);
-    common::AnfAlgo::SetNodeAttr(kAttrPreKernelGraph, MakeValue(func_graph), new_node);
+    common::AnfAlgo::SetNodeAttr(kAttrPreKernelGraph, MakeValue(func_graph->ToString()), new_node);
   }
 }
 
