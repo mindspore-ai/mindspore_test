@@ -406,7 +406,19 @@ Status ToDevice::Terminate() {
 Status TreeConsumer::Reset(int64_t step, const int64_t dataset_size) {
   MS_LOG(INFO) << "Resetting TreeConsumer";
 
-  MS_LOG(INFO) << "Terminating pipeline with UUID:" << tree_adapter_->tree_->GetUniqueId();
+  std::string unique_id = "";
+#if !defined(__APPLE__) && !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && \
+  !defined(ANDROID)
+  if (tree_adapter_->tree_) {
+#endif
+    unique_id = tree_adapter_->tree_->GetUniqueId();
+#if !defined(__APPLE__) && !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && \
+  !defined(ANDROID)
+  } else {
+    unique_id = tree_adapter_->receive_tree_->GetUniqueId();
+  }
+#endif
+  MS_LOG(INFO) << "Terminating pipeline with UUID:" << unique_id;
   std::shared_ptr<DatasetNode> old_root = tree_adapter_->input_ir_;
   RETURN_IF_NOT_OK(this->Stop());
   RETURN_IF_NOT_OK(this->Terminate());
