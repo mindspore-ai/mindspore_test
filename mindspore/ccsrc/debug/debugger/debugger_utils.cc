@@ -638,7 +638,7 @@ inline void Write2File(const TensorInfoForDump &tensor_info, uint32_t stream_id,
     if (it == tensor_info.stat_results.end()) {
       MS_LOG(EXCEPTION) << "The statistics of the " << name << " category cannot be found!";
     }
-    auto result = it->second;
+    auto result = it->second.back();
     const void *add = nullptr;
     if (result) {
       add = result->GetPtr();

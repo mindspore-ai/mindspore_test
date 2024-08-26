@@ -29,7 +29,7 @@ namespace datadump {
 
 class KernelFactory {
  public:
-  using KernelCreator = std::function<std::shared_ptr<StatisticKernel>(const DeviceContext *, const std::uint32_t)>;
+  using KernelCreator = std::function<std::shared_ptr<StatisticKernel>(const DeviceContext *)>;
 
   static KernelFactory &Instance() {
     static KernelFactory instance;
@@ -38,13 +38,13 @@ class KernelFactory {
 
   void RegisterKernel(const std::string &name, KernelCreator creator) { creators_[name] = creator; }
 
-  std::shared_ptr<StatisticKernel> CreateKernel(const std::string &name, const DeviceContext *device_context,
-                                                const std::uint32_t stream_id) const {
+  std::shared_ptr<StatisticKernel> CreateKernel(const std::string &name, const DeviceContext *device_context) {
     auto it = creators_.find(name);
     if (it == creators_.end()) {
-      MS_EXCEPTION(ValueError) << "No kernel named " << name << " found.";
+      MS_LOG(EXCEPTION) << "No kernel named " << name << " found.";
     }
-    return it->second(device_context, stream_id);
+
+    return it->second(device_context);
   }
 
  private:
@@ -56,17 +56,15 @@ class KernelFactory {
   KernelFactory &operator=(const KernelFactory &) = delete;
 };
 
-#define REGISTER_KERNEL(name, type)                                                                                \
-  namespace {                                                                                                      \
-  struct type##Register {                                                                                          \
-    type##Register() {                                                                                             \
-      KernelFactory::Instance().RegisterKernel(name,                                                               \
-                                               [](const DeviceContext *device_context, const uint32_t stream_id) { \
-                                                 return std::make_shared<type>(device_context, stream_id);         \
-                                               });                                                                 \
-    }                                                                                                              \
-  };                                                                                                               \
-  static type##Register global_##type##Register;                                                                   \
+#define REGISTER_KERNEL(name, type)                                                                        \
+  namespace {                                                                                              \
+  struct type##Register {                                                                                  \
+    type##Register() {                                                                                     \
+      KernelFactory::Instance().RegisterKernel(                                                            \
+        name, [](const DeviceContext *device_context) { return std::make_shared<type>(device_context); }); \
+    }                                                                                                      \
+  };                                                                                                       \
+  static type##Register global_##type##Register;                                                           \
   }  // namespace
 
 }  // namespace datadump

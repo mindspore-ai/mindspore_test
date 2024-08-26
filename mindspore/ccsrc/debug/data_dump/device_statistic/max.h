@@ -32,8 +32,8 @@ inline const std::set<TypeId> max_supported_dtype{
 
 class MaxStatisticKernel : public StatisticKernel {
  public:
-  explicit MaxStatisticKernel(const DeviceContext *device_context, std::uint32_t stream_id)
-      : StatisticKernel(device_context, ops::kNameMax, max_supported_dtype, stream_id) {}
+  explicit MaxStatisticKernel(const DeviceContext *device_context)
+      : StatisticKernel(device_context, ops::kNameMax, max_supported_dtype) {}
 };
 
 }  // namespace datadump

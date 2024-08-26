@@ -26,28 +26,28 @@ namespace datadump {
 TensorPtr CalStatistic(const std::string &stat_name, const DeviceContext *device_context, KernelTensor *input,
                        const std::uint32_t stream_id) {
   auto out = CalStatisticAsync(stat_name, device_context, input, stream_id);
-  return SyncDeviceToHostTensor(out);
+  return SyncDeviceToHostTensor(out.back());
 }
 
-DeviceAddressPtr CalStatisticAsync(const std::string &stat_name, const DeviceContext *device_context,
-                                   KernelTensor *input, const uint32_t stream_id) {
+vector<DeviceAddressPtr> CalStatisticAsync(const std::string &stat_name, const DeviceContext *device_context,
+                                           KernelTensor *input, const uint32_t stream_id) {
   MS_EXCEPTION_IF_NULL(input);
   auto dtype = input->dtype_id();
-  auto kernel = KernelFactory::Instance().CreateKernel(stat_name, device_context, stream_id);
+  auto kernel = KernelFactory::Instance().CreateKernel(stat_name, device_context);
   if (kernel->CheckDataType(dtype)) {
-    return kernel->LaunchKernelAsync(input);
+    return kernel->LaunchKernelAsync(input, stream_id);
   } else {
     const auto &device_name = device_context->device_context_key_.device_name_;
     const auto &type_name = TypeIdToString(dtype);
     WarningOnce(device_name, type_name, stat_name);
-    return nullptr;
+    return {nullptr};
   }
 }
 
 DeviceAddressPtr CalCheckOverflowAsync(const DeviceContext *device_context, vector<KernelTensor *> inputs,
                                        const uint32_t stream_id) {
-  auto kernel = KernelFactory::Instance().CreateKernel(KCheckOverflow, device_context, stream_id);
-  return kernel->LaunchKernelAsync(inputs);
+  auto kernel = KernelFactory::Instance().CreateKernel(KCheckOverflow, device_context);
+  return kernel->LaunchKernelAsync(inputs, stream_id);
 }
 
 }  // namespace datadump

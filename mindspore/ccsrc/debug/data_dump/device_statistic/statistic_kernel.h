@@ -38,22 +38,24 @@ namespace mindspore {
 namespace datadump {
 using device::DeviceAddressPtr;
 using kernel::KernelTensor;
+using kernel::KernelTensorPtr;
 using mindspore::device::DeviceContext;
 using TensorPtr = tensor::TensorPtr;
 
 class StatisticKernel {
  public:
-  StatisticKernel(const DeviceContext *device_context, string kernel_name, const std::set<TypeId> &dtype_id,
-                  const uint32_t stream_id)
-      : device_context_(device_context), kernel_name_(kernel_name), supported_dtype_(dtype_id), stream_id_(stream_id) {
+  StatisticKernel(const DeviceContext *device_context, const string &kernel_name, const std::set<TypeId> &dtype_id)
+      : device_context_(device_context), kernel_name_(kernel_name), supported_dtype_(dtype_id) {
     MS_EXCEPTION_IF_NULL(device_context);
     MS_EXCEPTION_IF_NULL(device_context_->device_res_manager_);
     MS_VLOG(VL_DUMP) << "Statistic kernel mod " << kernel_name_ << " construct.";
     kernel_mod_ = device_context_->GetKernelExecutor(false)->CreateKernelMod(kernel_name);
     MS_EXCEPTION_IF_NULL(kernel_mod_);
   }
-  DeviceAddressPtr LaunchKernelAsync(KernelTensor *input);
-  virtual DeviceAddressPtr LaunchKernelAsync(vector<KernelTensor *> inputs) { return nullptr; }
+  vector<DeviceAddressPtr> LaunchKernelAsync(KernelTensor *input, const uint32_t stream_id);
+  virtual DeviceAddressPtr LaunchKernelAsync(vector<KernelTensor *> inputs, const uint32_t stream_id) {
+    return nullptr;
+  }
 
   bool CheckDataType(const TypeId &dtype_id) { return supported_dtype_.find(dtype_id) != supported_dtype_.end(); }
 
@@ -63,12 +65,12 @@ class StatisticKernel {
   DeviceAddressPtr GetWorkSpaceDeviceAddress(const vector<KernelTensor *> &inputs,
                                              const vector<KernelTensor *> &outputs);
   virtual DeviceAddressPtr GetOutputDeviceAddress(TypeId dtype_id);
-  virtual vector<DeviceAddressPtr> GetExtraInputsDeviceAddress(KernelTensor *);
+  virtual vector<KernelTensorPtr> GetExtraInputsDeviceAddress(KernelTensor *);
   const DeviceContext *device_context_{nullptr};
   string kernel_name_;
+  const std::set<TypeId> &supported_dtype_;
+  uint32_t stream_id_ = kDefaultStreamIndex;
   kernel::KernelModPtr kernel_mod_;
-  std::set<TypeId> supported_dtype_;
-  const uint32_t stream_id_;
 };
 
 TensorPtr SyncDeviceToHostTensor(DeviceAddressPtr device_addr);

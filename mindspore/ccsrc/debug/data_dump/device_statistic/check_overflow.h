@@ -30,12 +30,12 @@ inline const std::set<TypeId> overflow_supported_dtype{kNumberTypeFloat16, kNumb
 
 class CheckOverflowKernel : public StatisticKernel {
  public:
-  explicit CheckOverflowKernel(const DeviceContext *device_context, std::uint32_t stream_id)
-      : StatisticKernel(device_context, kAllFiniteOpName, overflow_supported_dtype, stream_id) {}
+  explicit CheckOverflowKernel(const DeviceContext *device_context)
+      : StatisticKernel(device_context, kAllFiniteOpName, overflow_supported_dtype) {}
 
   vector<KernelTensor *> CheckInputs(vector<KernelTensor *> inputs);
-  DeviceAddressPtr LaunchKernelAsync(KernelTensor *input) = delete;
-  DeviceAddressPtr LaunchKernelAsync(vector<KernelTensor *> inputs) override;
+  DeviceAddressPtr LaunchKernelAsync(KernelTensor *input, const std::uint32_t stream_id) = delete;
+  DeviceAddressPtr LaunchKernelAsync(vector<KernelTensor *> inputs, const std::uint32_t stream_id) override;
 };
 
 }  // namespace datadump

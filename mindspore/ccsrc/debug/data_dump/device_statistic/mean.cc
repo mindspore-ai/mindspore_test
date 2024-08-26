@@ -23,47 +23,21 @@
 namespace mindspore {
 namespace datadump {
 
-DeviceAddressPtr MeanStatisticKernel::GetAxisDeviceAddress(size_t dim) {
-  vector<int64_t> axes(dim);
-  for (size_t i = 0; i < dim; i++) {
-    axes[i] = static_cast<int64_t>(i);
-  }
-  ShapeVector axes_shape{static_cast<int64_t>(dim)};
-  size_t axisbytes = UnitSizeInBytes(kNumberTypeInt64) * dim;
-  return GenerateDeviceAddress(axisbytes, kNumberTypeInt64, axes_shape, MakeValue(axes));
-}
-
-DeviceAddressPtr MeanStatisticKernel::GetKeepDimsDeviceAddress() {
-  ShapeVector keepdims_shape = {};
-  return GenerateDeviceAddress(UnitSizeInBytes(kNumberTypeBool), kNumberTypeBool, keepdims_shape, MakeValue(false));
-}
-
-DeviceAddressPtr MeanStatisticKernel::GetOutputDeviceAddress(const TypeId) {
-  ShapeVector shape_vec = {};
-  return GenerateDeviceAddress(UnitSizeInBytes(kNumberTypeFloat32), kNumberTypeFloat32, shape_vec);
-}
-
-DeviceAddressPtr MeanStatisticKernel::GetDtypeDeviceAddress(const TypeId type_id) {
-  ShapeVector dtype_shape_vec = {1};
-  return GenerateDeviceAddress(UnitSizeInBytes(type_id), type_id, dtype_shape_vec);
-}
-
-vector<DeviceAddressPtr> MeanStatisticKernel::GetExtraInputsDeviceAddress(KernelTensor *input) {
+vector<KernelTensorPtr> MeanStatisticKernel::GetExtraInputsDeviceAddress(KernelTensor *input) {
   MS_EXCEPTION_IF_NULL(input);
-  vector<DeviceAddressPtr> extra_inputs;
 
-  auto axis = GetAxisDeviceAddress(input->GetShapeVector().size());
+  auto dim = input->GetShapeVector().size();
+  vector<int64_t> axes(dim);
+  std::iota(axes.begin(), axes.end(), 0LL);
+  auto axis = std::make_shared<KernelTensor>(
+    std::make_shared<abstract::TensorShape>(ShapeVector(static_cast<int64_t>(dim))), kInt64, MakeValue(axes));
   MS_EXCEPTION_IF_NULL(axis);
-  extra_inputs.emplace_back(axis);
-
-  auto keepdims = GetKeepDimsDeviceAddress();
+  auto keepdims = std::make_shared<KernelTensor>(nullptr, kBool, MakeValue(false));
   MS_EXCEPTION_IF_NULL(keepdims);
-  extra_inputs.emplace_back(keepdims);
-
-  auto dtype = GetDtypeDeviceAddress(kNumberTypeFloat32);
+  auto dtype = std::make_shared<KernelTensor>(nullptr, kTypeNone, kNone);
   MS_EXCEPTION_IF_NULL(dtype);
-  extra_inputs.emplace_back(dtype);
-  return extra_inputs;
+
+  return {axis, keepdims, dtype};
 }
 
 REGISTER_KERNEL(KStatMean, MeanStatisticKernel);
