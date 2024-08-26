@@ -177,10 +177,6 @@ GVAR_DEF(PrimitivePtr, kPrimEmbeddingComputeVarExport, std::make_shared<Primitiv
 GVAR_DEF(PrimitivePtr, kPrimEmbeddingComputeVarImport, std::make_shared<Primitive>("EmbeddingComputeVarImport"));
 GVAR_DEF(PrimitivePtr, kPrimInitEmbeddingHashmap, std::make_shared<Primitive>("InitEmbeddingHashmap"));
 GVAR_DEF(PrimitivePtr, kPrimInitPartitionMap, std::make_shared<Primitive>("InitPartitionMap"));
-GVAR_DEF(PrimitivePtr, kPrimEmbeddingApplyAdam, std::make_shared<Primitive>("EmbeddingApplyAdam"));
-GVAR_DEF(PrimitivePtr, kPrimEmbeddingApplyAdamW, std::make_shared<Primitive>("EmbeddingApplyAdamW"));
-GVAR_DEF(PrimitivePtr, kPrimEmbeddingApplyAdaGrad, std::make_shared<Primitive>("EmbeddingApplyAdaGrad"));
-GVAR_DEF(PrimitivePtr, kPrimEmbeddingApplyFtrl, std::make_shared<Primitive>("EmbeddingApplyFtrl"));
 GVAR_DEF(PrimitivePtr, kPrimEmbeddingTableFind, std::make_shared<Primitive>("EmbeddingTableFind"));
 GVAR_DEF(PrimitivePtr, kPrimEmbeddingTableFindAndInit, std::make_shared<Primitive>("EmbeddingTableFindAndInit"));
 GVAR_DEF(PrimitivePtr, kPrimFakeRemoteLookupUniqued, std::make_shared<Primitive>("FakeRemoteLookupUniqued"));

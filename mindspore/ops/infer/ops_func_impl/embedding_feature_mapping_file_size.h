@@ -14,27 +14,22 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CORE_OPS_EMBEDDING_APPLY_ADAM_W_H
-#define MINDSPORE_CORE_OPS_EMBEDDING_APPLY_ADAM_W_H
+#ifndef MINDSPORE_CORE_OPS_FUNC_IMPL_EMBEDDING_FEATURE_MAPPING_FILE_SIZE_H_
+#define MINDSPORE_CORE_OPS_FUNC_IMPL_EMBEDDING_FEATURE_MAPPING_FILE_SIZE_H_
 
-#include <memory>
 #include <vector>
-#include "mindapi/base/types.h"
-#include "ops/base_operator.h"
+#include "infer/ops_func_impl/embedding_feature_mapping_table_size.h"
 
 namespace mindspore {
 namespace ops {
-constexpr auto kNameEmbeddingApplyAdamW = "EmbeddingApplyAdamW";
-class OPS_API EmbeddingApplyAdamW : public BaseOperator {
+class OPS_API EmbeddingFeatureMappingFileSizeFuncImpl final : public EmbeddingFeatureMappingTableSizeFuncImpl {
  public:
-  MIND_API_BASE_MEMBER(EmbeddingApplyAdamW);
-  EmbeddingApplyAdamW() : BaseOperator(kNameEmbeddingApplyAdamW) {
-    InitIOName({"var_handle", "beta1_power", "beta2_power", "lr", "weight_decay", "beta1", "beta2", "epsilon", "grad",
-                "keys", "max_grad_norm", "global_step"},
-               {"var_handle"});
-  }
+  EmbeddingFeatureMappingFileSizeFuncImpl() { table_name_idx_ = 1; }
+  ~EmbeddingFeatureMappingFileSizeFuncImpl() = default;
+
+  int32_t CheckValidation(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
 };
 }  // namespace ops
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CORE_OPS_EMBEDDING_APPLY_ADAM_W_H
+#endif  // MINDSPORE_CORE_OPS_FUNC_IMPL_EMBEDDING_FEATURE_MAPPING_FILE_SIZE_H_

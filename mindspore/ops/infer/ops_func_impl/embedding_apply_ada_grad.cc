@@ -16,29 +16,24 @@
 
 #include "infer/ops_func_impl/embedding_apply_ada_grad.h"
 
-#include <vector>
-#include <string>
 #include <set>
-#include <memory>
+#include <string>
 
-#include "mindspore/ops/ops_utils/op_utils.h"
-#include "utils/shape_utils.h"
 #include "utils/check_convert_utils.h"
-#include "mindspore/ops/op_def/op_name.h"
+#include "op_def/op_name.h"
+#include "ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace ops {
-BaseShapePtr EmbeddingApplyAdaGradFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                                       const std::vector<AbstractBasePtr> &input_args) const {
+void EmbeddingApplyAdaGradFuncImpl::CheckInputShapes(const PrimitivePtr &primitive,
+                                                     const std::vector<AbstractBasePtr> &input_args) const {
   CheckTensorScalarRank(primitive, input_args[kInputIndex0], "var_handle");
   CheckTensorScalarRank(primitive, input_args[kInputIndex1], "lr");
   CheckTensorScalarRank(primitive, input_args[kInputIndex4], "global_step");
-
-  return std::make_shared<abstract::Shape>(ShapeVector{});
 }
 
-TypePtr EmbeddingApplyAdaGradFuncImpl::InferType(const PrimitivePtr &primitive,
-                                                 const std::vector<AbstractBasePtr> &input_args) const {
+void EmbeddingApplyAdaGradFuncImpl::CheckInputTypes(const PrimitivePtr &primitive,
+                                                    const std::vector<AbstractBasePtr> &input_args) const {
   MS_EXCEPTION_IF_NULL(primitive);
   const std::string &prim_name = primitive->name();
 
@@ -58,8 +53,6 @@ TypePtr EmbeddingApplyAdaGradFuncImpl::InferType(const PrimitivePtr &primitive,
   auto global_step_type = input_args[kInputIndex4]->GetType();
   const std::set<TypePtr> global_types = {kInt32, kInt64};
   (void)CheckAndConvertUtils::CheckTensorTypeValid("global_step", global_step_type, global_types, prim_name);
-
-  return std::make_shared<TensorType>(kInt32);
 }
 }  // namespace ops
 }  // namespace mindspore

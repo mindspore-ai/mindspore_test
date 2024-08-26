@@ -1,0 +1,25 @@
+#EmbeddingFeatureMappingImport
+embedding_feature_mapping_import:
+    args:
+        file_path:
+            dtype: str
+        teble_name:
+            dtype: tensor
+        feature_size:
+            dtype: tensor
+        embedding_dim:
+            dtype: tuple[int]
+            type_cast: list[int]
+        only_offset_flag:
+            dtype: bool
+            default: True
+        num:
+            dtype: int
+            default: 1
+    returns:
+        feature_id:
+            dtype: tensor
+        offset_id:
+            dtype: tensor
+        values:
+            dtype: tensor

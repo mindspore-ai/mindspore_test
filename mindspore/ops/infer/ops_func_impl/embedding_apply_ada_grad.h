@@ -18,15 +18,18 @@
 #define MINDSPORE_CORE_OPS_FUNC_IMPL_EMBEDDING_APPLY_ADA_GRAD_H_
 
 #include <vector>
-#include "ops/ops_func_impl/op_func_impl.h"
+#include "infer/ops_func_impl/embedding_service_optimizer.h"
 
 namespace mindspore {
 namespace ops {
-class OPS_API EmbeddingApplyAdaGradFuncImpl final : public OpFuncImpl {
+class OPS_API EmbeddingApplyAdaGradFuncImpl final : public EmbeddingServiceOptimizerFuncImpl {
  public:
-  BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
+  EmbeddingApplyAdaGradFuncImpl() { embedding_dim_index_ = 5; }
+  ~EmbeddingApplyAdaGradFuncImpl() = default;
 
-  TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
+ protected:
+  void CheckInputShapes(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
+  void CheckInputTypes(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
 };
 }  // namespace ops
 }  // namespace mindspore

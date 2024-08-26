@@ -455,8 +455,15 @@ bool ParamCompare(const std::string &l, const std::string &r, const mindspore::H
 
 bool IsESNodeWithNoOutput(const AnfNodePtr &node) {
   const mindspore::HashSet<PrimitivePtr, PrimitiveHasher, PrimitiveEqual> no_output_prims = {
-    prim::kPrimInitPartitionMap,          prim::kPrimInitEmbeddingHashmap,      prim::kPrimEmbeddingTableImport,
-    prim::kPrimEmbeddingComputeVarExport, prim::kPrimEmbeddingComputeVarImport, prim::kPrimEmbeddingTableExport};
+    prim::kPrimInitPartitionMap,
+    prim::kPrimInitEmbeddingHashmap,
+    prim::kPrimEmbeddingTableImport,
+    prim::kPrimEmbeddingComputeVarExport,
+    prim::kPrimEmbeddingComputeVarImport,
+    prim::kPrimEmbeddingTableExport,
+    prim::kPrimEmbeddingTableEvict,
+    prim::kPrimEmbeddingFeatureMappingExport,
+    prim::kPrimEmbeddingFeatureMappingInsert};
   if (IsOneOfPrimitiveCNode(node, no_output_prims)) {
     return true;
   }
@@ -3063,10 +3070,10 @@ void DfGraphConvertor::SetDynamicInputBeforeNormalInput(const OpAdapterPtr &adpt
 
 void DfGraphConvertor::AddInputAttrsForESNode(const CNodePtr &node, const AnfNodePtr &input) {
   const mindspore::HashSet<PrimitivePtr, PrimitiveHasher, PrimitiveEqual> es_need_add_attr = {
-    prim::kPrimInitPartitionMap,     prim::kPrimInitEmbeddingHashmap,      prim::kPrimEmbeddingTableImport,
-    prim::kPrimEmbeddingTableExport, prim::kPrimEmbeddingComputeVarImport, prim::kPrimEmbeddingComputeVarExport,
-    prim::kPrimEmbeddingApplyAdam,   prim::kPrimEmbeddingApplyAdamW,       prim::kPrimEmbeddingApplyAdaGrad,
-    prim::kPrimEmbeddingApplyFtrl,
+    prim::kPrimInitPartitionMap,          prim::kPrimInitEmbeddingHashmap, prim::kPrimEmbeddingTableEvict,
+    prim::kPrimEmbeddingTableImport,      prim::kPrimEmbeddingTableExport, prim::kPrimEmbeddingComputeVarImport,
+    prim::kPrimEmbeddingComputeVarExport, prim::kPrimEmbeddingApplyAdam,   prim::kPrimEmbeddingApplyAdamW,
+    prim::kPrimEmbeddingApplyAdaGrad,     prim::kPrimEmbeddingApplyFtrl,
   };
   if (!IsOneOfPrimitiveCNode(node, es_need_add_attr)) {
     return;

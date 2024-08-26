@@ -81,3 +81,15 @@ LRScheduler subclass dynamically changes the learning rate by calling the `step`
     mindspore.experimental.optim.lr_scheduler.ReduceLROnPlateau
     mindspore.experimental.optim.lr_scheduler.SequentialLR
     mindspore.experimental.optim.lr_scheduler.StepLR
+
+Experimental EmbeddingService
+----------------------------------
+
+.. autosummary::
+    :toctree: experimental/es
+    :nosignatures:
+    :template: classtemplate.rst
+
+    mindspore.experimental.es.EmbeddingService
+    mindspore.experimental.es.EsEmbeddingLookup
+    mindspore.experimental.es.ESEmbeddingSmallTableLookup

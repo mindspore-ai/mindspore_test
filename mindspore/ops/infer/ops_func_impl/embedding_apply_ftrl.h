@@ -18,15 +18,18 @@
 #define MINDSPORE_CORE_OPS_FUNC_IMPL_EMBEDDING_APPLY_FTRL_H_
 
 #include <vector>
-#include "ops/ops_func_impl/op_func_impl.h"
+#include "infer/ops_func_impl/embedding_service_optimizer.h"
 
 namespace mindspore {
 namespace ops {
-class OPS_API EmbeddingApplyFtrlFuncImpl final : public OpFuncImpl {
+class OPS_API EmbeddingApplyFtrlFuncImpl final : public EmbeddingServiceOptimizerFuncImpl {
  public:
-  BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
+  EmbeddingApplyFtrlFuncImpl() { embedding_dim_index_ = 8; }
+  ~EmbeddingApplyFtrlFuncImpl() = default;
 
-  TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
+ protected:
+  void CheckInputShapes(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
+  void CheckInputTypes(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
 };
 }  // namespace ops
 }  // namespace mindspore

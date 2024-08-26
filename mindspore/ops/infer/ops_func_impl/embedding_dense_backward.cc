@@ -15,8 +15,9 @@
  */
 
 #include "infer/ops_func_impl/embedding_dense_backward.h"
-#include <vector>
+
 #include <memory>
+
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
 
