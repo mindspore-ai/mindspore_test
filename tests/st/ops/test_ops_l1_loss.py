@@ -15,6 +15,7 @@
 import pytest
 import numpy as np
 from mindspore.mint.nn.functional import l1_loss
+from mindspore.mint.nn import L1Loss
 import mindspore as ms
 import tests.st.utils.test_utils as test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
@@ -78,6 +79,35 @@ def test_ops_l1_loss_forward(mode, reduction):
         backward_op = ms.jit(l1_loss_backward_func, jit_config=ms.JitConfig(jit_level="O0"))
         output_forward_value = forward_op(inputx, target, reduction)
         output_backward_value = backward_op(inputx, target, reduction)
+
+    np.testing.assert_allclose(output_forward_value.asnumpy(), expect_forward_value, rtol=1e-3)
+    np.testing.assert_allclose(output_backward_value[0].asnumpy(), expect_backward_value, rtol=1e-3)
+
+
+@pytest.mark.level1
+@pytest.mark.env_onecard
+@pytest.mark.platform_arm_ascend_training
+@pytest.mark.parametrize("mode", ["pynative", "KBK"])
+@pytest.mark.parametrize("reduction", ["mean", "sum", "none"])
+def test_ops_nn_L1Loss(mode, reduction):
+    """
+    Feature: pyboost function.
+    Description: test function l1_loss forward.
+    Expectation: expect correct result.
+    """
+    inputx, target = get_input()
+    expect_forward_value = get_output_forward(reduction)
+    expect_backward_value = get_output_backward(reduction)
+    net = L1Loss(reduction)
+
+    if mode == "pynative":
+        ms.context.set_context(mode=ms.PYNATIVE_MODE)
+        output_forward_value = net(inputx, target)
+        output_backward_value = l1_loss_backward_func(inputx, target, reduction)
+    elif mode == "KBK":
+        ms.context.set_context(mode=ms.GRAPH_MODE, jit_level='O0')
+        output_forward_value = net(inputx, target)
+        output_backward_value = l1_loss_backward_func(inputx, target, reduction)
 
     np.testing.assert_allclose(output_forward_value.asnumpy(), expect_forward_value, rtol=1e-3)
     np.testing.assert_allclose(output_backward_value[0].asnumpy(), expect_backward_value, rtol=1e-3)

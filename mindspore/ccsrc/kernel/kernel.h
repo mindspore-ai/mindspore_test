@@ -26,7 +26,6 @@
 #include <variant>
 #include <vector>
 #include <algorithm>
-#include <unordered_map>
 #include "abstract/dshape.h"
 #include "abstract/ops/primitive_infer_map.h"
 #include "include/api/format.h"
@@ -43,7 +42,6 @@
 #include "utils/log_adapter.h"
 #include "mindspore/ops/op_def/op_name.h"
 #include "kernel/format_utils.h"
-#include "mindapi/base/types.h"
 
 #ifdef _MSC_VER
 #undef OPAQUE

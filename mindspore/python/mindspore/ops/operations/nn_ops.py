@@ -39,7 +39,7 @@ from ..auto_generate import (CeLU, Flatten, LogSoftmax, LogSoftmaxExt, ReLU, ReL
                              FlashAttentionScore, Embedding, UpsampleNearest1D, UpsampleNearest2D,
                              UpsampleNearest3D, UpsampleTrilinear3D,
                              UpsampleBilinear2D, UpsampleLinear1D,
-                             BinaryCrossEntropy, BCEWithLogitsLoss, SoftShrink, L1LossExt)
+                             BinaryCrossEntropy, BCEWithLogitsLoss, SoftShrink)
 from .manually_defined import BatchNorm
 
 

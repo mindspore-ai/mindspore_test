@@ -232,7 +232,8 @@ from mindspore.nn.layer import HSigmoid as Hardsigmoid
 # 222
 from mindspore.nn.layer import HSwish as Hardswish
 # 238
-from mindspore.ops.operations.nn_ops import L1LossExt as L1Loss
+from mindspore.nn.loss import L1LossExt as L1Loss
+
 
 class BCEWithLogitsLoss(Cell):
     r"""
@@ -303,6 +304,7 @@ class BCEWithLogitsLoss(Cell):
         >>> print(output)
         0.3463612
     """
+
     def __init__(self, weight=None, reduction='mean', pos_weight=None):
         super(BCEWithLogitsLoss, self).__init__()
         self.bce_with_logits = ops.auto_generate.BCEWithLogitsLoss(reduction)
@@ -312,6 +314,7 @@ class BCEWithLogitsLoss(Cell):
     def construct(self, input, target):
         out = self.bce_with_logits(input, target, self.weight, self.pos_weight)
         return out
+
 
 class SELU(Cell):
     r"""
@@ -373,6 +376,7 @@ class Mish(Cell):
         [[-3.0764845e-01 3.9974124e+00 -2.6832507e-03]
          [ 1.9439589e+00 -3.3576239e-02 8.9999990e+00]]
     """
+
     def __init__(self):
         """Initialize Mish."""
         super(Mish, self).__init__()

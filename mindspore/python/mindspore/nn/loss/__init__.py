@@ -25,7 +25,7 @@ from mindspore.nn.loss.loss import LossBase, L1Loss, CTCLoss, MSELoss, SmoothL1L
     SampledSoftmaxLoss, TripletMarginWithDistanceLoss,\
     PoissonNLLLoss, MultiLabelSoftMarginLoss, DiceLoss, BCEWithLogitsLoss, MultiClassDiceLoss, \
     RMSELoss, MAELoss, HuberLoss, CrossEntropyLoss, NLLLoss, KLDivLoss, MarginRankingLoss, GaussianNLLLoss, \
-    HingeEmbeddingLoss, MultilabelMarginLoss, TripletMarginLoss
+    HingeEmbeddingLoss, MultilabelMarginLoss, TripletMarginLoss, L1LossExt
 
 
 __all__ = ['LossBase', 'L1Loss', 'CTCLoss', 'MSELoss', 'SmoothL1Loss', 'SoftMarginLoss', 'FocalLoss',
@@ -33,4 +33,4 @@ __all__ = ['LossBase', 'L1Loss', 'CTCLoss', 'MSELoss', 'SmoothL1Loss', 'SoftMarg
            'CosineEmbeddingLoss', 'SampledSoftmaxLoss', 'TripletMarginWithDistanceLoss', 'PoissonNLLLoss',
            'MultiLabelSoftMarginLoss', 'DiceLoss', 'MultiClassDiceLoss', 'MultilabelMarginLoss',
            'RMSELoss', 'MAELoss', 'HuberLoss', 'CrossEntropyLoss', 'NLLLoss', 'KLDivLoss', 'MarginRankingLoss',
-           'GaussianNLLLoss', 'HingeEmbeddingLoss', 'TripletMarginLoss']
+           'GaussianNLLLoss', 'HingeEmbeddingLoss', 'TripletMarginLoss', 'L1LossExt']
