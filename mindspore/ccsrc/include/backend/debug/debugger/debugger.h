@@ -28,18 +28,14 @@
 #include "include/backend/kernel_graph.h"
 #include "include/backend/device_address.h"
 #include "include/backend/visible.h"
+#include "proto/debug_graph.pb.h"
 
 namespace debugger {
 class Chunk;
-class EventReply;
 class GraphProto;
 class ModelProto;
 class Statistics;
 class TensorProto;
-class WatchCondition;
-class WatchCondition_Parameter;
-class WatchNode;
-class WatchpointHit;
 class TensorBase;
 class TensorSummary;
 enum DataType : int;
@@ -49,19 +45,7 @@ template <class T>
 using ProtoVector = google::protobuf::RepeatedPtrField<T>;
 
 namespace mindspore {
-class GrpcClient;
 class DebugServices;
-// different types of command received by debugger
-// need to keep sync with client-side proto and server-side proto
-enum class DebuggerCommand {
-  kExitCMD = 2,
-  kRunCMD = 3,
-  kSetCMD = 4,
-  kViewCMD = 5,
-  kVersionMatchedCMD = 6,
-  kUnknownCMD = -1
-};
-
 class BACKEND_EXPORT Debugger : public std::enable_shared_from_this<Debugger> {
  public:
   static std::shared_ptr<Debugger> GetInstance();
@@ -105,36 +89,14 @@ class BACKEND_EXPORT Debugger : public std::enable_shared_from_this<Debugger> {
 
   void PostExecuteGraphDebugger();
 
-  bool ReadNodeDataRequired(const CNodePtr &kernel) const;
-
-  void PostExecuteNode(const CNodePtr &kernel, bool last_kernel);
-
   bool DumpTensorToFile(const std::string &filepath, const std::string &tensor_name, size_t slot) const;
 
   bool LoadNewTensor(const std::shared_ptr<TensorData> &tensor, bool keep_prev);
 
   std::shared_ptr<TensorData> GetTensor(const std::string &tensor_name) const;
 
-  bool debugger_enabled() const;
-
-  bool partial_memory() const;
-
-  void SetEnableHeartbeat(bool enabled);
-
-  void SetCurNode(const std::string &cur_name);
-
-  std::string run_level() const;
-
   // check if any feature that uses the debugger backend is enabled
   bool DebuggerBackendEnabled() const;
-
-  void SetTrainingDone(bool training_done);
-
-  // returns true if reply received and mindspore version matched with mindInsight version
-  // version_check should be true if you want the function to do backend compatibility check with MindInsight
-  bool SendMetadata(bool version_check);
-
-  bool CheckSendMetadata();
 
   void LoadParametersAndConst();
 
@@ -146,13 +108,7 @@ class BACKEND_EXPORT Debugger : public std::enable_shared_from_this<Debugger> {
 
   void DumpParamsAndConstAndHistory();
 
-  void UpdateStepNum(const session::KernelGraph *graph);
-
-  void UpdateStepNumGPU();
-
   void ClearCurrentData();
-
-  void LoadGraphOutputs();
 
   void CheckDatasetSinkMode(const KernelGraphPtr &graph_ptr);
 
@@ -178,10 +134,6 @@ class BACKEND_EXPORT Debugger : public std::enable_shared_from_this<Debugger> {
 
   // check if dump using debugger backend is enabled
   bool CheckDebuggerDumpEnabled() const;
-
-  // check if debugger is enabled
-  bool CheckDebuggerEnabled() const;
-
   std::map<uint32_t, int32_t> GetGraphIterMap() { return graph_iter_num_map_; }
 
   void UpdateGraphIterMap(uint32_t graph_id, int32_t iter_num);
@@ -192,115 +144,25 @@ class BACKEND_EXPORT Debugger : public std::enable_shared_from_this<Debugger> {
   // private constructor for singleton
   Debugger();
 
-  // enable debugger
-  // instantiate class members
-  // read env variable for grpc client
-  void EnableDebugger();
-
-  void CheckDebuggerEnabledParam() const;
-
-  bool CheckDebuggerPartialMemoryEnabled() const;
-
-  // check and save graph pointer
-  void CheckGraphPtr(const KernelGraphPtr &graph_ptr);
-
   // check if the graph is a dataset graph
   void CheckDatasetGraph();
 
   // serialize graph and get proto
   debugger::GraphProto GetGraphProto(const KernelGraphPtr &graph_ptr) const;
 
-  // send heartbeat message to UI once per 30 second by default
-  void SendHeartbeat(int32_t period);
-
-  // send graph and enter command wait loop
-  void SendGraphAndSuspend(const debugger::GraphProto &graph_proto);
-
-  void SendMultiGraphsAndSuspend(const std::list<debugger::GraphProto> &graph_proto_list);
-
-  // send multi_graphs and clear the graph_proto_list_
-  void SendMultiGraphsAndClear(const KernelGraphPtr &graph_ptr);
-
-  // wait for command and process command
-  // send command request and process reply in a loop
-  // break if RunCMD
-  void CommandLoop();
-
-  // Process the RunCMD
-  void ProcessRunCMD(const debugger::EventReply &reply);
-  // Process the KSetCMD
-  void ProcessKSetCMD(const debugger::EventReply &reply);
-  // Process the KViewCMD
-  void ProcessKViewCMD(const debugger::EventReply &reply);
-  // ViewCMD base level
-  void ViewBaseLevel(const debugger::EventReply &reply);
-  // ViewCMD statistics level
-  void ViewStatLevel(const debugger::EventReply &reply);
-  // ViewCMD value level
-  void ViewValueLevel(const debugger::EventReply &reply);
-  // set what nodes and conditions to watch
-  void SetWatchpoint(const ProtoVector<debugger::WatchNode> &nodes, const debugger::WatchCondition &condition,
-                     const int32_t id, const ProtoVector<debugger::WatchCondition_Parameter> &parameters);
-
-  // remove watchpoint with id
-  void RemoveWatchpoint(const int32_t id);
-
-  // load tensor for view command
-  std::list<debugger::TensorProto> LoadTensors(const ProtoVector<debugger::TensorProto> &tensors) const;
-
-  // load tensor base for view command
-  std::list<debugger::TensorBase> LoadTensorsBase(const ProtoVector<debugger::TensorProto> &tensors) const;
-
-  // load tensor statistics for view command
-  std::list<debugger::TensorSummary> LoadTensorsStat(const ProtoVector<debugger::TensorProto> &tensors) const;
-
-  // terminate training process
-  void Exit(bool exit_success = false);
-
-  // analyze tensors and check watchpoint conditions
-  // return names of tensors and what condition they hit
-  std::list<debugger::WatchpointHit> CheckWatchpoints(const std::string &watchnode = std::string(),
-                                                      const CNodePtr &kernel = nullptr, bool recheck = false);
-
-  // send watchpoints that hit
-  void SendWatchpoints(const std::list<debugger::WatchpointHit> &points);
-
-  // Check if the port is valid
-  bool CheckPort(const std::string &port) const;
-
-  // Check if the IP is valid
-  bool CheckIp(const std::string &host) const;
-
   void LoadSingleAnfnode(const AnfNodePtr &anf_node, const size_t output_index, uint32_t root_graph_id);
 
   void LoadSingleParameterMindRT(const AnfNodePtr &anf_node);
 
   // class members
-
-  std::unique_ptr<GrpcClient> grpc_client_;
   std::unique_ptr<DebugServices> debug_services_;
-  std::unique_ptr<std::thread> heartbeat_thread_;
   KernelGraphPtr graph_ptr_;
   uint32_t device_id_;
   std::string device_target_;
-  int32_t num_step_;
-  bool debugger_enabled_;
-  bool suspended_at_last_kernel_;
-  std::string run_level_;
-  std::string node_name_;
-  std::string cur_name_;
-  bool training_done_;
-  bool send_metadata_done_;
-  bool received_new_graph_;
   bool is_dataset_graph_;
-  bool partial_memory_;
   std::mutex access_lock_;
   uint32_t cur_root_graph_id_ = UINT32_MAX;
   uint32_t prev_root_graph_id_ = UINT32_MAX;
-  // flag to keep track of the very first suspension of debugger
-  bool initial_suspend_;
-  bool enable_heartbeat_;
-
   std::list<debugger::GraphProto> graph_proto_list_;
   std::list<KernelGraphPtr> graph_ptr_list_;
   // The vector of all the kernel graph pointers for the root graph that will execute in the current step.
@@ -310,7 +172,6 @@ class BACKEND_EXPORT Debugger : public std::enable_shared_from_this<Debugger> {
   // The vector of all the parameters for the current step for mindRT.
   std::vector<AnfNodePtr> parameters_mindRT_;
   std::vector<uint32_t> visited_root_graph_ids_;
-
   // map to store iter num in each epoch when dataset_sink_mode is true
   std::map<uint32_t, int32_t> graph_iter_num_map_;
 

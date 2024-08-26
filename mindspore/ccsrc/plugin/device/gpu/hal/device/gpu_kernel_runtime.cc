@@ -155,7 +155,6 @@ void LoadKernelData(Debugger *debugger, const CNodePtr &kernel,
   bool read_data = false;
   auto &dump_json_parser = DumpJsonParser::GetInstance();
   std::string kernel_name = GetKernelNodeName(kernel);
-  debugger->SetCurNode(kernel_name);
   if (dump_enabled) {
     auto dump_mode = dump_json_parser.dump_mode();
     // dump the node if dump_mode is 0, which means all kernels, or if this kernel is in the kernels list
@@ -163,14 +162,11 @@ void LoadKernelData(Debugger *debugger, const CNodePtr &kernel,
       read_data = true;
     }
   }
-  if (debugger->debugger_enabled()) {
-    read_data = debugger->ReadNodeDataRequired(kernel);
-  }
   if (!read_data) {
     return;
   }
 
-  if (debugger->debugger_enabled() || dump_json_parser.InputNeedDump()) {
+  if (dump_json_parser.InputNeedDump()) {
     // get inputs
     auto input_size = common::AnfAlgo::GetInputTensorNum(kernel);
     for (size_t j = 0; j < input_size; ++j) {
@@ -198,7 +194,7 @@ void LoadKernelData(Debugger *debugger, const CNodePtr &kernel,
     }
   }
 
-  if (debugger->debugger_enabled() || dump_json_parser.OutputNeedDump()) {
+  if (dump_json_parser.OutputNeedDump()) {
     // get outputs
     auto output_size = AnfAlgo::GetOutputTensorNum(kernel);
     auto node_name = common::AnfAlgo::GetCNodeName(kernel);
@@ -225,7 +221,6 @@ void LoadKernelData(Debugger *debugger, const CNodePtr &kernel,
       }
     }
   }
-  debugger->PostExecuteNode(kernel, last_kernel);
 }
 #endif
 }  // namespace
@@ -277,15 +272,6 @@ bool GPUKernelRuntime::InitDevice() {
 
 void GPUKernelRuntime::ReleaseDeviceRes() {
   // For dataset mode.
-#ifdef ENABLE_DEBUGGER
-  if (debugger_ && debugger_->debugger_enabled()) {
-    debugger_->SetTrainingDone(true);
-    bool ret = debugger_->SendMetadata(false);
-    if (!ret) {
-      MS_LOG(ERROR) << "Failed to SendMetadata when finalize";
-    }
-  }
-#endif
   if (DataQueueMgr::GetInstance().IsInit()) {
     if (!DataQueueMgr::GetInstance().IsClosed()) {
       if (!DataQueueMgr::GetInstance().CloseNotify()) {
@@ -755,10 +741,6 @@ bool GPUKernelRuntime::LaunchKernelDynamic(const session::KernelGraph *graph, bo
 
 #ifdef ENABLE_DEBUGGER
   bool dump_enabled = GPUKernelRuntime::DumpDataEnabledIteration();
-  if (!mock && debugger_) {
-    // Update the step number for old GPU runtime.
-    debugger_->UpdateStepNum(graph);
-  }
 #endif
   auto &kernels = graph->execution_order();
   int exec_order = 1;

@@ -50,14 +50,6 @@ install(
     COMPONENT mindspore
 )
 
-if(ENABLE_DEBUGGER)
-    install(
-        TARGETS _mindspore_offline_debug
-        DESTINATION ${INSTALL_BASE_DIR}
-        COMPONENT mindspore
-    )
-endif()
-
 install(
     TARGETS mindspore_shared_lib
     DESTINATION ${INSTALL_LIB_DIR}
@@ -384,18 +376,6 @@ if(EXISTS ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/dataset)
         DESTINATION ${INSTALL_PY_DIR}
         COMPONENT mindspore
     )
-endif()
-
-if(CMAKE_SYSTEM_NAME MATCHES "Windows")
-    message("offline debugger does not support windows system temporarily")
-else()
-    if(EXISTS ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/offline_debug)
-        install(
-            DIRECTORY ${CMAKE_SOURCE_DIR}/mindspore/python/mindspore/offline_debug
-            DESTINATION ${INSTALL_PY_DIR}
-            COMPONENT mindspore
-        )
-    endif()
 endif()
 
 ## Public header files

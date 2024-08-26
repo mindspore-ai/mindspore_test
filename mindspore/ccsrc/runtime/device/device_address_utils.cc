@@ -401,9 +401,8 @@ void DeviceAddressUtils::CreateValueNodeDeviceAddress(const DeviceContext *devic
   MS_EXCEPTION_IF_NULL(device_context);
   MS_EXCEPTION_IF_NULL(graph);
 #ifdef ENABLE_DEBUGGER
-  auto debugger = Debugger::GetInstance();
   auto &dump_json_parser = DumpJsonParser::GetInstance();
-  bool enable_debug = debugger->debugger_enabled() || dump_json_parser.InputNeedDump();
+  bool enable_debug = dump_json_parser.InputNeedDump();
 #endif
   // store node without init args, means need device addr
   auto value_nodes_without_init_args = FetchValueNodesNeedDevicePtr(graph);

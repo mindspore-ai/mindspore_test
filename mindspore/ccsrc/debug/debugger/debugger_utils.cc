@@ -40,7 +40,7 @@ using AnfAlgo = mindspore::session::AnfRuntimeAlgorithm;
 
 namespace mindspore {
 /*
- * Feature group: Online debugger.
+ * Feature group: Dump, Online debugger.
  * Target device group: GPU.
  * Runtime category: MindRT.
  * Description: Returns a vector containing real output number.
@@ -211,9 +211,6 @@ bool CheckReadData(const CNodePtr &cnode) {
       read_data = true;
     }
   }
-  if (debugger->debugger_enabled()) {
-    read_data = debugger->ReadNodeDataRequired(cnode);
-  }
   return read_data;
 }
 
@@ -226,7 +223,7 @@ bool IsDeviceTargetGPU() {
 bool GetTransFlag() {
   auto debugger = Debugger::GetInstance();
   MS_EXCEPTION_IF_NULL(debugger);
-  if (debugger->debugger_enabled() || IsDeviceTargetGPU()) {
+  if (IsDeviceTargetGPU()) {
     return true;
   }
   return DumpJsonParser::GetInstance().trans_flag();
@@ -235,7 +232,7 @@ bool GetTransFlag() {
 uint32_t GetSampleMode() {
   auto debugger = Debugger::GetInstance();
   MS_EXCEPTION_IF_NULL(debugger);
-  if (debugger->debugger_enabled() || IsDeviceTargetGPU()) {
+  if (IsDeviceTargetGPU()) {
     return 0;
   }
   return DumpJsonParser::GetInstance().sample_mode();
@@ -244,7 +241,7 @@ uint32_t GetSampleMode() {
 uint32_t GetSampleNum() {
   auto debugger = Debugger::GetInstance();
   MS_EXCEPTION_IF_NULL(debugger);
-  if (debugger->debugger_enabled() || IsDeviceTargetGPU()) {
+  if (IsDeviceTargetGPU()) {
     return 0;
   }
   return DumpJsonParser::GetInstance().sample_num();
@@ -273,7 +270,7 @@ void ReadDataAndDump(const CNodePtr &cnode, std::vector<device::DeviceAddress *>
   bool trans_flag = GetTransFlag();
   uint32_t sample_mode = GetSampleMode();
   uint32_t sample_num = GetSampleNum();
-  if (debugger->debugger_enabled() || dump_json_parser.InputNeedDump()) {
+  if (dump_json_parser.InputNeedDump()) {
     if (DumpJsonParser::GetInstance().IsDeviceCalcStats() && dump_enabled) {
       datadump::DumpKernelTensorStats(device_context, input_device_tensors, true, cnode, root_graph_id);
     } else {
@@ -282,7 +279,7 @@ void ReadDataAndDump(const CNodePtr &cnode, std::vector<device::DeviceAddress *>
                  sample_num, async_copy);
     }
   }
-  if (debugger->debugger_enabled() || dump_json_parser.OutputNeedDump()) {
+  if (dump_json_parser.OutputNeedDump()) {
     if (DumpJsonParser::GetInstance().IsDeviceCalcStats() && dump_enabled) {
       datadump::DumpKernelTensorStats(device_context, output_device_tensors, false, cnode, root_graph_id);
     } else if (!abnormal_dump) {
@@ -301,15 +298,7 @@ void ReadDataAndDump(const CNodePtr &cnode, std::vector<device::DeviceAddress *>
       // for Ascend, node are dumped in root_graph_id directory.
       debugger->DumpSingleNode(cnode, root_graph_id);
     }
-    // Clear Dumped data when online debugger is not enabled
-    if (!debugger->debugger_enabled()) {
-      debugger->ClearCurrentData();
-    }
-  }
-  if (IsDeviceTargetGPU()) {
-    // check if the node is last kernel
-    bool last_kernel = !common::AnfAlgo::IsInplaceNode(cnode, "skip");
-    debugger->PostExecuteNode(cnode, last_kernel);
+    debugger->ClearCurrentData();
   }
 }
 
@@ -329,38 +318,7 @@ std::string CheckDatasetSinkMode(const KernelGraphPtr &graph_ptr) {
   if (debugger->CheckDebuggerDumpEnabled() && sink_mode && IsDeviceTargetGPU()) {
     error_info = "e2e_dump is not supported on GPU with dataset_sink_mode=True. Please set dataset_sink_mode=False";
   }
-  if (debugger->CheckDebuggerEnabled() && sink_mode) {
-    error_info = "Debugger is not supported with dataset_sink_mode=True. Please set dataset_sink_mode=False";
-  }
   return error_info;
-}
-
-/*
- * Feature group: Online Debugger.
- * Target device group: Ascend.
- * Runtime category: MindRT.
- * Description: Loads graph's outputs and parameters for Ascend super kernel mode.
- */
-void LoadDataForDebugger(const KernelGraphPtr &graph_ptr) {
-  auto context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context);
-  if (context->get_param<std::string>(MS_CTX_DEVICE_TARGET) != kAscendDevice) {
-    return;
-  }
-#ifdef ENABLE_DEBUGGER
-  auto debugger = Debugger::GetInstance();
-  MS_EXCEPTION_IF_NULL(debugger);
-  if (!debugger->CheckDebuggerEnabled()) {
-    return;
-  }
-  MS_LOG(INFO) << "Start load step";
-  debugger->SetGraphPtr(graph_ptr);
-  // load output
-  debugger->LoadGraphOutputs();
-  // load parameters
-  debugger->LoadParametersAndConst();
-
-#endif
 }
 
 void Dump(const KernelGraphPtr &graph, uint32_t rank_id) {
@@ -381,105 +339,6 @@ uint32_t GetRankID() {
   }
   return rank_id;
 }
-
-void SuperKernelE2eDump(const KernelGraphPtr &graph) {
-#ifndef ENABLE_SECURITY
-  Dump(graph, GetRankID());
-#endif
-}
-
-DebuggerCommand GetCommand(const debugger::EventReply &reply) {
-  DebuggerCommand cmd = DebuggerCommand::kUnknownCMD;
-  switch (reply.cmd_case()) {
-    case debugger::EventReply::CmdCase::kExit:
-      cmd = DebuggerCommand::kExitCMD;
-      break;
-    case debugger::EventReply::CmdCase::kRunCmd:
-      cmd = DebuggerCommand::kRunCMD;
-      break;
-    case debugger::EventReply::CmdCase::kSetCmd:
-      cmd = DebuggerCommand::kSetCMD;
-      break;
-    case debugger::EventReply::CmdCase::kViewCmd:
-      cmd = DebuggerCommand::kViewCMD;
-      break;
-    case debugger::EventReply::CmdCase::kVersionMatched:
-      cmd = DebuggerCommand::kVersionMatchedCMD;
-      break;
-    default:
-      MS_LOG(DEBUG) << "Debug: UnknownCMD";
-      break;
-  }
-  return cmd;
-}
-
-ProtoVector<debugger::WatchCondition_Parameter> GetParameters(const debugger::EventReply &reply) {
-  if (!reply.has_set_cmd() || !reply.set_cmd().has_watch_condition()) {
-    MS_LOG(ERROR) << "Error: Can not get Parameters from command. Returning default value: ProtoVector<Parameter>().";
-    return ProtoVector<debugger::WatchCondition_Parameter>();
-  }
-  return reply.set_cmd().watch_condition().params();
-}
-
-ProtoVector<debugger::WatchNode> GetWatchnodes(const debugger::EventReply &reply) {
-  if (!reply.has_set_cmd()) {
-    MS_LOG(ERROR) << "Error: Not SetCMD, can not get WatchNodes. Returning default value: ProtoVector<WatchNode>().";
-    return ProtoVector<debugger::WatchNode>();
-  }
-  return reply.set_cmd().watch_nodes();
-}
-
-std::string GetNodeName(const debugger::EventReply &reply) {
-  if (!reply.has_run_cmd()) {
-    MS_LOG(ERROR) << "Error: Not RunCMD, can not get NodeName. Returning default value: "
-                     "";
-    return "";
-  }
-  return reply.run_cmd().node_name();
-}
-
-std::string GetRunLevel(const debugger::EventReply &reply) {
-  if (!reply.has_run_cmd()) {
-    MS_LOG(ERROR) << "Error: Not RunCMD, can not get RunLevel. Returning default value: "
-                     "";
-    return "";
-  }
-  return reply.run_cmd().run_level();
-}
-
-debugger::WatchCondition GetWatchcondition(const debugger::EventReply &reply) {
-  if (!reply.has_set_cmd() || !reply.set_cmd().has_watch_condition()) {
-    MS_LOG(ERROR) << "Error: Can not get WatchCondition from command. Returning default value: WatchCondition().";
-    return debugger::WatchCondition();
-  }
-  return reply.set_cmd().watch_condition();
-}
-
-int32_t GetWatchpointID(const debugger::EventReply &reply) {
-  if (!reply.has_set_cmd()) {
-    MS_LOG(ERROR) << "Error: Not SetCMD, can not get Watchpoint ID. Returning default value: 0.";
-    return 0;
-  }
-  return reply.set_cmd().id();
-}
-
-bool GetWatchpointDelete(const debugger::EventReply &reply) {
-  if (!reply.has_set_cmd()) {
-    MS_LOG(ERROR) << "Error: Not SetCMD, can not get Watchpoint delete flag. Returning default value: false.";
-    return false;
-  }
-  return reply.set_cmd().delete_();
-}
-
-ProtoVector<debugger::TensorProto> GetTensors(const debugger::EventReply &reply) {
-  if (!reply.has_view_cmd()) {
-    MS_LOG(ERROR) << "Error: Not ViewCMD, can not get Tensors. Returning default value: ProtoVector<TensorProto>().";
-    return ProtoVector<debugger::TensorProto>();
-  }
-  return reply.view_cmd().tensors();
-}
-
-bool GetMiVersionMatched(const debugger::EventReply &reply) { return reply.version_matched(); }
 
 std::string GetTensorFullName(const debugger::TensorProto &tensor) {
   string node_name = tensor.node_name();
