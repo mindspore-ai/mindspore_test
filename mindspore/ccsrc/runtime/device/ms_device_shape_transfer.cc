@@ -2038,8 +2038,6 @@ void FormatHelper::InitInfo() {
           {kOpFormat_NCDHW, FormatInfo(kOpFormat_NCDHW, false)},
           {kOpFormat_NDC1HWC0, FormatInfo(kOpFormat_NCDHW, true)},
           {kOpFormat_FRACTAL_Z_3D, FormatInfo(kOpFormat_NCDHW, true)}};
-
-  base_format_set_ = {Format::DEFAULT_FORMAT, Format::NCHW, Format::ND, Format::NCDHW};
 }
 
 FormatHelper &FormatHelper::GetInstance() noexcept {
@@ -2063,10 +2061,6 @@ bool FormatHelper::IsBaseFormatType(const std::string &format) {
   }
 
   return iter->first == iter->second.baseFormat;
-}
-
-bool FormatHelper::IsBaseFormatType(mindspore::Format format) {
-  return base_format_set_.find(format) != base_format_set_.end();
 }
 
 bool FormatHelper::IsPadded(const std::string &format) {
