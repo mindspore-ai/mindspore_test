@@ -16,15 +16,15 @@
 #ifndef MINDSPORE_CCSRC_INCLUDE_COMMON_ENV_VARS_H_
 #define MINDSPORE_CCSRC_INCLUDE_COMMON_ENV_VARS_H_
 
-#include "mindapi/base/macros.h"
+#include "include/common/visible.h"
 
 namespace mindspore {
 namespace common {
 // get slice_size for print, tensordump, tensorsummary, etc.
-MS_CORE_API int GetDumpSliceSize();
+COMMON_EXPORT int GetDumpSliceSize();
 
 // get wait_time for print, tensordump, tensorsummary, etc.
-MS_CORE_API int GetDumpWaitTime();
+COMMON_EXPORT int GetDumpWaitTime();
 }  // namespace common
 }  // namespace mindspore
 
