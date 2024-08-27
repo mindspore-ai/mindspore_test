@@ -442,7 +442,7 @@ def _check_save_obj_and_ckpt_file_name(save_obj, ckpt_file_name, format):
         raise TypeError("For 'save_checkpoint', the parameter {} for checkpoint file name is invalid,"
                         "'ckpt_file_name' must be "
                         "string, but got {}.".format(ckpt_file_name, type(ckpt_file_name)))
-    ckpt_file_name = os.path.abspath(ckpt_file_name)
+    ckpt_file_name = os.path.realpath(ckpt_file_name)
     if os.path.isdir(ckpt_file_name):
         raise IsADirectoryError("For 'save_checkpoint', the parameter `ckpt_file_name`: {} is a directory, "
                                 "it must be a file name.".format(ckpt_file_name))
@@ -856,7 +856,7 @@ def load(file_name, **kwargs):
     if not os.path.exists(file_name):
         raise ValueError("For 'load', the argument 'file_name'(MindIR file) does not exist, "
                          "please check whether the 'file_name' is correct.")
-    file_name = os.path.abspath(file_name)
+    file_name = os.path.realpath(file_name)
 
     # set customized functions for dynamic obfuscation
     obfuscated = _check_load_obfuscate(**kwargs)
@@ -919,7 +919,7 @@ def export_split_mindir(file_name, device_num=8, rank_id=0, dynamic=True, sapp=T
     if not os.path.exists(file_name):
         raise ValueError("For 'Split MindIR', the argument 'file_name'(MindIR file) does not exist, "
                          "please check whether the 'file_name' is correct.")
-    file_name = os.path.abspath(file_name)
+    file_name = os.path.realpath(file_name)
 
     logger.info("Execute the process of export and split mindir.")
     dynamic = True
@@ -1431,7 +1431,7 @@ def _check_ckpt_file_name(ckpt_file_name, format):
         raise ValueError(f"For 'load_checkpoint', the checkpoint file format must same with 'format', but got "
                          f"file_name:'{ckpt_file_name}', format:'{format}'")
 
-    ckpt_file_name = os.path.abspath(ckpt_file_name)
+    ckpt_file_name = os.path.realpath(ckpt_file_name)
     if not os.path.exists(ckpt_file_name):
         raise ValueError("For 'load_checkpoint', the checkpoint file: {} does not exist, please check "
                          "whether the 'ckpt_file_name' is correct.".format(ckpt_file_name))
@@ -1751,7 +1751,7 @@ def _save_graph(network, file_name):
     """
     logger.info("Execute the process of saving graph.")
 
-    file_name = os.path.abspath(file_name)
+    file_name = os.path.realpath(file_name)
     graph_pb = network.get_func_graph_proto()
     if graph_pb:
         with open(file_name, "wb") as f:
@@ -1965,7 +1965,7 @@ def export(net, *inputs, file_name, file_format, **kwargs):
                                + str(columns))
         inputs = tuple(inputs_col)
 
-    file_name = os.path.abspath(file_name)
+    file_name = os.path.realpath(file_name)
     if 'enc_key' in kwargs.keys():
         kwargs['enc_key'], kwargs['enc_mode'] = _check_key_mode_type(file_format, **kwargs)
     _export(net, file_name, file_format, *inputs, **kwargs)
@@ -2058,7 +2058,7 @@ def _save_air(net, file_name, *inputs, **kwargs):
     if os.path.exists(file_name):
         os.chmod(file_name, stat.S_IWUSR)
     if "/" in file_name:
-        real_path = os.path.abspath(file_name[:file_name.rfind("/")])
+        real_path = os.path.realpath(file_name[:file_name.rfind("/")])
         os.makedirs(real_path, exist_ok=True)
     if 'enc_key' in kwargs.keys() and 'enc_mode' in kwargs.keys():
         _executor.export(file_name, graph_id, enc_key=kwargs.get('enc_key'), encrypt_func=kwargs.get('enc_mode'))
@@ -2169,7 +2169,7 @@ def _split_save(net_dict, model, file_name, is_encrypt, **kwargs):
     file_prefix = file_name.split("/")[-1]
     if file_prefix.endswith(".mindir"):
         file_prefix = file_prefix[:-7]
-    current_path = os.path.abspath(file_name)
+    current_path = os.path.realpath(file_name)
     dirname = os.path.dirname(current_path)
     data_path = os.path.join(dirname, file_prefix + "_variables")
     if os.path.exists(data_path):
@@ -2343,7 +2343,7 @@ def _save_mindir_together(net_dict, model, file_name, is_encrypt, **kwargs):
                              "the data of parameter cannot be exported.".format(map_param_proto.name))
     if not file_name.endswith('.mindir'):
         file_name += ".mindir"
-    current_path = os.path.abspath(file_name)
+    current_path = os.path.realpath(file_name)
     dirname = os.path.dirname(current_path)
     os.makedirs(dirname, exist_ok=True)
     if os.path.exists(file_name):
@@ -2474,7 +2474,7 @@ def parse_print(print_file_name):
         [[ 1.00000000e+00,  2.00000000e+00,  3.00000000e+00,  4.00000000e+00],
         [ 5.00000000e+00,  6.00000000e+00,  7.00000000e+00,  8.00000000e+00]])]
     """
-    print_file_path = os.path.abspath(print_file_name)
+    print_file_path = os.path.realpath(print_file_name)
 
     if os.path.getsize(print_file_path) == 0:
         raise ValueError("For 'parse_print', the print file may be empty, please make sure enter the correct "
@@ -3118,7 +3118,7 @@ def _get_mindir_inputs(file_name):
         >>> input_tensor = get_mindir_inputs("lenet.mindir")
     """
     Validator.check_file_name_by_regular(file_name)
-    file_name = os.path.abspath(file_name)
+    file_name = os.path.realpath(file_name)
     model = read_proto(file_name)
     input_tensor = []
 

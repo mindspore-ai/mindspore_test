@@ -307,7 +307,7 @@ class SymbolTree(Observer, Observable, NodeManager):
     @staticmethod
     def _get_valid_import_info(import_node: ast.ImportFrom, file_path: str):
         """Get valid import info while import_node.module is at form of relative path"""
-        file_path = os.path.dirname(os.path.abspath(file_path))
+        file_path = os.path.dirname(os.path.realpath(file_path))
         # get real path from import_node.level
         # from .(A) import xxx: current path
         # from ..(A) import xxx: last level path
@@ -1452,7 +1452,7 @@ class SymbolTree(Observer, Observable, NodeManager):
         return self._saved_file_name
 
     def save_network_to_file(self):
-        abs_path = os.path.abspath(self._saved_file_name)
+        abs_path = os.path.realpath(self._saved_file_name)
         if os.path.isfile(abs_path):
             os.remove(abs_path)
         with os.fdopen(os.open(self._saved_file_name, os.O_WRONLY | os.O_CREAT, stat.S_IRWXU), 'wb') as f:
@@ -1563,7 +1563,7 @@ class SymbolTree(Observer, Observable, NodeManager):
         When level_num = 1(e.g. from .xxx import yyy), current path will be saved.
         When level_num = 2(e.g. from ..xxx import yyy), the path one level above the current path will be saved.
         """
-        file_path = os.path.dirname(os.path.abspath(file_path))
+        file_path = os.path.dirname(os.path.realpath(file_path))
         file_path = os.path.normcase(file_path)
         file_path = os.path.normpath(file_path)
         if level_num > 1:
