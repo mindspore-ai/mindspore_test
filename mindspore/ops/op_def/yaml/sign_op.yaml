@@ -8,5 +8,3 @@ sign:
       dtype: tensor
   dispatch:
     enable: True
-  class:
-    name: Sign

@@ -123,6 +123,7 @@ Tensor
     mindspore.mint.round
     mindspore.mint.rsqrt
     mindspore.mint.sigmoid
+    mindspore.mint.sign
     mindspore.mint.sin
     mindspore.mint.sinc
     mindspore.mint.sinh
