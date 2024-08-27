@@ -42,6 +42,8 @@ struct TryBlock {
   bool IsFinallyBlock; /*record current block is in exception block or finally block*/
 };
 
+const std::vector<std::string> kAstFunctionList = {"mindspore.ops.function.array_func"};
+
 bool CheckSupportCreateInstance(CallNode *call_node);
 ValueNode *GetSelfFromMethod(ValueNode *method);
 class GraphBuilder {
