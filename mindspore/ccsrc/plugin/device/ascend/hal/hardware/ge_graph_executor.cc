@@ -543,7 +543,8 @@ void GeGraphExecutor::BuildOutputDataGeTensor(const KernelGraphPtr &kernel_graph
       continue;
     }
     auto real_index = output_node->isa<ValueNode>() ? 0 : index;
-    auto device_addr = AnfAlgo::GetMutableOutputAddr(output_node, real_index, false);
+    auto device_addr =
+      kernel_graph->has_flag(kFlagGeKernel) ? nullptr : AnfAlgo::GetMutableOutputAddr(output_node, real_index, false);
     (void)device_addrs.emplace_back(device_addr.get());
     auto shapes = trans::GetRuntimePaddingShape(output_node, real_index);
     auto host_type = common::AnfAlgo::GetOutputInferDataType(output_node, real_index);
@@ -1061,8 +1062,10 @@ std::vector<GeTensor> GeGraphExecutor::CreateInputGeTensorList(const std::vector
       }
     }
 
-    MS_LOG(DEBUG) << "Update GeTensor, shape: " << tensor->GetShapeVector() << ", tensor_size: " << tensor->size()
-                  << ", dtype: " << tensor->dtype_id();
+    MS_LOG(DEBUG) << "For graph: " << graph->ToString() << ", update input GeTensor[" << index
+                  << "], shape: " << tensor->GetShapeVector() << ", tensor_size: " << tensor->size()
+                  << ", dtype: " << tensor->dtype_id() << ", ptr: " << tensor->device_ptr()
+                  << ", pointer_ref_count: " << tensor->pointer_ref_count();
     ++index;
   }
   return ge_inputs;
@@ -1108,8 +1111,10 @@ std::vector<GeTensor> GeGraphExecutor::CreateOutputGeTensorList(const std::vecto
         MS_LOG(EXCEPTION) << "Set ge tensor addr failed! addr size is " << tensor->size();
       }
     }
-    MS_LOG(DEBUG) << "Update GeTensor, shape: " << tensor->GetShapeVector() << ", tensor_size: " << tensor->size()
-                  << ", dtype: " << tensor->dtype_id();
+    MS_LOG(DEBUG) << "For graph: " << graph->ToString() << ", update output GeTensor[" << index
+                  << "], shape: " << tensor->GetShapeVector() << ", tensor_size: " << tensor->size()
+                  << ", dtype: " << tensor->dtype_id() << ", ptr: " << tensor->device_ptr()
+                  << ", pointer_ref_count: " << tensor->pointer_ref_count();
     ++index;
   }
   return ge_outputs;

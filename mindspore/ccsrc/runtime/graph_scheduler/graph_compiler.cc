@@ -458,7 +458,8 @@ void RecursiveSetRunMode(const KernelGraphPtr &graph, std::set<KernelGraphPtr> *
 }
 }  // namespace
 
-KernelGraphPtr GraphCompiler::ConvertGraphToGeNode(KernelGraphPtr kernel_graph, device::DeviceType device_target) {
+KernelGraphPtr GraphCompiler::ConvertGraphToGeNode(KernelGraphPtr kernel_graph, device::DeviceType device_target,
+                                                   const std::pair<AnfNodePtrList, AnfNodePtrList> &io_nodes) {
   MS_LOG(INFO) << "Start ConvertGraphToGeNode";
 
   auto new_kernel_graph = session_->NewKernelGraph();
@@ -523,6 +524,8 @@ KernelGraphPtr GraphCompiler::ConvertGraphToGeNode(KernelGraphPtr kernel_graph, 
   MS_EXCEPTION_IF_NULL(call_inline);
   call_inline->set_abstract(kernel_graph->get_return()->abstract());
   common::AnfAlgo::SetNodeAttr(kAttrKernelGraph, MakeValue(kernel_graph), call_inline);
+  auto output_num = io_nodes.second.size();
+  common::AnfAlgo::SetNodeAttr(kAttrOutputNum, MakeValue<int64_t>(output_num), call_inline);
 
   // copy backend_front_anf_map
   auto sub_graph_backe_front_map = kernel_graph->backend_front_anf_map();
@@ -533,6 +536,7 @@ KernelGraphPtr GraphCompiler::ConvertGraphToGeNode(KernelGraphPtr kernel_graph, 
     new_kernel_graph->FrontBackendMapAdd(iter->second, iter->first);
   }
 
+  kernel_graph->set_flag(kFlagGeKernel, true);
   new_kernel_graph->SetInputNodes();
   new_kernel_graph->set_output(call_inline);
   new_kernel_graph->SetExecOrderByDefault();
@@ -585,7 +589,7 @@ GraphId GraphCompiler::CompileGraph(const GraphSegmentPtr &segment,
         }
 #endif
         // convert graph to ge_node
-        kernel_graph = ConvertGraphToGeNode(kernel_graph, device_target);
+        kernel_graph = ConvertGraphToGeNode(kernel_graph, device_target, io_nodes);
 #ifdef ENABLE_DUMP_IR
         if (context_ptr->CanDump(kIntroductory)) {
           std::string file_name =

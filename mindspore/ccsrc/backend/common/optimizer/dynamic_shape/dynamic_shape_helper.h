@@ -40,8 +40,6 @@ abstract::AbstractBasePtr InferShapeAndType(const PrimitivePtr &primitive,
 
 void UpdateKernelTensorType(const TypePtr &type, const std::vector<kernel::KernelTensor *> &output_kernel_tensors);
 
-void UpdateGEGraphOpKernelTensor(const std::vector<kernel::KernelTensor *> &output_kernel_tensors);
-
 bool IsRealCNode(const BaseRef &n);
 void InferOp(const CNodePtr &node, void *args = nullptr);
 AnfNodePtr GenInferNode(const AnfNodePtr &node);

@@ -219,7 +219,8 @@ class GraphCompiler {
                                                      const DeviceContext *device_context,
                                                      std::vector<KernelGraphPtr> *const all_graphs,
                                                      bool *const need_return_ahead);
-  KernelGraphPtr ConvertGraphToGeNode(KernelGraphPtr kernel_graph, device::DeviceType device_target);
+  KernelGraphPtr ConvertGraphToGeNode(KernelGraphPtr kernel_graph, device::DeviceType device_target,
+                                      const std::pair<AnfNodePtrList, AnfNodePtrList> &io_nodes);
 
   // The member variable 'session_' will be removed after removing session module.
   // Now all the GraphCompiler share the same 'session_'.
