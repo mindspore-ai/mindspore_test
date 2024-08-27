@@ -101,7 +101,7 @@ const std::unordered_map<int, bool (GraphBuilder::*)(const Instr &)> GraphBuilde
   {INPLACE_XOR, &GraphBuilder::DoBinary},
   {INPLACE_OR, &GraphBuilder::DoBinary},
   {IS_OP, &GraphBuilder::DoIsOp},
-  {CONTAINS_OP, &GraphBuilder::DoIsOp},
+  {CONTAINS_OP, &GraphBuilder::DoContainsOp},
   {BUILD_TUPLE, &GraphBuilder::DoBuildOp},
   {BUILD_LIST, &GraphBuilder::DoBuildOp},
   {BUILD_SET, &GraphBuilder::DoBuildOp},
@@ -1443,6 +1443,8 @@ bool GraphBuilder::DoUnary(const Instr &instr) {
 }
 
 bool GraphBuilder::DoIsOp(const Instr &instr) { return DoBinary(instr); }
+
+bool GraphBuilder::DoContainsOp(const Instr &instr) { return DoBinary(instr); }
 
 AObject *GraphBuilder::InferBinary(ValueNode *left, ValueNode *right, const Instr &instr) {
   AObject *object_info;
@@ -4574,10 +4576,17 @@ AbstractWrapperPtr MindGraphBuilder::HandleMultiOp(const Instr &instr, const std
                                                    bool is_compare) {
   int opcode = instr.op();
   int oparg = instr.arg();
-  const auto &op_name =
-    is_compare ? pijit::GraphUtils::OpCompareArgToGraphName(oparg) : pijit::GraphUtils::OpCodeToGraphName(opcode);
+  std::string op_name;
+  if (is_compare) {
+    op_name = pijit::GraphUtils::OpCompareArgToGraphName(oparg);
+  } else if (opcode == CONTAINS_OP) {
+    op_name = pijit::GraphUtils::ContainsOpToGraphName(oparg);
+  } else {
+    op_name = pijit::GraphUtils::OpCodeToGraphName(opcode);
+  }
   MS_LOG(DEBUG) << "operation name is " << op_name;
   if (op_name == "") {
+    MS_LOG(INFO) << "Can not find operation for " << instr.ToString();
     return nullptr;
   }
   auto wrapper = fg_builder_->AddMultiNode(op_name, HandleInputArgs(p));
@@ -4717,6 +4726,20 @@ bool MindGraphBuilder::DoBuildOp(const Instr &instr) {
 }
 
 bool MindGraphBuilder::DoIsOp(const Instr &instr) { return GraphBuilder::DoBinary(instr); }
+
+bool MindGraphBuilder::DoContainsOp(const Instr &instr) {
+  auto r = pop();
+  auto l = pop();
+  auto o = HandleMultiOp(instr, {l, r}, false);
+  if (o == nullptr) {
+    MS_LOG(INFO) << "Failed to handle bytecode CONTAINS_OP";
+    return false;
+  }
+  auto v = NewValueNode(AObject::Convert(o), instr, {l, r});
+  v->set_abstract_wrapper(o);
+  push(v);
+  return true;
+}
 
 bool MindGraphBuilder::HandlePositionParams(const py::object &func, std::vector<ValueNode *> *params,
                                             FrameStates *frame) {
