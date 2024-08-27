@@ -26,6 +26,7 @@ namespace mindspore {
 namespace pynative {
 namespace {
 constexpr size_t kCacheThreshold = 10000;
+constexpr size_t kHalfThreshold = 5000;
 
 ValuePtr GetInferValueFromAbstract(const AbstractBasePtr &abs) {
   MS_EXCEPTION_IF_NULL(abs);
@@ -347,7 +348,7 @@ void InferOperation::SetNodeAbsCacheByValue(const FrontendOpRunInfoPtr &op_run_i
   if (node_abs_cache_.size() > kCacheThreshold) {
     std::unique_lock lock(abs_mutex_);
     auto half_it = node_abs_cache_.begin();
-    std::advance(half_it, kCacheThreshold / 2);
+    std::advance(half_it, kHalfThreshold);
     node_abs_cache_.erase(node_abs_cache_.begin(), half_it);
   }
 }

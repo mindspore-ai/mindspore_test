@@ -90,6 +90,11 @@ tensor::BaseTensorPtr IdentityCustomize(const std::shared_ptr<OpRunner> &op, con
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), x_tensor);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
 
+  IdentityCall(op, x_tensor);
+  return op->output(0);
+}
+
+void IdentityCall(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &x_tensor) {
   if (x_tensor->is_contiguous()) {
     MS_LOG(DEBUG) << "Run Identity input contiguous";
     IdentityCustomizeCall(op, x_tensor);
@@ -97,7 +102,6 @@ tensor::BaseTensorPtr IdentityCustomize(const std::shared_ptr<OpRunner> &op, con
     MS_LOG(DEBUG) << "Run Identity input without contiguous";
     IdentityCustomizeCallWithoutContigous(op, x_tensor);
   }
-  return op->output(0);
 }
 }  // namespace pyboost
 }  // namespace kernel

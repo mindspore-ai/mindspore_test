@@ -19,6 +19,7 @@
 #include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
 #include "kernel/common/pyboost/op_register.h"
 #include "kernel/common/pyboost/pyboost_utils.h"
+#include "kernel/common/pyboost/customize/identity.h"
 #include "kernel/ascend/pyboost/aclnn_utils.h"
 #include "transform/acl_ir/acl_helper.h"
 #include "plugin/device/ascend/kernel/acl/acl_kernel_mod.h"
@@ -146,13 +147,7 @@ tensor::BaseTensorPtr IdentityAscendCustomize(const std::shared_ptr<OpRunner> &o
   FillHostInfoForAclOp(x_tensor);
   FillHostInfoForAclOp(op->output(0));
 
-  if (x_tensor->is_contiguous()) {
-    MS_LOG(DEBUG) << "Run Identity input contiguous";
-    IdentityCustomizeCall(op, x_tensor);
-  } else {
-    MS_LOG(DEBUG) << "Run Identity input without contiguous";
-    IdentityCustomizeCallWithoutContigous(op, x_tensor);
-  }
+  IdentityCall(op, x_tensor);
   return op->output(0);
 }
 }  // namespace pyboost

@@ -139,5 +139,5 @@ class HookHandle:
         """
         if self.hook_dict_ref is not None:
             hook_dict = self.hook_dict_ref()
-            if hook_dict is not None  and self.handle_id in hook_dict:
+            if hook_dict is not None and self.handle_id in hook_dict:
                 del hook_dict[self.handle_id]

@@ -56,6 +56,7 @@ def is_op_multi_output(args):
         return True
     return False
 
+
 def get_index(index: int):
     """
     get index
