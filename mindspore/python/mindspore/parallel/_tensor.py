@@ -334,8 +334,10 @@ def _extract_layout_item(layout_item):
     tensor_map = layout_item[1]
     opt_shard_step = layout_item[4]
     opt_shard_size = layout_item[5]
+    tensor_strategy = _get_tensor_strategy(dev_matrix, tensor_map)
+    model_parallel_shard_size = np.prod(tensor_strategy)
     if opt_shard_size == -1:
-        opt_shard_size = np.prod(dev_matrix) // opt_shard_step
+        opt_shard_size = np.prod(dev_matrix) // model_parallel_shard_size
     return dev_matrix, tensor_map, opt_shard_step, opt_shard_size
 
 
@@ -406,12 +408,35 @@ def _construct_tensor_layout_for_opt_shard(dev_matrix, tensor_map, opt_shard_ste
     if opt_shard_step == 0 or opt_shard_size == 0:
         return dev_matrix, tensor_map, list(origin_full_tensor_shape)
     tensor_strategy = _get_tensor_strategy(dev_matrix, tensor_map)
-    model_parallel_shard_size = np.prod(tensor_strategy)
-    if model_parallel_shard_size != opt_shard_step:
+    repeated_dim = []
+    dev_sharded_index = []
+    for dim in tensor_map:
+        if dim != -1:
+            dev_sharded_index.append(len(dev_matrix) - dim - 1)
+    for index, value in enumerate(dev_matrix):
+        if index not in dev_sharded_index and value > 1:
+            repeated_dim.append(index)
+    if not repeated_dim:
+        raise ValueError("The device_matrix {} and tensor_map {} cannot sharding opt_shard".
+                         format(dev_matrix, tensor_map))
+    if len(repeated_dim) == 1 and np.prod(dev_matrix[repeated_dim[0] + 1:]) != opt_shard_step:
         raise ValueError("The optimizer sharding step {} is not equal to the model parallel sharding size {}.".
-                         format(opt_shard_step, model_parallel_shard_size))
-
+                         format(opt_shard_step, np.prod(dev_matrix[repeated_dim[0] + 1:])))
     first_dim_no_sharding_size = origin_full_tensor_shape[0] // tensor_strategy[0]
+    if (len(repeated_dim) < len(dev_matrix) and len(repeated_dim) > 1) or repeated_dim[0] > 0:
+        tensor_shape_new = list(origin_full_tensor_shape)
+        tensor_shape_new[0] = tensor_strategy[0]
+        accu_shp = 1
+        for i in range(len(repeated_dim) - 1):
+            opt_sharding_size = dev_matrix[repeated_dim[i]]
+            tensor_shape_new.insert(i + 1, opt_sharding_size)
+            accu_shp = accu_shp * opt_sharding_size
+        tensor_shape_new.insert(len(repeated_dim), first_dim_no_sharding_size // accu_shp)
+        tensor_map_new = list(copy.deepcopy(tensor_map))
+        for index, r_dim in enumerate(repeated_dim):
+            tensor_map_new.insert(index + 1, len(dev_matrix) - r_dim - 1)
+        return list(dev_matrix), tensor_map_new, tensor_shape_new
+
     full_tensor_shape = list(origin_full_tensor_shape)
     full_tensor_shape[0] = tensor_strategy[0]
     full_tensor_shape.insert(1, first_dim_no_sharding_size)
