@@ -15,6 +15,7 @@
 """
 Testing RandomCropWithBBox op in DE
 """
+import numpy as np
 import mindspore.dataset as ds
 import mindspore.dataset.vision as vision
 import mindspore.dataset.vision.utils as mode
@@ -236,6 +237,41 @@ def test_random_crop_with_bbox_op_bad_padding():
             err)
 
 
+def test_random_crop_with_bbox_padded_dataset():
+    """
+    Feature: RandomCropWithBBox op
+    Description: RandomCropWithBBox need to copy its input image and image bbox, otherwise numpy memory will be reused
+    Expectation: Images and bboxes are transformed as expected
+    """
+    original_seed = ds.config.get_seed()
+    ds.config.set_seed(1234)
+    # load dataset
+    dataset = ds.CocoDataset(DATA_DIR_COCO[0], annotation_file=DATA_DIR_COCO[1], task="Detection",
+                             decode=True, shuffle=True, extra_metadata=True, num_samples=2)
+
+    for data in dataset.create_dict_iterator(output_numpy=True, num_epochs=1):
+        image_data = data['image']
+        bbox_data = data['bbox']
+        break
+
+    padded_samples = [{'image': image_data, 'bbox': bbox_data, 'category_id': np.zeros((2, 1), np.uint32),
+                       'iscrowd': np.zeros((2, 1), np.uint32), '_meta-filename': np.array('0', dtype=str)}]
+
+    padded_ds = ds.PaddedDataset(padded_samples)
+    dataset = dataset + padded_ds
+    dataset = dataset.repeat(5)
+
+    randomcrop_op = vision.RandomCropWithBBox(size=(300, 300), padding=[200, 200, 200, 200],
+                                              pad_if_needed=True, fill_value=(1, 1, 0), padding_mode=vision.Border.EDGE)
+    dataset = dataset.map(input_columns=["image", "bbox"], operations=randomcrop_op, num_parallel_workers=1)
+    dataset = dataset.map(input_columns=["image", "bbox"], operations=randomcrop_op, num_parallel_workers=1)
+
+    for data in dataset.create_dict_iterator(output_numpy=True, num_epochs=1):
+        pass
+
+    ds.config.set_seed(original_seed)
+
+
 if __name__ == "__main__":
     test_random_crop_with_bbox_op_c(plot_vis=True)
     test_random_crop_with_bbox_op_coco_c(plot_vis=True)
@@ -245,3 +281,4 @@ if __name__ == "__main__":
     test_random_crop_with_bbox_op_invalid_c()
     test_random_crop_with_bbox_op_bad_c()
     test_random_crop_with_bbox_op_bad_padding()
+    test_random_crop_with_bbox_padded_dataset()
