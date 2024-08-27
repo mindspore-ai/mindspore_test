@@ -22,6 +22,7 @@ from mindspore import nn
 from mindspore import ops
 from mindspore import Tensor
 from mindspore import context
+from mindspore.common.parameter import Parameter
 from tests.mark_utils import arg_mark
 
 
@@ -475,6 +476,36 @@ def test_auto_mix_precision_with_to_float(mode):
     net = auto_mixed_precision(net, amp_level="auto", dtype=ms.float16)
     out = net(input_data)
     assert out.dtype == ms.float32
+
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
+@pytest.mark.parametrize("mode", (context.GRAPH_MODE, context.PYNATIVE_MODE))
+def test_auto_mix_precision_with_keyword_arguments(mode):
+    """
+    Feature: auto mixed precision auto mode.
+    Description: test amp auto mode using network with keyword arguments.
+    Expectation: success.
+    """
+    class CumSumNet(nn.Cell):
+        def __init__(self, weight_shape, input_type_np=np.float32):
+            super().__init__()
+            self.weight = Parameter(Tensor(np.random.randn(*weight_shape).astype(input_type_np)),
+                                    name="weight")
+            self.matmul = ops.MatMul()
+            self.cumsum = ops.CumSum()
+
+        def construct(self, x):
+            out1 = self.matmul(x, self.weight)
+            out2 = self.cumsum(out1, axis=-1)
+            return out1, out2
+
+    context.set_context(mode=mode)
+    net = CumSumNet((16, 16))
+    net = auto_mixed_precision(net, amp_level="auto", dtype=ms.float16)
+    input_x = Tensor(np.random.randn(16, 16).astype(np.float32))
+    out1, out2 = net(input_x)
+    assert out1.dtype == ms.float16 and out2.dtype == ms.float32
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
