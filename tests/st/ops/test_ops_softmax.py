@@ -209,8 +209,8 @@ def ops_softmax_binary_case2(input_binary_data=None, output_binary_data=None):
     ops_softmax_binary_compare(input_binary_data, output_binary_data, -1)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b', 'platform_gpu'], level_mark='level0',
-          card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 @pytest.mark.parametrize("mode", [context.GRAPH_MODE, context.PYNATIVE_MODE])
 def test_softmax_binary_cases(mode):
     """

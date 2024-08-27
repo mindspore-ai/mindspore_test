@@ -17,7 +17,7 @@ import pytest
 import numpy as np
 import mindspore as ms
 from mindspore.common import dtype as mstype
-from mindspore import ops, mint, Tensor, jit, JitConfig
+from mindspore import mint, Tensor, jit, JitConfig
 from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
@@ -30,12 +30,11 @@ def median_forward_func(input_tensor, axis=None, keepdim=None):
 
 @test_utils.run_with_cell
 def median_backward_func(input_tensor, axis=None, keepdim=None):
-    input_grad = ops.grad(median_forward_func, (0,))(input_tensor, axis, keepdim)
+    input_grad = ms.grad(median_forward_func, (0,))(input_tensor, axis, keepdim)
     return input_grad
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level0',
-          card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 def test_median_dim_normal(mode):
     """

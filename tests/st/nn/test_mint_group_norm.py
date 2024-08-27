@@ -42,8 +42,7 @@ def grad_group_norm_net(input_x, num_group, num_channels, eps=1e-05, affine=True
     return ms.grad(net)(input_x)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level0',
-          card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 def test_groupnorm_para_customed_dtype(mode):
     """

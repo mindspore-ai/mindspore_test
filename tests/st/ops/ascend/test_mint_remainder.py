@@ -21,6 +21,7 @@ import mindspore as ms
 from mindspore.mint import remainder
 from mindspore import ops, set_context, Tensor, jit, JitConfig
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.mark_utils import arg_mark
 
 
 def build_context_func(fn, mode):
@@ -144,10 +145,7 @@ def run_cases(op_type, fn, expect_out_key):
             fn(float(x), y, expected)
 
 
-@pytest.mark.level0
-@pytest.mark.env_onecard
-@pytest.mark.platform_arm_ascend_training
-@pytest.mark.platform_arm_ascend910b_training
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize("context_mode", [ms.PYNATIVE_MODE, ms.GRAPH_MODE])
 def test_remainder_normal(context_mode):
     """
