@@ -226,14 +226,14 @@ static const std::map<ProfilerEvent, std::string> kProfilerEventString = {
   } while (0);
 
 // Match PROFILER_START to use.
-#define PROFILER_END(start_time, module, event, op_name, is_inner_event)                                           \
-  do {                                                                                                             \
-    if (runtime::ProfilerAnalyzer::GetInstance().profiler_enable()) {                                              \
-      auto end_time = runtime::ProfilerAnalyzer::GetInstance().GetTimeStamp();                                     \
-      auto brief_name = runtime::ProfilerAnalyzer::GetInstance().GetBriefName(op_name);                            \
-      runtime::ProfilerAnalyzer::GetInstance().RecordData(                                                         \
-        std::make_shared<runtime::ProfilerData>(module, event, brief_name, is_inner_event, start_time, end_time)); \
-    }                                                                                                              \
+#define PROFILER_END(start_time, module, event, op_name, is_inner_event)                           \
+  do {                                                                                             \
+    if (runtime::ProfilerAnalyzer::GetInstance().profiler_enable()) {                              \
+      auto end_time = runtime::ProfilerAnalyzer::GetInstance().GetTimeStamp();                     \
+      auto brief_name = runtime::ProfilerAnalyzer::GetInstance().GetBriefName(op_name);            \
+      runtime::ProfilerAnalyzer::GetInstance().RecordData(std::make_shared<runtime::ProfilerData>( \
+        module, event, op_name, brief_name, is_inner_event, start_time, end_time));                \
+    }                                                                                              \
   } while (0);
 
 // Match PROFILER_START to use.
@@ -254,10 +254,11 @@ class COMMON_EXPORT ProfilerRecorder {
   ~ProfilerRecorder();
 
   struct Data {
-    Data(ProfilerModule module, ProfilerEvent event, std::string op_name, std::string py_stack, uint64_t start_time,
-         uint64_t flow_id, bool is_inner_event)
+    Data(ProfilerModule module, ProfilerEvent event, std::string op_full_name, std::string op_name,
+         std::string py_stack, uint64_t start_time, uint64_t flow_id, bool is_inner_event)
         : module_(module),
           event_(event),
+          op_full_name_(std::move(op_full_name)),
           op_name_(std::move(op_name)),
           py_stack_(std::move(py_stack)),
           start_time_(start_time),
@@ -265,6 +266,7 @@ class COMMON_EXPORT ProfilerRecorder {
           is_inner_event_(is_inner_event) {}
     ProfilerModule module_;
     ProfilerEvent event_;
+    std::string op_full_name_;
     std::string op_name_;
     std::string py_stack_;
     uint64_t start_time_;
@@ -330,12 +332,14 @@ struct ProfilerData {
         pid_(getpid()) {
   }
 
-  ProfilerData(ProfilerModule module, ProfilerEvent event, const std::string &op_name, bool is_inner_event,
-               uint64_t start_time, uint64_t end_time, uint64_t flow_id = UINT64_MAX, std::string py_stack = "")
+  ProfilerData(ProfilerModule module, ProfilerEvent event, const std::string &op_full_name, const std::string &op_name,
+               bool is_inner_event, uint64_t start_time, uint64_t end_time, uint64_t flow_id = UINT64_MAX,
+               std::string py_stack = "")
       : is_stage_(false),
         stage_(ProfilerStage::kDefault),
         module_(module),
         event_(event),
+        op_full_name_(op_full_name),
         op_name_(op_name),
         is_inner_event_(is_inner_event),
         start_time_(start_time),
@@ -356,6 +360,7 @@ struct ProfilerData {
         stage_(stage),
         module_(ProfilerModule::kDefault),
         event_(ProfilerEvent::kDefault),
+        op_full_name_(""),
         op_name_(""),
         is_inner_event_(false),
         start_time_(start_time),
@@ -374,6 +379,7 @@ struct ProfilerData {
         stage_(other.stage_),
         module_(other.module_),
         event_(other.event_),
+        op_full_name_(other.op_full_name_),
         op_name_(other.op_name_),
         is_inner_event_(other.is_inner_event_),
         start_time_(other.start_time_),
@@ -392,6 +398,7 @@ struct ProfilerData {
     stage_ = other.stage_;
     module_ = other.module_;
     event_ = other.event_;
+    op_full_name_ = other.op_full_name_;
     op_name_ = other.op_name_;
     is_inner_event_ = other.is_inner_event_;
     start_time_ = other.start_time_;
@@ -410,6 +417,7 @@ struct ProfilerData {
   ProfilerEvent event_{ProfilerEvent::kDefault};
   std::string module_graph_{};
   std::string event_graph_{};
+  std::string op_full_name_{};
   std::string op_name_{};
   bool is_inner_event_{false};
   uint64_t start_time_{0L};
