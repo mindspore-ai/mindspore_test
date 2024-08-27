@@ -22,7 +22,7 @@
 
 namespace {
 const uint32_t kOutputNum = 2;
-const uint32_t kInputNum = 3;
+const uint32_t kInputNum = 4;
 const char *const kTopKRouter = "TopKRouter";
 #define TOPKROUTER_COMPUTE_CASE(DTYPE, TYPE, CTX)                      \
   case (DTYPE): {                                                      \
@@ -57,6 +57,7 @@ uint32_t TopKRouterCpuKernel::TopKRouterCompute(const CpuKernelContext &ctx) {
   auto input_data = static_cast<T *>(ctx.Input(0)->GetData());
   auto capacity_ptr = static_cast<int64_t *>(ctx.Input(1)->GetData());
   auto expert_num_ptr = static_cast<int64_t *>(ctx.Input(2)->GetData());
+  auto drop_type_ptr = static_cast<int64_t *>(ctx.Input(3)->GetData());
   auto dispatch_index = static_cast<T *>(ctx.Output(0)->GetData());
   auto combine_index = static_cast<T *>(ctx.Output(1)->GetData());
   auto input_shape = ctx.Input(0)->GetTensorShape();
@@ -65,6 +66,7 @@ uint32_t TopKRouterCpuKernel::TopKRouterCompute(const CpuKernelContext &ctx) {
   auto k = input_shape->GetDimSize(2);
   auto capacity = *capacity_ptr;
   auto expert_num = *expert_num_ptr;
+  auto drop_type = *drop_type_ptr;
 
   // init dispatch index
   auto dispatch_shape = ctx.Output(0)->GetTensorShape();
@@ -74,21 +76,41 @@ uint32_t TopKRouterCpuKernel::TopKRouterCompute(const CpuKernelContext &ctx) {
   }
   // init counter
   std::vector<int64_t> expert_counter(batch * expert_num, 0);
-
-  for (int bs = 0; bs < batch; bs++) {
-    for (int i = 0; i < length; i++) {
+  if (drop_type == 0) {
+    for (int bs = 0; bs < batch; bs++) {
+      for (int i = 0; i < length; i++) {
+        for (int j = 0; j < k; j++) {
+          auto token_index = i;
+          auto expert_id = input_data[bs * length * k + i * k + j];
+          auto position_in_expert = expert_counter[bs * expert_num + expert_id];
+          if (position_in_expert < capacity) {
+            dispatch_index[bs * expert_num * capacity + expert_id * capacity + position_in_expert] =
+              static_cast<T>(token_index + 1);
+            combine_index[bs * length * k + i * k + j] =
+              static_cast<T>(expert_id * (capacity + 1) + position_in_expert + 1);
+            expert_counter[bs * expert_num + expert_id] = static_cast<T>(position_in_expert + 1);
+          } else {
+            combine_index[bs * length * k + i * k + j] = static_cast<T>(expert_id * (capacity + 1));
+          }
+        }
+      }
+    }
+  } else {
+    for (int bs = 0; bs < batch; bs++) {
       for (int j = 0; j < k; j++) {
-        auto token_index = i;
-        auto expert_id = input_data[bs * length * k + i * k + j];
-        auto position_in_expert = expert_counter[bs * expert_num + expert_id];
-        if (position_in_expert < capacity) {
-          dispatch_index[bs * expert_num * capacity + expert_id * capacity + position_in_expert] =
-            static_cast<T>(token_index + 1);
-          combine_index[bs * length * k + i * k + j] =
-            static_cast<T>(expert_id * (capacity + 1) + position_in_expert + 1);
-          expert_counter[bs * expert_num + expert_id] = static_cast<T>(position_in_expert + 1);
-        } else {
-          combine_index[bs * length * k + i * k + j] = static_cast<T>(expert_id * (capacity + 1));
+        for (int i = 0; i < length; i++) {
+          auto token_index = i;
+          auto expert_id = input_data[bs * length * k + i * k + j];
+          auto position_in_expert = expert_counter[bs * expert_num + expert_id];
+          if (position_in_expert < capacity) {
+            dispatch_index[bs * expert_num * capacity + expert_id * capacity + position_in_expert] =
+              static_cast<T>(token_index + 1);
+            combine_index[bs * length * k + i * k + j] =
+              static_cast<T>(expert_id * (capacity + 1) + position_in_expert + 1);
+            expert_counter[bs * expert_num + expert_id] = static_cast<T>(position_in_expert + 1);
+          } else {
+            combine_index[bs * length * k + i * k + j] = static_cast<T>(expert_id * (capacity + 1));
+          }
         }
       }
     }
