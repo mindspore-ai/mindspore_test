@@ -156,6 +156,8 @@ const std::unordered_map<int, bool (GraphBuilder::*)(const Instr &)> GraphBuilde
   {JUMP_FORWARD, &GraphBuilder::TraceRunControl},
   {JUMP_ABSOLUTE, &GraphBuilder::TraceRunControl},
   {YIELD_VALUE, &GraphBuilder::DoYieldValue},
+  {YIELD_FROM, &GraphBuilder::DoYieldFrom},
+  {GET_YIELD_FROM_ITER, &GraphBuilder::DoGetYieldFromIter},
   {POP_BLOCK, &GraphBuilder::DoPopStack},
   {SETUP_WITH, &GraphBuilder::DoWith},
   {SETUP_FINALLY, &GraphBuilder::DoSetupFinally},
@@ -534,6 +536,34 @@ bool GraphBuilder::DoCall(const Instr &instr) {
 bool GraphBuilder::DoNop(const Instr &instr) { return true; }
 bool GraphBuilder::NotImplementBytecode(const Instr &instr) { return false; }
 
+bool GraphBuilder::DoGetYieldFromIter(const Instr &instr) {
+  auto iterable = pop()->GetVobj()->GetPyObject().ptr();
+  ValueNode *iter_node = NULL;
+  if (!PyGen_CheckExact(iterable)) {
+    py::iterator new_iter = py::iter(iterable);
+    iter_node = NewValueNode(AObject::Convert(new_iter), instr);
+  } else {
+    MS_LOG(WARNING) << "not support yield iterator yet!";
+    return false;
+  }
+
+  push(iter_node);
+  return true;
+}
+
+bool GraphBuilder::DoYieldFrom(const Instr &instr) {
+  pop();  // None
+  auto iter_node = pop();
+  auto iter = iter_node->GetVobj()->GetPyObject().ptr();
+  for (auto val_handle : py::iter(iter)) {
+    py::object val = py::reinterpret_borrow<py::object>(val_handle);
+    auto val_node = NewValueNode(AObject::Convert(val), instr);
+    push(val_node);
+    DoYieldValue(instr);
+  }
+  return true;
+}
+
 bool GraphBuilder::DoYieldValue(const Instr &instr) {
   ValueNode *result = graph_->GetGeneratorResult();
   if (result == nullptr) {
@@ -542,6 +572,10 @@ bool GraphBuilder::DoYieldValue(const Instr &instr) {
   }
   ValueNode *value = seek(0);
   result->AddInput(value);
+  const int YIELD_COUNT_THRESHOLD = 1000;
+  if (result->getInputs().size() % YIELD_COUNT_THRESHOLD == 0) {
+    MS_LOG(WARNING) << "yield too many value: " << result->getInputs().size();
+  }
   return true;
 }
 

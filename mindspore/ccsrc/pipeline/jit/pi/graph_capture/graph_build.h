@@ -287,6 +287,8 @@ class GraphBuilder {
   bool DoFormatValue(const Instr &instr);
   bool DoImport(const Instr &instr);
   bool DoYieldValue(const Instr &instr);
+  bool DoYieldFrom(const Instr &instr);
+  bool DoGetYieldFromIter(const Instr &instr);
   bool DoWith(const Instr &instr);
   bool DoOtherBytecode(const Instr &instr);
   bool NotImplementBytecode(const Instr &instr);
