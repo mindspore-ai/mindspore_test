@@ -1,0 +1,40 @@
+scan:
+    description: |
+        Scan a function over an array while the processing of the current element
+        depends on the execution result of the previous element.
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        Inputs:
+            - **loop_func** (Function) - The loop function.
+            - **init** (Union[Tensor, number, str, bool, list, tuple, dict]) - An initial loop carry value.
+            - **xs** (Union[tuple, list, None]) - The value over which to scan.
+            - **length** (Union[int, None], optional) - The size of xs. Default: ``None`` .
+            - **unroll** (bool, optional) - The flag for whether unroll in compile process. Default: ``True`` .
+
+        Outputs:
+            Tuple(Union[Tensor, number, str, bool, list, tuple, dict], list). Output of scan loop,
+            a tuple with two elements, the first element has same type with init argument,
+            and the second is a list containing the results of each loop.
+
+        Raises:
+            TypeError: If `loop_func` is not a function.
+            TypeError: If `xs` is not a tuple, a list or None.
+            TypeError: If `length` is not an int or None.
+            TypeError: If `unroll` is not a bool.
+            ValueError: If `loop_func` cannot take `init` and element of `xs` as inputs.
+            ValueError: If the return value of `loop_func` is not a tuple with two elements,
+                        and the first element has the same type as `init` .
+
+        Supported Platforms:
+            ``Ascend`` ``GPU`` ``CPU``
+
+        Examples:
+            >>> scan_op = ops.Scan()
+            >>> def cumsum(res, el):
+            ...     return res, res + el
+            ...
+            >>> a = [1, 2, 3, 4]
+            >>> result_init = 0
+            >>> result = scan_op(cumsum, result_init, a)

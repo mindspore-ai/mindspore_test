@@ -665,6 +665,7 @@ Parameter操作算子
     :template: classtemplate.rst
 
     mindspore.ops.Depend
+    mindspore.ops.ForiLoop
     mindspore.ops.GradOperation
     mindspore.ops.HookBackward
     mindspore.ops.HyperMap
@@ -672,6 +673,8 @@ Parameter操作算子
     mindspore.ops.Map
     mindspore.ops.MultitypeFuncGraph
     mindspore.ops.Partial
+    mindspore.ops.Scan
+    mindspore.ops.WhileLoop
 
 算子信息注册
 -------------
