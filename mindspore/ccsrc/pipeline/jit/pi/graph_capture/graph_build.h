@@ -277,6 +277,7 @@ class GraphBuilder {
   AObject *InferBinary(ValueNode *, ValueNode *, const Instr &instr);
   virtual bool DoBinary(const Instr &instr);
   virtual bool DoIsOp(const Instr &instr);
+  virtual bool DoContainsOp(const Instr &instr);
   virtual bool DoBinaryMul(const Instr &instr);
   bool DoBinaryAdd(const Instr &instr);
   bool DoInplaceAdd(const Instr &instr);
@@ -362,6 +363,7 @@ class MindGraphBuilder : public GraphBuilder {
   bool DoUnary(const Instr &instr) override;
   bool DoBinary(const Instr &instr) override;
   bool DoIsOp(const Instr &instr) override;
+  bool DoContainsOp(const Instr &instr) override;
   bool DoBinaryMul(const Instr &instr) override;
   bool DoCompare(const Instr &instr) override;
   bool DoBuildOp(const Instr &instr) override;
