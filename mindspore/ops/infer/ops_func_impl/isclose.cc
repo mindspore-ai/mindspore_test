@@ -28,7 +28,6 @@ namespace mindspore {
 namespace ops {
 BaseShapePtr IsCloseFuncImpl::InferShape(const PrimitivePtr &primitive,
                                          const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
   auto op_name = primitive->name();
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
@@ -61,7 +60,6 @@ BaseShapePtr IsCloseFuncImpl::InferShape(const PrimitivePtr &primitive,
 
 TypePtr IsCloseFuncImpl::InferType(const PrimitivePtr &primitive,
                                    const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
   auto op_name = primitive->name();
   const std::set<TypePtr> valid_types = {kBool,  kFloat16, kFloat32, kFloat64, kInt8,
                                          kInt16, kInt32,   kInt64,   kUInt8,   kBFloat16};

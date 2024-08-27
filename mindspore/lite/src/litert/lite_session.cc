@@ -1935,6 +1935,10 @@ std::string lite::LiteSession::ParseWeightPath() {
 }
 
 int lite::LiteSession::ReshapeWeightTensor(lite::Tensor *orig_tensor, lite::Tensor *new_tensor) {
+  if (orig_tensor == nullptr || new_tensor == nullptr) {
+    MS_LOG(ERROR) << "Origin tensor or new tensor is nullptr!";
+    return RET_ERROR;
+  }
   if (orig_tensor->data_type() != new_tensor->data_type()) {
     MS_LOG(ERROR) << "Cannot reshape tensor of different type: " << new_tensor->tensor_name();
     return RET_PARAM_INVALID;
