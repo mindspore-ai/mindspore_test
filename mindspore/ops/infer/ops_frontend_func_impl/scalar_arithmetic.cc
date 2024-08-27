@@ -231,13 +231,7 @@ MathImplFunc ChooseFunc(const std::string &prim_name) {
 
 ValuePtr ScalarArithmeticFrontendFuncImpl::InferValue(const PrimitivePtr &primitive,
                                                       const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
-  const int64_t input_num = 2;
   auto op_name = primitive->name();
-  CheckAndConvertUtils::CheckInputArgs(input_args, kEqual, input_num, op_name);
-  for (const auto &item : input_args) {
-    MS_EXCEPTION_IF_NULL(item);
-  }
   constexpr size_t x_index = 0;
   constexpr size_t y_index = 1;
   auto elem_x = input_args[x_index];
@@ -252,8 +246,8 @@ ValuePtr ScalarArithmeticFrontendFuncImpl::InferValue(const PrimitivePtr &primit
   if (x_value->ContainsValueAny() || y_value->ContainsValueAny()) {
     return nullptr;
   }
-  auto x_type = input_args[x_index]->GetType();
-  auto y_type = input_args[y_index]->GetType();
+  auto x_type = elem_x->GetType();
+  auto y_type = elem_y->GetType();
   auto res_type = HighPriorityType(x_type, y_type, op_name);
   ValuePtr result;
   switch (res_type->type_id()) {

@@ -35,7 +35,11 @@ void ChunkAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
   if (dims_ < 0) {
     dims_ += SizeToLong(input_shape.size());
   }
+  MS_EXCEPTION_IF_CHECK_FAIL(LongToSize(dims_) < input_shape.size(),
+                             "For Chunk, the value of [dim] must be less than the rank of [input]!");
   int64_t dim_size = input_shape[dims_];
+  MS_EXCEPTION_IF_CHECK_FAIL(chunks > 0, "For Chunk, the value of [chunks] must be larger than 0!");
+
   split_size_ = (dim_size + chunks - 1) / chunks;
   if (split_size_ == 0 && dim_size == 0) {
     op_type_ = "aclnnSplitWithSize";

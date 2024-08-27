@@ -70,6 +70,7 @@ inline std::shared_ptr<AclnnKernelMod> GetCustomAclNNKernelMod(const AnfNodePtr 
   auto primitive = GetCNodePrimitive(anf_node);
   auto op_type = GetValue<std::string>(primitive->GetAttr("reg_op_name"));
   auto arg_num = AnfUtils::GetInputTensorNum(anf_node) + AnfUtils::GetOutputTensorNum(anf_node);
+  MS_EXCEPTION_IF_NULL(anf_node);
   MS_LOG(INFO) << "Kernel " << anf_node->fullname_with_scope() << " is a custom op, op type : " << op_type
                << ", arg num : " << arg_num;
   switch (arg_num) {

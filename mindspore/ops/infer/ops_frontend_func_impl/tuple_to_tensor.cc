@@ -52,7 +52,6 @@ constexpr auto kTupleToTensor = "TupleToTensor";
 tensor::TensorPtr CreateEmptyTupleTensorByType(const TypePtr &data_type) {
   std::vector<int64_t> tensor_shape = {0};
   tensor::TensorPtr tensor = std::make_shared<tensor::Tensor>(data_type->type_id(), tensor_shape);
-  MS_EXCEPTION_IF_NULL(tensor);
   return tensor;
 }
 template <typename T, typename S>
@@ -63,7 +62,6 @@ tensor::TensorPtr CreateTensorByTupleCast(const std::vector<T> &values, const Ty
                        [&](T value) -> S { return static_cast<S>(value); });
   std::vector<int64_t> tensor_shape = {SizeToLong(new_values.size())};
   tensor::TensorPtr tensor = std::make_shared<tensor::Tensor>(type_ptr->type_id(), tensor_shape);
-  MS_EXCEPTION_IF_NULL(tensor);
   auto data_ptr = tensor->data_c();
   MS_EXCEPTION_IF_NULL(data_ptr);
   auto elem_num = new_values.size() * data_len;

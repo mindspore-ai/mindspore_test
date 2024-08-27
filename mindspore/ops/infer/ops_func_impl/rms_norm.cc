@@ -25,17 +25,16 @@
 #include "utils/check_convert_utils.h"
 #include "utils/log_adapter.h"
 #include "utils/shape_utils.h"
+#include "ops/ops_func_impl/simple_infer.h"
 
 namespace mindspore {
 namespace ops {
 BaseShapePtr RmsNormFuncImpl::InferShape(const PrimitivePtr &primitive,
                                          const std::vector<AbstractBasePtr> &input_args) const {
   auto x_shape_ptr = input_args[0]->GetShape();
-  MS_EXCEPTION_IF_NULL(x_shape_ptr);
   auto x_shape = x_shape_ptr->GetShapeVector();
   auto x_rank = x_shape.size();
   auto gamma_shape_ptr = input_args[1]->GetShape();
-  MS_EXCEPTION_IF_NULL(gamma_shape_ptr);
   auto gamma_shape = gamma_shape_ptr->GetShapeVector();
   auto gamma_rank = gamma_shape.size();
   MS_EXCEPTION_IF_CHECK_FAIL(!IsShapeNone(x_shape) && !IsShapeNone(gamma_shape),
@@ -69,7 +68,6 @@ BaseShapePtr RmsNormFuncImpl::InferShape(const PrimitivePtr &primitive,
 
 TypePtr RmsNormFuncImpl::InferType(const PrimitivePtr &primitive,
                                    const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
   auto prim_name = primitive->name();
   auto x_dtype = input_args[kInputIndex0]->GetType();
   auto gamma_dtype = input_args[kInputIndex1]->GetType();
@@ -125,14 +123,16 @@ TypePtrList RmsNormFuncImpl::InferType(const PrimitivePtr &primitive, const Valu
   const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   const auto &x_dtype = x_tensor->Dtype();
-  const auto &gamma_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  const auto &gamma_tensor = input_values[kInputIndex1]->cast<tensor::BaseTensorPtr>();
   MS_EXCEPTION_IF_NULL(gamma_tensor);
   const auto &gamma_dtype = gamma_tensor->Dtype();
   std::map<std::string, TypePtr> types;
   (void)types.emplace("x", x_dtype);
   (void)types.emplace("gamma", gamma_dtype);
   (void)CheckAndConvertUtils::CheckTypeSame(types, prim_name);
-  return {x_dtype, std::make_shared<TensorType>(kFloat32)};
+  return {x_dtype, kFloat32};
 }
+
+REGISTER_SIMPLE_INFER(kNameRmsNorm, RmsNormFuncImpl);
 }  // namespace ops
 }  // namespace mindspore

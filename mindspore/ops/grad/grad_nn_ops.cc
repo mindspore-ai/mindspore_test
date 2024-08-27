@@ -494,9 +494,9 @@ REG_BPROP_BUILDER("Convolution").SetUnusedInputs({i9}).SetBody(BODYFUNC(ib) {
   auto conv2d_grad_out =
     ib->ConvolutionGrad(ib->GetInput(kIndex10), x, w, bias, pad_value, stride_value, dilation_value, transposed_value,
                         output_padding_value, group_value, output_mask);
-  auto dx = ib->TupleGetItem(conv2d_grad_out, 0);
-  auto dw = ib->TupleGetItem(conv2d_grad_out, 1);
-  auto dbias = ib->TupleGetItem(conv2d_grad_out, 2);
+  auto dx = ib->TupleGetItem(conv2d_grad_out, kIndex0);
+  auto dw = ib->TupleGetItem(conv2d_grad_out, kIndex1);
+  auto dbias = ib->TupleGetItem(conv2d_grad_out, kIndex2);
   return {dx,
           dw,
           dbias,
@@ -599,10 +599,10 @@ DEF_PURE_SHAPE_CALC(g_dense_shapecalc0)
     return {x_2d_shape, w_2d_shape, dout_2d_shape, b_reduce_shape, x_shape, w_shape};
   })
   .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &) -> std::vector<int64_t> {
-    auto &x_shape = inputs[0];
-    auto &w_shape = inputs[1];
-    auto &b_shape = inputs[2];
-    auto &dout_shape = inputs[3];
+    auto &x_shape = inputs[kIndex0];
+    auto &w_shape = inputs[kIndex1];
+    auto &b_shape = inputs[kIndex2];
+    auto &dout_shape = inputs[kIndex3];
 
     auto b_reduce_rank = -1LL;
     if (!IsDynamicRank(b_shape)) {
@@ -1449,10 +1449,10 @@ REG_BPROP_BUILDER("MaxPoolGradGrad").SetUnusedInputs({i2, i3}).SetBody(BODYFUNC(
 DEF_PURE_SHAPE_CALC(g_max_pool_grad)
   .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
     auto x2_shape = inputs.at(0);
-    auto b = x2_shape.at(0);
-    auto c = x2_shape.at(1);
-    auto h = x2_shape.at(2);
-    auto w = x2_shape.at(3);
+    auto b = x2_shape.at(kIndex0);
+    auto c = x2_shape.at(kIndex1);
+    auto h = x2_shape.at(kIndex2);
+    auto w = x2_shape.at(kIndex3);
     return {{b}, {b, -1}, {1, c * h * w}};
   })
   .SetInfer([](const ShapeArray &, const HashSet<size_t> &) -> std::vector<int64_t> {
@@ -1471,12 +1471,12 @@ REG_BPROP_BUILDER("MaxPoolGrad").SetUnusedInputs({i2, i3}).SetBody(BODYFUNC(ib) 
       MS_LOG(EXCEPTION) << "MaxPoolGradGrad does not support NHWC!";
     }
     kernel_size = GetValue<std::vector<int64_t>>(ib->GetAttr("kernel_size"));
-    if (kernel_size.size() == 4) {
-      kernel_size = {1, kernel_size[2], kernel_size[3], 1};
+    if (kernel_size.size() == kDim4) {
+      kernel_size = {1, kernel_size[kIndex2], kernel_size[kIndex3], 1};
     }
     strides = GetValue<std::vector<int64_t>>(ib->GetAttr("strides"));
-    if (strides.size() == 4) {
-      strides = {1, strides[2], strides[3], 1};
+    if (strides.size() == kDim4) {
+      strides = {1, strides[kIndex2], strides[kIndex3], 1};
     }
   }
   auto x1 = ib->GetInput(kIndex0);
@@ -1504,16 +1504,16 @@ REG_BPROP_BUILDER("MaxPoolGrad").SetUnusedInputs({i2, i3}).SetBody(BODYFUNC(ib) 
     if (IsDynamic(x2_shape)) {
       auto shape = ib->Emit("Shape", {x2});
       auto res = ib->ShapeCalc(g_max_pool_grad, {x2});
-      auto batch = ib->Cast(ib->Range(ib->TupleGetItem(res[0], 0)), kInt32);
-      batch = ib->Tile(ib->Reshape(batch, {-1, 1}), res[2]);
+      auto batch = ib->Cast(ib->Range(ib->TupleGetItem(res[kIndex0], 0)), kInt32);
+      batch = ib->Tile(ib->Reshape(batch, {-1, 1}), res[kIndex2]);
       int64_t axis = -1;
-      auto gather_ind = ib->Stack({batch, ib->Reshape(ind, res[1])}, axis);
-      dgrad = ib->Reshape(ib->GatherNd(ib->Reshape(dout, res[1]), gather_ind), shape);
+      auto gather_ind = ib->Stack({batch, ib->Reshape(ind, res[kIndex1])}, axis);
+      dgrad = ib->Reshape(ib->GatherNd(ib->Reshape(dout, res[kIndex1]), gather_ind), shape);
     } else {
-      auto b = x2_shape.at(0);
-      auto c = x2_shape.at(1);
-      auto h = x2_shape.at(2);
-      auto w = x2_shape.at(3);
+      auto b = x2_shape.at(kIndex0);
+      auto c = x2_shape.at(kIndex1);
+      auto h = x2_shape.at(kIndex2);
+      auto w = x2_shape.at(kIndex3);
       auto batch = ib->Tensor(Range(b), TypeIdToType(TypeId::kNumberTypeInt32));
       batch = ib->Tile(ib->Reshape(batch, {-1, 1}), {1, (c * h) * w});
       int64_t axis = -1;
@@ -2738,12 +2738,14 @@ REG_BPROP_BUILDER("SparseSoftmaxCrossEntropyWithLogitsV2").SetUnusedInputs({i1})
   auto dout = ib->GetInput(kIndex3);
   auto grad_loss = ib->TupleGetItem(dout, 0);
   auto softmax_grad = ib->TupleGetItem(out, 1);
-  grad_loss = ib->ExpandDims(grad_loss, -1);
+  int64_t axis_1 = -1;
+  int64_t axis_2 = 2;
+  grad_loss = ib->ExpandDims(grad_loss, axis_1);
   auto grad = ib->Mul(grad_loss, softmax_grad);
   if (ib->TupleGetItem(dout, 1) != nullptr) {
     auto softmax = ib->Softmax(logits, ib->Value<ShapeVector>({1}));
     auto x = ib->ExpandDims(ib->TupleGetItem(dout, 1), 1);
-    auto y = ib->ExpandDims(softmax, 2);
+    auto y = ib->ExpandDims(softmax, axis_2);
     auto matmul_tmp = ib->BatchMatMul(x, y);
     grad = grad + (ib->TupleGetItem(dout, 1) - ib->Squeeze(matmul_tmp, MakeValue(ShapeVector{1}))) * softmax;
   }

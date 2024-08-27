@@ -77,17 +77,8 @@ void CheckShapeValid(const PrimitivePtr &primitive, const std::vector<AbstractBa
 
 BaseShapePtr BiasAddFuncImpl::InferShape(const PrimitivePtr &primitive,
                                          const std::vector<AbstractBasePtr> &input_args) const {
-  if (input_args.size() < kBiasAddInputLen) {
-    MS_LOG(EXCEPTION) << "For " << primitive->name() << ", the input length should be at least " << kBiasAddInputLen
-                      << " but got " << input_args.size();
-  }
-  for (size_t i = 0; i < kBiasAddInputLen; ++i) {
-    MS_EXCEPTION_IF_NULL(input_args[i]);
-  }
   auto input_shape_base = input_args[kInputIndex0]->GetShape();
   auto bias_shape_base = input_args[kInputIndex1]->GetShape();
-  MS_EXCEPTION_IF_NULL(input_shape_base);
-  MS_EXCEPTION_IF_NULL(bias_shape_base);
   const auto &input_shape = input_shape_base->GetShapeVector();
   const auto &bias_shape = bias_shape_base->GetShapeVector();
   if (IsDynamicRank(input_shape)) {
@@ -123,7 +114,7 @@ TypePtr BiasAddFuncImpl::InferType(const PrimitivePtr &primitive,
   (void)types.emplace("input_x", input_x_type);
   (void)types.emplace("bias", bias_type);
   (void)CheckAndConvertUtils::CheckTypeSame(types, prim_name);
-  return input_x_type->Clone();
+  return input_x_type;
 }
 
 int32_t BiasAddFuncImpl::CheckValidation(const PrimitivePtr &primitive,

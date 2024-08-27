@@ -69,13 +69,7 @@ ScalarImplFunc ChooseFunction(const std::string &prim_name) {
 
 ValuePtr ScalarArithmeticUnaryFrontendFuncImpl::InferValue(const PrimitivePtr &primitive,
                                                            const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
-  const int64_t input_num = 1;
   auto op_name = primitive->name();
-  CheckAndConvertUtils::CheckInputArgs(input_args, kEqual, input_num, op_name);
-  for (const auto &item : input_args) {
-    MS_EXCEPTION_IF_NULL(item);
-  }
   auto elem = input_args[0];
   if (!CheckAndConvertUtils::IsScalar(elem)) {
     MS_EXCEPTION(TypeError) << "For '" << op_name << "', the input should be scalar but got x: " << elem->ToString();
