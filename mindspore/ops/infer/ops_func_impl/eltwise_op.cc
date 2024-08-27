@@ -41,8 +41,7 @@ BaseShapePtr EltwiseOpFuncImpl::InferShapeWithCheck(const PrimitivePtr &primitiv
 
 TypePtr EltwiseOpFuncImpl::InferType(const PrimitivePtr &primitive,
                                      const std::vector<AbstractBasePtr> &input_args) const {
-  auto input_type = input_args[kInputIndex0]->GetType();
-  return input_type->Clone();
+  return input_args[kInputIndex0]->GetType();
 }
 
 ShapeArray EltwiseOpFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {

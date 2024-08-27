@@ -35,9 +35,7 @@ BaseShapePtr CumSumFuncImpl::InferShape(const PrimitivePtr &primitive,
   }
   auto rank = SizeToLong(x_shape_vec.size());
   (void)CheckAndConvertUtils::CheckInteger("rank of 'x'", rank, kGreaterThan, 0, primitive->name());
-  auto axis_ptr = input_args[kIndex1];
-  MS_EXCEPTION_IF_NULL(axis_ptr);
-  auto axis = axis_ptr->GetValue();
+  auto axis = input_args[kIndex1]->GetValue();
   auto axis_opt = GetScalarValue<int64_t>(axis);
   if (axis_opt.has_value()) {
     auto axis_value = axis_opt.value();
@@ -64,7 +62,7 @@ TypePtr CumSumFuncImpl::InferType(const PrimitivePtr &primitive, const std::vect
   auto axis_type = input_args[kInputIndex1]->GetType();
   const std::set<TypePtr> valid_axis_types = {kInt32, kInt64};
   (void)CheckAndConvertUtils::CheckTypeValid("axis", axis_type, valid_axis_types, prim_name);
-  return x_type->Clone();
+  return x_type;
 }
 }  // namespace ops
 }  // namespace mindspore

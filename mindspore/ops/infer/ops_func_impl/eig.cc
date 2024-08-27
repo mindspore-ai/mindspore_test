@@ -95,10 +95,12 @@ TypePtr EigFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<
   const std::set<TypePtr> eig_support_dtype = {kComplex64, kComplex128, kFloat32, kFloat64};
   (void)CheckAndConvertUtils::CheckTensorTypeSame(types, eig_support_dtype, primitive->name());
 
+  auto x_tensor_type = x_type->cast<TensorTypePtr>();
+  MS_EXCEPTION_IF_NULL(x_tensor_type);
   std::vector<TypePtr> types_list;
-  if (*(x_type->cast<TensorTypePtr>()->element()) == *(kFloat32)) {
+  if (*(x_tensor_type->element()) == *(kFloat32)) {
     types_list = {std::make_shared<TensorType>(kComplex64), std::make_shared<TensorType>(kComplex64)};
-  } else if (*(x_type->cast<TensorTypePtr>()->element()) == *(kFloat64)) {
+  } else if (*(x_tensor_type->element()) == *(kFloat64)) {
     types_list = {std::make_shared<TensorType>(kComplex128), std::make_shared<TensorType>(kComplex128)};
   } else {
     types_list = {x_type, x_type};

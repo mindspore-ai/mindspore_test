@@ -29,7 +29,7 @@ BaseShapePtr LogSoftmaxFuncImpl::InferShape(const PrimitivePtr &primitive,
 
 TypePtr LogSoftmaxFuncImpl::InferType(const PrimitivePtr &primitive,
                                       const std::vector<AbstractBasePtr> &input_args) const {
-  return input_args[kIndex0]->GetType()->Clone();
+  return input_args[kIndex0]->GetType();
 }
 
 int32_t LogSoftmaxFuncImpl::CheckValidation(const PrimitivePtr &primitive,
@@ -43,7 +43,6 @@ int32_t LogSoftmaxFuncImpl::CheckValidation(const PrimitivePtr &primitive,
   auto axis = input_args[kIndex1]->GetValue();
   auto axis_opt = GetScalarValue<int64_t>(axis);
   auto x_shape = input_args[kIndex0]->GetShape();
-  MS_EXCEPTION_IF_NULL(x_shape);
   auto x_shape_vec = x_shape->GetShapeVector();
   if (MS_UNLIKELY(!axis_opt.has_value() || IsDynamicRank(x_shape_vec))) {
     check_status = OP_CHECK_RETRY;

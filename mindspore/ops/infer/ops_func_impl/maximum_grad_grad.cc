@@ -82,7 +82,7 @@ TypePtr MaximumGradGradFuncImpl::InferType(const PrimitivePtr &primitive,
                                            const std::vector<AbstractBasePtr> &input_args) const {
   const auto x_type = input_args[kIndex0]->GetType();
   const auto y_type = input_args[kIndex1]->GetType();
-  std::vector<TypePtr> type_list{x_type->Clone(), y_type->Clone(), x_type->Clone()};
+  std::vector<TypePtr> type_list{x_type, y_type, x_type};
   return std::make_shared<Tuple>(std::move(type_list));
 }
 }  // namespace ops

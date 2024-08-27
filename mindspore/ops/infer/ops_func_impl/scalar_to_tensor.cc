@@ -36,7 +36,6 @@ BaseShapePtr ScalarToTensorFuncImpl::InferShape(const PrimitivePtr &primitive,
 
 TypePtr ScalarToTensorFuncImpl::InferType(const PrimitivePtr &primitive,
                                           const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
   auto op_name = primitive->name();
   const int64_t input_len = 2;
   (void)CheckAndConvertUtils::CheckInteger("input number", SizeToLong(input_args.size()), kGreaterEqual, input_len,
@@ -46,7 +45,6 @@ TypePtr ScalarToTensorFuncImpl::InferType(const PrimitivePtr &primitive,
   TypePtr dst_type{nullptr};
   if (input_args[kInputIndex1]->GetType()->isa<TypeNone>()) {
     auto attr = input_args[0]->GetType();
-    MS_EXCEPTION_IF_NULL(attr);
     if (!attr->isa<Type>()) {
       MS_EXCEPTION(TypeError) << "For '" << op_name << "the second input must be a `Type`, but got "
                               << attr->type_name();

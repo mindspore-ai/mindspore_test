@@ -31,8 +31,6 @@ BaseShapePtr ComplexFuncImpl::InferShape(const PrimitivePtr &primitive,
 TypePtr ComplexFuncImpl::InferType(const PrimitivePtr &primitive,
                                    const std::vector<AbstractBasePtr> &input_args) const {
   // Valid types: kFloat32, kFloat64.
-  MS_EXCEPTION_IF_NULL(input_args[kInputIndex0]);
-  MS_EXCEPTION_IF_NULL(input_args[kInputIndex1]);
   std::map<std::string, TypePtr> types;
   auto real_input_type = input_args[kInputIndex0]->GetType();
   auto imag_input_type = input_args[kInputIndex1]->GetType();
@@ -40,6 +38,7 @@ TypePtr ComplexFuncImpl::InferType(const PrimitivePtr &primitive,
   (void)types.emplace("imag", imag_input_type);
   (void)CheckAndConvertUtils::CheckTensorTypeSame(types, std::set<TypePtr>{kFloat32, kFloat64}, primitive->name());
   auto real_input_tensor = real_input_type->cast<TensorTypePtr>();
+  MS_EXCEPTION_IF_NULL(real_input_tensor);
   TypeId real_input_tensor_id = real_input_tensor->element()->type_id();
   return real_input_tensor_id == kNumberTypeFloat32 ? std::make_shared<TensorType>(kComplex64)
                                                     : std::make_shared<TensorType>(kComplex128);

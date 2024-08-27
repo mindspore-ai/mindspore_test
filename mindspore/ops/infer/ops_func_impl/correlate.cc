@@ -68,9 +68,13 @@ TypePtr CorrelateFuncImpl::InferType(const PrimitivePtr &primitive,
                                      const std::vector<AbstractBasePtr> &input_args) const {
   MS_EXCEPTION_IF_NULL(input_args[kInputIndex0]);
   auto input_a_type = input_args[kInputIndex0]->GetType();
-  auto input_a_type_id = input_a_type->cast<TensorTypePtr>()->element()->type_id();
+  auto input_a_tensor = input_a_type->cast<TensorTypePtr>();
+  MS_EXCEPTION_IF_NULL(input_a_tensor);
+  auto input_a_type_id = input_a_tensor->element()->type_id();
   auto input_v_type = input_args[kInputIndex1]->GetType();
-  auto input_v_type_id = input_v_type->cast<TensorTypePtr>()->element()->type_id();
+  auto input_v_tensor = input_v_type->cast<TensorTypePtr>();
+  MS_EXCEPTION_IF_NULL(input_v_tensor);
+  auto input_v_type_id = input_v_tensor->element()->type_id();
   if (input_a_type_id != input_v_type_id) {
     MS_EXCEPTION(TypeError) << "For '" << primitive->name()
                             << "' the type of a and v must be same, but got type of a is different from that of v! ";
@@ -94,7 +98,7 @@ TypePtr CorrelateFuncImpl::InferType(const PrimitivePtr &primitive,
   } else if (is_type_to_float64) {
     return std::make_shared<TensorType>(kFloat64);
   } else {
-    return input_a_type->Clone();
+    return input_a_type;
   }
 }
 

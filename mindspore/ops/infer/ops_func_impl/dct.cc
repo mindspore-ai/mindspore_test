@@ -64,7 +64,9 @@ BaseShapePtr DCTFuncImpl::InferShape(const PrimitivePtr &primitive,
 
 TypePtr DCTFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
   auto input_type = input_args[kInputIndex0]->GetType();
-  auto input_type_id = input_type->cast<TensorTypePtr>()->element()->type_id();
+  auto input_tensor_type = input_type->cast<TensorTypePtr>();
+  MS_EXCEPTION_IF_NULL(input_tensor_type);
+  auto input_type_id = input_tensor_type->element()->type_id();
 
   static const std::vector<TypeId> double_type = {kNumberTypeFloat64, kNumberTypeComplex128, kNumberTypeUInt64,
                                                   kNumberTypeInt64};

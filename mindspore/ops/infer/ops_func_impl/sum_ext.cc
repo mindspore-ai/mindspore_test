@@ -56,7 +56,7 @@ TypePtrList SumExtFuncImpl::InferType(const PrimitivePtr &primitive, const Value
     const auto &input = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
     MS_EXCEPTION_IF_NULL(input);
     const auto &input_type = input->Dtype();
-    const auto &input_type_id = input->Dtype()->type_id();
+    const auto &input_type_id = input_type->type_id();
     static std::set<TypeId> intergral_set = {kNumberTypeBool, kNumberTypeUInt8, kNumberTypeInt8, kNumberTypeInt16,
                                              kNumberTypeInt32};
     if (intergral_set.find(input_type_id) != intergral_set.end()) {

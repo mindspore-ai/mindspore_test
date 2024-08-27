@@ -34,11 +34,7 @@ BaseShapePtr DropoutFuncImpl::InferShape(const PrimitivePtr &primitive,
 
 TypePtr DropoutFuncImpl::InferType(const PrimitivePtr &primitive,
                                    const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
   auto prim_name = primitive->name();
-  for (auto &input : input_args) {
-    MS_EXCEPTION_IF_NULL(input);
-  }
   auto x_type = input_args[0]->GetType();
   const std::set<TypePtr> valid_types = {kFloat16, kBFloat16, kFloat32, kFloat64};
   (void)CheckAndConvertUtils::CheckTensorTypeValid("x", x_type, valid_types, prim_name);

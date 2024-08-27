@@ -24,7 +24,7 @@ BaseShapePtr LogitFuncImpl::InferShape(const PrimitivePtr &primitive,
 }
 
 TypePtr LogitFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
-  return input_args[kIndex0]->GetType()->Clone();
+  return input_args[kIndex0]->GetType();
 }
 }  // namespace ops
 }  // namespace mindspore
