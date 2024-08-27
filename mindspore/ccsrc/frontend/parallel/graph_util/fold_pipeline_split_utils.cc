@@ -35,7 +35,7 @@
 #include "frontend/parallel/step_parallel.h"
 #include "frontend/parallel/step_parallel_utils.h"
 #include "frontend/parallel/graph_util/node_info.h"
-#include "utils/parallel_node_check.h"
+#include "frontend/parallel/parallel_node_check.h"
 
 namespace mindspore {
 namespace parallel {

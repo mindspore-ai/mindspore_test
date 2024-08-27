@@ -45,7 +45,7 @@
 #include "include/common/utils/comm_manager.h"
 #include "utils/ms_context.h"
 #include "utils/tensor_construct_utils.h"
-#include "utils/parallel_node_check.h"
+#include "frontend/parallel/parallel_node_check.h"
 
 namespace mindspore {
 namespace parallel {

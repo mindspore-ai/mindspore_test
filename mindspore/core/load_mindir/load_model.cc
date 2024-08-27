@@ -26,9 +26,7 @@
 #include <list>
 #include <utility>
 #include <nlohmann/json.hpp>
-#include "mindspore/ops/op_def/structure_ops.h"
-#include "mindspore/ops/op_def/sequence_ops.h"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "ir/core_ops_primitive.h"
 #include "utils/crypto.h"
 #include "utils/os.h"
 #include "ir/value.h"

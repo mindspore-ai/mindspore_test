@@ -15,16 +15,17 @@
  */
 
 #include <set>
+#include <memory>
 #include <string>
 #include "ir/func_graph.h"
-#include "mindspore/ops/op_def/array_ops.h"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "ir/core_ops_primitive.h"
 #include "mindspore/ops/op_def/other_ops.h"
-#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"
-#include "utils/parallel_node_check.h"
+#include "frontend/parallel/parallel_node_check.h"
 
 namespace mindspore {
+namespace parallel {
 // clang-format off
 #ifndef ENABLE_SECURITY
 static const std::set<std::string> PARALLEL_BLACK_LIST_ = {mindspore::kTupleGetItemOpName, "J", "list_getitem",
@@ -119,4 +120,5 @@ bool IsParallelConsiderCNode(const CNodePtr &cnode) {
   }
   return !IsInParallelBlackList(prim);
 }
+}  // namespace parallel
 }  // namespace mindspore

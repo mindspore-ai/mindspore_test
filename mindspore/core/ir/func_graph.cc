@@ -18,7 +18,7 @@
 
 #include "ir/func_graph.h"
 #include <algorithm>
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "ir/core_ops_primitive.h"
 #include "utils/trace_base.h"
 #include "ir/manager.h"
 #include "utils/ordered_set.h"

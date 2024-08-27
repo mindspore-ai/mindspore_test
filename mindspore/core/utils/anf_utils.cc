@@ -19,10 +19,7 @@
 #include <string>
 #include <list>
 #include <algorithm>
-#include "mindspore/ops/op_def/structure_ops.h"
-#include "mindspore/ops/op_def/sequence_ops.h"
-#include "mindspore/ops/op_def/other_ops.h"
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "ir/core_ops_primitive.h"
 #include "utils/trace_base.h"
 #include "utils/hash_map.h"
 #include "utils/os.h"
@@ -611,8 +608,8 @@ bool AnfUtils::NeedJumpMonadOutput(const AnfNodePtr &node) {
     return false;
   }
 
-  std::vector<std::string> jump_monad_output_nodes = {kRpcRecvOpName, prim::kPrimConditionSwitch->name(),
-                                                      prim::kPrimConditionGather->name()};
+  std::vector<std::string> jump_monad_output_nodes = {kRpcRecvOpName, kPrimConditionSwitchOpName,
+                                                      kPrimConditionGatherOpName};
   if (std::find(jump_monad_output_nodes.begin(), jump_monad_output_nodes.end(), GetCNodeName(cnode)) !=
       jump_monad_output_nodes.end()) {
     return true;

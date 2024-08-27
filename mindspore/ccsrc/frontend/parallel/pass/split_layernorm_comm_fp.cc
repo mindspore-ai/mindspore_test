@@ -26,7 +26,6 @@
 #include "frontend/parallel/pass/split_layernorm_comm_fp.h"
 #include "frontend/parallel/step_parallel.h"
 #include "include/common/utils/utils.h"
-#include "ir/pattern_matcher.h"
 
 namespace mindspore {
 namespace parallel {

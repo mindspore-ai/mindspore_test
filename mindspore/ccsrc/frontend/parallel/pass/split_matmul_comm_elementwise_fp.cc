@@ -24,7 +24,6 @@
 #include "frontend/parallel/step_parallel.h"
 #include "frontend/parallel/graph_util/graph_info.h"
 #include "include/common/utils/utils.h"
-#include "ir/pattern_matcher.h"
 
 namespace mindspore {
 namespace parallel {

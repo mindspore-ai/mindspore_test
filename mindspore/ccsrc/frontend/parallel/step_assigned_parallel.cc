@@ -43,7 +43,7 @@
 #include "ir/anf.h"
 #include "ir/tensor.h"
 #include "frontend/parallel/graph_util/generate_graph.h"
-#include "utils/parallel_node_check.h"
+#include "frontend/parallel/parallel_node_check.h"
 
 namespace mindspore {
 namespace parallel {

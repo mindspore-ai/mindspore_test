@@ -25,7 +25,7 @@
 #include "frontend/optimizer/irpass.h"
 #include "frontend/optimizer/anf_visitor.h"
 #include "frontend/operator/ops.h"
-#include "ir/pattern_matcher.h"
+#include "frontend/optimizer/pattern_matcher.h"
 #include "pipeline/jit/ps/parse/data_converter.h"
 #include "include/common/utils/python_adapter.h"
 #include "pipeline/jit/ps/parse/parse_base.h"

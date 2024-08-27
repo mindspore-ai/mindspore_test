@@ -64,7 +64,6 @@
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
 #include "utils/ms_utils.h"
-#include "utils/parallel_node_check.h"
 #include "utils/shape_utils.h"
 #include "utils/symbolic.h"
 #include "utils/compile_config.h"

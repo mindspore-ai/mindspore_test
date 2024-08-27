@@ -16,12 +16,10 @@
 
 #ifndef MINDSPORE_CORE_BASE_SEQUENCE_OP_NAME_H_
 #define MINDSPORE_CORE_BASE_SEQUENCE_OP_NAME_H_
-
+#include "ir/core_ops_name.h"
 namespace mindspore {
 // Tuple
 constexpr auto kRealMakeTupleOpName = "RealMakeTuple";
-constexpr auto kMakeTupleOpName = "MakeTuple";
-constexpr auto kTupleGetItemOpName = "TupleGetItem";
 constexpr auto kTupleSetItemOpName = "tuple_setitem";
 constexpr auto kTupleLtOpName = "tuple_lt";
 constexpr auto kTupleLeOpName = "tuple_le";
@@ -37,8 +35,6 @@ constexpr auto kListInplaceExtendOpName = "ListInplaceExtend";
 constexpr auto kListInplaceInsertOpName = "ListInplaceInsert";
 constexpr auto kListInplacePopOpName = "ListInplacePop";
 constexpr auto kMakeListOpName = "MakeList";
-constexpr auto kMakeListNewOpName = "make_list";
-constexpr auto kListGetItemOpName = "list_getitem";
 constexpr auto kListSetItemOpName = "list_setitem";
 constexpr auto kListLtOpName = "list_lt";
 constexpr auto kListLeOpName = "list_le";
