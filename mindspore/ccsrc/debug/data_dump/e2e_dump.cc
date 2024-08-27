@@ -297,9 +297,16 @@ void E2eDump::DumpArgsSingleNode(const CNodePtr &node, const std::string &dump_p
     MS_LOG(ERROR) << "Get realpath failed, path=" << file_path;
     return;
   }
+
+  ChangeFileMode(realpath.value(), S_IWUSR);
   std::ofstream outFile(realpath.value());
+  if (!outFile.is_open()) {
+    MS_LOG(ERROR) << "Could not open file" << file_path;
+    return;
+  }
   outFile << json.dump(kJsonIndent);
   outFile.close();
+  ChangeFileMode(realpath.value(), S_IRUSR);
 }
 
 void E2eDump::DumpInputImpl(const CNodePtr &node, bool trans_flag, const std::string &dump_path,
