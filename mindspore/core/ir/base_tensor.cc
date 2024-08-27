@@ -243,7 +243,7 @@ bool BaseTensor::ValueEqual(const BaseTensor &tensor) const {
 }
 
 void BaseTensor::ExecuteLazyTask() const {
-  if (lazy_callback_ != nullptr && need_pipeline_sync_) {
+  if (lazy_callback_ != nullptr && (need_pipeline_sync_ || device_sync_ != nullptr)) {
     lazy_callback_();
   }
 
