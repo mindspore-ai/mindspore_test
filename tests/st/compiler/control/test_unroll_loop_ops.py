@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.st.compiler.control.cases_register import case_register
 import numpy as np
 import mindspore as ms
 from mindspore import Tensor, jit, context, ops, nn
 from mindspore.common import dtype as mstype
+from tests.st.compiler.control.cases_register import case_register
 
 
 context.set_context(mode=context.GRAPH_MODE)
@@ -33,14 +33,13 @@ def test_while_loop():
     """
 
     def complex_pure_function(init_value):
-        input_tensor, init = init_value
+        input_tensor = init_value
         activation = ops.ReLU()
         fc = activation(input_tensor)
-        init = init + 1
-        return [fc, init]
+        return  fc + 1
 
     def cond_func(init_value):
-        return init_value[-1] < 100
+        return init_value.value() < 100
 
     @jit
     def test_while_loop_inner(init_val):
@@ -49,11 +48,10 @@ def test_while_loop():
         return result
 
     dtype = mstype.float32
-    input_tensor = Tensor(np.random.rand(6, 6), dtype)
-    init = 0
-    init_state = [input_tensor, init]
+    input_tensor = ms.Parameter(Tensor([1], dtype))
+    init_state = input_tensor
     result = test_while_loop_inner(init_state)
-    assert result[-1] == 100
+    assert result == 100
 
 
 @case_register.level1
