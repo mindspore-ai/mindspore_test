@@ -14,12 +14,12 @@ mindspore.mint.remainder
         输入不支持复数类型。至少一个输入为tensor，且不能都为布尔型tensor。
 
     参数：
-        - **input** (Union[Tensor, number.Number]) - 除数。
-        - **other** (Union[Tensor, number.Number]) - 被除数。
+        - **input** (Union[Tensor, number.Number, bool]) - 除数为数值型、bool或数据类型为 `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_ 或 `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_ 的Tensor。
+        - **other** (Union[Tensor, number.Number, bool]) - 被除数为数值型、bool或数据类型为数值型或bool的Tensor。当除数是Tensor时，则被除数是数值型、bool或数据类型为数值型或bool的Tensor。当除数是Scalar时，则被除数必须是数据类型为数值型或bool的Tensor。
 
     返回：
         Tensor，经过隐式类型提升和广播。
 
     异常：
-        - **TypeError** - 如果 `input` 和 `other` 不是以下类型之一：(tensor, tensor)，(tensor, number) 或 (number, tensor)。
+        - **TypeError** - 如果 `input` 和 `other` 不是以下类型之一：(tensor, tensor)，(tensor, number)，(tensor, bool)，(number, tensor) 或 (bool, tensor)。
         - **ValueError** - 如果 `input` 和 `other` 不能被广播。
