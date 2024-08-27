@@ -1084,6 +1084,10 @@ ParameterPtr KernelGraphMgr::CreateNewParameterFromParameter(const AnfNodePtr &a
       if (param_value != nullptr) {
         param_value->set_parameter(new_parameter);
       }
+    } else {
+      // The name of parameter cached in param_info may not be same with frontend parameter. For example, when param
+      // object is net's "x" input in first run and "y" input in second run, the cached name need to be updated to "y".
+      new_parameter->set_name(anf->cast<ParameterPtr>()->name());
     }
     new_parameter->IncreaseUsedGraphCount();
   } else {
@@ -1760,6 +1764,10 @@ ParameterPtr KernelGraphMgr::CreateNewParameter(const AnfNodePtr &anf, KernelGra
       TraceGuard trace_guard(std::make_shared<TraceCopy>(anf->debug_info()));
       new_parameter = graph->NewParameter(anf->cast<ParameterPtr>());
       param_value->set_parameter(new_parameter);
+    } else {
+      // The name of parameter cached in param_info may not be same with frontend parameter. For example, when param
+      // object is net's "x" input in first run and "y" input in second run, the cached name need to be updated to "y".
+      new_parameter->set_name(anf->cast<ParameterPtr>()->name());
     }
   } else {
     TraceGuard trace_guard(std::make_shared<TraceCopy>(anf->debug_info()));
