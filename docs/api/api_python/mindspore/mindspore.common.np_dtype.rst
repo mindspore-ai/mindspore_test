@@ -3,7 +3,7 @@ mindspore.common.np_dtype
 
 .. py:class:: mindspore.common.np_dtype
 
-    `np_dtype` 扩展了Numpy的数据类型。
+    MindSpore的Numpy数据类型。
 
     `np_dtype` 的实际路径为 `/mindspore/common/np_dtype.py` 。运行以下命令导入环境：
 
