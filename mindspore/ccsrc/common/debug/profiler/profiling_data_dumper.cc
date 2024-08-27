@@ -59,7 +59,7 @@ bool Utils::CreateDir(const std::string &path) {
     return IsDir(path) ? true : false;
   }
   size_t pos = 0;
-  static const int DEFAULT_MKDIR_MODE = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
+  static const int DEFAULT_MKDIR_MODE = S_IRUSR | S_IWUSR;
   while ((pos = path.find_first_of('/', pos)) != std::string::npos) {
     std::string base_dir = path.substr(0, ++pos);
     if (IsFileExist(base_dir)) {
@@ -123,7 +123,7 @@ bool Utils::CreateDumpFile(const std::string &path) {
   }
   std::ofstream output_file(path);
   output_file.close();
-  if (chmod(path.c_str(), S_IRUSR | S_IWUSR | S_IRGRP) == -1) {
+  if (chmod(path.c_str(), S_IRUSR | S_IWUSR) == -1) {
     MS_LOG(WARNING) << "chmod failed, path: " << path;
     return false;
   }

@@ -40,6 +40,19 @@ enum class COMMON_EXPORT Command { kStartOne = 0, kStartAll, kStop, kClear };
 
 enum class COMMON_EXPORT TraceTag { kPy_Call = 0, kPy_Return, kC_Call, kC_Return };
 
+class COMMON_EXPORT PythonCApi {
+ public:
+#if (PY_MAJOR_VERSION == 3) && (PY_MINOR_VERSION < 11)
+  static PyCodeObject *PyFrame_GetCode_MS(PyFrameObject *frame) { return frame->f_code; }
+  static PyObject *PyFrame_GetLocals_MS(PyFrameObject *frame) { return frame->f_locals; }
+  static PyFrameObject *PyFrame_GetBack_MS(PyFrameObject *frame) { return frame->f_back; }
+#else
+  static PyCodeObject *PyFrame_GetCode_MS(PyFrameObject *frame) { return PyFrame_GetCode(frame); }
+  static PyObject *PyFrame_GetLocals_MS(PyFrameObject *frame) { return PyFrame_GetLocals(frame); }
+  static PyFrameObject *PyFrame_GetBack_MS(PyFrameObject *frame) { return PyFrame_GetBack(frame); }
+#endif
+};
+
 struct COMMON_EXPORT TraceContext {
   PyObject_HEAD PyThreadState *thread_state_;
 };
@@ -50,36 +63,6 @@ struct COMMON_EXPORT PythonFuncCallData {
   uint32_t map_index_{0};
   PythonFuncCallData(uint64_t start_time, uint64_t end_time, uint32_t map_index)
       : start_time_{start_time}, end_time_{end_time}, map_index_{map_index} {}
-};
-
-struct COMMON_EXPORT RawEvent {
-  RawEvent(TraceTag tag, PyFrameObject *frame) : tag_(tag), frame_(frame), t_(0), misc_() {}
-
-  RawEvent(TraceTag tag, PyFrameObject *frame, PyObject *arg) : RawEvent(tag, frame) { misc_.arg_ = arg; }
-
-  TraceTag tag_{};
-  PyFrameObject *frame_{nullptr};
-  uint64_t t_{0};
-  union {
-    PyObject *arg_;  // kC_Call
-    void *null_;     // Unused (placeholder), kPy_Call, kPy_Return, kC_Return
-  } misc_{};
-
-  uint8_t tag() const { return static_cast<uint8_t>(tag_); }
-
-  std::string get_func_name() const {
-    if (tag_ == TraceTag::kC_Call) {
-      return py::repr(misc_.arg_);
-    } else if (tag_ == TraceTag::kPy_Call) {
-      auto line_no = std::to_string(frame_->f_code->co_firstlineno);
-      auto file_name = py::cast<std::string>(frame_->f_code->co_filename);
-      auto func_name = py::cast<std::string>(frame_->f_code->co_name);
-      std::stringstream name_stream;
-      name_stream << file_name << "(" << line_no << "): " << func_name;
-      return name_stream.str();
-    }
-    return "";
-  }
 };
 
 class COMMON_EXPORT PythonTracer final {
@@ -97,10 +80,6 @@ class COMMON_EXPORT PythonTracer final {
   void recordPyCall(TraceContext *ctx, PyFrameObject *frame);
   void recordCCall(TraceContext *ctx, PyFrameObject *frame, PyObject *arg);
   void recordReturn(TraceContext *ctx, PyFrameObject *frame, PyObject *arg, TraceTag tag);
-  void trackModule(PyFrameObject *frame);
-  void reportPythonModuleCallDataToNpuProfiler(PyObject *mod_class, uint64_t idx);
-  void reportPythonFuncCallDataToNpuProfiler(const RawEvent &event);
-  bool starts_with(const std::string &str, const std::string &start);
   void Flush();
 
   bool active_{false};
