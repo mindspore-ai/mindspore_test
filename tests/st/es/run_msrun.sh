@@ -20,17 +20,14 @@ export RANK_TABLE_FILE
 export ESCLUSTER_CONFIG_PATH
 export MS_DISABLE_REF_MODE=1
 export JOB_ID=10087
-export ASCEND_DEVICE_ID=0
-export DEVICE_NUM=1
-export DEVICE_ID=0
-export RANK_ID=0
-export RANK_SIZE=1
 export MS_DEV_JIT_SYNTAX_LEVEL=0
 
-python ${CURDIR}/test_es_external_api.py > worker_0.log
+msrun --worker_num=1 --local_worker_num=1 --join=True python ${CURDIR}/test_es_external_api.py
 
 result=$?
 if [ $result != 0 ]; then
+    echo "msrun test_es_external_api fail!"
     exit 1
 fi
+echo "msrun test_es_external_api succ!"
 exit 0
