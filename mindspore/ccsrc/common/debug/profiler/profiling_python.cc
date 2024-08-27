@@ -67,7 +67,7 @@ void PythonTracer::start(size_t max_threads, uint32_t rank_id) {
     size_t depth = 0;  // Make sure we can't infinite loop.
     while (frame != nullptr && depth <= STACK_MAX_DEPTH) {
       current_stack.push_back(frame);
-      frame = frame->f_back;
+      frame = PythonCApi::PyFrame_GetBack_MS(frame);
       ++depth;
     }
     MS_LOG(INFO) << "start depth: " << depth;
@@ -159,10 +159,10 @@ void PythonTracer::recordReturn(TraceContext *ctx, PyFrameObject *frame, PyObjec
   std::string op_name;
   if (tag == TraceTag::kPy_Return) {
     std::string py_class_name;
-    auto f_code = reinterpret_cast<PyObject *>(frame->f_code);
-    if (f_code == module_call_code_) {
+    auto f_code = PythonCApi::PyFrame_GetCode_MS(frame);
+    if (reinterpret_cast<PyObject *>(f_code) == module_call_code_) {
       PyFrame_FastToLocals(frame);
-      auto f_locals = reinterpret_cast<PyObject *>(frame->f_locals);
+      auto f_locals = reinterpret_cast<PyObject *>(PythonCApi::PyFrame_GetLocals_MS(frame));
       if (f_locals != nullptr) {
         auto module_class = PyDict_GetItemString(f_locals, "self");
         py_class_name = "nn.Cell." +
@@ -170,8 +170,8 @@ void PythonTracer::recordReturn(TraceContext *ctx, PyFrameObject *frame, PyObjec
                         ".";
       }
     }
-    op_name = py::cast<std::string>(frame->f_code->co_filename) + "(" + std::to_string(frame->f_code->co_firstlineno) +
-              "):" + py_class_name + py::cast<std::string>(frame->f_code->co_name);
+    op_name = py::cast<std::string>(f_code->co_filename) + "(" + std::to_string(f_code->co_firstlineno) +
+              "):" + py_class_name + py::cast<std::string>(f_code->co_name);
   } else if (arg != nullptr) {
     op_name = py::repr(arg);
   }
