@@ -19,35 +19,67 @@
 #include <iomanip>
 #include <limits>
 #include <ratio>
+#include <utility>
 
 #include "utils/log_adapter.h"
 
 namespace mindspore::graphkernel {
+namespace {
+constexpr size_t fusion_stage = std::numeric_limits<size_t>::max();
+}
 void GraphKernelPassManager::Add(const opt::PassPtr &pass, unsigned int pass_level, bool supported_device) {
   MS_EXCEPTION_IF_NULL(pass);
   auto pass_id = passes_.size();
   auto pass_name = pass->name();
-  auto pass_in_list = [this, pass_id, &pass_name](const std::vector<std::string> &pass_list) {
+
+  auto pass_in_list = [this, pass_id,
+                       &pass_name](const std::vector<std::string> &pass_list) -> std::pair<bool, size_t> {
+    if (pass_list.empty()) {
+      return std::make_pair(false, 0);
+    }
+
     // the config format can be "stage_id.pass_id" or "stage_name.pass_name"
-    return std::find(pass_list.begin(), pass_list.end(),
-                     std::to_string(this->stage_) + "." + std::to_string(pass_id)) != pass_list.end() ||
-           std::find(pass_list.begin(), pass_list.end(), this->name_ + "." + pass_name) != pass_list.end() ||
-           std::find(pass_list.begin(), pass_list.end(), pass_name) != pass_list.end();
+    auto number_name = std::to_string(this->stage_) + "." + std::to_string(pass_id);
+    auto stage_pass_name = this->name_ + "." + pass_name;
+    for (size_t i = 0; i < pass_list.size(); ++i) {
+      if (pass_list[i] == number_name || pass_list[i] == stage_pass_name ||
+          (this->stage_ == fusion_stage && pass_list[i] == pass_name)) {
+        return std::make_pair(true, i);
+      }
+    }
+    return std::make_pair(false, pass_list.size());
   };
+
   bool enable = supported_device && flags_.opt_level >= pass_level;
   if (enable) {
     // if it meets the condition to enable, check whether it's in the disabled list.
-    enable = !pass_in_list(flags_.disable_pass);
+    auto [match, idx] = pass_in_list(flags_.disable_pass);
+    enable = !match;
+    if (idx < flags_.disable_pass.size()) {
+      if (disable_pass_active_[idx]) {
+        MS_LOG(WARNING) << "More than one graph kernel pass disable by " << flags_.disable_pass[idx] << "!";
+      } else {
+        disable_pass_active_[idx] = true;
+      }
+    }
   } else {
     // if it doesn't meet the condition to enable, check whether it's in the enabled list.
-    enable = pass_in_list(flags_.enable_pass);
+    auto [match, idx] = pass_in_list(flags_.enable_pass);
+    enable = match;
+    if (idx < flags_.enable_pass.size()) {
+      if (enable_pass_active_[idx]) {
+        MS_LOG(WARNING) << "More than one graph kernel pass enable by " << flags_.enable_pass[idx] << "!";
+      } else {
+        enable_pass_active_[idx] = true;
+      }
+    }
   }
+
   passes_.push_back(pass);
   enabled_.push_back(enable);
 }
 
 std::string GraphKernelPassManager::GetPassFullname(size_t pass_id, const opt::PassPtr &pass) const {
-  const size_t fusion_stage = std::numeric_limits<size_t>::max();
   std::string full_name = "";
   if (stage_ != fusion_stage) {
     full_name += "stage" + std::to_string(stage_) + "_";
@@ -57,11 +89,36 @@ std::string GraphKernelPassManager::GetPassFullname(size_t pass_id, const opt::P
   return full_name;
 }
 
+void GraphKernelPassManager::PassFlagsValidation() const {
+  for (size_t i = 0; i < enable_pass_active_.size(); ++i) {
+    if (enable_pass_active_[i]) {
+      continue;
+    }
+
+    MS_LOG(WARNING) << "graph kernel pass enable flag \"" << flags_.enable_pass[i] << "\" is not valid!";
+  }
+
+  for (size_t i = 0; i < disable_pass_active_.size(); ++i) {
+    if (disable_pass_active_[i]) {
+      continue;
+    }
+
+    MS_LOG(WARNING) << "graph kernel pass disable flag \"" << flags_.disable_pass[i] << "\" is not valid!";
+  }
+}
+
 bool GraphKernelPassManager::Run(const FuncGraphPtr &func_graph) const {
+  PassFlagsValidation();
+
   bool changed = false;
   for (size_t i = 0; i < passes_.size(); i++) {
     if (enabled_[i]) {
-      changed = RunPass(func_graph, i, passes_[i]) || changed;
+      MS_LOG(INFO) << "graph kernel pass " << GetPassFullname(i, passes_[i]) << " is enabled.";
+      auto pass_changed = RunPass(func_graph, i, passes_[i]);
+      if (pass_changed) {
+        MS_LOG(INFO) << "graph kernel pass " << GetPassFullname(i, passes_[i]) << " changed.";
+      }
+      changed = pass_changed || changed;
       // dump ir to a graph_kernel subdir, and set a global id in front of the filename
       std::ostringstream oss;
       static int g_id = 0;

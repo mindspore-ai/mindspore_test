@@ -29,7 +29,10 @@ using opt::PassManager;
 class BACKEND_EXPORT GraphKernelPassManager : public PassManager {
  public:
   GraphKernelPassManager(size_t stage, const std::string &name)
-      : PassManager(name, true), stage_(stage), flags_(GraphKernelFlags::GetInstance()) {}
+      : PassManager(name, true), stage_(stage), flags_(GraphKernelFlags::GetInstance()) {
+    enable_pass_active_ = std::vector<bool>(flags_.enable_pass.size(), false);
+    disable_pass_active_ = std::vector<bool>(flags_.disable_pass.size(), false);
+  }
   ~GraphKernelPassManager() = default;
 
   // Add graph pass, the pass object will be freed when pass manager freed.
@@ -42,9 +45,14 @@ class BACKEND_EXPORT GraphKernelPassManager : public PassManager {
   bool RunPass(const FuncGraphPtr &func_graph, size_t pass_id, const opt::PassPtr &pass) const override;
   std::string GetPassFullname(size_t pass_id, const opt::PassPtr &pass) const override;
 
+ private:
+  void PassFlagsValidation() const;
+
   size_t stage_;
   std::vector<bool> enabled_;
   const GraphKernelFlags &flags_;
+  std::vector<bool> enable_pass_active_;
+  std::vector<bool> disable_pass_active_;
 };
 }  // namespace mindspore::graphkernel
 #endif  // MINDSPORE_CCSRC_BACKEND_OPTIMIZER_GRAPH_KERNEL_CORE_GRAPH_KERNEL_PASS_MANAGER_H_
