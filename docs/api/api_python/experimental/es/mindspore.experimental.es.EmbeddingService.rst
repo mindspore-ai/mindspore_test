@@ -3,8 +3,7 @@ mindspore.experimental.es.EmbeddingService
 
 .. py:class:: mindspore.experimental.es.EmbeddingService()
 
-    目前ES(EmbeddingService)特性只能创建一个EmbeddingService对象的实例，可支持大小表Embedding的模型训练和推理，
-    为训练和推理提供统一的Embedding管理，存储和计算的能力。
+    目前ES(EmbeddingService)特性只能创建一个EmbeddingService对象的实例，可支持大小表Embedding的模型训练和推理，为训练和推理提供统一的Embedding管理，存储和计算的能力。
     其中大表指vocab_size超过10万的数据量，推荐用户存储在PS(Parameter Server)上的表；
     小表指vocab_size小于10万的数据量，推荐用户存储在device上的表。
 
@@ -18,10 +17,7 @@ mindspore.experimental.es.EmbeddingService
         - **ValueError** - ESCLUSTER_CONFIG_PATH路径对应的配置文件中，每个server参数服务器总数超过4。
         - **ValueError** - ESCLUSTER_CONFIG_PATH路径对应的配置文件中，参数服务器总数超过4。
 
-    .. py:method:: embedding_init(embedding_dim, init_vocabulary_size, name,
-                       allow_merge=False, embedding_type="PS", ev_option=None,
-                       initializer=Uniform(scale=0.01), max_feature_count=None, mode="train",
-                       multihot_lens=None, optimizer=None, optimizer_param=None, )
+    .. py:method:: embedding_init(embedding_dim, init_vocabulary_size, name, allow_merge=False, embedding_type="PS", ev_option=None, initializer=Uniform(scale=0.01), max_feature_count=None, mode="train", multihot_lens=None, optimizer=None, optimizer_param=None)
 
         大小表的初始化接口。
 
@@ -29,15 +25,15 @@ mindspore.experimental.es.EmbeddingService
             - **name** (str) - 表名。
             - **init_vocabulary_size** (int) - 初始化表的大小。
             - **embedding_dim** (int) - 表中插入数据的维度大小。
-            - **max_feature_count** (int) - 每次查询的keys的数量。
-            - **initializer** (Initializer) - 表的初始化策略，默认为Uniform。
-            - **embedding_type** (str) - 生成embedding表的类型，可配置参数["PS", "data_parallel"]， "PS"表示初始化大表，"data_parallel"表示初始化小表。
-            - **ev_option** (EmbeddingVariableOption) - 大表的一些属性，是embedding_variable_option函数的返回值，为EmbeddingVariableOption对象。
-            - **multihot_lens** (int) - 小表的属性，只有allow_merge使能之后才用，当前不支持。
-            - **optimizer** (str) - 训练场景下大表优化器的类型，每张大表不能共用优化器，当前只支持Adam、Ftrl、SGD和RMSProp。
-            - **allow_merge** (bool) - 小表的属性，表示是否进行小表合并，当前不支持。
-            - **optimizer_param** (float) - 用户配置的优化器参数：initial_accumulator_value，表示moment累加器的初始值。
-            - **mode** (str) - 网络运行模式，可配置参数["train", "predict", "export"]， "train"表示训练模式，"predict"表示推理模式，"export"表示模型导出模式。
+            - **max_feature_count** (int) - 每次查询的keys的数量。默认值为 ``None``。
+            - **initializer** (Initializer) - 表的初始化策略，默认值为 ``Uniform``。
+            - **embedding_type** (str) - 生成embedding表的类型，可配置参数["PS", "data_parallel"]， ``"PS"``表示初始化大表，``"data_parallel"``表示初始化小表。默认值为 ``"PS"``。
+            - **ev_option** (EmbeddingVariableOption) - 大表的一些属性，是embedding_variable_option函数的返回值，为EmbeddingVariableOption对象。默认值为 ``None``。
+            - **multihot_lens** (int) - 小表的属性，只有allow_merge使能之后才用，当前不支持。默认值为 ``None``。
+            - **optimizer** (str) - 训练场景下大表优化器的类型，每张大表不能共用优化器，当前只支持``"Adam"``、``"Ftrl"``、``"SGD"``和``"RMSProp"``。默认值为 ``None``。
+            - **allow_merge** (bool) - 小表的属性，表示是否进行小表合并，当前不支持。默认值为 ``False``。
+            - **optimizer_param** (float) - 用户配置的优化器参数：initial_accumulator_value，表示moment累加器的初始值。默认值为 ``None``。
+            - **mode** (str) - 网络运行模式，可配置参数["train", "predict", "export"]， ``"train"``表示训练模式，``"predict"``表示推理模式，``"export"``表示模型导出模式。默认值为 ``"train"``。
 
         返回：
             - 如果初始化小表，返回小表的dict信息。
@@ -63,8 +59,8 @@ mindspore.experimental.es.EmbeddingService
 
         参数：
             - **padding_key** (int) - padding的值，必须是真实合法的hash key。
-            - **mask** (bool) - 是否更新padding key，设置为false则不更新。
-            - **mask_zero** (bool) - 是否更新key==0的值。
+            - **mask** (bool) - 是否更新padding key，设置为false则不更新。默认值为 ``True``。
+            - **mask_zero** (bool) - 是否更新key==0的值。默认值为 ``False``。
 
         返回：
             PaddingParamsOption对象。
@@ -79,7 +75,7 @@ mindspore.experimental.es.EmbeddingService
 
         参数：
             - **completion_key** (int) - completion key取值。
-            - **mask** (bool) - 是否更新completion key，设置为false则不更新。
+            - **mask** (bool) - 是否更新completion key，设置为false则不更新。默认值为 ``True``。
 
         返回：
             CompletionKeyOption对象。
@@ -97,8 +93,8 @@ mindspore.experimental.es.EmbeddingService
 
         参数：
             - **filter_freq** (int) - 特征准入的频率阈值。
-            - **default_key** (int) - 出现次数未达到阈值的key特征，在查询是返回default_key对应的特征值。
-            - **default_value** (int/float) - 出现次数未达到阈值的key特征，在查询时返回embedding_dim长度的default_value作为其特征值。
+            - **default_key** (int) - 出现次数未达到阈值的key特征，在查询是返回default_key对应的特征值。默认值为 ``None``。
+            - **default_value** (int/float) - 出现次数未达到阈值的key特征，在查询时返回embedding_dim长度的default_value作为其特征值。默认值为 ``None``。
 
         返回：
             CounterFilter对象。
@@ -131,13 +127,13 @@ mindspore.experimental.es.EmbeddingService
         每个大表的所有属性配置合集。
 
         参数：
-            - **filter_option** (CounterFilter) - filter属性。
-            - **padding_option** (PaddingParamsOption) - padding key属性。
-            - **evict_option** (EvictOption) - evict属性。
-            - **completion_option** (CompletionKeyOption) - completion key属性。
-            - **storage_option** (None) - 预留属性，当前不支持。
-            - **feature_freezing_option** (None) - 预留属性，当前不支持。
-            - **communication_option** (None) - 预留属性，当前不支持。
+            - **filter_option** (CounterFilter) - filter属性。默认值为 ``None``。
+            - **padding_option** (PaddingParamsOption) - padding key属性。默认值为 ``None``。
+            - **evict_option** (EvictOption) - evict属性。默认值为 ``None``。
+            - **completion_option** (CompletionKeyOption) - completion key属性。默认值为 ``None``。
+            - **storage_option** (None) - 预留属性，当前不支持。默认值为 ``None``。
+            - **feature_freezing_option** (None) - 预留属性，当前不支持。默认值为 ``None``。
+            - **communication_option** (None) - 预留属性，当前不支持。默认值为 ``None``。
 
         返回：
             EmbeddingVariableOption对象，作为embedding_init的ev_option入参。
@@ -156,7 +152,7 @@ mindspore.experimental.es.EmbeddingService
             此功能只支持rank 0执行。针对大表，在导出之前需要先调用embedding_variable_option接口为每张表设置对应的被动淘汰条件。
 
         参数：
-            - **file_path** (str) - 存放ckpt的地址，最后一个字符不能为 ``/``。
+            - **file_path** (str) - 存放ckpt的地址，最后一个字符不能为 ``"/"``。
             - **trainable_var** (list[parameter]) - 存放所有小表的parameter信息。
 
         返回：
@@ -170,7 +166,7 @@ mindspore.experimental.es.EmbeddingService
             此功能只支持rank 0执行。
 
         参数：
-            - **file_path** (str) - 存放table表的地址，最后一个字符不能为 ``/``。
+            - **file_path** (str) - 存放table表的地址，最后一个字符不能为 ``"/"``。
             - **trainable_var** (list[parameter]) - 存放所有小表的parameter信息。
 
         返回：
@@ -184,7 +180,7 @@ mindspore.experimental.es.EmbeddingService
             此功能只支持rank 0执行。
 
         参数：
-            - **file_path** (str) - 增量导出table表的存放地址，最后一个字符不能为 ``/``。
+            - **file_path** (str) - 增量导出table表的存放地址，最后一个字符不能为 ``"/"``。
 
         返回：
             EmbeddingTableExport算子的返回值。
@@ -194,7 +190,7 @@ mindspore.experimental.es.EmbeddingService
         导入file path下所有的embedding文件和ckpt文件。
 
         参数：
-            - **file_path** (str) - 存放ckpt的地址，最后一个字符不能为 ``/``。
+            - **file_path** (str) - 存放ckpt的地址，最后一个字符不能为 ``"/"``。
 
         返回：
             EmbeddingComputeVarImport算子的返回值及小表导入结果。
@@ -204,7 +200,7 @@ mindspore.experimental.es.EmbeddingService
         导入file path下所有的embedding文件。
 
         参数：
-            - **file_path** (str) - 存放table表的地址，最后一个字符不能为 ``/``。
+            - **file_path** (str) - 存放table表的地址，最后一个字符不能为 ``"/"``。
 
         返回：
             EmbeddingTableImport算子的返回值及小表导入结果。
