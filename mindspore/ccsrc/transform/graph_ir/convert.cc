@@ -933,7 +933,11 @@ void DfGraphConvertor::ReplaceAllParameterToRefData() {
     for (const auto &param : parameters) {
       MS_EXCEPTION_IF_NULL(param);
       auto op_itor = op_cache_.find(param.get());
-      if (op_itor != op_cache_.end() && op_itor->second->GetOpType() == kTypeRefData) {
+      if (op_itor == op_cache_.end()) {
+        MS_LOG(INFO) << "Cannot find this param in op cache: " << param->fullname_with_scope();
+        continue;
+      }
+      if (op_itor->second->GetOpType() == kTypeRefData) {
         MS_LOG(INFO) << "This process param has default, have been change to RefData: " << param->fullname_with_scope();
         continue;
       }

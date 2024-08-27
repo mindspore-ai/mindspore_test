@@ -36,9 +36,9 @@ void ConvertDataType(void *dst_data, void *ori_data, int64_t len, bool need_rank
 }
 
 std::shared_ptr<ValueNode> CreateValueNode(const tensor::TensorPtr &assist_tensor, const TensorTypePtr &tensor_type) {
+  MS_EXCEPTION_IF_NULL(assist_tensor);
   tensor::DeviceInfo device_info{kOpFormat_DEFAULT, tensor_type};
   assist_tensor->set_device_info(device_info);
-  MS_EXCEPTION_IF_NULL(assist_tensor);
 
   auto assist_const = std::make_shared<ValueNode>(assist_tensor);
   auto assist_abstract = assist_tensor->ToAbstract();

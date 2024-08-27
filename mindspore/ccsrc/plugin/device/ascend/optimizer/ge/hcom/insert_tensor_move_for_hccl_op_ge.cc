@@ -168,6 +168,7 @@ void InsertTensorMoveForHcclOpGe::InsertTensorMove(const FuncGraphPtr &graph, co
   MS_EXCEPTION_IF_NULL(graph);
   MS_EXCEPTION_IF_NULL(hccl_node);
   auto manager = graph->manager();
+  MS_EXCEPTION_IF_NULL(manager);
   bool need_tensor_move_async = false;
   std::vector<AnfNodePtr> new_inputs = {hccl_node->input(0)};
   for (size_t i = 1; i < hccl_node->size(); ++i) {
@@ -215,7 +216,6 @@ void InsertTensorMoveForHcclOpGe::InsertTensorMove(const FuncGraphPtr &graph, co
     new_hccl_node->set_inputs(new_inputs);
     new_hccl_node->set_scope(hccl_node->scope());
     new_hccl_node->set_fullname_with_scope(hccl_node->fullname_with_scope());
-    MS_EXCEPTION_IF_NULL(manager);
     MS_LOG(DEBUG) << "start replace new_hccl_node to old hccl_node";
     auto kernel_graph = graph->cast<KernelGraphPtr>();
     if (kernel_graph != nullptr && kernel_graph->IsInternalOutput(hccl_node)) {
