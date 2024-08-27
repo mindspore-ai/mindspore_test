@@ -199,13 +199,15 @@ bool EnableLccl() {
   if (ascend_soc_version != "ascend910b") {
     return false;
   }
-  std::string enable_lccl_env = "off";
-  if (MsContext::GetInstance()->IsEnableInferBoost()) {
-    enable_lccl_env = common::GetEnv("MS_ENABLE_LCCL", "on");
-  } else {
-    enable_lccl_env = common::GetEnv("MS_ENABLE_LCCL", "off");
+  auto enable_infer_boost = MsContext::GetInstance()->IsEnableInferBoost();
+  if (!enable_infer_boost) {
+    return false;
   }
-  return enable_lccl_env == "on";
+  static bool disable_lccl = common::GetEnv("MS_ENABLE_LCCL") == "off";
+  if (disable_lccl) {
+    return false;
+  }
+  return true;
 }
 
 void InitializeAcl() {
