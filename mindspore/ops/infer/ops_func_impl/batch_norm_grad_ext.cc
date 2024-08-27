@@ -25,9 +25,7 @@ namespace ops {
 BaseShapePtr BatchNormGradExtFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                   const std::vector<AbstractBasePtr> &input_args) const {
   // Get input tensor shape.
-  MS_EXCEPTION_IF_NULL(input_args[kInputIndex1]);
   auto x_shape_ptr = input_args[kInputIndex1]->GetShape();
-  MS_EXCEPTION_IF_NULL(x_shape_ptr);
   auto weight_shape_ptr = input_args[kInputIndex2]->GetShape();
   std::vector<BaseShapePtr> shapes_list{x_shape_ptr->Clone(), weight_shape_ptr->Clone(), weight_shape_ptr->Clone()};
   return std::make_shared<abstract::TupleShape>(shapes_list);
@@ -35,10 +33,7 @@ BaseShapePtr BatchNormGradExtFuncImpl::InferShape(const PrimitivePtr &primitive,
 
 TypePtr BatchNormGradExtFuncImpl::InferType(const PrimitivePtr &primitive,
                                             const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
-  MS_EXCEPTION_IF_NULL(input_args[kInputIndex0]);
   auto dy_type = input_args[kInputIndex0]->GetType();
-  MS_EXCEPTION_IF_NULL(dy_type);
   std::vector<TypePtr> types_list;
   types_list = {dy_type, kFloat32, kFloat32};
   return std::make_shared<Tuple>(types_list);

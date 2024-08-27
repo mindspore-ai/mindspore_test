@@ -49,7 +49,7 @@ TypePtr LayerNormGradV3FuncImpl::InferType(const PrimitivePtr &primitive,
                                            const std::vector<AbstractBasePtr> &input_args) const {
   auto x_type = input_args[kInputIndex1]->GetType();
   auto gamma_type = input_args[kInputIndex4]->GetType();
-  auto beta_type = input_args[kInputIndex2]->BuildType();
+  auto beta_type = input_args[kInputIndex2]->GetType();
   return std::make_shared<Tuple>(std::vector<TypePtr>{x_type, gamma_type, beta_type});
 }
 

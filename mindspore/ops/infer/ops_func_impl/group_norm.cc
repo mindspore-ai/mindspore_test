@@ -33,9 +33,7 @@ constexpr int64_t kNumberEight = 8;
 BaseShapePtr GroupNormFuncImpl::InferShape(const PrimitivePtr &primitive,
                                            const std::vector<AbstractBasePtr> &input_args) const {
   // Get input tensor shape.
-  MS_EXCEPTION_IF_NULL(input_args[kInputIndex0]);
   auto x_shape_ptr = input_args[kInputIndex0]->GetShape();
-  MS_EXCEPTION_IF_NULL(x_shape_ptr);
   const auto &x_shape = x_shape_ptr->GetShapeVector();
   const auto &weight_shape = input_args[kInputIndex2]->GetShape()->GetShapeVector();
   const auto &bias_shape = input_args[kInputIndex3]->GetShape()->GetShapeVector();
@@ -85,7 +83,6 @@ BaseShapePtr GroupNormFuncImpl::InferShape(const PrimitivePtr &primitive,
 
 TypePtr GroupNormFuncImpl::InferType(const PrimitivePtr &primitive,
                                      const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
   const auto &prim_name = primitive->name();
   std::map<std::string, TypePtr> types;
   const auto &x_type = input_args[kInputIndex0]->GetType();

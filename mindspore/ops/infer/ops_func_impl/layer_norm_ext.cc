@@ -33,7 +33,6 @@ namespace mindspore {
 namespace ops {
 BaseShapePtr LayerNormExtFuncImpl::InferShape(const PrimitivePtr &primitive,
                                               const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
   auto op_name = primitive->name();
   constexpr int64_t input_num = 5;
   CheckAndConvertUtils::CheckInputArgs(input_args, kEqual, input_num, op_name);
@@ -89,7 +88,6 @@ BaseShapePtr LayerNormExtFuncImpl::InferShape(const PrimitivePtr &primitive,
 TypePtr LayerNormExtFuncImpl::InferType(const PrimitivePtr &primitive,
                                         const std::vector<AbstractBasePtr> &input_args) const {
   // outputs: output, mean_out, rstd_out
-  MS_EXCEPTION_IF_NULL(primitive);
   const std::string op_name = primitive->name();
   constexpr int64_t input_num = 5;
   CheckAndConvertUtils::CheckInputArgs(input_args, kEqual, input_num, op_name);

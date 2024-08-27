@@ -52,7 +52,7 @@ void GroupNormAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs
   c_ = x_shape[1];
   hw_ = (x_shape.size() == kNumberTwo)
           ? 1
-          : std::accumulate(x_shape.begin() + 2, x_shape.end(), 1, std::multiplies<int64_t>());
+          : std::accumulate(x_shape.begin() + kIndex2, x_shape.end(), 1, std::multiplies<int64_t>());
 
   GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex2], inputs[kIndex3], n_, c_, hw_, num_groups_, eps_,
                         outputs[kIndex0], outputs[kIndex1], outputs[kIndex2]);

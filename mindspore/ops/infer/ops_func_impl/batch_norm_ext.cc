@@ -40,13 +40,17 @@ void MultiClone(std::vector<T> *const vec, const T &ori, const size_t times) {
   }
 }
 
+constexpr auto minDim = 2;
+constexpr auto kTwice = 2;
+constexpr auto maxDim = 8;
+
 void BatchNormExtShapeCheck(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args,
                             const ShapeVector &x_shape, const ShapeVector &weight_shape, const ShapeVector &bias_shape,
                             const size_t attr_pos) {
   if (MS_LIKELY(!IsDynamicRank(x_shape))) {
-    MS_CHECK_VALUE(2 <= x_shape.size() && x_shape.size() <= 8,
+    MS_CHECK_VALUE(minDim <= x_shape.size() && x_shape.size() <= maxDim,
                    CheckAndConvertUtils::FormatCheckInRangeMsg("rank of images", SizeToLong(x_shape.size()),
-                                                               kIncludeBoth, {2, 8}, primitive));
+                                                               kIncludeBoth, {minDim, maxDim}, primitive));
   }
   MS_CHECK_VALUE(weight_shape.size() == 1, CheckAndConvertUtils::FormatCheckIntegerMsg(
                                              "rank of weight", SizeToLong(weight_shape.size()), kEqual, 1, primitive));
@@ -100,18 +104,14 @@ BaseShapePtr BatchNormExtFuncImpl::InferShape(const PrimitivePtr &primitive,
                             ? std::make_shared<abstract::TensorShape>(ShapeVector{abstract::TensorShape::kShapeDimAny})
                             : std::make_shared<abstract::TensorShape>(weight_shape);
   std::vector<abstract::BaseShapePtr> shapes{std::move(x_shape_ptr)};
-  MultiClone<abstract::BaseShapePtr>(&shapes, weight_shape_ptr, 2);
+  MultiClone<abstract::BaseShapePtr>(&shapes, weight_shape_ptr, kTwice);
   return std::make_shared<abstract::TupleShape>(std::move(shapes));
 }
 
 TypePtr BatchNormExtFuncImpl::InferType(const PrimitivePtr &primitive,
                                         const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
-  MS_EXCEPTION_IF_NULL(input_args[kInputIndex0]);
   auto x_type = input_args[kInputIndex0]->GetType();
   auto weight_type = input_args[kInputIndex1]->GetType();
-  MS_EXCEPTION_IF_NULL(x_type);
-  MS_EXCEPTION_IF_NULL(weight_type);
   std::vector<TypePtr> types_list;
   types_list = {x_type, weight_type, weight_type};
   return std::make_shared<Tuple>(types_list);

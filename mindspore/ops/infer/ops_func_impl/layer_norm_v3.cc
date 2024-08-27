@@ -75,7 +75,6 @@ int64_t CheckAxisV3(const std::string &op, const std::string &args_name, int64_t
 
 BaseShapePtr LayerNormV3FuncImpl::InferShape(const PrimitivePtr &primitive,
                                              const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
   auto op_name = primitive->name();
   auto x_shape_ptr = input_args[kInputIndex0]->GetShape();
   auto gamma_shape_ptr = input_args[kInputIndex1]->GetShape();

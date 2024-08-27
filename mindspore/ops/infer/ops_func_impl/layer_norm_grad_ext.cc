@@ -25,9 +25,7 @@ namespace ops {
 BaseShapePtr LayerNormGradExtFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                   const std::vector<AbstractBasePtr> &input_args) const {
   // Get input tensor shape.
-  MS_EXCEPTION_IF_NULL(input_args[kInputIndex1]);
   auto x_shape_ptr = input_args[kInputIndex1]->GetShape();
-  MS_EXCEPTION_IF_NULL(x_shape_ptr);
   auto x_shape = x_shape_ptr->GetShapeVector();
   auto gamma_shape_ptr = input_args[kInputIndex5]->GetShape();
   std::vector<BaseShapePtr> shapes_list;
@@ -45,10 +43,7 @@ BaseShapePtr LayerNormGradExtFuncImpl::InferShape(const PrimitivePtr &primitive,
 
 TypePtr LayerNormGradExtFuncImpl::InferType(const PrimitivePtr &primitive,
                                             const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
-  MS_EXCEPTION_IF_NULL(input_args[kInputIndex1]);
   auto x_type = input_args[kInputIndex1]->GetType();
-  MS_EXCEPTION_IF_NULL(x_type);
   std::vector<TypePtr> types_list;
   auto out_type = x_type->Clone();
   types_list = {out_type, out_type, out_type};
