@@ -120,7 +120,7 @@ bool QuantileGpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &input
   int *ret_flag_device = GetDeviceAddress<int>(workspace, kIndex1);
   int *nan_flags = GetDeviceAddress<int>(workspace, kIndex2);
   total_ = inputs[0]->size() / sizeof(T);
-  if (total_ <= 0) {
+  if (total_ == 0) {
     MS_LOG(ERROR) << "For Quantile, input tensor must be non-empty";
   }
   int flag_in = 0;

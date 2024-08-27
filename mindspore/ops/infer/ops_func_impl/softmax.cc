@@ -36,7 +36,7 @@ TypePtr SoftmaxFuncImpl::InferType(const PrimitivePtr &primitive,
   const auto &x_type = input_args.at(kInputIndex0)->GetType();
   const std::set<TypePtr> valid_types{kBFloat16, kFloat16, kFloat32, kFloat64};
   (void)CheckAndConvertUtils::CheckTensorTypeValid("x", x_type, valid_types, primitive->name());
-  return x_type->Clone();
+  return x_type;
 }
 
 int32_t SoftmaxFuncImpl::CheckValidation(const PrimitivePtr &primitive,

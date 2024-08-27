@@ -67,7 +67,7 @@ TypePtr FloorModFuncImpl::InferType(const PrimitivePtr &primitive,
     }
   }
 
-  return type_x->Clone();
+  return type_x;
 }
 }  // namespace ops
 }  // namespace mindspore

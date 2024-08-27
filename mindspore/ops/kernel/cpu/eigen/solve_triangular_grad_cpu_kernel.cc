@@ -21,6 +21,7 @@
 #include <utility>
 #include <memory>
 #include <map>
+#include "abstract/utils.h"
 #include "mindspore/ops/infer/grad/solve_triangular_grad.h"
 
 namespace mindspore {
@@ -70,6 +71,9 @@ int SolveTriangularGradCpuKernelMod::Resize(const std::vector<KernelTensor *> &i
   dx_batch_size_ = x_batch_size_;
   da_batch_size_ = a_batch_size_;
   db_batch_size_ = x_batch_size_;
+  workspace_size_list_.push_back(a_batch_size_ * out_byte_size_);
+  workspace_size_list_.push_back(x_batch_size_ * out_byte_size_);
+  workspace_size_list_.push_back(dx_batch_size_ * out_byte_size_);
   return KRET_OK;
 }
 
@@ -78,6 +82,7 @@ bool SolveTriangularGradCpuKernelMod::Init(const std::vector<KernelTensor *> &in
   if (!MatchKernelFunc(kernel_name_, inputs, outputs)) {
     return false;
   }
+  out_byte_size_ = abstract::TypeIdSize(outputs[kIndexDA]->dtype_id());
   return true;
 }
 
@@ -178,7 +183,7 @@ void SolveTriangularGradCpuKernelMod::calculate_da(T *x_addr, T *da_addr, T *db_
 
 template <typename T_in, typename T_out, typename T_grad>
 bool SolveTriangularGradCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
-                                                   const std::vector<KernelTensor *> &,
+                                                   const std::vector<KernelTensor *> &workspace,
                                                    const std::vector<KernelTensor *> &outputs) {
   CHECK_KERNEL_INPUTS_NUM(inputs.size(), kSolveTriangularGradInputsNum, kernel_name_);
   CHECK_KERNEL_OUTPUTS_NUM(outputs.size(), kSolveTriangularGradOutputsNum, kernel_name_);
@@ -188,21 +193,9 @@ bool SolveTriangularGradCpuKernelMod::LaunchKernel(const std::vector<KernelTenso
   auto da_addr = reinterpret_cast<T_grad *>(outputs[kIndexDA]->device_ptr());
   auto db_addr = reinterpret_cast<T_grad *>(outputs[kIndexDB]->device_ptr());
   set_attr(inputs);
-  T_grad *casted_a_addr = static_cast<T_grad *>(malloc(sizeof(T_grad) * a_batch_size_));
-  if (casted_a_addr == nullptr) {
-    MS_LOG(ERROR) << "For '" << kernel_name_ << "', malloc [casted_a_addr] memory failed.";
-    return false;
-  }
-  T_grad *casted_x_addr = static_cast<T_grad *>(malloc(sizeof(T_grad) * x_batch_size_));
-  if (casted_x_addr == nullptr) {
-    MS_LOG(ERROR) << "For '" << kernel_name_ << "', malloc [casted_x_addr] memory failed.";
-    return false;
-  }
-  T_grad *casted_dx_addr = static_cast<T_grad *>(malloc(sizeof(T_grad) * dx_batch_size_));
-  if (casted_dx_addr == nullptr) {
-    MS_LOG(ERROR) << "For '" << kernel_name_ << "', malloc [casted_dx_addr] memory failed.";
-    return false;
-  }
+  T_grad *casted_a_addr = reinterpret_cast<T_grad *>(workspace[kIndex0]->device_ptr());
+  T_grad *casted_x_addr = reinterpret_cast<T_grad *>(workspace[kIndex1]->device_ptr());
+  T_grad *casted_dx_addr = reinterpret_cast<T_grad *>(workspace[kIndex2]->device_ptr());
   for (size_t i = 0; i < batch_; ++i) {
     T_in *a_batch_addr = a_addr + i * a_batch_size_;
     T_out *x_batch_addr = x_addr + i * x_batch_size_;
@@ -221,9 +214,6 @@ bool SolveTriangularGradCpuKernelMod::LaunchKernel(const std::vector<KernelTenso
     calculate_db<T_grad>(casted_a_addr, casted_dx_addr, db_batch_addr);
     calculate_da<T_grad>(casted_x_addr, da_batch_addr, db_batch_addr);
   }
-  free(casted_a_addr);
-  free(casted_x_addr);
-  free(casted_dx_addr);
   return true;
 }
 

@@ -31,7 +31,7 @@ BaseShapePtr BatchNormGradFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                const std::vector<AbstractBasePtr> &input_args) const {
   auto x_shape = input_args[kInputIndex1]->GetShape()->GetShapeVector();
   if (MS_LIKELY(!IsDynamicRank(x_shape))) {
-    MS_CHECK_VALUE(x_shape.size() >= 2 && x_shape.size() <= 4,
+    MS_CHECK_VALUE(x_shape.size() >= kIndex2 && x_shape.size() <= kIndex4,
                    CheckAndConvertUtils::FormatCheckInRangeMsg<int64_t>("rank of x", SizeToLong(x_shape.size()),
                                                                         kIncludeBoth, {2, 4}, primitive));
   }
@@ -44,8 +44,7 @@ TypePtr BatchNormGradFuncImpl::InferType(const PrimitivePtr &primitive,
                                          const std::vector<AbstractBasePtr> &input_args) const {
   auto x_type_ptr = input_args[kInputIndex1]->GetType();
   auto scale_type_ptr = input_args[kInputIndex2]->GetType();
-  return std::make_shared<Tuple>(
-    std::vector<TypePtr>{x_type_ptr->Clone(), scale_type_ptr->Clone(), scale_type_ptr->Clone()});
+  return std::make_shared<Tuple>(std::vector<TypePtr>{x_type_ptr, scale_type_ptr, scale_type_ptr});
 }
 
 int32_t BatchNormGradFuncImpl::CheckValidation(const PrimitivePtr &primitive,

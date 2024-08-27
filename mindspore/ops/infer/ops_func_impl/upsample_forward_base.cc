@@ -29,8 +29,7 @@ TypePtr UpsampleForwardBaseFuncImpl::InferType(const PrimitivePtr &primitive,
                                                const std::vector<AbstractBasePtr> &input_args) const {
   MS_EXCEPTION_IF_NULL(input_args.at(0));
   auto input_type = input_args[0]->GetType();
-  MS_EXCEPTION_IF_NULL(input_type);
-  return input_type->Clone();
+  return input_type;
 }
 }  // namespace ops
 }  // namespace mindspore

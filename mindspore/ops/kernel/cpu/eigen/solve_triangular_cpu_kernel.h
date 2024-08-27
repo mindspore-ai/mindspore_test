@@ -46,7 +46,7 @@ class SolveTriangularCpuKernelMod : public NativeCpuKernelMod, public MatchKerne
 
  private:
   template <typename T_in, typename T_out>
-  bool LaunchKernel(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &,
+  bool LaunchKernel(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                     const std::vector<KernelTensor *> &outputs);
 
   template <typename Derived_a, typename Derived_b, typename T>
@@ -54,6 +54,9 @@ class SolveTriangularCpuKernelMod : public NativeCpuKernelMod, public MatchKerne
 
   void SolveTriangularCheck(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
 
+  size_t out_byte_size_{0};
+  size_t a_batch_size_{0};
+  size_t b_batch_size_{0};
   size_t m_{0};
   size_t n_{0};
   size_t batch_{1};

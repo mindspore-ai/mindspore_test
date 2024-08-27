@@ -29,8 +29,7 @@ TypePtr UpsampleBackwardBaseFuncImpl::InferType(const PrimitivePtr &primitive,
                                                 const std::vector<AbstractBasePtr> &input_args) const {
   MS_EXCEPTION_IF_NULL(input_args.at(0));
   auto dout_type = input_args[0]->GetType();
-  MS_EXCEPTION_IF_NULL(dout_type);
-  return dout_type->Clone();
+  return dout_type;
 }
 
 int32_t UpsampleBackwardBaseFuncImpl::CheckValidation(const PrimitivePtr &primitive,

@@ -49,9 +49,9 @@ BaseShapePtr ResizeDFuncImpl::InferShape(const PrimitivePtr &primitive,
     MS_LOG(EXCEPTION) << "For " << primitive->name() << ", sizes should be const.";
   }
   auto sizes_array = sizes_opt.value();
-  MS_CHECK_VALUE(sizes_array.size() == 1,
+  MS_CHECK_VALUE(sizes_array.size() == kIndex1,
                  CheckAndConvertUtils::FormatCheckIntegerMsg("the number of sizes", SizeToLong(sizes_array.size()),
-                                                             kEqual, SizeToLong(1), primitive));
+                                                             kEqual, SizeToLong(kIndex1), primitive));
   if (MS_UNLIKELY(sizes_array.IsValueUnknown(0))) {
     MS_LOG(EXCEPTION) << "For " << primitive->name() << ", sizes should be const.";
   }
@@ -82,9 +82,9 @@ int32_t ResizeDFuncImpl::CheckValidation(const PrimitivePtr &primitive,
     MS_LOG(EXCEPTION) << "For " << primitive->name() << ", scales should be const.";
   }
   auto scales_array = scales_opt.value();
-  MS_CHECK_VALUE(scales_array.size() == 1,
+  MS_CHECK_VALUE(scales_array.size() == kIndex1,
                  CheckAndConvertUtils::FormatCheckIntegerMsg("the number of scales", SizeToLong(scales_array.size()),
-                                                             kEqual, SizeToLong(1), primitive));
+                                                             kEqual, SizeToLong(kIndex1), primitive));
 
   auto coordinate_transformation_mode_opt = GetScalarValue<int64_t>(input_args[kIndex3]->GetValue());
   if (MS_UNLIKELY(!coordinate_transformation_mode_opt.has_value())) {

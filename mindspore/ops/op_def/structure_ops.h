@@ -133,7 +133,7 @@ class DoTransPrimitiveFunction : public Primitive {
 
  private:
   PrimitivePtr prim_;
-  size_t given_init_size_;
+  size_t given_init_size_{0};
   bool has_given_init_size_{false};
 };
 using DoTransPrimitiveFunctionPtr = std::shared_ptr<DoTransPrimitiveFunction>;

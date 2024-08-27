@@ -33,7 +33,7 @@ BaseShapePtr SoftmaxBackwardFuncImpl::InferShape(const PrimitivePtr &primitive,
 TypePtr SoftmaxBackwardFuncImpl::InferType(const PrimitivePtr &primitive,
                                            const std::vector<AbstractBasePtr> &input_args) const {
   const auto &x_type = input_args.at(kInputIndex0)->GetType();
-  return x_type->Clone();
+  return x_type;
 }
 
 int32_t SoftmaxBackwardFuncImpl::CheckValidation(const PrimitivePtr &primitive,

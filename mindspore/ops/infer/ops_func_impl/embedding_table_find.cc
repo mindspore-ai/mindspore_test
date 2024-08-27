@@ -54,11 +54,11 @@ int32_t EmbeddingTableFindFuncImpl::CheckValidation(const PrimitivePtr &primitiv
 
 BaseShapePtr EmbeddingTableFindFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                     const std::vector<AbstractBasePtr> &input_args) const {
-  CheckTensorScalarRank(primitive, input_args[0], "table_id");
+  CheckTensorScalarRank(primitive, input_args[kIndex0], "table_id");
 
   std::vector<int64_t> output_shape{abstract::TensorShape::kShapeDimAny, abstract::TensorShape::kShapeDimAny};
 
-  auto keys_shape_ptr = input_args[1]->GetShape();
+  auto keys_shape_ptr = input_args[kIndex1]->GetShape();
   MS_EXCEPTION_IF_NULL(keys_shape_ptr);
   const auto &keys_shape = keys_shape_ptr->GetShapeVector();
   if (MS_LIKELY(!IsDynamicRank(keys_shape))) {
@@ -94,10 +94,10 @@ TypePtr EmbeddingTableFindFuncImpl::InferType(const PrimitivePtr &primitive,
   MS_EXCEPTION_IF_NULL(primitive);
   const auto &prim_name = primitive->name();
 
-  const auto &table_id_type = input_args[0]->GetType();
+  const auto &table_id_type = input_args[kIndex0]->GetType();
   (void)CheckAndConvertUtils::CheckTensorTypeValid("table_id", table_id_type, {kInt32}, prim_name);
 
-  const auto &keys_type = input_args[1]->GetType();
+  const auto &keys_type = input_args[kIndex1]->GetType();
   (void)CheckAndConvertUtils::CheckTensorTypeValid("keys", keys_type, {kInt64}, prim_name);
 
   return kFloat32;

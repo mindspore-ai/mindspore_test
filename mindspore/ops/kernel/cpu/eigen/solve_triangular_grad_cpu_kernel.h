@@ -47,7 +47,7 @@ class SolveTriangularGradCpuKernelMod : public NativeCpuKernelMod,
 
  private:
   template <typename T_in, typename T_out, typename T_grad>
-  bool LaunchKernel(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &,
+  bool LaunchKernel(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                     const std::vector<KernelTensor *> &outputs);
 
   template <typename Derived_a, typename Derived_b, typename T>
@@ -62,6 +62,7 @@ class SolveTriangularGradCpuKernelMod : public NativeCpuKernelMod,
   template <typename T>
   void calculate_da(T *x_addr, T *da_addr, T *db_addr);
 
+  size_t out_byte_size_{0};
   size_t m_{0};
   size_t n_{0};
   size_t batch_{1};

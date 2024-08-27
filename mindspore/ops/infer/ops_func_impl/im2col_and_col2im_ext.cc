@@ -69,7 +69,7 @@ std::vector<int64_t> Im2ColAndCol2ImCommonCheckArray(const PrimitivePtr &primiti
 std::pair<int32_t, std::vector<ArrayValue<int64_t>>> Im2ColAndCol2ImCommonCheckValidation(
   const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args,
   const std::vector<std::string> &arg_names, size_t ele_num, const std::vector<int64_t> &min_values, size_t start_idx) {
-  assert((input_args.size() - start_idx) == arg_names.size());
+  MS_ASSERT((input_args.size() - start_idx) == arg_names.size());
 
   std::vector<ArrayValue<int64_t>> arrays;
   for (size_t i = 0; i < arg_names.size(); ++i) {

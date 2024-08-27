@@ -274,13 +274,14 @@ TypePtr GroupedMatmulFuncImpl::InferType(const PrimitivePtr &primitive,
   ValuePtr split_ptr = input_args[kGmmInputSplitItem]->GetValue();
   auto split_item = GetValue<int64_t>(split_ptr);
   CheckSplitItem(op_name, split_item);
+
+  MS_EXCEPTION_IF_NULL(input_args[kGmmInputGroupList]);
   if (split_item == singleTensor) {
     (void)CheckAndConvertUtils::CheckTensorTypeValid("grouplist", input_args[kGmmInputGroupList]->GetType(), {kInt64},
                                                      op_name);
   }
 
   // check group_list
-  MS_EXCEPTION_IF_NULL(input_args[kGmmInputGroupList]);
   auto group_list_type = input_args[kGmmInputGroupList]->GetType();
   if (split_item == singleTensor && group_list_type->isa<TypeNone>()) {
     MS_EXCEPTION(ValueError) << "For '" << op_name

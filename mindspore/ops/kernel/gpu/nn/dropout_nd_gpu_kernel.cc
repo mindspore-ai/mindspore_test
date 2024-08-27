@@ -28,6 +28,9 @@
 
 namespace mindspore {
 namespace kernel {
+namespace {
+const float epsilon = 1e-6;
+}
 bool DropoutNDGpuKernelMod::CheckDropOutNdShape() {
   constexpr size_t k4d = 4;
   constexpr size_t k5d = 5;
@@ -125,7 +128,7 @@ bool DropoutNDGpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inpu
   bool *mask = GetDeviceAddress<bool>(outputs, kIndex1);
   auto *rand_f = GetDeviceAddress<float>(workspace, kIndex0);
   // When keep_prob equal to 0.0, output default to zero, mask default to false.
-  if (keep_prob_ == 0.0) {
+  if (keep_prob_ <= epsilon) {
     CHECK_CUDA_RET_WITH_ERROR_NOTRACE(cudaMemset(output, 0, outputs[kIndex0]->size()),
                                       "For DropoutNDGpuKernelMod failed to cudaMemset");
     // Default zero to be false.

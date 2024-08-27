@@ -25,6 +25,13 @@ namespace kernel {
 namespace {
 constexpr size_t kInputNum = 4;
 constexpr size_t kOutputNum = 1;
+inline bool IsEqual(double x, double y) {
+  const double epsilon = 1e-14;
+  if (std::abs(x - y) <= epsilon) {
+    return true;
+  }
+  return false;
+}
 }  // namespace
 
 bool SequenceIndexCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
@@ -82,7 +89,7 @@ bool SequenceIndexCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &
   for (int64_t i = start_value; i < std::min(end_value, elem_num); ++i) {
     double seq_value = static_cast<double>(seq_addr[i]);
     double target_value = static_cast<double>(target_addr[0]);
-    if (seq_value == target_value) {
+    if (IsEqual(seq_value, target_value)) {
       index = i;
       break;
     }

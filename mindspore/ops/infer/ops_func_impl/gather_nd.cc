@@ -23,8 +23,8 @@ namespace mindspore {
 namespace ops {
 BaseShapePtr GatherNdFuncImpl::InferShape(const PrimitivePtr &primitive,
                                           const std::vector<AbstractBasePtr> &input_args) const {
-  const auto &input_x_shape = input_args[0]->GetShape()->GetShapeVector();
-  const auto &indices_shape = input_args[1]->GetShape()->GetShapeVector();
+  const auto &input_x_shape = input_args[kIndex0]->GetShape()->GetShapeVector();
+  const auto &indices_shape = input_args[kIndex1]->GetShape()->GetShapeVector();
   if (IsDynamicRank(input_x_shape) || IsDynamicRank(indices_shape)) {
     return std::make_shared<abstract::TensorShape>(ShapeVector{abstract::Shape::kShapeRankAny});
   }
@@ -62,7 +62,7 @@ BaseShapePtr GatherNdFuncImpl::InferShape(const PrimitivePtr &primitive,
 
 TypePtr GatherNdFuncImpl::InferType(const PrimitivePtr &primitive,
                                     const std::vector<AbstractBasePtr> &input_args) const {
-  return input_args[0]->GetType()->Clone();
+  return input_args[kIndex0]->GetType();
 }
 }  // namespace ops
 }  // namespace mindspore

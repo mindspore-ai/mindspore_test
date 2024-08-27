@@ -79,6 +79,9 @@ AbstractBasePtr ConstSliceToIndices(const std::vector<int64_t> &init_by_none, co
   int64_t start = slice_ptr->start();
   int64_t stop = slice_ptr->stop();
   int64_t step = slice_ptr->step();
+  if (step == 0) {
+    MS_LOG(EXCEPTION) << "For 'slice', 'strides' cannot contain 0";
+  }
   std::vector<int64_t> indices;
   if (step > 0) {
     for (int64_t i = start; i < stop; i += step) {

@@ -35,17 +35,17 @@ BaseShapePtr BatchNormGradGradFuncImpl::InferShape(const PrimitivePtr &primitive
   auto x_shape_vec = x_shape->GetShapeVector();
   auto rank = x_shape_vec.size();
   if (!IsDynamicRank(x_shape_vec)) {
-    MS_CHECK_VALUE(rank >= 2 && rank <= 4, CheckAndConvertUtils::FormatCheckInRangeMsg<size_t>(
-                                             "x's rank", rank, kIncludeBoth, {2, 4}, primitive));
+    MS_CHECK_VALUE(rank >= kIndex2 && rank <= kIndex4, CheckAndConvertUtils::FormatCheckInRangeMsg<size_t>(
+                                                         "x's rank", rank, kIncludeBoth, {2, 4}, primitive));
   }
   return std::make_shared<abstract::TupleShape>(std::vector<abstract::BaseShapePtr>{x_shape, dy_shape, scale_shape});
 }
 
 TypePtr BatchNormGradGradFuncImpl::InferType(const PrimitivePtr &primitive,
                                              const std::vector<AbstractBasePtr> &input_args) const {
-  TypePtr x_type = input_args[kInputIndex0]->GetType()->Clone();
-  TypePtr dy_type = input_args[kInputIndex1]->GetType()->Clone();
-  TypePtr scale_type = input_args[kInputIndex2]->GetType()->Clone();
+  TypePtr x_type = input_args[kInputIndex0]->GetType();
+  TypePtr dy_type = input_args[kInputIndex1]->GetType();
+  TypePtr scale_type = input_args[kInputIndex2]->GetType();
   return std::make_shared<Tuple>(std::vector<TypePtr>{x_type, dy_type, scale_type});
 }
 

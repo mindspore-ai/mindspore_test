@@ -26,6 +26,7 @@
 namespace {
 constexpr size_t kSmoothL1LossInputsNum = 2;
 constexpr size_t kSmoothL1LossOutputsNum = 1;
+constexpr float epsilon = 1e-6;
 }  // namespace
 namespace mindspore {
 namespace kernel {
@@ -38,7 +39,7 @@ bool SmoothL1LossGpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
   }
 
   beta_ = GetValue<float>(primitive_->GetAttr("beta"));
-  if (beta_ == 0.0) {
+  if (beta_ <= epsilon) {
     MS_LOG(ERROR) << "For '" << kernel_name_ << ", the 'beta' can not be 0.";
     return false;
   }
