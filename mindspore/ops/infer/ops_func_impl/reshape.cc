@@ -22,16 +22,14 @@ namespace mindspore {
 namespace ops {
 BaseShapePtr ReshapeFuncImpl::InferShape(const PrimitivePtr &primitive,
                                          const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(input_args[0]);
-  MS_EXCEPTION_IF_NULL(input_args[1]);
-  auto input_shape = input_args[0]->GetShape();
+  auto input_shape = input_args[kIndex0]->GetShape();
   auto input_shape_vec = input_shape->GetShapeVector();
-  auto shape_shape = input_args[1]->GetShape();
+  auto shape_shape = input_args[kIndex1]->GetShape();
   if (shape_shape->isa<abstract::DynamicSequenceShape>()) {
     return std::make_shared<abstract::TensorShape>(ShapeVector({abstract::Shape::kShapeRankAny}));
   }
 
-  auto shape_array_opt = GetArrayValue<int64_t>(input_args[1]);
+  auto shape_array_opt = GetArrayValue<int64_t>(input_args[kIndex1]);
   if (!shape_array_opt.has_value()) {
     if (shape_shape->isa<abstract::SequenceShape>()) {
       auto seq_shape = shape_shape->cast<abstract::SequenceShapePtr>();
@@ -108,8 +106,7 @@ BaseShapePtr ReshapeFuncImpl::InferShape(const PrimitivePtr &primitive,
 
 TypePtr ReshapeFuncImpl::InferType(const PrimitivePtr &primitive,
                                    const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(input_args[0]->GetType());
-  return input_args[0]->GetType()->Clone();
+  return input_args[kIndex0]->GetType();
 }
 }  // namespace ops
 }  // namespace mindspore

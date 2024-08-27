@@ -24,8 +24,6 @@ namespace mindspore {
 namespace ops {
 BaseShapePtr RFFTGradFuncImpl::InferShape(const PrimitivePtr &primitive,
                                           const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(input_args[kIndex1]);
-  MS_EXCEPTION_IF_NULL(input_args[kIndex1]->GetType());
   return input_args[kIndex1]->GetShape()->Clone();
 }
 

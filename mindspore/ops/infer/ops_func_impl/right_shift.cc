@@ -24,19 +24,14 @@ namespace mindspore {
 namespace ops {
 BaseShapePtr RightShiftFuncImpl::InferShape(const PrimitivePtr &primitive,
                                             const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
   return BroadCastInferShape(primitive->name(), input_args);
 }
 
 TypePtr RightShiftFuncImpl::InferType(const PrimitivePtr &primitive,
                                       const std::vector<AbstractBasePtr> &input_args) const {
   auto prim_name = primitive->name();
-  MS_EXCEPTION_IF_NULL(input_args[kIndex0]);
   auto input_x_type = input_args[kIndex0]->GetType();
-  MS_EXCEPTION_IF_NULL(input_x_type);
-  MS_EXCEPTION_IF_NULL(input_args[kIndex1]);
   auto input_y_type = input_args[kIndex1]->GetType();
-  MS_EXCEPTION_IF_NULL(input_y_type);
   if (*input_x_type != *input_y_type) {
     MS_EXCEPTION(TypeError) << "For '" << prim_name
                             << "', the dtype of two args should be same, but the first arg dtype "
@@ -45,7 +40,7 @@ TypePtr RightShiftFuncImpl::InferType(const PrimitivePtr &primitive,
   }
   const std::set<TypePtr> valid_types = {kInt8, kInt16, kInt32, kInt64, kUInt8, kUInt16, kUInt32, kUInt64};
   (void)CheckAndConvertUtils::CheckTensorTypeValid("x", input_x_type, valid_types, prim_name);
-  return input_x_type->Clone();
+  return input_x_type;
 }
 }  // namespace ops
 }  // namespace mindspore

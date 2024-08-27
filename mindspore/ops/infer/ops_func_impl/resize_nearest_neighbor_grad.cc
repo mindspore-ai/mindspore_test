@@ -68,7 +68,7 @@ BaseShapePtr ResizeNearestNeighborGradFuncImpl::InferShape(const PrimitivePtr &p
 
 TypePtr ResizeNearestNeighborGradFuncImpl::InferType(const PrimitivePtr &primitive,
                                                      const std::vector<AbstractBasePtr> &input_args) const {
-  return input_args[kInputIndex0]->GetType()->Clone();
+  return input_args[kInputIndex0]->GetType();
 }
 }  // namespace ops
 }  // namespace mindspore
