@@ -23,6 +23,11 @@
 #include "runtime/collective/collective_communication_lib.h"
 
 namespace mindspore {
+constexpr int kDecimalBase = 10;
+constexpr int kDefaultRankSize = 1;
+constexpr int kDefaultRankId = 0;
+constexpr int kDefaultLocalRankSize = 8;
+constexpr int kDefaultLocalRankId = 0;
 namespace device {
 ///
 /// \brief DummyCommunicationGroup to maintain group device relationship.

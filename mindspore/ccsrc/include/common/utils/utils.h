@@ -481,6 +481,7 @@ constexpr auto kHCCLWorldGroup = "hccl_world_group";
 constexpr auto kNCCLWorldGroup = "nccl_world_group";
 constexpr auto kEnvRankSize = "RANK_SIZE";
 constexpr auto kEnvRankId = "RANK_ID";
+constexpr auto kEnvDeviceId = "DEVICE_ID";
 constexpr auto kEnvLocalRankSize = "LOCAL_RANK_SIZE";
 constexpr auto kEnvLocalRankId = "LOCAL_RANK_ID";
 
