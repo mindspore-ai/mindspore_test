@@ -163,7 +163,7 @@ void ProfilingFrameworkData::RecordHostProfile(std::shared_ptr<ProfilerData> dat
   }
   std::vector<std::string> stack_vec;
   stack_vec.push_back(data->py_stack_);
-  std::string op_name = data->op_name_;
+  std::string op_name = data->op_full_name_;
   if (data->is_graph_data_) {
     op_name = data->module_graph_ + "::" + data->event_graph_ + "::" + data->op_name_;
   } else if (data->is_stage_) {
