@@ -541,7 +541,7 @@ int64_t GetPosInSpDevice(std::shared_ptr<FlashAttentionScoreInfo> flash_score_in
   int64_t pos = -1;
   for (size_t rank_list_idx = 0; rank_list_idx < rankList.size(); ++rank_list_idx) {
     if (rank_id == rankList[rank_list_idx]) {
-      pos = rank_list_idx;
+      pos = SizeToLong(rank_list_idx);
     }
   }
   return pos;
