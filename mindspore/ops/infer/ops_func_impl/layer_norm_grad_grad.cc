@@ -48,7 +48,6 @@ constexpr int64_t kInputNum = 10;
 
 TypePtr LayerNormGradGradFuncImpl::InferType(const PrimitivePtr &primitive,
                                              const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
   auto op_name = primitive->name();
   (void)CheckAndConvertUtils::CheckInteger("input numbers", SizeToLong(input_args.size()), kEqual,
                                            SizeToLong(kInputNum), op_name);
