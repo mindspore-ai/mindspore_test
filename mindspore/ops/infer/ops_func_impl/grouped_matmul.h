@@ -38,6 +38,13 @@ class OPS_API GroupedMatmulFuncImpl : public OpFuncImpl {
   void CheckSplitItemAndGroupType(const std::string &op_name, const int64_t group_type, const int64_t split_item) const;
   void CheckInputType(const std::vector<AbstractBasePtr> &input_args, const std::string &op_name,
                       const std::string &input_name, const size_t input_idx, const std::set<TypePtr> &check_list) const;
+  void CheckXWShapeForSingle(const std::string &op_name, const std::vector<int64_t> &x_shape,
+                             const std::vector<int64_t> &w_shape) const;
+  void CheckXWShapeForMulti(const std::string &op_name, const std::vector<int64_t> &x_shape,
+                            const std::vector<int64_t> &w_shape, const size_t idx) const;
+  int64_t GetInt64Attr(const std::vector<AbstractBasePtr> &input_args, const size_t idx, const std::string &op_name,
+                       const string &attr_name) const;
+  std::vector<std::vector<int64_t>> GetTupleShape(abstract::AbstractTuplePtr tuple_ptr) const;
 };
 }  // namespace ops
 }  // namespace mindspore

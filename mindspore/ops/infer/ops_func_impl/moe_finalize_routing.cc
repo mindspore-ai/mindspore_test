@@ -47,6 +47,18 @@ BaseShapePtr MoeFinalizeRoutingFuncImpl::InferShape(const PrimitivePtr &primitiv
   auto rowIdx_shape_map = CheckAndConvertUtils::ConvertShapePtrToShapeMap(input_args[krowIdx]->GetShape());
   auto expertIdx_shape_map = CheckAndConvertUtils::ConvertShapePtrToShapeMap(input_args[kexpertIdx]->GetShape());
 
+  auto x_shp = x_shape_map[kShape];
+  auto skip_shp = skip_shape_map[kShape];
+  auto bias_shp = bias_shape_map[kShape];
+  auto scales_shp = scales_shape_map[kShape];
+  auto rowIdx_shp = rowIdx_shape_map[kShape];
+  auto expert_shp = expertIdx_shape_map[kShape];
+
+  if (IsDynamicRank(x_shp) || IsDynamicRank(skip_shp) || IsDynamicRank(bias_shp) || IsDynamicRank(scales_shp) ||
+      IsDynamicRank(rowIdx_shp) || IsDynamicRank(expert_shp)) {
+    return std::make_shared<abstract::Shape>(ShapeVector({abstract::Shape::kShapeRankAny}));
+  }
+
   if (x_shape_map.empty() || x_shape_map[kShape].size() != kFzrMatSize) {
     MS_LOG(EXCEPTION) << "For '" << prim_name
                       << "', input 'X' must be a 2D Tensor type, but got:" << input_args[kExpandedX]->ToString();
@@ -71,18 +83,6 @@ BaseShapePtr MoeFinalizeRoutingFuncImpl::InferShape(const PrimitivePtr &primitiv
   if (expertIdx_shape_map.empty() || expertIdx_shape_map[kShape].size() != kFzrMatSize) {
     MS_LOG(EXCEPTION) << "For '" << prim_name << "', input 'expanded_expert_idx' must be a 2D Tensor type, but got:"
                       << input_args[kexpertIdx]->ToString();
-  }
-
-  auto x_shp = x_shape_map[kShape];
-  auto skip_shp = skip_shape_map[kShape];
-  auto bias_shp = bias_shape_map[kShape];
-  auto scales_shp = scales_shape_map[kShape];
-  auto rowIdx_shp = rowIdx_shape_map[kShape];
-  auto expert_shp = expertIdx_shape_map[kShape];
-
-  if (IsDynamicRank(x_shp) || IsDynamicRank(skip_shp) || IsDynamicRank(bias_shp) || IsDynamicRank(scales_shp) ||
-      IsDynamicRank(rowIdx_shp) || IsDynamicRank(expert_shp)) {
-    return std::make_shared<abstract::Shape>(ShapeVector({abstract::Shape::kShapeRankAny}));
   }
 
   int64_t token_num = expert_shp[0];

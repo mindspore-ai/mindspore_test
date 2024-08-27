@@ -81,14 +81,22 @@ class GroupedMatmulNet(Cell):
         return out
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-@pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+@pytest.mark.parametrize('mode', ['GE', 'KBK', 'pynative'])
 def test_grouped_matmul_x2d_w2d_splititem0_grouptypeneg1_emptytensor_case0(mode):
     """
     Feature: Test grouped_matmul
     Description: semi_auto_parallel
     Expectation: shape is as expected.
     """
-    context.set_context(device_target="Ascend", mode=mode)
+    context.set_context(device_target="Ascend")
+    if mode == 'KBK':
+        ms.set_context(mode=ms.GRAPH_MODE)
+        ms.set_context(jit_level='O0')
+    elif mode == 'GE':
+        ms.context.set_context(mode=ms.GRAPH_MODE)
+        ms.set_context(jit_level='O2')
+    elif mode == 'pynative':
+        ms.set_context(mode=ms.PYNATIVE_MODE)
     gmm_net = GroupedMatmulNet(split_item=0, group_type=-1)
 
     # (16, 256) * (256, 128)   (127, 88) * (88, 64)
@@ -128,14 +136,22 @@ def test_grouped_matmul_x2d_w2d_splititem0_grouptypeneg1_emptytensor_case0(mode)
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-@pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+@pytest.mark.parametrize('mode', ['GE', 'KBK', 'pynative'])
 def test_grouped_matmul_x2d_w2d_splititem0_grouptypeneg1_none_case1(mode):
     """
     Feature: Test grouped_matmul
     Description: semi_auto_parallel
     Expectation: shape is as expected.
     """
-    context.set_context(device_target="Ascend", mode=mode)
+    context.set_context(device_target="Ascend")
+    if mode == 'KBK':
+        ms.set_context(mode=ms.GRAPH_MODE)
+        ms.set_context(jit_level='O0')
+    elif mode == 'GE':
+        ms.context.set_context(mode=ms.GRAPH_MODE)
+        ms.set_context(jit_level='O2')
+    elif mode == 'pynative':
+        ms.set_context(mode=ms.PYNATIVE_MODE)
     gmm_net = GroupedMatmulNet(split_item=0, group_type=-1)
 
     # (16, 256) * (256, 128)   (127, 88) * (88, 64)
@@ -169,14 +185,22 @@ def test_grouped_matmul_x2d_w2d_splititem0_grouptypeneg1_none_case1(mode):
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-@pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+@pytest.mark.parametrize('mode', ['GE', 'KBK', 'pynative'])
 def test_grouped_matmul_x6d_w2d_splititem0_grouptypeneg1_none_case2(mode):
     """
     Feature: Test grouped_matmul
     Description: semi_auto_parallel
     Expectation: shape is as expected.
     """
-    context.set_context(device_target="Ascend", mode=mode)
+    context.set_context(device_target="Ascend")
+    if mode == 'KBK':
+        ms.set_context(mode=ms.GRAPH_MODE)
+        ms.set_context(jit_level='O0')
+    elif mode == 'GE':
+        ms.context.set_context(mode=ms.GRAPH_MODE)
+        ms.set_context(jit_level='O2')
+    elif mode == 'pynative':
+        ms.set_context(mode=ms.PYNATIVE_MODE)
     gmm_net = GroupedMatmulNet(split_item=0, group_type=-1)
 
     # (16, 256) * (256, 128)   (127, 88) * (88, 64)
@@ -210,14 +234,22 @@ def test_grouped_matmul_x6d_w2d_splititem0_grouptypeneg1_none_case2(mode):
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-@pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+@pytest.mark.parametrize('mode', ['GE', 'KBK', 'pynative'])
 def test_grouped_matmul_x2d_w2d_b1d_splititem0_grouptypeneg1_none_case3(mode):
     """
     Feature: Test grouped_matmul
     Description: semi_auto_parallel
     Expectation: shape is as expected.
     """
-    context.set_context(device_target="Ascend", mode=mode)
+    context.set_context(device_target="Ascend")
+    if mode == 'KBK':
+        ms.set_context(mode=ms.GRAPH_MODE)
+        ms.set_context(jit_level='O0')
+    elif mode == 'GE':
+        ms.context.set_context(mode=ms.GRAPH_MODE)
+        ms.set_context(jit_level='O2')
+    elif mode == 'pynative':
+        ms.set_context(mode=ms.PYNATIVE_MODE)
     gmm_net = GroupedMatmulNet(split_item=0, group_type=-1)
 
     # (16, 256) * (256, 128)   (127, 88) * (88, 64)
@@ -254,14 +286,22 @@ def test_grouped_matmul_x2d_w2d_b1d_splititem0_grouptypeneg1_none_case3(mode):
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-@pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+@pytest.mark.parametrize('mode', ['GE', 'KBK', 'pynative'])
 def test_grouped_matmul_x2d_w3d_splititem3_grouptype0_none_case4(mode):
     """
     Feature: Test grouped_matmul
     Description: semi_auto_parallel
     Expectation: shape is as expected.
     """
-    context.set_context(device_target="Ascend", mode=mode)
+    context.set_context(device_target="Ascend")
+    if mode == 'KBK':
+        ms.set_context(mode=ms.GRAPH_MODE)
+        ms.set_context(jit_level='O0')
+    elif mode == 'GE':
+        ms.context.set_context(mode=ms.GRAPH_MODE)
+        ms.set_context(jit_level='O2')
+    elif mode == 'pynative':
+        ms.set_context(mode=ms.PYNATIVE_MODE)
     gmm_net = GroupedMatmulNet(split_item=3, group_type=0)
 
     M0 = 32
@@ -291,14 +331,22 @@ def test_grouped_matmul_x2d_w3d_splititem3_grouptype0_none_case4(mode):
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-@pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+@pytest.mark.parametrize('mode', ['GE', 'KBK', 'pynative'])
 def test_grouped_matmul_x2d_w3d_b2d_splititem3_grouptype0_none_case5(mode):
     """
     Feature: Test grouped_matmul
     Description: semi_auto_parallel
     Expectation: shape is as expected.
     """
-    context.set_context(device_target="Ascend", mode=mode)
+    context.set_context(device_target="Ascend")
+    if mode == 'KBK':
+        ms.set_context(mode=ms.GRAPH_MODE)
+        ms.set_context(jit_level='O0')
+    elif mode == 'GE':
+        ms.context.set_context(mode=ms.GRAPH_MODE)
+        ms.set_context(jit_level='O2')
+    elif mode == 'pynative':
+        ms.set_context(mode=ms.PYNATIVE_MODE)
     gmm_net = GroupedMatmulNet(split_item=3, group_type=0)
 
     M0 = 32
@@ -332,14 +380,22 @@ def test_grouped_matmul_x2d_w3d_b2d_splititem3_grouptype0_none_case5(mode):
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-@pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+@pytest.mark.parametrize('mode', ['GE', 'KBK', 'pynative'])
 def test_grouped_matmul_x2d_w2d_splititem0_grouptypeneg1_none_a16w8_case6(mode):
     """
     Feature: Test grouped_matmul
     Description: semi_auto_parallel
     Expectation: shape is as expected.
     """
-    context.set_context(device_target="Ascend", mode=mode)
+    context.set_context(device_target="Ascend")
+    if mode == 'KBK':
+        ms.set_context(mode=ms.GRAPH_MODE)
+        ms.set_context(jit_level='O0')
+    elif mode == 'GE':
+        ms.context.set_context(mode=ms.GRAPH_MODE)
+        ms.set_context(jit_level='O2')
+    elif mode == 'pynative':
+        ms.set_context(mode=ms.PYNATIVE_MODE)
     gmm_net = GroupedMatmulNet(split_item=0, group_type=-1)
 
     # (16, 256) * (256, 128)   (127, 88) * (88, 64)
