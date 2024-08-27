@@ -2456,6 +2456,19 @@ bool CheckBuildSubGraph(const py::object &ret) {
   }
   return !CheckConstPyObject(ret.ptr());
 }
+
+std::string GetModuleName(const py::object &object) {
+  PyObject *mod = PyObject_GetAttrString(object.ptr(), "__module__");
+  const char *module_name = "";
+  if (mod == nullptr) {
+    PyErr_Clear();
+  } else if (PyModule_Check(mod)) {
+    module_name = PyModule_GetName(mod);
+  } else if (PyUnicode_Check(mod)) {
+    module_name = PyUnicode_AsUTF8(mod);
+  }
+  return std::string(module_name);
+}
 }  // namespace
 
 AbstractWrapperPtrList MindGraphBuilder::HandleInputArgs(const std::vector<ValueNode *> args) {
@@ -4372,6 +4385,17 @@ std::pair<bool, py::object> MindGraphBuilder::ConvertBuiltInMethodOrFunction(con
     new_callable_info = func;
     should_parse_in_ast = should_parse_in_ast || PyMethod_Check(func.ptr()) || PyFunction_Check(func.ptr());
   }
+  if (!should_parse_in_ast && (PyMethod_Check(new_callable_info.ptr()) || PyFunction_Check(new_callable_info.ptr()))) {
+    const auto &module_name = GetModuleName(new_callable_info);
+    bool match = std::any_of(kAstFunctionList.begin(), kAstFunctionList.end(), [&module_name](const std::string &name) {
+      return module_name.substr(0, name.size()) == name;
+    });
+    if (match) {
+      MS_LOG(INFO) << "Found object " << py::str(new_callable_info) << " with module name " << module_name
+                   << "should be parsed in ast.";
+    }
+    should_parse_in_ast = match;
+  }
   return std::pair<bool, py::object>(should_parse_in_ast, new_callable_info);
 }
 
@@ -4414,6 +4438,10 @@ py::object MindGraphBuilder::ResolveCallable(CallNode *call_node, StopTraceReaso
     auto bind_arguments_result = bind_helper.results();
     const auto &bind_args = bind_arguments_result.args_;
     const auto &bind_vargs = bind_arguments_result.va_;
+    const auto &bind_kwargs = bind_arguments_result.kw_va_;
+    if (!bind_kwargs.empty()) {
+      MS_LOG(WARNING) << "Encounter kwargs scene, builder can not handle yet.";
+    }
     // TODO(LiangZhibo): need to handle kwargs scene.
     (void)std::copy(bind_args.begin(), bind_args.end(), std::back_inserter(args));
     (void)std::copy(bind_vargs.begin(), bind_vargs.end(), std::back_inserter(args));
