@@ -145,7 +145,7 @@ AnfNodePtr ConvertBFloat16::CastTensor(const ValueNodePtr &value_node) {
   MS_EXCEPTION_IF_NULL(value_node);
   auto value = value_node->value();
   MS_EXCEPTION_IF_NULL(value);
-  auto tensor = value->cast<tensor::TensorPtr>();
+  auto tensor = value->cast<tensor::BaseTensorPtr>();
   MS_EXCEPTION_IF_NULL(tensor);
   auto *src_data = reinterpret_cast<bfloat16 *>(tensor->data_c());
   MS_EXCEPTION_IF_NULL(src_data);

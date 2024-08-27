@@ -99,15 +99,15 @@ CNodePtr InsertCastForGraphKernel(const FuncGraphPtr &func_graph, const CNodePtr
     auto ori_dtype = AnfAlgo::GetOutputDeviceDataType(in_node, in_index);
     const std::string dev_fmt = AnfAlgo::GetInputFormat(cnode, input_index);
     if (cur_input->isa<ValueNode>()) {
-      ori_dtype = cur_input->cast<ValueNodePtr>()->value()->cast<tensor::TensorPtr>()->data_type();
+      ori_dtype = cur_input->cast<ValueNodePtr>()->value()->cast<tensor::BaseTensorPtr>()->data_type();
     }
     auto new_dtype = TypeId::kNumberTypeFloat16;
     if (ori_dtype == TypeId::kNumberTypeFloat32) {
       if (cur_input->isa<ValueNode>()) {
         auto valuePtr = cur_input->cast<ValueNodePtr>();
         auto itensor = std::make_shared<tensor::Tensor>(
-          TypeId::kNumberTypeFloat16, valuePtr->value()->cast<tensor::TensorPtr>()->shape(),
-          valuePtr->value()->cast<tensor::TensorPtr>()->data_c(), TypeId::kNumberTypeFloat32);
+          TypeId::kNumberTypeFloat16, valuePtr->value()->cast<tensor::BaseTensorPtr>()->shape(),
+          valuePtr->value()->cast<tensor::BaseTensorPtr>()->data_c(), TypeId::kNumberTypeFloat32);
         auto value_node = std::make_shared<ValueNode>(itensor);
         value_node->set_abstract(itensor->ToAbstract());
         (void)mng->Replace(cur_input, value_node);

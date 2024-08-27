@@ -31,7 +31,8 @@ bool BindValueToGraph::Run(const FuncGraphPtr &func_graph) {
   }
   for (auto node : todos) {
     auto value = GetValuePtr(node);
-    if (value == nullptr || (!value->isa<tensor::Tensor>() && !value->isa<Scalar>() && !value->isa<ValueSequence>())) {
+    if (value == nullptr ||
+        (!value->isa<tensor::BaseTensor>() && !value->isa<Scalar>() && !value->isa<ValueSequence>())) {
       continue;
     }
     if (auto vptr = node->cast<ValueNodePtr>(); vptr != nullptr && value_nodes.count(vptr) == 0) {

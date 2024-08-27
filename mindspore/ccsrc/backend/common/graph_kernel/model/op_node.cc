@@ -79,17 +79,17 @@ TypePtr InferTypeWithAbstract(const PrimitivePtr &prim, const AbstractBasePtrLis
   return nullptr;
 }
 
-tensor::TensorPtr InferValueWithAbstract(const PrimitivePtr &prim, const AbstractBasePtrList &abs_list) {
+tensor::BaseTensorPtr InferValueWithAbstract(const PrimitivePtr &prim, const AbstractBasePtrList &abs_list) {
   auto value_optional = abstract::InferValueByFuncImpl(prim, abs_list);
   if (value_optional.has_value()) {
-    return std::static_pointer_cast<tensor::Tensor>(value_optional.value());
+    return std::static_pointer_cast<tensor::BaseTensor>(value_optional.value());
   }
 
   auto found = abstract::GetBackendPrimitiveInferImpl(prim);
   if (found.has_value()) {
     auto infer = found.value();
     if (infer.IsImplInferValue()) {
-      return std::static_pointer_cast<tensor::Tensor>(infer.InferValue(prim, abs_list));
+      return std::static_pointer_cast<tensor::BaseTensor>(infer.InferValue(prim, abs_list));
     }
   }
   return nullptr;
@@ -285,7 +285,7 @@ NodePtr PrimOp::InferValue(const NodePtrList &inputs, const DAttrs &attrs) {
     }
   }
   TypeId output_type = this->type;
-  tensor::TensorPtr res = nullptr;
+  tensor::BaseTensorPtr res = nullptr;
   switch (static_cast<int>(output_type)) {
     case TypeId::kNumberTypeUInt8: {
       res = CalcByOperator<uint8_t>(inputs, attrs);
@@ -534,8 +534,8 @@ std::vector<DShape> ConstantOfShapeOp::InferShape(const NodePtrList &inputs, con
   if (value->isa<ValueSequence>()) {
     res = GetValue<std::vector<int64_t>>(value);
     return {res};
-  } else if (value->isa<tensor::Tensor>()) {
-    auto tvalue = value->cast<tensor::TensorPtr>();
+  } else if (value->isa<tensor::BaseTensor>()) {
+    auto tvalue = value->cast<tensor::BaseTensorPtr>();
     if (tvalue->data_type_c() == static_cast<int>(TypeId::kNumberTypeInt32)) {
       int *data = static_cast<int *>(tvalue->data_c());
       for (size_t elem = 0; elem < tvalue->DataSize(); elem++) {

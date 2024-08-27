@@ -64,7 +64,7 @@ class LiteGraph::GraphBuilderBase {
   }
 
   // Create a const value node
-  NodePtr Value(const tensor::TensorPtr &data) const { return std::make_shared<ConstTensorNode>(data); }
+  NodePtr Value(const tensor::BaseTensorPtr &data) const { return std::make_shared<ConstTensorNode>(data); }
 
   void SetOutputs(const NodePtrList &nodes) const { graph_->output_->SetInputs(nodes); }
 
