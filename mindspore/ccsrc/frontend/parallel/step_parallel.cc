@@ -188,6 +188,7 @@ void ForwardCommunicationForMultiOut(OperatorVector forward_op, const CNodePtr &
 }
 
 void ForwardCommunication(OperatorVector forward_op, const CNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
   if (dyn_cast<abstract::SequenceShape>(node->Shape()) != nullptr) {
     // For Ops like GMM has multiple output
     MS_LOG(INFO) << "The input node " << node->DebugString()
@@ -195,7 +196,6 @@ void ForwardCommunication(OperatorVector forward_op, const CNodePtr &node) {
     ForwardCommunicationForMultiOut(forward_op, node);
     return;
   }
-  MS_EXCEPTION_IF_NULL(node);
   // step1:get graph manager distribute_operator
   FuncGraphPtr func_graph = node->func_graph();
   MS_EXCEPTION_IF_NULL(func_graph);
@@ -358,10 +358,10 @@ TensorLayout GetTensorInLayout(const AnfNodePtr &pre_node, std::vector<int> get_
   auto pre_cnode = pre_node->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(pre_cnode);
   auto distribute_operator = GetDistributeOperator(pre_cnode);
+  MS_EXCEPTION_IF_NULL(distribute_operator);
   if (!distribute_operator->outputs_tensor_info_new().empty()) {
     return GetTensorInLayoutForNewShape(pre_node, get_item_index);
   }
-  MS_EXCEPTION_IF_NULL(distribute_operator);
   if (get_item_index.size() != 1) {
     // If does not have outputes_tensor_info_new, the outputs only have one tensor info
     // thus the get item index must only have one value
