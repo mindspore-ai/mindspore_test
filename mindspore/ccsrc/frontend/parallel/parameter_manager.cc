@@ -1617,6 +1617,7 @@ static std::shared_ptr<TensorLayout> FindParameterNextLayout(const AnfNodePtr &n
         continue;
       }
       StrategyPtr strategy = ExtractStrategy(attrs_temp[IN_STRATEGY]);
+      MS_EXCEPTION_IF_NULL(strategy);
       Strategies stra = strategy->GetInputDim();
       Dimensions input_strategy = stra.at(0);
 

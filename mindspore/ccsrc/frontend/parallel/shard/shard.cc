@@ -386,10 +386,10 @@ static bool SetStrategyForShard(const FuncGraphPtr &root, const std::vector<AnfN
       auto in_strategy = cnode->input(kShardInStrategyIndex);
       ScopeGuard scope_guard(vnode->scope());
       auto func_graph = GetValueNode<FuncGraphPtr>(vnode);
+      MS_EXCEPTION_IF_NULL(func_graph);
       if (func_graph->has_flag(kSharded)) {
         continue;
       }
-      MS_EXCEPTION_IF_NULL(func_graph);
       if (IsEmbedShardNode(func_graph) && execution_mode == kPynativeMode) {
         MS_LOG(EXCEPTION) << "Nested use of shard (e.g shard(shard(...), ...) is not supported in "
                           << "PyNative mode currently, | FuncGraph: " << func_graph->ToString();

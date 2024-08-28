@@ -785,10 +785,10 @@ static void CreateEdgeAccrossMakeList(const CNodePtr &cnode, const PrimitivePtr 
                                       const OperatorInfoPtr &node_op_info, CNodePtr *prev_cnode,
                                       ValueNodePtr *prev_prim_anf_node, PrimitivePtr *prev_prim, size_t *edge_count) {
   MS_LOG(INFO) << "Creating edges across the 'make_list' operator.";
+  MS_EXCEPTION_IF_NULL(prev_cnode);
   const auto &sub_inputs = (*prev_cnode)->inputs();
   for (size_t j = 1; j < sub_inputs.size(); ++j) {
     *prev_cnode = sub_inputs[j]->cast<CNodePtr>();
-    MS_EXCEPTION_IF_NULL(prev_cnode);
     bool bool_result_list = (*prev_cnode == nullptr) || !IsValueNode<Primitive>((*prev_cnode)->input(0)) ||
                             !IsAutoParallelCareNode(*prev_cnode);
     if (bool_result_list) {
