@@ -26,6 +26,7 @@
 #include <unordered_set>
 #include <string>
 #include <set>
+#include <queue>
 
 #include "ir/anf.h"
 #include "ir/manager.h"
@@ -411,6 +412,10 @@ void GraphOutputProcess(const KernelGraphPtr &, std::unordered_map<CNodePtr, Gpt
 void RefNodeProcess(const KernelGraphPtr &, std::unordered_map<CNodePtr, GptoTaskPtr> *);
 
 // Scheduling main functions
+void PrintBestSolutionStats(const SchedulingOutput &, const std::vector<GptoTaskPtr> &,
+                            const std::unordered_map<GptoTaskType, int32_t> &, const std::string &);
+void UpdateBestSolution(SchedulingOutput *, const SchedulingOutput &, const std::vector<GptoTaskPtr> &, std::string *,
+                        std::unordered_map<GptoTaskPtr, Time> *, std::unordered_map<GptoTaskPtr, Time> *, size_t);
 SchedulingOutput Process(const SchedulingInput &);
 SchedulingInput ExtractSchedulingInput(const KernelGraphPtr &, std::unordered_map<CNodePtr, GptoTaskPtr> *);
 SchedulingOutput ProcessCore(const std::vector<GptoTaskPtr> &, const std::unordered_map<GptoTaskType, int32_t> &,
@@ -433,6 +438,8 @@ void InsertEdges(const KernelGraphPtr &, std::unordered_map<CNodePtr, GptoTaskPt
 void InitializeProcessingElement(const std::unordered_map<GptoTaskType, int32_t> &, size_t *,
                                  std::unordered_map<GptoTaskType, const std::set<ProcessingElement, SortByLoad>> *,
                                  std::unordered_map<GptoTaskType, const std::vector<ProcessingElement>> *, bool);
+void PushTasksToVisit(std::queue<GptoTaskPtr> *, std::unordered_map<size_t, size_t> *, const GptoTaskPtr &, GptoTaskPtr,
+                      size_t);
 void InitializeTaskInlineCondition(const CNodePtr &, GptoTaskPtr *,
                                    std::unordered_map<GptoTaskPtr, std::pair<size_t, size_t>> *,
                                    std::unordered_map<GptoTaskPtr, std::pair<size_t, size_t>> *);
@@ -451,6 +458,9 @@ void ComputeInitialMemoryImpact(const std::vector<GptoTaskPtr> &);
 [[maybe_unused]] void ComputeAncestorsDescendants(
   const std::vector<GptoTaskPtr> &,
   std::vector<mindspore::somas::DynamicBitSet> *);  // only needed for memory lower bound
+Memory CalculateTaskLowerBound(const GptoTaskPtr &, const std::set<GptoTensorPtr, GptoTensorIdSort> &,
+                               const std::vector<mindspore::somas::DynamicBitSet> &);
+
 [[maybe_unused]] Memory MemoryLowerBound(const std::vector<GptoTaskPtr> &,
                                          const std::vector<mindspore::somas::DynamicBitSet> &,
                                          const std::set<GptoTensorPtr, GptoTensorIdSort> &);
