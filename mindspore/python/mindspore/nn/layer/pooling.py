@@ -1166,12 +1166,12 @@ class AvgPool2d(_PoolNd):
                  data_format="NCHW"):
         """Initialize AvgPool2d."""
         super(AvgPool2d, self).__init__(kernel_size, stride, pad_mode, data_format)
-        self.ascend_910bc_target = (MSContext.get_instance().get_ascend_soc_version() in ['ascend910b', 'ascend910c'])
+        self.ascend_910b_target = (MSContext.get_instance().get_ascend_soc_version() in ['ascend910b', 'ascend910_93'])
         if pad_mode.upper() == 'PAD' or padding != 0 or ceil_mode or not count_include_pad \
                 or divisor_override is not None:
-            if self.ascend_910bc_target:
-                raise ValueError(f"For '{self.cls_name}, the pad_mod 'PAD' is not support in 910B now, "
-                                 f"it will be supported in the future.")
+            if self.ascend_910b_target:
+                raise ValueError(f"For '{self.cls_name}, the pad_mod 'PAD' is not support in Ascend910B or Ascend910_93"
+                                 f" now, it will be supported in the future.")
             if self.format == "NHWC":
                 raise ValueError(f"For '{self.cls_name}, the 'NHWC' format are not support when 'pad_mode' is 'pad' or "
                                  f"'padding' is not 0 or 'ceil_mode' is not False or 'count_include_pad' is not True"
@@ -1836,7 +1836,7 @@ class AdaptiveMaxPool3d(Cell):
 
 class FractionalMaxPool2d(Cell):
     r"""
-    Applies the 2D FractionalMaxPool operatin over input. The output Tensor shape can be determined by either
+    Applies the 2D FractionalMaxPool operation over input. The output Tensor shape can be determined by either
     `output_size` or `output_ratio`, and the step size is determined by `_random_samples`. `output_size` will take
     effect when `output_size` and `output_ratio` are set at the same time.
     And `output_size` and `output_ratio` can not be ``None`` at the same time.
@@ -1937,7 +1937,7 @@ class FractionalMaxPool2d(Cell):
 
 class FractionalMaxPool3d(Cell):
     r"""
-    Applies the 3D FractionalMaxPool operatin over `input`. The output Tensor shape can be determined by either
+    Applies the 3D FractionalMaxPool operation over `input`. The output Tensor shape can be determined by either
     `output_size` or `output_ratio`, and the step size is determined by `_random_samples`. `output_size` will take
     effect when `output_size` and `output_ratio` are set at the same time.
     And `output_size` and `output_ratio` can not be ``None`` at the same time.

@@ -223,7 +223,7 @@ void GeDeviceContext::Initialize() {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   const auto &soc_version = ms_context->ascend_soc_version();
-  if (soc_version == "ascend910b" || soc_version == "ascend910c") {
+  if (soc_version == "ascend910b" || soc_version == "ascend910_93") {
     bool is_sat = (common::GetEnv("MS_ASCEND_CHECK_OVERFLOW_MODE") == "SATURATION_MODE");
     auto mode = (is_sat) ? aclrtFloatOverflowMode::ACL_RT_OVERFLOW_MODE_SATURATION
                          : aclrtFloatOverflowMode::ACL_RT_OVERFLOW_MODE_INFNAN;
@@ -619,12 +619,13 @@ MS_REGISTER_DEVICE(kAscendDevice, GeDeviceContext);
 namespace {
 void SetContextSocVersion(MsContext *ctx) {
   const std::map<std::string, std::string> kAscendSocVersions = {
-    {"Ascend910A", "ascend910"},    {"Ascend910B", "ascend910"},    {"Ascend910PremiumA", "ascend910"},
-    {"Ascend910ProA", "ascend910"}, {"Ascend910ProB", "ascend910"}, {"Ascend910B1", "ascend910b"},
-    {"Ascend910B2", "ascend910b"},  {"Ascend910B2C", "ascend910b"}, {"Ascend910B3", "ascend910b"},
-    {"Ascend910B4", "ascend910b"},  {"Ascend910C1", "ascend910c"},  {"Ascend910C2", "ascend910c"},
-    {"Ascend910C3", "ascend910c"},  {"Ascend910C4", "ascend910c"},  {"Ascend310P", "ascend310p"},
-    {"Ascend310P3", "ascend310p"},  {"Ascend310B4", "ascend310b"},  {"Ascend310B1", "ascend310b"}};
+    {"Ascend910A", "ascend910"},        {"Ascend910B", "ascend910"},        {"Ascend910PremiumA", "ascend910"},
+    {"Ascend910ProA", "ascend910"},     {"Ascend910ProB", "ascend910"},     {"Ascend910B1", "ascend910b"},
+    {"Ascend910B2", "ascend910b"},      {"Ascend910B2C", "ascend910b"},     {"Ascend910B3", "ascend910b"},
+    {"Ascend910B4", "ascend910b"},      {"Ascend910_9391", "ascend910_93"}, {"Ascend910_9392", "ascend910_93"},
+    {"Ascend910_9381", "ascend910_93"}, {"Ascend910_9382", "ascend910_93"}, {"Ascend910_9372", "ascend910_93"},
+    {"Ascend910_9361", "ascend910_93"}, {"Ascend310P", "ascend310p"},       {"Ascend310P3", "ascend310p"},
+    {"Ascend310B4", "ascend310b"},      {"Ascend310B1", "ascend310b"}};
   const char *soc_name_c = CALL_ASCEND_API(aclrtGetSocName);
   if (soc_name_c == nullptr) {
     MS_LOG(ERROR) << "Get soc name failed.";

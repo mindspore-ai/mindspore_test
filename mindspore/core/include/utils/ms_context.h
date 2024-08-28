@@ -78,7 +78,7 @@ const int kOptimizeO0 = 0;
 const int kOptimizeO1 = 1;
 constexpr auto kAscendVersion910 = "ascend910";
 constexpr auto kAscendVersion910b = "ascend910b";
-constexpr auto kAscendVersion910c = "ascend910c";
+constexpr auto kAscendVersion910_93 = "ascend910_93";
 constexpr auto kAscendVersion310p = "ascend310p";
 
 const std::set<std::string> kTargetSet = {kCPUDevice, kGPUDevice, kAscendDevice, kDavinciDevice};

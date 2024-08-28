@@ -258,8 +258,8 @@ Status MapOp::InitResource(const std::vector<std::vector<std::shared_ptr<TensorO
     if (ret != APP_ERR_OK) {
       RETURN_STATUS_UNEXPECTED("Get Soc Version failed.");
     }
-    if (soc_version.find("Ascend910B") == std::string::npos && soc_version.find("Ascend910C") == std::string::npos) {
-      std::string err_msg = "The SoC: " + soc_version + " is not Ascend910B / Ascend910C";
+    if (soc_version.find("Ascend910B") == std::string::npos && soc_version.find("Ascend910_93") == std::string::npos) {
+      std::string err_msg = "The SoC: " + soc_version + " is not Ascend910B / Ascend910_93";
       RETURN_STATUS_UNEXPECTED(err_msg);
     }
 

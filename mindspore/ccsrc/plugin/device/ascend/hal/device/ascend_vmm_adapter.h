@@ -98,8 +98,8 @@ class AscendVmmAdapter {
     }
 
     const auto &soc_version = ctx->ascend_soc_version();
-    if (!(soc_version == "ascend910b" || soc_version == "ascend910c")) {
-      MS_LOG(INFO) << "Soc is neither ascend910b nor ascend910c, vmm is disabled by default.";
+    if (!(soc_version == "ascend910b" || soc_version == "ascend910_93")) {
+      MS_LOG(INFO) << "Soc is neither ascend910b nor ascend910_93, vmm is disabled by default.";
       return false;
     }
 

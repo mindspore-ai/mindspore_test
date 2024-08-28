@@ -72,7 +72,7 @@ class CustomOOC():
                 f"please check your set --op_kernel_path")
 
         if self.args.soc_version != "":
-            support_soc_version = {"ascend310p", "ascend310b", "ascend910", "ascend910b", "ascend910c"}
+            support_soc_version = {"ascend310p", "ascend310b", "ascend910", "ascend910b", "ascend910_93"}
             for item in self.args.soc_version.split(';'):
                 if item not in support_soc_version:
                     raise ValueError(
