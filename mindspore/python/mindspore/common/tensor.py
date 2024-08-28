@@ -2400,6 +2400,38 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         x = x.astype(origin_dtype)
         return x
 
+    def copy_(self, src, non_blocking=False):
+        """
+        Copies the elements from src into self tensor and returns self.
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        Args:
+            src (Tensor): the source tensor to copy from.
+            non_blocking (bool): if True and this copy is between CPU and NPU,
+                the copy may occur asynchronously with respect to the host.
+                For other cases, this argument has no effect.
+
+        Returns:
+            Return self Tensor.
+
+        Supported Platforms:
+            ``Ascend``
+
+        examples:
+            >>> import numpy as np
+            >>> from mindspore import Tensor
+            >>> a = Tensor(np.ones((3,3)).astype("float32"))
+            >>> b = Tensor(np.zeros((3,3)).astype("float32"))
+            >>> a.copy(b)
+            >>> print(a)
+            [[0. 0. 0.]
+            [0. 0. 0.]
+            [0. 0. 0.]]
+        """
+        return tensor_operator_registry.get("copy_")(self, src)
+
     def max(self, axis=None, keepdims=False, *, initial=None, where=True, return_indices=False):
         """
         Return the maximum of a tensor or maximum along an axis.
