@@ -293,8 +293,7 @@ def write_json_file(tbe_ops_info, json_file_path):
     wr_mode = stat.S_IWUSR | stat.S_IRUSR
     with os.fdopen(os.open(json_file_real_path, wr_flag, wr_mode), 'w') as file_path:
         # The owner have all rights，group only have read rights
-        os.chmod(json_file_real_path, stat.S_IWUSR + stat.S_IRGRP
-                 + stat.S_IRUSR)
+        os.chmod(json_file_real_path, 0o640)
         json.dump(tbe_ops_info, file_path, sort_keys=True, indent=4,
                   separators=(',', ':'))
     print("Compile op info cfg successfully.")

@@ -80,6 +80,7 @@ const AnfNodePtr AvgPoolGradForGE::Process(const FuncGraphPtr &graph, const AnfN
 
 CNodePtr AvgPoolGradForGE::CreateTensorShapeNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
                                                  const AnfNodePtr &grad_node) const {
+  MS_EXCEPTION_IF_NULL(grad_node);
   auto prim = std::make_shared<Primitive>(kTensorShapeOpName);
   MS_EXCEPTION_IF_NULL(prim);
   AnfNodePtrList inputs = {NewValueNode(prim), node};

@@ -4,7 +4,7 @@ import os
 
 
 def get_config_opts(file):
-    src_dir = os.path.abspath(os.path.dirname(file))
+    src_dir = os.path.realpath(os.path.dirname(file))
     opts = ''
     with open(file, 'r') as fd:
         config = json.load(fd)
