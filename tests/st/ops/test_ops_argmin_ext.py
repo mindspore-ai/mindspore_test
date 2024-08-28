@@ -15,7 +15,7 @@
 import pytest
 import numpy as np
 import mindspore as ms
-from mindspore import ops, Tensor, mint, jit, JitConfig
+from mindspore import Tensor, mint, jit, JitConfig
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
@@ -36,7 +36,7 @@ def argmin_ext_forward_func(x, dim=None, keepdim=False):
 
 @test_utils.run_with_cell
 def argmin_ext_backward_func(x, dim=None, keepdim=False):
-    return ops.grad(argmin_ext_forward_func)(x, dim, keepdim)
+    return ms.grad(argmin_ext_forward_func)(x, dim, keepdim)
 
 def GenInputData(np_data_type, shape=(3, 4, 5)):
     """GenInputData"""
@@ -47,8 +47,7 @@ def GenInputData(np_data_type, shape=(3, 4, 5)):
     return Tensor(data)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_ascend910b'], level_mark='level0',
-          card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK'])
 def test_ops_argmin_ext(mode):
     """

@@ -37,8 +37,8 @@ def GenInputData(np_data_type, shape=(3, 4, 5)):
     data = np.arange(size).reshape(*shape).astype(np_data_type)
     return Tensor(data)
 
-@arg_mark(plat_marks=['platform_ascend910b', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'],
-          level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
+          card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_greater_equal_op(mode):
     """
@@ -54,8 +54,8 @@ def test_greater_equal_op(mode):
     assert np.allclose(output.asnumpy(), [False, True])
 
 
-@arg_mark(plat_marks=['platform_ascend910b', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'],
-          level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
+          card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_greater_equal_op_backward(mode):
     """
@@ -67,7 +67,7 @@ def test_greater_equal_op_backward(mode):
     x = Tensor(np.array([1, 2]).astype(np.float32))
     y = Tensor(np.array([2, 1]).astype(np.float32))
     net = GreaterEqualNet()
-    grads = ops.grad(net)(x, y)
+    grads = ms.grad(net)(x, y)
     expect_out = np.array([0., 0., 0.]).astype(np.float32)
     assert np.allclose(grads[0].asnumpy(), expect_out, rtol=1e-4)
 

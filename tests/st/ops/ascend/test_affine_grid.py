@@ -29,7 +29,7 @@ class Net(nn.Cell):
         return ops.affine_grid(theta, out_size, False)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
 def test_affine_grid(mode):
     """
