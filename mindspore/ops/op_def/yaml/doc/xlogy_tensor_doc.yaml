@@ -10,10 +10,10 @@ xlogy:
         Inputs of `input` and `other` comply with the implicit type conversion rules to make the data types consistent.
 
         Inputs:
-            - **input** (Tensor, number.Number, bool) - The first input is a number.Number or a bool or a tensor whose data
+            - **input** (Tensor, numbers.Number, bool) - The first input is a numbers.Number or a bool or a tensor whose data
               type is `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_ or
               `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_.
-            - **other** (Tensor, number.Number, bool) - The second input is a number.Number or a bool or a tensor whose data
+            - **other** (Tensor, numbers.Number, bool) - The second input is a numbers.Number or a bool or a tensor whose data
               type is `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_ or
               `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_.
 
@@ -22,8 +22,8 @@ xlogy:
               and the data type is the one with higher precision or higher digits among the two inputs.
 
         Raises:
-            TypeError: If `input` is not a Tensor.
-            TypeError: If `other` is not a Tensor.
+            TypeError: If `input` is not a Tensor, number or bool.
+            TypeError: If `other` is not a Tensor, number or bool.
             ValueError: If `input` and `other` can not broadcast.
 
         Supported Platforms:
