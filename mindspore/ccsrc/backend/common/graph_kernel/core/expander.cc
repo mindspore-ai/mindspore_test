@@ -114,7 +114,7 @@ FuncGraphPtr DefaultExpander::ExpandToGraph(const CNodePtr &node) {
   if (!ib_registry.IsOutputNumInconsistent(name)) {
     for (size_t i = 0; i < outputs.size(); i++) {
       if (!IsOutputInfoIdentical(outputs, node, i, i, cb)) {
-        MS_LOG(INFO) << "Expanding node: " << node->fullname_with_scope() << " failed, because output " << i
+        MS_LOG(INFO) << "Expanding node: " << node->fullname_with_scope() << " failed, because subgraph output " << i
                      << " has a different shape/dtype/format from the corresponding output of the original cnode.";
         return nullptr;
       }
@@ -122,9 +122,10 @@ FuncGraphPtr DefaultExpander::ExpandToGraph(const CNodePtr &node) {
   } else {
     auto real_output_indices = ib_registry.GetOutputNumInconsistentOps().at(name);
     for (size_t i = 0; i < real_output_indices.size(); i++) {
-      if (!IsOutputInfoIdentical(outputs, node, i, real_output_indices[i], cb)) {
-        MS_LOG(INFO) << "Expanding node: " << node->fullname_with_scope() << " failed, because output " << i
-                     << " has a different shape/dtype/format from the corresponding output of the original cnode.";
+      if (!IsOutputInfoIdentical(outputs, node, real_output_indices[i], i, cb)) {
+        MS_LOG(INFO) << "Expanding node: " << node->fullname_with_scope() << " failed, because subgraph output "
+                     << real_output_indices[i] << " has a different shape/dtype/format from the corresponding output "
+                     << i << " of the original cnode.";
         return nullptr;
       }
     }
