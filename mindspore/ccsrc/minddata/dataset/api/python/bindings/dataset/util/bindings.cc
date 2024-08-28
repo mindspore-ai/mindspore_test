@@ -18,6 +18,7 @@
 
 #include "minddata/dataset/api/python/pybind_register.h"
 #include "minddata/dataset/util/shared_mem.h"
+#include "minddata/dataset/util/sig_handler.h"
 #include "minddata/dataset/util/status.h"
 
 namespace mindspore {
@@ -57,5 +58,9 @@ PYBIND_REGISTER(SharedMemory, 0, ([](const py::module *m) {
                     });
                 }));
 #endif
+
+PYBIND_REGISTER(RegisterWorkerHandlers, 0, ([](py::module *m) {
+                  (void)m->def("register_worker_handlers", ([]() { RegisterWorkerHandlers(); }));
+                }));
 }  // namespace dataset
 }  // namespace mindspore

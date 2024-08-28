@@ -3141,7 +3141,10 @@ def _worker_loop(operations, pipe, worker_id):
     """
     Multiprocess worker process loop.
     """
-    # Ensure that the process does not hung when exiting
+    # Initialize C++ side signal handlers
+    cde.register_worker_handlers()
+
+    # Ensure that the process does not hang when exiting
     pipe.res_queue.cancel_join_thread()
 
     def _ignore_sigint():

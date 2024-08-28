@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2020-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,21 +16,14 @@
 #ifndef MINDSPORE_CCSRC_MINDDATA_DATASET_UTIL_SIG_HANDLER_H_
 #define MINDSPORE_CCSRC_MINDDATA_DATASET_UTIL_SIG_HANDLER_H_
 
-#include <limits.h>
-#include <signal.h>
-
-namespace mindspore {
-namespace dataset {
-// Register the custom signal handlers
-#if !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && !defined(ANDROID) && !defined(__APPLE__)
+namespace mindspore::dataset {
+/// \brief Register the custom signal handlers.
 extern void RegisterHandlers();
 
-// A signal handler for SIGINT.  Drives interrupt to watchdog
-extern void IntHandler(int sig_num,          // The signal that was raised
-                       siginfo_t *sig_info,  // The siginfo structure.
-                       void *context);       // context info
-#endif
-}  // namespace dataset
-}  // namespace mindspore
+/// \brief Register signal handlers for main process.
+extern void RegisterMainHandlers();
 
+/// \brief Register signal handlers for worker process.
+extern void RegisterWorkerHandlers();
+}  // namespace mindspore::dataset
 #endif  // MINDSPORE_CCSRC_MINDDATA_DATASET_UTIL_SIG_HANDLER_H_

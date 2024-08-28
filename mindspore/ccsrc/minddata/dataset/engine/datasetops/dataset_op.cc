@@ -28,12 +28,15 @@
 
 #include "minddata/dataset/engine/operator_connector.h"
 #include "minddata/dataset/util/log_adapter.h"
+#include "minddata/dataset/util/sig_handler.h"
 #ifndef ENABLE_ANDROID
 #include "utils/system/crc32c.h"
 #endif
 
 namespace mindspore {
 namespace dataset {
+bool DatasetOp::handler_set = false;
+
 // Constructor
 DatasetOp::DatasetOp(int32_t op_connector_size, std::shared_ptr<SamplerRT> sampler)
     : oc_queue_size_(op_connector_size),
@@ -499,5 +502,15 @@ int64_t DatasetOp::GetTreeRepeatCount() {
   }
 }
 std::vector<int32_t> DatasetOp::GetMPWorkerPIDs() const { return std::vector<int32_t>(); }
+
+Status DatasetOp::Launch() {
+  if (!handler_set) {
+#ifndef ENABLE_ANDROID
+    RegisterMainHandlers();
+#endif
+    handler_set = true;
+  }
+  return Status::OK();
+}
 }  // namespace dataset
 }  // namespace mindspore

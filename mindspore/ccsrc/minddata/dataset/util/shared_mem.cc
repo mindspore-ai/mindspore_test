@@ -16,6 +16,7 @@
 #include "minddata/dataset/util/shared_mem.h"
 
 #if !defined(_WIN32) && !defined(_WIN64)
+#include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #endif
