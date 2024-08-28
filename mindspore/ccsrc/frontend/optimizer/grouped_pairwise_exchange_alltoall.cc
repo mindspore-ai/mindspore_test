@@ -178,7 +178,7 @@ size_t GetConcatDimFromAlltoall(const AnfNodePtr &alltoall) {
 
 CNodePtr NewSplitNode(const AnfNodePtr &input_node, size_t split_dim, size_t split_num) {
   if (split_num == 0) {
-    MS_LOG(INTERNAL_EXCEPTION) << "split_num should not be zero.";
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, input_node) << "split_num should not be zero.";
   }
   MS_EXCEPTION_IF_NULL(input_node);
   std::vector<AnfNodePtr> split_inputs = {NewValueNode(std::make_shared<Primitive>(prim::kPrimSplit->name())),
@@ -200,7 +200,7 @@ CNodePtr NewSplitNode(const AnfNodePtr &input_node, size_t split_dim, size_t spl
 CNodePtr NewSplitNode(const AnfNodePtr &input_node, size_t split_dim, size_t split_num, const ShapeVector &input_shape,
                       const TypeId &input_dtype) {
   if (split_num == 0) {
-    MS_LOG(INTERNAL_EXCEPTION) << "split_num should not be zero.";
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, input_node) << "split_num should not be zero.";
   }
   MS_EXCEPTION_IF_NULL(input_node);
   std::vector<AnfNodePtr> split_inputs = {NewValueNode(std::make_shared<Primitive>(prim::kPrimSplit->name())),
@@ -272,7 +272,8 @@ CNodePtr NewTupleGetItemNode(const AnfNodePtr &input_node, size_t output_index) 
 void MakeSortedSplitGetItemNodes(const AnfNodePtr &input_node, const std::vector<int64_t> &sort_idx,
                                  std::vector<AnfNodePtr> *getitem_nodes) {
   if (AnfUtils::GetOutputTensorNum(input_node) != sort_idx.size()) {
-    MS_LOG(INTERNAL_EXCEPTION) << "The number of MakeTuple inputs is not equal to sort index number";
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, input_node)
+      << "The number of MakeTuple inputs is not equal to sort index number";
   }
 
   for (size_t i = 0; i < sort_idx.size(); i++) {
@@ -376,14 +377,14 @@ int64_t FindNodeIndex(const std::vector<CNodePtr> &node_vector, const CNodePtr &
 size_t FindAlltoallIndex(const std::vector<CNodePtr> &origin_nodes_topological, const CNodePtr &alltoall) {
   int64_t idx = FindNodeIndex(origin_nodes_topological, alltoall);
   if (idx == -1) {
-    MS_LOG(INTERNAL_EXCEPTION) << "Can not find alltoall node in origin_nodes_topological";
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, alltoall) << "Can not find alltoall node in origin_nodes_topological";
   }
   return LongToSize(idx);
 }
 
 ValueNodePtr ScaleShapeValueNode(const AnfNodePtr &old_shape_node, size_t scale_dim, int64_t scale_factor) {
   if (scale_factor == 0) {
-    MS_LOG(INTERNAL_EXCEPTION) << "scale_factor should not be zero.";
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, old_shape_node) << "scale_factor should not be zero.";
   }
   auto shape_value_node = old_shape_node->cast<ValueNodePtr>();
   auto value_ptr = shape_value_node->value();
@@ -510,7 +511,7 @@ CNodePtr CreateReplaceGraph(const FuncGraphManagerPtr &manager, const std::vecto
   size_t back_concat_dim = GetConcatDimFromAlltoall(back_alltoall);
   auto back_input_shape = common::AnfAlgo::GetPrevNodeOutputInferShape(back_alltoall, 0);
   if (split_num == 0) {
-    MS_LOG(INTERNAL_EXCEPTION) << "split_num should not be zero.";
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, split) << "split_num should not be zero.";
   }
   back_input_shape[back_split_dim] /= SizeToLong(split_num);
   auto back_input_dtype = common::AnfAlgo::GetPrevNodeOutputInferDataType(back_alltoall, 0);
@@ -574,7 +575,7 @@ void CreateAndReplaceGraph(const FuncGraphManagerPtr &manager, const std::vector
 }
 
 void CheckReshapeScaleAxis(const std::vector<CNodePtr> &origin_nodes_topological, const CNodePtrPair &alltoall_pair,
-                           GpeaInfo *gpea_info) {
+                           const FuncGraphPtr &func_graph, GpeaInfo *gpea_info) {
   size_t front_alltoall_idx = FindAlltoallIndex(origin_nodes_topological, alltoall_pair.first);
   size_t back_alltoall_idx = FindAlltoallIndex(origin_nodes_topological, alltoall_pair.second);
   size_t reshape_cnode_num = 0;
@@ -625,9 +626,9 @@ void CheckReshapeScaleAxis(const std::vector<CNodePtr> &origin_nodes_topological
       MS_LOG(DEBUG) << "Output shapes: " << output_shape_string;
     }
     MS_LOG(DEBUG) << "Show graph nodes end";
-    MS_LOG(EXCEPTION) << "The size of 'reshape scale axis' is not equal to reshape nodes number in graph. There are "
-                      << reshape_cnode_num
-                      << " reshape nodes to be scaled. Please set correct scale axis for each reshape node";
+    MS_LOG_WITH_NODE(EXCEPTION, func_graph->return_node())
+      << "The size of 'reshape scale axis' is not equal to reshape nodes number in graph. There are "
+      << reshape_cnode_num << " reshape nodes to be scaled. Please set correct scale axis for each reshape node";
   }
 }
 
@@ -696,7 +697,7 @@ void SetGroupedPairwiseExchangeAllToAll(const pipeline::ResourcePtr &resource) {
     return;
   }
 
-  CheckReshapeScaleAxis(origin_nodes_topological, alltoall_pairs[0], &gpea_info);
+  CheckReshapeScaleAxis(origin_nodes_topological, alltoall_pairs[0], func_graph, &gpea_info);
 
   CreateAndReplaceGraph(manager, origin_nodes_topological, alltoall_pairs, &gpea_info);
   MS_LOG(DEBUG) << "CreateAndReplaceGraph done";

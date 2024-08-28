@@ -78,7 +78,7 @@ FuncGraphPtr GetBprop(const PrimitivePtr &prim, const pipeline::ResourceBasePtr 
       fn = GetBpropFunction(prim_name);
     }
   } else {
-    MS_LOG(INTERNAL_EXCEPTION) << "Unexpected prim: " << prim->ToString();
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, cnode) << "Unexpected prim: " << prim->ToString();
   }
   if (!fn || py::isinstance<py::none>(fn)) {
     MS_LOG(DEBUG) << "Fail to find bprop function for " << prim_name << ". fn: " << py::str(fn);
@@ -128,7 +128,7 @@ FuncGraphPtr KPrim::GetFprop(const PrimitivePtr &prim) const {
   return BasicClone(func_graph);
 }
 
-MetaFuncGraphPtr KPrim::KMetaFuncGraph(const PrimitivePtr &prim) {
+MetaFuncGraphPtr KPrim::KMetaFuncGraph(const PrimitivePtr &prim, const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(prim);
 
   auto iter = bprop_registry_meta_.find(prim);
@@ -160,7 +160,7 @@ MetaFuncGraphPtr KPrim::KMetaFuncGraph(const PrimitivePtr &prim) {
     return meta;
   }
 
-  MS_LOG(EXCEPTION) << "Fail to find bprop function for " << prim->name() << ".";
+  MS_LOG_WITH_NODE(EXCEPTION, node) << "Fail to find bprop function for " << prim->name() << ".";
 }
 
 static void AddMonad(const FuncGraphPtr &bprop_fg, const CNodePtr &output, const AnfNodePtr &monad) {
@@ -252,7 +252,7 @@ void SetDumpFlag(const PrimitivePtr &prim, const FuncGraphPtr &bprop_fg) {
 FuncGraphPtr KPrim::KPrimitive(const CNodePtr &cnode, const ValueNodePtr &value_node,
                                const pipeline::ResourceBasePtr &resources) {
   if (!IsValueNode<Primitive>(value_node)) {
-    MS_LOG(INTERNAL_EXCEPTION) << "Primitive node is not valid.";
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, cnode) << "Primitive node is not valid.";
   }
 
   auto prim = GetValueNode<PrimitivePtr>(value_node);
@@ -269,7 +269,7 @@ FuncGraphPtr KPrim::KPrimitive(const CNodePtr &cnode, const ValueNodePtr &value_
   FuncGraphPtr bprop_fg = nullptr;
   if (IsPrimitiveEquals(prim, prim::kPrimHookBackward) || IsPrimitiveEquals(prim, prim::kPrimCellBackwardHook)) {
     if (MsContext::GetInstance()->get_param<int>(MsCtxParam::MS_CTX_EXECUTION_MODE) == kGraphMode) {
-      MS_LOG(EXCEPTION)
+      MS_LOG_WITH_NODE(EXCEPTION, cnode)
         << "The Hook operation is not supported in graph mode, which is only supported in pynative mode.\n"
         << trace::GetDebugInfoStr(cnode->debug_info());
     }
@@ -293,9 +293,9 @@ FuncGraphPtr KPrim::KPrimitive(const CNodePtr &cnode, const ValueNodePtr &value_
   }
   auto expanded_fg = BpropToK(prim, bprop_fg, nullptr, cnode, primal_attrs, primal_debug_infos);
   if (expanded_fg == nullptr) {
-    MS_LOG(INTERNAL_EXCEPTION) << "Failed convert " << prim->name()
-                               << " prim bprop function to J expanded func graph. NodeInfo: "
-                               << trace::GetDebugInfoStr(bprop_fg->debug_info());
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, cnode)
+      << "Failed convert " << prim->name()
+      << " prim bprop function to J expanded func graph. NodeInfo: " << trace::GetDebugInfoStr(bprop_fg->debug_info());
   }
   if (lift_fv_before_grad && IsPrimitiveEquals(prim, prim::kPrimSwitch)) {
     // Inline fprop_switch before renormalize;
@@ -340,7 +340,7 @@ AnfNodePtr KPrim::BuildOutput(const FuncGraphPtr &bprop_fg, const FuncGraphPtr &
       } else if (HasAbstractIOMonad(primal_node)) {
         extra_node = NewValueNode(kIOMonad);
       } else {
-        MS_EXCEPTION(TypeError)
+        MS_EXCEPTION_WITH_NODE(TypeError, bprop_fg->return_node())
           << "The params of function 'bprop' of Primitive or Cell requires the forward inputs as well "
              "as the 'out' and 'dout'.\n"
           << trace::GetDebugInfoStr(bprop_fg->debug_info());
@@ -489,10 +489,9 @@ void KPrim::TransformArgsForFuncGraph(const FuncGraphManagerPtr &mng, const Func
     }
   }
   if (transf_args->size() != current_primal_fg_params.size()) {
-    MS_EXCEPTION(TypeError) << "Function " << current_primal_fg->ToString()
-                            << ", The number of parameter of this primal function is "
-                            << current_primal_fg_params.size() << ", but the number of parameters of bprop is "
-                            << bprop_fg_param_size;
+    MS_EXCEPTION_WITH_NODE(TypeError, bprop_fg->return_node())
+      << "Function " << current_primal_fg->ToString() << ", The number of parameter of this primal function is "
+      << current_primal_fg_params.size() << ", but the number of parameters of bprop is " << bprop_fg_param_size;
   }
 }
 
@@ -535,9 +534,9 @@ FuncGraphPtr KPrim::KUserDefinedCellBprop(const FuncGraphPtr &bprop_fg, const Fu
   auto primal_fg = bprop_fg->transforms().find("primal")->second.func_graph();
   auto expanded_fg = BpropToK(primal_fg, bprop_fg, current_primal_fg, nullptr, {}, {});
   if (expanded_fg == nullptr) {
-    MS_LOG(INTERNAL_EXCEPTION) << "Failed convert " << primal_fg->ToString()
-                               << " Cell bprop function to K expanded func graph. NodeInfo: "
-                               << trace::GetDebugInfoStr(primal_fg->debug_info());
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, bprop_fg->return_node())
+      << "Failed convert " << primal_fg->ToString()
+      << " Cell bprop function to K expanded func graph. NodeInfo: " << trace::GetDebugInfoStr(primal_fg->debug_info());
   }
   return expanded_fg;
 }
@@ -552,7 +551,7 @@ FuncGraphPtr KPrim::BpropCut(const ValueNodePtr &value_node, const pipeline::Res
     return IsPrimitiveCNode(user.first, prim);
   });
   if (cnode == users.end()) {
-    MS_LOG(INTERNAL_EXCEPTION) << "Fail to find cnode.";
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, value_node) << "Fail to find cnode.";
   }
   auto cnode_first = cnode->first->cast_ptr<CNode>();
   MS_EXCEPTION_IF_NULL(cnode_first);
@@ -594,7 +593,7 @@ FuncGraphPtr KPrim::FakeBprop(const ValueNodePtr &value_node, const pipeline::Re
     return IsPrimitiveCNode(user.first, prim);
   });
   if (cnode == users.end()) {
-    MS_LOG(INTERNAL_EXCEPTION) << "Fail to find user for " << prim->ToString();
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, value_node) << "Fail to find user for " << prim->ToString();
   }
   auto cnode_first = cnode->first->cast_ptr<CNode>();
   MS_EXCEPTION_IF_NULL(cnode_first);
@@ -609,8 +608,9 @@ FuncGraphPtr KPrim::FakeBprop(const ValueNodePtr &value_node, const pipeline::Re
     monad_params_size++;
   }
   if (inputs_num < monad_params_size) {
-    MS_LOG(INTERNAL_EXCEPTION) << "Arguments number should be greater than or equal to " << monad_params_size
-                               << ", but the CNode is: " << cnode->first->DebugString();
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, cnode->first)
+      << "Arguments number should be greater than or equal to " << monad_params_size
+      << ", but the CNode is: " << cnode->first->DebugString();
   }
   inputs_num -= monad_params_size;
 
@@ -653,7 +653,7 @@ FuncGraphPtr KPrim::GetCustomVjpBprop(const FuncGraphPtr &bprop_fg) const {
   MS_EXCEPTION_IF_NULL(bprop_fg_output);
   // Check the definition of the bprop function
   if (IsValueNode<None>(bprop_fg_output->input(1))) {
-    MS_EXCEPTION(TypeError)
+    MS_EXCEPTION_WITH_NODE(TypeError, bprop_fg_output)
       << "The bprop function of @custom_vjp is undefined. Please use 'defbwd(bprop)' to define the 'bprop' function.";
   }
 
@@ -662,7 +662,8 @@ FuncGraphPtr KPrim::GetCustomVjpBprop(const FuncGraphPtr &bprop_fg) const {
     custom_vjp_bprop_fg->set_transforms(bprop_fg->transforms());
     return custom_vjp_bprop_fg;
   } else {
-    MS_EXCEPTION(TypeError) << "The 'bprop' function defined by @custom_vjp defbwd(bprop) is illegal.";
+    MS_EXCEPTION_WITH_NODE(TypeError, bprop_fg_output)
+      << "The 'bprop' function defined by @custom_vjp defbwd(bprop) is illegal.";
   }
 }
 }  // namespace ad

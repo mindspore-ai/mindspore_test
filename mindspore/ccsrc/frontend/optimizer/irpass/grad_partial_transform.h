@@ -36,7 +36,8 @@ class GradPartialTransform : public AnfVisitor {
   AnfNodePtr operator()(const OptimizerPtr &, const AnfNodePtr &node) override {
     auto grad_cnode = dyn_cast<CNode>(node);
     if (grad_cnode == nullptr || grad_cnode->inputs().empty()) {
-      MS_LOG(INTERNAL_EXCEPTION) << "GradPartialTransform encounter invalid node: " << node->DebugString();
+      MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, node)
+        << "GradPartialTransform encounter invalid node: " << node->DebugString();
     }
     const auto &value = GetCNodeValueWithoutDoSignature(grad_cnode);
     if (value == nullptr || !value->isa<prim::GradOperation>()) {

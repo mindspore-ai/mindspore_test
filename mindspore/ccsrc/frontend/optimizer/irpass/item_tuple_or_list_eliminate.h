@@ -127,11 +127,12 @@ class MakeSliceSliceGetItemEliminator : public AnfVisitor {
       auto slice_attr_ = GetValue<std::string>(vnode->value());
       auto iter = kSliceAttrToIndex.find(slice_attr_);
       if (iter == kSliceAttrToIndex.end()) {
-        MS_EXCEPTION(ValueError) << "The slice must be [start, stop, step], but got " << slice_attr_;
+        MS_EXCEPTION_WITH_NODE(ValueError, vnode) << "The slice must be [start, stop, step], but got " << slice_attr_;
       }
       idx_ = iter->second;
       if (idx_ > make_slice_->size()) {
-        MS_EXCEPTION(IndexError) << "The node make_slice should has 3 inputs but got " << make_slice_->DebugString();
+        MS_EXCEPTION_WITH_NODE(IndexError, vnode)
+          << "The node make_slice should has 3 inputs but got " << make_slice_->DebugString();
       }
       is_match_ = true;
     }
@@ -431,7 +432,7 @@ class TupleListGetSetitemEliminator : public AnfVisitor {
       index = index + SizeToLong(sequence_abstract->size());
     }
     if (index < 0) {
-      MS_LOG(EXCEPTION) << "Unexpected negative index:" << index << " , node: " << node->DebugString();
+      MS_LOG_WITH_NODE(EXCEPTION, node) << "Unexpected negative index:" << index << " , node: " << node->DebugString();
     }
     return index;
   }
@@ -484,8 +485,8 @@ class TupleListGetitemDependReorder : public AnfVisitor {
         idx += SizeToLong(abs_seq->elements().size());
       }
       if (idx < 0 || LongToSize(idx) >= abs_seq->elements().size()) {
-        MS_LOG(EXCEPTION) << "The idx value " << idx << " of tuple_getitem node " << c_->DebugString()
-                          << " is out of range.";
+        MS_LOG_WITH_NODE(EXCEPTION, c_) << "The idx value " << idx << " of tuple_getitem node " << c_->DebugString()
+                                        << " is out of range.";
       }
       item_node->set_abstract(abs_seq->elements()[LongToSize(idx)]);
     }

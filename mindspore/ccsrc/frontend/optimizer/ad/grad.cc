@@ -81,7 +81,8 @@ FuncGraphPtr LiftFv(const pipeline::ResourceBasePtr &resource, const FuncGraphPt
 #endif
   auto new_res = std::dynamic_pointer_cast<pipeline::Resource>(resource);
   if (new_res == nullptr) {
-    MS_LOG(INTERNAL_EXCEPTION) << "Parameter resources is not a pipeline::Resource";
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, func_graph->return_node())
+      << "Parameter resources is not a pipeline::Resource";
   }
   auto opt_fg = PartialEliminateOptPass(new_res, new_fg);
 #ifdef ENABLE_DUMP_IR
@@ -142,7 +143,7 @@ AnfNodePtr GetJUser(const FuncGraphManagerPtr &manager, const AnfNodePtr &j_node
   }
   auto users = iter->second;
   if (users.size() != 1) {
-    MS_LOG(EXCEPTION) << "The size of J users should be 1, but got " << users.size();
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, j_node) << "The size of J users should be 1, but got " << users.size();
   }
   return users.begin()->first;
 }
@@ -261,8 +262,8 @@ FuncGraphPtr Kprim(const ValueNodePtr &value_node, const pipeline::ResourceBaseP
   return BasicClone(fg);
 }
 
-MetaFuncGraphPtr Kmeta(const PrimitivePtr &prim, const pipeline::ResourceBasePtr &) {
-  MetaFuncGraphPtr fg = g_k_prims.KMetaFuncGraph(prim);
+MetaFuncGraphPtr Kmeta(const PrimitivePtr &prim, const pipeline::ResourceBasePtr &, const AnfNodePtr &node) {
+  MetaFuncGraphPtr fg = g_k_prims.KMetaFuncGraph(prim, node);
   return fg;
 }
 

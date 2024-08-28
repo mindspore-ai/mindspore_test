@@ -48,8 +48,9 @@ class SwitchSimplify : public OptimizerCaller {
       if (value_ptr->isa<BoolImm>()) {
         cond_value = GetValue<bool>(value_ptr);
       } else {
-        MS_LOG(EXCEPTION) << "The condition of branch must be a bool tensor value or a bool scalar value,"
-                          << " not support this condition value: " << value_ptr->ToString();
+        MS_LOG_WITH_NODE(EXCEPTION, node)
+          << "The condition of branch must be a bool tensor value or a bool scalar value,"
+          << " not support this condition value: " << value_ptr->ToString();
       }
 
       MS_LOG(DEBUG) << "condition value: " << value_ptr->ToString() << ", cond: " << cond_value
