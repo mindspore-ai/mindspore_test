@@ -260,7 +260,7 @@ def test_e2e_statistic_host():
         data["common_dump_settings"]["statistic_category"] = [
             "max", "min", "avg", "l2norm"]
 
-    def check_inf_dump(dump_file_path, step):
+    def check_dump_data(dump_file_path, step):
         stat_list = get_dumped_stat_list(dump_file_path)
         assert len(stat_list) == 3
         common_res = {'Op Type': 'Add', 'Data Size': '12',
@@ -272,14 +272,14 @@ def test_e2e_statistic_host():
             target_input0.update(
                 {'Max Value': 'nan', 'Min Value': 'nan', 'Avg Value': 'nan', 'L2Norm Value': 'nan'})
             target_input1.update(
-                {'Max Value': '2', 'Min Value': '-inf', 'L2Norm Value': 'inf'})
+                {'Max Value': '2', 'Min Value': '-inf', 'Avg Value': '-inf', 'L2Norm Value': 'inf'})
             target_output.update(
                 {'Max Value': 'nan', 'Min Value': 'nan', 'Avg Value': 'nan', 'L2Norm Value': 'nan'})
         elif step == 1:
             target_input0.update(
                 {'Max Value': 'inf', 'Min Value': '1', 'Avg Value': 'inf', 'L2Norm Value': 'inf'})
             target_input1.update(
-                {'Max Value': '2', 'Min Value': '-inf', 'L2Norm Value': 'inf'})
+                {'Max Value': '2', 'Min Value': '-inf', 'Avg Value': '-inf', 'L2Norm Value': 'inf'})
             target_output.update(
                 {'Max Value': 'inf', 'Min Value': '-inf', 'Avg Value': 'nan', 'L2Norm Value': 'inf'})
         elif step == 2:
@@ -289,6 +289,21 @@ def test_e2e_statistic_host():
                 {'Max Value': '2', 'Min Value': '-10', 'Avg Value': '-2', 'L2Norm Value': '10.3923'})
             target_output.update(
                 {'Max Value': '4', 'Min Value': '-7', 'Avg Value': '0', 'L2Norm Value': '8.60233'})
+        elif step == 3:
+            target_input0.update(
+                {'Max Value': 'inf', 'Min Value': 'inf', 'Avg Value': 'inf', 'L2Norm Value': 'inf'})
+            target_input1.update(
+                {'Max Value': 'inf', 'Min Value': 'inf', 'Avg Value': 'inf', 'L2Norm Value': 'inf'})
+            target_output.update(
+                {'Max Value': 'inf', 'Min Value': 'inf', 'Avg Value': 'inf', 'L2Norm Value': 'inf'})
+        elif step == 4:
+            target_input0.update(
+                {'Max Value': '-inf', 'Min Value': '-inf', 'Avg Value': '-inf', 'L2Norm Value': 'inf'})
+            target_input1.update(
+                {'Max Value': '-inf', 'Min Value': '-inf', 'Avg Value': '-inf', 'L2Norm Value': 'inf'})
+            target_output.update(
+                {'Max Value': '-inf', 'Min Value': '-inf', 'Avg Value': '-inf', 'L2Norm Value': 'inf'})
+        print("res is ", stat_list)
         check_statistic_result(
             stat_list, [target_input0, target_input1, target_output])
 
@@ -310,10 +325,18 @@ def test_e2e_statistic_host():
             x = Tensor([1., 2., 3.])
             y = Tensor([2., 2., -10.])
             t3 = net(x, y)
-            print(t1, t2, t3)
+            x = Tensor([float('inf'), float('inf'), float('inf')])
+            y = Tensor([float('inf'), float('inf'), float('inf')])
+            t4 = net(x, y)
+            x = Tensor([float('-inf'), float('-inf'), float('-inf')])
+            y = Tensor([float('-inf'), float('-inf'), float('-inf')])
+            t5 = net(x, y)
+            print(t1, t2, t3, t4, t5)
             time.sleep(2)
-            check_inf_dump(Path(dump_path) / "rank_0" / "Net" / "0" / "0", 0)
-            check_inf_dump(Path(dump_path) / "rank_0" / "Net" / "0" / "1", 1)
-            check_inf_dump(Path(dump_path) / "rank_0" / "Net" / "0" / "2", 2)
+            check_dump_data(Path(dump_path) / "rank_0" / "Net" / "0" / "0", 0)
+            check_dump_data(Path(dump_path) / "rank_0" / "Net" / "0" / "1", 1)
+            check_dump_data(Path(dump_path) / "rank_0" / "Net" / "0" / "2", 2)
+            check_dump_data(Path(dump_path) / "rank_0" / "Net" / "0" / "3", 3)
+            check_dump_data(Path(dump_path) / "rank_0" / "Net" / "0" / "4", 4)
         finally:
             del os.environ['MINDSPORE_DUMP_CONFIG']
