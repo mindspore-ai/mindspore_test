@@ -33,7 +33,7 @@ class BFloat16 {
   static constexpr uint16_t value_mask = 0x7fff;
   static constexpr uint16_t inf_value = 0x7f80;
   static constexpr uint16_t nan_value = 0x7fc0;
-  static constexpr uint16_t true_value = 0x3c00;
+  static constexpr uint16_t true_value = 0x3f80;
   static constexpr uint32_t f32_inf_value = 0x7f800000;
 
   BFloat16() = default;
