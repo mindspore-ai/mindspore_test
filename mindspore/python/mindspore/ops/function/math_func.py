@@ -9170,14 +9170,20 @@ def remainder_ext(input, other):
         Complex inputs are not supported. At least one input need to be tensor, but not both are bool tensors.
 
     Args:
-        input (Union[Tensor, numbers.Number]): The dividend.
-        other (Union[Tensor, numbers.Number]): The divisor.
+        input (Union[Tensor, numbers.Number, bool]): The dividend is a numbers.Number or
+            a bool or a tensor whose data type is
+            `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_ or
+            `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_.
+        other (Union[Tensor, numbers.Number, bool]): The divisor is a numbers.Number or
+            a bool or a tensor whose data type is number or bool\_ when the dividend is a tensor.
+            When the dividend is Scalar, the divisor must be a Tensor whose data type is number or bool\_.
 
     Returns:
         Tensor, with dtype promoted and shape broadcasted.
 
     Raises:
-        TypeError: If `input` and `other` are not of types: (tensor, tensor), (tensor, number) or (number, tensor).
+        TypeError: If `input` and `other` are not of types: (tensor, tensor), (tensor, number), (tensor, bool),
+            (number, tensor) or (bool, tensor).
         ValueError: If `input` and `other` are not broadcastable.
 
     Supported Platforms:
@@ -9195,9 +9201,9 @@ def remainder_ext(input, other):
 
     if isinstance(input, Tensor) and isinstance(other, Tensor):
         return remainder_tensor_tensor_(input, other)
-    if isinstance(input, Tensor) and isinstance(other, numbers.Number):
+    if isinstance(input, Tensor) and isinstance(other, (float, int, bool)):
         return remainder_tensor_scalar_(input, other)
-    if isinstance(input, numbers.Number) and isinstance(other, Tensor):
+    if isinstance(input, (float, int, bool)) and isinstance(other, Tensor):
         return remainder_scalar_tensor_(input, other)
     raise TypeError(f"For 'remainder', inputs should either be two tensors, or a tensor and a scalar.")
 
