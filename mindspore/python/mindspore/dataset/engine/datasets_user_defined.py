@@ -204,7 +204,6 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
             message = "Launching a new Python multiprocessing pool for GeneratorOp while a pool already exists!" + \
                 " The existing pool will be terminated first."
             logger.warning(message)
-            self._abort_watchdog()
             self._stop_subprocess()
             self.reset()
             self.workers = []
@@ -276,7 +275,7 @@ class SamplerFn(cde.PythonMultiprocessingRuntime):
     def _check_and_start_process(self):
         """Check the idx_queue and start the process"""
         if self.workers is None:
-            raise RuntimeError("The GeneratorDataset subprocess worker maybe killed or exit abnormally.")
+            raise RuntimeError("The GeneratorDataset subprocess worker may be killed or exit abnormally.")
         for w in self.workers:
             # Check whether the queue of the subprocess is empty.
             if not w.queue_empty():

@@ -100,8 +100,29 @@ Status GeneratorOp::CreateGeneratorObject() {
 Status GeneratorOp::Launch() {
   // Launch the python multiprocessing
   if (python_mp_) {
+    py::gil_scoped_acquire gil_acquire;
     MS_LOG(DEBUG) << "Launch Python Multiprocessing for GeneratorOp: " << id();
-    python_mp_->launch(id());
+    try {
+      python_mp_->launch(id());
+    } catch (py::error_already_set &e) {
+      std::string traceback;
+      try {
+        // Construct python-like traceback
+        py::list tb = py::module::import("traceback").attr("format_tb")(e.trace());
+        traceback = "Traceback (most recent call last):\n";
+        for (auto t : tb) {
+          traceback += py::reinterpret_borrow<py::str>(t);
+        }
+        traceback += e.what();
+      } catch (std::exception &) {
+        // Back to original exception
+        traceback = e.what();
+      }
+
+      // Restore exception to python
+      e.restore();
+      RETURN_STATUS_ERROR(StatusCode::kMDPyFuncException, traceback);
+    }
   }
   return DatasetOp::Launch();
 }
