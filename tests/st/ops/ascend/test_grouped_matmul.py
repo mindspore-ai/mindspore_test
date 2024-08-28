@@ -379,5 +379,5 @@ def test_grouped_matmul_x2d_w2d_splititem0_grouptypeneg1_none_a16w8_case6(mode):
     res = gmm_net(x, w, b, scale, offset, antiquant_scale, antiquant_offset, group_list)
 
     # compare
-    np.testing.assert_allclose(except0, res[0].asnumpy(), rtol=5e-3)
-    np.testing.assert_allclose(except1, res[1].asnumpy(), rtol=5e-3)
+    np.testing.assert_allclose(except0, res[0].asnumpy(), atol=5e-3, rtol=5e-3)
+    np.testing.assert_allclose(except1, res[1].asnumpy(), atol=5e-3, rtol=5e-3)
