@@ -1,0 +1,20 @@
+#operator copy_ext
+copy_ext:
+  args:
+    variable:
+      dtype: tensor
+    value:
+      dtype: tensor
+  args_signature:
+    rw_write: variable
+  returns:
+    output:
+      dtype: tensor
+      inplace: variable
+  labels:
+    side_effect_mem: True
+  class:
+    name: CopyExt
+  dispatch:
+    enable: True
+    Ascend: CopyExtAscend
