@@ -692,6 +692,9 @@ Status TreeAdapter::Launch() {
         py::module::import("mindspore.dataset.core.config").attr("set_seed")(seed);
       }
 
+      // the current is independent dataset process, no need to start new subprocess by ENV MS_INDEPENDENT_DATASET
+      (void)common::SetEnv("MS_INDEPENDENT_DATASET", "False");
+
       // release the gil in child process
       MS_LOG(INFO) << "[Independent Dataset Process] Begin release gil. Current Py_IsInitialized: "
                    << Py_IsInitialized() << ", PyGILState_Check: " << PyGILState_Check();
@@ -730,6 +733,19 @@ Status TreeAdapter::Launch() {
     }
     MS_LOG(INFO) << "[Main Datast Process] Begin release gil. Current Py_IsInitialized: " << Py_IsInitialized()
                  << ", PyGILState_Check: " << PyGILState_Check();
+  }
+#endif
+
+#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__) && !defined(ENABLE_ANDROID)
+  if (!independent_dataset_) {
+    // set num threads of opencv only for main process
+    int32_t thread_num = get_nprocs();
+    if (thread_num == 0) {
+      std::string err_msg = "Invalid thread number, got 0.";
+      RETURN_STATUS_UNEXPECTED(err_msg);
+    }
+    constexpr int32_t max_cv_threads_cnt = 8;
+    cv::setNumThreads(thread_num > max_cv_threads_cnt ? max_cv_threads_cnt : thread_num);
   }
 #endif
 
