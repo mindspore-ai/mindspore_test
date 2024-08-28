@@ -34,6 +34,7 @@ constexpr size_t kTensorNum12 = 12;
 constexpr auto kAclnnPrefix = "aclnn";
 constexpr auto kCustomAclop = "custom_aclop";
 constexpr auto kRegOpName = "reg_op_name";
+constexpr auto kPrefixLen = 5;
 
 template <size_t arg_num>
 std::shared_ptr<AclnnKernelMod> CreateCustomAclnnKernelModInstance(const std::string &op_type) {
@@ -81,7 +82,7 @@ std::string AddPrefixForCustomNode(const std::string &op_type, bool unset) {
   if (unset) {
     return op_type;
   }
-  if (op_type.length() >= 5 && op_type.substr(0, 5) == kAclnnPrefix) {
+  if (op_type.length() >= kPrefixLen && op_type.substr(0, kPrefixLen) == kAclnnPrefix) {
     return op_type;
   }
   return kAclnnPrefix + op_type;
