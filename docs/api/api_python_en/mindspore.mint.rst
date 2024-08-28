@@ -127,6 +127,7 @@ Pointwise Operations
     mindspore.mint.sub
     mindspore.mint.tan
     mindspore.mint.tanh
+    mindspore.mint.xlogy
 
 Reduction Operations
 ^^^^^^^^^^^^^^^^^^^^^
