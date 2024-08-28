@@ -836,6 +836,7 @@ void SessionBasic::GetOpInputTensors(const CNodePtr &cnode,
     ValuePtr input_value = nullptr;
     if (real_input->isa<ValueNode>()) {
       input_value = GetValueNodeOutput(real_input, kernel_with_index.second);
+      MS_EXCEPTION_IF_NULL(input_value);
       const auto &value_ptr = GetValueNode(real_input);
       MS_EXCEPTION_IF_NULL(value_ptr);
       auto is_value_node = value_ptr->isa<StringImm>();
@@ -876,7 +877,6 @@ void SessionBasic::GetOpInputTensors(const CNodePtr &cnode,
     } else {
       MS_LOG(EXCEPTION) << "Invalid input node, node = " << real_input->DebugString();
     }
-    MS_EXCEPTION_IF_NULL(input_value);
     MS_LOG(DEBUG) << "Get" << i << "th input tensor of " << cnode->fullname_with_scope() << " from "
                   << real_input->fullname_with_scope() << "-" << kernel_with_index.second;
     BaseShapePtr base_shape = nullptr;

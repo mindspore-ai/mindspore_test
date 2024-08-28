@@ -1589,7 +1589,7 @@ AnfNodePtr ConvertMakeTupleInputToPlantInputs(const FuncGraphPtr &graph, const C
   }
   std::vector<AnfNodePtr> plant_inputs;
   std::vector<int64_t> dyn_input_sizes;
-  GetPlantInputsAndSize(graph, cnode_ptr, &plant_inputs, &dyn_input_sizes);
+  (void)GetPlantInputsAndSize(graph, cnode_ptr, &plant_inputs, &dyn_input_sizes);
 
   // If there is dynamic input, set the dyn_input_sizes as an attribute and update the inputs.
   if (std::any_of(dyn_input_sizes.begin(), dyn_input_sizes.end(), [](int64_t s) { return s >= 0; })) {
