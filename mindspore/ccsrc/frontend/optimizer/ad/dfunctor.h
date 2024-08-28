@@ -264,6 +264,11 @@ FuncGraphPtr KPrim::BpropToK(const T &primal, const FuncGraphPtr &bprop_fg, cons
     if constexpr (std::is_same<T, PrimitivePtr>::value) {
       out_value->CloneCNodeInfo(cnode);
     }
+    const DebugInfoPtr &old_debug_info = cnode->debug_info();
+    const auto &old_real_loc = old_debug_info->real_loc();
+    if (!old_real_loc.empty()) {
+      out_value->debug_info()->set_real_loc(old_real_loc);
+    }
   } else {
     out_value = outer->NewCNode(transf_args);
   }

@@ -22,6 +22,8 @@ from mindspore.nn import Cell
 from mindspore.nn.optim.momentum import Momentum
 from mindspore.nn.loss import SoftmaxCrossEntropyWithLogits
 from mindspore.common.api import _cell_graph_executor, _MindsporeFunctionExecutor
+from mindspore.common.parameter import Parameter
+from mindspore import dataset as ds
 from tests.security_utils import security_off_wrap
 from tests.code_trace_analyzer import CodeTraceAnalyzer
 from tests.ut.python.debug.resnet import resnet50, DatasetResNet
@@ -621,6 +623,58 @@ def test_code_trace12():
 
     # return lines of sub cells will not be counted since those cells are inlined
     accuracy = analyzer.analyze(2)
+    if accuracy != 1.0:
+        analyzer.report_analysis()
+        raise ValueError("Code trace accuracy is not 1.0")
+
+    shutil.rmtree(save_graph_path)
+
+
+class AddNet(nn.Cell):
+    def __init__(self, weight_shape, dtype=mindspore.float32):
+        super(AddNet, self).__init__()
+        self.add = ops.Add()
+        self.add_weight = Parameter(
+            Tensor(np.full(weight_shape, 2.0), dtype=dtype), name="matmul_weight")
+
+    def construct(self, x, y):
+        out = x + y
+        out = self.add(out, self.add_weight)
+        out = out + out
+        return out
+
+
+def generator(size, dtype=mindspore.float32, label_dtype=mindspore.float32):
+    for _ in range(2):
+        inputs, label = Tensor(np.full(size[0], 0.5), dtype=dtype), Tensor(np.full(size[1], 0.5),
+                                                                           dtype=label_dtype)
+        yield inputs, label
+
+
+@security_off_wrap
+def test_code_trace13():
+    """
+    Feature: Code Trace.
+    Description: Test source code location.
+    Expectation: success.
+    """
+
+    save_graph_path = "test_code_trace13"
+    context.set_context(save_graphs=True, save_graphs_path=save_graph_path)
+    net = AddNet(weight_shape=(1, 2), dtype=mindspore.float32)
+
+
+    opt_fn = Momentum(learning_rate=0.01, momentum=0.9,
+                      params=net.get_parameters())
+    dataset = ds.GeneratorDataset(lambda: generator(size=((2, 2), (2, 2)), label_dtype=mindspore.float32),
+                                  ["inputs", "label"])
+    model = Model(net, optimizer=opt_fn)
+    model.train(2, dataset, dataset_sink_mode=False)
+
+    analyzer = CodeTraceAnalyzer(net, save_graph_path, "validate")
+
+    # return lines of sub cells will not be counted since those cells are inlined
+    accuracy = analyzer.analyze(1)
     if accuracy != 1.0:
         analyzer.report_analysis()
         raise ValueError("Code trace accuracy is not 1.0")
