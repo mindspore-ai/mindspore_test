@@ -33,14 +33,10 @@ namespace ops {
 
 BaseShapePtr SqrtFuncImpl::InferShape(const PrimitivePtr &primitive,
                                       const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(input_args[0]);
-  MS_EXCEPTION_IF_NULL(input_args[0]->GetShape());
-  return input_args[0]->GetShape()->Clone();
+  return input_args[kIndex0]->GetShape()->Clone();
 }
 
 TypePtr SqrtFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(input_args[0]);
-  MS_EXCEPTION_IF_NULL(input_args[0]->GetType());
   auto input_type = input_args[kIndex0]->GetType();
   auto input_type_id = input_type->cast<TensorTypePtr>()->element()->type_id();
   static const std::vector<TypeId> int_or_bool = {kNumberTypeUInt8,  kNumberTypeUInt16, kNumberTypeUInt32,
@@ -50,9 +46,8 @@ TypePtr SqrtFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector
                                     [&input_type_id](const TypeId &type_id) { return input_type_id == type_id; });
   if (is_int_or_bool) {
     return std::make_shared<TensorType>(kFloat32);
-  } else {
-    return input_type->Clone();
   }
+  return input_type;
 }
 TypePtrList SqrtFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
   const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
@@ -66,9 +61,8 @@ TypePtrList SqrtFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePt
                                     [&input_type_id](const TypeId &type_id) { return input_type_id == type_id; });
   if (is_int_or_bool) {
     return {kFloat32};
-  } else {
-    return {input_type};
   }
+  return {input_type};
 }
 ShapeArray SqrtFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
   const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();

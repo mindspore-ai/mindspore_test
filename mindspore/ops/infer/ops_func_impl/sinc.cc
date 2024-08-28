@@ -39,7 +39,7 @@ TypePtr SincFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector
   if (is_int_or_bool) {
     return std::make_shared<TensorType>(kFloat32);
   }
-  return input_type->Clone();
+  return input_type;
 }
 TypePtrList SincFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
   const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
