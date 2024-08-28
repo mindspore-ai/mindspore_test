@@ -1487,6 +1487,7 @@ class Profiler:
             self._minddata_aicpu_analyse(self._output_path, job_id)
             ProfilerInfo.set_graph_ids(graph_ids)
         try:
+            ProfilerInfo.set_data_simplification(self._data_simplification)
             ProfilerPathManager.simplify_data(self._output_path, self._data_simplification)
         except RuntimeError as err:
             logger.error('Profilier simplify data failed, %s', str(err))
