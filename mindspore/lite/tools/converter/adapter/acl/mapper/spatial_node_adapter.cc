@@ -120,6 +120,7 @@ CNodePtr CreateTupleGetItemNode(const FuncGraphPtr &func_graph, const CNodePtr &
   }
   TypeId type = acl::GetTypeFromNode(input_cnode);
   auto tensor_abstract = CreateTensorAbstract(shape, type);
+  MS_CHECK_TRUE_MSG(tensor_abstract != nullptr, nullptr, "tensor_abstract is nullptr!");
   MS_CHECK_TRUE_MSG(input_cnode->abstract() != nullptr, nullptr, "input_cnode->abstract() is nullptr.");
   std::string abstract_name = input_cnode->abstract()->name();
   tensor_abstract->set_name(abstract_name);
