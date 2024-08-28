@@ -165,6 +165,7 @@ bool IsMsClass(PyObject *obj);
 bool IsNumpyObject(PyObject *obj);
 bool IsNoGradEnterFunc(const py::object &handle);
 bool IsNoGradExitFunc(const py::object &handle);
+bool IsPartialFunc(const py::object &handle);
 const char *GetFuncName(const py::object &handle);
 
 bool CheckAdapterTensor(const py::object &tensor);

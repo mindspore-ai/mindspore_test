@@ -491,7 +491,31 @@ bool GraphBuilder::DoCall(const Instr &instr) {
   params = {frame_.GetStacks().end() - tmp_arg - 1, frame_.GetStacks().end()};
   opcode = (opcode == CALL_METHOD) ? CALL_FUNCTION : opcode;
   popn(tmp_arg + 1);
-  push(NewValueNode(nullptr, opcode, oparg, params));
+  if (IsPartialFunc(params[0]->GetVobj()->GetPyObject())) {
+    push(params[0]);
+    DoAttrAccess({LOAD_ATTR, 0, "func"});
+    push(params[0]);
+    DoAttrAccess({LOAD_ATTR, 0, "args"});
+    ValueNode *args = pop();
+    size_t args_size = PyTuple_GET_SIZE(args->GetVobj()->GetPyObject().ptr());
+    UnpackElements(args);
+    for (size_t i = 1; i < params.size(); ++i) {
+      push(params[0]);
+    }
+    DoBuildOp({BUILD_TUPLE, SizeToInt(args_size + params.size()) - 1});
+    auto kwargs = PyObject_GetAttrString(params[0]->GetVobj()->GetPyObject().ptr(), "keywords");
+    if (kwargs != nullptr && kwargs != Py_None && PyDict_Size(kwargs) > 0) {
+      push(params[0]);
+      DoAttrAccess({LOAD_ATTR, 0, "keywords"});
+      DoCall({CALL_FUNCTION_EX, 1});
+    } else {
+      DoCall({CALL_FUNCTION_EX, 0});
+    }
+    Py_XDECREF(kwargs);
+    return true;
+  } else {
+    push(NewValueNode(nullptr, opcode, oparg, params));
+  }
 
   CallNode *call_node = static_cast<CallNode *>(seek(0));
   call_node->SetVobj(AObject::MakeAObject(AObject::kTypeAnyValue));
