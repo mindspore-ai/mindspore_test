@@ -342,6 +342,10 @@ bool IsNoGradExitFunc(const py::object &handle) {
   return std::string(py::str(handle)).find("_no_grad.__exit__") != std::string::npos;
 }
 
+bool IsPartialFunc(const py::object &handle) {
+  return std::string(py::str(handle)).find("functools.partial") != std::string::npos;
+}
+
 std::string GetTopModule(const py::object &o) {
   PyObject *mod = PyObject_GetAttrString(o.ptr(), "__module__");
   const char *module_name = "";
