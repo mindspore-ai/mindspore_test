@@ -61,7 +61,7 @@ class DynamicProfilerArgs:
                  analyse_mode: int = -1,
                  profile_communication: bool = False,
                  parallel_strategy: bool = False,
-                 data_process: bool = False,
+                 with_stack: bool = False,
                  data_simplification: bool = True,
                  is_valid: bool = False,
                  **kwargs):
@@ -73,7 +73,7 @@ class DynamicProfilerArgs:
         self._analyse_mode = analyse_mode
         self._profile_communication = profile_communication
         self._parallel_strategy = parallel_strategy
-        self._data_process = data_process
+        self._with_stack = with_stack
         self._data_simplification = data_simplification
         self._is_valid = is_valid
         self._check_params_type()
@@ -112,9 +112,9 @@ class DynamicProfilerArgs:
             logger.warning("parallel_strategy should be bool type, parallel_strategy will be reset to False.")
             self._parallel_strategy = False
 
-        if not isinstance(self._data_process, bool):
-            logger.warning("data_process should be bool type, data_process will be reset to False.")
-            self._data_process = False
+        if not isinstance(self._with_stack, bool):
+            logger.warning("with_stack should be bool type, with_stack will be reset to False.")
+            self._with_stack = False
 
         if not isinstance(self._data_simplification, bool):
             logger.warning("data_simplification should be bool type, data_simplification will be reset to True.")
@@ -207,8 +207,6 @@ class DynamicProfilerArgs:
         if profile_framework == 0:
             return "time"
         if profile_framework == 1:
-            return "memory"
-        if profile_framework == 2:
             return "all"
         return None
 
