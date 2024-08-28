@@ -231,7 +231,7 @@ AnfNodePtr HyperMap::HyperMapDynamicConverter(const FuncGraphPtr &func_graph, co
   }
   MS_EXCEPTION_IF_NULL(element_type);
   if (element_type->isa<Tuple>() || element_type->isa<List>() || element_type->isa<Dictionary>()) {
-    MS_EXCEPTION(TypeError) << "The Hypermap does not support scenarios involving nested dynamic " << type_id
+    MS_EXCEPTION(TypeError) << "The HyperMap does not support scenarios involving nested dynamic " << type_id
                             << ", where the internal elements are " << element_type;
   }
   auto inner_fg = std::make_shared<FuncGraph>();
@@ -246,9 +246,9 @@ AnfNodePtr HyperMap::HyperMapDynamicConverter(const FuncGraphPtr &func_graph, co
   }
   py::function fn = python_adapter::GetPyFn(module, func_name);
   auto prim_func = parse::ParsePythonCode(fn);
-  ret_inputs.insert(ret_inputs.end(), {NewValueNode(prim::kPrimMakeTuple), func_input});
+  (void)ret_inputs.insert(ret_inputs.end(), {NewValueNode(prim::kPrimMakeTuple), func_input});
   for (auto e : arg_map) {
-    ret_inputs.push_back(inner_fg->add_parameter());
+    (void)ret_inputs.emplace_back(inner_fg->add_parameter());
   }
   auto ret_node = inner_fg->NewCNodeInOrder(ret_inputs);
   std::vector<AnfNodePtr> inner_ret_inputs = {NewValueNode(prim::kPrimDoUnpackCall), NewValueNode(prim_func), ret_node};
