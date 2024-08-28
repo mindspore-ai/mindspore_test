@@ -2475,7 +2475,6 @@ AbstractWrapperPtrList MindGraphBuilder::HandleInputArgs(const std::vector<Value
   AbstractWrapperPtrList ret;
   for (auto arg : args) {
     MS_EXCEPTION_IF_NULL(arg);
-    // TODO(LiangZhibo): need to handle node repeatedly found problem later.
     if (arg->has_abstract_wrapper() && FGBuilder()->GetNodeByWrapper(arg->abstract_wrapper()) != nullptr) {
       ret.push_back(arg->abstract_wrapper());
       continue;
@@ -4227,7 +4226,6 @@ AbstractWrapperPtrList MindGraphBuilder::HandleInputsForGrad(CallNode *call_node
   const auto &bind_vargs = bind_arguments_result.va_;
   const auto &bind_kwargs = bind_arguments_result.kw_va_;
 
-  // TODO(LiangZhibo): need to handle kwargs scene.
   auto wrapper_args = HandleInputArgs(bind_args);
   const auto &wrapper_vargs = HandleInputArgs(bind_vargs);
 
@@ -4442,7 +4440,6 @@ py::object MindGraphBuilder::ResolveCallable(CallNode *call_node, StopTraceReaso
     if (!bind_kwargs.empty()) {
       MS_LOG(WARNING) << "Encounter kwargs scene, builder can not handle yet.";
     }
-    // TODO(LiangZhibo): need to handle kwargs scene.
     (void)std::copy(bind_args.begin(), bind_args.end(), std::back_inserter(args));
     (void)std::copy(bind_vargs.begin(), bind_vargs.end(), std::back_inserter(args));
     return FGAddNode(call_node, callable_info, HandleInputArgs(args), stop_reason);
@@ -4513,8 +4510,6 @@ ValueNode *MindGraphBuilder::HandleGetattr(ValueNode *target_node, const Instr &
   auto attr_node = NewValueNode(target_node->get_attr(instr.name()), instr, {target_node});
   MS_EXCEPTION_IF_NULL(attr_node);
   ValueNode *graph_attr_node = nullptr;
-  // TODO(LiangZhibo): Need to deal with scene when attr_obj does not have python object.
-  // TODO(LiangZhibo): Need to refactor getattr process later.
   auto attr_obj = attr_node->GetVobj()->GetPyObject();
   if (instr.name() == "shape") {
     auto ret_wrapper = HandleGetShapeOfDynamicLengthTensor(target_node->abstract_wrapper());

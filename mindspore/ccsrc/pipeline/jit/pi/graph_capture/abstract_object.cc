@@ -280,7 +280,6 @@ AbstractObjectBase::Type AbstractObjectBase::GetMsType(PyTypeObject *tp) {
 }
 
 AObject *AbstractObjectBase::Convert(const AbstractWrapperPtr &wrapper) {
-  // TODO(LiangZhibo): Need to delete wrapper to python object precess later.
   py::object res = AbstractWrapper::ConvertToPyObject(wrapper);
   return Convert(res.ptr());
 }
