@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2020-2023 Huawei Technologies Co., Ltd
+ * Copyright 2020-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -180,14 +180,6 @@ static void AppendMonadOutput(const FuncGraphPtr &bprop_fg, const AnfNodePtr &mo
   const auto &output = bprop_fg->output();
   MS_EXCEPTION_IF_NULL(output);
   auto output_cnode = output->cast<CNodePtr>();
-  if (output_cnode != nullptr) {
-    // If output_cnode has the form like (make_tuple, x, y).
-    while (output_cnode->IsApply(prim::kPrimDepend)) {
-      const auto &real_input = output_cnode->input(kRealInputIndexInDepend);
-      MS_EXCEPTION_IF_NULL(real_input);
-      output_cnode = real_input->cast<CNodePtr>();
-    }
-  }
   constexpr char u_monad_in_output[] = "u_monad_in_output";
   constexpr char io_monad_in_output[] = "io_monad_in_output";
   if (output_cnode != nullptr) {

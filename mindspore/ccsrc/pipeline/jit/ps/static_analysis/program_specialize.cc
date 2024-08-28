@@ -1,7 +1,7 @@
 /**
  * This is the C++ adaptation and derivative work of Myia (https://github.com/mila-iqia/myia/).
  *
- * Copyright 2019-2023 Huawei Technologies Co., Ltd
+ * Copyright 2019-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@
 #include <unordered_set>
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/structure_ops.h"
 #include "frontend/operator/ops.h"
 #include "frontend/operator/composite/do_signature.h"
 #include "abstract/abstract_function.h"
@@ -297,6 +298,7 @@ AbstractFunctionPtr ProgramSpecializer::GetSpecializedAbstract(const AbstractFun
                     << ", new_abs_func: " << iter->second.second->ToString();
       return iter->second.second;
     }
+    MS_LOG(DEBUG) << "Cannot find abstract for old_abstract: " << old_abs_func->ToString();
     return nullptr;
   }
   if (old_abs_func->isa<FuncGraphAbstractClosure>()) {
@@ -375,25 +377,14 @@ AbstractFunctionPtr ProgramSpecializer::SpecializeAbstractFuncRecursively(const 
   return new_abs;
 }
 
-void ProgramSpecializer::SpecializeCNodeInput0FuncGraph() {
+void ProgramSpecializer::SpecializeFuncGraph() {
   MS_EXCEPTION_IF_NULL(manager_);
   const auto &all_nodes = manager_->all_nodes();
   for (auto node : all_nodes) {
     MS_EXCEPTION_IF_NULL(node);
-    if (!node->isa<CNode>()) {
-      continue;
-    }
-    auto &input0 = node->cast_ptr<CNode>()->input(0);
-    MS_EXCEPTION_IF_NULL(input0);
-    if (IsValueNode<FuncGraph>(input0) || IsValueNode<Primitive>(input0)) {
-      continue;
-    }
-    MS_EXCEPTION_IF_NULL(node);
-    const auto &old_abs = input0->abstract();
+    const auto &old_abs = node->abstract();
     if (old_abs == nullptr) {
-      constexpr auto recursive_level = 2;
-      MS_LOG(INTERNAL_EXCEPTION) << "Node's first input abstract should not be null, "
-                                 << node->DebugString(recursive_level);
+      continue;
     }
     if (!(old_abs->isa<FuncGraphAbstractClosure>() || old_abs->isa<MetaFuncGraphAbstractClosure>() ||
           old_abs->isa<AbstractFuncUnion>() || old_abs->isa<PartialAbstractClosure>())) {
@@ -402,12 +393,12 @@ void ProgramSpecializer::SpecializeCNodeInput0FuncGraph() {
     auto old_abs_func = old_abs->cast<AbstractFunctionPtr>();
     auto new_abs_func = SpecializeAbstractFuncRecursively(old_abs_func);
     if (new_abs_func != nullptr) {
-      input0->set_abstract(new_abs_func);
-      MS_LOG(DEBUG) << "Find specialized abstract for node: " << input0->DebugString()
+      node->set_abstract(new_abs_func);
+      MS_LOG(DEBUG) << "Find specialized abstract for node: " << node->DebugString()
                     << ", old_abstract: " << old_abs->ToString()
                     << ", specialized_abstract: " << new_abs_func->ToString();
     } else {
-      MS_LOG(DEBUG) << "cannot find specialized abstract for node: " << input0->DebugString()
+      MS_LOG(DEBUG) << "cannot find specialized abstract for node: " << node->DebugString()
                     << ", old_abstract: " << old_abs_func->ToString();
     }
   }
@@ -981,6 +972,43 @@ void FuncGraphSpecializer::EliminateUnusedSequenceItem(const CNodePtr &cnode) co
   }
 }
 
+bool FuncGraphSpecializer::GetIgnoreBuildValueFlag(const AnfNodePtr &node_input) {
+  bool ignore_build_value = false;
+  MS_EXCEPTION_IF_NULL(specializer_->engine());
+  bool back_prop = false;
+  if (node_input->isa<CNode>()) {
+    auto func = node_input->cast<CNodePtr>()->func_graph();
+    back_prop = func->has_flag(mindspore::kFuncGraphFlagBackPropEntry);
+  }
+  bool need_check_side_effect = specializer_->engine()->check_side_effect() || back_prop;
+  if (!need_check_side_effect) {
+    return ignore_build_value;
+  }
+  auto cnode_input = dyn_cast_ptr<CNode>(node_input);
+  ignore_build_value = (cnode_input != nullptr && cnode_input->has_side_effect_node());
+  if (ignore_build_value) {
+    MS_LOG(INFO) << "Don't build value node for CNode which contains isolated side-effect inputs, node: "
+                 << cnode_input->DebugString() << ", flag: " << cnode_input->has_side_effect_node();
+  }
+  // Recheck input
+  if (IsPrimitiveCNode(node_input->cast<CNodePtr>(), prim::kPrimStopGradient)) {
+    return GetIgnoreBuildValueFlag(node_input->cast<CNodePtr>()->input(1));
+  }
+  if (IsPrimitiveCNode(node_input->cast<CNodePtr>(), prim::kPrimMakeTuple)) {
+    auto inner_inputs = node_input->cast<CNodePtr>()->inputs();
+    for (auto inner_input : inner_inputs) {
+      auto cnode_inner_input = dyn_cast_ptr<CNode>(inner_input);
+      bool inner_ignore_build_value = (cnode_inner_input != nullptr && cnode_inner_input->has_side_effect_node());
+      if (inner_ignore_build_value) {
+        MS_LOG(INFO) << "Don't build value node for CNode which contains isolated side-effect inputs, node: "
+                     << cnode_input->DebugString() << ", flag: " << cnode_input->has_side_effect_node();
+        return true;
+      }
+    }
+  }
+  return ignore_build_value;
+}
+
 void FuncGraphSpecializer::ProcessNode(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
   ScopeGuard scope_guard(node->scope());
@@ -1041,17 +1069,8 @@ void FuncGraphSpecializer::ProcessNode(const AnfNodePtr &node) {
       real_abs = abs->inplace_abstract();
       MS_LOG(INFO) << "Use inplace abstract, " << abs->ToString() << " -> " << real_abs->ToString();
     }
-    bool ignore_build_value = false;
+    bool ignore_build_value = GetIgnoreBuildValueFlag(node_input);
     AnfNodePtr replace_node = nullptr;
-    MS_EXCEPTION_IF_NULL(specializer_->engine());
-    if (specializer_->engine()->check_side_effect()) {
-      auto cnode_input = dyn_cast_ptr<CNode>(node_input);
-      ignore_build_value = (cnode_input != nullptr && cnode_input->has_side_effect_node());
-      if (ignore_build_value) {
-        MS_LOG(INFO) << "Don't build value node for CNode which contains isolated side-effect inputs, node: "
-                     << cnode_input->DebugString() << ", flag: " << cnode_input->has_side_effect_node();
-      }
-    }
     if (!ignore_build_value) {
       // First try to check if node_input can be replaced by a ValueNode. If cannot, then try to check if
       // can be replaced by another CNode from anfnode_config_map, otherwise use the replicated node.

@@ -86,6 +86,8 @@ class HyperMap : public MetaFuncGraph {
   void CheckArgsInSequence(const ArgsPairList &arg_map, TypeId type_id, std::size_t size) const;
   AnfNodePtr HyperMapConverter(const FuncGraphPtr &func_graph, const AnfNodePtr &fn_arg, const ArgsPairList &arg_map,
                                TypeId type_id, std::size_t size) const;
+  AnfNodePtr HyperMapDynamicConverter(const FuncGraphPtr &func_graph, const AnfNodePtr &fn_arg,
+                                      const ArgsPairList &arg_map, const TypePtr &type) const;
 
   MultitypeFuncGraphPtr fn_leaf_;
   bool reverse_;

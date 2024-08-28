@@ -53,6 +53,7 @@ from mindspore.common._register_for_adapter import ms_adapter_registry
 from mindspore.common.auto_dynamic_shape import get_auto_dynamic_shape_args, update_auto_dynamic_shape_phase, \
     get_auto_dynamic_shape_args_with_check_input_signature, update_auto_dynamic_shape_phase_with_check_input_signature
 from mindspore.common._pijit_context import PIJitCaptureContext
+from mindspore.common.parameter import Parameter
 
 # Store ms_function class compiled pipeline cache.
 ms_compile_cache = set()
@@ -515,6 +516,19 @@ def _generate_dyn_compile_args(compile_args, dyn_args):
     return tuple(new_compile_args)
 
 
+def _get_parameter_ids(args, kwargs):
+    """Get the ids of parameters."""
+    parameter_ids = ""
+    for arg in args:
+        if isinstance(arg, Parameter):
+            parameter_ids += str(id(arg))
+    for _, value in kwargs.items():
+        # The type of key is usually String type.
+        if isinstance(value, Parameter):
+            parameter_ids += str(id(value))
+    return parameter_ids
+
+
 class _MindsporeFunctionExecutor:
     """
     Represents a function compiled by graph compiler.
@@ -627,6 +641,10 @@ class _MindsporeFunctionExecutor:
 
         self._graph_executor.set_enable_tuple_broaden(self.enable_tuple_broaden)
         key = self._graph_executor.generate_arguments_key(self.fn, compile_args, kwargs, self.enable_tuple_broaden)
+
+        parameter_ids = _get_parameter_ids(args, kwargs)
+        if parameter_ids != "":
+            key = str(key) + '.' + parameter_ids
         phase = generate_name + '.' + str(key)
 
         update_auto_dynamic_shape_phase_with_check_input_signature(compile_args, key_id, phase, self.input_signature)
@@ -1757,6 +1775,10 @@ class _CellGraphExecutor:
         self._graph_executor.set_enable_tuple_broaden(self.enable_tuple_broaden)
         key = self._graph_executor.generate_arguments_key(obj, args, kwargs, self.enable_tuple_broaden)
         obj.arguments_key = str(key)
+        # When exist parameter in the top graph inputs, need check if the parameter object has changed.
+        parameter_ids = _get_parameter_ids(args, kwargs)
+        if parameter_ids != "":
+            obj.arguments_key = obj.arguments_key + '.' + parameter_ids
         raw_phase = phase
         phase = phase + '.' + str(obj.create_time) + '.' + str(id(obj)) + '.' + obj.arguments_key
         obj.phase_cache[raw_phase] = phase

@@ -70,6 +70,37 @@ itemsize_map = {mstype.bool_: 1, mstype.int8: 1, mstype.uint8: 1,
 
 nan_tensor = Tensor(float('nan'), dtype=mstype.float32)
 
+_map = composite.HyperMap()
+
+
+def hypermap_dynamic_tuple(func, *inputs):
+    """Make hypermap for dynamic shape tuple."""
+    iter_len = len(inputs[0])
+    i = 0
+    ret = F.make_tuple()
+    while i < iter_len:
+        cur_input = F.make_tuple()
+        for m in inputs:
+            cur_input = cur_input + F.make_tuple(m[i])
+        new_out = _map(func, *cur_input)
+        ret = ret + F.make_tuple(new_out)
+        i = i + 1
+    return ret
+
+def hypermap_dynamic_list(func, *inputs):
+    """Make hypermap for dynamic shape list."""
+    iter_len = len(inputs[0])
+    i = 0
+    ret = F.make_list()
+    while i < iter_len:
+        cur_input = F.make_tuple()
+        for m in inputs:
+            cur_input = cur_input + F.make_tuple(m[i])
+        new_out = _map(func, *cur_input)
+        ret = ret + F.make_list(new_out)
+        i = i + 1
+    return ret
+
 
 def mean(x, axis=None, keep_dims=False):
     """
@@ -2459,6 +2490,7 @@ def list_func(data):
     for i in data:
         ret = ret + F.make_list(i)
     return ret
+
 
 def tuple_func(data):
     """Implementation of `tuple`."""

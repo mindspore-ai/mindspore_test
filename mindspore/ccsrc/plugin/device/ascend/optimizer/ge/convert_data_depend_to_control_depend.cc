@@ -20,6 +20,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
+#include "include/transform/graph_ir/utils.h"
 
 namespace mindspore {
 namespace opt {
@@ -33,13 +34,25 @@ const AnfNodePtr ConvertDataDependToControlDepend::Process(const FuncGraphPtr &f
   MS_EXCEPTION_IF_NULL(node);
   auto cnode = node->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(cnode);
-  PrimitiveSet data_to_control_set = {prim::kPrimSend};
-  if (!IsOneOfPrimitiveCNode(cnode, data_to_control_set)) {
+  if (common::AnfAlgo::HasNodeAttr(kDataToControl, cnode) || !AnfUtils::IsRealKernel(node) ||
+      IsPrimitiveCNode(node, prim::kPrimInitDataSetQueue)) {
     return nullptr;
   }
-  if (common::AnfAlgo::HasNodeAttr(kDataToControl, cnode)) {
+  auto adapter = transform::FindAdapter(node, True);
+  if (adapter == nullptr || !adapter->getOutputMap().empty() || !adapter->getDynOutputMap().empty()) {
     return nullptr;
   }
+
+  auto manager = func_graph->manager();
+  MS_EXCEPTION_IF_NULL(manager);
+  auto node_users = manager->node_users()[cnode];
+  auto res = std::find_if(node_users.begin(), node_users.end(), [](const auto user) {
+    return !IsPrimitiveCNode(user.first, prim::kPrimDepend) && !IsPrimitiveCNode(user.first, prim::kPrimUpdateState);
+  });
+  if (res == node_users.end()) {
+    return nullptr;
+  }
+
   MS_LOG(DEBUG) << "Process node: " << node->fullname_with_scope();
   auto tensor = std::make_shared<tensor::Tensor>(0.0);
   auto kernel_graph = func_graph->cast<KernelGraphPtr>();

@@ -840,10 +840,12 @@ class MultitypeFuncGraph(MultitypeFuncGraph_):
 
 class HyperMap(HyperMap_):
     """
-    Hypermap will apply the set operation to input sequences.
+    HyperMap will apply the set operation to input sequences.
 
     Apply the operations to every element of the sequence or nested sequence. Different
-    from `mindspore.ops.Map`, the `HyperMap` supports to apply on nested structure.
+    from `mindspore.ops.Map`, the `HyperMap` supports to apply on nested structure. The
+    `HyperMap` also supports dynamic sequences as input, but it does not extend this
+    support to nested dynamic sequences.
 
     Args:
         ops (Union[MultitypeFuncGraph, None], optional): `ops` is the operation to apply. If `ops` is `None`,
