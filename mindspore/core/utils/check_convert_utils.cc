@@ -530,8 +530,11 @@ bool CheckAndConvertUtils::CheckValueSame(const ValuePtr &value_1, const ValuePt
     return false;
   }
   if (value_1->isa<tensor::BaseTensor>()) {
+    auto value_1_ptr = value_1->cast_ptr<tensor::BaseTensor>();
+    MS_EXCEPTION_IF_NULL(value_1_ptr);
     auto list_tensor_value = value_2->cast_ptr<tensor::BaseTensor>();
-    return value_1->cast_ptr<tensor::BaseTensor>()->ValueEqual(*list_tensor_value);
+    MS_EXCEPTION_IF_NULL(list_tensor_value);
+    return value_1_ptr->ValueEqual(*list_tensor_value);
   }
   return *value_1 == *value_2;
 }

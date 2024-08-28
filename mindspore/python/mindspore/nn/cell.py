@@ -733,8 +733,8 @@ class Cell(Cell_):
 
         # Run in PyNative mode.
         if not (self._init_flag or self._is_check_and_refresh):
-            self._self_check()
             self._init_check()
+            self._self_check()
 
         if not (self.requires_grad or self._dynamic_shape_inputs or self.has_bprop or self.mixed_precision_type):
             if not (self._forward_pre_hook or self._forward_hook or self._backward_pre_hook or self._backward_hook or
@@ -748,6 +748,22 @@ class Cell(Cell_):
     def _complex_call(self, *args, **kwargs):
         """
         PyNative call with requires_grad or hooks
+        """
+        self._call_pre_process(*args, **kwargs)
+
+        if not (self._forward_pre_hook or self._forward_hook or self._backward_pre_hook or self._backward_hook or
+                self._shard_fn or self._recompute_cell):
+            output = self.construct(*args, **kwargs)
+        else:
+            output = self._run_construct(*args, **kwargs)
+
+        self._call_post_process(output, *args, **kwargs)
+
+        return output
+
+    def _call_pre_process(self, *args, **kwargs):
+        """
+        Process cell info before call construct
         """
         if self.requires_grad:
             self._is_call_new_graph_before = True
@@ -764,12 +780,10 @@ class Cell(Cell_):
         if self.mixed_precision_type is not None:
             _pynative_executor.set_mixed_precision_type(self.mixed_precision_type)
 
-        if not (self._forward_pre_hook or self._forward_hook or self._backward_pre_hook or self._backward_hook or
-                self._shard_fn or self._recompute_cell):
-            output = self.construct(*args, **kwargs)
-        else:
-            output = self._run_construct(*args, **kwargs)
-
+    def _call_post_process(self, output, *args, **kwargs):
+        """
+        Process cell info after call construct
+        """
         if self.requires_grad:
             _pynative_executor.end_graph(self, output, *args, **kwargs)
         elif self._dynamic_shape_inputs is not None:
@@ -782,8 +796,6 @@ class Cell(Cell_):
         # mixed precision reset
         if self.mixed_precision_type is not None:
             _pynative_executor.set_mixed_precision_type(MixedPrecisionType.NOTSET, False)
-
-        return output
 
     def _add_attr(self, name, value):
         if name and name[:2] != '__' and name not in Cell.IGNORE_LIST:

@@ -241,7 +241,7 @@ void EmplaceSliceInputs(const FrontendOpRunInfoPtr &op_run_info, const std::vect
 }
 
 size_t GetCurStreamId(const std::string &device_target) {
-  auto stream_id = kDefaultStreamIndex;
+  size_t stream_id = kDefaultStreamIndex;
 #ifndef ENABLE_TEST
   auto device_ctx = runtime::OpRunner::GetDeviceContext(device_target);
   stream_id = device_ctx->device_res_manager_->GetCurrentStreamId();
