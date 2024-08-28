@@ -577,7 +577,10 @@ Status TreeAdapter::LaunchSubprocess() {
     MS_LOG(ERROR) << log_prefix << ". Launch failed.";
 
     // got the first error from pipeline op
-    ret = tree_->AllTasks()->GetTaskErrorIfAny();
+    auto task_error = tree_->AllTasks()->GetTaskErrorIfAny();
+    if (task_error != Status::OK()) {
+      ret = task_error;
+    }
 
     // release the message queue
     message_queue.SetReleaseFlag(true);
@@ -692,7 +695,7 @@ Status TreeAdapter::Launch() {
         py::module::import("mindspore.dataset.core.config").attr("set_seed")(seed);
       }
 
-      // the current is independent dataset process, no need to start new subprocess by ENV MS_INDEPENDENT_DATASET
+      // no need to start new subprocess in independent dataset process
       (void)common::SetEnv("MS_INDEPENDENT_DATASET", "False");
 
       // release the gil in child process
