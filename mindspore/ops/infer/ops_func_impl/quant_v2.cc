@@ -31,14 +31,11 @@ namespace ops {
 
 BaseShapePtr QuantV2FuncImpl::InferShape(const PrimitivePtr &primitive,
                                          const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(input_args[kInputIndex0]);
   auto input_shape = input_args[kInputIndex0]->GetShape();
-  MS_EXCEPTION_IF_NULL(input_shape);
   return input_shape->Clone();
 }
 
 ShapeArray QuantV2FuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  MS_EXCEPTION_IF_NULL(input_values[kInputIndex0]);
   const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   return {x_tensor->shape()};
@@ -46,8 +43,6 @@ ShapeArray QuantV2FuncImpl::InferShape(const PrimitivePtr &primitive, const Valu
 
 TypePtr QuantV2FuncImpl::InferType(const PrimitivePtr &primitive,
                                    const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
-  MS_EXCEPTION_IF_NULL(input_args[kInputIndex5]);
   auto dtype_ptr = GetScalarValue<int64_t>(input_args[kInputIndex5]->GetValue());
   auto type = TypeIdToType(static_cast<TypeId>(dtype_ptr.value()));
   MS_CHECK_VALUE(type == kInt8 || type == kInt4, primitive->name() + "error: dtype should be " + kInt8->ToString() +

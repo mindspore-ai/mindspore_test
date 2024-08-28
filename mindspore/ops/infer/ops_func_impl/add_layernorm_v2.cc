@@ -47,13 +47,9 @@ using double_complex = std::complex<double>;
 
 abstract::BaseShapePtr AddLayerNormV2FuncImpl::InferShape(const PrimitivePtr &prim,
                                                           const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(prim);
   auto x_shape_ptr = input_args[kInputIndex0]->GetShape();
   auto gamma_shape_ptr = input_args[kInputIndex2]->GetShape();
   auto beta_shape_ptr = input_args[kInputIndex3]->GetShape();
-  MS_EXCEPTION_IF_NULL(x_shape_ptr);
-  MS_EXCEPTION_IF_NULL(gamma_shape_ptr);
-  MS_EXCEPTION_IF_NULL(beta_shape_ptr);
 
   auto x_shape = x_shape_ptr->GetShapeVector();
   auto gamma_shape = gamma_shape_ptr->GetShapeVector();
@@ -88,7 +84,6 @@ TypePtr AddLayerNormV2FuncImpl::InferType(const PrimitivePtr &prim,
 }
 
 ShapeArray AddLayerNormV2FuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
-  MS_EXCEPTION_IF_NULL(primitive);
   const auto &x_tensor = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
   const auto &x_shape = x_tensor->shape();

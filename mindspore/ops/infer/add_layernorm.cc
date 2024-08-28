@@ -46,7 +46,6 @@ namespace mindspore {
 namespace ops {
 namespace {
 BaseShapePtr AddLayerNormInferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) {
-  MS_EXCEPTION_IF_NULL(primitive);
   auto x_shape_ptr = input_args[kInputIndex0]->GetShape();
   auto gamma_shape_ptr = input_args[kInputIndex2]->GetShape();
   auto beta_shape_ptr = input_args[kInputIndex3]->GetShape();

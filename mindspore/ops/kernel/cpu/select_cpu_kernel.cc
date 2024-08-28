@@ -42,8 +42,16 @@ int SelectCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const 
   if ((ret = KernelMod::Resize(inputs, outputs)) != 0) {
     return ret;
   }
-  std::vector<int64_t> input_shape = inputs[0]->GetShapeVector();
-  element_num_ = SizeOf(input_shape);
+  auto cond_shape = LongVecToSizeVec(inputs.at(kIndex0)->GetShapeVector());
+  auto x_shape = LongVecToSizeVec(inputs.at(kIndex1)->GetShapeVector());
+  auto y_shape = LongVecToSizeVec(inputs.at(kIndex2)->GetShapeVector());
+  auto output_shape = LongVecToSizeVec(outputs.at(kIndex0)->GetShapeVector());
+  is_need_broadcast_ = (cond_shape != x_shape) || (cond_shape != y_shape);
+  if (is_need_broadcast_) {
+    GetBroadCastIndex(cond_shape, output_shape, &index_list1_);
+    GetBroadCastIndex(x_shape, output_shape, &index_list2_);
+    GetBroadCastIndex(y_shape, output_shape, &index_list3_);
+  }
   return KRET_OK;
 }
 
@@ -56,12 +64,26 @@ bool SelectCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
   auto *input_x = reinterpret_cast<T *>(inputs[1]->device_ptr());
   auto *input_y = reinterpret_cast<T *>(inputs[2]->device_ptr());
   auto *output = reinterpret_cast<T *>(outputs[0]->device_ptr());
-  auto task = [&input_x, &input_y, &output, &input_cond](size_t start, size_t end) {
-    for (size_t i = start; i < end; i++) {
-      output[i] = input_cond[i] ? input_x[i] : input_y[i];
-    }
-  };
-  ParallelLaunchAutoSearch(task, element_num_, this, &parallel_search_info_);
+
+  CTask task;
+  if (!is_need_broadcast_) {
+    task = [this, &input_x, &input_y, &output, &input_cond](size_t start, size_t end) {
+      for (size_t i = start; i < end; i++) {
+        output[i] = input_cond[i] ? input_x[i] : input_y[i];
+      }
+    };
+  } else {
+    task = [this, &input_x, &input_y, &output, &input_cond](size_t start, size_t end) {
+      for (size_t i = start; i < end; i++) {
+        auto idx1 = index_list1_[i];
+        auto idx2 = index_list2_[i];
+        auto idx3 = index_list3_[i];
+        output[i] = input_cond[idx1] ? input_x[idx2] : input_y[idx3];
+      }
+    };
+  }
+  size_t elem_num = outputs[kIndex0]->size() / sizeof(T);
+  ParallelLaunchAutoSearch(task, elem_num, this, &parallel_search_info_);
   return true;
 }
 
