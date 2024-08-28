@@ -17,6 +17,8 @@
 #include "frontend/optimizer/utils.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "utils/ms_context.h"
+#include "utils/compile_config.h"
 
 namespace mindspore {
 namespace opt {
@@ -49,6 +51,14 @@ AnfNodePtr GetBpropCaller(const FuncGraphManagerPtr &manager, const AnfNodePtr &
     MS_LOG(EXCEPTION) << "The bprop_getter should be used in input 0, but got " << user_node_idx->second;
   }
   return user_node_idx->first;
+}
+
+bool RecomputeBeforeInline() {
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  const auto cell_reuse = context->CellReuseLevel() != CellReuseLevel::kNoCellReuse;
+  const auto enable_recompute_before_inline = common::GetCompileConfig("ENABLE_RECOMPUTE_BEFORE_INLINE") == "1";
+  return cell_reuse || enable_recompute_before_inline;
 }
 }  // namespace opt
 }  // namespace mindspore

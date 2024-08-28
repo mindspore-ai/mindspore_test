@@ -24,6 +24,7 @@ namespace mindspore {
 namespace opt {
 AnfNodePtr GetBpropGetter(const FuncGraphManagerPtr &manager, const CNodePtr &node);
 AnfNodePtr GetBpropCaller(const FuncGraphManagerPtr &manager, const AnfNodePtr &bprop_getter);
+bool RecomputeBeforeInline();
 }  // namespace opt
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_FRONTEND_OPTIMIZER_UTILS_H_

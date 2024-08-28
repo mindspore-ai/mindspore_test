@@ -23,6 +23,7 @@
 #include "frontend/optimizer/irpass.h"
 #include "frontend/optimizer/optimizer.h"
 #include "frontend/optimizer/anf_visitor.h"
+#include "frontend/optimizer/utils.h"
 #include "include/common/utils/parallel_context.h"
 #include "ir/func_graph.h"
 
@@ -34,7 +35,7 @@ class SetCellOutputNoRecompute : public AnfVisitor {
   AnfNodePtr operator()(const OptimizerPtr &, const AnfNodePtr &node) override {
     auto context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(context);
-    const auto no_cell_reuse = context->CellReuseLevel() == CellReuseLevel::kNoCellReuse;
+    const auto recompute_after_inline = !RecomputeBeforeInline();
     if (!IsValueNode<FuncGraph>(node)) {
       return nullptr;
     }
@@ -58,7 +59,7 @@ class SetCellOutputNoRecompute : public AnfVisitor {
       }
       for (const auto &real_output : real_outputs) {
         // Set the attr of cnode in case of shared primitives.
-        if (no_cell_reuse) {
+        if (recompute_after_inline) {
           real_output->AddAttr(kAttrRecompute, MakeValue(false));
         }
 
@@ -71,7 +72,7 @@ class SetCellOutputNoRecompute : public AnfVisitor {
         }
       }
     }
-    if (no_cell_reuse) {
+    if (recompute_after_inline) {
       fg->erase_flag(FUNC_GRAPH_OUTPUT_NO_RECOMPUTE);
     }
     return nullptr;

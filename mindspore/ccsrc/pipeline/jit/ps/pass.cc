@@ -36,6 +36,7 @@
 #include "frontend/optimizer/irpass.h"
 #include "frontend/optimizer/graph_transform.h"
 #include "frontend/optimizer/auto_monad_eliminate.h"
+#include "frontend/optimizer/utils.h"
 #include "include/common/fallback.h"
 #include "include/common/utils/parallel_context.h"
 #include "frontend/parallel/dynamic_shape/dynamic_shape.h"
@@ -525,7 +526,7 @@ OptPassGroupMap GetOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass) {
      {"get_grad_eliminate_", get_grad},
      {"virtual_output", opt::OptPassConfig({irpass.virtual_output_eliminate_})},
      {"merge_forward", opt::OptPassConfig(ad::MergeForward)},
-     {"cell_reuse_recompute_pass", opt::OptPassConfig(opt::irpass::AddRecomputeNodes)},
+     {"cell_reuse_recompute_pass", opt::OptPassConfig(opt::irpass::Recomputation())},
      {"cell_reuse_handle_not_recompute_node_pass", cell_reuse_handle_not_recompute_node_pass},
      {"before_grad", before_grad},
      {"meta_fg_expand", opt::OptPassConfig(opt::irpass::ExpandMetaFg())},
@@ -767,7 +768,7 @@ bool OptPassGradEpilogueGroup(const ResourcePtr &resource) { return OptPassGroup
 bool AddRecomputationPass(const ResourcePtr &resource) {
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
-  if (context->CellReuseLevel() != CellReuseLevel::kNoCellReuse) {
+  if (opt::RecomputeBeforeInline()) {
     return true;
   }
   MS_EXCEPTION_IF_NULL(resource);
