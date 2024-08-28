@@ -462,6 +462,10 @@ class Profiler:
         real_path = os.path.realpath(path)
         PathManager.check_input_directory_path(real_path)
         profiler_parent_path_list = PathManager.get_profiler_parent_path_list(real_path)
+        if not isinstance(data_simplification, bool):
+            logger.warning(f"For offline_analyse, the parameter data_simplification must be bool, "
+                           f"but got type {type(data_simplification)}, it will be set to True.")
+            data_simplification = True
         if not profiler_parent_path_list:
             raise ProfilerPathErrorException(f'The provided path "{path}" must have a "profiler" directory for '
                                              f'single-device profiler data, or multiple subdirectories each containing '
