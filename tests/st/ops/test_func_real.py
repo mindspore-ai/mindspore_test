@@ -28,7 +28,8 @@ class Net(nn.Cell):
         return output
 
 
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_real_normal(mode):
     """
@@ -38,7 +39,7 @@ def test_real_normal(mode):
     """
     ms.set_context(mode=mode)
     net = Net()
-    x = ms.Tensor(np.asarray(np.complex(1.3+0.4j)), ms.complex64)
+    x = ms.Tensor(np.asarray(np.complex(1.3 + 0.4j)), ms.complex64)
     out = net(x)
     expect_out = np.array(1.3)
     assert np.allclose(out.asnumpy(), expect_out)

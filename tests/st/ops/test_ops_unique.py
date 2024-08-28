@@ -24,12 +24,15 @@ from tests.mark_utils import arg_mark
 def generate_random_input(shape):
     return np.random.randint(0, 10, shape)
 
+
 def forward_expect_func(inputx, return_inverse=False, return_counts=False):
     return np.unique(inputx, False, return_inverse, return_counts)
+
 
 @test_utils.run_with_cell
 def unique_forward_func(inputx, is_sorted=True, return_inverse=False, return_counts=False, dim=None):
     return unique(inputx, is_sorted, return_inverse, return_counts, dim)
+
 
 @test_utils.run_with_cell
 def unique_forward_func_dynamic(inputx, is_sorted=True, dim=1):
@@ -74,7 +77,6 @@ def test_ops_unique_forward_dim_None(mode):
         out3, counts3 = unique_forward_func(inputx, True, False, True, None)
         out4, inverse4, counts4 = unique_forward_func(inputx, True, True, True, None)
 
-
     np.testing.assert_allclose(out1.asnumpy(), expect_out1, rtol=1e-3)
     np.testing.assert_allclose(out2.asnumpy(), expect_out2, rtol=1e-3)
     np.testing.assert_allclose(inverse2.asnumpy(), expect_inverse2, rtol=1e-3)
@@ -83,6 +85,7 @@ def test_ops_unique_forward_dim_None(mode):
     np.testing.assert_allclose(out4.asnumpy(), expect_out4, rtol=1e-3)
     np.testing.assert_allclose(inverse4.asnumpy(), expect_inverse4, rtol=1e-3)
     np.testing.assert_allclose(counts4.asnumpy(), expect_counts4, rtol=1e-3)
+
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("mode", ["pynative", "KBK"])
@@ -94,8 +97,6 @@ def test_ops_unique_forward_with_dim(mode):
     """
     inputx = ms.Tensor([[1, 3, 2, 3, 4, 5, 3, 2], [2, 4, 3, 2, 2, 5, 2, 5], [1, 3, 2, 3, 4, 5, 3, 2]])
 
-
-
     expect_out1 = np.array([[1, 2, 2, 3, 3, 4, 5], [2, 3, 5, 2, 4, 2, 5], [1, 2, 2, 3, 3, 4, 5]])
     expect_inverse1 = np.array([0, 4, 1, 3, 5, 6, 3, 2])
     expect_counts1 = np.array([1, 1, 1, 2, 1, 1, 1])
@@ -103,7 +104,6 @@ def test_ops_unique_forward_with_dim(mode):
     expect_out2 = np.array([[1, 3, 2, 3, 4, 5, 3, 2], [2, 4, 3, 2, 2, 5, 2, 5]])
     expect_inverse2 = np.array([0, 1, 0])
     expect_counts2 = np.array([2, 1])
-
 
     if mode == "pynative":
         ms.context.set_context(mode=ms.PYNATIVE_MODE)
@@ -125,7 +125,6 @@ def test_ops_unique_forward_with_dim(mode):
     np.testing.assert_allclose(out2.asnumpy(), expect_out2, rtol=1e-3)
     np.testing.assert_allclose(inverse2.asnumpy(), expect_inverse2, rtol=1e-3)
     np.testing.assert_allclose(counts2.asnumpy(), expect_counts2, rtol=1e-3)
-
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')

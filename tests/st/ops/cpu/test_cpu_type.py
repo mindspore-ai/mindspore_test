@@ -1,13 +1,13 @@
-from tests.mark_utils import arg_mark
-import numpy as np
-import pytest
-import mindspore.nn as nn
-from mindspore import Tensor
-from mindspore.ops import operations as P
 import mindspore.context as context
+import mindspore.nn as nn
+import numpy as np
 from mindspore.nn import Dense
 from mindspore.nn import TrainOneStepCell, WithLossCell
 from mindspore.nn.optim import Momentum
+
+from mindspore import Tensor
+from mindspore.ops import operations as P
+from tests.mark_utils import arg_mark
 
 context.set_context(mode=context.GRAPH_MODE, device_target='CPU')
 
@@ -22,7 +22,8 @@ class Net(nn.Cell):
         return self.bias_add1(self.bias_add(x, b), c)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_bias_add1():
     x = np.ones([2, 2]).astype(np.float16)
     b = np.array([1, 1]).astype(np.float16)
@@ -56,7 +57,8 @@ class Net2(nn.Cell):
         return self.bias_add1(self.bias_add(x, b), c)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_bias_add2():
     x = np.ones([2, 2]).astype(np.float32)
     a = np.array([1, 1]).astype(np.float32)
@@ -89,7 +91,8 @@ class MomentumNet(nn.Cell):
         return output
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_momentum():
     epoch = 1
     net = MomentumNet()

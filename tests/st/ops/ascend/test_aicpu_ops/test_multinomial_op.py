@@ -20,6 +20,7 @@ import mindspore.context as context
 import mindspore.nn as nn
 from mindspore import Tensor
 from mindspore.ops import operations as P
+from mindspore.common.api import _pynative_executor
 
 context.set_context(mode=context.GRAPH_MODE, device_target='Ascend')
 
@@ -80,6 +81,7 @@ def test_multinomial_0d():
         x = Tensor(1)
         net = Net(1)
         net(x)
+        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -93,3 +95,4 @@ def test_multinomial_3d():
         x = Tensor(np.array([[[2, 0], [0, 9]]]).astype(np.float32))
         net = Net(1)
         net(x)
+        _pynative_executor.sync()

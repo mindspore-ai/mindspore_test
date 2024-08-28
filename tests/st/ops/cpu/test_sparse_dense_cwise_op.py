@@ -50,7 +50,8 @@ class SparseDenseCwiseDivNet(nn.Cell):
         return self.op(x1_indices, x1_values, x1_shape, x2)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_sparse_dense_add_dyn():
     """
     Feature: test SparseDenseCwiseAdd op in cpu.
@@ -75,7 +76,8 @@ def test_sparse_dense_add_dyn():
     assert out.asnumpy().shape == expect_out_shape
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_sparse_dense_mul_dyn():
     """
     Feature: test SparseDenseCwiseMul op in cpu.
@@ -100,7 +102,8 @@ def test_sparse_dense_mul_dyn():
     assert out.asnumpy().shape == expect_out_shape
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 @pytest.mark.skip(reason="Have issues")
 def test_sparse_dense_div_dyn():
     """

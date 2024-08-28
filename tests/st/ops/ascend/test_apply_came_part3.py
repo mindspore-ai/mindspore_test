@@ -16,7 +16,6 @@ from tests.mark_utils import arg_mark
 import numpy as np
 import pytest
 
-
 import mindspore as ms
 import mindspore.context as context
 import mindspore.nn as nn
@@ -29,9 +28,9 @@ class Net(nn.Cell):
         super(Net, self).__init__()
         self.apply_came_part3 = P.ApplyCamePart3()
 
-
     def construct(self, *inputs):
         return self.apply_came_part3(*inputs)
+
 
 @pytest.mark.skip(reason="only for testing stuck scenario")
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')

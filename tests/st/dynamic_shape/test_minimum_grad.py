@@ -16,10 +16,11 @@
 import numpy as np
 import pytest
 from tests.st.utils import test_utils
+from tests.mark_utils import arg_mark
 
 from mindspore import ops
+from mindspore.common.api import _pynative_executor
 import mindspore as ms
-from tests.mark_utils import arg_mark
 
 
 @test_utils.run_with_cell
@@ -51,7 +52,6 @@ def test_minimum_grad_op_forward(context_mode, data_type):
     expect_out = np.array([[1., 2., 0.], [0., 0., 3.]]).astype(np.float32)
     np.testing.assert_allclose(out[0].asnumpy(), expect_out[0], rtol=1e-3)
     np.testing.assert_allclose(out[1].asnumpy(), expect_out[1], rtol=1e-3)
-
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux'], level_mark='level1', card_mark='onecard',
@@ -157,3 +157,4 @@ def test_minimum_grad_op_dtype_check(context_mode, data_type):
     grads = ms.Tensor(np.array([1., 2., 3.]).astype(data_type))
     with pytest.raises(TypeError):
         _ = minimum_grad_forward_func(x1, x2, grads)
+        _pynative_executor.sync()

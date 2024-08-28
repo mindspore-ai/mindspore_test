@@ -12,15 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
-import pytest
-import numpy as np
 import mindspore.nn as nn
-from mindspore.ops import operations as P
-from mindspore import Tensor, context
-from mindspore.ops.functional import vmap
-from mindspore.ops import functional as F
+import numpy as np
+import pytest
 from mindspore.common.api import jit
+from mindspore.ops.functional import vmap
+
+from mindspore import Tensor, context
+from mindspore.ops import functional as F
+from mindspore.ops import operations as P
+from tests.mark_utils import arg_mark
 
 context.set_context(mode=context.GRAPH_MODE, device_target='CPU')
 
@@ -34,7 +35,8 @@ class CeluTEST(nn.Cell):
         return self.celu(x)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 @pytest.mark.parametrize("data_type", [np.float32, np.float16])
 def test_celu_op(data_type):
     """
@@ -57,7 +59,8 @@ def test_celu_op(data_type):
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=error)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 @pytest.mark.parametrize("data_type", [np.float32, np.float16])
 def test_celu_func(data_type):
     """
@@ -78,7 +81,8 @@ def test_celu_func(data_type):
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=error)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_celu_vmap():
     """
     Feature: celu cpu kernel.
@@ -86,6 +90,7 @@ def test_celu_vmap():
     Expectation: Success.
     """
     error = 1e-3
+
     def cal_celu(x):
         return P.CeLU(1.0)(x)
 

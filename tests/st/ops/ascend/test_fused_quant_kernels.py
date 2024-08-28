@@ -27,6 +27,7 @@ class NumpyQuantOps:
     """
     numpy quant ops for test.
     """
+
     @staticmethod
     def anti_quant(data, scale, offset, sqrt_mode=False, dst_type=np.float16):
         """
@@ -62,6 +63,7 @@ class NumpyQuantOps:
 
 class NumpyFullQuant:
     """full quant process using numpy"""
+
     def __init__(self,
                  weight_scale,
                  act_scale,
@@ -83,6 +85,7 @@ class NumpyFullQuant:
 
 class QuantDequantCell(Cell):
     """matmul and dequant fused cell"""
+
     def __init__(self,
                  weight,
                  weight_scale,
@@ -127,6 +130,7 @@ class QuantDequantCell(Cell):
 
 class AntiquantBMMCell(Cell):
     """fused anti quant cell."""
+
     def __init__(self,
                  scale,
                  offset,

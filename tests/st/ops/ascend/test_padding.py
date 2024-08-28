@@ -37,4 +37,4 @@ def test_padding():
     x = Tensor(np.array([[8], [10]]), mstype.int32)
     padding = Net(4)
     out = padding(x)
-    assert(out.asnumpy() == [[8, 0, 0, 0], [10, 0, 0, 0]]).all()
+    assert (out.asnumpy() == [[8, 0, 0, 0], [10, 0, 0, 0]]).all()

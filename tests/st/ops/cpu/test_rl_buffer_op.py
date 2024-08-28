@@ -26,9 +26,9 @@ from tests.mark_utils import arg_mark
 
 
 class RLBufferAppend(nn.Cell):
-    def __init__(self, capcity, shapes, types):
+    def __init__(self, capacity, shapes, types):
         super(RLBufferAppend, self).__init__()
-        self._capacity = capcity
+        self._capacity = capacity
         self.count = Parameter(Tensor(0, ms.int32), name="count")
         self.head = Parameter(Tensor(0, ms.int32), name="head")
         self.buffer_append = P.BufferAppend(self._capacity, shapes, types)
@@ -39,9 +39,9 @@ class RLBufferAppend(nn.Cell):
 
 
 class RLBufferGet(nn.Cell):
-    def __init__(self, capcity, shapes, types):
+    def __init__(self, capacity, shapes, types):
         super(RLBufferGet, self).__init__()
-        self._capacity = capcity
+        self._capacity = capacity
         self.count = Parameter(Tensor(5, ms.int32), name="count")
         self.head = Parameter(Tensor(0, ms.int32), name="head")
         self.buffer_get = P.BufferGetItem(self._capacity, shapes, types)
@@ -52,9 +52,9 @@ class RLBufferGet(nn.Cell):
 
 
 class RLBufferSample(nn.Cell):
-    def __init__(self, capcity, batch_size, shapes, types):
+    def __init__(self, capacity, batch_size, shapes, types):
         super(RLBufferSample, self).__init__()
-        self._capacity = capcity
+        self._capacity = capacity
         self.count = Parameter(Tensor(5, ms.int32), name="count")
         self.head = Parameter(Tensor(0, ms.int32), name="head")
         self.buffer_sample = P.BufferSample(self._capacity, batch_size, shapes, types)
@@ -64,10 +64,10 @@ class RLBufferSample(nn.Cell):
         return self.buffer_sample(buffer, self.count, self.head)
 
 
-states = Tensor(np.arange(4*5).reshape(5, 4).astype(np.float32)/10.0)
-actions = Tensor(np.arange(2*5).reshape(5, 2).astype(np.int32))
+states = Tensor(np.arange(4 * 5).reshape(5, 4).astype(np.float32) / 10.0)
+actions = Tensor(np.arange(2 * 5).reshape(5, 2).astype(np.int32))
 rewards = Tensor(np.ones((5, 1)).astype(np.int32))
-states_ = Tensor(np.arange(4*5).reshape(5, 4).astype(np.float32))
+states_ = Tensor(np.arange(4 * 5).reshape(5, 4).astype(np.float32))
 b = [states, actions, rewards, states_]
 
 s = Tensor(np.array([2, 2, 2, 2]), ms.float32)
@@ -87,7 +87,7 @@ c = [Tensor(np.array([[6, 6, 6, 6], [6, 6, 6, 6]]), ms.float32),
           essential_mark='unessential')
 def test_BufferSample():
     context.set_context(mode=context.PYNATIVE_MODE, device_target='CPU')
-    buffer_sample = RLBufferSample(capcity=5, batch_size=3, shapes=[(4,), (2,), (1,), (4,)], types=[
+    buffer_sample = RLBufferSample(capacity=5, batch_size=3, shapes=[(4,), (2,), (1,), (4,)], types=[
         ms.float32, ms.int32, ms.int32, ms.float32])
     ss, aa, rr, ss_ = buffer_sample(b)
     print(ss, aa, rr, ss_)
@@ -97,7 +97,7 @@ def test_BufferSample():
           essential_mark='unessential')
 def test_BufferGet():
     context.set_context(mode=context.PYNATIVE_MODE, device_target='CPU')
-    buffer_get = RLBufferGet(capcity=5, shapes=[(4,), (2,), (1,), (4,)], types=[
+    buffer_get = RLBufferGet(capacity=5, shapes=[(4,), (2,), (1,), (4,)], types=[
         ms.float32, ms.int32, ms.int32, ms.float32])
     ss, aa, rr, ss_ = buffer_get(b, 1)
     expect_s = [0.4, 0.5, 0.6, 0.7]
@@ -114,7 +114,7 @@ def test_BufferGet():
           essential_mark='unessential')
 def test_BufferAppend():
     context.set_context(mode=context.PYNATIVE_MODE, device_target='CPU')
-    buffer_append = RLBufferAppend(capcity=5, shapes=[(4,), (2,), (1,), (4,)], types=[
+    buffer_append = RLBufferAppend(capacity=5, shapes=[(4,), (2,), (1,), (4,)], types=[
         ms.float32, ms.int32, ms.int32, ms.float32])
 
     buffer_append(b, exp)

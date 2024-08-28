@@ -36,7 +36,8 @@ def sub_test(is_dyn_rank):
     tester.test_dynamic_grad_net([x, y], is_dyn_rank)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_sub_dyn_shape():
     """
     Feature: Sub Grad DynamicShape.
@@ -47,7 +48,8 @@ def test_sub_dyn_shape():
     sub_test(False)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_sub_dyn_rank():
     """
     Feature: Sub Grad DynamicShape.
@@ -77,7 +79,8 @@ def sub_test_scalar(is_dyn_rank):
     tester.test_dynamic_grad_net([x, y], is_dyn_rank)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_sub_dyn_shape_scalar():
     """
     Feature: Sub Grad DynamicShape.
@@ -95,7 +98,8 @@ def sub_test_both_scalar(is_dyn_rank):
     tester.test_dynamic_grad_net([x, y], is_dyn_rank)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_sub_dyn_shape_both_scalar():
     """
     Feature: Sub Grad DynamicShape.
@@ -114,7 +118,8 @@ def sub_test_same_shape(is_dyn_rank):
     tester.test_dynamic_grad_net([x, y], is_dyn_rank)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_sub_dyn_shape_same_shape():
     """
     Feature: Sub Grad DynamicShape.

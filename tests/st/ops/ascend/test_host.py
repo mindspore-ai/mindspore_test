@@ -6,6 +6,7 @@ from mindspore.ops import operations as P
 
 context.set_context(enable_graph_kernel=False, save_graphs=False, mode=context.PYNATIVE_MODE, device_target="Ascend")
 
+
 class Net(nn.Cell):
     def __init__(self):
         super(Net, self).__init__()
@@ -14,6 +15,7 @@ class Net(nn.Cell):
 
     def construct(self):
         return self.host(self.t1)
+
 
 def test_net():
     """

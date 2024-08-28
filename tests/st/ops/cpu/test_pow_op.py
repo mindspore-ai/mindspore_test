@@ -12,15 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
-import numpy as np
-import pytest
-
-import mindspore as ms
 import mindspore.context as context
 import mindspore.nn as nn
+import numpy as np
+
+import mindspore as ms
 from mindspore import Tensor, jit, ops
 from mindspore.ops import operations as P
+from tests.mark_utils import arg_mark
 
 
 class Net(nn.Cell):
@@ -32,7 +31,8 @@ class Net(nn.Cell):
         return self.ops(x, y)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_net():
     """
     Feature: ALL To ALL
@@ -80,7 +80,8 @@ def test_net():
     assert out.shape == expect.shape
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_tensor_pow_pynative():
     """
     Feature: Tensor interface pow.
@@ -99,7 +100,8 @@ def tensor_pow_func(x, y):
     return x.pow(y)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_tensor_pow_graph():
     """
     Feature: Tensor interface pow.
@@ -112,7 +114,8 @@ def test_tensor_pow_graph():
     assert np.all(output.asnumpy() == np.array([1, 4, 27]))
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_pow_functional():
     """
     Feature: Tensor interface pow.
@@ -125,7 +128,8 @@ def test_pow_functional():
     assert np.all(output.asnumpy() == np.array([1, 4, 27]))
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_pow_vmap():
     """
     Feature: Tensor interface pow.
@@ -139,7 +143,8 @@ def test_pow_vmap():
     assert np.all(output.asnumpy() == np.array([[1, 4, 27], [27, 4, 1]]))
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_pow_dynamic_shape():
     """
     Feature: test Pow op on CPU.
@@ -158,7 +163,8 @@ def test_pow_dynamic_shape():
     assert output.asnumpy().shape == except_shape
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_pow_complex():
     """
     Feature: Support various complex datatypes。
@@ -166,8 +172,8 @@ def test_pow_complex():
     Expectation: Output of Pow op match to numpy.power.
     """
     context.set_context(mode=context.GRAPH_MODE, device_target='CPU')
-    x_complex = np.array([1.+1.j, 1.-1.j, -1.+1.j, -1.-1.j])
-    y_complex = np.array([1.+1.j, 1.-1.j, -1.+1.j, -1.-1.j])
+    x_complex = np.array([1. + 1.j, 1. - 1.j, -1. + 1.j, -1. - 1.j])
+    y_complex = np.array([1. + 1.j, 1. - 1.j, -1. + 1.j, -1. - 1.j])
     np_out = np.power(x_complex, y_complex)
 
     complex_op = ops.Complex()

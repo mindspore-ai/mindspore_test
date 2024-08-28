@@ -21,6 +21,7 @@ import mindspore.context as context
 import mindspore.nn as nn
 from mindspore import Tensor
 
+
 class TensorArrayNet(nn.Cell):
     def __init__(self, dtype, element_shape, is_dynamic_shape=True, size=0):
         super(TensorArrayNet, self).__init__()
@@ -34,7 +35,8 @@ class TensorArrayNet(nn.Cell):
         return v, s
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_tensorarray():
     """
     Feature: TensorArray gpu TEST.
@@ -94,7 +96,8 @@ def test_tensorarray():
     ta.close()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_static_tensorarray():
     """
     Feature: TensorArray cpu TEST.

@@ -163,3 +163,4 @@ def test_no_grad_exception():
     with pytest.raises(RuntimeError, match="In no_grad context, you can not calculate gradient"):
         model(x)
         _pynative_executor.sync()
+

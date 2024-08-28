@@ -22,7 +22,6 @@ from mindspore import Tensor
 from mindspore.ops.operations import _grad_ops as G
 from mindspore.ops.functional import vmap
 
-
 context.set_context(mode=context.GRAPH_MODE, device_target="CPU")
 
 
@@ -37,7 +36,8 @@ class NetMaxPool3DGradGrad(nn.Cell):
         return self.maxpool_grad_grad_fun(x, out, grad)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_maxpool3d_grad_grad_fp16():
     """
     Feature: MaxPool3dGradGrad cpu kernel
@@ -66,7 +66,8 @@ def test_maxpool3d_grad_grad_fp16():
     assert np.allclose(output.asnumpy(), expect_result)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_maxpool3d_grad_grad_fp32():
     """
     Feature: MaxPool3dGradGrad cpu kernel
@@ -122,7 +123,8 @@ def test_maxpool3d_grad_grad_fp32():
     assert np.allclose(output.asnumpy(), expect_result)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 @pytest.mark.parametrize('axis', [2])
 def test_maxpool3d_grad_grad_vmap(axis):
     """

@@ -22,7 +22,6 @@ from mindspore.common import Tensor
 from mindspore.common import dtype as mstype
 from mindspore.ops import operations as P
 
-
 arith_np_func_map = {
     "prod": lambda a, b: a * b,
     "sum": lambda a, b: a + b,
@@ -71,7 +70,6 @@ def unsorted_segment_arith_expected(func, x, segment_ids, num_segments):
     trans_inp = np_inp.reshape(trans_inp_shape)
     trans_ids = np_ids.reshape(ids_size)
 
-
     for i in range(ids_size):
         out_index = trans_ids[i]
         if out_index < 0:
@@ -106,7 +104,6 @@ def test_unsorted_segment_op(func):
 
     expected = unsorted_segment_arith_expected(func, x, segment_ids, num_segments)
     np.testing.assert_array_almost_equal(graph_output.asnumpy(), expected)
-
 
 
 class TestUnsortedSegmentArithmeticNet(nn.Cell):

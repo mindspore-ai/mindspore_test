@@ -27,6 +27,7 @@ context.set_context(mode=context.PYNATIVE_MODE, device_target="Ascend")
 
 class NetConv2d(nn.Cell):
     "NetConv2d"
+
     def __init__(self):
         super(NetConv2d, self).__init__()
         out_channel = 2
@@ -70,6 +71,7 @@ def test_conv2d_acl():
 
 class NetConv2dWithGroup(nn.Cell):
     "NetConv2dWithGroup"
+
     def __init__(self):
         super(NetConv2dWithGroup, self).__init__()
         out_channel = 64

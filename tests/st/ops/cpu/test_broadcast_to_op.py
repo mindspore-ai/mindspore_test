@@ -21,9 +21,11 @@ import mindspore.context as context
 from mindspore.ops import operations as P
 from mindspore import Tensor
 from mindspore.nn import Cell
+from mindspore.common.api import _pynative_executor
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_broadcast():
     context.set_context(mode=context.GRAPH_MODE, device_target='CPU')
 
@@ -99,7 +101,8 @@ def test_broadcast_to_dtype():
         broadcast_to_dtype(dtype=dtype)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_broadcast_dyn_init():
     """
     Test running the op with -1's in the init shape to support varied inputs.
@@ -126,7 +129,8 @@ def test_broadcast_dyn_init():
     assert np.allclose(output.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard',
+          essential_mark='unessential')
 def test_broadcast_dyn_invalid_init():
     """
     Test running the op with -1's in the init shape in incorrect positions.
@@ -137,6 +141,7 @@ def test_broadcast_dyn_invalid_init():
     x_np = np.random.rand(4, 5).astype(np.float32)
     with pytest.raises(ValueError) or pytest.raises(RuntimeError):
         P.BroadcastTo(ms_shape)(Tensor(x_np))
+        _pynative_executor.sync()
 
 
 class BroadcastToNet(Cell):
@@ -152,7 +157,8 @@ class BroadcastToNet(Cell):
         return self.broadcastto(input_x)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_broadcast_to_dynamic_shape():
     """
     Feature: Test dynamic shape of BroadcastTo operator
@@ -170,7 +176,8 @@ def test_broadcast_to_dynamic_shape():
     assert np.allclose(output.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_broadcast_exception():
     """
     Feature: Test invalid input and target shape in of BroadcastTo.
@@ -181,6 +188,7 @@ def test_broadcast_exception():
         shape = (0,)
         x_np = np.random.randint(1, 4)
         P.BroadcastTo(shape)(Tensor(x_np))
+        _pynative_executor.sync()
         assert "ValueError: For 'BroadcastTo', each dimension pair, input_x shape and target shape must be equal or \
         input dimension is 1 or target dimension is -1. But got input_x shape: [const vector][], target shape: \
         [const vector][0]." in str(info.value)

@@ -58,7 +58,7 @@ def test_resize_bicubic_grad_pynative():
     types_2 = [np.float32, np.float64]
     for type_i in types_2:
         grad = np.array([1, 2, 3, 4])
-        grad = grad.reshape([1, 1, 2, 2,])
+        grad = grad.reshape([1, 1, 2, 2, ])
         gradients = Tensor(grad.astype(type_i))
         ori = np.array([1, 2, 3, 4])
         ori = ori.reshape([1, 1, 1, 4])

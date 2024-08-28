@@ -48,7 +48,8 @@ def grad_dyn_case(is_dynamic_rank):
         (input_x, random_samples), is_dynamic_rank)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_dynamic_shape_fractional_max_pool_with_fixed_ksize():
     """
     Feature: FractionalMaxPoolWithFixedKsize Grad DynamicShape.
@@ -63,7 +64,8 @@ def test_dynamic_shape_fractional_max_pool_with_fixed_ksize():
     grad_dyn_case(False)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_dynamic_rank_fractional_max_pool_with_fixed_ksize():
     """
     Feature: FractionalMaxPoolWithFixedKsize Grad DynamicRank.

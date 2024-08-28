@@ -54,7 +54,8 @@ def my_approximate_equal(x1, x2, tol=1e-5):
     return abs(x1 - x2) < tol
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_approxmiate_equal():
     """
     Feature: test ops ApproximateEqual.
@@ -65,10 +66,11 @@ def test_approxmiate_equal():
     approx_equal = NetApproxmiateEqual(tol)
     output = approx_equal()
     expect = my_approximate_equal(X, Y, tol)
-    assert(output.asnumpy() == expect).all()
+    assert (output.asnumpy() == expect).all()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_approxmiate_equal_docs():
     """
     Feature: test ops ApproximateEqual.
@@ -81,10 +83,11 @@ def test_approxmiate_equal_docs():
     x2 = np.array([2, 4, 6]).astype(np.float16)
     output = approx_equal.change_xy(Tensor(x1), Tensor(x2))
     expect = my_approximate_equal(x1, x2, tol)
-    assert(output.asnumpy() == expect).all()
+    assert (output.asnumpy() == expect).all()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_approxmiate_equal_different_shape():
     r"""
     Feature: test ops ApproximateEqual.
@@ -100,7 +103,8 @@ def test_approxmiate_equal_different_shape():
         _pynative_executor.sync()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_approxmiate_equal_tol_not_float():
     r"""
     Feature: test ops ApproximateEqual.
@@ -113,9 +117,11 @@ def test_approxmiate_equal_tol_not_float():
         x1 = np.random.rand(3, 3, 3).astype(np.float16)
         x2 = np.random.rand(3, 3, 3).astype(np.int)
         approx_equal.change_xy(Tensor(x1), Tensor(x2))
+        _pynative_executor.sync()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_approxmiate_equal_max_rank():
     r"""
     Feature: test ops ApproximateEqual.
@@ -133,7 +139,8 @@ def test_approxmiate_equal_max_rank():
         _pynative_executor.sync()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_approxmiate_equal_diff_dtype():
     r"""
     Feature: test ops ApproximateEqual.
@@ -147,10 +154,11 @@ def test_approxmiate_equal_diff_dtype():
     x2 = np.random.rand(3, 3, 3).astype(np.float32)
     output = approx_equal.change_xy(Tensor(x1), Tensor(x2))
     expect = my_approximate_equal(x1, x2, tol)
-    assert(output.asnumpy() == expect).all()
+    assert (output.asnumpy() == expect).all()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_approxmiate_equal_tensor_api():
     r"""
     Feature: test ops ApproximateEqual on tensor API.
@@ -160,21 +168,22 @@ def test_approxmiate_equal_tensor_api():
     tol = 0.5
     output = Tensor.approximate_equal(Tensor(X), Tensor(Y), tol)
     expect = my_approximate_equal(X, Y, tol)
-    assert(output.asnumpy() == expect).all()
+    assert (output.asnumpy() == expect).all()
     x1 = np.random.rand(4, 3, 3).astype(np.float32) / 12345
     x2 = np.random.rand(4, 3, 3).astype(np.float32) / 23456
     output = Tensor(x1).approximate_equal(Tensor(x2))
     expect = my_approximate_equal(x1, x2)
-    assert(output.asnumpy() == expect).all()
+    assert (output.asnumpy() == expect).all()
     tol = 2.
     x1 = Tensor(np.array([1, 2, 3]), mstype.float32)
     x2 = Tensor(np.array([2, 4, 6]), mstype.float32)
     output = Tensor.approximate_equal(Tensor(x1), Tensor(x2), tol)
     expect = my_approximate_equal(x1, x2, tol)
-    assert(output.asnumpy() == expect).all()
+    assert (output.asnumpy() == expect).all()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_approxmiate_equal_functional_api():
     r"""
     Feature: test ops ApproximateEqual on functional API.
@@ -184,27 +193,29 @@ def test_approxmiate_equal_functional_api():
     tol = 0.5
     output = approximate_equal(Tensor(X), Tensor(Y), tol)
     expect = my_approximate_equal(X, Y, tol)
-    assert(output.asnumpy() == expect).all()
+    assert (output.asnumpy() == expect).all()
     x1 = np.random.rand(4, 3, 3).astype(np.float32) / 12345
     x2 = np.random.rand(4, 3, 3).astype(np.float32) / 23456
     output = approximate_equal(Tensor(x1), Tensor(x2))
     expect = my_approximate_equal(x1, x2)
-    assert(output.asnumpy() == expect).all()
+    assert (output.asnumpy() == expect).all()
     tol = 2.
     x1 = Tensor(np.array([1, 2, 3]), mstype.float32)
     x2 = Tensor(np.array([2, 4, 6]), mstype.float32)
     output = approximate_equal(Tensor(x1), Tensor(x2), tol)
     expect = my_approximate_equal(x1, x2, tol)
-    assert(output.asnumpy() == expect).all()
+    assert (output.asnumpy() == expect).all()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_vmap_approximate_equal():
     """
     Feature: ApproximateEqual cpu op vmap feature.
     Description: test the vmap feature of ApproximateEqual.
     Expectation: success.
     """
+
     def cal_approximate_equal(input0, input1):
         func = P.ApproximateEqual(2.0)
         return func(input0, input1)

@@ -48,7 +48,6 @@ def cumulative_logsumexp(nptype, loss):
             self.x2 = Tensor(x2)
             self.axis2 = Tensor(axis2)
 
-
         @ms_function
         def construct(self):
             return (P.CumulativeLogsumexp()(self.x0, self.axis0),

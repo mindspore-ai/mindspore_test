@@ -23,7 +23,6 @@ from mindspore.train import Model
 import mindspore
 import pytest
 
-
 context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
 
 
@@ -69,6 +68,7 @@ def test_stridedslice_input_3d():
     end = (3, 3, 3)
     stride = (1, 1, 1)
     me_stridedslice(input_, begin, end, stride)
+
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_stridedslice_input_3d_bf16():

@@ -95,6 +95,7 @@ def test_kl_div_loss_vmap(reduction):
     Description: test cases for vmap of KLDivLoss operator
     Expectation: the result matched.
     """
+
     def cal_kl_div_loss(x, target):
         return P.KLDivLoss(reduction)(x, target)
 

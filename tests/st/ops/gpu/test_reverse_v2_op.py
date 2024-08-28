@@ -21,6 +21,8 @@ import mindspore.nn as nn
 import mindspore as ms
 from mindspore import Tensor
 from mindspore.ops import operations as P
+from mindspore.common.api import _pynative_executor
+
 
 class ReverseV2Net(nn.Cell):
     def __init__(self, axis):
@@ -38,6 +40,7 @@ def reverse_v2(x_numpy, axis):
     expected_output = np.flip(x_numpy, axis)
     np.testing.assert_array_equal(output, expected_output)
 
+
 def reverse_v2_3d(nptype):
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
 
@@ -49,6 +52,7 @@ def reverse_v2_3d(nptype):
     reverse_v2(x_numpy, (2, -2))
     reverse_v2(x_numpy, (-3, 1, 2))
 
+
 def reverse_v2_1d(nptype):
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
 
@@ -57,15 +61,18 @@ def reverse_v2_1d(nptype):
     reverse_v2(x_numpy, (0,))
     reverse_v2(x_numpy, (-1,))
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_reverse_v2_float16():
     reverse_v2_1d(np.float16)
     reverse_v2_3d(np.float16)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_reverse_v2_float32():
     reverse_v2_1d(np.float32)
     reverse_v2_3d(np.float32)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_reverse_v2_float64():
@@ -77,10 +84,12 @@ def test_reverse_v2_float64():
     reverse_v2_1d(np.float64)
     reverse_v2_3d(np.float64)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_reverse_v2_uint8():
     reverse_v2_1d(np.uint8)
     reverse_v2_3d(np.uint8)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_reverse_v2_uint16():
@@ -92,6 +101,7 @@ def test_reverse_v2_uint16():
     reverse_v2_1d(np.uint16)
     reverse_v2_3d(np.uint16)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_reverse_v2_int8():
     """
@@ -102,20 +112,24 @@ def test_reverse_v2_int8():
     reverse_v2_1d(np.int8)
     reverse_v2_3d(np.int8)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_reverse_v2_int16():
     reverse_v2_1d(np.int16)
     reverse_v2_3d(np.int16)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_reverse_v2_int32():
     reverse_v2_1d(np.int32)
     reverse_v2_3d(np.int32)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_reverse_v2_int64():
     reverse_v2_1d(np.int64)
     reverse_v2_3d(np.int64)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_reverse_v2_invalid_axis():
@@ -125,12 +139,15 @@ def test_reverse_v2_invalid_axis():
     with pytest.raises(ValueError) as info:
         reverse_v2_net = ReverseV2Net((0, 1, 2, 1))
         _ = reverse_v2_net(x)
+        _pynative_executor.sync()
     assert "'axis' cannot contain duplicate dimensions" in str(info.value)
 
     with pytest.raises(ValueError) as info:
         reverse_v2_net = ReverseV2Net((-2, -1, 3))
         _ = reverse_v2_net(x)
+        _pynative_executor.sync()
     assert "'axis' cannot contain duplicate dimensions" in str(info.value)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_reverse_v2_tensor_api():
@@ -144,6 +161,7 @@ def test_reverse_v2_tensor_api():
     output = input_x.reverse(axis=[1])
     expected = np.array([[4, 3, 2, 1], [8, 7, 6, 5]]).astype(np.int32)
     assert np.array_equal(output.asnumpy(), expected)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_reverse_v2_functional_api():

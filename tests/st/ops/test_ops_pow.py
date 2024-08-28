@@ -21,8 +21,10 @@ from tests.mark_utils import arg_mark
 from mindspore import ops
 import mindspore as ms
 
+
 def generate_random_input(shape, dtype):
     return np.random.uniform(0.9, 1.0, size=shape).astype(dtype), np.random.uniform(0.9, 1.0, size=shape).astype(dtype)
+
 
 @test_utils.run_with_cell
 def pow_forward_func(x, y):
@@ -99,6 +101,7 @@ def test_pow_op_vmap(context_mode, data_type):
     out = pow_vmap_func(x, y)
     expect_out = np.power(x_np, y_np)
     np.testing.assert_allclose(out.asnumpy(), expect_out, rtol=1e-3)
+
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
           card_mark='onecard', essential_mark='unessential')

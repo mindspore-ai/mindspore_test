@@ -54,8 +54,8 @@ def test_relu6():
     x = Tensor(np.array([[[[-1, 1, 10],
                            [5.9, 6.1, 6],
                            [10, 1, -1]]]]).astype(np.float32))
-    expect = np.array([[[[0, 1, 6,],
-                         [5.9, 6, 6,],
+    expect = np.array([[[[0, 1, 6, ],
+                         [5.9, 6, 6, ],
                          [6, 1, 0.]]]]).astype(np.float32)
 
     context.set_context(mode=context.PYNATIVE_MODE, device_target="GPU")
@@ -78,15 +78,14 @@ def test_relu6_dynamic():
     """
 
     x1 = Tensor(np.array([[-1.0, 4.0, -8.0], [2.0, -5.0, 9.0]]).astype(np.float32))
-    expect1 = np.array([[0, 4, 0,],
-                        [2, 0, 6,]]).astype(np.float32)
+    expect1 = np.array([[0, 4, 0, ],
+                        [2, 0, 6, ]]).astype(np.float32)
     x2 = Tensor(np.array([[[[-1, 1, 10],
                             [5.9, 6.1, 6],
                             [10, 1, -1]]]]).astype(np.float32))
-    expect2 = np.array([[[[0, 1, 6,],
-                          [5.9, 6, 6,],
+    expect2 = np.array([[[[0, 1, 6, ],
+                          [5.9, 6, 6, ],
                           [6, 1, 0.]]]]).astype(np.float32)
-
 
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
     relu6 = NetRelu6Dynamic()

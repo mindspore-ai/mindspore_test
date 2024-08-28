@@ -22,6 +22,7 @@ import scipy as osp
 import mindspore.nn as nn
 import mindspore.scipy as msp
 from mindspore import context, Tensor
+from mindspore.common.api import _pynative_executor
 import mindspore.numpy as mnp
 from mindspore.scipy.linalg import det
 
@@ -233,6 +234,7 @@ def test_eigh_error_type(dtype, argname, wrong_argvalue):
     kwargs = {argname: wrong_argvalue}
     with pytest.raises(TypeError):
         msp.linalg.eigh(Tensor(a), Tensor(b), **kwargs)
+        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_macos'], level_mark='level1', card_mark='onecard',
@@ -247,6 +249,7 @@ def test_eigh_error_tensor_dtype(dtype):
     a = create_random_rank_matrix((10, 10), dtype)
     with pytest.raises(TypeError):
         msp.linalg.eigh(Tensor(a))
+        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_macos'], level_mark='level1', card_mark='onecard',
@@ -262,10 +265,12 @@ def test_eigh_error_dims(n: int, dtype):
     a = create_random_rank_matrix((10,) * n, dtype)
     with pytest.raises(ValueError):
         msp.linalg.eigh(Tensor(a))
+        _pynative_executor.sync()
 
     a = create_random_rank_matrix((n, n + 1), dtype)
     with pytest.raises(ValueError):
         msp.linalg.eigh(Tensor(a))
+        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_macos'], level_mark='level2', card_mark='onecard',
@@ -280,12 +285,15 @@ def test_eigh_error_not_implemented():
     b = create_random_rank_matrix((10, 10), onp.float32)
     with pytest.raises(ValueError):
         msp.linalg.eigh(Tensor(a), Tensor(b))
+        _pynative_executor.sync()
 
     with pytest.raises(ValueError):
         msp.linalg.eigh(Tensor(a), 42)
+        _pynative_executor.sync()
 
     with pytest.raises(ValueError):
         msp.linalg.eigh(Tensor(a), eigvals=42)
+        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_macos'], level_mark='level1', card_mark='onecard',

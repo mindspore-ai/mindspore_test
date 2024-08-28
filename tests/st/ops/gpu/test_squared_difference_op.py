@@ -39,8 +39,8 @@ def test_nobroadcast_f16():
     input_x = np.random.uniform(10, 20, (3, 4, 5, 2)).astype(np.float16)
     input_y = np.random.uniform(40, 50, (3, 4, 5, 2)).astype(np.float16)
     output = net(Tensor(input_x), Tensor(input_y)).asnumpy()
-    diff = input_x-input_y
-    expect = diff*diff
+    diff = input_x - input_y
+    expect = diff * diff
     assert np.all(output == expect)
 
 
@@ -52,8 +52,8 @@ def test_nobroadcast_f32():
     input_x = np.random.rand(3, 4, 5, 2).astype(np.float32)
     input_y = np.random.rand(3, 4, 5, 2).astype(np.float32)
     output = net(Tensor(input_x), Tensor(input_y)).asnumpy()
-    diff = input_x-input_y
-    expect = diff*diff
+    diff = input_x - input_y
+    expect = diff * diff
     assert np.all(output == expect)
 
 
@@ -65,8 +65,8 @@ def test_nobroadcast_int32():
     input_x = np.random.rand(3, 4, 5, 2).astype(np.int32)
     input_y = np.random.rand(3, 4, 5, 2).astype(np.int32)
     output = net(Tensor(input_x), Tensor(input_y)).asnumpy()
-    diff = input_x-input_y
-    expect = diff*diff
+    diff = input_x - input_y
+    expect = diff * diff
     assert np.all(output == expect)
 
 
@@ -78,8 +78,8 @@ def test_broadcast_int32():
     input_x = np.random.rand(1, 4, 1, 2).astype(np.int32)
     input_y = np.random.rand(3, 1, 5, 1).astype(np.int32)
     output = net(Tensor(input_x), Tensor(input_y)).asnumpy()
-    diff = input_x-input_y
-    expect = diff*diff
+    diff = input_x - input_y
+    expect = diff * diff
     assert np.all(output == expect)
 
 
@@ -91,8 +91,8 @@ def test_broadcast_f32():
     input_x = np.random.rand(1, 4, 1, 2).astype(np.float32)
     input_y = np.random.rand(3, 1, 5, 1).astype(np.float32)
     output = net(Tensor(input_x), Tensor(input_y)).asnumpy()
-    diff = input_x-input_y
-    expect = diff*diff
+    diff = input_x - input_y
+    expect = diff * diff
     assert np.all(output == expect)
 
 
@@ -104,8 +104,8 @@ def test_broadcast_f16():
     input_x = np.random.rand(1, 4, 1, 2).astype(np.float16)
     input_y = np.random.rand(3, 1, 5, 1).astype(np.float16)
     output = net(Tensor(input_x), Tensor(input_y)).asnumpy()
-    diff = input_x-input_y
-    expect = diff*diff
+    diff = input_x - input_y
+    expect = diff * diff
     assert np.all(output == expect)
 
 
@@ -117,10 +117,10 @@ def test_broadcast_bool():
     input_x = np.random.rand(1, 4, 1, 2).astype(np.bool)
     input_y = np.random.uniform(10, 20, (3, 1, 5, 1)).astype(np.float32)
     output = net(Tensor(input_x), Tensor(input_y)).asnumpy()
-    diff = input_x-input_y
-    expect = diff*diff
-    error = np.ones(shape=np.array(output.shape, dtype=int))*1.0e-6
-    double_check = np.abs(output-expect)/expect
+    diff = input_x - input_y
+    expect = diff * diff
+    error = np.ones(shape=np.array(output.shape, dtype=int)) * 1.0e-6
+    double_check = np.abs(output - expect) / expect
     assert np.all(double_check < error)
 
 
@@ -132,10 +132,10 @@ def test_nobroadcast_bool():
     input_x = np.random.rand(3, 4, 5, 2).astype(np.bool)
     input_y = np.random.rand(3, 4, 5, 2).astype(np.float32)
     output = net(Tensor(input_x), Tensor(input_y)).asnumpy()
-    diff = input_x-input_y
-    expect = diff*diff
-    error = np.ones(shape=np.array(output.shape, dtype=int))*1.0e-6
-    double_check = np.abs(output-expect)/expect
+    diff = input_x - input_y
+    expect = diff * diff
+    error = np.ones(shape=np.array(output.shape, dtype=int)) * 1.0e-6
+    double_check = np.abs(output - expect) / expect
     assert np.all(double_check < error)
 
 
@@ -147,10 +147,10 @@ def test_broadcast_int32_f16():
     input_x = np.random.rand(1, 4, 1, 2).astype(np.int32)
     input_y = np.random.uniform(10, 20, (3, 1, 5, 1)).astype(np.float16)
     output = net(Tensor(input_x), Tensor(input_y)).asnumpy()
-    diff = input_x-input_y
-    expect = diff*diff
-    error = np.ones(shape=np.array(output.shape, dtype=int))*1.0e-3
-    double_check = np.abs(output-expect)/expect
+    diff = input_x - input_y
+    expect = diff * diff
+    error = np.ones(shape=np.array(output.shape, dtype=int)) * 1.0e-3
+    double_check = np.abs(output - expect) / expect
     assert np.all(double_check < error)
 
 
@@ -162,10 +162,10 @@ def test_broadcast_int32_f32():
     input_x = np.random.rand(1, 4, 1, 2).astype(np.int32)
     input_y = np.random.uniform(10, 20, (3, 1, 5, 1)).astype(np.float32)
     output = net(Tensor(input_x), Tensor(input_y)).asnumpy()
-    diff = input_x-input_y
-    expect = diff*diff
-    error = np.ones(shape=np.array(output.shape, dtype=int))*1.0e-6
-    double_check = np.abs(output-expect)/expect
+    diff = input_x - input_y
+    expect = diff * diff
+    error = np.ones(shape=np.array(output.shape, dtype=int)) * 1.0e-6
+    double_check = np.abs(output - expect) / expect
     assert np.all(double_check < error)
 
 
@@ -177,10 +177,10 @@ def test_nobroadcast_int32_f16():
     input_x = np.random.rand(2, 4, 3, 2).astype(np.int32)
     input_y = np.random.uniform(10, 20, (2, 4, 3, 2)).astype(np.float16)
     output = net(Tensor(input_x), Tensor(input_y)).asnumpy()
-    diff = input_x-input_y
-    expect = diff*diff
-    error = np.ones(shape=np.array(output.shape, dtype=int))*1.0e-3
-    double_check = np.abs(output-expect)/expect
+    diff = input_x - input_y
+    expect = diff * diff
+    error = np.ones(shape=np.array(output.shape, dtype=int)) * 1.0e-3
+    double_check = np.abs(output - expect) / expect
     assert np.all(double_check < error)
 
 
@@ -192,10 +192,10 @@ def test_nobroadcast_int32_f32():
     input_x = np.random.rand(2, 4, 3, 2).astype(np.int32)
     input_y = np.random.uniform(10, 20, (2, 4, 3, 2)).astype(np.float32)
     output = net(Tensor(input_x), Tensor(input_y)).asnumpy()
-    diff = input_x-input_y
-    expect = diff*diff
-    error = np.ones(shape=np.array(output.shape, dtype=int))*1.0e-6
-    double_check = np.abs(output-expect)/expect
+    diff = input_x - input_y
+    expect = diff * diff
+    error = np.ones(shape=np.array(output.shape, dtype=int)) * 1.0e-6
+    double_check = np.abs(output - expect) / expect
     assert np.all(double_check < error)
 
 
@@ -207,8 +207,8 @@ def test_broadcast_f32_scalar_tensor():
     input_x = np.random.rand(2).astype(np.float32)
     input_y = np.random.rand(3, 1, 5, 1).astype(np.float32)
     output = net(Tensor(input_x), Tensor(input_y)).asnumpy()
-    diff = input_x-input_y
-    expect = diff*diff
+    diff = input_x - input_y
+    expect = diff * diff
     assert np.all(output == expect)
 
 
@@ -220,8 +220,8 @@ def test_broadcast_f32_tensor_tensor():
     input_x = np.random.rand(1, 2).astype(np.float32)
     input_y = np.random.rand(3, 1, 5, 1).astype(np.float32)
     output = net(Tensor(input_x), Tensor(input_y)).asnumpy()
-    diff = input_x-input_y
-    expect = diff*diff
+    diff = input_x - input_y
+    expect = diff * diff
     assert np.all(output == expect)
 
 
@@ -259,10 +259,10 @@ def test_broadcast_int_f32_precision():
     input_x = np.random.randint(20, 30, (1, 2)).astype(np.int32)
     input_y = np.random.rand(3, 1, 5, 1).astype(np.float32)
     output = net(Tensor(input_x), Tensor(input_y)).asnumpy()
-    diff = input_x-input_y
-    expect = diff*diff
-    error = np.ones(shape=np.array(output.shape, dtype=int))*1.0e-3
-    double_thousand = np.abs(output-expect)/expect
+    diff = input_x - input_y
+    expect = diff * diff
+    error = np.ones(shape=np.array(output.shape, dtype=int)) * 1.0e-3
+    double_thousand = np.abs(output - expect) / expect
     assert np.all(double_thousand < error)
 
 

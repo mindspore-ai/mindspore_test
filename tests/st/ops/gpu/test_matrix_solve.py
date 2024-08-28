@@ -14,7 +14,6 @@
 # ============================================================================
 from tests.mark_utils import arg_mark
 
-
 import mindspore.context as context
 from mindspore import Tensor, ops, nn
 from mindspore import dtype as mstype

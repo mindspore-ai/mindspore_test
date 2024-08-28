@@ -208,6 +208,7 @@ def test_scatter_nd_func_indices_out_of_range(func, data_type, index_type):
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
     with pytest.raises(RuntimeError):
         _ = TestScatterNdFuncNet(func, inputx, indices, updates)()
+        _pynative_executor.sync()
 
     context.set_context(mode=context.PYNATIVE_MODE, device_target="GPU")
     with pytest.raises(RuntimeError):

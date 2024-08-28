@@ -24,6 +24,7 @@ from mindspore import Tensor
 
 context.set_context(device_target="Ascend")
 
+
 class Net(nn.Cell):
     def construct(self, theta, out_size):
         return ops.affine_grid(theta, out_size, False)

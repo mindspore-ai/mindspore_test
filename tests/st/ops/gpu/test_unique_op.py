@@ -23,6 +23,7 @@ from mindspore import Tensor
 from mindspore.ops import operations as P
 from mindspore.ops.operations import _inner_ops as inner
 
+
 class NetUnique(nn.Cell):
     def __init__(self):
         super(NetUnique, self).__init__()

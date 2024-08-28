@@ -21,8 +21,8 @@ import mindspore.context as context
 import mindspore.nn as nn
 from mindspore import Tensor
 from mindspore.ops import composite as C
-context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
 
+context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
 
 grad_with_sens = C.GradOperation(sens_param=True)
 
@@ -44,6 +44,7 @@ def test_net():
     output = square(Tensor(x))
     expect = np.array([1.0, 16.0, 81.0]).astype(np.float32)
     assert (output.asnumpy() == expect).all()
+
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_grad_net():

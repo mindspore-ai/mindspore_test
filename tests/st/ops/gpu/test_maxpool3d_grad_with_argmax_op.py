@@ -64,7 +64,7 @@ def test_maxpool3d_grad_withargmax_float32():
     """
     attributes = {'ksize': 3, 'strides': 1, 'pads': 0, 'dilation': 1,
                   'ceil_mode': False, 'data_format': 'NCDHW'}
-    inputs = Tensor(np.arange(3*4*3).reshape(1, 1, 3, 4, 3).astype(np.float32))
+    inputs = Tensor(np.arange(3 * 4 * 3).reshape(1, 1, 3, 4, 3).astype(np.float32))
     dy = Tensor(np.ones((1, 1, 1, 2, 1)).astype(np.float32))
     mask = Tensor(np.array([[[[[32], [35]]]]]).astype(np.int32))
     net = MaxPool3DGradWithArgmaxNet(**attributes)
@@ -93,7 +93,7 @@ def test_maxpool3d_grad_withargmax_float16():
     """
     attributes = {'ksize': 3, 'strides': 1, 'pads': 0, 'dilation': 1,
                   'ceil_mode': False, 'data_format': 'NCDHW'}
-    inputs = Tensor(np.arange(3*4*3).reshape(1, 1, 3, 4, 3).astype(np.float16))
+    inputs = Tensor(np.arange(3 * 4 * 3).reshape(1, 1, 3, 4, 3).astype(np.float16))
     dy = Tensor(np.ones((1, 1, 1, 2, 1)).astype(np.float16))
     mask = Tensor(np.array([[[[[32], [35]]]]]).astype(np.int32))
     net = MaxPool3DGradWithArgmaxNet(**attributes)
@@ -124,7 +124,7 @@ def test_maxpool3d_grad_withargmax_vmap():
                   'ceil_mode': False, 'data_format': 'NCDHW'}
     net = MaxPool3DGradWithArgmaxNet(**attributes)
     nest_vmap = vmap(net, in_axes=(-1, -1, -1), out_axes=0)
-    inputs = Tensor(np.arange(3*4*3).reshape(1, 1, 3, 4, 3, 1).astype(np.float32))
+    inputs = Tensor(np.arange(3 * 4 * 3).reshape(1, 1, 3, 4, 3, 1).astype(np.float32))
     dy = Tensor(np.ones((1, 1, 1, 2, 1, 1)).astype(np.float32))
     mask = Tensor(np.array([[[[[[32]], [[35]]]]]]).astype(np.int32))
     out = nest_vmap(inputs, dy, mask)
@@ -140,7 +140,7 @@ def test_dynamic_maxpool3d_grad_with_argmax():
     """
     attributes = {'ksize': 3, 'strides': 1, 'pads': 0, 'dilation': 1,
                   'ceil_mode': False, 'data_format': 'NCDHW'}
-    inputs = Tensor(np.arange(3*4*3).reshape(1, 1, 3, 4, 3).astype(np.float32))
+    inputs = Tensor(np.arange(3 * 4 * 3).reshape(1, 1, 3, 4, 3).astype(np.float32))
     dy = Tensor(np.ones((1, 1, 1, 2, 1)).astype(np.float32))
     mask = Tensor(np.array([[[[[32], [35]]]]]).astype(np.int32))
     indices = Tensor(np.array([0]).astype(np.int32))

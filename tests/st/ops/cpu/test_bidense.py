@@ -12,16 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
-import pytest
-import numpy as np
-
 import mindspore.context as context
 import mindspore.nn as nn
-from mindspore import Tensor
-from mindspore.common.api import jit
-from mindspore import ops
+import numpy as np
 from mindspore.common import dtype as mstype
+from mindspore.common.api import jit
+
+from mindspore import Tensor
+from mindspore import ops
+from tests.mark_utils import arg_mark
+
 context.set_context(device_target="CPU")
 
 
@@ -35,7 +35,8 @@ class Net(nn.Cell):
         return self.bidense(x1, x2)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_net():
     """
     Feature: Assert BiDense output shape
@@ -50,7 +51,8 @@ def test_net():
     assert output.shape == (128, 40)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_net_nd():
     """
     Feature: Assert BiDense output shape for n-dimensional input
@@ -65,7 +67,8 @@ def test_net_nd():
     assert output.shape == (128, 4, 40)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_net_1d():
     """
     Feature: Assert BiDense output shape for 1-dimensional input
@@ -80,7 +83,8 @@ def test_net_1d():
     assert output.shape == (40,)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_int8_inputs():
     """
     Feature: Bidense with int8 inputs.

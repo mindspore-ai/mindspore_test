@@ -23,6 +23,7 @@ import mindspore.ops as ops
 from mindspore import Tensor, Parameter
 from mindspore.ops import functional as F
 
+
 # all cases tested against dchip
 
 

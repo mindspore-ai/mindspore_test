@@ -47,7 +47,7 @@ def test_maxpool3d_valid(mode):
     expected_shape = (1, 2, 1, 1, 2)
 
     net = Net()
-    x_dyn = ms.Tensor(shape=[None]*len(x.shape), dtype=x.dtype)
+    x_dyn = ms.Tensor(shape=[None] * len(x.shape), dtype=x.dtype)
     net.set_inputs(x_dyn)
     output = net(x)
     assert output.shape == expected_shape

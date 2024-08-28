@@ -32,7 +32,8 @@ class NetSigmoidCrossEntropyWithLogits(nn.Cell):
         return self.sigmoid_cross_entropy_with_logits_grad(logits, labels, dout)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_sigmoid_cross_entropy_with_logits():
     """
     Feature: template

@@ -21,6 +21,7 @@ from tests.mark_utils import arg_mark
 
 context.set_context(mode=context.GRAPH_MODE, device_target="Ascend", save_graphs=False)
 
+
 class Net(nn.Cell):
     """
     Examples:
@@ -47,6 +48,7 @@ class Net(nn.Cell):
                              n_error_mode='specific'
                              )
     """
+
     def __init__(self, n_pos, eod_token_id, n_step, n_error_mode="specific"):
         super(Net, self).__init__()
         self.mask = P.inner_ops.GenerateEodMask(n_pos,
@@ -55,6 +57,7 @@ class Net(nn.Cell):
 
     def construct(self, tensor):
         return self.mask(tensor)
+
 
 def run_generate_eod_mask_on_step(data, element_pos, bit_pos, n_step, n_error_mode='specific'):
     """
@@ -77,6 +80,7 @@ def run_generate_eod_mask_on_step(data, element_pos, bit_pos, n_step, n_error_mo
                 assert source_data[0][element_pos] == -out.asnumpy()[0][element_pos]
             else:
                 assert (source_data == out.asnumpy()).all()
+
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_generate_eod_mask_on_each_step():

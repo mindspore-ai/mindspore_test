@@ -20,6 +20,7 @@ from mindspore import Tensor
 from mindspore.common.api import jit
 from mindspore.ops.operations import _inner_ops as inner
 
+
 class Net(nn.Cell):
     def __init__(self, axis=()):
         super(Net, self).__init__()
@@ -29,6 +30,7 @@ class Net(nn.Cell):
     @jit
     def construct(self, inputs):
         return self.centralization(inputs, self.axis)
+
 
 def test_net():
     np.random.seed(1)

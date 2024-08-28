@@ -12,17 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
-import numpy as np
-import pytest
-
 import mindspore.context as context
 import mindspore.nn as nn
-from mindspore import Tensor
+import numpy as np
+import pytest
 from mindspore.common.api import jit
-from mindspore.ops import operations as P
-from mindspore.ops import function as F
 from mindspore.ops.composite import GradOperation
+
+from mindspore import Tensor
+from mindspore.ops import function as F
+from mindspore.ops import operations as P
+from tests.mark_utils import arg_mark
 
 
 class Grad(nn.Cell):
@@ -57,7 +57,8 @@ def get_standard_loss(data_type):
     return loss
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 @pytest.mark.parametrize("data_type", [np.float16, np.float32, np.float64, np.complex64, np.complex128])
 def test_net(data_type):
     """
@@ -83,7 +84,8 @@ def test_net(data_type):
     print(output[0].asnumpy())
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 @pytest.mark.parametrize("data_type", [np.float16, np.float32, np.float64, np.complex64, np.complex128])
 def test_func(data_type):
     """
@@ -110,7 +112,8 @@ def test_func(data_type):
     assert np.allclose(out.asnumpy(), y_expect, rtol=loss, atol=loss)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 @pytest.mark.parametrize("data_type", [np.float16, np.float32, np.float64, np.complex64, np.complex128])
 def test_tensor(data_type):
     """
@@ -139,7 +142,8 @@ def test_tensor(data_type):
     assert np.allclose(out.asnumpy(), y_expect, rtol=loss, atol=loss)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_tanh_with_abnormal_input():
     """
     Feature: Tanh

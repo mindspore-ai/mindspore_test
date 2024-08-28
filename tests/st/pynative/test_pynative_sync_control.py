@@ -19,6 +19,7 @@ import mindspore.nn as nn
 from mindspore import Tensor
 from mindspore.common import dtype as mstype
 from mindspore.ops import operations as P
+from mindspore.common.api import _pynative_executor
 
 context.set_context(mode=context.PYNATIVE_MODE, device_target="Ascend")
 
@@ -49,3 +50,4 @@ def test_pynative_synchronize_false():
         output = net(Tensor(x1))
         print(output.asnumpy())
     assert "Sync stream error" in str(execinfo.value)
+

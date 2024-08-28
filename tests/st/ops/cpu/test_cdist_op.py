@@ -12,19 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
-
-import pytest
-import numpy as np
-from mindspore import Tensor
-from mindspore.ops import operations as P
-import mindspore.nn as nn
 import mindspore.context as context
-
-from mindspore.ops.functional import vmap
-from mindspore.ops import functional as F
+import mindspore.nn as nn
+import numpy as np
 from mindspore.common.api import jit
+from mindspore.ops.functional import vmap
 
+from mindspore import Tensor
+from mindspore.ops import functional as F
+from mindspore.ops import operations as P
+from tests.mark_utils import arg_mark
 
 context.set_context(mode=context.GRAPH_MODE, device_target='CPU')
 
@@ -38,7 +35,8 @@ class CdistNet(nn.Cell):
         return self.cdist(x1, x2)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_cdist_p_2_float32():
     """
     Feature: Cdist cpu kernel
@@ -55,7 +53,8 @@ def test_cdist_p_2_float32():
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_cdist_p_0_float32():
     """
     Feature: Cdist cpu kernel
@@ -71,7 +70,8 @@ def test_cdist_p_0_float32():
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_cdist_p_1_float32():
     """
     Feature: Cdist cpu kernel
@@ -87,7 +87,8 @@ def test_cdist_p_1_float32():
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_cdist_p_8_float32():
     """
     Feature: Cdist cpu kernel
@@ -104,7 +105,8 @@ def test_cdist_p_8_float32():
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_cdist_p_inf_float32():
     """
     Feature: Cdist cpu kernel
@@ -120,7 +122,8 @@ def test_cdist_p_inf_float32():
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_cdist_p_2_float32_func():
     """
     Feature: Cdist cpu kernel
@@ -136,7 +139,8 @@ def test_cdist_p_2_float32_func():
     print(output)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_vmap():
     """
     Feature: cdist vmap.
@@ -180,7 +184,8 @@ def test_vmap():
     np.testing.assert_allclose(output.asnumpy(), expect_m.asnumpy(), rtol=1e-3)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_vmap2():
     """
     Feature: cdist vmap.

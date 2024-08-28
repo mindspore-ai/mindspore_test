@@ -16,10 +16,11 @@
 import numpy as np
 import pytest
 from tests.st.utils import test_utils
+from tests.mark_utils import arg_mark
 
 from mindspore import ops
+from mindspore.common.api import _pynative_executor
 import mindspore as ms
-from tests.mark_utils import arg_mark
 
 ms.context.set_context(ascend_config={"precision_mode": "force_fp32"})
 
@@ -91,3 +92,4 @@ def test_reduce_mean_with_mutable_axis():
     input_x = ms.Tensor([1.0])
     with pytest.raises(ValueError):
         func(input_x, ms.mutable((0, 1)))
+        _pynative_executor.sync()

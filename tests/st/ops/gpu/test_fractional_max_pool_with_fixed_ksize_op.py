@@ -55,7 +55,7 @@ def test_fractionalmaxpoolwithfixedksize():
         context.set_context(mode=context_mode_type, device_target='GPU')
         for type_input1 in types_input1:
             for type_input2 in types_input2:
-                x_np = np.array([i+1 for i in range(16)]).reshape([1, 1, 4, 4]).astype(type_input1)
+                x_np = np.array([i + 1 for i in range(16)]).reshape([1, 1, 4, 4]).astype(type_input1)
                 x_ms = Tensor(x_np)
                 random_samples = Tensor(np.array([0.5, 0.8]).reshape([1, 1, 2]).astype(type_input2))
                 ksize = (1, 1)
@@ -69,7 +69,7 @@ def test_fractionalmaxpoolwithfixedksize():
                 assert np.allclose(output_ms.asnumpy(), expect_output)
                 assert np.allclose(argmax.asnumpy(), expect_output_argmax)
 
-                out_backprop = Tensor(np.array([i+1 for i in range(6)]).reshape([1, 1, 2, 3]).astype(type_input1))
+                out_backprop = Tensor(np.array([i + 1 for i in range(6)]).reshape([1, 1, 2, 3]).astype(type_input1))
                 net_grad = NetFractionalMaxPoolGradWithFixedKsize()
                 output_grad = net_grad(x_ms, out_backprop, argmax)
                 expect_output_grad = np.array([[[[1, 0, 2, 3],

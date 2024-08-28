@@ -25,6 +25,7 @@ from mindspore import dtype
 
 context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
 
+
 class NetLog1p(nn.Cell):
     def __init__(self):
         super(NetLog1p, self).__init__()
@@ -42,6 +43,7 @@ def test_log1p_fp32():
     expect = np.log1p(x)
     tol = 1e-6
     assert (np.abs(output.asnumpy() - expect) < tol).all()
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_log1p_fp16():

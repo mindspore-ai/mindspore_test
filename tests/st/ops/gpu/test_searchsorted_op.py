@@ -8,7 +8,6 @@ from mindspore import Tensor
 from mindspore.ops import operations as P
 
 
-
 class SearchSortedNet(nn.Cell):
     def __init__(self, out_int32=mindspore.int32, right=False):
         super(SearchSortedNet, self).__init__()

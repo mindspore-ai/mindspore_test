@@ -21,6 +21,7 @@ import mindspore
 import mindspore.context as context
 import mindspore.nn as nn
 from mindspore import Tensor
+from mindspore.common.api import _pynative_executor
 import mindspore.ops as ops
 from mindspore.ops import operations as P
 from mindspore.common.api import jit
@@ -40,7 +41,8 @@ class Net(nn.Cell):
 context.set_context(mode=context.GRAPH_MODE, device_target="CPU")
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_select_float32():
     cond = np.array([[True, False], [True, False]]).astype(np.bool)
     x = np.array([[1.2, 1], [1, 0]]).astype(np.float32)
@@ -55,7 +57,8 @@ def test_select_float32():
     assert np.all(-diff < error)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_select_float16():
     cond = np.array([[True, False], [True, False]]).astype(np.bool)
     x = np.array([[1.2, 1], [1, 0]]).astype(np.float16)
@@ -70,7 +73,8 @@ def test_select_float16():
     assert np.all(-diff < error)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_select_int32():
     cond = np.array([[True, False], [True, False]]).astype(np.bool)
     x = np.array([[12, 1], [1, 0]]).astype(np.int32)
@@ -85,7 +89,8 @@ def test_select_int32():
     assert np.all(-diff < error)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_functional_select_scalar():
     """
     Feature: Test functional select operator. Support x or y is a int/float.
@@ -104,7 +109,8 @@ def test_functional_select_scalar():
     assert np.all(-diff < error)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_functional_select_broadcast():
     """
     Feature: Test functional select operator support broadcast input.
@@ -114,14 +120,17 @@ def test_functional_select_broadcast():
     cond = Tensor(np.random.rand(1, 65, 54, 12, 5, 2), dtype=mstype.bool_)
     x = Tensor(np.random.rand(5, 5, 65, 1, 12, 5, 2).astype(np.float32))
     y = Tensor(np.random.rand(65, 54, 1, 5, 2).astype(np.float32))
+
     @jit
     def foo(a, b, c):
         return F.select(a, b, c)
+
     ret = foo(cond, x, y)
     assert ret.shape == (5, 5, 65, 54, 12, 5, 2)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_functional_select_type_error():
     """
     Feature: Functional select support scalar.
@@ -134,6 +143,8 @@ def test_functional_select_type_error():
 
     with pytest.raises(TypeError):
         ops.select(input_cond, input_x_int, 2.0)
+        _pynative_executor.sync()
 
     with pytest.raises(TypeError):
         ops.select(input_cond, input_x_float, 2)
+        _pynative_executor.sync()

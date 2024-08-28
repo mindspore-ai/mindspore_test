@@ -31,7 +31,8 @@ class MatrixDiagPartV3Net(nn.Cell):
         return self.matrix_diag_dart_v3(x, k, padding_value)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_matrix_diag_part_v3_function():
     """
     Feature: matrix_diag_part functional api.
@@ -62,7 +63,8 @@ def test_matrix_diag_part_v3_function():
     np.testing.assert_allclose(result, expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_matrix_diag_part_v3_function_int_k():
     """
     Feature: matrix_diag_part functional api.
@@ -86,7 +88,8 @@ def test_matrix_diag_part_v3_function_int_k():
     np.testing.assert_allclose(result, expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_matrix_diag_part_v3_pynative():
     """
     Feature: MatrixDiagPartV3 operator.
@@ -117,7 +120,8 @@ def test_matrix_diag_part_v3_pynative():
     np.testing.assert_allclose(result, expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_matrix_diag_part_v3_graph():
     """
     Feature: MatrixDiagPartV3 operator.
@@ -148,7 +152,8 @@ def test_matrix_diag_part_v3_graph():
     np.testing.assert_allclose(result, expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_matrix_diag_part_v3_primitive_negative_k():
     """
     Feature: MatrixDiagPartV3 operator.
@@ -174,7 +179,8 @@ def test_matrix_diag_part_v3_primitive_negative_k():
     np.testing.assert_allclose(result, expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_matrix_diag_part_v3_vmap():
     """
     Feature: MatrixDiagPartV3 operator.
@@ -205,7 +211,8 @@ def test_matrix_diag_part_v3_vmap():
     np.testing.assert_allclose(result, expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_matrix_diag_part_v3_dynamic_shape():
     """
     Feature: MatrixDiagPartV3 operator.

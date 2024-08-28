@@ -19,6 +19,7 @@ import numpy as np
 import mindspore.nn as nn
 from mindspore import Tensor, context
 from mindspore.ops.operations.random_ops import Uniform
+from mindspore.common.api import _pynative_executor
 import mindspore.common.dtype as mstype
 
 
@@ -31,7 +32,8 @@ class Net(nn.Cell):
         return self.uniform(x)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_uniform_double():
     """
     Feature: Uniform cpu TEST.
@@ -45,7 +47,8 @@ def test_uniform_double():
     assert y.shape == (3, 4)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_uniform_float():
     """
     Feature: Uniform cpu TEST.
@@ -59,7 +62,8 @@ def test_uniform_float():
     assert y.shape == (3, 4)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_uniform_half():
     """
     Feature: Uniform cpu TEST.
@@ -73,7 +77,8 @@ def test_uniform_half():
     assert y.shape == (3, 4)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_uniform_int32_input_error():
     """
     Feature: Uniform cpu TEST.
@@ -85,3 +90,4 @@ def test_uniform_int32_input_error():
     net = Net(min_val=1.0, max_val=2.0)
     with pytest.raises(TypeError):
         net(x)
+        _pynative_executor.sync()

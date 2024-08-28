@@ -23,11 +23,13 @@ from mindspore import Tensor
 from mindspore import Parameter
 from mindspore.common import dtype as mstype
 from mindspore.ops import operations as P
+from mindspore.common.api import _pynative_executor
 
 context.set_context(mode=context.GRAPH_MODE, device_target='CPU')
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 @pytest.mark.parametrize('dtype', [np.float32, np.float64])
 def test_op1(dtype):
     """
@@ -57,7 +59,8 @@ def test_op1(dtype):
                        np.array(expect, dtype=dtype))
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 @pytest.mark.parametrize('dtype', [np.float32, np.float64, np.int32, np.int64])
 def test_op2(dtype):
     """
@@ -87,7 +90,8 @@ def test_op2(dtype):
                        np.array(expect, dtype=dtype))
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 @pytest.mark.parametrize('dtype', [np.float32, np.float64, np.int32, np.int64])
 def test_op3(dtype):
     """
@@ -121,7 +125,8 @@ def test_op3(dtype):
     assert np.allclose(output.asnumpy(), np.array(expect, dtype=dtype))
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 @pytest.mark.parametrize('dtype', [np.float32, np.float64])
 def test_op4(dtype):
     """
@@ -149,7 +154,8 @@ def test_op4(dtype):
     assert np.allclose(out.asnumpy(), np.array(expect, dtype=dtype))
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 @pytest.mark.parametrize('dtype', [np.float32, np.float64])
 def test_op5(dtype):
     """
@@ -173,9 +179,11 @@ def test_op5(dtype):
     scatter_nd_update = ScatterNdUpdate()
     with pytest.raises(ValueError):
         scatter_nd_update(indices, update)
+        _pynative_executor.sync()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_scatter_nd_update_dyn_shape():
     """
     Feature: op dynamic shape
@@ -187,7 +195,6 @@ def test_scatter_nd_update_dyn_shape():
         def __init__(self):
             super(ScatterNdUpdate, self).__init__()
             self.scatter_nd_update = P.ScatterNdUpdate()
-
 
         def construct(self, x, indices, update):
             return self.scatter_nd_update(x, indices, update)

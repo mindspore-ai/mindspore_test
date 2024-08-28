@@ -463,6 +463,7 @@ def test_dynamic_reshape():
     Description: This case tests the dynamic shape for op reshape on ascend and gpu.
     Expectation: success
     """
+
     class MyReLU(nn.Cell):
         def __init__(self):
             super().__init__()

@@ -24,6 +24,7 @@ from mindspore import Tensor, Parameter, ParameterTuple
 from mindspore.ops import operations as P
 from mindspore.ops import composite as C
 from mindspore.common import dtype as mstype
+from mindspore.common.api import _pynative_executor
 
 
 class NetIndexAdd(nn.Cell):
@@ -208,6 +209,7 @@ def test_index_add_invalid_inputs():
     with pytest.raises(TypeError):
         # axis not int
         net = NetIndexAdd(x, 1.0)
+        _pynative_executor.sync()
 
         # x and y don't have the same type
         y = np.ones((2, 2, 4), dtype=np.float32)
@@ -220,6 +222,7 @@ def test_index_add_invalid_inputs():
         idx = np.array([0]).astype(np.int32)
         net = NetIndexAdd(x, 1)
         _ = net(Tensor(idx), Tensor(y))
+        _pynative_executor.sync()
 
         # x and y don't have same rank
         y = np.ones((2, 2), dtype=np.uint8)

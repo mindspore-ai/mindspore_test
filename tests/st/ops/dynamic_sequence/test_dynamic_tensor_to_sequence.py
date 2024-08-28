@@ -47,7 +47,8 @@ def dyn_case():
     assert expect_y == res_y
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard',
+          essential_mark='unessential')
 def test_seq_to_tensor():
     """
     Feature: test TensorToxx.

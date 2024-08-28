@@ -22,6 +22,7 @@ import mindspore.nn as nn
 from mindspore import Tensor
 from mindspore.ops.operations import _inner_ops as inner
 from mindspore.ops import operations as P
+from mindspore.common.api import _pynative_executor
 
 
 class GatherNet(nn.Cell):
@@ -1401,3 +1402,4 @@ def test_gather_tensor_outofbound(data_type):
 
     with pytest.raises(RuntimeError):
         graph_table_tensor.gather(input_indices, axis)
+        _pynative_executor.sync()

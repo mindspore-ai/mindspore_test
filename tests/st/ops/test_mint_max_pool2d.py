@@ -27,6 +27,7 @@ from tests.mark_utils import arg_mark
 def max_pool2d_forward_func(x, kernel_size, stride, padding, dilation, ceil_mode=False, return_indices=False):
     return max_pool2d(x, kernel_size, stride, padding, dilation, ceil_mode=ceil_mode, return_indices=return_indices)
 
+
 @test_utils.run_with_cell
 def max_pool2d_backward_func(x, kernel_size, stride, padding, dilation, ceil_mode, return_indices):
     return ops.grad(max_pool2d_forward_func, (0,))(x, kernel_size, stride, padding, dilation,

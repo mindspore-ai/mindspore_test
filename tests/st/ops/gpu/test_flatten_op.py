@@ -24,6 +24,7 @@ import mindspore.common.dtype as mstype
 from mindspore import Tensor
 from mindspore.ops import operations as P
 from mindspore.ops import functional as F
+from mindspore.common.api import _pynative_executor
 
 
 class NetFlatten(nn.Cell):
@@ -360,6 +361,7 @@ def test_ops_flatten_single_element(mode):
 
     with pytest.raises(ValueError):
         NetFlattenOps()(y, start_dim=2)
+        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -371,9 +373,11 @@ def test_nn_flatten_single_element():
     """
     with pytest.raises(ValueError):
         nn.Flatten()(Tensor(1))
+        _pynative_executor.sync()
 
     with pytest.raises(ValueError):
         nn.Flatten()(Tensor([1]))
+        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -386,9 +390,11 @@ def test_ops_flatten_invalid_input():
     x = Tensor([[1, 2], [3, 4]], mstype.int32)
     with pytest.raises(TypeError):
         NetFlattenOps()(x, start_dim=True)
+        _pynative_executor.sync()
 
     with pytest.raises(TypeError):
         NetFlattenOps()(x, end_dim=True)
+        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')

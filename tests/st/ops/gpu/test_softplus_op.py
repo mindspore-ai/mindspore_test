@@ -86,6 +86,7 @@ def test_softplus_neg():
 
     assert np.allclose(y_np, y_ms.asnumpy())
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_softplus_4d_fp16():
     x_np = np.random.random((32, 3, 224, 224)).astype(np.float16)

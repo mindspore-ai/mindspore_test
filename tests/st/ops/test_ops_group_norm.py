@@ -24,6 +24,7 @@ import tests.st.utils.test_utils as test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
 
+
 class GroupNormNet(nn.Cell):
     def __init__(self, num_groups, num_channels):
         super(GroupNormNet, self).__init__()

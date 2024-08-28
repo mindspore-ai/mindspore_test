@@ -19,6 +19,7 @@ import mindspore.nn as nn
 import mindspore.context as context
 from mindspore.ops.operations.math_ops import Lgamma
 from mindspore import Tensor
+
 context.set_context(mode=context.GRAPH_MODE, device_target='GPU')
 
 
@@ -44,7 +45,6 @@ def test_lgamma_graph_float16():
     z_ms = net(Tensor(x_ms))
     expect = np.array([0.000e+00, 7.295e-01, 1.060e+01, 2.075e-01, 4.645e+02]).astype(np.float64)
     assert np.allclose(z_ms.asnumpy(), expect.astype(np.float16), 0.001, 0.001)
-
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -75,6 +75,7 @@ def test_lgamma_graph_float64():
     expect = np.array([0.00000000e+00, 7.29359005e-01, 1.06046029e+01,
                        1.99549382e-01, 1.03024502e+05]).astype(np.float64)
     assert np.allclose(z_ms.asnumpy(), expect, 0.00001, 0.00001)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_lgamma_invalid_input():

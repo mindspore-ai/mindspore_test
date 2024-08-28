@@ -22,15 +22,16 @@ from collections import Counter
 import numpy as np
 import pytest
 from mindspore.common import set_seed
+from mindspore.common.api import _pynative_executor
 from mindspore.common.initializer import Normal
 from mindspore.nn.optim import Momentum
-from mindspore.ops import operations as P
 from mindspore.train import Loss, Model
 
 from mindspore import SummaryCollector, SummaryLandscape, SummaryRecord, Tensor, context, nn
+from mindspore.ops import operations as P
+from tests.mark_utils import arg_mark
 from tests.st.summary.dataset import create_mnist_dataset
 from tests.summary_utils import SummaryReader
-from tests.mark_utils import arg_mark
 
 
 def callback_fn():
@@ -288,11 +289,11 @@ def test_summary_collector_landscape():
     num_samples = 6
     summary_dir = train_network(epoch=3, num_samples=num_samples, dir_suffix="test_summary_collector_landscape",
                                 collect_specified_data={'collect_landscape':
-                                                        {'landscape_size': 4,
-                                                         'unit': 'epoch',
-                                                         'create_landscape': {'train': True, 'result': True},
-                                                         'num_samples': num_samples,
-                                                         'intervals': [interval_1]}})
+                                                            {'landscape_size': 4,
+                                                             'unit': 'epoch',
+                                                             'create_landscape': {'train': True, 'result': True},
+                                                             'num_samples': num_samples,
+                                                             'intervals': [interval_1]}})
 
     tag_list = TestSummary.list_summary_collect_landscape_tags(summary_dir.name)
     expected_tags = {'epoch_group', 'model_params_file_map', 'step_per_epoch', 'unit', 'num_samples',
@@ -321,4 +322,5 @@ def test_summary_of_more_than_one_instance():
         summary_dir2 = tempfile.TemporaryDirectory(suffix="test_summary_of_more_than_one_instance")
         _ = SummaryRecord(log_dir=summary_dir2.name)
         summary_record1.close()
+        _pynative_executor.sync()
     assert "only one instance is supported in a training process" in str(errinfo.value)

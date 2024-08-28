@@ -23,16 +23,16 @@ from mindspore.common.api import jit
 from mindspore.common.initializer import initializer
 from mindspore.common.parameter import Parameter
 
+
 class BatchToSpaceNet(nn.Cell):
     def __init__(self, nptype, block_size=2, input_shape=(4, 1, 2, 2)):
         super(BatchToSpaceNet, self).__init__()
         self.BatchToSpace = P.BatchToSpace(block_size=block_size, crops=[[0, 0], [0, 0]])
         input_size = 1
         for i in input_shape:
-            input_size = input_size*i
+            input_size = input_size * i
         data_np = np.arange(input_size).reshape(input_shape).astype(nptype)
         self.x1 = Parameter(initializer(Tensor(data_np), input_shape), name='x1')
-
 
     @jit
     def construct(self):
@@ -44,7 +44,7 @@ def BatchToSpace(nptype, block_size=2, input_shape=(4, 1, 2, 2)):
     context.set_context(mode=context.GRAPH_MODE, device_target='GPU')
     input_size = 1
     for i in input_shape:
-        input_size = input_size*i
+        input_size = input_size * i
     expect = np.array([[[[0, 4, 1, 5],
                          [8, 12, 9, 13],
                          [2, 6, 3, 7],
@@ -55,11 +55,12 @@ def BatchToSpace(nptype, block_size=2, input_shape=(4, 1, 2, 2)):
 
     assert (output.asnumpy() == expect).all()
 
+
 def BatchToSpace_pynative(nptype, block_size=2, input_shape=(4, 1, 2, 2)):
     context.set_context(mode=context.PYNATIVE_MODE, device_target='GPU')
     input_size = 1
     for i in input_shape:
-        input_size = input_size*i
+        input_size = input_size * i
     expect = np.array([[[[0, 4, 1, 5],
                          [8, 12, 9, 13],
                          [2, 6, 3, 7],
@@ -75,6 +76,7 @@ def BatchToSpace_pynative(nptype, block_size=2, input_shape=(4, 1, 2, 2)):
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_batchtospace_graph_float32():
     BatchToSpace(np.float32)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_batchtospace_graph_float16():

@@ -139,7 +139,7 @@ def test_large_shape():
     grad = Tensor(np.ones(24).reshape((2, 3, 4)).astype(np.float32) * 2)
     indices = Tensor(np.arange(2).astype(np.int32))
     output1, output2 = add_testcase(var, accum, lr, l1, l2, grad, indices)
-    #expected outputs are from Dchip
+    # expected outputs are from Dchip
     expect1 = np.array([[[-0.12248275, 0.39357165, 1.1591142, 1.9289699],
                          [2.7029436, 3.4808538, 4.2625313, 5.0478177],
                          [5.836565, 6.6286335, 7.423894, 8.222222]],

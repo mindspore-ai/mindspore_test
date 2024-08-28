@@ -12,19 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
-import pytest
-import numpy as np
-
-import mindspore
-import mindspore.nn as nn
 import mindspore.context as context
-
-from mindspore import Tensor
+import mindspore.nn as nn
+import numpy as np
+import pytest
+from mindspore.common.api import _pynative_executor
 from mindspore.ops.composite import GradOperation
 
+import mindspore
+from mindspore import Tensor
+from tests.mark_utils import arg_mark
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_pad_basic():
     """
     Test array is being padded with 0's
@@ -50,7 +51,8 @@ def test_pad_basic():
     np.testing.assert_array_equal(y_test, test_arr_expected)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_pad_row():
     """
     Test correct row padding
@@ -79,7 +81,8 @@ def test_pad_row():
     np.testing.assert_equal(y_test_2[:, :, 3:, :], test_arr_2)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_pad_column():
     """
     Test correct column padding
@@ -108,7 +111,8 @@ def test_pad_column():
     np.testing.assert_equal(y_test_2[:, :, :, 6:-1], test_arr_2)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_pad_3d_pad():
     """
     Test full 3d padding, with all 3 input types
@@ -164,7 +168,8 @@ class Net(nn.Cell):
         return self.pad(x)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_pad_3d_backprop():
     """
     Confirm correct 3d padding backprop
@@ -201,7 +206,8 @@ def test_pad_3d_backprop():
     np.testing.assert_array_equal(dx, expected_dx)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_pad_error_cases():
     context.set_context(mode=context.GRAPH_MODE, device_target="CPU")
 
@@ -212,6 +218,7 @@ def test_pad_error_cases():
 
     with pytest.raises(ValueError):
         test_op(test_arr_ms)
+        _pynative_executor.sync()
 
     # TEST 2 - Mismatched input size and paddings - 1D tensor
     test_op = nn.Pad(paddings=((0, 0), (1, 0)), mode="CONSTANT")
@@ -220,6 +227,7 @@ def test_pad_error_cases():
 
     with pytest.raises(ValueError):
         test_op(test_arr_ms)
+        _pynative_executor.sync()
 
     # TEST 3 - Mismatched input size and paddings - 2D tensor, 3D padding
     test_op = nn.Pad(paddings=((0, 0), (1, 0)), mode="CONSTANT")  # 2D Padding
@@ -228,12 +236,15 @@ def test_pad_error_cases():
 
     with pytest.raises(ValueError):
         test_op(test_arr_ms)
+        _pynative_executor.sync()
 
     # TEST 4 - 1D Paddings should not work
     with pytest.raises(TypeError):
         test_op = nn.Pad(paddings=((0, 2)), mode="CONSTANT")
+        _pynative_executor.sync()
 
     # TEST 5 - Padding beyond 4d - (added check in nn file in PR)
     with pytest.raises(ValueError):
         _ = nn.Pad(paddings=((0, 0), (0, 0,), (0, 0), (0, 0),
                              (1, 0)), mode="CONSTANT")  # 2D Padding
+        _pynative_executor.sync()

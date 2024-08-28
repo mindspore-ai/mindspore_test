@@ -29,11 +29,11 @@ class Net(nn.Cell):
         self.accumulation = Parameter(initializer(
             'normal', [2, 3, 3, 4]), name='accumulation')
         self.learning_rate = Parameter(initializer(
-            'normal', [1,]), name='learning_rate')
+            'normal', [1, ]), name='learning_rate')
         self.gradient = Parameter(initializer(
             'normal', [2, 3, 3, 4]), name='gradient')
         self.momentum = Parameter(initializer(
-            'normal', [1,]), name='momentum')
+            'normal', [1, ]), name='momentum')
 
     def construct(self):
         return self.apply_momentum(self.variable, self.accumulation, self.learning_rate, self.gradient, self.momentum)

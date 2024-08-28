@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 from tests.mark_utils import arg_mark
+
 """ test_dropout """
 import numpy as np
 import pytest
@@ -23,7 +24,6 @@ from mindspore import Tensor
 from mindspore import context
 from mindspore import dtype as mstype
 from mindspore.ops.operations import _grad_ops as P
-
 
 context.set_context(mode=context.GRAPH_MODE, device_target="CPU")
 
@@ -37,7 +37,8 @@ class Net(nn.Cell):
         return self.dropout_grad(output, mask)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_dropout_grad_001():
     in_tensor = Tensor(np.array([[[3., 1., 2.]], \
                                  [[4., 1., 4.]]]), mstype.float32)
@@ -53,7 +54,8 @@ def test_dropout_grad_001():
     assert np.all(np.abs(diff) < error)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_dropout_grad_002():
     in_tensor = Tensor(np.array([[[3., 1., 2.]], [[4., 1., 4.]]]), mstype.float16)
     in_mask = Tensor(np.array([[[1., 0, 0]], [[1., 1., 0]]]), mstype.float16)
@@ -68,7 +70,8 @@ def test_dropout_grad_002():
     assert np.all(np.abs(diff) < error)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_dropout_grad_003():
     in_tensor = Tensor(np.array([[[3., 1., 2.], [3., 1., 2.]], \
                                  [[4., 1., 4.], [4., 1., 4.]]]), mstype.float16)
@@ -86,7 +89,8 @@ def test_dropout_grad_003():
     assert np.all(np.abs(diff) < error)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_dropout_grad_004():
     in_tensor = Tensor(np.array([[6.]]), mstype.float32)
     in_mask = Tensor(np.array([[1.]]), mstype.float32)
@@ -102,7 +106,8 @@ def test_dropout_grad_004():
 
 
 @pytest.mark.skip(reason='0 in shape is not support')
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_dropout_grad_005():
     in_tensor = Tensor(np.array([[]]), mstype.float32)
     in_mask = Tensor(np.array([[]]), mstype.float32)
@@ -117,7 +122,8 @@ def test_dropout_grad_005():
     assert np.all(np.abs(diff) < error)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_dropout_grad_006():
     in_tensor = Tensor(np.array([[[3., 1., 2.]], [[4., 1., 4.]]]), mstype.float16)
     in_mask = Tensor(np.array([[[1., 0, 0]], [[0., 0., 1.]]]), mstype.float16)
@@ -143,7 +149,8 @@ class GradSec(nn.Cell):
         return gout
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_dropout_sec_grad():
     """
     Feature: test dropout second-order grad.

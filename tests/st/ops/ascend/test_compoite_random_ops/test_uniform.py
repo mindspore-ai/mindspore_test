@@ -24,6 +24,7 @@ from mindspore.common import set_seed
 context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
 set_seed(20)
 
+
 class Net(nn.Cell):
     def __init__(self, shape, seed=0):
         super(Net, self).__init__()

@@ -23,6 +23,7 @@ import mindspore.context as context
 
 from mindspore import Tensor
 from mindspore.ops.composite import GradOperation
+from mindspore.common.api import _pynative_executor
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -216,6 +217,7 @@ def test_pad_error_cases():
 
     with pytest.raises(ValueError):
         test_op(test_arr_ms)
+        _pynative_executor.sync()
 
     # TEST 2 - Mismatched input size and paddings - 1D tensor
     test_op = nn.Pad(paddings=((0, 0), (1, 0)), mode="CONSTANT")
@@ -224,6 +226,7 @@ def test_pad_error_cases():
 
     with pytest.raises(ValueError):
         test_op(test_arr_ms)
+        _pynative_executor.sync()
 
     # TEST 3 - Mismatched input size and paddings - 2D tensor, 3D padding
     test_op = nn.Pad(paddings=((0, 0), (1, 0)), mode="CONSTANT")  # 2D Padding
@@ -232,12 +235,15 @@ def test_pad_error_cases():
 
     with pytest.raises(ValueError):
         test_op(test_arr_ms)
+        _pynative_executor.sync()
 
     # TEST 4 - 1D Paddings should not work
     with pytest.raises(TypeError):
         test_op = nn.Pad(paddings=((0, 2)), mode="CONSTANT")
+        _pynative_executor.sync()
 
     # TEST 5 - Padding beyond 4d - (added check in nn file in PR)
     with pytest.raises(ValueError):
         _ = nn.Pad(paddings=((0, 0), (0, 0,), (0, 0), (0, 0),
                              (1, 0)), mode="CONSTANT")  # 2D Padding
+        _pynative_executor.sync()

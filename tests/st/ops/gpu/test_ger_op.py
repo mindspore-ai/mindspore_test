@@ -73,7 +73,6 @@ def test_ger_pynative_fp16():
     ger_pynative(x1, x2, mindspore.float16, np.float16)
 
 
-
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_ger_pynative_fp32():
     """
@@ -108,7 +107,6 @@ def test_ger_graph_fp16():
     x1 = np.random.randint(-100, 100, size=10)
     x2 = np.random.randint(-100, 100, size=10)
     ger_graph(x1, x2, mindspore.float16, np.float16)
-
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')

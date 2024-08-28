@@ -45,7 +45,8 @@ def dynamic_rank():
     test_dynamic.test_dynamic_grad_net((x, y), True)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_dynamic_div():
     """
     Feature: Div Grad DynamicShape.

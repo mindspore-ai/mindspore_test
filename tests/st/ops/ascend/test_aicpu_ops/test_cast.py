@@ -21,6 +21,7 @@ from mindspore.ops import operations as P
 
 context.set_context(mode=context.PYNATIVE_MODE, device_target="Ascend")
 
+
 class Net(nn.Cell):
     def __init__(self, x, dtype):
         super(Net, self).__init__()

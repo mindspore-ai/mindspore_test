@@ -14,7 +14,6 @@
 # ============================================================================
 from tests.mark_utils import arg_mark
 
-
 import numpy as np
 import pytest
 import mindspore as ms
@@ -22,7 +21,6 @@ from mindspore import Tensor
 import mindspore.context as context
 import mindspore.nn as nn
 import mindspore.ops.operations as P
-
 
 context.set_context(mode=context.GRAPH_MODE, device_target="CPU")
 
@@ -37,7 +35,8 @@ class MaxPoolWithArgmaxOp(nn.Cell):
         return self.max_pool_op(x)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_maxpool_with_argmax_valid():
     """
     Feature: test maxPoolWithArgmax cpu op.
@@ -62,7 +61,8 @@ def test_maxpool_with_argmax_valid():
     assert (argmax.asnumpy() == expect_argmax).all()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_maxpool_with_argmax_same():
     """
     Feature: test maxPoolWithArgmax cpu.
@@ -87,7 +87,8 @@ def test_maxpool_with_argmax_same():
     assert (argmax.asnumpy() == expect_argmax).all()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_maxpool_with_argmax_tensorflow():
     """
     Feature: test maxPoolWithArgmax op.
@@ -129,7 +130,8 @@ def test_maxpool_with_argmax_tensorflow():
     assert np.allclose(actual_output.asnumpy(), expect_output)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_maxpool_with_argmax_dynamic_shape():
     """
     Feature: test maxPoolWithArgmax op with dynamic shapes.

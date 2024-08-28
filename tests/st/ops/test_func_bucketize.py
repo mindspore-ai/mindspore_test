@@ -25,7 +25,8 @@ class Net(nn.Cell):
         return ops.bucketize(input_x, boundaries, right=right)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_net(mode):
     """
@@ -46,4 +47,3 @@ def test_net(mode):
     expected_result = np.array([[[1, 3, 5], [2, 4, 6]], [[1, 2, 3], [4, 5, 6]]], np.int32)
     output = net(values, boundaries, right=True)
     assert np.allclose(output.asnumpy(), expected_result)
-    

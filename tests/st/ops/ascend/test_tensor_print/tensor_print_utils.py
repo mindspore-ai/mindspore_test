@@ -22,6 +22,7 @@ from mindspore.ops import operations as P
 
 context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
 
+
 class TensorPrint(nn.Cell):
     def __init__(self):
         super().__init__()
@@ -30,6 +31,7 @@ class TensorPrint(nn.Cell):
     def construct(self, *inputs):
         self.print(*inputs)
         return inputs[0]
+
 
 def get_tensor(is_scalar, input_type):
     if is_scalar == 'scalar':

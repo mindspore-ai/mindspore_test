@@ -29,15 +29,18 @@ class Net(nn.Cell):
         return zeros_like(x)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard',
+          essential_mark='unessential')
 def test_seqence_zeros_like():
     """
     Feature: test sequence zeroslike op
     Description: setitem operation on tuple type
     Expectation: the behavior is matched to python style
     """
+
     def func(x):
         return tuple(np.zeros_like(x))
+
     net_ms = Net()
     input_x = (1, 2, 3, 4, 5)
     fact = TupleFactory(net_ms, func, (input_x,))
@@ -48,7 +51,8 @@ def test_seqence_zeros_like():
     fact.forward_cmp()
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard',
+          essential_mark='unessential')
 def test_seqence_zeros_like_tupleoftensor():
     """
     Feature: test sequence zeroslike op

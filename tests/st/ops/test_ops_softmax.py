@@ -35,7 +35,7 @@ def softmax_forward_func(x, axis=-1):
 
 @test_utils.run_with_cell
 def softmax_backward_func(x, axis=-1):
-    return ops.grad(softmax_forward_func, (0,))(x, axis) # pylint: disable=not-callable
+    return ops.grad(softmax_forward_func, (0,))(x, axis)  # pylint: disable=not-callable
 
 
 @test_utils.run_with_cell
@@ -45,7 +45,7 @@ def softmax_backward_forward_func(dout, out, dim=-1):
 
 @test_utils.run_with_cell
 def softmax_double_backward_func(dout, out, dim=-1):
-    return ops.grad(softmax_backward_forward_func, (0, 1))(dout, out, dim) # pylint: disable=not-callable
+    return ops.grad(softmax_backward_forward_func, (0, 1))(dout, out, dim)  # pylint: disable=not-callable
 
 
 @test_utils.run_with_cell

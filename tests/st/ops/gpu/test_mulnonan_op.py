@@ -42,7 +42,7 @@ def test_mulnonan_graph():
     context.set_context(mode=context.GRAPH_MODE, device_target='GPU')
     mul = MulNoNanNet()
     res = mul(input_x, input_y)
-    assert(res.asnumpy() == res_expect).all()
+    assert (res.asnumpy() == res_expect).all()
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -57,4 +57,4 @@ def test_mulnonan_pynative():
     context.set_context(mode=context.PYNATIVE_MODE, device_target='GPU')
     mul = MulNoNanNet()
     res = mul(input_x, input_y)
-    assert(res.asnumpy() == res_expect).all()
+    assert (res.asnumpy() == res_expect).all()

@@ -30,6 +30,7 @@ def rms_norm_backward_func(x, gamma, epsilon):
     x_grad, gamma_grad = ops.grad(rms_norm_forward_func, (0, 1))(x, gamma, epsilon)
     return x_grad, gamma_grad
 
+
 def rms_norm_grad_numpy_impl(x, gamma, epsilon, y_grad):
     x_dim = len(x.shape)
     gamma_dim = len(gamma.shape)
@@ -38,7 +39,7 @@ def rms_norm_grad_numpy_impl(x, gamma, epsilon, y_grad):
     norm_ele_num = np.prod(gamma.shape)
     var = np.mean(np.power(x, 2), reduce_dims_2, keepdims=True)
     std = np.sqrt(var + epsilon)
-    rstd = 1/ std
+    rstd = 1 / std
     np.broadcast(rstd, y_grad)
     np.broadcast(gamma, y_grad)
     dgamma = np.sum(y_grad * x * rstd, reduce_dims_1, keepdims=True)

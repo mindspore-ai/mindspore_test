@@ -12,17 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
 
 import random
 from functools import reduce
-import numpy as np
-import pytest
 
 import mindspore.context as context
 import mindspore.nn as nn
-from mindspore import Tensor, ops
+import numpy as np
 from mindspore.common import dtype as mstype
+
+from mindspore import Tensor, ops
 from mindspore.ops import functional as F
 
 context.set_context(mode=context.GRAPH_MODE, device_target="CPU")

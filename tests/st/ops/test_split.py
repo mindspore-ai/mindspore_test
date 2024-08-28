@@ -22,6 +22,7 @@ import mindspore.ops as ops
 from mindspore.ops.function.array_func import split_ext
 from tests.mark_utils import arg_mark
 
+
 class TensorSplitNet(nn.Cell):
     def construct(self, x, indices_or_sections, axis=0):
         out = ops.tensor_split(x, indices_or_sections, axis)
@@ -311,6 +312,7 @@ def test_f_split_ext_int(mode):
     for res, exp in zip(out, expect):
         assert np.allclose(res.asnumpy(), exp)
 
+
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_f_split_ext_int32(mode):
@@ -326,6 +328,7 @@ def test_f_split_ext_int32(mode):
     split_size_or_sections = 10
     out = net(x, split_size_or_sections)
     assert np.allclose(len(out), 100)
+
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
@@ -346,6 +349,7 @@ def test_f_split_ext_list(mode):
               np.array([[5, 6, 7, 8, 9], [15, 16, 17, 18, 19]], dtype=np.float32)]
     for res, exp in zip(out, expect):
         assert np.allclose(res.asnumpy(), exp)
+
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])

@@ -36,6 +36,7 @@ def generate_expect_forward_output(x1, x2, gamma, beta, eps=1e-5):
     y = rstdOut * (res - meanOut) * gamma + beta
     return y, meanOut, rstdOut, res
 
+
 class Add_LayerNorm(nn.Cell):
     def __init__(self):
         super().__init__()

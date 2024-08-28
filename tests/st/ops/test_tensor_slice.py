@@ -20,6 +20,7 @@ from mindspore import Tensor, Parameter
 from mindspore import context
 from mindspore import dtype as mstype
 from mindspore.nn import Cell
+from mindspore.common.api import _pynative_executor
 from ...mindspore_test_framework.mindspore_test import mindspore_test
 from ...mindspore_test_framework.pipeline.forward.compile_forward \
     import pipeline_for_compile_forward_ge_graph_for_case_by_case_config, \
@@ -470,15 +471,18 @@ def test_tensor_assign():
 
     # with pytest.raises(ValueError):
     #     net_e2(t, Tensor(2, mstype.int32))
+    #      _pynative_executor.sync()
 
     # Error for A[Slice] = U, U is a Tensor
     # 1. A[Slice] = U,  u.size is error
     with pytest.raises(ValueError):
         net2(t, Tb, tck)
+        _pynative_executor.sync()
 
     # 3. A[Slice] = U, U.size error
     with pytest.raises(ValueError):
         net2(t, Tb, tck)
+        _pynative_executor.sync()
 
     # Error for A[Tuple(Slice...)] = Tensor
     # 2. A[Tuple(Slice...)] = U, U.size error
@@ -487,11 +491,13 @@ def test_tensor_assign():
     # 3. A[Tuple(Slice...)] = U,  Slice error
     # with pytest.raises(IndexError):
     #     net_e1(Ta, b)
+    #      _pynative_executor.sync()
 
     # Error for A[Tuple(Slice...)] = Number
     # 1. A[Tuple(Slice...)] = Number,  Slice error
     # with pytest.raises(IndexError):
     #     net_e1(Ta, Tensor(2, mstype.int32))
+    #      _pynative_executor.sync()
 
     net = TensorAssignWithInteger()
     # Error for A[Number] = scalar/Tensor
@@ -501,6 +507,7 @@ def test_tensor_assign():
     # 2. A[Number] = U, the number index error
     with pytest.raises(IndexError):
         net(Ta4d, b, Ta4d_ck)
+        _pynative_executor.sync()
 
     # Error for A[(n,m)] = scalar/Tensor
     # 1. A[(n,m)] = U, U is a tensor. u.size not match
@@ -510,6 +517,7 @@ def test_tensor_assign():
     # 2. A[(n,m)] = U, the number index error
     with pytest.raises(IndexError):
         net(Ta4d, b, Ta4d_ck)
+        _pynative_executor.sync()
 
     # Error for  A[...] = U or A[1:, ...] = u
     # 1. A[...] = scalar/tensor
@@ -524,6 +532,7 @@ def test_tensor_assign():
     net(Ta, Tc)
     with pytest.raises(ValueError):
         net(Ta, Tb)
+        _pynative_executor.sync()
 
 
 class TensorAssignWithTupleEllipsis2(Cell):
@@ -650,7 +659,6 @@ tuple_index_np_1, tuple_index_np_2, tuple_index_np_3, tuple_index_np_4, tuple_in
     (0,), (1, 2), (1, 2, 3), (3, 4, 4), (1, 2, 3, 4)
 value_np_1, value_np_2 = 1, 2.0
 
-
 a = np.arange(60).reshape(3, 4, 5)
 ck = np.arange(60).reshape(3, 4, 5)
 a4 = np.arange(60).reshape(3, 2, 2, 5)
@@ -697,6 +705,7 @@ def test_tensor_assign_bool_index():
         net4(Ta, u_tensor)
     with pytest.raises(IndexError):
         net4(Ta, Tensor(u_scalar, mstype.int32))
+        _pynative_executor.sync()
 
 
 test_cases = [
@@ -1306,6 +1315,7 @@ def test_tensor_slice_reduce_out_of_bounds_neg():
     net = NetWork()
     with pytest.raises(IndexError):
         net(input_tensor)
+        _pynative_executor.sync()
 
 
 def test_tensor_slice_reduce_out_of_bounds_positive():
@@ -1322,6 +1332,7 @@ def test_tensor_slice_reduce_out_of_bounds_positive():
     net = NetWork()
     with pytest.raises(IndexError):
         net(input_tensor)
+        _pynative_executor.sync()
 
 
 def test_tensor_slice_none_in_pynative():

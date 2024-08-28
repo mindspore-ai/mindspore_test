@@ -45,9 +45,11 @@ def GenIndexData(np_data_type):
                          [2, 0, 2, 1]]]).astype(np_data_type)
     return Tensor(indices)
 
+
 def GenDim():
     """GenDim"""
     return 1
+
 
 def GenExpectResult(np_data_type):
     """GenExpectResult"""
@@ -144,6 +146,7 @@ def test_gather_ext_vmap(param_jit_level):
     Description: call ops.extend.gather with valid input and index.
     Expectation: return the correct value.
     """
+
     def _foreach_run(x, dim, index, batch_axis):
         out = []
         for i in range(x.shape[batch_axis]):
@@ -172,7 +175,6 @@ def test_gather_ext_vmap(param_jit_level):
     ms_out = gather_ext_vmap_func(ms_data, dim, ms_indices)
     expect = _foreach_run(ms_data, dim, ms_indices, batch_axis)
     assert np.allclose(ms_out.asnumpy(), expect.asnumpy(), rtol=1e-4)
-
 
 
 # @pytest.mark.parametrize('batch', [8, 16, 32, 64, 128])

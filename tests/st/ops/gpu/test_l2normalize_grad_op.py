@@ -22,6 +22,7 @@ from mindspore.common.tensor import Tensor
 from mindspore.nn import Cell
 from mindspore.ops.operations import _grad_ops as G
 
+
 class Net(Cell):
     def __init__(self, axis=0, epsilon=1e-12):
         super(Net, self).__init__()
@@ -40,9 +41,9 @@ def test_l2normalize_grad():
     """
     axis_ = 0
     x = np.random.randint(1, 10, (2, 3, 4, 4)).astype(np.float32)
-    y = x / np.sqrt(np.sum(x**2, axis=axis_, keepdims=True))
+    y = x / np.sqrt(np.sum(x ** 2, axis=axis_, keepdims=True))
     dy = np.random.randint(1, 10, (2, 3, 4, 4)).astype(np.float32)
-    expect = (dy - y * np.sum(y * dy, axis=axis_, keepdims=True)) / np.sqrt(np.sum(x**2, axis=axis_, keepdims=True))
+    expect = (dy - y * np.sum(y * dy, axis=axis_, keepdims=True)) / np.sqrt(np.sum(x ** 2, axis=axis_, keepdims=True))
     x = Tensor(x)
     y = Tensor(y)
     dy = Tensor(dy)

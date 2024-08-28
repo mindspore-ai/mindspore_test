@@ -12,12 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
-
-import numpy as np
-import pytest
 import mindspore.context as context
+import numpy as np
+
 from mindspore import Tensor
+from tests.mark_utils import arg_mark
 
 
 def test_add_tensor_api(nptype):
@@ -33,7 +32,8 @@ def test_add_tensor_api(nptype):
     np.testing.assert_array_almost_equal(output.asnumpy(), expected)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_add_float32_tensor_api():
     """
     Feature: test add tensor api.

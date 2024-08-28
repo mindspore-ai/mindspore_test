@@ -16,10 +16,11 @@
 import numpy as np
 import pytest
 from tests.st.utils import test_utils
+from tests.mark_utils import arg_mark
 
 from mindspore import ops
+from mindspore.common.api import _pynative_executor
 import mindspore as ms
-from tests.mark_utils import arg_mark
 
 
 @test_utils.run_with_cell
@@ -100,3 +101,4 @@ def test_nextafter_dtype_diff(context_mode):
     other = ms.Tensor(np.random.randint(0, 100000, ()), ms.float64)
     with pytest.raises((RuntimeError, TypeError)):
         next_after_forward_func(x, other)
+        _pynative_executor.sync()

@@ -18,7 +18,6 @@ import platform
 import numpy as np
 import pytest
 
-
 import mindspore.context as context
 import mindspore.nn as nn
 from mindspore import Tensor
@@ -38,7 +37,8 @@ class StridedSlice(nn.Cell):
         return self.stridedslice(x, (2, 0, 0), (3, 2, 3), (1, 1, 1))
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_slice():
     x = Tensor(np.array([[[1., 1., 1.], [2, 2, 2]], [[3, 3, 3], [4, 4, 4]], [[5, 5, 5], [6, 7, 8]]]).astype(np.float32))
     stridedslice = StridedSlice()
@@ -48,7 +48,8 @@ def test_slice():
     assert (output.asnumpy() == expect).all()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_slice_vmap():
     """
     Feature: Test stridedslice CPU vmap.
@@ -63,7 +64,8 @@ def test_slice_vmap():
     assert np.allclose(output.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 @pytest.mark.parametrize("dtype",
                          [np.bool, np.int8, np.uint8, np.int16, np.uint16, np.int32, np.uint32, np.int64,
                           np.uint64, np.float16, np.float32, np.float64])
@@ -83,7 +85,8 @@ def test_slice_functional_with_attr_int32(dtype):
     assert (output.asnumpy() == expect).all()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 @pytest.mark.parametrize("dtype",
                          [np.bool, np.int8, np.uint8, np.int16, np.uint16, np.int32, np.uint32, np.int64,
                           np.uint64, np.float16, np.float32, np.float64])
@@ -104,7 +107,8 @@ def test_slice_functional_with_attr_int64(dtype):
     assert (output.asnumpy() == expect).all()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 @pytest.mark.parametrize("dtype", [np.complex64, np.complex128])
 def test_slice_functional_with_attr_int32_complex(dtype):
     """
@@ -124,7 +128,8 @@ def test_slice_functional_with_attr_int32_complex(dtype):
     assert (output.asnumpy() == expect).all()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 @pytest.mark.parametrize("dtype", [np.complex64, np.complex128])
 def test_slice_functional_with_attr_int64_complex(dtype):
     """

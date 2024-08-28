@@ -47,6 +47,7 @@ def test_pow_first_order():
     res = grad_net(x, n)
     assert res == 75
 
+
 def test_pow_second_order():
     """
     Feature: pow second order test.
@@ -72,6 +73,7 @@ def test_high_order_with_params():
                  first_grad: 3 * (x ** 2) * (self.weight ** 3)
                  second_grad: 3 * (x ** 2) * 3 * (self.weight * 2)
     """
+
     class Net(nn.Cell):
         def __init__(self):
             super(Net, self).__init__()
@@ -86,7 +88,6 @@ def test_high_order_with_params():
                 r = r * x * self.weight
             return r
 
-
     class Grad(nn.Cell):
         def __init__(self, network):
             super(Grad, self).__init__()
@@ -96,7 +97,6 @@ def test_high_order_with_params():
         def construct(self, x):
             output = self.grad(self.network)(x)
             return output
-
 
     class GradSec(nn.Cell):
         def __init__(self, network):
@@ -108,7 +108,6 @@ def test_high_order_with_params():
         def construct(self, x):
             output = self.grad(self.network, self.params)(x)
             return output
-
 
     context.set_context(mode=context.GRAPH_MODE)
     x = Tensor([5], mstype.int32)
@@ -126,6 +125,7 @@ def test_reftoembed_with_two_weights():
                  even RewriterBeforeOptA (one more round of Renormalize) takes effect.
     Expectation: return expected value.
     """
+
     @jit_class
     class SimpleData:
         def __init__(self, a):

@@ -22,20 +22,25 @@ from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
 
+
 @test_utils.run_with_cell
 def split_forward_func(x, axis, output_num):
     return split(x, axis, output_num)
+
 
 def split_forward_func_dynamic(x, axis, output_num):
     result = split(x, axis, output_num)
     return result[0]
 
+
 @test_utils.run_with_cell
 def split_backward_func(x, axis, output_num):
     return ops.grad(split_forward_func, (0,))(x, axis, output_num)
 
+
 def split_dyn_shape_func(x, axis=0, output_num=2):
     return ops.Split(axis, output_num)(x)
+
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('context_mode', ['pynative', 'KBK'])
@@ -58,6 +63,7 @@ def test_split_ext_int_SDV1(context_mode):
     first_output = out[0]
     assert np.allclose(first_output.shape, expect_shape)
 
+
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('context_mode', ['pynative', 'KBK'])
 def test_split_ext_int_SD5B(context_mode):
@@ -79,6 +85,7 @@ def test_split_ext_int_SD5B(context_mode):
     first_output = out[0]
     assert np.allclose(first_output.shape, expect_shape)
 
+
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('context_mode', ['pynative', 'KBK'])
 def test_split_ext_int_SDV2(context_mode):
@@ -99,6 +106,7 @@ def test_split_ext_int_SDV2(context_mode):
     assert len(out) == 2
     first_output = out[0]
     assert np.allclose(first_output.shape, expect_shape)
+
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('context_mode', ['pynative', 'KBK'])
@@ -122,6 +130,7 @@ def test_split_ext_int_forward(context_mode):
     for res, exp in zip(out, expect):
         assert np.allclose(res.asnumpy(), exp)
 
+
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('context_mode', ['pynative', 'KBK'])
 def test_split_ext_int_backward(context_mode):
@@ -140,6 +149,7 @@ def test_split_ext_int_backward(context_mode):
 
     expect_shape = x.shape
     assert grads.asnumpy().shape == expect_shape
+
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('context_mode', ['pynative', 'KBK'])
@@ -164,6 +174,7 @@ def test_f_split_ext_list_forward(context_mode):
     for res, exp in zip(out, expect):
         assert np.allclose(res.asnumpy(), exp)
 
+
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('context_mode', ['pynative', 'KBK'])
 def test_f_split_ext_list_backward(context_mode):
@@ -185,6 +196,7 @@ def test_f_split_ext_list_backward(context_mode):
     expect_shape = logits.shape
     assert grads.asnumpy().shape == expect_shape
 
+
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_f_split_ext_dynamic():
     """
@@ -197,6 +209,7 @@ def test_f_split_ext_dynamic():
     np_x2 = np.arange(4 * 6 * 4).reshape(4, 6, 4)
     x2 = ms.Tensor(np_x2, ms.float32)
     TEST_OP(split_forward_func_dynamic, [[x1, 2, 0], [x2, 3, 1]], 'split_tensor')
+
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.context.PYNATIVE_MODE, ms.context.GRAPH_MODE])

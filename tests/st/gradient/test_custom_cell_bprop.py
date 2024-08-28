@@ -27,6 +27,7 @@ from mindspore.ops import composite as C
 from mindspore.ops import operations as P
 from mindspore import ops
 from mindspore._extends import cell_attr_register
+from mindspore.common.api import _pynative_executor
 from tests.mark_utils import arg_mark
 
 context.set_context(mode=context.GRAPH_MODE)
@@ -87,6 +88,7 @@ def test_with_param():
     with_param = WithParameter()
     with pytest.raises(RuntimeError):
         grad_all(with_param)(mutable(1), 2)
+        _pynative_executor.sync()
 
 
 class WithNoBprop(nn.Cell):
@@ -375,6 +377,7 @@ def test_grad_mul_add_with_wrong_output_num():
     mul_add = MulAddWithWrongOutputNum()
     with pytest.raises(ValueError):
         grad_all(mul_add)(mutable(1), 2)
+        _pynative_executor.sync()
 
 
 class MulAddWithWrongOutputType(nn.Cell):
@@ -391,6 +394,7 @@ def test_grad_mul_add_with_wrong_output_type():
     mul_add = MulAddWithWrongOutputType()
     with pytest.raises(TypeError):
         grad_all(mul_add)(1, Tensor(np.ones([2, 2])))
+        _pynative_executor.sync()
 
 
 class MulAddWithWrongOutputShape(nn.Cell):
@@ -411,6 +415,7 @@ def test_grad_mul_add_with_wrong_output_shape():
     mul_add = MulAddWithWrongOutputShape()
     with pytest.raises(ValueError):
         grad_all(mul_add)(1, Tensor(np.ones([2, 2])))
+        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')

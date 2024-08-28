@@ -17,6 +17,7 @@ import pytest
 import numpy as np
 import mindspore as ms
 from mindspore import Tensor, ops, nn, context
+from mindspore.common.api import _pynative_executor
 from tests.mark_utils import arg_mark
 
 # np.set_printoptions(threshold=np.inf)
@@ -183,6 +184,7 @@ def test_abnormal_case2(mode):
     y = ops.add(x, x)
     with pytest.raises(RuntimeError):
         y.move_to(to="GPU")
+        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -198,6 +200,7 @@ def test_abnormal_case3(mode):
     y = ops.add(x, x)
     with pytest.raises(ValueError):
         y.move_to(to="ASCEND")
+        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -213,6 +216,7 @@ def test_abnormal_case4(mode):
     y = ops.add(x, x)
     with pytest.raises(ValueError):
         y.move_to(to="Ascend")
+        _pynative_executor.sync()
 
 
 if __name__ == "__main__":

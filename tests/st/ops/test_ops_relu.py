@@ -21,22 +21,28 @@ from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
 
+
 def generate_random_input(shape, dtype):
     return np.random.randn(*shape).astype(dtype)
+
 
 def generate_expect_forward_output(x, dtype):
     return np.maximum(x, 0).astype(dtype)
 
+
 def generate_expect_backward_output(x, dtype):
     return np.where(x > 0, 1, 0).astype(dtype)
+
 
 @test_utils.run_with_cell
 def relu_forward_func(x):
     return relu(x)
 
+
 @test_utils.run_with_cell
 def relu_backward_func(x):
     return ms.ops.grad(relu_forward_func, (0))(x)
+
 
 @test_utils.run_with_cell
 def relu_vmap_func(x):

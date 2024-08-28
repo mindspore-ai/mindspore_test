@@ -45,7 +45,8 @@ def verify_forward(reduction, loss, expect):
         np.testing.assert_array_almost_equal(loss, expect_mean)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 @pytest.mark.parametrize("reduction", ['none', 'mean', 'sum'])
 def test_smoothl1loss(reduction):
     """
@@ -95,7 +96,8 @@ def smoothl1loss_grad(beta):
     return grad(Tensor(prediction), Tensor(target), Tensor(sens))
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_smoothl1loss_grad_no_reduce():
     """
     Feature: SmoothL1LossGrad cpu kernel.
@@ -116,8 +118,8 @@ def test_smoothl1loss_grad_no_reduce():
 
     diff1 = np.absolute(dx[0].asnumpy() - dx1_expect)
     diff2 = np.absolute(dx[1].asnumpy() - dx2_expect)
-    assert(diff1 < epsilon).all()
-    assert(diff2 < epsilon).all()
+    assert (diff1 < epsilon).all()
+    assert (diff2 < epsilon).all()
 
     beta = 1 / 9
     dx = smoothl1loss_grad(beta)
@@ -130,8 +132,8 @@ def test_smoothl1loss_grad_no_reduce():
 
     diff1 = np.absolute(dx[0].asnumpy() - np.array(dx1_expect))
     diff2 = np.absolute(dx[1].asnumpy() - np.array(dx2_expect))
-    assert(diff1 < epsilon).all()
-    assert(diff2 < epsilon).all()
+    assert (diff1 < epsilon).all()
+    assert (diff2 < epsilon).all()
 
 
 def smoothl1loss_grad_2(beta, reduction):
@@ -143,7 +145,8 @@ def smoothl1loss_grad_2(beta, reduction):
     return grad(Tensor(prediction), Tensor(target), Tensor(9, ms.float32))
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 @pytest.mark.parametrize("reduction", ['mean', 'sum'])
 def test_smoothl1loss_grad_sum(reduction):
     """

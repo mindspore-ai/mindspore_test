@@ -101,7 +101,7 @@ def test_maxunpool2d_4dinput_graph():
             assert output_type == inout_type_i
 
             maxunpoo2dgrad = NetMaxUnpool2DGradFourD()
-            grad = Tensor(np.array([i+1 for i in range(4*24)]).reshape([2, 2, 6, 4]).astype(inout_type_i))
+            grad = Tensor(np.array([i + 1 for i in range(4 * 24)]).reshape([2, 2, 6, 4]).astype(inout_type_i))
             output_grad = maxunpoo2dgrad(x, grad, indices)
             output_grad_type = output_grad.asnumpy().dtype
             expect_output_grad = Tensor(np.array([[[[10, 12], [22, 24]],
@@ -152,7 +152,7 @@ def test_maxunpool2d_4dinput_pynative():
             assert output_type == inout_type_i
 
             maxunpoo2dgrad = NetMaxUnpool2DGradFourDNHWC()
-            grad = Tensor(np.array([i+1 for i in range(4*24)]).reshape([2, 2, 6, 4])
+            grad = Tensor(np.array([i + 1 for i in range(4 * 24)]).reshape([2, 2, 6, 4])
                           .astype(inout_type_i)).transpose(0, 2, 3, 1)
             output_grad = maxunpoo2dgrad(x, grad, indices)
             output_grad_type = output_grad.asnumpy().dtype

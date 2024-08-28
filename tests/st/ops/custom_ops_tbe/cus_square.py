@@ -16,6 +16,7 @@ import numpy as np
 from mindspore import Tensor
 from mindspore.ops import prim_attr_register, PrimitiveWithInfer
 
+
 # y = x^2
 class CusSquare(PrimitiveWithInfer):
     """CusSquare definition"""
@@ -41,4 +42,5 @@ class CusSquare(PrimitiveWithInfer):
             gradient = data * 2
             dx = gradient * dout
             return (dx,)
+
         return bprop

@@ -33,6 +33,7 @@ class GradNet(nn.Cell):
 
 class NetConvertForward(nn.Cell):
     """Convert net output to dynamic."""
+
     def __init__(self, network, is_dynamic_rank=False, skip_convert_out_ids=None):
         super(NetConvertForward, self).__init__()
         self.net = network
@@ -53,7 +54,7 @@ class NetConvertForward(nn.Cell):
             return tuple(converted_outs)
         if 0 not in self.skip_convert_out_ids and (F.is_sequence_value_unknown(outs.shape) or outs.shape):
             return self.convert_to_dynamic(outs)
-        return  outs
+        return outs
 
 
 class DynamicGradNet(nn.Cell):

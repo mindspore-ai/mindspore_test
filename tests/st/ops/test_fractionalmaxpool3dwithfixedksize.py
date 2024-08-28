@@ -42,7 +42,8 @@ class NetFractionalMaxPool3DGradWithFixedKsize(nn.Cell):
         return self.fractional_max_pool_3d_grad_with_fixed_ksize(origin_input, out_backprop, argmax)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
 def test_fractionalmaxpool3dwithfixedksize():
     """
     Feature: FractionalMaxPool3DWithFixedKsize
@@ -56,7 +57,7 @@ def test_fractionalmaxpool3dwithfixedksize():
         context.set_context(mode=context_mode_type)
         for type_input1 in types_input1:
             for type_input2 in types_input2:
-                x_np = np.array([i+1 for i in range(64)]
+                x_np = np.array([i + 1 for i in range(64)]
                                 ).reshape([1, 1, 4, 4, 4]).astype(type_input1)
                 x_ms = Tensor(x_np)
                 x_dyn = Tensor(shape=(1, 1, None, None, None),

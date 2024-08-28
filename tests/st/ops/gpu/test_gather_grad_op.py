@@ -25,6 +25,7 @@ import mindspore.ops.operations._grad_ops as G
 from mindspore.ops.composite import GradOperation
 from mindspore import Tensor
 
+
 class GatherDNet(nn.Cell):
     def __init__(self, dim=0):
         super(GatherDNet, self).__init__()

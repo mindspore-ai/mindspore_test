@@ -25,12 +25,14 @@ from tests.mark_utils import arg_mark
 def generate_random_input(shape, dtype):
     return np.random.randint(1, 10, size=shape).astype(dtype)
 
+
 def generate_expect_forward_output(x, k, dim):
     index = np.argsort(-x, axis=dim)
     index = index.take(np.arange(k), axis=dim)
     value = abs(np.sort(-x, axis=dim))
     value = value.take(np.arange(k), axis=dim)
     return value, index
+
 
 def generate_expect_backward_output(x, k, dim):
     values, indices = generate_expect_forward_output(x, k, dim)
@@ -78,7 +80,6 @@ def test_ops_topk_ext_normal0(context_mode):
     assert output.asnumpy().shape == (7, 8, 9)
 
 
-
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("context_mode", [ms.PYNATIVE_MODE])
 def test_ops_topk_ext_normal1(context_mode):
@@ -105,7 +106,6 @@ def test_ops_topk_ext_normal1(context_mode):
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
     assert output.asnumpy().dtype == 'float32'
     assert output.asnumpy().shape == (7, 8, 9)
-
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
@@ -146,10 +146,8 @@ def test_ops_topk_ext_dynamic_shape():
     x1 = ms.Tensor(generate_random_input((7, 8), np.float32))
     k1 = 3
 
-
     x2 = ms.Tensor(generate_random_input((7, 8, 9), np.float32))
     k2 = 4
-
 
     test_cell = test_utils.to_cell_obj(topk_forward_func)
     TEST_OP(test_cell, [[x1, k1], [x2, k2]], '', disable_yaml_check=True, disable_mode=['GRAPH_MODE'])

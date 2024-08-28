@@ -20,6 +20,7 @@ from mindspore.ops import ifftshift
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 
+
 class IFFTShiftNet(nn.Cell):
     def __init__(self):
         super(IFFTShiftNet, self).__init__()
@@ -27,6 +28,7 @@ class IFFTShiftNet(nn.Cell):
 
     def construct(self, x, dim=None):
         return self.ifftshift(x, dim)
+
 
 class IFFTShiftGradNet(nn.Cell):
     def __init__(self, net, dout):
@@ -37,6 +39,7 @@ class IFFTShiftGradNet(nn.Cell):
 
     def construct(self, x, dim=None):
         return self.grad(self.net)(x, dim, self.dout)
+
 
 def generate_random_input(shape, dtype):
     return np.random.randn(*shape).astype(dtype)

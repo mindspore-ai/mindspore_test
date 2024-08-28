@@ -12,18 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
-
-import numpy as np
-import pytest
-
 import mindspore.context as context
 import mindspore.nn as nn
-from mindspore import Tensor
+import numpy as np
+from mindspore.common import dtype as mstype
 from mindspore.common.initializer import initializer
 from mindspore.common.parameter import Parameter
+
+from mindspore import Tensor
 from mindspore.ops import operations as P
-from mindspore.common import dtype as mstype
+from tests.mark_utils import arg_mark
 
 context.set_context(mode=context.GRAPH_MODE, device_target="CPU")
 
@@ -41,7 +39,8 @@ class NetEqBool(nn.Cell):
         return self.equal(self.x, self.y)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_equal_bool():
     equal_net = NetEqBool()
     output = equal_net()
@@ -64,7 +63,8 @@ class NetEqInt(nn.Cell):
         return self.equal(self.x, self.y)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_equal_int():
     equal_net = NetEqInt()
     output = equal_net()
@@ -87,7 +87,8 @@ class NetEqFloat(nn.Cell):
         return self.equal(self.x, self.y)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_equal_float():
     equal_net = NetEqFloat()
     output = equal_net()
@@ -110,7 +111,8 @@ def test_equal_tensor_api():
     np.testing.assert_array_equal(output.asnumpy(), expected)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_equal_tensor_modes():
     """
     Feature: test equal tensor API in PyNative and Graph modes.

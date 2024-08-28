@@ -26,7 +26,6 @@ from mindspore.ops.operations.nn_ops import AdaptiveMaxPool3D
 from mindspore.ops.functional import vmap
 import mindspore.numpy as ms_np
 
-
 context.set_context(mode=context.GRAPH_MODE, device_target='GPU')
 
 

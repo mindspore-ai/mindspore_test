@@ -25,19 +25,19 @@ import mindspore as ms
 from tests.mark_utils import arg_mark
 
 
-def create_tensor(capcity, shapes, types):
+def create_tensor(capacity, shapes, types):
     buffer = []
     for i in range(len(shapes)):
-        buffer.append(Parameter(Tensor(np.zeros(((capcity,)+shapes[i])), types[i]), \
-        name="buffer" + str(i)))
+        buffer.append(Parameter(Tensor(np.zeros(((capacity,) + shapes[i])), types[i]), \
+                                name="buffer" + str(i)))
     return buffer
 
 
 class RLBuffer(nn.Cell):
-    def __init__(self, batch_size, capcity, shapes, types):
+    def __init__(self, batch_size, capacity, shapes, types):
         super(RLBuffer, self).__init__()
-        self.buffer = create_tensor(capcity, shapes, types)
-        self._capacity = capcity
+        self.buffer = create_tensor(capacity, shapes, types)
+        self._capacity = capacity
         self._batch_size = batch_size
         self.count = Parameter(Tensor(0, ms.int32), name="count")
         self.head = Parameter(Tensor(0, ms.int32), name="head")
@@ -71,7 +71,7 @@ exp1 = [s_, a, r, s]
           essential_mark='unessential')
 def test_Buffer():
     context.set_context(mode=context.GRAPH_MODE, device_target='CPU')
-    buffer = RLBuffer(batch_size=32, capcity=100, shapes=[(4,), (2,), (1,), (4,)], types=[
+    buffer = RLBuffer(batch_size=32, capacity=100, shapes=[(4,), (2,), (1,), (4,)], types=[
         ms.float32, ms.int32, ms.float32, ms.float32])
     print("init buffer:\n", buffer.buffer)
     for _ in range(0, 110):

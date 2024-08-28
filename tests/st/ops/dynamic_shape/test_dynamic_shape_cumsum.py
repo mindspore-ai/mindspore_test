@@ -40,7 +40,8 @@ class CumSumDyNet(nn.Cell):
         return real_x, self.cumsum(real_x, axis)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu', 'platform_ascend'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize("axis", [0, 1, 2])
 @pytest.mark.parametrize("data_type", [np.float32, np.float16, np.int32])
 def test_dynamic_shape_cumsum(axis, data_type):

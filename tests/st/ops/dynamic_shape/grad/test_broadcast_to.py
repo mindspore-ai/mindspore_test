@@ -29,7 +29,8 @@ class NetBroadcastTo(nn.Cell):
         return self.op(x)
 
 
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_dynamic_shape_broadcast_to():
     """
     Feature: BroadcastTo Grad DynamicShape.
@@ -42,7 +43,8 @@ def test_dynamic_shape_broadcast_to():
     test_dynamic.test_dynamic_grad_net(x)
 
 
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_dynamic_rank_broadcast_to():
     """
     Feature: BroadcastTo Grad DynamicRank.

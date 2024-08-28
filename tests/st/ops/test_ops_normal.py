@@ -15,11 +15,12 @@
 import numpy as np
 import mindspore as ms
 from mindspore import mint, Generator
-from mindspore.ops.auto_generate import NormalTensorTensor, NormalTensorFloat,\
-     NormalFloatTensor, NormalFloatFloat
+from mindspore.ops.auto_generate import NormalTensorTensor, NormalTensorFloat, \
+    NormalFloatTensor, NormalFloatFloat
 from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
+
 generator = Generator()
 seed_ = ms.Tensor(1, ms.int64)
 offset_ = ms.Tensor(1, ms.int64)
@@ -30,6 +31,7 @@ normal_tensor_tensor_op = NormalTensorTensor()
 normal_tensor_float_op = NormalTensorFloat()
 normal_float_tensor_op = NormalFloatTensor()
 normal_float_float_op = NormalFloatFloat()
+
 
 def generate_random_input(shape):
     return np.random.randn(*shape).astype(np.float32)
@@ -176,6 +178,7 @@ def test_normal_float_tensor_dynamic_shape_testop():
              [1.0, ms.Tensor(x2), seed2_, offset2_]], 'normal_float_tensor',
             disable_input_check=True, disable_mode=['GRAPH_MODE'], inplace_update=True)
 
+
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_normal_float_float_dynamic_shape_testop():
     """
@@ -189,7 +192,6 @@ def test_normal_float_float_dynamic_shape_testop():
             disable_input_check=True, disable_mode=['GRAPH_MODE'], inplace_update=True)
 
 
-
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_mint_normal_func1():
     """
@@ -200,6 +202,7 @@ def test_mint_normal_func1():
     output1 = mint.normal(1.0, 1.0, (2, 2))
     output2 = mint.normal(1.0, 1.0, (2, 2))
     assert not np.all(output1.asnumpy() == output2.asnumpy())
+
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_mint_normal_func2():

@@ -20,7 +20,6 @@ from mindspore import nn, Tensor
 import mindspore.context as context
 from mindspore.ops.operations.math_ops import Orgqr
 
-
 RTOL = 1.e-5
 ATOL = 1.e-6
 

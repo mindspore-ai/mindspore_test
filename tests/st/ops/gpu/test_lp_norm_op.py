@@ -102,6 +102,7 @@ def test_lp_norm_op(data_type):
     output = lp_norm(Tensor(input_x))
     np.testing.assert_allclose(output.asnumpy(), benchmark_output, rtol=error)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_lp_norm_op_keepdims():
     """
@@ -119,6 +120,7 @@ def test_lp_norm_op_keepdims():
     lp_norm = LpNormNet(axis, p, keep_dims)
     output = lp_norm(input_x)
     np.testing.assert_allclose(output.asnumpy(), benchmark_output, rtol=error)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize("data_type", [np.float32, np.float16])

@@ -12,15 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
-
-import pytest
-import numpy as np
 import mindspore.context as context
-import mindspore.ops as ops
 import mindspore.nn as nn
-from mindspore import Tensor
+import numpy as np
+import pytest
 from mindspore.ops.functional import vmap
+
+import mindspore.ops as ops
+from mindspore import Tensor
+from tests.mark_utils import arg_mark
 
 
 def vmap_case():
@@ -44,7 +44,8 @@ def vmap_case():
     assert np.allclose(expect1, out_ms1.asnumpy())
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_pad_vmap_cpu():
     """
     Feature: test ops.Pad vmap.
@@ -66,7 +67,8 @@ class PadNet(nn.Cell):
         return self.pad(x)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard',
+          essential_mark='unessential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
 @pytest.mark.parametrize('dtype', [np.bool_, np.uint8, np.uint16, np.uint32, np.uint64, np.int8, np.int16, np.int32,
                                    np.int64, np.float16, np.float64, np.complex64, np.complex128])

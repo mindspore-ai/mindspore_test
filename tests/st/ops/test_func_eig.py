@@ -21,6 +21,7 @@ import mindspore as ms
 import mindspore.nn as nn
 import mindspore.ops as ops
 from mindspore import Tensor
+from mindspore.common.api import _pynative_executor
 
 
 class Net(nn.Cell):
@@ -29,7 +30,8 @@ class Net(nn.Cell):
         return output
 
 
-@arg_mark(plat_marks=['platform_ascend', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_eig(mode):
     """
@@ -44,12 +46,14 @@ def test_eig(mode):
 
     x = Tensor(inputs, ms.float32)
     value, vector = net(x)
-    expect_value = np.array([1.+0.j, 2.+0.j])
-    expect_vector = np.array([[1.+0.j, 0.+0.j], [0.+0.j, 1.+0.j]])
+    expect_value = np.array([1. + 0.j, 2. + 0.j])
+    expect_vector = np.array([[1. + 0.j, 0. + 0.j], [0. + 0.j, 1. + 0.j]])
     assert np.allclose(expect_value, value.asnumpy())
     assert np.allclose(expect_vector, vector.asnumpy())
 
-@arg_mark(plat_marks=['platform_ascend', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+
+@arg_mark(plat_marks=['platform_ascend', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_eig_abnormal_input(mode):
     """
@@ -63,4 +67,5 @@ def test_eig_abnormal_input(mode):
     inputs = ms.Tensor(np.random.uniform(-10, 10, size=())).astype(ms.float32)
     with pytest.raises(ValueError) as err:
         _ = net(inputs)
+        _pynative_executor.sync()
     assert "ValueError" in str(err)

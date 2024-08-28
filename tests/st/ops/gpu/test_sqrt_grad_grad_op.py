@@ -25,6 +25,7 @@ from mindspore.ops import composite as C
 
 context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
 
+
 class NetSqrtGrad(nn.Cell):
     def __init__(self):
         super(NetSqrtGrad, self).__init__()

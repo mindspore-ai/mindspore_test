@@ -12,21 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
-
 import math
-import pytest
-import numpy as np
 
 import mindspore.context as context
 import mindspore.nn as nn
-import mindspore as ms
-from mindspore import Tensor, Parameter
+import numpy as np
 from mindspore.nn import Dense
 from mindspore.nn import TrainOneStepCell, WithLossCell
 from mindspore.nn.optim import Adam
-from mindspore.ops import operations as P
 from mindspore.ops.functional import vmap
+
+import mindspore as ms
+from mindspore import Tensor, Parameter
+from mindspore.ops import operations as P
+from tests.mark_utils import arg_mark
 
 context.set_context(mode=context.GRAPH_MODE, device_target="CPU")
 
@@ -45,7 +44,8 @@ class NetAdam(nn.Cell):
         return output
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_adam():
     """
     Feature: Adam optimizer
@@ -71,7 +71,8 @@ def test_adam():
     assert losses1[1] > losses1[2]
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_lazy_adam():
     """
     Feature: LazyAdam optimizer
@@ -97,7 +98,8 @@ def test_lazy_adam():
     assert losses1[1] > losses1[2]
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_lazy2():
     """
     Feature: Adam optimizer
@@ -123,7 +125,8 @@ def test_lazy2():
     assert np.array_equal(losses1[-1], np.array(2.2237475, np.float32))
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_adam_offload():
     """
     Feature: LazyAdam optimizer
@@ -149,7 +152,8 @@ def test_adam_offload():
     assert losses1[1] > losses1[2]
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_adam_offload_acc():
     """
     Feature: AdamOffload optimizer
@@ -201,7 +205,8 @@ class AdamNetVmap(nn.Cell):
         return self.vmap_adam(self.var, self.m, self.v, beta1_power, beta2_power, lr, beta1, beta2, epsilon, grad)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_apply_adam_witm_adam_op_vmap():
     """
     Feature: Adam cpu kernel
@@ -210,6 +215,7 @@ def test_apply_adam_witm_adam_op_vmap():
     """
     shape = (8, 9, 6, 10, 5)
     seed = np.random.RandomState(seed=5)
+
     def cal_amsgrad(var, m, v, beta1_power, beta2_power, lr, beta1, beta2, epsilon, grad):
         return P.Adam()(var, m, v, beta1_power, beta2_power, lr, beta1, beta2, epsilon, grad)
 

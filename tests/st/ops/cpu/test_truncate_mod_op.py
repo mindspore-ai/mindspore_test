@@ -22,6 +22,7 @@ import mindspore.nn as nn
 from mindspore import Tensor, context
 from mindspore.ops import operations as P
 from mindspore.ops import functional as F
+from mindspore.common.api import _pynative_executor
 
 context.set_context(mode=context.GRAPH_MODE, device_target='CPU')
 
@@ -36,7 +37,8 @@ class TruncateMod(nn.Cell):
         return res
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_truncatemod_output_diff_types():
     """
     Feature: TruncateMod cpu op
@@ -85,7 +87,8 @@ def test_truncatemod_output_diff_types():
     assert out.shape == exp.shape
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_truncatemod_output_broadcasting():
     """
     Feature: TruncateMod cpu op
@@ -103,7 +106,8 @@ def test_truncatemod_output_broadcasting():
     assert out.shape == exp.shape
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_truncatemod_output_broadcasting_scalar():
     """
     Feature: TruncateMod cpu op
@@ -121,7 +125,8 @@ def test_truncatemod_output_broadcasting_scalar():
     assert out.shape == exp.shape
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_truncatemod_dtype_not_supported():
     """
     Feature: TruncateMod cpu op
@@ -131,11 +136,13 @@ def test_truncatemod_dtype_not_supported():
     with pytest.raises(TypeError):
         input_x = Tensor(np.array([True, False]), mindspore.bool_)
         input_y = Tensor(np.array([True]), mindspore.bool_)
+        _pynative_executor.sync()
 
         _ = TruncateMod()(input_x, input_y).asnumpy()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_truncatemod_cannot_broadcast():
     """
     Feature: TruncateMod cpu op
@@ -145,17 +152,20 @@ def test_truncatemod_cannot_broadcast():
     with pytest.raises(ValueError):
         input_x = Tensor(np.array([1, 4, -7]), mindspore.int32)
         input_y = Tensor(np.array([3, 2]), mindspore.int32)
+        _pynative_executor.sync()
 
         _ = TruncateMod()(input_x, input_y).asnumpy()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_vmap_truncate_mod():
     """
     Feature: TruncateMod cpu op vmap feature.
     Description: test the vmap feature of TruncateMod.
     Expectation: success.
     """
+
     def manually_batched(func, input0, input1):
         out_manual = []
         for i in range(input0.shape[0]):

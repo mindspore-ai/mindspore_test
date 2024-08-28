@@ -21,6 +21,7 @@ import mindspore.nn as nn
 import mindspore.nn.probability.distribution as msd
 from mindspore import Tensor
 from mindspore import dtype
+from mindspore.common.api import _pynative_executor
 
 context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
 
@@ -121,6 +122,7 @@ def test_sample():
     with pytest.raises(NotImplementedError):
         sample = Sampling()
         sample()
+        _pynative_executor.sync()
 
 
 class Basics(nn.Cell):

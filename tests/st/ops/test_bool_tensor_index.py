@@ -170,7 +170,7 @@ def test_bool_tensor_index_get_item_x_2x3_index_bool2_int1(mode):
     Expectation: success
     """
     ms.set_context(mode=mode)
-    x0 = np.arange(2*3).reshape(2, 3)
+    x0 = np.arange(2 * 3).reshape(2, 3)
     index0 = np.array([True, False])
     # Mindspore
     x_ms = Tensor(x0, dtype=mstype.float32)
@@ -193,7 +193,7 @@ def test_bool_tensor_index_set_item_x_2x3_index_bool2_int1_value_1(mode):
     Expectation: success
     """
     ms.set_context(mode=mode)
-    x0 = np.arange(2*3).reshape(2, 3)
+    x0 = np.arange(2 * 3).reshape(2, 3)
     index0 = np.array([True, False])
     # Mindspore
     x_ms = Tensor(x0, dtype=mstype.float32)
@@ -217,7 +217,7 @@ def test_bool_tensor_index_set_item_x_2x3_index_bool2_int1_value_list_1(mode):
     Expectation: success
     """
     ms.set_context(mode=mode)
-    x0 = np.arange(2*3).reshape(2, 3)
+    x0 = np.arange(2 * 3).reshape(2, 3)
     index0 = np.array([True, False])
     # Mindspore
     x_ms = Tensor(x0, dtype=mstype.float32)

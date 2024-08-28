@@ -12,16 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
-
-import numpy as np
-import pytest
-
 import mindspore.context as context
 import mindspore.nn as nn
+import numpy as np
+
 from mindspore import Tensor, ops
-from mindspore.ops import operations as P
 from mindspore import dtype as mstype
+from mindspore.ops import operations as P
+from tests.mark_utils import arg_mark
 
 context.set_context(mode=context.GRAPH_MODE, device_target='CPU')
 
@@ -48,7 +46,8 @@ class Net2InputsDynRank(nn.Cell):
         return res
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_two_tensors_add():
     """
     Feature: ALL To ALL
@@ -96,7 +95,8 @@ class Net4Inputs(nn.Cell):
         return self.addn((x, y, m, n))
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_four_tensors_add():
     """
     Feature: ALL To ALL
@@ -117,7 +117,8 @@ def test_four_tensors_add():
         assert np.array_equal(output.asnumpy(), expect_result)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_addn_support_type():
     """
     Feature: test ops.addn.

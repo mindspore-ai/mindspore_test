@@ -26,7 +26,6 @@ from mindspore.ops.operations import _grad_ops as G
 from mindspore.ops.functional import vmap
 import mindspore.numpy as ms_np
 
-
 context.set_context(device_target="Ascend")
 
 

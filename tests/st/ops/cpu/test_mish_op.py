@@ -12,16 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
-
+import mindspore.nn as nn
 import numpy as np
 import pytest
-import mindspore.nn as nn
-from mindspore.ops import operations as P
+from mindspore.common import dtype as ms_type
 from mindspore.ops.functional import vmap
+
 from mindspore import Tensor
 from mindspore import context
-from mindspore.common import dtype as ms_type
+from mindspore.ops import operations as P
+from tests.mark_utils import arg_mark
 
 
 class MishNet(nn.Cell):
@@ -57,7 +57,8 @@ def mish_np_bencmark(x):
     return result
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 @pytest.mark.parametrize("data_shape", [(4,), (3, 4), (4, 5, 7)])
 @pytest.mark.parametrize("data_type", [np.float32, np.float16])
 def test_mish(data_shape, data_type):
@@ -80,7 +81,8 @@ def test_mish(data_shape, data_type):
     np.testing.assert_allclose(output.asnumpy(), benchmark_output, rtol=error)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_mish_vmap():
     """
     Feature: Test Mish Vmap on CPU.
@@ -100,7 +102,8 @@ def test_mish_vmap():
     np.testing.assert_allclose(output.asnumpy(), benchmark_output, rtol=error, atol=error)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_mish_dy_shape():
     """
     Feature: Test Mish Dynamic Shape.

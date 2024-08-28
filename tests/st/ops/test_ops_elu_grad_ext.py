@@ -20,21 +20,21 @@ from tests.mark_utils import arg_mark
 from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 
-
-
 elu_grad_ext = ms.ops.auto_generate.EluGradExt()
+
 
 def generate_random_input(shape, dtype):
     return np.random.randn(*shape).astype(dtype)
 
 
 def generate_expect_forward_output(dy, y_x, alpha, dtype):
-    return (dy * np.where(y_x > 0, 1, alpha*np.exp(y_x * 1))).astype(dtype)
+    return (dy * np.where(y_x > 0, 1, alpha * np.exp(y_x * 1))).astype(dtype)
 
 
 @test_utils.run_with_cell
 def elu_grad_ext_forward_func(dy, y, alpha):
     return elu_grad_ext(dy, y, alpha)
+
 
 @test_utils.run_with_cell
 def elu_grad_ext_vmap_func(dy, y, alpha):

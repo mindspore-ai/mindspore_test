@@ -24,7 +24,6 @@ from mindspore.ops.operations import math_ops
 
 ms.context.set_context(mode=ms.context.PYNATIVE_MODE, device_target="GPU")
 
-
 LOSS_R_32 = 1e-4
 LOSS_R_64 = 1e-5
 LOSS_C_32 = 2e-4

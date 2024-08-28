@@ -82,7 +82,9 @@ class StridedSliceNet(Cell):
         out = self.strided_slice(input_x, begin, end, strides)
         return op.add(out, out)
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_strided_slice_insert_cast_for_tuple_input():
     """
     Feature: StridedSlice Grad DynamicShape in pynative mode.

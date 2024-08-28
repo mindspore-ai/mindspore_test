@@ -25,6 +25,7 @@ from mindspore.ops import functional as F
 from mindspore.ops.functional import vmap
 from mindspore.common.api import jit
 
+
 class NetDiag(nn.Cell):
     def __init__(self):
         super(NetDiag, self).__init__()
@@ -184,6 +185,7 @@ def test_diag_vmap():
     Expectation: The value and shape of output are the expected values.
     """
     context.set_context(device_target="GPU")
+
     def cal_diag(x):
         return P.Diag()(x)
 

@@ -52,3 +52,4 @@ def test_repeat_elements(mode):
     with pytest.raises(ValueError,
                        match="For repeat_elements, the rank of x should be less than or equal to 7, but got 8."):
         _ = net(x, 1, 0)
+        _pynative_executor.sync()

@@ -32,6 +32,7 @@ def test_bias_add_4d(mode):
     Description: test BiasAdd with 4D inputs.
     Expectation: the result match with expected result.
     """
+
     @test_utils.run_with_cell
     def bias_add_forward_func(x, b):
         return ops.BiasAdd(data_format="NCHW")(x, b)
@@ -57,6 +58,7 @@ def test_bias_add_2d(mode):
     Description: test BiasAdd with 2D inputs.
     Expectation: the result match with expected result.
     """
+
     @test_utils.run_with_cell
     def bias_add_forward_func(x, b):
         return ops.BiasAdd(data_format="NCHW")(x, b)
@@ -82,6 +84,7 @@ def test_bias_add_3d(mode):
     Description: test BiasAdd with 3D inputs.
     Expectation: the result match with expected result.
     """
+
     @test_utils.run_with_cell
     def bias_add_forward_func(x, b):
         return ops.BiasAdd(data_format="NCHW")(x, b)
@@ -107,6 +110,7 @@ def test_bias_add_5d(mode):
     Description: test BiasAdd with 5D inputs.
     Expectation: the result match with expected result.
     """
+
     @test_utils.run_with_cell
     def bias_add_forward_func(x, b):
         return ops.BiasAdd(data_format="NCHW")(x, b)
@@ -132,6 +136,7 @@ def test_bias_add_backward(mode):
     Description: test inputs for given input dtype.
     Expectation: the result match with expected result.
     """
+
     def bias_add_forward_func(x, b):
         return ops.BiasAdd(data_format="NCHW")(x, b)
 
@@ -157,6 +162,7 @@ def test_bias_add_vmap(mode):
     Description: test the rightness of basic biasadd vmap
     Expectation: use vmap rule's result equal to manually batched.
     """
+
     @test_utils.run_with_cell
     def bias_add_forward_func(x, b):
         return ops.BiasAdd(data_format="NCHW")(x, b)
@@ -187,6 +193,7 @@ def test_bias_add_ncdhw(mode):
     Description: test BiasAdd with NCDHW inputs.
     Expectation: the result match with expected result.
     """
+
     @jit
     def bias_add(x, b):
         return ops.BiasAdd(data_format="NCDHW")(x, b)
@@ -212,6 +219,7 @@ def test_bias_add_different_input_types(mode):
     Description: test BiasAdd with different input types.
     Expectation: the result match with expected result.
     """
+
     @test_utils.run_with_cell
     def bias_add_forward_func(x, b):
         return ops.BiasAdd(data_format="NCHW")(x, b)

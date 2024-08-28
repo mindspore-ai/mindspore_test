@@ -12,15 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
-
+import mindspore.nn as nn
 import numpy as np
 import pytest
 
-import mindspore.nn as nn
 from mindspore import Tensor
 from mindspore import context
 from mindspore.ops import operations as P
+from tests.mark_utils import arg_mark
+
 context.set_context(mode=context.GRAPH_MODE, device_target="CPU")
 
 
@@ -33,7 +33,8 @@ class NetAtan(nn.Cell):
         return self.atan(x)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 @pytest.mark.parametrize('dtype', [np.float32, np.float64])
 def test_atan(dtype):
     """
@@ -62,7 +63,8 @@ def test_atan_forward_tensor_api(nptype):
     np.testing.assert_array_almost_equal(output.asnumpy(), expected)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_atan_forward_float32_tensor_api():
     """
     Feature: test atan forward tensor api.
@@ -75,7 +77,8 @@ def test_atan_forward_float32_tensor_api():
     test_atan_forward_tensor_api(np.float32)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 @pytest.mark.parametrize('dtype', [np.float16, np.float32, np.float64])
 def test_atan_float(dtype):
     """
@@ -92,7 +95,8 @@ def test_atan_float(dtype):
     assert np.allclose(output.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 @pytest.mark.parametrize('dtype', [np.complex64, np.complex128])
 def test_atan_complex(dtype):
     """

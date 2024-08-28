@@ -23,12 +23,15 @@ from mindspore.ops.function.math_func import linspace_ext
 import mindspore as ms
 from mindspore.common import mutable
 
+
 def generate_random_input(shape, dtype):
     return np.random.randn(*shape).astype(dtype)
+
 
 @test_utils.run_with_cell
 def lin_space_ext_forward_func(start, end, steps, dtype=None):
     return linspace_ext(start, end, steps, dtype=dtype)
+
 
 @test_utils.run_with_cell
 def lin_space_ext_backward_func(start, end, steps, dtype=None):

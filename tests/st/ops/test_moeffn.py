@@ -19,6 +19,7 @@ import mindspore.nn as nn
 from mindspore import Tensor, jit, JitConfig
 from mindspore.ops.auto_generate import FFNExt
 
+
 class Net(nn.Cell):
     def __init__(self, activation_, innerPrecise_):
         super(Net, self).__init__()
@@ -27,12 +28,15 @@ class Net(nn.Cell):
     def construct(self, x_, w1_, w2_, expert_tokens_, bias1_, bias2_):
         return self.ffn(x_, w1_, w2_, expert_tokens_, bias1_, bias2_)
 
+
 def generate_random_input(shape, dtype):
     return np.random.randn(*shape).astype(dtype)
+
 
 def ffn_forward_func(x_, w1_, w2_, expert_tokens_, bias1_, bias2_):
     ffn = FFNExt("fastgelu", 1)
     return ffn(x_, w1_, w2_, expert_tokens_, bias1_, bias2_)
+
 
 x = Tensor(np.array([[0.2062, 0.9795, 0.02841, 0.438],
                      [0.776, 0.56, 0.6953, 0.8276],
@@ -115,6 +119,7 @@ expect = np.array([[12.805, 9.766, 8.98, 12.16],
                    [11.49, 12.05, 12.41, 14.17],
                    [9.82, 9.91, 10.79, 12.32]])
 
+
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_ffn_forward_net():
     """
@@ -127,6 +132,7 @@ def test_ffn_forward_net():
     output = net(x, w1, w2, expert_tokens, bias1, bias2)
 
     assert np.allclose(output.asnumpy(), expect, rtol=1e-1)
+
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', ['GE', 'KBK', 'pynative'])
@@ -144,6 +150,7 @@ def test_ffn_forward_mode(mode):
     else:
         output = (jit(ffn_forward_func, jit_config=JitConfig(jit_level="O2")))(x, w1, w2, expert_tokens, bias1, bias2)
     assert np.allclose(output.asnumpy(), expect, rtol=1e-1)
+
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_ffn_forward_value():

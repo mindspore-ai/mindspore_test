@@ -21,6 +21,7 @@ from mindspore import Tensor, JitConfig
 from mindspore.common.api import jit
 from mindspore.ops import operations as P
 from mindspore.common import dtype as mstype
+from mindspore.common.api import _pynative_executor
 
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
@@ -124,6 +125,7 @@ def do_test_matmul_dtypes(valid_dtypes, is_ge_only=False):
         else:
             with pytest.raises((RuntimeError, TypeError)):
                 matmul(x_ms, y_ms)
+                _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='unessential')

@@ -25,7 +25,8 @@ import mindspore.nn as nn
 from mindspore.ops import composite as c
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard',
+          essential_mark='unessential')
 @pytest.mark.parametrize("mode", [context.GRAPH_MODE, context.PYNATIVE_MODE])
 def test_gru_grad(mode):
     """
@@ -82,7 +83,8 @@ class NetGruV2(nn.Cell):
             x, h_0, self.weights.astype(x.dtype), seq_len)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 @pytest.mark.parametrize("has_bias", [True, False])
 @pytest.mark.parametrize("is_train", [True, False])
 def test_gru_backward(has_bias, is_train):

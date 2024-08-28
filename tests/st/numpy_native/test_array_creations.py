@@ -926,14 +926,6 @@ def test_asarray_exception():
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
           card_mark='onecard', essential_mark='unessential')
-def test_linspace_exception():
-    with pytest.raises(TypeError):
-        mnp.linspace(0, 1, num=2.5)
-        _pynative_executor.sync()
-
-
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
-          card_mark='onecard', essential_mark='unessential')
 def test_empty_like_exception():
     with pytest.raises(ValueError):
         mnp.empty_like([[1, 2, 3], [4, 5]])

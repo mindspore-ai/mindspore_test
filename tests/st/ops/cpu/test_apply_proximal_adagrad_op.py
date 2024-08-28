@@ -36,7 +36,8 @@ class ApplyProximalAdagradTEST(nn.Cell):
         return self.apply_proximal_adagrad(self.var, self.accum, lr, l1, l2, grad)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 @pytest.mark.parametrize("data_type", [np.float32, np.float16])
 def test_apply_proximal_adagrad_op(data_type):
     """
@@ -85,15 +86,18 @@ class AdgradNetVmap(nn.Cell):
         return self.vmap_adagrad(self.var, self.accum, lr, l1, l2, grad)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_apply_proximal_adagrad_op_vmap():
     """
     Feature: ApplyProximalAdagrad cpu kernel
     Description: test the ApplyProximalAdagrad vmap.
     Expectation: match to np benchmark.
     """
+
     def cal_adagrad(var, accum, lr, l1, l2, grad):
         return P.ApplyProximalAdagrad()(var, accum, lr, l1, l2, grad)
+
     error = 1e-3
     grad = Tensor(np.array([[[0.3, 0.7], [0.1, 0.8]],
                             [[0.3, 0.7], [0.1, 0.8]]]).astype(np.float32))
@@ -136,15 +140,18 @@ class AdgradNetVmap2(nn.Cell):
         return self.vmap_adagrad(self.var, self.accum, lr, l1, l2, grad)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_apply_proximal_adagrad_op_vmap2():
     """
     Feature: ApplyProximalAdagrad cpu kernel
     Description: test the ApplyProximalAdagrad vmap.
     Expectation: match to np benchmark.
     """
+
     def cal_adagrad(var, accum, lr, l1, l2, grad):
         return P.ApplyProximalAdagrad()(var, accum, lr, l1, l2, grad)
+
     error = 1e-3
     grad = Tensor(np.array([[[[0.3, 0.7], [0.1, 0.8]], [[0.3, 0.7], [0.1, 0.8]]],
                             [[[0.3, 0.7], [0.1, 0.8]], [[0.3, 0.7], [0.1, 0.8]]]]).astype(np.float32))

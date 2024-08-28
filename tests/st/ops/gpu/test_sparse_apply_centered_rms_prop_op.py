@@ -54,13 +54,13 @@ def test_sparse_apply_centered_rms_prop_graph_1():
     indices = Tensor(np.array([0, 1]).astype(np.int32))
     sparse_apply_centered_rms_prop_net = SparseApplyCenteredRMSPropNet(use_locking=False)
     sparse_apply_centered_rms_prop_output = sparse_apply_centered_rms_prop_net(var, mg, ms, mom, lr, rho, \
-        momentum, epsilon, grad, indices)
+                                                                               momentum, epsilon, grad, indices)
     sparse_apply_centered_rms_prop_expected_output = np.array([[0.5968, 0.3959], [0.0989, 0.4978]]).astype(np.float32)
 
     print(sparse_apply_centered_rms_prop_output)
     print(sparse_apply_centered_rms_prop_expected_output)
     assert np.allclose(sparse_apply_centered_rms_prop_output.asnumpy(), \
-        sparse_apply_centered_rms_prop_expected_output, rtol=1e-3)
+                       sparse_apply_centered_rms_prop_expected_output, rtol=1e-3)
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -82,10 +82,10 @@ def test_sparse_apply_centered_rms_prop_graph_2():
     indices = Tensor(np.array([0, 1]).astype(np.int32))
     sparse_apply_centered_rms_prop_net = SparseApplyCenteredRMSPropNet(use_locking=False)
     sparse_apply_centered_rms_prop_output = sparse_apply_centered_rms_prop_net(var, mg, ms, mom, lr, rho, \
-        momentum, epsilon, grad, indices)
+                                                                               momentum, epsilon, grad, indices)
     sparse_apply_centered_rms_prop_expected_output = np.array([[0.5968, 0.3959], [0.0989, 0.4978]]).astype(np.float32)
 
     print(sparse_apply_centered_rms_prop_output)
     print(sparse_apply_centered_rms_prop_expected_output)
     assert np.allclose(sparse_apply_centered_rms_prop_output.asnumpy(), \
-        sparse_apply_centered_rms_prop_expected_output, rtol=1e-3)
+                       sparse_apply_centered_rms_prop_expected_output, rtol=1e-3)

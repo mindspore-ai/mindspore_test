@@ -65,10 +65,10 @@ class RLBufferSample(nn.Cell):
         return self.buffer_sample(buffer, self.count, self.head)
 
 
-states = Tensor(np.arange(4*5).reshape(5, 4).astype(np.float32)/10.0)
-actions = Tensor(np.arange(2*5).reshape(5, 2).astype(np.int32))
+states = Tensor(np.arange(4 * 5).reshape(5, 4).astype(np.float32) / 10.0)
+actions = Tensor(np.arange(2 * 5).reshape(5, 2).astype(np.int32))
 rewards = Tensor(np.ones((5, 1)).astype(np.int32))
-states_ = Tensor(np.arange(4*5).reshape(5, 4).astype(np.float32))
+states_ = Tensor(np.arange(4 * 5).reshape(5, 4).astype(np.float32))
 b = [states, actions, rewards, states_]
 
 s = Tensor(np.array([2, 2, 2, 2]), ms.float32)

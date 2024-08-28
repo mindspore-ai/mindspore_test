@@ -16,10 +16,11 @@
 import numpy as np
 import pytest
 from tests.st.utils import test_utils
+from tests.mark_utils import arg_mark
 
 from mindspore import ops
+from mindspore.common.api import _pynative_executor
 import mindspore as ms
-from tests.mark_utils import arg_mark
 
 
 @test_utils.run_with_cell
@@ -258,3 +259,4 @@ def test_mul_op_check_dtype(context_mode, data_type):
     y = ms.Tensor(np.array([2, 4, 3]).astype(data_type))
     with pytest.raises(TypeError):
         _ = mul_forward_func(x, y)
+        _pynative_executor.sync()

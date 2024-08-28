@@ -28,7 +28,7 @@ from tests.mark_utils import arg_mark
 def create_tensor(capcity, shapes, dtypes):
     buffer = []
     for i in range(len(shapes)):
-        buffer.append(Tensor(np.zeros(((capcity,)+shapes[i])), dtypes[i]))
+        buffer.append(Tensor(np.zeros(((capcity,) + shapes[i])), dtypes[i]))
     return buffer
 
 

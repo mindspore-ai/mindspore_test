@@ -85,6 +85,7 @@ def test_ftrl_net_with_map_tensor():
     Description: Test FTRL gpu kernel for MapTensor update.
     Expectation: Result is correct.
     """
+
     class NetWithMapParameter(nn.Cell):
         def __init__(self):
             super(NetWithMapParameter, self).__init__()

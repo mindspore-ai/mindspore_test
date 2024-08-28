@@ -12,17 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
-
-import numpy as np
-import pytest
-
 import mindspore.context as context
 import mindspore.nn as nn
-from mindspore import Tensor
-from mindspore.common.parameter import Parameter
+import numpy as np
 from mindspore.common.initializer import initializer
+from mindspore.common.parameter import Parameter
+
+from mindspore import Tensor
 from mindspore.ops import operations as P
+from tests.mark_utils import arg_mark
 
 context.set_context(mode=context.GRAPH_MODE, device_target="CPU")
 
@@ -82,7 +80,8 @@ def rmspropcented_numpy(variable, gradients, mean_gradients, mean_square, moment
     return variable, gradients, mean_gradients, mean_square, moment
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_rmsprop():
     learning_rate, decay, momentum, epsilon, centered = [0.5, 0.8, 0.9, 1e-3, True]
 
@@ -141,7 +140,8 @@ def test_rmsprop():
     assert np.all(diff < error)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_rmspropcenter():
     learning_rate, decay, momentum, epsilon, centered = [0.1, 0.3, 0.9, 1.0, False]
 

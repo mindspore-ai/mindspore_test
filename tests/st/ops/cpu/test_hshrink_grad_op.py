@@ -23,7 +23,6 @@ from mindspore import Tensor
 from mindspore.ops.operations import _grad_ops as G
 from mindspore.ops.functional import vmap
 
-
 context.set_context(mode=context.GRAPH_MODE, device_target='CPU')
 
 
@@ -51,7 +50,8 @@ def hshrink_grad_op_np_bencmark(grad, input_x, lambd):
     return result
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 @pytest.mark.parametrize('dtype', [np.float16, np.float32])
 @pytest.mark.parametrize("data_shape", [(3, 4), (4, 5, 6, 7)])
 @pytest.mark.parametrize("lambd", [0.5])
@@ -71,7 +71,8 @@ def test_hshrink_grad(dtype, data_shape, lambd):
     assert np.allclose(output.asnumpy(), benchmark_output)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 @pytest.mark.parametrize('axis', [2])
 def test_hshrink_grad_vmap_cpu(axis):
     """

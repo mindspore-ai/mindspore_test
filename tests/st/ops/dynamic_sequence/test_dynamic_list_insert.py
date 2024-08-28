@@ -27,13 +27,15 @@ context.set_context(mode=context.GRAPH_MODE)
 context_prepare()
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard',
+          essential_mark='unessential')
 def test_list_insert1():
     """
     Feature: test sequence getitem op
     Description: setitem operation on tuple type
     Expectation: the behavior is matched to python style
     """
+
     class Net(Cell):
         def construct(self, x, idx, y):
             return list_insert(x, idx, y)
@@ -47,13 +49,15 @@ def test_list_insert1():
     assert res == expect
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_list_insert2():
     """
     Feature: test sequence getitem op
     Description: setitem operation on tuple type
     Expectation: the behavior is matched to python style
     """
+
     class Net(Cell):
         def construct(self, x, idx, y):
             return list_insert(x, idx, y)
@@ -68,13 +72,15 @@ def test_list_insert2():
         assert np.all(res[i].asnumpy() == expect[i].asnumpy())
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_list_insert3():
     """
     Feature: test sequence getitem op
     Description: setitem operation on tuple type
     Expectation: the behavior is matched to python style
     """
+
     class Net(Cell):
         def construct(self, x, idx, y):
             return list_insert(x, idx, y)
@@ -89,13 +95,15 @@ def test_list_insert3():
         assert np.all(res[i].asnumpy() == expect[i].asnumpy())
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_list_insert_grad():
     """
     Feature: test sequence getitem grad op
     Description: setitem operation on tuple type
     Expectation: the behavior is matched to python style
     """
+
     class Net(Cell):
         def construct(self, x, idx, y):
             return list_insert(x, idx, y)

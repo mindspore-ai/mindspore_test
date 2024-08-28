@@ -26,8 +26,10 @@ def irfft_forward_func(x, signal_ndim, inverse, real, norm='backward', onesided=
     x = ops.FFTWithSize(signal_ndim, inverse, real, norm, onesided, signal_sizes)(x)
     return ops.FFTWithSize(signal_ndim, not inverse, real, norm, onesided, signal_sizes)(x)
 
+
 def irfft_backward_func(x, signal_ndim, inverse, real, norm='backward', onesided=True, signal_sizes=()):
     return ops.grad(irfft_forward_func, (0,))(x, signal_ndim, inverse, real, norm, onesided, signal_sizes)
+
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])

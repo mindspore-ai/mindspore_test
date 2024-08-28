@@ -59,4 +59,3 @@ def test_apply_proximal_gradient_descent_float32():
     output = net(alpha, l1, l2, delta)
     expect = np.array([[0.99969995, 0.99969995], [0.99969995, 0.99969995]], dtype=np.float32)
     np.testing.assert_almost_equal(output.asnumpy(), expect)
-    

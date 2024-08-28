@@ -26,6 +26,7 @@ context.set_context(mode=context.PYNATIVE_MODE, device_target="Ascend")
 
 class Net(Cell):
     "BatchMatMul network."
+
     def __init__(self):
         super(Net, self).__init__()
         self.batchmatmul = P.BatchMatMul()

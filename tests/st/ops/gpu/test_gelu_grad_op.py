@@ -61,6 +61,7 @@ def test_gelugrad():
               0.34266686, 0.57757664, 0.04707306, 0.51536125]
     assert np.allclose(output[0].asnumpy(), expect)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_gelugrad_fp16():
     np.random.seed(42)

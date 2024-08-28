@@ -76,7 +76,6 @@ def test_ops_nonzero_normal(context_mode, as_tuple):
         np.testing.assert_array_equal(output.asnumpy(), expect)
         np.testing.assert_array_equal(output_tensor.asnumpy(), expect)
 
-
     if as_tuple and ms.get_context(attr_key='device_target') == 'Ascend':
         output_tuple = nonzero_forward_func(ms.Tensor(x), as_tuple)
         output_tensor_tuple = ms.Tensor(x).nonzero(as_tuple)

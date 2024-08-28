@@ -21,6 +21,7 @@ import mindspore as ms
 import mindspore.nn as nn
 import mindspore.ops as ops
 from mindspore import Tensor
+from mindspore.common.api import _pynative_executor
 
 
 class Net(nn.Cell):
@@ -29,7 +30,8 @@ class Net(nn.Cell):
         return output
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_sum_normal(mode):
     """
@@ -47,7 +49,8 @@ def test_sum_normal(mode):
     assert np.allclose(out.asnumpy(), expect_out)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_sum_keepdim(mode):
     """
@@ -67,7 +70,8 @@ def test_sum_keepdim(mode):
     assert np.allclose(out.asnumpy(), expect_out)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_sum_error(mode):
     """
@@ -84,9 +88,12 @@ def test_sum_error(mode):
 
     with pytest.raises(TypeError):
         net(1, dim=2, keepdim=True)
+        _pynative_executor.sync()
 
     with pytest.raises(TypeError):
         net(x, dim="error", keepdim=True)
+        _pynative_executor.sync()
 
     with pytest.raises(TypeError):
         net(x, dim=2, keepdim=12)
+        _pynative_executor.sync()

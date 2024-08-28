@@ -21,11 +21,14 @@ from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
 
+
 def generate_random_input(shape, dtype):
     return np.random.randn(*shape).astype(dtype)
 
+
 def generate_expect_forward_output(x, k, dtype):
     return np.triu(x, k=k).astype(dtype)
+
 
 def generate_expect_backward_output(x, k, dtype):
     grad = np.zeros_like(x)
@@ -33,13 +36,16 @@ def generate_expect_backward_output(x, k, dtype):
     out = np.ma.array(grad, mask=grad_mask)
     return out.filled(fill_value=1)
 
+
 @test_utils.run_with_cell
 def triu_forward_func(x, k):
     return triu(x, k)
 
+
 @test_utils.run_with_cell
 def triu_backward_func(x, k):
     return ms.ops.grad(triu_forward_func, (0))(x, k)
+
 
 @test_utils.run_with_cell
 def triu_vmap_func(x, k):

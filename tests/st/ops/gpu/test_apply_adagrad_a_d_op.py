@@ -116,6 +116,7 @@ def ms_forward_impl_vmap(grad, np_lr, np_l1, np_l2, np_global_step, data_type):
     def cal_apply_adagrad_a_d(var, gradient_accumulator, gradient_squared_accumulator, grad, lr, l1, l2, global_step):
         return P.ApplyAdagradDA(use_locking=False)(var, gradient_accumulator, gradient_squared_accumulator,
                                                    grad, lr, l1, l2, global_step)
+
     grad_ms = Tensor(grad)
     lr_ms = Tensor(np_lr)
     l1_ms = Tensor(np_l1)
@@ -131,6 +132,7 @@ def ms_forward_impl_vmap2(grad, np_lr, np_l1, np_l2, np_global_step, data_type):
     def cal_apply_adagrad_a_d(var, gradient_accumulator, gradient_squared_accumulator, grad, lr, l1, l2, global_step):
         return P.ApplyAdagradDA(use_locking=False)(var, gradient_accumulator, gradient_squared_accumulator,
                                                    grad, lr, l1, l2, global_step)
+
     grad_ms = Tensor(grad)
     lr_ms = Tensor(np_lr)
     l1_ms = Tensor(np_l1)
@@ -210,7 +212,7 @@ def test_apply_adagrad_da_float16_vmap():
     grad = np.array([[0.3, 0.4], [0.1, 0.2]], dtype=np.float16)
 
     np_out = numpy_impl(np_lr, np_l1, np_l2, np_global_step, data_type=np.float16)
-    #MindSpore
+    # MindSpore
     ms_out = ms_forward_impl_vmap(grad, np_lr, np_l1, np_l2, np_global_step, data_type=np.float16)
     np.testing.assert_allclose(np_out, ms_out.asnumpy(), rtol=error, atol=error)
 
@@ -261,7 +263,7 @@ def test_apply_adagrad_da_float16_vmap2():
     np_global_step = np.int32(2)
 
     np_out = numpy_impl(np_lr, np_l1, np_l2, np_global_step, data_type=np.float16)
-    #MindSpore
+    # MindSpore
     ms_out = ms_forward_impl_vmap2(grad, np_lr, np_l1, np_l2, np_global_step, data_type=np.float16)
     np.testing.assert_allclose(np_out, ms_out.asnumpy(), rtol=error, atol=error)
 

@@ -38,6 +38,7 @@ def argmin_ext_forward_func(x, dim=None, keepdim=False):
 def argmin_ext_backward_func(x, dim=None, keepdim=False):
     return ms.grad(argmin_ext_forward_func)(x, dim, keepdim)
 
+
 def GenInputData(np_data_type, shape=(3, 4, 5)):
     """GenInputData"""
     size = 1

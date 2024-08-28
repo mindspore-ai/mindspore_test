@@ -22,6 +22,7 @@ import mindspore.ops.operations as P
 from mindspore import Tensor
 from mindspore.ops.operations import _grad_ops as G
 
+
 class Einsum(nn.Cell):
     def __init__(self, equation):
         super().__init__()
@@ -31,6 +32,7 @@ class Einsum(nn.Cell):
         out = self.einsum(inputs)
         return out
 
+
 class EinsumGrad(nn.Cell):
     def __init__(self, equation):
         super().__init__()
@@ -39,9 +41,10 @@ class EinsumGrad(nn.Cell):
     def construct(self, *inputs):
         num = len(inputs)
         inp_data = inputs[0:num - 1]
-        dout = inputs[num - 1 : num]
+        dout = inputs[num - 1: num]
         dx = self.einsum_grad(inp_data, dout)
         return dx
+
 
 def einsum_test_cases(nptype, loss):
     context.set_context(mode=context.GRAPH_MODE, device_target='GPU')
@@ -50,7 +53,7 @@ def einsum_test_cases(nptype, loss):
                   ["ij,ij->ij", [[2, 3], [2, 3]]],
                   ["ij,kl->ijkl", [[3, 2], [2, 3]]],
                   ["ij,jk->ik", [[3, 2], [2, 3]]]
-                 ]
+                  ]
     for cur_case in test_cases:
         equation = cur_case[0]
         shapes = cur_case[1]
@@ -76,7 +79,7 @@ def einsum_test_cases_dynamic(nptype, loss):
                   ["ij,ij->ij", [[2, 3], [2, 3]]],
                   ["ij,kl->ijkl", [[3, 2], [2, 3]]],
                   ["ij,jk->ik", [[3, 2], [2, 3]]]
-                 ]
+                  ]
     for cur_case in test_cases:
         equation = cur_case[0]
         shapes = cur_case[1]
@@ -115,6 +118,7 @@ def test_einsum_graph_float16():
     """
     einsum_test_cases(np.float16, 1e-3)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_einsum_graph_float32():
     """
@@ -123,6 +127,7 @@ def test_einsum_graph_float32():
     Expectation: the diff between the result and the operator of np.einsum is within the loss range
     """
     einsum_test_cases(np.float32, 1e-4)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_einsum_graph_float64():
@@ -133,6 +138,7 @@ def test_einsum_graph_float64():
     """
     einsum_test_cases(np.float64, 1e-5)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_einsum_graph_float64_dynamic():
     """
@@ -141,6 +147,7 @@ def test_einsum_graph_float64_dynamic():
     Expectation: the diff between the result and the operator of np.einsum is within the loss range
     """
     einsum_test_cases_dynamic(np.float64, 1e-5)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_einsum_exception():

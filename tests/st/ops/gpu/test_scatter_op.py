@@ -24,6 +24,7 @@ from mindspore import Tensor
 from mindspore.common.parameter import Parameter
 from mindspore.common.initializer import initializer
 from mindspore.common.dtype import pytype_to_dtype
+from mindspore.common.api import _pynative_executor
 
 
 class ScatterDiv(Cell):
@@ -98,6 +99,7 @@ def test_scatter_func_indices_out_of_range():
     # div
     with pytest.raises(RuntimeError):
         _ = P.ScatterDiv()(input_x, indices, updates)
+        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')

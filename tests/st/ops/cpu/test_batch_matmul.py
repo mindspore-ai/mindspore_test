@@ -55,7 +55,8 @@ def judge_result_correct(result, expect):
     assert np.allclose(result, expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_4d_no_transpose_vec():
     x = np.arange(2 * 4 * 1 * 3).reshape((2, 4, 1, 3)).astype(np.float32)
     y = np.arange(2 * 4 * 3 * 4).reshape((2, 4, 3, 4)).astype(np.float32)
@@ -96,7 +97,8 @@ def test_4d_no_transpose_vec():
     judge_result_correct(output.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_4d_no_transpose():
     input_x = Tensor(np.arange(2 * 3 * 2 * 3).reshape((2, 3, 2, 3)), mstype.float32)
     input_y = Tensor(np.arange(2 * 3 * 3 * 4).reshape((2, 3, 3, 4)), mstype.float32)
@@ -119,7 +121,8 @@ def test_4d_no_transpose():
     judge_result_correct(output.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_4d_transpose_a():
     input_x = Tensor(np.arange(2 * 3 * 3 * 2).reshape((2, 3, 3, 2)), mstype.float32)
     input_y = Tensor(np.arange(2 * 3 * 3 * 4).reshape((2, 3, 3, 4)), mstype.float32)
@@ -142,7 +145,8 @@ def test_4d_transpose_a():
     judge_result_correct(output.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_4d_transpose_b():
     input_x = Tensor(np.arange(2 * 3 * 2 * 3).reshape((2, 3, 2, 3)), mstype.float32)
     input_y = Tensor(np.arange(2 * 3 * 4 * 3).reshape((2, 3, 4, 3)), mstype.float32)
@@ -165,7 +169,8 @@ def test_4d_transpose_b():
     judge_result_correct(output.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_4d_transpose_ab():
     input_x = Tensor(np.arange(2 * 3 * 3 * 2).reshape((2, 3, 3, 2)), mstype.float16)
     input_y = Tensor(np.arange(2 * 3 * 4 * 3).reshape((2, 3, 4, 3)), mstype.float16)
@@ -201,7 +206,8 @@ def test_bmm_forward_tensor_api(nptype):
     np.testing.assert_array_almost_equal(output.asnumpy(), expected)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_bmm_forward_float32_tensor_api():
     """
     Feature: test bmm forward tensor api.
@@ -227,7 +233,8 @@ def test_bmm_forward_functional_api(nptype):
     np.testing.assert_array_almost_equal(output.asnumpy(), expected)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_bmm_forward_float32_functional_api():
     """
     Feature: test bmm forward functional api.
@@ -268,7 +275,8 @@ class BatchMatMulTestNet(Cell):
         return out
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_batchmatmul_type_float16():
     """
     Feature: test bmm with dtype float16.
@@ -291,7 +299,8 @@ def test_batchmatmul_type_float16():
     assert str(float16_out.dtype) == "Float16"
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_batchmatmul_type_float32():
     """
     Feature: test bmm with dtype float32.
@@ -314,7 +323,8 @@ def test_batchmatmul_type_float32():
     assert str(float32_out.dtype) == "Float32"
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_batchmatmul_type_float64():
     """
     Feature: test bmm with dtype float64.
@@ -337,7 +347,8 @@ def test_batchmatmul_type_float64():
     assert str(float64_out.dtype) == "Float64"
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_batchmatmul_type_int8():
     """
     Feature: test bmm with dtype int8.
@@ -360,7 +371,8 @@ def test_batchmatmul_type_int8():
     assert str(out.dtype) == "Int32"
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_batchmatmul_type_int16():
     """
     Feature: test bmm with dtype int16.
@@ -383,7 +395,8 @@ def test_batchmatmul_type_int16():
     assert str(int16_out.dtype) == "Int16"
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_batchmatmul_type_int32():
     """
     Feature: test bmm with dtype int32.
@@ -406,7 +419,8 @@ def test_batchmatmul_type_int32():
     assert str(int32_out.dtype) == "Int32"
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_batchmatmul_type_int64():
     """
     Feature: test bmm with dtype int64.
@@ -429,7 +443,8 @@ def test_batchmatmul_type_int64():
     assert str(int64_out.dtype) == "Int64"
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_batchmatmul_type_uint8():
     """
     Feature: test bmm with dtype uint8.
@@ -452,7 +467,8 @@ def test_batchmatmul_type_uint8():
     assert str(uint8_out.dtype) == "UInt8"
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_batchmatmul_type_uint16():
     """
     Feature: test bmm with dtype uint16.
@@ -475,7 +491,8 @@ def test_batchmatmul_type_uint16():
     assert str(uint16_out.dtype) == "UInt16"
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_batchmatmul_type_uint32():
     """
     Feature: test bmm with dtype uint32.
@@ -498,7 +515,8 @@ def test_batchmatmul_type_uint32():
     assert str(uint32_out.dtype) == "UInt32"
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_batchmatmul_type_uint64():
     """
     Feature: test bmm with dtype uint64.
@@ -521,7 +539,8 @@ def test_batchmatmul_type_uint64():
     assert str(uint64_out.dtype) == "UInt64"
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_batchmatmul_type_complex64():
     """
     Feature: test bmm with dtype complex64.
@@ -554,15 +573,16 @@ def test_batchmatmul_type_complex64():
     input_list.append(input_x2)
     fact = BatchMatMulTestNet(inputs=input_list)
     out = fact.forward_mindspore_impl()
-    expect = np.array([[[8+0j, 8+0j, 8+0j, 8+0j]],
-                       [[8+0j, 8+0j, 8+0j, 8+0j]],
-                       [[8+0j, 8+0j, 8+0j, 8+0j]],
-                       [[8+0j, 8+0j, 8+0j, 8+0j]]], np.complex64)
+    expect = np.array([[[8 + 0j, 8 + 0j, 8 + 0j, 8 + 0j]],
+                       [[8 + 0j, 8 + 0j, 8 + 0j, 8 + 0j]],
+                       [[8 + 0j, 8 + 0j, 8 + 0j, 8 + 0j]],
+                       [[8 + 0j, 8 + 0j, 8 + 0j, 8 + 0j]]], np.complex64)
     assert (out.asnumpy() == expect).all()
     assert str(out.dtype) == "Complex64"
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_batchmatmul_type_complex128():
     """
     Feature: test bmm with dtype complex128.
@@ -595,15 +615,16 @@ def test_batchmatmul_type_complex128():
     input_list.append(input_x2)
     fact = BatchMatMulTestNet(inputs=input_list)
     out = fact.forward_mindspore_impl()
-    expect = np.array([[[8+0j, 8+0j, 8+0j, 8+0j]],
-                       [[8+0j, 8+0j, 8+0j, 8+0j]],
-                       [[8+0j, 8+0j, 8+0j, 8+0j]],
-                       [[8+0j, 8+0j, 8+0j, 8+0j]]], np.complex128)
+    expect = np.array([[[8 + 0j, 8 + 0j, 8 + 0j, 8 + 0j]],
+                       [[8 + 0j, 8 + 0j, 8 + 0j, 8 + 0j]],
+                       [[8 + 0j, 8 + 0j, 8 + 0j, 8 + 0j]],
+                       [[8 + 0j, 8 + 0j, 8 + 0j, 8 + 0j]]], np.complex128)
     assert (out.asnumpy() == expect).all()
     assert str(out.dtype) == "Complex128"
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_batchmatmul_default_transpose():
     """
     Feature: test bmm with default transpose.

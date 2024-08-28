@@ -21,6 +21,7 @@ from mindspore import Tensor, Parameter, ops
 from mindspore.ops import GradOperation, grad, get_grad
 from mindspore.common import dtype as mstype
 from mindspore.ops import composite as C
+from mindspore.common.api import _pynative_executor
 from tests.mark_utils import arg_mark
 
 
@@ -774,6 +775,7 @@ def test_grad_none_position(mode):
     w = Tensor([6], mstype.int32)
     with pytest.raises(ValueError):
         grad(Net(w), grad_position=None, weights=None)(x, y)
+        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -798,6 +800,7 @@ def test_grad_int_position_no_input():
     ms.set_context(mode=ms.GRAPH_MODE)
     with pytest.raises(IndexError):
         grad(Net(w, b), grad_position=0, weights=None)()
+        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -822,6 +825,7 @@ def test_grad_tuple_position_no_input():
     ms.set_context(mode=ms.GRAPH_MODE)
     with pytest.raises(IndexError):
         grad(Net(w, b), grad_position=(0, 1), weights=None)()
+        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -847,6 +851,7 @@ def test_grad_tuple_position_single_input():
     ms.set_context(mode=ms.GRAPH_MODE)
     with pytest.raises(IndexError):
         grad(Net(w, b), grad_position=(0, 1), weights=None)(x)
+        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -1206,6 +1211,7 @@ def test_grad_empty_position_and_single_param(mode):
     with pytest.raises(RuntimeError):
         net = Net(w, b)
         grad(net, grad_position=(), weights=net.trainable_params()[0])(x, y)
+        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -1231,6 +1237,7 @@ def test_grad_empty_position_and_single_param_tuple(mode):
     with pytest.raises(RuntimeError):
         net = Net(w)
         grad(net, grad_position=(), weights=net.trainable_params())(x, y)
+        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -1258,6 +1265,7 @@ def test_grad_empty_position_and_multiple_params(mode):
     with pytest.raises(RuntimeError):
         net = Net(w, b)
         grad(net, grad_position=(), weights=net.trainable_params())(x, y)
+        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -1278,6 +1286,7 @@ def test_grad_empty_position_and_no_param(mode):
     with pytest.raises(RuntimeError):
         net = Net()
         grad(net, grad_position=(), weights=net.trainable_params())(x, y)
+        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')

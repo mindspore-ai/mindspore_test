@@ -55,6 +55,7 @@ def dropout_net(*args, is_dynamic=False):
     print("input shape: ", x.shape)
     print("output shape: ", out[0].shape)
 
+
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_dropout_bf16():
     """

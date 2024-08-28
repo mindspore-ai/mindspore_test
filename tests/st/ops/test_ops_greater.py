@@ -67,8 +67,9 @@ def test_greater_op_normal(mode):
     expect2 = np.array([0., 0., 0.]).astype(np.float32)
     assert np.allclose(output2[0].asnumpy(), expect2, rtol=1e-4)
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
-          card_mark='onecard', essential_mark='essential')
+
+@arg_mark(plat_marks=['platform_ascend910b', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'],
+          level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_greater_op_forward_case01(mode):
     """

@@ -27,7 +27,8 @@ class Net(nn.Cell):
         return ops.nanmean(x, axis=0, keepdims=True)
 
 
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_ops_nanmean(mode):
     """
@@ -43,7 +44,8 @@ def test_ops_nanmean(mode):
     assert np.allclose(output.asnumpy(), expect_output, equal_nan=True)
 
 
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
+          card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_ops_nanmean_int_error(mode):
     """
@@ -56,3 +58,4 @@ def test_ops_nanmean_int_error(mode):
     net = Net()
     with pytest.raises(TypeError):
         net(x)
+        _pynative_executor.sync()

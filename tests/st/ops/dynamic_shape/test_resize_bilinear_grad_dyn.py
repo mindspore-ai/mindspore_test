@@ -79,7 +79,8 @@ def test_resize_bilinear_grad_dyn_gpu():
     dyn_case()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_resize_bilinear_grad_dyn_cpu():
     """
     Feature: Test ResizeBilinearGrad on CPU.

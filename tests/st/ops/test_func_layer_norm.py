@@ -29,18 +29,22 @@ from tests.mark_utils import arg_mark
 def layer_norm_forward_func(input_x, normalized_shape, gamma, beta, eps=1e-7):
     return layer_norm(input_x, normalized_shape, gamma, beta, eps)
 
+
 @test_utils.run_with_cell
 def layer_norm_backward_func(input_x, normalized_shape, gamma, beta, eps=1e-7):
     return ops.grad(layer_norm_forward_func, (0, 2, 3))(input_x, normalized_shape, gamma, beta, eps)
 
+
 def generate_random_input(shape, dtype):
     return np.random.randn(*shape).astype(dtype)
+
 
 def layer_norm_forward_func_np(input_x, normalized_shape, gamma, beta, eps=1e-7):
     mean_np = np.mean(input_x, axis=-1, keepdims=True)
     var_np = np.var(input_x, axis=-1, keepdims=True)
     x_norm = (input_x - mean_np) / np.sqrt(var_np + eps)
     return gamma * x_norm + beta
+
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
@@ -85,6 +89,7 @@ def test_ops_layer_norm_ext_backward(mode):
     assert np.allclose(grad_gamma.asnumpy(), expect_grad_gamma, rtol=1e-6, atol=1e-6)
     assert np.allclose(grad_beta.asnumpy(), expect_grad_beta, rtol=1e-6, atol=1e-6)
 
+
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_layer_norm_ext_vmap(mode):
@@ -111,6 +116,7 @@ def test_layer_norm_ext_vmap(mode):
                                [[-1.22474468, 0., 1.22474468],
                                 [-1.22474468, 0., 1.22474468]]]).astype(np.float32)
     assert np.allclose(outputs.asnumpy(), expect_outputs, rtol=1e-6, atol=1e-6)
+
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_layer_norm_ext_dyn():

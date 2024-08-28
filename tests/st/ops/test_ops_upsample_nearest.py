@@ -21,6 +21,7 @@ from tests.mark_utils import arg_mark
 import mindspore as ms
 from mindspore import Tensor
 from mindspore import context, ops
+from mindspore.common.api import _pynative_executor
 
 
 @test_utils.run_with_cell
@@ -75,7 +76,7 @@ def test_upsample_nearest(mode):
 
     expected = np.array([[[3.0, 2.0, 2.0, 2.0],
                           [3.0, 2.0, 2.0, 2.0]]]).astype(np.float32)
-    out = upsample_nearest_backward_func(input_tensor, None, [2.3,])
+    out = upsample_nearest_backward_func(input_tensor, None, [2.3, ])
     diff = abs(out.asnumpy() - expected)
     error = np.ones(shape=expected.shape) * 1.0e-4
     assert np.all(diff < error)
@@ -350,30 +351,37 @@ def test_upsample_nearest_3d_error(mode):
     with pytest.raises(ValueError):
         input_tensor = Tensor(np.ones((2, 2, 2, 2), dtype=np.float32))
         net(input_tensor, [3, 4, 5], None)
+        _pynative_executor.sync()
 
     with pytest.raises(TypeError):
         input_tensor = Tensor(np.ones((2, 2, 2, 2, 2), dtype=np.int32))
         net(input_tensor, [3, 4, 5], None)
+        _pynative_executor.sync()
 
     with pytest.raises(TypeError):
         input_tensor = Tensor(np.ones((2, 2, 2, 2, 2), dtype=np.float32))
         net(input_tensor, None, [1, 2, 3])
+        _pynative_executor.sync()
 
     with pytest.raises(ValueError):
         input_tensor = Tensor(np.ones((2, 2, 2, 2, 2), dtype=np.float32))
         net(input_tensor, [3, 4], None)
+        _pynative_executor.sync()
 
     with pytest.raises(ValueError):
         input_tensor = Tensor(np.ones((2, 2, 2, 2, 2), dtype=np.float32))
         net(input_tensor, None, [1.0, 2.0, 3.0, 4.0])
+        _pynative_executor.sync()
 
     with pytest.raises(ValueError):
         input_tensor = Tensor(np.ones((2, 2, 2, 2, 2), dtype=np.float32))
         net(input_tensor, [3, 4, 5], [1.0, 2.0, 3.0])
+        _pynative_executor.sync()
 
     with pytest.raises(ValueError):
         input_tensor = Tensor(np.ones((2, 2, 2, 2, 2), dtype=np.float32))
         net(input_tensor, None, None)
+        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',

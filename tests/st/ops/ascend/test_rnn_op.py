@@ -127,6 +127,7 @@ def test_sit_rnn_forward_input_3_32_32_is_32_hs_16():
     assert np.allclose(out.asnumpy(), out_pynative.asnumpy(), 0.001, 0.001)
     assert np.allclose(hy.asnumpy(), hy_pynative.asnumpy(), 0.001, 0.001)
 
+
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_sit_rnn_grad_input_3_32_32_is_32_hs_16():
     input_size = 32

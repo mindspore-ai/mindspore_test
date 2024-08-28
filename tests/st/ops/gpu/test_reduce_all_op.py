@@ -61,7 +61,6 @@ class ReduceAll(nn.Cell):
         self.axis3 = axis3
         self.keep_dims3 = keep_dims3
 
-
     @jit
     def construct(self):
         return (P.ReduceAll(self.keep_dims0)(self.x0, self.axis0),

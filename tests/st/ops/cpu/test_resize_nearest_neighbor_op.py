@@ -105,6 +105,7 @@ def resize_nn_grayscale_integer_ratio(datatype):
     output = resize_nn(input_tensor)
     np.testing.assert_array_equal(output.asnumpy(), input_tensor.asnumpy())
 
+
 def resize_nn_grayscale_not_integer_ratio(datatype):
     input_tensor = Tensor(np.array([[[[0.1, 0.2, 0.3, 0.4],
                                       [0.5, 0.6, 0.7, 0.8],
@@ -185,6 +186,7 @@ def resize_nn_grayscale_not_integer_ratio(datatype):
     resize_nn = NetResizeNearestNeighbor((3, 4))
     output = resize_nn(input_tensor)
     np.testing.assert_array_equal(output.asnumpy(), input_tensor.asnumpy())
+
 
 def resize_nn_rgb_integer_ratio(datatype):
     input_tensor = Tensor(np.array(
@@ -306,6 +308,7 @@ def resize_nn_rgb_integer_ratio(datatype):
     resize_nn = NetResizeNearestNeighbor((3, 3))
     output = resize_nn(input_tensor)
     np.testing.assert_array_equal(output.asnumpy(), input_tensor.asnumpy())
+
 
 def resize_nn_rgb_not_integer_ratio(datatype):
     input_tensor = Tensor(np.array([[[[1, 2, 3, 4],
@@ -449,6 +452,7 @@ def resize_nn_rgb_not_integer_ratio(datatype):
     output = resize_nn(input_tensor)
     np.testing.assert_array_equal(output.asnumpy(), input_tensor.asnumpy())
 
+
 def resize_nn_rgb_multiple(datatype):
     input_tensor = Tensor(np.array([[[[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]],
                                      [[11, 12, 13, 14, 15], [16, 17, 18, 19, 20]],
@@ -475,6 +479,7 @@ def resize_nn_rgb_multiple(datatype):
 
     np.testing.assert_array_equal(output.asnumpy(), expected_output.asnumpy())
 
+
 def resize_nn_rgb_align_corners(datatype):
     input_tensor = Tensor(np.array([[[[1, 2, 3, 4], [5, 6, 7, 8]],
                                      [[11, 12, 13, 14], [15, 16, 17, 18]],
@@ -497,6 +502,7 @@ def resize_nn_rgb_align_corners(datatype):
     np.testing.assert_raises(AssertionError, np.testing.assert_array_equal,
                              output.asnumpy(), expected_output.asnumpy())
 
+
 def resize_nn_grayscale_multiple_images(datatype):
     input_tensor = Tensor(np.array([[[[0.1, 0.2, 0.3], [0.4, 0.5, 0.6], [0.7, 0.8, 0.9]]],
                                     [[[0.4, 0.5, 0.6], [0.7, 0.8, 0.9], [0.1, 0.2, 0.3]]],
@@ -513,6 +519,7 @@ def resize_nn_grayscale_multiple_images(datatype):
                                          [0.1, 0.1, 0.2, 0.2, 0.3, 0.3]]]]).astype(datatype))
 
     np.testing.assert_array_equal(output.asnumpy(), expected_output.asnumpy())
+
 
 def resize_nn_grayscale_align_corners(datatype):
     input_tensor = Tensor(
@@ -534,65 +541,86 @@ def resize_nn_grayscale_align_corners(datatype):
     np.testing.assert_raises(AssertionError, np.testing.assert_array_equal,
                              output.asnumpy(), expected_output.asnumpy())
 
+
 def test_resize_nn_grayscale_integer_ratio_half():
     resize_nn_grayscale_integer_ratio(np.float16)
+
 
 def test_resize_nn_grayscale_integer_ratio_float():
     resize_nn_grayscale_integer_ratio(np.float32)
 
+
 def test_resize_nn_grayscale_integer_ratio_double():
     resize_nn_grayscale_integer_ratio(np.float64)
+
 
 def test_resize_nn_grayscale_not_integer_ratio_half():
     resize_nn_grayscale_not_integer_ratio(np.float16)
 
+
 def test_resize_nn_grayscale_not_integer_ratio_float():
     resize_nn_grayscale_not_integer_ratio(np.float32)
+
 
 def test_resize_nn_grayscale_not_integer_ratio_double():
     resize_nn_grayscale_not_integer_ratio(np.float64)
 
+
 def test_resize_nn_grayscale_multiple_half():
     resize_nn_grayscale_multiple_images(np.float16)
+
 
 def test_resize_nn_grayscale_multiple_float():
     resize_nn_grayscale_multiple_images(np.float32)
 
+
 def test_resize_nn_grayscale_multiple_double():
     resize_nn_grayscale_multiple_images(np.float64)
+
 
 def test_resize_nn_grayscale_align_corners_half():
     resize_nn_grayscale_align_corners(np.float16)
 
+
 def test_resize_nn_grayscale_align_corners_float():
     resize_nn_grayscale_align_corners(np.float32)
+
 
 def test_resize_nn_grayscale_align_corners_double():
     resize_nn_grayscale_align_corners(np.float64)
 
+
 def test_resize_nn_rgb_integer_ratio_int32():
     resize_nn_rgb_integer_ratio(np.int32)
+
 
 def test_resize_nn_rgb_integer_ratio_int64():
     resize_nn_rgb_integer_ratio(np.int64)
 
+
 def test_resize_nn_rgb_not_integer_ratio_int32():
     resize_nn_rgb_not_integer_ratio(np.int32)
+
 
 def test_resize_nn_rgb_not_integer_ratio_int64():
     resize_nn_rgb_not_integer_ratio(np.int64)
 
+
 def test_resize_nn_rgb_multiple_int32():
     resize_nn_rgb_multiple(np.int32)
+
 
 def test_resize_nn_rgb_multiple_int64():
     resize_nn_rgb_multiple(np.int64)
 
+
 def test_resize_nn_rgb_align_corners_int32():
     resize_nn_rgb_align_corners(np.int32)
 
+
 def test_resize_nn_rgb_align_corners_int64():
     resize_nn_rgb_align_corners(np.int64)
+
 
 if __name__ == "__main__":
     test_resize_nn_grayscale_integer_ratio_half()

@@ -140,9 +140,9 @@ class FlashAttentionScoreTest:
                 amask_slice = amask[idx, :, :]
             score = np.matmul(q_slice, k_slice_t)
             if s is None:
-                s = score.reshape([-1,])
+                s = score.reshape([-1, ])
             else:
-                s = np.concatenate((s, score.reshape([-1,])), 0)
+                s = np.concatenate((s, score.reshape([-1, ])), 0)
 
             tor = np.float16(math.sqrt(1.0 * embed))
             score = score / tor
@@ -154,9 +154,9 @@ class FlashAttentionScoreTest:
                     score[i][:] = score[i][:] - amask_slice[i][:] * 10000
             score_max = np.max(score, axis=-1)
             if _score_max is None:
-                _score_max = score_max.reshape([-1,])
+                _score_max = score_max.reshape([-1, ])
             else:
-                _score_max = np.concatenate((_score_max, score_max.reshape([-1,])), 0)
+                _score_max = np.concatenate((_score_max, score_max.reshape([-1, ])), 0)
             score = score - score_max.reshape((q_s, 1))
             score_exp = np.exp(score)
 
@@ -165,16 +165,16 @@ class FlashAttentionScoreTest:
 
             score_sum = np.sum(score_exp, axis=-1)
             if _score_sum is None:
-                _score_sum = score_sum.reshape([-1,])
+                _score_sum = score_sum.reshape([-1, ])
             else:
-                _score_sum = np.concatenate((_score_sum, score_sum.reshape([-1,])), 0)
+                _score_sum = np.concatenate((_score_sum, score_sum.reshape([-1, ])), 0)
 
             p = score_exp / score_sum.reshape((q_s, 1))
 
             if _p is None:
-                _p = p.reshape([-1,])
+                _p = p.reshape([-1, ])
             else:
-                _p = np.concatenate((_p, p.reshape([-1,])), 0)
+                _p = np.concatenate((_p, p.reshape([-1, ])), 0)
 
             o = np.matmul(p, v_slice)
             o = o.reshape(q_s, embed)

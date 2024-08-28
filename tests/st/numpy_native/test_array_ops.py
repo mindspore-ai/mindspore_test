@@ -46,7 +46,7 @@ class Cases():
 
         self.array_sets = [1, 1.1, True, [1, 0, True], [1, 1.0, 2], (1,),
                            [(1, 2, 3), (4, 5, 6)], onp.random.random(  # pylint: disable=no-member
-                               (100, 100)).astype(onp.float32),
+                (100, 100)).astype(onp.float32),
                            onp.random.random((100, 100)).astype(onp.bool)]
 
         self.arrs = [
@@ -357,11 +357,13 @@ def mnp_append(arr1, arr2):
     c = mnp.append(arr1, arr2, axis=-1)
     return a, b, c
 
+
 def onp_append(arr1, arr2):
     a = onp.append(arr1, arr2)
     b = onp.append(arr1, arr2, axis=0)
     c = onp.append(arr1, arr2, axis=-1)
     return a, b, c
+
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
           card_mark='onecard', essential_mark='unessential')
@@ -393,6 +395,7 @@ def construct_arrays(n=1, ndim=1, axis=None, low=1, high=5):
             onp_array_lst.append(onp_array2)
             mnp_array_lst.append(to_tensor(onp_array2))
     return onp_array_lst, mnp_array_lst
+
 
 # Test np.xstack
 
@@ -492,6 +495,8 @@ def test_vstack():
         o_vstack = onp_vstack(onp_seq)
         m_vstack = mnp_vstack(mnp_seq)
         check_all_results(o_vstack, m_vstack)
+
+
 # Test np.atleastxd
 
 
@@ -852,7 +857,7 @@ def mnp_flipud(x):
 
 
 def onp_flipud(x):
-    return  onp.flipud(x)
+    return onp.flipud(x)
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
@@ -984,9 +989,11 @@ def mnp_dsplit(input_tensor):
     a = mnp.dsplit(input_tensor, indices_or_sections=3)
     return a
 
+
 def onp_dsplit(input_array):
     a = onp.dsplit(input_array, indices_or_sections=3)
     return a
+
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
           card_mark='onecard', essential_mark='unessential')
@@ -1174,6 +1181,7 @@ class RollSwap(Cell):
 def test_expand_dims_exception():
     with pytest.raises(TypeError):
         mnp.expand_dims(mnp.ones((3, 3)), 1.2)
+        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
@@ -1181,6 +1189,7 @@ def test_expand_dims_exception():
 def test_swapaxes_exception():
     with pytest.raises(ValueError):
         mnp.swapaxes(mnp.ones((3, 3)), 1, 10)
+        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
@@ -1220,6 +1229,7 @@ def test_tensor_squeeze():
         tensor_list = tensor_list.squeeze(1.2)
     with pytest.raises(ValueError):
         tensor_list = tensor_list.squeeze(4)
+        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
@@ -1316,8 +1326,8 @@ def test_apply_along_axis():
     mnp_res = mnp.apply_along_axis(lambda x: x[0], 2, mnp_arr)
     onp_res = onp.apply_along_axis(lambda x: x[0], 2, onp_arr)
     match_all_arrays(mnp_res, onp_res)
-    mnp_res = mnp.apply_along_axis(lambda x, y, offset=0: (x[4] - y)*offset, 2, mnp_arr, 1, offset=3)
-    onp_res = onp.apply_along_axis(lambda x, y, offset=0: (x[4] - y)*offset, 2, onp_arr, 1, offset=3)
+    mnp_res = mnp.apply_along_axis(lambda x, y, offset=0: (x[4] - y) * offset, 2, mnp_arr, 1, offset=3)
+    onp_res = onp.apply_along_axis(lambda x, y, offset=0: (x[4] - y) * offset, 2, onp_arr, 1, offset=3)
     match_all_arrays(mnp_res, onp_res)
 
 
@@ -1347,7 +1357,7 @@ def test_piecewise():
     mnp_x = to_tensor(x)
     condlist = [x < 2, x == 2, x > 2]
     mnp_condlist = [mnp_x < 2, mnp_x == 2, mnp_x > 2]
-    funclist = [lambda x, offset=0: x - offset, lambda x, offset=0: x, lambda x, offset=0: x*offset]
+    funclist = [lambda x, offset=0: x - offset, lambda x, offset=0: x, lambda x, offset=0: x * offset]
     mnp_res = mnp.piecewise(mnp_x, mnp_condlist, funclist, offset=2)
     onp_res = onp.piecewise(x, condlist, funclist, offset=2)
     match_all_arrays(mnp_res, onp_res)
@@ -1360,7 +1370,7 @@ def test_piecewise():
     condlist = [x > 10, x < 0]
     mnp_x = to_tensor(x)
     mnp_condlist = [mnp_x > 10, mnp_x < 0]
-    funclist = [lambda x: x - 2, lambda x: x - 1, lambda x: x*2]
+    funclist = [lambda x: x - 2, lambda x: x - 1, lambda x: x * 2]
     mnp_res = mnp.piecewise(mnp_x, mnp_condlist, funclist)
     onp_res = onp.piecewise(x, condlist, funclist)
     match_all_arrays(mnp_res, onp_res)
@@ -1377,9 +1387,9 @@ def test_piecewise():
           card_mark='onecard', essential_mark='unessential')
 def test_unravel_index():
     shapes = [(2, 6, 3)]
-    dims = [(5, 4, 7), 5*4*7]
+    dims = [(5, 4, 7), 5 * 4 * 7]
     for shape in shapes:
-        x = onp.random.randint(0, 5*4*7, shape)
+        x = onp.random.randint(0, 5 * 4 * 7, shape)
         for dim in dims:
             for order in ('C', 'F'):
                 mnp_res = mnp.unravel_index(to_tensor(x), dim, order=order)
@@ -1432,6 +1442,7 @@ def test_argwhere():
         print(res)
     with pytest.raises(TypeError):
         mnp.argwhere(None)
+        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
@@ -1454,6 +1465,7 @@ def test_intersect1d():
         mnp.intersect1d(None, None)
     with pytest.raises(TypeError):
         mnp.intersect1d(x, y, assume_unique=1, return_indices=1)
+        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',

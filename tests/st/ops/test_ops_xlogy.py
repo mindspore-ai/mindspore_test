@@ -32,6 +32,7 @@ def generate_random_input(shape, dtype):
 def generate_expect_forward_output(x, y):
     return x * np.log(y)
 
+
 def reshape_grad(x, grad_x):
     if x.shape == grad_x.shape:
         return grad_x
@@ -45,6 +46,7 @@ def reshape_grad(x, grad_x):
     res = np.sum(grad_x, axis, keepdims=True)
     res.reshape(x.shape)
     return res
+
 
 def generate_expect_backward_output(x, y):
     if isinstance(x, np.ndarray):
@@ -152,7 +154,6 @@ def test_ops_xlogy_forward_910b_nan(mode):
 
     expect_out = np.array([[[np.nan, np.nan], [-np.inf, 0.0], [3.8384, -2.3263]],
                            [[0.0, -np.inf], [np.nan, np.nan], [4.9438, 0.0]]])
-
 
     if mode == "pynative":
         ms.context.set_context(mode=ms.PYNATIVE_MODE)

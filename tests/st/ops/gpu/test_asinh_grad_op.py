@@ -20,8 +20,10 @@ import pytest
 import mindspore.context as context
 from mindspore import Tensor
 import mindspore.ops.operations._grad_ops as P
+
 context.set_context(mode=context.PYNATIVE_MODE, device_target="GPU")
 np.random.seed(1)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_asinhgrad_fp32():
@@ -35,6 +37,7 @@ def test_asinhgrad_fp32():
     output_ms = P.AsinhGrad()(Tensor(y_np), Tensor(dout_np))
     output_np = dout_np / np.cosh(y_np)
     assert np.allclose(output_ms.asnumpy(), output_np, 1e-4, 1e-4)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_asinhgrad_fp16():

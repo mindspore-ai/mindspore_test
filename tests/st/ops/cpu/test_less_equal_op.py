@@ -32,7 +32,8 @@ class Net(nn.Cell):
         return self.ops(x, y)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_net_fp32():
     x0_np = np.random.randint(1, 5, (2, 3, 4, 4)).astype(np.float32)
     y0_np = np.random.randint(1, 5, (2, 3, 4, 4)).astype(np.float32)
@@ -84,7 +85,8 @@ def test_net_fp32():
     assert out.shape == expect.shape
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_net_fp16():
     x0_np = np.random.randint(1, 5, (2, 3, 4, 4)).astype(np.float16)
     y0_np = np.random.randint(1, 5, (2, 3, 4, 4)).astype(np.float16)
@@ -136,14 +138,14 @@ def test_net_fp16():
     assert out.shape == expect.shape
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_net_int32():
     x1_np = np.random.randint(1, 5, (2, 3, 4, 4)).astype(np.int32)
     y1_np = np.random.randint(1, 5, (2, 1, 4, 4)).astype(np.int32)
     x1 = Tensor(x1_np)
     y1 = Tensor(y1_np)
 
-
     context.set_context(mode=context.GRAPH_MODE, device_target='CPU')
     net = Net()
     out = net(x1, y1).asnumpy()
@@ -152,14 +154,14 @@ def test_net_int32():
     assert out.shape == expect.shape
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_net_int64():
     x1_np = np.random.randint(1, 5, (2, 3, 4, 4)).astype(np.int64)
     y1_np = np.random.randint(1, 5, (2, 1, 4, 4)).astype(np.int64)
     x1 = Tensor(x1_np)
     y1 = Tensor(y1_np)
 
-
     context.set_context(mode=context.GRAPH_MODE, device_target='CPU')
     net = Net()
     out = net(x1, y1).asnumpy()
@@ -168,7 +170,8 @@ def test_net_int64():
     assert out.shape == expect.shape
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_net_float64():
     """
     Feature: ALL To ALL
@@ -188,13 +191,13 @@ def test_net_float64():
     assert out.shape == expect.shape
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_net_int16():
     x1_np = np.random.randint(1, 5, (2, 3, 4, 4)).astype(np.int16)
     y1_np = np.random.randint(1, 5, (2, 1, 4, 4)).astype(np.int16)
     x1 = Tensor(x1_np)
     y1 = Tensor(y1_np)
-
 
     context.set_context(mode=context.GRAPH_MODE, device_target='CPU')
     net = Net()
@@ -230,7 +233,8 @@ def test_less_equal_tensor_api():
     np.testing.assert_array_equal(output.asnumpy(), expected)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_less_equal_functional_tensor_modes():
     """
     Feature: test less_equal functional and tensor APIs in PyNative and Graph modes.
@@ -243,6 +247,7 @@ def test_less_equal_functional_tensor_modes():
     context.set_context(mode=context.PYNATIVE_MODE, device_target="CPU")
     test_less_equal_functional_api()
     test_less_equal_tensor_api()
+
 
 if __name__ == '__main__':
     test_less_equal_functional_tensor_modes()

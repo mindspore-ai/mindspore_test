@@ -25,19 +25,24 @@ from tests.mark_utils import arg_mark
 def generate_random_input(shape, dtype):
     return np.random.randn(*shape).astype(dtype)
 
+
 def generate_expect_forward_output(input_x, dims):
     return np.flip(input_x, dims)
 
+
 def generate_expect_backward_output(input_x, dims):
     return np.ones_like(input_x)
+
 
 @test_utils.run_with_cell
 def flip_forward_func(input_x, dims):
     return flip(input_x, dims)
 
+
 @test_utils.run_with_cell
 def flip_backward_func(input_x, dims):
     return ms.ops.grad(flip_forward_func, (0))(input_x, dims)
+
 
 @test_utils.run_with_cell
 def flip_vmap_func(input_x, dims):

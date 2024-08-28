@@ -22,9 +22,10 @@ from tests.st.utils.test_utils import to_cell_obj, compare
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
 
+
 def np_backward_func(np_x, np_y, dout, is_minimum):
     input_equal = np.equal(np_x, np_y)
-    dout_scale = np.where(input_equal, dout/2.0, dout)
+    dout_scale = np.where(input_equal, dout / 2.0, dout)
     zeros = np.zeros_like(dout_scale)
     dx = np.where(np_x > np_y, zeros, dout_scale)
     dy = np.where(np_x < np_y, zeros, dout_scale)

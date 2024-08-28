@@ -23,6 +23,7 @@ from mindspore.ops.operations import _inner_ops as inner
 import mindspore.nn as nn
 import mindspore.context as context
 
+
 class DynamicShapeNet(nn.Cell):
     def __init__(self):
         super(DynamicShapeNet, self).__init__()
@@ -93,17 +94,21 @@ def dynamic_shape(np_type):
     expected = np.array(shape)
     np.testing.assert_array_equal(ms_out, expected)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_dynamic_shape_int32():
     dynamic_shape(np.int32)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_dynamic_shape_float16():
     dynamic_shape(np.float16)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_dynamic_shape_float32():
     dynamic_shape(np.float32)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_dynamic_shape_bool():

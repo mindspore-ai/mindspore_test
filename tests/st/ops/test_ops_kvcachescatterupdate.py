@@ -22,6 +22,7 @@ from tests.mark_utils import arg_mark
 
 kv_cache_scatter_update_op = KVCacheScatterUpdate()
 
+
 @test_utils.run_with_cell
 def kvcachescatterupdate_forward_func(var, indices, updates, axis, reduce):
     return kv_cache_scatter_update_op(var, indices, updates, axis, reduce)

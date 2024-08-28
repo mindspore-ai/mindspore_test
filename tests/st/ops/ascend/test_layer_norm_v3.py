@@ -110,6 +110,7 @@ def test_layer_norm_v3_dynamic_shape(mode):
     assert np.allclose(mean2.asnumpy(), expect_mean2, atol=1e-6)
     assert np.allclose(variance2.asnumpy(), expect_var2, atol=1e-6)
 
+
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [context.PYNATIVE_MODE, context.GRAPH_MODE])
 def test_layer_norm_grad_v3_dynamic_shape(mode):

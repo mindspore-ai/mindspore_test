@@ -12,15 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
-
-import numpy as np
-import pytest
 import mindspore.nn as nn
 import mindspore.ops.operations as P
-from mindspore import Tensor, context
+import numpy as np
+import pytest
 from mindspore.ops.functional import vmap
 from mindspore.ops.operations.math_ops import Lerp
+
+from mindspore import Tensor, context
+from tests.mark_utils import arg_mark
 
 
 class LerpNet(nn.Cell):
@@ -118,7 +118,8 @@ def lerp_np_bencmark(start, end, weight):
     return result
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 @pytest.mark.parametrize("data_shape", [(4,), (3, 4), (4, 5, 7)])
 @pytest.mark.parametrize("data_type", [np.float32, np.float16])
 def test_lerp(data_shape, data_type):
@@ -143,7 +144,8 @@ def test_lerp(data_shape, data_type):
     np.testing.assert_allclose(output.asnumpy(), benchmark_output, rtol=error, atol=error)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 @pytest.mark.parametrize("data_type", [np.float32, np.float16])
 def test_lerp_dy_shape(data_type):
     """
@@ -172,7 +174,8 @@ def test_lerp_dy_shape(data_type):
     np.testing.assert_allclose(np_result, ms_result.asnumpy(), rtol=loss, atol=loss)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_lerp_vmap_cpu():
     """
     Feature: test Lerp vmap on CPU.

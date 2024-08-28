@@ -27,6 +27,7 @@ expect_array = {'Bool': '\n[[ True False]\n [False  True]]', 'UInt': '\n[[1 2 3]
                 'Float32_64': '\n[[ *.********e*** **.********e***  *.********e***]\n ' \
                               '[ *.********e*** **.********e***  *.********e***]]'}
 
+
 def get_expect_value(res):
     if res[0] == '[]':
         if res[1] == 'Bool':
@@ -51,6 +52,7 @@ def get_expect_value(res):
         if res[1] in ['Float32', 'Float64']:
             return expect_array.get('Float32_64')
     return 'None'
+
 
 def num_to_asterisk(data):
     # Convert number and +/- to asterisk

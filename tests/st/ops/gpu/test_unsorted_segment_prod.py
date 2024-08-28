@@ -33,16 +33,16 @@ def init_result(func, shape, dtype):
         result = np.zeros(shape, dtype)
     if func == 'min':
         if dtype in [
-                np.int32, np.uint8, np.int16, np.int8, np.int64, np.uint16,
-                np.uint32, np.uint64
+            np.int32, np.uint8, np.int16, np.int8, np.int64, np.uint16,
+            np.uint32, np.uint64
         ]:
             result = result * np.iinfo(dtype).max
         if dtype in [np.float32, np.float64]:
             result = result * np.finfo(dtype).max
     if func == 'max':
         if dtype in [
-                np.int32, np.uint8, np.int16, np.int8, np.int64, np.uint16,
-                np.uint32, np.uint64
+            np.int32, np.uint8, np.int16, np.int8, np.int64, np.uint16,
+            np.uint32, np.uint64
         ]:
             result = result * np.iinfo(dtype).min
         if dtype in [np.float32, np.float64]:

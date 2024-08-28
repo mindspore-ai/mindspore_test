@@ -20,6 +20,7 @@ import pytest
 import mindspore.nn as nn
 import mindspore.ops as ops
 from mindspore import Tensor
+from mindspore.common.api import _pynative_executor
 
 
 class Net(nn.Cell):
@@ -28,7 +29,8 @@ class Net(nn.Cell):
         return output
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_real_normal():
     """
     Feature: ops.addbmm
@@ -41,3 +43,4 @@ def test_real_normal():
     net = Net()
     with pytest.raises(ValueError):
         net(x, b1, b2)
+        _pynative_executor.sync()

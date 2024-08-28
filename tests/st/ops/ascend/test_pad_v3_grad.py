@@ -14,7 +14,6 @@
 # ============================================================================
 from tests.mark_utils import arg_mark
 
-
 import pytest
 import numpy as np
 import mindspore as ms

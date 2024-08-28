@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 from tests.mark_utils import arg_mark
+
 """ test primitive cache """
 import pytest
 import numpy as np
@@ -29,7 +30,8 @@ from mindspore.ops._primitive_cache import _get_cache_prim
 # pylint: disable=W0235
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_jit_function_run_in_pynative():
     """
     Feature: test @jit decorated function run in PyNative.
@@ -57,7 +59,8 @@ def test_jit_function_run_in_pynative():
     np.testing.assert_almost_equal(output.asnumpy(), expect_output)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_run_pynative_and_then_run_graph():
     """
     Feature: test the cache key must be a str.
@@ -85,7 +88,8 @@ def test_run_pynative_and_then_run_graph():
     np.testing.assert_almost_equal(output1.asnumpy(), output2.asnumpy())
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_continuous_cache():
     """
     Feature: test continuous cache.

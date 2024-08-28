@@ -116,8 +116,8 @@ def test_smoothl1loss_grad_no_reduce():
 
     diff1 = np.absolute(dx[0].asnumpy() - dx1_expect)
     diff2 = np.absolute(dx[1].asnumpy() - dx2_expect)
-    assert(diff1 < epsilon).all()
-    assert(diff2 < epsilon).all()
+    assert (diff1 < epsilon).all()
+    assert (diff2 < epsilon).all()
 
     beta = 1 / 9
     dx = smoothl1loss_grad(beta)
@@ -130,8 +130,8 @@ def test_smoothl1loss_grad_no_reduce():
 
     diff1 = np.absolute(dx[0].asnumpy() - np.array(dx1_expect))
     diff2 = np.absolute(dx[1].asnumpy() - np.array(dx2_expect))
-    assert(diff1 < epsilon).all()
-    assert(diff2 < epsilon).all()
+    assert (diff1 < epsilon).all()
+    assert (diff2 < epsilon).all()
 
 
 def smoothl1loss_grad_2(beta, reduction):

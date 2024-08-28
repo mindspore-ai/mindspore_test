@@ -12,16 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
-
-import numpy as np
-import pytest
-
 import mindspore.context as context
 import mindspore.nn as nn
+import numpy as np
+import pytest
+from mindspore.common import dtype as mstype
+from mindspore.common.api import _pynative_executor
+
 from mindspore import Tensor
 from mindspore.ops import operations as P
-from mindspore.common import dtype as mstype
+from tests.mark_utils import arg_mark
+
 np.random.seed(100)
 
 
@@ -40,7 +41,8 @@ def judge_result_correct(result, expect):
     assert np.allclose(result, expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 @pytest.mark.parametrize('dtype', [np.float16, np.float32, np.float64])
 def test_matmul_no_transpose_vec(dtype):
     """
@@ -66,7 +68,8 @@ def np_matmul(a: np.ndarray, b: np.ndarray, trans_a: bool, trans_b: bool):
     return np.matmul(a, b)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 @pytest.mark.parametrize('trans_a', [True, False])
 @pytest.mark.parametrize('trans_b', [True, False])
 @pytest.mark.parametrize('dtype', [np.float16, np.float32, np.float64])
@@ -92,7 +95,8 @@ def test_matmul_matrix(trans_a, trans_b, dtype):
     judge_result_correct(output, expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
 def test_matmul_tensor_api_modes(mode):
     """
@@ -113,7 +117,8 @@ def test_matmul_tensor_api_modes(mode):
     np.testing.assert_array_equal(output.asnumpy(), expected)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_matmul_dtypes():
     """
     Feature: Test matmul dtypes.
@@ -144,3 +149,4 @@ def test_matmul_dtypes():
         else:
             with pytest.raises(TypeError):
                 matmul(x_ms, y_ms)
+                _pynative_executor.sync()

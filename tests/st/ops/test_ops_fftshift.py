@@ -29,6 +29,7 @@ class FFTShiftNet(nn.Cell):
     def construct(self, x, dim=None):
         return self.fftshift(x, dim)
 
+
 class FFTShiftGradNet(nn.Cell):
     def __init__(self, net, dout):
         super(FFTShiftGradNet, self).__init__()
@@ -38,6 +39,7 @@ class FFTShiftGradNet(nn.Cell):
 
     def construct(self, x, dim=None):
         return self.grad(self.net)(x, dim, self.dout)
+
 
 def generate_random_input(shape, dtype):
     return np.random.randn(*shape).astype(dtype)

@@ -85,6 +85,7 @@ def test_celu_vmap():
     Expectation: Success.
     """
     error = 1e-3
+
     def cal_celu(x):
         return P.CeLU(1.0)(x)
 

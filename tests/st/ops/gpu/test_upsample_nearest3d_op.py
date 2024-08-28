@@ -22,6 +22,7 @@ import mindspore as ms
 from mindspore import Tensor
 from mindspore.ops import functional as F
 from mindspore.ops.operations.nn_ops import UpsampleNearest3D
+from mindspore.common.api import _pynative_executor
 
 
 class UpsampleNearest3DNet(nn.Cell):
@@ -136,36 +137,43 @@ def test_upsample_nearest_3d_error():
         input_tensor = Tensor(np.ones((2, 2, 2, 2), dtype=np.float32))
         net = UpsampleNearest3DNet()
         net(input_tensor, [3, 4, 5], None)
+        _pynative_executor.sync()
 
     with pytest.raises(TypeError):
         input_tensor = Tensor(np.ones((2, 2, 2, 2, 2), dtype=np.int32))
         net = UpsampleNearest3DNet()
         net(input_tensor, [3, 4, 5], None)
+        _pynative_executor.sync()
 
     with pytest.raises(TypeError):
         input_tensor = Tensor(np.ones((2, 2, 2, 2, 2), dtype=np.float32))
         net = UpsampleNearest3DNet()
         net(input_tensor, None, [1, 2, 3])
+        _pynative_executor.sync()
 
     with pytest.raises(ValueError):
         input_tensor = Tensor(np.ones((2, 2, 2, 2, 2), dtype=np.float32))
         net = UpsampleNearest3DNet()
         net(input_tensor, [3, 4], None)
+        _pynative_executor.sync()
 
     with pytest.raises(ValueError):
         input_tensor = Tensor(np.ones((2, 2, 2, 2, 2), dtype=np.float32))
         net = UpsampleNearest3DNet()
         net(input_tensor, None, [1.0, 2.0, 3.0, 4.0])
+        _pynative_executor.sync()
 
     with pytest.raises(ValueError):
         input_tensor = Tensor(np.ones((2, 2, 2, 2, 2), dtype=np.float32))
         net = UpsampleNearest3DNet()
         net(input_tensor, [3, 4, 5], [1.0, 2.0, 3.0])
+        _pynative_executor.sync()
 
     with pytest.raises(ValueError):
         input_tensor = Tensor(np.ones((2, 2, 2, 2, 2), dtype=np.float32))
         net = UpsampleNearest3DNet()
         net(input_tensor, None, None)
+        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')

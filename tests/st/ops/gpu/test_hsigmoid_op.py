@@ -24,6 +24,7 @@ from mindspore.ops import operations as P
 from mindspore.ops.composite import GradOperation
 from mindspore.ops.operations import _inner_ops as inner
 
+
 class Grad(nn.Cell):
     def __init__(self, network):
         super(Grad, self).__init__()

@@ -119,7 +119,7 @@ def test_reduce_mean_negative():
     Expectation: the result match expectation
     """
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
-    x = Tensor([[[1, 2, 3,], [3, 2, 1]]], mstype.float32)
+    x = Tensor([[[1, 2, 3, ], [3, 2, 1]]], mstype.float32)
     net = ReduceMeanNegativeNet()
     out = net(x)
     assert out.shape == (1, 1)

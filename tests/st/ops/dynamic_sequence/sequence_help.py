@@ -39,7 +39,6 @@ class _Grad(Cell):
         return self.grad(self.network)(*inputs)
 
 
-
 class GradOfFirstInput(_Grad):
     """
     get grad of first tuple_input
@@ -54,6 +53,7 @@ class GradOfAllInputs(_Grad):
     """
     get grads of all inputs
     """
+
     def __init__(self, network, sens_param=True, real_inputs_count=None):
         super().__init__(grad=GradOperation(get_all=True, sens_param=sens_param),
                          network=network, real_inputs_count=real_inputs_count)

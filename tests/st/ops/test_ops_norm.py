@@ -29,10 +29,10 @@ from tests.mark_utils import arg_mark
 def norm_ext_forward_func(x):
     return norm_ext(x)
 
+
 @test_utils.run_with_cell
 def norm_ext_backward_func(x):
     return ops.grad(norm_ext_forward_func, (0))(x)
-
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -56,7 +56,6 @@ def test_ops_norm_forward(mode):
     assert np.allclose(output2.asnumpy(), expect_output2)
 
 
-
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_ops_norm_backward(mode):
@@ -76,7 +75,6 @@ def test_ops_norm_backward(mode):
     output2 = norm_ext_backward_func(b)
     expect_output2 = ops.grad(ops.norm, (0))(b).asnumpy()
     assert np.allclose(output2.asnumpy(), expect_output2)
-
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')

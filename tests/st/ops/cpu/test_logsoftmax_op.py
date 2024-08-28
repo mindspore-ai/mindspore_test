@@ -44,7 +44,8 @@ class Grad(nn.Cell):
         return gout
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 @pytest.mark.parametrize('axis', [-1, 0, 2])
 @pytest.mark.parametrize('dtype, error', [(np.float32, 1.0e-5), (np.float16, 1.0e-3)])
 def test_logsoftmax(axis, dtype, error):
@@ -62,7 +63,8 @@ def test_logsoftmax(axis, dtype, error):
     assert np.allclose(output.asnumpy(), expect, atol=error, rtol=error)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 @pytest.mark.parametrize('axis', [-1, 0, 2])
 @pytest.mark.parametrize('dtype, error', [(np.float32, 1.0e-5)])
 def test_logsoftmax_vmap(axis, dtype, error):
@@ -88,7 +90,8 @@ def test_logsoftmax_vmap(axis, dtype, error):
     assert np.allclose(output.asnumpy(), expect, atol=error, rtol=error)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_logsoftmax_dynamic_shape():
     """
     Feature: ALL To ALL
@@ -111,7 +114,8 @@ def test_logsoftmax_dynamic_shape():
     assert np.allclose(output.asnumpy(), expect, atol=error, rtol=error)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_logsoftmax_positive_result():
     """
     Feature: ALL To ALL
@@ -136,7 +140,8 @@ def test_logsoftmax_positive_result():
     assert y.max() <= 0
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_logsoftmaxgrad():
     """
     Feature: ALL To ALL
@@ -182,7 +187,8 @@ def test_logsoftmaxgrad():
     assert np.all(diff < err)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_logsoftmaxgrad1():
     """
     Feature: ALL To ALL
@@ -243,7 +249,8 @@ class LogSoftmaxForForward(nn.Cell):
         return out
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_logsoftmaxgrad_vmap():
     """
     Feature: ALL To ALL

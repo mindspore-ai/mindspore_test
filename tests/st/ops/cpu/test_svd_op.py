@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
 import numpy as np
-import pytest
+from mindspore.ops.operations import linalg_ops, array_ops
+from mindspore.ops.primitive import constexpr
+
 import mindspore
 from mindspore import context, ops, nn, Tensor
-from mindspore.ops.primitive import constexpr
-from mindspore.ops.operations import linalg_ops, array_ops
+from tests.mark_utils import arg_mark
 
 context.set_context(mode=context.GRAPH_MODE, device_target='CPU')
 RTOL = 1.e-5
@@ -51,7 +51,8 @@ class SvdNet(nn.Cell):
         return self.svd(a)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_svd_dynamic_shape():
     """
     Feature: test svd op in cpu.
@@ -72,7 +73,8 @@ def test_svd_dynamic_shape():
     assert v.asnumpy().shape == expect_v_shape
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_svd_net1():
     """
     Feature: Svd
@@ -87,7 +89,8 @@ def test_svd_net1():
     assert np.allclose(n_s, s.asnumpy(), rtol=RTOL, atol=ATOL)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_svd_net2():
     """
     Feature: Svd
@@ -103,7 +106,8 @@ def test_svd_net2():
     assert np.allclose(a, output.asnumpy(), rtol=RTOL, atol=ATOL)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_svd_net3():
     """
     Feature: Svd
@@ -117,7 +121,8 @@ def test_svd_net3():
     assert np.allclose(a, output.asnumpy(), rtol=RTOL, atol=ATOL)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_svd_net4():
     """
     Feature: Svd
@@ -131,7 +136,8 @@ def test_svd_net4():
     assert np.allclose(a, output.asnumpy(), rtol=RTOL, atol=ATOL)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_svd_net5():
     """
     Feature: Svd
@@ -148,7 +154,8 @@ def test_svd_net5():
     assert np.allclose(a, output.asnumpy(), rtol=RTOL, atol=ATOL)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_svd_net6():
     """
     Feature: Svd
@@ -162,7 +169,8 @@ def test_svd_net6():
     assert np.allclose(a, output.asnumpy(), rtol=RTOL, atol=ATOL)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_svd_vmap1():
     """
     Feature: Svd
@@ -179,7 +187,8 @@ def test_svd_vmap1():
     assert np.allclose(a, output.asnumpy(), rtol=RTOL, atol=ATOL)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_svd_vmap2():
     """
     Feature: Svd

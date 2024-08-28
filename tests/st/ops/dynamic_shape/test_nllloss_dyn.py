@@ -56,7 +56,8 @@ target = Tensor(np.array([1, 0, 4]).astype(np.int32))
 weight = Tensor(np.array([0.2, 0.3, 0.1, 0.15, 0.25]).astype(np_type))
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_nllloss_cpu_none_dynamic_shape():
     """
     Feature: test nllloss op with reduction none.
@@ -64,9 +65,9 @@ def test_nllloss_cpu_none_dynamic_shape():
     Expectation: expect correct output shape.
     """
     nllloss = NLLLoss("none")
-    logits_dyn = Tensor(shape=[None]*len(logits.shape), dtype=logits.dtype)
-    target_dyn = Tensor(shape=[None]*len(target.shape), dtype=target.dtype)
-    weight_dyn = Tensor(shape=[None]*len(weight.shape), dtype=weight.dtype)
+    logits_dyn = Tensor(shape=[None] * len(logits.shape), dtype=logits.dtype)
+    target_dyn = Tensor(shape=[None] * len(target.shape), dtype=target.dtype)
+    weight_dyn = Tensor(shape=[None] * len(weight.shape), dtype=weight.dtype)
     nllloss.set_inputs(logits_dyn, target_dyn, weight_dyn)
     loss, total_weight = nllloss(logits, target, weight)
     assert loss.asnumpy().shape == (logits.shape[0],)
@@ -80,7 +81,8 @@ def test_nllloss_cpu_none_dynamic_shape():
     assert expect_grad[2].asnumpy().shape == weight.asnumpy().shape
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_nllloss_cpu_mean_dynamic_shape():
     """
     Feature: test nllloss op with reduction mean.
@@ -88,9 +90,9 @@ def test_nllloss_cpu_mean_dynamic_shape():
     Expectation: expect correct shape result.
     """
     nllloss = NLLLoss("mean")
-    logits_dyn = Tensor(shape=[None]*len(logits.shape), dtype=logits.dtype)
-    target_dyn = Tensor(shape=[None]*len(target.shape), dtype=target.dtype)
-    weight_dyn = Tensor(shape=[None]*len(weight.shape), dtype=weight.dtype)
+    logits_dyn = Tensor(shape=[None] * len(logits.shape), dtype=logits.dtype)
+    target_dyn = Tensor(shape=[None] * len(target.shape), dtype=target.dtype)
+    weight_dyn = Tensor(shape=[None] * len(weight.shape), dtype=weight.dtype)
     nllloss.set_inputs(logits_dyn, target_dyn, weight_dyn)
     loss, total_weight = nllloss(logits, target, weight)
     assert loss.asnumpy().shape == tuple()

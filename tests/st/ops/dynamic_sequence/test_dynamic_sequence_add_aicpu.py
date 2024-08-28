@@ -86,6 +86,7 @@ def test_seq_add_grad_aicpu():
     Description: inputs are dynamic sequence.
     Expectation: the result match with tuple result
     """
+
     class Net(Cell):
         def construct(self, x, y):
             return x + y
@@ -105,6 +106,7 @@ def test_seq_add_grad_other_aicpu():
     Description: inputs are dynamic sequence.
     Expectation: the result match with tuple result
     """
+
     class Net(Cell):
         def construct(self, x, y):
             return x + y

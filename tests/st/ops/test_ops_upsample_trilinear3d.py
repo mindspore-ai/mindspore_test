@@ -21,6 +21,7 @@ from tests.mark_utils import arg_mark
 import mindspore as ms
 from mindspore import Tensor
 from mindspore import ops, context
+from mindspore.common.api import _pynative_executor
 
 
 @test_utils.run_with_cell
@@ -191,27 +192,34 @@ def test_upsample_trilinear_3d_error(mode):
     with pytest.raises(ValueError):
         input_tensor = Tensor(np.ones((2, 2, 2, 2), dtype=np.float32))
         net(input_tensor, [3, 4, 5], None)
+        _pynative_executor.sync()
 
     with pytest.raises(TypeError):
         input_tensor = Tensor(np.ones((2, 2, 2, 2, 2), dtype=np.int32))
         net(input_tensor, [3, 4, 5], None)
+        _pynative_executor.sync()
 
     with pytest.raises(TypeError):
         input_tensor = Tensor(np.ones((2, 2, 2, 2, 2), dtype=np.float32))
         net(input_tensor, None, [1, 2, 3])
+        _pynative_executor.sync()
 
     with pytest.raises(ValueError):
         input_tensor = Tensor(np.ones((2, 2, 2, 2, 2), dtype=np.float32))
         net(input_tensor, [3, 4], None)
+        _pynative_executor.sync()
 
     with pytest.raises(ValueError):
         input_tensor = Tensor(np.ones((2, 2, 2, 2, 2), dtype=np.float32))
         net(input_tensor, None, [1.0, 2.0, 3.0, 4.0])
+        _pynative_executor.sync()
 
     with pytest.raises(ValueError):
         input_tensor = Tensor(np.ones((2, 2, 2, 2, 2), dtype=np.float32))
         net(input_tensor, [3, 4, 5], [1.0, 2.0, 3.0])
+        _pynative_executor.sync()
 
     with pytest.raises(ValueError):
         input_tensor = Tensor(np.ones((2, 2, 2, 2, 2), dtype=np.float32))
         net(input_tensor, None, None)
+        _pynative_executor.sync()

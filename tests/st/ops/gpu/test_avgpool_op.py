@@ -154,7 +154,6 @@ def test_avgpool3d_1():
                                [0.16666667, 0.33333334, 0.33333334, 0.16666667],
                                [0.08333333, 0.16666667, 0.16666667, 0.08333333]]]]]).astype(np.float32)
 
-
     assert np.allclose(actual_grad[0].asnumpy(), expect_grad)
 
 

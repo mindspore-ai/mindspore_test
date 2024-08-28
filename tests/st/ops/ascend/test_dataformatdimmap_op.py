@@ -29,6 +29,7 @@ def test_data_formata_dim_map():
     Description: Test the dynamic shape case of operator DataFormatDimMap and compare with expected output.
     Expectation: Output should be equal to expected value.
     """
+
     class Net(nn.Cell):
         def __init__(self):
             super(Net, self).__init__()
@@ -41,7 +42,6 @@ def test_data_formata_dim_map():
             unique_indices, _ = self.unique(indices)
             x = self.reducesum(x.astype(mstype.int32), unique_indices)
             return self.data_format_dim_map(x.astype(mstype.int32))
-
 
     net = Net()
     x = [[1, 0, 0, -1, 0, -2, 1, 0],

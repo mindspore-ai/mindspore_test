@@ -20,6 +20,7 @@ import mindspore.nn as nn
 from mindspore.ops import operations as P
 from mindspore.common import dtype as mstype
 from mindspore import Tensor
+
 context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
 
 
@@ -33,6 +34,7 @@ class Net(nn.Cell):
 
     def construct(self):
         return self.stdnormal(self.shape)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_net():

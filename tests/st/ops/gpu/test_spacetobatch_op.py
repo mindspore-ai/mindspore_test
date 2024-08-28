@@ -23,16 +23,16 @@ from mindspore.common.api import jit
 from mindspore.common.initializer import initializer
 from mindspore.common.parameter import Parameter
 
+
 class SpaceToBatchNet(nn.Cell):
     def __init__(self, nptype, block_size=2, input_shape=(1, 1, 4, 4)):
         super(SpaceToBatchNet, self).__init__()
         self.SpaceToBatch = P.SpaceToBatch(block_size=block_size, paddings=[[0, 0], [0, 0]])
         input_size = 1
         for i in input_shape:
-            input_size = input_size*i
+            input_size = input_size * i
         data_np = np.arange(input_size).reshape(input_shape).astype(nptype)
         self.x1 = Parameter(initializer(Tensor(data_np), input_shape), name='x1')
-
 
     @jit
     def construct(self):
@@ -44,7 +44,7 @@ def SpaceToBatch(nptype, block_size=2, input_shape=(1, 1, 4, 4)):
     context.set_context(mode=context.GRAPH_MODE, device_target='GPU')
     input_size = 1
     for i in input_shape:
-        input_size = input_size*i
+        input_size = input_size * i
     expect = np.array([[[[0, 2],
                          [8, 10]]],
                        [[[1, 3],
@@ -59,11 +59,12 @@ def SpaceToBatch(nptype, block_size=2, input_shape=(1, 1, 4, 4)):
 
     assert (output.asnumpy() == expect).all()
 
+
 def SpaceToBatch_pynative(nptype, block_size=2, input_shape=(1, 1, 4, 4)):
     context.set_context(mode=context.PYNATIVE_MODE, device_target='GPU')
     input_size = 1
     for i in input_shape:
-        input_size = input_size*i
+        input_size = input_size * i
     expect = np.array([[[[0, 2],
                          [8, 10]]],
                        [[[1, 3],
@@ -83,6 +84,7 @@ def SpaceToBatch_pynative(nptype, block_size=2, input_shape=(1, 1, 4, 4)):
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_spacetobatch_graph_float32():
     SpaceToBatch(np.float32)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_spacetobatch_graph_float16():

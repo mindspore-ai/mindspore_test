@@ -20,6 +20,7 @@ import mindspore.context as context
 import mindspore.nn as nn
 from mindspore import Tensor
 from mindspore.ops import operations as P
+from mindspore.common.api import _pynative_executor
 
 
 class InTopKNet(nn.Cell):
@@ -83,7 +84,8 @@ def in_top_k(nptype):
     np.testing.assert_array_equal(output.asnumpy(), expected_output)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_in_top_k_float16():
     """
     Feature: Test InTopK op.
@@ -93,7 +95,8 @@ def test_in_top_k_float16():
     in_top_k(np.float16)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_in_top_k_float32():
     """
     Feature: Test InTopK op.
@@ -103,7 +106,8 @@ def test_in_top_k_float32():
     in_top_k(np.float32)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_in_top_k_invalid_input():
     """
     Feature: Test InTopK op.
@@ -118,6 +122,7 @@ def test_in_top_k_invalid_input():
         predictions = Tensor(np.zeros(4).astype(np.float32))
         targets = Tensor(np.zeros(4).astype(np.int32))
         _ = in_top_k_net(predictions, targets)
+        _pynative_executor.sync()
 
     # targets must be 1d
     with pytest.raises(ValueError):
@@ -125,6 +130,7 @@ def test_in_top_k_invalid_input():
         predictions = Tensor(np.zeros(4).astype(np.float32))
         targets = Tensor(np.zeros(4).reshape(2, 2).astype(np.int32))
         _ = in_top_k_net(predictions, targets)
+        _pynative_executor.sync()
 
     # predictions.shape[1] must be equal to targets.shape[0]
     with pytest.raises(ValueError):
@@ -132,3 +138,4 @@ def test_in_top_k_invalid_input():
         predictions = Tensor(np.zeros(4).reshape(2, 2).astype(np.float32))
         targets = Tensor(np.zeros(4).astype(np.int32))
         _ = in_top_k_net(predictions, targets)
+        _pynative_executor.sync()

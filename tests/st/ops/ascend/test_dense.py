@@ -31,6 +31,7 @@ class Net(nn.Cell):
     def construct(self, x):
         return self.dense(x)
 
+
 class MultiLayerDense(nn.Cell):
     def __init__(self):
         super(MultiLayerDense, self).__init__()

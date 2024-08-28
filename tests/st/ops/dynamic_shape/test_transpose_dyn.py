@@ -53,7 +53,8 @@ def dyn_case():
     np.allclose(dyn_out.asnumpy(), static_out.asnumpy(), 1e-6, 1e-6)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
 def test_transpose_dyn_cpu(mode):
     """

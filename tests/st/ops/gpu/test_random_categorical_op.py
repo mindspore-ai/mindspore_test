@@ -32,7 +32,9 @@ class RCnet(nn.Cell):
     def construct(self, logits, num_sample, seed):
         return self.rc(logits, num_sample, seed)
 
+
 TARGET = "GPU"
+
 
 def test_rc_graph_fp16_int64():
     """
@@ -54,6 +56,7 @@ def test_rc_graph_fp16_int64():
     assert expect.dtype == output.asnumpy().dtype
     assert np.all(diff == 0)
 
+
 def test_rc_graph_fp32_int64():
     """
     Feature: RandomCategorical gpu kernel
@@ -73,6 +76,7 @@ def test_rc_graph_fp32_int64():
     diff = output.asnumpy() - expect
     assert expect.dtype == output.asnumpy().dtype
     assert np.all(diff == 0)
+
 
 def test_rc_graph_fp64_int64():
     """
@@ -94,6 +98,7 @@ def test_rc_graph_fp64_int64():
     assert expect.dtype == output.asnumpy().dtype
     assert np.all(diff == 0)
 
+
 def test_rc_graph_fp16_int16():
     """
     Feature: RandomCategorical gpu kernel
@@ -113,6 +118,7 @@ def test_rc_graph_fp16_int16():
     diff = output.asnumpy() - expect
     assert expect.dtype == output.asnumpy().dtype
     assert np.all(diff == 0)
+
 
 def test_rc_graph_fp16_int32():
     """
@@ -134,6 +140,7 @@ def test_rc_graph_fp16_int32():
     assert expect.dtype == output.asnumpy().dtype
     assert np.all(diff == 0)
 
+
 def test_rc_pynative_fp16_int64():
     """
     Feature: RandomCategorical gpu kernel
@@ -153,6 +160,7 @@ def test_rc_pynative_fp16_int64():
     diff = output.asnumpy() - expect
     assert expect.dtype == output.asnumpy().dtype
     assert np.all(diff == 0)
+
 
 def test_rc_pynative_fp32_int64():
     """
@@ -174,6 +182,7 @@ def test_rc_pynative_fp32_int64():
     assert expect.dtype == output.asnumpy().dtype
     assert np.all(diff == 0)
 
+
 def test_rc_pynative_fp64_int64():
     """
     Feature: RandomCategorical gpu kernel
@@ -194,6 +203,7 @@ def test_rc_pynative_fp64_int64():
     assert expect.dtype == output.asnumpy().dtype
     assert np.all(diff == 0)
 
+
 def test_rc_pynative_fp16_int16():
     """
     Feature: RandomCategorical gpu kernel
@@ -213,6 +223,7 @@ def test_rc_pynative_fp16_int16():
     diff = output.asnumpy() - expect
     assert expect.dtype == output.asnumpy().dtype
     assert np.all(diff == 0)
+
 
 def test_rc_pynative_fp16_int32():
     """

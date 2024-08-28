@@ -22,7 +22,6 @@ from mindspore import Tensor
 from mindspore.ops.operations import math_ops as P
 
 
-
 class NetBetainc(nn.Cell):
 
     def __init__(self):

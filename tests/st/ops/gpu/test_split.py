@@ -18,6 +18,7 @@ import pytest
 
 import mindspore.context as context
 from mindspore import Tensor
+from mindspore.common.api import _pynative_executor
 import mindspore.nn as nn
 from mindspore.ops.operations import _inner_ops as inner
 from mindspore.ops import operations as P
@@ -151,18 +152,23 @@ def test_split_invalid_input():
     with pytest.raises(TypeError):
         net = Net(0.1, 3)
         _ = net(x_tensor)
+        _pynative_executor.sync()
 
     with pytest.raises(TypeError):
         net = Net(0, 3.0)
         _ = net(x_tensor)
+        _pynative_executor.sync()
 
     with pytest.raises(ValueError):
         net = Net(0, -3)
         _ = net(x_tensor)
+        _pynative_executor.sync()
 
     split_net = Net(2, 2)
     with pytest.raises(ValueError):
         _ = split_net(x_tensor)
+        _pynative_executor.sync()
 
     with pytest.raises(TypeError):
         _ = split_net(x)
+        _pynative_executor.sync()

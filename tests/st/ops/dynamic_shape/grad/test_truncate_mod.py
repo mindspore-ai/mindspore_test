@@ -46,7 +46,8 @@ def run_dynamic_rank():
     test_dynamic.test_dynamic_grad_net([x, y], True)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_dynamic_truncate_mode():
     """
     Feature: TruncateMod Grad DynamicShape.

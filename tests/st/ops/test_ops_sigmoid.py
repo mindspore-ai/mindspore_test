@@ -20,14 +20,18 @@ from mindspore.ops import sigmoid
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 
+
 def generate_random_input(shape, dtype):
     return np.random.randn(*shape).astype(dtype)
 
+
 def generate_expect_forward_output(x):
-    return 1./(1.+np.exp(-x))
+    return 1. / (1. + np.exp(-x))
+
 
 def generate_expect_backward_output(x):
-    return generate_expect_forward_output(x)*(1 - generate_expect_forward_output(x))
+    return generate_expect_forward_output(x) * (1 - generate_expect_forward_output(x))
+
 
 @test_utils.run_with_cell
 def sigmoid_forward_func(x):
@@ -37,6 +41,7 @@ def sigmoid_forward_func(x):
 @test_utils.run_with_cell
 def sigmoid_backward_func(x):
     return ops.grad(sigmoid_forward_func, (0,))(x)
+
 
 @test_utils.run_with_cell
 def sigmoid_vmap_func(x):
@@ -77,6 +82,7 @@ def test_ops_sigmoid_vmap(mode):
     output = sigmoid_vmap_func(ms.Tensor(x))
     expect = generate_expect_forward_output(x)
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
+
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
           card_mark='onecard', essential_mark='essential')

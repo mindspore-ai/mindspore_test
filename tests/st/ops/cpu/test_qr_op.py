@@ -12,15 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
-import pytest
-import numpy as onp
-import scipy as osp
 import mindspore.context as context
 import mindspore.nn as nn
+import numpy as onp
+import pytest
+import scipy as osp
+from mindspore.common import dtype as mstype
+
 from mindspore import Tensor
 from mindspore import _checkparam as validator
-from mindspore.common import dtype as mstype
 from mindspore.ops import PrimitiveWithInfer
 from mindspore.ops import prim_attr_register
 

@@ -121,7 +121,6 @@ def np_all_close_with_loss(out, expect):
     return np.allclose(out, expect, 0.005, 0.005, equal_nan=True)
 
 
-
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('dtype', [np.float32, np.float16])
 def test_hswish_vmap(dtype, shape=(100, 2)):

@@ -56,7 +56,6 @@ def crop_and_resize_test(is_dyn_rank):
                                  is_dyn_rank)
 
 
-
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_crop_and_resize_dyn_shape():
     """

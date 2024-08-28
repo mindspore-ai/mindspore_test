@@ -661,3 +661,4 @@ def test_tesnsor_augassign_by_tuple():
     with pytest.raises(IndexError):
         input_tensor_3d[index_tuple_6] %= value_number
         _pynative_executor.sync()
+

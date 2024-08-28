@@ -30,7 +30,7 @@ class Grad(Cell):
         self.grad = GradOperation(get_all=True, sens_param=True)
         self.network = network
 
-    def construct(self, input_, output_grad,):
+    def construct(self, input_, output_grad, ):
         gout = self.grad(self.network)(input_, output_grad)
         return gout
 

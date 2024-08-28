@@ -20,27 +20,27 @@ def to_csr(x, index_type=np.int32, value_type=np.float32):
     batches, rows, cols = 1, x_dense_shape[0], x_dense_shape[1]
     if len(x_dense_shape) == 3:
         batches, rows, cols = x_dense_shape[0], x_dense_shape[1], x_dense_shape[2]
-    x_batch_ptrs = np.zeros((batches+1))
+    x_batch_ptrs = np.zeros((batches + 1))
     x_row_ptrs = []
     x_col_inds = []
     x_values = []
     values = x.flatten()
-    value_cnt = rows*cols
+    value_cnt = rows * cols
     for i in range(batches):
-        start_pos = i*(rows+1)
-        for j in range(rows+1):
+        start_pos = i * (rows + 1)
+        for j in range(rows + 1):
             x_row_ptrs.append(0)
         for j in range(value_cnt):
-            if not values[value_cnt*i+j] == 0:
-                row_idx = j//cols
+            if not values[value_cnt * i + j] == 0:
+                row_idx = j // cols
                 col_idx = j % cols
-                x_batch_ptrs[i+1] += 1
-                x_row_ptrs[start_pos+row_idx+1] += 1
+                x_batch_ptrs[i + 1] += 1
+                x_row_ptrs[start_pos + row_idx + 1] += 1
                 x_col_inds.append(col_idx)
-                x_values.append(values[value_cnt*i+j])
+                x_values.append(values[value_cnt * i + j])
         for j in range(rows):
-            x_row_ptrs[j+start_pos+1] += x_row_ptrs[j+start_pos]
-        x_batch_ptrs[i+1] += x_batch_ptrs[i]
+            x_row_ptrs[j + start_pos + 1] += x_row_ptrs[j + start_pos]
+        x_batch_ptrs[i + 1] += x_batch_ptrs[i]
     x_dense_shape = np.array(x_dense_shape).astype(index_type)
     x_batch_ptrs = np.array(x_batch_ptrs).astype(index_type)
     x_row_ptrs = np.array(x_row_ptrs).astype(index_type)

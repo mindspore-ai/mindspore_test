@@ -17,6 +17,7 @@ import numpy as np
 import mindspore as ms
 from mindspore import Tensor
 
+
 def custom_compare(output, expect, mstype):
     if mstype == ms.float16:
         limit = 0.004
@@ -41,11 +42,13 @@ def custom_compare(output, expect, mstype):
     print("[SUCCESS]", "err_cnt = ", err_cnt, "/", limit_cnt)
     return True
 
+
 def gen_ms_tensor(input_np_list, mstype):
     input_tensor_list = []
     for input_np in input_np_list:
         input_tensor_list.append(Tensor(input_np, dtype=mstype))
     return input_tensor_list
+
 
 def run_expect_single(x_np, y_np, b_np=0, trans_a=False, trans_b=True):
     if (not trans_a) and (not trans_b):

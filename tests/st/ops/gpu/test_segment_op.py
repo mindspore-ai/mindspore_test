@@ -289,4 +289,3 @@ def test_segment_prod_dyn():
 
     expect_shape = (3, 3)
     assert expect_shape == output.asnumpy().shape
-    

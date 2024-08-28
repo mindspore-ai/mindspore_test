@@ -16,7 +16,8 @@ class NetNextAfter(nn.Cell):
         return self.nextafter(x1, x2)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_dynamic_nextafter_shape():
     """
     Feature: NextAfter Grad DynamicShape.
@@ -30,7 +31,8 @@ def test_dynamic_nextafter_shape():
     test_dynamic.test_dynamic_grad_net([x1, x2])
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_dynamic_nextafter_rank():
     """
     Feature: NextAfter Grad DynamicRank.

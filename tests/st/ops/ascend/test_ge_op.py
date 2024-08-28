@@ -19,6 +19,7 @@ from mindspore import Tensor, ops
 import mindspore.context as context
 from mindspore.common import dtype as mstype
 
+
 def test_f_ge_api():
     """
     Feature: test ge functional API.

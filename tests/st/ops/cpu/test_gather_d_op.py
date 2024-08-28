@@ -39,7 +39,8 @@ class NetGatherD(nn.Cell):
         return self.gatherd(x, self.dim, index)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_gatherd_fp32():
     prop = 100 if np.random.random() > 0.5 else -100
     x = np.random.randn(5, 5, 5).astype(np.float32) * prop
@@ -58,7 +59,8 @@ def test_gatherd_fp32():
     assert np.all(np.abs(output.asnumpy() - expect) < error)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_gatherd_fp16():
     prop = 100 if np.random.random() > 0.5 else -100
     x = np.random.randn(5, 5, 5).astype(np.float16) * prop
@@ -77,7 +79,8 @@ def test_gatherd_fp16():
     assert np.all(np.abs(output.asnumpy() - expect) < error)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_gatherd_int32():
     prop = 100 if np.random.random() > 0.5 else -100
     x = np.random.randn(5, 5, 5).astype(np.int32) * prop
@@ -95,7 +98,8 @@ def test_gatherd_int32():
     assert np.all(output.asnumpy() == expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_gatherd_bool():
     prop = 100 if np.random.random() > 0.5 else -100
     x = np.random.randn(5, 5, 5).astype(np.int32) * prop
@@ -114,7 +118,8 @@ def test_gatherd_bool():
     assert np.all(output.asnumpy() == expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_gatherd_cpu_dynamic_shape():
     """
     Feature: test GatherD op in cpu.
@@ -134,7 +139,8 @@ def test_gatherd_cpu_dynamic_shape():
     assert output.asnumpy().shape == expect_shape
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_gatherd_cpu_onnx():
     """
     Feature: test GatherD op in cpu.

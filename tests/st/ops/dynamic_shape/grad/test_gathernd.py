@@ -36,7 +36,8 @@ def gathernd_test(is_dyn_rank):
     tester.test_dynamic_grad_net([x, indices], is_dyn_rank)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_gathernd_dyn_shape():
     """
     Feature: GatherND Grad DynamicShape.
@@ -47,7 +48,8 @@ def test_gathernd_dyn_shape():
     gathernd_test(False)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_gathernd_dyn_rank():
     """
     Feature: GatherND Grad DynamicShape.

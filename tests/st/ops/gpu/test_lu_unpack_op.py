@@ -17,6 +17,7 @@ import numpy as np
 import mindspore.nn as nn
 from mindspore import Tensor
 from mindspore.ops.operations.math_ops import LuUnpack
+from mindspore.common.api import _pynative_executor
 import mindspore.common.dtype as mstype
 import torch
 import pytest
@@ -103,3 +104,4 @@ def test_lu_unpack_input_error():
     with pytest.raises(ValueError):
         net = LuUnpackNet(unpack_data=True, unpack_pivots=True)
         net(my_a_lu, my_pivots)
+        _pynative_executor.sync()

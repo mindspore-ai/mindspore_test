@@ -19,6 +19,7 @@ from mindspore import ops, nn, mutable
 from mindspore.ops import fft
 from tests.mark_utils import arg_mark
 
+
 class FFTNet(nn.Cell):
     def __init__(self):
         super(FFTNet, self).__init__()
@@ -26,6 +27,7 @@ class FFTNet(nn.Cell):
 
     def construct(self, x, n, dim):
         return self.fft(x, n, dim)
+
 
 class FFTGradNet(nn.Cell):
     def __init__(self, net, dout):

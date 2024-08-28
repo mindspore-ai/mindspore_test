@@ -460,7 +460,7 @@ def test_batchnorm_grad_grad_training_nchw_vmap():
         scale_new_shape = (2, 1)
         x, dy, dout_dx = x.reshape(x_new_shape), dy.reshape(x_new_shape), dout_dx.reshape(x_new_shape)
         scale, dout_dscale, dout_dbias = scale.reshape(scale_new_shape), dout_dscale.reshape(scale_new_shape), \
-                                         dout_dbias.reshape(scale_new_shape)
+            dout_dbias.reshape(scale_new_shape)
         mean = Tensor(np.array([7.666667, 5.5]).astype(np_type_fp32).reshape(scale_new_shape))
         variance = Tensor(np.array([22.888891, 9.583334]).astype(np_type_fp32).reshape(scale_new_shape))
         batchnorf_grad_grad = BatchnormGradGradNet(is_training=True, epsilon=1e-10, data_format="NCHW")
@@ -505,14 +505,14 @@ def test_batchnorm_grad_grad_inference_nhwc_vmap():
         expect_ddy = np.array([[[[-1.16491104e+02, 1.57302490e+02, 4.94995819e+02]],
                                 [[-2.27170822e+02, 2.83793610e+02, 8.96811523e+01]]],
                                [[[1.36491104e+02, 4.73530273e+02, 3.52587952e+02]],
-                                [[-1.32302490e+02, 3.08113918e+01, 2.28437531e+02]]]]).astype(np_type)\
+                                [[-1.32302490e+02, 3.08113918e+01, 2.28437531e+02]]]]).astype(np_type) \
             .reshape(x_new_shape)
         expect_dx = np.array([[[[3.16227760e+01, 9.48683319e+01, 7.59508545e+02]],
                                [[3.16227760e+01, 1.58113876e+02, 7.12039261e+01]]],
                               [[[3.16227760e+01, 9.48683319e+01, 7.59508545e+02]],
-                               [[3.16227760e+01, 1.58113876e+02, 1.18673210e+02]]]]).astype(np_type)\
+                               [[3.16227760e+01, 1.58113876e+02, 1.18673210e+02]]]]).astype(np_type) \
             .reshape(x_new_shape)
-        expect_dscale = np.array([6.95701065e+01, 9.48683319e+01, 2.39354736e+03]).astype(np_type_fp32)\
+        expect_dscale = np.array([6.95701065e+01, 9.48683319e+01, 2.39354736e+03]).astype(np_type_fp32) \
             .reshape(scale_new_shape)
         assert np.allclose(dx.asnumpy(), expect_dx)
         assert np.allclose(ddy.asnumpy(), expect_ddy)

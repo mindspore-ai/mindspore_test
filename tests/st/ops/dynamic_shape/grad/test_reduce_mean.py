@@ -33,7 +33,8 @@ class NetReduceMean(nn.Cell):
         return self.reducemean(x, self.axis)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_dynamic_reducemean_shape():
     """
     Feature: ReduceMean Grad DynamicShape.
@@ -46,7 +47,8 @@ def test_dynamic_reducemean_shape():
     test_dynamic.test_dynamic_grad_net(x)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_dynamic_reducemean_rank():
     """
     Feature: ReduceMean Grad DynamicRank.

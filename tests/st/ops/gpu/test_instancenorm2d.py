@@ -23,7 +23,9 @@ from mindspore import Tensor
 from mindspore.common.api import jit
 from mindspore.ops import functional as F
 from mindspore.ops.composite import GradOperation
+
 context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
+
 
 class Grad(nn.Cell):
     def __init__(self, network):
@@ -35,6 +37,7 @@ class Grad(nn.Cell):
     def construct(self, input_x, grad):
         return self.grad(self.network)(input_x, grad)
 
+
 class Net(nn.Cell):
     def __init__(self, n):
         super(Net, self).__init__()
@@ -43,6 +46,7 @@ class Net(nn.Cell):
     def construct(self, x):
         shape = F.shape(x)
         return F.reshape(self.ops(F.reshape(x, (1, -1, shape[2], shape[3]))), shape)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_InstanceNorm2d_fp32():

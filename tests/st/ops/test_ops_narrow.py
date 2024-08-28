@@ -30,7 +30,7 @@ def generate_expect_forward_output(x, dim, start, length):
     condition = np.zeros(x.shape[dim])
     if start < 0:
         start += x.shape[dim]
-    condition[start:start+length] = 1
+    condition[start:start + length] = 1
     return np.compress(condition, x, axis=dim)
 
 
@@ -58,7 +58,7 @@ def test_ops_narrow_forward(context_mode):
     length = 64
     expect_forward = generate_expect_forward_output(x, dim, start, length)
     expect_grad = np.zeros_like(x)
-    expect_grad[:, :, start:start+length, :] = 1
+    expect_grad[:, :, start:start + length, :] = 1
 
     if context_mode == 'pynative':
         ms.set_context(mode=ms.PYNATIVE_MODE)
@@ -88,7 +88,7 @@ def test_ops_narrow_forward_case01(context_mode):
     length = 640
     expect_forward = generate_expect_forward_output(x, dim, start, length)
     expect_grad = np.zeros_like(x)
-    expect_grad[:, start:start+length, :, :] = 1
+    expect_grad[:, start:start + length, :, :] = 1
 
     if context_mode == 'pynative':
         ms.set_context(mode=ms.PYNATIVE_MODE)

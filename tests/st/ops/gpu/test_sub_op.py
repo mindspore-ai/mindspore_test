@@ -23,6 +23,7 @@ from mindspore import Tensor
 from mindspore.ops import operations as P
 from mindspore.ops.operations import _inner_ops as inner
 
+
 class Net(nn.Cell):
     def __init__(self):
         super(Net, self).__init__()
@@ -30,6 +31,7 @@ class Net(nn.Cell):
 
     def construct(self, x, y):
         return self.sub(x, y)
+
 
 class NetDynamic(nn.Cell):
     def __init__(self):
@@ -123,7 +125,7 @@ def sub(nptype):
     assert np.all(diff4 < error4)
     assert output4.shape == expect4.shape
 
-    #dynamic shape
+    # dynamic shape
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
     d_sub_net = NetDynamic()
     output3 = d_sub_net(x3, y3)
@@ -140,17 +142,21 @@ def sub(nptype):
 def test_sub_float64():
     sub(np.float64)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_sub_float32():
     sub(np.float32)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_sub_float16():
     sub(np.float16)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_sub_int64():
     sub(np.int64)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_sub_int32():

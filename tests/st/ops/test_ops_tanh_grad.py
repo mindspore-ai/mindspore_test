@@ -26,27 +26,30 @@ tanh_grad = ms.ops.auto_generate.TanhGrad()
 def generate_random_input(shape, dtype):
     return np.random.randn(*shape).astype(dtype)
 
+
 def generate_expect_forward_output(y, dy, dtype):
-    return dy*(1 - np.power(y, 2)).astype(dtype)
+    return dy * (1 - np.power(y, 2)).astype(dtype)
+
 
 def generate_expect_backward_output(y, dy, dtype):
-    ydy = (-2*y*dy).astype(dtype)
-    dydy = (1 - y*y).astype(dtype)
-    return  ydy, dydy
+    ydy = (-2 * y * dy).astype(dtype)
+    dydy = (1 - y * y).astype(dtype)
+    return ydy, dydy
+
 
 @test_utils.run_with_cell
 def tanh_grad_forward_func(y, dy):
     return tanh_grad(y, dy)
 
+
 @test_utils.run_with_cell
 def tanh_grad_backward_func(y, dy):
     return ms.ops.grad(tanh_grad_forward_func, (0, 1))(y, dy)
 
+
 @test_utils.run_with_cell
 def tanh_grad_vamp_func(y, dy):
     return ms.ops.vmap(tanh_grad_forward_func, in_axes=0, out_axes=0)(y, dy)
-
-
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
@@ -157,7 +160,6 @@ def test_tanh_grad_forward_dynamic_rank(mode):
     output = test_cell(y2_tensor, dy2_tensor)
     expect = generate_expect_forward_output(y2_np, dy2_np, np.float32)
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-4, atol=1e-4)
-
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',

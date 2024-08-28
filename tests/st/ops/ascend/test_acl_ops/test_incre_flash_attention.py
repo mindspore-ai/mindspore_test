@@ -24,6 +24,7 @@ from mindspore.common.api import jit
 from mindspore.common import dtype as mstype
 from mindspore.ops.function.nn_func import incre_flash_attention
 
+
 class IncreFlashAttentionFunc(nn.Cell):
     def __init__(self, num_heads, input_layout, scale_value, num_key_value_heads):
         super().__init__()

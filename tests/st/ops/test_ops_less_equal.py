@@ -180,4 +180,3 @@ def test_less_equal_dynamic_shape():
 
     TEST_OP(less_equal_forward_func,
             [[ms.Tensor(x1), ms.Tensor(other1)], [ms.Tensor(x2), ms.Tensor(other2)]], 'less_equal')
-    

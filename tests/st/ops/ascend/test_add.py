@@ -79,7 +79,6 @@ def test_add_float32_tensor_api():
     test_add_tensor_api(np.float32)
 
 
-
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_add_bfloat16_tensor_api():
     """

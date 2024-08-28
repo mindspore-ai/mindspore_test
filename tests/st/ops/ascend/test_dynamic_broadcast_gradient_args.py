@@ -23,7 +23,6 @@ from mindspore.ops import composite as C
 from mindspore.ops.operations import _inner_ops
 from mindspore import Tensor
 
-
 context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
 grad = C.GradOperation(get_all=True)
 

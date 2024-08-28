@@ -30,6 +30,7 @@ class TopKRouterNet(nn.Cell):
     def construct(self, x_data, capacity_data, expert_num_data, drop_type):
         return self.topkrouter(x_data, capacity_data, expert_num_data, drop_type)
 
+
 class TopKRouterNet1(nn.Cell):
     def __init__(self):
         super(TopKRouterNet1, self).__init__()
@@ -68,6 +69,7 @@ truth_combine_idx_k = np.array([[[1, 4], [5, 14],
                                  [10, 3], [2, 4],
                                  [6, 8], [11, 4],
                                  [7, 8], [8, 0]]]).astype(np.int32)
+
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [context.PYNATIVE_MODE, context.GRAPH_MODE])

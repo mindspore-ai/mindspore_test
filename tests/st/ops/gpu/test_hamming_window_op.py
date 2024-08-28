@@ -34,7 +34,6 @@ class HammingWindowNet(nn.Cell):
         return self.hammingwindow(input_x)
 
 
-
 def hamming_window(periodic, loss):
     context.set_context(mode=context.GRAPH_MODE, device_target='GPU')
     input_x_np = np.array([10]).astype(np.int32)

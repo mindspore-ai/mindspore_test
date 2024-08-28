@@ -42,7 +42,8 @@ class NetReduceSumOther(nn.Cell):
         return self.reducesum(x, axis)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_dynamic_reducesum_shape():
     """
     Feature: ReduceSum Grad DynamicShape.
@@ -55,7 +56,8 @@ def test_dynamic_reducesum_shape():
     test_dynamic.test_dynamic_grad_net(x)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_dynamic_reducesum_rank():
     """
     Feature: ReduceSum Grad DynamicRank.
@@ -68,7 +70,8 @@ def test_dynamic_reducesum_rank():
     test_dynamic.test_dynamic_grad_net(x, True)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
 def test_dynamic_reducesum_shape_for_dynamic_axis():
     """
     Feature: ReduceSum Grad DynamicShape.
@@ -80,4 +83,3 @@ def test_dynamic_reducesum_shape_for_dynamic_axis():
     x = Tensor(np.random.randn(3, 4, 5).astype(np.float32))
     axis = Tensor([1, 2])
     test_dynamic.test_dynamic_grad_net((x, axis))
-    

@@ -33,7 +33,8 @@ class PolygammaNet(nn.Cell):
         return self.polygamma(a, x)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_polygamma_1d_a_1_int64_float16():
     """
     Feature: Polygamma

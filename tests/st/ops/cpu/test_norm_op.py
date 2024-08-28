@@ -12,18 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
-
-import numpy as np
-import pytest
-
-import mindspore
 import mindspore.context as context
 import mindspore.nn as nn
-from mindspore import Tensor
+import numpy as np
 from mindspore.common.api import jit
 
+import mindspore
+from mindspore import Tensor
+from tests.mark_utils import arg_mark
+
 context.set_context(mode=context.PYNATIVE_MODE, device_target='CPU')
+
 
 class NetNorm(nn.Cell):
     def __init__(self):
@@ -41,7 +40,9 @@ class NetNorm(nn.Cell):
                 self.norm_3(indices),
                 self.norm_4(indices))
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_norm():
     loss = 1e-5
     norm = NetNorm()

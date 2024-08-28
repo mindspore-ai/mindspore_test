@@ -87,6 +87,7 @@ def test_cast1():
     type1 = output[1].asnumpy().dtype
     assert type1 == 'float32'
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_cast2():
     x0 = Tensor(np.arange(24).reshape((4, 3, 2)).astype(np.float16))
@@ -101,6 +102,7 @@ def test_cast2():
     assert type0 == 'int32'
     type1 = output[1].asnumpy().dtype
     assert type1 == 'float64'
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_cast3():
@@ -117,6 +119,7 @@ def test_cast3():
     type1 = output[1].asnumpy().dtype
     assert type1 == 'int32'
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_cast4():
     x0 = Tensor(np.arange(24).reshape((4, 3, 2)).astype(np.int32))
@@ -131,6 +134,7 @@ def test_cast4():
     assert type0 == 'float16'
     type1 = output[1].asnumpy().dtype
     assert type1 == 'int8'
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_cast5():
@@ -147,6 +151,7 @@ def test_cast5():
     type1 = output[1].asnumpy().dtype
     assert type1 == 'bool'
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_cast6():
     x0 = Tensor(np.arange(24).reshape((4, 3, 2)).astype(np.int8))
@@ -161,6 +166,7 @@ def test_cast6():
     assert type0 == 'float64'
     type1 = output[1].asnumpy().dtype
     assert type1 == 'float32'
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_cast7():
@@ -177,6 +183,7 @@ def test_cast7():
     type1 = output[1].asnumpy().dtype
     assert type1 == 'float16'
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_cast8():
     x0 = Tensor(np.arange(24).reshape((4, 3, 2)).astype(np.int8))
@@ -191,6 +198,7 @@ def test_cast8():
     assert type0 == 'int32'
     type1 = output[1].asnumpy().dtype
     assert type1 == 'int16'
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_cast9():
@@ -207,6 +215,7 @@ def test_cast9():
     type1 = output[1].asnumpy().dtype
     assert type1 == 'float16'
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_cast10():
     x0 = Tensor(np.arange(24).reshape((4, 3, 2)).astype(np.bool))
@@ -221,6 +230,7 @@ def test_cast10():
     assert type0 == 'int8'
     type1 = output[1].asnumpy().dtype
     assert type1 == 'float64'
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_cast11():
@@ -237,6 +247,7 @@ def test_cast11():
     type1 = output[1].asnumpy().dtype
     assert type1 == 'int32'
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_cast12():
     x0 = Tensor(np.arange(24).reshape((4, 3, 2)).astype(np.bool))
@@ -251,6 +262,7 @@ def test_cast12():
     assert type0 == 'int64'
     type1 = output[1].asnumpy().dtype
     assert type1 == 'float32'
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_cast13():
@@ -267,6 +279,7 @@ def test_cast13():
     type1 = output[1].asnumpy().dtype
     assert type1 == 'float16'
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_cast14():
     x0 = Tensor(np.arange(24).reshape((4, 3, 2)).astype(np.int16))
@@ -281,6 +294,7 @@ def test_cast14():
     assert type0 == 'float64'
     type1 = output[1].asnumpy().dtype
     assert type1 == 'float32'
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_cast15():
@@ -297,6 +311,7 @@ def test_cast15():
     type1 = output[1].asnumpy().dtype
     assert type1 == 'int32'
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_cast16():
     x0 = Tensor(np.arange(24).reshape((4, 3, 2)).astype(np.int16))
@@ -311,6 +326,7 @@ def test_cast16():
     assert type0 == 'float16'
     type1 = output[1].asnumpy().dtype
     assert type1 == 'float64'
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_cast17():
@@ -327,6 +343,7 @@ def test_cast17():
     type1 = output[1].asnumpy().dtype
     assert type1 == 'float16'
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_cast18():
     x0 = Tensor(np.arange(24).reshape((4, 3, 2)).astype(np.int64))
@@ -341,6 +358,7 @@ def test_cast18():
     assert type0 == 'float32'
     type1 = output[1].asnumpy().dtype
     assert type1 == 'float16'
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_cast19():
@@ -357,6 +375,7 @@ def test_cast19():
     type1 = output[1].asnumpy().dtype
     assert type1 == 'bool'
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_cast20():
     x0 = Tensor(np.arange(24).reshape((4, 3, 2)).astype(np.int64))
@@ -371,6 +390,7 @@ def test_cast20():
     assert type0 == 'bool'
     type1 = output[1].asnumpy().dtype
     assert type1 == 'bool'
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_cast21():
@@ -387,6 +407,7 @@ def test_cast21():
     type1 = output[1].asnumpy().dtype
     assert type1 == 'bool'
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_cast22():
     x0 = Tensor(np.arange(24).reshape((4, 3, 2)).astype(np.uint8))
@@ -401,6 +422,7 @@ def test_cast22():
     assert type0 == 'bool'
     type1 = output[1].asnumpy().dtype
     assert type1 == 'bool'
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_cast23():
@@ -417,6 +439,7 @@ def test_cast23():
     type1 = output[1].asnumpy().dtype
     assert type1 == 'float16'
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_cast24():
     x0 = Tensor(np.arange(24).reshape((4, 3, 2)).astype(np.float64))
@@ -431,6 +454,7 @@ def test_cast24():
     assert type0 == 'int64'
     type1 = output[1].asnumpy().dtype
     assert type1 == 'int32'
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_cast25():
@@ -447,6 +471,7 @@ def test_cast25():
     type1 = output[1].asnumpy().dtype
     assert type1 == 'int8'
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_cast26():
     x0 = Tensor(np.arange(24).reshape((4, 3, 2)).astype(np.int32))
@@ -461,6 +486,7 @@ def test_cast26():
     assert type0 == 'int64'
     type1 = output[1].asnumpy().dtype
     assert type1 == 'float64'
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_cast27():
@@ -477,6 +503,7 @@ def test_cast27():
     type1 = output[1].asnumpy().dtype
     assert type1 == 'uint64'
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_cast28():
     x0 = Tensor(np.arange(24).reshape((4, 3, 2)).astype(np.float32))
@@ -491,6 +518,7 @@ def test_cast28():
     assert type0 == 'int8'
     type1 = output[1].asnumpy().dtype
     assert type1 == 'int16'
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_cast29():
@@ -507,6 +535,7 @@ def test_cast29():
     type1 = output[1].asnumpy().dtype
     assert type1 == 'uint8'
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_cast30():
     x0 = Tensor(np.arange(24).reshape((4, 3, 2)).astype(np.float32))
@@ -521,6 +550,7 @@ def test_cast30():
     assert type0 == 'uint16'
     type1 = output[1].asnumpy().dtype
     assert type1 == 'uint32'
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_cast31():
@@ -565,6 +595,7 @@ def test_two_cast():
     Description: test two cast eliminater.
     Expectation: no exception.
     """
+
     class TwoCastNet(nn.Cell):
         def construct(self, x):
             return ms.ops.Cast()(ms.ops.Cast()(x, ms.int32), ms.float32)

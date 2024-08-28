@@ -303,6 +303,7 @@ def test_concat_with_dyn_len_sequence_input():
     Description: Test Concat with dyn len sequence input.
     Expectation: No Exception raised.
     """
+
     class Grad(nn.Cell):
         def __init__(self, net):
             super().__init__()

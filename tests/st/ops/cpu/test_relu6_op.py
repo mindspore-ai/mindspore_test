@@ -12,18 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
-
-import numpy as np
-import pytest
-
 import mindspore.context as context
 import mindspore.nn as nn
-from mindspore import Tensor
-from mindspore.ops import operations as P
+import numpy as np
 from mindspore.ops.operations import _grad_ops as G
 
+from mindspore import Tensor
+from mindspore.ops import operations as P
+from tests.mark_utils import arg_mark
+
 context.set_context(mode=context.GRAPH_MODE, device_target="CPU")
+
 
 class NetReLU6(nn.Cell):
     def __init__(self):
@@ -33,6 +32,7 @@ class NetReLU6(nn.Cell):
     def construct(self, x):
         return self.relu6(x)
 
+
 class NetReLU6Grad(nn.Cell):
     def __init__(self):
         super(NetReLU6Grad, self).__init__()
@@ -41,7 +41,9 @@ class NetReLU6Grad(nn.Cell):
     def construct(self, x, dy):
         return self.relu6_grad(dy, x)
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_relu6():
     """
     Feature: template
@@ -51,15 +53,17 @@ def test_relu6():
     x = Tensor(np.array([[[[-1, 1, 10],
                            [5.9, 6.1, 6],
                            [10, 1, -1]]]]).astype(np.float32))
-    expect = np.array([[[[0, 1, 6,],
-                         [5.9, 6, 6,],
+    expect = np.array([[[[0, 1, 6, ],
+                         [5.9, 6, 6, ],
                          [6, 1, 0.]]]]).astype(np.float32)
 
     relu6 = NetReLU6()
     output = relu6(x)
     assert (output.asnumpy() == expect).all()
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_relu6_grad():
     """
     Feature: template
@@ -72,9 +76,9 @@ def test_relu6_grad():
     dy = Tensor(np.array([[[[1, 1, 1],
                             [1, 1, 1],
                             [1, 1, 1]]]]).astype(np.float32))
-    expect = np.array([[[[0, 1, 0,],
-                         [1, 0, 1,],
-                         [0, 1, 0,]]]]).astype(np.float32)
+    expect = np.array([[[[0, 1, 0, ],
+                         [1, 0, 1, ],
+                         [0, 1, 0, ]]]]).astype(np.float32)
     error = np.ones(shape=[3, 3]) * 1.0e-6
 
     relu6_grad = NetReLU6Grad()

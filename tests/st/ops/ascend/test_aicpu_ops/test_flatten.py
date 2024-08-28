@@ -22,6 +22,7 @@ import mindspore.nn as nn
 import mindspore.common.dtype as mstype
 from mindspore import Tensor, ops
 from mindspore.ops import operations as P
+from mindspore.common.api import _pynative_executor
 
 
 class FlattenNet(nn.Cell):
@@ -260,6 +261,7 @@ def test_ops_flatten_single_element(mode):
 
     with pytest.raises(ValueError):
         FlattenFuncNet()(y, start_dim=2)
+        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -271,9 +273,11 @@ def test_nn_flatten_single_element():
     """
     with pytest.raises(ValueError):
         nn.Flatten()(Tensor(1))
+        _pynative_executor.sync()
 
     with pytest.raises(ValueError):
         nn.Flatten()(Tensor([1]))
+        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')

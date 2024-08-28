@@ -20,7 +20,9 @@ import pytest
 import mindspore.context as context
 from mindspore import Tensor
 from mindspore.ops import operations as P
+
 context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
 def test_acosh_fp32():
@@ -69,7 +71,7 @@ def test_acosh_complex64():
     Expectation: just test
     """
     x_np = np.random.rand(4, 2).astype(np.complex64) * 10 + 1
-    x_np = x_np + 2j*x_np
+    x_np = x_np + 2j * x_np
     output_ms = P.Acosh()(Tensor(x_np))
     output_np = np.arccosh(x_np.astype(np.complex64)).astype(np.complex64)
     assert np.allclose(output_ms.asnumpy(), output_np, 1e-6, 1e-6)
@@ -83,7 +85,7 @@ def test_acosh_complex128():
     Expectation: just test
     """
     x_np = np.random.rand(4, 2).astype(np.complex128) * 10 + 1
-    x_np = x_np + 2j*x_np
+    x_np = x_np + 2j * x_np
     output_ms = P.Acosh()(Tensor(x_np))
     output_np = np.arccosh(x_np.astype(np.complex128)).astype(np.complex128)
     assert np.allclose(output_ms.asnumpy(), output_np, 1e-12, 1e-12)

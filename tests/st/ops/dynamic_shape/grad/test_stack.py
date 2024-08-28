@@ -41,7 +41,8 @@ def stack_test(is_dyn_rank):
     tester.test_dynamic_grad_net([x1, x2], is_dyn_rank)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard',
+          essential_mark='unessential')
 def test_stack_dyn_shape():
     """
     Feature: Stack Grad DynamicShape.

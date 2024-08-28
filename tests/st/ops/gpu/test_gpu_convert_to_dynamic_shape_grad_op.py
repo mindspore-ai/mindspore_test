@@ -21,6 +21,7 @@ from mindspore import Tensor
 from mindspore.ops import composite as C
 from mindspore.ops.operations import _inner_ops as inner
 
+
 def test_gpu_convert_to_dynamic_shape_grad():
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
 
@@ -31,7 +32,6 @@ def test_gpu_convert_to_dynamic_shape_grad():
 
         def construct(self, x1):
             return self.op(x1)
-
 
     class GradNet(nn.Cell):
         def __init__(self, network):

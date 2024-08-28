@@ -20,7 +20,9 @@ import pytest
 import mindspore.context as context
 from mindspore import Tensor
 import mindspore.ops.operations._grad_ops as P
+
 context.set_context(mode=context.PYNATIVE_MODE, device_target="GPU")
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_asingrad_fp32():

@@ -25,6 +25,7 @@ from mindspore.ops import composite as C
 
 context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
 
+
 class NetAcoshGrad(nn.Cell):
     def __init__(self):
         super(NetAcoshGrad, self).__init__()

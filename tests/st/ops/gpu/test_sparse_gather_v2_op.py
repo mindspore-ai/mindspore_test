@@ -23,6 +23,7 @@ from mindspore import Tensor
 from mindspore.ops import operations as P
 from mindspore.ops.operations import _inner_ops as inner
 
+
 class SparseGatherNet(nn.Cell):
     def __init__(self):
         super(SparseGatherNet, self).__init__()
@@ -744,16 +745,16 @@ class SparseGatherNet2(nn.Cell):
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_gather2():
-    x = Tensor(np.array([[4., 5., 4., 1., 5.,],
-                         [4., 9., 5., 6., 4.,],
-                         [9., 8., 4., 3., 6.,],
-                         [0., 4., 2., 2., 8.,],
-                         [1., 8., 6., 2., 8.,],
-                         [8., 1., 9., 7., 3.,],
-                         [7., 9., 2., 5., 7.,],
-                         [9., 8., 6., 8., 5.,],
-                         [3., 7., 2., 7., 4.,],
-                         [4., 2., 8., 2., 9.,]]
+    x = Tensor(np.array([[4., 5., 4., 1., 5., ],
+                         [4., 9., 5., 6., 4., ],
+                         [9., 8., 4., 3., 6., ],
+                         [0., 4., 2., 2., 8., ],
+                         [1., 8., 6., 2., 8., ],
+                         [8., 1., 9., 7., 3., ],
+                         [7., 9., 2., 5., 7., ],
+                         [9., 8., 6., 8., 5., ],
+                         [3., 7., 2., 7., 4., ],
+                         [4., 2., 8., 2., 9., ]]
                         ).astype(np.float32))
     indices = Tensor(np.array([[0, 1, 9]]).astype(np.int32))
     expect = np.array([[[4., 5., 4., 1., 5.],
@@ -783,16 +784,16 @@ class SparseGatherDynamicNet(nn.Cell):
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_gather_d():
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
-    x = Tensor(np.array([[4., 5., 4., 1., 5.,],
-                         [4., 9., 5., 6., 4.,],
-                         [9., 8., 4., 3., 6.,],
-                         [0., 4., 2., 2., 8.,],
-                         [1., 8., 6., 2., 8.,],
-                         [8., 1., 9., 7., 3.,],
-                         [7., 9., 2., 5., 7.,],
-                         [9., 8., 6., 8., 5.,],
-                         [3., 7., 2., 7., 4.,],
-                         [4., 2., 8., 2., 9.,]]
+    x = Tensor(np.array([[4., 5., 4., 1., 5., ],
+                         [4., 9., 5., 6., 4., ],
+                         [9., 8., 4., 3., 6., ],
+                         [0., 4., 2., 2., 8., ],
+                         [1., 8., 6., 2., 8., ],
+                         [8., 1., 9., 7., 3., ],
+                         [7., 9., 2., 5., 7., ],
+                         [9., 8., 6., 8., 5., ],
+                         [3., 7., 2., 7., 4., ],
+                         [4., 2., 8., 2., 9., ]]
                         ).astype(np.float32))
     indices = Tensor(np.array([[0, 1, 9]]).astype(np.int32))
     expect = np.array([[[4., 5., 4., 1., 5.],
@@ -824,17 +825,17 @@ class SparseGatherDynamicNet2(nn.Cell):
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_gather_d_two_inputs():
-    x_1 = Tensor(np.array([[4., 5., 4., 1., 5.,],
-                           [4., 9., 5., 6., 4.,],
-                           [9., 8., 4., 3., 6.,],
-                           [0., 4., 2., 2., 8.,],
-                           [1., 8., 6., 2., 8.,],
-                           [8., 1., 9., 7., 3.,],
-                           [7., 9., 2., 5., 7.,],
-                           [9., 8., 6., 8., 5.,],
-                           [3., 7., 2., 7., 4.,],
-                           [4., 2., 8., 2., 9.,]]
-                         ).astype(np.float32))
+    x_1 = Tensor(np.array([[4., 5., 4., 1., 5., ],
+                           [4., 9., 5., 6., 4., ],
+                           [9., 8., 4., 3., 6., ],
+                           [0., 4., 2., 2., 8., ],
+                           [1., 8., 6., 2., 8., ],
+                           [8., 1., 9., 7., 3., ],
+                           [7., 9., 2., 5., 7., ],
+                           [9., 8., 6., 8., 5., ],
+                           [3., 7., 2., 7., 4., ],
+                           [4., 2., 8., 2., 9., ]]
+                          ).astype(np.float32))
     indices_1 = Tensor(np.array([[0, 1, 9]]).astype(np.int32))
     expect_1 = np.array([[[4., 5., 4., 1., 5.],
                           [4., 9., 5., 6., 4.],

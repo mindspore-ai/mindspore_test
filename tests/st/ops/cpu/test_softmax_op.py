@@ -40,7 +40,8 @@ class NetSoftmax(nn.Cell):
         return self.softmax(self.x)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_softmax():
     Softmax = NetSoftmax()
     output = Softmax()
@@ -66,7 +67,8 @@ class NetSoftmax1(nn.Cell):
         return self.softmax(self.x)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_softmax1():
     Softmax = NetSoftmax1()
     output = Softmax()

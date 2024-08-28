@@ -24,6 +24,7 @@ from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
 
+
 @test_utils.run_with_cell
 def batch_norm_forward_func(x, scale, bias, mean, var, training=False, momentum=0.1, eps=1e-5):
     out = batch_norm_ext(x, scale, bias, mean, var, training, momentum, eps)
@@ -61,7 +62,6 @@ def test_batchnormext_normal(is_training, mode):
     output = batch_norm_forward_func(x, scale, bias, mean, variance,
                                      is_training)
     assert np.allclose(output.asnumpy(), expect, rtol=1e-4, atol=1e-4)
-
 
     grad = batch_norm_backward_func(x, scale, bias, mean, variance,
                                     is_training)

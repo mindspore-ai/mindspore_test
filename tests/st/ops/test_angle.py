@@ -22,6 +22,7 @@ from mindspore import Tensor
 from mindspore import ops
 import tests.st.utils.test_utils as test_utils
 
+
 @test_utils.run_with_cell
 def angle_forward_func(x):
     return ops.angle(x)

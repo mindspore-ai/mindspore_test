@@ -28,7 +28,8 @@ class Net(nn.Cell):
         return output
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_ops_vecdot_real_number(mode):
     """
@@ -48,7 +49,8 @@ def test_ops_vecdot_real_number(mode):
     assert np.allclose(output.asnumpy(), expect_output)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_ops_vecdot_complex_number(mode):
     """
@@ -58,17 +60,18 @@ def test_ops_vecdot_complex_number(mode):
     """
     ms.set_context(mode=mode)
 
-    x = ms.Tensor([[1+2j, 3+4j], [5-6j, 7+3j]], dtype=mstype.complex128)
-    y = ms.Tensor([[5+6j, 7+8j], [10-4j, 9+2j]], dtype=mstype.complex128)
+    x = ms.Tensor([[1 + 2j, 3 + 4j], [5 - 6j, 7 + 3j]], dtype=mstype.complex128)
+    y = ms.Tensor([[5 + 6j, 7 + 8j], [10 - 4j, 9 + 2j]], dtype=mstype.complex128)
     dim = -1
 
     net = Net()
     output = net(x, y, dim)
-    expect_output = [70-8j, 143+27j]
+    expect_output = [70 - 8j, 143 + 27j]
     assert np.allclose(output.asnumpy(), expect_output)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_ops_vecdot_broadcast_case(mode):
     """

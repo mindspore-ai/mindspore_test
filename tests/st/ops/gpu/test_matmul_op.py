@@ -26,6 +26,8 @@ from mindspore.ops import operations as P
 from mindspore.ops import composite as C
 from mindspore import dtype as mstype
 from mindspore.ops.operations import _inner_ops as inner
+from mindspore.common.api import _pynative_executor
+
 
 class MatMulNet(nn.Cell):
     def __init__(self):
@@ -59,7 +61,6 @@ class MatMulComposite(nn.Cell):
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_MatMul_dynamic():
-
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
     net = MatMul_d()
 
@@ -78,7 +79,6 @@ def test_MatMul_dynamic():
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_matmul_float64():
-
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
     net = MatMulNet()
 
@@ -88,9 +88,9 @@ def test_matmul_float64():
     expect = np.matmul(x, y)
     np.testing.assert_array_almost_equal(output.asnumpy(), expect)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_matmul_composite():
-
     context.set_context(mode=context.GRAPH_MODE, device_target='GPU')
     net = MatMulComposite()
 
@@ -108,8 +108,8 @@ def test_matmul_composite():
         np.random.randn(5, 4).astype(np.float32), np.random.randn(4, 1).astype(np.float32)
     ]
     for i in range(4):
-        x = broadcastables[2*i]
-        y = broadcastables[2*i + 1]
+        x = broadcastables[2 * i]
+        y = broadcastables[2 * i + 1]
         output = net(Tensor(x), Tensor(y))
         expect = np.matmul(x, y)
         np.testing.assert_array_almost_equal(output.asnumpy(), expect, decimal=4)
@@ -195,6 +195,7 @@ def test_matmul_dtypes():
         else:
             with pytest.raises(TypeError):
                 matmul(x_ms, y_ms)
+                _pynative_executor.sync()
         del os.environ['MS_DISABLE_KERNEL_BACKOFF']
 
 

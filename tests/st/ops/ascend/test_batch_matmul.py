@@ -22,6 +22,7 @@ from mindspore import Tensor, nn
 from mindspore.ops import functional as F
 from mindspore.common import dtype as mstype
 
+
 # all cases tested against dchip
 
 

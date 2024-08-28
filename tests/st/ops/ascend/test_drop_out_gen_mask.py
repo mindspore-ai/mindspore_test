@@ -25,8 +25,7 @@ from mindspore.ops import operations as P
 from mindspore.common import set_seed
 import mindspore.common.dtype as mstype
 
-context.set_context(mode=context.GRAPH_MODE,
-                    device_target="Ascend")
+context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
 
 
 class Net(nn.Cell):

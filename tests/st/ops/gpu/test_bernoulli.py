@@ -19,6 +19,7 @@ import pytest
 import mindspore as ms
 import mindspore.nn as nn
 from mindspore import Tensor
+from mindspore.common.api import _pynative_executor
 import mindspore.context as context
 from mindspore.ops import functional as F
 from mindspore.ops.operations import _inner_ops as inner
@@ -97,6 +98,7 @@ def test_bernoulli_dynamic_x_type_error():
         net = BernoulliDynamic()
         output = net(x, p=p)
         print(output)
+        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')

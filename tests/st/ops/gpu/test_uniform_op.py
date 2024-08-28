@@ -18,6 +18,7 @@ import pytest
 import mindspore.nn as nn
 from mindspore import Tensor
 from mindspore.ops.operations.random_ops import Uniform
+from mindspore.common.api import _pynative_executor
 import mindspore.common.dtype as mstype
 import numpy as np
 
@@ -81,3 +82,4 @@ def test_uniform_int32_input_error():
     net = Net(min_val=1.0, max_val=2.0)
     with pytest.raises(TypeError):
         net(x)
+        _pynative_executor.sync()

@@ -18,16 +18,19 @@ import pytest
 import mindspore as ms
 from mindspore import Tensor, ops, nn
 from mindspore import context
+
 context.set_context(mode=context.GRAPH_MODE)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_repeat_interleave():
     """
     Feature: repeat_interleave func
     Description: Verify the result of repeat_interleave
     Expectation: success
     """
+
     class Net(nn.Cell):
         def __init__(self):
             super(Net, self).__init__()
@@ -45,13 +48,15 @@ def test_repeat_interleave():
     assert np.allclose(output.asnumpy(), expect.asnumpy())
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_tensor_dot():
     """
     Feature: tensor_dot func
     Description: Verify the result of tensor_dot
     Expectation: success
     """
+
     class Net(nn.Cell):
         def __init__(self):
             super(Net, self).__init__()
@@ -69,13 +74,15 @@ def test_tensor_dot():
     assert np.allclose(output.asnumpy(), expect.asnumpy())
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_dot():
     """
     Feature: dot func
     Description: Verify the result of dot
     Expectation: success
     """
+
     class Net(nn.Cell):
         def __init__(self):
             super(Net, self).__init__()
@@ -92,13 +99,15 @@ def test_dot():
     assert np.allclose(output.asnumpy(), expect.asnumpy())
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_batch_dot():
     """
     Feature: batch_dot func
     Description: Verify the result of batch_dot
     Expectation: success
     """
+
     class Net(nn.Cell):
         def __init__(self):
             super(Net, self).__init__()
@@ -116,13 +125,15 @@ def test_batch_dot():
     assert np.allclose(output.asnumpy(), expect.asnumpy())
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_cummin():
     """
     Feature: cummin func
     Description: Verify the result of cummin
     Expectation: success
     """
+
     class Net(nn.Cell):
         def __init__(self):
             super(Net, self).__init__()
@@ -140,13 +151,15 @@ def test_cummin():
     assert np.allclose(output[0].asnumpy(), expect.asnumpy())
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_matmul():
     """
     Feature: matmul func
     Description: Verify the result of matmul
     Expectation: success
     """
+
     class Net(nn.Cell):
         def __init__(self):
             super(Net, self).__init__()
@@ -155,21 +168,23 @@ def test_matmul():
         def construct(self, a, b):
             return self.func(a, b)
 
-    x1 = Tensor(np.arange(1*3).reshape(1, 3), ms.float32)
-    x2 = Tensor(np.arange(3*2).reshape(3, 2), ms.float32)
+    x1 = Tensor(np.arange(1 * 3).reshape(1, 3), ms.float32)
+    x2 = Tensor(np.arange(3 * 2).reshape(3, 2), ms.float32)
     expect = Tensor(np.array([10, 13]), ms.float32)
     net = Net()
     output = net(x1, x2)
     assert np.allclose(output.asnumpy(), expect.asnumpy())
 
 
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_flip():
     """
     Feature: flip func
     Description: Verify the result of flip
     Expectation: success
     """
+
     class Net(nn.Cell):
         def __init__(self):
             super(Net, self).__init__()
@@ -186,7 +201,8 @@ def test_flip():
     assert np.allclose(output.asnumpy(), expect.asnumpy())
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_calculate_expert_capacity():
     """
     Feature: calculate_expert_capacity func
@@ -202,11 +218,13 @@ def test_calculate_expert_capacity():
 
         def construct(self, k, tokens_per_group, capacity_factor, expert_dim):
             return self.func(k, tokens_per_group, capacity_factor, expert_dim)
+
     net = Net()
     assert net(10.1, 2.0, 3.3, 4) == 17
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_unsqueeze():
     """
     Feature: unsqueeze func
@@ -222,13 +240,15 @@ def test_unsqueeze():
 
         def construct(self, x, dim):
             return self.func(x, dim)
+
     x = Tensor([[4.0, 9.0, 2.0, 10.0]]).astype("float32")
     net = Net()
     x2 = net(x, 0)
     assert x2.shape == (1, 1, 4)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_infer_out_shape():
     """
     Feature: _infer_out_shape func
@@ -237,7 +257,6 @@ def test_infer_out_shape():
     """
     from mindspore.numpy.utils_const import _infer_out_shape
 
-
     class Net(nn.Cell):
         def __init__(self):
             super(Net, self).__init__()
@@ -245,11 +264,13 @@ def test_infer_out_shape():
 
         def construct(self, *shape):
             return self.func(*shape)
+
     net = Net()
     assert net((5,), (6, 1), (7, 1, 5), (8, 1, 6, 1)) == (8, 7, 6, 5)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_tensor_bool():
     """
     Feature: tensor_bool func
@@ -265,13 +286,15 @@ def test_tensor_bool():
 
         def construct(self, x):
             return self.func(x)
+
     x = Tensor([4.0]).astype("float32")
     net = Net()
     x2 = net(x)
     assert bool(x2) is True
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_canonicalize_axis():
     """
     Feature: _canonicalize_axis func
@@ -287,11 +310,13 @@ def test_canonicalize_axis():
 
         def construct(self, axis, ndim):
             return self.func(axis, ndim)
+
     net = Net()
     assert net(0, 2) == 0
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_topk():
     """
     Feature: topk func
@@ -307,6 +332,7 @@ def test_topk():
 
         def construct(self, x, k):
             return self.func(x, k)
+
     x = Tensor([4.0, 9.0, 2.0, 10.0]).astype("float32")
     net = Net()
     output = net(x, 3)
@@ -331,6 +357,7 @@ def test_bernoulli():
 
         def construct(self, x):
             return self.func(x)
+
     x = Tensor(4).astype("float32")
     print(x)
     net = Net()
@@ -338,7 +365,8 @@ def test_bernoulli():
     print(output)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_view():
     """
     Feature: view func
@@ -354,6 +382,7 @@ def test_view():
 
         def construct(self, x, y):
             return self.func(x, y)
+
     x = Tensor(np.array([[1, 2, 3], [2, 3, 4]], dtype=np.float32))
     net = Net()
     output = net(x, (3, 2))
@@ -361,7 +390,8 @@ def test_view():
     assert np.allclose(output.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_reshape():
     """
     Feature: reshape func
@@ -377,6 +407,7 @@ def test_reshape():
 
         def construct(self, x, y):
             return self.func(x, y)
+
     x = Tensor([[-0.1, 0.3, 3.6], [0.4, 0.5, -3.2]], dtype=ms.float32)
     expect = [[-0.1, 0.3], [3.6, 0.4], [0.5, -3.2]]
     net = Net()
@@ -384,7 +415,8 @@ def test_reshape():
     assert np.allclose(output.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_swapaxes():
     """
     Feature: swapaxes func
@@ -400,6 +432,7 @@ def test_swapaxes():
 
         def construct(self, x, y, z):
             return self.func(x, y, z)
+
     x = Tensor(np.ones((2, 3, 4), dtype=np.float32))
     expect = [[[1., 1.], [1., 1.], [1., 1.]],
 
@@ -413,7 +446,8 @@ def test_swapaxes():
     assert np.allclose(output.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_squeeze():
     """
     Feature: squeeze func
@@ -429,6 +463,7 @@ def test_squeeze():
 
         def construct(self, x, y):
             return self.func(x, y)
+
     x = Tensor(np.ones((1, 2, 2, 1), dtype=np.float32))
     expect = [[1., 1.],
               [1., 1.]]
@@ -437,7 +472,8 @@ def test_squeeze():
     assert np.allclose(output.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_argmax():
     """
     Feature: argmax func
@@ -453,6 +489,7 @@ def test_argmax():
 
         def construct(self, x, y):
             return self.func(x, y)
+
     a = Tensor(np.arange(10, 16).reshape(2, 3).astype("float32"))
     net = Net()
     output = net(a, None)
@@ -460,7 +497,8 @@ def test_argmax():
     assert np.allclose(output.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_diagonal():
     """
     Feature: diagonal func
@@ -476,6 +514,7 @@ def test_diagonal():
 
         def construct(self, x):
             return self.func(x)
+
     a = Tensor(np.arange(4).reshape(2, 2))
     expect = [0, 3]
     net = Net()
@@ -483,7 +522,8 @@ def test_diagonal():
     assert np.allclose(output.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_take():
     """
     Feature: take func
@@ -499,6 +539,7 @@ def test_take():
 
         def construct(self, x, y):
             return self.func(x, y)
+
     a = Tensor(np.array([4, 3, 5, 7, 6, 8]))
     indices = Tensor(np.array([0, 1, 4]))
     expect = [4, 3, 6]
@@ -507,7 +548,8 @@ def test_take():
     assert np.allclose(output.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_choose():
     """
     Feature: choose func
@@ -523,6 +565,7 @@ def test_choose():
 
         def construct(self, x, y):
             return self.func(x, y)
+
     a = Tensor(np.array([2, 3, 1, 0]))
     choices = [[0, 1, 2, 3], [10, 11, 12, 13],
                [20, 21, 22, 23], [30, 31, 32, 33]]
@@ -532,7 +575,8 @@ def test_choose():
     assert np.allclose(output.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_var():
     """
     Feature: var func
@@ -546,8 +590,9 @@ def test_var():
             super(Net, self).__init__()
             self.func = var
 
-        def construct(self, x,):
-            return self.func(x,)
+        def construct(self, x, ):
+            return self.func(x, )
+
     a = Tensor(np.array([1., 2., 3., 4.]))
     expect = 1.25
     net = Net()
@@ -555,7 +600,8 @@ def test_var():
     assert np.allclose(output.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_searchsorted():
     """
     Feature: searchsorted func
@@ -571,6 +617,7 @@ def test_searchsorted():
 
         def construct(self, x, y):
             return self.func(x, y)
+
     a = Tensor(np.array([1., 2., 3., 4., 5.]))
     expect = 2
     net = Net()
@@ -578,7 +625,8 @@ def test_searchsorted():
     assert np.allclose(output.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_is_equal_one():
     """
     Feature: _is_equal_one func
@@ -594,6 +642,7 @@ def test_is_equal_one():
 
         def construct(self, x):
             return self.func(x)
+
     a = Tensor(np.array([1., 2., 3., 4., 5.]))
     expect = False
     net = Net()
@@ -613,7 +662,8 @@ def test_is_equal_one():
     assert np.allclose(output.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_triu():
     """
     Feature: Triu func
@@ -633,7 +683,8 @@ def test_triu():
     assert np.allclose(output.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_resizebilinear():
     """
     Feature: ResizeBilinear func
@@ -664,7 +715,8 @@ def test_matrixdiag():
     print(output)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
 def test_embeddinglookup():
     """
     Feature: EmbeddingLookup func
@@ -678,7 +730,8 @@ def test_embeddinglookup():
     assert output is not None
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_centralcrop():
     """
     Feature: CentralCrop func
@@ -692,7 +745,8 @@ def test_centralcrop():
     assert np.allclose(output.shape, expect)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_matmul_2():
     """
     Feature: MatMul func
@@ -710,7 +764,8 @@ def test_matmul_2():
     assert np.allclose(output.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_reflectionpad1d():
     """
     Feature: ReflectionPad1d func
@@ -727,7 +782,8 @@ def test_reflectionpad1d():
     assert np.allclose(output.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_constantpad1d():
     """
     Feature: ConstantPad1d func
@@ -751,7 +807,8 @@ def test_constantpad1d():
     assert np.allclose(output.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_generate_inverse_index():
     """
     Feature: ms_len_with_iterable_check func
@@ -767,13 +824,15 @@ def test_generate_inverse_index():
 
         def construct(self, x_shape, axis):
             return self.func(x_shape, axis)
+
     x_shape = (3, 2, 3)
     axis = 2
     net = Net()
     assert net(x_shape, axis) == (1, 2, 0)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_fft_rank_offset():
     """
     Feature: ms_len_with_iterable_check func
@@ -789,13 +848,15 @@ def test_fft_rank_offset():
 
         def construct(self, norm_shape, rank):
             return self.func(norm_shape, rank)
+
     norm_shape = (1, 2, 3, 4, 5, 10)
     rank = 3
     net = Net()
     assert net(norm_shape, rank) == 200
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_rfft_reshape():
     """
     Feature: ms_len_with_iterable_check func
@@ -811,13 +872,15 @@ def test_rfft_reshape():
 
         def construct(self, shape_a, shape_b):
             return self.func(shape_a, shape_b)
+
     shape_a = (1, 2, 3, 4, 5)
     shape_b = (2, 5, 7, 8)
     net = Net()
     assert net(shape_a, shape_b) == (1, 1, 1, 2, 5, 7, 8)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_rfft_tile_reshape():
     """
     Feature: ms_len_with_iterable_check func
@@ -833,12 +896,14 @@ def test_rfft_tile_reshape():
 
         def construct(self, shape_a):
             return self.func(shape_a)
+
     shape_a = (1, 2, 3, 4, 5)
     net = Net()
     assert net(shape_a) == (1, 2, 3, 1, 1)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_rfft_last_term_shape():
     """
     Feature: ms_len_with_iterable_check func
@@ -854,6 +919,7 @@ def test_rfft_last_term_shape():
 
         def construct(self, shape_a, shape_b):
             return self.func(shape_a, shape_b)
+
     shape_a = (1, 2, 3, 4, 5)
     shape_b = (2, 5, 7, 8)
     net = Net()

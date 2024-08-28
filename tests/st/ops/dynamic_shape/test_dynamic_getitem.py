@@ -106,13 +106,15 @@ class DynamicRankCommonFunc():
         grad_net(self.input_np_t, self.axis_np_t, Tensor(self.out_np))
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_dynamic_getitem_ellipsis():
     """
     Feature: Test Tensor slice for dynamic shape in feed mode.
     Description: The input shape is dynamic and the tensor index is ellipsis.
     Expectation: Assert the result is equal the numpy result.
     """
+
     class Net(Cell):
         def construct(self, x):
             x = x[...]
@@ -139,13 +141,15 @@ def test_dynamic_getitem_ellipsis():
     fact.grad_impl()
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_dynamic_getitem_bool():
     """
     Feature: Test Tensor slice for dynamic shape in feed mode.
     Description: The input shape is dynamic and the tensor index is bool.
     Expectation: Assert the result is equal the numpy result.
     """
+
     class Net(Cell):
         def construct(self, x):
             x = x[True]
@@ -172,13 +176,15 @@ def test_dynamic_getitem_bool():
     fact.grad_impl()
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_dynamic_getitem_none():
     """
     Feature: Test Tensor slice for dynamic shape in feed mode.
     Description: The input shape is dynamic and the tensor index is None.
     Expectation: Assert the result is equal the numpy result.
     """
+
     class Net(Cell):
         def construct(self, x):
             x = x[None]
@@ -205,13 +211,15 @@ def test_dynamic_getitem_none():
     fact.grad_impl()
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_dynamic_getitem_tensor():
     """
     Feature: Test Tensor slice for dynamic shape in feed mode.
     Description: The input shape is dynamic and the tensor index is tensor of int.
     Expectation: Assert the result is equal the numpy result.
     """
+
     class Net(Cell):
         def __init__(self):
             super().__init__()
@@ -243,13 +251,15 @@ def test_dynamic_getitem_tensor():
     fact.grad_impl()
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
 def test_dynamic_getitem_tensor_001():
     """
     Feature: Test Tensor slice for dynamic shape in feed mode.
     Description: The input shape is dynamic and the tensor index is dynamic shape tensor.
     Expectation: Assert the result is equal the numpy result.
     """
+
     class Net(Cell):
         def __init__(self):
             super().__init__()
@@ -283,13 +293,15 @@ def test_dynamic_getitem_tensor_001():
     fact.grad_impl()
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
 def test_dynamic_getitem_slice():
     """
     Feature: Test Tensor slice for dynamic shape in feed mode.
     Description: The input shape is dynamic and the tensor index is slice.
     Expectation: Assert the result is equal the numpy result.
     """
+
     class Net(Cell):
         def construct(self, x):
             x = x[2:4]
@@ -316,13 +328,15 @@ def test_dynamic_getitem_slice():
     fact.grad_impl()
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
 def test_dynamic_rank_getitem_slice():
     """
     Feature: Test Tensor slice for dynamic rank in feed mode.
     Description: The input shape is dynamic and the tensor index is slice.
     Expectation: Assert the result is equal the numpy result.
     """
+
     class Net(Cell):
         def construct(self, x, axis):
             x = ops.reduce_sum(x, axis)
@@ -350,13 +364,15 @@ def test_dynamic_rank_getitem_slice():
     fact.grad_impl()
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
 def test_dynamic_rank_getitem_with_single_basic_index():
     """
     Feature: Test Tensor slice for dynamic rank in feed mode.
     Description: The input shape is dynamic and the tensor index is ellipsis/None/Integer/True.
     Expectation: Assert the result is equal the numpy result.
     """
+
     class Net(Cell):
         def construct(self, x, axis):
             x = ops.reduce_sum(x, axis)
@@ -388,19 +404,21 @@ def test_dynamic_rank_getitem_with_single_basic_index():
 
 
 @pytest.mark.skip(reason="Need to be fixed.")
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
 def test_dynamic_rank_getitem_tuple_with_basic_index():
     """
     Feature: Test Tensor slice for dynamic rank in feed mode.
     Description: The input shape is dynamic and the tensor index is tuple (integer, slice, ellipsis, None).
     Expectation: Assert the result is equal the numpy result.
     """
+
     class Net(Cell):
         def construct(self, x, axis):
             x = ops.reduce_sum(x, axis)
             x_tensor_shape = ops.dyn_shape(x)[0]
             x_shape = x.shape[0]
-            x0 = x[1:x_shape:2, 1:x_tensor_shape:2, ..., x_shape-2, None]
+            x0 = x[1:x_shape:2, 1:x_tensor_shape:2, ..., x_shape - 2, None]
             return x0
 
     class NumpyNet():
@@ -423,13 +441,15 @@ def test_dynamic_rank_getitem_tuple_with_basic_index():
 
 
 @pytest.mark.skip(reason="Need to be fixed.")
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
 def test_dynamic_rank_getitem_with_tensor_index():
     """
     Feature: Test Tensor slice for dynamic rank in feed mode.
     Description: The input shape is dynamic and the tensor index is tensor.
     Expectation: Assert the result is equal the numpy result.
     """
+
     class Net(Cell):
         def construct(self, x, axis):
             x = ops.reduce_min(x, axis)
@@ -456,18 +476,20 @@ def test_dynamic_rank_getitem_with_tensor_index():
     fact.grad_impl()
 
 
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
 def test_dynamic_rank_getitem_tuple_with_multi_tensor_index():
     """
     Feature: Test Tensor slice for dynamic rank in feed mode.
     Description: The input shape is dynamic and the tensor index is multy tensors.
     Expectation: Assert the result is equal the numpy result.
     """
+
     class Net(Cell):
         def construct(self, x, axis):
             x = ops.reduce_min(x, axis)
             x0 = x[Tensor(np.ones((25), int)), :,
-                   Tensor(np.ones((5, 5), bool))]
+                 Tensor(np.ones((5, 5), bool))]
             x0 = x0[x0.min(), 0:1]
             return x0
 
@@ -490,13 +512,15 @@ def test_dynamic_rank_getitem_tuple_with_multi_tensor_index():
     fact.grad_impl()
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
 def test_dynamic_rank_getitem_with_list_index():
     """
     Feature: Test Tensor slice for dynamic rank in feed mode.
     Description: The input shape is dynamic and the tensor index is List.
     Expectation: Assert the result is equal the numpy result.
     """
+
     class Net(Cell):
         def construct(self, x, axis):
             x = ops.reduce_min(x, axis)
@@ -521,7 +545,8 @@ def test_dynamic_rank_getitem_with_list_index():
     fact.forward_cmp()
 
 
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
 def test_dynamic_rank_getitem_tuple_with_mix_index():
     """
     Feature: Test Tensor slice for dynamic rank in feed mode.
@@ -529,6 +554,7 @@ def test_dynamic_rank_getitem_tuple_with_mix_index():
      (integer, slice, ellipsis, tensor, bool ,list).
     Expectation: Assert the result is equal the numpy result.
     """
+
     class Net(Cell):
         def construct(self, x, axis):
             x = ops.reduce_min(x, axis)
@@ -553,13 +579,15 @@ def test_dynamic_rank_getitem_tuple_with_mix_index():
     fact.grad_impl()
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_dynamic_getitem_slice_001():
     """
     Feature: Test Tensor slice for dynamic shape in feed mode.
     Description: The input shape is dynamic and the tensor index is slice with negative int.
     Expectation: Assert the result is equal the numpy result.
     """
+
     class Net(Cell):
         def construct(self, x):
             x = x[-3:-1]
@@ -586,13 +614,15 @@ def test_dynamic_getitem_slice_001():
     fact.grad_impl()
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
 def test_dynamic_getitem_int():
     """
     Feature: Test Tensor slice for dynamic shape in feed mode.
     Description: The input shape is dynamic and the tensor index is int.
     Expectation: Assert the result is equal the numpy result.
     """
+
     class Net(Cell):
         def construct(self, x):
             x = x[-3]
@@ -619,13 +649,15 @@ def test_dynamic_getitem_int():
     fact.grad_impl()
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_dynamic_getitem_int_001():
     """
     Feature: Test Tensor slice for dynamic shape in feed mode.
     Description: The input shape is dynamic and the tensor index is int with control flow.
     Expectation: Assert the result is equal the numpy result.
     """
+
     class Net(Cell):
         def __init__(self):
             super().__init__()
@@ -657,13 +689,15 @@ def test_dynamic_getitem_int_001():
     fact.grad_impl()
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
 def test_dynamic_getitem_int_002():
     """
     Feature: Test Tensor slice for twice for dynamic shape in feed mode.
     Description: The input shape is dynamic and the tensor index is int.
     Expectation: Assert the result is equal the numpy result.
     """
+
     class Net(Cell):
         def construct(self, x):
             x = x[3][4]
@@ -690,13 +724,15 @@ def test_dynamic_getitem_int_002():
     fact.grad_impl()
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_dynamic_getitem_list():
     """
     Feature: Test Tensor slice for dynamic shape in feed mode.
     Description: The input shape is dynamic and the tensor index is list of bool and int.
     Expectation: Assert the result is equal the numpy result.
     """
+
     class Net(Cell):
         def construct(self, x):
             index = [False, 1]
@@ -731,6 +767,7 @@ def test_dynamic_getitem_tuple():
     Description: The input shape is dynamic and the tensor index is tuple of tensor and slice.
     Expectation: Assert the result is equal the numpy result.
     """
+
     class Net(Cell):
         def __init__(self):
             super().__init__()
@@ -758,13 +795,15 @@ def test_dynamic_getitem_tuple():
     fact.grad_impl()
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
 def test_dynamic_getitem_tuple_001():
     """
     Feature: Test Tensor slice for dynamic shape in feed mode.
     Description: The input shape is dynamic and the tensor index is tuple of advanced indices.
     Expectation: Assert the result is equal the numpy result.
     """
+
     class Net(Cell):
         def construct(self, x):
             index = (..., True, 4, slice(0, 2), None)
@@ -789,20 +828,21 @@ def test_dynamic_getitem_tuple_001():
     fact.grad_impl()
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
 def test_dynamic_getitem_tuple_002():
     """
     Feature: Test Tensor slice for twice for dynamic shape in feed mode.
     Description: The input shape is dynamic and the tensor index is tuple of advanced indices.
     Expectation: Assert the result is equal the numpy result.
     """
+
     class Net(Cell):
         def __init__(self):
             super().__init__()
             self.extra = Tensor([2, 3])
 
         def construct(self, x):
-
             x = x[True, [1, 2]][..., self.extra]
             return x
 
@@ -824,13 +864,15 @@ def test_dynamic_getitem_tuple_002():
     fact.grad_impl()
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
 def test_dynamic_getitem_tuple_003():
     """
     Feature: Test Tensor slice for twice for dynamic shape in feed mode.
     Description: The input shape is dynamic and the tensor index is tuple of advanced indices.
     Expectation: Assert the result is equal the numpy result.
     """
+
     class Net(Cell):
         def construct(self, x):
             x = x[:, :, :, :1]

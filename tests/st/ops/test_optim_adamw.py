@@ -40,7 +40,7 @@ class AdamWFactory():
         super().__init__()
         np.random.seed(1024)
         self.lin_weight_np = np.random.randn(3, 2).astype(dtype)
-        self.lin_bias_np = np.random.randn(3,).astype(dtype)
+        self.lin_bias_np = np.random.randn(3, ).astype(dtype)
 
         self.data = np.random.rand(2, 2).astype(np.float32)
         self.label = np.random.rand(2, 3).astype(np.float32)
@@ -99,7 +99,6 @@ class AdamWFactory():
 
         output = model(data)
         return output.detach().numpy()
-
 
     def forward_mindspore_impl(self):
         lin_weight = Tensor(self.lin_weight_np.copy())

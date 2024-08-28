@@ -19,6 +19,7 @@ import pytest
 import mindspore.context as context
 import mindspore.nn as nn
 from mindspore import Tensor
+from mindspore.common.api import _pynative_executor
 import mindspore.common.dtype as mstype
 import mindspore.ops as ops
 from mindspore.ops.functional import vmap
@@ -113,6 +114,7 @@ def test_index_fill_error(dim, data_type):
 
     with pytest.raises(RuntimeError):
         IndexFillNet()(ms_x, ms_dim, ms_index, ms_value)
+        _pynative_executor.sync()
 
 
 class IndexFillVmapNet(nn.Cell):

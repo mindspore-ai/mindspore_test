@@ -92,8 +92,10 @@ def test_apply_proximal_adagrad_op_vmap():
     Description: test the ApplyProximalAdagrad vmap.
     Expectation: match to np benchmark.
     """
+
     def cal_adagrad(var, accum, lr, l1, l2, grad):
         return P.ApplyProximalAdagrad()(var, accum, lr, l1, l2, grad)
+
     error = 1e-3
     grad = Tensor(np.array([[[0.3, 0.7], [0.1, 0.8]],
                             [[0.3, 0.7], [0.1, 0.8]]]).astype(np.float32))
@@ -143,8 +145,10 @@ def test_apply_proximal_adagrad_op_vmap2():
     Description: test the ApplyProximalAdagrad vmap.
     Expectation: match to np benchmark.
     """
+
     def cal_adagrad(var, accum, lr, l1, l2, grad):
         return P.ApplyProximalAdagrad()(var, accum, lr, l1, l2, grad)
+
     error = 1e-3
     grad = Tensor(np.array([[[[0.3, 0.7], [0.1, 0.8]], [[0.3, 0.7], [0.1, 0.8]]],
                             [[[0.3, 0.7], [0.1, 0.8]], [[0.3, 0.7], [0.1, 0.8]]]]).astype(np.float32))

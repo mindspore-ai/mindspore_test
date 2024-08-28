@@ -18,7 +18,7 @@ import numpy as np
 import mindspore.nn as nn
 from mindspore.ops import operations as P
 from mindspore import Tensor, context
-
+from mindspore.common.api import _pynative_executor
 
 context.set_context(mode=context.GRAPH_MODE, device_target='GPU')
 
@@ -59,3 +59,4 @@ def test_assert_op():
     with pytest.raises(RuntimeError) as info:
         assert1(False, [a, b, c, d, e, f, g, h, i, j, k, l])
     assert "assert failed" in str(info.value)
+    _pynative_executor.sync()
