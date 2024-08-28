@@ -670,9 +670,17 @@ void LaunchDeviceStatCallback(std::vector<TensorInfoForDump> *tensor_info_vec_pt
       Write2File(tensor_info, stream_id, tensor_info_comm);
     }
   };
+  auto enable_stream_control = DumpJsonParser::GetInstance().IsDeviceStatHighPrecisionMode();
+  auto multi_stream_controller = device::MultiStreamController::GetInstance();
+  if (enable_stream_control && stream_id != kDefaultStreamIndex) {
+    multi_stream_controller->DispatchRecordWaitEvent(device_context, stream_id, kDefaultStreamIndex);
+  }
   auto callback_ret = device_context->GetKernelExecutor(false)->LaunchCallback(callback_func, stream_id);
   if (!callback_ret) {
     MS_LOG(ERROR) << "Async device statistic dump callback launch fail.";
+  }
+  if (enable_stream_control && stream_id != kDefaultStreamIndex) {
+    multi_stream_controller->DispatchRecordWaitEvent(device_context, kDefaultStreamIndex, stream_id);
   }
 }
 

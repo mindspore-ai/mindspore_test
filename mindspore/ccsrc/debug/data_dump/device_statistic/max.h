@@ -25,15 +25,27 @@ namespace mindspore {
 
 namespace datadump {
 
-inline const std::set<TypeId> max_supported_dtype{
-  kNumberTypeBFloat16, kNumberTypeFloat16, kNumberTypeFloat32, kNumberTypeFloat64, kNumberTypeFloat,
-  kNumberTypeDouble,   kNumberTypeInt,     kNumberTypeInt8,    kNumberTypeUInt8,   kNumberTypeInt16,
-  kNumberTypeInt32,    kNumberTypeInt64,   kNumberTypeBool};
+inline const std::set<TypeId> GetMaxSupportedDtype() {
+  static auto is_low_precison_mode = !DumpJsonParser::GetInstance().IsDeviceStatHighPrecisionMode();
+  // In low-precision mode, memory multiplexing is not used for the workspace.
+  // The workspace memory is released only after the callback is fully executed.
+  // Operators of the bool type are internally converted to int32 for calculation,
+  // leading to excessive memory usage. Therefore, support for the bool type is removed.
+  if (is_low_precison_mode) {
+    return {kNumberTypeBFloat16, kNumberTypeFloat16, kNumberTypeFloat32, kNumberTypeFloat64,
+            kNumberTypeFloat,    kNumberTypeDouble,  kNumberTypeInt,     kNumberTypeInt8,
+            kNumberTypeUInt8,    kNumberTypeInt16,   kNumberTypeInt32,   kNumberTypeInt64};
+  } else {
+    return {kNumberTypeBFloat16, kNumberTypeFloat16, kNumberTypeFloat32, kNumberTypeFloat64, kNumberTypeFloat,
+            kNumberTypeDouble,   kNumberTypeInt,     kNumberTypeInt8,    kNumberTypeUInt8,   kNumberTypeInt16,
+            kNumberTypeInt32,    kNumberTypeInt64,   kNumberTypeBool};
+  }
+}
 
 class MaxStatisticKernel : public StatisticKernel {
  public:
   explicit MaxStatisticKernel(const DeviceContext *device_context)
-      : StatisticKernel(device_context, ops::kNameMax, max_supported_dtype) {}
+      : StatisticKernel(device_context, ops::kNameMax, GetMaxSupportedDtype()) {}
 };
 
 }  // namespace datadump

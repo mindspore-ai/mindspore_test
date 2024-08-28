@@ -23,6 +23,7 @@
 #include <string>
 #include <vector>
 #include "debug/data_dump/device_statistic/common.h"
+#include "include/backend/debug/data_dump/dump_json_parser.h"
 #include "include/common/debug/common.h"
 #include "ir/dtype/tensor_type.h"
 #include "mindrt/include/async/async.h"

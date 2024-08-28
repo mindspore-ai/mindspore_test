@@ -114,6 +114,7 @@ class BACKEND_EXPORT DumpJsonParser {
   };
   enum JosonSampleMode { DUMP_NORMAL = 0, DUMP_HEAD_AND_TAIL = 1 };
   static bool IsGeDump();
+  bool IsDeviceStatHighPrecisionMode() const;
   nlohmann::json GetKernelsJson() { return kernels_json_; }
   std::map<std::string, std::regex> GetKernelRegs() { return kernel_regs_; }
   std::map<std::string, uint32_t> GetKernelStrs() { return kernel_strings_; }
@@ -155,6 +156,7 @@ class BACKEND_EXPORT DumpJsonParser {
   bool already_parsed_{false};
   std::string dump_layer_{""};
   std::string stat_calc_mode_{"host"};
+  std::string device_stat_precision_mode_{"high"};
   nlohmann::json kernels_json_ = nlohmann::json::array();
   std::vector<std::string> statistic_category_;
 
@@ -181,6 +183,7 @@ class BACKEND_EXPORT DumpJsonParser {
   void ParseOpDebugMode(const nlohmann::json &content);
   void ParseFileFormat(const nlohmann::json &content);
   void ParseStatCalcMode(const nlohmann::json &content);
+  void ParseDeviceStatPrecisionMode(const nlohmann::json &content);
   void ParseOverflowNumber(const nlohmann::json &content);
   void ParseE2eSyncDumpEnable(const nlohmann::json &content);
 

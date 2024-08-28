@@ -8,7 +8,8 @@
         "input_output": 0,
         "saved_data": "statistic",
         "kernels": ["Default/Conv-op12"],
-        "support_device": [0,1,2,3,4,5,6,7]
+        "support_device": [0,1,2,3,4,5,6,7],
+        "statistic_category": ["max", "min", "avg", "l2norm"]
     },
     "e2e_dump_settings": {
         "enable": true,

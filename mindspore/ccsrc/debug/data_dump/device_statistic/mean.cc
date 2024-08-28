@@ -40,6 +40,13 @@ vector<KernelTensorPtr> MeanStatisticKernel::GetExtraInputsDeviceAddress(KernelT
   return {axis, keepdims, dtype};
 }
 
+DeviceAddressPtr MeanStatisticKernel::GetOutputDeviceAddress(TypeId type_id) {
+  if (DumpJsonParser::GetInstance().IsDeviceStatHighPrecisionMode()) {
+    type_id = kNumberTypeFloat32;
+  }
+  return StatisticKernel::GetOutputDeviceAddress(type_id);
+}
+
 REGISTER_KERNEL(KStatMean, MeanStatisticKernel);
 
 }  // namespace datadump
