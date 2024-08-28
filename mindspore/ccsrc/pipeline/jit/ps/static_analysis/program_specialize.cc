@@ -23,6 +23,7 @@
 #include <unordered_set>
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/structure_ops.h"
 #include "frontend/operator/ops.h"
 #include "frontend/operator/composite/do_signature.h"
 #include "abstract/abstract_function.h"
@@ -978,12 +979,29 @@ bool FuncGraphSpecializer::GetIgnoreBuildValueFlag(const AnfNodePtr &node_input)
     back_prop = func->has_flag(mindspore::kFuncGraphFlagBackPropEntry);
   }
   bool need_check_side_effect = specializer_->engine()->check_side_effect() || back_prop;
-  if (need_check_side_effect) {
-    auto cnode_input = dyn_cast_ptr<CNode>(node_input);
-    ignore_build_value = (cnode_input != nullptr && cnode_input->has_side_effect_node());
-    if (ignore_build_value) {
-      MS_LOG(INFO) << "Don't build value node for CNode which contains isolated side-effect inputs, node: "
-                   << cnode_input->DebugString() << ", flag: " << cnode_input->has_side_effect_node();
+  if (!need_check_side_effect) {
+    return ignore_build_value;
+  }
+  auto cnode_input = dyn_cast_ptr<CNode>(node_input);
+  ignore_build_value = (cnode_input != nullptr && cnode_input->has_side_effect_node());
+  if (ignore_build_value) {
+    MS_LOG(INFO) << "Don't build value node for CNode which contains isolated side-effect inputs, node: "
+                 << cnode_input->DebugString() << ", flag: " << cnode_input->has_side_effect_node();
+  }
+  // Recheck input
+  if (IsPrimitiveCNode(node_input->cast<CNodePtr>(), prim::kPrimStopGradient)) {
+    return GetIgnoreBuildValueFlag(node_input->cast<CNodePtr>()->input(1));
+  }
+  if (IsPrimitiveCNode(node_input->cast<CNodePtr>(), prim::kPrimMakeTuple)) {
+    auto inner_inputs = node_input->cast<CNodePtr>()->inputs();
+    for (auto inner_input : inner_inputs) {
+      auto cnode_inner_input = dyn_cast_ptr<CNode>(inner_input);
+      bool inner_ignore_build_value = (cnode_inner_input != nullptr && cnode_inner_input->has_side_effect_node());
+      if (inner_ignore_build_value) {
+        MS_LOG(INFO) << "Don't build value node for CNode which contains isolated side-effect inputs, node: "
+                     << cnode_input->DebugString() << ", flag: " << cnode_input->has_side_effect_node();
+        return true;
+      }
     }
   }
   return ignore_build_value;

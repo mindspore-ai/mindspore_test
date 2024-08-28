@@ -1821,7 +1821,8 @@ def test_return_none_with_side_effect_mutil_func():
     assert res[1] == 12
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_bprop_print_func():
     """
     Feature: Support side effect node in bprop.
@@ -1838,6 +1839,7 @@ def test_bprop_print_func():
             return x, y
         def bprop(self, x, y, out, dout):
             my_print(x)
+            my_print(y)
             dx = x + 1
             dy = y + 1
             return dx, dy
@@ -1863,7 +1865,7 @@ def test_bprop_print_func():
         sys.stdout.flush()
         time.sleep(0.1)
 
-    patterns = {'Tensor(shape=[1], dtype=Int32, value=[1])'}
+    patterns = {'Tensor(shape=[1], dtype=Int32, value=[1])\nTensor(shape=[1], dtype=Int32, value=[2])'}
     check_output(cap.output, patterns)
 
 
