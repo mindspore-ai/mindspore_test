@@ -12,23 +12,22 @@ prelu:
     
         PReLU Activation Function Graph:
 
-        .. image:: ../images/PReLU.png
+        .. image:: ../images/PReLU2.png
             :align: center
         
         Args:
-            x (Tensor): The input Tensor of the activation function. The data type is float16 or float32 or bfloat16.
-            weight (Tensor):  Weight Tensor. The data type is float16 or float32 or bfloat16.
-                The weight can only be a Tensor, and the length is the same as the number of channels C of the `input_x`.
-                On GPU devices, when the input is a scalar, the shape is :math:`(1,)` .
+            input (Tensor): The input Tensor of the activation function.
+            weight (Tensor):  Weight Tensor.
     
         Returns:
-            Tensor, with the same shape and dtype as `x`.
-            For detailed information, please refer to :class:`mindspore.nn.PReLU`.
+            Tensor, with the same shape and dtype as `input`.
+            For detailed information, please refer to :class:`mindspore.mint.nn.PReLU`.
     
         Raises:
-            TypeError: If dtype of `x` or `weight` not in (float16, float32, bfloat16).
-            TypeError: If the `x` or the `weight` is not a Tensor.
-    
+            TypeError: If dtype of `input` or `weight` is neither float16 nor float32(CPU and GPU).
+            TypeError: If the `input` or the `weight` is not a Tensor.
+            ValueError: If the `weight` is not a 0-D or 1-D Tensor.
+
         Supported Platforms:
             ``Ascend`` ``GPU`` ``CPU``
     

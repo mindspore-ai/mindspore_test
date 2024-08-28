@@ -1232,17 +1232,22 @@ class PReLUExt(Cell):
     .. image:: ../images/PReLU.png
         :align: center
 
+    .. note::
+        Channel dim is the 2nd dim of input. When input has dims < 2, then there is
+        no channel dim and the number of channels = 1.
+
     Args:
         num_parameters (int): number of `w` to learn. Although it takes an int as input,
-            there is only two legitimate values: 1, or the number of channels at Tensor `x`. Default: ``1`` .
+            there is only two legitimate values: 1, or the number of channels at Tensor `input`. Default: ``1`` .
         init (float): the initial value of `w`. Default: ``0.25`` .
-        dtype (mindspore.dtype, optional): the type of `w`. Default: ``None`` .
+        dtype (mindspore.dtype, optional): the type of `w`. Default: ``None`` . Supported data type
+        is {float16, float32, bfloat16}.
 
     Inputs:
-        - **x** (Tensor) - The input of PReLU.
+        - **input** (Tensor) - The input of PReLU.
 
     Outputs:
-        Tensor, with the same dtype and shape as the `x`.
+        Tensor, with the same dtype and shape as the `input`.
 
     Supported Platforms:
         ``Ascend``
@@ -1263,15 +1268,13 @@ class PReLUExt(Cell):
     def __init__(self, num_parameters=1, init=0.25, dtype=None):
         """Initialize PReLUExt."""
         super(PReLUExt, self).__init__()
-        self.init = init
         tmp = np.empty((num_parameters,), dtype=np.float32)
         tmp.fill(init)
         w = Tensor(tmp, dtype=dtype)
         self.weight = Parameter(w, name='weight')
-        self.prelu = P.PReLU()
 
     def construct(self, input):
-        return self.prelu(input, self.weight)
+        return ops.prelu(input, self.weight)
 
 
 class HSwish(Cell):

@@ -16,7 +16,7 @@ log_softmax_ext:
         Keyword Args:
             dtype (:class:`mindspore.dtype`, optional): The desired dtype of returned Tensor. If not set to None, the input
                 Tensor will be cast to `dtype` before the operation is performed. This is useful for preventing overflows.
-                If set to None, stay the same as original Tensor. Default: ``None`` .
+                If set to None, stay the same as original Tensor. Default: ``None`` . Supported data type is {float16, float32, double, bfloat16}.
     
         Returns:
             Tensor, with the same shape as the input.

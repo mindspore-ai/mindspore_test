@@ -1,7 +1,7 @@
 #operator prelu
 prelu:
     args:
-        x:
+        input:
             dtype: tensor
         weight:
             dtype: tensor

@@ -42,9 +42,18 @@ TypePtr PReLUFuncImpl::InferType(const PrimitivePtr &primitive, const std::vecto
   auto prim_name = primitive->name();
   auto x_type = input_args[kInputIndex0]->GetType();
   auto weight_type = input_args[kInputIndex1]->GetType();
-  auto valid_types = {kFloat16, kBFloat16, kFloat32};
-  (void)CheckAndConvertUtils::CheckTensorTypeValid("x", x_type, valid_types, prim_name);
-  (void)CheckAndConvertUtils::CheckTensorTypeValid("weight", weight_type, valid_types, prim_name);
+  auto weight_shape_ptr = input_args[kInputIndex1]->GetShape();
+  MS_EXCEPTION_IF_NULL(weight_shape_ptr);
+  auto weight_shape = weight_shape_ptr->GetShapeVector();
+  auto weight_rank = weight_shape.size();
+  if (weight_rank > 1) {
+    MS_EXCEPTION(ValueError) << "The dimension of 'weight' must be less than or equal to 1";
+  }
+  auto valid_types = {kFloat16, kFloat32};
+  if (!IsAscend()) {
+    (void)CheckAndConvertUtils::CheckTensorTypeValid("x", x_type, valid_types, prim_name);
+    (void)CheckAndConvertUtils::CheckTensorTypeValid("weight", weight_type, valid_types, prim_name);
+  }
   return x_type->Clone();
 }
 
@@ -54,11 +63,18 @@ TypePtrList PReLUFuncImpl::InferType(const PrimitivePtr &primitive, const ValueP
   MS_EXCEPTION_IF_NULL(x_tensor);
   const auto &weight_tensor = input_values[kIndex1]->cast<tensor::BaseTensorPtr>();
   MS_EXCEPTION_IF_NULL(weight_tensor);
+  auto weight_shape = weight_tensor->shape();
+  auto weight_rank = weight_shape.size();
+  if (weight_rank > 1) {
+    MS_EXCEPTION(ValueError) << "The dimension of 'weight' must be less than or equal to 1";
+  }
   const auto &x_type = x_tensor->Dtype();
   const auto &weight_type = weight_tensor->Dtype();
-  const std::set<TypePtr> valid_types = {kFloat16, kBFloat16, kFloat32};
-  (void)CheckAndConvertUtils::CheckTypeValid("x", x_type, valid_types, prim_name);
-  (void)CheckAndConvertUtils::CheckTypeValid("weight", weight_type, valid_types, prim_name);
+  const std::set<TypePtr> valid_types = {kFloat16, kFloat32};
+  if (!IsAscend()) {
+    (void)CheckAndConvertUtils::CheckTypeValid("x", x_type, valid_types, prim_name);
+    (void)CheckAndConvertUtils::CheckTypeValid("weight", weight_type, valid_types, prim_name);
+  }
   return {x_type};
 }
 
