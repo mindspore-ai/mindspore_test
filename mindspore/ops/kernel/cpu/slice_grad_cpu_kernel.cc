@@ -407,7 +407,7 @@ void SliceGradCpuKernelMod::FormatArgs(bool stride) {
       if (end_[i] == 0 && begin_[i] < 0) {
         end_[i] = end_[i] + SizeToInt(output_shape_[i]);
       }
-      if (end_[i] < 0) {
+      if (end_[i] <= 0) {
         end_[i] = end_[i] + SizeToInt(output_shape_[i]) < 0 ? 0 : end_[i] + SizeToInt(output_shape_[i]);
       }
       if (end_[i] > SizeToInt(output_shape_[i])) {
