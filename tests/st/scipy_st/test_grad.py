@@ -86,7 +86,7 @@ def test_cho_solve_grad(lower, shape, data_type):
     assert gradient_check([msp_c, Tensor(b)], cho_solve_net, epsilon) < error
 
 
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_macos'], level_mark='level0', card_mark='onecard',
           essential_mark='unessential')
 @pytest.mark.parametrize('compute_eigenvectors', [True, False])
 @pytest.mark.parametrize('lower', [True, False])

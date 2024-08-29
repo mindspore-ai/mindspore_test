@@ -80,6 +80,26 @@ TypePtrList ReverseV2FuncImpl::InferType(const PrimitivePtr &primitive, const Va
 ShapeArray ReverseV2FuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
   const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
+  const auto &x_shape_vec = x_tensor->shape();
+  const int64_t x_rank = SizeToLong(x_shape_vec.size());
+  MS_CHECK_VALUE(x_rank != 0,
+                 CheckAndConvertUtils::FormatCheckIntegerMsg("rank of x", x_rank, kNotEqual, 0, primitive));
+  const ArrayValue<int64_t> axis_array = GetArrayValue<int64_t>(input_values[kIndex1]).value();
+  constexpr uint32_t kBitOne = 1;
+  uint32_t axis_bitmap = 0;
+  const std::vector<int64_t> axis = axis_array.ToVector();
+  for (size_t i = 0; i < axis.size(); ++i) {
+    auto real_dim = axis[i] < 0 ? axis[i] + x_rank : axis[i];
+    if (real_dim < 0 || real_dim >= x_rank) {
+      MS_EXCEPTION(ValueError) << "For '" << primitive->name() << "', the 'axis[" << i << "]' must be in range of [-"
+                               << x_rank << ", " << x_rank << "), but got " << axis[i] << " with type 'int'.";
+    } else if ((axis_bitmap >> real_dim) & kBitOne) {
+      MS_EXCEPTION(ValueError) << "For " << primitive->name() << ", 'axis' cannot contain duplicate dimensions"
+                               << ", but got " << real_dim;
+    } else {
+      axis_bitmap |= (kBitOne << real_dim);
+    }
+  }
   return {x_tensor->shape()};
 }
 REGISTER_SIMPLE_INFER(kNameReverseV2, ReverseV2FuncImpl)
