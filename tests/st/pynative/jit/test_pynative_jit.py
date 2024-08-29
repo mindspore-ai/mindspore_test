@@ -240,6 +240,7 @@ def test_pynative_jit():
     Description: Jit call
     Expectation: The calculation result is correct.
     """
+
     class JitCell(nn.Cell):
         def __init__(self):
             super().__init__()
@@ -581,6 +582,7 @@ def test_control_flow_for_in_while_return_in_for_param():
                         return x
                 x = self.add(x, self.param)
             return x
+
     x = 1
     t = -4
     net = CtrlForReturnInWhileP(t)
@@ -603,6 +605,7 @@ def test_jit_pyexecute():
     Description: PyNative jit pyexecute.
     Expectation: Success.
     """
+
     class Out1():
         def __init__(self):
             self.a = -2
@@ -639,3 +642,52 @@ def test_jit_pyexecute():
     grad = P.GradOperation(get_all=False, get_by_list=False, sens_param=False)
     out_grad = grad(net)()
     assert out_grad == ()
+
+
+@arg_mark(plat_marks=['cpu_linux'],
+          level_mark='level0',
+          card_mark='onecard',
+          essential_mark='essential')
+def test_pynative_jit_with_tuple_nested_tuple_output():
+    """
+    Feature: PyNative jit.
+    Description: PyNative jit with tuple nested tuple.
+    Expectation: The calculation result is correct.
+    """
+
+    class NestedOutPutNet(nn.Cell):
+        def __init__(self):
+            super(NestedOutPutNet, self).__init__()
+            self.param = Parameter(Tensor(0.5, ms.float32))
+
+        @jit
+        def construct(self, x):
+            x = x + x
+            x = x / self.param
+            y = x * 2
+            y = y / self.param
+            return ([x], [y],)
+
+    class JitCell(nn.Cell):
+        def __init__(self):
+            super(JitCell, self).__init__()
+            self.net = NestedOutPutNet()
+            self.param = Parameter(Tensor(0.5, ms.float32))
+
+        def construct(self, x):
+            x = x + x
+            x = self.net(x)
+            y = x[0][0] * self.param
+            z = x[1][0] * self.param
+            x = y * z
+            return x
+
+    jit_net = JitCell()
+    grad = P.GradOperation(get_all=True, get_by_list=True, sens_param=False)
+    for _ in range(2):
+        x = Tensor(np.ones([2, 2]), dtype=ms.int32)
+        out_grad = grad(jit_net)(x)
+        assert np.allclose(out_grad[0][0].asnumpy(),
+                           Tensor(np.array([[128, 128], [128, 128]])).astype(np.float32).asnumpy(), 0.001, 0.001)
+        assert np.allclose(out_grad[1][0].asnumpy(), Tensor(np.array([-1536])).astype(np.float32).asnumpy(), 0.001,
+                           0.001)

@@ -26,13 +26,13 @@
 #include "pipeline/pynative/grad/top_cell.h"
 #include "pipeline/pynative/grad/auto_grad.h"
 #include "pipeline/pynative/grad/ir/bprop_tensor_replace.h"
-#include "pipeline/jit/ps/pipeline.h"
 #include "pipeline/jit/ps/resource.h"
 
 namespace mindspore {
 namespace pynative {
 class GradExecutor;
 struct JitCompileInfo {
+  bool has_added_v_{false};
   bool is_control_flow_{false};
   bool is_dynamic_shape_{false};
 };
@@ -43,7 +43,7 @@ class Jit {
   ~Jit() = default;
   inline void set_graph_phase(const std::string &graph_phase) { graph_phase_ = graph_phase; }
   py::object GradJit(const py::object &out, const py::args &args);
-  void SaveForwardOutputTensorInfoInBpropGraph(const FuncGraphPtr &func_graph);
+  void SaveForwardOutputTensorInfoInBpropGraph(const FuncGraphPtr &func_graph, const std::string &graph_phase);
   void ProcessCnodeFromAdGrad(const CNodePtr &k_app, const CNodePtr &cnode_morph);
   bool GetJitGradGraph(const pipeline::ResourcePtr &resource);
   inline bool eliminate_forward() const { return eliminate_forward_; }
@@ -64,15 +64,15 @@ class Jit {
                       const FuncGraphPtr &ms_func_graph, AnfNodePtrList *input_nodes) const;
   void MakeCNodeForJit(const FrontendOpRunInfoPtr &op_run_info, const GradExecutor *grad_executor,
                        const FuncGraphPtr &ms_func_graph, CNodePtr *jit_cnode) const;
-  // Make adjoint for jit fprop graph and connect it with previous op
-  void MakeAdjointForJit(const FrontendOpRunInfoPtr &op_run_info, const GradExecutor *grad_executor,
-                         const FuncGraphPtr &jit_forward_graph, const FuncGraphPtr &jit_grad_graph,
-                         bool has_added_v) const;
-  void KPynativeWithFProp(const GradExecutor *grad_executor, const autograd::AutoGradPtr &auto_grad_cell_ptr,
-                          const GradParamPtr &grad_param) const;
+  // create grad param for jit fprop graph and connect it with previous op
+  GradParamPtr CreateJitGradParam(const FrontendOpRunInfoPtr &op_run_info, const GradExecutor *grad_executor,
+                                  const FuncGraphPtr &jit_forward_graph, const FuncGraphPtr &jit_grad_graph);
+  void UpdateAddCnodeFoward(const OpGradInfoPtr &op_grad_info, const GradExecutor *grad_executor,
+                            const CNodePtr &added_node, const ValuePtr &added_out_v, const std::string &graph_phase);
   void RecordForwardGraphForJit(const FrontendOpRunInfoPtr &op_run_info, const GradExecutor *grad_executor,
                                 const FuncGraphPtr &ms_func_graph) const;
-  void UpdateJitForwardTensorInfoInBpropGraph(const std::string &op_info, const ValuePtr &v, const size_t &stream_id);
+  void UpdateJitForwardTensorInfoInBpropGraph(const std::string &op_info, const ValuePtr &v,
+                                              const std::string &graph_phase);
   FuncGraphPtr GetJitForwardGraphCNodeInfo(const FuncGraphPtr &jit_forward_graph);
   void Reset();
 

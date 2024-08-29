@@ -456,8 +456,8 @@ BackwardNodePtr FuncGrad::BuildGraphBackwardNode(const GradParamPtr &grad_param,
   bool is_jit_dynamic_shape = grad_param->is_jit_graph && grad_param->use_dynamic_shape_process;
   // Save replace info in first time
   if (!cache_hit && is_jit_dynamic_shape && grad_param->has_added_v) {
-    const auto &jit = PyNativeAlgo::Common::GetPyNativeExecutor()->grad_executor()->jit();
-    jit->SaveForwardOutputTensorInfoInBpropGraph(bprop_graph);
+    const auto &jit = PyNativeExecutor::grad_executor()->jit();
+    jit->SaveForwardOutputTensorInfoInBpropGraph(bprop_graph, grad_param->graph_cache_key);
   }
   VectorRef input_args;
   (void)std::transform(grad_param->op_grad_info->input_value.begin(), grad_param->op_grad_info->input_value.end(),

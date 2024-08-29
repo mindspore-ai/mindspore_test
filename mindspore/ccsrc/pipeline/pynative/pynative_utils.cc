@@ -31,6 +31,7 @@
 #include "include/common/utils/primfunc_utils.h"
 #include "include/common/debug/anf_ir_dump.h"
 #include "pipeline/jit/ps/parse/resolve.h"
+#include "pipeline/jit/ps/pipeline.h"
 #include "include/common/utils/stub_tensor.h"
 #include "frontend/expander/bprop/bprop.h"
 #include "frontend/optimizer/environ_conversion.h"
@@ -162,6 +163,7 @@ const mindspore::HashSet<std::string> kNotRealOP{
   kLoadOpName,
   kDependOpName,
   kReturnOpName,
+  kShapeOpName,
   kNPUAllocFloatStatusOpName,
   kNPUGetFloatStatusOpName,
   kNPUClearFloatStatusOpName,
@@ -2463,8 +2465,8 @@ void AutoGrad::CheckRecomputeInputs(const GradParamPtr &grad_param) {
   }
 }
 
-TopCellInfoPtr AutoGrad::FindPreTopcell(const GradExecutor *grad_executor, const OpGradInfoPtr &op_grad_info,
-                                        const std::string &op_info, const ValuePtr &value) {
+TopCellInfo *AutoGrad::FindPreTopcell(const GradExecutor *grad_executor, const OpGradInfoPtr &op_grad_info,
+                                      const std::string &op_info, const ValuePtr &value) {
   const auto &cur_top_cell = grad_executor->top_cell();
   // If the top cell is ir grad, which must be the first step, and pre-top cell cannot be found
   if (cur_top_cell->is_ir_grad()) {
@@ -2481,18 +2483,15 @@ TopCellInfoPtr AutoGrad::FindPreTopcell(const GradExecutor *grad_executor, const
     return nullptr;
   }
   // Not the first step
-  auto pre_top_cell = grad_executor->GetAlreadyRunTopCell(cur_top_cell->already_run_cell_id());
-  if (pre_top_cell == nullptr) {
-    pre_top_cell = grad_executor->GetPipelineRunTopCell(cur_top_cell->already_run_cell_id());
-    MS_EXCEPTION_IF_NULL(pre_top_cell);
-  }
+  auto pre_top_cell = grad_executor->pre_top_cell();
+  MS_EXCEPTION_IF_NULL(pre_top_cell);
   const auto &op_info_with_tensor_object = pre_top_cell->replace_info().op_info_with_tensor_object;
   op_grad_info->used_in_bprop_graph = op_info_with_tensor_object.find(op_info) != op_info_with_tensor_object.end();
   return pre_top_cell;
 }
 
 void AutoGrad::UpdateGradOpInfo(const GradExecutor *grad_executor, const OpGradInfoPtr &op_grad_info,
-                                const TopCellInfoPtr &pre_top_cell, bool is_jit_graph) {
+                                TopCellInfo *pre_top_cell, bool is_jit_graph) {
   MS_EXCEPTION_IF_NULL(op_grad_info);
   MS_EXCEPTION_IF_NULL(grad_executor);
   const auto &top_cell = grad_executor->top_cell();
@@ -2501,8 +2500,7 @@ void AutoGrad::UpdateGradOpInfo(const GradExecutor *grad_executor, const OpGradI
   }
   if (op_grad_info->need_do_forward_output_replace && op_grad_info->used_in_bprop_graph) {
     MS_EXCEPTION_IF_NULL(pre_top_cell);
-    top_cell->UpdateTopCellForwardTensorInfoInBpropGraph(op_grad_info->op_info, op_grad_info->out_value,
-                                                         pre_top_cell.get());
+    top_cell->UpdateTopCellForwardTensorInfoInBpropGraph(op_grad_info->op_info, op_grad_info->out_value, pre_top_cell);
   }
 }
 
@@ -2515,6 +2513,27 @@ bool GradCommon::IsRealOp(const AnfNodePtr &cnode) {
     return false;
   }
   return kNotRealOP.find(prim->name()) == kNotRealOP.end();
+}
+
+bool GradCommon::HasTensorOutput(const abstract::AbstractBasePtr &abs) {
+  MS_EXCEPTION_IF_NULL(abs);
+  if (abs->isa<abstract::AbstractTensor>()) {
+    return true;
+  }
+  if (abs->isa<abstract::AbstractSequence>()) {
+    const auto &abs_seq = abs->cast<abstract::AbstractSequencePtr>()->elements();
+    return std::any_of(abs_seq.begin(), abs_seq.end(),
+                       [](const abstract::AbstractBasePtr &abs) { return HasTensorOutput(abs); });
+  }
+  if (abs->isa<abstract::AbstractDictionary>()) {
+    auto dic_s = abs->cast<abstract::AbstractDictionaryPtr>();
+    return std::any_of(dic_s->elements().begin(), dic_s->elements().end(),
+                       [](const auto &key_value_pair) { return HasTensorOutput(key_value_pair.second); });
+  }
+  if (abs->isa<abstract::AbstractCSRTensor>() || abs->isa<abstract::AbstractCOOTensor>()) {
+    return true;
+  }
+  return false;
 }
 
 void GradCommon::SetForward(const AnfNodePtrList &node_list) {
@@ -2543,13 +2562,15 @@ void GradCommon::GetUsedCNodeInBpropGraph(const CNodePtr &cnode, const mindspore
       if (IsPrimitive(input_c, prim::kPrimMakeTuple)) {
         size_t tuple_input_num = input_c->size() - 1;
         for (size_t j = 0; j < tuple_input_num; ++j) {
-          if (auto f_node = common::AnfAlgo::VisitKernel(input_c, j).first; f_node->isa<CNode>() && IsRealOp(f_node)) {
+          if (auto f_node = common::AnfAlgo::VisitKernel(input_c, j).first;
+              f_node->isa<CNode>() && IsRealOp(f_node) && HasTensorOutput(f_node->abstract())) {
             MS_LOG(DEBUG) << "Get used input node " << f_node->DebugString();
             (void)node_list->emplace_back(f_node);
           }
         }
       } else {
-        if (auto f_node = common::AnfAlgo::VisitKernel(input_c, 0).first; f_node->isa<CNode>() && IsRealOp(f_node)) {
+        if (auto f_node = common::AnfAlgo::VisitKernel(input_c, 0).first;
+            f_node->isa<CNode>() && IsRealOp(f_node) && HasTensorOutput(f_node->abstract())) {
           MS_LOG(DEBUG) << "Get used input node " << f_node->DebugString();
           (void)node_list->emplace_back(f_node);
         }
@@ -2557,7 +2578,7 @@ void GradCommon::GetUsedCNodeInBpropGraph(const CNodePtr &cnode, const mindspore
     }
   }
   // Check output used in single op bprop graph
-  if (unused_inputs.find(cnode->size() - 1) == unused_inputs.end()) {
+  if (unused_inputs.find(cnode->size() - 1) == unused_inputs.end() && HasTensorOutput(cnode->abstract())) {
     MS_LOG(DEBUG) << "Get used output node " << cnode->DebugString();
     (void)node_list->emplace_back(cnode);
   }

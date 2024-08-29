@@ -79,7 +79,7 @@ tensor::BaseTensorPtr GetTensorFromOutValue(size_t index, const ValuePtr &v) {
   const auto &v_seq = v->cast<ValueSequencePtr>();
   MS_EXCEPTION_IF_NULL(v_seq);
   if (v_seq->size() < index) {
-    MS_LOG(EXCEPTION) << "Get wrong index " << index << " with multi output size " << v_seq->size();
+    MS_LOG(EXCEPTION) << "Get wrong index " << index << ", which is bigger than multi output size " << v_seq->size();
   }
   return v_seq->value()[index - kIndex1]->cast<tensor::BaseTensorPtr>();
 }
