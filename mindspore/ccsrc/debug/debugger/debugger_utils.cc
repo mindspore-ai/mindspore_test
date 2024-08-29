@@ -287,6 +287,26 @@ bool CheckReadData(const CNodePtr &cnode) {
   return read_data;
 }
 
+bool CheckOverFlow(const DeviceContext *device_context, std::vector<device::DeviceAddress *> output_device_tensors) {
+  std::vector<KernelTensor *> kernel_tensors;
+  std::transform(output_device_tensors.begin(), output_device_tensors.end(), std::back_inserter(kernel_tensors),
+                 [](const auto &tensor_info) { return tensor_info->kernel_tensor().get(); });
+  const auto &stream_id = kernel_tensors[0]->stream_id();
+
+  uint32_t set_overflow_num = DumpJsonParser::GetInstance().overflow_number();
+  uint32_t overflow_cont = OverflowCounter::GetInstance().getCount();
+  bool is_overflow = false;
+  if (set_overflow_num == 0) {
+    is_overflow = datadump::CalCheckOverflow(device_context, kernel_tensors, stream_id);
+  } else if (overflow_cont < set_overflow_num) {
+    is_overflow = datadump::CalCheckOverflow(device_context, kernel_tensors, stream_id);
+    if (is_overflow) {
+      OverflowCounter::GetInstance().addCount();
+    }
+  }
+  return is_overflow;
+}
+
 /*
  * Feature group: Dump, Online debugger.
  * Target device group: Ascend, GPU.
@@ -302,6 +322,11 @@ void ReadDataAndDump(const CNodePtr &cnode, std::vector<device::DeviceAddress *>
     return;
   }
   auto &dump_json_parser = DumpJsonParser::GetInstance();
+  if (dump_json_parser.op_debug_mode() == DumpJsonParser::DUMP_BOTH_OVERFLOW) {
+    if (!CheckOverFlow(device_context, output_device_tensors)) {
+      return;
+    }
+  }
   auto kernel_graph = std::dynamic_pointer_cast<KernelGraph>(cnode->func_graph());
   MS_EXCEPTION_IF_NULL(kernel_graph);
   auto root_graph_id = kernel_graph->root_graph_id();

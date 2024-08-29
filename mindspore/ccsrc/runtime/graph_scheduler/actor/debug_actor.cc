@@ -198,20 +198,7 @@ void DebugActor::AscendKbkDump(const CNodePtr &cnode, const std::vector<DeviceTe
         MS_LOG(ERROR) << "Sync stream error! The node input will be dumped";
       }
     } else if (op_debug_mode == DumpJsonParser::DUMP_BOTH_OVERFLOW && dump_json_parser.DumpEnabledForIter()) {
-      uint32_t set_overflow_num = dump_json_parser.overflow_number();
-      uint32_t overflow_count = OverflowCounter::GetInstance().getCount();
-      bool is_overflow = false;
-      if (set_overflow_num == 0) {
-        is_overflow = CheckOverflow(device_context, output_device_tensors);
-      } else if (overflow_count < set_overflow_num) {
-        is_overflow = CheckOverflow(device_context, output_device_tensors);
-        if (is_overflow) {
-          OverflowCounter::GetInstance().addCount();
-        }
-      }
-      if (is_overflow) {
-        read_data = CheckReadData(cnode);
-      }
+      read_data = true;
     } else {
       read_data = CheckReadData(cnode);
     }
@@ -395,85 +382,6 @@ void DebugActor::DebugOnStepEnd(OpContext<DeviceTensor> *const, const AID *, int
   MS_LOG(INFO) << "UpdateDumpIter: " << step_count_;
 #endif
 #endif
-}
-
-bool DebugActor::CheckOverflow(const DeviceContext *device_context, const std::vector<DeviceTensor *> &inputs) {
-  std::vector<KernelTensor *> check_kernel_tensors;
-  for (size_t i = 0; i < inputs.size(); i++) {
-    auto input = inputs[i]->kernel_tensor().get();
-    auto type = input->dtype_id();
-    if (type == mindspore::kNumberTypeFloat16 || type == mindspore::kNumberTypeFloat32 ||
-        type == mindspore::kNumberTypeBFloat16) {
-      check_kernel_tensors.emplace_back(input);
-    }
-  }
-  if (check_kernel_tensors.empty()) {
-    return false;
-  }
-  MS_EXCEPTION_IF_NULL(device_context);
-  MS_EXCEPTION_IF_NULL(device_context->device_res_manager_);
-
-  // 1. Get AllFinite kernel mod.
-  const auto &kernel_mod_iter = finite_kernel_mods_.find(device_context);
-  kernel::KernelModPtr finite_kernel_mod = nullptr;
-  if (kernel_mod_iter == finite_kernel_mods_.end()) {
-    const auto &new_finite_kernel_mod = device_context->GetKernelExecutor(false)->CreateKernelMod(kAllFiniteOpName);
-    MS_EXCEPTION_IF_NULL(new_finite_kernel_mod);
-    finite_kernel_mods_.emplace(device_context, new_finite_kernel_mod);
-    finite_kernel_mod = new_finite_kernel_mod;
-  } else {
-    finite_kernel_mod = kernel_mod_iter->second;
-  }
-  MS_EXCEPTION_IF_NULL(finite_kernel_mod);
-
-  // 2. Get output kernel tensor for AllFinite kernel.
-  MS_EXCEPTION_IF_NULL(check_kernel_tensors[0]);
-  const auto &stream_id =
-    check_kernel_tensors[0]->managed_by_somas() ? kDefaultStreamIndex : check_kernel_tensors[0]->stream_id();
-  const auto &kernel_stream_id = check_kernel_tensors[0]->stream_id();
-
-  auto &stream_id_to_output_device_address = finite_output_device_addresses_[device_context];
-  if (stream_id_to_output_device_address.find(stream_id) == stream_id_to_output_device_address.end()) {
-    auto finite_output_addr = device_context->device_res_manager_->AllocateMemory(1, stream_id);
-    MS_EXCEPTION_IF_NULL(finite_output_addr);
-
-    ShapeVector shape_vec = {1};
-    auto kernel_tensor = std::make_shared<kernel::KernelTensor>(
-      finite_output_addr, 1, Format::DEFAULT_FORMAT, kNumberTypeBool, shape_vec,
-      device_context->device_context_key().device_name_, device_context->device_context_key().device_id_);
-    kernel_tensor->set_stream_id(stream_id);
-    kernel_tensor->SetType(std::make_shared<TensorType>(kBool));
-    kernel_tensor->SetShape(std::make_shared<abstract::TensorShape>(shape_vec));
-    auto device_address = device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
-    MS_EXCEPTION_IF_NULL(device_address);
-    stream_id_to_output_device_address.emplace(stream_id, device_address);
-  }
-  auto &output_device_address = stream_id_to_output_device_address[stream_id];
-  MS_EXCEPTION_IF_NULL(output_device_address);
-  const auto &output_kernel_tensor = output_device_address->kernel_tensor();
-  MS_EXCEPTION_IF_NULL(output_kernel_tensor);
-
-  void *stream_ptr = device_context->device_res_manager_->GetStream(kernel_stream_id);
-  MS_EXCEPTION_IF_NULL(stream_ptr);
-  bool ret = finite_kernel_mod->Launch(check_kernel_tensors, {}, {output_kernel_tensor.get()}, stream_ptr);
-  if (!ret) {
-    MS_LOG(EXCEPTION) << "Launch AllFinite kernel failed.";
-  }
-  return output_kernel_tensor->GetValueWithCheck<bool>();
-}
-
-void DebugActor::Finalize() {
-  DumpJsonParser::GetInstance().PrintUnusedKernel();
-  for (const auto &item : finite_output_device_addresses_) {
-    auto &stream_id_to_output_device_address_map = item.second;
-    auto *device_context = item.first;
-    for (const auto &device_address_item : stream_id_to_output_device_address_map) {
-      const auto &device_address = device_address_item.second;
-      if (device_address && device_context) {
-        device_context->device_res_manager_->FreeMemory(device_address->GetMutablePtr());
-      }
-    }
-  }
 }
 }  // namespace runtime
 }  // namespace mindspore

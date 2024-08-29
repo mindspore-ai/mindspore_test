@@ -74,11 +74,6 @@ class DebugActor : public ActorBase {
   static inline uint64_t current_step{1};
 
  private:
-  // Check kernel output is finite or not synchronously.
-  bool CheckOverflow(const DeviceContext *device_context, const std::vector<DeviceTensor *> &inputs);
-  // Release device memory for AllFinite kernel.
-  void Finalize() override;
-
   void HandleHookDebugger(uint32_t device_id, const std::vector<KernelGraphPtr> &graphs, bool is_kbyk);
 
   bool IsE2EDumpEnabled();
@@ -91,9 +86,6 @@ class DebugActor : public ActorBase {
   void ClearAndSaveGraphs(const std::vector<KernelGraphPtr> &graphs,
                           const std::vector<DeviceContext *> &device_contexts,
                           OpContext<DeviceTensor> *const op_context);
-
-  std::map<const DeviceContext *, kernel::KernelModPtr> finite_kernel_mods_;
-  std::map<const DeviceContext *, std::map<uint32_t, DeviceAddressPtr>> finite_output_device_addresses_;
 
   // class members
   uint32_t exec_order_ = 0;
