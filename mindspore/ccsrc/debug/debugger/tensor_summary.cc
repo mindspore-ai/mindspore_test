@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2022 Huawei Technologies Co., Ltd
+ * Copyright 2020-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -99,8 +99,8 @@ TensorSummary<T>::TensorSummary(const void *current_tensor_ptr, const void *cons
       prev_tensor_ptr_(static_cast<const T *>(previous_tensor_ptr)),
       num_elements_(num_elements),
       prev_num_elements_(prev_num_elements),
-      min_(std::numeric_limits<double>::max()),
-      max_(std::numeric_limits<double>::lowest()),
+      min_(std::numeric_limits<double>::infinity()),
+      max_(-std::numeric_limits<double>::infinity()),
       avg_(0.0),
       is_bool_(false),
       neg_zero_count_(0),
