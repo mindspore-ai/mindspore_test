@@ -618,7 +618,8 @@ std::set<AnfNodePtr> FunctionBlock::SearchAllArgsOfPhiNode(const std::string &va
     auto arg_node = defined_branch.front().second;
     MS_EXCEPTION_IF_NULL(arg_node);
     MS_LOG(DEBUG) << "graph " << (func_graph_ ? func_graph_->ToString() : "FG(Null)") << " phi "
-                  << (phi ? phi->ToString() : "null") << " may be replaced by node " << arg_node->DebugString();
+                  << (phi != nullptr ? phi->ToString() : "null") << " may be replaced by node "
+                  << arg_node->DebugString();
   }
 
   if (not_defined_branch.second != nullptr) {
@@ -767,13 +768,10 @@ void FunctionBlock::SetStateAssign(const AnfNodePtr &target, const AnfNodePtr &s
   AddIsolatedNode(assign_node);
 }
 
-void FunctionBlock::ConvertUnusedNodesToIsolated(const std::pair<std::string, std::pair<AnfNodePtr, bool>> var) {
-  auto &node = var.second.first;
-  bool is_used = var.second.second;
+void FunctionBlock::ConvertUnusedNodesToIsolated(const std::string &var_name, const AnfNodePtr &node, bool is_used) {
   if (node == nullptr || is_used) {
     return;
   }
-  auto &var_name = var.first;
   if (CanBeIsolatedNode(var_name, node)) {
     const int recursive_level = 2;
     MS_LOG(INFO) << "Isolated node found(NoUse), node: " << node->DebugString(recursive_level)
@@ -795,7 +793,7 @@ void FunctionBlock::FindIsolatedNodes() {
   //
   // Add isolated nodes which is unused var but not found in used set.
   for (const auto &var : assigned_vars_) {
-    ConvertUnusedNodesToIsolated(var);
+    ConvertUnusedNodesToIsolated(var.first, var.second.first, var.second.second);
   }
 }
 

@@ -237,10 +237,8 @@ void ValidateTopGraphOutput(const AnfNodePtr &node) {
 }
 
 void Validate(const FuncGraphPtr &func_graph) {
-  FuncGraphManagerPtr mgr = Manage(func_graph, false);
-  MS_EXCEPTION_IF_NULL(mgr);
   ValidateTopGraphOutput(func_graph->output());
-  const AnfNodeSet &all_nodes = mgr->all_nodes();
+  const auto &all_nodes = TopoSort(func_graph->return_node(), SuccDeeperSimple);
   for (auto node : all_nodes) {
     TraceGuard guard(std::make_shared<TraceCopy>(node->debug_info()));
     CheckAssignReturnValue(node);

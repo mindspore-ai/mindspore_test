@@ -360,4 +360,69 @@ IncludeType IncludeBelongGraph(const FuncGraphPtr &fg, const AnfNodePtr &node) {
     return EXCLUDE;
   }
 }
+
+namespace ud_chain {
+AnfNodeWeakPtrList SuccToGenUsers(const AnfNodePtr &node) {
+  const AnfNodeWeakPtrList &vecs = SuccDeeperSimple(node);
+  for (const auto &weak_input : vecs) {
+    auto input = weak_input.lock();
+    MS_EXCEPTION_IF_NULL(input);
+    std::shared_ptr<UserData> users;
+    if (input->has_user_data(UserData::key)) {
+      users = input->user_data<UserData>();
+      MS_EXCEPTION_IF_NULL(users);
+      MS_LOG(INFO) << "Already has user node, key: " << UserData::key << ", node: " << input << "/"
+                   << input->DebugString() << ", user size: " << users->nodes.size()
+                   << ", first user: " << users->nodes[0]->DebugString();
+    } else {
+      users = std::make_shared<UserData>();
+    }
+    MS_LOG(DEBUG) << "Record user " << node->DebugString() << ", key: " << UserData::key;
+    (void)users->nodes.emplace_back(node);
+    input->set_user_data(users);
+  }
+  return vecs;
+}
+
+void Preprocess(const FuncGraphPtr &func_graph) {
+  // Generate new key for specific func graph before search node users.
+  std::stringstream ss;
+  ss << func_graph.get();
+  UserData::set_key(kNodeUserKey + ss.str());
+
+  (void)TopoSort(func_graph->return_node(), SuccToGenUsers);
+}
+
+// Call this function after Preprocess() invoked.
+AnfNodePtrList GetUsers(const AnfNodePtr &node) {
+  auto user = node->user_data<UserData>();
+  if (user == nullptr || user->nodes.empty()) {
+    MS_LOG(DEBUG) << "The user of node " << node->DebugString() << " is none";
+    return AnfNodePtrList();
+  }
+  return user->nodes;
+}
+
+void Replace(const AnfNodePtr &old_node, const AnfNodePtr &new_node) {
+  const auto &users = GetUsers(old_node);
+  if (users.empty()) {
+    MS_LOG(DEBUG) << "Fail to replace " << old_node->DebugString() << " with " << new_node->DebugString();
+    return;
+  }
+  for (const auto &user : users) {
+    auto cnode_user = dyn_cast_ptr<CNode>(user);
+    MS_EXCEPTION_IF_NULL(cnode_user);
+    size_t i;
+    for (i = 0; i < cnode_user->size(); ++i) {
+      auto input = cnode_user->weak_input(i).lock();
+      MS_EXCEPTION_IF_NULL(input);
+      if (input == old_node) {
+        break;
+      }
+    }
+    MS_EXCEPTION_IF_CHECK_FAIL(i < cnode_user->size(), "Not found node to replace");
+    cnode_user->set_input(i, new_node);
+  }
+}
+}  // namespace ud_chain
 }  // namespace mindspore
