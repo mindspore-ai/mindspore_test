@@ -109,7 +109,7 @@ static TypeId GetDataType(const py::buffer_info &buf) {
         break;
       case '?':
         return TypeId::kNumberTypeBool;
-      case 'T':
+      case 'E':
         return TypeId::kNumberTypeBFloat16;
       default:
         break;
@@ -133,7 +133,7 @@ static std::string GetPyTypeFormat(TypeId data_type) {
     case TypeId::kNumberTypeFloat16:
       return "e";
     case TypeId::kNumberTypeBFloat16:
-      return "T";
+      return "E";
     case TypeId::kNumberTypeFloat32:
       return py::format_descriptor<float>::format();
     case TypeId::kNumberTypeFloat64:
@@ -231,7 +231,7 @@ class TensorDataNumpy : public TensorData {
   py::array py_array(const py::handle &owner = py::str()) const {
     py::gil_scoped_acquire acquire;
     py::dtype np_dtype =
-      (buffer()->format == "T") ? py::detail::npy_format_descriptor<bfloat16>::dtype() : py::dtype(*buffer());
+      (buffer()->format == "E") ? py::detail::npy_format_descriptor<bfloat16>::dtype() : py::dtype(*buffer());
     return py::array(np_dtype, buffer()->shape, buffer()->strides, buffer()->ptr, owner);
   }
 
@@ -288,15 +288,15 @@ py::buffer_info TensorPy::GetPyBufferFromPyArray(const py::array &input) {
   py::buffer_info buf;
   auto descr = py::detail::array_descriptor_proxy(py::detail::array_proxy(input.ptr())->descr);
   // For bfloat16, modify descr->type_num to support acquiring buffer_info from numpy.
-  if (descr->type == 'T') {
-    // convert descr->type_num from T(NPY_BFLOAT16) to H(NPY_USHORT)
+  if (descr->type == 'E') {
+    // convert descr->type_num from E(NPY_BFLOAT16) to H(NPY_USHORT)
     const int NPY_USHORT = 4;
     int orig_type_num = descr->type_num;
     descr->type_num = NPY_USHORT;
     // acquire buffer_info with type of NPY_USHORT
     buf = input.request();
-    // convert buffer_info.format from H(NPY_USHORT) to T(NPY_BFLOAT16)
-    buf.format = "T";
+    // convert buffer_info.format from H(NPY_USHORT) to E(NPY_BFLOAT16)
+    buf.format = "E";
     // change back descr->type_num
     descr->type_num = orig_type_num;
   } else {

@@ -78,8 +78,8 @@ template <>
 struct NpTypeDescr<bfloat16> : NpTypeBaseDescr<bfloat16> {
   static constexpr const char *type_name = "bfloat16";
   static constexpr const char *type_doc = "BFloat16 type for numpy";
-  static constexpr char kind = 'T';
-  static constexpr char type = 'T';
+  static constexpr char kind = 'V';
+  static constexpr char type = 'E';
   static constexpr char byte_order = '=';
 };
 
