@@ -16,7 +16,6 @@ from tests.mark_utils import arg_mark
 
 import os
 import numpy as np
-import pytest
 import mindspore as ms
 import mindspore.ops as op
 from mindspore.nn import Cell
@@ -374,7 +373,7 @@ def test_batchmatmul_type_float64():
     assert str(float64_out.dtype) == "Float64"
 
 
-@arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_batchmatmul_type_int8():
     """
     Feature: test bmm with dtype int8.
@@ -395,7 +394,7 @@ def test_batchmatmul_type_int8():
                            [[4, 4, 4, 4]],
                            [[4, 4, 4, 4]]], np.int32)
         assert (out.asnumpy() == expect).all()
-        assert str(out.dtype) == "Int32"
+        assert str(out.dtype) == "Int8"
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
