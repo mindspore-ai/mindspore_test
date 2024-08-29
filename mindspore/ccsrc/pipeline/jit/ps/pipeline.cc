@@ -2441,6 +2441,10 @@ FuncGraphPtr DynamicObfuscateMindIR(const std::string &file_name, float obf_rati
   mindspore::DynamicObfuscator dynamic_obfuscator(obf_ratio, branch_control_input);
   MindIRLoader mindir_loader(false, reinterpret_cast<unsigned char *>(dec_key), key_len, dec_mode, false);
   FuncGraphPtr func_graph = mindir_loader.LoadMindIR(file_name);
+  if (func_graph == nullptr) {
+    MS_LOG(EXCEPTION) << "[DynamicObfuscateMindIR] load mindir failed, please check the mindir file.";
+    return nullptr;
+  }
   ModifyGraphs(func_graph);
   auto manager = func_graph->manager();
   if (manager == nullptr) {
@@ -2448,10 +2452,6 @@ FuncGraphPtr DynamicObfuscateMindIR(const std::string &file_name, float obf_rati
     manager->AddFuncGraph(func_graph, true);
   }
   InferFuncGraphLoaded(func_graph);
-  if (func_graph == nullptr) {
-    MS_LOG(EXCEPTION) << "[DynamicObfuscateMindIR] load mindir failed, please check the mindir file.";
-    return nullptr;
-  }
   mindspore::FuncGraphPtr obfuscated_graph = dynamic_obfuscator.ObfuscateMindIR(func_graph);
   if (obfuscated_graph == nullptr) {
     MS_LOG(ERROR) << "[DynamicObfuscateMindIR] obfuscate model failed.";
