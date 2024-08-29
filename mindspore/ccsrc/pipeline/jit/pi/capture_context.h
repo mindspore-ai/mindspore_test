@@ -49,26 +49,26 @@ class CaptureContext {
   // getter
   const auto &config() const { return config_; }
   const auto &wrapper_code() const { return wrapper_code_; }
-  const auto &wrapped_code() const { return wrapped_code_; }
+  const auto &wrapped_func() const { return wrapped_func_; }
   const auto &known_modules() const { return known_modules_; }
 
   // setter
   void set_config(const std::shared_ptr<GraphJitConfig> &c) { config_ = c; }
-  void set_wrapper_code(PyCodeObject *id) { wrapper_code_ = id; }
-  void set_wrapped_code(PyCodeObject *id) { wrapped_code_ = id; }
   void set_use_white_list(bool config) { use_white_list_ = config; }
 
   // helper
   bool IsEnable() const { return stat_ == kEnable; }
-  void Enable(PyCodeObject *top_function) {
+  void Enable(PyObject *top_function) {
     if (stat_ == kDefault) {
       stat_ = kEnable;
-      set_wrapped_code(top_function);
+      wrapped_func_ = top_function;
     }
   }
   void Disable() {
     if (stat_ == kEnable) {
       stat_ = kDefault;
+      wrapped_func_ = nullptr;
+      config_ = nullptr;
     }
   }
 
@@ -92,6 +92,7 @@ class CaptureContext {
   void SetSkipFiles(PyObject *);
   void SetWrapper(PyObject *);
   void SetConfig(PyObject *);
+  void SetFunction(PyObject *);
 
   // white list check
   bool IsSkipModule(PyCodeObject *co, const std::string &module_name) const;
@@ -107,7 +108,7 @@ class CaptureContext {
 
   // wrapper info
   void *wrapper_code_;
-  void *wrapped_code_;
+  void *wrapped_func_;
 
   Stat stat_;
 
