@@ -769,14 +769,14 @@ void CodeBreakGenerator::FixInterpretOuput(CodeGenerator *code_gen) {
     code_gen->NewInstr(STORE_FAST, code_gen->AllocLocal(i));
   });
   // reconstruct interpret values if need
-  int index = interpret_.operations.size() + 1;
+  auto index = interpret_.operations.size() + 1;
   std::for_each(outputs_optimize_.operations.rbegin(), outputs_optimize_.operations.rend(),
                 [code_gen, &index](ValueNode *input) {
                   // fill interpret local map
                   auto target = code_gen->GetLocalsMap().find(input);
                   if (target == code_gen->GetLocalsMap().end()) {
                     code_gen->MarkAlive(input);
-                    code_gen->BuildOper(input, index);
+                    code_gen->BuildOper(input, static_cast<int>(index));
                   }
                   index++;
                 });
