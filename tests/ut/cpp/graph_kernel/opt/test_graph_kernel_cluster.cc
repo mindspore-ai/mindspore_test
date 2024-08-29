@@ -39,6 +39,25 @@ FuncGraphPtr ConstructGraph_1() {
   c.SetOutput(op3);
   return c.GetGraph();
 }
+
+FuncGraphPtr ConstructGraph_2() {
+  ConstructGraph gb;
+  test::ConstructGraph c;
+  auto x0 = c.NewTensorInput("x0", kFloat32, {-1, 32});
+  auto x1 = c.NewTensorInput("x1", kFloat32, {-1, 32});
+  auto x2 = c.NewTensorInput("x2", kFloat32, {-1, 32});
+  auto op0 = c.NewCNodeWithBuildInfo("Mul", {x0, x1}, {});
+  auto op1 = c.NewCNodeWithBuildInfo("Add", {op0, op0}, {});
+  auto op2 = c.NewCNodeWithBuildInfo("Mul", {op1, op1}, {});
+  auto op3 = c.NewCNodeWithBuildInfo("Add", {x2, x2}, {});
+  auto op4 = c.NewCNodeWithBuildInfo("Add", {op2, op3}, {});
+  auto op5 = c.NewCNodeWithBuildInfo("Add", {op3, op3}, {});
+  auto op6 = c.NewCNodeWithBuildInfo("Mul", {op5, op5}, {});
+  auto op7 = c.NewCNodeWithBuildInfo("Add", {op1, op6}, {});
+  auto op8 = c.NewCNodeWithBuildInfo("MakeTuple", {op1, op2, op3, op4, op7}, {});
+  c.SetOutput(op8);
+  return c.GetGraph();
+}
 }  // namespace
 
 /// Feature: Test graph kernel cluster pass
@@ -51,5 +70,16 @@ TEST_F(TestGraphCluster, cluster_cut_max_id) {
   RunPass(fg, {std::make_shared<graphkernel::StaticShapeCluster>()});
   ASSERT_EQ(GetAllGKNodes(fg).size(), 2);
   ASSERT_EQ(GetAllCNodes(fg).size(), 4);
+}
+
+/// Feature: Test graph kernel cluster pass check circle
+/// Description: op will cluster, use max id cut will have circle and use pre max id.
+/// Expectation: After cluster pass, the gk node and main node should be correct.
+TEST_F(TestGraphCluster, cluster_cut_max_id_circle) {
+  SetGraphKernelFlags("--disable_cluster_ops=Mul");
+  SetDeviceTarget(kAscendDevice);
+  auto fg = ConstructGraph_2();
+  RunPass(fg, {std::make_shared<graphkernel::StaticShapeCluster>()});
+  ASSERT_EQ(GetAllGKNodes(fg).size(), 3);
 }
 }  // namespace mindspore::graphkernel::test

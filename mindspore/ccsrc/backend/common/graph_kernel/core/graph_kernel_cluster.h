@@ -21,12 +21,45 @@
 #include <sstream>
 #include <set>
 #include <string>
+#include <algorithm>
 
 #include "utils/hash_map.h"
 #include "ir/anf.h"
 #include "include/backend/optimizer/pass.h"
 
 namespace mindspore::graphkernel {
+// Binary Indexed Trees for max value
+class BitMax {
+ public:
+  // cluster_id starts from 0, but value in binary indexed tree starts from 1.
+  explicit BitMax(size_t n) : vec_(n + 1) { std::iota(vec_.begin(), vec_.end(), 0); }
+  void SetMax(size_t i, size_t val) {
+    i++;
+    while (i < vec_.size()) {
+      vec_[i] = std::max(vec_[i], val);
+      i += LowBit(i);
+    }
+  }
+
+  size_t FindMax(size_t i) {
+    i++;
+    if (i >= vec_.size()) {
+      i = vec_.size() - 1;
+    }
+    size_t result = 0;
+    while (i > 0) {
+      result = std::max(result, vec_[i]);
+      i -= LowBit(i);
+    }
+    return result;
+  }
+
+ private:
+  size_t LowBit(size_t x) const { return x & (-x); }
+  std::vector<size_t> vec_;
+};
+using BitMaxPtr = std::shared_ptr<BitMax>;
+
 class Graph;
 using GraphPtr = std::shared_ptr<Graph>;
 class Graph {
@@ -50,7 +83,7 @@ class Graph {
   };  // struct Cluster
 
  public:
-  static GraphPtr Build(const FuncGraphPtr &func_graph, AnfNodePtrList *nodes = nullptr,
+  static GraphPtr Build(const FuncGraphPtr &func_graph, bool aggressive_cut, AnfNodePtrList *nodes = nullptr,
                         HashMap<AnfNodePtr, size_t> *node_idx_map = nullptr);
   ~Graph() = default;
 
@@ -69,20 +102,26 @@ class Graph {
   // Get cluster size
   size_t GetSize(size_t cluster_id) { return clusters_[Find(cluster_id)].cluster_size_; }
 
+  size_t GetMaxIdWithCutStrategy(size_t cluster_id) {
+    return (bitmax_ == nullptr) ? GetMaxId(cluster_id) : bitmax_->FindMax(Find(cluster_id));
+  }
   // Get max id in cluster
   size_t GetMaxId(size_t cluster_id) { return clusters_[Find(cluster_id)].max_id_; }
 
   // Get cluster's inputs
   const std::set<size_t> &GetInputs(size_t cluster_id);
 
+  bool HasCircle();
+
   // public constructor for std::make_shared, do not call it manually.
-  Graph(const AnfNodePtrList &nodes, const HashMap<AnfNodePtr, size_t> &node_idx_map);
+  Graph(const AnfNodePtrList &nodes, const HashMap<AnfNodePtr, size_t> &node_idx_map, bool aggressive_cut);
 
  private:
   void RefreshInputs(size_t i);
   void DepthFirstSearch(size_t cluster_id, const VisitFunc &visitor);
 
   std::vector<Cluster> clusters_;
+  BitMaxPtr bitmax_{nullptr};
   size_t seen_{0};
 };  // Graph
 
@@ -115,6 +154,7 @@ class GraphKernelCluster : public opt::Pass {
   virtual std::vector<PrimitivePtr> GetClusterableOpList() { return {}; }
   virtual bool IsClusterableOp(const AnfNodePtr &node) = 0;
   void Init(const FuncGraphPtr &func_graph);
+  void GraphMerge(const FuncGraphPtr &func_graph, bool aggressive_cut);
   bool Process(const FuncGraphPtr &func_graph);
   std::vector<size_t> FindCandidates(size_t basenode_id);
   void RemoveWildGetitem(std::vector<size_t> *candidates);
