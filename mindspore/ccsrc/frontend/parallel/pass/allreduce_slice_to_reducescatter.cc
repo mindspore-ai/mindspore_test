@@ -167,7 +167,6 @@ std::vector<Shape> GetBatchMatMulStrategy(const AnfNodePtr &node) {
 
   auto transpose_a_value = transpose_a_value_node->value();
   auto transpose_b_value = transpose_b_value_node->value();
-
   if (transpose_a_value == nullptr || transpose_b_value == nullptr) {
     return {};
   }
@@ -244,7 +243,6 @@ bool CheckBatchMatmulAndStridedSliceStrategy(const std::vector<Shape> &bmm_input
   auto ss_mp = stridedslice_input1_strategy[stridedslice_input1_strategy.size() - kMpIndexFromRight];
   auto ss_no_split2 = stridedslice_input1_strategy[stridedslice_input1_strategy.size() - kEpIndexFromRight];
   auto ss_ep = stridedslice_input1_strategy[stridedslice_input1_strategy.size() - kEpIndexFromRight - 1];
-
   if (ss_mp != input1_mp || ss_ep != input1_ep || ss_no_split1 != 1 || ss_no_split2 != 1) {
     return false;
   }
@@ -393,7 +391,6 @@ std::vector<int64_t> GetShapeFromStridedSliceNode(const AnfNodePtr stridedslice)
 std::vector<int64_t> GetTargetShapeFromStridedSlice(const AllReduceSliceToReduceScatterParams &params) {
   std::vector<int64_t> target_shape{};
   auto origin_shape = GetShapeFromStridedSliceNode(params.stridedslice);
-
   if (origin_shape.size() <= kMpIndexFromRight || origin_shape.size() > kTransposeDim) {
     return target_shape;
   }
@@ -401,7 +398,7 @@ std::vector<int64_t> GetTargetShapeFromStridedSlice(const AllReduceSliceToReduce
   size_t reshape_dim = origin_shape.size() - kMpIndexFromRight;
   auto expert_parallel = params.expert_parallel;
   auto group_size = params.model_parallel;
-  if (expert_parallel < 1 || group_size == 0 || origin_shape[reshape_dim] % expert_parallel != 0) {
+  if (expert_parallel < 1 || group_size == 0 || LongToSize(origin_shape[reshape_dim]) % expert_parallel != 0) {
     return target_shape;
   }
 
@@ -542,7 +539,6 @@ void FillCase2Params(AllReduceSliceToReduceScatterParams *params) {
     }
     anchor_node = current_node;
     final_reshape = GetSingleUserPrimNode(params->manager, current_node, prim::kPrimReshape);
-
     if (final_reshape != nullptr) {
       current_node = final_reshape;
     }

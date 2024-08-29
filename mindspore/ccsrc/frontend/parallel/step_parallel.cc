@@ -275,12 +275,13 @@ static void InsertRedistribution(const RedistributionOpListPtr &redistribution_o
     MS_LOG(EXCEPTION) << "size of OperatorVector and OutPutInfoVector must be the same!";
   }
 
+  auto pos_u = LongToSize(pos);
+  if (pos_u >= node->size()) {
+    MS_LOG(EXCEPTION) << "InsertRedistribution:pos can't be larger than node's inputs'size";
+  }
   for (size_t index = 0; index < (redistribution_oplist_ptr->first).size(); ++index) {
-    if (pos >= SizeToLong(node->size())) {
-      MS_LOG(EXCEPTION) << "InsertRedistribution:pos can't be larger than node's inputs'size";
-    }
     // Create new node
-    AnfNodePtr target_node = node->input(LongToSize(pos));
+    AnfNodePtr target_node = node->input(pos_u);
     MS_EXCEPTION_IF_NULL(target_node);
     // Create instance_name
     auto op = (redistribution_oplist_ptr->first)[index];
@@ -301,9 +302,9 @@ static void InsertRedistribution(const RedistributionOpListPtr &redistribution_o
       }
       instance_name = instance_name + "_" + recompute_str;
     }
-    InsertNode(op, node, LongToSize(pos), target_node, func_graph, instance_name, "", nullptr, tensor_redistribution);
+    InsertNode(op, node, pos_u, target_node, func_graph, instance_name, "", nullptr, tensor_redistribution);
     if ((redistribution_oplist_ptr->second)[index].first) {
-      target_node = node->input(LongToSize(pos));
+      target_node = node->input(pos_u);
       MS_EXCEPTION_IF_NULL(target_node);
       (void)InsertMakeTuple(target_node, (redistribution_oplist_ptr->second)[index].second, func_graph);
     }
@@ -754,62 +755,51 @@ static void SplitTensorList(const AnfNodePtr &node, const CNodePtr &next_node, i
   MS_EXCEPTION_IF_NULL(func_graph);
   FuncGraphManagerPtr manager = func_graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
+  TensorInfoBasePtr new_tensor_infos = nullptr;
   if (op_info->inputs_tensor_info_new().empty()) {
     if (inputs_values.size() != op_info->inputs_tensor_info().size()) {
       MS_LOG(EXCEPTION) << "The inputs size " << inputs_values.size() << ", is not equal to inputs shape size "
                         << op_info->inputs_tensor_info().size();
     }
-    ScopePtr scope = next_node->scope();
-    MS_EXCEPTION_IF_NULL(scope);
-    for (size_t i = 0; i < inputs_values.size(); ++i) {
-      auto value_ptr = inputs_values[i];
-      auto tensor = value_ptr->cast<tensor::TensorPtr>();
-      MS_EXCEPTION_IF_NULL(tensor);
-      TensorInfo tensor_info = op_info->inputs_tensor_info()[i];
-      TensorLayout tensor_layout = tensor_info.tensor_layout();
-      auto value_node = NewValueNode(value_ptr)->cast<AnfNodePtr>();
-      Operator op = CreateGetTensorSliceOp(tensor_layout);
-      std::vector<AnfNodePtr> node_input = CreateInput(op, value_node, SPLIT_TENSOR);
-      CNodePtr new_node = func_graph->NewCNode(node_input);
-      new_node->set_in_forward_flag(true);
-      auto new_node_value = node_input[0]->cast<ValueNodePtr>();
-      MS_EXCEPTION_IF_NULL(new_node_value);
-      PrimitivePtr new_node_prim = new_node_value->value()->cast<PrimitivePtr>();
-      new_node_prim->set_instance_name(SPLIT_TENSOR);
-      new_node_prim->set_attr("keep_value_node_input", MakeValue(true));
-      new_node->set_scope(scope);
-      node_input[0]->set_scope(scope);
-      make_tuple_inputs.push_back(new_node);
-    }
+
   } else {
     if (inputs_values.size() != op_info->inputs_tensor_info_new()[index - 1]->size()) {
       MS_LOG(EXCEPTION) << "The inputs size " << inputs_values.size() << ", is not equal to inputs shape size "
                         << op_info->inputs_tensor_info_new()[index - 1]->size();
     }
-    auto corresponding_tensor_info = op_info->inputs_tensor_info_new()[index - 1];
-    ScopePtr scope = next_node->scope();
-    MS_EXCEPTION_IF_NULL(scope);
-    for (size_t i = 0; i < inputs_values.size(); ++i) {
-      auto value_ptr = inputs_values[i];
-      auto tensor = value_ptr->cast<tensor::TensorPtr>();
-      MS_EXCEPTION_IF_NULL(tensor);
-      TensorInfo tensor_info = corresponding_tensor_info->GetElement(SizeToLong(i))->GetValue();
-      TensorLayout tensor_layout = tensor_info.tensor_layout();
-      auto value_node = NewValueNode(value_ptr)->cast<AnfNodePtr>();
-      Operator op = CreateGetTensorSliceOp(tensor_layout);
-      std::vector<AnfNodePtr> node_input = CreateInput(op, value_node, SPLIT_TENSOR);
-      CNodePtr new_node = func_graph->NewCNode(node_input);
-      new_node->set_in_forward_flag(true);
-      auto new_node_value = node_input[0]->cast<ValueNodePtr>();
-      MS_EXCEPTION_IF_NULL(new_node_value);
-      PrimitivePtr new_node_prim = new_node_value->value()->cast<PrimitivePtr>();
-      new_node_prim->set_instance_name(SPLIT_TENSOR);
-      new_node_prim->set_attr("keep_value_node_input", MakeValue(true));
-      new_node->set_scope(scope);
-      node_input[0]->set_scope(scope);
-      make_tuple_inputs.push_back(new_node);
-    }
+    new_tensor_infos = op_info->inputs_tensor_info_new()[index - 1];
   }
+
+  ScopePtr scope = next_node->scope();
+  MS_EXCEPTION_IF_NULL(scope);
+  for (size_t i = 0; i < inputs_values.size(); ++i) {
+    auto value_ptr = inputs_values[i];
+    auto tensor = value_ptr->cast<tensor::TensorPtr>();
+    MS_EXCEPTION_IF_NULL(tensor);
+    TensorInfo tensor_info;
+    if (new_tensor_infos != nullptr) {
+      auto elem = new_tensor_infos->GetElement(SizeToLong(i));
+      MS_EXCEPTION_IF_NULL(elem);
+      tensor_info = elem->GetValue();
+    } else {
+      tensor_info = op_info->inputs_tensor_info()[i];
+    }
+    TensorLayout tensor_layout = tensor_info.tensor_layout();
+    auto value_node = NewValueNode(value_ptr)->cast<AnfNodePtr>();
+    Operator op = CreateGetTensorSliceOp(tensor_layout);
+    std::vector<AnfNodePtr> node_input = CreateInput(op, value_node, SPLIT_TENSOR);
+    CNodePtr new_node = func_graph->NewCNode(node_input);
+    new_node->set_in_forward_flag(true);
+    auto new_node_value = node_input[0]->cast<ValueNodePtr>();
+    MS_EXCEPTION_IF_NULL(new_node_value);
+    PrimitivePtr new_node_prim = new_node_value->value()->cast<PrimitivePtr>();
+    new_node_prim->set_instance_name(SPLIT_TENSOR);
+    new_node_prim->set_attr("keep_value_node_input", MakeValue(true));
+    new_node->set_scope(scope);
+    node_input[0]->set_scope(scope);
+    make_tuple_inputs.push_back(new_node);
+  }
+
   CNodePtr make_tuple = func_graph->NewCNode(make_tuple_inputs);
   (void)manager->Replace(node, make_tuple);
   auto prim = GetValueNode<PrimitivePtr>(next_node->input(0));
@@ -970,7 +960,7 @@ static void StepReplaceGraph(const ReplaceGraphPtr &replace_graph, const CNodePt
     replace_input_cnode->set_in_forward_flag(true);
     manager->SetEdge(replace_input.first, appear_count, pre_node);
   }
-  //  "(void)manager->Replace(replace_graph->first, pre_node);" can not be called
+
   auto replace_output = replace_graph->second->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(replace_output);
   replace_output->set_in_forward_flag(true);
@@ -1421,29 +1411,28 @@ static std::pair<AnfNodePtr, int64_t> FindSubGraph(const FuncGraphPtr &graph, co
   std::pair<AnfNodePtr, int64_t> prim_anf_node_pair = FindParallelCareNode(parameter, 0);
   if (prim_anf_node_pair.first != nullptr) {
     return prim_anf_node_pair;
-  } else {
-    AnfNodeIndexSet param_sub_set = manager->node_users()[parameter];
-    for (auto &param_pair : param_sub_set) {
-      CNodePtr param_cnode = param_pair.first->cast<CNodePtr>();
-      AnfNodePtr graph_value_node;
-      if (param_cnode->input(0)->isa<CNode>()) {
-        graph_value_node = param_cnode->input(0)->cast<CNodePtr>()->input(1);
-      } else {
-        graph_value_node = param_cnode->input(0);
-      }
-      if (!IsValueNode<FuncGraph>(graph_value_node)) {
-        continue;
-      }
-      FuncGraphPtr graph_sub = GetValueNode<FuncGraphPtr>(graph_value_node);
-      auto parameters = graph_sub->parameters();
-      if (LongToSize(param_pair.second - 1) >= parameters.size()) {
-        MS_LOG(EXCEPTION) << "The index is out of range, index is: " << (param_pair.second - 1) << ", vector size is "
-                          << parameters.size();
-      }
-      std::pair<AnfNodePtr, int64_t> res = FindSubGraph(graph_sub, parameters[LongToSize(param_pair.second - 1)]);
-      if (res.first != nullptr) {
-        return res;
-      }
+  }
+  AnfNodeIndexSet param_sub_set = manager->node_users()[parameter];
+  for (auto &param_pair : param_sub_set) {
+    CNodePtr param_cnode = param_pair.first->cast<CNodePtr>();
+    AnfNodePtr graph_value_node;
+    if (param_cnode->input(0)->isa<CNode>()) {
+      graph_value_node = param_cnode->input(0)->cast<CNodePtr>()->input(1);
+    } else {
+      graph_value_node = param_cnode->input(0);
+    }
+    if (!IsValueNode<FuncGraph>(graph_value_node)) {
+      continue;
+    }
+    FuncGraphPtr graph_sub = GetValueNode<FuncGraphPtr>(graph_value_node);
+    auto parameters = graph_sub->parameters();
+    if (LongToSize(param_pair.second - 1) >= parameters.size()) {
+      MS_LOG(EXCEPTION) << "The index is out of range, index is: " << (param_pair.second - 1) << ", vector size is "
+                        << parameters.size();
+    }
+    std::pair<AnfNodePtr, int64_t> res = FindSubGraph(graph_sub, parameters[LongToSize(param_pair.second - 1)]);
+    if (res.first != nullptr) {
+      return res;
     }
   }
   return std::make_pair(nullptr, 0);
@@ -2003,7 +1992,8 @@ void CheckStrategyAndShape(const StrategyPtr &in_strategy, const OperatorInfoPtr
 }
 
 static void ExtractStrategyAndInit(const CNodePtr &cnode, const PrimitivePtr &prim, const OperatorInfoPtr &op_info) {
-  StrategyPtr in_strategy = nullptr, out_strategy = nullptr;
+  StrategyPtr in_strategy = nullptr;
+  StrategyPtr out_strategy = nullptr;
   auto attrs = prim->attrs();
 
   // load strategy map from checkpoint
@@ -2518,7 +2508,7 @@ static TensorLayouts GetLossNodeGradOutputLayout(const LossNodeInfo &node_info) 
   if (!operator_info) {
     return ret;
   }
-  MS_EXCEPTION_IF_NULL(operator_info);
+
   TensorInfo loss_grad_tensor_info;
   size_t op_output_size = operator_info->outputs_tensor_info().size();
   MS_LOG(INFO) << "The loss name is " << operator_info->name() << ", the has tuple item is  "
@@ -3043,7 +3033,7 @@ static void HandleRootReshapeAndSaveStrategy(const std::vector<AnfNodePtr> &all_
       continue;
     }
     auto cnode = node->cast<CNodePtr>();
-    if (!IsValueNode<Primitive>(cnode->input(0)) || cnode == nullptr) {
+    if (!IsValueNode<Primitive>(cnode->input(0))) {
       continue;
     }
     if (cnode->in_forward_flag()) {
@@ -3107,7 +3097,7 @@ void MarkForwardCNode(const FuncGraphPtr &root) {
   }
 }
 
-OperatorInfoPtr set_make_list_for_ifa(CNodePtr make_list, const CNodePtr &next_node) {
+OperatorInfoPtr SetMakeListForIFA(CNodePtr make_list, const CNodePtr &next_node) {
   ValueNodePtr anf_node = next_node->input(0)->cast<ValueNodePtr>();
   if (!anf_node) {
     return nullptr;
@@ -3166,7 +3156,7 @@ static void HandleForwardMakeTupleAndMakeList(const std::vector<AnfNodePtr> &all
       continue;
     }
 
-    OperatorInfoPtr op_info = set_make_list_for_ifa(cnode, make_tuple_list_next_cnode);
+    OperatorInfoPtr op_info = SetMakeListForIFA(cnode, make_tuple_list_next_cnode);
     if (op_info == nullptr) {
       op_info = GetDistributeOperator(make_tuple_list_next_cnode);
     }
