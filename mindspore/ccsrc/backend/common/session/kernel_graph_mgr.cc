@@ -2734,8 +2734,8 @@ CNodePtr KernelGraphMgr::ConstructOutput(const AnfNodePtrList &outputs, const st
 
 KernelGraphPtr KernelGraphMgr::NewPynativeKernelGraph() {
   auto graph = std::make_shared<KernelGraph>();
-  graph->set_is_from_pynative(true);
   MS_EXCEPTION_IF_NULL(graph);
+  graph->set_is_from_pynative(true);
   graph->set_graph_id(pynative_graph_sum_);
   pynative_graph_sum_++;
   return graph;
