@@ -99,7 +99,7 @@ Status ReceiveBridgeOp::MonitorIndependentDatasetProcess() {
       RETURN_IF_NOT_OK(msg_queue_.MsgSnd(kMasterReceiveBridgeOpFinishedMsg));
 
       // sleep waiting for independent dataset process get the message queue
-      sleep(kMonitorInterval * 2);
+      sleep(kMonitorInterval * kSleepDelays);
 
       MS_LOG(INFO) << "Monitor thread get interrupt signal and will exit.";
       break;

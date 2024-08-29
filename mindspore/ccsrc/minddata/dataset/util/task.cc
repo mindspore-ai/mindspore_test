@@ -195,9 +195,10 @@ Status Task::Join(WaitFlag blocking) {
           }
           interrupt_svc->InterruptAll();
 #ifdef WITH_BACKEND
+          const int kMaxWaitTimes = 5;
           if (device_target == kAscendDevice) {
             // Because hostPush hung in DataQueueOp, wait 5 seconds and destroy the tdt
-            if (wait_times > 5 && my_name_.find("DataQueueOp") != std::string::npos) {
+            if (wait_times > kMaxWaitTimes && my_name_.find("DataQueueOp") != std::string::npos) {
               MS_LOG(WARNING) << "Wait " << wait_times << " seconds, "
                               << "the task: " << my_name_ << " will be destroyed by TdtHostDestory.";
               if (device::DataQueueMgr::DestoryTdtHandle()) {
@@ -217,7 +218,7 @@ Status Task::Join(WaitFlag blocking) {
           }
 
           // Because ReceiveBridgeOp maybe hung by MsgRcv from SendBridgeOp
-          if (wait_times > 5 && my_name_.find("ReceiveBridgeOp") != std::string::npos) {
+          if (wait_times > kMaxWaitTimes && my_name_.find("ReceiveBridgeOp") != std::string::npos) {
             MS_LOG(WARNING) << "Wait " << wait_times << " seconds, "
                             << "the task: " << my_name_ << ".";
 

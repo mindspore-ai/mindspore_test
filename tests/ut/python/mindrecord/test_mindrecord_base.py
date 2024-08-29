@@ -1336,7 +1336,6 @@ def test_file_writer_schema_len(file_name=None, remove_file=True):
         remove_multi_files(file_name, FILES_NUM)
 
 
-@pytest.mark.skip(reason="Random failure: multiprocessing queue.FULL")
 def test_file_writer_parallel(file_name=None, remove_file=True):
     """
     Feature: FileWriter
