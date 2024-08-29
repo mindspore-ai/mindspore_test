@@ -137,6 +137,16 @@ class ProfilerInfo:
         ProfilerInfo._profiler_info_dict["profiling_options"] = profiling_options
 
     @staticmethod
+    def set_data_simplification(data_simplification):
+        """
+        Function Description:
+            Set the data simplification to profiler info dict
+        Parameter:
+            data_simplification: Whether data simplification is enabled
+        """
+        ProfilerInfo._profiler_info_dict["data_simplification"] = data_simplification
+
+    @staticmethod
     def save(output_path):
         """Save the profiler info to file."""
         ProfilerInfo._file_path = os.path.join(output_path, ProfilerInfo._file_name)
