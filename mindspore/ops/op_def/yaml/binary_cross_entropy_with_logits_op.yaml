@@ -26,3 +26,4 @@ binary_cross_entropy_with_logits:
   dispatch:
     enable: True
     Ascend: BinaryCrossEntropyWithLogitsAscend
+    CPU: BinaryCrossEntropyWithLogitsCPU
