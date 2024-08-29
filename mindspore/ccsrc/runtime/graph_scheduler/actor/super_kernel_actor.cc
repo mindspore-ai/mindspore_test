@@ -69,6 +69,13 @@ inline bool InputDataNoNeedCopy(const AnfNodePtr &input_node, DeviceTensor *inpu
 }
 
 bool IsOnlyDependShape(const CNodePtr &kernel, size_t input_index) {
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  static const bool enable_infer_boost = ms_context->IsEnableInferBoost();
+  if (enable_infer_boost) {
+    return false;
+  }
+
   const auto &only_depend_shape_attr = common::AnfAlgo::GetCNodePrimitiveAttr(kernel, kAttrOnlyDependShape);
   if (only_depend_shape_attr != nullptr) {
     const auto &only_depend_shape = GetValue<std::vector<bool>>(only_depend_shape_attr);
@@ -313,8 +320,8 @@ void SuperKernelActor::FetchPersistentDeviceTensor() {
 
 void SuperKernelActor::CorrectRefCount(size_t input_index, DeviceTensor *device_tensor) {
   MS_EXCEPTION_IF_NULL(device_tensor);
-  const auto &input_rec_cnt = input_params_use_cnt_.at(input_index);
-  if (input_rec_cnt == SIZE_MAX) {
+  const auto &input_use_cnt = input_params_use_cnt_.at(input_index);
+  if (input_use_cnt == SIZE_MAX) {
     bool is_max_rec_cnt =
       device_tensor->original_ref_count() == SIZE_MAX && device_tensor->dynamic_ref_count() == INT32_MAX;
     if (!is_max_rec_cnt) {
@@ -325,21 +332,16 @@ void SuperKernelActor::CorrectRefCount(size_t input_index, DeviceTensor *device_
     return;
   }
 
-  if (input_rec_cnt == 0) {
+  if (input_use_cnt == 0) {
     // No user for this input in graph.
+    MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(device_tensor, device_contexts_[0], GetAID().Name());
     return;
   }
 
   if (device_tensor->original_ref_count() != SIZE_MAX) {
-    MS_LOG(DEBUG) << "The device address: " << device_tensor
-                  << " current ref count before correct: " << device_tensor->ref_count()
-                  << ", after correct: " << (device_tensor->ref_count() + input_rec_cnt);
-    device_tensor->set_ref_count(device_tensor->ref_count() + input_rec_cnt);
+    device_tensor->IncreaseRefCount(input_use_cnt);
   } else if (device_tensor->dynamic_ref_count() != INT32_MAX) {
-    MS_LOG(DEBUG) << "The device address: " << device_tensor
-                  << " current dynamic ref count before correct: " << device_tensor->dynamic_ref_count()
-                  << ", after correct: " << (device_tensor->dynamic_ref_count() + input_rec_cnt);
-    device_tensor->set_dynamic_ref_count(device_tensor->dynamic_ref_count() + input_rec_cnt);
+    device_tensor->IncreaseDynamicRefCount(GetAID().Name(), input_use_cnt);
   }
   // Need to decrease current ref count once.
   MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(device_tensor, device_contexts_[0], GetAID().Name());
@@ -1076,6 +1078,7 @@ void SuperKernelActor::LinkKernelActors() {
 
   // Record origin ref count of all input nodes and set original ref count to 1 to record use count of input nodes in
   // graph_, the original ref count will be restored.
+  HashSet<DeviceAddressPtr> input_param_address_set;
   std::vector<size_t> input_params_origin_ref_cnt(input_num);
   for (size_t i = 0; i < input_num; i++) {
     MS_EXCEPTION_IF_NULL(input_nodes[i]);
@@ -1084,6 +1087,10 @@ void SuperKernelActor::LinkKernelActors() {
     input_params_origin_ref_cnt[i] = device_tensor->original_ref_count();
     device_tensor->set_original_ref_count(1);
     device_tensor->ResetRefCount();
+    if (input_param_address_set.find(device_tensor) != input_param_address_set.end()) {
+      MS_LOG(EXCEPTION) << " Find same device address of input parameter for graph: " << graph_->ToString();
+    }
+    input_param_address_set.insert(device_tensor);
   }
 
   // Calculate original ref count of CNode and Parameter, prepare input and
@@ -1154,10 +1161,12 @@ void SuperKernelActor::AnalyseNodesDependence() {
         MS_EXCEPTION_IF_NULL(kernel_actor);
         (void)kernel_actor->device_tensor_store_keys_.emplace_back(j, device_tensor_store_key);
       } else if (input_node_with_idx.first->isa<Parameter>()) {
-        auto device_tensor =
-          AnfAlgo::GetMutableOutputAddr(input_node_with_idx.first, input_node_with_idx.second, false);
-        MS_EXCEPTION_IF_NULL(device_tensor);
-        UpdateRefCount(device_tensor.get(), false);
+        if (!IsOnlyDependShape(kernel, j)) {
+          auto device_tensor =
+            AnfAlgo::GetMutableOutputAddr(input_node_with_idx.first, input_node_with_idx.second, false);
+          MS_EXCEPTION_IF_NULL(device_tensor);
+          UpdateRefCount(device_tensor.get(), false);
+        }
 
         auto input_idx_iter = param_node_to_input_idx_.find(input_node_with_idx.first.get());
         if (input_idx_iter == param_node_to_input_idx_.end()) {
@@ -1186,14 +1195,6 @@ void SuperKernelActor::AnalyseNodesDependence() {
 
 void SuperKernelActor::LinkKernelActor(const CNodePtr &kernel, size_t input_index, const AnfNodePtr &input_kernel,
                                        size_t output_index) {
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  static const bool enable_infer_boost = ms_context->IsEnableInferBoost();
-  if (enable_infer_boost) {
-    LinkKernelActorByDeviceType(kernel, input_index, input_kernel, output_index);
-    return;
-  }
-
   // Shape depend kernel should not increase ref count.
   if (IsOnlyDependShape(kernel, input_index)) {
     auto device_tensor = AnfAlgo::GetMutableOutputAddr(input_kernel, output_index, false);

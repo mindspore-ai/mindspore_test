@@ -143,24 +143,43 @@ class PointerRefCount {
       original_ref_count_--;
     }
   }
+
+  void IncreaseRefCount(size_t increase_cnt) {
+    if (ref_count() < SIZE_MAX && (SIZE_MAX - ref_count()) > increase_cnt) {
+      ref_count_ += increase_cnt;
+      return;
+    }
+    MS_LOG(EXCEPTION) << "The reference count is:" << ref_count() << ", and can't add: " << increase_cnt << " more.";
+  }
   size_t DecreaseRefCount() { return --ref_count_; }
   void ResetRefCount() { ref_count_ = original_ref_count_; }
 
   // The related interface of dynamic reference count operation.
   void set_dynamic_ref_count(int32_t dynamic_ref_count) { dynamic_ref_count_ = dynamic_ref_count; }
   int32_t dynamic_ref_count() const { return dynamic_ref_count_; }
+
+  void IncreaseDynamicRefCount(const std::string &op_object, int32_t increase_cnt) {
+    if (dynamic_ref_count_ < INT32_MAX && (INT32_MAX - dynamic_ref_count_) > increase_cnt) {
+      auto ret = dynamic_ref_count_.fetch_add(increase_cnt) + increase_cnt;
+      MS_LOG(DEBUG) << op_object << " increases dynamic ref count to:" << ret << " for ptr:" << ptr();
+      return;
+    }
+    MS_LOG(EXCEPTION) << "The dynamic reference count is:" << dynamic_ref_count_ << ", and can't add: " << increase_cnt
+                      << " more.";
+  }
   void IncreaseDynamicRefCount(const std::string &op_object) {
     if (dynamic_ref_count_ < INT32_MAX) {
-      (void)++dynamic_ref_count_;
-      MS_LOG(DEBUG) << op_object << " increases dynamic ref count to:" << dynamic_ref_count_ << " for ptr:" << ptr();
+      auto ret = ++dynamic_ref_count_;
+      MS_LOG(DEBUG) << op_object << " increases dynamic ref count to:" << ret << " for ptr:" << ptr();
     }
   }
   int32_t DecreaseDynamicRefCount(const std::string &op_object) {
     if (dynamic_ref_count_ <= 0) {
       MS_LOG(EXCEPTION) << "The dynamic reference count is invalid value:" << dynamic_ref_count_;
     }
-    MS_LOG(DEBUG) << op_object << " The dynamic ref count decreases to:" << dynamic_ref_count_ << " for ptr:" << ptr();
-    return --dynamic_ref_count_;
+    auto ret = --dynamic_ref_count_;
+    MS_LOG(DEBUG) << op_object << " The dynamic ref count decreases to:" << ret << " for ptr:" << ptr();
+    return ret;
   }
 
   // Get pointer resource destructor.

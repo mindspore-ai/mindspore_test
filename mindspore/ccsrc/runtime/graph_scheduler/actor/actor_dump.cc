@@ -249,7 +249,7 @@ void DumpKernelActor(const KernelActor *actor, std::ofstream &ofs) {
       const auto &device_address = iter->second.first;
       MS_EXCEPTION_IF_NULL(device_address);
       copy_output_info = std::string("\tcopy output address original_ref_count:") +
-                         std::to_string(device_tensor->original_ref_count()) +
+                         std::to_string(device_address->original_ref_count()) +
                          "\t copy dest device target:" + GetDeviceNameByType(device_address->GetDeviceType());
     }
     ofs << "\t\t\toutput_index:" << i << "\tptr:" << device_tensor->GetPtr() << "\tsize:" << device_tensor->GetSize()

@@ -309,6 +309,8 @@ class DeviceAddress : public mindspore::DeviceSync {
       address_common_->pointer_ref_count_->DecreaseOriginalRefCount();
     }
   }
+
+  void IncreaseRefCount(size_t increase_cnt) { address_common_->pointer_ref_count_->IncreaseRefCount(increase_cnt); }
   size_t DecreaseRefCount() { return address_common_->pointer_ref_count_->DecreaseRefCount(); }
 
   // The related interface of dynamic reference count operation.
@@ -317,6 +319,10 @@ class DeviceAddress : public mindspore::DeviceSync {
   }
 
   int32_t dynamic_ref_count() const { return address_common_->pointer_ref_count_->dynamic_ref_count(); }
+
+  void IncreaseDynamicRefCount(const std::string &op_object, int32_t increase_cnt) {
+    address_common_->pointer_ref_count_->IncreaseDynamicRefCount(op_object, increase_cnt);
+  }
   void IncreaseDynamicRefCount(const std::string &op_object) {
     address_common_->pointer_ref_count_->IncreaseDynamicRefCount(op_object);
   }

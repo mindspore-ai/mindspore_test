@@ -78,6 +78,7 @@ class SuperKernelActor : public DebugAwareActor {
   void BuildAndLinkKernelActors();
   const std::vector<KernelActorPtr> &kernel_actors() const { return kernel_actors_; }
   const std::vector<size_t> &input_param_static_use_cnt() const { return input_params_use_cnt_; }
+  bool enable_kbk_sub_graph_execute() const { return enable_kbk_sub_graph_execute_; }
 
  protected:
   void Init() override;
