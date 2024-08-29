@@ -34,6 +34,7 @@ from mindspore.common import dtype as mstype
 from mindspore.common.api import jit
 from mindspore._c_expression import MSContext
 from mindspore.run_check._check_version import AscendEnvChecker
+from mindspore import log as logger
 
 _grad_scale = C.MultitypeFuncGraph("grad_scale")
 reciprocal = P.Reciprocal()
@@ -380,15 +381,19 @@ class TrainOneStepWithLossScaleCell(TrainOneStepCell):
         runtime_conf = os.environ.get('MS_DEV_RUNTIME_CONF')
         global_jit_config = context.get_jit_config()
         if runtime_conf is not None and ("all_finite:True" in runtime_conf or "all_finite:true" in runtime_conf):
+            logger.debug("Enable AllFinite through the environment variable MS_DEV_RUNTIME_CONF.")
             self.enable_allfinite = True
         elif runtime_conf is not None and ("all_finite:False" in runtime_conf or "all_finite:false" in runtime_conf):
+            logger.debug("Disable AllFinite through the environment variable MS_DEV_RUNTIME_CONF.")
             self.enable_allfinite = False
         elif global_jit_config:
+            logger.debug("Current global jit config is: {}".format(global_jit_config["jit_level"]))
             self.enable_allfinite = global_jit_config["jit_level"] == "O0" or global_jit_config["jit_level"] == "O1"
 
         if self.ascend_910bc_target:
             checker = AscendEnvChecker(None)
             if not checker.check_custom_version():
+                logger.debug("Disable AllFinite due to version check failure.")
                 self.enable_allfinite = False
 
         if isinstance(scale_sense, Cell):
@@ -514,6 +519,7 @@ class TrainOneStepWithLossScaleCell(TrainOneStepCell):
         """get overflow status of ascend on infnan mode."""
         overflow = False
         if self.enable_allfinite:
+            logger.debug("Enable AllFinite!")
             overflow = self._get_distributed_overflow_status_on_infnan_enable_allfinite(compute_output)
         else:
             overflow = self._get_distributed_overflow_status_on_infnan_mode(_ascend_grad_overflow, compute_output)

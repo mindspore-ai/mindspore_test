@@ -24,6 +24,7 @@ from mindspore.ops.operations.nn_ops import AllFinite
 from mindspore.run_check._check_version import AscendEnvChecker
 from mindspore import _checkparam as validator
 from mindspore._c_expression import MSContext
+from mindspore import log as logger
 from .common import dtype as mstype
 from . import context
 from . import ops
@@ -62,19 +63,24 @@ def _gpu_target():
 @constexpr
 def _enable_all_finite():
     """check whether enable all finite"""
+    logger.debug("Start enable all finite.")
     if _ascend_target():
         checker = AscendEnvChecker(None)
         if not checker.check_custom_version():
+            logger.debug("Disable AllFinite due to version check failure.")
             return False
     runtime_conf = os.environ.get('MS_DEV_RUNTIME_CONF')
     global_jit_config = context.get_jit_config()
     if runtime_conf is not None and ("all_finite:True" in runtime_conf or "all_finite:true" in runtime_conf):
+        logger.debug("Enable AllFinite through the environment variable MS_DEV_RUNTIME_CONF.")
         return True
 
     if runtime_conf is not None and ("all_finite:False" in runtime_conf or "all_finite:false" in runtime_conf):
+        logger.debug("Disable AllFinite through the environment variable MS_DEV_RUNTIME_CONF.")
         return False
 
     if global_jit_config:
+        logger.debug("Current global jit config is: {}".format(global_jit_config["jit_level"]))
         return global_jit_config["jit_level"] == "O0" or global_jit_config["jit_level"] == "O1"
     return False
 
@@ -121,6 +127,7 @@ def _all_finite(inputs, check_overflow_mode, enable_allfinite):
 
     status_finite = False
     if enable_allfinite:
+        logger.debug("Enable AllFinite!")
         status_finite = ~AllFinite()(inputs)  # pylint: disable=invalid-unary-operand-type
     else:
         outputs = _hypermap(_partial(_overflow), inputs)
