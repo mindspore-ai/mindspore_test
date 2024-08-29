@@ -20,8 +20,8 @@ mse_loss_ext:
             - ``'sum'``: the output elements will be summed.
 
     Returns:
-        Tensor, loss of type float. If `reduction` is ``'mean'`` or ``'sum'``, the shape of output is tensor scalar.
-        If reduction is ``'none'``, the shape of output is the broadcasted shape of **input** and **target** .
+        - Tensor. If `reduction` is ``'mean'`` or ``'sum'``, the shape of output is `Tensor Scalar`.
+        - If reduction is ``'none'``, the shape of output is the broadcasted shape of **input** and **target** .
 
     Raises:
         ValueError: If `reduction` is not one of ``'mean'`` , ``'sum'`` or ``'none'``.
