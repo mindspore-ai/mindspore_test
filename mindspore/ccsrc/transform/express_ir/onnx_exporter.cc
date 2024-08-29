@@ -4276,7 +4276,7 @@ void OnnxExporter::ExportMergeBatchNorm(const FuncGraphPtr &func_graph, const CN
     auto input_shape = input_shape_ptr->cast<abstract::ShapePtr>()->shape();
 
     std::vector<int64_t> normalize_axes = {0};
-    for (size_t i = kTwoNum; i < input_shape.size(); ++i) {
+    for (size_t i = IntToSize(kTwoNum); i < input_shape.size(); ++i) {
       normalize_axes.push_back(static_cast<int64_t>(i));
     }
 

@@ -265,11 +265,11 @@ void SuperKernelActor::Run(OpContext<DeviceTensor> *const context) {
   }
   if (memory_alloc_list_.size() > 0) {
     for (auto &device_tensor : memory_alloc_list_) {
+      MS_EXCEPTION_IF_NULL(device_tensor);
       if (device_tensor->IsNotNeedAlloc()) {
         continue;
       }
       if (common::IsNeedProfileMemory()) {
-        MS_EXCEPTION_IF_NULL(device_tensor);
         auto &info = device_address_to_node_[device_tensor];
         auto output_address = reinterpret_cast<std::uintptr_t>(device_tensor);
         MS_LOG(WARNING) << "Need Profile Memory, Memory need allocated, actor name: " << GetAID().Name()
