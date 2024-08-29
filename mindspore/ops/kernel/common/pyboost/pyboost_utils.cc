@@ -533,10 +533,27 @@ std::pair<bool, KernelAttr> GetKernelAttr(
   for (auto &output_type : outputs_types_dtypes.second) {
     (void)outputs.emplace_back(TypeIdToString(output_type));
   }
-  MS_EXCEPTION(TypeError)
-    << "Unsupported op [" << op_name << "] on CPU, input_type:" << inputs << " ,output_type:" << outputs
-    << ". Please confirm whether the device target setting is correct, "
-    << "or refer to 'mindspore.ops' at https://www.mindspore.cn to query the operator support list.";
+  std::string support_types;
+  for (auto &cur_kernel_attr : support_list) {
+    auto data_pair = kernel::GetInOutDataTypesFromKernelAttr(cur_kernel_attr);
+    const auto &[input_data_types, output_data_types] = kernel::GetInOutDataTypesFromKernelAttr(cur_kernel_attr);
+    std::string input_types_str = TypeIdToString(input_data_types[0].dtype);
+    for (size_t i = 1; i < input_data_types.size(); ++i) {
+      input_types_str += " " + TypeIdToString(input_data_types[i].dtype);
+    }
+    std::string input_str = "input[" + input_types_str + "]";
+
+    std::string output_types_str = TypeIdToString(output_data_types[0].dtype);
+    for (size_t i = 1; i < output_data_types.size(); ++i) {
+      output_types_str += " " + TypeIdToString(output_data_types[i].dtype);
+    }
+    std::string output_str = "output[" + output_types_str + "]";
+    support_types += input_str + ", " + output_str + ";";
+  }
+
+  MS_EXCEPTION(TypeError) << "Select CPU operator[" << op_name
+                          << "] fail! Unsupported data type!\nThe supported data types are " << support_types
+                          << ",\n but get input[" << inputs << "], output[" << outputs << "].";
 }
 }  // namespace
 
