@@ -30,6 +30,7 @@
 #include "symbolic_shape/symbol_engine.h"
 #include "abstract/abstract_value.h"
 #include "kernel/graph_kernel/kernel_packet/kernel_packet_infer_functor.h"
+#include "backend/common/graph_kernel/kernel_packet/kernel_packet_engine.h"
 
 namespace mindspore::kernel {
 bool KernelPacketInitializer::InitKernel(const CNodePtr &real_node, const KernelModPtr &real_kernel_mod,
@@ -198,5 +199,17 @@ KernelPacketKernelMod::AddressArgs KernelPacketKernelMod::GetLaunchArgs(const st
   MS_LOG(DEBUG) << "input_workspace_map_ size: " << input_workspace_map_.size();
   std::vector<KernelTensor *> res_workspace(workspaces.begin() + input_workspace_map_.size(), workspaces.end());
   return {res_inputs, res_workspace};
+}
+CNodePtr GetKernelPacketRealNode(const AnfNodePtr &kernelpacket) {
+  auto func_graph = common::AnfAlgo::GetNodeAttr<FuncGraphPtr>(kernelpacket, kAttrFuncGraph);
+  MS_EXCEPTION_IF_NULL(func_graph);
+  if (func_graph->symbol_engine() == nullptr) {
+    // rebuild symbol engine after reload mindir
+    auto symbol_engine = mindspore::graphkernel::packet::KernelPacketEngine::Build(func_graph);
+    func_graph->set_symbol_engine(symbol_engine);
+  }
+  auto real_node = func_graph->output()->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(real_node);
+  return real_node;
 }
 }  // namespace mindspore::kernel

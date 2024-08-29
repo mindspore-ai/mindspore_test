@@ -82,14 +82,7 @@ class BACKEND_EXPORT KernelPacketKernelMod : public KernelMod {
   KernelModPtr real_kernel_mod_;
   std::string real_node_debug_str_;
 };
-
-inline CNodePtr GetKernelPacketRealNode(const AnfNodePtr &kernelpacket) {
-  auto func_graph = common::AnfAlgo::GetNodeAttr<FuncGraphPtr>(kernelpacket, kAttrFuncGraph);
-  MS_EXCEPTION_IF_NULL(func_graph);
-  auto real_node = func_graph->output()->cast<CNodePtr>();
-  MS_EXCEPTION_IF_NULL(real_node);
-  return real_node;
-}
+BACKEND_EXPORT CNodePtr GetKernelPacketRealNode(const AnfNodePtr &kernelpacket);
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_KERNEL_GRAPH_KERNEL_KERNEL_PACKET_KERNEL_PACKET_KERNEL_MOD_H_

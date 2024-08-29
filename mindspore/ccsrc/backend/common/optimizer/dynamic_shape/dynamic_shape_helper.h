@@ -74,7 +74,7 @@ class CustomActorNodeManager {
 };
 
 /// \brief The class to implement an InferShape function, which is decoupled from the mindspore/core.
-class InferShapeFunctor : public Functor {
+class BACKEND_EXPORT InferShapeFunctor : public Functor {
  public:
   /// \brief Constructor of InferShapeFunctor.
   explicit InferShapeFunctor(const std::string &name) : Functor(name) {}

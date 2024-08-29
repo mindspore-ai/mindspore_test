@@ -554,8 +554,8 @@ bool IrExportBuilder::SetFunctorToAttrProto(const FunctorPtr &func, mind_ir::Att
   if (func->isa<ShapeCalcBaseFunctor>()) {
     functor_proto->set_type(mind_ir::FunctorProto_FunctorType_SHAPE_CALC_FUNCTOR);
   } else {
-    MS_LOG(ERROR) << "Unknown functor: " << func->ToString();
-    return false;
+    MS_LOG(DEBUG) << "Skip functor: " << func->ToString();
+    return true;
   }
   functor_proto->set_name(func->name());
   auto values = func->ToValue();
