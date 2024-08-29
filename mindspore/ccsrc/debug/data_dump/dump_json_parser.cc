@@ -41,6 +41,7 @@ constexpr auto kIteration = "iteration";
 constexpr auto kInputOutput = "input_output";
 constexpr auto kKernels = "kernels";
 constexpr auto kSupportDevice = "support_device";
+constexpr auto kOverflowNumber = "overflow_number";
 constexpr auto kEnable = "enable";
 constexpr auto kOpDebugMode = "op_debug_mode";
 constexpr auto kTransFlag = "trans_flag";
@@ -500,7 +501,8 @@ void DumpJsonParser::ParseCommonDumpSetting(const nlohmann::json &content) {
       ParseOpDebugMode(*op_debug_mode);
     }
   }
-  ParseSavedData(*common_dump_settings);  // saved data optional
+  ParseOverflowNumber(*common_dump_settings);  // The overflow number field is optional.
+  ParseSavedData(*common_dump_settings);       // saved data optional
 }
 
 void DumpJsonParser::ParseE2eSyncDumpEnable(const nlohmann::json &content) {
@@ -578,6 +580,26 @@ void DumpJsonParser::ParseDumpMode(const nlohmann::json &content) {
     }
     if (IsGeDump()) {
       MS_LOG(EXCEPTION) << "Set dump is not supported in GE dump. Please set dump_mode to 0 or 1.";
+    }
+  }
+}
+
+void DumpJsonParser::ParseOverflowNumber(const nlohmann::json &content) {
+  auto json_iter = content.find(kOverflowNumber);
+  if (op_debug_mode_ == static_cast<uint32_t>(DUMP_BOTH_OVERFLOW)) {
+    overflow_number_ = 0;
+    if (json_iter != content.end()) {
+      CheckJsonUnsignedType(*json_iter, kOverflowNumber);
+      overflow_number_ = *json_iter;
+      const uint32_t min_input_num = 0;
+      if (overflow_number_ < min_input_num) {
+        MS_LOG(EXCEPTION) << "Dump config parse failed, overflow_number should not be less than 0, but got "
+                          << overflow_number_;
+      }
+    }
+  } else {
+    if (json_iter != content.end()) {
+      MS_LOG(EXCEPTION) << "overflow_number only need to be set when op_debug_mode is 3.";
     }
   }
 }
