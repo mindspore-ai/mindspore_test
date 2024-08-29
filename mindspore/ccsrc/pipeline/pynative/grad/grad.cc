@@ -1763,12 +1763,12 @@ void GradExecutor::MakeNestedCnode(bool has_custom_bprop, const std::vector<Valu
   op_run_info->op_grad_info->input_value = forward_args;
   op_run_info->input_size = forward_args.size();
   auto out_value = PyNativeAlgo::DataConvert::BaseRefToValue(out, true, true, top_cell_->op_index());
+  MS_EXCEPTION_IF_NULL(out_value);
   // Get output values
   if (has_custom_bprop && !out_value->isa<ValueSequence>()) {
     std::vector<ValuePtr> out_v{out_value};
     out_value = std::make_shared<ValueTuple>(out_v);
   }
-  MS_EXCEPTION_IF_NULL(out_value);
   RecordNestedGraph(first_grad_fg, inner_graph_info, forward_args, out_value);
 
   // Get input values

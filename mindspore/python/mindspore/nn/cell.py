@@ -2307,7 +2307,7 @@ class Cell(Cell_):
             ...     def __init__(self):
             ...         super(Net, self).__init__()
             ...         self.relu = nn.ReLU()
-            ...         self.handle = self.relu.register_backward_pre_hook()
+            ...         self.handle = self.relu.register_backward_pre_hook(backward_pre_hook_fn)
             ...
             ...     def construct(self, x):
             ...         x = x + x
@@ -2399,7 +2399,7 @@ class Cell(Cell_):
             ...     def __init__(self):
             ...         super(Net, self).__init__()
             ...         self.relu = nn.ReLU()
-            ...         self.handle = self.relu.register_backward_hook()
+            ...         self.handle = self.relu.register_backward_hook(backward_hook_fn)
             ...
             ...     def construct(self, x):
             ...         x = x + x

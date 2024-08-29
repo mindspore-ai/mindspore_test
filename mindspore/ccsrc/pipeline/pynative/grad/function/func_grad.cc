@@ -32,12 +32,12 @@ namespace {
 constexpr char kInput[] = "input";
 
 ValuePtr Add(const ValuePtr &input, const ValuePtr &other, const FuncBuilderPtr &func_impl) {
+  MS_EXCEPTION_IF_NULL(input);
   if (input->isa<None>()) {
-    MS_EXCEPTION_IF_NULL(other);
     return other;
   }
+  MS_EXCEPTION_IF_NULL(other);
   if (other->isa<None>()) {
-    MS_EXCEPTION_IF_NULL(input);
     return input;
   }
   auto result = func_impl->Add(input, other);
