@@ -18,10 +18,6 @@
 #include <sstream>
 #include <unordered_map>
 #include "common/common_test.h"
-#include "include/c_api/ms/tensor.h"
-#include "include/c_api/ms/context.h"
-#include "include/c_api/ms/base/status.h"
-#include "include/c_api/ms/base/handle_types.h"
 
 namespace mindspore {
 class TestCApiTensor : public UT::CApiCommon {

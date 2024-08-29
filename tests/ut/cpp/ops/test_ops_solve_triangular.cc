@@ -28,7 +28,7 @@
 #include "test_value_utils.h"
 #include "ops/test_ops.h"
 #include "infer/ops_func_impl/solve_triangular.h"
-#include "include/c_api/ms/base/types.h"
+#include "mindapi/base/types.h"
 
 namespace mindspore {
 namespace ops {
