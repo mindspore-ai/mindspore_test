@@ -37,6 +37,37 @@
 namespace mindspore {
 namespace abstract {
 namespace {
+// Stack of amp strategy for funcgraphs.
+static std::stack<amp::AmpStrategyPtr> amp_strategy_stack_{};
+
+amp::AmpStrategyPtr GetCurrentGraphAmpStrategy() {
+  return amp_strategy_stack_.empty() ? nullptr : amp_strategy_stack_.top();
+}
+
+void PushGraphAmpStrategy(const FuncGraphPtr &fg) {
+  MS_EXCEPTION_IF_NULL(fg);
+  if (fg->has_flag(GRAPH_FLAG_MIX_PRECISION_FP32) || fg->has_flag(GRAPH_FLAG_MIX_PRECISION_FP16) ||
+      fg->has_flag(GRAPH_FLAG_MIX_PRECISION_BF16)) {
+    // When funcgraph has set to_float, follows to_float strategy rather than amp strategy.
+    fg->set_amp_strategy(std::make_shared<amp::AmpStrategy>());
+  } else {
+    amp::AmpStrategyPtr fg_amp_strategy = fg->amp_strategy();
+    amp::AmpStrategyPtr parent_amp_strategy = GetCurrentGraphAmpStrategy();
+    if (parent_amp_strategy != nullptr && (fg_amp_strategy == nullptr || !parent_amp_strategy->IsEnable())) {
+      // Pass amp strategy of parent func_graph to fg.
+      fg->set_amp_strategy(parent_amp_strategy);
+    }
+  }
+  amp_strategy_stack_.push(fg->amp_strategy());
+}
+
+void PopGraphAmpStrategy() {
+  if (amp_strategy_stack_.empty()) {
+    MS_LOG(INTERNAL_EXCEPTION) << "amp_strategy_stack_ is empty when trying to pop the amp strategy.";
+  }
+  amp_strategy_stack_.pop();
+}
+
 string EvalEntryLogging(const EvaluatorPtr &evaluator, const AbstractBasePtrList &arg_abs_list,
                         const AnfNodeConfigPtr &out_conf) {
   MS_EXCEPTION_IF_NULL(evaluator);
@@ -355,34 +386,6 @@ AbstractBasePtr BaseFuncGraphEvaluator::LaunchRecursiveEval(const AnalysisEngine
     SetSequenceElementsUseFlagsRecursively(abstract, true);
   }
   return abstract;
-}
-
-void BaseFuncGraphEvaluator::PushGraphAmpStrategy(const FuncGraphPtr &fg) {
-  MS_EXCEPTION_IF_NULL(fg);
-  if (fg->has_flag(GRAPH_FLAG_MIX_PRECISION_FP32) || fg->has_flag(GRAPH_FLAG_MIX_PRECISION_FP16) ||
-      fg->has_flag(GRAPH_FLAG_MIX_PRECISION_BF16)) {
-    // When funcgraph has set to_float, follows to_float strategy rather than amp strategy.
-    fg->set_amp_strategy(std::make_shared<amp::AmpStrategy>());
-  } else {
-    amp::AmpStrategyPtr fg_amp_strategy = fg->amp_strategy();
-    amp::AmpStrategyPtr parent_amp_strategy = GetCurrentGraphAmpStrategy();
-    if (parent_amp_strategy != nullptr && (fg_amp_strategy == nullptr || !parent_amp_strategy->IsEnable())) {
-      // Pass amp strategy of parent func_graph to fg.
-      fg->set_amp_strategy(parent_amp_strategy);
-    }
-  }
-  amp_strategy_stack_.push(fg->amp_strategy());
-}
-
-void BaseFuncGraphEvaluator::PopGraphAmpStrategy() {
-  if (amp_strategy_stack_.empty()) {
-    MS_LOG(INTERNAL_EXCEPTION) << "amp_strategy_stack_ is empty when trying to pop the amp strategy.";
-  }
-  amp_strategy_stack_.pop();
-}
-
-amp::AmpStrategyPtr BaseFuncGraphEvaluator::GetCurrentGraphAmpStrategy() {
-  return amp_strategy_stack_.empty() ? nullptr : amp_strategy_stack_.top();
 }
 
 EvalResultPtr BaseFuncGraphEvaluator::Eval(AnalysisEnginePtr engine, const AbstractBasePtrList &args_abs_list,
