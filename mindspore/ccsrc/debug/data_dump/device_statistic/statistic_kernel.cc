@@ -102,7 +102,11 @@ vector<DeviceAddressPtr> StatisticKernel::LaunchKernelAsync(KernelTensor *input,
   void *stream_ptr = device_context_->device_res_manager_->GetStream(stream_id_);
   MS_EXCEPTION_IF_NULL(stream_ptr);
   auto workspace_addr = GetWorkSpaceDeviceAddress(inputs, outputs);
-  res.emplace_back(workspace_addr);
+  // in low precision mode, workspace is about 1-13KB.
+  // don't use memreuse capture workspace mem.
+  if (!DumpJsonParser::GetInstance().IsDeviceStatHighPrecisionMode()) {
+    res.emplace_back(workspace_addr);
+  }
   res.emplace_back(output_addr);
   vector<KernelTensor *> workspace;
   if (workspace_addr) {

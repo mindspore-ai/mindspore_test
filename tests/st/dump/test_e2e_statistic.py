@@ -13,9 +13,9 @@
 # limitations under the License.
 # ============================================================================
 import os
-import math
 import glob
 import csv
+import numpy as np
 import mindspore.context as context
 import tempfile
 import time
@@ -47,16 +47,14 @@ def is_float_equal(value1, value2, rel_tol=1e-4, abs_tol=1e-4):
     try:
         value1 = float(value1)
         value2 = float(value2)
-        if math.isnan(value1) and math.isnan(value2):
-            return True
-        return math.isclose(value1, value2, rel_tol=rel_tol, abs_tol=abs_tol)
+        return np.isclose(value1, value2, rtol=rel_tol, atol=abs_tol, equal_nan=True)
     except ValueError:
         return value1 == value2
 
 
 def to_comparable_pairs(data):
     for key, value in data.items():
-        if key in {'Max Value', 'Min Value', 'L2norm Value', 'Avg Value'}:
+        if key in {'Max Value', 'Min Value', 'L2Norm Value', 'Avg Value'}:
             yield key, float(value)
         else:
             yield key, value
@@ -93,56 +91,63 @@ def get_dumped_stat_list(dump_file_path):
         return stats_list
 
 
+def compare_single_data(x, y, net, dump_path, precision_mode="high"):
+    t_x, t_y = x, y
+    t_out = x + y
+    if precision_mode == "high":
+        t_x, t_y, t_out = t_x.astype(np.float32), t_y.astype(np.float32), t_out.astype(np.float32)
+
+    common_res = {'Op Type': 'Add', 'Data Size': str(x.nbytes), 'Data Type': str(x.dtype), 'Shape': "(3)"}
+    target_list = []
+    for idx, tensor in enumerate([t_x, t_y]):
+        target = {**common_res, **{'IO': 'input', 'Slot': str(idx)}}
+        target.update({
+            'Max Value': tensor.max(), 'Min Value': tensor.min(),
+            'Avg Value': tensor.mean(), 'L2Norm Value': np.linalg.norm(tensor)
+        })
+        target_list.append(target)
+    target_output = {**common_res, **{'IO': 'output', 'Slot': '0', 'Max Value': t_out.max(),
+                                      'Min Value': t_out.min(), 'Avg Value': t_out.mean(),
+                                      'L2Norm Value': np.linalg.norm(t_out)}}
+    target_list.append(target_output)
+    t = net(Tensor(x), Tensor(y))
+    print(t)
+    time.sleep(1)
+    stat_list = get_dumped_stat_list(dump_path)
+    assert len(stat_list) == 3
+    check_statistic_result(stat_list, target_list)
+
+
+def compare_multi_data(net, dtype, dump_path, precision_mode="high"):
+    test_cases = [
+        (np.array([40000, 40000, 40000], dtype),
+         np.array([40000, 40000, 40000], dtype)),
+        (np.array([1., 2., float('inf')], dtype),
+         np.array([-float("inf"), 2., -10.], dtype)),
+        (np.array([1., 2., 3.], dtype), np.array([2., 2., -10.], dtype)),
+        (np.array([float('inf'), float('inf'), float('inf')], dtype),
+         np.array([float('inf'), float('inf'), float('inf')], dtype)),
+        (np.array([float('-inf'), float('-inf'), float('-inf')], dtype),
+         np.array([float('-inf'), float('-inf'), float('-inf')], dtype)),
+    ]
+    for i, (x, y) in enumerate(test_cases):
+        compare_single_data(x, y, net, Path(dump_path) / "rank_0" / "Net" / "0" / str(i), precision_mode)
+
+
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_e2e_async_statistic_device():
+def test_e2e_statistic_async_device_high_precision():
     """
-    Feature: kbyk statistic dump support device
-    Description: Test kbyk statistic dump on device.
+    Feature: kbyk statistic dump support device async high precision
+    Description: Test kbyk statistic dump on device in high precision mode.
     Expectation: The statistics result meet the requirement.
     """
-    context.set_context(mode=context.GRAPH_MODE,
-                        device_target="Ascend", jit_config={"jit_level": "O0"})
+    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend", jit_config={"jit_level": "O0"})
 
     def extra_json_settings(data):
         data["e2e_dump_settings"]["stat_calc_mode"] = "device"
         data["e2e_dump_settings"]["enable"] = False
-        data["common_dump_settings"]["saved_data"] = "statistic"
-        data["common_dump_settings"]["statistic_category"] = [
-            "max", "min", "avg", "l2norm"]
 
-    def check_inf_dump(dump_file_path, step):
-        stat_list = get_dumped_stat_list(dump_file_path)
-        assert len(stat_list) == 3
-        common_res = {'Op Type': 'Add', 'Data Size': '12',
-                      'Data Type': 'float32', 'Shape': '(3)'}
-        target_input0 = {**common_res, **{'IO': 'input', 'Slot': '0'}}
-        target_input1 = {**common_res, **{'IO': 'input', 'Slot': '1'}}
-        target_output = {**common_res, **{'IO': 'output', 'Slot': '0'}}
-        if step == 0:
-            target_input0.update(
-                {'Max Value': 'nan', 'Min Value': 'nan', 'Avg Value': 'nan', 'L2Norm Value': 'nan'})
-            target_input1.update(
-                {'Max Value': '2', 'Min Value': '-inf', 'L2Norm Value': 'inf'})
-            target_output.update(
-                {'Max Value': 'nan', 'Min Value': 'nan', 'Avg Value': 'nan', 'L2Norm Value': 'nan'})
-        elif step == 1:
-            target_input0.update(
-                {'Max Value': 'inf', 'Min Value': '1', 'Avg Value': 'inf', 'L2Norm Value': 'inf'})
-            target_input1.update(
-                {'Max Value': '2', 'Min Value': '-inf', 'L2Norm Value': 'inf'})
-            target_output.update(
-                {'Max Value': 'inf', 'Min Value': '-inf', 'Avg Value': 'nan', 'L2Norm Value': 'inf'})
-        elif step == 2:
-            target_input0.update(
-                {'Max Value': '3', 'Min Value': '1', 'Avg Value': '2', 'L2Norm Value': '3.74166'})
-            target_input1.update(
-                {'Max Value': '2', 'Min Value': '-10', 'Avg Value': '-2', 'L2Norm Value': '10.3923'})
-            target_output.update(
-                {'Max Value': '4', 'Min Value': '-7', 'Avg Value': '0', 'L2Norm Value': '8.60233'})
-        check_statistic_result(
-            stat_list, [target_input0, target_input1, target_output])
-
-    with tempfile.TemporaryDirectory(suffix="e2e_statistic_host_with_nan_and_inf") as test_dir:
+    with tempfile.TemporaryDirectory() as test_dir:
         path = Path(test_dir)
         dump_path = str(path / "dump_data")
         dump_config_path = str(path / "config.json")
@@ -151,71 +156,24 @@ def test_e2e_async_statistic_device():
         try:
             os.environ['MINDSPORE_DUMP_CONFIG'] = dump_config_path
             net = Net()
-            x = Tensor([1., 2., float('nan')])
-            y = Tensor([-float("inf"), 2., -10.])
-            t1 = net(x, y)
-            x = Tensor([1., 2., float('inf')])
-            y = Tensor([-float("inf"), 2., -10.])
-            t2 = net(x, y)
-            x = Tensor([1., 2., 3.])
-            y = Tensor([2., 2., -10.])
-            t3 = net(x, y)
-            print(t1, t2, t3)
-            time.sleep(2)
-            check_inf_dump(Path(dump_path) / "rank_0" / "Net" / "0" / "0", 0)
-            check_inf_dump(Path(dump_path) / "rank_0" / "Net" / "0" / "1", 1)
-            check_inf_dump(Path(dump_path) / "rank_0" / "Net" / "0" / "2", 2)
+            compare_multi_data(net, np.float32, dump_path)
         finally:
             del os.environ['MINDSPORE_DUMP_CONFIG']
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_e2e_sync_statistic_device():
+def test_e2e_statistic_async_device_low_precision():
     """
-    Feature: kbyk statistic dump support device
-    Description: Test kbyk statistic dump on device.
+    Feature: kbyk statistic dump support device async low precision
+    Description: Test kbyk statistic dump on device in low precision mode.
     Expectation: The statistics result meet the requirement.
     """
-    context.set_context(mode=context.GRAPH_MODE,
-                        device_target="Ascend", jit_config={"jit_level": "O0"})
+    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend", jit_config={"jit_level": "O0"})
 
     def extra_json_settings(data):
         data["e2e_dump_settings"]["stat_calc_mode"] = "device"
-        data["common_dump_settings"]["saved_data"] = "statistic"
-        data["common_dump_settings"]["statistic_category"] = [
-            "max", "min", "avg", "l2norm"]
-
-    def check_inf_dump(dump_file_path, step):
-        stat_list = get_dumped_stat_list(dump_file_path)
-        assert len(stat_list) == 3
-        common_res = {'Op Type': 'Add', 'Data Size': '12',
-                      'Data Type': 'float32', 'Shape': '(3)'}
-        target_input0 = {**common_res, **{'IO': 'input', 'Slot': '0'}}
-        target_input1 = {**common_res, **{'IO': 'input', 'Slot': '1'}}
-        target_output = {**common_res, **{'IO': 'output', 'Slot': '0'}}
-        if step == 0:
-            target_input0.update(
-                {'Max Value': 'nan', 'Min Value': 'nan', 'Avg Value': 'nan', 'L2Norm Value': 'nan'})
-            target_input1.update(
-                {'Max Value': '2', 'Min Value': '-inf', 'L2Norm Value': 'inf'})
-            target_output.update(
-                {'Max Value': 'nan', 'Min Value': 'nan', 'Avg Value': 'nan', 'L2Norm Value': 'nan'})
-        elif step == 1:
-            target_input0.update(
-                {'Max Value': 'inf', 'Min Value': '1', 'Avg Value': 'inf', 'L2Norm Value': 'inf'})
-            target_input1.update(
-                {'Max Value': '2', 'Min Value': '-inf', 'L2Norm Value': 'inf'})
-            target_output.update(
-                {'Max Value': 'inf', 'Min Value': '-inf', 'Avg Value': 'nan', 'L2Norm Value': 'inf'})
-        elif step == 2:
-            target_input0.update(
-                {'Max Value': '3', 'Min Value': '1', 'Avg Value': '2', 'L2Norm Value': '3.74166'})
-            target_input1.update(
-                {'Max Value': '2', 'Min Value': '-10', 'Avg Value': '-2', 'L2Norm Value': '10.3923'})
-            target_output.update(
-                {'Max Value': '4', 'Min Value': '-7', 'Avg Value': '0', 'L2Norm Value': '8.60233'})
-        check_statistic_result(
-            stat_list, [target_input0, target_input1, target_output])
+        data["e2e_dump_settings"]["device_stat_precision_mode"] = "low"
+        data["e2e_dump_settings"]["enable"] = False
 
     with tempfile.TemporaryDirectory(suffix="e2e_statistic_host_with_nan_and_inf") as test_dir:
         path = Path(test_dir)
@@ -226,88 +184,25 @@ def test_e2e_sync_statistic_device():
         try:
             os.environ['MINDSPORE_DUMP_CONFIG'] = dump_config_path
             net = Net()
-            x = Tensor([1., 2., float('nan')])
-            y = Tensor([-float("inf"), 2., -10.])
-            t1 = net(x, y)
-            x = Tensor([1., 2., float('inf')])
-            y = Tensor([-float("inf"), 2., -10.])
-            t2 = net(x, y)
-            x = Tensor([1., 2., 3.])
-            y = Tensor([2., 2., -10.])
-            t3 = net(x, y)
-            print(t1, t2, t3)
-            time.sleep(2)
-            check_inf_dump(Path(dump_path) / "rank_0" / "Net" / "0" / "0", 0)
-            check_inf_dump(Path(dump_path) / "rank_0" / "Net" / "0" / "1", 1)
-            check_inf_dump(Path(dump_path) / "rank_0" / "Net" / "0" / "2", 2)
+            compare_multi_data(net, np.float16, dump_path, precision_mode="low")
         finally:
             del os.environ['MINDSPORE_DUMP_CONFIG']
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-def test_e2e_statistic_host():
+def test_e2e_statistic_sync_device():
     """
-    Feature: kbyk statistic dump support host
-    Description: Test kbyk statistic dump on host.
+    Feature: kbyk statistic dump support device sync
+    Description: Test kbyk statistic dump on device.
     Expectation: The statistics result meet the requirement.
     """
-    context.set_context(mode=context.GRAPH_MODE,
-                        device_target="Ascend", jit_config={"jit_level": "O0"})
+    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend", jit_config={"jit_level": "O0"})
 
     def extra_json_settings(data):
-        data["e2e_dump_settings"]["stat_calc_mode"] = "host"
-        data["common_dump_settings"]["saved_data"] = "statistic"
-        data["common_dump_settings"]["statistic_category"] = [
-            "max", "min", "avg", "l2norm"]
+        data["e2e_dump_settings"]["stat_calc_mode"] = "device"
+        data["e2e_dump_settings"]["enable"] = True
 
-    def check_dump_data(dump_file_path, step):
-        stat_list = get_dumped_stat_list(dump_file_path)
-        assert len(stat_list) == 3
-        common_res = {'Op Type': 'Add', 'Data Size': '12',
-                      'Data Type': 'float32', 'Shape': '(3)'}
-        target_input0 = {**common_res, **{'IO': 'input', 'Slot': '0'}}
-        target_input1 = {**common_res, **{'IO': 'input', 'Slot': '1'}}
-        target_output = {**common_res, **{'IO': 'output', 'Slot': '0'}}
-        if step == 0:
-            target_input0.update(
-                {'Max Value': 'nan', 'Min Value': 'nan', 'Avg Value': 'nan', 'L2Norm Value': 'nan'})
-            target_input1.update(
-                {'Max Value': '2', 'Min Value': '-inf', 'Avg Value': '-inf', 'L2Norm Value': 'inf'})
-            target_output.update(
-                {'Max Value': 'nan', 'Min Value': 'nan', 'Avg Value': 'nan', 'L2Norm Value': 'nan'})
-        elif step == 1:
-            target_input0.update(
-                {'Max Value': 'inf', 'Min Value': '1', 'Avg Value': 'inf', 'L2Norm Value': 'inf'})
-            target_input1.update(
-                {'Max Value': '2', 'Min Value': '-inf', 'Avg Value': '-inf', 'L2Norm Value': 'inf'})
-            target_output.update(
-                {'Max Value': 'inf', 'Min Value': '-inf', 'Avg Value': 'nan', 'L2Norm Value': 'inf'})
-        elif step == 2:
-            target_input0.update(
-                {'Max Value': '3', 'Min Value': '1', 'Avg Value': '2', 'L2Norm Value': '3.74166'})
-            target_input1.update(
-                {'Max Value': '2', 'Min Value': '-10', 'Avg Value': '-2', 'L2Norm Value': '10.3923'})
-            target_output.update(
-                {'Max Value': '4', 'Min Value': '-7', 'Avg Value': '0', 'L2Norm Value': '8.60233'})
-        elif step == 3:
-            target_input0.update(
-                {'Max Value': 'inf', 'Min Value': 'inf', 'Avg Value': 'inf', 'L2Norm Value': 'inf'})
-            target_input1.update(
-                {'Max Value': 'inf', 'Min Value': 'inf', 'Avg Value': 'inf', 'L2Norm Value': 'inf'})
-            target_output.update(
-                {'Max Value': 'inf', 'Min Value': 'inf', 'Avg Value': 'inf', 'L2Norm Value': 'inf'})
-        elif step == 4:
-            target_input0.update(
-                {'Max Value': '-inf', 'Min Value': '-inf', 'Avg Value': '-inf', 'L2Norm Value': 'inf'})
-            target_input1.update(
-                {'Max Value': '-inf', 'Min Value': '-inf', 'Avg Value': '-inf', 'L2Norm Value': 'inf'})
-            target_output.update(
-                {'Max Value': '-inf', 'Min Value': '-inf', 'Avg Value': '-inf', 'L2Norm Value': 'inf'})
-        print("res is ", stat_list)
-        check_statistic_result(
-            stat_list, [target_input0, target_input1, target_output])
-
-    with tempfile.TemporaryDirectory(suffix="e2e_statistic_host_with_nan_and_inf") as test_dir:
+    with tempfile.TemporaryDirectory() as test_dir:
         path = Path(test_dir)
         dump_path = str(path / "dump_data")
         dump_config_path = str(path / "config.json")
@@ -316,27 +211,33 @@ def test_e2e_statistic_host():
         try:
             os.environ['MINDSPORE_DUMP_CONFIG'] = dump_config_path
             net = Net()
-            x = Tensor([1., 2., float('nan')])
-            y = Tensor([-float("inf"), 2., -10.])
-            t1 = net(x, y)
-            x = Tensor([1., 2., float('inf')])
-            y = Tensor([-float("inf"), 2., -10.])
-            t2 = net(x, y)
-            x = Tensor([1., 2., 3.])
-            y = Tensor([2., 2., -10.])
-            t3 = net(x, y)
-            x = Tensor([float('inf'), float('inf'), float('inf')])
-            y = Tensor([float('inf'), float('inf'), float('inf')])
-            t4 = net(x, y)
-            x = Tensor([float('-inf'), float('-inf'), float('-inf')])
-            y = Tensor([float('-inf'), float('-inf'), float('-inf')])
-            t5 = net(x, y)
-            print(t1, t2, t3, t4, t5)
-            time.sleep(2)
-            check_dump_data(Path(dump_path) / "rank_0" / "Net" / "0" / "0", 0)
-            check_dump_data(Path(dump_path) / "rank_0" / "Net" / "0" / "1", 1)
-            check_dump_data(Path(dump_path) / "rank_0" / "Net" / "0" / "2", 2)
-            check_dump_data(Path(dump_path) / "rank_0" / "Net" / "0" / "3", 3)
-            check_dump_data(Path(dump_path) / "rank_0" / "Net" / "0" / "4", 4)
+            compare_multi_data(net, np.float32, dump_path)
+        finally:
+            del os.environ['MINDSPORE_DUMP_CONFIG']
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_e2e_statistic_sync_host():
+    """
+    Feature: kbyk statistic dump support host sync
+    Description: Test kbyk statistic dump on host.
+    Expectation: The statistics result meet the requirement.
+    """
+    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend", jit_config={"jit_level": "O0"})
+
+    def extra_json_settings(data):
+        data["e2e_dump_settings"]["stat_calc_mode"] = "host"
+        data["e2e_dump_settings"]["enable"] = True
+
+    with tempfile.TemporaryDirectory() as test_dir:
+        path = Path(test_dir)
+        dump_path = str(path / "dump_data")
+        dump_config_path = str(path / "config.json")
+        generate_e2edump_json(dump_path, dump_config_path, extra_json_settings)
+
+        try:
+            os.environ['MINDSPORE_DUMP_CONFIG'] = dump_config_path
+            net = Net()
+            compare_multi_data(net, np.float16, dump_path)
         finally:
             del os.environ['MINDSPORE_DUMP_CONFIG']
