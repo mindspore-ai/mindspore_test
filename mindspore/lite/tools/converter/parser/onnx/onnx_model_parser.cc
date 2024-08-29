@@ -1509,6 +1509,10 @@ STATUS OnnxModelParser::BuildParameterNodeForQuantParam(const void *data, const 
     return RET_NOT_SUPPORT;
   }
   auto res_graph = ConvertGraph(res_graph_);
+  if (res_graph == nullptr) {
+    MS_LOG(ERROR) << "res_graph is nullptr!";
+    return RET_ERROR;
+  }
   auto parameter_node = res_graph->add_parameter();
   MS_CHECK_TRUE_MSG(parameter_node != nullptr, RET_NULL_PTR, "create parameter return nullptr");
   auto abstract_tensor = CreateTensorAbstract({}, type);
