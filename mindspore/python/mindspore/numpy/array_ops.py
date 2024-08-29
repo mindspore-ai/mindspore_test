@@ -1333,7 +1333,7 @@ def broadcast_arrays(*args):
 
 
 def array_split(x, indices_or_sections, axis=0):
-    """
+    r"""
     Splits a tensor into multiple sub-tensors.
 
     Note:
@@ -1342,7 +1342,7 @@ def array_split(x, indices_or_sections, axis=0):
     The only difference between ``np.split`` and ``np.array_split`` is that
     ``np.array_split`` allows indices_or_sections to be an integer that does not
     equally divide the axis. For a tensor of length l that should be split into
-    n sections, it returns :math:`l % n` sub-arrays of size :math:`l//n + 1` and
+    n sections, it returns :math:`l \% n` sub-arrays of size :math:`l//n + 1` and
     the rest of size :math:`l//n`.
 
     Args:
@@ -1550,7 +1550,7 @@ def hsplit(x, indices_or_sections):
             If tuple(int), list(int) or of sorted integers,
             the entries indicate where along axis the array is split.
             For example, :math:`[2, 3]` would, for :math:`axis=0`, result in
-            three sub-tensors :math:`x[:2]`, :math:`x[2:3]`and :math:`x[3:]`.
+            three sub-tensors :math:`x[:2]`, :math:`x[2:3]` and :math:`x[3:]`.
             If an index exceeds the dimension of the array along axis,
             an empty sub-array is returned correspondingly.
 
