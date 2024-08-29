@@ -44,6 +44,8 @@ class CustomOperator : public Operator {
 
   void CustomInputRegister(const string &name) { Operator::InputRegister(name); }
 
+  void CustomOptionalInputRegister(const string &name) { Operator::OptionalInputRegister(name); }
+
   void CustomOutputRegister(const string &name) { Operator::OutputRegister(name); }
 
   void CustomRequiredAttrRegister(const string &name) { Operator::RequiredAttrRegister(name); }

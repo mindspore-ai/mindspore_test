@@ -22,6 +22,7 @@
 #include "nnacl/custom_masked_fill_parameter.h"
 #include "nnacl/custom_is_inf_parameter.h"
 #include "nnacl/scatter_nd_parameter.h"
+#include "nnacl/conv3d_parameter.h"
 
 using mindspore::schema::PrimitiveType_Custom;
 
@@ -131,6 +132,18 @@ OpParameter *CreateCustomGruParameter() {
   return reinterpret_cast<OpParameter *>(param);
 }
 
+OpParameter *CreateCustomConv3DParameter(const schema::Custom *value) {
+  auto *param = static_cast<Conv3DParameter *>(malloc(sizeof(Conv3DParameter)));
+  if (param == nullptr) {
+    MS_LOG(ERROR) << "malloc Conv3DParameter failed.";
+    return nullptr;
+  }
+  memset(param, 0, sizeof(Conv3DParameter));
+
+  param->op_parameter_.type_ = PrimType_Inner_Conv3D;
+  return reinterpret_cast<OpParameter *>(param);
+}
+
 OpParameter *PopulateCustomParameter(const void *prim) {
   MS_CHECK_TRUE_RET(prim != nullptr, nullptr);
   auto primitive = static_cast<const schema::Primitive *>(prim);
@@ -176,6 +189,8 @@ OpParameter *PopulateCustomParameter(const void *prim) {
     return CreateCustomTensorScatterMaxParameter();
   } else if (type == "IsInf") {
     return CreateCustomIsInfParameter();
+  } else if (type == "Conv3D") {
+    return CreateCustomConv3DParameter(value);
   } else {
     MS_LOG(WARNING) << "Unsupported custom type: " << type;
   }

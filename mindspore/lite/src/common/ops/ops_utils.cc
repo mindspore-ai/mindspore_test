@@ -20,6 +20,8 @@
 #include "mindapi/base/shared_ptr.h"
 #ifdef PRIMITIVE_WRITEABLE
 #include "ops/primitive_c.h"
+#include "mindspore/ops/infer/conv3d.h"
+#include "mindspore/ops/op_def/op_name.h"
 
 namespace mindspore {
 namespace lite {
@@ -44,6 +46,22 @@ std::unique_ptr<schema::PrimitiveT> MSOp2SchemaOp(const mindspore::ops::Custom *
       schema_op->attr.emplace_back(std::move(attr));
     }
   }
+  auto prim = std::make_unique<schema::PrimitiveT>();
+  if (prim == nullptr) {
+    return nullptr;
+  }
+  prim->value.value = schema_op.release();
+  prim->value.type = schema::PrimitiveType_Custom;
+  return prim;
+}
+
+std::unique_ptr<schema::PrimitiveT> MSOp2SchemaOp(const mindspore::ops::Conv3D *op) {
+  auto schema_op = std::make_unique<schema::CustomT>();
+  if (schema_op == nullptr) {
+    return nullptr;
+  }
+  schema_op->type = "Conv3D";
+
   auto prim = std::make_unique<schema::PrimitiveT>();
   if (prim == nullptr) {
     return nullptr;
@@ -280,6 +298,7 @@ REG_MINDSPORE_OPERATOR(SparseFillEmptyRows)
 REG_MINDSPORE_OPERATOR(SparseReshape)
 REG_MINDSPORE_OPERATOR(SparseSegmentSum)
 REG_MINDSPORE_OPERATOR(AdamWeightDecay)
+REG_MINDSPORE_OPERATOR(Conv3D)
 }  // namespace lite
 }  // namespace mindspore
 

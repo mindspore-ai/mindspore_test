@@ -48,7 +48,7 @@ PassRegistry::PassRegistry(const std::vector<char> &pass_name, const PassBasePtr
 }
 
 PassRegistry::PassRegistry(PassPosition position, const std::vector<std::vector<char>> &names) {
-  if (position < POSITION_BEGIN || position > POSITION_END) {
+  if (position < POSITION_BEGIN || position > POSITION_ASCEND) {
     MS_LOG(ERROR) << "ILLEGAL position: position must be POSITION_BEGIN or POSITION_END.";
     return;
   }
@@ -57,7 +57,7 @@ PassRegistry::PassRegistry(PassPosition position, const std::vector<std::vector<
 }
 
 std::vector<std::vector<char>> PassRegistry::GetOuterScheduleTaskInner(PassPosition position) {
-  MS_CHECK_TRUE_MSG(position == POSITION_END || position == POSITION_BEGIN, {},
+  MS_CHECK_TRUE_MSG(position == POSITION_END || position == POSITION_BEGIN || position == POSITION_ASCEND, {},
                     "position must be POSITION_END or POSITION_BEGIN.");
   return VectorStringToChar(external_assigned_passes[position]);
 }

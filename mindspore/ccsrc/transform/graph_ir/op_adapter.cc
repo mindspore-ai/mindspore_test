@@ -18,11 +18,13 @@
 #include <algorithm>
 #include <map>
 #include <string>
+#include <vector>
 #include <unordered_set>
 #include "utils/check_convert_utils.h"
 #include "op_proto/inc/split_combination_ops.h"
 #include "graph/operator_factory.h"
 #include "include/common/utils/convert_utils.h"
+#include "include/common/utils/utils.h"
 #include "utils/anf_utils.h"
 #include "include/common/utils/anfalgo.h"
 
@@ -180,10 +182,20 @@ Status OpAdapterImpl::GenerateCustomOpInputMap(const CusOperatorPtr &op, const P
   }
 
   auto input_names = GetValue<const std::vector<std::string>>(value);
+  auto optional_name_value = prim->GetAttr(kAttrOptionalInputNames);
+  std::vector<std::string> optional_names = {};
+  if (optional_name_value != nullptr) {
+    optional_names = GetValue<const std::vector<std::string>>(optional_name_value);
+  }
+  MS_LOG(INFO) << "optional input: " << optional_names;
   for (size_t i = 0; i < input_names.size(); ++i) {
     // input_map begin form 1
     input_map[i + 1] = input_names[i];
-    op->CustomInputRegister(input_names[i]);
+    if (find(optional_names.begin(), optional_names.end(), input_names[i]) != optional_names.end()) {
+      op->CustomOptionalInputRegister(input_names[i]);
+    } else {
+      op->CustomInputRegister(input_names[i]);
+    }
   }
 
   if (cus_input_map_->find(op_type) == cus_input_map_->end()) {

@@ -26,6 +26,8 @@
 #include "transform/graph_ir/io_format_map.h"
 #include "ir/kernel_tensor_value.h"
 #include "ops_utils/op_utils.h"
+#include "include/transform/graph_ir/utils.h"
+#include "transform/graph_ir/op_adapter.h"
 
 namespace mindspore {
 GeDataTypeImm::GeDataTypeImm() : IntegerImm(kInt32), v_(::ge::DataType::DT_FLOAT) {}
@@ -422,15 +424,57 @@ GeTensor ConvertAnyUtil(const ValuePtr &value, const AnyTraits<ValueAny>) {
   return GeTensor();
 }
 
+enum class CustomOpTypeEnum { kUnKnown, kAkg, kTbe, kAiCpu };
+
+CustomOpTypeEnum GetCustomOpTypeDetailEnum(const PrimitivePtr &prim) {
+  if (prim == nullptr) {
+    return CustomOpTypeEnum::kUnKnown;
+  }
+  auto type = prim->GetAttr(kAttrType);
+  if (type != nullptr && GetValue<std::string>(type) == "GraphKernel") {
+    return CustomOpTypeEnum::kAkg;
+  }
+  auto func_type = prim->GetAttr(kAttrFuncType);
+  if (func_type != nullptr) {
+    auto func_type_value = GetValue<std::string>(func_type);
+    if (func_type_value == kCustomTypeTbe) {
+      return CustomOpTypeEnum::kTbe;
+    } else if (func_type_value == kCustomTypeAICPU) {
+      return CustomOpTypeEnum::kAiCpu;
+    }
+  }
+  return CustomOpTypeEnum::kUnKnown;
+}
+
 bool IsCustomPrim(const PrimitivePtr &prim) {
   if (prim == nullptr) {
     return false;
   }
-
+  auto detail_type = GetCustomOpTypeDetailEnum(prim);
   if (prim->name() == "Custom") {
-    return true;
+    if (detail_type == CustomOpTypeEnum::kAkg || detail_type == CustomOpTypeEnum::kTbe ||
+        detail_type == CustomOpTypeEnum::kAiCpu) {
+      return true;
+    } else {
+      auto value = prim->GetAttr(kAttrType);
+      std::string op_type = "";
+      if (value != nullptr) {
+        op_type = GetValue<std::string>(value);
+      }
+      auto adpt = transform::FindAdapter(op_type, false);
+      if (adpt != nullptr) {
+        prim->set_name(op_type);
+        MS_LOG(INFO) << "Origin prim name is Custom. Because the adapter can be found, change prim name to prim type: "
+                     << op_type << ". This prim is not Custom now.";
+        return false;
+      } else {
+        MS_LOG(INFO) << "Origin prim name is Custom and the adapter can not be found.";
+        return true;
+      }
+    }
+  } else {
+    return false;
   }
-  return false;
 }
 
 bool IsNoNeedConstantFoldCNode(const PrimitivePtr &prim) {
