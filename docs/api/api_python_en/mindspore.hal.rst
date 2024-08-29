@@ -52,6 +52,8 @@ Memory
     :nosignatures:
     :template: classtemplate.rst
 
+    mindspore.hal.contiguous_tensors_handle.combine_tensor_list_contiguous
+    mindspore.hal.contiguous_tensors_handle.ContiguousTensorsHandle
     mindspore.hal.max_memory_allocated
     mindspore.hal.max_memory_reserved
     mindspore.hal.memory_allocated
