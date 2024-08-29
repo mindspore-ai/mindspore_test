@@ -35,6 +35,7 @@
 namespace mindspore {
 namespace dataset {
 const int kMonitorInterval = 1;
+const int kSleepTime = 2;
 
 class ReceiveBridgeOp : public ParallelOp<TensorRow, TensorRow> {
  public:
