@@ -530,6 +530,37 @@ def test_overflow_acl_dump():
     run_overflow_acl_dump()
 
 
+def run_acl_set_dump():
+    """Run acl dump and generate data with dump flag"""
+    if sys.platform != 'linux':
+        return
+    context.set_context(mode=mindspore.GRAPH_MODE, jit_level="O2")
+    data = np.array([60, 60]).astype(np.float16)
+    with tempfile.TemporaryDirectory(dir='/tmp') as tmp_dir:
+        dump_path = os.path.join(tmp_dir, 'acl_set_dump')
+        dump_config_path = os.path.join(tmp_dir, 'acl_set_dump.json')
+        generate_dump_json(dump_path, dump_config_path, 'test_acl_set_dump')
+        os.environ['MINDSPORE_DUMP_CONFIG'] = dump_config_path
+        if os.path.isdir(dump_path):
+            shutil.rmtree(dump_path)
+        net = NetMulAdd()
+        mindspore.set_dump(net.add)
+        net(Tensor(data), Tensor(data))
+        check_ge_dump_structure_acl(dump_path, 0, 1)
+        del os.environ['MINDSPORE_DUMP_CONFIG']
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@security_off_wrap
+def test_acl_set_dump():
+    """
+    Feature: O2 process supports set dump.
+    Description: test acl dump with set dump enabled.
+    Expectation: Using mindpore.set_dump to enable dump functionality on objects will generate data.
+    """
+    run_acl_set_dump()
+
+
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @security_off_wrap
 def test_acl_statistic_dump():

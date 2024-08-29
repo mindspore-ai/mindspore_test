@@ -142,10 +142,6 @@ void DumpJsonParser::CheckE2eSetting() {
                          "Ascend O0/O1 mode instead";
     }
     CheckStatCalcModeVaild();
-  } else {
-    if (dump_mode_ == static_cast<uint32_t>(DUMP_KERNELS_WITH_FLAG)) {
-      MS_LOG(EXCEPTION) << "Cell dump only support e2e dump mode. Please set dump_mode to 0 or 1.";
-    }
   }
 }
 
@@ -578,7 +574,10 @@ void DumpJsonParser::ParseDumpMode(const nlohmann::json &content) {
   }
   if (dump_mode_ == static_cast<uint32_t>(DUMP_KERNELS_WITH_FLAG)) {
     if (context->get_param<std::string>(MS_CTX_DEVICE_TARGET) != kAscendDevice) {
-      MS_LOG(EXCEPTION) << "Cell dump is only supported in Ascend async dump. Please set dump_mode to 0 or 1.";
+      MS_LOG(EXCEPTION) << "Set dump is only supported in Ascend async dump. Please set dump_mode to 0 or 1.";
+    }
+    if (IsGeDump()) {
+      MS_LOG(EXCEPTION) << "Set dump is not supported in GE dump. Please set dump_mode to 0 or 1.";
     }
   }
 }
