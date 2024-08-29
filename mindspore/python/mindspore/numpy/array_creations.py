@@ -2259,7 +2259,7 @@ def tril_indices_from(arr, k=0):
 
     Returns:
         triu_indices_from, tuple of 2 tensor, shape(N)
-        Indices for the upper-triangle of `arr`.
+        Indices for the lower-triangle of `arr`.
 
     Raises:
         TypeError: If `arr` cannot be converted to tensor, or `k` is not a number.
