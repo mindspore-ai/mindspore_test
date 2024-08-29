@@ -3816,7 +3816,7 @@ def median_ext(input, dim=None, keepdim=False):
 
     Args:
         input (Tensor): A Tensor of any dimension whose data type is uint8, int16, int32, int64, float16 or float32.
-        dim (int, optional): The dimension need to reduce. Default: ``None`` .
+        dim (int, optional): Specify the axis for calculation. Default: ``None`` .
         keepdim (bool, optional): Whether the output tensor need to retain ``dim`` dimension or not.
             Default: ``False`` .
 
