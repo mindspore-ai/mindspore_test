@@ -778,6 +778,7 @@ bool GraphBuilder::DoPopExc(const mindspore::pijit::Instr &instr) {
     return false;
   }
   PopStack();
+  popn(3);
   popExc();
   return true;
 }
