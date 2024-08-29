@@ -454,8 +454,8 @@ def _transform_safetensors_with_parallel(needed_rank_list_map, all_safetensor_fi
 
     # cal param name for every pipeline, save in pipe_param_list.
     pipe_num = _extract_pipeline_stage_num(dst_strategy_dict)
-    pipe_param_list = [None for _ in range(pipe_num)]
-    if pipe_num > 1:
+    pipe_param_list = [None for _ in range(max(pipe_num, process_num))]
+    if len(needed_rank_list_map) == 1 and pipe_num > 1:
         pipe_param_list = [[] for _ in range(pipe_num)]
         layout_map = _convert_to_list(dst_strategy_dict)
 
