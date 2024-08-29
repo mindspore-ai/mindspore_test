@@ -17,6 +17,7 @@ from mindspore import Tensor
 import mindspore as ms
 import mindspore.nn as nn
 from mindspore.ops import operations as P
+from mindspore.common.api import _pynative_executor
 from tests.mark_utils import arg_mark
 
 class Net(nn.Cell):
@@ -41,6 +42,7 @@ def test_hal_memory_stats():
     net = Net()
     net(Tensor(2.0))
     res = ms.hal.memory_stats()
+    _pynative_executor.sync()
     assert not res is None
     assert isinstance(res, dict)
 
@@ -58,6 +60,7 @@ def test_hal_memory_reserved():
     net = Net()
     net(Tensor(2.0))
     res = ms.hal.memory_reserved()
+    _pynative_executor.sync()
     assert not res is None
     assert isinstance(res, int)
 
@@ -75,6 +78,7 @@ def test_hal_memory_allocated():
     net = Net()
     net(Tensor(2.0))
     res = ms.hal.memory_allocated()
+    _pynative_executor.sync()
     assert not res is None
     assert isinstance(res, int)
 
@@ -91,6 +95,7 @@ def test_hal_max_memory_reserved():
     net = Net()
     net(Tensor(2.0))
     res = ms.hal.max_memory_reserved()
+    _pynative_executor.sync()
     assert not res is None
     assert isinstance(res, int)
 
@@ -108,6 +113,7 @@ def test_hal_max_memory_allocated():
     net = Net()
     net(Tensor(2.0))
     res = ms.hal.max_memory_allocated()
+    _pynative_executor.sync()
     assert not res is None
     assert isinstance(res, int)
 
@@ -125,6 +131,7 @@ def test_hal_memory_summary():
     net = Net()
     net(Tensor(2.0))
     res = ms.hal.memory_summary()
+    _pynative_executor.sync()
     assert not res is None
     assert isinstance(res, str)
 
@@ -143,6 +150,7 @@ def test_hal_reset_peak_memory_stats():
     net(Tensor(2.0))
     ms.hal.reset_peak_memory_stats()
     res = ms.hal.memory_stats()
+    _pynative_executor.sync()
     assert (res["max_reserved_memory"] == 0 and res["max_allocated_memory"] == 0)
 
 
@@ -160,6 +168,7 @@ def test_hal_reset_max_memory_reserved():
     net(Tensor(2.0))
     ms.hal.reset_max_memory_reserved()
     res = ms.hal.max_memory_reserved()
+    _pynative_executor.sync()
     assert res == 0
 
 
@@ -177,4 +186,5 @@ def test_hal_reset_max_memory_allocated():
     net(Tensor(2.0))
     ms.hal.reset_max_memory_allocated()
     res = ms.hal.max_memory_allocated()
+    _pynative_executor.sync()
     assert res == 0
