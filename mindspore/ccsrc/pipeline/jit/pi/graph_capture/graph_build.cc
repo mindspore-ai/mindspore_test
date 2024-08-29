@@ -4530,10 +4530,15 @@ py::object MindGraphBuilder::ResolveCallable(CallNode *call_node, StopTraceReaso
   }
   if (FGBuilder()->CheckCallable(callable_info)) {
     std::vector<ValueNode *> args;
-    const auto &call_node_inputs = call_node->getInputs();
-    (void)std::copy(call_node_inputs.begin() + 1, call_node_inputs.end(), std::back_inserter(args));
     if (PyFunction_Check(callable_info.ptr())) {
       args = GetNewArgs(call_node);
+    } else if (PyMethod_Check(original_callable.ptr()) && callable_info != original_callable &&
+               py::hasattr(callable_info, PYTHON_PRIMITIVE_FLAG)) {
+      // When x.y maps to primitive, x should be added to the first input of the primitive.
+      args = GetNewArgs(call_node, AObject::Convert(callable_info.ptr()));
+    } else {
+      const auto &call_node_inputs = call_node->getInputs();
+      (void)std::copy(call_node_inputs.begin() + 1, call_node_inputs.end(), std::back_inserter(args));
     }
     return FGAddNode(call_node, callable_info, HandleInputArgs(args), stop_reason);
   }
