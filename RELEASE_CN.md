@@ -2,6 +2,16 @@
 
 [View English](./RELEASE.md)
 
+## MindSpore 2.3.2 Release Notes
+
+### Bug Fixes
+
+[#IANEXW](https://gitee.com/mindspore/mindspore/issues/IANEXW)：网络在pipeline与共享存储的场景下，通过减少stage之间数据的重复读取，来减轻存储的IO压力。
+
+### 贡献者
+
+BJ-WANG,DeshiChen,jiangshanfeng,jiangzhenguang,lichen,limingqi107,liuluobin,yanglong,yao_yf,YingLai Lin,zhangyinxia,zong_shuai,宦晓玲,黄勇,王禹程
+
 ## MindSpore 2.3.1 Release Notes
 
 ### 主要特性及增强

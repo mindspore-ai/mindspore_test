@@ -2,6 +2,16 @@
 
 [查看中文](./RELEASE_CN.md)
 
+## MindSpore 2.3.2 Release Notes
+
+### Bug Fixes
+
+[#IANEXW](https://gitee.com/mindspore/mindspore/issues/IANEXW): In the pipeline and shared storage scenario, the network reduces the IO pressure on storage by reducing duplicate reads of data between stages.
+
+### Contributors
+
+BJ-WANG,DeshiChen,jiangshanfeng,jiangzhenguang,lichen,limingqi107,liuluobin,yanglong,yao_yf,YingLai Lin,zhangyinxia,zong_shuai,宦晓玲,黄勇,王禹程
+
 ## MindSpore 2.3.1 Release Notes
 
 ### Major Features and Improvements
