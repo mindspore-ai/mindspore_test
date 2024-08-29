@@ -66,6 +66,7 @@ bool CpuCopyWithSliceKernelTask::RunWithRet() {
 
   const auto &dst_device_address = context_->GetInputAddr(0);
   const auto &src_device_address = context_->GetInputAddr(1);
+  MS_EXCEPTION_IF_NULL(dst_device_address);
 
   const auto &dst_storage_info = context_->GetInputAddr(0)->GetTensorStorageInfo();
   const auto &src_storage_info = context_->GetInputAddr(1)->GetTensorStorageInfo();
@@ -78,7 +79,6 @@ bool CpuCopyWithSliceKernelTask::RunWithRet() {
   MallocMemoryForDeviceAddress(src_device_address, device_context);
 
   kernel::CopyWithSliceCpuKernel copy_kernel;
-  MS_EXCEPTION_IF_NULL(dst_device_address);
   auto ret = copy_kernel.LaunchCopyWithSlice(dst_device_address->type_id(), src_storage_info, src_device_address,
                                              dst_storage_info, dst_device_address);
   if (!ret) {

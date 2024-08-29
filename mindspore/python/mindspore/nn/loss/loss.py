@@ -1580,7 +1580,7 @@ class BCELoss(LossBase):
     The formula is as follow:
 
     .. math::
-        L = \{l_1,\dots,l_N\}^\top, \quad
+        L = \{l_1,\dots,l_n,\dots,l_N\}^\top, \quad
         l_n = - w_n \left[ y_n \cdot \log x_n + (1 - y_n) \cdot \log (1 - x_n) \right]
 
     where N is the batch size. Then,
