@@ -73,7 +73,14 @@ class TreeAdapter {
 
   // unique_ptr overloads operator bool(), will return false if it doesn't manage an object
   // This is needed by Iterator to get data by 'GetNext'.
-  std::weak_ptr<DatasetOp> GetRoot() const { return tree_ ? tree_->root() : nullptr; }
+  std::weak_ptr<DatasetOp> GetRoot() const {
+#if !defined(__APPLE__) && !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && \
+  !defined(ANDROID)
+    return tree_ ? tree_->root() : receive_tree_->root();
+#else
+    return tree_ ? tree_->root() : nullptr;
+#endif
+  }
 
   // This function will return the column_name_map once BuildAndPrepare() is called
   std::unordered_map<std::string, int32_t> GetColumnNameMap() const { return column_name_map_; }

@@ -194,7 +194,7 @@ Status ExecutionTree::Launch() {
   // the main process is in single-threaded and lock-free, and then create
   // all the DatasetOp threads.
   for (auto itr = this->begin(); itr != this->end(); ++itr) {
-    itr->Launch();
+    RETURN_IF_NOT_OK(itr->Launch());
   }
 
   for (auto itr = this->begin(); itr != this->end(); ++itr) {
