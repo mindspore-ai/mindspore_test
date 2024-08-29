@@ -28,13 +28,14 @@
 
 namespace mindspore {
 namespace ops {
-constexpr int64_t kNumberTwo = 2;
-constexpr int64_t kNumberEight = 8;
+constexpr int64_t minInputDim = 2;
+constexpr int64_t maxInputDim = 8;
 BaseShapePtr GroupNormFuncImpl::InferShape(const PrimitivePtr &primitive,
                                            const std::vector<AbstractBasePtr> &input_args) const {
   // Get input tensor shape.
   auto x_shape_ptr = input_args[kInputIndex0]->GetShape();
   const auto &x_shape = x_shape_ptr->GetShapeVector();
+
   const auto &weight_shape = input_args[kInputIndex2]->GetShape()->GetShapeVector();
   const auto &bias_shape = input_args[kInputIndex3]->GetShape()->GetShapeVector();
   auto num_groups_opt = GetScalarValue<int64_t>(input_args[kInputIndex1]->GetValue());
@@ -47,7 +48,7 @@ BaseShapePtr GroupNormFuncImpl::InferShape(const PrimitivePtr &primitive,
   }
   int64_t num_groups = num_groups_opt.value();
   const auto x_rank = x_shape.size();
-  if (x_rank < kNumberTwo || x_rank > kNumberEight) {
+  if (x_rank < minInputDim || x_rank > maxInputDim) {
     MS_LOG(EXCEPTION) << "For '" << primitive->name()
                       << "', The dim of input must be between 2 and 8. But got: " << x_rank << ".";
   }
@@ -92,7 +93,9 @@ TypePtr GroupNormFuncImpl::InferType(const PrimitivePtr &primitive,
   (void)types.emplace("weight", weight_type);
   (void)types.emplace("bias", bias_type);
 
-  const std::set<TypePtr> valid_types = {kFloat16, kFloat32, kBFloat16};
+  // For CPU/GPU, the types of input tensors support float16, float32 and float64.
+  // For Ascend, the types of input tensors support float16, float32 and bfloat16.
+  const std::set<TypePtr> valid_types = {kFloat16, kFloat32, kFloat64, kBFloat16};
   (void)CheckAndConvertUtils::CheckTensorTypeSame(types, valid_types, prim_name);
 
   std::vector<TypePtr> types_list;
@@ -115,13 +118,12 @@ TypePtrList GroupNormFuncImpl::InferType(const PrimitivePtr &primitive, const Va
   TypePtrList input_types{x_type, weight_type, bias_type};
   const std::set<TypePtr> types_cnt(input_types.begin(), input_types.end());
   auto is_valid = std::all_of(input_types.begin(), input_types.end(), [](const TypePtr &type) {
-    return (type == kFloat16 || type == kFloat32 || type == kBFloat16);
+    return (type == kFloat16 || type == kFloat32 || type == kBFloat16 || type == kFloat64);
   });
   if (!is_valid || types_cnt.size() != 1) {
-    MS_EXCEPTION(TypeError) << "For " << prim_name
-                            << ". input arguments' types must be the same and be one of [BFloat16, Float16, Float32]. "
-                            << "But got input's type: " << x_type << ", weight's type: " << weight_type
-                            << ", bias's type: " << bias_type << ".";
+    MS_EXCEPTION(TypeError) << "For " << prim_name << ". input arguments' types must be the same and be one of "
+                            << "[BFloat16, Float16, Float32, Float64]. But got input's type: " << x_type
+                            << ", weight's type: " << weight_type << ", bias's type: " << bias_type << ".";
   }
   return {x_type, x_type, x_type};
 }
@@ -137,16 +139,13 @@ ShapeArray GroupNormFuncImpl::InferShape(const PrimitivePtr &primitive, const Va
   const auto &weight_shape = weight_tensor->shape();
   const auto &bias_shape = bias_tensor->shape();
   const auto &num_groups_value = input_values[kInputIndex1];
-  if (MS_UNLIKELY(IsDynamicRank(x_shape))) {
-    return {x_shape, x_shape, x_shape};
-  }
   auto num_groups_opt = GetScalarValue<int64_t>(num_groups_value);
   if (MS_UNLIKELY(!num_groups_opt.has_value())) {
     ShapeVector dynamic_rank_shape{abstract::TensorShape::kShapeRankAny};
     return {dynamic_rank_shape, dynamic_rank_shape, dynamic_rank_shape};
   }
   const auto x_rank = x_shape.size();
-  if (x_rank < kNumberTwo || x_rank > kNumberEight) {
+  if (x_rank < minInputDim || x_rank > maxInputDim) {
     MS_LOG(EXCEPTION) << "For '" << primitive->name()
                       << "', The dim of input must be between 2 and 8. But got: " << x_rank << ".";
   }

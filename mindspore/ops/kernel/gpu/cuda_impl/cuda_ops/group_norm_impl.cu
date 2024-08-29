@@ -24,7 +24,7 @@ constexpr int WARP_SIZE = 32;
 
 template <typename T>
 inline __device__ T general_sqrt(T val) {
-  return (T)sqrt(static_cast<float>(val));
+  return (T)sqrt(static_cast<double>(val));
 }
 
 template <>
@@ -57,7 +57,7 @@ inline __device__ void MeanAndVarMerge(T *mean1, T *var1, T *count1, const T &me
 }
 
 template <typename T>
-inline __device__ void ThreadReduce(const int col_dim, const T *block_addr, float *mean, float *var, float *count) {
+inline __device__ void ThreadReduce(const int col_dim, const T *block_addr, double *mean, double *var, double *count) {
   int loop_num = (col_dim + NUM_PER_THREAD_REDUCE - 1) / NUM_PER_THREAD_REDUCE;
   for (int i = threadIdx.x; i < loop_num; i += blockDim.x) {
     for (int j = 0; j < NUM_PER_THREAD_REDUCE; j++) {
@@ -65,7 +65,7 @@ inline __device__ void ThreadReduce(const int col_dim, const T *block_addr, floa
       if (pos >= col_dim) {
         return;
       }
-      MeanAndVarAccumulation(mean, var, count, static_cast<float>(block_addr[pos]));
+      MeanAndVarAccumulation(mean, var, count, static_cast<double>(block_addr[pos]));
     }
   }
 }
@@ -81,8 +81,8 @@ inline __device__ void WarpReduce(T *mean, T *var, T *count) {
 }
 
 template <typename T>
-inline __device__ void BlockReduce(const int col_dim, float *mean, float *var, float *count, T *mean_addr,
-                                   T *rstd_addr, float *share_mem, const float epsilon) {
+inline __device__ void BlockReduce(const int col_dim, double *mean, double *var, double *count, T *mean_addr,
+                                   T *rstd_addr, double *share_mem, const float epsilon) {
   // load data to share memory
   // thread(0, 32, 64, 96, ...) keep the data
   if (threadIdx.x % WARP_SIZE == 0) {
@@ -104,19 +104,19 @@ inline __device__ void BlockReduce(const int col_dim, float *mean, float *var, f
 
   if (threadIdx.x == 0) {
     mean_addr[blockIdx.x] = static_cast<T>(share_mem[0]);
-    share_mem[1] = 1.0 / general_sqrt((share_mem[1] / col_dim + epsilon));
+    share_mem[1] = 1.0 / general_sqrt((share_mem[1] / col_dim + static_cast<double>(epsilon)));
     rstd_addr[blockIdx.x] = static_cast<T>(share_mem[1]);
   }
 }
 
 template <typename T>
 inline __device__ void GroupNorm(const int row, const int col_dim, const int num_channel, const int HxW, const T *x,
-                                 const float *share_mem, const T *gamma, const T *beta, T *y) {
+                                 const double *share_mem, const T *gamma, const T *beta, T *y) {
   for (int col = threadIdx.x; col < col_dim; col += blockDim.x) {
     int pos = row * col_dim + col;
     int i = (pos / HxW) % num_channel;
-    float tmp_y = (static_cast<float>(x[pos]) - share_mem[0]) * share_mem[1] *
-                   static_cast<float>(gamma[i]) + static_cast<float>(beta[i]);
+    double tmp_y = (static_cast<double>(x[pos]) - share_mem[0]) * share_mem[1] *
+                   static_cast<double>(gamma[i]) + static_cast<double>(beta[i]);
     y[pos] = (T)(tmp_y);
   }
 }
@@ -126,11 +126,11 @@ __global__ void GroupNormKernel(const int row_dim, const int col_dim, const int 
                                 const float epsilon, const T *x, const T *gamma, const T *beta, T *y,
                                 T *mean_addr, T *rstd_addr) {
   for (auto row = blockIdx.x; row < row_dim; row += gridDim.x) {
-    float mean = 0;
-    float var = 0;
-    float count = 0;
+    double mean = 0;
+    double var = 0;
+    double count = 0;
     const T *block_addr = x + row * col_dim;
-    DynamicSharedMem<float> share_mem;
+    DynamicSharedMem<double> share_mem;
 
     ThreadReduce(col_dim, block_addr, &mean, &var, &count);
     WarpReduce(&mean, &var, &count);
@@ -146,7 +146,7 @@ cudaError_t GroupNorm(const int row_dim, const int col_dim, const int num_channe
                       const T *x, const T *gamma, const T *beta, T *y, T *mean, T *rstd, cudaStream_t stream) {
   const int thread_per_block = 256;
   // keep the mean/var/count after warp reduce
-  int share_mem_size = thread_per_block / WARP_SIZE * 3 * sizeof(float);
+  int share_mem_size = thread_per_block / WARP_SIZE * 3 * sizeof(double);
   GroupNormKernel<<<row_dim, thread_per_block, share_mem_size, stream>>>(row_dim, col_dim, num_channel, HxW, epsilon, x,
                                                                         gamma, beta, y, mean, rstd);
   return GetCudaStatus();
