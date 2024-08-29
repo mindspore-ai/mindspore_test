@@ -103,7 +103,7 @@ int64_t GetSlicingLengthForPositiveStrides(int64_t start_pos, int64_t end_pos, i
     if (end_pos > x_dim) {
       end_pos = x_dim;
     }
-    if (start_pos > end_pos) {
+    if (start_pos >= end_pos) {
       slicing_length = 0;
     } else {
       slicing_length = 1 + (end_pos - 1 - start_pos) / strides;
