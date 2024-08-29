@@ -125,7 +125,7 @@ REG_EXPANDER_FUNC("ApplyMomentum").SetRealOutputIndices({1}).SetBody(BODYFUNC(ib
 
 REG_EXPANDER_FUNC("Adam").SetBody(BODYFUNC(ib) {
   // Check Inputs and Attrs
-  if (!CheckAttrs(ib, {"use_nesterov"})) {
+  if (!CheckAttrs(ib, {"use_nesterov"}) || !CheckAllFormatsSame(ib)) {
     return {};
   }
   const auto &var = ib->input(0);
@@ -136,13 +136,22 @@ REG_EXPANDER_FUNC("Adam").SetBody(BODYFUNC(ib) {
   // Expand
   const auto &m = ib->input(1);
   const auto &v = ib->input(2);
-  const auto &beta1_power = ib->input(3);
-  const auto &beta2_power = ib->input(4);
-  const auto &lr = ib->input(5);
-  const auto &beta1 = ib->input(6);
-  const auto &beta2 = ib->input(7);
-  const auto &epsilon = ib->input(8);
+  auto beta1_power = ib->input(3);
+  auto beta2_power = ib->input(4);
+  auto lr = ib->input(5);
+  auto beta1 = ib->input(6);
+  auto beta2 = ib->input(7);
+  auto epsilon = ib->input(8);
   const auto &grad = ib->input(9);
+  if (var->GetDtype() != TypeIdToType(kNumberTypeFloat32)) {
+    auto dtype = var->GetDtype();
+    beta1_power = ib->Cast(beta1_power, dtype);
+    beta2_power = ib->Cast(beta2_power, dtype);
+    lr = ib->Cast(lr, dtype);
+    beta1 = ib->Cast(beta1, dtype);
+    beta2 = ib->Cast(beta2, dtype);
+    epsilon = ib->Cast(epsilon, dtype);
+  }
 
   // calc m_new : m_new = beta1 * m + (1 - beta1) * grad
   auto m_b = ib->Mul(beta1, m);
