@@ -866,7 +866,6 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
         if self.python_multiprocessing and get_debug_mode():
             logger.warning("Python multiprocessing is not supported in debug mode."
                            " Ignoring Python multiprocessing for GeneratorDataset.")
-            self.python_multiprocessing = False
 
         self.column_names = to_list(column_names)
 
@@ -924,7 +923,7 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
             if self.source_len == -1:
                 raise RuntimeError("Attempt to construct a random access dataset, '__len__' method is required!")
 
-            if self.num_parallel_workers > 1:
+            if self.num_parallel_workers > 1 and not get_debug_mode():
                 self.__validate_memory_usage()
 
                 sample_fn = SamplerFn(self.source, self.num_parallel_workers, self.python_multiprocessing,
