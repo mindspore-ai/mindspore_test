@@ -183,12 +183,26 @@ RankList FlashAttentionScoreInfo::GetSPRankList() {
   int64_t rank = g_device_manager->global_rank();
   DeviceMatrix dev_matrix(rank, stage_device_list_, dev_matrix_shape_);
   RankList group_devices;
-  int64_t seq_dim = SizeToLong(dev_matrix_shape_.size()) - dev_matrix_s1_dim_ - 1;
+  int64_t dev_matrix_s1_dim_real = dev_matrix_s1_dim_;
+  switch (input_layout_) {
+    case FASInputLayoutMode::BSH:
+      dev_matrix_s1_dim_real = inputs_tensor_map_[ops::kFlashAttentionScoreInputQueryIndex][1];
+      break;
+    case FASInputLayoutMode::SBH:
+      dev_matrix_s1_dim_real = inputs_tensor_map_[ops::kFlashAttentionScoreInputQueryIndex][0];
+      break;
+    case FASInputLayoutMode::BNSD:
+      dev_matrix_s1_dim_real = inputs_tensor_map_[ops::kFlashAttentionScoreInputQueryIndex][2];
+      break;
+    case FASInputLayoutMode::BSND:
+      dev_matrix_s1_dim_real = inputs_tensor_map_[ops::kFlashAttentionScoreInputQueryIndex][1];
+      break;
+    default:
+      break;
+  }
+  int64_t seq_dim = SizeToLong(dev_matrix_shape_.size()) - dev_matrix_s1_dim_real - 1;
   if (dev_matrix.GetDevicesAlongDim(seq_dim, &group_devices) != SUCCESS) {
     MS_LOG(ERROR) << name_ << " get group devices along dim " << seq_dim << " failed.";
-  }
-  if (repeated_calc_num_ > 1) {
-    MS_LOG(EXCEPTION) << "ring attention only support full split currently";
   }
   return group_devices;
 }
