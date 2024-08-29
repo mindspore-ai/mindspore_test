@@ -254,6 +254,7 @@ void DatasetReaderOptimizer::InsertBroadcast(const NodeUsersMap &node_user_map, 
     auto prim = GetCNodePrimitive(broadcast);
     prim->set_attr(ROOT_RANK, MakeValue(BROADCAST_ROOT_RANK));
     prim->set_attr(GROUP, MakeValue(data_repeat_group.name()));
+    prim->set_attr(DATASET_BROADCAST, MakeValue(True));
     (void)broadcast_ops.emplace_back(broadcast);
     if (iter == rank_list.begin()) {
       std::vector<AnfNodePtr> depend_input = {NewValueNode(prim::kPrimDepend), user_node,
@@ -271,10 +272,10 @@ void DatasetReaderOptimizer::InsertBroadcast(const NodeUsersMap &node_user_map, 
   }
 }
 
-void DatasetReaderOptimizer::BroadcastReorder() {
+CNodePtr BroadcastReorder(const std::vector<CNodePtr> &broadcast_ops) {
   auto op_num = broadcast_ops.size();
   if (broadcast_ops.empty()) {
-    return;
+    return nullptr;
   }
   auto first_broadcast = broadcast_ops.front()->cast<CNodePtr>();
   auto first_broadcast_prim = GetCNodePrimitive(first_broadcast);
@@ -283,7 +284,7 @@ void DatasetReaderOptimizer::BroadcastReorder() {
     auto cnode = broadcast_ops.front()->cast<CNodePtr>();
     auto prim = GetCNodePrimitive(cnode);
     prim->set_attr(LAST_BROADCAST, MakeValue(True));
-    return;
+    return first_broadcast;
   }
   for (size_t index = 0; index < op_num - 1; ++index) {
     auto prior_node = broadcast_ops.at(index)->cast<CNodePtr>();
@@ -294,6 +295,7 @@ void DatasetReaderOptimizer::BroadcastReorder() {
     }
     std::vector<AnfNodePtr> depend_input = {NewValueNode(prim::kPrimDepend), last_node->input(1), prior_node};
   }
+  return first_broadcast;
 }
 
 void DatasetReaderOptimizer::BroadcastDataset() {
@@ -351,18 +353,22 @@ void ControlOptShardCommAndDataBroadcastOrder(const FuncGraphPtr &graph) {
     return;
   }
   auto all_nodes = TopoSort(graph->get_return(), SuccDeeperSimple);
-  CNodePtr first_broadcast;
+  std::vector<CNodePtr> broadcast_ops;
   for (const auto &node : all_nodes) {
     if (!IsPrimitiveCNode(node, prim::kPrimBroadcast)) {
       continue;
     }
     auto cnode = node->cast<CNodePtr>();
     auto prim = GetCNodePrimitive(cnode);
-    if (!prim->HasAttr(FIRST_BROADCAST)) {
+    if (!prim->HasAttr(DATASET_BROADCAST)) {
       continue;
     }
-    first_broadcast = cnode;
+    broadcast_ops.emplace_back(cnode);
   }
+  if (broadcast_ops.empty()) {
+    return;
+  }
+  auto first_broadcast = BroadcastReorder(broadcast_ops);
   if (first_broadcast == nullptr) {
     return;
   }
@@ -374,13 +380,16 @@ void ControlOptShardCommAndDataBroadcastOrder(const FuncGraphPtr &graph) {
     auto all_gather_cnode = node->cast<CNodePtr>();
     (void)opt_shard_comm_list.emplace_back(all_gather_cnode);
   }
+  if (opt_shard_comm_list.empty()) {
+    return;
+  }
   std::vector<AnfNodePtr> make_tuple_inputs{NewValueNode(prim::kPrimMakeTuple)};
   (void)std::copy(opt_shard_comm_list.begin(), opt_shard_comm_list.end(), std::back_inserter(make_tuple_inputs));
-  std::vector<AnfNodePtr> depend_inputs{NewValueNode(prim::kPrimDepend), first_broadcast,
+  std::vector<AnfNodePtr> depend_inputs{NewValueNode(prim::kPrimDepend), first_broadcast->input(1),
                                         graph->NewCNode(make_tuple_inputs)};
   auto depend_node = graph->NewCNode(depend_inputs);
-  depend_node->set_abstract(first_broadcast->abstract()->Clone());
-  (void)manager->Replace(first_broadcast, depend_node);
+  depend_node->set_abstract(first_broadcast->input(1)->abstract()->Clone());
+  (void)manager->Replace(first_broadcast->input(1), depend_node);
 }
 
 void ControlPipelineCommAndDataBroadcastOrder(const FuncGraphPtr &graph) {

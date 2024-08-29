@@ -1075,7 +1075,6 @@ bool DatasetRepeatReaderOptPass(const ResourcePtr &resource) {
     return true;
   }
   dataset_opt->BroadcastDataset();
-  dataset_opt->BroadcastReorder();
   return true;
 }
 
