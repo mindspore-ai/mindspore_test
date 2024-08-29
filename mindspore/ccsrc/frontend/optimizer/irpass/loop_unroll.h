@@ -26,7 +26,7 @@
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "ir/func_graph_cloner.h"
 #include "frontend/optimizer/optimizer_caller.h"
-#include "ir/pattern_matcher.h"
+#include "frontend/optimizer/pattern_matcher.h"
 #include "frontend/operator/ops.h"
 #include "frontend/optimizer/irpass.h"
 #include "pipeline/jit/ps/parse/resolve.h"
