@@ -287,6 +287,11 @@ Status PromptFlashAttentionInfo::CheckStrategy(const StrategyPtr &strategy) {
     MS_LOG(ERROR) << "For" << name_ << ": The input layout" << input_layout_ << "is not supported.";
     return FAILED;
   }
+  if (head_num_ % mp_ || kv_head_num_ % mp_) {
+    MS_LOG(EXCEPTION)
+      << "For 'PromptFlashAttention', 'head_num' and 'kv_head_num' must be divisible by mp, but got 'head_num': "
+      << head_num_ << ", 'kv_head_num': " << kv_head_num_ << ", mp: " << mp_;
+  }
   if (optinal_inputs_.empty()) {
     SetOptinalInputs();
   }
