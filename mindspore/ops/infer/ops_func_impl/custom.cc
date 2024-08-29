@@ -83,10 +83,8 @@ BaseShapePtr CustomFuncImpl::InferShape(const PrimitivePtr &primitive,
                       << "' does not support shape inference in cpp yet, func name:" << exec_info;
   }
 
-  auto kernel_name = primitive->name();
   std::string file_path;
   std::string func_name;
-
   if (auto pos = exec_info.find(":"); pos != std::string::npos) {
     auto path = exec_info.substr(0, pos);
     auto real_path = FileUtils::GetRealPath(path.c_str());
@@ -102,7 +100,7 @@ BaseShapePtr CustomFuncImpl::InferShape(const PrimitivePtr &primitive,
   std::vector<int64_t *> input_shapes;
   std::vector<int> ndims;
   std::vector<std::vector<int64_t>> shape_list;
-
+  auto kernel_name = primitive->name();
   auto inputs = GetInputAbstract(op_type, input_args);
   for (size_t idx = 0; idx < inputs.size(); idx++) {
     auto params_shape_ptr = CheckAndConvertUtils::GetTensorInputShape(kernel_name, inputs, idx);
