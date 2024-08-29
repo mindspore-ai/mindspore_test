@@ -180,8 +180,6 @@ bool IrExportBuilder::BuildPrimitives() {
 
     // Set primitive attributes
     for (const auto &attr : prim->attrs()) {
-      MS_EXCEPTION_IF_NULL(attr.second);
-      MS_LOG(DEBUG) << "attr: " << attr.first << " " << attr.second->DumpText() << " " << attr.second->type_name();
       auto iter = g_export_attr_blacklist.find(attr.first);
       if (iter != g_export_attr_blacklist.end()) {
         continue;
@@ -190,6 +188,7 @@ bool IrExportBuilder::BuildPrimitives() {
         MS_LOG(ERROR) << "attr: " << attr.first << " has no value.";
         continue;
       }
+      MS_LOG(DEBUG) << "attr: " << attr.first << " " << attr.second->DumpText() << " " << attr.second->type_name();
       mind_ir::AttributeProto *attr_proto = prim_proto->add_attribute();
       attr_proto->set_name(attr.first);
       auto attr_value = attr.second;
@@ -408,7 +407,6 @@ bool IrExportBuilder::BuildFuncGraphAttrs(const FuncGraphPtr &func_graph, mind_i
   MS_EXCEPTION_IF_NULL(func_graph);
   MS_EXCEPTION_IF_NULL(graph_proto);
   for (const auto &attr : func_graph->attrs()) {
-    MS_LOG(DEBUG) << "attr: " << attr.first << " " << attr.second->DumpText() << " " << attr.second->type_name();
     auto iter = g_export_attr_blacklist.find(attr.first);
     if (iter != g_export_attr_blacklist.end()) {
       continue;
@@ -417,6 +415,7 @@ bool IrExportBuilder::BuildFuncGraphAttrs(const FuncGraphPtr &func_graph, mind_i
       MS_LOG(ERROR) << "attr: " << attr.first << " has no value.";
       continue;
     }
+    MS_LOG(DEBUG) << "attr: " << attr.first << " " << attr.second->DumpText() << " " << attr.second->type_name();
     mind_ir::AttributeProto *attr_proto = graph_proto->add_attribute();
     attr_proto->set_name(attr.first);
     if (!SetValueToAttributeProto(attr.second, attr_proto)) {
