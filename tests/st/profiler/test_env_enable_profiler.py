@@ -31,7 +31,7 @@ def cleanup():
 
 
 class CheckProfilerFiles:
-    def __init__(self, device_id, rank_id, profiler_path, device_target, profile_framework='all'):
+    def __init__(self, device_id, rank_id, profiler_path, device_target, profile_framework='all', with_stack=False):
         """Arges init."""
         self.device_id = device_id
         self.rank_id = rank_id
@@ -40,6 +40,8 @@ class CheckProfilerFiles:
         if device_target == "Ascend":
             self._check_d_profiling_file()
             self._check_host_profiling_file(profile_framework=profile_framework)
+            if with_stack:
+                self._check_with_stack_profiling_file()
         elif device_target == "GPU":
             self._check_gpu_profiling_file()
         else:
@@ -91,6 +93,10 @@ class CheckProfilerFiles:
             assert os.path.isfile(dataset_csv)
         else:
             assert not os.path.exists(dataset_csv)
+
+    def _check_with_stack_profiling_file(self):
+        op_range_file = os.path.join(self.profiler_path, "FRAMEWORK", f'op_range_{self.rank_id}')
+        assert os.path.isfile(op_range_file)
 
 
 class TestEnvEnableProfiler:
@@ -156,11 +162,11 @@ class TestEnvEnableProfiler:
     @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
     def test_ascend_profiler(self):
         status = os.system(
-            """export MS_PROFILER_OPTIONS='{"start":true, "profile_memory":true, "data_process":true}';
+            """export MS_PROFILER_OPTIONS='{"start":true, "profile_memory":true, "data_process":true, "with_stack":false}';
                python ./run_net.py --target=Ascend --mode=0;
             """
         )
-        CheckProfilerFiles(self.device_id, self.rank_id, self.profiler_path, "Ascend")
+        CheckProfilerFiles(self.device_id, self.rank_id, self.profiler_path, "Ascend", None, False)
         assert status == 0
 
     @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')

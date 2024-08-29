@@ -99,6 +99,8 @@ class FwkFileParser:
         """
         Get the summary data of dataset op by parsing the dataset_op_data.
         """
+        if not dataset_op_data:
+            return
         self._prof_root = validate_and_normalize_path(self._prof_root)
         dataset_file = os.path.join(self._prof_root, f'dataset_{self.rank_id}.csv')
         summary_data = defaultdict(list)
