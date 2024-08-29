@@ -2901,7 +2901,7 @@ void ControlNodeParser::PrintParseInfo() {
     }
   }
   for (const auto &pair : front_node_to_kernel_graph_) {
-    if (pair.first != nullptr && pair.second == nullptr) {
+    if (pair.first != nullptr && pair.second != nullptr) {
       MS_LOG(WARNING) << "Front node:" << pair.first->fullname_with_scope()
                       << " debug string:" << pair.first->DebugString(kDebugStrDepthTwo)
                       << " to kernel graph:" << pair.second->ToString();

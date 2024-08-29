@@ -2383,6 +2383,9 @@ bool AnfAlgo::IsTypeTransformOp(const std::string &op_name) {
 abstract::BaseShapePtr AnfAlgo::GetDynamicSequenceShape(const AnfNodePtr &node, size_t output_idx) {
   MS_EXCEPTION_IF_NULL(node);
   abstract::AbstractSequencePtr sequence_abs = nullptr;
+  if (node->abstract() == nullptr) {
+    MS_LOG(INTERNAL_EXCEPTION) << "Empty abstract in node:" << node->DebugString() << " for dynamic sequence shape.";
+  }
   if (node->Shape() == nullptr || (!node->Shape()->isa<abstract::DynamicSequenceShape>())) {
     MS_LOG(INFO) << "node:" << node->fullname_with_scope() << " index:" << output_idx
                  << " abs:" << node->abstract()->ToString();
@@ -2404,9 +2407,6 @@ abstract::BaseShapePtr AnfAlgo::GetDynamicSequenceShape(const AnfNodePtr &node, 
     }
     sequence_abs = sub_abs->cast<abstract::AbstractSequencePtr>();
   } else {
-    if (node->abstract() == nullptr) {
-      MS_LOG(INTERNAL_EXCEPTION) << "Empty abstract in node:" << node->DebugString() << " for dynamic sequence shape.";
-    }
     if (!node->abstract()->isa<abstract::AbstractSequence>()) {
       MS_LOG(INTERNAL_EXCEPTION) << "Not sequence abstract in node:" << node->DebugString()
                                  << " for dynamic sequence shape.";
