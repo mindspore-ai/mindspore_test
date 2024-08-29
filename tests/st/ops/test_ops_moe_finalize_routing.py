@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from tests.mark_utils import arg_mark
 import numpy as np
 import pytest
 from copy import deepcopy
@@ -20,6 +19,10 @@ import mindspore as ms
 from mindspore import context
 from mindspore.nn import Cell
 from mindspore.ops.auto_generate import MoeFinalizeRouting
+
+from tests.st.utils import test_utils
+from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.mark_utils import arg_mark
 
 
 # MoeFinalizeRouting has 7 inputs and 1 outputs (token_num is  bs*seq)
@@ -63,16 +66,30 @@ class MoeFinalizeRoutingNet(Cell):
         out = self.moefzr(x, skip1, skip2, bias, scale, expanded_src_to_dst, expert_for_source_row)
         return out
 
+@test_utils.run_with_cell
+def moe_finalize_routing_forward_func(x, skip1, skip2, bias, scale, expanded_src_to_dst, expert_for_source_row):
+    net = MoeFinalizeRoutingNet()
+    return net(x, skip1, skip2, bias, scale, expanded_src_to_dst, expert_for_source_row)
+
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-@pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+@pytest.mark.parametrize('mode', ['GE', 'KBK', 'pynative'])
 def test_moe_finalize_routing_case0(mode):
     """
     Feature: Test the moe_finalize_routing calculate
     Description: Test the moe_finalize_routing ops in Ascend backend
     Expectation: The result match to the expect value.
     """
-    context.set_context(device_target="Ascend", mode=mode)
+    context.set_context(device_target="Ascend")
+    if mode == 'KBK':
+        ms.set_context(mode=ms.GRAPH_MODE)
+        ms.set_context(jit_level='O0')
+    elif mode == 'GE':
+        ms.context.set_context(mode=ms.GRAPH_MODE)
+        ms.set_context(jit_level='O2')
+    elif mode == 'pynative':
+        ms.set_context(mode=ms.PYNATIVE_MODE)
+    moefzr_net = MoeFinalizeRoutingNet()
 
     top_k = 2
     token_num = 6
@@ -100,7 +117,6 @@ def test_moe_finalize_routing_case0(mode):
     expanded_src_to_dst = ms.Tensor(expanded_src_to_dst, ms.int32)
     expert_for_source_row = ms.Tensor(expert_for_source_row, ms.int32)
 
-    moefzr_net = MoeFinalizeRoutingNet()
     res = moefzr_net(x, skip1, skip2, bias, scale, expanded_src_to_dst, expert_for_source_row)
     resnpy = res.asnumpy()
 
@@ -108,14 +124,23 @@ def test_moe_finalize_routing_case0(mode):
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
-@pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
+@pytest.mark.parametrize('mode', ['GE', 'KBK', 'pynative'])
 def test_moe_finalize_routing_case1(mode):
     """
     Feature: Test the moe_finalize_routing calculate
     Description: Test the moe_finalize_routing ops in Ascend backend
     Expectation: The result match to the expect value.
     """
-    context.set_context(device_target="Ascend", mode=mode)
+    context.set_context(device_target="Ascend")
+    if mode == 'KBK':
+        ms.set_context(mode=ms.GRAPH_MODE)
+        ms.set_context(jit_level='O0')
+    elif mode == 'GE':
+        ms.context.set_context(mode=ms.GRAPH_MODE)
+        ms.set_context(jit_level='O2')
+    elif mode == 'pynative':
+        ms.set_context(mode=ms.PYNATIVE_MODE)
+    moefzr_net = MoeFinalizeRoutingNet()
 
     top_k = 2
     token_num = 512
@@ -143,8 +168,42 @@ def test_moe_finalize_routing_case1(mode):
     expanded_src_to_dst = ms.Tensor(expanded_src_to_dst, ms.int32)
     expert_for_source_row = ms.Tensor(expert_for_source_row, ms.int32)
 
-    moefzr_net = MoeFinalizeRoutingNet()
     res = moefzr_net(x, skip1, skip2, bias, scale, expanded_src_to_dst, expert_for_source_row)
     resnpy = res.asnumpy()
 
     np.testing.assert_allclose(resnpy, expect0, rtol=1e-3)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_ops_moe_finalize_routing_dyn():
+    """
+    Feature: pyboost function.
+    Description: test MoeFinalizeRouting forward with dynamic rank/shape.
+    Expectation: success.
+    """
+    # inputs1
+    x1 = ms.Tensor(np.random.random((6 * 2, 4)).astype(np.float16))
+    skip1_1 = ms.Tensor(np.random.random((6, 4)).astype(np.float16))
+    skip2_1 = ms.Tensor(np.random.random((6, 4)).astype(np.float16))
+    bias1 = ms.Tensor(np.random.random((8, 4)).astype(np.float16))
+    scale1 = ms.Tensor(np.random.random((6, 2)).astype(np.float16))
+    expanded_src_to_dst1 = np.arange(6 * 2).astype(np.int32)
+    np.random.shuffle(expanded_src_to_dst1)
+    expanded_src_to_dst1 = ms.Tensor(expanded_src_to_dst1)
+    expert_for_source_row1 = ms.Tensor(np.random.randint(low=0, high=8, size=(6, 2)).astype(np.int32))
+
+    # inputs2
+    x2 = ms.Tensor(np.random.random((12 * 4, 8)).astype(np.float16))
+    skip1_2 = ms.Tensor(np.random.random((12, 8)).astype(np.float16))
+    skip2_2 = ms.Tensor(np.random.random((12, 8)).astype(np.float16))
+    bias2 = ms.Tensor(np.random.random((16, 8)).astype(np.float16))
+    scale2 = ms.Tensor(np.random.random((12, 4)).astype(np.float16))
+    expanded_src_to_dst2 = np.arange(12 * 4).astype(np.int32)
+    np.random.shuffle(expanded_src_to_dst2)
+    expanded_src_to_dst2 = ms.Tensor(expanded_src_to_dst2)
+    expert_for_source_row2 = ms.Tensor(np.random.randint(low=0, high=16, size=(12, 4)).astype(np.int32))
+
+    TEST_OP(moe_finalize_routing_forward_func,
+            [[x1, skip1_1, skip2_1, bias1, scale1, expanded_src_to_dst1, expert_for_source_row1],
+             [x2, skip1_2, skip2_2, bias2, scale2, expanded_src_to_dst2, expert_for_source_row2]],
+            '', disable_input_check=True, disable_grad=True, disable_yaml_check=True)
