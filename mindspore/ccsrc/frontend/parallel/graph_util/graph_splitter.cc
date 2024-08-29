@@ -1571,6 +1571,7 @@ DataSyncNodePairList GraphSplitter::CreateDataSyncNodes(const CNodePtr &side_eff
                                                         const std::set<OperatorLabel> &diff_labels) {
   MS_EXCEPTION_IF_NULL(side_effect_node);
   MS_EXCEPTION_IF_NULL(ref);
+  MS_EXCEPTION_IF_NULL(func_graph_);
 
   DataSyncNodePairList result;
   for (const auto &label : diff_labels) {
@@ -1604,6 +1605,7 @@ DataSyncNodePairList GraphSplitter::CreateDataSyncNodes(const CNodePtr &side_eff
 }
 
 void GraphSplitter::AddControlEdgeForProcessWithoutIndegree() {
+  MS_EXCEPTION_IF_NULL(func_graph_);
   (void)std::for_each(node_labels_.begin(), node_labels_.end(),
                       [this](const auto &node_label_pair) { (void)all_labels_.insert(node_label_pair.second); });
 
@@ -1645,7 +1647,6 @@ void GraphSplitter::AddControlEdgeForProcessWithoutIndegree() {
                         });
 
     // Make tuple for all control-edge dst nodes.
-    MS_EXCEPTION_IF_NULL(func_graph_);
     auto tuple_of_control_dst_nodes = CreateMakeTupleNode(func_graph_, make_tuple_inputs);
     MS_EXCEPTION_IF_NULL(tuple_of_control_dst_nodes);
     node_labels_[tuple_of_control_dst_nodes] = default_label_;

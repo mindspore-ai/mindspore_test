@@ -31,7 +31,10 @@ AscendCommunicationGroup::AscendCommunicationGroup(const std::string &name, cons
     : CommunicationGroup(name, group_ranks, global_rank, local_group_rank, local_group_size),
       unique_id_({}),
       comm_(nullptr) {
-  (void)memset_s(inner_comm_name_, INNER_COMM_NAME_MAX_LENGTH, 0x00, INNER_COMM_NAME_MAX_LENGTH);
+  auto ret = memset_s(inner_comm_name_, INNER_COMM_NAME_MAX_LENGTH, 0x00, INNER_COMM_NAME_MAX_LENGTH);
+  if (ret != EOK) {
+    MS_LOG(ERROR) << "memset_s errorno: " << ret;
+  }
 }
 
 bool AscendCommunicationGroup::Initialize(void *root_info) {
