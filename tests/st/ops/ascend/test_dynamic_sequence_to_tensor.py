@@ -24,6 +24,7 @@ from mindspore.common import mutable
 
 context.set_context(mode=context.GRAPH_MODE)
 
+
 class Net(nn.Cell):
     def __init__(self):
         super().__init__()
@@ -32,6 +33,7 @@ class Net(nn.Cell):
 
     def construct(self, x, y):
         return self.tuple_to_tensor(x), self.scalar_to_tensor(y)
+
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_seq_to_tensor0():
@@ -49,6 +51,7 @@ def test_seq_to_tensor0():
     assert np.allclose(res_x.asnumpy(), expect_x0, 1.e-4, 1.e-4, equal_nan=True)
     assert np.allclose(res_y.asnumpy(), expect_y0, 1.e-4, 1.e-4, equal_nan=True)
 
+
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_seq_to_tensor1():
     """
@@ -65,6 +68,7 @@ def test_seq_to_tensor1():
     assert np.allclose(res_x.asnumpy(), expect_x0, 1.e-4, 1.e-4, equal_nan=True)
     assert np.allclose(res_y.asnumpy(), expect_y0, 1.e-4, 1.e-4, equal_nan=True)
 
+
 class Net1(nn.Cell):
     def __init__(self):
         super().__init__()
@@ -73,6 +77,7 @@ class Net1(nn.Cell):
 
     def construct(self, x, y):
         return self.tuple_to_tensor(x, mstype.int64), self.scalar_to_tensor(y, mstype.int64)
+
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_seq_to_tensor2():
@@ -90,6 +95,7 @@ def test_seq_to_tensor2():
     assert np.allclose(res_x.asnumpy(), expect_x0, 1.e-4, 1.e-4, equal_nan=True)
     assert np.allclose(res_y.asnumpy(), expect_y0, 1.e-4, 1.e-4, equal_nan=True)
 
+
 class Net2(nn.Cell):
     def __init__(self):
         super().__init__()
@@ -98,6 +104,7 @@ class Net2(nn.Cell):
 
     def construct(self, x, y):
         return self.tuple_to_tensor(x, mstype.float32), self.scalar_to_tensor(y, mstype.float32)
+
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_seq_to_tensor3():

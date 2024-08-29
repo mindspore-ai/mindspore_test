@@ -48,6 +48,7 @@ def test_hshrink(dtype, data_shape, lambd):
     Description: test the rightness of HShrink gpu kernel
     Expectation: the output is same as hshrink_op_np_bencmark output
     """
+
     class NetHShrink(nn.Cell):
         def __init__(self):
             super(NetHShrink, self).__init__()

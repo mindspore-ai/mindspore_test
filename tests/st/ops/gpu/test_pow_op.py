@@ -97,10 +97,10 @@ def test_complex_datatypes():
     context.set_context(mode=context.GRAPH_MODE, device_target='GPU')
     net = Net()
     for datatype, real_datatype in zip(complex_datatypes, real_datatypes):
-        x0_np = np.array([1.+1.j, 1.-1.j, -1.+1.j, -1.-1.j]).astype(datatype)
-        y0_np = np.array([1.+1.j, 1.-1.j, -1.+1.j, -1.-1.j]).astype(datatype)
-        x1_np = np.array([1.+1.j, 1.-1.j, -1.+1.j, -1.-1.j]).astype(datatype)
-        y1_np = np.array(1.+1.j).astype(datatype)
+        x0_np = np.array([1. + 1.j, 1. - 1.j, -1. + 1.j, -1. - 1.j]).astype(datatype)
+        y0_np = np.array([1. + 1.j, 1. - 1.j, -1. + 1.j, -1. - 1.j]).astype(datatype)
+        x1_np = np.array([1. + 1.j, 1. - 1.j, -1. + 1.j, -1. - 1.j]).astype(datatype)
+        y1_np = np.array(1. + 1.j).astype(datatype)
 
         complex_op = ops.Complex()
         x0 = complex_op(Tensor(x0_np.real, dtype=real_datatype), Tensor(x0_np.imag, dtype=real_datatype))

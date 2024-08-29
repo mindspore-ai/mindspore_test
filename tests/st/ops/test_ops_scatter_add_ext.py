@@ -58,11 +58,11 @@ def test_scatter_add_ext_normal(mode):
     index = Tensor(np.array([[0, 0, 0], [2, 2, 2], [4, 4, 4]]), dtype=ms.int64)
     dim = 0
     out1 = scatter_add_ext_forward_func(x, dim, index, src)
-    expect1 = np.array([[1.23, -2.34, 3.45, 0., 0.,],
-                        [0., 0., 0., 0., 0.,],
-                        [-4.56, 5.67, 6.78, 0., 0.,],
-                        [0., 0., 0., 0., 0.,],
-                        [-7.89, -8.91, 9.123, 0., 0.,]])
+    expect1 = np.array([[1.23, -2.34, 3.45, 0., 0., ],
+                        [0., 0., 0., 0., 0., ],
+                        [-4.56, 5.67, 6.78, 0., 0., ],
+                        [0., 0., 0., 0., 0., ],
+                        [-7.89, -8.91, 9.123, 0., 0., ]])
     assert np.allclose(out1.asnumpy(), expect1)
 
     ## backward
@@ -134,11 +134,11 @@ def test_scatter_add_ext_bfloat16(mode):
     index = Tensor(np.array([[0, 0, 0], [2, 2, 2], [4, 4, 4]]), dtype=ms.int64)
     dim = 0
     out1 = scatter_add_ext_forward_func(x, dim, index, src)
-    expect1 = np.array([[1.123, 2., 3., 0., 0.,],
-                        [0., 0., 0., 0., 0.,],
-                        [4, -4.55415, 6., 0., 0.,],
-                        [0., 0., 0., 0., 0.,],
-                        [7., 8., -9131.1349, 0., 0.,]])
+    expect1 = np.array([[1.123, 2., 3., 0., 0., ],
+                        [0., 0., 0., 0., 0., ],
+                        [4, -4.55415, 6., 0., 0., ],
+                        [0., 0., 0., 0., 0., ],
+                        [7., 8., -9131.1349, 0., 0., ]])
     assert np.allclose(out1.float().asnumpy(), expect1, rtol=4e-3, atol=4e-3)
 
     ## backward

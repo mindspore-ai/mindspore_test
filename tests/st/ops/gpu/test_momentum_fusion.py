@@ -23,6 +23,7 @@ from mindspore.common.parameter import Parameter
 from mindspore import Tensor
 from mindspore.ops import operations as P
 
+
 class MomentumFusionNet(nn.Cell):
     def __init__(self, var, accum):
         super(MomentumFusionNet, self).__init__()

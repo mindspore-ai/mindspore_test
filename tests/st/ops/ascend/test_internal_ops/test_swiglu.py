@@ -21,8 +21,10 @@ import mindspore.nn as nn
 from mindspore.common.np_dtype import bfloat16
 from mindspore import Tensor, context
 
+
 class NetSwiGlu(nn.Cell):
     """SwiGlu."""
+
     def __init__(self, shape, dim):
         super(NetSwiGlu, self).__init__()
         self.silu = nn.SiLU()
@@ -39,12 +41,14 @@ class NetSwiGlu(nn.Cell):
         res = self.mul(hidden, gate)
         return res
 
+
 def gen_np_output(output):
     if output.dtype == ms.bfloat16:
         output_np = output.float().asnumpy()
     else:
         output_np = output.asnumpy()
     return output_np
+
 
 def _test_swiglu(shape, dim, np_dtype, is_dyn):
     if "ASCEND_HOME_PATH" not in os.environ:

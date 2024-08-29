@@ -20,8 +20,10 @@ import pytest
 import mindspore.context as context
 from mindspore import Tensor
 from mindspore.ops import operations as P
+
 context.set_context(mode=context.PYNATIVE_MODE, device_target="GPU")
 np.random.seed(1)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_asinh_fp32():

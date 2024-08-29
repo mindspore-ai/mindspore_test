@@ -23,6 +23,7 @@ from mindspore.ops import erfinv
 import tests.st.utils.test_utils as test_utils
 from tests.mark_utils import arg_mark
 
+
 def generate_random_input(shape, dtype):
     return np.random.randn(*shape).astype(dtype)
 
@@ -34,17 +35,21 @@ def generate_expect_forward_output(x):
 def generate_expect_backward_output(x):
     return Tensor([0.88622695, 1.1125847, 3.428041], dtype=mstype.float32)
 
+
 @test_utils.run_with_cell
 def erfinv_forward_func(x):
     return erfinv(x)
+
 
 @test_utils.run_with_cell
 def erfinv_backward_func(x):
     return ops.grad(erfinv_forward_func, (0))(x)
 
+
 @test_utils.run_with_cell
 def erfinv_vmap_func(x):
     return ops.vmap(erfinv_forward_func)(x)
+
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
           card_mark='onecard', essential_mark='essential')

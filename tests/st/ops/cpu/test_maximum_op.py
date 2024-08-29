@@ -43,7 +43,8 @@ class TwoTensorsMaximum(Cell):
         return self.max(x, y)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_maximum_const_scalar_tensor_int():
     """
     Feature: Test maximum op.
@@ -62,7 +63,8 @@ def test_maximum_const_scalar_tensor_int():
     assert np.all(-diff < error)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_maximum_two_tensors_not_broadcast_int():
     """
     Feature: Test maximum op.
@@ -82,7 +84,8 @@ def test_maximum_two_tensors_not_broadcast_int():
     assert np.all(-diff < error)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_maximum_two_tensors_broadcast_int():
     """
     Feature: Test maximum op.
@@ -102,7 +105,8 @@ def test_maximum_two_tensors_broadcast_int():
     assert np.all(-diff < error)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_maximum_two_tensors_broadcast_one_dimension_int():
     """
     Feature: Test maximum op.
@@ -122,7 +126,8 @@ def test_maximum_two_tensors_broadcast_one_dimension_int():
     assert np.all(-diff < error)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_maximum_two_tensors_not_broadcast_all_one_dimension_int():
     """
     Feature: Test maximum op.
@@ -142,7 +147,8 @@ def test_maximum_two_tensors_not_broadcast_all_one_dimension_int():
     assert np.all(-diff < error)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_maximum_two_tensors_not_broadcast_float32():
     """
     Feature: Test maximum op.
@@ -162,7 +168,8 @@ def test_maximum_two_tensors_not_broadcast_float32():
     assert np.all(-diff < error)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_maximum_two_tensors_not_broadcast_float64():
     """
     Feature: Test maximum op.
@@ -182,7 +189,8 @@ def test_maximum_two_tensors_not_broadcast_float64():
     assert np.all(-diff < error)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
 def test_maximum_tensor_api_modes(mode):
     """

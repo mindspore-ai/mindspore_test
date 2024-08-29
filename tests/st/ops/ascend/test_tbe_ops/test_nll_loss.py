@@ -101,6 +101,7 @@ def test_nll_loss_grad_vmap():
     """
     context.set_context(mode=context.PYNATIVE_MODE)
     reduction = "none"
+
     def cal_nll_loss_grad(x, dout_x, target, weight, total_weight):
         return G.NLLLossGrad(reduction)(x, dout_x, target, weight, total_weight)
 

@@ -17,6 +17,7 @@ import numpy as np
 from mindspore import context, Tensor
 from mindspore.ops import operations as P
 
+
 def resize_nn_grayscale_integer_ratio(datatype):
     context.set_context(mode=context.PYNATIVE_MODE, device_target="GPU")
     input_tensor = Tensor(np.array([[[[0.1, 0.2, 0.3], [0.4, 0.5, 0.6], [0.7, 0.8, 0.9]]]]).astype(datatype))
@@ -535,23 +536,30 @@ def test_resize_nn_rgb_align_corners():
 def test_resize_nn_grayscale_integer_ratio_half():
     resize_nn_grayscale_integer_ratio(np.float16)
 
+
 def test_resize_nn_grayscale_integer_ratio_float():
     resize_nn_grayscale_integer_ratio(np.float32)
+
 
 def test_resize_nn_grayscale_not_integer_ratio_half():
     resize_nn_grayscale_not_integer_ratio(np.float16)
 
+
 def test_resize_nn_grayscale_not_integer_ratio_float():
     resize_nn_grayscale_not_integer_ratio(np.float32)
+
 
 def test_resize_nn_grayscale_multiple_half():
     resize_nn_grayscale_multiple_images(np.float16)
 
+
 def test_resize_nn_grayscale_multiple_float():
     resize_nn_grayscale_multiple_images(np.float32)
 
+
 def test_resize_nn_grayscale_align_corners_half():
     resize_nn_grayscale_align_corners(np.float16)
+
 
 def test_resize_nn_grayscale_align_corners_float():
     resize_nn_grayscale_align_corners(np.float32)

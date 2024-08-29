@@ -12,19 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
-
+import mindspore.context as context
+import mindspore.nn as nn
 import numpy as np
 import pytest
+from mindspore.common.api import _pynative_executor
+from mindspore.ops.operations import _inner_ops as inner
 
 from mindspore import Tensor
-from mindspore.ops.operations import _inner_ops as inner
-import mindspore.nn as nn
-import mindspore.context as context
+from tests.mark_utils import arg_mark
+
 
 # test to make sure this op actually generates a dynamically shaped output
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_gpu_convert_to_dyanamic_shape_confirm_dynamic():
+    """
+    Feature: Test dynamic shaoe
+    Description: Net test dynamic shape
+    Expectation: Success
+    """
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
 
     class AssertDynamicShapeNet(nn.Cell):
@@ -43,7 +49,9 @@ def test_gpu_convert_to_dyanamic_shape_confirm_dynamic():
 
     with pytest.raises(ValueError) as info:
         assert_dynamic_shape_net(x)
+        _pynative_executor.sync()
     assert "Input is dynamically shaped" in str(info.value)
+
 
 def gpu_convert_to_dynamic_shape(x):
     class GpuConvertToDynamicShapeNet(nn.Cell):
@@ -57,7 +65,13 @@ def gpu_convert_to_dynamic_shape(x):
     gpu_convert_to_dynamic_shape_net = GpuConvertToDynamicShapeNet()
     return gpu_convert_to_dynamic_shape_net(Tensor(x)).asnumpy()
 
+
 def gpu_convert_to_dynamic_shape_float(dtype):
+    """
+    Feature: Test dynamic shaoe
+    Description: Net test dynamic shape
+    Expectation: Success
+    """
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
 
     np.random.seed(0)
@@ -74,7 +88,13 @@ def gpu_convert_to_dynamic_shape_float(dtype):
     ms_out = gpu_convert_to_dynamic_shape(x)
     np.testing.assert_array_equal(x, ms_out)
 
+
 def gpu_convert_to_dynamic_shape_int(dtype):
+    """
+    Feature: Test dynamic shaoe
+    Description: Net test dynamic shape
+    Expectation: Success
+    """
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
 
     np.random.seed(0)
@@ -85,8 +105,14 @@ def gpu_convert_to_dynamic_shape_int(dtype):
     ms_out = gpu_convert_to_dynamic_shape(x)
     np.testing.assert_array_equal(x, ms_out)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_gpu_convert_to_dynamic_shape_bool():
+    """
+    Feature: Test dynamic shaoe
+    Description: Net test dynamic shape
+    Expectation: Success
+    """
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
 
     np.random.seed(0)
@@ -94,46 +120,112 @@ def test_gpu_convert_to_dynamic_shape_bool():
     ms_out = gpu_convert_to_dynamic_shape(x)
     np.testing.assert_array_equal(x, ms_out)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_gpu_convert_to_dynamic_shape_float16():
+    """
+    Feature: Test dynamic shaoe
+    Description: Net test dynamic shape
+    Expectation: Success
+    """
     gpu_convert_to_dynamic_shape_float(np.float16)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_gpu_convert_to_dynamic_shape_float32():
+    """
+    Feature: Test dynamic shaoe
+    Description: Net test dynamic shape
+    Expectation: Success
+    """
     gpu_convert_to_dynamic_shape_float(np.float32)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_gpu_convert_to_dynamic_shape_float64():
+    """
+    Feature: Test dynamic shaoe
+    Description: Net test dynamic shape
+    Expectation: Success
+    """
     gpu_convert_to_dynamic_shape_float(np.float64)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_gpu_convert_to_dynamic_shape_int8():
+    """
+    Feature: Test dynamic shaoe
+    Description: Net test dynamic shape
+    Expectation: Success
+    """
     gpu_convert_to_dynamic_shape_int(np.int8)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_gpu_convert_to_dynamic_shape_int16():
+    """
+    Feature: Test dynamic shaoe
+    Description: Net test dynamic shape
+    Expectation: Success
+    """
     gpu_convert_to_dynamic_shape_int(np.int16)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_gpu_convert_to_dynamic_shape_int32():
+    """
+    Feature: Test dynamic shaoe
+    Description: Net test dynamic shape
+    Expectation: Success
+    """
     gpu_convert_to_dynamic_shape_int(np.int32)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_gpu_convert_to_dynamic_shape_int64():
+    """
+    Feature: Test dynamic shaoe
+    Description: Net test dynamic shape
+    Expectation: Success
+    """
     gpu_convert_to_dynamic_shape_int(np.int64)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_gpu_convert_to_dynamic_shape_uint8():
+    """
+    Feature: Test dynamic shaoe
+    Description: Net test dynamic shape
+    Expectation: Success
+    """
     gpu_convert_to_dynamic_shape_int(np.uint8)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_gpu_convert_to_dynamic_shape_uint16():
+    """
+    Feature: Test dynamic shaoe
+    Description: Net test dynamic shape
+    Expectation: Success
+    """
     gpu_convert_to_dynamic_shape_int(np.uint16)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_gpu_convert_to_dynamic_shape_uint32():
+    """
+    Feature: Test dynamic shaoe
+    Description: Net test dynamic shape
+    Expectation: Success
+    """
     gpu_convert_to_dynamic_shape_int(np.uint32)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_gpu_convert_to_dynamic_shape_uint64():
+    """
+    Feature: Test dynamic shaoe
+    Description: Net test dynamic shape
+    Expectation: Success
+    """
     gpu_convert_to_dynamic_shape_int(np.uint64)

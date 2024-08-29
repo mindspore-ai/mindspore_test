@@ -17,6 +17,7 @@ from tests.mark_utils import arg_mark
 import mindspore as ms
 import mindspore.nn as nn
 from mindspore import Tensor
+from mindspore.common.api import _pynative_executor
 
 
 class Net(nn.Cell):
@@ -41,6 +42,9 @@ def test_tensor_swapaxes(mode):
     net = Net()
     with pytest.raises(TypeError):
         tensor_list = net(tensor_list, 0, (1,))
+        _pynative_executor.sync()
     with pytest.raises(ValueError):
         tensor_list = net(tensor_list, 0, 3)
+        _pynative_executor.sync()
     assert net(tensor_list, 0, 1).shape == (3, 2)
+

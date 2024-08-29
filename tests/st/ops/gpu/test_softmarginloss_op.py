@@ -48,7 +48,6 @@ def assert_func(logits, labels, expect_none, expect_mean, expect_sum, epsilon):
     assert np.allclose(output, expect_sum, epsilon)
 
 
-
 def softmarginloss_testset():
     np_types = [np.float16, np.float32, np.float64]
     mindspore_types = [mindspore.float16, mindspore.float32, mindspore.float64]

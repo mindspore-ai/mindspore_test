@@ -12,17 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
-
 import random
 from functools import reduce
-import numpy as np
-import pytest
 
 import mindspore.context as context
 import mindspore.nn as nn
-from mindspore import Tensor, ops
+import numpy as np
 from mindspore.common import dtype as mstype
+
+from mindspore import Tensor, ops
+from tests.mark_utils import arg_mark
 
 context.set_context(mode=context.GRAPH_MODE, device_target="CPU")
 
@@ -36,7 +35,8 @@ class NetArgmin(nn.Cell):
         return self.argmin(x)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_argmin_1d():
     """
     Features: The ops Argmin on CPU.
@@ -49,7 +49,8 @@ def test_argmin_1d():
     assert (output.asnumpy() == expect).all()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_argmin_2d():
     """
     Features: The ops Argmin on CPU.
@@ -67,7 +68,8 @@ def test_argmin_2d():
     assert (output.asnumpy() == expect).all()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_argmin_high_dims():
     """
     Features: The ops Argmin on CPU.
@@ -85,7 +87,8 @@ def test_argmin_high_dims():
         assert (ms_output.asnumpy() == np_output).all()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_function_argmin():
     """
     Features: The function argmin on CPU.
@@ -111,7 +114,8 @@ def cal_argmin_axis_negative(x):
     return ops.Argmin(axis=-1)(x)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_argmin_vmap_axis_zero():
     """
     Features: The argmin vmap on CPU.
@@ -124,7 +128,8 @@ def test_argmin_vmap_axis_zero():
     assert np.allclose(outputs.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_argmin_vmap_basic_axis_negative():
     """
     Features: The argmin vmap on CPU.
@@ -138,7 +143,8 @@ def test_argmin_vmap_basic_axis_negative():
     assert np.allclose(outputs.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_argmin_functional():
     """
     Feature: test ops.argmin.
@@ -161,7 +167,8 @@ def test_argmin_functional():
     assert np.all(out_dim_1_keepdim.asnumpy() == np.array([[1], [0], [1]]))
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_argmin_tensor():
     """
     Feature: test tensor.argmin.

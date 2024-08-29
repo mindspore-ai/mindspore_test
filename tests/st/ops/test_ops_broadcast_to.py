@@ -29,6 +29,7 @@ from tests.mark_utils import arg_mark
 def broadcast_to_forward_func(x, shape):
     return ms.ops.auto_generate.broadcast_to(x, shape)
 
+
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
           card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
@@ -211,9 +212,11 @@ def test_broadcast_exception(context_mode):
         shape = (0,)
         x_np = np.random.randint(1, 4)
         P.BroadcastTo(shape)(Tensor(x_np))
+        _pynative_executor.sync()
         assert "ValueError: For 'BroadcastTo', each dimension pair, input_x shape and target shape must be equal or \
         input dimension is 1 or target dimension is -1. But got input_x shape: [const vector][], target shape: \
         [const vector][0]." in str(info.value)
+
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
           card_mark='onecard', essential_mark='essential')

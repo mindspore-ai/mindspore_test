@@ -161,7 +161,7 @@ def test_pynative_precision():
     output_grad = torch.from_numpy(output_grad_np.copy().astype(np.float32))
     output.backward(gradient=output_grad)
     torch_grad = input_1.grad.detach().numpy(), input_2.grad.detach().numpy(), \
-                   weight_grad.grad.detach().numpy(), bias_grad.grad.detach().numpy()
+        weight_grad.grad.detach().numpy(), bias_grad.grad.detach().numpy()
 
     # calculate ms grad
     output_grad = Tensor(output_grad_np)
@@ -171,7 +171,7 @@ def test_pynative_precision():
     input_2_grad = Tensor(input2_np)
     input_grad = grad_net(input_1_grad, input_2_grad, output_grad)
     ms_grad = input_grad[0][0].asnumpy(), input_grad[0][1].asnumpy(), input_grad[1][
-                0].asnumpy(), input_grad[1][1].asnumpy()
+        0].asnumpy(), input_grad[1][1].asnumpy()
 
     allclose_nparray(torch_grad[0].astype(dtype), ms_grad[0], loss, loss)
     allclose_nparray(torch_grad[1].astype(dtype), ms_grad[1], loss, loss)

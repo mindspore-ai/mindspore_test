@@ -27,6 +27,7 @@ from mindspore.ops import operations as P
 
 context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
 
+
 class NetSGD(nn.Cell):
     def __init__(self):
         super(NetSGD, self).__init__()

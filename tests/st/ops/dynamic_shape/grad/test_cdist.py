@@ -32,7 +32,8 @@ class NetCdist(nn.Cell):
         return self.cdist(x1, x2)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_dynamic_shape_cdist():
     """
     Feature: Cdist Grad DynamicShape.
@@ -46,7 +47,8 @@ def test_dynamic_shape_cdist():
     test_dynamic.test_dynamic_grad_net([x1, x2], False)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_dynamic_rank_cdist():
     """
     Feature: Cdist Grad DynamicShape.

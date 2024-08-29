@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 from tests.mark_utils import arg_mark
+
 """ test_tensor_setitem """
 import pytest
 import numpy as np

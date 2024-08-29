@@ -70,6 +70,7 @@ def test_tensor_copy_slices_net_many_dtype(input_shape, update_shape, begin, end
     for dtype in dtypes:
         test_tensor_copy_slices_net(input_shape, update_shape, begin, end, strides, dtype)
 
+
 support_dtype = (np.int64, np.int32, np.float64, np.float32)
 
 
@@ -112,13 +113,15 @@ def test_tensor_copy_slices_gpu_pynative():
     test_tensor_copy_slices()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_tensor_copy_slices_cpu_graph():
     context.set_context(mode=context.GRAPH_MODE, device_target="CPU")
     test_tensor_copy_slices()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_tensor_copy_slices_cpu_pynative():
     context.set_context(mode=context.PYNATIVE_MODE, device_target="CPU")
     test_tensor_copy_slices()

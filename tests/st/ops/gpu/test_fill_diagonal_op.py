@@ -37,11 +37,9 @@ class FillDiagonalNet(nn.Cell):
                                 [0., 5., 0.],
                                 [0., 0., 5.]]).astype(nptype)
 
-
     @jit
     def construct(self):
         return self.fill_diagonal(self.a)
-
 
 
 def fill_diagonal(nptype, fill_value, wrap):

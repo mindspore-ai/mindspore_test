@@ -238,3 +238,4 @@ def test_csr_add_abnormal():
                x2_dense_shape, x2_batch_pointer, x2_row_pointer, x2_col_indices, x2_value,
                alpha, beta)
         _pynative_executor.sync()
+

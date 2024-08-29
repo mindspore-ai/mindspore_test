@@ -37,7 +37,8 @@ class Net(nn.Cell):
         return self.embedding(param, index, self.offset)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_embedding_look_up0():
     """
     Feature: test embedding_lookup op

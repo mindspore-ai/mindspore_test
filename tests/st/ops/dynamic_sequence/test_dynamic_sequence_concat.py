@@ -35,7 +35,8 @@ class NetSequenceConcat(nn.Cell):
         return self.op(seq)
 
 
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_ascend'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
 def test_seq_tensor_concat0():
     """
     Feature: test sequence concat op
@@ -49,7 +50,8 @@ def test_seq_tensor_concat0():
     assert np.all(res.asnumpy() == expect.asnumpy())
 
 
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_ascend'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_ascend'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_seq_tensor_concat1():
     """
     Feature: test sequence concat op

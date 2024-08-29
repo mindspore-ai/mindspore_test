@@ -37,6 +37,7 @@ class Net(nn.Cell):
     def construct(self, x):
         return C.multinomial(x, self.sample, self.replacement, self.seed)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_multinomial_exception1():
     """
@@ -51,6 +52,7 @@ def test_multinomial_exception1():
     except RuntimeError:
         assert True
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_multinomial__exception2():
     """
@@ -64,6 +66,7 @@ def test_multinomial__exception2():
         net(x)
     except RuntimeError:
         assert True
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_multinomial():
@@ -83,6 +86,7 @@ def test_multinomial():
     assert out0.asnumpy().shape == (1,)
     assert out1.asnumpy().shape == (2,)
     assert out2.asnumpy().shape == (2, 6)
+
 
 class BatchedMultinomial(nn.Cell):
     def __init__(self):

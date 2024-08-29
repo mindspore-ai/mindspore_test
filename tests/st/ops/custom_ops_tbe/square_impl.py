@@ -22,6 +22,7 @@ from tbe.tvm.topi.cce import util
 
 from mindspore.ops.op_info_register import op_info_register, TBERegOp, DataType
 
+
 @fusion_manager.register("square")
 def square_compute(input_x, output_y):
     """

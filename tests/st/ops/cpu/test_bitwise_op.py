@@ -43,7 +43,8 @@ suport_type_list = [np.bool_, np.int8, np.int16, np.int32, np.int64, np.uint8, n
 mode_list = [context.PYNATIVE_MODE, context.GRAPH_MODE]
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 @pytest.mark.parametrize('shape', [(2,), (4, 5), (3, 4, 5, 6), (3, 4, 5, 6, 2)])
 @pytest.mark.parametrize('dtype', suport_type_list)
 @pytest.mark.parametrize('mode_cpu', mode_list)
@@ -68,7 +69,8 @@ def test_bitwise_and(shape, dtype, mode_cpu):
     assert np.allclose(outputs_functional.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 @pytest.mark.parametrize('shape', [(2,), (4, 5), (3, 4, 5, 6), (3, 4, 5, 6, 2)])
 @pytest.mark.parametrize('dtype', suport_type_list)
 @pytest.mark.parametrize('mode_cpu', mode_list)
@@ -93,7 +95,8 @@ def test_bitwise_or(shape, dtype, mode_cpu):
     assert np.allclose(outputs_functional.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 @pytest.mark.parametrize('shape', [(2,), (4, 5), (3, 4, 5, 6), (3, 4, 5, 6, 2)])
 @pytest.mark.parametrize('dtype', suport_type_list)
 @pytest.mark.parametrize('mode_cpu', mode_list)
@@ -118,7 +121,8 @@ def test_bitwise_xor(shape, dtype, mode_cpu):
     assert np.allclose(outputs_functional.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 @pytest.mark.parametrize('op', [P.BitwiseAnd(), P.BitwiseOr(), P.BitwiseXor()])
 @pytest.mark.parametrize('dtype', suport_type_list)
 def test_bitwise_vmap(op, dtype):
@@ -149,7 +153,8 @@ def test_bitwise_vmap(op, dtype):
     assert np.allclose(outputs.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 @pytest.mark.parametrize('dtype', suport_type_list)
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
 @pytest.mark.parametrize('shape', [(2,), (4, 5), (3, 4, 5, 6), (3, 4, 5, 6, 2)])
@@ -169,7 +174,8 @@ def test_bitwise_and_tensor_interface_operator(dtype, mode, shape):
     assert np.allclose(outputs.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 @pytest.mark.parametrize('dtype', suport_type_list)
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
 @pytest.mark.parametrize('shape', [(2,), (4, 5), (3, 4, 5, 6), (3, 4, 5, 6, 2)])
@@ -189,7 +195,8 @@ def test_bitwise_or_tensor_interface_operator(dtype, mode, shape):
     assert np.allclose(outputs.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 @pytest.mark.parametrize('dtype', suport_type_list)
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
 @pytest.mark.parametrize('shape', [(2,), (4, 5), (3, 4, 5, 6), (3, 4, 5, 6, 2)])
@@ -209,7 +216,8 @@ def test_bitwise_xor_tensor_interface_operator(dtype, mode, shape):
     assert np.allclose(outputs.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 @pytest.mark.parametrize('dtype', suport_type_list)
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
 @pytest.mark.parametrize('shape', [(2,), (4, 5), (3, 4, 5, 6), (3, 4, 5, 6, 2)])
@@ -229,7 +237,8 @@ def test_bitwise_and_tensor_interface(dtype, mode, shape):
     assert np.allclose(outputs.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 @pytest.mark.parametrize('dtype', suport_type_list)
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
 @pytest.mark.parametrize('shape', [(2,), (4, 5), (3, 4, 5, 6), (3, 4, 5, 6, 2)])
@@ -249,7 +258,8 @@ def test_bitwise_or_tensor_interface(dtype, mode, shape):
     assert np.allclose(outputs.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 @pytest.mark.parametrize('dtype', suport_type_list)
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
 @pytest.mark.parametrize('shape', [(2,), (4, 5), (3, 4, 5, 6), (3, 4, 5, 6, 2)])
@@ -269,7 +279,8 @@ def test_bitwise_xor_tensor_interface(dtype, mode, shape):
     assert np.allclose(outputs.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 @pytest.mark.parametrize('xshape', [(2, 3)])
 @pytest.mark.parametrize('yshape', [(1, 1), (1, 3), (2, 1)])
 @pytest.mark.parametrize('dtype', suport_type_list)
@@ -294,7 +305,8 @@ def test_bitwise_and_broadcast(xshape, yshape, dtype):
     assert np.allclose(outputs_functional.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 @pytest.mark.parametrize('xshape', [(2, 3)])
 @pytest.mark.parametrize('yshape', [(1, 1), (1, 3), (2, 1)])
 @pytest.mark.parametrize('dtype', suport_type_list)
@@ -319,7 +331,8 @@ def test_bitwise_or_broadcast(xshape, yshape, dtype):
     assert np.allclose(outputs_functional.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 @pytest.mark.parametrize('xshape', [(2, 3)])
 @pytest.mark.parametrize('yshape', [(1, 1), (1, 3), (2, 1)])
 @pytest.mark.parametrize('dtype', suport_type_list)
@@ -355,7 +368,8 @@ class NetBitwise(nn.Cell):
         return out_and, out_or, out_xor
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 @pytest.mark.parametrize('mode_cpu', mode_list)
 def test_bitwise_bool(mode_cpu):
     """

@@ -35,8 +35,8 @@ def generate_expect_forward_output(condition, x, y):
 
 
 def generate_expect_backward_output(condition):
-    return np.zeros(np.shape(condition), dtype=np.bool_),\
-           np.where(condition, 1, 0), np.where(condition, 0, 1)
+    return np.zeros(np.shape(condition), dtype=np.bool_), \
+        np.where(condition, 1, 0), np.where(condition, 0, 1)
 
 
 @test_utils.run_with_cell
@@ -227,6 +227,7 @@ def test_where_vmap(param_jit_level):
     Description: call ops.where with valid input and index.
     Expectation: return the correct value.
     """
+
     def _foreach_run(condition, x, y, batch):
         out = []
         for i in range(condition.shape[batch]):
@@ -256,7 +257,6 @@ def test_where_vmap(param_jit_level):
     output = where_vmap_func(cond, x, y, batch_axis)
     expect = _foreach_run(cond, x, y, batch_axis)
     assert np.allclose(output.asnumpy(), expect.asnumpy(), rtol=1e-4)
-
 
 
 @arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_ascend'], level_mark='level0',

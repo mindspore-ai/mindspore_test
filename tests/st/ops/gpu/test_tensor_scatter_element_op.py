@@ -110,7 +110,7 @@ def test_scatter_add_with_axis_func(dtype, index_dtype, axis, reduction):
     indices = Tensor(np.array([[-1, 0, 1], [0, 1, 2]], dtype=index_dtype))
     update = Tensor(np.array([[1, 2, 2], [4, 5, 8]], dtype=dtype))
 
-    #cause scatter_add will change the value of input, so we first calculate numpy output.
+    # cause scatter_add will change the value of input, so we first calculate numpy output.
     np_output = scatter_element_np(x, indices, update, axis, reduction)
     ms_output = F.tensor_scatter_elements(x, indices, update, axis, reduction)
     print("np_output:\n", np_output)

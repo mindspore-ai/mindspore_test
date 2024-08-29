@@ -20,6 +20,7 @@ import mindspore.context as context
 import mindspore.nn as nn
 from mindspore import Tensor
 from mindspore.ops.operations import sparse_ops as P
+from mindspore.common.api import _pynative_executor
 import mindspore.common.dtype as mstype
 
 context.set_context(mode=context.GRAPH_MODE, device_target="CPU")
@@ -29,7 +30,7 @@ class Net(nn.Cell):
     def __init__(self, binary_output, minlength, maxlength):
         super(Net, self).__init__()
         self.sparse_count_sparse_output = P.SparseCountSparseOutput(binary_output=binary_output, \
-                                            minlength=minlength, maxlength=maxlength)
+                                                                    minlength=minlength, maxlength=maxlength)
 
     def construct(self, indices, values, dense_shape, weights):
         out = self.sparse_count_sparse_output(indices, values, dense_shape, weights)
@@ -51,7 +52,7 @@ def compare_results(result, expect):
 
 def sparse_count_sparse_output_valuecheck(v_type, w_type):
     indices = Tensor([[1, 2], [3, 4], [2, 1], [2, 2], [1, 0], [3, 3], [2, 0], [2, 2]], \
-                    dtype=mstype.int64)
+                     dtype=mstype.int64)
     values = Tensor([0, 2, 8, 8, 1, 2, 3, 7], dtype=v_type)
     dense_shape = Tensor([5, 5], dtype=mstype.int64)
     weights = Tensor([2, 5, 1, 0, 4, 2, 2, 2], dtype=w_type)
@@ -63,9 +64,9 @@ def sparse_count_sparse_output_valuecheck(v_type, w_type):
     expected_output = (expect_indices, expect_values, expect_shape)
     compare_results(op_output, expected_output)
 
-    #Test with float values for weights
+    # Test with float values for weights
     indices = Tensor([[1, 2], [3, 4], [2, 1], [2, 2], [1, 0], [3, 3], [2, 0], [2, 2]], \
-                    dtype=mstype.int64)
+                     dtype=mstype.int64)
     values = Tensor([0, 2, 8, 8, 1, 2, 3, 7], dtype=v_type)
     dense_shape = Tensor([5, 5], dtype=mstype.int64)
     weights = Tensor([2.2, 5.7, 1, 0, 4.6, 2, 2, 2], dtype=mstype.float32)
@@ -78,7 +79,8 @@ def sparse_count_sparse_output_valuecheck(v_type, w_type):
     compare_results(op_output, expected_output)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_sparsecountsparseoutput_checkvalue_difftypes():
     """
     Feature: SparseCountSparseOutput cpu op
@@ -92,7 +94,8 @@ def test_sparsecountsparseoutput_checkvalue_difftypes():
             sparse_count_sparse_output_valuecheck(v_type, w_type)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_sparsecountsparseoutput_checkvalue_maxvalue():
     """
     Feature: SparseCountSparseOutput cpu op
@@ -100,7 +103,7 @@ def test_sparsecountsparseoutput_checkvalue_maxvalue():
     Expectation: Output matching expected values
     """
     indices = Tensor([[1, 2], [3, 4], [2, 1], [2, 2], [1, 0], [3, 3], [2, 0], [2, 2]], \
-                    dtype=mstype.int64)
+                     dtype=mstype.int64)
     values = Tensor([0, 2, 8, 8, 1, 2, 3, 7], dtype=mstype.int64)
     dense_shape = Tensor([5, 5], dtype=mstype.int64)
     weights = Tensor([2, 5, 1, 0, 4, 2, 2, 2], dtype=mstype.int64)
@@ -113,14 +116,15 @@ def test_sparsecountsparseoutput_checkvalue_maxvalue():
     compare_results(op_output, expected_output)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_sparsecountsparseoutput_value_type_error():
     """
     Feature: SparseCountSparseOutput cpu op
     Description: Test output for unsupported type or value bounds
     Expectation: Raises corresponding errors
     """
-    #Number of weights is not equal to number of values
+    # Number of weights is not equal to number of values
     with pytest.raises(RuntimeError):
         indices = Tensor([[1, 2], [3, 1], [2, 2], [2, 1]], dtype=mstype.int64)
         values = Tensor([0, 2, 8, 8], dtype=mstype.int64)
@@ -128,8 +132,9 @@ def test_sparsecountsparseoutput_value_type_error():
         weights = Tensor([1, 2, 1], dtype=mstype.int64)
         sparse_count_sparse_output = Net(binary_output=False, minlength=-1, maxlength=-1)
         sparse_count_sparse_output(indices, values, dense_shape, weights)
+        _pynative_executor.sync()
 
-    #Indexes are not in bound of dense shape
+    # Indexes are not in bound of dense shape
     with pytest.raises(RuntimeError):
         indices = Tensor([[1, 2], [8, 6], [2, 2], [2, 1]], dtype=mstype.int64)
         values = Tensor([0, 2, 8, 8], dtype=mstype.int64)
@@ -137,3 +142,4 @@ def test_sparsecountsparseoutput_value_type_error():
         weights = Tensor([1, 2, 1, 0], dtype=mstype.int64)
         sparse_count_sparse_output = Net(binary_output=False, minlength=-1, maxlength=-1)
         sparse_count_sparse_output(indices, values, dense_shape, weights)
+        _pynative_executor.sync()

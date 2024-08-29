@@ -23,6 +23,7 @@ import mindspore.nn as nn
 from mindspore import Tensor, context, ops
 from st_utils import custom_compare, gen_ms_tensor, run_expect_single
 
+
 class NetMatmulWithSplit3(nn.Cell):
     """Matmul with split."""
 
@@ -46,6 +47,7 @@ class NetMatmulWithSplit3(nn.Cell):
         res2 = self.reshape(res1, out_shape)
         res = self.split_with_size(res2, self.sizes, -1)
         return res
+
 
 class NetMatmulWithSplit2(nn.Cell):
     """Matmul with split."""
@@ -71,6 +73,7 @@ class NetMatmulWithSplit2(nn.Cell):
         res = self.split_with_size(res2, self.sizes, -1)
         return res
 
+
 def run_expect_split(x_np, wq_np, wk_np, wv_np, b0_np, b1_np, b2_np):
     res = list()
     res.append(run_expect_single(x_np, wq_np, b0_np, False, True))
@@ -78,6 +81,7 @@ def run_expect_split(x_np, wq_np, wk_np, wv_np, b0_np, b1_np, b2_np):
     if wv_np is not None:
         res.append(run_expect_single(x_np, wv_np, b2_np, False, True))
     return res
+
 
 def _test_matmul_qkv(m=0, k=0, n0=0, n1=0, n2=0, mstype=ms.float16, is_dyn=False, profiling=False):
     if "ASCEND_HOME_PATH" not in os.environ:
@@ -196,6 +200,7 @@ def test_matmul_ffn_3584_3584(m, k, mstype, is_dyn):
     Expectation: Success.
     """
     _test_matmul_qkv(m=m, k=k, n0=3584, n1=3584, mstype=mstype, is_dyn=is_dyn)
+
 
 @pytest.mark.level1
 @pytest.mark.platform_arm_ascend910b_training

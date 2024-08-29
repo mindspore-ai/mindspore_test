@@ -21,7 +21,6 @@ from mindspore import Tensor
 import mindspore.ops.operations.sparse_ops as P
 
 
-
 def sparse_matrix_nnz(nptype1, nptype2):
     x_dense_shape = Tensor(np.array([2, 3]).astype(nptype1))
     x_batch_pointers = Tensor(np.array([0, 1]).astype(nptype1))

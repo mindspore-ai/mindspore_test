@@ -19,6 +19,8 @@ from mindspore import Tensor
 from mindspore.ops import operations as P
 
 context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
+
+
 class Net(nn.Cell):
     def __init__(self):
         super(Net, self).__init__()
@@ -31,7 +33,7 @@ class Net(nn.Cell):
 def test_net():
     B, T, U, V = 1, 2, 3, 5
     acts = np.random.random((B, T, U, V)).astype(np.float32)
-    labels = np.array([[np.random.randint(1, V-1) for _ in range(U-1)]]).astype(np.int32)
+    labels = np.array([[np.random.randint(1, V - 1) for _ in range(U - 1)]]).astype(np.int32)
     input_length = np.array([T] * B).astype(np.int32)
     label_length = np.array([len(l) for l in labels]).astype(np.int32)
     rnnt_loss = Net()

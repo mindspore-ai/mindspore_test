@@ -58,8 +58,8 @@ def np_antiquant_pergroup(np_data, scale, offset, group_num):
 
     np_antiquant_data = np_data.astype(np.float32)
     for i in range(group_num):
-        np_antiquant_data[i * group_size : (i+1) * group_size, :] = \
-            (np_antiquant_data[i * group_size : (i+1) * group_size, :] +
+        np_antiquant_data[i * group_size: (i + 1) * group_size, :] = \
+            (np_antiquant_data[i * group_size: (i + 1) * group_size, :] +
              offset[i, :].astype(np.float16)) * scale[i, :].astype(np.float32)
     return np_antiquant_data
 

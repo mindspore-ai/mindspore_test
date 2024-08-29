@@ -34,7 +34,8 @@ class ReNormNet(nn.Cell):
         return output
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_renorm_op_float32(data_type=np.float32):
     """
     Feature: test Renorm with using float32.
@@ -58,7 +59,8 @@ def test_renorm_op_float32(data_type=np.float32):
     np.testing.assert_allclose(output.asnumpy(), benchmark_output, rtol=error)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_renorm_op_float16(data_type=np.float16):
     """
     Feature: test Renorm using float16.
@@ -82,7 +84,8 @@ def test_renorm_op_float16(data_type=np.float16):
     np.testing.assert_allclose(output.asnumpy(), benchmark_output, rtol=error)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_renorm_op1_float32(data_type=np.float32):
     """
     Feature: test Renorm using float32.
@@ -106,7 +109,8 @@ def test_renorm_op1_float32(data_type=np.float32):
     np.testing.assert_allclose(output.asnumpy(), benchmark_output, rtol=error)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_renorm_op2_float16(data_type=np.float16):
     """
     Feature: test Renorm using float16.
@@ -130,7 +134,8 @@ def test_renorm_op2_float16(data_type=np.float16):
     np.testing.assert_allclose(output.asnumpy(), benchmark_output, rtol=error)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_renorm_op2_float64(data_type=np.float64):
     """
     Feature: test Renorm using float64.
@@ -162,9 +167,9 @@ def test_renorm_op2_complex64(data_type=np.complex64):
     """
     error = 1e-6
     context.set_context(mode=context.GRAPH_MODE, device_target="CPU")
-    input_x = np.array([[1+2j, 2+3j], [3+4j, 4+5j]]).astype(data_type)
-    benchmark_output = np.array([[0.91287088+1.82574177j, 1.36082768+2.04124165j],
-                                 [2.73861265+3.65148354j, 2.72165537+3.40206909j]]).astype(data_type)
+    input_x = np.array([[1 + 2j, 2 + 3j], [3 + 4j, 4 + 5j]]).astype(data_type)
+    benchmark_output = np.array([[0.91287088 + 1.82574177j, 1.36082768 + 2.04124165j],
+                                 [2.73861265 + 3.65148354j, 2.72165537 + 3.40206909j]]).astype(data_type)
 
     re_norm = ReNormNet(p=2, axis=1, maxnorm=5.0)
     output = re_norm(Tensor(input_x))
@@ -182,9 +187,9 @@ def test_renorm_op2_complex128(data_type=np.complex128):
     """
     error = 1e-6
     context.set_context(mode=context.GRAPH_MODE, device_target="CPU")
-    input_x = np.array([[1+2j, 2+3j], [3+4j, 4+5j]]).astype(data_type)
-    benchmark_output = np.array([[0.91287091+1.82574183j, 1.36082762+2.04124142j],
-                                 [2.73861274+3.65148365j, 2.72165523+3.40206904j]]).astype(data_type)
+    input_x = np.array([[1 + 2j, 2 + 3j], [3 + 4j, 4 + 5j]]).astype(data_type)
+    benchmark_output = np.array([[0.91287091 + 1.82574183j, 1.36082762 + 2.04124142j],
+                                 [2.73861274 + 3.65148365j, 2.72165523 + 3.40206904j]]).astype(data_type)
 
     re_norm = ReNormNet(p=2, axis=1, maxnorm=5.0)
     output = re_norm(Tensor(input_x))
@@ -274,7 +279,8 @@ def vmap_nested_case():
     np.testing.assert_allclose(output.asnumpy(), fornet_output.asnumpy(), rtol=1e-6)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_renorm_vmap_cpu():
     """
     Feature: test Renorm vmap on CPU.
@@ -285,7 +291,8 @@ def test_renorm_vmap_cpu():
     vmap_case()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_renorm_vmap_cpu_nested():
     """
     Feature: test nested Renorm vmap on CPU.

@@ -79,8 +79,10 @@ def test_apply_power_sign_op_vmap():
     Description: test the ApplyPowerSign vmap.
     Expectation: match to expected benchmark output.
     """
+
     def cal_grad(var, m, lr, logbase, sign_decay, beta, grad):
         return ops.ApplyPowerSign()(var, m, lr, logbase, sign_decay, beta, grad)
+
     error = 1e-3
     grad = Tensor(np.array([[[0.3, 0.7], [0.1, 0.8]],
                             [[0.3, 0.7], [0.1, 0.8]]]).astype(np.float32))
@@ -128,8 +130,10 @@ def test_apply_power_sign_op_vmap2():
     Description: test the ApplyPowerSign vmap.
     Expectation: match to expected benchmark output.
     """
+
     def cal_grad(var, m, lr, logbase, sign_decay, beta, grad):
         return ops.ApplyPowerSign()(var, m, lr, logbase, sign_decay, beta, grad)
+
     error = 1e-3
     grad = Tensor(np.array([[[[0.3, 0.7], [0.1, 0.8]], [[0.3, 0.7], [0.1, 0.8]]],
                             [[[0.3, 0.7], [0.1, 0.8]], [[0.3, 0.7], [0.1, 0.8]]]]).astype(np.float32))

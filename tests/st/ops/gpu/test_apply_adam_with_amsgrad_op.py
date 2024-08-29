@@ -104,6 +104,7 @@ def test_apply_adam_witm_amsgrad_op_vmap():
     Expectation: match to np benchmark.
     """
     shape = (8, 9, 6, 10, 5)
+
     def cal_amsgrad(var, m, v, vhat, beta1_power, beta2_power, lr, grad):
         return P.ApplyAdamWithAmsgrad()(var, m, v, vhat, beta1_power, beta2_power, lr, grad)
 
@@ -148,6 +149,7 @@ def test_apply_adam_with_amsgrad_grad_op_vmap2():
     Expectation: match to np benchmark.
     """
     shape = (8, 9, 6, 10, 5)
+
     def cal_amsgrad(var, m, v, vhat, beta1_power, beta2_power, lr, grad):
         return P.ApplyAdamWithAmsgrad()(var, m, v, vhat, beta1_power, beta2_power, lr, grad)
 

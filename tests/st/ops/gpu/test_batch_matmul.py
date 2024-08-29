@@ -432,10 +432,10 @@ def test_batchmatmul_type_complex64():
         input_list.append(input_x2)
         fact = BatchMatMulTestNet(inputs=input_list)
         out = fact.forward_mindspore_impl()
-        expect = np.array([[[8+0j, 8+0j, 8+0j, 8+0j]],
-                           [[8+0j, 8+0j, 8+0j, 8+0j]],
-                           [[8+0j, 8+0j, 8+0j, 8+0j]],
-                           [[8+0j, 8+0j, 8+0j, 8+0j]]], np.complex64)
+        expect = np.array([[[8 + 0j, 8 + 0j, 8 + 0j, 8 + 0j]],
+                           [[8 + 0j, 8 + 0j, 8 + 0j, 8 + 0j]],
+                           [[8 + 0j, 8 + 0j, 8 + 0j, 8 + 0j]],
+                           [[8 + 0j, 8 + 0j, 8 + 0j, 8 + 0j]]], np.complex64)
         assert (out.asnumpy() == expect).all()
         assert str(out.dtype) == "Complex64"
 
@@ -474,9 +474,9 @@ def test_batchmatmul_type_complex128():
         input_list.append(input_x2)
         fact = BatchMatMulTestNet(inputs=input_list)
         out = fact.forward_mindspore_impl()
-        expect = np.array([[[8+0j, 8+0j, 8+0j, 8+0j]],
-                           [[8+0j, 8+0j, 8+0j, 8+0j]],
-                           [[8+0j, 8+0j, 8+0j, 8+0j]],
-                           [[8+0j, 8+0j, 8+0j, 8+0j]]], np.complex128)
+        expect = np.array([[[8 + 0j, 8 + 0j, 8 + 0j, 8 + 0j]],
+                           [[8 + 0j, 8 + 0j, 8 + 0j, 8 + 0j]],
+                           [[8 + 0j, 8 + 0j, 8 + 0j, 8 + 0j]],
+                           [[8 + 0j, 8 + 0j, 8 + 0j, 8 + 0j]]], np.complex128)
         assert (out.asnumpy() == expect).all()
         assert str(out.dtype) == "Complex128"

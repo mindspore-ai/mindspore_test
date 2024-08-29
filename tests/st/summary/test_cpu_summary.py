@@ -25,6 +25,7 @@ import mindspore.nn as nn
 from mindspore import Tensor
 from mindspore.ops import operations as P
 from mindspore.train.summary.summary_record import SummaryRecord
+from mindspore.common.api import _pynative_executor
 from tests.summary_utils import SummaryReader
 from tests.mark_utils import arg_mark
 
@@ -95,5 +96,7 @@ def test_summary_record_for_multi_instances():
         summary_record1 = SummaryRecord(log_dir=summary_dir1)
         summary_dir2 = tempfile.mkdtemp(suffix="summary_dir2")
         _ = SummaryRecord(log_dir=summary_dir2)
+        _pynative_executor.sync()
     assert "only one instance is supported in a training process" in str(errinfo.value)
     summary_record1.close()
+

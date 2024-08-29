@@ -146,8 +146,9 @@ def test_crop_and_resize_int32_bilinear_v2(datatype=np.int32):
                                  [[9213.5, 9214.5], [9243.25, 9244.25], [0.368999987, 0.368999987]],
                                  [[9422.75, 9423.75], [9452.5, 9453.5], [0.368999987, 0.368999987]],
                                  [[9632.0, 9633.0], [9661.75, 9662.75], [0.368999987, 0.368999987]]]]).astype(
-                                     np.float32)
+        np.float32)
     assert np.allclose(output_ms, expected_output, 1e-5, 1e-5)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_crop_and_resize_float16_nearest(datatype=np.float16):
@@ -383,6 +384,7 @@ def test_crop_and_resize_uint8_nearest(datatype=np.uint8):
                                  [[30.0, 31.0], [38.0, 39.0], [0.0, 0.0]],
                                  [[50.0, 51.0], [58.0, 59.0], [0.0, 0.0]]]]).astype(np.float32)
     assert np.allclose(output_ms, expected_output, 1e-5, 1e-5)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_crop_and_resize_uint16_bilinear(datatype=np.uint16):

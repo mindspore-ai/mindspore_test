@@ -23,6 +23,7 @@ from mindspore import Tensor
 from mindspore.ops import operations as P
 from mindspore.ops import composite as C
 
+
 class StridedSliceNet(nn.Cell):
     def __init__(self, begin, end, stride, begin_mask=0, end_mask=0, ellipsis_mask=0):
         super(StridedSliceNet, self).__init__()
@@ -33,6 +34,7 @@ class StridedSliceNet(nn.Cell):
 
     def construct(self, x):
         return self.slice(x, self.begin, self.end, self.strides)
+
 
 class GradData(nn.Cell):
     def __init__(self, network):
@@ -47,7 +49,7 @@ class GradData(nn.Cell):
 def strided_slice_grad(nptype):
     context.set_context(mode=context.GRAPH_MODE, device_target='GPU')
 
-    x = Tensor(np.arange(0, 2*3*4*5).reshape(2, 3, 4, 5).astype(nptype))
+    x = Tensor(np.arange(0, 2 * 3 * 4 * 5).reshape(2, 3, 4, 5).astype(nptype))
     net = StridedSliceNet((1, 0, 0, 2), (2, 2, 2, 4), (1, 1, 1, 1))
     dx = GradData(net)(x)
     expect = np.array([[[[0., 0., 0., 0., 0.],
@@ -64,7 +66,6 @@ def strided_slice_grad(nptype):
                          [0., 0., 0., 0., 0.],
                          [0., 0., 0., 0., 0.],
                          [0., 0., 0., 0., 0.]]],
-
 
                        [[[0., 0., 1., 1., 0.],
                          [0., 0., 1., 1., 0.],
@@ -99,7 +100,6 @@ def strided_slice_grad(nptype):
                          [0., 0., 0., 0., 0.],
                          [0., 0., 0., 0., 0.]]],
 
-
                        [[[0., 0., 1., 0., 1.],
                          [0., 0., 1., 0., 1.],
                          [0., 0., 0., 0., 0.],
@@ -115,7 +115,6 @@ def strided_slice_grad(nptype):
                          [0., 0., 0., 0., 0.],
                          [0., 0., 0., 0., 0.]]]]).astype(nptype)
     assert np.allclose(dx[0].asnumpy(), expect)
-
 
     net = StridedSliceNet((1, 0, 0, -1), (2, 2, 2, 1), (1, 1, 1, -1))
     dx = GradData(net)(x)
@@ -134,7 +133,6 @@ def strided_slice_grad(nptype):
                          [0., 0., 0., 0., 0.],
                          [0., 0., 0., 0., 0.]]],
 
-
                        [[[0., 0., 1., 1., 1.],
                          [0., 0., 1., 1., 1.],
                          [0., 0., 0., 0., 0.],
@@ -150,7 +148,6 @@ def strided_slice_grad(nptype):
                          [0., 0., 0., 0., 0.],
                          [0., 0., 0., 0., 0.]]]]).astype(nptype)
     assert np.allclose(dx[0].asnumpy(), expect)
-
 
     net = StridedSliceNet((1, 0, 0, 2), (2, 2, 2, 4), (1, 1, 1, 1),
                           begin_mask=0b1000, end_mask=0b0010, ellipsis_mask=0b0100)
@@ -170,7 +167,6 @@ def strided_slice_grad(nptype):
                          [0., 0., 0., 0., 0.],
                          [0., 0., 0., 0., 0.]]],
 
-
                        [[[1., 1., 1., 1., 0.],
                          [1., 1., 1., 1., 0.],
                          [1., 1., 1., 1., 0.],
@@ -187,7 +183,7 @@ def strided_slice_grad(nptype):
                          [1., 1., 1., 1., 0.]]]]).astype(nptype)
     assert np.allclose(dx[0].asnumpy(), expect)
 
-    x = Tensor(np.arange(0, 3*4*5).reshape(3, 4, 5).astype(np.float32))
+    x = Tensor(np.arange(0, 3 * 4 * 5).reshape(3, 4, 5).astype(np.float32))
     net = StridedSliceNet((1, 0, 0), (2, -3, 3), (1, 1, 3))
     dx = GradData(net)(x)
     expect = np.array([[[0., 0., 0., 0., 0.],
@@ -240,49 +236,61 @@ def strided_slice_grad(nptype):
                             [0., 0., 0., 0., 0.]]]]]]]).astype(nptype)
     assert np.allclose(dx[0].asnumpy(), expect)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_strided_slice_grad_float64():
     strided_slice_grad(np.float64)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_strided_slice_grad_float32():
     strided_slice_grad(np.float32)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_strided_slice_grad_float16():
     strided_slice_grad(np.float16)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_strided_slice_grad_int64():
     strided_slice_grad(np.int64)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_strided_slice_grad_int32():
     strided_slice_grad(np.int32)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_strided_slice_grad_int16():
     strided_slice_grad(np.int16)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_strided_slice_grad_int8():
     strided_slice_grad(np.int8)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_strided_slice_grad_uint64():
     strided_slice_grad(np.uint64)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_strided_slice_grad_uint32():
     strided_slice_grad(np.uint32)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_strided_slice_grad_uint16():
     strided_slice_grad(np.uint16)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_strided_slice_grad_uint8():
     strided_slice_grad(np.uint8)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_strided_slice_grad_bool():

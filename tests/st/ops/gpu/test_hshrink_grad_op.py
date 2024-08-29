@@ -48,6 +48,7 @@ def test_hshrink_grad(dtype, data_shape, lambd):
     Description: test the rightness of HShrinkGrad gpu kernel
     Expectation: the output is same as hshrink_grad_op_np_bencmark output
     """
+
     class NetHShrinkGrad(nn.Cell):
         def __init__(self):
             super(NetHShrinkGrad, self).__init__()

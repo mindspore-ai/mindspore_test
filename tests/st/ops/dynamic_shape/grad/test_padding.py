@@ -32,7 +32,8 @@ class NetPadding(nn.Cell):
         return self.padding(x)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_gpu_dynamic_padding_shape():
     """
     Feature: Padding Grad DynamicShape.
@@ -45,7 +46,8 @@ def test_gpu_dynamic_padding_shape():
     test_dynamic.test_dynamic_grad_net(x)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_gpu_dynamic_padding_rank():
     """
     Feature: Padding Grad DynamicRank.

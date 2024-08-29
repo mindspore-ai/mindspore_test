@@ -12,15 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
-
+import mindspore.context as context
+import mindspore.nn as nn
 import numpy as np
 import pytest
 
-import mindspore.context as context
-import mindspore.nn as nn
 from mindspore import Tensor, ops
 from mindspore.ops import operations as P
+from tests.mark_utils import arg_mark
 
 
 class OpNetWrapper(nn.Cell):
@@ -37,7 +36,8 @@ class GreaterEqualFunc(nn.Cell):
         return ops.ge(*inputs)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
 @pytest.mark.parametrize('dtype', [np.int8, np.int16, np.int32, np.int64, np.float16, np.float32, np.float64])
 def test_greater_equal_op_dtype_1(mode, dtype):
@@ -59,7 +59,8 @@ def test_greater_equal_op_dtype_1(mode, dtype):
     assert np.allclose(outputs.asnumpy(), [False, True, True])
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
 @pytest.mark.parametrize('dtype', [np.uint8, np.uint16, np.uint32, np.uint64])
 def test_greater_equal_op_dtype_2(mode, dtype):
@@ -81,7 +82,8 @@ def test_greater_equal_op_dtype_2(mode, dtype):
     assert np.allclose(outputs.asnumpy(), [False, True, True])
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
 @pytest.mark.parametrize('dtype', [np.bool])
 def test_greater_equal_op_dtype_3(mode, dtype):
@@ -103,7 +105,8 @@ def test_greater_equal_op_dtype_3(mode, dtype):
     assert np.allclose(outputs.asnumpy(), [False, True, True])
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
 def test_greater_equal_op_functional(mode):
     """
@@ -123,7 +126,8 @@ def test_greater_equal_op_functional(mode):
     assert np.allclose(outputs.asnumpy(), [False, True, True])
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
 def test_greater_equal_op_tensor(mode):
     """

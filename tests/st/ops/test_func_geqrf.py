@@ -19,7 +19,6 @@ import pytest
 import mindspore as ms
 from mindspore import nn, Tensor, ops
 
-
 RTOL = 1.e-5
 ATOL = 1.e-6
 
@@ -29,7 +28,8 @@ class GeqrfNet(nn.Cell):
         return ops.geqrf(x)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_geqrf_rank2_double_fp(mode):
     """

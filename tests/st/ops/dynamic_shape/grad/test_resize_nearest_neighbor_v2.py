@@ -31,7 +31,8 @@ class NetResizeNearestNeighborV2(nn.Cell):
         return self.resize_nearest_neighbor_v2(input_tensor, size)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_dynamic_resize_nearest_neighbor_v2_shape():
     """
     Feature: ResizeNearestNeighborV2 Grad DynamicShape.
@@ -45,7 +46,8 @@ def test_dynamic_resize_nearest_neighbor_v2_shape():
     test_dynamic.test_dynamic_grad_net([input_tensor, size])
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_dynamic_resize_nearest_neighbor_v2_rank():
     """
     Feature: ResizeNearestNeighborV2 Grad DynamicRank.

@@ -21,6 +21,7 @@ from mindspore import context, Tensor
 from mindspore.ops.auto_generate import QuantBatchMatmul
 from st_utils import custom_compare
 
+
 class QbmmWithSplit3(ms.nn.Cell):
     def __init__(self, weight, bias, scale, n0, n1, n2, dst_dtype):
         super(QbmmWithSplit3, self).__init__()
@@ -43,6 +44,7 @@ class QbmmWithSplit3(ms.nn.Cell):
         res1 = self.reshape(res0, out_shape)
         res = self.split_with_size(res1, self.sizes, -1)
         return res
+
 
 class QbmmWithSplit2(ms.nn.Cell):
     def __init__(self, weight, bias, scale, n0, n1, dst_dtype):
@@ -67,9 +69,11 @@ class QbmmWithSplit2(ms.nn.Cell):
         res = self.split_with_size(res1, self.sizes, -1)
         return res
 
+
 def process_deq_scale(deq_scale) -> np.ndarray:
     new_deq_scale = np.frombuffer(deq_scale.tobytes(), dtype=np.uint32)
     return new_deq_scale.astype(np.int64)
+
 
 def np_qbmm_compute(a, b, tmp, bias=None):
     b = np.transpose(b, (1, 0))
@@ -80,6 +84,7 @@ def np_qbmm_compute(a, b, tmp, bias=None):
     c = c.astype(np.float16)
     return c
 
+
 def run_expect_split(x_np, wq_np, wk_np, wv_np, b0_np, b1_np, b2_np, s0_np, s1_np, s2_np):
     res = list()
     res.append(np_qbmm_compute(x_np, wq_np, s0_np, b0_np))
@@ -87,6 +92,7 @@ def run_expect_split(x_np, wq_np, wk_np, wv_np, b0_np, b1_np, b2_np, s0_np, s1_n
     if wv_np is not None:
         res.append(np_qbmm_compute(x_np, wv_np, s2_np, b2_np))
     return res
+
 
 def qbmm_split(m, k, n0=0, n1=0, n2=0, is_dyn=False, profiling=False):
     if "ASCEND_HOME_PATH" not in os.environ:
@@ -102,17 +108,17 @@ def qbmm_split(m, k, n0=0, n1=0, n2=0, is_dyn=False, profiling=False):
     bias0 = np.random.randint(-127, 127, (n0)).astype(np.int32)
     bias1 = np.random.randint(-127, 127, (n1)).astype(np.int32)
 
-    ori_scale0 = np.random.rand(n0).astype(np.float32) / 100 # float32
-    ori_scale1 = np.random.rand(n1).astype(np.float32) / 100 # float32
+    ori_scale0 = np.random.rand(n0).astype(np.float32) / 100  # float32
+    ori_scale1 = np.random.rand(n1).astype(np.float32) / 100  # float32
 
-    scale0 = process_deq_scale(ori_scale0) # int64
-    scale1 = process_deq_scale(ori_scale1) # int64
+    scale0 = process_deq_scale(ori_scale0)  # int64
+    scale1 = process_deq_scale(ori_scale1)  # int64
 
     if n2 != 0:
         w2 = np.random.uniform(-127, 127, size=(n2, k)).astype(np.int8)
         bias2 = np.random.randint(-127, 127, (n2)).astype(np.int32)
-        ori_scale2 = np.random.rand(n2).astype(np.float32) / 100 # float32
-        scale2 = process_deq_scale(ori_scale2) # int64
+        ori_scale2 = np.random.rand(n2).astype(np.float32) / 100  # float32
+        scale2 = process_deq_scale(ori_scale2)  # int64
         weight = np.vstack((w0, w1, w2))
         bias = np.concatenate((bias0, bias1, bias2))
         scale = np.concatenate((scale0, scale1, scale2))
@@ -149,6 +155,7 @@ def qbmm_split(m, k, n0=0, n1=0, n2=0, is_dyn=False, profiling=False):
         curr_res = custom_compare(output_np, expect_out_i, ms.float16)
         result = result and curr_res
     assert result, "qbmm split compare fail."
+
 
 @pytest.mark.level0
 @pytest.mark.platform_arm_ascend910b_training
@@ -193,6 +200,7 @@ def test_qbmm_ffn_3584_3584(m, k, is_dyn):
     Expectation: Success.
     """
     qbmm_split(m=m, k=k, n0=3584, n1=3584, is_dyn=is_dyn)
+
 
 @pytest.mark.level1
 @pytest.mark.platform_arm_ascend910b_training

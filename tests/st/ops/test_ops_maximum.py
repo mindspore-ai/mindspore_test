@@ -21,6 +21,7 @@ from tests.st.ops.test_ops_minimum import (minimum_maximum_case, minimum_maximum
                                            minimum_maximum_case_all_dyn)
 from tests.mark_utils import arg_mark
 
+
 def np_maximum(input_x, input_y):
     return np.maximum(input_x, input_y)
 

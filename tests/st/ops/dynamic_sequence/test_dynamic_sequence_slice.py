@@ -26,13 +26,15 @@ context.set_context(mode=context.GRAPH_MODE)
 context_prepare()
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard',
+          essential_mark='unessential')
 def test_seq_slice():
     """
     Feature: test sequence_slice op
     Description: slice operation on tuple type
     Expectation: the behavior is matched to python style
     """
+
     class Net(nn.Cell):
         def __init__(self):
             super().__init__()
@@ -53,13 +55,15 @@ def test_seq_slice():
     fact.forward_cmp()
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard',
+          essential_mark='unessential')
 def test_seq_slice_grad():
     """
     Feature: test sequence_slice grad
     Description: slice operation on tuple type
     Expectation: the behavior is matched to python style
     """
+
     class Net(nn.Cell):
         def __init__(self):
             super().__init__()
@@ -85,6 +89,7 @@ def test_seq_slice_mutable():
     Description: slice operation on tuple type
     Expectation: the behavior is matched to python style
     """
+
     class Net(nn.Cell):
         def construct(self, x, a, b):
             out = x[a:b]
@@ -120,6 +125,8 @@ start_stop_step_ = [
     (8, 1, -2),
     (mutable(3), 5, 1),
 ]
+
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize("sequence_data", sequence_data_)
 @pytest.mark.parametrize("start_stop_step", start_stop_step_)
@@ -129,6 +136,7 @@ def test_seq_slice_mutable_and_tensor(sequence_data, start_stop_step):
     Description: slice operation on tuple type which will cause type error
     Expectation: the behavior is matched to python style
     """
+
     class Net(nn.Cell):
         def construct(self, x, a, b, c):
             out = x[a:b:c]
@@ -153,6 +161,7 @@ def test_seq_slice_neg_step():
     Description: slice operation when step == -1
     Expectation: the behavior is matched to python style
     """
+
     class Net(nn.Cell):
         def construct(self, x):
             shp = x.shape

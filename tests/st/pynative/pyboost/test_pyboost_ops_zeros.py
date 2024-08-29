@@ -194,3 +194,4 @@ def test_zeros_backward_dynamic_rank(context_mode):
         size = Tensor(np.array([[2, 3], [4, 5]]).astype(np.int64))
         _ = test_cell(size, ms.int32)
         _pynative_executor.sync()
+

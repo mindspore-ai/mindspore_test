@@ -35,12 +35,13 @@ JIT_CONFIG = None
 ENABLE_DEBUG_INFO = False
 DEBUG_STATUS_INFO = ""
 
+
 class HelpNet(nn.Cell):
     def __init__(self, prim):
         super().__init__()
         self.op = prim
 
-    # Inorder to run the net twice, the inputs with the type of list/tuple/scalar in repalced by help tensor
+    # Inorder to run the net twice, the inputs with the type of list/tuple/scalar in replaced by help tensor
     def construct(self, *args):
         # the last two args indicates the index and type(tuple/list/scalar) of inputs which are replaced by help tensor
         index = args[-2]
@@ -113,26 +114,26 @@ def error_status_log():
     global DEBUG_STATUS_INFO
     print(f"\n[ERROR]: TEST_OP catch a error during testing. the error status info is: {DEBUG_STATUS_INFO}."
           f"\nPlease use these parameters to quickly reproduce the error:")
-    #disable_mode
+    # disable_mode
     if 'GRAPH_MODE' in DEBUG_STATUS_INFO:
         print("disable_mode=['PYNATIVE_MODE', 'GRAPH_MODE_O0']")
     elif 'PYNATIVE_MODE' in DEBUG_STATUS_INFO:
         print("disable_mode=['GRAPH_MODE', 'GRAPH_MODE_O0']")
     elif 'GRAPH_MODE_O0' in DEBUG_STATUS_INFO:
         print("disable_mode=['GRAPH_MODE', 'PYNATIVE_MODE']")
-    #disable_tensor_dynamic_type
+    # disable_tensor_dynamic_type
     if 'DYNAMIC_SHAPE' in DEBUG_STATUS_INFO:
         print("disable_tensor_dynamic_type='DYNAMIC_RANK'")
     elif 'DYNAMIC_RANK' in DEBUG_STATUS_INFO:
         print("disable_tensor_dynamic_type='DYNAMIC_SHAPE'")
-    #disable_nontensor_dynamic_type
+    # disable_nontensor_dynamic_type
     if 'STATIC_LEN' in DEBUG_STATUS_INFO:
         print("disable_nontensor_dynamic_type='MUTABLE_LEN'")
     elif 'MUTABLE_LEN' in DEBUG_STATUS_INFO:
         print("disable_nontensor_dynamic_type='STATIC_LEN'")
     else:
         print("disable_nontensor_dynamic_type='BOTH'")
-    #disable_resize
+    # disable_resize
     if 'Resize' not in DEBUG_STATUS_INFO:
         print("disable_resize=True")
     print("For more information, set dump_ir=True to get ir graphs.")
@@ -164,6 +165,7 @@ def remove_scalar_grad(grad):
         return tuple(grad_new)
 
     return grad
+
 
 def compare(expect, actual, grad, ignore_output_index):
     if not grad:
@@ -251,7 +253,8 @@ def check_args(inputs_seq, yaml_name, disable_input_check, disable_yaml_check, d
         raise ValueError(f"Arg 'disable_tensor_dynamic_type' must be one of ['DYNAMIC_SHAPE', 'DYNAMIC_RANK'], " \
                          f"but got '{disable_tensor_dynamic_type}'.")
 
-    if disable_nontensor_dynamic_type is not None and disable_nontensor_dynamic_type not in ['STATIC_LEN', 'MUTABLE_LEN', 'BOTH']:
+    if disable_nontensor_dynamic_type is not None and disable_nontensor_dynamic_type not in ['STATIC_LEN',
+                                                                                             'MUTABLE_LEN', 'BOTH']:
         raise ValueError(f"Arg 'disable_nontensor_dynamic_type' must be one of ['STATIC_LEN', 'MUTABLE_LEN', 'BOTH'], " \
                          f"but got {disable_nontensor_dynamic_type}.")
 
@@ -446,7 +449,8 @@ def replace_diff_len_tuple_from_run_inputs(compile_inputs, run_inputs):
     return re_compile_inputs, need_reset_inputs
 
 
-def run_with_dynamic_resize(prim, inputs_seq, mode_name, dump_ir, ir_path, expect_resize, ignore_output_index, inplace_update):
+def run_with_dynamic_resize(prim, inputs_seq, mode_name, dump_ir, ir_path, expect_resize, ignore_output_index,
+                            inplace_update):
     """test resize"""
     print(f"Start testing with [{mode_name}] [Resize]...")
     out_actual = None
@@ -553,8 +557,9 @@ def get_dynamic_type(disable_tensor_dynamic_type, disable_nontensor_dynamic_type
         warning_log("both 'STATIC_LEN' and 'MUTABLE_LEN' are skipped.")
         nontensor_dynamic_type = []
     else:
-        raise ValueError(f"'disable_nontensor_dynamic_type' must be one of ['STATIC_LEN', 'MUTABLE_LEN', 'BOTH'] or None, " \
-                         f"but got '{disable_nontensor_dynamic_type}'.")
+        raise ValueError(
+            f"'disable_nontensor_dynamic_type' must be one of ['STATIC_LEN', 'MUTABLE_LEN', 'BOTH'] or None, " \
+            f"but got '{disable_nontensor_dynamic_type}'.")
     return tensor_dynamic_type, nontensor_dynamic_type
 
 
@@ -652,7 +657,8 @@ def clone_inputs(args, inplace_update=False):
 
 def TEST_OP(op, inputs_seq, yaml_name, *, disable_input_check=False, disable_yaml_check=False, disable_mode=[],
             disable_tensor_dynamic_type=None, disable_nontensor_dynamic_type=None, disable_grad=False,
-            disable_resize=False, ignore_output_index=None, dump_ir=False, custom_flag='', debug_info=False, inplace_update=False):
+            disable_resize=False, ignore_output_index=None, dump_ir=False, custom_flag='', debug_info=False,
+            inplace_update=False):
     """
     This function creates several dynamic cases by converting Tensor/tuple/list/scalar inputs to dynamic shape to test
     the correctness of the op's dynamic inputs process. Both Primitive and Functional API are supported.

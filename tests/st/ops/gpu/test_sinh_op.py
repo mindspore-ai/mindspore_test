@@ -23,6 +23,7 @@ import mindspore.context as context
 from mindspore.ops import operations as P
 from mindspore.ops import composite as C
 from mindspore.common import dtype as mstype
+
 context.set_context(mode=context.PYNATIVE_MODE, device_target="GPU")
 
 

@@ -43,8 +43,8 @@ def test_unique_with_pad():
     unique_with_pad = Net(pad_num)
     out = unique_with_pad(x)
     expect_val = ([1, 5, 4, 3, 2, 8, 8, 8, 8, 8], [0, 0, 1, 1, 2, 2, 3, 3, 4, 4])
-    assert(out[0].asnumpy() == expect_val[0]).all()
-    assert(out[1].asnumpy() == expect_val[1]).all()
+    assert (out[0].asnumpy() == expect_val[0]).all()
+    assert (out[1].asnumpy() == expect_val[1]).all()
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')

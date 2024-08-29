@@ -12,18 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
-
+import mindspore.nn as nn
 import numpy as np
 import pytest
+from mindspore.common.api import jit
+from mindspore.ops.functional import vmap
 
-import mindspore.nn as nn
 from mindspore import Tensor
 from mindspore import context
-from mindspore.ops import operations as P
 from mindspore.ops import functional as F
-from mindspore.ops.functional import vmap
-from mindspore.common.api import jit
+from mindspore.ops import operations as P
+from tests.mark_utils import arg_mark
 
 
 class NetGer(nn.Cell):
@@ -44,7 +43,8 @@ def np_all_close_with_loss(out, expect):
     return np.allclose(out, expect, 0.0005, 0.0005, equal_nan=True)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
 @pytest.mark.parametrize('dtype', [np.float16, np.float32, np.float64])
 @pytest.mark.parametrize('xshape', [(2,), (3,), (4,)])
@@ -74,7 +74,8 @@ def test_ger_float16(dtype, mode, xshape, yshape):
     assert np.allclose(output_tensor.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 @pytest.mark.parametrize('dtype', [np.float32, np.float16, np.float64])
 def test_ger_vmap(dtype):
     """
@@ -113,7 +114,8 @@ def test_ger_vmap(dtype):
     assert np_all_close_with_loss(output_vmap.asnumpy(), output_manually.asnumpy())
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 @pytest.mark.parametrize('dtype', [np.float32, np.float16, np.float64])
 def test_ger_vmap_two(dtype):
     """

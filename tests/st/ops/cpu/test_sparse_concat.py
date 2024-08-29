@@ -12,7 +12,7 @@ class SparseConcatNet(nn.Cell):
     def construct(self, input_list, concat_dim, num):
         sp_input = []
         for i in range(0, num):
-            sp_input.append(COOTensor(input_list[i*3], input_list[i*3+1], input_list[i*3+2]))
+            sp_input.append(COOTensor(input_list[i * 3], input_list[i * 3 + 1], input_list[i * 3 + 2]))
         return F.coo_concat(sp_input, concat_dim)
 
 
@@ -39,17 +39,16 @@ def coo_concat_int(i_type, v_type):
     input1 = COOTensor(indices1, values1, shape1)
     forward_net = SparseConcatNet()
     concat_dim = 1
-    #net run
+    # net run
     forward_output = forward_net((indices0, values0, shape0, indices1, values1, shape1), concat_dim, 2)
     expect_forward_output_indices = Tensor([[0, 1], [0, 4], [1, 2], [1, 5]], dtype=i_type)
     expect_forward_output_values = Tensor([1, 3, 2, 4], dtype=v_type)
     expect_forward_output_shape = (3, 8)
     expect_forward_output = (expect_forward_output_indices, expect_forward_output_values, expect_forward_output_shape)
     judge_result_correct(forward_output, expect_forward_output)
-    #single op run
+    # single op run
     forward_output = F.coo_concat((input0, input1), concat_dim)
     judge_result_correct(forward_output, expect_forward_output)
-
 
     indices0 = Tensor([[0, 1], [0, 2]], dtype=i_type)
     values0 = Tensor([1, 2], dtype=v_type)
@@ -59,7 +58,7 @@ def coo_concat_int(i_type, v_type):
     shape1 = (3, 4)
     forward_net = SparseConcatNet()
     concat_dim = 1
-    #net run
+    # net run
     forward_output = forward_net((indices0, values0, shape0, indices1, values1, shape1), concat_dim, 2)
     expect_forward_output_indices = Tensor([[0, 1], [0, 2], [0, 5], [0, 6]], dtype=i_type)
     expect_forward_output_values = Tensor([1, 2, 3, 4], dtype=v_type)
@@ -67,7 +66,6 @@ def coo_concat_int(i_type, v_type):
     expect_forward_output = (expect_forward_output_indices, expect_forward_output_values, expect_forward_output_shape)
     judge_result_correct(forward_output, expect_forward_output)
 
-
     indices0 = Tensor([[0, 1], [0, 2]], dtype=i_type)
     values0 = Tensor([1, 2], dtype=v_type)
     shape0 = (3, 4)
@@ -79,16 +77,15 @@ def coo_concat_int(i_type, v_type):
     shape2 = (3, 4)
     forward_net = SparseConcatNet()
     concat_dim = 1
-    #net run
+    # net run
     forward_output = forward_net((indices0, values0, shape0, \
-                                 indices1, values1, shape1, indices2, values2, shape2), concat_dim, 3)
+                                  indices1, values1, shape1, indices2, values2, shape2), concat_dim, 3)
     expect_forward_output_indices = Tensor([[0, 1], [0, 2], [0, 5], [0, 6], [1, 9], [1, 10], [1, 11]], dtype=i_type)
     expect_forward_output_values = Tensor([1, 2, 3, 4, 5, 6, 7], dtype=v_type)
     expect_forward_output_shape = (3, 12)
     expect_forward_output = (expect_forward_output_indices, expect_forward_output_values, expect_forward_output_shape)
     judge_result_correct(forward_output, expect_forward_output)
 
-
     indices0 = Tensor([[0, 1], [0, 2]], dtype=i_type)
     values0 = Tensor([1, 2], dtype=v_type)
     shape0 = (3, 4)
@@ -100,9 +97,9 @@ def coo_concat_int(i_type, v_type):
     shape2 = (3, 4)
     forward_net = SparseConcatNet()
     concat_dim = 1
-    #net run
+    # net run
     forward_output = forward_net((indices2, values2, shape2, \
-                                 indices1, values1, shape1, indices0, values0, shape0), concat_dim, 3)
+                                  indices1, values1, shape1, indices0, values0, shape0), concat_dim, 3)
     expect_forward_output_indices = Tensor([[0, 5], [0, 6], [0, 9], [0, 10], [1, 1], [1, 2], [1, 3]], dtype=i_type)
     expect_forward_output_values = Tensor([3, 4, 1, 2, 5, 6, 7], dtype=v_type)
     expect_forward_output_shape = (3, 12)
@@ -121,17 +118,16 @@ def coo_concat_float(i_type, v_type):
     input1 = COOTensor(indices1, values1, shape1)
     forward_net = SparseConcatNet()
     concat_dim = 1
-    #net run
+    # net run
     forward_output = forward_net((indices0, values0, shape0, indices1, values1, shape1), concat_dim, 2)
     expect_forward_output_indices = Tensor([[0, 1], [0, 4], [1, 2], [1, 5]], dtype=i_type)
     expect_forward_output_values = Tensor([1.0, 3.0, 2.0, 4.0], dtype=v_type)
     expect_forward_output_shape = (3, 8)
     expect_forward_output = (expect_forward_output_indices, expect_forward_output_values, expect_forward_output_shape)
     judge_result_correct(forward_output, expect_forward_output)
-    #single op run
+    # single op run
     forward_output = F.coo_concat((input0, input1), concat_dim)
     judge_result_correct(forward_output, expect_forward_output)
-
 
     indices0 = Tensor([[0, 1], [0, 2]], dtype=i_type)
     values0 = Tensor([1.0, 2.0], dtype=v_type)
@@ -141,14 +137,13 @@ def coo_concat_float(i_type, v_type):
     shape1 = (3, 4)
     forward_net = SparseConcatNet()
     concat_dim = 1
-    #net run
+    # net run
     forward_output = forward_net((indices0, values0, shape0, indices1, values1, shape1), concat_dim, 2)
     expect_forward_output_indices = Tensor([[0, 1], [0, 2], [0, 5], [0, 6]], dtype=i_type)
     expect_forward_output_values = Tensor([1.0, 2.0, 3.0, 4.0], dtype=v_type)
     expect_forward_output_shape = (3, 8)
     expect_forward_output = (expect_forward_output_indices, expect_forward_output_values, expect_forward_output_shape)
     judge_result_correct(forward_output, expect_forward_output)
-
 
     indices0 = Tensor([[0, 1], [0, 2]], dtype=i_type)
     values0 = Tensor([1.0, 2.0], dtype=v_type)
@@ -161,15 +156,14 @@ def coo_concat_float(i_type, v_type):
     shape2 = (3, 4)
     forward_net = SparseConcatNet()
     concat_dim = -2
-    #net run
+    # net run
     forward_output = forward_net((indices0, values0, shape0, \
-                                 indices1, values1, shape1, indices2, values2, shape2), concat_dim, 3)
+                                  indices1, values1, shape1, indices2, values2, shape2), concat_dim, 3)
     expect_forward_output_indices = Tensor([[0, 1], [0, 2], [3, 1], [3, 2], [7, 1], [7, 2], [7, 3]], dtype=i_type)
     expect_forward_output_values = Tensor([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0], dtype=v_type)
     expect_forward_output_shape = (9, 4)
     expect_forward_output = (expect_forward_output_indices, expect_forward_output_values, expect_forward_output_shape)
     judge_result_correct(forward_output, expect_forward_output)
-
 
     indices0 = Tensor([[0, 1], [0, 2]], dtype=i_type)
     values0 = Tensor([1.0, 2.0], dtype=v_type)
@@ -182,9 +176,9 @@ def coo_concat_float(i_type, v_type):
     shape2 = (3, 6)
     forward_net = SparseConcatNet()
     concat_dim = -1
-    #net run
+    # net run
     forward_output = forward_net((indices2, values2, shape2, \
-                                        indices1, values1, shape1, indices0, values0, shape0), concat_dim, 3)
+                                  indices1, values1, shape1, indices0, values0, shape0), concat_dim, 3)
     expect_forward_output_indices = Tensor([[0, 7], [0, 8], [0, 12], [0, 13], [1, 1], [1, 2], [1, 3]], dtype=i_type)
     expect_forward_output_values = Tensor([3.0, 4.0, 1.0, 2.0, 5.0, 6.0, 7.0], dtype=v_type)
     expect_forward_output_shape = (3, 15)
@@ -207,7 +201,7 @@ def error_case_wrong_axis():
     forward_net = SparseConcatNet()
     concat_dim = 2
     value = 0
-    #net run
+    # net run
     try:
         forward_net((indices2, values2, shape2, indices1, values1, shape1, indices0, values0, shape0), concat_dim, 3)
     except IndexError:
@@ -266,7 +260,8 @@ def error_case_wrong_intput():
     assert value == 1
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_coo_concat_error_case():
     """
     Feature: Test coo_concat Ops. error case test
@@ -279,7 +274,8 @@ def test_coo_concat_error_case():
     error_case_wrong_axis()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_coo_concat_default_value():
     """
     Feature: Test coo_concat Ops. And the concat_dim input is default
@@ -300,7 +296,7 @@ def test_coo_concat_default_value():
     values2 = Tensor([5.0, 6.0, 7.0], dtype=v_type)
     shape2 = (4, 5)
     input2 = COOTensor(indices2, values2, shape2)
-    #net run
+    # net run
     forward_output = F.coo_concat((input0, input1, input2))
     expect_forward_output_indices = Tensor([[0, 1], [0, 2], [3, 1], [3, 2], [7, 1], [7, 2], [7, 3]], dtype=i_type)
     expect_forward_output_values = Tensor([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0], dtype=v_type)
@@ -309,7 +305,8 @@ def test_coo_concat_default_value():
     judge_result_correct(forward_output, expect_forward_output)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_coo_concat_int():
     """
     Feature: Test coo_concat Ops. And the input COOTensor dtype is int
@@ -318,12 +315,13 @@ def test_coo_concat_int():
     """
     context.set_context(mode=context.PYNATIVE_MODE, device_target="CPU")
     values_types = (mstype.int8, mstype.int16, mstype.int32, mstype.int64, \
-                     mstype.uint8, mstype.uint16, mstype.uint32, mstype.uint64)
+                    mstype.uint8, mstype.uint16, mstype.uint32, mstype.uint64)
     for v_type in values_types:
         coo_concat_int(mstype.int64, v_type)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_coo_concat_float():
     """
     Feature: Test coo_concat Ops. And the input COOTensor dtype is float

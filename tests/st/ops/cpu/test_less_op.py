@@ -12,13 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
-import numpy as np
-import pytest
 import mindspore.context as context
 import mindspore.nn as nn
+import numpy as np
+import pytest
+
 from mindspore import Tensor
 from mindspore.ops import operations as P
+from tests.mark_utils import arg_mark
 
 
 class Net(nn.Cell):
@@ -30,7 +31,8 @@ class Net(nn.Cell):
         return self.ops(x, y)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 @pytest.mark.parametrize('dtype', [np.int32, np.int64, np.float32, np.float64])
 def test_net(dtype):
     """

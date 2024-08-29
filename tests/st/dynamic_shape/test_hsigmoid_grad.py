@@ -16,11 +16,12 @@
 import numpy as np
 import pytest
 from tests.st.utils import test_utils
+from tests.mark_utils import arg_mark
 
 from mindspore import ops
 from mindspore import Tensor
+from mindspore.common.api import _pynative_executor
 import mindspore as ms
-from tests.mark_utils import arg_mark
 
 
 @test_utils.run_with_cell
@@ -147,4 +148,5 @@ def test_hsigmoid_grad_different_input_ranks(mode):
     x = Tensor(np_array)
     with pytest.raises(ValueError) as info:
         _ = hsigmoid_grad_forward_func(grads, x)
+        _pynative_executor.sync()
     assert "not equal" in str(info.value)

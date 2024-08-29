@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 from tests.mark_utils import arg_mark
+
 """ test loss """
 import numpy as np
 import pytest
@@ -23,16 +24,22 @@ import mindspore.context as context
 from mindspore import Tensor
 from mindspore.ops import operations as P
 
+
 def func_single_output(x1, x2):
     return x1 - x2
+
 
 def func_multi_output(x1, x2):
     return (x1 + x2), (x1 - x2)
 
+
 output = 0
+
+
 def func_no_output(x1, x2):
     global output
     output = x1 + x2
+
 
 class PyFuncNet(nn.Cell):
     def __init__(self, fn, in_types, in_shapes, out_types, out_shapes):
@@ -104,6 +111,7 @@ class PyFuncGraph(nn.Cell):
 
     def construct(self, x1, x2):
         return self.func((x1, x2))
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_pyfunc_no_output():

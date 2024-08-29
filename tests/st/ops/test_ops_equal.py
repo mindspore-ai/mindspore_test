@@ -17,6 +17,7 @@ import numpy as np
 import mindspore as ms
 from mindspore import ops
 from mindspore.ops.auto_generate import equal
+from mindspore.common.api import _pynative_executor
 
 import tests.st.utils.test_utils as test_utils
 from tests.mark_utils import arg_mark
@@ -135,7 +136,7 @@ class Net1(ms.nn.Cell):
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
           card_mark='onecard', essential_mark='unessential')
-@pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE,])
+@pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ])
 def test_a_is_variable_list_b_is_list_or_tuple(context_mode):
     """
     Feature: DT test: Graph mode Parameter[0] has not default param
@@ -168,3 +169,4 @@ def test_a_is_variable_list_b_is_list_or_tuple(context_mode):
 
     with pytest.raises(ValueError):
         net(a=[x, x, x, x, x], b=(11, 22, 33), start=-1, end=None, step=3)
+        _pynative_executor.sync()

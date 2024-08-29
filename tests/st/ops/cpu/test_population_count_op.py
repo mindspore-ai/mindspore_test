@@ -55,13 +55,15 @@ def test8_net():
     assert (output.asnumpy() == expect_x_result).all()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_vmap_population_count():
     """
     Feature: PopulationCount cpu op vmap feature.
     Description: test the vmap feature of PopulationCount.
     Expectation: success.
     """
+
     def manually_batched(func, inp):
         out_manual = []
         for i in range(inp.shape[0]):

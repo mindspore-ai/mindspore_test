@@ -241,9 +241,9 @@ def test_renorm_op2_complex64(data_type=np.complex64):
     """
     error = 1e-6
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
-    input_x = np.array([[1+2j, 2+3j], [3+4j, 4+5j]]).astype(data_type)
-    benchmark_output = np.array([[0.91287088+1.82574177j, 1.36082768+2.04124165j],
-                                 [2.73861265+3.65148354j, 2.72165537+3.40206909j]]).astype(data_type)
+    input_x = np.array([[1 + 2j, 2 + 3j], [3 + 4j, 4 + 5j]]).astype(data_type)
+    benchmark_output = np.array([[0.91287088 + 1.82574177j, 1.36082768 + 2.04124165j],
+                                 [2.73861265 + 3.65148354j, 2.72165537 + 3.40206909j]]).astype(data_type)
 
     re_norm = ReNormNet(p=2, axis=1, maxnorm=5.0)
     output = re_norm(Tensor(input_x))

@@ -14,7 +14,6 @@
 # ============================================================================
 from tests.mark_utils import arg_mark
 
-
 import numpy as np
 import pytest
 
@@ -181,6 +180,7 @@ def test_print_op_tuple():
     Description: test Print with tuple input.
     Expectation: success.
     """
+
     class PrintTupleNet(nn.Cell):
         def construct(self, x):
             tuple_x = tuple((1, 2, 3, 4, 5))
@@ -202,6 +202,7 @@ def test_print_tensor_dtype_in_nested_tuple(mode):
     Description: test Print with tensor dtype in nested tuple.
     Expectation: success.
     """
+
     class PrintDtypeNet(nn.Cell):
         def construct(self, x, y):
             dtype_tuple = (x.dtype, y)
@@ -223,6 +224,7 @@ def test_print_abs():
     Description: Print the result of max.
     Expectation: success.
     """
+
     @jit
     def function():
         tuple_x = (Tensor(10).astype("float32"), Tensor(30).astype("float32"), Tensor(50).astype("float32"))
@@ -250,6 +252,7 @@ def test_print_tensor():
     Description: Print tensor.
     Expectation: success.
     """
+
     class ReLUDynamicNet(nn.Cell):
         def __init__(self):
             super().__init__()

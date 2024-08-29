@@ -24,7 +24,7 @@ from mindspore.ops import operations as P
 
 def sin(nptype, loss=1e-5):
     if nptype == np.complex64 or np.complex128:
-        x_np = np.random.rand(2, 3, 4, 4).astype(nptype) + 2j*np.random.rand(2, 3, 4, 4).astype(nptype)
+        x_np = np.random.rand(2, 3, 4, 4).astype(nptype) + 2j * np.random.rand(2, 3, 4, 4).astype(nptype)
     x_np = np.random.rand(2, 3, 4, 4).astype(nptype)
 
     context.set_context(mode=context.PYNATIVE_MODE, device_target="GPU")

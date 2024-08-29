@@ -24,26 +24,29 @@ from tests.mark_utils import arg_mark
 def generate_random_input(shape, dtype):
     return np.random.randn(*shape).astype(dtype)
 
+
 def generate_expect_forward_output(x, dtype):
     return np.tanh(x).astype(dtype)
 
+
 def generate_expect_backward_output(x, dtype):
     output = 1 - np.power(np.tanh(x), 2)
-    return  output.astype(dtype)
+    return output.astype(dtype)
+
 
 @test_utils.run_with_cell
 def tanh_forward_func(x):
     return ms.ops.tanh(x)
 
+
 @test_utils.run_with_cell
 def tanh_backward_func(x):
     return ms.ops.grad(tanh_forward_func, (0))(x)
 
+
 @test_utils.run_with_cell
 def tanh_vmap_func(x):
     return ms.ops.vmap(tanh_forward_func, in_axes=0, out_axes=0)(x)
-
-
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
@@ -82,7 +85,6 @@ def test_tanh_vmap(mode):
     output = tanh_vmap_func(x_tensor)
     expect = generate_expect_forward_output(x_np, np.float32)
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-4, atol=1e-4)
-
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')

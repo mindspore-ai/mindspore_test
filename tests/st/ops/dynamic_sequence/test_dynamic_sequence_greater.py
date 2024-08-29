@@ -48,13 +48,15 @@ class GreaterEqualNet(nn.Cell):
         return 0
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_seq_greater_than():
     """
     Feature: test tuple_greater_than op
     Description: first, second inputs are dynamic tuple
     Expectation: the result match with tuple result
     """
+
     def func(x, y):
         return x > y
 
@@ -65,13 +67,15 @@ def test_seq_greater_than():
     fact.forward_cmp()
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_seq_greater_equal():
     """
     Feature: test tuple_greater_equal op
     Description: first input is dynamic tuple
     Expectation: the result match with tuple result
     """
+
     def func(x, y):
         return x >= y
 
@@ -82,7 +86,8 @@ def test_seq_greater_equal():
     fact.forward_cmp()
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard',
+          essential_mark='unessential')
 def test_seq_greater_than_grad():
     """
     Feature: test tuple_greater_than grad op
@@ -98,7 +103,8 @@ def test_seq_greater_than_grad():
     assert grad_func(x, y, dout) == expect
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_seq_greater_equal_grad():
     """
     Feature: test tuple_greater_equal grad op

@@ -68,10 +68,10 @@ def test_quant_static_shape(mode, rounding, support_type):
     if mode == 'pynative':
         ms_out = quant_forward_func(x, scale, offset, False, rounding, mstype.int8)
     elif mode == 'KBK':
-        ms_out = (jit(quant_forward_func, jit_config=JitConfig(jit_level="O0")))\
+        ms_out = (jit(quant_forward_func, jit_config=JitConfig(jit_level="O0"))) \
             (x, scale, offset, False, rounding, mstype.int8)
     else:
-        ms_out = (jit(quant_forward_func, jit_config=JitConfig(jit_level="O2")))\
+        ms_out = (jit(quant_forward_func, jit_config=JitConfig(jit_level="O2"))) \
             (x, scale, offset, False, rounding, mstype.int8)
 
     if support_type == mstype.bfloat16:

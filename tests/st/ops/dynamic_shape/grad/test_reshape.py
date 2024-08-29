@@ -33,7 +33,8 @@ class NetReshape(nn.Cell):
         return self.reshape(x, self.target)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
 def test_dynamic_reshape_shape():
     """
     Feature: Reshape Grad DynamicShape.
@@ -46,7 +47,8 @@ def test_dynamic_reshape_shape():
     test_dynamic.test_dynamic_grad_net(x)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'cpu_linux', 'cpu_windows', 'cpu_macos', 'platform_gpu'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_dynamic_reshape_rank():
     """
     Feature: Reshape Grad DynamicRank.

@@ -25,8 +25,10 @@ from tests.mark_utils import arg_mark
 def generate_random_input(shape, dtype):
     return np.random.randint(1, 10, size=shape).astype(dtype)
 
+
 def generate_expect_forward_output(x, min_, max_):
     return np.clip(x, min_, max_)
+
 
 def generate_expect_backward_output(x, min_, max_):
     out = np.ones_like(x)

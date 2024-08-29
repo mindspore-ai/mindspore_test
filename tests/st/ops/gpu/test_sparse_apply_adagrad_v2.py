@@ -22,6 +22,7 @@ import mindspore.nn as nn
 from mindspore import Tensor
 from mindspore.common.parameter import Parameter
 from mindspore.ops import operations as P
+from mindspore.common.api import _pynative_executor
 import mindspore.common.dtype as mstype
 
 context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
@@ -31,7 +32,7 @@ class Net(nn.Cell):
     def __init__(self, update_slots):
         super(Net, self).__init__()
         self.sparse_apply_adagrad_v2 = P.SparseApplyAdagradV2(lr=1e-8, update_slots=update_slots, \
-                                        epsilon=1e-6)
+                                                              epsilon=1e-6)
 
     def construct(self, var, accum, grad, indices):
         out = self.sparse_apply_adagrad_v2(var, accum, grad, indices)
@@ -130,6 +131,7 @@ def test_sparseapplyadagradv2_dtype_not_supported():
         indices = Tensor([0], mindspore.int32)
         sparse_apply_adagrad_v2 = Net(update_slots=True)
         sparse_apply_adagrad_v2(var, accum, gradient, indices)
+        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')

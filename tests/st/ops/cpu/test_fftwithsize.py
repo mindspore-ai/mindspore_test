@@ -19,6 +19,7 @@ import pytest
 import mindspore as ms
 import mindspore.context as context
 from mindspore import Tensor, ops
+from mindspore.common.api import _pynative_executor
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
 
@@ -53,8 +54,9 @@ def test_fftwithsize_fft_ifft(dtype, eps):
     Description: test cases for fft & ifft
     Expectation: the result matches pytorch
     """
-    x = Tensor(np.array([1.6243454+0.j, -0.6117564+0.j, -0.5281718+0.j, -1.0729686+0.j]).astype(dtype))
-    expect = np.array([-0.5885514+0.j, 2.1525173-0.46121222j, 2.7808986+0.j, 2.1525173+0.46121222j]).astype(dtype)
+    x = Tensor(np.array([1.6243454 + 0.j, -0.6117564 + 0.j, -0.5281718 + 0.j, -1.0729686 + 0.j]).astype(dtype))
+    expect = np.array([-0.5885514 + 0.j, 2.1525173 - 0.46121222j, 2.7808986 + 0.j, 2.1525173 + 0.46121222j]).astype(
+        dtype)
     error = np.ones(shape=[4]) * eps
     context.set_context(mode=context.GRAPH_MODE, device_target="CPU")
 
@@ -76,8 +78,8 @@ def test_fftwithsize_fft2_ifft2(dtype, eps):
     Description: test cases for fft2 & ifft2
     Expectation: the result matches pytorch
     """
-    x = Tensor(np.array([[1.6243454+0.j, -0.6117564+0.j], [-0.5281718+0.j, -1.0729686+0.j]]).astype(dtype))
-    expect = np.array([[-0.5885514+0.j, 2.7808986+0.j], [2.6137295+0.j, 1.6913052+0.j]]).astype(dtype)
+    x = Tensor(np.array([[1.6243454 + 0.j, -0.6117564 + 0.j], [-0.5281718 + 0.j, -1.0729686 + 0.j]]).astype(dtype))
+    expect = np.array([[-0.5885514 + 0.j, 2.7808986 + 0.j], [2.6137295 + 0.j, 1.6913052 + 0.j]]).astype(dtype)
     error = np.ones(shape=[2, 2]) * eps
     context.set_context(mode=context.GRAPH_MODE, device_target="CPU")
 
@@ -187,6 +189,7 @@ def test_fftwithsize_exception():
     ms.context.set_context(pynative_synchronize=True)
     with pytest.raises(ValueError, match="For 'FFTWithSize', the last dimension of the input cannot be 1"):
         fft_forward_func(x, signal_ndim, inverse, real)
+        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',

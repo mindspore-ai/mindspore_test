@@ -71,4 +71,3 @@ def test_apply_proximal_gradient_descent_float64():
     output = sparse_apply_proximal_gradient_descent(var, alpha, l1, l2, grad, indices)
     expect = np.array([[2.1, 5.2], [0., 1.]], dtype=np.float64)
     np.testing.assert_almost_equal(output.asnumpy(), expect)
-    

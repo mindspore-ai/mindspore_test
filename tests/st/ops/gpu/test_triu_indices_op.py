@@ -44,7 +44,7 @@ def test_triu_indices_int32_positive_offset():
         triu_indices = TriuIndicesNet(row=300, col=200, offset=50, dtype=mstype.int32)
         output = triu_indices()
         expect = np.array(np.triu_indices(n=300, m=200, k=50)).astype(np.int32)
-        assert(output.asnumpy() == expect).all()
+        assert (output.asnumpy() == expect).all()
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -59,4 +59,4 @@ def test_triu_indices_int64_negative_offset():
         triu_indices = TriuIndicesNet(row=500, col=700, offset=-200, dtype=mstype.int64)
         output = triu_indices()
         expect = np.array(np.triu_indices(n=500, m=700, k=-200)).astype(np.int64)
-        assert(output.asnumpy() == expect).all()
+        assert (output.asnumpy() == expect).all()

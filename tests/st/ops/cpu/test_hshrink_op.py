@@ -39,7 +39,8 @@ def hshrink_op_np_bencmark(input_x, lambd):
     return result
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 @pytest.mark.parametrize('dtype', [np.float16, np.float32])
 @pytest.mark.parametrize("data_shape", [(3, 4), (4, 5, 6, 7)])
 @pytest.mark.parametrize("lambd", [0.5])
@@ -49,6 +50,7 @@ def test_hshrink(dtype, data_shape, lambd):
     Description: test the rightness of HShrink cpu kernel
     Expectation: the output is same as hshrink_op_np_bencmark output
     """
+
     class NetHShrink(nn.Cell):
         def __init__(self):
             super(NetHShrink, self).__init__()

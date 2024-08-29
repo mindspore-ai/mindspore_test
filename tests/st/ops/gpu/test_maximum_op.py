@@ -278,4 +278,3 @@ def test_maximum_tensor_api_modes(mode):
     output = x.maximum(y)
     expected = np.array([4., 5., 6.], np.float32)
     np.testing.assert_array_equal(output.asnumpy(), expected)
-  

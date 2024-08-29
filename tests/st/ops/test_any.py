@@ -29,12 +29,9 @@ def generate_expect_forward_output(x):
     return np.any(x)
 
 
-
-
 @test_utils.run_with_cell
 def any_forward_func(x):
     return ms.ops.any(x)
-
 
 
 @test_utils.run_with_cell
@@ -55,7 +52,6 @@ def test_ops_any_forward(context_mode):
     output = any_forward_func(ms.Tensor(x))
     expect = generate_expect_forward_output(x)
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
-
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -123,8 +119,6 @@ def test_ops_any_forward_dynamic_rank(context_mode):
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
 
 
-
-
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', ['pynative', 'KBK', 'GE'])
 def test_any_forward_static_shape(mode):
@@ -144,7 +138,6 @@ def test_any_forward_static_shape(mode):
 
     expect = generate_expect_forward_output(x)
     assert np.allclose(output.asnumpy(), expect, rtol=1e-4)
-
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -168,6 +161,7 @@ def test_any_vmap(param_jit_level):
     Description: call ops.any with valid input and index.
     Expectation: return the correct value.
     """
+
     def _foreach_run(inputs, batch):
         out = []
         for i in range(inputs.shape[batch]):
@@ -191,4 +185,3 @@ def test_any_vmap(param_jit_level):
     output = any_vmap_func(ms.Tensor(x), batch_axis)
     expect = _foreach_run(ms.Tensor(x), batch_axis)
     assert np.allclose(output.asnumpy(), expect.asnumpy(), rtol=1e-4)
-    

@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
-import pytest
-import numpy as np
-from mindspore import Tensor
 import mindspore.context as context
-from mindspore.ops import functional as F
+import numpy as np
 from mindspore.common import dtype as mstype
+
+from mindspore import Tensor
+from mindspore.ops import functional as F
+from tests.mark_utils import arg_mark
 
 
 def test_cross_functional_api():
@@ -65,7 +65,8 @@ def test_cross_tensor_api():
     np.testing.assert_array_almost_equal(output.asnumpy(), expected)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_cross_functional_tensor_modes():
     """
     Feature: test cross functional and tensor APIs in PyNative and Graph modes.

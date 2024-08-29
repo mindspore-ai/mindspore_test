@@ -26,7 +26,8 @@ class Net(nn.Cell):
         return ops.slogdet(x)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_slogdet(mode):
     """
@@ -44,7 +45,8 @@ def test_slogdet(mode):
     assert np.allclose(output2.asnumpy(), expect_output2)
 
 
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_slogdet_complex(mode):
     """
@@ -58,7 +60,7 @@ def test_slogdet_complex(mode):
                 [-3.5 + 5.8j, 63 + 12.75j, -5 + 6.4j]], dtype=ms.complex64)
     net = Net()
     output1, output2 = net(x)
-    expect_output1 = np.array(0.749919+0.66153j, dtype=np.complex)
-    expect_output2 = np.array(12.0614+0j, dtype=np.complex)
+    expect_output1 = np.array(0.749919 + 0.66153j, dtype=np.complex)
+    expect_output2 = np.array(12.0614 + 0j, dtype=np.complex)
     assert np.allclose(output1.asnumpy(), expect_output1)
     assert np.allclose(output2.asnumpy(), expect_output2)

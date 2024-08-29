@@ -101,7 +101,8 @@ def test_resize_bilinear_grad_align_corner_false():
     assert np.all(output.asnumpy() == expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
 @pytest.mark.parametrize('dtype', [np.float16, np.float32, np.float64])
 def test_resize_bilinear_grad_dtype(mode, dtype):
@@ -156,4 +157,3 @@ def test_resize_bilinear_grad_half_pixel_centers():
     net = NetResizeBilinearFunc()
     output = net(Tensor(dy), Tensor(x), align_corner=False, half_pixel_centers=True)
     assert np.all(output.asnumpy() == expect)
-    

@@ -33,7 +33,6 @@ class RandomChoiceWithMaskNet(nn.Cell):
         return self.random_choice_with_mask(x)
 
 
-
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_random_choice_with_mask_check_value(mode):

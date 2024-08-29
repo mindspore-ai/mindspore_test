@@ -22,6 +22,7 @@ from mindspore.ops import GradOperation
 from mindspore.common import ParameterTuple
 from mindspore.common.api import jit
 from mindspore import ops as P
+from mindspore.common.api import _pynative_executor
 from tests.mark_utils import arg_mark
 
 
@@ -424,6 +425,7 @@ def test_pynative_forward_hook_exception():
         net.conv.register_forward_pre_hook(forward_hook_fn_with_ms_func)
     with pytest.raises(TypeError):
         net.conv.register_forward_hook(forward_hook_fn_with_ms_func)
+        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['cpu_linux'],

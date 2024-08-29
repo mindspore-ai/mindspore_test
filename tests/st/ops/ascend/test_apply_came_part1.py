@@ -16,7 +16,6 @@ from tests.mark_utils import arg_mark
 import numpy as np
 import pytest
 
-
 import mindspore as ms
 import mindspore.nn as nn
 from mindspore.ops.operations import _inner_ops as P
@@ -27,7 +26,6 @@ class Net(nn.Cell):
     def __init__(self):
         super(Net, self).__init__()
         self.apply_came_part1 = P.ApplyCamePart1()
-
 
     def construct(self, grad, eps):
         return self.apply_came_part1(grad, eps)

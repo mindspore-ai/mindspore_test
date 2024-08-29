@@ -24,6 +24,7 @@ from mindspore.ops import grad, value_and_grad, vmap, get_grad
 from mindspore.common import dtype as mstype
 from mindspore import ops
 from mindspore import Parameter, ParameterTuple
+from mindspore.common.api import _pynative_executor
 from tests.mark_utils import arg_mark
 
 context.set_context(mode=context.PYNATIVE_MODE)
@@ -784,6 +785,7 @@ def test_get_grad_not_found_pynative():
     res = grad(net, 0, weights, return_ids=True)(x)
     with pytest.raises(RuntimeError):
         get_grad(res, 1)
+        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -793,6 +795,7 @@ def test_grad_outer_list_weight():
     Description: Test get_grad with one weight and no position in pynative mode.
     Expectation: No exception.
     """
+
     class InnerNet(nn.Cell):
         def __init__(self):
             super().__init__()
@@ -986,4 +989,3 @@ def test_value_and_grad_nest_with_weights_graph_get_grad():
     assert np.allclose(res1.asnumpy(), expect_grad_input)
     assert np.allclose(res2.asnumpy(), expect_grad_weight1)
     assert np.allclose(res3.asnumpy(), expect_grad_weight2)
-                

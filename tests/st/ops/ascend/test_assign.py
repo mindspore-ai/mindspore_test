@@ -44,7 +44,7 @@ def test_assign_bfloat16(mode):
     """
     context.set_context(mode=mode)
     net = Net()
-    variable = Parameter(Tensor(np.random.randn(3,), mstype.bfloat16), name='variable')
-    value = Tensor(np.random.randn(3,), mstype.bfloat16)
+    variable = Parameter(Tensor(np.random.randn(3, ), mstype.bfloat16), name='variable')
+    value = Tensor(np.random.randn(3, ), mstype.bfloat16)
     output = net(variable, value)
     np.testing.assert_allclose(output.float().asnumpy(), value.float().asnumpy())

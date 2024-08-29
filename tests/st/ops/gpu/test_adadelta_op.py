@@ -48,11 +48,10 @@ def main_test(var_np, accum_np, accum_update_np, lr_np, rho_np, epsilon_np, grid
     grad = Tensor(grident_np)
 
     # expect
-    expect_accum_np = rho_np * accum_np + (1-rho_np) * grident_np * grident_np
+    expect_accum_np = rho_np * accum_np + (1 - rho_np) * grident_np * grident_np
     update = np.sqrt(accum_update_np + epsilon_np) * grident_np / np.sqrt(expect_accum_np + epsilon_np)
-    expect_accum_update_np = rho_np * accum_update_np + (1-rho_np) * update * update
+    expect_accum_update_np = rho_np * accum_update_np + (1 - rho_np) * update * update
     expect_var_np = var_np - lr_np * update
-
 
     net = Net(var_np, accum_np, accum_update_np)
     out = net(lr, rho, epsilon, grad)
@@ -60,8 +59,8 @@ def main_test(var_np, accum_np, accum_update_np, lr_np, rho_np, epsilon_np, grid
     res_accum_mindspore = out[1].asnumpy()
     res_accum_update_mindspore = out[2].asnumpy()
 
-    return (expect_accum_np, res_accum_mindspore), (expect_accum_update_np, res_accum_update_mindspore),\
-           (expect_var_np, res_var_mindspore)
+    return (expect_accum_np, res_accum_mindspore), (expect_accum_update_np, res_accum_update_mindspore), \
+        (expect_var_np, res_var_mindspore)
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -81,7 +80,7 @@ def test_apply_adadelta_fff():
 
     grident_np = np.array([[0.3, 0.7], [0.1, 0.8]]).astype(np.float32)
 
-    accum, accum_update, var,\
+    accum, accum_update, var, \
         = main_test(var_np, accum_np, accum_update_np, lr_np, rho_np, epsilon_np, grident_np)
 
     assert np.all(abs(accum[0] - accum[1]) < eps_f32)
@@ -107,7 +106,7 @@ def test_apply_adadelta_ddd():
 
     grident_np = np.array([[0.3, 0.7], [0.1, 0.8]]).astype(np.float64)
 
-    accum, accum_update, var,\
+    accum, accum_update, var, \
         = main_test(var_np, accum_np, accum_update_np, lr_np, rho_np, epsilon_np, grident_np)
 
     assert np.all(abs(accum[0] - accum[1]) < eps_f64)

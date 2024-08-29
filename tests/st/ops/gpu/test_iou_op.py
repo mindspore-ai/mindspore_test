@@ -32,6 +32,7 @@ class NetIOU(nn.Cell):
     def construct(self, anchor, groundtruth):
         return self.encode(anchor, groundtruth)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize("data_type", [np.float32, np.float64])
 def test_iou_gpu(data_type):

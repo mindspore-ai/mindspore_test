@@ -34,6 +34,7 @@ class EditDistance(nn.Cell):
         return self.edit_distance(hypothesis_indices, hypothesis_values, self.hypothesis_shape,
                                   truth_indices, truth_values, self.truth_shape)
 
+
 def test_edit_distance():
     h1, h2, h3 = np.array([[0, 0, 0], [1, 0, 1], [1, 1, 1]]), np.array([1, 2, 3]), np.array([2, 2, 2])
     t1, t2, t3 = np.array([[0, 1, 0], [0, 0, 1], [1, 1, 0], [1, 0, 1]]), np.array([1, 2, 3, 1]), np.array([2, 2, 2])

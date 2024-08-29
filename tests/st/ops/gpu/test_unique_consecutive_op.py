@@ -224,7 +224,7 @@ def test_unique_consecutive_3d():
     """
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
     x = Tensor(np.array([[[1, 2, 3], [3, 2, 4], [3, 2, 4], [1, 2, 3]], \
-        [[1, 2, 3], [3, 2, 4], [3, 2, 4], [1, 2, 3]]]).astype(np.int32))
+                         [[1, 2, 3], [3, 2, 4], [3, 2, 4], [1, 2, 3]]]).astype(np.int32))
     net = NetUniqueConsecutive(return_idx=True, return_counts=True, axis=0)
     out, idx, counts = net(x)
     exp_out = np.array([[[1, 2, 3], [3, 2, 4], [3, 2, 4], [1, 2, 3]]]).astype(np.int32)
@@ -244,11 +244,11 @@ def test_unique_consecutive_3d_axis():
     """
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
     x = Tensor(np.array([[[1, 2, 3], [3, 2, 4], [3, 2, 4], [1, 2, 3]], \
-        [[1, 2, 3], [3, 2, 4], [3, 2, 4], [1, 2, 3]]]).astype(np.int32))
+                         [[1, 2, 3], [3, 2, 4], [3, 2, 4], [1, 2, 3]]]).astype(np.int32))
     net = NetUniqueConsecutive(return_idx=True, return_counts=True, axis=1)
     out, idx, counts = net(x)
     exp_out = np.array([[[1, 2, 3], [3, 2, 4], [1, 2, 3]], \
-        [[1, 2, 3], [3, 2, 4], [1, 2, 3]]]).astype(np.int32)
+                        [[1, 2, 3], [3, 2, 4], [1, 2, 3]]]).astype(np.int32)
     exp_idx = np.array([0, 1, 1, 2]).astype(np.int32)
     exp_counts = np.array([1, 2, 1]).astype(np.int32)
     assert (out.asnumpy() == exp_out).all()

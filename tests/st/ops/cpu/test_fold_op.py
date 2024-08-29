@@ -12,15 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
-
+import mindspore.common.dtype as mstype
+import mindspore.context as context
 import numpy as np
 import pytest
+from mindspore.common.api import _pynative_executor
 
 from mindspore import Tensor
-import mindspore.context as context
-import mindspore.common.dtype as mstype
 from mindspore.ops import functional as F
+from tests.mark_utils import arg_mark
 
 
 def test_fold_functional_api():
@@ -50,7 +50,9 @@ def test_fold_tensor_api():
     assert output.dtype == x.dtype
     assert output.shape == expected_shape
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_fold_functional_api_with_invalid_output_size():
     """
     Feature: test fold tensor API with invalid output size.
@@ -62,9 +64,11 @@ def test_fold_functional_api_with_invalid_output_size():
     output_size = Tensor([6, -1], mstype.int32)
     with pytest.raises(ValueError, match=r"the value of 'output_size' must not be negative"):
         F.fold(x, output_size, kernel_size=[2, 2], dilation=[2, 2], padding=[2, 2], stride=[2, 2])
+        _pynative_executor.sync()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_fold_tensor_functional_api_modes():
     """
     Feature: test fold tensor and functional APIs for different modes.

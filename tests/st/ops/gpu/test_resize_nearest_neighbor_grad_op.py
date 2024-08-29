@@ -22,6 +22,7 @@ import mindspore.nn as nn
 from mindspore import Tensor
 from mindspore.ops.operations import _grad_ops as G
 
+
 class ResizeNearestNeighborGradAlignCornerT(nn.Cell):
     def __init__(self):
         super(ResizeNearestNeighborGradAlignCornerT, self).__init__()
@@ -29,6 +30,7 @@ class ResizeNearestNeighborGradAlignCornerT(nn.Cell):
 
     def construct(self, dy, size):
         return self.ResizeNearestNeighborGradAlignCornerT(dy, size)
+
 
 class ResizeNearestNeighborGradAlignCornerF(nn.Cell):
     def __init__(self):
@@ -60,6 +62,7 @@ def test_ResizeNearestNeighborGradAlignCornerT():
     rnn = ResizeNearestNeighborGradAlignCornerT()
     output = rnn(Tensor(dy), size)
     assert np.all(output.asnumpy() == expect)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_ResizeNearestNeighborGradAlignCornerF():

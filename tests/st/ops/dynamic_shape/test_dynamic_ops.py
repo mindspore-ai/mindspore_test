@@ -35,7 +35,8 @@ class Net(nn.Cell):
         return x
 
 
-@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level2', card_mark='onecard',
+          essential_mark='unessential')
 def test_strided_slice_feed_input_dynamic():
     """
     Feature: Test StridedSlice for dynamic shape in feed mode.
@@ -59,7 +60,8 @@ def test_strided_slice_feed_input_dynamic():
     assert (np.abs(out.asnumpy() - expect) < tol).all()
 
 
-@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'], level_mark='level2', card_mark='onecard',
+          essential_mark='unessential')
 def test_strided_slice_feed_output_dynamic():
     """
     Feature: Test StridedSlice for dynamic shape in feed mode.

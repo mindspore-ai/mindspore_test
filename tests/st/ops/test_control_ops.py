@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 from tests.mark_utils import arg_mark
+
 """ test control ops """
 import numpy as np
 import pytest
@@ -22,18 +23,21 @@ from mindspore import nn, context
 from mindspore.common import dtype as mstype
 from mindspore.ops import composite as C
 from mindspore.common.parameter import Parameter, ParameterTuple
+from mindspore.common.api import _pynative_executor
 
 grad_by_list = C.GradOperation(get_by_list=True)
 grad_all = C.GradOperation(get_all=True)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_switch_layer_with_single_prim():
     """
     Feature: SwitchLayer
     Description: run switch layer case
     Expectation: success.
     """
+
     class SwitchLayerCell(nn.Cell):
         def __init__(self):
             super(SwitchLayerCell, self).__init__()
@@ -60,6 +64,7 @@ def test_switch_layer_with_index_out_of_range():
     Description: run switch layer case
     Expectation: catch exception.
     """
+
     class Net(nn.Cell):
         def __init__(self):
             super().__init__()
@@ -75,4 +80,5 @@ def test_switch_layer_with_index_out_of_range():
     net = Net()
     with pytest.raises(IndexError) as err:
         net(inputs, index)
+        _pynative_executor.sync()
     assert "Given index -2 out of range" in str(err.value)

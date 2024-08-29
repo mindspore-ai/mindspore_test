@@ -221,6 +221,7 @@ def test_matmul_qkv_out_num_2_with_diff_m(ms_dtype, is_dynamic, dim_m):
     """
     _test_matmul_qkv(dim_m, 4096, 3584, 3584, mstype=ms_dtype, is_dyn=is_dynamic)
 
+
 @pytest.mark.level0
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.parametrize('input_shape', [(16, 8192, 2048, 256, 256),

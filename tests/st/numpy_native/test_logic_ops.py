@@ -19,6 +19,7 @@ import numpy as onp
 
 import mindspore.numpy as mnp
 from mindspore import context
+from mindspore.common.api import _pynative_executor
 
 from .utils import rand_int, rand_bool, run_binop_test, run_logical_test, match_res, \
     match_all_arrays, to_tensor
@@ -434,5 +435,7 @@ def test_setdiff1d():
     match_res(mnp.setdiff1d, onp.setdiff1d, x, y, dtype=mnp.int32, assume_unique=True)
     with pytest.raises(TypeError):
         mnp.intersect1d(None, None)
+        _pynative_executor.sync()
     with pytest.raises(TypeError):
         mnp.intersect1d(x, y, assume_unique=1)
+        _pynative_executor.sync()

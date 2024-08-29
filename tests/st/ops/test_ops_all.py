@@ -28,6 +28,7 @@ def generate_random_input(shape, dtype):
 def generate_expect_forward_output(x, axis, keep_dims):
     return np.all(x, axis, keepdims=keep_dims)
 
+
 def generate_expect_backward_output(x):
     return np.zeros_like(x)
 
@@ -45,7 +46,6 @@ def generate_expect_forward_vmap_output(x, axis, keep_dims, in_axes):
     return np.stack(slices)
 
 
-
 @test_utils.run_with_cell
 def all_forward_func(x, axis, keep_dims):
     return ms.ops.all(x, axis, keep_dims)
@@ -55,10 +55,10 @@ def all_forward_func(x, axis, keep_dims):
 def all_backward_func(x, axis, keep_dims):
     return ms.ops.grad(all_forward_func, (0))(x, axis, keep_dims)
 
+
 @test_utils.run_with_cell
 def all_vmap_func(x, axis, keep_dims):
     return ops.vmap(all_forward_func, in_axes=(0, None, None), out_axes=0)(x, axis, keep_dims)
-
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -78,8 +78,6 @@ def test_ops_all_forward(context_mode):
     np.testing.assert_equal(output.asnumpy(), expect)
 
 
-
-
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_ops_all_forward_llama(context_mode):
@@ -95,7 +93,6 @@ def test_ops_all_forward_llama(context_mode):
     output = all_forward_func(ms.Tensor(x), axis, keep_dims)
     expect = generate_expect_forward_output(x, axis, keep_dims)
     np.testing.assert_equal(output.asnumpy(), expect)
-
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -115,7 +112,6 @@ def test_ops_all_forward_SDv1(context_mode):
     np.testing.assert_equal(output.asnumpy(), expect)
 
 
-
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_ops_all_backward(context_mode):
@@ -133,7 +129,6 @@ def test_ops_all_backward(context_mode):
     np.testing.assert_equal(output.asnumpy(), expect)
 
 
-
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('context_mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_ops_all_vmap(context_mode):
@@ -149,7 +144,6 @@ def test_ops_all_vmap(context_mode):
     output = all_vmap_func(ms.Tensor(x), axis, keep_dims)
     expect = generate_expect_forward_vmap_output(x, axis, keep_dims, 0)
     np.testing.assert_equal(output.asnumpy(), expect)
-
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')

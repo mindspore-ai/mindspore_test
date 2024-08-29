@@ -1,4 +1,3 @@
-
 import numpy as np
 import pytest
 
@@ -8,6 +7,7 @@ from mindspore.ops.composite.base import GradOperation
 import mindspore
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
+
 
 class DenseCell(mindspore.nn.Cell):
     def __init__(self):

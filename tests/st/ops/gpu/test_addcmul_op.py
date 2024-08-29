@@ -53,7 +53,6 @@ def test_addcmul_float32_graph(type_s=np.float32):
     assert np.all(abs(diff) < error)
 
 
-
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
 def test_addcmul_float64_pynative_value(type_s=np.float64):
     """

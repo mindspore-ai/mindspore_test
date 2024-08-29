@@ -21,6 +21,7 @@ import mindspore.context as context
 import mindspore.nn as nn
 from mindspore import Tensor, ops, jit
 from mindspore.ops import operations as P
+from mindspore.common.api import _pynative_executor
 
 context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
 
@@ -178,6 +179,7 @@ def test_range_invalid_max_output_length():
         _ = range3(Tensor(-4, mstype.float64), Tensor(-1, mstype.float64), Tensor(1.5, mstype.float64))
         range4 = P.Range('5')
         _ = range4(Tensor(-4, mstype.float64), Tensor(-1, mstype.float64), Tensor(1.5, mstype.float64))
+        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -185,21 +187,25 @@ def test_range_invalid_input():
     with pytest.raises(ValueError) as info:
         range_net = RangeNet()
         _ = range_net(Tensor(0, mstype.int32), Tensor(5, mstype.int32), Tensor(0, mstype.int32)).asnumpy()
+        _pynative_executor.sync()
     assert "delta cannot be equal to zero" in str(info.value)
 
     with pytest.raises(RuntimeError) as info:
         range_net = RangeNet(2)
         _ = range_net(Tensor(2, mstype.int32), Tensor(5, mstype.int32), Tensor(1, mstype.int32)).asnumpy()
+        _pynative_executor.sync()
     assert "number of elements in the output exceeds maxlen" in str(info.value)
 
     with pytest.raises(ValueError) as info:
         range_net = RangeNet()
         _ = range_net(Tensor(20, mstype.int32), Tensor(5, mstype.int32), Tensor(1, mstype.int32)).asnumpy()
+        _pynative_executor.sync()
     assert "delta cannot be positive when limit < start" in str(info.value)
 
     with pytest.raises(ValueError) as info:
         range_net = RangeNet()
         _ = range_net(Tensor(2, mstype.int32), Tensor(5, mstype.int32), Tensor(-4, mstype.int32)).asnumpy()
+        _pynative_executor.sync()
     assert "delta cannot be negative when limit > start" in str(info.value)
 
 
@@ -253,3 +259,4 @@ def test_range_vmap_wrong_in_axis():
     vmap_range = ops.vmap(range_fn, (0, None, None, 0), 0)
     with pytest.raises(TypeError):
         vmap_range(start, limit, delta, a)
+        _pynative_executor.sync()

@@ -19,6 +19,7 @@ import mindspore.nn as nn
 import mindspore as ms
 from mindspore import context
 from mindspore import ops, Tensor, dtype, jit
+from mindspore.common.api import _pynative_executor
 from tests.st.pynative.utils import GradOfFirstInput, GradOfAllInputs, allclose_nparray
 from tests.mark_utils import arg_mark
 
@@ -81,6 +82,7 @@ def test_shape_raise():
     tensor1 = Tensor(np.ndarray([1, 448, 448]), dtype=dtype.float32)
     with pytest.raises(TypeError):
         ops.shape([tensor0, tensor1])
+        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux'],

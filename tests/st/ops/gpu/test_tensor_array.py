@@ -21,6 +21,7 @@ import mindspore.context as context
 import mindspore.nn as nn
 from mindspore import Tensor
 
+
 class TensorArrayNet(nn.Cell):
     def __init__(self, dtype, element_shape, is_dynamic_shape=True, size=0):
         super(TensorArrayNet, self).__init__()
@@ -35,7 +36,7 @@ class TensorArrayNet(nn.Cell):
             if i == 0:
                 self.ta.clear()
                 index = 0
-        v = self.ta.read(index-1)
+        v = self.ta.read(index - 1)
         s = self.ta.stack()
         self.ta.close()
         return v, s

@@ -188,10 +188,10 @@ def test_maskedselect_complex64_type():
     Expectation: the result match with expect
     """
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
-    x = np.array([1+2j, 2+3j, 3+4j, 4+5j]).astype(np.complex64)
+    x = np.array([1 + 2j, 2 + 3j, 3 + 4j, 4 + 5j]).astype(np.complex64)
     mask = np.array([1, 0, 1, 0]).astype(np.bool)
     y = maskedselect_for_type(x, mask)
-    expect = np.array([1+2j, 3+4j]).astype(np.complex64)
+    expect = np.array([1 + 2j, 3 + 4j]).astype(np.complex64)
     assert (y.asnumpy() == expect).all()
 
 
@@ -203,10 +203,10 @@ def test_maskedselect_complex128_type():
     Expectation: the result match with expect
     """
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
-    x = np.array([1+2j, 2+3j, 3+4j, 4+5j]).astype(np.complex128)
+    x = np.array([1 + 2j, 2 + 3j, 3 + 4j, 4 + 5j]).astype(np.complex128)
     mask = np.array([1, 0, 1, 0]).astype(np.bool)
     y = maskedselect_for_type(x, mask)
-    expect = np.array([1+2j, 3+4j]).astype(np.complex128)
+    expect = np.array([1 + 2j, 3 + 4j]).astype(np.complex128)
     assert (y.asnumpy() == expect).all()
 
 

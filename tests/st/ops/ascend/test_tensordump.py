@@ -115,6 +115,7 @@ def test_tensordump_when_jit(mode):
     Description: Check TensorDump ops when pynative jit
     Expectation: pass
     """
+
     @ms.jit
     def dump_tensor(x, path):
         ops.TensorDump()(path + "/input", x)

@@ -55,7 +55,8 @@ def cum_minmax_compare(op, x, expected, axis, data_type):
     assert np.allclose(output[1].asnumpy(), expected[1])
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 @pytest.mark.parametrize("data_type", [np.uint8, np.int8, np.int32, np.float16, np.float32])
 def test_cummin_multi_dims(data_type):
     """
@@ -78,7 +79,8 @@ def test_cummin_multi_dims(data_type):
     cum_minmax_compare(op, x, cummin_output, axis, data_type)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 @pytest.mark.parametrize("data_type", [np.uint8, np.uint32, np.int8, np.int32, np.int64, np.float16, np.float32])
 def test_cummax_multi_dims(data_type):
     """
@@ -101,7 +103,8 @@ def test_cummax_multi_dims(data_type):
     cum_minmax_compare(op, x, cummax_output, axis, data_type)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 @pytest.mark.parametrize("data_type", [np.float16, np.float32])
 def test_cum_minmax_nan(data_type):
     """

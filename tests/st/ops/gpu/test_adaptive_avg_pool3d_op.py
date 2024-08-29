@@ -158,7 +158,6 @@ def test_net_graph_mode_fp64():
     assert output_fp64.asnumpy().shape == expect_shape
     assert (output_fp64.asnumpy() == expect_output).all
 
-
     assert output_torch_fp16.detach().numpy().shape == expect_shape
     assert (output_fp16.asnumpy() - output_torch_fp16.detach().numpy() == 0).all
     assert output_torch_fp32.detach().numpy().shape == expect_shape

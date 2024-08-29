@@ -32,7 +32,8 @@ class NetArgMinWithValue(nn.Cell):
         return self.op(x)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_dynamic_shape_arg_min_with_value():
     """
     Feature: ArgMinWithValue Grad DynamicShape.
@@ -45,7 +46,8 @@ def test_dynamic_shape_arg_min_with_value():
     test_dynamic.test_dynamic_grad_net(x)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
 def test_dynamic_rank_arg_min_with_value():
     """
     Feature: ArgMinWithValue Grad DynamicRank.

@@ -22,6 +22,7 @@ import mindspore.nn as nn
 from mindspore import Tensor
 from mindspore.ops import operations as P
 
+
 class NetFloorDiv(nn.Cell):
     def __init__(self):
         super(NetFloorDiv, self).__init__()
@@ -29,6 +30,7 @@ class NetFloorDiv(nn.Cell):
 
     def construct(self, x, y):
         return self.floordiv(x, y)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_floor_div():

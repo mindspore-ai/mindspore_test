@@ -33,7 +33,7 @@ class MishNet(nn.Cell):
 
 
 def mish_compute(x):
-    return x*np.tanh(np.log(1 + np.exp(x)))
+    return x * np.tanh(np.log(1 + np.exp(x)))
 
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')

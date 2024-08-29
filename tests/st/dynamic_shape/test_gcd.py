@@ -16,10 +16,11 @@
 import numpy as np
 import pytest
 from tests.st.utils import test_utils
+from tests.mark_utils import arg_mark
 
 from mindspore import ops
+from mindspore.common.api import _pynative_executor
 import mindspore as ms
-from tests.mark_utils import arg_mark
 
 
 @test_utils.run_with_cell
@@ -65,6 +66,7 @@ def test_gcd_backward(mode):
     x2 = ms.Tensor(np.array([14, 6, 12]), ms.int32)
     with pytest.raises(RuntimeError):
         gcd_backward_func(x1, x2)
+        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux'], level_mark='level1', card_mark='onecard',

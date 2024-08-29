@@ -24,7 +24,6 @@ from mindspore import Tensor
 from mindspore.ops import operations as P
 from mindspore.ops.operations import _grad_ops as G
 
-
 os.environ['CUDA_VISIBLE_DEVICES'] = '2, 3'
 
 

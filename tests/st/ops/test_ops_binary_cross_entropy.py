@@ -25,6 +25,7 @@ from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 def generate_random_input(shape, dtype):
     return np.random.randn(*shape).astype(dtype)
 
+
 def get_input():
     inputx = ms.Tensor(np.array([[0.1531, 0.3302, 0.7537], [0.2200, 0.6875, 0.2268], [0.5109, 0.5873, 0.9275]]),
                        ms.float32)
@@ -33,12 +34,14 @@ def get_input():
                        ms.float32)
     return inputx, target, weight
 
+
 def get_output_forward(reduction):
     output_mean = np.array([0.4621])
     output_sum = np.array([4.1586])
     output_none = np.array([[1.6890, 0.0401, 0.1401], [0.02485, 0.1163, 1.3353], [0.0715, 0.4790, 0.2624]])
     output = {"mean": output_mean, "sum": output_sum, "none": output_none}
     return output[reduction]
+
 
 def get_output_backward(reduction):
     input_grad_sum = np.array([[-5.8785, 0.1493, 0.406], [0.1282, 0.32, -3.9683], [0.2045, -1.5325, 1.3793]])
@@ -54,12 +57,14 @@ def get_output_backward(reduction):
               "none": [input_grad_none, target_grad_none]}
     return output[reduction]
 
+
 def get_output_forward_none(reduction):
     output_mean = np.array([1.1606])
     output_sum = np.array([10.4455])
     output_none = np.array([[1.87666, 0.40078, 1.4012], [0.24846, 1.16315, 1.48369], [0.71519, 0.5322, 2.62417]])
     output = {"mean": output_mean, "sum": output_sum, "none": output_none}
     return output[reduction]
+
 
 def get_output_backward_none(reduction):
     input_grad_sum = np.array([[-6.5317, 1.493, 4.062], [1.282, 3.2, -4.41], [2.043, -1.702, 13.793]])

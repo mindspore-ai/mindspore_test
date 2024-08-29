@@ -25,6 +25,7 @@ from mindspore.common import dtype as mstype
 from mindspore.common import Tensor
 from mindspore.ops import operations as P
 from mindspore.ops import functional as F
+from mindspore.common.api import _pynative_executor
 
 UnsortedSegmentArith_func_map = {
     "max": ops.UnsortedSegmentMax,
@@ -47,16 +48,16 @@ def init_result(func, shape, dtype):
         result = np.zeros(shape, dtype)
     if func == 'min':
         if dtype in [
-                np.int32, np.uint8, np.int16, np.int8, np.int64, np.uint16,
-                np.uint32, np.uint64
+            np.int32, np.uint8, np.int16, np.int8, np.int64, np.uint16,
+            np.uint32, np.uint64
         ]:
             result = result * np.iinfo(dtype).max
         if dtype in [np.float16, np.float32, np.float64]:
             result = result * np.finfo(dtype).max
     if func == 'max':
         if dtype in [
-                np.int32, np.uint8, np.int16, np.int8, np.int64, np.uint16,
-                np.uint32, np.uint64
+            np.int32, np.uint8, np.int16, np.int8, np.int64, np.uint16,
+            np.uint32, np.uint64
         ]:
             result = result * np.iinfo(dtype).min
         if dtype in [np.float16, np.float32, np.float64]:
@@ -75,7 +76,8 @@ class TestUnsortedSegmentArithmeticNet(nn.Cell):
         return self.arith_func(data, ids, self.num_segments)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_unsorted_segment_max_dynamic_shape():
     """
     Feature: test UnsortedSegmentMax op in cpu.
@@ -95,7 +97,8 @@ def test_unsorted_segment_max_dynamic_shape():
     assert output.asnumpy().shape == expect_shape
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_unsorted_segment_min_dynamic_shape():
     """
     Feature: test UnsortedSegmentMin op in cpu.
@@ -116,7 +119,8 @@ def test_unsorted_segment_min_dynamic_shape():
     assert output.asnumpy().shape == expect_shape
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_unsorted_segment_prod_dynamic_shape():
     """
     Feature: test UnsortedSegmentProd op in cpu.
@@ -173,7 +177,8 @@ def unsorted_segment_arith_expected(func, x, segment_ids, num_segments):
     return result
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 @pytest.mark.parametrize('func', ['min', 'max', 'sum'])
 @pytest.mark.parametrize('data_type', [mstype.float32, mstype.int32])
 @pytest.mark.parametrize('index_type', [mstype.int32])
@@ -195,7 +200,8 @@ def test_unsorted_segment_arithmetic_one_d(func, data_type, index_type):
     np.testing.assert_array_almost_equal(graph_output.asnumpy(), expected)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 @pytest.mark.parametrize('func', ['min', 'max'])
 def test_unsorted_segment_arithmetic_error(func):
     """
@@ -212,9 +218,11 @@ def test_unsorted_segment_arithmetic_error(func):
 
     with pytest.raises(RuntimeError):
         net(x, segment_ids)
+        _pynative_executor.sync()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 @pytest.mark.parametrize('func', ['sum'])
 @pytest.mark.parametrize('data_type', [mstype.float32])
 @pytest.mark.parametrize('index_type', [mstype.int32])
@@ -379,7 +387,8 @@ def test_vmap2(func):
     np.testing.assert_allclose(output.asnumpy(), expected, rtol=1e-3)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 @pytest.mark.parametrize('func', ['sum', 'min'])
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
 @pytest.mark.parametrize('data_type', [

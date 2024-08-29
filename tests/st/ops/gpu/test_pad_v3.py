@@ -139,9 +139,9 @@ def test_padv3_circular_dynamic_shape_5d():
     net.set_inputs(x_dyn, padding_dyn)
 
     out = net(x, padding)
-    expect = np.array([[[[[3, 4, 5, 3,],
-                          [0, 1, 2, 0,],
-                          [3, 4, 5, 3,]]]]]).astype(np.float64)
+    expect = np.array([[[[[3, 4, 5, 3, ],
+                          [0, 1, 2, 0, ],
+                          [3, 4, 5, 3, ]]]]]).astype(np.float64)
     np.testing.assert_almost_equal(expect, out.asnumpy())
 
 

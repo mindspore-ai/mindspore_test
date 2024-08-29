@@ -12,16 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
-
-import numpy as np
-import pytest
-
+import mindspore.common.dtype as mstype
 import mindspore.context as context
 import mindspore.nn as nn
-import mindspore.common.dtype as mstype
+import numpy as np
+
 from mindspore import Tensor
 from mindspore.ops import operations as P
+from tests.mark_utils import arg_mark
 
 context.set_context(mode=context.GRAPH_MODE, device_target='CPU')
 
@@ -35,7 +33,8 @@ class OpNetWrapper(nn.Cell):
         return self.op(*inputs)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_out1_axis0():
     op = P.Split(0, 1)
     op_wrapper = OpNetWrapper(op)
@@ -48,7 +47,8 @@ def test_out1_axis0():
     assert np.allclose(outputs[0].asnumpy()[0, 0, :], [0, 1, 2, 3, 4, 5])
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_out2_axis2():
     op = P.Split(2, 2)
     op_wrapper = OpNetWrapper(op)
@@ -63,7 +63,8 @@ def test_out2_axis2():
     assert np.allclose(outputs[1].asnumpy()[0, 0, :], [3, 4, 5])
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_out2_axis1neg():
     op = P.Split(-1, 2)
     op_wrapper = OpNetWrapper(op)
@@ -76,7 +77,8 @@ def test_out2_axis1neg():
     assert np.allclose(outputs[1].asnumpy()[0, :, :], [[3., 4., 5.], [9., 10., 11.]])
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_out_float32():
     op = P.Split(5, 2)
     op_wrapper = OpNetWrapper(op)
@@ -96,7 +98,8 @@ def test_out_float32():
     assert np.allclose(outputs[2].asnumpy()[0, 0, 0, 0, 0, :], [4., 5.])
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_out_float64():
     op = P.Split(5, 2)
     op_wrapper = OpNetWrapper(op)
@@ -116,7 +119,8 @@ def test_out_float64():
     assert np.allclose(outputs[2].asnumpy()[0, 0, 0, 0, 0, :], [4., 5.])
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_out_float16():
     op = P.Split(-1, 2)
     op_wrapper = OpNetWrapper(op)
@@ -138,7 +142,8 @@ def test_out_float16():
     assert np.allclose(outputs[4].asnumpy()[0, 0, 0, 0, 0, :], [8., 9.])
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_out_int32():
     op = P.Split(5, 2)
     op_wrapper = OpNetWrapper(op)
@@ -158,7 +163,8 @@ def test_out_int32():
     assert np.allclose(outputs[2].asnumpy()[1, 0, 0, 0, 0, :], [100, 101])
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_out_int64():
     op = P.Split(5, 2)
     op_wrapper = OpNetWrapper(op)
@@ -178,7 +184,8 @@ def test_out_int64():
     assert np.allclose(outputs[2].asnumpy()[1, 0, 0, 0, 0, :], [100, 101])
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_out_uint32():
     op = P.Split(-1, 2)
     op_wrapper = OpNetWrapper(op)
@@ -222,7 +229,8 @@ def test_out_uint32():
     assert np.allclose(outputs[0].asnumpy(), [0])
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_split_dynamic_shape():
     """
     Feature: Split ops with dynamic shape

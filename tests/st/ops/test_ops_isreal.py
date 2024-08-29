@@ -25,7 +25,8 @@ class Net(nn.Cell):
         return ops.isreal(x)
 
 
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_ops_isreal(mode):
     """
@@ -34,7 +35,7 @@ def test_ops_isreal(mode):
     Expectation: success
     """
     ms.set_context(mode=mode)
-    x = Tensor([1, 1+1j, 2+0j])
+    x = Tensor([1, 1 + 1j, 2 + 0j])
     net = Net()
     output = net(x)
     expect_output = Tensor([True, False, True])

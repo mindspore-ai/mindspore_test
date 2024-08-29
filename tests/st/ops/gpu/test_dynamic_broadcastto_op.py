@@ -36,6 +36,7 @@ class Net(nn.Cell):
         shape = self.d_shape(shape)
         return self.d_broadcastto(data, shape)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_net_float32():
     """

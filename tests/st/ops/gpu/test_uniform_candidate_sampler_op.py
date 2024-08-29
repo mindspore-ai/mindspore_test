@@ -22,6 +22,7 @@ from mindspore.ops import operations as P
 import mindspore.nn as nn
 import mindspore.context as context
 
+
 class UniformCandidateSamplerNet(nn.Cell):
     def __init__(self, num_true, num_sampled, unique, range_max):
         super(UniformCandidateSamplerNet, self).__init__()
@@ -39,6 +40,7 @@ def uniform_candidate_sampler(x, num_true, num_sampled, unique, range_max):
                                                                range_max)
     out1, out2, out3 = uniform_candidate_sampler_net(Tensor(x.astype(np.int32)))
     return out1.shape, out2.shape, out3.shape
+
 
 def uniform_candidate_sampler_int64(x, num_true, num_sampled, unique, range_max):
     uniform_candidate_sampler_net = UniformCandidateSamplerNet(num_true,
@@ -89,6 +91,7 @@ def test_uniform_candidate_sampler_unique_1_true():
     np.testing.assert_array_equal(ms2, expected_2)
     np.testing.assert_array_equal(ms3, expected_3)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_uniform_candidate_sampler_not_unique_1_true():
     """
@@ -105,6 +108,7 @@ def test_uniform_candidate_sampler_not_unique_1_true():
     np.testing.assert_array_equal(ms1, expected_1)
     np.testing.assert_array_equal(ms2, expected_2)
     np.testing.assert_array_equal(ms3, expected_3)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_uniform_candidate_sampler_unique_2_true():
@@ -124,6 +128,7 @@ def test_uniform_candidate_sampler_unique_2_true():
     np.testing.assert_array_equal(ms2, expected_2)
     np.testing.assert_array_equal(ms3, expected_3)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_uniform_candidate_sampler_not_unique_2_true():
     """
@@ -142,6 +147,7 @@ def test_uniform_candidate_sampler_not_unique_2_true():
     np.testing.assert_array_equal(ms1, expected_1)
     np.testing.assert_array_equal(ms2, expected_2)
     np.testing.assert_array_equal(ms3, expected_3)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_uniform_candidate_sampler_large():
@@ -182,6 +188,7 @@ def test_uniform_candidate_sampler_large_random():
     np.testing.assert_array_equal(ms2, expected_2)
     np.testing.assert_array_equal(ms3, expected_3)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_uniform_candidate_sampler_large_random_int64_input():
     """
@@ -198,6 +205,7 @@ def test_uniform_candidate_sampler_large_random_int64_input():
     np.testing.assert_array_equal(ms1, expected_1)
     np.testing.assert_array_equal(ms2, expected_2)
     np.testing.assert_array_equal(ms3, expected_3)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_uniform_candidate_sampler_unique_1_true_hit():

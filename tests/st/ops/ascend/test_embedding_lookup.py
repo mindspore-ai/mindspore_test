@@ -40,4 +40,4 @@ def test_embedding_lookup_sparse():
     offset = 4
     embedding = Net(offset)
     out = embedding(params, indices)
-    assert(out.asnumpy() == [[[10, 11], [0, 0]], [[0, 0], [10, 11]]]).all()
+    assert (out.asnumpy() == [[[10, 11], [0, 0]], [[0, 0], [10, 11]]]).all()

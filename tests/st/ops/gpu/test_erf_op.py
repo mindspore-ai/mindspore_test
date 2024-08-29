@@ -26,6 +26,7 @@ from mindspore import dtype
 
 context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
 
+
 class NetErf(nn.Cell):
     def __init__(self):
         super(NetErf, self).__init__()
@@ -43,6 +44,7 @@ def test_erf_fp32():
     expect = special.erf(x)
     tol = 1e-6
     assert (np.abs(output.asnumpy() - expect) < tol).all()
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_erf_fp16():

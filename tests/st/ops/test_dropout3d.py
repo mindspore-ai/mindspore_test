@@ -62,9 +62,9 @@ def test_net_float32(context_mode):
     print(x0)
     print(output)
 
-    y = (output.asnumpy() == (x0.asnumpy()/0.7).astype(dtype)).reshape(3*4, 3*3*3)
-    output_reshape = output.asnumpy().reshape(3*4, 3*3*3)
-    for i in range(3*4):
+    y = (output.asnumpy() == (x0.asnumpy() / 0.7).astype(dtype)).reshape(3 * 4, 3 * 3 * 3)
+    output_reshape = output.asnumpy().reshape(3 * 4, 3 * 3 * 3)
+    for i in range(3 * 4):
         if not y[i].all():
             assert output_reshape[i].sum() == 0
     return output, mask

@@ -26,7 +26,7 @@ from mindspore.ops import operations as P
 def strided_slice(nptype):
     context.set_context(mode=context.GRAPH_MODE, device_target='GPU')
 
-    x = Tensor(np.arange(0, 2*3*4*5).reshape(2, 3, 4, 5).astype(nptype))
+    x = Tensor(np.arange(0, 2 * 3 * 4 * 5).reshape(2, 3, 4, 5).astype(nptype))
     y = P.StridedSlice()(x, (1, 0, 0, 2), (2, 2, 2, 4), (1, 1, 1, 1))
     expect = np.array([[[[62, 63],
                          [67, 68]],
@@ -73,12 +73,12 @@ def strided_slice(nptype):
                          [115, 116, 117, 118]]]]).astype(nptype)
     assert np.allclose(y.asnumpy(), expect)
 
-    x = Tensor(np.arange(0, 3*4*5).reshape(3, 4, 5).astype(nptype))
+    x = Tensor(np.arange(0, 3 * 4 * 5).reshape(3, 4, 5).astype(nptype))
     y = P.StridedSlice()(x, (1, 0, 0), (2, -3, 3), (1, 1, 3))
     expect = np.array([[[20]]]).astype(nptype)
     assert np.allclose(y.asnumpy(), expect)
 
-    x_np = np.arange(0, 4*5).reshape(4, 5).astype(nptype)
+    x_np = np.arange(0, 4 * 5).reshape(4, 5).astype(nptype)
     y = Tensor(x_np)[:, ::-1]
     expect = x_np[:, ::-1]
     assert np.allclose(y.asnumpy(), expect)
@@ -166,7 +166,7 @@ def test_strided_slice_uint8():
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_strided_slice_bool():
     strided_slice(np.bool)
-    x = Tensor(np.arange(0, 4*4*4).reshape(4, 4, 4).astype(np.float32))
+    x = Tensor(np.arange(0, 4 * 4 * 4).reshape(4, 4, 4).astype(np.float32))
     y = x[-8:, :8]
     expect = np.array([[[0., 1., 2., 3.],
                         [4., 5., 6., 7.],

@@ -45,9 +45,9 @@ def test_rsqrt_grad():
     dx = Tensor(np.array([[[[1, 1, 1],
                             [2, 2, 2],
                             [3, 3, 3]]]]).astype(np.float32))
-    expect = np.array([[[[0.5, -0.5, -500,],
+    expect = np.array([[[[0.5, -0.5, -500, ],
                          [-205.37901, -226.98099, -216],
-                         [-1500, -1.5, 1.5,]]]]).astype(np.float32)
+                         [-1500, -1.5, 1.5, ]]]]).astype(np.float32)
     error = np.ones(shape=[3, 3]) * 1.0e-6
 
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")

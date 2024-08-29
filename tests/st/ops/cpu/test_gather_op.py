@@ -18,12 +18,14 @@ import pytest
 import numpy as np
 from mindspore import Tensor
 from mindspore.ops import operations as P
+from mindspore.common.api import _pynative_executor
 import mindspore.nn as nn
 import mindspore.context as context
 from mindspore.common import dtype as mstype
 from mindspore.ops.functional import vmap
 
 context.set_context(mode=context.GRAPH_MODE, device_target='CPU')
+
 
 class NetGatherV2_axis0(nn.Cell):
     def __init__(self):
@@ -33,7 +35,9 @@ class NetGatherV2_axis0(nn.Cell):
     def construct(self, params, indices):
         return self.gatherv2(params, indices, 0)
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_gatherv2_axis0():
     x = Tensor(np.arange(3 * 2 * 2).reshape(3, 2, 2), mstype.float32)
     indices = Tensor(np.array([1, 2]), mstype.int32)
@@ -49,6 +53,7 @@ def test_gatherv2_axis0():
     assert np.all(diff < error)
     assert np.all(-diff < error)
 
+
 class NetGatherV2_axis1(nn.Cell):
     def __init__(self):
         super(NetGatherV2_axis1, self).__init__()
@@ -57,7 +62,9 @@ class NetGatherV2_axis1(nn.Cell):
     def construct(self, params, indices):
         return self.gatherv2(params, indices, 1)
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_gatherv2_axis1():
     x = Tensor(np.arange(2 * 3 * 2).reshape(2, 3, 2), mstype.float32)
     indices = Tensor(np.array([1, 2]), mstype.int32)
@@ -73,6 +80,7 @@ def test_gatherv2_axis1():
     assert np.all(diff < error)
     assert np.all(-diff < error)
 
+
 class NetGatherV2_axisN1(nn.Cell):
     def __init__(self):
         super(NetGatherV2_axisN1, self).__init__()
@@ -81,7 +89,9 @@ class NetGatherV2_axisN1(nn.Cell):
     def construct(self, params, indices):
         return self.gatherv2(params, indices, -1)
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_gatherv2_axisN1():
     x = Tensor(np.arange(2 * 2 * 3).reshape(2, 2, 3), mstype.float32)
     indices = Tensor(np.array([1, 2]), mstype.int32)
@@ -102,7 +112,8 @@ def cal_vmap_gather(x, indices, axis):
     return P.Gather()(x, indices, axis)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_gather_vmap_basic():
     """
     Feature: gather vmap test on cpu.
@@ -121,7 +132,8 @@ def test_gather_vmap_basic():
     assert np.allclose(outputs.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_gather_vmap_negative_axis():
     """
     Feature: gather vmap test on cpu.
@@ -145,7 +157,8 @@ def test_gather_vmap_negative_axis():
     assert np.allclose(outputs.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_gather_vmap_with_inaxes():
     """
     Feature: gather vmap test on cpu.
@@ -172,7 +185,8 @@ def test_gather_vmap_with_inaxes():
     assert np.allclose(outputs.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_gather_vmap_indices_outofbound():
     """
     Feature: gather vmap test on cpu.
@@ -190,10 +204,12 @@ def test_gather_vmap_indices_outofbound():
 
     with pytest.raises(RuntimeError) as info:
         vmap(cal_vmap_gather, in_axes=(0, 0, None), out_axes=0)(x, indices, axis)
+        _pynative_executor.sync()
     assert "For 'Gather', the 'input_indices' should be in the range" in str(info.value)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_gather_vmap_xdim_is_none():
     """
     Feature: gather vmap test on cpu.
@@ -213,7 +229,8 @@ def test_gather_vmap_xdim_is_none():
     assert np.allclose(outputs.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_gather_vmap_idim_is_none():
     """
     Feature: gather vmap test on cpu.
@@ -233,7 +250,8 @@ def test_gather_vmap_idim_is_none():
     assert np.allclose(outputs.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_gather_vmap_nested():
     """
     Feature: gather vmap test on cpu.
@@ -262,7 +280,8 @@ def test_gather_vmap_nested():
     assert np.allclose(outputs.asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 @pytest.mark.parametrize("data_type", [np.uint64, np.uint16, np.int64, np.complex64, np.complex128])
 def test_gather_tensor(data_type):
     """
@@ -292,7 +311,8 @@ def test_gather_tensor(data_type):
     np.allclose(out.asnumpy(), y_expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 @pytest.mark.parametrize("data_type", [np.uint64, np.uint16, np.int64, np.complex64, np.complex128])
 def test_gather_tensor_out_of_bound(data_type):
     """
@@ -307,10 +327,12 @@ def test_gather_tensor_out_of_bound(data_type):
     graph_table_tensor = Tensor(x)
     with pytest.raises(RuntimeError) as info:
         graph_table_tensor.gather(input_indices, axis)
+        _pynative_executor.sync()
     assert "For 'Gather', the 'input_indices' should be in the range" in str(info.value)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 @pytest.mark.parametrize("data_type", [np.uint64, np.uint16, np.int64, np.complex64, np.complex128])
 def test_gather_tensor_8d(data_type):
     """

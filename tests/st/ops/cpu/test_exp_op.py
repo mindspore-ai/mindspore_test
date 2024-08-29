@@ -12,16 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
-
-import numpy as np
-import pytest
-
-import mindspore as ms
 import mindspore.context as context
 import mindspore.nn as nn
+import numpy as np
+
+import mindspore as ms
 from mindspore import Tensor
 from mindspore.ops import operations as P
+from tests.mark_utils import arg_mark
 
 
 class NetExp(nn.Cell):
@@ -33,7 +31,8 @@ class NetExp(nn.Cell):
         return self.exp(x)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_exp():
     x0_np = np.random.uniform(-2, 2, (2, 3, 4, 4)).astype(np.float32)
     x1_np = np.random.uniform(-2, 2, 1).astype(np.float32)
@@ -55,7 +54,9 @@ def test_exp():
     assert np.all(diff1 < error1)
     assert output1.shape == expect1.shape
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_exp_dyn():
     """
     Feature: dynamic shape operator Exp on CPU
@@ -63,7 +64,7 @@ def test_exp_dyn():
     Expectation: success or throw AssertionError esxception.
     """
     x_np = np.random.uniform(-2, 2, 1).astype(np.float32)
-    input_dyn = Tensor(shape=[None,], dtype=ms.float32)
+    input_dyn = Tensor(shape=[None, ], dtype=ms.float32)
 
     context.set_context(mode=context.GRAPH_MODE, device_target="CPU")
     net = NetExp()

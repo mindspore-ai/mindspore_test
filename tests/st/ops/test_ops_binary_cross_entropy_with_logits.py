@@ -26,9 +26,11 @@ from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 def generate_random_input(shape, dtype):
     return np.random.randn(*shape).astype(dtype)
 
+
 @test_utils.run_with_cell
 def binary_cross_entropy_with_logits_forward_func(inputx, target, weight=None, posWeight=None, reduction="mean"):
     return binary_cross_entropy_with_logits(inputx, target, weight, reduction, posWeight)
+
 
 @test_utils.run_with_cell
 def binary_cross_entropy_with_logits_backward_func(inputx, target, weight=None, posWeight=None, reduction="mean"):
@@ -139,13 +141,17 @@ def test_ops_bce_with_logits_loss_forward(mode, reduction):
     elif mode == "KBK":
         ms.context.set_context(mode=ms.GRAPH_MODE)
         net = BCEWithLogitsLoss(weight, reduction, pos_weight)
+
         def func(inputx, target):
             return net(inputx, target)
+
         op = ms.jit(func, jit_config=ms.JitConfig(jit_level="O0"))
         out_fw = op(inputx, target)
         opx = BCEWithLogitsLoss(weight, reduction, pos_weight)
+
         def func2(inputx, target):
             return ops.grad(opx, (0, 1))(inputx, target)
+
         op2 = ms.jit(func2, jit_config=ms.JitConfig(jit_level="O0"))
         out_bw = op2(inputx, target)
     else:

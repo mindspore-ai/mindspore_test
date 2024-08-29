@@ -313,6 +313,7 @@ class ReduceSumTypeNet(nn.Cell):
     def construct(self):
         return P.ReduceSum(self.keep_dims0)(self.x0, self.axis0)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_reduce_sum_float64():
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")

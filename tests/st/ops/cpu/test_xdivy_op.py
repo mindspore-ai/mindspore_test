@@ -12,16 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
-
-import numpy as np
-import pytest
-
 import mindspore.context as context
 import mindspore.nn as nn
+import numpy as np
+
+import mindspore as ms
 from mindspore import Tensor
 from mindspore.ops import operations as P
-import mindspore as ms
+from tests.mark_utils import arg_mark
 
 TF_INSTALL_FLG = 1
 try:
@@ -131,7 +129,8 @@ def xdivy_sf_check(mstype, tftype):
     assert tz.numpy().all() == z.asnumpy().all()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_xdivy_float64():
     """
     Feature: test xdivy primitive use float64
@@ -147,7 +146,8 @@ def test_xdivy_float64():
     xdivy_sf_check(ms.float64, tf.dtypes.float64)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_xdivy_float32():
     """
     Feature: test xdivy primitive use float32
@@ -163,7 +163,8 @@ def test_xdivy_float32():
     xdivy_sf_check(ms.float32, tf.dtypes.float32)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_xdivy_float16():
     """
     Feature: test xdivy primitive use float16

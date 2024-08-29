@@ -23,6 +23,7 @@ from mindspore import Tensor
 from mindspore.ops import operations as P
 from mindspore.ops.operations import _inner_ops as inner
 
+
 class NetZerosLike(nn.Cell):
     def __init__(self):
         super(NetZerosLike, self).__init__()
@@ -89,12 +90,14 @@ def zeros_like_dynamic(x):
     net = ZerosLikeDynamicNet()
     return net(x)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_zeros_like_dynamic_bool():
     x = Tensor(np.arange(120).reshape(3, 4, 1, 2, 5).astype(np.bool))
     output = zeros_like_dynamic(x)
     expected = np.zeros([3, 4, 1, 2, 5])
     np.testing.assert_array_equal(output.asnumpy(), expected)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_zeros_like_dynamic_int8():
@@ -103,12 +106,14 @@ def test_zeros_like_dynamic_int8():
     expected = np.zeros([1, 4, 1, 6])
     np.testing.assert_array_equal(output.asnumpy(), expected)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_zeros_like_dynamic_uint8():
     x = Tensor(np.arange(30).reshape(3, 2, 5).astype(np.uint8))
     output = zeros_like_dynamic(x)
     expected = np.zeros([3, 2, 5])
     np.testing.assert_array_equal(output.asnumpy(), expected)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_zeros_like_dynamic_int32():
@@ -117,12 +122,14 @@ def test_zeros_like_dynamic_int32():
     expected = np.zeros([2, 2, 2, 2])
     np.testing.assert_array_equal(output.asnumpy(), expected)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_zeros_like_dynamic_float16():
     x = Tensor(np.arange(120).reshape(3, 4, 1, 2, 5).astype(np.float16))
     output = zeros_like_dynamic(x)
     expected = np.zeros([3, 4, 1, 2, 5])
     np.testing.assert_array_almost_equal(output.asnumpy(), expected)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_zeros_like_dynamic_float32():
@@ -131,12 +138,14 @@ def test_zeros_like_dynamic_float32():
     expected = np.zeros([3, 7, 3])
     np.testing.assert_array_almost_equal(output.asnumpy(), expected)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_zeros_like_dynamic_float64():
     x = Tensor(np.arange(2).reshape(2, 1, 1).astype(np.float64))
     output = zeros_like_dynamic(x)
     expected = np.zeros([2, 1, 1])
     np.testing.assert_array_almost_equal(output.asnumpy(), expected)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_zeros_like_dynamic_multiple_inputs():

@@ -41,7 +41,8 @@ def grad_dyn_case(is_dynamic_rank):
     test_dynamic.test_dynamic_grad_net([input_x, segment_ids], is_dynamic_rank)
 
 
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_unsorted_segment_prod_dynamic_shape():
     """
     Feature: test UnsortedSegmentProd dynamic shape on GPU, CPU.
@@ -52,7 +53,8 @@ def test_unsorted_segment_prod_dynamic_shape():
     grad_dyn_case(False)
 
 
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_unsorted_segment_prod_dynamic_rank():
     """
     Feature: test UnsortedSegmentProd dynamic rank on GPU, CPU.

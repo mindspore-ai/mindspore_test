@@ -31,7 +31,8 @@ class Net(nn.Cell):
         return self.op(x, value, begin, end, strides)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_tensor_copy_slices_dyn():
     """
     Feature: Test TensorCopySlices ops in cpu.

@@ -23,6 +23,7 @@ from mindspore import Tensor
 from mindspore.common.api import jit
 from mindspore.ops import operations as P
 
+
 def cum_sum(nptype):
     context.set_context(mode=context.PYNATIVE_MODE, device_target='GPU')
     x0 = np.random.rand(2, 3, 4, 4).astype(nptype)
@@ -81,7 +82,6 @@ def cum_sum(nptype):
                     P.CumSum()(self.x5, self.axis5),
                     P.CumSum()(self.x6, self.axis6))
 
-
     cumsum = CumSum(nptype)
     output = cumsum()
 
@@ -127,21 +127,26 @@ def cum_sum(nptype):
     assert np.all(diff6 < error6)
     assert output[6].shape == expect6.shape
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_cum_sum_uint8():
     cum_sum(np.uint8)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_cum_sum_int8():
     cum_sum(np.int8)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_cum_sum_int32():
     cum_sum(np.int32)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_cum_sum_float16():
     cum_sum(np.float16)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_cum_sum_float32():

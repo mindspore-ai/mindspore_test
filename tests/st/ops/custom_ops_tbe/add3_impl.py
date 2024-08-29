@@ -20,6 +20,7 @@ from tbe.tvm.topi import generic
 from tbe.tvm.topi.cce import util
 from mindspore.ops.op_info_register import op_info_register, TBERegOp, DataType
 
+
 @fusion_manager.register("add3")
 def add3_compute(input1, input2, const_bias):
     sum2 = te.lang.cce.vadd(input1, input2)

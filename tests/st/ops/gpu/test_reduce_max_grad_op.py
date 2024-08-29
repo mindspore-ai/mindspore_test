@@ -21,6 +21,7 @@ from mindspore import Tensor
 from mindspore.ops import composite as C
 from mindspore.ops import operations as P
 
+
 def test_reduce_sum_grad():
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
 
@@ -31,7 +32,6 @@ def test_reduce_sum_grad():
 
         def construct(self, x1, x2):
             return self.op(x1, x2)
-
 
     class GradNet(nn.Cell):
         def __init__(self, network):

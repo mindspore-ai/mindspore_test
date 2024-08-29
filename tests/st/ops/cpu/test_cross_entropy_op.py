@@ -22,7 +22,8 @@ from mindspore.common.tensor import Tensor
 import mindspore.ops as ops
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_cross_entropy_ops_input_float64():
     """
     Feature: Test abnormal input dtype of CrossEntropyLoss.
@@ -31,11 +32,12 @@ def test_cross_entropy_ops_input_float64():
     """
     input_data = Tensor(np.random.randn(3, 5).astype(np.float64))
     target_data = Tensor(np.random.randint(0, 5, (3,)), mstype.int32)
-    weight_data = Tensor(np.random.randn(5,), mstype.float32)
+    weight_data = Tensor(np.random.randn(5, ), mstype.float32)
     ops.cross_entropy(input_data, target_data, weight_data)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_cross_entropy_ops_weight_float64():
     """
     Feature: Test abnormal weight dtype of CrossEntropyLoss.
@@ -44,11 +46,12 @@ def test_cross_entropy_ops_weight_float64():
     """
     input_data = Tensor(np.random.randn(3, 5).astype(np.float32))
     target_data = Tensor(np.random.randint(0, 5, (3,)), mstype.int32)
-    weight_data = Tensor(np.random.randn(5,), mstype.float64)
+    weight_data = Tensor(np.random.randn(5, ), mstype.float64)
     ops.cross_entropy(input_data, target_data, weight_data)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_cross_entropy_ops_target_int64():
     """
     Feature: Test abnormal target dtype of CrossEntropyLoss.
@@ -57,5 +60,5 @@ def test_cross_entropy_ops_target_int64():
     """
     input_data = Tensor(np.random.randn(3, 5).astype(np.float32))
     target_data = Tensor(np.random.randint(0, 5, (3,)), mstype.int64)
-    weight_data = Tensor(np.random.randn(5,), mstype.float32)
+    weight_data = Tensor(np.random.randn(5, ), mstype.float32)
     ops.cross_entropy(input_data, target_data, weight_data)

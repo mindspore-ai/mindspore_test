@@ -24,16 +24,17 @@ class EmbeddingFeatueMappingV2Net(nn.Cell):
     """
     EmbeddingFeatueMappingV2Net
     """
+
     def construct(self, table_name, feature_id, table_total_size, table_actual_size):
         return ops.auto_generate.embedding_feature_mapping_v2(table_name, feature_id,
                                                               table_total_size, table_actual_size)
-
 
 
 class EmbeddingFeatueMappingExportNet(nn.Cell):
     """
     EmbeddingFeatueMappingExportNet
     """
+
     def __init__(self, table_name):
         super(EmbeddingFeatueMappingExportNet, self).__init__()
         self.table_name = Tensor(np.array(table_name))
@@ -59,6 +60,7 @@ class EmbeddingFeatueMappingInsertNet(nn.Cell):
     """
     EmbeddingFeatueMappingInsertNet
     """
+
     def __init__(self, table_name):
         super(EmbeddingFeatueMappingInsertNet, self).__init__()
         self.table_name = Tensor(np.array(table_name))
@@ -70,7 +72,7 @@ class EmbeddingFeatueMappingInsertNet(nn.Cell):
         offset_id = []
         for i in range(self.len):
             cur_table_name = self.table_name_list[i]
-            cur_embedding_dim = embedding_dim[i:i+1]
+            cur_embedding_dim = embedding_dim[i:i + 1]
             cur_feature_size = ops.auto_generate.embedding_feature_mapping_file_size(file_path,
                                                                                      cur_table_name,
                                                                                      cur_embedding_dim,
@@ -110,8 +112,8 @@ def test_embedding_feature_mapping_test():
     file_path = os.path.join(os.getcwd(), "embedding")
     values = Tensor(0, ms.float32)
     for i in range(len(table_name)):
-        cur_table_name = table_name[i:i+1]
-        cur_embedding_dim = embedding_dim[i:i+1]
+        cur_table_name = table_name[i:i + 1]
+        cur_embedding_dim = embedding_dim[i:i + 1]
         embedding_feature_mapping_export_forward_func = EmbeddingFeatueMappingExportNet(cur_table_name)
         embedding_feature_mapping_export_forward_func(file_path, values, cur_embedding_dim)
 

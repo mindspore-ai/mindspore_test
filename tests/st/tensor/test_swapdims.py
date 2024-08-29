@@ -16,6 +16,7 @@ import pytest
 from tests.mark_utils import arg_mark
 import mindspore as ms
 import mindspore.nn as nn
+from mindspore.common.api import _pynative_executor
 from tests.st.numpy_native.utils import to_tensor
 
 
@@ -43,4 +44,6 @@ def test_tensor_swapdims(mode):
         tensor_list = net(tensor_list, 0, (1,))
     with pytest.raises(ValueError):
         tensor_list = net(tensor_list, 0, 3)
+        _pynative_executor.sync()
     assert net(tensor_list, 0, 1).shape == (3, 2)
+

@@ -36,24 +36,25 @@ class PolarNet(nn.Cell):
 def polar(loss):
     context.set_context(mode=context.GRAPH_MODE, device_target='GPU')
     np_abs = np.array([1, 2, 3, 4]).astype(np.float32)
-    np_angle = np.array([np.pi/2, 5*np.pi/4, 3*np.pi/2, 2*np.pi/3]).astype(np.float32)
+    np_angle = np.array([np.pi / 2, 5 * np.pi / 4, 3 * np.pi / 2, 2 * np.pi / 3]).astype(np.float32)
     ms_abs = Tensor(np_abs)
     ms_angle = Tensor(np_angle)
     net = PolarNet()
     output = net(ms_abs, ms_angle)
-    expected = [-4.3711388e-08+1.j, -1.4142137e+00-1.4142134j, 3.5774640e-08-3.j, -2.0000002e+00+3.4641016j]
+    expected = [-4.3711388e-08 + 1.j, -1.4142137e+00 - 1.4142134j, 3.5774640e-08 - 3.j, -2.0000002e+00 + 3.4641016j]
     assert np.allclose(output.asnumpy(), expected, loss, loss)
 
 
 def polar_pynative(loss):
     context.set_context(mode=context.PYNATIVE_MODE, device_target='GPU')
     np_abs = np.array([1, 2, 3, 4]).astype(np.float64)
-    np_angle = np.array([np.pi/2, 5*np.pi/4, 3*np.pi/2, 2*np.pi/3]).astype(np.float64)
+    np_angle = np.array([np.pi / 2, 5 * np.pi / 4, 3 * np.pi / 2, 2 * np.pi / 3]).astype(np.float64)
     ms_abs = Tensor(np_abs)
     ms_angle = Tensor(np_angle)
     net = PolarNet()
     output = net(ms_abs, ms_angle)
-    expected = [6.12323400e-17+1.j, -1.41421356e+00-1.41421356j, -5.51091060e-16-3.j, -2.00000000e+00+3.46410162j]
+    expected = [6.12323400e-17 + 1.j, -1.41421356e+00 - 1.41421356j, -5.51091060e-16 - 3.j,
+                -2.00000000e+00 + 3.46410162j]
     assert np.allclose(output.asnumpy(), expected, loss, loss)
 
 
@@ -75,4 +76,3 @@ def test_polar_pynative_double():
     Expectation: the result match to pytorch
     """
     polar_pynative(loss=1.0e-5)
-    

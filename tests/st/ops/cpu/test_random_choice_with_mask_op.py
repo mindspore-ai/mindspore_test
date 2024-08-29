@@ -23,6 +23,7 @@ import mindspore.common.dtype as mstype
 import mindspore.nn as nn
 from mindspore import Tensor
 from mindspore.ops import operations as P
+from mindspore.common.api import _pynative_executor
 
 
 class RCWM_count_in(nn.Cell):
@@ -70,7 +71,8 @@ class RCWM_max_count(nn.Cell):
         return self.rcwm_max_count(x)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_RCWM_3D():
     """
     Feature: RandomChoiceWithMask cpu kernel
@@ -87,7 +89,8 @@ def test_RCWM_3D():
     assert output2.shape == expect2
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_RCWM_count_out():
     """
     Feature: RandomChoiceWithMask cpu kernel
@@ -105,7 +108,8 @@ def test_RCWM_count_out():
     assert output2.shape == expect2
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_RCWM_count_in():
     """
     Feature: RandomChoiceWithMask cpu kernel
@@ -123,7 +127,8 @@ def test_RCWM_count_in():
     assert output2.shape == expect2
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_RCWM_max_count_graph():
     """
     Feature: RandomChoiceWithMask cpu kernel
@@ -135,9 +140,11 @@ def test_RCWM_max_count_graph():
     with pytest.raises(RuntimeError):
         rcwm = RCWM_max_count()
         rcwm(input_tensor)
+        _pynative_executor.sync()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_RCWM_max_count_pynative():
     """
     Feature: RandomChoiceWithMask cpu kernel
@@ -149,9 +156,11 @@ def test_RCWM_max_count_pynative():
     with pytest.raises(RuntimeError):
         rcwm = RCWM_max_count()
         rcwm(input_tensor)
+        _pynative_executor.sync()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_RCWM_1D():
     """
     Feature: RandomChoiceWithMask cpu kernel

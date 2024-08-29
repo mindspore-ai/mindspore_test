@@ -24,9 +24,9 @@ from mindspore import ops, context, mint
 
 @test_utils.run_with_cell
 def avg_pool2d_forward_func(image, kernel_size, stride=None, padding=0,
-                            ceil_mode=False, count_include_pad=True, divisor_override=None,):
+                            ceil_mode=False, count_include_pad=True, divisor_override=None, ):
     return mint.nn.functional.avg_pool2d(image, kernel_size, stride, padding,
-                                         ceil_mode, count_include_pad, divisor_override,)
+                                         ceil_mode, count_include_pad, divisor_override, )
 
 
 @test_utils.run_with_cell
@@ -38,16 +38,16 @@ def avg_pool2d_backward_func(image, kernel_size, stride=None, padding=0, ceil_mo
 
 @test_utils.run_with_cell
 def avg_pool2d_backward_forward_func(grad, image, kernel_size, stride, padding=0, ceil_mode=False,
-                                     count_include_pad=True, divisor_override=None,):
+                                     count_include_pad=True, divisor_override=None, ):
     return ops.auto_generate.AvgPool2DGrad()(grad, image, kernel_size, stride, padding, ceil_mode,
                                              count_include_pad, divisor_override)
 
 
 @test_utils.run_with_cell
 def avg_pool2d_double_backward_func(grad, image, kernel_size, stride, padding=0, ceil_mode=False,
-                                    count_include_pad=True, divisor_override=None,):
+                                    count_include_pad=True, divisor_override=None, ):
     return ops.grad(avg_pool2d_backward_forward_func, (0))(grad, image, kernel_size, stride, padding,
-                                                           ceil_mode, count_include_pad, divisor_override,)
+                                                           ceil_mode, count_include_pad, divisor_override, )
 
 
 def set_context(mode):

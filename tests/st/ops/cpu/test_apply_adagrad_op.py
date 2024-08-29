@@ -40,7 +40,8 @@ class Net(nn.Cell):
         return self.apply_adagrad(self.var, self.accum, lr, grad)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_apply_adagrad():
     """
     Feature: template

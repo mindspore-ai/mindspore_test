@@ -21,6 +21,7 @@ import mindspore.context as context
 import mindspore.nn as nn
 from mindspore import Tensor
 from mindspore.ops.operations.array_ops import IdentityN
+from mindspore.common.api import _pynative_executor
 
 
 class Net(nn.Cell):
@@ -65,6 +66,7 @@ def test_identity_n_float32_input_error():
     with pytest.raises(TypeError):
         output = net(input_tensor)
         np.testing.assert_almost_equal([el.asnumpy() for el in output], [el.asnumpy() for el in input_tensor])
+        _pynative_executor.sync()
         assert id(input_tensor) != id(output)
 
 

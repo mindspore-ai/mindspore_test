@@ -19,12 +19,15 @@ from mindspore.common.tensor import Tensor
 from mindspore.nn import Cell
 from mindspore import ops
 
+
 class InnerNet():
     def __init__(self):
         self.x = [Tensor([1]), Tensor([2]), Tensor([3])]
 
+
 class Net(Cell):
     "Fallback network."
+
     def __init__(self):
         super(Net, self).__init__()
         obj = InnerNet()

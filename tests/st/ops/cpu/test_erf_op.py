@@ -12,17 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
-
+import mindspore.context as context
+import mindspore.nn as nn
 import numpy as np
 import pytest
+from scipy import special
 
 import mindspore as ms
-import mindspore.nn as nn
-import mindspore.context as context
 from mindspore import Tensor
 from mindspore.ops import operations as P
-from scipy import special
+from tests.mark_utils import arg_mark
 
 
 class NetErf(nn.Cell):
@@ -34,7 +33,8 @@ class NetErf(nn.Cell):
         return self.erf(x)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_erf_dshape():
     """
     Feature: Test erf dynamic shape.
@@ -51,7 +51,8 @@ def test_erf_dshape():
     assert output.asnumpy().shape == expect_shape
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
 @pytest.mark.parametrize('shape', [(2,), (4, 5), (3, 4, 5, 6)])
 @pytest.mark.parametrize('dtype, tol', [(np.float16, 1.0e-3), (np.float32, 1.0e-4)])

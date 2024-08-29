@@ -79,7 +79,7 @@ class NetTwoStack(nn.Cell):
 
 
 def test_net():
-    x1 = Tensor(np.random.randn(4,).astype(np.float64))
+    x1 = Tensor(np.random.randn(4, ).astype(np.float64))
     x2 = Tensor(np.random.randn(4, 6).astype(np.float32))
     x3 = Tensor(np.random.randint(100, size=(3, 4, 5)).astype(np.int32))
 
@@ -102,7 +102,7 @@ def test_net():
 
 
 def test_net_tow_stack():
-    x1 = Tensor(np.random.randn(4,).astype(np.float64))
+    x1 = Tensor(np.random.randn(4, ).astype(np.float64))
     x2 = Tensor(np.random.randn(4, 6).astype(np.float32))
     x3 = Tensor(np.random.randint(100, size=(3, 4, 5)).astype(np.int32))
 

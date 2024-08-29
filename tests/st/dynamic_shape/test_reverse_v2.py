@@ -16,6 +16,7 @@
 import numpy as np
 import pytest
 from mindspore import ops
+from mindspore.common.api import _pynative_executor
 import mindspore as ms
 from tests.st.utils import test_utils
 from tests.mark_utils import arg_mark
@@ -94,4 +95,5 @@ def test_reverse_v2_axis_incorrect():
     axis = 0.1
     with pytest.raises(TypeError) as err:
         ops.ReverseV2(axis)
+        _pynative_executor.sync()
     assert "For 'ReverseV2', the type of 'axis' should be one of '[list of int, tuple of int]'" in str(err.value)

@@ -28,6 +28,7 @@ from mindspore.ops.operations import _inner_ops as inner
 
 context.set_context(device_target='GPU')
 
+
 class Transpose(nn.Cell):
     def __init__(self, nptype):
         super(Transpose, self).__init__()
@@ -52,6 +53,7 @@ class Transpose(nn.Cell):
         return (self.transpose(self.x_2D, self.perm_2D), self.transpose(self.x_3D, self.perm_3D),
                 self.transpose(self.x_4D, self.perm_4D), self.transpose(self.x_5D, self.perm_5D))
 
+
 class Transpose_dynamic(nn.Cell):
     def __init__(self, nptype):
         super(Transpose_dynamic, self).__init__()
@@ -66,6 +68,7 @@ class Transpose_dynamic(nn.Cell):
     def construct(self):
         out = self.test_dynamic(self.x)
         return self.transpose(out, self.perm)
+
 
 class Transpose_dynamic2(nn.Cell):
     def __init__(self, input_1, input_2, perm_1, perm_2):
@@ -84,6 +87,7 @@ class Transpose_dynamic2(nn.Cell):
         out_2 = self.test_dynamic(self.x_2)
         out_2 = self.transpose(out_2, self.perm_2)
         return (out_1, out_2)
+
 
 def transpose1(nptype):
     context.set_context(mode=context.GRAPH_MODE, device_target='GPU')
@@ -168,6 +172,7 @@ def transpose1(nptype):
     assert (output[2].asnumpy() == expect2).all()
     assert (output[3].asnumpy() == expect3).all()
 
+
 def transpose_d(nptype):
     context.set_context(mode=context.GRAPH_MODE, device_target='GPU')
     transpose = Transpose_dynamic(nptype)
@@ -214,6 +219,7 @@ def transpose_d(nptype):
                            [79, 99, 119]]]]]]).astype(nptype)
     assert (output.asnumpy() == expect).all()
 
+
 def transpose_d2(nptype):
     context.set_context(mode=context.GRAPH_MODE, device_target='GPU')
     input_1 = Parameter(Tensor(np.arange(5 * 6).reshape(5, 6).astype(nptype)),
@@ -237,49 +243,61 @@ def transpose_d2(nptype):
     assert (output_1.asnumpy() == expect_1).all()
     assert (output_2.asnumpy() == expect_2).all()
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_transpose_float32():
     transpose1(np.float32)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_transpose_float16():
     transpose1(np.float16)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_transpose_int32():
     transpose1(np.int32)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_transpose_int64():
     transpose1(np.int64)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_transpose_dynamic_int64():
     transpose_d(np.int64)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_transpose_dynamic_two_inputs_int64():
     transpose_d2(np.int64)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_transpose_dynamic_float32():
     transpose_d(np.float32)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_transpose_dynamic_float16():
     transpose_d(np.float16)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_transpose_dynamic_int32():
     transpose_d(np.int32)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_transpose_dynamic_two_inputs_float32():
     transpose_d2(np.float32)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_transpose_dynamic_two_inputs_float16():
     transpose_d2(np.float16)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_transpose_dynamic_two_inputs_int32():

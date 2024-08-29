@@ -46,7 +46,8 @@ def run_dynamic_rank():
     test_dynamic.test_dynamic_grad_net([input_x, bias], True)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
 def test_dynamic_shape_bias_add():
     """
     Feature: BiasAdd Grad DynamicShape.
@@ -61,7 +62,8 @@ def test_dynamic_shape_bias_add():
     run_dynamic_shape()
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
 def test_dynamic_rank_bias_add():
     """
     Feature: BiasAdd Grad DynamicRank.

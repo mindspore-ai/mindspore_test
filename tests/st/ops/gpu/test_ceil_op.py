@@ -95,7 +95,6 @@ def test_func_ceil():
     assert np.allclose(output.asnumpy(), expect)
 
 
-
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_vmap():
     """
@@ -119,7 +118,6 @@ def test_vmap():
     assert np.allclose(output.asnumpy(), expect)
 
 
-
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_vmap2():
     """
@@ -127,6 +125,7 @@ def test_vmap2():
     Description: test the rightness of ceil vmap feature.
     Expectation: Success.
     """
+
     def cal_ceil(x):
         return P.Ceil()(x)
 

@@ -15,11 +15,11 @@
 import numpy as np
 import pytest
 from tests.st.utils import test_utils
-
+from tests.mark_utils import arg_mark
 from mindspore import ops
 from mindspore import Tensor
+from mindspore.common.api import _pynative_executor
 import mindspore as ms
-from tests.mark_utils import arg_mark
 
 
 @test_utils.run_with_cell
@@ -195,4 +195,5 @@ def test_grid_sampler_3d_diferent_input_types(mode):
     grid = Tensor(np.ones((2, 3, 3, 3, 3)).astype(np.int32))
     with pytest.raises(TypeError) as info:
         _ = grid_sampler_3d_forward_func(input_x, grid)
+        _pynative_executor.sync()
     assert "input type must be same" in str(info.value)

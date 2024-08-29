@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
-import pytest
-import numpy as np
 import mindspore.nn as nn
-from mindspore.ops import operations as P
+import numpy as np
+import pytest
+from mindspore.common.api import _pynative_executor
+
 from mindspore import Tensor, context
+from mindspore.ops import operations as P
+from tests.mark_utils import arg_mark
 
 context.set_context(mode=context.GRAPH_MODE, device_target='CPU')
 
@@ -58,4 +60,5 @@ def test_assert_op():
 
     with pytest.raises(RuntimeError) as info:
         assert1(False, [a, b, c, d, e, f, g, h, i, j, k, l])
+        _pynative_executor.sync()
     assert "assert failed" in str(info.value)

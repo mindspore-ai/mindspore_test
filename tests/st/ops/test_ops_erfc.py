@@ -22,6 +22,7 @@ from tests.mark_utils import arg_mark
 from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 
+
 def generate_random_input(shape, dtype):
     return np.random.randn(*shape).astype(dtype)
 
@@ -29,13 +30,16 @@ def generate_random_input(shape, dtype):
 def erfc_expect_forward_func(x):
     return special.erfc(x)
 
+
 @test_utils.run_with_cell
 def erfc_forward_func(x):
     return erfc(x)
 
+
 @test_utils.run_with_cell
 def erfc_backward_func(x):
     return ms.grad(erfc_forward_func, (0))(x)
+
 
 @test_utils.run_with_cell
 def erfc_vmap_func(x):

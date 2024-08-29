@@ -22,7 +22,6 @@ from mindspore import Tensor, context
 from mindspore.ops.operations._inner_ops import DecoderKVCache
 from tests.mark_utils import arg_mark
 
-
 b = 26
 h = 40
 s = 32

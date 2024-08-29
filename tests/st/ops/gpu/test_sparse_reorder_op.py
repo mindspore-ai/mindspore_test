@@ -20,6 +20,7 @@ from mindspore import Tensor
 import mindspore.ops.operations.sparse_ops as op
 from mindspore.nn import Cell
 import mindspore.context as context
+
 context.set_context(mode=context.GRAPH_MODE, device_target='GPU')
 
 

@@ -12,18 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
-
+import mindspore.nn as nn
 import numpy as np
 import pytest
-
-from mindspore import context
-import mindspore.nn as nn
-from mindspore import Tensor
 from mindspore.common import dtype as mstype
-from mindspore.ops import operations as P
-from mindspore.ops import functional as F
 
+from mindspore import Tensor
+from mindspore import context
+from mindspore.ops import functional as F
+from mindspore.ops import operations as P
+from tests.mark_utils import arg_mark
 
 context.set_context(mode=context.GRAPH_MODE, device_target="CPU")
 
@@ -87,13 +85,15 @@ def testint32_net():
     assert (output.asnumpy() == expect_x_result).all()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_vmap_trunc():
     """
     Feature: Trunc cpu op vmap feature.
     Description: test the vmap feature of Trunc.
     Expectation: success.
     """
+
     def manually_batched(func, inp):
         out_manual = []
         for i in range(inp.shape[0]):
@@ -109,7 +109,8 @@ def test_vmap_trunc():
     assert np.array_equal(out_manual.asnumpy(), out_vmap.asnumpy())
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 @pytest.mark.parametrize('mode', [context.GRAPH_MODE, context.PYNATIVE_MODE])
 def test_trunc_tensor_api_modes(mode):
     """

@@ -19,6 +19,7 @@ import mindspore as ms
 from mindspore import ops, nn, mutable
 from mindspore.ops import ifft2
 
+
 class IFFT2Net(nn.Cell):
     def __init__(self):
         super(IFFT2Net, self).__init__()
@@ -26,6 +27,7 @@ class IFFT2Net(nn.Cell):
 
     def construct(self, x, s, dim):
         return self.ifft2(x, s, dim)
+
 
 class IFFT2GradNet(nn.Cell):
     def __init__(self, net, dout):

@@ -74,7 +74,7 @@ def test_exp_dyn():
     Expectation: success or throw AssertionError exception.
     """
     x_np = np.random.uniform(-2, 2, 1).astype(np.float32)
-    input_dyn = Tensor(shape=[None,], dtype=ms.float32)
+    input_dyn = Tensor(shape=[None, ], dtype=ms.float32)
 
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
     net = NetExp()

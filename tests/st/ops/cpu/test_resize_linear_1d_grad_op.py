@@ -55,7 +55,8 @@ class ResizeLinear1DGradNet(nn.Cell):
         return gout
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 @pytest.mark.parametrize('dtype', [np.float32, np.float64])
 def test_resize_linear_1d_grad_align_corners(dtype):
     """
@@ -77,7 +78,8 @@ def test_resize_linear_1d_grad_align_corners(dtype):
     assert np.allclose(output[0].asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 @pytest.mark.parametrize('dtype', [np.float32, np.float64])
 def test_resize_linear_1d_grad_half_pixel(dtype):
     """
@@ -99,7 +101,8 @@ def test_resize_linear_1d_grad_half_pixel(dtype):
     assert np.allclose(output[0].asnumpy(), expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 @pytest.mark.parametrize('dtype', [np.float16, np.float32, np.float64])
 def test_resize_linear_1d_grad_same_shape(dtype):
     """

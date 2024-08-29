@@ -36,6 +36,7 @@ class ReshapeAndCacheNet(nn.Cell):
     """
     ReshapeAndCacheNet.
     """
+
     def __init__(self):
         super().__init__()
         self.reshape_and_cache = ops.ReshapeAndCache()

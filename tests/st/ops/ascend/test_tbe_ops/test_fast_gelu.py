@@ -20,6 +20,7 @@ from mindspore import context
 from mindspore.common.tensor import Tensor
 from mindspore.nn import FastGelu
 from mindspore.train import Model
+from mindspore.common.api import _pynative_executor
 import mindspore
 
 context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
@@ -47,6 +48,7 @@ def test_fast_gelu_input_dim_0():
     input_shape = [0]
     with pytest.raises(ValueError):
         fast_gelu_forward_cmp(input_shape)
+        _pynative_executor.sync()
 
 
 def test_fast_gelu_input_dim_10240_1024():

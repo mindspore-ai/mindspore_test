@@ -23,7 +23,6 @@ from mindspore import Tensor
 import mindspore.context as context
 from mindspore.ops.operations.linalg_ops import Geqrf
 
-
 RTOL = 1.e-5
 ATOL = 1.e-6
 
@@ -92,6 +91,7 @@ def test_geqrf_rank3_float_fp():
     y, tau = net(Tensor(x_np))
     assert np.allclose(expect_y, y.asnumpy(), rtol=RTOL, atol=ATOL)
     assert np.allclose(expect_tau, tau.asnumpy(), rtol=RTOL, atol=ATOL)
+
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_geqrf_acl():

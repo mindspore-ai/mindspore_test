@@ -43,7 +43,8 @@ def run_net(var, alpha, l1, l2, delta, expect):
     np.testing.assert_almost_equal(output.asnumpy(), expect, decimal=3)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_apply_proximal_gradient_descent_float32():
     """
     Feature: ApplyProximalGradientDescent cpu op.
@@ -73,7 +74,8 @@ def test_apply_proximal_gradient_descent_float32():
     run_net(var, alpha, l1, l2, delta, expect)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_apply_proximal_gradient_descent_float16():
     """
     Feature: ApplyProximalGradientDescent cpu op.
@@ -116,15 +118,18 @@ class ProximalGradientDescentNetVmap(nn.Cell):
         return self.vmap_proximal_gradient_descent(self.var, alpha, l1, l2, delta)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_apply_proximal_gradient_descent_op_vmap():
     """
     Feature: ApplyProximalGradientDescent cpu kernel
     Description: test the ApplyProximalGradientDescent vmap.
     Expectation: match to np benchmark.
     """
+
     def cal_proximal_gradient_descent(var, alpha, l1, l2, delta):
         return P.ApplyProximalGradientDescent()(var, alpha, l1, l2, delta)
+
     error = 1e-3
     delta = Tensor(np.array([[[0.3, 0.7], [0.1, 0.8]], [
         [0.3, 0.7], [0.1, 0.8]]]).astype(np.float32))
@@ -157,15 +162,18 @@ class ProximalGradientDescentNetVmap2(nn.Cell):
         return self.vmap_proximal_gradient_descent(self.var, alpha, l1, l2, delta)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_apply_proximal_adagrad_op_vmap2():
     """
     Feature: ApplyProximalGradientDescent cpu kernel
     Description: test the ApplyProximalGradientDescent vmap.
     Expectation: match to np benchmark.
     """
+
     def cal_proximal_gradient_descent(var, alpha, l1, l2, delta):
         return P.ApplyProximalGradientDescent()(var, alpha, l1, l2, delta)
+
     error = 1e-3
     delta = Tensor(np.array([[[[0.3, 0.7], [0.1, 0.8]], [[0.3, 0.7], [0.1, 0.8]]], [
         [[0.3, 0.7], [0.1, 0.8]], [[0.3, 0.7], [0.1, 0.8]]]]).astype(np.float32))

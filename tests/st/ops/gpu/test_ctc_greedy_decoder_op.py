@@ -21,6 +21,7 @@ import mindspore as ms
 import mindspore.nn as nn
 from mindspore import Tensor, context
 from mindspore.ops import operations as P
+from mindspore.common.api import _pynative_executor
 
 context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
 
@@ -85,6 +86,7 @@ def test_ctc_greedy_deocder_float64():
     assert np.array_equal(output[2].asnumpy(), out_expect2)
     assert np.array_equal(output[3].asnumpy(), out_expect3)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_ctc_greedy_deocder_float64_with_sequence_length_out_range():
     """
@@ -97,4 +99,5 @@ def test_ctc_greedy_deocder_float64_with_sequence_length_out_range():
     net = Net()
     with pytest.raises(RuntimeError) as raise_info:
         net(Tensor(inputs_np), Tensor(sequence_length_np))
+        _pynative_executor.sync()
     assert "should be less than" in str(raise_info.value)

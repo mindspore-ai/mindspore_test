@@ -24,7 +24,6 @@ from mindspore.common.api import jit
 from mindspore.ops import operations as P
 from mindspore.ops.operations import _inner_ops as inner
 
-
 x0 = np.random.rand(2, 3, 4, 4).astype(np.float32)
 axis0 = 3
 keep_dims0 = True
@@ -195,6 +194,7 @@ class ReduceMaxDynamic(nn.Cell):
         dynamic_x = self.test_dynamic(self.x)
         return self.reducemax(dynamic_x, self.axis)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_reduce_max_dynamic():
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
@@ -220,6 +220,7 @@ class ReduceMaxTypeNet(nn.Cell):
 
     def construct(self):
         return P.ReduceMax(self.keep_dims0)(self.x0, self.axis0)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_reduce_max_float64():

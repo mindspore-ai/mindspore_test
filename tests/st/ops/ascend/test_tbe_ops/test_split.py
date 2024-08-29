@@ -20,6 +20,7 @@ from mindspore.ops import operations as P
 
 context.set_context(mode=context.PYNATIVE_MODE, device_target="Ascend", device_id=6)
 
+
 class Net(nn.Cell):
     def __init__(self):
         super(Net, self).__init__()
@@ -30,6 +31,7 @@ class Net(nn.Cell):
 
 
 arr_x = np.random.randn(2, 4).astype(np.float32)
+
 
 def test_f_tensor_split_int(mode):
     """

@@ -257,6 +257,7 @@ def test_max_pool2d_vmap():
     Expectation: Consistent with the assertion.
     """
     context.set_context(mode=context.PYNATIVE_MODE, device_target="GPU")
+
     def max_pool(x):
         return P.MaxPoolWithArgmax(kernel_size=2, strides=1, pad_mode="valid", data_format="NCHW")(x)
 

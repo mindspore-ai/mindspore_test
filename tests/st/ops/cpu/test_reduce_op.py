@@ -129,7 +129,8 @@ class NetReduceAll(nn.Cell):
         return self.op(x, self.axis)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_reduce_any_onnx():
     """
     Feature: test ReduceAll op in cpu.
@@ -155,7 +156,8 @@ def test_reduce_any_onnx():
     os.remove(file)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_reduce_all_onnx():
     """
     Feature: test ReduceAll op in cpu.
@@ -181,12 +183,13 @@ def test_reduce_all_onnx():
     os.remove(file)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_reduce():
     """
     /// Feature: Reduce
     /// Description: reduce tensor elements, include reduce_mean, reduce_max, etc.
-    /// Expectation: Euqal to numpy results
+    /// Expectation: Equal to numpy results
     """
     reduce = NetReduce()
     indice = Tensor(np.array([
@@ -248,12 +251,13 @@ def test_reduce():
     assert (output[17].asnumpy() == 0.0).all()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_reduce_logic():
     """
     /// Feature: Reduce logic
     /// Description: Include reduce_all, reduce_any
-    /// Expectation: Euqal to numpy results
+    /// Expectation: Equal to numpy results
     """
     reduce_logic = NetReduceLogic()
     indice_bool = Tensor([[[False, True, True, True, False, True],
@@ -283,12 +287,13 @@ def test_reduce_logic():
     assert (output[7].asnumpy() == expect_any_4).all()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_reduce_prod():
     """
     /// Feature: Reduce prod
     /// Description: Product of tensor elements
-    /// Expectation: Euqal to numpy results
+    /// Expectation: Equal to numpy results
     """
     reduce_prod = NetReduceProd()
     indices = Tensor(np.array([[[1, 1, 1, 1, 1, 1], [2, 2, 2, 2, 2, 2], [3, 3, 3, 3, 3, 3]],

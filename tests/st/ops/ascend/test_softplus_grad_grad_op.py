@@ -24,6 +24,7 @@ from mindspore.ops import composite as C
 
 context.set_context(device_target="Ascend")
 
+
 class NetSoftplusGrad(nn.Cell):
     def __init__(self):
         super(NetSoftplusGrad, self).__init__()
@@ -31,6 +32,7 @@ class NetSoftplusGrad(nn.Cell):
 
     def construct(self, grad, x):
         return self.softplusGrad(grad, x)
+
 
 class NetSoftplusGradGrad(nn.Cell):
     def __init__(self, forward_net):
@@ -41,6 +43,7 @@ class NetSoftplusGradGrad(nn.Cell):
     def construct(self, grad, x, dout):
         backward_net = self.gradOps(self.forward_net)
         return backward_net(grad, x, dout)
+
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("data_type", [np.float32])

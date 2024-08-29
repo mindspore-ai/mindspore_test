@@ -45,6 +45,7 @@ def test_elu_grad_fp16():
     diff = output.asnumpy() - expect
     assert np.all(diff < error)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_elu_grad_fp32():
     x = Tensor(np.array([[0.5, 2, 5.5], [4.5, -2, 0]]).astype(np.float32))

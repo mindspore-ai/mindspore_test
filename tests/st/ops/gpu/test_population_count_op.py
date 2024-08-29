@@ -21,6 +21,7 @@ import mindspore.context as context
 from mindspore import Tensor
 from mindspore.ops import operations as P
 from mindspore.nn import Cell
+
 context.set_context(mode=context.PYNATIVE_MODE, device_target="GPU")
 
 

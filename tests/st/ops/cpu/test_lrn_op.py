@@ -12,16 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
-
-import numpy as np
-import pytest
 import mindspore.context as context
 import mindspore.nn as nn
+import numpy as np
+import pytest
+from mindspore.common import dtype as ms_type
+from mindspore.ops.functional import vmap
+
 from mindspore import Tensor
 from mindspore.ops import operations as P
-from mindspore.ops.functional import vmap
-from mindspore.common import dtype as ms_type
+from tests.mark_utils import arg_mark
 
 
 class LrnNet(nn.Cell):
@@ -66,7 +66,8 @@ def lrn_np_bencmark(data_type):
     return y_exp
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 @pytest.mark.parametrize("data_type", [np.float32, np.float16])
 def test_lrn(data_type):
     """
@@ -93,7 +94,8 @@ def test_lrn(data_type):
     np.testing.assert_allclose(output.asnumpy(), benchmark_output, rtol=loss, atol=loss)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_lrn_vmap():
     """
     Feature: Test LRN Vmap on CPU.
@@ -134,7 +136,8 @@ def test_lrn_vmap():
     np.testing.assert_allclose(output.asnumpy(), benchmark_output, rtol=loss, atol=loss)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_lrn_dy_shape():
     """
     Feature: Test LRN Dynamic Shape.

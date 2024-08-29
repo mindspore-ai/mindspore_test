@@ -37,7 +37,8 @@ def grad_dyn_case(is_dynamic_rank):
     test_dynamic.test_dynamic_grad_net([x1, x2], is_dynamic_rank)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_choleskysolve_dynamic_shape():
     """
     Feature: Test CholeskySolve on CPU.
@@ -49,7 +50,8 @@ def test_choleskysolve_dynamic_shape():
 
 
 @pytest.mark.skip(reason="dynamic rank feature is under developing.")
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_choleskysolve_dynamic_rank():
     """
     Feature: Test CholeskySolve on CPU.

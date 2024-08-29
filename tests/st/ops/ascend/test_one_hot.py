@@ -97,6 +97,7 @@ def one_hot_dynamic_shape_test_case(in_type, value_type, out_type):
 def one_hot_vmap(in_type, value_type, out_type):
     def cal_onehot(ind, dep, on_v, off_v):
         return P.OneHot()(ind, dep, on_v, off_v)
+
     depth = 5
     on_value = Tensor(1.0, value_type)
     off_value = Tensor(0.0, value_type)

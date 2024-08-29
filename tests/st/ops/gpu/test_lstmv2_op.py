@@ -22,6 +22,7 @@ import mindspore.nn as nn
 import mindspore.ops as ops
 from mindspore import Tensor
 from mindspore.ops.operations._rl_inner_ops import LSTMV2
+from mindspore.common.api import _pynative_executor
 
 
 class Net(nn.Cell):
@@ -118,3 +119,4 @@ def test_lstmv2_op_float64_exception():
     net = NetLstmV2(input_size, hidden_size, num_layers, False, weights, False)
     with pytest.raises(TypeError):
         net(x, h0, c0, seq_lengths)
+        _pynative_executor.sync()

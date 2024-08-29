@@ -12,15 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
-
+import mindspore.context as context
 import numpy as np
-import pytest
 
 import mindspore as ms
 from mindspore import Tensor
-import mindspore.context as context
 from mindspore.ops import operations as P
+from tests.mark_utils import arg_mark
 
 
 def test_to_tensor_api(dtype):
@@ -36,7 +34,8 @@ def test_to_tensor_api(dtype):
     assert dtype_op(output) == dtype
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_to_tensor_api_modes():
     """
     Feature: test to tensor API for different modes.

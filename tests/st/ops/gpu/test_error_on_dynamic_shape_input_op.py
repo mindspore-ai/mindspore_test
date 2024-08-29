@@ -12,41 +12,58 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
+import mindspore.context as context
+import pytest
+from mindspore.common.api import _pynative_executor
+from mindspore.ops.operations import _inner_ops as inner
+
 from tests.mark_utils import arg_mark
 
-import pytest
-
-from mindspore.ops.operations import _inner_ops as inner
-import mindspore.context as context
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_error_on_dynamic_shape_input_is_dynamic():
+    """
+    Feature: Test dynamic shape input exception.
+    Description: Test dynamic shape input exception.
+    Expectation: Success
+    """
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
 
     error_on_dynamic_shape_input = inner.ErrorOnDynamicShapeInput()
 
     with pytest.raises(ValueError) as info:
         error_on_dynamic_shape_input.infer_shape([-1])
+        _pynative_executor.sync()
     assert "Input is dynamically shaped" in str(info.value)
 
     with pytest.raises(ValueError) as info:
         error_on_dynamic_shape_input.infer_shape([1, 1, -1])
+        _pynative_executor.sync()
     assert "Input is dynamically shaped" in str(info.value)
 
     with pytest.raises(ValueError) as info:
         error_on_dynamic_shape_input.infer_shape([-1, 1, 1])
+        _pynative_executor.sync()
     assert "Input is dynamically shaped" in str(info.value)
 
     with pytest.raises(ValueError) as info:
         error_on_dynamic_shape_input.infer_shape([1, -1, 1])
+        _pynative_executor.sync()
     assert "Input is dynamically shaped" in str(info.value)
 
     with pytest.raises(ValueError) as info:
         error_on_dynamic_shape_input.infer_shape([-1, -1, -1])
+        _pynative_executor.sync()
     assert "Input is dynamically shaped" in str(info.value)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_error_on_dynamic_shape_input_not_dynamic():
+    """
+    Feature: Test dynamic shape input exception.
+    Description: Test dynamic shape input exception.
+    Expectation: Success
+    """
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
 
     error_on_dynamic_shape_input = inner.ErrorOnDynamicShapeInput()

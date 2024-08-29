@@ -56,6 +56,7 @@ class FlashAttentionNet(nn.Cell):
         _, _, _, attention = self.flash_attention(query, key, value, None, drop_mask, None, attention_mask, None)
         return attention
 
+
 class FlashAttentionGradNet(nn.Cell):
     def __init__(self, network):
         super(FlashAttentionGradNet, self).__init__()
@@ -79,6 +80,7 @@ class AttnNet(nn.Cell):
     Outputs:
         weighted_values: Tensor, the weighted sum scores
     """
+
     def __init__(self, head_dim, dropout_rate=0., softmax_compute_type=mstype.float16):
         super(AttnNet, self).__init__()
         self.softmax_compute_type = softmax_compute_type
@@ -88,7 +90,7 @@ class AttnNet(nn.Cell):
         self.sub = P.Sub()
         self.mul = P.Mul()
         self.add = P.Add()
-        self.multiply_data = Tensor([-10000.0,], dtype=softmax_compute_type)
+        self.multiply_data = Tensor([-10000.0, ], dtype=softmax_compute_type)
         self.softmax = nn.Softmax().to_float(softmax_compute_type)
         self.softmax_3d = nn.Softmax().to_float(softmax_compute_type)
         self.dropout = nn.Dropout(keep_prob=1 - dropout_rate)

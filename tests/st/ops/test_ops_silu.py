@@ -21,17 +21,22 @@ from tests.st.utils import test_utils
 from tests.st.ops.ops_binary_cases import ops_binary_cases, OpsBinaryCase
 from tests.mark_utils import arg_mark
 
+
 def generate_random_input(shape, dtype):
     return np.random.randn(*shape).astype(dtype)
 
+
 def sigmoid(x):
-    return 1./(1.+np.exp(-x))
+    return 1. / (1. + np.exp(-x))
+
 
 def generate_expect_forward_output(x):
-    return x*sigmoid(x)
+    return x * sigmoid(x)
+
 
 def generate_expect_backward_output(x):
-    return sigmoid(x)*((1-sigmoid(x))*x+1)
+    return sigmoid(x) * ((1 - sigmoid(x)) * x + 1)
+
 
 @test_utils.run_with_cell
 def silu_forward_func(x):
@@ -40,7 +45,8 @@ def silu_forward_func(x):
 
 @test_utils.run_with_cell
 def silu_backward_func(x):
-    return ops.grad(silu_forward_func, (0,))(x) # pylint: disable=not-callable
+    return ops.grad(silu_forward_func, (0,))(x)  # pylint: disable=not-callable
+
 
 @test_utils.run_with_cell
 def silu_vmap_func(x):
@@ -78,6 +84,7 @@ def test_ops_silu_backward(mode):
     expect = generate_expect_backward_output(x)
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
 
+
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
           card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.context.GRAPH_MODE, ms.context.PYNATIVE_MODE])
@@ -92,6 +99,7 @@ def test_ops_silu_vmap(mode):
     output = silu_vmap_func(ms.Tensor(x))
     expect = generate_expect_forward_output(x)
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
+
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
           card_mark='onecard', essential_mark='unessential')

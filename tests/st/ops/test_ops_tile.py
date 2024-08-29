@@ -39,7 +39,7 @@ def tile_forward_func(x, multiplies):
 
 @test_utils.run_with_cell
 def tile_backward_func(x, multiplies):
-    return ops.grad(tile_forward_func, (0,))(x, multiplies) # pylint: disable=not-callable
+    return ops.grad(tile_forward_func, (0,))(x, multiplies)  # pylint: disable=not-callable
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
@@ -87,19 +87,19 @@ def test_tile_backward(mode):
     x1 = Tensor(np.random.rand(3, 4, 5, 6).astype(np.float32))
     mul1 = (2, 2, 2, 2)
     grads1 = tile_backward_func(x1, ms.mutable(mul1))
-    expect1 = np.ones((3, 4, 5, 6)).astype(np.float32) * reduce(lambda x, y: x*y, mul1)
+    expect1 = np.ones((3, 4, 5, 6)).astype(np.float32) * reduce(lambda x, y: x * y, mul1)
     assert np.allclose(grads1.asnumpy(), expect1)
 
     x2 = Tensor(np.random.rand(3, 4).astype(np.float32))
     mul2 = (2, 2, 2, 2)
     grads2 = tile_backward_func(x2, ms.mutable(mul2))
-    expect2 = np.ones((3, 4)).astype(np.float32) * reduce(lambda x, y: x*y, mul2)
+    expect2 = np.ones((3, 4)).astype(np.float32) * reduce(lambda x, y: x * y, mul2)
     assert np.allclose(grads2.asnumpy(), expect2)
 
     x3 = Tensor(np.random.rand(3, 4, 5, 6).astype(np.float32))
     mul3 = (2,)
     grads3 = tile_backward_func(x3, ms.mutable(mul3))
-    expect3 = np.ones((3, 4, 5, 6)).astype(np.float32) * reduce(lambda x, y: x*y, mul3)
+    expect3 = np.ones((3, 4, 5, 6)).astype(np.float32) * reduce(lambda x, y: x * y, mul3)
     assert np.allclose(grads3.asnumpy(), expect3)
 
 
@@ -273,6 +273,7 @@ def ops_tile_binary_case4(input_binary_data=None, output_binary_data=None):
                                 extra_info='SD5B'))
 def ops_tile_binary_case5(input_binary_data=None, output_binary_data=None):
     ops_tile_binary_case_compare(input_binary_data, output_binary_data, (1, 1, 3584))
+
 
 @ops_binary_cases(OpsBinaryCase(input_info=[((64, 32), np.float32)],
                                 output_info=[((1, 64, 1835008), np.float32), ((64, 32), np.float32)],

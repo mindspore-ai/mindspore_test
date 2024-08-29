@@ -1842,6 +1842,7 @@ def test_histogram2d():
 def test_exception_mean():
     with pytest.raises(ValueError):
         mnp.mean(to_tensor(test_case.arrs[0]), (-1, 0))
+        _pynative_executor.sync()
 
 
 def mnp_sum(x):
@@ -2070,6 +2071,7 @@ def test_unwrap():
 def test_exception_amax():
     with pytest.raises(TypeError):
         mnp.amax(mnp.array([[1, 2], [3, 4]]).astype(mnp.float32), initial=[1.0, 2.0])
+        _pynative_executor.sync()
 
 
 def mnp_cumprod(x):

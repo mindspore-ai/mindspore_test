@@ -23,6 +23,7 @@ from tests.st.utils.test_utils import to_cell_obj, compare
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
 
+
 def np_backward_func(np_input, axis, keep_dims, out_tuple, dout_tuple):
     value = out_tuple[0]
     dvalue = dout_tuple[0]

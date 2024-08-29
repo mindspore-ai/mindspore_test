@@ -14,6 +14,7 @@
 
 import pytest
 from mindspore import context, nn, Tensor, ops
+from mindspore.common.api import _pynative_executor
 from tests.mark_utils import arg_mark
 
 
@@ -34,4 +35,6 @@ def test_all_gather_matmul_forward():
     y = Tensor([[2]])
     with pytest.raises(RuntimeError) as err:
         Net()(x, y, 0)
+        _pynative_executor.sync()
     assert "Sync stream failed" in str(err.value)
+

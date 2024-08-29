@@ -20,6 +20,7 @@ import pytest
 import mindspore.context as context
 from mindspore import Tensor
 from mindspore.ops import operations as P
+
 context.set_context(mode=context.PYNATIVE_MODE, device_target="GPU")
 
 
@@ -79,9 +80,9 @@ def test_atanh_complex64():
     Description: Complex64 dtype input.
     Expectation: success.
     """
-    x_np = np.array([[2+3j, 4+5j, 6-7j, 8+9j],
-                     [1+3j, 2+5j, 5-7j, 7+9j],
-                     [3+3j, 4+5j, 4-7j, 6+9j]]).astype(np.complex64)
+    x_np = np.array([[2 + 3j, 4 + 5j, 6 - 7j, 8 + 9j],
+                     [1 + 3j, 2 + 5j, 5 - 7j, 7 + 9j],
+                     [3 + 3j, 4 + 5j, 4 - 7j, 6 + 9j]]).astype(np.complex64)
     output_ms = P.Atanh()(Tensor(x_np))
     expect = atanh(x_np)
     assert np.allclose(output_ms.asnumpy(), expect)
@@ -94,9 +95,9 @@ def test_atanh_complex128():
     Description: Complex128 dtype input.
     Expectation: success.
     """
-    x_np = np.array([[2+3j, 4+5j, 6-7j, 8+9j],
-                     [1+3j, 2+5j, 5-7j, 7+9j],
-                     [3+3j, 4+5j, 4-7j, 6+9j]]).astype(np.complex128)
+    x_np = np.array([[2 + 3j, 4 + 5j, 6 - 7j, 8 + 9j],
+                     [1 + 3j, 2 + 5j, 5 - 7j, 7 + 9j],
+                     [3 + 3j, 4 + 5j, 4 - 7j, 6 + 9j]]).astype(np.complex128)
     output_ms = P.Atanh()(Tensor(x_np))
     expect = atanh(x_np)
     assert np.allclose(output_ms.asnumpy(), expect)

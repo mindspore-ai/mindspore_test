@@ -34,6 +34,7 @@ class Net(nn.Cell):
     def construct(self, x, y, dy):
         return self.kl_div_loss_grad(dy, x, y)
 
+
 reduction_list = ["none", "mean", "batchmean", "sum"]
 expect_list = [[[0, 0], [-1, 0]],
                [[0, 0.25], [0.25, 0]],
@@ -75,6 +76,7 @@ def test_vmap_case():
     Description: KLDivLossGrad with vmap mode, 2d input.
     Expectation: run success without error.
     """
+
     class NetVmap(nn.Cell):
         def __init__(self, reduction="none"):
             super(NetVmap, self).__init__()

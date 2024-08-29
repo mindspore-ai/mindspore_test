@@ -143,11 +143,11 @@ def change_data_bf16(input_np):
 
 
 def get_slopes(n_heads):
-    n = 2**math.floor(math.log2(n_heads))
-    m_0 = 2.0**(-8.0 / n)
+    n = 2 ** math.floor(math.log2(n_heads))
+    m_0 = 2.0 ** (-8.0 / n)
     m = torch.pow(m_0, torch.arange(1, 1 + n))
     if n < n_heads:
-        m_hat_0 = 2.0**(-4.0 / n)
+        m_hat_0 = 2.0 ** (-4.0 / n)
         m_hat = torch.pow(m_hat_0, torch.arange(1, 1 + 2 * (n_heads - n), 2))
         m = torch.cat([m, m_hat])
     return m
@@ -294,11 +294,11 @@ def gen_ifa_golden(shape,
                     continue
                 else:
                     k_cache[kv_cache_blk_id,
-                            0:block_size, :] = k_tensor_bsh[b, block_offset:(
-                                block_offset + block_size), :]
+                    0:block_size, :] = k_tensor_bsh[b, block_offset:(
+                            block_offset + block_size), :]
                     v_cache[kv_cache_blk_id,
-                            0:block_size, :] = v_tensor_bsh[b, block_offset:(
-                                block_offset + block_size), :]
+                    0:block_size, :] = v_tensor_bsh[b, block_offset:(
+                            block_offset + block_size), :]
 
     deq_scale1 = gen_deqscale()
     deq_scale2 = gen_deqscale()
@@ -328,7 +328,7 @@ def gen_ifa_golden(shape,
             kvnidx = nidx // nnumofqinonegroup
             q_cur = q[bidx:(bidx + 1), nidx:(nidx + 1), :, :]
             k_cur = k.transpose(0, 1, 3, 2)[bidx:(bidx + 1),
-                                            kvnidx:(kvnidx + 1), :, :s_value]
+                    kvnidx:(kvnidx + 1), :, :s_value]
             qk_cur = np.matmul(q_cur, k_cur, dtype=matmul_dtype)
             if in_dtype == np.int8:
                 qk_cur = dequant(qk_cur, deq_scale1[0], None)
@@ -346,7 +346,7 @@ def gen_ifa_golden(shape,
 
             softmax_res = softmax(qk_cur.astype(np.float16))
             softmax_total[bidx:(bidx + 1),
-                          nidx:(nidx + 1), :, :s_value] = softmax_res
+            nidx:(nidx + 1), :, :s_value] = softmax_res
 
             if in_dtype == np.int8:
                 max_num = max(max_num, softmax_res.max())
@@ -354,7 +354,7 @@ def gen_ifa_golden(shape,
 
     quant_scale1, quant_scale2, quant_offset2 = np.zeros([1]).astype(
         np.float16), np.zeros([1]).astype(np.float16), np.zeros([1]).astype(
-            np.float16)
+        np.float16)
 
     if in_dtype == np.int8:
         quant_scale1, _ = gen_quant_param(max_num, min_num)
@@ -365,7 +365,7 @@ def gen_ifa_golden(shape,
             kvnidx = nidx // nnumofqinonegroup
             v_cur = v[bidx:(bidx + 1), kvnidx:(kvnidx + 1), :s_value, :]
             softmax_res = softmax_total[bidx:(bidx + 1),
-                                        nidx:(nidx + 1), :, :s_value]
+                          nidx:(nidx + 1), :, :s_value]
             if in_dtype == np.int8:
                 softmax_res = quant(softmax_res, quant_scale1, 0)
 

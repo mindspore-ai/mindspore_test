@@ -22,6 +22,7 @@ from mindspore import context, Tensor, ops
 from mindspore.nn import Cell
 from mindspore.ops.auto_generate import GroupedMatmul
 
+
 # GroupedMatmul has 8 inputs and 1 outputs
 # -----------------Input-----------------
 # 1.x:                   TensorList ((N, h), ) or ((bs, N, h), )
@@ -54,14 +55,16 @@ def get_empty_tensor(dtype=mstype.float32):
     output = ops.slice(x, (0,), (0,))
     return output
 
+
 def split_x(x, group_list):
     x_split = []
     for i in range(len(group_list)):
         if i == 0:
-            x_split.append(x[0 : group_list[i],])
+            x_split.append(x[0: group_list[i], ])
         else:
-            x_split.append(x[group_list[i - 1] : group_list[i],])
+            x_split.append(x[group_list[i - 1]: group_list[i], ])
     return x_split
+
 
 def split_w(w):
     tmp_split = np.split(w, w.shape[0], axis=0)
@@ -69,6 +72,7 @@ def split_w(w):
     for t in tmp_split:
         w_split.append(np.squeeze(t, 0))
     return w_split
+
 
 class GroupedMatmulNet(Cell):
     def __init__(self, split_item=3, group_type=-1):
@@ -79,6 +83,7 @@ class GroupedMatmulNet(Cell):
                   group_list=None):
         out = self.gmm(x, weight, bias, scale, offset, antiquant_scale, antiquant_offset, group_list)
         return out
+
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', ['GE', 'KBK', 'pynative'])
@@ -314,14 +319,14 @@ def test_grouped_matmul_x2d_w3d_splititem3_grouptype0_none_case4(mode):
     np_x_all = np.random.uniform(0.1, 2, size=[M0, K0]).astype(np.float16)
     np_w_all = np.random.uniform(0.1, 1, size=[E0, K0, N0]).astype(np.float16)
 
-    np_x = split_x(np_x_all, group_list_np) # use group_list split x. [(G0, N0), (G1, N0)....(GN, N0)]
-    np_w = split_w(np_w_all)                # [(K0, N0), (K0, N0)....(K0, N0)]
+    np_x = split_x(np_x_all, group_list_np)  # use group_list split x. [(G0, N0), (G1, N0)....(GN, N0)]
+    np_w = split_w(np_w_all)  # [(K0, N0), (K0, N0)....(K0, N0)]
     res_np = [np.matmul(x0, w0) for x0, w0 in zip(np_x, np_w)]
     except_np = np.concatenate(res_np, axis=0)
 
     # ms calculate
-    x = [ms.Tensor(np_x_all)] # [M0, K0]
-    w = [ms.Tensor(np_w_all)] # [E0, K0, N0]
+    x = [ms.Tensor(np_x_all)]  # [M0, K0]
+    w = [ms.Tensor(np_w_all)]  # [E0, K0, N0]
 
     group_list = ms.Tensor(group_list_np, dtype=mstype.int64)
 
@@ -360,16 +365,16 @@ def test_grouped_matmul_x2d_w3d_b2d_splititem3_grouptype0_none_case5(mode):
     np_w_all = np.random.uniform(0.1, 1, size=[E0, K0, N0]).astype(np.float16)
     np_b_all = np.random.uniform(0.1, 1, size=[E0, N0]).astype(np.float16)
 
-    np_x = split_x(np_x_all, group_list_np) # use group_list split x. [(G0, N0), (G1, N0)....(GN, N0)]
-    np_w = split_w(np_w_all)                # [(K0, N0), (K0, N0)....(K0, N0)]
+    np_x = split_x(np_x_all, group_list_np)  # use group_list split x. [(G0, N0), (G1, N0)....(GN, N0)]
+    np_w = split_w(np_w_all)  # [(K0, N0), (K0, N0)....(K0, N0)]
     np_b = split_w(np_b_all)
 
     res_np = [np.matmul(x0, w0) + b0 for x0, w0, b0 in zip(np_x, np_w, np_b)]
     except_np = np.concatenate(res_np, axis=0)
 
     # ms calculate
-    x = [ms.Tensor(np_x_all)] # [M0, K0]
-    w = [ms.Tensor(np_w_all)] # after cann update 0515, w should be a [3DTensor,]
+    x = [ms.Tensor(np_x_all)]  # [M0, K0]
+    w = [ms.Tensor(np_w_all)]  # after cann update 0515, w should be a [3DTensor,]
     b = [ms.Tensor(np_b_all)]
 
     group_list = ms.Tensor(group_list_np, dtype=mstype.int64)

@@ -96,6 +96,7 @@ def test_basic(context_mode):
     assert not np.allclose(output1, output2, rtol=rtol)
     assert not np.allclose(expect1, expect2, rtol=rtol)
 
+
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_op():
     """

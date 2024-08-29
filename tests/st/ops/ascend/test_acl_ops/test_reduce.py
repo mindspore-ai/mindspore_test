@@ -28,6 +28,7 @@ context.set_context(mode=context.PYNATIVE_MODE, device_target="Ascend")
 
 class Grad(nn.Cell):
     """Grad Net"""
+
     def __init__(self, network):
         super(Grad, self).__init__()
         self.grad = GradOperation(get_all=True)
@@ -40,6 +41,7 @@ class Grad(nn.Cell):
 
 class Net(nn.Cell):
     """ReLU Net"""
+
     def __init__(self):
         super(Net, self).__init__()
         self.relu = P.ReduceSum()

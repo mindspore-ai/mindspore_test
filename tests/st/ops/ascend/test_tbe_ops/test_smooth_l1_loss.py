@@ -21,7 +21,6 @@ import mindspore.context as context
 import mindspore.nn as nn
 from mindspore import Tensor
 
-
 context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
 
 

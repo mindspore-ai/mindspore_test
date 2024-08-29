@@ -21,6 +21,7 @@ import torch
 import mindspore.nn as nn
 from mindspore import Tensor
 from mindspore.ops.operations import _grad_ops as G
+from mindspore.common.api import _pynative_executor
 import mindspore.common.dtype as mstype
 
 
@@ -119,3 +120,4 @@ def test_lu_unpack_grad_pynative_float_error():
     with pytest.raises(TypeError):
         net = NetLuUnpackGrad(l_grad_flag=True, u_grad_flag=True)
         net(a_l_mindspore, a_u_mindspore, a_lu_mindspore)
+        _pynative_executor.sync()

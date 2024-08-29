@@ -21,6 +21,7 @@ import mindspore.context as context
 from mindspore import Tensor
 from mindspore.ops import operations as P
 
+
 def reshape(nptype):
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
 
@@ -57,6 +58,7 @@ def reshape(nptype):
     output_tensor = reshape_op(input_tensor, new_shape)
     assert new_shape == output_tensor.shape
     np.testing.assert_array_equal(output_tensor.asnumpy().flatten(), data)
+
 
 def reshape_bool():
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
@@ -100,17 +102,21 @@ def reshape_bool():
 def test_reshape_float():
     reshape(np.float32)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_reshape_float16():
     reshape(np.float16)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_reshape_int32():
     reshape(np.int32)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_reshape_uint8():
     reshape(np.uint8)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_reshape_bool():

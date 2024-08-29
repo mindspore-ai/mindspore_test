@@ -26,9 +26,11 @@ import mindspore as ms
 context.set_context(mode=context.GRAPH_MODE,
                     device_target="Ascend")
 
+
 def dataset_generator():
     for i in range(1, 10):
-        yield(np.ones((32, 2*i), dtype=np.float32), np.ones((32, 2*i), dtype=np.float32))
+        yield (np.ones((32, 2 * i), dtype=np.float32), np.ones((32, 2 * i), dtype=np.float32))
+
 
 class Net(nn.Cell):
     def __init__(self):
@@ -43,6 +45,7 @@ class Net(nn.Cell):
         size = self.shape(val)
         res = self.reshape(val, size)
         return res
+
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_shape():

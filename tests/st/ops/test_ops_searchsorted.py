@@ -21,6 +21,7 @@ from tests.mark_utils import arg_mark
 from mindspore import ops, nn
 import mindspore as ms
 
+
 class SearchSortedNet(nn.Cell):
     def __init__(self):
         super(SearchSortedNet, self).__init__()
@@ -32,18 +33,22 @@ class SearchSortedNet(nn.Cell):
 
 def generate_random_input(shape, dtype):
     return np.sort(np.random.uniform(0.9, 1.0, size=shape).astype(dtype)), \
-           np.random.uniform(0.9, 1.0, size=shape).astype(dtype)
+        np.random.uniform(0.9, 1.0, size=shape).astype(dtype)
+
 
 def searchsorted_forward_func(x, y, out_int32=False, right=False, sorter=None):
     return SearchSortedNet()(x, y, out_int32=out_int32, right=right, side="right", sorter=sorter)
 
+
 def generate_expect_forward_output(x, y, side="right", sorter=None):
     return np.searchsorted(x, y, side=side, sorter=sorter)
+
 
 @test_utils.run_with_cell
 def searchsorted_vmap_func(x, y, out_int32=False, right=False, sorter=None):
     return ops.vmap(searchsorted_forward_func, in_axes=(0, 0, None, None, None),
                     out_axes=0)(x, y, out_int32, right, sorter)
+
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
           card_mark='onecard', essential_mark='essential')
@@ -63,6 +68,7 @@ def test_searchsorted_forward(context_mode):
     out = searchsorted_forward_func(x, y)
     expect_out = generate_expect_forward_output(x_np, y_np)
     np.testing.assert_allclose(out.asnumpy(), expect_out, rtol=1e-3)
+
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
           card_mark='onecard', essential_mark='unessential')
@@ -86,6 +92,7 @@ def test_ops_searchsorted_vmap(context_mode):
         expect_out.append(np_out)
 
     np.testing.assert_allclose(out.asnumpy(), expect_out, rtol=1e-3)
+
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
           card_mark='onecard', essential_mark='unessential')

@@ -58,7 +58,8 @@ def dyn_case():
     assert out.asnumpy().shape == (4, 3)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_sparse_segment_mat_mul_dyn():
     """
     Feature: test SparseSegmentMatMul in cpu.

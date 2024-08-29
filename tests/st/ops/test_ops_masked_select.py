@@ -81,10 +81,8 @@ def test_ops_masked_select_forward_dynamic():
     input1 = ms.Tensor(generate_random_input((7, 8, 9), np.float32))
     mask1 = ms.Tensor(generate_random_input((7, 8, 9), np.bool_))
 
-
     input2 = ms.Tensor(generate_random_input((3, 4, 5), np.float32))
     mask2 = ms.Tensor(generate_random_input((4, 5), np.bool_))
 
     test_cell = test_utils.to_cell_obj(masked_select_forward_func)
     TEST_OP(test_cell, [[input1, mask1], [input2, mask2]], "masked_select", disable_input_check=True)
-  

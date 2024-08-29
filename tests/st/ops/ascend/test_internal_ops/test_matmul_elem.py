@@ -137,7 +137,7 @@ def matmul_biasadd(m, k, n, trans_a=False, trans_b=False, mstype=ms.float16, pro
     context.set_context(jit_config={"jit_level": "O0", "infer_boost": "on"})
 
     i0_host_fp32, i1_host_fp32, expect, np_type = matmul(m, k, n, trans_a, trans_b, mstype, profiling)
-    i2_host = np.random.normal(0.0, 0.5, size=[n,]).astype(np_type)
+    i2_host = np.random.normal(0.0, 0.5, size=[n, ]).astype(np_type)
     i2_host_fp32 = i2_host.astype(np.float32)
     expect = expect + i2_host_fp32
     print("numpy compute done")

@@ -34,6 +34,7 @@ def flash_attention_score_forward_func(query, key, value, head_num, real_shift=N
                                  prefix, actual_seq_qlen, actual_seq_kvlen, keep_prob, scalar_value, pre_tokens,
                                  next_tokens, inner_precise, input_layout, sparse_mode)
 
+
 class Grad(Cell):
     def __init__(self, network):
         super(Grad, self).__init__()
@@ -81,7 +82,7 @@ def fas_backward(dx, q, k, v, softmax_res, drop_mask, pse, scale, keep_prob):
         drop_res = softmax_res.transpose(0, 1, 3, 2)
         dp_drop = dp
     else:
-        drop_res = softmax_res * drop_mask*(1.0 / (keep_prob)).transpose(0, 1, 3, 2)
+        drop_res = softmax_res * drop_mask * (1.0 / (keep_prob)).transpose(0, 1, 3, 2)
         dp_drop = dp * drop_mask * (1.0 / (keep_prob))
     dv = np.matmul(drop_res, dx)
     softmax_grad_res = (tsoftmax_grad(dp_drop, softmax_res) * scale)
@@ -97,6 +98,7 @@ def flash_attention_score_func(query, key, value, head_num, actual_seq_qlen=(4, 
     return flash_attention_score(query, key, value, head_num, real_shift, drop_mask, padding_mask, attn_mask,
                                  prefix, actual_seq_qlen, actual_seq_kvlen, keep_prob, scalar_value, pre_tokens,
                                  next_tokens, inner_precise, input_layout, sparse_mode)
+
 
 def generate_inputs(B, N1, N2, S1, S2, D, input_layout, dtype, return_tensor=True):
     min_value = -1
@@ -128,8 +130,9 @@ def generate_inputs(B, N1, N2, S1, S2, D, input_layout, dtype, return_tensor=Tru
     prefix = None
     if return_tensor:
         return Tensor(query, dtype=dtype), Tensor(key, dtype=dtype), Tensor(value, dtype=dtype), real_shift, \
-        Tensor(attn_mask, dtype=mstype.uint8), prefix
+            Tensor(attn_mask, dtype=mstype.uint8), prefix
     return query, key, value, real_shift, attn_mask, prefix
+
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.context.GRAPH_MODE, ms.context.PYNATIVE_MODE])
@@ -292,7 +295,7 @@ def test_ops_flash_attention_score_dynamic(input_layout):
     TEST_OP(flash_attention_score_func, \
             [[query1, key1, value1, head_num1, actual_seq_qlen1, actual_seq_kvlen1, input_layout], \
              [query2, key2, value2, head_num2, actual_seq_qlen2, actual_seq_kvlen2, input_layout]], \
-             '', disable_input_check=True, disable_yaml_check=True, disable_mode=['GRAPH_MODE'], ignore_output_index=2)
+            '', disable_input_check=True, disable_yaml_check=True, disable_mode=['GRAPH_MODE'], ignore_output_index=2)
 
 
 def generate_unpad_full_attn_mask(batch, seq_len, actual_seq_qlen, actual_seq_kvlen):
@@ -384,14 +387,14 @@ def test_ops_flash_attention_score_tnd(mode, dtype):
 
     bsh_output, bsh_dq, bsh_dk, bsh_dv = \
         bsh_output_tensor.astype(mstype.float32).asnumpy(), \
-        bsh_dq_tensor.astype(mstype.float32).asnumpy(), \
-        bsh_dk_tensor.astype(mstype.float32).asnumpy(), \
-        bsh_dv_tensor.astype(mstype.float32).asnumpy()
+            bsh_dq_tensor.astype(mstype.float32).asnumpy(), \
+            bsh_dk_tensor.astype(mstype.float32).asnumpy(), \
+            bsh_dv_tensor.astype(mstype.float32).asnumpy()
     tnd_output, tnd_dq, tnd_dk, tnd_dv = \
         tnd_output_tensor.astype(mstype.float32).asnumpy(), \
-        tnd_dq_tensor.astype(mstype.float32).asnumpy(), \
-        tnd_dk_tensor.astype(mstype.float32).asnumpy(), \
-        tnd_dv_tensor.astype(mstype.float32).asnumpy()
+            tnd_dq_tensor.astype(mstype.float32).asnumpy(), \
+            tnd_dk_tensor.astype(mstype.float32).asnumpy(), \
+            tnd_dv_tensor.astype(mstype.float32).asnumpy()
 
     rtol, atol = 1e-2, 1e-2
     assert np.allclose(bsh_output, tnd_output.reshape((B, S, H)), rtol, atol)

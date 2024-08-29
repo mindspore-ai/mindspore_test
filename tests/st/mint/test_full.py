@@ -18,6 +18,7 @@ import numpy as np
 import mindspore as ms
 from mindspore.common import dtype as mstype
 from mindspore import ops, mint, Tensor, jit, JitConfig, context, nn
+from mindspore.common.api import _pynative_executor
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
 
@@ -29,6 +30,7 @@ class FullNet(nn.Cell):
 
     def construct(self, size, fill_value, dtype):
         return self.full(size, fill_value, dtype=dtype)
+
 
 class FullGradNet(nn.Cell):
     def __init__(self):
@@ -46,6 +48,7 @@ class FullGradNet(nn.Cell):
 def full_forward_func(size, fill_value, dtype=None):
     y = mint.full(size, fill_value, dtype=dtype)
     return y
+
 
 def full_backward_func(size, fill_value, dtype=None):
     value_grad = ops.grad(full_forward_func, (1,))(size, fill_value, dtype=dtype)
@@ -134,6 +137,7 @@ def test_full_forward_dynamic_rank(context_mode):
     with pytest.raises(ValueError):
         value = Tensor(np.array([3, 4]).astype(np.float32))
         _ = test_cell(size, value, ms.int32)
+        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1',
@@ -161,3 +165,4 @@ def test_full_backward_dynamic_rank(context_mode):
         with pytest.raises(ValueError):
             value = Tensor(np.array([2, 3]).astype(np.float32))
             _ = test_cell(size, value, ms.int32)
+            _pynative_executor.sync()

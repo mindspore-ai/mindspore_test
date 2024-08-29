@@ -93,7 +93,7 @@ def test_maxunpool3d_5dinput_graph():
             assert output_type == inout_type_i
 
             maxunpoo2dgrad = NetMaxUnpool3DGradFiveD()
-            grad = Tensor(np.array([i+1 for i in range(32)]).reshape([2, 2, 2, 2, 2]).astype(inout_type_i))
+            grad = Tensor(np.array([i + 1 for i in range(32)]).reshape([2, 2, 2, 2, 2]).astype(inout_type_i))
             output_grad = maxunpoo2dgrad(x, grad, indices)
             output_grad_type = output_grad.asnumpy().dtype
             expect_output_grad = Tensor(np.array([[[[[8]]], [[[16]]]],

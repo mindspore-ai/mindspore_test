@@ -16,10 +16,11 @@
 import numpy as np
 import pytest
 from tests.st.utils import test_utils
+from tests.mark_utils import arg_mark
 
 from mindspore import ops
+from mindspore.common.api import _pynative_executor
 import mindspore as ms
-from tests.mark_utils import arg_mark
 
 
 @test_utils.run_with_cell
@@ -212,6 +213,7 @@ def test_minimum_op_dynamic_backward_shape(context_mode):
     np.testing.assert_allclose(grads_2[0].asnumpy(), expect_out_2[0], rtol=1e-3)
     np.testing.assert_allclose(grads_2[1].asnumpy(), expect_out_2[1], rtol=1e-3)
 
+
 # 反向动态shape有公共问题，待解决后再放开用例
 @pytest.mark.skip
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux'], level_mark='level0', card_mark='onecard',
@@ -258,3 +260,4 @@ def test_minimum_op_check_dtype(context_mode, data_type):
     y = ms.Tensor(np.array([2, 4, 3]).astype(data_type))
     with pytest.raises(TypeError):
         _ = minimum_forward_func(x, y)
+        _pynative_executor.sync()

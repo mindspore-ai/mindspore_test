@@ -96,6 +96,7 @@ def test_grad_fast_gelu_input_10240_1024():
     input_shape = [10240, 1024]
     fast_gelu_backward_cmp(input_shape)
 
+
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_grad_fast_gelu_input_10240_1024_bf16():
     """

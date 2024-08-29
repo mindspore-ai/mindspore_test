@@ -32,7 +32,8 @@ class NetGatherD(nn.Cell):
         return self.op(x, dim, index)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
+          card_mark='onecard', essential_mark='essential')
 def test_gatherd_dynamic_shape():
     """
     Feature: GatherD Grad DynamicShape.
@@ -55,7 +56,8 @@ def test_gatherd_dynamic_shape():
     test_dynamic.test_dynamic_grad_net(inputs, False)
 
 
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_gatherd_dynamic_rank():
     """
     Feature: GatherD Grad DynamicShape.
@@ -78,7 +80,8 @@ def test_gatherd_dynamic_rank():
     test_dynamic.test_dynamic_grad_net(inputs, True)
 
 
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_gatherd_int_dim_dynamic_rank():
     """
     Feature: GatherD Grad DynamicShape.

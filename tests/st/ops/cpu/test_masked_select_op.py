@@ -46,7 +46,8 @@ def maskedselect_for_type(x, mask):
     return net(Tensor(x), Tensor(mask))
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_maskedselect():
     context.set_context(mode=context.GRAPH_MODE, device_target="CPU")
     y = maskedselect()
@@ -54,7 +55,8 @@ def test_maskedselect():
     assert (y.asnumpy() == expect).all()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_maskedselect_dynamic_shape():
     """
     Feature: test MaskedSelect dynamic shape on CPU
@@ -67,7 +69,8 @@ def test_maskedselect_dynamic_shape():
     assert (y.asnumpy() == expect).all()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_maskedselect_bool_type():
     """
     Feature: test MaskedSelect bool type on CPU
@@ -82,7 +85,8 @@ def test_maskedselect_bool_type():
     assert (y.asnumpy() == expect).all()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_maskedselect_complex64_type():
     """
     Feature: test MaskedSelect complex64 type on CPU
@@ -90,14 +94,15 @@ def test_maskedselect_complex64_type():
     Expectation: the result match with expect
     """
     context.set_context(mode=context.GRAPH_MODE, device_target="CPU")
-    x = np.array([1+2j, 2+3j, 3+4j, 4+5j]).astype(np.complex64)
+    x = np.array([1 + 2j, 2 + 3j, 3 + 4j, 4 + 5j]).astype(np.complex64)
     mask = np.array([1, 0, 1, 0]).astype(np.bool)
     y = maskedselect_for_type(x, mask)
-    expect = np.array([1+2j, 3+4j]).astype(np.complex64)
+    expect = np.array([1 + 2j, 3 + 4j]).astype(np.complex64)
     assert (y.asnumpy() == expect).all()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_maskedselect_complex128_type():
     """
     Feature: test MaskedSelect complex128 type on CPU.
@@ -105,10 +110,10 @@ def test_maskedselect_complex128_type():
     Expectation: the result match with expect
     """
     context.set_context(mode=context.GRAPH_MODE, device_target="CPU")
-    x = np.array([1+2j, 2+3j, 3+4j, 4+5j]).astype(np.complex128)
+    x = np.array([1 + 2j, 2 + 3j, 3 + 4j, 4 + 5j]).astype(np.complex128)
     mask = np.array([1, 0, 1, 0]).astype(np.bool)
     y = maskedselect_for_type(x, mask)
-    expect = np.array([1+2j, 3+4j]).astype(np.complex128)
+    expect = np.array([1 + 2j, 3 + 4j]).astype(np.complex128)
     assert (y.asnumpy() == expect).all()
 
 
@@ -150,7 +155,8 @@ def masked_select_grad_dynamic_shape():
     return grad(x, mask, dy)[0]
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_masked_select_grad():
     context.set_context(mode=context.GRAPH_MODE, device_target="CPU")
     dx = masked_select_grad(np.int32)
@@ -158,7 +164,8 @@ def test_masked_select_grad():
     assert (dx.asnumpy() == expect).all()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_masked_select_grad_float64():
     """
     Feature: test MaskedSelectGrad complex64 type on CPU
@@ -171,7 +178,8 @@ def test_masked_select_grad_float64():
     assert (dx.asnumpy() == expect).all()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_masked_select_grad_dynamic_shape():
     """
     Feature: test MaskedSelectGrad dynamic shape on CPU

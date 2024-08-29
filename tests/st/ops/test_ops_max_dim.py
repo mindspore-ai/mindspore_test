@@ -22,6 +22,7 @@ from tests.st.ops.test_ops_min_dim import (argmin_with_value_argmax_case, argmin
                                            argmin_with_value_argmax_case_vmap)
 from tests.mark_utils import arg_mark
 
+
 def np_argmax_with_value(input_x, axis, keepdims):
     value = np.max(input_x, axis)
     index = np.argmax(input_x, axis).astype(np.int32)

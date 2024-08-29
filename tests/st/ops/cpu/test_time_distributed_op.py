@@ -34,7 +34,8 @@ class TestTimeDistributed(nn.Cell):
         return self.time_distributed(inputs)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_time_distributed_conv2d():
     inputs = np.random.randint(0, 10, [32, 12, 10, 10])
     conv2d = nn.Conv2d(12, 24, 4, has_bias=False, weight_init='normal')
@@ -47,7 +48,8 @@ def test_time_distributed_conv2d():
     print("Conv2D layer wrapped successful")
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_time_distributed_maxpool2d():
     inputs = np.random.randint(0, 10, [32, 12, 10, 10])
     pool = nn.MaxPool2d(kernel_size=3, stride=1)
@@ -60,7 +62,8 @@ def test_time_distributed_maxpool2d():
     print("MaxPooling2D layer wrapped successful")
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_time_distributed_dense():
     inputs = np.random.randint(0, 10, [32, 10])
     dense = nn.Dense(10, 6)
@@ -73,7 +76,8 @@ def test_time_distributed_dense():
     print("Dense layer wrapped successful")
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_time_distributed_dense_pynative():
     context.set_context(mode=context.PYNATIVE_MODE, device_target='CPU')
     inputs = np.random.randint(0, 10, [32, 10])
@@ -87,7 +91,8 @@ def test_time_distributed_dense_pynative():
     print("Dense layer with pynative mode wrapped successful")
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_time_distributed_dense_with_reshape_axis_not_first():
     inputs = np.random.randint(0, 10, [32, 10])
     dense = nn.Dense(10, 6)
@@ -100,7 +105,8 @@ def test_time_distributed_dense_with_reshape_axis_not_first():
     print("Dense layer wrapped successful")
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_time_distributed_argmax():
     inputs = np.random.randint(0, 10, [3, 4])
     argmax = ops.Argmax(output_type=mindspore.int32, axis=1)
@@ -113,7 +119,8 @@ def test_time_distributed_argmax():
     print("Argmax op wrapped successful")
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_time_distributed_flatten():
     inputs = np.random.randint(0, 10, [3, 4, 5])
     flatten = nn.Flatten()
@@ -126,7 +133,8 @@ def test_time_distributed_flatten():
     print("Flatten op wrapped successful")
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_time_distributed_conv2d_no_reshape_axis():
     inputs = np.random.randint(0, 10, [32, 12, 10, 10])
     conv2d = nn.Conv2d(12, 24, 4, has_bias=False, weight_init='normal')
@@ -139,7 +147,8 @@ def test_time_distributed_conv2d_no_reshape_axis():
     print("Conv2D layer with no reshape axis wrapped successful")
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_time_distributed_maxpool2d_no_reshape_axis():
     inputs = np.random.randint(0, 10, [32, 12, 10, 10])
     pool = nn.MaxPool2d(kernel_size=3, stride=1)
@@ -152,7 +161,8 @@ def test_time_distributed_maxpool2d_no_reshape_axis():
     print("MaxPooling2D layer with no reshape axis wrapped successful")
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_time_distributed_dense_no_reshape_axis():
     inputs = np.random.randint(0, 10, [32, 10])
     dense = nn.Dense(10, 6)
@@ -165,7 +175,8 @@ def test_time_distributed_dense_no_reshape_axis():
     print("Dense layer with no reshape axis wrapped successful")
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_time_distributed_argmax_no_reshape_axis():
     inputs = np.random.randint(0, 10, [3, 4])
     argmax = ops.Argmax(output_type=mindspore.int32, axis=1)
@@ -178,7 +189,8 @@ def test_time_distributed_argmax_no_reshape_axis():
     print("Argmax op with no reshape axis wrapped successful")
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_time_distributed_flatten_no_reshape_axis():
     inputs = np.random.randint(0, 10, [3, 4, 5])
     flatten = nn.Flatten()

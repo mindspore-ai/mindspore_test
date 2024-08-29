@@ -33,9 +33,9 @@ class Net(nn.Cell):
 
 
 def test_net_bool():
-    x = np.random.randn(4,) > 0
-    y = np.random.randn(3,) > 0
-    z = np.random.randn(6,) > 0
+    x = np.random.randn(4, ) > 0
+    y = np.random.randn(3, ) > 0
+    z = np.random.randn(6, ) > 0
     indexing = "xy"
 
     net = Net((Tensor(x), Tensor(y), Tensor(z)), indexing)
@@ -51,9 +51,9 @@ def test_net_bool():
 
 
 def test_net_int8():
-    x = np.random.randn(4,).astype(np.int8)
-    y = np.random.randn(3,).astype(np.int8)
-    z = np.random.randn(6,).astype(np.int8)
+    x = np.random.randn(4, ).astype(np.int8)
+    y = np.random.randn(3, ).astype(np.int8)
+    z = np.random.randn(6, ).astype(np.int8)
     indexing = "xy"
 
     net = Net((Tensor(x), Tensor(y), Tensor(z)), indexing)
@@ -69,9 +69,9 @@ def test_net_int8():
 
 
 def test_net_uint8():
-    x = np.random.randn(4,).astype(np.uint8)
-    y = np.random.randn(3,).astype(np.uint8)
-    z = np.random.randn(6,).astype(np.uint8)
+    x = np.random.randn(4, ).astype(np.uint8)
+    y = np.random.randn(3, ).astype(np.uint8)
+    z = np.random.randn(6, ).astype(np.uint8)
     indexing = "xy"
 
     net = Net((Tensor(x), Tensor(y), Tensor(z)), indexing)
@@ -87,9 +87,9 @@ def test_net_uint8():
 
 
 def test_net_int16():
-    x = np.random.randn(4,).astype(np.int16)
-    y = np.random.randn(3,).astype(np.int16)
-    z = np.random.randn(6,).astype(np.int16)
+    x = np.random.randn(4, ).astype(np.int16)
+    y = np.random.randn(3, ).astype(np.int16)
+    z = np.random.randn(6, ).astype(np.int16)
     indexing = "xy"
 
     net = Net((Tensor(x), Tensor(y), Tensor(z)), indexing)
@@ -105,9 +105,9 @@ def test_net_int16():
 
 
 def test_net_uint16():
-    x = np.random.randn(4,).astype(np.uint16)
-    y = np.random.randn(3,).astype(np.uint16)
-    z = np.random.randn(6,).astype(np.uint16)
+    x = np.random.randn(4, ).astype(np.uint16)
+    y = np.random.randn(3, ).astype(np.uint16)
+    z = np.random.randn(6, ).astype(np.uint16)
     indexing = "xy"
 
     net = Net((Tensor(x), Tensor(y), Tensor(z)), indexing)
@@ -123,9 +123,9 @@ def test_net_uint16():
 
 
 def test_net_int32():
-    x = np.random.randn(4,).astype(np.int32)
-    y = np.random.randn(3,).astype(np.int32)
-    z = np.random.randn(6,).astype(np.int32)
+    x = np.random.randn(4, ).astype(np.int32)
+    y = np.random.randn(3, ).astype(np.int32)
+    z = np.random.randn(6, ).astype(np.int32)
     indexing = "xy"
 
     net = Net((Tensor(x), Tensor(y), Tensor(z)), indexing)
@@ -141,9 +141,9 @@ def test_net_int32():
 
 
 def test_net_uint32():
-    x = np.random.randn(4,).astype(np.uint32)
-    y = np.random.randn(3,).astype(np.uint32)
-    z = np.random.randn(6,).astype(np.uint32)
+    x = np.random.randn(4, ).astype(np.uint32)
+    y = np.random.randn(3, ).astype(np.uint32)
+    z = np.random.randn(6, ).astype(np.uint32)
     indexing = "xy"
 
     net = Net((Tensor(x), Tensor(y), Tensor(z)), indexing)
@@ -159,9 +159,9 @@ def test_net_uint32():
 
 
 def test_net_int64():
-    x = np.random.randn(4,).astype(np.int64)
-    y = np.random.randn(3,).astype(np.int64)
-    z = np.random.randn(6,).astype(np.int64)
+    x = np.random.randn(4, ).astype(np.int64)
+    y = np.random.randn(3, ).astype(np.int64)
+    z = np.random.randn(6, ).astype(np.int64)
     indexing = "xy"
 
     net = Net((Tensor(x), Tensor(y), Tensor(z)), indexing)
@@ -175,10 +175,11 @@ def test_net_int64():
     assert np.array_equal(output[1].asnumpy(), np_output[1])
     assert np.array_equal(output[2].asnumpy(), np_output[2])
 
+
 def test_net_uint64():
-    x = np.random.randn(4,).astype(np.uint64)
-    y = np.random.randn(3,).astype(np.uint64)
-    z = np.random.randn(6,).astype(np.uint64)
+    x = np.random.randn(4, ).astype(np.uint64)
+    y = np.random.randn(3, ).astype(np.uint64)
+    z = np.random.randn(6, ).astype(np.uint64)
     indexing = "xy"
 
     net = Net((Tensor(x), Tensor(y), Tensor(z)), indexing)
@@ -194,9 +195,9 @@ def test_net_uint64():
 
 
 def test_net_float16():
-    x = np.random.randn(4,).astype(np.float16)
-    y = np.random.randn(3,).astype(np.float16)
-    z = np.random.randn(6,).astype(np.float16)
+    x = np.random.randn(4, ).astype(np.float16)
+    y = np.random.randn(3, ).astype(np.float16)
+    z = np.random.randn(6, ).astype(np.float16)
     indexing = "xy"
 
     net = Net((Tensor(x), Tensor(y), Tensor(z)), indexing)
@@ -212,9 +213,9 @@ def test_net_float16():
 
 
 def test_net_float32():
-    x = np.random.randn(4,).astype(np.float32)
-    y = np.random.randn(3,).astype(np.float32)
-    z = np.random.randn(6,).astype(np.float32)
+    x = np.random.randn(4, ).astype(np.float32)
+    y = np.random.randn(3, ).astype(np.float32)
+    z = np.random.randn(6, ).astype(np.float32)
     indexing = "xy"
 
     net = Net((Tensor(x), Tensor(y), Tensor(z)), indexing)
@@ -230,9 +231,9 @@ def test_net_float32():
 
 
 def test_net_float64():
-    x = np.random.randn(4,).astype(np.float64)
-    y = np.random.randn(3,).astype(np.float64)
-    z = np.random.randn(6,).astype(np.float64)
+    x = np.random.randn(4, ).astype(np.float64)
+    y = np.random.randn(3, ).astype(np.float64)
+    z = np.random.randn(6, ).astype(np.float64)
     indexing = "xy"
 
     net = Net((Tensor(x), Tensor(y), Tensor(z)), indexing)
@@ -248,9 +249,9 @@ def test_net_float64():
 
 
 def test_net_float64_ij():
-    x = np.random.randn(4,).astype(np.float64)
-    y = np.random.randn(3,).astype(np.float64)
-    z = np.random.randn(6,).astype(np.float64)
+    x = np.random.randn(4, ).astype(np.float64)
+    y = np.random.randn(3, ).astype(np.float64)
+    z = np.random.randn(6, ).astype(np.float64)
     indexing = "ij"
 
     net = Net((Tensor(x), Tensor(y), Tensor(z)), indexing)

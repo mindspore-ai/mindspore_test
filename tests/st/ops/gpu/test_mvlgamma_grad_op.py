@@ -34,7 +34,6 @@ class MvlgammaGradNet(nn.Cell):
         self.x_np = np.array([[3, 4, 5], [4, 2, 6]]).astype(nptype)
         self.x = Tensor(self.x_np)
 
-
     @jit
     def construct(self):
         return self.mvlgamma_grad(self.y_grad, self.x)

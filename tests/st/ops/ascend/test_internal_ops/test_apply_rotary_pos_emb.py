@@ -99,6 +99,7 @@ class RotaryEmbedding(nn.Cell):
         key_embed = key_embed.astype(np.float32)
         return query_embed, key_embed
 
+
 def run(net, seqLen, batch, num_head_q, num_head_k, hidden_dim, max_seq_len, query_dtype, pos_dtype, ndim=3,
         cos_format=0):
     if ndim == 3:

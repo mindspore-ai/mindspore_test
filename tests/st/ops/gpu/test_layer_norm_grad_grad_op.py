@@ -25,6 +25,7 @@ from mindspore.ops.operations import _grad_ops as G
 context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
 np.random.seed(0)
 
+
 class LayerNormGradGradNet(nn.Cell):
     def __init__(self, begin_norm_axis, begin_params_axis):
         super(LayerNormGradGradNet, self).__init__()
@@ -431,6 +432,7 @@ def test_layernormgradgrad8():
     assert np.allclose(d_x_ms.asnumpy(), d_x_np, rtol=5e-3, atol=5e-1)
     assert np.allclose(d_dy_ms.asnumpy(), d_dy_np, rtol=5e-3, atol=5e-1)
     assert np.allclose(d_gamma_ms.asnumpy(), d_gamma_np, rtol=5e-3, atol=5e-1)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_layernormgradgrad9():

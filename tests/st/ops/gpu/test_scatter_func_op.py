@@ -22,6 +22,7 @@ from mindspore import Tensor, Parameter
 from mindspore.ops import operations as P
 from mindspore.ops.functional import vmap
 from mindspore.ops.operations import _inner_ops as inner
+from mindspore.common.api import _pynative_executor
 
 context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
 # all cases tested against dchip
@@ -965,11 +966,14 @@ def test_scatter_func_indices_out_of_range():
     # update
     with pytest.raises(RuntimeError):
         _ = scatter_func_net("update", inputx, indices, updates)
+        _pynative_executor.sync()
 
     # add
     with pytest.raises(RuntimeError):
         _ = scatter_func_net("add", inputx, indices, updates)
+        _pynative_executor.sync()
 
     # sub
     with pytest.raises(RuntimeError):
         _ = scatter_func_net("sub", inputx, indices, updates)
+        _pynative_executor.sync()

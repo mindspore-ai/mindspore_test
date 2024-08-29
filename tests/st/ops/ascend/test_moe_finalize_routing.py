@@ -21,6 +21,7 @@ from mindspore import context
 from mindspore.nn import Cell
 from mindspore.ops.auto_generate import MoeFinalizeRouting
 
+
 # MoeFinalizeRouting has 7 inputs and 1 outputs (token_num is  bs*seq)
 # expanded_x:            2D Tensor (token_num * top_k, hidden)
 # skip1:                 2D Tensor (token_num, hidden)
@@ -43,7 +44,7 @@ def moe_finalize_routing(expanded_permuted_rows: np.ndarray,
     if skip2_optional is not None:
         out += skip2_optional
     token_num = skip1.shape[0]
-    top_k = expanded_src_to_dst_row.shape[0] // token_num # topk k
+    top_k = expanded_src_to_dst_row.shape[0] // token_num  # topk k
 
     for i in range(token_num):
         for k in range(top_k):

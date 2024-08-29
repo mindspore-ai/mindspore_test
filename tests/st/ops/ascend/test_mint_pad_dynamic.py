@@ -18,17 +18,22 @@ from tests.mark_utils import arg_mark
 import mindspore as ms
 from mindspore import mint
 
+
 def generate_random_input(shape, dtype):
     return np.random.randint(1, 10, size=shape).astype(dtype)
+
 
 def pad_constant_func(x, padding, value=0.0):
     return mint.nn.functional.pad(x, padding, 'constant', value)
 
+
 def pad_reflect_func(x, padding):
     return mint.nn.functional.pad(x, padding, 'reflect')
 
+
 def pad_replicate_func(x, padding):
     return mint.nn.functional.pad(x, padding, 'replicate')
+
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_ops_pad_constant_dynamic():
@@ -49,6 +54,7 @@ def test_ops_pad_constant_dynamic():
             'constant_pad_nd', disable_mode=['GRAPH_MODE'], disable_nontensor_dynamic_type='MUTABLE_LEN',
             disable_input_check=True, disable_yaml_check=True)
 
+
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_ops_pad_reflect_1d_dynamic():
     """
@@ -65,6 +71,7 @@ def test_ops_pad_reflect_1d_dynamic():
     TEST_OP(pad_reflect_func, [[ms.Tensor(input1), padding1], [ms.Tensor(input2), padding2]],
             'reflection_pad_1d', disable_mode=['GRAPH_MODE'], disable_nontensor_dynamic_type='MUTABLE_LEN',
             disable_input_check=True, disable_yaml_check=True)
+
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_ops_pad_reflect_2d_dynamic():
@@ -83,6 +90,7 @@ def test_ops_pad_reflect_2d_dynamic():
             'reflection_pad_2d', disable_mode=['GRAPH_MODE'], disable_nontensor_dynamic_type='MUTABLE_LEN',
             disable_input_check=True, disable_yaml_check=True)
 
+
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_ops_pad_reflect_3d_dynamic():
     """
@@ -99,6 +107,7 @@ def test_ops_pad_reflect_3d_dynamic():
     TEST_OP(pad_reflect_func, [[ms.Tensor(input1), padding1], [ms.Tensor(input2), padding2]],
             'reflection_pad_3d', disable_mode=['GRAPH_MODE'], disable_nontensor_dynamic_type='MUTABLE_LEN',
             disable_input_check=True, disable_yaml_check=True)
+
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_ops_pad_replicate_1d_dynamic():
@@ -117,6 +126,7 @@ def test_ops_pad_replicate_1d_dynamic():
             'replication_pad_1d', disable_mode=['GRAPH_MODE'], disable_nontensor_dynamic_type='MUTABLE_LEN',
             disable_input_check=True, disable_yaml_check=True)
 
+
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_ops_pad_replicate_2d_dynamic():
     """
@@ -133,6 +143,7 @@ def test_ops_pad_replicate_2d_dynamic():
     TEST_OP(pad_replicate_func, [[ms.Tensor(input1), padding1], [ms.Tensor(input2), padding2]],
             'replication_pad_2d', disable_mode=['GRAPH_MODE'], disable_nontensor_dynamic_type='MUTABLE_LEN',
             disable_input_check=True, disable_yaml_check=True)
+
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_ops_pad_replicate_3d_dynamic():

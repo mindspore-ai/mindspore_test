@@ -33,6 +33,7 @@ class Net(nn.Cell):
     def construct(self, a, b):
         return self.uniformint(self.shape, a, b)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_net_1D():
     seed = 10

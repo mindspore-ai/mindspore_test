@@ -37,7 +37,8 @@ class Net(nn.Cell):
         return self.bce(x, y, weight)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_binary_cross_entropy_loss():
     np.random.seed(42)
     prediction = np.random.rand(20).astype(np.float32)
@@ -138,7 +139,8 @@ class Grad(nn.Cell):
         return gout
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_binary_cross_entropy_loss_grad():
     np.random.seed(42)
     prediction = np.random.rand(20).astype(np.float32)
@@ -172,7 +174,8 @@ def test_binary_cross_entropy_forward_functional(nptype):
     np.testing.assert_array_almost_equal(output.asnumpy(), expected)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_binary_cross_entropy_forward_float32_functional():
     """
     Feature: test binary_cross_entropy forward.
@@ -184,7 +187,9 @@ def test_binary_cross_entropy_forward_float32_functional():
     context.set_context(mode=context.PYNATIVE_MODE, device_target="CPU")
     test_binary_cross_entropy_forward_functional(np.float32)
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_binary_cross_entropy_forward_float32_functional_with_optional(mode):
     """
@@ -199,6 +204,7 @@ def test_binary_cross_entropy_forward_float32_functional_with_optional(mode):
     output = F.binary_cross_entropy(logits, labels, weight)
     print(output.asnumpy())
 
+
 class GradNet(nn.Cell):
     def __init__(self, network):
         super(GradNet, self).__init__()
@@ -209,7 +215,9 @@ class GradNet(nn.Cell):
         gout = self.grad(self.network)(x1, x2, weight)
         return gout
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_binary_cross_entropy_loss_grad_with_optional(mode):
     """

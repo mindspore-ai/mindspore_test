@@ -23,7 +23,7 @@ from tests.mark_utils import arg_mark
 
 
 class Net(nn.Cell):
-    def __init__(self,):
+    def __init__(self, ):
         super(Net, self).__init__()
         self.all_finite = AllFinite()
 
@@ -64,7 +64,6 @@ def test_all_finite(mode):
     ]
     output1 = net(inputs1)
     assert output1.asnumpy() == False
-
 
     inputs1 = [
         Tensor(np.full(shape1, 100, np.float32), ms.bfloat16),

@@ -43,6 +43,7 @@ def argmax_ext_forward_func(x, dim=None, keepdim=False):
 def argmax_ext_backward_func(x, dim=None, keepdim=False):
     return ops.grad(argmax_ext_forward_func)(x, dim, keepdim)
 
+
 def GenInputData(np_data_type, shape=(3, 4, 5)):
     """GenInputData"""
     size = 1
@@ -50,6 +51,7 @@ def GenInputData(np_data_type, shape=(3, 4, 5)):
         size *= s
     data = np.arange(size).reshape(*shape).astype(np_data_type)
     return Tensor(data)
+
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("context_mode", [ms.GRAPH_MODE, ms.PYNATIVE_MODE])

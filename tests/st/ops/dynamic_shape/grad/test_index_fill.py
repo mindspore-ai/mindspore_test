@@ -33,7 +33,8 @@ class IndexFillNet(nn.Cell):
         return out
 
 
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_dynamic_shape_index_fill():
     """
     Feature: IndexFill Grad DynamicShape.
@@ -52,7 +53,8 @@ def test_dynamic_shape_index_fill():
         [Tensor(x_np), dim, Tensor(index_np), value], False)
 
 
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
 def test_dynamic_rank_index_fill():
     """
     Feature: IndexFill Grad DynamicShape.

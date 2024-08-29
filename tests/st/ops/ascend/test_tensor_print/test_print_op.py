@@ -76,6 +76,7 @@ def test_print_tensor_dtype(mode):
     Description: test Print with tensor dtype.
     Expectation: success.
     """
+
     class PrintDtypeNet(nn.Cell):
         def construct(self, x, y):
             print(f"Tensor x type: {x.dtype}")
@@ -98,6 +99,7 @@ def test_print_tensor_dtype_in_nested_tuple(mode):
     Description: test Print with tensor dtype in nested tuple.
     Expectation: success.
     """
+
     class PrintDtypeNet(nn.Cell):
         def construct(self, x, y):
             dtype_tuple = (x.dtype, y)

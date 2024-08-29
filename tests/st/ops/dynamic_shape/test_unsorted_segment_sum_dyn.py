@@ -46,7 +46,7 @@ def dyn_case():
     input_x_dyn = Tensor(shape=[None, 3], dtype=mindspore.float32)
     input_x = Tensor(x)
     segment_ids = Tensor([0, 1, 0], mindspore.int32)
-    num_segments = Tensor([2,], mindspore.int32)
+    num_segments = Tensor([2, ], mindspore.int32)
     expect_np = np.array([[8, 10, 12], [4, 5, 6]], dtype=np.float32)
     net = UnsortedSegmentSumDynamicShapeNetMS()
     net.set_inputs(input_x_dyn, segment_ids, num_segments)
@@ -71,7 +71,8 @@ def dyn_case_beta():
     assert np.allclose(output.asnumpy(), expect_np, rtol, atol, equal_nan=True)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_uss_dyn_cpu():
     """
     Feature: test UnsortedSegmentSum dynamic shape on CPU, all inputs are tensor.
@@ -97,7 +98,8 @@ def test_uss_dyn_gpu():
     dyn_case()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_uss_dyn_cpu_beta():
     """
     Feature: test UnsortedSegmentSum dynamic shape on CPU, num_segments is a var.

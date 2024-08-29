@@ -22,8 +22,8 @@ from mindspore import context
 from mindspore import dtype as mstype
 from mindspore.nn import Cell
 from mindspore.common.parameter import ParameterTuple
-from mindspore.common.api import _pynative_executor
 from mindspore.ops import composite as C
+from mindspore.common.api import _pynative_executor
 from tests.mark_utils import arg_mark
 
 
@@ -926,6 +926,7 @@ def test_tensor_assign_exception():
     # 1. A[Slice] = Number,  Slice error
     # with pytest.raises(ValueError):
     #     net_e2(t, 2)
+    #      _pynative_executor.sync()
 
     # Error for A[Tuple(Slice...)] = Tensor
     # 2. A[Tuple(Slice...)] = U, U.size error
@@ -935,6 +936,7 @@ def test_tensor_assign_exception():
     # 3. A[Tuple(Slice...)] = U,  Slice error
     # with pytest.raises(IndexError):
     #     net_e1(Ta, b)
+    #      _pynative_executor.sync()
 
     # Error for A[Slice] = U, U is a Tensor
     # 1. A[Slice] = U,  u.size is error
@@ -950,6 +952,7 @@ def test_tensor_assign_exception():
     # 1. A[Tuple(Slice...)] = Number,  Slice error
     # with pytest.raises(IndexError):
     #     net_e1(Ta, 2)
+    #      _pynative_executor.sync()
 
     net = TensorAssignWithInteger()
     # Error for A[Number] = scalar/Tensor

@@ -32,7 +32,7 @@ class NetUniqueConsecutive(nn.Cell):
         return ops.unique_consecutive(x, self.return_idx, self.return_counts, self.axis)
 
 
-#@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+# @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_unique_consecutive():
     """
     Feature: UniqueConsecutive operator.
@@ -46,7 +46,7 @@ def test_unique_consecutive():
     assert (out.asnumpy() == exp_out).all()
 
 
-#@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+# @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_unique_consecutive_return_idx():
     """
     Feature: UniqueConsecutive operator.
@@ -62,7 +62,7 @@ def test_unique_consecutive_return_idx():
     assert (idx.asnumpy() == exp_idx).all()
 
 
-#@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+# @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_unique_consecutive_return_counts():
     """
     Feature: UniqueConsecutive operator.
@@ -78,7 +78,7 @@ def test_unique_consecutive_return_counts():
     assert (counts.asnumpy() == exp_counts).all()
 
 
-#@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+# @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_unique_consecutive_set_axis_0():
     """
     Feature: UniqueConsecutive operator.
@@ -96,7 +96,7 @@ def test_unique_consecutive_set_axis_0():
     assert (counts.asnumpy() == exp_counts).all()
 
 
-#@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+# @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_unique_consecutive_set_axis_1():
     """
     Feature: UniqueConsecutive operator.
@@ -114,7 +114,7 @@ def test_unique_consecutive_set_axis_1():
     assert (counts.asnumpy() == exp_counts).all()
 
 
-#@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+# @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_unique_consecutive_1d_int32():
     """
     Feature: UniqueConsecutive operator.
@@ -132,7 +132,7 @@ def test_unique_consecutive_1d_int32():
     assert (counts.asnumpy() == exp_counts).all()
 
 
-#@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+# @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_unique_consecutive_1d_int64():
     """
     Feature: UniqueConsecutive operator.
@@ -150,7 +150,7 @@ def test_unique_consecutive_1d_int64():
     assert (counts.asnumpy() == exp_counts).all()
 
 
-#@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+# @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_unique_consecutive_1d_half():
     """
     Feature: UniqueConsecutive operator.
@@ -168,7 +168,7 @@ def test_unique_consecutive_1d_half():
     assert (counts.asnumpy() == exp_counts).all()
 
 
-#@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+# @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_unique_consecutive_1d_float():
     """
     Feature: UniqueConsecutive operator.
@@ -186,7 +186,7 @@ def test_unique_consecutive_1d_float():
     assert (counts.asnumpy() == exp_counts).all()
 
 
-#@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+# @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_unique_consecutive_0d():
     """
     Feature: UniqueConsecutive operator.
@@ -204,7 +204,7 @@ def test_unique_consecutive_0d():
     assert (counts.asnumpy() == exp_counts).all()
 
 
-#@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+# @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_unique_consecutive_3d():
     """
     Feature: UniqueConsecutive operator.
@@ -212,7 +212,7 @@ def test_unique_consecutive_3d():
     Expectation: No exception.
     """
     x = Tensor(np.array([[[1, 2, 3], [3, 2, 4], [3, 2, 4], [1, 2, 3]], \
-        [[1, 2, 3], [3, 2, 4], [3, 2, 4], [1, 2, 3]]]).astype(np.int32))
+                         [[1, 2, 3], [3, 2, 4], [3, 2, 4], [1, 2, 3]]]).astype(np.int32))
     net = NetUniqueConsecutive(return_idx=True, return_counts=True, axis=0)
     out, idx, counts = net(x)
     exp_out = np.array([[[1, 2, 3], [3, 2, 4], [3, 2, 4], [1, 2, 3]]]).astype(np.int32)
@@ -223,7 +223,7 @@ def test_unique_consecutive_3d():
     assert (counts.asnumpy() == exp_counts).all()
 
 
-#@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+# @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_unique_consecutive_3d_axis():
     """
     Feature: UniqueConsecutive operator.
@@ -231,11 +231,11 @@ def test_unique_consecutive_3d_axis():
     Expectation: No exception.
     """
     x = Tensor(np.array([[[1, 2, 3], [3, 2, 4], [3, 2, 4], [1, 2, 3]], \
-        [[1, 2, 3], [3, 2, 4], [3, 2, 4], [1, 2, 3]]]).astype(np.int32))
+                         [[1, 2, 3], [3, 2, 4], [3, 2, 4], [1, 2, 3]]]).astype(np.int32))
     net = NetUniqueConsecutive(return_idx=True, return_counts=True, axis=1)
     out, idx, counts = net(x)
     exp_out = np.array([[[1, 2, 3], [3, 2, 4], [1, 2, 3]], \
-        [[1, 2, 3], [3, 2, 4], [1, 2, 3]]]).astype(np.int32)
+                        [[1, 2, 3], [3, 2, 4], [1, 2, 3]]]).astype(np.int32)
     exp_idx = np.array([0, 1, 1, 2]).astype(np.int32)
     exp_counts = np.array([1, 2, 1]).astype(np.int32)
     assert (out.asnumpy() == exp_out).all()
@@ -248,7 +248,7 @@ class NetTensor(nn.Cell):
         return x.unique_consecutive(return_idx, return_counts, axis)
 
 
-#@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+# @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_tensor_return_output():
     """
     Feature: UniqueConsecutive operator.
@@ -262,7 +262,7 @@ def test_tensor_return_output():
     assert (out.asnumpy() == exp_out).all()
 
 
-#@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+# @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_tensor_return_idx():
     """
     Feature: UniqueConsecutive operator.
@@ -278,7 +278,7 @@ def test_tensor_return_idx():
     assert (idx.asnumpy() == exp_idx).all()
 
 
-#@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+# @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_tensor_return_counts():
     """
     Feature: UniqueConsecutive operator.
@@ -294,7 +294,7 @@ def test_tensor_return_counts():
     assert (counts.asnumpy() == exp_counts).all()
 
 
-#@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+# @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_tensor_return_all():
     """
     Feature: UniqueConsecutive operator.

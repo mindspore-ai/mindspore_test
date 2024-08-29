@@ -20,7 +20,9 @@ import pytest
 import mindspore.context as context
 from mindspore import Tensor
 import mindspore.ops.operations._grad_ops as P
+
 context.set_context(mode=context.PYNATIVE_MODE, device_target="GPU")
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_acosgrad_fp32():
@@ -78,7 +80,7 @@ def test_acosgrad_complex64():
     Expectation: just test
     """
     x_np = np.array([0, -0.25, 0.5, 0.3]).astype(np.complex64)
-    x_np = x_np - 2j*x_np
+    x_np = x_np - 2j * x_np
     dout_np = np.array([1, 1, 1, 1]).astype(np.complex64)
     output_ms = P.ACosGrad()(Tensor(x_np), Tensor(dout_np))
     expect = -dout_np / np.conjugate(np.sqrt(1 - x_np * x_np))
@@ -93,7 +95,7 @@ def test_acosgrad_complex128():
     Expectation: just test
     """
     x_np = np.array([0, -0.25, 0.5, 0.3]).astype(np.complex128)
-    x_np = x_np + 5j*x_np
+    x_np = x_np + 5j * x_np
     dout_np = np.array([1, 1, 1, 1]).astype(np.complex128)
     output_ms = P.ACosGrad()(Tensor(x_np), Tensor(dout_np))
     expect = -dout_np / np.conjugate(np.sqrt(1 - x_np * x_np))

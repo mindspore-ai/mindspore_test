@@ -35,7 +35,8 @@ class Net(nn.Cell):
         return self.seq_index(x, y, start, end)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard',
+          essential_mark='unessential')
 def test_seq_index_tuple_dy():
     """
     Feature: test sequence_index op
@@ -50,7 +51,8 @@ def test_seq_index_tuple_dy():
     assert res == expect
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_seq_index_scalar_dy():
     """
     Feature: test sequence_index op
@@ -65,7 +67,8 @@ def test_seq_index_scalar_dy():
     assert res == expect
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_seq_index_all_dy():
     """
     Feature: test sequence_index op
@@ -80,7 +83,8 @@ def test_seq_index_all_dy():
     assert res == expect
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard',
+          essential_mark='unessential')
 def test_seq_index_grad():
     """
     Feature: test sequence_index grad op

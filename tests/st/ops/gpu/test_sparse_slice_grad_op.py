@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 from tests.mark_utils import arg_mark
+
 """smoke tests for SparseSliceGrad"""
 
 import numpy as np
@@ -47,5 +48,5 @@ def test_sparse_tensor_dense_add(input_type):
     net = SparseSliceGrad()
     out = net(data[0], data[1], data[2], data[3]).asnumpy()
     expected = np.array([0, 0, 4, 2, 3, 0]).astype(input_type)
-    eps = 1e-6*np.array(np.ones_like(out))
+    eps = 1e-6 * np.array(np.ones_like(out))
     assert np.all(expected - out < eps)

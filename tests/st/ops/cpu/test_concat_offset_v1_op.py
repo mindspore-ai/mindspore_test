@@ -34,12 +34,13 @@ class ConcatOffsetNetV1(nn.Cell):
         return out
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_concat_offset_v1():
     """
     /// Feature: ConcatOffsetNetV1 op dynamic shape
     /// Description: ConcatOffsetNetV1 forward with dynamic shape
-    /// Expectation: Euqal to expected value
+    /// Expectation: Equal to expected value
     """
     if sys.platform != 'linux':
         return

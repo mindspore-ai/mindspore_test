@@ -50,9 +50,9 @@ def main_test(var_numpy, m_numpy, v_numpy, beta1_power_numpy, lr_numpy, beta1_nu
     epsilon = Tensor(epsilon_numpy)
     grad = Tensor(grident_numpy)
 
-    expect_m = beta1_numpy * m_numpy + (1-beta1_numpy) * grident_numpy
+    expect_m = beta1_numpy * m_numpy + (1 - beta1_numpy) * grident_numpy
     expect_v = numpy.maximum(abs(grident_numpy), beta2_numpy * v_numpy)
-    expect_var = var_numpy - lr_numpy * expect_m / (1-beta1_power_numpy) / (expect_v + epsilon_numpy)
+    expect_var = var_numpy - lr_numpy * expect_m / (1 - beta1_power_numpy) / (expect_v + epsilon_numpy)
 
     net = Net(var_numpy, m_numpy, v_numpy)
 

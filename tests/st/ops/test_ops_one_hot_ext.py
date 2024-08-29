@@ -22,6 +22,7 @@ from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
 
+
 def generate_random_input(num_classes):
     return np.random.permutation(num_classes)
 
@@ -40,19 +41,24 @@ def call_onehot(tensor, num_classes):
     out = ops.function.array_func.one_hot_ext(tensor, num_classes)
     return out
 
+
 def generate_expect_backward_output():
     return 0
+
 
 @test_utils.run_with_cell
 def onehot_backward_func(tensor, num_classes):
     return ops.grad(onehot_forward_func, (0))(tensor, num_classes)
 
+
 class Net(Cell):
     def __init__(self):
         super().__init__()
         self.one_hot = one_hot
+
     def construct(self, x, num_classes):
         return self.one_hot(x, num_classes)
+
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE])
@@ -111,7 +117,6 @@ def test_ops_onehot_vmap(mode):
     np.testing.assert_allclose(output.asnumpy(), expect_output, rtol=1e-3)
 
 
-
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_ops_onehot_forward_dynamic_shape(mode):
@@ -137,7 +142,6 @@ def test_ops_onehot_forward_dynamic_shape(mode):
     x2 = ms.Tensor(np.array([0, 1, 2]), ms.int64)
     output = test_cell(ms.Tensor(x2))
     np.testing.assert_allclose(output.asnumpy(), expect_output, rtol=1e-3)
-
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
@@ -239,6 +243,7 @@ def test_onehot_vmap(param_jit_level):
     Description: call ops.extend.one_hot with valid input and index.
     Expectation: return the correct value.
     """
+
     def _foreach_run(inputs, num_classes, batch):
         out = []
         for i in range(inputs.shape[batch]):
@@ -266,7 +271,6 @@ def test_onehot_vmap(param_jit_level):
     assert np.allclose(output.asnumpy(), expect.asnumpy(), rtol=1e-4)
 
 
-
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_ops_one_hot_int32(mode):
@@ -283,6 +287,7 @@ def test_ops_one_hot_int32(mode):
                      [0, 1, 0],
                      [0, 0, 1]]
     assert np.allclose(output.asnumpy(), expect_output)
+
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])

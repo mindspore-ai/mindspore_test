@@ -54,7 +54,8 @@ class TestNet(nn.Cell):
         return out
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_net():
     """
     Feature: FusedSparseProximalAdagrad
@@ -80,7 +81,8 @@ def test_net():
     assert np.all(sparse_apply_proximal_adagrad.var.data.asnumpy() == expect_var)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_fused_sparse_proximal_adagrad_invalid_input_shape_var_accum_not_match():
     """
     Feature: FusedSparseProximalAdagrad
@@ -102,7 +104,8 @@ def test_fused_sparse_proximal_adagrad_invalid_input_shape_var_accum_not_match()
         pass
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_fused_sparse_proximal_adagrad_invalid_input_shape_grad_indices_not_match():
     """
     Feature: FusedSparseProximalAdagrad
@@ -124,7 +127,8 @@ def test_fused_sparse_proximal_adagrad_invalid_input_shape_grad_indices_not_matc
         pass
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_fused_sparse_proximal_adagrad_invalid_input_shape_indices_rank_invalid():
     """
     Feature: FusedSparseProximalAdagrad
@@ -146,7 +150,8 @@ def test_fused_sparse_proximal_adagrad_invalid_input_shape_indices_rank_invalid(
         pass
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_fused_sparse_proximal_adagrad_invalid_input_shape_grad_rank_invalid():
     """
     Feature: FusedSparseProximalAdagrad
@@ -168,7 +173,8 @@ def test_fused_sparse_proximal_adagrad_invalid_input_shape_grad_rank_invalid():
         pass
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_fused_sparse_proximal_adagrad_invalid_input_shape_indices_grad_not_match():
     """
     Feature: FusedSparseProximalAdagrad
@@ -190,7 +196,8 @@ def test_fused_sparse_proximal_adagrad_invalid_input_shape_indices_grad_not_matc
         pass
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_fused_sparse_proximal_adagrad_invalid_input_type_indices_invalid():
     """
     Feature: FusedSparseProximalAdagrad
@@ -212,7 +219,8 @@ def test_fused_sparse_proximal_adagrad_invalid_input_type_indices_invalid():
         pass
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_fused_sparse_proximal_adagrad_invalid_input_type_indices_invalid2():
     """
     Feature: FusedSparseProximalAdagrad
@@ -233,7 +241,8 @@ def test_fused_sparse_proximal_adagrad_invalid_input_type_indices_invalid2():
         pass
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_fused_sparse_proximal_adagrad_invalid_input_type_gradient_invalid():
     """
     Feature: FusedSparseProximalAdagrad
@@ -254,7 +263,8 @@ def test_fused_sparse_proximal_adagrad_invalid_input_type_gradient_invalid():
         pass
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_fused_sparse_proximal_adagrad_dynamic():
     """
     Feature: FusedSparseProximalAdagrad

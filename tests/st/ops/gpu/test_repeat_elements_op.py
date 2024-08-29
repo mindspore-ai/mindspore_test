@@ -12,15 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-from tests.mark_utils import arg_mark
-
+import mindspore.context as context
+import mindspore.nn as nn
 import numpy as np
 import pytest
+from mindspore.common.api import _pynative_executor
 
 from mindspore import Tensor
 from mindspore.ops import composite as C
-import mindspore.nn as nn
-import mindspore.context as context
+from tests.mark_utils import arg_mark
 
 
 class RepeatElementsNet(nn.Cell):
@@ -40,6 +40,11 @@ def repeat_elements(x, rep, axis):
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_repeat_elements_1d_one_element_rep_1():
+    """
+    Feature: Test repeat elements 1d one element rep.
+    Description: Net test op repeat
+    Expectation: Success
+    """
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
     a = np.arange(1)
 
@@ -50,6 +55,11 @@ def test_repeat_elements_1d_one_element_rep_1():
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_repeat_elements_1d_one_element_rep_many():
+    """
+    Feature: Test repeat elements 1d one element rep.
+    Description: Net test op repeat
+    Expectation: Success
+    """
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
     a = np.arange(1)
 
@@ -64,6 +74,11 @@ def test_repeat_elements_1d_one_element_rep_many():
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_repeat_elements_1d_rep_1():
+    """
+    Feature: Test repeat elements 1d one element rep.
+    Description: Net test op repeat
+    Expectation: Success
+    """
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
     a = np.arange(24)
 
@@ -74,6 +89,11 @@ def test_repeat_elements_1d_rep_1():
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_repeat_elements_1d_rep_many():
+    """
+    Feature: Test repeat elements 1d one element rep.
+    Description: Net test op repeat
+    Expectation: Success
+    """
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
     a = np.arange(24)
 
@@ -84,6 +104,11 @@ def test_repeat_elements_1d_rep_many():
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_repeat_elements_2d_one_element_rep_1():
+    """
+    Feature: Test repeat elements 1d one element rep.
+    Description: Net test op repeat
+    Expectation: Success
+    """
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
     a = np.arange(1).reshape(1, 1)
 
@@ -98,6 +123,11 @@ def test_repeat_elements_2d_one_element_rep_1():
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_repeat_elements_2d_one_element_rep_many():
+    """
+    Feature: Test repeat elements 1d one element rep.
+    Description: Net test op repeat
+    Expectation: Success
+    """
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
     a = np.arange(1).reshape(1, 1)
 
@@ -112,6 +142,11 @@ def test_repeat_elements_2d_one_element_rep_many():
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_repeat_elements_2d_rep_1():
+    """
+    Feature: Test repeat elements 1d one element rep.
+    Description: Net test op repeat
+    Expectation: Success
+    """
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
     a = np.arange(24).reshape(12, 2)
 
@@ -126,6 +161,11 @@ def test_repeat_elements_2d_rep_1():
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_repeat_elements_2d_rep_many():
+    """
+    Feature: Test repeat elements 1d one element rep.
+    Description: Net test op repeat
+    Expectation: Success
+    """
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
     a = np.arange(24).reshape(8, 3)
 
@@ -140,6 +180,11 @@ def test_repeat_elements_2d_rep_many():
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_repeat_elements_3d_one_element_rep_1():
+    """
+    Feature: Test repeat elements 1d one element rep.
+    Description: Net test op repeat
+    Expectation: Success
+    """
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
     a = np.arange(1).reshape(1, 1, 1)
 
@@ -158,6 +203,11 @@ def test_repeat_elements_3d_one_element_rep_1():
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_repeat_elements_3d_one_element_rep_many():
+    """
+    Feature: Test repeat elements 1d one element rep.
+    Description: Net test op repeat
+    Expectation: Success
+    """
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
     a = np.arange(1).reshape(1, 1, 1)
 
@@ -176,6 +226,11 @@ def test_repeat_elements_3d_one_element_rep_many():
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_repeat_elements_3d_rep_1():
+    """
+    Feature: Test repeat elements 1d one element rep.
+    Description: Net test op repeat
+    Expectation: Success
+    """
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
     a = np.arange(60).reshape(6, 2, 5)
 
@@ -194,6 +249,11 @@ def test_repeat_elements_3d_rep_1():
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_repeat_elements_3d_rep_many():
+    """
+    Feature: Test repeat elements 1d one element rep.
+    Description: Net test op repeat
+    Expectation: Success
+    """
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
     a = np.arange(60).reshape(3, 4, 5)
 
@@ -212,6 +272,11 @@ def test_repeat_elements_3d_rep_many():
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_repeat_elements_4d_one_element_rep_1():
+    """
+    Feature: Test repeat elements 1d one element rep.
+    Description: Net test op repeat
+    Expectation: Success
+    """
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
     a = np.arange(1).reshape(1, 1, 1, 1)
 
@@ -234,6 +299,11 @@ def test_repeat_elements_4d_one_element_rep_1():
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_repeat_elements_4d_one_element_rep_many():
+    """
+    Feature: Test repeat elements 1d one element rep.
+    Description: Net test op repeat
+    Expectation: Success
+    """
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
     a = np.arange(1).reshape(1, 1, 1, 1)
 
@@ -256,6 +326,11 @@ def test_repeat_elements_4d_one_element_rep_many():
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_repeat_elements_4d_rep_1():
+    """
+    Feature: Test repeat elements 1d one element rep.
+    Description: Net test op repeat
+    Expectation: Success
+    """
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
     a = np.arange(24).reshape(4, 3, 2, 1)
 
@@ -278,6 +353,11 @@ def test_repeat_elements_4d_rep_1():
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_repeat_elements_4d_rep_many():
+    """
+    Feature: Test repeat elements 1d one element rep.
+    Description: Net test op repeat
+    Expectation: Success
+    """
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
     a = np.arange(24).reshape(2, 2, 2, 3)
 
@@ -300,6 +380,11 @@ def test_repeat_elements_4d_rep_many():
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_repeat_elements_5d_one_element_rep_1():
+    """
+    Feature: Test repeat elements 1d one element rep.
+    Description: Net test op repeat
+    Expectation: Success
+    """
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
     a = np.arange(1).reshape(1, 1, 1, 1, 1)
 
@@ -326,6 +411,11 @@ def test_repeat_elements_5d_one_element_rep_1():
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_repeat_elements_5d_one_element_rep_many():
+    """
+    Feature: Test repeat elements 1d one element rep.
+    Description: Net test op repeat
+    Expectation: Success
+    """
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
     a = np.arange(1).reshape(1, 1, 1, 1, 1)
 
@@ -352,6 +442,11 @@ def test_repeat_elements_5d_one_element_rep_many():
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_repeat_elements_5d_rep_1():
+    """
+    Feature: Test repeat elements 1d one element rep.
+    Description: Net test op repeat
+    Expectation: Success
+    """
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
     a = np.arange(224).reshape(8, 2, 1, 7, 2)
 
@@ -378,6 +473,11 @@ def test_repeat_elements_5d_rep_1():
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_repeat_elements_5d_rep_many():
+    """
+    Feature: Test repeat elements 1d one element rep.
+    Description: Net test op repeat
+    Expectation: Success
+    """
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
     a = np.arange(224).reshape(1, 7, 4, 4, 2)
 
@@ -404,6 +504,11 @@ def test_repeat_elements_5d_rep_many():
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_repeat_elements_large_one_element_rep_1():
+    """
+    Feature: Test repeat elements 1d one element rep.
+    Description: Net test op repeat
+    Expectation: Success
+    """
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
     a = np.arange(1).reshape(1, 1, 1, 1, 1, 1, 1, 1)
 
@@ -442,6 +547,11 @@ def test_repeat_elements_large_one_element_rep_1():
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_repeat_elements_large_one_element_rep_many():
+    """
+    Feature: Test repeat elements 1d one element rep.
+    Description: Net test op repeat
+    Expectation: Success
+    """
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
     a = np.arange(1).reshape(1, 1, 1, 1, 1, 1)
 
@@ -472,6 +582,11 @@ def test_repeat_elements_large_one_element_rep_many():
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_repeat_elements_large_rep_1():
+    """
+    Feature: Test repeat elements 1d one element rep.
+    Description: Net test op repeat
+    Expectation: Success
+    """
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
     a = np.arange(1152).reshape(2, 3, 4, 8, 1, 1, 2, 3)
 
@@ -510,6 +625,11 @@ def test_repeat_elements_large_rep_1():
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_repeat_elements_large_rep_many():
+    """
+    Feature: Test repeat elements 1d one element rep.
+    Description: Net test op repeat
+    Expectation: Success
+    """
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
     a = np.arange(1152).reshape(4, 3, 4, 2, 4, 3)
 
@@ -540,6 +660,11 @@ def test_repeat_elements_large_rep_many():
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_repeat_elements_half():
+    """
+    Feature: Test repeat elements 1d one element rep.
+    Description: Net test op repeat
+    Expectation: Success
+    """
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
     a = np.arange(1152).astype(np.float16).reshape(4, 3, 4, 2, 4, 3)
 
@@ -570,6 +695,11 @@ def test_repeat_elements_half():
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_repeat_elements_net_multi_use():
+    """
+    Feature: Test repeat elements 1d one element rep.
+    Description: Net test op repeat
+    Expectation: Success
+    """
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
 
     rep = 3
@@ -594,13 +724,21 @@ def test_repeat_elements_net_multi_use():
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_repeat_elements_invalid_input():
+    """
+    Feature: Test repeat elements 1d one element rep.
+    Description: Net test op repeat
+    Expectation: Success
+    """
     context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
     a = np.arange(64).reshape(2, 2, 2, 2, 2, 2)
     with pytest.raises(ValueError):
         _ = repeat_elements(a, 0, 0)
+        _pynative_executor.sync()
 
     with pytest.raises(ValueError):
         _ = repeat_elements(a, 1, 6)
+        _pynative_executor.sync()
 
     with pytest.raises(ValueError):
         _ = repeat_elements(a, 1, -7)
+        _pynative_executor.sync()

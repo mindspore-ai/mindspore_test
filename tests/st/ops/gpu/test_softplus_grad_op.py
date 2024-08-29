@@ -63,6 +63,7 @@ def test_softplusgrad():
     expect = dy * np.exp(x) / (1 + np.exp(x))
     assert np.allclose(output[0].asnumpy(), expect, rtol=1e-3)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_softplusgrad_fp16():
     np.random.seed(42)

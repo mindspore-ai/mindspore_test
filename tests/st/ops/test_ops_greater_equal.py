@@ -20,14 +20,17 @@ from mindspore import Tensor, ops
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
 from tests.mark_utils import arg_mark
 
+
 class GreaterEqualNet(nn.Cell):
     def construct(self, x, y):
         return ops.greater_equal(x, y)
+
 
 def call_ge(input_tensor, other):
     """call_greater_equal"""
     out = ops.greater_equal(input_tensor, other)
     return out
+
 
 def GenInputData(np_data_type, shape=(3, 4, 5)):
     """GenInputData"""
@@ -37,8 +40,9 @@ def GenInputData(np_data_type, shape=(3, 4, 5)):
     data = np.arange(size).reshape(*shape).astype(np_data_type)
     return Tensor(data)
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
-          card_mark='onecard', essential_mark='essential')
+
+@arg_mark(plat_marks=['platform_ascend910b', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'],
+          level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
 def test_greater_equal_op(mode):
     """

@@ -33,7 +33,8 @@ class NetOnesLike(nn.Cell):
         return self.ones_like(x)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 @pytest.mark.parametrize('dtype', [np.int32, np.float32, np.float64])
 def test_OnesLike(dtype):
     """
@@ -64,7 +65,8 @@ def test_OnesLike(dtype):
     assert output1.shape == expect1.shape
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_oneslike_cpu_dynamic_shape():
     """
     Feature: test OnesLike op in cpu.

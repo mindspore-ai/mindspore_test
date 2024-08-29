@@ -26,13 +26,15 @@ context.set_context(mode=context.GRAPH_MODE)
 context_prepare()
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard',
+          essential_mark='unessential')
 def test_real_make_tuple():
     """
     Feature: test real_make_tuple op
     Description: all inputs are scalar
     Expectation: the result match with tuple result
     """
+
     class Net(nn.Cell):
         def __init__(self):
             super().__init__()
@@ -52,13 +54,15 @@ def test_real_make_tuple():
     assert res == expect
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard',
+          essential_mark='unessential')
 def test_real_make_tuple_dy():
     """
     Feature: test real_make_tuple op
     Description: all inputs are dynamic scalar
     Expectation: the result match with tuple result
     """
+
     class Net(nn.Cell):
         def __init__(self):
             super().__init__()
@@ -77,13 +81,15 @@ def test_real_make_tuple_dy():
     assert res == expect
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard',
+          essential_mark='unessential')
 def test_real_make_tuple_tensor_dy():
     """
     Feature: test real_make_tuple op
     Description: all inputs are dynamic tensor
     Expectation: the result match with tuple result
     """
+
     class Net(nn.Cell):
         def construct(self, *x):
             make_tuple = (x[0], x[1])
@@ -98,13 +104,15 @@ def test_real_make_tuple_tensor_dy():
         assert np.all(res[i].asnumpy() == expect[i].asnumpy())
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard',
+          essential_mark='unessential')
 def test_real_make_tuple_grad():
     """
     Feature: test real_make_tuple grad op
     Description: all inputs are dynamic scalar
     Expectation: the result match with tuple result
     """
+
     class Net(nn.Cell):
         def __init__(self):
             super().__init__()

@@ -65,7 +65,7 @@ def test_complex_basic(context_mode):
     imag = Tensor([1.], mstype.float64)
     net = Complex()
     out = net(real, imag)
-    expected = np.array([1.+1j], np.complex128)
+    expected = np.array([1. + 1j], np.complex128)
     assert expected == out.asnumpy()
 
 

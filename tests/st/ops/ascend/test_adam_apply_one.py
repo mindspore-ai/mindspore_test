@@ -75,7 +75,8 @@ def compute_func(ms_net, np_net, is_dyn=False):
         ms_net.set_inputs(inputs, inputs, inputs, inputs, inputs, inputs, inputs, inputs, inputs, inputs)
     input0 = np.array([[0.1, 0.3, 3.6], [0.4, 0.5, 3.2]]).astype(np.float32)
     out0, out1, out2 = ms_net(Tensor(input0), Tensor(input0), Tensor(input0), Tensor(input0), \
-        Tensor(input0), Tensor(input0), Tensor(input0), Tensor(input0), Tensor(input0), Tensor(input0))
+                              Tensor(input0), Tensor(input0), Tensor(input0), Tensor(input0), Tensor(input0),
+                              Tensor(input0))
     np0, np1, np2 = np_net(input0, input0, input0, input0, input0, input0, input0, input0, input0, input0)
     assert np.all(out0.asnumpy() == np0)
     assert np.all(out1.asnumpy() == np1)

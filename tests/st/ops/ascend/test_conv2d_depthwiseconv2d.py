@@ -22,7 +22,6 @@ import mindspore.common.dtype as mstype
 from mindspore.common.initializer import Normal
 from mindspore import Tensor
 
-
 context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
 
 

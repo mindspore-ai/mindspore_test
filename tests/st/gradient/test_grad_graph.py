@@ -23,6 +23,7 @@ from mindspore.ops.functional import grad, value_and_grad, get_grad
 from mindspore.ops import composite as C
 from mindspore.common import dtype as mstype
 from mindspore import Parameter, ParameterTuple
+from mindspore.common.api import _pynative_executor
 from tests.mark_utils import arg_mark
 
 
@@ -953,6 +954,7 @@ def test_construct_get_grad_not_found():
     with pytest.raises(RuntimeError):
         grad_net = GradNet(inner_net)
         grad_net(x, y)
+        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -989,6 +991,7 @@ def test_construct_get_grad_not_found_from_empty_tuple():
     with pytest.raises(RuntimeError):
         grad_net = GradNet(inner_net)
         grad_net(x, y)
+        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='unessential')

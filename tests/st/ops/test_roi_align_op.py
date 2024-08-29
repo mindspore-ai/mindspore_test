@@ -92,7 +92,8 @@ def roi_align_case(data_type=np.float16, is_dyn_shape=False, is_dyn_rank=False):
     np.testing.assert_almost_equal(output.asnumpy(), expect, decimal=2)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
 def test_roi_align_float16():
     """
     Feature: Test the operator ROIAlign
@@ -105,7 +106,8 @@ def test_roi_align_float16():
     roi_align_case(np.float16)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
+          card_mark='onecard', essential_mark='unessential')
 def test_roi_align_float32():
     """
     Feature: Test the operator ROIAlign
@@ -118,7 +120,8 @@ def test_roi_align_float32():
     roi_align_case(np.float32)
 
 
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_roi_align_float16_dynamic_shape():
     """
     Feature: Test the operator ROIAlign with dynamic shape inputs
@@ -131,7 +134,8 @@ def test_roi_align_float16_dynamic_shape():
     roi_align_case(np.float16, True)
 
 
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2',
+          card_mark='onecard', essential_mark='unessential')
 def test_roi_align_float32_dynamic_rank():
     """
     Feature: Test the operator ROIAlign with dynamic rank inputs

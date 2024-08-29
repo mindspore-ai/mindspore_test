@@ -53,7 +53,7 @@ def test_xdivy():
     out1 = net()[0]
     out2 = net()[1]
     out_mindspore1 = out1.asnumpy()
-    print("loss:", expect_output_np1-out_mindspore1)
+    print("loss:", expect_output_np1 - out_mindspore1)
     out_mindspore2 = out2.asnumpy()
     print("expect_output_np1:", expect_output_np1)
     print("out_mindspore:", out_mindspore1)

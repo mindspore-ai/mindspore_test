@@ -33,20 +33,21 @@ class Net(nn.Cell):
         return self.ops(input_x, output, dout)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0', card_mark='onecard',
+          essential_mark='essential')
 def test_net01():
     context.set_context(mode=context.GRAPH_MODE, device_target='CPU')
     axis = 1
     net = Net(axis)
     input_x = np.arange(24).astype(np.float32).reshape((2, 3, 4))
     dout = np.arange(24, 48).astype(np.float32).reshape((2, 3, 4))
-    output = input_x / np.sqrt(np.sum(input_x**2, axis=axis, keepdims=True))
+    output = input_x / np.sqrt(np.sum(input_x ** 2, axis=axis, keepdims=True))
     except_asn = (dout - output * np.sum(output * dout, axis=axis, keepdims=True)
-                  ) / np.sqrt(np.sum(input_x**2, axis=axis, keepdims=True))
+                  ) / np.sqrt(np.sum(input_x ** 2, axis=axis, keepdims=True))
     input_x = Tensor(input_x, mstype.float32)
     output = Tensor(output, mstype.float32)
     dout = Tensor(dout, mstype.float32)
     net_output = net(input_x, output, dout).asnumpy()
     precision = np.ones(shape=(2, 3, 4), dtype=np.float32) * 1.0e-5
-    absolute_error = np.abs(except_asn-net_output)
+    absolute_error = np.abs(except_asn - net_output)
     assert np.all(absolute_error < precision)

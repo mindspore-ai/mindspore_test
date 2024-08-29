@@ -26,6 +26,7 @@ from mindspore import dtype
 
 context.set_context(mode=context.GRAPH_MODE, device_target="GPU")
 
+
 class NetErfc(nn.Cell):
     def __init__(self):
         super(NetErfc, self).__init__()

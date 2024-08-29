@@ -27,6 +27,7 @@ def embedding_func(input_x, weight, padding_idx=None, max_norm=None, norm_type=2
     """embedding_func"""
     return ops.embedding(input_x, weight, padding_idx, max_norm=max_norm, norm_type=norm_type)
 
+
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_embedding_static_shape():
     """
@@ -106,6 +107,7 @@ def test_embedding_grad():
     Description: test grad using different padding_idx, max_norm and scale_grad_by_freq
     Expectation: expect correct result.
     """
+
     def embedding_func1(input_x, weight, padding_idx, max_norm, norm_type, scale_grad):
         return ops.embedding(input_x, weight, padding_idx, max_norm, norm_type, scale_grad)
 

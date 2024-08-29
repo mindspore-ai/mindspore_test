@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 from tests.mark_utils import arg_mark
+
 """smoke tests for SparseMatrixSoftmax"""
 
 import numpy as np

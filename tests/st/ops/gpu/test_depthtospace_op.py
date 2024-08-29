@@ -23,16 +23,16 @@ from mindspore.common.api import jit
 from mindspore.common.initializer import initializer
 from mindspore.common.parameter import Parameter
 
+
 class DepthToSpaceNet(nn.Cell):
     def __init__(self, nptype, block_size=2, input_shape=(1, 12, 1, 1)):
         super(DepthToSpaceNet, self).__init__()
         self.DepthToSpace = P.DepthToSpace(2)
         input_size = 1
         for i in input_shape:
-            input_size = input_size*i
+            input_size = input_size * i
         data_np = np.arange(input_size).reshape(input_shape).astype(nptype)
         self.x1 = Parameter(initializer(Tensor(data_np), input_shape), name='x1')
-
 
     @jit
     def construct(self):
@@ -44,7 +44,7 @@ def DepthToSpace(nptype, block_size=2, input_shape=(1, 12, 1, 1)):
     context.set_context(mode=context.GRAPH_MODE, device_target='GPU')
     input_size = 1
     for i in input_shape:
-        input_size = input_size*i
+        input_size = input_size * i
     expect = np.array([[[[0, 3],
                          [6, 9]],
                         [[1, 4],
@@ -57,11 +57,12 @@ def DepthToSpace(nptype, block_size=2, input_shape=(1, 12, 1, 1)):
     print(output)
     assert (output.asnumpy() == expect).all()
 
+
 def DepthToSpace_pynative(nptype, block_size=2, input_shape=(1, 12, 1, 1)):
     context.set_context(mode=context.PYNATIVE_MODE, device_target='GPU')
     input_size = 1
     for i in input_shape:
-        input_size = input_size*i
+        input_size = input_size * i
     expect = np.array([[[[0, 3],
                          [6, 9]],
                         [[1, 4],
@@ -80,77 +81,96 @@ def DepthToSpace_pynative(nptype, block_size=2, input_shape=(1, 12, 1, 1)):
 def test_depthtospace_graph_float32():
     DepthToSpace(np.float32)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_depthtospace_graph_float16():
     DepthToSpace(np.float16)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_depthtospace_graph_int32():
     DepthToSpace(np.int32)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_depthtospace_graph_int64():
     DepthToSpace(np.int64)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_depthtospace_graph_int8():
     DepthToSpace(np.int8)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_depthtospace_graph_int16():
     DepthToSpace(np.int16)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_depthtospace_graph_uint8():
     DepthToSpace(np.uint8)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_depthtospace_graph_uint16():
     DepthToSpace(np.uint16)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_depthtospace_graph_uint32():
     DepthToSpace(np.uint32)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_depthtospace_graph_uint64():
     DepthToSpace(np.uint64)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_depthtospace_pynative_float32():
     DepthToSpace_pynative(np.float32)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_depthtospace_pynative_float16():
     DepthToSpace_pynative(np.float16)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_depthtospace_pynative_int32():
     DepthToSpace_pynative(np.int32)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_depthtospace_pynative_int64():
     DepthToSpace_pynative(np.int64)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_depthtospace_pynative_int8():
     DepthToSpace_pynative(np.int8)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_depthtospace_pynative_int16():
     DepthToSpace_pynative(np.int16)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_depthtospace_pynative_uint8():
     DepthToSpace_pynative(np.uint8)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_depthtospace_pynative_uint16():
     DepthToSpace_pynative(np.uint16)
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_depthtospace_pynative_uint32():
     DepthToSpace_pynative(np.uint32)
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
 def test_depthtospace_pynative_uint64():

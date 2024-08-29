@@ -18,6 +18,7 @@ import tests.st.utils.test_utils as test_utils
 from tests.mark_utils import arg_mark
 
 from mindspore import ops
+from mindspore.common.api import _pynative_executor
 import mindspore as ms
 
 
@@ -217,4 +218,5 @@ def test_scatter_nd_exception(context_mode):
     ms.context.set_context(pynative_synchronize=True)
     with pytest.raises(RuntimeError) as info:
         _ = scatter_nd_forward_func(indices, updates, shape)
+        _pynative_executor.sync()
     assert "a scalar" in str(info)

@@ -18,6 +18,7 @@ import pytest
 from mindspore import Tensor
 from mindspore.nn import Cell
 from mindspore import ops
+from mindspore.common.api import _pynative_executor
 import mindspore.context as context
 import mindspore.common.dtype as mstype
 from mindspore.ops import functional as F
@@ -105,6 +106,7 @@ def test_fold_functional_api_with_invalid_output_size():
     output_size = Tensor([6, -1], mstype.int32)
     with pytest.raises(ValueError, match=r"the value of 'output_size' must not be negative"):
         F.fold(x, output_size, kernel_size=2, dilation=2, padding=2, stride=2)
+        _pynative_executor.sync()
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')

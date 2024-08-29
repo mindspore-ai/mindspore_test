@@ -44,12 +44,13 @@ class ConcatOffsetNet(nn.Cell):
         return out
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_concat_offset_dynamic_cpu():
     """
     /// Feature: Concatoffset op dynamic shape
     /// Description: Concatoffset forward with dynamic shape
-    /// Expectation: Euqal to expected value
+    /// Expectation: Equal to expected value
     """
     if sys.platform != 'linux':
         return
@@ -76,12 +77,13 @@ class SliceNet(nn.Cell):
         return self.slice(x, begin, size)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_slice_begin_size_tensor_cpu():
     """
     /// Feature: Slice op dynamic shape
     /// Description: Slice forward with dynamic shape
-    /// Expectation: Euqal to expected value
+    /// Expectation: Equal to expected value
     """
     if sys.platform != 'linux':
         return
@@ -111,12 +113,13 @@ class GradSlice(nn.Cell):
         return self.grad(self.network)(input_x, begin, size)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_slice_begin_size_tensor_grad():
     """
     /// Feature: Slice op dynamic shape
     /// Description: Slice backward with dynamic shape
-    /// Expectation: Euqal to expected value
+    /// Expectation: Equal to expected value
     """
     if sys.platform != 'linux':
         return
@@ -163,12 +166,13 @@ class GradReduceMean(nn.Cell):
         return self.grad(self.network)(input_x, shape)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_reducemean_dynamic_cpu():
     """
     /// Feature: ReduceMean op dynamic shape
     /// Description: ReduceMean forward with dynamic shape
-    /// Expectation: Euqal to expected value
+    /// Expectation: Equal to expected value
     """
     if sys.platform != 'linux':
         return
@@ -180,12 +184,13 @@ def test_reducemean_dynamic_cpu():
     assert (out.asnumpy() == expect).all()
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_reducemean_dynamic_grad_cpu():
     """
     /// Feature: ReduceMean op dynamic shape
     /// Description: ReduceMean backward with dynamic shape
-    /// Expectation: Euqal to expected value
+    /// Expectation: Equal to expected value
     """
     if sys.platform != 'linux':
         return

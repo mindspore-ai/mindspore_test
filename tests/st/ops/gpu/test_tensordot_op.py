@@ -203,7 +203,6 @@ def test_tensor_dot_reverse_axes():
                                 [0.8003185, 0.457294, 1.0721111]]).astype(np.float32)
     np.testing.assert_array_almost_equal(ms_result_np, expected_result)
 
-
     np.random.seed(1526)
     shape_x1 = (1, 2, 3, 4, 5)
     shape_x2 = (1, 2, 3)

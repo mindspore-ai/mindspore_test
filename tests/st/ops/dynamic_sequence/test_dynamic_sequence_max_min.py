@@ -45,13 +45,15 @@ class MinNet(nn.Cell):
         return self.func(x)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_seq_max():
     """
     Feature: test sequence max op
     Description: first input is dynamic sequence
     Expectation: the result match with tuple result
     """
+
     def func(x):
         return max(x)
 
@@ -61,13 +63,15 @@ def test_seq_max():
     fact.forward_cmp()
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_seq_min():
     """
     Feature: test sequence min op
     Description: first input is dynamic sequence
     Expectation: the result match with tuple result
     """
+
     def func(x):
         return min(x)
 
@@ -77,7 +81,8 @@ def test_seq_min():
     fact.forward_cmp()
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard',
+          essential_mark='unessential')
 def test_seq_max_grad():
     """
     Feature: test sequence max grad op
@@ -91,7 +96,8 @@ def test_seq_max_grad():
     print("grad=:", grad_func(x, dout))
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_seq_min_grad():
     """
     Feature: test sequence min grad op
@@ -105,7 +111,8 @@ def test_seq_min_grad():
     print("grad=:", grad_func(x, dout))
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_seq_min_grad_mutable():
     """
     Feature: test sequence min grad op

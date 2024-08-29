@@ -38,7 +38,8 @@ class Net(nn.Cell):
         return C.multinomial(x, self.sample, self.replacement, self.seed)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='unessential')
 def test_multinomial_net():
     x0 = Tensor(np.array([0.9, 0.2]).astype(np.float32))
     x1 = Tensor(np.array([[0.9, 0.2], [0.9, 0.2]]).astype(np.float32))
@@ -61,6 +62,7 @@ class DynamicShapeNet(nn.Cell):
           supports x 1 or 2 dimensions and Ascend only supports 2 dimensions.
         - **num_samples** (int) - number of samples to draw, must be a nonnegative number.
     """
+
     def __init__(self):
         super(DynamicShapeNet, self).__init__()
         self.unique = P.Unique()
@@ -73,7 +75,8 @@ class DynamicShapeNet(nn.Cell):
         return self.multinomial(x, 2)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard',
+          essential_mark='unessential')
 def test_multinomial_dynamic_shape():
     """
     Feature: test Multinomial dynamic_shape feature.
@@ -111,7 +114,8 @@ def multinomial(prob, num_sample):
     return P.Multinomial(seed=5, seed2=6)(prob, num_sample)
 
 
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard', essential_mark='unessential')
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level2', card_mark='onecard',
+          essential_mark='unessential')
 def test_multinomial_vmap():
     """
     Feature: test Multinomial vmap feature.

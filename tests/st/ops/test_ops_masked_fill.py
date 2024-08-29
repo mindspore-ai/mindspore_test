@@ -27,6 +27,7 @@ def np_masked_fill_forward_func(input_x, mask, value):
     input_x = np.ma.array(input_x, mask=mask, fill_value=value)
     return input_x.filled()
 
+
 @test_utils.run_with_cell
 def masked_fill_forward_func(input_x, mask, value):
     return masked_fill(input_x, mask, value)
