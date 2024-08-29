@@ -1,0 +1,35 @@
+while_loop:
+    description: |
+        Provide a useful op for reducing compilation times of while loop.
+
+        .. warning::
+            This is an experimental API that is subject to change or deletion.
+
+        Inputs:
+            - **cond_func** (Function) - The condition function.
+            - **loop_func** (Function) - The loop function, take one argument and
+              return value has the same type with input argument.
+            - **init_val** (Union[Tensor, number, str, bool, list, tuple, dict]) - The initial value.
+
+        Outputs:
+            Union[Tensor, number, str, bool, list, tuple, dict], the final result of the while loop,
+            has same type with input `init_val` .
+
+        Raises:
+            TypeError: If `cond_func` is not a function.
+            TypeError: If `loop_func` is not a function.
+            ValueError: If `loop_func` cannot take `init_val` as input or
+                        has different output type with `init_val` .
+
+        Supported Platforms:
+            ``Ascend`` ``GPU`` ``CPU``
+
+        Examples:
+            >>> while_loop = ops.WhileLoop()
+            >>> def loop_while_fun(init_val):
+            ...     val = init_val
+            ...     val = val + 1
+            ...     return val
+            ...
+            >>> init_state = 10
+            >>> result = while_loop(lambda x : x < 100, loop_while_fun, init_state)

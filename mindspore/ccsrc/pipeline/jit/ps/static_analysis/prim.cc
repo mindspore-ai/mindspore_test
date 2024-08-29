@@ -4137,7 +4137,7 @@ class WhileLoopEvaluator : public Evaluator {
     EvalResultPtr cond_eval_result = engine->GetEvaluatorFor(cond_func)->Run(engine, value_arg_conf_list, nullptr);
     EvalResultPtr loop_eval_result = engine->GetEvaluatorFor(loop_func)->Run(engine, value_arg_conf_list, nullptr);
     auto loop_result_abs = loop_eval_result->abstract();
-    if (!(*AbstractBroaden(loop_result_abs) == *AbstractBroaden(init_value_abs))) {
+    if (!CheckTypeIdEqual(loop_result_abs, init_value_abs)) {
       MS_EXCEPTION(ValueError) << "WhileLoop op has invalid argument, the return value of the [loop_func] "
                                << "and the [init_value] should maintain the same type, but got: "
                                << loop_result_abs->ToString() << " and " << init_value_abs->ToString();
@@ -4180,7 +4180,7 @@ class WhileLoopEvaluator : public Evaluator {
     // Convert mutable argument, so that the while loop will not be unrolled
     if (cond_eval_result->abstract()->BuildValue()->ContainsValueAny() ||
         loop_result_abs->BuildValue()->ContainsValueAny()) {
-      init_value_node = cur_graph->NewCNodeInOrder({NewValueNode(prim::kPrimMutable), init_value_node});
+      init_value_node = cur_graph->NewCNode({NewValueNode(prim::kPrimMutable), init_value_node});
     }
     auto while_loop_graph_caller = cur_graph->NewCNodeInOrder({NewValueNode(while_loop_graph), init_value_node});
     AnfNodeConfigPtr fn_conf = engine->MakeConfig(while_loop_graph_caller, out_conf->context(), out_conf->func_graph());
@@ -4189,6 +4189,16 @@ class WhileLoopEvaluator : public Evaluator {
 
   EvalResultPtr Eval(AnalysisEnginePtr, const AbstractBasePtrList &, const AnfNodeConfigPtr &) override {
     MS_LOG(INTERNAL_EXCEPTION) << "Eval() should not be called, Run() method should be called";
+  }
+
+ private:
+  bool CheckTypeIdEqual(const AbstractBasePtr &left, const AbstractBasePtr &right) {
+    // Regard Tensor and Parameter as the same type
+    auto left_type = left->BuildType();
+    MS_EXCEPTION_IF_NULL(left_type);
+    auto right_type = right->BuildType();
+    MS_EXCEPTION_IF_NULL(right_type);
+    return left_type->type_id() == right_type->type_id();
   }
 };
 
@@ -4499,18 +4509,25 @@ class ScanEvaluator : public Evaluator {
     auto result = scan_func_graph->NewCNodeInOrder({switch_node});
     scan_func_graph->set_output(result);
     // Call loop_func first and init ys as a list with one element, to avoid TypeJoined Problem
-    auto first_item =
-      cur_graph->NewCNodeInOrder({NewValueNode(getitem_op), xs_node, NewValueNode(static_cast<int64_t>(0))});
-    auto first_loop_func_output = cur_graph->NewCNodeInOrder({NewValueNode(loop_func_node), init_node, first_item});
-    auto new_init_node = cur_graph->NewCNodeInOrder(
+    auto top_scan_func_graph = std::make_shared<FuncGraph>();
+    auto top_xs_param = top_scan_func_graph->add_parameter();
+    auto top_init_param = top_scan_func_graph->add_parameter();
+    top_scan_func_graph->set_manager(manager);
+    auto first_item = top_scan_func_graph->NewCNodeInOrder(
+      {NewValueNode(getitem_op), top_xs_param, NewValueNode(static_cast<int64_t>(0))});
+    auto first_loop_func_output =
+      top_scan_func_graph->NewCNodeInOrder({NewValueNode(loop_func_node), top_init_param, first_item});
+    auto new_init_node = top_scan_func_graph->NewCNodeInOrder(
       {NewValueNode(prim::kPrimTupleGetItem), first_loop_func_output, NewValueNode(static_cast<int64_t>(0))});
-    auto y_node = cur_graph->NewCNodeInOrder(
+    auto y_node = top_scan_func_graph->NewCNodeInOrder(
       {NewValueNode(prim::kPrimTupleGetItem), first_loop_func_output, NewValueNode(static_cast<int64_t>(1))});
-    auto ys_node = cur_graph->NewCNodeInOrder({NewValueNode(prim::kPrimMakeList), y_node});
+    auto ys_node = top_scan_func_graph->NewCNodeInOrder({NewValueNode(prim::kPrimMakeList), y_node});
     auto mutable_index_node =
-      cur_graph->NewCNodeInOrder({NewValueNode(prim::kPrimMutable), NewValueNode(static_cast<int64_t>(1))});
-    auto result_node =
-      cur_graph->NewCNodeInOrder({NewValueNode(scan_func_graph), mutable_index_node, xs_node, new_init_node, ys_node});
+      top_scan_func_graph->NewCNodeInOrder({NewValueNode(prim::kPrimMutable), NewValueNode(static_cast<int64_t>(1))});
+    auto top_result_node = top_scan_func_graph->NewCNodeInOrder(
+      {NewValueNode(scan_func_graph), mutable_index_node, top_xs_param, new_init_node, ys_node});
+    top_scan_func_graph->set_output(top_result_node);
+    auto result_node = cur_graph->NewCNodeInOrder({NewValueNode(top_scan_func_graph), xs_node, init_node});
     return result_node;
   }
 };
@@ -4569,11 +4586,11 @@ class ForiLoopEvaluator : public Evaluator {
       // Call Scan_op instead
       // (_, result), _ = {prim::kPrimScan(scan_loop_func_graph), (lower, init_val), None, length_node, unroll_node}
       auto unroll_node = GetUnroll(args_abs_list, max_input_size);
-      auto scan_init = cur_graph->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), lower_index_node, init_node});
+      auto scan_init = cur_graph->NewCNode({NewValueNode(prim::kPrimMakeTuple), lower_index_node, init_node});
       auto scan_output =
-        cur_graph->NewCNodeInOrder({NewValueNode(prim::kPrimScan), NewValueNode(scan_loop_func_graph), scan_init,
-                                    NewValueNode(std::make_shared<None>()), length_node, unroll_node});
-      auto carry_output = cur_graph->NewCNodeInOrder(
+        cur_graph->NewCNode({NewValueNode(prim::kPrimScan), NewValueNode(scan_loop_func_graph), scan_init,
+                             NewValueNode(std::make_shared<None>()), length_node, unroll_node});
+      auto carry_output = cur_graph->NewCNode(
         {NewValueNode(prim::kPrimTupleGetItem), scan_output, NewValueNode(static_cast<int64_t>(0))});
       final_node = cur_graph->NewCNodeInOrder(
         {NewValueNode(prim::kPrimTupleGetItem), carry_output, NewValueNode(static_cast<int64_t>(1))});
@@ -4589,8 +4606,8 @@ class ForiLoopEvaluator : public Evaluator {
       // Call while_loop op instead
       // _, _, result = {prim::kPrimWhileLoop(cond_func_graph, loop_func_graph, (lower, upper, init_val)}
       auto params =
-        cur_graph->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), lower_index_node, upper_index_node, init_node});
-      auto while_loop_output = cur_graph->NewCNodeInOrder(
+        cur_graph->NewCNode({NewValueNode(prim::kPrimMakeTuple), lower_index_node, upper_index_node, init_node});
+      auto while_loop_output = cur_graph->NewCNode(
         {NewValueNode(prim::kPrimWhileLoop), NewValueNode(cond_func_graph), NewValueNode(loop_func_graph), params});
       final_node = cur_graph->NewCNodeInOrder(
         {NewValueNode(prim::kPrimTupleGetItem), while_loop_output, NewValueNode(static_cast<int64_t>(2))});
@@ -4657,8 +4674,8 @@ class ForiLoopEvaluator : public Evaluator {
       {NewValueNode(prim::kPrimScalarAdd), index, NewValueNode(static_cast<int64_t>(1))});
     auto tuple_result =
       scan_loop_func_graph->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), new_index, body_output});
-    auto scan_loop_func_output =
-      scan_loop_func_graph->NewCNodeInOrder({NewValueNode(prim::kPrimMakeTuple), tuple_result, item});
+    auto scan_loop_func_output = scan_loop_func_graph->NewCNodeInOrder(
+      {NewValueNode(prim::kPrimMakeTuple), tuple_result, NewValueNode(static_cast<int64_t>(0))});
     scan_loop_func_graph->set_output(scan_loop_func_output);
     return scan_loop_func_graph;
   }

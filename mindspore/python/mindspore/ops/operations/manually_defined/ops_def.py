@@ -2019,23 +2019,28 @@ def flash_attention_score(query, key, value, head_num, real_shift=None, drop_mas
 
 class WhileLoop(Primitive):
     """
-    Provide a useful op for reducing compilation times of while loop
+    Provide a useful op for reducing compilation times of while loop.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
 
     Inputs:
         - **cond_func** (Function) - The condition function.
-        - **loop_func** (Function) - The loop function, take one argument
-                                      and return value has the same type with input argument
-        - **init_val** (Union[Tensor, Number, Str, Bool, List, Tuple, Dict]) - The initial value.
+        - **loop_func** (Function) - The loop function, take one argument and
+          return value has the same type with input argument.
+        - **init_val** (Union[Tensor, number, str, bool, list, tuple, dict]) - The initial value.
 
     Outputs:
-        Union[Tensor, Number, Str, Bool, List, Tuple, Dict] The final result of the while loop,
-        has same type with input 'init_val'.
+        Union[Tensor, number, str, bool, list, tuple, dict], the final result of the while loop,
+        has same type with input `init_val` .
 
     Raises:
         TypeError: If `cond_func` is not a function.
         TypeError: If `loop_func` is not a function.
-        ValueError: If `loop_func` cannot take `init_val` as input or
-                    has different output type with `init_val`
+        ValueError: If `loop_func` cannot take `init_val` as input or has different output type with `init_val` .
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> while_loop = ops.WhileLoop()
@@ -2043,6 +2048,7 @@ class WhileLoop(Primitive):
         ...     val = init_val
         ...     val = val + 1
         ...     return val
+        ...
         >>> init_state = 10
         >>> result = while_loop(lambda x : x < 100, loop_while_fun, init_state)
     """
@@ -2052,44 +2058,51 @@ class WhileLoop(Primitive):
         """Initialize WhileLoop."""
 
     def __call__(self, cond_func, loop_func, init_val):
-        validator.check_value_type("cond_func", cond_func, [types.FunctionType], "WhileLoop")
-        validator.check_value_type("loop_func", loop_func, [types.FunctionType], "WhileLoop")
+        validator.check_value_type("cond_func", cond_func,
+                                   [types.FunctionType, types.MethodType], "WhileLoop")
+        validator.check_value_type("loop_func", loop_func,
+                                   [types.FunctionType, types.MethodType], "WhileLoop")
         val = init_val
         try:
             while cond_func(val):
                 val = loop_func(val)
         except Exception as e:
-            raise ValueError("Invalid loop body, please make sure the loop_func can take \
-                             `init_val` as argument, and the return value has the same type \
-                             with `init_val`, error info: {}".format(e))
+            raise ValueError("Invalid loop_func, please check input arguments and \
+                             return value, error info: {}".format(e))
         return val
 
 
 class Scan(Primitive):
     """
     Scan a function over an array while the processing of the current element
-    depends on the execution result of the previous element
+    depends on the execution result of the previous element.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
 
     Inputs:
         - **loop_func** (Function) - The loop function.
-        - **init** (Union[Tensor, Number, Str, Bool, List, Tuple, Dict]) - An initial loop carry value
-        - **xs** (Union(Tuple, List, None)) - The value over which to scan
-        - **length** (Optional) Int - The size of xs
-        - **unroll** (Optional) Bool - The flag for whether unroll in compile process
+        - **init** (Union[Tensor, number, str, bool, list, tuple, dict]) - An initial loop carry value.
+        - **xs** (Union[tuple, list, None]) - The value over which to scan.
+        - **length** (Union[int, None], optional) - The size of xs. Default: ``None`` .
+        - **unroll** (bool, optional) - The flag for whether unroll in compile process. Default: ``True`` .
 
     Outputs:
-        Tuple(Union[Tensor, Number, Str, Bool, List, Tuple, Dict], List). Output of scan loop,
+        Tuple(Union[Tensor, number, str, bool, list, tuple, dict], list). Output of scan loop,
         a tuple with two elements, the first element has same type with init argument,
-        and the second is a list.
+        and the second is a list containing the results of each loop.
 
     Raises:
         TypeError: If `loop_func` is not a function.
-        TypeError: If `xs` is not in Union(Tuple, List, None)
-        TypeError: If `length` is not an int
-        TypeError: If `unroll` is not a bool
+        TypeError: If `xs` is not a tuple, a list or None.
+        TypeError: If `length` is not an int or None.
+        TypeError: If `unroll` is not a bool.
         ValueError: If `loop_func` cannot take `init` and element of `xs` as inputs.
         ValueError: If the return value of `loop_func` is not a tuple with two elements,
-                    and the first element has the same type as `init`
+                    and the first element has the same type as `init` .
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> scan_op = ops.Scan()
@@ -2106,7 +2119,8 @@ class Scan(Primitive):
         """Initialize Scan."""
 
     def __call__(self, loop_func, init, xs, length=None, unroll=True):
-        validator.check_value_type("loop_func", loop_func, [types.FunctionType], "Scan")
+        validator.check_value_type("loop_func", loop_func,
+                                   [types.FunctionType, types.MethodType], "Scan")
         validator.check_value_type("xs", xs, [list, tuple, None], "Scan")
         if xs is None:
             validator.check_value_type("length", length, [int], "Scan")
@@ -2125,32 +2139,38 @@ class Scan(Primitive):
                 i = i + 1
         except Exception as e:
             raise ValueError("Invalid loop_func, please check input arguments and \
-                                return value, error info: {}".format(e))
+                             return value, error info: {}".format(e))
         return carry, ys
 
 
 class ForiLoop(Primitive):
     """
-    Provide a useful op for loop from lower to upper
+    Provide a useful op for loop from lower to upper.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
 
     Inputs:
         - **lower** (Union[int, Tensor]) - The start index of loop.
         - **upper** (Union[int, Tensor]) - The end index of loop.
         - **loop_func** (Function) - The loop function, takes two arguments.
-        - **init_val** (Union[Tensor, Number, Str, Bool, List, Tuple, Dict]) - The init value.
-        - **unroll** (Optional) Bool - The flag for whether unroll in compile process,
-                            only works for certain loop times
+        - **init_val** (Union[Tensor, number, str, bool, list, tuple, dict]) - The init value.
+        - **unroll** (bool, optional) - The flag for whether unroll in compile process,
+          only valid when the number of loop iterations is determined. Default: ``True`` .
 
     Outputs:
-        Union[Tensor, Number, Str, Bool, List, Tuple, Dict] The final result of the loop,
-        has same type with input 'init_val'.
+        Union[Tensor, number, str, bool, list, tuple, dict], the final result of the loop,
+        has same type with input `init_val` .
 
     Raises:
         TypeError: If `lower` is not an int or a Tensor.
         TypeError: If `upper` is not an int or a Tensor.
         TypeError: If `loop_func` is not a function.
-        ValueError: If `loop_func` cannot take index and `init_val` as inputs or
-                    has different output type with `init_val`
+        ValueError: If `loop_func` cannot take index and `init_val` as arguments or if the type
+                    of output it produces is different from the type of `init_val` .
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
 
     Examples:
         >>> fori_loop = ops.ForiLoop()
@@ -2168,7 +2188,8 @@ class ForiLoop(Primitive):
     def __call__(self, lower, upper, loop_func, init_val, unroll=True):
         validator.check_value_type("lower", lower, [int, Tensor], "ForiLoop")
         validator.check_value_type("upper", upper, [int, Tensor], "ForiLoop")
-        validator.check_value_type("loop_func", loop_func, [types.FunctionType], "ForiLoop")
+        validator.check_value_type("loop_func", loop_func,
+                                   [types.FunctionType, types.MethodType], "ForiLoop")
         val = init_val
         try:
             for i in range(lower, upper):
