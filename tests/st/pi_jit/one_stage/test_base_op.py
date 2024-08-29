@@ -798,6 +798,26 @@ def test_tensor_method_by_ast_3():
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_tensor_method_by_ast_4():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        @jit(mode="PIJit")
+        def construct(self, x):
+            return x.contiguous()
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    a = Tensor([1, 2, 3, 4])
+    net = Net()
+    net(a)
+    jcr = get_code_extra(Net.construct.__wrapped__)
+    assert jcr["break_count_"] == 0
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 def test_function_parse_by_ast():
     """
     Feature: One stage basic operation.
