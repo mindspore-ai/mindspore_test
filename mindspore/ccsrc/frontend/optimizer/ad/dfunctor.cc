@@ -392,6 +392,11 @@ AdjointPtr DFunctor::MapMorphism(const AnfNodePtr &morph) {
   {
     TraceGuard guard(std::make_shared<TraceGradFpropApp>(cnode_morph->debug_info()));
     k_app = k_graph_->NewCNode(inputs);
+    const DebugInfoPtr &old_debug_info = cnode_morph->debug_info();
+    const auto &old_real_loc = old_debug_info->real_loc();
+    if (!old_real_loc.empty()) {
+      k_app->debug_info()->set_real_loc(old_real_loc);
+    }
   }
   // Run in pynative mode, when @jit is used.
   if (MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
