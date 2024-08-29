@@ -42,6 +42,7 @@
 #include "pipeline/jit/pi/python_adapter/pydef.h"
 #include "pipeline/jit/ps/parse/data_converter.h"
 #include "include/common/utils/tensor_py.h"
+#include "frontend/operator/composite/composite.h"
 
 namespace mindspore {
 namespace pijit {
@@ -4076,16 +4077,12 @@ void MindGraphBuilder::FGAddOutput(bool is_top_graph) {
   }
 }
 
-py::object MindGraphBuilder::FGAddNode(CallNode *call_node, const py::object &callable_info,
-                                       const AbstractWrapperPtrList &args, StopTraceReason *stop_reason) {
-  MS_LOG(INFO) << "try add node: " << py::str(callable_info);
-  TraceGuard trace_guard(GetLocation(call_node));
-  auto res = FGBuilder()->AddNode(callable_info, args);
+void UpdateNodeInfo(const AbstractWrapperPtr &res, CallNode *call_node, StopTraceReason *stop_reason) {
   if (res == nullptr) {
-    MS_LOG(INFO) << "add node fail";
+    MS_LOG(INFO) << "Add node fail";
     *stop_reason = StopTraceReason::kTrace_Fail;
   } else {
-    MS_LOG(INFO) << "add node suc";
+    MS_LOG(INFO) << "Add node succ";
     auto node = AObject::Convert(res);
     MS_LOG(INFO) << py::str(node->GetPyObject());
     MS_LOG(INFO) << node->ToString();
@@ -4093,7 +4090,22 @@ py::object MindGraphBuilder::FGAddNode(CallNode *call_node, const py::object &ca
     call_node->set_abstract_wrapper(res);
     *stop_reason = StopTraceReason::kNonStopTrace;
   }
-  return py::object();
+}
+
+void MindGraphBuilder::FGAddNode(CallNode *call_node, const py::object &callable_info,
+                                 const AbstractWrapperPtrList &args, StopTraceReason *stop_reason) {
+  MS_LOG(INFO) << "Try add node: " << py::str(callable_info);
+  TraceGuard trace_guard(GetLocation(call_node));
+  auto res = FGBuilder()->AddNode(callable_info, args);
+  UpdateNodeInfo(res, call_node, stop_reason);
+}
+
+void MindGraphBuilder::FGAddNode(CallNode *call_node, const ValuePtr &callable_value,
+                                 const AbstractWrapperPtrList &args, StopTraceReason *stop_reason) {
+  MS_LOG(INFO) << "Try add node: " << callable_value->ToString();
+  TraceGuard trace_guard(GetLocation(call_node));
+  auto res = FGBuilder()->AddNode(callable_value, args);
+  UpdateNodeInfo(res, call_node, stop_reason);
 }
 
 std::vector<ValueNode *> MindGraphBuilder::GetNewArgs(CallNode *call_node, AObject *vobj) {
@@ -4459,37 +4471,87 @@ static bool MindFGForbiddenConvertFunc(const py::handle &func) {
                      [&qualname](const std::string &name) { return qualname == name; });
 }
 
-std::pair<bool, py::object> MindGraphBuilder::ConvertBuiltInMethodOrFunction(const py::object &callable_info) const {
-  auto new_callable_info = callable_info;
-  bool should_parse_in_ast = false;
-  bool forbidden_convert = MindFGForbiddenConvertFunc(callable_info);
-  if (forbidden_convert) {
-    return std::pair<bool, py::object>(should_parse_in_ast, new_callable_info);
+std::string GetClassTypeName(const py::object &obj) {
+  if (!PyType_Check(obj.ptr())) {
+    return "";
   }
-  auto method = FGBuilder()->ConvertMethod(new_callable_info);
+  // desc has format "<class xxxx>", strip the '<' and '>' by offset 1.
+  std::string tp_name = reinterpret_cast<PyTypeObject *>(obj.ptr())->tp_name;
+  return "class '" + tp_name + "'";
+}
+
+py::object ConvertPythonBuiltInFunction(const py::object &obj, const std::string &func_name) {
+  py::str func_name_obj = py::str(func_name);
+  auto dict = python_adapter::GetPyObjAttr(python_adapter::GetPyModule("mindspore._extends.parse.resources"),
+                                           "convert_class_to_function_map");
+  auto callable_obj_ptr = PyDict_GetItem(dict.ptr(), func_name_obj.ptr());
+  return callable_obj_ptr == nullptr ? py::object() : py::cast<py::object>(callable_obj_ptr);
+}
+
+bool MindGraphBuilder::ConvertClassType(const py::object &callable_info, CallNode *call_node,
+                                        StopTraceReason *stop_reason) {
+  // Iterator is not currently supported and will be considered later.
+  if (PyIter_Check(callable_info.ptr())) {
+    return false;
+  }
+  const auto &class_type_name = GetClassTypeName(callable_info);
+  if (class_type_name == "") {
+    return false;
+  }
+  static std::map<std::string, ValuePtr> list_or_tuple_func_map = {
+    {"class 'list'", std::make_shared<prim::ListFunc>("list_func")},
+    {"class 'tuple'", std::make_shared<prim::TupleFunc>("tuple_func")}};
+  auto iter = list_or_tuple_func_map.find(class_type_name);
+  if (iter != list_or_tuple_func_map.end()) {
+    auto callable_value = iter->second;
+    MS_LOG(INFO) << "Found built-in class type: " << class_type_name;
+    std::vector<ValueNode *> args;
+    const auto &call_node_inputs = call_node->getInputs();
+    (void)std::copy(call_node_inputs.begin() + 1, call_node_inputs.end(), std::back_inserter(args));
+    FGAddNode(call_node, callable_value, HandleInputArgs(args), stop_reason);
+    return true;
+  }
+  auto py_builtin_func = ConvertPythonBuiltInFunction(callable_info, class_type_name);
+  if (py_builtin_func.ptr() != nullptr) {
+    MS_LOG(INFO) << "Convert python built-in function:" << py::str(callable_info) << " to " << py::str(py_builtin_func);
+    std::vector<ValueNode *> args;
+    const auto &call_node_inputs = call_node->getInputs();
+    (void)std::copy(call_node_inputs.begin() + 1, call_node_inputs.end(), std::back_inserter(args));
+    FGAddNode(call_node, py_builtin_func, HandleInputArgs(args), stop_reason);
+    return true;
+  }
+  return false;
+}
+
+std::pair<bool, py::object> MindGraphBuilder::ConvertBuiltInMethodOrFunction(const py::object &callable_info) const {
+  bool should_parse_in_ast = false;
+  if (MindFGForbiddenConvertFunc(callable_info)) {
+    return std::make_pair(should_parse_in_ast, callable_info);
+  }
+  auto method = FGBuilder()->ConvertMethod(callable_info);
   if (method.ptr() != nullptr) {
     MS_LOG(INFO) << "convert method :" << py::str(callable_info) << " to " << py::str(method);
-    new_callable_info = method;
-    should_parse_in_ast = should_parse_in_ast || PyMethod_Check(method.ptr()) || PyFunction_Check(method.ptr());
+    should_parse_in_ast = PyMethod_Check(method.ptr()) || PyFunction_Check(method.ptr());
+    return std::make_pair(should_parse_in_ast, method);
   }
-  auto func = FGBuilder()->ConvertFunction(new_callable_info);
+  auto func = FGBuilder()->ConvertFunction(callable_info);
   if (func.ptr() != nullptr) {
     MS_LOG(INFO) << "convert function:" << py::str(callable_info) << " to " << py::str(func);
-    new_callable_info = func;
-    should_parse_in_ast = should_parse_in_ast || PyMethod_Check(func.ptr()) || PyFunction_Check(func.ptr());
+    should_parse_in_ast = PyMethod_Check(func.ptr()) || PyFunction_Check(func.ptr());
+    return std::make_pair(should_parse_in_ast, func);
   }
-  if (!should_parse_in_ast && (PyMethod_Check(new_callable_info.ptr()) || PyFunction_Check(new_callable_info.ptr()))) {
-    const auto &module_name = GetModuleName(new_callable_info);
+  if (PyMethod_Check(callable_info.ptr()) || PyFunction_Check(callable_info.ptr())) {
+    const auto &module_name = GetModuleName(callable_info);
     bool match = std::any_of(kAstFunctionList.begin(), kAstFunctionList.end(), [&module_name](const std::string &name) {
       return module_name.substr(0, name.size()) == name;
     });
     if (match) {
-      MS_LOG(INFO) << "Found object " << py::str(new_callable_info) << " with module name " << module_name
+      MS_LOG(INFO) << "Found object " << py::str(callable_info) << " with module name " << module_name
                    << "should be parsed in ast.";
     }
     should_parse_in_ast = match;
   }
-  return std::pair<bool, py::object>(should_parse_in_ast, new_callable_info);
+  return std::make_pair(should_parse_in_ast, callable_info);
 }
 
 py::object MindGraphBuilder::ResolveCallable(CallNode *call_node, StopTraceReason *stop_reason) {
@@ -4513,6 +4575,9 @@ py::object MindGraphBuilder::ResolveCallable(CallNode *call_node, StopTraceReaso
       return HandleConstantFoldFunc(res.second, call_node, stop_reason);
     }
   }
+  if (ConvertClassType(callable_info, call_node, stop_reason)) {
+    return py::object();
+  }
 
   auto convert_result = ConvertBuiltInMethodOrFunction(callable_info);
   callable_info = convert_result.second;
@@ -4533,7 +4598,8 @@ py::object MindGraphBuilder::ResolveCallable(CallNode *call_node, StopTraceReaso
     }
     (void)std::copy(bind_args.begin(), bind_args.end(), std::back_inserter(args));
     (void)std::copy(bind_vargs.begin(), bind_vargs.end(), std::back_inserter(args));
-    return FGAddNode(call_node, callable_info, HandleInputArgs(args), stop_reason);
+    FGAddNode(call_node, callable_info, HandleInputArgs(args), stop_reason);
+    return py::object();
   }
   if (FGBuilder()->CheckCallable(callable_info)) {
     std::vector<ValueNode *> args;
@@ -4547,7 +4613,8 @@ py::object MindGraphBuilder::ResolveCallable(CallNode *call_node, StopTraceReaso
       const auto &call_node_inputs = call_node->getInputs();
       (void)std::copy(call_node_inputs.begin() + 1, call_node_inputs.end(), std::back_inserter(args));
     }
-    return FGAddNode(call_node, callable_info, HandleInputArgs(args), stop_reason);
+    FGAddNode(call_node, callable_info, HandleInputArgs(args), stop_reason);
+    return py::object();
   }
 
   py::object result = this->GraphBuilder::ResolveCallable(call_node, stop_reason);
