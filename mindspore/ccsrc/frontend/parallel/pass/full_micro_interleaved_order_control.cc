@@ -298,9 +298,6 @@ void FullMicroInterleavedOrderControl(const FuncGraphPtr &graph) {
   if (!parallel::ParallelContext::GetInstance()->enable_micro_interleaved()) {
     return;
   }
-  if (common::GetEnv("MS_ENABLE_FRONTEND_SCHEDULING_OPTIMIZATION") == "1") {
-    return;
-  }
   MS_EXCEPTION_IF_NULL(graph);
   auto manager = graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
