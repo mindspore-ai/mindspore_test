@@ -3,7 +3,7 @@ mindspore.dtype
 
 .. py:class:: mindspore.dtype
 
-    创建一个MindSpore数据类型的对象。
+    MindSpore的数据类型。
 
     `dtype` 的实际路径为 `/mindspore/common/dtype.py` 。运行以下命令导入环境：
 
