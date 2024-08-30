@@ -518,6 +518,9 @@ def _generator_worker_loop(dataset, idx_queue, result_queue, eof, is_multiproces
     """
     Multithread or multiprocess generator worker process loop.
     """
+    # Initialize C++ side signal handlers
+    cde.register_worker_handlers()
+
     if is_multiprocessing:
         result_queue.cancel_join_thread()  # Ensure that the process does not hung when exiting
         signal.signal(signal.SIGTERM, partial(_subprocess_handle, eof))

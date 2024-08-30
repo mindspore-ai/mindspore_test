@@ -16,8 +16,6 @@
 #ifndef MINDSPORE_CCSRC_MINDDATA_DATASET_UTIL_SHARED_MEM_H_
 #define MINDSPORE_CCSRC_MINDDATA_DATASET_UTIL_SHARED_MEM_H_
 
-#include <fcntl.h>
-
 #include <string>
 
 #include "minddata/dataset/util/status.h"

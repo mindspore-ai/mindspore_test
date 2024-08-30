@@ -75,6 +75,7 @@ class DatasetOp : public std::enable_shared_from_this<DatasetOp> {
  public:
   static constexpr int32_t kInvalidOperatorId = -1;
   static constexpr int32_t kInfiniteRepeat = -1;
+  static bool handler_set;
 
   // Flags that control operator runtime behaviors
   enum OpState { kDeOpRunning = 0, kDeOpIdle = 1, kDeOpTerminated };
@@ -389,7 +390,7 @@ class DatasetOp : public std::enable_shared_from_this<DatasetOp> {
   void UpdateRepeatAndEpochCounter();
 
   // Launch the Op
-  virtual Status Launch() { return Status::OK(); }
+  virtual Status Launch();
 
   enum ImplementedPullMode { NotImplemented = 0, Implemented, DisabledDebugMode };
   /// \brief Gets the implementation status for operator in pull mode
