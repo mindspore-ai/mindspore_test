@@ -736,6 +736,7 @@ Status CostGraph::SearchStrategyForMultiNodeFinalGraph(const std::vector<Operato
       return FAILED;
     }
     MS_EXCEPTION_IF_NULL(connected_components[k]);
+    MS_EXCEPTION_IF_NULL(selected_cost->decision_ptr_);
     if (connected_components[k]->GetOperators().size() == 1) {
       auto u = connected_components[k]->GetOperators()[0];
       auto decision_f = selected_cost->decision_ptr_->cast<FinalSingleDecisionPtr>();
@@ -762,7 +763,6 @@ Status CostGraph::SearchStrategyForMultiNodeFinalGraph(const std::vector<Operato
       auto e = u->GetAliveSuccEdges()[0];
       MS_EXCEPTION_IF_NULL(v);
       MS_EXCEPTION_IF_NULL(e);
-      MS_EXCEPTION_IF_NULL(selected_cost->decision_ptr_);
       auto decision = selected_cost->decision_ptr_->cast<FinalDecisionPtr>();
       MS_EXCEPTION_IF_NULL(decision);
       u->SetSelectedStrategyAndCost(decision->u_strategy_, decision->left_cost_);

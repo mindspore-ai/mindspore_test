@@ -221,7 +221,7 @@ static void InsertAllReduceToNodeInput(const CNodePtr &node, const std::string &
 }
 
 bool InsertAllReduceOps(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphPtr &root, const size_t devices) {
-  int64_t device_num = devices;
+  int64_t device_num = (int64_t)devices;
   if (device_num <= 1) {
     return true;
   }
@@ -335,7 +335,7 @@ bool InsertAllReduceOpsForFFN(const std::vector<AnfNodePtr> &all_nodes, const Fu
 }
 
 void ChangeReshape(const AnfNodePtr &node, const size_t devices) {
-  int64_t device_num = devices;
+  int64_t device_num = (int64_t)devices;
   MS_EXCEPTION_IF_NULL(node);
   if (!node->isa<CNode>()) {
     return;
@@ -396,7 +396,7 @@ void ChangeReshape(const AnfNodePtr &node, const size_t devices) {
 }
 
 bool ModifyReshapeOps(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphPtr &root, const size_t devices) {
-  int64_t device_num = devices;
+  int64_t device_num = (int64_t)devices;
   MS_EXCEPTION_IF_NULL(root);
   for (auto &node : all_nodes) {
     if (!node->isa<CNode>()) {
@@ -430,7 +430,7 @@ bool ModifyReshapeOps(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphP
 }
 
 bool ModifyMakeTupleOps(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphPtr &root, const size_t devices) {
-  int64_t device_num = devices;
+  int64_t device_num = (int64_t)devices;
   MS_EXCEPTION_IF_NULL(root);
   for (auto &node : all_nodes) {
     if (!node->isa<CNode>()) {
@@ -461,7 +461,7 @@ bool ModifyMakeTupleOps(const std::vector<AnfNodePtr> &all_nodes, const FuncGrap
 }
 
 bool ModifySoftmaxReshapeOps(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphPtr &root, const size_t devices) {
-  int64_t device_num = devices;
+  int64_t device_num = (int64_t)devices;
   MS_EXCEPTION_IF_NULL(root);
   for (auto &node : all_nodes) {
     if (!node->isa<CNode>()) {
@@ -575,7 +575,7 @@ void InitRefMap(const FuncGraphPtr &root) {
           auto &node_users = manager->node_users();
           auto iter = node_users.find(node);
           if (iter == node_users.end()) {
-            MS_LOG(ERROR) << "Can not find the parameter used node.";
+            MS_LOG(EXCEPTION) << "Can not find the parameter used node.";
           }
           auto &node_set = iter->second;
           const auto node_set_back = node_set.back().first->cast<CNodePtr>();
@@ -595,9 +595,8 @@ void InitRefMap(const FuncGraphPtr &root) {
 static void SetParallelShape(const AnfNodePtr &parameter, const std::pair<AnfNodePtr, int64_t> &res, size_t rank_id) {
   MS_LOG(INFO) << "Begin set parallel shape";
   // check null for param and cnode
-  auto param_shape = parameter->Shape();
-
   MS_EXCEPTION_IF_NULL(parameter);
+  auto param_shape = parameter->Shape();
   MS_EXCEPTION_IF_NULL(param_shape);
 
   CNodePtr cnode = res.first->cast<CNodePtr>();
@@ -756,8 +755,8 @@ void ExtractGraphInformation(const std::vector<AnfNodePtr> &all_nodes) {
     PrimitivePtr prim = GetValueNode<PrimitivePtr>(prim_anf_node);
 
     OperatorInfoPtr operator_ = CreateOperatorInfo(cnode);
-    operator_->set_assigned_parallel(true);
     MS_EXCEPTION_IF_NULL(operator_);
+    operator_->set_assigned_parallel(true);
 
     if (prim->name() == RESHAPE) {
       cnode->set_user_data<OperatorInfo>(operator_);
@@ -884,7 +883,7 @@ static void FixReturnRedistribution(const FuncGraphPtr &root, const size_t devic
     } else {
       auto allgather = gen_g.PushBack({NewAllGatherNode(ALL_GATHER, HCCL_WORLD_GROUP), matmul});
       // split
-      int64_t split_count = devices;
+      int64_t split_count = (int64_t)devices;
       Attr split_axis_attr = std::make_pair(AXIS, MakeValue(0));
       Attr split_count_attr = std::make_pair(OUTPUT_NUM, MakeValue(split_count));
       OperatorAttrs split_attrs = {split_axis_attr, split_count_attr};

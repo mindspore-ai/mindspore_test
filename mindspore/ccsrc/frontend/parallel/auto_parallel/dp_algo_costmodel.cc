@@ -207,6 +207,7 @@ Status RecoverStrategy(std::vector<EliminationPtr> eliminations) {
       auto merged_node_star = elimination_star->eliminated_node_;
       auto succ_edges = elimination_star->succ_edges_;
       auto succ_nodes = elimination_star->succ_ops_;
+      MS_EXCEPTION_IF_NULL(succ_nodes[0]);
       // decision is hidden in succ_nodes[0]
       auto decision_star = succ_nodes[0]->selected_cost()->decision_ptr_->cast<StarEliminationDecisionPtr>();
       merged_node_star->SetSelectedStrategyAndCost(decision_star->eliminated_op_strategy_,
@@ -214,7 +215,6 @@ Status RecoverStrategy(std::vector<EliminationPtr> eliminations) {
       for (size_t i = 0; i < succ_edges.size(); ++i) {
         succ_edges[i]->set_selected_cost(decision_star->succ_edges_cost_list_[i]);
       }
-      MS_EXCEPTION_IF_NULL(succ_nodes[0]);
       MS_EXCEPTION_IF_NULL(decision_star->succ_ops_stra_list_[0]);
       MS_EXCEPTION_IF_NULL(decision_star->succ_ops_cost_list_[0]);
       // Star is eliminated into 'succ_nodes[0]'
