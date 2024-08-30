@@ -23,6 +23,7 @@
 #include <string>
 #include <map>
 #include "utils/hash_map.h"
+#include "utils/ms_context.h"
 #include "transform/graph_ir/op_adapter_util.h"
 #include "transform/graph_ir/op_adapter_base.h"
 #include "include/common/utils/utils.h"
@@ -744,7 +745,8 @@ class OpAdapter : public BaseOpAdapter {
 
   static OperatorPtr getOp() {
     if (op_ == nullptr) {
-      if (!::ge::OperatorFactory::IsExistOp(op_type_)) {
+      static auto use_simu = MsContext::GetInstance()->UseSimulationApi();
+      if (!use_simu && !::ge::OperatorFactory::IsExistOp(op_type_)) {
         MS_LOG(EXCEPTION) << "OperatorFactory is not exist, op type: " << op_type_;
       }
       auto op = ::ge::OperatorFactory::CreateOperator("", op_type_);

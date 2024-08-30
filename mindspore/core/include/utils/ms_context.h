@@ -300,6 +300,8 @@ class MS_CORE_API MsContext {
   std::string GetJitLevel() const;
   bool IsKByKExecutorMode() const;
 
+  bool UseSimulationApi() const;
+
   std::string GetLoadPluginErrorStr() const { return load_plugin_error_(); }
 
   void set_not_convert_jit(bool not_convert_jit) { not_convert_jit_ = not_convert_jit; }

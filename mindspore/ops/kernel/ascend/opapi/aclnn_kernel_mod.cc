@@ -34,6 +34,9 @@ bool AclnnKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::
 
 int AclnnKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
   auto ret = KernelMod::Resize(inputs, outputs);
+  if (MsContext::GetInstance()->UseSimulationApi()) {
+    return ret;
+  }
   GetWorkSpaceInfo(inputs, outputs);
   return ret;
 }
@@ -54,7 +57,7 @@ std::vector<size_t> AclnnKernelMod::GetLaunchIgnoredInputAddressIdx() const {
 }
 
 std::string AclnnKernelMod::GetCommName(const std::string &group) {
-    return device::ascend::AscendCollectiveCommLib::GetInstance().HcclInnerCommName(group);
+  return device::ascend::AscendCollectiveCommLib::GetInstance().HcclInnerCommName(group);
 }
 
 }  // namespace kernel

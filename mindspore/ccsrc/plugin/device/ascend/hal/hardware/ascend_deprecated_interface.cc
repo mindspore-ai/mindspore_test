@@ -255,6 +255,10 @@ bool AscendDeprecatedInterface::OpenTsd(const std::shared_ptr<MsContext> &ms_con
     return true;
   }
 
+  if (ms_context_ptr->UseSimulationApi()) {
+    return true;
+  }
+
   if (ms_context_ptr->get_param<uint32_t>(MS_CTX_TSD_REF) != 0) {
     MS_LOG(DEBUG) << "ACLTDT Dataset client is already opened.";
     ms_context_ptr->increase_param<uint32_t>(MS_CTX_TSD_REF);

@@ -35,6 +35,46 @@
 #define PORTABLE_EXPORT __declspec(dllexport)
 #endif
 
+template <typename T>
+struct SimuDataFactory {
+  static T Data() {
+    static T data{};
+    return data;
+  }
+};
+
+template <typename T>
+struct SimuDataFactory<T *> {
+  static T *Data() {
+    static int data{};
+    return reinterpret_cast<T *>(&data);
+  }
+};
+
+template <typename T>
+struct SimuDataFactory<T **> {
+  static T **Data() {
+    static int data{};
+    static T *data_ptr = reinterpret_cast<T *>(&data);
+    return &data_ptr;
+  }
+};
+
+template <typename T>
+struct SimuCreateTypeGetter {
+  typedef T type;
+};
+
+template <typename T>
+struct SimuCreateTypeGetter<T *> {
+  typedef T type;
+};
+
+template <typename T>
+struct SimuCreateTypeGetter<T **> {
+  typedef T *type;
+};
+
 #define PLUGIN_METHOD(name, return_type, ...)                   \
   extern "C" {                                                  \
   PORTABLE_EXPORT return_type Plugin##name(__VA_ARGS__);        \
@@ -50,6 +90,47 @@
   constexpr const char *k##name##Name = #name;                  \
   using name##FunObj = std::function<return_type(__VA_ARGS__)>; \
   using name##FunPtr = return_type (*)(__VA_ARGS__);
+
+#define ORIGIN_METHOD_WITH_SIMU(name, return_type, ...) \
+  ORIGIN_METHOD(name, return_type, __VA_ARGS__)         \
+  template <typename T>                                 \
+  inline T SimuFuncI##name(__VA_ARGS__) {               \
+    return SimuDataFactory<T>::Data();                  \
+  }                                                     \
+                                                        \
+  template <>                                           \
+  inline void SimuFuncI##name(__VA_ARGS__) {}           \
+  extern name##FunObj name##_;                          \
+  inline void SimuAssignI##name() { name##_ = SimuFuncI##name<return_type>; }
+
+#define ORIGIN_METHOD_WITH_SIMU_CREATE(name, return_type, create_type_ptr, ...)          \
+  ORIGIN_METHOD(name, return_type, create_type_ptr, ##__VA_ARGS__)                       \
+  template <typename T, typename U>                                                      \
+  inline T SimuFuncI##name(U *in_ret, ##__VA_ARGS__) {                                   \
+    static U st##name{};                                                                 \
+    *in_ret = st##name;                                                                  \
+    T ret{};                                                                             \
+    return ret;                                                                          \
+  }                                                                                      \
+                                                                                         \
+  template <>                                                                            \
+  inline aclError SimuFuncI##name(void **in_ret, ##__VA_ARGS__) {                        \
+    static int st##name{};                                                               \
+    *in_ret = static_cast<void *>(&st##name);                                            \
+    return ACL_ERROR_NONE;                                                               \
+  }                                                                                      \
+                                                                                         \
+  template <>                                                                            \
+  inline void SimuFuncI##name(void **in_ret, ##__VA_ARGS__) {                            \
+    static int st##name{};                                                               \
+    *in_ret = static_cast<void *>(&st##name);                                            \
+  }                                                                                      \
+  extern name##FunObj name##_;                                                           \
+  inline void SimuAssignI##name() {                                                      \
+    name##_ = SimuFuncI##name<return_type, SimuCreateTypeGetter<create_type_ptr>::type>; \
+  }
+
+#define ASSIGN_SIMU(name) SimuAssignI##name();
 
 inline static std::string GetDlErrorMsg() {
 #ifndef _WIN32

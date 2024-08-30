@@ -23,54 +23,32 @@
 namespace mindspore {
 namespace transform {
 
-ORIGIN_METHOD(acltdtAddDataItem, aclError, acltdtDataset *, acltdtDataItem *)
-ORIGIN_METHOD(acltdtCreateChannel, acltdtChannelHandle *, uint32_t, const char *)
-ORIGIN_METHOD(acltdtCreateChannelWithCapacity, acltdtChannelHandle *, uint32_t, const char *, size_t)
-ORIGIN_METHOD(acltdtCreateDataItem, acltdtDataItem *, acltdtTensorType, const int64_t *, size_t, aclDataType, void *,
-              size_t)
-ORIGIN_METHOD(acltdtCreateDataset, acltdtDataset *)
-ORIGIN_METHOD(acltdtDestroyChannel, aclError, acltdtChannelHandle *)
-ORIGIN_METHOD(acltdtDestroyDataItem, aclError, acltdtDataItem *)
-ORIGIN_METHOD(acltdtDestroyDataset, aclError, acltdtDataset *)
-ORIGIN_METHOD(acltdtGetDataAddrFromItem, void *, const acltdtDataItem *)
-ORIGIN_METHOD(acltdtGetDataItem, acltdtDataItem *, const acltdtDataset *, size_t)
-ORIGIN_METHOD(acltdtGetDatasetName, const char *, const acltdtDataset *)
-ORIGIN_METHOD(acltdtGetDatasetSize, size_t, const acltdtDataset *)
-ORIGIN_METHOD(acltdtGetDataSizeFromItem, size_t, const acltdtDataItem *)
-ORIGIN_METHOD(acltdtGetDataTypeFromItem, aclDataType, const acltdtDataItem *)
-ORIGIN_METHOD(acltdtGetDimNumFromItem, size_t, const acltdtDataItem *)
-ORIGIN_METHOD(acltdtGetDimsFromItem, aclError, const acltdtDataItem *, int64_t *, size_t)
-ORIGIN_METHOD(acltdtGetTensorTypeFromItem, acltdtTensorType, const acltdtDataItem *)
-ORIGIN_METHOD(acltdtGetSliceInfoFromItem, aclError, const acltdtDataItem *, size_t *, size_t *)
-ORIGIN_METHOD(acltdtQueryChannelSize, aclError, const acltdtChannelHandle *, size_t *)
-ORIGIN_METHOD(acltdtReceiveTensor, aclError, const acltdtChannelHandle *, acltdtDataset *, int32_t)
-ORIGIN_METHOD(acltdtSendTensor, aclError, const acltdtChannelHandle *, const acltdtDataset *, int32_t)
-ORIGIN_METHOD(acltdtStopChannel, aclError, acltdtChannelHandle *)
-
-extern acltdtAddDataItemFunObj acltdtAddDataItem_;
-extern acltdtCreateChannelFunObj acltdtCreateChannel_;
-extern acltdtCreateChannelWithCapacityFunObj acltdtCreateChannelWithCapacity_;
-extern acltdtCreateDataItemFunObj acltdtCreateDataItem_;
-extern acltdtCreateDatasetFunObj acltdtCreateDataset_;
-extern acltdtDestroyChannelFunObj acltdtDestroyChannel_;
-extern acltdtDestroyDataItemFunObj acltdtDestroyDataItem_;
-extern acltdtDestroyDatasetFunObj acltdtDestroyDataset_;
-extern acltdtGetDataAddrFromItemFunObj acltdtGetDataAddrFromItem_;
-extern acltdtGetDataItemFunObj acltdtGetDataItem_;
-extern acltdtGetDatasetNameFunObj acltdtGetDatasetName_;
-extern acltdtGetDatasetSizeFunObj acltdtGetDatasetSize_;
-extern acltdtGetDataSizeFromItemFunObj acltdtGetDataSizeFromItem_;
-extern acltdtGetDataTypeFromItemFunObj acltdtGetDataTypeFromItem_;
-extern acltdtGetDimNumFromItemFunObj acltdtGetDimNumFromItem_;
-extern acltdtGetDimsFromItemFunObj acltdtGetDimsFromItem_;
-extern acltdtGetTensorTypeFromItemFunObj acltdtGetTensorTypeFromItem_;
-extern acltdtGetSliceInfoFromItemFunObj acltdtGetSliceInfoFromItem_;
-extern acltdtQueryChannelSizeFunObj acltdtQueryChannelSize_;
-extern acltdtReceiveTensorFunObj acltdtReceiveTensor_;
-extern acltdtSendTensorFunObj acltdtSendTensor_;
-extern acltdtStopChannelFunObj acltdtStopChannel_;
+ORIGIN_METHOD_WITH_SIMU(acltdtAddDataItem, aclError, acltdtDataset *, acltdtDataItem *)
+ORIGIN_METHOD_WITH_SIMU(acltdtCreateChannel, acltdtChannelHandle *, uint32_t, const char *)
+ORIGIN_METHOD_WITH_SIMU(acltdtCreateChannelWithCapacity, acltdtChannelHandle *, uint32_t, const char *, size_t)
+ORIGIN_METHOD_WITH_SIMU(acltdtCreateDataItem, acltdtDataItem *, acltdtTensorType, const int64_t *, size_t, aclDataType,
+                        void *, size_t)
+ORIGIN_METHOD_WITH_SIMU(acltdtCreateDataset, acltdtDataset *)
+ORIGIN_METHOD_WITH_SIMU(acltdtDestroyChannel, aclError, acltdtChannelHandle *)
+ORIGIN_METHOD_WITH_SIMU(acltdtDestroyDataItem, aclError, acltdtDataItem *)
+ORIGIN_METHOD_WITH_SIMU(acltdtDestroyDataset, aclError, acltdtDataset *)
+ORIGIN_METHOD_WITH_SIMU(acltdtGetDataAddrFromItem, void *, const acltdtDataItem *)
+ORIGIN_METHOD_WITH_SIMU(acltdtGetDataItem, acltdtDataItem *, const acltdtDataset *, size_t)
+ORIGIN_METHOD_WITH_SIMU(acltdtGetDatasetName, const char *, const acltdtDataset *)
+ORIGIN_METHOD_WITH_SIMU(acltdtGetDatasetSize, size_t, const acltdtDataset *)
+ORIGIN_METHOD_WITH_SIMU(acltdtGetDataSizeFromItem, size_t, const acltdtDataItem *)
+ORIGIN_METHOD_WITH_SIMU(acltdtGetDataTypeFromItem, aclDataType, const acltdtDataItem *)
+ORIGIN_METHOD_WITH_SIMU(acltdtGetDimNumFromItem, size_t, const acltdtDataItem *)
+ORIGIN_METHOD_WITH_SIMU(acltdtGetDimsFromItem, aclError, const acltdtDataItem *, int64_t *, size_t)
+ORIGIN_METHOD_WITH_SIMU(acltdtGetTensorTypeFromItem, acltdtTensorType, const acltdtDataItem *)
+ORIGIN_METHOD_WITH_SIMU(acltdtGetSliceInfoFromItem, aclError, const acltdtDataItem *, size_t *, size_t *)
+ORIGIN_METHOD_WITH_SIMU(acltdtQueryChannelSize, aclError, const acltdtChannelHandle *, size_t *)
+ORIGIN_METHOD_WITH_SIMU(acltdtReceiveTensor, aclError, const acltdtChannelHandle *, acltdtDataset *, int32_t)
+ORIGIN_METHOD_WITH_SIMU(acltdtSendTensor, aclError, const acltdtChannelHandle *, const acltdtDataset *, int32_t)
+ORIGIN_METHOD_WITH_SIMU(acltdtStopChannel, aclError, acltdtChannelHandle *)
 
 void LoadAcltdtApiSymbol(const std::string &ascend_path);
+void LoadSimulationTdtApi();
 }  // namespace transform
 }  // namespace mindspore
 
