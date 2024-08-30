@@ -324,6 +324,9 @@ AnfNodePtr EliminateHangingOutput::ReplaceMakeTuple(const AnfNodePtr &node, cons
   MS_EXCEPTION_IF_NULL(old_cnode);
   AnfNodePtrList inputs(old_cnode->inputs().begin() + 1, old_cnode->inputs().end());
   auto graph_kernel_node = CreateNewFuseCNode(node->func_graph(), func_graph, inputs);
+  if (!node->fullname_with_scope().empty()) {
+    graph_kernel_node->set_fullname_with_scope(node->fullname_with_scope());
+  }
   return graph_kernel_node;
 }
 

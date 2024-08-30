@@ -78,9 +78,17 @@ void RectifyRmsNormGrad(const CNodePtr &node) {
   }
 }
 
+void RectifyGeLUGrad(const CNodePtr &node) {
+  if (IsPrimitiveCNode(node, prim::kPrimMul)) {
+    SetBinaryOpSymbolShapeEqual(node);
+  }
+}
+
 void RectifySymbol(const FuncGraphPtr &func_graph) {
-  static std::map<std::string, RectifyFunc> funcs{
-    {"SiLUGrad", RectifySiLUGrad}, {"AddN", RectifyAddN}, {"RmsNormGrad", RectifyRmsNormGrad}};
+  static std::map<std::string, RectifyFunc> funcs{{"SiLUGrad", RectifySiLUGrad},
+                                                  {"AddN", RectifyAddN},
+                                                  {"RmsNormGrad", RectifyRmsNormGrad},
+                                                  {"GeLUGrad", RectifyGeLUGrad}};
 
   MS_EXCEPTION_IF_NULL(func_graph);
   auto nodes = TopoSort(func_graph->get_return());
@@ -115,6 +123,7 @@ bool SymbolEngineBuilder::Run(const FuncGraphPtr &func_graph) {
   if (!common::AnfAlgo::IsDynamicGraph(func_graph)) {
     return false;
   }
+  func_graph->set_dynamic_shape(true);
   if (multi_engine_) {
     symshape::MultiSymbolEngine::Build(func_graph);
   } else {
