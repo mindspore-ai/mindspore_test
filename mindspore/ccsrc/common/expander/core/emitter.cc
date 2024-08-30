@@ -236,6 +236,7 @@ NodePtr Emitter::Tile(const NodePtr &node, const NodePtr &dims) {
 }
 
 NodePtr Emitter::BroadcastTo(const NodePtr &x, const NodePtr &y) {
+  // y must be NodePtr of Tensor
   if (IsDynamic(x->shape()) || IsDynamic(y->shape())) {
     return Emit("BroadcastTo", {x, Shape(y)});
   }
