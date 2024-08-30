@@ -703,8 +703,7 @@ bool CombineLikeGraphs(const ResourcePtr &resource) {
     MS_LOG(DEBUG) << "Start combine like graph:" << it->first << ", size:" << graphs.size();
     auto fg = graphs[0];
     FuncGraphVector func_graphs = {fg};
-    Cloner cloner(func_graphs, false, false, true, std::make_shared<TraceCopy>(),
-                  std::make_shared<TraceCombileLikeGraphs>());
+    Cloner cloner(func_graphs, false, false, true, MakeTraceInfo<TraceCopy>(), MakeTraceInfo<TraceCombileLikeGraphs>());
     cloner.Run();
     auto cloned_fg_iter = cloner.cloned_func_graphs().find(fg);
     if (cloned_fg_iter == cloner.cloned_func_graphs().end()) {
@@ -719,7 +718,7 @@ bool CombineLikeGraphs(const ResourcePtr &resource) {
     }
     auto &cloned_nodes = cloner.cloned_nodes();
     for (auto &fv : fg->parameter_obj_nodes()) {
-      TraceGuard guard(std::make_shared<TraceCombileLikeGraphs>(fg->output()->debug_info()));
+      TraceGuard guard(MakeTraceInfo<TraceCombileLikeGraphs>(fg->output()->debug_info()));
       auto param = base_graph->add_parameter();
       MS_EXCEPTION_IF_NULL(resource->manager());
       auto &node_users = resource->manager()->node_users()[fv];
@@ -737,7 +736,7 @@ bool CombineLikeGraphs(const ResourcePtr &resource) {
     MS_LOG(DEBUG) << "Fg0 parameter_obj_nodes size :" << fg->parameter_obj_nodes().size();
 
     for (auto &g : graphs) {
-      TraceGuard guard(std::make_shared<TraceCopy>(fg->output()->debug_info()));
+      TraceGuard guard(MakeTraceInfo<TraceCopy>(fg->output()->debug_info()));
       auto &fvs = g->parameter_obj_nodes();
       std::vector<AnfNodePtr> new_node_inputs;
       new_node_inputs.push_back(NewValueNode(base_graph));
@@ -809,7 +808,7 @@ void UpdateCellFuncGraph(const FuncGraphPtr &func_graph, const FuncGraphPtr &reu
 void GeneralizeReusingGraph(const FuncGraphPtr &func_graph, const FuncGraphPtr &top_func_graph) {
   FuncGraphPtr fg = func_graph;
   FuncGraphVector func_graphs = {fg};
-  Cloner cloner(func_graphs, false, false, true, std::make_shared<TraceCopy>(), std::make_shared<TraceGraphReusing>());
+  Cloner cloner(func_graphs, false, false, true, MakeTraceInfo<TraceCopy>(), MakeTraceInfo<TraceGraphReusing>());
   cloner.Run();
   auto cloned_fg_iter = cloner.cloned_func_graphs().find(fg);
   if (cloned_fg_iter == cloner.cloned_func_graphs().end()) {
@@ -824,7 +823,9 @@ void GeneralizeReusingGraph(const FuncGraphPtr &func_graph, const FuncGraphPtr &
     auto param = reusing_graph->InsertFrontParameter();
     const auto &top_param = fv->cast<ParameterPtr>();
     std::string name = "CR_" + top_param->name();
-    param->debug_info()->set_name(name);
+    if (param->debug_info() != nullptr) {
+      param->debug_info()->set_name(name);
+    }
     param->set_name(name);
     param->set_abstract(top_param->abstract());
     auto &node_users = manager->node_users()[fv];

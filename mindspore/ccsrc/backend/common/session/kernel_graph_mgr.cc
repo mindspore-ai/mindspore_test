@@ -1311,7 +1311,7 @@ ParameterPtr KernelGraphMgr::CreateNewParameterFromParameter(const AnfNodePtr &a
                     << " backend node:" << new_parameter->DebugString();
       return new_parameter;
     }
-    TraceGuard trace_guard(std::make_shared<TraceCopy>(anf->debug_info()));
+    TraceGuard trace_guard(MakeTraceInfo<TraceCopy>(anf->debug_info()));
     new_parameter = anf->cast<ParameterPtr>();
     if (!is_pynative_bprop_kernel_graph) {
       new_parameter = graph->NewParameter(new_parameter);
@@ -1328,7 +1328,7 @@ ParameterPtr KernelGraphMgr::CreateNewParameterFromParameter(const AnfNodePtr &a
       new_parameter = param_value->parameter();
     }
     if (new_parameter == nullptr) {
-      TraceGuard trace_guard(std::make_shared<TraceCopy>(anf->debug_info()));
+      TraceGuard trace_guard(MakeTraceInfo<TraceCopy>(anf->debug_info()));
       new_parameter = graph->NewParameter(anf->cast<ParameterPtr>());
 
       auto input_node_iter = partial_parameters_map_.find(anf);
@@ -1512,7 +1512,7 @@ CNodePtr KernelGraphMgr::CreateNewCNode(const CNodePtr &cnode, KernelGraph *grap
   std::vector<AnfNodePtr> cnode_inputs;
   GetCNodeInfo(cnode, &cnode_inputs);
   GetNewCNodeInputs(cnode, graph, &cnode_inputs, other_graph_cnode);
-  TraceGuard trace_guard(std::make_shared<TraceCopy>(cnode->debug_info()));
+  TraceGuard trace_guard(MakeTraceInfo<TraceCopy>(cnode->debug_info()));
   auto new_cnode = graph->NewCNodeWithInfos(cnode_inputs, cnode);
   new_cnode->set_fullname_with_scope(fullname);
   return new_cnode;
@@ -1545,7 +1545,7 @@ CNodePtr KernelGraphMgr::CreateNewCNode(const CNodePtr &cnode, KernelGraph *grap
   }
   // handle inputs of cnode except primitive
   CreateCNodeInputs(cnode, graph, &cnode_inputs);
-  TraceGuard trace_guard(std::make_shared<TraceCopy>(cnode->debug_info()));
+  TraceGuard trace_guard(MakeTraceInfo<TraceCopy>(cnode->debug_info()));
   auto new_cnode = graph->NewCNodeWithInfos(cnode_inputs, cnode);
   MS_EXCEPTION_IF_NULL(new_cnode);
   // if the cnode is call switch, remove call
@@ -2020,7 +2020,7 @@ ParameterPtr KernelGraphMgr::CreateNewParameter(const AnfNodePtr &anf, KernelGra
   if (param_value != nullptr) {
     new_parameter = param_value->parameter();
     if (new_parameter == nullptr) {
-      TraceGuard trace_guard(std::make_shared<TraceCopy>(anf->debug_info()));
+      TraceGuard trace_guard(MakeTraceInfo<TraceCopy>(anf->debug_info()));
       new_parameter = graph->NewParameter(anf->cast<ParameterPtr>());
       param_value->set_parameter(new_parameter);
     } else {
@@ -2029,7 +2029,7 @@ ParameterPtr KernelGraphMgr::CreateNewParameter(const AnfNodePtr &anf, KernelGra
       new_parameter->set_name(anf->cast<ParameterPtr>()->name());
     }
   } else {
-    TraceGuard trace_guard(std::make_shared<TraceCopy>(anf->debug_info()));
+    TraceGuard trace_guard(MakeTraceInfo<TraceCopy>(anf->debug_info()));
     new_parameter = graph->NewParameter(anf->cast<ParameterPtr>());
   }
 

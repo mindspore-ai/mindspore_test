@@ -491,6 +491,24 @@ class TraceAssert : public TraceInfo {
   ~TraceAssert() override = default;
   TraceInfoPtr clone() override { return std::make_shared<TraceAssert>(*this); }
 };
+
+template <typename T, typename U>
+TraceInfoPtr MakeTraceInfo(const U &info) {
+  if (DebugMode::IsDebug()) {
+    return std::make_shared<T>(info);
+  } else {
+    return nullptr;
+  }
+}
+
+template <typename T>
+TraceInfoPtr MakeTraceInfo() {
+  if (DebugMode::IsDebug()) {
+    return std::make_shared<T>();
+  } else {
+    return nullptr;
+  }
+}
 }  // namespace mindspore
 
 #endif  // MINDSPORE_CORE_UTILS_TRACE_INFO_H_

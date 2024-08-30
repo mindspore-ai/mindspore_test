@@ -234,7 +234,7 @@ class InlinerBase : public AnfVisitor {
     MS_EXCEPTION_IF_NULL(mng);
     ReplaceParams(mng, args, fg);
     auto out_node = fg->output();
-    mng->MoveAllCNodeDropGraph(fg, node->func_graph(), node, inputs[0]->scope(), true);
+    mng->MoveAllCNodeDropGraph(fg, node->func_graph(), node, inputs[0]->scope(), DebugMode::IsDebug());
     return out_node;
   }
 

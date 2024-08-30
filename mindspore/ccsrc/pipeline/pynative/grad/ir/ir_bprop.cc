@@ -512,7 +512,9 @@ FuncGraphPtr IrBprop::GetBpropGraphFromExpander(const GradParamPtr &grad_param) 
   PyNativeAlgo::Common::DumpGraphIR("ad_input_graph.ir", grad_param->fg);
   auto current_ad_param = ad_param_;
   ad_param_ = std::make_shared<AdParam>();
-  ad_param_->tape_->debug_info()->set_name("ad_graph");
+  if (ad_param_->tape_->debug_info() != nullptr) {
+    ad_param_->tape_->debug_info()->set_name("ad_graph");
+  }
   bprop_graph_run_by_single_op_ = bprop_graph_run_by_single_op_ || grad_param->use_dynamic_shape_process;
 
   GradGraphByExpander(grad_param);
@@ -537,7 +539,9 @@ FuncGraphPtr IrBprop::GetBpropGraphFromExpander(const GradParamPtr &grad_param) 
     // Just have a return node
     auto ad_graph_dout = ad_param_->tape_->add_parameter();
     ad_graph_dout->set_abstract(grad_param->fg->output()->abstract());
-    ad_graph_dout->debug_info()->set_name("sens");
+    if (ad_graph_dout->debug_info() != nullptr) {
+      ad_graph_dout->debug_info()->set_name("sens");
+    }
     ad_param_->sens_value_ = grad_param->op_grad_info->out_value;
     (void)BuildForwardLastNode();
     // Update dout

@@ -79,7 +79,7 @@ class SplitNodesDecoder {
     MS_EXCEPTION_IF_NULL(func_graph);
     auto cnode = orig_node->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(cnode);
-    TraceGuard guard(std::make_shared<TraceOpt>(cnode->debug_info()));
+    TraceGuard guard(MakeTraceInfo<TraceOpt>(cnode->debug_info()));
     auto orig_inputs = cnode->inputs();
     std::vector<AnfNodePtr> inputs;
     for (auto inp : orig_inputs) {

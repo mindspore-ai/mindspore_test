@@ -59,7 +59,7 @@ class MS_CORE_API Cloner {
  public:
   explicit Cloner(const FuncGraphVector &func_graphs = {}, bool clone_all_valuenodes = false,
                   bool clone_all_child_graphs = true, bool clone_all_used_graphs = false,
-                  const TraceInfoPtr &relation = std::make_shared<TraceCopy>(),
+                  const TraceInfoPtr &relation = MakeTraceInfo<TraceCopy>(),
                   const TraceInfoPtr &target_relation = nullptr);
   ~Cloner() = default;
   void AddClone(const FuncGraphPtr &func_graph, const FuncGraphPtr &target_func_graph = nullptr,
@@ -160,7 +160,7 @@ MS_CORE_API FuncGraphVector LiftingCloneMulti(const FuncGraphVector &func_graphs
 MS_CORE_API ClonerPtr SpecializerClone(const FuncGraphPtr &func_graph, const TraceInfoPtr &relation);
 
 MS_CORE_API FuncGraphPtr TransformableClone(const FuncGraphPtr &func_graph,
-                                            const TraceInfoPtr &relation = std::make_shared<TraceTransform>());
+                                            const TraceInfoPtr &relation = MakeTraceInfo<TraceTransform>());
 MS_CORE_API FuncGraphPtr BasicClone(const FuncGraphPtr &func_graph, bool clone_value_nodes = false,
                                     const UpdateInfoPtr update_info = nullptr);
 }  // namespace mindspore

@@ -50,7 +50,7 @@ class SpecializeTransform {
     if (cache.count(key) == 0) {
       auto mng = func_graph->manager();
       MS_EXCEPTION_IF_NULL(mng);
-      FuncGraphPtr new_fg = TransformableClone(func_graph, std::make_shared<TraceTransform>("sp"));
+      FuncGraphPtr new_fg = TransformableClone(func_graph, MakeTraceInfo<TraceTransform>("sp"));
       mng->AddFuncGraph(new_fg);
       std::vector<AnfNodePtr> params = new_fg->parameters();
       std::vector<AnfNodePtr> new_params;

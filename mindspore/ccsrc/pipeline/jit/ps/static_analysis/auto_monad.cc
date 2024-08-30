@@ -75,8 +75,9 @@ AnfNodePtr AddMonadParameter(const FuncGraphPtr &func_graph, const std::string &
   // Create a new parameter if not existed.
   auto para = std::make_shared<Parameter>(func_graph);
   para->set_name(name);
-  MS_EXCEPTION_IF_NULL(para->debug_info());
-  para->debug_info()->set_name(name);
+  if (para->debug_info() != nullptr) {
+    para->debug_info()->set_name(name);
+  }
   para->set_abstract(abs);
   // If io monad parameter added before u monad parameter, should insert u monad before io monad in parameters
   if (io_monad_location != params_size && abs->isa<abstract::AbstractUMonad>()) {
@@ -1727,7 +1728,7 @@ class AutoMonadConverter {
 
   void AttachToOutput(const AnfNodePtr &node) const {
     auto output = GetGraphOutput();
-    TraceGuard guard(std::make_shared<TraceCopy>(output->debug_info()));
+    TraceGuard guard(MakeTraceInfo<TraceCopy>(output->debug_info()));
     auto depend = NewValueNode(prim::kPrimDepend);
     // If isolated nodes dependencies exist.
     if (IsPrimitiveCNode(output, prim::kPrimDepend) &&

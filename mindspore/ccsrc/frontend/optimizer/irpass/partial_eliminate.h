@@ -60,7 +60,7 @@ class PartialEliminater : public AnfVisitor {
       args.push_back(X_);
       (void)std::copy(Xs_.begin(), Xs_.end(), std::back_inserter(args));
       (void)std::copy(inputs.begin() + 1, inputs.end(), std::back_inserter(args));
-      TraceGuard guard(std::make_shared<TracePartialTransform>(node->debug_info()));
+      TraceGuard guard(MakeTraceInfo<TracePartialTransform>(node->debug_info()));
       auto new_node = node->func_graph()->NewCNode(args);
       new_node->set_abstract(node->abstract());
       return new_node;
@@ -85,7 +85,7 @@ class PartialEliminater : public AnfVisitor {
     // Ys first;
     (void)std::copy(inputs.begin() + 1, inputs.end(), std::back_inserter(args));
     (void)std::copy(Xs_.begin(), Xs_.end(), std::back_inserter(args));
-    TraceGuard guard(std::make_shared<TracePartialTransform>(node->debug_info()));
+    TraceGuard guard(MakeTraceInfo<TracePartialTransform>(node->debug_info()));
     auto new_node = node->func_graph()->NewCNode(args);
     new_node->set_abstract(node->abstract());
 
@@ -298,7 +298,7 @@ class ChoicePartialEliminater : public AnfVisitor {
       // The new_arg is the arg of other func graph.
       const auto other_fg_parameter = GetParameterByArg(all_old_args_index_map, new_arg);
       MS_LOG(DEBUG) << "Get other fg's parameter:" << other_fg_parameter->DebugString();
-      TraceGuard guard(std::make_shared<TraceCopy>(other_fg_parameter->debug_info()));
+      TraceGuard guard(MakeTraceInfo<TraceCopy>(other_fg_parameter->debug_info()));
       ParameterPtr param = std::make_shared<Parameter>(func_graph);
       param->set_abstract(other_fg_parameter->abstract());
       new_parameters[new_arg_index] = param;
@@ -357,14 +357,14 @@ class SwitchPartialEliminater : public ChoicePartialEliminater {
     const auto input0 = switch_call->input(0);
     MS_EXCEPTION_IF_NULL(input0);
     const auto switch_node = input0->cast<CNodePtr>();
-    TraceGuard guard1(std::make_shared<TraceCopy>(switch_node->debug_info()));
+    TraceGuard guard1(MakeTraceInfo<TraceCopy>(switch_node->debug_info()));
     // {Switch, cond, G1, G2}
     std::vector<AnfNodePtr> switch_inputs = {switch_node->input(0), switch_node->input(1)};
     (void)switch_inputs.insert(switch_inputs.end(), fg_list_.begin(), fg_list_.end());
     const auto new_switch_cnode = fg->NewCNode(std::move(switch_inputs));
     new_switch_cnode->set_abstract(switch_node->abstract());
     // Create switch call.
-    TraceGuard guard2(std::make_shared<TraceCopy>(switch_call->debug_info()));
+    TraceGuard guard2(MakeTraceInfo<TraceCopy>(switch_call->debug_info()));
     AnfNodePtrList switch_call_inputs{new_switch_cnode};
     (void)switch_call_inputs.insert(switch_call_inputs.end(), new_args.begin(), new_args.end());
     const auto new_call_node = fg->NewCNode(std::move(switch_call_inputs));
@@ -435,14 +435,14 @@ class SwitchLayerPartialEliminater : public ChoicePartialEliminater {
     // {primMakeTuple, G1, G2, ...}
     AnfNodePtrList make_tuple_args{make_tuple_cnode->input(0)};
     (void)make_tuple_args.insert(make_tuple_args.end(), fg_list_.begin(), fg_list_.end());
-    TraceGuard guard1(std::make_shared<TraceCopy>(make_tuple_cnode->debug_info()));
+    TraceGuard guard1(MakeTraceInfo<TraceCopy>(make_tuple_cnode->debug_info()));
     auto new_make_tuple_cnode = make_tuple_cnode->func_graph()->NewCNode(std::move(make_tuple_args));
     // {primSwitchLayer, cond, MakeTuple{}}
-    TraceGuard guard2(std::make_shared<TraceCopy>(switch_layer->debug_info()));
+    TraceGuard guard2(MakeTraceInfo<TraceCopy>(switch_layer->debug_info()));
     auto new_switch_layer =
       switch_layer->func_graph()->NewCNode({switch_layer->input(0), switch_layer->input(1), new_make_tuple_cnode});
     // Create new switch_layer call node.
-    TraceGuard guard3(std::make_shared<TraceCopy>(switch_layer_call_node->debug_info()));
+    TraceGuard guard3(MakeTraceInfo<TraceCopy>(switch_layer_call_node->debug_info()));
     AnfNodePtrList switch_layer_call_inputs{new_switch_layer};
     (void)switch_layer_call_inputs.insert(switch_layer_call_inputs.cend(), new_args.cbegin(), new_args.cend());
     auto new_node = switch_layer_call_node->func_graph()->NewCNode(std::move(switch_layer_call_inputs));

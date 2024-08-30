@@ -48,7 +48,7 @@ class CallOutputTransform {
     auto &cache = cache_[fg];
     auto key = std::make_pair(nargs, xs_first);
     if (cache.find(key) == cache.end()) {
-      FuncGraphPtr new_fg = TransformableClone(fg, std::make_shared<TraceTransform>("call"));
+      FuncGraphPtr new_fg = TransformableClone(fg, MakeTraceInfo<TraceTransform>("call"));
 
       std::vector<AnfNodePtr> new_items;
       new_items.push_back(new_fg->output());

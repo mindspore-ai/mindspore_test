@@ -72,7 +72,7 @@ class GraphSequenceParamTransform {
   }
 
   FuncGraphPtr TransformGraphParam(const FuncGraphPtr &fg, const FuncGraphManagerPtr &mng) {
-    Cloner cloner({fg}, false, false, false, std::make_shared<TraceCopy>(), std::make_shared<TraceCopy>());
+    Cloner cloner({fg}, false, false, false, MakeTraceInfo<TraceCopy>(), MakeTraceInfo<TraceCopy>());
     auto new_fg = cloner[fg];
     auto &params = new_fg->parameters();
     std::vector<AnfNodePtr> new_params;

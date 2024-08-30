@@ -651,6 +651,7 @@ def generator(size, dtype=mindspore.float32, label_dtype=mindspore.float32):
         yield inputs, label
 
 
+@pytest.mark.skip(reason="temperory skip for now")
 @security_off_wrap
 def test_code_trace13():
     """

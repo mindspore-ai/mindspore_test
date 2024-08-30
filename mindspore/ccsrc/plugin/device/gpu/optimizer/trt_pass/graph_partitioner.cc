@@ -281,14 +281,18 @@ Subgraph GraphPartitioner::CreateNewGraph(const AnfNodePtrList &segment) {
     if (inputs[i]->isa<Parameter>()) {
       ParameterPtr src = inputs[i]->cast<ParameterPtr>();
       dst->set_name(src->name());
-      dst->debug_info()->set_name(src->name());
+      if (dst->debug_info() != nullptr) {
+        dst->debug_info()->set_name(src->name());
+      }
 
       if (common::AnfAlgo::IsParameterWeight(src)) {
         dst->set_default_param(src->default_param());
       }
     } else {
       dst->set_name(inputs[i]->fullname_with_scope());
-      dst->debug_info()->set_name(inputs[i]->fullname_with_scope());
+      if (dst->debug_info() != nullptr) {
+        dst->debug_info()->set_name(inputs[i]->fullname_with_scope());
+      }
     }
   }
 

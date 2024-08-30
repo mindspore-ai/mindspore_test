@@ -109,8 +109,8 @@ class MS_CORE_API AnfNode : public Base {
   /// \brief Constructor.
   ///
   /// \param[in] func_graph The FuncGraph to which this AnfNode belongs.
-  /// \param[in] debug_info The debug info to be used for this AnfNode.
-  AnfNode(const FuncGraphPtr &func_graph, NodeDebugInfoPtr &&debug_info);
+  /// \param[in] use_debug_info If use debug info for this AnfNode.
+  AnfNode(const FuncGraphPtr &func_graph, bool use_debug_info);
 
   /// \brief Constructor.
   ///
@@ -177,12 +177,14 @@ class MS_CORE_API AnfNode : public Base {
   /// \brief Obtain the debugging information of this AnfNode.
   ///
   /// \return The debugging information of this AnfNode.
-  NodeDebugInfoPtr debug_info();
+  NodeDebugInfoPtr debug_info() const;
 
   /// \brief Set the debugging information of this AnfNode.
   ///
   /// \return New debugging information.
   virtual void set_debug_info(const NodeDebugInfoPtr &debug_info);
+
+  void set_debug_info(const NodeDebugInfoPtr &&debug_info);
 
   /// \brief Obtain the type of the element in this AnfNode.
   ///
@@ -643,7 +645,9 @@ class MS_CORE_API ANode : public AnfNode {
   ///
   /// \param[in] func_graph The FuncGraph to which this ANode belongs.
   /// \param[in] debug_info The debug info to be used for this ANode.
-  ANode(const FuncGraphPtr &func_graph, NodeDebugInfoPtr &&debug_info) : AnfNode(func_graph, std::move(debug_info)) {}
+  ANode(const FuncGraphPtr &func_graph, NodeDebugInfoPtr &&debug_info) : AnfNode(func_graph, false) {
+    set_debug_info(std::move(debug_info));
+  }
 
   /// \brief Destructor.
   virtual ~ANode() = default;

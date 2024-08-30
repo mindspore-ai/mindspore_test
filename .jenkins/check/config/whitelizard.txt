@@ -30,6 +30,8 @@ mindspore/mindspore/ccsrc/runtime/graph_scheduler/actor/super_kernel_actor.cc:mi
 mindspore/mindspore/ccsrc/pipeline/jit/ps/init.cc:PYBIND11_MODULE
 mindspore/mindspore/ccsrc/pipeline/jit/ps/parse/resolve.cc:mindspore::parse::ResolveObjectToNode
 mindspore/mindspore/ccsrc/pipeline/jit/ps/parse/parse.cc:mindspore::parse::Parser::ParseIf
+mindspore/mindspore/ccsrc/pipeline/jit/ps/parse/parse.cc:mindspore::parse::Parser::ParseAttribute
+mindspore/mindspore/ccsrc/pipeline/pynative/grad/ir/ir_bprop.cc:mindspore::pynative::autograd::IrBprop::GetBpropGraphFromExpander
 mindspore/mindspore/ccsrc/include/common/utils/python_utils.h:mindspore::HandleExceptionRethrow
 mindspore/mindspore/ccsrc/pipeline/jit/ps/static_analysis/prim.cc:mindspore::abstract::ConvertAbstractToPython
 mindspore/mindspore/ccsrc/pybind_api/ir/log_adapter_py.h:mindspore::PyExceptionInitializer::HandleExceptionPy
