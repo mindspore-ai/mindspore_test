@@ -159,7 +159,7 @@ class GPUEnvChecker(EnvChecker):
         """Get cuda bin path by lib path."""
         path_list = []
         for path in self.cuda_lib_path:
-            path = os.path.abspath(path.strip() + "/bin/")
+            path = os.path.realpath(path.strip() + "/bin/")
             if Path(path).is_dir():
                 path_list.append(path)
         return np.unique(path_list)
@@ -235,7 +235,7 @@ class GPUEnvChecker(EnvChecker):
                     continue
                 path = path.partition(lib_name)[0]
                 if path:
-                    path_list.append(os.path.abspath(path.strip() + "../"))
+                    path_list.append(os.path.realpath(path.strip() + "../"))
             return np.unique(path_list)
         except subprocess.TimeoutExpired:
             logger.warning("Failed to check cuda version due to the ldd command timeout. Please confirm that "
@@ -346,7 +346,7 @@ class AscendEnvChecker(EnvChecker):
             return True
 
         cur_version = self._read_version(self.fwk_version)
-        custom_version_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+        custom_version_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                            "../lib/plugin/ascend/custom_ascendc_ops/version.info")
         with open(custom_version_path, 'r') as f:
             all_info = f.readlines()
@@ -418,10 +418,10 @@ class AscendEnvChecker(EnvChecker):
                 time.sleep(1)
 
     def set_env(self):
-        curr_path = os.path.abspath(os.path.dirname(__file__))
-        cust_aicpu_path = os.path.abspath(os.path.join(curr_path, "../lib/plugin/ascend/custom_aicpu_ops"))
-        cust_aicore_path = os.path.abspath(os.path.join(curr_path, "../lib/plugin/ascend/custom_aicore_ops"))
-        cust_ascendc_path = os.path.abspath(os.path.join(curr_path, "../lib/plugin/ascend/custom_ascendc_ops"))
+        curr_path = os.path.realpath(os.path.dirname(__file__))
+        cust_aicpu_path = os.path.realpath(os.path.join(curr_path, "../lib/plugin/ascend/custom_aicpu_ops"))
+        cust_aicore_path = os.path.realpath(os.path.join(curr_path, "../lib/plugin/ascend/custom_aicore_ops"))
+        cust_ascendc_path = os.path.realpath(os.path.join(curr_path, "../lib/plugin/ascend/custom_ascendc_ops"))
         if os.getenv('ASCEND_CUSTOM_OPP_PATH'):
             os.environ['ASCEND_CUSTOM_OPP_PATH'] = os.environ['ASCEND_CUSTOM_OPP_PATH'] + ":" + \
                                                    cust_ascendc_path + ":" + cust_aicore_path + ":" + cust_aicpu_path
