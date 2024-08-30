@@ -1111,6 +1111,9 @@ bool GeKernelExecutor::MemoryCopyAsync(const CNodePtr &node, const vector<Kernel
                   << " input size is:" << inputs.size() << " output size is:" << outputs.size();
   }
 
+  if (inputs[0]->size() == 0) {
+    return true;
+  }
   const auto stream = AscendStreamMng::GetInstance().GetStream(kDefaultStreamIndex);
   MS_EXCEPTION_IF_NULL(stream);
   aclError status = CALL_ASCEND_API(aclrtMemcpyAsync, outputs[0]->device_ptr(), outputs[0]->size(),
