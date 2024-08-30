@@ -118,6 +118,8 @@ class LineReader:
 
     def close(self):
         """Close the file handle."""
+        if not hasattr(self, 'fo_handle'):
+            return
         if self.fo_handle is None:
             return
         self.fo_handle.close()

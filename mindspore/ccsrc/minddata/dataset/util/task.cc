@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2019-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -195,9 +195,10 @@ Status Task::Join(WaitFlag blocking) {
           }
           interrupt_svc->InterruptAll();
 #ifdef WITH_BACKEND
+          const int kMaxWaitTimes = 5;
           if (device_target == kAscendDevice) {
             // Because hostPush hung in DataQueueOp, wait 5 seconds and destroy the tdt
-            if (wait_times > 5 && my_name_.find("DataQueueOp") != std::string::npos) {
+            if (wait_times > kMaxWaitTimes && my_name_.find("DataQueueOp") != std::string::npos) {
               MS_LOG(WARNING) << "Wait " << wait_times << " seconds, "
                               << "the task: " << my_name_ << " will be destroyed by TdtHostDestory.";
               if (device::DataQueueMgr::DestoryTdtHandle()) {
@@ -213,6 +214,19 @@ Status Task::Join(WaitFlag blocking) {
                                 << " is not responding. Maybe it has been destroyed. Stop the task.";
                 break;
               }
+            }
+          }
+
+          // Because ReceiveBridgeOp maybe hung by MsgRcv from SendBridgeOp
+          if (wait_times > kMaxWaitTimes && my_name_.find("ReceiveBridgeOp") != std::string::npos) {
+            MS_LOG(WARNING) << "Wait " << wait_times << " seconds, "
+                            << "the task: " << my_name_ << ".";
+
+            // just wait 30 seconds
+            if (wait_times > kWaitInterruptTaskTime) {
+              MS_LOG(WARNING) << "Task: " << my_name_ << " Thread ID " << ss.str()
+                              << " is not responding. Break the interrupt.";
+              break;
             }
           }
 #endif
@@ -237,7 +251,7 @@ TaskGroup *Task::MyTaskGroup() { return task_group_; }
 
 void Task::set_task_group(TaskGroup *vg) { task_group_ = vg; }
 
-Task::~Task() { task_group_ = nullptr; }
+Task::~Task() { ReleaseTaskGroup(); }
 
 Status Task::OverrideInterruptRc(const Status &rc) {
   if (rc == StatusCode::kMDInterrupted && this_thread::is_master_thread()) {

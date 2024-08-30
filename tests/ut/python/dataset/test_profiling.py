@@ -30,6 +30,19 @@ DATASET_ROOT = "../data/dataset/testTFTestAllTypes/"
 SCHEMA_FILE = "../data/dataset/testTFTestAllTypes/datasetSchema.json"
 
 
+def test_disable_profiling_in_independent_mode():
+    """
+    Feature: Disable profiling in independent mode.
+    Description: Test profiling is disable in independent mode.
+    Expectation: Exception raised to notify feature not supported.
+    """
+    os.environ["MS_INDEPENDENT_DATASET"] = "True"
+    with pytest.raises(RuntimeError) as err:
+        cde.GlobalContext.profiling_manager()
+    assert "Dataset Profiling is not supported in Dataset Independent mode" in str(err.value)
+    os.environ["MS_INDEPENDENT_DATASET"] = "False"
+
+
 @pytest.mark.forked
 class TestMinddataProfilingManager:
     """

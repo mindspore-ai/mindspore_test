@@ -84,6 +84,7 @@ Status SendBridgeOp::operator()() {
 
   while (!new_row.eof()) {
     while (!new_row.eoe()) {
+      RETURN_IF_INTERRUPTED();
       // The NextWorkerID() should always 0, because SendBridgeOp is a single thread op
       RETURN_IF_NOT_OK(worker_in_queues_[NextWorkerID()]->Add(std::move(new_row)));
       RETURN_IF_NOT_OK(child_iterator_->FetchNextTensorRow(&new_row));
@@ -130,6 +131,7 @@ Status SendBridgeOp::WorkerEntry(int32_t worker_id) {
   // send op does not use child iterator, and it needs to manually handle eoe and eof's itself
   // rather than use the base-class defaults.
   while (true) {
+    RETURN_IF_INTERRUPTED();
     // Handle special logic where row carries a ctrl flag.
     if (in_row.Flags() != TensorRow::kFlagNone) {
       if (in_row.quit()) {
@@ -216,5 +218,7 @@ Status SendBridgeOp::GetNextRowPullMode(TensorRow *const row) {
 MessageQueue::State SendBridgeOp::MessageQueueState() { return msg_queue_.MessageQueueState(); }
 
 MessageQueue SendBridgeOp::GetMessageQueue() { return msg_queue_; }
+
+SharedMemoryQueue SendBridgeOp::GetSharedMemoryQueue() { return send_queue_; }
 }  // namespace dataset
 }  // namespace mindspore

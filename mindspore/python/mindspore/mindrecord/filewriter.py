@@ -113,8 +113,10 @@ class FileWriter:
         # parallel write mode
         self._parallel_writer = None
         self._writers = None
-        self._queue = None
+        self._queues = []      # the data queue from main process to worker process
+        self._msg_queues = []  # the err msg from worker process to main process
         self._workers = None
+        self._workers_loop_index = 0
         self._index_workers = None
 
     @classmethod
@@ -340,41 +342,52 @@ class FileWriter:
         # init the _writers and launch the workers
         if self._writers is None:
             self._writers = [None] * len(self._paths)  # writers used by worker
-            self._queue = mp.Queue(len(self._paths) * 2)  # queue for worker
+            self._queues = [mp.Queue(2) for _ in range(len(self._paths))]  # data queue for worker
+            self._msg_queues = [mp.Queue(2) for _ in range(len(self._paths))]  # msg queue for worker
             self._workers = [None] * len(self._paths)  # worker process
+            worker_pid_list = []
             for i, path in enumerate(self._paths):
                 self._writers[i] = ShardWriter()
                 self._writers[i].open([path], self._overwrite)
                 self._writers[i].set_shard_header(self._header)
 
                 # launch the workers for parallel write
-                self._queue._joincancelled = True  # pylint: disable=W0212
-                p = mp.Process(target=self._write_worker, name="WriterWorker" + str(i), args=(i, self._queue))
+                self._queues[i]._joincancelled = True  # pylint: disable=W0212
+                self._msg_queues[i]._joincancelled = True  # pylint: disable=W0212
+                p = mp.Process(target=self._write_worker, name="WriterWorker" + str(i),
+                               args=(i, self._queues[i], self._msg_queues[i]))
                 p.daemon = True
                 p.start()
                 logger.info("Start worker process(pid:{}) to parallel write.".format(p.pid))
                 self._workers[i] = p
+                worker_pid_list.append(self._workers[i].pid)
 
-        # fill the self._queue
+        # fill the self._queues
         check_interval = 0.5  # 0.5s
         start_time = time.time()
         while True:
             try:
-                self._queue.put(raw_data, block=False)
+                self._queues[self._workers_loop_index].put(raw_data, block=False)
             except queue.Full:
                 if time.time() - start_time > check_interval:
                     start_time = time.time()
                     logger.warning("Because there are too few MindRecord file shards, the efficiency of parallel " \
                                    "writing is too low. You can stop the current task and add the parameter " \
                                    "`shard_num` of `FileWriter` to upgrade the task.")
-
-                # check the status of worker process
-                for i in range(len(self._paths)):
-                    if not self._workers[i].is_alive():
-                        raise RuntimeError("Worker process(pid:{}) has stopped abnormally. Please check " \
-                                           "the above log".format(self._workers[i].pid))
+                self.check_worker_status(self._workers_loop_index)
                 continue
+            self._workers_loop_index = (self._workers_loop_index + 1) % len(self._paths)
             return
+
+    def check_all_worker_status(self):
+        for index in range(len(self._msg_queues)):
+            self.check_worker_status(index)
+
+    def check_worker_status(self, index):
+        if not self._msg_queues[index].empty():
+            if self._msg_queues[index].get() == "Error":
+                raise RuntimeError("Worker process(pid:{}) has stopped abnormally. Please check " \
+                                   "the above log".format(self._workers[index].pid))
 
     def set_header_size(self, header_size):
         """
@@ -495,52 +508,45 @@ class FileWriter:
 
     def _parallel_commit(self):
         """Parallel commit"""
-        # if some workers stopped, error may occur
-        alive_count = 0
-        for i in range(len(self._paths)):
-            if self._workers[i].is_alive():
-                alive_count += 1
-        if alive_count != len(self._paths):
-            raise RuntimeError("Parallel write worker error, please check the above log.")
+        # waiting for all the self._queues had been writed by workers
+        for index in range(len(self._paths)):
+            while not self._queues[index].empty():
+                logger.info("Waiting for the data is writed by worker: {}.".format(self._workers[index].pid))
+                time.sleep(1)
+
+                # check the workers status
+                self.check_worker_status(index)
 
         # send EOF to worker process
-        for i in range(len(self._paths)):
+        for index in range(len(self._paths)):
+            logger.info("Send EOF flag to worker: {}.".format(self._workers[index].pid))
             while True:
                 try:
-                    self._queue.put("EOF", block=False)
+                    self._queues[index].put("EOF", block=False)
                 except queue.Full:
+                    # check the workers status
+                    self.check_worker_status(index)
+
                     time.sleep(1)
-                    if not self._workers[i].is_alive():
-                        raise RuntimeError("Worker process(pid:{}) has stopped abnormally. Please check " \
-                                           "the above log".format(self._workers[i].pid))
                     continue
                 break
 
-        # wait the worker processing
-        while True:
-            alive_count = 0
-            for i in range(len(self._paths)):
-                if self._workers[i].is_alive():
-                    alive_count += 1
-            if alive_count == 0:
-                break
-            time.sleep(1)
-            logger.info("Waiting for all the parallel workers to finish.")
-
-        del self._queue
-
-        # wait for worker process stop
-        for index in range(len(self._paths)):
+        worker_sucess = 0
+        for index in range(len(self._msg_queues)):
             while True:
-                logger.info("Waiting for the worker process(pid:{}) to process all the data.".format(
-                    self._workers[index].pid))
-                if self._workers[index].is_alive():
-                    time.sleep(1)
-                    continue
-                elif self._workers[index].exitcode != 0:
-                    raise RuntimeError("Worker process(pid:{}) has stopped abnormally. Please check " \
-                                       "the above log".format(self._workers[index].pid))
-                break
+                logger.info("Waiting for the worker: {} to exit.".format(self._workers[index].pid))
+                if not self._msg_queues[index].empty():
+                    ret = self._msg_queues[index].get()
+                    if ret == "Success":
+                        worker_sucess += 1
+                        break
+                    else:
+                        raise RuntimeError("Worker process(pid:{}) has stopped abnormally. Please check " \
+                                           "the above log".format(self._workers[index].pid))
+                time.sleep(1)
+
+        del self._queues
+        del self._msg_queues
 
         if self._index_generator:
             # use parallel index workers to generator index
@@ -678,7 +684,7 @@ class FileWriter:
                 return False, error
         return True, error
 
-    def _write_worker(self, i, in_queue):
+    def _write_worker(self, i, in_queue, msg_queue):
         """The worker do the data check and write to disk for parallel mode"""
         while True:
             # try to get new raw_data from master
@@ -691,15 +697,26 @@ class FileWriter:
             if raw_data == "EOF":
                 ret = self._writers[i].commit()
                 if ret != SUCCESS:
+                    msg_queue.put("Error")
                     raise RuntimeError("Commit the {}th shard of MindRecord file failed.".format(i))
+
+                logger.info("Send Success flag from worker: {} to master: {}.".format(os.getpid(), os.getppid()))
+                msg_queue.put("Success")
+
                 break
 
             # check the raw_data
             if not isinstance(raw_data, list):
+                msg_queue.put("Error")
                 raise ParamTypeError('raw_data', 'list')
             for each_raw in raw_data:
                 if not isinstance(each_raw, dict):
+                    msg_queue.put("Error")
                     raise ParamTypeError('raw_data item', 'dict')
 
-            self._verify_based_on_schema(raw_data)
-            self._writers[i].write_raw_data(raw_data, True, False)
+            try:
+                self._verify_based_on_schema(raw_data)
+                self._writers[i].write_raw_data(raw_data, True, False)
+            except Exception as e:
+                msg_queue.put("Error")
+                raise e

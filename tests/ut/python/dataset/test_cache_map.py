@@ -37,6 +37,20 @@ MIND_RECORD_DATA_DIR = "../data/mindrecord/testTwoImageData/twobytes.mindrecord"
 GENERATE_GOLDEN = False
 
 
+def test_disable_cache_in_independent_mode():
+    """
+    Feature: Disable cache in independent mode.
+    Description: Test cache is disable in independent mode.
+    Expectation: Exception raised to notify feature not supported.
+    """
+    os.environ["MS_INDEPENDENT_DATASET"] = "True"
+    with pytest.raises(RuntimeError) as err:
+        some_cache = ds.DatasetCache(session_id=1, size=0)
+        _ = ds.ImageFolderDataset(dataset_dir=DATA_DIR, cache=some_cache)
+    assert "Dataset Cache is not supported in Dataset Independent mode" in str(err.value)
+    os.environ["MS_INDEPENDENT_DATASET"] = "False"
+
+
 @pytest.mark.skipif(os.environ.get('RUN_CACHE_TEST') != 'TRUE', reason="Require to bring up cache server")
 def test_cache_map_basic1():
     """

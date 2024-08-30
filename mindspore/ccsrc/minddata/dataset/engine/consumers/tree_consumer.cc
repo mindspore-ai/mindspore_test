@@ -173,7 +173,7 @@ Status IteratorConsumer::Init(const std::shared_ptr<DatasetNode> &root, int64_t 
   if (global_step != 0) {
     tree_adapter_ = std::make_unique<TreeAdapter>(TreeAdapter::UsageFlag::kDeReset);
   }
-  RETURN_IF_NOT_OK(tree_adapter_->Compile(root, num_epochs_, global_step, dataset_size));
+  RETURN_IF_NOT_OK(tree_adapter_->Compile(root, num_epochs_, global_step, dataset_size, false));
 #ifndef ENABLE_SECURITY
   profiling_manager_ = GlobalContext::profiling_manager();
   if (profiling_manager_->IsProfiling()) {
@@ -308,7 +308,7 @@ Status ToDevice::Init(const std::shared_ptr<DatasetNode> &root, int64_t global_s
   if (global_step != 0) {
     tree_adapter_ = std::make_unique<TreeAdapter>(TreeAdapter::UsageFlag::kDeReset);
   }
-  RETURN_IF_NOT_OK(tree_adapter_->Compile(root, num_epochs_, global_step, dataset_size));
+  RETURN_IF_NOT_OK(tree_adapter_->Compile(root, num_epochs_, global_step, dataset_size, true));
 #ifndef ENABLE_SECURITY
   profiling_manager_ = GlobalContext::profiling_manager();
   if (profiling_manager_->IsProfiling()) {
@@ -406,7 +406,19 @@ Status ToDevice::Terminate() {
 Status TreeConsumer::Reset(int64_t step, const int64_t dataset_size) {
   MS_LOG(INFO) << "Resetting TreeConsumer";
 
-  MS_LOG(INFO) << "Terminating pipeline with UUID:" << tree_adapter_->tree_->GetUniqueId();
+  std::string unique_id = "";
+#if !defined(__APPLE__) && !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && \
+  !defined(ANDROID)
+  if (tree_adapter_->tree_) {
+#endif
+    unique_id = tree_adapter_->tree_->GetUniqueId();
+#if !defined(__APPLE__) && !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && \
+  !defined(ANDROID)
+  } else {
+    unique_id = tree_adapter_->receive_tree_->GetUniqueId();
+  }
+#endif
+  MS_LOG(INFO) << "Terminating pipeline with UUID:" << unique_id;
   std::shared_ptr<DatasetNode> old_root = tree_adapter_->input_ir_;
   RETURN_IF_NOT_OK(this->Stop());
   RETURN_IF_NOT_OK(this->Terminate());
@@ -424,7 +436,7 @@ Status TreeConsumer::Reset(int64_t step, const int64_t dataset_size) {
   }
 #endif
   tree_adapter_ = std::make_unique<TreeAdapter>(TreeAdapter::UsageFlag::kDeReset);
-  RETURN_IF_NOT_OK(tree_adapter_->Compile(old_root, num_epochs_, step, dataset_size));
+  RETURN_IF_NOT_OK(tree_adapter_->Compile(old_root, num_epochs_, step, dataset_size, true));
   RETURN_IF_NOT_OK(tree_adapter_->Launch());
   MS_LOG(INFO) << "Launched a new pipeline after reset. UUID: " << tree_adapter_->tree_->GetUniqueId();
   std::shared_ptr<DatasetOp> root2 = std::shared_ptr<DatasetOp>(tree_adapter_->GetRoot());

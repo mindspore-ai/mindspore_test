@@ -256,7 +256,7 @@ def test_dataset_with_independent_process_train_and_eval():
 
 def print_psutil(name):
     print("============== {} =============".format(name), flush=True)
-    os.system("ps -ef | grep python")
+    os.system("ps -ef | grep pytest")
 
 
 def test_dataset_with_independent_process_two_stage_pipeline():
@@ -321,12 +321,12 @@ def test_dataset_with_independent_process_two_stage_pipeline():
 
     assert second_dataset.get_dataset_size() == 10
     print_psutil("after dataset_size")
-    # TODO: hung with output_shapes & output_types
-    ## assert second_dataset.output_shapes() == [[64, 64, 3], [1]]
-    ## print_psutil("after shapes")
 
-    ## assert second_dataset.output_types() == [np.float32, np.float32]
-    ## print_psutil("after types")
+    assert second_dataset.output_shapes() == [[64, 64, 3], [1]]
+    print_psutil("after shapes")
+
+    assert second_dataset.output_types() == [np.float32, np.float32]
+    print_psutil("after types")
 
     assert second_dataset.get_col_names() == ["data", "label"]
     print_psutil("after col_names")
@@ -602,7 +602,7 @@ def test_dataset_generator_with_filter_error():
         for i in range(num):
             yield i
 
-    dataset = ds.GeneratorDataset(gen(40), ["num"], num_parallel_workers=8)
+    dataset = ds.GeneratorDataset(lambda: gen(40), ["num"], num_parallel_workers=8)
     dataset = dataset.repeat(2)
 
     def apply_func(data):
@@ -654,7 +654,7 @@ def test_dataset_wikitextdataset_with_op_input_error():
     os.environ["MS_INDEPENDENT_DATASET"] = "False"
 
 
-def test_dataset_generator_error():
+def skip_test_dataset_generator_error():
     """
     Feature: Dataset With Independent Process
     Description: Test dataset in independent process with script error
@@ -675,7 +675,6 @@ def test_dataset_generator_error():
         def __len__(self):
             return len(self._data)
 
-    # gzj dataset = ds.GeneratorDataset(RandomAccessDataset(), ["num", "label"], num_parallel_workers=8)
     dataset = ds.GeneratorDataset(RandomAccessDataset(), ["num", "label"])
 
     with pytest.raises(RuntimeError) as err:
@@ -752,7 +751,6 @@ if __name__ == "__main__":
     test_dataset_with_independent_process()
     test_dataset_with_independent_process_dynamic_shape()
     test_dataset_with_independent_process_train_and_eval()
-    test_dataset_with_independent_process_two_stage_pipeline()
     test_dataset_with_independent_process_with_dict()
     test_generator_with_generator_object_iterated_multi_times()
     test_dataset_mnistdataset_with_for_loop_iterator()

@@ -59,7 +59,7 @@ class TreeAdapter {
   // This function performs syntax checking, semantics checking, optimizes, and then builds
   // the Execution tree.
   Status Compile(const std::shared_ptr<DatasetNode> &input_ir, int32_t num_epochs = -1, int64_t global_step = 0,
-                 int64_t dataset_size = -1);
+                 int64_t dataset_size = -1, bool independent_dataset = false);
 
   // Return the root node of the IR after cloned from the parsed IR tree
   std::shared_ptr<DatasetNode> RootIRNode() const { return root_ir_; }
@@ -73,7 +73,14 @@ class TreeAdapter {
 
   // unique_ptr overloads operator bool(), will return false if it doesn't manage an object
   // This is needed by Iterator to get data by 'GetNext'.
-  std::weak_ptr<DatasetOp> GetRoot() const { return tree_ ? tree_->root() : nullptr; }
+  std::weak_ptr<DatasetOp> GetRoot() const {
+#if !defined(__APPLE__) && !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && \
+  !defined(ANDROID)
+    return tree_ ? tree_->root() : receive_tree_->root();
+#else
+    return tree_ ? tree_->root() : nullptr;
+#endif
+  }
 
   // This function will return the column_name_map once BuildAndPrepare() is called
   std::unordered_map<std::string, int32_t> GetColumnNameMap() const { return column_name_map_; }
@@ -145,8 +152,8 @@ class TreeAdapter {
   // Launch the subprocess
   Status LaunchSubprocess();
 
-  // The subprocess is changed to daemon and do nothing, just waiting for the main process exit
-  void SubprocessDaemonLoop();
+  // The subprocess will exit
+  void SubprocessExit(int exit_code);
 
   // the send tree, like: xxDataset -> map -> ... -> batch -> send
   std::unique_ptr<ExecutionTree> send_tree_;
@@ -156,6 +163,8 @@ class TreeAdapter {
   pid_t parent_process_id_;  // parent process id
   pid_t process_id_;         // current process id
   pid_t sub_process_id_;     // sub process id
+
+  bool independent_dataset_;  // BuildVocabConsumer, DatasetSizeGetter, SaveToDisk consumer no need to start subprocess
 #endif
 
   // 1. the tree holder, the send_tree_ will be moved to it and launched in independent dataset process
