@@ -1044,7 +1044,12 @@ void SuperKernelActor::BuildKernelActors() {
       continue;
     }
     if (!AnfUtils::IsRealCNodeKernel(output_kernel)) {
-      continue;
+      auto real_output_pair = common::AnfAlgo::FetchRealNodeSkipMonadControl({output_kernel, 0});
+      if (!AnfUtils::IsRealCNodeKernel(real_output_pair.first)) {
+        continue;
+      }
+      output_kernel = real_output_pair.first;
+      output_index = real_output_pair.second;
     }
     auto iter = cnode_to_kernel_actor_.find(output_kernel);
     if (iter == cnode_to_kernel_actor_.end()) {
