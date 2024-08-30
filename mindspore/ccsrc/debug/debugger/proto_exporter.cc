@@ -538,6 +538,8 @@ debugger::DataType GetDebuggerNumberDataType(const TypePtr &type) {
   switch (type->type_id()) {
     case kNumberTypeBool:
       return debugger::DT_BOOL;
+    case kNumberTypeInt4:
+      return debugger::DT_INT4;
     case kNumberTypeInt8:
       return debugger::DT_INT8;
     case kNumberTypeInt16:

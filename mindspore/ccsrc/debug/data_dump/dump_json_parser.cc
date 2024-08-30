@@ -138,7 +138,8 @@ void DumpJsonParser::CheckE2eSetting() {
   MS_EXCEPTION_IF_NULL(context);
   if (e2e_dump_enabled()) {
     if (!context->IsKByKExecutorMode()) {
-      MS_LOG(WARNING) << "E2e dump only support kernel by kernel mode on Ascend platform.";
+      MS_LOG(WARNING) << "e2e_dump_settings does not support Ascend O2 mode. Do not use e2e_dump_settings or use "
+                         "Ascend O0/O1 mode instead";
     }
     CheckStatCalcModeVaild();
   } else {
@@ -506,6 +507,14 @@ void DumpJsonParser::ParseCommonDumpSetting(const nlohmann::json &content) {
   ParseSavedData(*common_dump_settings);  // saved data optional
 }
 
+void DumpJsonParser::ParseE2eSyncDumpEnable(const nlohmann::json &content) {
+  auto enable_value_iter = content.find(kEnable);
+  e2e_sync_dump_enabled_ = false;
+  if (enable_value_iter != content.end()) {
+    e2e_sync_dump_enabled_ = ParseEnable(*enable_value_iter);
+  }
+}
+
 void DumpJsonParser::ParseE2eDumpSetting(const nlohmann::json &content) {
   auto e2e_dump_setting = content.find(kE2eDumpSettings);
   auto context = MsContext::GetInstance();
@@ -515,7 +524,8 @@ void DumpJsonParser::ParseE2eDumpSetting(const nlohmann::json &content) {
     return;
   }
 
-  auto e2e_dump_enable = CheckJsonKeyExist(*e2e_dump_setting, kEnable);
+  e2e_dump_enabled_ = true;
+  ParseE2eSyncDumpEnable(*e2e_dump_setting);
   bool set_trans_flag = CheckSelectableKeyExist(*e2e_dump_setting, kTransFlag);
   if (set_trans_flag) {
     auto trans_flag = CheckJsonKeyExist(*e2e_dump_setting, kTransFlag);
@@ -527,7 +537,7 @@ void DumpJsonParser::ParseE2eDumpSetting(const nlohmann::json &content) {
     auto save_args_flag = CheckJsonKeyExist(*e2e_dump_setting, kSaveArgs);
     save_args_flag_ = ParseEnable(*save_args_flag);
   }
-  e2e_dump_enabled_ = ParseEnable(*e2e_dump_enable);
+
   ParseStatCalcMode(*e2e_dump_setting);
   if (CheckSelectableKeyExist(*e2e_dump_setting, kSampleMode)) {
     auto sample_mode = CheckJsonKeyExist(*e2e_dump_setting, kSampleMode);

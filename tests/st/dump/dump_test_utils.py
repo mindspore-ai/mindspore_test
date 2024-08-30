@@ -53,6 +53,23 @@ e2e_dump_dict = {
     }
 }
 
+e2e_async_dump_dict = {
+    "common_dump_settings": {
+        "dump_mode": 0,
+        "path": "",
+        "net_name": "Net",
+        "iteration": "0",
+        "input_output": 0,
+        "kernels": ["Default/Conv-op12"],
+        "support_device": [0, 1, 2, 3, 4, 5, 6, 7],
+        "op_debug_mode": 0
+    },
+    "e2e_dump_settings": {
+        "enable": False,
+        "trans_flag": False
+    }
+}
+
 async_dump_dict_2 = {
     "common_dump_settings": {
         "dump_mode": 0,
@@ -267,7 +284,7 @@ def generate_statistic_dump_json(dump_path, json_file_name, test_key, saved_data
     Util function to generate dump configuration json file for statistic dump.
     """
     data = {}
-    if test_key in ["test_gpu_e2e_dump", "test_e2e_dump_dynamic_shape_custom_statistic"]:
+    if test_key in ["test_gpu_e2e_dump", "test_e2e_dump_dynamic_shape_custom_statistic", "test_e2e_dump"]:
         data = e2e_dump_dict
     elif test_key in ["test_async_dump", "test_ge_dump", "test_acl_dump"]:
         data = async_dump_dict
@@ -276,6 +293,8 @@ def generate_statistic_dump_json(dump_path, json_file_name, test_key, saved_data
     elif test_key == "stat_calc_mode":
         data = e2e_dump_dict
         data["e2e_dump_settings"]["stat_calc_mode"] = "device"
+    elif test_key == "test_e2e_async_dump":
+        data = e2e_async_dump_dict
     else:
         raise ValueError(
             "Failed to generate statistic dump json file. The test name value " + test_key + " is invalid.")

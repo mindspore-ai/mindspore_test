@@ -173,6 +173,8 @@ class DeviceAddress : public mindspore::DeviceSync {
       address_common_->pointer_ref_count_ = nullptr;
     }
   }
+
+  virtual bool CallAclrtMemcpy(void *dst, size_t dst_size, const void *src, size_t src_size) { return true; }
   virtual bool AsyncHostToDevice(size_t size, TypeId /* type */, const void *host_ptr) const { return true; }
 
   virtual bool AsyncHostToDevice(size_t size, const void *host_ptr) const { return true; }

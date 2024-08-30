@@ -19,6 +19,7 @@ import tempfile
 import glob
 import shutil
 import numpy as np
+import json
 
 import mindspore.nn as nn
 from mindspore import context
@@ -29,8 +30,24 @@ from mindspore.ops import operations as P
 from mindspore.ops import composite as C
 from tests.mark_utils import arg_mark
 from tests.security_utils import security_off_wrap
-from dump_test_utils import generate_dump_json, check_dump_structure
+from dump_test_utils import check_dump_structure
 
+e2e_async_dump_json = {
+    "common_dump_settings": {
+        "dump_mode": 0,
+        "path": "",
+        "net_name": "Net",
+        "iteration": "0",
+        "input_output": 0,
+        "kernels": ["Default/Conv-op12"],
+        "support_device": [0, 1, 2, 3, 4, 5, 6, 7],
+        "op_debug_mode": 0
+    },
+    "e2e_dump_settings": {
+        "enable": False,
+        "trans_flag": True
+    }
+}
 
 def weight_variable():
     return TruncatedNormal(0.02)
@@ -104,6 +121,11 @@ class TrainOneStepCell(nn.Cell):
         grads = self.grad(self.network, weights)(x, label)
         return self.optimizer(grads)
 
+def generate_dump_json(dump_path, json_file_name):
+    json_data = e2e_async_dump_json
+    json_data["common_dump_settings"]["path"] = dump_path
+    with open(json_file_name, 'w') as f:
+        json.dump(json_data, f)
 
 def run_trans_flag(test_name):
     if sys.platform != 'linux':
@@ -111,7 +133,7 @@ def run_trans_flag(test_name):
     with tempfile.TemporaryDirectory(dir='/tmp') as tmp_dir:
         dump_path = os.path.join(tmp_dir, test_name)
         dump_config_path = os.path.join(tmp_dir, '{}.json'.format(test_name))
-        generate_dump_json(dump_path, dump_config_path, test_name)
+        generate_dump_json(dump_path, dump_config_path)
         os.environ['MINDSPORE_DUMP_CONFIG'] = dump_config_path
         if os.path.isdir(dump_path):
             shutil.rmtree(dump_path)
@@ -131,7 +153,7 @@ def run_trans_flag(test_name):
         del os.environ['MINDSPORE_DUMP_CONFIG']
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @security_off_wrap
 def test_ascend_kernel_by_kernel_lenet():
     """
