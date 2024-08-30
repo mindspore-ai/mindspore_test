@@ -3,7 +3,7 @@ mindspore.ops.mish
 
 .. py:function:: mindspore.ops.mish(x)
 
-    逐元素计算输入Tensor的MISH（Self Regularized Non-Monotonic Neural Activation Function 自正则化非单调神经激活函数）。
+    逐元素计算输入Tensor的MISH（A Self Regularized Non-Monotonic Neural Activation Function 自正则化非单调神经激活函数）。
 
     公式如下：
 
@@ -12,13 +12,13 @@ mindspore.ops.mish
 
     更多详细信息请参见 `A Self Regularized Non-Monotonic Neural Activation Function <https://arxiv.org/abs/1908.08681>`_ 。
 
-    Mish函数图：
+    Mish激活函数图：
 
     .. image:: ../images/Mish.png
         :align: center
 
     参数：
-        - **x** (Tensor) - 输入Tensor。
+        - **x** (Tensor) - Mish的输入。
           支持数据类型：
 
           - GPU/CPU：float16、float32、float64。

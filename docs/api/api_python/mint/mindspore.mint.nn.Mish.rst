@@ -7,7 +7,7 @@
 
     更多参考详见 :func:`mindspore.mint.nn.functional.mish`。
 
-    Mish函数图：
+    Mish激活函数图：
 
     .. image:: ../images/Mish.png
         :align: center

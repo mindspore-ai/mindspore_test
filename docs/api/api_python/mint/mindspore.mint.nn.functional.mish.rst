@@ -12,13 +12,13 @@ mindspore.mint.nn.functional.mish
 
     更多详细信息请参见 `A Self Regularized Non-Monotonic Neural Activation Function <https://arxiv.org/abs/1908.08681>`_ 。
 
-    Mish函数图：
+    Mish激活函数图：
 
     .. image:: ../images/Mish.png
         :align: center
 
     参数：
-        - **input** (Tensor) - 输入Tensor。支持数据类型：
+        - **input** (Tensor) - Mish的输入。支持数据类型：
 
           - Ascend：float16、float32。
 
