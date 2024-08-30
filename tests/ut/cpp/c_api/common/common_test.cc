@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 #include "common_test.h"
-#include "include/c_api/ms/context.h"
 
 #ifdef __cplusplus
 #if __cplusplus
