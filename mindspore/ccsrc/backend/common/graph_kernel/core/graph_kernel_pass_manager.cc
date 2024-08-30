@@ -18,6 +18,7 @@
 #include <iomanip>
 
 #include "utils/log_adapter.h"
+#include "backend/common/graph_kernel/core/graph_kernel_utils.h"
 
 namespace mindspore::graphkernel {
 void GraphKernelPassManager::Add(const opt::PassPtr &pass, unsigned int pass_level, bool supported_device) {
@@ -49,17 +50,19 @@ std::string GraphKernelPassManager::GetPassFullname(size_t pass_id, const opt::P
 bool GraphKernelPassManager::Run(const FuncGraphPtr &func_graph) const {
   bool changed = false;
   for (size_t i = 0; i < passes_.size(); i++) {
+    auto pass_name = GetPassFullname(i, passes_[i]);
     if (enabled_[i]) {
+      GK_PROF_START(pass_name);
       changed = RunPass(func_graph, i, passes_[i]) || changed;
+      GK_PROF_END_WITH_VAR(pass_name);
       // dump ir to a graph_kernel subdir, and set a global id in front of the filename
       std::ostringstream oss;
       static int g_id = 0;
       constexpr int id_length = 4;
-      oss << "graph_kernel/" << std::setfill('0') << std::setw(id_length) << g_id++ << "_"
-          << GetPassFullname(i, passes_[i]);
+      oss << "graph_kernel/" << std::setfill('0') << std::setw(id_length) << g_id++ << "_" << pass_name;
       DumpPassIR(func_graph, oss.str());
     } else {
-      MS_LOG(INFO) << "pass " << GetPassFullname(i, passes_[i]) << " is disabled.";
+      MS_LOG(INFO) << "pass " << pass_name << " is disabled.";
     }
   }
   return changed;

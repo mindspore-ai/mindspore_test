@@ -376,8 +376,10 @@ void GraphKernelOptimizer::RunKernelPacket(const KernelGraphPtr &kernel_graph) {
 }
 
 void GraphKernelOptimize(const KernelGraphPtr &kernel_graph) {
+  PROF_START(GraphKernelOptimize);
   GraphKernelOptimizer graph_kernel_optimizer;
   graph_kernel_optimizer.Run(kernel_graph);
+  PROF_END(GraphKernelOptimize);
 }
 
 void KernelPacketOptimize(const KernelGraphPtr &kernel_graph) {
