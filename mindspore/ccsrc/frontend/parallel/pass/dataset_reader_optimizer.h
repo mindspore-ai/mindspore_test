@@ -37,7 +37,6 @@ class DatasetReaderOptimizer {
 
   bool Init();
   void BroadcastDataset();
-  void BroadcastReorder();
 
  private:
   RankList InferReapteDataRankThroughDataStrategy(const Strategies &data_stra);

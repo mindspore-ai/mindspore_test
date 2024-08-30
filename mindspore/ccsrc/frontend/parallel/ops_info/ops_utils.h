@@ -701,6 +701,7 @@ constexpr char FORWARD_END[] = "forward_end";
 constexpr char SLICE_INDEX[] = "slice_index";
 constexpr char MAIN_GRAPH[] = "main_graph";
 constexpr char SR_TAG[] = "sr_tag";
+constexpr char DATASET_BROADCAST[] = "dataset_broadcast";
 constexpr char LAST_BROADCAST[] = "last_broadcast";
 constexpr char FIRST_BROADCAST[] = "first_broadcast";
 constexpr char NEED_GRAD[] = "need_grad";
