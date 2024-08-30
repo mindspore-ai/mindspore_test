@@ -17,6 +17,7 @@
 #include "backend/common/graph_kernel/expander/base/ir_builder.h"
 #include "backend/common/graph_kernel/expander/base/utils.h"
 #include "kernel/common_utils.h"
+#include "ops_utils/op_utils.h"
 
 namespace mindspore::graphkernel::expander {
 namespace {
@@ -309,5 +310,207 @@ REG_EXPANDER_FUNC("RmsNormGrad").SetBody(BODYFUNC(ib) {
     dx = ib->Cast(dx, x_type);
   }
   return {dx, dgamma};
+});
+
+REG_EXPANDER_FUNC("LeakyReLUExt").SetBody(BODYFUNC(ib) {
+  auto input = ib->input(kIndex0);
+  auto alpha = ib->input(kIndex1);
+  if (alpha->GetDtype() != TypeIdToType(kNumberTypeFloat32)) {
+    MS_LOG(INFO) << "In LeakyReLU, negative_slope's dtype must be float32, but got " << alpha->GetDtype()->ToString();
+    return {};
+  }
+  auto f32 = TypeIdToType(kNumberTypeFloat32);
+  auto need_cast = input->GetDtype() != f32;
+  auto cast_1 = need_cast ? ib->Cast(input, f32) : input;
+  auto mul = ib->Mul(cast_1, alpha);
+  auto gre = ib->Less(cast_1, ib->Tensor(0, f32));
+  auto result = ib->Select(gre, mul, cast_1);
+  result = need_cast ? ib->Cast(result, input->GetDtype()) : result;
+  return {result};
+});
+
+REG_EXPANDER_FUNC("EluExt").SetBody(BODYFUNC(ib) {
+  auto input = ib->input(kIndex0);
+  auto f32 = TypeIdToType(kNumberTypeFloat32);
+  auto need_cast = input->GetDtype() != f32;
+  auto cast_1 = need_cast ? ib->Cast(input, f32) : input;
+  auto alpha = ib->input(kIndex1);
+  auto min = ib->Minimum(cast_1, 0);
+  auto exp = ib->Exp(min);
+  auto sub = ib->Sub(exp, 1);
+  auto mul = ib->Mul(sub, alpha);
+  NodePtr result;
+  auto m_x = ib->Maximum(cast_1, 0);
+  result = ib->Add(m_x, mul);
+  result = need_cast ? ib->Cast(result, input->GetDtype()) : result;
+  return {result};
+});
+
+REG_EXPANDER_FUNC("SoftplusExt").SetBody(BODYFUNC(ib) {
+  auto input_x = ib->input(kIndex0);
+  auto beta = ib->input(kIndex1);
+  auto threshold = ib->input(kIndex2);
+  auto f32 = TypeIdToType(kNumberTypeFloat32);
+  auto need_cast = input_x->GetDtype() != f32;
+  auto cast_1 = need_cast ? ib->Cast(input_x, f32) : input_x;
+  threshold = ib->ScalarToTensor(threshold, f32);
+  beta = ib->ScalarToTensor(beta, f32);
+  auto mul = ib->Mul(cast_1, beta);
+  auto exp_x = ib->Exp(mul);
+  auto exp_x_add_one = ib->Add(exp_x, 1);
+  auto result = ib->Div(ib->Log(exp_x_add_one), beta);
+  auto greater_t = ib->Greater(mul, threshold);
+  result = ib->Select(greater_t, cast_1, result);
+  result = need_cast ? ib->Cast(result, input_x->GetDtype()) : result;
+  return {result};
+});
+
+REG_EXPANDER_FUNC("HShrink").SetBody(BODYFUNC(ib) {
+  auto input = ib->input(kIndex0);
+  if (IsDynamic(input->GetShape())) {
+    MS_LOG(DEBUG) << "FOr HShrink, input cannot be dynamic";
+    return {};
+  }
+  auto lambd = ib->input(kIndex1);
+  auto abs = ib->Abs(input);
+  auto const_zero = ib->Tensor(0, input->GetDtype());
+  auto le_cmp = ib->LessEqual(abs, lambd);
+  auto result = ib->Select(le_cmp, const_zero, input);
+  return {result};
+});
+
+REG_EXPANDER_FUNC("HSigmoid").SetBody(BODYFUNC(ib) {
+  auto input = ib->input(kIndex0);
+  auto f32 = TypeIdToType(kNumberTypeFloat32);
+  auto need_cast = input->GetDtype() != f32;
+  auto cast_1 = need_cast ? ib->Cast(input, f32) : input;
+  auto div_add = ib->Add(ib->Div(cast_1, 6), 0.5);
+  auto result = ib->Minimum(div_add, 1);
+  result = ib->Maximum(result, 0);
+  result = need_cast ? ib->Cast(result, input->GetDtype()) : result;
+  return {result};
+});
+
+REG_EXPANDER_FUNC("HSwish").SetBody(BODYFUNC(ib) {
+  auto input = ib->input(kIndex0);
+  auto f32 = TypeIdToType(kNumberTypeFloat32);
+  auto need_cast = input->GetDtype() != f32;
+  auto cast_1 = need_cast ? ib->Cast(input, f32) : input;
+  auto in_add = ib->Add(cast_1, 3);
+  auto in_max = ib->Maximum(in_add, 0);
+  auto in_min = ib->Minimum(in_max, 6);
+  auto in_div = ib->RealDiv(in_min, 6);
+  auto result = ib->Mul(in_div, cast_1);
+  result = need_cast ? ib->Cast(result, input->GetDtype()) : result;
+  return {result};
+});
+
+REG_EXPANDER_FUNC("BinaryCrossEntropy").SetBody(BODYFUNC(ib) {
+  auto logits = ib->input(kIndex0);
+  auto labels = ib->input(kIndex1);
+  auto weight = ib->input(kIndex2);
+  if (weight->GetDtype() == TypeIdToType(kMetaTypeNone)) {
+    weight = ib->Tensor(1, logits->GetDtype());
+  }
+  if (logits->GetDtype() != labels->GetDtype() || logits->GetDtype() != weight->GetDtype()) {
+    MS_LOG(DEBUG) << "for BinaryCrossEntropy, all inputs should have same type";
+    return {};
+  }
+  auto f32 = TypeIdToType(kNumberTypeFloat32);
+  auto dtype = logits->GetDtype();
+  auto need_cast = dtype != f32;
+  if (need_cast) {
+    logits = ib->Cast(logits, f32);
+    labels = ib->Cast(labels, f32);
+    weight = ib->Cast(weight, f32);
+  }
+  auto mode = ib->input(kIndex3);
+  auto log1 = ib->Log(logits);
+  auto mul1 = ib->Mul(labels, log1);
+  auto log2 = ib->Log(ib->Add(ib->Neg(logits), 1));
+  auto mul2 = ib->Mul(ib->Add(ib->Neg(labels), 1), log2);
+  auto ln = ib->Mul(ib->Neg(ib->Add(mul1, mul2)), weight);
+  auto mode_num = GetValue<int64_t>(mode->GetValue());
+  if (mode_num == 2) {
+    ln = need_cast ? ib->Cast(ln, dtype) : ln;
+    return {ln};
+  }
+  if (IsDynamic(ln->GetShape())) {
+    MS_LOG(DEBUG) << "for BinaryCrossEntropy reduce mode, input cannot be dynamic";
+    return {};
+  }
+  ShapeVector reduce_axis;
+  for (int64_t i = 0; i < SizeToLong(ln->GetShape().size()); ++i) {
+    reduce_axis.push_back(i);
+  }
+  auto result = ib->ReduceSum(ln, ib->Value(reduce_axis), ib->Value(false));
+  if (mode_num == 1) {
+    int64_t sz = 1;
+    for (int64_t i = 0; i < SizeToLong(reduce_axis.size()); ++i) {
+      sz *= ln->GetShape()[i];
+    }
+    result = ib->Div(result, sz);
+  }
+  result = need_cast ? ib->Cast(result, dtype) : result;
+  return {result};
+});
+
+REG_EXPANDER_FUNC("BCEWithLogitsLoss").SetBody(BODYFUNC(ib) {
+  auto logits = ib->input(kIndex0);
+  auto labels = ib->input(kIndex1);
+  auto weight = ib->input(kIndex2);
+  auto post = ib->input(kIndex3);
+  if (weight->GetDtype() == TypeIdToType(kMetaTypeNone)) {
+    weight = ib->Tensor(1, logits->GetDtype());
+  }
+  if (post->GetDtype() == TypeIdToType(kMetaTypeNone)) {
+    post = ib->Tensor(1, logits->GetDtype());
+  }
+  if (logits->GetDtype() != labels->GetDtype() || logits->GetDtype() != weight->GetDtype() ||
+      logits->GetDtype() != post->GetDtype()) {
+    MS_LOG(DEBUG) << "for BCEWithLogitsLoss, all inputs should have same type";
+    return {};
+  }
+  auto f32 = TypeIdToType(kNumberTypeFloat32);
+  auto dtype = logits->GetDtype();
+  auto need_cast = dtype != f32;
+  if (need_cast) {
+    logits = ib->Cast(logits, f32);
+    labels = ib->Cast(labels, f32);
+    weight = ib->Cast(weight, f32);
+    post = ib->Cast(post, f32);
+  }
+  auto const_one = ib->Tensor(1, f32);
+  logits = ib->Div(const_one, ib->Add(const_one, ib->Exp(ib->Neg(logits))));
+  auto mode = ib->input(kIndex4);
+  auto log1 = ib->Log(logits);
+  auto mul1 = ib->Mul(labels, log1);
+  mul1 = ib->Mul(mul1, post);
+  auto log2 = ib->Log(ib->Add(ib->Neg(logits), 1));
+  auto mul2 = ib->Mul(ib->Add(ib->Neg(labels), 1), log2);
+  auto ln = ib->Mul(ib->Neg(ib->Add(mul1, mul2)), weight);
+  auto mode_num = GetValue<int64_t>(mode->GetValue());
+  if (mode_num == 2) {
+    ln = need_cast ? ib->Cast(ln, dtype) : ln;
+    return {ln};
+  }
+  if (IsDynamic(ln->GetShape())) {
+    MS_LOG(DEBUG) << "for BCEWithLogitsLoss reduce mode, input cannot be dynamic";
+    return {};
+  }
+  ShapeVector reduce_axis;
+  for (int64_t i = 0; i < SizeToLong(ln->GetShape().size()); ++i) {
+    reduce_axis.push_back(i);
+  }
+  auto result = ib->ReduceSum(ln, ib->Value(reduce_axis), ib->Value(false));
+  if (mode_num == 1) {
+    int64_t sz = 1;
+    for (int64_t i = 0; i < SizeToLong(reduce_axis.size()); ++i) {
+      sz *= ln->GetShape()[i];
+    }
+    result = ib->Div(result, sz);
+  }
+  result = need_cast ? ib->Cast(result, dtype) : result;
+  return {result};
 });
 }  // namespace mindspore::graphkernel::expander

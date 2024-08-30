@@ -78,11 +78,26 @@ class IrBuilder {
     MS_EXCEPTION_IF_NULL(v);
     return GetValue<T>(v);
   }
+  NodePtr ScalarToTensor(const NodePtr &node, const TypePtr &dtype) const {
+    MS_EXCEPTION_IF_NULL(node);
+    auto value = node->GetValue();
+    MS_EXCEPTION_IF_NULL(value);
+    auto scalar = value->cast<ScalarPtr>();
+    if (scalar == nullptr) {
+      return Cast(node, dtype);
+    }
+    auto tensor = mindspore::ScalarToTensor(scalar, dtype);
+    return e->EmitValue(tensor);
+  }
   const std::string &processor() const { return processor_; }
 
   // meta ops begin
   inline NodePtr Abs(const NodePtr &node) const { return e->Emit(MetaOp::Abs, {node}); }
   inline NodePtr Add(const NodePtr &lhs, const NodePtr &rhs) const { return e->Emit(MetaOp::Add, {lhs, rhs}); }
+  template <typename T>
+  inline NodePtr Add(const NodePtr &x, T n) const {
+    return Add(x, Tensor(n, x->GetDtype()));
+  }
   inline NodePtr Assign(const NodePtr &dst, const NodePtr &src) const { return e->Emit(MetaOp::Assign, {dst, src}); }
   inline NodePtr BroadcastTo(const NodePtr &node, const NodePtr &shape) const {
     return e->Emit(MetaOp::BroadcastTo, {node, shape});
@@ -94,12 +109,23 @@ class IrBuilder {
   inline NodePtr Cast(const NodePtr &node, TypeId dst_type) const {
     return Cast(node, Value(static_cast<int64_t>(dst_type)));
   }
+  inline NodePtr Floor(const NodePtr &node) const { return e->Emit(MetaOp::Floor, {node}); }
+  inline NodePtr Trunc(const NodePtr &node) const { return e->Emit(MetaOp::Trunc, {node}); }
   inline NodePtr Concat(const NodePtrList &inputs, const NodePtr &axis) const {
     NodePtrList new_inputs(inputs.cbegin(), inputs.cend());
     new_inputs.push_back(axis);
     return e->Emit(MetaOp::Concat, new_inputs);
   }
   inline NodePtr Div(const NodePtr &lhs, const NodePtr &rhs) const { return e->Emit(MetaOp::Div, {lhs, rhs}); }
+  template <typename T>
+  inline NodePtr Div(const NodePtr &x, T n) const {
+    return Div(x, Tensor(n, x->GetDtype()));
+  }
+  inline NodePtr RealDiv(const NodePtr &lhs, const NodePtr &rhs) const { return e->Emit(MetaOp::RealDiv, {lhs, rhs}); }
+  template <typename T>
+  inline NodePtr RealDiv(const NodePtr &x, T n) const {
+    return RealDiv(x, Tensor(n, x->GetDtype()));
+  }
   inline NodePtr Equal(const NodePtr &lhs, const NodePtr &rhs) const { return e->Emit(MetaOp::Equal, {lhs, rhs}); }
   inline NodePtr Exp(const NodePtr &node) const { return e->Emit(MetaOp::Exp, {node}); }
   inline NodePtr Gather(const NodePtr &param, const NodePtr &indices, const NodePtr &axis) const {
@@ -128,6 +154,10 @@ class IrBuilder {
     return e->Emit(MetaOp::MatMul, {a, b, transpose_a, transpose_b});
   }
   inline NodePtr Mul(const NodePtr &lhs, const NodePtr &rhs) const { return e->Emit(MetaOp::Mul, {lhs, rhs}); }
+  template <typename T>
+  inline NodePtr Mul(const NodePtr &x, T n) const {
+    return Mul(x, Tensor(n, x->GetDtype()));
+  }
   inline NodePtr Neg(const NodePtr &node) const { return e->Emit(MetaOp::Neg, {node}); }
   inline NodePtr ReduceMax(const NodePtr &node, const NodePtr &axis, const NodePtr &keepdims) const {
     return e->Emit(MetaOp::ReduceMax, {node, axis, keepdims});
@@ -157,44 +187,61 @@ class IrBuilder {
     return e->Emit(MetaOp::StridedSlice, {input, begin, end, strides});
   }
   inline NodePtr Sub(const NodePtr &lhs, const NodePtr &rhs) const { return e->Emit(MetaOp::Sub, {lhs, rhs}); }
+  template <typename T>
+  inline NodePtr Sub(const NodePtr &x, T n) const {
+    return Sub(x, Tensor(n, x->GetDtype()));
+  }
   inline NodePtr Tanh(const NodePtr &node) const {
-    if (processor_ == kernel::kProcessorAiCore) {
-      // Tanh(x) = 1 - 2/(e^{2x}+1)
-      auto tanh_exp = Exp(Mul(node, Tensor(2, node->GetDtype())));
-      auto tanh_add_0 = Add(tanh_exp, Tensor(1, node->GetDtype()));
-      auto tanh_rec = Reciprocal(tanh_add_0);
-      auto tanh_neg = Mul(tanh_rec, Tensor(-2, node->GetDtype()));
-      auto tanh_add_1 = Add(tanh_neg, Tensor(1, node->GetDtype()));
-      return tanh_add_1;
-    }
-    return e->Emit(MetaOp::Tanh, {node});
+    // Tanh(x) = 1 - 2/(e^{2x}+1)
+    auto f32 = TypeIdToType(kNumberTypeFloat32);
+    auto need_cast = node->GetDtype() != f32;
+    auto cast_node = need_cast ? Cast(node, f32) : node;
+    auto tanh_exp = Exp(Mul(cast_node, Tensor(2, f32)));
+    auto tanh_add_0 = Add(tanh_exp, Tensor(1, f32));
+    auto tanh_rec = Reciprocal(tanh_add_0);
+    auto tanh_neg = Mul(tanh_rec, Tensor(-2, f32));
+    auto tanh_add_1 = Add(tanh_neg, Tensor(1, f32));
+    auto res = need_cast ? Cast(tanh_add_1, node->GetDtype()) : tanh_add_1;
+    return res;
   }
   inline NodePtr Cosh(const NodePtr &node) const {
-    if (processor_ == kernel::kProcessorAiCore) {
-      // Cosh(x) = (e^x + e^{-x})/2
-      auto cosh_exp_pos = Exp(node);
-      auto cosh_exp_neg = Exp(Mul(node, Tensor(-1, node->GetDtype())));
-      auto cosh_add = Add(cosh_exp_pos, cosh_exp_neg);
-      auto cosh_div = Div(cosh_add, Tensor(2, node->GetDtype()));
-      return cosh_div;
-    }
-    return e->Emit(MetaOp::Cosh, {node});
+    // Cosh(x) = (e^x + e^{-x})/2
+    auto f32 = TypeIdToType(kNumberTypeFloat32);
+    auto need_cast = node->GetDtype() != f32;
+    auto cast_node = need_cast ? Cast(node, f32) : node;
+    auto cosh_exp_pos = Exp(cast_node);
+    auto cosh_exp_neg = Exp(Mul(cast_node, Tensor(-1, f32)));
+    auto cosh_add = Add(cosh_exp_pos, cosh_exp_neg);
+    auto cosh_div = Div(cosh_add, Tensor(2, f32));
+    auto res = need_cast ? Cast(cosh_div, node->GetDtype()) : cosh_div;
+    return res;
   }
   inline NodePtr Sinh(const NodePtr &node) const {
-    if (processor_ == kernel::kProcessorAiCore) {
-      auto sinh_exp_pos = Exp(node);
-      auto sinh_exp_neg = Exp(Mul(node, Tensor(-1, node->GetDtype())));
-      auto sinh_add = Sub(sinh_exp_pos, sinh_exp_neg);
-      auto sinh_div = Div(sinh_add, Tensor(2, node->GetDtype()));
-      return sinh_div;
-    }
-    return e->Emit(MetaOp::Sinh, {node});
+    auto f32 = TypeIdToType(kNumberTypeFloat32);
+    auto need_cast = node->GetDtype() != f32;
+    auto cast_node = need_cast ? Cast(node, f32) : node;
+    auto sinh_exp_pos = Exp(cast_node);
+    auto sinh_exp_neg = Exp(Mul(cast_node, Tensor(-1, f32)));
+    auto sinh_add = Sub(sinh_exp_pos, sinh_exp_neg);
+    auto sinh_div = Div(sinh_add, Tensor(2, f32));
+    auto res = need_cast ? Cast(sinh_div, node->GetDtype()) : sinh_div;
+    return res;
   }
   inline NodePtr TensorScatterAdd(const NodePtr &input, const NodePtr &indices, const NodePtr &update) const {
     return e->Emit(MetaOp::TensorScatterAdd, {input, indices, update});
   }
   inline NodePtr Transpose(const NodePtr &node, const NodePtr &perm) const {
     return e->Emit(MetaOp::Transpose, {node, perm});
+  }
+  inline NodePtr Maximum(const NodePtr &lhs, const NodePtr &rhs) const { return e->Emit(MetaOp::Maximum, {lhs, rhs}); }
+  inline NodePtr Minimum(const NodePtr &lhs, const NodePtr &rhs) const { return e->Emit(MetaOp::Minimum, {lhs, rhs}); }
+  template <typename T>
+  inline NodePtr Maximum(const NodePtr &lhs, T num) const {
+    return Maximum(lhs, Tensor(num, lhs->GetDtype()));
+  }
+  template <typename T>
+  inline NodePtr Minimum(const NodePtr &lhs, T num) const {
+    return Minimum(lhs, Tensor(num, lhs->GetDtype()));
   }
   // meta ops end
  protected:

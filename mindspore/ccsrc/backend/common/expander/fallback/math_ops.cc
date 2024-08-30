@@ -17,6 +17,7 @@
 #include "backend/common/expander/fallback/fallback_irbuilder.h"
 #include "include/common/utils/utils.h"
 #include "utils/shape_utils.h"
+#include "utils/ms_context.h"
 #include "infer/ops_func_impl/matmul_ext.h"
 #include "ops_utils/op_utils.h"
 #include "mindspore/ops/op_def/op_enum.h"
@@ -27,14 +28,6 @@ namespace {
 const std::set<TypeId> kIntergralSet = {kNumberTypeBool, kNumberTypeUInt8, kNumberTypeInt8, kNumberTypeInt16,
                                         kNumberTypeInt32};
 
-size_t Rank(NodePtr x) {
-  if (IsDynamicRank(x->shape())) {
-    MS_LOG(EXCEPTION) << "Rank of input shape is dynamic.";
-  }
-
-  return x->shape().size();
-}
-
 NodePtr Expand(FallbackIRBuilder *ib, NodePtr tensor, size_t ndim) {
   ShapeVector shape = tensor->shape();
   while (shape.size() < ndim) {
@@ -42,19 +35,6 @@ NodePtr Expand(FallbackIRBuilder *ib, NodePtr tensor, size_t ndim) {
   }
   tensor = ib->Reshape(tensor, ib->Value(shape));
   return tensor;
-}
-
-ShapeVector ReduceTo3D(const ShapeVector &shape) {
-  ShapeVector ret;
-
-  int64_t dim0 = 1;
-  for (size_t i = 0; i < shape.size() - kDim2; ++i) {
-    dim0 *= shape[i];
-  }
-  ret.push_back(dim0);
-  ret.push_back(shape[shape.size() - kDim2]);
-  ret.push_back(shape[shape.size() - kDim1]);
-  return ret;
 }
 }  // namespace
 REG_FALLBACK_BUILDER("AddExt").SetBody(BODYFUNC(ib) {
@@ -159,56 +139,44 @@ REG_FALLBACK_BUILDER("MatMulExt").SetBody(BODYFUNC(ib) {
     ret = ib->Reshape(ret, shapes[5]);
     return {ret};
   } else {
-    auto input_rank = input->shape().size();
-    auto other_rank = other->shape().size();
-    if (input_rank == 2 && other_rank == 2) {
-      auto ret = ib->Cast(ib->MatMul(input, other), ib->GetDtype(input));
-      return {ret};
-    }
-    const ShapeVector &shape1_orig = input->shape();
-    const ShapeVector &shape2_orig = other->shape();
+    const ShapeVector shape1_orig = input->shape();
+    const ShapeVector shape2_orig = other->shape();
+    auto output_dtype = ib->GetDtype(input);
+    auto shape_backbone = ops::CheckMatMulShapes(shape1_orig, shape2_orig);
     bool is_empty_tensor =
       std::any_of(shape1_orig.begin(), shape1_orig.end(), [](const auto &element) { return element == 0; });
     if (is_empty_tensor) {
       return {ib->Tensor(0, input->dtype())};
     }
+    auto input_rank = input->shape().size();
+    auto other_rank = other->shape().size();
     bool transpose_b = other_rank == 1;
-    ShapeVector shape_backbone = ops::CheckMatMulShapes(shape1_orig, shape2_orig);
-    ShapeVector shape_out = ops::InferShapeRem(shape_backbone, shape1_orig, shape2_orig, transpose_b);
-    input = Expand(ib, input, 2);
-    other = Expand(ib, other, 2);
-    NodePtr ret;
-    if (Rank(other) == 2) {
-      if (Rank(input) > 2) {
-        int64_t new_shape_dim0 = 1;
-        for (size_t i = 0; i < shape1_orig.size() - 1; ++i) {
-          new_shape_dim0 *= shape1_orig[i];
-        }
-        std::vector<int64_t> new_shape_vector = {new_shape_dim0, shape1_orig.back()};
-        input = ib->Reshape(input, ib->Value(new_shape_vector));
-      }
-      ret = ib->Cast(ib->MatMul(input, other, false, transpose_b), ib->GetDtype(input));
-    } else {
-      size_t ndim_aligned = std::max(input_rank, other_rank);
-      input = Expand(ib, input, ndim_aligned);
-      other = Expand(ib, other, ndim_aligned);
-      ShapeVector shape1_aligned = input->shape();
-      ShapeVector shape2_aligned = other->shape();
-      ShapeVector shape_cur1(shape1_aligned.begin(), shape1_aligned.end() - 2);
-      ShapeVector shape_cur2(shape2_aligned.begin(), shape2_aligned.end() - 2);
-      const ShapeVector &broadcast_shape1 = ops::GetMatMulExtBroadcastShape(shape_backbone, shape1_orig);
-      const ShapeVector &broadcast_shape2 = ops::GetMatMulExtBroadcastShape(shape_backbone, shape2_orig);
-      if (input->shape() != broadcast_shape1) {
-        input = ib->Emit("BroadcastTo", {input, ib->Value(broadcast_shape1)});
-      }
-      if (other->shape() != broadcast_shape2) {
-        other = ib->Emit("BroadcastTo", {other, ib->Value(broadcast_shape2)});
-      }
-      input = ib->Reshape(input, ReduceTo3D(input->shape()));
-      other = ib->Reshape(other, ReduceTo3D(other->shape()));
-      ret = ib->Cast(ib->BatchMatMul(input, other, false, transpose_b), ib->GetDtype(input));
+    auto shape_out = ops::InferShapeRem(shape_backbone, shape1_orig, shape2_orig, transpose_b);
+    input = input_rank == 1 ? Expand(ib, input, 2) : input;
+    other = other_rank == 1 ? Expand(ib, other, 2) : other;
+    if (input->shape().size() == 2 && other->shape().size() == 2) {
+      auto ret = ib->MatMul(input, other, false, transpose_b);
+      ret = ib->Cast(ib->Reshape(ret, shape_out), output_dtype);
+      return {ret};
     }
-    ret = ib->Reshape(ret, ib->Value(shape_out));
+    auto context_ptr = MsContext::GetInstance();
+    MS_EXCEPTION_IF_NULL(context_ptr);
+    auto target = context_ptr->get_param<std::string>(MS_CTX_DEVICE_TARGET);
+    if (target == kAscendDevice) {
+      auto ret = ib->BatchMatMul(input, other, false, transpose_b);
+      ret = ib->Cast(ib->Reshape(ret, shape_out), output_dtype);
+      return {ret};
+    }
+    ShapeVector broadcast_shape1 = ops::GetMatMulExtBroadcastShape(shape_backbone, shape1_orig);
+    ShapeVector broadcast_shape2 = ops::GetMatMulExtBroadcastShape(shape_backbone, shape2_orig);
+    if (input->shape() != broadcast_shape1) {
+      input = ib->Emit("BroadcastTo", {input, ib->Value(broadcast_shape1)});
+    }
+    if (other->shape() != broadcast_shape2) {
+      other = ib->Emit("BroadcastTo", {other, ib->Value(broadcast_shape2)});
+    }
+    auto ret = ib->BatchMatMul(input, other, false, transpose_b);
+    ret = ib->Cast(ib->Reshape(ret, shape_out), output_dtype);
     return {ret};
   }
 });

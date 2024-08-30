@@ -15,6 +15,7 @@
  */
 #include "backend/common/graph_kernel/expander/base/ir_builder.h"
 #include "backend/common/graph_kernel/expander/base/utils.h"
+#include "mindspore/ops/op_def/op_enum.h"
 
 namespace mindspore::graphkernel::expander {
 REG_EXPANDER_FUNC("AddN").SetBody(BODYFUNC(ib) {
@@ -49,16 +50,28 @@ REG_EXPANDER_FUNC("AssignAdd").SetBody(BODYFUNC(ib) {
 });
 
 REG_EXPANDER_FUNC("Tanh").SetBody(BODYFUNC(ib) {
+  if (ib->input(kIndex0)->GetDtype() != TypeIdToType(kNumberTypeFloat32)) {
+    MS_LOG(DEBUG) << "For Tanh expander, input must be float32";
+    return {};
+  }
   auto result = ib->Tanh(ib->input(kIndex0));
   return {result};
 });
 
 REG_EXPANDER_FUNC("Sinh").SetBody(BODYFUNC(ib) {
+  if (ib->input(kIndex0)->GetDtype() != TypeIdToType(kNumberTypeFloat32)) {
+    MS_LOG(DEBUG) << "For Sinh expander, input must be float32";
+    return {};
+  }
   auto result = ib->Sinh(ib->input(kIndex0));
   return {result};
 });
 
 REG_EXPANDER_FUNC("Cosh").SetBody(BODYFUNC(ib) {
+  if (ib->input(kIndex0)->GetDtype() != TypeIdToType(kNumberTypeFloat32)) {
+    MS_LOG(DEBUG) << "For Cosh expander, input must be float32";
+    return {};
+  }
   auto result = ib->Cosh(ib->input(kIndex0));
   return {result};
 });
@@ -161,5 +174,154 @@ REG_EXPANDER_FUNC("ReluGrad").SetBody(BODYFUNC(ib) {
   auto gt_res = ib->Greater(input_x, const_zero);
   auto res = ib->Select(gt_res, input_dout, const_zero);
   return {res};
+});
+
+REG_EXPANDER_FUNC("DivMod").SetBody(BODYFUNC(ib) {
+  auto input1 = ib->input(kIndex0);
+  auto input2 = ib->input(kIndex1);
+  auto rounding_mode = ib->input(kIndex2);
+  auto rounding_mode_value = GetValue<int64_t>(rounding_mode->GetValue());
+  auto f32 = TypeIdToType(kNumberTypeFloat32);
+  auto out_type = input1->GetDtype();
+  auto floor_f16 = rounding_mode_value == ops::RoundingMode::FLOOR && out_type == TypeIdToType(kNumberTypeFloat16);
+  if (!(out_type == f32) && !floor_f16) {
+    input1 = ib->Cast(input1, f32);
+    input2 = ib->Cast(input2, f32);
+  }
+  auto result = ib->Div(input1, input2);
+  result = floor_f16 ? ib->Cast(result, f32) : result;
+  if (rounding_mode_value == ops::RoundingMode::FLOOR) {
+    result = ib->Floor(result);
+  } else if (rounding_mode_value == ops::RoundingMode::TRUNC) {
+    if (out_type == TypeIdToType(kNumberTypeBFloat16) || out_type == TypeIdToType(kNumberTypeFloat16)) {
+      result = ib->Cast(result, out_type);
+      result = ib->Cast(result, f32);
+    }
+    result = ib->Trunc(result);
+  }
+  result = out_type == f32 ? result : ib->Cast(result, out_type);
+  return {result};
+});
+
+REG_EXPANDER_FUNC("MeanExt").SetBody(BODYFUNC(ib) {
+  auto input = ib->input(kIndex0);
+  auto input_type = input->GetDtype()->type_id();
+  if (input_type != kNumberTypeFloat32 && input_type != kNumberTypeFloat16 && input_type != kNumberTypeBFloat16) {
+    MS_LOG(INFO) << "In MeanExt, dtype must be float16 or float32 or bfloat16";
+    return {};
+  }
+  auto axis = ib->input(kIndex1);
+  auto keep_dims = ib->input(kIndex2);
+  auto dtype = ib->input(kIndex3);
+  auto out_type = input_type;
+  if (dtype->GetDtype() != TypeIdToType(kMetaTypeNone)) {
+    out_type = static_cast<TypeId>(GetValue<int64_t>(dtype->GetValue()));
+  }
+  input = input_type == kNumberTypeFloat32 ? input : ib->Cast(input, kNumberTypeFloat32);
+  auto x_shape = input->GetShape();
+  if (x_shape.empty() || IsDynamicRank(x_shape)) {
+    MS_LOG(DEBUG) << "Skip empty shape or dynamic rank, shape is: " << x_shape;
+    return {};
+  }
+  auto axis_ = GetAxisList(axis->GetValue());
+  auto rank = SizeToLong(x_shape.size());
+  (void)std::for_each(axis_.begin(), axis_.end(), [rank](auto &a) { a = a < 0 ? a + rank : a; });
+  if (axis_.empty()) {
+    for (int64_t i = 0; i < rank; ++i) {
+      axis_.push_back(i);
+    }
+  }
+  for (const auto &a : axis_) {
+    if (x_shape.at(LongToSize(a)) < 0) {
+      MS_LOG(DEBUG) << "Input shape " << x_shape << " at reduce axis [" << a << "] is dynamic";
+      return {};
+    }
+  }
+  int64_t sz = 1;
+  for (size_t i = 0; i < x_shape.size(); ++i) {
+    if (std::find(axis_.begin(), axis_.end(), SizeToLong(i)) != axis_.end()) {
+      sz *= x_shape[i];
+    }
+  }
+  auto sum_x = ib->ReduceSum(input, axis_, GetValue<bool>(keep_dims->GetValue()));
+  auto result = ib->Div(sum_x, sz);
+  result = out_type == kNumberTypeFloat32 ? result : ib->Cast(result, out_type);
+  return {result};
+});
+
+REG_EXPANDER_FUNC("AcoshExt").SetBody(BODYFUNC(ib) {
+  auto input = ib->input(kIndex0);
+  auto f32 = TypeIdToType(kNumberTypeFloat32);
+  auto need_cast = input->GetDtype() != TypeIdToType(kNumberTypeFloat32);
+  auto cast = need_cast ? ib->Cast(input, f32) : input;
+  auto mul = ib->Add(ib->Mul(cast, cast), -1);
+  auto ln1 = ib->Log(ib->Add(ib->Sqrt(mul), cast));
+  auto ln2 = ib->Add(ib->Log(cast), 6.931472e-01f);
+  auto res = ib->Minimum(ln1, ln2);
+  res = need_cast ? ib->Cast(res, input->GetDtype()) : res;
+  return {res};
+});
+
+REG_EXPANDER_FUNC("AsinhExt").SetBody(BODYFUNC(ib) {
+  auto input = ib->input(kIndex0);
+  auto f32 = TypeIdToType(kNumberTypeFloat32);
+  auto need_cast = input->GetDtype() != f32;
+  auto cast = need_cast ? ib->Cast(input, f32) : input;
+  auto abs = ib->Abs(cast);
+  auto mul = ib->Add(ib->Mul(abs, abs), 1);
+  auto add = ib->Add(ib->Sqrt(mul), abs);
+  auto res = ib->Log(add);
+  auto min = ib->Neg(res);
+  auto ge = ib->Greater(cast, ib->Tensor(0, f32));
+  res = ib->Select(ge, res, min);
+  res = need_cast ? ib->Cast(res, input->GetDtype()) : res;
+  return {res};
+});
+
+REG_EXPANDER_FUNC("Erf").SetBody(BODYFUNC(ib) {
+  const auto &x = ib->input(kIndex0);
+  const float a1 = 5.3443748503923416e-02f;
+  const float a2 = 7.5517015457153320e+00f;
+  const float a3 = 1.0162808990478516e+02f;
+  const float a4 = 1.3938061523437500e+03f;
+  const float a5 = 5.0637915039062500e+03f;
+  const float a6 = 2.9639384765625000e+04f;
+  const float b1 = 3.1212858200073242e+01f;
+  const float b2 = 3.9856964111328125e+02f;
+  const float b3 = 3.0231247558593750e+03f;
+  const float b4 = 1.3243366210937500e+04f;
+  const float b5 = 2.6267224609375000e+04f;
+  const float t = 3.9200000762939453e+00f;
+  // when x belongs to [-t,t],  Erf(x) = ((((((a1*x^2 + a2)*x^2 + x3)*x^2 + a4)*x^2 + a5)*x^2 + a6) * x)
+  //                                   / (((((x^2 + b1)*x^2 + b2)*x^2 + b3)*x^2 + b4)*x^2 + b5)
+  // else, Erf(x) = 1 or -1
+  auto need_cast = x->GetDtype() != TypeIdToType(kNumberTypeFloat32);
+  auto cast_1 = need_cast ? ib->Cast(x, kNumberTypeFloat32) : x;
+  cast_1 = ib->Minimum(cast_1, t);
+  cast_1 = ib->Maximum(cast_1, -t);
+  auto mul_2 = ib->Mul(cast_1, cast_1);
+  auto mul_3 = ib->Mul(mul_2, a1);
+  mul_3 = ib->Add(mul_3, a2);
+  mul_3 = ib->Mul(mul_3, mul_2);
+  mul_3 = ib->Add(mul_3, a3);
+  mul_3 = ib->Mul(mul_3, mul_2);
+  mul_3 = ib->Add(mul_3, a4);
+  mul_3 = ib->Mul(mul_3, mul_2);
+  mul_3 = ib->Add(mul_3, a5);
+  mul_3 = ib->Mul(mul_3, mul_2);
+  mul_3 = ib->Add(mul_3, a6);
+  mul_3 = ib->Mul(mul_3, cast_1);
+  auto add_4 = ib->Add(mul_2, b1);
+  add_4 = ib->Mul(add_4, mul_2);
+  add_4 = ib->Add(add_4, b2);
+  add_4 = ib->Mul(add_4, mul_2);
+  add_4 = ib->Add(add_4, b3);
+  add_4 = ib->Mul(add_4, mul_2);
+  add_4 = ib->Add(add_4, b4);
+  add_4 = ib->Mul(add_4, mul_2);
+  add_4 = ib->Add(add_4, b5);
+  auto result = ib->Div(mul_3, add_4);
+  result = need_cast ? ib->Cast(result, x->GetDtype()) : result;
+  return {result};
 });
 }  // namespace mindspore::graphkernel::expander

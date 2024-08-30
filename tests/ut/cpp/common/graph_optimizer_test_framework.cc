@@ -57,6 +57,11 @@ ParameterPtr ConstructGraph::NewScalarInput(const std::string &name, const TypeP
   return NewInput(name, abs);
 }
 
+ParameterPtr ConstructGraph::NewScalarInput(const std::string &name, const ValuePtr &value, const TypePtr &type) {
+  auto abs = std::make_shared<abstract::AbstractScalar>(value, type);
+  return NewInput(name, abs);
+}
+
 ParameterPtr ConstructGraph::NewTensorInput(const std::string &name, const TypePtr &type, const ShapeVector &shape) {
   auto abs = std::make_shared<abstract::AbstractTensor>(type, shape);
   return NewInput(name, abs);

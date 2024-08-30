@@ -30,6 +30,10 @@ class OnesLike : public OpDesc {
       MS_LOG(DEBUG) << "Skip dynamic shape case";
       return false;
     }
+    if (IsShapeEmpty(x_shape)) {
+      MS_LOG(DEBUG) << "Skip empty shape case";
+      return {};
+    }
     return true;
   }
 
