@@ -294,6 +294,9 @@ from mindspore.ops.function.math_func import tan
 
 from mindspore.ops.auto_generate import trace_ext as trace
 
+# 304
+from mindspore.ops.function.array_func import tril_ext as tril
+
 
 def add(input, other, *, alpha=1):
     r"""
@@ -985,6 +988,7 @@ def zeros(size, *, dtype=None):
     """
     return ops.auto_generate.zeros(size, dtype)
 
+
 def fix(x):
     """
     Alias for mindspore.mint.trunc()
@@ -1272,6 +1276,7 @@ __all__ = [
     'tan',
     'trace',
     # 304
+    'tril',
 
     # 305
 

@@ -70,7 +70,7 @@ from mindspore.ops.auto_generate import cat, range, scatter_nd, deepcopy, masked
     broadcast_to, strided_slice, ones, zeros, max_, min_, select
 from mindspore.ops.auto_generate.gen_ops_prim import scatter_add_ext_op, slice_ext_op, gather_d_op
 from mindspore.ops.operations.manually_defined import tile, rank, scalar_cast
-from mindspore.ops.auto_generate.pyboost_inner_prim import _PyboostOneHotExtPrim
+from mindspore.ops.auto_generate.pyboost_inner_prim import _PyboostOneHotExtPrim, tril_ext_impl
 
 arg_max_with_value_ = ArgMaxWithValue()
 arg_min_with_value_ = ArgMinWithValue()
@@ -4946,8 +4946,68 @@ def tril(input, diagonal=0):  # pylint: disable=redefined-outer-name
          [10 11  0  0]
          [14 15 16  0]]
     """
-    tril_ = Tril(diagonal)
+    tril_ = _get_cache_prim(Tril)(diagonal)
     return tril_(input)
+
+
+def tril_ext(input, diagonal=0):
+    """
+    Returns the lower triangle part of 'input' (elements that contain the diagonal and below),
+    and set the other elements to zeros.
+
+    Args:
+        input (Tensor): A Tensor with shape :math:`(x_1, x_2, ..., x_R)`. The rank must be at least 2.
+          Supporting all number types including bool.
+        diagonal (int, optional): An optional attribute indicates the diagonal to consider, default: 0,
+            indicating the main diagonal.
+
+    Returns:
+        Tensor, the same shape and data type as the input `x`.
+
+    Raises:
+        TypeError: If `x` is not a Tensor.
+        TypeError: If `diagonal` is not an int.
+        TypeError: If the type of `x` is neither number nor bool.
+        ValueError: If the rank of `x` is less than 2.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import numpy as np
+        >>> from mindspore import Tensor, ops
+        >>> x = Tensor(np.array([[ 1,  2,  3,  4],
+        ...                      [ 5,  6,  7,  8],
+        ...                      [10, 11, 12, 13],
+        ...                      [14, 15, 16, 17]]))
+        >>> result = ops.function.array_func.tril_ext(x)
+        >>> print(result)
+        [[ 1  0  0  0]
+         [ 5  6  0  0]
+         [10 11 12  0]
+         [14 15 16 17]]
+        >>> x = Tensor(np.array([[ 1,  2,  3,  4],
+        ...                      [ 5,  6,  7,  8],
+        ...                      [10, 11, 12, 13],
+        ...                      [14, 15, 16, 17]]))
+        >>> result = ops.function.array_func.tril_ext(x, diagonal=1)
+        >>> print(result)
+        [[ 1  2  0  0]
+         [ 5  6  7  0]
+         [10 11 12 13]
+         [14 15 16 17]]
+        >>> x = Tensor(np.array([[ 1,  2,  3,  4],
+        ...                      [ 5,  6,  7,  8],
+        ...                      [10, 11, 12, 13],
+        ...                      [14, 15, 16, 17]]))
+        >>> result = ops.function.array_func.tril_ext(x, diagonal=-1)
+        >>> print(result)
+        [[ 0  0  0  0]
+         [ 5  0  0  0]
+         [10 11  0  0]
+         [14 15 16  0]]
+    """
+    return tril_ext_impl(input, diagonal)
 
 
 @_primexpr

@@ -2220,6 +2220,13 @@ REG_BPROP_BUILDER("Tril").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
   return {dx};
 });
 
+REG_BPROP_BUILDER("TrilExt").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
+  auto diagonal = ib->GetInput(kIndex1);
+  auto dout = ib->GetInput(kIndex3);
+  auto dx = ib->Emit("TrilExt", {dout, diagonal});
+  return {dx, ib->OutZeros(diagonal)};
+});
+
 REG_BPROP_BUILDER("SegmentSum").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
   auto segment_ids = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex3);

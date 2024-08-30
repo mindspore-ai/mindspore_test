@@ -319,3 +319,4 @@ MishExt: 'aclnnMish'
 MishGradExt: 'aclnnMishBackward'
 
 # 301
+TrilExt: 'aclnnTril'
