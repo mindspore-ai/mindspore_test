@@ -55,7 +55,7 @@ size_t AscendGmemAdapter::AllocDeviceMem(size_t size, DeviceMemPtr *addr) const 
 size_t AscendGmemAdapter::EagerFreeDeviceMem(const DeviceMemPtr addr, const size_t size) const {
   MS_LOG(DEBUG) << "Enter ascend eager free device mem, addr : " << addr << ", size : " << size << ".";
   if (size == 0) {
-    MS_LOG(WARNING) << "Size is non positive.";
+    MS_LOG(WARNING) << "Eager free device mem, addr : " << addr << ", size is zero.";
     return 0;
   }
   size_t addr_size_t = reinterpret_cast<size_t>(addr);
@@ -74,7 +74,7 @@ size_t AscendGmemAdapter::EagerFreeDeviceMem(const DeviceMemPtr addr, const size
 uint8_t *AscendGmemAdapter::MmapMemory(size_t size, void *addr) const {
   MS_LOG(DEBUG) << "Enter mmap memory, size : " << size << ".";
   if (size == 0) {
-    MS_LOG(ERROR) << "Size : " << size << " is non positive.";
+    MS_LOG(ERROR) << "Mmap memory, addr : " << addr << ", size is zero.";
     return nullptr;
   }
 
