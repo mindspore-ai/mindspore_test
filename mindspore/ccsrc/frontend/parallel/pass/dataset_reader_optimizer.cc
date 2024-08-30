@@ -18,7 +18,6 @@
 #include <algorithm>
 #include <stack>
 #include <queue>
-#include <set>
 #include <string>
 #include "mindspore/core/ops/other_ops.h"
 #include "mindspore/core/ops/array_ops.h"
@@ -138,17 +137,15 @@ AnfNodePtr DatasetReaderOptimizer::FindDatasetParameter(const AnfNodePtr &node, 
   return nullptr;
 }
 
-RankList DatasetReaderOptimizer::FindAllStageIdUsedDataParameter(const AnfNodePtr &node,
-                                                                 const NodeUsersMap &node_users_map) {
-  RankList rank_list = {};
+void DatasetReaderOptimizer::FindAllStageIdUsedDataParameter(const AnfNodePtr &node, const NodeUsersMap &node_users_map,
+                                                             std::set<int64_t> *const data_used_stage) {
   if (opt_level_ != BETWEEN_STAGE && opt_level_ != OPT_ALL) {
-    return rank_list;
+    return;
   }
   std::queue<AnfNodePtr> queue;
   HashSet<AnfNodePtr> visited;
   queue.push(node);
   visited.insert(node);
-  std::set<int64_t> stage_set;
   while (!queue.empty()) {
     auto cur_node = queue.front();
     queue.pop();
@@ -159,7 +156,7 @@ RankList DatasetReaderOptimizer::FindAllStageIdUsedDataParameter(const AnfNodePt
         auto fg = GetValueNode<FuncGraphPtr>(user_node->input(0));
         auto stage = fg->stage();
         if (stage != -1) {
-          stage_set.insert(stage);
+          data_used_stage->insert(stage);
         }
         continue;
       }
@@ -169,8 +166,7 @@ RankList DatasetReaderOptimizer::FindAllStageIdUsedDataParameter(const AnfNodePt
       }
     }
   }
-  rank_list.assign(stage_set.begin(), stage_set.end());
-  return rank_list;
+  return;
 }
 
 RankList DatasetReaderOptimizer::InferRepeatRankList(const RankList &within_stage, const RankList &between_stage) {
@@ -199,103 +195,104 @@ RankList DatasetReaderOptimizer::InferRepeatRankList(const RankList &within_stag
   return rank_list;
 }
 
-AnfNodePtr DatasetReaderOptimizer::CreateZeroNode(const AnfNodePtr &node) {
-  auto abs = node->abstract();
-  if (abs == nullptr) {
-    return nullptr;
+bool DatasetReaderOptimizer::CreateZeroNode(const Shapes &shapes, const std::vector<TypePtr> &types,
+                                            std::vector<AnfNodePtr> *const input_vec) {
+  auto data_stra = ParallelContext::GetInstance()->dataset_strategy();
+  if (shapes.size() != types.size()) {
+    return false;
   }
-  auto tensor_abs = abs->cast<abstract::AbstractTensorPtr>();
-  if (tensor_abs == nullptr) {
-    return nullptr;
+  for (size_t i = 0; i < shapes.size(); ++i) {
+    tensor::TensorPtr zero_tensor = nullptr;
+    auto cur_input_shape = shapes.at(i);
+    auto cur_input_type = types.at(i);
+    Shape slice_shape;
+    if (!data_stra.empty()) {
+      if (data_stra.size() != shapes.size()) {
+        return false;
+      }
+      auto cur_input_stra = data_stra.at(i);
+      if (cur_input_stra.size() != cur_input_shape.size()) {
+        return false;
+      }
+      for (size_t j = 0; j < cur_input_stra.size(); ++j) {
+        slice_shape.emplace_back(cur_input_shape.at(j) / cur_input_stra.at(j));
+      }
+    } else {
+      slice_shape = cur_input_shape;
+      auto full_batch = ParallelContext::GetInstance()->full_batch();
+      if (!full_batch) {
+        auto dev_num = g_device_manager->stage_device_num();
+        slice_shape[0] = slice_shape[0] / dev_num;
+      }
+    }
+
+    zero_tensor = TensorConstructUtils::CreateZerosTensor(cur_input_type, slice_shape);
+    if (zero_tensor == nullptr) {
+      return false;
+    }
+    input_vec->emplace_back(NewValueNode(zero_tensor));
   }
-  TypePtr tensor_type_ptr = tensor_abs->element()->BuildType();
-  Shape tensor_shape = tensor_abs->shape()->shape();
-  auto zero_tensor = TensorConstructUtils::CreateZerosTensor(tensor_type_ptr, tensor_shape);
-  if (zero_tensor == nullptr) {
-    return nullptr;
-  }
-  return NewValueNode(zero_tensor);
+
+  return true;
 }
 
-void DatasetReaderOptimizer::InsertBroadcast(const NodeUsersMap &node_user_map, const RankList &rank_list,
-                                             int64_t index) {
-  auto node_users = node_user_map.at(get_next_);
+void DatasetReaderOptimizer::InsertBroadcast(const RankList &rank_list) {
   auto global_rank = g_device_manager->global_rank();
   auto iter = std::find(rank_list.begin(), rank_list.end(), global_rank);
-  constexpr int64_t place_holder = 0;
   if (iter == rank_list.end()) {
     return;
   }
-  for (const auto &node_pair : node_users) {
-    auto user_node = node_pair.first->cast<CNodePtr>();
-    if (!IsPrimitiveCNode(user_node, prim::kPrimTupleGetItem)) {
-      continue;
-    }
-    auto input_index = GetTupleGetItemIndex(user_node);
-    if (input_index != index) {
-      continue;
-    }
-    Group data_repeat_group;
-    if (g_device_manager->CreateGroup(rank_list, &data_repeat_group) != SUCCESS) {
-      MS_LOG(WARNING) << "Create dataset repeat group failed, rank list is: " << rank_list;
+  std::vector<AnfNodePtr> broadcast_input = {NewValueNode(prim::kPrimBroadcast->Clone())};
+  AnfNodePtr broadcast;
+  if (iter == rank_list.begin()) {
+    (void)broadcast_input.emplace_back(get_next_);
+    broadcast = root_->NewCNode(broadcast_input);
+    std::vector<AnfNodePtr> depend_input = {NewValueNode(prim::kPrimDepend), get_next_, broadcast};
+    auto depend = root_->NewCNode(depend_input);
+    (void)manager_->Replace(get_next_, depend);
+  } else {
+    auto prim = GetCNodePrimitive(get_next_);
+    auto shape_attr = prim->GetAttr(SHAPES);
+    auto type_attr = prim->GetAttr(TYPES);
+    if (shape_attr == nullptr || type_attr == nullptr) {
       return;
     }
-    auto fg = user_node->func_graph();
+    std::vector<ValuePtr> shape = shape_attr->isa<ValueTuple>() ? shape_attr->cast<ValueTuplePtr>()->value()
+                                                                : shape_attr->cast<ValueListPtr>()->value();
+    Shapes shapes;
+    for (const auto &element : shape) {
+      std::vector<ValuePtr> element_list =
+        element->isa<ValueTuple>() ? element->cast<ValueTuplePtr>()->value() : element->cast<ValueListPtr>()->value();
+      Shape shape_vec;
+      (void)std::transform(element_list.begin(), element_list.end(), std::back_inserter(shape_vec),
+                           [](const ValuePtr &v) -> int64_t { return GetValue<int64_t>(v); });
+      shapes.emplace_back(shape_vec);
+    }
+    auto types = GetValue<std::vector<TypePtr>>(type_attr);
     std::vector<AnfNodePtr> make_tuple_input = {NewValueNode(prim::kPrimMakeTuple->Clone())};
-    if (iter == rank_list.begin()) {
-      (void)make_tuple_input.emplace_back(user_node);
-    } else {
-      auto zero_tensor = CreateZeroNode(user_node);
-      (void)make_tuple_input.emplace_back(zero_tensor);
-    }
-    auto make_tuple = fg->NewCNode(make_tuple_input);
-    std::vector<AnfNodePtr> broadcast_input = {NewValueNode(prim::kPrimBroadcast->Clone()), make_tuple};
-    auto broadcast = fg->NewCNode(broadcast_input);
-    auto prim = GetCNodePrimitive(broadcast);
-    prim->set_attr(ROOT_RANK, MakeValue(BROADCAST_ROOT_RANK));
-    prim->set_attr(GROUP, MakeValue(data_repeat_group.name()));
-    prim->set_attr(DATASET_BROADCAST, MakeValue(True));
-    (void)broadcast_ops.emplace_back(broadcast);
-    if (iter == rank_list.begin()) {
-      std::vector<AnfNodePtr> depend_input = {NewValueNode(prim::kPrimDepend), user_node,
-                                              NewValueNode(MakeValue(place_holder))};
-      auto depend = fg->NewCNode(depend_input);
-      (void)manager_->Replace(user_node, depend);
-      (void)manager_->SetEdge(depend, SIZE_TWO, broadcast);
+    if (!CreateZeroNode(shapes, types, &make_tuple_input)) {
       return;
     }
-    std::vector<AnfNodePtr> getitem_input = {NewValueNode(prim::kPrimTupleGetItem), broadcast,
-                                             NewValueNode(MakeValue(INT64_ZERO))};
-    auto getitem = fg->NewCNode(getitem_input);
-    (void)manager_->Replace(user_node, getitem);
+    if (make_tuple_input.size() == 1) {
+      return;
+    }
+    auto make_tuple = root_->NewCNode(make_tuple_input);
+    (void)broadcast_input.emplace_back(make_tuple);
+    broadcast = root_->NewCNode(broadcast_input);
+    (void)manager_->Replace(get_next_, broadcast);
+  }
+  Group data_repeat_group;
+  if (g_device_manager->CreateGroup(rank_list, &data_repeat_group) != SUCCESS) {
+    MS_LOG(WARNING) << "Create dataset repeat group failed, rank list is: " << rank_list;
     return;
   }
-}
-
-CNodePtr BroadcastReorder(const std::vector<CNodePtr> &broadcast_ops) {
-  auto op_num = broadcast_ops.size();
-  if (broadcast_ops.empty()) {
-    return nullptr;
+  if (broadcast == nullptr) {
+    return;
   }
-  auto first_broadcast = broadcast_ops.front()->cast<CNodePtr>();
-  auto first_broadcast_prim = GetCNodePrimitive(first_broadcast);
-  first_broadcast_prim->set_attr(FIRST_BROADCAST, MakeValue(True));
-  if (op_num == 1) {
-    auto cnode = broadcast_ops.front()->cast<CNodePtr>();
-    auto prim = GetCNodePrimitive(cnode);
-    prim->set_attr(LAST_BROADCAST, MakeValue(True));
-    return first_broadcast;
-  }
-  for (size_t index = 0; index < op_num - 1; ++index) {
-    auto prior_node = broadcast_ops.at(index)->cast<CNodePtr>();
-    auto last_node = broadcast_ops.at(index + 1)->cast<CNodePtr>();
-    if (index == op_num - 2) {
-      auto prim = GetCNodePrimitive(last_node);
-      prim->set_attr(LAST_BROADCAST, MakeValue(True));
-    }
-    std::vector<AnfNodePtr> depend_input = {NewValueNode(prim::kPrimDepend), last_node->input(1), prior_node};
-  }
-  return first_broadcast;
+  auto prim = GetCNodePrimitive(broadcast);
+  prim->set_attr(ROOT_RANK, MakeValue(BROADCAST_ROOT_RANK));
+  prim->set_attr(GROUP, MakeValue(data_repeat_group.name()));
+  prim->set_attr(DATASET_BROADCAST, MakeValue(True));
 }
 
 void DatasetReaderOptimizer::BroadcastDataset() {
@@ -309,23 +306,24 @@ void DatasetReaderOptimizer::BroadcastDataset() {
   auto reapte_rank_within_stage = InferRepeatRankListWithinStage();
   const auto &node_users_map = manager_->node_users();
   auto dataset_users = node_users_map.at(virtual_dataset_);
+  std::set<int64_t> data_used_stage;
   for (const auto &node_pair : dataset_users) {
     auto cnode = node_pair.first->cast<CNodePtr>();
     if (!IsPrimitiveCNode(cnode, prim::kPrimTupleGetItem)) {
       continue;
     }
-    auto input_index = GetTupleGetItemIndex(cnode);
     auto cur_input_parameter = FindDatasetParameter(cnode, node_users_map);
-    if (cur_input_parameter == nullptr) {
-      continue;
+    if (cur_input_parameter != nullptr) {
+      FindAllStageIdUsedDataParameter(cur_input_parameter, node_users_map, &data_used_stage);
     }
-    auto cur_input_used_stage = FindAllStageIdUsedDataParameter(cur_input_parameter, node_users_map);
-    auto rank_list = InferRepeatRankList(reapte_rank_within_stage, cur_input_used_stage);
-    if (rank_list.empty()) {
-      continue;
-    }
-    InsertBroadcast(node_users_map, rank_list, input_index);
   }
+  RankList reapte_rank_between_stage;
+  reapte_rank_between_stage.assign(data_used_stage.begin(), data_used_stage.end());
+  auto rank_list = InferRepeatRankList(reapte_rank_within_stage, reapte_rank_between_stage);
+  if (rank_list.size() <= 1) {
+    return;
+  }
+  InsertBroadcast(rank_list);
 }
 
 void ControlOptShardCommAndDataBroadcastOrder(const FuncGraphPtr &graph) {
@@ -333,7 +331,8 @@ void ControlOptShardCommAndDataBroadcastOrder(const FuncGraphPtr &graph) {
   if (ms_context == nullptr) {
     return;
   }
-  if (ms_context->get_param<int>(MS_CTX_DATASET_BROADCAST_OPT_LEVEL) == 0) {
+  auto opt_level = ms_context->get_param<int>(MS_CTX_DATASET_BROADCAST_OPT_LEVEL);
+  if (opt_level == 0) {
     return;
   }
   if (graph == nullptr) {
@@ -353,7 +352,7 @@ void ControlOptShardCommAndDataBroadcastOrder(const FuncGraphPtr &graph) {
     return;
   }
   auto all_nodes = TopoSort(graph->get_return(), SuccDeeperSimple);
-  std::vector<CNodePtr> broadcast_ops;
+  CNodePtr broadcast_op;
   for (const auto &node : all_nodes) {
     if (!IsPrimitiveCNode(node, prim::kPrimBroadcast)) {
       continue;
@@ -363,13 +362,10 @@ void ControlOptShardCommAndDataBroadcastOrder(const FuncGraphPtr &graph) {
     if (!prim->HasAttr(DATASET_BROADCAST)) {
       continue;
     }
-    broadcast_ops.emplace_back(cnode);
+    broadcast_op = cnode;
+    break;
   }
-  if (broadcast_ops.empty()) {
-    return;
-  }
-  auto first_broadcast = BroadcastReorder(broadcast_ops);
-  if (first_broadcast == nullptr) {
+  if (broadcast_op == nullptr) {
     return;
   }
   std::vector<CNodePtr> opt_shard_comm_list;
@@ -383,13 +379,22 @@ void ControlOptShardCommAndDataBroadcastOrder(const FuncGraphPtr &graph) {
   if (opt_shard_comm_list.empty()) {
     return;
   }
+  if (opt_level == 2) {
+    for (const auto &opt_shard_comm : opt_shard_comm_list) {
+      std::vector<AnfNodePtr> depend_inputs{NewValueNode(prim::kPrimDepend), opt_shard_comm->input(1), broadcast_op};
+      auto depend_node = graph->NewCNode(depend_inputs);
+      depend_node->set_abstract(opt_shard_comm->input(1)->abstract()->Clone());
+      (void)manager->Replace(opt_shard_comm->input(1), depend_node);
+    }
+    return;
+  }
   std::vector<AnfNodePtr> make_tuple_inputs{NewValueNode(prim::kPrimMakeTuple)};
   (void)std::copy(opt_shard_comm_list.begin(), opt_shard_comm_list.end(), std::back_inserter(make_tuple_inputs));
-  std::vector<AnfNodePtr> depend_inputs{NewValueNode(prim::kPrimDepend), first_broadcast->input(1),
+  std::vector<AnfNodePtr> depend_inputs{NewValueNode(prim::kPrimDepend), broadcast_op->input(1),
                                         graph->NewCNode(make_tuple_inputs)};
   auto depend_node = graph->NewCNode(depend_inputs);
-  depend_node->set_abstract(first_broadcast->input(1)->abstract()->Clone());
-  (void)manager->Replace(first_broadcast->input(1), depend_node);
+  depend_node->set_abstract(broadcast_op->input(1)->abstract()->Clone());
+  (void)manager->Replace(broadcast_op->input(1), depend_node);
 }
 
 void ControlPipelineCommAndDataBroadcastOrder(const FuncGraphPtr &graph) {
@@ -426,23 +431,23 @@ void ControlPipelineCommAndDataBroadcastOrder(const FuncGraphPtr &graph) {
   if (first_recv == nullptr) {
     return;
   }
-  CNodePtr last_broadcast;
+  CNodePtr broadcast_op;
   for (const auto &node : all_nodes) {
     if (!IsPrimitiveCNode(node, prim::kPrimBroadcast)) {
       continue;
     }
     auto cnode = node->cast<CNodePtr>();
     auto prim = GetCNodePrimitive(cnode);
-    if (!prim->HasAttr(LAST_BROADCAST)) {
+    if (!prim->HasAttr(DATASET_BROADCAST)) {
       continue;
     }
-    last_broadcast = cnode;
+    broadcast_op = cnode;
     break;
   }
-  if (last_broadcast == nullptr) {
+  if (broadcast_op == nullptr) {
     return;
   }
-  std::vector<AnfNodePtr> depend_inputs{NewValueNode(prim::kPrimDepend), first_recv->input(1), last_broadcast};
+  std::vector<AnfNodePtr> depend_inputs{NewValueNode(prim::kPrimDepend), first_recv->input(1), broadcast_op};
   auto depend_node = graph->NewCNode(depend_inputs);
   depend_node->set_abstract(first_recv->input(1)->abstract()->Clone());
   (void)manager->Replace(first_recv->input(1), depend_node);
