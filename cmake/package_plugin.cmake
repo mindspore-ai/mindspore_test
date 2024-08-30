@@ -31,21 +31,6 @@ set(INSTALL_BASE_DIR ".")
 set(INSTALL_LIB_DIR "lib")
 set(INSTALL_PLUGIN_DIR "${INSTALL_LIB_DIR}/plugin")
 
-# set package files
-install(
-        TARGETS mindspore_shared_lib
-        DESTINATION ${INSTALL_LIB_DIR}
-        COMPONENT mindspore
-)
-
-if(ENABLE_D OR ENABLE_GPU)
-    install(
-            TARGETS api_lib
-            DESTINATION ${INSTALL_LIB_DIR}
-            COMPONENT mindspore
-    )
-endif()
-
 if(ENABLE_D)
     install(
             TARGETS mindspore_ascend LIBRARY

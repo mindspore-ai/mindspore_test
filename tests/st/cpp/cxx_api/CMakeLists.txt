@@ -17,7 +17,7 @@ if(ENABLE_ACL)
 endif()
 file(GLOB_RECURSE CXX_ST_SRC RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cc)
 add_executable(cxx_st_tests ${CXX_ST_SRC})
-target_link_libraries(cxx_st_tests PRIVATE mindspore_shared_lib _c_dataengine mindspore::gtest)
+target_link_libraries(cxx_st_tests PRIVATE _c_dataengine mindspore::gtest)
 target_link_options(cxx_st_tests PRIVATE -Wl,--unresolved-symbols=ignore-all)
 set_target_properties(cxx_st_tests PROPERTIES SKIP_BUILD_RPATH TRUE RUNTIME_OUTPUT_DIRECTORY
         ${CMAKE_CURRENT_SOURCE_DIR})

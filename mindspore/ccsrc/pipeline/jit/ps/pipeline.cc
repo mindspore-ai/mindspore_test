@@ -2741,9 +2741,9 @@ void ClearResAtexit() {
   mindspore::trans::FormatHelper::GetInstance().Clear();
   ClearResPart3();
   ClearSingleton();
-  MS_LOG(INFO) << "Start unload dynamic lib...";
-  device::DeviceContextManager::GetInstance().UnloadPlugin();
-  MS_LOG(INFO) << "End unload dynamic lib...";
+  //  The premature unloading of the plugin .so triggers the process to exit during the termination phase. Other
+  //  components' singletons, static variables, and global variables in MindSpore may inadvertently invoke the plugin
+  //  interface, resulting in an undefined coredump.
 }
 
 py::bytes PyEncrypt(char *plain_data, size_t plain_len, char *key, size_t key_len, const std::string &enc_mode) {

@@ -17,7 +17,7 @@ set(DVPP_UTILS_SRC
 if(NOT MSLITE_ENABLE_ACL)
     set(DVPP_UTILS_SRC
     ${DVPP_UTILS_SRC}
-    ${CMAKE_SOURCE_DIR}/mindspore/ccsrc/cxx_api/graph/acl/acl_env_guard.cc
+    acl_env_guard.cc # in lite, src code has acl_env_guard.cc impl
     )
 endif()
 
@@ -46,7 +46,7 @@ else()
     find_library(nnopbase libnnopbase.so ${ASCEND_CANN_RUNTIME_PATH} ${ASCEND_TOOLKIT_RUNTIME_PATH})
     find_library(acl_dvpp_op libacl_dvpp_op.so ${ASCEND_CANN_RUNTIME_PATH} ${ASCEND_TOOLKIT_RUNTIME_PATH})
     find_library(acl_dvpp_mpi libacl_dvpp_mpi.so ${ASCEND_CANN_RUNTIME_PATH} ${ASCEND_TOOLKIT_RUNTIME_PATH})
-    target_link_libraries(dvpp_utils PRIVATE _c_dataengine ${acl} ${acl_dvpp} mindspore_core mindspore_shared_lib ${nnopbase} ${acl_dvpp_op} ${acl_dvpp_mpi})
+    target_link_libraries(dvpp_utils PRIVATE _c_dataengine ${acl} ${acl_dvpp} mindspore_core ${nnopbase} ${acl_dvpp_op} ${acl_dvpp_mpi})
 endif()
 target_link_libraries(dvpp_utils PRIVATE $<TARGET_OBJECTS:_mindspore_transform_symbol_obj>)
 

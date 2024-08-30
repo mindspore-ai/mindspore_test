@@ -231,7 +231,7 @@ def build_source_file_path(dep_h):
             dep_cc = "EXTERNAL"
             return dep_cc
     if 'include/api/types.h' in dep_h:
-        dep_cc = "mindspore/ccsrc/cxx_api/types.cc"
+        dep_cc = "mindspore/ccsrc/minddata/dataset/core/types.cc"
         return dep_cc
     dep_cc = dep_h.replace('.hpp', '.cc').replace('.h', '.cc')
     if not os.path.isfile(dep_cc):

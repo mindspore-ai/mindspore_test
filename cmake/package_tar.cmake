@@ -22,12 +22,6 @@ set(INSTALL_PLUGIN_DIR "${INSTALL_LIB_DIR}/plugin")
 
 # set package files
 install(
-        TARGETS mindspore_shared_lib
-        DESTINATION ${INSTALL_LIB_DIR}
-        COMPONENT mindspore
-)
-
-install(
         TARGETS mindspore_core mindspore_ops mindspore_common mindspore_backend mindspore_np_dtype
         DESTINATION ${INSTALL_LIB_DIR}
         COMPONENT mindspore

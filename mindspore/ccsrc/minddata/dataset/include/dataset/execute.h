@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2023 Huawei Technologies Co., Ltd
+ * Copyright 2020-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@
 #include <vector>
 
 #include "include/api/context.h"
-#include "include/api/types.h"
+#include "include/api/visible.h"
 #include "include/dataset/constants.h"
 #include "include/dataset/transforms.h"
 #if !defined(BUILD_LITE) && defined(ENABLE_D)

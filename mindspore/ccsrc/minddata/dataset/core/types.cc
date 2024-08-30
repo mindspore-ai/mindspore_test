@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef BUILDING_DLL
+#define BUILDING_DLL
 #include "include/api/types.h"
+#undef BUILDING_DLL
+#endif
+
 #include <fstream>
 #include <numeric>
 #include "securec/include/securec.h"
