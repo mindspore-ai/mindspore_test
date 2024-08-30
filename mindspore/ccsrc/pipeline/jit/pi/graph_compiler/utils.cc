@@ -192,8 +192,6 @@ std::string GraphUtils::OpCompareArgToGraphName(int oparg) {
     {Py_GE, "greater_equal"},
 #if (PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION < 9)
     {PyCmp_IN, "in_"},
-  // not correct in accsend server for 3.8
-  // {PyCmp_NOT_IN, "not_in_"},
 #endif
   };
   auto iter = compare_arg_2_graph_name.find(oparg);
