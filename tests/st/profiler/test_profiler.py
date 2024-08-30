@@ -151,12 +151,14 @@ def test_gpu_profiler():
     Expectation: No exception.
     """
     device_id = int(os.getenv('DEVICE_ID')) if os.getenv('DEVICE_ID') else 0
+    rank_id = int(os.getenv('RANK_ID')) if os.getenv('RANK_ID') else 0
     data_path = tempfile.mkdtemp(prefix='profiler_data', dir='/tmp')
     profiler_path = os.path.join(data_path, 'profiler/')
     try:
         _train_with_profiler(data_path=data_path, device_target="GPU", profile_memory=False,
                              context_mode=context.GRAPH_MODE)
         _check_gpu_profiling_file(profiler_path, device_id)
+        _check_host_profiling_file(profiler_path, rank_id)
     finally:
         if os.path.exists(data_path):
             shutil.rmtree(data_path)
@@ -170,12 +172,14 @@ def test_gpu_profiler_pynative():
     Expectation: No exception.
     """
     device_id = int(os.getenv('DEVICE_ID')) if os.getenv('DEVICE_ID') else 0
+    rank_id = int(os.getenv('RANK_ID')) if os.getenv('RANK_ID') else 0
     data_path = tempfile.mkdtemp(prefix='profiler_data', dir='/tmp')
     profiler_path = os.path.join(data_path, 'profiler/')
     try:
         _train_with_profiler(data_path=data_path, device_target="GPU", profile_memory=False,
                              context_mode=context.PYNATIVE_MODE)
         _check_gpu_profiling_file(profiler_path, device_id)
+        _check_host_profiling_file(profiler_path, rank_id)
     finally:
         if os.path.exists(data_path):
             shutil.rmtree(data_path)

@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 """The integrator for integrating parsed profiling files."""
+import json
 import os
 import csv
 
@@ -23,6 +24,7 @@ from mindspore.profiler.parser.container import TimelineContainer
 from mindspore.profiler.parser.base_timeline_generator import BaseTimelineGenerator
 from mindspore.profiler.parser.integrator import DeviceTarget
 from mindspore.profiler.common.validator.validate_path import validate_and_normalize_path
+from mindspore.profiler.parser.gpu_analysis.fwk_file_parser import GPUFwkFileParser
 
 
 class GpuTimelineGenerator(BaseTimelineGenerator):
@@ -65,10 +67,6 @@ class GpuTimelineGenerator(BaseTimelineGenerator):
             if len(timeline) == 4:
                 self._update_num_of_streams(timeline, stream_count_dict)
 
-        # Add format thread meta data.
-        self._format_meta_data_list.extend(self._timeline_meta)
-        self._timeline_meta = self._format_meta_data_list
-
         # Update timeline summary info
         self._timeline_summary['num_of_streams'] += len(stream_count_dict)
 
@@ -109,6 +107,26 @@ class GpuTimelineGenerator(BaseTimelineGenerator):
             logger.warning('No step trace data exists.')
             return False
 
+    def parse_fwk_data(self):
+        """
+        Get framework op range trace data
+        """
+
+        fwk_parser = GPUFwkFileParser(self._profiling_dir, self._device_id)
+        fwk_data = fwk_parser.get_op_range_data()
+        self._fwk_json = fwk_parser.get_fwk_trace_data(fwk_data)
+
+    def write_fwk_timeline(self):
+        display_file_path = os.path.join(self._profiling_dir, self._display_filename)
+        timeline_data = self._fwk_json
+        if os.path.exists(display_file_path):
+            with os.fdopen(os.open(display_file_path, os.O_RDONLY, 0o600), 'r') as fr:
+                device_data = fr.read()
+            timeline_data.extend(json.loads(device_data))
+
+        with os.fdopen(os.open(display_file_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), 'w') as fw:
+            json.dump(timeline_data, fw)
+
     def _get_and_validate_path(self, file_name):
         """Generate op or activity file path from file name, and validate this path."""
         file_path = os.path.join(
@@ -133,9 +151,9 @@ class GpuTimelineGenerator(BaseTimelineGenerator):
         timeline_dict['tid'] = op_meta.stream_id
         timeline_dict['ts'] = (op_meta.start_time - min_cycle_counter) / factor
         dur = op_meta.duration
-        timeline_dict['dur'] = dur
+        timeline_dict['dur'] = dur  # unit is us
         if op_meta.pid is None:
-            timeline_dict['pid'] = int(self._device_id)
+            timeline_dict['pid'] = int(f'2{self._device_id}')
         else:
             timeline_dict['pid'] = op_meta.pid
         if op_meta.stream_id == "Scope Name":
@@ -555,17 +573,12 @@ class CpuTimelineGenerator(GpuTimelineGenerator):
             if len(timeline) == 4:
                 self._update_num_of_streams(timeline, stream_count_dict)
 
-        # Add format thread meta data.
-        self._format_meta_data_list.extend(self._timeline_meta)
-        self._timeline_meta = self._format_meta_data_list
-
         # Update timeline summary info
         self._timeline_summary['num_of_streams'] += len(stream_count_dict.keys())
 
     def load_cpu_op_data(self):
         """Load cpu operator data from file"""
-        op_file_path = self._get_and_validate_path(
-            self._output_op_execute_time_file_path)
+        op_file_path = self._get_and_validate_path(self._output_op_execute_time_file_path)
         timeline_list = []
         if not os.path.exists(op_file_path):
             logger.info("No cpu operator info.")

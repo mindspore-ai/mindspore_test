@@ -42,7 +42,7 @@ class FwkFileParser:
         self.rank_id = rank_id
         self._prof_root = None
         self._op_range_path = None
-        self.__init_framework_path(source_path)
+        self._init_framework_path(source_path)
 
     def get_op_range_data(self, step_list=None) -> List[MindSporeOpEvent]:
         """Read and decode all the mindspore oprange data."""
@@ -121,7 +121,7 @@ class FwkFileParser:
                 csv_writer.writerow([event, stage, count, average_execution, custom_info])
         os.chmod(dataset_file, modes)
 
-    def __init_framework_path(self, source_path: str):
+    def _init_framework_path(self, source_path: str):
         """Init the oprange data path."""
         source_path = validate_and_normalize_path(source_path)
         if not os.path.exists(source_path):
