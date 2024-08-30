@@ -219,7 +219,7 @@ Status TensorTransform::TransAllGatherToAllConcat(
 Status TensorTransform::TransAllConcatToAllGather(
   std::vector<std::pair<std::string, std::vector<int64_t>>> *transform_op_list) {
   MS_EXCEPTION_IF_NULL(transform_op_list);
-  int64_t index = transform_op_list->size() - 1;
+  int64_t index = SizeToLong(transform_op_list->size()) - 1;
   while (index >= 0) {
     if ((*transform_op_list)[LongToSize(index)].first != ALL_CONCAT) {
       --index;
@@ -702,7 +702,7 @@ void TensorTransform::OptimizeAllConcat(const Shape &input_shape, std::vector<Re
       continue;
     }
     auto pre_shape = Shape(in_shape.begin() + concat_axis, in_shape.end());
-    for (int64_t pre_node_index = i - 1; pre_node_index >= 0; --pre_node_index) {
+    for (int64_t pre_node_index = SizeToLong(i) - 1; pre_node_index >= 0; --pre_node_index) {
       if (transform_op_list->at(pre_node_index).first != RESHAPE) {
         pre_shape = shape_list[pre_node_index];
         break;
@@ -724,7 +724,7 @@ void TensorTransform::OptimizeAllConcat(const Shape &input_shape, std::vector<Re
 // Slice(axis>0)->Reshape => Slice(axis=0)->Reshape
 void TensorTransform::OptimizeSlice(const Shape &input_shape, std::vector<RedisOpPair> *transform_op_list) {
   MS_EXCEPTION_IF_NULL(transform_op_list);
-  for (int64_t i = transform_op_list->size() - 2; i >= 0; --i) {
+  for (int64_t i = SizeToLong(transform_op_list->size()) - 2; i >= 0; --i) {
     auto slice_op_pair = transform_op_list->at(i);
     auto reshape_op_pair = transform_op_list->at(i + 1);
     if (slice_op_pair.first != SLICE || reshape_op_pair.first != RESHAPE) {
