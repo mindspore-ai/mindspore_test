@@ -592,7 +592,7 @@ Status TreeAdapter::LaunchSubprocess() {
     message_queue.MsgSnd(kWorkerErrorMsg);
 
     // waiting for the main process get the message
-    sleep(kMonitorInterval * 2);
+    sleep(kMonitorInterval * kSleepTime);
 
     SubprocessExit(-1);
   }
@@ -627,7 +627,7 @@ Status TreeAdapter::LaunchSubprocess() {
       message_queue.MsgSnd(kWorkerErrorMsg);
 
       // waiting for the main process get the message
-      sleep(kMonitorInterval * 2);
+      sleep(kMonitorInterval * kSleepTime);
 
       SubprocessExit(-1);
     }

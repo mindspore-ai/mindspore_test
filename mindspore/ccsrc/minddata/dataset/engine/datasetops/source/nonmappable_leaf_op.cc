@@ -342,6 +342,7 @@ Status NonMappableLeafOp::GetNextRowPullMode(TensorRow *const row) {
     prepared_data_ = true;
   }
   if (finished_reading_dataset_) {
+    RETURN_UNEXPECTED_IF_NULL(row);
     *row = TensorRow(TensorRow::kFlagEOF);
     return Status::OK();
   }
@@ -359,6 +360,7 @@ Status NonMappableLeafOp::GetNextRowPullMode(TensorRow *const row) {
     workers_done_++;
     if (static_cast<int32_t>(workers_done_) == num_workers_) {
       RETURN_IF_NOT_OK(ResetAndUpdateRepeat());
+      RETURN_UNEXPECTED_IF_NULL(row);
       *row = TensorRow(TensorRow::kFlagEOE);
       return Status::OK();
     } else {
@@ -392,6 +394,7 @@ Status NonMappableLeafOp::GetNextRowPullMode(TensorRow *const row) {
     RETURN_IF_NOT_OK(ResetAndUpdateRepeat());
     new_row = TensorRow(TensorRow::kFlagEOE);
   }
+  RETURN_UNEXPECTED_IF_NULL(row);
   *row = std::move(new_row);
   return Status::OK();
 }
