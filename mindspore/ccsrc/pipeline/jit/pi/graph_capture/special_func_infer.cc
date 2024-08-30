@@ -561,6 +561,9 @@ static bool GuardBuiltinFunc(CallNode *call_node) {
       }
     }
   }
+  Graph *graph = call_node->GetGraph();
+  MS_EXCEPTION_IF_NULL(graph);
+  bool guard_inputs = call_node->GetVobj()->GetType() == AObject::kTypeAnyValue;
   const auto &call_node_inputs = call_node->getInputs();
   for (size_t i = 1; i < call_node_inputs.size(); ++i) {
     auto cur_input = call_node_inputs[i];
@@ -576,10 +579,11 @@ static bool GuardBuiltinFunc(CallNode *call_node) {
                    << " is not constant.";
       return false;
     }
+    if (guard_inputs && !graph->GuardValueNode(cur_input)) {
+      return false;
+    }
   }
-  Graph *graph = call_node->GetGraph();
-  MS_EXCEPTION_IF_NULL(graph);
-  return graph->GuardValueNode(call_node);
+  return guard_inputs ? true : graph->GuardValueNode(call_node);
 }
 
 static bool GuardIsInstance(CallNode *call_node) {
