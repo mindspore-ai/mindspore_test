@@ -255,7 +255,7 @@ class Profiler:
             Default value: ``False`` .
         timeline_limit (int, optional): (Ascend/GPU) Set the maximum storage size of the timeline file (unit M).
             When using this parameter, `op_time` must be set to True. Default value: ``500`` .
-        profile_framework (str, optional): (Ascend) The host information to collect, it must be one of
+        profile_framework (str, optional): (Ascend/GPU) The host information to collect, it must be one of
             ["all", "time", None], When is not set to None, it would collect the host profiler data.
             Default: None.
 
@@ -952,12 +952,12 @@ class Profiler:
 
         gpu_profiler = c_expression.Profiler
         self._gpu_profiler = gpu_profiler.get_instance("GPU")
-        self._gpu_profiler.init(self._output_path)
-        self._gpu_profiler.sync_enable(self._sync_enable)
         if GlobalComm.WORLD_COMM_GROUP == "nccl_world_group":
             self._dev_id = str(get_rank())
         os.environ['DEVICE_ID'] = self._dev_id
         self._rank_id = self._dev_id
+        self._gpu_profiler.init(self._output_path, int(self._rank_id))
+        self._gpu_profiler.sync_enable(self._sync_enable)
 
     def _ascend_profiler_init(self, kwargs):
         """Ascend profiler init."""
@@ -1672,6 +1672,8 @@ class Profiler:
             timeline_generator.init_timeline(reduce_op_type)
             self._timeline_meta = timeline_generator.write_timeline(self._timeline_size_limit_byte)
             timeline_generator.write_timeline_summary()
+            timeline_generator.parse_fwk_data()
+            timeline_generator.write_fwk_timeline()
             return timeline_generator
         except (ProfilerIOException, ProfilerFileNotFoundException, RuntimeError) as err:
             logger.warning('Fail to write timeline data: %s', err)

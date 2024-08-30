@@ -181,6 +181,7 @@ class GPU_EXPORT GPUProfiler : public Profiler {
   std::mutex event_lock_;
   std::map<std::string, std::shared_ptr<ProfilingOp>> profiling_op_;
   ProfilingTraceInfo step_trace_op_name_;
+  uint32_t device_id_ = 0;
   bool is_init_ = false;
 };
 }  // namespace gpu

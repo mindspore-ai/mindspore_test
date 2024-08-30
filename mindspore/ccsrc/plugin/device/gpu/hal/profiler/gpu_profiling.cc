@@ -35,6 +35,8 @@
 #include "include/common/utils/utils.h"
 #include "utils/profile.h"
 #include "utils/ms_context.h"
+#include "common/debug/profiler/profiling_data_dumper.h"
+#include "common/debug/profiler/profiling_framework_data.h"
 
 #ifdef _MSC_VER
 namespace {
@@ -293,6 +295,9 @@ void GPUProfiler::StepProfilingEnable(const bool enable_flag) {
   MS_LOG(INFO) << "GPU Profiler enable flag:" << enable_flag;
   CHECK_CUPTI_RET_WITH_ERROR(CuptiActivityFlushAll(0), "CuptiActivityFlushAll");
   enable_flag_ = enable_flag;
+  ascend::ProfilingFrameworkData::Device_Id = device_id_;
+  ascend::ProfilingDataDumper::GetInstance().Init(profile_data_path_ + "/FRAMEWORK", device_id_);
+  ascend::ProfilingDataDumper::GetInstance().Start();
 }
 
 void GPUProfiler::FixOpNameByCorrelationId(Event *event) {
@@ -451,6 +456,7 @@ void CUPTIAPI ActivityProcessBuffer(CUcontext ctx, uint32_t streamId, uint8_t *b
 
 void GPUProfiler::Init(const std::string &profiling_path, uint32_t device_id, const std::string &profiling_options) {
   MS_LOG(INFO) << "Initialize GPU Profiling";
+  device_id_ = device_id;
   if (subscriber_ != nullptr) {
     StopCUPTI();
     MS_LOG(EXCEPTION)
@@ -561,6 +567,7 @@ void GPUProfiler::StopCUPTI() {
 
 void GPUProfiler::Stop() {
   MS_LOG(INFO) << "Stop GPU Profiling";
+  ascend::ProfilingDataDumper::GetInstance().Stop();
   StopCUPTI();
   OpsParser();
   SaveProfileData();
