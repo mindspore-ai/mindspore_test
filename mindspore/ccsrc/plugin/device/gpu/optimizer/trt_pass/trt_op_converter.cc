@@ -929,6 +929,10 @@ MS_TRT_CONVERTER_FUNC_REG(LayerNorm) {
   auto begin_params_axis = common::AnfAlgo::GetNodeAttr<int64_t>(node, "begin_params_axis");
   begin_params_axis = begin_params_axis >= 0 ? begin_params_axis : begin_params_axis + input_shape.size();
   auto param_shape = Convert2SizeTClipNeg(input_shape);
+  if (param_shape.size() < LongToSize(begin_params_axis)) {
+    MS_LOG(EXCEPTION) << "Index out of range for axis is " << begin_params_axis << ", and shape size is "
+                      << param_shape.size();
+  }
   for (size_t j = 0; j < LongToSize(begin_params_axis); j++) {
     param_shape[j] = 1;
   }
