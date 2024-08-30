@@ -253,12 +253,13 @@ class L1LossExt(LossBase):
     L1LossExt is used to calculate the mean absolute error between the predicted value and the target value.
 
     Assuming that the :math:`x` and :math:`y` are 1-D Tensor, length :math:`N`, then calculate the loss of :math:`x` and
-    :math:`y` without dimensionality reduction (the reduction parameter is set to "none"). The formula is as follows:
+    :math:`y` without dimensionality reduction (the reduction parameter is set to ``'none'`` ). The formula is as
+    follows:
 
     .. math::
         \ell(x, y) = L = \{l_1,\dots,l_N\}^\top, \quad \text{with } l_n = \left| x_n - y_n \right|,
 
-    where :math:`N` is the batch size. If `reduction` is not ``'none'``, then:
+    where :math:`N` is the batch size. If `reduction` is not ``'none'`` , then:
 
     .. math::
         \ell(x, y) =
@@ -285,7 +286,7 @@ class L1LossExt(LossBase):
         Tensor, data type is float.
 
     Raises:
-        ValueError: If `reduction` is not one of ``'none'``, ``'mean'``, ``'sum'``.
+        ValueError: If `reduction` is not one of ``'none'`` , ``'mean'`` or ``'sum'`` .
         ValueError: If `logits` and `labels` have different shapes and cannot be broadcasted to each other.
 
     Supported Platforms:

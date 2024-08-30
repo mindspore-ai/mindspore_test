@@ -3,7 +3,7 @@ l1_loss_ext:
             Calculate the mean absolute error between the `input` value and the `target` value.
 
             Assuming that the :math:`x` and :math:`y` are the predicted value and target value,
-            both are one-dimensional tensors of length :math:`N`, length :math:`N`, `reduction` is set to ``'none'``,
+            both are one-dimensional tensors of length :math:`N`, length :math:`N`, `reduction` is set to ``'none'`` ,
             then calculate the loss of :math:`x` and :math:`y` without dimensionality reduction.
 
             The formula is as follows:
@@ -34,16 +34,16 @@ l1_loss_ext:
                     - ``'sum'``: the output elements will be summed.
 
             Returns:
-                Tensor or Scalar, if `reduction` is ``'none'``, return a Tensor with same shape and dtype as `input`.
+                Tensor or Scalar, if `reduction` is ``'none'`` , return a Tensor with same shape and dtype as `input`.
                 Otherwise, a scalar value will be returned.
 
             Raises:
                 TypeError: If `input` is not a Tensor.
                 TypeError: If `target` is not a Tensor.
-                ValueError: If `reduction` is not one of ``'none'``, ``'mean'`` or ``'sum'``.
+                ValueError: If `reduction` is not one of ``'none'`` , ``'mean'`` or ``'sum'`` .
 
             Supported Platforms:
-                ``Ascend`` ``GPU`` ``CPU``
+                ``Ascend``
 
             Examples:
                 >>> from mindspore import Tensor, ops
