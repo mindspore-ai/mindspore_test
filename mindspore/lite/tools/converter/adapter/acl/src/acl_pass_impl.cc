@@ -626,7 +626,7 @@ void AclPassImpl::AdjustDuplicateNodeName(const FuncGraphPtr &func_graph) {
   }
 }
 
-STATUS AclPassImpl::RunAclOptimizerPass(const FuncGraphPtr &func_graph) {
+STATUS AclPassImpl::RunLiteInnerPass(const FuncGraphPtr &func_graph) {
   auto plugin_custom_ops = user_options_cfg_.plugin_custom_ops;
   MS_LOG(INFO) << "plugin_custom_ops: " << plugin_custom_ops;
   if (find(plugin_custom_ops.begin(), plugin_custom_ops.end(), "All") != plugin_custom_ops.end() ||
@@ -689,6 +689,14 @@ STATUS AclPassImpl::RunAclOptimizerPass(const FuncGraphPtr &func_graph) {
     return lite::RET_ERROR;
   }
   return lite::RET_OK;
+}
+
+STATUS AclPassImpl::RunAclOptimizerPass(const FuncGraphPtr &func_graph) {
+  if (!lite::RunExternalPass(func_graph, registry::POSITION_ASCEND)) {
+    MS_LOG(ERROR) << "Run external pass failed, place is ACL!";
+    return lite::RET_ERROR;
+  }
+  return RunLiteInnerPass(func_graph);
 }
 
 STATUS AclPassImpl::PreProcGraph(const FuncGraphPtr &func_graph) {

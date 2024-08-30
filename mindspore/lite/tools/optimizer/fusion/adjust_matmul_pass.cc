@@ -195,30 +195,111 @@ CNodePtr CreateAfterReshapeNode(const FuncGraphPtr &func_graph, const CNodePtr &
   return reshape_node;
 }
 
-bool AdjustBMMToMM(const FuncGraphPtr &func_graph, const CNodePtr &batch_matmul_cnode) {
-  MS_CHECK_TRUE_RET(func_graph != nullptr, false);
-  MS_CHECK_TRUE_RET(batch_matmul_cnode != nullptr, false);
-  MS_LOG(INFO) << "Adjust BatchMatMul node to MatMul node.";
-  if (batch_matmul_cnode->size() < kSize_3 || batch_matmul_cnode->size() > kSize_4) {
-    MS_LOG(ERROR) << "batch_matmul_cnode->size() < 3 or size() > 4!";
+std::vector<int64_t> GetTensorShape(CNodePtr cnode, size_t input_index) {
+  auto abstract = GetCNodeInputAbstract(cnode, input_index);
+  MS_CHECK_TRUE_RET(abstract != nullptr, {});
+  std::vector<int64_t> shape = {};
+  if (FetchShapeFromAbstract(abstract, &shape) != lite::RET_OK) {
+    MS_LOG(ERROR) << "FetchShape From Abstract failed.";
+    return {};
+  }
+  return shape;
+}
+
+bool IsStatic3DAnd2D(const std::vector<int64_t> &input_x_shape, const std::vector<int64_t> &weight_shape) {
+  if (input_x_shape.size() != kSize_3 || weight_shape.size() != kInputSizeTwo) {
     return false;
   }
+  int64_t kNumDynShape = -1;
+  bool is_dyn_input_x =
+    std::any_of(input_x_shape.begin(), input_x_shape.end(), [kNumDynShape](int y) { return kNumDynShape == y; });
+  bool is_dyn_weight =
+    std::any_of(weight_shape.begin(), weight_shape.end(), [kNumDynShape](int y) { return kNumDynShape == y; });
+  if (is_dyn_weight || is_dyn_input_x) {
+    return false;
+  }
+  return true;
+}
+
+CNodePtr CreateReshapeCNode(const FuncGraphPtr &func_graph, const AnfNodePtr &cnode,
+                            const std::vector<int32_t> &shape) {
+  MS_CHECK_TRUE_RET(func_graph != nullptr, nullptr);
+  MS_CHECK_TRUE_RET(cnode != nullptr, nullptr);
+  MS_CHECK_TRUE_RET(cnode->abstract() != nullptr, nullptr);
+  auto shape_parm_node =
+    opt::BuildIntVecParameterNode(func_graph, shape, cnode->fullname_with_scope() + "_input_shape_perm");
+  MS_CHECK_TRUE_MSG(shape_parm_node != nullptr, nullptr, "create shape_parm_node return nullptr!");
+  std::vector<AnfNodePtr> op_inputs = {cnode, shape_parm_node};
+  auto reshape_prim = std::make_shared<ops::Reshape>();
+  MS_CHECK_TRUE_MSG(reshape_prim != nullptr, nullptr, "create reshape_prim return nullptr!");
+  auto reshape_prim_c = reshape_prim->GetPrim();
+  MS_CHECK_TRUE_MSG(reshape_prim_c != nullptr, nullptr, "create prim_c return nullptr!");
+  auto reshape_node = func_graph->NewCNode(reshape_prim_c, op_inputs);
+  MS_CHECK_TRUE_MSG(reshape_node != nullptr, nullptr, "create reshape_node return nullptr!");
+  reshape_node->set_fullname_with_scope(cnode->fullname_with_scope() + "_reshape");
+  reshape_node->set_abstract(cnode->abstract()->Clone());
+  return reshape_node;
+}
+
+CNodePtr CreateMatmulCNode(const FuncGraphPtr &func_graph, const std::vector<AnfNodePtr> &inputs,
+                           const CNodePtr &batch_matmul_cnode) {
+  MS_CHECK_TRUE_RET(func_graph != nullptr, nullptr);
+  MS_CHECK_TRUE_RET(batch_matmul_cnode != nullptr, nullptr);
+  MS_CHECK_TRUE_RET(batch_matmul_cnode->abstract() != nullptr, nullptr);
+  auto mm_prim = std::make_shared<ops::MatMul>();
+  MS_CHECK_TRUE_MSG(mm_prim != nullptr, nullptr, "create matmul_prim return nullptr");
+  auto mm_prim_c = mm_prim->GetPrim();
+  MS_CHECK_TRUE_MSG(mm_prim_c != nullptr, nullptr, "create prim_c return nullptr");
+  auto mm_node = func_graph->NewCNode(mm_prim_c, inputs);
+  MS_CHECK_TRUE_MSG(mm_node != nullptr, nullptr, "create matmul node return nullptr");
+  mm_node->set_fullname_with_scope(batch_matmul_cnode->fullname_with_scope() + "_matmul");
+  mm_node->set_abstract(batch_matmul_cnode->abstract()->Clone());
+  auto prim = GetValueNode<PrimitivePtr>(batch_matmul_cnode->input(kInputIndex_0));
+  MS_CHECK_TRUE_RET(prim != nullptr, nullptr);
+  SetMatMulTransposeAttr(prim, mm_prim_c);
+  return mm_node;
+}
+
+bool BMMToMMForStatic(const FuncGraphPtr &func_graph, const CNodePtr &batch_matmul_cnode) {
+  auto x1_input = batch_matmul_cnode->input(kInputIndex_1);
+  MS_CHECK_TRUE_RET(x1_input != nullptr, false);
+  auto x2_input = batch_matmul_cnode->input(kInputIndex_2);
+  MS_CHECK_TRUE_RET(x1_input != nullptr, false);
+  // create reshape node before matmul.
+  auto input_1_shape = GetTensorShape(batch_matmul_cnode, 1);
+  if (input_1_shape.size() != kInputSizeThree) {
+    MS_LOG(ERROR) << "BMM input 1 size is not 3! but get " << input_1_shape.size();
+    return false;
+  }
+  std::vector<int32_t> MM_shape = {kShapeMinus_1, static_cast<int32_t>(input_1_shape[kInputIndex_2])};
+  auto reshape_node = CreateReshapeCNode(func_graph, x1_input, MM_shape);
+  MS_CHECK_TRUE_MSG(reshape_node != nullptr, false, "Failed to create reshape node before matmul!");
+  // create matmul node.
+  std::vector<AnfNodePtr> mm_inputs = {reshape_node, x2_input};
   if (batch_matmul_cnode->size() == kSize_4) {
-    MS_LOG(INFO) << "Now not support MM with bias.";
-    return true;
+    mm_inputs = {reshape_node, x2_input, batch_matmul_cnode->input(kInputIndexThree)};
   }
-  if (batch_matmul_cnode->abstract() == nullptr) {
-    MS_LOG(ERROR) << "batch_matmul_cnode abstract is nullptr!";
+  auto matmul = CreateMatmulCNode(func_graph, mm_inputs, batch_matmul_cnode);
+  MS_CHECK_TRUE_MSG(matmul != nullptr, false, "Failed to create MatMul node!");
+
+  // create reshape node before matmul.
+  std::vector<int32_t> output_shape = {static_cast<int32_t>(input_1_shape[kInputIndex_0]),
+                                       static_cast<int32_t>(input_1_shape[kInputIndex_1]),
+                                       static_cast<int32_t>(kShapeMinus_1)};
+  auto reshape_output_node = CreateReshapeCNode(func_graph, matmul, output_shape);
+  MS_CHECK_TRUE_MSG(reshape_output_node != nullptr, false, "Failed to create reshape node after matmul!");
+
+  auto graph_manager = func_graph->manager();
+  MS_CHECK_TRUE_RET(graph_manager != nullptr, false);
+  if (!graph_manager->Replace(batch_matmul_cnode, reshape_output_node)) {
+    MS_LOG(ERROR) << "Failed to replace MatMul with BatchMatMul, cnode: " << batch_matmul_cnode->fullname_with_scope()
+                  << ", input size: " << batch_matmul_cnode->size();
     return false;
   }
-  if (!utils::isa<CNodePtr>(batch_matmul_cnode->input(kInputIndex_1))) {
-    MS_LOG(INFO) << "Input_1 cnode is not CNode, return true!";
-    return true;
-  }
-  if (!utils::isa<ParameterPtr>(batch_matmul_cnode->input(kInputIndex_2))) {
-    MS_LOG(INFO) << "Input_2 cnode is not ParameterPtr, return true!";
-    return true;
-  }
+  return true;
+}
+
+bool BMMToMMForDynamic(const FuncGraphPtr &func_graph, const CNodePtr &batch_matmul_cnode) {
   auto batch_matmul_input_1 = batch_matmul_cnode->input(kInputIndex_1)->cast<CNodePtr>();
   MS_CHECK_TRUE_RET(batch_matmul_input_1 != nullptr, false);
   auto matmul_weight_input = batch_matmul_cnode->input(kInputIndex_2);
@@ -306,6 +387,40 @@ bool AdjustBMMToMM(const FuncGraphPtr &func_graph, const CNodePtr &batch_matmul_
     return false;
   }
   return true;
+}
+
+bool AdjustBMMToMM(const FuncGraphPtr &func_graph, const CNodePtr &batch_matmul_cnode) {
+  MS_CHECK_TRUE_RET(func_graph != nullptr, false);
+  MS_CHECK_TRUE_RET(batch_matmul_cnode != nullptr, false);
+  MS_LOG(INFO) << "Adjust BatchMatMul node to MatMul node.";
+  if (batch_matmul_cnode->size() < kSize_3 || batch_matmul_cnode->size() > kSize_4) {
+    MS_LOG(ERROR) << "batch_matmul_cnode->size() < 3 or size() > 4!";
+    return false;
+  }
+  if (batch_matmul_cnode->size() == kSize_4) {
+    MS_LOG(INFO) << "Now not support MM with bias.";
+    return true;
+  }
+  if (batch_matmul_cnode->abstract() == nullptr) {
+    MS_LOG(ERROR) << "batch_matmul_cnode abstract is nullptr!";
+    return false;
+  }
+  if (!utils::isa<CNodePtr>(batch_matmul_cnode->input(kInputIndex_1))) {
+    MS_LOG(INFO) << "Input_1 cnode is not CNode, return true!";
+    return true;
+  }
+  if (!utils::isa<ParameterPtr>(batch_matmul_cnode->input(kInputIndex_2))) {
+    MS_LOG(INFO) << "Input_2 cnode is not ParameterPtr, return true!";
+    return true;
+  }
+
+  auto input_1_shape = GetTensorShape(batch_matmul_cnode, kInputIndex_1);
+  auto input_2_shape = GetTensorShape(batch_matmul_cnode, kInputIndex_2);
+  if (IsStatic3DAnd2D(input_1_shape, input_2_shape)) {
+    return BMMToMMForStatic(func_graph, batch_matmul_cnode);
+  } else {
+    return BMMToMMForDynamic(func_graph, batch_matmul_cnode);
+  }
 }
 
 }  // namespace

@@ -267,7 +267,7 @@ STATUS NodeInferShape::InferShapeByNNACL(const CNodePtr &cnode) {
     }
     auto parameter = parameter_gen(prim);
     if (parameter == nullptr) {
-      MS_LOG(ERROR) << cnode->fullname_with_scope() << " generate nullptr lite op parameter.";
+      MS_LOG(WARNING) << cnode->fullname_with_scope() << " generate nullptr lite op parameter.";
       fbb.Clear();
       return lite::RET_ERROR;
     }

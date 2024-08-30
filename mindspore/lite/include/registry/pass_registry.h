@@ -28,7 +28,7 @@ namespace registry {
 class PassBase;
 using PassBasePtr = std::shared_ptr<PassBase>;
 /// \brief PassPosition defined where to place user's pass.
-enum MS_API PassPosition { POSITION_BEGIN = 0, POSITION_END = 1 };
+enum MS_API PassPosition { POSITION_BEGIN = 0, POSITION_END = 1, POSITION_ASCEND = 2 };
 
 /// \brief PassRegistry defined registration of Pass.
 class MS_API PassRegistry {

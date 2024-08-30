@@ -29,6 +29,7 @@
 #include "infer/cxx_api/gegluv2.h"
 #include "infer/instance_norm.h"
 #include "infer/add_layernorm.h"
+#include "infer/custom.h"
 #include "mindspore/ops/op_def/nn_op_name.h"
 #include "infer/stack.h"
 #include "mindspore/ops/op_def/op_name.h"
@@ -49,8 +50,7 @@ constexpr auto kAnfPrimitiveIndex = 0;
 constexpr auto kNamewiEltwise = "Eltwise";
 const std::set<std::string> kCNodeWithMultiOutputs = {
   kBatchNormOpName,          ops::kNameFusedBatchNorm,  ops::kNameInstanceNorm, ops::kNameLayerNorm,
-  ops::kNameLayerNormFusion, ops::kNameArgMaxWithValue, ops::kNameGeGluV2,      ops::kNameGroupNormSilu,
-};
+  ops::kNameLayerNormFusion, ops::kNameArgMaxWithValue, ops::kNameGeGluV2,      ops::kNameGroupNormSilu};
 
 const std::set<std::string> kCNodeWithDynamicInput = {kNamewiEltwise, ops::kNameConcat, ops::kNameStack,
                                                       acl::kNameConcatV2};
@@ -150,7 +150,15 @@ static STATUS AdapteNodeWithMultiOutputs(const FuncGraphPtr &func_graph, const C
     auto input_cnode = input->cast<CNodePtr>();
     MS_CHECK_TRUE_MSG(input_cnode != nullptr, lite::RET_ERROR, "input_cnode is nullptr.");
     std::string input_func_name = GetCNodeFuncName(input_cnode);
-    if (kCNodeWithMultiOutputs.find(input_func_name) != kCNodeWithMultiOutputs.end()) {
+    bool custom_node_has_muilt_output = false;
+    // When the cnode name is custom, and output_num attr is greater than 1, this var will be set to true
+    if (input_func_name == kCustomTypeCustom) {
+      auto prim = GetCNodePrimitive(input_cnode);
+      if (prim->HasAttr(kAttrOutputNum) && GetValue<int64_t>(prim->GetAttr(kAttrOutputNum)) > 1) {
+        custom_node_has_muilt_output = true;
+      }
+    }
+    if (kCNodeWithMultiOutputs.find(input_func_name) != kCNodeWithMultiOutputs.end() || custom_node_has_muilt_output) {
       MS_LOG(DEBUG) << "Input " << input_func_name << " of cnode " << cnode_func_name << " has multioutputs";
       CNodePtr get_item_cnode = CreateTupleGetItemNode(func_graph, input_cnode);
       if (get_item_cnode == nullptr) {

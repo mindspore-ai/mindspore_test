@@ -27,7 +27,7 @@
 namespace mindspore {
 namespace opt {
 struct FlashAttentionParm {
-  bool format_bsh = false;
+  string input_layout = "BNSD";
   int64_t seq_threshold = 0;
   int inner_precise = 1;
   int sparse_mode = 0;
@@ -85,6 +85,22 @@ class FlashAttentionFusion : public MultiplePatternProcessPass {
                                                  const AnfNodePtr &atten_mask, int64_t num_heads, int64_t next_token,
                                                  float scale_value,
                                                  const std::shared_ptr<FlashAttentionParm> &fa_parm) const;
+
+  CNodePtr CreatePromptFlashAttentionCnodeForBNSDBSND(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
+                                                      const AnfNodePtr &q, const AnfNodePtr &k, const AnfNodePtr &v,
+                                                      const AnfNodePtr &atten_mask, int64_t num_heads,
+                                                      int64_t next_token, float scale_value,
+                                                      const std::shared_ptr<FlashAttentionParm> &fa_parm) const;
+
+  CNodePtr PreMulBSH(const FuncGraphPtr &func_graph, const AnfNodePtr &node, const CNodePtr &q_trans_BNSD,
+                     const CNodePtr &k_trans_BNDS, const CNodePtr &v_trans_BNSD, const AnfNodePtr &atten_mask,
+                     int64_t num_head, int64_t next_tokens, float scale_value,
+                     const std::shared_ptr<FlashAttentionParm> &fa_parm) const;
+
+  CNodePtr PreMulInBNSDOutBSND(const FuncGraphPtr &func_graph, const AnfNodePtr &node, const CNodePtr &q_trans_BNSD,
+                               const CNodePtr &k_trans_BNDS, const CNodePtr &v_trans_BNSD, const AnfNodePtr &atten_mask,
+                               int64_t num_head, int64_t next_tokens, float scale_value,
+                               const std::shared_ptr<FlashAttentionParm> &fa_parm) const;
 
   CNodePtr CreateIncreFlashAttentionCnodeForBNSD(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
                                                  const AnfNodePtr &q, const AnfNodePtr &k, const AnfNodePtr &v,
