@@ -216,7 +216,7 @@ AnfNodePtr FunctionBlock::ReadVariable(const std::string &var_name) {
   // If have more than one predecessor blocks then build a phi node.
   auto debug_info = std::make_shared<NodeDebugInfo>();
   debug_info->set_name(var_name);
-  TraceGuard guard(std::make_shared<TracePhi>(debug_info));
+  TraceGuard guard(MakeTraceInfo<TracePhi>(debug_info));
   ParameterPtr phi_param = std::make_shared<Parameter>(func_graph());
   MS_LOG(DEBUG) << (func_graph_ ? func_graph_->ToString() : "FG(Null)") << " generate phi node "
                 << phi_param->ToString() << " for " << var_name;
@@ -523,7 +523,7 @@ AnfNodePtr FunctionBlock::MakeInterpret(const std::string &script_text, const An
 // Add input for the block's phi parameter
 void FunctionBlock::SetPhiArgument(const ParameterPtr &phi) {
   MS_EXCEPTION_IF_NULL(phi);
-  TraceGuard trace_guard(std::make_shared<TraceResolve>(phi->debug_info()));
+  TraceGuard trace_guard(MakeTraceInfo<TraceResolve>(phi->debug_info()));
   std::string var = phi_nodes_[phi];
   MS_LOG(DEBUG) << "graph " << (func_graph_ ? func_graph_->ToString() : "FG(Null)") << " set phi " << phi->ToString()
                 << " for var `" << var << "`";
@@ -557,7 +557,7 @@ std::string GetVariableDefinedLocation(const FunctionBlock *block, const std::st
     (void)visited.insert(cur_block);
     (void)std::copy(cur_block->prev_blocks().cbegin(), cur_block->prev_blocks().cend(), std::back_inserter(todo_list));
     auto node = cur_block->ReadLocalVariable(var);
-    if (node != nullptr) {
+    if (node != nullptr && node->debug_info() != nullptr) {
       const auto &debug_info = trace::GetSourceCodeDebugInfo(node->debug_info());
       const auto &location = debug_info->location();
       return location->ToString(kSourceSectionTipNextLineHere, start_line);
@@ -623,7 +623,7 @@ std::set<AnfNodePtr> FunctionBlock::SearchAllArgsOfPhiNode(const std::string &va
   }
 
   if (not_defined_branch.second != nullptr) {
-    if (!defined_branch.empty()) {
+    if (!defined_branch.empty() && phi->debug_info() != nullptr) {
       auto locaction = trace::GetSourceCodeDebugInfo(phi->debug_info())->location();
       MS_EXCEPTION_IF_NULL(locaction);
       TraceGuard trace_guard(locaction);
@@ -849,10 +849,10 @@ void FunctionBlock::AttachIsolatedNodesBeforeReturn() {
   }
   AnfNodePtr stop_grad_node = func_graph_->NewCNode({NewValueNode(prim::kPrimStopGradient), state});
   CNodePtr depend_node = func_graph_->NewCNode({NewValueNode(prim::kPrimDepend), old_output, stop_grad_node});
-  if (stop_grad_node->debug_info()) {
+  if (stop_grad_node->debug_info() != nullptr) {
     stop_grad_node->debug_info()->set_location(nullptr);
   }
-  if (depend_node->debug_info()) {
+  if (old_output->debug_info() != nullptr && depend_node->debug_info() != nullptr) {
     depend_node->debug_info()->set_location(old_output->debug_info()->location());
   }
   // We add this attribute for @constexpr use scene, since we must infer them before other nodes.
@@ -863,7 +863,7 @@ void FunctionBlock::AttachIsolatedNodesBeforeReturn() {
                << ", state: " << state->DebugString(recursive_level);
   func_graph_->set_output(depend_node, true);
   // Update new return node's debug_info with old one.
-  if (return_node != nullptr && return_node->debug_info()) {
+  if (return_node != nullptr && return_node->debug_info() != nullptr) {
     auto new_return = func_graph_->get_return();
     MS_EXCEPTION_IF_NULL(new_return);
     new_return->set_debug_info(return_node->debug_info());

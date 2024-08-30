@@ -96,7 +96,7 @@ bool CastAllFusion::Run(const FuncGraphPtr &graph) {
     }
     if (cast_list.size() > 0) {
       MS_EXCEPTION_IF_NULL(cast_list[0]);
-      TraceGuard guard(std::make_shared<TraceOpt>(cast_list[0]->debug_info()));
+      TraceGuard guard(MakeTraceInfo<TraceOpt>(cast_list[0]->debug_info()));
       auto cast_all = graph->NewCNode(inputs);
       auto kernel_info = std::make_shared<device::KernelInfo>();
       MS_EXCEPTION_IF_NULL(cast_all);

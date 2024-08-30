@@ -34,19 +34,30 @@
 namespace mindspore {
 namespace {
 NodeDebugInfoPtr CloneNodeDebugInfo(const DebugInfoPtr &debug_info, const TraceInfoPtr &relation) {
+  if (DebugMode::IsRelease()) {
+    return nullptr;
+  }
   auto trace_info = relation->clone();
   trace_info->set_debug_info(debug_info);
   return std::make_shared<NodeDebugInfo>(std::move(trace_info));
 }
 
 NodeDebugInfoPtr CloneNodeDebugInfo(const NodeDebugInfoPtr &debug_info) {
-  auto trace_info = std::make_shared<TraceCopy>(debug_info);
+  if (DebugMode::IsRelease()) {
+    return nullptr;
+  }
+  auto trace_info = MakeTraceInfo<TraceCopy>(debug_info);
   return std::make_shared<NodeDebugInfo>(std::move(trace_info));
 }
 
 GraphDebugInfoPtr CloneGraphDebugInfo(const GraphDebugInfoPtr &debug_info, const TraceInfoPtr &relation) {
-  auto trace_info = relation->clone();
-  trace_info->set_debug_info(debug_info);
+  TraceInfoPtr trace_info;
+  if (relation == nullptr) {
+    trace_info = MakeTraceInfo<TraceCopy>(debug_info);
+  } else {
+    trace_info = relation->clone();
+    trace_info->set_debug_info(debug_info);
+  }
   return std::make_shared<GraphDebugInfo>(std::move(trace_info));
 }
 }  // namespace
@@ -91,8 +102,13 @@ void Cloner::CloneParameter(const AnfNodePtr &node, const FuncGraphPtr &target, 
   auto old_param = node->cast_ptr<Parameter>();
   MS_EXCEPTION_IF_NULL(old_param);
   auto debug_info = CloneNodeDebugInfo(node->debug_info(), relation_);
-  auto new_param = (is_add ? target->add_parameter(std::move(debug_info))
-                           : std::make_shared<Parameter>(target, std::move(debug_info)));
+  ParameterPtr new_param;
+  if (debug_info != nullptr) {
+    new_param = is_add ? target->add_parameter(std::move(debug_info))
+                       : std::make_shared<Parameter>(target, std::move(debug_info));
+  } else {
+    new_param = is_add ? target->add_parameter() : std::make_shared<Parameter>(target);
+  }
   if (preset_abstract()) {
     new_param->set_abstract(old_param->abstract());
   }
@@ -122,21 +138,30 @@ void Cloner::CloneCNodeWithoutInputs(const AnfNodePtr &node, const FuncGraphPtr 
     debug_info = node->debug_info();
   }
 
-  auto cloned_debug_info = CloneNodeDebugInfo(debug_info, relation_);
-  CNodePtr new_node = std::make_shared<CNode>(std::move(inputs), target, std::move(cloned_debug_info));
-  if (inline_call_node_ != nullptr) {
-    MS_LOG(DEBUG) << "inline_call_node_: " << inline_call_node_ << "/" << inline_call_node_->DebugString()
-                  << ", new_node: " << new_node << "/" << new_node->DebugString();
-    UpdateInlineCNodeDebugInfo(inline_call_node_, new_node);
-  } else {
-    // Synchronize callers' shadow debug infos.
-    auto &new_shadow_debug_infos = new_node->debug_info()->shadow_debug_infos_map();
-    const auto &old_shadow_debug_infos = debug_info->shadow_debug_infos_map();
-    new_shadow_debug_infos.insert(old_shadow_debug_infos.cbegin(), old_shadow_debug_infos.cend());
-    const auto &old_real_loc = debug_info->real_loc();
-    if (!old_real_loc.empty()) {
-      new_node->debug_info()->set_real_loc(old_real_loc);
+  CNodePtr new_node;
+  if (DebugMode::IsDebug()) {
+    auto cloned_debug_info = CloneNodeDebugInfo(debug_info, relation_);
+    if (cloned_debug_info != nullptr) {
+      new_node = std::make_shared<CNode>(std::move(inputs), target, std::move(cloned_debug_info));
+    } else {
+      new_node = std::make_shared<CNode>(std::move(inputs), target);
     }
+    if (inline_call_node_ != nullptr) {
+      MS_LOG(DEBUG) << "inline_call_node_: " << inline_call_node_ << "/" << inline_call_node_->DebugString()
+                    << ", new_node: " << new_node << "/" << new_node->DebugString();
+      UpdateInlineCNodeDebugInfo(inline_call_node_, new_node);
+    } else if (new_node->debug_info() != nullptr) {
+      // Synchronize callers' shadow debug infos.
+      auto &new_shadow_debug_infos = new_node->debug_info()->shadow_debug_infos_map();
+      const auto &old_shadow_debug_infos = debug_info->shadow_debug_infos_map();
+      new_shadow_debug_infos.insert(old_shadow_debug_infos.cbegin(), old_shadow_debug_infos.cend());
+      const auto &old_real_loc = debug_info->real_loc();
+      if (!old_real_loc.empty()) {
+        new_node->debug_info()->set_real_loc(old_real_loc);
+      }
+    }
+  } else {
+    new_node = std::make_shared<CNode>(std::move(inputs), target);
   }
   new_node->CloneCNodeInfo(old_node);
   // Copy to target graph
@@ -164,8 +189,13 @@ void Cloner::CloneValueNode(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
   auto value_node = node->cast_ptr<ValueNode>();
   MS_EXCEPTION_IF_NULL(value_node);
-  auto debug_info = CloneNodeDebugInfo(node->debug_info(), relation_);
-  ValueNodePtr new_const = NewValueNode(GetValueNode(node), std::move(debug_info));
+  NodeDebugInfoPtr debug_info = CloneNodeDebugInfo(node->debug_info(), relation_);
+  ValueNodePtr new_const;
+  if (debug_info != nullptr) {
+    new_const = NewValueNode(GetValueNode(node), std::move(debug_info));
+  } else {
+    new_const = NewValueNode(GetValueNode(node));
+  }
   ScopePtr scope = ((node->scope() == kDefaultScope) && (this->scope() != nullptr)) ? this->scope() : node->scope();
   new_const->set_scope(scope);
   if (preset_abstract()) {
@@ -180,8 +210,13 @@ void Cloner::CloneFuncGraphValueNode(const AnfNodePtr &node, const FuncGraphPtr 
   MS_EXCEPTION_IF_NULL(target);
   auto value_node = node->cast_ptr<ValueNode>();
   MS_EXCEPTION_IF_NULL(value_node);
-  auto debug_info = CloneNodeDebugInfo(node->debug_info(), relation_);
-  ValueNodePtr new_const = NewValueNode(target, std::move(debug_info));
+  NodeDebugInfoPtr debug_info = CloneNodeDebugInfo(node->debug_info(), relation_);
+  ValueNodePtr new_const;
+  if (debug_info != nullptr) {
+    new_const = NewValueNode(target, std::move(debug_info));
+  } else {
+    new_const = NewValueNode(target);
+  }
   ScopePtr scope = ((node->scope() == kDefaultScope) && (this->scope() != nullptr)) ? this->scope() : node->scope();
   new_const->set_scope(scope);
   if (preset_abstract()) {
@@ -394,8 +429,13 @@ void Cloner::CloneParameter(const ParameterPtr &param, const AnfNodePtr &node) c
 ParameterPtr Cloner::AddParameter(const FuncGraphPtr &func_graph, const AnfNodePtr &node, bool is_add) {
   MS_EXCEPTION_IF_NULL(func_graph);
   MS_EXCEPTION_IF_NULL(node);
-  auto debug_info = CloneNodeDebugInfo(node->debug_info());
-  ParameterPtr param = std::make_shared<Parameter>(func_graph, std::move(debug_info));
+  NodeDebugInfoPtr debug_info = CloneNodeDebugInfo(node->debug_info());
+  ParameterPtr param;
+  if (debug_info != nullptr) {
+    param = std::make_shared<Parameter>(func_graph, std::move(debug_info));
+  } else {
+    param = std::make_shared<Parameter>(func_graph);
+  }
   CloneParameter(param, node);
   if (is_add) {
     func_graph->add_parameter(param);
@@ -1048,8 +1088,7 @@ FuncGraphVector LiftingCloneMulti(const FuncGraphVector &func_graphs) {
 ClonerPtr SpecializerClone(const FuncGraphPtr &func_graph, const TraceInfoPtr &relation) {
   MS_EXCEPTION_IF_NULL(func_graph);
   FuncGraphVector func_graphs = {func_graph};
-  ClonerPtr cloner =
-    std::make_shared<Cloner>(func_graphs, false, false, false, std::make_shared<TraceCopy>(), relation);
+  ClonerPtr cloner = std::make_shared<Cloner>(func_graphs, false, false, false, MakeTraceInfo<TraceCopy>(), relation);
   {
     MsProfileStatGuard stat_guard("func_graph_cloner_run.FuncGraphSpecializer");
     cloner->Run();
@@ -1063,8 +1102,13 @@ FuncGraphPtr TransformableClone(const FuncGraphPtr &func_graph, const TraceInfoP
   auto new_func_graph = std::make_shared<FuncGraph>(std::move(debug_info));
   for (auto &param : func_graph->parameters()) {
     MS_EXCEPTION_IF_NULL(param);
-    auto param_debug_info = CloneNodeDebugInfo(param->debug_info());
-    auto new_param = new_func_graph->add_parameter(std::move(param_debug_info));
+    NodeDebugInfoPtr param_debug_info = CloneNodeDebugInfo(param->debug_info());
+    ParameterPtr new_param;
+    if (param_debug_info != nullptr) {
+      new_param = new_func_graph->add_parameter(std::move(param_debug_info));
+    } else {
+      new_param = new_func_graph->add_parameter(std::move(param_debug_info));
+    }
     new_param->set_abstract(param->abstract());
   }
 

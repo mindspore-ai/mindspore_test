@@ -13,15 +13,6 @@
 # limitations under the License.
 # ============================================================================
 """
-Name: AUTO_PASSES_OPTIMIZE_PATH
-Function: Whether to do optimize the passes configure.
-Value Range:
-    string: The passes configure file path.
-    Default: '' .empty string. Disable to do optimize the passes.
-"""
-AUTO_PASSES_OPTIMIZE_PATH = ''
-
-"""
 Name: COMPILE_PROFILE
 Function: Whether to do profile and print profile log.
 Value Range:
@@ -240,6 +231,15 @@ Value Range:
 DUMP_VALIDATE_BEFORE_RESET_ID = ''
 
 """
+Name: AUTO_PASSES_OPTIMIZE_PATH
+Function: Whether to do optimize the passes configure.
+Value Range:
+    string: The passes configure file path.
+    Default: '' .empty string. Disable to do optimize the passes.
+"""
+AUTO_PASSES_OPTIMIZE_PATH = ''
+
+"""
 Name: STRICT_CHECK_CONTEXT
 Function: Whether to check parent context strictly.
 Value Range:
@@ -247,6 +247,16 @@ Value Range:
     Default: Disable.
 """
 STRICT_CHECK_PARENT_CONTEXT = ''
+
+"""
+Name: DEBUG_MODE
+Function: Whether to compile in debug mode.
+Value Range:
+    "debug": Debug mode
+    "release": Release mode
+    Default: "debug"
+"""
+COMPILE_DEBUG_MODE = ''
 
 __all__ = [
     "COMPILE_PROFILE",
@@ -274,5 +284,6 @@ __all__ = [
     "COMBINE_LIKE_GRAPHS",
     "DUMP_VALIDATE_BEFORE_RESET_ID",
     "AUTO_PASSES_OPTIMIZE_PATH",
-    "STRICT_CHECK_PARENT_CONTEXT"
+    "STRICT_CHECK_PARENT_CONTEXT",
+    "COMPILE_DEBUG_MODE",
 ]

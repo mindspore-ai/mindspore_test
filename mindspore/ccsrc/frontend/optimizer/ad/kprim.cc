@@ -417,7 +417,7 @@ static void TransformNormalArgs(const FuncGraphManagerPtr &mng, const FuncGraphP
     auto p = bprop_fg->parameters()[i];
     MS_EXCEPTION_IF_NULL(p);
 
-    TraceGuard trace_guard(std::make_shared<TraceGradFprop>(p->debug_info()));
+    TraceGuard trace_guard(MakeTraceInfo<TraceGradFprop>(p->debug_info()));
     auto transf_p = outer->add_parameter();
 
     (void)mng->Replace(p, transf_p);
@@ -457,7 +457,7 @@ void KPrim::TransformArgsForFuncGraph(const FuncGraphManagerPtr &mng, const Func
     if (lifted == nullptr || !*lifted) {
       break;
     }
-    TraceGuard trace_guard(std::make_shared<TraceGradFprop>(primal_parameter->debug_info()));
+    TraceGuard trace_guard(MakeTraceInfo<TraceGradFprop>(primal_parameter->debug_info()));
     auto transf_p = outer->add_parameter();
     transf_args->push_back(transf_p);
     ++bprop_fg_param_size;
@@ -476,7 +476,7 @@ void KPrim::TransformArgsForFuncGraph(const FuncGraphManagerPtr &mng, const Func
                     << ", has extra monad parameter: " << p->DebugString()
                     << ", abstract: " << p->abstract()->ToString();
 
-      TraceGuard trace_guard(std::make_shared<TraceGradFprop>(p->debug_info()));
+      TraceGuard trace_guard(MakeTraceInfo<TraceGradFprop>(p->debug_info()));
       auto transf_p = outer->add_parameter();
       // See also Notes on extra_node of BuildOutput.
       // Notes: No need to replace p with transf_p as the only use of p is here.
@@ -496,7 +496,7 @@ void KPrim::TransformArgsForFuncGraph(const FuncGraphManagerPtr &mng, const Func
 }
 
 void KPrim::CheckBprop(const FuncGraphPtr &bprop_fg, const string &prim_to_check) const {
-  TraceGuard guard(std::make_shared<TraceCopy>(bprop_fg->return_node()->debug_info()));
+  TraceGuard guard(MakeTraceInfo<TraceCopy>(bprop_fg->return_node()->debug_info()));
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
   bool check_bprop_flag = context->get_param<bool>(MS_CTX_CHECK_BPROP_FLAG);

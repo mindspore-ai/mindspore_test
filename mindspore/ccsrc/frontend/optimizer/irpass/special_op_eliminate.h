@@ -676,7 +676,7 @@ class FloatDependGCall : public AnfVisitor {
       // put {Y, Xs} to new_inputs;
       std::vector<AnfNodePtr> new_inputs({depend_inputs[1]});
       (void)new_inputs.insert(new_inputs.cend(), inputs.cbegin() + 1, inputs.cend());
-      TraceGuard guard(std::make_shared<TraceCopy>(node->debug_info()));
+      TraceGuard guard(MakeTraceInfo<TraceCopy>(node->debug_info()));
       ScopePtr scope = node->scope();
       ScopeGuard scope_guard(scope);
       auto new_call_node = node->func_graph()->NewCNode(new_inputs);

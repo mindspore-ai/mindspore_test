@@ -296,7 +296,7 @@ int GetAxisSize(const CNodePtr &cnode, size_t cell_size, size_t parameters_size,
 }
 
 CNodePtr AttachToOutput(const FuncGraphPtr &func_graph, const CNodePtr &output, const AnfNodePtr &node) {
-  TraceGuard guard(std::make_shared<TraceCopy>(output->debug_info()));
+  TraceGuard guard(MakeTraceInfo<TraceCopy>(output->debug_info()));
   auto depend = NewValueNode(prim::kPrimDepend);
   auto depend_cnode = func_graph->NewCNode({depend, output, node});
   MS_EXCEPTION_IF_NULL(depend_cnode);

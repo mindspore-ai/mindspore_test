@@ -101,7 +101,7 @@ void FuncGraph::GenerateVarParams(const FuncGraphPtr &specialized_graph, int var
   }
   MS_EXCEPTION_IF_NULL(specialized_graph->GetVariableArgParameter());
   TraceGuard trace_guard(
-    std::make_shared<TraceGenerateVarArg>(specialized_graph->GetVariableArgParameter()->debug_info()));
+    MakeTraceInfo<TraceGenerateVarArg>(specialized_graph->GetVariableArgParameter()->debug_info()));
   AnfNodePtrList var_param_tuple_nodes;
   var_param_tuple_nodes.push_back(NewValueNode(prim::kPrimMakeTuple));
 
@@ -111,8 +111,9 @@ void FuncGraph::GenerateVarParams(const FuncGraphPtr &specialized_graph, int var
     ParameterPtr para = std::make_shared<Parameter>(specialized_graph);
     std::string param_name = varg_name + std::to_string(i);
     para->set_name(param_name);
-    MS_EXCEPTION_IF_NULL(para->debug_info());
-    para->debug_info()->set_name(param_name);
+    if (para->debug_info() != nullptr) {
+      para->debug_info()->set_name(param_name);
+    }
     var_param_tuple_nodes.push_back(para);
     MS_EXCEPTION_IF_NULL(specialized_parameter_list);
     specialized_parameter_list->push_back(para);
@@ -164,8 +165,9 @@ void FuncGraph::GenerateKwParams(const FuncGraphPtr &specialized_graph,
           MS_EXCEPTION(TypeError) << "Multiply values for keyword argument: " << kw_param_name;
         }
         para->set_name(param_name);
-        MS_EXCEPTION_IF_NULL(para->debug_info());
-        para->debug_info()->set_name(param_name);
+        if (para->debug_info() != nullptr) {
+          para->debug_info()->set_name(param_name);
+        }
         kwarg_keys_tuple_nodes.push_back(NewValueNode(kw_param_name));
         auto extract_node =
           specialized_graph->NewCNode({NewValueNode(prim::kPrimExtractKeywordArg), NewValueNode(kw_param_name), para});
@@ -196,8 +198,7 @@ void FuncGraph::GenerateKwargReplNode(const FuncGraphPtr &specialized_graph,
                                       mindspore::HashMap<AnfNodePtr, AnfNodePtr> *repl_nodes) const {
   if (has_kwarg() && !kwarg_keys_tuple_nodes.empty()) {
     MS_EXCEPTION_IF_NULL(specialized_graph);
-    TraceGuard guard(
-      std::make_shared<TraceGenerateKwArg>(specialized_graph->GetVariableKwargParameter()->debug_info()));
+    TraceGuard guard(MakeTraceInfo<TraceGenerateKwArg>(specialized_graph->GetVariableKwargParameter()->debug_info()));
     auto make_tuple_keys = specialized_graph->NewCNode(kwarg_keys_tuple_nodes);
     auto make_tuple_values = specialized_graph->NewCNode(kwarg_values_tuple_nodes);
     auto make_dict_node =

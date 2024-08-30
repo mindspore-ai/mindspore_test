@@ -71,7 +71,7 @@ void ComplexPreprocess(const AnfNodePtr &input, const CNodePtr &din) {
 DFunctor::DFunctor(const FuncGraphPtr &primal_graph, const pipeline::ResourceBasePtr &resources, bool is_top)
     : primal_graph_(primal_graph), resources_(resources), need_cut_(false), is_top_(is_top) {
   {
-    TraceGuard guard(std::make_shared<TraceGradFprop>(primal_graph->debug_info()));
+    TraceGuard guard(MakeTraceInfo<TraceGradFprop>(primal_graph->debug_info()));
     k_graph_ = std::make_shared<FuncGraph>();
   }
   // To keep switch or switch_layer's inputs from being inlined
@@ -80,7 +80,7 @@ DFunctor::DFunctor(const FuncGraphPtr &primal_graph, const pipeline::ResourceBas
   k_graph_->set_segment(primal_graph->segment());
 
   {
-    TraceGuard guard(std::make_shared<TraceGradBprop>(primal_graph->debug_info()));
+    TraceGuard guard(MakeTraceInfo<TraceGradBprop>(primal_graph->debug_info()));
     tape_ = std::make_shared<FuncGraph>();
   }
   tape_->set_stage(primal_graph->stage());
@@ -390,12 +390,14 @@ AdjointPtr DFunctor::MapMorphism(const AnfNodePtr &morph) {
   }
   CNodePtr k_app = nullptr;
   {
-    TraceGuard guard(std::make_shared<TraceGradFpropApp>(cnode_morph->debug_info()));
+    TraceGuard guard(MakeTraceInfo<TraceGradFpropApp>(cnode_morph->debug_info()));
     k_app = k_graph_->NewCNode(inputs);
     const DebugInfoPtr &old_debug_info = cnode_morph->debug_info();
-    const auto &old_real_loc = old_debug_info->real_loc();
-    if (!old_real_loc.empty()) {
-      k_app->debug_info()->set_real_loc(old_real_loc);
+    if (old_debug_info != nullptr) {
+      const auto &old_real_loc = old_debug_info->real_loc();
+      if (!old_real_loc.empty() && k_app->debug_info() != nullptr) {
+        k_app->debug_info()->set_real_loc(old_real_loc);
+      }
     }
   }
   // Run in pynative mode, when @jit is used.
@@ -721,7 +723,7 @@ AnfNodePtr DFunctor::MapParameterToK(const AnfNodePtr &primal) {
   }
   ScopeGuard scope_guard(primal->scope());
   // Map Parameter to K
-  TraceGuard trace_guard(std::make_shared<TraceGradFprop>(primal->debug_info()));
+  TraceGuard trace_guard(MakeTraceInfo<TraceGradFprop>(primal->debug_info()));
   auto ret = k_graph_->add_parameter();
   ret->cast_ptr<Parameter>()->set_name(primal->cast_ptr<Parameter>()->name());
   return ret;

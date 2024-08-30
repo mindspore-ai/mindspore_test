@@ -1259,7 +1259,7 @@ class AfterOptARewriter : public BaseRewriter {
     constexpr size_t node_target_index = 2;
     auto list_input_node = node_inputs[node_list_index];
     if (IsPrimitiveCNode(list_input_node, prim::kPrimMakeList)) {
-      TraceGuard trace_guard(std::make_shared<TraceCopy>(list_input_node->debug_info()));
+      TraceGuard trace_guard(MakeTraceInfo<TraceCopy>(list_input_node->debug_info()));
       auto new_node = ConvertMakeList(list_input_node->cast<CNodePtr>());
       (void)manager_->Replace(list_input_node, new_node);
       list_input_node = new_node;
@@ -1363,7 +1363,7 @@ class AfterOptARewriter : public BaseRewriter {
     constexpr size_t node_index_index = 2;
     auto list_input_node = node_inputs[node_list_index];
     if (IsPrimitiveCNode(list_input_node, prim::kPrimMakeList)) {
-      TraceGuard trace_guard(std::make_shared<TraceCopy>(list_input_node->debug_info()));
+      TraceGuard trace_guard(MakeTraceInfo<TraceCopy>(list_input_node->debug_info()));
       auto new_pop_list_node = ConvertMakeList(list_input_node->cast<CNodePtr>());
       (void)manager_->Replace(list_input_node, new_pop_list_node);
       list_input_node = new_pop_list_node;
@@ -1413,7 +1413,7 @@ class AfterOptARewriter : public BaseRewriter {
     constexpr size_t node_list_index = 1;
     auto list_input_node = node_inputs[node_list_index];
     if (IsPrimitiveCNode(list_input_node, prim::kPrimMakeList)) {
-      TraceGuard trace_guard(std::make_shared<TraceCopy>(list_input_node->debug_info()));
+      TraceGuard trace_guard(MakeTraceInfo<TraceCopy>(list_input_node->debug_info()));
       auto new_node = ConvertMakeList(list_input_node->cast<CNodePtr>());
       (void)manager_->Replace(list_input_node, new_node);
       list_input_node = new_node;
@@ -1509,7 +1509,7 @@ class AfterOptARewriter : public BaseRewriter {
     constexpr size_t node_target_index = 3;
     auto list_input_node = node_inputs[node_list_index];
     if (IsPrimitiveCNode(list_input_node, prim::kPrimMakeList)) {
-      TraceGuard trace_guard(std::make_shared<TraceCopy>(list_input_node->debug_info()));
+      TraceGuard trace_guard(MakeTraceInfo<TraceCopy>(list_input_node->debug_info()));
       auto new_insert_list_node = ConvertMakeList(list_input_node->cast<CNodePtr>());
       (void)manager_->Replace(list_input_node, new_insert_list_node);
       list_input_node = new_insert_list_node;

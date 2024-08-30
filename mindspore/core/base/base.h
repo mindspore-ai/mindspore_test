@@ -32,6 +32,7 @@
 #include "utils/log_adapter.h"
 #include "utils/ordered_map.h"
 #include "utils/ordered_set.h"
+#include "utils/compile_config.h"
 
 namespace mindspore {
 template <typename T>
@@ -296,6 +297,11 @@ using AbstractElementPair = std::pair<AbstractBasePtr, AbstractBasePtr>;
 class AnalysisContext;
 using AnalysisContextPtr = std::shared_ptr<AnalysisContext>;
 }  // namespace abstract
+
+namespace DebugMode {
+MS_CORE_API bool IsDebug();
+MS_CORE_API bool IsRelease();
+}  // namespace DebugMode
 }  // namespace mindspore
 
 #endif  // MINDSPORE_CORE_BASE_BASE_H_

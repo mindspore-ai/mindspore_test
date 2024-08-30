@@ -194,7 +194,7 @@ bool CombineOptimizerFusion::Run(const FuncGraphPtr &graph) {
     MS_EXCEPTION_IF_NULL(first_monad_input_node);
     inputs.push_back(first_monad_input_node);
 
-    TraceGuard guard(std::make_shared<TraceOpt>(optimizer_node_list[0]->debug_info()));
+    TraceGuard guard(MakeTraceInfo<TraceOpt>(optimizer_node_list[0]->debug_info()));
     auto combine_optimizer_node = graph->NewCNode(inputs);
     auto kernel_info = std::make_shared<device::KernelInfo>();
     MS_EXCEPTION_IF_NULL(combine_optimizer_node);

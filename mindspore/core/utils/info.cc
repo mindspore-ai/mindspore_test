@@ -245,7 +245,9 @@ TraceContextPtr TraceManager::CurrentContextInfo() {
 }
 
 bool TraceManager::DebugTrace(const LocationPtr &location) {
-  MS_EXCEPTION_IF_NULL(location);
+  if (location == nullptr) {
+    return false;
+  }
   if (location->invalid()) {
     MS_LOG(DEBUG) << "Trace failed";
     return false;
@@ -259,9 +261,13 @@ bool TraceManager::DebugTrace(const LocationPtr &location) {
 }
 
 bool TraceManager::DebugTrace(const TraceInfoPtr &trace_info) {
-  MS_EXCEPTION_IF_NULL(trace_info);
+  if (trace_info == nullptr) {
+    return false;
+  }
   auto &debug_info = trace_info->debug_info();
-  MS_EXCEPTION_IF_NULL(debug_info);
+  if (debug_info == nullptr) {
+    return false;
+  }
   (void)trace_context_stack_.emplace_back(trace_info);
   if (parser_debug_info_flag_) {
     parser_debug_info_ = debug_info;
@@ -285,13 +291,13 @@ void TraceManager::OpenParserDebugInfoFlag() { parser_debug_info_flag_ = true; }
 bool TraceManager::parser_debug_info_flag() { return parser_debug_info_flag_; }
 
 LocationPtr GetFirstLocation(const DebugInfoPtr &debug_info) {
-  auto tmp = debug_info;
-  while (tmp != nullptr) {
-    if (tmp->location() != nullptr) {
-      return tmp->location();
+  auto first = debug_info;
+  while (first != nullptr) {
+    if (first->location() != nullptr) {
+      return first->location();
     }
-    if (tmp->trace_info() != nullptr) {
-      tmp = tmp->trace_info()->debug_info();
+    if (first->trace_info() != nullptr) {
+      first = first->trace_info()->debug_info();
     } else {
       break;
     }
@@ -300,8 +306,12 @@ LocationPtr GetFirstLocation(const DebugInfoPtr &debug_info) {
 }
 
 bool DebugInfoCompare::operator()(const DebugInfoPtr &left, const DebugInfoPtr &right) const {
-  MS_EXCEPTION_IF_NULL(left);
-  MS_EXCEPTION_IF_NULL(right);
+  if (left == nullptr) {
+    return false;
+  }
+  if (right == nullptr) {
+    return false;
+  }
   if (left == right) {
     return false;
   }
@@ -314,21 +324,6 @@ bool DebugInfoCompare::operator()(const DebugInfoPtr &left, const DebugInfoPtr &
     return false;
   }
   return *left_loc < *right_loc;
-}
-
-void UpdateDebugInfo(const FuncGraphPtr &func_graph, const ScopePtr &scope, const DebugInfoPtr &debug_info) {
-  if (func_graph == nullptr || scope == nullptr || debug_info == nullptr) {
-    return;
-  }
-  auto nodes = TopoSort(func_graph->get_return(), SuccDeeperSimple);
-  TraceGuard guard(std::make_shared<TraceGenMetaFuncGraph>(debug_info));
-  for (const auto &node : nodes) {
-    if (!node->isa<CNode>()) {
-      continue;
-    }
-    node->set_scope(std::make_shared<Scope>(scope->name()));
-    node->set_debug_info(std::make_shared<NodeDebugInfo>());
-  }
 }
 
 namespace {
@@ -395,6 +390,8 @@ bool generate_real_location(const DebugInfoPtr &callee_debug_info, const DebugIn
 }
 
 void SyncShadowDebugInfo(const DebugInfoPtr &caller_debug_info, const DebugInfoPtr &callee_debug_info) {
+  MS_EXCEPTION_IF_NULL(caller_debug_info);
+  MS_EXCEPTION_IF_NULL(callee_debug_info);
   // Synchronize callers' shadow debug infos.
   const auto &caller_shadow_debug_infos = caller_debug_info->shadow_debug_infos_map();
   callee_debug_info->shadow_debug_infos_map().insert(caller_shadow_debug_infos.cbegin(),
@@ -410,6 +407,9 @@ void SyncShadowDebugInfo(const DebugInfoPtr &caller_debug_info, const DebugInfoP
 void UpdateInlineCNodeDebugInfo(const AnfNodePtr &caller, const AnfNodePtr &callee) {
   const DebugInfoPtr &caller_debug_info = caller->debug_info();
   const DebugInfoPtr &callee_debug_info = callee->debug_info();
+  if (caller_debug_info == nullptr || callee_debug_info == nullptr) {
+    return;
+  }
   const auto caller_debug_infos = GetDebugInfoList(caller_debug_info);
   const auto callee_debug_infos = GetDebugInfoList(callee_debug_info);
   if (callee_debug_infos.size() == 1) {  // New inserted node, not by parser.

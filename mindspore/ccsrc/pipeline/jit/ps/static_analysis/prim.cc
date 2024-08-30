@@ -216,7 +216,7 @@ EvalResultPtr DoSignatureEvaluator::Run(AnalysisEnginePtr engine, const ConfigPt
   ScopePtr scope = out_conf->node()->scope();
   ScopeGuard scope_guard(scope);
   if (bound_node() != nullptr) {
-    TraceGuard trace_guard(std::make_shared<TraceDoSignature>(bound_node()->debug_info()));
+    TraceGuard trace_guard(MakeTraceInfo<TraceDoSignature>(bound_node()->debug_info()));
     new_cnode = GenerateNewNodeBySignatures(func, args_abs_list, engine, out_conf);
   } else {
     new_cnode = GenerateNewNodeBySignatures(func, args_abs_list, engine, out_conf);
@@ -432,7 +432,7 @@ EvalResultPtr MixedPrecisionCastEvaluator::Run(AnalysisEnginePtr engine, const C
                        });
 
   ScopeGuard scope_guard(out_conf->node()->scope());
-  TraceGuard trace_guard(std::make_shared<TraceMixedPrecision>(out_conf->node()->debug_info()));
+  TraceGuard trace_guard(MakeTraceInfo<TraceMixedPrecision>(out_conf->node()->debug_info()));
 
   FuncGraphPtr func_graph = out_cnode->func_graph();
   constexpr size_t source_node_index = 2;
@@ -1565,12 +1565,11 @@ EvalResultPtr InterpretGetAttrNode(const AbstractBasePtrList &args_abs_list, con
 
   constexpr auto debug_recursive_level = 2;
   const auto &debug_info = trace::GetSourceCodeDebugInfo(out_node->debug_info());
-  const auto &location = debug_info->location();
-  if (location == nullptr) {
+  if (debug_info == nullptr || debug_info->location() == nullptr) {
     MS_LOG(WARNING) << "Location info is null, node: " << out_node->DebugString(debug_recursive_level);
     return nullptr;
   }
-  const auto expr = location->expr_src();
+  const auto expr = debug_info->location()->expr_src();
   if (expr.empty()) {
     MS_LOG(WARNING) << "Location's expr is empty, node: " << out_node->DebugString(debug_recursive_level);
     return nullptr;
@@ -3820,7 +3819,7 @@ class GetAttrEvaluator : public TransitionPrimEvaluator {
     }
     EvalResultPtr res = nullptr;
     if (bound_node() != nullptr) {
-      TraceGuard trace_guard(std::make_shared<TraceResolve>(bound_node()->debug_info()));
+      TraceGuard trace_guard(MakeTraceInfo<TraceResolve>(bound_node()->debug_info()));
       res = StaticGetter(engine, args_abs_list, in_conf0, out_conf);
     } else {
       res = StaticGetter(engine, args_abs_list, in_conf0, out_conf);
@@ -3870,7 +3869,7 @@ class ResolveEvaluator : public TransitionPrimEvaluator {
     }
     EvalResultPtr res = nullptr;
     if (bound_node() != nullptr) {
-      TraceGuard trace_guard(std::make_shared<TraceResolve>(bound_node()->debug_info()));
+      TraceGuard trace_guard(MakeTraceInfo<TraceResolve>(bound_node()->debug_info()));
       res = StaticGetter(engine, args_abs_list, in_conf0, out_conf);
     } else {
       res = StaticGetter(engine, args_abs_list, in_conf0, out_conf);
@@ -3939,7 +3938,7 @@ class CreateInstanceEvaluator : public TransitionPrimEvaluator {
     }
 
     // Process the object.
-    TraceGuard guard(std::make_shared<TraceResolve>(node->debug_info()));
+    TraceGuard guard(MakeTraceInfo<TraceResolve>(node->debug_info()));
     ValuePtr converted_res = nullptr;
     bool converted = parse::ConvertData(obj, &converted_res, true);
     if (!converted) {
@@ -4086,7 +4085,7 @@ class PartialEvaluator : public Evaluator {
     MS_EXCEPTION_IF_NULL(cnode);
 
     ScopeGuard scope_guard(out_conf->node()->scope());
-    TraceGuard trace_guard(std::make_shared<TraceDoSignature>(out_conf->node()->debug_info()));
+    TraceGuard trace_guard(MakeTraceInfo<TraceDoSignature>(out_conf->node()->debug_info()));
     auto new_nodes_inputs = cnode->weak_inputs();
     auto new_signature_value = std::make_shared<prim::DoSignatureMetaFuncGraph>("signature", signature_value);
     auto new_sig_node = NewValueNode(new_signature_value);

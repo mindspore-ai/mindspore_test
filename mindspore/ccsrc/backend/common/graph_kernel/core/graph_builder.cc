@@ -313,7 +313,7 @@ std::tuple<FuncGraphPtr, AnfNodePtrList, AnfNodePtrList> BuildGraphFromNodes(con
   FuncGraphPtr fg = nullptr;
   {
     // limit the lifetime of guard.
-    TraceGuard guard(std::make_shared<TraceSegmentTransform>(nodes[0]->cast<CNodePtr>()->func_graph()->debug_info()));
+    TraceGuard guard(MakeTraceInfo<TraceSegmentTransform>(nodes[0]->cast<CNodePtr>()->func_graph()->debug_info()));
     fg = std::make_shared<FuncGraph>();
   }
   AnfNodePtrList input_list;
@@ -325,7 +325,7 @@ std::tuple<FuncGraphPtr, AnfNodePtrList, AnfNodePtrList> BuildGraphFromNodes(con
     (void)std::transform(
       std::begin(node_inputs) + 1, std::end(node_inputs), std::back_inserter(new_args),
       [&fg, &input_list, &eqv](const AnfNodePtr &node) { return RefSubGraphNode(fg, node, &input_list, &eqv); });
-    TraceGuard tg(std::make_shared<TraceSegmentTransform>(node->debug_info()));
+    TraceGuard tg(MakeTraceInfo<TraceSegmentTransform>(node->debug_info()));
     eqv[node] = fg->NewCNode(new_args);
     eqv[node]->cast<CNodePtr>()->CloneCNodeInfo(node->cast<CNodePtr>());
     eqv[node]->cast<CNodePtr>()->set_fullname_with_scope(node->fullname_with_scope());

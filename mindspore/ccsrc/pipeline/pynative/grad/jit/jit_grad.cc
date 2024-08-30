@@ -279,7 +279,9 @@ void Jit::GetWeightsNode(const FrontendOpRunInfoPtr &op_run_info, const GradExec
       param = it->second;
     } else {
       top_cell->fg()->add_parameter(param);
-      param->debug_info()->set_name(param->name());
+      if (param->debug_info() != nullptr) {
+        param->debug_info()->set_name(param->name());
+      }
       top_cell->SetParamNodeMapInGraphInfoMap(tensor_value->id(), param, true);
     }
     (void)input_nodes->emplace_back(param);

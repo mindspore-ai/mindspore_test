@@ -313,6 +313,9 @@ AnfNodePtr ConvertMsClassObjectToPyExecute(const FuncGraphPtr &fg, const ValuePt
 }
 
 TypePtr GetJitAnnotationTypeFromComment(const AnfNodePtr &node, const FormatedVariableTypeFunc &format_type_func) {
+  if (node->debug_info() == nullptr) {
+    return nullptr;
+  }
   const auto &debug_info = trace::GetSourceCodeDebugInfo(node->debug_info());
   const auto &location = debug_info->location();
   if (location == nullptr) {
@@ -353,6 +356,9 @@ TypePtr GetJitAnnotationTypeFromComment(const AnfNodePtr &node, const FormatedVa
 
 bool GetJitAnnotationSideEffectFromComment(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
+  if (node->debug_info() == nullptr) {
+    return false;
+  }
   const auto &debug_info = trace::GetSourceCodeDebugInfo(node->debug_info());
   const auto &location = debug_info->location();
   if (location == nullptr) {
