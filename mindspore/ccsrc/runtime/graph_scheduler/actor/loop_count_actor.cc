@@ -96,7 +96,8 @@ void LoopCountActor::IncreaseLoopCount(OpContext<DeviceTensor> *const context) {
 }
 
 void LoopCountActor::SendDebugReq(OpContext<DeviceTensor> *const context) {
-  ActorDispatcher::SendSync(*debug_aid_, &DebugActor::DebugOnStepEnd, context, &GetAID(), total_running_count_);
+  ActorDispatcher::SendSync(*debug_aid_, &DebugActor::DebugOnStepEnd, context, &GetAID(), total_running_count_,
+                            sink_size_);
   OnDebugFinish(context);
 }
 
