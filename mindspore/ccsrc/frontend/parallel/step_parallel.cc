@@ -2653,6 +2653,9 @@ static void StepReplace(const std::vector<AnfNodePtr> &all_nodes) {
           continue;
         }
         auto reshape_redis = reshape_info->ReshapeRedistribution();
+        if (GetCNodePrimitive(cnode)->HasAttr(RECOMPUTE)) {
+          GetCNodePrimitive(cnode)->AddAttr(RECOMPUTE_COMM_OP, GetCNodePrimitive(cnode)->GetAttr(RECOMPUTE));
+        }
         InsertRedistributionForMicroInterleaved(reshape_redis, {cnode, 1}, cnode->func_graph(), cnode,
                                                 cnode->input(kIndex1)->cast<CNodePtr>());
         if (!IsPrimitiveCNode(cnode->input(kIndex1), prim::kPrimVirtualConverterEnd)) {
