@@ -851,12 +851,12 @@ AObject *AbstractType::BuildAbstractInstance(const std::vector<AObject *> &args,
 // this function call object without error
 py::object AbstractType::BuildInstance(const std::vector<py::object> &args, int opcode) {
   if (value_.ptr() == nullptr) {
-    MS_LOG(DEBUG) << "create instance failed, unknown class";
+    MS_LOG(INFO) << "Create instance failed, unknown class";
     return py::object();
   }
   auto pair = Utils::PackCallStackArgs(args, opcode, true);
   if (pair.first.ptr() == nullptr) {
-    MS_LOG(DEBUG) << "create instance failed, unknown opcode or arguments";
+    MS_LOG(INFO) << "Create instance failed, unknown opcode or arguments";
     return py::object();
   }
   PyObject *const *vector_args = &PyTuple_GET_ITEM(pair.first.ptr(), 0);

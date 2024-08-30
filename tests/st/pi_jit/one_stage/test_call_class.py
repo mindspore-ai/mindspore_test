@@ -14,7 +14,9 @@
 # ============================================================================
 """Test call class to create instance"""
 import sys  
-import pytest 
+import pytest
+
+import mindspore as ms
 from mindspore import Tensor
 from mindspore import context
 from ..share.utils import match_array, assert_executed_by_graph_mode, pi_jit_with_config
@@ -71,4 +73,25 @@ def test_create_tensor_list():
     assert len(actual) == 2
     match_array(actual[0].asnumpy(), expect[0].asnumpy())
     match_array(actual[1].asnumpy(), expect[1].asnumpy())
+    assert_executed_by_graph_mode(fn)
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_create_tensor_by_ms_api():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+    def fn():
+        a = ms.tensor([1, 2, 3])
+        return a + 1
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    expect = fn()
+
+    fn = jit(fn, mode="PIJit", jit_config=cfg)
+    actual = fn()
+
+    match_array(actual.asnumpy(), expect.asnumpy())
     assert_executed_by_graph_mode(fn)
