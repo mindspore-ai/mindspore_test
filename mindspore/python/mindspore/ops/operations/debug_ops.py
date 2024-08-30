@@ -64,6 +64,8 @@ class ScalarSummary(Primitive):
     which specify the directory of the summary file. The summary file can
     be loaded and shown by MindInsight, see `MindInsight documents <https://www.mindspore.cn/
     mindinsight/docs/en/master/index.html>`_ for details.
+    In Ascend platform with graph mode, can set environment variables `MS_DUMP_SLICE_SIZE` and `MS_DUMP_WAIT_TIME`
+    to solve operator execution failure when calling this operator intensively.
 
     Inputs:
         - **name** (str) - The name of the input variable, it must not be an empty string.
@@ -122,6 +124,8 @@ class ImageSummary(Primitive):
     SummaryRecord or SummaryCollector, which specify the directory of the summary file. The summary file can
     be loaded and shown by MindInsight, see `MindInsight documents <https://www.mindspore.cn/
     mindinsight/docs/en/master/index.html>`_ for details.
+    In Ascend platform with graph mode, can set environment variables `MS_DUMP_SLICE_SIZE` and `MS_DUMP_WAIT_TIME`
+    to solve operator execution failure when calling this operator intensively.
 
     Inputs:
         - **name** (str) - The name of the input variable, it must not be an empty string.
@@ -173,6 +177,8 @@ class TensorSummary(Primitive):
     or SummaryCollector, which specify the directory of the summary file. The summary file can
     be loaded and shown by MindInsight, see `MindInsight documents <https://www.mindspore.cn/
     mindinsight/docs/en/master/index.html>`_ for details.
+    In Ascend platform with graph mode, can set environment variables `MS_DUMP_SLICE_SIZE` and `MS_DUMP_WAIT_TIME`
+    to solve operator execution failure when calling this operator intensively.
 
     Inputs:
         - **name** (str) - The name of the input variable.
@@ -230,6 +236,8 @@ class TensorDump(Primitive):
 
     The file name will automatically have a prefix added based on the execution order. For example, if `file` is `a`,
     the first saved file will be named `0_a.npy`, and the second one will be named `1_a.npy`, and so on.
+    In Ascend platform with graph mode, can set environment variables `MS_DUMP_SLICE_SIZE` and `MS_DUMP_WAIT_TIME`
+    to solve operator execution failure when outputting big tensor or outputting tensor intensively.
 
     .. warning::
         - If a large amount of data is stored within a short period, it may lead to memory overflow on the device side.
@@ -314,6 +322,8 @@ class HistogramSummary(Primitive):
     It must be used with SummaryRecord or SummaryCollector, which specify the directory of the summary file.
     The summary file can be loaded and shown by MindInsight, see `MindInsight documents <https://www.mindspore.cn/
     mindinsight/docs/en/master/index.html>`_ for details.
+    In Ascend platform with graph mode, can set environment variables `MS_DUMP_SLICE_SIZE` and `MS_DUMP_WAIT_TIME`
+    to solve operator execution failure when calling this operator intensively.
 
     Inputs:
         - **name** (str) - The name of the input variable.

@@ -797,8 +797,16 @@ void DispVerboseLogTags() {
   MS_VLOG(VL_DISP_VLOG_TAGS) << VL_CORE << ": start of submodule log level";
   MS_VLOG(VL_DISP_VLOG_TAGS) << VL_USER_CUSTOM << ": start of user defined log level";
 
-  MS_VLOG(VL_DISP_VLOG_TAGS) << VL_ASCEND_KERNEL_SELECT << ": ascend kernel select tag";
-  MS_VLOG(VL_DISP_VLOG_TAGS) << VL_DISP_VLOG_TAGS << ": log level for printing vlog tags already been used";
+  static std::map<int, std::string> used_tags = {
+    {VL_ASCEND_KERNEL_SELECT, "ascend kernel select tag"},
+    {VL_DISP_VLOG_TAGS, "log level for printing vlog tags already been used"},
+    {VL_PRINT_DUMP_V0, "verbose level0 for print and tensordump, etc."},
+    {VL_PRINT_DUMP_V1, "verbose level1 for print and tensordump, etc."},
+  };
+
+  for (auto &[tag, desc] : used_tags) {
+    MS_VLOG(VL_DISP_VLOG_TAGS) << tag << ": " << desc;
+  }
 }
 
 const std::string GetSubModuleName(SubModuleId module_id) {

@@ -23,6 +23,7 @@
 #include <functional>
 #include <future>
 #include <map>
+#include <queue>
 #include <memory>
 #include <mutex>
 #include <sstream>
@@ -46,13 +47,21 @@ class ScopeAclTdtDataset;
 
 using MbufFuncType = std::function<void(ScopeAclTdtDataset &)>;
 
-const std::map<aclDataType, TypeId> kAclDataTypeMap = {
-  {ACL_INT8, TypeId::kNumberTypeInt8},       {ACL_UINT8, TypeId::kNumberTypeUInt8},
-  {ACL_INT16, TypeId::kNumberTypeInt16},     {ACL_UINT16, TypeId::kNumberTypeUInt16},
-  {ACL_INT32, TypeId::kNumberTypeInt32},     {ACL_UINT32, TypeId::kNumberTypeUInt32},
-  {ACL_INT64, TypeId::kNumberTypeInt64},     {ACL_UINT64, TypeId::kNumberTypeUInt64},
-  {ACL_FLOAT16, TypeId::kNumberTypeFloat16}, {ACL_FLOAT, TypeId::kNumberTypeFloat32},
-  {ACL_DOUBLE, TypeId::kNumberTypeFloat64},  {ACL_BOOL, TypeId::kNumberTypeBool}};
+const std::map<aclDataType, TypeId> kAclDataTypeMap = {{ACL_INT8, TypeId::kNumberTypeInt8},
+                                                       {ACL_UINT8, TypeId::kNumberTypeUInt8},
+                                                       {ACL_INT16, TypeId::kNumberTypeInt16},
+                                                       {ACL_UINT16, TypeId::kNumberTypeUInt16},
+                                                       {ACL_INT32, TypeId::kNumberTypeInt32},
+                                                       {ACL_UINT32, TypeId::kNumberTypeUInt32},
+                                                       {ACL_INT64, TypeId::kNumberTypeInt64},
+                                                       {ACL_UINT64, TypeId::kNumberTypeUInt64},
+                                                       {ACL_FLOAT16, TypeId::kNumberTypeFloat16},
+                                                       {ACL_BF16, TypeId::kNumberTypeBFloat16},
+                                                       {ACL_FLOAT, TypeId::kNumberTypeFloat32},
+                                                       {ACL_DOUBLE, TypeId::kNumberTypeFloat64},
+                                                       {ACL_COMPLEX64, TypeId::kNumberTypeComplex64},
+                                                       {ACL_COMPLEX128, TypeId::kNumberTypeComplex128},
+                                                       {ACL_BOOL, TypeId::kNumberTypeBool}};
 
 struct SlicedTensor {
   SlicedTensor(size_t slice_num, aclDataType type, const ShapeVector &shape)
@@ -76,20 +85,13 @@ using DataItem = std::variant<std::string, mindspore::tensor::TensorPtr>;
 
 class ScopeAclTdtDataset {
  public:
-  ScopeAclTdtDataset() {
-    acl_dataset_ = CALL_ASCEND_API(acltdtCreateDataset);
-    Reset();
-  }
-  acltdtDataset *Get() const { return acl_dataset_; }
-  ~ScopeAclTdtDataset() {
-    if (acl_dataset_ != nullptr && CALL_ASCEND_API(acltdtDestroyDataset, acl_dataset_) != ACL_SUCCESS) {
-      MS_LOG(ERROR) << "AcltdtDestroyDataset failed.";
-    } else {
-      MS_LOG(INFO) << "AcltdtDestroyDataset succeed.";
-    }
-  }
+  ScopeAclTdtDataset() { Reset(); }
+  ~ScopeAclTdtDataset() {}
 
-  void Reset() {
+  void Reset(bool force = false) {
+    if (force && tensor_type_ != ACL_TENSOR_DATA_UNDEFINED) {
+      MS_LOG(WARNING) << "Clear the incomplete data been processed.";
+    }
     sliced_tensor_ = nullptr;
     sliced_string_ = nullptr;
     dataset_name_ = "";
@@ -136,6 +138,35 @@ class ScopeAclTdtDataset {
   std::vector<DataItem> data_items_;
 };
 
+class AclDatasetInfo {
+ public:
+  AclDatasetInfo(acltdtDataset *dataset, bool first_slice) : acl_dataset_(dataset), first_slice_(first_slice) {}
+  ~AclDatasetInfo() {
+    if (acl_dataset_ == nullptr) {
+      return;
+    }
+    if (CALL_ASCEND_API(acltdtDestroyDataset, acl_dataset_) != ACL_SUCCESS) {
+      MS_LOG(ERROR) << "AcltdtDestroyDataset failed.";
+    } else {
+      MS_LOG(INFO) << "AcltdtDestroyDataset succeeded.";
+    }
+  }
+
+  acltdtDataset *Get() { return acl_dataset_; }
+  bool IsFirstSlice() { return first_slice_; }
+
+ private:
+  acltdtDataset *acl_dataset_ = nullptr;
+  bool first_slice_ = false;
+};
+using AclDatasetInfoPtr = std::shared_ptr<AclDatasetInfo>;
+
+enum class RecvDataState : uint8_t {
+  kReadyToRecv,  // ready to receive a new tensor
+  kWaitForEnd,   // wait for the end of sliced tensor
+  kWaitForSync   // wait for a synchronization dataset
+};
+
 class MbufDataHandler {
  public:
   MbufDataHandler(MbufFuncType func, uint32_t device_id, string channel_name, string op_name = "",
@@ -153,13 +184,33 @@ class MbufDataHandler {
   std::string prim_name_;
   size_t capacity_;
   int32_t timeout_;
-  std::mutex mutex_;
   std::atomic_bool stop_receive_{false};
-  std::thread thread_;
   acltdtChannelHandle *acl_handle_;
 
-  void HandleData();
-  bool ReceiveAndProcessData(ScopeAclTdtDataset *dataset);
+  // record the current receive state for data receiving thread
+  RecvDataState receive_state_ = RecvDataState::kReadyToRecv;
+  // whether the data receive thread has finished receiving all data
+  bool done_receive_data_ = false;
+  // thread for receiving data from device to host and put it on data queue
+  std::thread thread_receive_;
+  // thread for processing data on data queue and write data to file or stdout
+  std::thread thread_process_;
+  // mutex and cond_var for thread synchronization between thread_receive and thread_process
+  std::mutex queue_mutex_;
+  std::condition_variable queue_cond_var_;
+  // data queue for sharing data between thread_receive and thread_process
+  std::queue<AclDatasetInfoPtr> dataset_queue_;
+
+  AclDatasetInfoPtr CreateAclDatasetInfo(bool first_slice);
+  // receive one acltdtDataset, return false when encounter error, otherwise return true
+  bool ReceiveOneDataset(AclDatasetInfoPtr *ds_info_ptr);
+  // Update receive_state_ according to the input dataset and return the value of receive_state_ before update
+  RecvDataState UpdateReceiveState(const AclDatasetInfoPtr &ds_info);
+  // thread main function for receiving data
+  void ReceiveData();
+  // thread main function for processing data
+  void ProcessData();
+
   bool QueryChannelSize(size_t *queue_size);
 };
 

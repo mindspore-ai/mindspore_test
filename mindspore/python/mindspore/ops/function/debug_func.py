@@ -26,6 +26,8 @@ def print_(*input_x):
     Once set, the output will be saved in the file specified by print_file_path.
     :func:`mindspore.parse_print` can be employed to reload the data.
     For more information, please refer to :func:`mindspore.set_context` and :func:`mindspore.parse_print`.
+    In Ascend platform with graph mode, can set environment variables `MS_DUMP_SLICE_SIZE` and `MS_DUMP_WAIT_TIME`
+    to solve operator execution failure when outputting big tensor or outputting tensor intensively.
 
     Note:
         In pynative mode, please use python print function.
