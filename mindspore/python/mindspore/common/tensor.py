@@ -2409,9 +2409,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
 
         Args:
             src (Tensor): the source tensor to copy from.
-            non_blocking (bool): if True and this copy is between CPU and NPU,
-                the copy may occur asynchronously with respect to the host.
-                For other cases, this argument has no effect.
+            non_blocking (bool): no effect currently.
 
         Returns:
             Return self Tensor.
