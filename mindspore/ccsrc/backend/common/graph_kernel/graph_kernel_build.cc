@@ -330,8 +330,8 @@ bool GraphKernelBuild::SplitNodes(const std::vector<kernel::JsonNodePair> &nodes
     MS_EXCEPTION_IF_NULL(cnode);
     if (!splitter_.TrySplit(cnode)) {
       // This means the compiled failed node also can not be split.
-      MS_LOG(EXCEPTION) << "Node [" << node->fullname_with_scope() << "] with kernel name [" << kernel_name
-                        << "] compiled failed and can not be split.";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Node [" << node->fullname_with_scope() << "] with kernel name ["
+                                         << kernel_name << "] compiled failed and can not be split.";
     }
     result = true;
   }

@@ -1140,8 +1140,8 @@ void SetOutputs(const std::vector<KernelWithIndex> &graph_outputs,
                           << ", bytes not aligned with expected.";
       }
       if (me_types[i] == TypeId::kObjectTypeString) {
-        MS_LOG(EXCEPTION) << "It is not supported that Output node " << output_node->DebugString()
-                          << "'s output data type is string now.";
+        MS_LOG_WITH_NODE(EXCEPTION, output_node) << "It is not supported that Output node "
+                                                 << output_node->DebugString() << "'s output data type is string now.";
       }
       MS_LOG(DEBUG) << "Zero-copy ge tensor " << reinterpret_cast<uintptr_t>(ge_data) << " as aligned with "
                     << kTensorAlignBytes << " types.";
@@ -1151,8 +1151,8 @@ void SetOutputs(const std::vector<KernelWithIndex> &graph_outputs,
       output_addr->set_ptr(ge_data);
       output_addr->SetSize(tensor->GetSize());
     } else {
-      MS_LOG(EXCEPTION) << "It is not supported that Output node " << output_node->DebugString()
-                        << "'s output data's placement is device now.";
+      MS_LOG_WITH_NODE(EXCEPTION, output_node) << "It is not supported that Output node " << output_node->DebugString()
+                                               << "'s output data's placement is device now.";
     }
     auto actual_shapes = tensor->GetTensorDesc().GetShape().GetDims();
     UpdateOutputNodeShape(output_node, idx, me_types[i], actual_shapes);
@@ -1189,8 +1189,8 @@ void SetOutput(GeDeviceResManager *res_manager, GeTensor *ge_output, const AnfNo
     size_t size = ge_output->GetSize();
     void *mem = res_manager->AllocateMemory(size);
     if (mem == nullptr) {
-      MS_LOG(EXCEPTION) << "Allocate memory failed, memory size:" << size
-                        << ", output_node: " << output_node->ToString();
+      MS_LOG_WITH_NODE(EXCEPTION, output_node)
+        << "Allocate memory failed, memory size:" << size << ", output_node: " << output_node->ToString();
     }
     output_addr->set_from_mem_pool(true);
     output_addr->set_ptr(mem);
@@ -1590,11 +1590,11 @@ std::vector<GeTensor> GeGraphExecutor::GenerateOutputGeTensor(const KernelGraphP
     auto node_output_device_addr = output_device_addr->GetMutablePtr();
     MS_LOG(INFO) << "Output addr " << node_output_device_addr;
     if (node_output_device_addr == nullptr) {
-      MS_LOG(EXCEPTION) << "Output " << output_node->fullname_with_scope() << ", index: " << index
-                        << " address is nullptr, kernel graph: " << kernel_graph->ToString()
-                        << ", addr memory size: " << output_device_addr->GetSize()
-                        << "\n Maybe memory is not enough, memory statistics:"
-                        << AscendMemAdapter::GetInstance().DevMemStatistics();
+      MS_LOG_WITH_NODE(EXCEPTION, output_node)
+        << "Output " << output_node->fullname_with_scope() << ", index: " << index
+        << " address is nullptr, kernel graph: " << kernel_graph->ToString()
+        << ", addr memory size: " << output_device_addr->GetSize()
+        << "\n Maybe memory is not enough, memory statistics:" << AscendMemAdapter::GetInstance().DevMemStatistics();
     }
     MS_LOG(INFO) << "[ZeroCopy] For Graph " << kernel_graph->ToString() << ", update output "
                  << output_node->DebugString() << " out_idx " << index << " address to "

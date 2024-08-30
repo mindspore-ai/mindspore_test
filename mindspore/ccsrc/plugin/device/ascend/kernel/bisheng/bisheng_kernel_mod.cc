@@ -121,7 +121,7 @@ void BiShengKernelMod::DoTiling(std::vector<void *> *workspace_addrs) {
 
   std::vector<uint8_t> tiling_data;
   if (GetTilingFunc() == nullptr) {
-    MS_LOG(EXCEPTION) << "Node's tiling func must register! Op name: " << cnode->fullname_with_scope();
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Node's tiling func must register! Op name: " << cnode->fullname_with_scope();
   }
   auto ret = GetTilingFunc()(bisheng_args, &tiling_data);
   if (ret != 0) {
@@ -136,7 +136,8 @@ void BiShengKernelMod::DoTiling(std::vector<void *> *workspace_addrs) {
   }
   tiling_addr_ = mem_manager->MallocMemFromMemPool(tiling_data.size(), false);
   if (tiling_addr_ == nullptr) {
-    MS_LOG(EXCEPTION) << "Call MemoryPool to allocate tiling_addr_ failed. Op name: " << cnode->fullname_with_scope();
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Call MemoryPool to allocate tiling_addr_ failed. Op name: "
+                                       << cnode->fullname_with_scope();
   }
 
   // CopyHostToDevice

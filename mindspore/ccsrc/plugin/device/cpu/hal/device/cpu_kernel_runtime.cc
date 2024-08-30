@@ -191,8 +191,8 @@ tensor::TensorPtr CPUKernelRuntime::CreateTensorForOutput(session::KernelGraph *
   MS_EXCEPTION_IF_NULL(bound_addresses);
   size_t output_size = AnfAlgo::GetOutputTensorNum(node);
   if (index >= output_size) {
-    MS_LOG(EXCEPTION) << "For node " << node->DebugString() << ", index " << index << " exceed output size "
-                      << output_size;
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "For node " << node->DebugString() << ", index " << index
+                                      << " exceed output size " << output_size;
   }
   auto address = AnfAlgo::GetMutableOutputAddr(node, index);
   MS_EXCEPTION_IF_NULL(address);
@@ -472,7 +472,7 @@ bool CPUKernelRuntime::Run(const session::KernelGraph &kernel_graph, bool) {
       auto outputs = AnfAlgo::GetOrCreateAllOutputKernelTensors(kernel);
       if (cpu_kernel != nullptr &&
           cpu_kernel->Resize(inputs, outputs) == static_cast<int>(kernel::KRET_RESIZE_FAILED)) {
-        MS_LOG(EXCEPTION) << "Node " << kernel->fullname_with_scope() << " Resize failed!";
+        MS_LOG_WITH_NODE(EXCEPTION, kernel) << "Node " << kernel->fullname_with_scope() << " Resize failed!";
       }
     }
     std::vector<kernel::KernelTensor *> kernel_inputs;
@@ -508,7 +508,7 @@ bool CPUKernelRuntime::Run(const session::KernelGraph &kernel_graph, bool) {
 #ifdef ENABLE_DUMP_IR
       mindspore::RDR::TriggerAll();
 #endif
-      MS_LOG(EXCEPTION) << "Launch kernel failed." << trace::DumpSourceLines(kernel);
+      MS_LOG_WITH_NODE(EXCEPTION, kernel) << "Launch kernel failed." << trace::DumpSourceLines(kernel);
     }
     static_cast<CPUMemoryManager *>(mem_manager_.get())->DecreaseAddressRefCount(kernel);
     if (IS_OUTPUT_ON(mindspore::kInfo)) {

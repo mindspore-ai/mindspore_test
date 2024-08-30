@@ -32,7 +32,7 @@ int64_t ParallelCostModel::GetNodeCalAmount(const AnfNodePtr &node) const {
   AnfNodePtrList nodes = {node};
   DumpOption dump_option;
   if (!AnfToJsonDesc(nodes, dump_option, &json_desc)) {
-    MS_LOG(EXCEPTION) << "Collect json desc for node [" << node->fullname_with_scope() << "] failed";
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "Collect json desc for node [" << node->fullname_with_scope() << "] failed";
   }
 
   auto json_desc_str = json_desc.dump();

@@ -35,7 +35,8 @@ namespace {
 inline size_t GetIndex(const AnfNodePtr &getitem_node) {
   MS_EXCEPTION_IF_NULL(getitem_node);
   if (!IsPrimitiveCNode(getitem_node, prim::kPrimTupleGetItem)) {
-    MS_LOG(EXCEPTION) << "User of MakeTuple should be GetItem but got " << getitem_node->fullname_with_scope();
+    MS_LOG_WITH_NODE(EXCEPTION, getitem_node)
+      << "User of MakeTuple should be GetItem but got " << getitem_node->fullname_with_scope();
   }
   return LongToSize(GetValue<int64_t>(
     getitem_node->cast<CNodePtr>()->input(kInputNodeOutputIndexInTupleGetItem)->cast<ValueNodePtr>()->value()));
@@ -60,7 +61,8 @@ bool GetGraphKernelGetitemList(const FuncGraphManagerPtr &mng, const AnfNodePtr 
   MS_EXCEPTION_IF_NULL(func_graph);
   auto output = func_graph->output();
   if (!IsPrimitiveCNode(output, prim::kPrimMakeTuple)) {
-    MS_LOG(EXCEPTION) << "The output should be a MakeTuple, but got " << output->fullname_with_scope();
+    MS_LOG_WITH_NODE(EXCEPTION, output) << "The output should be a MakeTuple, but got "
+                                        << output->fullname_with_scope();
   }
   auto output_num = output->cast<CNodePtr>()->size() - 1;
   getitem_list->clear();
@@ -277,8 +279,8 @@ void EliminateHangingOutput::UpdateGetitemIndex(const AnfNodePtr &getitem, size_
   MS_EXCEPTION_IF_NULL(getitem);
   auto index = GetIndex(getitem);
   if (offset > index) {
-    MS_LOG(EXCEPTION) << "The offset is greater than the original index of GetItem: " << getitem->DebugString() << ". "
-                      << offset << " vs " << index;
+    MS_LOG_WITH_NODE(EXCEPTION, getitem) << "The offset is greater than the original index of GetItem: "
+                                         << getitem->DebugString() << ". " << offset << " vs " << index;
   }
   index -= offset;
   SetIndex(getitem, index);

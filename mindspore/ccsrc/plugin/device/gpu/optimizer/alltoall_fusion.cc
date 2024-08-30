@@ -50,7 +50,8 @@ CNodePtr CreateSplitNode(const FuncGraphPtr &graph, const CNodePtr &all_to_all) 
   int64_t split_count = common::AnfAlgo::GetNodeAttr<int64_t>(all_to_all, kAttrSplitCount);
   int64_t split_dim = common::AnfAlgo::GetNodeAttr<int64_t>(all_to_all, kAttrSplitDim);
   if (all_to_all->size() <= kAllToAllInputIdx) {
-    MS_LOG(EXCEPTION) << "Invalid cnode " << all_to_all->DebugString() << " input size " << all_to_all->size();
+    MS_LOG_WITH_NODE(EXCEPTION, all_to_all)
+      << "Invalid cnode " << all_to_all->DebugString() << " input size " << all_to_all->size();
   }
 
   auto all_to_all_input = all_to_all->input(kAllToAllInputIdx);
@@ -108,7 +109,8 @@ CNodePtr CreateAllToAllvNode(const FuncGraphPtr &graph, const CNodePtr &all_to_a
   std::vector<AnfNodePtr> split_outputs;
   CreateMultipleOutputsOfAnfNode(graph, split, split_count, &split_outputs);
   if (split_outputs.empty()) {
-    MS_LOG(EXCEPTION) << "The node " << split->DebugString() << " should have at least one output, but got 0.";
+    MS_LOG_WITH_NODE(EXCEPTION, split) << "The node " << split->DebugString()
+                                       << " should have at least one output, but got 0.";
   }
 
   // Make a all_to_all_v CNode.
@@ -146,7 +148,8 @@ CNodePtr CreateConcatNode(const FuncGraphPtr &graph, const CNodePtr &all_to_all,
   std::vector<AnfNodePtr> all_to_all_v_outputs;
   CreateMultipleOutputsOfAnfNode(graph, all_to_all_v, split_count, &all_to_all_v_outputs);
   if (all_to_all_v_outputs.empty()) {
-    MS_LOG(EXCEPTION) << "The node " << all_to_all_v->DebugString() << " should have at least one output, but got 0.";
+    MS_LOG_WITH_NODE(EXCEPTION, all_to_all_v)
+      << "The node " << all_to_all_v->DebugString() << " should have at least one output, but got 0.";
   }
 
   // Make a Concat CNode.

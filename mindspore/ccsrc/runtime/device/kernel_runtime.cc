@@ -557,8 +557,8 @@ void KernelRuntime::RunOpAssignOutputNodeMemory(const ValuePtr &pre_output_value
     }
     if (common::AnfAlgo::IsNopNode(real_output_cnode)) {
       if (real_output_cnode->size() < kMinInputSize) {
-        MS_LOG(EXCEPTION) << "The input size of output node: " << real_output_cnode->DebugString()
-                          << " should large than one!";
+        MS_LOG_WITH_NODE(EXCEPTION, real_output_cnode)
+          << "The input size of output node: " << real_output_cnode->DebugString() << " should large than one!";
       }
       AnfAlgo::SetOutputAddr(std::dynamic_pointer_cast<device::DeviceAddress>(pre_output_tensors[i]->device_address()),
                              output_node_with_index.second, real_output_cnode->input(1).get());
@@ -1454,7 +1454,7 @@ void KernelRuntime::DebugStreamSync(const CNodePtr &kernel) {
   auto enable_sync_run = ms_context->get_param<bool>(MS_CTX_ENABLE_PYNATIVE_SYNCHRONIZE);
   if (enable_sync_run) {
     if (!SyncStream()) {
-      MS_LOG(EXCEPTION) << "Op " << kernel->fullname_with_scope() << " run failed!";
+      MS_LOG_WITH_NODE(EXCEPTION, kernel) << "Op " << kernel->fullname_with_scope() << " run failed!";
     }
   }
 }
@@ -1716,7 +1716,7 @@ bool KernelRuntime::LaunchKernelMod(const session::KernelGraph &graph, bool mock
       auto inputs = AnfAlgo::GetOrCreateAllInputKernelTensors(kernel);
       auto outputs = AnfAlgo::GetOrCreateAllOutputKernelTensors(kernel);
       if (kernel_mod->Resize(inputs, outputs) == static_cast<int>(kernel::KRET_RESIZE_FAILED)) {
-        MS_LOG(EXCEPTION) << "Node " << kernel->fullname_with_scope() << " Resize  failed.";
+        MS_LOG_WITH_NODE(EXCEPTION, kernel) << "Node " << kernel->fullname_with_scope() << " Resize  failed.";
       }
       KernelLaunchInfo kernel_launch_info;
       device::KernelRuntime::GenLaunchArgs(*kernel_mod, kernel, &kernel_launch_info);

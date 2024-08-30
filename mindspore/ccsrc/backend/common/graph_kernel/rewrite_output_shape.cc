@@ -66,8 +66,8 @@ void RewriteOutputShape::Process(const AnfNodePtr &node, size_t index, const Abs
   if (node->abstract()->isa<abstract::AbstractTuple>()) {
     auto node_abstracts = node->abstract()->cast<abstract::AbstractTuplePtr>()->elements();
     if (index >= node_abstracts.size()) {
-      MS_LOG(EXCEPTION) << "Index " << index << " is out of the range of node_abstracts [0, " << node_abstracts.size()
-                        << ") in node " << node->fullname_with_scope();
+      MS_LOG_WITH_NODE(EXCEPTION, node) << "Index " << index << " is out of the range of node_abstracts [0, "
+                                        << node_abstracts.size() << ") in node " << node->fullname_with_scope();
     }
     node_abstracts[index] = abstract;
     node->set_abstract(std::make_shared<abstract::AbstractTuple>(node_abstracts));

@@ -51,7 +51,7 @@ CNodePtr CreateAssign(const FuncGraphPtr &sub_graph,
 
 size_t GetItemIdx(const AnfNodePtr &node) {
   if (!IsPrimitiveCNode(node, prim::kPrimTupleGetItem)) {
-    MS_LOG(EXCEPTION) << "Expect TupleGetItem node, but got " << common::AnfAlgo::GetCNodeName(node);
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "Expect TupleGetItem node, but got " << common::AnfAlgo::GetCNodeName(node);
   }
   auto get_item_cnode = node->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(get_item_cnode);

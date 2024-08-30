@@ -1149,7 +1149,7 @@ void Somas::RefNodeProcess(const session::KernelGraph &graph) {
         auto ori_index = origin_pair.second;
         MS_EXCEPTION_IF_NULL(ori_node);
         if (nodes_map_.find(ori_node.get()) == nodes_map_.end()) {
-          MS_LOG(EXCEPTION)
+          MS_LOG_WITH_NODE(EXCEPTION, ori_node)
             << "The ori_node is not included in nodes_map_ constructed from exec_order of graph. Info ori_node: "
             << ori_node->DebugString();
         }

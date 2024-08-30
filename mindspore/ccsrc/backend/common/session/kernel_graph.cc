@@ -335,9 +335,10 @@ void KernelGraph::CreateKernelInfoFromNewParameter(const CNodePtr &cnode) const 
 
 void KernelGraph::ResetAssignInputFeatureMapFlag(const CNodePtr &cnode) const {
   if (kOpAssignKernelNameList.find(common::AnfAlgo::GetCNodeName(cnode)) == kOpAssignKernelNameList.end()) {
-    MS_LOG(EXCEPTION) << "Only supported to change the node [Assign , AssignSub, AssignAdd] node's input feature map "
-                         "flag but got the node :"
-                      << cnode->DebugString();
+    MS_LOG_WITH_NODE(EXCEPTION, cnode)
+      << "Only supported to change the node [Assign , AssignSub, AssignAdd] node's input feature map "
+         "flag but got the node :"
+      << cnode->DebugString();
   }
   auto input_node = common::AnfAlgo::GetInputNode(cnode, 0);
   MS_EXCEPTION_IF_NULL(input_node);
@@ -1215,9 +1216,9 @@ kernel::KernelObjectType GetTupleGetItemOutputKernelObjectType(const AnfNodePtr 
           return kernel::TypeIdToKernelObjectType(
             AnfAlgo::GetAbstractObjectType(sequence_abstract->elements()[output_idx]));
         } else {
-          MS_LOG(EXCEPTION) << "Invalid index:" << output_idx << " for abstract:" << sequence_abstract->ToString()
-                            << " in node:" << input_node->fullname_with_scope()
-                            << " real node:" << node->fullname_with_scope();
+          MS_LOG_WITH_NODE(EXCEPTION, input_node)
+            << "Invalid index:" << output_idx << " for abstract:" << sequence_abstract->ToString()
+            << " in node:" << input_node->fullname_with_scope() << " real node:" << node->fullname_with_scope();
         }
       }
     }
@@ -1484,8 +1485,8 @@ std::vector<abstract::AbstractBasePtr> FetchInputAbstracts(const CNodePtr &cnode
     MS_EXCEPTION_IF_NULL(input);
     const auto &abstract = input->abstract();
     if (abstract == nullptr) {
-      MS_LOG(EXCEPTION) << "Invalid abstract for input:" << input->DebugString()
-                        << " for node:" << cnode->fullname_with_scope() << " input index:" << i;
+      MS_LOG_WITH_NODE(EXCEPTION, input) << "Invalid abstract for input:" << input->DebugString()
+                                         << " for node:" << cnode->fullname_with_scope() << " input index:" << i;
     }
     MS_LOG(DEBUG) << "Add abstract:" << abstract->ToString() << " for input:" << input->DebugString();
     abstracts.emplace_back(abstract);
@@ -1517,8 +1518,8 @@ void KernelGraph::InferType() {
     MS_EXCEPTION_IF_NULL(primitive);
     auto abstract_opt = abstract::TryInferAbstract(primitive, abstracts);
     if (!abstract_opt.has_value()) {
-      MS_LOG(EXCEPTION) << "Failed to infer for primitive:" << primitive->ToString()
-                        << " in node:" << cnode->fullname_with_scope();
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Failed to infer for primitive:" << primitive->ToString()
+                                         << " in node:" << cnode->fullname_with_scope();
     }
     auto abstract = abstract_opt.value();
     MS_LOG(INFO) << "Set abstract:" << abstract->ToString() << " for node:" << cnode->DebugString();

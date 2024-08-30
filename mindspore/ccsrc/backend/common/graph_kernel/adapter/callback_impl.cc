@@ -69,7 +69,7 @@ void GetTypeAndFormats(const device::KernelWithIndex &kernel_with_index, std::ve
     MS_EXCEPTION_IF_NULL(data_type);
     (void)input_types->emplace_back(data_type->type_id());
   } else {
-    MS_LOG(EXCEPTION) << "value " << value_node->ToString() << " is unexpected Type.";
+    MS_LOG_WITH_NODE(EXCEPTION, value_node) << "value " << value_node->ToString() << " is unexpected Type.";
   }
   (void)input_formats->emplace_back(kOpFormat_DEFAULT);
 }

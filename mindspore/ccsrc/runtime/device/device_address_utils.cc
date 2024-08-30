@@ -158,7 +158,7 @@ void DeviceAddressUtils::CreateDeviceAddressByMapTensorNode(const DeviceContext 
   const auto &abstract_base = AnfAlgo::GetNodeAbstractByIndex(node, index);
   MS_EXCEPTION_IF_NULL(abstract_base);
   if (!abstract_base->isa<abstract::AbstractMapTensor>()) {
-    MS_LOG(EXCEPTION) << "Parameter:" << node->DebugString() << " is not a map tensor type.";
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "Parameter:" << node->DebugString() << " is not a map tensor type.";
   }
 
   const auto &abstract = abstract_base->cast<abstract::AbstractMapTensorPtr>();

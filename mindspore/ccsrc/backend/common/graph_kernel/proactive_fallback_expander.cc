@@ -95,7 +95,7 @@ bool ProactiveFallbackExpander::Run(const FuncGraphPtr &func_graph) {
     expander::FallbackIRBuilder ib(prim_name, cnode->func_graph(), func);
     const auto *handle = expander::IRBuilderFactory::Instance().GetBuilder(prim_name);
     if (handle == nullptr) {
-      MS_LOG(EXCEPTION) << "No fallback handle for node: " << cnode->fullname_with_scope();
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << "No fallback handle for node: " << cnode->fullname_with_scope();
       return false;
     }
     auto output = ib.Run(cnode, *handle);

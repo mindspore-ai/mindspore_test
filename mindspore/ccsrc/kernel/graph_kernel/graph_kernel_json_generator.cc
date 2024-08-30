@@ -275,7 +275,8 @@ void SetValueList(nlohmann::json *node_json, void *data, size_t data_size, TypeI
     }
     (*node_json)["value"] = vec;
   } else {
-    MS_LOG(EXCEPTION) << "The input data of node " << cnode->DebugString() << " should be an int tensor.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "The input data of node " << cnode->DebugString()
+                                       << " should be an int tensor.";
   }
 }
 
@@ -306,10 +307,11 @@ void SetSingleValue(nlohmann::json *node_json, void *data, TypeId type_id, const
   } else if (type_id == kBool->type_id()) {
     (*node_json)["value"] = static_cast<bool *>(data)[0];
   } else {
-    MS_LOG(EXCEPTION) << "Fail to parse the input value of [" << cnode->DebugString() << "], the input index is "
-                      << input_idx << ", because the value type: " << TypeIdToString(type_id, true)
-                      << " is not in supported list: [float64, float32, float16, uint64, uint32, uint16, uint8, int64, "
-                         "int32, int16, int8, bool].";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode)
+      << "Fail to parse the input value of [" << cnode->DebugString() << "], the input index is " << input_idx
+      << ", because the value type: " << TypeIdToString(type_id, true)
+      << " is not in supported list: [float64, float32, float16, uint64, uint32, uint16, uint8, int64, "
+         "int32, int16, int8, bool].";
   }
 }
 
@@ -338,7 +340,8 @@ bool GraphKernelJsonGenerator::GetInputTensorValue(const AnfNodePtr &anf_node, s
       if (v->isa<Int32Imm>() || v->isa<Int64Imm>()) {
         (void)vec.emplace_back(AnfUtils::GetIntValue(v));
       } else {
-        MS_LOG(EXCEPTION) << "Element in valuenode must be int" << input_node->fullname_with_scope();
+        MS_LOG_WITH_NODE(EXCEPTION, input_node)
+          << "Element in valuenode must be int" << input_node->fullname_with_scope();
       }
     }
     (*node_json)["value"] = vec;
@@ -404,9 +407,10 @@ void GraphKernelJsonGenerator::SaveShape(const AnfNodePtr &node, nlohmann::json 
   } else {
     symbol_shape = QuerySymbolicShapeStr(node);
     if (shape.size() != symbol_shape.size()) {
-      MS_LOG(EXCEPTION) << "The length of tensor shape and symbol shape should be equal but got " << shape.size()
-                        << " and " << symbol_shape.size() << ". node: " << node->DebugString() << ", shape: " << shape
-                        << ", symbol_shape: " << symbol_shape;
+      MS_LOG_WITH_NODE(EXCEPTION, node) << "The length of tensor shape and symbol shape should be equal but got "
+                                        << shape.size() << " and " << symbol_shape.size()
+                                        << ". node: " << node->DebugString() << ", shape: " << shape
+                                        << ", symbol_shape: " << symbol_shape;
     }
     for (size_t i = 0; i < new_shape.size(); i++) {
       auto symbol = symbol_shape[i];
@@ -587,8 +591,9 @@ bool GraphKernelJsonGenerator::CreateAttrDescJson(const AnfNodePtr &anf_node, co
       if (find_item != op_info_shape_name.end()) {
         if (!dyn_input_sizes.empty()) {
           if (find_item->second >= dyn_input_sizes.size() - 1) {
-            MS_LOG(EXCEPTION) << "dyn_input_sizes list index " << find_item->second << " is out of range [0, "
-                              << dyn_input_sizes.size() - 1 << ") in node [" << anf_node->fullname_with_scope() << "]";
+            MS_LOG_WITH_NODE(EXCEPTION, anf_node)
+              << "dyn_input_sizes list index " << find_item->second << " is out of range [0, "
+              << dyn_input_sizes.size() - 1 << ") in node [" << anf_node->fullname_with_scope() << "]";
             return false;
           }
           size_t tensor_idx = LongToSize(std::accumulate(&dyn_input_sizes[0], &dyn_input_sizes[find_item->second], 0));
@@ -1108,9 +1113,9 @@ void GraphKernelJsonGenerator::GenParallelJson(const std::vector<AnfNodePtr> &an
         auto info = GetValue<std::vector<size_t>>(prim->GetAttr(kAttrParallelDimInfo));
         auto info_size = info.size();
         if (info_size != kAttrParallelDimInfoSize) {
-          MS_LOG(EXCEPTION) << "The size of attr " << kAttrParallelDimInfo << " in node ["
-                            << tcnode->fullname_with_scope() << "] should be " << kAttrParallelDimInfoSize
-                            << ", but got " << info_size;
+          MS_LOG_WITH_NODE(EXCEPTION, tcnode)
+            << "The size of attr " << kAttrParallelDimInfo << " in node [" << tcnode->fullname_with_scope()
+            << "] should be " << kAttrParallelDimInfoSize << ", but got " << info_size;
         }
         auto tensor_name =
           GetTensorName(node_json_map.at(tmp_output), kJsonKeyOutputDesc, std::make_pair(0, tmp_output_index));

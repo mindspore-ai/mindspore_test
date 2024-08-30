@@ -67,7 +67,7 @@ bool DealWithSideEffect::Run(const FuncGraphPtr &func_graph) {
       if (GetCNodePrimitive(out_cnode)->name() == prim::kPrimAssign->name()) {
         auto iter = std::find(graph_inputs.begin(), graph_inputs.end(), out_cnode->input(kIndex1));
         if (iter == graph_inputs.end()) {
-          MS_LOG(EXCEPTION) << out_cnode->fullname_with_scope() << " first input isn't parameter.";
+          MS_LOG_WITH_NODE(EXCEPTION, out_cnode) << out_cnode->fullname_with_scope() << " first input isn't parameter.";
         }
         auto input_idx = std::distance(graph_inputs.begin(), iter);
         auto origin_pair = common::AnfAlgo::GetPrevNodeOutput(node, input_idx, true);

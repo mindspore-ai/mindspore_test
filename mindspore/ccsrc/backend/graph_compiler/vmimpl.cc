@@ -72,7 +72,7 @@ const BaseRef VMFrame::operator[](const AnfNodePtr &node) {
     return GetValueNode(node);
   }
 
-  MS_LOG(EXCEPTION) << "ValueError " << node->type_name();
+  MS_LOG_WITH_NODE(EXCEPTION, node) << "ValueError " << node->type_name();
 }
 
 Closure::Closure(const FuncGraphPtr &graph, const AnfNodePtrToBaseRefMap &values)

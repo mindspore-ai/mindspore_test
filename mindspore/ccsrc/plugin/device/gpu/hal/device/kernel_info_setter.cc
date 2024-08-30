@@ -385,8 +385,9 @@ void UpdateKernelFormatInfo(const CNodePtr &kernel_node, const std::vector<TypeI
   TransformFormatPosition(&inputs_format_position, input_num);
   for (const auto &input_format_position : inputs_format_position) {
     if (input_format_position >= inputs_format->size()) {
-      MS_LOG(EXCEPTION) << "The position [" << input_format_position << "] is out of range of the input size ["
-                        << inputs_format->size() << "] #kernel_node [" << kernel_node->fullname_with_scope() << "]";
+      MS_LOG_WITH_NODE(EXCEPTION, kernel_node)
+        << "The position [" << input_format_position << "] is out of range of the input size [" << inputs_format->size()
+        << "] #kernel_node [" << kernel_node->fullname_with_scope() << "]";
     }
     (*inputs_format)[input_format_position] = cal_format;
   }

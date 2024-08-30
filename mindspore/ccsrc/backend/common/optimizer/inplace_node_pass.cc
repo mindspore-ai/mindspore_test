@@ -33,16 +33,17 @@ AnfNodePtr InplaceNodePass::Run(const FuncGraphPtr &, const AnfNodePtr &node) {
     MS_EXCEPTION_IF_NULL(cnode);
     auto inputs = cnode->inputs();
     if (inputs.size() != pre_inputs.size()) {
-      MS_LOG(EXCEPTION) << "InplaceNodePass ERROR, the pass modify node: " << node->DebugString()
-                        << ", pass name: " << name();
+      MS_LOG_WITH_NODE(EXCEPTION, node) << "InplaceNodePass ERROR, the pass modify node: " << node->DebugString()
+                                        << ", pass name: " << name();
     }
     for (size_t i = 0; i < inputs.size(); i++) {
       MS_EXCEPTION_IF_NULL(inputs[i]);
       MS_EXCEPTION_IF_NULL(pre_inputs[i]);
       if (!opt::AnfEqual(inputs[i], pre_inputs[i])) {
-        MS_LOG(EXCEPTION) << "InplaceNodePass ERROR, the pass modify node: " << node->DebugString()
-                          << ", pass name: " << name() << ", before node " << i << ":" << inputs[i]->DebugString()
-                          << ", after node " << i << ":" << pre_inputs[i]->DebugString();
+        MS_LOG_WITH_NODE(EXCEPTION, node)
+          << "InplaceNodePass ERROR, the pass modify node: " << node->DebugString() << ", pass name: " << name()
+          << ", before node " << i << ":" << inputs[i]->DebugString() << ", after node " << i << ":"
+          << pre_inputs[i]->DebugString();
       }
     }
   }

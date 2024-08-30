@@ -267,7 +267,7 @@ class OpAdapter : public BaseOpAdapter {
       op = GenerateNormalOp(anf);
     }
     if (op == nullptr) {
-      MS_LOG(EXCEPTION) << "Can not generate op for " << anf->fullname_with_scope();
+      MS_LOG_WITH_NODE(EXCEPTION, anf) << "Can not generate op for " << anf->fullname_with_scope();
     }
     return op;
   }
@@ -292,7 +292,7 @@ class OpAdapter : public BaseOpAdapter {
     OperatorPtr op = nullptr;
     op = GenerateDynamicOutputOp(anf);
     if (op == nullptr) {
-      MS_LOG(EXCEPTION) << "Can not generate op for " << anf->fullname_with_scope();
+      MS_LOG_WITH_NODE(EXCEPTION, anf) << "Can not generate op for " << anf->fullname_with_scope();
     }
     return op;
   }

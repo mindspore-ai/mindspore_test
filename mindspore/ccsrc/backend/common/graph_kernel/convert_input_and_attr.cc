@@ -141,8 +141,8 @@ void ConvertFrontEndToGraphKernel::AddConstInputToAttr(const CNodePtr &cnode, co
                                                        const std::string &arg_name, const std::string &arg_handler,
                                                        const PrimitivePtr &primitive) {
   if (input_index >= cnode->size() - 1) {
-    MS_LOG(EXCEPTION) << "The index of args in op_def `" << input_index
-                      << "` should less than the inputs size minus one `" << cnode->size() - 1 << "`.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "The index of args in op_def `" << input_index
+                                       << "` should less than the inputs size minus one `" << cnode->size() - 1 << "`.";
   }
   auto input_node = cnode->inputs()[input_index + 1];
 
@@ -155,10 +155,10 @@ void ConvertFrontEndToGraphKernel::AddConstInputToAttr(const CNodePtr &cnode, co
     value = parameter_node->abstract()->BuildValue();
   }
   if (value == nullptr) {
-    MS_LOG(EXCEPTION) << cnode->ToString() << " is not Value.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << cnode->ToString() << " is not Value.";
   }
   if (value->isa<ValueAny>()) {
-    MS_LOG(EXCEPTION) << cnode->ToString() << " is ValueAny.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << cnode->ToString() << " is ValueAny.";
   }
   if (!arg_handler.empty() && !value->isa<None>()) {
     auto arg_handler_func = GetArgHandlerFunc(arg_handler);

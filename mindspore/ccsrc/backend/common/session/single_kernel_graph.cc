@@ -46,7 +46,7 @@ std::shared_ptr<session::KernelGraph> SingleKernelGraph::ConstructKernelGraphBas
   // get output dynamic shape info
   common::AnfAlgo::SetNodeAttr(kAttrOutputIsDynamicShape, MakeValue(false), cnode);
   if (output_dtypes.size() != output_shapes.size()) {
-    MS_LOG(EXCEPTION)
+    MS_LOG_WITH_NODE(EXCEPTION, cnode)
       << "The size of output_dtypes should be equal to size of output_shapes, but got output_dtypes size: "
       << output_dtypes.size() << ", output_shapes size: " << output_shapes.size() << ". The op name is: " << op_name
       << trace::DumpSourceLines(cnode);

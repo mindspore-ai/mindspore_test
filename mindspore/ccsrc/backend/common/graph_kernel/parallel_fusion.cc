@@ -490,7 +490,7 @@ std::tuple<std::vector<bool>, std::vector<ParallelInfo>> ParallelOpFusion::DoSea
   auto get_index = [](std::map<AnfNodePtr, int> *indices, const AnfNodePtr &node) -> int {
     MS_EXCEPTION_IF_NULL(node);
     if (indices->find(node) == indices->end()) {
-      MS_LOG(EXCEPTION) << "There is no index record for node " << node->ToString();
+      MS_LOG_WITH_NODE(EXCEPTION, node) << "There is no index record for node " << node->ToString();
     }
     return (*indices)[node];
   };

@@ -1854,7 +1854,7 @@ void RefNodeProcess(const KernelGraphPtr &graph, std::unordered_map<CNodePtr, Gp
         auto ori_node = origin_pair.first->cast<CNodePtr>();
         auto ori_index = origin_pair.second;
         if (cnode_to_task_map.find(ori_node.get()->cast<CNodePtr>()) == cnode_to_task_map.end()) {
-          MS_LOG(EXCEPTION)
+          MS_LOG_WITH_NODE(EXCEPTION, ori_node)
             << "The ori_node is not included in cnode_to_task_map constructed from exec_order of graph. Info ori_node: "
             << ori_node->DebugString();
         }

@@ -33,8 +33,9 @@ void ReduceFakeOutMem::ModifyAbstract(const AnfNodePtr &composite_node, const st
   }
 
   if (output_list.empty()) {
-    MS_LOG(EXCEPTION) << "Output size should not be zero while there is at least one fake output in node "
-                      << composite_node->fullname_with_scope();
+    MS_LOG_WITH_NODE(EXCEPTION, composite_node)
+      << "Output size should not be zero while there is at least one fake output in node "
+      << composite_node->fullname_with_scope();
   }
 
   std::vector<AbstractBasePtr> out_specs;

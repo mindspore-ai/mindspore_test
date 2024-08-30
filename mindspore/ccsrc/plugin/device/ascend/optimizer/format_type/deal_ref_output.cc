@@ -74,8 +74,8 @@ AnfNodePtr GetRefInputNode(const CNodePtr &cnode, const size_t cur_out_index) {
     if (ref_infos.count(cur_out_index) != 0) {
       auto in_index = ref_infos.at(cur_out_index);
       if (in_index > cnode->size()) {
-        MS_LOG(EXCEPTION) << "Ref op has wrong inputs: op inputs num is " << cnode->size() << ", ref info is "
-                          << cur_out_index;
+        MS_LOG_WITH_NODE(EXCEPTION, cnode)
+          << "Ref op has wrong inputs: op inputs num is " << cnode->size() << ", ref info is " << cur_out_index;
       }
       return cnode->input(in_index + 1);
     }

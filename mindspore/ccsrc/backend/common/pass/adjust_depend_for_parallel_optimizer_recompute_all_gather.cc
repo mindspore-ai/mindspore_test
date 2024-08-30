@@ -63,9 +63,10 @@ bool AdjustDependForParallelOptimizerRecomputeAllGather::Run(const FuncGraphPtr 
       auto [iter, inserted] =
         forward_allgather_recompute_value_in_fusion_group.emplace(unrecompute_fusion_id, would_be_recomputed);
       if (!inserted && iter->second != would_be_recomputed) {
-        MS_LOG(EXCEPTION) << "In same fusion group, the allgather recompute attribute should be equal. "
-                             "The normal node is:"
-                          << cnode->fullname_with_scope();
+        MS_LOG_WITH_NODE(EXCEPTION, cnode)
+          << "In same fusion group, the allgather recompute attribute should be equal. "
+             "The normal node is:"
+          << cnode->fullname_with_scope();
       }
     }
   }

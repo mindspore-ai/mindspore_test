@@ -197,7 +197,8 @@ const AnfNodePtr OptimizeDependence::Process(const FuncGraphPtr &func_graph, con
   bool inputs_changed = false;
   for (auto index : candidate_inputs) {
     if (index >= new_inputs.size()) {
-      MS_LOG(EXCEPTION) << "Index is out of the size of " << cnode->DebugString() << trace::DumpSourceLines(cnode);
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Index is out of the size of " << cnode->DebugString()
+                                         << trace::DumpSourceLines(cnode);
     }
     auto replace_node = GetConvertNode(func_graph, cnode, index);
     if (replace_node != nullptr) {

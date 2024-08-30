@@ -476,14 +476,14 @@ std::vector<AnfNodePtr> GetEmbeddingApplyAdamOutput(const CNodePtr &node) {
   auto depend = node->input(1);
   MS_EXCEPTION_IF_NULL(depend);
   if (!IsPrimitiveCNode(depend, prim::kPrimDepend)) {
-    MS_LOG(EXCEPTION) << "Need Depend ops, but get " << depend->fullname_with_scope();
+    MS_LOG_WITH_NODE(EXCEPTION, depend) << "Need Depend ops, but get " << depend->fullname_with_scope();
   }
   auto depend_cnode = depend->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(depend_cnode);
   auto tuple = depend_cnode->input(2);
   MS_EXCEPTION_IF_NULL(tuple);
   if (!IsPrimitiveCNode(tuple, prim::kPrimMakeTuple)) {
-    MS_LOG(EXCEPTION) << "Need MakeTuple ops, but get " << tuple->fullname_with_scope();
+    MS_LOG_WITH_NODE(EXCEPTION, tuple) << "Need MakeTuple ops, but get " << tuple->fullname_with_scope();
   }
   auto tuple_cnode = tuple->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(tuple_cnode);
@@ -847,7 +847,7 @@ void DfGraphConvertor::InitParamWithData(const TensorOrderMap &tensors) {
     MS_EXCEPTION_IF_NULL(node);
     auto op_itor = op_cache_.find(node.get());
     if (op_itor == op_cache_.end()) {
-      MS_LOG(EXCEPTION) << "Can not find op for node " << node->ToString() << ".";
+      MS_LOG_WITH_NODE(EXCEPTION, node) << "Can not find op for node " << node->ToString() << ".";
     }
 
     MS_EXCEPTION_IF_NULL(it.second);
@@ -2009,7 +2009,7 @@ void DfGraphConvertor::SetGraphInputs(std::vector<Operator> *inputs) {
           input = it_op->second;
           break;
         } else {
-          MS_LOG(EXCEPTION) << "Can not find the operator of node: " << it->fullname_with_scope();
+          MS_LOG_WITH_NODE(EXCEPTION, it) << "Can not find the operator of node: " << it->fullname_with_scope();
         }
       }
     }
@@ -2173,7 +2173,7 @@ void DfGraphConvertor::AddInputInDataSink(vector<Operator> *inputs) {
         input = it_op->second;
         break;
       } else {
-        MS_LOG(EXCEPTION) << "Can not find the operator of node: " << it->fullname_with_scope();
+        MS_LOG_WITH_NODE(EXCEPTION, it) << "Can not find the operator of node: " << it->fullname_with_scope();
       }
     }
   }
@@ -2239,7 +2239,7 @@ void DfGraphConvertor::FillEmptyInputsWithNoInputOp(std::vector<Operator> *input
         (void)inputs->emplace_back(*(cnode_op->second));
         break;
       } else {
-        MS_LOG(EXCEPTION) << "Can not find the operator of node: " << it->fullname_with_scope();
+        MS_LOG_WITH_NODE(EXCEPTION, it) << "Can not find the operator of node: " << it->fullname_with_scope();
       }
     }
   }
@@ -2501,7 +2501,7 @@ void DfGraphConvertor::SetGraphOutputs(bool is_main_graph) {
       } else if (tuple_out_handle_cache_.count(output_node.get()) > 0) {
         handles = *tuple_out_handle_cache_[output_node.get()];
       } else {
-        MS_LOG(EXCEPTION) << "Can not find matched handles for node " << output_node->ToString();
+        MS_LOG_WITH_NODE(EXCEPTION, output_node) << "Can not find matched handles for node " << output_node->ToString();
       }
 
       for (const auto &handle : handles) {
@@ -2615,7 +2615,7 @@ AnfNodePtr DfGraphConvertor::ParseLoadInput(const CNodePtr &cnode) const {
   MS_EXCEPTION_IF_NULL(cnode);
   size_t min_inputs_size = 3;
   if (cnode->size() < min_inputs_size) {
-    MS_LOG(EXCEPTION) << "input size error, " << cnode->ToString();
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "input size error, " << cnode->ToString();
   }
   const size_t para_index = 1;
   return cnode->input(para_index);
@@ -2629,7 +2629,7 @@ void DfGraphConvertor::TransformConstOp(const CNodePtr &node, const AnfNodePtr &
     std::string name = std::static_pointer_cast<Parameter>(pred)->name();
     auto op_itor = op_cache_.find(pred.get());
     if (op_itor == op_cache_.end()) {
-      MS_LOG(EXCEPTION) << "Can not find op for node " << pred->ToString() << ".";
+      MS_LOG_WITH_NODE(EXCEPTION, pred) << "Can not find op for node " << pred->ToString() << ".";
     }
     if (op_itor->second != nullptr &&
         (op_itor->second->GetOpType() == "Constant" || op_itor->second->GetOpType() == "Const") &&
@@ -2829,9 +2829,9 @@ std::vector<OutHandler> DfGraphConvertor::GetInputHandles(const AnfNodePtr &node
     MS_EXCEPTION_IF_NULL(cnode);
     size_t tuplegetitem_idx = common::AnfAlgo::GetTupleGetItemOutIndex(cnode);
     if (tuplegetitem_idx >= handles.size()) {
-      MS_LOG(EXCEPTION) << "Node output index " << tuplegetitem_idx << " is out of range [0," << handles.size()
-                        << "), node: " << node->fullname_with_scope()
-                        << ", input node: " << input->fullname_with_scope();
+      MS_LOG_WITH_NODE(EXCEPTION, input) << "Node output index " << tuplegetitem_idx << " is out of range [0,"
+                                         << handles.size() << "), node: " << node->fullname_with_scope()
+                                         << ", input node: " << input->fullname_with_scope();
     } else {
       return_handles.emplace_back(handles[tuplegetitem_idx]);
       return return_handles;
@@ -2868,7 +2868,7 @@ void DfGraphConvertor::SetDynamicInputHandleByMultiInput(const OpAdapterPtr &adp
 
   auto ret = adpt->setInput(Convert(node), 1, std::make_shared<std::vector<OutHandler>>(handles));
   if (ret != SUCCESS) {
-    MS_LOG(EXCEPTION) << "Set node input handle failed, node:" << node->fullname_with_scope();
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "Set node input handle failed, node:" << node->fullname_with_scope();
   }
 }
 
@@ -2908,14 +2908,15 @@ void DfGraphConvertor::SetMergeInput(const OpAdapterPtr &adpt, const CNodePtr &m
   MS_EXCEPTION_IF_NULL(merge_node);
   auto inputs = merge_node->inputs();
   if (inputs.size() != kMergeInputSize) {
-    MS_LOG(EXCEPTION) << "Merge input size should be " << kMergeInputSize << ", but is " << inputs.size()
-                      << ", node: " << merge_node->fullname_with_scope();
+    MS_LOG_WITH_NODE(EXCEPTION, merge_node) << "Merge input size should be " << kMergeInputSize << ", but is "
+                                            << inputs.size() << ", node: " << merge_node->fullname_with_scope();
   }
   auto make_tuple = inputs[1];
   MS_EXCEPTION_IF_NULL(make_tuple);
   if (!IsPrimitiveCNode(make_tuple, prim::kPrimMakeTuple)) {
-    MS_LOG(EXCEPTION) << "Merge input is not MakeTuple, but is " << make_tuple->fullname_with_scope()
-                      << ", node: " << merge_node->fullname_with_scope();
+    MS_LOG_WITH_NODE(EXCEPTION, merge_node)
+      << "Merge input is not MakeTuple, but is " << make_tuple->fullname_with_scope()
+      << ", node: " << merge_node->fullname_with_scope();
   }
   SetDynamicInputHandleByMultiInput(adpt, merge_node, make_tuple->cast<CNodePtr>());
 }
@@ -3047,9 +3048,9 @@ void DfGraphConvertor::SetDynamicInputBeforeNormalInput(const OpAdapterPtr &adpt
         handles.emplace_back(handle);
       }
       if (handles.size() != 1) {
-        MS_LOG(EXCEPTION) << "Input handles size " << handles.size() << " is not equal to 1, "
-                          << node->fullname_with_scope() << ", input node: " << pred->fullname_with_scope()
-                          << ", index: " << ms_input_idx;
+        MS_LOG_WITH_NODE(EXCEPTION, pred)
+          << "Input handles size " << handles.size() << " is not equal to 1, " << node->fullname_with_scope()
+          << ", input node: " << pred->fullname_with_scope() << ", index: " << ms_input_idx;
       }
       ret = adpt->setInput(src, SizeToInt(ms_input_idx), handles[0]);
     }
@@ -3171,9 +3172,9 @@ void DfGraphConvertor::SetOpInput(const OpAdapterPtr &adpt, const CNodePtr &node
         handles.emplace_back(handle);
       }
       if (handles.size() != 1) {
-        MS_LOG(EXCEPTION) << "Input handles size " << handles.size() << " is not equal to 1, "
-                          << node->fullname_with_scope() << ", input node: " << pred->fullname_with_scope()
-                          << ", index: " << real_input_idx;
+        MS_LOG_WITH_NODE(EXCEPTION, pred)
+          << "Input handles size " << handles.size() << " is not equal to 1, " << node->fullname_with_scope()
+          << ", input node: " << pred->fullname_with_scope() << ", index: " << real_input_idx;
       }
       ret = adpt->setInput(src, SizeToInt(real_input_idx), handles[0]);
       input_idx += 1;
@@ -3701,8 +3702,9 @@ void DfGraphConvertor::ConvertTopK(const CNodePtr &node) {
     // input is not const valuenode, cannot convert to int32, throw exception when input k is int64 since cann
     // has precision problem, can be deleted after cann support int64 for input k
     if (common::AnfAlgo::GetPrevNodeOutputInferDataType(node, kIndex1) == kNumberTypeInt64) {
-      MS_LOG(EXCEPTION) << "Op TopK(" << node->fullname_with_scope() << ")'s second input k is an int64 mutable "
-                        << "tensor/scalar, which is not supported in ascend, please use int32.";
+      MS_LOG_WITH_NODE(EXCEPTION, node) << "Op TopK(" << node->fullname_with_scope()
+                                        << ")'s second input k is an int64 mutable "
+                                        << "tensor/scalar, which is not supported in ascend, please use int32.";
     }
     return;
   }
@@ -3827,8 +3829,8 @@ void DfGraphConvertor::TransAttrDataType(const CNodePtr &node, const std::string
     std::string attr_name = item.first;
     TypeId dst_type = item.second;
     if (!prim->HasAttr(attr_name)) {
-      MS_LOG(EXCEPTION) << "Please check kTransAttrDTypeMap, node:" << node->DebugString()
-                        << " has no attr:" << attr_name;
+      MS_LOG_WITH_NODE(EXCEPTION, node) << "Please check kTransAttrDTypeMap, node:" << node->DebugString()
+                                        << " has no attr:" << attr_name;
     }
     auto attr_value = prim->GetAttr(attr_name);
     auto new_attr_value = CastDstValue(attr_value, dst_type);
@@ -4271,7 +4273,8 @@ void DfGraphConvertor::SetNodeAbstract(const CNodePtr &node) const {
   if (IsPrimitiveCNode(node, prim::kPrimReturn) || IsPrimitiveCNode(node, prim::kPrimDepend)) {
     auto inputs = node->inputs();
     if (inputs.size() < kInputSize2) {
-      MS_LOG(EXCEPTION) << "node input size " << inputs.size() << " less than 2, node: " << node->fullname_with_scope();
+      MS_LOG_WITH_NODE(EXCEPTION, node) << "node input size " << inputs.size()
+                                        << " less than 2, node: " << node->fullname_with_scope();
     }
     auto input = inputs[1];
     MS_EXCEPTION_IF_NULL(input);
@@ -4591,7 +4594,7 @@ std::map<int, std::string> GeOpConvertor::GetAclInputNames(const AnfNodePtr &nod
   MS_EXCEPTION_IF_NULL(node);
   OpAdapterPtr adapterPtr = FindAdapter(node, true);
   if (adapterPtr == nullptr) {
-    MS_LOG(EXCEPTION) << "Can't find a adapter for op:" << node->DebugString();
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "Can't find a adapter for op:" << node->DebugString();
   }
 
   std::map<int, std::string> input_names;
@@ -4609,7 +4612,7 @@ std::map<int, std::string> GeOpConvertor::GetAclOutputNames(const AnfNodePtr &no
   MS_EXCEPTION_IF_NULL(node);
   OpAdapterPtr adapterPtr = FindAdapter(node, true);
   if (adapterPtr == nullptr) {
-    MS_LOG(EXCEPTION) << "Can't find a adapter for op:" << node->DebugString();
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "Can't find a adapter for op:" << node->DebugString();
   }
 
   std::map<int, std::string> output_names;
@@ -4628,7 +4631,7 @@ std::map<int, std::string> GeOpConvertor::GetAclDynamicInputNames(const AnfNodeP
   MS_EXCEPTION_IF_NULL(node);
   OpAdapterPtr adapterPtr = FindAdapter(node, true);
   if (adapterPtr == nullptr) {
-    MS_LOG(EXCEPTION) << "Can't find a adapter for op:" << node->DebugString();
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "Can't find a adapter for op:" << node->DebugString();
   }
   std::map<int, std::string> dyn_input_names;
   for (const auto &[k, v] : adapterPtr->getDynInputMap()) {
@@ -4641,7 +4644,7 @@ std::map<int, std::string> GeOpConvertor::GetAclDynamicOutputNames(const AnfNode
   MS_EXCEPTION_IF_NULL(node);
   OpAdapterPtr adapterPtr = FindAdapter(node, true);
   if (adapterPtr == nullptr) {
-    MS_LOG(EXCEPTION) << "Can't find a adapter for op:" << node->DebugString();
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "Can't find a adapter for op:" << node->DebugString();
   }
   std::map<int, std::string> dyn_output_names;
   for (const auto &[k, v] : adapterPtr->getDynOutputMap()) {

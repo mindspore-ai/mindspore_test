@@ -153,8 +153,8 @@ CNodePtr AllToAllUnifyMindIR::CreateSplitNodeWithSplitDim(const KernelGraphPtr &
   int64_t split_dim = common::AnfAlgo::GetNodeAttr<int64_t>(all_to_all, kAttrSplitDim);
 
   if (all_to_all->size() <= kAllToAllInputIdx) {
-    MS_LOG(EXCEPTION) << "Inputs should not be empty for cnode " << all_to_all->DebugString()
-                      << trace::DumpSourceLines(all_to_all);
+    MS_LOG_WITH_NODE(EXCEPTION, all_to_all)
+      << "Inputs should not be empty for cnode " << all_to_all->DebugString() << trace::DumpSourceLines(all_to_all);
   }
   auto all_to_all_input = all_to_all->input(kAllToAllInputIdx);
   return CreateSplitNode(graph, all_to_all, all_to_all_input, split_count, split_dim);

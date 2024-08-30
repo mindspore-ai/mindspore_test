@@ -695,7 +695,8 @@ void ProcessCloseFollowing(const FuncGraphPtr &graph, const AnfNodePtr &cut_node
   }
   auto &node_user = manager->node_users();
   if (node_user[cut_node].size() != 1) {
-    MS_LOG(EXCEPTION) << "Error Node without output: " << cut_node->fullname_with_scope() << ", node user must be 1";
+    MS_LOG_WITH_NODE(EXCEPTION, cut_node)
+      << "Error Node without output: " << cut_node->fullname_with_scope() << ", node user must be 1";
   }
 
   std::vector<AnfNodePtr> follow_set;

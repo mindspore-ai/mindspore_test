@@ -156,7 +156,7 @@ const AnfNodePtr AddNoOpToESGrad::Process(const FuncGraphPtr &func_graph, const 
   CNodePtr cnode = node->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(cnode);
   if (InsertNoOpForOutput(func_graph, node) == nullptr) {
-    MS_LOG(EXCEPTION) << "Insert NoOp for node: " << node->fullname_with_scope() << " failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "Insert NoOp for node: " << node->fullname_with_scope() << " failed.";
   }
   return node;
 }

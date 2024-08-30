@@ -376,9 +376,9 @@ CNodePtr CreateAllToAllvNode(const FuncGraphPtr &graph, const CNodePtr &neighbor
     if (split_nodes[i] != nullptr) {
       CreateMultipleOutputsOfAnfNode(graph, split_nodes[i], static_cast<size_t>(split_num[i]), &output);
       if (output.empty()) {
-        MS_LOG(EXCEPTION) << "The node " << split_nodes[i]->DebugString()
-                          << " should have at least one output, but got 0. trace: "
-                          << trace::DumpSourceLines(split_nodes[i]);
+        MS_LOG_WITH_NODE(EXCEPTION, split_nodes[i])
+          << "The node " << split_nodes[i]->DebugString()
+          << " should have at least one output, but got 0. trace: " << trace::DumpSourceLines(split_nodes[i]);
       }
     }
     (void)split_outputs.emplace_back(output);
@@ -473,9 +473,9 @@ std::vector<CNodePtr> NeighborExchangeV2Fusion::CreateSplitNodes(const FuncGraph
     common::AnfAlgo::GetNodeAttr<std::vector<int64_t>>(neighbor_exchange_v2, kAttrSendLens);
 
   if (neighbor_exchange_v2->size() <= kNeighborExchangeV2InputIdx) {
-    MS_LOG(EXCEPTION) << "Invalid cnode " << neighbor_exchange_v2->DebugString() << " input size "
-                      << neighbor_exchange_v2->size() << ", should be " << kNeighborExchangeV2InputIdx
-                      << trace::DumpSourceLines(neighbor_exchange_v2);
+    MS_LOG_WITH_NODE(EXCEPTION, neighbor_exchange_v2)
+      << "Invalid cnode " << neighbor_exchange_v2->DebugString() << " input size " << neighbor_exchange_v2->size()
+      << ", should be " << kNeighborExchangeV2InputIdx << trace::DumpSourceLines(neighbor_exchange_v2);
   }
   std::vector<CNodePtr> split_nodes = {};
 
@@ -492,8 +492,9 @@ std::vector<CNodePtr> NeighborExchangeV2Fusion::CreateSplitNodes(const FuncGraph
   splitv_node_info.dtype = dtype;
   splitv_node_info.base_shape = shape;
   if (SizeToLong(splitv_node_info.base_shape.size()) != kShapeSize) {  // only support NCHW now
-    MS_LOG(EXCEPTION) << "Invalid shape size " << splitv_node_info.base_shape.size() << ", only support NCHW input now!"
-                      << trace::DumpSourceLines(neighbor_exchange_v2);
+    MS_LOG_WITH_NODE(EXCEPTION, neighbor_exchange_v2)
+      << "Invalid shape size " << splitv_node_info.base_shape.size() << ", only support NCHW input now!"
+      << trace::DumpSourceLines(neighbor_exchange_v2);
   }
   CNodePtr split_v_top_bottom = nullptr;
   if (splitv_node_info.is_first || splitv_node_info.is_last) {
@@ -521,8 +522,9 @@ std::vector<CNodePtr> NeighborExchangeV2Fusion::CreateSplitNodes(const FuncGraph
     CreateMultipleOutputsOfAnfNode(graph, split_nodes[0], static_cast<size_t>((*split_num)[0]),
                                    &split_outputs_top_bottom);
     if (split_outputs_top_bottom.empty()) {
-      MS_LOG(EXCEPTION) << "The node " << split_nodes[0]->DebugString() << " should have at least one output, but got 0"
-                        << trace::DumpSourceLines(split_nodes[0]);
+      MS_LOG_WITH_NODE(EXCEPTION, split_nodes[0])
+        << "The node " << split_nodes[0]->DebugString() << " should have at least one output, but got 0"
+        << trace::DumpSourceLines(split_nodes[0]);
     }
 
     // for top corner
@@ -707,8 +709,9 @@ CNodePtr NeighborExchangeV2Fusion::CreateConcatNodes(const FuncGraphPtr &graph, 
   CreateMultipleOutputsOfAnfNode(graph, all_to_all_v, static_cast<size_t>(all_to_all_output_num),
                                  &all_to_all_v_outputs);
   if (all_to_all_v_outputs.empty()) {
-    MS_LOG(EXCEPTION) << "The node " << all_to_all_v->DebugString() << " should have at least one output, but got 0."
-                      << trace::DumpSourceLines(all_to_all_v);
+    MS_LOG_WITH_NODE(EXCEPTION, all_to_all_v)
+      << "The node " << all_to_all_v->DebugString() << " should have at least one output, but got 0."
+      << trace::DumpSourceLines(all_to_all_v);
   }
 
   if (recv_rank_ids[kRankIdZero] == kInvalidId && recv_rank_ids[kRankIdFour] == kInvalidId) {
@@ -742,8 +745,9 @@ CNodePtr NeighborExchangeV2Fusion::CreateConcatNodes(const FuncGraphPtr &graph, 
     std::vector<AnfNodePtr> concat_left_outputs;
     CreateMultipleOutputsOfAnfNode(graph, concat_left, 1, &concat_left_outputs);
     if (concat_left_outputs.empty()) {
-      MS_LOG(EXCEPTION) << "The node " << concat_left->DebugString() << " should have at least one output, but got 0."
-                        << trace::DumpSourceLines(concat_left);
+      MS_LOG_WITH_NODE(EXCEPTION, concat_left)
+        << "The node " << concat_left->DebugString() << " should have at least one output, but got 0."
+        << trace::DumpSourceLines(concat_left);
     }
     (void)concat_input_all.insert(concat_input_all.end(), concat_left_outputs.begin(), concat_left_outputs.end());
     ++input_nums_all;
@@ -754,8 +758,9 @@ CNodePtr NeighborExchangeV2Fusion::CreateConcatNodes(const FuncGraphPtr &graph, 
   std::vector<AnfNodePtr> concat_middle_outputs;
   CreateMultipleOutputsOfAnfNode(graph, concat_middle, 1, &concat_middle_outputs);
   if (concat_middle_outputs.empty()) {
-    MS_LOG(EXCEPTION) << "The node " << concat_middle->DebugString() << " should have at least one output, but got 0."
-                      << trace::DumpSourceLines(concat_middle);
+    MS_LOG_WITH_NODE(EXCEPTION, concat_middle)
+      << "The node " << concat_middle->DebugString() << " should have at least one output, but got 0."
+      << trace::DumpSourceLines(concat_middle);
   }
   (void)concat_input_all.insert(concat_input_all.end(), concat_middle_outputs.begin(), concat_middle_outputs.end());
   ++input_nums_all;
@@ -767,8 +772,9 @@ CNodePtr NeighborExchangeV2Fusion::CreateConcatNodes(const FuncGraphPtr &graph, 
     std::vector<AnfNodePtr> concat_right_outputs;
     CreateMultipleOutputsOfAnfNode(graph, concat_right, 1, &concat_right_outputs);
     if (concat_right_outputs.empty()) {
-      MS_LOG(EXCEPTION) << "The node " << concat_right->DebugString() << " should have at least one output, but got 0."
-                        << trace::DumpSourceLines(concat_right);
+      MS_LOG_WITH_NODE(EXCEPTION, concat_right)
+        << "The node " << concat_right->DebugString() << " should have at least one output, but got 0."
+        << trace::DumpSourceLines(concat_right);
     }
     (void)concat_input_all.insert(concat_input_all.end(), concat_right_outputs.begin(), concat_right_outputs.end());
     ++input_nums_all;
@@ -794,17 +800,19 @@ std::vector<CNodePtr> NeighborExchangeV2GradFusion::CreateSplitNodesForGrad(cons
     common::AnfAlgo::GetNodeAttr<std::vector<int64_t>>(neighbor_exchange_v2_grad, kAttrSendLens);
 
   if (neighbor_exchange_v2_grad->size() <= kNeighborExchangeV2InputIdx) {
-    MS_LOG(EXCEPTION) << "Invalid cnode " << neighbor_exchange_v2_grad->DebugString() << " input size "
-                      << neighbor_exchange_v2_grad->size() << ", should be " << kNeighborExchangeV2InputIdx
-                      << trace::DumpSourceLines(neighbor_exchange_v2_grad);
+    MS_LOG_WITH_NODE(EXCEPTION, neighbor_exchange_v2_grad)
+      << "Invalid cnode " << neighbor_exchange_v2_grad->DebugString() << " input size "
+      << neighbor_exchange_v2_grad->size() << ", should be " << kNeighborExchangeV2InputIdx
+      << trace::DumpSourceLines(neighbor_exchange_v2_grad);
   }
 
   auto neighbor_exchange_v2_grad_input = neighbor_exchange_v2_grad->input(kNeighborExchangeV2InputIdx);
   auto dtype = common::AnfAlgo::GetOutputInferDataType(neighbor_exchange_v2_grad_input, 0);
   auto shape = common::AnfAlgo::GetOutputInferShape(neighbor_exchange_v2_grad_input, 0);
   if (SizeToLong(shape.size()) != kShapeSize) {
-    MS_LOG(EXCEPTION) << "Invalid shape size " << shape.size() << ", only support NCHW input now!"
-                      << trace::DumpSourceLines(neighbor_exchange_v2_grad);
+    MS_LOG_WITH_NODE(EXCEPTION, neighbor_exchange_v2_grad)
+      << "Invalid shape size " << shape.size() << ", only support NCHW input now!"
+      << trace::DumpSourceLines(neighbor_exchange_v2_grad);
   }
 
   std::vector<CNodePtr> split_nodes = {};
@@ -833,8 +841,9 @@ std::vector<CNodePtr> NeighborExchangeV2GradFusion::CreateSplitNodesForGrad(cons
     CreateMultipleOutputsOfAnfNode(graph, split_nodes[0], static_cast<size_t>(splitv_h_node_info.num_split),
                                    &split_outputs_top_bottom);
     if (split_outputs_top_bottom.empty()) {
-      MS_LOG(EXCEPTION) << "The node " << split_nodes[0]->DebugString()
-                        << " should have at least one output, but got 0." << trace::DumpSourceLines(split_nodes[0]);
+      MS_LOG_WITH_NODE(EXCEPTION, split_nodes[0])
+        << "The node " << split_nodes[0]->DebugString() << " should have at least one output, but got 0."
+        << trace::DumpSourceLines(split_nodes[0]);
     }
     size_split_h = common::AnfAlgo::GetNodeAttr<std::vector<int64_t>>(split_nodes[0], kAttrSizeSplits);
   } else {
@@ -979,8 +988,8 @@ CNodePtr NeighborExchangeV2GradFusion::CreateSplitGradNodes(const FuncGraphPtr &
     std::vector<AnfNodePtr> pad_outputs;
     CreateMultipleOutputsOfAnfNode(graph, pad, 1, &pad_outputs);
     if (pad_outputs.empty()) {
-      MS_LOG(EXCEPTION) << "The node " << pad->DebugString() << " should have at least one output, but got 0."
-                        << trace::DumpSourceLines(pad);
+      MS_LOG_WITH_NODE(EXCEPTION, pad) << "The node " << pad->DebugString()
+                                       << " should have at least one output, but got 0." << trace::DumpSourceLines(pad);
     }
     (void)addn_inputs.insert(addn_inputs.end(), pad_outputs.begin(), pad_outputs.end());
     ++pad_num;

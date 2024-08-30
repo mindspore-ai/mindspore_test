@@ -49,8 +49,9 @@ void MemReuseChecker::CheckOutRef(const KernelRefs &kernel_refs, const CNodePtr 
   auto iter = kernel_refs.find(key);
   auto node_name = common::AnfAlgo::GetCNodeName(c_node);
   if (iter == kernel_refs.end()) {
-    MS_LOG(EXCEPTION) << "kernel [" << node_name << "] has no output tensor, node: " << c_node->DebugString()
-                      << " output index: " << output_idx;
+    MS_LOG_WITH_NODE(EXCEPTION, c_node) << "kernel [" << node_name
+                                        << "] has no output tensor, node: " << c_node->DebugString()
+                                        << " output index: " << output_idx;
   }
   if (output_idx >= iter->second.size()) {
     MS_LOG(INFO) << "invalid cnode: " << c_node->fullname_with_scope().c_str();
@@ -402,9 +403,9 @@ void MemReuseChecker::CheckNormalIR(const session::KernelGraph *graph) {
     size_t input_num = common::AnfAlgo::GetInputTensorNum(node);
     for (size_t i = 0; i < input_num; ++i) {
       if (i + 1 >= node->size()) {
-        MS_LOG(EXCEPTION) << "Input index: " << i
-                          << " is larger than input number: " << common::AnfAlgo::GetInputTensorNum(node)
-                          << trace::DumpSourceLines(node);
+        MS_LOG_WITH_NODE(EXCEPTION, node)
+          << "Input index: " << i << " is larger than input number: " << common::AnfAlgo::GetInputTensorNum(node)
+          << trace::DumpSourceLines(node);
       }
       auto real_input_index = AnfAlgo::GetInputGraphIdxByKernelIdx(node, i);
       auto input = node->input(real_input_index + 1);

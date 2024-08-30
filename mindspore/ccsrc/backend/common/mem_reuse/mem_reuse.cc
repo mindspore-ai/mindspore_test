@@ -263,8 +263,8 @@ KernelRefCountPtr MemReuseUtil::GetRef(const AnfNodePtr &node, size_t output_idx
 KernelRefCountPtr MemReuseUtil::GetKernelInputRef(const CNodePtr &kernel, size_t input_idx) {
   MS_EXCEPTION_IF_NULL(kernel);
   if (input_idx >= common::AnfAlgo::GetInputTensorNum(kernel)) {
-    MS_LOG(EXCEPTION) << "Input index " << input_idx << " is larger than input number "
-                      << common::AnfAlgo::GetInputTensorNum(kernel);
+    MS_LOG_WITH_NODE(EXCEPTION, kernel) << "Input index " << input_idx << " is larger than input number "
+                                        << common::AnfAlgo::GetInputTensorNum(kernel);
   }
   auto input_node = kernel->input(input_idx + 1);
   // Graph may be all nop nodes and not remove nop node, so this can not skip nop node.
@@ -485,7 +485,8 @@ uint8_t *MemReuseUtil::GetNodeOutputPtr(const AnfNodePtr &node, size_t index) co
     auto output_ref = iter->second[index];
     ptr = mem_base_ + output_ref->offset_;
   } else {
-    MS_LOG(EXCEPTION) << "node [" << common::AnfAlgo::GetCNodeName(node) << "] don't exist in kernel_output_refs";
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "node [" << common::AnfAlgo::GetCNodeName(node)
+                                      << "] don't exist in kernel_output_refs";
   }
   return ptr;
 }

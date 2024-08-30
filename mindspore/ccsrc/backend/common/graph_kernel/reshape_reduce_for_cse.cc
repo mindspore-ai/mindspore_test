@@ -150,9 +150,10 @@ bool ReshapeReduceForCSE::Run(const FuncGraphPtr &graph) {
         size_t output_num = AnfAlgo::GetOutputTensorNum(node);
         size_t target_output_num = AnfAlgo::GetOutputTensorNum(target);
         if (output_num != target_output_num) {
-          MS_LOG(EXCEPTION) << "Node " << node->fullname_with_scope() << " and node " << target->fullname_with_scope()
-                            << " can not CSE, because their output num is different: " << output_num << " vs "
-                            << target_output_num << ".";
+          MS_LOG_WITH_NODE(EXCEPTION, node)
+            << "Node " << node->fullname_with_scope() << " and node " << target->fullname_with_scope()
+            << " can not CSE, because their output num is different: " << output_num << " vs " << target_output_num
+            << ".";
         }
 
         std::vector<ShapeVector> origin_output_shapes;

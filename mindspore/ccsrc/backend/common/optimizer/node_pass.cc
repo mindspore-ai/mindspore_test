@@ -91,12 +91,12 @@ void ModifyOutputAndCallerToMap(const CNodePtr &cnode, const FuncGraphPtr &fg,
       } else if (IsPrimitive(partial_inputs.at(0), prim::kPrimPartialInline)) {
         switch_subgraph = common::AnfAlgo::GetNodeAttr<KernelGraphPtr>(partial_node, kAttrKernelGraph);
       } else {
-        MS_LOG(EXCEPTION) << "Invalid switch node: " << cnode->DebugString();
+        MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Invalid switch node: " << cnode->DebugString();
       }
     } else if (node->isa<ValueNode>()) {
       switch_subgraph = GetValueNode<FuncGraphPtr>(node);
     } else {
-      MS_LOG(EXCEPTION) << "Get unknown cnode: " << cnode->DebugString();
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Get unknown cnode: " << cnode->DebugString();
     }
     MS_EXCEPTION_IF_NULL(switch_subgraph);
     if (is_add) {
@@ -129,7 +129,7 @@ void UpdateSubGraphCaller(const AnfNodePtr &origin_output, const FuncGraphPtr &f
     for (auto &call_node : call_node_list) {
       auto fg_iter = node_to_fg.find(call_node);
       if (fg_iter == node_to_fg.end()) {
-        MS_LOG(EXCEPTION) << "Node to Funcgraph find failed: " << call_node->fullname_with_scope();
+        MS_LOG_WITH_NODE(EXCEPTION, call_node) << "Node to Funcgraph find failed: " << call_node->fullname_with_scope();
       }
       auto call_node_fg = fg_iter->second.lock();
       UpdateCallerAbstract(call_node, call_node_fg, fg);
@@ -229,13 +229,13 @@ bool NodePass::ProcessFastPassNode(const AnfNodePtr &node, const FuncGraphPtr &f
   MS_EXCEPTION_IF_NULL(manager);
   auto iter = func_graph_index->node_to_fg_.find(node);
   if (iter == func_graph_index->node_to_fg_.end()) {
-    MS_LOG(EXCEPTION) << "Node to Funcgraph map can't find node: " << node->fullname_with_scope();
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "Node to Funcgraph map can't find node: " << node->fullname_with_scope();
   }
   auto fg = iter->second.lock();
   TraceGuard guard(std::make_shared<TraceOpt>(node->debug_info()));
   auto degree_iter = func_graph_index->node_degree_.find(node);
   if (degree_iter == func_graph_index->node_degree_.end()) {
-    MS_LOG(EXCEPTION) << "Node degree map can't find node: " << node->fullname_with_scope();
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "Node degree map can't find node: " << node->fullname_with_scope();
   }
   auto degree = degree_iter->second;
   if (degree == 0 && node != func_graph->output()) {

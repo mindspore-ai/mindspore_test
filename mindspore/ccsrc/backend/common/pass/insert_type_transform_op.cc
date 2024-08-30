@@ -668,7 +668,7 @@ AnfNodePtrList InsertTypeTransformOp::ProcessTupleUnfoldToTensor(const FuncGraph
     auto seq_abs = input->abstract();
     MS_EXCEPTION_IF_NULL(seq_abs);
     if (!seq_abs->isa<abstract::AbstractSequence>()) {
-      MS_LOG(EXCEPTION) << "Input " << input->DebugString() << " is not tuple output";
+      MS_LOG_WITH_NODE(EXCEPTION, input) << "Input " << input->DebugString() << " is not tuple output";
     }
     data_type = seq_abs->cast<abstract::AbstractSequencePtr>()->ElementsType()[kIndex0]->type_id();
     MS_LOG(DEBUG) << "Input " << input->DebugString() << " real data type is " << data_type;
@@ -709,8 +709,8 @@ AnfNodePtrList InsertTypeTransformOp::ProcessTupleToTupleUnfold(const FuncGraphP
     if (build_info->op_type() == kernel::OpType::SKIP) {
       return ProcessTupleToTupleUnfoldForSkipOp(func_graph, input, node, new_prim);
     }
-    MS_LOG(EXCEPTION) << "Tuple to TupleUnfold pattern should have TupleGetItem as user node, but got "
-                      << node->fullname_with_scope() << ", " << node->DebugString();
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "Tuple to TupleUnfold pattern should have TupleGetItem as user node, but got "
+                                      << node->fullname_with_scope() << ", " << node->DebugString();
   }
   return ProcessTupleToTupleUnfoldForTupleGetItem(func_graph, input, node, new_prim);
 }
@@ -786,8 +786,8 @@ AnfNodePtrList InsertTypeTransformOp::ProcessTupleToTupleUnfoldForTupleGetItem(c
 
   // For TupleGetItem node, the second input value node's kernel info must be in case of nullptr.
   if (common::AnfAlgo::GetInputTensorNum(node) != kSizeTwo) {
-    MS_LOG(EXCEPTION) << "Input number of TupleGetItem node " << node->DebugString() << " should be 2. But got "
-                      << common::AnfAlgo::GetInputTensorNum(node);
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "Input number of TupleGetItem node " << node->DebugString()
+                                      << " should be 2. But got " << common::AnfAlgo::GetInputTensorNum(node);
   }
   auto index_input = node->input(kIndex2);
   MS_EXCEPTION_IF_NULL(index_input);
@@ -825,8 +825,9 @@ AnfNodePtrList InsertTypeTransformOp::ProcessTupleToTensor(const FuncGraphPtr &f
   }
 
   if (IsNewKernel(node) && IsNewKernel(input)) {
-    MS_LOG(EXCEPTION) << "Insert TupleToTensor op for input:" << input->fullname_with_scope()
-                      << " of node:" << node->fullname_with_scope() << " in graph:" << func_graph->ToString();
+    MS_LOG_WITH_NODE(EXCEPTION, input) << "Insert TupleToTensor op for input:" << input->fullname_with_scope()
+                                       << " of node:" << node->fullname_with_scope()
+                                       << " in graph:" << func_graph->ToString();
   }
 
   // Data type of the tensor should be set as an attr of TupleToTensor op.
@@ -842,7 +843,7 @@ AnfNodePtrList InsertTypeTransformOp::ProcessTupleToTensor(const FuncGraphPtr &f
     auto seq_abs = input->abstract();
     MS_EXCEPTION_IF_NULL(seq_abs);
     if (!seq_abs->isa<abstract::AbstractSequence>()) {
-      MS_LOG(EXCEPTION) << "Input " << input->DebugString() << " is not tuple output";
+      MS_LOG_WITH_NODE(EXCEPTION, input) << "Input " << input->DebugString() << " is not tuple output";
     }
     data_type = seq_abs->cast<abstract::AbstractSequencePtr>()->ElementsType()[kIndex0]->type_id();
     MS_LOG(DEBUG) << "Input " << input->DebugString() << " real data type is " << data_type;

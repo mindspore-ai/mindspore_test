@@ -107,7 +107,8 @@ const AnfNodePtr AddRmsNormQuantFusion::Process(const FuncGraphPtr &graph, const
   std::vector<BaseShapePtr> quant_result_shapes;
   size_t output_num = AnfAlgo::GetOutputElementNum(node);
   if (output_num != 1) {
-    MS_LOG(EXCEPTION) << node->cast<CNodePtr>()->fullname_with_scope() << " output_num " << output_num << " != 1.";
+    MS_LOG_WITH_NODE(EXCEPTION, node) << node->cast<CNodePtr>()->fullname_with_scope() << " output_num " << output_num
+                                      << " != 1.";
   }
   auto tensor_quant_type = common::AnfAlgo::GetOutputInferDataType(node, 0);
   auto tensor_quant_shape = AnfAlgo::GetOutputDetailShape(node, 0);
