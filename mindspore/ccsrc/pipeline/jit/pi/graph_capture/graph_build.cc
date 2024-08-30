@@ -4645,11 +4645,11 @@ AbstractWrapperPtr MindGraphBuilder::HandleMultiOp(const Instr &instr, const std
   int oparg = instr.arg();
   std::string op_name;
   if (is_compare) {
-    op_name = pijit::GraphUtils::OpCompareArgToGraphName(oparg);
+    op_name = GraphUtils::OpCompareArgToGraphName(oparg);
   } else if (opcode == CONTAINS_OP) {
-    op_name = pijit::GraphUtils::ContainsOpToGraphName(oparg);
+    op_name = GraphUtils::ContainsOpToGraphName(oparg);
   } else {
-    op_name = pijit::GraphUtils::OpCodeToGraphName(opcode);
+    op_name = GraphUtils::OpCodeToGraphName(opcode);
   }
   MS_LOG(DEBUG) << "operation name is " << op_name;
   if (op_name == "") {
@@ -4665,7 +4665,11 @@ AbstractWrapperPtr MindGraphBuilder::HandleBuildOp(const Instr &instr, const std
   AbstractWrapperPtrList inputs_wrapper = HandleInputArgs(p);
   auto primitive = pijit::GraphUtils::GetPrimitive(opcode);
   if (primitive == nullptr) {
+    MS_LOG(INFO) << "Can not find primitive for " << instr.ToString();
     return nullptr;
+  }
+  if (primitive == prim::kPrimStringConcat) {
+    return HandleBuildStringOp(primitive, inputs_wrapper);
   }
   if (primitive == prim::kPrimMakeDict) {
     if (opcode == BUILD_CONST_KEY_MAP) {
@@ -4700,6 +4704,24 @@ AbstractWrapperPtr MindGraphBuilder::HandleBuildOp(const Instr &instr, const std
   }
   auto wrapper = fg_builder_->AddNode(primitive, inputs_wrapper);
   return wrapper;
+}
+
+AbstractWrapperPtr MindGraphBuilder::HandleBuildStringOp(const PrimitivePtr &primitive,
+                                                         const AbstractWrapperPtrList &inputs_wrapper) {
+  // The string_concat primitive only supports concatenating two strings.
+  // Thus, if we want to concatenate multiple strings, we need to call this primitive multiple times.
+  MS_LOG(DEBUG) << "Handle BUILD_STRING op, concat " << inputs_wrapper.size() << " strings";
+  AbstractWrapperPtr result_str = inputs_wrapper[0];
+  for (size_t i = 1; i < inputs_wrapper.size(); ++i) {
+    const AbstractWrapperPtr &concated_str = fg_builder_->AddNode(primitive, {result_str, inputs_wrapper[i]});
+    if (concated_str == nullptr || concated_str->abstract() == nullptr) {
+      MS_LOG(INFO) << "Failed to do string concat. Left string: " << result_str->ToString()
+                   << ". Right string is inputs[" << i << "]: " << inputs_wrapper[i]->ToString();
+      return nullptr;
+    }
+    result_str = concated_str;
+  }
+  return result_str;
 }
 
 bool MindGraphBuilder::DoGetItem(const Instr &instr) {
