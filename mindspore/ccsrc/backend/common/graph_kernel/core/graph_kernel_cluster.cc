@@ -17,6 +17,7 @@
 
 #include <algorithm>
 #include <utility>
+#include <queue>
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/nn_optimizer_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"
@@ -57,7 +58,7 @@ void Graph::Cluster::Merge(Cluster *other_cluster) {
   other_cluster->Clean();
 }
 
-GraphPtr Graph::Build(const FuncGraphPtr &func_graph, AnfNodePtrList *nodes,
+GraphPtr Graph::Build(const FuncGraphPtr &func_graph, bool aggressive_cut, AnfNodePtrList *nodes,
                       HashMap<AnfNodePtr, size_t> *node_idx_map) {
   MS_EXCEPTION_IF_NULL(func_graph);
   auto cnodes = TopoSort(func_graph->output(), SuccIncoming,
@@ -66,7 +67,7 @@ GraphPtr Graph::Build(const FuncGraphPtr &func_graph, AnfNodePtrList *nodes,
   for (size_t i = 0; i < cnodes.size(); i++) {
     tmp_node_idx_map[cnodes[i]] = i;
   }
-  auto graph_ptr = std::make_shared<Graph>(cnodes, tmp_node_idx_map);
+  auto graph_ptr = std::make_shared<Graph>(cnodes, tmp_node_idx_map, aggressive_cut);
   if (nodes != nullptr) {
     *nodes = std::move(cnodes);
   }
@@ -76,10 +77,13 @@ GraphPtr Graph::Build(const FuncGraphPtr &func_graph, AnfNodePtrList *nodes,
   return graph_ptr;
 }
 
-Graph::Graph(const AnfNodePtrList &nodes, const HashMap<AnfNodePtr, size_t> &node_idx_map) {
+Graph::Graph(const AnfNodePtrList &nodes, const HashMap<AnfNodePtr, size_t> &node_idx_map, bool aggressive_cut) {
   clusters_.reserve(nodes.size());
   for (size_t i = 0; i < nodes.size(); i++) {
     (void)clusters_.emplace_back(i, nodes[i], node_idx_map);
+  }
+  if (!aggressive_cut) {
+    bitmax_ = std::make_shared<BitMax>(nodes.size());
   }
 }
 
@@ -95,6 +99,9 @@ void Graph::Merge(const std::vector<size_t> &candidates) {
       continue;
     }
     clusters_[min_id].Merge(&clusters_[id]);
+  }
+  if (bitmax_ != nullptr) {
+    bitmax_->SetMax(min_id, clusters_[min_id].max_id_);
   }
 }
 
@@ -146,6 +153,39 @@ void Graph::DepthFirstSearch(size_t cluster_id, const VisitFunc &visitor) {
   }
 }
 
+bool Graph::HasCircle() {
+  std::vector<size_t> valid_clusters;
+  for (size_t i = 0; i < clusters_.size(); i++) {
+    if (clusters_[i].cluster_id_ == i) {
+      valid_clusters.emplace_back(i);
+    }
+  }
+  size_t count = 0;
+  std::vector<int> out_degree(clusters_.size(), 0);
+  std::queue<size_t> que;
+  for (auto &cluster_id : valid_clusters) {
+    for (size_t i : GetInputs(cluster_id)) {
+      out_degree[i]++;
+    }
+  }
+  for (auto &cluster_id : valid_clusters) {
+    if (out_degree[cluster_id] == 0) {
+      que.push(cluster_id);
+    }
+  }
+  while (!que.empty()) {
+    size_t u = que.front();
+    que.pop();
+    count++;
+    for (size_t i : GetInputs(u)) {
+      if (--out_degree[i] == 0) {
+        que.push(i);
+      }
+    }
+  }
+  return count != valid_clusters.size();
+}
+
 void CircleChecker::RemoveCircle(std::vector<size_t> *candidates) {
   if (candidates->size() <= 1) {
     return;
@@ -188,9 +228,11 @@ bool CircleChecker::CheckCircle(size_t basenode) {
     }
     bool has_circle = false;
     std::set<size_t> done;
-    auto min = *candidates_.begin();
-    auto vis_func = [this, &has_circle, &done, &visited_circle_nodes, &min](size_t cluster_id) {
-      if (graph_->GetMaxId(cluster_id) < min) {
+    auto candidate_min = *candidates_.begin();
+    auto vis_func = [this, &has_circle, &done, &visited_circle_nodes, &candidate_min](size_t cluster_id) {
+      // for all clusters before this cluster_id, if the possible max clusterid is less then the candidates' min id,
+      // that means it's impossible to reach the candidates from the cluster_id, so we can stop searching from here.
+      if (graph_->GetMaxIdWithCutStrategy(cluster_id) < candidate_min) {
         return EXCLUDE;
       }
       if (done.count(cluster_id) > 0 || acyclic_nodes_.count(cluster_id) > 0 ||
@@ -250,8 +292,9 @@ std::vector<size_t> GraphKernelCluster::FindCandidates(size_t basenode_id) {
   return candidates;
 }
 
-bool GraphKernelCluster::Process(const FuncGraphPtr &func_graph) {
-  bool changed = false;
+void GraphKernelCluster::GraphMerge(const FuncGraphPtr &func_graph, bool aggressive_cut) {
+  graph_ = Graph::Build(func_graph, aggressive_cut, &nodes_);
+  MS_EXCEPTION_IF_NULL(graph_);
   for (int i = SizeToInt(nodes_.size()) - 1; i >= 0; i--) {
     // if the node has been clustered, it has tried to find its previous nodes, so it's unnecessary to try again.
     if (graph_->GetSize(IntToSize(i)) > 1) {
@@ -261,14 +304,26 @@ bool GraphKernelCluster::Process(const FuncGraphPtr &func_graph) {
     CircleChecker circle_checker(graph_);
     circle_checker.RemoveCircle(&candidates);
     RemoveWildGetitem(&candidates);
-    if (candidates.empty()) {
+    if (candidates.size() <= 1) {
       continue;
     }
     // merge candidates into one cluster
     graph_->Merge(candidates);
   }
+}
+
+bool GraphKernelCluster::Process(const FuncGraphPtr &func_graph) {
+  GraphMerge(func_graph, true);
+  if (graph_->HasCircle()) {
+    MS_LOG(INFO) << "graph has circle, we will try again.";
+    GraphMerge(func_graph, false);
+    if (graph_->HasCircle()) {
+      MS_LOG(ERROR) << "graph has circle!";
+    }
+  }
 
   // Rebuild func_graphs
+  bool changed = false;
   auto clusters = graph_->CollectClusters();
   for (size_t i = 0; i < clusters.size(); i++) {
     auto node_without_getitem = std::count_if(clusters[i].begin(), clusters[i].end(), [this](size_t node_id) {
@@ -366,11 +421,7 @@ void GraphKernelCluster::RemoveWildGetitem(std::vector<size_t> *candidates) {
   }
 }
 
-void GraphKernelCluster::Init(const FuncGraphPtr &func_graph) {
-  op_list_ = GetClusterableOpList();
-  graph_ = Graph::Build(func_graph, &nodes_);
-  MS_EXCEPTION_IF_NULL(graph_);
-}
+void GraphKernelCluster::Init(const FuncGraphPtr &func_graph) { op_list_ = GetClusterableOpList(); }
 
 bool GraphKernelCluster::Run(const FuncGraphPtr &func_graph) {
   auto mng = func_graph->manager();
