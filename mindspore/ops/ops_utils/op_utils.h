@@ -270,5 +270,51 @@ static inline TypePtr PromoteType(TypePtr a, TypePtr b, const std::string &op_na
 void CheckTensorScalarRank(const PrimitivePtr &primitive, const AbstractBasePtr input_arg, const std::string &arg_name);
 bool IsFloatType(TypePtr type);
 bool IsIntegralType(TypePtr type, bool include_bool);
+
+inline void CheckSpaceToBatchNdParam(const size_t block_rank, const size_t off_set,
+                                     const std::vector<int64_t> &block_size,
+                                     const std::vector<std::vector<int64_t>> &paddings,
+                                     const std::vector<int64_t> &input_shape, const std::string &kernel_name) {
+  constexpr size_t PADDING_SHAPE_1 = 2;
+  for (size_t i = 0; i < block_rank; i++) {
+    if (block_size[i] < 1) {
+      MS_LOG(EXCEPTION) << "For '" << kernel_name
+                        << "', the elements of 'block_size' should be both larger than 1, but got " << i
+                        << "'th block size " << block_size[i] << ")\n";
+    }
+  }
+
+  // check paddings
+  if (paddings.size() != block_rank) {
+    MS_LOG(EXCEPTION) << "For '" << kernel_name
+                      << "', the size of 'paddings' should be equal to the length of 'block_size':  " << block_rank
+                      << ", but got " << paddings.size();
+  }
+
+  for (size_t idx_i = 0; idx_i < block_rank; ++idx_i) {
+    if (paddings[idx_i].size() != PADDING_SHAPE_1) {
+      MS_LOG(EXCEPTION) << "For '" << kernel_name
+                        << "', the size of each vector of 'paddings' should be equal to the length of 'block_size': "
+                        << PADDING_SHAPE_1 << ", but got " << idx_i << "'th element: " << paddings[idx_i].size();
+    }
+    for (size_t idx_j = 0; idx_j < PADDING_SHAPE_1; ++idx_j) {
+      if (paddings[idx_i][idx_j] < 0) {
+        MS_LOG(EXCEPTION) << "For '" << kernel_name << "', the element of 'paddings' cannot be less than 0, "
+                          << "but got paddings[" << idx_i << "][ " << idx_j << "]: " << paddings[idx_i][idx_j];
+      }
+    }
+    auto tmp_shape = input_shape[idx_i + off_set] + paddings[idx_i][0] + paddings[idx_i][1];
+    if (input_shape[idx_i + off_set] > 0 && (tmp_shape % block_size[idx_i]) != 0) {
+      MS_LOG(EXCEPTION) << "For '" << kernel_name
+                        << "', padded shape should be divisible by block_size, but got padded shape: " << tmp_shape
+                        << ", block_size: " << block_size[idx_i];
+    }
+    if (input_shape[idx_i + off_set] > 0 && (tmp_shape / block_size[idx_i]) == 0) {
+      MS_LOG(EXCEPTION) << "For '" << kernel_name << "', padded shape cannot be less than block_size"
+                        << ", but got padded shape: " << tmp_shape << ", block_size: " << block_size[idx_i];
+    }
+  }
+}
+
 }  // namespace mindspore::ops
 #endif  // MINDSPORE_CORE_OPS_OP_UTILS_H

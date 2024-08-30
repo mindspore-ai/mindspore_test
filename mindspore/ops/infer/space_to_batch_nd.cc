@@ -36,6 +36,7 @@
 #include "mindapi/src/helper.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/op_name.h"
+#include "mindspore/ops/ops_utils/op_utils.h"
 #include "ops/primitive_c.h"
 #include "utils/check_convert_utils.h"
 #include "utils/convert_utils_base.h"
@@ -59,46 +60,13 @@ ShapeVector SpaceToBatchNDInferShapeImpl(const string &kernel_name_, const std::
   auto block_rank_ = block_size_.size();
   auto off_set_ = input_shape_.size() - block_size_.size();
 
-  ShapeVector output_shape_ = input_shape_;
-  for (size_t i = 0; i < block_rank_; i++) {
-    if (block_size_[i] < 1) {
-      MS_LOG(EXCEPTION) << "For '" << kernel_name_
-                        << "', the elements of 'block_size' should be both larger than 1, but got " << i
-                        << "'th block size " << block_size_[i] << ")\n";
-    }
-  }
+  CheckSpaceToBatchNdParam(block_rank_, off_set_, block_size_, paddings_, input_shape_, kernel_name_);
 
-  // check paddings_
-  if (paddings_.size() != block_rank_) {
-    MS_LOG(EXCEPTION) << "For '" << kernel_name_
-                      << "', the size of 'paddings' should be equal to the length of 'block_size':  " << block_rank_
-                      << ", but got " << paddings_.size();
-  }
+  ShapeVector output_shape_ = input_shape_;
 
   for (size_t idx_i = 0; idx_i < block_rank_; ++idx_i) {
-    if (paddings_[idx_i].size() != PADDING_SHAPE_1) {
-      MS_LOG(EXCEPTION) << "For '" << kernel_name_
-                        << "', the size of each vector of 'paddings' should be equal to the length of 'block_size': "
-                        << PADDING_SHAPE_1 << ", but got " << idx_i << "'th element: " << paddings_[idx_i].size();
-    }
-    for (size_t idx_j = 0; idx_j < PADDING_SHAPE_1; ++idx_j) {
-      if (paddings_[idx_i][idx_j] < 0) {
-        MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', the element of 'paddings' cannot be less than 0, "
-                          << "but got paddings[" << idx_i << "][ " << idx_j << "]: " << paddings_[idx_i][idx_j];
-      }
-    }
-
-    // check the paddings and block_sizes are valid
     auto tmp_shape = input_shape_[idx_i + off_set_] + paddings_[idx_i][0] + paddings_[idx_i][1];
-    if (input_shape_[idx_i + off_set_] > 0 && (tmp_shape % block_size_[idx_i]) != 0) {
-      MS_LOG(EXCEPTION) << "For '" << kernel_name_
-                        << "', padded shape should be divisible by block_size, but got padded shape: " << tmp_shape
-                        << ", block_size: " << block_size_[idx_i];
-    }
-    if (input_shape_[idx_i + off_set_] > 0 && (tmp_shape / block_size_[idx_i]) == 0) {
-      MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', padded shape cannot be less than block_size"
-                        << ", but got padded shape: " << tmp_shape << ", block_size: " << block_size_[idx_i];
-    }
+
     output_shape_[idx_i + off_set_] =
       input_shape_[idx_i + off_set_] > 0 ? tmp_shape / block_size_[idx_i] : input_shape_[idx_i + off_set_];
     output_shape_[0] = output_shape_[0] > 0 ? output_shape_[0] * block_size_[idx_i] : output_shape_[0];
