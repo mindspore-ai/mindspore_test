@@ -6,7 +6,7 @@ mindspore.mint.ones
     创建一个值全为1的Tensor。第一个参数 `size` 指定Tensor的shape，第二个参数 `dtype` 指定填充值的数据类型。
 
     参数：
-        - **size** (Union[tuple[int], list[int], int, Tensor]) - 指定输出Tensor的shape，只允许正整数或者包含正整数的tuple/list/Tensor。
+        - **size** (Union[tuple[int], list[int], int, Tensor]) - 指定输出Tensor的shape，只允许正整数或者包含正整数的tupled、list、Tensor。
           如果是一个Tensor，必须是一个数据类型为int32或者int64的0-D或1-D Tensor。
 
     关键字参数：
@@ -16,4 +16,4 @@ mindspore.mint.ones
         Tensor，shape和dtype由输入定义。
 
     异常：
-        - **TypeError** - 如果 `size` 不是一个int，或元素为int的元组/列表/Tensor。
+        - **TypeError** - 如果 `size` 不是一个int，或元素为int的元组、列表、Tensor。
