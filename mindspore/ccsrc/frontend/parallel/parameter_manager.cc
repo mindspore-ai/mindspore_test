@@ -1575,6 +1575,7 @@ static std::shared_ptr<TensorLayout> FindParameterNextLayout(const AnfNodePtr &n
                     << MAX_RECURSIVE_DEPTH;
     return nullptr;
   }
+  MS_EXCEPTION_IF_NULL(node);
   FuncGraphManagerPtr manager = node->func_graph()->manager();
   MS_EXCEPTION_IF_NULL(manager);
   AnfNodeIndexSet node_set = manager->node_users()[node];

@@ -328,9 +328,9 @@ void InsertDependForBegin(const FuncGraphManagerPtr &manager,
   auto comm_node_a_input_node = comm_node_a->input(kIndex1)->cast<CNodePtr>();
   std::vector<AnfNodePtr> depend2_inputs{NewValueNode(prim::kPrimDepend), begin_input, comm_node_a_input_node};
   auto depend_node2 = comm_node_a_input_node->func_graph()->NewCNode(depend2_inputs);
+  MS_EXCEPTION_IF_NULL(depend_node2);
   depend_node2->AddAttr("micro_interleaved_depend_begin", MakeValue(true));
   depend_node2->set_abstract(begin_input->abstract()->Clone());
-  MS_EXCEPTION_IF_NULL(depend_node2);
   (void)manager->Replace(begin_input, depend_node2);
 }
 

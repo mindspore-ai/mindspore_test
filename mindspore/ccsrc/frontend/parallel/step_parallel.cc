@@ -3726,6 +3726,7 @@ static void ParallelPartProcess(const std::vector<AnfNodePtr> &all_nodes, const 
   if (pipeline_stages > 1 && is_pp_interleave) {
     pipeline_processor =
       std::make_shared<PipelinePostProcess>(manager, g_device_manager->stage_id(), pipeline_stages, root);
+    MS_EXCEPTION_IF_NULL(pipeline_processor);
     pipeline_processor->Init(all_nodes);
     pipeline_processor->ModifySendRecvAttr(all_nodes);
   }
