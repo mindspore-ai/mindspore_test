@@ -438,13 +438,16 @@ bool GraphBuilder::DoBuildWithUnpack(const Instr &instr) {
   const std::vector<ValueNode *> iterables(frame_.GetStacks().end() - instr.arg(), frame_.GetStacks().end());
   popn(instr.arg());
   int elements_cnt = 0;
-  std::for_each(iterables.rbegin(), iterables.rend(), [this, &elements_cnt](auto node) {
-    int size = GetIterableSize(node);
-    MS_EXCEPTION_IF_CHECK_FAIL(size > 0, "Invalid unpack object.");
-    push(node);
+  for (auto iter = iterables.rbegin(); iter != iterables.rend(); iter++) {
+    int size = GetIterableSize(*iter);
+    if (size < 0) {
+      MS_LOG(ERROR) << "Invalid unpack object. error : " << py::error_already_set().what();
+      return false;
+    }
+    push(*iter);
     DoUnpack({UNPACK_SEQUENCE, size});
     elements_cnt += size;
-  });
+  }
   const std::vector<ValueNode *> elements(frame_.GetStacks().end() - elements_cnt, frame_.GetStacks().end());
   popn(elements_cnt);
   std::for_each(elements.rbegin(), elements.rend(), [this](auto node) { push(node); });
@@ -471,10 +474,10 @@ bool GraphBuilder::DoBuildMapWithUnpack(const Instr &instr) {
         DoLoadConst({LOAD_CONST, -1, py::reinterpret_borrow<py::object>(value)});
         keys_values.push_back(pop());
       }
-      stack_items.insert(stack_items.end(), keys_values.rbegin(), keys_values.rend());
+      stack_items.insert(stack_items.end(), keys_values.begin(), keys_values.end());
     }
   });
-  std::for_each(stack_items.rbegin(), stack_items.rend(), [this](auto node) { push(node); });
+  std::for_each(stack_items.begin(), stack_items.end(), [this](auto node) { push(node); });
   DoBuildOp({BUILD_MAP, static_cast<int>(stack_items.size() / 2)});
   return true;
 }
@@ -2133,6 +2136,9 @@ bool CheckSupportCreateInstance(CallNode *call_node) {
   static const std::set<PyTypeObject *> limit_create_instance_type = {
     &PyList_Type, &PyTuple_Type, &PySet_Type, &PyFrozenSet_Type, &PyDict_Type, &PyUnicode_Type, &PyEnum_Type,
   };
+  if (call_node->getInputs().size() == 1) {
+    return limit_create_instance_type.find(tp) != limit_create_instance_type.end();
+  }
   if (call_node->getInputs().size() != 2) {
     return false;
   }

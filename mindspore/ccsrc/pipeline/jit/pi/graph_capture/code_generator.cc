@@ -776,7 +776,7 @@ void CodeBreakGenerator::FixInterpretOuput(CodeGenerator *code_gen) {
                   auto target = code_gen->GetLocalsMap().find(input);
                   if (target == code_gen->GetLocalsMap().end()) {
                     code_gen->MarkAlive(input);
-                    code_gen->BuildOper(input, static_cast<int>(index));
+                    code_gen->BuildOper(input, SizeToInt(index));
                   }
                   index++;
                 });
