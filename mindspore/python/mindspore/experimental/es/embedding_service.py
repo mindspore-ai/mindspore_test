@@ -531,8 +531,6 @@ class EmbeddingService:
                 index += 1
                 feature_mapping_export_list.append(feature_mapping_export)
 
-            print("data_parallel embedding: ", file_path, len(self._small_table_variable_list),
-                  self._ps_table_count, flush=True)
             if self._ps_table_count == 0:
                 return feature_mapping_export_list
 
@@ -561,7 +559,6 @@ class EmbeddingService:
             The output of EmbeddingTableExport operator and data_parallel embedding export result.
         """
         embedding_dim_list = []
-        steps_to_live_list = []
         feature_mapping_export_list = []
         if self._small_table_variable_list:
             small_table_var = []
@@ -580,11 +577,10 @@ class EmbeddingService:
                 feature_mapping_export = embedding_feature_mapping_export_layer()
                 index += 1
                 feature_mapping_export_list.append(feature_mapping_export)
-            print("data_parallel embedding: ", file_path, len(self._small_table_variable_list),
-                  self._ps_table_count, flush=True)
+
             if self._ps_table_count == 0:
                 return feature_mapping_export_list
-
+        steps_to_live_list = []
         for table_id in self._ps_table_id_list:
             embedding_dim_list.append(self._table_to_embedding_dim.get(table_id))
             steps_to_live_list.append(self._table_id_to_steps_to_live.get(table_id, 0))
@@ -638,8 +634,6 @@ class EmbeddingService:
             for i in range(len(self._small_table_variable_list)):
                 small_table_name = self._small_table_variable_list[i]
                 small_table_embedding_dim = self._small_table_variable_dim_list[i]
-                print("start do ckpt import, embedding feature mapping import for: ", small_table_name,
-                      small_table_embedding_dim, flush=True)
                 embedding_feature_mapping_import = ESEmbeddingFeatureMappingImport(file_path, small_table_name,
                                                                                    small_table_embedding_dim)
                 feature_mapping_insert = embedding_feature_mapping_import()
@@ -674,8 +668,6 @@ class EmbeddingService:
             for i in range(len(self._small_table_variable_list)):
                 small_table_name = self._small_table_variable_list[i]
                 small_table_embedding_dim = self._small_table_variable_dim_list[i]
-                print("start do table import, embedding feature mapping import for: ", small_table_name,
-                      small_table_embedding_dim, flush=True)
                 embedding_feature_mapping_import = ESEmbeddingFeatureMappingImport(file_path, small_table_name,
                                                                                    small_table_embedding_dim)
                 feature_mapping_insert = embedding_feature_mapping_import()
@@ -849,8 +841,6 @@ class EmbeddingService:
         Create variable for data_parallel embedding when not merge data_parallel embedding.
         """
         for user_table_info in self.user_defined_table_infos:
-            print("data_parallel embedding, init parameter: ", user_table_info['name'], user_table_info['initializer'],
-                  user_table_info['max_vocabulary_size'], user_table_info['embedding_dim'], flush=True)
             self._small_table_to_variable[user_table_info['name']] = Parameter(
                 ms_initializer(user_table_info['initializer'],
                                shape=[user_table_info['max_vocabulary_size'] + 1, user_table_info['embedding_dim']],
