@@ -19,6 +19,7 @@
 #include <string>
 
 #include "plugin/device/ascend/kernel/internal/internal_kernel_mod.h"
+#include "utils/llm_manager.h"
 
 namespace mindspore {
 namespace kernel {
@@ -100,5 +101,43 @@ void InternalKernelUtils::ToInternalTensor(internal::Tensor *internal_tensor, co
 internal::DeviceRawBuf InternalKernelUtils::ToDeviceRawBuf(const KernelTensor *kernel_tensor) {
   return internal::DeviceRawBuf{kernel_tensor->size(), kernel_tensor->device_ptr()};
 }
+
+inline void SplitStringToNum(const std::string &str, char delim, std::vector<int32_t> *output_list) {
+  std::stringstream ss(str);
+  std::string item;
+  while (std::getline(ss, item, delim)) {
+    if (!item.empty() && std::all_of(item.begin(), item.end(), ::isdigit)) {
+      (void)output_list->emplace_back(std::stoi(item));
+    }
+  }
+}
+
+void GetSeqLenFromGraphInputOrEnv(const std::string &kernel_name, const std::string &tensor_name,
+                                  const std::string &env_name, std::vector<int32_t> *seq_len) {
+  seq_len->clear();
+  std::string seq_len_env = common::GetEnv(env_name);
+  if (!seq_len_env.empty()) {
+    // first use env value to set seq_len if exists
+    SplitStringToNum(seq_len_env, ',', seq_len);
+    MS_LOG(INFO) << "For op '" << kernel_name << "', set param seq_len with env '" << env_name << "' as " << (*seq_len);
+    return;
+  }
+  auto &llm_manager = LLMManager::GetInstance();
+  auto seq_length_tensor = llm_manager.get_graph_input(tensor_name);
+  if (seq_length_tensor != nullptr) {
+    // then use graph_input tensor value to set seq_len if saved
+    auto seq_length_values = static_cast<int32_t *>(seq_length_tensor->data());
+    auto seq_length_values_num = seq_length_tensor->nbytes() / sizeof(int32_t);
+    for (size_t i = 0; i < seq_length_values_num; i++) {
+      (*seq_len).emplace_back(seq_length_values[i]);
+    }
+    MS_LOG(INFO) << "For op '" << kernel_name << "', set param seq_len with graph_input '" << tensor_name << "' as "
+                 << (*seq_len);
+    return;
+  }
+  MS_LOG(INFO) << "For op '" << kernel_name << "', if custom op disabled, param seq_len must be set, but '"
+               << tensor_name << "' is not in graph_input, and env '" << env_name << "' is not set";
+}
+
 }  // namespace kernel
 }  // namespace mindspore

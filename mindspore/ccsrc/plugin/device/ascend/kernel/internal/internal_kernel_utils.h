@@ -32,6 +32,9 @@ class InternalKernelUtils {
 
   static internal::DeviceRawBuf ToDeviceRawBuf(const KernelTensor *kernel_tensor);
 };
+
+void GetSeqLenFromGraphInputOrEnv(const std::string &kernel_name, const std::string &tensor_name,
+                                  const std::string &env_name, std::vector<int32_t> *seq_len);
 }  // namespace kernel
 }  // namespace mindspore
 

@@ -24,6 +24,7 @@
 #include "runtime/graph_scheduler/actor/debug_actor.h"
 #include "async/async.h"
 #include "utils/phase.h"
+#include "utils/llm_manager.h"
 #include "utils/log_adapter.h"
 
 namespace mindspore {
@@ -491,8 +492,11 @@ void SuperKernelActor::RunGraphKernelByKernel(OpContext<DeviceTensor> *const con
         MS_LOG(DEBUG) << "End wait runtime pipeline for kernel: " << kernel_actor->kernel_->fullname_with_scope();
       }
     } else {
-      if (kernel_actor->kernel_mod_->kernel_name() == "PagedAttention") {
+      auto &llm_manager = LLMManager::GetInstance();
+      if (llm_manager.need_force_resize(kernel_actor->kernel_mod_->kernel_name())) {
         kernel_actor->ResizeKernelMod();
+        kernel_actor->FetchOutputDeviceTensor(context);
+        kernel_actor->FetchWorkspaceDeviceTensor();
       }
       Async(kernel_async_launch_aid_, &KernelAsyncLaunchActor::LaunchKernel, context, kernel_actor.get());
     }

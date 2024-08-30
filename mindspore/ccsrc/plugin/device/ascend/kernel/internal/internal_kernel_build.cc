@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,7 +62,7 @@ static std::unordered_map<std::string, std::vector<std::vector<size_t> > > kNzFo
   {kMatMulOpName, {{0, 1}, {0}}},
   {"QuantLinearSparse", {{0}, {0}}},
   {"QuantBatchMatmul", {{0, 1}, {0}}},
-  {kPagedAttentionOpName, {{0, 1, 2}, {0}}},
+  {kPagedAttentionOpName, {{0, 1, 2, 7}, {0}}},
   {kFlashAttentionScoreOpName, {{0, 1, 2, 6}, {3}}},
   {kReshapeAndCacheOpName, {{2, 3}, {}}}};
 
@@ -179,6 +179,14 @@ void GetValidKernelBuildInfoWithInternalFormat(const AnfNodePtr &node, std::vect
   std::vector<int64_t> special_format_inputs;
   for (size_t i = 0; i < input_num; ++i) {
     auto kernel_with_index = common::AnfAlgo::GetPrevNodeOutput(node, i);
+    auto first_node = kernel_with_index.first;
+    if (first_node->isa<ValueNode>()) {
+      auto value_node = first_node->cast<ValueNodePtr>();
+      auto value = value_node->value();
+      if (value->isa<None>()) {
+        continue;
+      }
+    }
     std::string input_format = AnfAlgo::GetOutputFormat(kernel_with_index.first, kernel_with_index.second);
     input_format = NeedSetParameterFormat(kernel_with_index.first, input_formats->at(i), input_format)
                      ? input_formats->at(i)

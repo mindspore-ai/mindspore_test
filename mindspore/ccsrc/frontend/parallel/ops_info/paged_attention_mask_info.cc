@@ -19,15 +19,17 @@
 
 namespace mindspore {
 namespace parallel {
-// PagedAttentionMask has 6 inputs
-// query:         (batch, seq_len, hidden_size)
-// key_cache:     (block_size, num_blocks, num_head, head_dim)
-// value_cache:   (block_size, num_blocks, num_head, head_dim)
-// block_tables:  (batch, max_num_block_per_batch)
-// context_lens:  (batch * seq_len)
-// alibi_mask:    (batch, num_head, seq_len, seq_len)
+// PagedAttentionMask has 8 inputs
+// query:           (batch, seq_len, hidden_size)
+// key_cache:       (block_size, num_blocks, num_head, head_dim)
+// value_cache:     (block_size, num_blocks, num_head, head_dim)
+// block_tables:    (batch, max_num_block_per_batch)
+// context_lens:    (batch * seq_len)
+// antiquant_scale: (2, num_head * head_dim)
+// antiquant_offset:(2, num_head * head_dim)
+// alibi_mask:      (batch, num_head, seq_len, seq_len)
 // ------------------------------
-// output:        (batch, seq_len, hidden_size)
+// output:          (batch, seq_len, hidden_size)
 
 // split strategy
 // num_blocks is not able to split
@@ -124,7 +126,7 @@ Status PagedAttentionMaskInfo::InferTensorMap() {
   inputs_tensor_map_.emplace_back(block_tensor_map);
   inputs_tensor_map_.emplace_back(context_tensor_map);
   constexpr size_t antiquant_input_size = 8;
-  if (strategy()->GetInputDim().size() == antiquant_input_size) {
+  if (strategy()->GetInputDim().size() >= antiquant_input_size) {
     inputs_tensor_map_.emplace_back(antiquant_tensor_map);
     inputs_tensor_map_.emplace_back(antiquant_tensor_map);
   }

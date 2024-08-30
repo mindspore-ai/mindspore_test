@@ -28,9 +28,11 @@ class InternalPagedAttention : public InternalKernelMod {
   ~InternalPagedAttention() = default;
 
  protected:
+  bool Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
   internal::OpParamPtr CreateOpParam(const std::vector<KernelTensor *> &inputs,
                                      const std::vector<KernelTensor *> &outputs);
   uint64_t GenTilingCacheKey(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs);
+  bool enable_custom_pa_{false};
   std::vector<int32_t> q_seq_len_;
   std::vector<int32_t> kv_seq_len_;
 };

@@ -16,6 +16,8 @@
 
 #include "utils/llm_manager.h"
 
+#include <algorithm>
+#include <sstream>
 #include "utils/ms_utils.h"
 #include "utils/log_adapter.h"
 
@@ -24,57 +26,6 @@ LLMManager &LLMManager::GetInstance() noexcept {
   static LLMManager instance;
   return instance;
 }
-
-LLMManager::LLMManager() { init(); }
-
-void LLMManager::init() {
-  if (inited_) {
-    return;
-  }
-
-  auto llm_batch_valid_length_idx_env = common::GetEnv("MS_LLM_SEQ_LENGTH_INDEX");
-  if (!llm_batch_valid_length_idx_env.empty()) {
-    batch_valid_length_graph_input_index_ = stoi(llm_batch_valid_length_idx_env);
-    enable_llm_seq_length_ = true;
-    MS_LOG(INFO) << "LLM Manager init: enable batch_valid_length with graph input index: "
-                 << batch_valid_length_graph_input_index_;
-  }
-
-  auto llm_query_length_idx_env = common::GetEnv("MS_LLM_QUERY_LENGTH_INDEX");
-  if (!llm_query_length_idx_env.empty()) {
-    query_seq_length_graph_input_index_ = stoi(llm_query_length_idx_env);
-    enable_llm_seq_length_ = true;
-    MS_LOG(INFO) << "LLM Manager init: enable query_seq_length with graph input index: "
-                 << query_seq_length_graph_input_index_;
-  }
-
-  auto seq_length_level_size = common::GetEnv("MS_LLM_SEQ_LENGTH_LEVEL_SIZE");
-  if (!seq_length_level_size.empty()) {
-    seq_length_level_size_ = stoi(seq_length_level_size);
-  }
-  MS_LOG(INFO) << "LLM Manager init: use seq_length_level_size: " << seq_length_level_size_;
-
-  inited_ = true;
-}
-
-bool LLMManager::update_round_up_max_batch_valid_length(int32_t max_seq_length) {
-  if (!enable_llm_seq_length_) {
-    return false;
-  }
-
-  auto round_up_max_seq_length = ((max_seq_length / seq_length_level_size_) + 1) * seq_length_level_size_;
-  if (current_round_up_max_batch_valid_length != round_up_max_seq_length) {
-    current_round_up_max_batch_valid_length = round_up_max_seq_length;
-    return true;
-  }
-  return false;
-}
-
-int32_t LLMManager::get_current_round_up_max_batch_valid_length() { return current_round_up_max_batch_valid_length; }
-
-int32_t LLMManager::get_batch_valid_length_graph_input_index() { return batch_valid_length_graph_input_index_; }
-
-int32_t LLMManager::get_query_seq_length_graph_input_index() { return query_seq_length_graph_input_index_; }
 
 tensor::TensorDataPtr LLMManager::get_graph_input(const std::string &name) {
   auto it = graph_inputs_map_.find(name);
@@ -89,4 +40,17 @@ void LLMManager::add_graph_input(const std::string &name, tensor::TensorDataPtr 
 }
 
 void LLMManager::reset_graph_inputs() { graph_inputs_map_.clear(); }
+
+void LLMManager::add_force_resize_kernel(const std::string &kernel_name) {
+  force_resize_kernel_set_.insert(kernel_name);
+  force_resize_kernel_ = true;
+}
+
+bool LLMManager::need_force_resize(const std::string &kernel_name) {
+  if (!force_resize_kernel_) {
+    return false;
+  }
+  auto it = std::find(force_resize_kernel_set_.begin(), force_resize_kernel_set_.end(), kernel_name);
+  return it != force_resize_kernel_set_.end();
+}
 }  // namespace mindspore

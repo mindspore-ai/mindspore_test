@@ -44,6 +44,7 @@ class PagedAttentionInfo : public OperatorInfo {
   Status InferForwardCommunication() { return SUCCESS; }
   Status InferTensorMap() override;
   Status InferDevMatrixShape() override;
+  std::vector<bool> optional_inputs_;
 };
 using PagedAttentionInfoPtr = std::shared_ptr<PagedAttentionInfo>;
 }  // namespace parallel

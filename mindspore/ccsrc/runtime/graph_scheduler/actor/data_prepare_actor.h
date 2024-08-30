@@ -126,6 +126,8 @@ class DataPrepareActor : public DebugAwareActor {
 
   void SetInitTensorsIfNeeded(const std::vector<std::vector<TensorPtr>> &input_tensors);
 
+  void RecordGraphInputs(const std::vector<TensorPtr> &host_tensors, const std::vector<size_t> &host_param_indexes);
+
   // Preprocess before prepare data for data prepare actor.
   void PreprocessBeforePrepareData() const;
 
