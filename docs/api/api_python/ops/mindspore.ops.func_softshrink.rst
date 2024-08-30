@@ -13,7 +13,7 @@ mindspore.ops.softshrink
         0, & \text{ otherwise }
         \end{cases}
 
-    SoftShrink函数图：
+    SoftShrink激活函数图：
 
     .. image:: ../images/Softshrink.png
         :align: center
