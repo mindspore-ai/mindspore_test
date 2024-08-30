@@ -461,9 +461,6 @@ void MicroInterleavedOrderControl(const FuncGraphPtr &graph) {
   MS_EXCEPTION_IF_NULL(graph);
   auto manager = graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
-  if (common::GetEnv("MS_ENABLE_FRONTEND_SCHEDULING_OPTIMIZATION") == "1") {
-    return;
-  }
   auto context = MsContext::GetInstance();
   const auto graph_reuse = context->CellReuseLevel() != CellReuseLevel::kNoCellReuse;
 
