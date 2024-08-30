@@ -279,6 +279,7 @@ cd ${x86_path}
 file_name=$(ls *-linux-*.tar.gz)
 IFS="-" read -r -a file_name_array <<< "$file_name"
 version=${file_name_array[2]}
+export MSLITE_PACKAGE_PATH=${x86_path}/mindspore-lite-${version}-linux-x64/
 cd -
 
 # Set models config filepath

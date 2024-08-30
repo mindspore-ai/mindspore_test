@@ -311,7 +311,7 @@ function Run_Benchmark() {
   # $1:cfgFileList; $2:modelPath; $3:dataPath; $4:logFile; $5:resultFile; $6:platform; $7:processor; $8:phoneId; $9:failNotReturn;
   local cfg_file_list cfg_file_name line_info model_info spec_acc_limit model_name input_num input_shapes spec_threads \
         extra_info benchmark_mode infix mode model_file ms_model_type input_files output_file data_path threads acc_limit enableFp16 \
-        run_result cfg_file input_data_mode enableGLTexture elapsed_time ret
+        run_result cfg_file input_data_mode enableGLTexture elapsed_time ret 
   cfg_file_list=$1
   for cfg_file in ${cfg_file_list[*]}; do
     cfg_file_name=${cfg_file##*/}

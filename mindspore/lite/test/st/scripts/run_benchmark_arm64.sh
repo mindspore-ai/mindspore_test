@@ -94,6 +94,8 @@ arm64_path=${release_path}/android_aarch64/npu
 file_name=$(ls ${x86_path}/*-linux-x64.tar.gz)
 IFS="-" read -r -a file_name_array <<< "$file_name"
 version=${file_name_array[2]}
+export MSLITE_PACKAGE_PATH=${x86_path}/mindspore-lite-${version}-linux-x64/
+export LD_LIBRARY_PATH=${MSLITE_PACKAGE_PATH}/runtime/lib:${MSLITE_PACKAGE_PATH}/tools/converter/lib;${MSLITE_PACKAGE_PATH}/runtime/third_party/dnnl:${LD_LIBRARY_PATH}
 
 # Set models config filepath
 config_folder="config_level0"
@@ -270,4 +272,20 @@ fi
 echo "Run_arm64_fp32 and Run_arm64_fp16 and nnapi is ended"
 Print_Benchmark_Result $run_benchmark_result_file
 adb -s ${device_id} shell "rm -rf /data/local/tmp/benchmark_test/*"
+echo "Run_arm64_fp32 and Run_arm64_fp16 single op st"
+cd ${MSLITE_OPST_PATH} || exit 1
+cur_path=$(pwd)
+PYTHONPATH=$cur_path/ops/frame python3 $cur_path/ops/op/run.py -o $cur_path/ops/output -a
+op_st_output=$cur_path/ops/failed_tmp.txt
+line=$(cat "$op_st_output")
+echo $line
+IFS=' ' read -r -a fields <<< "$line"
+failed_op_name="${fields[1]}"
+if [ -z "$failed_op_name" ]; then
+    echo "Run single op st success"
+else
+    echo "Run single op st failed"
+    cat ${op_st_output}
+    isFailed=1
+fi
 exit ${isFailed}
