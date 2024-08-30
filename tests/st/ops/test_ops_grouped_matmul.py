@@ -11,8 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from tests.mark_utils import arg_mark
-
 import numpy as np
 import pytest
 
@@ -21,6 +19,10 @@ from mindspore import dtype as mstype
 from mindspore import context, Tensor, ops
 from mindspore.nn import Cell
 from mindspore.ops.auto_generate import GroupedMatmul
+
+from tests.st.utils import test_utils
+from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
+from tests.mark_utils import arg_mark
 
 
 # GroupedMatmul has 8 inputs and 1 outputs
@@ -60,9 +62,9 @@ def split_x(x, group_list):
     x_split = []
     for i in range(len(group_list)):
         if i == 0:
-            x_split.append(x[0: group_list[i], ])
+            x_split.append(x[0: group_list[i],])
         else:
-            x_split.append(x[group_list[i - 1]: group_list[i], ])
+            x_split.append(x[group_list[i - 1]: group_list[i],])
     return x_split
 
 
@@ -83,6 +85,11 @@ class GroupedMatmulNet(Cell):
                   group_list=None):
         out = self.gmm(x, weight, bias, scale, offset, antiquant_scale, antiquant_offset, group_list)
         return out
+
+@test_utils.run_with_cell
+def grouped_matmul_forward_func(x, weight):
+    net = GroupedMatmulNet(split_item=0, group_type=-1)
+    return net(x, weight)
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
@@ -442,3 +449,27 @@ def test_grouped_matmul_x2d_w2d_splititem0_grouptypeneg1_none_a16w8_case6(mode):
     # compare
     np.testing.assert_allclose(except0, res[0].asnumpy(), atol=5e-3, rtol=5e-3)
     np.testing.assert_allclose(except1, res[1].asnumpy(), atol=5e-3, rtol=5e-3)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+def test_ops_grouped_mamtul_dyn():
+    """
+    Feature: pyboost function.
+    Description: test GroupedMatmul forward with dynamic rank/shape.
+    Expectation: success.
+    """
+
+    np_x0 = np.random.uniform(0.1, 2, size=[16, 256]).astype(np.float16)
+    np_w0 = np.random.uniform(0.1, 1, size=[256, 128]).astype(np.float16)
+
+    np_x1 = np.random.uniform(0.1, 2, size=[127, 88]).astype(np.float16)
+    np_w1 = np.random.uniform(0.1, 1, size=[88, 64]).astype(np.float16)
+
+    x1 = [ms.Tensor(np_x0), ms.Tensor(np_x1)]
+    wweight1 = [ms.Tensor(np_w0), ms.Tensor(np_w1)]
+
+    x2 = [ms.Tensor(np_x0)]
+    weight2 = [ms.Tensor(np_w0)]
+
+    TEST_OP(grouped_matmul_forward_func, [[x1, wweight1], [x2, weight2]], '', disable_input_check=True,
+            disable_grad=True, disable_yaml_check=True, disable_resize=True)

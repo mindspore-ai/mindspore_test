@@ -82,8 +82,8 @@ void GroupedMatmulFuncImpl::CheckSplitItemAndGroupType(const std::string &op_nam
   }
 }
 
-void GroupedMatmulFuncImpl::CheckXWShapeForSingle(const std::string &op_name, const std::vector<int64_t> &x_shape,
-                                                  const std::vector<int64_t> &w_shape) const {
+void GroupedMatmulFuncImpl::CheckXWShapeForSingle(const std::string &op_name, const ShapeVector &x_shape,
+                                                  const ShapeVector &w_shape) const {
   if (x_shape.size() != gmmTensor2D) {
     MS_EXCEPTION(ValueError) << "For '" << op_name
                              << "', when split_item is 3, the x[0] must be 2D Tensor. But x[0] shape :" << x_shape;
@@ -98,8 +98,8 @@ void GroupedMatmulFuncImpl::CheckXWShapeForSingle(const std::string &op_name, co
   }
 }
 
-void GroupedMatmulFuncImpl::CheckXWShapeForMulti(const std::string &op_name, const std::vector<int64_t> &x_shape,
-                                                 const std::vector<int64_t> &w_shape, const size_t idx) const {
+void GroupedMatmulFuncImpl::CheckXWShapeForMulti(const std::string &op_name, const ShapeVector &x_shape,
+                                                 const ShapeVector &w_shape, const size_t idx) const {
   if (x_shape.size() < gmmTensor2D || x_shape.size() > gmmTensor6D) {
     MS_EXCEPTION(ValueError) << "For '" << op_name << "', when split_item is 0, the tensor in x must be 2-6D. But"
                              << idx << "th tensor in x, shape is : " << x_shape;
@@ -130,12 +130,12 @@ void GroupedMatmulFuncImpl::CheckInputType(const std::vector<AbstractBasePtr> &i
   }
 }
 
-std::vector<std::vector<int64_t>> GroupedMatmulFuncImpl::GetTupleShape(abstract::AbstractTuplePtr tuple_ptr) const {
-  std::vector<std::vector<int64_t>> tuple_shape;
+std::vector<ShapeVector> GroupedMatmulFuncImpl::GetTupleShape(abstract::AbstractTuplePtr tuple_ptr) const {
+  std::vector<ShapeVector> tuple_shape;
   abstract::AbstractTuple input_tuple = *tuple_ptr;
   for (size_t i = 0; i < input_tuple.size(); i++) {
-    std::vector<int64_t> element_shape = input_tuple[i]->GetShape()->GetShapeVector();
-    tuple_shape.emplace_back(element_shape);
+    ShapeVector element_shape = input_tuple[i]->GetShape()->GetShapeVector();
+    (void)tuple_shape.emplace_back(element_shape);
   }
   return tuple_shape;
 }
@@ -169,8 +169,8 @@ BaseShapePtr GroupedMatmulFuncImpl::InferShape(const PrimitivePtr &primitive,
   CheckSplitItemAndGroupType(op_name, group_type, split_item);
 
   // Get Shape
-  std::vector<std::vector<int64_t>> tuple_x_shape;
-  std::vector<std::vector<int64_t>> tuple_weight_shape;
+  std::vector<ShapeVector> tuple_x_shape;
+  std::vector<ShapeVector> tuple_weight_shape;
 
   // Compile phase: the element in input_args is AbstractTuple. (tuple)
   MS_EXCEPTION_IF_NULL(input_args[kGmmInputX]);
@@ -208,24 +208,30 @@ BaseShapePtr GroupedMatmulFuncImpl::InferShape(const PrimitivePtr &primitive,
 
     // Runtime phase: get tuple_x_shape
     tuple_x_shape.clear();
-    for (size_t i = 0; i < x_idx_end; i++) {
+    for (size_t i = 0; i < x_idx_end; ++i) {
       (void)tuple_x_shape.emplace_back(input_args[i]->GetShape()->GetShapeVector());
     }
     // Runtime phase: get tuple_weight_shape
     tuple_weight_shape.clear();
-    for (size_t i = x_idx_end; i < w_idx_end; i++) {
+    for (size_t i = x_idx_end; i < w_idx_end; ++i) {
       (void)tuple_weight_shape.emplace_back(input_args[i]->GetShape()->GetShapeVector());
     }
   }
   // calculate shape. split_item = 3, x[0](m, n) * w[0](e, n, k) = out(m, k)
   if (split_item == singleTensor) {
     if (tuple_x_shape.size() == 1 && tuple_weight_shape.size() == 1) {
-      std::vector<int64_t> x_shape = tuple_x_shape[0];
-      std::vector<int64_t> w_shape = tuple_weight_shape[0];
+      ShapeVector x_shape = tuple_x_shape[0];
+      ShapeVector w_shape = tuple_weight_shape[0];
+      if (IsDynamicRank(x_shape) || IsDynamicRank(w_shape)) {
+        auto any_shape =
+          std::make_shared<abstract::TensorShape>(std::vector<int64_t>{abstract::TensorShape::kShapeRankAny});
+        std::vector<BaseShapePtr> output_shapes = {any_shape};
+        return std::make_shared<abstract::TupleShape>(output_shapes);
+      }
       CheckXWShapeForSingle(op_name, x_shape, w_shape);
       std::vector<BaseShapePtr> outshape_merge = {};
-      std::vector<int64_t> res_shape = {x_shape[0], w_shape.back()};
-      outshape_merge.emplace_back(std::make_shared<abstract::TensorShape>(res_shape));
+      ShapeVector res_shape = {x_shape[0], w_shape.back()};
+      (void)outshape_merge.emplace_back(std::make_shared<abstract::TensorShape>(res_shape));
       return std::make_shared<abstract::TupleShape>(outshape_merge);
     } else {
       MS_EXCEPTION(ValueError) << "For '" << op_name << "', when split_item is 3. the size of x or weight only be 1."
@@ -242,14 +248,19 @@ BaseShapePtr GroupedMatmulFuncImpl::InferShape(const PrimitivePtr &primitive,
 
   std::vector<BaseShapePtr> outshape_list = {};
   for (size_t i = 0; i < tuple_x_shape.size(); i++) {
-    std::vector<int64_t> x_shape = tuple_x_shape[i];
-    std::vector<int64_t> w_shape = tuple_weight_shape[i];
-    CheckXWShapeForMulti(op_name, x_shape, w_shape, i);
-    std::vector<int64_t> res_shape = x_shape;
-    res_shape.back() = w_shape[1];  // x[a,b,c,m,n] * w[n,k] = out[a,b,c,m,k]
-    outshape_list.emplace_back(std::make_shared<abstract::TensorShape>(res_shape));
+    ShapeVector x_shape = tuple_x_shape[i];
+    ShapeVector w_shape = tuple_weight_shape[i];
+    if (IsDynamicRank(x_shape) || IsDynamicRank(w_shape)) {
+      auto any_shape =
+        std::make_shared<abstract::TensorShape>(std::vector<int64_t>{abstract::TensorShape::kShapeRankAny});
+      (void)outshape_list.emplace_back(any_shape);
+    } else {
+      CheckXWShapeForMulti(op_name, x_shape, w_shape, i);
+      ShapeVector res_shape = x_shape;
+      res_shape.back() = w_shape[1];  // x[a,b,c,m,n] * w[n,k] = out[a,b,c,m,k]
+      (void)outshape_list.emplace_back(std::make_shared<abstract::TensorShape>(res_shape));
+    }
   }
-
   return std::make_shared<abstract::TupleShape>(outshape_list);
 }
 
@@ -313,7 +324,7 @@ TypePtr GroupedMatmulFuncImpl::InferType(const PrimitivePtr &primitive,
   std::vector<TypePtr> type_tuple;
   abstract::AbstractTuple x_list = *(input_args[kGmmInputX]->cast<abstract::AbstractTuplePtr>());
   for (size_t i = 0; i < x_list.size(); i++) {
-    type_tuple.emplace_back(x_list[i]->GetType()->Clone());
+    (void)type_tuple.emplace_back(x_list[i]->GetType()->Clone());
   }
 
   return std::make_shared<Tuple>(std::move(type_tuple));
