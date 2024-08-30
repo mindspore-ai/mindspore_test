@@ -4102,7 +4102,7 @@ std::vector<ValueNode *> MindGraphBuilder::GetNewArgs(CallNode *call_node, AObje
   return new_arg_value_nodes;
 }
 
-std::pair<bool, std::vector<py::object>> MindGraphBuilder::GetInputsObject(CallNode *call_node) {
+std::pair<bool, std::vector<py::object>> MindGraphBuilder::GetConstantInputsObject(CallNode *call_node) {
   AObject *callable = call_node->input(0)->GetVobj();
   auto callable_info = callable->GetPyObject();
   if (callable_info.ptr() == nullptr) {
@@ -4118,10 +4118,15 @@ std::pair<bool, std::vector<py::object>> MindGraphBuilder::GetInputsObject(CallN
 
   std::vector<py::object> input_objects;
   for (auto arg_value_node : args_value_node) {
-    auto arg_py_object = arg_value_node->GetVobj()->GetPyObject();
-    if (arg_py_object.ptr() == nullptr && arg_value_node->has_abstract_wrapper()) {
+    py::object arg_py_object;
+    if (arg_value_node->has_abstract_wrapper()) {
       auto arg_abstract_wrapper = arg_value_node->abstract_wrapper();
+      if (!arg_abstract_wrapper->IsConstant()) {
+        return std::pair<bool, std::vector<py::object>>(false, {});
+      }
       arg_py_object = AbstractWrapper::ConvertToPyObject(arg_abstract_wrapper);
+    } else {
+      arg_py_object = arg_value_node->GetVobj()->GetPyObject();
     }
     if (arg_py_object.ptr() == nullptr) {
       return std::pair<bool, std::vector<py::object>>(false, {});
@@ -4473,7 +4478,7 @@ py::object MindGraphBuilder::ResolveCallable(CallNode *call_node, StopTraceReaso
   MS_LOG(INFO) << "trace_flag for: " << py::str(callable_info);
 
   if (FGBuilder()->CanConstantFoldFunc(callable_info)) {
-    const auto &res = GetInputsObject(call_node);
+    const auto &res = GetConstantInputsObject(call_node);
     if (res.first) {
       const auto &inputs_obj = res.second;
       MS_LOG(INFO) << "CanConstantFoldFunc for: " << py::str(callable_info);
