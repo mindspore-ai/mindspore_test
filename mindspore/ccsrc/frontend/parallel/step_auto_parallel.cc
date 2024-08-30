@@ -89,7 +89,8 @@ void SearchParallelStrategy(const std::string &strategy_search_mode, const FuncG
 
 bool HasCellShard(const FuncGraphPtr &func_graph) {
   AnfNodePtr ret = func_graph->get_return();
-  std::vector<AnfNodePtr> all_nodes = DeepScopedGraphSearch(ret);
+  MS_EXCEPTION_IF_NULL(ret);
+  std::vector<AnfNodePtr> all_nodes = TopoSort(ret, SuccDeeperSimple);
   for (auto &node : all_nodes) {
     if (IsPrimitiveCNode(node, prim::kPrimShard) || IsPrimitiveCNode(node, prim::kPrimReshard)) {
       return true;
