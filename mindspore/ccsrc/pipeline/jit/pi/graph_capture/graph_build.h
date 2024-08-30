@@ -382,7 +382,7 @@ class MindGraphBuilder : public GraphBuilder {
   py::object ResolveGradCall(CallNode *call_node, StopTraceReason *stop_reason);
 
   AbstractWrapperPtr HandleGetShapeOfDynamicLengthTensor(const AbstractWrapperPtr &abstract_wrapper);
-  std::pair<bool, std::vector<py::object>> GetInputsObject(CallNode *call_node);
+  std::pair<bool, std::vector<py::object>> GetConstantInputsObject(CallNode *call_node);
   py::object GetPyObject(ValueNode *node);
 
   mindspore::FuncGraphBuilderPtr fg_builder_{nullptr};
