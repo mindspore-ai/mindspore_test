@@ -672,6 +672,26 @@ void SchedulerHelper::ConvertDataArrowToControlArrow(AbstractActor *const from_a
       new_ref_count = SIZE_MAX;
       break;
     }
+    if (device_tensor->flag() == device::kDeviceAddressFlagNullptr) {
+      const auto &to_actor_tmp = FetchActor(output_data_arrow->to_op_id_.Name());
+      if (to_actor_tmp != nullptr && to_actor_tmp->type() == KernelTransformType::kKernelActor) {
+        const auto &to_kernel_actor = dynamic_cast<KernelActor *>(to_actor_tmp);
+        MS_EXCEPTION_IF_NULL(to_kernel_actor);
+        if (to_kernel_actor->kernel() != nullptr) {
+          const auto &only_depend_shape_attr =
+            common::AnfAlgo::GetCNodePrimitiveAttr(to_kernel_actor->kernel(), kAttrOnlyDependShape);
+          if (only_depend_shape_attr != nullptr) {
+            auto only_depend_shape = GetValue<std::vector<bool>>(only_depend_shape_attr);
+            if (IntToSize(output_data_arrow->to_input_index_) < only_depend_shape.size() &&
+                only_depend_shape[output_data_arrow->to_input_index_]) {
+              MS_LOG(INFO) << "Skip add ref count for allow null device address:" << device_tensor
+                           << " from actor:" << from_actor->GetAID() << " to actor:" << to_actor->GetAID();
+              continue;
+            }
+          }
+        }
+      }
+    }
     ++new_ref_count;
   }
   device_tensor->set_original_ref_count(new_ref_count);
