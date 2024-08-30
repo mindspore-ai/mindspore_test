@@ -2305,15 +2305,16 @@ void LogGuardFailed(ValueNode *node, const GraphJitConfig &conf, const std::stri
   GRAPH_JIT_LOG_F("%s", s.str().c_str());
 }
 
-bool GraphBuilder::HandleCallClass(CallNode *call_node) {
+ValueNode *GraphBuilder::HandleCallClass(CallNode *call_node) {
   AObject *vobj = call_node->input(0)->GetVobj();
   if (!vobj || vobj->GetType() != AObject::kTypeType) {
-    return false;
+    return nullptr;
   }
-  AbstractType *t = static_cast<AbstractType *>(vobj);
+  auto *t = static_cast<AbstractType *>(vobj);
   AObject::Type type = t->GetTypeType();
   if (!trace_flag() && ClassInstantiationFold(call_node, type)) {
-    return true;
+    MS_LOG(INFO) << "Class instantiation folded";
+    return call_node;
   }
 
   const auto &params = call_node->getInputs();
@@ -2323,6 +2324,7 @@ bool GraphBuilder::HandleCallClass(CallNode *call_node) {
                   IsMsClass(t->GetPyObject().ptr());
   // create instance
   if (support_create_instance || constant) {
+    MS_LOG(INFO) << "Build instance, support_create_instance=" << support_create_instance << ", constant=" << constant;
     constant |= std::none_of(params.begin(), params.end(), [](ValueNode *i) { return !i->IsConstantValue(); });
     std::vector<py::object> args;
     std::transform(params.begin() + 1, params.end(), std::back_inserter(args), [](ValueNode *n) {
@@ -2333,6 +2335,7 @@ bool GraphBuilder::HandleCallClass(CallNode *call_node) {
     instance = res.ptr() ? AObject::Convert(res) : nullptr;
   } else if (reinterpret_cast<PyTypeObject *>(vobj->GetPyObject().ptr()) == &PySuper_Type) {
     // take super ptr and compare with PySuper_Type
+    MS_LOG(INFO) << "Build super object";
     instance = BuildSuperObject(graph_->GetCodeObj());
     this->graph_->GetTracedNodes().pop_back();
     if (PyErr_Occurred()) {
@@ -2342,16 +2345,19 @@ bool GraphBuilder::HandleCallClass(CallNode *call_node) {
 
   if (constant && instance != nullptr && GuardConstCallNodeParam(call_node, call_node->GetGraph(), INT_MAX)) {
     // make instance is constant
+    MS_LOG(INFO) << "Instance is constant, convert it to LOAD_CONST node";
     auto iter = this->graph_->GetTracedNodes().end() - 1;
     MS_EXCEPTION_IF_CHECK_FAIL(*iter == call_node, "CallNode must be last when build sub graph");
     *iter = NewValueNode(instance, LOAD_CONST, -1, {});
     seek(0) = *iter;
+    return seek(0);
   } else if (!instance) {
     // create abstract instance
+    MS_LOG(INFO) << "Build abstract instance";
     instance = t->BuildAbstractInstance(CollectObjects({params.begin() + 1, params.end()}), call_node->GetOpcode());
   }
   call_node->SetVobj(instance);
-  return instance != nullptr;
+  return call_node;
 }
 
 // NOTE: must be copy __code__, copy.deepcopy do nothing for code object
@@ -4561,23 +4567,23 @@ py::object MindGraphBuilder::ResolveCallable(CallNode *call_node, StopTraceReaso
   return FindPyFunc(AObject::Convert(callable_info));
 }
 
-bool MindGraphBuilder::HandleCallClass(CallNode *call_node) {
-  bool succ = GraphBuilder::HandleCallClass(call_node);
-  if (!succ) {
+ValueNode *MindGraphBuilder::HandleCallClass(CallNode *call_node) {
+  ValueNode *node = GraphBuilder::HandleCallClass(call_node);
+  if (node == nullptr) {
     MS_LOG(INFO) << "Failed to handle call class";
-    return false;
+    return nullptr;
   }
-  if (call_node->has_abstract_wrapper()) {
-    return true;
-  }
-  if (call_node->GetVobj() != nullptr && call_node->GetVobj()->GetPyObject().ptr() != nullptr) {
-    auto abs_wrapper = FGBuilder()->AddLocalVariable(call_node->GetVobj()->GetPyObject());
+  if (node->GetVobj() != nullptr && node->GetVobj()->GetPyObject().ptr() != nullptr) {
+    auto abs_wrapper = FGBuilder()->AddLocalVariable(node->GetVobj()->GetPyObject());
     if (abs_wrapper != nullptr) {
-      call_node->set_abstract_wrapper(abs_wrapper);
-      return true;
+      node->set_abstract_wrapper(abs_wrapper);
     }
   }
-  return false;
+  if (!node->has_abstract_wrapper()) {
+    MS_LOG(INFO) << "Failed to handle call class, failed to create abstract for node: " << node->ToString();
+    return nullptr;
+  }
+  return node;
 }
 
 // Fix dynamic shape tensor get shape issue.
