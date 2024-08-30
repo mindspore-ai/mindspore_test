@@ -16,6 +16,9 @@
 
 #include "kernel/cpu/pyboost/customize/min.h"
 #include "kernel/cpu/pyboost/customize/max.h"
+#include "kernel/cpu/pyboost/auto_generate/min.h"
+#include "kernel/cpu/pyboost/auto_generate/max.h"
+#include "kernel/cpu/pyboost/auto_generate/cast.h"
 #include "kernel/common/pyboost/pyboost_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 
@@ -27,32 +30,50 @@ void MinOrMaxCPUCall(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &i
                      const std::string &reduce_op) {
   MS_EXCEPTION_IF_NULL(op);
   OpRunner::InferOpOutput(op, input_tensor);
-  auto axis = MakeValue<std::vector<int64_t>>({});
-  auto keep_dims = MakeValue<bool>(false);
-  std::vector<AbstractBasePtr> input_abs{input_tensor->ToAbstract(), axis->ToAbstract(), keep_dims->ToAbstract()};
 
-  PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor);
-  PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
+  if (input_tensor->data_type() == kNumberTypeFloat16) {
+    const auto &device_name = op->device_context()->device_context_key_.device_name_;
+    // Increase the precision to float32 for calculation
+    const auto &cast_input_tensor = PyBoostUtils::CastTensor(input_tensor, kNumberTypeFloat32, device_name);
+    tensor::BaseTensorPtr cast_output_tensor;
+    if (reduce_op == prim::kPrimReduceMin->name()) {
+      const auto &min_op = CREATE_PYBOOST_OP(Min, device_name);
+      cast_output_tensor = min_op->Call(cast_input_tensor);
+    } else {
+      const auto &max_op = CREATE_PYBOOST_OP(Max, device_name);
+      cast_output_tensor = max_op->Call(cast_input_tensor);
+    }
+    // After calculation, reduce the precision to float16
+    const auto &output_tensor = PyBoostUtils::CastTensor(cast_output_tensor, kNumberTypeFloat16, device_name);
+    op->set_outputs({output_tensor});
+  } else {
+    auto axis = MakeValue<std::vector<int64_t>>({});
+    auto keep_dims = MakeValue<bool>(false);
+    std::vector<AbstractBasePtr> input_abs{input_tensor->ToAbstract(), axis->ToAbstract(), keep_dims->ToAbstract()};
 
-  PyBoostUtils::DispatchRun(
-    std::make_shared<runtime::PyBoostDeviceTask>([op, input_tensor, axis, keep_dims, input_abs, reduce_op]() {
-      MS_LOG(DEBUG) << "For '" << op->primitive()->name() << "', the cpu task start";
-      auto device_context = op->device_context();
-      const auto &outputs = op->outputs();
-      const auto primitive = std::make_shared<Primitive>(reduce_op);
-      MS_EXCEPTION_IF_NULL(primitive);
+    PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), input_tensor);
+    PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
 
-      PyBoostUtils::MallocOpInputs(device_context, input_tensor);
-      PyBoostUtils::MallocOpOutputs(device_context, outputs);
+    PyBoostUtils::DispatchRun(
+      std::make_shared<runtime::PyBoostDeviceTask>([op, input_tensor, axis, keep_dims, input_abs, reduce_op]() {
+        MS_LOG(DEBUG) << "For '" << op->primitive()->name() << "', the cpu task start";
+        auto device_context = op->device_context();
+        const auto &outputs = op->outputs();
+        const auto primitive = std::make_shared<Primitive>(reduce_op);
+        MS_EXCEPTION_IF_NULL(primitive);
 
-      const auto &input_address_info =
-        PyBoostUtils::GetAddressInfo(device_context, op->stream_id(), input_abs, input_tensor, axis, keep_dims);
-      const auto &output_address_info =
-        PyBoostUtils::GetAddressInfo(device_context, op->stream_id(), {op->output_abs()}, outputs);
+        PyBoostUtils::MallocOpInputs(device_context, input_tensor);
+        PyBoostUtils::MallocOpOutputs(device_context, outputs);
 
-      PyBoostUtils::LaunchKernel(primitive, device_context, input_address_info, output_address_info);
-      MS_LOG(DEBUG) << "For '" << op->primitive()->name() << "', the cpu task end";
-    }));
+        const auto &input_address_info =
+          PyBoostUtils::GetAddressInfo(device_context, op->stream_id(), input_abs, input_tensor, axis, keep_dims);
+        const auto &output_address_info =
+          PyBoostUtils::GetAddressInfo(device_context, op->stream_id(), {op->output_abs()}, outputs);
+
+        PyBoostUtils::LaunchKernel(primitive, device_context, input_address_info, output_address_info);
+        MS_LOG(DEBUG) << "For '" << op->primitive()->name() << "', the cpu task end";
+      }));
+  }
 }
 }  // namespace
 
