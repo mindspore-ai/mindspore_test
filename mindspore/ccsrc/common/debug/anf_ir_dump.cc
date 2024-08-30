@@ -95,7 +95,7 @@ inline bool Skip(const MetaFuncGraphPtr &meta_func_graph) {
          meta_func_graph->isa<prim::ListAdd>() || meta_func_graph->isa<prim::StarredGetItem>() ||
          meta_func_graph->isa<prim::StarredUnpack>() || meta_func_graph->isa<prim::StarredUnpackMerge>() ||
          meta_func_graph->isa<prim::IterConverter>() || meta_func_graph->isa<prim::HasNext>() ||
-         meta_func_graph->isa<prim::Next>();
+         meta_func_graph->isa<prim::Next>() || meta_func_graph->isa<prim::ForHalfUnrollLess>();
 }
 
 void GetMetaFuncGraphText(const MetaFuncGraphPtr &meta_func_graph, std::ostringstream &oss) {
@@ -175,6 +175,8 @@ void GetPrimitiveText(const PrimitivePtr &prim, std::ostringstream &oss) {
     if (func->isa<Primitive>()) {
       auto sig_prim = dyn_cast<Primitive>(func);
       oss << sig_prim->GetAttrsText();
+    } else {
+      oss << func->ToString();
     }
   }
 }
@@ -1126,6 +1128,10 @@ void GetSubgraphAttrAsString(const FuncGraphPtr &func_graph, std::ostringstream 
       oss << GetValue<bool>(attr.second);
     } else if (attr.second->isa<StringImm>()) {
       oss << (GetValue<std::string>(attr.second));
+    } else if (attr.second->isa<Int64Imm>()) {
+      oss << GetValue<int64_t>(attr.second);
+    } else {
+      oss << attr.second->ToString();
     }
     oss << std::endl;
   }

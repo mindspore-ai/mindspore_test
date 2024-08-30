@@ -2266,5 +2266,32 @@ FuncGraphPtr ListFunc::GenerateFuncGraph(const AbstractBasePtrList &args_abs_lis
   fg->set_output(ret);
   return fg;
 }
+
+FuncGraphPtr ForHalfUnrollLess::GenerateFuncGraph(const AbstractBasePtrList &args_abs_list) {
+  constexpr size_t less_inputs_size = 2;
+  if (args_abs_list.size() != less_inputs_size) {
+    MS_LOG(EXCEPTION) << "For 'ForHalfUnrollLess', the number of input should be " << less_inputs_size << ", but got "
+                      << args_abs_list.size();
+  }
+  auto fg = std::make_shared<FuncGraph>();
+  fg->debug_info()->set_name("for_half_unroll_less");
+  auto x = fg->add_parameter();
+  auto y = fg->add_parameter();
+  auto other_value = args_abs_list[1]->BuildValue();
+  if (!other_value->isa<Int64Imm>()) {
+    MS_EXCEPTION(TypeError) << "The other value of ForHalfUnrollLess should be an int64 number, but got "
+                            << args_abs_list[1]->BuildType();
+  }
+  auto other = GetValue<int64_t>(other_value);
+  if (other == 0) {
+    fg->set_output(NewValueNode(false));
+    return fg;
+  }
+  constexpr auto less_module_name = "mindspore.ops.composite.multitype_ops.less_impl";
+  ValuePtr less_op = prim::GetPythonOps("less", less_module_name);
+  auto cond_node = fg->NewCNodeInOrder({NewValueNode(less_op), x, y});
+  fg->set_output(cond_node);
+  return fg;
+}
 }  // namespace prim
 }  // namespace mindspore
