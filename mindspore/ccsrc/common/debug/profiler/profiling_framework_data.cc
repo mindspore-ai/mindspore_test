@@ -140,13 +140,12 @@ std::vector<uint8_t> OpRangeData::encode() {
 
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && !defined(ANDROID) && !defined(__APPLE__)
 void ProfilingFrameworkData::RecordHostProfile(std::shared_ptr<ProfilerData> data, uint64_t step) {
-  auto ascend_profiler = Profiler::GetInstance(kAscendDevice);
-  MS_EXCEPTION_IF_NULL(ascend_profiler);
-  if (!ascend_profiler->EnableHostStack()) {
+  auto profiler_manager = profiler::ProfilerManager::GetInstance();
+  MS_EXCEPTION_IF_NULL(profiler_manager);
+  if (!profiler_manager->GetProfilingEnableFlag() || !profiler_manager->EnableCollectHost()) {
     return;
   }
   std::vector<std::string> stack_vec;
-  stack_vec.push_back(data->py_stack_);
   std::string op_name = data->op_full_name_;
   if (data->is_stage_) {
     op_name = kProfilerStageString.at(data->stage_);

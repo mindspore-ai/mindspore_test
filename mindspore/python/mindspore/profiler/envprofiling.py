@@ -197,7 +197,8 @@ def combine_profile_options(profiling_options):
         "timeline_limit": profiling_options.get("timeline_limit", 500),
         "parallel_strategy": profiling_options.get("parallel_strategy", False),
         'op_time': profiling_options.get("op_time", True),
-        'profile_framework': profiling_options.get("profile_framework", "all")
+        'profile_framework': profiling_options.get("profile_framework", "all"),
+        'with_stack': profiling_options.get("with_stack", False)
     }
     combine_options = parse_profiling_args(config_options)
     if combine_options.get("start"):
@@ -250,7 +251,8 @@ def profiler_check_env():
              sync_enable=config.get("sync_enable", False),
              op_time=config.get("op_time", False),
              timeline_limit=config.get("timeline_limit", 500),
-             profile_framework=config.get("profile_framework", "all"))
+             profile_framework=config.get("profile_framework", "all"),
+             with_stack=config.get("with_stack", False))
 
 
 profiler_check_env()

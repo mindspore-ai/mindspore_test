@@ -78,8 +78,8 @@ ProfilerRecorder::ProfilerRecorder(ProfilerModule module, ProfilerEvent event, c
     return;
   }
 
-  data_ = std::make_unique<Data>(module, event, profiler.GetBriefName(op_name), std::string(), profiler.GetTimeStamp(),
-                                 flow_id, is_inner_event);
+  data_ = std::make_unique<Data>(module, event, op_name, profiler.GetBriefName(op_name), std::string(),
+                                 profiler.GetTimeStamp(), flow_id, is_inner_event);
 }
 
 ProfilerRecorder::~ProfilerRecorder() {
