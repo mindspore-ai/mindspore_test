@@ -129,6 +129,16 @@ AnfNodePtr GetNodeAfterArgHandler(const AnfNodePtr &node, const std::string &op_
   return fg->NewCNodeInOrder(
     {NewValueNode(arg_handler_fg), NewValueNode(op_name), NewValueNode(op_arg.arg_name_), node});
 }
+
+bool CheckTypeIdAndShapeEqual(const AbstractBasePtr &left, const AbstractBasePtr &right) {
+  // Regard Tensor and Parameter as the same type
+  auto left_type = left->BuildType();
+  MS_EXCEPTION_IF_NULL(left_type);
+  auto right_type = right->BuildType();
+  MS_EXCEPTION_IF_NULL(right_type);
+  return left_type->type_id() == right_type->type_id() &&
+         CheckAndConvertUtils::CheckAbstractShapeSame({left, right}) == 0;
+}
 }  // namespace
 
 CNodePtr DoSignatureEvaluator::GenerateNewNodeBySignatures(const ValuePtr &func,
@@ -4132,14 +4142,21 @@ class WhileLoopEvaluator : public Evaluator {
     EvalResultPtr cond_eval_result = engine->GetEvaluatorFor(cond_func)->Run(engine, value_arg_conf_list, nullptr);
     EvalResultPtr loop_eval_result = engine->GetEvaluatorFor(loop_func)->Run(engine, value_arg_conf_list, nullptr);
     auto loop_result_abs = loop_eval_result->abstract();
-    if (!CheckTypeIdEqual(loop_result_abs, init_value_abs)) {
+    if (!CheckTypeIdAndShapeEqual(loop_result_abs, init_value_abs)) {
       MS_EXCEPTION(ValueError) << "WhileLoop op has invalid argument, the return value of the [loop_func] "
-                               << "and the [init_value] should maintain the same type, but got: "
+                               << "and the [init_value] should maintain the same type and shape, but got: "
                                << loop_result_abs->ToString() << " and " << init_value_abs->ToString();
     }
     // Generate condition function graph
     auto cond_fg = cond_func->cast<abstract::FuncGraphAbstractClosurePtr>()->func_graph();
     cond_fg->debug_info()->set_name("cond_func");
+    // Keep while loop not unroll
+    if (cond_eval_result->abstract()->BuildValue()->ContainsValueAny() ||
+        loop_result_abs->BuildValue()->ContainsValueAny()) {
+      auto output = cond_fg->output();
+      auto mutable_output = cond_fg->NewCNodeInOrder({NewValueNode(prim::kPrimMutable), output});
+      cond_fg->set_output(mutable_output);
+    }
 
     // Convert kPrimWhileLoop to a func graph
     auto while_loop_graph = std::make_shared<FuncGraph>();
@@ -4152,7 +4169,6 @@ class WhileLoopEvaluator : public Evaluator {
     auto cond_result = while_loop_graph->NewCNodeInOrder({NewValueNode(cond_fg), init_param});
     // Generate loop function graph
     auto loop_func_graph = std::make_shared<FuncGraph>();
-    loop_func_graph->set_flag(FUNC_GRAPH_FLAG_CORE, true);
     loop_func_graph->debug_info()->set_name("loop_func");
     auto loop_fg = loop_func->cast<abstract::FuncGraphAbstractClosurePtr>()->func_graph();
     auto loop_value = loop_func_graph->NewCNodeInOrder({NewValueNode(loop_fg), init_param});
@@ -4172,11 +4188,6 @@ class WhileLoopEvaluator : public Evaluator {
       {NewValueNode(prim::kPrimSwitch), cond_node, NewValueNode(loop_func_graph), NewValueNode(return_func_graph)});
     auto result = while_loop_graph->NewCNodeInOrder({sw_node});
     while_loop_graph->set_output(result);
-    // Convert mutable argument, so that the while loop will not be unrolled
-    if (cond_eval_result->abstract()->BuildValue()->ContainsValueAny() ||
-        loop_result_abs->BuildValue()->ContainsValueAny()) {
-      init_value_node = cur_graph->NewCNode({NewValueNode(prim::kPrimMutable), init_value_node});
-    }
     auto while_loop_graph_caller = cur_graph->NewCNodeInOrder({NewValueNode(while_loop_graph), init_value_node});
     AnfNodeConfigPtr fn_conf = engine->MakeConfig(while_loop_graph_caller, out_conf->context(), out_conf->func_graph());
     return engine->ForwardConfig(out_conf, fn_conf);
@@ -4184,16 +4195,6 @@ class WhileLoopEvaluator : public Evaluator {
 
   EvalResultPtr Eval(AnalysisEnginePtr, const AbstractBasePtrList &, const AnfNodeConfigPtr &) override {
     MS_LOG(INTERNAL_EXCEPTION) << "Eval() should not be called, Run() method should be called";
-  }
-
- private:
-  bool CheckTypeIdEqual(const AbstractBasePtr &left, const AbstractBasePtr &right) {
-    // Regard Tensor and Parameter as the same type
-    auto left_type = left->BuildType();
-    MS_EXCEPTION_IF_NULL(left_type);
-    auto right_type = right->BuildType();
-    MS_EXCEPTION_IF_NULL(right_type);
-    return left_type->type_id() == right_type->type_id();
   }
 };
 
@@ -4358,13 +4359,6 @@ class ScanEvaluator : public Evaluator {
         const auto &ele = abs_seq->elements();
         return ele[kIndex0];
       }
-    } else if (array->isa<AbstractDictionary>()) {
-      auto abs_dict = array->cast<AbstractDictionaryPtr>();
-      if (abs_dict->size()) {
-        const auto &ele = abs_dict->elements();
-        return std::make_shared<AbstractKeywordArg>(GetValue<std::string>(ele[kIndex0].first->BuildValue()),
-                                                    ele[kIndex0].second);
-      }
     }
     return std::make_shared<abstract::AbstractNone>();
   }
@@ -4421,6 +4415,12 @@ class ScanEvaluator : public Evaluator {
     if (!loop_result_tuple || loop_result_tuple->size() != loop_result_size) {
       MS_EXCEPTION(ValueError) << "For `Scan` op, the return value of parameter [loop_func] "
                                << "must be a tuple with two elements, but got: " << loop_result_abs->ToString();
+    }
+    const auto &ele_abs = loop_result_tuple->elements()[0];
+    if (!CheckTypeIdAndShapeEqual(ele_abs, init_value)) {
+      MS_EXCEPTION(ValueError) << "Scan op has invalid argument, the first element of [loop_func]'s output "
+                               << "and the [init_value] should maintain the same type and shape, but got: "
+                               << ele_abs->ToString() << " and " << init_value->ToString();
     }
     return loop_result_abs;
   }
