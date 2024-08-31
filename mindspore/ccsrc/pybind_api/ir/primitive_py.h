@@ -61,7 +61,7 @@ enum class HookType {
   kUnknown,
 };
 
-class PYBOOST_API PrimitivePy : public Primitive {
+class ME_EXPORT PrimitivePy : public Primitive {
  public:
   explicit PrimitivePy(const std::string &name);
   PrimitivePy(const PrimitivePy &prim_py);
