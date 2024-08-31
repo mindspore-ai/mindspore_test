@@ -20,7 +20,7 @@
 #include <vector>
 #include <unordered_set>
 
-#include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "kernel/oplib/opinfo.h"
 #include "kernel/oplib/oplib.h"
 #include "include/common/utils/anfalgo.h"

@@ -1,0 +1,16 @@
+#operator custom
+custom:
+  args:
+    tensors:
+      dtype: tuple[tensor]
+      type_cast: list[tensor]
+  returns:
+    out:
+      dtype: tensor
+  function:
+    disable: True
+  class:
+    disable: True
+  dispatch:
+    enable: True
+    Ascend: CustomAscend

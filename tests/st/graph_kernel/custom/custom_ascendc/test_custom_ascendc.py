@@ -92,6 +92,18 @@ class TestCase():
         assert result.returncode == 0
 
     @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
+    def test_custom_add_aclnn_add_prefix(self):
+        """
+        Feature: Custom op testcase
+        Description: test case for adding prefix
+        Expectation: the result match with numpy result
+        """
+        command = ['pytest -sv test_custom_aclnn.py::test_custom_add_aclnn_add_prefix']
+        result = subprocess.run(command, shell=True, stderr=subprocess.STDOUT)
+        assert result.returncode == 0
+
+
+    @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')
     def test_custom_add_aclnn_dynamic(self):
         """
         Feature: Custom op testcase

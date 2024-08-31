@@ -45,6 +45,7 @@
 #include "runtime/device/ms_device_shape_transfer.h"
 #include "plugin/device/cpu/hal/device/kernel_select_cpu.h"
 #include "utils/anf_utils.h"
+#include "kernel/ascend/opapi/aclnn/custom_aclnn_utils.h"
 #endif
 
 namespace mindspore {
@@ -689,6 +690,7 @@ bool IsEnableAclnn(const KernelGraphPtr &kernel_graph, const AnfNodePtr &node) {
   if (IsPrimitiveCNode(node, prim::kPrimCustom)) {
     auto primitive = GetCNodePrimitive(node);
     auto op_type = GetValue<std::string>(primitive->GetAttr("reg_op_name"));
+    op_type = kernel::AddPrefixForCustomNode(op_type, primitive->GetAttr("custom_aclop") != nullptr);
     auto op_api_func = transform::GetOpApiFunc(op_type.c_str());
     if (op_api_func != nullptr) {
       MS_LOG(INFO) << "Kernel of custom op " << node->fullname_with_scope() << "is selected AclNN.";
