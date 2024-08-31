@@ -35,6 +35,7 @@ class AscendMemoryPool : public DynamicMemPoolBestFit {
   bool FreeDeviceMem(const DeviceMemPtr &addr) override;
   size_t MmapDeviceMem(const size_t size, const DeviceMemPtr addr) override;
   size_t GetMaxUsedMemSize() const override;
+  size_t GetVmmUsedMemSize() const override;
   size_t free_mem_size() override;
   uint64_t total_mem_size() const override;
   std::string GetMemoryPoolType() const override { return "Ascend"; }
@@ -42,9 +43,6 @@ class AscendMemoryPool : public DynamicMemPoolBestFit {
   void SetMemPoolBlockSize(size_t available_device_mem_size) override;
 
   void ResetIdleMemBuf() const;
-
-  // The main program entry of memory alloc.
-  DeviceMemPtr AllocOverflowTensorMem(size_t size, bool from_persistent_mem = false);
 
   static AscendMemoryPool &GetInstance() {
     static AscendMemoryPool instance;

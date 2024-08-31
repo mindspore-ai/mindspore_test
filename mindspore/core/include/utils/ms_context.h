@@ -302,7 +302,7 @@ class MS_CORE_API MsContext {
   std::string GetJitLevel() const;
   bool IsKByKExecutorMode();
 
-  bool UseSimulationApi() const;
+  bool UseSimulationApi();
 
   std::string GetLoadPluginErrorStr() const { return load_plugin_error_(); }
 

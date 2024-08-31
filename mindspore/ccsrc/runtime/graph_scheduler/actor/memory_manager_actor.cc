@@ -20,6 +20,7 @@
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "async/async.h"
 #include "utils/log_adapter.h"
+#include "utils/ms_utils.h"
 
 namespace mindspore {
 namespace runtime {
@@ -254,24 +255,28 @@ void MemoryManagerActor::AllocateSomasMemory(SomasInfo *const somas_info, const 
     std::string error_info = from_aid.Name() + " already has the base somas address.";
     SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*op_context), error_info);
   }
-  try {
-    device::DynamicMemAllocatorDebugInfo::SetDebugInfo(from_aid.Name(), device::AllocatorType::kKernelOutput);
-    auto device_ptr = device_context->device_res_manager_->AllocateMemory(somas_info->whole_block_size_);
-    if (device_ptr == nullptr) {
-      MS_LOG(INFO) << from_aid.Name()
-                   << " allocate somas whole block memory failed, alloc size: " << somas_info->whole_block_size_
-                   << ". Try to allocate the merged blocks memory.";
-    } else {
-      device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddCompileTimeMemInfo, from_aid.Name(),
-                                                     somas_info->whole_block_size_, device_ptr,
-                                                     device::tracker::MemType::kSomas);
-      somas_info->base_address_ = device_ptr;
-      PROFILER_END(start_time, ProfilerModule::kRuntime, ProfilerEvent::kMemoryAlloc, from_aid.Name(), false);
+
+  if (common::IsEnableAllocConfig(common::kAllocSomasWholeBlock)) {
+    try {
+      device::DynamicMemAllocatorDebugInfo::SetDebugInfo(from_aid.Name(), device::AllocatorType::kKernelOutput);
+      auto device_ptr = device_context->device_res_manager_->AllocateMemory(somas_info->whole_block_size_);
+      if (device_ptr == nullptr) {
+        MS_LOG(INFO) << from_aid.Name()
+                     << " allocate somas whole block memory failed, alloc size: " << somas_info->whole_block_size_
+                     << ". Try to allocate the merged blocks memory.";
+      } else {
+        device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddCompileTimeMemInfo, from_aid.Name(),
+                                                       somas_info->whole_block_size_, device_ptr,
+                                                       device::tracker::MemType::kSomas);
+        somas_info->base_address_ = device_ptr;
+        PROFILER_END(start_time, ProfilerModule::kRuntime, ProfilerEvent::kMemoryAlloc, from_aid.Name(), false);
+        MS_LOG(INFO) << from_aid.Name() << " allocate somas whole block memory succeeded and continue running.";
+        return;
+      }
+    } catch (const std::exception &e) {
+      SetOpContextMemoryAllocFail(from_aid.Name(), device_context, somas_info->whole_block_size_, op_context);
       return;
     }
-  } catch (const std::exception &e) {
-    SetOpContextMemoryAllocFail(from_aid.Name(), device_context, somas_info->whole_block_size_, op_context);
-    return;
   }
 
   // Allocate the merged blocks memory.

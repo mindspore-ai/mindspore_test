@@ -1036,7 +1036,7 @@ namespace {
 void InitGeMemory(const KernelGraphPtr &kernel_graph) {
   auto execution_order = kernel_graph->execution_order();
   for (const auto &node : execution_order) {
-    if (!IsPrimitiveCNode(node, prim::kPrimCallGE)) {
+    if (!IsPrimitiveCNode(node, prim::kPrimGEGraphOp)) {
       continue;
     }
     auto stream_id = AnfAlgo::GetStreamId(node);

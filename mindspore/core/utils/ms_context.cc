@@ -759,7 +759,7 @@ void MsContext::SetMsInternalEnableCustomKernelList() {
   MS_LOG(INFO) << "Enable internal kernel list: " << SetToString(ms_internal_enable_custom_kernel_list_);
 }
 
-bool MsContext::UseSimulationApi() const {
+bool MsContext::UseSimulationApi() {
   static auto kSimulationLevelKey = "MS_SIMULATION_LEVEL";
   static auto kSimulationLevel0 = "0";
   static auto kSimulationLevel1 = "1";

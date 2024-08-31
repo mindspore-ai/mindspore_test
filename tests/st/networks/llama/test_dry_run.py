@@ -99,10 +99,9 @@ def test_train_pipeline():
     Description: Test context parallel trainer for train.
     Expectation: AssertionError
     """
-    # os.environ['ASCEND_HOME_PATH'] = "/usr/local/Ascend/latest"
     sh_path = os.path.split(os.path.realpath(__file__))[0]
-    # os.system(f"source {sh_path}/env.sh")
-    run_command(f"bash {sh_path}/dry.sh 0 pipeline", f"{sh_path}/pipeline.log", f"{sh_path}/rank_0", 4, 2, 10)
+    run_command(f"bash {sh_path}/dry.sh 0 pipeline", f"{sh_path}/pipeline.log",
+                f"{sh_path}/pipeline/rank_0", 4, 2, 10)
 
 
 @arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -112,7 +111,6 @@ def test_train_grad_accu():
     Description: Test context parallel trainer for train.
     Expectation: AssertionError
     """
-    # os.environ['ASCEND_HOME_PATH'] = "/usr/local/Ascend/latest"
     sh_path = os.path.split(os.path.realpath(__file__))[0]
-    # os.system(f"source {sh_path}/env.sh")
-    run_command(f"bash {sh_path}/dry.sh 1 grad_accu", f"{sh_path}/grad_accu.log", f"{sh_path}/rank_0", 8, 2, 10)
+    run_command(f"bash {sh_path}/dry.sh 1 grad_accu", f"{sh_path}/grad_accu.log",
+                f"{sh_path}/grad_accu/rank_0", 8, 2, 10)

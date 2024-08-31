@@ -47,8 +47,8 @@ KernelModPtr GeOpBuild(const AnfNodePtr &anf_node, device::ascend::GeGraphExecut
   MS_EXCEPTION_IF_NULL(anf_node);
   MS_EXCEPTION_IF_NULL(graph_executor);
 
-  if (!common::AnfAlgo::CheckPrimitiveType(anf_node, prim::kPrimCallGE)) {
-    MS_LOG(EXCEPTION) << "Current node must be callGE! but got " << anf_node->DebugString();
+  if (!common::AnfAlgo::CheckPrimitiveType(anf_node, prim::kPrimGEGraphOp)) {
+    MS_LOG(EXCEPTION) << "Current node must be GEGraphOp! but got " << anf_node->DebugString();
   }
 
   auto kernel_mod_ptr = std::make_shared<GeKernelMod>();

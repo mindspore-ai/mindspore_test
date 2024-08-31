@@ -81,6 +81,7 @@ class GeDeviceResManager : public DeviceResManager {
               bool blocking, bool *return_self) override;
 
   bool LoadCollectiveCommLib() override;
+  bool IsEnableVmm() const override;
 
   void ResetStreamAndCtx() override;
   bool BindDeviceToCurrentThread(bool force_bind) const override;

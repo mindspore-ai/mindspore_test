@@ -45,7 +45,7 @@ std::unordered_map<size_t, size_t> GetRefInfoMaps(const CNodePtr &cnode) {
   }
 
   if (kernel_type == KernelType::GE_KERNEL) {
-    if (!common::AnfAlgo::CheckPrimitiveType(cnode, prim::kPrimCallGE)) {
+    if (!common::AnfAlgo::CheckPrimitiveType(cnode, prim::kPrimGEGraphOp)) {
       MS_LOG(EXCEPTION) << "Current node must be callinline! but got " << cnode->DebugString();
     }
     auto kernel_mod = AnfAlgo::GetKernelMod(cnode);
@@ -109,8 +109,8 @@ session::KernelWithIndex FindRefOriginNode(const AnfNodePtr &node, const AnfNode
     MS_EXCEPTION_IF_NULL(cnode);
     std::string op_name = common::AnfAlgo::GetCNodeName(cnode);
     // deal special (identity,cast,reshape) op and nop-node
-    // There is currently no optimizer operator in CallGE for sub graph mode.
-    if (!IsPrimitiveCNode(origin_ref_node, prim::kPrimCallGE)) {
+    // There is currently no optimizer operator in GEGraphOp for sub graph mode.
+    if (!IsPrimitiveCNode(origin_ref_node, prim::kPrimGEGraphOp)) {
       if (op_name == prim::kPrimCast->name() || op_name == prim::kPrimIdentity->name() ||
           op_name == prim::kPrimReshape->name() || common::AnfAlgo::IsNopNode(cnode)) {
         AnfNodePtr next_node = cnode->input(kIndex1);

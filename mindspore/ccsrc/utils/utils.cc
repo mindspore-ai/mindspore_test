@@ -309,7 +309,7 @@ bool IsEnableRefMode() {
 }
 
 bool IsMemoryPoolRecycle() {
-  static bool optimize_mem = !common::IsDisableAlllocConfig(common::kAllocMemoryRecycle);
+  static bool optimize_mem = !common::IsDisableAllocConfig(common::kAllocMemoryRecycle);
   static bool disable_ge_kernel = common::IsDisableRuntimeConfig(common::kRuntimeGeKernel);
   static bool enable_ref_mode = IsEnableRefMode();
   auto context_ptr = MsContext::GetInstance();

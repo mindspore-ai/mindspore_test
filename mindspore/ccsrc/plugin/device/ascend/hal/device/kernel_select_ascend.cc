@@ -606,7 +606,7 @@ std::tuple<bool, std::string, ExceptionType> SelectKernelInfoWithMsg(const Kerne
   std::tuple<bool, std::string, ExceptionType> result = std::make_tuple(true, "", NoExceptionType);
   std::string op_name = common::AnfAlgo::GetCNodeName(node);
 
-  if (common::AnfAlgo::CheckPrimitiveType(node, prim::kPrimCallGE)) {
+  if (common::AnfAlgo::CheckPrimitiveType(node, prim::kPrimGEGraphOp)) {
     GenerateKernelBuildInfo(node, KernelType::GE_KERNEL);
     if (op_selected_type[kGeOpSelect].count(op_name) == 0) {
       (void)op_selected_type[kGeOpSelect].insert(op_name);

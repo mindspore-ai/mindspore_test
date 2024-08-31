@@ -98,7 +98,6 @@ void GetBackendCommonUnifyMindIRPassManager(PassManagerPtr *unify_mindir_pm) {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   bool graph_mode = ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) == kGraphMode;
-  bool is_kbk_mode = ms_context->IsKByKExecutorMode();
   if (graph_mode) {
     (*unify_mindir_pm)->AddPass(std::make_shared<opt::GradSparseSoftmaxCrossEntropyWithLogitsUnifyMindIR>());
     (*unify_mindir_pm)->AddPass(std::make_shared<opt::GradSparseSoftmaxCrossEntropyWithLogitsUnifyMindIRV2>());
@@ -149,11 +148,7 @@ void GetBackendCommonUnifyMindIRPassManager(PassManagerPtr *unify_mindir_pm) {
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::FlashAttentionFusionV2>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::MatmulReduceScatterFusion>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::AllGatherMatmulFusion>());
-  // kbk aclnn
-  bool enable_lccl = device::ascend::EnableLccl();
-  if (is_kbk_mode && !enable_lccl) {
-    (*unify_mindir_pm)->AddPass(std::make_shared<opt::MatMulAllReduceFusion>());
-  }
+  (*unify_mindir_pm)->AddPass(std::make_shared<opt::MatMulAllReduceFusion>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::CentralizationMindIR>());
 #ifdef ENABLE_INTERNAL_KERNELS
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::AddLayernormFusion>());
@@ -168,7 +163,6 @@ void GetBackendCommonUnifyMindIRPassManager(PassManagerPtr *unify_mindir_pm) {
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::RmsNormQuantFusion>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::AddRmsNormFusion>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::AddCastRmsNormCastFusion>());
-  (*unify_mindir_pm)->AddPass(std::make_shared<opt::MatMulAllReduceFusion>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::SplitConcatFusion>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::MatmulElemBiasaddFusion>());
   (*unify_mindir_pm)->AddPass(std::make_shared<opt::MatmulElemAddFusion>());

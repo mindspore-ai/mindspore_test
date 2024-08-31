@@ -546,6 +546,10 @@ const size_t DynamicMemPoolBestFit::FreeIdleMemsByEagerFree() {
     std::cout << "Total eager free memory : " << free_size << ", real free : " << real_free_size
               << ", not free size: " << (free_size - real_free_size) << "." << std::endl;
   }
+  if (real_free_size > kGBToByte) {
+    MS_LOG(WARNING) << "Eager free count : " << eager_free_count_ << ", free memory : " << free_size
+                    << ", real free : " << real_free_size << ", not free size: " << (free_size - real_free_size) << ".";
+  }
   MS_LOG(INFO) << "Eager free count : " << eager_free_count_ << ", free memory : " << free_size
                << ", real free : " << real_free_size << ", not free size: " << (free_size - real_free_size) << ".";
   return real_free_size;
@@ -1252,6 +1256,9 @@ size_t DynamicMemPoolBestFit::MaxMemReservedStatistics() const {
          common_mem_->mps_.temp_total_mem_size_ - persistent_mem_->mps_.temp_total_mem_size_;
 }
 size_t DynamicMemPoolBestFit::ActualPeakStatistics() const {
+  if (IsEnableVmm()) {
+    return GetVmmUsedMemSize();
+  }
   return common_mem_->CalActualPeak() + persistent_mem_->CalActualPeak();
 }
 std::unordered_map<std::string, std::size_t> DynamicMemPoolBestFit::BlockCountsStatistics() const {

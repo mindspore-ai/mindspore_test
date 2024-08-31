@@ -30,83 +30,72 @@
 namespace mindspore {
 namespace device {
 namespace ascend {
-class AscendMemAdapter {
- public:
-  static AscendMemAdapter &GetInstance() {
-    static AscendMemAdapter instance{};
-    return instance;
+struct MemoryBlock {
+  MemoryBlock(void *ptr, const size_t size, const std::string &tag) {
+    mem_ptr = ptr;
+    mem_size = size;
+    mem_tag = tag;
   }
 
-  bool Initialize();
-  bool DeInitialize();
+  void *mem_ptr{nullptr};
+  size_t mem_size{0};
+  std::string mem_tag;
+};
 
-  void SimulationInitialize();
+class AscendMemAdapter;
+using AscendMemAdapterPtr = std::shared_ptr<AscendMemAdapter>;
 
-  uint8_t *MallocStaticDevMem(size_t size, const std::string &tag = "");
-  uint8_t *MallocDynamicDevMem(size_t size, const std::string &tag = "");
-  uint8_t *MallocOverflowMem();
-  uint8_t *GetBaseAddr() const;
-  bool FreeStaticDevMem(void *) const { return true; }
-  void ResetDynamicMemory();
+class AscendMemAdapter {
+ public:
+  virtual ~AscendMemAdapter() = default;
+  static AscendMemAdapterPtr GetInstance();
+
+  virtual bool Initialize();
+  virtual bool DeInitialize();
+
+  virtual uint8_t *MallocStaticDevMem(size_t size, const std::string &tag = "") = 0;
+  virtual uint8_t *MallocDynamicDevMem(size_t size, const std::string &tag = "") = 0;
+  virtual void ResetDynamicMemory() = 0;
+  virtual std::string DevMemStatistics() const = 0;
+  virtual size_t GetDynamicMemUpperBound(void *min_static_addr) const = 0;
+  [[nodiscard]] virtual uint64_t FreeDevMemSize() const = 0;
+
+  virtual void SimulationInitialize();
+
   int64_t GetActualPeakMemory() const { return actual_peak_memory_; }
   int64_t GetUsedPeakMemory() const { return used_peak_memory_; }
   void UpdateActualPeakMemory(int64_t memory) { actual_peak_memory_ = std::max(actual_peak_memory_, memory); }
   void UpdateUsedPeakMemory(int64_t memory) { used_peak_memory_ = std::max(used_peak_memory_, memory); }
-
-  static size_t GetRoundUpAlignSize(size_t input_size);
-
-  [[nodiscard]] uint64_t FreeDevMemSize() const { return std::max(static_mem_offset_ - max_dynamic_mem_offset_, 0L); }
   [[nodiscard]] uint64_t MaxHbmSizeForMs() const { return max_available_ms_hbm_size_; }
   [[nodiscard]] int64_t GetMsUsedHbmSize() const { return ms_used_hbm_size_; }
-  std::string DevMemStatistics() const;
-  std::string DevMemDetailInfo() const;
+  static size_t GetRoundUpAlignSize(size_t input_size);
+  static size_t GetRoundDownAlignSize(size_t input_size);
 
- private:
+ protected:
   AscendMemAdapter() = default;
-
-  struct MemoryBlock {
-    MemoryBlock(void *ptr, const size_t size, const std::string &tag) {
-      mem_ptr = ptr;
-      mem_size = size;
-      mem_tag = tag;
-    }
-
-    void *mem_ptr{nullptr};
-    size_t mem_size{0};
-    std::string mem_tag;
-  };
-
   uint8_t *MallocFromRts(size_t size) const;
   bool FreeToRts(void *devPtr, const size_t size) const;
-  size_t GetDeviceMemSizeFromContext() const;
-  bool initialized_{false};
 
+  bool initialized_{false};
   // Support multi-thread.
   std::mutex mutex_;
 
-  // rts Memory INFO
-  size_t device_hbm_total_size_{0};
-  size_t device_hbm_free_size_{0};
-  int64_t max_available_ms_hbm_size_{0};
-  uint8_t *device_mem_base_addr_{nullptr};
-  int64_t ms_used_hbm_size_{0};
-
-  // dynamic memory info, from a low address to a high address
-  int64_t cur_dynamic_mem_offset_{0};
-  // Maximum dynamic memory have already allocated, dynamically updated
-  int64_t max_dynamic_mem_offset_{0};
-  // History maximum dynamic memory (used in memory pool recycle mode)
-  int64_t history_max_dynamic_mem_offset_{0};
-  std::vector<std::shared_ptr<MemoryBlock>> dynamic_memory_block_list_;
-
-  // static memory info, from a high address to a low address
-  int64_t static_mem_offset_{0};
   // Actual peak memory usage (with fragments)
   int64_t actual_peak_memory_{0};
   // Used peak memory usage (without fragments)
   int64_t used_peak_memory_{0};
-  std::vector<std::shared_ptr<MemoryBlock>> static_memory_block_list_;
-  static size_t GetRoundDownAlignSize(size_t input_size);
+
+  // rts Memory INFO
+  size_t device_hbm_total_size_{0};
+  size_t device_hbm_free_size_{0};
+
+  int64_t ms_used_hbm_size_{0};
+  int64_t max_available_ms_hbm_size_{0};
+
+ private:
+  DISABLE_COPY_AND_ASSIGN(AscendMemAdapter)
+  size_t GetDeviceMemSizeFromContext() const;
+  static AscendMemAdapterPtr instance_;
 };
 }  // namespace ascend
 }  // namespace device

@@ -92,11 +92,8 @@ bool IsBpropNode(const AnfNodePtr &node) {
   return node->fullname_with_scope().find("Gradients") == 0;
 }
 
-bool IsKbkAclnnMode() {
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-
-  bool is_k_by_k_mode = ms_context->IsKByKExecutorMode();
+bool IsKbkAclnnMode(const KernelGraphPtr &kernel_graph) {
+  bool is_k_by_k_mode = !kernel_graph->is_graph_run_mode();
   bool enable_lccl = device::ascend::EnableLccl();
   //  When lccl communication is not enabled in the kbk scenario
   return is_k_by_k_mode && !enable_lccl;
@@ -165,8 +162,10 @@ AnfNodePtr MatMulAllReduceFusion::CreateMatMulAllReduceNode(const FuncGraphPtr &
   MS_ASSERT(input_x_node != nullptr);
   auto input_y_node = matmul_cnode->input(kIndex2);
   MS_ASSERT(input_y_node != nullptr);
+  auto kernel_graph = func_graph->cast<KernelGraphPtr>();
+  MS_EXCEPTION_IF_NULL(kernel_graph);
 
-  if (IsKbkAclnnMode()) {
+  if (IsKbkAclnnMode(kernel_graph)) {
     auto is_trans_a = GetInputValueFromCNode<bool>(matmul_cnode, kIndex3);
     // current only support b tans
     MS_CHECK_TRUE_RET(!is_trans_a, {});
@@ -201,7 +200,10 @@ AnfNodePtr MatMulAllReduceFusion::CreateMatMulAllReduceNode(const FuncGraphPtr &
 const AnfNodePtr MatMulAllReduceFusion::Process(const mindspore::FuncGraphPtr &func_graph,
                                                 const mindspore::AnfNodePtr &node,
                                                 const mindspore::EquivPtr &equiv) const {
-  if (IsKbkAclnnMode()) {
+  MS_EXCEPTION_IF_NULL(func_graph);
+  auto kernel_graph = func_graph->cast<KernelGraphPtr>();
+  MS_EXCEPTION_IF_NULL(kernel_graph);
+  if (IsKbkAclnnMode(kernel_graph)) {
     auto ms_context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(ms_context);
     auto mc2_fusion_level = ms_context->get_param<int>(MS_CTX_COMPUTE_COMMUNICATE_FUSION_LEVEL);
@@ -227,6 +229,9 @@ const AnfNodePtr MatMulAllReduceFusion::Process(const mindspore::FuncGraphPtr &f
     }
 
   } else {
+#ifndef ENABLE_INTERNAL_KERNELS
+    return nullptr;
+#else
     auto ms_context = MsContext::GetInstance();
     MS_EXCEPTION_IF_NULL(ms_context);
     if (!ms_context->IsEnableInferBoost()) {
@@ -245,6 +250,7 @@ const AnfNodePtr MatMulAllReduceFusion::Process(const mindspore::FuncGraphPtr &f
     if (!enable_matmul_allreduce) {
       return nullptr;
     }
+#endif  // ENABLE_INTERNAL_KERNELS
   }
 
   if (func_graph == nullptr || node == nullptr) {
