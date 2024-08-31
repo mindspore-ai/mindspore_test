@@ -103,7 +103,9 @@ class SuperKernelActor : public DebugAwareActor {
   // Parse all nodes dependence of graph_, record device tensor store key of every kernel, calculate original ref count
   // of CNode and Parameter, prepare input and heterogeneous output device address of all kernels.
   void LinkKernelActors();
-  void AnalyseNodesDependence();
+  void AnalyseNodesDependence(const HashMap<size_t, AnfNodePtr> &device_tensor_store_keys_map,
+                              const HashMap<AnfNodePtr, std::vector<size_t>> &output_node_to_actor_output_index);
+
   void LinkKernelActor(const CNodePtr &kernel, size_t input_index, const AnfNodePtr &input_node, size_t output_index);
   void LinkKernelActorByDeviceType(const CNodePtr &kernel, size_t input_index, const AnfNodePtr &input_node,
                                    size_t output_index);

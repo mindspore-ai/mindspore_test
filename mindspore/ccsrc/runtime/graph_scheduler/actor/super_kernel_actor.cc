@@ -320,18 +320,11 @@ void SuperKernelActor::FetchPersistentDeviceTensor() {
 
 void SuperKernelActor::CorrectRefCount(size_t input_index, DeviceTensor *device_tensor) {
   MS_EXCEPTION_IF_NULL(device_tensor);
-  const auto &input_use_cnt = input_params_use_cnt_.at(input_index);
-  if (input_use_cnt == SIZE_MAX) {
-    bool is_max_rec_cnt =
-      device_tensor->original_ref_count() == SIZE_MAX && device_tensor->dynamic_ref_count() == INT32_MAX;
-    if (!is_max_rec_cnt) {
-      MS_LOG(EXCEPTION) << "Expect a max static and dynamic ref count input, but got static ref count: "
-                        << device_tensor->original_ref_count()
-                        << ", dynamic ref count: " << device_tensor->dynamic_ref_count();
-    }
+  if (device_tensor->original_ref_count() == SIZE_MAX && device_tensor->dynamic_ref_count() == INT32_MAX) {
     return;
   }
 
+  const auto &input_use_cnt = input_params_use_cnt_.at(input_index);
   if (input_use_cnt == 0) {
     // No user for this input in graph.
     MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(device_tensor, device_contexts_[0], GetAID().Name());
@@ -341,7 +334,7 @@ void SuperKernelActor::CorrectRefCount(size_t input_index, DeviceTensor *device_
   if (device_tensor->original_ref_count() != SIZE_MAX) {
     device_tensor->IncreaseRefCount(input_use_cnt);
   } else if (device_tensor->dynamic_ref_count() != INT32_MAX) {
-    device_tensor->IncreaseDynamicRefCount(GetAID().Name(), input_use_cnt);
+    device_tensor->IncreaseDynamicRefCount(GetAID().Name(), SizeToInt(input_use_cnt));
   }
   // Need to decrease current ref count once.
   MemoryManagerActor::GetInstance()->FreeMemoryByRefCount(device_tensor, device_contexts_[0], GetAID().Name());
@@ -1080,43 +1073,10 @@ void SuperKernelActor::LinkKernelActors() {
   for (size_t i = 0; i < input_num; i++) {
     param_node_to_input_idx_[input_nodes[i].get()] = i;
   }
+  input_params_use_cnt_.resize(input_num, 0);
 
-  // Record origin ref count of all input nodes and set original ref count to 1 to record use count of input nodes in
-  // graph_, the original ref count will be restored.
-  HashSet<DeviceAddressPtr> input_param_address_set;
-  std::vector<size_t> input_params_origin_ref_cnt(input_num);
-  for (size_t i = 0; i < input_num; i++) {
-    MS_EXCEPTION_IF_NULL(input_nodes[i]);
-    auto device_tensor = AnfAlgo::GetMutableOutputAddr(input_nodes[i], 0, false);
-    MS_EXCEPTION_IF_NULL(device_tensor);
-    input_params_origin_ref_cnt[i] = device_tensor->original_ref_count();
-    device_tensor->set_original_ref_count(1);
-    device_tensor->ResetRefCount();
-    if (input_param_address_set.find(device_tensor) != input_param_address_set.end()) {
-      MS_LOG(EXCEPTION) << " Find same device address of input parameter for graph: " << graph_->ToString();
-    }
-    input_param_address_set.insert(device_tensor);
-  }
-
-  // Calculate original ref count of CNode and Parameter, prepare input and
-  // heterogeneous output device address of all kernels.
-  AnalyseNodesDependence();
-
-  // Calculate use count of all input nodes according to original ref count, and restore original ref count.
-  input_params_use_cnt_.resize(input_num);
-  for (size_t i = 0; i < input_num; i++) {
-    auto device_tensor = AnfAlgo::GetMutableOutputAddr(input_nodes[i], 0, false);
-    MS_EXCEPTION_IF_NULL(device_tensor);
-    input_params_use_cnt_.at(i) =
-      device_tensor->original_ref_count() != SIZE_MAX ? (device_tensor->original_ref_count() - 1) : SIZE_MAX;
-    device_tensor->set_original_ref_count(input_params_origin_ref_cnt[i]);
-    device_tensor->ResetRefCount();
-    MS_LOG(DEBUG) << "SuperKernelActor: " << GetAID().Name() << " Parameter[" << input_nodes[i]->fullname_with_scope()
-                  << "] debug_name: " << input_nodes[i]->DebugString() << " use count is: " << input_params_use_cnt_[i];
-  }
-}
-
-void SuperKernelActor::AnalyseNodesDependence() {
+  // 1. Record input index -> device tensor store key (AnfNodePtr), use to check
+  // whether a input index of graph input nodes is a persistent device tensor.
   HashMap<size_t, AnfNodePtr> device_tensor_store_keys_map;
   device_tensor_store_keys_map.reserve(device_tensor_store_keys_.size());
   std::for_each(device_tensor_store_keys_.begin(), device_tensor_store_keys_.end(),
@@ -1124,6 +1084,8 @@ void SuperKernelActor::AnalyseNodesDependence() {
                   device_tensor_store_keys_map.emplace(item.first, item.second);
                 });
 
+  // 2. Record output node -> output index, use to quickly find all output indices of the same output node.
+  // Maybe there is same node in all output of graph.
   size_t actor_output_num = output_data_nodes_.size();
   HashMap<AnfNodePtr, std::vector<size_t>> output_node_to_actor_output_index;
   output_node_to_actor_output_index.reserve(actor_output_num);
@@ -1134,6 +1096,34 @@ void SuperKernelActor::AnalyseNodesDependence() {
     }
   }
 
+  // 3. Check input parameter(not persist tensor) as graph output case.
+  for (size_t i = 0; i < input_num; i++) {
+    const auto &node = input_nodes[i];
+    MS_EXCEPTION_IF_NULL(node);
+    if (output_node_to_actor_output_index.find(node) == output_node_to_actor_output_index.end()) {
+      continue;
+    }
+    if (device_tensor_store_keys_map.find(i) == device_tensor_store_keys_map.end()) {
+      MS_LOG(EXCEPTION) << "Can't support Parameter(not weight) as sub graph output for graph: " << graph_->ToString();
+    }
+  }
+
+  // 4. Calculate original ref count of CNode and Parameter, prepare input and
+  // heterogeneous output device address of all kernels.
+  AnalyseNodesDependence(device_tensor_store_keys_map, output_node_to_actor_output_index);
+
+  if (IS_OUTPUT_ON(MsLogLevel::kDebug)) {
+    for (size_t i = 0; i < input_num; i++) {
+      MS_LOG(DEBUG) << "SuperKernelActor: " << GetAID().Name() << " Parameter[" << input_nodes[i]->fullname_with_scope()
+                    << "] debug_name: " << input_nodes[i]->DebugString()
+                    << " use count is: " << input_params_use_cnt_[i];
+    }
+  }
+}
+
+void SuperKernelActor::AnalyseNodesDependence(
+  const HashMap<size_t, AnfNodePtr> &device_tensor_store_keys_map,
+  const HashMap<AnfNodePtr, std::vector<size_t>> &output_node_to_actor_output_index) {
   const auto &execution_order = graph_->execution_order();
   size_t kernel_num = execution_order.size();
   for (size_t i = 0; i < kernel_num; i++) {
@@ -1166,19 +1156,15 @@ void SuperKernelActor::AnalyseNodesDependence() {
         MS_EXCEPTION_IF_NULL(kernel_actor);
         (void)kernel_actor->device_tensor_store_keys_.emplace_back(j, device_tensor_store_key);
       } else if (input_node_with_idx.first->isa<Parameter>()) {
-        if (!IsOnlyDependShape(kernel, j)) {
-          auto device_tensor =
-            AnfAlgo::GetMutableOutputAddr(input_node_with_idx.first, input_node_with_idx.second, false);
-          MS_EXCEPTION_IF_NULL(device_tensor);
-          UpdateRefCount(device_tensor.get(), false);
-        }
-
         auto input_idx_iter = param_node_to_input_idx_.find(input_node_with_idx.first.get());
         if (input_idx_iter == param_node_to_input_idx_.end()) {
           MS_LOG_WITH_NODE(EXCEPTION, input_node_with_idx.first)
             << "Can not find index for input node: " << input_node_with_idx.first->fullname_with_scope();
         }
         size_t input_node_idx = input_idx_iter->second;
+        if (!IsOnlyDependShape(kernel, j)) {
+          ++(input_params_use_cnt_.at(input_node_idx));
+        }
 
         const auto &device_tensor_store_key_iter = device_tensor_store_keys_map.find(input_node_idx);
         if (device_tensor_store_key_iter != device_tensor_store_keys_map.end()) {
