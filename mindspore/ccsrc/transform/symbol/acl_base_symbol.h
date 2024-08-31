@@ -21,42 +21,25 @@
 
 namespace mindspore {
 namespace transform {
-
-ORIGIN_METHOD(aclCreateDataBuffer, aclDataBuffer *, void *, size_t);
-ORIGIN_METHOD(aclCreateTensorDesc, aclTensorDesc *, aclDataType, int, const int64_t *, aclFormat);
-ORIGIN_METHOD(aclDataTypeSize, size_t, aclDataType);
-ORIGIN_METHOD(aclDestroyDataBuffer, aclError, const aclDataBuffer *);
-ORIGIN_METHOD(aclDestroyTensorDesc, void, const aclTensorDesc *);
-ORIGIN_METHOD(aclGetTensorDescDimV2, aclError, const aclTensorDesc *, size_t, int64_t *);
-ORIGIN_METHOD(aclGetTensorDescNumDims, size_t, const aclTensorDesc *)
-ORIGIN_METHOD(aclSetTensorConst, aclError, aclTensorDesc *, void *, size_t)
-ORIGIN_METHOD(aclSetTensorDescName, void, aclTensorDesc *, const char *)
-ORIGIN_METHOD(aclSetTensorFormat, aclError, aclTensorDesc *, aclFormat)
-ORIGIN_METHOD(aclSetTensorPlaceMent, aclError, aclTensorDesc *, aclMemType)
-ORIGIN_METHOD(aclSetTensorShape, aclError, aclTensorDesc *, int, const int64_t *)
-ORIGIN_METHOD(aclrtGetSocName, const char *)
-ORIGIN_METHOD(aclUpdateDataBuffer, aclError, aclDataBuffer *, void *, size_t)
-ORIGIN_METHOD(aclGetDataBufferAddr, void *, const aclDataBuffer *)
-ORIGIN_METHOD(aclGetTensorDescSize, size_t, const aclTensorDesc *)
-
-extern aclCreateDataBufferFunObj aclCreateDataBuffer_;
-extern aclCreateTensorDescFunObj aclCreateTensorDesc_;
-extern aclDataTypeSizeFunObj aclDataTypeSize_;
-extern aclDestroyDataBufferFunObj aclDestroyDataBuffer_;
-extern aclDestroyTensorDescFunObj aclDestroyTensorDesc_;
-extern aclGetTensorDescDimV2FunObj aclGetTensorDescDimV2_;
-extern aclGetTensorDescNumDimsFunObj aclGetTensorDescNumDims_;
-extern aclSetTensorConstFunObj aclSetTensorConst_;
-extern aclSetTensorDescNameFunObj aclSetTensorDescName_;
-extern aclSetTensorFormatFunObj aclSetTensorFormat_;
-extern aclSetTensorPlaceMentFunObj aclSetTensorPlaceMent_;
-extern aclSetTensorShapeFunObj aclSetTensorShape_;
-extern aclrtGetSocNameFunObj aclrtGetSocName_;
-extern aclUpdateDataBufferFunObj aclUpdateDataBuffer_;
-extern aclGetDataBufferAddrFunObj aclGetDataBufferAddr_;
-extern aclGetTensorDescSizeFunObj aclGetTensorDescSize_;
+ORIGIN_METHOD_WITH_SIMU(aclCreateDataBuffer, aclDataBuffer *, void *, size_t);
+ORIGIN_METHOD_WITH_SIMU(aclCreateTensorDesc, aclTensorDesc *, aclDataType, int, const int64_t *, aclFormat);
+ORIGIN_METHOD_WITH_SIMU(aclDataTypeSize, size_t, aclDataType);
+ORIGIN_METHOD_WITH_SIMU(aclDestroyDataBuffer, aclError, const aclDataBuffer *);
+ORIGIN_METHOD_WITH_SIMU(aclDestroyTensorDesc, void, const aclTensorDesc *);
+ORIGIN_METHOD_WITH_SIMU(aclGetTensorDescDimV2, aclError, const aclTensorDesc *, size_t, int64_t *);
+ORIGIN_METHOD_WITH_SIMU(aclGetTensorDescNumDims, size_t, const aclTensorDesc *)
+ORIGIN_METHOD_WITH_SIMU(aclSetTensorConst, aclError, aclTensorDesc *, void *, size_t)
+ORIGIN_METHOD_WITH_SIMU(aclSetTensorDescName, void, aclTensorDesc *, const char *)
+ORIGIN_METHOD_WITH_SIMU(aclSetTensorFormat, aclError, aclTensorDesc *, aclFormat)
+ORIGIN_METHOD_WITH_SIMU(aclSetTensorPlaceMent, aclError, aclTensorDesc *, aclMemType)
+ORIGIN_METHOD_WITH_SIMU(aclSetTensorShape, aclError, aclTensorDesc *, int, const int64_t *)
+ORIGIN_METHOD_WITH_SIMU(aclrtGetSocName, const char *)
+ORIGIN_METHOD_WITH_SIMU(aclUpdateDataBuffer, aclError, aclDataBuffer *, void *, size_t)
+ORIGIN_METHOD_WITH_SIMU(aclGetDataBufferAddr, void *, const aclDataBuffer *)
+ORIGIN_METHOD_WITH_SIMU(aclGetTensorDescSize, size_t, const aclTensorDesc *)
 
 void LoadAclBaseApiSymbol(const std::string &ascend_path);
+void LoadSimulationAclBaseApi();
 }  // namespace transform
 }  // namespace mindspore
 

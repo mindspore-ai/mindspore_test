@@ -62,5 +62,22 @@ void LoadAclBaseApiSymbol(const std::string &ascend_path) {
   MS_LOG(INFO) << "Load acl base api success!";
 }
 
+void LoadSimulationAclBaseApi() {
+  ASSIGN_SIMU(aclCreateDataBuffer);
+  ASSIGN_SIMU(aclCreateTensorDesc);
+  ASSIGN_SIMU(aclDataTypeSize);
+  ASSIGN_SIMU(aclDestroyDataBuffer);
+  ASSIGN_SIMU(aclDestroyTensorDesc);
+  ASSIGN_SIMU(aclGetTensorDescDimV2);
+  ASSIGN_SIMU(aclGetTensorDescNumDims);
+  ASSIGN_SIMU(aclSetTensorConst);
+  ASSIGN_SIMU(aclSetTensorDescName);
+  ASSIGN_SIMU(aclSetTensorFormat);
+  ASSIGN_SIMU(aclSetTensorPlaceMent);
+  ASSIGN_SIMU(aclSetTensorShape);
+  ASSIGN_SIMU(aclUpdateDataBuffer);
+  ASSIGN_SIMU(aclGetDataBufferAddr);
+  ASSIGN_SIMU(aclGetTensorDescSize);
+}
 }  // namespace transform
 }  // namespace mindspore

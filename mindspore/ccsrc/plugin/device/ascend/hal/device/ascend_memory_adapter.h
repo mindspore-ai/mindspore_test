@@ -40,6 +40,8 @@ class AscendMemAdapter {
   bool Initialize();
   bool DeInitialize();
 
+  void SimulationInitialize();
+
   uint8_t *MallocStaticDevMem(size_t size, const std::string &tag = "");
   uint8_t *MallocDynamicDevMem(size_t size, const std::string &tag = "");
   uint8_t *MallocOverflowMem();

@@ -81,5 +81,29 @@ void LoadAcltdtApiSymbol(const std::string &ascend_path) {
   MS_LOG(INFO) << "Load acl tdt api success!";
 }
 
+void LoadSimulationTdtApi() {
+  ASSIGN_SIMU(acltdtAddDataItem);
+  ASSIGN_SIMU(acltdtCreateChannel);
+  ASSIGN_SIMU(acltdtCreateChannelWithCapacity);
+  ASSIGN_SIMU(acltdtCreateDataItem);
+  ASSIGN_SIMU(acltdtCreateDataset);
+  ASSIGN_SIMU(acltdtDestroyChannel);
+  ASSIGN_SIMU(acltdtDestroyDataItem);
+  ASSIGN_SIMU(acltdtDestroyDataset);
+  ASSIGN_SIMU(acltdtGetDataAddrFromItem);
+  ASSIGN_SIMU(acltdtGetDataItem);
+  ASSIGN_SIMU(acltdtGetDatasetName);
+  ASSIGN_SIMU(acltdtGetDatasetSize);
+  ASSIGN_SIMU(acltdtGetDataSizeFromItem);
+  ASSIGN_SIMU(acltdtGetDataTypeFromItem);
+  ASSIGN_SIMU(acltdtGetDimNumFromItem);
+  ASSIGN_SIMU(acltdtGetDimsFromItem);
+  ASSIGN_SIMU(acltdtGetTensorTypeFromItem);
+  ASSIGN_SIMU(acltdtGetSliceInfoFromItem);
+  ASSIGN_SIMU(acltdtQueryChannelSize);
+  ASSIGN_SIMU(acltdtReceiveTensor);
+  ASSIGN_SIMU(acltdtSendTensor);
+  ASSIGN_SIMU(acltdtStopChannel);
+}
 }  // namespace transform
 }  // namespace mindspore

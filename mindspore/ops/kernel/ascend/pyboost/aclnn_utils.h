@@ -38,6 +38,10 @@
 
 #define LAUNCH_ACLNN(aclnn_api, device_context, stream_id, ...)                                                      \
   do {                                                                                                               \
+    static auto simu = MsContext::GetInstance()->UseSimulationApi();                                                 \
+    if (simu) {                                                                                                      \
+      break;                                                                                                         \
+    }                                                                                                                \
     static const std::string aclnn_name = #aclnn_api;                                                                \
     runtime::ProfilerRecorder aclnn_profiler(runtime::ProfilerModule::kPynative,                                     \
                                              runtime::ProfilerEvent::kPyBoostLaunchAclnn, aclnn_name, false);        \

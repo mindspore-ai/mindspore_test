@@ -36,6 +36,7 @@ constexpr double kMSMemoryRatio = 0.9375;           // 15/16
 constexpr double kReservedMemoryRatio = 0.0625;     // 1/16
 constexpr size_t kPerHugePageMemorySize = 2097152;  // 2mb
 constexpr size_t kExtraReservedMemory = 10485760;   // 10mb
+constexpr size_t kSimuHBMTotalMemSizeGB = 64;
 constexpr double kHalfRatio = 0.5;
 constexpr uint64_t kOverflowAddrSize = 512;
 constexpr char kGlobalOverflowWorkspace[] = "GLOBAL_OVERFLOW_WORKSPACE";
@@ -53,6 +54,13 @@ bool AscendMemAdapter::Initialize() {
     return true;
   }
 
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  if (context_ptr->UseSimulationApi()) {
+    SimulationInitialize();
+    return true;
+  }
+
   auto ret = CALL_ASCEND_API(aclrtGetMemInfo, ACL_HBM_MEM, &device_hbm_free_size_, &device_hbm_total_size_);
   if (ret != ACL_ERROR_NONE || device_hbm_total_size_ == 0) {
     MS_LOG(EXCEPTION) << "Internal Error: Get Device HBM memory size failed, ret = " << ret
@@ -60,8 +68,6 @@ bool AscendMemAdapter::Initialize() {
   }
 
   if (device_hbm_free_size_ < LongToSize(DoubleToLong(device_hbm_total_size_ * kHalfRatio))) {
-    auto context_ptr = MsContext::GetInstance();
-    MS_EXCEPTION_IF_NULL(context_ptr);
     unsigned int device_id = context_ptr->get_param<uint32_t>(MS_CTX_DEVICE_ID);
     MS_LOG(EXCEPTION) << "#umsg#Framework Error Message:#umsg#Malloc device memory failed, free memory size is less "
                          "than half of total memory size."
@@ -163,6 +169,40 @@ bool AscendMemAdapter::DeInitialize() {
   }
 
   return ret;
+}
+
+void AscendMemAdapter::SimulationInitialize() {
+  device_hbm_total_size_ = kSimuHBMTotalMemSizeGB * kGBToByte;
+  device_hbm_free_size_ = device_hbm_total_size_;
+  size_t reserved_mem_size_for_others;
+  auto user_define_ms_size = GetDeviceMemSizeFromContext();
+  if (user_define_ms_size == 0) {
+    ms_used_hbm_size_ = DoubleToLong(device_hbm_free_size_ * kMSMemoryRatio);
+    ms_used_hbm_size_ = (ms_used_hbm_size_ / kPerHugePageMemorySize) * kPerHugePageMemorySize - kExtraReservedMemory;
+    reserved_mem_size_for_others = device_hbm_free_size_ - SizeToLong(ms_used_hbm_size_);
+  } else {
+    ms_used_hbm_size_ = SizeToLong(user_define_ms_size);
+    if (user_define_ms_size > device_hbm_total_size_) {
+      device_hbm_total_size_ = user_define_ms_size;
+    }
+    reserved_mem_size_for_others = device_hbm_total_size_ - user_define_ms_size;
+  }
+
+  MS_LOG(INFO) << "Simulation Device HBM Size:" << device_hbm_total_size_ / kMBToByte
+               << "M, Device free HBM Size:" << device_hbm_free_size_ / kMBToByte
+               << "M, Reserved HBM size for Other Components(HCCL/rts/etc.):"
+               << reserved_mem_size_for_others / kMBToByte
+               << "M, User define MindSpore HBM Size:" << user_define_ms_size / kGBToByte
+               << "G, MindSpore Used HBM Size:" << ms_used_hbm_size_ / kMBToByte << "M.";
+
+  static_mem_offset_ = ms_used_hbm_size_;
+  max_available_ms_hbm_size_ = ms_used_hbm_size_;
+  cur_dynamic_mem_offset_ = 0;
+  max_dynamic_mem_offset_ = 0;
+  history_max_dynamic_mem_offset_ = 0;
+  uint8_t simulation_addr = 0;
+  device_mem_base_addr_ = &simulation_addr;
+  initialized_ = true;
 }
 
 uint8_t *AscendMemAdapter::MallocStaticDevMem(size_t size, const std::string &tag) {

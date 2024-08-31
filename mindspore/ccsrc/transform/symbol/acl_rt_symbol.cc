@@ -132,5 +132,58 @@ void LoadAclRtApiSymbol(const std::string &ascend_path) {
   MS_LOG(INFO) << "Load acl rt api success!";
 }
 
+void LoadSimulationRtApi() {
+  ASSIGN_SIMU(aclrtCreateContext);
+  ASSIGN_SIMU(aclrtCreateEvent);
+  ASSIGN_SIMU(aclrtCreateEventWithFlag);
+  ASSIGN_SIMU(aclrtCreateStreamWithConfig);
+  ASSIGN_SIMU(aclrtDestroyContext);
+  ASSIGN_SIMU(aclrtDestroyEvent);
+  ASSIGN_SIMU(aclrtDestroyStream);
+  ASSIGN_SIMU(aclrtEventElapsedTime);
+  ASSIGN_SIMU(aclrtFree);
+  ASSIGN_SIMU(aclrtFreeHost);
+  ASSIGN_SIMU(aclrtGetCurrentContext);
+  ASSIGN_SIMU(aclrtGetDevice);
+  ASSIGN_SIMU(aclrtGetDeviceCount);
+  ASSIGN_SIMU(aclrtGetDeviceIdFromExceptionInfo);
+  ASSIGN_SIMU(aclrtGetErrorCodeFromExceptionInfo);
+  ASSIGN_SIMU(aclrtGetMemInfo);
+  ASSIGN_SIMU(aclrtGetRunMode);
+  ASSIGN_SIMU(aclrtGetStreamIdFromExceptionInfo);
+  ASSIGN_SIMU(aclrtGetTaskIdFromExceptionInfo);
+  ASSIGN_SIMU(aclrtGetThreadIdFromExceptionInfo);
+  ASSIGN_SIMU(aclrtLaunchCallback);
+  ASSIGN_SIMU(aclrtMalloc);
+  ASSIGN_SIMU(aclrtMallocHost);
+  ASSIGN_SIMU(aclrtMemcpy);
+  ASSIGN_SIMU(aclrtMemcpyAsync);
+  ASSIGN_SIMU(aclrtMemset);
+  ASSIGN_SIMU(aclrtProcessReport);
+  ASSIGN_SIMU(aclrtQueryEventStatus);
+  ASSIGN_SIMU(aclrtRecordEvent);
+  ASSIGN_SIMU(aclrtResetDevice);
+  ASSIGN_SIMU(aclrtResetEvent);
+  ASSIGN_SIMU(aclrtSetCurrentContext);
+  ASSIGN_SIMU(aclrtSetDevice);
+  ASSIGN_SIMU(aclrtSetDeviceSatMode);
+  ASSIGN_SIMU(aclrtSetExceptionInfoCallback);
+  ASSIGN_SIMU(aclrtSetOpExecuteTimeOut);
+  ASSIGN_SIMU(aclrtSetOpWaitTimeout);
+  ASSIGN_SIMU(aclrtSetStreamFailureMode);
+  ASSIGN_SIMU(aclrtStreamQuery);
+  ASSIGN_SIMU(aclrtStreamWaitEvent);
+  ASSIGN_SIMU(aclrtSubscribeReport);
+  ASSIGN_SIMU(aclrtSynchronizeEvent);
+  ASSIGN_SIMU(aclrtSynchronizeStream);
+  ASSIGN_SIMU(aclrtSynchronizeStreamWithTimeout);
+  ASSIGN_SIMU(aclrtUnmapMem);
+  ASSIGN_SIMU(aclrtReserveMemAddress);
+  ASSIGN_SIMU(aclrtMallocPhysical);
+  ASSIGN_SIMU(aclrtMapMem);
+  ASSIGN_SIMU(aclrtFreePhysical);
+  ASSIGN_SIMU(aclrtReleaseMemAddress);
+  ASSIGN_SIMU(aclrtCtxSetSysParamOpt);
+}
 }  // namespace transform
 }  // namespace mindspore

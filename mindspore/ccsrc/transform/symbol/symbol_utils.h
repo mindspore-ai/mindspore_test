@@ -53,6 +53,7 @@ namespace transform {
 std::string GetAscendPath();
 void *GetLibHandler(const std::string &lib_path);
 void LoadAscendApiSymbols();
+void LoadSimulationApiSymbols();
 }  // namespace transform
 }  // namespace mindspore
 

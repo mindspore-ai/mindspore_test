@@ -174,6 +174,9 @@ void GeDeviceContext::Initialize() {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
 
+  if (ms_context->UseSimulationApi()) {
+    transform::LoadSimulationApiSymbols();
+  }
   // set overflow mode
   const auto &soc_version = ms_context->ascend_soc_version();
   if (soc_version == "ascend910b" || soc_version == "ascend910c") {
@@ -193,7 +196,9 @@ void GeDeviceContext::Initialize() {
 
   // set MS_CTX_ENABLE_GE_HETEROGENOUS true according to  heterogeneous mode
   ms_context->set_param<bool>(MS_CTX_ENABLE_GE_HETEROGENOUS, false);
-  InitGe(ms_context);
+  if (!ms_context->UseSimulationApi()) {
+    InitGe(ms_context);
+  }
 
   MS_EXCEPTION_IF_NULL(GetKernelExecutor(false));
   GetKernelExecutor(false)->Initialize();

@@ -174,6 +174,12 @@ const bool AscendMemoryPool::IsEnableEagerFree() const {
 const bool AscendMemoryPool::SyncAllStreams() { return AscendStreamMng::GetInstance().SyncAllStreams(); }
 
 size_t AscendMemoryPool::AllocDeviceMemByEagerFree(size_t size, DeviceMemPtr *addr) {
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  if (ms_context->UseSimulationApi()) {
+    return AllocDeviceMem(size, addr);
+  }
+
   if (IsEnableVmm()) {
     return AscendVmmAdapter::GetInstance().AllocDeviceMem(size, addr);
   } else if (IsEnableEagerFree()) {
@@ -184,6 +190,12 @@ size_t AscendMemoryPool::AllocDeviceMemByEagerFree(size_t size, DeviceMemPtr *ad
 }
 
 size_t AscendMemoryPool::FreeDeviceMemByEagerFree(const DeviceMemPtr addr, const size_t size) {
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  if (ms_context->UseSimulationApi()) {
+    return size;
+  }
+
   if (IsEnableVmm()) {
     return AscendVmmAdapter::GetInstance().EagerFreeDeviceMem(addr, size);
   } else if (IsEnableEagerFree()) {
@@ -194,6 +206,11 @@ size_t AscendMemoryPool::FreeDeviceMemByEagerFree(const DeviceMemPtr addr, const
 }
 
 size_t AscendMemoryPool::MmapDeviceMem(const size_t size, const DeviceMemPtr addr) {
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  if (ms_context->UseSimulationApi()) {
+    return size;
+  }
   return AscendVmmAdapter::GetInstance().MmapDeviceMem(size, addr, total_mem_size());
 }
 

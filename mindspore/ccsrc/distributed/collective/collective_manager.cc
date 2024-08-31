@@ -209,7 +209,6 @@ bool CollectiveManager::InitializeDummyCommLib() {
   dummy_comm_lib_instance_ = std::make_shared<device::DummyCollectiveCommunicationLib>();
   comm_lib_instance_ = dummy_comm_lib_instance_.get();
   MS_EXCEPTION_IF_NULL(comm_lib_instance_);
-
   // Get global rank id, global rank size and local rank(device id).
   if (!common::GetEnv(kEnvRankSize).empty()) {
     global_rank_size_ = LongToUint(std::strtol(common::GetEnv(kEnvRankSize).c_str(), nullptr, kDecimalBase));
@@ -225,6 +224,7 @@ bool CollectiveManager::InitializeDummyCommLib() {
 
   RETURN_IF_FALSE_WITH_LOG(comm_lib_instance_->Initialize(global_rank_id_, global_rank_size_, local_rank_id_),
                            "Failed to initialize dummy communication library.");
+  device_comm_lib_instance_ = comm_lib_instance_;
   for (uint32_t i = 0; i < global_rank_size_; i++) {
     global_group_ranks_.push_back(i);
   }
@@ -232,10 +232,11 @@ bool CollectiveManager::InitializeDummyCommLib() {
                   << ", rank id: " << global_rank_id_ << ", local rank id: " << local_rank_id_
                   << ". Real rank size: 1.";
 
+  static auto use_simu = MsContext::GetInstance()->UseSimulationApi();
   std::string device_type = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
   // If this is Ascend backend and uses host collective(OpenMPI or Dynamic Cluster/msrun), initialize dummy ascend
   // collective lib.
-  if (device_type == kAscendDevice) {
+  if (!use_simu && device_type == kAscendDevice) {
     MS_LOG(WARNING) << "Initialize dummy Ascend collective communication lib.";
     RETURN_IF_FALSE_WITH_LOG(InitDeviceCommLib(), "Failed to initialize dummy device communication library on Ascend.");
 
@@ -634,10 +635,11 @@ bool CollectiveManager::CreateSimulationGroup(const std::string &group_name, con
     dummy_comm_lib_instance_->CreateCommunicationGroup(group_name, group_ranks, local_rank, local_rank_size),
     "Failed to create dummy communication group " + group_name);
 
+  static auto use_simu = MsContext::GetInstance()->UseSimulationApi();
   std::string device_type = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
   // If this is Ascend backend and uses host collective(OpenMPI or Dynamic Cluster/msrun), initialize real HCCL
   // communicator through dummy Ascend collective communication lib.
-  if (device_type == kAscendDevice) {
+  if (!use_simu && device_type == kAscendDevice) {
     MS_LOG(WARNING) << "Create Ascend communication group with group name: " << group_name
                     << ", group ranks: " << group_ranks
                     << ". Real HCCL communicator will be initialized with group size 1.";
