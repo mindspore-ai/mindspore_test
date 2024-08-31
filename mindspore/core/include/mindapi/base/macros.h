@@ -49,12 +49,6 @@
 #define OPS_VAR_DEF(type, name, value) OPS_API inline const type name = value;
 #endif
 
-#if (defined(_WIN32) || defined(__WIN32__) || defined(WIN32) || defined(__CYGWIN__))
-#define PYBOOST_API
-#else
-#define PYBOOST_API __attribute__((visibility("default")))
-#endif
-
 #ifdef _MSC_VER
 #define NO_RETURN
 #define ALWAYS_INLINE
