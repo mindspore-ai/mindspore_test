@@ -127,7 +127,6 @@ def _all_finite(inputs, check_overflow_mode, enable_allfinite):
 
     status_finite = False
     if enable_allfinite:
-        logger.debug("Enable AllFinite!")
         status_finite = ~AllFinite()(inputs)  # pylint: disable=invalid-unary-operand-type
     else:
         outputs = _hypermap(_partial(_overflow), inputs)

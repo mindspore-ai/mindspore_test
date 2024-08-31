@@ -519,7 +519,6 @@ class TrainOneStepWithLossScaleCell(TrainOneStepCell):
         """get overflow status of ascend on infnan mode."""
         overflow = False
         if self.enable_allfinite:
-            logger.debug("Enable AllFinite!")
             overflow = self._get_distributed_overflow_status_on_infnan_enable_allfinite(compute_output)
         else:
             overflow = self._get_distributed_overflow_status_on_infnan_mode(_ascend_grad_overflow, compute_output)
