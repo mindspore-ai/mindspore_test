@@ -35,12 +35,27 @@ namespace ascend {
     }                                                               \
   } while (0)
 
+#define EXCEPTION_IF_HCCL_RUN_CHECK_FAIL(op_name, group, op)            \
+  do {                                                                  \
+    auto hccl_result = static_cast<int64_t>(op);                        \
+    if (hccl_result != 0) {                                             \
+      MS_LOG(EXCEPTION) << (op_name) << " failed: #" << (group) << "#"; \
+    }                                                                   \
+  } while (0)
+
 #define HCCL_GROUP_CHECK_EMPTY(group)                              \
   do {                                                             \
     if ((group).length() == 0) {                                   \
       MS_LOG(ERROR) << "The length of group name should not be 0"; \
       return false;                                                \
     }                                                              \
+  } while (0)
+
+#define EXCEPTION_IF_HCCL_GROUP_CHECK_EMPTY(group)                     \
+  do {                                                                 \
+    if ((group).length() == 0) {                                       \
+      MS_LOG(EXCEPTION) << "The length of group name should not be 0"; \
+    }                                                                  \
   } while (0)
 
 #define HCCL_GROUP_CHECK_IS_WORLD(group)                                   \
@@ -245,37 +260,37 @@ std::string AscendCollectiveCommLib::HcclInnerCommName(const std::string &group_
 
 uint32_t AscendCollectiveCommLib::GetRankId(const std::string &group_name) {
   uint32_t rank_id = 0;
-  HCCL_RUN_CHECK(std::string("get rank_id"), group_name,
-                 hccl::HcclAdapter::GetInstance().HcclGetRankId(group_name, &rank_id));
+  EXCEPTION_IF_HCCL_RUN_CHECK_FAIL(std::string("get rank_id"), group_name,
+                                   hccl::HcclAdapter::GetInstance().HcclGetRankId(group_name, &rank_id));
   return rank_id;
 }
 
 uint32_t AscendCollectiveCommLib::GetGroupSize(const std::string &group_name) {
-  HCCL_GROUP_CHECK_EMPTY(group_name);
+  EXCEPTION_IF_HCCL_GROUP_CHECK_EMPTY(group_name);
   uint32_t rank_size = 0;
-  HCCL_RUN_CHECK(std::string("get rank size"), group_name,
-                 hccl::HcclAdapter::GetInstance().HcclGetRankSize(group_name, &rank_size));
+  EXCEPTION_IF_HCCL_RUN_CHECK_FAIL(std::string("get rank size"), group_name,
+                                   hccl::HcclAdapter::GetInstance().HcclGetRankSize(group_name, &rank_size));
   return rank_size;
 }
 
 uint32_t AscendCollectiveCommLib::GetLocalRankId(const std::string &group_name) {
   uint32_t rank_id = 0;
-  HCCL_RUN_CHECK(std::string("get rank_id"), group_name,
-                 hccl::HcclAdapter::GetInstance().HcclGetLocalRankId(group_name, &rank_id));
+  EXCEPTION_IF_HCCL_RUN_CHECK_FAIL(std::string("get rank_id"), group_name,
+                                   hccl::HcclAdapter::GetInstance().HcclGetLocalRankId(group_name, &rank_id));
   return rank_id;
 }
 
 uint32_t AscendCollectiveCommLib::GetLocalGroupSize(const std::string &group_name) {
-  HCCL_GROUP_CHECK_EMPTY(group_name);
+  EXCEPTION_IF_HCCL_GROUP_CHECK_EMPTY(group_name);
   uint32_t rank_size = 0;
-  HCCL_RUN_CHECK(std::string("get rank size"), group_name,
-                 hccl::HcclAdapter::GetInstance().HcclGetLocalRankSize(group_name, &rank_size));
+  EXCEPTION_IF_HCCL_RUN_CHECK_FAIL(std::string("get rank size"), group_name,
+                                   hccl::HcclAdapter::GetInstance().HcclGetLocalRankSize(group_name, &rank_size));
   return rank_size;
 }
 
 uint32_t AscendCollectiveCommLib::GetWorldRankFromGroupRank(const std::string &group_name, uint32_t local_rank) {
   uint32_t world_rank_id = 0;
-  HCCL_RUN_CHECK(
+  EXCEPTION_IF_HCCL_RUN_CHECK_FAIL(
     std::string("get world rank id"), group_name,
     hccl::HcclAdapter::GetInstance().HcclGetWorldRankFromGroupRank(group_name, local_rank, &world_rank_id));
   return world_rank_id;
@@ -283,7 +298,7 @@ uint32_t AscendCollectiveCommLib::GetWorldRankFromGroupRank(const std::string &g
 
 uint32_t AscendCollectiveCommLib::GetGroupRankFromWorldRank(uint32_t world_rank, const std::string &group_name) {
   uint32_t local_rank_id = 0;
-  HCCL_RUN_CHECK(
+  EXCEPTION_IF_HCCL_RUN_CHECK_FAIL(
     std::string("get local rank id"), group_name,
     hccl::HcclAdapter::GetInstance().HcclGetGroupRankFromWorldRank(world_rank, group_name, &local_rank_id));
   return local_rank_id;
