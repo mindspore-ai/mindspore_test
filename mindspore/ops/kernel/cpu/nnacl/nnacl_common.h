@@ -99,6 +99,7 @@ static const unsigned int FP16_EXPONENT_BIAS = 15;
 static const unsigned int FP16_SIGNIFICAND = 10;
 static const int FP16_EXPONENT_MAX = 30;
 static const int FP16_EXPONENT_MIN = -10;
+static const int FP16_SHIFT = 13;
 float ShortToFloat32(uint16_t src_value);
 uint16_t Float32ToShort(float src_value);
 

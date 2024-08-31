@@ -37,7 +37,6 @@
 #include "tools/common/tensor_util.h"
 #include "tools/converter/converter_context.h"
 #include "tools/converter/parser/lite_model_parser_creator.h"
-#include "tools/converter/parser/onnx/onnx_einsum_adjust.h"
 #include "tools/converter/parser/onnx/onnx_inputs_adjust.h"
 #include "tools/converter/parser/onnx/onnx_megatron_op_adjust.h"
 #include "tools/converter/parser/onnx/onnx_nonzero_adjust.h"
@@ -51,6 +50,7 @@
 #include "tools/converter/quantizer/quant_param_holder.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "tools/converter/parser/onnx/onnx_dtype_adjust.h"
+#include "tools/converter/parser/einsum_adjust.h"
 
 using mindspore::converter::kFmkTypeOnnx;
 namespace mindspore {
@@ -94,9 +94,10 @@ int Onnx2AnfAdjust(const std::set<FuncGraphPtr> &all_func_graphs, const converte
       ReturnCode::GetSingleReturnCode()->UpdateReturnCode(RET_ERROR);
       return RET_ERROR;
     }
-    if (!OnnxEinsumAdjust::Adjust(func_graph)) {
-      MS_LOG(ERROR) << "onnx einsum adjust failed.";
-      ReturnCode::GetSingleReturnCode()->UpdateReturnCode(RET_ERROR);
+    auto einsum_adjust = std::make_shared<EinsumAdjust>();
+    MS_CHECK_TRUE_MSG(einsum_adjust != nullptr, RET_NULL_PTR, "einsum_adjust is nullptr.");
+    if (!einsum_adjust->Adjust(func_graph)) {
+      MS_LOG(ERROR) << "Adjust einsum failed!";
       return RET_ERROR;
     }
     if (!OnnxQuantizeLinearAdjust::Adjust(func_graph)) {

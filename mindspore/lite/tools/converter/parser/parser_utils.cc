@@ -41,6 +41,7 @@
 #include "ops_utils/op_utils.h"
 #include "src/common/common.h"
 #include "tools/converter/parser/conv2d_transpose_input_adjust.h"
+#include "tools/converter/parser/einsum_adjust.h"
 
 namespace mindspore::lite {
 namespace {

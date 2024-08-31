@@ -21,6 +21,7 @@
 #include <set>
 #include <vector>
 #include <map>
+#include <unordered_set>
 #include "include/backend/optimizer/pass.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "tools/converter/parser/tf/functionalize_control_op_pass.h"
@@ -40,15 +41,18 @@ class FunctionalizeCond {
   STATUS Process();
 
  private:
-  STATUS GetSwitchBranchType(const CNodePtr &switch_cnode, BranchType *branch_type);
-  STATUS BranchSubGraphAddNodes(const FuncGraphPtr &graph, const AnfNodePtr &root_node, BranchType branch_type);
-  FuncGraphPtr CreateBranchGraph(const AnfNodePtr &node, std::string name, BranchType branch_type);
+  STATUS GetSwitchBranchType(const CNodePtr &switch_cnode, const std::unordered_set<AnfNodePtr> &link,
+                             BranchType *branch_type);
+  STATUS BranchSubGraphAddNodes(const FuncGraphPtr &graph, const AnfNodePtr &root_node, BranchType *branch_type);
+  FuncGraphPtr CreateBranchGraph(const AnfNodePtr &node, const std::string &else_name, const std::string &then_name,
+                                 BranchType *branch_type);
   STATUS DegenerateNonControlFlow(const FuncGraphPtr &else_graph, const FuncGraphPtr &then_graph);
   int PosInInputNodes(const CNodePtr &node);
   STATUS IdentifySubgraphInput(const FuncGraphPtr &graph, std::string graph_name);
   CNodePtr CreateNewIf(const FuncGraphPtr &else_branch, const FuncGraphPtr &then_branch);
   STATUS VerifyPredictNode();
   void CheckBranchIsEffective(const CNodePtr &switch_cnode, BranchType branch_type);
+  STATUS SearchEffectiveInputIdx(const CNodePtr &begin_node, const AnfNodePtr &target_node, int32_t *index);
 
   bool then_is_effective_ = true;
   bool else_is_effective_ = true;

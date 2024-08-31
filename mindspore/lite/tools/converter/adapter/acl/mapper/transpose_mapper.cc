@@ -39,7 +39,7 @@ STATUS TransposeMapper::Mapper(const CNodePtr &cnode) {
   // convert last parameter to const value node
   auto perm_input = cnode->input(kCommonInputNum - 1);
   MS_CHECK_TRUE_MSG(perm_input != nullptr, lite::RET_ERROR, "perm_input is nullptr.");
-  if (perm_input->isa<ValueNode>()) {
+  if (perm_input->isa<ValueNode>() || utils::isa<CNodePtr>(perm_input)) {
     return lite::RET_OK;
   }
   if (!utils::isa<ParameterPtr>(perm_input)) {

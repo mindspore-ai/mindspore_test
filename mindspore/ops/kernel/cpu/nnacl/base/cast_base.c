@@ -17,6 +17,49 @@
 #include "nnacl/base/cast_base.h"
 #include "nnacl/cast_base_simd.h"
 
+typedef union float32_bits {
+  unsigned int u;
+  float f;
+} float32_bits;
+
+uint16_t Float32ToFloat16_(float f) {
+  float32_bits hbit;
+  hbit.f = f;
+  uint16_t hbits = 0;
+  // Extract the sign bit
+  uint16_t sign = (hbit.u >> FP16_BIT_SIZE) & 0x8000;  // Get the sign (1 bit) ox8000
+  // Extract the exponent
+  uint32_t exponent = (hbit.u >> FP32_SIGNIFICAND) & 0xFF;  // Extract the exponent (8 bits) 0xFF
+  // Handle special cases (NaN, Inf, 0)
+  if (exponent == 0xFF) {    // NaN or Infinity 0xFF
+    hbits |= sign | 0x7FFF;  // Set to max float16 value (Infinity)
+    return hbits;
+  } else if (exponent == 0) {  // Zero or denormalized number
+    // In float16, we treat zero the same way
+    hbits |= sign;  // Preserve sign for zero
+    return hbits;
+  }
+  // Adjust the exponent to fit float16
+  exponent -= FP32_EXPONENT_BIAS;  // Remove float32 bias
+  exponent += FP16_EXPONENT_BIAS;  // Add float16 bias
+  // Check for overflow
+  if (exponent >= 0x1F) {    // 0X1F
+    hbits |= sign | 0x7FFF;  // Set to max float16 value (Infinity) 0x7FFF
+    return hbits;
+  }
+  if (exponent == 0) {
+    // Handle underflow (too small to represent)
+    return sign;  // Return zero with the correct sign
+  }
+  // Shift the mantissa:
+  // Extract the mantissa (23 bits), shift right by 13 (10-exp)
+  uint32_t mantissa = (hbit.u & 0x7FFFFF) >> FP16_SHIFT;  // 0x7FFFFF
+  // Combine sign, exponent, and mantissa into hbits
+  hbits |=
+    sign | ((uint16_t)exponent << FP16_SIGNIFICAND) | (mantissa & 0x3FF);  // combine sign exponent and mantissa 0x3FF
+  return hbits;
+}
+
 void Int32ToFloat32(const int32_t *input, float *output, int number) {
   int index = 0;
 
@@ -102,7 +145,7 @@ void Fp16ToFloat32(const uint16_t *input, float *output, int number) {
 
 void Float32ToFp16(const float *input, uint16_t *output, int number) {
   for (int i = 0; i < number; ++i) {
-    output[i] = Float32ToShort(input[i]);
+    output[i] = Float32ToFloat16_(input[i]);
   }
 }
 #endif
