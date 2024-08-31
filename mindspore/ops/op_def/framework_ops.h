@@ -149,6 +149,8 @@ GVAR_DEF(PrimitivePtr, kPrimSwitchLayer, std::make_shared<Primitive>("switch_lay
 GVAR_DEF(PrimitivePtr, kPrimStringUpper, std::make_shared<Primitive>(kStringUpperOpName));
 GVAR_DEF(PrimitivePtr, kPrimStringLower, std::make_shared<Primitive>(kStringLowerOpName));
 GVAR_DEF(PrimitivePtr, kPrimFormat, std::make_shared<Primitive>(kFormatOpName));
+GVAR_DEF(PrimitivePtr, kPrimMoveTo, std::make_shared<Primitive>(kMoveToOpName));
+GVAR_DEF(PrimitivePtr, kPrimMoveAssign, std::make_shared<Primitive>(kMoveAssignOpName));
 
 // Backend Inline
 GVAR_DEF(PrimitivePtr, kPrimCallInline, std::make_shared<Primitive>("CallInline"));

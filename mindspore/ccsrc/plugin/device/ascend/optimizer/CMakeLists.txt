@@ -17,6 +17,7 @@ endif()
 file(GLOB_RECURSE MS_OPTIMIZER_910B RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "./mindir/*.cc"
         "./ge/*.cc"
+        "./heterogeneous/*.cc"
         "./ge_backend_optimization.cc"
         "./ge_optimization.cc"
         "./get_value_helper.cc"

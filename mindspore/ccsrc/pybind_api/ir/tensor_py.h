@@ -158,6 +158,19 @@ class TensorPy {
   static TensorPtr MoveTo(const Tensor &self, const std::string &to, bool blocking = True);
 
   static void SetDeviceAddress(const Tensor &tensor, uintptr_t addr, const ShapeVector &shape, const TypePtr type_ptr);
+
+  struct TensorPyUserData {
+    py::object obj;
+    ~TensorPyUserData() {
+      // cppcheck-suppress unreadVariable
+      py::gil_scoped_acquire acquire_gil;
+      obj = py::none();
+    }
+  };
+
+  static void SetUserData(const Tensor &tensor, const py::str &key, const py::object &value);
+
+  static py::object GetUserData(const Tensor &tensor, const py::str &key);
 };
 
 // CSRTensor python wrapper and adapter class.

@@ -21,11 +21,14 @@
 #include <utility>
 
 #include "include/common/utils/offload_context.h"
+#include "include/common/debug/common.h"
 #include "utils/file_utils.h"
 #include "utils/temp_file_manager.h"
 
 namespace mindspore {
 namespace device {
+
+constexpr char kSwapFileSuffix[] = ".data";
 constexpr char kLinuxAioLibName[] = "libaio_plugin.so";
 constexpr char kLinuxAioInstanceFuncName[] = "get_aio_instance";
 constexpr size_t kFirstSizeLevel = 0xFFFFFFFFFFFFFFFF << 24;  // 16M
@@ -219,7 +222,7 @@ bool SwapManager::SwapOutTemp(const std::pair<DeviceAddressStatus, StorageType> 
 
 void *SwapManager::AllocDeviceMemorySimply(const size_t &size, uint32_t stream_id) {
   MS_EXCEPTION_IF_NULL(device_memory_pool_);
-  return device_memory_pool_->AllocTensorMem(size + kSwapMemAlignSize, stream_id);
+  return device_memory_pool_->AllocTensorMem(size + kSwapMemAlignSize, false, false, stream_id);
 }
 
 void *SwapManager::AllocDeviceMemory(size_t size, uint32_t stream_id) {
@@ -343,6 +346,22 @@ bool SwapManager::HostMemoryToFile(const std::string &file_name, const void *dat
 bool SwapManager::WaitAsyncIO(mindspore::device::AsyncIOToken sync_token) {
   MS_EXCEPTION_IF_NULL(io_handle_);
   return io_handle_->Wait(sync_token);
+}
+
+std::string SwapManager::GetSwapFileName(uint32_t device_id) const {
+  static size_t swap_file_index = 0;
+  std::string file_dir;
+  const auto &offload_context = OffloadContext::GetInstance();
+  if (offload_context != nullptr) {
+    const auto real_dir = FileUtils::GetRealPath(offload_context->offload_path().c_str());
+    if (!real_dir.has_value()) {
+      MS_LOG(EXCEPTION) << "Invalid offload path[" << offload_context->offload_path()
+                        << "]. Please check offload_path configuration.";
+    }
+    file_dir = real_dir.value() + "/";
+  }
+  return file_dir + std::to_string(device_id) + "_" + std::to_string(swap_file_index++) + "_" +
+         std::to_string(Common::GetTimeStamp()) + kSwapFileSuffix;
 }
 
 void SwapManager::AddSwappableTensor(const DeviceAddressPtr &device_address) {

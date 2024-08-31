@@ -143,6 +143,8 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
             Default: ``False`` .
         const_arg (bool): Whether the tensor is a constant when it is used for the argument of a network.
             Default: ``False`` .
+        device(str): This parameter is reserved and does not need to be configured.
+            Default: ``None`` .
 
     Outputs:
         Tensor.
@@ -205,7 +207,8 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
     """
     delta_seed = 0
 
-    def __init__(self, input_data=None, dtype=None, shape=None, init=None, internal=False, const_arg=False):
+    def __init__(self, input_data=None, dtype=None, shape=None, init=None, internal=False, const_arg=False,
+                 device=None):
         self.init_finished = False
         if isinstance(input_data, (Tensor, Tensor_)) and dtype is not None:
             logger.info("It is suggested to use 'Tensor.astype()' to convert the dtype of a Tensor.")
@@ -263,6 +266,9 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
                     else:
                         Tensor_.__init__(self, input_data)
                     validator.check_value_type('const_arg', const_arg, bool, 'Tensor')
+
+        if device is not None and device != "CPU":
+            raise ValueError(f"Only 'CPU' is supported for device, but got ${device}.")
 
         self.const_arg = const_arg
         self.virtual_flag = False
@@ -4790,7 +4796,7 @@ class Tensor(Tensor_, metaclass=_TensorMeta):
         mode = context.get_context("mode")
         if mode != context.PYNATIVE_MODE:
             raise ValueError(f"The method of 'move_to' only supported in pynative mode, but got: {mode}.")
-        return Tensor(Tensor_.move_to(self, to, blocking))
+        return Tensor(Tensor_.move_to(self, to, blocking), device="CPU" if to == "CPU" else None)
 
 
     def _offload(self):

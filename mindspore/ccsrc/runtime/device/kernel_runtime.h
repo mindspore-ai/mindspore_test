@@ -218,6 +218,8 @@ class BACKEND_EXPORT KernelRuntime {
   void *backward_send_stream_{nullptr};
   void *forward_recv_stream_{nullptr};
   void *backward_recv_stream_{nullptr};
+  void *swap_in_steam_{nullptr};
+  void *swap_out_steam_{nullptr};
   std::shared_ptr<MemoryManager> mem_manager_{nullptr};
   std::map<uint32_t, std::pair<std::map<AnfNodePtr, std::vector<std::function<void()>>>,
                                std::map<AnfNodePtr, std::vector<std::function<void()>>>>>

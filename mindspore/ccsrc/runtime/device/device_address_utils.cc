@@ -21,8 +21,9 @@
 #include <map>
 #include <vector>
 #include <memory>
-#include "mindspore/ops/op_def/sequence_ops.h"
 #include "ops/op_def.h"
+#include "mindspore/ops/op_def/sequence_ops.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "ir/tensor.h"
 #include "include/backend/device_address.h"
 #include "include/backend/kernel_info.h"
@@ -33,6 +34,7 @@
 #include "runtime/pynative/op_runner.h"
 #include "runtime/pynative/op_executor.h"
 #include "pybind_api/gil_scoped_long_running.h"
+#include "pybind_api/ir/tensor_py.h"
 #include "include/backend/mem_reuse/mem_tracker.h"
 #ifdef ENABLE_DEBUGGER
 #include "include/backend/debug/debugger/debugger.h"
@@ -45,6 +47,8 @@ namespace mindspore {
 using tensor::TensorPtr;
 namespace runtime {
 namespace {
+constexpr auto kParamterDiskUserDataName = "parameter_device";
+
 device::DeviceAddressPtr CreateDeviceAddressForScalarAndString(const DeviceContext *device_context,
                                                                const ValueNodePtr &value_node) {
   device::DeviceAddressPtr address = nullptr;
@@ -99,6 +103,35 @@ Format GetFormatByTensorShape(const DeviceContext *device_context, const ShapeVe
       return Format::NCDHW;
     default:
       return Format::ND;
+  }
+}
+
+void SetHeteInfoForParamDeviceAddress(const ParameterPtr &parameter, const KernelTensorPtr &kernel_tensor) {
+  const auto value = parameter->default_param();
+  if (value == nullptr) {
+    return;
+  }
+  const auto meta_tensor = value->cast_ptr<tensor::MetaTensor>();
+  if (meta_tensor == nullptr) {
+    return;
+  }
+  const auto &user_data = meta_tensor->user_data<tensor::TensorPy::TensorPyUserData>(kParamterDiskUserDataName);
+  if (user_data == nullptr) {
+    return;
+  }
+  if (!py::isinstance<py::str>(user_data->obj)) {
+    return;
+  }
+  std::string device_str = py::cast<std::string>(user_data->obj);
+  if (device_str.empty()) {
+    return;
+  }
+  if (device_str == kToCpu) {
+    kernel_tensor->set_heterogeneous_info(std::make_shared<kernel::HeterogeneousInfo>());
+    kernel_tensor->heterogeneous_info()->need_alloc_hete_res_ = kernel::NeedAllocateHeteRes::NeedHostMem;
+  } else if (device_str == kToDisk) {
+    kernel_tensor->set_heterogeneous_info(std::make_shared<kernel::HeterogeneousInfo>());
+    kernel_tensor->heterogeneous_info()->need_alloc_hete_res_ = kernel::NeedAllocateHeteRes::NeedDiskFile;
   }
 }
 }  // namespace
@@ -227,6 +260,9 @@ void DeviceAddressUtils::CreateParameterDeviceAddress(const DeviceContext *devic
   }
 
   // Create device address for anf node in nodes_list
+  const auto &ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  const auto enable_offload = ms_context->get_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD);
   for (const auto &item : nodes_list) {
     MS_EXCEPTION_IF_NULL(item);
     const auto &real_device_context = device::FetchRealDeviceContext(item, device_context);
@@ -264,6 +300,9 @@ void DeviceAddressUtils::CreateParameterDeviceAddress(const DeviceContext *devic
           MS_LOG(INFO) << "Node:" << item->fullname_with_scope() << " debug name:" << item->DebugString()
                        << " is not used in the graph " << graph->graph_id();
           device_address->UpdateFlag(device::kDeviceAddressFlagNotUsed);
+        }
+        if (enable_offload) {
+          SetHeteInfoForParamDeviceAddress(input_param, kernel_tensor);
         }
       }
       device_address->SetNodeIndex(item, index);
@@ -486,6 +525,21 @@ void DeviceAddressUtils::CreateKernelOutputDeviceAddress(const DeviceContext *de
       (is_gradient_out || (is_pynative_bprop_graph && (find(outputs.begin(), outputs.end(), kernel) != outputs.end())));
 
     auto output_size = AnfAlgo::GetOutputAddressNum(kernel);
+    const bool is_move_to = IsPrimitiveCNode(kernel, prim::kPrimMoveTo);
+    std::string move_to;
+    if (is_move_to) {
+      const auto &kernel_with_index = common::AnfAlgo::VisitKernelWithReturnType(kernel->input(2), 0, true);
+      const auto &second_input = kernel_with_index.first;
+      MS_EXCEPTION_IF_NULL(second_input);
+      if (!second_input->isa<ValueNode>()) {
+        MS_LOG(EXCEPTION) << "Get to value failed, the second input of MoveTo is not a ValueNode.";
+      }
+      auto to_value_node = second_input->cast<ValueNodePtr>();
+      auto to_value = to_value_node->value();
+      if (to_value->isa<StringImm>()) {
+        move_to = to_value->cast<StringImmPtr>()->value();
+      }
+    }
     for (size_t i = 0; i < output_size; ++i) {
       if (AnfAlgo::OutputAddrExist(kernel, i)) {
         continue;
@@ -516,6 +570,14 @@ void DeviceAddressUtils::CreateKernelOutputDeviceAddress(const DeviceContext *de
         user_data);
       kernel_tensor->set_stream_id(AnfAlgo::GetStreamId(kernel));
       MS_LOG(DEBUG) << "Kernel tensor created without set stream id, but set after device address created.";
+      if (is_move_to) {
+        kernel_tensor->set_heterogeneous_info(std::make_shared<kernel::HeterogeneousInfo>());
+        if (move_to == kToCpu) {
+          kernel_tensor->heterogeneous_info()->need_alloc_hete_res_ = kernel::NeedAllocateHeteRes::NeedHostMem;
+        } else if (move_to == kToDisk) {
+          kernel_tensor->heterogeneous_info()->need_alloc_hete_res_ = kernel::NeedAllocateHeteRes::NeedDiskFile;
+        }
+      }
       auto device_address = real_device_context->device_res_manager_->CreateDeviceAddress(kernel_tensor);
       device_address->SetNodeIndex(kernel, i);
       if (is_from_persistent_mem) {

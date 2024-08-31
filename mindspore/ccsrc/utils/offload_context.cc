@@ -104,6 +104,10 @@ void OffloadContext::set_cpu_ratio(float cpu_ratio) { cpu_ratio_ = cpu_ratio; }
 
 void OffloadContext::set_hbm_ratio(float hbm_ratio) { hbm_ratio_ = hbm_ratio; }
 
+void OffloadContext::set_specific_param_offload(bool specific_param_offload) {
+  specific_param_offload_ = specific_param_offload;
+}
+
 OffloadContext::OffloadContext()
     : offload_param_(kOffloadParam),
       offload_path_(kOffloadPath),
@@ -114,9 +118,10 @@ OffloadContext::OffloadContext()
       aio_block_size_(kAioBlockSize),
       aio_queue_depth_(kAioQueueDepth),
       enable_pinned_mem_(true),
-      auto_offload_(true),
+      auto_offload_(false),
       host_mem_block_size_(kGBToByte),
       cpu_size_configured_(false),
       cpu_ratio_(1.0f),
-      hbm_ratio_(1.0f) {}
+      hbm_ratio_(1.0f),
+      specific_param_offload_(false) {}
 }  // namespace mindspore

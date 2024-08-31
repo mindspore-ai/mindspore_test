@@ -85,6 +85,7 @@ class BACKEND_EXPORT SwapManager {
   bool HostMemoryToFile(const std::string &file_name, const void *data, size_t byte_num, bool async,
                         AsyncIOToken *sync_token);
   bool WaitAsyncIO(AsyncIOToken sync_token);
+  std::string GetSwapFileName(uint32_t device_id) const;
 
   // Swapping and swappable tensors
   void AddSwappableTensor(const DeviceAddressPtr &device_address);
@@ -132,6 +133,7 @@ class BACKEND_EXPORT SwapManager {
   std::queue<const DeviceAddress *> swapping_tensors_file_;
   IOHandlePtr io_handle_;
 };
+using SwapManagerPtr = std::shared_ptr<SwapManager>;
 }  // namespace device
 }  // namespace mindspore
 
