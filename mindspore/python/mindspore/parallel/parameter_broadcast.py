@@ -104,10 +104,10 @@ def parameter_broadcast(net, layout, cur_rank=0, initial_rank=0):
         ...         print("step end, cur step num: ", cb_params.cur_step_num, flush=True)
         >>> model.train(1, dataset, callbacks=[LossCallBack()])
     """
-    from mindspore.train._utils import get_parameter_redundancy, remove_param_redundancy
-    from mindspore.nn.wrap.cell_wrapper import AllreduceGraph
     if not layout:
         return
+    from mindspore.train._utils import get_parameter_redundancy, remove_param_redundancy
+    from mindspore.nn.wrap.cell_wrapper import AllreduceGraph
     origin_parallel_mode = ms.get_auto_parallel_context("parallel_mode")
     if origin_parallel_mode not in ("semi_auto_parallel", "auto_parallel"):
         return
