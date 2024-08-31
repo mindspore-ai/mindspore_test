@@ -190,6 +190,7 @@ mindspore
     :toctree: mindspore
 
     mindspore.Profiler
+    mindspore.profiler.DynamicProfilerMonitor
     mindspore.SummaryCollector
     mindspore.SummaryLandscape
     mindspore.SummaryRecord

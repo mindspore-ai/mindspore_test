@@ -216,6 +216,7 @@ Debugging and Tuning
     :template: classtemplate.rst
 
     mindspore.Profiler
+    mindspore.profiler.DynamicProfilerMonitor
     mindspore.SummaryCollector
     mindspore.SummaryLandscape
     mindspore.SummaryRecord
