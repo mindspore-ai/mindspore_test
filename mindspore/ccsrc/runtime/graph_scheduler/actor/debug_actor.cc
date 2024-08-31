@@ -35,15 +35,22 @@
 #include "utils/file_utils.h"
 #include "include/backend/debug/profiler/profiling.h"
 #include "mindspore/ops/op_def/nn_op_name.h"
+#include "debug/data_dump/overflow_counter.h"
 
 namespace mindspore {
 namespace runtime {
 void DebugActor::ACLDump(uint32_t device_id, const std::vector<KernelGraphPtr> &graphs, bool is_kbyk) {
   std::vector<std::string> all_kernel_names;
+  std::vector<std::string> set_dump_names;
   for (const auto &graph : graphs) {
     auto all_kernels = graph->execution_order();
-    std::for_each(all_kernels.begin(), all_kernels.end(),
-                  [&](const auto &k) { all_kernel_names.push_back(k->fullname_with_scope()); });
+    std::for_each(all_kernels.begin(), all_kernels.end(), [&](const auto &k) {
+      all_kernel_names.push_back(k->fullname_with_scope());
+      auto dump_flag = common::AnfAlgo::GetDumpFlag(k);
+      if (dump_flag.has_value() && dump_flag.value().compare("true") == 0) {
+        set_dump_names.push_back(k->fullname_with_scope());
+      }
+    });
   }
 
   auto step_count_num = 0;
@@ -74,7 +81,16 @@ void DebugActor::ACLDump(uint32_t device_id, const std::vector<KernelGraphPtr> &
     auto registered_dumper = datadump::DataDumperRegister::Instance().GetDumperForBackend(device::DeviceType::kAscend);
     if (registered_dumper != nullptr) {
       registered_dumper->Initialize();
-      registered_dumper->EnableDump(device_id, step_count_num, is_init, all_kernel_names);
+      if (DumpJsonParser::GetInstance().dump_mode() ==
+          static_cast<uint32_t>(mindspore::DumpJsonParser::JsonDumpMode::DUMP_KERNELS_WITH_FLAG)) {
+        if (set_dump_names.empty()) {
+          MS_LOG(WARNING) << "[set dump] There is no target with dump flag.";
+          set_dump_names.push_back("NoSetDumpTarget");
+        }
+        registered_dumper->EnableDump(device_id, step_count_num, is_init, set_dump_names);
+      } else {
+        registered_dumper->EnableDump(device_id, step_count_num, is_init, all_kernel_names);
+      }
     }
   }
 }
@@ -181,7 +197,17 @@ void DebugActor::AscendKbkDump(const CNodePtr &cnode, const std::vector<DeviceTe
         MS_LOG(ERROR) << "Sync stream error! The node input will be dumped";
       }
     } else if (op_debug_mode == DumpJsonParser::DUMP_BOTH_OVERFLOW && dump_json_parser.DumpEnabledForIter()) {
-      auto is_overflow = CheckOverflow(device_context, output_device_tensors);
+      uint32_t set_overflow_num = dump_json_parser.overflow_number();
+      uint32_t overflow_count = OverflowCounter::GetInstance().getCount();
+      bool is_overflow = false;
+      if (set_overflow_num == 0) {
+        is_overflow = CheckOverflow(device_context, output_device_tensors);
+      } else if (overflow_count < set_overflow_num) {
+        is_overflow = CheckOverflow(device_context, output_device_tensors);
+        if (is_overflow) {
+          OverflowCounter::GetInstance().addCount();
+        }
+      }
       if (is_overflow) {
         read_data = CheckReadData(cnode);
       }

@@ -55,6 +55,20 @@ class NetMul(nn.Cell):
         return self.mul(x_, y_)
 
 
+class NetMulAdd(nn.Cell):
+    def __init__(self):
+        super(NetMulAdd, self).__init__()
+        self.add = P.Add()
+        self.mul = P.Mul()
+
+    def construct(self, x_, y_):
+        x_ = self.mul(x_, 2)
+        y_ = self.mul(y_, 2)
+        x_ = self.add(x_, y_)
+        y_ = self.add(x_, y_)
+        return self.add(x_, y_)
+
+
 x = np.array([[1, 2, 3], [4, 5, 6]]).astype(np.float32)
 y = np.array([[7, 8, 9], [10, 11, 12]]).astype(np.float32)
 
@@ -278,6 +292,29 @@ def run_overflow_dump():
         del os.environ['ENABLE_MS_GE_DUMP']
 
 
+def run_set_overflow_dump():
+    """Run async dump and generate overflow"""
+    if sys.platform != 'linux':
+        return
+    context.set_context(jit_level="O2")
+    data = np.array([60000, 60000]).astype(np.float16)
+    with tempfile.TemporaryDirectory(dir='/tmp') as tmp_dir:
+        dump_path = os.path.join(tmp_dir, 'overflow_dump')
+        dump_config_path = os.path.join(tmp_dir, 'overflow_dump.json')
+        set_overflow_num = 1
+        generate_dump_json_with_overflow(dump_path, dump_config_path, 'test_ge_dump_npy', 3, set_overflow_num)
+        os.environ['MINDSPORE_DUMP_CONFIG'] = dump_config_path
+        os.environ['ENABLE_MS_GE_DUMP'] = "1"
+        if os.path.isdir(dump_path):
+            shutil.rmtree(dump_path)
+        net = NetMulAdd()
+        net(Tensor(data), Tensor(data))
+
+        check_ge_dump_structure(dump_path, 1, 1, True, check_overflow_num=True, overflow_number=set_overflow_num)
+        del os.environ['MINDSPORE_DUMP_CONFIG']
+        del os.environ['ENABLE_MS_GE_DUMP']
+
+
 def run_saved_data_dump_test_bf16(scenario, saved_data):
     """Run dump on GE backend, testing statistic dump"""
     if sys.platform != 'linux':
@@ -347,6 +384,19 @@ def test_ge_overflow_dump():
     context.set_context(mode=context.GRAPH_MODE, device_target='Ascend')
     context.set_context(jit_level="O2")
     run_overflow_dump()
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@security_off_wrap
+def test_ge_set_overflow_dump():
+    """
+    Feature: The number of overflow dump can be configured on GE backend
+    Description: Test set overflow dump number
+    Expectation: Overflow is occurred, and the number of overflow dump file is in correct
+    """
+    context.set_context(mode=context.GRAPH_MODE, device_target='Ascend')
+    context.set_context(jit_level="O2")
+    run_set_overflow_dump()
 
 
 def run_train():
@@ -528,6 +578,37 @@ def test_overflow_acl_dump():
     Expectation:overflow  dump data are generated.
     """
     run_overflow_acl_dump()
+
+
+def run_acl_set_dump():
+    """Run acl dump and generate data with dump flag"""
+    if sys.platform != 'linux':
+        return
+    context.set_context(mode=mindspore.GRAPH_MODE, jit_level="O2")
+    data = np.array([60, 60]).astype(np.float16)
+    with tempfile.TemporaryDirectory(dir='/tmp') as tmp_dir:
+        dump_path = os.path.join(tmp_dir, 'acl_set_dump')
+        dump_config_path = os.path.join(tmp_dir, 'acl_set_dump.json')
+        generate_dump_json(dump_path, dump_config_path, 'test_acl_set_dump')
+        os.environ['MINDSPORE_DUMP_CONFIG'] = dump_config_path
+        if os.path.isdir(dump_path):
+            shutil.rmtree(dump_path)
+        net = NetMulAdd()
+        mindspore.set_dump(net.add)
+        net(Tensor(data), Tensor(data))
+        check_ge_dump_structure_acl(dump_path, 0, 1)
+        del os.environ['MINDSPORE_DUMP_CONFIG']
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@security_off_wrap
+def test_acl_set_dump():
+    """
+    Feature: O2 process supports set dump.
+    Description: test acl dump with set dump enabled.
+    Expectation: Using mindpore.set_dump to enable dump functionality on objects will generate data.
+    """
+    run_acl_set_dump()
 
 
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='unessential')

@@ -47,24 +47,29 @@ class AclDataDumper : public DataDumper {
 
     // select target kernel names specified by user config
     nlohmann::json target_kernel_names = nlohmann::json::array();
-    auto kernel_regs = dump_parser.GetKernelRegs();
-    if (!kernel_regs.empty()) {
-      for (auto iter = kernel_regs.begin(); iter != kernel_regs.end(); iter++) {
-        auto kernel_reg = iter->second;
-        for (const auto &s : all_kernel_names) {
-          if (std::regex_search(s, kernel_reg)) {
-            target_kernel_names.emplace_back(s);
-            dump_parser.MatchKernel(iter->first);
+    if (dump_parser.dump_mode() ==
+        static_cast<uint32_t>(mindspore::DumpJsonParser::JsonDumpMode::DUMP_KERNELS_WITH_FLAG)) {
+      std::copy(all_kernel_names.begin(), all_kernel_names.end(), std::back_inserter(target_kernel_names));
+    } else {
+      auto kernel_regs = dump_parser.GetKernelRegs();
+      if (!kernel_regs.empty()) {
+        for (auto iter = kernel_regs.begin(); iter != kernel_regs.end(); iter++) {
+          auto kernel_reg = iter->second;
+          for (const auto &s : all_kernel_names) {
+            if (std::regex_search(s, kernel_reg)) {
+              target_kernel_names.emplace_back(s);
+              dump_parser.MatchKernel(iter->first);
+            }
           }
         }
       }
-    }
 
-    auto kernels_strs = dump_parser.GetKernelStrs();
-    for (auto iter = kernels_strs.begin(); iter != kernels_strs.end(); iter++) {
-      for (const auto &s : all_kernel_names) {
-        if (iter->first == s) {
-          dump_parser.MatchKernel(iter->first);
+      auto kernels_strs = dump_parser.GetKernelStrs();
+      for (auto iter = kernels_strs.begin(); iter != kernels_strs.end(); iter++) {
+        for (const auto &s : all_kernel_names) {
+          if (iter->first == s) {
+            dump_parser.MatchKernel(iter->first);
+          }
         }
       }
     }
