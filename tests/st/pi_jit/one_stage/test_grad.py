@@ -105,6 +105,7 @@ def test_base_grad_operation_2():
     assert np.allclose(pynative_res[1].asnumpy(), pijit_res[1].asnumpy())
     jit_mode_pi_disable()
 
+
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_base_grad_operation_3():
     """
@@ -148,6 +149,7 @@ def test_base_grad_operation_3():
     assert len(pynative_res) == 1 and len(pijit_res) == 1
     assert np.allclose(pynative_res[0].asnumpy(), pijit_res[0].asnumpy())
     jit_mode_pi_disable()
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_base_grad_operation_4():
@@ -286,6 +288,96 @@ def test_base_grad_operation_6():
     assert len(pynative_res[1]) == 1 and len(pijit_res[1]) == 1
     assert np.allclose(pynative_res[1][0].asnumpy(), pijit_res[1][0].asnumpy())
     jit_mode_pi_disable()
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_base_grad_operation_7():
+    """
+    Feature: One stage GradOperation
+    Description: Test One stage GradOperation with no graph break
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.w = Parameter(Tensor([1]), name='w')
+
+        def construct(self, x, y):
+            ret = self.w * x + y
+            return ret
+
+    class GradNet(nn.Cell):
+        def __init__(self, net, ):
+            super(GradNet, self).__init__()
+            self.net = net
+            self.params = self.net.trainable_params()
+            self.grad_op = GradOperation(False, True, False)
+
+        @jit(mode="PIJit")
+        def construct(self, x, y):
+            grad_ret = self.grad_op(self.net, self.params)(x, y)
+            return grad_ret
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    net = Net()
+    grad_net = GradNet(net)
+    a = Tensor([1, 1, 1])
+    b = Tensor([2, 2, 2])
+    jit_mode_pi_disable()
+    pynative_res = grad_net(a, b)
+    jit_mode_pi_enable()
+    pijit_res = grad_net(a, b)
+    jcr = get_code_extra(GradNet.construct.__wrapped__)
+    assert jcr["break_count_"] == 0
+    assert isinstance(pynative_res, tuple) and isinstance(pijit_res, tuple)
+    assert len(pynative_res) == 1 and len(pijit_res) == 1
+    assert np.allclose(pynative_res[0].asnumpy(), pijit_res[0].asnumpy())
+    jit_mode_pi_disable()
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_base_grad_operation_8():
+    """
+    Feature: One stage GradOperation
+    Description: Test One stage GradOperation with no graph break
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.w = Parameter(Tensor([1]), name='w')
+
+        def construct(self, x, y):
+            ret = self.w * x + y
+            return ret
+
+    class GradNet(nn.Cell):
+        def __init__(self, net, ):
+            super(GradNet, self).__init__()
+            self.net = net
+            self.grad_op = GradOperation(False, True, False)
+
+        @jit(mode="PIJit")
+        def construct(self, x, y):
+            grad_ret = self.grad_op(self.net, self.net.trainable_params())(x, y)
+            return grad_ret
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    net = Net()
+    grad_net = GradNet(net)
+    a = Tensor([1, 1, 1])
+    b = Tensor([2, 2, 2])
+    jit_mode_pi_disable()
+    pynative_res = grad_net(a, b)
+    jit_mode_pi_enable()
+    pijit_res = grad_net(a, b)
+    jcr = get_code_extra(GradNet.construct.__wrapped__)
+    assert jcr["break_count_"] == 1
+    assert isinstance(pynative_res, tuple) and isinstance(pijit_res, tuple)
+    assert len(pynative_res) == 1 and len(pijit_res) == 1
+    assert np.allclose(pynative_res[0].asnumpy(), pijit_res[0].asnumpy())
+    jit_mode_pi_disable()
+
 
 @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_base_grad_operation_with_keywords_args():

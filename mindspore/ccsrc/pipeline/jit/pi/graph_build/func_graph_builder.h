@@ -148,6 +148,8 @@ class FuncGraphBuilder {
 
   static AbstractBasePtr EvalValue(const ValuePtr &value, const AbstractBasePtrList &inputs_abs_list);
 
+  static bool IsParameterSequence(const py::object &object);
+
   void AddPrevBuilder(const FuncGraphBuilderPtr &builder);
 
   const std::vector<FuncGraphBuilder *> &prev_builders() const { return prev_builders_; }
