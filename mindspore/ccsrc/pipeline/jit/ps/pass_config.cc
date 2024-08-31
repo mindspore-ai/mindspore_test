@@ -180,25 +180,27 @@ void PassConfigure::SetOptimizeConfig(const py::list &optimize_cfg) {
 std::string PassConfigure::GetOptimizeConfig() {
   std::stringstream out;
   out << std::endl << "Opt graph functions:" << std::endl;
-  std::string split = "\t";
+  constexpr auto tab_sp = "\t";
+  constexpr auto new_line_sp = "\r\n";
+  constexpr int number_3 = 3;
   int i = 0;
   for (const auto &[name, func] : opt_func_map_) {
-    out << name << (++i % 3 != 0 ? split : "\r\n");
+    out << name << (++i % number_3 != 0 ? tab_sp : new_line_sp);
   }
   out << std::endl << std::endl << "Pass functions:" << std::endl;
   i = 0;
   for (const auto &[name, func] : pass_func_map_) {
-    out << name << (++i % 3 != 0 ? split : "\r\n");
+    out << name << (++i % number_3 != 0 ? tab_sp : new_line_sp);
   }
   out << std::endl << std::endl << "Opt substitutions:" << std::endl;
   i = 0;
   for (const auto &[name, func] : substitution_map_) {
-    out << name << (++i % 3 != 0 ? split : "\r\n");
+    out << name << (++i % number_3 != 0 ? tab_sp : new_line_sp);
   }
   out << std::endl << std::endl << "Opt PassItems:" << std::endl;
   i = 0;
   for (const auto &item : passes_) {
-    out << item.first << split << (++i % 3 != 0 ? split : "\r\n");
+    out << item.first << tab_sp << (++i % number_3 != 0 ? tab_sp : new_line_sp);
   }
   out << std::endl;
   return out.str();
@@ -244,22 +246,23 @@ void SavePassesConfig(const std::string &func_graph) {
   if (path.empty() || py::len(running_passes) < 1) {
     return;
   }
-
-  auto realpath = Common::CreatePrefixPath(path + "/" + func_graph + "_pass.conf", true);
+  path += "/" + func_graph + "_pass.conf";
+  auto realpath = Common::CreatePrefixPath(path, true);
   if (!realpath.has_value()) {
     MS_LOG(ERROR) << "Get real path of file ./" << func_graph << ".conf failed.";
     return;
   }
   ChangeFileMode(realpath.value(), S_IWUSR);
-  std::ofstream fout(realpath.value());
-  if (!fout.is_open()) {
+  auto ofs = FileUtils::OpenFile(realpath.value(), std::ios::out);
+  if (ofs == nullptr) {
     MS_LOG(ERROR) << "Open the file '" << realpath.value() << "' failed!" << ErrnoToString(errno);
     return;
   }
   for (auto &pass : running_passes) {
-    fout << py::str(pass) << std::endl;
+    *ofs << py::str(pass) << std::endl;
   }
-  fout.close();
+  ofs->close();
+  delete ofs;
   ChangeFileMode(realpath.value(), S_IRUSR);
 }
 
@@ -270,20 +273,23 @@ void LoadPassesConfig(const std::string &func_graph) {
   if (path.empty()) {
     return;
   }
+
   std::string realpath = path + "/" + func_graph + "_pass.conf";
-  std::ifstream fin(realpath);
-  if (!fin.is_open()) {
+  auto ifs = FileUtils::OpenFile(realpath, std::ios::in);
+  if (ifs == nullptr) {
     MS_LOG(INFO) << "Open the file '" << realpath << "' failed!" << ErrnoToString(errno);
     return;
   }
-  char buffer[128];
+  constexpr int kNumber256 = 256;
+  char buffer[kNumber256];
   py::list cfg_passes;
-  fin.getline(buffer, 128);
-  while (fin.good()) {
+  ifs->getline(buffer, kNumber256);
+  while (ifs->good()) {
     cfg_passes.append(py::str(buffer));
-    fin.getline(buffer, 128);
+    ifs->getline(buffer, kNumber256);
   }
-  fin.close();
+  ifs->close();
+  delete ifs;
   opt::PassConfigure::Instance().SetConfigPasses(cfg_passes);
   MS_LOG(INFO) << "Set Config passes: " << py::str(cfg_passes);
 }
