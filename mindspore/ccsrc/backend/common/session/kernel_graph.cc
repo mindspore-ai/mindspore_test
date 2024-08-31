@@ -1182,6 +1182,12 @@ void KernelGraph::CacheGraphOutputToFrontNodeWithIndex(const AnfNodePtrList &bac
   }
 }
 
+bool IsTupleGetItemOutputDynamicSequence(const CNodePtr &get_item, size_t index) {
+  return index == 0 && get_item != nullptr && get_item->abstract() != nullptr &&
+         get_item->abstract()->isa<abstract::AbstractSequence>() &&
+         get_item->abstract()->cast<abstract::AbstractSequencePtr>()->dynamic_len();
+}
+
 kernel::KernelObjectType GetTupleGetItemOutputKernelObjectType(const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
   auto tuple_get_item = node->cast<CNodePtr>();
@@ -1208,6 +1214,9 @@ kernel::KernelObjectType GetTupleGetItemOutputKernelObjectType(const AnfNodePtr 
       const auto &sequence_abstract = input_node->abstract()->cast<abstract::AbstractSequencePtr>();
       MS_EXCEPTION_IF_NULL(sequence_abstract);
       if (sequence_abstract->dynamic_len()) {
+        if (IsTupleGetItemOutputDynamicSequence(tuple_get_item, output_idx)) {
+          return KernelObjectType::TUPLE;
+        }
         MS_EXCEPTION_IF_NULL(sequence_abstract->dynamic_len_element_abs());
         return kernel::TypeIdToKernelObjectType(
           AnfAlgo::GetAbstractObjectType(sequence_abstract->dynamic_len_element_abs()));
