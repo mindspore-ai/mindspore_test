@@ -36,7 +36,8 @@ class SendActor : public RpcActor {
                  modifiable_ref_input_indexes, modifiable_ref_output_indexes, KernelTransformType::kSendActor),
         client_(nullptr),
         context_(nullptr),
-        server_url_("") {}
+        server_url_(""),
+        remote_func_id_(0) {}
   ~SendActor() override;
 
   // Set send actor's destination peer info, in another word, send actor's output.

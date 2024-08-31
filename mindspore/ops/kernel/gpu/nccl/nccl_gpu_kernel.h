@@ -50,7 +50,12 @@ typedef std::vector<int> (*GetGroupRanks)(const std::string &);
 
 class NcclGpuKernelMod : public NativeGpuKernelMod {
  public:
-  NcclGpuKernelMod() : collective_handle_(nullptr), group_name_(""), nccl_data_type_(ncclHalf), use_mpi_(true) {}
+  NcclGpuKernelMod()
+      : collective_handle_(nullptr),
+        nvidia_collective_handle_(nullptr),
+        group_name_(""),
+        nccl_data_type_(ncclHalf),
+        use_mpi_(true) {}
   ~NcclGpuKernelMod() override = default;
 
  protected:
