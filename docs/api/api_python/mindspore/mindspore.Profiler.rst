@@ -80,7 +80,7 @@ mindspore.Profiler
               - "sync": 同步模式解析性能数据，会阻塞当前进程。
               - "async": 异步模式，另起一个子进程解析性能数据，不会阻塞当前进程。由于解析进程会额外占用CPU资源，请根据实际资源情况开启该模式。
 
-    .. py:method:: offline_analyse(path: str, pretty=False, step_list=None)
+    .. py:method:: offline_analyse(path: str, pretty=False, step_list=None, data_simplification=True)
         :classmethod:
 
         离线分析训练的性能数据，性能数据采集结束后调用。
@@ -89,6 +89,7 @@ mindspore.Profiler
             - **path** (str) - 需要进行离线分析的profiling数据路径，指定到profiler上层目录。
             - **pretty** (bool, 可选) - 对json文件进行格式化处理。此参数默认值为 ``False``，即不进行格式化。
             - **step_list** (list, 可选) - 只分析指定step的性能数据。此参数默认值为 ``None``，即进行全解析。
+            - **data_simplification** (bool, 可选) - 数据精简开关功能。默认值为 ``True``，即开启数据精简。
 
     .. py:method:: op_analyse(op_name, device_id=None)
 
