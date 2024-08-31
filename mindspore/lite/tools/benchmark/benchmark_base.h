@@ -221,8 +221,8 @@ class MS_API BenchmarkFlags : public virtual FlagParser {
   std::map<std::string, std::vector<int64_t>> graph_input_shape_map_;
   std::vector<std::vector<int>> resize_dims_;
   // Distributed Infer
-  int device_id_;
-  int rank_id_;
+  int device_id_ = 0;
+  int rank_id_ = 0;
 
   std::string device_ = "CPU";
   std::string provider_ = "litert";

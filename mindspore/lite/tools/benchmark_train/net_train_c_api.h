@@ -105,7 +105,7 @@ class MS_API NetTrainCApi : public NetTrainBase {
 
   int SaveModels() override;
 
-  MSModelHandle ms_model_;
+  MSModelHandle ms_model_ = nullptr;
   MSTensorHandleArray ms_inputs_for_api_;
   MSContextHandle context_ = nullptr;
   MSTrainCfgHandle train_cfg_ = nullptr;

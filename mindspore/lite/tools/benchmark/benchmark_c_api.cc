@@ -368,6 +368,10 @@ int BenchmarkCApi::PrintInputData() {
       return RET_ERROR;
     }
     auto tensor_data = MSTensorGetData(input);
+    if (tensor_data == nullptr) {
+      BENCHMARK_LOG_ERROR("MSTensorGetData failed.");
+      return RET_ERROR;
+    }
     size_t print_num = std::min(MSTensorGetElementNum(input), kPrintDataNum);
     for (size_t j = 0; j < print_num; j++) {
       if (data_type == TypeId::kNumberTypeFloat32 || data_type == TypeId::kNumberTypeFloat) {

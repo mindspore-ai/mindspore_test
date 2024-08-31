@@ -84,12 +84,12 @@ int StridedSliceOpenCLKernel::CheckSpecs() {
   const std::string kernel_name = type() == PrimitiveType_SliceFusion ? "Slice" : "StridedSlice";
   auto in_ndim = in_tensors_.front()->shape().size();
   if (in_ndim == 0 || in_ndim > DIMENSION_4D) {
-    MS_LOG(WARNING) << kernel_name + " only supports 1D-4D input tensor";
+    MS_LOG(WARNING) << kernel_name << " only supports 1D-4D input tensor";
     return RET_ERROR;
   }
   auto out_ndim = out_tensors_.front()->shape().size();
   if (out_ndim > DIMENSION_4D) {
-    MS_LOG(WARNING) << kernel_name + " only supports 0D-4D output tensor";
+    MS_LOG(WARNING) << kernel_name << " only supports 0D-4D output tensor";
     return RET_ERROR;
   }
   if (InitConstArgs() != RET_OK) {

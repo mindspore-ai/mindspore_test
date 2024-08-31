@@ -94,6 +94,10 @@ int ToFormatOpenCLKernel::Prepare() {
   }
 
   auto output = GpuTensorInfo::CreateGpuTensorInfo(out_tensor);
+  if (output == nullptr) {
+    MS_LOG(ERROR) << "Create gpu tensor info failed!";
+    return RET_ERROR;
+  }
   N_ = output->N;
   D_ = output->D;
   H_ = output->H;
