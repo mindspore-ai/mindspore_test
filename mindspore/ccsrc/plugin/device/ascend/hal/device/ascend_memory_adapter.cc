@@ -277,6 +277,9 @@ size_t AscendMemAdapter::GetDeviceMemSizeFromContext() const {
   if (context->ascend_soc_version() == kAscendVersion910b || context->ascend_soc_version() == kAscendVersion910c) {
     total_device_memory = 64.0f;
   }
+  if (context->ascend_soc_version() == kAscendVersion310p) {
+    total_device_memory = 43.0f;
+  }
   if (max_device_memory <= total_device_memory) {
     MS_LOG(INFO) << "context max_device_memory:" << max_device_memory;
     size_from_context = FloatToSize(max_device_memory * kGBToByte);
