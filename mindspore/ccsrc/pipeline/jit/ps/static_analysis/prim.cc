@@ -4374,10 +4374,10 @@ class ScanEvaluator : public Evaluator {
     auto [xs_node, getitem_op] = CheckXsNode(cnode->input(kIndex3), xs_abs, length_value, cur_graph);
     auto loop_func_node = CheckLoopFunc(loop_func);
     AnfNodePtr result_node = nullptr;
-    AbstractBasePtr loop_result_abs = EvaluateLoopFunction(engine, loop_func, init_value, xs_abs);
+    AbstractBasePtr loop_result_abs = EvaluateLoopFunction(engine, loop_func, init_value, xs_abs, cnode);
     if (loop_result_abs->BuildValue()->ContainsValueAny()) {
       loop_func_node->set_flag(FUNC_GRAPH_FLAG_IGNORE_VALUE, true);
-      (void)EvaluateLoopFunction(engine, loop_func, init_value, xs_abs);
+      (void)EvaluateLoopFunction(engine, loop_func, init_value, xs_abs, cnode);
       // Keep kPrimScan and get EvalResult directly, unroll later
       if (user_unroll) {
         MS_LOG(DEBUG) << "`Scan` op will be unrolled in graph optimization action later";
@@ -4512,7 +4512,8 @@ class ScanEvaluator : public Evaluator {
   }
 
   AbstractBasePtr EvaluateLoopFunction(AnalysisEnginePtr engine, const AbstractFunctionPtr &loop_func,
-                                       const AbstractBasePtr &init_value, const AbstractBasePtr &xs_abs) {
+                                       const AbstractBasePtr &init_value, const AbstractBasePtr &xs_abs,
+                                       const AnfNodePtr &cnode) {
     auto abs_item = GetItemAbs(xs_abs);
     ConfigPtrList value_arg_conf_list = {std::make_shared<VirtualConfig>(init_value),
                                          std::make_shared<VirtualConfig>(abs_item)};
@@ -4529,11 +4530,16 @@ class ScanEvaluator : public Evaluator {
                                << "must be a tuple with two elements, but got: " << loop_result_abs->ToString();
     }
     const auto &ele_abs = loop_result_tuple->elements()[0];
-    if (!CheckTypeIdAndShapeEqual(ele_abs, init_value)) {
-      MS_EXCEPTION(ValueError) << "Scan op has invalid argument, the first element of [loop_func]'s output "
-                               << "and the [init_value] should maintain the same type and shape, but got: "
-                               << ele_abs->ToString() << " and " << init_value->ToString();
+    constexpr auto kCheckArg = "CheckArg";
+    if (!cnode->has_user_data(kCheckArg)) {
+      if (!CheckTypeIdAndShapeEqual(ele_abs, init_value)) {
+        MS_EXCEPTION(ValueError) << "Scan op has invalid argument, the first element of [loop_func]'s output "
+                                 << "and the [init_value] should maintain the same type and shape, but got: "
+                                 << ele_abs->ToString() << " and " << init_value->ToString();
+      }
+      cnode->set_user_data(kCheckArg, std::make_shared<bool>(true));
     }
+
     return loop_result_abs;
   }
 
