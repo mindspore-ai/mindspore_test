@@ -333,6 +333,8 @@ from mindspore.ops.function.math_func import tan
 
 from mindspore.ops.auto_generate import trace_ext as trace
 
+from mindspore.ops.function.array_func import reshape
+
 # 304
 from mindspore.ops.function.array_func import tril_ext as tril
 
@@ -1443,6 +1445,7 @@ __all__ = [
     # 301
     'tan',
     'trace',
+    'reshape',
     # 304
     'tril',
 
