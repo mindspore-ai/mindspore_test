@@ -49,6 +49,7 @@ if [[ "${MSLITE_ENABLE_CLOUD_FUSION_INFERENCE}" == "on" || "${MSLITE_ENABLE_CLOU
   export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/local/Ascend/latest/lib64
   set -e
   ./lite-test-converter --gtest_filter="ClipMapperTest.*"
+  ./lite-test-converter --gtest_filter="PassRegistryPositionAscendTest.*"
   exit 0
 fi
 

@@ -128,6 +128,7 @@ if(MSLITE_ENABLE_CONVERTER)
         file(GLOB_RECURSE TEST_CONVERTER_UT_SRC
                 ${TEST_DIR}/ut/tools/converter/adapter/acl/mapper/*.cc
                 ${TEST_DIR}/ut/tools/converter/parser/onnx/*.cc
+                ${TEST_DIR}/ut/tools/converter/registry/pass_registry_position_ascend.cc
                 )
     endif()
     if(NOT (MSLITE_ENABLE_CLOUD_FUSION_INFERENCE OR MSLITE_ENABLE_CLOUD_INFERENCE))
