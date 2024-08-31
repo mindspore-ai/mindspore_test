@@ -24,9 +24,9 @@
 #include <map>
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
-#include "mindspore/core/base/base.h"
-#include "mindspore/core/ir/dtype/amp.h"
-#include "mindspore/core/ir/dtype/type.h"
+#include "mindspore/core/include/base/base.h"
+#include "mindspore/core/include/ir/dtype/amp.h"
+#include "mindspore/core/include/ir/dtype/type.h"
 #include "include/common/visible.h"
 
 namespace py = pybind11;

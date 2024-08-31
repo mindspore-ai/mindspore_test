@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include "ir/dtype/amp.h"
-#include "mindspore/core/ir/dtype/number.h"
+#include "ir/dtype/number.h"
 #include "utils/log_adapter.h"
 
 namespace mindspore {
