@@ -53,6 +53,7 @@ class PIJitCaptureContext:
         self.input_signature = input_signature
         self.ret = None
         self.fn = None
+        self._init_arg = iter([self.config, self.input_signature])
 
         if not SKIP_RULES:
             return
@@ -94,7 +95,7 @@ class PIJitCaptureContext:
         return functools.wraps(fn)(_fn)
 
     def __enter__(self):
-        pi_jit_set_context(self.fn, self.config, self.input_signature)
+        pi_jit_set_context(self.fn, *self._init_arg)
         jit_mode_pi_enable()
 
     def __exit__(self, exc_type, exc_val, exc_tb):

@@ -15,6 +15,7 @@
 """Test concat operation"""
 import numpy as np
 import pytest
+from tests.mark_utils import arg_mark
 import sys
 import mindspore as ms
 from mindspore import Tensor
@@ -28,9 +29,7 @@ def skip_if_python_version_too_high():
     if sys.version_info >= (3, 11):  
         pytest.skip("Skipping tests on Python 3.11 and higher.") 
 
-@pytest.mark.level0
-@pytest.mark.platform_x86_cpu
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_cat():
     """
     Feature: ops.cat()
@@ -48,10 +47,7 @@ def test_cat():
     match_array(ret.asnumpy(), np.array([1, 2, 3, 4, 5, 6]))
     assert_executed_by_graph_mode(fn)
 
-
-@pytest.mark.level0
-@pytest.mark.platform_x86_cpu
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_cat_axis_0():
     """
     Feature: ops.cat()
@@ -69,10 +65,7 @@ def test_cat_axis_0():
     match_array(ret.asnumpy(), np.array([[0, 1], [2, 1], [0, 1], [2, 1]]))
     assert_executed_by_graph_mode(fn)
 
-
-@pytest.mark.level0
-@pytest.mark.platform_x86_cpu
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_cat_axis_1():
     """
     Feature: ops.cat()
@@ -90,10 +83,7 @@ def test_cat_axis_1():
     match_array(ret.asnumpy(), np.array([[0, 1, 0, 1], [2, 1, 2, 1]]))
     assert_executed_by_graph_mode(fn)
 
-
-@pytest.mark.level0
-@pytest.mark.platform_x86_cpu
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_cat_three_tensors_at_axis_0():
     """
     Feature: ops.cat()
@@ -112,10 +102,7 @@ def test_cat_three_tensors_at_axis_0():
     match_array(ret.asnumpy(), np.array([[1, 2], [3, 4], [5, 6], [7, 8], [9, 0]]))
     assert_executed_by_graph_mode(fn)
 
-
-@pytest.mark.level0
-@pytest.mark.platform_x86_cpu
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_cat_three_tensors_at_axis_negative_1():
     """
     Feature: ops.cat()

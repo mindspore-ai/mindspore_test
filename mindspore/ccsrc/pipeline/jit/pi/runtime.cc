@@ -1436,7 +1436,7 @@ py::bool_ pi_jit_disable() {
   return true;
 }
 
-py::bool_ pi_jit_should_compile(const py::object &funcHandle, const py::object &tag, const py::object &signature) {
+bool pi_jit_should_compile(const py::handle &funcHandle, const py::handle &tag, const py::handle &signature) {
   PyObject *func = funcHandle.ptr();
   PyObject *code = NULL;
   if (PyFunction_Check(func)) {
@@ -1455,8 +1455,8 @@ py::bool_ pi_jit_should_compile(const py::object &funcHandle, const py::object &
   if (c == nullptr) {
     return false;
   }
-  c->set_input_signature(signature);
-  auto new_config = mindspore::pijit::GraphJitConfig(tag);
+  c->set_input_signature(py::reinterpret_borrow<py::object>(signature));
+  auto new_config = mindspore::pijit::GraphJitConfig(py::reinterpret_borrow<py::object>(tag));
   // When switching between one-stage and two-stage, reset the config.
   if (c->conf()->GetBoolConfig(pijit::GraphJitConfig::kTraceFlag) !=
       new_config.GetBoolConfig(pijit::GraphJitConfig::kTraceFlag)) {

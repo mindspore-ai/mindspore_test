@@ -207,22 +207,36 @@ void CaptureContext::SetContext(const py::args &va, const py::kwargs &kw) {
   this->SetWrapper(args.wrapper_);
   this->SetSkipCodes(args.skip_codes_);
   this->SetSkipFiles(args.skip_files_);
+  this->SetFunction(args.fn_);
 
-  if (args.fn_ == nullptr) {
+  if (args.fn_ == nullptr || wrapped_func_ == nullptr) {
     return;
   }
-  if (args.fn_ == Py_None) {
-    this->Disable();
-  } else if (PyFunction_Check(args.fn_)) {
-    PyCodeObject *co = reinterpret_cast<PyCodeObject *>(PyFunction_GET_CODE(args.fn_));
-    py::object config_handle = args.config_ ? py::cast<py::dict>(args.config_) : py::dict();
-    (void)pi_jit_should_compile(py::cast<py::object>(args.fn_), config_handle,
-                                py::cast<py::object>(args.input_signature_));
-    this->set_config(GetJitCompileResults(co)->conf());
-    this->Enable(co);
-  } else {
-    throw py::type_error("the arguments 'fn' must be function");
+  auto jcr = GetJitCompileResults(args.fn_);
+  if (jcr == nullptr || jcr == JitCompileResults::get_skip_jcr()) {
+    pi_jit_should_compile(args.fn_, py::dict(), args.input_signature_);
+    jcr = GetJitCompileResults(args.fn_);
   }
+  if (config_ == nullptr) {
+    config_ = jcr->conf();
+  } else {
+    jcr->set_conf(config_);
+  }
+}
+
+void CaptureContext::SetFunction(PyObject *fn) {
+  if (fn == nullptr) {
+    return;
+  }
+  if (fn == Py_None) {
+    this->Disable();
+    return;
+  }
+  if (PyFunction_Check(fn)) {
+    this->Enable(fn);
+    return;
+  }
+  throw py::type_error("the arguments 'fn' must be function or None");
 }
 
 void CaptureContext::SetConfig(PyObject *config) {
@@ -241,7 +255,7 @@ void CaptureContext::SetWrapper(PyObject *wrapper) {
     return;
   }
   if (PyFunction_Check(wrapper)) {
-    this->set_wrapper_code(reinterpret_cast<PyCodeObject *>(PyFunction_GET_CODE(wrapper)));
+    wrapper_code_ = PyFunction_GET_CODE(wrapper);
     return;
   }
   throw py::type_error("the arguments 'wrapper' must be function");

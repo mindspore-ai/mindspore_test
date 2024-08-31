@@ -279,6 +279,34 @@ static bool IsVariableNode(PyObject *obj) {
   return IsTensorPyObject(obj) || CheckScalar(obj);
 }
 
+static bool IsAttrClosure(ValueNode *node) {
+  while (node != nullptr) {
+    switch (node->GetType()) {
+      case AbstractNode::Type::Call:
+      case AbstractNode::Type::Value: {
+        int opcode = node->GetOpcode();
+        if (opcode != LOAD_ATTR) {
+          return false;
+        } else {
+          auto inputs = node->getInputs();
+          if (inputs.size() == 0) {
+            return false;
+          }
+          node = inputs[0];
+        }
+      } break;
+      case AbstractNode::Type::Param:
+      case AbstractNode::Type::CellVar:
+      case AbstractNode::Type::FreeVar:
+      case AbstractNode::Type::kUnbound:
+        return true;
+      default:
+        return false;
+    }
+  }
+  return false;
+}
+
 static std::vector<TracePtr> GetTraceClosure(ValueNode *node, bool *succ, bool strict, bool print, int depth,
                                              int max_depth) {
   std::vector<ValueNode *> todo;
@@ -292,10 +320,9 @@ static std::vector<TracePtr> GetTraceClosure(ValueNode *node, bool *succ, bool s
     switch (node->GetType()) {
       case AbstractNode::Type::Call:
       case AbstractNode::Type::Value: {
-        int opcode = node->GetOpcode();
         PyObject *obj = node->GetVobj() ? node->GetVobj()->GetPyObject().ptr() : nullptr;
         if (IsVariableNode(obj)) {
-          if (opcode == LOAD_ATTR) {
+          if (IsAttrClosure(node)) {
             auto item = GetTrace(node, strict, print, depth, max_depth);
             if (item != nullptr) {
               ret.insert(ret.end(), item);

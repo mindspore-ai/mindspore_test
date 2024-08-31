@@ -141,7 +141,7 @@ def test_try_block_4():
 
 
 @pytest.mark.skip(reason="tmp skip")
-@arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_with_block():
     """
     Feature:
@@ -258,10 +258,7 @@ def fib():
 # this generator is used to trigger graph-break
 G = fib()
 
-
-@pytest.mark.level0
-@pytest.mark.platform_x86_cpu
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_graph_parameter_is_closure_variable():
     """
     Feature:
@@ -295,10 +292,7 @@ def test_graph_parameter_is_closure_variable():
     assert jcr['stat'] == 'GRAPH_CALLABLE'
     assert jcr['break_count_'] == 1
 
-
-@pytest.mark.level0
-@pytest.mark.platform_x86_cpu
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_graph_parameter_is_closure_variable_v2():
     """
     Feature:
@@ -332,10 +326,7 @@ def test_graph_parameter_is_closure_variable_v2():
     assert jcr['stat'] == 'GRAPH_CALLABLE'
     assert jcr['break_count_'] == 1
 
-
-@pytest.mark.level0
-@pytest.mark.platform_x86_cpu
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_graph_parameter_is_closure_variable_v3():
     """
     Feature:
@@ -368,10 +359,7 @@ def test_graph_parameter_is_closure_variable_v3():
     assert jcr['stat'] == 'GRAPH_CALLABLE'
     assert jcr['break_count_'] == 1
 
-
-@pytest.mark.level0
-@pytest.mark.platform_x86_cpu
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_graph_parameter_is_closure_variable_v4():
     """
     Feature:
@@ -400,10 +388,7 @@ def test_graph_parameter_is_closure_variable_v4():
         match_array(l.asnumpy(), r.asnumpy())
     assert_executed_by_graph_mode(fn)
 
-
-@pytest.mark.level0
-@pytest.mark.platform_x86_cpu
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_graph_parameter_is_closure_variable_v5():
     """
     Feature:

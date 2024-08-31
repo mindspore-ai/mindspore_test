@@ -14,6 +14,7 @@
 # ============================================================================
 """Test basic operation with one stage"""
 import pytest
+from tests.mark_utils import arg_mark
 import math
 import numpy as np
 import mindspore.nn as nn
@@ -26,9 +27,7 @@ from mindspore.common.parameter import ParameterTuple
 from mindspore._c_expression import jit_mode_pi_enable, jit_mode_pi_disable, get_code_extra
 
 
-@pytest.mark.level0
-@pytest.mark.platform_x86_gpu_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_base_grad_operation():
     """
     Feature: One stage GradOperation
@@ -66,9 +65,7 @@ def test_base_grad_operation():
     jit_mode_pi_disable()
 
 
-@pytest.mark.level0
-@pytest.mark.platform_x86_gpu_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_base_grad_operation_2():
     """
     Feature: One stage GradOperation
@@ -108,10 +105,7 @@ def test_base_grad_operation_2():
     assert np.allclose(pynative_res[1].asnumpy(), pijit_res[1].asnumpy())
     jit_mode_pi_disable()
 
-
-@pytest.mark.level0
-@pytest.mark.platform_x86_gpu_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_base_grad_operation_3():
     """
     Feature: One stage GradOperation
@@ -155,10 +149,7 @@ def test_base_grad_operation_3():
     assert np.allclose(pynative_res[0].asnumpy(), pijit_res[0].asnumpy())
     jit_mode_pi_disable()
 
-
-@pytest.mark.level0
-@pytest.mark.platform_x86_gpu_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_base_grad_operation_4():
     """
     Feature: One stage GradOperation
@@ -205,10 +196,7 @@ def test_base_grad_operation_4():
     assert np.allclose(pynative_res[1][0].asnumpy(), pijit_res[1][0].asnumpy())
     jit_mode_pi_disable()
 
-
-@pytest.mark.level0
-@pytest.mark.platform_x86_gpu_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_base_grad_operation_5():
     """
     Feature: One stage GradOperation
@@ -251,10 +239,7 @@ def test_base_grad_operation_5():
     assert np.allclose(pynative_res.asnumpy(), pijit_res.asnumpy())
     jit_mode_pi_disable()
 
-
-@pytest.mark.level0
-@pytest.mark.platform_x86_gpu_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_base_grad_operation_6():
     """
     Feature: One stage GradOperation
@@ -302,10 +287,7 @@ def test_base_grad_operation_6():
     assert np.allclose(pynative_res[1][0].asnumpy(), pijit_res[1][0].asnumpy())
     jit_mode_pi_disable()
 
-
-@pytest.mark.level0
-@pytest.mark.platform_x86_gpu_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_base_grad_operation_with_keywords_args():
     """
     Feature: One stage GradOperation
@@ -343,9 +325,7 @@ def test_base_grad_operation_with_keywords_args():
 
 
 @pytest.mark.skip(reason="pynative handle kwargs failed")
-@pytest.mark.level0
-@pytest.mark.platform_x86_gpu_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_base_grad_operation_with_keywords_args_2():
     """
     Feature: One stage GradOperation
@@ -384,9 +364,7 @@ def test_base_grad_operation_with_keywords_args_2():
 
 
 @pytest.mark.skip(reason="tmp skip")
-@pytest.mark.level0
-@pytest.mark.platform_x86_gpu_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_base_grad_operation_with_vargs():
     """
     Feature: One stage GradOperation
@@ -424,9 +402,7 @@ def test_base_grad_operation_with_vargs():
     jit_mode_pi_disable()
 
 
-@pytest.mark.level0
-@pytest.mark.platform_x86_gpu_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_functional_grad():
     """
     Feature: One stage GradOperation
@@ -467,9 +443,7 @@ def test_functional_grad():
     jit_mode_pi_disable()
 
 
-@pytest.mark.level0
-@pytest.mark.platform_x86_gpu_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_functional_grad_2():
     """
     Feature: One stage GradOperation
@@ -512,10 +486,7 @@ def test_functional_grad_2():
     assert np.allclose(pynative_res[1].asnumpy(), pijit_res[1].asnumpy())
     jit_mode_pi_disable()
 
-
-@pytest.mark.level0
-@pytest.mark.platform_x86_gpu_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_functional_grad_3():
     """
     Feature: One stage GradOperation
@@ -561,10 +532,7 @@ def test_functional_grad_3():
     assert np.allclose(pynative_res[1][0].asnumpy(), pijit_res[1][0].asnumpy())
     jit_mode_pi_disable()
 
-
-@pytest.mark.level0
-@pytest.mark.platform_x86_gpu_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_functional_grad_4():
     """
     Feature: One stage GradOperation
@@ -611,10 +579,7 @@ def test_functional_grad_4():
     assert np.allclose(pynative_res[1][1].asnumpy(), pijit_res[1][1].asnumpy())
     jit_mode_pi_disable()
 
-
-@pytest.mark.level0
-@pytest.mark.platform_x86_gpu_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_functional_grad_5():
     """
     Feature: One stage GradOperation
@@ -658,10 +623,7 @@ def test_functional_grad_5():
     assert np.allclose(pynative_res[1].asnumpy(), pijit_res[1].asnumpy())
     jit_mode_pi_disable()
 
-
-@pytest.mark.level0
-@pytest.mark.platform_x86_gpu_training
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_second_grad_operation():
     """
     Feature: One stage GradOperation

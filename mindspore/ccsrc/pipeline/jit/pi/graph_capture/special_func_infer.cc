@@ -549,15 +549,16 @@ static bool GuardBuiltinFunc(CallNode *call_node) {
         MS_LOG(WARNING) << "failed to find self value node for call node" << call_node->ToString();
         return false;
       }
-      auto self_node_wrapper = self_node->abstract_wrapper();
-      if (self_node_wrapper == nullptr) {
-        MS_LOG(WARNING) << "Failed to find wrapper for tensor self, node: " << call_node->ToString();
-        return false;
-      }
-      if (!self_node_wrapper->IsConstant()) {
-        MS_LOG(INFO) << "The tensor self is variable, fail to guard built-in function call node: "
-                     << call_node->ToString();
-        return false;
+      if (self_node->GetOpcode() != LOAD_CONST) {
+        auto self_node_wrapper = self_node->abstract_wrapper();
+        if (self_node_wrapper == nullptr) {
+          MS_LOG(WARNING) << "Failed to find wrapper for tensor self, node: " << call_node->ToString();
+          return false;
+        }
+        if (!self_node_wrapper->IsConstant()) {
+          MS_LOG(INFO) << "Fail to guard built-in function due to variable self tensor " << call_node->ToString();
+          return false;
+        }
       }
     }
   }
@@ -568,15 +569,16 @@ static bool GuardBuiltinFunc(CallNode *call_node) {
   for (size_t i = 1; i < call_node_inputs.size(); ++i) {
     auto cur_input = call_node_inputs[i];
     MS_EXCEPTION_IF_NULL(cur_input);
+    if (cur_input->GetOpcode() == LOAD_CONST) {
+      continue;
+    }
     auto cur_input_wrapper = cur_input->abstract_wrapper();
     if (cur_input_wrapper == nullptr) {
-      MS_LOG(WARNING) << "Failed to find wrapper for cur_input " << cur_input->ToString()
-                      << ", failed to guard built-in function call node";
+      MS_LOG(WARNING) << "Failed to guard built-in function since wrapper is nullptr for " << cur_input->ToString();
       return false;
     }
     if (!cur_input_wrapper->IsConstant()) {
-      MS_LOG(INFO) << "Failed to guard built-in function call node since input " << cur_input->ToString()
-                   << " is not constant.";
+      MS_LOG(INFO) << "Failed to guard built-in function due to variable input " << cur_input->ToString();
       return false;
     }
     if (guard_inputs && !graph->GuardValueNode(cur_input)) {
@@ -649,7 +651,7 @@ bool InferDictItems(CallNode *call_node, GraphBuilder *unused = nullptr) {
       return false;
     }
     auto mind_builder = static_cast<MindGraphBuilder *>(unused);
-    std::vector<AbstractWrapperPtr> inputs_wrapper = {wrapper};
+    AbstractWrapperPtrList inputs_wrapper = {wrapper};
     auto ret = mind_builder->FGBuilder()->AddNode(prim::kPrimDictItems, inputs_wrapper);
     if (ret == nullptr) {
       MS_LOG(INFO) << "Handle dict items failed for node: " << call_node->ToString();
@@ -1066,7 +1068,7 @@ bool InferTensorSetItem(CallNode *call_node, GraphBuilder *parent) {
   auto meta = py::module::import(kMeTaModule).attr("setitem").cast<mindspore::MetaFuncGraphPtr>();
 
   auto fg = dynamic_cast<MindGraphBuilder *>(parent);
-  std::vector<AbstractWrapperPtr> args{self->abstract_wrapper()};
+  AbstractWrapperPtrList args{self->abstract_wrapper()};
   for (size_t i = 1 + is_not_method; i < call_node->getInputs().size(); ++i) {
     args.push_back(call_node->input(i)->abstract_wrapper());
   }

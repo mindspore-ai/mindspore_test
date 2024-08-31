@@ -192,6 +192,7 @@ std::string GraphUtils::OpCompareArgToGraphName(int oparg) {
     {Py_GE, "greater_equal"},
 #if (PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION < 9)
     {PyCmp_IN, "in_"},
+    {PyCmp_NOT_IN, "not_in_"},
 #endif
   };
   auto iter = compare_arg_2_graph_name.find(oparg);
@@ -200,6 +201,8 @@ std::string GraphUtils::OpCompareArgToGraphName(int oparg) {
   }
   return iter->second;
 }
+
+std::string GraphUtils::ContainsOpToGraphName(int oparg) { return oparg == 1 ? "not_in_" : "in_"; }
 
 AnfNodePtr GraphUtils::GetMetaFuncGraph(int op_code) {
   // MS_EXCEPTION_IF_CHECK_FAIL(op_code_2_graph_name.find(op_code) != op_code_2_graph_name.end(),

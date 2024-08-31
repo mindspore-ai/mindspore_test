@@ -328,9 +328,7 @@ def test_object_consistency2():
     assert l == [a, 1, 2, 1]
 
 
-@pytest.mark.level0
-@pytest.mark.platform_x86_cpu
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("assign_fn", [Tensor.assign_value,
                                        mindspore.ops.assign,
                                        lambda x, v: x.__setitem__(slice(None), v)
@@ -363,9 +361,7 @@ def test_tensor_assign(assign_fn):
     assert rand1 is None and isinstance(rand2, numpy.ndarray)
 
 
-@pytest.mark.level0
-@pytest.mark.platform_x86_cpu
-@pytest.mark.env_onecard
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @pytest.mark.parametrize("assign_fn", [Tensor.assign_value,
                                        mindspore.ops.assign,
                                        lambda x, v: x.__setitem__(slice(None), v)

@@ -52,7 +52,6 @@ py::object ConvertToPyTensorOrParameter(const py::object &cpp_tensor) {
   if (cpp_tensor.ptr() == nullptr || !py::isinstance<tensor::Tensor>(cpp_tensor)) {
     return py::object();
   }
-  // TODO(LiangZhibo): guard for parameter need to change later.
   auto tensor = py::cast<tensor::TensorPtr>(cpp_tensor);
   if (tensor->is_parameter()) {
     return cpp_tensor;
@@ -162,7 +161,6 @@ py::object ConvertToPyObjInner(const AbstractBasePtr &abs) {
     return py::object();
   }
 
-  // TODO(LiangZhibo): One stage and two stage should do same process, fix later.
   if (pijit::kPIJitConfigDefault.GetBoolConfig(pijit::GraphJitConfig::kTraceFlag)) {
     return ConvertToPythonTensor(py_obj);
   }
@@ -246,7 +244,6 @@ py::object AbstractWrapper::FetchPythonObject(const AbstractWrapperPtr &wrapper)
   return py::cast<py::object>(val->cast<parse::InterpretedObjectPtr>()->obj());
 }
 
-// TODO(LiangZhibo): Add config.
 bool AbstractWrapper::MarkObjectPiJItShouldCompile(const py::object &object) {
   if (object.ptr() == nullptr) {
     MS_LOG(INFO) << "Can not mark NULL python object to pi_jit_should_compile";
