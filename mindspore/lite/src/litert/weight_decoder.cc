@@ -298,7 +298,7 @@ std::vector<bool> WeightDecoder::StringToBitVector(const std::string &str) {
   std::vector<bool> vec(str.size() * kBitNum8);
   size_t index = 0;
   for (auto ch : str) {
-    for (size_t shift = kBitNum8; shift > 0; shift--) {
+    for (size_t shift = static_cast<size_t>(kBitNum8); shift > 0; shift--) {
       vec[index++] = (static_cast<unsigned char>(ch) >> static_cast<size_t>(shift - 1)) & 0x1;
     }
   }

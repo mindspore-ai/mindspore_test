@@ -68,7 +68,7 @@ class TrainLoop : virtual public session::TrainLoop {
   unsigned int epoch_ = 0;
   KernelCallBack before_cb_ = nullptr;
   KernelCallBack after_cb_ = nullptr;
-  int batch_size;
+  int batch_size = 1;
   std::vector<mindspore::session::Metrics *> metrics_;
 };
 }  // namespace lite

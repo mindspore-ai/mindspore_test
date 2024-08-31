@@ -96,6 +96,10 @@ int OpenCLKernel::GetImageSize(size_t idx, lite::opencl::ImageSize *img_size) {
     return RET_ERROR;
   }
   auto img_info = GpuTensorInfo::CreateGpuTensorInfo(out_tensors_[idx]);
+  if (img_info == nullptr) {
+    MS_LOG(ERROR) << "Create gpu tensor info failed!";
+    return RET_ERROR;
+  }
   size_t img_dtype = CL_FLOAT;
   switch (out_tensors_[idx]->data_type()) {
     case kNumberTypeFloat32: {
@@ -147,6 +151,10 @@ void OpenCLKernel::PrintOutput(int print_num, const std::string &out_file) {
   }
 
   auto img_info = GpuTensorInfo::CreateGpuTensorInfo(tensor);
+  if (img_info == nullptr) {
+    MS_LOG(ERROR) << "Create gpu tensor info failed!";
+    return;
+  }
   auto size = mem_type == lite::opencl::MemType::BUF ? img_info->OriginSize : img_info->Image2DSize;
   std::vector<char> data(size);
   auto runtime_wrapper = lite::opencl::OpenCLRuntimeInnerWrapper();

@@ -134,7 +134,7 @@ int WinogradOpenCLKernel::InitFilter() {
   int Ogroup = 2;
   if (filter_type_ == MemType::IMG) {
     size_t width = F43_OH * F43_OW * UP_ROUND(CI_, CI_TILE);
-    size_t height = CO_SLICES_;
+    size_t height = static_cast<size_t>(CO_SLICES_);
     size_t dtype = use_fp16_ ? CL_HALF_FLOAT : CL_FLOAT;
     size = width * height * CO_TILE * sizeof_FLT_;
     packed_filter_ = allocator->Malloc({width, height, dtype});
@@ -194,7 +194,7 @@ int WinogradOpenCLKernel::AllocateMemory() {
   auto allocator = ocl_runtime_->GetAllocator();
   size_t img_dtype = use_fp16_ ? CL_HALF_FLOAT : CL_FLOAT;
 
-  size_t width = TILE_HW_;
+  size_t width = static_cast<size_t>(TILE_HW_);
   size_t height = CI_SLICES_ * F43_OH * F43_OW;
   winograd_mem0_ = allocator->Malloc({width, height, img_dtype});
   if (winograd_mem0_ == nullptr) {
@@ -202,7 +202,7 @@ int WinogradOpenCLKernel::AllocateMemory() {
     return RET_ERROR;
   }
 
-  width = TILE_HW_;
+  width = static_cast<size_t>(TILE_HW_);
   height = CO_SLICES_ * F43_OH * F43_OW;
   winograd_mem1_ = allocator->Malloc({width, height, img_dtype});
   if (winograd_mem1_ == nullptr) {
