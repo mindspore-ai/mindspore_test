@@ -17,65 +17,24 @@
 #include <utility>
 
 #include "mindspore/ops/infer/space_to_batch_nd.h"
+#include "mindspore/ops/ops_utils/op_utils.h"
 #include "kernel/cpu/space_to_batch_nd_cpu_kernel.h"
 #include "plugin/device/cpu/hal/device/cpu_device_address.h"
 
 namespace mindspore {
 namespace kernel {
 namespace {
-constexpr size_t PADDING_SHAPE_1 = 2;
 constexpr size_t kSpaceToBatchNDInputsNum = 1;
 constexpr size_t kSpaceToBatchNDOutputsNum = 1;
-constexpr char kKernelName[] = "SpaceToBatchND";
 using KernelRunFunc = SpaceToBatchNDCpuKernelMod::KernelRunFunc;
 }  // namespace
-void SpaceToBatchNDCpuKernelMod::CheckParam() {
-  for (size_t i = 0; i < block_rank_; i++) {
-    if (block_size_[i] < 1) {
-      MS_LOG(EXCEPTION) << "For '" << kernel_name_
-                        << "', the elements of 'block_size' should be both larger than 1, but got " << i
-                        << "'th block size " << block_size_[i] << ")\n";
-    }
-  }
-
-  // check paddings_
-  if (paddings_.size() != block_rank_) {
-    MS_LOG(EXCEPTION) << "For '" << kernel_name_
-                      << "', the size of 'paddings' should be equal to the length of 'block_size':  " << block_rank_
-                      << ", but got " << paddings_.size();
-  }
-
-  for (size_t idx_i = 0; idx_i < block_rank_; ++idx_i) {
-    if (paddings_[idx_i].size() != PADDING_SHAPE_1) {
-      MS_LOG(EXCEPTION) << "For '" << kernel_name_
-                        << "', the size of each vector of 'paddings' should be equal to the length of 'block_size': "
-                        << PADDING_SHAPE_1 << ", but got " << idx_i << "'th element: " << paddings_[idx_i].size();
-    }
-    for (size_t idx_j = 0; idx_j < PADDING_SHAPE_1; ++idx_j) {
-      if (paddings_[idx_i][idx_j] < 0) {
-        MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', the element of 'paddings' cannot be less than 0, "
-                          << "but got paddings[" << idx_i << "][ " << idx_j << "]: " << paddings_[idx_i][idx_j];
-      }
-    }
-    auto tmp_shape = input_shape_[idx_i + off_set_] + paddings_[idx_i][0] + paddings_[idx_i][1];
-    if ((tmp_shape % block_size_[idx_i]) != 0) {
-      MS_LOG(EXCEPTION) << "For '" << kernel_name_
-                        << "', padded shape should be divisible by block_size, but got padded shape: " << tmp_shape
-                        << ", block_size: " << block_size_[idx_i];
-    }
-    if ((tmp_shape / block_size_[idx_i]) == 0) {
-      MS_LOG(EXCEPTION) << "For '" << kernel_name_ << "', padded shape cannot be less than block_size"
-                        << ", but got padded shape: " << tmp_shape << ", block_size: " << block_size_[idx_i];
-    }
-  }
-}
 
 template <typename T>
 bool SpaceToBatchNDCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
                                               const std::vector<kernel::KernelTensor *> &,
                                               const std::vector<kernel::KernelTensor *> &outputs) {
   // check all shapes, blocks and paddings are valid
-  CheckParam();
+  ops::CheckSpaceToBatchNdParam(block_rank_, off_set_, block_size_, paddings_, input_shape_, kernel_name_);
 
   const auto *input = reinterpret_cast<T *>(inputs[0]->device_ptr());
   auto *output = reinterpret_cast<T *>(outputs[0]->device_ptr());

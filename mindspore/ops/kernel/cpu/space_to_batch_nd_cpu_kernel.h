@@ -47,8 +47,6 @@ class SpaceToBatchNDCpuKernelMod : public NativeCpuKernelMod, public MatchKernel
   std::vector<KernelAttr> GetOpSupport() override { return OpSupport(); }
 
  private:
-  void CheckParam();
-
   template <typename T>
   bool LaunchKernel(const std::vector<kernel::KernelTensor *> &inputs,
                     const std::vector<kernel::KernelTensor *> &workspace,
