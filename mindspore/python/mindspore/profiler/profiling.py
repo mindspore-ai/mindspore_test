@@ -1424,7 +1424,7 @@ class Profiler:
             dst_op_mem_file = os.path.join(ascend_profiler_output_path, f"operator_memory.csv")
             shutil.copy(src_op_mem_file, dst_op_mem_file)
 
-        ms_output_path = os.path.abspath(
+        ms_output_path = os.path.realpath(
             os.path.join(source_path, os.path.pardir, 'mindstudio_profiler_output'))
         static_op_mem_path = os.path.join(ms_output_path, f"static_op_mem_*.csv")
         src_static_op_mem_path = glob.glob(static_op_mem_path)
@@ -1469,7 +1469,7 @@ class Profiler:
                                                           f"communication_matrix.json")
             communication_matrix_file_path = validate_and_normalize_path(communication_matrix_file_path)
 
-            analyze_path = os.path.abspath(os.path.join(source_path, os.path.pardir, 'analyze'))
+            analyze_path = os.path.realpath(os.path.join(source_path, os.path.pardir, 'analyze'))
             communicate_analyser = AscendCommunicationGenerator(analyze_path)
             communicate_analyser.parse()
             communicate_analyser.write(communication_file_path, communication_matrix_file_path)
@@ -1559,7 +1559,7 @@ class Profiler:
         source_path = os.path.join(self._output_path, job_id)
         self._minddata_analyse()
         if self._op_time:
-            mindstudio_profiler_output = os.path.abspath(
+            mindstudio_profiler_output = os.path.realpath(
                 os.path.join(source_path, os.path.pardir, 'mindstudio_profiler_output'))
             flag = _ascend_graph_msprof_generator(mindstudio_profiler_output, self._model_iteration_dict)
             if not flag:
