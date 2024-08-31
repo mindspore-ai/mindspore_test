@@ -1011,6 +1011,9 @@ std::vector<int64_t> FlashAttentionScoreInfo::GetSplitIdAndRank() {
   DeviceMatrix dev_matrix(rank, stage_device_list_, dev_matrix_shape_);
   RankList group_devices;
   int64_t seq_dim = SizeToLong(dev_matrix_shape_.size()) - dev_matrix_s1_dim_ - 1;
+  if (repeated_calc_num_ > 1 && repeated_num_in_dev_matrix_right()) {
+    seq_dim -= 1;
+  }
   if (dev_matrix.GetDevicesAlongDim(seq_dim, &group_devices) != SUCCESS) {
     MS_LOG(ERROR) << name_ << " get group devices along dim " << seq_dim << " failed.";
   }
@@ -1306,6 +1309,7 @@ Status FlashAttentionScoreInfo::ComputeReplaceGraphForLoadBalance(const CNodePtr
   int64_t target_split_id = split_info[kIndex3];
   Group group;
   RankList swap_group_devices = {rank_id, target_rank_id};
+  std::sort(swap_group_devices.begin(), swap_group_devices.end());
   if (g_device_manager->CreateGroup(swap_group_devices, &group) != SUCCESS) {
     MS_LOG(ERROR) << "Create communication group for " << swap_group_devices << " failed";
     return FAILED;

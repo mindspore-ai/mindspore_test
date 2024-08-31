@@ -186,3 +186,42 @@ def test_flash_attention_score_tnd():
 
     atol, rtol = 1e-3, 1e-3
     np.allclose(standalone_out.asnumpy(), parallel_out.asnumpy(), atol, rtol)
+
+def test_flash_attention_score_load_balance():
+    """
+    Feature: Test the precision for load balance.
+    Description: Test function flash attention score forward and backward with load balance.
+    Expectation: The result of standalone and parallel is equal.
+    """
+    mode = ms.context.GRAPH_MODE
+    dtype = mstype.float16
+    input_layout = "BNSD"
+    context.set_context(jit_level='O0')
+    context.set_context(mode=mode)
+    init()
+    B, N, S, D = 1, 8, 1024, 128
+    dp = 1
+    mp = 1
+    sp = 8
+    use_mqa = 0
+    sparse_mode = 3
+    query, key, value, _, _, _ = generate_inputs(B, N, N, S, S, D, input_layout, dtype)
+    real_shift = None
+
+    attn_mask = Tensor(np.triu(np.ones((2048, 2048), np.uint8), 1))
+
+    context.reset_auto_parallel_context()
+    context.set_auto_parallel_context(parallel_mode="stand_alone")
+    standalone_net = Net(N, input_layout=input_layout, use_mqa=use_mqa, keep_prob=1.0, sparse_mode=sparse_mode,
+                         with_real_shift=False)
+    standalone_out = standalone_net(query, key, value, real_shift, attn_mask)
+
+    context.reset_auto_parallel_context()
+    context.set_auto_parallel_context(device_num=8, dataset_strategy="full_batch",
+                                      parallel_mode="semi_auto_parallel")
+    parallel_net = Net(N, input_layout=input_layout, use_mqa=use_mqa, keep_prob=1.0, sparse_mode=sparse_mode,
+                       with_real_shift=False, dp=dp, mp=mp, sp=sp)
+    parallel_out = parallel_net(query, key, value, real_shift, attn_mask)
+
+    atol, rtol = 1e-3, 1e-3
+    np.allclose(standalone_out.asnumpy(), parallel_out.asnumpy(), atol, rtol)
