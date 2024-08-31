@@ -515,6 +515,7 @@ OptPassGroupMap GetOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass) {
   OptPassGroupMap map_a(
     {{"expand_dump_flag", opt::OptPassConfig(opt::irpass::ExpandDumpFlag())},
      {"switch_simplify", opt::OptPassConfig({irpass.switch_simplify_})},
+     {"loop_unroll", opt::OptPassConfig({irpass.loop_unroll_before_grad_})},
      {"a_1", a_1},
      {"recompute_prepare", recompute_prepare},
      {"updatestate_depend_eliminate", updatestate_depend_eliminate},
@@ -542,7 +543,6 @@ OptPassGroupMap GetOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass) {
      {"cell_reuse_recompute_pass", opt::OptPassConfig(opt::irpass::Recomputation())},
      {"cell_reuse_handle_not_recompute_node_pass", cell_reuse_handle_not_recompute_node_pass},
      {"before_grad", before_grad},
-     {"loop_unroll", opt::OptPassConfig({irpass.loop_unroll_before_grad_})},
      {"meta_fg_expand", opt::OptPassConfig(opt::irpass::ExpandMetaFg())},
      {"receive_attached", opt::OptPassConfig(parallel::IsolatedNodeAttach)},
      {"after_resolve", after_resolve_pass},
@@ -559,7 +559,7 @@ OptPassGroupMap GetOptPassesA(const opt::irpass::OptimizeIRPassLib &irpass) {
 
 OptPassGroupMap GetA1A2(const opt::irpass::OptimizeIRPassLib &irpass) {
   auto opt_a = GetOptPassesA(irpass);
-  constexpr auto a1_a2_len = 10;
+  constexpr auto a1_a2_len = 11;
   OptPassGroupMap a1_a2(opt_a.begin(), opt_a.begin() + a1_a2_len);
   return a1_a2;
 }
