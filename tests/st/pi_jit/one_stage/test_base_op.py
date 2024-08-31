@@ -835,3 +835,27 @@ def test_function_parse_by_ast():
     net(a)
     jcr = get_code_extra(Net.construct.__wrapped__)
     assert jcr["break_count_"] == 0
+
+
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_constant_flod_for_variable():
+    """
+    Feature: One stage basic operation.
+    Description: Test one stage basic operation.
+    Expectation: No exception.
+    """
+    class Net(nn.Cell):
+        @jit(mode="PIJit")
+        def construct(self, x, y):
+            if all(x > y):
+                out = x + y
+            else:
+                out = x * y
+            return out
+
+    context.set_context(mode=context.PYNATIVE_MODE)
+    a = Tensor([3, 4, 5])
+    b = Tensor([1, 2, 3])
+    net = Net()
+    ret = net(a, b)
+    assert np.all(ret.asnumpy() == np.array([4, 6, 8]))
