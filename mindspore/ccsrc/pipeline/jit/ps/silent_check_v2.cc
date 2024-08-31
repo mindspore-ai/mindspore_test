@@ -20,6 +20,9 @@
 #include <cstdint>
 #include <ios>
 #include <memory>
+#include <queue>
+#include <map>
+#include <set>
 #include <regex>
 #include <string>
 #include <utility>
@@ -31,6 +34,7 @@
 #include "include/common/utils/utils.h"
 #include "ir/anf.h"
 #include "ir/dtype/number.h"
+#include "ir/func_graph.h"
 #include "ir/param_info.h"
 #include "ir/primal_attr.h"
 #include "ir/scalar.h"
@@ -374,6 +378,110 @@ bool SilentCheckV2::HasFloat16Input() {
   return false;
 }
 
+CNodePtr SilentCheckV2::GetLastGradNode(const FuncGraphPtr &func_graph, const AnfNodePtr &start_node) {
+  auto manager = func_graph->manager();
+
+  // map's key: forward_unique_id, value: CNode in backward graph
+  std::map<std::string, CNodePtr> grad_node_map;
+  for (auto &node : manager->all_nodes()) {
+    auto cnode = node->cast<CNodePtr>();
+    if (cnode == nullptr) {
+      continue;
+    }
+    if (!cnode->HasPrimalAttr(kPrimalAttrForwardUniqueId)) {
+      continue;
+    }
+    auto forward_unique_id = GetValue<std::string>(cnode->GetPrimalAttr(kPrimalAttrForwardUniqueId));
+    grad_node_map.emplace(std::make_pair(forward_unique_id, cnode));
+  }
+  MS_LOG(INFO) << "grad_node_map.size=" << grad_node_map.size();
+
+  auto &node_users = manager->node_users();
+  std::queue<AnfNodePtr> candidates;
+  std::set<AnfNodePtr> visited;
+  candidates.push(start_node);
+  while (!candidates.empty()) {
+    auto node = candidates.front();
+    candidates.pop();
+    MS_LOG(DEBUG) << node->DebugString();
+    auto iter = node_users.find(node);
+    if (iter == node_users.end()) {
+      continue;
+    }
+    for (auto &elem : iter->second) {
+      auto &user_node = elem.first;
+      auto cnode = user_node->cast<CNodePtr>();
+      if (cnode == nullptr) {
+        continue;
+      }
+      if (visited.count(user_node)) {
+        continue;
+      }
+      if (cnode->HasPrimalAttr(kPrimalAttrUniqueId)) {
+        auto node_unique_id = GetValue<std::string>(cnode->GetPrimalAttr(kPrimalAttrUniqueId));
+        if (grad_node_map.count(node_unique_id)) {
+          MS_LOG(INFO) << "Found grad node " << grad_node_map[node_unique_id]->DebugString()
+                       << " based on start node: " << start_node->DebugString() << " for graph "
+                       << func_graph->ToString();
+          return grad_node_map[node_unique_id];
+        }
+      }
+      if (common::AnfAlgo::IsCallNode(cnode)) {
+        auto op = cnode->input(kIndex0);
+        MS_EXCEPTION_IF_NULL(op);
+        if (IsValueNode<FuncGraph>(op)) {
+          FuncGraphPtr fg = GetValueNode<FuncGraphPtr>(op);
+          auto param = fg->parameters()[elem.second - 1]->cast<ParameterPtr>();
+          MS_LOG(INFO) << "Encounter func_graph: " << fg->ToString() << " user_node param_index=" << elem.second << "/"
+                       << fg->parameters().size() << " param_name=" << param->name();
+          candidates.push(param);
+        } else {
+          candidates.push(user_node);
+        }
+      } else {
+        candidates.push(user_node);
+      }
+    }
+    visited.insert(node);
+  }
+
+  MS_LOG(INFO) << "Not found grad node based on start node: " << start_node->DebugString() << " for graph "
+               << func_graph->ToString();
+  return nullptr;
+}
+
+void SilentCheckV2::GetLastGradNode() {
+  MS_EXCEPTION_IF_NULL(root_);
+  auto parameters = root_->parameters();
+  for (const auto &param : parameters) {
+    auto param_ptr = param->cast<ParameterPtr>();
+    MS_EXCEPTION_IF_NULL(param_ptr);
+    // skip network weight which has default value
+    if (param_ptr->has_default()) {
+      continue;
+    }
+    MS_LOG(INFO) << "Consider param " << param_ptr->name() << " as start node to find last grad node";
+    auto grad_node = GetLastGradNode(root_, param);
+    if (grad_node != nullptr) {
+      last_grad_node_ = grad_node;
+      return;
+    }
+  }
+
+  auto get_next_node = FindGetNextNode();
+  if (get_next_node != nullptr) {
+    MS_LOG(INFO) << "GetNext node is " << get_next_node->DebugString() << " of graph "
+                 << get_next_node->func_graph()->ToString();
+    auto grad_node = GetLastGradNode(root_, get_next_node);
+    if (grad_node != nullptr) {
+      last_grad_node_ = grad_node;
+      return;
+    }
+  }
+
+  MS_LOG(INFO) << "Not found suitable grad node for root graph " << root_->ToString();
+}
+
 AnfNodePtr SilentCheckV2::CreateSlientCheckNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(func_graph);
   MS_EXCEPTION_IF_NULL(node);
@@ -496,7 +604,7 @@ bool SilentCheckV2::Run(const FuncGraphPtr &func_graph) {
         continue;
       }
       // skip communicator operators which don't need check
-      if (!NeedCheckCommOperator(cnode->input(ops::kInputIndex0))) {
+      if (!((cnode == last_grad_node_) || NeedCheckCommOperator(cnode->input(ops::kInputIndex0)))) {
         continue;
       }
       auto check_node = CreateSlientCheckNode(func_graph, node);
@@ -582,6 +690,8 @@ bool SilentCheckPass(const ResourcePtr &resource) {
   if (silent_check->HasFloat16Input()) {
     return true;
   }
+  // find last grad node in graphs
+  silent_check->GetLastGradNode();
   // insert silent check operator for root graph
   silent_check->Run(root_graph);
 

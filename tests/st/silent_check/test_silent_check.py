@@ -133,7 +133,8 @@ def test_silent_check_receive():
     receive_op_cnt = int(exec_command(f"cat ms_graphs/rank_0/graph_build*.ir | grep '= Receive(' | wc -l"))
     print(f'backward_comm_op_cnt={backward_comm_op_cnt} silent_check_op_cnt={silent_check_op_cnt} '
           f'receive_op_cnt={receive_op_cnt}')
-    assert backward_comm_op_cnt == (silent_check_op_cnt + receive_op_cnt)
+    last_grad_node_check_cnt = 1
+    assert (backward_comm_op_cnt + last_grad_node_check_cnt) == (silent_check_op_cnt + receive_op_cnt)
 
     os.system(f'rm -rf ms_graphs worker_*.log ascend_log')
 
