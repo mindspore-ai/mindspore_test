@@ -4015,6 +4015,9 @@ bool MindGraphBuilder::FGAddTopInputs(int args_count, bool has_vargs, bool has_k
   for (cur_index = 0; cur_index < args_count; ++cur_index) {
     auto cur = locals[cur_index];
     auto cur_object = cur->GetVobj()->GetPyObject();
+    if (fg_builder_->IsParameterSequence(cur_object)) {
+      continue;
+    }
     auto ret = fg_builder_->AddTopGraphArgInput(cur_object);
     if (ret == nullptr) {
       return false;

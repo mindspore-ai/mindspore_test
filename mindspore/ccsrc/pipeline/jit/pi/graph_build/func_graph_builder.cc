@@ -138,8 +138,7 @@ ValuePtr FuncGraphBuilder::ConvertPyObjToValue(const py::object &obj) {
 }
 
 AnfNodePtr FuncGraphBuilder::ConvertParameterTupleToNode(const py::object &input_obj) {
-  constexpr auto parameter_tuple_attr = "__parameter_tuple__";
-  if (input_obj.ptr() == nullptr || !py::hasattr(input_obj, parameter_tuple_attr)) {
+  if (!IsParameterSequence(input_obj)) {
     return nullptr;
   }
   auto tuple_obj = input_obj.cast<py::tuple>();
@@ -305,6 +304,28 @@ AnfNodePtr FuncGraphBuilder::GetNodeByWrapper(const AbstractWrapperPtr &abstract
     return ret;
   }
   return nullptr;
+}
+
+bool FuncGraphBuilder::IsParameterSequence(const py::object &object) {
+  if (object.ptr() == nullptr) {
+    return false;
+  }
+  constexpr auto parameter_tuple_attr = "__parameter_tuple__";
+  if (py::hasattr(object, parameter_tuple_attr)) {
+    return true;
+  }
+  if (!py::isinstance<py::tuple>(object) && !py::isinstance<py::list>(object)) {
+    return false;
+  }
+  auto object_tuple = object.cast<py::tuple>();
+  if (object_tuple.size() == 0) {
+    return false;
+  }
+  if (std::any_of(object_tuple.begin(), object_tuple.end(),
+                  [](const auto &element) { return !IsParameter(py::cast<py::object>(element)); })) {
+    return false;
+  }
+  return true;
 }
 
 AbstractWrapperPtr FuncGraphBuilder::AddTopGraphArgInput(const py::object &object) {
