@@ -9,7 +9,7 @@ mindspore.tensor
 
     详情请参考教程 `创建和使用Tensor <https://www.mindspore.cn/docs/zh-CN/master/model_train/program_form/static_graph.html#mindspore自定义数据类型>`_ 。
 
-    有别于Tensor类，其与Tensor类的区别为内部增加了 `Annotation <https://www.mindspore.cn/docs/zh-CN/master/design/dynamic_graph_and_static_graph.html#annotation-type>`_ 指示当前创建的Tensor的类型，与Tensor类相比能够防止AnyType的产生。
+    有别于Tensor类，其与Tensor类的区别为内部增加了 `Annotation <https://www.mindspore.cn/docs/zh-CN/master/model_train/program_form/static_graph.html#annotation-type>`_ 指示当前创建的Tensor的类型，与Tensor类相比能够防止AnyType的产生。
 
     参数和返回值与Tensor类完全一致。另参考：:class:`mindspore.Tensor`。
 

@@ -232,8 +232,9 @@ class Cell(Cell_):
         Get whether cell custom bprop debug is enabled.
 
         Tutorial Examples:
-            - `Cell and Parameter - Custom Cell Reverse
-              <https://mindspore.cn/docs/en/master/model_train/custom_program/layer.html#custom-cell-reverse>`_
+            - `Custom Neural Network Layers - Custom Cell Reverse
+              <https://mindspore.cn/docs/en/master/model_train/custom_program/network_custom.html
+              #custom-cell-reverse>`_
         """
         return self._bprop_debug
 
