@@ -73,9 +73,11 @@ class FusedInferAttentionScoreInfo : public OperatorInfo {
   void SplitKVSequenceGraph(const Group &group, GenerateGraph *gen_g, AnfNodePtr *fused_attention_score,
                             AnfNodePtr *output);
   Status ComputeReplaceGraphForSplitKVSeq(const CNodePtr &cnode);
+  void InferOptionalTensorMapForAntiquant();
   int64_t head_num_;
   int64_t kv_head_num_;
   int64_t input_layout_;
+  int64_t antiquant_mode_;
   int64_t dp_;
   int64_t mp_;
   int64_t sp_;
