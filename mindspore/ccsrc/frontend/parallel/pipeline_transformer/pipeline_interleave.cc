@@ -1359,6 +1359,7 @@ bool IsolatedNodeAttach(const FuncGraphPtr &root, const opt::OptimizerPtr &optim
     for (auto &get_item_usr_pair : get_item_usrs) {
       auto get_item_usr = get_item_usr_pair.first;
       auto grad_node = GetDout(get_item_usr, node_users_map);
+      MS_EXCEPTION_IF_NULL(grad_node);
       if (grad_graph == nullptr) {
         grad_graph = grad_node->func_graph();
       } else {

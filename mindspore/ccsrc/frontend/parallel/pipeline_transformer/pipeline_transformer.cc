@@ -1554,7 +1554,7 @@ void PipelineTransformer::HandleGraphOutputs(const std::vector<AnfNodePtr> &node
   // Create root graph output before modify subgraph(shared cell).
   // This process order is crucial when the output of subgraph is directly used as root graph.
   auto zero_outputs = GetZeroOutputs(main_graph_);
-
+  MS_EXCEPTION_IF_NULL(zero_outputs);
   size_t ends_size = pipeline_ends.size();
   bool single_pipeline_end = ends_size == 1;
   if (single_pipeline_end) {

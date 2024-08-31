@@ -90,6 +90,7 @@ Status AllCommFusion::SetFusionBySize(const CNodePtr &ret, int64_t threshold, co
   std::unordered_map<std::string, CNodePtr> comm_node_map;
   for (auto &node : todo) {
     auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
     if (cnode->input(1)->Shape() == nullptr) {
       continue;
     }

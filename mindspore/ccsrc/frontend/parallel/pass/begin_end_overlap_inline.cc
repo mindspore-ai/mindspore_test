@@ -63,6 +63,7 @@ FuncGraphPtr GetAbstractFunc(const CNodePtr &node) {
 }
 
 void InlineExpandFuncGraph(const CNodePtr &expanding_node, const FuncGraphPtr &expanded_graph) {
+  MS_EXCEPTION_IF_NULL(expanding_node);
   auto main_graph = expanding_node->func_graph();
   auto mng = main_graph->manager();
   if (mng == nullptr) {

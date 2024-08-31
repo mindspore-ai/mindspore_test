@@ -75,6 +75,9 @@ void GetAllFuncGraphs(const FuncGraphPtr &func_graph, std::set<FuncGraphPtr> *al
 
 bool DeleteDirRecursively(const std::string &dir_name) {
   DIR *dir = opendir(dir_name.c_str());
+  if (dir == nullptr) {
+    return true;
+  }
   dirent *dirent = nullptr;
   std::vector<std::string> file_names{};
   while ((dirent = readdir(dir)) != nullptr) {

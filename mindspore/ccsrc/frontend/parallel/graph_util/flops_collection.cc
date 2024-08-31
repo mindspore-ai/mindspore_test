@@ -105,6 +105,7 @@ int64_t CalBMMFlops(const std::vector<ShapeVector> &input_shapes, bool transpose
 }
 
 OpInfoPtr GetBMMInfo(const CNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
   OpInfoPtr op_info = std::make_shared<OpInfo>();
   for (size_t i = 1; i < kIndex3; i++) {
     op_info->shard_input_shapes.emplace_back(node->input(i)->abstract()->GetShapeTrack()->GetShapeVector());
@@ -113,7 +114,6 @@ OpInfoPtr GetBMMInfo(const CNodePtr &node) {
   if (node->HasPrimalAttr("origin_input_shapes")) {
     op_info->origin_input_shapes = GetValue<std::vector<ShapeVector>>(node->GetPrimalAttr("origin_input_shapes"));
   }
-  MS_EXCEPTION_IF_NULL(node);
   auto prim = GetCNodePrimitive(node);
   MS_EXCEPTION_IF_NULL(prim);
   auto tb = GetValue<bool>(GetValueNode(node->input(kIndex4)));
@@ -140,6 +140,7 @@ int64_t CalConv2DFlops(const std::vector<ShapeVector> &input_shapes, const Shape
 }
 
 OpInfoPtr GetConv2DInfo(const CNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
   OpInfoPtr op_info = std::make_shared<OpInfo>();
   for (size_t i = 1; i < kIndex3; i++) {
     op_info->shard_input_shapes.emplace_back(node->input(i)->abstract()->GetShapeTrack()->GetShapeVector());
@@ -151,7 +152,6 @@ OpInfoPtr GetConv2DInfo(const CNodePtr &node) {
     op_info->origin_output_shapes = {GetValue<ShapeVector>(node->GetPrimalAttr("origin_output_shape"))};
     op_info->origin_input_shapes = GetValue<std::vector<ShapeVector>>(node->GetPrimalAttr("origin_input_shapes"));
   }
-  MS_EXCEPTION_IF_NULL(node);
   auto prim = GetCNodePrimitive(node);
   MS_EXCEPTION_IF_NULL(prim);
   auto data_format = GetValue<std::string>(prim->GetAttr(FORMAT));

@@ -883,6 +883,7 @@ void AddVisitedNode(std::queue<std::pair<std::shared_ptr<AnfNode>, int>> *visite
   }
   auto node_users = node_users_map.at(key_node);
   for (auto &node_user : node_users) {
+    MS_EXCEPTION_IF_NULL(node_user.first);
     auto cnode = node_user.first->cast<CNodePtr>();
     if (!cnode || IsSomePrimitiveList(cnode, {MAKE_TUPLE, UPDATESTATE})) {
       continue;
