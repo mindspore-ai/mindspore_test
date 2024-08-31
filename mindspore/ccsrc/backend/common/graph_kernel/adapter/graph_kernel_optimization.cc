@@ -74,6 +74,7 @@
 #include "backend/common/graph_kernel/fold_updatestate.h"
 #include "backend/common/graph_kernel/proactive_fallback_expander.h"
 #include "backend/common/graph_kernel/transpose_matmul_fusion.h"
+#include "backend/common/graph_kernel/shrink_only_shape_needed.h"
 #ifdef ENABLE_AKG
 #include "backend/common/graph_kernel/graph_kernel_build.h"
 #endif
@@ -201,6 +202,8 @@ PassManagerPtr GraphKernelOptimizer::Split() const {
   pm->Add(std::make_shared<ShapeOpsSplitter>(duplicated_ops), OptLevel_1);
   // Use symbol to calculate a more precise edge relation between nodes
   pm->Add(std::make_shared<SymbolEngineBuilder>(false), OptLevel_1, is_dvm);
+  // Replace sub graph output(which is only used by Shape) with sub graph input
+  pm->Add(std::make_shared<ShrinkOnlyShapeNeeded>(), OptLevel_1, is_dvm);
   // Split kernel according to costmodel
   pm->Add(std::make_shared<GraphKernelSplitterWithPy>(false), OptLevel_1);
   // After Simplify and Splitter, a lot of redundant getitem/maketuple

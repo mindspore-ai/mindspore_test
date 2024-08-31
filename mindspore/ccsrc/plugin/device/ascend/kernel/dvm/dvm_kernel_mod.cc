@@ -103,7 +103,7 @@ BaseShapePtr DvmKernelMod::InferShape(const AbstractBasePtrList &inputs_abs) {
   // update input shape
   for (size_t i = 0; i < inputs_abs.size(); ++i) {
     // to do: if input value is needed in infer shape, then we should fetch input value here
-    inputs_shape_[i] = inputs_abs[i]->GetShape()->GetShapeVector();
+    inputs_shape_[i] = BaseShapeToShape(inputs_abs[i]->GetShape());
     if (inputs_shape_ref_[i] != nullptr) {
       *inputs_shape_ref_[i] = inputs_shape_[i];
     }
