@@ -1351,7 +1351,7 @@ def array_split(x, indices_or_sections, axis=0):
             If tuple(int), list(int) or of sorted integers,
             the entries indicate where along axis the array is split.
             For example, :math:`[2, 3]` would, for :math:`axis=0`, result in
-            three sub-tensors :math:`x[:2]`, :math:`x[2:3]`and :math:`x[3:]`.
+            three sub-tensors :math:`x[:2]`, :math:`x[2:3]` and :math:`x[3:]`.
             If an index exceeds the dimension of the array along axis,
             an empty sub-array is returned correspondingly.
         axis (int): The axis along which to split. Default: ``0`` .
@@ -1396,7 +1396,7 @@ def split(x, indices_or_sections, axis=0):
             If tuple(int), list(int) or of sorted integers,
             the entries indicate where along axis the array is split.
             For example, :math:`[2, 3]` would, for :math:`axis=0`, result in
-            three sub-tensors :math:`x[:2]`, :math:`x[2:3]`and :math:`x[3:]`.
+            three sub-tensors :math:`x[:2]`, :math:`x[2:3]` and :math:`x[3:]`.
             If an index exceeds the dimension of the array along axis,
             an empty sub-array is returned correspondingly.
         axis (int): The axis along which to split. Default: ``0`` .
@@ -1506,7 +1506,7 @@ def vsplit(x, indices_or_sections):
             If tuple(int), list(int) or of sorted integers,
             the entries indicate where along axis the array is split.
             For example, :math:`[2, 3]` would, for :math:`axis=0`, result in
-            three sub-tensors :math:`x[:2]`, :math:`x[2:3]`and :math:`x[3:]`.
+            three sub-tensors :math:`x[:2]`, :math:`x[2:3]` and :math:`x[3:]`.
             If an index exceeds the dimension of the array along axis,
             an empty sub-array is returned correspondingly.
 
@@ -1593,7 +1593,7 @@ def dsplit(x, indices_or_sections):
             If tuple(int), list(int) or of sorted integers,
             the entries indicate where along axis the array is split.
             For example, :math:`[2, 3]` would, for :math:`axis=0`, result in
-            three sub-tensors :math:`x[:2]`, :math:`x[2:3]`and :math:`x[3:]`.
+            three sub-tensors :math:`x[:2]`, :math:`x[2:3]` and :math:`x[3:]`.
             If an index exceeds the dimension of the array along axis,
             an empty sub-array is returned correspondingly.
 
