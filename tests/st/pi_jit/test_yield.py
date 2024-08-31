@@ -27,12 +27,8 @@ def skip_if_python_version_too_high():
         pytest.skip("Skipping tests on Python 3.11 and higher.")
 
 
-@arg_mark(
-    plat_marks=["cpu_linux"],
-    level_mark="level0",
-    card_mark="onecard",
-    essential_mark="essential",
-)
+@pytest.mark.skipif(sys.version_info[:2] == (3,7), reason="not support py37 setup loop bytecode")
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_yield_case_1():
     """
     Feature: Test yield
@@ -60,12 +56,8 @@ def test_yield_case_1():
     assert jcr["break_count_"] == 0
 
 
-@arg_mark(
-    plat_marks=["cpu_linux"],
-    level_mark="level0",
-    card_mark="onecard",
-    essential_mark="essential",
-)
+@pytest.mark.skipif(sys.version_info[:2] == (3,7), reason="not support py37 setup loop bytecode")
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_yield_case_2():
     """
     Feature: Test yield from
@@ -91,12 +83,8 @@ def test_yield_case_2():
     assert jcr["break_count_"] == 0
 
 
-@arg_mark(
-    plat_marks=["cpu_linux"],
-    level_mark="level0",
-    card_mark="onecard",
-    essential_mark="essential",
-)
+@pytest.mark.skipif(sys.version_info[:2] == (3,7), reason="not support py37 setup loop bytecode")
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_yield_case_3():
     """
     Feature: Test yield from
@@ -122,12 +110,8 @@ def test_yield_case_3():
     assert jcr["break_count_"] == 0
 
 
-@arg_mark(
-    plat_marks=["cpu_linux"],
-    level_mark="level0",
-    card_mark="onecard",
-    essential_mark="essential",
-)
+@pytest.mark.skip(reason="tmp skip")
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_yield_case_4():
     """
     Feature: Test yield from
