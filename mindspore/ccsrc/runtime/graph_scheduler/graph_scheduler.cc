@@ -15,6 +15,7 @@
  */
 
 #include "runtime/graph_scheduler/graph_scheduler.h"
+
 #include <queue>
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
@@ -36,6 +37,7 @@
 #include "include/common/profiler.h"
 #include "actor/actormgr.h"
 #include "async/async.h"
+#include "include/backend/device_address.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/common/utils/parallel_context.h"
@@ -314,6 +316,31 @@ void ChangeGraphMode(const GraphCompilerInfo &graph_compiler_info) {
       } else {
         graph->set_run_mode(device::RunMode::kGraphMode);
       }
+    }
+  }
+}
+
+void FetchContinuousMemoryInfo(const CNodePtr &node, bool is_input) {
+  MS_EXCEPTION_IF_NULL(node);
+
+  auto continuous_device_addresses = std::make_shared<std::vector<std::weak_ptr<device::DeviceAddress>>>();
+  if (is_input) {
+    const auto &intput_sizes = AnfAlgo::GetNodeInputSizeList(node);
+    for (size_t i = 0; i < intput_sizes.size(); ++i) {
+      const auto &device_tensor = AnfAlgo::GetPrevNodeMutableOutputAddr(node, i, false);
+      MS_EXCEPTION_IF_NULL(device_tensor);
+      device_tensor->set_continuous_device_addresses(continuous_device_addresses);
+      continuous_device_addresses->emplace_back(std::weak_ptr<device::DeviceAddress>(device_tensor));
+    }
+  } else {
+    const auto &kernel_mod = AnfAlgo::GetKernelMod(node);
+    MS_EXCEPTION_IF_NULL(kernel_mod);
+    const auto &output_sizes = kernel_mod->GetOutputSizeList();
+    for (size_t i = 0; i < output_sizes.size(); ++i) {
+      const auto &device_tensor = AnfAlgo::GetMutableOutputAddr(node, i, false);
+      MS_EXCEPTION_IF_NULL(device_tensor);
+      device_tensor->set_continuous_device_addresses(continuous_device_addresses);
+      continuous_device_addresses->emplace_back(std::weak_ptr<device::DeviceAddress>(device_tensor));
     }
   }
 }
@@ -606,6 +633,10 @@ ActorSet *GraphScheduler::Transform(const GraphCompilerInfo &graph_compiler_info
   UpdateDeviceAddressByRefInternalParameter(graph_compiler_info);
   (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageLink, 1, 0, 0);
   Link(actor_set.get(), graph_compiler_info);
+
+  // Process continuous memory and set flag for data prepare actor.
+  ProcessContinuousMemoryInfo(actor_set, graph_compiler_info);
+
   (void)profiler::CollectHostInfo(kModelNameRuntime, kEventCompileGraph, kStageLink, 1, 0, 1);
   DumpActor(actor_set.get(), graph_compiler_info);
   if (graph_compiler_info.strategy_ == GraphExecutionStrategy::kPipeline) {
@@ -1221,6 +1252,69 @@ void GraphScheduler::Link(ActorSet *actor_set, const GraphCompilerInfo &graph_co
                                              }) != group_name_to_communication_nodes.end());
 }
 
+void GraphScheduler::ProcessContinuousMemoryInfo(const ActorSetPtr &actor_set,
+                                                 const GraphCompilerInfo &graph_compiler_info) {
+  // Cache the nodes which need continuous memory for actor set.
+  if (graph_compiler_info.strategy_ == GraphExecutionStrategy::kPipeline) {
+    for (size_t index = 0; index < graph_compiler_info.graphs_.size(); ++index) {
+      const auto &graph = graph_compiler_info.graphs_[index];
+      MS_EXCEPTION_IF_NULL(graph);
+      auto ms_context = MsContext::GetInstance();
+      MS_EXCEPTION_IF_NULL(ms_context);
+      // Memory swap strategy will take over the continuous memory.
+      const bool enable_mem_offload =
+        ms_context->get_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD) && !graph->is_dynamic_shape();
+      // Somas will take over the continuous memory.
+      const bool using_somas = graph->is_graph_run_mode() || (graph->somas_whole_block_size() != 0);
+      if (enable_mem_offload || using_somas) {
+        continue;
+      }
+
+      auto &execution_order = graph->execution_order();
+      for (auto &kernel : execution_order) {
+        if (common::AnfAlgo::GetCNodeName(kernel) == kFlattenConcatOpName) {
+          graph_compiler_info.exist_flatten_concat_ = true;
+        }
+        if (!common::AnfAlgo::IsCommunicationOp(kernel) ||
+            common::AnfAlgo::GetCNodeName(kernel) == kMatMulAllReduceOpName) {
+          continue;
+        }
+        auto key =
+          std::make_pair(kernel, device::FetchRealDeviceContext(kernel, graph_compiler_info.device_contexts_[index]));
+        auto value = std::make_pair(false, false);
+        if (common::AnfAlgo::GetInputTensorNum(kernel) > 1) {
+          value.first = true;
+        }
+        if (AnfAlgo::GetOutputTensorNum(kernel) > 1) {
+          value.second = true;
+        }
+        if (value.first || value.second) {
+          actor_set->continuous_memory_nodes_[key] = value;
+        }
+      }
+    }
+  }
+
+  // Process continuous memory info.
+  for (auto &iter : actor_set->continuous_memory_nodes_) {
+    // Inputs need continuous memory.
+    if (iter.second.first) {
+      const auto &cnode = iter.first.first;
+      MS_LOG(INFO) << "Init continuous_memory_nodes_ cnode : " << cnode->fullname_with_scope() << ".";
+      FetchContinuousMemoryInfo(cnode, true);
+    }
+    // Outputs need continuous memory.
+    if (iter.second.second) {
+      const auto &cnode = iter.first.first;
+      MS_LOG(INFO) << "Init  continuous_memory_nodes_ cnode : " << cnode->fullname_with_scope() << ".";
+      FetchContinuousMemoryInfo(cnode, false);
+    }
+  }
+
+  // Update continuous memory flag for data prepare actor.
+  actor_set->data_prepare_actor_->set_has_continuous_memory(actor_set->continuous_memory_nodes_.size() > 0);
+}
+
 void GraphScheduler::Optimize(const ActorSetPtr &actor_set, const GraphCompilerInfo &graph_compiler_info) const {
   MS_EXCEPTION_IF_NULL(actor_set);
 
@@ -1561,48 +1655,6 @@ DataPrepareActorPtr GraphScheduler::BuildDataPrepareActor(const GraphCompilerInf
     actor_name, memory_manager_aid_, debug_aid_, profiler_aid_, &graph_compiler_info, host_queue_ds_actor, host_queue);
   MS_LOG(INFO) << "Create data prepare actor: " << actor_name;
   MS_EXCEPTION_IF_NULL(data_prepare_actor);
-
-  // Cache the nodes which need continuous memory.
-  if (graph_compiler_info.strategy_ == GraphExecutionStrategy::kPipeline) {
-    for (size_t index = 0; index < graph_compiler_info.graphs_.size(); ++index) {
-      const auto &graph = graph_compiler_info.graphs_[index];
-      MS_EXCEPTION_IF_NULL(graph);
-      auto ms_context = MsContext::GetInstance();
-      MS_EXCEPTION_IF_NULL(ms_context);
-      // Memory swap strategy will take over the continuous memory.
-      const bool enable_mem_offload =
-        ms_context->get_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD) && !graph->is_dynamic_shape();
-      // Somas will take over the continuous memory.
-      const bool using_somas = graph->is_graph_run_mode() || (graph->somas_whole_block_size() != 0);
-      if (enable_mem_offload || using_somas) {
-        continue;
-      }
-
-      auto &execution_order = graph->execution_order();
-      for (auto &kernel : execution_order) {
-        if (common::AnfAlgo::GetCNodeName(kernel) == kFlattenConcatOpName) {
-          graph_compiler_info.exist_flatten_concat_ = true;
-        }
-        if (!common::AnfAlgo::IsCommunicationOp(kernel) ||
-            common::AnfAlgo::GetCNodeName(kernel) == kMatMulAllReduceOpName) {
-          continue;
-        }
-        auto key =
-          std::make_pair(kernel, device::FetchRealDeviceContext(kernel, graph_compiler_info.device_contexts_[index]));
-        auto value = std::make_pair(false, false);
-        if (common::AnfAlgo::GetInputTensorNum(kernel) > 1) {
-          value.first = true;
-        }
-        if (AnfAlgo::GetOutputTensorNum(kernel) > 1) {
-          value.second = true;
-        }
-        if (value.first || value.second) {
-          data_prepare_actor->continuous_memory_nodes_[key] = value;
-        }
-      }
-    }
-  }
-
   InsertActor(data_prepare_actor.get());
   return data_prepare_actor;
 }

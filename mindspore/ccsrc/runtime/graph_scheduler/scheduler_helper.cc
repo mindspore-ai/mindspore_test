@@ -1175,6 +1175,7 @@ void SchedulerHelper::CheckActorValid(const ActorSet *actor_set) {
 
 void SchedulerHelper::DumpActorSet(const ActorSet *actor_set, std::ofstream &ofs) {
   MS_EXCEPTION_IF_NULL(actor_set);
+  DumpContinuousMemoryNodes(actor_set, ofs);
   DumpDataPrepareActor(actor_set->data_prepare_actor_, ofs);
   DumpDSActors(actor_set->data_source_actors_, ofs);
   DumpKernelActors(actor_set->kernel_actors_, ofs);

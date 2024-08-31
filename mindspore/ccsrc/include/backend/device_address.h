@@ -102,6 +102,8 @@ constexpr size_t kDeviceAddressFlagNullptr = 8;
 
 class DeviceAddress : public mindspore::DeviceSync {
  public:
+  using ContinuousDeviceAddressesPtr = std::shared_ptr<std::vector<std::weak_ptr<DeviceAddress>>>;
+
   explicit DeviceAddress(const KernelTensorPtr &kernel_tensor)
       : kernel_tensor_(kernel_tensor), address_common_(kernel_tensor_->address_common()) {}
 
@@ -450,6 +452,11 @@ class DeviceAddress : public mindspore::DeviceSync {
   bool is_view() const { return is_view_; }
   AddressCommonPtr address_common() const { return address_common_; }
 
+  ContinuousDeviceAddressesPtr continuous_device_addresses() const { return continuous_device_addresses_; }
+  void set_continuous_device_addresses(const ContinuousDeviceAddressesPtr &continuous_device_addresses) {
+    continuous_device_addresses_ = continuous_device_addresses;
+  }
+
  protected:
   KernelTensorPtr kernel_tensor_{nullptr};
   // address basic info
@@ -493,6 +500,9 @@ class DeviceAddress : public mindspore::DeviceSync {
   bool need_sync_user_data_{false};
   // The specified deleter to release memory
   std::function<void(uint8_t *)> deleter_;
+
+  ContinuousDeviceAddressesPtr continuous_device_addresses_{nullptr};
+
   friend class KernelRuntime;
   friend class MemoryManager;
   friend class mindspore::device::ascend::tasksink::TaskGenerator;

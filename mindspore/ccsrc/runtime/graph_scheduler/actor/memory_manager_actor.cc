@@ -49,7 +49,18 @@ void MemoryManagerActor::AllocateMemory(const std::vector<DeviceTensor *> *alloc
     try {
       // Allocate memory through the device context.
       device::DynamicMemAllocatorDebugInfo::SetDebugInfo(from_aid.Name(), device::AllocatorType::kKernelOutput);
-      if (!device_context->device_res_manager_->AllocateMemory(device_tensor, kDefaultStreamIndex)) {
+      bool success = false;
+      if (device_tensor->continuous_device_addresses() == nullptr) {
+        success = device_context->device_res_manager_->AllocateMemory(device_tensor, kDefaultStreamIndex);
+      } else {
+        if (device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
+          device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, from_aid.Name(), "ContinuousMemory", "");
+        }
+        MS_LOG(DEBUG) << "Allocate continuous memory, device address : " << device_tensor << ".";
+        success = AllocateContinuousMemory(device_tensor, device_context, from_aid);
+      }
+
+      if (!success) {
         SetOpContextMemoryAllocFail(from_aid.Name(), device_context, device_tensor->GetSize(), op_context);
         return;
       }
@@ -65,6 +76,34 @@ void MemoryManagerActor::AllocateMemory(const std::vector<DeviceTensor *> *alloc
                       << ", device address addr: " << device_tensor->GetPtr();
     }
   }
+}
+
+bool MemoryManagerActor::AllocateContinuousMemory(const DeviceTensor *device_tensor,
+                                                  const DeviceContext *device_context, const AID &from_aid) {
+  std::vector<size_t> size_list;
+  const auto &continuous_device_addresses = device_tensor->continuous_device_addresses();
+  for (const auto &device_address_wpr : *continuous_device_addresses) {
+    const auto &device_address = device_address_wpr.lock();
+    MS_EXCEPTION_IF_NULL(device_address);
+    (void)size_list.emplace_back(device_address->GetSize());
+  }
+  const auto &device_addresses =
+    device_context->device_res_manager_->AllocateContinuousMemory(size_list, kDefaultStreamIndex);
+  if (device_addresses.size() == continuous_device_addresses->size()) {
+    for (size_t i = 0, end = (*continuous_device_addresses).size(); i < end; ++i) {
+      const auto &device_address = (*(continuous_device_addresses))[i].lock();
+      device_address->set_ptr(device_addresses[i]);
+      device_address->set_from_mem_pool(true);
+      if (device::tracker::MemTrackerManager::GetInstance().IsEnabled()) {
+        device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, from_aid.Name(),
+                                                       device::tracker::MemType::kContinuousMemory,
+                                                       device_address->GetSize(), device_address.get());
+        device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(BindDevicePtr, device_address.get(), device_addresses[i]);
+      }
+    }
+    return true;
+  }
+  return false;
 }
 
 void MemoryManagerActor::AllocateContinuousMemory(const std::vector<std::vector<DeviceTensorPtr>> *alloc_list_list,

@@ -15,11 +15,13 @@
  */
 
 #include "runtime/graph_scheduler/actor/actor_dump.h"
+
+#include <deque>
 #include <map>
 #include <utility>
-#include <deque>
 
 #include "runtime/graph_scheduler/scheduler_helper.h"
+
 namespace mindspore {
 namespace runtime {
 namespace {
@@ -652,6 +654,17 @@ void DumpStackActors(const std::vector<StackActorPtr> &actors, std::ofstream &of
 }
 }  // namespace
 
+void DumpContinuousMemoryNodes(const ActorSet *actor_set, std::ofstream &ofs) {
+  ofs << "\tcontinuous_memory_nodes:" << actor_set->continuous_memory_nodes_.size() << "\n ";
+  for (const auto &iter : actor_set->continuous_memory_nodes_) {
+    MS_EXCEPTION_IF_NULL(iter.first.first);
+    MS_EXCEPTION_IF_NULL(iter.first.second);
+    ofs << "\t\tnode_name:" << iter.first.first->fullname_with_scope()
+        << "\tdevice_context:" << iter.first.second->device_context_key().ToString()
+        << "\tis_input_need:" << iter.second.first << "\tis_output_need:" << iter.second.second << "\n";
+  }
+}
+
 void DumpDataPrepareActor(const DataPrepareActorPtr &actor, std::ofstream &ofs) {
   ofs << "\n\n[Data prepare actor:" << (actor != nullptr ? 1 : 0) << "]\n";
   if (actor == nullptr) {
@@ -660,15 +673,6 @@ void DumpDataPrepareActor(const DataPrepareActorPtr &actor, std::ofstream &ofs) 
 
   ofs << "\tactor_name:" << actor->GetAID().Name() << "\tactor_id:" << actor->actor_id() << "\n";
   DumpAbstractActor(actor.get(), ofs);
-
-  ofs << "\t\tcontinuous_memory_nodes:" << actor->continuous_memory_nodes().size() << "\n ";
-  for (const auto &iter : actor->continuous_memory_nodes()) {
-    MS_EXCEPTION_IF_NULL(iter.first.first);
-    MS_EXCEPTION_IF_NULL(iter.first.second);
-    ofs << "\t\t\tnode_name:" << iter.first.first->fullname_with_scope()
-        << "\tdevice_context:" << iter.first.second->device_context_key().ToString()
-        << "\tis_input_need:" << iter.second.first << "\tis_output_need:" << iter.second.second << "\n";
-  }
 }
 
 void DumpLoopCountActor(const LoopCountActorPtr &actor, std::ofstream &ofs) {

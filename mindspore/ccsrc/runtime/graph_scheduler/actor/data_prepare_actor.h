@@ -63,13 +63,8 @@ class DataPrepareActor : public DebugAwareActor {
   void SendProfilerReq(OpContext<DeviceTensor> *const context);
   void OnDebugFinish(OpContext<DeviceTensor> *const context) override;
 
-  // The continuous memory related operation interface.
-  void SendMemoryAllocReq(OpContext<DeviceTensor> *const context) override;
-  void OnMemoryAllocFinish(OpContext<DeviceTensor> *const context) override;
-
-  const std::map<std::pair<CNodePtr, const DeviceContext *>, std::pair<bool, bool>> &continuous_memory_nodes() const {
-    return continuous_memory_nodes_;
-  }
+  void set_has_continuous_memory(bool has_continuous_memory) { has_continuous_memory_ = has_continuous_memory; }
+  bool has_continuous_memory() { return has_continuous_memory_; }
 
  protected:
   void Init() override;
@@ -139,17 +134,7 @@ class DataPrepareActor : public DebugAwareActor {
   GraphExecutionStrategy real_strategy_;
   HostQueueDSActorPtr host_data_source_actor_;
   HostTensorQueuePtr host_tensor_queue_;
-
-  // The nodes need continuous memory, which must allocate in the begin of step running. The first bool of pair
-  // expresses the inputs of node need continuous memory, the second bool of pair expresses the outputs of node need
-  // continuous memory.
-  std::map<std::pair<CNodePtr, const DeviceContext *>, std::pair<bool, bool>> continuous_memory_nodes_;
-  // The members for continuous memory alloc fetched by continuous_memory_nodes_.
-  std::vector<std::vector<DeviceTensorPtr>> continuous_memory_alloc_list_list_;
-  std::vector<std::vector<size_t>> size_list_list_;
-  std::vector<uint32_t> stream_id_list_;
-  std::vector<size_t> total_size_list_;
-  std::vector<const DeviceContext *> continuous_memory_device_contexts_;
+  bool has_continuous_memory_;
   std::vector<std::vector<TensorPtr>> init_tensors_;
 
   // Record the address modified input nodes to refresh the ref node.

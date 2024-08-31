@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <set>
+
 #include "runtime/graph_scheduler/actor/data_prepare_actor.h"
 #include "runtime/graph_scheduler/actor/memory_manager_actor.h"
 #include "runtime/graph_scheduler/actor/kernel_actor.h"
@@ -199,40 +200,6 @@ void SyncTensorData(const TensorPtr &host_tensor, const DeviceTensorPtr &device_
   }
 }
 
-void FetchContinuousMemoryInfo(const CNodePtr &node, std::vector<DeviceTensorPtr> *const addr_list,
-                               std::vector<size_t> *const size_list, size_t *const total_size, bool is_input) {
-  MS_EXCEPTION_IF_NULL(node);
-  MS_EXCEPTION_IF_NULL(addr_list);
-  MS_EXCEPTION_IF_NULL(size_list);
-  MS_EXCEPTION_IF_NULL(total_size);
-
-  (*addr_list).clear();
-  (*size_list).clear();
-  *total_size = 0;
-
-  if (is_input) {
-    const auto &intput_sizes = AnfAlgo::GetNodeInputSizeList(node);
-    for (size_t i = 0; i < intput_sizes.size(); ++i) {
-      const auto &device_tensor = AnfAlgo::GetPrevNodeMutableOutputAddr(node, i, false);
-      MS_EXCEPTION_IF_NULL(device_tensor);
-      *total_size += intput_sizes[i];
-      (void)size_list->emplace_back(intput_sizes[i]);
-      (void)addr_list->emplace_back(device_tensor);
-    }
-  } else {
-    const auto &kernel_mod = AnfAlgo::GetKernelMod(node);
-    MS_EXCEPTION_IF_NULL(kernel_mod);
-    const auto &output_sizes = kernel_mod->GetOutputSizeList();
-    for (size_t i = 0; i < output_sizes.size(); ++i) {
-      const auto &device_tensor = AnfAlgo::GetMutableOutputAddr(node, i, false);
-      MS_EXCEPTION_IF_NULL(device_tensor);
-      *total_size += output_sizes[i];
-      (void)size_list->emplace_back(output_sizes[i]);
-      (void)addr_list->emplace_back(device_tensor);
-    }
-  }
-}
-
 void ValueTupleToValue(const ValuePtr &value, std::vector<ValuePtr> *const values) {
   MS_EXCEPTION_IF_NULL(value);
   MS_EXCEPTION_IF_NULL(values);
@@ -399,33 +366,6 @@ void DataPrepareActor::Init() {
     if (graph->is_dynamic_shape()) {
       has_dynamic_shape_ = true;
       break;
-    }
-  }
-
-  for (auto &iter : continuous_memory_nodes_) {
-    size_t total_size = 0;
-    std::vector<size_t> size_list;
-    std::vector<DeviceTensorPtr> addr_list;
-    // Inputs need continuous memory.
-    if (iter.second.first) {
-      const auto &cnode = iter.first.first;
-      FetchContinuousMemoryInfo(cnode, &addr_list, &size_list, &total_size, true);
-      (void)continuous_memory_alloc_list_list_.emplace_back(addr_list);
-      (void)size_list_list_.emplace_back(size_list);
-      (void)stream_id_list_.emplace_back(kDefaultStreamIndex);
-      (void)total_size_list_.emplace_back(total_size);
-      (void)continuous_memory_device_contexts_.emplace_back(iter.first.second);
-    }
-
-    // Outputs need continuous memory.
-    if (iter.second.second) {
-      const auto &cnode = iter.first.first;
-      FetchContinuousMemoryInfo(cnode, &addr_list, &size_list, &total_size, false);
-      (void)continuous_memory_alloc_list_list_.emplace_back(addr_list);
-      (void)size_list_list_.emplace_back(size_list);
-      (void)stream_id_list_.emplace_back(kDefaultStreamIndex);
-      (void)total_size_list_.emplace_back(total_size);
-      (void)continuous_memory_device_contexts_.emplace_back(iter.first.second);
     }
   }
 }
@@ -596,12 +536,7 @@ void DataPrepareActor::PrepareData(const std::vector<std::vector<TensorPtr>> &in
   PROFILER_END(start_time, runtime::ProfilerModule::kRuntime, runtime::ProfilerEvent::kPreLaunch, GetAID().Name(),
                false);
 
-  // Allocate continuous memory and send output to trigger the step running.
-  if (continuous_memory_alloc_list_list_.size() > 0) {
-    SendMemoryAllocReq(context);
-  } else {
-    PostRun(context);
-  }
+  PostRun(context);
 }
 
 void DataPrepareActor::SendDebugReq(OpContext<DeviceTensor> *const context) {
@@ -622,35 +557,6 @@ void DataPrepareActor::SendProfilerReq(OpContext<DeviceTensor> *const context) {
 
 void DataPrepareActor::OnDebugFinish(OpContext<DeviceTensor> *const context) {
   MS_EXCEPTION_IF_NULL(context);
-  if (continuous_memory_alloc_list_list_.size() > 0) {
-    SendMemoryAllocReq(context);
-  } else {
-    PostRun(context);
-  }
-}
-
-void DataPrepareActor::SendMemoryAllocReq(OpContext<DeviceTensor> *const context) {
-  // Allocate continuous memory in the begin of the step running.
-  if (ActorDispatcher::is_memory_allocation_sync()) {
-    if (!ActorDispatcher::enable_use_trace_memory()) {
-      ActorDispatcher::SendSync(memory_manager_aid_, &MemoryManagerActor::AllocateContinuousMemory,
-                                &continuous_memory_alloc_list_list_, &size_list_list_, &stream_id_list_,
-                                &total_size_list_, &continuous_memory_device_contexts_, context, GetAID());
-    }
-    OnMemoryAllocFinish(context);
-  } else {
-    ActorDispatcher::Send(memory_manager_aid_, &MemoryManagerActor::AllocateContinuousMemory,
-                          &continuous_memory_alloc_list_list_, &size_list_list_, &stream_id_list_, &total_size_list_,
-                          &continuous_memory_device_contexts_, context, GetAID());
-  }
-}
-
-void DataPrepareActor::OnMemoryAllocFinish(OpContext<DeviceTensor> *const context) {
-  MS_EXCEPTION_IF_NULL(context);
-  if (IsRunningFailed(context)) {
-    return;
-  }
-
   PostRun(context);
 }
 
@@ -982,7 +888,7 @@ void DataPrepareActor::PrepareDataForHostTensorQueueNew(const VectorRef &args, O
     const auto &phase = PhaseManager::GetInstance().phase();
     bool is_increment_graph = (phase.find("increment") != std::string::npos);
     if (EnableTraceMemory() && is_increment_graph) {
-      if (continuous_memory_alloc_list_list_.size() > 0) {
+      if (has_continuous_memory()) {
         MS_LOG(EXCEPTION)
           << "Can not support continuous memory allocate in dynamic shape graph when enable trace memory.";
       }

@@ -138,6 +138,10 @@ struct ActorSet {
   bool has_dynamic_shape_{false};
   bool has_kernel_need_user_data_{false};
   bool enable_multi_stream_{false};
+  // The nodes need continuous memory.
+  // The first bool of pair expresses the inputs of node need continuous memory,
+  // the second bool of pair expresses the outputs of node need continuous memory.
+  std::map<std::pair<CNodePtr, const DeviceContext *>, std::pair<bool, bool>> continuous_memory_nodes_;
 };
 using ActorSetPtr = std::shared_ptr<ActorSet>;
 
