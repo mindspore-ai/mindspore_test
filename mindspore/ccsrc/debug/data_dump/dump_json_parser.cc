@@ -29,6 +29,7 @@
 #include "utils/convert_utils_base.h"
 #include "utils/log_adapter.h"
 #include "utils/ms_context.h"
+#include "include/backend/debug/data_dump/dump_control.h"
 
 namespace {
 constexpr auto kCommonDumpSettings = "common_dump_settings";
@@ -368,7 +369,12 @@ void DumpJsonParser::CopyMSCfgJsonToDir(uint32_t rank_id) {
 bool DumpJsonParser::GetIterDumpFlag() const { return e2e_dump_enabled_ && IsDumpIter(cur_dump_iter_); }
 
 bool DumpJsonParser::DumpEnabledForIter() const {
-  return ((e2e_dump_enabled_ || async_dump_enabled_) && IsDumpIter(cur_dump_iter_));
+  const auto &dump_control = DumpControl::GetInstance();
+  if (dump_control.dynamic_switch()) {
+    MS_LOG(INFO) << (dump_control.dump_switch() ? "Dynamic switch is on, dump for every iteration." : "Dump is end.");
+    return dump_control.dump_switch() && (e2e_dump_enabled_ || async_dump_enabled_);
+  }
+  return (e2e_dump_enabled_ || async_dump_enabled_) && IsDumpIter(cur_dump_iter_);
 }
 
 /*

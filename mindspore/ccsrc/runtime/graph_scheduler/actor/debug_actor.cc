@@ -47,19 +47,19 @@ void DebugActor::ACLDump(uint32_t device_id, const std::vector<KernelGraphPtr> &
   }
 
   auto step_count_num = 0;
-  step_count_num = step_count;
-  if (step_count == 1 && is_dataset_sink == 1) {
+  step_count_num = step_count_;
+  if (step_count_ == 1 && is_dataset_sink_ == 1) {
     step_count_num = 0;
   }
   if (!graphs.empty()) {
     auto graph = graphs[0];
-    is_dataset_sink = graph->IsDatasetGraph();
+    is_dataset_sink_ = graph->IsDatasetGraph();
   }
   auto enable_ge_dump = common::GetEnv("ENABLE_MS_GE_DUMP");
   if (DumpJsonParser::GetInstance().async_dump_enabled() &&
-      ((DumpJsonParser::GetInstance().IsDumpIter(step_count_num) && is_kbyk) || (enable_ge_dump != "1" && !is_kbyk))) {
+      ((DumpJsonParser::GetInstance().DumpEnabledForIter() && is_kbyk) || (enable_ge_dump != "1" && !is_kbyk))) {
     bool is_init = false;
-    if ((enable_ge_dump != "1") && !(DumpJsonParser::GetInstance().IsDumpIter(step_count_num))) {
+    if ((enable_ge_dump != "1") && !(DumpJsonParser::GetInstance().DumpEnabledForIter())) {
       is_init = true;
     } else {
       std::string dump_path = DumpJsonParser::GetInstance().path();
@@ -70,7 +70,7 @@ void DebugActor::ACLDump(uint32_t device_id, const std::vector<KernelGraphPtr> &
         return;
       }
     }
-    dump_flag = true;
+    dump_flag_ = true;
     auto registered_dumper = datadump::DataDumperRegister::Instance().GetDumperForBackend(device::DeviceType::kAscend);
     if (registered_dumper != nullptr) {
       registered_dumper->Initialize();
@@ -232,14 +232,14 @@ void DebugActor::DebugOnStepBegin(const std::vector<KernelGraphPtr> &graphs,
   if (DumpJsonParser::GetInstance().e2e_dump_enabled() && !graphs.empty()) {
     // First graph is the dataset graph when dataset_sink_mode = True
     auto graph = graphs[0];
-    bool is_dataset_sink = graph->IsDatasetGraph();
+    bool is_dataset_graph = graph->IsDatasetGraph();
     uint32_t cur_step = DumpJsonParser::GetInstance().cur_dump_iter();
     if (cur_step == 1 && DumpJsonParser::GetInstance().GetDatasetSink()) {
       uint32_t init_step = 0;
       DumpJsonParser::GetInstance().UpdateDumpIter(init_step);
       MS_LOG(INFO) << "In dataset sink mode, reset step to init_step: " << init_step;
     }
-    DumpJsonParser::GetInstance().SetDatasetSink(is_dataset_sink);
+    DumpJsonParser::GetInstance().SetDatasetSink(is_dataset_graph);
   }
 #endif
   if (backend == "ge") {
@@ -292,14 +292,14 @@ void DebugActor::DebugOnStepEnd(OpContext<DeviceTensor> *const, const AID *, int
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
   std::string backend = context->backend_policy();
-  step_count = total_running_count_;
-  if (dump_flag == true) {
+  step_count_ = total_running_count_;
+  if (dump_flag_ == true) {
     auto registered_dumper = datadump::DataDumperRegister::Instance().GetDumperForBackend(device::DeviceType::kAscend);
     if (registered_dumper != nullptr) {
       device_ctx_->device_res_manager_->SyncAllStreams();
       registered_dumper->Finalize();
     }
-    dump_flag = false;
+    dump_flag_ = false;
   }
   device_ctx_->device_res_manager_->SyncAllStreams();
   std::lock_guard<std::mutex> locker(debug_mutex_);
@@ -323,8 +323,8 @@ void DebugActor::DebugOnStepEnd(OpContext<DeviceTensor> *const, const AID *, int
     debugger->Debugger::PostExecuteGraphDebugger();
   }
 #ifndef ENABLE_SECURITY
-  DumpJsonParser::GetInstance().UpdateDumpIter(step_count);
-  MS_LOG(INFO) << "UpdateDumpIter: " << step_count;
+  DumpJsonParser::GetInstance().UpdateDumpIter(step_count_);
+  MS_LOG(INFO) << "UpdateDumpIter: " << step_count_;
 #endif
 #endif
 }
