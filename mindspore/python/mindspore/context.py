@@ -1366,12 +1366,14 @@ def set_context(**kwargs):
             If device target is not set, the version of MindSpore package is used.
         max_device_memory (str): Set the maximum memory available for devices. The format is "xxGB".
             Default: ``" 1024GB"`` . The actual used memory size is the minimum of the available memory of the device
-            and max_device_memory. 'max_device_memory' should be set before the program runs.
+            and max_device_memory. 'max_device_memory' should be set before the program runs. When virtual memory is
+            enabled, a too small 'max_device_memory' will cause frequent defragmentation, affecting performance.
         variable_memory_max_size (str): This parameter is deprecated, and will be removed in a future version.
             Please use parameter 'max_device_memory' instead.
-        mempool_block_size (str): Set the size of the memory pool block in PyNative mode or jit level is 'O0'/'O1'
-            for devices. The format is "xxGB". Default: ``"1GB"`` . Minimum size is "1G". The actual used memory block
-            size is the minimum of the available memory of the device and mempool_block_size.
+        mempool_block_size (str): It takes effect when virtual memory is turned off, set the size of the memory pool
+            block for devices. The format is "xxGB". Default: ``"1GB"`` . Minimum size is "1G". The actual used memory
+            block size is the minimum of the available memory of the device and mempool_block_size. When there is
+            enough memory, the memory will be expanded by this value.
         op_timeout (int): Set the maximum duration of executing an operator in seconds.
             If the execution time exceeds this value, system will terminate the task.
             0 means endless wait. The defaults for AI Core and AICPU operators vary on different hardware.
