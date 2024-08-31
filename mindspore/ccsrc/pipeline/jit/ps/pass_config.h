@@ -74,14 +74,7 @@ class PassConfigure {
 
   void SetPasses(const std::vector<PassItem> &passes) { passes_ = passes; }
 
-  std::vector<PassItem> GetPasses() {
-    int i = 0;
-    std::string split = "\t";
-    for (const auto &item : passes_) {
-      MS_LOG(DEBUG) << item.first << split << (++i % 3 != 0 ? split : "\r\n");
-    }
-    return passes_;
-  }
+  std::vector<PassItem> GetPasses() { return passes_; }
 
   static PassConfigure &Instance() {
     static PassConfigure instance;
