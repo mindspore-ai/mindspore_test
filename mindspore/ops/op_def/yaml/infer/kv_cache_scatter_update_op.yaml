@@ -13,6 +13,11 @@ kv_cache_scatter_update:
             dtype: int
             default: "'none'"
             arg_handler: str_to_enum
+    args_signature:
+        rw_write: var
+        dtype_group: (var, updates), (indices)
+    labels:
+        side_effect_mem: True
     returns:
         out:
             dtype: tensor
