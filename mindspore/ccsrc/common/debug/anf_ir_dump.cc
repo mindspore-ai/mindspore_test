@@ -1107,6 +1107,22 @@ void DumpIRInSubgraph(const std::vector<AnfNodePtr> &nodes, OrderedMap<AnfNodePt
   }
 }
 
+void GetSubgraphAttrAsString(const FuncGraphPtr &func_graph, std::ostringstream &oss) {
+  for (const auto &attr : func_graph->attrs()) {
+    oss << attr.first << ": ";
+    MS_EXCEPTION_IF_NULL(attr.second);
+    if (attr.second->isa<BoolImm>()) {
+      oss << GetValue<bool>(attr.second);
+    } else if (attr.second->isa<StringImm>()) {
+      oss << (GetValue<std::string>(attr.second));
+    }
+    oss << std::endl;
+  }
+  if (func_graph->amp_strategy() != nullptr && func_graph->amp_strategy()->IsEnable()) {
+    oss << func_graph->amp_strategy()->ToString() << std::endl;
+  }
+}
+
 void DumpSubgraph(const OrderedMap<FuncGraphPtr, std::shared_ptr<SubGraphIRInfo>> *sub_graphs,
                   const FuncGraphPtr &graph, OrderedMap<AnfNodePtr, int32_t> *para_map, std::ostringstream &oss) {
   if (sub_graphs == nullptr || graph == nullptr) {
@@ -1120,15 +1136,7 @@ void DumpSubgraph(const OrderedMap<FuncGraphPtr, std::shared_ptr<SubGraphIRInfo>
     }
     if (format_level > kBasicLevel) {
       oss << "subgraph attr:" << std::endl;
-      for (const auto &attr : sg.first->attrs()) {
-        oss << attr.first << ": ";
-        if (attr.second->isa<BoolImm>()) {
-          oss << GetValue<bool>(attr.second);
-        } else if (attr.second->isa<StringImm>()) {
-          oss << (GetValue<std::string>(attr.second));
-        }
-        oss << std::endl;
-      }
+      GetSubgraphAttrAsString(sg.first, oss);
       if (sg.first->symbol_engine() != nullptr) {
         oss << "subgraph symbol engine: " << sg.first->symbol_engine()->ToString() << " : "
             << sg.first->symbol_engine().get() << std::endl;
@@ -1657,16 +1665,7 @@ void AnfExporter::ExportOneFuncGraph(const FuncGraphPtr &func_graph, const Tagge
     oss << "indirect: " << *(func_graph->indirect()) << "\n";
   }
   oss << "subgraph attr:" << std::endl;
-  for (const auto &attr : func_graph->attrs()) {
-    oss << attr.first << ": ";
-    MS_EXCEPTION_IF_NULL(attr.second);
-    if (attr.second->isa<BoolImm>()) {
-      oss << GetValue<bool>(attr.second);
-    } else if (attr.second->isa<StringImm>()) {
-      oss << (GetValue<std::string>(attr.second));
-    }
-    oss << std::endl;
-  }
+  GetSubgraphAttrAsString(func_graph, oss);
   oss << "subgraph instance: " << func_graph->ToString() << " : " << func_graph.get() << std::endl;
   // Dump side effect info.
   auto effect_info = func_graph->GetEffectInfo();

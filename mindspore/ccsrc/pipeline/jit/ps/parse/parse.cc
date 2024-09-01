@@ -40,6 +40,7 @@
 #include "utils/interpret_node_recorder.h"
 #include "pipeline/jit/ps/debug/trace.h"
 #include "ir/cell.h"
+#include "include/common/amp/amp.h"
 #include "include/common/fallback.h"
 #include "include/common/utils/utils.h"
 #include "include/common/utils/python_adapter.h"
@@ -89,6 +90,11 @@ FuncGraphPtr ParsePythonCode(const py::object &obj, const std::string &python_mo
   auto cell_reuse_value = py::getattr(obj, FUNC_GRAPH_FLAG_CELL_REUSE, py::none());
   if (cell_reuse_value != py::none()) {
     func_graph->set_flag(FUNC_GRAPH_FLAG_CELL_REUSE, py::cast<bool>(cell_reuse_value));
+  }
+  // Handle amp_strategy
+  auto amp_strategy_value = py::getattr(obj, FUNC_GRAPH_FLAG_AMP_STRATEGY, py::none());
+  if (amp_strategy_value != py::none()) {
+    func_graph->set_amp_strategy(amp_strategy_value.cast<amp::AmpStrategyPtr>());
   }
 
   MS_LOG(DEBUG) << "Finish Parsing " << py::str(obj);

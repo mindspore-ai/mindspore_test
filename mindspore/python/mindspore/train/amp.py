@@ -16,6 +16,9 @@
 from __future__ import absolute_import
 import inspect
 import types
+from typing import Any
+import functools
+import collections
 
 import mindspore as ms
 from mindspore import nn
@@ -29,7 +32,9 @@ from mindspore.train.loss_scale_manager import DynamicLossScaleManager, LossScal
 from mindspore import boost, context
 from mindspore.ops import operations as P
 from mindspore.ops import Primitive
+from mindspore.ops import auto_generate as gen
 from mindspore import log as logger
+from mindspore._c_expression.amp import pop_amp_strategy, push_amp_strategy, create_amp_strategy, AmpLevel
 
 AMP_WHITE_LIST = [
     nn.Conv1d,
@@ -51,15 +56,66 @@ AMP_WHITE_LIST = [
     P.BatchMatMul,
     P.PReLU,
     P.ReLU,
-    P.Ger
+    P.Ger,
 ]
 
 AMP_BLACK_LIST = [
     nn.BatchNorm1d,
     nn.BatchNorm2d,
     nn.BatchNorm3d,
-    nn.LayerNorm
+    nn.LayerNorm,
 ]
+
+AMP_AUTO_WHITE_LIST = [
+    P.Conv2D,
+    P.Conv3D,
+    P.Conv2DTranspose,
+    P.Conv3DTranspose,
+    gen.Convolution,
+    P.MatMul,
+    gen.MatMulExt,
+    P.BatchMatMul,
+    gen.BatchMatMulExt,
+    gen.PReLU,
+    P.Einsum,
+    gen.Dense,
+    gen.Addmm,
+]
+
+AMP_AUTO_BLACK_LIST = [
+    gen.Pow,
+    gen.ACos,
+    gen.Asin,
+    gen.Cosh,
+    P.Erfinv,
+    P.Exp,
+    P.Expm1,
+    P.Log,
+    P.Log1p,
+    P.Reciprocal,
+    P.Rsqrt,
+    P.Sinh,
+    P.Tan,
+    P.Softplus,
+    gen.SoftplusExt,
+    P.LayerNorm,
+    gen.LayerNormExt,
+    P.BatchNorm,
+    gen.GroupNorm,
+    P.KLDivLoss,
+    P.SmoothL1Loss,
+    P.MultilabelMarginLoss,
+    P.SoftMarginLoss,
+    P.TripletMarginLoss,
+    P.MultiMarginLoss,
+    P.BCEWithLogitsLoss,
+    P.Pdist,
+    P.Cdist,
+    P.Renorm,
+]
+
+# Indicates which inputs of primitives need to be converted
+AMP_PRIM_ARG_TABLE = collections.defaultdict(list, {})
 
 # Primitives in inner amp black list will not be converted in O2/O3
 _INNER_AMP_BLACK_LIST = []
@@ -300,6 +356,42 @@ def _auto_black_list(network, black_list, dtype):
     return network
 
 
+class amp_decorator:
+    """
+    Auto mixed precision decorator.
+    Type of lists: List[Tuple[str, List[int]]]
+    """
+    def __init__(self, amp_level, amp_dtype, white_list, black_list):
+        self.amp_level = amp_level
+        self.amp_dtype = amp_dtype
+        self.white_list = white_list
+        self.black_list = black_list
+
+    def __enter__(self):
+        push_amp_strategy(self.amp_level, self.amp_dtype, self.white_list, self.black_list)
+
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any):
+        pop_amp_strategy()
+
+
+def _set_amp_decorator(obj, amp_level, amp_dtype, white_list, black_list):
+    """
+    Set auto mixed precision context decorator for object.
+    Type of lists: List[Tuple[str, List[int]]]
+    """
+    if inspect.isfunction(obj) or inspect.ismethod(obj):
+        @functools.wraps(obj)
+        def wrapper(*args, **kwargs):
+            with amp_decorator(amp_level, amp_dtype, white_list, black_list):
+                return obj(*args, **kwargs)
+        return wrapper
+    if isinstance(obj, nn.Cell):
+        obj.construct = types.MethodType(
+            _set_amp_decorator(obj.construct.__func__, amp_level, amp_dtype, white_list, black_list), obj)
+        return obj
+    raise TypeError(f"For amp_level '{amp_level}', the network type should be Cell or function, bot got {type(obj)}.")
+
+
 def auto_mixed_precision(network, amp_level="O0", dtype=mstype.float16):
     """
     Returns a network processed with auto mixed precision.
@@ -310,23 +402,41 @@ def auto_mixed_precision(network, amp_level="O0", dtype=mstype.float16):
     converted to lower precision float, and calculation results are converted back to full precision float,
     i.e. ``mstype.float32`` .
 
-    The framework has a set of built-in blacklists and whitelists, and the `amp_level` determines which cells and
-    operators are specifically converted.
+    The `amp_level` and its corresponding lists determine which cells and operators are converted.
 
-    The current built-in whitelist contents are:
+    When `amp_level` is set to ``O0``, no cells and operators are converted.
 
-    [:class:`mindspore.nn.Conv1d`, :class:`mindspore.nn.Conv2d`, :class:`mindspore.nn.Conv3d`,
-    :class:`mindspore.nn.Conv1dTranspose`, :class:`mindspore.nn.Conv2dTranspose`,
-    :class:`mindspore.nn.Conv3dTranspose`, :class:`mindspore.nn.Dense`, :class:`mindspore.nn.LSTMCell`,
-    :class:`mindspore.nn.RNNCell`, :class:`mindspore.nn.GRUCell`, :class:`mindspore.ops.Conv2D`,
-    :class:`mindspore.ops.Conv3D`, :class:`mindspore.ops.Conv2DTranspose`,
-    :class:`mindspore.ops.Conv3DTranspose`, :class:`mindspore.ops.MatMul`, :class:`mindspore.ops.BatchMatMul`,
-    :class:`mindspore.ops.PReLU`, :class:`mindspore.ops.ReLU`, :class:`mindspore.ops.Ger`]
+    When `amp_level` is set to ``O1``, cells and operators in whitelist will be converted to lower precision
+    operations. For details on whitelist, refer to :func:`mindspore.amp.get_white_list`.
 
-    The current built-in blacklist contents are:
+    When `amp_level` is set to ``O2``, cells in blacklist will maintain full precision, and cells outside the
+    list will be converted to low precision. For details on blacklist, refer to :func:`mindspore.amp.get_black_list`.
 
-    [:class:`mindspore.nn.BatchNorm1d`, :class:`mindspore.nn.BatchNorm2d`, :class:`mindspore.nn.BatchNorm3d`,
-    :class:`mindspore.nn.LayerNorm`]
+    When `amp_level` is set to ``O3``, all cells will be converted to low precision.
+
+    When `amp_level` is set to ``auto``, operators in `auto_whitelist` will be converted to lower precision
+    operations, operators in `auto_blacklist` will be converted to full precision  operations, operators in
+    `promote_list` will be converted to the higher accuracy float type of the operator inputs, and operators
+    not listed will run in the type defined by their inputs.
+
+    Operators in `auto_whitelist` are:
+
+    ``Conv2D``, ``Conv3D``, ``Conv2DTranspose``, ``Conv3DTranspose``, ``Convolution``, ``MatMul``, ``MatMulExt``,
+    ``BatchMatMul``, ``BatchMatMulExt``, ``PReLU``, ``Einsum``, ``Dense``, ``Addmm``
+
+    Operators in `auto_blacklist` are:
+
+    ``Pow``, ``ACos``, ``Asin``, ``Cosh``, ``Erfinv``, ``Exp``, ``Expm1``, ``Log``, ``Log1p``, ``Reciprocal``,
+    ``Rsqrt``, ``Sinh``, ``Tan``, ``Softplus``, ``SoftplusExt``, ``LayerNorm``, ``LayerNormExt``, ``BatchNorm``,
+    ``GroupNorm``, ``KLDivLoss``, ``SmoothL1Loss``, ``MultilabelMarginLoss``, ``SoftMarginLoss``,
+    ``TripletMarginLoss``, ``MultiMarginLoss``, ``BCEWithLogitsLoss``, ``Pdist``, ``Cdist``, ``Renorm``,
+    ``ReduceProd``, ``Softmax``, ``LogSoftmax``, ``CumProd``, ``CumSum``, ``CumsumExt``, ``ProdExt``, ``SumExt``,
+    ``Norm``
+
+    Operators in `promote_list` are:
+
+    ``Addcdiv``, ``Addcmul``, ``Cross``, ``_PyboostCrossPrim``, ``Dot``, ``GridSampler2D``, ``GridSampler3D``,
+    ``BiasAdd``
 
     For details on automatic mixed precision, refer to
     `Automatic Mix Precision <https://www.mindspore.cn/tutorials/en/master/beginner/mixed_precision.html>`_ .
@@ -337,10 +447,18 @@ def auto_mixed_precision(network, amp_level="O0", dtype=mstype.float16):
         - If interfaces like `Model` and `build_train_network` is used to train the network which is converted by
           mixed-precision interfaces such as `custom_mixed_precision` and `auto_mixed_precision`, `amp_level`
           need to be configured to ``O0`` to avoid the duplicated accuracy conversion.
+        - When `amp_level` is set to ``auto``, the output of the network may be lower precision. In this case, you
+          may need to manually convert the type to avoid type inconsistency errors of the loss function.
+        - When `amp_level` is set to ``auto``, and cells in the network are configured with `to_float`, the accuracy
+          specified by `to_float` takes effect first.
+
+    .. warning::
+        ``auto`` level of `amp_level` is an experimental API that is subject to change or deletion.
 
     Args:
-        network (Cell): Definition of the network.
-        amp_level (str): Supports ["O0", "O1", "O2", "O3"]. Default: ``"O0"`` .
+        network (Union[Cell, function]): Definition of the network. Function type is supported only when `amp_level`
+            is set to ``auto`` .
+        amp_level (str): Supports ["O0", "O1", "O2", "O3", "auto"]. Default: ``"O0"`` .
 
             - "O0": Do not change.
             - "O1": Convert cells and operators in whitelist to lower precision operations, and keep full
@@ -348,12 +466,16 @@ def auto_mixed_precision(network, amp_level="O0", dtype=mstype.float16):
             - "O2": Keep full precision operations for cells and operators in blacklist, and convert the rest
               to lower precision operations.
             - "O3": Cast network to lower precision.
+            - "auto": Operators in `auto_whitelist` will be converted to lower precision operations, operators in
+              `auto_blacklist` will be converted to full precision, operators in `promote_list` will be converted
+              to the higher accuracy float type of the operator inputs, and operators not listed will run in the
+              type defined by their inputs.
 
         dtype (Type): The type used in lower precision calculations, can be ``mstype.float16`` or ``mstype.bfloat16`` ,
             default: ``mstype.float16`` .
 
     Raises:
-        TypeError: If `network` is not a Cell.
+        TypeError: If `network` is not a Cell or a function.
         ValueError: If `dtype` is not one of ``mstype.float16`` , ``mstype.bfloat16`` .
         ValueError: If `amp_level` is not within the supported range.
 
@@ -366,7 +488,12 @@ def auto_mixed_precision(network, amp_level="O0", dtype=mstype.float16):
         >>> net = amp.auto_mixed_precision(network, amp_level)
     """
     if not isinstance(network, nn.Cell):
-        raise TypeError("The network type should be Cell.")
+        if amp_level == "auto":
+            if not inspect.isfunction(network) and not inspect.ismethod(network):
+                raise TypeError("For amp_level 'auto', the network type should be Cell or function.")
+            # function is supported for amp_level 'auto'
+        else:
+            raise TypeError(f"For amp_level '{amp_level}', the network type should be Cell.")
 
     if dtype not in (mstype.float16, mstype.bfloat16):
         raise ValueError(f"The dtype should be one of (mstype.float16, mstype.bfloat16), but got {dtype}.")
@@ -375,7 +502,7 @@ def auto_mixed_precision(network, amp_level="O0", dtype=mstype.float16):
         return network
 
     # Return network if the same amp level has already been configurated
-    if getattr(network, "_amp_level") in ("O1", "O2", "O3"):
+    if hasattr(network, "_amp_level") and getattr(network, "_amp_level") in ("O1", "O2", "O3", "auto"):
         logger.warning(f"The network's auto mixed-precision level is adjusted from {getattr(network, '_amp_level')} "
                        f"to {amp_level}, and repeated calls to mixed-precision interfaces can cause performance "
                        f"degradation.")
@@ -394,8 +521,16 @@ def auto_mixed_precision(network, amp_level="O0", dtype=mstype.float16):
         else:
             network.to_float(dtype)
             network = _OutputTo32(network)
+    elif amp_level == "auto":
+        white_list = [(prim.__name__, AMP_PRIM_ARG_TABLE[prim]) for prim in AMP_AUTO_WHITE_LIST]
+        black_list = [(prim.__name__, AMP_PRIM_ARG_TABLE[prim]) for prim in AMP_AUTO_BLACK_LIST]
+        # set amp_strategy attribute for the object
+        amp_strategy = create_amp_strategy(AmpLevel.AmpAuto, dtype, white_list, black_list)
+        setattr(network, "amp_strategy", amp_strategy)
+        # set amp_strategy context decorator for the object
+        network = _set_amp_decorator(network, AmpLevel.AmpAuto, dtype, white_list, black_list)
     else:
-        raise ValueError("The amp level {} is not supported".format(amp_level))
+        raise ValueError(f"The amp level {amp_level} is not supported")
 
     setattr(network, "_amp_level", amp_level)
 
@@ -435,6 +570,10 @@ _config_level = {
     "O3": {
         "keep_batchnorm_fp32": False,
         "cast_model_type": mstype.float16,
+        "loss_scale_manager": None},
+    "auto": {
+        "keep_batchnorm_fp32": False,
+        "cast_model_type": mstype.float32,
         "loss_scale_manager": None}}
 
 
@@ -459,19 +598,10 @@ def _check_kwargs(key_words):
 def _check_level(level, boost_level):
     """Check level."""
     if not isinstance(level, str):
-        raise TypeError("The argument `level` must be a string in ['O0', 'O1', 'O2', 'O3', 'auto'], \
-                         but got type {}.".format(type(level)))
+        raise TypeError(f"The argument `level` must be a string in ['O0', 'O1', 'O2', 'O3', 'auto'],"
+                        f"but got type {type(level)}.")
     validator.check('level', level, "", ['O0', 'O1', 'O2', 'O3', 'auto'], validator.IN)
     validator.check('boost_level', boost_level, "", ['O0', 'O1', 'O2'], validator.IN)
-
-    if level == "auto":
-        device_target = context.get_context('device_target')
-        if device_target == "GPU":
-            level = "O2"
-        elif device_target == "Ascend":
-            level = "O3"
-        else:
-            raise ValueError("Level `auto` only support when `device_target` is GPU or Ascend.")
 
     enable_boost = False
     if boost_level in ["O1", "O2"]:
@@ -497,7 +627,8 @@ def _add_loss_network(network, loss_fn, cast_model_type):
             return self._loss_fn(F.mixed_precision_cast(mstype.float32, out), label)
 
     validator.check_value_type('loss_fn', loss_fn, nn.Cell)
-    if cast_model_type == mstype.float16:
+    if cast_model_type in (mstype.float16, mstype.bfloat16) or \
+       (hasattr(network, "_amp_level") and getattr(network, "_amp_level") in ("O2", "O3", "auto")):
         network = WithLossCell(network, loss_fn)
     else:
         network = nn.WithLossCell(network, loss_fn)
@@ -553,20 +684,10 @@ def build_train_network(network, optimizer, loss_fn=None, level='O0', boost_leve
             Default: ``None`` .
         level (str): Supports ['O0', 'O1', 'O2', 'O3', 'auto']. Default: ``'O0'`` .
 
-            - 'O0': Do not change.
-            - 'O1': Cast the operators in white_list to float16, the remaining operators are kept in float32.
-              The operators in the whitelist: [Conv1d, Conv2d, Conv3d, Conv1dTranspose, Conv2dTranspose,
-              Conv3dTranspose, Dense, LSTMCell, RNNCell, GRUCell, MatMul, BatchMatMul, PReLU, ReLU, Ger].
-            - 'O2': Cast network to float16, keep `mindspore.nn.BatchNorm` series interface,
-              :class:`mindspore.nn.LayerNorm` and `loss_fn` (if set) run in float32, using dynamic loss scale.
-            - 'O3': Cast network to float16, with additional property `keep_batchnorm_fp32=False` .
-            - 'auto': Set to level to recommended level in different devices. Set level to 'O2' on GPU, Set
-              level to 'O3' Ascend. The recommended level is chosen by the export experience, not applicable to all
-              scenarios. User should specify the level for special network.
+            For details on amp level, refer to :func:`mindspore.amp.auto_mixed_precision`.
 
-            'O2' is recommended on GPU, 'O3' is recommended on Ascend. Property of `keep_batchnorm_fp32`,
-            `cast_model_type` and `loss_scale_manager` determined by `level` setting may be overwritten by settings in
-            `kwargs`.
+            Property of `keep_batchnorm_fp32`, `cast_model_type` and `loss_scale_manager` determined by `level`
+            setting may be overwritten by settings in `kwargs`.
 
         boost_level (str): Option for argument `level` in `mindspore.boost` , level for boost mode
             training. Supports ['O0', 'O1', 'O2']. Default: ``'O0'`` .
@@ -647,7 +768,7 @@ def build_train_network(network, optimizer, loss_fn=None, level='O0', boost_leve
 
 def get_white_list():
     """
-    Provide a copy of internal white list used by auto mixed precision.
+    Provide a copy of internal white list used by auto mixed precision with `amp_level` set to ``O1``.
 
     The current built-in whitelist contents are:
 
@@ -685,7 +806,7 @@ def get_white_list():
 
 def get_black_list():
     """
-    Provide a copy of internal black list used by auto mixed precision.
+    Provide a copy of internal black list used by auto mixed precision with `amp_level` set to ``O2``.
 
     The current built-in blacklist contents are:
 
@@ -708,7 +829,6 @@ def get_black_list():
 
 def custom_mixed_precision(network, *, white_list=None, black_list=None, dtype=mstype.float16):
     """
-    Custom mixed precision by setting whitelist or blacklist.
     When the `white_list` is provided, primitives and cells in `white_list` will perform the precision conversion.
     When the `black_list` is provided, cells that are not in `black_list` will perform the pereision conversion.
     Only one of `white_list` and `black_list` should be provided.
