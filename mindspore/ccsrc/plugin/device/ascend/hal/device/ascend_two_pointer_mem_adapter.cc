@@ -17,7 +17,6 @@
 #include "plugin/device/ascend/hal/device/ascend_two_pointer_mem_adapter.h"
 #include <algorithm>
 #include <set>
-#include "hal/device/ascend_memory_adapter.h"
 #include "ir/func_graph.h"
 #include "utils/ms_context.h"
 #include "utils/convert_utils_base.h"

@@ -45,8 +45,8 @@ class TestLoadSimulationAPI : public UT::Common {
 /// Description: load simulation memory.
 /// Expectation: load simulation memory and can not throw exception.
 TEST_F(TestLoadSimulationAPI, test_load_simulation_memory) {
-  AscendMemAdapter::GetInstance().Initialize();
-  auto addr = AscendMemAdapter::GetInstance().MallocStaticDevMem(1000);
+  AscendMemAdapter::GetInstance()->Initialize();
+  auto addr = AscendMemAdapter::GetInstance()->MallocStaticDevMem(1000);
   EXPECT_NE(addr, nullptr);
 }
 
