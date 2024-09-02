@@ -230,6 +230,9 @@ void GatherHash(const std::pair<mindspore::kernel::KernelTensor *, bool> &);
 void GatherHash(const std::vector<mindspore::kernel::KernelTensor *> &);
 void GatherHash(const device::DeviceAddressPtr &);
 
+void GatherHash(const mindspore::tensor::BaseTensorPtr &);
+void GatherHash(const std::optional<tensor::BaseTensorPtr> &);
+void GatherHash(const std::vector<tensor::BaseTensorPtr> &);
 void GatherHash(const mindspore::tensor::TensorPtr &);
 void GatherHash(const std::optional<tensor::TensorPtr> &);
 void GatherHash(const std::vector<tensor::TensorPtr> &);

@@ -510,6 +510,22 @@ void GatherHash(const std::vector<tensor::TensorPtr> &tensors) {
   }
 }
 
+void GatherHash(const mindspore::tensor::BaseTensorPtr &tensor) { Gather(tensor); }
+
+void GatherHash(const std::optional<tensor::BaseTensorPtr> &tensor) {
+  // "ot" for optional tensor
+  MemcpyToBuf("ot", 2);
+  if (tensor.has_value()) {
+    GatherHash(tensor.value());
+  }
+}
+
+void GatherHash(const std::vector<tensor::BaseTensorPtr> &tensors) {
+  for (const auto &tensor : tensors) {
+    GatherHash(tensor);
+  }
+}
+
 void GatherHash(const ScalarPtr &scalar) {
   if (scalar == nullptr) {
     MemcpyToBuf("None", 5);

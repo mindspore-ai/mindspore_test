@@ -74,26 +74,6 @@ ReleaseHugeMem OpApiDefaultResource::release_mem_func() {
   return release_mem_func_;
 }
 
-ShapeVector UpdateOutputShape(const aclTensor *tensor) {
-  MS_EXCEPTION_IF_NULL(tensor);
-  static const auto op_api_func = GetOpApiFunc("aclGetViewShape");
-  if (op_api_func == nullptr) {
-    MS_LOG(EXCEPTION) << "aclGetViewShape not in " << GetOpApiLibName() << ", please check!";
-  }
-  using aclGetViewShapeFunc = int (*)(const aclTensor *tensor, int64_t **view_dims, uint64_t *view_dims_num);
-  auto aclGetViewShape = reinterpret_cast<aclGetViewShapeFunc>(op_api_func);
-  int64_t *view_dims = nullptr;
-  uint64_t view_dim_num = 0;
-  auto ret = aclGetViewShape(tensor, &view_dims, &view_dim_num);
-  if (ret != 0) {
-    MS_LOG(EXCEPTION) << "aclGetViewShape failed!";
-  }
-  ShapeVector output_shape(view_dims, view_dims + view_dim_num);
-  delete view_dims;
-  view_dims = nullptr;
-  return output_shape;
-}
-
 std::vector<std::string> ParseCustomPriority(std::string file_name) {
   std::ifstream file(file_name);
   std::string line;

@@ -598,6 +598,62 @@ inline std::vector<void *> GetAddr(const std::pair<KernelTensor *, bool> &tensor
   return {tensor_pair.first->device_ptr()};
 }
 
+inline std::vector<void *> GetAddr(const std::vector<tensor::BaseTensorPtr> &tensor_list) {
+  std::vector<void *> addr_list;
+  for (const auto &tensor : tensor_list) {
+    MS_EXCEPTION_IF_NULL(tensor);
+    (void)addr_list.emplace_back(tensor->device_address()->GetMutablePtr());
+  }
+  return addr_list;
+}
+
+inline std::vector<void *> GetAddr(const tensor::BaseTensorPtr &tensor) {
+  MS_EXCEPTION_IF_NULL(tensor);
+  return {tensor->device_address()->GetMutablePtr()};
+}
+
+inline std::vector<void *> GetAddr(const device::DeviceAddressPtr &device_address) {
+  return {device_address->GetMutablePtr()};
+}
+
+inline std::vector<void *> GetAddr(const std::pair<tensor::BaseTensorPtr, bool> &tensor_pair) {
+  MS_EXCEPTION_IF_NULL(tensor_pair.first);
+  return {tensor_pair.first->device_address()->GetMutablePtr()};
+}
+
+inline std::vector<void *> GetAddr(const std::optional<tensor::BaseTensorPtr> &tensor) {
+  if (tensor.has_value()) {
+    return {tensor.value()->device_address()->GetMutablePtr()};
+  }
+  return {};
+}
+
+inline std::vector<void *> GetAddr(const std::vector<tensor::TensorPtr> &tensor_list) {
+  std::vector<void *> addr_list;
+  for (const auto &tensor : tensor_list) {
+    MS_EXCEPTION_IF_NULL(tensor);
+    (void)addr_list.emplace_back(tensor->device_address()->GetMutablePtr());
+  }
+  return addr_list;
+}
+
+inline std::vector<void *> GetAddr(const tensor::TensorPtr &tensor) {
+  MS_EXCEPTION_IF_NULL(tensor);
+  return {tensor->device_address()->GetMutablePtr()};
+}
+
+inline std::vector<void *> GetAddr(const std::pair<tensor::TensorPtr, bool> &tensor_pair) {
+  MS_EXCEPTION_IF_NULL(tensor_pair.first);
+  return {tensor_pair.first->device_address()->GetMutablePtr()};
+}
+
+inline std::vector<void *> GetAddr(const std::optional<tensor::TensorPtr> &tensor) {
+  if (tensor.has_value()) {
+    return {tensor.value()->device_address()->GetMutablePtr()};
+  }
+  return {};
+}
+
 template <typename T>
 std::vector<void *> GetAddr(T) {
   return {};
@@ -809,11 +865,58 @@ void ReleaseConvertTypes(const Tuple &t) {
   CallRelease(t, std::make_index_sequence<size>{});
 }
 
+inline ShapeVector UpdateOutputShape(const aclTensor *tensor) {
+  MS_EXCEPTION_IF_NULL(tensor);
+  static const auto op_api_func = GetOpApiFunc("aclGetViewShape");
+  if (op_api_func == nullptr) {
+    MS_LOG(EXCEPTION) << "aclGetViewShape not in " << GetOpApiLibName() << ", please check!";
+  }
+  using aclGetViewShapeFunc = int (*)(const aclTensor *tensor, int64_t **view_dims, uint64_t *view_dims_num);
+  auto aclGetViewShape = reinterpret_cast<aclGetViewShapeFunc>(op_api_func);
+  int64_t *view_dims = nullptr;
+  uint64_t view_dim_num = 0;
+  auto ret = aclGetViewShape(tensor, &view_dims, &view_dim_num);
+  if (ret != 0) {
+    MS_LOG(EXCEPTION) << "aclGetViewShape failed!";
+  }
+  ShapeVector output_shape(view_dims, view_dims + view_dim_num);
+  delete view_dims;
+  view_dims = nullptr;
+  return output_shape;
+}
+
+inline void GetShape(aclTensor *tensor, std::vector<ShapeVector> *shape_list) {
+  shape_list->emplace_back(UpdateOutputShape(tensor));
+}
+
+template <typename T>
+void GetShape(T param, std::vector<ShapeVector> *shape_list) {
+  shape_list->emplace_back(ShapeVector());
+}
+
+template <typename Tuple, size_t... I>
+void CallFillShape(std::vector<ShapeVector> *shape_list, Tuple t, std::index_sequence<I...>) {
+  (void)std::initializer_list<int>{(GetShape(std::get<I>(t), shape_list), 0)...};
+}
+
+template <typename Tuple>
+std::vector<ShapeVector> FillShapeListFromTuple(const Tuple &t) {
+  static constexpr auto size = std::tuple_size<Tuple>::value;
+  std::vector<ShapeVector> shape_list;
+  CallFillShape(&shape_list, t, std::make_index_sequence<size>{});
+  return shape_list;
+}
+
 inline void UpdateAddress(aclOpExecutor *executor, aclTensor *tensor, const std::vector<void *> &address, size_t *idx) {
   MS_EXCEPTION_IF_NULL(executor);
   static const auto aclSetTensorAddr = GET_OP_API_FUNC(aclSetTensorAddr);
   if (aclSetTensorAddr == nullptr) {
     MS_LOG(EXCEPTION) << "aclSetTensorAddr is nullptr";
+    return;
+  }
+
+  if (address.size() < 1) {
+    MS_LOG(DEBUG) << "UpdateAddress when address list size is: " << address.size();
     return;
   }
   if (address[0] == nullptr) {

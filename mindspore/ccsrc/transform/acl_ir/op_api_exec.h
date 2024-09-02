@@ -39,7 +39,7 @@ using InitHugeMemThreadLocal = std::function<int(void *, bool)>;
 using UnInitHugeMemThreadLocal = std::function<void(void *, bool)>;
 using ReleaseHugeMem = std::function<void(void *, bool)>;
 using ReleaseCallBack = std::function<void()>;
-using ProcessCache = std::function<void(bool, const std::vector<std::vector<void *>> &)>;
+using ProcessCache = std::function<std::vector<ShapeVector>(bool, const std::vector<std::vector<void *>> &, bool)>;
 using RunApiFunc = int (*)(void *, uint64_t, transform::aclOpExecutor *, const aclrtStream);
 
 class OpApiDefaultResource {
@@ -132,8 +132,6 @@ auto call(Function f, Tuple t) {
   return call(f, t, std::make_index_sequence<size>{});
 }
 
-// Get output shape from acl tensor.
-ShapeVector UpdateOutputShape(const aclTensor *tensor);
 void LoadOpApiLib();
 void AclnnInit();
 void AclnnFinalize();
@@ -142,12 +140,18 @@ template <typename T>
 class GraphCache {
  public:
   explicit GraphCache(transform::aclOpExecutor *executor, T &&param) : executor_(executor), converted_params_(param) {}
-  void operator()(bool is_release = false, const std::vector<std::vector<void *>> &address_list = {}) {
+  std::vector<ShapeVector> operator()(bool is_release = false,
+                                      const std::vector<std::vector<void *>> &address_list = {},
+                                      bool get_shapes = false) {
+    if (get_shapes) {
+      return FillShapeListFromTuple(converted_params_);
+    }
     if (is_release) {
       ReleaseConvertTypes(converted_params_);
     } else {
       UpdateAddressForTensor(executor_, address_list, converted_params_);
     }
+    return {};
   }
 
  private:
@@ -326,7 +330,7 @@ class ApiCachePool {
 #define UPDATE_TENSOR_FOR_LAUNCH(process_cache, ...)                     \
   do {                                                                   \
     const auto &address_list = transform::GetTensorAddress(__VA_ARGS__); \
-    process_cache(false, address_list);                                  \
+    process_cache(false, address_list, false);                           \
   } while (false)
 
 // Async run op.
