@@ -13,6 +13,7 @@
 # limitations under the License.
 # ============================================================================
 """Record profiler information"""
+import glob
 import os
 import stat
 
@@ -167,3 +168,40 @@ class ProfilerInfo:
             return
         ProfilerInfo._profiler_info_dict = load_info_dict
         os.chmod(ProfilerInfo._file_path, stat.S_IREAD | stat.S_IWRITE)
+
+    @staticmethod
+    def get_rank_id(profiler_dir: str):
+        """
+        Function Description:
+            Get rank id from profiler_info_*.json
+        Parameter:
+            profiler_dir: the directory path of profiler data, eg: rank_0/profiler
+        Return:
+            str type rank id
+        """
+        prof_info_path = os.path.join(profiler_dir, "profiler_info_*.json")
+        prof_info_path = glob.glob(prof_info_path)
+        if not prof_info_path:
+            logger.warning("Cannot find profiler_info.json in the profiler directory.")
+            return "-1"
+
+        info_data = FileManager.read_json_file(prof_info_path[0])
+        return info_data.get("rank_id", "-1")
+
+    @staticmethod
+    def get_device_id(prof_dir: str):
+        """
+        Function Description:
+            Get device id from PROF_XXX dir
+        Parameter:
+            prof_dir: the directory path of PROF_XXX
+        Return:
+            str type device id
+        """
+        device_dir = os.path.join(prof_dir, "device_*")
+        device_dir = glob.glob(device_dir)
+        if not device_dir:
+            logger.warning("Cannot find device_XXX in the %s.", prof_dir)
+            return "-1"
+
+        return device_dir[0].split("device_")[-1]

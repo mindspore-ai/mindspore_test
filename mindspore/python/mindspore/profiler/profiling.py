@@ -14,7 +14,6 @@
 # ============================================================================
 """Profiling api file."""
 import os
-import shutil
 import stat
 import time
 import json
@@ -463,11 +462,6 @@ class Profiler:
         ...     # Profiler end
         ...     profiler.analyse()
     """
-
-    _hwts_output_filename_target = "output_format_data_hwts_"
-    _opcompute_output_filename_target = "output_op_compute_time_"
-    _aicpu_op_output_filename_target = "output_data_preprocess_aicpu_"
-    _has_analysed = False
     _has_initialized = False
     _ascend_profiling_options = ""
     _ascend_job_id = ""
@@ -545,20 +539,6 @@ class Profiler:
                 self.start()
 
     @staticmethod
-    def _get_prof_rank(prof_path: str):
-        """get rank id."""
-        sub_dirs = os.listdir(os.path.realpath(prof_path))
-        info_json_path = ""
-        for sub_dir in sub_dirs:
-            if sub_dir.startswith("device_"):
-                device_id = sub_dir.split("_")[-1]
-                info_json_path = os.path.join(prof_path, sub_dir, f"info.json.{device_id}")
-        if not os.path.exists(info_json_path):
-            return -1
-        rank_id, _ = Profiler._parse_info_json(info_json_path)
-        return rank_id
-
-    @staticmethod
     def _check_output_path(output_path):
         """Checking path validity."""
         try:
@@ -606,28 +586,6 @@ class Profiler:
             logger.warning('Get the drvVersion error, use single-export mode instead. detail : %s', err)
             return None
 
-    @staticmethod
-    def _parse_info_json(info_file):
-        """
-        Parse info log file, get the rank id and device id of the job.
-        Args:
-             input_file (str): The file path of the parse info log file.
-
-        Returns:
-            rank id, device id
-        """
-        with open(info_file, "r") as f:
-            info_dict = json.load(f)
-
-            rank_id = info_dict.get("rank_id", 0)
-            dev_info = info_dict.get("DeviceInfo", [])
-            dev_id = dev_info[0].get("id", -1)
-
-            if int(rank_id) < 0:
-                rank_id = 0
-
-            return str(rank_id), str(dev_id)
-
     @classmethod
     def offline_analyse(cls, path: str, pretty=False, step_list=None, data_simplification=True):
         """
@@ -660,11 +618,10 @@ class Profiler:
         rank_list = []
         for parent_path in profiler_parent_path_list:
             profiler_path = os.path.join(parent_path, Constant.PROFILER_DIR)
-            cann_path = PathManager.get_cann_path(profiler_path)
-            rank = cls._get_prof_rank(cann_path)
-            if int(rank) < 0:
-                logger.error(f"Unable to get a valid rank ID in the cann path directory: {cann_path}")
-            rank_list.append(rank)
+            rank_id = ProfilerInfo.get_rank_id(profiler_path)
+            if int(rank_id) < 0:
+                logger.error(f"Unable to get a valid rank ID in the profiler directory: {profiler_path}")
+            rank_list.append(rank_id)
         # start offline analyse
         if len(profiler_parent_path_list) == 1:
             PathManager.check_directory_path_writeable(profiler_parent_path_list[0])
@@ -1509,25 +1466,23 @@ class Profiler:
 
         dev_id = self._rank_id if self._device_target == DeviceTarget.ASCEND.value else self._dev_id
         ascend_profiler_output_path = os.path.join(ascend_ms_path, 'ASCEND_PROFILER_OUTPUT')
-        FileManager.make_dir_safety(ascend_profiler_output_path)
+        PathManager.make_dir_safety(ascend_profiler_output_path)
 
         source_profiler_info_path = os.path.join(self._output_path, f"profiler_info_{dev_id}.json")
         target_profiler_info_path = os.path.join(ascend_ms_path, f"profiler_info_{dev_id}.json")
-        shutil.copy(source_profiler_info_path, target_profiler_info_path)
+        PathManager.copy_file(source_profiler_info_path, target_profiler_info_path)
 
         source_profiler_metadata_path = os.path.join(self._output_path, f"profiler_metadata.json")
-        if os.path.exists(source_profiler_metadata_path):
-            target_profiler_metadata_path = os.path.join(ascend_ms_path, f"profiler_metadata.json")
-            shutil.copy(source_profiler_metadata_path, target_profiler_metadata_path)
+        target_profiler_metadata_path = os.path.join(ascend_ms_path, f"profiler_metadata.json")
+        PathManager.copy_file(source_profiler_metadata_path, target_profiler_metadata_path)
 
         source_timeline_path = os.path.join(self._output_path, f"ascend_timeline_display_{dev_id}.json")
         target_timeline_path = os.path.join(ascend_profiler_output_path, f"trace_view.json")
-        shutil.copy(source_timeline_path, target_timeline_path)
+        PathManager.copy_file(source_timeline_path, target_timeline_path)
 
         src_op_mem_file = os.path.join(self._output_path, f"operator_memory_{dev_id}.csv")
-        if os.path.exists(src_op_mem_file):
-            dst_op_mem_file = os.path.join(ascend_profiler_output_path, f"operator_memory.csv")
-            shutil.copy(src_op_mem_file, dst_op_mem_file)
+        dst_op_mem_file = os.path.join(ascend_profiler_output_path, f"operator_memory.csv")
+        PathManager.copy_file(src_op_mem_file, dst_op_mem_file)
 
         ms_output_path = os.path.abspath(
             os.path.join(source_path, os.path.pardir, 'mindstudio_profiler_output'))
@@ -1535,7 +1490,13 @@ class Profiler:
         src_static_op_mem_path = glob.glob(static_op_mem_path)
         if src_static_op_mem_path:
             dst_static_op_mem_file = os.path.join(ascend_profiler_output_path, f"static_op_mem.csv")
-            shutil.copy(src_static_op_mem_path[0], dst_static_op_mem_file)
+            PathManager.copy_file(src_static_op_mem_path[0], dst_static_op_mem_file)
+
+        src_op_statistics_path = os.path.join(ms_output_path, "op_statistic_*.csv")
+        src_op_statistics_path = glob.glob(src_op_statistics_path)
+        if src_op_statistics_path:
+            dst_op_statistics_path = os.path.join(ascend_profiler_output_path, f"op_statistic.csv")
+            PathManager.copy_file(src_op_statistics_path[0], dst_op_statistics_path)
 
         self._ascend_graph_cluster_analyse(source_path, ascend_profiler_output_path)
         self._ascend_graph_communicate_analyse(source_path, ascend_profiler_output_path)
@@ -1653,10 +1614,13 @@ class Profiler:
             ProfilerInfo.set_export_flag(flag)
             op_summary, op_statistic, steptrace, steptrace_model \
                 = _ascend_graph_msprof_analyse(mindstudio_profiler_output)
+            kernels = self._ascend_timeline_analyse(op_summary, steptrace, source_path, mindstudio_profiler_output)
+
             if isinstance(op_statistic, np.ndarray) and op_statistic.shape[0] == 0 or \
                     not isinstance(op_statistic, np.ndarray) and not op_statistic:
+                logger.warning('Op statistic data is empty!')
                 return
-            kernels = self._ascend_timeline_analyse(op_summary, steptrace, source_path, mindstudio_profiler_output)
+
             launch_ops = self._get_kernel_op_map(op_summary, kernels)
             self._ascend_op_analyse(op_summary, op_statistic, self._dynamic_status, launch_ops)
             graph_ids = np.unique(op_summary['Model ID']).tolist()
@@ -1873,7 +1837,7 @@ class Profiler:
         """Get profiling job id, which was generated by ada service.
 
         Returns:
-            str, profiling job id.
+            str, profiling job id, eg: PROF_XXX/device_*.
         """
 
         if offline_path:
@@ -1902,18 +1866,17 @@ class Profiler:
                                "profiler will ignore this job dir.", job_dir)
                 continue
 
-            prof_rank_id, prof_device_id = self._parse_info_json(info_file_path)
+            prof_rank_id = ProfilerInfo.get_rank_id(self._output_path)
+            prof_device_id = ProfilerInfo.get_device_id(prof_dir)
             job_start_time = self._parse_job_start_time(prof_dir)
 
             if offline_path:
-                if self._rank_id != prof_rank_id:
-                    continue
                 self._start_time = int(job_start_time)
             else:
                 if self._dev_id != prof_device_id and self._rank_id != prof_rank_id:
-                    logger.debug("Find profiling find job path %s, but not current training device id. "
-                                 "Current training rank id %s, but job path rank id: %s, "
-                                 "profiler will ignore this job dir.", job_dir, self._rank_id, prof_rank_id)
+                    logger.warning("Find profiling find job path %s, but not current training device id. "
+                                   "Current training rank id %s, but job path rank id: %s, "
+                                   "profiler will ignore this job dir.", job_dir, self._rank_id, prof_rank_id)
                     continue
 
                 if job_start_time < self._start_time:
@@ -2076,10 +2039,6 @@ class Profiler:
             logger.warning(f"For '{self.__class__.__name__}', the parameter profile_framework must be one of ['memory',"
                            f" 'time', 'all', None], but got {self._profile_framework}, it will be set to 'all'.")
             self._profile_framework = "all"
-        if not isinstance(self._data_simplification, bool):
-            logger.warning(f"For '{self.__class__.__name__}', the parameter data_simplification must be bool, "
-                           f"but got type {type(self._data_simplification)}, it will be set to True.")
-            self._data_simplification = True
 
         if not isinstance(self._data_simplification, bool):
             logger.warning(f"For '{self.__class__.__name__}', the parameter data_simplification must be bool, "

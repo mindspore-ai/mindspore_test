@@ -17,6 +17,8 @@ import os
 import re
 import shutil
 import warnings
+
+from mindspore import log as logger
 from mindspore.profiler.parser.ascend_analysis.constant import Constant
 
 
@@ -65,6 +67,31 @@ class PathManager:
         if os.path.isdir(path):
             msg = "Invalid input path is a directory path: {path}"
             raise RuntimeError(msg)
+
+    @classmethod
+    def copy_file(cls, src_path: str, dst_path: str):
+        """
+        Function Description:
+            copy file safety
+        Parameter:
+            src_path: file source path
+            dst_path: file destination path
+        Exception Description:
+            when src_path is link throw exception
+        """
+        if not os.path.exists(src_path):
+            logger.warning("The source file does not exist: %s", src_path)
+            return
+
+        cls.check_input_file_path(src_path)
+        dst_dir = os.path.dirname(dst_path)
+        cls.check_directory_path_writeable(dst_dir)
+
+        try:
+            shutil.copy2(src_path, dst_path)
+        except Exception as err:
+            msg = f"Failed to copy path: {src_path}"
+            raise RuntimeError(msg) from err
 
     @classmethod
     def check_path_owner_consistent(cls, path: str):
