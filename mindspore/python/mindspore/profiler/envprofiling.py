@@ -95,8 +95,8 @@ def parse_pubilc_args(options):
     if not isinstance(options.get("data_process"), bool):
         logger.warning(
             "The 'data_process' parameter of the environment variable MS_PROFILE_OPTIONS must be bool,"
-            f" but got type {type(options.get('data_process'))}, it will be set to true.")
-        options["data_process"] = True
+            f" but got type {type(options.get('data_process'))}, it will be set to False.")
+        options["data_process"] = False
     if not isinstance(options.get("op_time"), bool):
         logger.warning(
             "The 'op_time' parameter of the environment variable MS_PROFILE_OPTIONS must be bool,"
@@ -150,8 +150,8 @@ def parse_ascend_args(options):
     if not isinstance(options.get("parallel_strategy"), bool):
         logger.warning(
             "The 'parallel_strategy' parameter of the environment variable MS_PROFILE_OPTIONS must be bool,"
-            f" but got type {type(options.get('parallel_strategy'))}, it will be set to true.")
-        options["parallel_strategy"] = True
+            f" but got type {type(options.get('parallel_strategy'))}, it will be set to false.")
+        options["parallel_strategy"] = False
     if not isinstance(options.get("profile_communication"), bool):
         logger.warning(
             "The 'profile_communication' parameter of the environment variable MS_PROFILE_OPTIONS must be bool,"
@@ -193,11 +193,12 @@ def combine_profile_options(profiling_options):
         "aicore_metrics": profiling_options.get("aicore_metrics", 0),
         "l2_cache": profiling_options.get("l2_cache", False),
         "sync_enable": profiling_options.get("sync_enable", True),
-        "data_process": profiling_options.get("data_process", True),
+        "data_process": profiling_options.get("data_process", False),
         "timeline_limit": profiling_options.get("timeline_limit", 500),
-        "parallel_strategy": profiling_options.get("parallel_strategy", True),
+        "parallel_strategy": profiling_options.get("parallel_strategy", False),
         'op_time': profiling_options.get("op_time", True),
-        'profile_framework': profiling_options.get("profile_framework", "all")
+        'profile_framework': profiling_options.get("profile_framework", "all"),
+        'with_stack': profiling_options.get("with_stack", False)
     }
     combine_options = parse_profiling_args(config_options)
     if combine_options.get("start"):
@@ -250,7 +251,8 @@ def profiler_check_env():
              sync_enable=config.get("sync_enable", False),
              op_time=config.get("op_time", False),
              timeline_limit=config.get("timeline_limit", 500),
-             profile_framework=config.get("profile_framework", "all"))
+             profile_framework=config.get("profile_framework", "all"),
+             with_stack=config.get("with_stack", False))
 
 
 profiler_check_env()

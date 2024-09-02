@@ -16,7 +16,7 @@ mindspore.Profiler
         - **op_time** (bool, 可选) -（Ascend/GPU）表示是否收集算子性能数据，默认值： ``True`` 。
         - **profile_communication** (bool, 可选) -（仅限Ascend）表示是否在多设备训练中收集通信性能数据。当值为 ``True`` 时，收集这些数据。在单卡训练中，该参数的设置无效。使用此参数时， `op_time` 必须设置成 ``True`` 。默认值： ``False`` 。
         - **profile_memory** (bool, 可选) -（仅限Ascend）表示是否收集Tensor内存数据。当值为 ``True`` 时，收集这些数据。使用此参数时， `op_time` 必须设置成 ``True`` 。默认值： ``False`` 。
-        - **parallel_strategy** (bool, 可选) -（仅限Ascend）表示是否收集并行策略性能数据， 默认值： ``True`` 。
+        - **parallel_strategy** (bool, 可选) -（仅限Ascend）表示是否收集并行策略性能数据， 默认值： ``False`` 。
         - **start_profile** (bool, 可选) - 该参数控制是否在Profiler初始化的时候开启数据采集。默认值： ``True`` 。
         - **aicore_metrics** (int, 可选) -（仅限Ascend）收集的AICORE性能数据类型，使用此参数时， `op_time` 必须设置成 ``True`` ，且值必须包含在[-1, 0, 1, 2, 3, 4, 5, 6]，默认值： ``0`` ，每种类型包含的数据项如下：
 
@@ -37,7 +37,7 @@ mindspore.Profiler
           - True: 同步方式，在把算子发送到GPU之前，在CPU端记录开始时间戳。然后在算子执行完毕返回到CPU端后，再记录结束时间戳。算子耗时为两个时间戳的差值。
           - False: 异步方式，算子耗时为从CPU发送到GPU的耗时。这种方式能减少因增加Profiler对整体训练时间的影响。
 
-        - **data_process** (bool, 可选) -（Ascend/GPU）表示是否收集数据准备性能数据，默认值： ``True`` 。
+        - **data_process** (bool, 可选) -（Ascend/GPU）表示是否收集数据准备性能数据，默认值： ``False`` 。
         - **timeline_limit** (int, 可选) -（Ascend/GPU）设置限制timeline文件存储上限大小（单位M），使用此参数时， `op_time` 必须设置成 ``True`` 。默认值： ``500`` 。
         - **profile_framework** (str, 可选) -（Ascend/GPU）需要收集的host信息类别，可选参数为["all", "time", "memory", None]，如果设置值不为None，会在指定的profiler目录下生成子目录host_info，存放收集到的Host侧的内存和时间文件。默认值：``"all"``。
 
@@ -45,7 +45,7 @@ mindspore.Profiler
           - "time": 只记录host侧时间戳。
           - "memory": 只记录host侧内存占用情况。
           - None: 不记录host信息。
-        - **host_stack** (bool, 可选) - （Ascend）表示是否收集框架host侧调用栈的数据，使用此参数时， `op_time` 必须设置成 ``True`` 。默认值： ``True`` 。
+        - **with_stack** (bool, 可选) - （Ascend）表示是否收集Python侧的调用栈的数据，此数据在timeline中采用火焰图的形式呈现，使用此参数时， `op_time` 必须设置成 ``True`` 。默认值： ``False`` 。
         - **data_simplification** (bool, 可选) - （仅限Ascend）是否开启数据精简，开启后将在导出性能数据后删除FRAMEWORK目录数据以及其他多余数据，仅保留profiler的交付件以及PROF_XXX目录下的原始性能数据，以节省空间。默认值: ``True`` 。
 
     异常：

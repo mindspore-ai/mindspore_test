@@ -28,8 +28,8 @@ class CpuProfiler(ProfilerInterface):
     def __init__(
             self,
             op_time: bool = True,
-            host_stack: bool = False,
-            data_process: bool = True,
+            with_stack: bool = False,
+            data_process: bool = False,
             output_path: str = "./data",
             profile_memory: bool = False,
             profile_framework: str = "all",

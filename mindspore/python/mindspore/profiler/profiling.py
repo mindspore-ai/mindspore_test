@@ -106,7 +106,7 @@ class DeviceSupportParam(Enum):
     ASCEND = [
         'start', 'start_profile', 'output_path', 'data_process', 'timeline_limit', 'profile_memory',
         'parallel_strategy', 'profile_communication', 'aicore_metrics', 'l2_cache', 'hbm_ddr', 'pcie', 'op_time',
-        'ascend_job_id', 'profile_framework', 'host_stack', 'profiler_level', 'data_simplification'
+        'ascend_job_id', 'profile_framework', 'with_stack', 'profiler_level', 'data_simplification'
     ]
 
 
@@ -364,7 +364,7 @@ class Profiler:
         profile_memory (bool, optional): (Ascend only) Whether to collect tensor memory data, collect when ``True`` .
             When using this parameter, `op_time` must be set to True. Default: ``False`` .
         parallel_strategy (bool, optional): (Ascend only) Whether to collect parallel policy performance data.
-            Default value: ``True`` .
+            Default value: ``False`` .
         start_profile (bool, optional): The start_profile parameter controls whether to enable or disable performance
             data collection based on conditions. Default: ``True`` .
         aicore_metrics (int, optional): (Ascend only) Types of AICORE performance data collected, when using this
@@ -396,7 +396,7 @@ class Profiler:
             - False: The asynchronous way. The duration of the operator is that of sending from the CPU to the GPU.
               This method can reduce the impact of adding profiler on overall training time.
         data_process (bool, optional): (Ascend/GPU) Whether to collect data to prepare performance data.
-            Default value: ``True`` .
+            Default value: ``False`` .
         timeline_limit (int, optional): (Ascend/GPU) Set the maximum storage size of the timeline file (unit M).
             When using this parameter, `op_time` must be set to True. Default value: ``500`` .
         profile_framework (str, optional): (Ascend/GPU) The host information to collect, it must be one of
@@ -412,8 +412,9 @@ class Profiler:
             If set to True, only the delivery of profiler and the original performance data in the PROF_XXX
             directory are retained to save disk space.
             Default value: ``True`` .
-        host_stack (bool, optional): (Ascend) Whether to collect frame host call stack data.
-            Default value: ``True`` .
+        with_stack (bool, optional): (Ascend) Whether to collect frame host call stack data on the Python side. This
+            data is presented in the form of a flame graph in the timeline. When using this parameter, the parameter
+            op_time must be set to True. Default value: ``False`` .
 
     Raises:
         RuntimeError: When the version of CANN does not match the version of MindSpore,
@@ -521,7 +522,7 @@ class Profiler:
         self._pretty_json = False
         self._analyse_only = kwargs.get("analyse_only", False)
         self._data_simplification = kwargs.get("data_simplification", True)
-        self._host_stack = True
+        self._with_stack = False
         if self._msprof_enable:
             return
         self._start_time = int(time.time() * 1e6)  # us
@@ -915,7 +916,7 @@ class Profiler:
         ProfilerInfo.set_profiling_start_time(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
         ProfilerInfo.set_system_cnt(c_expression.get_clock_syscnt())
         ProfilerInfo.set_system_time(int(c_expression.get_clock_time() * 1e3)) # cast us to ns
-        if self._host_stack:
+        if self._with_stack:
             _framework_profiler_enable_mi()
 
     def stop(self):
@@ -1201,7 +1202,7 @@ class Profiler:
             "op_time": self.ENABLE_STATUS if self._op_time else self.DISABLE_STATUS,
             "profile_framework": self._profile_framework,
             "profiler_level": self.profiler_level.value if self.profiler_level else self.DISABLE_STATUS,
-            "host_stack": "on" if self._host_stack else "off"
+            "with_stack": "on" if self._with_stack else "off"
         }
         ProfilerInfo.set_profiling_options(profiling_options)
         return profiling_options
@@ -1275,11 +1276,11 @@ class Profiler:
             pcie_enable = False
         self._pcie = self.ENABLE_STATUS if pcie_enable else self.DISABLE_STATUS
 
-        self._parallel_strategy = kwargs.pop("parallel_strategy", True)
+        self._parallel_strategy = kwargs.pop("parallel_strategy", False)
         if not isinstance(self._parallel_strategy, bool):
             logger.warning(f"For '{self.__class__.__name__}', the parameter parallel_strategy must be bool, "
-                           f"but got type {type(self._parallel_strategy)}, it will be set to True.")
-            self._parallel_strategy = True
+                           f"but got type {type(self._parallel_strategy)}, it will be set to False.")
+            self._parallel_strategy = False
 
         self.profiler_level = kwargs.pop("profiler_level", None)
         if self.profiler_level and not isinstance(self.profiler_level, ProfilerLevel):
@@ -2054,11 +2055,11 @@ class Profiler:
                            f"but got type {type(self._op_time)}, it will be set to True.")
             self._op_time = True
 
-        self._data_process = kwargs.pop("data_process", True)
+        self._data_process = kwargs.pop("data_process", False)
         if not isinstance(self._data_process, bool):
             logger.warning(f"For '{self.__class__.__name__}', the parameter data_process must be bool, "
-                           f"but got type {type(self._data_process)}, it will be set to True.")
-            self._data_process = True
+                           f"but got type {type(self._data_process)}, it will be set to False.")
+            self._data_process = False
 
         timeline_limit = kwargs.pop("timeline_limit", 500)
         if isinstance(timeline_limit, bool) or not isinstance(timeline_limit, int):
@@ -2085,11 +2086,11 @@ class Profiler:
                            f"but got type {type(self._data_simplification)}, it will be set to True.")
             self._data_simplification = True
 
-        self._host_stack = kwargs.pop("host_stack", True)
-        if not isinstance(self._host_stack, bool):
-            logger.warning(f"For '{self.__class__.__name__}', the parameter host_stack must be bool, but got "
-                           f"type {type(self._host_stack)}, it will be set to True.")
-            self._host_stack = True
+        self._with_stack = kwargs.pop("with_stack", False)
+        if not isinstance(self._with_stack, bool):
+            logger.warning(f"For '{self.__class__.__name__}', the parameter with_stack must be bool, but got "
+                           f"type {type(self._with_stack)}, it will be set to False.")
+            self._with_stack = False
 
     def _host_info_analyse(self):
         """
