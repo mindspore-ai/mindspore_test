@@ -47,6 +47,8 @@
 #include "tools/converter/parser/unify_format.h"
 #include "tools/converter/quantizer/quant_param_holder.h"
 #include "tools/optimizer/common/gllo_utils.h"
+#include "tools/converter/parser/unused_node_remove_pass.h"
+#include "tools/converter/parser/einsum_adjust.h"
 
 using mindspore::converter::kFmkTypeTf;
 namespace mindspore {
@@ -146,6 +148,44 @@ STATUS SetFloatTensorInfo(const tensorflow::TensorProto &tensor_proto, tensor::T
   if (tensor_proto.tensor_content().size() == shape_size * sizeof(float)) {
     const auto addr = reinterpret_cast<const float *>(tensor_proto.tensor_content().data());
     if (::memcpy_s(tensor_data, (*tensor_info)->Size(), addr, shape_size * sizeof(float)) != EOK) {
+      MS_LOG(ERROR) << "memcpy_s failed";
+      return RET_ERROR;
+    }
+  }
+
+  return RET_OK;
+}
+
+STATUS SetFloat16TensorInfo(const tensorflow::TensorProto &tensor_proto, tensor::TensorPtr *tensor_info) {
+  auto shape_size = GetShapeSize(tensor_proto);
+  auto &tensor_shape = tensor_proto.tensor_shape();
+  ShapeVector shape_vector{};
+  for (int i = 0; i < tensor_shape.dim_size(); i++) {
+    shape_vector.push_back(tensor_shape.dim(i).size());
+  }
+  *tensor_info = CreateTensorInfo(nullptr, 0, shape_vector, kNumberTypeFloat16);
+  if (*tensor_info == nullptr) {
+    MS_LOG(ERROR) << "create tensor data failed.";
+    return RET_ERROR;
+  }
+  auto tensor_data = reinterpret_cast<int16_t *>((*tensor_info)->data_c());
+  if (tensor_data == nullptr) {
+    MS_LOG(ERROR) << "new data failed";
+    return RET_ERROR;
+  }
+
+  if (tensor_proto.half_val_size() == 1) {
+    for (int i = 0; i < shape_size; i++) {
+      tensor_data[i] = tensor_proto.half_val(0);
+    }
+  }
+  if (INT_MUL_OVERFLOW_THRESHOLD(shape_size, sizeof(int16_t), SIZE_MAX)) {
+    MS_LOG(ERROR) << "data_size overflow.";
+    return RET_ERROR;
+  }
+  if (tensor_proto.tensor_content().size() == shape_size * sizeof(int16_t)) {
+    const auto addr = tensor_proto.tensor_content().data();
+    if (::memcpy_s(tensor_data, (*tensor_info)->Size(), addr, shape_size * sizeof(int16_t)) != EOK) {
       MS_LOG(ERROR) << "memcpy_s failed";
       return RET_ERROR;
     }
@@ -430,6 +470,8 @@ STATUS TFModelParser::SetTensorInfoFromType(const tensorflow::TensorProto &tenso
     return ConvertConstVariant(tensor_proto, tensor_info);
   } else if (type == kObjectTypeString) {
     return SetStringTensorInfo(tensor_proto, tensor_info);
+  } else if (type == kNumberTypeFloat16) {
+    return SetFloat16TensorInfo(tensor_proto, tensor_info);
   } else {
     MS_LOG(ERROR) << "Unsupported dataType: " << type;
     return RET_ERROR;
@@ -1377,6 +1419,12 @@ int TFModelParser::TF2AnfAdjust(const std::set<FuncGraphPtr> &all_func_graphs,
   for (const auto &func_graph : all_func_graphs) {
     if (!TfInputAdjust::Adjust(func_graph)) {
       MS_LOG(ERROR) << "Do TfInputAdjust failed.";
+      return RET_ERROR;
+    }
+    auto einsum_adjust = std::make_shared<EinsumAdjust>();
+    MS_CHECK_TRUE_MSG(einsum_adjust != nullptr, RET_NULL_PTR, "einsum_adjust is nullptr.");
+    if (!einsum_adjust->Adjust(func_graph)) {
+      MS_LOG(ERROR) << "Adjust einsum failed!";
       return RET_ERROR;
     }
     auto remove_ineffective_control_flow = std::make_shared<RemoveIneffectiveControlFlow>();

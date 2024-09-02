@@ -19,6 +19,7 @@
 #include <memory>
 #include <deque>
 #include <unordered_set>
+#include <stack>
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "include/errorcode.h"
@@ -29,7 +30,8 @@
 #include "tools/lite_exporter/fetch_content.h"
 
 namespace mindspore::opt {
-STATUS FunctionalizeCond::GetSwitchBranchType(const CNodePtr &switch_cnode, BranchType *branch_type) {
+STATUS FunctionalizeCond::GetSwitchBranchType(const CNodePtr &switch_cnode, const std::unordered_set<AnfNodePtr> &link,
+                                              BranchType *branch_type) {
   MS_ASSERT(switch_cnode != nullptr);
   MS_ASSERT(branch_type != nullptr);
   auto manager = fg_->manager();
@@ -38,13 +40,16 @@ STATUS FunctionalizeCond::GetSwitchBranchType(const CNodePtr &switch_cnode, Bran
     return RET_ERROR;
   }
   auto node_users = manager->node_users()[switch_cnode];
-  if (node_users.size() != 1) {  // only one output of switch is referenced in cond
-    MS_LOG(ERROR) << "switch's node users is not correct";
-    return RET_ERROR;
+  AnfNodePtr tuple_get_item = nullptr;
+  for (auto &node_usr : node_users) {
+    if (link.find(node_usr.first) == link.end()) {
+      continue;
+    }
+    tuple_get_item = node_usr.first;
+    break;
   }
-  auto node_user = node_users.front();
-  auto tuple_get_item = node_user.first;
-  if (!utils::isa<CNodePtr>(tuple_get_item) || !CheckPrimitiveType(tuple_get_item, prim::kPrimTupleGetItem)) {
+  if (tuple_get_item == nullptr || !utils::isa<CNodePtr>(tuple_get_item) ||
+      !CheckPrimitiveType(tuple_get_item, prim::kPrimTupleGetItem)) {
     MS_LOG(ERROR) << "switch's node user is not TupleGetItem";
     return RET_ERROR;
   }
@@ -91,9 +96,10 @@ void FunctionalizeCond::CheckBranchIsEffective(const CNodePtr &switch_cnode, Bra
 }
 
 STATUS FunctionalizeCond::BranchSubGraphAddNodes(const FuncGraphPtr &graph, const AnfNodePtr &root_node,
-                                                 BranchType branch_type) {
+                                                 BranchType *branch_type) {
   CHECK_NULL_RETURN(graph);
   CHECK_NULL_RETURN(root_node);
+  CHECK_NULL_RETURN(branch_type);
   std::deque<AnfNodePtr> q;
   std::unordered_set<AnfNodePtr> vis;
   q.push_back(root_node);
@@ -104,12 +110,11 @@ STATUS FunctionalizeCond::BranchSubGraphAddNodes(const FuncGraphPtr &graph, cons
     vis.insert(node);
     if (FunctionalizeControlOpPass::IsSwitch(node)) {
       auto cnode = utils::cast<CNodePtr>(node);
-      BranchType this_type;
-      if (GetSwitchBranchType(cnode, &this_type) != RET_OK || this_type != branch_type) {
+      if (GetSwitchBranchType(cnode, vis, branch_type) != RET_OK) {
         MS_LOG(ERROR) << "switch node in branch " << branch_type << " is not correct";
         return RET_ERROR;
       }
-      CheckBranchIsEffective(cnode, branch_type);
+      CheckBranchIsEffective(cnode, *branch_type);
       continue;
     }
     if (utils::isa<ParameterPtr>(node)) {
@@ -176,9 +181,11 @@ STATUS FunctionalizeCond::IdentifySubgraphInput(const FuncGraphPtr &graph, std::
   return RET_OK;
 }
 
-FuncGraphPtr FunctionalizeCond::CreateBranchGraph(const AnfNodePtr &node, std::string name, BranchType branch_type) {
+FuncGraphPtr FunctionalizeCond::CreateBranchGraph(const AnfNodePtr &node, const std::string &else_name,
+                                                  const std::string &then_name, BranchType *branch_type) {
   MS_CHECK_TRUE_RET(node != nullptr, nullptr);
-  auto graph = FunctionalizeControlOpPass::NewFuncGraph(name, converter::kFmkTypeTf);
+  MS_CHECK_TRUE_RET(branch_type != nullptr, nullptr);
+  auto graph = FunctionalizeControlOpPass::NewFuncGraph(else_name, converter::kFmkTypeTf);
   if (graph == nullptr) {
     MS_LOG(ERROR) << "new graph Partial Node return nullptr";
     return nullptr;
@@ -188,6 +195,8 @@ FuncGraphPtr FunctionalizeCond::CreateBranchGraph(const AnfNodePtr &node, std::s
   if (status != RET_OK) {
     return nullptr;
   }
+  auto name = (*branch_type == kElseBranch) ? else_name : then_name;
+  graph->set_attr("graph_name", MakeValue(name));
 
   if (!CheckPrimitiveType(node, prim::kPrimSwitch)) {  // graph is not empty
     auto return_prim_ptr = std::make_shared<ops::Return>();
@@ -250,6 +259,46 @@ STATUS FunctionalizeCond::VerifyPredictNode() {
   return RET_OK;
 }
 
+// Search effective input of merge node
+STATUS FunctionalizeCond::SearchEffectiveInputIdx(const CNodePtr &begin_node, const AnfNodePtr &target_node,
+                                                  int32_t *index) {
+  MS_CHECK_TRUE_RET(begin_node != nullptr, RET_ERROR);
+  MS_CHECK_TRUE_RET(target_node != nullptr, RET_ERROR);
+  MS_CHECK_TRUE_RET(index != nullptr, RET_ERROR);
+  std::stack<AnfNodePtr> node_stack;
+  std::unordered_set<AnfNodePtr> visited;
+  node_stack.push(begin_node);
+  int32_t cur_index = 0;
+  while (!node_stack.empty()) {
+    auto node = node_stack.top();
+    CHECK_NULL_RETURN(node);
+    for (size_t i = 1; i < begin_node->size(); ++i) {
+      if (node == begin_node->input(i)) {
+        cur_index = i;
+        break;
+      }
+    }
+    if (node == target_node) {
+      *index = cur_index;
+      return RET_OK;
+    }
+    node_stack.pop();
+    if (!utils::isa<CNodePtr>(node)) {
+      MS_LOG(ERROR) << "input node is not cnode!";
+      return RET_ERROR;
+    }
+    auto cnode = utils::cast<CNodePtr>(node);
+    visited.insert(node);
+    for (size_t i = 1; i < cnode->size(); ++i) {
+      if (visited.find(cnode->input(i)) != visited.end()) {
+        continue;
+      }
+      node_stack.push(cnode->input(i));
+    }
+  }
+  return RET_ERROR;
+}
+
 STATUS FunctionalizeCond::DegenerateNonControlFlow(const FuncGraphPtr &else_graph, const FuncGraphPtr &then_graph) {
   MS_ASSERT(else_graph != nullptr && then_graph != nullptr);
   std::vector<AnfNodePtr> nodes;
@@ -258,39 +307,43 @@ STATUS FunctionalizeCond::DegenerateNonControlFlow(const FuncGraphPtr &else_grap
   auto then_nodes = then_graph->nodes();
   nodes.insert(nodes.end(), then_nodes.begin(), then_nodes.end());
   for (auto &node : nodes) {
-    MS_CHECK_TRUE_MSG(node != nullptr, lite::RET_ERROR, "find a node is a nullptr.");
+    MS_CHECK_TRUE_MSG(node != nullptr, lite::RET_ERROR, "find a node is a nullptr!");
     if (!utils::isa<ValueNode>(node)) {
       node->set_func_graph(fg_);
     }
   }
   auto manager = fg_->manager();
-  MS_CHECK_TRUE_MSG(manager != nullptr, lite::RET_ERROR, "manager must be not a nullptr.");
+  MS_CHECK_TRUE_MSG(manager != nullptr, lite::RET_ERROR, "manager must be not a nullptr!");
   CNodePtr switch_op{nullptr};
-  int merge_input_index = 1;
   if (then_is_effective_ && !else_is_effective_) {
     switch_op = then_switch_;
-    merge_input_index = kInputIndexTwo;
   } else if (else_is_effective_ && !then_is_effective_) {
     switch_op = else_switch_;
   } else {
     return lite::RET_ERROR;
   }
-  MS_CHECK_TRUE_MSG(switch_op != nullptr, lite::RET_NULL_PTR, "switch node is a nullptr.");
-  MS_CHECK_TRUE_MSG(switch_op->size() >= kInputSizeThree, lite::RET_ERROR, "switch's inputs-size is invalid.");
+  MS_CHECK_TRUE_MSG(switch_op != nullptr, lite::RET_NULL_PTR, "switch node is a nullptr!");
+  MS_CHECK_TRUE_MSG(switch_op->size() >= kInputSizeThree, lite::RET_ERROR, "switch's inputs-size is invalid!");
   auto node_users = manager->node_users()[switch_op];
   for (auto &node_user : node_users) {
     auto post_node = node_user.first;
     if (!CheckPrimitiveType(post_node, prim::kPrimTupleGetItem)) {
-      MS_LOG(ERROR) << "switch's post-node must be TupleGetItem.";
+      MS_LOG(ERROR) << "switch's post-node must be TupleGetItem!";
       return lite::RET_ERROR;
     }
     if (!manager->Replace(post_node, switch_op->input(1))) {
-      MS_LOG(ERROR) << "Manager: Replace unused switch-node failed.";
+      MS_LOG(ERROR) << "Manager: Replace unused switch-node failed!";
       return lite::RET_ERROR;
     }
   }
+  int merge_input_index = 0;
+  if (SearchEffectiveInputIdx(merge_node_, switch_op->input(1), &merge_input_index) != RET_OK) {
+    MS_LOG(ERROR) << "SearchEffectiveInputIdx failed!";
+    return lite::RET_ERROR;
+  }
+
   if (!manager->Replace(merge_node_, merge_node_->input(merge_input_index))) {
-    MS_LOG(ERROR) << "Manager: Replace unused merge-node failed.";
+    MS_LOG(ERROR) << "Manager: Replace unused merge-node failed!";
     return lite::RET_ERROR;
   }
   return lite::RET_OK;
@@ -298,7 +351,7 @@ STATUS FunctionalizeCond::DegenerateNonControlFlow(const FuncGraphPtr &else_grap
 
 STATUS FunctionalizeCond::Process() {
   if (fg_ == nullptr || merge_node_ == nullptr || merge_node_->size() != kInputSizeThree) {
-    MS_LOG(ERROR) << "fg or merge is not correct";
+    MS_LOG(ERROR) << "fg or merge is not correct!";
     return RET_ERROR;
   }
 
@@ -309,20 +362,29 @@ STATUS FunctionalizeCond::Process() {
   auto else_branch_name = merge_node_->fullname_with_scope() + "-partial-if-else";
   auto then_branch_name = merge_node_->fullname_with_scope() + "-partial-then-else";
 
-  auto else_branch = CreateBranchGraph(merge_node_->input(1), else_branch_name, kElseBranch);
-  if (else_branch == nullptr) {
-    MS_LOG(ERROR) << "create else branch failed";
+  BranchType branch1_type;
+  auto branch1 = CreateBranchGraph(merge_node_->input(1), else_branch_name, then_branch_name, &branch1_type);
+  if (branch1 == nullptr) {
+    MS_LOG(ERROR) << "create first branch failed!";
     return RET_ERROR;
   }
-  auto then_branch = CreateBranchGraph(merge_node_->input(kInputIndexTwo), then_branch_name, kThenBranch);
-  if (then_branch == nullptr) {
-    MS_LOG(ERROR) << "create then branch failed";
+  BranchType branch2_type;
+  auto branch2 =
+    CreateBranchGraph(merge_node_->input(kInputIndexTwo), else_branch_name, then_branch_name, &branch2_type);
+  if (branch2 == nullptr) {
+    MS_LOG(ERROR) << "create second branch failed!";
     return RET_ERROR;
   }
+  if (branch1_type == branch2_type) {
+    MS_LOG(ERROR) << "The merge op is invalid, because the two branch is same!";
+    return RET_ERROR;
+  }
+  auto else_branch = (branch1_type == kElseBranch) ? branch1 : branch2;
+  auto then_branch = (branch1_type == kElseBranch) ? branch2 : branch1;
   if (else_is_effective_ ^ then_is_effective_) {
     auto status = DegenerateNonControlFlow(else_branch, then_branch);
     if (status != lite::RET_OK) {
-      MS_LOG(ERROR) << "Degenerate to non-control-flow failed.";
+      MS_LOG(ERROR) << "Degenerate to non-control-flow failed!";
     }
     return status;
   }
@@ -343,7 +405,7 @@ STATUS FunctionalizeCond::Process() {
 
   auto if_node = CreateNewIf(else_branch, then_branch);
   if (if_node == nullptr) {
-    MS_LOG(ERROR) << "create if node error";
+    MS_LOG(ERROR) << "create if node error!";
     return RET_ERROR;
   }
   if_node->set_abstract(merge_node_->abstract()->Clone());

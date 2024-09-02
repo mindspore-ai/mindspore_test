@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_LITE_TOOLS_CONVERTER_PARSER_ONNX_ONNX_EINSUM_ADJUST_H_
-#define MINDSPORE_LITE_TOOLS_CONVERTER_PARSER_ONNX_ONNX_EINSUM_ADJUST_H_
+#ifndef MINDSPORE_LITE_TOOLS_CONVERTER_PARSER_EINSUM_ADJUST_H_
+#define MINDSPORE_LITE_TOOLS_CONVERTER_PARSER_EINSUM_ADJUST_H_
 #include <string>
 #include <vector>
 #include "include/backend/optimizer/pass.h"
 #include "include/backend/optimizer/optimizer.h"
 
 namespace mindspore::lite {
-class OnnxEinsumAdjust {
+class EinsumAdjust {
  public:
-  static bool Adjust(const FuncGraphPtr &func_graph);
+  bool Adjust(const FuncGraphPtr &func_graph);
 };
 }  // namespace mindspore::lite
-#endif  // MINDSPORE_LITE_TOOLS_CONVERTER_PARSER_ONNX_ONNX_EINSUM_ADJUST_H_
+#endif  // MINDSPORE_LITE_TOOLS_CONVERTER_PARSER_EINSUM_ADJUST_H_

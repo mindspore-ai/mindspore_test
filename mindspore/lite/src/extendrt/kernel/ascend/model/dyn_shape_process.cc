@@ -141,7 +141,9 @@ bool DynShapeProcess::CheckDynamicDims(const std::vector<ShapeVector> &new_shape
                   << original_shapes.size() << "].";
     return false;
   }
+  size_t shape_size = 0;
   for (size_t i = 0; i < new_shapes.size(); i++) {
+    shape_size += new_shapes[i].size();
     if (new_shapes[i].size() != original_shapes[i].size()) {
       MS_LOG(ERROR) << "new shapes[" << i << "] size: " << new_shapes[i].size() << ", not equal original shapes[" << i
                     << "] size: " << original_shapes[i].size();
@@ -153,6 +155,10 @@ bool DynShapeProcess::CheckDynamicDims(const std::vector<ShapeVector> &new_shape
         return false;
       }
     }
+  }
+  if (shape_size > ACL_MAX_DIM_CNT) {
+    MS_LOG(ERROR) << "The sum of all inputs dims must be less than 128! Current size:" << shape_size;
+    return false;
   }
 
   return true;
