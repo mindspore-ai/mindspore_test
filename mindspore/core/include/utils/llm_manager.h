@@ -21,6 +21,7 @@
 #include <memory>
 #include <map>
 #include <vector>
+#include <set>
 #include "mindapi/base/macros.h"
 #include "ir/meta_tensor.h"
 #include "utils/log_adapter.h"
@@ -40,62 +41,20 @@ class MS_CORE_API LLMManager {
   /// \brief Destructor.
   ~LLMManager() = default;
 
-  /// \brief Update the current round_up_max_batch_valid_length.
-  ///
-  /// \param[in] The max_batch_valid_length of an obj to be compiled.
-  /// \return The result of update, if no change, return false, if change, return true
-  bool update_round_up_max_batch_valid_length(int32_t max_seq_length);
-
-  /// \brief Get the current round_up_max_batch_valid_length.
-  ///
-  /// \return The current round_up_max_batch_valid_length.
-  int32_t get_current_round_up_max_batch_valid_length();
-
-  /// \brief Get the batch_valid_length_graph_input_index.
-  ///
-  /// \return The batch_valid_length_graph_input_index.
-  int32_t get_batch_valid_length_graph_input_index();
-
-  /// \brief Get the query_seq_length_graph_input_index.
-  ///
-  /// \return The query_seq_length_graph_input_index.
-  int32_t get_query_seq_length_graph_input_index();
-
-  bool enable_llm_seq_length() { return enable_llm_seq_length_; }
-
-  void set_current_batch_valid_length(const std::vector<int32_t> &batch_valid_length) {
-    current_batch_valid_length_ = batch_valid_length;
-  }
-
-  const std::vector<int32_t> &get_current_batch_valid_length() { return current_batch_valid_length_; }
-
-  void set_current_query_seq_length(const std::vector<int32_t> &query_seq_length) {
-    current_query_seq_length_ = query_seq_length;
-  }
-
-  const std::vector<int32_t> &get_current_query_seq_length() { return current_query_seq_length_; }
-
   tensor::TensorDataPtr get_graph_input(const std::string &name);
 
   void add_graph_input(const std::string &name, tensor::TensorDataPtr tensor);
 
   void reset_graph_inputs();
 
- private:
-  LLMManager();
+  void add_force_resize_kernel(const std::string &kernel_name);
 
-  void init();
+  bool need_force_resize(const std::string &kernel_name);
 
  private:
-  bool inited_{false};
-  bool enable_llm_seq_length_{false};
-  int32_t current_round_up_max_batch_valid_length{1024};
-  int32_t seq_length_level_size_{128};
-  int32_t batch_valid_length_graph_input_index_{-1};
-  int32_t query_seq_length_graph_input_index_{-1};
-  std::vector<int32_t> current_batch_valid_length_;
-  std::vector<int32_t> current_query_seq_length_;
+  bool force_resize_kernel_{false};
   std::map<std::string, tensor::TensorDataPtr> graph_inputs_map_;
+  std::set<std::string> force_resize_kernel_set_{};
 };
 }  // namespace mindspore
 #endif  // MINDSPORE_CORE_UTILS_LLM_MANAGER_H_

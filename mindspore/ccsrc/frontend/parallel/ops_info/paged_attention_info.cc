@@ -19,14 +19,18 @@
 
 namespace mindspore {
 namespace parallel {
-// PagedAttention has 5 inputs
-// query:         (batch, seq_len, hidden_size)
-// key_cache:     (block_size, num_blocks, num_head, head_dim)
-// value_cache:   (block_size, num_blocks, num_head, head_dim)
-// block_tables:  (batch, max_num_block_per_batch)
-// context_lens:  (batch * seq_len)
+// PagedAttention has 9 inputs
+// query:           (batch, seq_len, hidden_size)
+// key_cache:       (block_size, num_blocks, num_head, head_dim)
+// value_cache:     (block_size, num_blocks, num_head, head_dim)
+// block_tables:    (batch, max_num_block_per_batch)
+// context_lens:    (batch * seq_len)
+// antiquant_scale: (2, num_head * head_dim)
+// antiquant_offset:(2, num_head * head_dim)
+// attn_mask:       (num_tokens, max_kv_seq_len)
+// q_seq_lens:      (batch, )
 // ------------------------------
-// output:        (batch, seq_len, hidden_size)
+// output:          (batch, seq_len, hidden_size)
 
 // split strategy
 // num_blocks is not able to split
@@ -102,21 +106,50 @@ Status PagedAttentionInfo::InferDevMatrixShape() {
 }
 
 Status PagedAttentionInfo::InferTensorMap() {
+  auto input_strategies = strategy()->GetInputDim();
+
+  optional_inputs_.resize(input_value_.size(), true);
+  for (size_t index = 0; index < input_value_.size(); index++) {
+    auto optional_input_ptr = input_value_[index];
+    if (optional_input_ptr != nullptr && optional_input_ptr->isa<None>()) {
+      optional_inputs_[index] = false;
+    }
+  }
+  const int kQuantScaleIndex = 5;
+  const int kQuantOffsetIndex = 6;
+  const int kAttenMaskIndex = 7;
+  const int kQLensIndex = 8;
+
   Shape query_tensor_map{4, 1, 0};
   Shape cache_tensor_map{-1, -1, 0, -1};
   Shape block_tensor_map{4, -1};
   Shape context_tensor_map{-1};
-  Shape antiquant_tensor_map{-1, 0};
 
   inputs_tensor_map_.emplace_back(query_tensor_map);
   inputs_tensor_map_.emplace_back(cache_tensor_map);
   inputs_tensor_map_.emplace_back(cache_tensor_map);
   inputs_tensor_map_.emplace_back(block_tensor_map);
   inputs_tensor_map_.emplace_back(context_tensor_map);
-  constexpr size_t antiquant_input_size = 7;
-  if (strategy()->GetInputDim().size() == antiquant_input_size) {
+
+  if (optional_inputs_[kQuantScaleIndex]) {
+    Shape antiquant_tensor_map{-1, 0};
     inputs_tensor_map_.emplace_back(antiquant_tensor_map);
+  }
+  if (optional_inputs_[kQuantOffsetIndex]) {
+    Shape antiquant_tensor_map{-1, 0};
     inputs_tensor_map_.emplace_back(antiquant_tensor_map);
+  }
+  if (optional_inputs_[kAttenMaskIndex]) {
+    auto atten_mask_shape_size = input_strategies[inputs_tensor_map_.size()].size();
+    Shape atten_mask_map{-1, -1};
+    if (atten_mask_shape_size == 3) {
+      atten_mask_map.insert(atten_mask_map.begin(), 4);
+    }
+    inputs_tensor_map_.emplace_back(atten_mask_map);
+  }
+  if (optional_inputs_[kQLensIndex]) {
+    Shape qlen_tensor_map{-1};
+    inputs_tensor_map_.emplace_back(qlen_tensor_map);
   }
   Shape out_tensor_map{4, 1, 0};
   outputs_tensor_map_.emplace_back(out_tensor_map);

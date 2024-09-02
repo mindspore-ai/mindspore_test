@@ -36,6 +36,8 @@ enum PagedAttentionInputIndex : size_t {
   kPagedAttentionInputContextLensIndex,
   kPagedAttentionInputAntiquantScaleIndex,
   kPagedAttentionInputAntiquantOffsetIndex,
+  kPagedAttentionInputAttnMaskIndex,
+  kPagedAttentionInputQueryLensIndex,
   kPagedAttentionInputNumHeadIndex,
   kPagedAttentionInputScaleValueIndex,
   kPagedAttentionInputNumKVHeadIndex,
@@ -46,6 +48,9 @@ class OPS_API PagedAttentionFuncImpl : public OpFuncImpl {
  public:
   BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
   TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
+  std::set<int64_t> GetValueDependArgIndices() const override {
+    return {kPagedAttentionInputAttnMaskIndex, kPagedAttentionInputQueryLensIndex};
+  };
 };
 }  // namespace ops
 }  // namespace mindspore

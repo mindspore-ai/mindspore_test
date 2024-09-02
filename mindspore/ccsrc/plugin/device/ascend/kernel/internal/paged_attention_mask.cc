@@ -22,6 +22,12 @@ internal::OpParamPtr InternalPagedAttentionMask::CreateOpParam(const std::vector
                                                                const std::vector<KernelTensor *> &outputs) {
   internal::OpParamPtr param_ptr = std::make_shared<internal::OpParam>();
   param_ptr->opId = internal::OpId::PagedAttention;
+  internal::MixParam op_param;
+  op_param.maskType = internal::MixParam::MaskType::MASK_TYPE_NONE;
+  if (!(inputs[kIndex7]->GetType()->isa<TypeNone>())) {
+    op_param.maskType = internal::MixParam::MaskType::MASK_TYPE_ALIBI;
+  }
+  param_ptr->specificParam = op_param;
   return param_ptr;
 }
 
