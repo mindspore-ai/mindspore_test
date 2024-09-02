@@ -177,6 +177,7 @@ Status FusedInferAttentionScoreInfo::GetAttrs() {
   need_update_op_attrs_mode_ = sparse_mode_ != kSparseAllMask;
   input_layout_ = GetInputValueFromCNode<int64_t>(cnode_, ops::kFusedInferAttentionScoreInputLayoutIndex + 1);
   softmax_lse_flag_ = GetInputValueFromCNode<bool>(cnode_, ops::kFusedInferAttentionScoreInputSoftmaxLseFlagIndex + 1);
+  antiquant_mode_ = GetInputValueFromCNode<int64_t>(cnode_, ops::kFusedInferAttentionScoreInputAntiquantModeIndex + 1);
   if (CheckInputInRingAttention() != Status::SUCCESS) {
     return FAILED;
   }
@@ -314,6 +315,20 @@ Status FusedInferAttentionScoreInfo::InferDevMatrixShape() {
   return SUCCESS;
 }
 
+void FusedInferAttentionScoreInfo::InferOptionalTensorMapForAntiquant() {
+  if (antiquant_mode_ == 0) {
+    if (input_layout_ == FASInputLayoutMode::BSH) {
+      (void)inputs_tensor_map_new_.emplace_back(std::make_shared<ShapeValue>(Shape{-1, 0}));
+    } else if (input_layout_ == FASInputLayoutMode::BNSD) {
+      (void)inputs_tensor_map_new_.emplace_back(std::make_shared<ShapeValue>(Shape{-1, 0, -1, -1}));
+    } else if (input_layout_ == FASInputLayoutMode::BSND) {
+      (void)inputs_tensor_map_new_.emplace_back(std::make_shared<ShapeValue>(Shape{-1, -1, 0, -1}));
+    }
+  } else if (antiquant_mode_ == 1) {
+    (void)inputs_tensor_map_new_.emplace_back(std::make_shared<ShapeValue>(Shape{-1, -2, -1}));
+  }
+}
+
 void FusedInferAttentionScoreInfo::InferOptionalTensorMap() {
   int64_t pos_s = (sparse_mode_ == 0 ? dev_matrix_s1_dim_ : -1);
   if (atten_mask_rank_ == kRank2) {
@@ -341,16 +356,8 @@ void FusedInferAttentionScoreInfo::InferOptionalTensorMap() {
     if (optional_inputs_[index]) {
       if (index == ops::kFusedInferAttentionScoreInputAntiquantScaleIndex ||
           index == ops::kFusedInferAttentionScoreInputAntiquantOffsetIndex) {
-        if (input_layout_ == FASInputLayoutMode::BSH) {
-          (void)inputs_tensor_map_new_.emplace_back(std::make_shared<ShapeValue>(Shape{-1, 0}));
-          continue;
-        } else if (input_layout_ == FASInputLayoutMode::BNSD) {
-          (void)inputs_tensor_map_new_.emplace_back(std::make_shared<ShapeValue>(Shape{-1, 0, -1, -1}));
-          continue;
-        } else if (input_layout_ == FASInputLayoutMode::BSND) {
-          (void)inputs_tensor_map_new_.emplace_back(std::make_shared<ShapeValue>(Shape{-1, -1, 0, -1}));
-          continue;
-        }
+        InferOptionalTensorMapForAntiquant();
+        continue;
       }
       (void)inputs_tensor_map_new_.emplace_back(std::make_shared<ShapeValue>(optional_tensor_map_[index]));
     }
