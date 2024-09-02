@@ -36,13 +36,25 @@ const size_t kReshapeShapeIndex = 2;
 const size_t kStridedSliceBeginIndex = 2;
 const size_t kStridedSliceEndIndex = 3;
 const size_t kStridedSliceStrideIndex = 4;
-const size_t kTransposeDim = 4;
+const size_t k4DTransposeDim = 4;
+const size_t k5DTransposeDim = 5;
+const size_t k6DTransposeDim = 6;
 const size_t kEpIndexFromLeft = 2;
 const size_t kMinInputDimNum = 3;
 const size_t kMpIndexFromRight = 2;
 const size_t kEpIndexFromRight = 3;
+const size_t kBiasAddRightIndex = 2;
 
-const std::vector<int64_t> kTransposePerm = {2, 1, 0, 3};
+std::vector<int64_t> GetTransposePerm(size_t dim) {
+  if (dim == k4DTransposeDim) {
+    return {2, 1, 0, 3};
+  } else if (dim == k5DTransposeDim) {
+    return {3, 1, 2, 0, 4};
+  } else if (dim == k6DTransposeDim) {
+    return {4, 1, 2, 3, 0, 5};
+  }
+  return {};
+}
 
 CNodePtr CreateReshapeNode(const FuncGraphPtr &graph, const AnfNodePtr &input_node,
                            const std::vector<int64_t> &target_shape) {
@@ -127,6 +139,7 @@ struct AllReduceSliceToReduceScatterParams {
 
   size_t expert_parallel{1};
   size_t model_parallel{1};
+  size_t bias_add_replace_index{1};
 
   AllReduceSliceToReduceScatterParams(const FuncGraphManagerPtr &m, const FuncGraphPtr &g) : manager(m), graph(g) {}
 };
@@ -258,6 +271,35 @@ bool CheckCase1Strategy(const AllReduceSliceToReduceScatterParams &params) {
   return true;
 }
 
+size_t GetReshapeDim(const CNodePtr &reshape_cnode) {
+  auto default_dim = k4DTransposeDim;
+  if (reshape_cnode == nullptr) {
+    return default_dim;
+  }
+
+  auto shape_node = reshape_cnode->input(kReshapeShapeIndex);
+  if (shape_node == nullptr) {
+    return default_dim;
+  }
+
+  auto shape_value_node = shape_node->cast<ValueNodePtr>();
+  if (shape_value_node == nullptr) {
+    return default_dim;
+  }
+
+  auto shape_index_value = shape_value_node->value();
+  if (shape_index_value == nullptr) {
+    return default_dim;
+  }
+
+  auto shape_vector = GetValue<std::vector<int64_t>>(shape_index_value);
+  if (shape_vector.size() < k4DTransposeDim) {
+    return default_dim;
+  }
+
+  return shape_vector.size();
+}
+
 // case1:
 // BatchMatMul -> AllReduce （-> Reshape）-> StridedSlice change to
 // BatchMatMul -> Reshape -> Transpose -> ReduceScatter -> Transpose
@@ -266,6 +308,7 @@ void AllReduceSliceToReduceScatterCase1(const AllReduceSliceToReduceScatterParam
     return;
   }
 
+  auto transpose_dim = k4DTransposeDim;
   auto current_node = params.batch_matmul;
   if (params.reshape != nullptr) {
     auto origin_reshape_cnode = params.reshape->cast<CNodePtr>();
@@ -274,14 +317,16 @@ void AllReduceSliceToReduceScatterCase1(const AllReduceSliceToReduceScatterParam
     }
     current_node =
       CreateReshapeNode(params.graph, params.batch_matmul, origin_reshape_cnode->input(kReshapeShapeIndex));
+    transpose_dim = GetReshapeDim(origin_reshape_cnode);
   }
 
-  auto transpose_out = CreateTransposeNode(params.graph, current_node, kTransposePerm);
+  auto perm = GetTransposePerm(transpose_dim);
+  auto transpose_out = CreateTransposeNode(params.graph, current_node, perm);
   auto reduce_scatter_node = CreateReduceScatterNode(params.graph, transpose_out, params.allreduce);
   if (reduce_scatter_node == nullptr) {
     return;
   }
-  auto transpose_in = CreateTransposeNode(params.graph, reduce_scatter_node, kTransposePerm);
+  auto transpose_in = CreateTransposeNode(params.graph, reduce_scatter_node, perm);
   params.manager->Replace(params.anchor, transpose_in);
 }
 
@@ -341,7 +386,7 @@ bool CheckCase2Strategy(const AllReduceSliceToReduceScatterParams &params) {
   return true;
 }
 
-std::vector<int64_t> GetShapeFromStridedSliceNode(const AnfNodePtr stridedslice) {
+std::vector<int64_t> GetShapeFromStridedSliceNode(const AnfNodePtr &stridedslice) {
   std::vector<int64_t> target_shape{};
   if (stridedslice == nullptr) {
     return target_shape;
@@ -391,7 +436,7 @@ std::vector<int64_t> GetShapeFromStridedSliceNode(const AnfNodePtr stridedslice)
 std::vector<int64_t> GetTargetShapeFromStridedSlice(const AllReduceSliceToReduceScatterParams &params) {
   std::vector<int64_t> target_shape{};
   auto origin_shape = GetShapeFromStridedSliceNode(params.stridedslice);
-  if (origin_shape.size() <= kMpIndexFromRight || origin_shape.size() > kTransposeDim) {
+  if (origin_shape.size() <= kMpIndexFromRight) {
     return target_shape;
   }
 
@@ -402,12 +447,17 @@ std::vector<int64_t> GetTargetShapeFromStridedSlice(const AllReduceSliceToReduce
     return target_shape;
   }
 
-  size_t pad_dim = kTransposeDim - origin_shape.size();
-  for (size_t i = 0; i < pad_dim; ++i) {
-    target_shape.push_back(1);
+  size_t pad_dim = 0;
+  size_t final_dim = origin_shape.size();
+  if (origin_shape.size() < k4DTransposeDim) {
+    pad_dim = k4DTransposeDim - origin_shape.size();
+    for (size_t i = 0; i < pad_dim; ++i) {
+      target_shape.push_back(1);
+    }
+    final_dim = k4DTransposeDim;
   }
 
-  for (size_t i = pad_dim; i < kTransposeDim; ++i) {
+  for (size_t i = pad_dim; i < final_dim; ++i) {
     auto origin_shape_idx = i - pad_dim;
     if (origin_shape_idx == reshape_dim - 1) {
       target_shape.push_back(origin_shape[origin_shape_idx] * expert_parallel);
@@ -442,17 +492,18 @@ void AllReduceSliceToReduceScatterCase2(const AllReduceSliceToReduceScatterParam
   }
 
   auto target_shape = GetTargetShapeForReshape(params);
-  if (target_shape.size() != kTransposeDim) {
+  if (target_shape.size() != k4DTransposeDim) {
     return;
   }
+  auto perm = GetTransposePerm(target_shape.size());
   auto reshape_node = CreateReshapeNode(params.graph, params.batch_matmul, target_shape);
-  auto transpose_out = CreateTransposeNode(params.graph, reshape_node, kTransposePerm);
+  auto transpose_out = CreateTransposeNode(params.graph, reshape_node, perm);
   auto reduce_scatter_node = CreateReduceScatterNode(params.graph, transpose_out, params.allreduce);
   if (reduce_scatter_node == nullptr) {
     return;
   }
 
-  auto transpose_in = CreateTransposeNode(params.graph, reduce_scatter_node, kTransposePerm);
+  auto transpose_in = CreateTransposeNode(params.graph, reduce_scatter_node, perm);
 
   auto reshape_before_biasadd = target_shape;
   reshape_before_biasadd[1] = reshape_before_biasadd[1] / params.expert_parallel;
@@ -461,21 +512,21 @@ void AllReduceSliceToReduceScatterCase2(const AllReduceSliceToReduceScatterParam
   auto reshape_before_biasadd_node = CreateReshapeNode(params.graph, transpose_in, reshape_before_biasadd);
 
   if (params.final_reshape != nullptr) {
-    params.manager->Replace(bias_add_cnode->input(1), reshape_before_biasadd_node);
+    params.manager->Replace(bias_add_cnode->input(params.bias_add_replace_index), reshape_before_biasadd_node);
     params.manager->Replace(params.anchor, params.bias_add);
   } else {
     auto final_shape = GetShapeFromStridedSliceNode(params.strategy_stridedslice);
-    if (final_shape.size() < kTransposeDim) {
+    if (final_shape.size() < k4DTransposeDim) {
       return;
     }
 
     auto current_idx = final_shape.size() - kMpIndexFromRight;
     final_shape[current_idx] = final_shape[current_idx] / params.model_parallel;
-    current_idx = final_shape.size() - kTransposeDim;
+    current_idx = final_shape.size() - k4DTransposeDim;
     final_shape[current_idx] = final_shape[current_idx] / params.expert_parallel;
     auto final_reshape_node = CreateReshapeNode(params.graph, params.bias_add, final_shape);
 
-    params.manager->Replace(bias_add_cnode->input(1), reshape_before_biasadd_node);
+    params.manager->Replace(bias_add_cnode->input(params.bias_add_replace_index), reshape_before_biasadd_node);
     params.manager->Replace(params.anchor, final_reshape_node);
   }
 }
@@ -509,13 +560,22 @@ void FillCase2Params(AllReduceSliceToReduceScatterParams *params) {
   if (current_node == nullptr) {
     current_node = params->anchor;
   }
-  current_node = GetSingleUserPrimNode(params->manager, current_node, prim::kPrimAdd);
-  if (current_node == nullptr) {
+  auto bias_add_node = GetSingleUserPrimNode(params->manager, current_node, prim::kPrimAdd);
+  if (bias_add_node == nullptr) {
     return;
   }
-  params->bias_add = current_node;
 
-  current_node = GetSingleUserPrimNode(params->manager, current_node, prim::kPrimReshape);
+  params->bias_add = bias_add_node;
+  auto bias_add_cnode = bias_add_node->cast<CNodePtr>();
+  if (bias_add_cnode == nullptr) {
+    return;
+  }
+
+  if (bias_add_cnode->input(kBiasAddRightIndex) == current_node) {
+    params->bias_add_replace_index = kBiasAddRightIndex;
+  }
+
+  current_node = GetSingleUserPrimNode(params->manager, bias_add_node, prim::kPrimReshape);
   if (current_node == nullptr) {
     current_node = params->bias_add;
   }
@@ -604,13 +664,18 @@ bool AllReduceSliceToReduceScatter(const FuncGraphPtr &graph, const opt::Optimiz
         continue;
       }
 
+      auto current_node = GetSingleUserPrimNode(manager, stridedslice_node, prim::kPrimReshape);
+      if (current_node == nullptr) {
+        current_node = stridedslice_node;
+      }
+
       AllReduceSliceToReduceScatterParams params{manager, child_graph};
       params.batch_matmul = input_nodes[1];
       params.allreduce = node;
       params.reshape = reshape_node;
       params.stridedslice = stridedslice_node;
       params.anchor = stridedslice_node;
-      params.strategy_stridedslice = GetSingleUserPrimNode(manager, stridedslice_node, prim::kPrimStridedSlice);
+      params.strategy_stridedslice = GetSingleUserPrimNode(manager, current_node, prim::kPrimStridedSlice);
       if (params.strategy_stridedslice != nullptr) {
         AllReduceSliceToReduceScatterCase1(params);
       } else {
