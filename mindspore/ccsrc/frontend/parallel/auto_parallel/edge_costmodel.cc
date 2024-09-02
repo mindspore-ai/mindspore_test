@@ -477,7 +477,9 @@ int64_t Edge::GetReshapeSWCIndexByNextOpStrategy(const StrategyPtr &next_op_stra
     MS_LOG(EXCEPTION) << "The edge: " << edge_name_ << "'s prev_op is not a Reshape.";
   }
   if (next_op_->IsReshape()) {
-    MS_LOG(EXCEPTION) << "The edge: " << edge_name_ << " has two Reshapes, which is not supported currently.";
+    MS_LOG(WARNING) << "The edge: " << edge_name_
+                    << " has two Reshapes, please set the strategy for at least one, or it might cause error.";
+    return -1;
   }
   const auto &reshape_output_layout = next_op_->GetInputLayoutFromSWCByStrategy(next_op_stra, next_op_input_index_);
   MS_LOG(INFO) << prev_op_->name() << "'s output layout: " << reshape_output_layout.ToString();
@@ -500,7 +502,9 @@ int64_t Edge::GetReshapeSWCIndexByPrevOpStrategy(const StrategyPtr &prev_op_stra
     MS_LOG(EXCEPTION) << "The edge: " << edge_name_ << "'s next_op is not a Reshape.";
   }
   if (prev_op_->IsReshape()) {
-    MS_LOG(EXCEPTION) << "The edge: " << edge_name_ << " has two Reshapes, which is not supported currently.";
+    MS_LOG(WARNING) << "The edge: " << edge_name_
+                    << " has two Reshapes, please set the strategy for at least one, or it might cause error.";
+    return -1;
   }
   const auto &reshape_input_lyt = prev_op_->GetOutputLayoutFromSWCByStrategy(prev_op_stra, prev_op_output_index_);
   MS_LOG(INFO) << next_op_->name() << "'s input layout: " << reshape_input_lyt.ToString();
@@ -522,7 +526,9 @@ StrategyPtr Edge::GetPrevOpStrategyByReshapeSWCIndex(int64_t swc_index) {
     MS_LOG(EXCEPTION) << "The edge: " << edge_name_ << "'s next_op is not a Reshape.";
   }
   if (prev_op_->IsReshape()) {
-    MS_LOG(EXCEPTION) << "The edge: " << edge_name_ << " has two Reshapes, which is not supported currently.";
+    MS_LOG(WARNING) << "The edge: " << edge_name_
+                    << " has two Reshapes, please set the strategy for at least one, or it might cause error.";
+    return nullptr;
   }
   auto reshape_ptr = std::dynamic_pointer_cast<ReshapeInfo>(next_op_);
   const auto &reshape_input_lyt = reshape_ptr->GetInputLayoutBySWCIndex(swc_index);
@@ -535,7 +541,9 @@ StrategyPtr Edge::GetNextOpStrategyByReshapeSWCIndex(int64_t swc_index) {
     MS_LOG(EXCEPTION) << "The edge: " << edge_name_ << "'s next_op is not a Reshape.";
   }
   if (next_op_->IsReshape()) {
-    MS_LOG(EXCEPTION) << "The edge: " << edge_name_ << " has two Reshapes, which is not supported currently.";
+    MS_LOG(WARNING) << "The edge: " << edge_name_
+                    << " has two Reshapes, please set the strategy for at least one, or it might cause error.";
+    return nullptr;
   }
   auto reshape_ptr = std::dynamic_pointer_cast<ReshapeInfo>(prev_op_);
   const auto &reshape_output_lyt = reshape_ptr->GetOutputLayoutBySWCIndex(swc_index);
