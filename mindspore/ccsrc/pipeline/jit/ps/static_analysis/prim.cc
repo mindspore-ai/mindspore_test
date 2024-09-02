@@ -1517,7 +1517,7 @@ void CheckObjAttrValid(const TypePtr &data_type, const std::string &item_name, c
                       << "Try to use the '" << data_type_str << "." << item_name << "' externally "
                       << "such as initialized in the method '__init__' before assigning"
                       << ".\nFor more details, please refer to "
-                      << "https://www.mindspore.cn/docs/zh-CN/master/design/dynamic_graph_and_static_graph.html \n";
+                      << "https://www.mindspore.cn/docs/zh-CN/master/model_train/program_form/static_graph.html \n";
   }
 }
 
