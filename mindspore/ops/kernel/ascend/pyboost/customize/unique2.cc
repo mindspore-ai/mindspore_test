@@ -51,13 +51,13 @@ std::tuple<tensor::BaseTensorPtr, tensor::BaseTensorPtr, tensor::BaseTensorPtr> 
   auto return_value =
     LAUNCH_ACLNN_SYNC(aclnnUnique2, device_context, stream_id, input_tensor, sorted_imm, return_inverse_imm,
                       return_counts_imm, outputs[kIndex0], outputs[kIndex1], outputs[kIndex2]);
-  const auto &cache_func_ptr = std::get<2>(return_value);
+  const auto &cache_func_ptr = std::get<kIndex2>(return_value);
   auto all_acl_tensor = cache_func_ptr(false, {}, true);
 
   // update shape
-  auto output_real_shape0 = all_acl_tensor[4];
-  auto output_real_shape1 = all_acl_tensor[5];
-  auto output_real_shape2 = all_acl_tensor[6];
+  auto output_real_shape0 = all_acl_tensor[kIndex4];
+  auto output_real_shape1 = all_acl_tensor[kIndex5];
+  auto output_real_shape2 = all_acl_tensor[kIndex6];
   auto simple_infer_ptr = op->output_value_simple_info();
   simple_infer_ptr->shape_vector_ = ShapeArray{output_real_shape0, output_real_shape1, output_real_shape2};
 
