@@ -128,22 +128,14 @@ void GEBackendOptimization(const KernelGraphPtr &kernel_graph) {
   MS_LOG(DEBUG) << "Status record: end ascend backend optimize ge pass. graph id: " << kernel_graph->graph_id();
 }
 
-void GEBackendOptimizeACL(const KernelGraphPtr &kernel_graph) {
-  MS_EXCEPTION_IF_NULL(kernel_graph);
-  MS_LOG(DEBUG) << "Status record: start ascend backend optimize acl pass. graph id: " << kernel_graph->graph_id();
-  profiler::CollectHostInfo("Ascend", "Graph Optimization", "BackendOptimization_OptimizeACL", 0, 0, 0);
-  PROF_START(ascend_backend_optimize_acl);
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
-#ifdef ENABLE_DUMP_IR
-  if (context_ptr->CanDump(kIntroductory)) {
-    std::string file_name = "hwopt_d_before_opt_acl_graph_" + std::to_string(kernel_graph->graph_id()) + ".ir";
-    DumpIR(file_name, kernel_graph, true, kWholeStack);
+void AddCommFusionForKbk(const PassManagerPtr &opt_acl_pm) {
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  auto is_kbk = ms_context->IsKByKExecutorMode();
+  if (!is_kbk) {
+    MS_LOG(INFO) << "This not kbk mode. Do not do communication operation fusion.";
+    return;
   }
-#endif
-  auto optimizer = std::make_shared<GraphOptimizer>();
-  auto opt_acl_pm = std::make_shared<PassManager>("opt_acl_pm");
-  opt_acl_pm->AddPass(std::make_shared<SeedAdapter>());
 
   // Do communication op fusion before InsertTensorMoveForCommunication pass.
   // So these passes are before kernel select process, no need to generate kernel build info in them.
@@ -161,6 +153,26 @@ void GEBackendOptimizeACL(const KernelGraphPtr &kernel_graph) {
     opt_acl_pm->AddPass(std::make_shared<opt::ReduceScatterFusion>());
     opt_acl_pm->AddPass(std::make_shared<opt::SplitInputsForReduceScatter>());
   }
+}
+
+void GEBackendOptimizeACL(const KernelGraphPtr &kernel_graph) {
+  MS_EXCEPTION_IF_NULL(kernel_graph);
+  MS_LOG(DEBUG) << "Status record: start ascend backend optimize acl pass. graph id: " << kernel_graph->graph_id();
+  profiler::CollectHostInfo("Ascend", "Graph Optimization", "BackendOptimization_OptimizeACL", 0, 0, 0);
+  PROF_START(ascend_backend_optimize_acl);
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+#ifdef ENABLE_DUMP_IR
+  if (context_ptr->CanDump(kIntroductory)) {
+    std::string file_name = "hwopt_d_before_opt_acl_graph_" + std::to_string(kernel_graph->graph_id()) + ".ir";
+    DumpIR(file_name, kernel_graph, true, kWholeStack);
+  }
+#endif
+  auto optimizer = std::make_shared<GraphOptimizer>();
+  auto opt_acl_pm = std::make_shared<PassManager>("opt_acl_pm");
+  opt_acl_pm->AddPass(std::make_shared<SeedAdapter>());
+
+  AddCommFusionForKbk(opt_acl_pm);
 
   if (common::IsEnableRuntimeConfig(common::kRuntimeInsertTensorMove)) {
     opt_acl_pm->AddPass(std::make_shared<opt::InsertTensorMoveForHcclOpGe>());
