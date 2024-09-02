@@ -242,7 +242,7 @@ class DfGraphConvertor {
   void ConvertReshape(const CNodePtr &node);
   void ConvertHcomFusionId(const CNodePtr &node);
   void ConvertHcclNode(const CNodePtr &node);
-  void ConvertAllToAllv(const CNodePtr &node);
+  void ConvertAlltoAllVGE(const CNodePtr &node);
   void ConvertUniformReal(const CNodePtr &node);
   void ConvertUpdateState(const CNodePtr &node);
   void AddCommAttrForHcclNode(const CNodePtr &node, const OperatorPtr &converted_op) const;

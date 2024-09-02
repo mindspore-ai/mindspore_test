@@ -60,7 +60,7 @@ HcclResult HcclAdapter::HcclRecv(void *, uint64_t, HcclDataType, uint32_t, aclrt
 HcclResult HcclAdapter::HcclExecEnqueueOp(const ::HcomOperation &op_info, const HExecCallBack &callback) const {
   return HCCL_SUCCESS;
 }
-HcclResult HcclAdapter::HcclAllToAllv(void *, void *, hccl::HcclAllToAllVParams, HcclDataType, aclrtStream,
+HcclResult HcclAdapter::HcclAlltoAllV(void *, void *, hccl::HcclAllToAllVParams, HcclDataType, aclrtStream,
                                       HcclComm) const {
   return HCCL_SUCCESS;
 }

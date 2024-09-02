@@ -138,7 +138,7 @@ CNodePtr CreateSplitNode(const FuncGraphPtr &graph, const std::vector<AnfNodePtr
   return split_v;
 }
 
-std::vector<ShapeVector> CalAllToAllvOutputShape(const ShapeVector &base_shape, const std::vector<int64_t> &recv_lens,
+std::vector<ShapeVector> CalAlltoAllVOutputShape(const ShapeVector &base_shape, const std::vector<int64_t> &recv_lens,
                                                  const std::vector<int64_t> &recv_rank_ids) {
   if (SizeToLong(base_shape.size()) != kShapeSize) {
     MS_LOG(INTERNAL_EXCEPTION) << "Wrong base_shape size: " << base_shape.size() << ", it should be equal to 4.";
@@ -163,9 +163,9 @@ std::vector<ShapeVector> CalAllToAllvOutputShape(const ShapeVector &base_shape, 
   return shapes;
 }
 
-std::vector<AnfNodePtr> CreateAllToAllvInput(const std::vector<std::vector<AnfNodePtr>> &split_outputs,
+std::vector<AnfNodePtr> CreateAlltoAllVInput(const std::vector<std::vector<AnfNodePtr>> &split_outputs,
                                              const std::vector<int64_t> &send_rank_ids) {
-  std::vector<AnfNodePtr> all_to_all_v_input = {NewValueNode(std::make_shared<Primitive>(kAllToAllvOpName))};
+  std::vector<AnfNodePtr> all_to_all_v_input = {NewValueNode(std::make_shared<Primitive>(kAlltoAllVOpName))};
   std::vector<size_t> split_idx = {0, 5, 3, 7, 1, 6, 2, 4};
   std::vector<bool> is_begin = {true, false, false, false, false, true, true, true};
   for (size_t idx = 0; idx < send_rank_ids.size(); ++idx) {
@@ -215,7 +215,7 @@ AnfNodePtr GetCenter(const FuncGraphPtr &graph, const CNodePtr &neighbor_exchang
   }
 }
 
-std::vector<AnfNodePtr> CreateAllToAllvInputForGrad(const std::vector<int64_t> &send_rank_ids,
+std::vector<AnfNodePtr> CreateAlltoAllVInputForGrad(const std::vector<int64_t> &send_rank_ids,
                                                     const std::vector<std::vector<AnfNodePtr>> &split_outputs,
                                                     const std::vector<CNodePtr> &split_nodes) {
   if (send_rank_ids.size() != kSizeEight) {
@@ -227,7 +227,7 @@ std::vector<AnfNodePtr> CreateAllToAllvInputForGrad(const std::vector<int64_t> &
   if (split_nodes.size() != kSizeFour) {
     MS_LOG(INTERNAL_EXCEPTION) << "Wrong split_nodes size: " << split_nodes.size() << ", expect size: 4.";
   }
-  std::vector<AnfNodePtr> all_to_all_v_input = {NewValueNode(std::make_shared<Primitive>(kAllToAllvOpName))};
+  std::vector<AnfNodePtr> all_to_all_v_input = {NewValueNode(std::make_shared<Primitive>(kAlltoAllVOpName))};
   // only have top-bottom split
   std::vector<size_t> side_idx = {1, 2, 3, 5, 6, 7};
   bool no_send_side = std::all_of(side_idx.begin(), side_idx.end(),
@@ -273,7 +273,7 @@ std::vector<AnfNodePtr> CreateAllToAllvInputForGrad(const std::vector<int64_t> &
 }
 
 // alltoallv for forward & grad
-CNodePtr CreateAllToAllvNode(const FuncGraphPtr &graph, const CNodePtr &neighbor_exchange_v2_or_grad,
+CNodePtr CreateAlltoAllVNode(const FuncGraphPtr &graph, const CNodePtr &neighbor_exchange_v2_or_grad,
                              const std::vector<CNodePtr> &split_nodes, const std::vector<int64_t> &split_num,
                              bool is_grad, const PatternProcessPass &pass) {
   MS_LOG(DEBUG) << "Start to create alltoallv node.";
@@ -309,10 +309,10 @@ CNodePtr CreateAllToAllvNode(const FuncGraphPtr &graph, const CNodePtr &neighbor
   std::vector<AnfNodePtr> all_to_all_v_input;
   AnfNodePtr base_node = nullptr;
   if (is_grad) {
-    all_to_all_v_input = CreateAllToAllvInputForGrad(send_rank_ids, split_outputs, split_nodes);
+    all_to_all_v_input = CreateAlltoAllVInputForGrad(send_rank_ids, split_outputs, split_nodes);
     base_node = GetCenter(graph, neighbor_exchange_v2_or_grad, split_nodes, split_num, send_rank_ids);
   } else {
-    all_to_all_v_input = CreateAllToAllvInput(split_outputs, send_rank_ids);
+    all_to_all_v_input = CreateAlltoAllVInput(split_outputs, send_rank_ids);
     base_node = neighbor_exchange_v2_or_grad->input(kNeighborExchangeV2InputIdx);
   }
 
@@ -331,7 +331,7 @@ CNodePtr CreateAllToAllvNode(const FuncGraphPtr &graph, const CNodePtr &neighbor
   if (SizeToLong(base_shape.size()) != kShapeSize) {
     MS_LOG(INTERNAL_EXCEPTION) << "Invalid shape size " << base_shape.size() << ", only support NCHW input now!";
   }
-  std::vector<ShapeVector> shapes = CalAllToAllvOutputShape(base_shape, recv_lens, recv_rank_ids);
+  std::vector<ShapeVector> shapes = CalAlltoAllVOutputShape(base_shape, recv_lens, recv_rank_ids);
 
   // erase -1 in send_rank_ids
   std::vector<int64_t> real_send_rank_ids(send_rank_ids.size());
@@ -356,14 +356,8 @@ CNodePtr CreateAllToAllvNode(const FuncGraphPtr &graph, const CNodePtr &neighbor
   common::AnfAlgo::SetNodeAttr(kAttrRecvType, TypeIdToType(base_dtype), all_to_all_v);
   common::AnfAlgo::SetNodeAttr(kAttrGroup, MakeValue<std::string>(group), all_to_all_v);
   common::AnfAlgo::SetNodeAttr(kAttrGroupRankIds, MakeValue<std::vector<uint32_t>>(group_rank_ids), all_to_all_v);
-
-  auto neighbor_exchange_v2_or_grad_prim = GetCNodePrimitive(neighbor_exchange_v2_or_grad);
-  MS_EXCEPTION_IF_NULL(neighbor_exchange_v2_or_grad_prim);
-  if (neighbor_exchange_v2_or_grad_prim->HasAttr(parallel::COMM_REUSE) &&
-      GetValue<bool>(neighbor_exchange_v2_or_grad_prim->GetAttr(parallel::COMM_REUSE))) {
-    auto all_to_all_v_prim = GetCNodePrimitive(all_to_all_v);
-    MS_EXCEPTION_IF_NULL(all_to_all_v_prim);
-    (void)all_to_all_v_prim->AddAttr(parallel::COMM_REUSE, MakeValue(true));
+  if (common::AnfAlgo::HasNodeAttr(parallel::COMM_REUSE, neighbor_exchange_v2_or_grad)) {
+    common::AnfAlgo::CopyNodeAttr(parallel::COMM_REUSE, neighbor_exchange_v2_or_grad, all_to_all_v);
   }
 
   // add depend for input & alltoallv in send_empty condition
@@ -381,7 +375,7 @@ CNodePtr CreateAllToAllvNode(const FuncGraphPtr &graph, const CNodePtr &neighbor
     depend->set_abstract(all_to_all_v->abstract());
     return depend;
   }
-  MS_LOG(INFO) << "Create AllToAllv success, send rank size " << send_rank_ids.size() << ", recv rank size "
+  MS_LOG(INFO) << "Create AlltoAllV success, send rank size " << send_rank_ids.size() << ", recv rank size "
                << recv_rank_ids.size();
   return all_to_all_v;
 }
@@ -602,7 +596,7 @@ CNodePtr NeighborExchangeV2UnifyMindIR::CreateMiddleConcat(
   return concat_all;
 }
 
-CNodePtr NeighborExchangeV2UnifyMindIR::AllToAllvRecvEmpty(const FuncGraphPtr &graph,
+CNodePtr NeighborExchangeV2UnifyMindIR::AlltoAllVRecvEmpty(const FuncGraphPtr &graph,
                                                            const CNodePtr &neighbor_exchange_v2,
                                                            const CNodePtr &all_to_all_v) const {
   MS_EXCEPTION_IF_NULL(graph);
@@ -632,7 +626,7 @@ CNodePtr NeighborExchangeV2UnifyMindIR::CreateConcatNodes(const FuncGraphPtr &gr
   int64_t all_to_all_output_num =
     std::count_if(recv_rank_ids.begin(), recv_rank_ids.end(), [](int64_t ids) { return ids != kInvalidId; });
   if (all_to_all_output_num == 0) {
-    return AllToAllvRecvEmpty(graph, neighbor_exchange_v2, all_to_all_v);
+    return AlltoAllVRecvEmpty(graph, neighbor_exchange_v2, all_to_all_v);
   }
 
   std::vector<AnfNodePtr> all_to_all_v_outputs;
@@ -956,7 +950,7 @@ const AnfNodePtr NeighborExchangeV2UnifyMindIR::Process(const FuncGraphPtr &grap
   MS_EXCEPTION_IF_NULL(neighbor_exchange_v2);
   std::vector<int64_t> split_num;
   auto split_nodes = CreateSplitNodes(graph, neighbor_exchange_v2, &split_num);
-  auto all_to_all_v = CreateAllToAllvNode(graph, neighbor_exchange_v2, split_nodes, split_num, false, *this);
+  auto all_to_all_v = CreateAlltoAllVNode(graph, neighbor_exchange_v2, split_nodes, split_num, false, *this);
   auto concat = CreateConcatNodes(graph, neighbor_exchange_v2, all_to_all_v);
   return concat;
 }
@@ -979,7 +973,7 @@ const AnfNodePtr NeighborExchangeV2GradUnifyMindIR::Process(const FuncGraphPtr &
   MS_EXCEPTION_IF_NULL(neighbor_exchange_v2_grad);
   std::vector<int64_t> split_num;
   auto split_nodes = CreateSplitNodesForGrad(graph, neighbor_exchange_v2_grad, &split_num);
-  auto all_to_all_v = CreateAllToAllvNode(graph, neighbor_exchange_v2_grad, split_nodes, split_num, true, *this);
+  auto all_to_all_v = CreateAlltoAllVNode(graph, neighbor_exchange_v2_grad, split_nodes, split_num, true, *this);
   auto add = CreateSplitGradNodes(graph, neighbor_exchange_v2_grad, all_to_all_v, split_nodes, split_num);
   return add;
 }

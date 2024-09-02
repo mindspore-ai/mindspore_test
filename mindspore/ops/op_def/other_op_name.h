@@ -52,10 +52,11 @@ constexpr auto kReduceScatterOpName = "ReduceScatter";
 constexpr auto kAlltoAllOpName = "AlltoAll";
 constexpr auto kAllToAllOpName = "AllToAll";
 constexpr auto kAllToAllvOpName = "AllToAllv";
+constexpr auto kAlltoAllVOpName = "AlltoAllV";
+constexpr auto kAlltoAllVGEOpName = "AlltoAllVGE";
 constexpr auto kBarrierOpName = "Barrier";
 constexpr auto kMatMulAllReduceOpName = "MatMulAllReduce";
 constexpr auto kBatchISendIRecvOpName = "BatchISendIRecv";
-constexpr auto kAlltoAllVOpName = "AlltoAllV";
 constexpr auto kCustomOpName = "Custom";
 }  // namespace mindspore
 

@@ -93,7 +93,7 @@ void GEBackendOptimization(const KernelGraphPtr &kernel_graph) {
   auto opt_ge_pm = std::make_shared<PassManager>("opt_ge_pm");
   opt_ge_pm->AddPass(std::make_shared<opt::GEConvertConstInputToTensorInput>());
   opt_ge_pm->AddPass(std::make_shared<opt::RemoveTensorToScalarOrTupleOps>());
-  opt_ge_pm->AddPass(std::make_shared<opt::AllToAllvForGE>());
+  opt_ge_pm->AddPass(std::make_shared<opt::AlltoAllVForGE>());
   opt_ge_pm->AddPass(std::make_shared<opt::FaAlltoAllvParallel>());
   opt_ge_pm->AddPass(std::make_shared<opt::InsertLoadForAllGather>());
   opt_ge_pm->AddPass(std::make_shared<opt::InsertTensorMoveForHcclOpGe>());

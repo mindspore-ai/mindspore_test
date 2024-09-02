@@ -40,7 +40,6 @@ inline bool is_comm_ops(const AnfNodePtr &node) {
                                                                   prim::kPrimCollectiveGather,
                                                                   prim::kPrimAlltoAll,
                                                                   prim::kPrimAllSwap,
-                                                                  prim::kPrimAllToAllv,
                                                                   prim::kPrimNeighborExchange,
                                                                   prim::kPrimNeighborExchangeV2,
                                                                   prim::kPrimNeighborExchangeV2Grad,

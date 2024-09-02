@@ -659,7 +659,7 @@ CNodePtr CreateMakeTupleNode(const FuncGraphPtr &func_graph, const std::vector<A
   return make_tuple;
 }
 
-ValueNodePtr CreateShapeValueNode(const FuncGraphPtr &func_graph, const std::vector<int64_t> &shape, bool to_tensor) {
+ValueNodePtr CreateShapeValueNode(const FuncGraphPtr &func_graph, const ShapeVector &shape, bool to_tensor) {
   MS_EXCEPTION_IF_NULL(func_graph);
   auto kernel_graph = func_graph->cast<KernelGraphPtr>();
   MS_EXCEPTION_IF_NULL(kernel_graph);
@@ -697,6 +697,21 @@ ValueNodePtr CreateShapeValueNode(const FuncGraphPtr &func_graph, const std::vec
   MS_EXCEPTION_IF_NULL(shape_value_node);
   kernel_graph->AddValueNodeToGraph(shape_value_node);
   return shape_value_node;
+}
+
+CNodePtr CreateReshapeNode(const FuncGraphPtr &graph, const AnfNodePtr &input_node, const ShapeVector &shape) {
+  MS_EXCEPTION_IF_NULL(input_node);
+
+  auto shape_node = CreateShapeValueNode(graph, shape);
+  AnfNodePtrList reshape_inputs = {NewValueNode(std::make_shared<Primitive>(kReshapeOpName)), input_node, shape_node};
+  auto reshape_node = NewCNode(reshape_inputs, graph);
+  MS_EXCEPTION_IF_NULL(reshape_node);
+  reshape_node->set_scope(input_node->scope());
+  common::AnfAlgo::SetNodeAttr(kAttrShape, MakeValue(shape), reshape_node);
+  auto data_type = common::AnfAlgo::GetOutputInferDataType(input_node, kIndex0);
+  common::AnfAlgo::SetOutputInferTypeAndShape({data_type}, {shape}, reshape_node.get());
+
+  return reshape_node;
 }
 
 CNodePtr AddCastNode(const FuncGraphPtr &func_graph, const TypeId dst_type, const CNodePtr &node, const bool is_input,

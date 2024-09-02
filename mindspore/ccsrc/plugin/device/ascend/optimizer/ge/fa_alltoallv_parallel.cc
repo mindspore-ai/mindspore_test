@@ -43,10 +43,10 @@ bool FindTargetNodes(const std::vector<CNodePtr> &origin_nodes_topological,
   bool found = false;
   for (size_t i = 0; i < origin_nodes_topological.size(); i++) {
     auto cnode = origin_nodes_topological[i];
-    if (IsPrimitiveCNode(cnode, prim::kPrimAllToAllv)) {
-      auto AllToAllv_prim = GetCNodePrimitive(cnode);
-      if (AllToAllv_prim->HasAttr("FLASH_INDEX")) {
-        auto flash_index = GetValue<std::string>(AllToAllv_prim->GetAttr("FLASH_INDEX"));
+    if (IsPrimitiveCNode(cnode, prim::kPrimAlltoAllVGE)) {
+      auto AlltoAllVGE_prim = GetCNodePrimitive(cnode);
+      if (AlltoAllVGE_prim->HasAttr("FLASH_INDEX")) {
+        auto flash_index = GetValue<std::string>(AlltoAllVGE_prim->GetAttr("FLASH_INDEX"));
         alltoallv_map->insert({flash_index, cnode});
       }
     }
