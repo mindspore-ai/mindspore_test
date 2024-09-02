@@ -31,7 +31,7 @@ def cleanup():
 
 
 class CheckProfilerFiles:
-    def __init__(self, device_id, rank_id, profiler_path, device_target, profile_framework='all', with_stack=False):
+    def __init__(self, device_id, rank_id, profiler_path, device_target, profile_framework=None, with_stack=False):
         """Arges init."""
         self.device_id = device_id
         self.rank_id = rank_id
@@ -44,6 +44,7 @@ class CheckProfilerFiles:
                 self._check_with_stack_profiling_file()
         elif device_target == "GPU":
             self._check_gpu_profiling_file()
+            self._check_host_profiling_file(profile_framework=profile_framework)
         else:
             self._check_cpu_profiling_file()
 
@@ -133,11 +134,11 @@ class TestEnvEnableProfiler:
         if root_status and not cuda_status:
             return
         status = os.system(
-            """export MS_PROFILER_OPTIONS='{"start":true, "profile_memory":true, "sync_enable":true, "data_process":true}';
+            """export MS_PROFILER_OPTIONS='{"start":true, "profile_framework":"all", "profile_memory":true, "sync_enable":true, "data_process":true}';
                python ./run_net.py --target=GPU --mode=0;
             """
         )
-        CheckProfilerFiles(self.device_id, self.rank_id, self.profiler_path, "GPU")
+        CheckProfilerFiles(self.device_id, self.rank_id, self.profiler_path, "GPU", "all")
         assert status == 0
 
     @arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='essential')
@@ -152,31 +153,31 @@ class TestEnvEnableProfiler:
         if root_status and not cuda_status:
             return
         status = os.system(
-            """export MS_PROFILER_OPTIONS='{"start":true, "sync_enable":true, "data_process":true}';
+            """export MS_PROFILER_OPTIONS='{"start":true, "profile_framework":"all", "sync_enable":true, "data_process":true}';
                python ./run_net.py --target=GPU --mode=1;
             """
         )
-        CheckProfilerFiles(self.device_id, self.rank_id, self.profiler_path, "GPU")
+        CheckProfilerFiles(self.device_id, self.rank_id, self.profiler_path, "GPU", "all")
         assert status == 0
 
     @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
     def test_ascend_profiler(self):
         status = os.system(
-            """export MS_PROFILER_OPTIONS='{"start":true, "profile_memory":true, "data_process":true, "with_stack":false}';
+            """export MS_PROFILER_OPTIONS='{"start":true, "profile_memory":true, "profile_framework":"all", "data_process":true, "with_stack":false}';
                python ./run_net.py --target=Ascend --mode=0;
             """
         )
-        CheckProfilerFiles(self.device_id, self.rank_id, self.profiler_path, "Ascend", None, False)
+        CheckProfilerFiles(self.device_id, self.rank_id, self.profiler_path, "Ascend", "all")
         assert status == 0
 
     @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
     def test_host_profiler_none(self):
         status = os.system(
-            """export MS_PROFILER_OPTIONS='{"start":true, "profile_memory":true, "profile_framework":null, "data_process":true}';
+            """export MS_PROFILER_OPTIONS='{"start":true, "profile_memory":true, "data_process":true}';
                python ./run_net.py --target=Ascend --mode=0;
             """
         )
-        CheckProfilerFiles(self.device_id, self.rank_id, self.profiler_path, "Ascend", None)
+        CheckProfilerFiles(self.device_id, self.rank_id, self.profiler_path, "Ascend", None, False)
         assert status == 0
 
     @arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')

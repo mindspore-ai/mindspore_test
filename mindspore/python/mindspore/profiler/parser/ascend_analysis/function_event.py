@@ -163,9 +163,9 @@ class MindSporeOpEvent(BaseEvent):
         self.step = int(fix_size_data[MindSporeOpEnum.STEP_ID.value])
         self.level = int(fix_size_data[MindSporeOpEnum.LEVEL.value])
         self.custom_info = ""
-        self.args = self.__get_args(fix_size_data)
+        self.args = self._get_args(fix_size_data)
 
-    def __get_args(self, fix_size_data) -> Dict:
+    def _get_args(self, fix_size_data) -> Dict:
         """Get the rest information saved in args"""
         args = {
             Constant.SEQUENCE_UNMBER: int(fix_size_data[MindSporeOpEnum.SEQUENCE_UNMBER.value]),
