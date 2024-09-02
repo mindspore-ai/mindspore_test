@@ -112,13 +112,13 @@ def test_embedding_grad():
         return ops.embedding(input_x, weight, padding_idx, max_norm, norm_type, scale_grad)
 
     def grad_func1(input_x, weight, padding_idx, max_norm, norm_type, scale_grad):
-        return ops.grad(embedding_func1, grad_position=1)(input_x, weight, padding_idx, max_norm, norm_type, scale_grad)
+        return ms.grad(embedding_func1, grad_position=1)(input_x, weight, padding_idx, max_norm, norm_type, scale_grad)
 
     def embedding_func2(input_x, weight, padding_idx, max_norm, norm_type, scale_grad):
         return ops.embedding(input_x, weight, padding_idx, max_norm, norm_type, scale_grad)
 
     def grad_func2(input_x, weight, padding_idx, max_norm, norm_type, scale_grad):
-        return ops.grad(embedding_func2, grad_position=1)(input_x, weight, padding_idx, max_norm, norm_type, scale_grad)
+        return ms.grad(embedding_func2, grad_position=1)(input_x, weight, padding_idx, max_norm, norm_type, scale_grad)
 
     input_x = ms.Tensor([[0, 2, 4, 5], [4, 3, 2, 9]])
     weight = ms.Parameter([[0.3649, 0.6303, 0.7726],
@@ -153,7 +153,7 @@ def test_embedding_grad():
         return ops.embedding(input_x, weight, max_norm=max_norm, norm_type=norm_type, scale_grad_by_freq=scale_grad)
 
     def grad_func3(input_x, weight, max_norm, norm_type, scale_grad):
-        return ops.grad(embedding_func3, grad_position=1)(input_x, weight, max_norm, norm_type, scale_grad)
+        return ms.grad(embedding_func3, grad_position=1)(input_x, weight, max_norm, norm_type, scale_grad)
 
     expect_out3 = [[1., 1., 1.],
                    [0., 0., 0.],
@@ -173,7 +173,7 @@ def test_embedding_grad():
         return ops.embedding(input_x, weight, max_norm=max_norm, norm_type=norm_type, scale_grad_by_freq=scale_grad)
 
     def grad_func4(input_x, weight, max_norm, norm_type, scale_grad):
-        return ops.grad(embedding_func4, grad_position=1)(input_x, weight, max_norm, norm_type, scale_grad)
+        return ms.grad(embedding_func4, grad_position=1)(input_x, weight, max_norm, norm_type, scale_grad)
 
     expect_out4 = [[1., 1., 1.],
                    [0., 0., 0.],
@@ -217,17 +217,9 @@ def test_embedding_nn_api():
                [0.1678, 0.2147, 0.2928],
                [0.2227, 0.2019, 0.2639]]]
 
-    # exception cases
-    # embedding = nn.extend.Embedding(num_embeddings=4.0, embedding_dim=weight.shape[1])
-    # embedding = nn.extend.Embedding(num_embeddings=weight.shape[0], embedding_dim=3.0)
-    # embedding = nn.extend.Embedding(num_embeddings=weight.shape[0], embedding_dim=weight.shape[1], dtype='str')
-    # embedding = nn.extend.Embedding(num_embeddings=weight.shape[0], embedding_dim=weight.shape[1], max_norm=[1])
-    # embedding = nn.extend.Embedding(num_embeddings=weight.shape[0], embedding_dim=weight.shape[1], max_norm=0.4, norm_type=False)
-    # embedding = nn.extend.Embedding(num_embeddings=weight.shape[0], embedding_dim=weight.shape[1], padding_idx=18, max_norm=0.4, norm_type=2.0)
-    # embedding = nn.extend.Embedding(num_embeddings=weight.shape[0], embedding_dim=weight.shape[1], padding_idx=8, max_norm=0.4, norm_type=2.0, scale_grad_by_freq=1.0)
-    embedding_layer = nn.extend.Embedding(num_embeddings=weight.shape[0], embedding_dim=weight.shape[1],
-                                          padding_idx=8, max_norm=0.4, norm_type=2.0, scale_grad_by_freq=True,
-                                          _weight=weight)
+    embedding_layer = nn.EmbeddingExt(num_embeddings=weight.shape[0], embedding_dim=weight.shape[1],
+                                      padding_idx=8, max_norm=0.4, norm_type=2.0, scale_grad_by_freq=True,
+                                      _weight=weight)
     ms_out1 = embedding_layer(input_x)
     assert np.allclose(ms_out1.asnumpy(), expect, rtol=1e-3)
 
