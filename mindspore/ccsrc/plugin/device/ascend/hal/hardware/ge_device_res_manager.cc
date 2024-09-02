@@ -50,24 +50,8 @@
 namespace mindspore {
 namespace device {
 namespace ascend {
-<<<<<<< HEAD
 using DeviceTensorStore = mindspore::runtime::DeviceTensorStore;
 using DeviceMemInfo = std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>;
-std::string GetCurrentDir() {
-#ifndef _WIN32
-  Dl_info dl_info;
-  if (dladdr(reinterpret_cast<void *>(GetCurrentDir), &dl_info) == 0) {
-    MS_LOG(WARNING) << "Get dladdr error";
-    return "";
-  }
-  std::string cur_so_path = dl_info.dli_fname;
-  return dirname(cur_so_path.data());
-#else
-  return "";
-#endif
-}
-=======
->>>>>>> 97fc31d5b1a (utilize lccl for communication within single machine)
 
 ::ge::MemBlock *GeAllocator::Malloc(size_t size) {
   auto addr = res_manager_->AllocateMemory(size);
@@ -429,7 +413,7 @@ bool GeDeviceResManager::LoadCollectiveCommLib() {
   // Load Multi ascend collective communication lib using dynamic library.
   collective_comm_lib_ = &MultiAscendCollectiveCommLib::GetInstance();
   MS_EXCEPTION_IF_NULL(collective_comm_lib_);
-  MS_LOG(WARNING) << "Loading MACCL collective library successfully.";
+  MS_LOG(INFO) << "Loading MACCL collective library successfully.";
   return true;
 }
 

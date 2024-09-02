@@ -41,7 +41,8 @@ std::unordered_set<std::string> MultiAscendCollectiveCommLib::GetLcclEnabledGrou
 bool MultiAscendCollectiveCommLib::isGroupWithinLocalMachine(const std::vector<uint32_t> &group_ranks) {
   std::vector<size_t> all_host_hashs = distributed::collective::CollectiveManager::instance()->GetAllHostHashs();
   if (all_host_hashs.empty()) {
-    MS_LOG(INFO) << "all_host_hashs is empty.";
+    MS_LOG(WARNING) << "The all_host_hashs_ is empty. Please check whether the local rank ids are successfully "
+                       "assigned when initializing collective communication";
     return false;
   }
   return std::all_of(group_ranks.begin() + 1, group_ranks.end(),
@@ -68,7 +69,7 @@ bool MultiAscendCollectiveCommLib::Initialize(uint32_t global_rank, uint32_t glo
     lowlatency_collective_comm_lib_ = instance_func();
     MS_EXCEPTION_IF_NULL(lowlatency_collective_comm_lib_);
     MS_LOG(WARNING) << "Loading LCCL because env MS_ENABLE_LCCL is set to on. Pay attention that LCCL only supports "
-                       "single-node-multi-card mode in KernelByKernel for now.";
+                       "communication group within single node in KernelByKernel for now.";
     RETURN_IF_FALSE_WITH_LOG(lowlatency_collective_comm_lib_->Initialize(global_rank, global_rank_size, local_rank_id),
                              "Failed to initialize LCCL.");
   }

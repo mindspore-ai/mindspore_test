@@ -39,7 +39,6 @@ LowlatencyCommunicationGroup::LowlatencyCommunicationGroup(const std::string &na
       lccl_comm_(nullptr) {}
 
 bool LowlatencyCommunicationGroup::Initialize(void *root_info) {
-  MS_LOG(WARNING) << "LowlatencyCommunicationGroup::Initialize, root_info: " << root_info;
   if (initialized_) {
     return true;
   }
@@ -48,9 +47,6 @@ bool LowlatencyCommunicationGroup::Initialize(void *root_info) {
   auto ret = aclrtSetDevice(device_id);
   if (ret != ACL_RT_SUCCESS) {
     return false;
-  }
-  for (auto &element : global_to_group_ranks_) {
-    MS_LOG(WARNING) << "global_to_group_ranks_[" << element.first << "] = " << element.second;
   }
   uint32_t group_rank = GetGroupRank(global_rank_);
 
@@ -78,7 +74,6 @@ bool LowlatencyCommunicationGroup::Finalize() {
 }
 
 void *LowlatencyCommunicationGroup::GenerateRootInfo(size_t *root_info_size) {
-  MS_LOG(WARNING) << "LowlatencyCommunicationGroup::GenerateRootInfo()";
   *root_info_size = sizeof(size_t);
   return root_info_size;
 }
