@@ -33,10 +33,10 @@ constexpr char kInput[] = "input";
 
 ValuePtr Add(const ValuePtr &input, const ValuePtr &other, const FuncBuilderPtr &func_impl) {
   MS_EXCEPTION_IF_NULL(input);
+  MS_EXCEPTION_IF_NULL(other);
   if (input->isa<None>()) {
     return other;
   }
-  MS_EXCEPTION_IF_NULL(other);
   if (other->isa<None>()) {
     return input;
   }

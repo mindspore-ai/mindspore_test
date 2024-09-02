@@ -80,7 +80,7 @@ class CppTemplate:
 
 
 NEW_LINE = "\n"
-WORK_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../../../")
+WORK_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), "../../../../")
 
 PYTHON_PRIM_TEMPLATE = CppTemplate("""
 

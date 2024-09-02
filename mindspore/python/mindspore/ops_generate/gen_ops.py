@@ -968,7 +968,7 @@ def generate_create_instance_helper_file(work_path, yaml_str):
 
 def generate_aclnn_reg_code(yaml_data):
     """generate aclnn register code"""
-    current_path = os.path.dirname(os.path.abspath(__file__))
+    current_path = os.path.dirname(os.path.realpath(__file__))
     work_path = os.path.join(current_path, '../../../../')
     ops_yaml_path = os.path.join(work_path, K.PY_OPS_GEN_PATH, "ops.yaml")
     yaml_str = gen_utils.safe_load_yaml(ops_yaml_path)
@@ -1037,7 +1037,7 @@ def generate_arg_handler_files(work_path):
 
 
 def main():
-    current_path = os.path.dirname(os.path.abspath(__file__))
+    current_path = os.path.dirname(os.path.realpath(__file__))
     work_path = os.path.join(current_path, '../../../../')
 
     # merge ops yaml
