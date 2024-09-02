@@ -74,7 +74,7 @@ class TensorIndex : public MetaFuncGraph {
   std::vector<CNodePtr> GetTupleIndexInfo(const AnfNodePtr &data_node, const AnfNodePtr &fancy_position_node,
                                           const std::vector<AnfNodePtr> &normalized_tensors,
                                           const mindspore::HashMap<std::string, ValuePtr> &attrs);
-  std::vector<AnfNodePtr> NormalizeTensorNext(const AnfNodePtr &data_node,
+  std::vector<AnfNodePtr> NormalizeTensorNext(const AnfNodePtr &data_node, const AnfNodePtr &position_node,
                                               const std::vector<AnfNodePtr> &normalized_tensors,
                                               const mindspore::HashMap<std::string, ValuePtr> &attrs,
                                               const std::vector<int64_t> &tuple_index_types, bool has_ellipsis);
