@@ -18,6 +18,7 @@ from tests.st.networks.utils import get_num_from_log
 
 os.environ["GLOG_v"] = "1"
 os.environ['ASCEND_HOME_PATH'] = "/usr/local/Ascend/latest"
+os.environ['LCCL_DETERMINISTIC'] = "1"
 TOELERANCE = 5e-2
 PEAK_MEMORY_NAME = "Actual peak memory usage (with fragments):"
 
