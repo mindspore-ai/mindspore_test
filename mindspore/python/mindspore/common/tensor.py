@@ -89,7 +89,7 @@ def tensor(input_data=None, dtype=None, shape=None, init=None, internal=False, c
 
     The difference between it and the Tensor class is that it adds
     `Annotation
-    <https://www.mindspore.cn/docs/en/master/design/dynamic_graph_and_static_graph.html?#annotation-type>`_
+    <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph.html#annotation-type>`_
     which can prevent the generation of AnyType compared to the Tensor class.
 
     The arguments and return values are the same as the Tensor class. Also see: :class:`mindspore.Tensor`.

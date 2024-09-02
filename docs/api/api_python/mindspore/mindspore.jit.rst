@@ -12,7 +12,7 @@ mindspore.jit
         - **mode** (str) - 使用jit的类型，可选值有 ``"PSJit"`` 和 ``"PIJit"`` 。默认值： ``"PSJit"``。
 
           - `PSJit <https://www.mindspore.cn/docs/zh-CN/master/model_train/program_form/static_graph.html>`_ ：解析python的ast以构建静态图。
-          - `PIJit <https://www.mindspore.cn/docs/zh-CN/master/design/dynamic_graph_and_static_graph.html>`_ ：在运行时解析python字节码以构建静态图。
+          - `PIJit <https://www.mindspore.cn/docs/zh-CN/master/model_train/program_form/pynative.html#pijit>`_ ：在运行时解析python字节码以构建静态图。
 
         - **input_signature** (Union[Tuple, List, Dict, Tensor]) - 输入的Tensor是用于描述输入参数的。Tensor的shape和dtype将被配置到函数中去。如果指定了 `input_signature`，则 `fn` 的输入参数不接受 `**kwargs` 类型，并且实际输入的shape和dtype需要与 `input_signature` 相匹配。否则，将会抛出TypeError异常。 `input_signature` 有两种模式：
 

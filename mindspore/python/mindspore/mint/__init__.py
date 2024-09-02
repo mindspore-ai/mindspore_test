@@ -302,12 +302,12 @@ def add(input, other, *, alpha=1):
     Args:
         input (Union[Tensor, number.Number, bool]): The first input is a number.Number or
             a bool or a tensor whose data type is
-            `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_ or
-            `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_.
+            `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
+            `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
         other (Union[Tensor, number.Number, bool]): The second input, is a number.Number or
             a bool or a tensor whose data type is
-            `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_ or
-            `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_.
+            `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
+            `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
 
     Keyword Args:
         alpha (number.Number): A scaling factor applied to `other`, default 1.
@@ -902,12 +902,12 @@ def sub(input, other, *, alpha=1):
     Args:
         input (Union[Tensor, number.Number, bool]): The first input is a number.Number or
             a bool or a tensor whose data type is
-            `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_ or
-            `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_.
+            `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
+            `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
         other (Union[Tensor, number.Number, bool]): The second input, is a number.Number or
             a bool or a tensor whose data type is
-            `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_ or
-            `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore.html#mindspore.dtype>`_.
+            `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
+            `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
 
     Keyword Args:
         alpha (number.Number): A scaling factor applied to `other`, default 1.

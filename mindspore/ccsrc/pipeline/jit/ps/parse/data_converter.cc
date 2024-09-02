@@ -569,7 +569,7 @@ void CheckJITForbiddenAPI(const py::object &obj) {
         << "Try to use the " << obj_type << " '" << obj_module << "." << obj_name << "' externally "
         << "such as initialized in the method '__init__' before assigning"
         << ".\nFor more details, please refer to "
-        << "https://www.mindspore.cn/docs/zh-CN/master/design/dynamic_graph_and_static_graph.html \n";
+        << "https://www.mindspore.cn/docs/zh-CN/master/model_train/program_form/overview.html \n";
     // Check if the API is decoratored by @jit_forbidden_register.
     bool is_jit_forbidden_register = data_converter::IsJITForbiddenAPI(obj);
     if (is_jit_forbidden_register) {

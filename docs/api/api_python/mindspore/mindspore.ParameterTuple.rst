@@ -24,5 +24,5 @@ mindspore.ParameterTuple
             新的参数元组。
 
         教程样例：
-            - `Cell与参数 - Parameter Tuple
-              <https://mindspore.cn/docs/zh-CN/master/model_train/custom_program/layer.html#parameter-tuple>`_
+            - `Tensor与Parameter - Parameter Tuple
+              <https://mindspore.cn/docs/zh-CN/master/model_train/model_building/tensor_and_parameter.html#parameter-tuple>`_
