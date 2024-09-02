@@ -292,7 +292,8 @@ NodePtr MatMulExtBroadCastGradPart(BpropBuilder *ib, const NodePtr &dx, const Sh
   std::vector<std::vector<int64_t>> bc_axis =
     BroadcastGradientArgsInferValue(broadcast_shape[0], broadcast_shape[1], ignore_offset);
   if (!bc_axis[index].empty()) {
-    reduce_dx = ib->ReduceSum(reduce_dx, bc_axis[index], ib->GetRank(reduce_dx) == shape[index].size());
+    reduce_dx = ib->SumExt(reduce_dx, ib->Value<ShapeVector>(bc_axis[index]),
+                           ib->Value<bool>(ib->GetRank(reduce_dx) == shape[index].size()));
   }
   if (ib->GetRank(reduce_dx) != shape[index].size()) {
     reduce_dx = ib->Reshape(reduce_dx, shape[index]);
