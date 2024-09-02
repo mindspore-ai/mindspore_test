@@ -769,41 +769,13 @@ class Padding(Primitive):
 
 class UniqueWithPad(Primitive):
     """
-    Returns unique elements and relative indexes in 1-D tensor, filled with padding num.
-
-    The basic function is the same as the Unique operator, but the UniqueWithPad operator adds a Pad function.
-    The returned tuple(`y`, `idx`) after the input Tensor `x` is processed by the unique operator,
-    in which the shapes of `y` and `idx` are mostly not equal. Therefore, in order to solve the above situation,
-    the UniqueWithPad operator will fill the `y` Tensor with the `pad_num` specified by the user
-    to make it have the same shape as the Tensor `idx`.
-
-    Refer to :func:`mindspore.ops.unique_with_pad` for more details.
-
-    Inputs:
-        - **x** (Tensor) - The tensor need to be unique. Must be 1-D vector with types: int32, int64.
-        - **pad_num** (int) - Pad num. The data type is an int.
-
-    Outputs:
-        tuple(Tensor), tuple of 2 tensors, `y` and `idx`.
-
-        - y (Tensor) - The unique elements filled with pad_num, the shape and data type same as `x`.
-        - idx (Tensor) - The index of each value of `x` in the unique output `y`, the shape and data type same as `x`.
+    'ops.UniqueWithPad' is deprecated from version 2.4 and will be removed in a future version.
 
     Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> x = Tensor(np.array([1, 1, 2, 2, 3, 3, 4, 5]), mindspore.int32)
-        >>> pad_num = 8
-        >>> output = ops.UniqueWithPad()(x, pad_num)
-        >>> print(output)
-        (Tensor(shape=[8], dtype=Int32, value= [1, 2, 3, 4, 5, 8, 8, 8]),
-         Tensor(shape=[8], dtype=Int32, value= [0, 0, 1, 1, 2, 2, 3, 4]))
+        Deprecated
     """
 
+    @deprecated("2.4", "UniqueWithPad", False)
     @prim_attr_register
     def __init__(self):
         """init UniqueWithPad"""

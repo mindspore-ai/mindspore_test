@@ -1287,6 +1287,9 @@ def unique_with_pad(x, pad_num):
     the UniqueWithPad operator will fill the `y` Tensor with the `pad_num` specified by the user
     to make it have the same shape as the Tensor `idx`.
 
+    .. warning::
+        :func:`mindspore.ops.unique_with_pad` is deprecated from version 2.4 and will be removed in a future version.
+
     Args:
         x (Tensor): The tensor need to be unique. Must be 1-D vector with types: int32, int64.
         pad_num (int): Pad num. The data type is an int.
@@ -1299,10 +1302,10 @@ def unique_with_pad(x, pad_num):
 
     Raises:
         TypeError: If dtype of `x` is neither int32 nor int64.
-        ValueError: If length of shape of `x` is not equal to 1.
+        ValueError: If `x` is not a 1-D Tensor.
 
     Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
+        Deprecated
 
     Examples:
         >>> import mindspore

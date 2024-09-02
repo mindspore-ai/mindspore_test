@@ -9,6 +9,9 @@ mindspore.ops.standard_laplace
     .. math::
         \text{f}(x) = \frac{1}{2}\exp(-|x|)
 
+    .. warning::
+        Ascend后端不支持随机数重现功能， `seed` 参数不起作用。
+
     参数：
         - **shape** (Union[tuple, Tensor]) - 待生成的Tensor的shape。当为tuple类型时，只支持常量值；当为Tensor类型时，支持动态Shape。
         - **seed** (int, 可选) - 算子层的随机种子，用于生成随机数。必须是非负的。默认值： ``None`` 。
