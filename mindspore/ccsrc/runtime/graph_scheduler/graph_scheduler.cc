@@ -316,7 +316,7 @@ bool CheckKbkSubGraphExecConditon(const std::vector<KernelGraphPtr> &graphs) {
   for (const auto &graph : graphs) {
     MS_EXCEPTION_IF_NULL(graph);
     // Note: Kbk sub graph mode doesn't support 'SwitchInline' and Fallback feature currently.
-    if (!graph->enable_kbk_sub_graph_execute()) {
+    if (!graph->enable_kbk_sub_graph_execute() || graph->RunMode() != device::RunMode::kKernelMode) {
       return false;
     }
   }
