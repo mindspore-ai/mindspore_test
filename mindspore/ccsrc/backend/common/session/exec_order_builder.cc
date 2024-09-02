@@ -16,6 +16,7 @@
 #include "backend/common/session/exec_order_builder.h"
 #include <algorithm>
 #include <string>
+#include <functional>
 #include "mindspore/ops/op_def/ascend_op_name.h"
 #include "include/common/utils/anfalgo.h"
 #include "utils/ms_context.h"
@@ -62,7 +63,16 @@ void ExecOrderBuilder::Build(FuncGraph *graph, std::vector<CNodePtr> *execution_
   ClearLinkInfo();
   BuildLinkInfo();
   FindIndependentNodes();
-  Build();
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  auto exec_order = context->get_param<std::string>(MS_CTX_EXEC_ORDER);
+  if (exec_order == "dfs") {
+    MS_LOG(INFO) << "exec order build by dfs";
+    BuildByDFS();
+  } else {
+    MS_LOG(INFO) << "exec order build by bfs";
+    BuildByBFS();
+  }
 }
 
 void ExecOrderBuilder::ClearLinkInfo() {
@@ -279,7 +289,41 @@ void ExecOrderBuilder::EnqueueReadyNodes(const AnfNodePtr &node, std::deque<AnfN
   (void)std::copy(active_nodes.begin(), active_nodes.end(), std::back_inserter(*visit_queue));
 }
 
-void ExecOrderBuilder::Build() {
+void ExecOrderBuilder::BuildByDFS() {
+  MS_EXCEPTION_IF_NULL(execution_order_);
+  execution_order_->clear();
+  execution_order_->reserve(kDefaultContainerSize);
+  MS_EXCEPTION_IF_NULL(node_output_edges_);
+  std::function<void(AnfNodePtr)> dfs = [&](AnfNodePtr node) {
+    MS_EXCEPTION_IF_NULL(node);
+    if (node->isa<CNode>() && AnfUtils::IsRealKernel(node)) {
+      execution_order_->emplace_back(node->cast<CNodePtr>());
+    }
+    auto it = node_output_edges_->find(node);
+    if (it == node_output_edges_->end()) {
+      return;
+    }
+    for (const auto &output_node : it->second) {
+      MS_EXCEPTION_IF_NULL(output_node);
+      auto input_num_iter = node_input_num_.find(output_node);
+      if (input_num_iter == node_input_num_.end() || input_num_iter->second == 0) {
+        continue;
+      }
+      input_num_iter->second--;
+      if (input_num_iter->second == 0) {
+        dfs(output_node);
+      }
+    }
+  };
+  while (!independent_nodes_.empty()) {
+    dfs(independent_nodes_.top());
+    independent_nodes_.pop();
+  }
+  if (!is_pynative_kernel_graph_) {
+    CheckLoop();
+  }
+}
+void ExecOrderBuilder::BuildByBFS() {
   MS_EXCEPTION_IF_NULL(execution_order_);
   execution_order_->clear();
   execution_order_->reserve(kDefaultContainerSize);

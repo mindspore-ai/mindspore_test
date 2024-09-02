@@ -254,9 +254,9 @@ class _Context:
 
     def set_exec_order(self, exec_order):
         """
-        The execution order mode, support "bfs", "gpto".
+        The execution order mode, support "bfs", "dfs", "gpto".
         """
-        exec_order_modes = ["bfs", "gpto"]
+        exec_order_modes = ["bfs", "dfs", "gpto"]
         if exec_order not in exec_order_modes:
             raise ValueError(f"For 'context.set_context', the argument 'exec_order' must be one of "
                              f"{exec_order_modes}, but got {exec_order}.")
@@ -1357,6 +1357,8 @@ def set_context(**kwargs):
     |                         |  gpu_config                  |  GPU                       |
     |                         +------------------------------+----------------------------+
     |                         |  jit_config                  |  CPU/GPU/Ascend            |
+    |                         +------------------------------+----------------------------+
+    |                         |  exec_order                  |  Ascend                    |
     +-------------------------+------------------------------+----------------------------+
 
     Args:
@@ -1759,6 +1761,18 @@ def set_context(**kwargs):
               - ``"on"``: Enable infer mode, get better infer performance.
               - ``"off"``: Disable infer mode, use forward to infer, performance is not good.
 
+        exec_order (str): Set the sorting method for operator execution in GRAPH_MODE Currently, only three sorting
+            methods are supported: bfs and gpto, and the default method is bfs.
+
+            - ``"bfs"``: The default sorting method, breadth priority, good communication masking, relatively good
+              performance.
+            - ``"dfs"``: An optional sorting method, depth-first sorting. The performance is relatively worse than that
+              of bfs execution order, but it occupies less memory. It is recommended to try dfs in scenarios where other
+              execution orders run out of memory (OOM).
+            - ``"gpto"``: An optional sorting method. This method combines multiple execution orders and selects a
+              method with relatively good performance. There may be some performance gains in scenarios with multiple
+              replicas running in parallel.
+
     Raises:
         ValueError: If input key is not an attribute in context.
 
@@ -1801,6 +1815,7 @@ def set_context(**kwargs):
         >>> ms.set_context(gpu_config={"conv_fprop_algo": "performance", "conv_allow_tf32": True,
         ...                "matmul_allow_tf32": True})
         >>> ms.set_context(jit_config={"jit_level": "O0"})
+        >>> ms.set_context(exec_order="gpto")
     """
     ctx = _context()
     # set device target first
