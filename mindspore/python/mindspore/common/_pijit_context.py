@@ -88,6 +88,12 @@ class PIJitCaptureContext:
             logger.warning("unsupported function type" + str(fn))
             return fn
 
+        try:
+            if inspect.getmodule(fn.__code__).__name__.startswith("mindspore"):
+                return fn
+        finally:
+            pass
+
         _fn = self._wrapper()
         if fn.__code__ is _fn.__code__:
             fn = fn.__closure__[0].cell_contents.fn
@@ -138,6 +144,7 @@ SKIP_RULES = {
     "skip_dirs": (
         "<frozen importlib",
         "<__array_function__ internals>",
+        "<string>",
     ),
     "builtins": (
         "mindspore",  # not capture any function of mindspore unless it's called by user
