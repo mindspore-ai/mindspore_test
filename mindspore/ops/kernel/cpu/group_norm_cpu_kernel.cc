@@ -26,7 +26,7 @@ namespace kernel {
 namespace {
 constexpr size_t kGroupNormInputsNum = 5;
 constexpr size_t kGroupNormOutputsNum = 3;
-constexpr size_t kNumberTwo = 2;
+constexpr size_t minGroupNormInputDim = 2;
 }  // namespace
 bool GroupNormCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
                                  const std::vector<KernelTensor *> &outputs) {
@@ -55,7 +55,7 @@ int GroupNormCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
   auto num_groups = inputs[kIndex1]->GetValueWithCheck<int64_t>();
 
   num_channel_ = x_shape[1];
-  HxW_ = LongToSize((x_shape.size() == kNumberTwo)
+  HxW_ = LongToSize((x_shape.size() == minGroupNormInputDim)
                       ? 1
                       : std::accumulate(x_shape.begin() + kIndex2, x_shape.end(), 1, std::multiplies<int64_t>()));
   eps_ = inputs[kIndex4]->GetValueWithCheck<float_t>();
@@ -91,17 +91,20 @@ void GroupNormCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inpu
 
   auto task = [this, &x, &gamma, &beta, &y, &mean, &rstd](size_t start, size_t end) {
     for (size_t i = start; i < end; ++i) {
-      double sum = 0.0;
-      double sum_square = 0.0;
+      double mean_val = 0.0;
+      double variance = 0.0;
       for (size_t j = i * inner_size_; j < (i + 1) * inner_size_; ++j) {
-        sum += static_cast<double>(x[j]);
-        sum_square += static_cast<double>(x[j]) * static_cast<double>(x[j]);
+        // Welford Algorithm:
+        auto old_mean = mean_val;
+        mean_val += (static_cast<double>(x[j]) - old_mean) / (j % inner_size_ + 1);
+        variance += (static_cast<double>(x[j]) - old_mean) * (static_cast<double>(x[j]) - mean_val);
       }
-      double mean_val = sum / inner_size_;
-      double rstd_val = std::sqrt(1 / ((sum_square / inner_size_ - mean_val * mean_val) + static_cast<double>(eps_)));
+      double rstd_val = 1 / std::sqrt(std::max(variance / inner_size_, 0.0) + static_cast<double>(eps_));
       for (size_t j = i * inner_size_; j < (i + 1) * inner_size_; ++j) {
         auto param_index = (j / HxW_) % num_channel_;
-        y[j] = (x[j] - static_cast<T>(mean_val)) * static_cast<T>(rstd_val) * gamma[param_index] + beta[param_index];
+        auto scale = rstd_val * static_cast<double>(gamma[param_index]);
+        auto bias = -scale * mean_val + static_cast<double>(beta[param_index]);
+        y[j] = static_cast<T>(static_cast<double>(x[j]) * scale + bias);
       }
       mean[i] = static_cast<T>(mean_val);
       rstd[i] = static_cast<T>(rstd_val);

@@ -26,7 +26,7 @@ namespace kernel {
 namespace {
 constexpr size_t kGroupNormGradInputsNum = 9;
 constexpr size_t kGroupNormGradOutputsNum = 3;
-constexpr size_t kNumberTwo = 2;
+constexpr size_t minGroupNormGradInputDim = 2;
 }  // namespace
 
 bool GroupNormGradCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
@@ -55,14 +55,14 @@ int GroupNormGradCpuKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
   const auto &x_shape_vector = inputs[kIndex1]->GetShapeVector();
   batch_ = LongToSize(x_shape_vector[kIndex0]);
   num_channel_ = LongToSize(x_shape_vector[kIndex1]);
-  HxW_ = (x_shape_vector.size() == kNumberTwo)
+  HxW_ = (x_shape_vector.size() == minGroupNormGradInputDim)
            ? 1
            : std::accumulate(x_shape_vector.begin() + kIndex2, x_shape_vector.end(), 1, std::multiplies<int64_t>());
   num_groups_ = LongToSize(inputs[kIndex5]->GetValueWithCheck<int64_t>());
   inner_size_ = num_channel_ * LongToSize(HxW_) / num_groups_;
 
-  const size_t dscale_shape_size = batch_ * num_channel_ * sizeof(float);
-  const size_t dbias_shape_size = batch_ * num_channel_ * sizeof(float);
+  const size_t dscale_shape_size = batch_ * num_channel_ * sizeof(double);
+  const size_t dbias_shape_size = batch_ * num_channel_ * sizeof(double);
 
   workspace_size_list_.clear();
   workspace_size_list_ = {dscale_shape_size, dbias_shape_size};
@@ -91,57 +91,57 @@ void GroupNormGradCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &
   auto *dx = reinterpret_cast<T *>(outputs[kIndex0]->device_ptr());
   auto *d_gamma = reinterpret_cast<T *>(outputs[kIndex1]->device_ptr());
   auto *d_beta = reinterpret_cast<T *>(outputs[kIndex2]->device_ptr());
-  auto *dscale = reinterpret_cast<float *>(workspace[kIndex0]->device_ptr());
-  auto *dbias = reinterpret_cast<float *>(workspace[kIndex1]->device_ptr());
+  auto *dscale = reinterpret_cast<double *>(workspace[kIndex0]->device_ptr());
+  auto *dbias = reinterpret_cast<double *>(workspace[kIndex1]->device_ptr());
 
   for (size_t idx = 0; idx < batch_ * num_channel_; ++idx) {
-    float ds_val = 0.0;
-    float db_val = 0.0;
+    T ds_val = (T)0.0;
+    T db_val = (T)0.0;
     for (size_t j = idx * LongToSize(HxW_); j < (idx + 1) * LongToSize(HxW_); ++j) {
-      ds_val += static_cast<float>(dy[j]) * static_cast<float>(x[j]);
-      db_val += static_cast<float>(dy[j]);
+      ds_val += dy[j] * x[j];
+      db_val += dy[j];
     }
-    dscale[idx] = ds_val;
-    dbias[idx] = db_val;
+    dscale[idx] = static_cast<double>(ds_val);
+    dbias[idx] = static_cast<double>(db_val);
   }
 
   for (size_t param_index = 0; param_index < num_channel_; ++param_index) {
-    float dg = 0.0;
-    float db = 0.0;
+    T dg = (T)0.0;
+    T db = (T)0.0;
     for (size_t j = 0; j < LongToSize(batch_); ++j) {
       auto idx1 = j * LongToSize(num_channel_) + param_index;
       auto idx2 = static_cast<size_t>(std::floor(idx1 * num_groups_ / num_channel_));
-      dg += (dscale[idx1] - dbias[idx1] * static_cast<float>(mean[idx2])) * static_cast<float>(rstd[idx2]);
-      db += dbias[idx1];
+      dg += (static_cast<T>(dscale[idx1]) - static_cast<T>(dbias[idx1]) * mean[idx2]) * rstd[idx2];
+      db += static_cast<T>(dbias[idx1]);
     }
-    d_gamma[param_index] = static_cast<T>(dg);
-    d_beta[param_index] = static_cast<T>(db);
+    d_gamma[param_index] = dg;
+    d_beta[param_index] = db;
   }
 
   auto task = [this, &dy, &x, &mean, &rstd, &dx, &gamma](size_t start, size_t end) {
     for (size_t i = start; i < end; ++i) {
-      float sum1 = 0.0;
-      float sum2 = 0.0;
-      float sum3 = 0.0;
+      double sum1 = 0.0;
+      double sum2 = 0.0;
+      double sum3 = 0.0;
       for (size_t j = i * inner_size_; j < (i + 1) * inner_size_; ++j) {
         auto param_index = (j / LongToSize(HxW_)) % num_channel_;
-        auto dxm = static_cast<float>(x[j]) - static_cast<float>(mean[i]);
-        auto dyg = static_cast<float>(dy[j] * gamma[param_index]);
+        auto dxm = static_cast<double>(x[j]) - static_cast<double>(mean[i]);
+        auto dyg = static_cast<double>(dy[j] * gamma[param_index]);
         sum1 += dyg * dxm;
         sum2 += dyg;
         sum3 += dxm;
       }
-      sum1 *= -0.5 * std::pow(static_cast<float>(rstd[i]), 3.0);
+      sum1 *= -0.5 * std::pow(static_cast<double>(rstd[i]), 3.0);
       sum3 *= -2.0;
 
       auto inv_inner_size = 1.0 / inner_size_;
       auto dx3 = 2.0 * sum1 * inv_inner_size;
-      auto dx4 = (-1.0 * static_cast<float>(rstd[i]) * sum2 + inv_inner_size * sum1 * sum3) * inv_inner_size;
+      auto dx4 = (-1.0 * static_cast<double>(rstd[i]) * sum2 + sum1 * sum3 * inv_inner_size) * inv_inner_size;
       for (size_t j = i * inner_size_; j < (i + 1) * inner_size_; ++j) {
         auto param_index = (j / LongToSize(HxW_)) % num_channel_;
-        auto dx1 = static_cast<float>(dy[j] * gamma[param_index]);
-        auto dx2 = static_cast<float>(x[j]) - static_cast<float>(mean[i]);
-        dx[j] = static_cast<T>(dx1 * static_cast<float>(rstd[i]) + dx2 * dx3 + dx4);
+        auto dx1 = static_cast<double>(dy[j] * gamma[param_index]);
+        auto dx2 = static_cast<double>(x[j]) - static_cast<double>(mean[i]);
+        dx[j] = static_cast<T>(dx1 * static_cast<double>(rstd[i]) + dx2 * dx3 + dx4);
       }
     }
   };
