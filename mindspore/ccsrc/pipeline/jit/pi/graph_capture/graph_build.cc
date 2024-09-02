@@ -4510,11 +4510,7 @@ py::object MindGraphBuilder::ResolveCallable(CallNode *call_node, StopTraceReaso
   if (FGBuilder()->CanConstantFoldFunc(callable_info)) {
     const auto &res = GetConstantInputsObject(call_node);
     if (res.first) {
-      const auto &inputs_obj = res.second;
-      MS_LOG(INFO) << "CanConstantFoldFunc for: " << py::str(callable_info);
-      JustCallAndSetResWithArgs(call_node, inputs_obj);
-      *stop_reason = StopTraceReason::kNonStopTrace;
-      return py::object();
+      return HandleConstantFoldFunc(res.second, call_node, stop_reason);
     }
   }
 
@@ -4565,6 +4561,25 @@ py::object MindGraphBuilder::ResolveCallable(CallNode *call_node, StopTraceReaso
   MS_LOG(DEBUG) << "convert " << std::string(py::str(original_callable)) << " -> "
                 << std::string(py::str(callable_info));
   return FindPyFunc(AObject::Convert(callable_info));
+}
+
+py::object MindGraphBuilder::HandleConstantFoldFunc(const std::vector<py::object> &args, CallNode *call_node,
+                                                    StopTraceReason *stop_reason) {
+  py::object callable_info = GetPyObject(call_node->input(0));
+  MS_LOG(INFO) << "CanConstantFoldFunc for: " << py::str(callable_info);
+
+  JustCallAndSetResWithArgs(call_node, args);
+
+  py::object result = call_node->GetVobj()->GetPyObject();
+  if (result.ptr() != nullptr) {
+    const AbstractWrapperPtr &abs_wrapper = fg_builder_->AddLocalVariable(result);
+    call_node->set_abstract_wrapper(abs_wrapper);
+    *stop_reason = StopTraceReason::kNonStopTrace;
+  } else {
+    MS_LOG(INFO) << "Constant fold failed, result is null";
+    *stop_reason = StopTraceReason::kStopTraceInfer_Fail;
+  }
+  return py::object();
 }
 
 ValueNode *MindGraphBuilder::HandleCallClass(CallNode *call_node) {

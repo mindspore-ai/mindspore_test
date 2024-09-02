@@ -909,6 +909,7 @@ AbstractWrapperPtr FuncGraphBuilder::AddMultiNode(const std::string &name,
 
 bool FuncGraphBuilder::AddOutput(const AbstractWrapperPtr &abstract_wrapper, bool is_top_graph) {
   if (abstract_wrapper == nullptr) {
+    MS_LOG(INFO) << "Fail to add output, abstract wrapper is NULL";
     return false;
   }
   auto iter = key_to_node_.find(abstract_wrapper);
