@@ -1070,6 +1070,10 @@ void AnalysisEngine::Clear() {
   constructors_app_.clear();
   continued_evals_.clear();
   root_context_ = nullptr;
+  // Clear amp_strategy_stack_.
+  while (!amp_strategy_stack_.empty()) {
+    amp_strategy_stack_.pop();
+  }
 }
 
 EvaluatorPtr GetPyEvaluator(const PrimitivePtr &prim, const AnalysisEnginePtr &engine) {
@@ -1743,6 +1747,30 @@ EvalResultPtr AnalysisEngine::ExecuteMultipleEvaluators(const std::vector<Evalua
   }
   possible_parent_fg->set_flag(kFuncGraphFlagUndetermined, false);
   return ProcessEvalResults(out_abs_list, out_conf->node());
+}
+
+void AnalysisEngine::PushGraphAmpStrategy(const FuncGraphPtr &fg) {
+  MS_EXCEPTION_IF_NULL(fg);
+  if (fg->has_flag(GRAPH_FLAG_MIX_PRECISION_FP32) || fg->has_flag(GRAPH_FLAG_MIX_PRECISION_FP16) ||
+      fg->has_flag(GRAPH_FLAG_MIX_PRECISION_BF16)) {
+    // When funcgraph has set to_float, follows to_float strategy rather than amp strategy.
+    fg->set_amp_strategy(std::make_shared<amp::AmpStrategy>());
+  } else {
+    amp::AmpStrategyPtr fg_amp_strategy = fg->amp_strategy();
+    amp::AmpStrategyPtr parent_amp_strategy = amp_strategy_stack_.empty() ? nullptr : amp_strategy_stack_.top();
+    if (parent_amp_strategy != nullptr && (fg_amp_strategy == nullptr || !parent_amp_strategy->IsEnable())) {
+      // Pass amp strategy of parent func_graph to fg.
+      fg->set_amp_strategy(parent_amp_strategy);
+    }
+  }
+  amp_strategy_stack_.push(fg->amp_strategy());
+}
+
+void AnalysisEngine::PopGraphAmpStrategy() {
+  if (amp_strategy_stack_.empty()) {
+    MS_LOG(INTERNAL_EXCEPTION) << "amp_strategy_stack_ is empty when trying to pop the amp strategy.";
+  }
+  amp_strategy_stack_.pop();
 }
 
 EvalResultPtr AnfNodeConfig::ObtainEvalResult() {

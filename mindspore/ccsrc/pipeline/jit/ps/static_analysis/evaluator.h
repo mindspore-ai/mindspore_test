@@ -227,7 +227,7 @@ class BaseFuncGraphEvaluator : public Evaluator {
                                    const AnalysisContextPtr &context);
   void EnterStackFrame(const AnalysisEnginePtr &engine, const StackFramePtr &current_stack_frame,
                        const StackFramePtr &new_stack_frame);
-  void LeaveStackFrame(const AnalysisEnginePtr &, const StackFramePtr &current_stack_frame);
+  void LeaveStackFrame(const AnalysisEnginePtr &engine, const StackFramePtr &current_stack_frame);
 
   // As evaluator can be recursively called, so use a vector to simulate a stack of flags.
   std::vector<bool> always_eval_flags_;

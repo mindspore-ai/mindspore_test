@@ -26,6 +26,7 @@
 #include <utility>
 #include <map>
 #include <set>
+#include <stack>
 #include <unordered_map>
 #include <unordered_set>
 #include <mutex>
@@ -36,6 +37,7 @@
 #include "utils/compile_config.h"
 #include "utils/trace_base.h"
 #include "ir/anf.h"
+#include "ir/dtype/amp.h"
 #include "pybind_api/ir/primitive_py.h"
 #include "abstract/abstract_value.h"
 #include "abstract/analysis_context.h"
@@ -336,6 +338,9 @@ class AnalysisEngine : public std::enable_shared_from_this<AnalysisEngine> {
   void SetUndeterminedFlag(const std::string &thread_id, const FuncGraph &fg);
   void SetIgnoreValueFlag(const std::string &thread_id, FuncGraph *fg);
 
+  void PushGraphAmpStrategy(const FuncGraphPtr &fg);
+  void PopGraphAmpStrategy();
+
  private:
   // Overloaded function.
   EvaluatorPtr _GetEvaluatorFor(const std::shared_ptr<PrimitiveAbstractClosure> &func);
@@ -351,6 +356,16 @@ class AnalysisEngine : public std::enable_shared_from_this<AnalysisEngine> {
   EvaluatorPtr HandleNestedRecursion(const std::vector<EvaluatorPtr> &evaluators, const EvaluatorPtr &eval,
                                      const AbstractBasePtrList &args_abs_list, const EvalTraceRevIter &it,
                                      bool *continue_flag);
+  AnalysisContextPtr Run(const FuncGraphPtr &func_graph, const AnalysisContextPtr &context,
+                         const ConfigPtrList &args_conf_list);
+  EvalResultPtr Eval(const AnfNodeConfigPtr &conf);
+  EvalResultPtr ExecuteEvaluators(const std::vector<EvaluatorPtr> &evaluators, const AnfNodeConfigPtr &out_conf,
+                                  const ConfigPtrList &args_conf_list);
+  EvalResultPtr ExecuteMultipleEvaluators(const std::vector<EvaluatorPtr> &evaluators, const AnfNodeConfigPtr &out_conf,
+                                          const ConfigPtrList &args_conf_list);
+  EvalResultPtr ExecuteMultipleEvaluatorsMultiThread(const std::vector<EvaluatorPtr> &evaluators,
+                                                     const AnfNodeConfigPtr &out_conf,
+                                                     const ConfigPtrList &args_conf_list);
 
   const PrimEvaluatorMap &prim_constructors_;
   FuncGraphManagerPtr func_graph_manager_;
@@ -368,17 +383,8 @@ class AnalysisEngine : public std::enable_shared_from_this<AnalysisEngine> {
   // Root or top func_graph for static analysis;
   FuncGraphWeakPtr root_func_graph_;
   AnalysisContextPtr root_context_{nullptr};
-
-  AnalysisContextPtr Run(const FuncGraphPtr &func_graph, const AnalysisContextPtr &context,
-                         const ConfigPtrList &args_conf_list);
-  EvalResultPtr Eval(const AnfNodeConfigPtr &conf);
-  EvalResultPtr ExecuteEvaluators(const std::vector<EvaluatorPtr> &evaluators, const AnfNodeConfigPtr &out_conf,
-                                  const ConfigPtrList &args_conf_list);
-  EvalResultPtr ExecuteMultipleEvaluators(const std::vector<EvaluatorPtr> &evaluators, const AnfNodeConfigPtr &out_conf,
-                                          const ConfigPtrList &args_conf_list);
-  EvalResultPtr ExecuteMultipleEvaluatorsMultiThread(const std::vector<EvaluatorPtr> &evaluators,
-                                                     const AnfNodeConfigPtr &out_conf,
-                                                     const ConfigPtrList &args_conf_list);
+  // Stack of amp strategy for funcgraphs.
+  std::stack<amp::AmpStrategyPtr> amp_strategy_stack_;
 
   std::atomic_long forward_count_;
 
