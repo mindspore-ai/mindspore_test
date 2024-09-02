@@ -771,6 +771,10 @@ void DumpJsonParser::ParseInputOutput(const nlohmann::json &content) {
   CheckJsonUnsignedType(content, kInputOutput);
   input_output_ = content;
   const uint32_t max_inout_num = 2;
+  if (op_debug_mode_ == static_cast<uint32_t>(DUMP_BOTH_OVERFLOW)) {
+    input_output_ = 0;
+    MS_LOG(WARNING) << "When the `op_debug` mode is set to 3, `input_output` should be set to 0.";
+  }
   if (input_output_ > max_inout_num) {
     MS_LOG(EXCEPTION) << "Dump Json Parse Failed. input_output should be 0, 1, 2";
   }
@@ -837,6 +841,11 @@ void DumpJsonParser::ParseStatCalcMode(const nlohmann::json &content) {
   if (calc_mode != kHost && calc_mode != kDevice) {
     MS_LOG(EXCEPTION) << "Dump Json parse failed, 'stat_calc_mode' only supports 'host' or 'device', but got: "
                       << calc_mode << ". Please set 'stat_cal_mode' to 'host' or 'device'";
+  }
+  if (calc_mode == kDevice && op_debug_mode_ == static_cast<uint32_t>(DUMP_LITE_EXCEPTION) && !async_dump_enabled_) {
+    MS_LOG(WARNING) << "When op_debug_mode is set to 3 and e2e_enable is set to false,"
+                       "stat_calc_mode has been be set to 'host'.";
+    calc_mode = kHost;
   }
   stat_calc_mode_ = calc_mode;
 }

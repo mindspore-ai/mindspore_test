@@ -28,6 +28,8 @@ TensorPtr CalStatistic(const std::string &, const DeviceContext *, KernelTensor 
 vector<DeviceAddressPtr> CalStatisticAsync(const std::string &, const DeviceContext *, KernelTensor *,
                                            const std::uint32_t);
 
+bool CalCheckOverflow(const DeviceContext *, vector<KernelTensor *>, const std::uint32_t);
+
 DeviceAddressPtr CalCheckOverflowAsync(const DeviceContext *, vector<KernelTensor *>, const std::uint32_t);
 }  // namespace datadump
 
