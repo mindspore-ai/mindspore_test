@@ -153,7 +153,7 @@ std::ostream &operator<<(std::ostream &os, const VarPtr &var);
 
 using Equiv = std::map<VarPtr, BaseRef>;
 using EquivPtr = std::shared_ptr<Equiv>;
-using PrimitiveVarMap = mindspore::HashMap<PrimitivePtr, VarPtr>;
+using PrimitiveVarMap = std::map<PrimitivePtr, VarPtr>;
 using PrimitiveVarMapPtr = std::shared_ptr<PrimitiveVarMap>;
 
 inline bool DefaultTypeEq(const BaseRef &x, const BaseRef &y) { return x.type() == y.type(); }
