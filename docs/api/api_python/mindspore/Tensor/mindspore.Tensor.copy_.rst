@@ -7,6 +7,7 @@ mindspore.Tensor.copy\_
 
     .. warning::
         这是一个实验性API，后续可能修改或删除。
+        `src` 需可广播为 `self`。 `src` 可以是不同的数据类型。
 
     参数：
         - **src** (Tensor) - 用于复制的Tensor。
