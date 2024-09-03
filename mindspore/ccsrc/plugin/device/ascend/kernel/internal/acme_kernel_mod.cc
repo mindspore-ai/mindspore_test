@@ -251,8 +251,8 @@ int AcmeKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const std::
     auto dev_shape = trans::TransShapeToDevice(shape, kOpFormat_FRAC_NZ, output->dtype_id());
     auto type_size = GetTypeByte(TypeIdToType(output->dtype_id()));
     auto tensor_size = dev_shape.empty()
-                          ? std::accumulate(shape.begin(), shape.end(), type_size, std::multiplies<size_t>())
-                          : std::accumulate(dev_shape.begin(), dev_shape.end(), type_size, std::multiplies<size_t>());
+                         ? std::accumulate(shape.begin(), shape.end(), type_size, std::multiplies<size_t>())
+                         : std::accumulate(dev_shape.begin(), dev_shape.end(), type_size, std::multiplies<size_t>());
     output_size_list_[index] = tensor_size;
   }
 
@@ -311,13 +311,8 @@ void AcmeKernelMod::UpdateAddr(const std::vector<KernelTensor *> &inputs, const 
 bool AcmeKernelMod::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                            const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   UpdateAddr(inputs, outputs, workspace);
-  acme::AcmeStatus status;
-  if (ascend_profiler_->GetEnableFlag()) {
-    status =
-      acme_op_->LaunchWithProfiling(acme_inputs_addr_, acme_outputs_addr_, acme_wss_addr_, stream_ptr, fullname_);
-  } else {
-    status = acme_op_->Launch(acme_inputs_addr_, acme_outputs_addr_, acme_wss_addr_, stream_ptr);
-  }
+  acme::AcmeStatus status =
+    acme_op_->Launch(acme_inputs_addr_, acme_outputs_addr_, acme_wss_addr_, stream_ptr, fullname_);
   return (status == acme::AcmeStatus::kAcmeOk);
 }
 }  // namespace kernel
