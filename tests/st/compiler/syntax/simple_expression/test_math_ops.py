@@ -341,7 +341,7 @@ class Sub(nn.Cell):
         return z
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
           essential_mark='unessential')
 def test_number_sub_number():
     """
@@ -349,15 +349,14 @@ def test_number_sub_number():
     Description: test sub operator.
     Expectation: No exception
     """
-    with pytest.raises(TypeError, match="For 'Sub', the element of 'x' must be one of Tensor"):
-        input_x = 10.11
-        input_y = 902
-        result1 = input_x - input_y
-        sub_net = Sub()
-        result2 = sub_net(input_x, input_y)
-        expect = -891.89
-        assert np.all(result1 == expect)
-        assert np.all(result2 == expect)
+    input_x = 10.11
+    input_y = 902
+    result1 = input_x - input_y
+    sub_net = Sub()
+    result2 = sub_net(input_x, input_y)
+    expect = -891.89
+    assert result1 == expect
+    assert result2 == expect
 
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
