@@ -13,14 +13,12 @@
 # limitations under the License.
 # ============================================================================
 import numpy as np
-import pytest
 
 import mindspore as ms
 import mindspore.context as context
 import mindspore.nn as nn
 from mindspore import Parameter, Tensor
 from mindspore.common.api import _cell_graph_executor
-from mindspore.nn import Momentum, TrainOneStepCell
 from mindspore.ops import operations as P
 
 
@@ -47,16 +45,15 @@ _x = Tensor(np.ones(target_shape), dtype=ms.float32)
 w = Tensor(np.ones(target_shape), dtype=ms.float32)
 _smooth_scales = Tensor(np.ones(target_shape[-1:]), dtype=ms.float32)
 strategy_ok = ((2, 4, 1), (1,))
-strategy_fail = ((1, 4, 2), (1,))
+strategy_optional = ((2, 4, 1),)
 
 
-def compile_net(net):
+def compile_net(net, *inputs):
     context.set_context(mode=context.GRAPH_MODE)
-    optimizer = Momentum(net.trainable_params(), learning_rate=0.1, momentum=0.9)
-    train_net = TrainOneStepCell(net, optimizer)
-    train_net.set_train()
-    _cell_graph_executor.compile(train_net, _x, _smooth_scales)
+    net.set_train()
+    phase, _ = _cell_graph_executor.compile(net, *inputs)
     context.reset_auto_parallel_context()
+    return phase
 
 
 def test_dynamic_quant_shard_auto():
@@ -67,7 +64,7 @@ def test_dynamic_quant_shard_auto():
     """
     context.set_auto_parallel_context(parallel_mode="auto_parallel", device_num=8, global_rank=0)
     net = NetDynamicQuant()
-    compile_net(net)
+    compile_net(net, _x, _smooth_scales)
 
 
 def test_dynamic_quant_shard_success():
@@ -78,16 +75,15 @@ def test_dynamic_quant_shard_success():
     """
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", device_num=8, global_rank=0)
     net = NetDynamicQuant(strategy=strategy_ok)
-    compile_net(net)
+    compile_net(net, _x, _smooth_scales)
 
 
-def test_dynamic_quant_shard_fail():
+def test_dynamic_quant_shard_optional():
     """
-    Feature: test DynamicQuant parallel with invalid strategy
+    Feature: test DynamicQuant parallel with smooth_scales None
     Description: model parallel
-    Expectation: raise RuntimeError
+    Expectation: compile success
     """
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", device_num=8, global_rank=0)
-    net = NetDynamicQuant(strategy=strategy_fail)
-    with pytest.raises(RuntimeError):
-        compile_net(net)
+    net = NetDynamicQuant(strategy=strategy_optional)
+    compile_net(net, _x, None)

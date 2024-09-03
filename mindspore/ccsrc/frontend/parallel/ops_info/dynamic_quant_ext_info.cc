@@ -33,14 +33,7 @@
 
 namespace mindspore {
 namespace parallel {
-Status DynamicQuantExtInfo::GetAttrs() {
-  auto prim = GetCNodePrimitive(cnode_);
-  if (prim->HasAttr(parallel::SKIP_REDISTRIBUTION)) {
-    skip_redistribution_ = GetValue<bool>(prim->GetAttr(parallel::SKIP_REDISTRIBUTION));
-  }
-
-  return SUCCESS;
-}
+Status DynamicQuantExtInfo::GetAttrs() { return SUCCESS; }
 
 Status DynamicQuantExtInfo::CheckStrategy(const StrategyPtr &strategy) {
   MS_EXCEPTION_IF_NULL(strategy);
@@ -52,13 +45,6 @@ Status DynamicQuantExtInfo::CheckStrategy(const StrategyPtr &strategy) {
   std::vector<Dimensions> stra = strategy->GetInputDim();
   if (stra.empty()) {
     MS_LOG(ERROR) << name_ << ": The strategy is empty";
-    return FAILED;
-  }
-
-  size_t last_dim = stra[0].size() - 1;
-
-  if ((stra[0][last_dim] != 1 || stra[1][0] != 1) && !skip_redistribution_) {
-    MS_LOG(ERROR) << name_ << ": The last dim can not be split";
     return FAILED;
   }
 
@@ -79,7 +65,6 @@ Status DynamicQuantExtInfo::InferDevMatrixShape() {
 
 Status DynamicQuantExtInfo::InferTensorMap() {
   TensorMap tensor_map_x;
-  TensorMap tensor_map_smooth_scales;
   TensorMap tensor_map_scale;
   if (inputs_shape_.empty()) {
     MS_LOG(ERROR) << name_ << "The inputs shape is empty";
@@ -91,14 +76,18 @@ Status DynamicQuantExtInfo::InferTensorMap() {
     tensor_map_x.push_back(size - i - 1);
   }
 
-  tensor_map_smooth_scales.push_back(0);
-
   for (int i = 0; i < size - 1; ++i) {
     tensor_map_scale.push_back(size - i - 1);
   }
 
   inputs_tensor_map_.push_back(tensor_map_x);
-  inputs_tensor_map_.push_back(tensor_map_smooth_scales);
+
+  constexpr size_t smooth_scales_input_size = 2;
+  if (strategy()->GetInputDim().size() == smooth_scales_input_size) {
+    TensorMap tensor_map_smooth_scales;
+    tensor_map_smooth_scales.push_back(0);
+    inputs_tensor_map_.push_back(tensor_map_smooth_scales);
+  }
 
   outputs_tensor_map_.push_back(tensor_map_x);
   outputs_tensor_map_.push_back(tensor_map_scale);
