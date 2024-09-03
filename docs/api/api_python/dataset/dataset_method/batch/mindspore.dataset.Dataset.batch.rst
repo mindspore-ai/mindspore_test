@@ -12,7 +12,8 @@ mindspore.dataset.Dataset.batch
     .. image:: batch_cn.png
 
     .. note::
-        执行 `repeat` 和 `batch` 操作的先后顺序，会影响批处理数据的数量及 `per_batch_map` 的结果。建议在 `batch` 操作完成后执行 `repeat` 操作。
+        - 执行 `repeat` 和 `batch` 操作的先后顺序，会影响批处理数据的数量及 `per_batch_map` 的结果。建议在 `batch` 操作完成后执行 `repeat` 操作。
+        - 在静态图模式使用 `数据下沉 <https://www.mindspore.cn/docs/zh-CN/master/model_train/train_process/optimize/sink_mode.html#%E6%95%B0%E6%8D%AE%E4%B8%8B%E6%B2%89>`_ 时，网络输入的 Shape 应保持一致，此时应设置 `drop_remainder` 为 "True" 以丢弃最后一个不完整的批数据，或通过补充/删除样本以确保数据集大小能被 `batch_size` 整除。
 
     参数：
         - **batch_size** (Union[int, Callable]) - 指定每个批处理数据包含的数据条目。

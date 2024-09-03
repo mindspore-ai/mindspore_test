@@ -167,6 +167,52 @@ class MindDataset(MappableDataset, UnionBaseDataset):
         ValueError: If `shard_id` is not in range of [0, `num_shards` ).
 
     Note:
+        - When sharding MindRecord (by configuring `num_shards` and `shard_id`), there are two strategies to implement
+          the data sharding logic. This API uses the strategy 2.
+
+        .. list-table:: Data sharding strategy 1
+            :widths: 50 50 50 50
+            :header-rows: 1
+
+            * - rank 0
+              - rank 1
+              - rank 2
+              - rank 3
+            * - 0
+              - 1
+              - 2
+              - 3
+            * - 4
+              - 5
+              - 6
+              - 7
+            * - 8
+              - 9
+              - 10
+              - 11
+
+        .. list-table:: Data sharding strategy 2
+            :widths: 50 50 50 50
+            :header-rows: 1
+
+            * - rank 0
+              - rank 1
+              - rank 2
+              - rank 3
+            * - 0
+              - 3
+              - 6
+              - 9
+            * - 1
+              - 4
+              - 7
+              - 10
+            * - 2
+              - 5
+              - 8
+              - 11
+
+    Note:
         - The parameters `num_samples` , `shuffle` , `num_shards` , `shard_id` can be used to control the sampler
           used in the dataset, and their effects when combined with parameter `sampler` are as follows.
 
