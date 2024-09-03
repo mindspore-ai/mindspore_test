@@ -110,7 +110,6 @@ def test_yield_case_3():
     assert jcr["break_count_"] == 0
 
 
-@pytest.mark.skip(reason="tmp skip")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_yield_case_4():
     """

@@ -55,8 +55,6 @@ from mindspore.train.serialization import _exec_save, load, export_split_mindir,
 from mindspore.parallel import _cost_model_context
 from mindspore.parallel._offload_context import offload_context
 from mindspore.run_check._check_version import check_version_and_env_config
-from mindspore.offline_debug.dbg_services import get_version, DbgServices, TensorInfo, TensorData, TensorBaseData, \
-    TensorStatData, Parameter as DBGParameter
 from mindspore.dataset.callback.ds_callback import DSCallback, WaitedDSCallback
 from mindspore.dataset.transforms.c_transforms import TensorOperation as CTensorOperation, OneHot as COneHot, \
     Fill as CFill, TypeCast as CTypeCast, Slice as CSlice, Mask as CMask, PadEnd as CPadEnd, \
@@ -495,7 +493,6 @@ _func_map = {
     function_id(get_rank_id): FUNC_KEY_PIJIT_CONSTEXPR,
     function_id(offload_context): FUNC_KEY_PIJIT_CONSTEXPR,
     function_id(check_version_and_env_config): FUNC_KEY_PIJIT_CONSTEXPR,
-    function_id(get_version): FUNC_KEY_PIJIT_CONSTEXPR,
 
     # inner function
     function_id(type_size_in_bytes): FUNC_KEY_BUILTIN_FUNC,
@@ -537,12 +534,6 @@ _func_map = {
     function_id(_split_save): FUNC_KEY_PIJIT_FORBIDDEN,
     function_id(_save_mindir_together): FUNC_KEY_PIJIT_FORBIDDEN,
     function_id(_load_into_param_dict): FUNC_KEY_PIJIT_FORBIDDEN,
-    function_id(DbgServices.__init__): FUNC_KEY_PIJIT_FORBIDDEN,
-    function_id(TensorInfo.__init__): FUNC_KEY_PIJIT_FORBIDDEN,
-    function_id(TensorData.__init__): FUNC_KEY_PIJIT_FORBIDDEN,
-    function_id(TensorBaseData.__init__): FUNC_KEY_PIJIT_FORBIDDEN,
-    function_id(TensorStatData.__init__): FUNC_KEY_PIJIT_FORBIDDEN,
-    function_id(DBGParameter.__init__): FUNC_KEY_PIJIT_FORBIDDEN,
     function_id(Profiler.start): FUNC_KEY_PIJIT_FORBIDDEN,
     function_id(_create_group_helper): FUNC_KEY_PIJIT_FORBIDDEN,
     function_id(_destroy_group_helper): FUNC_KEY_PIJIT_FORBIDDEN,

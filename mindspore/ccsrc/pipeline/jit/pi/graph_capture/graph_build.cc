@@ -542,7 +542,7 @@ bool GraphBuilder::NotImplementBytecode(const Instr &instr) { return false; }
 bool GraphBuilder::DoGetYieldFromIter(const Instr &instr) {
   auto iterable = pop()->GetVobj()->GetPyObject().ptr();
   ValueNode *iter_node = NULL;
-  if (!PyGen_CheckExact(iterable)) {
+  if (!PyIter_Check(iterable)) {
     py::iterator new_iter = py::iter(iterable);
     iter_node = NewValueNode(AObject::Convert(new_iter), instr);
   } else {
