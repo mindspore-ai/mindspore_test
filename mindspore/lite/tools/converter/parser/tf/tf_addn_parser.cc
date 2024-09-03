@@ -36,9 +36,9 @@ PrimitiveCPtr TFAddNParser::Parse(const tensorflow::NodeDef &tf_op,
     MS_LOG(ERROR) << "The N attr should be specified!";
     return nullptr;
   }
-  std::vector<int64_t> N;
-  N.push_back(static_cast<int64_t>(attr_value.i()));
-  prim->AddAttr("dyn_input_sizes", api::MakeValue(N));
+  std::vector<int64_t> param_n;
+  param_n.push_back(static_cast<int64_t>(attr_value.i()));
+  prim->AddAttr("dyn_input_sizes", api::MakeValue(param_n));
   *output_size = 1;
   for (int i = 0; i < tf_op.input_size(); i++) {
     inputs->emplace_back(tf_op.input(i));
