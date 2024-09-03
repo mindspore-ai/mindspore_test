@@ -50,6 +50,41 @@ class MS_CORE_API AbstractFuncAtom : public AbstractFunction {
   std::size_t hash() const override { return tid(); }
 };
 
+/// \brief AbstractFutureFuncAtom defines interface for abstract of future function.
+class MS_CORE_API AbstractFutureFuncAtom : public AbstractFuncAtom {
+ public:
+  /// \brief Constructor of AbstractFutureFuncAtom.
+  AbstractFutureFuncAtom() = default;
+
+  /// \brief Destructor of AbstractFutureFuncAtom.
+  ~AbstractFutureFuncAtom() override = default;
+  MS_DECLARE_PARENT(AbstractFutureFuncAtom, AbstractFuncAtom)
+
+  AbstractFunctionPtr GetUnique() override {
+    if (resolved_ != nullptr) {
+      return resolved_;
+    }
+    return shared_from_base<AbstractFutureFuncAtom>();
+  }
+
+  std::string ToString() const override {
+    if (resolved_ == nullptr) {
+      return "AbstractFutureFuncAtom(Not Resolved)";
+    }
+
+    std::ostringstream buffer;
+    buffer << "AbstractFutureFuncAtom(";
+    buffer << resolved_->ToString();
+    buffer << ")";
+
+    return buffer.str();
+  }
+
+ protected:
+  // Resolved AbstractFunction after fully analyzed.
+  AbstractFunctionPtr resolved_{nullptr};
+};
+
 /// \brief AbstractFuncUnion defines interface for abstract of union function.
 class MS_CORE_API AbstractFuncUnion final : public AbstractFunction {
  public:

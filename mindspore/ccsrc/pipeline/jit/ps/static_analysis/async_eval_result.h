@@ -256,12 +256,12 @@ class AsyncAbstract : public std::enable_shared_from_this<AsyncAbstract> {
 };
 
 // Wrap AsyncAbstract, so it can work with Join method of AbstractFunction.
-class AsyncAbstractFuncAtom : public AbstractFuncAtom {
+class AsyncAbstractFuncAtom : public AbstractFutureFuncAtom {
  public:
   AsyncAbstractFuncAtom(const AsyncAbstractPtr &async_abstract, const std::vector<std::size_t> &index)
       : async_abstract_(async_abstract), index_(index) {}
   ~AsyncAbstractFuncAtom() = default;
-  MS_DECLARE_PARENT(AsyncAbstractFuncAtom, AbstractFuncAtom);
+  MS_DECLARE_PARENT(AsyncAbstractFuncAtom, AbstractFutureFuncAtom);
 
   static std::shared_ptr<AsyncAbstractFuncAtom> MakeShared(const AsyncAbstractPtr &async_abstract,
                                                            const std::vector<std::size_t> &index) {
@@ -308,8 +308,6 @@ class AsyncAbstractFuncAtom : public AbstractFuncAtom {
   std::string ToString() const override;
 
  private:
-  // Resolved AbstractFunction after fully analyzed.
-  AbstractFunctionPtr resolved_{nullptr};
   // Before resolved, use the following two items to track.
   const AsyncAbstractPtr async_abstract_;
   const std::vector<std::size_t> index_;
