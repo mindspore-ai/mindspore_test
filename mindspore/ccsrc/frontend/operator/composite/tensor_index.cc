@@ -780,13 +780,13 @@ void TensorIndex::RemakeTupleIndex(bool has_ellipsis, const std::vector<int64_t>
   }
 }
 
-std::vector<AnfNodePtr> TensorIndex::NormalizeTensorNext(const AnfNodePtr &data_node,
+std::vector<AnfNodePtr> TensorIndex::NormalizeTensorNext(const AnfNodePtr &data_node, const AnfNodePtr &position_node,
                                                          const std::vector<AnfNodePtr> &normalized_tensors,
                                                          const mindspore::HashMap<std::string, ValuePtr> &attrs,
                                                          const std::vector<int64_t> &tuple_index_types,
                                                          bool has_ellipsis) {
   std::vector<AnfNodePtr> new_normalized_tensors;
-  auto tuple_index_info_node = GetTupleIndexInfo(data_node, NewValueNode(SizeToLong(0)), normalized_tensors, attrs);
+  auto tuple_index_info_node = GetTupleIndexInfo(data_node, position_node, normalized_tensors, attrs);
   auto broad_cast_shape_node = tuple_index_info_node[kIndex1];
   auto new_index_shape_node = tuple_index_info_node[kIndex2];
   auto final_shape_node = tuple_index_info_node[kIndex3];
@@ -870,8 +870,8 @@ void TensorIndexGetitem::GetItemByTuple(const AnfNodePtr &input_data_node, const
 
   mindspore::HashMap<std::string, ValuePtr> attrs(
     {{kAttrTupleIndexTypes, MakeValue(tuple_index_types)}, {kAttrExpandDimsCnt, MakeValue(SizeToLong(0))}});
-  auto new_normalized_tensors =
-    NormalizeTensorNext(data_node, normalized_tensors, attrs, tuple_index_types, has_ellipsis);
+  auto new_normalized_tensors = NormalizeTensorNext(data_node, NewValueNode(SizeToLong(0)), normalized_tensors, attrs,
+                                                    tuple_index_types, has_ellipsis);
   RemakeTupleIndex(has_ellipsis, tuple_index_types, data_node, new_normalized_tensors, not_ellipsis_position_cnt,
                    ellipsis_position);
 }
@@ -1109,7 +1109,7 @@ void TensorIndexSetitem::SetItemByTuple(const AnfNodePtr &input_data_node, const
     attrs.insert(attrs.end(), {kAttrTupleIndexInfoType, MakeValue(kSetitemByTuple)});
   }
   auto new_normalized_tensors =
-    NormalizeTensorNext(data_node, normalized_tensors, attrs, tuple_index_types, has_ellipsis);
+    NormalizeTensorNext(data_node, fancy_position_node, normalized_tensors, attrs, tuple_index_types, has_ellipsis);
   if (IsDynamicRank(data_shape_) && has_ellipsis) {
     auto prim = std::make_shared<Primitive>(kPrimRemakeTupleIndex->name());
     prim->set_attr(kAttrTupleIndexTypes, MakeValue(tuple_index_types));
