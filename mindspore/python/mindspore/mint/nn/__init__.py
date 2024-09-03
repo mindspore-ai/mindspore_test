@@ -20,8 +20,7 @@ Predefined building blocks or computing units to construct neural networks.
 from __future__ import absolute_import
 import mindspore.ops as ops
 from mindspore.nn.cell import Cell
-from mindspore.nn.extend import *
-from mindspore.nn.extend import basic, embedding
+from mindspore.nn import EmbeddingExt as Embedding, MaxPool2dExt as MaxPool2d, LayerNormExt as LayerNorm, Linear
 
 # 1
 
@@ -38,8 +37,7 @@ from mindspore.nn.layer.basic import UnfoldExt as Unfold
 # 7
 from mindspore.nn.layer.basic import Fold
 # 8
-from mindspore.nn.extend.layer import normalization
-from mindspore.nn.extend.layer.normalization import *
+
 # 9
 
 # 10
@@ -100,7 +98,7 @@ from mindspore.nn.layer.basic import DropoutExt as Dropout
 # 37
 
 # 38
-from mindspore.nn.extend.basic import Linear
+
 # 39
 
 # 40
@@ -524,7 +522,3 @@ __all__ = [
     # 222
     'Hardswish',
 ]
-
-__all__.extend(basic.__all__)
-__all__.extend(embedding.__all__)
-__all__.extend(normalization.__all__)

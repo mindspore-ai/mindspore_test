@@ -31,7 +31,6 @@ from mindspore.nn.wrap import *
 from mindspore.nn.grad import Jvp, Vjp
 from mindspore.nn.sparse import *
 from mindspore.nn.reinforcement import *
-from mindspore.nn import extend
 
 __all__ = ["Cell", "GraphCell"]
 __all__.extend(layer.__all__)
