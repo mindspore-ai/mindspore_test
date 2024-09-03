@@ -63,6 +63,74 @@ enum InferStrategyMode {
   INVALID_MODE = 4,
 };
 
+class TensorLayoutBase {
+ public:
+  explicit TensorLayoutBase(bool is_list) { is_list_ = is_list; }
+  virtual ~TensorLayoutBase() = default;
+  bool is_list() const { return is_list_; }
+  bool no_shape_layout() const { return no_shape_layout_; }
+  void set_no_shape_layout(bool no_shape_layout) { no_shape_layout_ = no_shape_layout; }
+  virtual std::shared_ptr<TensorLayoutBase> GetElement(int64_t idx) = 0;
+  virtual std::shared_ptr<TensorLayout> GetValue() = 0;
+  virtual size_t size() = 0;
+  virtual std::vector<std::shared_ptr<TensorLayout>> GetAllElements() = 0;
+
+ private:
+  bool is_list_;
+  bool no_shape_layout_ = false;
+};
+
+using TensorLayoutBasePtr = std::shared_ptr<TensorLayoutBase>;
+
+class TensorLayoutValue : public TensorLayoutBase {
+ public:
+  explicit TensorLayoutValue(std::shared_ptr<TensorLayout> l) : TensorLayoutBase(false), _l(std::move(l)) {}
+  TensorLayoutValue() : TensorLayoutBase(false) { set_no_shape_layout(true); }
+  ~TensorLayoutValue() override = default;
+  std::shared_ptr<TensorLayoutBase> GetElement(int64_t idx) override {
+    MS_LOG(WARNING) << "Can not get element from TensorLayoutValue, please use GetValue";
+    return std::make_shared<TensorLayoutValue>(_l);
+  }
+  std::vector<std::shared_ptr<TensorLayout>> GetAllElements() override { return {_l}; }
+  std::shared_ptr<TensorLayout> GetValue() override { return _l; }
+  size_t size() override { return 1; }
+
+ private:
+  std::shared_ptr<TensorLayout> _l;
+};
+
+class TensorLayoutList : public TensorLayoutBase {
+ public:
+  explicit TensorLayoutList(std::vector<TensorLayoutBasePtr> l_list)
+      : TensorLayoutBase(true), _l_list(std::move(l_list)) {}
+  explicit TensorLayoutList(size_t n) : TensorLayoutBase(true) {
+    set_no_shape_layout(true);
+    for (size_t i = 0; i < n; ++i) {
+      _l_list.emplace_back(std::make_shared<TensorLayoutValue>());
+    }
+  }
+  ~TensorLayoutList() override = default;
+  TensorLayoutBasePtr GetElement(int64_t idx) override {
+    if (idx < 0 || static_cast<size_t>(idx) >= _l_list.size()) {
+      MS_LOG(EXCEPTION) << "Index " << idx << " is out of range";
+    }
+    return _l_list[LongToSize(idx)];
+  }
+  std::vector<std::shared_ptr<TensorLayout>> GetAllElements() override {
+    std::vector<std::shared_ptr<TensorLayout>> all_elements;
+    for (auto &l : _l_list) {
+      auto elements = l->GetAllElements();
+      all_elements.insert(all_elements.end(), elements.begin(), elements.end());
+    }
+    return all_elements;
+  }
+  std::shared_ptr<TensorLayout> GetValue() override { MS_LOG(EXCEPTION) << "Can not get value from TensorLayoutList"; }
+  size_t size() override { return _l_list.size(); }
+
+ private:
+  std::vector<TensorLayoutBasePtr> _l_list;
+};
+
 class TensorInfoBase {
  public:
   explicit TensorInfoBase(bool is_list) { is_list_ = is_list; }
@@ -71,6 +139,7 @@ class TensorInfoBase {
   virtual std::shared_ptr<TensorInfoBase> GetElement(int64_t idx) = 0;
   virtual TensorInfo GetValue() = 0;
   virtual size_t size() = 0;
+  virtual std::vector<TensorInfo> GetAllElements() = 0;
 
  private:
   bool is_list_;
@@ -81,11 +150,23 @@ using TensorInfoBasePtr = std::shared_ptr<TensorInfoBase>;
 class TensorInfoValue : public TensorInfoBase {
  public:
   explicit TensorInfoValue(TensorInfo l) : TensorInfoBase(false), _l(std::move(l)) {}
+  explicit TensorInfoValue(TensorLayoutBasePtr l) : TensorInfoBase(false) {
+    if (l->is_list()) {
+      MS_LOG(EXCEPTION) << "Input TensorLayoutBasePTr l is a list. Please use TensorInfoList to create instance";
+    }
+    auto l_value = std::dynamic_pointer_cast<TensorLayoutValue>(l);
+    if (l_value == nullptr) {
+      MS_LOG(EXCEPTION) << "Input TensorLayoutBasePtr l is not a TensorLayoutValue";
+    }
+    TensorInfo tensor_info(*(l_value->GetValue()));
+    _l = tensor_info;
+  }
   ~TensorInfoValue() override = default;
   std::shared_ptr<TensorInfoBase> GetElement(int64_t idx) override {
     MS_LOG(WARNING) << "Can not get element from TensorInfoValue, please use GetValue";
     return std::make_shared<TensorInfoValue>(_l);
   }
+  std::vector<TensorInfo> GetAllElements() override { return {_l}; }
   TensorInfo GetValue() override { return _l; }
   size_t size() override { return 1; }
 
@@ -96,6 +177,23 @@ class TensorInfoValue : public TensorInfoBase {
 class TensorInfoList : public TensorInfoBase {
  public:
   explicit TensorInfoList(std::vector<TensorInfoBasePtr> l_list) : TensorInfoBase(true), _l_list(std::move(l_list)) {}
+  explicit TensorInfoList(TensorLayoutBasePtr l) : TensorInfoBase(true) {
+    if (!l->is_list()) {
+      MS_LOG(EXCEPTION) << "Input TensorLayoutBasePTr l is not a list. Please use TensorInfoValue to create instance";
+    }
+    auto l_list = std::dynamic_pointer_cast<TensorLayoutList>(l);
+    if (l_list == nullptr) {
+      MS_LOG(EXCEPTION) << "Input TensorLayoutBasePtr l is not a TensorLayoutList";
+    }
+    for (size_t i = 0; i < l_list->size(); ++i) {
+      auto l_value = l_list->GetElement(SizeToLong(i));
+      if (l_value->is_list()) {
+        _l_list.emplace_back(std::make_shared<TensorInfoList>(l_value));
+      } else {
+        _l_list.emplace_back(std::make_shared<TensorInfoValue>(l_value));
+      }
+    }
+  }
   ~TensorInfoList() override = default;
   TensorInfoBasePtr GetElement(int64_t idx) override {
     if (idx < 0 || static_cast<size_t>(idx) >= _l_list.size()) {
@@ -103,11 +201,59 @@ class TensorInfoList : public TensorInfoBase {
     }
     return _l_list[LongToSize(idx)];
   }
+  std::vector<TensorInfo> GetAllElements() override {
+    std::vector<TensorInfo> all_elements;
+    for (auto &l : _l_list) {
+      auto elements = l->GetAllElements();
+      all_elements.insert(all_elements.end(), elements.begin(), elements.end());
+    }
+    return all_elements;
+  }
   TensorInfo GetValue() override { MS_LOG(EXCEPTION) << "Can not get value from TensorInfoList"; }
   size_t size() override { return _l_list.size(); }
 
  private:
   std::vector<TensorInfoBasePtr> _l_list;
+};
+
+class OperatorVectorBase {
+ public:
+  explicit OperatorVectorBase(bool is_list) { is_list_ = is_list; }
+  virtual ~OperatorVectorBase() = default;
+  virtual std::vector<OperatorVector> GetAllElements() = 0;
+
+ private:
+  bool is_list_;
+};
+
+using OperatorVectorBasePtr = std::shared_ptr<OperatorVectorBase>;
+
+class OperatorVectorValue : public OperatorVectorBase {
+ public:
+  explicit OperatorVectorValue(OperatorVector m_op) : OperatorVectorBase(false), _m_op(std::move(m_op)) {}
+  ~OperatorVectorValue() override = default;
+  std::vector<OperatorVector> GetAllElements() override { return {_m_op}; }
+
+ private:
+  OperatorVector _m_op;
+};
+
+class OperatorVectorList : public OperatorVectorBase {
+ public:
+  explicit OperatorVectorList(std::vector<OperatorVectorBasePtr> m_ops)
+      : OperatorVectorBase(true), _m_ops(std::move(m_ops)) {}
+  ~OperatorVectorList() override = default;
+  std::vector<OperatorVector> GetAllElements() override {
+    std::vector<OperatorVector> all_elements;
+    for (auto &op : _m_ops) {
+      auto elements = op->GetAllElements();
+      all_elements.insert(all_elements.end(), elements.begin(), elements.end());
+    }
+    return all_elements;
+  }
+
+ private:
+  std::vector<OperatorVectorBasePtr> _m_ops;
 };
 
 class Edge;
@@ -150,6 +296,9 @@ class OperatorInfo {
   virtual Status Init(const StrategyPtr &in_strategy, const StrategyPtr &out_strategy,
                       const std::vector<std::shared_ptr<TensorLayout>> &in_tensor_layouts = {},
                       const std::vector<std::shared_ptr<TensorLayout>> &out_tensor_layouts = {});
+  virtual Status Init(const StrategyPtr &in_strategy, const StrategyPtr &out_strategy,
+                      const std::vector<TensorLayoutBasePtr> &in_tensor_layouts,
+                      const std::vector<TensorLayoutBasePtr> &out_tensor_layouts);
   // only init the necessary parts
   virtual Status InitForCostModel(const StrategyPtr &in_strategy, const StrategyPtr &out_strategy);
 
@@ -175,6 +324,7 @@ class OperatorInfo {
   Shapes inputs_divisor() { return inputs_divisor_; }
   Shapes outputs_divisor() { return outputs_divisor_; }
   bool dynamic_shape_flag() { return dynamic_shape_flag_; }
+  bool use_shape_base() const { return use_shape_base_; }
 
   double GetForwardMemoryCostFromCNode();
   // This is a common method for setting operator cost for a given strategy, in which the validity of this strategy
@@ -197,17 +347,22 @@ class OperatorInfo {
   OutPutInfoVector replace_op_info() const { return replace_op_info_; }
   virtual ReplaceGraphPtr replace_graph(const CNodePtr &) { return replace_graph_; }
   MirrorOps mirror_ops() const { return mirror_ops_; }
+  std::vector<OperatorVectorBasePtr> mirror_ops_new() const { return mirror_ops_new_; }
   Ops sub_ops() const { return sub_ops_; }
   VirtualDivOp virtual_div_op() const { return virtual_div_op_; }
   Shape dev_matrix_shape() const { return dev_matrix_shape_; }
   std::vector<TensorInfo> inputs_tensor_info() const { return inputs_tensor_info_; }
   std::vector<TensorInfoBasePtr> inputs_tensor_info_new() const { return inputs_tensor_info_new_; }
   void set_inputs_tensor_info(const std::vector<TensorInfo> &tensor_info) { inputs_tensor_info_ = tensor_info; }
+  void set_inputs_tensor_info_new(const std::vector<TensorInfoBasePtr> &tensor_info) {
+    inputs_tensor_info_new_ = tensor_info;
+  }
   std::vector<TensorInfo> outputs_tensor_info() const { return outputs_tensor_info_; }
   std::vector<TensorInfoBasePtr> outputs_tensor_info_new() const { return outputs_tensor_info_new_; }
   std::vector<std::shared_ptr<StrategyWithCost>> strategy_cost() const { return strategy_cost_; }
   const std::string &name() const { return name_; }
   void set_name(const std::string &name) { name_ = name; }
+  void set_mirror_ops(const MirrorOps &mirror_ops) { mirror_ops_ = mirror_ops; }
   RankList stage_device_list() const { return stage_device_list_; }
 
   void AddSuccEdge(const std::shared_ptr<Edge> &e) { succ_edges_.push_back(e); }
@@ -370,6 +525,8 @@ class OperatorInfo {
   Status InitWithAutoRepeatCalc(const StrategyPtr &in_strategy, const StrategyPtr &out_strategy);
   Status InitWithTensorLayout(const std::vector<std::shared_ptr<TensorLayout>> &in_tensor_layouts,
                               const std::vector<std::shared_ptr<TensorLayout>> &out_tensor_layouts);
+  Status InitWithTensorLayoutForNewShape(const std::vector<TensorLayoutBasePtr> &in_tensor_layouts,
+                                         const std::vector<TensorLayoutBasePtr> &out_tensor_layouts);
   Status InitForCostModelWithAutoRepeatCalc(const StrategyPtr &in_strategy, const StrategyPtr &out_strategy);
   Status InferRepeatedCalcInfo();
   Status InferVirtualDivOps();
@@ -434,6 +591,7 @@ class OperatorInfo {
   OutPutInfoVector replace_op_info_;
   ReplaceGraphPtr replace_graph_;
   MirrorOps mirror_ops_;
+  std::vector<OperatorVectorBasePtr> mirror_ops_new_;
   VirtualDivOp virtual_div_op_;
   RankList stage_device_list_;  // the device list in this stage
   int64_t stage_device_size_ = 0;
@@ -485,6 +643,7 @@ class OperatorInfo {
   // Whether the list of available strategies is exact or approximate
   bool is_strategy_cost_exact_ = true;
   bool self_define_shard_;
+  bool use_shape_base_ = false;
 
  private:
   OperatorCostPtr operator_cost_;

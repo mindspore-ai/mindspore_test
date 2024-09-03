@@ -44,16 +44,35 @@ class SelfDefineShardInfo : public OperatorInfo {
   Status CheckInputLayout() override;
   Status CheckOutputLayout() override;
   Status InferOutputTensorInfo() override;
+  Status InferMirrorOpsByLayout() override;
   Status GetAttrs() override { return SUCCESS; }
   Status InferTensorInfo() override { return UnreachableError(); }
   Status InferForwardCommunication() override { return UnreachableError(); }
   Status InferDevMatrixShape() override { return UnreachableError(); }
   Status InferTensorMap() override { return UnreachableError(); }
   Status InferAsLossDivisor() override { return UnreachableError(); }
+  Status CheckLayout(const NewShapes &in_shapes, const std::vector<TensorInfoBasePtr> &tensor_info, const string &name);
 
  private:
-  Status CheckLayout(const Shapes &in_shapes, const std::vector<TensorInfo> &tensor_info, const string &name);
+  Status InferOperatorVectorListForShapeList(const TensorInfoBasePtr &tensor_info, const int64_t &input_idx,
+                                             std::vector<OperatorVectorBasePtr> *mirror_ops_new, bool *group_is_empty);
+  Status InferOperatorVectorValueForShapeValue(const TensorInfoBasePtr &tensor_info, const int64_t &input_idx,
+                                               std::vector<OperatorVectorBasePtr> *mirror_ops_new,
+                                               MirrorOps *mirror_ops, bool *group_is_empty);
 };
+
+class CustomInfo : public SelfDefineShardInfo {
+ public:
+  CustomInfo(const std::string &name, const Shapes &inputs_shape, const Shapes &outputs_shape,
+             const PrimitiveAttrs &attrs)
+      : SelfDefineShardInfo(name, inputs_shape, outputs_shape, attrs) {}
+  ~CustomInfo() override = default;
+
+ protected:
+  Status CheckInputLayout() override;
+  Status GetAttrs() override;
+};
+
 }  // namespace parallel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_FRONTEND_PARALLEL_OPS_INFO_SELF_DEFINE_SHARD_INFO_H_

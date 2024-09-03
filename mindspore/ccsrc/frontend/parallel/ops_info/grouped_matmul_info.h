@@ -44,10 +44,7 @@ class GroupedMatmulInfo : public OperatorInfo {
   Status GetAttrs() override;
   Status InferDevMatrixShape() override;
   Status InferTensorMap() override;
-  Status InferTensorInfo() override;
   Status InferForwardCommunication() override;
-  TensorInfoBasePtr CreateTensorInfo(const Shape &device_matrix, const ShapeBasePtr &inputs_shape,
-                                     const ShapeBasePtr &inputs_tensor_map);
   Status InferAsLossDivisor();
   void SetOptionalInputTensorMap(const size_t &index, size_t *valid_input_index);
 

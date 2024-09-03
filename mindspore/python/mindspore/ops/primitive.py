@@ -171,6 +171,9 @@ class Primitive(Primitive_):
                     if not isinstance(in_value, int) and self.name not in SUPPORTED_TUPLE_IN_TUPLE_STRATEGY:
                         raise TypeError(f'The {log_info}: {strategy} of {self.name} is not valid,'
                                         f' the value of strategy must be int type, but got:{type(in_value)}')
+                    if isinstance(in_value, Layout) and (self.name in SUPPORTED_TUPLE_IN_TUPLE_STRATEGY):
+                        is_layout.append(True)
+                        continue
                 is_layout.append(False)
                 continue
             is_layout.append(True)
@@ -188,9 +191,17 @@ class Primitive(Primitive_):
                 raise TypeError(f'{log_info} must be tuple type, but got:{type(layout)}')
             layout_value = ()
             for in_ele in layout:
-                if not isinstance(in_ele, Layout):
-                    raise TypeError(f"The {log_info} item should be a object of class Layout.")
-                layout_value += (in_ele.to_dict(),)
+                if isinstance(in_ele, Layout):
+                    layout_value += (in_ele.to_dict(),)
+                elif isinstance(in_ele, tuple):
+                    new_layout_list = ()
+                    for ele in in_ele:
+                        if not isinstance(ele, Layout):
+                            raise TypeError(f"The {log_info} item should be a object of class Layout.")
+                        new_layout_list += (ele.to_dict(),)
+                    layout_value += (new_layout_list,)
+                else:
+                    raise TypeError(f"The {log_info} item should be a object of class Layout or a tuple.")
         return layout_value
 
     def _check_shard_strategy_in_out_match(self, in_strategy, out_strategy):
@@ -299,7 +310,8 @@ class Primitive(Primitive_):
         if out_strategy is not None:
             out_is_layout = self._check_shard_strategy(out_strategy, "out_strategy")
         self._check_shard_strategy_in_out_match(in_strategy, out_strategy)
-        if in_is_layout is not None and out_is_layout is not None and in_is_layout[0] != out_is_layout[0]:
+        if in_is_layout is not None and out_is_layout is not None and (
+                (in_is_layout[0] != out_is_layout[0]) and (self.name not in SUPPORTED_TUPLE_IN_TUPLE_STRATEGY)):
             raise ValueError(f'The in_strategy type must equal to the out_strategy type, '
                              f'one using tuple(tuple) and the other using tuple(Layout) is not allowed.')
         in_layout_value = None
