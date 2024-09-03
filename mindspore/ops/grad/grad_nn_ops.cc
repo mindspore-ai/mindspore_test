@@ -45,7 +45,7 @@ NodePtr ApplyAdam(BpropBuilder *ib, const std::vector<NodePtr> &nodes, const std
   auto grad_dtype = ib->GetDtype(dout);
 
   auto backward_float_params = GetValue<std::vector<float>>(ib->GetAttr("backward_float_params"));
-  assert(backward_float_params.size() == kIndex6);
+  MS_ASSERT(backward_float_params.size() == kIndex6);
   auto beta1_power = ib->Tensor(backward_float_params[0], grad_dtype);
   auto beta2_power = ib->Tensor(backward_float_params[1], grad_dtype);
   auto lr = ib->Tensor(backward_float_params[2], grad_dtype);
@@ -54,7 +54,7 @@ NodePtr ApplyAdam(BpropBuilder *ib, const std::vector<NodePtr> &nodes, const std
   auto epsilon = ib->Tensor(backward_float_params[5], grad_dtype);
 
   auto backward_int_params = GetValue<std::vector<std::vector<int64_t>>>(ib->GetAttr("backward_int_params"));
-  assert(backward_int_params.size() == kIndex4);
+  MS_ASSERT(backward_int_params.size() == kIndex4);
   auto global_step = ib->Tensor(backward_int_params[0][0], kInt32);
   auto mask_zero = ib->Value(backward_int_params[1]);
   auto padding_key = ib->Value(backward_int_params[2]);
@@ -81,14 +81,14 @@ NodePtr ApplyFtrl(BpropBuilder *ib, const std::vector<NodePtr> &nodes, const std
   auto grad_dtype = ib->GetDtype(dout);
 
   auto backward_float_params = GetValue<std::vector<float>>(ib->GetAttr("backward_float_params"));
-  assert(backward_float_params.size() == kIndex4);
+  MS_ASSERT(backward_float_params.size() == kIndex4);
   auto lr = ib->Tensor(backward_float_params[0], grad_dtype);
   auto lr_power = ib->Tensor(backward_float_params[1], grad_dtype);
   auto lambda1 = ib->Tensor(backward_float_params[2], grad_dtype);
   auto lambda2 = ib->Tensor(backward_float_params[3], grad_dtype);
 
   auto backward_int_params = GetValue<std::vector<std::vector<int64_t>>>(ib->GetAttr("backward_int_params"));
-  assert(backward_int_params.size() == kIndex4);
+  MS_ASSERT(backward_int_params.size() == kIndex4);
   auto global_step = ib->Tensor(backward_int_params[0][0], kInt32);
   auto mask_zero = ib->Value(backward_int_params[1]);
   auto padding_key = ib->Value(backward_int_params[2]);
@@ -114,7 +114,7 @@ NodePtr ApplyAdamW(BpropBuilder *ib, const std::vector<NodePtr> &nodes, const st
   auto grad_dtype = ib->GetDtype(dout);
 
   auto backward_float_params = GetValue<std::vector<float>>(ib->GetAttr("backward_float_params"));
-  assert(backward_float_params.size() == kIndex7);
+  MS_ASSERT(backward_float_params.size() == kIndex7);
   auto beta1_power = ib->Tensor(backward_float_params[0], grad_dtype);
   auto beta2_power = ib->Tensor(backward_float_params[1], grad_dtype);
   auto lr = ib->Tensor(backward_float_params[2], grad_dtype);
@@ -124,7 +124,7 @@ NodePtr ApplyAdamW(BpropBuilder *ib, const std::vector<NodePtr> &nodes, const st
   auto epsilon = ib->Tensor(backward_float_params[6], grad_dtype);
 
   auto backward_int_params = GetValue<std::vector<std::vector<int64_t>>>(ib->GetAttr("backward_int_params"));
-  assert(backward_int_params.size() == kIndex6);
+  MS_ASSERT(backward_int_params.size() == kIndex6);
   auto global_step = ib->Tensor(backward_int_params[0][0], kInt32);
   auto amsgrad = ib->Value(backward_int_params[1]);
   auto maximize = ib->Value(backward_int_params[2]);
@@ -164,7 +164,7 @@ NodePtr ApplyAdaGrad(BpropBuilder *ib, const std::vector<NodePtr> &nodes, const 
   auto lr = ib->Tensor(backward_float_params.at(0), grad_dtype);
 
   auto backward_int_params = GetValue<std::vector<std::vector<int64_t>>>(ib->GetAttr("backward_int_params"));
-  assert(backward_int_params.size() == kIndex4);
+  MS_ASSERT(backward_int_params.size() == kIndex4);
   auto global_step = ib->Tensor(backward_int_params[0][0], kInt32);
   auto mask_zero = ib->Value(backward_int_params[1]);
   auto padding_key = ib->Value(backward_int_params[2]);

@@ -107,7 +107,7 @@ bool DeformableOffsetsGpuKernelMod::CheckParam(const PrimitivePtr &primitive_) {
     return false;
   }
   deformable_groups_ = static_cast<uint32_t>(GetValue<int64_t>(primitive_->GetAttr("deformable_groups")));
-  if (deformable_groups_ <= 0) {
+  if (deformable_groups_ == 0) {
     MS_LOG(ERROR) << kernel_name_ << "'s deformable_groups should greater than 0, but got " << deformable_groups_;
     return false;
   }

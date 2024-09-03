@@ -64,6 +64,7 @@ bool PoolingGradCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs,
   if (kernel_name_ != kAvgPoolGradOpName) {
     if (KernelMod::primitive_->HasAttr(CEIL_MODE)) {
       ValuePtr ceil_mode = KernelMod::primitive_->GetAttr(CEIL_MODE);
+      MS_EXCEPTION_IF_NULL(ceil_mode);
       ceil_mode_ = (ceil_mode->isa<BoolImm>() && GetValue<bool>(ceil_mode)) ||
                    (ceil_mode->isa<Int64Imm>() && GetValue<int64_t>(ceil_mode) == 1);
     }

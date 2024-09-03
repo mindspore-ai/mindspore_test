@@ -101,7 +101,7 @@ int SparseApplyAdagradDAGpuKernelMod::Resize(const std::vector<KernelTensor *> &
                                                        inputs[kLRIndex]->GetDeviceShapeVector().end());
   int64_t indices_nums_ = std::accumulate(indices.begin(), indices.end(), int64_t(1), std::multiplies<int64_t>());
 
-  if (batch_rank_ < 0 || lr_shape.size() != static_cast<size_t>(batch_rank_)) {
+  if (lr_shape.size() != batch_rank_) {
     MS_LOG(ERROR) << "For '" << kernel_name_
                   << "', the shape size of 'lr' must be equal to 'batch_rank', but got the shape of 'lr': " << lr_shape
                   << " and 'batch_rank': " << batch_rank_;

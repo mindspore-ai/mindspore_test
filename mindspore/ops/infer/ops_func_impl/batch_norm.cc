@@ -62,16 +62,17 @@ void BatchNormShapeCheck(const PrimitivePtr &primitive, const std::vector<Abstra
                    CheckAndConvertUtils::FormatCheckInRangeMsg("rank of images", SizeToLong(x_shape.size()),
                                                                kIncludeBoth, {2, 4}, primitive));
   }
-  MS_CHECK_VALUE(scale_shape.size() == 1, CheckAndConvertUtils::FormatCheckIntegerMsg(
-                                            "rank of scale", SizeToLong(scale_shape.size()), kEqual, 1, primitive));
-  MS_CHECK_VALUE(bias_shape.size() == 1, CheckAndConvertUtils::FormatCheckIntegerMsg(
-                                           "rank of bias", SizeToLong(bias_shape.size()), kEqual, 1, primitive));
+  MS_CHECK_VALUE(
+    scale_shape.size() == kIndex1,
+    CheckAndConvertUtils::FormatCheckIntegerMsg("rank of scale", SizeToLong(scale_shape.size()), kEqual, 1, primitive));
+  MS_CHECK_VALUE(bias_shape.size() == kIndex1, CheckAndConvertUtils::FormatCheckIntegerMsg(
+                                                 "rank of bias", SizeToLong(bias_shape.size()), kEqual, 1, primitive));
   if (MS_LIKELY(!(IsDynamic(scale_shape) || IsDynamic(bias_shape)))) {
     MS_CHECK_VALUE(bias_shape == scale_shape,
                    CheckAndConvertUtils::FormatCheckMsg("scale and bias", scale_shape, kEqual, bias_shape, primitive));
   }
 
-  auto format_opt = GetScalarValue<int64_t>(input_args[attr_pos + 3]->GetValue());
+  auto format_opt = GetScalarValue<int64_t>(input_args[attr_pos + kIndex3]->GetValue());
   if (MS_LIKELY(format_opt.has_value() && !IsDynamic(x_shape) && !IsDynamic(scale_shape))) {
     mindspore::Format format = static_cast<mindspore::Format>(format_opt.value());
     auto channel = (format == Format::NCHW) ? x_shape[kInputIndex1] : x_shape.back();
@@ -87,12 +88,12 @@ void BatchNormShapeCheck(const PrimitivePtr &primitive, const std::vector<Abstra
   }
   auto mean_shape = input_args[kInputIndex3]->GetShape()->GetShapeVector();
   auto variance_shape = input_args[kInputIndex4]->GetShape()->GetShapeVector();
-  MS_CHECK_VALUE(mean_shape.size() == 1, CheckAndConvertUtils::FormatCheckIntegerMsg(
-                                           "rank of mean", SizeToLong(mean_shape.size()), kEqual, 1, primitive));
-  MS_CHECK_VALUE(variance_shape.size() == 1,
+  MS_CHECK_VALUE(mean_shape.size() == kIndex1, CheckAndConvertUtils::FormatCheckIntegerMsg(
+                                                 "rank of mean", SizeToLong(mean_shape.size()), kEqual, 1, primitive));
+  MS_CHECK_VALUE(variance_shape.size() == kIndex1,
                  CheckAndConvertUtils::FormatCheckIntegerMsg("rank of variance", SizeToLong(variance_shape.size()),
                                                              kEqual, 1, primitive));
-  auto is_training_opt = GetScalarValue<bool>(input_args[attr_pos + 0]->GetValue());
+  auto is_training_opt = GetScalarValue<bool>(input_args[attr_pos + kIndex0]->GetValue());
   if (MS_UNLIKELY(!is_training_opt.has_value())) {
     return;
   }
@@ -148,7 +149,7 @@ TypePtr BatchNormFuncImpl::InferType(const PrimitivePtr &prim, const std::vector
 int32_t BatchNormFuncImpl::CheckValidation(const PrimitivePtr &primitive,
                                            const std::vector<AbstractBasePtr> &input_args) const {
   const size_t attr_pos = GetAttrPosZero();
-  auto epsilon_value = GetScalarValue<pyfloat>(input_args[attr_pos + 1]->GetValue());
+  auto epsilon_value = GetScalarValue<pyfloat>(input_args[attr_pos + kIndex1]->GetValue());
   if (MS_UNLIKELY(!epsilon_value.has_value())) {
     return OP_CHECK_RETRY;
   }
@@ -156,7 +157,7 @@ int32_t BatchNormFuncImpl::CheckValidation(const PrimitivePtr &primitive,
                  CheckAndConvertUtils::FormatCheckInRangeMsg<pyfloat>("eps", epsilon_value.value(), kIncludeRight,
                                                                       {0., 1.}, primitive));
 
-  auto momentum_value = GetScalarValue<pyfloat>(input_args[attr_pos + 2]->GetValue());
+  auto momentum_value = GetScalarValue<pyfloat>(input_args[attr_pos + kIndex2]->GetValue());
   if (MS_UNLIKELY(!momentum_value.has_value())) {
     return OP_CHECK_RETRY;
   }
@@ -164,7 +165,7 @@ int32_t BatchNormFuncImpl::CheckValidation(const PrimitivePtr &primitive,
   MS_CHECK_VALUE(momentum >= 0 && momentum <= 1, CheckAndConvertUtils::FormatCheckInRangeMsg<pyfloat>(
                                                    "momentum", momentum, kIncludeRight, {0., 1.}, primitive));
 
-  auto format_opt = GetScalarValue<int64_t>(input_args[attr_pos + 3]->GetValue());
+  auto format_opt = GetScalarValue<int64_t>(input_args[attr_pos + kIndex3]->GetValue());
   if (MS_UNLIKELY(!format_opt.has_value())) {
     return OP_CHECK_RETRY;
   }

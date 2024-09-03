@@ -23,7 +23,7 @@ namespace mindspore {
 namespace device {
 namespace gpu {
 size_t CudaDriver::AllocDeviceMem(size_t size, DeviceMemPtr *addr) {
-  if (size <= 0) {
+  if (size == 0) {
     MS_LOG(EXCEPTION) << "#umsg#Cuda error:#umsg#The cudaMalloc alloc size is under 0.";
   }
   size_t retreat_count = 0;

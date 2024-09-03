@@ -28,8 +28,8 @@
 namespace mindspore::ops {
 namespace {
 void EmbeddingTableBaseCheckShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) {
-  CheckTensorScalarRank(primitive, input_args[1], "ps_id");
-  const auto &table_id_shape = input_args[2]->GetShape()->GetShapeVector();
+  CheckTensorScalarRank(primitive, input_args[kIndex1], "ps_id");
+  const auto &table_id_shape = input_args[kIndex2]->GetShape()->GetShapeVector();
   if (MS_LIKELY(!IsDynamicRank(table_id_shape))) {
     MS_CHECK_VALUE(table_id_shape.size() == 1,
                    CheckAndConvertUtils::FormatCheckIntegerMsg("rank of table_id", SizeToLong(table_id_shape.size()),
@@ -39,9 +39,9 @@ void EmbeddingTableBaseCheckShape(const PrimitivePtr &primitive, const std::vect
 
 void EmbeddingTableBaseCheckType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) {
   const auto &prim_name = primitive->name();
-  auto ps_id_type = input_args[1]->GetType();
+  auto ps_id_type = input_args[kIndex1]->GetType();
   MS_EXCEPTION_IF_NULL(ps_id_type);
-  auto table_id_type = input_args[2]->GetType();
+  auto table_id_type = input_args[kIndex2]->GetType();
   MS_EXCEPTION_IF_NULL(table_id_type);
   const std::set<TypePtr> valid_types = {kInt32};
   (void)CheckAndConvertUtils::CheckTensorTypeValid("ps_id", ps_id_type, valid_types, prim_name);
@@ -74,7 +74,7 @@ int32_t EmbeddingTableBaseFuncImpl::CommonCheckValidation(const PrimitivePtr &pr
     MS_EXCEPTION(ValueError) << "For " << primitive->name() << ", does not support Non-bin file.";
   }
 
-  const auto &table_id_shape = input_args[kInputIndex2]->GetShape()->GetShapeVector();
+  const auto &table_id_shape = input_args[kIndex2]->GetShape()->GetShapeVector();
   auto table_name_opt = GetArrayValue<std::string>(primitive->GetAttr("table_name"));
   if (MS_UNLIKELY(IsDynamic(table_id_shape) || !table_name_opt.has_value())) {
     return OP_CHECK_RETRY;

@@ -162,7 +162,7 @@ BaseShapePtr GatherFuncImpl::InferShape(const PrimitivePtr &primitive,
 
 TypePtr GatherFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
   MS_EXCEPTION_IF_NULL(input_args[kInputIndex0]);
-  return input_args[kInputIndex0]->GetType()->Clone();
+  return input_args[kInputIndex0]->GetType();
 }
 }  // namespace ops
 }  // namespace mindspore

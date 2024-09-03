@@ -25,8 +25,14 @@
 
 namespace mindspore {
 namespace kernel {
+namespace {
 static constexpr size_t INPUT_NUM = 2;
 static constexpr size_t OUTPUT_NUM = 1;
+inline bool IsEqual(double x, double y) {
+  const double epsilon = 1e-14;
+  return std::abs(x - y) <= epsilon;
+}
+}  // namespace
 bool GammaCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
   int64_t seed = GetValue<int64_t>(primitive_->GetAttr(ops::kSeed));
   int64_t seed2 = GetValue<int64_t>(primitive_->GetAttr(ops::kSeed2));
@@ -124,7 +130,7 @@ void GammaCpuKernelMod::Generate(const std::vector<KernelTensor *> &inputs,
       const double alpha_value = static_cast<double>(alpha_flat[alpha_idx]);
 
       //      DISABLE_FLOAT_EQUALITY_WARNING
-      if (alpha_value == static_cast<double>(1.0)) {
+      if (IsEqual(alpha_value, 1.0)) {
         //        ENABLE_FLOAT_EQUALITY_WARNING
         // Sample from an exponential distribution.
         for (int64_t sample_idx = output_idx % sample_shape_per_al;

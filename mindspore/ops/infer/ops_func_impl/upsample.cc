@@ -179,15 +179,16 @@ BaseShapePtr UpsampleForwardInferShape(const PrimitivePtr &primitive, const std:
                    CheckAndConvertUtils::FormatCheckIntegerMsg("image rank", SizeToLong(x_shape.size()), kEqual,
                                                                SizeToLong(image_rank), primitive));
     if (MS_LIKELY(!IsDynamic(x_shape))) {
-      auto input_num = std::accumulate(x_shape.begin(), x_shape.end(), int64_t(1), std::multiplies<int64_t>());
-      if (input_num <= 0) {
+      auto input_num = SizeOf(x_shape);
+      if (input_num == 0) {
         MS_EXCEPTION(RuntimeError) << "For " << primitive->name()
                                    << ", input sizes should be greater than 0, but got input.shape: " << x_shape << ".";
       }
     }
   }
 
-  auto y_shape = InferShapeWithNone(primitive, std::make_tuple(input_args[1], input_args[2]), x_shape, image_rank);
+  auto y_shape =
+    InferShapeWithNone(primitive, std::make_tuple(input_args[kIndex1], input_args[kIndex2]), x_shape, image_rank);
 
   return std::make_shared<abstract::TensorShape>(std::move(y_shape));
 }
@@ -201,7 +202,7 @@ BaseShapePtr UpsampleBackwardInferShape(const PrimitivePtr &primitive, const std
 
 int32_t UpsampleBackwardCheck(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args,
                               const size_t image_rank) {
-  const auto &dout_shape = input_args[0]->GetShape()->GetShapeVector();
+  const auto &dout_shape = input_args[kIndex0]->GetShape()->GetShapeVector();
   if (MS_UNLIKELY(IsDynamicRank(dout_shape))) {
     return OP_CHECK_RETRY;
   }
@@ -210,8 +211,9 @@ int32_t UpsampleBackwardCheck(const PrimitivePtr &primitive, const std::vector<A
                  CheckAndConvertUtils::FormatCheckIntegerMsg("grad rank", SizeToLong(dout_shape.size()), kEqual,
                                                              SizeToLong(image_rank), primitive));
 
-  auto x_shape = InferShapeFromOriginSizeArg(primitive, input_args[1], image_rank);
-  auto y_shape = InferShapeWithNone(primitive, std::make_tuple(input_args[2], input_args[3]), x_shape, image_rank);
+  auto x_shape = InferShapeFromOriginSizeArg(primitive, input_args[kIndex1], image_rank);
+  auto y_shape =
+    InferShapeWithNone(primitive, std::make_tuple(input_args[kIndex2], input_args[kIndex3]), x_shape, image_rank);
 
   const auto &prim_name = primitive->name();
   for (size_t i = 0; i < image_rank; ++i) {

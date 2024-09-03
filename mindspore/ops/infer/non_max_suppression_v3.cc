@@ -123,8 +123,8 @@ abstract::ShapePtr NonMaxSuppressionV3FrontendInferShape(const PrimitivePtr &pri
 }
 
 TypePtr NonMaxSuppressionV3InferType(const PrimitivePtr &prim, const std::vector<AbstractBasePtr> &input_args) {
-  auto prim_name = prim->name();
   MS_EXCEPTION_IF_NULL(prim);
+  auto prim_name = prim->name();
   const int input_num = 5;
   (void)CheckAndConvertUtils::CheckInteger("input number", SizeToLong(input_args.size()), kEqual, input_num, prim_name);
   for (const auto &item : input_args) {

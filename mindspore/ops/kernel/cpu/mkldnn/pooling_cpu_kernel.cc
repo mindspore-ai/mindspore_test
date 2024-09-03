@@ -21,6 +21,7 @@
 #include <functional>
 #include "mindspore/ops/op_def/conv_pool_op_name.h"
 #include "kernel/format_utils.h"
+#include "utils/log_adapter.h"
 
 namespace mindspore {
 namespace kernel {
@@ -55,6 +56,7 @@ void PoolingCpuKernelMod::InitPoolingFields(const std::vector<KernelTensor *> &i
 
   if (KernelMod::primitive_->HasAttr(CEIL_MODE)) {
     ValuePtr ceil_mode = KernelMod::primitive_->GetAttr(CEIL_MODE);
+    MS_EXCEPTION_IF_NULL(ceil_mode);
     ceil_mode_ = (ceil_mode->isa<BoolImm>() && GetValue<bool>(ceil_mode)) ||
                  (ceil_mode->isa<Int64Imm>() && GetValue<int64_t>(ceil_mode) == 1);
   }

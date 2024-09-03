@@ -21,6 +21,7 @@
 #include <utility>
 #include <memory>
 #include <map>
+#include "abstract/utils.h"
 
 namespace mindspore {
 namespace kernel {
@@ -60,6 +61,10 @@ int SolveTriangularCpuKernelMod::Resize(const std::vector<KernelTensor *> &input
   m_ = a_shape[a_dims - kSquareSize];
   n_ = (b_dims == a_dims - 1) ? 1 : b_shape[b_dims - 1];
   batch_ = std::accumulate(a_shape.begin(), a_shape.end() - kSquareSize, int64_t(1), std::multiplies{});
+  a_batch_size_ = m_ * m_;
+  b_batch_size_ = m_ * n_;
+  workspace_size_list_.push_back(a_batch_size_ * out_byte_size_);
+  workspace_size_list_.push_back(b_batch_size_ * out_byte_size_);
   return KRET_OK;
 }
 
@@ -85,7 +90,7 @@ bool SolveTriangularCpuKernelMod::Init(const std::vector<KernelTensor *> &inputs
   if (!MatchKernelFunc(kernel_name_, inputs, outputs)) {
     return false;
   }
-
+  out_byte_size_ = abstract::TypeIdSize(outputs[kIndexX]->dtype_id());
   return true;
 }
 
@@ -151,33 +156,22 @@ void SolveTriangularCpuKernelMod::SolveTriangularCheck(const std::vector<KernelT
 
 template <typename T_in, typename T_out>
 bool SolveTriangularCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *> &inputs,
-                                               const std::vector<KernelTensor *> &,
+                                               const std::vector<KernelTensor *> &workspace,
                                                const std::vector<KernelTensor *> &outputs) {
   SolveTriangularCheck(inputs, outputs);
   auto a_addr = reinterpret_cast<T_in *>(inputs[kIndexA]->device_ptr());
   auto b_addr = reinterpret_cast<T_in *>(inputs[kIndexB]->device_ptr());
   auto output_addr = reinterpret_cast<T_out *>(outputs[kIndexX]->device_ptr());
-  size_t a_batch_size = m_ * m_;
-  size_t b_batch_size = m_ * n_;
-  size_t output_batch_size = b_batch_size;
-  T_out *casted_a_addr = static_cast<T_out *>(malloc(sizeof(T_out) * a_batch_size));
-  if (casted_a_addr == nullptr) {
-    MS_LOG(ERROR) << "For '" << kernel_name_ << "', malloc [casted_a_addr] memory failed.";
-    return false;
-  }
-  T_out *casted_b_addr = static_cast<T_out *>(malloc(sizeof(T_out) * b_batch_size));
-  if (casted_b_addr == nullptr) {
-    MS_LOG(ERROR) << "For '" << kernel_name_ << "', malloc [casted_b_addr] memory failed.";
-    return false;
-  }
+  T_out *casted_a_addr = reinterpret_cast<T_out *>(workspace[kIndex0]->device_ptr());
+  T_out *casted_b_addr = reinterpret_cast<T_out *>(workspace[kIndex1]->device_ptr());
   for (size_t i = 0; i < batch_; ++i) {
-    T_in *a_batch_addr = a_addr + i * a_batch_size;
-    T_in *b_batch_addr = b_addr + i * b_batch_size;
-    T_out *output_batch_addr = output_addr + i * output_batch_size;
-    for (size_t j = 0; j < a_batch_size; j++) {
+    T_in *a_batch_addr = a_addr + i * a_batch_size_;
+    T_in *b_batch_addr = b_addr + i * b_batch_size_;
+    T_out *output_batch_addr = output_addr + i * b_batch_size_;
+    for (size_t j = 0; j < a_batch_size_; j++) {
       casted_a_addr[j] = static_cast<T_out>(a_batch_addr[j]);
     }
-    for (size_t j = 0; j < b_batch_size; j++) {
+    for (size_t j = 0; j < b_batch_size_; j++) {
       casted_b_addr[j] = static_cast<T_out>(b_batch_addr[j]);
     }
     Map<Matrix<T_out, RowMajor>> b(casted_b_addr, m_, n_);
@@ -193,8 +187,6 @@ bool SolveTriangularCpuKernelMod::LaunchKernel(const std::vector<KernelTensor *>
       solve(a, b, output_batch_addr, lower_);
     }
   }
-  free(casted_a_addr);
-  free(casted_b_addr);
   return true;
 }
 

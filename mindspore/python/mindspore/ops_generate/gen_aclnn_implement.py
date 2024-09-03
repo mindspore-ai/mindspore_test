@@ -177,7 +177,7 @@ def gen_aclnn_kernel(op_name, yaml_str, need_update_shape=False, auto=False):
     if check_op_registed(op_name) and not auto:
         logging.warning("Kernel {%s} is already registered.", op_name)
         return
-    current_path = os.path.dirname(os.path.abspath(__file__))
+    current_path = os.path.dirname(os.path.realpath(__file__))
     work_path = os.path.join(current_path, '../../../../')
 
     aclnn_path = '{MS_OPS_KERNEL_PATH}/ascend/opapi/aclnn/'
@@ -211,7 +211,7 @@ def gen_aclnn_kernel(op_name, yaml_str, need_update_shape=False, auto=False):
 def get_registed_ops(file_path=f'{MS_OPS_KERNEL_PATH}/ascend/opapi/'):
     '''get registered ops by search files'''
     # default search in 'ops/kernel/ascend/opapi/'
-    current_path = os.path.dirname(os.path.abspath(__file__))
+    current_path = os.path.dirname(os.path.realpath(__file__))
     work_path = os.path.join(current_path, '../../../../')
     search_path = os.path.join(work_path, file_path)
     ret = []

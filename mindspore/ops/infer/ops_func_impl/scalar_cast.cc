@@ -17,6 +17,7 @@
 #include "infer/ops_func_impl/scalar_cast.h"
 #include <vector>
 #include "mindspore/ops/ops_utils/op_utils.h"
+#include "utils/log_adapter.h"
 
 namespace mindspore {
 namespace ops {
@@ -31,6 +32,7 @@ TypePtr ScalarCastFuncImpl::InferType(const PrimitivePtr &primitive,
   MS_CHECK_VALUE(dtype_ptr.has_value(), primitive->name() + " error: dtype input should has valid value.");
   auto type_id = static_cast<TypeId>(dtype_ptr.value());
   auto type = TypeIdToType(type_id);
+  MS_EXCEPTION_IF_NULL(type);
   if (type_id != kNumberTypeInt64 && type_id != kNumberTypeFloat32 && type_id != kNumberTypeFloat64 &&
       type_id != kNumberTypeBool) {
     MS_EXCEPTION(ValueError) << "For '" << primitive->name()

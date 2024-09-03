@@ -177,8 +177,11 @@ void ConcatWeightsToNewTensor(void *data_ptr, const std::vector<void *> &data_c_
     auto count = k_len * n_len_list[idx];
     auto rank_offset = need_rank_offset ? global_rank_id * count : 0;
     auto byte_size = count * data_size;
-    memcpy_s(reinterpret_cast<T *>(data_ptr) + offset, byte_size, reinterpret_cast<T *>(data_c_list[idx]) + rank_offset,
-             byte_size);
+    auto copy_ret = memcpy_s(reinterpret_cast<T *>(data_ptr) + offset, byte_size,
+                             reinterpret_cast<T *>(data_c_list[idx]) + rank_offset, byte_size);
+    if (copy_ret != EOK) {
+      MS_LOG(EXCEPTION) << "Failed to copy weihgts for Concat";
+    }
     offset += count;
   }
 }

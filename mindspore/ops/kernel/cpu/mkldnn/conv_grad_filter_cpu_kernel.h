@@ -49,10 +49,10 @@ class ConvGradFilterCpuKernelMod : public MKLCpuKernelMod {
   const size_t filter_size_index_{2};
   std::string kernel_type_;
   std::string format_;
-  int64_t group_;
+  int64_t group_{0};
   mindspore::PadMode pad_mode_;
-  std::vector<int64_t> strides_include_nc_;
-  std::vector<int64_t> dilation_include_nc_;
+  std::vector<int64_t> strides_include_nc_{};
+  std::vector<int64_t> dilation_include_nc_{};
 };
 }  // namespace kernel
 }  // namespace mindspore

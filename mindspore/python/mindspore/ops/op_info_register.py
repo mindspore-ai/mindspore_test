@@ -121,7 +121,7 @@ class _CustomInstaller:
 
     def _find_ai_cpu_so_path(self, so_file):
         """find the absolute path of so"""
-        current_path = os.path.dirname(os.path.abspath(__file__))
+        current_path = os.path.dirname(os.path.realpath(__file__))
         search_paths = [current_path + "/../lib", current_path + "/../lib/plugin/ascend"]
         for path in search_paths:
             so_path = os.path.join(path, so_file)
