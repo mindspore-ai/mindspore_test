@@ -101,11 +101,11 @@ CNodePtr GeGluV2Fusion::CreateGeGluV2Node(const FuncGraphPtr &func_graph, const 
 
 AnfNodePtr GeGluV2Fusion::Process(const std::string &patten_name, const FuncGraphPtr &func_graph,
                                   const AnfNodePtr &node, const EquivPtr &equiv) const {
-  MS_LOG(INFO) << "do GeGluV2 fusion, pattern name: " << patten_name << "   " << node->fullname_with_scope();
   if (func_graph == nullptr || node == nullptr || equiv == nullptr) {
     MS_LOG(ERROR) << "function graph, node or equiv is nullptr.";
     return nullptr;
   }
+  MS_LOG(INFO) << "do GeGluV2 fusion, pattern name: " << patten_name << "   " << node->fullname_with_scope();
   if (!utils::isa<CNodePtr>(node)) {
     MS_LOG(ERROR) << "this node is not cnode, node name: " << node->fullname_with_scope();
     return nullptr;
