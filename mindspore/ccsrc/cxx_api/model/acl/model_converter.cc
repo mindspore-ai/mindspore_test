@@ -101,6 +101,7 @@ Buffer ModelConverter::BuildAirModel(const transform::DfGraphPtr &graph,
     MS_LOG(ERROR) << "Call aclgrphBuildInitialize fail: " << CALL_ASCEND_API(aclGetRecentErrMsg);
     return Buffer();
   }
+#ifdef ENABLE_BUNDLE
   ge::WeightRefreshableGraphs split_graphs;
   auto option = options_.lock();
   std::vector<ge::AscendString> ascend_const_names;
@@ -141,6 +142,15 @@ Buffer ModelConverter::BuildAirModel(const transform::DfGraphPtr &graph,
       return Buffer();
     }
   }
+#else
+  ret = ge::aclgrphBuildModel(*graph, build_options, model);
+  if (ret != ge::SUCCESS) {
+    MS_LOG(ERROR) << "Call aclgrphBuildModel fail: " << CALL_ASCEND_API(aclGetRecentErrMsg);
+    ge::aclgrphBuildFinalize();
+    return Buffer();
+  }
+#endif
+
   ge::aclgrphBuildFinalize();
   return Buffer(model.data.get(), model.length);
 }
