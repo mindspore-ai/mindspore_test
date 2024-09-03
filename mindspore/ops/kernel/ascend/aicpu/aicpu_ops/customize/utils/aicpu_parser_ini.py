@@ -156,6 +156,8 @@ cust_op_lists = [
     "logspace",
     "loguniformcandidatesampler",
     "lowerbound",
+    "lstsqv2",
+    "lstsqv2grad",
     "lusolve",
     "luunpack",
     "luunpackgrad",
