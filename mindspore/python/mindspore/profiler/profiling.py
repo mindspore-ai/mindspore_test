@@ -1592,7 +1592,7 @@ class Profiler:
         try:
             timeline_generator = CpuTimelineGenerator(self._output_path, self._rank_id, context.get_context("mode"))
             timeline_generator.init_timeline(pretty=self._pretty_json)
-            timeline_generator.write_timeline(self._timeline_size_limit_byte)
+            timeline_generator.write_timeline()
             timeline_generator.write_timeline_summary()
         except (ProfilerIOException, ProfilerFileNotFoundException, RuntimeError) as err:
             logger.warning('Fail to write timeline data: %s', err)
@@ -1670,7 +1670,7 @@ class Profiler:
             timeline_generator = GpuTimelineGenerator(self._output_path, self._dev_id, self._rank_size,
                                                       context.get_context("mode"))
             timeline_generator.init_timeline(reduce_op_type)
-            self._timeline_meta = timeline_generator.write_timeline(self._timeline_size_limit_byte)
+            self._timeline_meta = timeline_generator.write_timeline()
             timeline_generator.write_timeline_summary()
             timeline_generator.parse_fwk_data()
             timeline_generator.write_fwk_timeline()

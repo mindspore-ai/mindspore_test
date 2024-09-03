@@ -1,4 +1,4 @@
-# Copyright 2023 Huawei Technologies Co., Ltd
+# Copyright 2024 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ from mindspore.profiler.parser.ascend_analysis.constant import Constant
 
 from mindspore.profiler.parser.gpu_analysis.function_event import GPUMindSporeOpEvent
 from mindspore.profiler.parser.gpu_analysis.profiler_info_parser import GPUProfilerInfoParser
+from mindspore.profiler.common.validator.validate_path import validate_and_normalize_path
 
 
 class GPUFwkFileParser(FwkFileParser):
@@ -81,7 +82,7 @@ class GPUFwkFileParser(FwkFileParser):
 
     def _init_framework_path(self, source_path: str):
         """Init the oprange data path."""
-        # source_path = validate_and_normalize_path(source_path)
+        source_path = validate_and_normalize_path(source_path)
         if not os.path.exists(source_path):
             raise FileNotFoundError("Input source_path does not exist!")
         self._prof_root = source_path
