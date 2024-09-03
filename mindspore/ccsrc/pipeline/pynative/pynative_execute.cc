@@ -327,10 +327,15 @@ void PyNativeExecutor::ChildAfterFork() {
 }
 
 void PyNativeExecutor::SetAsyncForGraph(bool flag) const {
+  if (MsContext::GetInstance()->get_param<int>(MS_CTX_EXECUTION_MODE) == kPynativeMode) {
+    MS_LOG(INFO) << "Skip set async flag " << flag;
+    return;
+  }
   if (!flag) {
     // Need to wait all tasks finish before disable async.
     runtime::Pipeline::Get().WaitAll();
   }
+  MS_LOG(INFO) << "Set async " << flag << " for GRAPH_MODE";
   runtime::Pipeline::Get().SetSpin(flag);
   runtime::OpExecutor::GetInstance().set_async_for_graph(flag);
 }
