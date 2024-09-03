@@ -618,7 +618,7 @@ static std::string TraceInferFailed(ValueNode *node, int depth = 0) {
 }
 
 static void PrintCallNode(std::ostream *os, CallNode *node, int depth) {
-  std::string prefix(depth << 1, ' ');
+  std::string prefix(depth * kTwo, ' ');
   auto &s = *os;
   s << prefix << "{ inline stat " << GetInlineReasonDesc(node->GetInlineReason());
   if (!node->GetParams().empty()) {

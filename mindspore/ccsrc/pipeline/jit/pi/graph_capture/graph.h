@@ -138,10 +138,10 @@ class Graph {
   auto &GetFrames() { return frame_states_; }
   const auto &GetFrames() const { return frame_states_; }
   Allocator &allocator() { return alloc_; }
-  ValueNode *NewValueNode(AObject *, int op, int arg, const std::vector<ValueNode *> & = {},
+  ValueNode *NewValueNode(AObject *, int op, int arg, const std::vector<ValueNode *> &inputs = {},
                           const std::string &name = "");
 
-  CellVarNode *NewCellNode(AObject *, int op, int arg, const std::vector<ValueNode *> & = {},
+  CellVarNode *NewCellNode(AObject *, int op, int arg, const std::vector<ValueNode *> &inputs = {},
                            const std::string &name = "");
 
   CallNode *NewCallNode(int op, int arg, const std::vector<ValueNode *> &);

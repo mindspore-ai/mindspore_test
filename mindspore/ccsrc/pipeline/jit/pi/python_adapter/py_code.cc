@@ -36,8 +36,9 @@ int PyCodeWrapper::LocalSize() const { return ptr_->co_nlocals; }
 
 int PyCodeWrapper::ArgCount(bool *has_var_args, bool *has_kw_var_args) const {
   PyCodeObject *co = this->ptr_;
-  bool va = co->co_flags & CO_VARARGS;
-  bool kw_va = co->co_flags & CO_VARKEYWORDS;
+  const unsigned flags = co->co_flags;
+  bool va = flags & CO_VARARGS;
+  bool kw_va = flags & CO_VARKEYWORDS;
   has_var_args ? (void)(*has_var_args = va) : (void)0;
   has_kw_var_args ? (void)(*has_kw_var_args = kw_va) : (void)0;
   return co->co_argcount + co->co_kwonlyargcount + va + kw_va;

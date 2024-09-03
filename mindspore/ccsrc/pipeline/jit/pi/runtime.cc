@@ -169,6 +169,16 @@ static void PrintGuardPerf() {
   }
 }
 
+class GuardPerfLogger {
+ public:
+  ~GuardPerfLogger() {
+    if (kPIJitConfigDefault.GetBoolConfig(GraphJitConfig::kLogGuardPerf)) {
+      PrintGuardPerf();
+    }
+  }
+};
+GuardPerfLogger at_exit_printer;
+
 // jit compiler initialize
 static void ensureInitialize() {
   static bool init = false;
@@ -176,11 +186,6 @@ static void ensureInitialize() {
     return;
   }
   init = true;
-  std::atexit([]() {
-    if (kPIJitConfigDefault.GetBoolConfig(GraphJitConfig::kLogGuardPerf)) {
-      PrintGuardPerf();
-    }
-  });
 }
 
 void Traceback::PushInlineInfo(InlineInfo info) {
@@ -617,7 +622,7 @@ void AddGuardForGlobals(const PyFrameWrapper &wrapper, OptGuardPtr guard, bool d
   EvalFrameObject *f = wrapper.frame();
   PyCodeObject *co = wrapper.GetCode().ptr();
   const _Py_CODEUNIT *bytecodes = _PyCode_CODE(co);
-  int size = _PyCode_NBYTES(co) / sizeof(_Py_CODEUNIT);
+  int size = static_cast<size_t>(_PyCode_NBYTES(co)) / sizeof(_Py_CODEUNIT);
   unsigned int exarg = 0;
   for (int bci = 0; bci < size; ++bci) {
     int opcode = _Py_OPCODE(bytecodes[bci]);

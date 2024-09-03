@@ -1052,12 +1052,14 @@ void ByteCodeParser::ParseDeleteName(const InstrPtr &instr) {
     name = names[instr->GetArg()];
     scope = ir::kScopeLocal;
   } else if (op_code == DELETE_DEREF) {
+    bool is_free;
+    int name_index;
 #if IS_PYTHON_3_11_PLUS
-    bool is_free = instr->GetArg() >= (co->co_nlocalsplus - co_wrapper.FreeVarsSize());
-    int name_index = instr->GetArg();
+    is_free = instr->GetArg() >= (co->co_nlocalsplus - co_wrapper.FreeVarsSize());
+    name_index = instr->GetArg();
 #else
-    bool is_free = instr->GetArg() >= co_wrapper.CellVarsSize();
-    int name_index = instr->GetArg() + co->co_nlocals;
+    is_free = instr->GetArg() >= co_wrapper.CellVarsSize();
+    name_index = instr->GetArg() + co->co_nlocals;
 #endif
     name = names[name_index];
     scope = is_free ? ir::kScopeFreeVar : ir::kScopeCellVar;

@@ -176,7 +176,7 @@ std::pair<py::bytes, py::bytes> CodeGenerator::ConvertToCodeBytes(const std::vec
       bci = i->bci();
       line = i->line();
     }
-    unsigned oparg = Opcode(i->op()).HasArg() ? i->arg() : 0;
+    unsigned int oparg = Opcode(i->op()).HasArg() ? i->arg() : 0;
     for (unsigned c = 0, exa = oparg >> MoveEightBits; exa > 0; exa >>= MoveEightBits, ++c) {
       co_code.insert(co_code.end() - c, _Py_MAKECODEUNIT(EXTENDED_ARG, exa & 0xffu));
     }

@@ -114,13 +114,12 @@ std::string ValueNode::ToString() const {
 
 std::string InstrNode::ToString() const {
   std::stringstream s;
-  int w = 4;
-  s << std::setw(w) << std::left;
+  s << std::setw(kTwo * kTwo) << std::left;
   if (bci() >= 0) {
     s << bci();
   }
   s << ' ';
-  w = 12;
+  constexpr auto w = 12;
   s << std::setw(w) << std::left << Opcode(GetOpcode()).name();
   if (Opcode(GetOpcode()).HasArg()) {
     s << ' ' << GetOparg() << ' ' << GetName();

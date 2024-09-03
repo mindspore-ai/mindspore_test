@@ -155,7 +155,9 @@ PyObject *PyFrameWrapper::EvalNewCode(PyThreadState *ts, PyCodeObject *new_co) c
     return _PyEval_EvalFrameDefault(ts, old_f, 0);
   }
   PyCodeObject *old_co = EvalFrameGetCode(old_f);
-  if (old_co->co_flags & (CO_GENERATOR | CO_COROUTINE | CO_ASYNC_GENERATOR)) {
+  const unsigned flags = old_co->co_flags;
+  constexpr unsigned unsupported_flags = (CO_GENERATOR | CO_COROUTINE | CO_ASYNC_GENERATOR);
+  if (flags & unsupported_flags) {
     return nullptr;
   }
   PyFunctionObject *old_func = EvalFrameGetFunction(old_f);
@@ -197,8 +199,12 @@ py::tuple PyFrameWrapper::PackArgs() const {
   // CHECK code is execute, args is changed;
   PyObject **fast = EvalFrameGetFastLocals(frame_);
   PyCodeObject *co = EvalFrameGetCode(frame_);
-  int argc = co->co_argcount + co->co_kwonlyargcount;
-  py::tuple ret_handle(3);
+  PyCodeWrapper co_wrapper(co);
+  bool has_va;
+  bool has_kw_va;
+  int argc = co_wrapper.ArgCount(&has_va, &has_kw_va);
+  argc = argc - has_va - has_kw_va;
+  py::tuple ret_handle(kTwo + 1);
   py::list args_handle(argc);
   PyObject *ret = ret_handle.ptr();
   PyObject *args = args_handle.ptr();
@@ -209,9 +215,9 @@ py::tuple PyFrameWrapper::PackArgs() const {
     PyList_SET_ITEM(args, i, Py_XNewRef(fast[i]));
   }
   PyTuple_SET_ITEM(ret, 0, Py_NewRef(args));
-  value = (co->co_flags & CO_VARARGS) ? fast[argc++] : Py_None;
+  value = has_va ? fast[argc++] : Py_None;
   PyTuple_SET_ITEM(ret, 1, Py_XNewRef(value));
-  value = (co->co_flags & CO_VARKEYWORDS) ? fast[argc++] : Py_None;
+  value = has_kw_va ? fast[argc++] : Py_None;
   PyTuple_SET_ITEM(ret, kTwo, Py_XNewRef(value));
 
 #if !IS_PYTHON_3_11_PLUS
@@ -225,7 +231,7 @@ py::tuple PyFrameWrapper::PackArgs() const {
         if (argi < argc) {
           PyList_SET_ITEM(args, argi, value);
         } else {
-          PyTuple_SET_ITEM(ret, (co->co_flags & CO_VARARGS) ? (argi == argc ? 1 : kTwo) : kTwo, value);
+          PyTuple_SET_ITEM(ret, has_va ? (argi == argc ? 1 : kTwo) : kTwo, value);
         }
       }
     }

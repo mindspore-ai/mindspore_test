@@ -842,7 +842,7 @@ static bool InferListPop(CallNode *call_node, GraphBuilder *parent) {
 
   ValueNode *pop_value = nullptr;
   auto pop_action = [&pop_value, &index](CallNode *call_node, GraphBuilder *, std::vector<ValueNode *> *elements) {
-    index = index < 0 ? elements->size() + index : index;
+    index = index < 0 ? static_cast<Py_ssize_t>(elements->size()) + index : index;
     auto iter = elements->begin() + index;
     pop_value = *iter;
     (void)elements->erase(iter);
