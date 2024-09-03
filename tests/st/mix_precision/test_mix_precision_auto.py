@@ -478,7 +478,7 @@ def test_auto_mix_precision_with_to_float(mode):
     assert out.dtype == ms.float32
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize("mode", (context.PYNATIVE_MODE,))
 def test_auto_mix_precision_with_keyword_arguments(mode):
