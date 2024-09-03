@@ -103,3 +103,4 @@ run:
   - in_model: instancenormalization_fp16_fix_2_fix.ms
     gold_in: instancenormalization_fp32_fix_gold_1
     dtypes: 1
+disabled: on

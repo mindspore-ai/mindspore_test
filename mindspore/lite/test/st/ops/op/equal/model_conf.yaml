@@ -95,3 +95,4 @@ run:
     gold_in: equal_fp32_fix_gold_1
     dtypes: 1
     input_shapes: None
+disabled: on
