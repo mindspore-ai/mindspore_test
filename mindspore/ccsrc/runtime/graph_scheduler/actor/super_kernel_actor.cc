@@ -1096,16 +1096,19 @@ void SuperKernelActor::LinkKernelActors() {
     }
   }
 
-  // 3. Check input parameter(not persist tensor) as graph output case.
-  for (size_t i = 0; i < input_num; i++) {
-    const auto &node = input_nodes[i];
-    MS_EXCEPTION_IF_NULL(node);
-    if (output_node_to_actor_output_index.find(node) == output_node_to_actor_output_index.end()) {
-      continue;
+  // 3. Check input parameter(not persist tensor) as graph output case, need increase the parameter use count for output
+  // parameter.
+  for (const auto &item : output_node_to_actor_output_index) {
+    const auto &output_param = item.first;
+    MS_EXCEPTION_IF_NULL(output_param);
+    auto input_idx_iter = param_node_to_input_idx_.find(output_param.get());
+    if (input_idx_iter == param_node_to_input_idx_.end()) {
+      MS_LOG_WITH_NODE(EXCEPTION, output_param)
+        << "Can not find index for input node: " << output_param->fullname_with_scope();
     }
-    if (device_tensor_store_keys_map.find(i) == device_tensor_store_keys_map.end()) {
-      MS_LOG(EXCEPTION) << "Can't support Parameter(not weight) as sub graph output for graph: " << graph_->ToString();
-    }
+    size_t input_node_idx = input_idx_iter->second;
+    const auto &output_indices = item.second;
+    input_params_use_cnt_.at(input_node_idx) += output_indices.size();
   }
 
   // 4. Calculate original ref count of CNode and Parameter, prepare input and

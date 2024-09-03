@@ -376,7 +376,6 @@ void DumpSuperKernelActor(const SuperKernelActor *actor, std::ofstream &ofs) {
         ofs << "\t\tinput[" << j << "]: "
             << "[Kernel] name: " << input_node_with_idx.first->fullname_with_scope()
             << ", output index: " << input_node_with_idx.second;
-
       } else if (input_node_with_idx.first->isa<ValueNode>()) {
         ofs << "\t\tinput[" << j << "]: "
             << "[Const Value] name: " << input_node_with_idx.first->fullname_with_scope()
@@ -393,7 +392,8 @@ void DumpSuperKernelActor(const SuperKernelActor *actor, std::ofstream &ofs) {
     }
     ofs << "\n";
   }
-  ofs << std::string(100, '-');
+  const size_t kDelimiterNum = 100;
+  ofs << std::string(kDelimiterNum, '-');
   ofs << "\n";
 }
 

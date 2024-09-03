@@ -26,6 +26,7 @@ mindspore/mindspore/ccsrc/plugin/device/gpu/hal/device/gpu_kernel_runtime.cc:min
 mindspore/mindspore/ccsrc/runtime/graph_scheduler/actor/super_kernel_actor.cc:mindspore::runtime::SuperKernelActor::BuildKernelActors
 mindspore/mindspore/ccsrc/runtime/graph_scheduler/actor/super_kernel_actor.cc:mindspore::runtime::SuperKernelActor::RunGraphKernelByKernel
 mindspore/mindspore/ccsrc/runtime/graph_scheduler/actor/kernel_actor.cc:mindspore::runtime::KernelActor::ExecuteLaunchKernelTask
+mindspore/mindspore/ccsrc/runtime/graph_scheduler/actor/super_kernel_actor.cc:mindspore::runtime::SuperKernelActor::LaunchAllKernels
 mindspore/mindspore/ccsrc/pipeline/jit/ps/init.cc:PYBIND11_MODULE
 mindspore/mindspore/ccsrc/pipeline/jit/ps/parse/resolve.cc:mindspore::parse::ResolveObjectToNode
 mindspore/mindspore/ccsrc/pipeline/jit/ps/parse/parse.cc:mindspore::parse::Parser::ParseIf
