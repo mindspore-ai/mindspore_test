@@ -17,15 +17,17 @@ mindspore.ops.prelu
     .. image:: ../images/PReLU2.png
         :align: center
 
+    .. note::
+        通道数是输入的第二个维度值。当输入的维度小于2时，则没有通道维度并且通道数等于1。
+
     参数：
         - **input** (Tensor) - 激活函数的输入Tensor。
-        - **weight** (Tensor) - 权重Tensor。
+        - **weight** (Tensor) - 权重Tensor。它的大小是1或者输入Tensor `input` 的通道数。
 
     返回：
         Tensor，其shape和数据类型与 `input` 相同。
         有关详细信息，请参考 :class:`mindspore.mint.nn.PReLU` 。
 
     异常：
-        - **TypeError** - `input` 或 `weight` 的数据类型既不是float16也不是float32(CPU和GPU)。
         - **TypeError** - `input` 或 `weight` 不是Tensor。
         - **ValueError** - `weight` 不是0-D或1-DTensor。

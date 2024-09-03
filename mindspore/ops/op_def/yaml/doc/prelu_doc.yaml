@@ -14,17 +14,20 @@ prelu:
 
         .. image:: ../images/PReLU2.png
             :align: center
+
+        .. note::
+            Channel dim is the 2nd dim of input. When input has dims < 2, then there is
+            no channel dim and the number of channels = 1.
         
         Args:
             input (Tensor): The input Tensor of the activation function.
-            weight (Tensor):  Weight Tensor.
+            weight (Tensor):  Weight Tensor. The size of the weight should be 1 or the number of channels at Tensor `input`.
     
         Returns:
             Tensor, with the same shape and dtype as `input`.
             For detailed information, please refer to :class:`mindspore.mint.nn.PReLU`.
     
         Raises:
-            TypeError: If dtype of `input` or `weight` is neither float16 nor float32(CPU and GPU).
             TypeError: If the `input` or the `weight` is not a Tensor.
             ValueError: If the `weight` is not a 0-D or 1-D Tensor.
 
