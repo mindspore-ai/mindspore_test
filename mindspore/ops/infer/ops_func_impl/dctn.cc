@@ -13,28 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <utility>
-#include "infer/ops_func_impl/dct.h"
+
+#include <set>
+#include <memory>
+#include <unordered_map>
+#include "ops_utils/op_utils.h"
 #include "infer/ops_func_impl/fft_arithmetic.h"
 #include "utils/check_convert_utils.h"
-#include "mindspore/ops/ops_utils/op_utils.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include "infer/ops_func_impl/dctn.h"
 
 namespace mindspore {
 namespace ops {
-BaseShapePtr DCTFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                     const std::vector<AbstractBasePtr> &input_args) const {
-  return DCTInferShape(primitive, input_args);
+BaseShapePtr DCTNFuncImpl::InferShape(const PrimitivePtr &primitive,
+                                      const std::vector<AbstractBasePtr> &input_args) const {
+  return DCTNInferShape(primitive, input_args);
 }
 
-TypePtr DCTFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
+TypePtr DCTNFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
   return DCTInferType(primitive, input_args);
 }
 
-int32_t DCTFuncImpl::CheckValidation(const PrimitivePtr &primitive,
-                                     const std::vector<AbstractBasePtr> &input_args) const {
-  return DCTCheckValidation(primitive, input_args);
+int32_t DCTNFuncImpl::CheckValidation(const PrimitivePtr &primitive,
+                                      const std::vector<AbstractBasePtr> &input_args) const {
+  return DCTNCheckValidation(primitive, input_args);
 }
-
 }  // namespace ops
 }  // namespace mindspore
