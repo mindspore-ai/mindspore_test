@@ -211,8 +211,8 @@ void TilingMemMgr::CopyAsync(void *host_ptr, void *device_ptr, size_t size) {
     auto default_stream_id = device_context_->device_res_manager_->DefaultStream();
     default_stream_ = device_context_->device_res_manager_->GetStream(default_stream_id);
   }
-  auto ret = InternalAscendAdapter::AcendMemcpyAsync(device_ptr, size, host_ptr, size, ACL_MEMCPY_HOST_TO_DEVICE,
-                                                     default_stream_);
+  auto ret = InternalAscendAdapter::AscendMemcpyAsync(device_ptr, size, host_ptr, size, ACL_MEMCPY_HOST_TO_DEVICE,
+                                                      default_stream_);
   if (ret != 0) {
     MS_LOG(EXCEPTION) << "Copy tiling data from host to device failed!";
   }
@@ -224,8 +224,8 @@ void TilingMemMgr::CopyAsyncD2H(void *host_ptr, void *device_ptr, size_t size) {
     auto default_stream_id = device_context_->device_res_manager_->DefaultStream();
     default_stream_ = device_context_->device_res_manager_->GetStream(default_stream_id);
   }
-  auto ret = InternalAscendAdapter::AcendMemcpyAsync(host_ptr, size, device_ptr, size, ACL_MEMCPY_DEVICE_TO_HOST,
-                                                     default_stream_);
+  auto ret = InternalAscendAdapter::AscendMemcpyAsync(host_ptr, size, device_ptr, size, ACL_MEMCPY_DEVICE_TO_HOST,
+                                                      default_stream_);
   if (ret != 0) {
     MS_LOG(EXCEPTION) << "Copy tiling data from host to device failed!";
   }

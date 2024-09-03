@@ -20,8 +20,8 @@
 
 namespace mindspore {
 namespace kernel {
-aclError InternalAscendAdapter::AcendMemcpyAsync(void *dst, size_t destMax, const void *src, size_t count,
-                                                 aclrtMemcpyKind kind, aclrtStream stream) {
+aclError InternalAscendAdapter::AscendMemcpyAsync(void *dst, size_t destMax, const void *src, size_t count,
+                                                  aclrtMemcpyKind kind, aclrtStream stream) {
   return CALL_ASCEND_API(aclrtMemcpyAsync, dst, destMax, src, count, ACL_MEMCPY_HOST_TO_DEVICE, stream);
 }
 }  // namespace kernel
