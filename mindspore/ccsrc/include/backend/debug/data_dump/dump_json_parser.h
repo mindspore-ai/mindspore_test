@@ -191,6 +191,7 @@ class BACKEND_EXPORT DumpJsonParser {
   void JsonConfigToString();
   void CheckStatCalcModeVaild();
   void ParseStatisticCategory(const nlohmann::json &content);
+  void CheckOverflowSetting();
 };
 }  // namespace mindspore
 #endif  // MINDSPORE_MINDSPORE_CCSRC_DEBUG_DUMP_JSON_PARSER_H_
