@@ -76,6 +76,9 @@
 #include "tools/common/custom_ascend_utils.h"
 #include "tools/optimizer/graph/attr_to_args_pass.h"
 #include "tools/optimizer/fusion/ffn_fusion.h"
+#include "tools/optimizer/fusion/gnsnz_pass.h"
+#include "tools/optimizer/fusion/ffn_custom_pass.h"
+#include "tools/optimizer/fusion/gnbmm_pass.h"
 #include "transform/symbol/symbol_utils.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
 
@@ -106,6 +109,9 @@ constexpr auto kCustomOpGeGluV2Fusion = "GeGluV2Fusion";
 constexpr auto kLayerNormV3Fusion = "LayerNormV3Fusion";
 constexpr auto kFuseAddAndLayernorm = "FuseAddAndLayernorm";
 constexpr auto kCustomOpFFNFusion = "FFNFusion";
+constexpr auto kCustomOpGNSNZPass = "GNSNZPass";
+constexpr auto kCustomOpGNBMMPass = "GNBMMPass";
+constexpr auto kCustomOpFFNCustomPass = "FFNCustomPass";
 constexpr auto kScalarOpPass = "ScalarOpPass";
 constexpr auto kMakeListPass = "MakeListPass";
 constexpr auto kFuncType = "func_type";
@@ -626,6 +632,14 @@ void AclPassImpl::AdjustDuplicateNodeName(const FuncGraphPtr &func_graph) {
   }
 }
 
+// this macro is used to reduce Cyclomatic complexity
+#define RUN_OPT_PASS(func_graph, config_name, pass_name)                                                   \
+  if (find(plugin_custom_ops.begin(), plugin_custom_ops.end(), #config_name) != plugin_custom_ops.end()) { \
+    MS_LOG(INFO) << "using " << #config_name;                                                              \
+    MS_CHECK_TRUE_MSG(lite::RunOptimizerPass(func_graph, {pass_name}), lite::RET_ERROR,                    \
+                      #config_name " op pass failed.");                                                    \
+  }
+
 STATUS AclPassImpl::RunLiteInnerPass(const FuncGraphPtr &func_graph) {
   auto plugin_custom_ops = user_options_cfg_.plugin_custom_ops;
   MS_LOG(INFO) << "plugin_custom_ops: " << plugin_custom_ops;
@@ -655,6 +669,10 @@ STATUS AclPassImpl::RunLiteInnerPass(const FuncGraphPtr &func_graph) {
   if (find(plugin_custom_ops.begin(), plugin_custom_ops.end(), "FFN") != plugin_custom_ops.end()) {
     MS_LOG(INFO) << "using FFN";
     MS_CHECK_TRUE_MSG(lite::RunOptimizerPass(func_graph, {kCustomOpFFNFusion}), lite::RET_ERROR, "FFN op pass failed.");
+  } else if (find(plugin_custom_ops.begin(), plugin_custom_ops.end(), "FFNCust") != plugin_custom_ops.end()) {
+    MS_LOG(INFO) << "using FFNCust";
+    MS_CHECK_TRUE_MSG(lite::RunOptimizerPass(func_graph, {kCustomOpFFNCustomPass}), lite::RET_ERROR,
+                      "FFNCust op pass failed.");
   }
   if (find(plugin_custom_ops.begin(), plugin_custom_ops.end(), "All") != plugin_custom_ops.end() ||
       find(plugin_custom_ops.begin(), plugin_custom_ops.end(), "LayerNormV3") != plugin_custom_ops.end()) {
@@ -673,8 +691,14 @@ STATUS AclPassImpl::RunLiteInnerPass(const FuncGraphPtr &func_graph) {
     MS_CHECK_TRUE_MSG(lite::RunOptimizerPass(func_graph, {kCustomOpGeGluV2Fusion}), lite::RET_ERROR,
                       "GeGluV2 op pass failed.");
   }
-  if (find(plugin_custom_ops.begin(), plugin_custom_ops.end(), "All") != plugin_custom_ops.end() ||
-      find(plugin_custom_ops.begin(), plugin_custom_ops.end(), "GroupNormSilu") != plugin_custom_ops.end()) {
+  RUN_OPT_PASS(func_graph, GNBMM, kCustomOpGNBMMPass);
+  if (find(plugin_custom_ops.begin(), plugin_custom_ops.end(), "GNSNZ") != plugin_custom_ops.end() &&
+      find(plugin_custom_ops.begin(), plugin_custom_ops.end(), "GroupNormSilu") == plugin_custom_ops.end()) {
+    MS_LOG(INFO) << "using GNSNZ";
+    MS_CHECK_TRUE_MSG(lite::RunOptimizerPass(func_graph, {kCustomOpGNSNZPass}), lite::RET_ERROR,
+                      "GNSNZ op pass failed.");
+  } else if (find(plugin_custom_ops.begin(), plugin_custom_ops.end(), "All") != plugin_custom_ops.end() ||
+             find(plugin_custom_ops.begin(), plugin_custom_ops.end(), "GroupNormSilu") != plugin_custom_ops.end()) {
     MS_LOG(INFO) << "using GroupNormSilu";
     MS_CHECK_TRUE_MSG(lite::RunOptimizerPass(func_graph, {kCustomOpGroupNormSiluFusion}), lite::RET_ERROR,
                       "GroupNormSilu op pass failed.");
