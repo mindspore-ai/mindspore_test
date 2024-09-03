@@ -1,4 +1,4 @@
-# Copyright 2021 Huawei Technologies Co., Ltd
+# Copyright 2021-2024 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ MANUAL_HEADERS = [
     "mindspore/ccsrc/minddata/dataset",
     "mindspore/ccsrc/minddata/dataset/kernels/image",
     "mindspore/core",
+    "mindspore/core/include",
     "mindspore/lite",
 ]
 
