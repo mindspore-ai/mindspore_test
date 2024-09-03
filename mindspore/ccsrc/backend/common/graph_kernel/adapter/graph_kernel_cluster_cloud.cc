@@ -132,8 +132,16 @@ bool DvmSupported(const AnfNodePtr &node) {
     auto skip_mode_attr = prim->GetAttr(kAttrSkipMode);
     MS_EXCEPTION_IF_NULL(skip_mode_attr);
     auto skip_mode = GetValue<bool>(skip_mode_attr);
-    if (skip_mode == true) {
-      return false;
+    if (skip_mode) {
+      auto cnode = node->cast<CNodePtr>();
+      MS_EXCEPTION_IF_NULL(cnode);
+      auto axis = cnode->input(kIndex2);
+      auto axis_abs = axis->abstract();
+      if (!axis_abs->isa<abstract::AbstractSequence>() ||
+          axis_abs->cast<abstract::AbstractSequencePtr>()->dynamic_len() ||
+          axis_abs->cast<abstract::AbstractSequencePtr>()->size() == 0) {
+        return false;
+      }
     }
   }
   // compare op
