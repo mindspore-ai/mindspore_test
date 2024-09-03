@@ -18,5 +18,6 @@ Provide llm boost for inference, such as LlamaBoost.
 from __future__ import absolute_import
 
 from mindspore.experimental.llm_boost.atb.llama_boost import LlamaBoost
+from mindspore.experimental.llm_boost.atb.qwen_boost import QwenBoost
 
-__all__ = ['LlamaBoost']
+__all__ = ['LlamaBoost', 'QwenBoost']

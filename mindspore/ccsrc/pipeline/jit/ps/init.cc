@@ -46,6 +46,7 @@
 #include "runtime/hardware/device_context_manager.h"
 #include "include/backend/mem_reuse/mem_dynamic_allocator.h"
 #include "frontend/parallel/tensor_layout/tensor_transform.h"
+#include "pipeline/llm_boost/utils.h"
 #include "pipeline/llm_boost/llm_boost_binder.h"
 #include "pybind_api/gil_scoped_long_running.h"
 
@@ -143,6 +144,8 @@ void RegLlmBoostBinder(const py::module *m) {
     .def("set_kvcache", &pipeline::LlmBoostBinder::SetKVCache, "set_kvcache")
     .def("set_weights", &pipeline::LlmBoostBinder::SetWeight, "set_weights");
 }
+
+void RegLlmBoostUtils(py::module *m) { m->def("_set_format", &pipeline::SetFormat, "set_format"); }
 }  // namespace profiler
 }  // namespace mindspore
 #endif  // ENABLE_SECURITY
@@ -196,6 +199,7 @@ void RegModule(py::module *m) {
 #endif
   mindspore::ops::RegOpEnum(m);
   mindspore::profiler::RegLlmBoostBinder(m);
+  mindspore::profiler::RegLlmBoostUtils(m);
 }
 
 void RegModuleHelper(py::module *m) {
