@@ -483,6 +483,10 @@ ModelPoolConfig ModelPool::CreateCpuModelPoolConfig(const std::shared_ptr<Runner
       return {};
     }
     auto context = CopyContext(init_context);
+    if (context == nullptr) {
+      MS_LOG(ERROR) << "context is nullptr.";
+      return {};
+    }
     if (init_context->GetThreadAffinityMode() != lite::NO_BIND) {
       // bind by core id
       context->SetThreadAffinity(init_context->GetThreadAffinityMode());

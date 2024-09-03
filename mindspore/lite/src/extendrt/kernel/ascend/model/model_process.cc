@@ -467,12 +467,12 @@ bool ModelProcess::CreateDataBuffer(void **data_mem_buffer, size_t buffer_size, 
       (void)CALL_ASCEND_API(aclrtFreeHost, dataMemBuffer);
     }
   };
+  if (data_mem_buffer == nullptr) {
+    MS_LOG(ERROR) << "Data mem buffer is nullptr.";
+    return false;
+  }
   // The model with dynamic input do not need to malloc the memory of output
   if (buffer_size != 0) {
-    if (data_mem_buffer == nullptr) {
-      MS_LOG(ERROR) << "Data mem buffer is nullptr.";
-      return false;
-    }
     if (!is_run_on_device_) {
       ret = CALL_ASCEND_API(aclrtMalloc, data_mem_buffer, buffer_size, ACL_MEM_MALLOC_HUGE_FIRST);
       if (ret != ACL_ERROR_NONE) {
