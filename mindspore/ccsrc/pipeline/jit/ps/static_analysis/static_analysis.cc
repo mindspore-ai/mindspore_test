@@ -1071,9 +1071,7 @@ void AnalysisEngine::Clear() {
   continued_evals_.clear();
   root_context_ = nullptr;
   // Clear amp_strategy_stack_.
-  while (!amp_strategy_stack_.empty()) {
-    amp_strategy_stack_.pop();
-  }
+  amp_strategy_stack_ = std::stack<amp::AmpStrategyPtr>();
 }
 
 EvaluatorPtr GetPyEvaluator(const PrimitivePtr &prim, const AnalysisEnginePtr &engine) {
