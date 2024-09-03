@@ -1534,7 +1534,8 @@ void MindRTBackendBase::ConstructOutputs(const AnfNodePtr &output_node,
     return;
   }
 
-  if (common::AnfAlgo::IsCallNode(output_node)) {
+  if (common::AnfAlgo::IsCallNode(output_node) ||
+      (output_node->abstract() != nullptr && output_node->abstract()->isa<abstract::AbstractSequence>())) {
     auto abstract = output_node->abstract();
     MS_EXCEPTION_IF_NULL(abstract);
     outputs->emplace_back(ConstructOutputByAbstract(abstract, output_tensors, output_position, tuple_tensors));

@@ -42,9 +42,10 @@ namespace {
 int64_t SequenceSliceGetValue(const std::string &prim_name, const std::string &attr_name, const AbstractBasePtr &abs) {
   auto build_type = abs->GetType();
   auto build_value = abs->GetValue();
-  if (build_type == kInt32) {
+  MS_EXCEPTION_IF_NULL(build_type);
+  if (build_type->type_id() == TypeId::kNumberTypeInt32) {
     return GetScalarValue<int32_t>(build_value).value();
-  } else if (build_type == kInt64) {
+  } else if (build_type->type_id() == TypeId::kNumberTypeInt64) {
     return GetScalarValue<int64_t>(build_value).value();
   } else {
     MS_EXCEPTION(TypeError) << "For '" << prim_name << "', the type of '" << attr_name

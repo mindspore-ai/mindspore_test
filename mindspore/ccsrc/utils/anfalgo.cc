@@ -764,7 +764,8 @@ ShapeVector GetOutputShape(const abstract::AbstractBasePtr &abstract, size_t out
   if (sequence_abstract->dynamic_len()) {
     const auto &element_abstract = sequence_abstract->dynamic_len_element_abs();
     if (element_abstract == nullptr) {
-      MS_LOG(ERROR) << "Invalid abstract for get shape:" << sequence_abstract->ToString();
+      MS_LOG(INFO) << "No element abstract for get shape:" << sequence_abstract->ToString()
+                   << ", the abstract would be regard as an empty tuple";
       return ShapeVector();
     }
     return GetOutputShape(element_abstract, 0, true);
