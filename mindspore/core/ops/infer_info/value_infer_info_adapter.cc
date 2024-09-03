@@ -84,7 +84,7 @@ std::vector<InferInfoPtr> ValueInferInfoAdapter::GetSequenceElements() {
   std::vector<InferInfoPtr> infer_infos;
   size_t idx = 0;
   std::transform(elements.begin(), elements.end(), std::back_inserter(infer_infos), [this, &idx](ValuePtr element) {
-    return std::make_shared<ValueInferInfoAdapter>(element, op_type_, arg_name_ + "_" + std::to_string(idx++));
+    return std::make_unique<ValueInferInfoAdapter>(element, op_type_, arg_name_ + "_" + std::to_string(idx++));
   });
   return infer_infos;
 }

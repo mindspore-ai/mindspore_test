@@ -331,9 +331,8 @@ static BaseShapePtr ShapePtrFromShapeArray(const ShapeArray &shapes) {
     MS_LOG(EXCEPTION) << "No shape provided";
   }
   std::vector<BaseShapePtr> shape_ptr_list;
-  std::transform(shapes.begin(), shapes.end(), std::back_inserter(shape_ptr_list), [](const ShapeVector &shape) {
-    return std::dynamic_pointer_cast<BaseShape>(std::make_shared<TensorShape>(shape));
-  });
+  std::transform(shapes.begin(), shapes.end(), std::back_inserter(shape_ptr_list),
+                 [](const ShapeVector &shape) { return std::make_shared<TensorShape>(shape); });
   if (shape_ptr_list.size() == 1) {
     return shape_ptr_list[0];
   } else {
@@ -364,7 +363,7 @@ std::optional<BaseShapePtr> InferShapeByFuncImpl(const PrimitivePtr &primitive, 
     if (OP_CHECK_SUCCESS != op_def->func_impl_.CheckValidation(primitive, input_args)) {
       MS_LOG(EXCEPTION) << "CheckValidation failed for " << op_name;
     }
-    auto shapes = op_def->func_impl_.InferShape(primitive, infer_infos);
+    auto &&shapes = op_def->func_impl_.InferShape(primitive, infer_infos);
     return ShapePtrFromShapeArray(shapes);
   }
   (void)op_def->func_impl_.CheckValidation(primitive, input_args);
@@ -403,11 +402,11 @@ std::optional<TypePtr> InferTypeByFuncImpl(const PrimitivePtr &primitive, const 
     return std::nullopt;
   }
   if (op_def->func_impl_.GeneralInferRegistered()) {
-    const auto infer_infos = ops::ConvertAbstractListToInferInfoList(input_args, op_def);
+    const auto &infer_infos = ops::ConvertAbstractListToInferInfoList(input_args, op_def);
     if (OP_CHECK_SUCCESS != op_def->func_impl_.CheckValidation(primitive, input_args)) {
       MS_LOG(EXCEPTION) << "CheckValidation failed for " << op_name;
     }
-    auto type_ids = op_def->func_impl_.InferType(primitive, infer_infos);
+    auto &&type_ids = op_def->func_impl_.InferType(primitive, infer_infos);
     return TypePtrFromTypeIds(type_ids);
   }
   (void)op_def->func_impl_.CheckValidation(primitive, input_args);

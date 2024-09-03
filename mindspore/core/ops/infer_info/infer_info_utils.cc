@@ -65,7 +65,7 @@ InferInfoPtrList ConvertAbstractListToInferInfoList(const AbstractBasePtrList &a
   auto size = abstract_list.size();
   const auto &arg_names = GetArgNames(abstract_list, op_def);
   for (size_t i = 0; i < size; ++i) {
-    infer_infos.push_back(std::make_shared<AbstractInferInfoAdapter>(abstract_list[i], op_type, arg_names[i]));
+    infer_infos.push_back(std::make_unique<AbstractInferInfoAdapter>(abstract_list[i], op_type, arg_names[i]));
   }
   return infer_infos;
 }
@@ -75,7 +75,7 @@ AbstractBasePtr DoGeneralInfer(const PrimitivePtr primitive, const AbstractBaseP
   const auto &op_type = primitive->name();
   MS_LOG(DEBUG) << "DoGeneralInfer for op " << op_type;
   const auto op_def = GetOpDef(op_type);
-  const std::vector<InferInfoPtr> infer_infos = ConvertAbstractListToInferInfoList(abstract_list, op_def);
+  const std::vector<InferInfoPtr> &infer_infos = ConvertAbstractListToInferInfoList(abstract_list, op_def);
   auto ret = op_def->func_impl_.CheckValidation(primitive, infer_infos);
   if (ret != OP_CHECK_SUCCESS) {
     MS_LOG(EXCEPTION) << "CheckValidation failed for op " << op_type;
@@ -86,8 +86,8 @@ AbstractBasePtr DoGeneralInfer(const PrimitivePtr primitive, const AbstractBaseP
       return infer_result;
     }
   }
-  auto types = op_def->func_impl_.InferType(primitive, infer_infos);
-  auto shapes = op_def->func_impl_.InferShape(primitive, infer_infos);
+  const auto &types = op_def->func_impl_.InferType(primitive, infer_infos);
+  const auto &shapes = op_def->func_impl_.InferShape(primitive, infer_infos);
   if (types.size() != shapes.size()) {
     MS_LOG(EXCEPTION) << "Infer shape size " << shapes.size() << " not equal to infer type size " << types.size()
                       << " for op " << op_type;
@@ -105,22 +105,22 @@ ValueSimpleInfoPtr DoGeneralInfer(const PrimitivePtr &prim, const ValuePtrList &
   MS_LOG(DEBUG) << "DoGeneralInfer for op " << op_type;
   std::vector<ops::InferInfoPtr> input_infos(values.size());
   for (size_t i = 0; i < values.size(); ++i) {
-    input_infos[i] = std::make_shared<ops::ValueInferInfoAdapter>(values[i], op_type, op_def->args_[i].arg_name_);
+    input_infos[i] = std::make_unique<ops::ValueInferInfoAdapter>(values[i], op_type, op_def->args_[i].arg_name_);
   }
   if (OP_CHECK_SUCCESS != op_def->func_impl_.CheckValidation(prim, input_infos)) {
     MS_LOG(EXCEPTION) << "CheckValidation failed for op " << op_type;
   }
-  auto shapes = op_def->func_impl_.InferShape(prim, input_infos);
-  auto types = op_def->func_impl_.InferType(prim, input_infos);
+  auto &&shapes = op_def->func_impl_.InferShape(prim, input_infos);
+  const auto &types = op_def->func_impl_.InferType(prim, input_infos);
   if (shapes.size() != types.size()) {
     MS_LOG(EXCEPTION) << "Infer shape size " << shapes.size() << " not equal to infer type size " << types.size()
                       << " for op " << prim->name();
   }
   auto value_simple_info = std::make_shared<ValueSimpleInfo>();
-  value_simple_info->shape_vector_ = shapes;
+  value_simple_info->shape_vector_ = std::move(shapes);
   std::transform(types.begin(), types.end(), std::back_inserter(value_simple_info->dtype_vector_),
                  [](const TypeId &type) { return TypeIdToType(type); });
-  value_simple_info->size_ = shapes.size();
+  value_simple_info->size_ = types.size();
   return value_simple_info;
 }
 }  // namespace mindspore::ops

@@ -90,23 +90,22 @@ AbstractListPtr make_abstract_list(ValuePtrList values) {
   return abs_list_ptr;
 }
 
-#define make_infer_ptr(name, prim_name, arg_name, shape, type, value, with_value)                            \
-  if constexpr (this->is_value_infer_) {                                                                     \
-    auto value_ptr = make_value(shape, type, value);                                                         \
-    name = std::static_pointer_cast<InferInfo>(std::make_shared<TypeParam>(value_ptr, prim_name, arg_name)); \
-  } else {                                                                                                   \
-    auto value_ptr = make_value(shape, type, value);                                                         \
-    name = std::static_pointer_cast<InferInfo>(                                                              \
-      std::make_shared<TypeParam>(make_abstract(value_ptr, with_value), prim_name, arg_name));               \
+#define make_infer_ptr(name, prim_name, arg_name, shape, type, value, with_value)                  \
+  if constexpr (this->is_value_infer_) {                                                           \
+    auto value_ptr = make_value(shape, type, value);                                               \
+    name = std::make_unique<TypeParam>(value_ptr, prim_name, arg_name);                            \
+  } else {                                                                                         \
+    auto value_ptr = make_value(shape, type, value);                                               \
+    name = std::make_unique<TypeParam>(make_abstract(value_ptr, with_value), prim_name, arg_name); \
   }
 
-#define make_infer_ptr_from_seq_value(name, prim_name, arg_name, values, with_value)                          \
-  if constexpr (this->is_value_infer_) {                                                                      \
-    auto seq_value = make_sequence_value(values);                                                             \
-    name = std::dynamic_pointer_cast<InferInfo>(std::make_shared<TypeParam>(seq_value, prim_name, arg_name)); \
-  } else {                                                                                                    \
-    auto abs = make_abstract_list(values);                                                                    \
-    name = std::dynamic_pointer_cast<InferInfo>(std::make_shared<TypeParam>(abs, prim_name, arg_name));       \
+#define make_infer_ptr_from_seq_value(name, prim_name, arg_name, values, with_value) \
+  if constexpr (this->is_value_infer_) {                                             \
+    auto seq_value = make_sequence_value(values);                                    \
+    name = std::make_unique<TypeParam>(seq_value, prim_name, arg_name);              \
+  } else {                                                                           \
+    auto abs = make_abstract_list(values);                                           \
+    name = std::make_unique<TypeParam>(abs, prim_name, arg_name);                    \
   }
 
 #define expect_inferinfo_throw(statement, prim_name, arg_name) \
@@ -289,10 +288,9 @@ TEST_F(TestInferInfo, test_dynamic_sequence) {
 TYPED_TEST(TypedTestInferInfo, test_none) {
   InferInfoPtr infer_info;
   if constexpr (this->is_value_infer_) {
-    infer_info = std::static_pointer_cast<InferInfo>(std::make_shared<TypeParam>(kNone, kPrim, kArg0));
+    infer_info = std::make_unique<TypeParam>(kNone, kPrim, kArg0);
   } else {
-    infer_info = std::static_pointer_cast<InferInfo>(
-      std::make_shared<TypeParam>(std::make_shared<abstract::AbstractNone>(), kPrim, kArg0));
+    infer_info = std::make_unique<TypeParam>(std::make_shared<abstract::AbstractNone>(), kPrim, kArg0);
   }
   ASSERT_TRUE(infer_info->IsNone());
   EXPECT_FALSE(infer_info->IsSequence());

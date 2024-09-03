@@ -66,7 +66,7 @@ InferInfoPtr param_to_abstract_info(InferInfoParam param, const std::string &op_
       abs->set_value(value);
     }
   }
-  return std::make_shared<AbstractInferInfoAdapter>(abs, op_type, arg_name);
+  return std::make_unique<AbstractInferInfoAdapter>(abs, op_type, arg_name);
 }
 
 static ValuePtr MakeValue(const ShapeVector &shape, TypeId type, ValuePtr value, const std::string &arg_name) {
@@ -96,7 +96,7 @@ InferInfoPtr param_to_value_info(InferInfoParam param, const std::string &op_typ
     const auto &value_ = std::get<ValuePtr>(param.value);
     value = MakeValue(shape, type, value_, arg_name);
   }
-  return std::make_shared<ValueInferInfoAdapter>(value, op_type, arg_name);
+  return std::make_unique<ValueInferInfoAdapter>(value, op_type, arg_name);
 }
 
 /*

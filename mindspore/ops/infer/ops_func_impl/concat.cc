@@ -146,7 +146,7 @@ inline ShapeVector CheckAndCalOutputShapeInTupleCase(const ShapeArray &shapes, s
 
 ShapeArray ConcatFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
   auto axis = input_infos.back()->GetScalarValue<int64_t>();
-  auto tensors = input_infos[0];
+  auto &tensors = input_infos[0];
   ShapeVector output_shape;
   if (MS_LIKELY(tensors->IsSequence())) {
     if (MS_UNLIKELY(tensors->IsDynamicSequence())) {
@@ -155,13 +155,13 @@ ShapeArray ConcatFuncImpl::InferShape(const PrimitivePtr &primitive, const Infer
       auto elements = tensors->GetSequenceElements();
       ShapeArray shapes;
       std::transform(elements.begin(), elements.end(), std::back_inserter(shapes),
-                     [](InferInfoPtr info) { return info->GetShape(); });
+                     [](const InferInfoPtr &info) { return info->GetShape(); });
       output_shape = CheckAndCalOutputShapeInTupleCase(shapes, axis, primitive);
     }
   } else {
     ShapeArray shapes;
     std::transform(input_infos.begin(), input_infos.end() - 1, std::back_inserter(shapes),
-                   [](InferInfoPtr info) { return info->GetShape(); });
+                   [](const InferInfoPtr &info) { return info->GetShape(); });
     output_shape = CheckAndCalOutputShapeInTupleCase(shapes, axis, primitive);
   }
   return {output_shape};
@@ -170,7 +170,7 @@ ShapeArray ConcatFuncImpl::InferShape(const PrimitivePtr &primitive, const Infer
 std::vector<TypeId> ConcatFuncImpl::InferType(const PrimitivePtr &primitive,
                                               const InferInfoPtrList &input_infos) const {
   std::vector<TypeId> element_types;
-  auto input = input_infos[kInputIndex0];
+  auto &input = input_infos[kInputIndex0];
   if (input->IsSequence()) {
     if (MS_UNLIKELY(input->IsDynamicSequence())) {
       auto element_type = input->GetDynamicSequenceElement()->GetType();
@@ -178,7 +178,7 @@ std::vector<TypeId> ConcatFuncImpl::InferType(const PrimitivePtr &primitive,
                                              primitive->name());
       return {element_type};
     } else {
-      const auto elements = input->GetSequenceElements();
+      const auto &elements = input->GetSequenceElements();
       (void)std::transform(elements.begin(), elements.end(), std::back_inserter(element_types),
                            [](const auto &info) { return info->GetType(); });
     }

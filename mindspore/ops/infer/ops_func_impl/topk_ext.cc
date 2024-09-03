@@ -28,7 +28,7 @@ namespace mindspore {
 namespace ops {
 ShapeArray TopkExtFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
   const auto &prim_name = primitive->name();
-  auto x = input_infos[kInputIndex0];
+  auto &x = input_infos[kInputIndex0];
   auto k_opt = input_infos[kInputIndex1]->GetScalarValue<int64_t>();
   if (x->IsDynamicRank() || !k_opt.has_value()) {
     return {{abstract::Shape::kShapeRankAny}, {abstract::Shape::kShapeRankAny}};

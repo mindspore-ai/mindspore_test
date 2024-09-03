@@ -34,7 +34,7 @@
 
 namespace mindspore::ops {
 class InferInfo;
-using InferInfoPtr = std::shared_ptr<InferInfo>;
+using InferInfoPtr = std::unique_ptr<InferInfo>;
 using InferInfoPtrList = std::vector<InferInfoPtr>;
 class MS_CORE_API InferInfo {
  public:

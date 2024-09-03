@@ -84,12 +84,12 @@ void AdaptShapeAndMultipies(ShapeVector *shape, ShapeVector *dims) {
 }
 
 ShapeArray TileFuncImpl::InferShape(const PrimitivePtr &primitive, const InferInfoPtrList &input_infos) const {
-  auto x = input_infos[kInputIndex0];
+  auto &x = input_infos[kInputIndex0];
   auto x_shape = x->GetShape();
   if (MS_UNLIKELY(x->IsDynamicRank())) {
     return {{abstract::TensorShape::kShapeRankAny}};
   }
-  auto dim = input_infos[kInputIndex1];
+  auto &dim = input_infos[kInputIndex1];
   if (MS_UNLIKELY(dim->IsSequence() && dim->IsDynamicSequence())) {
     return {{abstract::TensorShape::kShapeRankAny}};
   }

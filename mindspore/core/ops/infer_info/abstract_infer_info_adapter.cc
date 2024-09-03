@@ -106,12 +106,12 @@ InferInfoPtrList AbstractInferInfoAdapter::GetSequenceElements() {
     auto abstract_sequence = abs_->cast<abstract::AbstractSequencePtr>();
     const auto &elements = abstract_sequence->elements();
     for (size_t i = 0; i < elements.size(); ++i) {
-      elem_infer_infos.push_back(std::make_shared<AbstractInferInfoAdapter>(elements[i], op_type_, arg_name_));
+      elem_infer_infos.push_back(std::make_unique<AbstractInferInfoAdapter>(elements[i], op_type_, arg_name_));
     }
   } else {  // KernelTensor
     auto sequence_shape_ptr = abs_->GetShape()->cast<abstract::SequenceShapePtr>();
     MS_EXCEPTION_IF_NULL(sequence_shape_ptr);
-    auto shapes = sequence_shape_ptr->shape();
+    const auto &shapes = sequence_shape_ptr->shape();
     auto type_ptr = abs_->GetType();
     TypePtrList types;
     if (type_ptr->isa<Tuple>()) {
@@ -122,11 +122,10 @@ InferInfoPtrList AbstractInferInfoAdapter::GetSequenceElements() {
       MS_LOG(EXCEPTION) << "Failed to get types of list elements from type " << type_ptr->ToString() << ", "
                         << BaseDebugInfo();
     }
-    AbstractBasePtrList abs_list;
     for (size_t i = 0; i < shapes.size(); ++i) {
-      auto element = abstract::MakeAbstract(shapes[i], types[i]);
+      const auto &element = abstract::MakeAbstract(shapes[i], types[i]);
       elem_infer_infos.push_back(
-        std::make_shared<AbstractInferInfoAdapter>(element, op_type_, arg_name_ + "_" + std::to_string(i)));
+        std::make_unique<AbstractInferInfoAdapter>(element, op_type_, arg_name_ + "_" + std::to_string(i)));
     }
   }
   return elem_infer_infos;
@@ -138,7 +137,7 @@ InferInfoPtr AbstractInferInfoAdapter::GetDynamicSequenceElement() {
   }
   auto abstract_sequence = abs_->cast<abstract::AbstractSequencePtr>();
   auto element_abs = abstract_sequence->dynamic_len_element_abs();
-  return std::make_shared<AbstractInferInfoAdapter>(element_abs, op_type_, arg_name_);
+  return std::make_unique<AbstractInferInfoAdapter>(element_abs, op_type_, arg_name_);
 }
 
 ValuePtr AbstractInferInfoAdapter::GetValuePtr() {
