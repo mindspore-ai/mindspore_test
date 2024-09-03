@@ -58,6 +58,7 @@ class _RecomputeCell(Cell):
         self.args = []
         self.kwargs = []
         self.wrap_cell = _WrapCell(block)
+        self.wrap_cell.set_inputs()
 
         self.net = block
         self.internal_params = []
