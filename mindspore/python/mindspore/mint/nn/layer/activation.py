@@ -22,7 +22,10 @@ from mindspore.nn.cell import Cell
 
 class SiLU(Cell):
     r"""
-    Applies the silu linear unit function element-wise.
+    Calculates the SiLU activation function element-wise. It is also sometimes referred to as Swish
+    function.
+
+    The SiLU function is defined as follows:
 
     .. math::
 
