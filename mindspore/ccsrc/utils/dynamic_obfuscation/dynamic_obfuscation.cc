@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Huawei Technologies Co., Ltd
+ * Copyright 2022-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -905,7 +905,15 @@ void DynamicObfuscator::AddSwitchNode(const FuncGraphPtr fg) {
     parent_names_.pop();
 
     mindspore::FuncGraphPtr fg_subgraph_clone = CloneSubGraph(nodes, parent_node);
+    if (fg_subgraph_clone == nullptr) {
+      MS_LOG(ERROR) << "fg_subgraph_clone is nullptr.";
+      return;
+    }
     mindspore::FuncGraphPtr fg_subgraph_fake = BuildFakeGraph(nodes, parent_node);
+    if (fg_subgraph_fake == nullptr) {
+      MS_LOG(ERROR) << "fg_subgraph_fake is nullptr.";
+      return;
+    }
 
     mgr->AddFuncGraph(fg_subgraph_clone);
     mgr->AddFuncGraph(fg_subgraph_fake);

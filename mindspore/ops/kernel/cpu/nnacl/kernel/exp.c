@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Huawei Technologies Co., Ltd
+ * Copyright 2022-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,11 +47,12 @@ int ExpPrepare(struct KernelBase *self) {
   NNACL_CHECK_FALSE(self->in_size_ < 1 || self->out_size_ < 1, NNACL_TENSOR_SIZE_INVALID);
 
   float log_base = (param->base_ == -1) ? 1 : logf(param->base_);
+  float epsilon = 0.000001;
   exp->in_scale_ = param->scale_ * log_base;
   if (param->shift_ == 0) {
     exp->out_scale_ = 1;
   } else {
-    if (log_base == 1) {
+    if (fabs(log_base - 1) < epsilon) {
       exp->out_scale_ = expf(param->shift_);
     } else {
       exp->out_scale_ = powf(param->base_, param->shift_);
