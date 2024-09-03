@@ -814,7 +814,7 @@ class _Context:
         """"Check and set speedup config for auto parallel."""
         if speedup_config_path is None or speedup_config_path == "":
             return
-        speedup_config_real_path = os.path.abspath(speedup_config_path)
+        speedup_config_real_path = os.path.realpath(speedup_config_path)
         if not os.path.exists(speedup_config_real_path):
             raise ValueError(f"For 'ascend_config', the path to parallel_speed_up_json: "
                              f"{speedup_config_real_path} does not exist, please check whether the "

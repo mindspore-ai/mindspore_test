@@ -697,7 +697,7 @@ Status FlashAttentionScoreInfo::CheckInputInRingAttention() {
     MS_LOG(ERROR) << "Ring attention currently only supports sparse mode 0";
     return FAILED;
   }
-  if (keep_prob_ != 1.0) {
+  if (!common::IsFloatEqual(keep_prob_, 1.0)) {
     MS_LOG(ERROR) << "Ring attention currently only supports keep prob 1.0";
   }
   if (is_input_passed_[ops::kFlashAttentionScoreInputAttnMaskIndex] && (enable_flash_sp_ || enable_load_balance_)) {
