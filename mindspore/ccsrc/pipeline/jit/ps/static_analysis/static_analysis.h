@@ -377,16 +377,6 @@ class AnalysisEngine : public std::enable_shared_from_this<AnalysisEngine> {
   EvaluatorPtr HandleNestedRecursion(const std::vector<EvaluatorPtr> &evaluators, const EvaluatorPtr &eval,
                                      const AbstractBasePtrList &args_abs_list, const EvalTraceRevIter &it,
                                      bool *continue_flag);
-  AnalysisContextPtr Run(const FuncGraphPtr &func_graph, const AnalysisContextPtr &context,
-                         const ConfigPtrList &args_conf_list);
-  EvalResultPtr Eval(const AnfNodeConfigPtr &conf);
-  EvalResultPtr ExecuteEvaluators(const std::vector<EvaluatorPtr> &evaluators, const AnfNodeConfigPtr &out_conf,
-                                  const ConfigPtrList &args_conf_list);
-  EvalResultPtr ExecuteMultipleEvaluators(const std::vector<EvaluatorPtr> &evaluators, const AnfNodeConfigPtr &out_conf,
-                                          const ConfigPtrList &args_conf_list);
-  EvalResultPtr ExecuteMultipleEvaluatorsMultiThread(const std::vector<EvaluatorPtr> &evaluators,
-                                                     const AnfNodeConfigPtr &out_conf,
-                                                     const ConfigPtrList &args_conf_list);
   AbstractBasePtr ObtainEvalResult(const AnfNodePtr &node, const AnfNodeConfigPtr &conf);
   bool IsRealToComplexGradient(const CNodePtr &cnode, const AnfNodeConfigPtr &conf);
 

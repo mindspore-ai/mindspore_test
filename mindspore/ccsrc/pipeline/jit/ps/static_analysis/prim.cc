@@ -24,6 +24,7 @@
 #include <mutex>
 #include <string>
 #include <utility>
+#include <tuple>
 
 #include "abstract/abstract_value.h"
 #include "abstract/ops/primitive_infer_map.h"
