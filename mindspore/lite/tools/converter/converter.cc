@@ -89,6 +89,7 @@ constexpr auto kEncryption = "encryption";
 constexpr auto kInputDataType = "inputDataType";
 constexpr auto kOutputDataType = "outputDataType";
 constexpr auto kInfer = "infer";
+constexpr size_t kMaxDimNum = 128;
 std::map<std::string, FmkType> StrToEnumFmkTypeMap = {
   {"CAFFE", FmkType::kFmkTypeCaffe},  {"MINDIR", FmkType::kFmkTypeMs}, {"TFLITE", FmkType::kFmkTypeTflite},
   {"ONNX", FmkType::kFmkTypeOnnx},    {"TF", FmkType::kFmkTypeTf},     {"PYTORCH", FmkType::kFmkTypePytorch},
@@ -1007,6 +1008,17 @@ int ConverterImpl::UnifyInputShape(const std::shared_ptr<ConverterPara> &param) 
   if (ret != RET_OK) {
     MS_LOG(ERROR) << "ParseStringInputShape failed! ret:" << ret << "!";
     return ret;
+  }
+  if (ShapeMapIsDynamicShape(input_shape_config)) {
+    size_t dim_num = 0;
+    for (auto &shape : input_shape_config) {
+      dim_num += shape.second.size();
+    }
+    if (dim_num > kMaxDimNum) {
+      MS_LOG(ERROR) << "The dynamic dim model supports a maximum total winput shape of 128! Current num:" << dim_num
+                    << "!";
+      return RET_ERROR;
+    }
   }
   if (!input_shape_param.empty() && !input_shape_config.empty()) {
     bool compare_res = CompareInputShape(input_shape_param, input_shape_config);
