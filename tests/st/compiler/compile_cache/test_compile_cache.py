@@ -456,7 +456,7 @@ def test_compile_cache_run_two_cells_once():
     run_two_cells_networks_once("run_lenet_two_cells.py", "./lenet_two_cells", "lenet_two_cells.txt")
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='allcards', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='allcards', essential_mark='essential')
 def test_compile_cache_pipeline_parallel_and_recompute():
     """
     Feature: Compile cache.
