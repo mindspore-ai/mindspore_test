@@ -116,7 +116,7 @@ convert_object_map = {
     T.xor:          multitype_ops.bitwise_xor,
     T.pos:          multitype_ops.uadd,
     T.neg:          multitype_ops.negative,
-    T.invert:       F.logical_not,
+    T.invert:       multitype_ops.invert,
     T.not_:         multitype_ops.logical_not,
     T.eq:           multitype_ops.equal,
     T.ne:           multitype_ops.not_equal,

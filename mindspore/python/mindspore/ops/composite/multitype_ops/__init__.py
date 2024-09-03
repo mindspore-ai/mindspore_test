@@ -44,6 +44,7 @@ from mindspore.ops.composite.multitype_ops.right_shift_impl import right_shift
 from mindspore.ops.composite.multitype_ops.uadd_impl import uadd
 from mindspore.ops.composite.multitype_ops.in_impl import in_
 from mindspore.ops.composite.multitype_ops.not_in_impl import not_in_
+from mindspore.ops.composite.multitype_ops.invert_impl import invert
 __all__ = [
     'add',
     'sub',
@@ -73,5 +74,6 @@ __all__ = [
     'left_shift',
     'right_shift',
     'in_',
-    'not_in_'
+    'not_in_',
+    'invert'
 ]

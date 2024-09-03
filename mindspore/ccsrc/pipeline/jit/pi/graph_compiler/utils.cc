@@ -151,6 +151,7 @@ PrimitivePtr GraphUtils::GetPrimitive(int op_code) {
 std::string GraphUtils::OpCodeToGraphName(int op_code) {
   static std::map<int, std::string> op_code_2_graph_name = {{UNARY_NEGATIVE, "negative"},
                                                             {UNARY_NOT, "logical_not"},
+                                                            {UNARY_INVERT, "invert"},
                                                             {BINARY_POWER, "pow_"},
                                                             {BINARY_MULTIPLY, "mul"},
                                                             {BINARY_MODULO, "mod"},
