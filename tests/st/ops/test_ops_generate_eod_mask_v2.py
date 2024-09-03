@@ -20,6 +20,7 @@ import mindspore.nn as nn
 from mindspore import Tensor
 from mindspore import ops
 
+# pylint: disable=not-callable
 
 def set_mode(mode):
     context.set_context(device_target="Ascend", save_graphs=False)

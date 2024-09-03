@@ -21,7 +21,7 @@ import os
 import pytest
 
 
-@pytest.mark.level0
+@pytest.mark.level1
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.env_single
 def test_npu_asd_enable0():
@@ -42,7 +42,7 @@ def test_npu_asd_enable0():
     os.system(f'rm -rf ms_graphs log_output ascend_log')
 
 
-@pytest.mark.level0
+@pytest.mark.level1
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.env_single
 def test_npu_asd_enable1():
