@@ -139,7 +139,7 @@ class AnfExporter {
                                   OrderedMap<AnfNodePtr, int32_t> *para_map = nullptr);
 
   OrderedMap<FuncGraphPtr, ParamIndexMap> exported_;
-  bool is_top_graph_;
+  bool is_top_graph_{false};
 
  private:
   int param_index_;

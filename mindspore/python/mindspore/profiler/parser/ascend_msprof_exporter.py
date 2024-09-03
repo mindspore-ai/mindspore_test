@@ -54,7 +54,7 @@ class AscendMsprofExporter:
         self._time_out = time_out
         self.mindstudio_profiler_output = mindstudio_profiler_output  # mindstudio_profiler_output dir
         # PROF* dir
-        self.prof_root_dir = os.path.abspath(os.path.join(self.mindstudio_profiler_output, os.path.pardir))
+        self.prof_root_dir = os.path.realpath(os.path.join(self.mindstudio_profiler_output, os.path.pardir))
 
         AscendMsprofExporter.check_msprof_env()
 
