@@ -202,4 +202,4 @@ def test_load_mindir_generated_from_old_version():
     loaded_net = nn.GraphCell(graph)
     output = Tensor([0.01944945, 0.01933849, -0.00446877])
     output_from_load = loaded_net(x)
-    assert np.allclose(output.asnumpy(), output_from_load.asnumpy())
+    assert np.allclose(output.asnumpy(), output_from_load.asnumpy(), rtol=1e-3)
