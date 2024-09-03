@@ -29,6 +29,38 @@ namespace kernel {
 namespace {
 constexpr size_t kDropoutInputsNum = 4;
 constexpr size_t kDropoutOutputsNum = 2;
+
+template <typename T>
+CTask DoDropOut(const T *input_addr, T *output_addr, T *mask_addr, float keep_prob,
+                std::uniform_real_distribution<float> *uniform, std::default_random_engine *rng) {
+  MS_EXCEPTION_IF_NULL(input_addr);
+  MS_EXCEPTION_IF_NULL(output_addr);
+  MS_EXCEPTION_IF_NULL(mask_addr);
+  T scale = static_cast<T>(1.f / keep_prob);
+  auto task = [input_addr, output_addr, mask_addr, scale, keep_prob, uniform, rng](size_t start, size_t end) {
+    for (size_t i = start; i < end; i++) {
+      mask_addr[i] = static_cast<T>((*uniform)(*rng) < keep_prob);
+      output_addr[i] = mask_addr[i] * input_addr[i] * scale;
+    }
+  };
+  return task;
+}
+
+template <>
+CTask DoDropOut<float16>(const float16 *input_addr, float16 *output_addr, float16 *mask_addr, float keep_prob,
+                         std::uniform_real_distribution<float> *uniform, std::default_random_engine *rng) {
+  MS_EXCEPTION_IF_NULL(input_addr);
+  MS_EXCEPTION_IF_NULL(output_addr);
+  MS_EXCEPTION_IF_NULL(mask_addr);
+  float scale = 1.f / keep_prob;
+  auto task = [input_addr, output_addr, mask_addr, scale, keep_prob, &uniform, &rng](size_t start, size_t end) {
+    for (size_t i = start; i < end; i++) {
+      mask_addr[i] = static_cast<float16>((*uniform)(*rng) < keep_prob);
+      output_addr[i] = mask_addr[i] * static_cast<float16>(static_cast<float>(input_addr[i]) * scale);
+    }
+  };
+  return task;
+}
 }  // namespace
 
 using FuncVec = const std::vector<std::pair<KernelAttr, DropoutCpuKernelMod::KernelRunFunc>>;
@@ -72,14 +104,8 @@ bool DropoutCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTensor *>
   const auto *input_addr = reinterpret_cast<T *>(inputs[0]->device_ptr());
   auto *output_addr = reinterpret_cast<T *>(outputs[0]->device_ptr());
   auto mask_addr = reinterpret_cast<T *>(outputs[1]->device_ptr());
-  T scale = static_cast<T>(1.f / keep_prob_);
   std::uniform_real_distribution<float> uniform(0.f, 1.f);
-  auto task = [input_addr, output_addr, mask_addr, scale, &uniform, this](size_t start, size_t end) {
-    for (size_t i = start; i < end; i++) {
-      mask_addr[i] = static_cast<T>(uniform(this->rng_) < keep_prob_);
-      output_addr[i] = mask_addr[i] * input_addr[i] * scale;
-    }
-  };
+  auto task = DoDropOut<T>(input_addr, output_addr, mask_addr, keep_prob_, &uniform, &rng_);
   ParallelLaunchAutoSearch(task, tensor_size_, this, &parallel_search_info_);
   return true;
 }

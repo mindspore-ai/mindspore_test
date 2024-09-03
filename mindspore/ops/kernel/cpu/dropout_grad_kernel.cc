@@ -30,6 +30,34 @@ namespace kernel {
 namespace {
 constexpr size_t kDropoutGradInputsNum = 2;
 constexpr size_t kDropoutGradOutputsNum = 1;
+template <typename T>
+CTask DoDropOutGrad(const T *input_addr, const T *mask_addr, T *output_addr, float keep_prob) {
+  MS_EXCEPTION_IF_NULL(input_addr);
+  MS_EXCEPTION_IF_NULL(mask_addr);
+  MS_EXCEPTION_IF_NULL(output_addr);
+  T scale = static_cast<T>(1.f / keep_prob);
+  auto task = [input_addr, mask_addr, output_addr, scale](size_t start, size_t end) {
+    for (size_t i = start; i < end; i++) {
+      output_addr[i] = input_addr[i] * mask_addr[i] * scale;
+    }
+  };
+  return task;
+}
+
+template <>
+CTask DoDropOutGrad<float16>(const float16 *input_addr, const float16 *mask_addr, float16 *output_addr,
+                             float keep_prob) {
+  MS_EXCEPTION_IF_NULL(input_addr);
+  MS_EXCEPTION_IF_NULL(mask_addr);
+  MS_EXCEPTION_IF_NULL(output_addr);
+  float scale = 1.f / keep_prob;
+  auto task = [input_addr, mask_addr, output_addr, scale](size_t start, size_t end) {
+    for (size_t i = start; i < end; i++) {
+      output_addr[i] = mask_addr[i] * static_cast<float16>(static_cast<float>(input_addr[i]) * scale);
+    }
+  };
+  return task;
+}
 }  // namespace
 
 using FuncVec = const std::vector<std::pair<KernelAttr, DropoutGradBwdCpuKernelMod::KernelRunFunc>>;
@@ -77,13 +105,7 @@ bool DropoutGradBwdCpuKernelMod::LaunchKernel(const std::vector<kernel::KernelTe
   T *output = reinterpret_cast<T *>(outputs[0]->device_ptr());
   const T *input = reinterpret_cast<T *>(inputs[0]->device_ptr());
   const T *mask = reinterpret_cast<T *>(inputs[1]->device_ptr());
-  const T scale = static_cast<T>(1.f / keep_prob_);
-
-  auto task = [&](size_t start, size_t end) {
-    for (size_t i = start; i < end; i++) {
-      output[i] = input[i] * mask[i] * scale;
-    }
-  };
+  auto task = DoDropOutGrad<T>(input, mask, output, keep_prob_);
   ParallelLaunchAutoSearch(task, num_count_, this, &parallel_search_info_);
   return true;
 }
