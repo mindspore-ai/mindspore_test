@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "mindspore/core/ops/op_def.h"
+#include "mindspore/core/include/ops/op_def.h"
 
 namespace mindspore::ops {
 OPS_API extern OpDef gGEGraphOp;

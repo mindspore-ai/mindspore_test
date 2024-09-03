@@ -683,6 +683,7 @@ Status OpAdapterImpl::UpdateMultiOutputDesc(const OperatorPtr &op, const abstrac
 
 std::shared_ptr<GeTensorDesc> OpAdapterImpl::CreateNodeDesc(const AnfNodePtr &node, const std::string &format) const {
   MS_EXCEPTION_IF_NULL(node);
+  MS_EXCEPTION_IF_NULL(node->Type());
   TypeId me_type = node->Type()->type_id();
   if (kObjectTypeTensorType == me_type) {
     me_type = dyn_cast<TensorType>(node->Type())->element()->type_id();

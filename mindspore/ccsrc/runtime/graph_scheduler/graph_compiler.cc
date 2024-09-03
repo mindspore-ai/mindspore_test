@@ -651,6 +651,7 @@ GraphId GraphCompiler::CompileGraph(const KernelGraphPtr &kernel_graph,
   if (context_ptr->backend_policy() == "ge" && device_context->GetDeviceType() == device::DeviceType::kAscend &&
       !IsEnableRefMode()) {
     MS_EXCEPTION_IF_NULL(device_context->graph_executor_);
+    device_context->GetKernelExecutor(false)->OptimizeGraph(kernel_graph);
     if (!device_context->graph_executor_->CompileGraph(kernel_graph, {})) {
       MS_LOG(EXCEPTION) << "Compile kernel_graph failed: " << kernel_graph->graph_id();
     }

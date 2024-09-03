@@ -844,8 +844,6 @@ bool GeGraphExecutor::CompileGraph(const FuncGraphPtr &graph, const std::map<str
     const auto &tensor_order_map = GetDefaultParams(graph, &origin_shape);
     auto &compile_cache_context = CompileCacheContext::GetInstance();
     auto use_compile_cache = compile_cache_context.UseCompileCache();
-    std::set<KernelGraphPtr> memo;
-    GEGraphOptimization::GetInstance().OptimizeGEGraph(kg, &memo);
     if (use_compile_cache) {
       MS_LOG(INFO) << "Use ge compile cache, and skip specific optimization and ge_adapter execution";
 
