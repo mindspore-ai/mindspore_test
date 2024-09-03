@@ -39,7 +39,7 @@ vector<KernelTensor *> CheckOverflowKernel::CheckInputs(vector<KernelTensor *> i
         break;
       } else {
         warning_once.insert(type);
-        MS_LOG(WARNING) << "Overflow detection does not support " << type << " !";
+        MS_LOG(WARNING) << "Overflow detection does not support " << TypeIdToType(type) << " !";
       }
     }
   }
