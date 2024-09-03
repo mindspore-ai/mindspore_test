@@ -1133,7 +1133,7 @@ class Profiler:
         data_path = os.path.join(container_path, "data")
         data_path = validate_and_normalize_path(data_path)
         if not os.path.exists(data_path):
-            os.makedirs(data_path, exist_ok=True)
+            os.makedirs(data_path, exist_ok=True, mode=stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
 
     def _construct_profiling_options(self):
         """
@@ -1989,15 +1989,13 @@ class Profiler:
 
         self._output_path = os.path.join(self._output_path, "profiler")
         if not os.path.exists(self._output_path):
-            os.makedirs(self._output_path, exist_ok=True)
-            os.chmod(self._output_path, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
+            os.makedirs(self._output_path, exist_ok=True, mode=stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
         else:
             logger.warning("The target dir already exists. "
                            "There may be some old profiling data, and they will be rewritten in the end.")
         self._framework_path = os.path.join(self._output_path, "FRAMEWORK")
         if not os.path.exists(self._framework_path):
-            os.makedirs(self._framework_path, exist_ok=True)
-            os.chmod(self._framework_path, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
+            os.makedirs(self._framework_path, exist_ok=True, mode=stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
 
     def _parser_kwargs(self, kwargs):
         """Parse kwargs vale."""
