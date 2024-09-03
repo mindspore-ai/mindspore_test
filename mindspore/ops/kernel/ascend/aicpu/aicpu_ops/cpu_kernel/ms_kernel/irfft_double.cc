@@ -16,7 +16,7 @@
 
 #include "cpu_kernel/ms_kernel/irfft_double.h"
 #include "context/inc/cpu_kernel_utils.h"
-#include "mindspore/core/mindapi/base/types.h"
+#include "mindapi/base/types.h"
 #include "utils/kernel_util.h"
 #include "cpu_kernel/utils/fft_helper.h"
 
