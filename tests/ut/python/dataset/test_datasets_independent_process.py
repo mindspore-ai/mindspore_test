@@ -153,7 +153,6 @@ def test_dataset_with_independent_process_dynamic_shape():
     del os.environ["MS_INDEPENDENT_DATASET"]
 
 
-@pytest.mark.skip(reason="random failures")
 def test_dataset_with_independent_process_train_and_eval():
     """
     Feature: Dataset With Independent Process
@@ -260,7 +259,6 @@ def print_psutil(name):
     os.system("ps -ef | grep pytest")
 
 
-@pytest.mark.skip(reason="random failures")
 def test_dataset_with_independent_process_two_stage_pipeline():
     """
     Feature: Dataset With Independent Process
@@ -356,7 +354,6 @@ def test_dataset_with_independent_process_two_stage_pipeline():
     del os.environ["MS_INDEPENDENT_DATASET"]
 
 
-@pytest.mark.skip(reason="random failures")
 def test_dataset_with_independent_process_with_dict():
     """
     Feature: Dataset With Independent Process
@@ -428,7 +425,6 @@ def test_dataset_with_independent_process_with_dict():
     del os.environ["MS_INDEPENDENT_DATASET"]
 
 
-@pytest.mark.skip(reason="random failures")
 def test_generator_with_generator_object_iterated_multi_times():
     """
     Feature: GeneratorDataset
@@ -476,7 +472,6 @@ def test_generator_with_generator_object_iterated_multi_times():
     del os.environ["MS_INDEPENDENT_DATASET"]
 
 
-@pytest.mark.skip(reason="random failures")
 def test_dataset_mnistdataset_with_for_loop_iterator():
     """
     Feature: Dataset With Independent Process
