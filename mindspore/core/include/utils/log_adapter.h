@@ -222,6 +222,7 @@ enum VLogLevel : int {
   VL_DEBUG = COMPONENT_START + (SM_DEBUG - 1) * COMPONENT_RANGE,  // 3. debug
   VL_PRINT_DUMP_V0 = VL_DEBUG,                                    // verbose level0 for print and tensordump, etc.
   VL_PRINT_DUMP_V1,                                               // verbose level1 for print and tensordump, etc.
+  VL_DUMP,                                                        // tag is 10302, for O0/O1 device statistic dump.
 
   VL_OFFLINE_DEBUG = COMPONENT_START + (SM_OFFLINE_DEBUG - 1) * COMPONENT_RANGE,          // 4. offline debug
   VL_DEVICE = COMPONENT_START + (SM_DEVICE - 1) * COMPONENT_RANGE,                        // 5. device

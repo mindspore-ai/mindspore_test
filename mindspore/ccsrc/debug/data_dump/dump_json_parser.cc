@@ -53,6 +53,9 @@ constexpr auto kStatCalcMode = "stat_calc_mode";
 constexpr auto kHost = "host";
 constexpr auto kDevice = "device";
 constexpr auto kStatisticDump = "statistic";
+constexpr auto kDeviceStatPrecisionMode = "device_stat_precision_mode";
+constexpr auto kHighPrecision = "high";
+constexpr auto kLowPrecision = "low";
 constexpr auto kTensorDump = "tensor";
 constexpr auto kFullDump = "full";
 constexpr auto kFileFormat = "file_format";
@@ -543,6 +546,7 @@ void DumpJsonParser::ParseE2eDumpSetting(const nlohmann::json &content) {
   }
 
   ParseStatCalcMode(*e2e_dump_setting);
+  ParseDeviceStatPrecisionMode(*e2e_dump_setting);
   if (CheckSelectableKeyExist(*e2e_dump_setting, kSampleMode)) {
     auto sample_mode = CheckJsonKeyExist(*e2e_dump_setting, kSampleMode);
     ParseSampleMode(*sample_mode);
@@ -835,6 +839,22 @@ void DumpJsonParser::ParseStatCalcMode(const nlohmann::json &content) {
                       << calc_mode << ". Please set 'stat_cal_mode' to 'host' or 'device'";
   }
   stat_calc_mode_ = calc_mode;
+}
+
+void DumpJsonParser::ParseDeviceStatPrecisionMode(const nlohmann::json &content) {
+  auto iter = content.find(kDeviceStatPrecisionMode);
+  device_stat_precision_mode_ = kHighPrecision;
+  if (iter == content.end()) {
+    MS_LOG(INFO) << "'device_stat_precision_mode' is not set, default is " << device_stat_precision_mode_;
+    return;
+  }
+  CheckJsonStringType(*iter, kDeviceStatPrecisionMode);
+  std::string presicion_mode = *iter;
+  if (presicion_mode != kHighPrecision && presicion_mode != kLowPrecision) {
+    MS_LOG(EXCEPTION) << "Dump Json parse failed, 'device_stat_precision_mode' only supports 'high' or 'low', but got: "
+                      << presicion_mode << ". Please set 'stat_cal_mode' to 'high' or 'low'";
+  }
+  device_stat_precision_mode_ = presicion_mode;
 }
 
 void DumpJsonParser::CheckStatCalcModeVaild() {
@@ -1209,4 +1229,7 @@ bool DumpJsonParser::IsGeDump() {
   auto enable_ge_dump = common::GetEnv("ENABLE_MS_GE_DUMP");
   return enable_ge_dump == "1";
 }
+
+bool DumpJsonParser::IsDeviceStatHighPrecisionMode() const { return device_stat_precision_mode_ == kHighPrecision; }
+
 }  // namespace mindspore
