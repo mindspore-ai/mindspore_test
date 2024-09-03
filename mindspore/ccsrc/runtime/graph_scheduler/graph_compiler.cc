@@ -149,6 +149,27 @@ AnfNodePtr FetchRealNodeByNopNode(const AnfNodePtr &node) {
   return FetchRealNodeByNopNode(inputs[1]);
 }
 
+bool IsSwitchInlineNopNode(const CNodePtr &cnode) {
+  MS_EXCEPTION_IF_NULL(cnode);
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  if (context_ptr->get_param<int>(MS_CTX_MEMORY_OPTIMIZE_LEVEL) != kOptimizeO0) {
+    return std::find_if(cnode->inputs().begin(), cnode->inputs().end(), [](const auto &input) {
+             return common::AnfAlgo::CheckPrimitiveType(input, prim::kPrimConditionGather) ||
+                    common::AnfAlgo::CheckPrimitiveType(common::AnfAlgo::VisitKernelWithReturnType(input, 0).first,
+                                                        prim::kPrimConditionGather);
+           }) != cnode->inputs().end();
+  }
+  return std::find_if(cnode->inputs().begin(), cnode->inputs().end(), [](const auto &input) {
+           return common::AnfAlgo::CheckPrimitiveType(input, prim::kPrimConditionGather) ||
+                  common::AnfAlgo::CheckPrimitiveType(common::AnfAlgo::VisitKernelWithReturnType(input, 0).first,
+                                                      prim::kPrimConditionGather) ||
+                  common::AnfAlgo::CheckPrimitiveType(input, prim::kPrimConditionSwitch) ||
+                  common::AnfAlgo::CheckPrimitiveType(common::AnfAlgo::VisitKernelWithReturnType(input, 0).first,
+                                                      prim::kPrimConditionSwitch);
+         }) != cnode->inputs().end();
+}
+
 void OptimizeNopNode(KernelGraph *graph) {
   MS_EXCEPTION_IF_NULL(graph);
   std::vector<CNodePtr> nop_nodes_need_set_ref;
@@ -176,11 +197,7 @@ void OptimizeNopNode(KernelGraph *graph) {
                        const auto &real_output = common::AnfAlgo::FetchRealNodeSkipMonadControl(output);
                        return real_output == KernelWithIndex(cnode, 0);
                      }) != graph_outputs.end() ||
-        std::find_if(cnode->inputs().begin(), cnode->inputs().end(), [](const auto &input) {
-          return common::AnfAlgo::CheckPrimitiveType(input, prim::kPrimConditionGather) ||
-                 common::AnfAlgo::CheckPrimitiveType(common::AnfAlgo::VisitKernelWithReturnType(input, 0).first,
-                                                     prim::kPrimConditionGather);
-        }) != cnode->inputs().end()) {
+        IsSwitchInlineNopNode(cnode)) {
       continue;
     }
     // NopNode that does not meet the above conditions is set to Ref Node and is not deleted from the graph to avoid

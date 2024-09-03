@@ -2881,6 +2881,8 @@ AnfNodePtr KernelGraphMgr::DoInline(const FuncGraphPtr &func_graph, const FuncGr
           sub_graph_name = sub_graph_iter->second;
         }
       }
+      MS_LOG(DEBUG) << "Add inline node:" << new_node->fullname_with_scope() << " ptr:" << new_node
+                    << " graph:" << sub_graph_name;
       target_kernel_graph->AddInlineSubgraphKernel(new_node, sub_graph_name);
       if (common::AnfAlgo::CheckPrimitiveType(new_node, prim::kPrimConditionGather) ||
           common::AnfAlgo::CheckPrimitiveType(new_node, prim::kPrimConditionSwitch)) {

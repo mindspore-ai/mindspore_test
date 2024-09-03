@@ -251,6 +251,7 @@ void InlineControlFlowScheduler::InitOutputDataBranchInfoForConditionSwitchActor
       if (inline_sub_graph_kernels.find(to_kernel_actor->kernel()) == inline_sub_graph_kernels.end()) {
         MS_LOG(EXCEPTION) << "Failed to get inline sub graph name by data user node:"
                           << to_kernel_actor->kernel()->fullname_with_scope()
+                          << " node addr:" << to_kernel_actor->kernel()
                           << " in actor:" << condition_switch_actor->GetAID();
       }
       MS_LOG(DEBUG) << "Sub graph kernel:" << to_kernel_actor->kernel()->fullname_with_scope()
