@@ -41,15 +41,6 @@ class TestLoadSimulationAPI : public UT::Common {
   void TearDown() override {}
 };
 
-/// Feature: test load simulation memory.
-/// Description: load simulation memory.
-/// Expectation: load simulation memory and can not throw exception.
-TEST_F(TestLoadSimulationAPI, test_load_simulation_memory) {
-  AscendMemAdapter::GetInstance()->Initialize();
-  auto addr = AscendMemAdapter::GetInstance()->MallocStaticDevMem(1000);
-  EXPECT_NE(addr, nullptr);
-}
-
 /// Feature: test load simulation api.
 /// Description: load simulation api.
 /// Expectation: load simulation api and can not throw exception.

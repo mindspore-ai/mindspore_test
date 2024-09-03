@@ -555,12 +555,10 @@ size_t GeGraphExecutor::GetGraphWorkSpaceMemory(const std::string &graph_name) c
 
 void GeGraphExecutor::AllocGEFixMemory() const {
   MS_LOG(INFO) << "Start AllocGEFixMemory";
-  auto graph_runner = transform::GetGraphRunner();
-  MS_EXCEPTION_IF_NULL(graph_runner);
   auto res_manager = ResManager();
   auto alloc_func = [&res_manager](size_t size) { return res_manager->AllocateStaticMemory(size); };
-  auto update_func = [&graph_runner](bool is_refreshable, const transform::RunOptions &options,
-                                     const void *const memory, size_t size) {
+  auto update_func = [](bool is_refreshable, const transform::RunOptions &options, const void *const memory,
+                        size_t size) {
     MS_LOG(INFO) << "Update GE fixed memory, graph name: " << options.name << ", is_refreshable: " << is_refreshable
                  << ", size: " << size << ", memory: " << memory;
     if (common::IsEnableRuntimeConfig(common::kRuntimeMemoryStat)) {
@@ -568,6 +566,8 @@ void GeGraphExecutor::AllocGEFixMemory() const {
                 << "Update GE fixed memory, graph name: " << options.name << ", is_refreshable: " << is_refreshable
                 << ", size: " << size << ", memory: " << memory << std::endl;
     }
+    auto graph_runner = transform::GetGraphRunner();
+    MS_EXCEPTION_IF_NULL(graph_runner);
     if (is_refreshable) {
       return graph_runner->SetFixedMemory(options, memory, size);
     }
