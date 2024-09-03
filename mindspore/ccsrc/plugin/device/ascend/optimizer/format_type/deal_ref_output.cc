@@ -221,6 +221,13 @@ AnfNodePtr DealRefOutput::DealRefForMultipleOutput(const FuncGraphPtr &func_grap
     cnode = NewCNode(orig_cnode, kernel_graph);
     MS_EXCEPTION_IF_NULL(cnode);
     cnode->set_inputs(orig_cnode->inputs());
+    // As the pass would execute after create kernel, the inline sub graph kernel map should be update for new kernel.
+    const auto &iter = kernel_graph->inline_sub_graph_kernels().find(orig_cnode);
+    if (iter != kernel_graph->inline_sub_graph_kernels().end()) {
+      kernel_graph->AddInlineSubgraphKernel(cnode, iter->second);
+      MS_LOG(WARNING) << "Add inline sub graph kernel:" << cnode->fullname_with_scope() << " addr:" << cnode
+                      << " sub graph:" << iter->second;
+    }
     for (auto &update_state : update_states) {
       manager->SetEdge(update_state.first, update_state.second, cnode);
     }
