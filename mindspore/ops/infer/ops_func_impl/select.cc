@@ -79,20 +79,20 @@ ShapeArray SelectFuncImpl::InferShape(const PrimitivePtr &primitive, const Value
 
 TypePtr SelectFuncImpl::InferType(const PrimitivePtr &prim, const std::vector<AbstractBasePtr> &input_args) const {
   auto x_type = input_args[kSelectXIndex]->GetType();
-  auto x_shape = input_args[kSelectXIndex]->GetShape()->GetShapeVector();
-  if (x_shape.empty()) {
-    return input_args[kSelectYIndex]->GetType()->Clone();
-  }
-  return x_type->Clone();
+  auto y_type = input_args[kSelectYIndex]->GetType();
+  auto promote_type = PromoteType(x_type, y_type, prim->name());
+  return {std::make_shared<TensorType>(promote_type)};
 }
 
 TypePtrList SelectFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
   const auto &x_tensor = input_values[kSelectXIndex]->cast<tensor::BaseTensorPtr>();
   MS_EXCEPTION_IF_NULL(x_tensor);
-  if ((x_tensor->shape()).empty()) {
-    return {input_values[kSelectYIndex]->cast<tensor::BaseTensorPtr>()->Dtype()};
-  }
-  return {x_tensor->Dtype()};
+  auto x_type = x_tensor->Dtype();
+  const auto &y_tensor = input_values[kSelectYIndex]->cast<tensor::BaseTensorPtr>();
+  MS_EXCEPTION_IF_NULL(y_tensor);
+  auto y_type = y_tensor->Dtype();
+  auto promote_type = PromoteType(x_type, y_type, primitive->name());
+  return {promote_type};
 }
 REGISTER_SIMPLE_INFER(kNameSelect, SelectFuncImpl)
 }  // namespace ops
