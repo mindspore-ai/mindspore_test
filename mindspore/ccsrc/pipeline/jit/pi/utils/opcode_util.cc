@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 #include "pipeline/jit/pi/utils/opcode_util.h"
-#include "pipeline/jit/pi/pydef.h"
+#include "pipeline/jit/pi/python_adapter/pydef.h"
+#include "pipeline/jit/pi/utils/opcode_declare.h"
 
 namespace mindspore {
 namespace pijit {
@@ -48,12 +49,19 @@ bool Opcode::HasFree() const { return flag_ & kHasFree; }
 bool Opcode::HasConst() const { return flag_ & kHasConst; }
 bool Opcode::CanDelete(int oparg) const { return (flag_ & kCanDel) || CheckIsOp(oparg); }
 bool Opcode::MayDelete(int oparg) const { return (flag_ & kMayDel) || CanDelete(oparg); }
+bool Opcode::IsExcMatch(int oparg) const {
+#if (PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION < 9)
+  return oparg == PyCmp_EXC_MATCH;
+#else
+  return false;
+#endif
+}
 bool Opcode::CheckIsOp(int oparg, bool *invert) const {
 #if (PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION < 9)
   if (invert != nullptr) {
     *invert = oparg == PyCmp_IS_NOT;
   }
-  return code_ == COMPARE_OP ? oparg == PyCmp_IS : false;
+  return code_ == COMPARE_OP ? (oparg == PyCmp_IS || oparg == PyCmp_IS_NOT) : false;
 #else
   if (invert != nullptr) {
     *invert = oparg;
@@ -66,7 +74,7 @@ bool Opcode::CheckContainsOp(int oparg, bool *invert) const {
   if (invert != nullptr) {
     *invert = oparg == PyCmp_NOT_IN;
   }
-  return code_ == COMPARE_OP ? oparg == PyCmp_IN : false;
+  return code_ == COMPARE_OP ? (oparg == PyCmp_IN || oparg == PyCmp_NOT_IN) : false;
 #else
   if (invert != nullptr) {
     *invert = oparg;

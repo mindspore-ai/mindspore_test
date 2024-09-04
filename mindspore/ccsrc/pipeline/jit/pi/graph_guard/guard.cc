@@ -22,6 +22,7 @@
 #include "include/common/utils/convert_utils_py.h"
 #include "pipeline/jit/pi/utils/utils.h"
 #include "pipeline/jit/pi/graph_guard/strategy.h"
+#include "pipeline/jit/pi/python_adapter/pydef.h"
 
 namespace mindspore {
 namespace pijit {
@@ -270,7 +271,7 @@ void OptGuard::UpdateGuardList(GuardItemPtr item) {
   }
 }
 
-bool OptGuard::Check(const PyFrameObject *frame, bool print, std::map<size_t, PyObject *> *cache,
+bool OptGuard::Check(const EvalFrameObject *frame, bool print, std::map<size_t, PyObject *> *cache,
                      std::map<size_t, bool> *success, std::map<size_t, bool> *fail, bool perf) {
   // filter failure case
   if (fail != nullptr) {
@@ -292,7 +293,7 @@ bool OptGuard::Check(const PyFrameObject *frame, bool print, std::map<size_t, Py
   } else {
     list = guardList_;
   }
-  list = OptStrategy::MakeGuardItemListStrategyByFrame(frame, list);
+  list = OptStrategy::MakeGuardItemListStrategyByFrame(list);
   for (size_t i = 0; i < list.size(); ++i) {
     GuardItemPtr item = list[i];
     if (perf) {
@@ -327,7 +328,7 @@ bool OptGuard::Check(const PyFrameObject *frame, bool print, std::map<size_t, Py
 bool OptGuard::GuardOn(TracePtr var, GuardLevel tp, bool needSpecialize, int recurseDepth) {
   // Now we have TypeGuard IdGuard NameGuard AttrGuard EqGuard, let's add guard to guardlist based on type
   PyObject *obj = var->GetObject();
-  if (int_config_.find(kGuardRelaxCnt) != int_config_.end()) {
+  if (int_config_.find(kGuardRelaxCnt) != int_config_.end() && int_config_[kGuardRelaxCnt] != 0) {
     var->SetRelaxCount(int_config_[kGuardRelaxCnt]);
   }
   GuardItemPtr item = nullptr;
@@ -610,7 +611,16 @@ bool OptGuard::MatchShape(OptGuardPtr other) {
   }
   return true;
 }
-
+#if IS_PYTHON_3_11_PLUS
+std::vector<PyObject *> OptGuard::ApplyDynamicShape(EvalFrameObject *f) {
+  std::vector<PyObject *> ret;
+  MS_LOG(ERROR) << "not implement in python3.11";
+  return ret;
+}
+void OptGuard::RevertDynamicShape(EvalFrameObject *f, const std::vector<PyObject *> &backup) {
+  MS_LOG(ERROR) << "not implement in python3.11";
+}
+#else
 static PyObject *FindItem(const std::vector<GuardItemPtr> &guardList, int idx, TraceType type, PyObject *obj) {
   auto iter = std::find_if(guardList.begin(), guardList.end(), [idx, type](GuardItemPtr item) {
     if (item->GetTrace()->GetTraceType() == type) {
@@ -630,7 +640,7 @@ static PyObject *FindItem(const std::vector<GuardItemPtr> &guardList, int idx, T
   }
 }
 
-std::vector<PyObject *> OptGuard::ApplyDynamicShape(PyFrameObject *f) {
+std::vector<PyObject *> OptGuard::ApplyDynamicShape(EvalFrameObject *f) {
   std::vector<PyObject *> ret;
   int argc = f->f_code->co_argcount + f->f_code->co_kwonlyargcount;
   PyObject *vargs = NULL;
@@ -650,6 +660,7 @@ std::vector<PyObject *> OptGuard::ApplyDynamicShape(PyFrameObject *f) {
       f->f_localsplus[i] = new_obj;
     }
   }
+
   if (vargs != NULL) {
     ret.push_back(nullptr);
   }
@@ -685,7 +696,7 @@ std::vector<PyObject *> OptGuard::ApplyDynamicShape(PyFrameObject *f) {
   return ret;
 }
 
-void OptGuard::RevertDynamicShape(PyFrameObject *f, const std::vector<PyObject *> &backup) {
+void OptGuard::RevertDynamicShape(EvalFrameObject *f, const std::vector<PyObject *> &backup) {
   int argc = f->f_code->co_argcount + f->f_code->co_kwonlyargcount;
   for (int i = 0; i < argc; ++i) {
     if (backup[i] != nullptr) {
@@ -712,6 +723,7 @@ void OptGuard::RevertDynamicShape(PyFrameObject *f, const std::vector<PyObject *
     }
   }
 }
+#endif
 
 std::string OptGuard::ToString() const {
   std::stringstream s;

@@ -53,7 +53,15 @@ class SideEffectData {
   void Track(PyObject *ptr, ValueNode *node) { (ptr ? (void)id_map_[ptr].insert(node) : (void)0); }
   void UnTrack(PyObject *ptr, ValueNode *node) { (ptr ? (void)id_map_[ptr].erase(node) : (void)0); }
 
-  // record replaced node
+  /**
+   * record replaced node
+   * NOTE: avoid this case:
+   *    old_node.assign(new_node)
+   *    old_node.assign(other)
+   *    new_node.assign(other)
+   * if replace 'old_node' by 'new_node', how to identify old_node.assign and new_node.assign ?
+   * old_node must be unreached after replace and record. new_node is a new temporary node
+   */
   void RecordModifiedAndReplacedNode(ValueNode *src_node, ValueNode *new_node);
 
   // merge attr modify operations
@@ -82,12 +90,9 @@ class SideEffect {
  public:
   enum Type {
     kDefault,
-    kSetAttr,
     kSetGlobal,
-    kListSetItem,
-    kDictSetItem,
-    kListAppend,
-    kDictPop,
+    kBuiltinFunction,
+    kBuiltinMethod,
   };
 
   struct CacheResult {
@@ -105,16 +110,20 @@ class SideEffect {
   SideEffect() = default;
 
   const auto &data() const { return data_; }
+  const auto &nodes() const { return nodes_; }
   void set_data(const std::shared_ptr<SideEffectData> &data) { data_ = data; }
 
   // check the node is a side-effect record
   bool IsRecord(ValueNode *node) const { return nodes_.empty() ? false : nodes_.find(node) != nodes_.end(); }
 
+  // return true if a record can't be reorder
+  bool NeedTrack(ValueNode *node);
+
   // check record is empty
   bool IsEmpty() const { return nodes_.empty(); }
 
   // return false if unsupported the side-effect
-  bool Record(ValueNode *side_effect_node, Type type = Type::kDefault);
+  bool Record(ValueNode *side_effect_node, Type type = Type::kDefault, std::string name = "");
 
   // generate the code to restore side-effect
   void Restore(CodeGenerator *cg) const;
@@ -132,17 +141,23 @@ class SideEffect {
   const std::set<ValueNode *> &GetRequiredNodes() const;
 
  private:
+  struct Entry {
+    ValueNode *node_;
+    Type type_;
+    size_t order_;
+    std::string method_name_;
+  };
   // add nodes to required
   void AddKeepAlive(const std::vector<ValueNode *> &inputs) { keep_alive_.insert(inputs.begin(), inputs.end()); }
 
   // get required node of the side-effect node
-  std::vector<ValueNode *> GetKeepAlive(ValueNode *node, Type type) const;
+  std::vector<ValueNode *> GetKeepAlive(const Entry &) const;
 
   // if side-effect is function call, check it's supported
-  bool RecordFuncCall(ValueNode *node, Type type);
+  bool CheckCallRecord(ValueNode *node, Type type, const std::string &name);
 
   // restore a side-effect node
-  void RestoreEntry(CodeGenerator *cg, ValueNode *node, Type type) const;
+  void RestoreEntry(CodeGenerator *cg, const Entry &) const;
 
   // restore attribute
   void RestoreAttrs(CodeGenerator *cg) const;
@@ -151,12 +166,7 @@ class SideEffect {
   void RestoreGlobal(CodeGenerator *cg) const;
 
   // restore list, dict, or other specialized object function call
-  void RestoreSpecializeEntry(CodeGenerator *cg, ValueNode *node, Type type) const;
-
-  struct Entry {
-    Type type_;
-    size_t order_;
-  };
+  void RestoreBuiltinMethod(CodeGenerator *cg, const Entry &) const;
 
   // shared from other side-effect recorder
   std::shared_ptr<SideEffectData> data_;
@@ -169,7 +179,7 @@ class SideEffect {
 };
 
 // return the self node, if return nullptr, unsupported to handle side-effect
-ValueNode *GetSelfFromListAppendCall(ValueNode *call_node, bool *is_method_descriptor = nullptr);
+ValueNode *GetSelfFromKnownMethod(ValueNode *call_node, bool *is_method_descriptor = nullptr);
 
 }  // namespace pijit
 }  // namespace mindspore

@@ -266,6 +266,9 @@ class CodeBreakGenerator {
   // followed interpret execute node
   NodeSet captured_;
 
+  // interpret execute node after graph
+  NodeSet outputs_optimize_;
+
   GraphInputInfo graph_inputs_info_;
 
   // break bci alive locals

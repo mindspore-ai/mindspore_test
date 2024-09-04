@@ -22,7 +22,7 @@
 #include <string>
 #include <utility>
 #include <tuple>
-#include "pipeline/jit/pi/pydef.h"
+#include "pipeline/jit/pi/python_adapter/pydef.h"
 #include "include/common/utils/python_adapter.h"
 #include "pipeline/jit/pi/graph_guard/trace.h"
 #include "utils/convert_utils_base.h"
@@ -43,7 +43,8 @@ class GuardItem : public std::enable_shared_from_this<GuardItem> {
  public:
   explicit GuardItem(TracePtr var);
   virtual ~GuardItem() = default;
-  virtual bool Check(const PyFrameObject *frame, std::map<size_t, PyObject *> *cache = nullptr, bool perf = false) = 0;
+  virtual bool Check(const EvalFrameObject *frame, std::map<size_t, PyObject *> *cache = nullptr,
+                     bool perf = false) = 0;
   virtual bool Check(PyObject *obj) = 0;
   virtual std::string ToString() = 0;
   virtual const InfoPack &Info() = 0;

@@ -21,10 +21,11 @@
 #include <string>
 #include <queue>
 #include <vector>
-#include "pipeline/jit/pi/pydef.h"
+#include "pipeline/jit/pi/python_adapter/pydef.h"
 #include "pipeline/jit/pi/utils/ptr_list_ref.h"
 #include "pybind11/pybind11.h"
 #include "pipeline/jit/pi/graph_capture/local_liveness.h"
+#include "pipeline/jit/pi/utils/opcode_declare.h"
 
 namespace mindspore {
 namespace pijit {

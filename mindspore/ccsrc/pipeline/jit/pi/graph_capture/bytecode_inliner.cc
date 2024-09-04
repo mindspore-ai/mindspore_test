@@ -54,6 +54,10 @@ void BytecodeInliner::Run() {
     InitCFG();
   }
 
+  if (graph_->Config().GetBoolConfig(GraphJitConfig::kLogGraphBreak)) {
+    GRAPH_JIT_LOG_F("===before start instruction rebuild\n%s", graph_->ToString(1).c_str());
+  }
+
   Rebuild();
 
   if (graph_->Config().GetBoolConfig(GraphJitConfig::kPrintBB)) {
@@ -61,6 +65,10 @@ void BytecodeInliner::Run() {
   }
 
   ResetGraphStat();
+
+  if (graph_->Config().GetBoolConfig(GraphJitConfig::kLogGraphBreak)) {
+    GRAPH_JIT_LOG_F("===after instruction rebuild\n%s", graph_->ToString(1).c_str());
+  }
 
   if (graph_->Config().GetBoolConfig(GraphJitConfig::kLogGraphBreak)) {
     std::stringstream s;
@@ -226,7 +234,8 @@ static bool EliminateSideEffect(Graph *top_graph, Graph *sub_graph) {
    * 3. eliminate closure access operations if function has cell or free variable
    */
   if (top_graph != sub_graph && sub_graph->GetFrame(0).GetClosures().size() != 0) {
-    PyObject *frees = sub_graph->GetCodeObj()->co_freevars;
+    py::tuple release_handle = PyCodeWrapper(sub_graph->GetCodeObj()).FreeVars();
+    PyObject *frees = release_handle.ptr();
     if (PyTuple_GET_SIZE(frees) == 1 && std::string("__class__") == PyUnicode_AsUTF8(PyTuple_GET_ITEM(frees, 0))) {
       /**
        * BUGS: not check super call or free variable access after the break point
@@ -447,9 +456,9 @@ void BytecodeInliner::EraseDeadLocal(const std::vector<ValueNode *> &alive_nodes
 }
 
 void BytecodeInliner::EliminateClosureSideEffect() {
-  PyCodeObject *co = graph_->GetCodeObj();
-  int ncells = PyTuple_GET_SIZE(co->co_cellvars);
-  int nfrees = PyTuple_GET_SIZE(co->co_freevars);
+  PyCodeWrapper co(graph_->GetCodeObj());
+  int ncells = co.CellVarsSize();
+  int nfrees = co.FreeVarsSize();
   if (ncells + nfrees == 0) {
     return;
   }

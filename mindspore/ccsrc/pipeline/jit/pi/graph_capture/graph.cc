@@ -20,7 +20,7 @@
 #include <string>
 #include <regex>
 #include <utility>
-#include "pipeline/jit/pi/common.h"
+#include "pipeline/jit/pi/runtime.h"
 
 namespace mindspore {
 namespace pijit {
@@ -65,13 +65,9 @@ Graph::Graph(PyCodeObject *co, PyObject *globals, const GraphJitConfig &conf)
 const std::shared_ptr<SideEffect> &Graph::GetSideEffect() const { return side_effect_; }
 void Graph::SetSideEffect(const std::shared_ptr<SideEffect> &handler) { side_effect_ = handler; }
 
-ValueNode *Graph::NewValueNode(AObject *obj_info, int op, int arg, const std::vector<ValueNode *> &inputs,
-                               const std::string &name) {
-  // when got a new object, check it's side-effect replaced node ......
-  MS_EXCEPTION_IF_CHECK_FAIL(!Opcode(op).IsCall(), "must not be call function opcode");
-  ValueNode *node = this->allocator().NewNode<ValueNode>(obj_info, op, arg, inputs);
+static void SetNodeInfo(Graph *graph, ValueNode *node, AObject *obj_info, const std::string &name) {
   node->SetName(name);
-  node->SetGraph(this);
+  node->SetGraph(graph);
   ConstantInfo::CollectConstantInfo(node);
   if (node->IsConstantValue() && obj_info && CheckConstPyObject(obj_info->GetPyObject().ptr())) {
     node->SetOpcode(LOAD_CONST);
@@ -80,15 +76,36 @@ ValueNode *Graph::NewValueNode(AObject *obj_info, int op, int arg, const std::ve
   }
   auto new_object = obj_info ? obj_info->GetPyObject().ptr() : nullptr;
   if (new_object != nullptr && !CheckConstPyObject(new_object)) {  // literal not need track
-    this->side_effect_->data()->Track(new_object, node);
+    graph->GetSideEffect()->data()->Track(new_object, node);
   }
-  return node;
 }
 
 CallNode *Graph::NewCallNode(int op, int arg, const std::vector<ValueNode *> &inputs) {
   MS_EXCEPTION_IF_CHECK_FAIL(Opcode(op).IsCall(), "must be call function opcode");
   CallNode *node = this->allocator().NewNode<CallNode>(op, arg, inputs);
   node->SetGraph(this);
+  return node;
+}
+
+ValueNode *Graph::NewValueNode(AObject *obj_info, int op, int arg, const std::vector<ValueNode *> &inputs,
+                               const std::string &name) {
+  // when got a new object, check it's side-effect replaced node ......
+  MS_EXCEPTION_IF_CHECK_FAIL(!Opcode(op).IsCall(), "must not be call function opcode");
+  ValueNode *node = this->allocator().NewNode<ValueNode>(obj_info, op, arg, inputs);
+  SetNodeInfo(this, node, obj_info, name);
+  return node;
+}
+
+CellVarNode *Graph::NewCellNode(AObject *obj_info, int op, int arg, const std::vector<ValueNode *> &inputs,
+                                const std::string &name) {
+  CellVarNode *node = this->allocator().NewNode<CellVarNode>(CellVarNode::CellVar);
+  SetNodeInfo(this, node, obj_info, name);
+  for (auto i : inputs) {
+    node->AddInput(i);
+  }
+  node->SetOpcode(op);
+  node->SetOparg(arg);
+  node->SetVobj(obj_info);
   return node;
 }
 
@@ -229,6 +246,8 @@ TracePtr GetTrace(ValueNode *node, bool strict, bool print, int depth, int max_d
     return strict ? nullptr : std::make_shared<UnsupportedTrace>(nullptr, tv, opcode, oparg);
   }
   switch (node->GetType()) {
+    case AbstractNode::Type::CellVar: /* fall-through */
+    case AbstractNode::Type::FreeVar: /* fall-through */
     case AbstractNode::Type::Value:
       if (!has_unsupported) {
         ret = CreateOpTrace(obj, opcode, oparg, tv, module_name, name, strict, print);
@@ -241,8 +260,6 @@ TracePtr GetTrace(ValueNode *node, bool strict, bool print, int depth, int max_d
       }
       break;
     case AbstractNode::Type::Param:
-    case AbstractNode::Type::CellVar: /* fall-through */
-    case AbstractNode::Type::FreeVar:
       if (oparg == -1) {
         return nullptr;
       }
@@ -255,19 +272,126 @@ TracePtr GetTrace(ValueNode *node, bool strict, bool print, int depth, int max_d
   return CacheTrace(node, ret, strict, tv, opcode, oparg, obj);
 }
 
+static bool IsVariableNode(PyObject *obj) {
+  if (obj == nullptr) {
+    return false;
+  }
+  return IsTensorPyObject(obj) || CheckScalar(obj);
+}
+
+static bool IsAttrClosure(ValueNode *node) {
+  while (node != nullptr) {
+    switch (node->GetType()) {
+      case AbstractNode::Type::Call:
+      case AbstractNode::Type::Value: {
+        int opcode = node->GetOpcode();
+        if (opcode != LOAD_ATTR) {
+          return false;
+        } else {
+          auto inputs = node->getInputs();
+          if (inputs.size() == 0) {
+            return false;
+          }
+          node = inputs[0];
+        }
+      } break;
+      case AbstractNode::Type::Param:
+      case AbstractNode::Type::CellVar:
+      case AbstractNode::Type::FreeVar:
+      case AbstractNode::Type::kUnbound:
+        return true;
+      default:
+        return false;
+    }
+  }
+  return false;
+}
+
+static std::vector<TracePtr> GetTraceClosure(ValueNode *node, bool *succ, bool strict, bool print, int depth,
+                                             int max_depth) {
+  std::vector<ValueNode *> todo;
+  std::map<ValueNode *, bool> done;
+  todo.push_back(node);
+  std::vector<TracePtr> ret;
+  while (todo.size() > 0) {
+    node = todo[0];
+    done[node] = true;
+    todo.erase(todo.begin());
+    switch (node->GetType()) {
+      case AbstractNode::Type::Call:
+      case AbstractNode::Type::Value: {
+        PyObject *obj = node->GetVobj() ? node->GetVobj()->GetPyObject().ptr() : nullptr;
+        if (IsVariableNode(obj)) {
+          if (IsAttrClosure(node)) {
+            auto item = GetTrace(node, strict, print, depth, max_depth);
+            if (item != nullptr) {
+              ret.insert(ret.end(), item);
+            } else {
+              *succ = false;
+              MS_LOG(DEBUG) << "too deep trace for guard";
+              return {};
+            }
+          } else {
+            auto inputs = node->getInputs();
+            for (auto input : inputs) {
+              if (done.find(input) != done.end()) {
+                continue;
+              } else {
+                todo.push_back(input);
+              }
+            }
+          }
+        }
+      } break;
+      case AbstractNode::Type::Param:
+      case AbstractNode::Type::CellVar:
+      case AbstractNode::Type::FreeVar:
+      case AbstractNode::Type::kUnbound:
+      default:
+        break;
+    }
+  }
+  return ret;
+}
+
 bool Graph::GuardValueNode(ValueNode *node, GuardLevel level) {
   if (node->IsConstantValue()) {
     return true;
   }
   TracePtr tr = this->TraceValueNode(node);
   if (tr == nullptr) {
-    return false;
+    bool retg = this->GuardValueNodeClosure(node);
+    if (retg) {
+      if (level == GuardLevel::GEqual || level == GuardLevel::GId) {
+        node->SetConstantValue(retg);
+      }
+    }
+    return retg;
   }
   bool ret = guard_->GetGuard()->GuardOn(tr, level);
   if (level == GuardLevel::GEqual || level == GuardLevel::GId) {
     node->SetConstantValue(ret);
   }
   return ret;
+}
+
+bool Graph::GuardValueNodeClosure(ValueNode *node, GuardLevel level) {
+  bool bSucc = true;
+  auto vec = this->TraceValueNodeClosure(node, &bSucc);
+  if (bSucc) {
+    std::map<size_t, TracePtr> rep;
+    for (auto item : vec) {
+      auto id = item->Info().Id();
+      if (rep.find(id) == rep.end()) {
+        GetGuard()->GetGuard()->GuardOn(item, level);
+      }
+      rep[id] = item;
+    }
+    return true;
+  } else {
+    MS_LOG(DEBUG) << "too deep trace for guard";
+    return false;
+  }
 }
 
 TracePtr Graph::TraceValueNode(ValueNode *node, int max_trace_depth) {
@@ -280,6 +404,20 @@ TracePtr Graph::TraceValueNode(ValueNode *node, int max_trace_depth) {
   }
   return GetTrace(node, Config().GetBoolConfig(GraphJitConfig::kStrictTrace),
                   Config().GetBoolConfig(GraphJitConfig::kPrintGuard), 0, max_trace_depth);
+}
+
+std::vector<TracePtr> Graph::TraceValueNodeClosure(ValueNode *node, bool *ret, int max_trace_depth) {
+  AObject *vo = node->GetVobj();
+  if (guard_ == nullptr || !vo || vo->GetPyObject().ptr() == nullptr) {
+    return {};
+  }
+  bool succ = true;
+  auto list = GetTraceClosure(node, &succ, Config().GetBoolConfig(GraphJitConfig::kStrictTrace),
+                              Config().GetBoolConfig(GraphJitConfig::kPrintGuard), 0, max_trace_depth);
+  if (ret != nullptr) {
+    *ret = succ;
+  }
+  return list;
 }
 
 std::vector<ValueNode *> Graph::CollectAliveNode(int bci, std::vector<int> *ids, BitMap *map) const {
@@ -338,6 +476,10 @@ bool Graph::GuardSequenceNodeLength(ValueNode *sequence_node, Py_ssize_t sequenc
   }
   TracePtr tr = this->TraceValueNode(sequence_node);
   if (tr == nullptr) {
+    if (this->GuardValueNodeClosure(sequence_node)) {
+      sequence_node->MakeConstantInfo()->set_len(sequence_size);
+      return true;
+    }
     return false;
   }
   const auto &guard = this->GetGuard()->GetGuard();
@@ -363,6 +505,10 @@ bool Graph::GuardType(ValueNode *node) {
   }
   TracePtr tr = this->TraceValueNode(node);
   if (tr == nullptr) {
+    if (this->GuardValueNodeClosure(node)) {
+      node->MakeConstantInfo()->set_type(node->GetVobj()->GetTypeObject());
+      return true;
+    }
     return false;
   }
   bool ret = guard_->GetGuard()->GuardOn(tr, mindspore::pijit::GuardLevel::GType);
@@ -391,6 +537,19 @@ bool Graph::GuardInlinedFunc(CallNode *call_node) {
   }
   TracePtr tr = this->TraceValueNode(call_node->input(0));
   if (tr == nullptr) {
+    if (this->GuardValueNodeClosure(call_node->input(0))) {
+      AObject *callable_info = call_node->input(0)->GetVobj();
+      AObject::Type func_type = callable_info->GetType();
+      if (func_type == AObject::kTypeBoundMethod) {
+      } else if (func_type == AObject::kTypeCell || func_type == AObject::kTypeAnyValue) {
+        call_node->input(0)->MakeConstantInfo()->set_type(callable_info->GetTypeObject());
+      } else if (func_type == AObject::kTypeFunction) {
+        call_node->input(0)->SetConstantValue(true);
+      } else {
+        return false;
+      }
+      return true;
+    }
     return false;
   }
   const auto &guard = this->GetGuard()->GetGuard();
@@ -458,6 +617,23 @@ static std::string TraceInferFailed(ValueNode *node, int depth = 0) {
   return s.str();
 }
 
+static void PrintCallNode(std::ostream *os, CallNode *node, int depth) {
+  std::string prefix(depth * kTwo, ' ');
+  auto &s = *os;
+  s << prefix << "{ inline stat " << GetInlineReasonDesc(node->GetInlineReason());
+  if (!node->GetParams().empty()) {
+    s << ", has extra operations to handle parameters:" << std::endl;
+    for (const auto &ex : node->GetParams()) {
+      s << prefix << "  " << ex->ToString() << std::endl;
+    }
+  }
+  s << std::endl;
+  if (node->GetSubGraph() != nullptr) {
+    s << node->GetSubGraph()->ToString(depth + 1);
+  }
+  s << prefix << "}" << std::endl;
+}
+
 std::string Graph::ToString(int depth) const {
   std::stringstream s;
   std::string prefix(depth << 1, ' ');
@@ -468,20 +644,17 @@ std::string Graph::ToString(int depth) const {
     s << prefix << "Frame:\n" << GetFrame(0).ToString();
   }
 
-  s << prefix << "Nodes:\n";
+  s << prefix << "Graph " << this << " Nodes:\n";
   for (auto i : GetTracedNodes()) {
     s << prefix << i->ToString() << "\n";
     if (i->GetType() != AbstractNode::Call) {
       continue;
     }
-    CallNode *node = static_cast<CallNode *>(i);
-    s << prefix << "{ inline stat " << GetInlineReasonDesc(node->GetInlineReason()) << "\n";
-    if (node->GetSubGraph() != nullptr) {
-      s << node->GetSubGraph()->ToString(depth + 1);
-    }
-    s << prefix << "}\n";
+    PrintCallNode(&s, static_cast<CallNode *>(i), depth);
   }
-  s << prefix << "return: " << (GetRetVal() ? GetRetVal()->ToString() : "trace break") << "\n";
+  if (GetRetVal()) {
+    s << prefix << "Return the Node " << GetRetVal() << "\n";
+  }
   s << prefix << GetStopTraceReasonDesc(GetStopTraceReason()) << "\n";
   s << prefix << "break bci: " << GetStopTraceBci() << "\n\n";
 

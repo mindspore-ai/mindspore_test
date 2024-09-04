@@ -27,8 +27,7 @@ ValueNode ValueNode::kUnboundLocal(ValueNode::kUnbound, &kNullObject, 0, 0);
 // these value node not in locals
 bool IsNonLocalValue(ValueNode *i) {
   int op = i->GetOpcode();
-  return op == LOAD_CONST || op == LOAD_GLOBAL || op == LOAD_DEREF || i->GetType() == ValueNode::CellVar ||
-         i->GetType() == ValueNode::FreeVar;
+  return op == LOAD_CONST || op == LOAD_GLOBAL || op == LOAD_DEREF;
 }
 
 void ValueNode::SetVobj(AObject *object_info) {
@@ -83,22 +82,14 @@ const std::unique_ptr<ConstantInfo> &ValueNode::MakeConstantInfo() {
 
 std::string ParamNode::ToString() const {
   std::stringstream s;
-  s << GetOparg() << ":" << GetVobj()->ToString() << '<' << this << '>';
+  s << this->AbstractNode::ToString() << " Parameter " << GetOparg() << "("
+    << (GetName().empty() ? "<unnamed>" : GetName()) << ") = " << GetVobj()->ToString();
   return s.str();
-}
-
-std::string CellVarNode::ToString() const {
-  if (val_) {
-    return std::string("Cell:").append(val_->ToString());
-  }
-  char buf[64];
-  snprintf(buf, sizeof(buf), "Cell:%p->(nil)", this);
-  return buf;
 }
 
 std::string CallNode::ToString() const {
   std::stringstream s;
-  s << this->ValueNode::ToString() << "sub-graph " << sub_graph_;
+  s << this->ValueNode::ToString() << "sub-graph=" << sub_graph_;
   return s.str();
 }
 
@@ -107,11 +98,14 @@ std::string ValueNode::ToString() const {
     return "(kUnboundLocal)";
   }
   std::stringstream s;
-  s << this->InstrNode::ToString();
-  s << " vobj:{" << vobj_ << ":" << (vobj_ ? vobj_->ToString() : "(nil)") << "}";
+  int w = 30;
+  s << std::setw(w) << std::left << this->InstrNode::ToString() << " ";
+  s << this->AbstractNode::ToString() << " vobj=" << (vobj_ ? vobj_->ToString() : "(nil)");
+  s << " inputs=(";
   for (auto i : inputs_) {
     s << i << ',';
   }
+  s << ") ";
   if (constant_info_ != nullptr) {
     s << " constant: " << constant_info_->ToString();
   }
@@ -120,14 +114,22 @@ std::string ValueNode::ToString() const {
 
 std::string InstrNode::ToString() const {
   std::stringstream s;
-  s << this->AbstractNode::ToString() << " bci " << bci() << " lno " << GetLineNo() << ' ' << Opcode(GetOpcode()).name()
-    << ' ' << GetOparg() << ' ' << GetName();
+  s << std::setw(kTwo * kTwo) << std::left;
+  if (bci() >= 0) {
+    s << bci();
+  }
+  s << ' ';
+  constexpr auto w = 12;
+  s << std::setw(w) << std::left << Opcode(GetOpcode()).name();
+  if (Opcode(GetOpcode()).HasArg()) {
+    s << ' ' << GetOparg() << ' ' << GetName();
+  }
   return s.str();
 }
 
 std::string AbstractNode::ToString() const {
   std::stringstream s;
-  s << this << " type " << type_ << " graph " << graph_;
+  s << "Node(" << this << ")";
   return s.str();
 }
 

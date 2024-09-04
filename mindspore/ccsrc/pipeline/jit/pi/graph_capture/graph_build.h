@@ -21,6 +21,7 @@
 #include <utility>
 #include <memory>
 #include <string>
+#include "pipeline/jit/pi/python_adapter/py_frame.h"
 #include "pipeline/jit/pi/graph_capture/graph.h"
 #include "pipeline/jit/pi/graph_build/func_graph_builder.h"
 #include "utils/convert_utils_base.h"
@@ -33,14 +34,18 @@ using GraphBuilderPtr = std::shared_ptr<GraphBuilder>;
 using MindGraphBuilderPtr = std::shared_ptr<MindGraphBuilder>;
 
 struct TryBlock {
-  int type;       /*what kind of block this is (SETUP_SETUP, SETUP_FINALLY, SETUP_EXCEPT)*/
-  int bci;        /*where to jump to find handler*/
-  int checkpoint; /*the handler to be rolled back*/
+  int type;         /*what kind of block this is (SETUP_SETUP, SETUP_FINALLY, SETUP_EXCEPT)*/
+  int bci;          /*where to jump to find handler*/
+  std::string name; /*entry of block name,which equal with instr name*/
+  int checkpoint;   /*the handler to be rolled back*/
   // int level;   /* value stack level to pop toe*/
   bool IsFinallyBlock; /*record current block is in exception block or finally block*/
 };
 
+const std::vector<std::string> kAstFunctionList = {"mindspore.ops.function.array_func"};
+
 bool CheckSupportCreateInstance(CallNode *call_node);
+ValueNode *GetSelfFromMethod(ValueNode *method);
 class GraphBuilder {
  public:
   static const char *ID___self__;
@@ -48,17 +53,18 @@ class GraphBuilder {
   static const char *ID___call__;
   static const char *ID_construct;
 
-  explicit GraphBuilder(const PyFrameObject *f);
+  explicit GraphBuilder(const PyFrameWrapper &f);
   GraphBuilder(GraphBuilder *r, GraphBuilder *p, PyCodeObject *co, PyObject *globals)
-      : root_(r), parent_(p), graph_(NewGraph(co, globals)), frame_(), current_block_(nullptr) {}
-  explicit GraphBuilder(GraphBuilder *r) : root_(r), parent_(nullptr), graph_(nullptr), current_block_(nullptr) {}
+      : root_(r), parent_(p), graph_(NewGraph(co, globals)), frame_(), current_block_(nullptr), no_grad_(r->no_grad_) {}
+  explicit GraphBuilder(GraphBuilder *r)
+      : root_(r), parent_(nullptr), graph_(nullptr), current_block_(nullptr), no_grad_(r->no_grad_) {}
   ~GraphBuilder() {
     for (auto i : graph_pool_) {
       delete i;
     }
     graph_pool_.clear();
   }
-  static GraphBuilderPtr Creator(const PyFrameObject *f, bool trace_flag) {
+  static GraphBuilderPtr Creator(const PyFrameWrapper &f, bool trace_flag) {
     return trace_flag ? std::static_pointer_cast<GraphBuilder>(std::make_shared<MindGraphBuilder>(f))
                       : std::make_shared<GraphBuilder>(f);
   }
@@ -79,12 +85,18 @@ class GraphBuilder {
   static py::object FindPyFunc(AObject *vobj);
   static py::object GetFuncInfo(ValueNode *func_node);
 
+  // Exception
+  ValueNode *&peekExc(int p) { return excFrame_.Peek(p); }
+  void pushExc(ValueNode *v) { excFrame_.Push(v); }
+  ValueNode *popExc() { return excFrame_.Pop(); }
+  int excStackSize() { return excFrame_.Size(); }
+
   // TryBlockStack operation
   TryBlock &PeekStack(int p);
   void PushStack(TryBlock tb) { tryBlockStacks_.push_back(tb); }
   int StackSize() { return tryBlockStacks_.size(); }
   std::vector<TryBlock> &GetTryBlockStacks() { return tryBlockStacks_; }
-  TryBlock &PopStack();
+  TryBlock PopStack();
 
   // loop analyze
   void HandleLoop();
@@ -112,7 +124,7 @@ class GraphBuilder {
    * \param callable_node The value node of callable object
    * \param frame FrameStates to place closure node
    */
-  void ResolveClosure(const py::object &func_info, ValueNode *callable_node, FrameStates *frame);
+  void ResolveClosure(const py::object &func_info, CallNode *call_node, FrameStates *frame);
 
   std::pair<PyObject *, ValueNode *> SearchSelfPyObject(PyCodeObject *co);
   bool HandleSuper(const Instr &instr, AObject *super);
@@ -193,6 +205,9 @@ class GraphBuilder {
   // unpack elements
   bool UnpackSequenceElements(ValueNode *);
 
+  // unpack dict items to build map inputs
+  bool UnpackDict(ValueNode *map);
+
   // unpack object elements as LOAD_CONST
   std::vector<ValueNode *> UnpackConstObject(const py::object &);
 
@@ -206,6 +221,9 @@ class GraphBuilder {
 
   // transform list set item to make a new list
   ValueNode *TransformListSetItem(ValueNode *list, ValueNode *key, ValueNode *val);
+
+  // make a tensor copy operation
+  ValueNode *MakeTensorCopy(ValueNode *tensor);
 
   ValueNode *ReplaceMergeOp(int opcode, const std::vector<ValueNode *> &inputs);
 
@@ -231,11 +249,14 @@ class GraphBuilder {
   bool TraceRunForIterSequence(int jump_bci, bool is_range_type);
   bool TraceRunForIterEnumerate(int jump_bci);
   bool TraceRunForIterZip(int jump_bci);
+  bool TraceRunForIterDictItems(int jump_bci);
 
   // bytecode operations
   bool TraceRunControl(const Instr &instr);
   bool TraceRunForIter(const Instr &instr);
   bool DoUnpack(const Instr &instr);
+  bool DoBuildWithUnpack(const Instr &instr);
+  bool DoBuildMapWithUnpack(const Instr &instr);
   bool DoCall(const Instr &instr);
   bool DoNop(const Instr &instr);
   bool DoReturn(const Instr &instr);
@@ -256,6 +277,7 @@ class GraphBuilder {
   AObject *InferBinary(ValueNode *, ValueNode *, const Instr &instr);
   virtual bool DoBinary(const Instr &instr);
   virtual bool DoIsOp(const Instr &instr);
+  virtual bool DoContainsOp(const Instr &instr);
   virtual bool DoBinaryMul(const Instr &instr);
   bool DoBinaryAdd(const Instr &instr);
   bool DoInplaceAdd(const Instr &instr);
@@ -265,33 +287,53 @@ class GraphBuilder {
   bool DoFormatValue(const Instr &instr);
   bool DoImport(const Instr &instr);
   bool DoYieldValue(const Instr &instr);
-  bool DoException(const Instr &instr);
+  bool DoYieldFrom(const Instr &instr);
+  bool DoGetYieldFromIter(const Instr &instr);
   bool DoWith(const Instr &instr);
   bool DoOtherBytecode(const Instr &instr);
   bool NotImplementBytecode(const Instr &instr);
+  bool DoRaise(const Instr &instr);
+  bool DoSetupFinally(const Instr &instr);
+  bool DoWithCleanUpStart(const Instr &instr);
+  bool DoWithCleanUpFinish(const Instr &instr);
+  bool DoBeginFinally(const Instr &instr);
+  bool DoPopFinally(const Instr &instr);
+  bool DoEndFinally(const Instr &instr);
+  bool DoCallFinally(const Instr &instr);
+  bool DoSetupExc(const Instr &instr);
+  bool DoRaiseVarage(const Instr &instr);
+  bool DoPopExc(const Instr &instr);
+  bool DoExcMatch(const Instr &instr);
+  bool DoLoadAssertError(const Instr &instr);
+  bool DoPopStack(const Instr &instr);
+  bool DoRaiseVarags(const Instr &instr);
 
   const auto &root() const { return root_; }
   const auto &frame() const { return frame_; }
 
  protected:
+  GraphBuilderPtr sub_graph = nullptr;
   GraphBuilder *root_;
   GraphBuilder *parent_;
   Graph *graph_;
   FrameStates frame_;
   Block *current_block_;
-  int cur_bci_;
+  int cur_bci_ = 0;
+  bool no_grad_;
   std::vector<TryBlock> tryBlockStacks_{};
+  FrameStates excFrame_;
 
   static const std::unordered_map<int, bool (GraphBuilder::*)(const Instr &)> bytecode_meth_map_;
 
   ValueNode *GetCallFunctionNode(ValueNode *node, PyObject *dst_dtype);
   bool DoMixedPrecisionLocalAccess(const Instr &instr, ValueNode *node);
   ValueNode *DoMixedPrecisionAttrAccess(const Instr &instr, ValueNode *node, ValueNode *attr);
+  bool ResolveNoGrad(CallNode *call_node, StopTraceReason *stop_reason);
 };
 
 class MindGraphBuilder : public GraphBuilder {
  public:
-  explicit MindGraphBuilder(const PyFrameObject *f);
+  explicit MindGraphBuilder(const PyFrameWrapper &f);
   MindGraphBuilder(GraphBuilder *r, GraphBuilder *p, PyCodeObject *co, PyObject *globals)
       : GraphBuilder(r, p, co, globals) {
     std::vector<std::string> comments;
@@ -304,14 +346,14 @@ class MindGraphBuilder : public GraphBuilder {
   }
   bool trace_flag() { return true; }
   mindspore::FuncGraphBuilderPtr FGBuilder() const { return fg_builder_; }
-  bool FGAddInputs(const std::vector<py::object> &args);
-  py::object FGAddNode(CallNode *call_node, const py::object &callable_info, const std::vector<py::object> &args,
+  bool FGAddTopInputs(int args_count, bool has_vargs, bool has_kwargs);
+  bool FGAddInputs(const std::vector<ValueNode *> &args);
+  py::object FGAddNode(CallNode *call_node, const py::object &callable_info, const AbstractWrapperPtrList &args,
                        StopTraceReason *stop_reason);
   void FGAddOutput(bool is_top_graph);
   StopTraceReason BuildSubGraph(CallNode *call_node, int depth, const py::object &func,
                                 const GraphBuilderPtr &subgraph) override;
   py::object ResolveCallable(CallNode *call_node, StopTraceReason *stop_reason) override;
-  bool WhiteListFuncCheckAndInfer(CallNode *, const py::object &f) override;
 
   LocationPtr GetLocation(CallNode *call_node) const;
 
@@ -321,6 +363,7 @@ class MindGraphBuilder : public GraphBuilder {
   bool DoUnary(const Instr &instr) override;
   bool DoBinary(const Instr &instr) override;
   bool DoIsOp(const Instr &instr) override;
+  bool DoContainsOp(const Instr &instr) override;
   bool DoBinaryMul(const Instr &instr) override;
   bool DoCompare(const Instr &instr) override;
   bool DoBuildOp(const Instr &instr) override;
@@ -333,15 +376,28 @@ class MindGraphBuilder : public GraphBuilder {
   bool HandleCallClass(CallNode *call_node) override;
 
  private:
-  std::vector<py::object> GetNewArgs(CallNode *call_node, AObject *vobj = nullptr);
-  bool AllConstantArgs(const std::vector<py::object> &args, const py::object &callable_info, CallNode *call_node);
+  AbstractWrapperPtrList HandleInputArgs(const std::vector<ValueNode *> args);
+  std::vector<ValueNode *> GetNewArgs(CallNode *call_node, AObject *vobj = nullptr);
+  bool IsGradCallable(ValueNode *node);
+  py::object ResolveGradCall(CallNode *call_node, StopTraceReason *stop_reason);
 
-  py::object HandleGetShapeOfDynamicLengthTensor(const py::object &object);
+  AbstractWrapperPtr HandleGetShapeOfDynamicLengthTensor(const AbstractWrapperPtr &abstract_wrapper);
+  std::pair<bool, std::vector<py::object>> GetConstantInputsObject(CallNode *call_node);
+  py::object GetPyObject(ValueNode *node);
 
   mindspore::FuncGraphBuilderPtr fg_builder_{nullptr};
   std::string co_name_;
-  AObject *HandleMultiOp(const Instr &instr, const std::vector<ValueNode *> &p, bool is_compare);
-  AObject *HandleBuildOp(const Instr &instr, const std::vector<ValueNode *> &p);
+  AbstractWrapperPtr HandleMultiOp(const Instr &instr, const std::vector<ValueNode *> &p, bool is_compare);
+  AbstractWrapperPtr HandleBuildOp(const Instr &instr, const std::vector<ValueNode *> &p);
+
+  BindArgumentsHelper<ValueNode *> PackInputsForFunc(const py::object &obj, int op_code,
+                                                     const std::vector<ValueNode *> &inputs,
+                                                     ValueNode *self_node = nullptr, bool eliminate_sens = false);
+
+  std::pair<FuncGraphPtr, BindArgumentsHelper<ValueNode *>> BuildForwardGraph(CallNode *call_node);
+  AbstractWrapperPtrList HandleInputsForGrad(CallNode *call_node, BindArgumentsHelper<ValueNode *> forward_inputs);
+  void HandleCustomBProp(const FuncGraphPtr &graph, const py::object &obj) const;
+  std::pair<bool, py::object> ConvertBuiltInMethodOrFunction(const py::object &callable_info) const;
 };
 }  // namespace pijit
 }  // namespace mindspore

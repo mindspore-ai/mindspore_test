@@ -78,6 +78,7 @@ class FrameStates {
     }
   }
   void Push(ValueNode *i) { stack.push_back(i); }
+  int Size() { return stack.size(); }
 
   void Rot(int i) {
     MS_ASSERT((int)stack.size() - i >= 0);
@@ -137,8 +138,12 @@ class Graph {
   auto &GetFrames() { return frame_states_; }
   const auto &GetFrames() const { return frame_states_; }
   Allocator &allocator() { return alloc_; }
-  ValueNode *NewValueNode(AObject *, int op, int arg, const std::vector<ValueNode *> & = {},
+  ValueNode *NewValueNode(AObject *, int op, int arg, const std::vector<ValueNode *> &inputs = {},
                           const std::string &name = "");
+
+  CellVarNode *NewCellNode(AObject *, int op, int arg, const std::vector<ValueNode *> &inputs = {},
+                           const std::string &name = "");
+
   CallNode *NewCallNode(int op, int arg, const std::vector<ValueNode *> &);
   const std::vector<LoopInfo *> &loops() const { return loops_; }
   void AddLoop(LoopInfo *loop) { loops_.emplace_back(loop); }
@@ -150,11 +155,13 @@ class Graph {
   }
 
   bool GuardValueNode(ValueNode *, GuardLevel level = GuardLevel::GEqual);
+  bool GuardValueNodeClosure(ValueNode *, GuardLevel level = GuardLevel::GDeduce);
   bool GuardType(ValueNode *);
   bool GuardSequenceNodeLength(ValueNode *, Py_ssize_t);
   bool GuardInlinedFunc(CallNode *call_node);
 
   TracePtr TraceValueNode(ValueNode *, int max_trace_depth = -1);
+  std::vector<TracePtr> TraceValueNodeClosure(ValueNode *, bool *ret, int max_trace_depth = -1);
   int GetPruneBranchCount() const { return prune_branch_count_; }
   void SetPruneBranchCount(int count) { prune_branch_count_ = count; }
   const std::shared_ptr<OptCode> &GetGuard() const { return guard_; }

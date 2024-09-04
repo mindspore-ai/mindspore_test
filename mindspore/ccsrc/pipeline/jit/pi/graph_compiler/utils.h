@@ -59,6 +59,9 @@ class GraphUtils {
 
   static std::string OpCodeToGraphName(int op_code);
 
+  // Get MultiTypeFuncGraph name of bytecode CONTAINS_OP
+  static std::string ContainsOpToGraphName(int oparg);
+
   static AnfNodePtr GetMetaFuncGraph(int op_code);
 
   static AnfNodePtr GetMetaFuncGraph(const std::string &name);

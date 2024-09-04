@@ -21,7 +21,7 @@
 #include <vector>
 #include <map>
 #include <functional>
-#include "pipeline/jit/pi/pydef.h"
+#include "pipeline/jit/pi/python_adapter/pydef.h"
 #include "pybind11/pybind11.h"
 #include "pipeline/jit/pi/graph_guard/info.h"
 
@@ -295,8 +295,8 @@ class UnsupportedTrace : public Trace {
 using UnsupportedTracePtr = std::shared_ptr<UnsupportedTrace>;
 
 /// \brief Get the reference for the object by Py_INCREF and call Py_DECREF by yourself.
-PyObject *GetObjectFromTrace(const PyFrameObject *frame, TracePtr trace, std::map<size_t, PyObject *> *cache = nullptr,
-                             bool perf = false);
+PyObject *GetObjectFromTrace(const EvalFrameObject *frame, TracePtr trace,
+                             std::map<size_t, PyObject *> *cache = nullptr, bool perf = false);
 }  // namespace pijit
 }  // namespace mindspore
 

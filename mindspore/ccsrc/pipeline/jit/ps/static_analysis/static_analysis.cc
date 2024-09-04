@@ -587,7 +587,10 @@ AnalysisResult AnalysisEngine::Run(const FuncGraphPtr &func_graph, const Abstrac
     AnalysisSchedule::GetInstance().Wait();
     MS_EXCEPTION_IF_NULL(root_context);
     auto root_context_fg = root_context->func_graph();
-    MS_EXCEPTION_IF_NULL(root_context_fg);
+    if (root_context_fg == nullptr && common::GetCompileConfig("STRICT_CHECK_PARENT_CONTEXT") != "1") {
+      MS_LOG(INFO) << "root_context_fg is NUll, use function graph for dummy_context.";
+      root_context_fg = root_func_graph_backup();
+    }
     AnfNodeConfigPtr output_conf = MakeConfig(root_context_fg->get_return(), root_context, root_context_fg);
     MS_LOG(DEBUG) << func_graph->ToString() << ": Run finished.";
 
@@ -596,7 +599,7 @@ AnalysisResult AnalysisEngine::Run(const FuncGraphPtr &func_graph, const Abstrac
     result.eval_result = eval_result;
     result.context = root_context;
   } catch (const std::exception &ex) {
-    MS_LOG(INFO) << "Eval " << func_graph->ToString() << " threw exception.";
+    MS_LOG(INFO) << "Eval " << func_graph->ToString() << " threw exception.\n" << ex.what();
     AnalysisSchedule::GetInstance().HandleException(ex);
   }
   AnalysisSchedule::GetInstance().Wait();
@@ -1913,6 +1916,10 @@ AnalysisContextPtr NewContext(const AnalysisContextPtr &current_context, const F
   MS_EXCEPTION_IF_NULL(fg);
   auto new_context = current_context->NewContext(fg, args_abs_list);
   if (new_context == nullptr) {  // Not obtain context for fg->parent() during create context.
+    if (common::GetCompileConfig("STRICT_CHECK_PARENT_CONTEXT") != "1") {
+      MS_LOG(INFO) << "Failed to find parent context in current context, use dummy context instead.";
+      return AnalysisContext::DummyContext();
+    }
     FuncGraphPtr parent_graph = fg->parent();
     const auto no_parent = parent_graph == nullptr;
 #ifdef ENABLE_DUMP_IR

@@ -15,6 +15,7 @@
  */
 #include "pipeline/jit/pi/graph_capture/graph_analyzer.h"
 #include <algorithm>
+#include <list>
 #include <unordered_set>
 #include <utility>
 #include <string>
@@ -243,8 +244,6 @@ bool GraphAnalyzer::AddToCaptured(ValueNode *v) {
 }
 
 void GraphAnalyzer::AddToEscaped(ValueNode *v) {
-  MS_EXCEPTION_IF_CHECK_FAIL(GetCaptureInfo().interpret_.values.find(v) == GetCaptureInfo().interpret_.values.end(),
-                             "duplicate escaped values");
   GetCaptureInfo().interpret_.values.insert(v);
   GetCaptureInfo().interpret_.operations.push_back(v);
 }
@@ -256,7 +255,7 @@ bool GraphAnalyzer::TryToCapture(AbstractNode *n) {
   if (IsNonLocalValue(v)) {
     return true;
   }
-  if (graph_->GetSideEffect()->IsRecord(v)) {
+  if (graph_->GetSideEffect()->IsRecord(v) && !graph_->GetSideEffect()->NeedTrack(v)) {
     return true;
   }
   bool is_side_effect = IsSideEffect(v);
@@ -348,15 +347,11 @@ void GraphAnalyzer::CollectCapturedInputs() {
 void GraphAnalyzer::UseDefAnalyze() {
   // UD analyze: alive nodes analysis
   std::vector<ValueNode *> aliveLocals = GetAliveLocals(graph_);
-  if (!aliveLocals.empty()) {
-    bool isStopAnalyze = false;
-    while (!isStopAnalyze) {
-      isStopAnalyze = AnalyzeAliveLocals(aliveLocals);
-      if (isStopAnalyze) {
-        break;
-      }
-      aliveLocals = GetAliveLocals(graph_);
-    }
+  if (aliveLocals.empty()) {
+    return;
+  }
+  while (!AnalyzeAliveLocals(aliveLocals)) {
+    aliveLocals = GetAliveLocals(graph_);
   }
 }
 
@@ -373,12 +368,16 @@ void GraphAnalyzer::OptimizeSideEffectRecord() const {
 void GraphAnalyzer::ResetSideEffectRecord() const {
   // if break point is changed, rollback graph nodes(only reset break bci) and side-effect record
   int break_bci = graph_->GetStopTraceBci();
-  if (break_bci == -1 || graph_->GetSideEffect()->IsEmpty()) {
+  if (graph_->GetSideEffect()->IsEmpty()) {
     return;
   }
   const auto &nodes = graph_->GetTracedNodes();
-  auto iter = std::find_if(nodes.begin(), nodes.end(), [&break_bci](ValueNode *i) { return i->bci() > break_bci; });
-  graph_->GetSideEffect()->ResetRecord({nodes.begin(), iter});
+  if (break_bci == -1) {
+    graph_->GetSideEffect()->ResetRecord({nodes.begin(), nodes.end()});
+  } else {
+    auto iter = std::find_if(nodes.begin(), nodes.end(), [&break_bci](ValueNode *i) { return i->bci() > break_bci; });
+    graph_->GetSideEffect()->ResetRecord({nodes.begin(), iter});
+  }
   OptimizeSideEffectRecord();  // after reset record, rollback side-effect record status
 }
 
@@ -431,22 +430,19 @@ std::vector<ValueNode *> GraphAnalyzer::GetAliveLocals(Graph *g) {
     uniques.insert(output);
   }
   outputs.assign(uniques.begin(), uniques.end());
+
+  if (this->graph_->Config().GetBoolConfig(GraphJitConfig::kLogGraphBreak)) {
+    GRAPH_JIT_LOG_F("UD analyze: alive node size : %ld", outputs.size());
+    for (auto node : outputs) {
+      if (node) {
+        GRAPH_JIT_LOG_F("UD analyze: alive node: %s", node->ToString().c_str());
+      }
+    }
+  }
   return outputs;
 }
 
-void PrintAliveNodes(std::vector<ValueNode *> aliveNodes) {
-  GRAPH_JIT_LOG_F("UD analyze: alive node size : %ld", aliveNodes.size());
-  for (auto node : aliveNodes) {
-    if (node) {
-      GRAPH_JIT_LOG_F("UD analyze: alive node: %s", node->ToString().c_str());
-    }
-  }
-}
-
 bool GraphAnalyzer::AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes) {
-  if (this->graph_->Config().GetBoolConfig(GraphJitConfig::kLogGraphBreak)) {
-    PrintAliveNodes(aliveNodes);
-  }
   bool isAllNodesSupportOutput = true;
   for (auto node : aliveNodes) {
     AObject *o = node->GetVobj();
@@ -458,11 +454,30 @@ bool GraphAnalyzer::AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes) {
     if (std::find(capturedLocals.begin(), capturedLocals.end(), node) == capturedLocals.end()) {
       continue;
     }
+    if (ProduceInterpretValue(node)) {
+      continue;  // try to construct this value in python
+    }
 
     if (!HasTensorOperation()) {
       CleanCapturedValue();
       break;
     }
+    /**
+     * produce the values if it can be produced by interpret values before call graph
+     * e.g
+     *   return parameter.some_attribute
+     *   return build_map(parameters, other_constants)
+     */
+    if (ProduceInterpretValue(node)) {
+      continue;
+    }
+    /**
+     * produce the values if it can be produced by interpret values and graph outputs after call graph
+     * e.g
+     *   graph_outputs = call_graph()
+     *   return graph_outputs[0].dtype, graph_outputs[1].asnumpy
+     * ...save alive nodes and reconstruct these values when generated the code
+     */
 
     //  reset break graph point
     isAllNodesSupportOutput = false;
@@ -537,6 +552,7 @@ void GraphAnalyzer::CapturedInfo::GraphInputs::clear() {
 void GraphAnalyzer::CapturedInfo::clear() {
   captured_.clear();
   interpret_.clear();
+  outputs_optimize_.clear();
   graph_inputs_.clear();
 }
 
@@ -675,6 +691,34 @@ void GraphAnalyzer::CollectGraphInputs() {
   MS_EXCEPTION_IF_CHECK_FAIL(inputs_count == captured_.inputs.size(), "error parameters");
 }
 
+// One possible reason why frame.Local(i) is kUnboundLocal:
+// If the function arg at index-i is used as a free variable, then f_localsplus[i] is nullptr, and then
+// frame.Local(i) will be kUnboundLocal. For example:
+// def fn(x, y):
+//   def inner():
+//     return y + 1
+//   ...
+// Arg y at index-1, is used as a free variable in inner function. Python does not store the real object of y at
+// f_localsplus[1], but rather in a cell variable. If fn() or inner() want to read arg y, it needs bytecode LOAD_DEREF.
+// So here, we try to find if this kUnboundLocal arg is stored in a cell variable. If so, we return the real object
+// contained in this cell.
+static ValueNode *FindFromClosure(const FrameStates &frame, int param_idx) {
+  for (CellVarNode *cell_node : frame.GetClosures()) {
+    if (cell_node->GetFromParam() == param_idx) {
+      MS_LOG(DEBUG) << "Found CellVarNode associated with frame.Local[" << param_idx
+                    << "], node: " << cell_node->ToString();
+      ValueNode *node = cell_node->GetValue();
+      if (node == nullptr || node == &ValueNode::kUnboundLocal) {
+        MS_LOG(INFO) << "CellVarNode's value is null!";  // might be a bug
+        return nullptr;
+      }
+      return node;
+    }
+  }
+  MS_LOG(INFO) << "Cannot find CellVarNode associated with frame.Local[" << param_idx << "]";  // might be a bug
+  return nullptr;
+}
+
 void MindGraphAnalyzer::CollectCapturedInputs() {
   auto &inputs = GetCaptureInfo().captured_.inputs;
   const FrameStates &enter_frame = graph_->GetFrame(0);
@@ -682,12 +726,19 @@ void MindGraphAnalyzer::CollectCapturedInputs() {
   int argc = co->co_argcount + co->co_kwonlyargcount;
   argc += SizeToInt(IntToSize(co->co_flags) & CO_VARARGS) ? 1 : 0;
   argc += SizeToInt(IntToSize(co->co_flags) & CO_VARKEYWORDS) ? 1 : 0;
-  for (Py_ssize_t m = 0; m < argc; ++m) {
-    const auto &local = enter_frame.Local(m);
-    if (local == &ValueNode::kUnboundLocal) {
-      continue;
+  for (int i = 0; i < argc; ++i) {
+    const auto &local = enter_frame.Local(i);
+    if (local != &ValueNode::kUnboundLocal) {
+      inputs.push_back(local);
+    } else {
+      MS_LOG(DEBUG) << "Frame.Local[" << i << "] is kUnboundLocal";
+      ValueNode *node = FindFromClosure(enter_frame, i);
+      // If simply ignore this kUnboundLocal, the bytecodes generated in CodeGenerator will be wrong (the graph needs N
+      // args, but the generated bytecodes only pass N-1 args to graph), and will cause exception in runtime
+      MS_EXCEPTION_IF_CHECK_FAIL(node != nullptr, "captured.inputs[" + std::to_string(i) + "] is kUnboundLocal");
+
+      inputs.push_back(node);
     }
-    inputs.push_back(local);
   }
 }
 
@@ -696,9 +747,6 @@ void MindGraphAnalyzer::Analyze() {
 
   auto origin_stop_bci = graph_->GetStopTraceBci();
   UseDefAnalyze();
-
-  const FrameStates &enter_frame = graph_->GetFrame(0);
-  GetCaptureInfo().interpret_.values.insert(enter_frame.GetLocals().begin(), enter_frame.GetLocals().end());
 
   auto mind_graph_builder = std::static_pointer_cast<MindGraphBuilder>(graph_builder_);
   MS_EXCEPTION_IF_NULL(mind_graph_builder);
@@ -734,56 +782,68 @@ void MindGraphAnalyzer::Analyze() {
   if (!support_ret) {
     return;
   }
-  need_interpret_ = !graph_->GetSideEffect()->IsEmpty();
+  need_interpret_ = !graph_->GetSideEffect()->IsEmpty() || !GetCaptureInfo().outputs_optimize_.operations.empty();
 }
 
+bool IsValidOutput(AObject *vobj) {
+  if (vobj == nullptr) {
+    return false;
+  }
+  return vobj->IsMindSporeSupportedType();
+}
+
+inline bool IsValidOutput(const ValueNode *node) { return node != nullptr && IsValidOutput(node->GetVobj()); }
+
 bool MindGraphAnalyzer::AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes) {
-  bool isAllNodesSupportOutput = true;
   auto mind_graph_builder = std::static_pointer_cast<MindGraphBuilder>(graph_builder_);
   MS_EXCEPTION_IF_NULL(mind_graph_builder);
   auto func_graph_builder = mind_graph_builder->FGBuilder();
   MS_EXCEPTION_IF_NULL(func_graph_builder);
   func_graph_builder->ClearOutputNodes();
-  GetCaptureInfo().captured_.outputs.clear();
-  for (auto node : aliveNodes) {
+  auto &outputs = GetCaptureInfo().captured_.outputs;
+  auto &values = GetCaptureInfo().interpret_.values;
+  outputs.clear();
+  std::list<ValueNode *> nodes(aliveNodes.begin(), aliveNodes.end());
+  while (!nodes.empty()) {
+    auto node = nodes.front();
+    nodes.pop_front();
     // If the value can get from local, no need to add to graph output.
     if (IsNonLocalValue(node)) {
-      MS_LOG(DEBUG) << "Skip non local value used as graph return.";
+      MS_LOG(INFO) << "Skip non local value used as graph output: " << node->ToString();
       continue;
     }
-    auto capturedLocals = info_.captured_.operations;
-    if (std::find(capturedLocals.begin(), capturedLocals.end(), node) == capturedLocals.end()) {
+
+    // The node has been added to the output
+    if (std::find(outputs.begin(), outputs.end(), node) != outputs.end()) {
       continue;
     }
-    AObject *o = node->GetVobj();
-    auto out_py_obj = o->GetPyObject();
-    if (func_graph_builder->AddOutput(out_py_obj, true)) {
-      MS_LOG(INFO) << "Add output success for node: " << node->ToString();
+
+    // This value is defined out of the graph
+    if (std::find(values.begin(), values.end(), node) != values.end()) {
+      continue;
+    }
+
+    // add output for func_graph
+    if (IsValidOutput(node) && func_graph_builder->AddOutput(node->abstract_wrapper(), true)) {
+      MS_LOG(INFO) << "Add graph output : " << node->ToString();
       GetCaptureInfo().captured_.outputs.push_back(node);
       continue;
     }
-    MS_LOG(INFO) << "Add output failed for node: " << node->ToString();
-    GetCaptureInfo().captured_.outputs.clear();
-    //  reset break graph point
-    isAllNodesSupportOutput = false;
-    int new_break_point = node->bci();
-    auto curNode = node;
-    if (new_break_point == -1) {
-      // No node is unsupported output since no node in captured output.
-      isAllNodesSupportOutput = true;
-      break;
-    }
-    MS_EXCEPTION_IF_NULL(curNode->GetGraph());
-    if (this->graph_->Config().GetBoolConfig(GraphJitConfig::kLogGraphBreak)) {
-      GRAPH_JIT_LOG_F("reset break point: %d", new_break_point);
-    }
-    this->graph_->StopTraceAt(new_break_point, StopTraceReason::kStopTraceDataDependsOnGraphOut);
-    break;
+    MS_LOG(INFO) << "Invalid output : " << node->ToString();
+    GetCaptureInfo().outputs_optimize_.operations.push_back(node);
+
+    std::for_each(node->getInputs().begin(), node->getInputs().end(),
+                  [&nodes](ValueNode *input) { nodes.push_back(input); });
   }
-  return isAllNodesSupportOutput;
+  return true;
 }
 
 void MindGraphAnalyzer::UpdateCapturedOrder() {
+  const auto &locals = graph_->GetFrame(0).GetLocals();
+  GetCaptureInfo().interpret_.inputs = locals;
+  GetCaptureInfo().interpret_.values.insert(locals.begin(), locals.end());
+
+  // assume all values is captured to func_graph
   const auto &traced_nodes = graph_->GetTracedNodes();
   auto stop_bci = graph_->GetStopTraceBci();
   if (stop_bci == -1) {
@@ -802,7 +862,8 @@ void MindGraphAnalyzer::UpdateCapturedOrder() {
   for (auto val : captured_local_order) {
     new_capture_local_values.insert(val);
   }
-  GetCaptureInfo().captured_.values = new_capture_local_values;
+  // remove duplicates
+  GetCaptureInfo().captured_.values = std::move(new_capture_local_values);
 }
 
 void MindGraphAnalyzer::CollectCapturedAndInterpret() {
@@ -813,8 +874,20 @@ void MindGraphAnalyzer::CollectCapturedAndInterpret() {
   GetCaptureInfo().interpret_.inputs = graph_->GetFrame(0).GetLocals();
   GetCaptureInfo().interpret_.outputs = std::move(alive_nodes);
 
+  std::set<ValueNode *> outputs_optimize_inputs;
+  for (const auto &i : GetCaptureInfo().outputs_optimize_.operations) {
+    for (const auto &j : i->getInputs()) {
+      outputs_optimize_inputs.insert(j);
+    }
+  }
+  auto inserter = std::back_inserter(GetCaptureInfo().outputs_optimize_.inputs);
+  std::copy(outputs_optimize_inputs.begin(), outputs_optimize_inputs.end(), inserter);
+
   // remove side-effect node
-  auto is_remove = [this](ValueNode *node) { return this->graph_->GetSideEffect()->IsRecord(node); };
+  auto is_remove = [this](ValueNode *node) {
+    const auto &rec = this->graph_->GetSideEffect();
+    return rec->IsRecord(node) && !rec->NeedTrack(node);
+  };
   auto *ops = &GetCaptureInfo().captured_.operations;
   ops->erase(std::remove_if(ops->begin(), ops->end(), is_remove), ops->end());
   ops = &GetCaptureInfo().interpret_.operations;
@@ -879,6 +952,25 @@ void MindGraphAnalyzer::CollectGraphInputs() {
   }
   captured_.inputs.insert(captured_.inputs.end(), graph_inputs.globals.begin(), graph_inputs.globals.end());
   MS_EXCEPTION_IF_CHECK_FAIL(inputs_count == captured_.inputs.size(), "error parameters");
+}
+
+void MindGraphAnalyzer::ResetSideEffectRecord() const {
+  // side-effect rollback, adapter later
+  // sub-graph side-effect rollback, adapter later
+  int break_bci = graph_->GetStopTraceBci();
+  if (break_bci == -1 || graph_->GetSideEffect()->IsEmpty()) {
+    return;
+  }
+  const auto &nodes = graph_->GetSideEffect()->nodes();
+  for (const auto &pair : nodes) {
+    Graph *g = pair.first->GetGraph();
+    if (g != nullptr && g != graph_) {
+      MS_LOG(ERROR) << "function " << PyCodeWrapper(g->GetCodeObj()).Name()
+                    << " has side-effect but not implement side-effect rollback";
+      return;
+    }
+  }
+  this->GraphAnalyzer::ResetSideEffectRecord();
 }
 
 }  // namespace pijit

@@ -56,10 +56,16 @@ py::object ByteCodeGenerator::Generate(const ir::FunctionNodePtr &func) {
   auto names = py::cast<py::tuple>(co_names_);
   auto free_vars = py::cast<py::tuple>(co_free_vars_);
   auto cell_vars = py::cast<py::tuple>(co_cell_vars_);
-  PyCodeObject *code = PyCode_New(func->GetPosArgsCnt(), func->GetKwOnlyArgsCnt(), var_names.size(),
-                                  func->GetStackSize(), func->GetFlags(), byte_code.ptr(), consts.ptr(), names.ptr(),
-                                  var_names.ptr(), free_vars.ptr(), cell_vars.ptr(), py::str(func->GetFileName()).ptr(),
-                                  py::str(func->GetName()).ptr(), func->GetFirstLineNo(), lnotab.ptr());
+  PyCodeObject *code = nullptr;
+#if !IS_PYTHON_3_11_PLUS
+  code = PyCode_New(func->GetPosArgsCnt(), func->GetKwOnlyArgsCnt(), var_names.size(), func->GetStackSize(),
+                    func->GetFlags(), byte_code.ptr(), consts.ptr(), names.ptr(), var_names.ptr(), free_vars.ptr(),
+                    cell_vars.ptr(), py::str(func->GetFileName()).ptr(), py::str(func->GetName()).ptr(),
+                    func->GetFirstLineNo(), lnotab.ptr());
+#else
+  MS_LOG(ERROR) << "not implement in python3.11";
+#endif
+
   globals_[py::str("__builtins__")] = builtins_.ptr();
   auto function = py::reinterpret_steal<py::object>(PyFunction_New(reinterpret_cast<PyObject *>(code), globals_.ptr()));
   Py_DECREF(code);

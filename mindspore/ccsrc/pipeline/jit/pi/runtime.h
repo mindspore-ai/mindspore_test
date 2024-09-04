@@ -13,20 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#define PY_SSIZE_T_CLEAN
-#include <Python.h>
-#if (PY_MAJOR_VERSION == 3) && (PY_MINOR_VERSION == 8)
-#define Py_BUILD_CORE
-// <stdatomic.h> is unsupported by g++
-#include <internal/pycore_pystate.h>
-#undef Py_BUILD_CORE
-#endif
+#ifndef MINDSPORE_PI_JIT_RUNTIME_H
+#define MINDSPORE_PI_JIT_RUNTIME_H
 
-#if (PY_MAJOR_VERSION == 3) && (PY_MINOR_VERSION < 9)
+#include <vector>
+#include "pipeline/jit/pi/python_adapter/pydef.h"
+#include "pipeline/jit/pi/jit_compile_results.h"
 
-_PyFrameEvalFunction _PyInterpreterState_GetEvalFrameFunc(PyInterpreterState *state) { return state->eval_frame; }
-void _PyInterpreterState_SetEvalFrameFunc(PyInterpreterState *state, _PyFrameEvalFunction eval_frame_function) {
-  state->eval_frame = eval_frame_function;
-}
+namespace mindspore {
+namespace pijit {
+namespace py = pybind11;
 
-#endif
+void AutoGrad(EvalFrameObject *f, PyObject *ret);
+PyObject *CallCodeHook(PyThreadState *tstate, EvalFrameObject *f, JitCompileResults *c);
+
+}  // namespace pijit
+}  // namespace mindspore
+
+#endif  // MINDSPORE_PI_JIT_COMMON_H

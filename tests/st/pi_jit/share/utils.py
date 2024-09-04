@@ -100,7 +100,7 @@ def is_empty(variable):
     return False
 
 def assert_executed_by_graph_mode(func):
-    jcr = get_code_extra(func)
+    jcr = get_code_extra(getattr(func, "__wrapped__", func))
     assert jcr is not None
     assert jcr['stat'] == 'GRAPH_CALLABLE'
     assert jcr['break_count_'] == 0

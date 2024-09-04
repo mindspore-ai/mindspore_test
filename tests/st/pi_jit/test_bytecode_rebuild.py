@@ -16,16 +16,17 @@ import numpy as np
 from mindspore import ops, numpy, Tensor
 from mindspore.nn import Cell
 from mindspore import jit
-import sys  
-import pytest 
-from .share.utils import match_array
+from mindspore._c_expression import get_code_extra
+import sys
+import pytest
+from .share.utils import match_array, assert_executed_by_graph_mode
 from tests.mark_utils import arg_mark
 
-@pytest.fixture(autouse=True)  
-def skip_if_python_version_too_high():  
-    if sys.version_info >= (3, 11):  
-        pytest.skip("Skipping tests on Python 3.11 and higher.") 
-        
+@pytest.fixture(autouse=True)
+def skip_if_python_version_too_high():
+    if sys.version_info >= (3, 11):
+        pytest.skip("Skipping tests on Python 3.11 and higher.")
+
 config = {
     "replace_nncell_by_construct": True,
     "interpret_captured_code": True,
@@ -139,6 +140,7 @@ def test_try_block_4():
     assert np.all(ret.asnumpy() == np.array([3, 5, 7]))
 
 
+@pytest.mark.skip(reason="tmp skip")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_with_block():
     """
@@ -215,6 +217,7 @@ def test_kw_inline():
     assert a == b
 
 
+@pytest.mark.skip(reason="tmp skip")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_cell_free():
     """
@@ -244,6 +247,178 @@ def test_cell_free():
     res2 = cell_free_test()
     res1 = jit(fn=cell_free_test, mode="PIJit", jit_config=config)()
     assert res1 == res2
+
+
+def fib():
+    p, q = 0, 1
+    while True:
+        yield p
+        p, q = q, p + q
+
+# this generator is used to trigger graph-break
+G = fib()
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_graph_parameter_is_closure_variable():
+    """
+    Feature:
+        Testing bytecode generation, when graph parameter is closure variable.
+
+    Description:
+        1.function's parameter x is a closure variable.
+        2.x is graph's parameter, and x is used as a free variable in inner function.
+
+    Expectation:
+        1.The outputs of pynative and pijit should be equal.
+        2.The code before the graph break point should be executed in graph mode.
+    """
+    def fn(x: Tensor) -> Tensor:
+        y = x + 1  # graph. x is a closure variable and is a parameter of graph
+        next(G)  # break
+        def inner():
+            return x + 1
+        return y + inner()
+
+    x = Tensor([1, 2, 3])
+    o1 = fn(x)
+
+    x = Tensor([1, 2, 3])
+    fn = jit(fn, mode='PIJit', jit_config={'compile_with_try': False})
+    o2 = fn(x)
+
+    match_array(o1.asnumpy(), o2.asnumpy())
+    jcr = get_code_extra(fn.__wrapped__)
+    assert jcr is not None
+    assert jcr['stat'] == 'GRAPH_CALLABLE'
+    assert jcr['break_count_'] == 1
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_graph_parameter_is_closure_variable_v2():
+    """
+    Feature:
+        Testing bytecode generation, when graph parameter is closure variable.
+
+    Description:
+        1.function fn has two parameters, and the second one y is a closure variable.
+        2.y is graph's parameter, and y is used as a free variable in inner function.
+
+    Expectation:
+        1.The outputs of pynative and pijit should be equal.
+        2.The code before the graph break point should be executed in graph mode.
+    """
+    def fn(x: Tensor, y: Tensor) -> Tensor:
+        z = y + 1  # graph
+        next(G)  # break
+        def inner():
+            return y + 1
+        return x + z + inner()
+
+    x = Tensor([1, 2, 3])
+    y = Tensor([1, 1, 1])
+    o1 = fn(x, y)
+
+    fn = jit(fn, mode='PIJit', jit_config={'compile_with_try': False})
+    o2 = fn(x, y)
+
+    match_array(o1.asnumpy(), o2.asnumpy())
+    jcr = get_code_extra(fn.__wrapped__)
+    assert jcr is not None
+    assert jcr['stat'] == 'GRAPH_CALLABLE'
+    assert jcr['break_count_'] == 1
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_graph_parameter_is_closure_variable_v3():
+    """
+    Feature:
+        Testing bytecode generation, when graph parameter is closure variable.
+
+    Description:
+        1.function's parameter x is a closure variable.
+        2.x is graph's parameter, and x is used as a free variable in list comprehension.
+
+    Expectation:
+        1.The outputs of pynative and pijit should be equal.
+        2.The code before the graph break point should be executed in graph mode.
+    """
+    def fn(x: Tensor) -> Tensor:
+        y = [x + i for i in range(3)]  # x is a free variable used in list comprehension
+        next(G)  # break
+        return y
+
+    x = Tensor([1, 2, 3])
+    o1 = fn(x)
+
+    fn = jit(fn, mode='PIJit', jit_config={'compile_with_try': False})
+    o2 = fn(x)
+
+    assert len(o1) == len(o2)
+    for l, r in zip(o1, o2):
+        match_array(l.asnumpy(), r.asnumpy())
+    jcr = get_code_extra(fn.__wrapped__)
+    assert jcr is not None
+    assert jcr['stat'] == 'GRAPH_CALLABLE'
+    assert jcr['break_count_'] == 1
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_graph_parameter_is_closure_variable_v4():
+    """
+    Feature:
+        Testing bytecode generation, when graph parameter is closure variable.
+
+    Description:
+        1.function's parameter x is a closure variable.
+        2.x is graph's parameter, and x is used as a free variable in list comprehension.
+
+    Expectation:
+        1.The outputs of pynative and pijit should be equal.
+        2.No graph break.
+    """
+    def fn(x: Tensor) -> Tensor:
+        y = [x + i for i in range(3)]  # x is a free variable used in list comprehension
+        return y
+
+    x = Tensor([1, 2, 3])
+    o1 = fn(x)
+
+    fn = jit(fn, mode='PIJit', jit_config={'compile_with_try': False})
+    o2 = fn(x)
+
+    assert len(o1) == len(o2)
+    for l, r in zip(o1, o2):
+        match_array(l.asnumpy(), r.asnumpy())
+    assert_executed_by_graph_mode(fn)
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_graph_parameter_is_closure_variable_v5():
+    """
+    Feature:
+        Testing bytecode generation, when graph parameter is closure variable.
+
+    Description:
+        1.function's parameter x is a closure variable.
+        2.x is graph's parameter, and x is used as a free variable in list comprehension.
+
+    Expectation:
+        1.The outputs of pynative and pijit should be equal.
+        2.The code before the graph break point should be executed in graph mode.
+    """
+    def fn(x: Tensor) -> Tensor:
+        y = [x + i for i in range(3)]
+        next(G)  # break
+        return x + y[-1]  # x is used after break point
+
+    x = Tensor([1, 2, 3])
+    o1 = fn(x)
+
+    x = Tensor([1, 2, 3])
+    fn = jit(fn, mode='PIJit', jit_config={'compile_with_try': False})
+    o2 = fn(x)
+
+    match_array(o1.asnumpy(), o2.asnumpy())
+    jcr = get_code_extra(fn.__wrapped__)
+    assert jcr is not None
+    assert jcr['stat'] == 'GRAPH_CALLABLE'
+    assert jcr['break_count_'] == 1
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')

@@ -41,7 +41,7 @@ class GraphAnalyzer {
   // escaped_locals and captured.values do not intersect
   struct CapturedInfo {
     struct Info {
-      // contains inputs and operations, used to find
+      // contains inputs and operations, fast to find
       mindspore::CompactSet<ValueNode *> values;
       // the inputs of operations
       std::vector<ValueNode *> inputs;
@@ -69,6 +69,15 @@ class GraphAnalyzer {
      * for captured outputs, it's ordered by stack values and alive locals.
      */
     Info captured_;
+
+    /**
+     * for captured outputs, it's maybe invalid type as graph's outputs.
+     * if type is number/string/tensor/tuple, it's valid graph's output.
+     * if type is list, convert to tuple as graph's output, then convert to tuple again in python.
+     * if type is dict, convert to keys tuple and values tuple as graph's output, then convert to dict again in python.
+     * Others, recreate in python.
+     */
+    Info outputs_optimize_;
 
     /**
      * for interpret inputs, it's ordered and same as original function.
@@ -106,7 +115,7 @@ class GraphAnalyzer {
   void OptimizeSideEffectRecord() const;
 
   // rollback
-  void ResetSideEffectRecord() const;
+  virtual void ResetSideEffectRecord() const;
 
   void AddToEscaped(ValueNode *value);
   // UD analyze
@@ -116,6 +125,8 @@ class GraphAnalyzer {
   virtual void CollectCapturedInputs();
   virtual void CollectCapturedAndInterpret();
   virtual void CollectGraphInputs();
+  bool ProduceInterpretValue(ValueNode *v);
+
   bool need_interpret_;
   Graph *graph_;
   CapturedInfo info_;
@@ -128,7 +139,6 @@ class GraphAnalyzer {
   bool HandleSideEffectNodeForCapture(AbstractNode *capture_node);
   bool AddToCaptured(ValueNode *value);
   bool HandleCallableToGraph(AObject *f);
-  bool ProduceInterpretValue(ValueNode *v);
   void CleanCapturedValue();
 };
 
@@ -145,6 +155,7 @@ class MindGraphAnalyzer : public GraphAnalyzer {
   void UpdateCapturedOrder();
   void CollectCapturedAndInterpret() override;
   bool AnalyzeAliveLocals(std::vector<ValueNode *> aliveNodes) override;
+  void ResetSideEffectRecord() const override;
   GraphBuilderPtr graph_builder_ = nullptr;
 };
 }  // namespace pijit
