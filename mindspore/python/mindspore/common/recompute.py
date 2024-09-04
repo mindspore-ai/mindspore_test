@@ -23,7 +23,7 @@ from mindspore.common.tensor import Tensor
 from mindspore import ops
 from mindspore.ops.composite import GradOperation
 from mindspore.common._register_for_recompute import recompute_registry
-from mindspore.common.api import _pynative_executor
+from mindspore.common.api import _pynative_executor, _no_grad
 from mindspore.common.generator import get_rng_state, set_rng_state
 from mindspore.train.amp import amp_decorator
 from mindspore._c_expression.amp import get_curr_amp_strategy
@@ -77,7 +77,8 @@ class _RecomputeCell(Cell):
         if self.save_rng_state:
             self.cpu_rng_state = get_rng_state()
         self.amp_strategy = get_curr_amp_strategy()
-        return self.net(*args, **kwargs)
+        with _no_grad():
+            return self.net(*args, **kwargs)
 
     def bprop(self, *args):
         """
