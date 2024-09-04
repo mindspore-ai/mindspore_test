@@ -70,7 +70,6 @@ void InlineExpandFuncGraph(const CNodePtr &expanding_node, const FuncGraphPtr &e
     mng = Manage(main_graph, true);
     main_graph->set_manager(mng);
   }
-  MS_EXCEPTION_IF_NULL(expanding_node);
   AnfNodePtrList inp(expanding_node->inputs().begin() + 1, expanding_node->inputs().end());
   // expand bg node from partial
   auto out = InlineClone(expanded_graph, main_graph, inp, expanding_node);
@@ -80,13 +79,13 @@ void InlineExpandFuncGraph(const CNodePtr &expanding_node, const FuncGraphPtr &e
 // expand bg node from partial
 void InlineExpandPartialFuncGraph(const CNodePtr &expanding_node, const FuncGraphPtr &expanded_graph,
                                   const AnfNodePtrList &partial_params) {
+  MS_EXCEPTION_IF_NULL(expanding_node);
   auto main_graph = expanding_node->func_graph();
   auto mng = main_graph->manager();
   if (mng == nullptr) {
     mng = Manage(main_graph, true);
     main_graph->set_manager(mng);
   }
-  MS_EXCEPTION_IF_NULL(expanding_node);
   AnfNodePtrList inp(expanding_node->inputs().begin() + 1, expanding_node->inputs().end());
   (void)inp.insert(inp.begin(), partial_params.begin(), partial_params.end());
   auto out = InlineClone(expanded_graph, main_graph, inp, expanding_node);
