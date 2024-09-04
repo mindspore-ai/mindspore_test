@@ -10,7 +10,7 @@ mindspore.numpy.polysub
 
     参数：
         - **a1** (Union[int, float, list, tuple, Tensor]) - 被减多项式。
-        - **a2** (Union[int, float, list, tuple, Tensor]) – 减数多项式。
+        - **a2** (Union[int, float, list, tuple, Tensor]) - 减数多项式。
 
     返回：
         Tensor，输入的差。

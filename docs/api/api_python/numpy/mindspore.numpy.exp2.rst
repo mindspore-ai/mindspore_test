@@ -9,7 +9,7 @@ mindspore.numpy.exp2
         不支持NumPy参数 `out` 、 `where` 、 `casting` 、 `order` 、 `subok` 、 `signature` 、 `extobj` 。
         在GPU上，支持的数据类型为np.float16和np.float32。
 
-    参数
+    参数：
         - **x** (Tensor) - 输入值。
         - **dtype** (mindspore.dtype, 可选) - 默认值： `None` 。 覆盖输出Tensor的dtype。
 

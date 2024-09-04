@@ -7,7 +7,7 @@ mindspore.ops.TensorDump
 
     文件名会按照执行顺序自动添加前缀。例如，如果 `file` 为 `a`，第一次保存的文件名为 `0_a.npy`，第二次为 `1_a.npy`。
 
-    在Ascend平台上的Graph模式下，可以通过设置环境变量`MS_DUMP_SLICE_SIZE`和`MS_DUMP_WAIT_TIME`解决在输出大Tesnor
+    在Ascend平台上的Graph模式下，可以通过设置环境变量 `MS_DUMP_SLICE_SIZE` 和 `MS_DUMP_WAIT_TIME` 解决在输出大Tesnor
     或输出Tensor比较密集场景下算子执行失败的问题。
 
     .. warning::
