@@ -1,0 +1,27 @@
+#operator dctn
+dctn:
+  args:
+    x:
+      dtype: tensor
+    type:
+      dtype: int
+      default: 2
+    s:
+      dtype: tuple[int]
+      type_cast: list[int]
+      default: None
+    axes:
+      dtype: tuple[int]
+      type_cast: list[int]
+      default: None
+    norm:
+      dtype: int
+      arg_handler: str_to_enum
+      default: None
+  returns:
+    output:
+      dtype: tensor
+  class:
+    name: DCTN
+  function:
+    disable: True

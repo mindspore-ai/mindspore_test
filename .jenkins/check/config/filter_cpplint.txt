@@ -38,6 +38,7 @@
 "mindspore/mindspore/ccsrc/pipeline/jit/ps/resource.cc"                                            "readability/fn_size"
 "mindspore/mindspore/ops/kernel/gpu/math/binary_ops_gpu_kernel.cc"                 "whitespace/indent"
 "mindspore/mindspore/ops/kernel/cpu/cast_cpu_kernel.cc"                            "readability/braces"
+"mindspore/mindspore/ops/kernel/cpu/utils/fft_helper.h"                            "readability/braces"
 "mindspore/mindspore/ops/kernel/cpu/lp_norm_cpu_kernel.cc"                         "build/include"
 "mindspore/mindspore/ccsrc/backend/operator/"                                                      "whitespace/braces"
 "mindspore/mindspore/ccsrc/pybind_api/ir/dtype_py.cc"                                              "whitespace/line_length"
@@ -51,11 +52,14 @@
 "mindspore/mindspore/ccsrc/runtime/pynative/op_function/func_object.h"                             "runtime/explicit"
 "mindspore/mindspore/ccsrc/runtime/pynative/op_function/func_object.h"
 "mindspore/mindspore/ops/kernel/cpu/dct_cpu_kernel.cc"
+"mindspore/mindspore/ops/kernel/cpu/utils/fft_helper.h"                             "build/include_subdir"
 "mindspore/mindspore/ccsrc/debug/data_dump/npy_header.h"
 "mindspore/mindspore/ccsrc/plugin/device/ascend/hal/hardware/lowlatency_communication_group.h"       "build/include_subdir"
 "mindspore/mindspore/ccsrc/plugin/device/ascend/hal/hardware/lowlatency_communication_group.h"       "build/namespaces"
 "mindspore/mindspore/ccsrc/backend/common/mem_reuse/mem_tracker.cc"                                 "whitespace/indent"
 "mindspore/mindspore/ccsrc/runtime/graph_scheduler/actor/data_prepare_actor.cc"                    "runtime/references"
+"mindspore/mindspore/ccsrc/frontend/parallel/ops_info/fft_info.h"                                   "readability/namespace"
+"mindspore/mindspore/ccsrc/frontend/parallel/ops_info/fft_info.h"                                   "whitespace/indent"
 
 # Modelzoo
 "mindspore/model_zoo/official/cv/yolov4_tiny/infer/mxbase/src/Yolov4TinyDetection.h"                 "runtime/references"

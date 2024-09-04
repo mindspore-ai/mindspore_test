@@ -183,6 +183,12 @@ REG_STRING_TO_ENUM_COMMON(fas_input_layout_mode, StrToEnumMap{{"BSH", FASInputLa
                                                               {"TND", FASInputLayoutMode::TND},
                                                               {"NSD", FASInputLayoutMode::NSD},
                                                               {"SH", FASInputLayoutMode::SH}})
+
+// DriverName
+REG_STRING_TO_ENUM_COMMON(driver_name, StrToEnumMap{{"GELS", DriverName::GELS},
+                                                    {"GELSY", DriverName::GELSY},
+                                                    {"GELSD", DriverName::GELSD},
+                                                    {"GELSS", DriverName::GELSS}})
 }  // namespace
 
 int64_t StringToEnumImpl(const std::string &op_name, const std::string &arg_name, const std::string &enum_string) {

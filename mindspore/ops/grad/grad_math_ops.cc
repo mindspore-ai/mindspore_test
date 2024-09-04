@@ -336,34 +336,93 @@ NodePtrList FminFmaxGrad(BpropBuilder *ib, bool if_fmin) {
   return {brrx1, brrx2};
 }
 
-DEF_PURE_SHAPE_CALC(g_fft_shape)
+DEF_PURE_SHAPE_CALC(g_fft_dct_axis2tuple)
+  .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
+    constexpr int64_t input_num = 2;
+    if (inputs.size() != input_num) {
+      MS_LOG_EXCEPTION << "ShapeCalc[g_fft_dct_axis2tuple] expect 2 inputs, but got " << inputs.size() << "inputs";
+    }
+    auto x_shape = inputs.at(kIndex0);
+    auto axis = inputs.at(kIndex1)[0];
+
+    axis = NormalizeAxis(axis, x_shape.size());
+    std::vector<int64_t> res{axis};
+    return {res};
+  })
+  .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &) -> std::vector<int64_t> { return {1}; });
+
+DEF_PURE_SHAPE_CALC(g_fft_dct_axes)
+  .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
+    auto x_shp = inputs.at(kIndex0);
+    auto s_v = inputs.at(kIndex1);
+
+    std::vector<int64_t> res;
+    for (size_t i = 0; i < s_v.size(); i++) {
+      (void)res.emplace_back(SizeToLong(x_shp.size() - s_v.size() + i));
+    }
+    return {res};
+  })
+  .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &) -> std::vector<int64_t> {
+    auto s_shape = inputs.at(kIndex1);
+    return {IsDynamicRank(s_shape) ? -1 : SizeToLong(s_shape.size())};
+  });
+
+DEF_PURE_SHAPE_CALC(g_fft_shape_dim)
   .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
     constexpr int64_t input_num = 1;
     if (inputs.size() != input_num) {
-      MS_LOG_EXCEPTION << "ShapeCalc[g_fft_shape] expect 1 inputs, but got " << inputs.size() << "inputs";
+      MS_LOG_EXCEPTION << "ShapeCalc[g_fft_shape_dim] expect 1 inputs, but got " << inputs.size() << "inputs";
     }
     auto x_shape = inputs.at(kIndex0);
 
     std::vector<int64_t> input_shape;
-    for (int64_t i = 0; i < SizeToLong(x_shape.size()); i++) {
-      input_shape.push_back(x_shape[i]);
+    std::vector<int64_t> input_size;
+    for (size_t i = 0; i < x_shape.size(); i++) {
+      input_shape.emplace_back(x_shape[i]);
+      input_size.emplace_back(i);
     }
-
-    return {input_shape};
+    return {input_shape, input_size};
   })
   .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &) -> std::vector<int64_t> {
     auto x_shape = inputs.at(0);
-    return {IsDynamicRank(x_shape) ? -1 : SizeToLong(x_shape.size())};
+    auto rank = IsDynamicRank(x_shape) ? -1 : SizeToLong(x_shape.size());
+    return {rank, rank};
   });
 
-NodePtrList FFTGradCommon(BpropBuilder *ib, const std::string &op_name) {
-  auto x = ib->GetInput(kIndex0);
-  auto n = ib->GetInput(kIndex1);
-  auto dim = ib->GetInput(kIndex2);
-  auto norm = ib->GetInput(kIndex3);
-  auto out = ib->GetInput(kIndex4);
-  auto dout = ib->GetInput(kIndex5);
+DEF_PURE_SHAPE_CALC(g_fft_axes_shape)
+  .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
+    auto x_shp = inputs.at(kIndex0);
+    auto axes_v = inputs.at(kIndex1);
 
+    int64_t axis;
+    std::vector<int64_t> res;
+
+    for (size_t i = 0; i < axes_v.size(); i++) {
+      axis = NormalizeAxis(axes_v[i], x_shp.size());
+      res.emplace_back(x_shp[LongToSize(axis)]);
+    }
+    return {res};
+  })
+  .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &) -> std::vector<int64_t> {
+    auto axes_shape = inputs.at(kIndex1);
+    return {IsDynamicRank(axes_shape) ? -1 : SizeToLong(axes_shape.size())};
+  });
+
+DEF_PURE_SHAPE_CALC(g_fft_cmpt_double_n_dim)
+  .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
+    auto dout_shp = inputs.at(kIndex0);
+    auto axes_v = inputs.at(kIndex1);
+
+    std::vector<int64_t> res;
+
+    auto last_dim = NormalizeAxis(axes_v.back(), dout_shp.size());
+    res.push_back(dout_shp[last_dim]);
+    res.push_back(last_dim);
+    return {res};
+  })
+  .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &) -> std::vector<int64_t> { return {2}; });
+
+NodePtr FFTNormReverse(BpropBuilder *ib, NodePtr norm) {
   constexpr int64_t kNormBackward = 0;
   constexpr int64_t kNormForward = 1;
   constexpr int64_t kNormOrtho = 2;
@@ -387,18 +446,34 @@ NodePtrList FFTGradCommon(BpropBuilder *ib, const std::string &op_name) {
         break;
     }
   }
+  return ib->Value(grad_norm_value);
+}
+
+NodePtrList FFTGradCommon(BpropBuilder *ib, const std::string &op_name) {
+  auto x = ib->GetInput(kIndex0);
+  auto n = ib->GetInput(kIndex1);
+  auto dim = ib->GetInput(kIndex2);
+  auto norm = ib->GetInput(kIndex3);
+  auto out = ib->GetInput(kIndex4);
+  auto dout = ib->GetInput(kIndex5);
+
+  norm = FFTNormReverse(ib, norm);
 
   // step2：Get the gradient.
-  auto grad_dout = ib->Emit(op_name, {dout, n, dim, ib->Value(grad_norm_value)});
+  auto grad_dout = ib->Emit(op_name, {dout, n, dim, norm});
 
   // step3：If given, the gradient will be zero-padded or trimmed to this length.
   auto n_type = n->abstract()->BuildType();
   if (!n_type->isa<TypeNone>()) {
-    auto res = ib->ShapeCalc(g_fft_shape, {x});
-    grad_dout = ib->Emit("FFTShapeCopy", {grad_dout, res[0]});
+    auto x_shape = ib->ShapeCalc(g_fft_shape_dim, {x})[0];
+    grad_dout = ib->Emit("FFTShapeCopy", {grad_dout, x_shape});
   }
 
   // step4：Return gradient results.
+  if (ib->GetDtypeId(x) != kNumberTypeBFloat16) {
+    auto x_dtype = ib->GetDtype(x);
+    grad_dout = ib->Cast(grad_dout, x_dtype);
+  }
   return {grad_dout, ib->OutZeros(n), ib->OutZeros(dim), ib->OutZeros(norm)};
 }
 
@@ -1995,6 +2070,18 @@ REG_BPROP_BUILDER("Trace").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
   return {dx};
 });
 
+REG_BPROP_BUILDER("TraceV2").SetUnusedInputs({i5}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto offset = ib->GetInput(kIndex1);
+  auto axis1 = ib->GetInput(kIndex2);
+  auto axis2 = ib->GetInput(kIndex3);
+  auto dtype = ib->GetInput(kIndex4);
+  auto dout = ib->GetInput(kIndex6);
+  auto shape = ib->Shape(input, true);
+  auto dx = ib->Emit("TraceV2Grad", {dout, shape, offset, axis1, axis2});
+  return {dx, ib->OutZeros(offset), ib->OutZeros(axis1), ib->OutZeros(axis2), ib->OutZeros(dtype)};
+});
+
 REG_BPROP_BUILDER("Erfinv").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
   auto out = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex2);
@@ -3137,6 +3224,359 @@ REG_BPROP_BUILDER("IFFT2").SetBody(BODYFUNC(ib) { return FFTGradCommon(ib, "FFT2
 REG_BPROP_BUILDER("FFTN").SetBody(BODYFUNC(ib) { return FFTGradCommon(ib, "IFFTN"); });
 REG_BPROP_BUILDER("IFFTN").SetBody(BODYFUNC(ib) { return FFTGradCommon(ib, "FFTN"); });
 
+REG_BPROP_BUILDER("HFFT").SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto n = ib->GetInput(kIndex1);
+  auto dim = ib->GetInput(kIndex2);
+  auto norm = ib->GetInput(kIndex3);
+  auto dout = ib->GetInput(kIndex5);
+
+  norm = FFTNormReverse(ib, norm);
+  auto n_type = n->abstract()->BuildType();
+  if (n_type->isa<TypeNone>()) {
+    n = ib->ShapeCalc(g_fft_axes_shape, {dout, dim}, {1})[0];
+    n = ib->TupleGetItem(n, 0);
+  }
+
+  // step2：Get the gradient.
+  auto grad_dout = ib->Emit("IHFFT", {dout, n, dim, norm});
+  grad_dout = ib->Emit("IRFFTDouble", {grad_dout, n, dim});
+  // step3：If given, the gradient will be zero-padded or trimmed to this length.
+  auto x_shape = ib->ShapeCalc(g_fft_shape_dim, {x})[0];
+  grad_dout = ib->Emit("FFTShapeCopy", {grad_dout, x_shape});
+
+  // step4：Return gradient results.
+  if (ib->GetDtypeId(x) != kNumberTypeBFloat16) {
+    auto x_dtype = ib->GetDtype(x);
+    grad_dout = ib->Cast(grad_dout, x_dtype);
+  }
+  return {grad_dout, ib->OutZeros(n), ib->OutZeros(dim), ib->OutZeros(norm)};
+});
+
+REG_BPROP_BUILDER("HFFT2").SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto s = ib->GetInput(kIndex1);
+  auto dim = ib->GetInput(kIndex2);
+  auto norm = ib->GetInput(kIndex3);
+  auto dout = ib->GetInput(kIndex5);
+
+  norm = FFTNormReverse(ib, norm);
+  // step2：Get the gradient.
+  auto grad_dout = ib->Emit("IHFFT2", {dout, s, dim, norm});
+
+  auto dim_n_res = ib->ShapeCalc(g_fft_cmpt_double_n_dim, {dout, dim}, {1})[0];
+  auto n = ib->TupleGetItem(dim_n_res, 0);
+  auto last_dim = ib->TupleGetItem(dim_n_res, 1);
+  grad_dout = ib->Emit("IRFFTDouble", {grad_dout, n, last_dim});
+
+  // step3：If given, the gradient will be zero-padded or trimmed to this length.
+  auto x_shape = ib->ShapeCalc(g_fft_shape_dim, {x})[0];
+  grad_dout = ib->Emit("FFTShapeCopy", {grad_dout, x_shape});
+
+  // step4：Return gradient results.
+  if (ib->GetDtypeId(x) != kNumberTypeBFloat16) {
+    auto x_dtype = ib->GetDtype(x);
+    grad_dout = ib->Cast(grad_dout, x_dtype);
+  }
+  return {grad_dout, ib->OutZeros(s), ib->OutZeros(dim), ib->OutZeros(norm)};
+});
+
+REG_BPROP_BUILDER("HFFTN").SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto s = ib->GetInput(kIndex1);
+  auto dim = ib->GetInput(kIndex2);
+  auto norm = ib->GetInput(kIndex3);
+  auto dout = ib->GetInput(kIndex5);
+
+  norm = FFTNormReverse(ib, norm);
+  // step1：Get the optional input.
+  auto s_type = s->abstract()->BuildType();
+  auto dim_type = dim->abstract()->BuildType();
+  if (s_type->isa<TypeNone>() && dim_type->isa<TypeNone>()) {
+    dim = ib->ShapeCalc(g_fft_shape_dim, {x})[1];
+  }
+
+  // step2：Get the gradient.
+  auto grad_dout = ib->Emit("IHFFTN", {dout, s, dim, norm});
+
+  auto dim_n_res = ib->ShapeCalc(g_fft_cmpt_double_n_dim, {dout, dim}, {1})[0];
+  auto n = ib->TupleGetItem(dim_n_res, 0);
+  auto last_dim = ib->TupleGetItem(dim_n_res, 1);
+  grad_dout = ib->Emit("IRFFTDouble", {grad_dout, n, last_dim});
+
+  // step3：If given, the gradient will be zero-padded or trimmed to this length.
+  auto x_shape = ib->ShapeCalc(g_fft_shape_dim, {x})[0];
+  grad_dout = ib->Emit("FFTShapeCopy", {grad_dout, x_shape});
+
+  // step4：Return gradient results.
+  if (ib->GetDtypeId(x) != kNumberTypeBFloat16) {
+    auto x_dtype = ib->GetDtype(x);
+    grad_dout = ib->Cast(grad_dout, x_dtype);
+  }
+  return {grad_dout, ib->OutZeros(s), ib->OutZeros(dim), ib->OutZeros(norm)};
+});
+
+REG_BPROP_BUILDER("IHFFT").SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto n = ib->GetInput(kIndex1);
+  auto dim = ib->GetInput(kIndex2);
+  auto norm = ib->GetInput(kIndex3);
+  auto dout = ib->GetInput(kIndex5);
+
+  auto n_type = n->abstract()->BuildType();
+  if (n_type->isa<TypeNone>()) {
+    n = ib->ShapeCalc(g_fft_axes_shape, {x, dim}, {1})[0];
+    n = ib->TupleGetItem(n, 0);
+  }
+  // step2：Get the gradient.
+  auto grad_dout = ib->Emit("IFFT", {dout, n, dim, norm});
+
+  auto x_shape = ib->ShapeCalc(g_fft_shape_dim, {x})[0];
+  grad_dout = ib->Emit("FFTShapeCopy", {grad_dout, x_shape});
+
+  // step4：Return gradient results.
+  if (ib->GetDtypeId(x) != kNumberTypeBFloat16) {
+    auto x_dtype = ib->GetDtype(x);
+    grad_dout = ib->Cast(grad_dout, x_dtype);
+  }
+  return {grad_dout, ib->OutZeros(n), ib->OutZeros(dim), ib->OutZeros(norm)};
+});
+
+REG_BPROP_BUILDER("IHFFT2").SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto s = ib->GetInput(kIndex1);
+  auto dim = ib->GetInput(kIndex2);
+  auto norm = ib->GetInput(kIndex3);
+  auto dout = ib->GetInput(kIndex5);
+
+  auto s_type = s->abstract()->BuildType();
+  if (s_type->isa<TypeNone>()) {
+    s = ib->ShapeCalc(g_fft_axes_shape, {x, dim}, {1})[0];
+  }
+
+  // step2：Get the gradient.
+  auto grad_dout = ib->Emit("IFFT2", {dout, s, dim, norm});
+
+  // step3：If given, the gradient will be zero-padded or trimmed to this length.
+  auto x_shape = ib->ShapeCalc(g_fft_shape_dim, {x})[0];
+  grad_dout = ib->Emit("FFTShapeCopy", {grad_dout, x_shape});
+
+  // step4：Return gradient results.
+  if (ib->GetDtypeId(x) != kNumberTypeBFloat16) {
+    auto x_dtype = ib->GetDtype(x);
+    grad_dout = ib->Cast(grad_dout, x_dtype);
+  }
+  return {grad_dout, ib->OutZeros(s), ib->OutZeros(dim), ib->OutZeros(norm)};
+});
+
+REG_BPROP_BUILDER("IHFFTN").SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto s = ib->GetInput(kIndex1);
+  auto dim = ib->GetInput(kIndex2);
+  auto norm = ib->GetInput(kIndex3);
+  auto dout = ib->GetInput(kIndex5);
+
+  auto s_type = s->abstract()->BuildType();
+  auto dim_type = dim->abstract()->BuildType();
+  if (s_type->isa<TypeNone>()) {
+    if (dim_type->isa<TypeNone>()) {
+      dim = ib->ShapeCalc(g_fft_shape_dim, {x})[1];
+    }
+    s = ib->ShapeCalc(g_fft_axes_shape, {x, dim}, {1})[0];
+  }
+
+  // step2：Get the gradient.
+  auto grad_dout = ib->Emit("IFFTN", {dout, s, dim, norm});
+
+  // step3：If given, the gradient will be zero-padded or trimmed to this length.
+  auto x_shape = ib->ShapeCalc(g_fft_shape_dim, {x})[0];
+  grad_dout = ib->Emit("FFTShapeCopy", {grad_dout, x_shape});
+
+  // step4：Return gradient results.
+  if (ib->GetDtypeId(x) != kNumberTypeBFloat16) {
+    auto x_dtype = ib->GetDtype(x);
+    grad_dout = ib->Cast(grad_dout, x_dtype);
+  }
+  return {grad_dout, ib->OutZeros(s), ib->OutZeros(dim), ib->OutZeros(norm)};
+});
+
+REG_BPROP_BUILDER("RFFT").SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto n = ib->GetInput(kIndex1);
+  auto dim = ib->GetInput(kIndex2);
+  auto norm = ib->GetInput(kIndex3);
+  auto dout = ib->GetInput(kIndex5);
+
+  norm = FFTNormReverse(ib, norm);
+
+  auto n_type = n->abstract()->BuildType();
+  if (n_type->isa<TypeNone>()) {
+    n = ib->ShapeCalc(g_fft_axes_shape, {x, dim}, {1})[0];
+    n = ib->TupleGetItem(n, 0);
+  }
+  // step2：Get the gradient.
+  auto grad_dout = ib->Emit("IFFT", {dout, n, dim, norm});
+
+  auto x_shape = ib->ShapeCalc(g_fft_shape_dim, {x})[0];
+  grad_dout = ib->Emit("FFTShapeCopy", {grad_dout, x_shape});
+
+  // step4：Return gradient results.
+  if (ib->GetDtypeId(x) != kNumberTypeBFloat16) {
+    auto x_dtype = ib->GetDtype(x);
+    grad_dout = ib->Cast(grad_dout, x_dtype);
+  }
+  return {grad_dout, ib->OutZeros(n), ib->OutZeros(dim), ib->OutZeros(norm)};
+});
+
+REG_BPROP_BUILDER("RFFT2").SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto s = ib->GetInput(kIndex1);
+  auto dim = ib->GetInput(kIndex2);
+  auto norm = ib->GetInput(kIndex3);
+  auto dout = ib->GetInput(kIndex5);
+
+  norm = FFTNormReverse(ib, norm);
+
+  auto s_type = s->abstract()->BuildType();
+  if (s_type->isa<TypeNone>()) {
+    s = ib->ShapeCalc(g_fft_axes_shape, {x, dim}, {1})[0];
+  }
+  // step2：Get the gradient.
+  auto grad_dout = ib->Emit("IFFT2", {dout, s, dim, norm});
+
+  auto x_shape = ib->ShapeCalc(g_fft_shape_dim, {x})[0];
+  grad_dout = ib->Emit("FFTShapeCopy", {grad_dout, x_shape});
+
+  // step4：Return gradient results.
+  if (ib->GetDtypeId(x) != kNumberTypeBFloat16) {
+    auto x_dtype = ib->GetDtype(x);
+    grad_dout = ib->Cast(grad_dout, x_dtype);
+  }
+  return {grad_dout, ib->OutZeros(s), ib->OutZeros(dim), ib->OutZeros(norm)};
+});
+
+REG_BPROP_BUILDER("RFFTN").SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto s = ib->GetInput(kIndex1);
+  auto dim = ib->GetInput(kIndex2);
+  auto norm = ib->GetInput(kIndex3);
+  auto dout = ib->GetInput(kIndex5);
+
+  norm = FFTNormReverse(ib, norm);
+
+  auto s_type = s->abstract()->BuildType();
+  auto dim_type = dim->abstract()->BuildType();
+  if (s_type->isa<TypeNone>()) {
+    if (dim_type->isa<TypeNone>()) {
+      dim = ib->ShapeCalc(g_fft_shape_dim, {x})[1];
+    }
+    s = ib->ShapeCalc(g_fft_axes_shape, {x, dim}, {1})[0];
+  }
+  // step2：Get the gradient.
+  auto grad_dout = ib->Emit("IFFTN", {dout, s, dim, norm});
+
+  auto x_shape = ib->ShapeCalc(g_fft_shape_dim, {x})[0];
+  grad_dout = ib->Emit("FFTShapeCopy", {grad_dout, x_shape});
+
+  // step4：Return gradient results.
+  if (ib->GetDtypeId(x) != kNumberTypeBFloat16) {
+    auto x_dtype = ib->GetDtype(x);
+    grad_dout = ib->Cast(grad_dout, x_dtype);
+  }
+  return {grad_dout, ib->OutZeros(s), ib->OutZeros(dim), ib->OutZeros(norm)};
+});
+
+REG_BPROP_BUILDER("IRFFT").SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto n = ib->GetInput(kIndex1);
+  auto dim = ib->GetInput(kIndex2);
+  auto norm = ib->GetInput(kIndex3);
+  auto dout = ib->GetInput(kIndex5);
+
+  norm = FFTNormReverse(ib, norm);
+  auto n_type = n->abstract()->BuildType();
+  if (n_type->isa<TypeNone>()) {
+    n = ib->ShapeCalc(g_fft_axes_shape, {dout, dim}, {1})[0];
+    n = ib->TupleGetItem(n, 0);
+  }
+  // step2：Get the gradient.
+  auto grad_dout = ib->Emit("RFFT", {dout, n, dim, norm});
+  grad_dout = ib->Emit("IRFFTDouble", {grad_dout, n, dim});
+
+  auto x_shape = ib->ShapeCalc(g_fft_shape_dim, {x})[0];
+  grad_dout = ib->Emit("FFTShapeCopy", {grad_dout, x_shape});
+
+  if (ib->GetDtypeId(x) != kNumberTypeBFloat16) {
+    auto x_dtype = ib->GetDtype(x);
+    grad_dout = ib->Cast(grad_dout, x_dtype);
+  }
+  return {grad_dout, ib->OutZeros(n), ib->OutZeros(dim), ib->OutZeros(norm)};
+});
+
+REG_BPROP_BUILDER("IRFFT2").SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto s = ib->GetInput(kIndex1);
+  auto dim = ib->GetInput(kIndex2);
+  auto norm = ib->GetInput(kIndex3);
+  auto dout = ib->GetInput(kIndex5);
+
+  norm = FFTNormReverse(ib, norm);
+  auto s_type = s->abstract()->BuildType();
+  if (s_type->isa<TypeNone>()) {
+    s = ib->ShapeCalc(g_fft_axes_shape, {dout, dim}, {1})[0];
+  }
+  // step2：Get the gradient.
+  auto grad_dout = ib->Emit("RFFT2", {dout, s, dim, norm});
+
+  auto dim_n_res = ib->ShapeCalc(g_fft_cmpt_double_n_dim, {dout, dim}, {1})[0];
+  auto n = ib->TupleGetItem(dim_n_res, 0);
+  auto last_dim = ib->TupleGetItem(dim_n_res, 1);
+  grad_dout = ib->Emit("IRFFTDouble", {grad_dout, n, last_dim});
+
+  auto x_shape = ib->ShapeCalc(g_fft_shape_dim, {x})[0];
+  grad_dout = ib->Emit("FFTShapeCopy", {grad_dout, x_shape});
+
+  if (ib->GetDtypeId(x) != kNumberTypeBFloat16) {
+    auto x_dtype = ib->GetDtype(x);
+    grad_dout = ib->Cast(grad_dout, x_dtype);
+  }
+  return {grad_dout, ib->OutZeros(s), ib->OutZeros(dim), ib->OutZeros(norm)};
+});
+
+REG_BPROP_BUILDER("IRFFTN").SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto s = ib->GetInput(kIndex1);
+  auto dim = ib->GetInput(kIndex2);
+  auto norm = ib->GetInput(kIndex3);
+  auto dout = ib->GetInput(kIndex5);
+
+  norm = FFTNormReverse(ib, norm);
+  auto s_type = s->abstract()->BuildType();
+  auto dim_type = dim->abstract()->BuildType();
+  if (s_type->isa<TypeNone>()) {
+    if (dim_type->isa<TypeNone>()) {
+      dim = ib->ShapeCalc(g_fft_shape_dim, {x})[1];
+    }
+    s = ib->ShapeCalc(g_fft_axes_shape, {dout, dim}, {1})[0];
+  }
+  // step2：Get the gradient.
+  auto grad_dout = ib->Emit("RFFTN", {dout, s, dim, norm});
+
+  auto dim_n_res = ib->ShapeCalc(g_fft_cmpt_double_n_dim, {dout, dim}, {1})[0];
+  auto n = ib->TupleGetItem(dim_n_res, 0);
+  auto last_dim = ib->TupleGetItem(dim_n_res, 1);
+  grad_dout = ib->Emit("IRFFTDouble", {grad_dout, n, last_dim});
+
+  auto x_shape = ib->ShapeCalc(g_fft_shape_dim, {x})[0];
+  grad_dout = ib->Emit("FFTShapeCopy", {grad_dout, x_shape});
+
+  if (ib->GetDtypeId(x) != kNumberTypeBFloat16) {
+    auto x_dtype = ib->GetDtype(x);
+    grad_dout = ib->Cast(grad_dout, x_dtype);
+  }
+  return {grad_dout, ib->OutZeros(s), ib->OutZeros(dim), ib->OutZeros(norm)};
+});
+
 REG_BPROP_BUILDER("FFTShift").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
   auto dim = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex3);
@@ -3148,6 +3588,9 @@ REG_BPROP_BUILDER("IFFTShift").SetUnusedInputs({i0, i2}).SetBody(BODYFUNC(ib) {
   auto dout = ib->GetInput(kIndex3);
   return {ib->Emit("FFTShift", {dout, dim}), ib->OutZeros(dim)};
 });
+
+REG_BPROP_BUILDER("FFTFreq").SetUnusedInputs({i0, i1, i2, i3, i4}).SetBody(ReturnZeros);
+REG_BPROP_BUILDER("RFFTFreq").SetUnusedInputs({i0, i1, i2, i3, i4}).SetBody(ReturnZeros);
 
 DEF_PURE_SHAPE_CALC(g_correlate)
   .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
@@ -3233,100 +3676,133 @@ REG_BPROP_BUILDER("Correlate").SetUnusedInputs({i3}).SetBody(BODYFUNC(ib) {
 REG_BPROP_BUILDER("DCT").SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto type = ib->GetInput(kIndex1);
-  auto type_value = GetValue<int64_t>(type->BuildValue());
   auto n = ib->GetInput(kIndex2);
-  auto n_value = GetValue<int64_t>(n->BuildValue());
+  auto n_type = n->abstract()->BuildType();
   auto axis = ib->GetInput(kIndex3);
-  auto axis_value = GetValue<int64_t>(axis->BuildValue());
   auto norm = ib->GetInput(kIndex4);
+  auto dout = ib->GetInput(kIndex6);
+
+  auto x_shape_dim = ib->ShapeCalc(g_fft_shape_dim, {x});
+  auto axis_to_tuple = ib->ShapeCalc(g_fft_dct_axis2tuple, {x, axis}, {1})[0];
+
+  constexpr int64_t kNormBackward = 0;
+  constexpr int64_t kNormOrtho = 2;
+  auto norm_type = norm->abstract()->BuildType();
+  if (norm_type->isa<TypeNone>()) {
+    norm = ib->Value(kNormBackward);
+  }
   auto norm_value = GetValue<int64_t>(norm->BuildValue());
-  auto forward = ib->GetInput(kIndex5);
-  auto forward_value = GetValue<bool>(forward->BuildValue());
-  auto grad = ib->GetInput(kIndex6);
-  auto out = ib->GetInput(kIndex7);
-  auto dout = ib->GetInput(kIndex8);
-
-  auto input_shape_vec = ib->GetShape(x);
-
-  int64_t grad_norm_value = 2;
-  if (norm_value == 0) {
-    grad_norm_value = 1;
-  } else if (norm_value == 1) {
-    grad_norm_value = 0;
-  }
-  bool grad_forward_value = !forward_value;
-
-  auto temp_dout = ib->Emit("DCT", {dout, ib->Value(type_value), n, axis, ib->Value(grad_norm_value),
-                                    ib->Value(grad_forward_value), ib->Value(true)});
-  auto grad_dout = temp_dout;
-
-  auto output_shape_vec = ib->GetShape(out);
-  auto x_rank = static_cast<int64_t>(input_shape_vec.size());
-
-  axis_value = axis_value < 0 ? axis_value + x_rank : axis_value;
-  n_value = n_value > 0 ? n_value : input_shape_vec[axis_value];
-
-  ShapeVector begin;
-  ShapeVector end;
-  ShapeVector strides;
-  for (int64_t i = 0; i < x_rank; i++) {
-    (void)begin.emplace_back(0LL);
-    (void)end.emplace_back(output_shape_vec[i]);
-    (void)strides.emplace_back(1LL);
-  }
-  bool need_slice = false;
-  bool need_pad = false;
-  if (input_shape_vec[axis_value] < n_value) {
-    end[axis_value] = input_shape_vec[axis_value];
-    need_slice = true;
-  } else if (input_shape_vec[axis_value] > n_value) {
-    need_pad = true;
+  if (norm_value == kNormBackward) {
+    dout = ib->Emit("FFTOrtho", {dout, axis_to_tuple, ib->Value(false)});
+    norm = ib->Value(kNormOrtho);
   }
 
-  // at most one of need_pad or need_slice is true
-  if (need_pad) {
-    NodePtr input_shape_node = ib->EmitValue(MakeValue(input_shape_vec));
-    grad_dout = ib->Emit("StridedSliceGrad",
-                         {grad_dout, input_shape_node, ib->Value<ShapeVector>(begin), ib->Value<ShapeVector>(end),
-                          ib->Value<ShapeVector>(strides)},
-                         {{kAttrBeginMask, MakeValue<int64_t>(0)},
-                          {kAttrEndMask, MakeValue<int64_t>(0)},
-                          {kAttrEllipsisMask, MakeValue<int64_t>(0)},
-                          {kAttrNewAxisMask, MakeValue<int64_t>(0)},
-                          {kAttrShrinkAxisMask, MakeValue<int64_t>(0)}});
-  } else if (need_slice) {
-    grad_dout = ib->StridedSlice(grad_dout, ib->Value<ShapeVector>(begin), ib->Value<ShapeVector>(end),
-                                 ib->Value<ShapeVector>(strides));
+  auto grad_dout = ib->Emit("IDCT", {dout, type, n, axis, norm});
+  if (!n_type->isa<TypeNone>()) {
+    grad_dout = ib->Emit("FFTShapeCopy", {grad_dout, x_shape_dim[0]});
   }
-
-  return {grad_dout,          ib->OutZeros(type),    ib->OutZeros(n),   ib->OutZeros(axis),
-          ib->OutZeros(norm), ib->OutZeros(forward), ib->OutZeros(grad)};
+  if (ib->GetDtypeId(x) != kNumberTypeBFloat16) {
+    auto x_dtype = ib->GetDtype(x);
+    grad_dout = ib->Cast(grad_dout, x_dtype);
+  }
+  return {grad_dout, ib->OutZeros(type), ib->OutZeros(n), ib->OutZeros(axis), ib->OutZeros(norm)};
 });
 
-REG_BPROP_BUILDER("RFFT").SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("DCTN").SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
-  auto n = ib->GetInput(kIndex1);
-  auto dim = ib->GetInput(kIndex2);
-  auto norm = ib->GetInput(kIndex3);
-  auto out = ib->GetInput(kIndex4);
-  auto dout = ib->GetInput(kIndex5);
+  auto type = ib->GetInput(kIndex1);
+  auto s = ib->GetInput(kIndex2);
+  auto axes = ib->GetInput(kIndex3);
+  auto norm = ib->GetInput(kIndex4);
+  auto dout = ib->GetInput(kIndex6);
 
-  auto grad_dout = ib->Emit("RFFTGrad", {dout, x, n, dim, norm});
+  auto x_shape_dim = ib->ShapeCalc(g_fft_shape_dim, {x});
 
-  return {grad_dout, ib->OutZeros(n), ib->OutZeros(dim), ib->OutZeros(norm)};
+  auto s_type = s->abstract()->BuildType();
+  auto dim_type = axes->abstract()->BuildType();
+  if (dim_type->isa<TypeNone>()) {
+    if (s_type->isa<TypeNone>()) {
+      axes = x_shape_dim[1];
+    } else {
+      axes = ib->ShapeCalc(g_fft_dct_axes, {x, s}, {1})[0];
+    }
+  }
+
+  constexpr int64_t kNormBackward = 0;
+  constexpr int64_t kNormOrtho = 2;
+  auto norm_type = norm->abstract()->BuildType();
+  if (norm_type->isa<TypeNone>()) {
+    norm = ib->Value(kNormBackward);
+  }
+  auto norm_value = GetValue<int64_t>(norm->BuildValue());
+  if (norm_value == kNormBackward) {
+    dout = ib->Emit("FFTOrtho", {dout, axes, ib->Value(false)});
+    norm = ib->Value(kNormOrtho);
+  }
+
+  auto grad_dout = ib->Emit("IDCTN", {dout, type, s, axes, norm});
+  if (!s_type->isa<TypeNone>()) {
+    grad_dout = ib->Emit("FFTShapeCopy", {grad_dout, x_shape_dim[0]});
+  }
+  if (ib->GetDtypeId(x) != kNumberTypeBFloat16) {
+    auto x_dtype = ib->GetDtype(x);
+    grad_dout = ib->Cast(grad_dout, x_dtype);
+  }
+  return {grad_dout, ib->OutZeros(type), ib->OutZeros(s), ib->OutZeros(axes), ib->OutZeros(norm)};
 });
 
-REG_BPROP_BUILDER("IRFFT").SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("IDCT").SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
-  auto n = ib->GetInput(kIndex1);
-  auto dim = ib->GetInput(kIndex2);
-  auto norm = ib->GetInput(kIndex3);
-  auto out = ib->GetInput(kIndex4);
-  auto dout = ib->GetInput(kIndex5);
+  auto type = ib->GetInput(kIndex1);
+  auto n = ib->GetInput(kIndex2);
+  auto axis = ib->GetInput(kIndex3);
+  auto norm = ib->GetInput(kIndex4);
+  auto out = ib->GetInput(kIndex5);
+  auto dout = ib->GetInput(kIndex6);
 
-  auto grad_dout = ib->Emit("IRFFTGrad", {dout, x, n, dim, norm});
+  // step2：Get the gradient.
+  auto grad_dout = ib->Emit("DCT", {dout, type, n, axis, norm});
 
-  return {grad_dout, ib->OutZeros(n), ib->OutZeros(dim), ib->OutZeros(norm)};
+  // step3：If given, the gradient will be zero-padded or trimmed to this length.
+  auto n_type = n->abstract()->BuildType();
+  if (!n_type->isa<TypeNone>()) {
+    auto res = ib->ShapeCalc(g_fft_shape_dim, {x})[0];
+    grad_dout = ib->Emit("FFTShapeCopy", {grad_dout, res});
+  }
+  if (ib->GetDtypeId(x) != kNumberTypeBFloat16) {
+    auto x_dtype = ib->GetDtype(x);
+    grad_dout = ib->Cast(grad_dout, x_dtype);
+  }
+
+  // step4：Return gradient results.
+  return {grad_dout, ib->OutZeros(type), ib->OutZeros(n), ib->OutZeros(axis), ib->OutZeros(norm)};
+});
+
+REG_BPROP_BUILDER("IDCTN").SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto type = ib->GetInput(kIndex1);
+  auto s = ib->GetInput(kIndex2);
+  auto axes = ib->GetInput(kIndex3);
+  auto norm = ib->GetInput(kIndex4);
+  auto out = ib->GetInput(kIndex5);
+  auto dout = ib->GetInput(kIndex6);
+
+  // step2：Get the gradient.
+  auto grad_dout = ib->Emit("DCTN", {dout, type, s, axes, norm});
+
+  // step3：If given, the gradient will be zero-padded or trimmed to this length.
+  auto s_type = s->abstract()->BuildType();
+  if (!s_type->isa<TypeNone>()) {
+    auto res = ib->ShapeCalc(g_fft_shape_dim, {x})[0];
+    grad_dout = ib->Emit("FFTShapeCopy", {grad_dout, res});
+  }
+  if (ib->GetDtypeId(x) != kNumberTypeBFloat16) {
+    auto x_dtype = ib->GetDtype(x);
+    grad_dout = ib->Cast(grad_dout, x_dtype);
+  }
+
+  // step4：Return gradient results.
+  return {grad_dout, ib->OutZeros(type), ib->OutZeros(s), ib->OutZeros(axes), ib->OutZeros(norm)};
 });
 
 REG_BPROP_BUILDER("MeanExt").SetUnusedInputs({i0, i4}).SetBody(BODYFUNC(ib) {

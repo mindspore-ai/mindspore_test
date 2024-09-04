@@ -5,21 +5,17 @@ dct:
       dtype: tensor
     type:
       dtype: int
+      default: 2
     n:
       dtype: int
+      default: None
     axis:
       dtype: int
       default: -1
     norm:
       dtype: int
-      default: "'BACKWARD'"
       arg_handler: str_to_enum
-    forward:
-      dtype: bool
-      default: True
-    grad:
-      dtype: bool
-      default: False
+      default: None
   returns:
     output:
       dtype: tensor

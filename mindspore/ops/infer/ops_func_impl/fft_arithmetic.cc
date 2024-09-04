@@ -17,6 +17,7 @@
 #include <set>
 #include <memory>
 #include <unordered_map>
+#include <string>
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "ops/ops_func_impl/op_func_impl.h"
 #include "utils/check_convert_utils.h"
@@ -28,9 +29,21 @@ namespace ops {
 BaseShapePtr FFTInferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) {
   auto input_shape_ptr = input_args[kIndex0]->GetShape();
   auto input_shape = input_shape_ptr->GetShapeVector();
+
+  // When input is a dynamic rank, it needs to be processed in the kernel
   if (IsDynamicRank(input_shape)) {
     ShapeVector dyn_output{abstract::TensorShape::kShapeRankAny};
     return std::make_shared<abstract::TensorShape>(dyn_output);
+  }
+  auto dim_opt = GetScalarValue<int64_t>(input_args[kInputIndex2]->GetValue());
+  auto x_rank = SizeToLong(input_shape.size());
+
+  int64_t tmp_pos;
+  if (dim_opt.has_value()) {
+    int64_t dim = dim_opt.value();
+    tmp_pos = dim < 0 ? x_rank + dim : dim;
+  } else {
+    tmp_pos = x_rank - 1;
   }
 
   auto y_shape = input_shape;
@@ -38,58 +51,211 @@ BaseShapePtr FFTInferShape(const PrimitivePtr &primitive, const std::vector<Abst
     auto n_opt = GetScalarValue<int64_t>(input_args[kInputIndex1]->GetValue());
     if (n_opt.has_value()) {
       auto n = n_opt.value();
-      auto dim_opt = GetScalarValue<int64_t>(input_args[kInputIndex2]->GetValue());
-      auto x_rank = SizeToLong(input_shape.size());
 
-      int64_t tmp_pos;
-      if (dim_opt.has_value()) {
-        int64_t dim = dim_opt.value();
-        tmp_pos = dim < 0 ? x_rank + dim : dim;
-      } else {
-        tmp_pos = x_rank - 1;
-      }
       y_shape[tmp_pos] = n;
+      if (primitive->name() == prim::kPrimIHFFT->name() || primitive->name() == prim::kPrimRFFT->name()) {
+        y_shape[tmp_pos] = n / 2 + 1;
+      }
+    }
+  } else {
+    if (primitive->name() == prim::kPrimHFFT->name() || primitive->name() == prim::kPrimIRFFT->name()) {
+      y_shape[tmp_pos] = (y_shape[tmp_pos] - 1) * 2;
+    } else if (primitive->name() == prim::kPrimIHFFT->name() || primitive->name() == prim::kPrimRFFT->name()) {
+      y_shape[tmp_pos] = y_shape[tmp_pos] / 2 + 1;
     }
   }
 
   return std::make_shared<abstract::TensorShape>(y_shape);
 }
 
+BaseShapePtr DCTInferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) {
+  auto input_shape_ptr = input_args[kIndex0]->GetShape();
+  auto input_shape = input_shape_ptr->GetShapeVector();
+
+  // When input is a dynamic rank, it needs to be processed in the kernel
+  if (IsDynamicRank(input_shape)) {
+    ShapeVector dyn_output{abstract::TensorShape::kShapeRankAny};
+    return std::make_shared<abstract::TensorShape>(dyn_output);
+  }
+  auto dim_opt = GetScalarValue<int64_t>(input_args[kInputIndex3]->GetValue());
+  auto x_rank = SizeToLong(input_shape.size());
+
+  int64_t tmp_pos;
+  if (dim_opt.has_value()) {
+    int64_t dim = dim_opt.value();
+    tmp_pos = dim < 0 ? x_rank + dim : dim;
+  } else {
+    tmp_pos = x_rank - 1;
+  }
+
+  auto y_shape = input_shape;
+  if (!input_args[kInputIndex2]->GetType()->isa<TypeNone>()) {
+    auto n_opt = GetScalarValue<int64_t>(input_args[kInputIndex2]->GetValue());
+    if (n_opt.has_value()) {
+      auto n = n_opt.value();
+      y_shape[tmp_pos] = n;
+    }
+  }
+  return std::make_shared<abstract::TensorShape>(y_shape);
+}
+
+void FFTNGetAttr(const std::vector<AbstractBasePtr> &input_args, std::vector<int64_t> *s, std::vector<int64_t> *dim) {
+  auto input_shape_ptr = input_args[kIndex0]->GetShape();
+  auto input_shape = input_shape_ptr->GetShapeVector();
+  auto x_rank = input_shape.size();
+
+  bool s_is_none = input_args[kInputIndex1]->GetType()->isa<TypeNone>();
+  bool dim_is_none = input_args[kInputIndex2]->GetType()->isa<TypeNone>();
+
+  if (!s_is_none) {
+    auto s_opt = GetArrayValue<int64_t>(input_args[kInputIndex1]->GetValue());
+    if (s_opt.has_value()) {
+      s->clear();
+      *s = s_opt.value().ToVector();
+    }
+  }
+
+  if (!dim_is_none) {
+    auto dim_opt = GetArrayValue<int64_t>(input_args[kInputIndex2]->GetValue());
+    if (dim_opt.has_value()) {
+      dim->clear();
+      *dim = dim_opt.value().ToVector();
+      for (size_t i = 0; i < dim->size(); i++) {
+        (*dim)[i] = (*dim)[i] < 0 ? x_rank + (*dim)[i] : (*dim)[i];
+      }
+    }
+  }
+
+  if (dim->empty() && !s->empty()) {
+    for (size_t i = 0; i < s->size(); i++) {
+      (void)dim->emplace_back(x_rank - s->size() + i);
+    }
+  }
+  if (s->empty() && !dim->empty()) {
+    for (size_t i = 0; i < dim->size(); i++) {
+      (void)s->emplace_back(input_shape[(*dim)[i]]);
+    }
+  }
+  if (s->empty() && dim->empty()) {
+    for (size_t i = 0; i < x_rank; i++) {
+      (void)dim->emplace_back(i);
+      (void)s->emplace_back(input_shape[i]);
+    }
+  }
+}
+
 BaseShapePtr FFTNInferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) {
   auto input_shape_ptr = input_args[kIndex0]->GetShape();
   auto input_shape = input_shape_ptr->GetShapeVector();
+
   if (IsDynamicRank(input_shape)) {
     ShapeVector dyn_output{abstract::TensorShape::kShapeRankAny};
     return std::make_shared<abstract::TensorShape>(dyn_output);
   }
 
+  std::string op_name = primitive->name();
+  static const std::vector<std::string> same_shape_prim = {prim::kPrimFFT2->name(),  prim::kPrimFFTN->name(),
+                                                           prim::kPrimIFFT2->name(), prim::kPrimIFFTN->name(),
+                                                           prim::kPrimDCTN->name(),  prim::kPrimIDCTN->name()};
+  static const std::vector<std::string> half_shape_prim = {prim::kPrimIHFFT2->name(), prim::kPrimIHFFTN->name(),
+                                                           prim::kPrimRFFT2->name(), prim::kPrimRFFTN->name()};
+  static const std::vector<std::string> double_shape_prim = {prim::kPrimHFFT2->name(), prim::kPrimHFFTN->name(),
+                                                             prim::kPrimIRFFT2->name(), prim::kPrimIRFFTN->name()};
+
+  bool is_same_shape_prim = std::find(same_shape_prim.begin(), same_shape_prim.end(), op_name) != same_shape_prim.end();
+  bool is_half_shape_prim = std::find(half_shape_prim.begin(), half_shape_prim.end(), op_name) != half_shape_prim.end();
+  bool is_double_shape_prim =
+    std::find(double_shape_prim.begin(), double_shape_prim.end(), op_name) != double_shape_prim.end();
+  bool s_is_none = input_args[kInputIndex1]->GetType()->isa<TypeNone>();
+  bool dim_is_none = input_args[kInputIndex2]->GetType()->isa<TypeNone>();
+
   auto y_shape = input_shape;
-  auto x_rank = SizeToLong(input_shape.size());
-  if (input_args[kInputIndex1]->GetType()->isa<TypeNone>()) {
+
+  if (s_is_none && is_same_shape_prim) {
     return std::make_shared<abstract::TensorShape>(y_shape);
   }
 
-  auto s_opt = GetArrayValue<int64_t>(input_args[kInputIndex1]->GetValue());
-  if (!s_opt.has_value()) {
-    return std::make_shared<abstract::TensorShape>(y_shape);
-  }
-  std::vector<int64_t> s = s_opt.value().ToVector();
-
+  std::vector<int64_t> s;
   std::vector<int64_t> dim;
-  if (!input_args[kInputIndex2]->GetType()->isa<TypeNone>()) {
-    auto dim_opt = GetArrayValue<int64_t>(input_args[kInputIndex2]->GetValue());
-    if (dim_opt.has_value()) {
-      dim = dim_opt.value().ToVector();
-      for (size_t i = 0; i < s.size(); i++) {
-        dim[i] = dim[i] < 0 ? SizeToLong(x_rank) + dim[i] : dim[i];
-      }
+  if (!s_is_none) {
+    auto s_opt = GetArrayValue<int64_t>(input_args[kInputIndex1]->GetValue());
+    if (!s_opt.has_value()) {
+      ShapeVector dyn_output{abstract::TensorShape::kShapeRankAny};
+      return std::make_shared<abstract::TensorShape>(dyn_output);
     }
   }
-  if (dim.empty()) {
+  if (!dim_is_none) {
+    auto dim_opt = GetArrayValue<int64_t>(input_args[kInputIndex2]->GetValue());
+    if (!dim_opt.has_value()) {
+      ShapeVector dyn_output{abstract::TensorShape::kShapeRankAny};
+      return std::make_shared<abstract::TensorShape>(dyn_output);
+    }
+  }
+
+  FFTNGetAttr(input_args, &s, &dim);
+
+  for (size_t i = 0; i < s.size(); i++) {
+    y_shape[dim[i]] = s[i];
+  }
+
+  if (is_double_shape_prim && s_is_none) {
+    y_shape[dim.back()] = (y_shape[dim.back()] - 1) * 2;
+  }
+
+  if (is_half_shape_prim && s_is_none) {
+    y_shape[dim.back()] = y_shape[dim.back()] / 2 + 1;
+  }
+  if (is_half_shape_prim && !s_is_none) {
+    y_shape[dim.back()] = s.back() / 2 + 1;
+  }
+  return std::make_shared<abstract::TensorShape>(y_shape);
+}
+
+BaseShapePtr DCTNInferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) {
+  auto input_shape_ptr = input_args[kIndex0]->GetShape();
+  auto input_shape = input_shape_ptr->GetShapeVector();
+  auto x_rank = input_shape.size();
+
+  if (IsDynamicRank(input_shape)) {
+    ShapeVector dyn_output{abstract::TensorShape::kShapeRankAny};
+    return std::make_shared<abstract::TensorShape>(dyn_output);
+  }
+  bool s_is_none = input_args[kInputIndex2]->GetType()->isa<TypeNone>();
+  bool dim_is_none = input_args[kInputIndex3]->GetType()->isa<TypeNone>();
+
+  auto y_shape = input_shape;
+
+  if (s_is_none) {
+    return std::make_shared<abstract::TensorShape>(y_shape);
+  }
+
+  auto s_opt = GetArrayValue<int64_t>(input_args[kInputIndex2]->GetValue());
+  if (!s_opt.has_value()) {
+    ShapeVector dyn_output{abstract::TensorShape::kShapeRankAny};
+    return std::make_shared<abstract::TensorShape>(dyn_output);
+  }
+  std::vector<int64_t> s = s_opt.value().ToVector();
+  if (s.empty()) {
+    return std::make_shared<abstract::TensorShape>(y_shape);
+  }
+  std::vector<int64_t> dim;
+  if (!dim_is_none) {
+    auto dim_opt = GetArrayValue<int64_t>(input_args[kInputIndex3]->GetValue());
+    if (!dim_opt.has_value()) {
+      ShapeVector dyn_output{abstract::TensorShape::kShapeRankAny};
+      return std::make_shared<abstract::TensorShape>(dyn_output);
+    } else {
+      dim = dim_opt.value().ToVector();
+      for (size_t i = 0; i < dim.size(); i++) {
+        dim[i] = dim[i] < 0 ? x_rank + dim[i] : dim[i];
+      }
+    }
+  } else {
     for (size_t i = 0; i < s.size(); i++) {
       (void)dim.emplace_back(x_rank - s.size() + i);
     }
   }
+  // if s and dim are both given, they must have same len
   for (size_t i = 0; i < s.size(); i++) {
     y_shape[dim[i]] = s[i];
   }
@@ -99,15 +265,56 @@ BaseShapePtr FFTNInferShape(const PrimitivePtr &primitive, const std::vector<Abs
 TypePtr FFTInferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) {
   auto input_type = input_args[kIndex0]->GetType();
   auto input_type_id = input_type->cast<TensorTypePtr>()->element()->type_id();
+  std::string op_name = primitive->name();
 
   static const std::vector<TypeId> double_type = {kNumberTypeFloat64, kNumberTypeComplex128};
   bool is_double_type = std::any_of(double_type.begin(), double_type.end(),
                                     [&input_type_id](const TypeId &type_id) { return input_type_id == type_id; });
-  if (is_double_type) {
-    return std::make_shared<TensorType>(kComplex128);
-  } else {
-    return std::make_shared<TensorType>(kComplex64);
+
+  static const std::vector<std::string> float_prim = {
+    prim::kPrimHFFT->name(),   prim::kPrimHFFT2->name(),  prim::kPrimHFFTN->name(), prim::kPrimIRFFT->name(),
+    prim::kPrimIRFFT2->name(), prim::kPrimIRFFTN->name(), prim::kPrimDCT->name(),   prim::kPrimIDCT->name(),
+    prim::kPrimDCTN->name(),   prim::kPrimIDCTN->name()};
+  bool is_float_prim = std::find(float_prim.begin(), float_prim.end(), op_name) != float_prim.end();
+
+  TypePtr output_type;
+  if (is_double_type && is_float_prim) {
+    output_type = kFloat64;
   }
+  if (is_double_type && !is_float_prim) {
+    output_type = kComplex128;
+  }
+  if (!is_double_type && is_float_prim) {
+    output_type = kFloat32;
+  }
+  if (!is_double_type && !is_float_prim) {
+    output_type = kComplex64;
+  }
+
+  return std::make_shared<TensorType>(output_type);
+}
+
+TypePtr DCTInferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) {
+  auto input_type = input_args[kIndex0]->GetType();
+  auto input_type_id = input_type->cast<TensorTypePtr>()->element()->type_id();
+
+  static const std::vector<TypeId> double_type = {kNumberTypeFloat64};
+  static const std::vector<TypeId> complex_type = {kNumberTypeComplex64, kNumberTypeComplex128};
+  bool is_double_type = std::any_of(double_type.begin(), double_type.end(),
+                                    [&input_type_id](const TypeId &type_id) { return input_type_id == type_id; });
+  bool is_complex_type = std::any_of(complex_type.begin(), complex_type.end(),
+                                     [&input_type_id](const TypeId &type_id) { return input_type_id == type_id; });
+
+  TypePtr output_type;
+  if (is_double_type) {
+    output_type = kFloat64;
+  } else if (is_complex_type) {
+    return input_args[kInputIndex0]->GetType()->Clone();
+  } else {
+    output_type = kFloat32;
+  }
+
+  return std::make_shared<TensorType>(output_type);
 }
 
 void FFTCheckInputShape(const PrimitivePtr &primitive, std::vector<int64_t> x_shape_vec, int64_t x_rank) {
@@ -152,6 +359,57 @@ int32_t FFTCheckValidation(const PrimitivePtr &primitive, const std::vector<Abst
     int64_t dim = dim_opt.value();
     if (dim < -x_rank || dim >= x_rank) {
       MS_EXCEPTION(ValueError) << CheckAndConvertUtils::FormatCheckInRangeMsg("dim", dim, kIncludeLeft,
+                                                                              {-x_rank, x_rank - 1}, primitive);
+    }
+  }
+  return check_status;
+}
+
+int32_t DCTCheckValidation(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) {
+  auto check_status = OP_CHECK_SUCCESS;
+  const auto &input_x_shape = input_args[kIndex0]->GetShape();
+  auto x_shape_vec = input_x_shape->GetShapeVector();
+  if (MS_UNLIKELY(IsDynamicRank(x_shape_vec))) {
+    check_status = OP_CHECK_RETRY;
+  }
+  int64_t x_rank = SizeToLong(x_shape_vec.size());
+  FFTCheckInputShape(primitive, x_shape_vec, x_rank);
+
+  const int64_t required_type = 2;
+  const int64_t required_norm = 2;
+  auto dct_type = input_args[kIndex1]->GetValue();
+  auto dct_type_opt = GetScalarValue<int64_t>(dct_type);
+  if (dct_type_opt.has_value()) {
+    auto dct_type_value = dct_type_opt.value();
+    if (dct_type_value != required_type) {
+      MS_EXCEPTION(ValueError) << "Only dct type II is supported currently.";
+    }
+  }
+
+  if (!input_args[kInputIndex4]->GetType()->isa<TypeNone>()) {
+    auto norm = input_args[kIndex4]->GetValue();
+    auto norm_opt = GetScalarValue<int64_t>(norm);
+    if (norm_opt.has_value()) {
+      auto norm_value = norm_opt.value();
+      if (norm_value != required_norm) {
+        MS_EXCEPTION(ValueError) << "Only norm \"ortho\" is supported currently.";
+      }
+    }
+  }
+
+  if (!input_args[kInputIndex2]->GetType()->isa<TypeNone>()) {
+    auto n_opt = GetScalarValue<int64_t>(input_args[kInputIndex2]->GetValue());
+    if (n_opt.has_value()) {
+      int64_t n = n_opt.value();
+      (void)CheckAndConvertUtils::CheckInteger("n", n, kGreaterThan, 0);
+    }
+  }
+
+  auto dim_opt = GetScalarValue<int64_t>(input_args[kInputIndex3]->GetValue());
+  if (dim_opt.has_value()) {
+    int64_t dim = dim_opt.value();
+    if (dim < -x_rank || dim >= x_rank) {
+      MS_EXCEPTION(ValueError) << CheckAndConvertUtils::FormatCheckInRangeMsg("axis", dim, kIncludeLeft,
                                                                               {-x_rank, x_rank - 1}, primitive);
     }
   }
@@ -204,6 +462,70 @@ int32_t FFTNCheckValidation(const PrimitivePtr &primitive, const std::vector<Abs
   }
   if (!s.empty() && !dim.empty() && s.size() != dim.size()) {
     MS_EXCEPTION(ValueError) << "When givec, dim and s arguuments must have the same length.";
+  }
+  return check_status;
+}
+
+int32_t DCTNCheckValidation(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) {
+  auto check_status = OP_CHECK_SUCCESS;
+  const auto &input_x_shape = input_args[kIndex0]->GetShape();
+  auto x_shape_vec = input_x_shape->GetShapeVector();
+  if (MS_UNLIKELY(IsDynamicRank(x_shape_vec))) {
+    check_status = OP_CHECK_RETRY;
+  }
+  int64_t x_rank = SizeToLong(x_shape_vec.size());
+  FFTCheckInputShape(primitive, x_shape_vec, x_rank);
+
+  const int64_t required_type = 2;
+  const int64_t required_norm = 2;
+  auto dct_type = input_args[kIndex1]->GetValue();
+  auto dct_type_opt = GetScalarValue<int64_t>(dct_type);
+  if (dct_type_opt.has_value()) {
+    auto dct_type_value = dct_type_opt.value();
+    if (dct_type_value != required_type) {
+      MS_EXCEPTION(ValueError) << "Only dct type II is supported currently.";
+    }
+  }
+
+  if (!input_args[kInputIndex4]->GetType()->isa<TypeNone>()) {
+    auto norm = input_args[kIndex4]->GetValue();
+    auto norm_opt = GetScalarValue<int64_t>(norm);
+    if (norm_opt.has_value()) {
+      auto norm_value = norm_opt.value();
+      if (norm_value != required_norm) {
+        MS_EXCEPTION(ValueError) << "Only norm \"ortho\" is supported currently.";
+      }
+    }
+  }
+
+  std::vector<int64_t> s;
+  if (!input_args[kInputIndex2]->GetType()->isa<TypeNone>()) {
+    auto s_opt = GetArrayValue<int64_t>(input_args[kInputIndex2]->GetValue());
+    if (s_opt.has_value()) {
+      s = s_opt.value().ToVector();
+      for (size_t i = 0; i < s.size(); i++) {
+        (void)CheckAndConvertUtils::CheckInteger("s", s[i], kGreaterThan, 0);
+      }
+    }
+  }
+
+  std::vector<int64_t> dim;
+  if (!input_args[kInputIndex3]->GetType()->isa<TypeNone>()) {
+    auto dim_opt = GetArrayValue<int64_t>(input_args[kInputIndex3]->GetValue());
+    if (dim_opt.has_value()) {
+      dim = dim_opt.value().ToVector();
+      for (size_t i = 0; i < dim.size(); i++) {
+        MS_CHECK_VALUE(
+          dim[i] >= -x_rank && dim[i] < x_rank,
+          CheckAndConvertUtils::FormatCheckInRangeMsg("axes", dim[i], kIncludeLeft, {-x_rank, x_rank}, primitive));
+      }
+    }
+  }
+  if (std::set<int64_t>(dim.begin(), dim.end()).size() != dim.size()) {
+    MS_EXCEPTION(ValueError) << "The dims must be unique.";
+  }
+  if (!s.empty() && !dim.empty() && s.size() != dim.size()) {
+    MS_EXCEPTION(ValueError) << "When given, dim and s arguments must have the same length.";
   }
   return check_status;
 }

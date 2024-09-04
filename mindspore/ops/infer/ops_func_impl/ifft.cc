@@ -17,7 +17,7 @@
 #include <set>
 #include <memory>
 #include <unordered_map>
-#include "mindspore/ops/ops_utils/op_utils.h"
+#include "ops_utils/op_utils.h"
 #include "infer/ops_func_impl/ifft.h"
 #include "infer/ops_func_impl/fft_arithmetic.h"
 #include "utils/check_convert_utils.h"
