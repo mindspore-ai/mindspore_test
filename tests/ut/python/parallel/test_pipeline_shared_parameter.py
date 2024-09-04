@@ -351,7 +351,7 @@ def test_pipeline_with_begin_end_inline():
         ["grep -r '%s' %s | wc -l" % (para, file)],
         shell=True)
     out = str(output, 'utf-8').strip()
-    assert out == "3"
+    assert out == "2"
     if os.path.exists("./rank_0"):
         shutil.rmtree("./rank_0")
     if os.path.exists("./speed_up.json"):
@@ -395,7 +395,7 @@ def test_grad_accumulation_with_begin_end_inline():
         ["grep -r '%s' %s | wc -l" % (para, file)],
         shell=True)
     out = str(output, 'utf-8').strip()
-    assert out == "3"
+    assert out == "2"
     if os.path.exists("./rank_0"):
         shutil.rmtree("./rank_0")
     if os.path.exists("./speed_up.json"):

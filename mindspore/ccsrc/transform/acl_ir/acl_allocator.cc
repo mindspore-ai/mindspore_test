@@ -93,7 +93,7 @@ AclAllocatorRegister &AclAllocatorRegister::Instance() {
 }
 
 void AclAllocatorRegister::RegisterAllocator(void *stream) {
-  static const bool is_disable_register = common::IsDisableAlllocConfig(common::kAllocAclAllocator);
+  static const bool is_disable_register = common::IsDisableAllocConfig(common::kAllocAclAllocator);
   if (is_disable_register) {
     return;
   }

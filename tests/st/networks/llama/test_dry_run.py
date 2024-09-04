@@ -57,6 +57,7 @@ def run_command(cmd, log_path, graph_path, graph_check, log_check, loss_check):
     if os.path.isfile(log_path):
         os.remove(log_path)
 
+
 def run_command_compile(cmd, log_path, backend_time, compile_time):
     if os.path.isfile(log_path):
         os.remove(log_path)
@@ -89,3 +90,27 @@ def test_train_compile():
     """
     sh_path = os.path.split(os.path.realpath(__file__))[0]
     run_command_compile(f"bash {sh_path}/dry_compile.sh compile", f"{sh_path}/compile.log", 80000, 200000)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_train_pipeline():
+    """
+    Feature: Trainer.train()
+    Description: Test context parallel trainer for train.
+    Expectation: AssertionError
+    """
+    sh_path = os.path.split(os.path.realpath(__file__))[0]
+    run_command(f"bash {sh_path}/dry.sh 0 pipeline", f"{sh_path}/pipeline.log",
+                f"{sh_path}/pipeline/rank_0", 4, 2, 10)
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_train_grad_accu():
+    """
+    Feature: Trainer.train()
+    Description: Test context parallel trainer for train.
+    Expectation: AssertionError
+    """
+    sh_path = os.path.split(os.path.realpath(__file__))[0]
+    run_command(f"bash {sh_path}/dry.sh 1 grad_accu", f"{sh_path}/grad_accu.log",
+                f"{sh_path}/grad_accu/rank_0", 8, 2, 10)

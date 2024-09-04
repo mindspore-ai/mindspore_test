@@ -74,7 +74,8 @@ bool NoAdditionalMemory() {
   const auto is_cell_reuse = context->CellReuseLevel() != CellReuseLevel::kNoCellReuse;
   const auto is_multi_graph_sink = context->get_param<bool>(MS_CTX_IS_MULTI_GRAPH_SINK);
   const auto is_task_sink = context->get_param<bool>(MS_CTX_ENABLE_TASK_SINK);
-  return (is_cell_reuse || is_multi_graph_sink) && is_task_sink;
+  const auto disable_ge_kernel = common::IsDisableRuntimeConfig(common::kRuntimeGeKernel);
+  return (is_cell_reuse || is_multi_graph_sink) && is_task_sink && disable_ge_kernel;
 }
 }  // namespace
 
@@ -92,7 +93,7 @@ size_t AscendMemoryPool::CalMemBlockAllocSize(size_t size, bool from_persistent_
                  << device::ascend::AscendMemoryPool::GetInstance().TotalUsedMemStatistics() / kMBToByte
                  << "M, used peak size is "
                  << device::ascend::AscendMemoryPool::GetInstance().UsedMemPeakStatistics() / kMBToByte << "M.";
-    MS_LOG(INFO) << "Memory Statistics:" << AscendMemAdapter::GetInstance().DevMemStatistics();
+    MS_LOG(INFO) << "Memory Statistics:" << AscendMemAdapter::GetInstance()->DevMemStatistics();
     return 0;
   }
 
@@ -133,28 +134,11 @@ size_t AscendMemoryPool::AllocDeviceMem(size_t size, DeviceMemPtr *addr) {
   if (size == 0) {
     MS_LOG(EXCEPTION) << "Failed to alloc memory pool resource, the size is zero!";
   }
-  *addr = AscendMemAdapter::GetInstance().MallocStaticDevMem(size);
+  *addr = AscendMemAdapter::GetInstance()->MallocStaticDevMem(size);
   if (*addr == nullptr) {
     MS_LOG(EXCEPTION) << "Alloc device memory pool address is nullptr, failed to alloc memory pool resource!";
   }
   return size;
-}
-
-DeviceMemPtr AscendMemoryPool::AllocOverflowTensorMem(size_t size, bool from_persistent_mem) {
-  size_t align_size = AlignMemorySize(size);
-  std::lock_guard<std::mutex> locker(mutex_);
-  auto iter = overflow_memory_info_map_.find(kGlobalOverflowWorkspace);
-  if (iter != overflow_memory_info_map_.cend()) {
-    return iter->second;
-  }
-  DeviceMemPtr overflow_memory_ptr = AllocTensorMem(align_size, from_persistent_mem);
-  MS_EXCEPTION_IF_NULL(overflow_memory_ptr);
-  auto acl_ret = CALL_ASCEND_API(aclrtMemset, overflow_memory_ptr, align_size, 0, align_size);
-  if (acl_ret != ACL_RT_SUCCESS) {
-    MS_LOG(EXCEPTION) << "Clear overflow memory failed, aclrtMemset size = " << align_size << ", ret = " << acl_ret;
-  }
-  (void)overflow_memory_info_map_.emplace(kGlobalOverflowWorkspace, overflow_memory_ptr);
-  return overflow_memory_ptr;
 }
 
 size_t AscendMemoryPool::GetMaxUsedMemSize() const {
@@ -162,9 +146,14 @@ size_t AscendMemoryPool::GetMaxUsedMemSize() const {
   if (min_used_addr == nullptr) {
     return 0;
   }
-  auto max_used_hbm = AscendMemAdapter::GetInstance().GetMsUsedHbmSize();
-  size_t static_offset = reinterpret_cast<uint8_t *>(min_used_addr) - AscendMemAdapter::GetInstance().GetBaseAddr();
-  return LongToSize(max_used_hbm) - static_offset;
+  return AscendMemAdapter::GetInstance()->GetDynamicMemUpperBound(min_used_addr);
+}
+
+size_t AscendMemoryPool::GetVmmUsedMemSize() const {
+  if (IsEnableVmm()) {
+    return AscendVmmAdapter::GetInstance().GetAllocatedSize();
+  }
+  return 0;
 }
 
 const bool AscendMemoryPool::IsEnableEagerFree() const {
@@ -218,11 +207,11 @@ bool AscendMemoryPool::FreeDeviceMem(const DeviceMemPtr &addr) {
   MS_EXCEPTION_IF_NULL(addr);
   int64_t max_actual = ActualPeakStatistics();
   MS_LOG(INFO) << "Max actual used memory size is " << max_actual;
-  AscendMemAdapter::GetInstance().UpdateActualPeakMemory(max_actual);
+  AscendMemAdapter::GetInstance()->UpdateActualPeakMemory(max_actual);
   int64_t max_peak = UsedMemPeakStatistics();
   MS_LOG(INFO) << "Max peak used memory size is " << max_peak;
-  AscendMemAdapter::GetInstance().UpdateUsedPeakMemory(max_peak);
-  return AscendMemAdapter::GetInstance().FreeStaticDevMem(addr);
+  AscendMemAdapter::GetInstance()->UpdateUsedPeakMemory(max_peak);
+  return true;
 }
 
 void AscendMemoryPool::ResetIdleMemBuf() const {
@@ -250,14 +239,14 @@ void AscendMemoryPool::ResetIdleMemBuf() const {
   fn(common_mem());
 }
 
-size_t AscendMemoryPool::free_mem_size() { return AscendMemAdapter::GetInstance().FreeDevMemSize(); }
+size_t AscendMemoryPool::free_mem_size() { return AscendMemAdapter::GetInstance()->FreeDevMemSize(); }
 
 uint64_t AscendMemoryPool::total_mem_size() const {
   static constexpr uint64_t kMaxHbmSize = 1LL << 40;
   if (common::IsNeedProfileMemory()) {
     return kMaxHbmSize;
   } else {
-    return AscendMemAdapter::GetInstance().MaxHbmSizeForMs();
+    return AscendMemAdapter::GetInstance()->MaxHbmSizeForMs();
   }
 }
 }  // namespace ascend

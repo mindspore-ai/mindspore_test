@@ -15,7 +15,6 @@
  */
 #ifndef MINDSPORE_CCSRC_RUNTIME_HARDWARE_ASCEND_GE_GRAPH_EXECUTOR_H_
 #define MINDSPORE_CCSRC_RUNTIME_HARDWARE_ASCEND_GE_GRAPH_EXECUTOR_H_
-
 #include <vector>
 #include <memory>
 #include <string>
@@ -27,8 +26,10 @@
 #include "runtime/device/memory_manager.h"
 #include "utils/ms_context.h"
 #include "include/transform/graph_ir/types.h"
-#include "plugin/device/ascend/hal/hardware/ascend_collective_comm_lib.h"
 #include "plugin/device/ascend/hal/hardware/ge_device_res_manager.h"
+#include "plugin/device/ascend/hal/hardware/ge_summary.h"
+#include "plugin/device/ascend/hal/hardware/ge_memory_manager.h"
+#include "plugin/device/ascend/hal/hardware/ascend_collective_comm_lib.h"
 #include "plugin/device/ascend/mindio/mindio_adapter.h"
 
 namespace mindspore {
@@ -46,6 +47,39 @@ struct GeOutputData {
   std::vector<std::pair<AnfNodeWeakPtr, size_t>> graph_outputs;
 };
 
+class GeMessageManager {
+ public:
+  void SetFeatureMemory(const std::string &name, size_t size) { feature_memorys[name] = size; }
+  void SetStream(const std::string &name, size_t size) { streams[name] = size; }
+  void SetSummary(const std::string &name, const GraphSummary &summary) { summarys[name] = summary; }
+  size_t GetFeatureMemory(const std::string &name) const {
+    auto iter = feature_memorys.find(name);
+    if (iter == feature_memorys.end()) {
+      MS_LOG(EXCEPTION) << "Feature memory " << name << " not found.";
+    }
+    return iter->second;
+  }
+  size_t GetStream(const std::string &name) const {
+    auto iter = streams.find(name);
+    if (iter == streams.end()) {
+      MS_LOG(EXCEPTION) << "Stream " << name << " not found.";
+    }
+    return iter->second;
+  }
+  GraphSummary GetSummary(const std::string &name) const {
+    auto iter = summarys.find(name);
+    if (iter == summarys.end()) {
+      MS_LOG(EXCEPTION) << "Summary " << name << " not found.";
+    }
+    return iter->second;
+  }
+
+ private:
+  HashMap<std::string, size_t> feature_memorys;
+  HashMap<std::string, size_t> streams;
+  HashMap<std::string, GraphSummary> summarys;
+};
+
 class GeGraphExecutor : public GraphExecutor {
  public:
   ~GeGraphExecutor() override = default;
@@ -59,16 +93,22 @@ class GeGraphExecutor : public GraphExecutor {
   size_t GetGraphFeatureMemory(const FuncGraphPtr &graph) const override;
   void InitGraphInfo(const FuncGraphPtr &graph) override;
 
+  // For run as kernelmod.
+  std::vector<std::pair<uint32_t, uint32_t>> GetGraphRefIndexes(const KernelGraphPtr &graph) const;
+  void SetGraphWorkspaceMemory(const KernelGraphPtr &graph, void *device_ptr, size_t size);
+  size_t GetGraphWorkSpaceMemory(const std::string &graph_name) const;
+  bool CompileGraphForKernel(const KernelGraphPtr &graph);
+  bool RunGraphRefModeForKernel(const FuncGraphPtr &graph, const std::vector<KernelTensor *> &inputs,
+                                const std::vector<KernelTensor *> &outputs, void *stream);
+  void AllocGEFixMemory() const;
+  void InitGEFixMemory(const KernelGraphPtr &graph, size_t stream_id) const;
+
  private:
   bool RunGraphRefMode(const FuncGraphPtr &graph, const std::vector<tensor::Tensor> &inputs);
-  void AllocInputHostMemory(const KernelGraphPtr &kernel_graph) const;
-  void AllocOutputHostMemory(const KernelGraphPtr &kernel_graph) const;
-  void AllocConstMemory(const transform::RunOptions &options, const KernelGraphPtr &graph, size_t memory_size) const;
-  void AllocFeatureMemory(const transform::RunOptions &options, size_t memory_size) const;
-  void AllocParameterMemory(const KernelGraphPtr &kernel_graph, std::set<KernelGraphPtr> *memo = nullptr) const;
+  bool RunGraphRefModeInnner(const FuncGraphPtr &graph, const std::vector<GeTensor> &inputs,
+                             std::vector<GeTensor> *outputs, void *stream);
   void BuildInputDataGeTensor(const KernelGraphPtr &kernel_graph);
   void BuildOutputDataGeTensor(const KernelGraphPtr &kernel_graph);
-  void AllocOutputMemory(const KernelGraphPtr &kernel_graph) const;
   bool CompileGraph(const KernelGraphPtr &graph, const std::map<string, string> &compile_options);
   int64_t CurGraphSinkSize(std::string graph_name);
   std::vector<GeTensor> GenerateInputGeTensor(const KernelGraphPtr &kernel_graph) const;
@@ -81,13 +121,15 @@ class GeGraphExecutor : public GraphExecutor {
   DeviceAddressPtr CreateOutputDeviceAddress(const KernelGraphPtr &kernel_graph,
                                              const KernelWithIndex &output_with_index,
                                              size_t need_alloc_output_cnt) const;
-  void AllocMemory(const KernelGraphPtr &graph);
   void DoAsyncCkpt(const FuncGraphPtr &graph);
   bool IsNeedNotifyTTP(const FuncGraphPtr &graph);
   mindspore::HashMap<session::KernelGraph *, GeInputData> input_datas_;
   mindspore::HashMap<session::KernelGraph *, GeOutputData> output_datas_;
+  mindspore::HashMap<std::string, std::vector<std::pair<uint32_t, uint32_t>>> io_indexes_;
   std::map<std::string, int64_t> graph_sink_size_;
   int64_t pre_sink_size_{-1};
+  bool disable_ge_kernel_ = common::IsDisableRuntimeConfig(common::kRuntimeGeKernel);
+  GeMessageManager ge_message_manager_;
 };
 }  // namespace ascend
 }  // namespace device

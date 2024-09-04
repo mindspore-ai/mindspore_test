@@ -25,6 +25,7 @@
 
 #include "plugin/device/cpu/hal/device/cpu_memory_manager.h"
 #include "plugin/device/ascend/hal/device/ascend_memory_manager.h"
+#include "plugin/device/ascend/hal/device/ascend_vmm_adapter.h"
 #include "plugin/device/ascend/hal/device/ascend_device_address.h"
 #include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
 #include "plugin/device/ascend/hal/device/ascend_device_synchronizer.h"
@@ -115,6 +116,8 @@ void GeDeviceResManager::Destroy() {
   }
 }
 
+bool GeDeviceResManager::IsEnableVmm() const { return AscendVmmAdapter::GetInstance().IsEnabled(); }
+
 bool GeDeviceResManager::AllocateMemory(DeviceAddress *const &address, uint32_t stream_id) const {
   MS_EXCEPTION_IF_NULL(address);
   MS_EXCEPTION_IF_NULL(mem_manager_);
@@ -187,6 +190,15 @@ void *GeDeviceResManager::AllocateMemory(size_t size, uint32_t stream_id) const 
     return swap_manager_->AllocDeviceMemory(size, stream_id);
   }
   return mem_manager_->MallocMemFromMemPool(size, false, false, stream_id);
+}
+
+void *GeDeviceResManager::AllocateStaticMemory(size_t size, uint32_t stream_id) const {
+  MS_EXCEPTION_IF_NULL(runtime_instance_);
+  runtime_instance_->SetContext();
+  if (swap_manager_ != nullptr) {
+    return swap_manager_->AllocDeviceMemory(size, stream_id);
+  }
+  return mem_manager_->MallocMemFromMemPool(size, true, false, stream_id);
 }
 
 size_t GeDeviceResManager::GetMaxUsedMemorySize() const {

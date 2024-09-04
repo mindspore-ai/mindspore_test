@@ -443,6 +443,7 @@ constexpr auto kFlagJitCallGraph = "jit_call_graph";
 constexpr auto kFlagJitGraph = "jit_graph";
 constexpr auto kFlagSwitchInline = "switch_inline_graph";
 constexpr auto kFlagIsControlFlow = "is_control_flow";
+constexpr auto kFlagGeKernel = "ge_kernel";
 
 // custom operator func type
 constexpr auto kCustomTypeAOT = "aot";

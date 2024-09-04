@@ -25,6 +25,7 @@
 #include "ops/op_def.h"
 #include "plugin/device/ascend/optimizer/format_type/utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
+#include "plugin/device/ascend/kernel/ge/ge_kernel_mod.h"
 #include "kernel/oplib/oplib.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
@@ -41,6 +42,20 @@ std::unordered_map<size_t, size_t> GetRefInfoMaps(const CNodePtr &cnode) {
   auto kernel_type = AnfAlgo::GetKernelType(cnode);
   if (kernel_type == KernelType::UNKNOWN_KERNEL_TYPE) {
     return ref_infos;
+  }
+
+  if (kernel_type == KernelType::GE_KERNEL) {
+    if (!common::AnfAlgo::CheckPrimitiveType(cnode, prim::kPrimGEGraphOp)) {
+      MS_LOG(EXCEPTION) << "Current node must be callinline! but got " << cnode->DebugString();
+    }
+    auto kernel_mod = AnfAlgo::GetKernelMod(cnode);
+    if (kernel_mod == nullptr) {
+      return ref_infos;
+    }
+    auto ge_ref = dynamic_cast<kernel::GeKernelMod *>(kernel_mod)->io_indexes();
+    for (auto [input_idx, output_idx] : ge_ref) {
+      ref_infos[output_idx] = input_idx;
+    }
   }
 
   auto op_name = common::AnfAlgo::GetCNodeName(cnode);
@@ -84,7 +99,7 @@ AnfNodePtr GetRefInputNode(const CNodePtr &cnode, const size_t cur_out_index) {
   return nullptr;
 }
 
-session::KernelWithIndex FindRefOriginNode(const AnfNodePtr &node) {
+session::KernelWithIndex FindRefOriginNode(const AnfNodePtr &node, const AnfNodePtr &origin_ref_node) {
   session::KernelWithIndex kernel_with_index = common::AnfAlgo::VisitKernel(node, 0);
   AnfNodePtr cur_node = kernel_with_index.first;
   size_t cur_out_index = kernel_with_index.second;
@@ -94,15 +109,18 @@ session::KernelWithIndex FindRefOriginNode(const AnfNodePtr &node) {
     MS_EXCEPTION_IF_NULL(cnode);
     std::string op_name = common::AnfAlgo::GetCNodeName(cnode);
     // deal special (identity,cast,reshape) op and nop-node
-    if (op_name == prim::kPrimCast->name() || op_name == prim::kPrimIdentity->name() ||
-        op_name == prim::kPrimReshape->name() || common::AnfAlgo::IsNopNode(cnode)) {
-      AnfNodePtr next_node = cnode->input(kIndex1);
-      return FindRefOriginNode(next_node);
+    // There is currently no optimizer operator in GEGraphOp for sub graph mode.
+    if (!IsPrimitiveCNode(origin_ref_node, prim::kPrimGEGraphOp)) {
+      if (op_name == prim::kPrimCast->name() || op_name == prim::kPrimIdentity->name() ||
+          op_name == prim::kPrimReshape->name() || common::AnfAlgo::IsNopNode(cnode)) {
+        AnfNodePtr next_node = cnode->input(kIndex1);
+        return FindRefOriginNode(next_node, origin_ref_node);
+      }
     }
 
     AnfNodePtr next_node = GetRefInputNode(cnode, cur_out_index);
     if (next_node) {
-      return FindRefOriginNode(next_node);
+      return FindRefOriginNode(next_node, origin_ref_node);
     }
   }
 
@@ -149,7 +167,7 @@ AnfNodePtr DealRefOutput::AddAdditionalToRefOutput(const FuncGraphPtr &func_grap
                                                    const AnfNodePtr &get_item) const {
   AnfNodePtr final_node = (get_item == nullptr ? cnode : get_item);
   AnfNodePtr input_node = common::AnfAlgo::GetInputNode(cnode, input_index);
-  session::KernelWithIndex origin_pair = FindRefOriginNode(input_node);
+  session::KernelWithIndex origin_pair = FindRefOriginNode(input_node, cnode);
   MS_EXCEPTION_IF_NULL(origin_pair.first);
   MS_LOG(DEBUG) << "DealRefTransAndCast the node input index " << input_index << ", find origin op is "
                 << origin_pair.first->DebugString() << ", index is " << origin_pair.second;

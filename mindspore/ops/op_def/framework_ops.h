@@ -157,6 +157,9 @@ GVAR_DEF(PrimitivePtr, kPrimCallInline, std::make_shared<Primitive>("CallInline"
 GVAR_DEF(PrimitivePtr, kPrimPartialInline, std::make_shared<Primitive>("PartialInline"));
 GVAR_DEF(PrimitivePtr, kPrimConditionSwitch, std::make_shared<Primitive>("ConditionSwitch"));
 GVAR_DEF(PrimitivePtr, kPrimConditionGather, std::make_shared<Primitive>("ConditionGather"));
+
+// Backend GE kernel
+GVAR_DEF(PrimitivePtr, kPrimGEGraphOp, std::make_shared<Primitive>("GEGraphOp"));
 }  // namespace prim
 }  // namespace mindspore
 

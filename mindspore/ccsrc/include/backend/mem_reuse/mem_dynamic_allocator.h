@@ -151,6 +151,7 @@ class BACKEND_EXPORT DynamicMemPoolBestFit {
   // Set mem pool block size
   virtual void SetMemPoolBlockSize(size_t available_device_mem_size);
   virtual size_t GetMaxUsedMemSize() const { return 0; }
+  virtual size_t GetVmmUsedMemSize() const { return 0; }
 
   // Element in vector : memory_stream_id, address
   bool RecordEvent(int64_t task_id_on_stream, uint32_t user_stream_id,

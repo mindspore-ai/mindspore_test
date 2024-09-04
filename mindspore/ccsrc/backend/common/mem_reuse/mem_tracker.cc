@@ -51,11 +51,11 @@ AllocatorType GetAllocatorType(MemType mem_type) {
     {MemType::kInSideSomas, AllocatorType::kConstantValue},
     {MemType::kSomasOutput, AllocatorType::kKernelOutput},
     {MemType::kGeConst, AllocatorType::kConstantValue},
+    {MemType::kGeFixed, AllocatorType::kOther},
     {MemType::kBatchMemory, AllocatorType::kConstantValue},
     {MemType::kContinuousMemory, AllocatorType::kConstantValue},
     {MemType::kPyNativeInput, AllocatorType::kConstantValue},
     {MemType::kPyNativeOutput, AllocatorType::kKernelOutput},
-    {MemType::kGeFeatureMemory, AllocatorType::kConstantValue},
     {MemType::kWorkSpace, AllocatorType::kWorkspace},
     {MemType::kOther, AllocatorType::kOther}};
 

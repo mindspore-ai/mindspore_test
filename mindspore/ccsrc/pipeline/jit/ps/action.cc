@@ -923,13 +923,11 @@ bool GraphReusingAction(const ResourcePtr &resource) {
 
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
-  const bool enable_ge = context->backend_policy() == "ge";
   const bool force_no_inline = common::IsDisableRuntimeConfig(common::kRuntimeInline);
   context->SetCellReuseLevel(CellReuseLevel::kNoCellReuse);
 
   MS_LOG(INFO) << "Cell reuse(@lazy_inline) actually takes effect.";
-  auto cell_reuse_level =
-    (enable_ge && !context->IsKByKExecutorMode()) ? CellReuseLevel::kNoInline : CellReuseLevel::kLazyInline;
+  auto cell_reuse_level = CellReuseLevel::kLazyInline;
   if (force_no_inline) {
     cell_reuse_level = CellReuseLevel::kNoInline;
   }
@@ -1492,7 +1490,8 @@ void ProcessCanNotInline(const FuncGraphPtr &func_graph, const std::shared_ptr<M
       return;
     }
     MS_LOG(INFO) << "Cell reuse micro num: " << micro_num;
-    if (micro_num > kLazyInlineThershold) {
+    auto jit_level = context_ptr->GetJitLevel();
+    if (micro_num > kLazyInlineThershold && jit_level != kAttrJitLevelO2) {
       MS_LOG(INFO) << "Set no inline because cell reuse micro num is greater than " << kLazyInlineThershold
                    << ", micro num: " << micro_num;
       context_ptr->SetCellReuseLevel(CellReuseLevel::kNoInline);

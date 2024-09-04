@@ -744,7 +744,7 @@ void ProcessCloseFollowing(const FuncGraphPtr &graph, const AnfNodePtr &cut_node
 bool IsNeedInline(const CNodePtr &cnode) {
   auto context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context);
-  if (!context->IsKByKExecutorMode() || context->CellReuseLevel() != CellReuseLevel::kLazyInline) {
+  if (context->CellReuseLevel() != CellReuseLevel::kLazyInline) {
     return false;
   }
   MS_EXCEPTION_IF_NULL(cnode);
@@ -859,13 +859,13 @@ void ProcessNodeToSegments(const std::string &cur_flag, const std::string &flag,
 
 std::vector<GraphSegmentPtr> GraphPartition::Partition(const FuncGraphPtr &graph, bool *multi_target) {
   MS_EXCEPTION_IF_NULL(graph);
+  MS_LOG(INFO) << "GraphPartion Info: " << graph->ToString();
   auto nodes = TopoSort(graph->get_return());
   MS_LOG(DEBUG) << "Split all nodes size:" << nodes.size();
   bool contain_multi_target = ContainMultiTarget(nodes);
   if (multi_target != nullptr) {
     *multi_target = contain_multi_target;
   }
-
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
   auto enable_loop_sink = context_ptr->get_param<bool>(MS_CTX_ENABLE_LOOP_SINK);
@@ -877,8 +877,9 @@ std::vector<GraphSegmentPtr> GraphPartition::Partition(const FuncGraphPtr &graph
     } else {
       nodes = SplitSort(graph, default_target);
     }
-    if (context_ptr->IsKByKExecutorMode()) {
-      // Keep the cutting position as far back as possible
+    // Keep the cutting position as far back as possible
+    auto disable_ge_kernel = common::IsDisableRuntimeConfig(common::kRuntimeGeKernel);
+    if (!disable_ge_kernel) {
       nodes = LazySort(nodes, {prim::kPrimPartial});
     }
     nodes = ReorderVirtualNode(nodes, prim::kPrimTupleGetItem);

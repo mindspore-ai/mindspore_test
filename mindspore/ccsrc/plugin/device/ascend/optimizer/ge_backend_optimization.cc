@@ -128,15 +128,46 @@ void GEBackendOptimization(const KernelGraphPtr &kernel_graph) {
   MS_LOG(DEBUG) << "Status record: end ascend backend optimize ge pass. graph id: " << kernel_graph->graph_id();
 }
 
-void AddCommFusionForKbk(const PassManagerPtr &opt_acl_pm) {
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  auto is_kbk = ms_context->IsKByKExecutorMode();
+void AclAfterCreateKernel(const KernelGraphPtr &kernel_graph) {
+  MS_EXCEPTION_IF_NULL(kernel_graph);
+  MS_LOG(DEBUG) << "Status record: start ascend backend optimize acl pass after kernel create. graph id: "
+                << kernel_graph->graph_id();
+  profiler::CollectHostInfo("Ascend", "Graph Optimization", "BackendOptimization_OptimizeACL", 0, 0, 0);
+  PROF_START(ascend_backend_optimize_acl);
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+#ifdef ENABLE_DUMP_IR
+  if (context_ptr->CanDump(kIntroductory)) {
+    std::string file_name = "hwopt_d_before_acl_graph_final_" + std::to_string(kernel_graph->graph_id()) + ".ir";
+    DumpIR(file_name, kernel_graph, true, kWholeStack);
+  }
+#endif
+  auto optimizer = std::make_shared<GraphOptimizer>();
+  auto opt_acl_ack = std::make_shared<PassManager>("opt_acl_ack");
+  opt_acl_ack->AddPass(std::make_shared<EraseVisitAttr>());
+  opt_acl_ack->AddPass(std::make_shared<DealRefOutput>());
+  optimizer->AddPassManager(opt_acl_ack);
+  (void)optimizer->Optimize(kernel_graph);
+  kernel_graph->SetExecOrderByDefault();
+#ifdef ENABLE_DUMP_IR
+  if (context_ptr->CanDump(kIntroductory)) {
+    std::string file_name = "hwopt_d_end_acl_graph_final_" + std::to_string(kernel_graph->graph_id()) + ".ir";
+    DumpIR(file_name, kernel_graph, true, kWholeStack);
+  }
+#endif
+  PROF_END(ascend_backend_optimize_acl);
+  profiler::CollectHostInfo("Ascend", "Graph Optimization", "BackendOptimization_OptimizeACL", 0, 0, 1);
+  MS_LOG(DEBUG) << "Status record: end ascend backend optimize acl pass after kernel create. graph id: "
+                << kernel_graph->graph_id();
+}
+
+namespace {
+void AddCommFusionForKbk(const PassManagerPtr &opt_acl_pm, const KernelGraphPtr &kernel_graph) {
+  auto is_kbk = !kernel_graph->is_graph_run_mode();
   if (!is_kbk) {
     MS_LOG(INFO) << "This not kbk mode. Do not do communication operation fusion.";
     return;
   }
-
   // Do communication op fusion before InsertTensorMoveForCommunication pass.
   // So these passes are before kernel select process, no need to generate kernel build info in them.
   if (parallel::ParallelContext::GetInstance()->enable_all_reduce_fusion()) {
@@ -154,6 +185,7 @@ void AddCommFusionForKbk(const PassManagerPtr &opt_acl_pm) {
     opt_acl_pm->AddPass(std::make_shared<opt::SplitInputsForReduceScatter>());
   }
 }
+}  // namespace
 
 void GEBackendOptimizeACL(const KernelGraphPtr &kernel_graph) {
   MS_EXCEPTION_IF_NULL(kernel_graph);
@@ -170,9 +202,10 @@ void GEBackendOptimizeACL(const KernelGraphPtr &kernel_graph) {
 #endif
   auto optimizer = std::make_shared<GraphOptimizer>();
   auto opt_acl_pm = std::make_shared<PassManager>("opt_acl_pm");
+  opt_acl_pm->AddPass(std::make_shared<opt::ProcessCallInline>());
   opt_acl_pm->AddPass(std::make_shared<SeedAdapter>());
 
-  AddCommFusionForKbk(opt_acl_pm);
+  AddCommFusionForKbk(opt_acl_pm, kernel_graph);
 
   if (common::IsEnableRuntimeConfig(common::kRuntimeInsertTensorMove)) {
     opt_acl_pm->AddPass(std::make_shared<opt::InsertTensorMoveForHcclOpGe>());
@@ -180,7 +213,6 @@ void GEBackendOptimizeACL(const KernelGraphPtr &kernel_graph) {
     opt_acl_pm->AddPass(std::make_shared<InsertTensorMoveForCommunication>());
   }
   opt_acl_pm->AddPass(std::make_shared<opt::TransDependValueToInt32>());
-  opt_acl_pm->AddPass(std::make_shared<opt::ProcessCallInline>());
   opt_acl_pm->AddPass(std::make_shared<opt::ProcessPartialInline>());
   opt_acl_pm->AddPass(std::make_shared<opt::ExpanderFallback>());
   opt_acl_pm->AddPass(std::make_shared<opt::ConvertPadV3Paddings>());
@@ -223,7 +255,13 @@ void GEBackendOptimizeACLAfterKernelSelect(const KernelGraphPtr &kernel_graph) {
   opt_acl_after_kernel_select_pm->AddPass(std::make_shared<SetFraczGroupAttr>());
   opt_acl_after_kernel_select_pm->AddPass(std::make_shared<InsertIdentity>());
   opt_acl_after_kernel_select_pm->AddPass(std::make_shared<EraseVisitAttr>());
-  opt_acl_after_kernel_select_pm->AddPass(std::make_shared<DealRefOutput>());
+
+  int execution_mode = context_ptr->get_param<int>(MS_CTX_EXECUTION_MODE);
+  // graph_mode process the pass in OptimizeACLGraphAfterCreateKernel
+  if (execution_mode == kPynativeMode) {
+    opt_acl_after_kernel_select_pm->AddPass(std::make_shared<DealRefOutput>());
+  }
+
   if (!kernel_graph->is_from_single_op() && !kernel_graph->has_flag(kFlagIsPyNativeBpropKernelGraph)) {
     opt_acl_after_kernel_select_pm->AddPass(std::make_shared<opt::InsertTypeTransformOp>());
   }

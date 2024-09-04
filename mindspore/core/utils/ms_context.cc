@@ -536,7 +536,7 @@ std::string MsContext::GetJitLevel() const {
   return jit_level;
 }
 
-bool MsContext::IsKByKExecutorMode() const {
+bool MsContext::IsKByKExecutorMode() {
   // Get jit level.
   std::string jit_level = GetJitLevel();
   static std::string jit_level_log = "";
@@ -546,11 +546,25 @@ bool MsContext::IsKByKExecutorMode() const {
     is_jit_level_changed = true;
     jit_level_log = jit_level;
     CheckHcclBufferSize(jit_level);
+    set_param<bool>(MS_CTX_ENABLE_HYBRID_MODE, false);
   }
 
   if (get_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD)) {
     PrintJitLevelAndExecMode(is_jit_level_changed, jit_level, "enable kernelbykernel executor by mem offload.");
     return true;
+  }
+
+  static bool is_hybrid_mode = false;
+  if (get_param<bool>(MS_CTX_ENABLE_HYBRID_MODE)) {
+    if (!is_hybrid_mode) {
+      is_hybrid_mode = true;
+      MS_LOG(INFO) << "Enable kernelbykernel executor by hybrid mode.";
+    }
+    return true;
+  }
+  if (is_hybrid_mode) {
+    MS_LOG(INFO) << "Disable hybrid mode.";
+    is_hybrid_mode = false;
   }
 
   if (mode == kPynativeMode) {
@@ -607,6 +621,7 @@ void MsContext::InitBoolTypeDefaultValue() {
   set_param<bool>(MS_CTX_ENABLE_PYNATIVE_SYNCHRONIZE, false);
   set_param<bool>(MS_CTX_ENABLE_PYNATIVE_OP_GRAPH_CACHE, true);
   set_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD, false);
+  set_param<bool>(MS_CTX_ENABLE_HYBRID_MODE, false);
   set_param<bool>(MS_CTX_ENABLE_PROF_MEM, false);
   set_param<bool>(MS_CTX_ENABLE_RECOVERY, false);
   set_param<bool>(MS_CTX_ENABLE_GE_HETEROGENOUS, false);
@@ -744,7 +759,7 @@ void MsContext::SetMsInternalEnableCustomKernelList() {
   MS_LOG(INFO) << "Enable internal kernel list: " << SetToString(ms_internal_enable_custom_kernel_list_);
 }
 
-bool MsContext::UseSimulationApi() const {
+bool MsContext::UseSimulationApi() {
   static auto kSimulationLevelKey = "MS_SIMULATION_LEVEL";
   static auto kSimulationLevel0 = "0";
   static auto kSimulationLevel1 = "1";

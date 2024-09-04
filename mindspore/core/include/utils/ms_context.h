@@ -115,6 +115,7 @@ enum MsCtxParam : unsigned {
   MS_CTX_ENABLE_PYNATIVE_SYNCHRONIZE,
   MS_CTX_ENABLE_PYNATIVE_OP_GRAPH_CACHE,
   MS_CTX_ENABLE_MEM_OFFLOAD,
+  MS_CTX_ENABLE_HYBRID_MODE,
   MS_CTX_ENABLE_RECOVERY,
   MS_CTX_ENABLE_GE_HETEROGENOUS,
   MS_CTX_DISABLE_FORMAT_TRANSFORM,
@@ -299,9 +300,9 @@ class MS_CORE_API MsContext {
 
   void SetJitLevel(const std::string &jit_level) const;
   std::string GetJitLevel() const;
-  bool IsKByKExecutorMode() const;
+  bool IsKByKExecutorMode();
 
-  bool UseSimulationApi() const;
+  bool UseSimulationApi();
 
   std::string GetLoadPluginErrorStr() const { return load_plugin_error_(); }
 

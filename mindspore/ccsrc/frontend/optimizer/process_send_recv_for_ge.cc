@@ -328,10 +328,6 @@ void ProcessSendRecvForGE(const FuncGraphPtr &graph) {
   if (!is_enable_ge || no_cell_reuse) {
     return;
   }
-  if (context->IsKByKExecutorMode()) {
-    AddAllGatherRecvDepend(graph);
-    return;
-  }
   auto parallel_context = parallel::ParallelContext::GetInstance();
   MS_EXCEPTION_IF_NULL(parallel_context);
   auto stages = parallel_context->pipeline_stage_split_num();
@@ -382,6 +378,11 @@ void ProcessSendRecvForGE(const FuncGraphPtr &graph) {
     }
   }
 
-  ProcessSpecialNodes(graph, all_nodes, send_cnt);
+  if (context->IsKByKExecutorMode()) {
+    return;
+  }
+  if (common::IsDisableRuntimeConfig(common::kRuntimeGeKernel)) {
+    ProcessSpecialNodes(graph, all_nodes, send_cnt);
+  }
 }
 }  // namespace mindspore::opt

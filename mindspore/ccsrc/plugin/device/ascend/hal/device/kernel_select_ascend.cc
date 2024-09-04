@@ -59,6 +59,7 @@ constexpr size_t kAclOpSelect = 1;
 constexpr size_t kHcclOpSelect = 2;
 constexpr size_t kHostOpSelect = 3;
 constexpr size_t kInternalOpSelect = 4;
+constexpr size_t kGeOpSelect = 5;
 
 std::string KernelSelectDebugString(const kernel::KernelBuildInfo *build_info,
                                     const std::vector<std::shared_ptr<kernel::KernelBuildInfo>> &kernel_info_list) {
@@ -605,6 +606,15 @@ std::tuple<bool, std::string, ExceptionType> SelectKernelInfoWithMsg(const Kerne
   std::tuple<bool, std::string, ExceptionType> result = std::make_tuple(true, "", NoExceptionType);
   std::string op_name = common::AnfAlgo::GetCNodeName(node);
 
+  if (common::AnfAlgo::CheckPrimitiveType(node, prim::kPrimGEGraphOp)) {
+    GenerateKernelBuildInfo(node, KernelType::GE_KERNEL);
+    if (op_selected_type[kGeOpSelect].count(op_name) == 0) {
+      (void)op_selected_type[kGeOpSelect].insert(op_name);
+      MS_LOG(INFO) << op_name << " select GE kernel.";
+    }
+    return result;
+  }
+
   if (IsEnableInternalNode(node)) {
     GenerateKernelBuildInfo(node, KernelType::INTERNAL_KERNEL);
     if (op_selected_type[kInternalOpSelect].count(op_name) == 0) {
@@ -635,7 +645,8 @@ std::tuple<bool, std::string, ExceptionType> SelectKernelInfoWithMsg(const Kerne
   // for backend inline
   if (IsOneOfPrimitiveCNode(
         node, {prim::kPrimCallInline, prim::kPrimSwitch, prim::kPrimPartialInline, prim::kPrimConditionSwitch,
-               prim::kPrimConditionGather, prim::kPrimReshapeExt, prim::kPrimMoveTo, prim::kPrimMoveAssign})) {
+               prim::kPrimConditionGather, prim::kPrimReshapeExt, prim::kPrimMoveTo, prim::kPrimMoveAssign,
+               prim::kPrimStreamSend, prim::kPrimStreamRecv})) {
     GenerateKernelBuildInfo(node, KernelType::RT_KERNEL);
     return result;
   }

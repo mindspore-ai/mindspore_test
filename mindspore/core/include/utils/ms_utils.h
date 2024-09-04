@@ -68,6 +68,7 @@ MS_CORE_API const char *SafeCStr(const std::string &&str);
 // Memory dev config.
 const char kAllocConf[] = "MS_ALLOC_CONF";
 const char kAllocAclAllocator[] = "acl_allocator";
+const char kAllocSomasWholeBlock[] = "somas_whole_block";
 const char kAllocEnableVmm[] = "enable_vmm";
 const char kAllocVmmAlignSize[] = "vmm_align_size";
 const char kAllocMemoryRecycle[] = "memory_recycle";
@@ -84,6 +85,7 @@ const char kRuntimeView[] = "view";
 const char kRuntimeInsertTensorMove[] = "insert_tensormove";
 const char kRuntimeAllfinite[] = "all_finite";
 const char kRuntimeParalletAssignAddOpt[] = "parallel_assignadd_opt";
+const char kRuntimeGeKernel[] = "ge_kernel";
 // Runtime debug config.
 const char kRuntimeSynchronize[] = "synchronize";
 const char kRuntimeMemoryTrack[] = "memory_track";
@@ -102,8 +104,8 @@ MS_CORE_API std::string GetConfigValue(const std::string &config, const std::str
 MS_CORE_API bool IsEnableRuntimeConfig(const std::string &runtime_config);
 MS_CORE_API bool IsDisableRuntimeConfig(const std::string &runtime_config);
 MS_CORE_API std::string GetAllocConfigValue(const std::string &alloc_config);
-MS_CORE_API bool IsEnableAlllocConfig(const std::string &alloc_config);
-MS_CORE_API bool IsDisableAlllocConfig(const std::string &alloc_config);
+MS_CORE_API bool IsEnableAllocConfig(const std::string &alloc_config);
+MS_CORE_API bool IsDisableAllocConfig(const std::string &alloc_config);
 
 static inline std::string GetEnv(const std::string &envvar, const std::string &default_value = "") {
   const char *value = std::getenv(envvar.c_str());

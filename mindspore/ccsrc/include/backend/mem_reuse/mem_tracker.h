@@ -40,11 +40,11 @@ enum class MemType : int {
   kInSideSomas,
   kSomasOutput,
   kGeConst,
+  kGeFixed,
   kBatchMemory,
   kContinuousMemory,
   kPyNativeInput,
   kPyNativeOutput,
-  kGeFeatureMemory,
   kWorkSpace,
   kOther
 };
@@ -57,11 +57,11 @@ const std::map<MemType, std::string> MemTypeToStr = {{MemType::kWeight, "Weight"
                                                      {MemType::kInSideSomas, "InSideSomas"},
                                                      {MemType::kSomasOutput, "SomasOutput"},
                                                      {MemType::kGeConst, "GeConst"},
+                                                     {MemType::kGeFixed, "GeFixed"},
                                                      {MemType::kBatchMemory, "BatchMemory"},
                                                      {MemType::kContinuousMemory, "ContinuousMemory"},
                                                      {MemType::kPyNativeInput, "PyNativeInput"},
                                                      {MemType::kPyNativeOutput, "PyNativeOutput"},
-                                                     {MemType::kGeFeatureMemory, "GeFeatureMemory"},
                                                      {MemType::kWorkSpace, "WorkSpace"},
                                                      {MemType::kOther, "Other"}};
 using DeviceMemPtr = const void *;
@@ -293,7 +293,7 @@ class BACKEND_EXPORT MemoryTrackerDisabled : public MemTracker {
 class BACKEND_EXPORT MemTrackerManager {
  public:
   static MemTracker &GetInstance() {
-    static bool enable_trace_mem = common::IsEnableAlllocConfig(common::kAllocMemoryTracker);
+    static bool enable_trace_mem = common::IsEnableAllocConfig(common::kAllocMemoryTracker);
     if (MsContext::GetInstance()->get_param<bool>(MS_CTX_ENABLE_PROF_MEM) || enable_trace_mem) {
       return MemoryTrackerEnabled::getInstance();
     } else {

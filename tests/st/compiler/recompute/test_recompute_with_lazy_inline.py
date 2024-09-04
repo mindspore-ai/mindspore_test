@@ -39,7 +39,8 @@ def run_testcase(testcase_name, expect_memory_usage):
         os.remove(log_filename)
     assert not os.path.exists(log_filename)
 
-    cmd = f"export GLOG_v=1; export MS_ALLOC_CONF=\"memory_recycle:False\"; pytest -s test_recompute.py::" + \
+    cmd = (f"export GLOG_v=1; export MS_ALLOC_CONF=\"memory_recycle:False\"; "
+           f"export MS_DEV_RUNTIME_CONF=\"ge_kernel:False\"; pytest -s test_recompute.py::") + \
           testcase_name + " > " + log_filename + " 2>&1"
     subprocess.check_output(cmd, shell=True)
     assert os.path.exists(log_filename)

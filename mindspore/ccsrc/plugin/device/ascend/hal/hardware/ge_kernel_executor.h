@@ -65,6 +65,7 @@ class GeKernelExecutor : public KernelExecutor {
   void UnifyMindIR(const KernelGraphPtr &graph) const override;
   void AddMindIRPass(const KernelGraphPtr &graph) const override;
   void OptimizeExecutionOrder(const FuncGraphPtr &graph) const;
+  void AllocGraphFixedMemory() const override;
 
   // Get rank id for distributed training.
   uint32_t GetRankID() const override { return 0; }
@@ -73,7 +74,7 @@ class GeKernelExecutor : public KernelExecutor {
                          const device::DeviceAddressPtrList &output_addr_list, const size_t &stream_id) const override;
 
  private:
-  static void DoSomas(const FuncGraphPtr &graph, const std::vector<std::pair<CNodePtr, CNodePtr>> &sched_events);
+  static void DoSomas(const FuncGraphPtr &graph);
   static void DoStreamAssign(const KernelGraphPtr &kernel_graph,
                              const std::vector<std::pair<CNodePtr, CNodePtr>> &sched_events);
   // launch

@@ -317,10 +317,11 @@ const AnfNodePtr AllToAllUnifyMindIR::Process(const FuncGraphPtr &graph, const A
   }
   auto kernel_graph = graph->cast<KernelGraphPtr>();
   MS_EXCEPTION_IF_NULL(kernel_graph);
-  auto ms_context = MsContext::GetInstance();
-  bool is_kbk = ms_context->IsKByKExecutorMode() || ms_context->get_param<bool>(MS_CTX_ENABLE_TASK_SINK) == false;
+  bool is_kbk = !kernel_graph->is_graph_run_mode();
   AnfNodePtr ret_node = nullptr;
   if (is_kbk) {
+    MS_LOG(INFO) << "AlltoAll pass in KernelMode, node: " << node->fullname_with_scope()
+                 << ", graph: " << graph->ToString();
     int64_t split_dim = common::AnfAlgo::GetNodeAttr<int64_t>(all_to_all, kAttrSplitDim);
     int64_t concat_dim = common::AnfAlgo::GetNodeAttr<int64_t>(all_to_all, kAttrConcatDim);
     AnfNodePtr all_to_all_input = all_to_all->input(kAllToAllInputIdx);
@@ -337,6 +338,8 @@ const AnfNodePtr AllToAllUnifyMindIR::Process(const FuncGraphPtr &graph, const A
       ret_node = concat;
     }
   } else {
+    MS_LOG(INFO) << "AlltoAll pass in GraphMode, node: " << node->fullname_with_scope()
+                 << ", graph: " << graph->ToString();
     auto split = CreateSplitNodeWithSplitDim(kernel_graph, all_to_all);
     auto new_ata = CreateAlltoAllVNode(kernel_graph, all_to_all, split);
     auto concat = CreateConcatNodeWithConcatDim(kernel_graph, all_to_all, new_ata);

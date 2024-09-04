@@ -168,6 +168,7 @@ class BACKEND_EXPORT DeviceResManager {
   virtual void FreePartMemorys(const std::vector<void *> &free_addrs, const std::vector<void *> &keep_addrs,
                                const std::vector<size_t> &keep_addr_sizes) const = 0;
   virtual void DefragMemory() {}
+  virtual bool IsEnableVmm() const { return false; }
 
   virtual void SwapIn(const void *host_ptr, void *device_ptr, size_t mem_size, void *stream) {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";
@@ -415,6 +416,8 @@ class BACKEND_EXPORT KernelExecutor {
 
   // Get rank id for distributed training.
   virtual uint32_t GetRankID() const { return 0; }
+
+  virtual void AllocGraphFixedMemory() const {}
 
   void SetDeviceContext(DeviceContext *device_context) { device_context_ = device_context; }
 
