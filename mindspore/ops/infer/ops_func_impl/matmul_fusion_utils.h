@@ -38,9 +38,6 @@ class MatmulFusionUtils {
 
   static TuplePtr InferenceMultiMatmulInferType(const PrimitivePtr &primitive,
                                                 const std::vector<AbstractBasePtr> &input_args);
-
-  static TypePtr FusedMatMulElemInferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args,
-                                          const int input_num);
 };
 
 }  // namespace ops

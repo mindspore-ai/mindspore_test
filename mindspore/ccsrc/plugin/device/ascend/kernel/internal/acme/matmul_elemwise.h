@@ -25,30 +25,8 @@
 
 namespace mindspore {
 namespace kernel {
-class AcmeFusedMatmulElemBase : public AcmeKernelMod {
- public:
-  AcmeFusedMatmulElemBase() : AcmeKernelMod() {}
-  ~AcmeFusedMatmulElemBase() = default;
-
- protected:
-  acme::AcmeOpPtr CreateKernel(const acme::InputsImmutableInfoList &inputs,
-                               const acme::OutputsImmutableInfoList &outputs,
-                               const std::vector<KernelTensor *> &ms_inputs,
-                               const std::vector<KernelTensor *> &ms_outputs) override;
-  uint64_t GenerateTilingKey(const std::vector<KernelTensor *> &inputs) override;
-};
-
-class AcmeFusedMatmulElemUnary : public AcmeFusedMatmulElemBase {
- public:
-  AcmeFusedMatmulElemUnary() : AcmeFusedMatmulElemBase() {}
-  ~AcmeFusedMatmulElemUnary() = default;
-};
-
-class AcmeFusedMatmulElemBinary : public AcmeFusedMatmulElemBase {
- public:
-  AcmeFusedMatmulElemBinary() : AcmeFusedMatmulElemBase() {}
-  ~AcmeFusedMatmulElemBinary() = default;
-};
+DECLARE_ACME_KERNEL_MOD(FusedMatMulElemBinary)
+DECLARE_ACME_KERNEL_MOD(FusedMatMulElemUnary)
 }  // namespace kernel
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_INTERNAL_ACME_MATMUL_ELEMWISE_H_

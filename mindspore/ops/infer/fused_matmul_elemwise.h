@@ -14,24 +14,32 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_MATMUL_ELEM_BINARY_H_
-#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_MATMUL_ELEM_BINARY_H_
+#ifndef MINDSPORE_CORE_OPS_FUSED_MATMUL_ELEMWISE_H_
+#define MINDSPORE_CORE_OPS_FUSED_MATMUL_ELEMWISE_H_
 #include <memory>
 #include <string>
 #include <vector>
 #include "mindapi/base/types.h"
+#include "utils/ms_context.h"
 #include "ops/base_operator.h"
-#include "ops/ops_func_impl/op_func_impl.h"
 #include "infer/ops_func_impl/matmul.h"
 
 namespace mindspore {
 namespace ops {
-class MIND_API FusedMatmulElemBinaryFuncImpl : public MatMulFuncImpl {
+/// \brief Multiplies matrix a and matrix b. Refer to Python API @ref mindspore.ops.FusedMatMulElemBinary for more
+/// details.
+class OPS_API FusedMatMulElemBinary : public MatMulFuncImpl {
  public:
-  BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
+  TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
+};
+
+/// \brief Multiplies matrix a and matrix b. Refer to Python API @ref mindspore.ops.FusedMatMulElemUnary for more
+/// details.
+class OPS_API FusedMatMulElemUnary : public MatMulFuncImpl {
+ public:
   TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
 };
 
 }  // namespace ops
 }  // namespace mindspore
-#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_MATMUL_ELEM_BINARY_H_
+#endif  // MINDSPORE_CORE_OPS_FUSED_MATMUL_ELEMWISE_H_
