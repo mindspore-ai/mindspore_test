@@ -147,6 +147,8 @@ class GeDeviceResManager : public DeviceResManager {
                                             size_t end) override;
   TensorPtr GetSliceByPaddingShapeHandle(const tensor::TensorPtr &first_tensor, size_t start, size_t end) override;
 
+  int StressDetect() const override;
+
   DeviceEventPtr CreateRuntimeEvent(bool enable_blocking, bool enable_record_wait);
   DeviceEventPtr CreateEventWithFlag(bool enable_timing, bool blocking) override;
 
