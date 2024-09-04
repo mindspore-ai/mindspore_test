@@ -337,8 +337,8 @@ class FuncBuilder : public BpropBuilder {
                              const NodePtr &scales, const NodePtr &expanded_row_idx,
                              const NodePtr &expanded_expert_idx) override;
   NodePtr QuantBatchMatmul(const NodePtr &x1, const NodePtr &x2, const NodePtr &scale, const NodePtr &offset,
-                           const NodePtr &bias, const NodePtr &transpose_x1, const NodePtr &transpose_x2,
-                           const NodePtr &dtype) override;
+                           const NodePtr &bias, const NodePtr &pertokenScaleOptional, const NodePtr &transpose_x1,
+                           const NodePtr &transpose_x2, const NodePtr &dtype) override;
   NodePtr QuantV2(const NodePtr &x, const NodePtr &scale, const NodePtr &offset, const NodePtr &sqrt_mode,
                   const NodePtr &rounding_mode, const NodePtr &dst_type) override;
   NodePtr WeightQuantBatchMatmul(const NodePtr &x, const NodePtr &weight, const NodePtr &antiquant_scale,

@@ -882,9 +882,10 @@ class COMMON_EXPORT Emitter {
     return Emit("MoeFinalizeRouting", {expanded_x, x1, x2, bias, scales, expanded_row_idx, expanded_expert_idx});
   }
   virtual NodePtr QuantBatchMatmul(const NodePtr &x1, const NodePtr &x2, const NodePtr &scale, const NodePtr &offset,
-                                   const NodePtr &bias, const NodePtr &transpose_x1, const NodePtr &transpose_x2,
-                                   const NodePtr &dtype) {
-    return Emit("QuantBatchMatmul", {x1, x2, scale, offset, bias, transpose_x1, transpose_x2, dtype});
+                                   const NodePtr &bias, const NodePtr &pertokenScaleOptional,
+                                   const NodePtr &transpose_x1, const NodePtr &transpose_x2, const NodePtr &dtype) {
+    return Emit("QuantBatchMatmul",
+                {x1, x2, scale, offset, bias, pertokenScaleOptional, transpose_x1, transpose_x2, dtype});
   }
   virtual NodePtr QuantV2(const NodePtr &x, const NodePtr &scale, const NodePtr &offset, const NodePtr &sqrt_mode,
                           const NodePtr &rounding_mode, const NodePtr &dst_type) {

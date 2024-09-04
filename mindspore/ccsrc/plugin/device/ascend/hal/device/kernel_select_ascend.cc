@@ -373,11 +373,13 @@ bool ReadAclnnEnableEnv(const std::string &op_name) {
     }
   }
 
-  static std::set<std::string> kAscendcKernelList = {"AllFinite", "AllGatherMatmul", "MatmulReduceScatter"};
+  static std::set<std::string> kAscendcKernelList = {"AllFinite", "AllGatherMatmul", "MatmulReduceScatter",
+                                                     "QuantBatchMatmulAllReduce"};
   //  In the current kbk, MatMulAllReduce can also be implemented using LCCL operator.
   bool enable_lccl = device::ascend::EnableLccl();
   if (!enable_lccl) {
-    kAscendcKernelList = {"AllFinite", "AllGatherMatmul", "MatMulAllReduce", "MatmulReduceScatter"};
+    kAscendcKernelList = {"AllFinite", "AllGatherMatmul", "MatMulAllReduce", "MatmulReduceScatter",
+                          "QuantBatchMatmulAllReduce"};
   }
 
   if (kAscendcKernelList.count(op_name) != 0) {
@@ -757,6 +759,13 @@ bool IsEnableInternalNode(const AnfNodePtr &node) {
     enable_internal = true;
   }
 
+  if (op_name == "QuantBatchMatmul") {
+    auto cnode = node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(cnode);
+    if (!IsValueNode<None>(cnode->input(kIndex6))) {
+      enable_internal = false;
+    }
+  }
   std::string disable_name_list = common::GetEnv("MS_DISABLE_INTERNAL_KERNELS_LIST");
   std::vector<std::string> op_name_vec = SplitString(disable_name_list, ',');
   if (std::any_of(op_name_vec.begin(), op_name_vec.end(),

@@ -61,6 +61,19 @@ class AllGatherMatmulFusion : public MC2FusionBase {
   CNodePtr CreateFusionCNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
                              const EquivPtr &equiv) const override;
 };
+
+class QuantBatchMatmulAllReduceFusion : public MC2FusionBase {
+ public:
+  explicit QuantBatchMatmulAllReduceFusion(const std::string &name = "quantbatchmatmul_reduce_fusion",
+                                           bool multigraph = true)
+      : MC2FusionBase(name, multigraph) {}
+  ~QuantBatchMatmulAllReduceFusion() override = default;
+
+ private:
+  const VectorRef DefineFusionPattern() const override;
+  CNodePtr CreateFusionCNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
+                             const EquivPtr &equiv) const override;
+};
 }  // namespace opt
 }  // namespace mindspore
 #endif  // MINDSPORE_CCSRC_BACKEND_OPTIMIZER_ASCEND_IR_FUSION_MC2_FUSION_H_

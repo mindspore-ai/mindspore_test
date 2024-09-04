@@ -176,8 +176,16 @@ int ReplaceMMToQuantBatchMatmul(const FuncGraphPtr &func_graph, const CNodePtr &
   auto none_value_node_bias = NewValueNode(std::make_shared<mindspore::None>());
   MS_CHECK_TRUE_RET(none_value_node_bias != nullptr, RET_ERROR);
   none_value_node_bias->set_abstract(std::make_shared<abstract::AbstractNone>());
-  std::vector<AnfNodePtr> quant_op_inputs = {
-    NewValueNode(QBMM_prim), input_x1, input_x2, trans_quant_param_cnode, none_value_node_offset, none_value_node_bias};
+  auto none_value_node_pertoken_scale = NewValueNode(std::make_shared<mindspore::None>());
+  MS_CHECK_TRUE_RET(none_value_node_pertoken_scale != nullptr, RET_ERROR);
+  none_value_node_pertoken_scale->set_abstract(std::make_shared<abstract::AbstractNone>());
+  std::vector<AnfNodePtr> quant_op_inputs = {NewValueNode(QBMM_prim),
+                                             input_x1,
+                                             input_x2,
+                                             trans_quant_param_cnode,
+                                             none_value_node_offset,
+                                             none_value_node_bias,
+                                             none_value_node_pertoken_scale};
   auto QBMM_cnode = func_graph->NewCNode(quant_op_inputs);
   MS_CHECK_TRUE_RET(QBMM_cnode != nullptr, RET_ERROR);
   QBMM_cnode->set_fullname_with_scope(mm_cnode->fullname_with_scope() + "_QuantBatchMatmul");

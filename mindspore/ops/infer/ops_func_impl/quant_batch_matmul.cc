@@ -30,9 +30,10 @@ constexpr size_t kQbmmInputX2 = 1;
 constexpr size_t kQbmmInputScale = 2;
 constexpr size_t kQbmmInputOffset = 3;
 constexpr size_t kQbmmInputBias = 4;
-constexpr size_t kQbmmInputTransposeX1 = 5;
-constexpr size_t kQbmmInputTransposeX2 = 6;
-constexpr size_t kQbmmInputDtype = 7;
+constexpr size_t kQbmmInputPertokenScaleOptional = 5;
+constexpr size_t kQbmmInputTransposeX1 = 6;
+constexpr size_t kQbmmInputTransposeX2 = 7;
+constexpr size_t kQbmmInputDtype = 8;
 }  // namespace
 BaseShapePtr QuantBatchMatmulFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                   const std::vector<AbstractBasePtr> &input_args) const {
@@ -112,6 +113,13 @@ TypePtr QuantBatchMatmulFuncImpl::InferType(const PrimitivePtr &primitive,
     types.clear();
     (void)types.emplace("bias", input_args[kQbmmInputBias]->GetType());
     (void)CheckAndConvertUtils::CheckTensorTypeSame(types, {kInt32, kBFloat16}, primitive->name());
+  }
+
+  MS_EXCEPTION_IF_NULL(input_args[kQbmmInputPertokenScaleOptional]);
+  if (!input_args[kQbmmInputPertokenScaleOptional]->GetType()->isa<TypeNone>()) {
+    types.clear();
+    (void)types.emplace("pertokenScaleOptional", input_args[kQbmmInputPertokenScaleOptional]->GetType());
+    (void)CheckAndConvertUtils::CheckTensorTypeSame(types, {kFloat32}, primitive->name());
   }
 
   ValuePtr dtype_ptr = input_args[kQbmmInputDtype]->GetValue();

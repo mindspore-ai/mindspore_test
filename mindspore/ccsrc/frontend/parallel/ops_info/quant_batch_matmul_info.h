@@ -67,6 +67,8 @@ class QuantBatchMatmulInfo : public OperatorInfo {
 
  private:
   Status CheckInputStrategy(const Shape &x1_strategy, const Shape &x2_strategy);
+  void SetValidInputsIndex();
+  std::vector<size_t> valid_inputs_index_;
 };
 
 }  // namespace parallel

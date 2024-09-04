@@ -43,6 +43,7 @@ class QbmmFusionBase : public PatternProcessPass {
   mutable VarPtr scale_ = nullptr;
   mutable VarPtr offset_ = nullptr;
   mutable VarPtr bias_ = nullptr;
+  mutable VarPtr pertoken_scale_ = nullptr;
   mutable VarPtr trans_a_ = nullptr;
   mutable VarPtr trans_b_ = nullptr;
   mutable VarPtr out_dtype_ = nullptr;
@@ -53,6 +54,7 @@ class QbmmFusionBase : public PatternProcessPass {
   mutable AnfNodePtr scale_node_ = nullptr;
   mutable AnfNodePtr offset_node_ = nullptr;
   mutable AnfNodePtr bias_node_ = nullptr;
+  mutable AnfNodePtr pertoken_scale_node_ = nullptr;
   mutable AnfNodePtr bias_tensor_node_ = nullptr;
   mutable AnfNodePtr trans_a_node_ = nullptr;
   mutable AnfNodePtr trans_b_node_ = nullptr;

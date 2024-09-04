@@ -48,7 +48,7 @@ const BaseRef QbmmAllReduceAddFusion::DefinePattern() const {
     MS_LOG(DEBUG) << "initial member failed.";
     return {};
   }
-  VectorRef qbmm_ref({qbmm_prim_, x_, w_, scale_, offset_, bias_, trans_a_, trans_b_, out_dtype_});
+  VectorRef qbmm_ref({qbmm_prim_, x_, w_, scale_, offset_, bias_, pertoken_scale_, trans_a_, trans_b_, out_dtype_});
   auto is_allreduce = std::make_shared<CondVar>(IsSpecifiedNode<&prim::kPrimAllReduce>);
   MS_CHECK_TRUE_RET(is_allreduce != nullptr, {});
   VectorRef allreduce_ref({is_allreduce, qbmm_ref});
@@ -66,6 +66,10 @@ const AnfNodePtr QbmmAllReduceAddFusion::Process(const FuncGraphPtr &func_graph,
     return nullptr;
   }
   SetNodes(equiv);
+  if (!IsValueNode<None>(pertoken_scale_node_)) {
+    MS_LOG(INFO) << "Currently, do not support to fuse qbmm(pertoken) with communication.";
+    return nullptr;
+  }
   CheckValid();
   auto cnode = CreateQbmmAllReduceAddNode(func_graph, node, equiv);
   return cnode;

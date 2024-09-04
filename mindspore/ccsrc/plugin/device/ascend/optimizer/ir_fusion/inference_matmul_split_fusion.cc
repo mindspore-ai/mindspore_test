@@ -156,8 +156,8 @@ bool InferenceMatmulSplitFusion::CheckMatMulDataFormat(const CNodePtr &matmul_cn
   size_t trans_b_index = 0;
   auto cnode_name = common::AnfAlgo::GetCNodeName(matmul_cnode);
   if (cnode_name == prim::kPrimQuantBatchMatmul->name()) {
-    trans_a_index = kIndex6;
-    trans_b_index = kIndex7;
+    trans_a_index = kIndex7;
+    trans_b_index = kIndex8;
   } else if (cnode_name == prim::kPrimMatMul->name()) {
     trans_a_index = kIndex3;
     trans_b_index = kIndex4;
@@ -354,6 +354,12 @@ CNodePtr InferenceMatmulSplitFusion::CreateQuantbatchmatmulSplitNode(const FuncG
   MS_EXCEPTION_IF_NULL(input_w);
   auto input_bias = qbmm_cnode->input(kIndex5);
   MS_EXCEPTION_IF_NULL(input_bias);
+  auto pertoken_scale = qbmm_cnode->input(kIndex6);
+  MS_EXCEPTION_IF_NULL(pertoken_scale);
+  if (!IsValueNode<None>(pertoken_scale)) {
+    MS_LOG(INFO) << "Currently, do not support to fuse qbmm(pertoken) with split.";
+    return nullptr;
+  }
   auto input_scale = qbmm_cnode->input(kIndex3);
   MS_EXCEPTION_IF_NULL(input_scale);
   const std::set<TypeId> support_dtype = {kNumberTypeInt8};
@@ -559,6 +565,12 @@ CNodePtr InferenceMatmulSplitFusion::CreateQuantbatchmatmulSplitSiluNode(const F
   MS_EXCEPTION_IF_NULL(qbmm_w);
   auto input_bias = qbmm_cnode->input(kIndex5);
   MS_EXCEPTION_IF_NULL(input_bias);
+  auto pertoken_scale = qbmm_cnode->input(kIndex6);
+  MS_EXCEPTION_IF_NULL(pertoken_scale);
+  if (!IsValueNode<None>(pertoken_scale)) {
+    MS_LOG(INFO) << "Currently, do not support to fuse qbmm(pertoken) with split.";
+    return nullptr;
+  }
   auto input_scale = qbmm_cnode->input(kIndex3);
   MS_EXCEPTION_IF_NULL(input_scale);
   const std::set<TypeId> support_dtype = {kNumberTypeInt8};

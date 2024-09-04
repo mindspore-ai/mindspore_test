@@ -33,6 +33,10 @@
 
 namespace mindspore {
 namespace parallel {
+namespace {
+constexpr size_t kOutStrategySize = 2;
+}  // namespace
+
 Status DynamicQuantExtInfo::GetAttrs() { return SUCCESS; }
 
 Status DynamicQuantExtInfo::CheckStrategy(const StrategyPtr &strategy) {
@@ -159,6 +163,32 @@ Status DynamicQuantExtInfo::InferAsLossDivisor() {
   MS_LOG(INFO) << name_ << ": the dev matrix shape is " << ShapeToString(dev_matrix_shape_)
                << ", the output tensor map is " << ShapeToString(outputs_tensor_map_[0]) << ", loss divisor is "
                << as_loss_divisor_;
+  return SUCCESS;
+}
+
+Status DynamicQuantExtInfo::CheckOutputStrategy(const StrategyPtr &out_strategy) {
+  if (out_strategy == nullptr) {
+    MS_LOG(INFO) << name_ << ": The output strategy is null";
+    return SUCCESS;
+  }
+  std::vector<Dimensions> stra = out_strategy->GetInputDim();
+  if (stra.size() != kOutStrategySize) {
+    MS_LOG(ERROR) << name_ << ": The output strategy's size must be 2, now is " << stra.size();
+    return FAILED;
+  }
+  Dimensions out1_stra = stra[0];
+  Dimensions out2_stra = stra[1];
+  if (out1_stra.size() != out2_stra.size() + 1) {
+    MS_LOG(ERROR) << name_ << ": The first output strategy's size must be equal to that of the second plus 1, now is "
+                  << out1_stra.size() << " and " << out2_stra.size();
+    return FAILED;
+  }
+  for (size_t i = 0; i < out2_stra.size(); ++i) {
+    if (out1_stra[i] != out2_stra[i]) {
+      MS_LOG(ERROR) << name_ << ": The second output strategy must be equal to the first output strategy[0:-1]";
+      return FAILED;
+    }
+  }
   return SUCCESS;
 }
 
