@@ -501,7 +501,7 @@ def convert_class_to_function(cls_str, cls_obj):
                          f"supported in 'construct' or @jit decorated function. Try to create {cls_str} "
                          f"instances external such as initialized in the method '__init__' before assigning. "
                          f"For more details, please refer to "
-                         f"https://www.mindspore.cn/docs/zh-CN/master/model_train/program_form/overview.html \n")
+                         f"https://www.mindspore.cn/docs/zh-CN/master/model_train/program_form/static_graph.html \n")
     return convert_class_to_function_map.get(cls_str)
 
 
@@ -1056,6 +1056,9 @@ third_party_checker = ThirdPartyLibraryChecker()
 def is_from_third_party_library(value):
     """Check if value is from a third-party library."""
     return third_party_checker.is_third_party_module_or_function(value)
+
+def convert_to_mutable(object):
+    return mutable(object)
 
 
 def get_const_abs(obj):

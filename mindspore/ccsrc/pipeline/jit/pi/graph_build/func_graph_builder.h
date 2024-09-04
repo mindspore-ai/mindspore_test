@@ -170,6 +170,8 @@ class FuncGraphBuilder {
 
   AnfNodePtr GetNodeByWrapper(const AbstractWrapperPtr &abstract_wrapper);
 
+  AbstractWrapperPtr AddAttributeInput(const py::object &object);
+
  private:
   static bool CheckCallable(const ValuePtr &value, const AbstractBasePtr &abs);
 

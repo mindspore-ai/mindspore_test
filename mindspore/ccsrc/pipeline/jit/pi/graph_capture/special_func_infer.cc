@@ -1112,6 +1112,7 @@ enum FuncKey {
   FUNC_KEY_PRIMITIVE_ASSIGN,      // mindspore.ops.assign, Primitive("Assign")
   FUNC_KEY_TENSOR_SETITEM,        // Tensor.__setitem__
   FUNC_KEY_TENSOR_ASSIGN_VALUE,   // Tensor.assign_value
+  FUNC_KEY_ATTRIBUTE_AS_PARAMETER,
   FUNC_KEY_COUNT,
 };
 static FuncKey FindFuncKey(const py::object &callable);

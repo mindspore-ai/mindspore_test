@@ -25,6 +25,7 @@
 #include "pipeline/jit/ps/parse/parse_base.h"
 #include "pipeline/jit/ps/parse/data_converter.h"
 #include "pipeline/jit/pi/pi_jit_config.h"
+#include "pipeline/jit/ps/parse/parse.h"
 #include "mindspore/ops/op_def/arithmetic_ops.h"
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "pipeline/jit/pi/graph_guard/infer.h"
@@ -440,6 +441,36 @@ AbstractWrapperPtr FuncGraphBuilder::AddTopGraphVargsInputs(const py::object &va
   (void)key_to_node_.emplace(abstract_wrapper, para);
   MS_LOG(INFO) << "Add top vargs input success, python object: " << py::str(vargs) << ", node: " << para->DebugString()
                << ", abstract: " << new_vargs_abs->ToString();
+  return abstract_wrapper;
+}
+
+AbstractWrapperPtr FuncGraphBuilder::AddAttributeInput(const py::object &object) {
+  if (object.ptr() == nullptr) {
+    return nullptr;
+  }
+  auto value = ConvertPyObjToValue(object);
+  if (value == nullptr) {
+    return nullptr;
+  }
+  AbstractBasePtr abs = abstract::ToAbstract(value, nullptr, nullptr);
+  if (!abs->isa<abstract::AbstractScalar>() && !abs->isa<abstract::AbstractTensor>()) {
+    MS_LOG(ERROR) << "Can not broaden abstract: " << abs->ToString();
+    return nullptr;
+  }
+  abs = AbstractBroaden(abs);
+  if (abs == nullptr) {
+    MS_LOG(INFO) << "Failed to add input for python object: " << std::string(py::str(object)) << "  " << object.ptr();
+    return nullptr;
+  }
+  auto top_graph = parse::Parser::GetTopFuncGraph();
+  auto para = top_graph->add_parameter();
+  para->set_abstract(abs);
+  para->set_is_top_graph_param(true);
+
+  py::object ret_object = python_adapter::CallPyFn(parse::PYTHON_MOD_PARSE_MODULE, "convert_to_mutable", object);
+  para->set_user_data(kPiJitPyObjKey, std::make_shared<py::object>(ret_object));
+  AbstractWrapperPtr abstract_wrapper = std::make_shared<AbstractWrapper>(para->abstract());
+  (void)key_to_node_.emplace(abstract_wrapper, para);
   return abstract_wrapper;
 }
 

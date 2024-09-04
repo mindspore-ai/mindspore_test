@@ -4701,6 +4701,21 @@ ValueNode *MindGraphBuilder::HandleGetattr(ValueNode *target_node, const Instr &
       return ret;
     }
   }
+
+  const auto &attr_names = graph_->Config().attr_as_param_list();
+  const auto &cur_name = instr.name();
+  if (std::any_of(attr_names.begin(), attr_names.end(), [&cur_name](const auto &name) { return cur_name == name; })) {
+    MS_LOG(INFO) << "Try adding attribute " << cur_name << " as graph input";
+    auto abstract_wrapper = fg_builder_->AddAttributeInput(attr_obj);
+    if (abstract_wrapper != nullptr) {
+      graph_attr_node = attr_node;
+      graph_attr_node->set_abstract_wrapper(abstract_wrapper);
+    } else {
+      MS_LOG(ERROR) << "Failed to add attribute " << cur_name << " as input failed.";
+    }
+    return graph_attr_node;
+  }
+
   // If the attr_obj can convert to anf node directly, return the origin attr node.
   auto abstract_wrapper = fg_builder_->AddAttrPythonObject(attr_obj);
   graph_attr_node = attr_node;
