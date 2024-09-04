@@ -834,6 +834,7 @@ class _Context:
                             "interleaved_layernorm_comm": (ms_ctx_param.interleaved_layernorm_comm, bool),
                             "enable_allreduce_slice_to_reducescatter":
                                 (ms_ctx_param.enable_allreduce_slice_to_reducescatter, bool),
+                            "enable_offloading_packed_experts": (ms_ctx_param.enable_offloading_packed_experts, bool),
                             "compute_communicate_fusion_level":
                                 (ms_ctx_param.compute_communicate_fusion_level, int),
                             "enable_flash_attention_load_balance":

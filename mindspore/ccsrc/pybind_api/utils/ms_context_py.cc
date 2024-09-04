@@ -71,6 +71,29 @@ py::object MsCtxGetParameter(const std::shared_ptr<MsContext> &ctx, MsCtxParam p
 }
 }  // namespace
 
+void RegMsContextDefs(const py::module *m) {
+  (void)py::class_<mindspore::MsContext, std::shared_ptr<mindspore::MsContext>>(*m, "MSContext")
+    .def_static("get_instance", &mindspore::MsContext::GetInstance, "Get ms context instance.")
+    .def("get_param", &mindspore::MsCtxGetParameter, "Get value of specified parameter.")
+    .def("set_param", &mindspore::MsCtxSetParameter, "Set value for specified parameter.")
+    .def("set_device_target_inner", &mindspore::MsContext::SetDeviceTargetFromInner, "Set device target inner.")
+    .def("get_backend_policy", &mindspore::MsContext::backend_policy, "Get backend policy.")
+    .def("set_backend_policy", &mindspore::MsContext::set_backend_policy, "Set backend policy.")
+    .def("get_ascend_soc_version", &mindspore::MsContext::ascend_soc_version, "Get ascend soc version.")
+    .def("enable_dump_ir", &mindspore::MsContext::enable_dump_ir, "Get the ENABLE_DUMP_IR.")
+    .def("is_ascend_plugin_loaded", &mindspore::MsContext::IsAscendPluginLoaded,
+         "Get the status that has ascend plugin been loaded.")
+    .def("register_set_env_callback", &mindspore::MsContext::RegisterSetEnv,
+         "Register callback function for check environment variable.")
+    .def("register_check_env_callback", &mindspore::MsContext::RegisterCheckEnv,
+         "Register callback function for check environment variable.")
+    .def("is_pkg_support_device", &mindspore::MsContext::IsSupportDevice,
+         "Return whether this MindSpore package supports specified device.")
+    .def("load_plugin_error", &mindspore::MsContext::GetLoadPluginErrorStr,
+         "Return error message when loading plugins for this MindSpore package.")
+    .def("_set_not_convert_jit", &mindspore::MsContext::set_not_convert_jit, "Set not convert jit.");
+}
+
 // Note: exported python enum variables beginning with '_' are for internal use
 void RegMsContext(const py::module *m) {
   (void)py::enum_<MsCtxParam>(*m, "ms_ctx_param", py::arithmetic())
@@ -150,26 +173,8 @@ void RegMsContext(const py::module *m) {
     .value("last_triggered_step", MsCtxParam::MS_CTX_LAST_TRIGGERED_STEP)
     .value("enable_flash_attention_load_balance", MsCtxParam::MS_CTX_ENABLE_FLASH_ATTENTION_LOAD_BALANCE)
     .value("enable_allreduce_slice_to_reducescatter", MsCtxParam::MS_CTX_ENABLE_ALLREDUCE_SLICE_TO_REDUCESCATTER)
+    .value("enable_offloading_packed_experts", MsCtxParam::MS_CTX_ENABLE_OFFLOADING_PACKED_EXPERTS)
     .value("op_debug_option", MsCtxParam::MS_CTX_OP_DEBUG_OPTION);
-  (void)py::class_<mindspore::MsContext, std::shared_ptr<mindspore::MsContext>>(*m, "MSContext")
-    .def_static("get_instance", &mindspore::MsContext::GetInstance, "Get ms context instance.")
-    .def("get_param", &mindspore::MsCtxGetParameter, "Get value of specified parameter.")
-    .def("set_param", &mindspore::MsCtxSetParameter, "Set value for specified parameter.")
-    .def("set_device_target_inner", &mindspore::MsContext::SetDeviceTargetFromInner, "Set device target inner.")
-    .def("get_backend_policy", &mindspore::MsContext::backend_policy, "Get backend policy.")
-    .def("set_backend_policy", &mindspore::MsContext::set_backend_policy, "Set backend policy.")
-    .def("get_ascend_soc_version", &mindspore::MsContext::ascend_soc_version, "Get ascend soc version.")
-    .def("enable_dump_ir", &mindspore::MsContext::enable_dump_ir, "Get the ENABLE_DUMP_IR.")
-    .def("is_ascend_plugin_loaded", &mindspore::MsContext::IsAscendPluginLoaded,
-         "Get the status that has ascend plugin been loaded.")
-    .def("register_set_env_callback", &mindspore::MsContext::RegisterSetEnv,
-         "Register callback function for check environment variable.")
-    .def("register_check_env_callback", &mindspore::MsContext::RegisterCheckEnv,
-         "Register callback function for check environment variable.")
-    .def("is_pkg_support_device", &mindspore::MsContext::IsSupportDevice,
-         "Return whether this MindSpore package supports specified device.")
-    .def("load_plugin_error", &mindspore::MsContext::GetLoadPluginErrorStr,
-         "Return error message when loading plugins for this MindSpore package.")
-    .def("_set_not_convert_jit", &mindspore::MsContext::set_not_convert_jit, "Set not convert jit.");
+  RegMsContextDefs(m);
 }
 }  // namespace mindspore
