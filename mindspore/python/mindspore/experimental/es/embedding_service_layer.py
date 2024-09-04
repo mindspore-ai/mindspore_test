@@ -216,7 +216,7 @@ class EsEmbeddingLookup(nn.Cell):
             self.filter_freq = 1
             self.default_key_or_value = 1
             self.default_key = 0
-            self.default_value = -1.0
+            self.default_value = 1.0
 
         self.global_step = 1
         if es_padding_key is not None:
@@ -563,12 +563,12 @@ class ESEmbeddingSmallTableLookup(nn.Cell):
         """
         hash_key_shape = ids_list.shape
         if self.rank_size > 1 and (hash_key_shape[0] is not None):
-            hash_key = self.allgather(ids_list)
+            hash_key = ops.stop_gradient(self.allgather(ids_list))
             non_hash_key = self.embedding_feature_mapping_v2(self.name, hash_key, [1], [1])
             recovery_matrix = []
             for i in range(hash_key_shape[0]):
                 recovery_matrix.append(self.rank_id * hash_key_shape[0] + i)
-            local_non_hash_keys = self.gather(non_hash_key, recovery_matrix)
+            local_non_hash_keys = self.gather(non_hash_key, Tensor(recovery_matrix), 0)
         else:
             hash_key = ids_list
             local_non_hash_keys = self.embedding_feature_mapping_v2(self.name, hash_key, [1], [1])
