@@ -22,7 +22,6 @@ import sys
 import time
 from multiprocessing import Process
 import numpy as np
-import pytest
 
 from mindspore import nn, context
 from mindspore import dataset as ds
@@ -140,7 +139,9 @@ def test_on_request_exit_callback():
     """
     if sys.platform != 'linux':
         return
+    os.environ['MS_ENABLE_GRACEFUL_EXIT'] = '1'
     context.set_context(mode=context.GRAPH_MODE)
+    device_id = context.get_context("device_id")
     directory = "./data"
     if os.path.exists(directory):
         shutil.rmtree(directory)
@@ -156,10 +157,10 @@ def test_on_request_exit_callback():
     send_signal_process = Process(target=send_signal, args=[1])
     send_signal_process.start()
     model.train(epoch_num, dataset, callbacks=[loss_monitor, epoch_and_step_record, on_request_exit])
-    train_ckpt_file = f"{directory}/LeNet5_train.ckpt"
-    train_mindir_file = f"{directory}/LeNet5_train.mindir"
-    eval_ckpt_file = f"{directory}/LeNet5_eval.ckpt"
-    eval_mindir_file = f"{directory}/LeNet5_eval.mindir"
+    train_ckpt_file = f"{directory}/rank_{device_id}/LeNet5_train.ckpt"
+    train_mindir_file = f"{directory}/rank_{device_id}/LeNet5_train.mindir"
+    eval_ckpt_file = f"{directory}/rank_{device_id}/LeNet5_eval.ckpt"
+    eval_mindir_file = f"{directory}/rank_{device_id}/LeNet5_eval.mindir"
     assert epoch_and_step_record.epoch != epoch_num or epoch_and_step_record.step != step_num
     assert os.path.isfile(train_ckpt_file)
     assert os.path.isfile(train_mindir_file)
@@ -191,6 +192,7 @@ def test_on_request_exit_callback():
     assert epoch_and_step_record.step == step_num
 
     shutil.rmtree(directory)
+    del os.environ['MS_ENABLE_GRACEFUL_EXIT']
 
 
 @arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'],

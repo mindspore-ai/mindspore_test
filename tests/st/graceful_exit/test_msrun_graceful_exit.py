@@ -12,10 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-"""Utils module."""
-from __future__ import absolute_import
-from mindspore._c_expression import stress_detect
-from .utils import ExitByRequest
+import os
+from tests.mark_utils import arg_mark
 
-# Symbols from utils module.
-__all__ = ["stress_detect", "ExitByRequest"]
+
+@arg_mark(plat_marks=["platform_ascend"], level_mark="level1", card_mark="allcards", essential_mark="essential")
+def test_msrun_comm_subgraph_8p():
+    """
+    Feature: test graceful exit.
+    Description: test graceful exit, save ckpt after exit training process.
+    Expectation: none.
+    """
+    return_code = os.system(
+        "msrun --worker_num=8 --local_worker_num=8 --master_addr=127.0.0.1 " \
+        "--master_port=10970 --join=True --log_dir=./comm_subgraph_logs " \
+        "pytest -s test_graceful_exit_ascend.py::test_graceful_exit_ascend_8p"
+    )
+    assert return_code == 0

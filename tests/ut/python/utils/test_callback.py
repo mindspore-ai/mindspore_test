@@ -30,7 +30,7 @@ from mindspore.common.tensor import Tensor
 from mindspore.nn import TrainOneStepCell, WithLossCell
 from mindspore.nn.optim import Momentum
 from mindspore.train import ModelCheckpoint, RunContext, LossMonitor, Callback, CheckpointConfig, \
-    LambdaCallback, History, MindIOTTPAdapter
+    LambdaCallback, History, MindIOTTPAdapter, OnRequestExit
 from mindspore.train.callback import _InternalCallbackParam, _CallbackManager, _checkpoint_cb_for_save_op, _set_cur_net
 from mindspore.train.callback._checkpoint import _chg_ckpt_file_name_if_same_exist
 
@@ -596,6 +596,42 @@ def test_lambda():
         callbacklist.on_train_step_end(run_context)
         callbacklist.on_train_epoch_end(run_context)
         callbacklist.on_train_end(run_context)
+
+
+def test_graceful_exit():
+    """
+    Feature: test graceful exit.
+    Description: test graceful exit callback.
+    Expectation: run success
+    """
+    os.environ["MS_ENABLE_GRACEFUL_EXIT"] = '1'
+    context.set_context(mode=context.GRAPH_MODE, device_target='Ascend')
+    net = LossNet()
+    optimizer = Momentum(net.trainable_params(), learning_rate=0.1, momentum=0.9)
+    net = TrainOneStepCell(net, optimizer)
+    input_data = Tensor(np.random.randint(0, 255, [1, 3, 224, 224]).astype(np.float32))
+    input_label = Tensor(np.random.randint(0, 3, [1, 3]).astype(np.float32))
+    net(input_data, input_label)
+
+    cb_params = _InternalCallbackParam()
+    cb_params.cur_epoch_num = 4
+    cb_params.epoch_num = 4
+    cb_params.cur_step_num = 2
+    cb_params.batch_num = 2
+    cb_params.train_network = net
+    run_context = RunContext(cb_params)
+
+    # cb function
+    graceful_cb = OnRequestExit(save_ckpt=False, save_mindir=False, config_file="./reset.json")
+    assert graceful_cb.save_path == "./"
+    assert graceful_cb.use_graceful is True
+    ret = graceful_cb.remote_config_file == "./reset.json"
+    assert ret is True
+    assert graceful_cb.is_distributed is False
+    # 1. single device
+    graceful_cb.on_train_step_begin(run_context)
+    graceful_cb.on_train_step_end(run_context)
+    del os.environ["MS_ENABLE_GRACEFUL_EXIT"]
 
 
 def test_mindio_ttp_adapter():

@@ -36,6 +36,7 @@ from mindspore.ops import operations as P
 from mindspore.ops.operations.comm_ops import _VirtualDataset
 from mindspore.nn.cell import Cell
 from mindspore.nn.wrap.grad_reducer import DistributedGradReducer
+from mindspore.utils import ExitByRequest
 
 _get_datatype = C.MultitypeFuncGraph("_get_datatype")
 
@@ -414,6 +415,11 @@ class TrainOneStepCell(Cell):
                 group = server_group_name
             self.grad_reducer = DistributedGradReducer(self.weights, self.mean, self.degree, group=group)
         self._get_attr_from_cell(network)
+        self.use_graceful_exit = os.environ.get("MS_ENABLE_GRACEFUL_EXIT") == "1"
+        if self.use_graceful_exit:
+            self.graceful_exit = ExitByRequest()
+            self.exit_param = Parameter(Tensor(False, mstype.bool_), name="graceful_exit")  # update by reduce value
+            self.init_param = Parameter(Tensor([0], mstype.int32), name="graceful_init")  # update by config file
 
     def construct(self, *inputs):
         if not self.sense_flag:
@@ -422,6 +428,8 @@ class TrainOneStepCell(Cell):
         sens = F.fill(loss.dtype, loss.shape, self.sens)
         grads = self.grad(self.network, self.weights)(*inputs, sens)
         grads = self.grad_reducer(grads)
+        if self.use_graceful_exit:
+            grads = self.graceful_exit.exit_by_request(grads, self.init_param, self.exit_param)
         loss = F.depend(loss, self.optimizer(grads))
         if self.return_grad:
             grad_with_param_name = {}
@@ -435,6 +443,8 @@ class TrainOneStepCell(Cell):
         loss = self.network(*inputs)
         grads = self.grad_no_sens(self.network, self.weights)(*inputs)
         grads = self.grad_reducer(grads)
+        if self.use_graceful_exit:
+            grads = self.graceful_exit.exit_by_request(grads, self.init_param, self.exit_param)
         loss = F.depend(loss, self.optimizer(grads))
         if self.return_grad:
             grad_with_param_name = {}

@@ -23,6 +23,7 @@ from mindspore.mindrecord import *
 from mindspore.ops import _op_impl, grad, value_and_grad, vjp, jvp, jacfwd, jacrev, vmap, get_grad, constexpr, reshard
 from mindspore.train import *
 from mindspore.log import *
+from mindspore.utils import *
 from mindspore.context import GRAPH_MODE, PYNATIVE_MODE, set_context, get_context, set_auto_parallel_context, \
     get_auto_parallel_context, reset_auto_parallel_context, ParallelMode, set_ps_context, \
     get_ps_context, reset_ps_context, set_offload_context, get_offload_context, STRICT, COMPATIBLE, LAX
