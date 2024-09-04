@@ -1369,15 +1369,14 @@ void GraphExecutorPy::ConvertSymbolicShape(const py::tuple &args, AbstractBasePt
       continue;
     }
     auto digital_shape = iter->second.second->GetShape();
+    MS_EXCEPTION_IF_NULL(digital_shape);
     if (digital_shape->IsDynamic()) {
       has_dyn_shape = true;
     }
     constexpr char symbolic_shape_attr[] = "symbolic_shape";
     if (!py::hasattr(args[i], symbolic_shape_attr)) {
-      if (is_parallel) {
-        if (digital_shape != nullptr && digital_shape->isa<abstract::TensorShape>()) {
-          info_list.resize(digital_shape->GetShapeVector().size());
-        }
+      if (is_parallel && digital_shape->isa<abstract::TensorShape>()) {
+        info_list.resize(digital_shape->GetShapeVector().size());
       }
       continue;
     }
