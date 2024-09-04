@@ -282,7 +282,33 @@ AbstractObjectBase::Type AbstractObjectBase::GetMsType(PyTypeObject *tp) {
 
 AObject *AbstractObjectBase::Convert(const AbstractWrapperPtr &wrapper) {
   py::object res = AbstractWrapper::ConvertToPyObject(wrapper);
-  return Convert(res.ptr());
+  if (res.ptr() != nullptr) {
+    return Convert(res.ptr());
+  }
+  if (wrapper == nullptr) {
+    return Resource::Current()->pool()->New<AbstractObjectBase>(kTypeAnyValue);
+  }
+  auto abstract = wrapper->abstract();
+  if (abstract == nullptr || !abstract->isa<abstract::AbstractScalar>()) {
+    return Resource::Current()->pool()->New<AbstractObjectBase>(kTypeAnyValue);
+  }
+  auto type_id = abstract->BuildType()->type_id();
+  MS_LOG(INFO) << "Current type_id is " << TypeIdToString(type_id);
+  switch (type_id) {
+    case kNumberTypeInt:
+    case kNumberTypeInt64:
+    case kNumberTypeInt32:
+      return MakeAObject(kTypeInt, &PyLong_Type, nullptr);
+    case kNumberTypeFloat:
+    case kNumberTypeFloat16:
+    case kNumberTypeFloat32:
+    case kNumberTypeFloat64:
+      return MakeAObject(kTypeFloat, &PyFloat_Type, nullptr);
+    case kNumberTypeBool:
+      return MakeAObject(kTypeBool, &PyBool_Type, nullptr);
+    default:
+      return MakeAObject(kTypeAnyValue, nullptr, nullptr);
+  }
 }
 
 AObject *AbstractObjectBase::MakeAObject(AObject::Type type, PyTypeObject *tp, PyObject *o, RecMap *m) {

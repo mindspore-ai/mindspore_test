@@ -1488,10 +1488,12 @@ void MindCodeBreakGenerator::Compile(const std::string &co_name, int co_argcount
     py::cast<std::string>(co_->co_filename) + "_" + std::to_string(co_->co_firstlineno) + "_" + co_name;
   const auto &parameters = func_graph->parameters();
   py::tuple args(parameters.size() - func_graph->fv_param_count());
+  size_t param_count = 0;
   for (size_t i = 0; i < parameters.size(); ++i) {
     auto para = parameters[i]->cast<ParameterPtr>();
     MS_EXCEPTION_IF_NULL(para);
     if (para->has_default()) {
+      param_count++;
       continue;
     }
     auto para_abstract = para->abstract();
@@ -1499,7 +1501,7 @@ void MindCodeBreakGenerator::Compile(const std::string &co_name, int co_argcount
     phase += "_" + para_abstract->ToString();
     auto input_obj = para->user_data<py::object>("pi_jit_py_obj");
     MS_EXCEPTION_IF_NULL(input_obj);
-    args[i] = *input_obj;
+    args[i - param_count] = *input_obj;
   }
   phase += ".pi_jit";
   MindCompiler::CompileInfo compile_info{co_name, co_argcount, co_kwonlyargcount, co_flags};
