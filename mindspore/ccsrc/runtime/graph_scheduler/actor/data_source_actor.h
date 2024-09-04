@@ -144,6 +144,9 @@ class HostQueueDataSourceActor : public DataSourceActor {
  protected:
   void FillDataBuffer() override;
 
+  void AddCopyDataCallBack(bool enable_async_copy, const mindspore::tensor::TensorPtrList &host_tensors,
+                           const std::vector<mindspore::runtime::DeviceTensor *> &device_tensors);
+
  private:
   friend class GraphScheduler;
   friend class ControlNodeScheduler;
