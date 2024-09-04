@@ -44,5 +44,21 @@ vector<DeviceAddressPtr> CalStatisticAsync(const std::string &stat_name, const D
   }
 }
 
+bool CalCheckOverflow(const DeviceContext *device_context, vector<KernelTensor *> inputs,
+                      const std::uint32_t stream_id) {
+  auto out = CalCheckOverflowAsync(device_context, inputs, stream_id);
+  if (out == nullptr) {
+    return false;
+  }
+  auto overflow_tensor = out->kernel_tensor();
+  return overflow_tensor->GetValueWithCheck<bool>();
+}
+
+DeviceAddressPtr CalCheckOverflowAsync(const DeviceContext *device_context, vector<KernelTensor *> inputs,
+                                       const uint32_t stream_id) {
+  auto kernel = KernelFactory::Instance().CreateKernel(KCheckOverflow, device_context);
+  return kernel->LaunchKernelAsync(inputs, stream_id);
+}
+
 }  // namespace datadump
 }  // namespace mindspore

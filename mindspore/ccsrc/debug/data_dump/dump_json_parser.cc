@@ -503,11 +503,13 @@ void DumpJsonParser::ParseCommonDumpSetting(const nlohmann::json &content) {
   ParseSupportDevice(*support_device);
   if (!e2e_dump_enabled_) {
     ParseOpDebugMode(*op_debug_mode);
+    CheckOverflowSetting();
     ParseFileFormat(
       *common_dump_settings);  // Pass in the whole json string to parse because file_format field is optional.
   } else {
     if (CheckSelectableKeyExist(*common_dump_settings, kOpDebugMode)) {
       ParseOpDebugMode(*op_debug_mode);
+      CheckOverflowSetting();
     }
   }
   ParseOverflowNumber(*common_dump_settings);  // The overflow number field is optional.
@@ -937,7 +939,7 @@ void DumpJsonParser::ParseOpDebugMode(const nlohmann::json &content) {
       auto device_target = context->get_param<std::string>(MS_CTX_DEVICE_TARGET);
       if (device_target == "CPU" || device_target == "GPU") {
         MS_LOG(WARNING) << "Abnormal dump is not supported on " << device_target
-                        << " backend, and none operator data would be saved when abnormal dump is enabled.";
+                        << " backend, and none operator data would be saved when abnormal dump is enabled. ";
       }
       if (e2e_dump_enabled_ && iteration_ != "all") {
         MS_LOG(WARNING) << "For e2e exception dump, it is not support to specify iteration, set iteration to all.";
@@ -963,6 +965,20 @@ void DumpJsonParser::ParseOpDebugMode(const nlohmann::json &content) {
   if (op_debug_mode_ != static_cast<uint32_t>(DUMP_WHOLE) && dump_mode_ != static_cast<uint32_t>(DUMP_ALL)) {
     MS_LOG(WARNING) << "Overflow dump or exception dump do not support specify kernels, the dump_mode is set to 0";
     dump_mode_ = static_cast<uint32_t>(DUMP_ALL);
+  }
+}
+
+void DumpJsonParser::CheckOverflowSetting() {
+  if (op_debug_mode_ == static_cast<uint32_t>(DUMP_BOTH_OVERFLOW)) {
+    if (input_output_ != 0) {
+      input_output_ = 0;
+      MS_LOG(WARNING) << "When the `op_debug` mode is set to 3, `input_output` should be set to 0.";
+    }
+    if (stat_calc_mode_ == kDevice && !e2e_sync_dump_enabled_) {
+      stat_calc_mode_ = kHost;
+      MS_LOG(WARNING) << "When op_debug_mode is set to 3 and e2e_enable is set to false,"
+                         "stat_calc_mode has been be set to 'host'.";
+    }
   }
 }
 
