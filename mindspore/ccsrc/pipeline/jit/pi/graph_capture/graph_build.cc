@@ -507,7 +507,7 @@ bool GraphBuilder::DoCall(const Instr &instr) {
     size_t args_size = PyTuple_GET_SIZE(args->GetVobj()->GetPyObject().ptr());
     UnpackElements(args);
     for (size_t i = 1; i < params.size(); ++i) {
-      push(params[0]);
+      push(params[i]);
     }
     DoBuildOp({BUILD_TUPLE, SizeToInt(args_size + params.size()) - 1});
     auto kwargs = PyObject_GetAttrString(params[0]->GetVobj()->GetPyObject().ptr(), "keywords");
