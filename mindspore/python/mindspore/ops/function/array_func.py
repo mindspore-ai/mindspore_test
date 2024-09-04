@@ -36,10 +36,10 @@ from mindspore.ops.auto_generate import OnesLikeExt, ZerosLikeExt, FillScalar, F
     Unique2, SortExt, NonZero, NonZeroExt
 from mindspore.ops.auto_generate.gen_ops_prim import SplitTensor
 from mindspore.ops.auto_generate.gen_ops_prim import SplitWithSize, RepeatInterleaveInt, RepeatInterleaveTensor
+from mindspore.ops.auto_generate.pyboost_inner_prim import _PyboostSearchSortedPrim
 
 from mindspore.ops.operations.array_ops import (
     UniqueConsecutive,
-    SearchSorted,
     MatrixDiagV3,
     MatrixDiagPartV3,
     MatrixSetDiagV3,
@@ -104,6 +104,7 @@ scatter_min_ = P.ScatterMin()
 scatter_mul_ = P.ScatterMul()
 scatter_nd_ = P.ScatterNd()
 scatter_update_ = P.ScatterUpdate()
+search_sorted_ = _PyboostSearchSortedPrim()
 shape_ = P.Shape()
 split_tensor = SplitTensor()
 split_with_size = SplitWithSize()
@@ -1442,8 +1443,7 @@ def searchsorted(sorted_sequence, values, *, out_int32=False, right=False, side=
                          f"got side of left while right was True.")
     if side == "right":
         right = True
-    search_sorted_ = SearchSorted(dtype, right)
-    return search_sorted_(sorted_sequence, values, sorter)
+    return search_sorted_(sorted_sequence, values, sorter, dtype, right)
 
 
 def ger(input, vec2):

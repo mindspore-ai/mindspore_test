@@ -42,6 +42,7 @@
 #include "utils/check_convert_utils.h"
 #include "utils/log_adapter.h"
 #include "utils/shape_utils.h"
+#include "ops/ops_func_impl/simple_infer.h"
 
 namespace mindspore {
 namespace ops {
@@ -130,5 +131,49 @@ TypePtr SearchSortedFuncImpl::InferType(const PrimitivePtr &primitive,
 
   return std::make_shared<TensorType>(type);
 }
+
+TypePtrList SearchSortedFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
+  auto dtype_ptr = input_values[kInputIndex3]->cast<Int64ImmPtr>();
+  MS_EXCEPTION_IF_NULL(dtype_ptr);
+  auto type = TypeIdToType(static_cast<TypeId>(dtype_ptr->value()));
+  return {type};
+}
+
+ShapeArray SearchSortedFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
+  MS_EXCEPTION_IF_NULL(primitive);
+
+  auto sequence_tensor_ptr = input_values[kInputIndex0]->cast<tensor::BaseTensorPtr>();
+  MS_EXCEPTION_IF_NULL(sequence_tensor_ptr);
+  auto sequence_shape = sequence_tensor_ptr->shape();
+
+  auto values_tensor_ptr = input_values[kInputIndex1]->cast<tensor::BaseTensorPtr>();
+  MS_EXCEPTION_IF_NULL(values_tensor_ptr);
+  auto values_shape = values_tensor_ptr->shape();
+
+  auto sorter_tensor_ptr = input_values[kInputIndex2]->cast<tensor::BaseTensorPtr>();
+
+  if (sorter_tensor_ptr != nullptr) {
+    MS_CHECK_VALUE(sorter_tensor_ptr->Dtype()->type_id() == kNumberTypeInt64,
+                   "For '" + primitive->name() + "' sorter type should be Int64");
+  }
+
+  if (sequence_shape.empty()) {
+    MS_EXCEPTION(ValueError) << "For '" << primitive->name()
+                             << "', empty shape is not permitted in 'sorted_sequence' inputs. ";
+  }
+
+  if (values_shape.empty() && sequence_shape.size() != 1) {
+    MS_EXCEPTION(ValueError) << "For '" << primitive->name()
+                             << "', 'values' can be a scalar only when the dimension of 'sorted_sequence' is 1. ";
+  }
+
+  if (sequence_shape.size() != 1 && !CheckDimsMatched(sequence_shape, values_shape)) {
+    MS_EXCEPTION(ValueError) << "For '" << primitive->name() << "', the 'sorted_sequence' must be 1 dimensional or "
+                             << "all dimensions except the last dimension of 'sorted_sequence' "
+                             << "must be the same as all dimensions except the last dimension of 'values'.";
+  }
+  return {values_shape};
+}
+REGISTER_SIMPLE_INFER(kNameSearchSorted, SearchSortedFuncImpl)
 }  // namespace ops
 }  // namespace mindspore
