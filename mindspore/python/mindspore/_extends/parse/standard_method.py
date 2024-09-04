@@ -1075,6 +1075,7 @@ def copy_(self, src, non_blocking=False):
 
     .. warning::
         This is an experimental API that is subject to change or deletion.
+        The `src` tensor must be broadcastable with the `self` tensor. It may be of a different data type.
 
     Args:
         src (Tensor): the source tensor to copy from.
@@ -1086,17 +1087,19 @@ def copy_(self, src, non_blocking=False):
     Supported Platforms:
         ``Ascend``
 
-    examples:
+    Examples:
         >>> import numpy as np
         >>> from mindspore import Tensor
         >>> a = Tensor(np.ones((3,3)).astype("float32"))
         >>> b = Tensor(np.zeros((3,3)).astype("float32"))
-        >>> a.copy(b)
+        >>> a.copy_(b)
         >>> print(a)
         [[0. 0. 0.]
         [0. 0. 0.]
         [0. 0. 0.]]
     """
+    if non_blocking:
+        logger.warning(f"'non_blocking' == True has no effect")
     return tensor_operator_registry.get("copy_")(self, src)
 
 
