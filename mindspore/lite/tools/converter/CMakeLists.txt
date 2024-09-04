@@ -5,7 +5,7 @@ set(MSLITE_MERGE_DISABLE on)
 if(MSLITE_ENABLE_MODEL_ENCRYPTION AND MSLITE_DEPS_OPENSSL)
     add_compile_definitions(ENABLE_OPENSSL)
 endif()
-
+set(PYTHON_VERSION ${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR})
 set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../src)
 
 if(ENABLE_GPU)
@@ -389,6 +389,9 @@ target_link_libraries(mindspore_converter
         coder_mid
         mindir_serializer_mid
         )
+if(PYTHON_VERSION MATCHES "3.11")
+  target_link_libraries(mindspore_converter ${PYTHON_LIBRARIES})
+endif()
 
 if(NOT MSLITE_SIMPLEST_CLOUD_INFERENCE)
     target_link_libraries(mindspore_converter decomposer_mid)
