@@ -502,8 +502,9 @@ bool SymbolEngineImpl::SetParamSymbols(const CNodePtr &cnode, const FuncGraphPtr
       input_abs->SetSymbolicValue(BuildSymbolicValue(input_abs));
     }
     auto param = sub_fg->parameters()[i - begin_input_index];
+    auto param_abs = param->abstract();
     if (visit_cnt == 1) {
-      auto param_abs = CloneAbstractIfSymbolExists(param);
+      param_abs = CloneAbstractIfSymbolExists(param);
       MS_EXCEPTION_IF_NULL(param_abs);
       param_abs->SetSymbolicShape(input_abs->GetSymbolicShape());
       param_abs->SetSymbolicValue(input_abs->GetSymbolicValue());
@@ -511,6 +512,10 @@ bool SymbolEngineImpl::SetParamSymbols(const CNodePtr &cnode, const FuncGraphPtr
       build_again = GeneralizeParamShape(param, input_abs) || build_again;
       build_again = GeneralizeParamValue(param, input_abs) || build_again;
     }
+    MS_LOG(DEBUG) << "Symbol of param[" << i - begin_input_index << "]: S:"
+                  << (param_abs->GetSymbolicShape() == nullptr ? "none" : param_abs->GetSymbolicShape()->ToString())
+                  << ". V:"
+                  << (param_abs->GetSymbolicValue() == nullptr ? "none" : param_abs->GetSymbolicValue()->ToString());
   }
   return build_again;
 }

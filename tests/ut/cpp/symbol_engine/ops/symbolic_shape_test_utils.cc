@@ -97,4 +97,28 @@ BaseShapePtr SymbolEngineImplTestHelper::ConvertSymbolToShape(const AnfNodePtr &
 ValuePtr SymbolEngineImplTestHelper::ConvertSymbolToValue(const AnfNodePtr &node) {
   return mindspore::symshape::QueryValue(node->abstract());
 }
+
+void OperationTestHelper::Infer(const std::vector<std::pair<ListSymbolPtr, ShapeVector>> &real_shape) {
+  DumpText();
+  for (auto &[listsym, shape] : real_shape) {
+    listsym->Update(ShapeVector2Symbol(shape));
+  }
+  for (auto &op : ops_list_) {
+    op->Run();
+  }
+}
+
+void OperationTestHelper::DumpText() {
+  if (common::GetEnv("MS_UT_DUMP_SYMBOL") != "on") {
+    return;
+  }
+  auto current_test_info = testing::UnitTest::GetInstance()->current_test_info();
+  std::string case_name = current_test_info->test_case_name();
+  std::string cur_name = current_test_info->name();
+  std::cout << "==== Ops in " << case_name << "." << cur_name << " ====" << std::endl;
+  for (auto &op : ops_list_) {
+    std::cout << op->DumpText();
+  }
+  std::cout << "=====================\n" << std::endl;
+}
 }  // namespace mindspore::symshape::test

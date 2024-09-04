@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Huawei Technologies Co., Ltd
+ * Copyright 2023-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "mindspore/ops/infer/symbol_ops_impl/common.h"
+#include "mindspore/ops/infer/symbol_ops_impl/reshape.h"
+#include <set>
+#include <memory>
+#include <utility>
 #include "mindspore/ops/infer/symbol_ops_impl/scalar_mul.h"
 #include "mindspore/ops/infer/symbol_ops_impl/scalar_div.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
@@ -21,26 +24,6 @@
 namespace mindspore {
 namespace symshape {
 namespace ops {
-class OPS_API Reshape : public InferShapeOp {
- public:
-  using InferShapeOp::InferShapeOp;
-  Reshape(const SymbolPtr &input, const SymbolPtr &shape) : InferShapeOp({input, shape}) {}
-  ~Reshape() override = default;
-  MS_DECLARE_PARENT(Reshape, InferShapeOp)
-  std::string DumpText() const override;
-
- protected:
-  SymbolPtr Eval() override;
-  void EvalOnRun() override;
-  void ProductShape(const ListSymbol *shape);
-  std::pair<SymbolPtr, int64_t> ProductData(const ListSymbol *data);
-
-  int unknown_dim_idx_{-1};
-  SymbolPtr shape_unknown_dims_{nullptr};
-  int64_t shape_const_dims_{1};
-  OpPtrList inner_ops_;
-};
-
 std::string Reshape::DumpText() const {
   std::ostringstream oss;
   oss << InferShapeOp::DumpText();
@@ -50,73 +33,54 @@ std::string Reshape::DumpText() const {
   return oss.str();
 }
 
-/// \brief calculate the product value of shape
-void Reshape::ProductShape(const ListSymbol *shape) {
-  shape_unknown_dims_ = nullptr;
-  shape_const_dims_ = 1LL;
-  unknown_dim_idx_ = -1;
+size_t Reshape::FindUnknownDim(const SymbolPtrList &symbols) {
+  size_t unknown_dim_idx = symbols.size();
   size_t notpositive_symbol_cnt = 0;
-  int notpositive_symbol_idx = 0;
-  for (size_t i = 0; i < shape->size(); i++) {
-    auto item = shape->item_as<IntSymbol>(i);
-    if (item->HasData()) {
-      auto s = item->value();
-      if (s < 0) {
-        unknown_dim_idx_ = static_cast<int>(i);
-      } else {
-        shape_const_dims_ *= s;
-      }
-    } else {
-      if (!item->is_positive()) {
-        notpositive_symbol_cnt++;
-        notpositive_symbol_idx = static_cast<int>(i);
-      }
+  size_t notpositive_symbol_idx = 0;
+  for (size_t i = 0; i < symbols.size(); i++) {
+    auto item = symbols[i]->as<IntSymbol>();
+    if (item->is_negative()) {
+      unknown_dim_idx = i;
+      break;
+    } else if (!item->is_positive()) {
+      // unknown positive or negative
+      notpositive_symbol_cnt++;
+      notpositive_symbol_idx = i;
     }
   }
 
-  if (notpositive_symbol_cnt > 0) {
-    if (unknown_dim_idx_ >= 0) {
-      // there's a "-1" in shape, so other symbols are all positive.
-      for (size_t i = 0; i < shape->size(); i++) {
-        auto item = shape->item_as_sptr<IntSymbol>(i);
-        if (static_cast<int>(i) != unknown_dim_idx_ && !item->is_positive()) {
-          item->SetRangeMin(1);
-        }
-      }
-    } else if (notpositive_symbol_cnt == 1) {
-      // there's no "-1" in shape, but is only one symbol that is not always positive, it can be treated as "-1".
-      unknown_dim_idx_ = notpositive_symbol_idx;
-    }
+  if (unknown_dim_idx < symbols.size()) {
+    return unknown_dim_idx;
   }
-  // product the unknown dims, except the "-1" item.
-  for (size_t i = 0; i < shape->size(); i++) {
-    auto item = shape->item_as_sptr<IntSymbol>(i);
-    if (static_cast<int>(i) == unknown_dim_idx_ || item->HasData()) {
-      continue;
-    }
-    if (shape_unknown_dims_ == nullptr) {
-      shape_unknown_dims_ = item;
-    } else {
-      shape_unknown_dims_ = Emit(std::make_shared<ScalarMul>(shape_unknown_dims_, item));
-    }
+  // when there is no a certainly negative symbol, and there is only one not-positive symbol, set it to unknown.
+  if (notpositive_symbol_cnt == 1) {
+    return notpositive_symbol_idx;
   }
+  return symbols.size();
 }
 
-std::pair<SymbolPtr, int64_t> Reshape::ProductData(const ListSymbol *data) {
-  int64_t input_const_dims = 1LL;
-  SymbolPtr input_unknown_dims = nullptr;
-  for (auto &s : data->symbols()) {
-    if (s->HasData()) {
-      input_const_dims *= AsInt(s);
-    } else {
-      if (input_unknown_dims == nullptr) {
-        input_unknown_dims = s;
-      } else {
-        input_unknown_dims = Emit(std::make_shared<ScalarMul>(input_unknown_dims, s));
+void Reshape::RemoveSameSymbol(SymbolPtrList *inp_symbols, SymbolPtrList *out_symbols) {
+  std::set<SymbolPtr> input(inp_symbols->begin(), inp_symbols->end());
+  std::set<SymbolPtr> output(out_symbols->begin(), out_symbols->end());
+  for (auto it1 = input.begin(); it1 != input.end();) {
+    bool removed = false;
+    for (auto it2 = output.begin(); it2 != output.end();) {
+      if ((*it1)->EqualsTo(*it2)) {
+        removed = true;
+        it1 = input.erase(it1);
+        it2 = output.erase(it2);
+        break;
       }
+      ++it2;
+    }
+    if (!removed) {
+      ++it1;
     }
   }
-  return std::make_pair(input_unknown_dims, input_const_dims);
+  if (input.size() < inp_symbols->size()) {
+    *inp_symbols = SymbolPtrList(input.begin(), input.end());
+    *out_symbols = SymbolPtrList(output.begin(), output.end());
+  }
 }
 
 SymbolPtr Reshape::Eval() {
@@ -132,12 +96,22 @@ SymbolPtr Reshape::Eval() {
     DoNotEvalOnRun();
     return input(1);
   }
+  auto inp_symbols = data->symbols();
+  auto out_symbols = shape->symbols();
+  RemoveSameSymbol(&inp_symbols, &out_symbols);
+  if (out_symbols.empty()) {
+    // all output symbols are from input.
+    DoNotEvalOnRun();
+    return input(1);
+  }
   // do not add the inner operation to global op list.
   OperationEmitter e(&inner_ops_);
   SetEmitter(&e);
-  ProductShape(shape);
+
+  // auto unknown_dim_symbol = ProductOutShape(out_symbols);
+  auto unknown_dim_idx = FindUnknownDim(out_symbols);
   SymbolPtrList result = shape->symbols();
-  if (unknown_dim_idx_ < 0) {
+  if (unknown_dim_idx == out_symbols.size()) {
     for (size_t i = 0; i < result.size(); i++) {
       if (!result[i]->as<IntSymbol>()->is_positive()) {
         result[i] = GenVInt();
@@ -145,52 +119,91 @@ SymbolPtr Reshape::Eval() {
     }
     return GenList(std::move(result));
   }
+  auto unknown_dim_symbol = out_symbols[unknown_dim_idx];
+  out_symbols.erase(out_symbols.begin() + unknown_dim_idx);
+  unknown_dim_idx = static_cast<size_t>(std::find(result.begin(), result.end(), unknown_dim_symbol) - result.begin());
+  if (unknown_dim_idx >= result.size()) {
+    MS_LOG(INTERNAL_EXCEPTION) << "The symbol " << unknown_dim_symbol->ToString() << " is not found in output shape";
+  }
 
   // "-1" exists in shape.
   if (data->is_dyn_len()) {
-    result[unknown_dim_idx_] = GenVInt();
+    result[unknown_dim_idx] = GenVInt();
     return GenList(std::move(result));
   }
-  SymbolPtr input_unknown_dims;
-  int64_t input_const_dims;
-  std::tie(input_unknown_dims, input_const_dims) = ProductData(data);
-  if (input_unknown_dims == nullptr && shape_unknown_dims_ == nullptr) {
-    result[unknown_dim_idx_] = GenInt(input_const_dims / shape_const_dims_);
+  SymbolPtr input_unknown_dims = nullptr;
+  SymbolPtr output_unknown_dims = nullptr;
+  int64_t input_const_dims = 1;
+  int64_t output_const_dims = 1;
+  Accumulate<ScalarMul>(inp_symbols, emitter(), &input_unknown_dims, &input_const_dims);
+  Accumulate<ScalarMul>(out_symbols, emitter(), &output_unknown_dims, &output_const_dims);
+  if (input_const_dims != 1 && output_const_dims != 1) {
+    auto g = std::gcd(input_const_dims, output_const_dims);
+    input_const_dims /= g;
+    output_const_dims /= g;
+  }
+  if (input_unknown_dims == nullptr && output_unknown_dims == nullptr) {
+    if (input_const_dims % output_const_dims != 0) {
+      MS_EXCEPTION(ValueError) << "For 'Reshape', the input " << data->ToString() << " can not be reshape to "
+                               << shape->ToString();
+    }
+    result[unknown_dim_idx] = GenInt(input_const_dims / output_const_dims);
     return GenList(std::move(result));
   }
 
   // Reshape (const1, s1) to (const2, s2, U), the `U = (const1 * s1) / (const2 * s2)`
   // if `const1 % const2 == 0`, then simplify to `U = (const1/const2) * s1 / s2`
-  if (input_const_dims % shape_const_dims_ == 0) {
-    auto c = GenInt(input_const_dims / shape_const_dims_);
+  if (input_const_dims % output_const_dims == 0) {
+    auto c = GenInt(input_const_dims / output_const_dims);
     auto c_s1 = input_unknown_dims != nullptr ? Emit(std::make_shared<ScalarMul>(input_unknown_dims, c)) : c;
-    auto u = shape_unknown_dims_ != nullptr ? Emit(std::make_shared<ScalarDiv>(c_s1, shape_unknown_dims_)) : c_s1;
-    result[unknown_dim_idx_] = u;
+    auto u = output_unknown_dims != nullptr ? Emit(std::make_shared<ScalarDiv>(c_s1, output_unknown_dims)) : c_s1;
+    result[unknown_dim_idx] = u;
   } else {
     auto tmp1 = input_unknown_dims != nullptr
                   ? Emit(std::make_shared<ScalarMul>(input_unknown_dims, GenInt(input_const_dims)))
                   : GenInt(input_const_dims);
-    auto tmp2 = shape_unknown_dims_ != nullptr
-                  ? Emit(std::make_shared<ScalarMul>(shape_unknown_dims_, GenInt(shape_const_dims_)))
-                  : GenInt(shape_const_dims_);
-    result[unknown_dim_idx_] = Emit(std::make_shared<ScalarDiv>(tmp1, tmp2));
+    auto tmp2 = output_unknown_dims != nullptr
+                  ? Emit(std::make_shared<ScalarMul>(output_unknown_dims, GenInt(output_const_dims)))
+                  : GenInt(output_const_dims);
+    result[unknown_dim_idx] = Emit(std::make_shared<ScalarDiv>(tmp1, tmp2));
   }
   return GenList(std::move(result));
 }
 
 void Reshape::EvalOnRun() {
-  auto shape = input_as<ListSymbol>(1);
-  ProductShape(shape);
-  if (unknown_dim_idx_ < 0) {
+  auto shape = input_as<ListSymbol>(kIndex1);
+  size_t unknown_dim_idx = shape->size();
+  int64_t output_const_dims = 1LL;
+  for (size_t i = 0; i < shape->size(); i++) {
+    auto v = shape->item_as<IntSymbol>(i)->value();
+    if (v <= 0) {
+      if (unknown_dim_idx != shape->size()) {
+        MS_EXCEPTION(ValueError) << "For 'Reshape', there are more than one \"-1\" in \"shape\": " << shape->ToString();
+      }
+      unknown_dim_idx = i;
+    } else {
+      output_const_dims *= v;
+    }
+  }
+  if (unknown_dim_idx == shape->size()) {
     // no "-1" in "shape"
     output_->Update(input(1));
     return;
   }
-  int64_t data_size;
-  std::tie(std::ignore, data_size) = ProductData(input_as<ListSymbol>(kIndex0));
+  SymbolPtr data_sym = nullptr;
+  int64_t data_size = 1;
+  auto data = input_as<ListSymbol>(kIndex0);
+  Accumulate<ScalarMul>(data->symbols(), emitter(), &data_sym, &data_size);
+  if (data_sym != nullptr) {
+    MS_EXCEPTION(ValueError) << "For 'Reshape', the input shape has dynamic dim in runtime: " << data->ToString();
+  }
   // the size of "-1"
   auto result = shape->symbols();
-  result[unknown_dim_idx_] = GenInt(data_size / shape_const_dims_);
+  if (data_size % output_const_dims != 0) {
+    MS_EXCEPTION(ValueError) << "For 'Reshape', the input " << data->ToString() << " can not be reshape to "
+                             << shape->ToString();
+  }
+  result[unknown_dim_idx] = GenInt(data_size / output_const_dims);
   output_as<ListSymbol>()->UpdateList(std::move(result));
 }
 
