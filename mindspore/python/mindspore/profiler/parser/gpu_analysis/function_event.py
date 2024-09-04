@@ -1,4 +1,4 @@
-# Copyright 2023 Huawei Technologies Co., Ltd
+# Copyright 2024 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ class GPUMindSporeOpEvent(MindSporeOpEvent):
     def _init_params(self):
         """Initialize the attribute value of MindSporeOpEvent."""
         fix_size_data = struct.unpack(self._fix_data_format, self._orig_data.get(Constant.FIX_SIZE_BYTES))
-        self.pid = Constant.MINDSPORE  # int(fix_size_data[MindSporeOpEnum.PROCESS_ID.value])
+        self.pid = Constant.MINDSPORE
         self.tid = int(fix_size_data[MindSporeOpEnum.START_THREAD_ID.value])
         self.name = str(self._orig_data.get(self._tlv_type_dict.get(Constant.OP_NAME), ""))
         self.ts = GPUProfilerInfoParser.get_local_time(fix_size_data[MindSporeOpEnum.START_NS.value])  # unit is us

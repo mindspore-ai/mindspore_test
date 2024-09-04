@@ -194,15 +194,15 @@ class BaseTimelineGenerator:
              "args": {"sort_index": self._STEPS_SORT_INDEX}},
         ]
 
-    def write_timeline(self, size_limit=SIZE_LIMIT_DEFAULT):
+    def write_timeline(self):
         """Load data according to the parsed profiling files."""
         # Write timeline to file.
         logger.info('Writing timeline file...')
-        timeline_meta = self.write_timeline_to_json_by_limitation(size_limit)
+        timeline_meta = self.write_timeline_to_json_by_limitation()
         logger.info('Finished file writing!')
         return timeline_meta
 
-    def write_timeline_to_json_by_limitation(self, size_limit):
+    def write_timeline_to_json_by_limitation(self):
         """Write timeline to json by limitation."""
         display_file_path = os.path.join(
             self._profiling_dir,
@@ -217,9 +217,6 @@ class BaseTimelineGenerator:
                 if "scope_level" in data.keys():
                     self._max_scope_name_num = max(
                         self._max_scope_name_num, data["scope_level"] + 1)
-
-                if len(timeline_data.__str__().encode('utf-8')) > size_limit:
-                    break
 
             with os.fdopen(os.open(display_file_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), 'w') as json_file:
                 json.dump(timeline_data, json_file, indent=self.indent)
