@@ -16,4 +16,3 @@ select:
             dtype: tensor
     dispatch:
         enable: True
-        CPU: SelectCPU
