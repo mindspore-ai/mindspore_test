@@ -242,6 +242,15 @@ mindspore.set_context
               - 2: 仅对反向节点使能通算融合。
 
               - 3: 对所有节点使能通算融合。
+            - **dataset_broadcast_opt_level** (int): 数据集读取的优化级别。默认值：``0``。
+
+              - 0: 不启用数据集读取优化。
+
+              - 1: 优化流水线并行中，Stage间的数据读取。
+
+              - 2: 优化模型并行维度数据的读取。
+
+              - 3: 同时优化场景1和2。
             - **bias_add_comm_swap** (bool): 为 ``True`` 时表示开启matmul-add结构下，通信算子与add算子执行顺序互换。当前仅支持bias为一维的情况。默认值： ``False`` 。
             - **enable_allreduce_slice_to_reducescatter** (bool): 为 ``True`` 时表示开启allreduce优化。在batchmatmul模型并行引入allreduce的场景中，如果后续节点是配置了模型并行的stridedslice算子，在已识别可优化的模式中，将allreduce优化为reducescatter。典型的用在开启了groupwise alltoall的MoE模块。默认值： ``False`` 。
           - **host_scheduling_max_threshold** (int): 控制静态小图（根图）执行时是否使用动态shape调度的最大阈值，默认阈值为0。如果静态根图节点个数小于最大阈值，则使用动态shape调度。大模型场景，该方式可以节约stream资源。如果静态根图节点个数大于最大阈值，则保持原有流程不变。

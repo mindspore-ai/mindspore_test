@@ -1808,6 +1808,8 @@ bool RemoveValueNodeDuplicationsAction(const ResourcePtr &resource) {
   return true;
 }
 
+bool DatasetRepeatReaderOptAction(const ResourcePtr &resource) { return DatasetRepeatReaderOptPass(resource); }
+
 bool PipelineSplitAction(const ResourcePtr &resource) { return PipelineSplitPass(resource); }
 
 bool ParallelVirtualDatasetAction(const ResourcePtr &resource) { return ParallelVirtualDatasetPass(resource); }
@@ -1950,6 +1952,7 @@ static std::vector<ActionItem> CommonPipeline(bool trace_flag) {
   // insert virtual dataset
   (void)actions.emplace_back(std::make_pair("insert-virtual-dataset", ParallelVirtualDatasetAction));
   (void)actions.emplace_back(std::make_pair("parallel-infer-symbol-second", AutoParallelSymbolWithReNormalizeAction));
+  (void)actions.emplace_back(std::make_pair("dataset_repeat_opt", DatasetRepeatReaderOptAction));
   // Do PipelineSplit action.
   (void)actions.emplace_back(std::make_pair(kPipelineSplit, PipelineSplitAction));
 

@@ -32,8 +32,7 @@
 
 namespace mindspore {
 namespace parallel {
-namespace {
-inline bool is_allgather_comm_ops(const AnfNodePtr &node) {
+bool is_allgather_comm_ops(const AnfNodePtr &node) {
   static const std::vector<PrimitivePtr> kAllGatherOpsPrim = {prim::kPrimMicroStepAllGather,
                                                               prim::kPrimMiniStepAllGather, prim::kPrimAllGather};
 
@@ -49,11 +48,17 @@ inline bool is_allgather_comm_ops(const AnfNodePtr &node) {
   return false;
 }
 
-inline bool is_first_receive(const AnfNodePtr &node) {
+bool is_first_receive(const AnfNodePtr &node) {
   if (IsPrimitiveCNode(node, prim::kPrimReceive)) {
     auto recv_node = node->cast<CNodePtr>();
     if (recv_node->HasPrimalAttr(kPrimalAttrForwardNodeName)) {
       return false;
+    }
+    if (recv_node->HasPrimalAttr(parallel::CHUNK)) {
+      auto chunk = GetValue<int64_t>(recv_node->GetPrimalAttr(parallel::CHUNK));
+      if (chunk != 0) {
+        return false;
+      }
     }
     auto micro = GetValue<int64_t>(recv_node->GetPrimalAttr(parallel::MICRO));
     if (micro != 0 || recv_node->HasPrimalAttr(parallel::PIPELINE_PARAM)) {
@@ -63,7 +68,6 @@ inline bool is_first_receive(const AnfNodePtr &node) {
   }
   return false;
 }
-}  // namespace
 
 void OverlapOptShardInPipeline(const FuncGraphPtr &graph) {
   auto context = MsContext::GetInstance();
