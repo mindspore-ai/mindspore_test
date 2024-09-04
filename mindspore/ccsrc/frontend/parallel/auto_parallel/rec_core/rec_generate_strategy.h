@@ -59,6 +59,7 @@ class RecStrategyPropagator {
   size_t GenerateEliminatedOperatorStrategyForward(size_t min_devices = 1);
   size_t GenerateEliminatedOperatorStrategyBackward(size_t min_devices = 1);
   size_t GenerateRemainingOperatorStrategy();
+  size_t ModifySharingParamGatherStrategy(std::vector<size_t> tensor, size_t op_i);
   size_t ModifyParamSharingOpsStrategy();
   size_t AssignStandaloneAndBatchParallelOpStrategy();
 

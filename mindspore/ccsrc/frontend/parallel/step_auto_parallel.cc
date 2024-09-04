@@ -1430,7 +1430,7 @@ void TMpInferBatchMatMul(const std::shared_ptr<Graph> &graph, Graph::NodeType *n
     if (node->node_out.size() == 0) {
       MS_LOG(EXCEPTION) << "The current BatchMatMul (" << node->name << ") does not have an outgoing node.";
     }
-    auto &outgoing_node = graph->nodes[node->node_out[0]];
+    auto &outgoing_node = graph->nodes[node->node_out[0].idx];
     if (outgoing_node.apply.arguments[0].tensor_shape.shape_c == node->tensor_parm.tensor_shape.shape_c) {
       outgoing_node.apply.arguments[0].tensor_shape.shape_c = infer_shape;
     }
@@ -1461,6 +1461,7 @@ bool HasUserConfiguredStrategy(const std::vector<std::shared_ptr<OperatorInfo>> 
 
 Status ParallelStrategyRecSearch(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphPtr &root, size_t rank_id,
                                  const size_t device_num) {
+  MS_LOG(INFO) << "Now entering Symbolic Automatic Parallel Planner";
   bool dyn_shape_tmp_fix = false;
   if (device_num > 0) {
     dyn_shape_tmp_fix = true;
@@ -1468,6 +1469,7 @@ Status ParallelStrategyRecSearch(const std::vector<AnfNodePtr> &all_nodes, const
 
   ReInitCostGraph(all_nodes, root, dyn_shape_tmp_fix);
   auto ops = entire_costgraph->GetOperators();
+
   if (dyn_shape_tmp_fix && HasUserConfiguredStrategy(ops)) {
     MS_LOG(WARNING) << "Now the split strategy will be automatically generated through SAPP, which will overwrite "
                        "the strategy that has been manually configured by the user.";

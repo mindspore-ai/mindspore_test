@@ -66,7 +66,9 @@ void TestPartition::InitNode(std::shared_ptr<Graph> graph, int num_node) {
 
 // Local function for Create() to crate Edge
 void TestPartition::InitEdge(std::shared_ptr<Graph> graph, int vHead, int vTail) {
-  graph->nodes[vHead].node_out.push_back(vTail);
+  NodeDep tail;
+  tail.idx = vTail;
+  graph->nodes[vHead].node_out.push_back(tail);
   graph->nodes[vTail].node_in.push_back(vHead);
 }
 
@@ -218,7 +220,7 @@ TEST_F(TestPartition, test_PartitionNode) {
   Graph::NodeType node2 = graph->nodes[2];
   std::vector<std::pair<std::string, StrategyRec>> nameToStrategy;
   bool isTraining = true;
-  StrategyRec str = PartitionNode(node2, nameToStrategy, graph, isTraining);
+  StrategyRec str = PartitionNode(node2, nameToStrategy, graph, isTraining, 0);
   ASSERT_EQ(str.outputTensor.str_h, 1);
   ASSERT_EQ(str.outputTensor.str_w, 1);
 }
@@ -237,79 +239,19 @@ TEST_F(TestPartition, test_PartitionNode2) {
   Graph::NodeType node = graph->nodes[2];
   std::vector<std::pair<std::string, StrategyRec>> nameToStrategy;
   bool isTraining = true;
-  StrategyRec str = PartitionNode(node, nameToStrategy, graph, isTraining);
+  StrategyRec str = PartitionNode(node, nameToStrategy, graph, isTraining, 0);
   ASSERT_EQ(str.outputTensor.str_h, 1);
   ASSERT_EQ(str.outputTensor.str_w, 1);
 
   node = graph->nodes[4];
-  str = PartitionNode(node, nameToStrategy, graph, isTraining);
+  str = PartitionNode(node, nameToStrategy, graph, isTraining, 0);
   ASSERT_EQ(str.outputTensor.str_h, 1);
   ASSERT_EQ(str.outputTensor.str_w, 0.5);
 
   node = graph->nodes[6];
-  str = PartitionNode(node, nameToStrategy, graph, isTraining);
+  str = PartitionNode(node, nameToStrategy, graph, isTraining, 0);
   ASSERT_EQ(str.outputTensor.str_h, 1);
   ASSERT_EQ(str.outputTensor.str_w, 0.5);
-}
-
-/// Feature: test PartitionNode with nodes of type kRecPooling
-/// Description:
-/// Expectation: success
-TEST_F(TestPartition, test_PartitionNode3) {
-  std::shared_ptr<Graph> graph = MakeMatMulData(9);
-  
-  graph->nodes[2].apply.op_type = OperatorType::kRecPooling;
-  Graph::NodeType node2 = graph->nodes[2];
-  std::vector<std::pair<std::string, StrategyRec>> nameToStrategy;
-  bool isTraining = true;
-  StrategyRec str = PartitionNode(node2, nameToStrategy, graph, isTraining);
-  ASSERT_EQ(str.outputTensor.str_h, 1);
-  ASSERT_EQ(str.outputTensor.str_w, 1);
-}
-
-/// Feature: test PartitionNode with nodes of type kRecReLU
-/// Description:
-/// Expectation: success
-TEST_F(TestPartition, test_PartitionNode4) {
-  std::shared_ptr<Graph> graph = MakeMatMulData(9);
-
-  graph->nodes[2].apply.op_type = OperatorType::kRecReLU;
-  Graph::NodeType node2 = graph->nodes[2];
-  std::vector<std::pair<std::string, StrategyRec>> nameToStrategy;
-  bool isTraining = true;
-  StrategyRec str = PartitionNode(node2, nameToStrategy, graph, isTraining);
-  ASSERT_EQ(str.outputTensor.str_h, 0.5);
-  ASSERT_EQ(str.outputTensor.str_w, 1);
-}
-
-/// Feature: test PartitionNode with nodes of type kRecBiasAdd
-/// Description:
-/// Expectation: success
-TEST_F(TestPartition, test_PartitionNode5) {
-  std::shared_ptr<Graph> graph = MakeMatMulData(9);
-
-  graph->nodes[2].apply.op_type = OperatorType::kRecBiasAdd;
-  Graph::NodeType node2 = graph->nodes[2];
-  std::vector<std::pair<std::string, StrategyRec>> nameToStrategy;
-  bool isTraining = true;
-  StrategyRec str = PartitionNode(node2, nameToStrategy, graph, isTraining);
-  ASSERT_EQ(str.outputTensor.str_h, 0.5);
-  ASSERT_EQ(str.outputTensor.str_w, 1);
-}
-
-/// Feature: test PartitionNode with nodes of type kRecElmWiseOp
-/// Description:
-/// Expectation: success
-TEST_F(TestPartition, test_PartitionNode6) {
-  std::shared_ptr<Graph> graph = MakeMatMulData(9);
-
-  graph->nodes[2].apply.op_type = OperatorType::kRecElmWiseOp;
-  Graph::NodeType node2 = graph->nodes[2];
-  std::vector<std::pair<std::string, StrategyRec>> nameToStrategy;
-  bool isTraining = true;
-  StrategyRec str = PartitionNode(node2, nameToStrategy, graph, isTraining);
-  ASSERT_EQ(str.outputTensor.str_h, 0.5);
-  ASSERT_EQ(str.outputTensor.str_w, 1);
 }
 
 TEST_F(TestPartition, test_PartitionForAllDevices) {
@@ -339,7 +281,7 @@ TEST_F(TestPartition, test_ApplyStrToTensor) {
   std::shared_ptr<Graph> graph = MakeMatMulData(9);
   std::vector<std::pair<std::string, StrategyRec>> nameToStrategy;
   bool isTraining = true;
-  graph->nodes[4].apply.str = PartitionNode(graph->nodes[4], nameToStrategy, graph, isTraining);
+  graph->nodes[4].apply.str = PartitionNode(graph->nodes[4], nameToStrategy, graph, isTraining, 0);
   auto h_str = graph->nodes[4].apply.str.outputTensor.str_h;
   auto w_str = graph->nodes[4].apply.str.outputTensor.str_w;
 

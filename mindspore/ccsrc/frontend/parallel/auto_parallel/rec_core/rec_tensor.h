@@ -18,7 +18,10 @@
 #define PARALLEL_AUTO_PARALLEL_REC_TENSOR_H_
 
 #include <cstdint>
+#include <vector>
 #include "frontend/parallel/auto_parallel/rec_core/rec_strategy.h"
+#include "frontend/parallel/ops_info/ops_utils.h"
+#include "utils/log_adapter.h"
 
 namespace mindspore {
 namespace parallel {
@@ -30,13 +33,40 @@ struct Shape4D {
   int64_t shape_h = 1;
   int64_t shape_w = 1;
 
+  std::vector<int64_t> ShapeToVector() const {
+    std::vector<int64_t> shape_vector;
+    shape_vector.push_back(shape_n);
+    shape_vector.push_back(shape_c);
+    shape_vector.push_back(shape_h);
+    shape_vector.push_back(shape_w);
+    return shape_vector;
+  }
+
   bool operator==(const Shape4D sh) const {
     if (shape_n == sh.shape_n && shape_c == sh.shape_c && shape_h == sh.shape_h && shape_w == sh.shape_w) {
       return true;
     }
     return false;
   }
+
+  friend std::ostream &operator<<(std::ostream &os, Shape4D const &shape) {
+    return os << "n: " << shape.shape_n << " c: " << shape.shape_c << " h: " << shape.shape_h
+              << " w: " << shape.shape_w;
+  }
 };
+
+inline Shape4D VectorToShape(std::vector<int64_t> vec) {
+  Shape4D vector_shape;
+  if (vec.size() != SIZE_FOUR) {
+    MS_LOG(WARNING) << "Only a vector with length 4 can be converted to Shape4D";
+  } else {
+    vector_shape.shape_n = vec[INDEX_ZERO];
+    vector_shape.shape_c = vec[INDEX_ONE];
+    vector_shape.shape_h = vec[INDEX_TWO];
+    vector_shape.shape_w = vec[INDEX_THREE];
+  }
+  return vector_shape;
+}
 
 struct TensorParam {
   TensorType tensor_type = kFloat32;  // default as float.

@@ -47,7 +47,9 @@ std::shared_ptr<Graph> TestEliminate::MakeGraph(int num_node) {
   std::vector<int64_t> edge_head = {1, 2, 2, 3};
   std::vector<int64_t> edge_tail = {0, 1, 3, 0};
   for (int i = 0; i < edge_head.size(); i++) {
-    graph->nodes[edge_head[i]].node_out.push_back(edge_tail[i]);
+    NodeDep tail;
+    tail.idx = edge_tail[i];
+    graph->nodes[edge_head[i]].node_out.push_back(tail);
     graph->nodes[edge_tail[i]].node_in.push_back(edge_head[i]);
   }
 

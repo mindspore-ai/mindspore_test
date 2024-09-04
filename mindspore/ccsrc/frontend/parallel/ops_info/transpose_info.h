@@ -40,6 +40,8 @@ class TransposeInfo : public OperatorInfo {
   std::vector<StrategyPtr> GenerateOpStrategies(int64_t stage_id) override;
   Status SetCostUnderStrategy(const StrategyPtr &strategy) override;
   ReplaceGraphPtr replace_graph(const CNodePtr &cnode) override;
+  Status GetAttrs() override;
+  std::vector<int64_t> axis_v() const { return axis_v_; }
 
  protected:
   Status CheckStrategy(const StrategyPtr &strategy) override;
@@ -51,7 +53,6 @@ class TransposeInfo : public OperatorInfo {
   Status InferTensorMap() override;
   Status InferOutputTensorMap() override;
   Status InferOutputTensorInfo() override;
-  Status GetAttrs() override;
 
  private:
   TensorLayout InferOutputLayout();

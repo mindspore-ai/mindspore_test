@@ -19,6 +19,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <vector>
 
 namespace mindspore {
 namespace parallel {
@@ -30,6 +31,7 @@ struct TensorStr4D {
   float str_c = 1;
   float str_h = 1;
   float str_w = 1;
+  std::vector<TensorStr4D> decomposed_custom_strategy;
 };
 
 struct StrategyRec {

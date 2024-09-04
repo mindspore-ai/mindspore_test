@@ -51,18 +51,18 @@ double minNodeSize(const Graph::NodeType &node);
 
 double CostRedis(const Graph::NodeType &node,
                  const std::vector<std::pair<std::string, StrategyRec>> &node_name_to_strategy,
-                 const std::vector<std::vector<float>> &mode, const Graph &graph);
+                 const std::vector<std::vector<float>> &mode, const Graph &graph, int64_t loop = 0);
 
 double CostRedisWithAdjacentNode(const std::vector<std::pair<std::string, StrategyRec>> &node_name_to_strategy,
                                  const std::vector<std::vector<float>> &mode, size_t i_strategy, size_t i_node,
-                                 double tensor_size, bool is_search_forward);
+                                 double tensor_size, bool is_search_forward, int64_t loop = 0);
 
 // class CostMatMul is used to compute the cost of MatMul operator.
 class CostMatMul {
  public:
   StrategyRec GetOptimalStr(const Graph::NodeType &node,
                             const std::vector<std::pair<std::string, StrategyRec>> &node_name_to_strategy,
-                            const Graph &graph, const bool isTraining);
+                            const Graph &graph, const bool isTraining, int64_t loop);
 
   double GetMaxCostIn(const OperatorRec &op);
 
@@ -111,13 +111,17 @@ bool SplitOnlyOneDimension(const Graph &graph, float str);
 // class CostBatchMatMul is used to compute the cost of MatMul operator.
 class CostBatchMatMul {
  public:
+  enum Axis { B, X, I, J, K, R };
   StrategyRec GetOptimalStr(const Graph::NodeType &node,
                             const std::vector<std::pair<std::string, StrategyRec>> &node_name_to_strategy,
                             const Graph &graph, const bool isTraining);
   double GetMaxCostIn(const Graph::NodeType &node);
+  static const char *AxisToString(Axis axis);
 
  private:
-  enum Axis { B, X, I, J, K, R };
+  void ComputeAndLogCost(double *cost_op, const std::vector<std::vector<float>> &mode, const Graph::NodeType &node,
+                         const std::vector<std::pair<std::string, StrategyRec>> &node_name_to_strategy,
+                         const Graph &graph, const Axis axis_name, const size_t coef = 1);
   size_t getBatchDimsSize(const OperatorRec &op);
   double cost(Axis a, const Graph::NodeType &node);
   StrategyRec ChoseStr(const std::vector<double> &cost_op, StrategyRec str) const;
