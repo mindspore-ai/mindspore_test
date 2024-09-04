@@ -325,7 +325,7 @@ void FusedInferAttentionScoreInfo::InferOptionalTensorMapForAntiquant() {
       (void)inputs_tensor_map_new_.emplace_back(std::make_shared<ShapeValue>(Shape{-1, -1, 0, -1}));
     }
   } else if (antiquant_mode_ == 1) {
-    (void)inputs_tensor_map_new_.emplace_back(std::make_shared<ShapeValue>(Shape{-1, -2, -1}));
+    (void)inputs_tensor_map_new_.emplace_back(std::make_shared<ShapeValue>(Shape{-1, 2, -1}));
   }
 }
 
