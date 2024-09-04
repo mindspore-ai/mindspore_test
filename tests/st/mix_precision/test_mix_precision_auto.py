@@ -478,7 +478,7 @@ def test_auto_mix_precision_with_to_float(mode):
     assert out.dtype == ms.float32
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level1', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
           essential_mark='essential')
 @pytest.mark.parametrize("mode", (context.PYNATIVE_MODE,))
 def test_auto_mix_precision_with_keyword_arguments(mode):
@@ -487,21 +487,21 @@ def test_auto_mix_precision_with_keyword_arguments(mode):
     Description: test amp auto mode using network with keyword arguments.
     Expectation: success.
     """
-    class CumSumNet(nn.Cell):
+    class SoftmaxNet(nn.Cell):
         def __init__(self, weight_shape, input_type_np=np.float32):
             super().__init__()
             self.weight = Parameter(Tensor(np.random.randn(*weight_shape).astype(input_type_np)),
                                     name="weight")
             self.matmul = ops.MatMul()
-            self.cumsum = ops.CumSum()
+            self.softmax = ops.Softmax(axis=1)
 
         def construct(self, x):
             out1 = self.matmul(x, self.weight)
-            out2 = self.cumsum(out1, axis=-1)
+            out2 = self.softmax(out1)
             return out1, out2
 
     context.set_context(mode=mode)
-    net = CumSumNet((16, 16))
+    net = SoftmaxNet((16, 16))
     net = auto_mixed_precision(net, amp_level="auto", dtype=ms.float16)
     input_x = Tensor(np.random.randn(16, 16).astype(np.float32))
     out1, out2 = net(input_x)
