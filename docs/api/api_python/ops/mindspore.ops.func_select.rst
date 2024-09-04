@@ -18,10 +18,10 @@ mindspore.ops.select
         - **condition** (Tensor[bool]) - 条件Tensor，决定选择哪一个元素，shape是 :math:`(x_1, x_2, ..., x_N, ..., x_R)`。
         - **input** (Union[Tensor, int, float]) - 第一个被选择的Tensor或者数字。
           如果input是一个Tensor，那么shape是或者可以被广播为 :math:`(x_1, x_2, ..., x_N, ..., x_R)`。
-          如果input是int或者float，那么将会被转化为int32或者float32类型，并且被广播为与y相同的shape。x和y中至少要有一个Tensor。
+          如果input是int或者float，那么将会被转化为int32或者float32类型，并且被广播为与other相同的shape。input和other中至少要有一个Tensor。
         - **other** (Union[Tensor, int, float]) - 第二个被选择的Tensor或者数字。
           如果other是一个Tensor，那么shape是或者可以被广播为 :math:`(x_1, x_2, ..., x_N, ..., x_R)`。
-          如果other是int或者float，那么将会被转化为int32或者float32类型，并且被广播为与x相同的shape。x和y中至少要有一个Tensor。
+          如果other是int或者float，那么将会被转化为int32或者float32类型，并且被广播为与input相同的shape。input和other中至少要有一个Tensor。
 
     返回：
         Tensor，与 `condition` 的shape相同。
