@@ -5,6 +5,9 @@ mindspore.ops.randint
 
     返回一个Tensor，其元素为 [ `low` , `high` ) 区间的随机整数。
 
+    .. warning::
+        Ascend后端不支持随机数重现功能， `seed` 参数不起作用。
+
     参数：
         - **low** (int) - 随机区间的起始值。
         - **high** (int) - 随机区间的结束值。

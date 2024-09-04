@@ -9,6 +9,9 @@
 
     更多参考详见 :func:`mindspore.ops.uniform_candidate_sampler`。
 
+    .. warning::
+        Ascend后端不支持随机数重现功能， `seed` 参数不起作用。
+
     参数：
         - **num_true** (int) - 每个训练样本的目标类数。
         - **num_sampled** (int) - 随机采样的类数。 `sampled_candidates` 的shape将为 `num_sampled` 。如果 `unique` 为 ``True`` ，则 `num_sampled` 必须小于或等于 `range_max` 。

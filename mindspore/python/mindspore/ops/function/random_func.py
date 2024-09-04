@@ -157,6 +157,10 @@ def random_categorical(logits, num_sample, seed=0, dtype=mstype.int64):
     r"""
     Generates random samples from a given categorical distribution tensor.
 
+    .. warning::
+        The Ascend backend does not support the reproducibility of random numbers, so
+        the `seed` parameter has no effect.
+
     Args:
         logits (Tensor): The input tensor. 2-D Tensor with shape :math:`(batch\_size, num\_classes)`.
         num_sample (int):  Number of sample to be drawn. Only constant values is allowed.
@@ -378,6 +382,10 @@ def standard_normal(shape, seed=None):
     .. math::
         f(x)=\frac{1}{\sqrt{2 \pi}} e^{\left(-\frac{x^{2}}{2}\right)}
 
+    .. warning::
+        The Ascend backend does not support the reproducibility of random numbers, so
+        the `seed` parameter has no effect.
+
     Args:
         shape (Union[tuple, Tensor]): The shape of random tensor to be generated. Only constant value is allowed
           when the input type is tuple. And the operator supports dynamic shape only when the input type is Tensor.
@@ -422,6 +430,10 @@ def uniform_candidate_sampler(true_classes,
 
     This function samples a set of classes(sampled_candidates) from [0, range_max-1] based on uniform distribution.
     If unique=True, candidates are drawn without replacement, else unique=False with replacement.
+
+    .. warning::
+        The Ascend backend does not support the reproducibility of random numbers, so
+        the `seed` parameter has no effect.
 
     Args:
         true_classes (Tensor): A Tensor. The target classes with a Tensor shape of :math:`(batch\_size, num\_true)` .
@@ -590,6 +602,10 @@ def log_uniform_candidate_sampler(true_classes, num_true=1, num_sampled=5, uniqu
 
     Randomly samples a tensor of sampled classes from the range of integers [0, range_max).
 
+    .. warning::
+        The Ascend backend does not support the reproducibility of random numbers, so
+        the `seed` parameter has no effect.
+
     Args:
         true_classes (Tensor): The target classes. With data type of int64 and
           shape :math:`(batch\_size, num\_true)` .
@@ -755,6 +771,10 @@ def normal(shape, mean, stddev, seed=None):
     """
     Generates random numbers according to the Normal (or Gaussian) random number distribution.
 
+    .. warning::
+        The Ascend backend does not support the reproducibility of random numbers, so
+        the `seed` parameter has no effect.
+
     Args:
         shape (tuple): The shape of random tensor to be generated.
           The format is :math:`(N,*)` where :math:`*` means, any number of additional dimensions.
@@ -821,6 +841,10 @@ def laplace(shape, mean, lambda_param, seed=None):
     .. math::
         \text{f}(x;μ,λ) = \frac{1}{2λ}\exp(-\frac{|x-μ|}{λ}),
 
+    .. warning::
+        The Ascend backend does not support the reproducibility of random numbers, so
+        the `seed` parameter has no effect.
+
     Args:
         shape (tuple): The shape of random tensor to be generated.
           The format is :math:`(N,*)` where :math:`*` means, any number of additional dimensions.
@@ -868,12 +892,16 @@ def gamma(shape, alpha, beta, seed=None):
     r"""
     Generates random numbers according to the Gamma random number distribution.
 
+    .. warning::
+        The Ascend backend does not support the reproducibility of random numbers, so
+        the `seed` parameter has no effect.
+
     Args:
         shape (tuple): The shape of random tensor to be generated.
         alpha (Tensor): The :math:`\alpha` distribution parameter. It should be greater than 0 with float32 data type.
         beta (Tensor): The :math:`\beta` distribution parameter. It should be greater than 0 with float32 data type.
         seed (int, optional): Seed is used as entropy source for the random number engines to generate
-            pseudo-random numbers, must be non-negative. Default: ``None`` , which will be treated as ``0`` .
+            pseudo-random numbers, must be non-negative. Default: ``None`` .
 
     Returns:
         Tensor. The shape should be equal to the broadcasted shape between the input `shape` and shapes
@@ -971,6 +999,10 @@ def rand(*size, dtype=None, seed=None):
     Returns a new tensor that fills numbers from the uniform distribution over an interval :math:`[0, 1)`
     based on the given shape and dtype.
 
+    .. warning::
+        The Ascend backend does not support the reproducibility of random numbers, so
+        the `seed` parameter has no effect.
+
     Args:
         size (Union[int, tuple(int), list(int)]): Shape of the new tensor, e.g. :math:`(2, 3)` or :math:`2`.
 
@@ -1014,6 +1046,10 @@ def rand_like(input, seed=None, *, dtype=None):
     r"""
     Returns a new tensor that fills numbers from the uniform distribution over an interval :math:`[0, 1)`
     based on the given shape and dtype.
+
+    .. warning::
+        The Ascend backend does not support the reproducibility of random numbers, so
+        the `seed` parameter has no effect.
 
     Args:
         input (Tensor): Input Tensor to specify the output shape and its default dtype.
@@ -1134,6 +1170,10 @@ def randn(*size, dtype=None, seed=None):
     Returns a new Tensor with given shape and dtype, filled with a sample (or samples)
     from the standard normal distribution.
 
+    .. warning::
+        The Ascend backend does not support the reproducibility of random numbers, so
+        the `seed` parameter has no effect.
+
     Args:
         size (Union[int, tuple(int), list(int)]): Shape of the new tensor, e.g., :math:`(2, 3)` or :math:`2`.
 
@@ -1178,6 +1218,10 @@ def randn_like(input, seed=None, *, dtype=None):
     r"""
     Returns a new Tensor with given shape and dtype, filled with a sample (or samples) from the standard normal
     distribution.
+
+    .. warning::
+        The Ascend backend does not support the reproducibility of random numbers, so
+        the `seed` parameter has no effect.
 
     Args:
         input (Tensor): Input Tensor to specify the output shape and its default dtype.
@@ -1226,6 +1270,10 @@ def randn_like(input, seed=None, *, dtype=None):
 def randint(low, high, size, seed=None, *, dtype=None):
     r"""
     Returns a Tensor whose elements are random integers in the range of [ `low` , `high` ) .
+
+    .. warning::
+        The Ascend backend does not support the reproducibility of random numbers, so
+        the `seed` parameter has no effect.
 
     Args:
         low (int): Start value of interval.
@@ -1285,6 +1333,10 @@ def randint_like(input, low, high, seed=None, *, dtype=None):
     r"""
     Returns a tensor with the same shape as Tensor `input` whose elements are random integers in the range
     of [ `low` , `high` ) .
+
+    .. warning::
+        The Ascend backend does not support the reproducibility of random numbers, so
+        the `seed` parameter has no effect.
 
     Args:
         input (Tensor): Input Tensor to specify the output shape and its default dtype.
@@ -1429,6 +1481,10 @@ def multinomial(input, num_samples, replacement=True, seed=None):
         The rows of input do not need to sum to one (in which case we use the values as weights),
         but must be non-negative, finite and have a non-zero sum. When using values as weights, it can be understood as
         normalizing the input along the last dimension.
+
+    .. warning::
+        The Ascend backend does not support the reproducibility of random numbers, so
+        the `seed` parameter has no effect.
 
     Args:
         input (Tensor): The input tensor containing probabilities, must be 1 or 2 dimensions, with

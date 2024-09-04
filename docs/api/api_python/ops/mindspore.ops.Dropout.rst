@@ -7,6 +7,9 @@
 
     更多细节请参考 :func:`mindspore.ops.dropout` 。
 
+    .. warning::
+        Ascend后端不支持随机数重现功能， `Seed0` 和 `Seed1` 参数不起作用。
+
     参数：
         - **keep_prob** (float，可选) - 输入神经元保留概率，数值范围在0到1之间。例如，keep_prob=0.9，删除10%的神经元。默认值： ``0.5`` 。
         - **Seed0** (int，可选) - 算子层的随机种子，用于生成随机数。默认值： ``0`` 。

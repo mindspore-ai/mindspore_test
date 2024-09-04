@@ -44,6 +44,7 @@
 #include "utils/convert_utils_base.h"
 #include "utils/log_adapter.h"
 #include "utils/shape_utils.h"
+#include "utils/ms_context.h"
 
 namespace mindspore {
 namespace ops {
@@ -55,6 +56,14 @@ abstract::TupleShapePtr UCSInferShape(const PrimitivePtr &primitive, const std::
   auto input_shape_ptr = input_args[kInputIndex0]->GetShape();
   auto input_shape_map = CheckAndConvertUtils::ConvertShapePtrToShapeMap(input_shape_ptr);
   auto input_shape = input_shape_map[kShape];
+
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  bool is_ascend = (context->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kAscendDevice);
+  if (is_ascend && IsDynamic(input_shape)) {
+    MS_EXCEPTION(ValueError)
+      << "LogUniformCandidateSampler does not support dynamic shape scenarios on Ascend currently.";
+  }
 
   if (IsDynamicRank(input_shape)) {
     auto unknow_shape_ptr = std::make_shared<abstract::Shape>(std::vector<int64_t>{abstract::Shape::kShapeRankAny});
