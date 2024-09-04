@@ -259,7 +259,7 @@ def test_force_fp32_comm():
     y = Tensor(np.ones([32, 64]), dtype=ms.float16)
     b = Tensor(np.ones([128, 64]), dtype=ms.float16)
     if os.path.exists("./rank_0"):
-        shutil.rmtree("./rank_0")
+        shutil.rmtree("./rank_0", ignore_errors=True)
     compile_net(net, x, y, b)
     file = "./rank_0/*validate*.ir"
     para = "PrimFunc_Cast"
