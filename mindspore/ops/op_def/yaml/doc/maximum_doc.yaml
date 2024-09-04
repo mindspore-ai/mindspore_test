@@ -2,6 +2,9 @@ maximum:
     description: |
         Computes the maximum of input tensors element-wise.
 
+        .. math::
+            output_i = \max(input_i, other_i)
+
         Note:
             - Inputs of `input` and `other` comply with the implicit type conversion rules to make the data types
               consistent.
@@ -12,9 +15,10 @@ maximum:
               the scalar could only be a constant.
             - Broadcasting is supported.
             - If one of the elements being compared is a NaN, then that element is returned.
-    
-        .. math::
-            output_i = \max(input_i, other_i)
+
+        .. warning::
+            If all inputs are scalar of integers. In GRAPH mode, the output will be Tensor of int32, while in
+            PYNATIVE mode, the output will be Tensor of int64.
     
         Args:
             input (Union[Tensor, Number, bool]): The first input is a number or

@@ -8,6 +8,9 @@ mindspore.ops.choice_with_mask
     输入必须是维度不小于1的Tensor。如果其维度大于等于2，则第一个维度指定样本数。
     返回的索引Tensor为非空样本值的索引，掩码Tensor说明索引Tensor中的哪些元素是有效的。
 
+    .. warning::
+        Ascend后端不支持随机数重现功能， `seed` 参数不起作用。
+
     参数：
         - **input_x** (Tensor[bool]) - 输入Tensor，bool类型。秩必须大于等于1且小于等于5。
         - **count** (int, 可选) - 取样数量，必须大于0。默认值： ``256`` 。

@@ -116,14 +116,18 @@ def standard_laplace(shape, seed=None):
     .. math::
         \text{f}(x) = \frac{1}{2}\exp(-|x|)
 
+    .. warning::
+        The Ascend backend does not support the reproducibility of random numbers, so
+        the `seed` parameter has no effect.
+
     Args:
         shape (Union[tuple, Tensor]): The shape of random tensor to be generated. Only constant value is allowed
           when the input type is tuple. And the operator supports dynamic shape only when the input type is Tensor.
         seed (int, optional): Seed is used as entropy source for Random number engines generating pseudo-random numbers.
-          Default: ``None`` , which will be treated as 0.
+          Default: ``None`` .
 
     Returns:
-        Tensor. The shape that the input 'shape' denotes. The dtype is float32.
+        Tensor. The shape that the input `shape` denotes. The dtype is float32.
 
     Raises:
         TypeError: If shape is neither a tuple nor a Tensor.
@@ -483,11 +487,15 @@ def random_poisson(shape, rate, seed=None, dtype=mstype.float32):
 
         \text{P}(i|μ) = \frac{\exp(-μ)μ^{i}}{i!}
 
+    .. warning::
+        The Ascend backend does not support the reproducibility of random numbers, so
+        the `seed` parameter has no effect.
+
     Args:
         shape (Tensor): The shape of random tensor to be sampled from each poisson distribution, 1-D `Tensor` whose
             dtype is mstype.int32 or mstype.int64.
         rate (Tensor): The :math:`μ` parameter the distribution is constructed with.
-            It represents the mean of the distribution
+            It represents the mean of poisson distribution
             and also the variance of the distribution. It should be a `Tensor` whose dtype is mstype.int64,
             mstype.int32, mstype.float64, mstype.float32 or mstype.float16.
         seed (int, optional): Seed is used as entropy source for the random number engines to generate pseudo-random
@@ -640,12 +648,16 @@ def choice_with_mask(input_x, count=256, seed=None):
     The returned index tensor denotes the index of the nonzero
     sample, the mask tensor denotes which elements in the index tensor are valid.
 
+    .. warning::
+        The Ascend backend does not support the reproducibility of random numbers, so
+        the `seed` parameter has no effect.
+
     Args:
         input_x (Tensor[bool]): The input tensor.
             The input tensor rank must be greater than or equal to 1 and less than or equal to 5.
         count (int, optional): Number of items expected to get and the number must be greater than 0. Default: ``256`` .
         seed (int, optional): Seed is used as entropy source for Random number engines generating pseudo-random numbers.
-            Default: ``None`` , which will be treated as 0.
+            Default: ``None`` .
 
     Returns:
         Two tensors, the first one is the index tensor and the other one is the mask tensor.

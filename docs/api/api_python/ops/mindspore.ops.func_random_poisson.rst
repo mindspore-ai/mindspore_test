@@ -8,6 +8,9 @@ mindspore.ops.random_poisson
     .. math::
 
         \text{P}(i|μ) = \frac{\exp(-μ)μ^{i}}{i!}
+    
+    .. warning::
+        Ascend后端不支持随机数重现功能， `seed` 参数不起作用。
 
     参数：
         - **shape** (Tensor) - 表示要从每个分布中采样的随机数张量的形状。必须是一个一维的张量且数据类型必须是 `mindspore.dtype.int32` 或者 `mindspore.dtype.int64` 。
