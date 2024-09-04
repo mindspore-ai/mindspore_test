@@ -41,20 +41,18 @@ static const std::set<std::string> CANDIDATE_DYNAMIC_VALUE_OPS = {RESHAPE, STRID
 static const std::set<std::string> SPLIT_TENSOR_ONLY_FOR_FIRST_INPUT_OPS = {PAD_V3};
 // the input is tuple or list
 static const std::set<std::string> INPUT_IS_TUPLE_OR_LIST_OPS = {
-  CONCAT, STACK, ADDN, INCRE_FLASH_ATTENTION, MESHGRID, FUSED_INFER_ATTENTION_SCORE, GROUPED_MATMUL, STACK_EXT};
+  CONCAT, STACK, ADDN, INCRE_FLASH_ATTENTION, MESHGRID, FUSED_INFER_ATTENTION_SCORE, GROUPED_MATMUL, STACK_EXT, CUSTOM};
 // support new shapebase operator
 static const std::set<std::string> SUPPORT_NEW_SHAPEBASE_OPS = {VIRTUAL_DATA_SET, FUSED_INFER_ATTENTION_SCORE,
                                                                 GROUPED_MATMUL};
+// new shapebase operator always run in new logic
+static const std::set<std::string> ALWAYS_NEW_SHAPEBASE_OPS = {CUSTOM};
 // op list for allreduce pull down
 static const std::set<std::string> ALLREDUCE_PULL_DOWN_WHITE_LIST = {
   TUPLE_GETITEM_OP, RESHAPE, TRANSPOSE, MIRROR_OPERATOR, ADD, MUL, DIV, GATHERV2};
 
 const int64_t TWO_INPUT_SIZE = 2;
 
-constexpr char KAttrAsLossDivisor[] = "as_loss_divisor";
-constexpr char KAttrDevMatrixShape[] = "dev_matrix_shape";
-constexpr char KAttrInputsTensorMap[] = "inputs_tensor_map";
-constexpr char KAttrOutputsTensorMap[] = "outputs_tensor_map";
 constexpr int64_t DYNAMIC_DIM_VAL = -1;
 constexpr int64_t kFineGrainedInterleavedBlockIndexMax = 1000;
 
@@ -78,7 +76,7 @@ bool IsSomePrimitiveList(const CNodePtr &cnode, const std::set<string> &check_li
 bool IsParallelCareNode(const CNodePtr &cnode);
 bool IsAutoParallelCareNode(const CNodePtr &cnode);
 Shapes GetNodeShape(const AnfNodePtr &node);
-bool HasSupportedValueSequence(const CNodePtr &node);
+bool IsSupportNewShapeBaseNode(const CNodePtr &node);
 // Extract shape from anfnode
 std::vector<Shapes> ExtractShape(const CNodePtr &node);
 std::vector<NewShapes> ExtractNewShape(const CNodePtr &node);
@@ -87,12 +85,13 @@ std::vector<Shapes> ExtractRealDivisor(const CNodePtr &node);
 OperatorInfoPtr OperatorInstance(const PrimitivePtr &prim, const PrimitiveAttrs &attrs,
                                  const std::vector<Shapes> &shape_list);
 OperatorInfoPtr CreateOperatorInfo(const CNodePtr &cnode);
-OperatorInfoPtr CreateOperatorInfoForTupleShape(const CNodePtr &cnode);
+OperatorInfoPtr CreateOperatorInfoForNewShape(const CNodePtr &cnode);
 std::string GetPrimName(const CNodePtr &node);
 std::shared_ptr<Value> GetAttrsFromAnfNode(const std::shared_ptr<AnfNode> &node, const string &key);
 std::string CreateInstanceName(const CNodePtr &node, size_t index);
-TensorInfo GetInputsTensorInfo(const std::pair<AnfNodePtr, int64_t> &param_info);
-AnfNodePtr CheckMakeTupleSplit(const AnfNodePtr &node, const FuncGraphManagerPtr &manager);
+std::vector<TensorInfo> GetInputsTensorInfo(const std::pair<AnfNodePtr, int64_t> &param_info);
+std::pair<AnfNodePtr, int> CheckMakeTupleSplit(const AnfNodePtr &node, const FuncGraphManagerPtr &manager);
+bool IsSameTensorInfo(const std::vector<TensorInfo> &a, const std::vector<TensorInfo> &b);
 bool IsControlFlowNode(const AnfNodePtr &node);
 int64_t GetTupleGetItemIndex(const CNodePtr &cnode);
 std::pair<AnfNodePtr, int64_t> GetRealKernelNode(const AnfNodePtr &node, int64_t get_item_index,
@@ -105,10 +104,10 @@ AnfNodePtr GetInputNodeWithFilter(const AnfNodePtr &node,
                                   std::function<std::pair<bool, size_t>(const CNodePtr &)> filter);
 void RedistributionPreNode(const CNodePtr &cnode, const FuncGraphManagerPtr &manager,
                            std::vector<AnfNodePtr> *pre_nodes);
-void RedistributionNextNode(
-  const AnfNodePtr &node, const FuncGraphManagerPtr &manager, const NodeUsersMap &node_users_map,
-  const std::vector<int> &get_item_index, int64_t make_tuple_index,
-  std::vector<std::pair<std::pair<AnfNodePtr, std::vector<int>>, std::vector<int>>> *next_nodes);
+void RedistributionNextNode(const AnfNodePtr &node, const FuncGraphManagerPtr &manager,
+                            const NodeUsersMap &node_users_map, const std::vector<int> &get_item_index,
+                            int64_t make_tuple_index,
+                            std::vector<std::pair<std::pair<AnfNodePtr, int>, std::vector<int>>> *next_nodes);
 AnfNodePtr NewMicroMirrorPrimByMicroMirror(const FuncGraphPtr &func_graph, const CNodePtr &micro_mirror,
                                            const AnfNodePtr &micro_mirror_new_input);
 // for specific scenarios
@@ -138,7 +137,7 @@ bool AttrFound(const mindspore::HashMap<std::string, ValuePtr> &attrs, const std
 void ExceptionIfHasCommunicationOp(const std::vector<AnfNodePtr> &all_nodes);
 std::string MirrorOpName();
 // Extract strategy from attr
-StrategyPtr ExtractStrategy(const ValuePtr &stra);
+StrategyPtr ExtractStrategy(const ValuePtr &stra, const bool use_shape_base = false);
 StrategyPtr ExtractNewStrategy(const ValuePtr &stra);
 ParameterMap NodeParameterName(const CNodePtr &node, int64_t index, size_t curr_depth);
 std::vector<std::pair<AnfNodePtr, int>> FuncGraphNodeUsers(const std::pair<AnfNodePtr, int> &node_pair);
@@ -168,6 +167,10 @@ Status ExtractUserConfigLayout(const mindspore::HashMap<std::string, ValuePtr> &
                                const Shapes &outputs_shape,
                                std::vector<std::shared_ptr<TensorLayout>> *in_tensor_layouts,
                                std::vector<std::shared_ptr<TensorLayout>> *out_tensor_layouts);
+Status ExtractUserConfigLayoutForNewShape(const mindspore::HashMap<std::string, ValuePtr> &prim_attrs,
+                                          const NewShapes &inputs_shape, const NewShapes &outputs_shape,
+                                          std::vector<TensorLayoutBasePtr> *in_tensor_layouts,
+                                          std::vector<TensorLayoutBasePtr> *out_tensor_layouts);
 inline bool IsMakeSequence(const AnfNodePtr &node) {
   return AnfNodeIsPrimitive(node, MAKE_TUPLE) || AnfNodeIsPrimitive(node, MAKE_LIST);
 }

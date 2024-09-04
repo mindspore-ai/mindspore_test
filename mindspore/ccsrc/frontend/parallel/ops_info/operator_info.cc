@@ -202,8 +202,11 @@ Status OperatorInfo::CheckStrategyValue(const StrategyPtr &strategy, const Shape
 
 void OperatorInfo::ResetQueueMember() {
   inputs_tensor_info_.clear();
+  inputs_tensor_info_new_.clear();
   outputs_tensor_info_.clear();
+  outputs_tensor_info_new_.clear();
   outputs_tensor_map_.clear();
+  outputs_tensor_map_new_.clear();
   out_dev_matrix_shape_.clear();
   forward_op_.clear();
   mirror_ops_.clear();
@@ -213,6 +216,7 @@ void OperatorInfo::ResetQueueMember() {
   virtual_div_op_.clear();
   if (!is_layout_config_) {
     inputs_tensor_map_.clear();
+    inputs_tensor_map_new_.clear();
     dev_matrix_shape_.clear();
   }
   strategy_ = nullptr;
@@ -443,6 +447,7 @@ Status OperatorInfo::InferAttrs() {
     return FAILED;
   }
 
+  use_shape_base_ = true;
   self_define_shard_ = IsSelfDefineShard();
   is_dynamic_shape_ = IsDynamicShape();
   is_dynamic_rank_ = IsDynamicRank();
@@ -571,11 +576,10 @@ TensorInfoBasePtr CreateTensorInfo(const Shape &device_matrix, const ShapeBasePt
 Status OperatorInfo::InferTensorInfoNew() {
   size_t real_input_index = 0;
   for (size_t i = 0; i < inputs_tensor_map_new_.size(); ++i) {
-    // Insert placeholder TensorInfo for optional input
-    while (real_input_index < input_value_.size() && input_value_[real_input_index] != nullptr &&
-           input_value_[real_input_index]->isa<None>()) {
+    // noshape insert default tenosor info
+    if (inputs_shape_new_[i]->size() == 0) {
       (void)inputs_tensor_info_new_.emplace_back(std::make_shared<TensorInfoValue>(TensorInfo()));
-      ++real_input_index;
+      continue;
     }
     auto input_tensor_info = CreateTensorInfo(dev_matrix_shape_, inputs_shape_new_[i], inputs_tensor_map_new_[i]);
     inputs_tensor_info_new_.emplace_back(input_tensor_info);
@@ -1314,6 +1318,22 @@ Status OperatorInfo::Init(const StrategyPtr &in_strategy, const StrategyPtr &out
   return SUCCESS;
 }
 
+Status OperatorInfo::Init(const StrategyPtr &in_strategy, const StrategyPtr &out_strategy,
+                          const std::vector<TensorLayoutBasePtr> &in_tensor_layouts,
+                          const std::vector<TensorLayoutBasePtr> &out_tensor_layouts) {
+  if (!in_tensor_layouts.empty()) {
+    return InitWithTensorLayoutForNewShape(in_tensor_layouts, out_tensor_layouts);
+  }
+
+  if (InitWithAutoRepeatCalc(in_strategy, out_strategy) != SUCCESS) {
+    MS_LOG(ERROR) << name_ << " : Init failed.";
+    return FAILED;
+  }
+
+  MS_LOG(INFO) << name_ << " : Init success.";
+  return SUCCESS;
+}
+
 Status OperatorInfo::InitForCostModel(const StrategyPtr &in_strategy, const StrategyPtr &out_strategy) {
   std::vector<std::shared_ptr<TensorLayout>> in_tensor_layouts;
   std::vector<std::shared_ptr<TensorLayout>> out_tensor_layouts;
@@ -1535,6 +1555,85 @@ Status OperatorInfo::InitWithTensorLayout(const std::vector<std::shared_ptr<Tens
   if (outputs_tensor_info_.size() != outputs_shape_.size()) {
     MS_LOG(ERROR) << name_ << ": the output tensor layout num " << outputs_tensor_info_.size()
                   << " dose not match the output num " << outputs_shape_.size();
+    return FAILED;
+  }
+
+  if (CheckOutputLayout() != SUCCESS) {
+    MS_LOG(ERROR) << name_ << ": CheckLayout failed.";
+    return FAILED;
+  }
+
+  // Need be override
+  if (InferForwardCommunicationByLayout() != SUCCESS) {
+    MS_LOG(ERROR) << name_ << ": InferForwardCommunication failed.";
+    return FAILED;
+  }
+
+  if (InferMirrorOpsByLayout() != SUCCESS) {
+    MS_LOG(ERROR) << name_ << ": InferMirrorOps failed.";
+    return FAILED;
+  }
+  if (InferVirtualDivOpsByLayout() != SUCCESS) {
+    MS_LOG(ERROR) << name_ << ": InferVirtualDivOps failed.";
+    return FAILED;
+  }
+  return SUCCESS;
+}
+
+Status OperatorInfo::InitWithTensorLayoutForNewShape(const std::vector<TensorLayoutBasePtr> &in_tensor_layouts,
+                                                     const std::vector<TensorLayoutBasePtr> &out_tensor_layouts) {
+  ResetQueueMember();
+  if (InferAttrs() != SUCCESS) {
+    MS_LOG(ERROR) << name_ << ": InferAttrs failed.";
+    return FAILED;
+  }
+
+  size_t real_input_index = 0;
+  for (const auto &input_layout : in_tensor_layouts) {
+    // Insert placeholder TensorInfo for optional input
+    while (real_input_index < input_value_.size() && input_value_[real_input_index] != nullptr &&
+           input_value_[real_input_index]->isa<None>()) {
+      (void)inputs_tensor_info_new_.emplace_back(std::make_shared<TensorInfoValue>(TensorInfo()));
+      ++real_input_index;
+    }
+    if (input_layout->no_shape_layout()) {
+      if (input_layout->is_list()) {
+        std::vector<TensorInfoBasePtr> info_list(input_layout->size(), std::make_shared<TensorInfoValue>(TensorInfo()));
+        inputs_tensor_info_new_.emplace_back(std::make_shared<TensorInfoList>(info_list));
+      } else {
+        inputs_tensor_info_new_.emplace_back(std::make_shared<TensorInfoValue>(TensorInfo()));
+      }
+    } else if (input_layout->is_list()) {
+      inputs_tensor_info_new_.emplace_back(std::make_shared<TensorInfoList>(input_layout));
+    } else {
+      inputs_tensor_info_new_.emplace_back(std::make_shared<TensorInfoValue>(input_layout));
+    }
+    ++real_input_index;
+  }
+  if (CheckInputLayout() != SUCCESS) {
+    MS_LOG(ERROR) << name_ << ": CheckInputLayout failed.";
+    return FAILED;
+  }
+  for (const auto &output_layout : out_tensor_layouts) {
+    if (output_layout->is_list()) {
+      outputs_tensor_info_new_.emplace_back(std::make_shared<TensorInfoList>(output_layout));
+    } else {
+      outputs_tensor_info_new_.emplace_back(std::make_shared<TensorInfoValue>(output_layout));
+    }
+  }
+
+  if (outputs_tensor_info_new_.size() != outputs_shape_new_.size()) {
+    outputs_tensor_info_new_.clear();
+    // Need be override
+    if (InferOutputTensorInfo() != SUCCESS) {
+      MS_LOG(ERROR) << name_ << ": InferOutputTensorLayout failed.";
+      return FAILED;
+    }
+  }
+
+  if (outputs_tensor_info_new_.size() != outputs_shape_new_.size()) {
+    MS_LOG(ERROR) << name_ << ": the output tensor layout num " << outputs_tensor_info_new_.size()
+                  << " dose not match the output num " << outputs_shape_new_.size();
     return FAILED;
   }
 

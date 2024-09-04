@@ -155,7 +155,7 @@ static std::shared_ptr<TensorLayout> FindNextLayout(const CNodePtr &cnode, bool 
       return FindNextLayout(use_apply, next_is_reshape, make_tuple_index);
     }
     if (IsParallelCareNode(use_apply) && use_apply->has_user_data<OperatorInfo>() &&
-        IsSomePrimitiveList(use_apply, SUPPORT_NEW_SHAPEBASE_OPS)) {
+        IsSupportNewShapeBaseNode(use_apply)) {
       MS_LOG(INFO) << "FindNextLayout success node " << use_apply->DebugString() << ", in support new shapebase ops";
       *next_is_reshape = false;
       auto layout = GetInputLayoutFromCNode(node_pair, make_tuple_index);

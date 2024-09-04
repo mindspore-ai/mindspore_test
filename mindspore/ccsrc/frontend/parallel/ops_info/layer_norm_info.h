@@ -42,7 +42,9 @@ class LayerNormInfo : public OperatorInfo {
   LayerNormInfo(const std::string &operator_name, const Shapes &inputs_shape, const Shapes &outputs_shape,
                 const PrimitiveAttrs &attrs)
       : OperatorInfo(operator_name, inputs_shape, outputs_shape, attrs, std::make_shared<LayerNormCost>()),
-        begin_norm_axis_(0) {}
+        begin_norm_axis_(0),
+        begin_params_axis_(0),
+        epsilon_(0) {}
   ~LayerNormInfo() override = default;
 
   std::vector<StrategyPtr> GenerateOpStrategies(int64_t stage_id) override;

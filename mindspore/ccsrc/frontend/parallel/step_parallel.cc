@@ -389,33 +389,25 @@ TensorLayout GetTensorInLayout(const AnfNodePtr &pre_node, std::vector<int> get_
 }
 
 Status ObtainOutputTensorLayout(const OperatorInfoPtr &next_distribute_operator,
-                                const std::pair<AnfNodePtr, std::vector<int>> &node_pair, const CNodePtr &next_cnode,
+                                const std::pair<AnfNodePtr, int> &node_pair, const CNodePtr &next_cnode,
                                 const bool &using_func_param_op_info, TensorLayout *tensorlayout_out) {
   bool next_dist_op_has_tuple = !next_distribute_operator->inputs_tensor_info_new().empty();
   if (next_dist_op_has_tuple) {
     auto next_inputs_tensor_info = using_func_param_op_info ? next_distribute_operator->outputs_tensor_info_new()
                                                             : next_distribute_operator->inputs_tensor_info_new();
-    auto it = std::find_if(node_pair.second.begin(), node_pair.second.end(), [&](const auto &input_idx) {
-      return LongToSize(input_idx - 1) >= next_inputs_tensor_info.size();
-    });
-    if (it != node_pair.second.end()) {
-      MS_LOG(INFO) << "The index is out of range, the index is " << (*it - 1) << ", the vector size is "
+    if (LongToSize(node_pair.second - 1) >= next_inputs_tensor_info.size()) {
+      MS_LOG(INFO) << "The index is out of range, the index is " << node_pair.second - 1 << ", the vector size is "
                    << next_inputs_tensor_info.size() << ", next node is " << next_cnode->DebugString();
       return FAILED;
     }
-    auto tensorinfo_out_ptr = next_inputs_tensor_info[LongToSize(node_pair.second[0] - 1)];
-    if (tensorinfo_out_ptr->is_list()) {
-      for (size_t i = 1; i < node_pair.second.size(); ++i) {
-        tensorinfo_out_ptr = tensorinfo_out_ptr->GetElement(LongToSize(node_pair.second[i] - 1));
-      }
-    }
+    auto tensorinfo_out_ptr = next_inputs_tensor_info[LongToSize(node_pair.second - 1)];
     TensorInfo tensorinfo_out = tensorinfo_out_ptr->GetValue();
     *tensorlayout_out = tensorinfo_out.tensor_layout();
     return SUCCESS;
   }
   auto next_inputs_tensor_info = using_func_param_op_info ? next_distribute_operator->outputs_tensor_info()
                                                           : next_distribute_operator->inputs_tensor_info();
-  size_t out_layout_index = LongToSize(node_pair.second[node_pair.second.size() - 1] - 1);
+  size_t out_layout_index = LongToSize(node_pair.second - 1);
   if (out_layout_index >= next_inputs_tensor_info.size()) {
     MS_LOG(INFO) << "The index is out of range, the index is " << out_layout_index << ", the vector size is "
                  << next_inputs_tensor_info.size() << ", next node is " << next_cnode->DebugString();
@@ -516,7 +508,7 @@ void InsertRedistributionForMicroInterleaved(const TensorRedistributionPtr &tens
   ConvertInterleaveAllGatherToConcat(func_graph, virtual_converter_end, ag_group_ranks_vectors);
 }
 
-static void Redistribution(const std::pair<AnfNodePtr, std::vector<int>> &node_pair, const AnfNodePtr &pre_node,
+static void Redistribution(const std::pair<AnfNodePtr, int> &node_pair, const AnfNodePtr &pre_node,
                            const std::vector<int> &get_item_index) {
   MS_LOG(DEBUG) << "Do Redistribution for " << node_pair.first->fullname_with_scope();
   auto next_cnode = node_pair.first->cast<CNodePtr>();
@@ -533,7 +525,7 @@ static void Redistribution(const std::pair<AnfNodePtr, std::vector<int>> &node_p
   if (IsValueNode<FuncGraph>(next_cnode->input(0))) {
     auto fg = GetValueNode<FuncGraphPtr>(next_cnode->input(0));
     auto fg_parameters = fg->parameters();
-    auto param = fg_parameters[IntToSize(node_pair.second[node_pair.second.size() - 1] - 1)];
+    auto param = fg_parameters[IntToSize(node_pair.second - 1)];
     if (param->has_user_data<OperatorInfo>()) {
       MS_LOG(INFO) << "Func call node:" << next_cnode->DebugString() << " has operator info.";
       next_distribute_operator = param->user_data<OperatorInfo>();
@@ -576,10 +568,9 @@ static void Redistribution(const std::pair<AnfNodePtr, std::vector<int>> &node_p
     MS_LOG(EXCEPTION) << "Failure:tensor_redistribution init failed";
   }
   if (tensorlayout_in.GetVirtualRank().size() > 1 || tensorlayout_out.GetVirtualRank().size() > 1) {
-    auto real_pre_node = next_cnode->input(node_pair.second[node_pair.second.size() - 1]);
-    InsertRedistributionForMicroInterleaved(tensor_redistribution,
-                                            {node_pair.first, node_pair.second[node_pair.second.size() - 1]},
-                                            func_graph, pre_cnode, real_pre_node);
+    auto real_pre_node = next_cnode->input(node_pair.second);
+    InsertRedistributionForMicroInterleaved(tensor_redistribution, {node_pair.first, node_pair.second}, func_graph,
+                                            pre_cnode, real_pre_node);
     return;
   }
   RedistributionOpListPtr redistribution_oplist_ptr = tensor_redistribution->InferTensorRedistributionOperatorList();
@@ -597,11 +588,10 @@ static void Redistribution(const std::pair<AnfNodePtr, std::vector<int>> &node_p
   MS_LOG(DEBUG) << "Redistribution size " << redistribution_oplist_ptr->first.size();
   if (!redistribution_oplist_ptr->first.empty()) {
     // the last one is the pos of node in maketuple
-    tensor_redistribution->CreateAssembledDynamicMapping(next_cnode, pre_cnode, func_graph,
-                                                         node_pair.second[node_pair.second.size() - 1]);
+    tensor_redistribution->CreateAssembledDynamicMapping(next_cnode, pre_cnode, func_graph, node_pair.second);
     // insert node before next node
-    InsertRedistribution(redistribution_oplist_ptr, next_cnode, func_graph,
-                         node_pair.second[node_pair.second.size() - 1], pre_cnode, tensor_redistribution);
+    InsertRedistribution(redistribution_oplist_ptr, next_cnode, func_graph, node_pair.second, pre_cnode,
+                         tensor_redistribution);
   }
   // Rollback to dynamic shape.
   if (tensor_redistribution->IsAssembledStaticShape() &&
@@ -622,7 +612,7 @@ static void StepRedistribution(const CNodePtr &cnode, const NodeUsersMap &node_u
   }
   // Find Redistribution next_nodes
   // next_node.first.second = (pos in next node input(don't need to -1), pos in tuple(need to -1))
-  std::vector<std::pair<std::pair<AnfNodePtr, std::vector<int>>, std::vector<int>>> next_nodes;
+  std::vector<std::pair<std::pair<AnfNodePtr, int>, std::vector<int>>> next_nodes;
   RedistributionNextNode(cnode, manager, node_users_map, {-1}, -1, &next_nodes);
   if (next_nodes.empty()) {
     return;
@@ -736,7 +726,7 @@ static void SplitTensor(const AnfNodePtr &node, const CNodePtr &next_node, int64
 static void SplitTensorList(const AnfNodePtr &node, const CNodePtr &next_node, int index) {
   MS_EXCEPTION_IF_NULL(node);
   MS_EXCEPTION_IF_NULL(next_node);
-  if (((next_node->size() != kSizeTwo) && !IsSomePrimitiveList(next_node, SUPPORT_NEW_SHAPEBASE_OPS)) || index != 1) {
+  if ((next_node->size() != kSizeTwo || index != 1) && !IsSupportNewShapeBaseNode(next_node)) {
     MS_LOG(INFO) << next_node->fullname_with_scope() << " Inputs must have only one input, get "
                  << (next_node->size() - 1) << " index should be 1, get " << index;
     return;
@@ -765,7 +755,7 @@ static void SplitTensorList(const AnfNodePtr &node, const CNodePtr &next_node, i
   } else {
     if (inputs_values.size() != op_info->inputs_tensor_info_new()[index - 1]->size()) {
       MS_LOG(EXCEPTION) << "The inputs size " << inputs_values.size() << ", is not equal to inputs shape size "
-                        << op_info->inputs_tensor_info_new()[index - 1]->size();
+                        << op_info->inputs_tensor_info_new()[index - 1]->size() << ", index is " << index - 1;
     }
     new_tensor_infos = op_info->inputs_tensor_info_new()[index - 1];
   }
@@ -773,9 +763,6 @@ static void SplitTensorList(const AnfNodePtr &node, const CNodePtr &next_node, i
   ScopePtr scope = next_node->scope();
   MS_EXCEPTION_IF_NULL(scope);
   for (size_t i = 0; i < inputs_values.size(); ++i) {
-    auto value_ptr = inputs_values[i];
-    auto tensor = value_ptr->cast<tensor::TensorPtr>();
-    MS_EXCEPTION_IF_NULL(tensor);
     TensorInfo tensor_info;
     if (new_tensor_infos != nullptr) {
       auto elem = new_tensor_infos->GetElement(SizeToLong(i));
@@ -784,6 +771,14 @@ static void SplitTensorList(const AnfNodePtr &node, const CNodePtr &next_node, i
     } else {
       tensor_info = op_info->inputs_tensor_info()[i];
     }
+    if (tensor_info == TensorInfo()) {
+      MS_LOG(INFO) << "Tensor info for " << i << "th input of node " << node->DebugString()
+                   << " is TensorInfo. It is not need to split";
+      return;
+    }
+    auto value_ptr = inputs_values[i];
+    auto tensor = value_ptr->cast<tensor::TensorPtr>();
+    MS_EXCEPTION_IF_NULL(tensor);
     TensorLayout tensor_layout = tensor_info.tensor_layout();
     auto value_node = NewValueNode(value_ptr)->cast<AnfNodePtr>();
     Operator op = CreateGetTensorSliceOp(tensor_layout);
@@ -1199,6 +1194,29 @@ static bool CheckInsertMirrorOps(const MirrorOps &mirror_ops, const CNodePtr &no
   return true;
 }
 
+static bool CheckInsertMirrorOpsForNewShape(const MirrorOps &mirror_ops, const CNodePtr &node) {
+  if (IsPrimitiveCNode(node, prim::kPrimSend)) {
+    return true;
+  }
+  constexpr size_t kSingleArgCNodeSize = 2;
+  auto all_inputs = node->inputs();
+  auto has_value_seq = std::all_of(all_inputs.begin() + 1, all_inputs.end(),
+                                   [&node](const AnfNodePtr &input) { return IsValueSequence(input); });
+  if ((node->size() == kSingleArgCNodeSize || IsSomePrimitiveList(node, INPUT_IS_TUPLE_OR_LIST_OPS)) && has_value_seq) {
+    MS_LOG(INFO) << "Input is ValueList, skip it.";
+    return false;
+  }
+  auto has_make_tuple_list = std::all_of(all_inputs.begin() + 1, all_inputs.end(), [&node](const AnfNodePtr &input) {
+    return (AnfNodeIsPrimitive(input, MAKE_TUPLE) || AnfNodeIsPrimitive(input, MAKE_LIST));
+  });
+  if ((node->size() == kSingleArgCNodeSize || IsSomePrimitiveList(node, INPUT_IS_TUPLE_OR_LIST_OPS)) &&
+      (has_make_tuple_list)) {
+    MS_LOG(INFO) << "The mirror for " << GetPrimName(node) << " has handle by make_tuple node";
+    return false;
+  }
+  return true;
+}
+
 // only used for InsertMirrorOps
 static CNodePtr SkipTrivialNodesMoveUp(CNodePtr node) {
   MS_EXCEPTION_IF_NULL(node);
@@ -1326,7 +1344,11 @@ static void DoInsertMirrorOps(const FuncGraphPtr &root, const MirrorOps &mirror_
 
 static void InsertMirrorOps(const FuncGraphPtr &root, const MirrorOps &mirror_ops, const CNodePtr &node) {
   MS_EXCEPTION_IF_NULL(node);
-  if (!CheckInsertMirrorOps(mirror_ops, node)) {
+  if (!IsSupportNewShapeBaseNode(node) && !CheckInsertMirrorOps(mirror_ops, node)) {
+    return;
+  }
+
+  if (IsSupportNewShapeBaseNode(node) && !CheckInsertMirrorOpsForNewShape(mirror_ops, node)) {
     return;
   }
 
@@ -1628,7 +1650,7 @@ static void ApplyParallelOptOnParam(const FuncGraphPtr &root, const AnfNodePtr &
 
 // When this function returns non-empty string, that means parallel optimizer is applied on this parameter.
 static std::string SetParallelShape(const AnfNodePtr &parameter, const std::pair<AnfNodePtr, int64_t> &res,
-                                    const FuncGraphPtr &root, const int &idx) {
+                                    const FuncGraphPtr &root) {
   // check null for param and cnode
   MS_EXCEPTION_IF_NULL(parameter);
   auto param_shape = parameter->Shape();
@@ -1652,21 +1674,12 @@ static std::string SetParallelShape(const AnfNodePtr &parameter, const std::pair
     TensorInfo tensorinfo_in = distribute_operator->inputs_tensor_info()[LongToSize(res.second - 1)];
     tensor_layout = tensorinfo_in.tensor_layout();
   } else {
-    TensorInfoBasePtr tensorinfo_in;
-    if (idx == -1) {
-      tensorinfo_in = distribute_operator->inputs_tensor_info_new()[LongToSize(res.second - 1)];
-    } else {
-      // idx != -1, input is maketuple
-      tensorinfo_in = distribute_operator->inputs_tensor_info_new()[LongToSize(idx)];
+    if (LongToSize(res.second - 1) >= distribute_operator->inputs_tensor_info_new().size()) {
+      MS_LOG(EXCEPTION) << "The parameter index is not in inputs_tensor_info. index = " << (res.second - 1)
+                        << ", inputs_tensor_info size = " << distribute_operator->inputs_tensor_info_new().size();
     }
-    if (tensorinfo_in->is_list()) {
-      if (idx == -1) {
-        MS_LOG(EXCEPTION) << "The input of " << distribute_operator->name() << " is a list, but idx is -1.";
-      }
-      tensor_layout = tensorinfo_in->GetElement(res.second - 1)->GetValue().tensor_layout();
-    } else {
-      tensor_layout = tensorinfo_in->GetValue().tensor_layout();
-    }
+    auto tensorinfo_in = distribute_operator->inputs_tensor_info_new()[LongToSize(res.second - 1)];
+    tensor_layout = tensorinfo_in->GetValue().tensor_layout();
   }
   Shape slice_shape = tensor_layout.base_slice_shape().array();
 
@@ -1714,30 +1727,14 @@ static std::string SetParallelShape(const AnfNodePtr &parameter, const std::pair
   return opt_shard_group;
 }
 
-int ObtainActualInputIdxForSupportedOps(const AnfNodeIndexSet &node_set) {
-  int idx = 0;
-  for (const auto &node_pair : node_set) {
-    auto use_cnode = node_pair.first->cast<CNodePtr>();
-    if (IsSomePrimitiveList(use_cnode, SUPPORT_NEW_SHAPEBASE_OPS)) {
-      idx = node_pair.second;
-    }
-  }
-  return idx;
-}
-
 static void CoverSliceShape(const FuncGraphPtr &root) {
   MS_EXCEPTION_IF_NULL(root);
   auto parameters = root->parameters();
-  FuncGraphManagerPtr manager = root->manager();
-  MS_EXCEPTION_IF_NULL(manager);
-  const auto &node_users_map = manager->node_users();
   for (auto &parameter : parameters) {
     MS_EXCEPTION_IF_NULL(parameter->Shape());
     auto iter = g_RefMap.find(parameter);
     if (iter != g_RefMap.cend()) {
-      auto node_set = node_users_map.at(g_RefMap[parameter].first);
-      auto idx = ObtainActualInputIdxForSupportedOps(node_set);
-      std::string group = SetParallelShape(parameter, g_RefMap[parameter], root, idx - 1);
+      std::string group = SetParallelShape(parameter, g_RefMap[parameter], root);
       // find all forward nodes that use parameter in graphs and insert allgather if group is not empty
       SetSharedParameterFlag(root, parameter);
       ApplyParallelOptOnParam(root, parameter, group);
@@ -1755,9 +1752,7 @@ static void CoverSliceShape(const FuncGraphPtr &root) {
         parameter->set_abstract(param_abstract);
       }
     } else {
-      auto node_set = node_users_map.at(res.first);
-      auto idx = ObtainActualInputIdxForSupportedOps(node_set);
-      std::string group = SetParallelShape(parameter, res, root, idx - 1);
+      std::string group = SetParallelShape(parameter, res, root);
       // find all forward nodes that use parameter in graphs and insert allgather if group is not empty
       SetSharedParameterFlag(root, parameter);
       ApplyParallelOptOnParam(root, parameter, group);
@@ -1892,7 +1887,7 @@ void ObtainElementsForStrategy(const std::vector<Shapes> &shape_list, const int6
 std::pair<std::vector<Shapes>, std::vector<NewShapes>> ObtainShape(const CNodePtr &node) {
   std::vector<Shapes> shape_list;
   std::vector<NewShapes> new_shape_list;
-  if (HasSupportedValueSequence(node)) {
+  if (IsSupportNewShapeBaseNode(node)) {
     new_shape_list = ExtractNewShape(node);
   } else {
     shape_list = ExtractShape(node);
@@ -1970,12 +1965,12 @@ static bool CheckExtractInformation(const CNodePtr &cnode) {
   return IsParallelCareNode(cnode);
 }
 
-StrategyPtr GenerateStandAloneStra(const OperatorInfoPtr &op_info) {
+StrategyPtr GenerateStandAloneStra(const OperatorInfoPtr &op_info, const bool use_new_shape_base) {
   StrategyPtr in_strategy;
-  if (op_info->inputs_shape_new().empty()) {
-    in_strategy = GenerateStandAloneStrategy(op_info->inputs_shape());
-  } else {
+  if (!op_info->inputs_shape_new().empty() || use_new_shape_base) {
     in_strategy = GenerateStandAloneStrategyForNewShapes(op_info->inputs_shape_new());
+  } else {
+    in_strategy = GenerateStandAloneStrategy(op_info->inputs_shape());
   }
   return in_strategy;
 }
@@ -1986,8 +1981,74 @@ void CheckStrategyAndShape(const StrategyPtr &in_strategy, const OperatorInfoPtr
   auto has_new_shape = !op_info->inputs_shape_new().empty();
   if (has_tuple_stra != has_new_shape) {
     MS_LOG(EXCEPTION)
-      << "One of the strategy or input shape have tuple in tuple input, but the other does not; in_strategy is "
+      << "For " << op_info->name()
+      << ": One of the strategy or input shape have tuple in tuple input, but the other does not; in_strategy is "
       << has_tuple_stra << ", input shape is " << has_new_shape;
+  }
+}
+
+void ObtainInOutStrategy(const StrategyMap &stra_map, const PrimitivePtr &prim, const std::string &strategy_key_name,
+                         const CNodePtr &cnode, const OperatorInfoPtr &op_info, const bool &is_new_shape_base_node,
+                         StrategyPtr *in_strategy, StrategyPtr *out_strategy) {
+  auto attrs = prim->attrs();
+  bool load_strategy_from_ckpt =
+    StrategyCheckpoint::GetInstance().LoadCheckPointOn() && stra_map.find(strategy_key_name) != stra_map.end();
+  if (!prim->HasAttr(STAND_ALONE)) {
+    if (((!StrategyFound(attrs) && !load_strategy_from_ckpt) && !cnode->HasPrimalAttr(IN_STRATEGY)) ||
+        prim->HasAttr(BATCH_PARALLEL)) {
+      MS_LOG(INFO) << "ExtractInformation: the strategy of node " << cnode->ToString() << " prim " << prim->name()
+                   << " is empty, using batch parallel";
+      *in_strategy = GenerateBatchParallelStrategy(op_info, prim);
+    } else if (cnode->HasPrimalAttr(IN_STRATEGY)) {
+      *in_strategy = ExtractStrategy(cnode->GetPrimalAttr(IN_STRATEGY), is_new_shape_base_node);
+      *out_strategy = ExtractStrategy(cnode->GetPrimalAttr(OUT_STRATEGY), is_new_shape_base_node);
+    } else if (StrategyFound(attrs)) {
+      *in_strategy = ExtractStrategy(attrs[IN_STRATEGY], is_new_shape_base_node);
+      *out_strategy = ExtractStrategy(attrs[OUT_STRATEGY], is_new_shape_base_node);
+    } else {
+      *in_strategy = stra_map.at(strategy_key_name);
+    }
+  } else {
+    *in_strategy = GenerateStandAloneStra(op_info, is_new_shape_base_node);
+  }
+  CheckStrategyAndShape(*in_strategy, op_info);
+}
+
+void PaddingStrategy(const OperatorInfoPtr &op_info, const bool &is_new_shape_base_node, StrategyPtr *in_strategy) {
+  if (is_new_shape_base_node) {
+    auto standalone_stra = GenerateStandAloneStra(op_info, is_new_shape_base_node)->GetInputNewDim();
+    auto stra = (*in_strategy)->GetInputNewDim();
+    std::vector<NewDimensions> new_stra;
+    if (stra.size() <= op_info->inputs_shape_new().size()) {
+      MS_LOG(INFO) << "The strategy size " << stra.size() << " is smaller than actual input size(contain attr) "
+                   << op_info->inputs_shape_new().size() << ", the remained input will set to no split.";
+      // For no shape like scalar / None, set a standalone stra
+      MS_LOG(DEBUG) << "Before padding, the strategy is " << (*in_strategy)->ToString() << ", size is "
+                    << (*in_strategy)->GetInputNewDim().size();
+      size_t real_idx = 0;
+      for (size_t i = 0; i < op_info->inputs_shape_new().size(); ++i) {
+        if (op_info->inputs_shape_new()[i]->size() == 0) {
+          MS_LOG(DEBUG) << "The " << i << "th input shape is no shape set to standalone strategy";
+          new_stra.push_back(standalone_stra[i]);
+        } else {
+          if (real_idx >= stra.size()) {
+            break;
+          }
+          new_stra.push_back(stra[real_idx]);
+          ++real_idx;
+        }
+      }
+      if (new_stra.size() < op_info->inputs_shape_new().size()) {
+        new_stra.insert(new_stra.end(), standalone_stra.begin() + SizeToLong(real_idx), standalone_stra.end());
+      }
+      (*in_strategy)->ResetInputs(new_stra);
+      MS_LOG(DEBUG) << "After padding, the new strategy is " << (*in_strategy)->ToString() << ", size is "
+                    << (*in_strategy)->GetInputNewDim().size();
+    } else {
+      MS_LOG(EXCEPTION) << "For op " << op_info->name()
+                        << ": its strategy size is larger than input shape size. The strategy size is " << stra.size()
+                        << ", but the input shape size is " << op_info->inputs_shape_new().size();
+    }
   }
 }
 
@@ -2008,40 +2069,48 @@ static void ExtractStrategyAndInit(const CNodePtr &cnode, const PrimitivePtr &pr
   if (!param_names.empty()) {
     strategy_key_name = prim->name() + "_" + param_names[0].first;
   }
+  auto is_new_shape_base_node = IsSupportNewShapeBaseNode(cnode);
   std::vector<std::shared_ptr<TensorLayout>> in_tensor_layouts;
   std::vector<std::shared_ptr<TensorLayout>> out_tensor_layouts;
-  if (ExtractUserConfigLayout(attrs, op_info->inputs_shape(), op_info->outputs_shape(), &in_tensor_layouts,
-                              &out_tensor_layouts) != SUCCESS) {
-    MS_LOG(EXCEPTION) << "Failure:operator " << prim->name() << " extract configured layout failed"
-                      << trace::DumpSourceLines(cnode);
-  }
-  if (in_tensor_layouts.empty() && out_tensor_layouts.empty()) {
-    bool load_strategy_from_ckpt =
-      StrategyCheckpoint::GetInstance().LoadCheckPointOn() && stra_map.find(strategy_key_name) != stra_map.end();
-    if (!prim->HasAttr(STAND_ALONE)) {
-      if (((!StrategyFound(attrs) && !load_strategy_from_ckpt) && !cnode->HasPrimalAttr(IN_STRATEGY)) ||
-          prim->HasAttr(BATCH_PARALLEL)) {
-        MS_LOG(INFO) << "ExtractInformation: the strategy of node " << cnode->ToString() << " prim " << prim->name()
-                     << " is empty, using batch parallel";
-        in_strategy = GenerateBatchParallelStrategy(op_info, prim);
-      } else if (cnode->HasPrimalAttr(IN_STRATEGY)) {
-        in_strategy = ExtractStrategy(cnode->GetPrimalAttr(IN_STRATEGY));
-        out_strategy = ExtractStrategy(cnode->GetPrimalAttr(OUT_STRATEGY));
-      } else if (StrategyFound(attrs)) {
-        in_strategy = ExtractStrategy(attrs[IN_STRATEGY]);
-        out_strategy = ExtractStrategy(attrs[OUT_STRATEGY]);
-      } else {
-        in_strategy = stra_map[strategy_key_name];
-      }
-    } else {
-      in_strategy = GenerateStandAloneStra(op_info);
+  std::vector<TensorLayoutBasePtr> in_tensor_layouts_new;
+  std::vector<TensorLayoutBasePtr> out_tensor_layouts_new;
+  if (is_new_shape_base_node) {
+    if (ExtractUserConfigLayoutForNewShape(attrs, op_info->inputs_shape_new(), op_info->outputs_shape_new(),
+                                           &in_tensor_layouts_new, &out_tensor_layouts_new) != SUCCESS) {
+      MS_LOG(EXCEPTION) << "Failure:operator " << prim->name() << " extract configured layout failed"
+                        << trace::DumpSourceLines(cnode);
     }
-    CheckStrategyAndShape(in_strategy, op_info);
+    for (size_t i = 0; i < in_tensor_layouts_new.size(); ++i) {
+      auto in_layouts = in_tensor_layouts_new[i]->GetAllElements();
+      in_tensor_layouts.insert(in_tensor_layouts.end(), in_layouts.begin(), in_layouts.end());
+    }
+    for (size_t i = 0; i < out_tensor_layouts_new.size(); ++i) {
+      auto out_layouts = out_tensor_layouts_new[i]->GetAllElements();
+      out_tensor_layouts.insert(out_tensor_layouts.end(), out_layouts.begin(), out_layouts.end());
+    }
+  } else {
+    if (ExtractUserConfigLayout(attrs, op_info->inputs_shape(), op_info->outputs_shape(), &in_tensor_layouts,
+                                &out_tensor_layouts) != SUCCESS) {
+      MS_LOG(EXCEPTION) << "Failure:operator " << prim->name() << " extract configured layout failed"
+                        << trace::DumpSourceLines(cnode);
+    }
+  }
+  if (in_tensor_layouts.empty() && out_tensor_layouts.empty() && in_tensor_layouts_new.empty() &&
+      out_tensor_layouts_new.empty()) {
+    ObtainInOutStrategy(stra_map, prim, strategy_key_name, cnode, op_info, is_new_shape_base_node, &in_strategy,
+                        &out_strategy);
+    PaddingStrategy(op_info, is_new_shape_base_node, &in_strategy);
   } else if (CheckLayoutForDynamicShape(in_tensor_layouts, out_tensor_layouts, op_info) != SUCCESS) {
     MS_LOG_WITH_NODE(EXCEPTION, cnode) << "check layout for dynamic shape failed";
   }
-  if (op_info->Init(in_strategy, out_strategy, in_tensor_layouts, out_tensor_layouts) == FAILED) {
-    MS_LOG(EXCEPTION) << "Failure:operator " << prim->name() << " init failed" << trace::DumpSourceLines(cnode);
+  if (is_new_shape_base_node) {
+    if (op_info->Init(in_strategy, out_strategy, in_tensor_layouts_new, out_tensor_layouts_new) == FAILED) {
+      MS_LOG(EXCEPTION) << "Failure:operator " << prim->name() << " init failed" << trace::DumpSourceLines(cnode);
+    }
+  } else {
+    if (op_info->Init(in_strategy, out_strategy, in_tensor_layouts, out_tensor_layouts) == FAILED) {
+      MS_LOG(EXCEPTION) << "Failure:operator " << prim->name() << " init failed" << trace::DumpSourceLines(cnode);
+    }
   }
 }
 
@@ -2149,7 +2218,7 @@ static std::shared_ptr<TensorLayout> FindNextLayout(const AnfNodePtr &cnode, boo
       }
     }
     if (IsParallelCareNode(use_apply) && use_apply->has_user_data<OperatorInfo>() &&
-        IsSomePrimitiveList(use_apply, SUPPORT_NEW_SHAPEBASE_OPS)) {
+        IsSupportNewShapeBaseNode(use_apply)) {
       MS_LOG(INFO) << "FindNextLayout success node " << use_apply->DebugString() << ", in support new shapebase ops";
       *next_is_reshape = false;
       auto layout = GetInputLayoutFromCNode(node_pair, make_tuple_index);
@@ -3133,6 +3202,95 @@ OperatorInfoPtr SetMakeListForIFA(CNodePtr make_list, const CNodePtr &next_node)
   return operator_make_list;
 }
 
+OperatorInfoPtr CreateOperatorInfoForMakeTuple(const CNodePtr make_tuple_node, const CNodePtr &next_node,
+                                               const int input_pos) {
+  // For tuple input ops, copy the corresponding op info from ops to make tuple
+  OperatorInfoPtr operator_make_tuple;
+  auto is_new_shapebase_node = IsSupportNewShapeBaseNode(next_node);
+  if (!is_new_shapebase_node) {
+    // For ops like concat/stack, copy the whole op info to make tuple
+    MS_LOG(DEBUG) << "make tuple node " << make_tuple_node->DebugString() << " has the same op info as next node "
+                  << next_node->DebugString();
+    operator_make_tuple = GetDistributeOperator(next_node);
+  } else {
+    // For ops like gmm/fia, create a new op info which contains the corresponding info
+    operator_make_tuple = CreateOperatorInfo(make_tuple_node);
+    MS_LOG(DEBUG) << "make tuple node " << make_tuple_node->DebugString() << " take the input " << input_pos << " of "
+                  << next_node->DebugString() << " as the op info";
+    auto make_tuple_prim = GetValueNode<PrimitivePtr>(make_tuple_node->input(0));
+    if (make_tuple_prim->HasAttr(STAND_ALONE)) {
+      (void)make_tuple_prim->DelAttr(STAND_ALONE);
+    }
+    OperatorInfoPtr next_operator = next_node->user_data<OperatorInfo>();
+    if (!next_operator->mirror_ops_new().empty()) {
+      if (next_operator->mirror_ops_new().size() <= LongToSize(input_pos)) {
+        MS_LOG(EXCEPTION) << "The size of mirror ops is not enough, which is " << next_operator->mirror_ops_new().size()
+                          << ", but the input pos is " << input_pos;
+      }
+      auto corresponding_mirror_ops = next_operator->mirror_ops_new().at(input_pos)->GetAllElements();
+      operator_make_tuple->set_mirror_ops(corresponding_mirror_ops);
+    }
+
+    // Copy tensor info
+    if (next_operator->inputs_tensor_info_new().empty()) {
+      if (next_operator->inputs_tensor_info().size() <= LongToSize(input_pos)) {
+        MS_LOG(EXCEPTION) << "The size of inputs tensor info is not enough, which is "
+                          << next_operator->inputs_tensor_info().size() << ", but the input pos is " << input_pos;
+      }
+      std::vector<TensorInfo> corresponding_tensor_info(1, next_operator->inputs_tensor_info()[input_pos]);
+      operator_make_tuple->set_inputs_tensor_info(corresponding_tensor_info);
+    } else {
+      if (next_operator->inputs_tensor_info_new().size() <= LongToSize(input_pos)) {
+        MS_LOG(EXCEPTION) << "The size of inputs tensor info is not enough, which is "
+                          << next_operator->inputs_tensor_info_new().size() << ", but the input pos is " << input_pos;
+      }
+      auto input_tensor_info = next_operator->inputs_tensor_info_new()[input_pos];
+      std::vector<TensorInfoBasePtr> corresponding_tensor_info;
+      for (size_t i = 0; i < input_tensor_info->size(); ++i) {
+        corresponding_tensor_info.push_back(input_tensor_info->GetElement(SizeToLong(i)));
+      }
+      operator_make_tuple->set_inputs_tensor_info_new(corresponding_tensor_info);
+    }
+
+    // Copy strategy if have
+    StrategyPtr next_node_strategy = next_operator->strategy();
+    if (next_node_strategy != nullptr) {
+      StrategyPtr make_tuple_new_in_stra;
+      if (next_node_strategy->GetInputNewDim().empty()) {
+        Strategies corresponding_strategies;
+        auto make_tuple_stage = next_node_strategy->GetInputStage();
+        if (next_node_strategy->GetInputDim().size() <= LongToSize(input_pos)) {
+          MS_LOG(EXCEPTION) << "The size of input dim is not enough, which is "
+                            << next_node_strategy->GetInputDim().size() << ", but the input pos is " << input_pos;
+        }
+        Dimensions corresponding_dim = next_node_strategy->GetInputDim().at(input_pos);
+        corresponding_strategies.push_back(corresponding_dim);
+        make_tuple_new_in_stra = NewStrategy(make_tuple_stage, corresponding_strategies);
+      } else {
+        // For ops which supports NewShapeBase
+        NewStrategies corresponding_strategies;
+        auto make_tuple_stage = next_node_strategy->GetInputStage();
+        if (next_node_strategy->GetInputNewDim().size() <= LongToSize(input_pos)) {
+          MS_LOG(EXCEPTION) << "The size of input new dim is not enough, which is "
+                            << next_node_strategy->GetInputNewDim().size() << ", but the input pos is " << input_pos;
+        }
+        NewDimensions corresponding_dim = next_node_strategy->GetInputNewDim().at(input_pos);
+
+        for (size_t i = 0; i < corresponding_dim->size(); ++i) {
+          corresponding_strategies.push_back(corresponding_dim->GetElement(SizeToLong(i)));
+        }
+        make_tuple_new_in_stra = NewStrategy(make_tuple_stage, corresponding_strategies);
+      }
+      MS_LOG(DEBUG) << "The strategy set to " << make_tuple_node->DebugString() << " is "
+                    << make_tuple_new_in_stra->ToString();
+      operator_make_tuple->set_strategy(make_tuple_new_in_stra);
+    } else {
+      MS_LOG(INFO) << "For next cnode " << next_node->DebugString() << ", do not have strategy";
+    }
+  }
+  return operator_make_tuple;
+}
+
 static void HandleForwardMakeTupleAndMakeList(const std::vector<AnfNodePtr> &all_nodes) {
   for (auto &node : all_nodes) {
     if (!AnfNodeIsPrimitive(node, MAKE_TUPLE) && !AnfNodeIsPrimitive(node, MAKE_LIST)) {
@@ -3148,8 +3306,10 @@ static void HandleForwardMakeTupleAndMakeList(const std::vector<AnfNodePtr> &all
     FuncGraphManagerPtr manager = cnode->func_graph()->manager();
     MS_EXCEPTION_IF_NULL(manager);
 
+    AnfNodePtr make_tuple_list_next_node;
+    int input_pos;
     // MakeTuple has multiple users, each user's TensorInfo must be same.
-    auto make_tuple_list_next_node = CheckMakeTupleSplit(node, manager);
+    std::tie(make_tuple_list_next_node, input_pos) = CheckMakeTupleSplit(node, manager);
     if (make_tuple_list_next_node == nullptr) {
       continue;
     }
@@ -3161,7 +3321,7 @@ static void HandleForwardMakeTupleAndMakeList(const std::vector<AnfNodePtr> &all
 
     OperatorInfoPtr op_info = SetMakeListForIFA(cnode, make_tuple_list_next_cnode);
     if (op_info == nullptr) {
-      op_info = GetDistributeOperator(make_tuple_list_next_cnode);
+      op_info = CreateOperatorInfoForMakeTuple(cnode, make_tuple_list_next_cnode, input_pos - 1);
     }
     MS_EXCEPTION_IF_NULL(op_info);
     cnode->set_user_data<OperatorInfo>(op_info);

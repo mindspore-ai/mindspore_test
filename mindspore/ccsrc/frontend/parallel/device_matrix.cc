@@ -55,7 +55,7 @@ Status DeviceMatrix::CreateGroupList() {
   return Status::SUCCESS;
 }
 
-Status DeviceMatrix::GetDevicesAlongDim(const uint64_t &dim, RankList *devices) {
+Status DeviceMatrix::GetDevicesAlongDim(const uint64_t &dim, RankList *devices) const {
   if (dim >= dev_shape_.size()) {
     MS_LOG(EXCEPTION) << "The dimension " << dim << " is out of the size of the device shape!";
   }

@@ -20,7 +20,6 @@ from mindspore import Tensor, context, Parameter
 from mindspore.common.api import _cell_graph_executor
 from mindspore.ops import operations as P
 from mindspore.common.initializer import initializer
-from mindspore.context import _Context
 from ....train_step_wrap import train_step_with_loss_warp
 
 
@@ -78,7 +77,6 @@ class DenseMutMulNet(nn.Cell):
 
 
 def compile_net(mp_comm_recompute, recompute_slice_activation):
-    _Context().set_backend_policy("vm")
     context.set_context(mode=context.GRAPH_MODE)
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", device_num=8)
     input_ = Tensor(np.ones([64, 128]).astype(np.float32) * 0.01)
@@ -87,7 +85,6 @@ def compile_net(mp_comm_recompute, recompute_slice_activation):
                                                    recompute_slice_activation=recompute_slice_activation))
     net.set_train()
     _cell_graph_executor.compile(net, input_, label)
-    _Context().set_backend_policy("ge")
 
 
 def test_dmnet_train_step_mp_recompute():
