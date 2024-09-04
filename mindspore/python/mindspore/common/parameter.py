@@ -199,8 +199,8 @@ class Parameter(Tensor_):
         device(str): Only Ascend device target is supported. It is used to specify the device which the parameter is
             stored. By default, the parameter will be stored on NPU while computing. When the device is specified as
             ``"CPU"``, the parameter will be loaded into the device when it needs to be used, and unloaded to the CPU
-            after use. It takes effext only when `memory_offload` is``"ON"``, `jit_level` is not ``"O2"`` and
-            `memory_optimize_level` is ``O0``in `mindspore.set_context()`. Less device memory is needed when device is
+            after use. It takes effext only when `memory_offload` is ``"ON"``, `jit_level` is not ``"O2"`` and
+            `memory_optimize_level` is ``O0`` in `mindspore.set_context()`. Less device memory is needed when device is
             specified as ``"CPU"``.
 
     Examples:

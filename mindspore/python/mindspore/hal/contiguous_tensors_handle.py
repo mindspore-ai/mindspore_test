@@ -27,7 +27,7 @@ def combine_tensor_list_contiguous(tensor_list, enable_mem_align=True):
     Return a contiguous memory handle where contiguous memory has been requested and slicing functionality is provided.
 
     Args:
-        tensor_list (list[Tensor]，Tuple[Tensor]): The tensor list to be stored.
+        tensor_list (list[Tensor], Tuple[Tensor]): The tensor list to be stored.
         enable_mem_align (bool, optional): Whether to enable the memory alignment function.
             False is not supported. Default: ``True`` .
 
@@ -57,7 +57,7 @@ class ContiguousTensorsHandle:
     ContiguousTensorsHandle is a handle manage continuous memory.
 
     Args:
-        tensor_list (list[Tensor]，Tuple[Tensor]): The tensor list to be stored.
+        tensor_list (list[Tensor], Tuple[Tensor]): The tensor list to be stored.
         enable_mem_align (bool, optional): Whether to enable the memory alignment function.
             False is not supported. Default: ``True`` .
 

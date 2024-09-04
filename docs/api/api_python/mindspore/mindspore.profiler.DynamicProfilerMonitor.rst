@@ -2,6 +2,7 @@ mindspore.profiler.DynamicProfilerMonitor
 =========================================
 
 .. py:class:: mindspore.profiler.DynamicProfilerMonitor(cfg_path, output_path="./dyn_profile_data", poll_interval=2)
+
     该类用于动态采集MindSpore神经网络性能数据。
 
     参数：

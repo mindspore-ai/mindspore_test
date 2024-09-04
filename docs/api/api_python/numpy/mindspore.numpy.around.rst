@@ -9,7 +9,7 @@ mindspore.numpy.around
          不支持NumPy参数 `out` 。 不支持复数。
 
     参数：
-        - **a** (Union[int, float, bool, list, tuple, Tensor]) - 输入数据。
+        - **a** (Union[int, float, list, tuple, Tensor]) - 输入数据。
         - **decimals** (int) - 需要四舍五入到的小数位数。 默认值： `0` 。
 
     返回：

@@ -10,7 +10,7 @@ mindspore.numpy.bincount
 
     参数：
         - **x** (Union[list, tuple, Tensor]) - 1-d输入数组。
-        - **weights** (Union[int, float, bool, list, tuple, Tensor]) - 权重，与 `x` 的shape相同的数组。 默认值：0。
+        - **weights** (Union[int, float, bool, list, tuple, Tensor]，可选) - 权重，与 `x` 的shape相同的数组。 默认值：0。
         - **minlength** (int, 可选) - 输出数组的最小桶数。 默认值： `0` 。
         - **length** (int, 可选) - 桶的数量。 默认值： `None` 。
 

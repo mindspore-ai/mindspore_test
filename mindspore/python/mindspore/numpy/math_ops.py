@@ -3161,8 +3161,8 @@ def nancumsum(a, axis=None, dtype=None):
     Zeros are returned for slices that are all-NaN or empty.
 
     Note:
-        If ``a.dtype`` is :class:`int8`, :class:`int16` or :class:`bool`, the result
-        `dtype` will be elevated to :class:`int32`.
+        If ``a.dtype`` is `int8`, `int16` or `bool`, the result
+        `dtype` will be elevated to `int32`.
 
     Args:
         a (Tensor): Input tensor.
@@ -3497,7 +3497,7 @@ def tan(x, dtype=None):
         Tensor or scalar. This is a scalar if `x` is a scalar.
 
     Raises:
-        TypeError: If the input is not a tensor or is :class:`tensor.dtype` is :class:`mindspore.float64`.
+        TypeError: If the input is not a tensor or the dtype of tensor is mindspore.float64.
 
     Supported Platforms:
         ``Ascend`` ``CPU``
@@ -3978,7 +3978,7 @@ def gradient(f, *varargs, axis=None, edge_order=1):
             1. single scalar to specify a sample distance for all dimensions.
             2. N scalars to specify a constant sample distance for each dimension.
         axis (Union[None, int, tuple(int), list(int)], optional): Gradient is calculated
-            only along the given axis or axes. The default :class:`(axis = None)` is to calculate
+            only along the given axis or axes. The default ``(axis = None)`` is to calculate
             the gradient for all the axes of the input tensor. `axis` may be negative,
             in which case it counts from the last to the first `axis`.
         edge_order (int): Gradient is calculated using N-th order accurate differences
@@ -4050,7 +4050,7 @@ def sum_(a, axis=None, dtype=None, keepdims=False, initial=None):
         `extobj` are not supported.
 
     Args:
-        x (Union[int, float, bool, list, tuple, Tensor]): Elements to sum.
+        a (Union[int, float, bool, list, tuple, Tensor]): Elements to sum.
         axis (Union[None, int, tuple(int)]): Axis or axes along which a sum is performed. Default: `None`.
             If `None`, sum all of the elements of the input array.
             If axis is negative it counts from the last to the first axis.
@@ -5060,8 +5060,8 @@ def polyadd(a1, a2):
         Numpy object poly1d is currently not supported.
 
     Args:
-        a1 (Union[int, float, list, tuple, Tensor): Input polynomial.
-        a2 (Union[int, float, list, tuple, Tensor): Input polynomial.
+        a1 (Union[int, float, list, tuple, Tensor]): Input polynomial.
+        a2 (Union[int, float, list, tuple, Tensor]): Input polynomial.
 
     Returns:
         Tensor, the sum of the inputs.
@@ -5096,8 +5096,8 @@ def polysub(a1, a2):
         Numpy object poly1d is currently not supported.
 
     Args:
-        a1 (Union[int, float, list, tuple, Tensor): Minuend polynomial.
-        a2 (Union[int, float, list, tuple, Tensor): Subtrahend polynomial.
+        a1 (Union[int, float, list, tuple, Tensor]): Minuend polynomial.
+        a2 (Union[int, float, list, tuple, Tensor]): Subtrahend polynomial.
 
     Returns:
         Tensor, the difference of the inputs.
@@ -5128,10 +5128,10 @@ def polyval(p, x):
         Numpy object poly1d is currently not supported.
 
     Args:
-        p (Union[int, float, bool, list, tuple, Tensor): 1D array of polynomial
+        p (Union[int, float, bool, list, tuple, Tensor]): 1D array of polynomial
             coefficients (including coefficients equal to zero) from highest
             degree to the constant term.
-        x (Union[int, float, bool, list, tuple, Tensor): A number, an array of
+        x (Union[int, float, bool, list, tuple, Tensor]): A number, an array of
             numbers, at which to evaluate `p`.
 
     Returns:
@@ -5230,7 +5230,7 @@ def polyint(p, m=1, k=None):
         Numpy object poly1d is currently not supported.
 
     Args:
-        p (Union[int, float, bool, list, tuple, Tensor): Polynomial to integrate. A
+        p (Union[int, float, bool, list, tuple, Tensor]): Polynomial to integrate. A
             sequence is interpreted as polynomial coefficients.
         m (int, optional): Defaults to 1, Order of the antiderivative.
         k (Union[int, list of int]y, optinoal): Integration constants. They are given
@@ -5337,7 +5337,7 @@ def unwrap(p, discont=3.141592653589793, axis=-1):
         differently than numpy due to differences in round-off.
 
     Args:
-        p (Union[int, float, bool, list, tuple, Tensor): Input array.
+        p (Union[int, float, bool, list, tuple, Tensor]): Input array.
         discont (float, optional): Maximum discontinuity between values, default: ``pi`` .
         axis (int, optional): Axis along which unwrap will operate, default: ``-1`` .
 
