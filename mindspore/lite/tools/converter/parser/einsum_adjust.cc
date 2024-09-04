@@ -41,20 +41,31 @@ constexpr const size_t kLen2 = 2;
 constexpr const size_t kLen3 = 3;
 constexpr const size_t kLen4 = 4;
 
-int CheckCanConvertToMatmul(const std::string &first_dims, const std::string &second_dims,
-                            const std::string &output_dims, bool *trans_a, bool *trans_b, bool *trans_out) {
-  MS_CHECK_TRUE_RET(trans_a != nullptr && trans_b != nullptr && trans_out != nullptr, RET_NULL_PTR);
-  // dimensions other than the last two dimensions and not common dimension from the right should be the same.
-  // e.g. "bdn,bdm->bnm"/"bnm,bdm->bdn"/"bhid,bhjd->bhij"/"bhid,hjd->dhij"
-  auto first_subdims = first_dims.substr(0, first_dims.length() - DIMENSION_2D);
-  auto second_subdims = second_dims.substr(0, second_dims.length() - DIMENSION_2D);
-  auto output_subdims = output_dims.substr(0, output_dims.length() - DIMENSION_2D);
+lite::STATUS CheckSubdims(const std::string &first_subdims, const std::string &second_subdims,
+                          const std::string &output_subdims) {
   auto min_dim = first_subdims.length() < second_subdims.length() ? first_subdims.length() : second_subdims.length();
   min_dim = min_dim < output_subdims.length() ? min_dim : output_subdims.length();
+  auto max_subdims = first_subdims.length() > second_subdims.length() ? first_subdims : second_subdims;
   if (first_subdims.substr(first_subdims.length() - min_dim) !=
         second_subdims.substr(second_subdims.length() - min_dim) ||
       first_subdims.substr(first_subdims.length() - min_dim) !=
-        output_subdims.substr(output_subdims.length() - min_dim)) {
+        output_subdims.substr(output_subdims.length() - min_dim) ||
+      max_subdims.at(0) != output_subdims.at(0)) {
+    return RET_ERROR;
+  }
+  return RET_OK;
+}
+
+lite::STATUS CheckCanConvertToMatmul(const std::string &first_dims, const std::string &second_dims,
+                                     const std::string &output_dims, bool *trans_a, bool *trans_b, bool *trans_out) {
+  MS_CHECK_TRUE_RET(trans_a != nullptr && trans_b != nullptr && trans_out != nullptr, RET_NULL_PTR);
+  // dimensions other than the last two dimensions and not common dimension from the right should be the same.
+  // e.g. "bdn,bdm->bnm"/"bnm,bdm->bdn"/"bhid,bhjd->bhij"/"bhid,hjd->bhij"
+  auto first_subdims = first_dims.substr(0, first_dims.length() - DIMENSION_2D);
+  auto second_subdims = second_dims.substr(0, second_dims.length() - DIMENSION_2D);
+  auto output_subdims = output_dims.substr(0, output_dims.length() - DIMENSION_2D);
+  if (CheckSubdims(first_subdims, second_subdims, output_subdims) != RET_OK) {
+    MS_LOG(ERROR) << "Check subdim failed!";
     return RET_ERROR;
   }
 
