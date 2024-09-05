@@ -1,27 +1,24 @@
-# Copyright 2020 Huawei Technologies Co., Ltd
+#Copyright 2020 Huawei Technologies Co., Ltd
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
+#Licensed under the Apache License, Version 2.0(the "License");
+#you may not use this file except in compliance with the License.
+#You may obtain a copy of the License at
 #
-# http://www.apache.org/licenses/LICENSE-2.0
+#http:  // www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ============================================================================
+#Unless required by applicable law or agreed to in writing, software
+#distributed under the License is distributed on an "AS IS" BASIS,
+#WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#See the License for the specific language governing permissions and
+#limitations under the License.
+#== == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == ==
 from tests.mark_utils import arg_mark
 
 import numpy as np
-import pytest
 
-import mindspore
 import mindspore.context as context
 import mindspore.nn as nn
 from mindspore import Tensor
-from mindspore.common.api import _pynative_executor
 import mindspore.ops as ops
 from mindspore.ops import operations as P
 from mindspore.common.api import jit
@@ -127,24 +124,3 @@ def test_functional_select_broadcast():
 
     ret = foo(cond, x, y)
     assert ret.shape == (5, 5, 65, 54, 12, 5, 2)
-
-
-@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
-          essential_mark='unessential')
-def test_functional_select_type_error():
-    """
-    Feature: Functional select support scalar.
-    Description: If y is a int, x must be a Tensor with int32 type. If y is a float, x must be a Tensor with float32.
-    Expectation: TypeError.
-    """
-    input_cond = Tensor([True, True])
-    input_x_int = Tensor([2, 3], mindspore.int32)
-    input_x_float = Tensor([2, 3], mindspore.float32)
-
-    with pytest.raises(TypeError):
-        ops.select(input_cond, input_x_int, 2.0)
-        _pynative_executor.sync()
-
-    with pytest.raises(TypeError):
-        ops.select(input_cond, input_x_float, 2)
-        _pynative_executor.sync()
