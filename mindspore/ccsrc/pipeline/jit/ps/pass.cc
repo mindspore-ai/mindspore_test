@@ -83,6 +83,7 @@
 #include "frontend/optimizer/irpass/recompute.h"
 #include "frontend/optimizer/slice_activation_in_recompute.h"
 #include "frontend/optimizer/grouped_pairwise_exchange_alltoall.h"
+#include "frontend/parallel/pass/offloading_packed_expert.h"
 #include "frontend/optimizer/comm_op_attrs.h"
 #include "frontend/optimizer/process_send_recv_for_ge.h"
 #include "frontend/optimizer/environ_conversion.h"
@@ -788,6 +789,23 @@ bool GroupedPairwiseExchangeAllToAllPass(const ResourcePtr &resource) {
   return true;
 }
 
+bool OffloadingPackedExpertFrontPass2(const ResourcePtr &resource) {
+  MS_EXCEPTION_IF_NULL(resource);
+  FuncGraphPtr func_graph = resource->func_graph();
+  bool res = parallel::SetOffloadingPackedExpert(func_graph);
+  if (res) {
+    abstract::AbstractBasePtrList args_abs;
+    const auto parameters = func_graph->parameters();
+    (void)std::transform(parameters.begin(), parameters.end(), std::back_inserter(args_abs),
+                         [](const AnfNodePtr &p) -> AbstractBasePtr { return p->abstract(); });
+    FuncGraphPtr new_fg = pipeline::Renormalize(resource, func_graph, args_abs);
+    resource->set_func_graph(new_fg);
+    resource->set_args_abs(args_abs);
+  }
+
+  return true;
+}
+
 bool SliceReuseRecomputedActivationPass(const ResourcePtr &resource) {
   MS_EXCEPTION_IF_NULL(resource);
   parallel::SliceReuseRecomputedActivationNodes(resource->func_graph());
@@ -1318,6 +1336,7 @@ std::vector<PassItem> kVmPasses = {
   {"overlap_opt_shard_grad_in_pipeline", OverlapOptShardGradInPipelinePass},
   {"control_data_broadcast_order", ControlDataBroadcastOrderPass},
   {"grouped_pairwise_exchange_alltoall", GroupedPairwiseExchangeAllToAllPass},
+  {"offloading_packed_experts", OffloadingPackedExpertFrontPass2},
   {"overlap_recompute_and_grad_model_parallel", OverlapRecomputeAndGradModelParallel},
   {"overlap_grad_matmul_and_grad_allreduce", OverlapGradMatmulAndGradAllreduce},
   {"overlap_recompute_allgather_and_fa_grad", OverlapRecomputeAllGatherAndFlashAttentionGradPass},
