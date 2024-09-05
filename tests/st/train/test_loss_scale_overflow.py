@@ -36,7 +36,7 @@ class Net(nn.Cell):
 
 
 @arg_mark(plat_marks=['platform_gpu', 'platform_ascend', 'platform_ascend910b'],
-          level_mark='level2',
+          level_mark='level0',
           card_mark='onecard',
           essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.PYNATIVE_MODE])
@@ -63,7 +63,7 @@ def test_train_one_step_with_loss_scale_cell_overflow(mode):
     ]
     label = Tensor(np.full([out_features,], 0, np.float16))
     datasets = list(zip(inputs, [label for _ in range(len(inputs))]))
-    scaling_sens = Tensor([8], dtype=mstype.float16)
+    scaling_sens = Tensor(8, dtype=mstype.float16)
     train_network = nn.TrainOneStepWithLossScaleCell(
         net_with_loss, optimizer, scale_sense=scaling_sens)
     expect_results = [True, False, True, False, True]
@@ -75,7 +75,7 @@ def test_train_one_step_with_loss_scale_cell_overflow(mode):
 
 
 @arg_mark(plat_marks=['platform_gpu', 'platform_ascend'],
-          level_mark='level2',
+          level_mark='level0',
           card_mark='onecard',
           essential_mark='unessential')
 @pytest.mark.parametrize('mode', [ms.PYNATIVE_MODE])
@@ -102,7 +102,7 @@ def test_boost_train_one_step_with_loss_scale_cell_overflow(mode):
     ]
     label = Tensor(np.full([out_features,], 0, np.float16))
     datasets = list(zip(inputs, [label for _ in range(len(inputs))]))
-    scaling_sens = Tensor([8], dtype=mstype.float16)
+    scaling_sens = Tensor(8, dtype=mstype.float16)
     train_network = boost.BoostTrainOneStepWithLossScaleCell(
         net_with_loss, optimizer, scale_sense=scaling_sens)
     expect_results = [True, False, True, False, True]
