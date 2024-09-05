@@ -743,13 +743,9 @@ Status SqueezeInfo::InferAxis(const ValueTuplePtr &value_tuple) {
 }
 
 Status SqueezeInfo::GetAttrs() {
-  auto iter = attrs_.find(AXIS);
-  if (iter == attrs_.end()) {
-    MS_LOG(ERROR) << name_ << ": Can't find axis attribute.";
-    return FAILED;
-  }
-  MS_EXCEPTION_IF_NULL(iter->second);
-  auto value_tuple = iter->second->cast<ValueTuplePtr>();
+  auto value = input_value_[kIndex1];
+  MS_EXCEPTION_IF_NULL(value);
+  auto value_tuple = value->cast<ValueTuplePtr>();
   MS_EXCEPTION_IF_NULL(value_tuple);
   if (InferAxis(value_tuple) != SUCCESS) {
     return FAILED;

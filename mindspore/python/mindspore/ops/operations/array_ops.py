@@ -35,13 +35,14 @@ from mindspore.common import Tensor, CSRTensor, COOTensor
 from mindspore._c_expression import Tensor as Tensor_
 from mindspore._c_expression import CSRTensor as CSRTensor_
 from mindspore._c_expression import COOTensor as COOTensor_
-from ..auto_generate import (ExpandDims, Reshape, TensorShape, Transpose, Gather,
-                             OnesLike, ZerosLike, Argmax, ArgMaxExt,
-                             ReverseV2, Diag, Eye, ScatterNd, ResizeNearestNeighborV2,
-                             GatherNd, GatherD, Range, MaskedFill, RightShift, NonZero,
-                             ResizeNearestNeighbor, Identity, Split, CumSum, CumProd, MaskedSelect,
-                             Cummax, Cummin, Argmin, Concat, UnsortedSegmentSum, ScalarToTensor,
-                             Triu, BroadcastTo, StridedSlice, Select, TopkExt, SearchSorted)
+from ..auto_generate import (
+    ExpandDims, Reshape, TensorShape, Transpose, Gather, OnesLike, ZerosLike,
+    Argmax, ArgMaxExt, ReverseV2, Diag, Eye, ScatterNd,
+    ResizeNearestNeighborV2, GatherNd, GatherD, Range, MaskedFill, RightShift,
+    NonZero, ResizeNearestNeighbor, Identity, Split, CumSum, CumProd,
+    MaskedSelect, Cummax, Cummin, Argmin, Concat, UnsortedSegmentSum,
+    ScalarToTensor, Triu, BroadcastTo, StridedSlice, Select, TopkExt,
+    SearchSorted, Squeeze)
 from .manually_defined import Rank, Shape, Tile, Cast, Ones, Zeros
 from ..auto_generate import ArgMaxWithValue, ArgMinWithValue
 from ..auto_generate import TensorScatterElements as TensorScatterElementsExt
@@ -472,52 +473,6 @@ class Unsqueeze(PrimitiveWithCheck):
     def __init__(self, axis):
         self.init_prim_io_names(inputs=['x'], outputs=['y'])
         self.axis = axis
-
-
-class Squeeze(Primitive):
-    """
-    Return the Tensor after deleting the dimension of size 1 in the specified `axis`.
-
-    Refer to :func:`mindspore.ops.squeeze` for more details.
-
-    Args:
-        axis (Union[int, tuple(int)]): Specifies the dimension indexes of shape to be removed, which will remove
-            all the dimensions of size 1 in the given axis parameter. If specified, it must be int32 or int64.
-            Default: ``()`` .
-
-    Inputs:
-        - **input_x** (Tensor) - The shape of tensor is :math:`(x_1, x_2, ..., x_R)`.
-
-    Outputs:
-        Tensor, the shape of tensor is :math:`(x_1, x_2, ..., x_S)`.
-
-    Supported Platforms:
-        ``Ascend`` ``GPU`` ``CPU``
-
-    Examples:
-        >>> import mindspore
-        >>> import numpy as np
-        >>> from mindspore import Tensor, ops
-        >>> input_x = Tensor(np.ones(shape=[3, 2, 1]), mindspore.float32)
-        >>> squeeze = ops.Squeeze(2)
-        >>> output = squeeze(input_x)
-        >>> print(output)
-        [[1. 1.]
-         [1. 1.]
-         [1. 1.]]
-    """
-
-    @prim_attr_register
-    def __init__(self, axis=()):
-        """Initialize Squeeze"""
-        self.init_prim_io_names(inputs=['x'], outputs=['output'])
-        validator.check_value_type('axis', axis, [int, tuple], self.name)
-        if isinstance(axis, tuple):
-            for idx, item in enumerate(axis):
-                validator.check_value_type("axis[%d]" % idx, item, [int], self.name)
-        else:
-            self.axis = (axis,)
-            self.add_prim_attr("axis", (axis,))
 
 
 class ConjugateTranspose(Primitive):

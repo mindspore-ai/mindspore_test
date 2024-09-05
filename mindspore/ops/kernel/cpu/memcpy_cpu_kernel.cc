@@ -25,6 +25,9 @@ namespace {
 #define EXPAND_DIMS_CPU_REG(T)                                                                     \
   KernelAttr().AddInputAttr(T).AddInputAttr(kObjectTypeNumber, kNumberTypeInt64).AddOutputAttr(T), \
     KernelAttr().AddInputAttr(T).AddInputAttr(kObjectTypeNumber, kNumberTypeInt32).AddOutputAttr(T)
+#define SQUEEZE_CPU_REG(T)                                                                        \
+  KernelAttr().AddInputAttr(T).AddInputAttr(kObjectTypeTuple, kNumberTypeInt64).AddOutputAttr(T), \
+    KernelAttr().AddInputAttr(T).AddInputAttr(kObjectTypeTuple, kNumberTypeInt32).AddOutputAttr(T)
 
 constexpr size_t kMemcpyOutputsNum = 1;
 constexpr auto kReshape = "Reshape";
@@ -97,6 +100,18 @@ std::vector<KernelAttr> MemcpyCpuKernelMod::expand_dims_valid_types_ = {
 
   EXPAND_DIMS_CPU_REG(kNumberTypeBool),      EXPAND_DIMS_CPU_REG(kNumberTypeComplex64),
   EXPAND_DIMS_CPU_REG(kNumberTypeComplex128)};
+
+std::vector<KernelAttr> MemcpyCpuKernelMod::squeeze_valid_types_ = {
+  // index int64
+  SQUEEZE_CPU_REG(kNumberTypeFloat64), SQUEEZE_CPU_REG(kNumberTypeFloat32),   SQUEEZE_CPU_REG(kNumberTypeFloat16),
+
+  SQUEEZE_CPU_REG(kNumberTypeInt8),    SQUEEZE_CPU_REG(kNumberTypeInt16),     SQUEEZE_CPU_REG(kNumberTypeInt32),
+  SQUEEZE_CPU_REG(kNumberTypeInt64),
+
+  SQUEEZE_CPU_REG(kNumberTypeUInt8),   SQUEEZE_CPU_REG(kNumberTypeUInt16),    SQUEEZE_CPU_REG(kNumberTypeUInt32),
+  SQUEEZE_CPU_REG(kNumberTypeUInt64),
+
+  SQUEEZE_CPU_REG(kNumberTypeBool),    SQUEEZE_CPU_REG(kNumberTypeComplex64), SQUEEZE_CPU_REG(kNumberTypeComplex128)};
 
 std::vector<KernelAttr> MemcpyCpuKernelMod::common_valid_types_with_bool_complex_ = {
   KernelAttr().AddInputAttr(kNumberTypeInt8).AddOutputAttr(kNumberTypeInt8),
@@ -207,7 +222,7 @@ std::vector<KernelAttr> MemcpyCpuKernelMod::GetOpSupport() {
     {kFlatten, common_valid_types_with_bool_complex_},
     {kFlattenGrad, common_two_valid_types_with_bool_complex_},
     {kExpandDims, expand_dims_valid_types_},
-    {kSqueeze, common_valid_types_with_bool_complex_},
+    {kSqueeze, squeeze_valid_types_},
   };
 
   auto iter = support_list_map.find(kernel_type_);

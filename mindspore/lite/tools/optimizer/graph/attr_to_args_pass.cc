@@ -211,6 +211,10 @@ static const std::map<std::string, std::vector<string>> kAttrMapNeedAdjust = {
    {
      "lambd",
    }},
+  {"Squeeze",
+   {
+     "axis",
+   }},
   {"FusedInferAttentionScore",
    {
      "num_heads",

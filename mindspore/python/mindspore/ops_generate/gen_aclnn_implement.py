@@ -174,9 +174,9 @@ def generate(op_name, class_name, op_yaml, h_and_cc, need_update_shape):
 
 def gen_aclnn_kernel(op_name, yaml_str, need_update_shape=False, auto=False):
     """gen_aclnn_kernel function"""
-    skip_aclnn_list = {"generator"}
+    skip_aclnn_list = {"squeeze", "generator"}
     if op_name in skip_aclnn_list:
-        logging.warning("Aclnn kernel is not registered for Operator {%s}", op_name)
+        logging.warning("Operator {%s} has no aclnn interface, no aclnn kernel will be generated.", op_name)
         return
     if check_op_registed(op_name) and not auto:
         logging.warning("Kernel {%s} is already registered.", op_name)

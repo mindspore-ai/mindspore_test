@@ -35,7 +35,7 @@
 #include "tools/common/tensor_util.h"
 #include "ops_utils/op_utils.h"
 #include "infer/cxx_api/mat_mul_fusion.h"
-#include "infer/squeeze.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 
 namespace mindspore::opt {
 namespace {
