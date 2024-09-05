@@ -20,7 +20,7 @@
 #include <memory>
 #include <string>
 #include <vector>
-
+#include <utility>
 #include "utils/hash_map.h"
 #include "utils/ms_utils.h"
 #include "ir/value.h"
@@ -84,6 +84,8 @@ class MatMul : public MatMulBase {
   virtual Status ComputeReplaceGraphForInterleaved(const CNodePtr &cnode);
 
  private:
+  AnfNodePtr GetInputOutputNodeForNDTP(const CNodePtr &cnode, const AnfNodePtr &square_actual_input_node,
+                                       GenerateGraph *gen_g, std::vector<std::pair<AnfNodePtr, int64_t>> *input_nodes);
   Status ComputeNDTPReplaceGraph(const CNodePtr &cnode);
   int64_t GetAllGatherDim(size_t all_gather_tensor_axis, const TensorLayout &input_layout, size_t tensor_index);
   AnfNodePtr ComputePreAllGatherGraph(const CNodePtr &cnode, GenerateGraph *gen_g,

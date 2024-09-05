@@ -383,6 +383,28 @@ def test_interleaved_two_matmul():
     phase = compile_net(net, x)
     _ = ParallelValidator(net, phase)
 
+def test_interleaved_two_matmul_2dtp():
+    """
+    Feature: test micro interleaved using two matmul
+    Description: dev_num is 16.
+    Expectation: compile success, forward reduce_scatter
+    """
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", device_num=16, global_rank=0)
+    layout = Layout((2, 2, 2, 2, 2), ("dp", "mp_x", "mp_y", "sp", "interleaved_parallel"))
+    layout1 = (layout(("dp", "interleaved_parallel"), ("mp_x", "mp_y")), layout("mp_x", "mp_y"))
+    out_layout1 = None
+    layout2 = (layout(("dp", "interleaved_parallel"), ("mp_y", "mp_x")), layout("mp_y", "mp_x"))
+    out_layout2 = None
+    x = Tensor(np.ones([1024, 1024]), dtype=ms.float32)
+    w1 = Tensor(np.ones([1024, 1024]), dtype=ms.float32)
+    w2 = Tensor(np.ones([1024, 1024]), dtype=ms.float16)
+    net_two_matmul = NetTwoMatMul(w1, w2, layout1, layout2, out_layout1, out_layout2)
+    net_two_matmul.matmul1.add_prim_attr("enable_nd_tp", True)
+    net_two_matmul.matmul2.add_prim_attr("enable_nd_tp", True)
+    net = GradWrap(NetWithLoss(net_two_matmul))
+    phase = compile_net(net, x)
+    _ = ParallelValidator(net, phase)
+
 def test_interleaved_with_reshape():
     """
     Feature: test micro interleaved using two matmul
@@ -498,6 +520,25 @@ def test_interleaved_with_rmsnorm():
         NetWithLoss(NetWithRmsNorm(w, bias, bias, matmul_layout, add_layout, activation_layout, rmsnorm_layout)))
     _ = compile_net(net, x)
 
+def test_interleaved_with_rmsnorm_split_norm_axis():
+    """
+    Feature: test micro interleaved split norm
+    Description: dev_num is 8.
+    Expectation: compile success
+    """
+
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", device_num=8, global_rank=0)
+    layout = Layout((2, 4, 2), ("dp", "mp", "interleaved_parallel"))
+    matmul_layout = (layout(("dp", "interleaved_parallel"), "None"), layout("None", "mp"))
+    add_layout = (layout(("dp", "interleaved_parallel"), "mp"), layout("mp"))
+    activation_layout = (layout(("dp", "interleaved_parallel"), "mp"),)
+    rmsnorm_layout = (layout(("dp", "interleaved_parallel"), "mp"), layout("mp"))
+    x = Tensor(np.ones([1024, 1024]), dtype=ms.float32)
+    w = Tensor(np.ones([1024, 1024]), dtype=ms.float32)
+    bias = Tensor(np.ones([1024,]), dtype=ms.float32)
+    net = GradWrap(
+        NetWithLoss(NetWithRmsNorm(w, bias, bias, matmul_layout, add_layout, activation_layout, rmsnorm_layout)))
+    _ = compile_net(net, x)
 
 def test_interleaved_with_layernorm():
     """

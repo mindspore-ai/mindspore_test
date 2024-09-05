@@ -151,3 +151,40 @@ def test_layout_layernorm_multi_shard_with_grad():
     phase = compile_net(net, x)
     validator = ParallelValidator(net, phase)
     assert validator.check_parameter_shape('network.network.gamma', [32])
+
+def test_layout_rmsnorm_split_norm_axis():
+    """
+    Feature: test layout extend
+    Description: dev_num is 8.
+    Expectation: compile success
+    """
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", device_num=8, global_rank=0)
+    layout = Layout((2, 2, 2), ("dp", "sp", "mp"))
+    layout1 = (layout("dp", "sp", "mp"), layout("mp"))
+    net = Net(gamma, layout1)
+    compile_net(net, x)
+
+def test_layout_rmsnorm_multisplit_norm_axis():
+    """
+    Feature: test layout extend
+    Description: dev_num is 8.
+    Expectation: compile success
+    """
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", device_num=8, global_rank=0)
+    layout = Layout((2, 1, 2, 2), ("dp", "sp", "mp_x", "mp_y"))
+    layout1 = (layout("dp", "sp", ("mp_x", "mp_y")), layout(("mp_x", "mp_y"),))
+    net = Net(gamma, layout1)
+    compile_net(net, x)
+
+def test_layout_rmsnorm_split_norm_axis_mismatch():
+    """
+    Feature: test layout extend
+    Description: dev_num is 8.
+    Expectation: raise error
+    """
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel", device_num=8, global_rank=0)
+    layout = Layout((2, 2, 2), ("dp", "sp", "mp"))
+    layout1 = (layout("dp", "sp", "mp"), layout("None"))
+    net = Net(gamma, layout1)
+    with pytest.raises(RuntimeError):
+        compile_net(net, x)

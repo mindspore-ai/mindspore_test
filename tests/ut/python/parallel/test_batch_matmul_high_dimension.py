@@ -119,8 +119,8 @@ def test_batch_matmul_2D_TP():
         _w1,
         _w2,
         False,
-        (layout("b", "x", "y"), layout("b", "y", "x")),
-        (layout("b", "y", "x"), layout("b", "x", "y"))
+        (layout("b", "None", ("x", "y")), layout("b", "x", "y")),
+        (layout("b", "None", ("y", "x")), layout("b", "y", "x"))
     )
     compile_batch_net(net)
 
@@ -139,8 +139,8 @@ def test_batch_matmul_2D_TP_transpose_b():
         _w1_trans,
         _w2_trans,
         True,
-        (layout("b", "x", "y"), layout("b", "x", "y")),
-        (layout("b", "y", "x"), layout("b", "y", "x"))
+        (layout("b", "None", ("x", "y")), layout("b", "y", "x")),
+        (layout("b", "None", ("y", "x")), layout("b", "x", "y"))
     )
     compile_batch_net(net)
 
@@ -159,8 +159,8 @@ def test_batch_matmul_2D_TP_reduce_1D():
         _w1,
         _w2,
         False,
-        (layout("b", "x", "y"), layout("b", "y", "x")),
-        (layout("b", "y", "x"), layout("b", "x", "y"))
+        (layout("b", "None", ("x", "y")), layout("b", "x", "y")),
+        (layout("b", "None", ("y", "x")), layout("b", "y", "x"))
     )
     compile_batch_net(net)
 
@@ -239,8 +239,8 @@ def test_matmul_2D_TP():
         _w1_s,
         _w2_s,
         False,
-        (layout("x", "y"), layout("y", "x")),
-        (layout("y", "x"), layout("x", "y"))
+        (layout("None", ("x", "y")), layout("x", "y")),
+        (layout("None", ("y", "x")), layout("y", "x"))
     )
     compile_net(net)
 
@@ -259,8 +259,8 @@ def test_matmul_2D_TP_transpose_b():
         _w1_trans_s,
         _w2_trans_s,
         True,
-        (layout("x", "y"), layout("x", "y")),
-        (layout("y", "x"), layout("y", "x"))
+        (layout("None", ("x", "y")), layout("y", "x")),
+        (layout("None", ("y", "x")), layout("x", "y"))
     )
     compile_net(net)
 
@@ -279,8 +279,8 @@ def test_matmul_2D_TP_reduce_1D():
         _w1_s,
         _w2_s,
         False,
-        (layout("x", "y"), layout("y", "x")),
-        (layout("y", "x"), layout("x", "y"))
+        (layout("None", ("x", "y")), layout("x", "y")),
+        (layout("None", ("y", "x")), layout("y", "x"))
     )
     compile_net(net)
 
