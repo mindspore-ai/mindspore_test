@@ -133,6 +133,7 @@ AnfNodePtr FindRealInputByFormalParameter(const CNodePtr &node, const AnfNodePtr
 std::vector<std::string> ExtractInputsTensorName(const CNodePtr &node, const std::vector<AnfNodePtr> &all_nodes);
 OperatorInfoPtr GetDistributeOperator(const CNodePtr &node);
 bool StrategyFound(const mindspore::HashMap<std::string, ValuePtr> &attrs);
+bool OutStrategyFound(const mindspore::HashMap<std::string, ValuePtr> &attrs);
 bool AttrFound(const mindspore::HashMap<std::string, ValuePtr> &attrs, const std::string &target);
 void ExceptionIfHasCommunicationOp(const std::vector<AnfNodePtr> &all_nodes);
 std::string MirrorOpName();

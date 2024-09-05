@@ -36,6 +36,7 @@
 #include "frontend/parallel/auto_parallel/rec_core/rec_partition.h"
 #include "frontend/parallel/graph_util/graph_info.h"
 #include "frontend/parallel/graph_util/node_info.h"
+#include "frontend/parallel/graph_util/grad_accumulation_utils.h"
 #include "frontend/parallel/ops_info/reshape_info.h"
 #include "frontend/parallel/ops_info/tmp_identity_info.h"
 #include "frontend/parallel/parameter_manager.h"
@@ -191,6 +192,9 @@ bool StepAutoParallel(const FuncGraphPtr &root, const opt::OptimizerPtr &) {
     MS_LOG(EXCEPTION)
       << "The recursive auto parallel strategy searching mode requires the device num be the power of 2.";
   }
+
+  // set grad accumulation step
+  SetGradAccumulationStep(all_nodes);
   // mark the forward cnodes, parallel only care these nodes
   MarkForwardCNode(root);
 
@@ -289,6 +293,20 @@ void InitCostGraph() {
   entire_costgraph->Init();
   configured_stra_ops_.clear();
   ignore_candidate_.clear();
+}
+
+void SetOutStrategyToOperator(const OperatorInfoPtr &operator_info, const PrimitivePtr &prim,
+                              mindspore::HashMap<std::string, ValuePtr> attrs) {
+  // In this case, when attrs has out_strategy, the out_strategy will be set to operator
+  StrategyPtr strategyPtr;
+  if (!OutStrategyFound(attrs)) {
+    return;
+  }
+  strategyPtr = parallel::ExtractStrategy(attrs[OUT_STRATEGY]);
+  if (strategyPtr == nullptr) {
+    return;
+  }
+  operator_info->set_out_strategy(strategyPtr);
 }
 
 void SetStrategyToOperator(const OperatorInfoPtr &operator_info, const PrimitivePtr &prim,
@@ -423,6 +441,9 @@ OperatorInfoPtr CreateTheOperatorInfo(const PrimitivePtr &prim, const CNodePtr &
   // if strategy is set to load from checkpoint, it is prefer to load strategy from checkpoint .
   auto attrs = prim->attrs();
   if (ParallelContext::GetInstance()->strategy_search_mode() != kRecursiveProgramming) {
+    if (OutStrategyFound(attrs)) {
+      SetOutStrategyToOperator(operator_info, prim, attrs);
+    }
     if ((StrategyFound(attrs) && prim->name() != CAST) || load_strategy_from_ckpt) {
       SetStrategyToOperator(operator_info, prim, attrs, is_last_nodes, stra_map, strategy_key_name);
       return operator_info;
@@ -1064,7 +1085,8 @@ void ReshapeCostCompute(const std::vector<AnfNodePtr> &all_nodes) {
     auto operator_info = cnode->user_data<OperatorInfo>();
     bool is_prev_param = false;
     if (!FindReshapePreNodeStraCosts(pre_node, &pre_operator_info, &is_prev_param, &out_index, 0)) {
-      MS_LOG(EXCEPTION) << "FindReshapePreNodeStraCosts for reshape failed";
+      MS_LOG(WARNING) << "FindReshapePreNodeStraCosts for reshape failed";
+      continue;
     }
     // 如果是双递归的话枚举reshape和前向算子的策略
     if (ParallelContext::GetInstance()->strategy_search_mode() == kRecursiveProgramming) {

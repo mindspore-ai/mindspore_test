@@ -2282,7 +2282,8 @@ Status GenerateStrategiesWithBroadcast(int64_t stage_id, const Shapes &inputs_sh
 }
 
 Status OperatorInfo::SetCostUnderStrategyBase(const StrategyPtr &strategy) {
-  if (InitForCostModel(strategy, nullptr) == FAILED) {
+  StrategyPtr out_strategy = out_strategy_;
+  if (InitForCostModel(strategy, out_strategy) == FAILED) {
     MS_LOG(DEBUG) << name_ << ": Initialization under the strategy failed.";
     return FAILED;
   }
@@ -2367,6 +2368,20 @@ StrategyPtr OperatorInfo::GetStrategyFromSWCByOutputLayout(const TensorLayout &o
 
 bool OperatorInfo::IsReshape() const {
   if (name_.find(RESHAPEINFO) != std::string::npos) {
+    return true;
+  }
+  return false;
+}
+
+bool OperatorInfo::IsVirtualOutput() const {
+  if (name_.find(VIRTUALOUTPUTINFO) != std::string::npos) {
+    return true;
+  }
+  return false;
+}
+
+bool OperatorInfo::IsConcat() const {
+  if (name_.find(CONCATINFO) != std::string::npos) {
     return true;
   }
   return false;

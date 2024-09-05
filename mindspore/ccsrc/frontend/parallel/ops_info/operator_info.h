@@ -389,6 +389,8 @@ class OperatorInfo {
   StrategyPtr GetStrategyFromSWCByInputLayout(const TensorLayout &input_layout, size_t input_index);
   StrategyPtr GetStrategyFromSWCByOutputLayout(const TensorLayout &output_layout, size_t output_index);
   bool IsReshape() const;
+  bool IsVirtualOutput() const;
+  bool IsConcat() const;
   bool IsTmpIdentity() const;
 
   void set_swc_index(int64_t swc, int64_t depth);
