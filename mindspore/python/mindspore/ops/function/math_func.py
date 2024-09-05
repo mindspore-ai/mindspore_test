@@ -1590,11 +1590,11 @@ def xlogy(input, other):
         - On Ascend, the data type of `input` and `other` must be float16 or float32.
 
     Args:
-        input (Union[Tensor, number.Number, bool]): The first input is a number.Number or
+        input (Union[Tensor, numbers.Number, bool]): The first input is a numbers.Number or
             a bool or a tensor whose data type is
             `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
             `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
-        other (Union[Tensor, number.Number, bool]): The second input is a number.Number or
+        other (Union[Tensor, numbers.Number, bool]): The second input is a numbers.Number or
             a bool when the first input is a tensor or a tensor whose data type is number or bool\_.
             When the first input is Scalar, the second input must be a Tensor whose data type is number or bool\_.
 
@@ -1603,7 +1603,7 @@ def xlogy(input, other):
         and the data type is the one with higher precision or higher digits among the two inputs.
 
     Raises:
-        TypeError: If `input` and `other` is not a number.Number or a bool or a Tensor.
+        TypeError: If `input` and `other` is not a numbers.Number or a bool or a Tensor.
         TypeError: If dtype of `input` and `other` is not in [float16, float32, float64, complex64, complex128].
         ValueError: If `input` could not be broadcast to a tensor with shape of `other`.
 
@@ -1641,20 +1641,20 @@ def xlogy_ext(input, other):
     When the inputs are two tensors, the shapes of them could be broadcast.
 
     Args:
-        input (Union[Tensor, number.Number, bool]): The first input is a number.Number or
+        input (Union[Tensor, numbers.Number, bool]): The first input is a numbers.Number or
             a bool or a tensor whose data type is
             `number <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_ or
             `bool_ <https://www.mindspore.cn/docs/en/master/api_python/mindspore/mindspore.dtype.html>`_.
-        other (Union[Tensor, number.Number, bool]): The second input is a number.Number or
-            a bool or a tensor whose data type is number or bool\_ when the first input is a tensor.
-            When the first input is Scalar, the second input must be a Tensor whose data type is number or bool\_.
+        other (Union[Tensor, numbers.Number, bool]): The second input is a numbers.Number or
+            a bool or a tensor whose data type is number or bool when the first input is a tensor.
+            When the first input is Scalar, the second input must be a Tensor whose data type is number or bool.
 
     Returns:
         Tensor, the shape is the same as the one after broadcasting,
         and the data type is the one with higher precision or higher digits among the two inputs.
 
     Raises:
-        TypeError: If `input` and `other` is not a number.Number or a bool or a Tensor.
+        TypeError: If `input` and `other` is not a numbers.Number or a bool or a Tensor.
         ValueError: If `input` could not be broadcast to a tensor with shape of `other`.
 
     Supported Platforms:
