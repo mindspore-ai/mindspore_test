@@ -13,21 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#include "plugin/device/ascend/kernel/internal/acme/sub.h"
+
 #include <memory>
+#include "kernel/kernel.h"
+
 #include "plugin/device/ascend/kernel/internal/internal_kernel_in_out_map.h"
-#include "plugin/device/ascend/kernel/internal/quant_v2.h"
+
 namespace mindspore {
 namespace kernel {
-internal::OpParamPtr InternalQuantV2::CreateOpParam(const std::vector<KernelTensor *> &inputs,
-                                                    const std::vector<KernelTensor *> &outputs) {
-  internal::OpParamPtr param_ptr = std::make_shared<internal::OpParam>();
-  param_ptr->opId = internal::OpId::QuantPerChannel;
-  internal::ElewiseParam op_param;
-  op_param.elewiseType = internal::ElewiseParam::ELEWISE_QUANT_PER_CHANNEL;
-  param_ptr->specificParam = op_param;
-  return param_ptr;
+acme::AcmeOpPtr AcmeSub::CreateKernel(const acme::InputsImmutableInfoList &inputs_ii,
+                                      const acme::OutputsImmutableInfoList &outputs_ii,
+                                      const std::vector<KernelTensor *> &ms_inputs,
+                                      const std::vector<KernelTensor *> &ms_outputs) {
+  return acme::CreateSubOp(inputs_ii, outputs_ii, acme::kAcmeSubOpName);
 }
-
-MS_INTERNAL_KERNEL_FACTORY_REG(QuantV2, InternalQuantV2);
+MS_ACME_KERNEL_FACTORY_REG(Sub, acme::kAcmeSubOpName, AcmeSub);
+REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(Sub, INPUT_NUM_2, INDEX_0, INDEX_1);
+REG_MS_TO_INTERNAL_OUT_TENSOR_IDX_MAP(Sub, OUTPUT_NUM_1, INDEX_0);
 }  // namespace kernel
 }  // namespace mindspore

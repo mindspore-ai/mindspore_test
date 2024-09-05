@@ -49,7 +49,5 @@ internal::OpParamPtr InternalQuantLinearSparse::CreateOpParam(const std::vector<
 }
 
 MS_INTERNAL_KERNEL_FACTORY_REG(QuantLinearSparse, InternalQuantLinearSparse);
-REG_MS_TO_INTERNAL_IN_TENSOR_IDX_MAP(QuantLinearSparse, INPUT_NUM_5, INDEX_0, INDEX_1, INDEX_4, INDEX_2, INDEX_3);
-REG_MS_TO_INTERNAL_OUT_TENSOR_IDX_MAP(QuantLinearSparse, OUTPUT_NUM_1, INDEX_0);
 }  // namespace kernel
 }  // namespace mindspore
