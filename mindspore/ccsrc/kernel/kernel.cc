@@ -488,19 +488,11 @@ ValuePtr KernelTensor::GetValue() const {
   // There is a origin value in KernelTensor(maybe come from a ValueNode).
   if (address_common_->dtype_id_ == kMetaTypeNone) {
     return kNone;
-  } else if (value_ && !value_->isa<ValueAny>()) {
-    if (host_info_->kernel_tensor_value_ == nullptr) {
-      host_info_->kernel_tensor_value_ = ConvertValueToKernelTensorValue(value_);
-      return host_info_->kernel_tensor_value_ ? host_info_->kernel_tensor_value_ : value_;
-    }
-    return host_info_->kernel_tensor_value_;
   }
-
-  // Sync value data from device.
-  if (!SyncDataFromDeviceToHost()) {
-    MS_LOG(EXCEPTION) << "Sync data from device to host side failed";
+  if (!SetKernelTensorValue()) {
+    MS_LOG(EXCEPTION) << "Failed to set KernelTensorValue.";
   }
-  return host_info_->kernel_tensor_value_;
+  return host_info_->kernel_tensor_value_ != nullptr ? host_info_->kernel_tensor_value_ : value_;
 }
 
 const void *KernelTensor::GetValuePtr() {
@@ -510,18 +502,11 @@ const void *KernelTensor::GetValuePtr() {
   // There is a origin value in KernelTensor(maybe come from a ValueNode).
   if (address_common_->dtype_id_ == kMetaTypeNone) {
     return nullptr;
-  } else if (value_ && !value_->isa<ValueAny>()) {
-    if (host_info_->kernel_tensor_value_ == nullptr) {
-      host_info_->kernel_tensor_value_ = ConvertValueToKernelTensorValue(value_);
-    }
-    MS_EXCEPTION_IF_NULL(host_info_->kernel_tensor_value_);
-    return host_info_->kernel_tensor_value_->GetDataPtr();
   }
-
-  // Sync value data from device.
-  if (!SyncDataFromDeviceToHost()) {
-    MS_LOG(EXCEPTION) << "Sync data from device to host side failed";
+  if (!SetKernelTensorValue()) {
+    MS_LOG(EXCEPTION) << "Failed to set KernelTensorValue.";
   }
+  MS_EXCEPTION_IF_NULL(host_info_->kernel_tensor_value_);
   return host_info_->kernel_tensor_value_->GetDataPtr();
 }
 
@@ -570,6 +555,36 @@ bool KernelTensor::SyncDataFromDeviceToHost() const {
         host_ptr, device_ptr, address_common_->size_, address_common_->device_name_, address_common_->device_id_,
         address_common_->format_, address_common_->shape_vector_, address_common_->stream_id_, user_data_)) {
     MS_LOG(EXCEPTION) << "Sync data from device to host side failed";
+  }
+  return true;
+}
+
+bool KernelTensor::SetKernelTensorValue() const {
+  // The tensor is const value
+  if (value_ != nullptr && !value_->isa<ValueAny>()) {
+    if (host_info_->kernel_tensor_value_ == nullptr) {
+      host_info_->kernel_tensor_value_ = ConvertValueToKernelTensorValue(value_);
+    }
+    return true;
+  }
+
+  // The tensor is variable value that is set in user_data.
+  if (user_data() != nullptr) {
+    auto var_host_value = user_data()->get<std::pair<ValuePtr, bool>>("variable_host_value");
+    if (var_host_value != nullptr) {
+      if (var_host_value->second) {
+        MS_LOG(DEBUG) << "Set kernel_tensor_value from host value in user data: " << var_host_value->first->ToString();
+        host_info_->kernel_tensor_value_ = ConvertValueToKernelTensorValue(var_host_value->first);
+        var_host_value->second = false;
+      }
+      return true;
+    }
+  }
+
+  // Sync value data from device.
+  if (!SyncDataFromDeviceToHost()) {
+    MS_LOG(ERROR) << "Sync data from device to host side failed";
+    return false;
   }
   return true;
 }

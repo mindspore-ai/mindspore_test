@@ -265,6 +265,21 @@ void SymbolEngineExtender::ProcessNopNode(const FuncGraphPtr &fg, AnfNodePtrList
   }
 }
 
+void SymbolEngineExtender::ConstValueToParam(const FuncGraphPtr &fg, AnfNodePtrList *inputs) const {
+  auto out_cnode = fg->output()->cast<CNodePtr>();
+  MS_EXCEPTION_IF_NULL(out_cnode);
+  for (size_t i = 1; i < out_cnode->size(); i++) {
+    if (out_cnode->input(i)->isa<ValueNode>()) {
+      auto vnode = out_cnode->input(i)->cast<ValueNodePtr>();
+      MS_EXCEPTION_IF_NULL(vnode);
+      auto p = fg->add_parameter();
+      p->set_abstract(vnode->value()->ToAbstract());
+      inputs->push_back(vnode);
+      out_cnode->set_input(i, p);
+    }
+  }
+}
+
 bool SymbolEngineExtender::ExtendNode(const AnfNodePtr &node, const FuncGraphPtr &main_fg) {
   ClusterConfig config;
   config.inline_sub_func_graph = false;
@@ -288,6 +303,7 @@ bool SymbolEngineExtender::ExtendNode(const AnfNodePtr &node, const FuncGraphPtr
     return false;
   }
   ProcessNopNode(fg, &inputs);
+  ConstValueToParam(fg, &inputs);
   auto symbol_engine = KernelPacketEngine::Build(fg);
   if (symbol_engine == nullptr || !symbol_engine->SupportInfer()) {
     MS_LOG(INFO) << "Symbol engine doesn't support infer shape from node: " << node->fullname_with_scope();

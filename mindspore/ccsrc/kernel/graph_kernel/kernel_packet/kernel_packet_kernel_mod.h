@@ -79,6 +79,7 @@ class BACKEND_EXPORT KernelPacketKernelMod : public KernelMod {
   // Cache the host data.
   std::vector<ValuePtr> host_value_cache_;
   std::vector<const void *> host_data_cache_;
+  std::vector<bool> is_dynamic_shape_;
   KernelModPtr real_kernel_mod_;
   std::string real_node_debug_str_;
 };

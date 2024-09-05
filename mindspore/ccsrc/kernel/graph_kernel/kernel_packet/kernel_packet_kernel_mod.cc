@@ -47,7 +47,8 @@ bool KernelPacketInitializer::InitKernel(const CNodePtr &real_node, const Kernel
     return false;
   }
   size_t input_tensor_num = common::AnfAlgo::GetInputTensorNum(real_node);
-  packet_kernel_mod->inputs_cache_.reserve(input_tensor_num);
+  packet_kernel_mod->inputs_cache_.resize(input_tensor_num, nullptr);
+  packet_kernel_mod->is_dynamic_shape_.resize(input_tensor_num, false);
   infer->SetInnerInputNum(input_tensor_num);
   packet_kernel_mod->host_value_cache_.clear();
   packet_kernel_mod->host_value_cache_.resize(input_tensor_num);
@@ -62,13 +63,16 @@ bool KernelPacketInitializer::InitKernel(const CNodePtr &real_node, const Kernel
     auto iter = std::find(outer_inputs.begin(), outer_inputs.end(), prev_node);
     if (iter != outer_inputs.end()) {
       packet_kernel_mod->input_map_[i] = static_cast<size_t>(iter - outer_inputs.begin());
+      continue;
     } else if (value == nullptr || value->isa<ValueAny>()) {
       infer->SetInnerInput(i, prev_node->abstract());
     } else {
-      MS_LOG(DEBUG) << "The input " << i << " is a const value: " << value->ToString();
+      // const value is moved to parameter, this branch may be dead code.
+      MS_LOG(INFO) << "The input " << i << " is a const value: " << value->ToString();
     }
     auto kernel_tensor = std::make_shared<KernelTensor>(abs->GetShape(), abs->GetType(), value);
-    (void)packet_kernel_mod->inputs_cache_.emplace_back(std::move(kernel_tensor));
+    packet_kernel_mod->is_dynamic_shape_[i] = abs->GetShape()->IsDynamic();
+    packet_kernel_mod->inputs_cache_[i] = std::move(kernel_tensor);
   }
   packet_kernel_mod->real_kernel_mod_ = real_kernel_mod;
   return true;
@@ -101,15 +105,20 @@ int KernelPacketKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
     }
     if (host_value_cache_[i] != nullptr) {
       auto ori = inputs_cache_[i];
-      BaseShapePtr shape = ori->GetShape();
-      if (shape->IsDynamic()) {
-        shape = host_value_cache_[i]->ToAbstract()->GetShape();
-      }
+      MS_EXCEPTION_IF_NULL(ori);
+      auto shape = is_dynamic_shape_[i] ? host_value_cache_[i]->ToAbstract()->GetShape() : ori->GetShape();
       MS_LOG(DEBUG) << "Inner input " << i << " is host value: " << host_value_cache_[i]->ToString()
                     << ". Its shape is " << shape->ToString() << ", the type is " << ori->GetType();
-      inputs_cache_[i] = std::make_shared<KernelTensor>(shape, ori->GetType(), host_value_cache_[i]);
+      inputs_cache_[i] = std::make_shared<KernelTensor>(shape, ori->GetType(), kValueAny);
+      if (inputs_cache_[i]->user_data() == nullptr) {
+        inputs_cache_[i]->set_user_data(std::make_shared<UserData>());
+      }
+      inputs_cache_[i]->user_data()->set<std::pair<ValuePtr, bool>>(
+        "variable_host_value", std::make_shared<std::pair<ValuePtr, bool>>(host_value_cache_[i], true));
+      // inputs_cache_[i]->SetInnerHostValue(host_value_cache_[i];);
       inner_inputs[i] = inputs_cache_[i].get();
     } else {
+      // const value is moved to parameter, this branch may be dead code.
       inner_inputs[i] = inputs_cache_[i].get();
       MS_LOG(DEBUG) << "Inner input " << i << " of " << real_node_debug_str_ << " is const value.";
     }
@@ -175,11 +184,11 @@ KernelPacketKernelMod::AddressArgs KernelPacketKernelMod::GetLaunchArgs(const st
   for (size_t i = 0; i < inputs_cache_.size(); i++) {
     if (auto iter = input_map_.find(i); iter != input_map_.end()) {
       auto j = iter->second;
-      MS_LOG(DEBUG) << "Inner input " << i << " -> outer input " << j;
+      MS_LOG(DEBUG) << "Inner input " << i << " used outer input " << j;
       res_inputs[i] = inputs[j];
     } else if (auto iter = input_workspace_map_.find(i); iter != input_workspace_map_.end()) {
       auto j = iter->second;
-      MS_LOG(DEBUG) << "Inner input " << i << " -> workspace " << j;
+      MS_LOG(DEBUG) << "Inner input " << i << " used workspace " << j;
       res_inputs[i] = inputs_cache_[i].get();
       // set the device_ptr of workspaces to res_input
       res_inputs[i]->set_pointer_ref_count(workspaces[j]->pointer_ref_count());
@@ -190,6 +199,7 @@ KernelPacketKernelMod::AddressArgs KernelPacketKernelMod::GetLaunchArgs(const st
         CopyHostToDevice(res_inputs[i]->device_ptr(), host_data_cache_[i], res_inputs[i]->size(), stream_ptr);
       }
     } else {
+      // const value is moved to parameter, this branch may be dead code.
       MS_LOG(DEBUG) << "Inner input " << i << " is not found in input_map and input_workspace_map.";
       res_inputs[i] = inputs_cache_[i].get();
     }

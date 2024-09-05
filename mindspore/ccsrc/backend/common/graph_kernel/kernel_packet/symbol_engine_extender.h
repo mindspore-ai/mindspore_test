@@ -45,6 +45,7 @@ class SymbolEngineExtender : public opt::Pass {
   CNodePtr CreatePacketNode(const FuncGraphPtr &main_fg, const FuncGraphPtr &sub_fg,
                             const AnfNodePtrList &inputs) const;
   void ProcessNopNode(const FuncGraphPtr &fg, AnfNodePtrList *inputs) const;
+  void ConstValueToParam(const FuncGraphPtr &fg, AnfNodePtrList *inputs) const;
 
   HashSet<AnfNodePtr> visited_;
   HashSet<AnfNodePtr> valid_nodes_;
