@@ -176,6 +176,7 @@ class MbufDataHandler {
   uint32_t GetDeviceId() { return device_id_; }
   size_t GetCapacity() { return capacity_; }
   void StopReceive() { stop_receive_.store(true, std::memory_order_acq_rel); }
+  void CleanChannel();
 
  private:
   MbufFuncType func_;
@@ -225,6 +226,12 @@ class MbufDataHandlerManager {
   MbufDataHandlerManager &operator=(const MbufDataHandlerManager &) = delete;
 
   void AddHandler(std::unique_ptr<MbufDataHandler> handler) { handles_.push_back(std::move(handler)); }
+
+  void CleanChannels() {
+    for (auto &handle : handles_) {
+      handle->CleanChannel();
+    }
+  }
 
   void DestoryPrintHandler() {
     for (auto iter = handles_.begin(); iter != handles_.end(); iter++) {

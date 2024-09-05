@@ -56,6 +56,7 @@ from mindspore.dataset.core.config import get_debug_mode
 from mindspore.dataset.engine.datasets import _set_training_dataset, _reset_training_dataset
 from mindspore.train import amp
 from mindspore._c_expression import _framework_profiler_step_start, _framework_profiler_step_end
+from mindspore._c_expression import _get_uce_process_strategy, _get_uce_mem_info
 
 
 def _transfer_tensor_to_tuple(inputs):
@@ -134,14 +135,63 @@ def _handle_tft(func):
                     obj = item
         if obj:
             tft = obj.tft
-            try:
-                func(self, *args, **kwargs)
-            except BaseException as e:
-                tft.tft_report_error(tft.ReportState.RS_UNKNOWN.value)
-                raise e    # raise same error for current rank, other rank do tft process
+            tft_env = os.getenv("MS_ENABLE_TFT", "")
+            uce_env = "UCE:1" in tft_env
+            while True:
+                try:
+                    if "initial_step" in kwargs:
+                        logger.info("uce wrapper restart train initial_epoch: {}, initial_step: {} \
+".format(kwargs["initial_epoch"], kwargs["initial_step"]))
+                    return func(self, *args, **kwargs)
+                except RuntimeError as e:
+                    logger.info("uce wrapper caught RuntimeError")
+                    if not uce_env:
+                        logger.info("uce wrapper caught RuntimeError uce not enable")
+                        tft.tft_report_error(obj.tft.ReportState.RS_UNKNOWN.value)
+                        raise e
+                    e_str = str(e)
+                    logger.info("uce wrapper caught RuntimeError e_str:{}".format(e_str))
+                    if "UCEError" in e_str:
+                        err_strategy = _get_uce_process_strategy(_get_uce_mem_info(obj.device_id))
+                        if err_strategy == "RS_UCE_HIGHLEVEL":
+                            logger.info("uce wrapper caught UCEError HIGHLEVEL")
+                            tft.tft_report_error(tft.ReportState.RS_UCE_HIGHLEVEL.value)
+                        elif err_strategy == "RS_UCE_LOWLEVEL":
+                            logger.info("uce wrapper caught UCEError LOWLEVEL")
+                            tft.tft_report_error(tft.ReportState.RS_UCE_LOWLEVEL.value)
+                        else:
+                            logger.info("uce wrapper caught RuntimeError OTHER strategy")
+                            tft.tft_report_error(obj.tft.ReportState.RS_UNKNOWN.value)
+                            raise e
+                    elif "ForceStopError" in e_str:
+                        logger.info("uce wrapper caught RuntimeError ForceStopError")
+                        force_stop_err = tft.ReportState.RS_NORMAL.value
+                        tft.tft_report_error(force_stop_err)
+                    else:
+                        logger.info("uce wrapper caught RuntimeError rankid: {} OTHER ERROR")
+                        tft.tft_report_error(obj.tft.ReportState.RS_UNKNOWN.value)
+                        raise e
+                    ret = tft.tft_wait_next_action()
+                    if ret == tft.Action.EXIT.value:
+                        raise e
+                    repair_step = tft.tft_get_repair_step()
+                    logger.info("uce wrapper caught repair finish REPAIR STEP: {} batch_num: \
+{}".format(repair_step, self.batch_num))
+                    initial_epoch = int(repair_step/self.batch_num)
+                    initial_step = repair_step%self.batch_num
+                    kwargs["initial_epoch"] = initial_epoch
+                    kwargs["initial_step"] = initial_step
+                    logger.info("uce wrapper repair complete  \
+initial_epoch: {}, initial_step: {} ".format(kwargs["initial_epoch"], kwargs["initial_step"]))
+                    continue
+                except BaseException as e:
+                    logger.info("uce wrapper caught BaseException error")
+                    tft.tft_report_error(obj.tft.ReportState.RS_UNKNOWN.value)
+                    raise e
         else:
-            func(self, *args, **kwargs)
+            return func(self, *args, **kwargs)
     return wrapper
+
 
 
 def _append_ccae(callbacks):
@@ -393,6 +443,7 @@ class Model:
         self._mindspore_lite = None
         self._lite_infer = True  # if backend lite infer fails, set False
         self._mindspore_lite_model_group_id = id(self) & 0xFFFF
+        self.batch_num = -1
 
     def _check_for_graph_cell(self, kwargs):
         """Check for graph cell"""
@@ -765,10 +816,11 @@ class Model:
 
         return [callbacks]
 
+    @_handle_tft
     @_save_final_ckpt
     @_handle_tft
     def _train(self, epoch, train_dataset, callbacks=None, dataset_sink_mode=True, sink_size=-1, initial_epoch=0,
-               valid_dataset=None, valid_frequency=1, valid_dataset_sink_mode=True):
+               valid_dataset=None, valid_frequency=1, valid_dataset_sink_mode=True, initial_step=0):
         """
         Training.
 
@@ -790,6 +842,8 @@ class Model:
         """
         if self._parameter_broadcast:
             self._train_network.set_broadcast_flag()
+        if initial_step != 0:
+            train_dataset.set_init_skip(initial_step)
 
         cb_params = _InternalCallbackParam()
         cb_params.train_network = self._train_network
@@ -798,6 +852,7 @@ class Model:
             cb_params.batch_num = sink_size
         else:
             cb_params.batch_num = train_dataset.get_dataset_size()
+        self.batch_num = cb_params.batch_num
         cb_params.mode = "train"
         cb_params.loss_fn = self._loss_fn
         cb_params.optimizer = self._optimizer
@@ -826,11 +881,13 @@ class Model:
         with _CallbackManager(callbacks) as list_callback:
             self._check_reuse_dataset(train_dataset)
             if not dataset_sink_mode:
-                self._train_process(epoch, train_dataset, list_callback, cb_params, initial_epoch, valid_infos)
+                self._train_process(epoch, train_dataset, list_callback, cb_params, initial_epoch,
+                                    valid_infos, initial_step)
             elif context.get_context("device_target") == "CPU":
                 logger.info("The CPU cannot support dataset sink mode currently."
                             "So the training process will be performed with dataset not sink.")
-                self._train_process(epoch, train_dataset, list_callback, cb_params, initial_epoch, valid_infos)
+                self._train_process(epoch, train_dataset, list_callback, cb_params, initial_epoch,
+                                    valid_infos, initial_step)
             else:
                 self._train_dataset_sink_process(epoch, train_dataset, list_callback,
                                                  cb_params, sink_size, initial_epoch, valid_infos)
@@ -1017,7 +1074,6 @@ class Model:
             dataset_size (int): The number of batches in a dataset.
             sink_size (int): Control the amount of data in each sink. Default: -1.
         """
-
         if not self.enable_recovery:
             self.need_load_ckpt = False
 
@@ -1084,7 +1140,7 @@ class Model:
             _set_recovery_context(need_reset=False)
 
     def _train_process(self, epoch, train_dataset, list_callback=None, cb_params=None, initial_epoch=0,
-                       valid_infos=None):
+                       valid_infos=None, initial_step=0):
         """
         Training process. The data would be passed to network directly.
 
@@ -1104,7 +1160,7 @@ class Model:
                                                   dataset=train_dataset,
                                                   dataset_sink_mode=False,
                                                   epoch_num=epoch)
-        cb_params.cur_step_num = 0
+        cb_params.cur_step_num = initial_step
         cb_params.dataset_sink_mode = False
         run_context = RunContext(cb_params)
         list_callback.on_train_begin(run_context)
@@ -1126,7 +1182,6 @@ class Model:
                                      "returned by 'train_dataset'".format(len_element))
                 cb_params.cur_step_num += 1
                 self._current_step_num = int((cb_params.cur_step_num - 1) % cb_params.batch_num + 1)
-
                 cb_params.train_dataset_element = next_element
                 list_callback.on_train_step_begin(run_context)
                 self._check_network_mode(self._train_network, True)

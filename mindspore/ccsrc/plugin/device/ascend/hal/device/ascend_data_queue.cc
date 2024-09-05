@@ -103,6 +103,23 @@ void DelHandle(acltdtChannelHandle **handle) {
   }
 }
 
+bool CleanHandle() {
+  std::lock_guard<std::mutex> lock(g_acl_destroy_all_mutex);
+  bool success = true;
+  for (auto &item : g_acl_handle_map) {
+    acltdtChannelHandle **handle = reinterpret_cast<acltdtChannelHandle **>(item.first);
+    if (*handle != nullptr) {
+      aclError status = CALL_ASCEND_API(acltdtCleanChannel, *handle);
+      if (status != ACL_SUCCESS) {
+        MS_LOG(WARNING) << "Failed clean acl data channel and the return status is " << status;
+        success = false;
+      }
+      MS_LOG(INFO) << "Clean acl data channel successfully.";
+    }
+  }
+  return success;
+}
+
 bool DestroyHandle() {
   std::lock_guard<std::mutex> lock(g_acl_destroy_all_mutex);
   bool destroy_all = true;
@@ -479,6 +496,7 @@ std::shared_ptr<DataQueue> CreateAscendDataQueue(const std::string &channel_name
 REGISTER_DATA_QUEUE_CREATOR(kAscendDevice, CreateAscendDataQueue);
 struct DevicePlugFuncRegister {
   DevicePlugFuncRegister() noexcept {
+    DataQueueMgr::SetCleanTdtHandleHandler([]() -> bool { return tdt_handle::CleanHandle(); });
     DataQueueMgr::SetDestoryTdtHandleHandler([]() -> bool { return tdt_handle::DestroyHandle(); });
   }
 } ascend_device_func_register;

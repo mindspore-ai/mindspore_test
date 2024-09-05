@@ -109,6 +109,8 @@ class DeviceTensorStore {
     device_tensors_.clear();
   }
 
+  const mindspore::HashMap<AnfNode *, std::vector<DeviceTensorPtr>> &GetAll() const { return device_tensors_; }
+
  private:
   DeviceTensorStore() = default;
   ~DeviceTensorStore() = default;

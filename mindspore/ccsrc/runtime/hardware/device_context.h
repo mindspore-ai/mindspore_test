@@ -308,6 +308,13 @@ class BACKEND_EXPORT DeviceResManager {
 
   // Detect stress.
   virtual int StressDetect() const { MS_LOG(EXCEPTION) << "Stress detection is not supported."; }
+  // Send and receive parameters.
+  virtual int SendRecv(const std::vector<tensor::TensorPtr> &params, int src_rank, int dst_rank) const {
+    MS_LOG(EXCEPTION) << "Send and receive parameters is not supported.";
+  }
+
+  // Clean tdt channel
+  virtual int CleanTdtChannel() const { MS_LOG(EXCEPTION) << "Clean tdt channel is not supported."; }
 
   // Dynamically load collective communication library.
   // Currently, four types are supported: OpenMPI and self developed framework for CPU. NCCL for GPU. HCCL for Ascend.
@@ -335,6 +342,12 @@ class BACKEND_EXPORT DeviceResManager {
                                                          size_t end) {
     MS_LOG(EXCEPTION) << "Unimplemented interface.";
   }
+  virtual std::vector<device::DeviceMemPtr> GetMemUceInfo(int32_t device_id) { return {}; }
+  virtual std::string GetUceProcessStrategy() const { return "RS_NORMAL"; }
+  virtual void UceMemRepair(int32_t device_id) { MS_LOG(EXCEPTION) << "Uce repair device is not supported."; }
+  virtual void StopDevice(int32_t device_id) { MS_LOG(EXCEPTION) << "Uce stop device is not supported."; }
+
+  virtual void ThrowUCEError() { MS_EXCEPTION(UCEError) << "UCEError"; }  // test api, remove later.
 
  protected:
   // Ensure the thread safety for allocating device memory.

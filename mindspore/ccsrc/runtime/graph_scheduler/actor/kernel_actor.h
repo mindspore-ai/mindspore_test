@@ -132,6 +132,7 @@ class KernelActor : public DebugAwareActor {
   const std::map<size_t, std::pair<DeviceTensorPtr, const DeviceContext *>> &copy_output_device_tensors() const {
     return copy_output_device_tensors_;
   }
+  std::vector<DeviceTensor *> GetOutputDeviceTensors() { return output_device_tensors_; }
 
  protected:
   void Init() override;

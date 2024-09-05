@@ -503,7 +503,7 @@ void DataPrepareActor::PrepareData(const std::vector<std::vector<TensorPtr>> &in
     MS_EXCEPTION_IF_NULL(ms_context);
     static const bool enable_infer_boost = ms_context->IsEnableInferBoost();
     if (first_step_ || !tensors_need_reprepare_.empty() || (has_parameter_input_ && !enable_infer_boost) ||
-        is_sub_data_) {
+        is_sub_data_ || UCEException::GetInstance().get_uce_flag()) {
       PrepareDataForDeviceTensorStore(input_tensors, args, context);
     }
     PrepareDataForHostTensorQueue(input_tensors, args, context);
@@ -676,6 +676,11 @@ void DataPrepareActor::PrepareDataForDeviceTensorStore(const std::vector<std::ve
       }
     }
 
+    // Uce error restart do not need to prepare weights.
+    if (UCEException::GetInstance().get_uce_flag()) {
+      continue;
+    }
+
     // Prepare the data of device tensor store(weights of graph).
     const auto &input_nodes = graph->input_nodes();
     for (size_t j = 0; j < input_nodes.size(); ++j) {
@@ -695,6 +700,12 @@ void DataPrepareActor::PrepareDataForDeviceTensorStore(const std::vector<std::ve
       }
     }
   }
+
+  if (UCEException::GetInstance().get_uce_flag()) {
+    MS_LOG(INFO) << "Clear UCE state.";
+    UCEException::GetInstance().set_uce_flag(false);
+  }
+
   if (RecoveryContext::GetInstance()->enable_recovery() &&
       RecoveryContext::GetInstance()->need_sync_weight_to_device()) {
     RecoveryContext::GetInstance()->set_need_sync_weight_to_device(false);

@@ -76,6 +76,11 @@ class OutputActor : public AbstractActor {
   size_t outputs_num() const { return outputs_num_; }
   const std::vector<TensorPtr> &outputs() const { return outputs_; }
 
+  void ResetState() {
+    current_outputs_num_ = 0;
+    current_count_ = 0;
+  }
+
  protected:
   void Init() override;
 

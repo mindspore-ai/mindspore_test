@@ -15,6 +15,8 @@
  */
 
 #include "plugin/device/ascend/hal/hardware/ge_device_res_manager.h"
+#include "hal/device/mbuf_receive_manager.h"
+#include "include/backend/data_queue/data_queue_mgr.h"
 #ifndef _WIN32
 #include <dlfcn.h>
 #include <libgen.h>
@@ -31,6 +33,7 @@
 #include "plugin/device/ascend/hal/device/ascend_device_synchronizer.h"
 #include "plugin/device/ascend/hal/device/ascend_event.h"
 #include "plugin/device/ascend/hal/device/ascend_pin_mem_pool.h"
+#include "plugin/device/ascend/hal/special/parameter_replication.h"
 #include "plugin/device/cpu/hal/device/cpu_device_synchronizer.h"
 #include "mindspore/ops/kernel/ascend/pyboost/customize/stress_detect.h"
 #include "include/transform/graph_ir/utils.h"
@@ -41,11 +44,14 @@
 #include "utils/file_utils.h"
 #include "graph/def_types.h"
 #include "runtime/device/move_to.h"
+#include "runtime/graph_scheduler/device_tensor_store.h"
+#include "acl/acl_rt.h"
 
 namespace mindspore {
 namespace device {
 namespace ascend {
-
+using DeviceTensorStore = mindspore::runtime::DeviceTensorStore;
+using DeviceMemInfo = std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>;
 std::string GetCurrentDir() {
 #ifndef _WIN32
   Dl_info dl_info;
@@ -280,14 +286,12 @@ std::unordered_map<std::string, std::size_t> GeDeviceResManager::GetBlockUnitSiz
   return mem_manager_->GetBlockUnitSizeStatistics();
 }
 
-std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>
-GeDeviceResManager::GetCommonMemBlocksInfoStatistics() const {
+DeviceMemInfo GeDeviceResManager::GetCommonMemBlocksInfoStatistics() const {
   MS_EXCEPTION_IF_NULL(mem_manager_);
   return mem_manager_->GetCommonMemBlocksInfoStatistics();
 }
 
-std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>
-GeDeviceResManager::GetPersistentMemBlocksInfoStatistics() const {
+DeviceMemInfo GeDeviceResManager::GetPersistentMemBlocksInfoStatistics() const {
   MS_EXCEPTION_IF_NULL(mem_manager_);
   return mem_manager_->GetPersistentMemBlocksInfoStatistics();
 }
@@ -680,6 +684,24 @@ int GeDeviceResManager::StressDetect() const {
   return kernel::pyboost::StressDetectKernel(device_context_);
 }
 
+// return 0 when success, otherwise return 1
+int GeDeviceResManager::SendRecv(const std::vector<tensor::TensorPtr> &params, int src_rank, int dst_rank) const {
+  ParamReplication replicator(this);
+  replicator.Init();
+  return replicator.SendRecv(params, src_rank, dst_rank);
+}
+
+int GeDeviceResManager::CleanTdtChannel() const {
+  if (!BindDeviceToCurrentThread(false)) {
+    MS_LOG(ERROR) << "Bind context to current thread failed";
+    return 1;
+  }
+  MS_EXCEPTION_IF_NULL(device_context_);
+  MbufDataHandlerManager::GetInstance().CleanChannels();
+  (void)device::DataQueueMgr::GetInstance().CleanTdtHandle();
+  return 0;
+}
+
 // ACL_EVENT_TIME_LINE: indicates that the number of created events is not limited, and the created events can be used
 //  to compute the elapsed time between events, which may cause lost some performance.
 // ACL_EVENT_SYNC: indicates that the number of created events is limited, and the created events can be used for
@@ -713,6 +735,137 @@ DeviceEventPtr GeDeviceResManager::CreateEventWithFlag(bool enable_timing, bool 
 void GeDeviceResManager::MoveTo(const tensor::TensorPtr &src_tensor, const tensor::TensorPtr &dst_tensor,
                                 const std::string &to, bool blocking, bool *return_self) {
   device::MoveTo(src_tensor, dst_tensor, to, blocking, return_self);
+}
+
+std::vector<device::DeviceMemPtr> GeDeviceResManager::GetMemUceInfo(int32_t device_id) {
+  aclrtMemUceInfo info[MAX_MEM_UCE_INFO_ARRAY_SIZE];
+  size_t retSize = 0;
+  auto ret = CALL_ASCEND_API(aclrtGetMemUceInfo, device_id, info, sizeof(info) / sizeof(aclrtMemUceInfo), &retSize);
+  if (ret != ACL_ERROR_NONE) {
+    MS_EXCEPTION(DeviceProcessError) << "Call aclrtGetMemUceInfo failed.";
+  }
+  if (retSize == 0) {
+    MS_LOG(EXCEPTION) << "aclrtGetMemUceInfo get UCE Error failed.";
+  }
+
+  MS_LOG(INFO) << "aclrtGetMemUceInfo get UCE Error, retSize is " << retSize;
+
+  MemUceInfo mem_uce_info;
+  mem_uce_info.device_id = device_id;
+  mem_uce_info.info.assign(info, info + retSize);
+  mem_uce_info.retSize = retSize;
+
+  std::lock_guard<std::mutex> lock(mem_uce_info_mutex_);
+  mem_uce_info_ = mem_uce_info;
+
+  std::vector<device::DeviceMemPtr> mem_uce_device_list;
+  for (size_t i = 0; i < retSize; ++i) {
+    mem_uce_device_list.emplace_back(info[i].addr);
+  }
+  return mem_uce_device_list;
+}
+
+bool GetUceLevelWithMemPoolForKbk(const DeviceMemInfo &persistent_mem_blocks_info,
+                                  const DeviceMemInfo &common_mem_blocks_info, const MemUceInfo &mem_uce_info) {
+  for (auto iter = persistent_mem_blocks_info.begin(); iter != persistent_mem_blocks_info.end(); ++iter) {
+    auto persistent_block_start_addr = reinterpret_cast<char *>(iter->first);
+    auto block_info = iter->second.begin();
+    auto persistent_block_end_addr = persistent_block_start_addr + block_info->second;
+    for (size_t i = 0; i < mem_uce_info.info.size(); ++i) {
+      auto mem_uce_start_addr = reinterpret_cast<char *>(mem_uce_info.info[i].addr);
+      auto mem_uce_end_addr = mem_uce_start_addr + mem_uce_info.info[i].len;
+      if ((persistent_block_end_addr >= mem_uce_start_addr && persistent_block_start_addr < mem_uce_start_addr) ||
+          (mem_uce_end_addr >= persistent_block_start_addr && mem_uce_start_addr < persistent_block_start_addr)) {
+        MS_LOG(DEBUG) << "UCE process strategy is RS_UCE_LOWLEVEL.";
+        return true;
+      }
+    }
+  }
+
+  for (auto iter = common_mem_blocks_info.begin(); iter != common_mem_blocks_info.end(); ++iter) {
+    auto common_block_start_addr = reinterpret_cast<char *>(iter->first);
+    auto block_info = iter->second.begin();
+    auto common_block_end_addr = common_block_start_addr + block_info->second;
+    for (size_t i = 0; i < mem_uce_info.info.size(); ++i) {
+      auto mem_uce_start_addr = reinterpret_cast<char *>(mem_uce_info.info[i].addr);
+      auto mem_uce_end_addr = mem_uce_start_addr + mem_uce_info.info[i].len;
+      if ((common_block_end_addr >= mem_uce_start_addr && common_block_start_addr < mem_uce_start_addr) ||
+          (mem_uce_end_addr >= common_block_start_addr && mem_uce_start_addr < common_block_start_addr)) {
+        MS_LOG(DEBUG) << "UCE process strategy is RS_UCE_LOWLEVEL.";
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+std::string GetUceProcessStrategyForKbk(const DeviceMemInfo &persistent_mem_blocks_info,
+                                        const DeviceMemInfo &common_mem_blocks_info, const MemUceInfo &mem_uce_info) {
+  // Judge whether weights got uce error.
+  MS_LOG(INFO) << "Start to get UCE process strategy for kbk.";
+  const auto &device_tensors = DeviceTensorStore::GetInstance().GetAll();
+  for (auto iter = device_tensors.begin(); iter != device_tensors.end(); ++iter) {
+    auto device_tensor_list = iter->second;
+    for (const auto &device_tensor : device_tensor_list) {
+      MS_EXCEPTION_IF_NULL(device_tensor);
+      auto device_tensor_start_addr = reinterpret_cast<char *>(const_cast<void *>(device_tensor->GetPtr()));
+      auto device_tensor_end_addr = device_tensor_start_addr + device_tensor->GetSize();
+      for (size_t i = 0; i < mem_uce_info.info.size(); ++i) {
+        auto mem_uce_start_addr = reinterpret_cast<char *>(mem_uce_info.info[i].addr);
+        auto mem_uce_end_addr = mem_uce_start_addr + mem_uce_info.info[i].len;
+        // Return RS_UCE_HIGHLEVEL if overlap of device tensor addr and mem uce addr.
+        if ((device_tensor_end_addr >= mem_uce_start_addr && device_tensor_start_addr < mem_uce_start_addr) ||
+            (mem_uce_end_addr >= device_tensor_start_addr && mem_uce_start_addr < device_tensor_start_addr)) {
+          MS_LOG(DEBUG) << "UCE process strategy is RS_UCE_HIGHLEVEL.";
+          return RS_UCE_HIGHLEVEL;
+        }
+      }
+    }
+  }
+
+  // Return RS_UCE_LOWLEVEL if overlap of memory pool addr and mem uce addr.
+  if (GetUceLevelWithMemPoolForKbk(persistent_mem_blocks_info, common_mem_blocks_info, mem_uce_info)) {
+    return RS_UCE_LOWLEVEL;
+  }
+
+  MS_LOG(DEBUG) << "UCE process strategy is RS_NORMAL.";
+
+  return RS_NORMAL;
+}
+
+std::string GeDeviceResManager::GetUceProcessStrategy() const {
+  auto persistent_mem_blocks_info = GetPersistentMemBlocksInfoStatistics();
+  auto common_mem_blocks_info = GetCommonMemBlocksInfoStatistics();
+  return GetUceProcessStrategyForKbk(persistent_mem_blocks_info, common_mem_blocks_info, mem_uce_info_);
+}
+
+void GeDeviceResManager::UceMemRepair(int32_t device_id) {
+  if (device_id != mem_uce_info_.device_id) {
+    MS_LOG(EXCEPTION) << "Uce mem repair device id is not correct, device id is " << mem_uce_info_.device_id
+                      << ", but got " << device_id << ".";
+  }
+  aclrtMemUceInfo *info = mem_uce_info_.info.data();
+  if (CALL_ASCEND_API(aclrtMemUceRepair, mem_uce_info_.device_id, info, mem_uce_info_.retSize) != ACL_ERROR_NONE) {
+    MS_EXCEPTION(DeviceProcessError) << "Call aclrtMemUceRepair failed.";
+  }
+  // Clear mem_uce_info.
+  mem_uce_info_.device_id = 0;
+  mem_uce_info_.info.clear();
+  mem_uce_info_.retSize = 0;
+}
+
+void GeDeviceResManager::StopDevice(int32_t device_id) {
+  UCEException::GetInstance().set_force_stop_flag(true);
+
+  uint32_t timeout = 0;
+  if (CALL_ASCEND_API(aclrtDeviceTaskAbort, device_id, timeout) != ACL_ERROR_NONE) {
+    MS_EXCEPTION(DeviceProcessError) << "Call aclrtDeviceTaskAbort failed.";
+  }
+}
+
+void GeDeviceResManager::ThrowUCEError() {
+  UCEException::GetInstance().set_uce_flag(true);
+  MS_EXCEPTION(UCEError) << "UCEError.";
 }
 }  // namespace ascend
 }  // namespace device

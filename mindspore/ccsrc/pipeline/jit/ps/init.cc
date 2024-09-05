@@ -173,6 +173,9 @@ void RegModule(py::module *m) {
   RegNumpyTypes(m);
   RegAmpModule(m);
   RegStress(m);
+  RegSendRecv(m);
+  RegCleanTdtChannel(m);
+  RegUCE(m);
   mindspore::hal::RegStream(m);
   mindspore::hal::RegEvent(m);
   mindspore::hal::RegMemory(m);
@@ -637,8 +640,8 @@ PYBIND11_MODULE(_c_expression, m) {
          "Get group rank by world rank.")
     .def("get_rank_id", &CollectiveManager::GetRankId, "Get the node rank id.")
     .def("get_group_size", &CollectiveManager::GetGroupSize, "Get the nodes number in the collective communication.")
-    .def("get_group_ranks", &CollectiveManager::GetGroupRanks,
-         "Get group ranks for the specified communication group.");
+    .def("get_group_ranks", &CollectiveManager::GetGroupRanks, "Get group ranks for the specified communication group.")
+    .def("resume_hccl_comm", &CollectiveManager::ResumeHcclComm, "resume hccl comm.");
 
   (void)py::class_<PSContext, std::shared_ptr<PSContext>>(m, "PSContext")
     .def_static("get_instance", &PSContext::instance, "Get PS context instance.")

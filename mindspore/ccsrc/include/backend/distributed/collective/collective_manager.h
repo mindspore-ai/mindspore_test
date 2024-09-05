@@ -105,6 +105,8 @@ class BACKEND_EXPORT CollectiveManager {
   bool InitializeDummyCommLib();
   bool FinalizeDummyCommLib();
 
+  bool ResumeHcclComm();
+
  private:
   CollectiveManager();
 

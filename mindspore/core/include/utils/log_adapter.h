@@ -84,6 +84,8 @@ enum ExceptionType {
   NotImplementedError,
   IndentationError,
   RuntimeWarning,
+  UCEError,
+  ForceStopError,
 };
 
 static const inline std::map<std::string, ExceptionType> exception_types_map = {
@@ -108,7 +110,9 @@ static const inline std::map<std::string, ExceptionType> exception_types_map = {
   {"RuntimeError", RuntimeError},
   {"NotImplementedError", NotImplementedError},
   {"IndentationError", IndentationError},
-  {"RuntimeWarning", RuntimeWarning}};
+  {"RuntimeWarning", RuntimeWarning},
+  {"UCEError", UCEError},
+  {"ForceStopError", ForceStopError}};
 
 static inline std::string SupportedExceptionsToString() {
   std::ostringstream oss;

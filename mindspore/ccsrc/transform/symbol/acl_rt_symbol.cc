@@ -70,6 +70,9 @@ aclrtMapMemFunObj aclrtMapMem_ = nullptr;
 aclrtFreePhysicalFunObj aclrtFreePhysical_ = nullptr;
 aclrtReleaseMemAddressFunObj aclrtReleaseMemAddress_ = nullptr;
 aclrtCtxSetSysParamOptFunObj aclrtCtxSetSysParamOpt_ = nullptr;
+aclrtGetMemUceInfoFunObj aclrtGetMemUceInfo_ = nullptr;
+aclrtDeviceTaskAbortFunObj aclrtDeviceTaskAbort_ = nullptr;
+aclrtMemUceRepairFunObj aclrtMemUceRepair_ = nullptr;
 
 void LoadAclRtApiSymbol(const std::string &ascend_path) {
   std::string aclrt_plugin_path = ascend_path + "lib64/libascendcl.so";
@@ -129,6 +132,9 @@ void LoadAclRtApiSymbol(const std::string &ascend_path) {
   aclrtFreePhysical_ = DlsymAscendFuncObj(aclrtFreePhysical, handler);
   aclrtReleaseMemAddress_ = DlsymAscendFuncObj(aclrtReleaseMemAddress, handler);
   aclrtCtxSetSysParamOpt_ = DlsymAscendFuncObj(aclrtCtxSetSysParamOpt, handler);
+  aclrtGetMemUceInfo_ = DlsymAscendFuncObj(aclrtGetMemUceInfo, handler);
+  aclrtDeviceTaskAbort_ = DlsymAscendFuncObj(aclrtDeviceTaskAbort, handler);
+  aclrtMemUceRepair_ = DlsymAscendFuncObj(aclrtMemUceRepair, handler);
   MS_LOG(INFO) << "Load acl rt api success!";
 }
 

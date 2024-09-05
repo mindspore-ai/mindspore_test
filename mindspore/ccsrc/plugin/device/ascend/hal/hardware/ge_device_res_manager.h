@@ -22,6 +22,7 @@
 #include <map>
 #include <unordered_map>
 #include <utility>
+#include "ir/tensor.h"
 #include "runtime/hardware/device_context.h"
 #include "utils/ms_context.h"
 #include "include/transform/graph_ir/types.h"
@@ -37,6 +38,16 @@ namespace mindspore {
 namespace device {
 namespace ascend {
 std::string GetCurrentDir();
+struct MemUceInfo {
+  int device_id = 0;
+  std::vector<aclrtMemUceInfo> info;
+  size_t retSize = 0;
+};
+
+constexpr auto RS_NORMAL = "RS_NORMAL";
+constexpr auto RS_UCE_HIGHLEVEL = "RS_UCE_HIGHLEVEL";
+constexpr auto RS_UCE_LOWLEVEL = "RS_UCE_LOWLEVEL";
+constexpr auto RS_UNKNOWN = "RS_UNKNOWN";
 
 class GeHostAddress : public cpu::CPUDeviceAddress {
  public:
@@ -151,6 +162,9 @@ class GeDeviceResManager : public DeviceResManager {
 
   int StressDetect() const override;
 
+  int SendRecv(const std::vector<tensor::TensorPtr> &params, int src_rank, int dst_rank) const override;
+  int CleanTdtChannel() const override;
+
   DeviceEventPtr CreateRuntimeEvent(bool enable_blocking, bool enable_record_wait);
   DeviceEventPtr CreateEventWithFlag(bool enable_timing, bool blocking) override;
 
@@ -159,6 +173,13 @@ class GeDeviceResManager : public DeviceResManager {
   // Only used in graph_mode with MS_DISABLE_REF_MODE, delete it when delete MS_DISABLE_REF_MODEF
   void SetCPUMemManager();
 
+  std::vector<device::DeviceMemPtr> GetMemUceInfo(int32_t device_id) override;
+  std::string GetUceProcessStrategy() const override;
+  void UceMemRepair(int32_t device_id) override;
+  void StopDevice(int32_t device_id) override;
+
+  void ThrowUCEError() override;  // test api, remove later.
+
  private:
   friend class GeGraphExecutor;
   static void GeSetContextOptions(const std::shared_ptr<MsContext> &ms_context_ptr, transform::SessionOptions *options);
@@ -166,6 +187,8 @@ class GeDeviceResManager : public DeviceResManager {
   KernelRuntime *runtime_instance_ = nullptr;
   // Only used in graph_mode with MS_DISABLE_REF_MODE, delete it when delete MS_DISABLE_REF_MODE
   bool is_use_cpu_memory_ = false;
+  MemUceInfo mem_uce_info_;
+  std::mutex mem_uce_info_mutex_;
 };
 }  // namespace ascend
 }  // namespace device

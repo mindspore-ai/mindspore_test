@@ -122,6 +122,7 @@ void HcclAdapter::InitPlugin() {
   hccl_exec_enqueue_all_to_all_v_ = DlsymFuncObj(HcomExecEnqueueAllToAllV, plugin_handle_);
   launch_hccl_all_to_allv_ = DlsymFuncObj(HcclAlltoAllV, plugin_handle_);
   launch_hccl_all_to_all_ = DlsymFuncObj(HcclAlltoAll, plugin_handle_);
+  launch_hccl_comm_resume_ = DlsymFuncObj(HcclCommResume, plugin_handle_);
   hcom_destroy_ = DlsymFuncObj(HcomDestroy, plugin_handle_);
 }
 
@@ -157,6 +158,7 @@ void HcclAdapter::FinalizePlugin() {
   hccl_exec_enqueue_op_ = nullptr;
   hccl_exec_enqueue_all_to_all_v_ = nullptr;
   launch_hccl_all_to_allv_ = nullptr;
+  launch_hccl_comm_resume_ = nullptr;
   hcom_destroy_ = nullptr;
   (void)dlclose(plugin_handle_);
   plugin_handle_ = nullptr;
@@ -314,6 +316,8 @@ HcclResult HcclAdapter::HcclBatchISendIRecv(HcclSendRecvItem *sendRecvInfo, uint
                                             aclrtStream stream) const {
   return launch_hccl_batch_isend_irecv_(sendRecvInfo, itemNum, comm, stream);
 }
+
+HcclResult HcclAdapter::HcclCommResume(HcclComm comm) const { return launch_hccl_comm_resume_(comm); }
 
 bool HcclAdapter::InitKernelInfoStore(const std::map<std::string, std::string> options) {
   MS_LOG(INFO) << "Start init hccl kernel info store.";

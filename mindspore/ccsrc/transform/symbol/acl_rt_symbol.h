@@ -73,6 +73,9 @@ ORIGIN_METHOD_WITH_SIMU(aclrtMapMem, aclError, void *, size_t, size_t, aclrtDrvM
 ORIGIN_METHOD_WITH_SIMU(aclrtFreePhysical, aclError, aclrtDrvMemHandle)
 ORIGIN_METHOD_WITH_SIMU(aclrtReleaseMemAddress, aclError, void *)
 ORIGIN_METHOD_WITH_SIMU(aclrtCtxSetSysParamOpt, aclError, aclSysParamOpt, int64_t)
+ORIGIN_METHOD_WITH_SIMU(aclrtGetMemUceInfo, aclError, int32_t, aclrtMemUceInfo *, size_t, size_t *)
+ORIGIN_METHOD_WITH_SIMU(aclrtDeviceTaskAbort, aclError, int32_t, uint32_t)
+ORIGIN_METHOD_WITH_SIMU(aclrtMemUceRepair, aclError, int32_t, aclrtMemUceInfo *, size_t)
 
 void LoadAclRtApiSymbol(const std::string &ascend_path);
 void LoadSimulationRtApi();

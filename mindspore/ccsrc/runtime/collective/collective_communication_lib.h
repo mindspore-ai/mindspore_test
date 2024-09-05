@@ -151,6 +151,8 @@ class CollectiveCommunicationLib {
 
   virtual void SetLocalGroupSize(const std::string &group_name, uint32_t local_group_size);
 
+  virtual bool ResumeHcclComm() { return false; }
+
  protected:
   // Whether this collective communication library is initialized.
   bool initialized_;

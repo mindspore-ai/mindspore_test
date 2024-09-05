@@ -674,6 +674,16 @@ int64_t CollectiveManager::GetCommunicatorInitTimeout() {
   }
   return default_comm_init_timeout;
 }
+
+bool CollectiveManager::ResumeHcclComm() {
+  MS_EXCEPTION_IF_NULL(device_comm_lib_instance_);
+  if (!device_comm_lib_instance_->ResumeHcclComm()) {
+    MS_LOG(EXCEPTION) << "Failed to resume comm group.";
+  }
+  MS_LOG(INFO) << "Resume hccl comm, and clear force stop state.";
+  UCEException::GetInstance().set_force_stop_flag(false);
+  return true;
+}
 }  // namespace collective
 }  // namespace distributed
 }  // namespace mindspore
