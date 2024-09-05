@@ -19,7 +19,7 @@
 
 #include <vector>
 #include "tools/converter/adapter/acl/mapper/primitive_mapper.h"
-#include "infer/squeeze.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 
 namespace mindspore {
 namespace lite {

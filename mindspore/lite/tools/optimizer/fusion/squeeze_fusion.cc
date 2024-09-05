@@ -21,7 +21,7 @@
 #include "mindspore/ops/op_def/lite_ops.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "schema/inner/model_generated.h"
-#include "infer/squeeze.h"
+#include "mindspore/ops/op_def/auto_generate/gen_lite_ops.h"
 #include "infer/unsqueeze.h"
 #include "tools/optimizer/common/gllo_utils.h"
 #include "nnacl/op_base.h"

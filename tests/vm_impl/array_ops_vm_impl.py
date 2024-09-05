@@ -114,9 +114,9 @@ def vm_impl_shape(self):
 def vm_impl_squeeze(self):
     """Generate vm_impl function for Squeeze"""
 
-    def vm_impl(x):
+    def vm_impl(x, axis):
         x = x.asnumpy()
-        out = vm.squeeze(x, self.axis)
+        out = vm.squeeze(x, axis)
         return Tensor(out)
 
     return vm_impl

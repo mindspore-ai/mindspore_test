@@ -117,6 +117,10 @@ def generate(kernelmod_name, class_name, op_proto, h_and_cc, need_update_shape):
 def gen_aclnn_kernel(op_proto: OpProto, need_update_shape=False, auto=False):
     """gen_aclnn_kernel function"""
     op_name = op_proto.op_name
+    skip_aclnn_list = {"expand_dims", "squeeze"}
+    if op_name in skip_aclnn_list:
+        logging.warning("Operator {%s} has no aclnn interface, no aclnn kernel will be generated.", op_name)
+        return
     if check_op_registed(op_proto.op_name) and not auto:
         logging.warning("Kernel {%s} is already registered.", op_name)
         return

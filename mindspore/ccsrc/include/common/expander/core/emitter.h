@@ -177,7 +177,7 @@ class COMMON_EXPORT Emitter {
     return Emit("TensorScatterUpdate", {input_x, indices, updates});
   }
   NodePtr Slice(const NodePtr &x, const NodePtr &begin, const NodePtr &size) { return Emit("Slice", {x, begin, size}); }
-  NodePtr Squeeze(const NodePtr &x, const ValuePtr &axis) { return Emit("Squeeze", {x}, {{"axis", axis}}); }
+  NodePtr Squeeze(const NodePtr &x, const ValuePtr &axis) { return Emit("Squeeze", {x, EmitValue(axis)}); }
 
   NodePtr MatrixSetDiagV3(const NodePtr &x, const NodePtr &diagonal, const NodePtr &k, const ValuePtr &align) {
     const auto diag_max_length = 200000000;
