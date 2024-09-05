@@ -2030,6 +2030,7 @@ void ControlNodeScheduler::LinkDataArrowByKernelGraph(const KernelGraphPtr &grap
                                                       const ControlNodeParserPtr &parser) const {
   MS_EXCEPTION_IF_NULL(graph);
   MS_EXCEPTION_IF_NULL(parser);
+  MS_EXCEPTION_IF_NULL(entrance_actor);
   MS_LOG(DEBUG) << "Link data arrow by kernel graph:" << graph->ToString();
   auto from_actor = entrance_actor;
   // If there is a call node in the input of the graph, the parameter of the graph needs to be sent by the
@@ -2038,6 +2039,7 @@ void ControlNodeScheduler::LinkDataArrowByKernelGraph(const KernelGraphPtr &grap
     auto actor = FetchActor(parser->FetchGroupNameByKernelGraph(graph) + kStackActorNameSuffix);
     MS_EXCEPTION_IF_NULL(actor);
     from_actor = dynamic_cast<ControlActor *>(actor);
+    MS_EXCEPTION_IF_NULL(from_actor);
   }
 
   if (graph->is_graph_run_mode() || graph->is_any_type_input()) {
@@ -2093,6 +2095,7 @@ void ControlNodeScheduler::LinkDataArrowByKernelGraph(const KernelGraphPtr &grap
         auto actor = FetchActor(actor_name);
         MS_EXCEPTION_IF_NULL(actor);
         from_actor = dynamic_cast<ControlActor *>(actor);
+        MS_EXCEPTION_IF_NULL(from_actor);
       } else if (from_node->isa<CNode>() && (from_actor->type() != KernelTransformType::kStackActor)) {
         // If the input is an internal parameter, the input arrow should be linked to the exit actor of the kernel
         // graph which the internal parameter belong.
@@ -2113,7 +2116,6 @@ void ControlNodeScheduler::LinkDataArrowByKernelGraph(const KernelGraphPtr &grap
         from_index = from_actor->FetchNodePosition(from_node_with_index);
       }
 
-      MS_EXCEPTION_IF_NULL(from_actor);
       SchedulerHelper::AddFormalParameterDeviceTensor(from_actor, from_index, input, graph);
       SchedulerHelper::AddDataArrow(from_actor, to_actor, from_index, i);
     }
