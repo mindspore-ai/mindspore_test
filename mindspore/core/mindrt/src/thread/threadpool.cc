@@ -66,7 +66,7 @@ void Worker::ChildAfterFork() {
 }
 
 #if defined(BIND_CORE) && !defined(__ANDROID__) && !defined(__APPLE__) && !defined(_MSC_VER) && !defined(_WIN32)
-std::string MaskToStr(cpu_set_t *mask) {
+std::string MaskToStr(const cpu_set_t *mask) {
   std::stringstream ss;
   size_t cpu_num = static_cast<size_t>(sysconf(_SC_NPROCESSORS_ONLN));
   for (size_t i = 0; i < cpu_num; i++) {
