@@ -626,7 +626,6 @@ constexpr char MAX[] = "Max";
 constexpr char ROI_ALIGN[] = "ROIAlign";
 constexpr char SQUARE_SUM_ALL[] = "SquareSumAll";
 constexpr char IS_FINITE[] = "IsFinite";
-constexpr char GENERATEEODMASK[] = "GenerateEodMask";
 constexpr char RINT[] = "Rint";
 constexpr char HSHRINK[] = "HShrink";
 constexpr char HSIGMOID[] = "HSigmoid";
@@ -823,6 +822,7 @@ constexpr char TENSOR_SCATTER_ELEMENTS[] = "TensorScatterElements";
 constexpr char STACK[] = "Stack";
 constexpr char STACK_EXT[] = "StackExt";
 constexpr char GRID_SAMPLER_2D[] = "GridSampler2D";
+constexpr char GENERATEEODMASKV2[] = "GenerateEodMaskV2";
 
 constexpr size_t LAST_INDEX(size_t s) {
   if (s < 1) {

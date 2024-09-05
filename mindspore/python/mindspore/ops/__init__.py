@@ -29,13 +29,12 @@ from mindspore.ops.vm_impl_registry import get_vm_impl_fn, vm_impl_registry
 from mindspore.ops.op_info_register import op_info_register, custom_info_register, AkgGpuRegOp, AkgAscendRegOp, \
     AiCPURegOp, TBERegOp, CpuRegOp, CustomRegOp, DataType
 from mindspore.ops.primitive import constexpr
-from mindspore.ops import composite, operations, functional, function, auto_generate
+from mindspore.ops import composite, operations, functional, function, auto_generate    # pylint: disable=import-self
 from mindspore.ops import signature
 from mindspore.ops.composite import *
 from mindspore.ops.operations import *
 from mindspore.ops.function import *
 from mindspore.ops.functional import *
-from mindspore.ops.silent_check import _silent_check
 
 __primitive__ = [
     "prim_attr_register", "prim_arg_register", "Primitive", "PrimitiveWithInfer", "PrimitiveWithCheck", "signature"
@@ -51,4 +50,3 @@ __all__.extend(operations.__all__)
 __all__.extend(functional.__all__)
 __all__.extend(function.__all__)
 __all__.extend(auto_generate.__all__)
-_silent_check()
