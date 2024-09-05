@@ -873,6 +873,18 @@ def test_pipeline_debug_mode_batch_concat(num_epochs):
     assert sample_count == 3 * num_epochs
 
 
+def test_pipeline_debug_mode_num_parallel_workers_1():
+    """
+    Feature: Dataset Debug Mode
+    Description: Test Debug Mode when num_parallel_workers is 1
+    Expectation: Success
+    """
+    np_data = [[7, 8], [1, 2]]
+    data_set = ds.NumpySlicesDataset(np_data, num_parallel_workers=1, shuffle=False)
+    for i, data in enumerate(data_set):
+        assert np.equal(data[0].asnumpy(), np_data[i]).all()
+
+
 if __name__ == '__main__':
     setup_function()
     test_pipeline_debug_mode_tuple()
@@ -903,6 +915,7 @@ if __name__ == '__main__':
     test_pipeline_debug_mode_batch_map_get_epoch_batch_num()
     test_pipeline_debug_mode_batch_map_get_epoch_num()
     test_pipeline_debug_mode_dataset_sink_not_support()
+    test_pipeline_debug_mode_num_parallel_workers_1()
     test_pipeline_debug_mode_batch_concat(1)
     test_pipeline_debug_mode_batch_concat(3)
     teardown_function()
