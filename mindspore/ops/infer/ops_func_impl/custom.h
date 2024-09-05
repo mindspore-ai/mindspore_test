@@ -24,13 +24,25 @@
 #include "ops/ops_func_impl/op_func_impl.h"
 
 namespace mindspore::ops {
+using InferShapeCallback =
+  std::function<BaseShapePtr(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args)>;
+
+using InferTypeCallback =
+  std::function<TypePtr(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args)>;
+
 class OPS_API CustomFuncImpl : public OpFuncImpl {
  public:
+  static void set_infer_shape_call_func(const InferShapeCallback &call) { infer_shape_func_ = call; }
+  static void set_infer_type_call_func(const InferTypeCallback &call) { infer_type_func_ = call; }
   CustomFuncImpl() = default;
   ~CustomFuncImpl() = default;
 
   BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
   TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
+
+ private:
+  static InferShapeCallback infer_shape_func_;
+  static InferTypeCallback infer_type_func_;
 };
 
 using CustomFuncImplPtr = std::shared_ptr<CustomFuncImpl>;
