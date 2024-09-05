@@ -884,12 +884,14 @@ void DfGraphConvertor::InitParamWithData(const TensorOrderMap &tensors) {
       if (adpt_const == nullptr) {
         continue;
       }
+      MS_LOG(INFO) << "InitParam with const for node: " << name;
       auto const_op = adpt_const->generate(name + "_const");
-      (void)adpt_const->setAttr(const_op, "value", it.second);
+      (void)adpt_const->setAttr(const_op, "value", it.second, true);
       const_op->UpdateOutputDesc(kTypeY, *desc);
       const_op_to_value_[const_op] = it.second;
       vars_[name] = const_op;
       op_itor->second = const_op;
+      node->set_user_data(kNoNeedAllocDeviceAddress, std::make_shared<bool>(true));
     } else {
       auto &infer_need_update_parameter_names =
         Singleton<mindspore::device::ascend::InferNeedUpdateParaNames>::Instance().GetInferParameterNames();
@@ -3310,6 +3312,10 @@ bool DfGraphConvertor::IsIdentityRedundant(const ::ge::GNode &node) const {
     return false;
   }
 
+  if (IsTwoPhaseInfer() && node_type == kTypeIdentity) {
+    return true;
+  }
+
   auto node_name = GetGNodeName(node);
   auto ret = std::find_if(graph_outputs_.begin(), graph_outputs_.end(),
                           [&node_name](const auto &output) { return output.first.GetName() == node_name; });
@@ -3356,10 +3362,6 @@ void DfGraphConvertor::RemoveIdentity(::ge::GNode identity_node) {
   ::ge::graphStatus ret;
   for (size_t output_index = 0; output_index < identity_node.GetOutputsSize(); output_index++) {
     auto output_nodes = identity_node.GetOutDataNodesAndPortIndexs(static_cast<int>(output_index));
-    if (output_nodes.size() != 1 && !has_es_node_) {
-      return;
-    }
-
     // 1. Set identity_node data edge
     for (size_t i = 0; i < output_nodes.size(); i++) {
       auto node_output = output_nodes[i];

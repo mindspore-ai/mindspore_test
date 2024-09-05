@@ -478,7 +478,6 @@ std::set<size_t> FetchModifiableRefOutputIndex(const CNodePtr &node, const Kerne
 // Check whether this process is parameter server and enable embedding cache.
 bool is_embedding_cache_server();
 
-bool IsTwoPhaseInfer();
 std::string GetActorIdByKernel(const AnfNodePtr &node);
 std::string GenerateActorIdByKernel(const AnfNodePtr &node);
 }  // namespace runtime

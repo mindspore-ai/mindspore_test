@@ -51,6 +51,7 @@
 #include "mindspore/ops/op_def/array_ops.h"
 #include "pybind_api/gil_scoped_long_running.h"
 #include "include/common/utils/compile_cache_context.h"
+#include "utils/phase.h"
 using InputNameAndType = std::vector<std::pair<std::string, bool>>;
 using Data = ::ge::op::Data;
 using RefData = ::ge::op::RefData;
@@ -340,8 +341,24 @@ std::vector<GeTensor> CreateNewGeTensorList(const std::vector<KernelTensor *> &t
 }
 }  // namespace
 
+void GeGraphExecutor::SetFlagIgnoreDevicePtr(const FuncGraphPtr &graph) {
+  MS_EXCEPTION_IF_NULL(graph);
+  const auto &param_list = graph->parameters();
+  for (const auto &param_node : param_list) {
+    MS_EXCEPTION_IF_NULL(param_node);
+    if (param_node->has_user_data(transform::kNoNeedAllocDeviceAddress)) {
+      auto output_addr = AnfAlgo::GetMutableOutputAddr(param_node, 0, false);
+      MS_EXCEPTION_IF_NULL(output_addr);
+      output_addr->UpdateFlag(device::kDeviceAddressFlagIgnoreDevicePtr);
+      MS_LOG(INFO) << "Node " << param_node->fullname_with_scope()
+                   << " does not need device memory, so set kDeviceAddressFlagIgnoreDevicePtr.";
+    }
+  }
+}
+
 void GeGraphExecutor::InitGraphInfo(const FuncGraphPtr &graph) {
   MS_EXCEPTION_IF_NULL(graph);
+  SetFlagIgnoreDevicePtr(graph);
   KernelGraphPtr kg = std::dynamic_pointer_cast<session::KernelGraph>(graph);
   MS_EXCEPTION_IF_NULL(kg);
   BuildInputDataGeTensor(kg);
@@ -664,6 +681,7 @@ bool GeGraphExecutor::CompileGraph(const FuncGraphPtr &graph, const std::map<str
   ContextReset reset_context(device_context_);
   KernelGraphPtr kg = std::dynamic_pointer_cast<session::KernelGraph>(graph);
   MS_EXCEPTION_IF_NULL(kg);
+
   if (IsEnableRefMode()) {
     auto ret = CompileGraph(kg, compile_options);
 

@@ -65,5 +65,10 @@ class MS_CORE_API PhaseManager {
   std::string phase_ = "";
   std::map<std::string, std::string> jit_config_;
 };
+
+inline bool IsTwoPhaseInfer() {
+  const auto &phase = PhaseManager::GetInstance().phase();
+  return phase.find("prefill") != std::string::npos || phase.find("increment") != std::string::npos;
+}
 }  // namespace mindspore
 #endif  // MINDSPORE_CORE_UTILS_PHASE_H_
