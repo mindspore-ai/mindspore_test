@@ -222,11 +222,11 @@ class Optimizer : public std::enable_shared_from_this<Optimizer> {
           current_pass_ = {counter, pass_names_[i]};
           auto opt_func = std::bind(&Optimizer::OptProcess, this, opt);
           auto profiler_pass_name = name_ + ".r" + std::to_string(counter) + "." + pass_names_[i];
-          uint64_t start_time = profiler::GetClockSyscnt();
           if (FilterPass(profiler_pass_name)) {
             continue;
           }
 
+          uint64_t start_time = profiler::GetClockSyscnt();
           MS_LOG(INFO) << "Start " << name_ << ".r" << std::to_string(counter) << "." << pass_names_[i];
           auto last_version = FuncGraphManager::version();
           use_profile ? ProfileExecute(MsProfile::GetProfile()->Step(pass_names_[i]), opt_func) : opt_func();
