@@ -19,7 +19,7 @@
 
 namespace mindspore {
 namespace device {
-std::string GetDeviceNameByType(const DeviceType &type) {
+const std::string &GetDeviceNameByType(const DeviceType &type) {
   auto iter = device_type_to_name_map.find(type);
   if (iter == device_type_to_name_map.end()) {
     MS_LOG(EXCEPTION) << "Illegal device type: " << type;

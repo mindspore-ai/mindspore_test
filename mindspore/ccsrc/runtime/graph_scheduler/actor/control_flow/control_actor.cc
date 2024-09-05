@@ -38,12 +38,18 @@ void ControlActor::Init() {
   }
 
   size_t output_data_index = 0;
-  for (auto &data_arrow : output_data_arrows_) {
+  for (size_t i = 0; i < output_data_arrows_.size(); ++i) {
+    const auto &data_arrow = output_data_arrows_[i];
     auto data = output_data_[output_data_index].first.get();
     MS_EXCEPTION_IF_NULL(data);
     MS_EXCEPTION_IF_NULL(data_arrow);
     if (IntToSize(data_arrow->from_output_index_) >= output_data_by_output_index_.size()) {
       MS_LOG(EXCEPTION) << "The output index is out of range: " << GetAID();
+    }
+    if (i < output_need_disable_dynamic_ref_counts_.size() && output_need_disable_dynamic_ref_counts_[i] &&
+        data->data_ != nullptr) {
+      data->data_->UpdateFlag(device::kDeviceAddressFlagNullptr);
+      MS_LOG(INFO) << "Add null flag for device address:" << data->data_ << " in actor:" << GetAID();
     }
     (void)output_data_by_output_index_[IntToSize(data_arrow->from_output_index_)].emplace_back(data);
     ++output_data_index;
@@ -113,14 +119,31 @@ size_t ControlActor::FetchNodePosition(const KernelWithIndex &node) const {
     if (load_iter != formal_parameters_.end()) {
       return load_iter - formal_parameters_.begin();
     }
+    const auto &get_item_iter =
+      std::find_if(formal_parameters_.begin(), formal_parameters_.end(), [&node](const KernelWithIndex &pair) {
+        return pair.first != nullptr && common::AnfAlgo::CheckPrimitiveType(pair.first, prim::kPrimTupleGetItem) &&
+               common::AnfAlgo::GetTupleGetItemRealInput(pair.first->cast<CNodePtr>()) == node.first &&
+               common::AnfAlgo::GetTupleGetItemOutIndex(pair.first->cast<CNodePtr>()) == node.second;
+      });
+    if (get_item_iter != formal_parameters_.end()) {
+      MS_LOG(INFO) << "Input node:" << node.first->DebugString() << " fullname:" << node.first->fullname_with_scope()
+                   << " node ptr:" << node.first << " index:" << node.second
+                   << " match the tuple get item node:" << get_item_iter->first->DebugString()
+                   << " fullname:" << get_item_iter->first->fullname_with_scope()
+                   << " node ptr:" << get_item_iter->first << " index:" << get_item_iter->second;
+      return get_item_iter - formal_parameters_.begin();
+    }
     for (const auto &formal_parameter : formal_parameters_) {
       MS_LOG(WARNING) << "Actor:" << GetAID() << " formal parameter:"
                       << (formal_parameter.first != nullptr ? formal_parameter.first->DebugString() : "")
+                      << " full name:"
+                      << (formal_parameter.first != nullptr ? formal_parameter.first->fullname_with_scope() : "")
                       << " index:" << formal_parameter.second << " node ptr:" << formal_parameter.first;
     }
     MS_LOG_WITH_NODE(EXCEPTION, node.first)
       << "Invalid formal parameter:" << (node.first != nullptr ? node.first->DebugString() : "")
-      << " node ptr:" << node.first << " index:" << node.second << " for actor:" << GetAID();
+      << " full name:" << (node.first != nullptr ? node.first->fullname_with_scope() : "") << " node ptr:" << node.first
+      << " index:" << node.second << " for actor:" << GetAID();
   }
   return iter - formal_parameters_.begin();
 }
@@ -315,6 +338,12 @@ void ControlActor::IncreaseDynamicRefCounts(OpContext<DeviceTensor> *const conte
                                " index:" + std::to_string(output_data_[i].first->index_);
       SET_OPCONTEXT_FAIL_RET_WITH_ERROR((*context), error_info);
     }
+    if (i < output_need_disable_dynamic_ref_counts_.size() && output_need_disable_dynamic_ref_counts_[i]) {
+      MS_LOG(DEBUG) << "Disable dynamic ref count for device address:" << output_data_[i].first->data_
+                    << " ptr:" << output_data_[i].first->data_->GetPtr() << " for actor:" << GetAID();
+      output_data_[i].first->data_->UpdateFlag(device::kDeviceAddressFlagNullptr);
+      continue;
+    }
     IncreaseDynamicRefCount(output_data_[i].first.get());
   }
 
@@ -341,6 +370,12 @@ void ControlActor::SendMemoryFreeReq(OpContext<DeviceTensor> *const context) {
     for (auto &input_op_data : input_op_datas_[sequential_num]) {
       MS_EXCEPTION_IF_NULL(input_op_data);
       MS_EXCEPTION_IF_NULL(input_op_data->data_);
+      if (input_need_disable_dynamic_ref_counts_.find(input_op_data->index_) !=
+          input_need_disable_dynamic_ref_counts_.end()) {
+        MS_LOG(DEBUG) << "Actor:" << GetAID() << " skip free dynamic ref count for:" << input_op_data->data_
+                      << " index:" << input_op_data->index_;
+        continue;
+      }
       (void)memory_free_list.emplace_back(input_op_data->data_);
     }
   }

@@ -53,8 +53,6 @@ void DumpLoopCountActor(const LoopCountActorPtr &actor, std::ofstream &ofs);
 void DumpOutputActor(const OutputActorPtr &actor, std::ofstream &ofs);
 void DumpDSActors(const std::vector<DataSourceActorPtr> &actors, std::ofstream &ofs);
 void DumpKernelActors(const std::vector<KernelActorPtr> &actors, std::ofstream &ofs);
-void DumpKernelInferActors(const std::vector<KernelInferActorPtr> &actors, std::ofstream &ofs);
-void DumpKernelResizeActors(const std::vector<KernelResizeActorPtr> &actors, std::ofstream &ofs);
 void DumpSuperKernelActors(const std::vector<SuperKernelActorPtr> &actors, std::ofstream &ofs);
 void DumpAnyTypeKernelActors(const std::vector<AnyTypeKernelActorPtr> &actors, std::ofstream &ofs);
 void DumpNoInputKernelActors(const std::vector<AbstractActorPtr> &actors, std::ofstream &ofs);
@@ -64,9 +62,8 @@ void DumpFusionActors(const std::vector<FusionActorPtr> &actors, std::ofstream &
 void DumpControlActors(const ControlActorSetPtr &control_actor_set, std::ofstream &ofs);
 void DumpCustomActors(const std::vector<CustomActorPtr> &actors, std::ofstream &ofs);
 void DumpSwapActors(const std::vector<std::vector<MemSwapActorPtr>> &actors, std::ofstream &ofs);
-
-using ActorInfoMap =
-  mindspore::HashMap<AbstractActor *, std::tuple<size_t, std::vector<BaseShapePtr>, std::vector<TypePtr>>>;
+using DeviceAddressPtr = device::DeviceAddressPtr;
+using ActorInfoMap = mindspore::HashMap<AbstractActor *, std::tuple<size_t, std::vector<DeviceAddressPtr>>>;
 std::vector<AbstractActor *> TopoSortForActor(AbstractActor *root);
 void DumpActorInfo(AbstractActor *actor, size_t index, ActorInfoMap *actor_info, std::ofstream &ofs);
 }  // namespace runtime

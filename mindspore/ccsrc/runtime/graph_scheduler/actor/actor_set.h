@@ -142,6 +142,9 @@ struct ActorSet {
   // The first bool of pair expresses the inputs of node need continuous memory,
   // the second bool of pair expresses the outputs of node need continuous memory.
   std::map<std::pair<CNodePtr, const DeviceContext *>, std::pair<bool, bool>> continuous_memory_nodes_;
+
+  // Whether this graph could be executed as kbk graph mode which disable kernel actor message mechanism.
+  bool enable_kbk_sub_graph_execute_{true};
 };
 using ActorSetPtr = std::shared_ptr<ActorSet>;
 

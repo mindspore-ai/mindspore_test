@@ -41,7 +41,7 @@ const std::map<std::string, DeviceType> device_name_to_type_map = {{"Unknown", D
                                                                    {"CPU", DeviceType::kCPU},
                                                                    {"GPU", DeviceType::kGPU}};
 
-BACKEND_EXPORT std::string GetDeviceNameByType(const DeviceType &type);
+BACKEND_EXPORT const std::string &GetDeviceNameByType(const DeviceType &type);
 BACKEND_EXPORT DeviceType GetDeviceTypeByName(const std::string &name);
 }  // namespace device
 }  // namespace mindspore

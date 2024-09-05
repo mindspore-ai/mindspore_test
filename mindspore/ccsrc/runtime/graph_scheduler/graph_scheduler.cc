@@ -306,18 +306,74 @@ void DoDisasterRecovery(const std::string &actor_set_name) {
 }
 #endif
 
+// Check whether this graph could be executed as kbk graph mode which disable kernel actor message mechanism.
+bool CheckKbkSubGraphExecConditon(const std::vector<KernelGraphPtr> &graphs) {
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  if (!ms_context->IsKByKExecutorMode()) {
+    return false;
+  }
+
+  for (const auto &graph : graphs) {
+    MS_EXCEPTION_IF_NULL(graph);
+    // Note: Kbk sub graph mode doesn't support 'SwitchInline' and Fallback feature currently.
+    if (!graph->enable_kbk_sub_graph_execute() || graph->RunMode() != device::RunMode::kKernelMode) {
+      return false;
+    }
+  }
+
+  auto IsFallBackKernel = [](const CNodePtr &kernel) {
+    MS_EXCEPTION_IF_NULL(kernel);
+    return common::AnfAlgo::GetCNodeName(kernel) == "PyExecute";
+  };
+
+  // Note: Kbk sub graph mode doesn't support 'RpcSend, RpcRecv, ConditionSwitch, ConditionGather, PyExecute' currently.
+  auto IsKernelNotSupportKbkSubGraphMode = [&](const CNodePtr &kernel) {
+    MS_EXCEPTION_IF_NULL(kernel);
+    return (IsRpcActor(kernel) || IsInnerControlFlowActor(kernel) || IsFallBackKernel(kernel));
+  };
+
+  for (const auto &graph : graphs) {
+    MS_EXCEPTION_IF_NULL(graph);
+    if (std::any_of(graph->execution_order().begin(), graph->execution_order().end(),
+                    [&](const CNodePtr &kernel) { return IsKernelNotSupportKbkSubGraphMode(kernel); })) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+void UpdateEnableSubGraphExecForCurActorSet(const ActorSet *actor_set) {
+  MS_EXCEPTION_IF_NULL(actor_set);
+  ActorDispatcher::set_enable_sub_graph_execute_for_cur_actor_set(actor_set->enable_kbk_sub_graph_execute_);
+}
+
 void ChangeGraphMode(const GraphCompilerInfo &graph_compiler_info) {
   if (EnableKbkSubGraphExecute()) {
     for (size_t i = 0; i < graph_compiler_info.graphs_.size(); ++i) {
       const auto &graph = graph_compiler_info.graphs_[i];
-      MS_LOG(INFO) << "Enable kbk subgraph execute and set run mode for graph: " << graph->graph_id()
-                   << " to GraphMode.";
+      MS_LOG(DEBUG) << "Enable kbk subgraph execute and set run mode for graph: " << graph->graph_id()
+                    << " to GraphMode.";
       if (graph->RunMode() == device::RunMode::kGraphMode) {
         MS_LOG(WARNING) << "Can not set graph sink when execute sub graph kernel by kernel mode.";
       } else {
         graph->set_run_mode(device::RunMode::kGraphMode);
       }
     }
+  }
+}
+
+// Try to enable the actor set execute as kbk sub graph mode which disable kernel actor message mechanism.
+void TryEnableKbkSubGraphExecMode(const GraphCompilerInfo &graph_compiler_info, ActorSet *const actor_set) {
+  MS_EXCEPTION_IF_NULL(actor_set);
+
+  actor_set->enable_kbk_sub_graph_execute_ = CheckKbkSubGraphExecConditon(graph_compiler_info.graphs_);
+  UpdateEnableSubGraphExecForCurActorSet(actor_set);
+  // Adaptive operator direct Launch mode (no message mechanism).
+  ChangeGraphMode(graph_compiler_info);
+  if (EnableKbkSubGraphExecute()) {
+    MS_LOG(INFO) << "Enable kbk subgraph execute mode for actor set: " << actor_set->name_;
   }
 }
 
@@ -618,9 +674,6 @@ ActorSet *GraphScheduler::Transform(const GraphCompilerInfo &graph_compiler_info
       << "#dmsg#Runtime error info:#dmsg#The number of graphs is not equal to the number of device contexts.";
   }
 
-  // Adaptive operator direct Launch mode (no message mechanism), will be deleted in the future.
-  ChangeGraphMode(graph_compiler_info);
-
   if (graph_compiler_info.strategy_ == GraphExecutionStrategy::kPipelineWithExecutionOrder) {
     execution_order_running_ = true;
     graph_compiler_info.strategy_ = GraphExecutionStrategy::kPipeline;
@@ -864,6 +917,7 @@ void GraphScheduler::Run(ActorSet *const actor_set, const std::vector<std::vecto
   MS_EXCEPTION_IF_NULL(ActorMgr::GetActorMgrRef());
   auto thread_pool = ActorMgr::GetActorMgrRef()->GetActorThreadPool();
   MS_EXCEPTION_IF_NULL(thread_pool);
+  UpdateEnableSubGraphExecForCurActorSet(actor_set);
   SpawnMultiPipelineActor(actor_set, thread_pool);
   RefreshContextAndThreadPool(actor_set, thread_pool);
   if (actor_set->is_multi_thread_execution_) {
@@ -1031,6 +1085,8 @@ ActorSetPtr GraphScheduler::Build(const GraphCompilerInfo &graph_compiler_info) 
   MS_EXCEPTION_IF_NULL(actor_set);
   (void)actors_.emplace(actor_set->name_, actor_set);
 
+  TryEnableKbkSubGraphExecMode(graph_compiler_info, actor_set.get());
+
   auto host_queue = std::make_shared<HostTensorQueue>();
   actor_set->data_source_actors_ = BuildDataSourceActor(graph_compiler_info, host_queue);
   actor_set->custom_actors_ = BuildCustomActor(graph_compiler_info);
@@ -1122,7 +1178,7 @@ void GraphScheduler::UpdateDeviceAddressByRefInternalParameter(const GraphCompil
   for (const auto &graph : graph_compiler_info.graphs_) {
     MS_EXCEPTION_IF_NULL(graph);
     // The graph run mode no need update.
-    if (graph->is_graph_run_mode()) {
+    if (graph->is_graph_run_mode() && !EnableKbkSubGraphExecute()) {
       continue;
     }
 
@@ -1202,16 +1258,28 @@ void GraphScheduler::Link(ActorSet *actor_set, const GraphCompilerInfo &graph_co
     }
     return false;
   };
+
+  // Maintain shared pointer for graphs manager which will be used in Link and LinkKernelActorsForSubGraphExecute phase.
+  std::vector<FuncGraphManagerPtr> graph_managers;
+  graph_managers.reserve(graph_compiler_info.graphs_.size());
   for (const auto &graph : graph_compiler_info.graphs_) {
     MS_EXCEPTION_IF_NULL(graph);
     if (graph->execution_order().empty()) {
-      MS_LOG(INFO) << "The graph " << graph->graph_id() << " is an empty graph and skips linking.";
       continue;
     }
     auto manager = graph->manager();
     if (manager == nullptr) {
       manager = Manage(graph, true);
       graph->set_manager(manager);
+    }
+    graph_managers.push_back(manager);
+  }
+
+  for (const auto &graph : graph_compiler_info.graphs_) {
+    MS_EXCEPTION_IF_NULL(graph);
+    if (graph->execution_order().empty()) {
+      MS_LOG(INFO) << "The graph " << graph->graph_id() << " is an empty graph and skips linking.";
+      continue;
     }
 
     if (graph->is_graph_run_mode() || graph->is_any_type_input()) {
@@ -1255,6 +1323,10 @@ void GraphScheduler::Link(ActorSet *actor_set, const GraphCompilerInfo &graph_co
                                              group_name_to_communication_nodes.end(), [](const auto &pair) {
                                                return !pair.second.first.empty();
                                              }) != group_name_to_communication_nodes.end());
+
+  // Need to call after all link task finish, because all kernel actor of super kernel actor will be initialized and
+  // need to known the graph output(ref count: SIZE_MAX)
+  LinkKernelActorsForSubGraphExecute(actor_set);
 }
 
 void GraphScheduler::ProcessContinuousMemoryInfo(const ActorSetPtr &actor_set,
@@ -1270,7 +1342,8 @@ void GraphScheduler::ProcessContinuousMemoryInfo(const ActorSetPtr &actor_set,
       const bool enable_mem_offload =
         ms_context->get_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD) && !graph->is_dynamic_shape();
       // Somas will take over the continuous memory.
-      const bool using_somas = graph->is_graph_run_mode() || (graph->somas_whole_block_size() != 0);
+      const bool using_somas =
+        (graph->is_graph_run_mode() && !EnableKbkSubGraphExecute()) || (graph->somas_whole_block_size() != 0);
       if (enable_mem_offload || using_somas) {
         continue;
       }
@@ -1462,30 +1535,6 @@ std::vector<CustomActorPtr> GraphScheduler::BuildCustomActor(const GraphCompiler
   return custom_actors;
 }
 
-namespace {
-void ProcessStreamSendRecvEventPair(
-  mindspore::HashMap<uint32_t, std::pair<KernelActorPtr, KernelActorPtr>> *send_recv_nodes, const CNodePtr &kernel,
-  const KernelActorPtr &kernel_actor, bool is_send_node) {
-  auto primitive = common::AnfAlgo::GetCNodePrimitive(kernel);
-  MS_EXCEPTION_IF_NULL(primitive);
-  auto record_event_stream_pair_attr = primitive->GetAttr(kAttrRecordWaitEventStreamPairId);
-  if (record_event_stream_pair_attr != nullptr) {
-    auto event_pair_id = GetValue<uint32_t>(record_event_stream_pair_attr);
-    MS_LOG(DEBUG) << "Process event pair id : " << event_pair_id << ".";
-    auto &send_recv_actor = (*send_recv_nodes)[event_pair_id];
-    if (is_send_node) {
-      MS_EXCEPTION_IF_CHECK_FAIL(send_recv_actor.first == nullptr, "Stream send pair id is already set.");
-      send_recv_actor.first = kernel_actor;
-    } else {
-      MS_EXCEPTION_IF_CHECK_FAIL(send_recv_actor.second == nullptr, "Stream recv pair id is already set.");
-      send_recv_actor.second = kernel_actor;
-    }
-  } else {
-    MS_LOG(INFO) << "Stream send/recv kernel : " << kernel->DebugString() << " has no event stream pair id.";
-  }
-}
-}  // namespace
-
 std::vector<KernelActorPtr> GraphScheduler::BuildKernelActor(const GraphCompilerInfo &graph_compiler_info) {
   std::vector<KernelActorPtr> kernel_actors;
   auto root_weights = GatherAllParams(graph_compiler_info);
@@ -1536,9 +1585,9 @@ std::vector<KernelActorPtr> GraphScheduler::BuildKernelActor(const GraphCompiler
                                                   (common::AnfAlgo::GetInputTensorNum(kernel) > 1);
 
         if (IsPrimitiveCNode(kernel, prim::kPrimStreamSend)) {
-          ProcessStreamSendRecvEventPair(&send_recv_nodes, kernel, kernel_actor, true);
+          SchedulerHelper::ProcessStreamSendRecvEventPair(&send_recv_nodes, kernel, kernel_actor, true);
         } else if (IsPrimitiveCNode(kernel, prim::kPrimStreamRecv)) {
-          ProcessStreamSendRecvEventPair(&send_recv_nodes, kernel, kernel_actor, false);
+          SchedulerHelper::ProcessStreamSendRecvEventPair(&send_recv_nodes, kernel, kernel_actor, false);
         }
 
         InsertActor(kernel_actor.get());
@@ -1848,15 +1897,19 @@ void GraphScheduler::LinkDataArrowInSinkMode(const KernelGraphPtr &graph, const 
       continue;
     }
 
-    UpdateRefCount(input_node, 0, true);
+    if (!EnableKbkSubGraphExecute()) {
+      UpdateRefCount(input_node, 0, true);
+    }
     KernelWithIndex from_kernel_with_output_idx = std::make_pair(input_node, 0);
     KernelWithIndex to_kernel_with_input_idx = std::make_pair(input_node, node_index);
     // The gather of linking data arrows of kernel by the different from kernel type.
     LinkDataArrow(to_actor, graph_compiler_info, graph, from_kernel_with_output_idx, to_kernel_with_input_idx);
   }
+
   if (graph->is_any_type_input()) {
     return;
   }
+
   // Foreach the execution order to add the auto monad device tensor stores.
   auto &execution_order = graph->execution_order();
   (void)std::for_each(execution_order.begin(), execution_order.end(), [&](const CNodePtr &kernel) {
@@ -2058,7 +2111,7 @@ void GraphScheduler::LinkDataArrowForInternalParameter(AbstractActor *const, Abs
 
     // The format of internal parameter need update in the heterogeneous scene.
     auto parameter_device_address = AnfAlgo::GetMutableOutputAddr(internal_parameter, 0);
-    if ((parameter_device_address != nullptr) && !graph->is_graph_run_mode()) {
+    if ((parameter_device_address != nullptr) && !(graph->is_graph_run_mode() && !EnableKbkSubGraphExecute())) {
       auto format =
         AnfAlgo::GetOutputFormat(real_from_kernel_with_output_idx.first, real_from_kernel_with_output_idx.second);
       parameter_device_address->set_format(format);
@@ -2220,13 +2273,15 @@ void GraphScheduler::LinkDataArrowForCopyActor(AbstractActor *const from_actor, 
     (void)copy_actor->device_contexts_.emplace_back(to_device_context);
 
     // Set the member output_ of the copy actor.
-    if (to_actor->type_ == KernelTransformType::kSuperKernelActor ||
-        to_actor->type_ == KernelTransformType::kAnyTypeKernelActor) {
+    if (!EnableKbkSubGraphExecute() && (to_actor->type_ == KernelTransformType::kSuperKernelActor ||
+                                        to_actor->type_ == KernelTransformType::kAnyTypeKernelActor)) {
       // Use address of to_kernel directly to avoid data copy in the subgraph sink.
       copy_actor->output_ = AnfAlgo::GetMutableOutputAddr(to_kernel_with_input_idx.first, 0, false);
     } else {
-      const auto &pre_device_tensor =
-        AnfAlgo::GetPrevNodeMutableOutputAddr(to_kernel_with_input_idx.first, to_kernel_with_input_idx.second, false);
+      const auto &pre_device_tensor = !to_kernel_with_input_idx.first->isa<CNode>()
+                                        ? AnfAlgo::GetMutableOutputAddr(to_kernel_with_input_idx.first, 0, false)
+                                        : AnfAlgo::GetPrevNodeMutableOutputAddr(to_kernel_with_input_idx.first,
+                                                                                to_kernel_with_input_idx.second, false);
       MS_EXCEPTION_IF_NULL(pre_device_tensor);
 
       const auto &pre_kernel_tensor = pre_device_tensor->kernel_tensor();
@@ -2255,8 +2310,8 @@ void GraphScheduler::LinkDataArrowForCopyActor(AbstractActor *const from_actor, 
   // If the copy actor already exists, only need link between copy actor and to actor.
   SchedulerHelper::AddDataArrow(copy_actor, to_actor, 0, to_kernel_with_input_idx.second, nullptr);
   copy_actor->output_->ClearFlag(device::kDeviceAddressFlagNotUsed);
-  if (to_actor->type_ == KernelTransformType::kSuperKernelActor ||
-      to_actor->type_ == KernelTransformType::kAnyTypeKernelActor) {
+  if (!EnableKbkSubGraphExecute() && (to_actor->type_ == KernelTransformType::kSuperKernelActor ||
+                                      to_actor->type_ == KernelTransformType::kAnyTypeKernelActor)) {
     UpdateRefCount(copy_actor->output_.get(), true);
   } else {
     UpdateRefCount(copy_actor->output_.get(), false);
@@ -2950,6 +3005,16 @@ void GraphScheduler::LinkOutputResultArrowForOutputActor(OutputActor *to_actor,
   }
 }
 
+void GraphScheduler::LinkKernelActorsForSubGraphExecute(const ActorSet *actor_set) const {
+  MS_EXCEPTION_IF_NULL(actor_set);
+  if (EnableKbkSubGraphExecute()) {
+    for (auto &super_kernel_actor : actor_set->super_kernel_actors_) {
+      MS_EXCEPTION_IF_NULL(super_kernel_actor);
+      super_kernel_actor->BuildAndLinkKernelActors();
+    }
+  }
+}
+
 void GraphScheduler::LinkDeviceTensorStoreForAutoMonadActor(const std::vector<AbstractActor *> &auto_monad_actors) {
   const size_t kNeedUpdateDeviceTensorStoreNum = 2;
   for (auto &auto_monad_actor : auto_monad_actors) {
@@ -3382,29 +3447,6 @@ bool GraphScheduler::HaveRpcActors(const ActorSet *actor_set) const {
   return false;
 }
 #endif
-
-bool GraphScheduler::EnableRuntimePipeline() {
-  static bool disable = common::IsDisableRuntimeConfig(common::kRuntimePipeline);
-  if (disable) {
-    return false;
-  }
-
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  if (ms_context->get_param<bool>(MS_CTX_ENABLE_MEM_OFFLOAD)) {
-    return false;
-  }
-
-  if (ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kCPUDevice) {
-    return false;
-  }
-
-  if (distributed::recovery::RecoveryContext::GetInstance()->enable_recovery()) {
-    return false;
-  }
-
-  return true;
-}
 
 }  // namespace runtime
 }  // namespace mindspore

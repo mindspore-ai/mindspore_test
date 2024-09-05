@@ -1113,6 +1113,32 @@ void GetArgumentIndexForDynamicLenParameter(const abstract::AbstractBasePtr &arg
     start_index += common::AnfAlgo::GetOutputNumByAbstract(arg_seq_abs->elements()[i]);
   }
 }
+
+void PrintGraphGroupInfo(const std::set<KernelGraphGroupInfoPtr> &kernel_graph_group_infos) {
+  for (const auto &group : kernel_graph_group_infos) {
+    MS_EXCEPTION_IF_NULL(group);
+    for (const auto &graph : group->graphs_) {
+      MS_EXCEPTION_IF_NULL(graph);
+      MS_LOG(WARNING) << "Group:" << group->group_name_ << " graph:" << graph->ToString() << " level:" << group->level_;
+      for (const auto &input : group->front_input_nodes_) {
+        MS_EXCEPTION_IF_NULL(input.first.first);
+        MS_LOG(WARNING) << "Input node:" << input.first.first->DebugString()
+                        << " full name:" << input.first.first->fullname_with_scope()
+                        << " node ptr:" << input.first.first << " index:" << input.first.second;
+      }
+      for (const auto &output : group->front_output_nodes_) {
+        MS_EXCEPTION_IF_NULL(output.first.first);
+        MS_EXCEPTION_IF_NULL(output.second.first.first);
+        MS_LOG(WARNING) << "Output front node:" << output.first.first->DebugString()
+                        << " full name:" << output.first.first->fullname_with_scope()
+                        << " node ptr:" << output.first.first << " index:" << output.first.second
+                        << " backend node:" << output.second.first.first->DebugString()
+                        << " full name:" << output.second.first.first->fullname_with_scope()
+                        << " node ptr:" << output.second.first.first << " index:" << output.second.first.second;
+      }
+    }
+  }
+}
 }  // namespace
 
 void ControlNodeParser::ParseDynamicLenFormalParameterByCallNode(const AnfNodePtr &node) {
@@ -2543,8 +2569,9 @@ void CollectEffectiveInputByGraph(const KernelGraphPtr &graph, const DeviceConte
     }
     MS_LOG(DEBUG) << "Kernel graph:" << graph->ToString()
                   << " add front input node:" << front_node_with_index.first->DebugString()
-                  << " index:" << front_node_with_index.second << " backend node:" << parameter->DebugString()
-                  << " index:0";
+                  << " fullname:" << front_node_with_index.first->fullname_with_scope()
+                  << " node ptr:" << front_node_with_index.first << " index:" << front_node_with_index.second
+                  << " backend node:" << parameter->DebugString() << " index:0";
     kernel_graph_group_info->front_input_nodes_[front_node_with_index] = device_context;
   }
 }
@@ -2585,10 +2612,11 @@ void CollectEffectiveOutputByGraph(const KernelGraphPtr &graph, DeviceContext *c
 
     MS_LOG(DEBUG) << "Kernel graph:" << graph->ToString()
                   << " add front output node:" << front_to_backend.first.first->DebugString()
-                  << " index:" << front_to_backend.first.second
+                  << " full name:" << front_to_backend.first.first->fullname_with_scope()
+                  << " node ptr:" << front_to_backend.first.first << " index:" << front_to_backend.first.second
                   << " backend node:" << front_to_backend.second.first->DebugString()
                   << " full name:" << front_to_backend.second.first->fullname_with_scope()
-                  << " index:" << front_to_backend.second.second;
+                  << " node ptr:" << front_to_backend.second.first << " index:" << front_to_backend.second.second;
     (*outputs)[front_to_backend.first] = {front_to_backend.second, device_context};
   }
 }
@@ -2766,6 +2794,7 @@ void ControlNodeParser::ParseNodeLevel(const std::vector<AnfNodePtr> &control_no
       MS_EXCEPTION_IF_NULL(input_node);
       auto iter = node_to_level_.find(input_node);
       if (iter == node_to_level_.end()) {
+        PrintGraphGroupInfo(kernel_graph_group_infos_);
         MS_LOG_WITH_NODE(EXCEPTION, input_node) << "Failed to get input node:" << input_node->DebugString()
                                                 << " for kernel graph:" << kernel_graph_group_info->group_name_;
       }

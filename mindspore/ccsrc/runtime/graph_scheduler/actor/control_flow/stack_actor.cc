@@ -393,6 +393,12 @@ void StackActor::SendMemoryFreeReq(OpContext<DeviceTensor> *const context) {
     for (auto &input_data : input_op_datas_[sequential_num]) {
       MS_EXCEPTION_IF_NULL(input_data);
       MS_EXCEPTION_IF_NULL(input_data->data_);
+      if (input_need_disable_dynamic_ref_counts_.find(input_data->index_) !=
+          input_need_disable_dynamic_ref_counts_.end()) {
+        MS_LOG(DEBUG) << "Actor:" << GetAID() << " skip free dynamic ref count for:" << input_data->data_
+                      << " index:" << input_data->index_;
+        continue;
+      }
       (void)memory_free_list.emplace_back(input_data->data_);
     }
   }
@@ -406,6 +412,12 @@ void StackActor::SendMemoryFreeReq(OpContext<DeviceTensor> *const context) {
   if ((input_stack_data_num_ != 0) && (input_stack_data_.count(sequential_num) > 0)) {
     for (auto &stack_data_pair : input_stack_data_[sequential_num]) {
       if (!stack_data_pair.second.empty()) {
+        if (input_need_disable_dynamic_ref_counts_.find(SizeToInt(stack_data_pair.first)) !=
+            input_need_disable_dynamic_ref_counts_.end()) {
+          MS_LOG(DEBUG) << "Actor:" << GetAID() << " skip free dynamic ref count for:" << stack_data_pair.second.top()
+                        << " index:" << stack_data_pair.first;
+          continue;
+        }
         (void)memory_free_list.emplace_back(stack_data_pair.second.top());
       }
     }

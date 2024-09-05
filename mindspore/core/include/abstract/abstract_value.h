@@ -223,6 +223,7 @@ class MS_CORE_API AbstractBase : public Base {
   /// \return A std::ostream.
 #ifndef _MSC_VER
   friend std::ostream &operator<<(std::ostream &os, const std::shared_ptr<AbstractBase> &a) {
+    MS_EXCEPTION_IF_NULL(a);
     os << a->ToString();
     return os;
   }

@@ -218,6 +218,8 @@ class BACKEND_EXPORT GraphScheduler {
   // 3. The processing of linking output result arrows.
   void LinkOutputResultArrowForOutputActor(OutputActor *to_actor, const GraphCompilerInfo &graph_compiler_info) const;
 
+  void LinkKernelActorsForSubGraphExecute(const ActorSet *actor_set) const;
+
   // Persist device tensors of graph's some nodes(such as weights and value nodes).
   void PersistDeviceTensor(const GraphCompilerInfo &graph_compiler_info) const;
   void PersistDeviceTensorForValueNode(const AnfNodePtr &value_node, const KernelGraphPtr &graph,
@@ -240,11 +242,6 @@ class BACKEND_EXPORT GraphScheduler {
 
   // Spawn kernel async infer/resize/launch kernel in run graph phase if need.
   void SpawnMultiPipelineActor(ActorSet *const actor_set, ActorThreadPool *const thread_pool);
-
-  // Whether enable async launch kernel or infer->resize->launch pipeline.
-  // Set ture will enable async launch, and also enable infer->resize->launch pipeline if actor set contains dynamic
-  // shape kernel.
-  bool EnableRuntimePipeline();
 
   // The global maps, only be cleared in the deconstruction.
   mindspore::HashMap<ActorInfo, ActorSetPtr> actors_;
