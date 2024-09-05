@@ -173,7 +173,7 @@ class InlinerBase : public AnfVisitor {
       }
     } else {
       // We don't expand the middle multiple used after block, except the last one.
-      if (GraphHasBranch(fg)) {
+      if (!fg->has_flag(FUNC_GRAPH_FLAG_PROXY_GRAPH) && GraphHasBranch(fg)) {
         return nullptr;
       }
       // Check if parameters' changed for the first met branch calling.
