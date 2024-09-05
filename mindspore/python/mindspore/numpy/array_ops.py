@@ -1153,9 +1153,9 @@ def moveaxis(a, source, destination):
 
     Args:
         a (Tensor): The array whose axes should be reordered.
-        source (int or sequence of ints): Original positions of the
+        source (int, sequence of ints): Original positions of the
             axes to move. These must be unique.
-        destination (int or sequence of ints): Destination positions
+        destination (int, sequence of ints): Destination positions
             for each of the original axes. These must also be unique.
 
     Returns:
@@ -1205,7 +1205,7 @@ def tile(a, reps):
 
     Args:
         a (Tensor): The input array.
-        reps (int or sequence of ints): The number of repetitions of `a` along
+        reps (int, sequence of ints): The number of repetitions of `a` along
             each axis.
 
     Returns:
@@ -1647,7 +1647,7 @@ def flip(m, axis=None):
 
     Args:
         m (Tensor): Input array.
-        axis (None or int or tuple of integers, optional): Axis or axes along which
+        axis (Union[int, tuple(int), None], optional): Axis or axes along which
             to flip over. The default, ``axis=None``, will flip over all of the axes
             of the input array. If `axis` is negative it counts from the last to
             the first axis. If `axis` is a tuple of integers, flipping is performed on
@@ -1904,7 +1904,7 @@ def repeat(a, repeats, axis=None):
 
     Args:
         a (Tensor): Input array.
-        repeats (int or sequence of ints): The number of repetitions for each element.
+        repeats (int, sequence of ints): The number of repetitions for each element.
             `repeats` is broadcasted to fit the shape of the given axis.
         axis (int, optional): The axis along which to repeat values. By default,
             use the flattened input array, and return a flat output array. Default: ``None`` .
@@ -2351,14 +2351,14 @@ def piecewise(x, condlist, funclist, *args, **kw):
 
     Args:
         x (Union[int, float, bool, list, tuple, Tensor]): The input domain.
-        condlist (Union[bool, list of bool Tensor]): Each boolean array corresponds to a
+        condlist (Union[bool, list[Tensor, bool]]): Each boolean array corresponds to a
             function in `funclist`. Wherever `condlist[i]` is True, `funclist[i](x)` is used as
             the output value. Each boolean array in `condlist` selects a piece of `x`, and
             should therefore be of the same shape as `x`. The length of `condlist` must
             correspond to that of `funclist`. If one extra function is given, i.e. if
             ``len(funclist) == len(condlist) + 1``, then that extra function is the default
             value, used wherever all conditions are false.
-        funclist (Union[list of callables, list of scalars]): Each function is evaluated over
+        funclist (Union[list[callables], list[scalars]): Each function is evaluated over
             `x` wherever its corresponding condition is True. It should take a 1d array as input
             and give an 1d array or a scalar value as output. If, instead of a callable, a scalar
             is provided then a constant function ``(lambda x: scalar)`` is assumed.
@@ -2418,7 +2418,7 @@ def unravel_index(indices, shape, order='C'):
     Args:
         indices (Union[int, float, bool, list, tuple, Tensor]): An integer array whose elements
             are indices into the flattened version of an array of dimensions shape.
-        shape (tuple of integers): The shape of the array to use for unraveling indices.
+        shape (tuple(int)): The shape of the array to use for unraveling indices.
         order (Union['C', 'F'], optional): Determines whether the indices should be viewed as
             indexing in row-major (C-style) or column-major (Fortran-style) order. Default: ``'C'`` .
 

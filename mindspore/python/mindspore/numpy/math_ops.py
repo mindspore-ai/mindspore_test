@@ -604,7 +604,7 @@ def mean(a, axis=None, keepdims=False, dtype=None):
     Args:
         a (Tensor): input tensor containing numbers whose mean is desired.
                     If a is not an array, a conversion is attempted.
-        axis (None or int or tuple of integers, optional): Axis or axes along
+        axis (Union[int, tuple(int), None], optional): Axis or axes along
                     which the means are computed. The default is to compute
                     the mean of the flattened array. If this is a tuple of
                     ints, a mean is performed over multiple axes.
@@ -1992,9 +1992,9 @@ def ediff1d(ary, to_end=None, to_begin=None):
 
     Args:
         ary (Tensor): If necessary, will be flattened before the differences are taken.
-        to_end (Tensor or scalar, optional): Number(s) to append at the end of the
+        to_end (Tensor, scalar, optional): Number(s) to append at the end of the
             returned differences.
-        to_begin (Tensor or scalar, optional): Number(s) to prepend at the beginning
+        to_begin (Tensor, scalar, optional): Number(s) to prepend at the beginning
             of the returned differences.
 
     Returns:
@@ -2499,7 +2499,7 @@ def nanmax(a, axis=None, dtype=None, keepdims=False):
     Args:
         a (Union[int, float, list, tuple, Tensor]): Array containing numbers whose maximum
             is desired. If `a` is not an array, a conversion is attempted.
-        axis (Union[int, tuple of int, None], optional): Axis or axes along which the maximum is
+        axis (Union[int, tuple(int), None], optional): Axis or axes along which the maximum is
             computed. The default is to compute the maximum of the flattened array.
         dtype (:class:`mindspore.dtype`, optional): Default: ``None`` . Overrides the dtype of the
             output Tensor.
@@ -2549,7 +2549,7 @@ def nanmin(a, axis=None, dtype=None, keepdims=False):
     Args:
         a (Union[int, float, list, tuple, Tensor]): Array containing numbers whose minimum
             is desired. If `a` is not an array, a conversion is attempted.
-        axis (Union[int, tuple of int, None], optional): Axis or axes along which the minimum is
+        axis (Union[int, tuple(int), None], optional): Axis or axes along which the minimum is
             computed. The default is to compute the minimum of the flattened array.
         dtype (:class:`mindspore.dtype`, optional): Default: ``None`` . Overrides the dtype of the
             output Tensor.
@@ -5472,7 +5472,7 @@ def ravel_multi_index(multi_index, dims, mode='clip', order='C'):
     Args:
         multi_index (tuple of array_like):
             A tuple of integer arrays, one array for each dimension.
-        dims (Union[int, tuple of integers]): The shape of array into which the indices from multi_index apply.
+        dims (Union[int, tuple(int)]): The shape of array into which the indices from multi_index apply.
         mode ({`wrap`, `clip`}): Specifies how out-of-bounds indices are handled. Default: ``clip''``.
 
             - `wrap`: wrap around
