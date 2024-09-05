@@ -1092,9 +1092,6 @@ bool GraphBuilder::DoAttrAccess(const Instr &instr) {
       }
     }
   } else if (opcode == STORE_ATTR) {
-    if (trace_flag() && parent_ != nullptr) {
-      return false;
-    }
     auto o = pop();
     auto v = pop();
     auto node = NewValueNode(nullptr, instr, {v, o});
@@ -2497,7 +2494,7 @@ bool GraphBuilder::ReplaceCall(CallNode *call_node, const py::object &old_func) 
   return true;
 }
 
-MindGraphBuilder::MindGraphBuilder(const PyFrameWrapper &f) : GraphBuilder(f) {
+MindGraphBuilder::MindGraphBuilder(const PyFrameWrapper &f) : GraphBuilder(f), side_effect_outputs_() {
   std::vector<std::string> comments;
   auto co = f.GetCode();
   const char *name = co.Name();
@@ -2541,6 +2538,10 @@ bool CheckBuildSubGraph(const py::object &ret) {
     if (ret_str.substr(0, fake_grad_prefix.size()) == fake_grad_prefix) {
       return true;
     }
+  }
+  if (ret.ptr() == Py_None) {
+    // Function return None, or has no return statement.
+    return true;
   }
   return !CheckConstPyObject(ret.ptr());
 }
@@ -2624,36 +2625,93 @@ StopTraceReason MindGraphBuilder::BuildSubGraph(CallNode *call_node, int depth, 
 
   call_node->SetSubGraph(sg->GetGraph());
   auto sub_ret = sg->GetGraph()->GetRetVal();
-  if (sub_ret != nullptr) {
-    if (!CheckBuildSubGraph(sub_ret->GetVobj()->GetPyObject())) {
-      call_node->SetVobj(sub_ret->GetVobj());
-    } else {
-      sg->FGBuilder()->SetGraphName(GetFuncGraphName(func, sg));
-      sg->FGAddOutput(false);
-      auto sub_graph = sg->FGBuilder()->graph();
-      if (sub_graph == nullptr) {
-        MS_LOG(INFO) << "subgraph trace null";
-        return StopTraceReason::kTrace_Fail;
-      } else {
-        TraceGuard trace_guard(GetLocation(call_node));
-        auto res = FGBuilder()->AddNode(sg->FGBuilder()->graph(), HandleInputArgs(args));
-        if (res != nullptr) {
-          MS_LOG(INFO) << "add fg node suc: ";
-          call_node->SetVobj(AObject::Convert(res));
-          call_node->set_abstract_wrapper(res);
-        }
-        auto callable_obj = GetPyObject(call_node->input(0));
-        if (py::isinstance<Cell>(callable_obj)) {
-          HandleCustomBProp(sub_graph, callable_obj);
-        }
-      }
+  if (sub_ret == nullptr) {
+    MS_LOG(INFO) << "Subgraph ret value is NULL!";
+  } else if (!CheckBuildSubGraph(sub_ret->GetVobj()->GetPyObject())) {
+    MS_LOG(INFO) << "Subgraph ret value is const type, will not build subgraph";
+    call_node->SetVobj(sub_ret->GetVobj());
+  } else {
+    TraceGuard trace_guard(GetLocation(call_node));
+    sg->FGBuilder()->SetGraphName(GetFuncGraphName(func, sg));
+
+    const FuncGraphPtr &sub_graph = BuildSubFuncGraph(sg, args, call_node);
+    if (sub_graph == nullptr) {
+      return StopTraceReason::kTrace_Fail;
+    }
+    auto callable_obj = GetPyObject(call_node->input(0));
+    if (py::isinstance<Cell>(callable_obj)) {
+      HandleCustomBProp(sub_graph, callable_obj);
     }
   }
-  bool is_make_func = call_node->input(0)->GetOpcode() == MAKE_FUNCTION;
-  if (is_make_func) {
+  if (call_node->input(0)->GetOpcode() == MAKE_FUNCTION) {
     graph_->GuardInlinedFunc(call_node);
   }
   return reason;
+}
+
+FuncGraphPtr MindGraphBuilder::BuildSubFuncGraph(const MindGraphBuilderPtr &subgraph_builder,
+                                                 const std::vector<ValueNode *> &args, CallNode *call_node) {
+  bool succ = subgraph_builder->FGAddOutput(false);
+  if (!succ) {
+    return nullptr;
+  }
+  const FuncGraphPtr &sub_graph = subgraph_builder->FGBuilder()->graph();
+  if (sub_graph == nullptr) {
+    MS_LOG(INFO) << "Subgraph's func graph is NULL";
+    return nullptr;
+  }
+  const AbstractWrapperPtr &res = FGBuilder()->AddNode(sub_graph, HandleInputArgs(args));
+  if (res == nullptr) {
+    MS_LOG(INFO) << "Add fg node failed: " << sub_graph->ToString();
+    return nullptr;
+  }
+  MS_LOG(DEBUG) << "Add fg node success: " << res->ToString();
+
+  succ = HandleSubGraphOutput(res, subgraph_builder, call_node);
+  return succ ? sub_graph : nullptr;
+}
+
+bool MindGraphBuilder::HandleSubGraphOutput(const AbstractWrapperPtr &output,
+                                            const MindGraphBuilderPtr &subgraph_builder, CallNode *call_node) {
+  if (subgraph_builder->FGBuilder()->GetOutputSize() == 1) {
+    // Only the output of function call, no side effect output.
+    call_node->SetVobj(AObject::Convert(output));
+    call_node->set_abstract_wrapper(output);
+  } else {
+    // output[0] is function call output, and output[1:] are side effect outputs.
+    AbstractWrapperPtr call_node_output = FGTupleGetItem(output, 0);
+    if (call_node_output == nullptr) {
+      return false;
+    }
+    call_node->SetVobj(AObject::Convert(call_node_output));
+    call_node->set_abstract_wrapper(call_node_output);
+    // Add sub-graph's side effect outputs to parent-graph.
+    for (size_t i = 0; i < subgraph_builder->side_effect_outputs_.size(); ++i) {
+      AbstractWrapperPtr side_effect_output = FGTupleGetItem(output, SizeToInt(i + 1));
+      if (side_effect_output == nullptr) {
+        return false;
+      }
+      // Build the mapping from sub-graph's ValueNode to parent-graph's AnfNode.
+      AnfNodePtr side_effect_anf_node = fg_builder_->ReadLocalVariable(side_effect_output);
+      MS_EXCEPTION_IF_NULL(side_effect_anf_node);
+      AbstractWrapperPtr side_effect_abs = subgraph_builder->side_effect_outputs_[i]->abstract_wrapper();
+      fg_builder_->UpdateNodesMap(side_effect_abs, side_effect_anf_node);
+    }
+    (void)std::copy(subgraph_builder->side_effect_outputs_.begin(), subgraph_builder->side_effect_outputs_.end(),
+                    std::back_inserter(side_effect_outputs_));
+  }
+  return true;
+}
+
+AbstractWrapperPtr MindGraphBuilder::FGTupleGetItem(const AbstractWrapperPtr &tuple, int index) {
+  MS_EXCEPTION_IF_NULL(tuple);
+  AbstractWrapperPtr idx = fg_builder_->AddLocalVariable(py::int_(index));
+  AbstractWrapperPtr ret = fg_builder_->AddNode(prim::kPrimTupleGetItem, {tuple, idx});
+  if (ret == nullptr || ret->abstract() == nullptr) {
+    MS_LOG(INFO) << "Failed to do tuple getitem, index: " << index << ", tuple: " << tuple->ToString();
+    return nullptr;
+  }
+  return ret;
 }
 
 // build sub-graph
@@ -4092,15 +4150,54 @@ bool MindGraphBuilder::FGAddInputs(const std::vector<ValueNode *> &args) {
   return true;
 }
 
-void MindGraphBuilder::FGAddOutput(bool is_top_graph) {
-  if (auto ret = GetGraph()->GetRetVal()) {
-    MS_LOG(INFO) << "try add output for value node: " << ret->ToString();
-    if (FGBuilder()->AddOutput(ret->abstract_wrapper(), is_top_graph)) {
-      MS_LOG(INFO) << "add output succuss for value node: " << ret->ToString();
-    } else {
-      MS_LOG(INFO) << "add output fail for value node: " << ret->ToString();
+bool MindGraphBuilder::FGAddOutput(bool is_top_graph) {
+  if (GetGraph()->GetRetVal() == nullptr) {
+    MS_LOG(INFO) << "Add output failed, graph ret value is null";
+    return false;
+  }
+  ValueNode *ret = GetGraph()->GetRetVal();
+  if (FGBuilder()->AddOutput(ret->abstract_wrapper(), is_top_graph)) {
+    MS_LOG(INFO) << "Add output success for value node: " << ret->ToString();
+  } else {
+    MS_LOG(INFO) << "Add output fail for value node: " << ret->ToString();
+    return false;
+  }
+
+  // Top graph doesn't need to handle side effect nodes here. GraphAnalyzer will handle it later.
+  if (!is_top_graph) {
+    bool succ = FGAddSideEffectOutput(is_top_graph);
+    if (!succ) {
+      return false;
     }
   }
+  MS_LOG(INFO) << "Add graph output success, total outputs num: " << fg_builder_->GetOutputSize()
+               << ", side effect num: " << side_effect_outputs_.size();
+  return true;
+}
+
+bool MindGraphBuilder::FGAddSideEffectOutput(bool is_top_graph) {
+  const std::set<ValueNode *> &side_effect_nodes = graph_->GetSideEffect()->GetRequiredNodes();
+  for (ValueNode *node : side_effect_nodes) {
+    if (node->GetGraph() != graph_) {
+      continue;  // This side effect node wasn't created by current graph, skip it.
+    }
+    if (!node->has_abstract_wrapper()) {
+      MS_LOG(INFO) << "Side effect node doesn't have abstract wrapper! " << node->ToString();
+      return false;
+    }
+    side_effect_outputs_.push_back(node);
+  }
+
+  for (ValueNode *node : side_effect_outputs_) {
+    bool succ = FGBuilder()->AddOutput(node->abstract_wrapper(), is_top_graph);
+    if (succ) {
+      MS_LOG(INFO) << "Add side effect output success: " << node->ToString();
+    } else {
+      MS_LOG(INFO) << "Add side effect output failed: " << node->ToString();
+      return false;
+    }
+  }
+  return true;
 }
 
 void UpdateNodeInfo(const AbstractWrapperPtr &res, CallNode *call_node, StopTraceReason *stop_reason) {
@@ -4983,6 +5080,15 @@ bool MindGraphBuilder::DoContainsOp(const Instr &instr) {
   auto v = NewValueNode(AObject::Convert(o), instr, {l, r});
   v->set_abstract_wrapper(o);
   push(v);
+  return true;
+}
+
+bool MindGraphBuilder::DoLoadConst(const Instr &instr) {
+  const py::object &const_obj = instr.cnst();
+  const AbstractWrapperPtr &abs = fg_builder_->AddLocalVariable(const_obj);
+  auto node = NewValueNode(AObject::Convert(const_obj), instr, {});
+  node->set_abstract_wrapper(abs);
+  push(node);
   return true;
 }
 

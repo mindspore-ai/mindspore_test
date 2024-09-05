@@ -268,7 +268,7 @@ class GraphBuilder {
   virtual bool DoGetItem(const Instr &instr);
   virtual bool DoItemAccess(const Instr &instr);
   bool DoStackOp(const Instr &instr);
-  bool DoLoadConst(const Instr &instr);
+  virtual bool DoLoadConst(const Instr &instr);
   bool DoListToTuple(const Instr &instr);
   bool DoGetIter(const Instr &instr);
   bool DoMakeFunction(const Instr &instr);
@@ -336,7 +336,7 @@ class MindGraphBuilder : public GraphBuilder {
  public:
   explicit MindGraphBuilder(const PyFrameWrapper &f);
   MindGraphBuilder(GraphBuilder *r, GraphBuilder *p, PyCodeObject *co, PyObject *globals)
-      : GraphBuilder(r, p, co, globals) {
+      : GraphBuilder(r, p, co, globals), side_effect_outputs_() {
     std::vector<std::string> comments;
     auto location = co ? std::make_shared<Location>(py::cast<std::string>(co->co_filename), co->co_firstlineno, 0,
                                                     co->co_firstlineno, 0, "", std::move(comments))
@@ -353,7 +353,6 @@ class MindGraphBuilder : public GraphBuilder {
                  StopTraceReason *stop_reason);
   void FGAddNodeWithAst(CallNode *call_node, const py::object &callable_info, const std::vector<ValueNode *> &args,
                         StopTraceReason *stop_reason);
-  void FGAddOutput(bool is_top_graph);
   StopTraceReason BuildSubGraph(CallNode *call_node, int depth, const py::object &func,
                                 const GraphBuilderPtr &subgraph) override;
   py::object ResolveCallable(CallNode *call_node, StopTraceReason *stop_reason) override;
@@ -370,6 +369,8 @@ class MindGraphBuilder : public GraphBuilder {
   bool DoBinaryMul(const Instr &instr) override;
   bool DoCompare(const Instr &instr) override;
   bool DoBuildOp(const Instr &instr) override;
+  bool DoLoadConst(const Instr &instr) override;
+
   ValueNode *HandleGetattr(ValueNode *target_node, const Instr &instr) override;
   bool HandlePositionParams(const py::object &func, std::vector<ValueNode *> *params, FrameStates *frame) override;
   bool UnpackCallExParams(std::vector<ValueNode *> *params, int extra_local, bool *has_kw,
@@ -390,12 +391,18 @@ class MindGraphBuilder : public GraphBuilder {
   py::object HandleConstantFoldFunc(const std::vector<py::object> &args, CallNode *call_node,
                                     StopTraceReason *stop_reason);
 
+  FuncGraphPtr BuildSubFuncGraph(const MindGraphBuilderPtr &subgraph_builder, const std::vector<ValueNode *> &args,
+                                 CallNode *call_node);
+  bool FGAddOutput(bool is_top_graph);
+  bool FGAddSideEffectOutput(bool is_top_graph);
+  bool HandleSubGraphOutput(const AbstractWrapperPtr &output, const MindGraphBuilderPtr &subgraph_builder,
+                            CallNode *call_node);
+  AbstractWrapperPtr FGTupleGetItem(const AbstractWrapperPtr &tuple, int index);
+
   AbstractWrapperPtr HandleGetShapeOfDynamicLengthTensor(const AbstractWrapperPtr &abstract_wrapper);
   std::pair<bool, std::vector<py::object>> GetConstantInputsObject(CallNode *call_node);
   py::object GetPyObject(ValueNode *node);
 
-  mindspore::FuncGraphBuilderPtr fg_builder_{nullptr};
-  std::string co_name_;
   AbstractWrapperPtr HandleMultiOp(const Instr &instr, const std::vector<ValueNode *> &p, bool is_compare);
   AbstractWrapperPtr HandleBuildOp(const Instr &instr, const std::vector<ValueNode *> &p);
   AbstractWrapperPtr HandleBuildStringOp(const PrimitivePtr &primitive, const AbstractWrapperPtrList &inputs_wrapper);
@@ -409,6 +416,11 @@ class MindGraphBuilder : public GraphBuilder {
   void HandleCustomBProp(const FuncGraphPtr &graph, const py::object &obj) const;
   bool ConvertClassType(const py::object &callable_info, CallNode *call_node, StopTraceReason *stop_reason);
   std::pair<bool, py::object> ConvertBuiltInMethodOrFunction(const py::object &callable_info) const;
+
+  mindspore::FuncGraphBuilderPtr fg_builder_{nullptr};
+  std::string co_name_;
+  // Side effect outputs of this graph (including the side effect outputs of all its sub-graphs).
+  std::vector<ValueNode *> side_effect_outputs_;
 };
 }  // namespace pijit
 }  // namespace mindspore

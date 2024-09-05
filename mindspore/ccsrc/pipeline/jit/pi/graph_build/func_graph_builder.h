@@ -114,6 +114,8 @@ class FuncGraphBuilder {
   /// \brief Clear all output node of the graph.
   void ClearOutputNodes() { output_nodes_.clear(); }
 
+  size_t GetOutputSize() const { return output_nodes_.size(); }
+
   /// \brief Get the callable python primitive or function.
   ///
   /// \param[in] obj The method of a python object.
@@ -169,6 +171,10 @@ class FuncGraphBuilder {
   void AddPrevBuilder(const FuncGraphBuilderPtr &builder);
 
   const std::vector<FuncGraphBuilder *> &prev_builders() const { return prev_builders_; }
+
+  void UpdateNodesMap(const AbstractWrapperPtr &key, const AnfNodePtr &node) {
+    (void)key_to_node_.insert_or_assign(key, node);
+  }
 
   AnfNodePtr ReadLocalVariable(const AbstractWrapperPtr &abstract_wrapper);
 
