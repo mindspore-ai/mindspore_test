@@ -27,10 +27,10 @@ BaseShapePtr EmbeddingDenseBackwardFuncImpl::InferShape(const PrimitivePtr &prim
                                                         const std::vector<AbstractBasePtr> &input_args) const {
   auto grad_shape = input_args[kIndex0]->GetShape()->GetShapeVector();
   auto num_weights = input_args[kIndex2]->GetValue();
-  MS_EXCEPTION_IF_NULL(num_weights);
   auto num_weights_opt = GetScalarValue<int64_t>(num_weights);
 
   auto first_dim = num_weights_opt.has_value() ? num_weights_opt.value() : abstract::Shape::kShapeDimAny;
+  MS_EXCEPTION_IF_ZERO("size of grad_shape", grad_shape.size());
   auto second_dim = IsDynamicRank(grad_shape) ? abstract::Shape::kShapeDimAny : grad_shape.back();
 
   return std::make_shared<abstract::Shape>(ShapeVector{first_dim, second_dim});
