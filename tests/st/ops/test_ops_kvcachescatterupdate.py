@@ -15,6 +15,7 @@
 
 import numpy as np
 from mindspore.ops.auto_generate import KVCacheScatterUpdate
+from mindspore.common.parameter import Parameter
 from mindspore import Tensor, jit, JitConfig
 from tests.st.utils import test_utils
 from tests.st.ops.dynamic_shape.test_op_utils import TEST_OP
@@ -70,7 +71,8 @@ def test_kvcachescatterupdate_forward_mode():
     updates = np.random.uniform(low=1, high=10, size=updates_shape).astype(np.float32)
 
     output = (jit(kvcachescatterupdate_forward_func,
-                  jit_config=JitConfig(jit_level="O2")))(Tensor(var), Tensor(indices), Tensor(updates), -1, 'update')
+                  jit_config=JitConfig(jit_level="O2")))(Parameter(Tensor(var), "var"),
+                                                         Tensor(indices), Tensor(updates), -1, 'update')
     expect_shape = [1, 5, 128, 4096]
     assert np.allclose(output.shape, expect_shape)
 
@@ -91,7 +93,8 @@ def test_scatter_value():
     updates = np.random.uniform(low=1, high=10, size=updates_shape).astype(np.float32)
 
     output = (jit(kvcachescatterupdate_forward_func,
-                  jit_config=JitConfig(jit_level="O2")))(Tensor(var), Tensor(indices), Tensor(updates), -1, 'update')
+                  jit_config=JitConfig(jit_level="O2")))(Parameter(Tensor(var), "var"),
+                                                         Tensor(indices), Tensor(updates), -1, 'update')
     expect_value = expect_func(var, indices, updates, -1)
     assert np.allclose(output.asnumpy(), expect_value)
 
