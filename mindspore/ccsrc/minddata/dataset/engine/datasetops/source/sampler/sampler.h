@@ -118,6 +118,8 @@ class SamplerRT {
   // @return number of samples
   int64_t GetNumSamples() const;
 
+  virtual int64_t GetSamplesPerTensor() const;
+
   // Calculate num samples. Unlike GetNumSamples, it is not a getter and doesn't necessarily return the value of
   // num_samples_
   // @return number of samples, return -1 if sampler cannot determine this value (e.g. PKSampler)

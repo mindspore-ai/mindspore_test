@@ -288,6 +288,46 @@ def test_init_step_with_mind_dataset(fast_recovery_mode, shuffle):
     ds.config.set_seed(original_seed)
 
 
+def test_init_step_with_distributed_sampler():
+    """
+    Feature: Pipeline resuming
+    Description: Test fast recovery mode with DistributedSampler
+    Expectation: Pipeline returns data from the specified step
+    """
+    original_mode = ds.config.get_fast_recovery()
+    ds.config.set_fast_recovery(True)
+    original_seed = ds.config.get_seed()
+    ds.config.set_seed(0)
+
+    class MyDataset:
+        def __init__(self, length):
+            self.length = length
+            self.data = np.random.randint(0, 255, (self.length, 28, 28, 3), dtype=np.uint8)
+
+        def __getitem__(self, index):
+            return self.data[index]
+
+        def __len__(self):
+            return self.length
+
+    dataset = ds.GeneratorDataset(MyDataset(20), column_names=["image"], num_parallel_workers=2,
+                                  num_shards=3, shard_id=2)
+
+    dataset = dataset.batch(3)
+    dataset = dataset.repeat(1)
+
+    num_epochs = 2
+    dataset_size = dataset.get_dataset_size()
+    expected_result = get_expected_result(dataset, num_epochs)
+    # test initialize from the beginning, the middle of the first epoch,
+    # the end of the first epoch and the middle of the second epoch
+    for init_step in [0, dataset_size // 2, dataset_size, dataset_size + dataset_size // 2]:
+        init_dataset_from_step_and_verify_result(dataset, init_step, num_epochs, dataset_size, expected_result)
+
+    ds.config.set_fast_recovery(original_mode)
+    ds.config.set_seed(original_seed)
+
+
 @pytest.mark.parametrize("init_step", list(range(8)))
 def test_getter(init_step):
     """
