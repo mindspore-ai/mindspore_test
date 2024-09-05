@@ -25,18 +25,22 @@ namespace lite {
 PrimitiveCPtr OnnxGridSampleParser::Parse(const onnx::GraphProto &onnx_graph, const onnx::NodeProto &onnx_node) {
   auto prim = std::make_unique<ops::GridSampler2D>();
   MS_CHECK_TRUE_RET(prim != nullptr, nullptr);
+  int64_t interpolation_mode = 0;
+  int64_t padding_mode = 0;
+  bool align_corners = false;
   for (const auto &onnx_node_attr : onnx_node.attribute()) {
     if (onnx_node_attr.name() == "mode") {
-      int64_t mode = ops::StringToEnumImpl(prim->name(), "interpolation_mode", onnx_node_attr.s());
-      prim->set_interpolation_mode(mode);
+      interpolation_mode = ops::StringToEnumImpl(prim->name(), "interpolation_mode", onnx_node_attr.s());
     } else if (onnx_node_attr.name() == "padding_mode") {
-      int64_t padding_mode = ops::StringToEnumImpl(prim->name(), "padding_mode", onnx_node_attr.s());
-      prim->set_padding_mode(padding_mode);
+      padding_mode = ops::StringToEnumImpl(prim->name(), "padding_mode", onnx_node_attr.s());
     } else if (onnx_node_attr.name() == "align_corners") {
-      prim->set_align_corners(static_cast<bool>(onnx_node_attr.i()));
+      align_corners = static_cast<bool>(onnx_node_attr.i());
     }
   }
 
+  prim->set_interpolation_mode(interpolation_mode);
+  prim->set_padding_mode(padding_mode);
+  prim->set_align_corners(align_corners);
   return prim->GetPrim();
 }
 
