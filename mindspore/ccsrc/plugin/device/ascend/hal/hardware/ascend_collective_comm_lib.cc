@@ -21,6 +21,7 @@
 #include "runtime/hardware/device_context_manager.h"
 #include "utils/convert_utils_base.h"
 #include "utils/ms_context.h"
+#include "plugin/device/ascend/hal/hardware/hccl_watch_dog_thread.h"
 
 constexpr size_t kPathMax = 4096;
 namespace mindspore {
@@ -163,6 +164,36 @@ bool AscendCollectiveCommLib::Initialize(uint32_t global_rank, uint32_t global_r
   initialized_ = true;
   finalized_ = false;
   return true;
+}
+
+bool AscendCollectiveCommLib::InitializeWatchDog(uint32_t global_rank_id, uint32_t global_rank_size,
+                                                 uint32_t local_rank_id) {
+  if (!initialized_) {
+    MS_LOG(INFO) << "Ascend collective comm lib has not initialized, skip watch dog thread";
+    return true;
+  }
+  auto context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context);
+  if (!context->get_param<bool>(MS_CTX_ENABLE_HCCL_WATCHDOG) || !common::GetEnv(kSimulationLevel).empty()) {
+    MS_LOG(INFO) << "No need watch dog if not set context or used MS_SIMULATION_LEVEL";
+    return true;
+  }
+  auto hcoms = GetAllCommunicationGroup();
+  HcclWatchDogManager::GetInstance().AddHandler(
+    std::make_unique<HcclWatchDogHandler>(global_rank_id, local_rank_id, global_rank_size, hcoms));
+  (void)HcclWatchDogManager::GetInstance().InitHandler();
+  return true;
+}
+
+std::map<std::string, HcclComm> AscendCollectiveCommLib::GetAllCommunicationGroup() {
+  std::map<std::string, HcclComm> hcoms;
+  for (const auto &group : groups_) {
+    auto group_name = group.first;
+    auto d_group = std::dynamic_pointer_cast<AscendCommunicationGroup>(group.second);
+    MS_EXCEPTION_IF_NULL(d_group);
+    hcoms[group_name] = d_group->hccl_communicator();
+  }
+  return hcoms;
 }
 
 bool AscendCollectiveCommLib::DestroyHcclComm() {

@@ -89,7 +89,8 @@ endif()
 file(GLOB_RECURSE UT_SYMBOL_ENGINE_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         ./backend/graph_optimizer_test_framework.cc ./symbol_engine/*.cc)
 # plugin/device/cpu/hal/test_ms_collective_topo.cc will also open 127.0.0.1:8090
-file(GLOB_RECURSE UT_PS_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./ps/*.cc ./plugin/device/cpu/hal/*.cc)
+file(GLOB_RECURSE UT_PS_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./ps/*.cc ./plugin/device/cpu/hal/*.cc
+        ./plugin/device/ascend/hal/hardware/ascend_watch_dog_thread_test.cc)
 file(GLOB_RECURSE UT_CCSRC_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./ccsrc/*.cc)
 file(GLOB_RECURSE UT_OTHERS_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ./debug/*.cc ./side_effect/*.cc ./utils/*.cc
         ./place/*.cc)
@@ -192,6 +193,7 @@ file(GLOB_RECURSE MINDSPORE_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/device/lic_manager.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/device/tasksink/rtmodel_zero_copy.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/hardware/ascend_collective_comm_lib.cc"
+        "../../../mindspore/ccsrc/plugin/device/ascend/hal/hardware/hccl_watch_dog_thread.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/hardware/ascend_communication_group.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/hardware/ascend_device_context.cc"
         "../../../mindspore/ccsrc/plugin/device/ascend/hal/hardware/ascend_device_res_manager.cc"

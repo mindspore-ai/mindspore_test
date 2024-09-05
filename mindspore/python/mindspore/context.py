@@ -335,6 +335,8 @@ class _Context:
                 - parallel_speed_up_json_path(Union[str, None]): The path to the parallel speed up json file.
                   If its value is None or '', it does not take effect. Default None.
                 - host_scheduling_max_threshold(int): The host scheduling max threshold.
+                - hccl_watchdog (bool): Enable a thread to monitor the failure of collective communication.
+                  Default: ``True`` .
         """
         ascend_cfg_modes = {
             'precision_mode': ["force_fp16", "allow_fp32_to_fp16", "allow_mix_precision", "must_keep_origin_dtype",
@@ -353,6 +355,7 @@ class _Context:
             'save_checkpoint_steps': (int,),
             'need_ckpt': (bool,),
             'last_triggered_step': (int,),
+            'hccl_watchdog': (bool,),
             'topo_order': (dict,),
             'op_debug_option': (str, None),
         }
@@ -372,6 +375,7 @@ class _Context:
             'save_checkpoint_steps': self._set_save_checkpoint_steps,
             'need_ckpt': self._set_need_ckpt,
             'last_triggered_step': self._set_last_triggered_step,
+            'hccl_watchdog': self._set_hccl_watchdog,
             'topo_order': self._set_topo_order
         }
         ascend_cfg_set = tuple(ascend_cfg_modes.keys())
@@ -785,6 +789,12 @@ class _Context:
 
         options_str = json.dumps(topo_order)
         self.set_param(ms_ctx_param.topo_order, options_str)
+
+    def _set_hccl_watchdog(self, flag):
+        """set hccl watchdog"""
+        if not isinstance(flag, bool):
+            raise TypeError(f"For 'ascend_config', the type of 'hccl_watchdog' must be bool, but got {type(flag)}.")
+        self.set_param(ms_ctx_param.hccl_watchdog, flag)
 
     def _set_need_ckpt(self, need_ckpt):
         """Set need ckpt flag"""

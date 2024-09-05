@@ -1195,6 +1195,11 @@ bool GeKernelExecutor::LaunchKernel(const CNodePtr &kernel, const vector<KernelT
   // launch kernel
   uint64_t start_time = 0;
   PROFILER_START(start_time);
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  if (ms_context->get_param<bool>(MS_CTX_ENABLE_HCCL_WATCHDOG)) {
+    MsException::Instance().CheckException();
+  }
   DoAsyncCkpt(kernel);
   if (nop_op_to_memcpy_.find(kernel) != nop_op_to_memcpy_.end()) {
     if (!MemoryCopyAsync(kernel, inputs, outputs)) {

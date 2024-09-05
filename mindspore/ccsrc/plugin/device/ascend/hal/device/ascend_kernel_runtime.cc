@@ -25,6 +25,7 @@
 #include "plugin/device/ascend/hal/device/ascend_device_address.h"
 #include "utils/ms_context.h"
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm_lib.h"
+#include "plugin/device/ascend/hal/hardware/hccl_watch_dog_thread.h"
 #include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/optimizer/helper.h"
@@ -248,6 +249,9 @@ void AscendKernelRuntime::ReleaseDeviceRes() {
   MS_EXCEPTION_IF_NULL(context_ptr);
   uint32_t device_id = context_ptr->get_param<uint32_t>(MS_CTX_DEVICE_ID);
 
+  if (context_ptr->get_param<bool>(MS_CTX_ENABLE_HCCL_WATCHDOG)) {
+    HcclWatchDogManager::GetInstance().DestoryHandler();
+  }
   // DestroyHccl must be called before FreeDeviceMemory
   (void)DestroyHccl();
   if (mem_manager_ != nullptr) {
@@ -346,8 +350,9 @@ bool AscendKernelRuntime::Init() {
     if (init_device) {
       ResetDevice(device_id_);
     }
-    MS_LOG(EXCEPTION) << "Ascend kernel runtime initialization failed. The details refer to 'Ascend Error Message'."
-                      << "#dmsg#Framework Error Message:#dmsg#" << e.what();
+    MS_LOG(EXCEPTION) << "Ascend kernel runtime initialization failed, device id: " << device_id_
+                      << "The details refer to 'Ascend Error Message'. #dmsg#Framework Error Message:#dmsg#"
+                      << e.what();
   }
 
   initialized_ = true;

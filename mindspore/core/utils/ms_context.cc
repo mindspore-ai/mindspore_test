@@ -642,6 +642,7 @@ void MsContext::InitBoolTypeDefaultValue() {
   set_param<bool>(MS_CTX_CONV_ALLOW_TF32, true);
   set_param<bool>(MS_CTX_MATMUL_ALLOW_TF32, false);
   set_param<bool>(MS_CTX_NEED_CKPT, false);
+  set_param<bool>(MS_CTX_ENABLE_HCCL_WATCHDOG, true);
   set_param<bool>(MS_CTX_RECOMPUTE_ALLGATHER_OVERLAP_FAGRAD, false);
   set_param<bool>(MS_CTX_ENABLE_FLASH_ATTENTION_LOAD_BALANCE, false);
   set_param<bool>(MS_CTX_ENABLE_ALLREDUCE_SLICE_TO_REDUCESCATTER, false);
@@ -653,7 +654,6 @@ void MsContext::InitStringTypeDefaultValue() {
   set_param<std::string>(MS_CTX_SAVE_DUMP_PATH, ".");
   set_param<std::string>(MS_CTX_DETERMINISTIC, "OFF");
   set_param<std::string>(MS_CTX_ENV_CONFIG_PATH, "");
-  set_param<std::string>(MS_CTX_TUNE_MODE, "NO_TUNE");
   set_param<std::string>(MS_CTX_AOE_TUNE_MODE, "");
   set_param<std::string>(MS_CTX_AOE_JOB_TYPE, "2");
   set_param<std::string>(MS_CTX_GRAPH_KERNEL_FLAGS, "");

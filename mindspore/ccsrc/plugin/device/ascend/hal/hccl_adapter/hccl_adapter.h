@@ -64,6 +64,7 @@ class HcclAdapter {
   bool InitHccl(uint32_t device_id, std::string_view rank_id, std::string_view rank_file, HcclMode hccl_mode);
   bool InitHccl(uint32_t device_id, std::string_view rank_id);
   bool FinalizeHccl();
+  bool HcclWatchdogThread(HcclComm comm, std::string *error_info);
   const bool Inited() const { return init_flag_; }
   const HcclComm get_hccl_comm() const { return hccl_comm_; }
   HcclResult HcclCreateGroup(const std::string &group, uint32_t rank_num, uint32_t *rank_ids) const;
@@ -153,6 +154,8 @@ class HcclAdapter {
   HcclAlltoAllFunObj launch_hccl_all_to_all_ = nullptr;
   HcclBatchSendRecvFunObj launch_hccl_batch_isend_irecv_ = nullptr;
 
+  HcclGetCommAsyncErrorFunObj hccl_get_comm_async_error_ = nullptr;
+  HcclGetErrorStringFunObj hccl_get_error_string_ = nullptr;
   HcomCreateGroupFunObj hccl_create_group_ = nullptr;
   HcomDestroyGroupFunObj hccl_destroy_group_ = nullptr;
   HcomGetRankIdFunObj hccl_get_rank_id_ = nullptr;

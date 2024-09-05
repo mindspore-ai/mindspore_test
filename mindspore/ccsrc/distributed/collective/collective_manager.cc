@@ -197,6 +197,11 @@ bool CollectiveManager::Initialize() {
     RETURN_IF_FALSE_WITH_LOG(CreateCommunicationGroup(group_name, global_group_ranks_),
                              "Failed to create group " + group_name);
   }
+  MS_LOG(INFO) << "Start initializing hccl watchdog on device side...";
+  RETURN_IF_FALSE_WITH_LOG(
+    device_comm_lib_instance_->InitializeWatchDog(global_rank_id_, global_rank_size_, local_rank_id_),
+    "Failed to hccl watchdog on device side.");
+  MS_LOG(INFO) << "hccl watchdog on device side is successfully initialized.";
 
   MS_LOG(INFO) << "End initializing collective communication for backend: " << device_type;
   inited_ = true;

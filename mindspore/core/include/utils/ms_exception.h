@@ -34,8 +34,12 @@ class MS_CORE_API MsException {
  public:
   static MsException &Instance();
 
-  void SetException() {
-    exception_ptr_ = std::current_exception();
+  void SetException(const std::exception_ptr &def = nullptr) {
+    if (def != nullptr) {
+      exception_ptr_ = def;
+    } else {
+      exception_ptr_ = std::current_exception();
+    }
     if (exception_ptr_ != nullptr && listener_ != nullptr) {
       auto listener = listener_;
       listener_ = nullptr;
