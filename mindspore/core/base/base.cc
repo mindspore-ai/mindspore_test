@@ -59,4 +59,15 @@ void Base::CloneUserData(const std::shared_ptr<Base> &other) { user_data_ = othe
 void Base::CloneUserData(const UserData &other) { user_data_ = other; }
 
 const UserData &Base::GetUserData() const { return user_data_; }
+
+bool DebugMode::IsDebug() {
+  static const auto compile_debug_mode = common::GetCompileConfig("COMPILE_DEBUG_MODE");
+  if (compile_debug_mode.empty() || compile_debug_mode == "debug") {
+    return true;
+  }
+  // compile_debug_mode: "release"
+  return false;
+}
+
+bool DebugMode::IsRelease() { return !IsDebug(); }
 }  // namespace mindspore

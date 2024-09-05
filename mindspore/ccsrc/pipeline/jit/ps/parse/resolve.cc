@@ -579,7 +579,7 @@ AnfNodePtr ResolveSymbol(const FuncGraphManagerPtr &manager, const NameSpacePtr 
   }
   MS_LOG(DEBUG) << "name_space: " << name_space->ToString() << ", symbol: " << symbol->ToString()
                 << ", loc: " << trace::GetDebugInfoStr(node->debug_info());
-  TraceGuard trace_guard(std::make_shared<TraceResolve>(trace::GetSourceCodeDebugInfo(node->debug_info())));
+  TraceGuard trace_guard(MakeTraceInfo<TraceResolve>(trace::GetSourceCodeDebugInfo(node->debug_info())));
   auto obj = GetSymbolObject(name_space, symbol, node);
   AnfNodePtr resolved_node = ResolveObjectAndAddToManager(manager, obj, node);
   if (IsValueNode<NameSpace>(resolved_node) && !py::isinstance<py::none>(name_space->module_obj())) {
@@ -665,7 +665,7 @@ AnfNodePtr ResolveCellWithAttr(const FuncGraphManagerPtr &manager, const py::obj
       return call_func_node;
     }
   }
-  TraceGuard trace_guard(std::make_shared<TraceResolve>(get_attr_node->debug_info()));
+  TraceGuard trace_guard(MakeTraceInfo<TraceResolve>(get_attr_node->debug_info()));
   if (!data_converter::IsCellInstance(obj)) {
     AnfNodePtr resolved_node = ResolveObjectAndAddToManager(manager, obj, resolve_node);
     AnfNodePtrList inputs = {NewValueNode(prim::kPrimGetAttr), resolved_node, attr};
@@ -695,7 +695,7 @@ AnfNodePtr ResolveClassObjectWithAttr(const py::object &cls_obj, const AnfNodePt
                                       const AnfNodePtr &get_attr_node) {
   MS_EXCEPTION_IF_NULL(get_attr_node);
   MS_LOG(DEBUG) << "Resolve ms_class obj (" << py::str(cls_obj) << ") with attr " << attr->ToString() << ".";
-  TraceGuard trace_guard(std::make_shared<TraceResolve>(get_attr_node->debug_info()));
+  TraceGuard trace_guard(MakeTraceInfo<TraceResolve>(get_attr_node->debug_info()));
   return CreateResolveNode(cls_obj, attr, get_attr_node);
 }
 
@@ -765,7 +765,7 @@ AnfNodePtr ResolveSymbolWithAttr(const FuncGraphManagerPtr &manager, const AnfNo
 py::object GetObjectFromSequence(const NameSpacePtr &name_space, const SymbolPtr &symbol, const AnfNodePtr &node,
                                  const AnfNodePtr &index_node) {
   MS_EXCEPTION_IF_NULL(node);
-  TraceGuard trace_guard(std::make_shared<TraceResolve>(node->debug_info()));
+  TraceGuard trace_guard(MakeTraceInfo<TraceResolve>(node->debug_info()));
   py::object obj = GetSymbolObject(name_space, symbol, node);
   // If obj is nn.CellList, convert it to sequence.
   py::module mod = python_adapter::GetPyModule(PYTHON_MOD_PARSE_MODULE);
@@ -966,7 +966,9 @@ AnfNodePtr ResolveParameterObj(const FuncGraphPtr &func_graph, const py::object 
         // add suffix to the name of the input of construct.
         string suffix_name = param_node->name() + "_$";
         param_node->set_name(suffix_name);
-        param_node->debug_info()->set_name(suffix_name);
+        if (param_node->debug_info() != nullptr) {
+          param_node->debug_info()->set_name(suffix_name);
+        }
         MS_LOG(DEBUG) << "Add suffix to the name of the input of construct " << func_graph->ToString()
                       << ", input: " << param_node->DebugString();
       } else {

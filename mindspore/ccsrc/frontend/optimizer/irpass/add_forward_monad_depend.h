@@ -56,7 +56,9 @@ void AddUMonadInput(const FuncGraphManagerPtr &manager, const FuncGraphPtr &bpro
 void PropagateUMonadInput(const FuncGraphManagerPtr &manager, const FuncGraphPtr &bprop_graph,
                           const AbstractBasePtr &u_abs, bool add_u_input) {
   auto new_u_para = bprop_graph->add_parameter();
-  new_u_para->debug_info()->set_name("forward_u");
+  if (new_u_para->debug_info() != nullptr) {
+    new_u_para->debug_info()->set_name("forward_u");
+  }
   new_u_para->set_abstract(u_abs);
   bprop_graph->set_flag(kFuncGraphFlagAddedForwardU, true);
   if (add_u_input) {

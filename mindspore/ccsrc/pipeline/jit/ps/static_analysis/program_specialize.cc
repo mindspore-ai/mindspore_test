@@ -418,7 +418,7 @@ FuncGraphSpecializer::FuncGraphSpecializer(ProgramSpecializer *const s, const Fu
                                << ", parent context: " << context->parent()->ToString();
   }
   engine_ = s->engine();
-  cloner_ = SpecializerClone(fg, std::make_shared<TraceSpecialize>(GetNextCounter()));
+  cloner_ = SpecializerClone(fg, MakeTraceInfo<TraceSpecialize>(GetNextCounter()));
   specialized_func_graph_ = cloner_->cloned_func_graphs().find(fg)->second;
   AddTodoItem(fg->get_return());
   AddTodoItem(fg->parameters());
@@ -1012,7 +1012,7 @@ void FuncGraphSpecializer::ProcessNode(const AnfNodePtr &node) {
   ScopeGuard scope_guard(node->scope());
   AnfNodeConfigPtr conf = MakeConfig(node);
   MS_EXCEPTION_IF_NULL(conf);
-  TraceGuard guard(std::make_shared<TraceCopy>(node->debug_info()));
+  TraceGuard guard(MakeTraceInfo<TraceCopy>(node->debug_info()));
   AnfNodePtr new_node = GetReplicatedNode(node);
   MS_EXCEPTION_IF_NULL(new_node);
   if (new_node->func_graph() != specialized_func_graph_) {

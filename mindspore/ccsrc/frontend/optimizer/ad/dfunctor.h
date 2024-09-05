@@ -204,14 +204,14 @@ FuncGraphPtr KPrim::BpropToK(const T &primal, const FuncGraphPtr &bprop_fg, cons
 
   GraphDebugInfoPtr debug_info = nullptr;
   {
-    TraceGuard guard(std::make_shared<TraceCopy>(bprop_fg->debug_info()));
+    TraceGuard guard(MakeTraceInfo<TraceCopy>(bprop_fg->debug_info()));
     debug_info = std::make_shared<GraphDebugInfo>();
   }
   if (debug_info->trace_info() != nullptr && debug_info->trace_info()->debug_info() != nullptr) {
     debug_info->trace_info()->debug_info()->set_name(primal->ToString());
   }
   cloned_bprop_fg->debug_info()->set_name("");
-  cloned_bprop_fg->debug_info()->set_trace_info(std::make_shared<TraceGradBprop>(debug_info));
+  cloned_bprop_fg->debug_info()->set_trace_info(MakeTraceInfo<TraceGradBprop>(debug_info));
 
   // Make sure (out, dout) provided.
   constexpr auto number_two = 2;
@@ -228,7 +228,7 @@ FuncGraphPtr KPrim::BpropToK(const T &primal, const FuncGraphPtr &bprop_fg, cons
   {
     auto outer_debug_info = std::make_shared<GraphDebugInfo>();
     outer_debug_info->set_name(primal->ToString());
-    TraceGuard guard(std::make_shared<TraceGradFprop>(outer_debug_info));
+    TraceGuard guard(MakeTraceInfo<TraceGradFprop>(outer_debug_info));
     outer = std::make_shared<FuncGraph>();
     (void)outer->transforms().emplace("primal", FuncGraphTransform(primal));
     outer->set_output(NewValueNode(kNone));
@@ -259,22 +259,24 @@ FuncGraphPtr KPrim::BpropToK(const T &primal, const FuncGraphPtr &bprop_fg, cons
   }
   CNodePtr out_value = nullptr;
   if (cnode != nullptr) {  // Set equiv debug info. for Primitive CNode out.
-    TraceGuard trace_guard(std::make_shared<TraceEquiv>(cnode->debug_info()));
+    TraceGuard trace_guard(MakeTraceInfo<TraceEquiv>(cnode->debug_info()));
     out_value = outer->NewCNode(transf_args);
     if constexpr (std::is_same<T, PrimitivePtr>::value) {
       out_value->CloneCNodeInfo(cnode);
     }
     const DebugInfoPtr &old_debug_info = cnode->debug_info();
-    const auto &old_real_loc = old_debug_info->real_loc();
-    if (!old_real_loc.empty()) {
-      out_value->debug_info()->set_real_loc(old_real_loc);
+    if (old_debug_info != nullptr && out_value->debug_info() != nullptr) {
+      const auto &old_real_loc = old_debug_info->real_loc();
+      if (!old_real_loc.empty()) {
+        out_value->debug_info()->set_real_loc(old_real_loc);
+      }
     }
   } else {
     out_value = outer->NewCNode(transf_args);
   }
   (void)mng->Replace(out_param, out_value);
 
-  TraceGuard guard(std::make_shared<TraceGradSens>(out_param->debug_info()));
+  TraceGuard guard(MakeTraceInfo<TraceGradSens>(out_param->debug_info()));
   auto new_dout = cloned_bprop_fg->add_parameter();
   (void)mng->Replace(dout, new_dout);
   // We remove all parameters except new_dout.

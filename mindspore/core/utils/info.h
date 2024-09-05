@@ -350,11 +350,9 @@ struct MS_CORE_API DebugInfoCompare {
   bool operator()(const DebugInfoPtr &left, const DebugInfoPtr &right) const;
 };
 
-MS_CORE_API void UpdateDebugInfo(const FuncGraphPtr &func_graph, const ScopePtr &scope, const DebugInfoPtr &debug_info);
 MS_CORE_API void UpdateInlineCNodeDebugInfo(const AnfNodePtr &caller, const AnfNodePtr &callee);
 
 MS_CORE_API std::vector<DebugInfoPtr> GetDebugInfoList(const DebugInfoPtr &debug_info);
-
 }  // namespace mindspore
 
 #endif  // MINDSPORE_CORE_UTILS_INFO_H_

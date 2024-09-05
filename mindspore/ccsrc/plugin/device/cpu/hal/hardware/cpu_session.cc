@@ -78,7 +78,7 @@ ParameterPtr CPUSession::CreateNewParameterFromParameter(const AnfNodePtr &anf, 
   auto graph_inputs = graph->MutableInputs();
   MS_EXCEPTION_IF_NULL(valid_inputs);
   MS_EXCEPTION_IF_NULL(graph_inputs);
-  TraceManager::DebugTrace(std::make_shared<TraceCopy>(anf->debug_info()));
+  TraceManager::DebugTrace(MakeTraceInfo<TraceCopy>(anf->debug_info()));
   ParameterPtr new_parameter = graph->NewParameter(anf->cast<ParameterPtr>());
   TraceManager::EndTrace();
   graph_inputs->push_back(new_parameter);

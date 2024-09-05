@@ -60,7 +60,7 @@ bool ReplaceNodeByProxy::Run(const FuncGraphPtr &func_graph) {
   std::vector<AnfNodePtr> node_list = TopoSort(func_graph->get_return());
   for (auto node : node_list) {
     if (node != nullptr && node->isa<CNode>() && common::AnfAlgo::GetCNodeName(node) == kEmbeddingLookupOpName) {
-      TraceGuard guard(std::make_shared<TraceOpt>(node->debug_info()));
+      TraceGuard guard(MakeTraceInfo<TraceOpt>(node->debug_info()));
       auto cnode = node->cast<CNodePtr>();
       MS_EXCEPTION_IF_NULL(cnode);
       auto prim = std::make_shared<Primitive>(kEmbeddingLookupProxyOpName);

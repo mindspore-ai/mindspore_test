@@ -814,6 +814,8 @@ void DumpLocationInCurrentScope(const DebugInfoPtr &debug_info, const std::share
       if (iter != shadow_debug_infos_map.end()) {
         DebugInfoPtr shadowed_debug_info = iter->first;
         DebugInfoPtr shadow_debug_info = iter->second;
+        MS_EXCEPTION_IF_NULL(shadowed_debug_info);
+        MS_EXCEPTION_IF_NULL(shadow_debug_info);
         MS_LOG(DEBUG) << "Insert debug info, shadow_debug_info: " << shadow_debug_info << "/"
                       << shadow_debug_info->name() << "/" << shadow_debug_info->debug_name() << "/"
                       << trace::GetDebugInfoStr(shadow_debug_info, "", kSourceLineTipNextLine, true)
@@ -857,6 +859,7 @@ void DumpPrimalDebugInfos(const CNodePtr &node, const std::shared_ptr<SubGraphIR
   auto primal_debug_infos = node->primal_debug_infos();
   if (!primal_debug_infos.empty()) {
     for (const auto &primal_debug_info : primal_debug_infos) {
+      MS_EXCEPTION_IF_NULL(primal_debug_info);
       std::string lines;
       auto debug_info_str = trace::GetDebugInfoStr(primal_debug_info, "      # ", kSourceLineTipDiscard);
       if (!debug_info_str.empty()) {
@@ -892,6 +895,7 @@ void DumpDebugInfo(const CNodePtr &node, const std::shared_ptr<SubGraphIRInfo> &
     auto fused_debug_infos = node->fused_debug_infos();
     if (!fused_debug_infos.empty()) {
       for (const auto &debug_info : fused_debug_infos) {
+        MS_EXCEPTION_IF_NULL(debug_info);
         std::string lines;
         gsub->buffer << "      # Corresponding code candidate:\n";
         auto debug_info_str = trace::GetDebugInfoStr(debug_info, "      # ", kSourceLineTipDiscard);
@@ -903,6 +907,7 @@ void DumpDebugInfo(const CNodePtr &node, const std::shared_ptr<SubGraphIRInfo> &
         }
       }
     } else {
+      MS_EXCEPTION_IF_NULL(node->debug_info());
       auto debug_info_str = trace::GetDebugInfoStr(node->debug_info(), "      # ", kSourceLineTipDiscard);
       if (!debug_info_str.empty()) {
         gsub->buffer << debug_info_str << "\n";
@@ -913,16 +918,19 @@ void DumpDebugInfo(const CNodePtr &node, const std::shared_ptr<SubGraphIRInfo> &
     auto fused_debug_infos = node->fused_debug_infos();
     if (!fused_debug_infos.empty()) {
       for (const auto &debug_info : fused_debug_infos) {
+        MS_EXCEPTION_IF_NULL(debug_info);
         gsub->buffer << "      # Corresponding code candidate:\n";
         DumpLocationInCurrentScope(debug_info, gsub);
       }
     } else {
+      MS_EXCEPTION_IF_NULL(node->debug_info());
       DumpLocationInCurrentScope(node->debug_info(), gsub);
     }
     // Print whole stack primal infos
     auto primal_debug_infos = node->primal_debug_infos();
     if (!primal_debug_infos.empty()) {
       for (const auto &primal_debug_info : primal_debug_infos) {
+        MS_EXCEPTION_IF_NULL(primal_debug_info);
         gsub->buffer << "      # Corresponding forward node candidate:\n";
         DumpLocationInCurrentScope(primal_debug_info, gsub);
       }
@@ -1022,7 +1030,9 @@ void DumpCNode(const CNodePtr &node, const FuncGraphPtr &sub_graph, const Ordere
       gsub->buffer << "      # Scope: (" << node->scope()->name() << ")" << std::endl;
     }
     // Print debug info
-    DumpDebugInfo(node, gsub, dump_location);
+    if (DebugMode::IsDebug()) {
+      DumpDebugInfo(node, gsub, dump_location);
+    }
   }
 }
 
@@ -1170,6 +1180,7 @@ void DumpSubgraph(const OrderedMap<FuncGraphPtr, std::shared_ptr<SubGraphIRInfo>
         DumpParameters(sg.first, oss);
       }
     }
+    MS_EXCEPTION_IF_NULL(sg.first->debug_info());
     if (trace::GetGlobalTraceLabelType() == trace::TraceLabelType::kWithUniqueId) {
       oss << trace::GetDebugInfoStr(sg.first->debug_info(), "# ", kSourceLineTipDiscard) << "#"
           << trace::Label(sg.first->debug_info()) << "\n";
@@ -1638,6 +1649,7 @@ void AnfExporter::OuputIrStyleCNodes(const FuncGraphPtr &func_graph, const std::
       }
     }
     DumpCNode(cnode, func_graph, *para_map, gsub);
+    MS_EXCEPTION_IF_NULL(cnode->debug_info());
     if (trace::GetGlobalTraceLabelType() == trace::TraceLabelType::kWithUniqueId) {
       gsub->buffer << trace::GetDebugInfoStr(cnode->debug_info(), "      # ", kSourceLineTipDiscard) << "#"
                    << trace::Label(cnode->debug_info()) << "\n";
@@ -1691,6 +1703,7 @@ void AnfExporter::ExportOneFuncGraph(const FuncGraphPtr &func_graph, const Tagge
   }
   // Dump parameters info.
   DumpParameters(func_graph, oss);
+  MS_EXCEPTION_IF_NULL(func_graph->debug_info());
   if (trace::GetGlobalTraceLabelType() == trace::TraceLabelType::kWithUniqueId) {
     oss << trace::GetDebugInfoStr(func_graph->debug_info(), "# ", kSourceLineTipDiscard) << "#"
         << trace::Label(func_graph->debug_info()) << "\n";

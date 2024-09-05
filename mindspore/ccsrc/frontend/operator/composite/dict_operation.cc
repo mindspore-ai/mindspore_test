@@ -40,46 +40,46 @@ FuncGraphPtr DictSetItem::GenerateFuncGraph(const abstract::AbstractBasePtrList 
   auto dict_abs = data_abs->cast<abstract::AbstractDictionaryPtr>();
   MS_EXCEPTION_IF_NULL(dict_abs);
 
-  FuncGraphPtr ret = std::make_shared<FuncGraph>();
-  ret->set_flag(FUNC_GRAPH_FLAG_CORE, true);
-  MS_EXCEPTION_IF_NULL(ret->debug_info());
-  ret->debug_info()->set_name("setitem");
+  FuncGraphPtr res_graph = std::make_shared<FuncGraph>();
+  res_graph->set_flag(FUNC_GRAPH_FLAG_CORE, true);
+  MS_EXCEPTION_IF_NULL(res_graph->debug_info());
+  res_graph->debug_info()->set_name("setitem");
 
-  auto dict_param = ret->add_parameter();
-  auto index_param = ret->add_parameter();
-  auto target_param = ret->add_parameter();
+  auto dict_param = res_graph->add_parameter();
+  auto index_param = res_graph->add_parameter();
+  auto target_param = res_graph->add_parameter();
   std::vector<AnfNodePtr> inputs = {dict_param, index_param, target_param};
 
   if (fallback::HasObjInExtraInfoHolder(dict_abs) && !fallback::GetCreateInGraphFromExtraInfoHolder(dict_abs)) {
     // The dict input has attached python object and the object is not created in graph.
     // Convert the DictSetItem to InplaceDictSetItem node.
     (void)inputs.insert(inputs.begin(), NewValueNode(prim::kPrimDictInplaceSetItem));
-    auto dict_inplace_setitem_node = ret->NewCNodeInOrder(inputs);
+    auto dict_inplace_setitem_node = res_graph->NewCNodeInOrder(inputs);
     dict_inplace_setitem_node->set_has_side_effect_node(true);
-    ret->set_output(dict_inplace_setitem_node);
-    ret->set_has_side_effect_node(true);
-    return ret;
+    res_graph->set_output(dict_inplace_setitem_node);
+    res_graph->set_has_side_effect_node(true);
+    return res_graph;
   }
 
   (void)inputs.insert(inputs.begin(), NewValueNode(prim::kPrimDictSetItem));
-  auto dict_setitem_node = ret->NewCNode(inputs);
-  ret->set_output(dict_setitem_node);
-  return ret;
+  auto dict_setitem_node = res_graph->NewCNode(inputs);
+  res_graph->set_output(dict_setitem_node);
+  return res_graph;
 }
 
 FuncGraphPtr DictClear::GenerateFuncGraph(const abstract::AbstractBasePtrList &args_list) {
   constexpr size_t dict_clear_args_size = 1;
   abstract::CheckArgsSize("DictClear", args_list, dict_clear_args_size);
 
-  FuncGraphPtr ret = std::make_shared<FuncGraph>();
-  ret->set_flag(FUNC_GRAPH_FLAG_CORE, true);
-  MS_EXCEPTION_IF_NULL(ret->debug_info());
-  ret->debug_info()->set_name("clear");
-  (void)ret->add_parameter();
+  FuncGraphPtr res_graph = std::make_shared<FuncGraph>();
+  res_graph->set_flag(FUNC_GRAPH_FLAG_CORE, true);
+  MS_EXCEPTION_IF_NULL(res_graph->debug_info());
+  res_graph->debug_info()->set_name("clear");
+  (void)res_graph->add_parameter();
 
   auto empty_dict = std::vector<std::pair<ValuePtr, ValuePtr>>();
-  ret->set_output(NewValueNode(std::make_shared<ValueDictionary>(empty_dict)));
-  return ret;
+  res_graph->set_output(NewValueNode(std::make_shared<ValueDictionary>(empty_dict)));
+  return res_graph;
 }
 
 AnfNodePtr GeneratePyExecuteNodeHasKey(const FuncGraphPtr &fg) {
@@ -114,19 +114,19 @@ FuncGraphPtr DictHasKey::GenerateFuncGraph(const abstract::AbstractBasePtrList &
   MS_EXCEPTION_IF_NULL(dict);
   MS_EXCEPTION_IF_NULL(key_value);
   const auto &elems = dict->elements();
-  FuncGraphPtr ret = std::make_shared<FuncGraph>();
-  ret->set_flag(FUNC_GRAPH_FLAG_CORE, true);
-  MS_EXCEPTION_IF_NULL(ret->debug_info());
-  ret->debug_info()->set_name("has_key");
+  FuncGraphPtr res_graph = std::make_shared<FuncGraph>();
+  res_graph->set_flag(FUNC_GRAPH_FLAG_CORE, true);
+  MS_EXCEPTION_IF_NULL(res_graph->debug_info());
+  res_graph->debug_info()->set_name("has_key");
   // If key_value or value of dictionary has variable, then we convert has key operation to pyexecute.
   bool has_variable = (key_value == kValueAny) || std::any_of(elems.cbegin(), elems.cend(),
                                                               [&key_value](const abstract::AbstractElementPair &item) {
                                                                 return item.first->BuildValue() == kValueAny;
                                                               });
   if (has_variable) {
-    auto out = GeneratePyExecuteNodeHasKey(ret);
-    ret->set_output(out);
-    return ret;
+    auto out = GeneratePyExecuteNodeHasKey(res_graph);
+    res_graph->set_output(out);
+    return res_graph;
   }
   bool has_key = false;
   auto it = std::find_if(elems.cbegin(), elems.cend(), [&key_value](const abstract::AbstractElementPair &item) {
@@ -136,22 +136,22 @@ FuncGraphPtr DictHasKey::GenerateFuncGraph(const abstract::AbstractBasePtrList &
     has_key = true;
   }
 
-  (void)ret->add_parameter();
-  (void)ret->add_parameter();
+  (void)res_graph->add_parameter();
+  (void)res_graph->add_parameter();
 
   auto out = NewValueNode(MakeValue(has_key));
-  ret->set_output(out);
-  return ret;
+  res_graph->set_output(out);
+  return res_graph;
 }
 
 FuncGraphPtr DictUpdate::GenerateFuncGraph(const abstract::AbstractBasePtrList &args_list) {
   constexpr size_t dict_update_args_size = 2;
   abstract::CheckArgsSize("DictUpdate", args_list, dict_update_args_size);
 
-  FuncGraphPtr ret = std::make_shared<FuncGraph>();
-  ret->set_flag(FUNC_GRAPH_FLAG_CORE, true);
-  MS_EXCEPTION_IF_NULL(ret->debug_info());
-  ret->debug_info()->set_name("update");
+  FuncGraphPtr res_graph = std::make_shared<FuncGraph>();
+  res_graph->set_flag(FUNC_GRAPH_FLAG_CORE, true);
+  MS_EXCEPTION_IF_NULL(res_graph->debug_info());
+  res_graph->debug_info()->set_name("update");
 
   AnfNodePtrList key_inputs;
   AnfNodePtrList value_inputs;
@@ -159,12 +159,13 @@ FuncGraphPtr DictUpdate::GenerateFuncGraph(const abstract::AbstractBasePtrList &
   (void)value_inputs.emplace_back(NewValueNode(prim::kPrimMakeTuple));
 
   std::vector<std::pair<ValuePtr, size_t>> key_place_map;
-  AddNodeToLists(args_list[0], ret, &key_inputs, &value_inputs, &key_place_map);
-  AddNodeToLists(args_list[1], ret, &key_inputs, &value_inputs, &key_place_map);
+  AddNodeToLists(args_list[0], res_graph, &key_inputs, &value_inputs, &key_place_map);
+  AddNodeToLists(args_list[1], res_graph, &key_inputs, &value_inputs, &key_place_map);
 
-  ret->set_output(ret->NewCNode(
-    {NewValueNode(prim::kPrimMakeDict), ret->NewCNode(std::move(key_inputs)), ret->NewCNode(std::move(value_inputs))}));
-  return ret;
+  res_graph->set_output(
+    res_graph->NewCNode({NewValueNode(prim::kPrimMakeDict), res_graph->NewCNode(std::move(key_inputs)),
+                         res_graph->NewCNode(std::move(value_inputs))}));
+  return res_graph;
 }
 
 void DictUpdate::AddNodeToLists(const AbstractBasePtr &arg, const FuncGraphPtr &ret, AnfNodePtrList *keys,
@@ -196,13 +197,13 @@ FuncGraphPtr DictFromKeys::GenerateFuncGraph(const abstract::AbstractBasePtrList
   abstract::CheckArgsSize("DictFromKeys", args_list, dict_fromkeys_args_size);
   const auto &keys_abs = ParseIterableObject(args_list[1]);
 
-  FuncGraphPtr ret = std::make_shared<FuncGraph>();
-  ret->set_flag(FUNC_GRAPH_FLAG_CORE, true);
-  MS_EXCEPTION_IF_NULL(ret->debug_info());
-  ret->debug_info()->set_name("fromkeys");
-  (void)ret->add_parameter();
-  (void)ret->add_parameter();
-  auto new_value_input = ret->add_parameter();
+  FuncGraphPtr res_graph = std::make_shared<FuncGraph>();
+  res_graph->set_flag(FUNC_GRAPH_FLAG_CORE, true);
+  MS_EXCEPTION_IF_NULL(res_graph->debug_info());
+  res_graph->debug_info()->set_name("fromkeys");
+  (void)res_graph->add_parameter();
+  (void)res_graph->add_parameter();
+  auto new_value_input = res_graph->add_parameter();
 
   AnfNodePtrList keys_tuple_input{NewValueNode(prim::kPrimMakeTuple)};
   AnfNodePtrList values_tuple_input{NewValueNode(prim::kPrimMakeTuple)};
@@ -215,12 +216,12 @@ FuncGraphPtr DictFromKeys::GenerateFuncGraph(const abstract::AbstractBasePtrList
     (void)keys_tuple_input.emplace_back(NewValueNode(key_abs_val));
     (void)values_tuple_input.emplace_back(new_value_input);
   }
-  auto key_tuple_node = ret->NewCNode(keys_tuple_input);
-  auto value_tuple_node = ret->NewCNode(values_tuple_input);
+  auto key_tuple_node = res_graph->NewCNode(keys_tuple_input);
+  auto value_tuple_node = res_graph->NewCNode(values_tuple_input);
   AnfNodePtrList make_dicts_input{NewValueNode(prim::kPrimMakeDict), key_tuple_node, value_tuple_node};
-  auto make_dicts_node = ret->NewCNode(make_dicts_input);
-  ret->set_output(make_dicts_node);
-  return ret;
+  auto make_dicts_node = res_graph->NewCNode(make_dicts_input);
+  res_graph->set_output(make_dicts_node);
+  return res_graph;
 }
 
 abstract::AbstractBasePtrList DictFromKeys::ParseIterableObject(const abstract::AbstractBasePtr &arg_key) const {

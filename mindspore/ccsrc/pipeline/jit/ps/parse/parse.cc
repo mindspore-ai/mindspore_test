@@ -78,9 +78,11 @@ FuncGraphPtr ParsePythonCode(const py::object &obj, const std::string &python_mo
     MS_LOG(ERROR) << "Parse python code failed, errcode = " << parser->errcode();
     py::object node = ast->GetAstNode();
     const auto &location = parser->GetLocation(node);
-    py::str desc = python_adapter::CallPyModFn(ast->module(), PYTHON_MOD_GET_OBJECT_DESCRIPTION, ast->function(),
-                                               location->file_name(), location->line());
-    MS_LOG(ERROR) << "\nlocation:" << desc.cast<std::string>();
+    if (location != nullptr) {
+      py::str desc = python_adapter::CallPyModFn(ast->module(), PYTHON_MOD_GET_OBJECT_DESCRIPTION, ast->function(),
+                                                 location->file_name(), location->line());
+      MS_LOG(ERROR) << "\nlocation:" << desc.cast<std::string>();
+    }
     return nullptr;
   }
 
@@ -204,8 +206,7 @@ void Parser::CheckFuncReturn() {
     }
     py::object node = ast_->GetAstNode();
     const auto &location = GetLocation(node);
-    MS_EXCEPTION_IF_NULL(location);
-    if (IS_OUTPUT_ON(mindspore::kInfo)) {
+    if (IS_OUTPUT_ON(mindspore::kInfo) && location != nullptr) {
       py::str desc = python_adapter::CallPyModFn(ast_->module(), PYTHON_MOD_GET_OBJECT_DESCRIPTION, ast_->function(),
                                                  location->file_name(), location->line());
       MS_LOG(INFO) << "Function must has 'return' statement, but missing in " << desc.cast<std::string>()
@@ -639,8 +640,9 @@ void Parser::GenerateArgsNodeForFunction(const FunctionBlockPtr &block, const py
     auto para_node = std::make_shared<Parameter>(block_fg);
     MS_EXCEPTION_IF_NULL(para_node);
     para_node->set_name(arg_name);
-    MS_EXCEPTION_IF_NULL(para_node->debug_info());
-    para_node->debug_info()->set_name(arg_name);
+    if (para_node->debug_info() != nullptr) {
+      para_node->debug_info()->set_name(arg_name);
+    }
     block_fg->add_parameter(para_node);
     AnfNodePtr para_after_cast = GetMixedPrecisionCastHelp(block_fg, para_node);
     MS_LOG(DEBUG) << "The arg[" << i << "] is " << arg_name;
@@ -742,8 +744,9 @@ FunctionBlockPtr Parser::ParseDefFunction(const py::object &node, const Function
   ScopePtr scope = GetScopeForParseFunction();
   // The node created in the parsefunction context, will inherit the scope created using scope_guard
   ScopeGuard scope_guard(scope);
-  const auto debug_info = std::make_shared<DebugInfo>(GetLocation(node));
-  TraceGuard trace_guard(std::make_shared<TraceParse>(debug_info));
+  const auto &loc = GetLocation(node);
+  const auto debug_info = std::make_shared<DebugInfo>(loc);
+  TraceGuard trace_guard(MakeTraceInfo<TraceParse>(debug_info));
   FunctionBlockPtr func_block = MakeFunctionBlock();
   if (block != nullptr) {
     func_block->AddPrevBlock(block);
@@ -753,7 +756,7 @@ FunctionBlockPtr Parser::ParseDefFunction(const py::object &node, const Function
   func_block->Mature();
   auto current_fg = func_block->func_graph();
   auto function_name = py::cast<std::string>(python_adapter::GetPyObjAttr(node, "name"));
-  MS_LOG(DEBUG) << "The function name is " << function_name << ", loc: " << GetLocation(node)->ToString();
+  MS_LOG(DEBUG) << "The function name is " << function_name << ", loc: " << (loc != nullptr ? loc->ToString() : "none");
   // Replace the construct function name with the cell name
   constexpr auto cell_construct = "construct";
   bool is_construct_function = false;
@@ -777,11 +780,12 @@ FunctionBlockPtr Parser::ParseDefFunction(const py::object &node, const Function
 
   // Save the function node to block
   func_block->WriteVariable(function_name, NewValueNode(current_fg));
-  MS_EXCEPTION_IF_NULL(current_fg->debug_info());
-  current_fg->debug_info()->set_name(function_name);
-  py::list deco_list = node.attr("decorator_list");
-  if (!deco_list.empty()) {
-    current_fg->debug_info()->set_deco_location(GetLocation(deco_list));
+  if (current_fg->debug_info() != nullptr) {
+    current_fg->debug_info()->set_name(function_name);
+    py::list deco_list = node.attr("decorator_list");
+    if (!deco_list.empty()) {
+      current_fg->debug_info()->set_deco_location(GetLocation(deco_list));
+    }
   }
   MS_EXCEPTION_IF_NULL(ast_);
   bool set_flag = UpdateFuncGraphFlags(ast_->function(), current_fg);
@@ -806,13 +810,14 @@ FunctionBlockPtr Parser::ParseDefFunction(const py::object &node, const Function
     // If the def function has no return statement, mean that return none.
     py::object location_node = ast_->GetAstNode();
     const auto &location = GetLocation(location_node);
-    MS_EXCEPTION_IF_NULL(location);
-    py::str desc = python_adapter::CallPyModFn(ast_->module(), PYTHON_MOD_GET_OBJECT_DESCRIPTION, ast_->function(),
-                                               location->file_name(), location->line());
-    MS_LOG(INFO) << "Function must has 'return' statement, but missing in " << desc.cast<std::string>()
-                 << ". FuncGraph: " << current_fg->ToString() << ", location: " << location->ToString()
-                 << ". We will add a 'return None' statement automatically.";
-    TraceGuard trace_guard_none(location);
+    if (location != nullptr) {
+      py::str desc = python_adapter::CallPyModFn(ast_->module(), PYTHON_MOD_GET_OBJECT_DESCRIPTION, ast_->function(),
+                                                 location->file_name(), location->line());
+      MS_LOG(INFO) << "Function must has 'return' statement, but missing in " << desc.cast<std::string>()
+                   << ". FuncGraph: " << current_fg->ToString() << ", location: " << location->ToString()
+                   << ". We will add a 'return None' statement automatically.";
+    }
+    TraceGuard trace_guard_none(location);  // TraceGuard allows nullptr location.
     auto none_node = NewValueNode(kNone);
     auto return_node = current_fg->NewCNodeInOrder({NewValueNode(prim::kPrimReturn), none_node});
     current_fg->set_return(return_node);
@@ -840,7 +845,7 @@ FunctionBlockPtr Parser::ParseLambdaFunction(const py::object &node, const Funct
   ScopePtr scope = GetScopeForParseFunction();
   ScopeGuard scope_guard(scope);
   const auto debug_info = std::make_shared<DebugInfo>(GetLocation(node));
-  TraceGuard trace_guard(std::make_shared<TraceParse>(debug_info));
+  TraceGuard trace_guard(MakeTraceInfo<TraceParse>(debug_info));
   FunctionBlockPtr func_block = MakeFunctionBlock();
   MS_EXCEPTION_IF_NULL(func_block);
   if (block != nullptr) {
@@ -860,8 +865,9 @@ FunctionBlockPtr Parser::ParseLambdaFunction(const py::object &node, const Funct
   constexpr auto lambda_suffix = "_lambda_";  // Represent <lambda>.
   auto function_name = lambda_function_name + "_" + lambda_suffix;
   MS_LOG(DEBUG) << "The function name is " << function_name;
-  MS_EXCEPTION_IF_NULL(current_fg->debug_info());
-  current_fg->debug_info()->set_name(function_name);
+  if (current_fg->debug_info() != nullptr) {
+    current_fg->debug_info()->set_name(function_name);
+  }
   GenerateArgsNodeForFunction(func_block, node);
 
   // When parsing the top graph of construct, save the top graph
@@ -948,18 +954,20 @@ FunctionBlockPtr Parser::ParseStatements(const FunctionBlockPtr &block, const py
 }
 
 FunctionBlockPtr Parser::ParseStatement(const FunctionBlockPtr &block, const py::object &node) {
-  TraceGuard trace_guard(GetLocation(node));
+  const auto &location = GetLocation(node);
+  TraceGuard trace_guard(location);
   auto node_type = ast_->GetNodeType(node);
 
   // Check the node type
   AstMainType nodeType = node_type->main_type();
   if (nodeType != AST_MAIN_TYPE_STMT) {
-    MS_LOG(INFO) << "Node type is error : " << nodeType;
+    MS_LOG(INFO) << "Node type is error: " << nodeType;
     return block;
   }
   // Call the process function
   std::string node_name = node_type->node_name();
-  MS_LOG(DEBUG) << "Ast node is " << node_name << ", location:" << GetLocation(node)->ToString();
+  MS_LOG(DEBUG) << "Ast node is " << node_name
+                << ", location: " << (location != nullptr ? location->ToString() : "none");
   if (stmt_method_map_.count(node_name) != 0) {
     auto stmt_block = (this->*stmt_method_map_[node_name])(block, node);
     return stmt_block;
@@ -972,17 +980,19 @@ FunctionBlockPtr Parser::ParseStatement(const FunctionBlockPtr &block, const py:
 
 AnfNodePtr Parser::ParseExprNode(const FunctionBlockPtr &block, const py::object &node) {
   MS_LOG(DEBUG) << "Process ast expr.";
-  TraceGuard trace_guard(GetLocation(node));
+  const auto &location = GetLocation(node);
+  TraceGuard trace_guard(location);
   auto node_type = ast_->GetNodeType(node);
   // Check the node type
   AstMainType node_main_type = node_type->main_type();
   if (node_main_type != AST_MAIN_TYPE_EXPR) {
     errcode_ = PARSE_NODE_TYPE_NO_MATCH;
-    MS_LOG(INTERNAL_EXCEPTION) << "Node type is error : " << node_main_type;
+    MS_LOG(INTERNAL_EXCEPTION) << "Node type is error: " << node_main_type;
   }
   // Call the process function
   const std::string &node_type_name = node_type->node_name();
-  MS_LOG(DEBUG) << "Ast node is " << node_type_name << ", location:" << GetLocation(node)->ToString();
+  MS_LOG(DEBUG) << "Ast node is " << node_type_name
+                << ", location: " << (location != nullptr ? location->ToString() : "none");
   if (expr_method_map_.count(node_type_name) != 0) {
     auto expr_node = (this->*expr_method_map_[node_type_name])(block, node);
     MS_LOG(DEBUG) << "Get parsed anf node:" << expr_node->DebugString();
@@ -1123,6 +1133,9 @@ FunctionBlockPtr Parser::ParseExpr(const FunctionBlockPtr &block, const py::obje
 }
 
 LocationPtr Parser::GetLocation(const py::object &node) const {
+  if (DebugMode::IsRelease()) {
+    return nullptr;
+  }
   MS_EXCEPTION_IF_NULL(ast_);
   py::list res = ast_->CallParserObjMethod(PYTHON_PARSE_GET_LOCATION, node);
   constexpr size_t list_size = 6;
@@ -1783,9 +1796,7 @@ AnfNodePtr Parser::ParseCall(const FunctionBlockPtr &block, const py::object &no
   ClassInstanceType class_tensor_type = CLASS_INSTANCE_TYPE_INVALID;
   if (class_tensor_object != nullptr) {
     auto call_location = GetLocation(node);
-    MS_EXCEPTION_IF_NULL(call_location);
-    const auto &comments = call_location->comments();
-    if (comments.empty()) {
+    if (call_location != nullptr && call_location->comments().empty()) {
       class_tensor_type = ClassInstanceType(
         ast_->CallParserObjMethod(PYTHON_PARSE_GET_CLASS_TENSOR_TYPE, *class_tensor_object).cast<int32_t>());
       AnfNodePtr new_call_function_node = nullptr;
@@ -2145,10 +2156,13 @@ AnfNodePtr Parser::ParseAttribute(const FunctionBlockPtr &block, const py::objec
   // Create the apply node
   AnfNodePtr attr_cnode = cur_fg->NewCNodeInOrder({op_node, value_node, attr_node});
 
-  auto value_id_str = GetLocation(value_body)->expr_src();
-  auto iter = setattr_nodes_map_.find(value_id_str);
-  if (iter != setattr_nodes_map_.end() && iter->second.find(attr_str) != iter->second.end()) {
-    attr_cnode->set_user_data<bool>(fallback::kObjectAttrChange, std::make_shared<bool>(true));
+  const auto &location = GetLocation(value_body);
+  if (location != nullptr) {
+    auto value_id_str = location->expr_src();
+    auto iter = setattr_nodes_map_.find(value_id_str);
+    if (iter != setattr_nodes_map_.end() && iter->second.find(attr_str) != iter->second.end()) {
+      attr_cnode->set_user_data<bool>(fallback::kObjectAttrChange, std::make_shared<bool>(true));
+    }
   }
 
   // Directly resolve the symbol.
@@ -2174,8 +2188,11 @@ AnfNodePtr Parser::ParseAttribute(const FunctionBlockPtr &block, const py::objec
       return pyexecute_node;
     }
   }
+  if (location == nullptr) {
+    return attr_cnode;
+  }
   // If getting other object, eg: obj.xx, find object from namespace by name
-  obj_name = GetLocation(value_body)->expr_src();
+  obj_name = location->expr_src();
   try {
     py::tuple namespace_info = ast_->CallParserObjMethod(PYTHON_PARSE_GET_NAMESPACE_SYMBOL, obj_name);
     constexpr size_t value_index = 2;
@@ -2192,7 +2209,7 @@ AnfNodePtr Parser::ParseAttribute(const FunctionBlockPtr &block, const py::objec
       attr_cnode = getattr_node;
     } else {
       // if getting attr from other obj, but did not find setattr before getattr, convert getattr later
-      (void)getattr_nodes_map_[GetLocation(value_body)->expr_src()][attr_str].emplace_back(attr_cnode);
+      (void)getattr_nodes_map_[location->expr_src()][attr_str].emplace_back(attr_cnode);
     }
     attr_cnode->set_user_data<py::object>("__getattr__", std::make_shared<py::object>(getattr_obj));
   }
@@ -2273,18 +2290,18 @@ AnfNodePtr Parser::ConnectSingleCompare(const FunctionBlockPtr &block, const Anf
   auto block_fg = block->func_graph();
   MS_EXCEPTION_IF_NULL(block_fg);
   {
-    TraceGuard guard(std::make_shared<TraceIfExpTrueBranch>(block_fg->debug_info()));
+    TraceGuard guard(MakeTraceInfo<TraceIfExpTrueBranch>(block_fg->debug_info()));
     true_block = MakeFunctionBlock();
   }
   {
-    TraceGuard guard(std::make_shared<TraceIfExpFalseBranch>(block_fg->debug_info()));
+    TraceGuard guard(MakeTraceInfo<TraceIfExpFalseBranch>(block_fg->debug_info()));
     false_block = MakeFunctionBlock();
   }
   MakeConditionBlocks(block, true_block, false_block);
   MS_EXCEPTION_IF_NULL(true_block->func_graph());
   MS_EXCEPTION_IF_NULL(false_block->func_graph());
   true_block->func_graph()->set_output(right_node);
-  TraceGuard trace_guard(std::make_shared<TraceCopy>(left_node->debug_info()));
+  TraceGuard trace_guard(MakeTraceInfo<TraceCopy>(left_node->debug_info()));
   false_block->func_graph()->set_output(left_node);
 
   AnfNodePtr cond_node = block->ForceToCondNode(left_node);
@@ -2317,11 +2334,11 @@ AnfNodePtr Parser::ProcessBoolOpValueList(const FunctionBlockPtr &block, const p
     FunctionBlockPtr false_block = nullptr;
     auto block_fg = block->func_graph();
     {
-      TraceGuard guard(std::make_shared<TraceIfExpTrueBranch>(block_fg->debug_info()));
+      TraceGuard guard(MakeTraceInfo<TraceIfExpTrueBranch>(block_fg->debug_info()));
       true_block = MakeFunctionBlock();
     }
     {
-      TraceGuard guard(std::make_shared<TraceIfExpFalseBranch>(block_fg->debug_info()));
+      TraceGuard guard(MakeTraceInfo<TraceIfExpFalseBranch>(block_fg->debug_info()));
       false_block = MakeFunctionBlock();
     }
     MakeConditionBlocks(block, true_block, false_block);
@@ -2857,7 +2874,9 @@ bool Parser::CheckBoolOpConstantCond(const FunctionBlockPtr &block, const py::ob
 bool Parser::GetConstantConditionFromComment(const FunctionBlockPtr &block, const py::object &if_node,
                                              bool *is_true_cond) const {
   auto location = GetLocation(if_node);
-  MS_EXCEPTION_IF_NULL(location);
+  if (location == nullptr) {
+    return false;
+  }
   const auto &comments = location->comments();
   if (comments.empty()) {
     return false;
@@ -2933,12 +2952,12 @@ FunctionBlockPtr Parser::ParseIf(const FunctionBlockPtr &block, const py::object
   auto block_fg = block->func_graph();
   MS_EXCEPTION_IF_NULL(block_fg);
   if (!is_bool_const_cond || is_true_cond) {
-    TraceGuard guard(std::make_shared<TraceIfStmtTrueBranch>(block_fg->debug_info()));
+    TraceGuard guard(MakeTraceInfo<TraceIfStmtTrueBranch>(block_fg->debug_info()));
     true_block = MakeFunctionBlock();
     MS_LOG(DEBUG) << "Make true branch, " << true_block->ToString();
   }
   if (!is_bool_const_cond || !is_true_cond) {
-    TraceGuard guard(std::make_shared<TraceIfStmtFalseBranch>(block_fg->debug_info()));
+    TraceGuard guard(MakeTraceInfo<TraceIfStmtFalseBranch>(block_fg->debug_info()));
     false_block = MakeFunctionBlock();
     MS_LOG(DEBUG) << "Make false branch, " << false_block->ToString();
   }
@@ -2958,7 +2977,7 @@ FunctionBlockPtr Parser::ParseIf(const FunctionBlockPtr &block, const py::object
   }
 
   {
-    TraceGuard guard(std::make_shared<TraceIfStmtAfterBranch>(block_fg->debug_info()));
+    TraceGuard guard(MakeTraceInfo<TraceIfStmtAfterBranch>(block_fg->debug_info()));
     after_block = MakeFunctionBlock();
   }
 
@@ -3065,18 +3084,18 @@ FunctionBlockPtr Parser::ParseWhile(const FunctionBlockPtr &block, const py::obj
   FunctionBlockPtr after_block = nullptr;
   MS_EXCEPTION_IF_NULL(block->func_graph());
   {
-    TraceGuard guard(std::make_shared<TraceWhileHeader>(block->func_graph()->debug_info()));
+    TraceGuard guard(MakeTraceInfo<TraceWhileHeader>(block->func_graph()->debug_info()));
     header_block = MakeFunctionBlock();
     auto func_graph = header_block->func_graph();
     MS_EXCEPTION_IF_NULL(func_graph);
     func_graph->set_flag(GRAPH_FLAG_IS_WHILE_HEADER, true);
   }
   {
-    TraceGuard guard(std::make_shared<TraceWhileBody>(block->func_graph()->debug_info()));
+    TraceGuard guard(MakeTraceInfo<TraceWhileBody>(block->func_graph()->debug_info()));
     body_block = MakeFunctionBlock();
   }
   {
-    TraceGuard guard(std::make_shared<TraceWhileAfter>(block->func_graph()->debug_info()));
+    TraceGuard guard(MakeTraceInfo<TraceWhileAfter>(block->func_graph()->debug_info()));
     after_block = MakeFunctionBlock();
   }
 
@@ -3091,7 +3110,7 @@ FunctionBlockPtr Parser::ParseWhile(const FunctionBlockPtr &block, const py::obj
   AnfNodePtr condition_node = ParseExprNode(header_block, test_node);
   AnfNodePtr while_condition_node = nullptr;
   {
-    TraceGuard trace_guard(std::make_shared<TraceForceWhileCond>(condition_node->debug_info()));
+    TraceGuard trace_guard(MakeTraceInfo<TraceForceWhileCond>(condition_node->debug_info()));
     while_condition_node = header_block->ForceToCondNode(condition_node, true);
   }
   (void)header_block->ConditionalJump(while_condition_node, body_block, after_block);
@@ -3159,8 +3178,7 @@ FunctionBlockPtr Parser::ParseForUnroll(const FunctionBlockPtr &block, const py:
   MS_EXCEPTION_IF_NULL(origin_iter_node);
   auto iter_node = block->func_graph()->NewCNodeInOrder({op_iter, origin_iter_node});
   CNodePtr scalar_len = block->func_graph()->NewCNodeInOrder({op_len, iter_node});
-  FunctionBlockPtr header_block =
-    MakeFunctionBlock(std::make_shared<TraceForHeader>(block->func_graph()->debug_info()));
+  FunctionBlockPtr header_block = MakeFunctionBlock(MakeTraceInfo<TraceForHeader>(block->func_graph()->debug_info()));
   MS_EXCEPTION_IF_NULL(header_block);
   // Create loop variable 'i'
   ParameterPtr loop_var = header_block->func_graph()->add_parameter();
@@ -3170,7 +3188,7 @@ FunctionBlockPtr Parser::ParseForUnroll(const FunctionBlockPtr &block, const py:
   CNodePtr cond_node = header_block->func_graph()->NewCNodeInOrder({NewValueNode(less_op), loop_var, scalar_len});
 
   // Generate the body of the for statement
-  FunctionBlockPtr body_block = MakeFunctionBlock(std::make_shared<TraceForBody>(block->func_graph()->debug_info()));
+  FunctionBlockPtr body_block = MakeFunctionBlock(MakeTraceInfo<TraceForBody>(block->func_graph()->debug_info()));
   MS_EXCEPTION_IF_NULL(body_block);
   body_block->AddPrevBlock(header_block);
   // Create 'x = xs[i]'
@@ -3190,12 +3208,14 @@ FunctionBlockPtr Parser::ParseForUnroll(const FunctionBlockPtr &block, const py:
   body_block->WriteVariable(loop_var->name(), loop_var_inc);
 
   // Link the variable name with the target
-  auto it_info = std::make_shared<TraceIterator>(loop_var_inc->debug_info());
-  loop_var->debug_info()->set_trace_info(it_info);
+  auto it_info = MakeTraceInfo<TraceIterator>(loop_var_inc->debug_info());
+  if (loop_var->debug_info() != nullptr) {
+    loop_var->debug_info()->set_trace_info(it_info);
+  }
 
   FunctionBlockPtr after_block = nullptr;
   {
-    TraceGuard guard(std::make_shared<TraceForAfter>(block->func_graph()->debug_info()));
+    TraceGuard guard(MakeTraceInfo<TraceForAfter>(block->func_graph()->debug_info()));
     after_block = MakeFunctionBlock();
   }
   MS_EXCEPTION_IF_NULL(after_block);
@@ -3234,8 +3254,7 @@ FunctionBlockPtr Parser::ParseForUnroll(const FunctionBlockPtr &block, const py:
 FunctionBlockPtr Parser::ParseForRepeat(const FunctionBlockPtr &block, const py::object &node) {
   MS_LOG(DEBUG) << "Process ast For by loop variable";
   MS_EXCEPTION_IF_NULL(block);
-  FunctionBlockPtr header_block =
-    MakeFunctionBlock(std::make_shared<TraceForHeader>(block->func_graph()->debug_info()));
+  FunctionBlockPtr header_block = MakeFunctionBlock(MakeTraceInfo<TraceForHeader>(block->func_graph()->debug_info()));
   MS_EXCEPTION_IF_NULL(header_block);
 
   // Create statement 'len(xs)'
@@ -3256,7 +3275,7 @@ FunctionBlockPtr Parser::ParseForRepeat(const FunctionBlockPtr &block, const py:
   header_block->func_graph()->set_flag(FUNC_GRAPH_FLAG_ROLLED_HEADER, true);
 
   // Generate the body of the for statement
-  FunctionBlockPtr body_block = MakeFunctionBlock(std::make_shared<TraceForBody>(block->func_graph()->debug_info()));
+  FunctionBlockPtr body_block = MakeFunctionBlock(MakeTraceInfo<TraceForBody>(block->func_graph()->debug_info()));
   MS_EXCEPTION_IF_NULL(body_block);
   body_block->AddPrevBlock(header_block);
   // Create 'x = xs[i]'
@@ -3279,12 +3298,14 @@ FunctionBlockPtr Parser::ParseForRepeat(const FunctionBlockPtr &block, const py:
   body_block->WriteVariable(loop_var->name(), loop_var_inc);
 
   // Link the variable name with the target
-  auto it_info = std::make_shared<TraceIterator>(loop_var_inc->debug_info());
-  loop_var->debug_info()->set_trace_info(it_info);
+  auto it_info = MakeTraceInfo<TraceIterator>(loop_var_inc->debug_info());
+  if (loop_var->debug_info() != nullptr) {
+    loop_var->debug_info()->set_trace_info(it_info);
+  }
 
   FunctionBlockPtr after_block = nullptr;
   {
-    TraceGuard guard(std::make_shared<TraceForAfter>(block->func_graph()->debug_info()));
+    TraceGuard guard(MakeTraceInfo<TraceForAfter>(block->func_graph()->debug_info()));
     after_block = MakeFunctionBlock();
   }
   MS_EXCEPTION_IF_NULL(after_block);
@@ -3296,7 +3317,7 @@ FunctionBlockPtr Parser::ParseForRepeat(const FunctionBlockPtr &block, const py:
 
   // Generate the body of the for statement
   FunctionBlockPtr rolled_body_block =
-    MakeFunctionBlock(std::make_shared<TraceForRolledBody>(body_block->func_graph()->debug_info()));
+    MakeFunctionBlock(MakeTraceInfo<TraceForRolledBody>(body_block->func_graph()->debug_info()));
   MS_EXCEPTION_IF_NULL(rolled_body_block);
 
   rolled_body_block->Mature();
@@ -3358,11 +3379,11 @@ AnfNodePtr Parser::ParseIfExp(const FunctionBlockPtr &block, const py::object &n
   FunctionBlockPtr false_block = nullptr;
   MS_EXCEPTION_IF_NULL(block->func_graph());
   {
-    TraceGuard guard(std::make_shared<TraceIfExpTrueBranch>(block->func_graph()->debug_info()));
+    TraceGuard guard(MakeTraceInfo<TraceIfExpTrueBranch>(block->func_graph()->debug_info()));
     true_block = MakeFunctionBlock();
   }
   {
-    TraceGuard guard(std::make_shared<TraceIfExpFalseBranch>(block->func_graph()->debug_info()));
+    TraceGuard guard(MakeTraceInfo<TraceIfExpFalseBranch>(block->func_graph()->debug_info()));
     false_block = MakeFunctionBlock();
   }
 
@@ -3399,7 +3420,7 @@ FunctionBlockPtr Parser::ParseListCompIter(const FunctionBlockPtr &block, const 
                                            const py::object &generator_node) {
   // Create a header block.
   MS_EXCEPTION_IF_NULL(block->func_graph());
-  FunctionBlockPtr top_block = MakeFunctionBlock(std::make_shared<TraceListComp>(block->func_graph()->debug_info()));
+  FunctionBlockPtr top_block = MakeFunctionBlock(MakeTraceInfo<TraceListComp>(block->func_graph()->debug_info()));
   top_block->AddPrevBlock(block);
   // Handle iter attribute.
   py::object iter_node = python_adapter::GetPyObjAttr(generator_node, "iter");
@@ -3412,7 +3433,7 @@ FunctionBlockPtr Parser::ParseListCompIter(const FunctionBlockPtr &block, const 
 
   // Create header graph.
   FunctionBlockPtr list_header_block =
-    MakeFunctionBlock(std::make_shared<TraceForHeader>(block->func_graph()->debug_info()));
+    MakeFunctionBlock(MakeTraceInfo<TraceForHeader>(block->func_graph()->debug_info()));
   MS_EXCEPTION_IF_NULL(list_header_block);
 
   // Create hasNext apply.
@@ -3421,23 +3442,24 @@ FunctionBlockPtr Parser::ParseListCompIter(const FunctionBlockPtr &block, const 
   ParameterPtr iter_param = list_header_block->func_graph()->add_parameter();
   constexpr auto iter_param_name = "iter";
   iter_param->set_name(iter_param_name);
-  MS_EXCEPTION_IF_NULL(iter_param->debug_info());
-  iter_param->debug_info()->set_name(iter_param_name);
+  if (iter_param->debug_info() != nullptr) {
+    iter_param->debug_info()->set_name(iter_param_name);
+  }
   CNodePtr cond_apply = list_header_block->func_graph()->NewCNodeInOrder({op_hasnext, iter_param});
 
   // Call the header graph with iter.
   ParameterPtr list_param = list_header_block->func_graph()->add_parameter();
   constexpr auto list_param_name = "list";
   list_param->set_name(list_param_name);
-  MS_EXCEPTION_IF_NULL(list_param->debug_info());
-  list_param->debug_info()->set_name(list_param_name);
+  if (list_param->debug_info() != nullptr) {
+    list_param->debug_info()->set_name(list_param_name);
+  }
   auto empty_list = std::vector<ValuePtr>();
   AnfNodePtr empty_list_node = NewValueNode(std::make_shared<ValueList>(empty_list));
   top_block->Jump(list_header_block, {iter_anf_node, empty_list_node});
 
   // Create body graph.
-  FunctionBlockPtr list_body_block =
-    MakeFunctionBlock(std::make_shared<TraceForBody>(block->func_graph()->debug_info()));
+  FunctionBlockPtr list_body_block = MakeFunctionBlock(MakeTraceInfo<TraceForBody>(block->func_graph()->debug_info()));
   MS_EXCEPTION_IF_NULL(list_body_block);
   list_body_block->AddPrevBlock(list_header_block);
   AnfNodePtr op_next = top_block->MakeResolveOperation(NAMED_PRIMITIVE_NEXT);
@@ -3458,7 +3480,7 @@ FunctionBlockPtr Parser::ParseListCompIter(const FunctionBlockPtr &block, const 
 
   // Create after graph.
   FunctionBlockPtr list_after_block =
-    MakeFunctionBlock(std::make_shared<TraceForAfter>(block->func_graph()->debug_info()));
+    MakeFunctionBlock(MakeTraceInfo<TraceForAfter>(block->func_graph()->debug_info()));
   MS_EXCEPTION_IF_NULL(list_after_block);
   list_after_block->AddPrevBlock(list_header_block);
   // Return the list in after graph.
@@ -3488,7 +3510,7 @@ AnfNodePtr Parser::ParseListCompIfs(const FunctionBlockPtr &list_body_block, con
 
   // Create if-true graph.
   FunctionBlockPtr if_true_block =
-    MakeFunctionBlock(std::make_shared<TraceIfStmtTrueBranch>(list_body_block->func_graph()->debug_info()));
+    MakeFunctionBlock(MakeTraceInfo<TraceIfStmtTrueBranch>(list_body_block->func_graph()->debug_info()));
   MS_EXCEPTION_IF_NULL(if_true_block);
   if_true_block->AddPrevBlock(list_body_block);
   // Handle elt attribute in body block.
@@ -3508,7 +3530,7 @@ AnfNodePtr Parser::ParseListCompIfs(const FunctionBlockPtr &list_body_block, con
 
   // Create if-false graph.
   FunctionBlockPtr if_false_block =
-    MakeFunctionBlock(std::make_shared<TraceIfStmtFalseBranch>(list_body_block->func_graph()->debug_info()));
+    MakeFunctionBlock(MakeTraceInfo<TraceIfStmtFalseBranch>(list_body_block->func_graph()->debug_info()));
   MS_EXCEPTION_IF_NULL(if_false_block);
   if_false_block->AddPrevBlock(list_body_block);
   // Return original list in false branch graph.
@@ -3574,7 +3596,7 @@ FunctionBlockPtr Parser::ParseDictCompIter(const FunctionBlockPtr &block, const 
   // Create a header block.
   MS_EXCEPTION_IF_NULL(block);
   MS_EXCEPTION_IF_NULL(block->func_graph());
-  FunctionBlockPtr top_block = MakeFunctionBlock(std::make_shared<TraceDictComp>(block->func_graph()->debug_info()));
+  FunctionBlockPtr top_block = MakeFunctionBlock(MakeTraceInfo<TraceDictComp>(block->func_graph()->debug_info()));
   MS_EXCEPTION_IF_NULL(top_block);
   top_block->AddPrevBlock(block);
   // Handle iter attribute.
@@ -3587,23 +3609,25 @@ FunctionBlockPtr Parser::ParseDictCompIter(const FunctionBlockPtr &block, const 
 
   // Create header graph.
   FunctionBlockPtr dict_header_block =
-    MakeFunctionBlock(std::make_shared<TraceForHeader>(block->func_graph()->debug_info()));
+    MakeFunctionBlock(MakeTraceInfo<TraceForHeader>(block->func_graph()->debug_info()));
   MS_EXCEPTION_IF_NULL(dict_header_block);
   AnfNodePtr op_hasnext = top_block->MakeResolveOperation(NAMED_PRIMITIVE_HASNEXT);
   MS_EXCEPTION_IF_NULL(dict_header_block->func_graph());
   ParameterPtr iter_param = dict_header_block->func_graph()->add_parameter();
   constexpr auto iter_param_name = "iter";
   iter_param->set_name(iter_param_name);
-  MS_EXCEPTION_IF_NULL(iter_param->debug_info());
-  iter_param->debug_info()->set_name(iter_param_name);
+  if (iter_param->debug_info() != nullptr) {
+    iter_param->debug_info()->set_name(iter_param_name);
+  }
   CNodePtr cond_apply = dict_header_block->func_graph()->NewCNodeInOrder({op_hasnext, iter_param});
 
   // Call the header graph with iter.
   ParameterPtr dict_param = dict_header_block->func_graph()->add_parameter();
   constexpr auto dict_param_name = "dict";
   dict_param->set_name(dict_param_name);
-  MS_EXCEPTION_IF_NULL(dict_param->debug_info());
-  dict_param->debug_info()->set_name(dict_param_name);
+  if (dict_param->debug_info() != nullptr) {
+    dict_param->debug_info()->set_name(dict_param_name);
+  }
   auto empty_key = std::vector<ValuePtr>();
   AnfNodePtr empty_key_node = NewValueNode(std::make_shared<ValueTuple>(empty_key));
   auto empty_value = std::vector<ValuePtr>();
@@ -3613,8 +3637,7 @@ FunctionBlockPtr Parser::ParseDictCompIter(const FunctionBlockPtr &block, const 
   top_block->Jump(dict_header_block, {iter_anf_node, empty_dict_node});
 
   // Create body graph.
-  FunctionBlockPtr dict_body_block =
-    MakeFunctionBlock(std::make_shared<TraceForBody>(block->func_graph()->debug_info()));
+  FunctionBlockPtr dict_body_block = MakeFunctionBlock(MakeTraceInfo<TraceForBody>(block->func_graph()->debug_info()));
   MS_EXCEPTION_IF_NULL(dict_body_block);
   dict_body_block->AddPrevBlock(dict_header_block);
   AnfNodePtr op_next = top_block->MakeResolveOperation(NAMED_PRIMITIVE_NEXT);
@@ -3635,7 +3658,7 @@ FunctionBlockPtr Parser::ParseDictCompIter(const FunctionBlockPtr &block, const 
 
   // Create after graph.
   FunctionBlockPtr dict_after_block =
-    MakeFunctionBlock(std::make_shared<TraceForAfter>(block->func_graph()->debug_info()));
+    MakeFunctionBlock(MakeTraceInfo<TraceForAfter>(block->func_graph()->debug_info()));
   MS_EXCEPTION_IF_NULL(dict_after_block);
   dict_after_block->AddPrevBlock(dict_header_block);
   // Return the dict in after graph.
@@ -3666,7 +3689,7 @@ AnfNodePtr Parser::ParseDictCompIfs(const FunctionBlockPtr &dict_body_block, con
   // Create if-true graph.
   MS_EXCEPTION_IF_NULL(dict_body_block->func_graph());
   FunctionBlockPtr if_true_block =
-    MakeFunctionBlock(std::make_shared<TraceIfStmtTrueBranch>(dict_body_block->func_graph()->debug_info()));
+    MakeFunctionBlock(MakeTraceInfo<TraceIfStmtTrueBranch>(dict_body_block->func_graph()->debug_info()));
   MS_EXCEPTION_IF_NULL(if_true_block);
   if_true_block->AddPrevBlock(dict_body_block);
   // Handle key, value attribute in body block.
@@ -3698,7 +3721,7 @@ AnfNodePtr Parser::ParseDictCompIfs(const FunctionBlockPtr &dict_body_block, con
 
   // Create if-false graph.
   FunctionBlockPtr if_false_block =
-    MakeFunctionBlock(std::make_shared<TraceIfStmtFalseBranch>(dict_body_block->func_graph()->debug_info()));
+    MakeFunctionBlock(MakeTraceInfo<TraceIfStmtFalseBranch>(dict_body_block->func_graph()->debug_info()));
   MS_EXCEPTION_IF_NULL(if_false_block);
   if_false_block->AddPrevBlock(dict_body_block);
   // Return original dict in false branch graph.
@@ -3817,8 +3840,9 @@ void Parser::HandleAssignStarred(const FunctionBlockPtr &block, const py::object
   py::object value_object = python_adapter::GetPyObjAttr(target, "value");
   py::str name = python_adapter::GetPyObjAttr(value_object, "id");
   std::string name_id = name;
-  MS_EXCEPTION_IF_NULL(assigned_node->debug_info());
-  assigned_node->debug_info()->set_name(name_id);
+  if (assigned_node->debug_info() != nullptr) {
+    assigned_node->debug_info()->set_name(name_id);
+  }
   MS_LOG(DEBUG) << "Assign name: `" << name_id << "` to node: " << assigned_node->DebugString();
   block->WriteVariable(name_id, assigned_node);
 }
@@ -3830,8 +3854,9 @@ void Parser::HandleAssignName(const FunctionBlockPtr &block, const py::object &t
   py::str name = python_adapter::GetPyObjAttr(target, "id");
   std::string name_id = name;
 
-  MS_EXCEPTION_IF_NULL(assigned_node->debug_info());
-  assigned_node->debug_info()->set_name(name_id);
+  if (assigned_node->debug_info() != nullptr) {
+    assigned_node->debug_info()->set_name(name_id);
+  }
   // Set the debug name of the constant graph
   if (IsValueNode<FuncGraph>(assigned_node)) {
     // The value should be graph
@@ -4007,7 +4032,8 @@ void Parser::HandleAssignClassMember(const FunctionBlockPtr &block, const py::ob
                                      const AnfNodePtr &value_node) {
   MS_EXCEPTION_IF_NULL(block);
   const py::object target_obj = python_adapter::GetPyObjAttr(target, "value");
-  TraceGuard trace_guard(GetLocation(target_obj));
+  const auto &location = GetLocation(target_obj);
+  TraceGuard trace_guard(location);
   std::string target_id_str;
   AnfNodePtr target_node = nullptr;
   auto node_type = ast()->GetNodeType(target_obj);
@@ -4016,11 +4042,15 @@ void Parser::HandleAssignClassMember(const FunctionBlockPtr &block, const py::ob
   if (node_type_name == "Attribute") {
     // Prepare for setattr with nested getattr target, parse getattr firstly.
     target_node = ParseExprNode(block, target_obj);
-    target_id_str = GetLocation(target_obj)->expr_src();
+    if (location != nullptr) {
+      target_id_str = location->expr_src();
+    }
   } else if (node_type_name == "Call") {
     // Prepare for setattr with nested 'getattr' call target, parse 'getattr' call firstly.
     target_node = ParseExprNode(block, target_obj);
-    target_id_str = GetLocation(target_obj)->expr_src();
+    if (location != nullptr) {
+      target_id_str = location->expr_src();
+    }
   } else if (node_type_name == "Name") {
     if (!py::hasattr(target_obj, "id")) {
       MS_LOG(INTERNAL_EXCEPTION) << "Wrong ast, target: " << target;
@@ -4415,7 +4445,7 @@ FunctionBlockPtr Parser::ParseBreak(const FunctionBlockPtr &block, const py::obj
   if (loop.end == nullptr) {
     // Create end_block if it is not existed.
     MS_EXCEPTION_IF_NULL(block->func_graph());
-    TraceGuard trace_guard(std::make_shared<TraceLoopEnd>(block->func_graph()->debug_info()));
+    TraceGuard trace_guard(MakeTraceInfo<TraceLoopEnd>(block->func_graph()->debug_info()));
     loop.end = MakeFunctionBlock();
   }
   block->set_break_continue_statement_inside();
@@ -4505,7 +4535,7 @@ FunctionBlockPtr Parser::ParseAssert(const FunctionBlockPtr &block, const py::ob
   AnfNodePtr condition_node = ParseExprNode(block, test_node);
 
   AnfNodePtr bool_node = block->ForceToCondNode(condition_node);
-  TraceGuard guard(std::make_shared<TraceAssert>(block->func_graph()->debug_info()));
+  TraceGuard guard(MakeTraceInfo<TraceAssert>(block->func_graph()->debug_info()));
   TraceGuard location_guard(GetLocation(node));
   FunctionBlockPtr true_block = MakeFunctionBlock();
   FunctionBlockPtr false_block = MakeFunctionBlock();

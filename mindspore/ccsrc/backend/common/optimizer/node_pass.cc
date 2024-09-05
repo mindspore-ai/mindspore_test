@@ -202,7 +202,7 @@ void GenIndex(const FuncGraphPtr &func_graph, const FuncGraphIndexPtr &func_grap
       continue;
     }
     (void)seen_node.insert(node);
-    TraceGuard guard(std::make_shared<TraceOpt>(node->debug_info()));
+    TraceGuard guard(MakeTraceInfo<TraceOpt>(node->debug_info()));
 
     if (IsValueNode<FuncGraph>(node)) {
       auto const_func_graph = GetValueNode<FuncGraphPtr>(node);
@@ -232,7 +232,7 @@ bool NodePass::ProcessFastPassNode(const AnfNodePtr &node, const FuncGraphPtr &f
     MS_LOG(EXCEPTION) << "Node to Funcgraph map can't find node: " << node->fullname_with_scope();
   }
   auto fg = iter->second.lock();
-  TraceGuard guard(std::make_shared<TraceOpt>(node->debug_info()));
+  TraceGuard guard(MakeTraceInfo<TraceOpt>(node->debug_info()));
   auto degree_iter = func_graph_index->node_degree_.find(node);
   if (degree_iter == func_graph_index->node_degree_.end()) {
     MS_LOG(EXCEPTION) << "Node degree map can't find node: " << node->fullname_with_scope();
@@ -320,7 +320,7 @@ bool NodePass::ProcessPass(const FuncGraphPtr &func_graph, const FuncGraphManage
       continue;
     }
     (void)seen_node.insert(node);
-    TraceGuard guard(std::make_shared<TraceOpt>(node->debug_info()));
+    TraceGuard guard(MakeTraceInfo<TraceOpt>(node->debug_info()));
     // we may update return value in some pass.
     MS_EXCEPTION_IF_NULL(fg);
     auto origin_output = fg->output();

@@ -336,8 +336,10 @@ void BaseDigraph::SubGraph(const FuncGraphPtr &key, const std::shared_ptr<BaseDi
     return;
   }
 
-  MS_EXCEPTION_IF_NULL(key->debug_info());
-  std::string label = key->debug_info()->debug_name();
+  std::string label;
+  if (key->debug_info() != nullptr) {
+    label = key->debug_info()->debug_name();
+  }
   if (label.empty()) {
     label = gsub->name();
   }
@@ -517,11 +519,14 @@ void Digraph::Node(const AnfNodePtr &node, int id) {
   } else {
     buffer_ << "label=\"" << node->ToString();
     if (IsValueNode<FuncGraph>(node)) {
-      FuncGraphPtr nextNet = GetValueNode<FuncGraphPtr>(node);
-      MS_EXCEPTION_IF_NULL(nextNet->debug_info());
-      std::string nextNetName = nextNet->debug_info()->debug_name();
-      if (!nextNetName.empty()) {
-        buffer_ << "[" << nextNet->debug_info()->debug_name().c_str() << "]";
+      FuncGraphPtr next_net = GetValueNode<FuncGraphPtr>(node);
+      MS_EXCEPTION_IF_NULL(next_net->debug_info());
+      std::string next_net_name;
+      if (next_net->debug_info() != nullptr) {
+        next_net_name = next_net->debug_info()->debug_name();
+      }
+      if (!next_net_name.empty()) {
+        buffer_ << "[" << next_net_name << "]";
       }
     }
     buffer_ << "\","

@@ -240,7 +240,7 @@ void Validate(const FuncGraphPtr &func_graph) {
   ValidateTopGraphOutput(func_graph->output());
   const auto &all_nodes = TopoSort(func_graph->return_node(), SuccDeeperSimple);
   for (auto node : all_nodes) {
-    TraceGuard guard(std::make_shared<TraceCopy>(node->debug_info()));
+    TraceGuard guard(MakeTraceInfo<TraceCopy>(node->debug_info()));
     CheckAssignReturnValue(node);
     while (IsPrimitiveCNode(node, prim::kPrimReturn) || IsPrimitiveCNode(node, prim::kPrimDepend)) {
       node = node->cast_ptr<CNode>()->input(1);
