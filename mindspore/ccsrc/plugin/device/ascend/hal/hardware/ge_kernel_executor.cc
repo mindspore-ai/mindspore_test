@@ -910,7 +910,7 @@ void GeKernelExecutor::OptimizeGraph(const FuncGraphPtr &graph) const {
   if (kernel_graph->is_graph_run_mode() && IsEnableRefMode()) {
     return;
   }
-  profiler::CollectHostInfo("Ascend", "Graph Optimization", "GeOptimizeGraph", 1, 0, 0);
+  uint64_t start_time = profiler::GetClockSyscnt();
   std::set<KernelGraphPtr> memo;
   GEGraphOptimization::GetInstance().OptimizeACLGraph(kernel_graph, &memo);
   memo.clear();
@@ -921,7 +921,9 @@ void GeKernelExecutor::OptimizeGraph(const FuncGraphPtr &graph) const {
   InlineCallGraph(kernel_graph);
   memo.clear();
   InlineSwitchGraph(kernel_graph, &memo);
-  profiler::CollectHostInfo("Ascend", "Graph Optimization", "GeOptimizeGraph", 1, 0, 1);
+  (void)profiler::CollectHostInfo("Ascend", "Graph Optimization", "GeOptimizeGraph", start_time,
+                                  profiler::GetClockSyscnt(), 0);
+  OptimizeExecutionOrder(NOT_NULL(graph));
 }
 
 void GeKernelExecutor::CreateKernel(const std::vector<CNodePtr> &nodes) const {
@@ -939,7 +941,7 @@ void GeKernelExecutor::CreateKernel(const std::vector<CNodePtr> &nodes) const {
   }
   // build kernel mod
   MS_LOG(DEBUG) << "Status record: start create kernel.";
-  profiler::CollectHostInfo("Ascend", "CreateKernel", "CreateGeKernel", 1, 0, 0);
+  uint64_t start_time = profiler::GetClockSyscnt();
   PROF_START(create_kernel);
   SetKernelInfoBeforeCreateKernel(nodes);
   auto ret = GenerateKernelMod(nodes, graph_executor_);
@@ -949,7 +951,8 @@ void GeKernelExecutor::CreateKernel(const std::vector<CNodePtr> &nodes) const {
   GEGraphOptimization::GetInstance().OptimizeACLGraphAfterCreateKernel(kernel_graph);
   OptimizeExecutionOrder(NOT_NULL(func_graph));
   PROF_END(create_kernel);
-  profiler::CollectHostInfo("Ascend", "CreateKernel", "CreateGeKernel", 1, 0, 1);
+  (void)profiler::CollectHostInfo("Ascend", "CreateKernel", "CreateGeKernel", start_time, profiler::GetClockSyscnt(),
+                                  1);
   MS_LOG(DEBUG) << "Status record: end create kernel.";
 }
 
@@ -1064,7 +1067,7 @@ void CreateEventKernelMod(const KernelGraphPtr &kernel_graph) {
 
 void GeKernelExecutor::PreprocessBeforeRun(const FuncGraphPtr &graph) const {
   MS_EXCEPTION_IF_NULL(graph);
-  profiler::CollectHostInfo("Ascend", "PreprocessBeforeRun", "GePreprocess", 1, 0, 0);
+  uint64_t start_time = profiler::GetClockSyscnt();
   auto kernel_graph = graph->cast<KernelGraphPtr>();
   MS_EXCEPTION_IF_NULL(kernel_graph);
   const auto &nodes = kernel_graph->execution_order();
@@ -1080,7 +1083,8 @@ void GeKernelExecutor::PreprocessBeforeRun(const FuncGraphPtr &graph) const {
     }
     MS_EXCEPTION_IF_NULL(graph_executor_);
     graph_executor_->PreprocessBeforeRun(kernel_graph);
-    profiler::CollectHostInfo("Ascend", "PreprocessBeforeRun", "GePreprocess", 1, 0, 1);
+    (void)profiler::CollectHostInfo("Ascend", "PreprocessBeforeRun", "GePreprocess", start_time,
+                                    profiler::GetClockSyscnt(), 1);
     return;
   }
 
@@ -1116,7 +1120,8 @@ void GeKernelExecutor::PreprocessBeforeRun(const FuncGraphPtr &graph) const {
   InitGeMemory(kernel_graph);
   kernel_graph->PrintGraphExecuteOrder();
   DoSomas(NOT_NULL(graph));
-  profiler::CollectHostInfo("Ascend", "PreprocessBeforeRun", "GePreprocess", 1, 0, 1);
+  (void)profiler::CollectHostInfo("Ascend", "PreprocessBeforeRun", "GePreprocess", start_time,
+                                  profiler::GetClockSyscnt(), 1);
 }
 
 bool GeKernelExecutor::PySyncRuning(void *stream) const {

@@ -149,7 +149,8 @@ class BaseTimelineGenerator:
         """Get process and thread config."""
         device_process_label = self._get_device_process_label()
         return [
-            {"name": "process_labels", "ph": "M", "pid": self._device_id, "args": {"labels": device_process_label}},
+            {"name": "process_labels", "ph": "M", "pid": f'2{self._device_id}',
+             "args": {"labels": device_process_label}},
             {"name": "process_labels", "ph": "M", "pid": self._AI_CPU_PID, "args": {"labels": self._aicpu_op_label}},
             {"name": "process_labels", "ph": "M", "pid": self._COMMUNICATION_OP_PID,
              "args": {"labels": "Communication Op"}},
@@ -160,7 +161,7 @@ class BaseTimelineGenerator:
             {"name": "process_labels", "ph": "M", "pid": self._OP_GPU_ACTIVITY_PID,
              "args": {"labels": "Activity Op"}},
 
-            {"name": "process_sort_index", "ph": "M", "pid": self._device_id, "args": {"sort_index": 0}},
+            {"name": "process_sort_index", "ph": "M", "pid": f'2{self._device_id}', "args": {"sort_index": 2}},
             {"name": "process_sort_index", "ph": "M", "pid": self._AI_CPU_PID, "args": {"sort_index": 10}},
             {"name": "process_sort_index", "ph": "M", "pid": self._COMMUNICATION_OP_PID, "args": {"sort_index": 20}},
             {"name": "process_sort_index", "ph": "M", "pid": self._HOST_CPU_PID, "args": {"sort_index": 30}},
@@ -176,9 +177,9 @@ class BaseTimelineGenerator:
              "args": {"name": "Merged Communication Op"}},
             {"name": "thread_name", "ph": "M", "pid": self._OP_OVERLAP_PID, "tid": self._FREE_TIME_TID,
              "args": {"name": "Free Time"}},
-            {"name": "thread_name", "ph": "M", "pid": self._device_id, "tid": self._STEPS_TID,
+            {"name": "thread_name", "ph": "M", "pid": f'2{self._device_id}', "tid": self._STEPS_TID,
              "args": {"name": "Steps"}},
-            {"name": "thread_name", "ph": "M", "pid": self._device_id, "tid": self._SINGLE_TID,
+            {"name": "thread_name", "ph": "M", "pid": f'2{self._device_id}', "tid": self._SINGLE_TID,
              "args": {"name": "Ops"}},
 
             {"name": "thread_sort_index", "ph": "M", "pid": self._OP_OVERLAP_PID, "tid": self._MERGED_COMPUTATION_TID,
@@ -189,19 +190,19 @@ class BaseTimelineGenerator:
              "args": {"sort_index": self._MERGED_COMMUNICATION_TID}},
             {"name": "thread_sort_index", "ph": "M", "pid": self._OP_OVERLAP_PID, "tid": self._FREE_TIME_TID,
              "args": {"sort_index": self._FREE_TIME_TID}},
-            {"name": "thread_sort_index", "ph": "M", "pid": self._device_id, "tid": self._STEPS_TID,
+            {"name": "thread_sort_index", "ph": "M", "pid": f'2{self._device_id}', "tid": self._STEPS_TID,
              "args": {"sort_index": self._STEPS_SORT_INDEX}},
         ]
 
-    def write_timeline(self, size_limit=SIZE_LIMIT_DEFAULT):
+    def write_timeline(self):
         """Load data according to the parsed profiling files."""
         # Write timeline to file.
         logger.info('Writing timeline file...')
-        timeline_meta = self.write_timeline_to_json_by_limitation(size_limit)
+        timeline_meta = self.write_timeline_to_json_by_limitation()
         logger.info('Finished file writing!')
         return timeline_meta
 
-    def write_timeline_to_json_by_limitation(self, size_limit):
+    def write_timeline_to_json_by_limitation(self):
         """Write timeline to json by limitation."""
         display_file_path = os.path.join(
             self._profiling_dir,
@@ -210,22 +211,15 @@ class BaseTimelineGenerator:
         display_file_path = validate_and_normalize_path(display_file_path)
 
         try:
+            timeline_data = self.get_thread_label_name()
+            for data in self._timeline_meta:
+                timeline_data.append(data)
+                if "scope_level" in data.keys():
+                    self._max_scope_name_num = max(
+                        self._max_scope_name_num, data["scope_level"] + 1)
+
             with os.fdopen(os.open(display_file_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), 'w') as json_file:
-                json_file.write('[')
-                for _, item in enumerate(self._timeline_meta):
-                    item_json = json.dumps([item], indent=self.indent)
-                    item_json = item_json.lstrip('[').rstrip('\n]')
-                    json_file.write(item_json)
-                    if "scope_level" in item.keys():
-                        self._max_scope_name_num = max(
-                            self._max_scope_name_num, item["scope_level"] + 1)
-                    file_size = os.path.getsize(display_file_path)
-                    json_file.write(',')
-                    if file_size > size_limit:
-                        break
-                label_name_json = json.dumps(self.get_thread_label_name(), indent=self.indent)
-                label_name_json = label_name_json.lstrip('[')
-                json_file.write(label_name_json)
+                json.dump(timeline_data, json_file, indent=self.indent)
                 os.chmod(display_file_path, stat.S_IREAD | stat.S_IWRITE)
             return self._timeline_meta
         except (IOError, OSError) as err:
@@ -317,7 +311,7 @@ class BaseTimelineGenerator:
         """Update format meta data which control the display arrange and map the thread name."""
         thread_name_meta_data = {
             "name": "thread_name",
-            "pid": int(self._device_id),
+            "pid": int(f'2{self._device_id}'),
             "tid": 100000,
             "ts": 0,
             "ph": "M",

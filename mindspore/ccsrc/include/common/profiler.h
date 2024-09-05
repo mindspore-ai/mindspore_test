@@ -327,6 +327,24 @@ struct StepInfo {
 using StepInfoPtr = std::shared_ptr<StepInfo>;
 
 struct ProfilerData {
+  ProfilerData(const std::string &module, const std::string &event, const std::string &op_name, uint64_t start_time,
+               uint64_t end_time, int8_t level, const std::map<std::string, std::string> &custom_info = {})
+      : is_graph_data_(true),
+        module_graph_(module),
+        event_graph_(event),
+        op_name_(op_name),
+        start_time_(start_time),
+        end_time_(end_time),
+        level_(level),
+        custom_info_(custom_info),
+#if !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && !defined(ANDROID) && !defined(__APPLE__)
+        tid_(LongToUlong(syscall(SYS_gettid))),
+#else
+        tid_(0),
+#endif
+        pid_(getpid()) {
+  }
+
   ProfilerData(ProfilerModule module, ProfilerEvent event, const std::string &op_full_name, const std::string &op_name,
                bool is_inner_event, uint64_t start_time, uint64_t end_time, uint64_t flow_id = UINT64_MAX,
                std::string py_stack = "")
@@ -405,16 +423,21 @@ struct ProfilerData {
     return *this;
   }
 
+  bool is_graph_data_{false};
   bool is_stage_{false};
   ProfilerStage stage_{ProfilerStage::kDefault};
   ProfilerModule module_{ProfilerModule::kDefault};
   ProfilerEvent event_{ProfilerEvent::kDefault};
+  std::string module_graph_{};
+  std::string event_graph_{};
   std::string op_full_name_{};
   std::string op_name_{};
   bool is_inner_event_{false};
   uint64_t start_time_{0L};
   uint64_t end_time_{0L};
   uint64_t dur_time_{0L};
+  int8_t level_{-1};
+  std::map<std::string, std::string> custom_info_{};
   uint64_t tid_{};
   int32_t pid_{0};
   uint64_t flow_id_{UINT64_MAX};

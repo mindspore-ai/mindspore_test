@@ -46,6 +46,7 @@ class Constant:
     MODULE_HIERARCHY = "Module Hierarchy"
     FLOPS = "flops"
     NAME = "name"
+    CUSTOM_INFO = "custom_info"
 
     # trace constant
     PROCESS_NAME = "process_name"
@@ -57,3 +58,14 @@ class Constant:
     # dir name
     FRAMEWORK_DIR = "FRAMEWORK"
     PROFILER_DIR = "profiler"
+    TOP_SCOPE_NAMES = ('Default', 'Gradients', 'recompute_Default')
+
+    # the index of modules of timeline
+    MINDSPORE = 1
+    CPU_OP = 2
+    CANN = 3
+    SCOPE_LAYLER = 4
+    ASCEND_HARDWARE = 5
+    HCCL = 6
+    OVERLAP = 7
+    OTHERWISE = 8

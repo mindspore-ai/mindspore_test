@@ -189,10 +189,11 @@ Status ConcatOp::SampleInSequence(TensorRow *row, bool is_pipeline_mode) {
     is_not_mappable_or_second_ne_zero = is_not_mappable || second_ne_zero;
   }
 
-  RETURN_IF_NOT_OK(CollectOpInfoStart(this->NameWithID(), "GetFromPreviousOp"));
+  uint64_t start_time = GetSyscnt();
   Status s = is_pipeline_mode ? child_[cur_child_]->GetNextRow(row) : child_[cur_child_]->GetNextRowPullMode(row);
   RETURN_IF_NOT_OK(s);
-  RETURN_IF_NOT_OK(CollectOpInfoEnd(this->NameWithID(), "GetFromPreviousOp", {{"TensorRowFlags", row->FlagName()}}));
+  RETURN_IF_NOT_OK(
+    CollectOpInfo(this->NameWithID(), "GetFromPreviousOp", start_time, {{"TensorRowFlags", row->FlagName()}}));
 
   if (!row->eoe() && !row->eof()) {
     if (!verified_) {
@@ -223,11 +224,11 @@ Status ConcatOp::SampleInSequence(TensorRow *row, bool is_pipeline_mode) {
   } else if (row->eof()) {
     CHECK_FAIL_RETURN_UNEXPECTED(cur_child_ == 0, "[Internal ERROR] Received an unexpected EOF.");
     for (size_t i = cur_child_ + 1; i < child_.size(); i++) {
-      RETURN_IF_NOT_OK(CollectOpInfoStart(this->NameWithID(), "GetFromPreviousOp"));
+      start_time = GetSyscnt();
       s = is_pipeline_mode ? child_[i]->GetNextRow(row) : child_[i]->GetNextRowPullMode(row);
       RETURN_IF_NOT_OK(s);
       RETURN_IF_NOT_OK(
-        CollectOpInfoEnd(this->NameWithID(), "GetFromPreviousOp", {{"TensorRowFlags", row->FlagName()}}));
+        CollectOpInfo(this->NameWithID(), "GetFromPreviousOp", start_time, {{"TensorRowFlags", row->FlagName()}}));
       CHECK_FAIL_RETURN_UNEXPECTED(row->eof(), "[Internal ERROR] Row must be an EOF.");
     }
   }
@@ -240,10 +241,11 @@ Status ConcatOp::SampleInGlobal(TensorRow *row, bool is_pipeline_mode) {
   auto child_id = (*discrete_random_)(rnd_);
   MS_LOG(INFO) << "sample from child " << child_id;
 
-  RETURN_IF_NOT_OK(CollectOpInfoStart(this->NameWithID(), "GetFromPreviousOp"));
+  uint64_t start_time = GetSyscnt();
   Status s = is_pipeline_mode ? child_[child_id]->GetNextRow(row) : child_[child_id]->GetNextRowPullMode(row);
   RETURN_IF_NOT_OK(s);
-  RETURN_IF_NOT_OK(CollectOpInfoEnd(this->NameWithID(), "GetFromPreviousOp", {{"TensorRowFlags", row->FlagName()}}));
+  RETURN_IF_NOT_OK(
+    CollectOpInfo(this->NameWithID(), "GetFromPreviousOp", start_time, {{"TensorRowFlags", row->FlagName()}}));
 
   if (!row->eoe() && !row->eof()) {
     // normal case, but reduce total sample numbers for without replacement sampling
@@ -262,11 +264,11 @@ Status ConcatOp::SampleInGlobal(TensorRow *row, bool is_pipeline_mode) {
     for (auto c = 0; c < children_exhausted_.size(); c++) {
       TensorRow eoe;
       if (!children_exhausted_[c]) {
-        RETURN_IF_NOT_OK(CollectOpInfoStart(this->NameWithID(), "GetFromPreviousOp"));
+        start_time = GetSyscnt();
         s = is_pipeline_mode ? child_[c]->GetNextRow(&eoe) : child_[c]->GetNextRowPullMode(&eoe);
         RETURN_IF_NOT_OK(s);
         RETURN_IF_NOT_OK(
-          CollectOpInfoEnd(this->NameWithID(), "GetFromPreviousOp", {{"TensorRowFlags", eoe.FlagName()}}));
+          CollectOpInfo(this->NameWithID(), "GetFromPreviousOp", start_time, {{"TensorRowFlags", eoe.FlagName()}}));
         // for those variable dataset size, we cannot support currently
         CHECK_FAIL_RETURN_UNEXPECTED(
           eoe.eoe(),
@@ -287,11 +289,11 @@ Status ConcatOp::SampleInGlobal(TensorRow *row, bool is_pipeline_mode) {
     MS_LOG(INFO) << "Get eof from child " << child_id << ", drain eof of other children";
     for (size_t i = 0; i < child_.size(); i++) {
       if (i != child_id) {
-        RETURN_IF_NOT_OK(CollectOpInfoStart(this->NameWithID(), "GetFromPreviousOp"));
+        start_time = GetSyscnt();
         s = is_pipeline_mode ? child_[i]->GetNextRow(row) : child_[i]->GetNextRowPullMode(row);
         RETURN_IF_NOT_OK(s);
         RETURN_IF_NOT_OK(
-          CollectOpInfoEnd(this->NameWithID(), "GetFromPreviousOp", {{"TensorRowFlags", row->FlagName()}}));
+          CollectOpInfo(this->NameWithID(), "GetFromPreviousOp", start_time, {{"TensorRowFlags", row->FlagName()}}));
         CHECK_FAIL_RETURN_UNEXPECTED(row->eof(), "[Internal ERROR] Row must be an EOF.");
       }
     }

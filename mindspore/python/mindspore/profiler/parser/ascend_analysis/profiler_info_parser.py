@@ -86,8 +86,7 @@ class ProfilerInfoParser:
             ProfilerInfo.set_system_cnt(cls._start_cnt)
             cls._loaded_frequency = True
         start_ns = cls.__get_timestamp(syscnt)
-        start_us = Decimal(start_ns * Constant.NS_TO_US)
-        return start_us
+        return Decimal(start_ns).quantize(Decimal('0.000')) * Decimal(Constant.NS_TO_US).quantize(Decimal('0.000'))
 
     @classmethod
     def __run_cmd(cls, cmd):

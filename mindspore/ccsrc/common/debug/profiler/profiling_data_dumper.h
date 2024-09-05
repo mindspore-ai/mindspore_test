@@ -110,6 +110,7 @@ enum class COMMON_EXPORT OpRangeDataType {
   STACK = 6,
   MODULE_HIERARCHY = 7,
   EXTRA_ARGS = 8,
+  CUSTOM_INFO = 9,
   RESERVED = 30,
 };
 
@@ -128,10 +129,13 @@ struct COMMON_EXPORT OpRangeData : BaseReportData {
   std::vector<std::string> stack;
   std::vector<std::string> module_hierarchy;
   uint64_t flow_id{0};
+  int8_t level{-1};
+  std::map<std::string, std::string> custom_info{};
   uint64_t step{0};
   OpRangeData(int64_t start_ns, int64_t end_ns, int64_t sequence_number, uint64_t process_id, uint64_t start_thread_id,
               uint64_t end_thread_id, uint64_t forward_thread_id, bool is_async, std::string name,
-              std::vector<std::string> stack, uint64_t flow_id, int32_t device_id, uint64_t step)
+              std::vector<std::string> stack, uint64_t flow_id, int32_t device_id, uint64_t step, int8_t level,
+              const std::map<std::string, std::string> &custom_info)
       : BaseReportData(device_id, "op_range_" + std::to_string(device_id)),
         start_ns(start_ns),
         end_ns(end_ns),
@@ -144,6 +148,8 @@ struct COMMON_EXPORT OpRangeData : BaseReportData {
         name(std::move(name)),
         stack(std::move(stack)),
         flow_id(flow_id),
+        level(level),
+        custom_info(custom_info),
         step(step) {}
 
   OpRangeData(int64_t start_ns, int64_t end_ns, uint64_t start_thread_id, std::string name, int32_t device_id)

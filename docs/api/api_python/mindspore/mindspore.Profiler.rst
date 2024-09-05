@@ -39,11 +39,10 @@ mindspore.Profiler
 
         - **data_process** (bool, 可选) -（Ascend/GPU）表示是否收集数据准备性能数据，默认值： ``False`` 。
         - **timeline_limit** (int, 可选) -（Ascend/GPU）设置限制timeline文件存储上限大小（单位M），使用此参数时， `op_time` 必须设置成 ``True`` 。默认值： ``500`` 。
-        - **profile_framework** (str, 可选) -（Ascend/GPU）需要收集的host信息类别，可选参数为["all", "time", "memory", None]，如果设置值不为None，会在指定的profiler目录下生成子目录host_info，存放收集到的Host侧的内存和时间文件。默认值：``"all"``。
+        - **profile_framework** (str, 可选) -（Ascend/GPU）需要收集的host信息类别，可选参数为["all", "time", None]，如果设置值不为None，会在指定的profiler目录下生成子目录host_info，存放收集到的Host侧的内存和时间文件。默认值：``"None"``。
 
-          - "all": 记录host侧时间戳和内存占用情况。
-          - "time": 只记录host侧时间戳。
-          - "memory": 只记录host侧内存占用情况。
+          - "all": 记录host侧时间戳。
+          - "time": 与"all"参数相同。
           - None: 不记录host信息。
         - **with_stack** (bool, 可选) - （Ascend）表示是否收集Python侧的调用栈的数据，此数据在timeline中采用火焰图的形式呈现，使用此参数时， `op_time` 必须设置成 ``True`` 。默认值： ``False`` 。
         - **data_simplification** (bool, 可选) - （仅限Ascend）是否开启数据精简，开启后将在导出性能数据后删除FRAMEWORK目录数据以及其他多余数据，仅保留profiler的交付件以及PROF_XXX目录下的原始性能数据，以节省空间。默认值: ``True`` 。

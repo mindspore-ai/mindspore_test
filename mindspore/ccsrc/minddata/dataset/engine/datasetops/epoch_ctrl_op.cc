@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 #include <iostream>
-
 #include "minddata/dataset/engine/datasetops/epoch_ctrl_op.h"
-
 #include "minddata/dataset/util/log_adapter.h"
 
 namespace mindspore {
@@ -42,7 +40,7 @@ void EpochCtrlOp::Print(std::ostream &out, bool show_all) const {
 
 Status EpochCtrlOp::GetNextRow(TensorRow *row) {
   RETURN_UNEXPECTED_IF_NULL(row);
-  RETURN_IF_NOT_OK(CollectOpInfoStart(this->NameWithID(), "GetFromPreviousOp"));
+  uint64_t start_time = GetSyscnt();
   if (child_.empty()) {
     RETURN_STATUS_UNEXPECTED("[Internal ERROR] EpochCtrlOp can't be the leaf node(first operator) of pipeline.");
   }
@@ -55,7 +53,8 @@ Status EpochCtrlOp::GetNextRow(TensorRow *row) {
   if (row->eoe()) {
     RETURN_IF_NOT_OK(EoeReceived(0));
   }
-  RETURN_IF_NOT_OK(CollectOpInfoEnd(this->NameWithID(), "GetFromPreviousOp", {{"TensorRowFlags", row->FlagName()}}));
+  RETURN_IF_NOT_OK(
+    CollectOpInfo(this->NameWithID(), "GetFromPreviousOp", start_time, {{"TensorRowFlags", row->FlagName()}}));
   return Status::OK();
 }
 

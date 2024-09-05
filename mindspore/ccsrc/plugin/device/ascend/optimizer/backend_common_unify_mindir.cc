@@ -194,7 +194,7 @@ PassManagerPtr GetBackendFusionGroupPassManager() {
 }
 
 void AscendUnfoldInputsForSpecialNodes(const KernelGraphPtr &kernel_graph) {
-  profiler::CollectHostInfo("Ascend", "Graph Optimization", "BackendOptimization_UnfoldInputsForSpecialNodes", 0, 0, 0);
+  uint64_t start_time = profiler::GetClockSyscnt();
   MS_EXCEPTION_IF_NULL(kernel_graph);
   auto context_ptr = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(context_ptr);
@@ -221,7 +221,8 @@ void AscendUnfoldInputsForSpecialNodes(const KernelGraphPtr &kernel_graph) {
     DumpIR(file_name, kernel_graph, true, kWholeStack);
   }
 #endif
-  profiler::CollectHostInfo("Ascend", "Graph Optimization", "BackendOptimization_UnfoldInputsForSpecialNodes", 0, 0, 1);
+  (void)profiler::CollectHostInfo("Ascend", "Graph Optimization", "BackendOptimization_UnfoldInputsForSpecialNodes",
+                                  start_time, profiler::GetClockSyscnt(), 0);
 }
 }  // namespace opt
 }  // namespace mindspore

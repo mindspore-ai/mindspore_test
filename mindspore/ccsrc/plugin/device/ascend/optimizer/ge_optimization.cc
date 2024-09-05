@@ -38,7 +38,7 @@ void ReduceOptimization(const FuncGraphPtr &func_graph) {
   }
 #endif
 
-  profiler::CollectHostInfo("Ascend", "Graph Optimization", "GeOptimizeGraph_ReduceOptimization", 0, 0, 0);
+  uint64_t start_time = profiler::GetClockSyscnt();
   auto optimizer = std::make_shared<opt::GraphOptimizer>();
   auto pm = std::make_shared<opt::PassManager>("reduce_optimization_pm");
   MS_EXCEPTION_IF_NULL(pm);
@@ -47,7 +47,8 @@ void ReduceOptimization(const FuncGraphPtr &func_graph) {
   optimizer->AddPassManager(pm);
 
   (void)optimizer->Optimize(func_graph);
-  profiler::CollectHostInfo("Ascend", "Graph Optimization", "GeOptimizeGraph_ReduceOptimization", 0, 0, 1);
+  (void)profiler::CollectHostInfo("Ascend", "Graph Optimization", "GeOptimizeGraph_ReduceOptimization", start_time,
+                                  profiler::GetClockSyscnt(), 0);
 
 #ifdef ENABLE_DUMP_IR
   if (context->CanDump(kIntroductory)) {

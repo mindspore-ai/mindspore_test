@@ -58,20 +58,6 @@ struct OpInfo {
   uint32_t pid;
 };
 
-struct HostProfileData {
-  std::thread::id tid = std::thread::id();
-  int pid = 0;
-  int parent_pid = 0;
-  std::string module_name = "";
-  std::string event = "";
-  std::string stage = "";
-  int level = 0;
-  int start_end = 0;
-  std::map<std::string, std::string> custom_info;
-  int64_t memory_usage = 0;
-  uint64_t time_stamp = 0;
-};
-
 struct MemoryPoolInfo {
   uint64_t time_stamp = 0;
   size_t total_allocated = 0;
@@ -93,14 +79,12 @@ class BACKEND_EXPORT ProfilerManager {
   void SetNetDynamicShapeStatus() { is_dynamic_shape_net_ = true; }
   std::string ProfileDataPath() const;
   void SetProfileFramework(const std::string &profile_framework);
-  bool NeedCollectHostTime() const;
-  bool NeedCollectHostMemory() const;
   bool EnableCollectHost() const;
 
  private:
   inline static std::shared_ptr<ProfilerManager> profiler_manager_inst_ = std::make_shared<ProfilerManager>();
   bool is_dynamic_shape_net_ = 0;
-  std::string profile_framework_ = "all";
+  std::string profile_framework_ = "NULL";
 };
 
 class BACKEND_EXPORT Profiler {
@@ -176,17 +160,9 @@ class BACKEND_EXPORT Profiler {
   static std::map<std::string, std::shared_ptr<Profiler>> &GetInstanceMap();
 };
 
-// level: 0, for developer user, 1, for general user;
-// profile_framework: 0, all host info, 1, host memory, 2, host time;
-// start_end: 0, start flag, 1, end flag, 2, no distinguish start and end.
-// Default parameter for host profile meaning: for developer user, collect both time and memory, record timestamp.
-BACKEND_EXPORT void CollectHostInfo(
-  const std::string &module_name, const std::string &event, const std::string &stage, int level = 0,
-  int profile_framework = 0, int start_end = 2,
-  const std::map<std::string, std::string> &custom_info = std::map<std::string, std::string>());
-#ifdef __linux__
-BACKEND_EXPORT void WriteHostDataToFile(const HostProfileData &host_profile_data, const std::string &output_path);
-#endif
+BACKEND_EXPORT void CollectHostInfo(const std::string &module, const std::string &event, const std::string &stage,
+                                    const uint64_t &start_time, const uint64_t &end_time, int8_t level = 0,
+                                    const std::map<std::string, std::string> &custom_info = {});
 
 BACKEND_EXPORT uint64_t GetClockTime();
 

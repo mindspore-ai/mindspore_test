@@ -51,10 +51,10 @@ Status ConvertPythonToTensor(const py::object &py_obj, TensorRow *output) {
 Status PyFuncOp::Compute(const TensorRow &input, TensorRow *output) {
   IO_CHECK_VECTOR(input, output);
   {
-    RETURN_IF_NOT_OK(CollectOpInfoStart(this->Name(), "AcquireGIL"));
+    uint64_t start_time = GetSyscnt();
     // Acquire Python GIL
     py::gil_scoped_acquire gil_acquire;
-    RETURN_IF_NOT_OK(CollectOpInfoEnd(this->Name(), "AcquireGIL"));
+    RETURN_IF_NOT_OK(CollectOpInfo(this->Name(), "AcquireGIL", start_time));
     if (Py_IsInitialized() == 0) {
       return Status(StatusCode::kMDPythonInterpreterFailure, "Python Interpreter is finalized");
     }
