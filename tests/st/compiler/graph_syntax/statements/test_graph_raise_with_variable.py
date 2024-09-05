@@ -506,7 +506,7 @@ class CellInList(nn.Cell):
         return self.cell_list[index](x)
 
 
-@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level2', card_mark='onecard',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
           essential_mark='unessential')
 def test_cell_in_list():
     """
@@ -515,7 +515,7 @@ def test_cell_in_list():
     Expectation: No exception.
     """
     net = CellInList()
-    x = Tensor(np.ones((1, 1, 224, 224)), mstype.float64)
+    x = Tensor(np.ones((1, 1, 224, 224)), mstype.float32)
     idx = Tensor(0, mstype.int32)
     out = net(idx, x)
     relu_func = nn.ReLU()
