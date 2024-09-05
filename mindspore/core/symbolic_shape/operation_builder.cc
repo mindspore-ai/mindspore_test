@@ -64,6 +64,7 @@ SymbolPtr OperationBuilder::GetShape(const AbstractBasePtr &abs) const {
   MS_EXCEPTION_IF_NULL(baseshape);
   real_shape = baseshape->BuildSymbolicShape();
   MS_EXCEPTION_IF_NULL(real_shape);
+  MS_LOG(DEBUG) << "The input symbolic shape is empty, create new symbol: " << real_shape->ToString();
   abs->SetSymbolicShape(real_shape);
   return real_shape;
 }
@@ -76,6 +77,7 @@ SymbolPtr OperationBuilder::GetValue(const AbstractBasePtr &abs) const {
   }
   smbl = BuildSymbolicValue(abs);
   MS_EXCEPTION_IF_NULL(smbl);
+  MS_LOG(DEBUG) << "The input symbolic value is empty, create new symbol: " << smbl->ToString();
   abs->SetSymbolicValue(smbl);
   return smbl;
 }

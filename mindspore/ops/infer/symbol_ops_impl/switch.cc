@@ -113,8 +113,19 @@ REG_SYMBOL_OP_BUILDER(kControlFlowJoin)
   .SetShapeDepend({DependOn::kShape, DependOn::kShape, DependOn::kShape})
   .SetShapeFunc([](OperationBuilder *b) -> SymbolPtr {
     auto cond = b->GetInputValue(kIndex0);
-    auto true_branch = b->GetInputShape(kIndex1);
-    auto false_branch = b->GetInputShape(kIndex2);
+    // "b->GetInputShape" will create a new symbol when it not exists, so manually use GetInput.
+    auto true_branch = b->GetInput(kIndex1)->GetSymbolicShape();
+    auto false_branch = b->GetInput(kIndex2)->GetSymbolicShape();
+    if (cond->HasData()) {
+      return cond->as<BoolSymbol>()->value() ? true_branch : false_branch;
+    }
+    // In control flow block, the branch without symbol is a loop body, the result of should be the other branch.
+    if (true_branch == nullptr) {
+      return false_branch;
+    }
+    if (false_branch == nullptr) {
+      return true_branch;
+    }
     return b->Emit(std::make_shared<ControlFlowJoin>(cond, true_branch, false_branch));
   })
   .SetValueDepend({DependOn::kValue, DependOn::kValue, DependOn::kValue})

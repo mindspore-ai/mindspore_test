@@ -19,6 +19,7 @@
 #include "ir/anf.h"
 #include "ir/func_graph.h"
 #include "ir/graph_utils.h"
+#include "abstract/abstract_function.h"
 #include "mindspore/ops/op_def/array_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
@@ -158,6 +159,7 @@ class JFuncCaller : public SpecialCNodeHelper {
 
 SymbolEngineImplPtr SymbolEngineImpl::Build(const FuncGraphPtr &func_graph) {
   MS_EXCEPTION_IF_NULL(func_graph);
+  MS_LOG(INFO) << "Start to build symbol engine for func_graph [" << func_graph->ToString() << "].";
   SymbolEngineImplPtr engine = nullptr;
   try {
     MS_LOG_TRY_CATCH_SCOPE;
@@ -187,6 +189,16 @@ void SymbolEngineImpl::BuildNodesSymbol(const FuncGraphPtr &fg, const AnfNodePtr
     if (auto fg_with_index = GetFuncGraphFromCNode(cnode); fg_with_index.first != nullptr) {
       // "call" or "Partial" node
       BuildSubgraphImpl(cnode, fg_with_index.first, fg_with_index.second);
+      // For "call" node, after building graph, if the output symbol is none, it means the graph has not been fully
+      // built. It may be a loop body. In this case, we should not build the following nodes from this graph.
+      if (fg_with_index.second == kIndex1) {
+        auto sub_fg_abs = fg_with_index.first->output()->abstract();
+        if (sub_fg_abs->GetSymbolicShape() == nullptr && sub_fg_abs->GetSymbolicValue() == nullptr) {
+          MS_LOG(DEBUG) << "Early stop building symbols for " << fg->ToString() << ", because the symbols of subgraph "
+                        << fg_with_index.first->ToString() << " has not been fully built.";
+          break;
+        }
+      }
     } else {
       BuildCNodeSymbol(cnode);
     }
@@ -216,6 +228,7 @@ void SymbolEngineImpl::BuildNodesSymbol(const FuncGraphPtr &fg, const AnfNodePtr
 void SymbolEngineImpl::PreBuild() {
   auto func_graph = func_graph_.lock();
   MS_EXCEPTION_IF_NULL(func_graph);
+  MS_LOG(DEBUG) << "Prebuild " << ToString() << " with graph " << func_graph->ToString();
   visited_graph_.clear();
   visited_graph_[func_graph.get()] = 1;
   GetAllNodes(func_graph);
@@ -544,6 +557,8 @@ void SymbolEngineImpl::BuildSubgraphImpl(const CNodePtr &cnode, const FuncGraphP
     cnode_abs->SetSymbolicShape(out_abs->GetSymbolicShape());
     cnode_abs->SetSymbolicValue(out_abs->GetSymbolicValue());
   }
+  MS_LOG(DEBUG) << "Finish to build subgraph " << sub_fg->ToString() << " of node " << cnode->fullname_with_scope()
+                << ". visit count: " << visit_cnt;
 }
 
 SymbolPtr SymbolEngineImpl::BuildCNodeSymbolicShape(OperationBuilder *builder, const PrimitivePtr &prim,
@@ -705,6 +720,10 @@ AbstractBasePtr CloneAbstractIfSymbolExists(const AbstractBasePtr &abs) {
     return nullptr;
   }
   if (abs->GetSymbolicShape() == nullptr && abs->GetSymbolicValue() == nullptr) {
+    return abs;
+  }
+  // some abstract does not support clone
+  if (abs->isa<abstract::AbstractFuncUnion>()) {
     return abs;
   }
   try {
