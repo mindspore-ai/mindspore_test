@@ -17,7 +17,8 @@ import json
 import os
 import math
 import mindspore.common.dtype as mstype
-from mindspore import Parameter
+import mindspore as ms
+from mindspore import Parameter, Tensor
 from mindspore.experimental.es.embedding_service_layer import ESInitLayer
 from mindspore.common.initializer import Uniform, TruncatedNormal, Constant
 from mindspore.common.initializer import initializer as ms_initializer
@@ -542,7 +543,8 @@ class EmbeddingService:
         embedding_ckpt_export_layer = ESEmbeddingCKPTExport(embedding_dim_list, value_total_len_list,
                                                             self._ps_table_name_list, self._ps_table_id_list,
                                                             file_path, steps_to_live_list)
-        return embedding_ckpt_export_layer(), feature_mapping_export_list
+        global_step = Tensor([-1], ms.int64)
+        return embedding_ckpt_export_layer(global_step), feature_mapping_export_list
 
     def embedding_table_export(self, file_path, trainable_var):
         r"""
@@ -588,7 +590,8 @@ class EmbeddingService:
         embedding_table_export_layer = ESEmbeddingTableExport(embedding_dim_list, embedding_dim_list,
                                                               self._ps_table_name_list, self._ps_table_id_list,
                                                               file_path, steps_to_live_list)
-        return embedding_table_export_layer(), feature_mapping_export_list
+        global_step = Tensor([-1], ms.int64)
+        return embedding_table_export_layer(global_step), feature_mapping_export_list
 
     def incremental_embedding_table_export(self, file_path):
         r"""
@@ -614,7 +617,8 @@ class EmbeddingService:
                                                                                      self._ps_table_name_list,
                                                                                      self._ps_table_id_list,
                                                                                      file_path, steps_to_live_list)
-        incremental_embedding_table_export_layer()
+        global_step = Tensor([-1], ms.int64)
+        incremental_embedding_table_export_layer(global_step)
 
     def embedding_ckpt_import(self, file_path):
         r"""
@@ -635,7 +639,7 @@ class EmbeddingService:
                 small_table_name = self._small_table_variable_list[i]
                 small_table_embedding_dim = self._small_table_variable_dim_list[i]
                 embedding_feature_mapping_import = ESEmbeddingFeatureMappingImport(file_path, small_table_name,
-                                                                                   small_table_embedding_dim)
+                                                                                   small_table_embedding_dim, False)
                 feature_mapping_insert = embedding_feature_mapping_import()
                 index += 1
                 feature_mapping_import_list.append(feature_mapping_insert)
@@ -649,7 +653,8 @@ class EmbeddingService:
         embedding_ckpt_export_layer = ESEmbeddingCKPTImport(embedding_dim_list, value_total_len_list,
                                                             self._ps_table_name_list, self._ps_table_id_list,
                                                             file_path)
-        return embedding_ckpt_export_layer(), feature_mapping_import_list
+        global_step = Tensor([-1], ms.int64)
+        return embedding_ckpt_export_layer(global_step), feature_mapping_import_list
 
     def embedding_table_import(self, file_path):
         r"""
@@ -669,7 +674,7 @@ class EmbeddingService:
                 small_table_name = self._small_table_variable_list[i]
                 small_table_embedding_dim = self._small_table_variable_dim_list[i]
                 embedding_feature_mapping_import = ESEmbeddingFeatureMappingImport(file_path, small_table_name,
-                                                                                   small_table_embedding_dim)
+                                                                                   small_table_embedding_dim, True)
                 feature_mapping_insert = embedding_feature_mapping_import()
                 index += 1
                 feature_mapping_import_list.append(feature_mapping_insert)
@@ -680,7 +685,8 @@ class EmbeddingService:
         embedding_table_export_layer = ESEmbeddingTableImport(embedding_dim_list, embedding_dim_list,
                                                               self._ps_table_name_list, self._ps_table_id_list,
                                                               file_path)
-        return embedding_table_export_layer(), feature_mapping_import_list
+        global_step = Tensor([-1], ms.int64)
+        return embedding_table_export_layer(global_step), feature_mapping_import_list
 
     def embedding_evict(self, steps_to_live):
         r"""
