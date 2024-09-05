@@ -36,6 +36,51 @@
         - `使用数据Pipeline加载 & 处理数据集
           <https://www.mindspore.cn/docs/zh-CN/master/api_python/samples/dataset/dataset_gallery.html>`_
 
+    .. note::
+        对MindRecord进行分片（配置 `num_shards` 和 `shard_id` ）时，数据的切分逻辑有2种实现策略，此API采用了策略2。
+
+        .. list-table:: 数据分片的实现策略1
+            :widths: 50 50 50 50
+            :header-rows: 1
+
+            * - rank 0
+              - rank 1
+              - rank 2
+              - rank 3
+            * - 0
+              - 1
+              - 2
+              - 3
+            * - 4
+              - 5
+              - 6
+              - 7
+            * - 8
+              - 9
+              - 10
+              - 11
+
+        .. list-table:: 数据分片的实现策略2
+            :widths: 50 50 50 50
+            :header-rows: 1
+
+            * - rank 0
+              - rank 1
+              - rank 2
+              - rank 3
+            * - 0
+              - 3
+              - 6
+              - 9
+            * - 1
+              - 4
+              - 7
+              - 10
+            * - 2
+              - 5
+              - 8
+              - 11
+
     .. note:: 入参 `num_samples` 、 `shuffle` 、 `num_shards` 、 `shard_id` 可用于控制数据集所使用的采样器，其与入参 `sampler` 搭配使用的效果如下。
 
     .. include:: mindspore.dataset.sampler.rst

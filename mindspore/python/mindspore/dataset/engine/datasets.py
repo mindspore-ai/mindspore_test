@@ -494,6 +494,12 @@ class Dataset:
 
         .. image:: bucket_batch_by_length_en.png
 
+        Note:
+            - When using `Data Sinking <https://www.mindspore.cn/docs/en/master/model_train/train_process/optimize/
+              sink_mode.html#data-sinking>`_ in Graph mode, the input shape of the network should keep consistent.
+              You should set `drop_remainder` to "True" to discard the last incomplete batch of data,
+              or supplement/remove samples to ensure the dataset size is divisible by `batch_size`.
+
         Args:
             column_names (list[str]): Columns passed to element_length_function.
             bucket_boundaries (list[int]): A list consisting of the upper boundaries
@@ -564,8 +570,12 @@ class Dataset:
         .. image:: batch_en.png
 
         Note:
-            The order of using repeat and batch reflects the number of batches and per_batch_map.
-            It is recommended that the repeat operation applied after the batch operation finished.
+            - The order of using repeat and batch reflects the number of batches and per_batch_map.
+              It is recommended that the repeat operation applied after the batch operation finished.
+            - When using `Data Sinking <https://www.mindspore.cn/docs/en/master/model_train/train_process/optimize/
+              sink_mode.html#data-sinking>`_ in Graph mode, the input shape of the network should keep consistent.
+              You should set `drop_remainder` to "True" to discard the last incomplete batch of data,
+              or supplement/remove samples to ensure the dataset size is divisible by `batch_size`.
 
         Args:
             batch_size (Union[int, Callable]): The number of rows each batch is created with. An
@@ -657,8 +667,12 @@ class Dataset:
         .. image:: padded_batch_en.png
 
         Note:
-            The order of using repeat and padded_batch reflects the number of batches.
-            It is recommended that the repeat operation applied after the padded_batch operation finished.
+            - The order of using repeat and padded_batch reflects the number of batches.
+              It is recommended that the repeat operation applied after the padded_batch operation finished.
+            - When using `Data Sinking <https://www.mindspore.cn/docs/en/master/model_train/train_process/optimize/
+              sink_mode.html#data-sinking>`_ in Graph mode, the input shape of the network should keep consistent.
+              You should set `drop_remainder` to "True" to discard the last incomplete batch of data,
+              or supplement/remove samples to ensure the dataset size is divisible by `batch_size`.
 
         Args:
             batch_size (Union[int, Callable]): The number of rows each batch is created with. An

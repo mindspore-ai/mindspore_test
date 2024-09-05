@@ -12,6 +12,9 @@ mindspore.dataset.Dataset.bucket_batch_by_length
 
     .. image:: bucket_batch_by_length_cn.png
 
+    .. note::
+        - 在静态图模式使用 `数据下沉 <https://www.mindspore.cn/docs/zh-CN/master/model_train/train_process/optimize/sink_mode.html#%E6%95%B0%E6%8D%AE%E4%B8%8B%E6%B2%89>`_ 时，网络输入的 Shape 应保持一致，此时应设置 `drop_remainder` 为 "True" 以丢弃最后一个不完整的批数据，或通过补充/删除样本以确保数据集大小能被 `batch_size` 整除。
+
     参数：
         - **column_names** (list[str]) - 传递给参数 `element_length_function` 的数据列，用于计算数据的长度。
         - **bucket_boundaries** (list[int]) - 指定各个分桶的上边界值，列表的数值必须严格递增。
