@@ -19,9 +19,11 @@
 #include <map>
 #include <set>
 #include <functional>
+#include "utils/ms_utils.h"
 #include "ir/tensor.h"
 #include "transform/acl_ir/acl_helper.h"
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm_lib.h"
+#include "plugin/device/ascend/hal/hardware/dummy_ascend_collective_comm_lib.h"
 
 namespace mindspore {
 namespace kernel {
@@ -57,6 +59,9 @@ std::vector<size_t> AclnnKernelMod::GetLaunchIgnoredInputAddressIdx() const {
 }
 
 std::string AclnnKernelMod::GetCommName(const std::string &group) {
+  if (!common::GetEnv(kSimulationLevel).empty()) {
+    return device::DummyAscendCollectiveCommLib::GetInstance().HcclInnerCommName(group);
+  }
   return device::ascend::AscendCollectiveCommLib::GetInstance().HcclInnerCommName(group);
 }
 
