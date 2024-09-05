@@ -15,12 +15,14 @@
  */
 
 #include "pybind_api/hal/memory_py.h"
+#include "runtime/pipeline/pipeline.h"
 #include "runtime/hardware/device_context.h"
 #include "runtime/hardware/device_context_manager.h"
 
 namespace mindspore {
 namespace hal {
 py::dict MemoryStats(const std::string &device_target) {
+  runtime::Pipeline::Get().WaitAll();
   auto device_ctx = device::DeviceContextManager::GetInstance().GetDeviceContext(device_target);
   if (device_ctx == nullptr) {
     MS_LOG(EXCEPTION) << "Device context of device " << device_target << " is not created yet.";
@@ -66,6 +68,7 @@ py::dict MemoryStats(const std::string &device_target) {
 }
 
 void ResetMaxMemoryReserved(const std::string &device_target) {
+  runtime::Pipeline::Get().WaitAll();
   auto device_ctx = device::DeviceContextManager::GetInstance().GetDeviceContext(device_target);
   if (device_ctx == nullptr) {
     MS_LOG(EXCEPTION) << "Device context of device " << device_target << " is not created yet.";
@@ -75,6 +78,7 @@ void ResetMaxMemoryReserved(const std::string &device_target) {
 }
 
 void ResetMaxMemoryAllocated(const std::string &device_target) {
+  runtime::Pipeline::Get().WaitAll();
   auto device_ctx = device::DeviceContextManager::GetInstance().GetDeviceContext(device_target);
   if (device_ctx == nullptr) {
     MS_LOG(EXCEPTION) << "Device context of device " << device_target << " is not created yet.";
