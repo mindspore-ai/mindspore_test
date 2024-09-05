@@ -16,9 +16,9 @@
 
 #include "tests/ut/cpp/common/device_common_test.h"
 
-#include "mindspore/ops/op_def/comparison_ops.h"
-#include "mindspore/ops/op_def/framework_ops.h"
-#include "mindspore/ops/op_def/math_ops.h"
+#include "op_def/comparison_ops.h"
+#include "op_def/framework_ops.h"
+#include "op_def/math_ops.h"
 
 namespace mindspore {
 namespace runtime {
@@ -40,6 +40,80 @@ FuncGraphPtr BuildFuncGraph() {
   auto parameter_y = func_graph->add_parameter();
   parameter_y->set_abstract(abstract_y);
   return func_graph;
+}
+
+/// Feature: unify runtime.
+/// Description: build parameter.
+/// Expectation: success.
+FuncGraphPtr BuildFuncGraphWithParameter() {
+  std::vector<int64_t> shp_4{4, 4};
+  std::vector<int64_t> shp_8{2, 8};
+  auto func_graph_shp4 = std::make_shared<FuncGraph>();
+  auto abstract_x = std::make_shared<abstract::AbstractTensor>(kFloat32, shp_4);
+  auto parameter_x = func_graph_shp4->add_parameter();
+  parameter_x->set_abstract(abstract_x);
+
+  auto abstract_y = std::make_shared<abstract::AbstractTensor>(kFloat32, shp_8);
+  auto parameter_y = func_graph_shp4->add_parameter();
+  parameter_y->set_abstract(abstract_y);
+  return func_graph_shp4;
+}
+
+/// Feature: unify runtime.
+/// Description: build singlecallfuncgraph.
+/// Expectation: success.
+FuncGraphPtr BuildSingleCallFuncGraph() {
+  auto root_func_graph = BuildFuncGraphWithParameter();
+  auto mul_func_graph = BuildFuncGraphWithParameter();
+  std::vector<int64_t> shp_4{4, 4};
+
+  // root graph
+  auto parameters = root_func_graph->parameters();
+  // add
+  std::vector<AnfNodePtr> add_inputs{NewValueNode(prim::kPrimAdd), parameters[0], parameters[0]};
+  auto add = root_func_graph->NewCNode(add_inputs);
+  auto add_abs = std::make_shared<AbstractTensor>(kFloat32, shp_4);
+  add->set_abstract(add_abs);
+  // call
+  // scalar
+  auto value_2 = MakeValue(2);
+  auto valuenode_2 = NewValueNode(value_2);
+  valuenode_2->set_abstract(value_2->ToAbstract());
+  std::vector<AnfNodePtr> call_inputs{NewValueNode(mul_func_graph), add, valuenode_2};
+
+  auto call = root_func_graph->NewCNode(call_inputs);
+  auto call_abs = std::make_shared<AbstractTensor>(kFloat32, shp_4);
+  call->set_abstract(call_abs);
+  // shape
+  std::vector<AnfNodePtr> shape_inputs{NewValueNode(prim::kPrimShape), call};
+  auto getshape = root_func_graph->NewCNode(shape_inputs);
+  auto shape_abs = std::make_shared<AbstractTensor>(kFloat32, shp_4);
+  getshape->set_abstract(shape_abs);
+  // reshape
+  std::vector<AnfNodePtr> reshape_inputs{NewValueNode(prim::kPrimReshape), parameters[1], getshape};
+  auto reshape = root_func_graph->NewCNode(reshape_inputs);
+  auto reshape_abs = std::make_shared<AbstractTensor>(kFloat32, shp_4);
+  reshape->set_abstract(reshape_abs);
+  // return
+  std::vector<AnfNodePtr> return_inputs{NewValueNode(prim::kPrimReturn), reshape};
+  auto root_return = root_func_graph->NewCNode(return_inputs);
+  auto return_abs = std::make_shared<AbstractTensor>(kFloat32, shp_4);
+  root_func_graph->set_return(root_return);
+
+  // mul Graph
+  // mul
+  auto mulfunc_parameters = mul_func_graph->parameters();
+  std::vector<AnfNodePtr> mul_inputs{NewValueNode(prim::kPrimMul), mulfunc_parameters[0], mulfunc_parameters[1]};
+  auto mulfunc_node = root_func_graph->NewCNode(mul_inputs);
+  auto mul_abs = std::make_shared<AbstractTensor>(kFloat32, shp_4);
+  mulfunc_node->set_abstract(mul_abs);
+  // return
+  std::vector<AnfNodePtr> mulfunc_return_inputs{NewValueNode(prim::kPrimReturn), mulfunc_node};
+  auto mulfunc_return = mul_func_graph->NewCNode(mulfunc_return_inputs);
+  auto mulfunc_return_abs = std::make_shared<AbstractTensor>(kFloat32, shp_4);
+  mulfunc_return->set_abstract(mulfunc_return_abs);
+  mul_func_graph->set_return(mulfunc_return);
+  return root_func_graph;
 }
 
 FuncGraphPtr BuildGraphs() {
@@ -124,10 +198,7 @@ FuncGraphPtr BuildGraphs() {
 }
 }  // namespace
 
-/// Feature: unify runtime.
-/// Description: Test the compile graphs.
-/// Expectation: As expected.
-TEST_F(GraphSchedulerTest, Transform) {
+void RunTestCase(const FuncGraphPtr &func_graph) {
   const char device_name[] = "CPU";
   uint32_t device_id = 0;
 
@@ -142,7 +213,6 @@ TEST_F(GraphSchedulerTest, Transform) {
   ms_context->set_param<uint32_t>(MS_CTX_DEVICE_ID, device_id);
   ms_context->set_param<std::string>(MS_CTX_DEVICE_TARGET, device_name);
 
-  FuncGraphPtr func_graph = BuildGraphs();
   std::vector<FuncGraphPtr> graphs{func_graph};
   FuncGraphManagerPtr manager = std::make_shared<FuncGraphManager>(graphs);
   manager->AddFuncGraph(func_graph);
@@ -159,6 +229,16 @@ TEST_F(GraphSchedulerTest, Transform) {
   ms_context->set_param<uint32_t>(MS_CTX_DEVICE_ID, last_device_id);
   ms_context->set_param<std::string>(MS_CTX_DEVICE_TARGET, last_device_target);
 }
+
+/// Feature: unify runtime.
+/// Description: test the compile graphs.
+/// Expectation: success.
+TEST_F(GraphSchedulerTest, test_singlecalltransform) { RunTestCase(BuildSingleCallFuncGraph()); }
+
+/// Feature: unify runtime.
+/// Description: test the compile graphs.
+/// Expectation: success.
+TEST_F(GraphSchedulerTest, test_transform) { RunTestCase(BuildGraphs()); }
 
 FuncGraphPtr BuildAnyTypeGraph() {
   auto func_graph = BuildFuncGraph();
