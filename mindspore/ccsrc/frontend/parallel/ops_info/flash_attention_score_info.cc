@@ -33,6 +33,8 @@
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/infer/ops_func_impl/flash_attention_score.h"
 #include "mindspore/ops/op_def/op_enum.h"
+#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/arithmetic_ops.h"
 
 namespace mindspore {
 using mindspore::ops::FASInputLayoutMode;
@@ -706,6 +708,12 @@ Status FlashAttentionScoreInfo::CheckInputInRingAttention() {
   return SUCCESS;
 }
 
+void FlashAttentionScoreInfo::CheckDynamicShape() {
+  if (is_dynamic_rank_) {
+    MS_LOG(EXCEPTION) << name_ << ": Not support dynamic rank currently.";
+  }
+}
+
 Status FlashAttentionScoreInfo::GetAttrs() {
   InitIsInputPassed();
   head_num_ = GetInputValueFromCNode<int64_t>(cnode_, ops::kFlashAttentionScoreInputHeadNumIndex + 1);
@@ -769,25 +777,30 @@ Status FlashAttentionScoreInfo::GetAttrs() {
     return FAILED;
   }
 
+  CheckDynamicShape();
+
   kv_split_ = inputs_shape_[ops::kFlashAttentionScoreInputQueryIndex][qkv_head_dim_] !=
               inputs_shape_[ops::kFlashAttentionScoreInputKeyIndex][qkv_head_dim_] * head_num_;
 
   if (is_input_passed_[ops::kFlashAttentionScoreInputRealShiftIndex]) {
     auto real_shift_s1_dim =
       inputs_shape_.at(GetStrategyRealIndex(ops::kFlashAttentionScoreInputRealShiftIndex)).at(kIndex3);
-    real_shift_have_s1_dim_ = real_shift_s1_dim > 1;
+    real_shift_have_s1_dim_ = real_shift_s1_dim != 1;
     auto real_shift_batch_dim =
       inputs_shape_.at(GetStrategyRealIndex(ops::kFlashAttentionScoreInputRealShiftIndex)).at(kIndex0);
-    real_shift_have_batch_dim_ = real_shift_batch_dim > 1;
+    real_shift_have_batch_dim_ = real_shift_batch_dim != 1;
   }
 
   if (is_input_passed_[ops::kFlashAttentionScoreInputAttnMaskIndex]) {
     auto attn_mask_shape = inputs_shape_.at(GetStrategyRealIndex(ops::kFlashAttentionScoreInputAttnMaskIndex));
     if (attn_mask_shape.size() == kSizeFour) {
-      attn_mask_have_batch_dim_ = attn_mask_shape.at(kIndex0) > 1;
-      attn_mask_have_n1_dim_ = attn_mask_shape.at(kIndex1) > 1;
+      attn_mask_have_batch_dim_ = attn_mask_shape.at(kIndex0) != 1;
+      attn_mask_have_n1_dim_ = attn_mask_shape.at(kIndex1) != 1;
     }
   }
+  q_seq_len_ = inputs_shape_[ops::kFlashAttentionScoreInputQueryIndex][qkv_seq_dim_];
+  kv_seq_len_ = inputs_shape_[ops::kFlashAttentionScoreInputKeyIndex][qkv_seq_dim_];
+  dynamic_seq_flag_ = (q_seq_len_ == -1) || (kv_seq_len_ == -1);
   return SUCCESS;
 }
 
@@ -1030,13 +1043,9 @@ std::vector<int64_t> FlashAttentionScoreInfo::GetSplitIdAndRank() {
 
 std::tuple<int64_t, int64_t> FlashAttentionScoreInfo::GetAttentionMaskAttrs(const int64_t split_id,
                                                                             const int64_t split_num) {
-  int64_t kv_seq_length;
-  int64_t q_seq_length;
-  kv_seq_length = inputs_shape_[ops::kFlashAttentionScoreInputKeyIndex][qkv_seq_dim_];
-  q_seq_length = inputs_shape_[ops::kFlashAttentionScoreInputQueryIndex][qkv_seq_dim_];
-  int64_t q_len_each_split = q_seq_length / split_num;
+  int64_t q_len_each_split = q_seq_len_ / split_num;
   int64_t new_pre_tokens =
-    (sparse_mode_ == ops::kSparseDefaultMask || sparse_mode_ == ops::kSparseBand) ? pre_tokens_ : kv_seq_length;
+    (sparse_mode_ == ops::kSparseDefaultMask || sparse_mode_ == ops::kSparseBand) ? pre_tokens_ : q_seq_len_;
   int64_t new_next_tokens =
     (sparse_mode_ == ops::kSparseDefaultMask || sparse_mode_ == ops::kSparseBand) ? next_tokens_ : 0;
   switch (opAttrUpdateMap.at(sparse_mode_)) {
@@ -1045,12 +1054,12 @@ std::tuple<int64_t, int64_t> FlashAttentionScoreInfo::GetAttentionMaskAttrs(cons
       new_next_tokens = LongAdd(new_next_tokens, split_id * q_len_each_split);
       break;
     case kLeftUpToRightDown:
-      new_pre_tokens = LongAdd(new_pre_tokens, (kv_seq_length - (split_id + 1) * q_len_each_split));
-      new_next_tokens = LongAdd(new_next_tokens, -(kv_seq_length - (split_id + 1) * q_len_each_split));
+      new_pre_tokens = LongAdd(new_pre_tokens, (kv_seq_len_ - (split_id + 1) * q_len_each_split));
+      new_next_tokens = LongAdd(new_next_tokens, -(kv_seq_len_ - (split_id + 1) * q_len_each_split));
       break;
     case kRightDownToRightDown:
-      new_pre_tokens = LongAdd(new_pre_tokens, (split_num - split_id - 1) * (q_seq_length / split_num));
-      new_next_tokens = LongAdd(new_next_tokens, -(split_num - split_id - 1) * (q_seq_length / split_num));
+      new_pre_tokens = LongAdd(new_pre_tokens, (split_num - split_id - 1) * (q_seq_len_ / split_num));
+      new_next_tokens = LongAdd(new_next_tokens, -(split_num - split_id - 1) * (q_seq_len_ / split_num));
       break;
     default:
       MS_LOG(EXCEPTION) << "Invalid sparse mode " << sparse_mode_ << ", sparse mode should be one of [0, 2, 3, 4].";
@@ -1058,35 +1067,110 @@ std::tuple<int64_t, int64_t> FlashAttentionScoreInfo::GetAttentionMaskAttrs(cons
   return std::make_tuple(new_pre_tokens, new_next_tokens);
 }
 
+std::tuple<AnfNodePtr, AnfNodePtr> FlashAttentionScoreInfo::GetAttentionMaskAttrsByDynamicSeqDim(
+  const AnfNodePtr &query_shape, const AnfNodePtr &key_shape, const int64_t split_id, const int64_t split_num,
+  GenerateGraph *gen_g) {
+  auto query_seq_slice_length = gen_g->PushBack(
+    {NewValueNode(prim::kPrimTupleGetItem), query_shape, NewValueNode(MakeValue(SizeToLong(qkv_seq_dim_)))});
+  auto key_seq_length = gen_g->PushBack(
+    {NewValueNode(prim::kPrimTupleGetItem), key_shape, NewValueNode(MakeValue(SizeToLong(qkv_seq_dim_)))});
+
+  AnfNodePtr new_pre_tokens;
+  AnfNodePtr new_next_tokens;
+  if (sparse_mode_ == ops::kSparseDefaultMask || sparse_mode_ == ops::kSparseBand) {
+    new_pre_tokens = NewValueNode(MakeValue(pre_tokens_));
+    new_next_tokens = NewValueNode(MakeValue(next_tokens_));
+  } else {
+    new_pre_tokens = key_seq_length;
+    new_next_tokens = NewValueNode(MakeValue<int64_t>(0));
+  }
+  AnfNodePtr new_pre_tokens_offset;
+  AnfNodePtr new_next_tokens_offset;
+  switch (opAttrUpdateMap.at(sparse_mode_)) {
+    case kLeftUpToLeftUp:
+      // new_pre_tokens_offset = -split_id * q_len_each_split
+      // new_next_tokens_offset = split_id * q_len_each_split
+      new_pre_tokens_offset = gen_g->PushBack(
+        {NewValueNode(prim::kPrimScalarMul), NewValueNode(MakeValue(-split_id)), query_seq_slice_length});
+      new_next_tokens_offset = gen_g->PushBack(
+        {NewValueNode(prim::kPrimScalarMul), NewValueNode(MakeValue(split_id)), query_seq_slice_length});
+      break;
+    case kLeftUpToRightDown:
+      // new_pre_tokens_offset = kv_seq_length - (split_id + 1) * q_len_each_split
+      // new_next_tokens_offset = -kv_seq_length + (split_id + 1) * q_len_each_split
+      new_pre_tokens_offset = gen_g->PushBack(
+        {NewValueNode(prim::kPrimScalarMul), NewValueNode(MakeValue(split_id + 1)), query_seq_slice_length});
+      new_pre_tokens_offset =
+        gen_g->PushBack({NewValueNode(prim::kPrimScalarSub), key_seq_length, new_pre_tokens_offset});
+      new_next_tokens_offset = gen_g->PushBack(
+        {NewValueNode(prim::kPrimScalarMul), new_pre_tokens_offset, NewValueNode(MakeValue<int64_t>(-1))});
+      break;
+    case kRightDownToRightDown:
+      // new_pre_tokens_offset = (split_num - split_id - 1) * (q_seq_length / split_num)
+      // new_next_tokens_offset = -(split_num - split_id - 1) * (q_seq_length / split_num))
+      new_pre_tokens_offset =
+        gen_g->PushBack({NewValueNode(prim::kPrimScalarMul), NewValueNode(MakeValue(split_num - split_id - 1)),
+                         query_seq_slice_length});
+      new_next_tokens_offset =
+        gen_g->PushBack({NewValueNode(prim::kPrimScalarMul), NewValueNode(MakeValue(split_id + 1 - split_num)),
+                         query_seq_slice_length});
+      break;
+    default:
+      MS_LOG(EXCEPTION) << "Invalid sparse mode " << sparse_mode_ << ", sparse mode should be one of [0, 2, 3, 4].";
+  }
+
+  new_pre_tokens = gen_g->PushBack({NewValueNode(prim::kPrimScalarAdd), new_pre_tokens, new_pre_tokens_offset});
+  new_next_tokens = gen_g->PushBack({NewValueNode(prim::kPrimScalarAdd), new_next_tokens, new_next_tokens_offset});
+  return std::make_tuple(new_pre_tokens, new_next_tokens);
+}
+
 Status FlashAttentionScoreInfo::ReplaceActualSeqLenForSplitSeqInTnd(const CNodePtr &cnode) {
-  std::vector<int64_t> split_info = GetSplitIdAndRank();
-  int64_t tq = inputs_shape_[GetStrategyRealIndex(ops::kFlashAttentionScoreInputQueryIndex)][qkv_batch_dim_];
-  int64_t tk = inputs_shape_[GetStrategyRealIndex(ops::kFlashAttentionScoreInputKeyIndex)][qkv_batch_dim_];
-  int64_t slice_tq = tq / s1_split_num_ / batch_split_num_;
-  int64_t slice_tk = tk / batch_split_num_;
-  int64_t split_id = split_info[kIndex2];
-  int64_t offset = slice_tq * split_id;
   if (!is_input_passed_[ops::kFlashAttentionScoreInputActualSeqQlenIndex] ||
       !is_input_passed_[ops::kFlashAttentionScoreInputActualSeqKVlenIndex]) {
     MS_LOG(ERROR) << name_ << ": The input 'actual_seq_qlen' and 'actual_seq_kvlen' cannot be None under 'TND'.";
     return FAILED;
   }
-  auto actual_seq_qlen_input_index = ops::kFlashAttentionScoreInputActualSeqQlenIndex + 1;
-  auto actual_seq_kvlen_input_index = ops::kFlashAttentionScoreInputActualSeqKVlenIndex + 1;
-  auto actual_seq_qlen_node = cnode->input(actual_seq_qlen_input_index);
-  auto actual_seq_kvlen_node = cnode->input(actual_seq_kvlen_input_index);
-
   auto func_graph = cnode->func_graph();
   MS_EXCEPTION_IF_NULL(func_graph);
   auto manager = func_graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
 
+  auto actual_seq_qlen_input_index = ops::kFlashAttentionScoreInputActualSeqQlenIndex + 1;
+  auto actual_seq_kvlen_input_index = ops::kFlashAttentionScoreInputActualSeqKVlenIndex + 1;
+  auto actual_seq_qlen_node = cnode->input(actual_seq_qlen_input_index);
+  auto actual_seq_kvlen_node = cnode->input(actual_seq_kvlen_input_index);
+  std::vector<int64_t> split_info = GetSplitIdAndRank();
+  auto split_id = split_info[kIndex2];
+
+  AnfNodePtr slice_tq_node;
+  AnfNodePtr slice_tk_node;
+  AnfNodePtr offset_node;
+  if (dynamic_seq_flag_) {
+    auto query_shape = func_graph->NewCNode(
+      {NewValueNode(prim::kPrimShape), cnode->input(ops::kFlashAttentionScoreInputQueryIndex + 1)});
+    auto key_shape =
+      func_graph->NewCNode({NewValueNode(prim::kPrimShape), cnode->input(ops::kFlashAttentionScoreInputKeyIndex + 1)});
+    auto slice_tq_scalar_node = func_graph->NewCNode(
+      {NewValueNode(prim::kPrimTupleGetItem), query_shape, NewValueNode(MakeValue(qkv_batch_dim_))});
+    auto slice_tk_scalar_node =
+      func_graph->NewCNode({NewValueNode(prim::kPrimTupleGetItem), key_shape, NewValueNode(MakeValue(qkv_batch_dim_))});
+    slice_tq_node = func_graph->NewCNode({NewValueNode(prim::kPrimScalarToTensor), slice_tq_scalar_node});
+    slice_tk_node = func_graph->NewCNode({NewValueNode(prim::kPrimScalarToTensor), slice_tk_scalar_node});
+    offset_node =
+      func_graph->NewCNode({NewValueNode(prim::kPrimMul), slice_tq_node, CreateInt32Tensor(split_id, true)});
+  } else {
+    int64_t tq = inputs_shape_[GetStrategyRealIndex(ops::kFlashAttentionScoreInputQueryIndex)][qkv_batch_dim_];
+    int64_t tk = inputs_shape_[GetStrategyRealIndex(ops::kFlashAttentionScoreInputKeyIndex)][qkv_batch_dim_];
+    auto slice_tq = tq / s1_split_num_ / batch_split_num_;
+    slice_tq_node = CreateInt32Tensor(slice_tq, true);
+    slice_tk_node = CreateInt32Tensor(tk / batch_split_num_, true);
+    offset_node = CreateInt32Tensor(slice_tq * split_id, true);
+  }
+
   // new_actual_seq_qlen = clip(actual_seq_qlen - offset, 0, slice_tq)
-  auto qlen_offset_sub_cnode =
-    func_graph->NewCNode({NewValueNode(prim::kPrimSub), actual_seq_qlen_node, CreateInt32Tensor(offset, true)});
-  auto new_actual_seq_qlen_cnode =
-    func_graph->NewCNode({NewValueNode(prim::kPrimClipByValue), qlen_offset_sub_cnode, CreateInt32Tensor(0, true),
-                          CreateInt32Tensor(slice_tq, true)});
+  auto qlen_offset_sub_cnode = func_graph->NewCNode({NewValueNode(prim::kPrimSub), actual_seq_qlen_node, offset_node});
+  auto new_actual_seq_qlen_cnode = func_graph->NewCNode(
+    {NewValueNode(prim::kPrimClipByValue), qlen_offset_sub_cnode, CreateInt32Tensor(0, true), slice_tq_node});
   manager->SetEdge(cnode, actual_seq_qlen_input_index, new_actual_seq_qlen_cnode);
 
   // new_actual_seq_kvlen = actual_seq_kvlen - (ReLU(actual_seq_qlen - offset) - new_actual_seq_qlen)
@@ -1096,13 +1180,79 @@ Status FlashAttentionScoreInfo::ReplaceActualSeqLenForSplitSeqInTnd(const CNodeP
     func_graph->NewCNode({NewValueNode(prim::kPrimSub), actual_seq_kvlen_node, kvlen_offset_sub_cnode});
 
   // new_actual_seq_kvlen[actual_seq_kvlen == slice_tk] = slice_tk
-  auto equal =
-    func_graph->NewCNode({NewValueNode(prim::kPrimEqual), actual_seq_kvlen_node, CreateInt32Tensor(slice_tk, true)});
+  auto equal = func_graph->NewCNode({NewValueNode(prim::kPrimEqual), actual_seq_kvlen_node, slice_tk_node});
   auto new_actual_seq_kvlen_cnode = func_graph->NewCNode(
     {NewValueNode(prim::kPrimSelect), equal, actual_seq_kvlen_node, tmp_new_actual_seq_kvlen_cnode});
   manager->SetEdge(cnode, actual_seq_kvlen_input_index, new_actual_seq_kvlen_cnode);
 
   return SUCCESS;
+}
+
+std::tuple<AnfNodePtr, AnfNodePtr> FlashAttentionScoreInfo::GetAttentionMaskAttrsByDynamicSeqDim(
+  const CNodePtr &fa_cnode, const int64_t split_id, const int64_t split_num) {
+  MS_EXCEPTION_IF_NULL(fa_cnode);
+  auto func_graph = fa_cnode->func_graph();
+  MS_EXCEPTION_IF_NULL(func_graph);
+  auto manager = func_graph->manager();
+  MS_EXCEPTION_IF_NULL(manager);
+
+  auto query_shape = func_graph->NewCNode(
+    {NewValueNode(prim::kPrimShape), fa_cnode->input(ops::kFlashAttentionScoreInputQueryIndex + 1)});
+  auto key_shape =
+    func_graph->NewCNode({NewValueNode(prim::kPrimShape), fa_cnode->input(ops::kFlashAttentionScoreInputKeyIndex + 1)});
+
+  auto query_seq_slice_length = func_graph->NewCNode(
+    {NewValueNode(prim::kPrimTupleGetItem), query_shape, NewValueNode(MakeValue(SizeToLong(qkv_seq_dim_)))});
+  auto key_seq_length = func_graph->NewCNode(
+    {NewValueNode(prim::kPrimTupleGetItem), key_shape, NewValueNode(MakeValue(SizeToLong(qkv_seq_dim_)))});
+
+  AnfNodePtr new_pre_tokens;
+  AnfNodePtr new_next_tokens;
+  if (sparse_mode_ == ops::kSparseDefaultMask || sparse_mode_ == ops::kSparseBand) {
+    new_pre_tokens = NewValueNode(MakeValue(pre_tokens_));
+    new_next_tokens = NewValueNode(MakeValue(next_tokens_));
+  } else {
+    new_pre_tokens = key_seq_length;
+    new_next_tokens = NewValueNode(MakeValue<int64_t>(0));
+  }
+  AnfNodePtr new_pre_tokens_offset;
+  AnfNodePtr new_next_tokens_offset;
+  switch (opAttrUpdateMap.at(sparse_mode_)) {
+    case kLeftUpToLeftUp:
+      // new_pre_tokens_offset = -split_id * q_len_each_split
+      // new_next_tokens_offset = split_id * q_len_each_split
+      new_pre_tokens_offset = func_graph->NewCNode(
+        {NewValueNode(prim::kPrimScalarMul), NewValueNode(MakeValue(-split_id)), query_seq_slice_length});
+      new_next_tokens_offset = func_graph->NewCNode(
+        {NewValueNode(prim::kPrimScalarMul), NewValueNode(MakeValue(split_id)), query_seq_slice_length});
+      break;
+    case kLeftUpToRightDown:
+      // new_pre_tokens_offset = kv_seq_length - (split_id + 1) * q_len_each_split
+      // new_next_tokens_offset = -kv_seq_length + (split_id + 1) * q_len_each_split
+      new_pre_tokens_offset = func_graph->NewCNode(
+        {NewValueNode(prim::kPrimScalarMul), NewValueNode(MakeValue(split_id + 1)), query_seq_slice_length});
+      new_pre_tokens_offset =
+        func_graph->NewCNode({NewValueNode(prim::kPrimScalarSub), key_seq_length, new_pre_tokens_offset});
+      new_next_tokens_offset = func_graph->NewCNode(
+        {NewValueNode(prim::kPrimScalarMul), new_pre_tokens_offset, NewValueNode(MakeValue<int64_t>(-1))});
+      break;
+    case kRightDownToRightDown:
+      // new_pre_tokens_offset = (split_num - split_id - 1) * (q_seq_length / split_num)
+      // new_next_tokens_offset = -(split_num - split_id - 1) * (q_seq_length / split_num))
+      new_pre_tokens_offset =
+        func_graph->NewCNode({NewValueNode(prim::kPrimScalarMul), NewValueNode(MakeValue(split_num - split_id - 1)),
+                              query_seq_slice_length});
+      new_next_tokens_offset =
+        func_graph->NewCNode({NewValueNode(prim::kPrimScalarMul), NewValueNode(MakeValue(split_id + 1 - split_num)),
+                              query_seq_slice_length});
+      break;
+    default:
+      MS_LOG(EXCEPTION) << "Invalid sparse mode " << sparse_mode_ << ", sparse mode should be one of [0, 2, 3, 4].";
+  }
+
+  new_pre_tokens = func_graph->NewCNode({NewValueNode(prim::kPrimScalarAdd), new_pre_tokens, new_pre_tokens_offset});
+  new_next_tokens = func_graph->NewCNode({NewValueNode(prim::kPrimScalarAdd), new_next_tokens, new_next_tokens_offset});
+  return std::make_tuple(new_pre_tokens, new_next_tokens);
 }
 
 void FlashAttentionScoreInfo::ReplaceNodeInputOrAttrs() {
@@ -1114,14 +1264,27 @@ void FlashAttentionScoreInfo::ReplaceNodeInputOrAttrs() {
           MS_LOG(EXCEPTION) << name_ << ": Replace actual_seq_qlen and actual_seq_kvlen failed.";
         }
       } else {
-        int64_t new_pre_tokens, new_next_tokens;
         std::vector<int64_t> split_info = GetSplitIdAndRank();
         int64_t split_id = split_info[kIndex2];
-        std::tie(new_pre_tokens, new_next_tokens) = GetAttentionMaskAttrs(split_id, s1_split_num_);
+        AnfNodePtr new_pre_tokens_node;
+        AnfNodePtr new_next_tokens_node;
+        if (dynamic_seq_flag_) {
+          std::tie(new_pre_tokens_node, new_next_tokens_node) =
+            GetAttentionMaskAttrsByDynamicSeqDim(cnode, split_id, s1_split_num_);
+        } else {
+          int64_t new_pre_tokens, new_next_tokens;
+          std::tie(new_pre_tokens, new_next_tokens) = GetAttentionMaskAttrs(split_id, s1_split_num_);
+          new_pre_tokens_node = NewValueNode(MakeValue(new_pre_tokens));
+          new_next_tokens_node = NewValueNode(MakeValue(new_next_tokens));
+        }
         int64_t new_sparse_mode = is_attn_mask_compressed_ ? ops::kSparseBand : sparse_mode_;
+        auto func_graph = cnode->func_graph();
+        MS_EXCEPTION_IF_NULL(func_graph);
+        auto manager = func_graph->manager();
+        MS_EXCEPTION_IF_NULL(manager);
         SetValueInputToCNode<int64_t>(cnode, ops::kFlashAttentionScoreInputSparseModeIndex + 1, new_sparse_mode);
-        SetValueInputToCNode<int64_t>(cnode, ops::kFlashAttentionScoreInputPreTokensIndex + 1, new_pre_tokens);
-        SetValueInputToCNode<int64_t>(cnode, ops::kFlashAttentionScoreInputNextTokensIndex + 1, new_next_tokens);
+        manager->SetEdge(cnode, ops::kFlashAttentionScoreInputPreTokensIndex + 1, new_pre_tokens_node);
+        manager->SetEdge(cnode, ops::kFlashAttentionScoreInputNextTokensIndex + 1, new_next_tokens_node);
       }
     }
     // If DropoutGenMask -> Reshape -> FlashAttentionScore, replace its.
@@ -1222,33 +1385,45 @@ void FlashAttentionScoreInfo::LoadBalanceExchange(const int64_t all_gather_idx, 
 
 void FlashAttentionScoreInfo::GetFlashAttentionScoreOpNode(int64_t split_id, int64_t split_num, const AnfNodePtr &q,
                                                            const AnfNodePtr &real_shift, const AnfNodePtr &drop_mask,
-                                                           const AnfNodePtr &attn_mask, AnfNodePtr *fa_op,
+                                                           const AnfNodePtr &attn_mask, const AnfNodePtr &q_shape,
+                                                           const AnfNodePtr &k_shape, AnfNodePtr *fa_op,
                                                            GenerateGraph *gen_g) {
   int64_t new_sparse_mode = is_attn_mask_compressed_ ? ops::kSparseBand : sparse_mode_;
-  int64_t new_pre_tokens, new_next_tokens;
+  AnfNodePtr new_pre_tokens_node;
+  AnfNodePtr new_next_tokens_node;
   if (!need_update_op_attrs_mode_) {
-    new_pre_tokens = pre_tokens_;
-    new_next_tokens = next_tokens_;
+    new_pre_tokens_node = NewValueNode(MakeValue(pre_tokens_));
+    new_next_tokens_node = NewValueNode(MakeValue(next_tokens_));
   } else {
-    std::tie(new_pre_tokens, new_next_tokens) = GetAttentionMaskAttrs(split_id, split_num);
+    if (dynamic_seq_flag_) {
+      MS_EXCEPTION_IF_NULL(q_shape);
+      MS_EXCEPTION_IF_NULL(k_shape);
+      std::tie(new_pre_tokens_node, new_next_tokens_node) =
+        GetAttentionMaskAttrsByDynamicSeqDim(q_shape, k_shape, split_id, split_num, gen_g);
+    } else {
+      int64_t new_pre_tokens, new_next_tokens;
+      std::tie(new_pre_tokens, new_next_tokens) = GetAttentionMaskAttrs(split_id, split_num);
+      new_pre_tokens_node = NewValueNode(MakeValue(new_pre_tokens));
+      new_next_tokens_node = NewValueNode(MakeValue(new_next_tokens));
+    }
   }
-  OperatorAttrs fa_attrs = {std::make_pair(HEAD_NUM, MakeValue(head_num_ / n1_split_num_)),
-                            std::make_pair(KEEP_PROB, MakeValue(keep_prob_)),
-                            std::make_pair(SCALE_VALUE, MakeValue(scale_value_)),
-                            std::make_pair(PRE_TOKENS, MakeValue(new_pre_tokens)),
-                            std::make_pair(NEXT_TOKENS, MakeValue(new_next_tokens)),
-                            std::make_pair(INNER_PRECISE, MakeValue<int64_t>(0)),
-                            std::make_pair(INPUT_LAYOUT, MakeValue(input_layout_)),
-                            std::make_pair(SPARSE_MODE, MakeValue<int64_t>(new_sparse_mode))};
-  *fa_op = gen_g->PushBack({gen_g->NewOpInst(FLASH_ATTENTION_SCORE, fa_attrs), q, gen_g->virtual_input_node(),
+  auto head_num = NewValueNode(MakeValue(head_num_ / n1_split_num_));
+  auto keep_prob = NewValueNode(MakeValue(keep_prob_));
+  auto scale_value = NewValueNode(MakeValue(scale_value_));
+  auto inner_precise = NewValueNode(MakeValue<int64_t>(0));
+  auto input_layout = NewValueNode(MakeValue(input_layout_));
+  auto sparse_mode = NewValueNode(MakeValue<int64_t>(new_sparse_mode));
+  *fa_op = gen_g->PushBack({gen_g->NewOpInst(FLASH_ATTENTION_SCORE), q, gen_g->virtual_input_node(),
                             gen_g->virtual_input_node(), real_shift, drop_mask, gen_g->virtual_input_node(), attn_mask,
-                            gen_g->virtual_input_node(), gen_g->virtual_input_node(), gen_g->virtual_input_node()});
+                            gen_g->virtual_input_node(), gen_g->virtual_input_node(), gen_g->virtual_input_node(),
+                            head_num, keep_prob, scale_value, new_pre_tokens_node, new_next_tokens_node, inner_precise,
+                            input_layout, sparse_mode});
 }
 
 std::vector<std::pair<AnfNodePtr, int64_t>> FlashAttentionScoreInfo::ReplaceGraphGetInputNodes(
   const AnfNodePtr &q_split, const AnfNodePtr &real_shift_split, const AnfNodePtr &drop_mask_split,
   const AnfNodePtr &attn_mask_split, const AnfNodePtr &flash_attention_score_keep,
-  const AnfNodePtr &flash_attention_score_target) {
+  const AnfNodePtr &flash_attention_score_target, const AnfNodePtr &key_shape) {
   std::pair<AnfNodePtr, int64_t> real_shift_input;
   if (is_input_passed_[ops::kFlashAttentionScoreInputRealShiftIndex]) {
     real_shift_input = std::make_pair(real_shift_split, kIndex4);
@@ -1293,6 +1468,9 @@ std::vector<std::pair<AnfNodePtr, int64_t>> FlashAttentionScoreInfo::ReplaceGrap
   inputs_nodes.insert(inputs_nodes.end(), {std::make_pair(flash_attention_score_target, kIndex8),
                                            std::make_pair(flash_attention_score_target, kIndex9),
                                            std::make_pair(flash_attention_score_target, kIndex10)});
+  if (key_shape != nullptr) {
+    inputs_nodes.insert(inputs_nodes.end(), {std::make_pair(key_shape, kIndex2)});
+  }
   return inputs_nodes;
 }
 
@@ -1327,9 +1505,35 @@ Status FlashAttentionScoreInfo::ComputeReplaceGraphForLoadBalance(const CNodePtr
   LoadBalanceSplitAlongSeqDim(ops::kFlashAttentionScoreInputAttnMaskIndex, &gen_g, &attn_mask_split, &attn_mask_keep,
                               &attn_mask_exchange);
 
-  AnfNodePtr flash_attention_score_keep;
+  const int64_t all_gather_idx = (split_id < target_split_id) ? 1 : 0;
+  AnfNodePtr q_target;
+  LoadBalanceExchange(all_gather_idx, group, q_exchange, &q_target, &gen_g);
+  AnfNodePtr real_shift_target = gen_g.virtual_input_node();
+  if (is_input_passed_[ops::kFlashAttentionScoreInputRealShiftIndex]) {
+    LoadBalanceExchange(all_gather_idx, group, real_shift_exchange, &real_shift_target, &gen_g);
+  }
+  AnfNodePtr drop_mask_target = gen_g.virtual_input_node();
+  if (is_input_passed_[ops::kFlashAttentionScoreInputDropMaskIndex]) {
+    LoadBalanceExchange(all_gather_idx, group, drop_mask_exchange, &drop_mask_target, &gen_g);
+  }
+  AnfNodePtr attn_mask_target = gen_g.virtual_input_node();
+  if (is_input_passed_[ops::kFlashAttentionScoreInputAttnMaskIndex] && !is_attn_mask_compressed_) {
+    LoadBalanceExchange(all_gather_idx, group, attn_mask_exchange, &attn_mask_target, &gen_g);
+  }
+
+  AnfNodePtr flash_attention_score_keep, flash_attention_score_target;
+  AnfNodePtr q_target_shape = nullptr;
+  AnfNodePtr q_keep_shape = nullptr;
+  AnfNodePtr k_shape = nullptr;
+  if (dynamic_seq_flag_) {
+    q_keep_shape = gen_g.PushBack({NewValueNode(prim::kPrimShape), q_keep});
+    k_shape = gen_g.PushBack({NewValueNode(prim::kPrimShape), gen_g.virtual_input_node()});
+    q_target_shape = gen_g.PushBack({NewValueNode(prim::kPrimShape), q_target});
+  }
+
   GetFlashAttentionScoreOpNode(split_id * kLoadBalanceSplitNum, s1_split_num_ * kLoadBalanceSplitNum, q_keep,
-                               real_shift_keep, drop_mask_keep, attn_mask_keep, &flash_attention_score_keep, &gen_g);
+                               real_shift_keep, drop_mask_keep, attn_mask_keep, q_keep_shape, k_shape,
+                               &flash_attention_score_keep, &gen_g);
   auto softmax_max_keep = gen_g.PushBack({gen_g.NewOpInst(TUPLE_GETITEM), flash_attention_score_keep,
                                           CreatInt64Imm(ops::kFlashAttentionScoreOutputSoftmaxMaxIndex)});
   auto softmax_sum_keep = gen_g.PushBack({gen_g.NewOpInst(TUPLE_GETITEM), flash_attention_score_keep,
@@ -1339,35 +1543,12 @@ Status FlashAttentionScoreInfo::ComputeReplaceGraphForLoadBalance(const CNodePtr
   auto attention_out_keep = gen_g.PushBack({gen_g.NewOpInst(TUPLE_GETITEM), flash_attention_score_keep,
                                             CreatInt64Imm(ops::kFlashAttentionScoreOutputAttentionOutIndex)});
 
-  const int64_t all_gather_idx = (split_id < target_split_id) ? 1 : 0;
-  AnfNodePtr q_target;
-  LoadBalanceExchange(all_gather_idx, group, q_exchange, &q_target, &gen_g);
-  AnfNodePtr real_shift_target;
-  if (is_input_passed_[ops::kFlashAttentionScoreInputRealShiftIndex]) {
-    LoadBalanceExchange(all_gather_idx, group, real_shift_exchange, &real_shift_target, &gen_g);
-  } else {
-    real_shift_target = gen_g.virtual_input_node();
-  }
-  AnfNodePtr drop_mask_target;
-  if (is_input_passed_[ops::kFlashAttentionScoreInputDropMaskIndex]) {
-    LoadBalanceExchange(all_gather_idx, group, drop_mask_exchange, &drop_mask_target, &gen_g);
-  } else {
-    drop_mask_target = gen_g.virtual_input_node();
-  }
-  AnfNodePtr attn_mask_target;
-  if (is_input_passed_[ops::kFlashAttentionScoreInputAttnMaskIndex] && !is_attn_mask_compressed_) {
-    LoadBalanceExchange(all_gather_idx, group, attn_mask_exchange, &attn_mask_target, &gen_g);
-  } else {
-    attn_mask_target = gen_g.virtual_input_node();
-  }
-
   // Insert Depend between fa_keep->fa_target
   auto q_target_depend = gen_g.PushBack({gen_g.NewOpInst(DEPEND), q_target, attention_out_keep});
 
-  AnfNodePtr flash_attention_score_target;
   GetFlashAttentionScoreOpNode(target_split_id * kLoadBalanceSplitNum + 1, s1_split_num_ * kLoadBalanceSplitNum,
-                               q_target_depend, real_shift_target, drop_mask_target, attn_mask_target,
-                               &flash_attention_score_target, &gen_g);
+                               q_target_depend, real_shift_target, drop_mask_target, attn_mask_target, q_target_shape,
+                               k_shape, &flash_attention_score_target, &gen_g);
   auto softmax_max_target = gen_g.PushBack({gen_g.NewOpInst(TUPLE_GETITEM), flash_attention_score_target,
                                             CreatInt64Imm(ops::kFlashAttentionScoreOutputSoftmaxMaxIndex)});
   auto softmax_sum_target = gen_g.PushBack({gen_g.NewOpInst(TUPLE_GETITEM), flash_attention_score_target,
@@ -1397,7 +1578,7 @@ Status FlashAttentionScoreInfo::ComputeReplaceGraphForLoadBalance(const CNodePtr
 
   std::vector<std::pair<AnfNodePtr, int64_t>> inputs_nodes =
     ReplaceGraphGetInputNodes(q_split, real_shift_split, drop_mask_split, attn_mask_split, flash_attention_score_keep,
-                              flash_attention_score_target);
+                              flash_attention_score_target, k_shape);
 
   replace_graph_ = std::make_shared<std::pair<std::vector<std::pair<AnfNodePtr, int64_t>>, AnfNodePtr>>(
     std::make_pair(inputs_nodes, output_maketuple));
