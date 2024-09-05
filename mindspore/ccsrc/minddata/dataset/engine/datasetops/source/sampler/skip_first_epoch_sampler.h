@@ -44,6 +44,8 @@ class SkipFirstEpochSamplerRT : public SequentialSamplerRT {
   /// \return int64_t Calculated number of samples (always -1)
   int64_t CalculateNumSamples(const int64_t num_rows) override;
 
+  Status HandshakeRandomAccessOp(const RandomAccessOp *op, const int32_t reset_count = 0) override;
+
   // Printer for debugging purposes.
   // @param out - output stream to write to
   // @param show_all - bool to show detailed vs summary
