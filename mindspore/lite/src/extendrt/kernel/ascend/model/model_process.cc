@@ -660,7 +660,7 @@ bool ModelProcess::Load(const void *om_data, size_t om_data_size) {
         MS_LOG(ERROR) << "Call aclmdlBundleGetModelId failed, ret = " << acl_ret << "!";
         return false;
       }
-      acl_ret = CALL_ASCEND_API(aclmdlBundleGetModelId, model_id_, 2, &update_id_);
+      acl_ret = CALL_ASCEND_API(aclmdlBundleGetModelId, model_id_, 1, &update_id_);
       if (acl_ret != ACL_ERROR_NONE) {
         MS_LOG(ERROR) << "Call aclmdlBundleGetModelId failed, ret = " << acl_ret << "!";
         return false;
@@ -1353,7 +1353,7 @@ bool ModelProcess::CreateWeightsInput(const std::vector<KernelTensor *> &kernel_
       auto size = host_data->size;
       if (size != info.buffer_size) {
         MS_LOG(ERROR) << "Buffer size: " << info.buffer_size << "!="
-                      << "input size :" << size << ", current only support data type fp32!";
+                      << "input size :" << size << ", current only support data type fp16!";
         return false;
       }
       if (data == nullptr) {

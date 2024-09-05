@@ -126,7 +126,6 @@ Buffer ModelConverter::BuildAirModel(const transform::DfGraphPtr &graph,
     }
     std::vector<ge::GraphWithOptions> graph_and_options;
     graph_and_options.push_back(ge::GraphWithOptions{split_graphs.infer_graph, bund_bundle_options});
-    graph_and_options.push_back(ge::GraphWithOptions{split_graphs.var_init_graph, bund_bundle_options});
     graph_and_options.push_back(ge::GraphWithOptions{split_graphs.var_update_graph, bund_bundle_options});
     ret = ge::aclgrphBundleBuildModel(graph_and_options, model);
     if (ret != ge::SUCCESS) {
@@ -150,7 +149,6 @@ Buffer ModelConverter::BuildAirModel(const transform::DfGraphPtr &graph,
     return Buffer();
   }
 #endif
-
   ge::aclgrphBuildFinalize();
   return Buffer(model.data.get(), model.length);
 }
