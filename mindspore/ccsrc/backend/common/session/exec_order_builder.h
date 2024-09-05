@@ -45,7 +45,8 @@ class ExecOrderBuilder {
 
   bool CanVisitInput(bool visit_with_refcount, const AnfNodePtr &input, SeenNum seen);
 
-  void Build();
+  void BuildByBFS();
+  void BuildByDFS();
 
   void EnqueueReadyNodes(const AnfNodePtr &node, std::deque<AnfNodePtr> *visit_queue, bool comm_first = true);
 
