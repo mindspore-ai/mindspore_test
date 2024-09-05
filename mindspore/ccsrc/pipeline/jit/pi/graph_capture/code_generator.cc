@@ -722,9 +722,17 @@ py::object CodeBreakGenerator::MakeCapturedCode(std::vector<std::unique_ptr<Inst
   code_gen.set_missing_value_to_undefine(true);
   code_gen.SetGlobals(GetGlobals());
   code_gen.Init();
-  code_gen.AddInstrs(std::move(load_oper));
-  code_gen.Build();
-  code_gen.GenReturn();
+  if (side_effect_handler_->IsEmpty()) {
+    code_gen.AddInstrs(std::move(load_oper));
+    code_gen.Build();
+    code_gen.GenReturn();
+  } else {
+    // If side effect nodes exist, we can't generate bytecode successfully. We will implement it later
+    code_gen.AddInstr(std::make_unique<Instr>(LOAD_GLOBAL, 0, "Exception"));
+    code_gen.AddInstr(std::make_unique<Instr>(LOAD_CONST, 0, py::str("Dummy bytecode, shouldn't reach here!")));
+    code_gen.AddInstr(std::make_unique<Instr>(CALL_FUNCTION, 1));
+    code_gen.AddInstr(std::make_unique<Instr>(RAISE_VARARGS, 1));
+  }
 
   unsigned flags = co_->co_flags & ~(CO_VARARGS | CO_VARKEYWORDS);
   code_gen.SetArgsInfo(argc, 0);

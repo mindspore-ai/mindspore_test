@@ -1043,7 +1043,7 @@ FuncGraphPtr FuncGraphBuilder::graph() {
     return graph_;
   }
   if (output_nodes_.empty()) {
-    MS_LOG(DEBUG) << "The graph " << graph_->ToString() << " has not been set output.";
+    MS_LOG(INFO) << "The graph " << graph_->ToString() << " has not been set output.";
     return nullptr;
   }
   bool all_value_node = std::all_of(output_nodes_.begin(), output_nodes_.end(),

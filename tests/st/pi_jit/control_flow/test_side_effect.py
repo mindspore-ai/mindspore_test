@@ -14,7 +14,7 @@
 ''' test resolve of side effect in pijit , by break_count_ judge is support side effect handing'''
 import sys
 import pytest
-from mindspore import jit, Tensor, context
+from mindspore import jit, Tensor, context, ops
 from mindspore.nn import Cell, ReLU
 from mindspore._c_expression import get_code_extra
 import dis
@@ -22,6 +22,7 @@ import mindspore
 import types
 import numpy
 from tests.mark_utils import arg_mark
+from ..share.utils import match_array, assert_executed_by_graph_mode
 
 @pytest.fixture(autouse=True)
 def skip_if_python_version_too_high():
@@ -100,7 +101,6 @@ def test_del_subscr_side_effect_3():
     assert jcr["break_count_"] == 0
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
-@pytest.mark.skip(reason="fix later, error because of bytecode reorder")
 def test_dict_pop_side_effect_4():
     """
     Feature: DICT POP side effect
@@ -169,7 +169,6 @@ def test_del_global_side_effect_7():
     context.set_context(mode=context.PYNATIVE_MODE)
 
 
-@pytest.mark.skip(reason="fix later")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_fix_bug_store_subscr_side_effect_1():
     """
@@ -220,7 +219,6 @@ def test_modify_mix1(test_optimize):
 
 
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
-@pytest.mark.skip(reason="fix later, error because of bytecode reorder")
 def test_modify_mix2():
     """
     Feature: Side-effect handle
@@ -244,7 +242,6 @@ def test_modify_mix2():
     assert x1 == x2
 
 
-@pytest.mark.skip(reason="fix later")
 @arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 def test_global_modified_cross_module():
     """
@@ -397,3 +394,335 @@ def test_tensor_consistency(assign_fn):
     assert x.value() == x1 and y.value() == y1
     assert a1 == Tensor([3]) and b1 == Tensor([7])
     assert a2 == Tensor([7]) and b2 == Tensor([7])
+
+
+jit_cfg = {'compile_with_try': False}
+
+
+@pytest.mark.skip(reason='unsupported for now')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_subgraph_side_effect_of_dict():
+    """
+    Feature: Side-effect handle
+    Description: Test dict set item
+    Expectation: No exception
+    """
+    def fn2(d: dict):
+        d['x'] *= 2
+        return d['x'] + 1
+
+    def fn(d: dict):
+        x = d['x']
+        d['x'] = x + 1
+        y = fn2(d)
+        return d['x'] + y
+
+    x1 = {'x': Tensor([1, 2, 3])}
+    o1 = fn(x1)
+
+    x2 = {'x': Tensor([1, 2, 3])}
+    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    o2 = fn(x2)
+
+    match_array(o1, o2)
+    assert len(x1) == len(x2)
+    match_array(x1['x'], x2['x'])
+    jcr = get_code_extra(fn.__wrapped__)
+    assert jcr['stat'] == 'GRAPH_CALLABLE'
+    assert jcr['break_count_'] == 0
+
+
+class Net1(mindspore.nn.Cell):
+    def __init__(self):
+        super(Net1, self).__init__()
+        self.memory = Tensor([1, 2, 3])
+
+    @jit(mode='PIJit', jit_config=jit_cfg)
+    def construct(self, x: Tensor):
+        self.update_memory()
+        return x + self.memory
+
+    def update_memory(self):
+        self.memory = self.memory + 1
+        return self.memory
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_subgraph_side_effect_of_store_attr():
+    """
+    Feature: Side-effect handle
+    Description: Test STORE_ATTR
+    Expectation: No exception
+    """
+    net = Net1()
+    x = Tensor([1, 1, 1])
+    o = net(x)
+
+    match_array(o, Tensor([3, 4, 5]))
+    match_array(net.memory, Tensor([2, 3, 4]))
+    jcr = get_code_extra(net.construct.__wrapped__)
+    assert jcr['stat'] == 'GRAPH_CALLABLE'
+    assert jcr['break_count_'] == 0
+
+
+class Net2(mindspore.nn.Cell):
+    def __init__(self):
+        super(Net2, self).__init__()
+        self.memory_a = Tensor([1, 2, 3])
+        self.memory_b = Tensor([1, 1, 1])
+
+    def construct(self, x: Tensor):
+        a = self.memory_a * 2
+        self.memory_a += 1
+        c = self.memory_a + self.memory_b
+        memory = self.update_memory(x)
+        return a + c + memory
+
+    def update_memory(self, x: Tensor):
+        self.memory_a = self.memory_a + x
+        self.memory_b = self.memory_b * 2
+        self.update_memory_once_more()
+        return self.memory_a + self.memory_b
+
+    def update_memory_once_more(self):
+        self.memory_a = self.memory_a + self.memory_b
+        self.memory_b = self.memory_b * 2
+        return self.memory_a
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_side_effect_of_store_attr_in_deep_subgraph():
+    """
+    Feature: Side-effect handle
+    Description: Test STORE_ATTR
+    Expectation: No exception
+    """
+    net1 = Net2()
+    x = Tensor([1, 1, 1])
+    o1 = net1(x)
+
+    net2 = Net2()
+    fn = jit(net2.construct, mode='PIJit', jit_config=jit_cfg)
+    o2 = fn(x)
+
+    match_array(o1, o2)
+    match_array(net1.memory_a, net2.memory_a)
+    match_array(net1.memory_b, net2.memory_b)
+    jcr = get_code_extra(fn.__wrapped__)
+    assert jcr['stat'] == 'GRAPH_CALLABLE'
+    assert jcr['break_count_'] == 0
+
+
+class Net3(mindspore.nn.Cell):
+    def __init__(self):
+        super(Net3, self).__init__()
+        self.net = Net2()
+
+    def construct(self, x: Tensor):
+        y = self.net(x)
+        return x + y
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_side_effect_of_store_attr_in_nested_cell():
+    """
+    Feature: Side-effect handle
+    Description: Test STORE_ATTR
+    Expectation: No exception
+    """
+    net1 = Net3()
+    x = Tensor([1, 1, 1])
+    o1 = net1(x)
+
+    net2 = Net3()
+    fn = jit(net2.construct, mode='PIJit', jit_config=jit_cfg)
+    o2 = fn(x)
+
+    match_array(o1, o2)
+    match_array(net1.net.memory_a, net2.net.memory_a)
+    match_array(net1.net.memory_b, net2.net.memory_b)
+    jcr = get_code_extra(fn.__wrapped__)
+    assert jcr['stat'] == 'GRAPH_CALLABLE'
+    assert jcr['break_count_'] == 0
+
+
+class Net4(mindspore.nn.Cell):
+    def __init__(self):
+        super(Net4, self).__init__()
+        self.memory = Tensor([1, 2, 3])
+
+    @jit(mode='PIJit', jit_config=jit_cfg)
+    def construct(self, x: Tensor):
+        self.update_memory()
+        return 2 * x
+
+    def update_memory(self):
+        self.memory = self.memory + 1
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_subgraph_has_side_effect_but_has_no_return_value():
+    """
+    Feature: Side-effect handle
+    Description: Test a function that has no return statement
+    Expectation: No exception
+    """
+    net1 = Net4()
+    x = Tensor([1, 1, 1])
+    o1 = net1(x)
+
+    net2 = Net4()
+    fn = jit(net2.construct, mode='PIJit', jit_config=jit_cfg)
+    o2 = fn(x)
+
+    match_array(o1, o2)
+    match_array(net1.memory, net2.memory)
+    jcr = get_code_extra(fn.__wrapped__)
+    assert jcr['stat'] == 'GRAPH_CALLABLE'
+    assert jcr['break_count_'] == 0
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_list_setitem():
+    """
+    Feature: Side-effect handle
+    Description: Test list setitem
+    Expectation: No exception
+    """
+    def fn(x: Tensor, axis: int):
+        lst = [1] * len(x.shape)
+        lst[axis + 1] = -1
+        return lst
+
+    x = ops.ones((2, 3, 4))
+    o1 = fn(x, 0)
+
+    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    o2 = fn(x, 0)
+
+    assert o1 == o2
+    jcr = get_code_extra(fn.__wrapped__)
+    assert jcr['stat'] == 'GRAPH_CALLABLE'
+    assert jcr['break_count_'] == 0
+
+
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_list_setitem_by_inplace_add():
+    """
+    Feature: Side-effect handle
+    Description: Test list setitem by inplace operation
+    Expectation: No exception
+    """
+    def fn(lst: list, i: int, x: Tensor):
+        lst[i - 1] += ops.abs(x)
+        return lst
+
+    lst = [Tensor([1, 1, 1]), Tensor([2, 2, 2]), Tensor([3, 3, 3])]
+    x = Tensor([-1, 0, 1])
+    o1 = fn(lst, 2, x)
+
+    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    lst = [Tensor([1, 1, 1]), Tensor([2, 2, 2]), Tensor([3, 3, 3])]
+    o2 = fn(lst, 2, x)
+
+    assert o2 is lst
+    assert len(o1) == len(o2)
+    for l, r in zip(o1, o2):
+        match_array(l, r)
+    jcr = get_code_extra(fn.__wrapped__)
+    assert jcr['stat'] == 'GRAPH_CALLABLE'
+    assert jcr['break_count_'] == 0
+
+
+@pytest.mark.skip(reason='unsupported for now')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_list_setitem_in_subgraph():
+    """
+    Feature: Side-effect handle
+    Description: Test list setitem
+    Expectation: No exception
+    """
+    def fn2(lst: list):
+        lst[0] *= 2
+        return lst[0] + 2
+
+    def fn(lst: list):
+        x = lst[0]
+        lst[0] += 1
+        y = fn2(lst)
+        return lst[0] + y + x
+
+    x1 = [Tensor([1, 2, 3])]
+    o1 = fn(x1)
+
+    x2 = [Tensor([1, 2, 3])]
+    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    o2 = fn(x2)
+
+    match_array(o1, o2)
+    assert len(x1) == len(x2)
+    match_array(x1[0], x2[0])
+    jcr = get_code_extra(fn.__wrapped__)
+    assert jcr['stat'] == 'GRAPH_CALLABLE'
+    assert jcr['break_count_'] == 0
+
+
+@pytest.mark.skip(reason='unsupported')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_tensor_setitem_by_slice():
+    """
+    Feature: Side-effect handle
+    Description: Test Tensor setitem by slice
+    Expectation: No exception
+    """
+    def fn(x: Tensor, indices: tuple, y: int):
+        x[:, indices] = y
+        return x
+
+    x = ops.ones((2, 3, 4))
+    indices = (0, 1)
+    o1 = fn(x, indices, -1)
+
+    fn = jit(fn, mode='PIJit', jit_config=jit_cfg)
+    o2 = fn(x, indices, -1)
+
+    match_array(o1, o2)
+    jcr = get_code_extra(fn.__wrapped__)
+    assert jcr['stat'] == 'GRAPH_CALLABLE'
+    assert jcr['break_count_'] == 0
+
+
+class Net5(mindspore.nn.Cell):
+    def __init__(self):
+        super(Net5, self).__init__()
+        self.a = 0
+
+    def construct(self, x: Tensor):
+        return x + self.a
+
+
+@pytest.mark.skip('unsupported')
+@arg_mark(plat_marks=['cpu_linux'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+def test_graph_reusing_for_store_int_attr_outside_of_jit():
+    """
+    Feature: Side-effect handle
+    Description: Test graph reusing
+    Expectation: No exception
+    """
+    net1 = Net5()
+    out1 = []
+    x = Tensor([1, 2, 3])
+    for _ in range(3):
+        out1.append(net1(x))
+        net1.a += 1
+
+    net2 = Net5()
+    fn = jit(net2.construct, mode='PIJit', jit_config=jit_cfg)
+    phase = ''
+    for i in range(3):
+        o = fn(x)
+        match_array(o, out1[i])
+        assert_executed_by_graph_mode(fn)
+        jcr = get_code_extra(fn.__wrapped__)
+        if i == 0:
+            phase = jcr['phase_']
+        else:
+            assert jcr['phase_'] == phase  # reusing the first graph
+        assert jcr['call_count_'] == (i + 1)

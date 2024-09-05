@@ -5,6 +5,7 @@ import mindspore.nn as nn
 import mindspore.common.dtype as mstype
 from mindspore import Tensor, jit, context, Parameter
 from mindspore.ops import composite as C
+from mindspore._c_expression import get_code_extra
 from tests.mark_utils import arg_mark
 from tests.st.pi_jit.share.utils import pi_jit_with_config
 
@@ -26,7 +27,7 @@ class Net(nn.Cell):
         self.forward_time += self.step_time
         print("2nd=>cur_time:", self.forward_time, " step:", self.step_time)
 
-    @pi_jit_with_config(jit_config={"compile_by_trace": False})
+    @pi_jit_with_config(jit_config={"compile_with_try": False})
     def construct(self, x):
         x = self.fc(x)
         self.inc_time()
@@ -63,3 +64,7 @@ def test_forward_time(Net1, CustomLoss1, x, y):
     loss = CustomLoss1(net)
     loss(y, x)
     assert net.forward_time == 1
+    jcr = get_code_extra(net.construct.__wrapped__)
+    assert jcr is not None
+    assert jcr['stat'] == 'GRAPH_CALLABLE'
+    assert jcr['break_count_'] == 0
