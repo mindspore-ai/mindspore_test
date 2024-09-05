@@ -584,7 +584,7 @@ class _AutoParallelContext:
         self.check_context_handle()
         dir_path = os.path.dirname(strategy_ckpt_save_file)
         if dir_path and not os.path.exists(dir_path):
-            os.makedirs(dir_path, exist_ok=True)
+            os.makedirs(dir_path, mode=0o700, exist_ok=True)
         self._context_handle.set_strategy_ckpt_save_file(strategy_ckpt_save_file)
 
     def get_strategy_ckpt_save_file(self):
@@ -643,7 +643,7 @@ class _AutoParallelContext:
         self.check_context_handle()
         dir_path = os.path.dirname(group_ckpt_save_file)
         if dir_path and not os.path.exists(dir_path):
-            os.makedirs(dir_path)
+            os.makedirs(dir_path, mode=0o700, exist_ok=True)
         self._context_handle.set_group_ckpt_save_file(group_ckpt_save_file)
 
     def get_parameter_broadcast_is_set(self):
@@ -1210,7 +1210,7 @@ def _set_ops_strategy_json_config(type="SAVE", path="", mode="all"):
     """
     dir_path = os.path.dirname(path)
     if dir_path and not os.path.exists(dir_path):
-        os.makedirs(dir_path)
+        os.makedirs(dir_path, mode=0o700, exist_ok=True)
     check_type = ["SAVE", "LOAD"]
     check_mode = ["all", "principal"]
     if type in check_type and mode in check_mode:
