@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2023 Huawei Technologies Co., Ltd
+ * Copyright 2020-2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,11 +65,6 @@ DFunctor::DFunctor(const FuncGraphPtr &primal_graph, const pipeline::ResourceBas
   tape_->set_segment(primal_graph->segment());
 
   dout_ = tape_->add_parameter();
-  const auto &info = primal_graph->GetEffectInfo();
-  if (is_top_ && info.back_mem) {
-    // Add Umonad arg for top graph.
-    (void)tape_->add_parameter();
-  }
 }
 
 void DFunctor::Init(bool is_top) {
