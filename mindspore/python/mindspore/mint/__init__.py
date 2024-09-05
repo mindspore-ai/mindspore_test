@@ -571,6 +571,14 @@ def cat(tensors, dim=0):
     """
     return ops.auto_generate.cat(tensors, dim)
 
+def concat(tensors, dim=0):
+    r"""
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Alias of mint.cat().
+    """
+    return cat(tensors, dim)
 
 def cummax(input, dim):
     r"""
@@ -1215,7 +1223,7 @@ __all__ = [
     # 44
     'cos',
     # 45
-
+    'concat',
     # 46
     'bitwise_and',
     'bitwise_or',
