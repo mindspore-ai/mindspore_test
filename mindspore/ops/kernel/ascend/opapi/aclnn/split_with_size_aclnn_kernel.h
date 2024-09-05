@@ -36,6 +36,7 @@ class SplitWithSizeAscend : public AclnnKernelMod {
 
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
+  std::vector<KernelTensorPtr> converted_output_;
 
   int64_t GetDimValue(KernelTensor *axis_ptr) const noexcept;
 

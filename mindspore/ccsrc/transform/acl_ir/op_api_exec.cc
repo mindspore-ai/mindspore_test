@@ -27,6 +27,7 @@ namespace {
 using InitHugeMemThreadLocalCast = int (*)(void *, bool);
 using UnInitHugeMemThreadLocalCast = void (*)(void *, bool);
 using ReleaseHugeMemCast = void (*)(void *, bool);
+using ReleaseExecutorCast = int (*)(aclOpExecutor *);
 }  // namespace
 
 static std::mutex init_mutex;
@@ -72,6 +73,18 @@ ReleaseHugeMem OpApiDefaultResource::release_mem_func() {
   }
   release_mem_func_ = reinterpret_cast<ReleaseHugeMemCast>(release_mem_func);
   return release_mem_func_;
+}
+
+ReleaseExecutor OpApiDefaultResource::release_executor_func() {
+  if (release_executor_func_ != nullptr) {
+    return release_executor_func_;
+  }
+  auto release_executor_func = GetOpApiFunc("aclDestroyAclOpExecutor");
+  if (release_executor_func == nullptr) {
+    MS_LOG(EXCEPTION) << "aclDestroyAclOpExecutor not in " << GetOpApiLibName() << ", please check!";
+  }
+  release_executor_func_ = reinterpret_cast<ReleaseExecutorCast>(release_executor_func);
+  return release_executor_func_;
 }
 
 std::vector<std::string> ParseCustomPriority(std::string file_name) {

@@ -65,13 +65,13 @@ using CacheTuple = std::tuple<uint64_t, aclOpExecutor *, ProcessCache, size_t>;
         hash_map_[hash_id_##FUNC_NAME##_] = hash_cache_.begin();                                                     \
       } else {                                                                                                       \
         hash_id_##FUNC_NAME##_ = 0;                                                                                  \
-        cache(true, {}, false);                                                                                      \
+        cache(transform::ProcessCacheType::kReleaseParamsAndExecutor, {});                                           \
       }                                                                                                              \
     }                                                                                                                \
     if (hash_cache_.size() > capacity_) {                                                                            \
       hash_map_.erase(std::get<0>(hash_cache_.back()));                                                              \
       auto release_func = std::get<2>(hash_cache_.back());                                                           \
-      release_func(true, {}, false);                                                                                 \
+      release_func(transform::ProcessCacheType::kReleaseParamsAndExecutor, {});                                      \
       hash_cache_.pop_back();                                                                                        \
     }                                                                                                                \
                                                                                                                      \
@@ -134,13 +134,13 @@ using CacheTuple = std::tuple<uint64_t, aclOpExecutor *, ProcessCache, size_t>;
         hash_map_[hash_id_] = hash_cache_.begin();                                                              \
       } else {                                                                                                  \
         hash_id_ = 0;                                                                                           \
-        cache(true, {}, false);                                                                                 \
+        cache(transform::ProcessCacheType::kReleaseParamsAndExecutor, {});                                      \
       }                                                                                                         \
     }                                                                                                           \
     if (hash_cache_.size() > capacity_) {                                                                       \
       hash_map_.erase(std::get<0>(hash_cache_.back()));                                                         \
       auto release_func = std::get<2>(hash_cache_.back());                                                      \
-      release_func(true, {}, false);                                                                            \
+      release_func(transform::ProcessCacheType::kReleaseParamsAndExecutor, {});                                 \
       hash_cache_.pop_back();                                                                                   \
     }                                                                                                           \
                                                                                                                 \
@@ -286,7 +286,7 @@ class AclnnKernelMod : public KernelMod {
   std::mutex mtx_;
   std::unordered_map<uint64_t, std::list<CacheTuple>::iterator> hash_map_;
   std::list<CacheTuple> hash_cache_;
-  size_t capacity_{128};
+  size_t capacity_{1024};
 
   static constexpr size_t kWsSizeIndex = 0;
   static constexpr size_t kHashIdIndex = 3;

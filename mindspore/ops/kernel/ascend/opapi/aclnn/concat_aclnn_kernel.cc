@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #include "kernel/ascend/opapi/aclnn/concat_aclnn_kernel.h"
+#include <algorithm>
 #include <utility>
 #include "transform/acl_ir/acl_convert.h"
 
@@ -21,7 +22,9 @@ namespace mindspore {
 namespace kernel {
 namespace {
 constexpr size_t kConcatMinNum = 2;
-std::pair<std::vector<KernelTensor *>, int64_t> GetConcatRealInputs(const std::vector<KernelTensor *> &inputs) {
+}  // namespace
+
+std::vector<KernelTensor *> ConcatAscend::GetConcatRealInputs(const std::vector<KernelTensor *> &inputs) {
   if (MS_UNLIKELY(inputs.size() < kConcatMinNum)) {
     MS_LOG(EXCEPTION) << "For 'Concat', inputs should be 2 at least, bug got " << inputs.size();
   }
@@ -29,27 +32,28 @@ std::pair<std::vector<KernelTensor *>, int64_t> GetConcatRealInputs(const std::v
   auto last_element = inputs.end() - 1;
   std::vector<KernelTensor *> tensors(inputs.begin(), last_element);
   if (inputs.size() == kConcatMinNum) {
+    tuple_tensors_ = transform::ConvertKernelTensor<std::vector<KernelTensorPtr>>(inputs[kIndex0]);
     tensors.clear();
-    tensors = transform::ConvertKernelTensor<std::vector<KernelTensor *>>(inputs[kIndex0]);
+    std::transform(tuple_tensors_.begin(), tuple_tensors_.end(), std::back_inserter(tensors),
+                   [](const KernelTensorPtr &tensor) -> KernelTensor * { return tensor.get(); });
   }
 
   auto last_kernel_tensor = *last_element;
   MS_EXCEPTION_IF_NULL(last_kernel_tensor);
-  auto axis = last_kernel_tensor->GetValueWithCheck<int64_t>();
-  return std::make_pair(tensors, axis);
+  axis_ = last_kernel_tensor->GetValueWithCheck<int64_t>();
+  return tensors;
 }
-}  // namespace
 void ConcatAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                     const std::vector<KernelTensor *> &outputs) {
-  std::tie(tensors_, axis_) = GetConcatRealInputs(inputs);
-  GetWorkspaceForResize(tensors_, axis_, outputs[kIndex0]);
+  auto inputs_tensors = GetConcatRealInputs(inputs);
+  GetWorkspaceForResize(inputs_tensors, axis_, outputs[kIndex0]);
 }
 
 bool ConcatAscend::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
                           const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
-  std::tie(tensors_, axis_) = GetConcatRealInputs(inputs);
-  RunOp(stream_ptr, workspace, tensors_, axis_, outputs[kIndex0]);
+  auto inputs_tensors = GetConcatRealInputs(inputs);
+  RunOp(stream_ptr, workspace, inputs_tensors, axis_, outputs[kIndex0]);
   return true;
 }
 
