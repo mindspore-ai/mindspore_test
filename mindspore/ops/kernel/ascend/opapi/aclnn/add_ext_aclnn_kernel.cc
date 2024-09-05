@@ -26,22 +26,22 @@ void AddExtAscend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
   switch (alpha_dtype_id) {
     case kNumberTypeBool: {
       auto alpha_value = inputs[kIndex2]->GetValueWithCheck<bool>();
-      MAKE_SCALAR(alpha_value, inputs[0]->dtype_id(), alpha_);
+      MAKE_SCALAR(alpha_value, alpha_dtype_id, alpha_);
       break;
     }
     case kNumberTypeFloat32: {
       auto alpha_value = inputs[kIndex2]->GetValueWithCheck<float>();
-      MAKE_SCALAR(alpha_value, inputs[0]->dtype_id(), alpha_);
+      MAKE_SCALAR(alpha_value, alpha_dtype_id, alpha_);
       break;
     }
     case kNumberTypeFloat64: {
       auto alpha_value = inputs[kIndex2]->GetValueWithCheck<double>();
-      MAKE_SCALAR(alpha_value, inputs[0]->dtype_id(), alpha_);
+      MAKE_SCALAR(alpha_value, alpha_dtype_id, alpha_);
       break;
     }
     case kNumberTypeInt64: {
       auto alpha_value = inputs[kIndex2]->GetValueWithCheck<int64_t>();
-      MAKE_SCALAR(alpha_value, inputs[0]->dtype_id(), alpha_);
+      MAKE_SCALAR(alpha_value, alpha_dtype_id, alpha_);
       break;
     }
     default:
