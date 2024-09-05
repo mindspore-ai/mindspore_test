@@ -21,21 +21,10 @@
 #include "utils/ms_context.h"
 #include "include/common/pybind_api/api_register.h"
 #include "runtime/device/multi_stream_controller.h"
+#include "pybind_api/hal/utils_py.h"
 
 namespace mindspore {
 namespace hal {
-namespace {
-DeviceContext *GetDeviceCtx() {
-  const auto &device_name = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
-  auto device_ctx = device::DeviceContextManager::GetInstance().GetOrCreateDeviceContext(
-    {device_name, MsContext::GetInstance()->get_param<uint32_t>(MS_CTX_DEVICE_ID)});
-  MS_EXCEPTION_IF_NULL(device_ctx);
-
-  device_ctx->Initialize();
-  return device_ctx;
-}
-}  // namespace
-
 StreamPy::StreamPy(int priority) {
   device_ctx_ = GetDeviceCtx();
   device_ctx_->device_res_manager_->CreateStreamWithPriority(&stream_id_, priority);
