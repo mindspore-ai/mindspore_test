@@ -381,9 +381,12 @@ BaseRef PrimitivePy::RunCellCustomBpropFunction(const py::tuple &py_args) const 
 }
 
 BaseRef PrimitivePy::RunCustomOpBpropFunction(const py::tuple &ori_py_args) const {
-  auto is_custom_node = this->HasAttr(kCustomOpNameAttrName) &&
-                        GetValue<std::string>(this->GetAttr(kCustomOpNameAttrName)) == kCustomOpName;
-  py::tuple py_args = is_custom_node ? UnfoldPyArgs(ori_py_args) : ori_py_args;
+  auto is_custom_aot_node = this->HasAttr(kCustomOpNameAttrName) &&
+                            GetValue<std::string>(this->GetAttr(kCustomOpNameAttrName)) == kCustomOpName &&
+                            this->HasAttr(kAttrFuncType) &&
+                            GetValue<std::string>(this->GetAttr(kAttrFuncType)) == kCustomTypeAOT;
+  MS_LOG(DEBUG) << "Custom op:" << name() << ", is custom aot node: " << is_custom_aot_node;
+  py::tuple py_args = is_custom_aot_node ? UnfoldPyArgs(ori_py_args) : ori_py_args;
   py::tuple converted_args = ConvertCTensorToPyTensor(py_args);
   MS_LOG(DEBUG) << "Get convert args size " << converted_args.size() << ", args are "
                 << ConvertPyObjToString(converted_args);
