@@ -29,7 +29,7 @@
 #include "mindspore/ops/op_def/math_op_name.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/backend/optimizer/helper.h"
-#include "mindspore/core/utils/ms_utils.h"
+#include "mindspore/core/include/utils/ms_utils.h"
 
 namespace mindspore {
 namespace opt {

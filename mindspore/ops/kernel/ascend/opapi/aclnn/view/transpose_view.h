@@ -18,7 +18,7 @@
 #include <vector>
 #include <utility>
 #include "ops/base_operator.h"
-#include "mindspore/core/ir/tensor_storage_info.h"
+#include "mindspore/core/include/ir/tensor_storage_info.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
 
 namespace mindspore {

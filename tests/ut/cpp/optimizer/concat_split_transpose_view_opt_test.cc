@@ -41,6 +41,7 @@ class TestConcatSplitTransposeView : public UT::Common {
 /// Description: test correct situation
 /// Expectation: concat ops will be replace by concatView
 TEST_F(TestConcatSplitTransposeView, test_concat_with_correct_inputsize) {
+  common::SetEnv("MS_DEV_VIEW_OP", "Concat");
   test::ConstructGraph c;
   auto x1 = c.NewTensorInput("x1", kFloat32, {16, 8});
   auto x2 = c.NewTensorInput("x2", kFloat32, {8, 16});
@@ -68,12 +69,14 @@ TEST_F(TestConcatSplitTransposeView, test_concat_with_correct_inputsize) {
     .AddCNode("concatView", {std::make_shared<Primitive>("ConcatView"), "matmul1", "matmul2", "axis"})
     .AddCNode("add", {std::make_shared<Primitive>("Add"), "concatView", "x3"});
   EXPECT_TRUE(checker.build_pattern_map(g->output()));
+  common::SetEnv("MS_DEV_VIEW_OP", "");
 }
 
 /// Feature: test graph view replace pass
 /// Description: test wrong situation
 /// Expectation: concat ops will not be replace by concatView
 TEST_F(TestConcatSplitTransposeView, test_concat_with_wrong_inputsize) {
+  common::SetEnv("MS_DEV_VIEW_OP", "Concat");
   test::ConstructGraph c;
   auto x1 = c.NewTensorInput("x1", kFloat32, {2, 3});
   auto x2 = c.NewTensorInput("x2", kFloat32, {3, 2});
@@ -101,12 +104,14 @@ TEST_F(TestConcatSplitTransposeView, test_concat_with_wrong_inputsize) {
     .AddCNode("concatView", {std::make_shared<Primitive>("ConcatView"), "matmul1", "matmul2", "axis"})
     .AddCNode("add", {std::make_shared<Primitive>("Add"), "concatView", "x3"});
   EXPECT_FALSE(checker.build_pattern_map(g->output()));
+  common::SetEnv("MS_DEV_VIEW_OP", "");
 }
 
 /// Feature: test graph view replace pass
 /// Description: test wrong situation
 /// Expectation: concat ops will not be replace by concatView
 TEST_F(TestConcatSplitTransposeView, test_concat_with_output_bountry) {
+  common::SetEnv("MS_DEV_VIEW_OP", "Split");
   test::ConstructGraph c;
   auto x1 = c.NewTensorInput("x1", kFloat32, {2, 3});
   auto x2 = c.NewTensorInput("x2", kFloat32, {3, 2});
@@ -130,12 +135,14 @@ TEST_F(TestConcatSplitTransposeView, test_concat_with_output_bountry) {
     .AddCNode("matmul2", {std::make_shared<Primitive>("MatMul"), "x1", "x2", "trans_a", "trans_b"})
     .AddCNode("concatView", {std::make_shared<Primitive>("ConcatView"), "matmul1", "matmul2", "axis"});
   EXPECT_FALSE(checker.build_pattern_map(g->output()));
+  common::SetEnv("MS_DEV_VIEW_OP", "");
 }
 
 /// Feature: test graph view replace pass
 /// Description: test wrong situation
 /// Expectation: concat ops will not be replace by concatView
 TEST_F(TestConcatSplitTransposeView, test_concat_with_wrong_input) {
+  common::SetEnv("MS_DEV_VIEW_OP", "Concat,Split");
   test::ConstructGraph c;
   auto x1 = c.NewTensorInput("x1", kFloat32, {2, 3});
   auto x2 = c.NewTensorInput("x2", kFloat32, {3, 2});
@@ -163,12 +170,14 @@ TEST_F(TestConcatSplitTransposeView, test_concat_with_wrong_input) {
     .AddCNode("concatView", {std::make_shared<Primitive>("ConcatView"), "matmul1", "x3", "axis"})
     .AddCNode("add", {std::make_shared<Primitive>("Add"), "concatView", "x4"});
   EXPECT_FALSE(checker.build_pattern_map(g->output()));
+  common::SetEnv("MS_DEV_VIEW_OP", "");
 }
 
 /// Feature: test graph view replace pass
 /// Description: test wrong situation
 /// Expectation: concat ops will not be replace by concatView
 TEST_F(TestConcatSplitTransposeView, test_concat_with_wrong_output) {
+  common::SetEnv("MS_DEV_VIEW_OP", "Concat,Split");
   test::ConstructGraph c;
   auto x1 = c.NewTensorInput("x1", kFloat32, {2, 3});
   auto x2 = c.NewTensorInput("x2", kFloat32, {3, 2});
@@ -196,6 +205,7 @@ TEST_F(TestConcatSplitTransposeView, test_concat_with_wrong_output) {
     .AddCNode("concatView", {std::make_shared<Primitive>("ConcatView"), "matmul1", "matmul2", "axis"})
     .AddCNode("reshape", {std::make_shared<Primitive>("Reshape"), "concatView", "shape0"});
   EXPECT_FALSE(checker.build_pattern_map(g->output()));
+  common::SetEnv("MS_DEV_VIEW_OP", "");
 }
 
 /// Feature: test graph view replace pass
