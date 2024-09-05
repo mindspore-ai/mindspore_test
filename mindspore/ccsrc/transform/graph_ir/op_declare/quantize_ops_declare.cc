@@ -54,12 +54,12 @@ OUTPUT_MAP(AscendAntiQuant) = {{0, OUTPUT_DESC(y)}};
 REG_ADPT_DESC(AscendAntiQuant, kNameAscendAntiQuant, ADPT_DESC(AscendAntiQuant))
 
 // QuantBatchMatmulV3
-INPUT_MAP(QuantBatchMatmulV3) = {
-  {1, INPUT_DESC(x1)}, {2, INPUT_DESC(x2)}, {3, INPUT_DESC(scale)}, {4, INPUT_DESC(offset)}, {5, INPUT_DESC(bias)}};
+INPUT_MAP(QuantBatchMatmulV3) = {{1, INPUT_DESC(x1)},     {2, INPUT_DESC(x2)},   {3, INPUT_DESC(scale)},
+                                 {4, INPUT_DESC(offset)}, {5, INPUT_DESC(bias)}, {6, INPUT_DESC(pertoken_scale)}};
 ATTR_MAP(QuantBatchMatmulV3) = EMPTY_ATTR_MAP;
-INPUT_ATTR_MAP(QuantBatchMatmulV3) = {{6, ATTR_DESC(transpose_x1, AnyTraits<bool>())},
-                                      {7, ATTR_DESC(transpose_x2, AnyTraits<bool>())},
-                                      {8, ATTR_DESC(dtype, AnyTraits<GEType>(), AnyTraits<int64_t>())}};
+INPUT_ATTR_MAP(QuantBatchMatmulV3) = {{7, ATTR_DESC(transpose_x1, AnyTraits<bool>())},
+                                      {8, ATTR_DESC(transpose_x2, AnyTraits<bool>())},
+                                      {9, ATTR_DESC(dtype, AnyTraits<GEType>(), AnyTraits<int64_t>())}};
 OUTPUT_MAP(QuantBatchMatmulV3) = {{0, OUTPUT_DESC(y)}};
 REG_ADPT_DESC(QuantBatchMatmulV3, kNameQuantBatchMatmul, ADPT_DESC(QuantBatchMatmulV3))
 

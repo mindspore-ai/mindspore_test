@@ -29,8 +29,8 @@ internal::OpParamPtr InternalQuantBatchMatmul::CreateOpParam(const std::vector<K
   param_ptr->opId = internal::OpId::MatMul;
   bool transpose_x1 = false;
   bool transpose_x2 = false;
-  transpose_x1 = static_cast<bool>(inputs[kIndex5]->GetValueWithCheck<bool>());
-  transpose_x2 = static_cast<bool>(inputs[kIndex6]->GetValueWithCheck<bool>());
+  transpose_x1 = static_cast<bool>(inputs[kIndex6]->GetValueWithCheck<bool>());
+  transpose_x2 = static_cast<bool>(inputs[kIndex7]->GetValueWithCheck<bool>());
 
   auto shape_a = inputs[kIndex0]->GetShapeVector();
   auto shape_b = inputs[kIndex1]->GetShapeVector();

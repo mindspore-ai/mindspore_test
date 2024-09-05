@@ -50,7 +50,7 @@ const std::vector<Signature> &GetSignature(const ValuePtr &function) {
 }
 
 void ProcessDefault(const std::string &func_name, size_t actual_param_number, const std::vector<Signature> &signature,
-                    bool has_var, std::vector<AnfNodePtr> *op_inputs) {
+                    bool has_var, std::vector<AnfNodePtr> *op_inputs, std::vector<TypePtr> *input_types) {
   std::size_t sig_size = signature.size();
   auto positional_size = sig_size;
   if (has_var) {
@@ -64,6 +64,11 @@ void ProcessDefault(const std::string &func_name, size_t actual_param_number, co
                           << actual_param_number << ". Please check inputs of the operator.";
       } else {
         (*op_inputs).push_back(NewValueNode(default_value));
+        if (default_value->type() == nullptr) {
+          (*input_types).push_back(std::make_shared<TypeNone>());
+        } else {
+          (*input_types).push_back(default_value->type());
+        }
       }
     }
   }
@@ -326,7 +331,7 @@ std::vector<AnfNodePtr> GetNewInputsBySignatures(const FuncGraphPtr &func_graph,
     op_inputs.push_back(param);
   }
   // process default
-  ProcessDefault(func_name, args_abs_list.size(), signature, has_var, &op_inputs);
+  ProcessDefault(func_name, args_abs_list.size(), signature, has_var, &op_inputs, &input_types);
   // Record type info.
   std::vector<TypeId> source_type_id;
   std::vector<bool> source_is_tensor;

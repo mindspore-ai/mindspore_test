@@ -158,6 +158,7 @@ PassManagerPtr GetBackendFusionGroupPassManager() {
   auto pm = std::make_shared<graphkernel::GraphKernelPassManager>(std::numeric_limits<size_t>::max(), "fusion_group");
   pm->Add(std::make_shared<opt::FlashAttentionFusionV1>(), graphkernel::OptLevel_0);
   pm->Add(std::make_shared<opt::FlashAttentionFusionV2>(), graphkernel::OptLevel_0);
+  pm->Add(std::make_shared<opt::QuantBatchMatmulAllReduceFusion>(), graphkernel::OptLevel_0);
 
 #ifdef ENABLE_INTERNAL_KERNELS
   pm->Add(std::make_shared<opt::AddLayernormFusion>(), graphkernel::OptLevel_0);

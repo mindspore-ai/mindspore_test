@@ -33,6 +33,8 @@ bool QbmmFusionBase::Init() const {
   MS_CHECK_TRUE_RET(offset_ != nullptr, false);
   bias_ = std::make_shared<Var>();
   MS_CHECK_TRUE_RET(bias_ != nullptr, false);
+  pertoken_scale_ = std::make_shared<Var>();
+  MS_CHECK_TRUE_RET(pertoken_scale_ != nullptr, false);
   trans_a_ = std::make_shared<Var>();
   MS_CHECK_TRUE_RET(trans_a_ != nullptr, false);
   trans_b_ = std::make_shared<Var>();
@@ -55,6 +57,8 @@ void QbmmFusionBase::SetNodes(const EquivPtr &equiv) const {
   MS_ASSERT(offset_node != nullptr);
   bias_node_ = utils::cast<AnfNodePtr>((*equiv)[bias_]);
   MS_ASSERT(bias_node_ != nullptr);
+  pertoken_scale_node_ = utils::cast<AnfNodePtr>((*equiv)[pertoken_scale_]);
+  MS_ASSERT(pertoken_scale_node_ != nullptr);
   bias_tensor_node_ = utils::cast<AnfNodePtr>((*equiv)[bias_tensor_]);
   MS_ASSERT(bias_tensor_node_ != nullptr);
   trans_a_node_ = utils::cast<AnfNodePtr>((*equiv)[trans_a_]);

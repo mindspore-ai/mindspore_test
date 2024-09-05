@@ -407,4 +407,101 @@ CNodePtr AllGatherMatmulFusion::CreateFusionCNode(const FuncGraphPtr &func_graph
   MS_LOG(DEBUG) << "Create AllGatherMatmul cnode success.";
   return all_gather_matmul_cnode;
 }
+
+const VectorRef QuantBatchMatmulAllReduceFusion::DefineFusionPattern() const {
+  MS_LOG(DEBUG) << "Do QuantBatchMatmulAllReducePattern.";
+  // QuantBatchMatMul
+  auto x = std::make_shared<Var>();
+  MS_CHECK_TRUE_RET(x != nullptr, {});
+  auto w = std::make_shared<Var>();
+  MS_CHECK_TRUE_RET(w != nullptr, {});
+  auto scale = std::make_shared<Var>();
+  MS_CHECK_TRUE_RET(scale != nullptr, {});
+  auto offset = std::make_shared<Var>();
+  MS_CHECK_TRUE_RET(offset != nullptr, {});
+  auto bias = std::make_shared<Var>();
+  MS_CHECK_TRUE_RET(bias != nullptr, {});
+  auto pertoken_scale = std::make_shared<Var>();
+  MS_CHECK_TRUE_RET(pertoken_scale != nullptr, {});
+  auto trans_a = std::make_shared<Var>();
+  MS_CHECK_TRUE_RET(trans_a != nullptr, {});
+  auto trans_b = std::make_shared<Var>();
+  MS_CHECK_TRUE_RET(trans_b != nullptr, {});
+  auto out_dtype = std::make_shared<Var>();
+  MS_CHECK_TRUE_RET(out_dtype != nullptr, {});
+
+  auto is_quant_batch_matmul = std::make_shared<CondVar>(IsSpecifiedNode<&prim::kPrimQuantBatchMatmul>);
+  MS_CHECK_TRUE_RET(is_quant_batch_matmul != nullptr, {});
+
+  auto quant_batch_matmul =
+    VectorRef({is_quant_batch_matmul, x, w, scale, offset, bias, pertoken_scale, trans_a, trans_b, out_dtype});
+
+  // AllReduce
+  auto is_allreduce = std::make_shared<CondVar>(IsSpecifiedNode<&prim::kPrimAllReduce>);
+  MS_CHECK_TRUE_RET(is_allreduce != nullptr, {});
+  auto allreduce = VectorRef({is_allreduce, quant_batch_matmul});
+  return allreduce;
+}
+
+CNodePtr QuantBatchMatmulAllReduceFusion::CreateFusionCNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
+                                                            const EquivPtr &equiv) const {
+  if (!IsKbkMode(func_graph)) {
+    MS_LOG(DEBUG) << "QuantBatchMatmulAllReduceFusion only support in KBK mode.";
+    return nullptr;
+  }
+  MS_LOG(DEBUG) << "Create QuantBatchMatmulAllReduce CNode";
+  auto allreduce_cnode = node->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(allreduce_cnode != nullptr, {});
+
+  auto qbmm_cnode = allreduce_cnode->input(kIndex1)->cast<CNodePtr>();
+  MS_CHECK_TRUE_RET(qbmm_cnode != nullptr, {});
+  MS_CHECK_TRUE_RET(qbmm_cnode->func_graph() == allreduce_cnode->func_graph(), {});
+
+  auto pertoken_scale = qbmm_cnode->input(kIndex6);
+  if (IsValueNode<None>(pertoken_scale)) {
+    MS_LOG(INFO) << "The pass only to fuse qbmm(pertoken) with communication.";
+    return nullptr;
+  }
+  auto offset = qbmm_cnode->input(kIndex4);
+  auto bias = qbmm_cnode->input(kIndex5);
+  if (!IsValueNode<None>(offset) || !IsValueNode<None>(bias)) {
+    MS_LOG(INFO) << "The pass only support qbmm's offset and bias must be None.";
+    return nullptr;
+  }
+
+  auto qbmm_cnode_users = qbmm_cnode->func_graph()->manager()->node_users()[qbmm_cnode];
+  MS_CHECK_TRUE_RET(qbmm_cnode_users.size() == 1, {});
+
+  // create op
+  auto qbmm_reduce_prim = prim::kPrimQuantBatchMatmulAllReduce->Clone();
+  MS_CHECK_TRUE_RET(qbmm_reduce_prim, {});
+
+  auto transpose_a_node = qbmm_cnode->input(kIndex7)->cast<ValueNodePtr>();
+  auto transpose_b_node = qbmm_cnode->input(kIndex8)->cast<ValueNodePtr>();
+  // add attr
+  auto allreduce_prim = GetCNodePrimitive(allreduce_cnode);
+  qbmm_reduce_prim->AddAttr(kAttrGroup, allreduce_prim->GetAttr(kAttrGroup));
+  qbmm_reduce_prim->AddAttr(kAttrFusion, allreduce_prim->GetAttr(kAttrFusion));
+  qbmm_reduce_prim->AddAttr(kAttrOp, allreduce_prim->GetAttr(kAttrOp));
+  qbmm_reduce_prim->AddAttr(kAttrIsTransA, transpose_a_node->value());
+  qbmm_reduce_prim->AddAttr(kAttrIsTransB, transpose_b_node->value());
+
+  auto input_x = qbmm_cnode->input(kIndex1);
+  auto input_w = qbmm_cnode->input(kIndex2);
+  auto x_shape = GetShape(input_x);
+  auto w_shape = GetShape(input_w);
+  MS_CHECK_TRUE_RET(x_shape.size() == kSizeTwo && w_shape.size() == kSizeTwo, {});
+  auto scale = qbmm_cnode->input(kIndex3);
+  auto out_type = qbmm_cnode->input(kIndex9);
+  auto qbmm_allreduce_cnode = func_graph->NewCNode(
+    {NewValueNode(qbmm_reduce_prim), input_x, input_w, bias, offset, scale, pertoken_scale, out_type});
+  if (qbmm_allreduce_cnode == nullptr) {
+    MS_LOG(DEBUG) << "New qbmm_allreduce_cnode should not be null, but it is null.";
+    return nullptr;
+  }
+  qbmm_allreduce_cnode->set_abstract(allreduce_cnode->abstract()->Clone());
+  qbmm_allreduce_cnode->set_fullname_with_scope(allreduce_cnode->fullname_with_scope() + "_qbmm_allreduce");
+  MS_LOG(DEBUG) << "Create QuantBatchMatmulAllReduce cnode success.";
+  return qbmm_allreduce_cnode;
+}
 }  // namespace mindspore::opt

@@ -38,6 +38,7 @@ class DynamicQuantExtInfo : public OperatorInfo {
   std::vector<StrategyPtr> GenerateOpStrategies(int64_t stage_id) override;
   std::shared_ptr<Strategies> GenerateBatchStrategies() override;
   Status SetCostUnderStrategy(const StrategyPtr &strategy) override;
+  Status CheckOutputStrategy(const StrategyPtr &out_strategy) override;
 
  protected:
   Status GetAttrs() override;

@@ -40,12 +40,15 @@ namespace {
 constexpr size_t kQbmmInputX1 = 0;
 constexpr size_t kQbmmInputX2 = 1;
 constexpr size_t kQbmmInputScale = 2;
-constexpr size_t kQbmmInputTransposeX1 = 5;
-constexpr size_t kQbmmInputTransposeX2 = 6;
+constexpr size_t kQbmmInputOffset = 3;
+constexpr size_t kQbmmInputBias = 4;
+constexpr size_t kQbmmInputPertokenScaleOptional = 5;
+constexpr size_t kQbmmInputTransposeX1 = 6;
+constexpr size_t kQbmmInputTransposeX2 = 7;
 constexpr size_t kQbmmOutput = 0;
 constexpr size_t kQbmmInputMinNum = 3;
 constexpr size_t kQbmmInputMinSize = 2;
-constexpr size_t kQbmmInputNum = 5;
+constexpr size_t kQbmmInputNum = 6;
 }  // namespace
 
 Shape QuantBatchMatmulInfo::GetCommonShape(const Dimensions &x1_strategy, const Dimensions &x2_strategy) const {
@@ -398,6 +401,16 @@ Status QuantBatchMatmulInfo::CheckLayoutConfig() {
   return SUCCESS;
 }
 
+void QuantBatchMatmulInfo::SetValidInputsIndex() {
+  valid_inputs_index_.clear();
+  for (size_t i = 0; i < input_value_.size(); ++i) {
+    if (input_value_[i] != nullptr && input_value_[i]->isa<None>()) {
+      continue;
+    }
+    valid_inputs_index_.push_back(i);
+  }
+}
+
 Status QuantBatchMatmulInfo::InferTensorMap() {
   // need to use origin_dev_matrix_shape_ here, since the dev_matrix_shape_ will be changed if repeated calculation.
   size_t size = origin_dev_matrix_shape_.size();
@@ -458,8 +471,26 @@ Status QuantBatchMatmulInfo::InferTensorMap() {
   inputs_tensor_map_.push_back(x1_tensor_map);
   inputs_tensor_map_.push_back(x2_tensor_map);
 
+  SetValidInputsIndex();
+  if (valid_inputs_index_.size() < inputs_shape_.size()) {
+    MS_LOG(ERROR) << "Valid input number must be greater or equal inputs_shape number, now "
+                  << valid_inputs_index_.size() << " < " << inputs_shape_.size();
+    return FAILED;
+  }
   for (size_t i = kQbmmInputScale; i < inputs_shape_.size(); i++) {
-    TensorMap tensor_map = {0};
+    TensorMap tensor_map = (valid_inputs_index_[i] == kQbmmInputPertokenScaleOptional) ? TensorMap{2} : TensorMap{0};
+    bool is_one_dimension = valid_inputs_index_[i] == kQbmmInputScale || valid_inputs_index_[i] == kQbmmInputOffset ||
+                            valid_inputs_index_[i] == kQbmmInputPertokenScaleOptional;
+    if (is_one_dimension) {
+      if (inputs_shape_[i].size() != 1) {
+        MS_LOG(ERROR) << "The input " << valid_inputs_index_[i] << " must be one dimension, but now is "
+                      << inputs_shape_[i].size();
+        return FAILED;
+      }
+      if (inputs_shape_[i].front() == 1) {
+        tensor_map[0] = -1;
+      }
+    }
     inputs_tensor_map_.push_back(tensor_map);
   }
   outputs_tensor_map_.push_back(output_tensor_map);

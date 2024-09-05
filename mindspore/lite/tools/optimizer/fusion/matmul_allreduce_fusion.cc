@@ -112,15 +112,18 @@ VectorRef MatMulAllReduceFusion::DefineQuantBatchMatmulAllReducePattern() const 
   auto deq_scale_input = std::make_shared<Var>();   // input dequant scale
   auto deq_offset_input = std::make_shared<Var>();  // input dequant offset
   auto deq_bias_input = std::make_shared<Var>();    // input dequant bias
+  auto pertoken_scale = std::make_shared<Var>();    // input pertoken scale
   MS_CHECK_TRUE_RET(w_input != nullptr, {});
   MS_CHECK_TRUE_RET(x_input != nullptr, {});
   MS_CHECK_TRUE_RET(deq_scale_input != nullptr, {});
   MS_CHECK_TRUE_RET(deq_offset_input != nullptr, {});
   MS_CHECK_TRUE_RET(deq_bias_input != nullptr, {});
+  MS_CHECK_TRUE_RET(pertoken_scale != nullptr, {});
   auto is_quant_bmm = std::make_shared<CondVar>(IsSpecifiedNode<&prim::kPrimQuantBatchMatmul>);
   MS_CHECK_TRUE_RET(is_quant_bmm != nullptr, {});
 
-  auto quant_bmm = VectorRef({is_quant_bmm, x_input, w_input, deq_scale_input, deq_offset_input, deq_bias_input});
+  auto quant_bmm =
+    VectorRef({is_quant_bmm, x_input, w_input, deq_scale_input, deq_offset_input, deq_bias_input, pertoken_scale});
 
   // AllReduce
   auto is_allreduce = std::make_shared<CondVar>(IsSpecifiedNode<&prim::kPrimAllReduce>);
@@ -321,6 +324,8 @@ CNodePtr MatMulAllReduceFusion::CreateQuantBatchMatmulAllReduceNode(const FuncGr
                   << ", its dequant offset input will not use";
   auto input_deq_bias = qbmm_cnode->input(kIndex5);
   MS_EXCEPTION_IF_NULL(input_deq_bias);
+  auto input_pertoken_scale = qbmm_cnode->input(kIndex6);
+  MS_EXCEPTION_IF_NULL(input_pertoken_scale);
 
   auto matmul_cnode_users = qbmm_cnode->func_graph()->manager()->node_users()[qbmm_cnode];
   MS_CHECK_TRUE_RET(matmul_cnode_users.size() == 1, {});
@@ -346,7 +351,7 @@ CNodePtr MatMulAllReduceFusion::CreateQuantBatchMatmulAllReduceNode(const FuncGr
   func_graph->NewCNode({none_node});
   auto matmul_allreduce_cnode =
     func_graph->NewCNode({NewValueNode(matmul_allreduce_prim), input_x, input_w, input_deq_bias, none_node, none_node,
-                          none_node, input_deq_scale});
+                          none_node, input_deq_scale, input_pertoken_scale});
   if (matmul_allreduce_cnode == nullptr) {
     MS_LOG(ERROR) << "New matmul_allreduce_cnode should not be null, but it is null.";
     return nullptr;

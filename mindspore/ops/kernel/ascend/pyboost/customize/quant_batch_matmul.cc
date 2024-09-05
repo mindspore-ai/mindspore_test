@@ -25,45 +25,49 @@ namespace mindspore {
 namespace kernel {
 namespace pyboost {
 namespace {
-void QuantMatmulV3AscendCall(const std::shared_ptr<OpRunner> &op, const device::DeviceContext *device_context,
+void QuantMatmulV4AscendCall(const std::shared_ptr<OpRunner> &op, const device::DeviceContext *device_context,
                              const BaseTensorPtr &x1_tensor, const BaseTensorPtr &x2_tensor,
                              const BaseTensorPtr &scale_tensor, const std::optional<BaseTensorPtr> &offset_tensor,
-                             const std::optional<BaseTensorPtr> &bias_tensor, const bool &transpose_x1,
+                             const std::optional<BaseTensorPtr> &bias_tensor,
+                             const std::optional<BaseTensorPtr> &pertokenScaleOptional_tensor, const bool &transpose_x1,
                              const bool &transpose_x2, const std::vector<tensor::BaseTensorPtr> &outputs) {
-  MS_LOG(DEBUG) << "QuantMatmulV3 call start";
-  LAUNCH_ACLNN(aclnnQuantMatmulV3, device_context, op->stream_id(), x1_tensor, x2_tensor, scale_tensor, offset_tensor,
-               bias_tensor, transpose_x1, transpose_x2, outputs[0]);
-  MS_LOG(DEBUG) << "QuantMatmulV3 call end";
+  MS_LOG(DEBUG) << "QuantMatmulV4 call start";
+  LAUNCH_ACLNN(aclnnQuantMatmulV4, device_context, op->stream_id(), x1_tensor, x2_tensor, scale_tensor, offset_tensor,
+               pertokenScaleOptional_tensor, bias_tensor, transpose_x1, transpose_x2, outputs[0]);
+  MS_LOG(DEBUG) << "QuantMatmulV4 call end";
 }
 }  // namespace
 
-tensor::BaseTensorPtr QuantMatmulV3AscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &x1_tensor,
+tensor::BaseTensorPtr QuantMatmulV4AscendCustomize(const std::shared_ptr<OpRunner> &op, const BaseTensorPtr &x1_tensor,
                                                    const BaseTensorPtr &x2_tensor, const BaseTensorPtr &scale_tensor,
                                                    const std::optional<BaseTensorPtr> &offset_tensor,
                                                    const std::optional<BaseTensorPtr> &bias_tensor,
+                                                   const std::optional<BaseTensorPtr> &pertokenScaleOptional_tensor,
                                                    const BoolImmPtr &transpose_x1, const BoolImmPtr &transpose_x2,
                                                    const Int64ImmPtr &dtype) {
-  OpRunner::InferOpOutput(op, x1_tensor, x2_tensor, scale_tensor, offset_tensor, bias_tensor, transpose_x1,
-                          transpose_x2, dtype);
+  OpRunner::InferOpOutput(op, x1_tensor, x2_tensor, scale_tensor, offset_tensor, bias_tensor,
+                          pertokenScaleOptional_tensor, transpose_x1, transpose_x2, dtype);
 
   auto transpose_x1_imm = GetValue<bool>(transpose_x1);
   auto transpose_x2_imm = GetValue<bool>(transpose_x2);
   PyBoostUtils::PrepareOpInputs(op->device_context(), op->stream_id(), x1_tensor, x2_tensor, scale_tensor,
-                                offset_tensor, bias_tensor);
+                                offset_tensor, bias_tensor, pertokenScaleOptional_tensor);
   PyBoostUtils::PrepareOpOutputs(op->device_context(), op->stream_id(), op->outputs());
 
-  PyBoostUtils::DispatchRun(std::make_shared<runtime::PyBoostDeviceTask>(
-    [op, x1_tensor, x2_tensor, scale_tensor, offset_tensor, bias_tensor, transpose_x1_imm, transpose_x2_imm]() {
-      MS_LOG(DEBUG) << "Run device task QuantMatmulV3 start";
+  PyBoostUtils::DispatchRun(
+    std::make_shared<runtime::PyBoostDeviceTask>([op, x1_tensor, x2_tensor, scale_tensor, offset_tensor, bias_tensor,
+                                                  pertokenScaleOptional_tensor, transpose_x1_imm, transpose_x2_imm]() {
+      MS_LOG(DEBUG) << "Run device task QuantMatmulV4 start";
       auto device_context = op->device_context();
       const auto &outputs = op->outputs();
       // Malloc for input tensors
-      PyBoostUtils::MallocOpInputs(device_context, x1_tensor, x2_tensor, scale_tensor, offset_tensor, bias_tensor);
+      PyBoostUtils::MallocOpInputs(device_context, x1_tensor, x2_tensor, scale_tensor, offset_tensor, bias_tensor,
+                                   pertokenScaleOptional_tensor);
       // Malloc for output tensors
       PyBoostUtils::MallocOpOutputs(device_context, outputs);
-      QuantMatmulV3AscendCall(op, device_context, x1_tensor, x2_tensor, scale_tensor, offset_tensor, bias_tensor,
-                              transpose_x1_imm, transpose_x2_imm, outputs);
-      MS_LOG(DEBUG) << "Run device task QuantMatmulV3 end";
+      QuantMatmulV4AscendCall(op, device_context, x1_tensor, x2_tensor, scale_tensor, offset_tensor, bias_tensor,
+                              pertokenScaleOptional_tensor, transpose_x1_imm, transpose_x2_imm, outputs);
+      MS_LOG(DEBUG) << "Run device task QuantMatmulV4 end";
     }));
   return op->output(0);
 }

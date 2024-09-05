@@ -23,22 +23,22 @@
 
 namespace mindspore {
 namespace kernel {
-void QuantMatmulV3Ascend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
+void QuantMatmulV4Ascend::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
                                            const std::vector<KernelTensor *> &outputs) {
-  transpose_x1_ = inputs[kIndex5]->GetValueWithCheck<bool>();
-  transpose_x2_ = inputs[kIndex6]->GetValueWithCheck<bool>();
-  GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], inputs[kIndex3], inputs[kIndex4],
-                        transpose_x1_, transpose_x2_, outputs[kIndex0]);
+  transpose_x1_ = inputs[kIndex6]->GetValueWithCheck<bool>();
+  transpose_x2_ = inputs[kIndex7]->GetValueWithCheck<bool>();
+  GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], inputs[kIndex3], inputs[kIndex5],
+                        inputs[kIndex4], transpose_x1_, transpose_x2_, outputs[kIndex0]);
 }
 
-bool QuantMatmulV3Ascend::Launch(const std::vector<KernelTensor *> &inputs,
+bool QuantMatmulV4Ascend::Launch(const std::vector<KernelTensor *> &inputs,
                                  const std::vector<KernelTensor *> &workspace,
                                  const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
-  RunOp(stream_ptr, workspace, inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], inputs[kIndex3], inputs[kIndex4],
-        transpose_x1_, transpose_x2_, outputs[kIndex0]);
+  RunOp(stream_ptr, workspace, inputs[kIndex0], inputs[kIndex1], inputs[kIndex2], inputs[kIndex3], inputs[kIndex5],
+        inputs[kIndex4], transpose_x1_, transpose_x2_, outputs[kIndex0]);
   return true;
 }
-MS_ACLNN_KERNEL_FACTORY_REG(QuantBatchMatmul, QuantMatmulV3Ascend);
+MS_ACLNN_KERNEL_FACTORY_REG(QuantBatchMatmul, QuantMatmulV4Ascend);
 }  // namespace kernel
 }  // namespace mindspore

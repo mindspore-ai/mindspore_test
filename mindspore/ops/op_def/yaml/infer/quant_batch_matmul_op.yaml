@@ -13,6 +13,9 @@ quant_batch_matmul:
     bias:
       dtype: tensor
       default: None
+    pertokenScaleOptional:
+      dtype: tensor
+      default: None
     transpose_x1:
       dtype: bool
       default: false
@@ -33,4 +36,4 @@ quant_batch_matmul:
       dtype: tensor
   dispatch:
     enable: True
-    Ascend: QuantMatmulV3Ascend
+    Ascend: QuantMatmulV4Ascend

@@ -13,9 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_QUANT_BATCH_MATMUL_ACLNN_KERNEL_MOD_H_
-#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_QUANT_BATCH_MATMUL_ACLNN_KERNEL_MOD_H_
+#ifndef MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_QUANT_BATCH_MATMUL_ALL_REDUCE_ACLNN_KERNEL_MOD_H_
+#define MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_QUANT_BATCH_MATMUL_ALL_REDUCE_ACLNN_KERNEL_MOD_H_
 #include <vector>
+#include <string>
 #include <utility>
 #include "ops/base_operator.h"
 #include "kernel/ascend/opapi/aclnn_kernel_mod.h"
@@ -23,22 +24,29 @@
 
 namespace mindspore {
 namespace kernel {
-class QuantMatmulV4Ascend : public AclnnKernelMod {
+
+class QuantBatchMatmulAllReduceAscend : public AclnnKernelMod {
  public:
-  QuantMatmulV4Ascend() : AclnnKernelMod(std::move("aclnnQuantMatmulV4")) {}
-  ~QuantMatmulV4Ascend() = default;
+  QuantBatchMatmulAllReduceAscend() : AclnnKernelMod(std::move("aclnnQuantMatmulAllReduceV2")) {}
+  ~QuantBatchMatmulAllReduceAscend() = default;
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
               const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;
   void GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
-  bool IsNeedUpdateOutputShapeAndSize() override { return true; }
 
  private:
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
-
-  bool transpose_x1_;
-  bool transpose_x2_;
+  void InitializeCommonAttributes();
+  std::pair<KernelTensor *, bool> input_a_;
+  std::pair<KernelTensor *, bool> input_b_;
+  bool trans_a_;
+  bool trans_b_;
+  std::string group_;
+  std::string hccl_inner_comm_name_;
+  int64_t comm_turn_ = 0;
+  std::string reduce_op_;
+  int64_t stream_mode_ = 1;
 };
 }  // namespace kernel
 }  // namespace mindspore
 
-#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_QUANT_BATCH_MATMUL_ACLNN_KERNEL_MOD_H_
+#endif  // MINDSPORE_CCSRC_BACKEND_KERNEL_COMPILER_QUANT_BATCH_MATMUL_ALL_REDUCE_ACLNN_KERNEL_MOD_H_

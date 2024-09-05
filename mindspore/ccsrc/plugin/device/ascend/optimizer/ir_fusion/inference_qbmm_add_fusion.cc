@@ -34,8 +34,9 @@ CNodePtr QbmmAddFusion::CreateQbmmAddNode(const FuncGraphPtr &func_graph, const 
   auto kernel_graph = func_graph->cast<KernelGraphPtr>();
   kernel_graph->AddValueNodeToGraph(bias_int32_node);
 
-  std::vector<AnfNodePtr> inputs = {x_node_,         w_node_,       scale_node_,   offset_node_,
-                                    bias_int32_node, trans_a_node_, trans_b_node_, out_dtype_node_};
+  std::vector<AnfNodePtr> inputs = {x_node_,       w_node_,         scale_node_,
+                                    offset_node_,  bias_int32_node, pertoken_scale_node_,
+                                    trans_a_node_, trans_b_node_,   out_dtype_node_};
   auto new_qbmm_node = func_graph->NewCNode(qbmm_prim, inputs);
   MS_CHECK_TRUE_RET(new_qbmm_node != nullptr, nullptr);
   new_qbmm_node->set_fullname_with_scope(node->fullname_with_scope() + "-QbmmAddFusion");
@@ -51,7 +52,7 @@ const BaseRef QbmmAddFusion::DefinePattern() const {
     MS_LOG(DEBUG) << "initial member failed.";
     return {};
   }
-  VectorRef qbmm_ref({qbmm_prim_, x_, w_, scale_, offset_, bias_, trans_a_, trans_b_, out_dtype_});
+  VectorRef qbmm_ref({qbmm_prim_, x_, w_, scale_, offset_, bias_, pertoken_scale_, trans_a_, trans_b_, out_dtype_});
   bias_tensor_ = std::make_shared<Var>();
   auto is_add = std::make_shared<CondVar>(IsSpecifiedNode<&prim::kPrimAdd>);
   MS_CHECK_TRUE_RET(is_add != nullptr, {});
@@ -66,6 +67,10 @@ const AnfNodePtr QbmmAddFusion::Process(const FuncGraphPtr &func_graph, const An
     return nullptr;
   }
   SetNodes(equiv);
+  if (!IsValueNode<None>(pertoken_scale_node_)) {
+    MS_LOG(INFO) << "Currently, do not support to fuse qbmm(pertoken) with add.";
+    return nullptr;
+  }
   CheckValid();
   auto cnode = CreateQbmmAddNode(func_graph, node, equiv);
   return cnode;
