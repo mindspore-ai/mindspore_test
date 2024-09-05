@@ -20,6 +20,8 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <set>
+#include <climits>
 
 #include "frontend/parallel/auto_parallel/rec_core/rec_strategy.h"
 #include "frontend/parallel/auto_parallel/rec_core/rec_tensor.h"
@@ -77,6 +79,12 @@ struct OperatorRec {
   std::vector<StrategyRec> strs;
 };
 
+struct NodeDep {
+  size_t idx;
+  std::vector<int64_t> transpose_mapping;
+  std::vector<std::vector<int64_t>> reshape_mapping;
+};
+
 // Define simplified dataflow Graph for partitioning
 class Graph {
  public:
@@ -85,12 +93,15 @@ class Graph {
     // Nodes that point to this node
     std::vector<size_t> node_in;
     // Nodes that point from this node
-    std::vector<size_t> node_out;
+    std::vector<NodeDep> node_out;
     // Nodes that point to this node via auxiliary edges
     std::vector<size_t> node_in_aux;
     // Input indices of the nodes that point to this node via auxliary edges
     std::vector<size_t> node_in_aux_idx;
-
+    //  operation of transpose
+    std::vector<int64_t> transpose_mapping;
+    // operation of reshape
+    std::vector<std::vector<int64_t>> reshape_mapping;
     // Node Type Info: Application or Constant. Defined in enum <InfoType> .
     InfoType info;
     // Operator info. Defined in struct <OperatorRec> .
@@ -99,14 +110,83 @@ class Graph {
     TensorParam tensor_parm;
 
     std::string param_name;
+    // yield to user-defined strategy
+    bool interfered_sapp = false;
   };
 
   bool dyn_shape_tmp_fix = false;
 
   int64_t micro_batch_size = 1;
+  // Nodes of the graph. Public.
+  std::vector<Graph::NodeType> nodes;
+};
 
-  std::vector<Graph::NodeType> nodes;  // Nodes of the graph. Public.
-};                                     // Define simplified dataflow Graph for partitioning
+inline std::vector<int64_t> TransposeCombine(const std::vector<int64_t> &tranpose_mapping,
+                                             const std::vector<int64_t> &node_out_tranpose_mapping) {
+  std::vector<int64_t> updated;
+
+  if (tranpose_mapping.empty()) {
+    return node_out_tranpose_mapping;
+  }
+
+  if (node_out_tranpose_mapping.empty()) {
+    return tranpose_mapping;
+  }
+
+  if (tranpose_mapping.size() != node_out_tranpose_mapping.size()) {
+    MS_LOG(EXCEPTION) << "tranpose_mapping " << tranpose_mapping << " and node_out_tranpose_mapping "
+                      << node_out_tranpose_mapping << " should share same size";
+  }
+
+  MS_LOG(INFO) << "tranpose_mapping " << tranpose_mapping << " and node_out_tranpose_mapping "
+               << node_out_tranpose_mapping;
+  updated.insert(updated.begin(), node_out_tranpose_mapping.size(), 0);
+  for (size_t i = 0; i < node_out_tranpose_mapping.size(); i++) {
+    updated[i] = tranpose_mapping[node_out_tranpose_mapping[i]];
+  }
+  MS_LOG(INFO) << "after operation updating, mapping is: " << updated;
+
+  return updated;
+}
+
+inline std::vector<std::vector<int64_t>> ReshapeCombine(
+  const std::vector<std::vector<int64_t>> &reshape_mapping,
+  const std::vector<std::vector<int64_t>> &node_out_reshape_mapping) {
+  if (reshape_mapping.empty()) {
+    return node_out_reshape_mapping;
+  }
+
+  if (node_out_reshape_mapping.empty()) {
+    return reshape_mapping;
+  }
+
+  std::vector<std::vector<int64_t>> updated;
+
+  if (reshape_mapping.size() != node_out_reshape_mapping.size()) {
+    MS_LOG(EXCEPTION) << "reshape_mapping " << reshape_mapping << " and node_out_reshape_mapping "
+                      << node_out_reshape_mapping << " should share same size";
+  }
+
+  MS_LOG(INFO) << "reshape_mapping " << reshape_mapping << " and node_out_reshape_mapping " << node_out_reshape_mapping;
+  for (size_t i = 0; i < node_out_reshape_mapping.size(); i++) {
+    std::vector<int64_t> tmp;
+    if (node_out_reshape_mapping[i].empty()) {
+      tmp.push_back(i);
+    }
+    for (int64_t ii : node_out_reshape_mapping[i]) {
+      if (ii == INT_MAX) continue;
+      tmp.insert(tmp.end(), reshape_mapping[ii].begin(), reshape_mapping[ii].end());
+    }
+    std::set<int64_t> s(tmp.begin(), tmp.end());
+    tmp.assign(s.begin(), s.end());
+
+    updated.push_back(tmp);
+  }
+  MS_LOG(INFO) << "after operation updating, mapping is: " << updated;
+
+  return updated;
+}
+
 }  // namespace parallel
 }  // namespace mindspore
 #endif  // PARALLEL_AUTO_PARALLEL_REC_GRAPH_H_

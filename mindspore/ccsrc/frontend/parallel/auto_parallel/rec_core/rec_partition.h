@@ -45,7 +45,7 @@ double GetWeights(const Graph::NodeType &node);
 
 StrategyRec PartitionNode(Graph::NodeType node,
                           const std::vector<std::pair<std::string, StrategyRec>> &node_name_to_strategy,
-                          const std::shared_ptr<Graph> &graph, const bool isTraining);
+                          const std::shared_ptr<Graph> &graph, const bool isTraining, int64_t loop);
 
 Status PartitionForAllDevices(size_t num_device, double device_memory, const std::shared_ptr<Graph> &graph,
                               bool isTraining, const FuncGraphPtr &root);

@@ -46,7 +46,7 @@ def test_auto_parallel_sapp_optimizer_parallel_restrict():
     context.set_auto_parallel_context(enable_parallel_optimizer=True)
 
     x = Tensor(np.ones([160, 320]), dtype=ms.float32)
-    y = Tensor(np.ones([320, 320000]), dtype=ms.float32)
+    y = Tensor(np.ones([320, 3200000]), dtype=ms.float32)
     net = MatMulNet()
     net.set_train()
     _cell_graph_executor.compile(net, x, y, phase='train')
