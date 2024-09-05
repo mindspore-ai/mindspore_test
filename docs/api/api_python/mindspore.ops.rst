@@ -693,6 +693,7 @@ Parameter操作函数
     :template: classtemplate.rst
 
     mindspore.ops.print_
+    mindspore.ops.tensordump
 
 稀疏函数
 ----------------
