@@ -368,6 +368,7 @@ class MSANFModelParser {
   void SetMindIRDecKey(const unsigned char *dec_key) { mindir_dec_key_ = dec_key; }
   void SetMindIRKeySize(size_t size) { mindir_key_size_ = size; }
   void SetMindIRDecMode(const std::string &dec_mode) { mindir_dec_mode_ = dec_mode; }
+  void SetMindIRDecParallelNum(size_t num_parallel) { mindir_dec_num_parallel_ = num_parallel; }
 
  private:
   void TrytoBuildCNodeAbstract();
@@ -440,6 +441,7 @@ class MSANFModelParser {
   const unsigned char *mindir_dec_key_{nullptr};
   size_t mindir_key_size_{0};
   std::string mindir_dec_mode_;
+  size_t mindir_dec_num_parallel_{0};
   bool little_endian_ = common::IsLittleByteOrder();
   std::map<std::string, std::unique_ptr<Byte[]>> tenor_data_;
   bool is_kernel_graph_{false};
@@ -968,9 +970,16 @@ bool MSANFModelParser::GetTensorDataFromExternal(const mind_ir::TensorProto &ten
     std::string file = mindir_path_ + "/" + tensor_proto.external_data().location();
     if (mindir_dec_key_ != nullptr) {
       size_t plain_len;
-      auto plain_data = Decrypt(&plain_len, file, mindir_dec_key_, mindir_key_size_, mindir_dec_mode_);
+      auto plain_data =
+        Decrypt(&plain_len, file, mindir_dec_key_, mindir_key_size_, mindir_dec_mode_, mindir_dec_num_parallel_);
       if (plain_data == nullptr) {
         MS_LOG(ERROR) << "Decrypt MindIR file failed, please check the correctness of the dec_key or dec_mode.";
+        return false;
+      }
+      constexpr Byte is_little_endian = 1;
+      constexpr int byte_order_index = 0;
+      if ((plain_data[byte_order_index] == is_little_endian) ^ little_endian()) {
+        MS_LOG(ERROR) << "The byte order of export MindIr device and load MindIr device is not same!";
         return false;
       }
       data = plain_data.get();
@@ -2885,6 +2894,41 @@ bool MindIRLoader::LoadMindIR(const std::string &file_name, const std::vector<Fu
     MS_LOG(ERROR) << "Parse model failed!";
     return false;
   }
+  return true;
+}
+
+bool MindIRLoader::LoadMindIR(const void *buffer, const size_t &size, const std::string &mindir_path,
+                              const CryptoInfo &cryptoInfo, FuncGraphPtr *func_graph, std::string *user_info_string) {
+  mind_ir::ModelProto model;
+  auto ret = model.ParseFromArray(buffer, SizeToInt(size));
+  if (!ret) {
+    MS_LOG(ERROR) << "ParseFromArray failed!";
+    return false;
+  }
+  if (!CheckModelConfigureInfo(model)) {
+    MS_LOG(ERROR) << "Check configuration info for pb file failed!";
+    return false;
+  }
+  MSANFModelParser model_parser;
+  InitModelParser(&model_parser, this);
+  model_parser.SetMindIRPath(mindir_path);
+  model_parser.SetMindIRDecKey(cryptoInfo.key.key);
+  model_parser.SetMindIRKeySize(cryptoInfo.key.len);
+  model_parser.SetMindIRDecMode(cryptoInfo.mode);
+  model_parser.SetMindIRDecParallelNum(cryptoInfo.parallel_num);
+  *func_graph = model_parser.Parse(model);
+  std::stringstream user_info_buffer;
+  // user_info to string
+  auto user_info = model.user_info();
+  user_info_buffer << "{";
+  for (auto it = user_info.begin(); it != user_info.end(); it++) {
+    if (it != user_info.begin()) {
+      user_info_buffer << ", ";
+    }
+    user_info_buffer << "\"" << it->first << "\": \"" << it->second + "\"";
+  }
+  user_info_buffer << "}";
+  *user_info_string = user_info_buffer.str();
   return true;
 }
 

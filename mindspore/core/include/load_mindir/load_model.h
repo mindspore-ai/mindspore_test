@@ -22,6 +22,7 @@
 #include <memory>
 
 #include "ir/func_graph.h"
+#include "include/api/types.h"
 
 namespace mindspore {
 class Layout {
@@ -87,6 +88,8 @@ class MS_CORE_API MindIRLoader {
                   mindspore::HashMap<std::string, AnfNodePtr> *name_to_node = nullptr);
   bool LoadMindIR(const void *buffer, const size_t &size, const std::string &mindir_path, FuncGraphPtr *func_graph,
                   std::string *user_info_string);
+  bool LoadMindIR(const void *buffer, const size_t &size, const std::string &mindir_path, const CryptoInfo &cryptoInfo,
+                  FuncGraphPtr *func_graph, std::string *user_info_string);
   std::vector<FuncGraphPtr> LoadMindIRs(const std::vector<std::string> &file_names);
   std::vector<std::string> LoadPreprocess(const std::string &file_name);
   bool is_lite() const { return is_lite_; }

@@ -300,6 +300,58 @@ FuncGraphPtr ModelImpl::LoadGraphByBufferImpl(const void *model_buff, size_t mod
   return func_graph;
 }
 
+FuncGraphPtr ModelImpl::LoadGraphByBufferImpl(const void *model_data, size_t model_size, ModelType model_type,
+                                              const std::shared_ptr<Context> &model_context,
+                                              const std::string &model_path, const CryptoInfo &cryptoInfo) {
+  if (model_type != kMindIR) {
+    MS_LOG(ERROR) << "Invalid model type";
+    return nullptr;
+  }
+  MS_CHECK_TRUE_MSG(model_context != nullptr, nullptr, "Invalid context pointers.");
+  auto status = UpdateSharingWorkspaceConfig(model_data, model_size, model_path);
+  if (status != kSuccess) {
+    MS_LOG(ERROR) << "UpdateSharingWorkspaceConfig failed!";
+    return nullptr;
+  }
+  auto mindir_path = GetConfig(lite::kConfigModelFileSection, lite::kConfigMindIRPathKey);
+  std::string weight_path = "./";
+  std::string base_path = "";
+  if (!mindir_path.empty()) {
+    base_path = mindir_path;
+  } else {
+    // user does not set mindir_path, convert from model_path
+    base_path = model_path;
+  }
+  if (base_path.find("/") != std::string::npos) {
+    weight_path = base_path.substr(0, base_path.rfind("/"));
+  }
+  auto dump_path = GetConfig(lite::kAscendContextSection, lite::kDumpPathKey);
+  if (!dump_path.empty()) {
+    auto dir_pos = model_path.find_last_of('/');
+    auto mindir_name = dir_pos != std::string::npos ? model_path.substr(dir_pos + 1) : model_path;
+    auto dot_pos = mindir_name.find_last_of('.');
+    auto model_name = mindir_name.substr(0, dot_pos);
+    (void)UpdateConfig(lite::kAscendContextSection,
+                       std::pair<std::string, std::string>(lite::kDumpModelNameKey, model_name));
+  }
+  FuncGraphPtr func_graph;
+  std::string user_info_string;
+  {
+    std::unique_lock<std::mutex> l(g_load_mindir_lock);
+    MindIRLoader mindir_loader(true, nullptr, 0, kDecModeAesGcm, false);
+    auto ret =
+      mindir_loader.LoadMindIR(model_data, model_size, weight_path, cryptoInfo, &func_graph, &user_info_string);
+    if (!ret || func_graph == nullptr) {
+      MS_LOG(ERROR) << "Failed to load MindIR model, please check the validity of the model: " << weight_path;
+      return nullptr;
+    }
+    if (!user_info_string.empty()) {
+      SetModelInfo(lite::KModelUserInfo, user_info_string);
+    }
+  }
+  return func_graph;
+}
+
 bool ModelImpl::IsEnableModelSharing(const std::string &model_path, ModelGroupFlag *model_group_flag) {
   const std::map<std::string, ModelGroupFlag> &model_path_set = ModelManager::GetInstance().GetModelPath();
   auto it = model_path_set.find(model_path);
@@ -465,6 +517,94 @@ Status ModelImpl::BuildByBufferImpl(const void *model_buff, size_t model_size, M
   return FuncGraphReuseManager::GetInstance()->StoreFuncGraph(func_graph, config_info_);
 }
 
+Status ModelImpl::BuildByBufferImpl(const void *model_data, size_t model_size, ModelType model_type,
+                                    const std::shared_ptr<Context> &model_context, const std::string &model_path,
+                                    const CryptoInfo &cryptoInfo) {
+  if (model_data == nullptr) {
+    MS_LOG(ERROR) << "The input model buffer is nullptr!";
+    return kLiteError;
+  }
+  if (model_size == 0) {
+    MS_LOG(ERROR) << "The input model buffer size is 0!";
+    return kLiteError;
+  }
+  std::lock_guard<std::recursive_mutex> lock(mutex_);
+  if (session_) {
+    MS_LOG(ERROR) << "Model has been called Build!";
+    return kLiteModelRebuild;
+  }
+  if (model_context == nullptr) {
+    MS_LOG(ERROR) << "Invalid context pointers!";
+    return kLiteError;
+  }
+  SetMsContext();
+  auto thread_num = model_context->GetThreadNum();
+  if (thread_num < 0) {
+    MS_LOG(ERROR) << "Invalid thread num " << thread_num;
+    return kLiteError;
+  }
+  UpdateProvider();
+  auto status = UpdateSharingWorkspaceConfig(model_data, model_size, model_path);
+  if (status != kSuccess) {
+    MS_LOG(ERROR) << "UpdateSharingWorkspaceConfig failed!";
+    return kLiteError;
+  }
+  auto mindir_path = GetConfig(lite::kConfigModelFileSection, lite::kConfigMindIRPathKey);
+  if (mindir_path.empty()) {
+    (void)UpdateConfig(lite::kConfigModelFileSection,
+                       std::pair<std::string, std::string>(lite::kConfigMindIRPathKey, model_path));
+  }
+  session_ = InferSession::CreateSession(model_context, config_info_);
+  if (session_ == nullptr) {
+    MS_LOG(ERROR) << "Create session failed!";
+    return kLiteError;
+  }
+  Status ret;
+  if (model_type == kMindIR_Lite) {
+    ret = session_->CompileGraph(model_data, model_size, &graph_id_);
+    if (ret != kSuccess) {
+      MS_LOG(ERROR) << "compile graph failed!";
+      return ret;
+    }
+    return kSuccess;
+  }
+  // for model pool
+  FuncGraphPtr func_graph = FuncGraphReuseManager::GetInstance()->GetSharedFuncGraph(config_info_);
+  if (func_graph != nullptr) {
+    MS_LOG(INFO) << "the model buffer is the same as the last time. we can directly use the cached function graph.";
+    std::unique_lock<std::shared_mutex> build_lock(g_model_converter_lock);
+    return session_->CompileGraph(func_graph, nullptr, 0, &graph_id_);
+  }
+
+  if (model_type != ModelType::kDataFlow) {
+    func_graph = LoadGraphByBufferImpl(model_data, model_size, model_type, model_context, model_path, cryptoInfo);
+    if (func_graph == nullptr) {
+      MS_LOG(ERROR) << "Failed to load MindIR model, please check the validity of the model: " << model_path;
+      return kLiteError;
+    }
+    // convert and optimize func graph to infer
+    ret = ConvertGraphOnline(func_graph, model_context);
+    if (ret != kSuccess) {
+      MS_LOG(ERROR) << "convert graph failed!";
+      return ret;
+    }
+  } else {
+    // new a func graph contains a custom node, which is the data-flow graph.
+    func_graph = CreateFuncGraphFromDataFlow(model_data, model_size);
+    if (func_graph == nullptr) {
+      MS_LOG(ERROR) << "Create func graph failed from data flow graph!";
+      return kLiteError;
+    }
+  }
+  ret = session_->CompileGraph(func_graph, nullptr, 0, &graph_id_);
+  if (ret != kSuccess) {
+    MS_LOG(ERROR) << "compile graph failed!";
+    return ret;
+  }
+  std::shared_lock<std::shared_mutex> build_lock(g_model_converter_lock);
+  return FuncGraphReuseManager::GetInstance()->StoreFuncGraph(func_graph, config_info_);
+}
+
 Status ModelImpl::Build(const FuncGraphPtr &func_graph, const std::shared_ptr<Context> &model_context) {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
   if (session_) {
@@ -516,6 +656,12 @@ Status ModelImpl::Build(const FuncGraphPtr &func_graph, const std::shared_ptr<Co
 Status ModelImpl::Build(const void *model_data, size_t data_size, ModelType model_type,
                         const std::shared_ptr<Context> &model_context) {
   return BuildByBufferImpl(model_data, data_size, model_type, model_context);
+}
+
+Status ModelImpl::Build(const void *model_data, size_t data_size, ModelType model_type,
+                        const std::shared_ptr<Context> &model_context, const std::string &model_path,
+                        const CryptoInfo &cryptoInfo) {
+  return BuildByBufferImpl(model_data, data_size, model_type, model_context, model_path, cryptoInfo);
 }
 
 Status ModelImpl::Build(const std::string &model_path, ModelType model_type,
