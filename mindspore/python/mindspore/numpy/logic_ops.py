@@ -635,7 +635,7 @@ def logical_or(x1, x2, dtype=None):
             output Tensor.
 
     Returns:
-       Tensor or scalar, element-wise comparison of `x1` and `x2`. Typically of type
+       Tensor or scalar, logical OR operation of `x1` and `x2`. Typically of type
        bool, unless ``dtype=object`` is passed. This is a scalar if both `x1` and `x2` are
        scalars.
 
@@ -704,7 +704,7 @@ def logical_xor(x1, x2, dtype=None):
 
     Returns:
         Tensor or scalar.
-        Boolean result of the logical AND operation applied to the elements of `x1` and `x2`;
+        Boolean result of the logical XOR operation applied to the elements of `x1` and `x2`;
         the shape is determined by broadcasting. This is a scalar if both `x1` and `x2` are scalars.
 
     Supported Platforms:
@@ -869,7 +869,7 @@ def sometrue(a, axis=None, keepdims=False):
 
     Raises:
         TypeError: If input is not array_like or `axis` is not int or tuple of integers or
-            `keepdims` is not integer or `initial` is not scalar.
+            `keepdims` is not bool.
         ValueError: If any axis is out of range or duplicate axes exist.
 
     Supported Platforms:
