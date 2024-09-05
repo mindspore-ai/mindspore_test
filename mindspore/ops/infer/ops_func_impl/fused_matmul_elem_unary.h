@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2024 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,19 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_MATMUL_ELEM_UNARY_H_
-#define MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_MATMUL_ELEM_UNARY_H_
+#ifndef MINDSPORE_OPS_INFER_OPS_FUNC_IMPL_MATMUL_ELEM_UNARY_H_
+#define MINDSPORE_OPS_INFER_OPS_FUNC_IMPL_MATMUL_ELEM_UNARY_H_
 #include <memory>
 #include <string>
 #include <vector>
 #include "mindapi/base/types.h"
 #include "ops/base_operator.h"
-#include "mindspore/core/ops/ops_func_impl/op_func_impl.h"
+#include "ops/ops_func_impl/op_func_impl.h"
 #include "infer/ops_func_impl/matmul.h"
 
 namespace mindspore {
 namespace ops {
-class MIND_API FusedMatmulElemUnaryFuncImpl : public MatMulFuncImpl {
+class OPS_API FusedMatmulElemUnaryFuncImpl : public MatMulFuncImpl {
  public:
   BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
   TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
@@ -34,4 +34,4 @@ class MIND_API FusedMatmulElemUnaryFuncImpl : public MatMulFuncImpl {
 
 }  // namespace ops
 }  // namespace mindspore
-#endif  // MINDSPORE_CORE_OPS_OPS_FUNC_IMPL_MATMUL_ELEM_UNARY_H_
+#endif  // MINDSPORE_OPS_INFER_OPS_FUNC_IMPL_MATMUL_ELEM_UNARY_H_
