@@ -135,7 +135,8 @@ class Model(BaseModel):
         return res
 
     @set_env
-    def build_from_file(self, model_path, model_type, context=None, config_path="", config_dict: dict = None):
+    def build_from_file(self, model_path, model_type, context=None, config_path="", config_dict: dict = None,
+                        dec_key=None, dec_mode="AES-GCM", dec_num_parallel=0):
         """
         Load and build a model from file.
 
@@ -189,16 +190,26 @@ class Model(BaseModel):
                     config_dict = {"ascend_context" : {"rank_table_file" : "path_b"}}
 
                 The the path_b from the config_dict will be used to compile the model.
+            dec_key (Bytes, optional) - key for decrypting model file, for example ``b'1234567890ABCDEF'``.
+                Default: ``None``.
+            dec_mode (str, optional) - decryption mode, currently support ``"AES-GCM"``, ``"AES-CBC"``, ``"SM4-CBC"``.
+                Default: ``"AES-GCM"``.
+            dec_num_parallel (int, optional) - Number of threads used during decryption, limited to 0~64.
+                Default: ``0``.
 
         Raises:
             TypeError: `model_path` is not a str.
             TypeError: `model_type` is not a ModelType.
             TypeError: `context` is neither a Context nor ``None``.
             TypeError: `config_path` is not a str.
+            TypeError: `dec_key` is not Bytes.
+            TypeError: `dec_mode` is not str.
+            TypeError: `dec_num_parallel` is not int.
             RuntimeError: `model_path` does not exist.
             RuntimeError: `config_path` does not exist.
             RuntimeError: load configuration by `config_path` failed.
             RuntimeError: build from file failed.
+            RuntimeError: `dec_mode` is an empty string.
 
         Examples:
             >>> # Testcase 1: build from file with default cpu context.
@@ -260,8 +271,18 @@ class Model(BaseModel):
                     raise RuntimeError(f"update configuration failed! Error is {ret.ToString()}."
                                        f"Setcion is {key}, config is {value}")
 
-        ret = self._model.build_from_file(
-            self.model_path_, model_type_, context._context._inner_context)
+        if dec_key:
+            check_isinstance("dec_key", dec_key, bytes)
+            check_isinstance("dec_mode", dec_mode, str)
+            check_isinstance("dec_num_parallel", dec_num_parallel, int)
+            if dec_mode == "":
+                raise RuntimeError(f"build_from_file failed, dec_mode is empty!")
+            ret = self._model.build_from_file_with_decrypt(
+                self.model_path_, model_type_, context._context._inner_context,
+                dec_key, len(dec_key), dec_mode, dec_num_parallel)
+        else:
+            ret = self._model.build_from_file(
+                self.model_path_, model_type_, context._context._inner_context)
         if not ret.IsOk():
             raise RuntimeError(
                 f"build_from_file failed! Error is {ret.ToString()}")

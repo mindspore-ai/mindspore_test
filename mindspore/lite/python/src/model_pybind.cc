@@ -16,11 +16,13 @@
 #include "include/api/model.h"
 #include "include/api/model_group.h"
 #include "include/api/model_parallel_runner.h"
+#include "extendrt/cxx_api/model/model_impl.h"
 #include "src/common/log_adapter.h"
 #include "mindspore/lite/python/src/common_pybind.h"
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 #include "pybind11/functional.h"
+#include "utils/crypto.h"
 
 namespace mindspore::lite {
 namespace py = pybind11;
@@ -115,6 +117,39 @@ Status PyModelUpdateWeights(Model *model, const std::vector<std::vector<MSTensor
   return kSuccess;
 }
 
+Status PyModelBuild(Model *model, const std::string &model_path, ModelType model_type,
+                    const std::shared_ptr<Context> &model_context, char *key, size_t key_len,
+                    const std::string &dec_mode, size_t num_parallel) {
+  size_t decrypt_len;
+  auto decrypt_data = Decrypt(&decrypt_len, model_path, reinterpret_cast<unsigned char *>(key), key_len, dec_mode);
+  if (decrypt_data == nullptr) {
+    MS_LOG(ERROR) << "Decrypt failed!";
+    return kLiteFileError;
+  }
+  try {
+    CryptoInfo cryptoInfo = CryptoInfo(key, key_len, dec_mode, num_parallel);
+    Status ret =
+      model->impl()->Build(decrypt_data.get(), decrypt_len, model_type, model_context, model_path, cryptoInfo);
+    if (ret != kSuccess) {
+      auto sec_ret = memset_s(key, key_len, 0, key_len);
+      if (sec_ret != EOK) {
+        MS_LOG(ERROR) << "memcpy_s failed, src_len = " << key_len << ", dst_len = " << key_len << ", ret = " << sec_ret;
+        return kLiteMemoryFailed;
+      }
+      return ret;
+    }
+    auto sec_ret = memset_s(key, key_len, 0, key_len);
+    if (sec_ret != EOK) {
+      MS_LOG(ERROR) << "memcpy_s failed, src_len = " << key_len << ", dst_len = " << key_len << ", ret = " << sec_ret;
+      return kLiteMemoryFailed;
+    }
+    return kSuccess;
+  } catch (const std::exception &exe) {
+    MS_LOG(ERROR) << "Catch exception: " << exe.what();
+    return kCoreFailed;
+  }
+}
+
 void ModelPyBind(const py::module &m) {
   (void)py::enum_<ModelType>(m, "ModelType")
     .value("kMindIR", ModelType::kMindIR)
@@ -183,9 +218,7 @@ void ModelPyBind(const py::module &m) {
     .def("build_from_buff_with_decrypt",
          py::overload_cast<const void *, size_t, ModelType, const std::shared_ptr<Context> &, const Key &,
                            const std::string &, const std::string &>(&Model::Build))
-    .def("build_from_file_with_decrypt",
-         py::overload_cast<const std::string &, ModelType, const std::shared_ptr<Context> &, const Key &,
-                           const std::string &, const std::string &>(&Model::Build))
+    .def("build_from_file_with_decrypt", &PyModelBuild, py::call_guard<py::gil_scoped_release>())
     .def("load_config", py::overload_cast<const std::string &>(&Model::LoadConfig))
     .def("update_config", &PyModelUpdateConfig)
     .def("resize", &PyModelResize)

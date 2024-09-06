@@ -5,7 +5,7 @@ mindspore_lite.Model
 
     `Model` 类定义MindSpore Lite模型，便于计算图管理。
 
-    .. py:method:: build_from_file(model_path, model_type, context=None, config_path="", config_dict: dict = None)
+    .. py:method:: build_from_file(model_path, model_type, context=None, config_path="", config_dict: dict = None, dec_key=None, dec_mode="AES-GCM", dec_num_parallel=0)
 
         从文件加载并构建模型。
 
@@ -50,16 +50,24 @@ mindspore_lite.Model
                   config_dict = {"ascend_context" : {"rank_table_file" : "path_b"}}
 
               那么配置参数字典中路径b的rank table将覆盖配置文件中的路径a的rank table。
+            
+            - **dec_key** (Bytes, 可选) - 当导入密文模型时，使用该参数传入解密密钥，例如 ``b'1234567890ABCDEF'``。默认值：``None``。
+            - **dec_mode** (str, 可选) - 当导入密文模型时，使用该参数指定解密模式。当前支持的解密模式包括："AES-GCM"，"AES-CBC"与``"SM4-CBC"。默认值：``"AES-GCM"``。
+            - **dec_num_parallel** (int, 可选) - 当导入密文模型时，使用该参数开启并行解密，并指定并行线程数，取值范围0~64。默认为：``0``。
 
         异常：
             - **TypeError** - `model_path` 不是str类型。
             - **TypeError** - `model_type` 不是ModelType类型。
             - **TypeError** - `context` 既不是Context类型也不是 ``None`` 。
             - **TypeError** - `config_path` 不是str类型。
+            - **TypeError** - `dec_key` 不是Bytes类型。
+            - **TypeError** - `dec_mode` 不是str类型。
+            - **TypeError** - `dec_num_parallel` 不是int类型。
             - **RuntimeError** - `model_path` 文件路径不存在。
             - **RuntimeError** - `config_path` 文件路径不存在。
             - **RuntimeError** - 从 `config_path` 加载配置文件失败。
             - **RuntimeError** - 从文件加载并构建模型失败。
+            - **RuntimeError** - `dec_mode` 在密文导入时为空字符串。
 
     .. py:method:: get_inputs()
 

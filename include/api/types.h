@@ -60,6 +60,24 @@ struct QuantParam {
   double max;          ///< Quantization max value
 };
 
+using Key = struct MS_API Key {
+  size_t max_key_len = 32;
+  size_t len = 0;
+  unsigned char key[32] = {0};
+  Key() : len(0) {}
+  explicit Key(const char *dec_key, size_t key_len);
+};
+
+constexpr char kDecModeAesGcm[] = "AES-GCM";
+
+struct CryptoInfo {
+  Key key;
+  std::string mode = "AES-GCM";
+  size_t parallel_num = 0;
+  CryptoInfo() : parallel_num(0) {}
+  explicit CryptoInfo(const char *dec_key, size_t key_len, const std::string dec_mode, size_t parallel_num);
+};
+
 class Allocator;
 /// \brief The MSTensor class defines a tensor in MindSpore.
 class MS_API MSTensor {
@@ -401,16 +419,6 @@ MSTensor::MSTensor(const std::string &name, enum DataType type, const std::vecto
 std::string MSTensor::Name() const { return CharToString(CharName()); }
 
 void MSTensor::SetTensorName(const std::string &name) { SetTensorName(StringToChar(name)); }
-
-using Key = struct MS_API Key {
-  const size_t max_key_len = 32;
-  size_t len = 0;
-  unsigned char key[32] = {0};
-  Key() : len(0) {}
-  explicit Key(const char *dec_key, size_t key_len);
-};
-
-constexpr char kDecModeAesGcm[] = "AES-GCM";
 
 /// \brief CallBackParam defined input arguments for callBack function.
 struct MSCallBackParam {

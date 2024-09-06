@@ -23,6 +23,7 @@
 
 typedef unsigned char Byte;
 namespace mindspore {
+constexpr size_t MAX_DEC_THREAD_NUM = 64;            // maximum number of threads can launch during dec
 constexpr size_t MAX_BLOCK_SIZE = 64 * 1024 * 1024;  // Maximum ciphertext segment, units is Byte
 constexpr size_t RESERVED_BYTE_PER_BLOCK = 50;       // Reserved byte per block to save addition info
 constexpr size_t DECRYPT_BLOCK_BUF_SIZE = MAX_BLOCK_SIZE + RESERVED_BYTE_PER_BLOCK;  // maximum length of decrypt block
@@ -37,6 +38,8 @@ MS_CORE_API std::unique_ptr<Byte[]> Decrypt(size_t *decrypt_len, const std::stri
                                             size_t key_len, const std::string &dec_mode);
 MS_CORE_API std::unique_ptr<Byte[]> Decrypt(size_t *decrypt_len, const Byte *model_data, size_t data_size,
                                             const Byte *key, size_t key_len, const std::string &dec_mode);
+MS_CORE_API std::unique_ptr<Byte[]> Decrypt(size_t *decrypt_len, const std::string &encrypt_data_path, const Byte *key,
+                                            size_t key_len, const std::string &dec_mode, size_t num_threads);
 MS_CORE_API bool IsCipherFile(const std::string &file_path);
 MS_CORE_API bool IsCipherFile(const Byte *model_data);
 }  // namespace mindspore

@@ -110,7 +110,7 @@ std::vector<std::string> ReadFileNames(const std::string &dir) {
 
 Key::Key(const char *dec_key, size_t key_len) {
   len = 0;
-  if (key_len >= max_key_len) {
+  if (key_len > max_key_len) {
     MS_LOG(ERROR) << "Invalid key len " << key_len << " is more than max key len " << max_key_len;
     return;
   }
@@ -122,6 +122,12 @@ Key::Key(const char *dec_key, size_t key_len) {
   }
 
   len = key_len;
+}
+
+CryptoInfo::CryptoInfo(const char *dec_key, size_t key_len, const std::string dec_mode, size_t parallel_num) {
+  key = Key(dec_key, key_len);
+  mode = dec_mode;
+  parallel_num = parallel_num;
 }
 
 Status Serialization::Load(const void *model_data, size_t data_size, ModelType model_type, Graph *graph,

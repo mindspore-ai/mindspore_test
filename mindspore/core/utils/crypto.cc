@@ -19,6 +19,7 @@
 #include <vector>
 #include <unordered_set>
 #include <fstream>
+#include <future>
 #include <algorithm>
 #include "utils/log_adapter.h"
 #include "utils/convert_utils_base.h"
@@ -74,6 +75,11 @@ std::unique_ptr<Byte[]> Encrypt(size_t *, const Byte *, size_t, const Byte *, si
 }
 
 std::unique_ptr<Byte[]> Decrypt(size_t *, const std::string &, const Byte *, size_t, const std::string &) {
+  MS_LOG(ERROR) << "Unsupported feature in Windows platform.";
+  return nullptr;
+}
+
+std::unique_ptr<Byte[]> Decrypt(size_t *, const std::string &, const Byte *, size_t, const std::string &, size_t) {
   MS_LOG(ERROR) << "Unsupported feature in Windows platform.";
   return nullptr;
 }
@@ -481,12 +487,152 @@ std::unique_ptr<Byte[]> Encrypt(size_t *encrypt_len, const Byte *plain_data, siz
   return encrypt_data;
 }
 
+bool WaitParallelDecryption(size_t thread_num, std::future<bool> *thread_rets, size_t len_thread_rets) {
+  if (thread_num > len_thread_rets) {
+    MS_LOG(ERROR) << "The number of threads " << thread_num << " exceeds the capacity of thread pool!";
+    return false;
+  }
+  for (size_t i = 0; i < thread_num; i++) {
+    if (!thread_rets[i].get()) {
+      MS_LOG(ERROR) << "Thread number " << i << " decrypt failed!";
+      return false;
+    }
+  }
+  return true;
+}
+
+bool InitSharedBuffs(std::vector<std::vector<char> > *block_bufs, std::vector<std::vector<char> > *int_bufs,
+                     std::vector<std::vector<Byte> > *decrypt_block_bufs, size_t num_threads) {
+  if (!block_bufs) {
+    MS_LOG(ERROR) << "block_bufs is nullptr!";
+    return false;
+  }
+  if (!int_bufs) {
+    MS_LOG(ERROR) << "int_bufs is nullptr!";
+    return false;
+  }
+  if (!decrypt_block_bufs) {
+    MS_LOG(ERROR) << "decrypt_block_bufs is nullptr!";
+    return false;
+  }
+  std::vector<char> block_buf(DECRYPT_BLOCK_BUF_SIZE);
+  std::vector<char> int_buf(sizeof(int32_t));
+  std::vector<Byte> decrypt_block_buf(DECRYPT_BLOCK_BUF_SIZE);
+  for (size_t i = 0; i < num_threads; ++i) {
+    (void)block_bufs->emplace_back(block_buf);
+    (void)int_bufs->emplace_back(int_buf);
+    (void)decrypt_block_bufs->emplace_back(decrypt_block_buf);
+  }
+  return true;
+}
+
+bool CheckDecMode(const std::string &dec_mode, unsigned int cipher_flag, const std::string &encrypt_data_path) {
+  if (dec_mode == "AES-GCM" && cipher_flag != GCM_MAGIC_NUM) {
+    MS_LOG(ERROR) << "File \"" << encrypt_data_path << "\" is not an encrypted AES-GCM file and cannot be decrypted";
+    return false;
+  } else if (dec_mode == "AES-CBC" && cipher_flag != CBC_MAGIC_NUM) {
+    MS_LOG(ERROR) << "File \"" << encrypt_data_path << "\" is not an encrypted AES-CBC file and cannot be decrypted";
+    return false;
+  } else if (dec_mode == "SM4-CBC" && cipher_flag != SM4_CBC_MAGIC_NUM) {
+    MS_LOG(ERROR) << "File \"" << encrypt_data_path << "\" is not an encrypted SM4-CBC file and cannot be decrypted";
+    return false;
+  }
+  return true;
+}
+
+std::unique_ptr<Byte[]> Decrypt(size_t *decrypt_len, const std::string &encrypt_data_path, const Byte *key,
+                                size_t key_len, const std::string &dec_mode, size_t num_threads) {
+  if (num_threads <= 1) {
+    MS_LOG(INFO) << "num_threads less than 1, using serial decryption.";
+    return Decrypt(decrypt_len, encrypt_data_path, key, key_len, dec_mode);
+  } else if (num_threads > MAX_DEC_THREAD_NUM) {
+    MS_LOG(INFO) << "num_threads larger than MAX_DEC_THREAD_NUM, set to MAX_DEC_THREAD_NUM.";
+    num_threads = MAX_DEC_THREAD_NUM;
+  }
+  MS_EXCEPTION_IF_NULL(key);
+  if (dec_mode != "AES-GCM" && dec_mode != "AES-CBC" && dec_mode != "SM4-CBC") {
+    MS_LOG(ERROR) << "Mode only support AES-GCM|AES-CBC|SM4-CBC.";
+    return nullptr;
+  }
+  MS_LOG(INFO) << "Decryption Mode: " << dec_mode;
+  std::ifstream fid(encrypt_data_path, std::ios::in | std::ios::binary);
+  if (!fid) {
+    MS_LOG(ERROR) << "Open file '" << encrypt_data_path << "' failed, please check the correct of the file.";
+    return nullptr;
+  }
+  fid.seekg(0, std::ios_base::end);
+  size_t file_size = static_cast<size_t>(fid.tellg());
+  fid.clear();
+  fid.seekg(0);
+  *decrypt_len = 0;
+  auto decrypt_data = std::make_unique<Byte[]>(file_size);
+  std::vector<std::vector<char> > block_bufs;
+  std::vector<std::vector<char> > int_bufs;
+  std::vector<std::vector<Byte> > decrypt_block_bufs;
+  int32_t decrypt_block_lens[MAX_DEC_THREAD_NUM];
+  unsigned char tags[num_threads][Byte16];
+  std::future<bool> thread_rets[num_threads];
+  bool init_ret = InitSharedBuffs(&block_bufs, &int_bufs, &decrypt_block_bufs, num_threads);
+  if (!init_ret) {
+    MS_LOG(ERROR) << "Init shared buffers failed!";
+    return nullptr;
+  }
+  while (static_cast<size_t>(fid.tellg()) < file_size) {
+    size_t real_thread_used = 0;
+    for (size_t i = 0; i < num_threads; i++) {
+      if (static_cast<size_t>(fid.tellg()) < file_size) {
+        fid.read(int_bufs[i].data(), static_cast<int32_t>(sizeof(int32_t)));
+        auto cipher_flag =
+          static_cast<unsigned int>(ByteToInt(reinterpret_cast<Byte *>(int_bufs[i].data()), int_bufs[i].size()));
+        if (!CheckDecMode(dec_mode, cipher_flag, encrypt_data_path)) {
+          MS_LOG(ERROR) << "Decryption Mode mismatch Encryption Mode";
+          return nullptr;
+        }
+        if (dec_mode == "AES-GCM") {
+          (void)fid.read(reinterpret_cast<char *>(tags[i]), SizeToLong(Byte16));
+        }
+        fid.read(int_bufs[i].data(), static_cast<int64_t>(sizeof(int32_t)));
+        auto block_size = ByteToInt(reinterpret_cast<Byte *>(int_bufs[i].data()), int_bufs[i].size());
+        if (block_size < 0) {
+          MS_LOG(ERROR) << "The block_size read from the cipher file must be not negative, but got " << block_size;
+          return nullptr;
+        }
+        fid.read(block_bufs[i].data(), static_cast<int64_t>(block_size));
+        thread_rets[i] = async(std::launch::async, BlockDecrypt, decrypt_block_bufs[i].data(), &decrypt_block_lens[i],
+                               reinterpret_cast<Byte *>(block_bufs[i].data()), IntToSize(block_size), key,
+                               static_cast<int32_t>(key_len), dec_mode, tags[i]);
+      } else {
+        break;
+      }
+      real_thread_used++;
+    }
+    auto ret = WaitParallelDecryption(real_thread_used, thread_rets, num_threads);
+    if (!ret) {
+      MS_LOG(ERROR) << "Parallel decryption failed!";
+      return nullptr;
+    }
+    for (size_t i = 0; i < real_thread_used; i++) {
+      size_t capacity = std::min(file_size - *decrypt_len, SECUREC_MEM_MAX_LEN);
+      errno_t ret = memcpy_s(decrypt_data.get() + *decrypt_len, capacity, decrypt_block_bufs[i].data(),
+                             static_cast<int32_t>(decrypt_block_lens[i]));
+      if (ret != EOK) {
+        MS_LOG(INTERNAL_EXCEPTION) << "memcpy_s error, errorno " << ret;
+      }
+      *decrypt_len += static_cast<size_t>(decrypt_block_lens[i]);
+    }
+  }
+  fid.close();
+  return decrypt_data;
+}
+
 std::unique_ptr<Byte[]> Decrypt(size_t *decrypt_len, const std::string &encrypt_data_path, const Byte *key,
                                 size_t key_len, const std::string &dec_mode) {
   MS_EXCEPTION_IF_NULL(key);
   if (dec_mode != "AES-GCM" && dec_mode != "AES-CBC" && dec_mode != "SM4-CBC") {
     MS_LOG(ERROR) << "Mode only support AES-GCM|AES-CBC|SM4-CBC.";
     return nullptr;
+  } else {
+    MS_LOG(INFO) << "Decryption Mode: " << dec_mode;
   }
   std::ifstream fid(encrypt_data_path, std::ios::in | std::ios::binary);
   if (!fid) {
