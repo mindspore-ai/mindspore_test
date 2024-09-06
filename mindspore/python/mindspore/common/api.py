@@ -815,7 +815,7 @@ def jit(fn=None, mode="PSJit", input_signature=None, hash_args=None, jit_config=
 
             - `PSJit <https://www.mindspore.cn/docs/en/master/model_train/program_form/static_graph.html>`_ :
               Parse python ast to build graph.
-            - `PIJit <https://www.mindspore.cn/docs/en/master/design/dynamic_graph_and_static_graph.html>`_ :
+            - `PIJit <https://www.mindspore.cn/docs/en/master/model_train/program_form/pynative.html#pijit>`_ :
               Parse python bytecode to build graph at runtime.
 
         input_signature (Union[Tuple, List, Dict, Tensor]): The Tensor which describes the input arguments. The

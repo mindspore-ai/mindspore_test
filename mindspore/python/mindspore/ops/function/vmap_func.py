@@ -27,7 +27,7 @@ def vmap(fn, in_axes=0, out_axes=0):
     Vmap is pioneered by Jax and it removes the restriction of batch dimension on the operator, and provides a
     more convenient and unified operator expression. Moreover, it allows users to composite with other functional
     modules such as :func:`mindspore.grad`, to improve the development efficiency, please refer to the
-    `Automatic Vectorization (Vmap) <https://www.mindspore.cn/docs/en/master/model_train/train_process/func_programming/vmap.html>`_
+    `Automatic Vectorization (Vmap) <https://www.mindspore.cn/docs/en/master/model_train/train_process/optimize/vmap.html>`_
     tutorial for more detail.
     In addition, the vectorizing map does not execute loops outside the function, but sinks loops
     into the primitive operations of the function for better performance. When combined with `Graph Kernel Fusion`,
