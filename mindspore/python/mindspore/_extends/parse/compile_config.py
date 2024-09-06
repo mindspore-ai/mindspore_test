@@ -39,6 +39,16 @@ Value Range:
 COMPILE_PROFILE_FINISH_ACTION = ''
 
 """
+Name: DEBUG_MODE
+Function: Whether to compile in debug mode.
+Value Range:
+    "debug": Debug mode
+    "release": Release mode
+    Default: "debug"
+"""
+COMPILE_DEBUG_MODE = ''
+
+"""
 Name: FALLBACK_SUPPORT_LIST_DICT_INPLACE
 Function: Whether to support the inplace operation of list and dict.
 Value Range:
@@ -240,17 +250,8 @@ Value Range:
 DUMP_VALIDATE_BEFORE_RESET_ID = ''
 
 """
-Name: AUTO_PASSES_OPTIMIZE_PATH
-Function: Whether to do optimize the passes configure.
-Value Range:
-    string: The passes configure file path.
-    Default: '' .empty string. Disable to do optimize the passes.
-"""
-AUTO_PASSES_OPTIMIZE_PATH = ''
-
-"""
-Name: STRICT_CHECK_CONTEXT
-Function: Whether to check parent context strictly.
+Name: ENABLE_RECOMPUTE_BEFORE_INLINE
+Function: Whether to do recomputation before fprop and bprop being inlined.
 Value Range:
     1: Enable
     Default: Disable.
@@ -264,21 +265,12 @@ Value Range:
     1: Enable
     Default: Disable.
 """
-
 STRICT_CHECK_PARENT_CONTEXT = ''
-"""
-Name: DEBUG_MODE
-Function: Whether to compile in debug mode.
-Value Range:
-    "debug": Debug mode
-    "release": Release mode
-    Default: "debug"
-"""
-COMPILE_DEBUG_MODE = ''
 
 __all__ = [
     "COMPILE_PROFILE",
     "COMPILE_PROFILE_FINISH_ACTION",
+    "COMPILE_DEBUG_MODE",
     "FALLBACK_SUPPORT_LIST_DICT_INPLACE",
     "FALLBACK_FORCE_ANY",
     "IF_PARALLEL_CALL",
@@ -304,6 +296,4 @@ __all__ = [
     "ENABLE_RECOMPUTE_BEFORE_INLINE",
     "STRICT_CHECK_PARENT_CONTEXT",
     "AUTO_PASSES_OPTIMIZE_PATH",
-    "STRICT_CHECK_PARENT_CONTEXT",
-    "COMPILE_DEBUG_MODE",
 ]
