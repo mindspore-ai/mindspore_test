@@ -21,6 +21,51 @@
 
 namespace mindspore {
 namespace ops {
+enum FASGradInputIndex : size_t {
+  kFASGradInputQueryIndex = 0,
+  kFASGradInputKeyIndex,
+  kFASGradInputValueIndex,
+  kFASGradInputDyIndex,
+  kFASGradInputPseShiftIndex,
+  kFASGradInputDropMaskIndex,
+  kFASGradInputPaddingMaskIndex,
+  kFASGradInputAttnMaskIndex,
+  kFASGradInputSoftmaxMaxIndex,
+  kFASGradInputSoftmaxSumIndex,
+  kFASGradInputSoftmaxOutIndex,
+  kFASGradInputAttentionInIndex,
+  kFASGradInputPrefixIndex,
+  kFASGradInputActualSeqQlenIndex,
+  kFASGradInputActualSeqKVlenIndex,
+  kFASGradInputHeadNumIndex,
+  kFASGradInputKeepProbIndex,
+  kFASGradInputScaleValueIndex,
+  kFASGradInputPreTokensIndex,
+  kFASGradInputNextTokensIndex,
+  kFASGradInputInnerPreciseIndex,
+  kFASGradInputLayoutIndex,
+  kFASGradInputSparseModeIndex,
+  kFASGradInputsNum,
+};
+enum FASGradOutputIndex : size_t {
+  kFASGradOutputDqIndex = 0,
+  kFASGradOutputDkIndex,
+  kFASGradOutputDvIndex,
+  kFASGradOutputDpseIndex,
+  kFASGradOutputsNum,
+};
+enum FASGradSparseMode : int64_t {
+  kFAGSparseDefaultMask = 0,
+  kFAGSparseAllMask,
+  kFAGSparseLeftUpCausal,
+  kFAGSparseRightDownCausal,
+  kFAGSparseBand,
+  kFAGSparsePrefix,
+  kFAGSparseGlobal,
+  kFAGSparseDilated,
+  kFAGSparseBlockLocal,
+};
+
 class OPS_API FlashAttentionScoreGradFuncImpl : public OpFuncImpl {
  public:
   BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;

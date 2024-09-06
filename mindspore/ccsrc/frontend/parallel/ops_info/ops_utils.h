@@ -724,6 +724,7 @@ constexpr char DST_GLOBAL_RANK[] = "dst_global_rank";
 constexpr char SRC_GLOBAL_RANK[] = "src_global_rank";
 constexpr char NO_UPDATE[] = "no_update";
 constexpr char HAS_ATTACHED[] = "has_attached";
+constexpr char FLASH_SP_SEND_RECV_HAS_ATTACHED[] = "flash_sp_send_recv_has_attached";
 constexpr char CHUNK[] = "chunk";
 constexpr char ORDER[] = "order";
 constexpr char STAGE[] = "stage";

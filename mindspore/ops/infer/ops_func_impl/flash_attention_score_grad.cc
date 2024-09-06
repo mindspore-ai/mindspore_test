@@ -31,53 +31,6 @@
 
 namespace mindspore {
 namespace ops {
-namespace {
-enum FASGradInputIndex : size_t {
-  kFASGradInputQueryIndex = 0,
-  kFASGradInputKeyIndex,
-  kFASGradInputValueIndex,
-  kFASGradInputDyIndex,
-  kFASGradInputPseShiftIndex,
-  kFASGradInputDropMaskIndex,
-  kFASGradInputPaddingMaskIndex,
-  kFASGradInputAttnMaskIndex,
-  kFASGradInputSoftmaxMaxIndex,
-  kFASGradInputSoftmaxSumIndex,
-  kFASGradInputSoftmaxOutIndex,
-  kFASGradInputAttentionInIndex,
-  kFASGradInputPrefixIndex,
-  kFASGradInputActualSeqQlenIndex,
-  kFASGradInputActualSeqKVlenIndex,
-  kFASGradInputHeadNumIndex,
-  kFASGradInputKeepProbIndex,
-  kFASGradInputScaleValueIndex,
-  kFASGradInputPreTokensIndex,
-  kFASGradInputNextTokensIndex,
-  kFASGradInputInnerPreciseIndex,
-  kFASGradInputLayoutIndex,
-  kFASGradInputSparseModeIndex,
-  kFASGradInputsNum,
-};
-enum FASGradOutputIndex : size_t {
-  kFASGradOutputDqIndex = 0,
-  kFASGradOutputDkIndex,
-  kFASGradOutputDvIndex,
-  kFASGradOutputDpseIndex,
-  kFASGradOutputsNum,
-};
-enum FASGradSparseMode : int64_t {
-  kFAGSparseDefaultMask = 0,
-  kFAGSparseAllMask,
-  kFAGSparseLeftUpCausal,
-  kFAGSparseRightDownCausal,
-  kFAGSparseBand,
-  kFAGSparsePrefix,
-  kFAGSparseGlobal,
-  kFAGSparseDilated,
-  kFAGSparseBlockLocal,
-};
-}  // namespace
-
 constexpr size_t kFASGradSoftmaxLastDim = 8;
 constexpr size_t kInputFASGradQueryBSHRank = 3;
 constexpr size_t kInputFASGradQuerySBHRank = 3;

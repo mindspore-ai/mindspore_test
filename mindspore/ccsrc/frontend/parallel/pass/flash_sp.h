@@ -26,10 +26,12 @@
 #include "include/common/utils/parallel_context.h"
 #include "include/backend/optimizer/optimizer.h"
 #include "pipeline/jit/ps/resource.h"
+#include "frontend/optimizer/optimizer.h"
 
 namespace mindspore {
 namespace parallel {
 bool SetFlashSP(const FuncGraphPtr &func_graph);
+bool FlashSPSendRecvNodeAttach(const FuncGraphPtr &root, const opt::OptimizerPtr &optimizer);
 
 class FlashSPInfo {
  public:

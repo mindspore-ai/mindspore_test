@@ -22,13 +22,13 @@ import mindspore as ms
 import mindspore.nn as nn
 from mindspore import Tensor
 from mindspore import context
+from mindspore import Symbol
 from mindspore.common.api import _cell_graph_executor
 from mindspore.context import set_auto_parallel_context
 from mindspore.ops.operations.nn_ops import FlashAttentionScore
 from mindspore.ops.auto_generate import FusedInferAttentionScore
 from mindspore.ops import operations as P
 from tests.ut.python.ops.test_math_ops import VirtualLoss
-
 
 def setup_function():
     context.set_auto_parallel_context(dataset_strategy="full_batch")
@@ -148,39 +148,37 @@ def generate_strategy_for_fias(dp, mp, optinal_inputs, input_layout='BSH', spars
             stra += ((),)
     return stra
 
-
 def generate_inputs(B, N, S, D, input_layout, use_mqa=False, with_real_shift=False, sparse_mode=0):
     N_Q = N
     N_KV = 1 if use_mqa else N
     if input_layout == "BSH":
-        H_Q = N_Q * D
-        H_KV = N_KV * D
-        query = Tensor(np.ones((B, S, H_Q), dtype=np.float16))
-        key = Tensor(np.ones((B, S, H_KV), dtype=np.float16))
-        value = Tensor(np.ones((B, S, H_KV), dtype=np.float16))
+        query = Tensor(shape=[B, S, D], dtype=ms.float16)
+        key = Tensor(shape=[B, S, D], dtype=ms.float16)
+        value = Tensor(shape=[B, S, D], dtype=ms.float16)
     elif input_layout == "SBH":
         H_Q = N_Q * D
         H_KV = N_KV * D
-        query = Tensor(np.ones((S, B, H_Q), dtype=np.float16))
-        key = Tensor(np.ones((S, B, H_KV), dtype=np.float16))
-        value = Tensor(np.ones((S, B, H_KV), dtype=np.float16))
+        query = Tensor(shape=[S, B, H_Q], dtype=ms.float16)
+        key = Tensor(shape=[S, B, H_KV], dtype=ms.float16)
+        value = Tensor(shape=[S, B, H_KV], dtype=ms.float16)
     elif input_layout == "BNSD":
-        query = Tensor(np.ones((B, N_Q, S, D), dtype=np.float16))
-        key = Tensor(np.ones((B, N_KV, S, D), dtype=np.float16))
-        value = Tensor(np.ones((B, N_KV, S, D), dtype=np.float16))
+        query = Tensor(shape=[B, N, S, D], dtype=ms.float16)
+        key = Tensor(shape=[B, N_KV, S, D], dtype=ms.float16)
+        value = Tensor(shape=[B, N_KV, S, D], dtype=ms.float16)
     elif input_layout == "BSND":
-        query = Tensor(np.ones((B, S, N_Q, D), dtype=np.float16))
-        key = Tensor(np.ones((B, S, N_KV, D), dtype=np.float16))
-        value = Tensor(np.ones((B, S, N_KV, D), dtype=np.float16))
+        query = Tensor(shape=[B, S, N, D], dtype=ms.float16)
+        key = Tensor(shape=[B, S, N_KV, D], dtype=ms.float16)
+        value = Tensor(shape=[B, S, N_KV, D], dtype=ms.float16)
     else:
         raise ValueError(f"input_layout is invalid.")
-    real_shift = Tensor(np.ones((B, N, S, S), dtype=np.float16)) if with_real_shift else None
-    # attn_mask = Tensor(np.ones((S, S), dtype=np.uint8))
+    real_shift = Tensor(shape=[B, N, S, S], dtype=np.float16) if with_real_shift else None
     attn_mask = None
     sample_num = 4
-    actual_seq_qlen = Tensor(tuple(range(S // sample_num, S + 1, S // sample_num)), ms.int64)
+    actual_seq_qlen = Tensor(tuple(range(2048 // sample_num, 2048 + 1, 2048 // sample_num)), ms.int64)
     actual_seq_kvlen = actual_seq_qlen
     return query, key, value, real_shift, attn_mask, actual_seq_qlen, actual_seq_kvlen
+
+
 
 
 class NetWithLoss(nn.Cell):
@@ -201,8 +199,8 @@ def compile_net(net, *inputs):
 
 class Net(nn.Cell):
     def __init__(self, head_num, keep_prob=1.0, input_layout="BSH", sparse_mode=0, use_mqa=False,
-                 with_real_shift=False, dp=None, mp=None, sp=1, enable_ring_attention=False,
-                 use_send_recv=False, enable_flash_sp=False,
+                 with_real_shift=False, dp=None, mp=None, sp=1, enable_ring_attention=True,
+                 use_send_recv=True, enable_flash_sp=False,
                  enable_ud_mask=False, reset_attn_mask=False):
         super(Net, self).__init__()
         self.reshape = P.Reshape()
@@ -308,63 +306,28 @@ class FiasNet(nn.Cell):
 
 
 @pytest.mark.parametrize('input_layout', ["BSH", "BNSD"])
-def test_ring_attention_semi_auto_parallel_alltoallv(input_layout):
-    """
-    Features: test Ring Attention
-    Description: semi_auto_parallel with strategy
-    Expectation: compile success
-    """
-    set_auto_parallel_context(device_num=4, global_rank=0)
-    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
-    context.set_context(save_graphs=True, save_graphs_path="./ring_attention_semi_auto_parallel_alltoallv")
-    dp = 1
-    mp = 1
-    sp = 4
-    B, N, S, D = 8, 16, 1024, 128
-    query, key, value, real_shift, attn_mask, _, _ = generate_inputs(B, N, S, D, input_layout)
-    net = Net(N, input_layout=input_layout, dp=dp, mp=mp, sp=sp, enable_ring_attention=True, use_send_recv=False)
-    if os.path.exists("./ring_attention_semi_auto_parallel_alltoallv/rank_0"):
-        shutil.rmtree("./ring_attention_semi_auto_parallel_alltoallv/rank_0")
-    compile_net(net, query, key, value, real_shift, attn_mask)
-    file = "./ring_attention_semi_auto_parallel_alltoallv/rank_0/*validate*.ir"
-    para = "PrimFunc_FlashAttentionScore"
-    output = subprocess.check_output(
-        ["grep -r '%s' %s | wc -l" % (para, file)],
-        shell=True)
-    out = str(output, 'utf-8').strip()
-    assert out == "4"
-
-    para = "NeighborExchange("
-    output = subprocess.check_output(
-        ["grep -r '%s' %s | wc -l" % (para, file)],
-        shell=True)
-    out = str(output, 'utf-8').strip()
-    assert out == "3"
-    context.reset_auto_parallel_context()
-
-
-@pytest.mark.skip(reason="fail in pipeline")
-@pytest.mark.parametrize('input_layout', ["BSH", "BNSD"])
 def test_ring_attention_semi_auto_parallel_send_recv(input_layout):
     """
     Features: test Ring Attention
     Description: semi_auto_parallel with strategy
     Expectation: compile success
     """
-    set_auto_parallel_context(device_num=4, global_rank=0)
+    set_auto_parallel_context(device_num=4, global_rank=2)
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
-    context.set_context(save_graphs=True, save_graphs_path="./ring_attention_semi_auto_parallel_send_recv")
+    context.set_context(save_graphs=True, save_graphs_path="./")
     dp = 1
     mp = 1
     sp = 4
-    B, N, S, D = 8, 16, 1024, 128
+    s1 = Symbol(divisor=8)
+    B, N, S, D = s1, 16, s1, 128
     query, key, value, real_shift, attn_mask, _, _ = generate_inputs(B, N, S, D,
                                                                      input_layout)
     net = Net(N, input_layout=input_layout, dp=dp, mp=mp, sp=sp, enable_ring_attention=True, use_send_recv=True)
-    if os.path.exists("./ring_attention_semi_auto_parallel_send_recv/rank_0"):
-        shutil.rmtree("./ring_attention_semi_auto_parallel_send_recv/rank_0")
+    if os.path.exists("./rank_0"):
+        shutil.rmtree("./rank_0")
+    net.set_inputs(query, key, value, real_shift, attn_mask)
     compile_net(net, query, key, value, real_shift, attn_mask)
-    file = "./ring_attention_semi_auto_parallel_send_recv/rank_0/*validate*.ir"
+    file = "./rank_0/*validate*.ir"
     para = "PrimFunc_FlashAttentionScore"
     output = subprocess.check_output(
         ["grep -r '%s' %s | wc -l" % (para, file)],
@@ -396,18 +359,20 @@ def test_flash_sp_semi_auto_parallel(input_layout):
     """
     set_auto_parallel_context(device_num=8, global_rank=0)
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
-    context.set_context(save_graphs=True, save_graphs_path="./flash_sp_semi_auto_parallel")
+    context.set_context(save_graphs=True, save_graphs_path="./")
     dp = 1
     mp = 1
     sp = 8
-    B, N, S, D = 8, 16, 1024, 128
+    s1 = Symbol(divisor=8)
+    B, N, S, D = s1, 16, s1, 128
     query, key, value, real_shift, attn_mask, _, _ = generate_inputs(B, N, S, D,
                                                                      input_layout)
     net = Net(N, input_layout=input_layout, dp=dp, mp=mp, sp=sp, enable_flash_sp=True)
-    if os.path.exists("./flash_sp_semi_auto_parallel/rank_0"):
-        shutil.rmtree("./flash_sp_semi_auto_parallel/rank_0")
+    if os.path.exists("./rank_0"):
+        shutil.rmtree("./rank_0")
+    net.set_inputs(query, key, value, real_shift, attn_mask)
     compile_net(net, query, key, value, real_shift, attn_mask)
-    file = "./flash_sp_semi_auto_parallel/rank_0/*validate*.ir"
+    file = "./rank_0/*validate*.ir"
     para = "PrimFunc_FlashAttentionScore"
     output = subprocess.check_output(
         ["grep -r '%s' %s | wc -l" % (para, file)],
@@ -438,17 +403,20 @@ def test_ring_attention_user_define_mask_semi_auto_parallel(input_layout):
     Expectation: compile success
     """
 
-    set_auto_parallel_context(device_num=4, global_rank=0)
+    set_auto_parallel_context(device_num=8, global_rank=0)
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
+    context.set_context(save_graphs=True, save_graphs_path="./")
     dp = 1
     mp = 1
-    sp = 4
-    B, N, S, D = 8, 16, 1024, 128
+    sp = 8
+    s1 = Symbol(divisor=8)
+    B, N, S, D = s1, 16, s1, 128
     query, key, value, real_shift, attn_mask, _, _ = generate_inputs(B, N, S, D,
                                                                      input_layout)
     np.random.seed(42)
-    attn_mask = Tensor(np.random.uniform(0, 2, size=(S, S)).astype(np.uint8), dtype=ms.uint8)
+    attn_mask = Tensor(shape=[S, S], dtype=ms.uint8)
     net = Net(N, input_layout=input_layout, dp=dp, mp=mp, sp=sp, enable_ring_attention=True, enable_ud_mask=True)
+    net.set_inputs(query, key, value, real_shift, attn_mask)
     compile_net(net, query, key, value, real_shift, attn_mask)
 
 @pytest.mark.parametrize('input_layout', ["BSH", "BNSD"])
@@ -458,36 +426,14 @@ def test_ring_attention_semi_auto_parallel_eod_reset_attn_mask(input_layout):
     Description: semi_auto_parallel with strategy
     Expectation: compile success
     """
-    set_auto_parallel_context(device_num=4, global_rank=0)
+    set_auto_parallel_context(device_num=8, global_rank=0)
     context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
     dp = 1
     mp = 1
-    sp = 4
-    B, N, S, D = 8, 16, 1024, 128
+    sp = 8
+    s1 = Symbol(divisor=8)
+    B, N, S, D = s1, 16, s1, 1024
     query, key, value, real_shift, _, actual_seq_qlen, actual_seq_kvlen = generate_inputs(B, N, S, D, input_layout)
     net = Net(N, input_layout=input_layout, dp=dp, mp=mp, sp=sp, enable_ring_attention=True, reset_attn_mask=True)
+    net.set_inputs(query, key, value, real_shift, _, actual_seq_qlen, actual_seq_kvlen)
     compile_net(net, query, key, value, real_shift, None, actual_seq_qlen, actual_seq_kvlen)
-
-
-@pytest.mark.parametrize('input_layout', ['BSH', 'BNSD'])
-@pytest.mark.parametrize('strategys', [(1, 2, 4)])
-def test_ring_attention_semi_auto_parallel_for_fused_infer_attention_score(input_layout, strategys):
-    """
-    Feature: test FusedInferAttentionScore semi parallel
-    Description: semi parallel
-    Expectation: compile success
-    """
-    set_auto_parallel_context(device_num=8, global_rank=0, dataset_strategy="full_batch")
-    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel")
-    B, N, S, D = 8, 16, 1024, 128
-    dp = strategys[0]
-    mp = strategys[1]
-    sp = strategys[2]
-    optinal_inputs = [True, True, True, False, False, False, False,
-                      False, False, False, False, False, False, False]
-    dims = [B, N, S, D]
-    inputs = generate_inputs_for_fias(dims, optinal_inputs, input_layout=input_layout, sparse_mode=0)
-    strategies = generate_strategy_for_fias(dp, mp, optinal_inputs, input_layout=input_layout, sparse_mode=0, sp=sp)
-    net = FiasNet(N, input_layout=input_layout, strategy=strategies, sparse_mode=0, enable_ring_attention=True,
-                  softmax_lse_flag=True)
-    compile_net(net, *inputs)

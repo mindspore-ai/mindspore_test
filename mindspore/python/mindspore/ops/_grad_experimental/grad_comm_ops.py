@@ -98,6 +98,9 @@ def get_bprop_send(self):
     if "dst_global_rank" in self.get_attr_dict():
         dst_global_rank = self.get_attr_dict().get("dst_global_rank")
         send_grad.add_prim_attr("src_global_rank", dst_global_rank)
+    if "RING_ATTENTION_INDEX" in self.get_attr_dict():
+        ringattention = self.get_attr_dict().get("RING_ATTENTION_INDEX")
+        send_grad.add_prim_attr("RING_ATTENTION_INDEX", ringattention)
     virtual_input = Tensor(0.0, dtype)
 
     def bprop(x, out, dout):
@@ -118,6 +121,9 @@ def get_bprop_receive(self):
     if "src_global_rank" in self.get_attr_dict():
         src_global_rank = self.get_attr_dict().get("src_global_rank")
         receive_grad.add_prim_attr("dst_global_rank", src_global_rank)
+    if "RING_ATTENTION_INDEX" in self.get_attr_dict():
+        ringattention = self.get_attr_dict().get("RING_ATTENTION_INDEX")
+        receive_grad.add_prim_attr("RING_ATTENTION_INDEX", ringattention)
     depend = P.Depend()
     cast = P.Cast()
     out_tensor = Tensor(0.0, mstype.float16)
