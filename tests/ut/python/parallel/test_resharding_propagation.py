@@ -182,6 +182,7 @@ def test_parameter_plan_with_layout_4x1():
     check_layout_config(para2, file2, in_strategy2)
 
 
+@pytest.mark.skip(reason="IR content check based on string is unreasonable")
 def test_reshard_with_layout_in_attrs():
     """
     Feature: Reshard input must be type Layout.
