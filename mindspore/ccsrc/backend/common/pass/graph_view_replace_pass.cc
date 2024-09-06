@@ -193,10 +193,10 @@ bool GraphViewReplacePass::Run(const FuncGraphPtr &func_graph) {
     }
     auto cnode = node->cast<CNodePtr>();
     auto kernel_name = AnfUtils::GetCNodeName(node);
-    auto ops = op_enabled_aclnn.find(kernel_name);
     if (!mindspore::common::IsEnableAclnnViewOp(kernel_name)) {
       continue;
     }
+    auto ops = op_enabled_aclnn.find(kernel_name);
     if (ops == op_enabled_aclnn.end() || IsNodeBoundary(func_graph, node) || !IsOutSuit(node, manager)) {
       continue;
     }
@@ -214,15 +214,8 @@ bool GraphViewReplacePass::Run(const FuncGraphPtr &func_graph) {
     // Copy attributes
     common::AnfAlgo::CopyNodeAttrs(node, view_node);
     view_node->AddAttr("enable_view", MakeValue(true));
-    // Set output
-    std::vector<TypeId> outputs_type;
-    std::vector<BaseShapePtr> outputs_shape;
-    auto out_num = AnfAlgo::GetOutputTensorNum(cnode);
-    for (size_t i = 0; i < out_num; i++) {
-      outputs_type.push_back(common::AnfAlgo::GetOutputInferDataType(node, i));
-      outputs_shape.push_back(AnfAlgo::GetOutputDetailShape(node, i));
-    }
-    common::AnfAlgo::SetOutputTypeAndDetailShape(outputs_type, outputs_shape, view_node.get());
+    // Set node abstract
+    view_node->set_abstract(node->abstract());
     auto kernel_graph = func_graph->cast<KernelGraphPtr>();
     MS_EXCEPTION_IF_NULL(kernel_graph);
 

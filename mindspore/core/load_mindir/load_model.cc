@@ -2248,21 +2248,19 @@ bool MSANFModelParser::BuildPrimitiveNodeFromProto(const mind_ir::ModelProto &mo
   for (int i = 0; i < model_proto.primitives_size(); ++i) {
     auto prim_name = model_proto.primitives(i).name();
     if (prim_name.find("GraphKernel") == 0) {
-      graph_kernel_prim_proto.emplace_back(model_proto.primitives(i));
-    } else {
-      if (!BuildPrimitiveNode(model_proto.primitives(i))) {
-        MS_LOG(ERROR) << "Parse primitives info for pb file failed! " << graph_kernel_prim_proto[i].DebugString();
-        return false;
-      }
-    }
-  }
-
-  for (size_t i = 0; i < graph_kernel_prim_proto.size(); ++i) {
-    if (!BuildPrimitiveNode(graph_kernel_prim_proto[i])) {
+      (void)graph_kernel_prim_proto.emplace_back(model_proto.primitives(i));
+    } else if (!BuildPrimitiveNode(model_proto.primitives(i))) {
       MS_LOG(ERROR) << "Parse primitives info for pb file failed! " << graph_kernel_prim_proto[i].DebugString();
       return false;
     }
   }
+  auto it = std::find_if(graph_kernel_prim_proto.begin(), graph_kernel_prim_proto.end(),
+                         [&](const mind_ir::PrimitiveProto &proto) { return !BuildPrimitiveNode(proto); });
+  if (it != graph_kernel_prim_proto.end()) {
+    MS_LOG(ERROR) << "Parse primitives info for pb file failed! " << it->DebugString();
+    return false;
+  }
+
   return true;
 }
 
