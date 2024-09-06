@@ -168,6 +168,24 @@ class _AutoParallelContext:
         self.check_context_handle()
         return _ParallelFusionConfig.CONFIG
 
+    def set_dump_local_norm(self, dump_local_norm):
+        """
+        Set dump local norm for auto parallel.
+
+        Args:
+            dump_local_norm (bool): User need to specify if he want to dump local norm.  Default: False
+
+        Raises:
+            KeyError: When key of comm_fusion is not 'allreduce'.
+        """
+        self.check_context_handle()
+        self._context_handle.set_dump_local_norm(dump_local_norm)
+
+    def get_dump_local_norm(self):
+        """Get dump local norm."""
+        self.check_context_handle()
+        return self._context_handle.get_dump_local_norm()
+
     def set_fusion_threshold_mb(self, fusion_threshold=64, comm_type="allreduce"):
         """
         Set fusion threshold (MB) for auto parallel.
@@ -1266,7 +1284,8 @@ _set_auto_parallel_context_func_map = {
     "sharding_propagation": auto_parallel_context().set_sharding_propagation,
     "enable_alltoall": auto_parallel_context().set_enable_alltoall,
     "strategy_ckpt_config": auto_parallel_context().set_strategy_ckpt_config,
-    "comm_fusion": auto_parallel_context().set_comm_fusion}
+    "comm_fusion": auto_parallel_context().set_comm_fusion,
+    "dump_local_norm": auto_parallel_context().set_dump_local_norm}
 
 _get_auto_parallel_context_func_map = {
     "device_num": auto_parallel_context().get_device_num,
@@ -1298,7 +1317,8 @@ _get_auto_parallel_context_func_map = {
     "enable_alltoall": auto_parallel_context().get_enable_alltoall,
     "comm_fusion": auto_parallel_context().get_comm_fusion,
     "strategy_ckpt_config": auto_parallel_context().get_strategy_ckpt_config,
-    "full_batch_is_set": auto_parallel_context().get_full_batch_is_set}
+    "full_batch_is_set": auto_parallel_context().get_full_batch_is_set,
+    "dump_local_norm": auto_parallel_context().get_dump_local_norm}
 
 
 @args_type_check(device_num=int, global_rank=int, gradients_mean=bool, gradient_fp32_sync=bool,
