@@ -256,7 +256,7 @@ bool AscendDeprecatedInterface::OpenTsd(const std::shared_ptr<MsContext> &ms_con
     return true;
   }
 
-  if (ms_context_ptr->UseSimulationApi()) {
+  if (UseSimulationApi()) {
     return true;
   }
 

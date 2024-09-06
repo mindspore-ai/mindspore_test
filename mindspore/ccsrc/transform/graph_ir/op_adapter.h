@@ -756,7 +756,7 @@ class OpAdapter : public BaseOpAdapter {
 
   static OperatorPtr getOp() {
     if (op_ == nullptr) {
-      static auto use_simu = MsContext::GetInstance()->UseSimulationApi();
+      static auto use_simu = UseSimulationApi();
       if (!use_simu && !::ge::OperatorFactory::IsExistOp(op_type_)) {
         MS_LOG(EXCEPTION) << "OperatorFactory is not exist, op type: " << op_type_;
       }

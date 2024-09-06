@@ -237,7 +237,7 @@ bool CollectiveManager::InitializeDummyCommLib() {
                   << ", rank id: " << global_rank_id_ << ", local rank id: " << local_rank_id_
                   << ". Real rank size: 1.";
 
-  static auto use_simu = MsContext::GetInstance()->UseSimulationApi();
+  static auto use_simu = UseSimulationApi();
   std::string device_type = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
   // If this is Ascend backend and uses host collective(OpenMPI or Dynamic Cluster/msrun), initialize dummy ascend
   // collective lib.
@@ -640,7 +640,7 @@ bool CollectiveManager::CreateSimulationGroup(const std::string &group_name, con
     dummy_comm_lib_instance_->CreateCommunicationGroup(group_name, group_ranks, local_rank, local_rank_size),
     "Failed to create dummy communication group " + group_name);
 
-  static auto use_simu = MsContext::GetInstance()->UseSimulationApi();
+  static auto use_simu = UseSimulationApi();
   std::string device_type = MsContext::GetInstance()->get_param<std::string>(MS_CTX_DEVICE_TARGET);
   // If this is Ascend backend and uses host collective(OpenMPI or Dynamic Cluster/msrun), initialize real HCCL
   // communicator through dummy Ascend collective communication lib.

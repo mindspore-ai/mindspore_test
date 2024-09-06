@@ -34,7 +34,7 @@ bool AclnnKernelMod::Init(const std::vector<KernelTensor *> &inputs, const std::
 
 int AclnnKernelMod::Resize(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) {
   auto ret = KernelMod::Resize(inputs, outputs);
-  if (MsContext::GetInstance()->UseSimulationApi()) {
+  if (UseSimulationApi()) {
     return ret;
   }
   GetWorkSpaceInfo(inputs, outputs);

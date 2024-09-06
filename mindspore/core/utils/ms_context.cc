@@ -760,16 +760,6 @@ void MsContext::SetMsInternalEnableCustomKernelList() {
   MS_LOG(INFO) << "Enable internal kernel list: " << SetToString(ms_internal_enable_custom_kernel_list_);
 }
 
-bool MsContext::UseSimulationApi() {
-  static auto kSimulationLevelKey = "MS_SIMULATION_LEVEL";
-  static auto kSimulationLevel0 = "0";
-  static auto kSimulationLevel1 = "1";
-  static auto simu_level = common::GetEnv(kSimulationLevelKey);
-  static auto kbyk = IsKByKExecutorMode();
-  static bool use_simu_api = (simu_level == kSimulationLevel0 || (simu_level == kSimulationLevel1 && kbyk));
-  return use_simu_api;
-}
-
 bool MsContext::IsEnableInferBoost() {
   if (enable_infer_boost_.has_value()) {
     return enable_infer_boost_.value();
@@ -812,4 +802,16 @@ template MS_CORE_API void MsContext::CheckReadStatus<uint32_t>(MsCtxParam, const
 template MS_CORE_API void MsContext::CheckReadStatus<int>(MsCtxParam, const int &) const;
 template MS_CORE_API void MsContext::CheckReadStatus<float>(MsCtxParam, const float &) const;
 template MS_CORE_API void MsContext::CheckReadStatus<std::string>(MsCtxParam, const std::string &) const;
+
+bool UseSimulationApi() {
+  static auto kSimulationLevelKey = "MS_SIMULATION_LEVEL";
+  static auto kSimulationLevel0 = "0";
+  static auto kSimulationLevel1 = "1";
+  static auto simu_level = common::GetEnv(kSimulationLevelKey);
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  static auto kbyk = context_ptr->IsKByKExecutorMode();
+  static bool use_simu_api = (simu_level == kSimulationLevel0 || (simu_level == kSimulationLevel1 && kbyk));
+  return use_simu_api;
+}
 }  // namespace mindspore
