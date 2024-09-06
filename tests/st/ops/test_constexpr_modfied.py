@@ -14,7 +14,6 @@
 # ============================================================================
 from tests.mark_utils import arg_mark
 import numpy as np
-import pytest
 import mindspore as ms
 from mindspore import Tensor, ops, nn
 from mindspore import context
@@ -590,8 +589,8 @@ def test_var():
             super(Net, self).__init__()
             self.func = var
 
-        def construct(self, x, ):
-            return self.func(x, )
+        def construct(self, x,):
+            return self.func(x,)
 
     a = Tensor(np.array([1., 2., 3., 4.]))
     expect = 1.25
@@ -621,7 +620,8 @@ def test_searchsorted():
     a = Tensor(np.array([1., 2., 3., 4., 5.]))
     expect = 2
     net = Net()
-    output = net(a, 3)
+    v = Tensor(3.0, dtype=ms.float64)
+    output = net(a, v)
     assert np.allclose(output.asnumpy(), expect)
 
 
