@@ -76,8 +76,8 @@ std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>
 GPUMemoryManager::GetPersistentMemBlocksInfoStatistics() const {
   return GPUMemoryAllocator::GetInstance().PersistentMemBlocksInfoStatistics();
 }
-void GPUMemoryManager::ResetMaxMemoryReserved() const { GPUMemoryAllocator::GetInstance().ResetMaxMemReserved(); }
-void GPUMemoryManager::ResetMaxMemoryAllocated() const { GPUMemoryAllocator::GetInstance().ResetMaxMemAllocated(); }
+void GPUMemoryManager::ResetMaxMemoryReserved() { GPUMemoryAllocator::GetInstance().ResetMaxMemReserved(); }
+void GPUMemoryManager::ResetMaxMemoryAllocated() { GPUMemoryAllocator::GetInstance().ResetMaxMemAllocated(); }
 
 bool GPUMemoryManager::MallocContinuousMemFromMemPool(const DeviceAddressPtrList &addr_list, size_t total_size,
                                                       std::vector<size_t> size_list, uint32_t steam_id) {

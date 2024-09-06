@@ -22,7 +22,7 @@
 #include <utility>
 #include <vector>
 
-#include "include/backend/mem_reuse/mem_dynamic_allocator.h"
+#include "include/backend/mem_reuse/dynamic_mem_pool.h"
 #include "include/backend/device_address.h"
 #include "runtime/device/gsm/io_handle.h"
 #include "runtime/device/gsm/pin_mem_pool.h"
@@ -65,7 +65,7 @@ class SwappableTensorCandidates {
 
 class BACKEND_EXPORT SwapManager {
  public:
-  SwapManager(size_t stream_id, DynamicMemPoolBestFit *device_memory_pool, PinMemPool *pin_mem_pool);
+  SwapManager(size_t stream_id, DynamicMemPool *device_memory_pool, PinMemPool *pin_mem_pool);
   ~SwapManager() = default;
   // Device memory
   void *AllocDeviceMemory(size_t size, uint32_t stream_id = kDefaultStreamIndex);
@@ -115,7 +115,7 @@ class BACKEND_EXPORT SwapManager {
 
  private:
   size_t stream_id_;
-  DynamicMemPoolBestFit *device_memory_pool_;
+  DynamicMemPool *device_memory_pool_;
   PinMemPool *pin_mem_pool_;
   size_t max_file_size_{0};
   size_t current_used_file_size_{0};

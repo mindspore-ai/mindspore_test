@@ -24,7 +24,7 @@
 #include <string>
 #include <unordered_map>
 #include "backend/common/mem_reuse/mem_reuse.h"
-#include "include/backend/mem_reuse/mem_dynamic_allocator.h"
+#include "include/backend/mem_reuse/dynamic_mem_pool.h"
 #include "runtime/device/common_somas_allocator.h"
 
 namespace mindspore {
@@ -112,7 +112,7 @@ class BACKEND_EXPORT MemoryManager {
     return memory_pool_->SyncAllEvents();
   }
 
-  DynamicMemPoolBestFit *memory_pool() { return memory_pool_; }
+  DynamicMemPool *memory_pool() { return memory_pool_; }
 
   // Relevant function to manage memory statistics
   virtual size_t GetTotalMemStatistics() const { return 0; }
@@ -131,8 +131,8 @@ class BACKEND_EXPORT MemoryManager {
   GetPersistentMemBlocksInfoStatistics() const {
     return {};
   }
-  virtual void ResetMaxMemoryReserved() const {}
-  virtual void ResetMaxMemoryAllocated() const {}
+  virtual void ResetMaxMemoryReserved() {}
+  virtual void ResetMaxMemoryAllocated() {}
 
  protected:
   virtual uint8_t *MallocStaticMem(size_t size, bool communication_mem, uint32_t graph_id) = 0;
@@ -143,7 +143,7 @@ class BACKEND_EXPORT MemoryManager {
   SomasAllocatorPtr somas_allocator_ptr_{nullptr};
 
   // Hold memory pool for common operations on memory.
-  DynamicMemPoolBestFit *memory_pool_{nullptr};
+  DynamicMemPool *memory_pool_{nullptr};
 };
 }  // namespace device
 }  // namespace mindspore

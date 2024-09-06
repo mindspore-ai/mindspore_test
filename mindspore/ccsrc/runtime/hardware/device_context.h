@@ -201,8 +201,8 @@ class BACKEND_EXPORT DeviceResManager {
   GetPersistentMemBlocksInfoStatistics() const {
     return {};
   }
-  virtual void ResetMaxMemoryReserved() const {};
-  virtual void ResetMaxMemoryAllocated() const {};
+  virtual void ResetMaxMemoryReserved() {}
+  virtual void ResetMaxMemoryAllocated() {}
 
   // Allocate host memory with raii and ref count
   virtual std::shared_ptr<void> AllocateHostMemory(size_t size) const {
@@ -388,8 +388,8 @@ class BACKEND_EXPORT KernelExecutor {
  public:
   virtual ~KernelExecutor() = default;
 
-  virtual void Initialize(){};
-  virtual void Destroy(){};
+  virtual void Initialize() {}
+  virtual void Destroy() {}
 
   // Optimize the kernel graph for graph mode.
   virtual void OptimizeGraph(const FuncGraphPtr &graph) const {}

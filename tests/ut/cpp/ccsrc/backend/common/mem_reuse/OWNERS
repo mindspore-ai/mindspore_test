@@ -1,0 +1,7 @@
+approvers:
+- limingqi107
+reviewers:
+- zyli2020
+
+options:
+  no_parent_owners: true

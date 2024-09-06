@@ -15,240 +15,30 @@
  */
 
 #include "plugin/device/ascend/hal/device/ascend_memory_pool.h"
-#include <algorithm>
-#include <utility>
-#include "plugin/device/ascend/hal/device/ascend_memory_adapter.h"
-#include "plugin/device/ascend/hal/device/ascend_gmem_adapter.h"
+
 #include "plugin/device/ascend/hal/device/ascend_vmm_adapter.h"
-#include "plugin/device/ascend/hal/device/ascend_stream_manager.h"
 #include "utils/log_adapter.h"
-#include "utils/convert_utils_base.h"
-#include "transform/symbol/acl_rt_symbol.h"
-#include "transform/symbol/symbol_utils.h"
 
 namespace mindspore {
 namespace device {
 namespace ascend {
-// The minimum unit size (8MB) of memory block used for dynamic extend in graph run mode.
-static const size_t ASCEND_COMMON_POOL_ALLOC_UNIT_SIZE_FOR_GRAPH_RUN_MODE = 8 << 20;
-constexpr char kGlobalOverflowWorkspace[] = "GLOBAL_OVERFLOW_WORKSPACE";
 
-AscendMemoryPool::AscendMemoryPool() { SetEnableVmm(AscendVmmAdapter::GetInstance().IsEnabled()); }
-
-void AscendMemoryPool::SetMemPoolBlockSize(size_t available_device_mem_size) {
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  float mem_block_size = ms_context->get_param<float>(MS_CTX_MEMPOOL_BLOCK_SIZE);
-  // set from context configuration
-  if (!common::IsFloatEqual(mem_block_size, kDefaultMempoolBlockSize)) {
-    size_t config_size = FloatToSize(mem_block_size * kGBToByte);
-    if (config_size > available_device_mem_size) {
-      MS_LOG(WARNING) << "Memory pool block size " << config_size
-                      << " is bigger than currently available maximum memory " << available_device_mem_size
-                      << ", and the actual effective value will be " << available_device_mem_size;
-    }
-    // Reserve 1G for persistent_mem
-    if (available_device_mem_size > kDynamicMemAllocUnitSize) {
-      available_device_mem_size -= kDynamicMemAllocUnitSize;
-    }
-    size_t real_block_size = std::min(config_size, available_device_mem_size);
-    SetMemAllocUintSize(real_block_size, kDynamicMemAllocUnitSize);
-    return;
-  }
-
-  // set by default configuration
-  const auto graph_mode = (ms_context->get_param<int>(MS_CTX_EXECUTION_MODE) == kGraphMode);
-  const bool is_graph_run_mode = ms_context->get_param<bool>(MS_CTX_ENABLE_TASK_SINK);
-  if (graph_mode && is_graph_run_mode) {
-    SetMemAllocUintSize(ASCEND_COMMON_POOL_ALLOC_UNIT_SIZE_FOR_GRAPH_RUN_MODE,
-                        ASCEND_COMMON_POOL_ALLOC_UNIT_SIZE_FOR_GRAPH_RUN_MODE);
-  } else {
-    SetMemAllocUintSize(kDynamicMemAllocUnitSize, kDynamicMemAllocUnitSize);
-  }
+DefaultAscendMemoryPool::DefaultAscendMemoryPool() {
+  MS_LOG(INFO) << "DefaultAscendMemoryPool constructed.";
+  SetEnableVmm(AscendVmmAdapter::GetInstance().IsEnabled());
 }
 
-namespace {
-bool NoAdditionalMemory() {
-  auto context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context);
-  const auto is_cell_reuse = context->CellReuseLevel() != CellReuseLevel::kNoCellReuse;
-  const auto is_multi_graph_sink = context->get_param<bool>(MS_CTX_IS_MULTI_GRAPH_SINK);
-  const auto is_task_sink = context->get_param<bool>(MS_CTX_ENABLE_TASK_SINK);
-  const auto disable_ge_kernel = common::IsDisableRuntimeConfig(common::kRuntimeGeKernel);
-  return (is_cell_reuse || is_multi_graph_sink) && is_task_sink && disable_ge_kernel;
-}
-}  // namespace
-
-size_t AscendMemoryPool::CalMemBlockAllocSize(size_t size, bool from_persistent_mem, bool need_recycle) {
-  auto device_free_mem_size = free_mem_size();
-  if (device_free_mem_size < size && common::IsNeedProfileMemory()) {
-    device_free_mem_size = size;
-  }
-  if (device_free_mem_size < size) {
-    MS_LOG(INFO) << "The device memory is not enough, the free memory size is " << device_free_mem_size
-                 << ", but the alloc size is " << size;
-    MS_LOG(INFO) << "The dynamic memory pool total size is "
-                 << device::ascend::AscendMemoryPool::GetInstance().TotalMemStatistics() / kMBToByte
-                 << "M, total used size is "
-                 << device::ascend::AscendMemoryPool::GetInstance().TotalUsedMemStatistics() / kMBToByte
-                 << "M, used peak size is "
-                 << device::ascend::AscendMemoryPool::GetInstance().UsedMemPeakStatistics() / kMBToByte << "M.";
-    MS_LOG(INFO) << "Memory Statistics:" << AscendMemAdapter::GetInstance()->DevMemStatistics();
-    return 0;
-  }
-
-  size_t alloc_mem_size;
-  SetMemPoolBlockSize(device_free_mem_size);
-  auto alloc_mem_unit_size = MemAllocUnitSize(from_persistent_mem);
-  if (need_recycle) {
-    alloc_mem_unit_size = kDynamicMemAllocUnitSize;
-  }
-  MS_LOG(DEBUG) << "Get unit block size " << alloc_mem_unit_size;
-  alloc_mem_size = alloc_mem_unit_size;
-
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  const bool is_graph_run_mode = ms_context->get_param<bool>(MS_CTX_ENABLE_TASK_SINK);
-  if (is_graph_run_mode) {
-    // Growing at adding alloc unit size
-    while (alloc_mem_size < size) {
-      alloc_mem_size = alloc_mem_size + alloc_mem_unit_size;
-    }
-  } else {
-    // Growing at twice of alloc unit size
-    constexpr size_t kDouble = 2;
-    while (alloc_mem_size < size) {
-      alloc_mem_size = alloc_mem_size * kDouble;
-    }
-  }
-
-  alloc_mem_size = std::min(alloc_mem_size, device_free_mem_size);
-  if (NoAdditionalMemory() && !need_recycle) {
-    alloc_mem_size = std::min(alloc_mem_size, size);
-  }
-  return alloc_mem_size;
+DefaultEnhancedAscendMemoryPool::DefaultEnhancedAscendMemoryPool() {
+  MS_LOG(INFO) << "DefaultEnhancedAscendMemoryPool constructed.";
+  SetEnableVmm(AscendVmmAdapter::GetInstance().IsEnabled());
 }
 
-size_t AscendMemoryPool::AllocDeviceMem(size_t size, DeviceMemPtr *addr) {
-  MS_LOG(INFO) << "Malloc Memory for Pool, size: " << size;
-  if (size == 0) {
-    MS_LOG(EXCEPTION) << "Failed to alloc memory pool resource, the size is zero!";
-  }
-  *addr = AscendMemAdapter::GetInstance()->MallocStaticDevMem(size);
-  if (*addr == nullptr) {
-    MS_LOG(EXCEPTION) << "Alloc device memory pool address is nullptr, failed to alloc memory pool resource!";
-  }
-  return size;
+BestFitAscendMemoryPool::BestFitAscendMemoryPool() {
+  MS_LOG(INFO) << "BestFitAscendMemoryPool constructed.";
+  SetEnableVmm(AscendVmmAdapter::GetInstance().IsEnabled());
 }
 
-size_t AscendMemoryPool::GetMaxUsedMemSize() const {
-  void *min_used_addr = GetMinUsingMemoryAddr();
-  if (min_used_addr == nullptr) {
-    return 0;
-  }
-  return AscendMemAdapter::GetInstance()->GetDynamicMemUpperBound(min_used_addr);
-}
-
-size_t AscendMemoryPool::GetVmmUsedMemSize() const {
-  if (IsEnableVmm()) {
-    return AscendVmmAdapter::GetInstance().GetAllocatedSize();
-  }
-  return 0;
-}
-
-const bool AscendMemoryPool::IsEnableEagerFree() const {
-  return AscendGmemAdapter::GetInstance().is_eager_free_enabled();
-}
-
-const bool AscendMemoryPool::SyncAllStreams() { return AscendStreamMng::GetInstance().SyncAllStreams(); }
-
-size_t AscendMemoryPool::AllocDeviceMemByEagerFree(size_t size, DeviceMemPtr *addr) {
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  if (ms_context->UseSimulationApi()) {
-    return AllocDeviceMem(size, addr);
-  }
-
-  if (IsEnableVmm()) {
-    return AscendVmmAdapter::GetInstance().AllocDeviceMem(size, addr);
-  } else if (IsEnableEagerFree()) {
-    return AscendGmemAdapter::GetInstance().AllocDeviceMem(size, addr);
-  } else {
-    MS_LOG(EXCEPTION) << "Eager free and VMM are both disabled.";
-  }
-}
-
-size_t AscendMemoryPool::FreeDeviceMemByEagerFree(const DeviceMemPtr addr, const size_t size) {
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  if (ms_context->UseSimulationApi()) {
-    return size;
-  }
-
-  if (IsEnableVmm()) {
-    return AscendVmmAdapter::GetInstance().EagerFreeDeviceMem(addr, size);
-  } else if (IsEnableEagerFree()) {
-    return AscendGmemAdapter::GetInstance().EagerFreeDeviceMem(addr, size);
-  } else {
-    MS_LOG(EXCEPTION) << "Eager free and VMM are both disabled.";
-  }
-}
-
-size_t AscendMemoryPool::MmapDeviceMem(const size_t size, const DeviceMemPtr addr) {
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  if (ms_context->UseSimulationApi()) {
-    return size;
-  }
-  return AscendVmmAdapter::GetInstance().MmapDeviceMem(size, addr, total_mem_size());
-}
-
-bool AscendMemoryPool::FreeDeviceMem(const DeviceMemPtr &addr) {
-  MS_EXCEPTION_IF_NULL(addr);
-  int64_t max_actual = ActualPeakStatistics();
-  MS_LOG(INFO) << "Max actual used memory size is " << max_actual;
-  AscendMemAdapter::GetInstance()->UpdateActualPeakMemory(max_actual);
-  int64_t max_peak = UsedMemPeakStatistics();
-  MS_LOG(INFO) << "Max peak used memory size is " << max_peak;
-  AscendMemAdapter::GetInstance()->UpdateUsedPeakMemory(max_peak);
-  return true;
-}
-
-void AscendMemoryPool::ResetIdleMemBuf() const {
-  auto fn = [this](const MemStatusManagerPtr &mem_mng) {
-    MS_EXCEPTION_IF_NULL(mem_mng);
-    if (mem_mng->mem_block_list_.empty()) {
-      return;
-    }
-    const auto &stream_ids = mem_mng->GetStreamIds();
-    for (const auto stream_id : stream_ids) {
-      auto key = std::make_pair(stream_id, DynamicMemBufStatus::kMemBufIdle);
-      const auto &&iter = mem_mng->mem_bufs_.find(key);
-      if (iter == mem_mng->mem_bufs_.end()) {
-        continue;
-      }
-      const auto &mem_buf_map = iter->second;
-      for (auto &&idle_iter = mem_buf_map.begin(); idle_iter != mem_buf_map.end(); idle_iter++) {
-        auto &mem_buf = idle_iter->second;
-        MS_EXCEPTION_IF_NULL(mem_buf);
-        (void)CALL_ASCEND_API(aclrtMemset, mem_buf->device_addr_, mem_buf->size_, 0, mem_buf->size_);
-      }
-    }
-  };
-  fn(persistent_mem());
-  fn(common_mem());
-}
-
-size_t AscendMemoryPool::free_mem_size() { return AscendMemAdapter::GetInstance()->FreeDevMemSize(); }
-
-uint64_t AscendMemoryPool::total_mem_size() const {
-  static constexpr uint64_t kMaxHbmSize = 1LL << 40;
-  if (common::IsNeedProfileMemory()) {
-    return kMaxHbmSize;
-  } else {
-    return AscendMemAdapter::GetInstance()->MaxHbmSizeForMs();
-  }
-}
+std::shared_ptr<AbstractAscendMemoryPoolSupport> AscendMemoryPool::instance_ = nullptr;
 }  // namespace ascend
 }  // namespace device
 }  // namespace mindspore

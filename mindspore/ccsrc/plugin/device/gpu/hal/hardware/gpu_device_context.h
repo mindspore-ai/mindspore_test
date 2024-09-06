@@ -114,8 +114,8 @@ class GPUDeviceResManager : public DeviceResManager {
     const override;
   std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>
   GetPersistentMemBlocksInfoStatistics() const override;
-  void ResetMaxMemoryReserved() const override;
-  void ResetMaxMemoryAllocated() const override;
+  void ResetMaxMemoryReserved() override;
+  void ResetMaxMemoryAllocated() override;
 
  private:
   friend class GPUKernelExecutor;

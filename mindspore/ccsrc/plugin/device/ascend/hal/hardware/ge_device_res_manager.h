@@ -24,6 +24,7 @@
 #include <utility>
 #include "runtime/hardware/device_context.h"
 #include "utils/ms_context.h"
+#include "include/backend/mem_reuse/dynamic_mem_pool.h"
 #include "include/transform/graph_ir/types.h"
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm_lib.h"
 #include "plugin/device/ascend/hal/hardware/dummy_ascend_collective_comm_lib.h"
@@ -121,8 +122,8 @@ class GeDeviceResManager : public DeviceResManager {
     const override;
   std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>
   GetPersistentMemBlocksInfoStatistics() const override;
-  void ResetMaxMemoryReserved() const override;
-  void ResetMaxMemoryAllocated() const override;
+  void ResetMaxMemoryReserved() override;
+  void ResetMaxMemoryAllocated() override;
 
   transform::GeAllocatorPtr GetAllocator() { return std::make_shared<GeAllocator>(this); }
 

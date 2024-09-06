@@ -32,3 +32,6 @@ ACL_FUNC_VISIBILITY aclprofConfig *aclprofCreateConfig(uint32_t *deviceIdList, u
 
 ACL_FUNC_VISIBILITY aclError aclprofDestroyConfig(const aclprofConfig *profilerConfig) { return ACL_SUCCESS; }
 
+ACL_FUNC_VISIBILITY aclError aclprofSetConfig(aclprofConfigType configType, const char *config, size_t configLength) {
+  return ACL_SUCCESS;
+}

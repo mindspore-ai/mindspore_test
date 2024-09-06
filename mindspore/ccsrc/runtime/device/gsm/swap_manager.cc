@@ -142,7 +142,7 @@ void SwappableTensorCandidates::Add(const DeviceAddressPtr &candidate) {
   swappable_tensors_[size_level][idx] = std::make_pair(candidate, candidate.get());
 }
 
-SwapManager::SwapManager(size_t stream_id, mindspore::device::DynamicMemPoolBestFit *device_memory_pool,
+SwapManager::SwapManager(size_t stream_id, mindspore::device::DynamicMemPool *device_memory_pool,
                          PinMemPool *pin_mem_pool)
     : stream_id_(stream_id),
       device_memory_pool_(device_memory_pool),
