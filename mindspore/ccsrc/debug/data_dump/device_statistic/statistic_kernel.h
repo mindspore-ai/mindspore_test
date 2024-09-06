@@ -53,6 +53,10 @@ class StatisticKernel {
     MS_EXCEPTION_IF_NULL(kernel_mod_);
   }
   vector<DeviceAddressPtr> LaunchKernelAsync(KernelTensor *input, const uint32_t stream_id);
+  virtual DeviceAddressPtr LaunchKernelAsync(vector<KernelTensor *> inputs, const uint32_t stream_id) {
+    return nullptr;
+  }
+
   bool CheckDataType(const TypeId &dtype_id) { return supported_dtype_.find(dtype_id) != supported_dtype_.end(); }
 
  protected:

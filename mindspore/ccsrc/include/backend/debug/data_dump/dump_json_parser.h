@@ -184,13 +184,14 @@ class BACKEND_EXPORT DumpJsonParser {
   void ParseFileFormat(const nlohmann::json &content);
   void ParseStatCalcMode(const nlohmann::json &content);
   void ParseDeviceStatPrecisionMode(const nlohmann::json &content);
-  void ParseE2eSyncDumpEnable(const nlohmann::json &content);
   void ParseOverflowNumber(const nlohmann::json &content);
+  void ParseE2eSyncDumpEnable(const nlohmann::json &content);
 
   void JudgeDumpEnabled();
   void JsonConfigToString();
   void CheckStatCalcModeVaild();
   void ParseStatisticCategory(const nlohmann::json &content);
+  void CheckOverflowSetting();
 };
 }  // namespace mindspore
 #endif  // MINDSPORE_MINDSPORE_CCSRC_DEBUG_DUMP_JSON_PARSER_H_
