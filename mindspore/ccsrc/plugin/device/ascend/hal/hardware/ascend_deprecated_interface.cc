@@ -36,6 +36,7 @@
 #include "utils/ms_context.h"
 #include "plugin/device/ascend/hal/device/tensorsummary_utils.h"
 #include "plugin/device/ascend/hal/device/tensordump_utils.h"
+#include "plugin/device/ascend/hal/device/tensorreport_utils.h"
 #include "plugin/device/ascend/hal/device/mbuf_receive_manager.h"
 #include "transform/symbol/acl_base_symbol.h"
 #include "transform/symbol/acl_rt_symbol.h"
@@ -303,6 +304,11 @@ bool AscendDeprecatedInterface::OpenTsd(const std::shared_ptr<MsContext> &ms_con
     MbufDataHandlerManager::GetInstance().AddHandler(std::make_unique<MbufDataHandler>(
       std::bind(&TensorDumpUtils::AsyncSaveDatasetToNpyFile, &TensorDumpUtils::GetInstance(), std::placeholders::_1),
       device_id, tensordump_mapping.first, tensordump_mapping.second));
+    if (TensorReportUtils::IsEnable()) {
+      MbufDataHandlerManager::GetInstance().AddHandler(std::make_unique<MbufDataHandler>(
+        std::bind(&TensorReportUtils::ReportReceiveData, &TensorReportUtils::GetInstance(), std::placeholders::_1),
+        device_id, tensorreport_mapping.first, tensorreport_mapping.second));
+    }
     for (const std::pair<string, string> &summary_mapping : summary_mappings) {
       MbufDataHandlerManager::GetInstance().AddHandler(
         std::make_unique<MbufDataHandler>(std::bind(SummaryReceiveData, std::placeholders::_1, summary_mapping.first),

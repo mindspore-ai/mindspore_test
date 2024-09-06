@@ -68,6 +68,7 @@ constexpr auto kScalarSummary = "ScalarSummary";
 constexpr auto kImageSummary = "ImageSummary";
 constexpr auto kHistogramSummary = "HistogramSummary";
 constexpr auto kTensorDump = "TensorDump";
+constexpr auto kTensorReport = "TensorReport";
 }  // namespace mindspore
 
 #endif  // MINDSPORE_CORE_BASE_IMAGE_OP_NAME_H_

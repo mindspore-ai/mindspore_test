@@ -36,7 +36,7 @@ from mindspore.train.metrics import get_metrics, get_metric_fn
 from mindspore._checkparam import check_input_data, check_output_data
 from mindspore import _checkparam as Validator
 from mindspore.train.callback import _InternalCallbackParam, RunContext, _CallbackManager, Callback, TimeMonitor,\
-    FlopsUtilizationCollector, MindIOTTPAdapter
+    FlopsUtilizationCollector, TFTRegister
 from mindspore.train.callback import __all__ as internal_cb_names
 from mindspore.train.callback._cluster_monitor import ClusterMonitor
 from mindspore import context
@@ -115,6 +115,30 @@ def _save_final_ckpt(func):
                 save_checkpoint(self._train_network, cur_file, obj._config.integrated_save, obj._config.async_save,
                                 obj._append_dict, obj._config.enc_key, obj._config.enc_mode)
                 raise e
+        else:
+            func(self, *args, **kwargs)
+    return wrapper
+
+def _handle_tft(func):
+    """
+    Decorator function, which starts uce handle process when an exception occurs during training.
+    """
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        obj = None
+        if kwargs.get('callbacks') and isinstance(kwargs.get('callbacks'), TFTRegister):
+            obj = kwargs.get('callbacks')
+        if kwargs.get('callbacks') and isinstance(kwargs.get('callbacks'), list):
+            for item in kwargs.get('callbacks'):
+                if isinstance(item, TFTRegister):
+                    obj = item
+        if obj:
+            tft = obj.tft
+            try:
+                func(self, *args, **kwargs)
+            except BaseException as e:
+                tft.tft_report_error(tft.ReportState.RS_UNKNOWN.value)
+                raise e    # raise same error for current rank, other rank do tft process
         else:
             func(self, *args, **kwargs)
     return wrapper
@@ -742,6 +766,7 @@ class Model:
         return [callbacks]
 
     @_save_final_ckpt
+    @_handle_tft
     def _train(self, epoch, train_dataset, callbacks=None, dataset_sink_mode=True, sink_size=-1, initial_epoch=0,
                valid_dataset=None, valid_frequency=1, valid_dataset_sink_mode=True):
         """
@@ -1145,31 +1170,6 @@ class Model:
 
         list_callback.on_train_end(run_context)
 
-    def _wrapper_train(self, callbacks):
-        """
-        This method used to wrap train function with ttp wrapper which will do event notify when
-        exceptions throw.
-
-        Args:
-            callbacks (function): Callbacks passed by train method.
-        """
-
-        if not callbacks:
-            return self._train
-        cbs = callbacks if isinstance(callbacks, list) else [callbacks]
-        obj = None
-        _train_wrapper = None
-        for item in cbs:
-            if isinstance(item, MindIOTTPAdapter):
-                obj = item
-
-        if (obj is not None) and (obj.enable is True):
-            logger.info("MindIO TTP is enable, so we wrapper ttp exception handdler for self train method.")
-            _train_wrapper = obj.wrapper_ttp_persist(self._train)
-
-        return self._train if not _train_wrapper else _train_wrapper
-
-
     def train(self, epoch, train_dataset, callbacks=None, dataset_sink_mode=False, sink_size=-1, initial_epoch=0):
         """
         Training API.
@@ -1278,16 +1278,14 @@ class Model:
         _device_number_check(self._parallel_mode, self._device_number)
 
         callbacks = _append_ccae(callbacks)
-        _train_wrapper = None
         if callbacks:
             self._check_methods_for_custom_callbacks(callbacks, "train")
-        _train_wrapper = self._wrapper_train(callbacks)
-        _train_wrapper(epoch,
-                       train_dataset,
-                       callbacks=callbacks,
-                       dataset_sink_mode=dataset_sink_mode,
-                       sink_size=sink_size,
-                       initial_epoch=initial_epoch)
+        self._train(epoch,
+                    train_dataset,
+                    callbacks=callbacks,
+                    dataset_sink_mode=dataset_sink_mode,
+                    sink_size=sink_size,
+                    initial_epoch=initial_epoch)
 
         # When it's distributed training and using MindRT,
         # the node id should be reset to start from 0.

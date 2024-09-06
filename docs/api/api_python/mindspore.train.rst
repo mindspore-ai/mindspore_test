@@ -24,11 +24,11 @@ mindspore.train
     mindspore.train.LambdaCallback
     mindspore.train.LearningRateScheduler
     mindspore.train.LossMonitor
-    mindspore.train.MindIOTTPAdapter
     mindspore.train.ModelCheckpoint
     mindspore.train.OnRequestExit
     mindspore.train.ReduceLROnPlateau
     mindspore.train.RunContext
+    mindspore.train.TFTRegister
     mindspore.train.TimeMonitor
 
 评价指标

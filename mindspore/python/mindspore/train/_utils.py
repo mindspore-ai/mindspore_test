@@ -356,6 +356,9 @@ def get_parameter_redundancy(layout_obj, initial_rank=0):
         for _, indices in sorted(redundancy_dict.items()):
             redundancy_list.append(tuple(indices))
         param_redundancy_dict[key] = tuple(redundancy_list)
+    if isinstance(layout_obj, str):
+        return param_redundancy_dict
+
     for key, value in layout_obj.items():
         if value[5]:
             world_groups = ("hccl_world_group", "nccl_world_group", "mccl_world_group")

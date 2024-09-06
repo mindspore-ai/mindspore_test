@@ -30,7 +30,6 @@
 #include "plugin/device/ascend/hal/hardware/ge_summary.h"
 #include "plugin/device/ascend/hal/hardware/ge_memory_manager.h"
 #include "plugin/device/ascend/hal/hardware/ascend_collective_comm_lib.h"
-#include "plugin/device/ascend/mindio/mindio_adapter.h"
 
 namespace mindspore {
 namespace device {
@@ -134,7 +133,6 @@ class GeGraphExecutor : public GraphExecutor {
                                              const KernelWithIndex &output_with_index,
                                              size_t need_alloc_output_cnt) const;
   void DoAsyncCkpt(const FuncGraphPtr &graph);
-  bool IsNeedNotifyTTP(const FuncGraphPtr &graph);
   void SetFlagIgnoreDevicePtr(const FuncGraphPtr &graph);
   mindspore::HashMap<session::KernelGraph *, GeInputData> input_datas_;
   mindspore::HashMap<session::KernelGraph *, GeOutputData> output_datas_;

@@ -752,18 +752,16 @@ class _TrainGradAccuStepCell(TrainOneStepCell):
         self.hyper_map = ops.HyperMap()
         self.opt_shard = _get_enable_parallel_optimizer()
         self._get_attr_from_cell(network)
-        self.enable_mindio = False
+        self.enable_tft = False
         mode = get_context("mode")
         device_type = get_context("device_target")
         if device_type != "Ascend" or mode != GRAPH_MODE:
             return
-        graceful_exit = os.getenv("MS_ENABLE_MINDIO_GRACEFUL_EXIT")
-        ttp_lib_path = os.getenv("MS_MINDIO_TTP_LIB_PATH")
-        ttp_path_check = ttp_lib_path is not None and os.path.isfile(ttp_lib_path)
-        if graceful_exit == "true" and ttp_path_check:
+        tft_env = os.getenv("MS_ENABLE_TFT", "")
+        if ("TTP:1" in tft_env) or ("UCE:1" in tft_env):
             self.g_one = Tensor([0.1])
             self.allreduce_sum = ops.AllReduce()
-            self.enable_mindio = True
+            self.enable_tft = True
 
     def construct(self, *inputs):
         if not self.sense_flag:
@@ -772,7 +770,7 @@ class _TrainGradAccuStepCell(TrainOneStepCell):
         sens = ops.fill(ops.DType()(loss), ops.Shape()(loss), self.sens)
         grads = self.grad(self.network, self.weights)(*inputs, sens)
         accu_grads = ops.depend(self.accu_grads, grads)
-        if self.enable_mindio:
+        if self.enable_tft:
             g_one = ops.depend(self.g_one, accu_grads)
             g_one_res = self.allreduce_sum(g_one)
             accu_grads = ops.depend(accu_grads, g_one_res)
@@ -791,7 +789,7 @@ class _TrainGradAccuStepCell(TrainOneStepCell):
         loss = self.network(*inputs)
         grads = self.grad_no_sens(self.network, self.weights)(*inputs)
         accu_grads = ops.depend(self.accu_grads, grads)
-        if self.enable_mindio:
+        if self.enable_tft:
             g_one = ops.depend(self.g_one, accu_grads)
             g_one_res = self.allreduce_sum(g_one)
             accu_grads = ops.depend(accu_grads, g_one_res)
