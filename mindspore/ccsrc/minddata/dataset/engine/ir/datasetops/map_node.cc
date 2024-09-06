@@ -35,14 +35,15 @@ namespace dataset {
 MapNode::MapNode(std::shared_ptr<DatasetNode> child, std::vector<std::shared_ptr<TensorOperation>> operations,
                  std::vector<std::string> input_columns, std::vector<std::string> output_columns,
                  const std::shared_ptr<DatasetCache> &cache, std::vector<std::shared_ptr<DSCallback>> callbacks,
-                 ManualOffloadMode offload, std::shared_ptr<PythonMultiprocessingRuntime> python_mp)
+                 ManualOffloadMode offload,
+                 std::shared_ptr<PythonMultiprocessingRuntime> python_multiprocessing_runtime)
     : operations_(std::move(operations)),
       input_columns_(std::move(input_columns)),
       output_columns_(std::move(output_columns)),
       DatasetNode(cache),
       callbacks_(std::move(callbacks)),
       offload_(offload),
-      python_mp_(std::move(python_mp)) {
+      python_multiprocessing_runtime_(std::move(python_multiprocessing_runtime)) {
   this->AddChild(std::move(child));
 }
 
@@ -54,12 +55,12 @@ MapNode::MapNode(std::vector<std::shared_ptr<TensorOperation>> operations, std::
       DatasetNode(nullptr),
       callbacks_({}),
       offload_(ManualOffloadMode::kUnspecified),
-      python_mp_(nullptr) {}
+      python_multiprocessing_runtime_(nullptr) {}
 
 std::shared_ptr<DatasetNode> MapNode::Copy() {
   std::vector<std::shared_ptr<TensorOperation>> operations = operations_;
   auto node = std::make_shared<MapNode>(nullptr, operations, input_columns_, output_columns_, cache_, callbacks_,
-                                        offload_, python_mp_);
+                                        offload_, python_multiprocessing_runtime_);
   (void)node->SetNumWorkers(num_workers_);
   (void)node->SetConnectorQueueSize(connector_que_size_);
   return node;
@@ -124,8 +125,8 @@ Status MapNode::Build(std::vector<std::shared_ptr<DatasetOp>> *const node_ops) {
 
   map_op->SetTotalRepeats(GetTotalRepeats());
   map_op->SetNumRepeatsPerEpoch(GetNumRepeatsPerEpoch());
-  if (python_mp_ != nullptr) {
-    map_op->SetPythonMp(python_mp_);
+  if (python_multiprocessing_runtime_ != nullptr) {
+    map_op->SetPythonMp(python_multiprocessing_runtime_);
   }
   node_ops->push_back(map_op);
   return Status::OK();

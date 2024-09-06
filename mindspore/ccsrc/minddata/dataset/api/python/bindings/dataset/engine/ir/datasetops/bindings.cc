@@ -97,7 +97,7 @@ PYBIND_REGISTER(BatchNode, 2, ([](const py::module *m) {
                     .def(py::init([](const std::shared_ptr<DatasetNode> &self, int32_t batch_size, bool drop_remainder,
                                      bool pad, const py::list &in_col_names, const py::list &out_col_names,
                                      const py::object &size_obj, const py::object &map_obj, const py::dict &pad_info,
-                                     const std::shared_ptr<PythonMultiprocessingRuntime> &python_mp) {
+                                     std::shared_ptr<PythonMultiprocessingRuntime> python_multiprocessing_runtime) {
                       std::map<std::string, std::pair<TensorShape, std::shared_ptr<Tensor>>> c_pad_info;
                       if (pad) {
                         THROW_IF_ERROR(toPadInfo(pad_info, &c_pad_info));
@@ -106,9 +106,10 @@ PYBIND_REGISTER(BatchNode, 2, ([](const py::module *m) {
                         py::isinstance<py::function>(size_obj) ? size_obj.cast<py::function>() : py::function();
                       py::function map_func =
                         py::isinstance<py::function>(map_obj) ? map_obj.cast<py::function>() : py::function();
-                      auto batch = std::make_shared<BatchNode>(
-                        self, batch_size, drop_remainder, pad, toStringVector(in_col_names),
-                        toStringVector(out_col_names), size_func, map_func, c_pad_info, python_mp);
+                      auto batch =
+                        std::make_shared<BatchNode>(self, batch_size, drop_remainder, pad, toStringVector(in_col_names),
+                                                    toStringVector(out_col_names), size_func, map_func, c_pad_info,
+                                                    std::move(python_multiprocessing_runtime));
                       THROW_IF_ERROR(batch->ValidateParams());
                       return batch;
                     }));
@@ -196,12 +197,12 @@ PYBIND_REGISTER(MapNode, 2, ([](const py::module *m) {
                                      const py::list &input_columns, const py::list &output_columns,
                                      std::vector<std::shared_ptr<PyDSCallback>> &py_callbacks,
                                      const ManualOffloadMode &offload,
-                                     std::shared_ptr<PythonMultiprocessingRuntime> &python_mp) {
+                                     std::shared_ptr<PythonMultiprocessingRuntime> python_multiprocessing_runtime) {
                       auto map = std::make_shared<MapNode>(
                         self, std::move(toTensorOperations(operations)), toStringVector(input_columns),
                         toStringVector(output_columns), nullptr,
                         std::vector<std::shared_ptr<DSCallback>>(py_callbacks.begin(), py_callbacks.end()), offload,
-                        python_mp);
+                        std::move(python_multiprocessing_runtime));
                       THROW_IF_ERROR(map->ValidateParams());
                       return map;
                     }));
@@ -209,8 +210,8 @@ PYBIND_REGISTER(MapNode, 2, ([](const py::module *m) {
 
 PYBIND_REGISTER(PythonMultiprocessingRuntime, 1, ([](const py::module *m) {
                   (void)py::class_<PythonMultiprocessingRuntime, PyPythonMultiprocessingRuntime,
-                                   std::shared_ptr<PythonMultiprocessingRuntime>>(
-                    *m, "PythonMultiprocessingRuntime", "to create a PythonMultiprocessingRuntime")
+                                   std::shared_ptr<PythonMultiprocessingRuntime>>(*m, "PythonMultiprocessingRuntime",
+                                                                                  "Runtime for Python Multiprocessing")
                     .def(py::init<>())
                     .def("launch", &PythonMultiprocessingRuntime::launch)
                     .def("terminate", &PythonMultiprocessingRuntime::terminate)
@@ -219,10 +220,10 @@ PYBIND_REGISTER(PythonMultiprocessingRuntime, 1, ([](const py::module *m) {
                     .def("remove_workers", &PythonMultiprocessingRuntime::remove_workers)
                     .def("get_pids", &PythonMultiprocessingRuntime::get_pids)
                     .def("get_thread_to_worker",
-                         [](PythonMultiprocessingRuntime &rt) {
-                           int32_t res;
-                           THROW_IF_ERROR(rt.get_thread_to_worker(&res));
-                           return res;
+                         [](const PythonMultiprocessingRuntime &python_multiprocessing_runtime) {
+                           int32_t worker_id;
+                           THROW_IF_ERROR(python_multiprocessing_runtime.get_thread_to_worker(&worker_id));
+                           return worker_id;
                          })
                     .def("reset", &PythonMultiprocessingRuntime::reset)
                     .def("is_running", &PythonMultiprocessingRuntime::is_running);

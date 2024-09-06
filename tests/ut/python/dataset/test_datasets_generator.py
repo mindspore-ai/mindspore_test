@@ -1,4 +1,4 @@
-# Copyright 2019-2023 Huawei Technologies Co., Ltd
+# Copyright 2020-2024 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,8 +17,8 @@ import os
 import random
 import subprocess
 import time
-import psutil
 
+import psutil
 import pytest
 import numpy as np
 
@@ -26,9 +26,9 @@ import mindspore
 import mindspore.common.dtype as mstype
 import mindspore.dataset as ds
 import mindspore.dataset.engine.iterators as it
+import mindspore.ops as ops
 from mindspore import log as logger
 from mindspore import Tensor
-import mindspore.ops as ops
 from util import config_get_set_seed, save_and_check_dict
 
 
@@ -2699,6 +2699,76 @@ def test_generator_with_generator_object_iterated_multi_times():
     assert count == 9
 
 
+@pytest.mark.parametrize("num_epochs", (-1, 1, 10))
+def test_release_generator_dataset_iter(num_epochs):
+    """
+    Feature: GeneratorDataset
+    Description: Test memory collection of GeneratorDataset
+    Expectation: After destructing all the instance created, the memory should be released
+    """
+    original_prefetch_size = ds.config.get_prefetch_size()
+    ds.config.set_prefetch_size(1)
+
+    init_memory = psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024
+
+    class Iterable:
+        def __init__(self):
+            self.a = [np.ones((2048 * 2048 * 3), dtype=np.int64),  # 96M
+                      np.ones((2048 * 2048 * 3 * 2), dtype=np.int64),  # 192M
+                      np.ones((2048 * 2048 * 3 * 3), dtype=np.int64),  # 288M
+                      np.ones((2048 * 2048 * 3 * 4), dtype=np.int64),  # 384M
+                      np.ones((2048 * 2048 * 3 * 5), dtype=np.int64)]  # 480M
+            self.b = [np.ones((1024 * 1024 * 5), dtype=np.int64),  # 40M
+                      np.ones((1024 * 1024 * 5 * 2), dtype=np.int64),  # 80M
+                      np.ones((1024 * 1024 * 5 * 3), dtype=np.int64),  # 120M
+                      np.ones((1024 * 1024 * 5 * 4), dtype=np.int64),  # 160M
+                      np.ones((1024 * 1024 * 5 * 5), dtype=np.int64)]  # 200M
+            self.len = len(self.a)
+
+        def __getitem__(self, index):
+            return self.a[4 - index], self.b[4 - index]
+
+        def __len__(self):
+            return self.len
+
+    # initialize user defined dataset
+    data = Iterable()
+    data_memory = psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024
+    assert (data_memory - init_memory) > 2000
+
+    # initialize GeneratorDataset
+    dataset = ds.GeneratorDataset(source=data, column_names=["data", "label"], shuffle=False)
+    dataset_memory = psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024
+    assert (dataset_memory - data_memory) < 2
+
+    # initialize Iterator
+    ds_iter = dataset.create_dict_iterator(output_numpy=True, num_epochs=num_epochs)
+    iterator_memory = psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024
+    assert (iterator_memory - dataset_memory) < 2
+
+    # process and fetch data
+    epochs = 1 if num_epochs == -1 else num_epochs
+    item = None
+    for _ in range(epochs):
+        for item in ds_iter:
+            break
+
+    process_memory = psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024
+    assert (process_memory - iterator_memory) < 2
+
+    # destruct all the instance
+    del item
+    del ds_iter
+    del dataset
+    del data
+
+    # all the memory should be released
+    end_memory = psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024
+    assert (end_memory - init_memory) < 2
+
+    ds.config.set_prefetch_size(original_prefetch_size)
+
+
 if __name__ == "__main__":
     test_generator_0()
     test_generator_1()
@@ -2766,3 +2836,4 @@ if __name__ == "__main__":
     test_generator_with_invalid_max_row_size()
     test_generator_with_generator_object_iterated_multi_times()
     test_generator_with_seed_and_multiprocessing_mode()
+    test_release_generator_dataset_iter(1)

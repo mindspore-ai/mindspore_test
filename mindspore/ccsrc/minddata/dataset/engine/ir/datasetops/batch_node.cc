@@ -34,7 +34,7 @@ BatchNode::BatchNode(std::shared_ptr<DatasetNode> child, int32_t batch_size, boo
                      const std::vector<std::string> &in_col_names, const std::vector<std::string> &out_col_names,
                      py::function batch_size_func, py::function batch_map_func,
                      std::map<std::string, std::pair<TensorShape, std::shared_ptr<Tensor>>> pad_map,
-                     std::shared_ptr<PythonMultiprocessingRuntime> python_mp)
+                     std::shared_ptr<PythonMultiprocessingRuntime> python_multiprocessing_runtime)
     : batch_size_(batch_size),
       drop_remainder_(drop_remainder),
       pad_(pad),
@@ -43,7 +43,7 @@ BatchNode::BatchNode(std::shared_ptr<DatasetNode> child, int32_t batch_size, boo
       batch_size_func_(batch_size_func),
       batch_map_func_(batch_map_func),
       pad_map_(pad_map),
-      python_mp_(python_mp) {
+      python_multiprocessing_runtime_(std::move(python_multiprocessing_runtime)) {
   this->AddChild(child);
 }
 #endif
@@ -57,7 +57,7 @@ BatchNode::BatchNode(std::shared_ptr<DatasetNode> child, int32_t batch_size, boo
 std::shared_ptr<DatasetNode> BatchNode::Copy() {
 #ifdef ENABLE_PYTHON
   auto node = std::make_shared<BatchNode>(nullptr, batch_size_, drop_remainder_, pad_, in_col_names_, out_col_names_,
-                                          batch_size_func_, batch_map_func_, pad_map_, python_mp_);
+                                          batch_size_func_, batch_map_func_, pad_map_, python_multiprocessing_runtime_);
 #else
   auto node = std::make_shared<BatchNode>(nullptr, batch_size_, drop_remainder_);
 #endif
@@ -98,8 +98,8 @@ Status BatchNode::Build(std::vector<std::shared_ptr<DatasetOp>> *const node_ops)
                                       in_col_names_, out_col_names_, batch_size_func_, batch_map_func_, pad_map_);
   op->SetTotalRepeats(GetTotalRepeats());
   op->SetNumRepeatsPerEpoch(GetNumRepeatsPerEpoch());
-  if (python_mp_ != nullptr) {
-    op->SetPythonMp(python_mp_);
+  if (python_multiprocessing_runtime_ != nullptr) {
+    op->SetPythonMp(python_multiprocessing_runtime_);
   }
   node_ops->push_back(op);
 #else

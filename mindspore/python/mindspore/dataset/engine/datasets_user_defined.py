@@ -90,7 +90,7 @@ def _generator_fn(generator, num_samples):
             yield _convert_row(val)
 
 
-def _cpp_sampler_fn(sample_ids, dataset):
+def _cpp_sampler_fn(dataset, sample_ids):
     """
     Generator function wrapper for mappable dataset with cpp sampler.
     """
@@ -105,7 +105,7 @@ def _cpp_sampler_fn(sample_ids, dataset):
         yield _convert_row(val)
 
 
-def _cpp_sampler_fn_mp(sample_ids, sample_fn):
+def _cpp_sampler_fn_mp(sample_fn, sample_ids):
     """
     Multiprocessing generator function wrapper for mappable dataset with cpp sampler.
     """
@@ -115,6 +115,14 @@ def _cpp_sampler_fn_mp(sample_ids, sample_fn):
         raise RuntimeError("Sampler passed an empty sample IDs list.")
 
     return sample_fn.process(sample_ids)
+
+
+def _generator_fn_wrapper(function, *args):
+    """
+    Generate a new function that wraps the specified generator function with partial
+    application of the given arguments and keywords.
+    """
+    return partial(function, *args)
 
 
 def _fill_worker_indices(workers, indices, idx_cursor, worker_to_quit):
@@ -931,9 +939,9 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
 
                 sample_fn = SamplerFn(self.source, self.num_parallel_workers, self.python_multiprocessing,
                                       self.max_rowsize)
-                self.prepared_source = (lambda sample_ids: _cpp_sampler_fn_mp(sample_ids, sample_fn))
+                self.prepared_source = _generator_fn_wrapper(_cpp_sampler_fn_mp, sample_fn)
             else:
-                self.prepared_source = (lambda sample_ids: _cpp_sampler_fn(sample_ids, self.source))
+                self.prepared_source = _generator_fn_wrapper(_cpp_sampler_fn, self.source)
             self.sample_fn = sample_fn
         else:
             self.sampler = None
@@ -941,11 +949,11 @@ class GeneratorDataset(MappableDataset, UnionBaseDataset):
             self.source_len = min(self.source_len, self.num_samples) if self.num_samples != 0 else self.source_len
             if not hasattr(self.source, "__iter__"):
                 # Use generator function if input callable
-                self.prepared_source = (lambda: _generator_fn(self.source, self.num_samples))
+                self.prepared_source = _generator_fn_wrapper(_generator_fn, self.source, self.num_samples)
             else:
                 # Use iterator function if input is iterable
                 # Random accessible input is also iterable
-                self.prepared_source = (lambda: _iter_fn(self.source, self.num_samples))
+                self.prepared_source = _generator_fn_wrapper(_iter_fn, self.source, self.num_samples)
 
     def parse(self, children=None):
         self.prepare_multiprocessing()

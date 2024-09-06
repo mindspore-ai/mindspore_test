@@ -29,12 +29,11 @@ namespace mindspore {
 namespace dataset {
 class PyFuncOp : public TensorOp {
  public:
-  explicit PyFuncOp(py::function func) : py_func_ptr_(std::move(func)), output_type_(DataType::DE_UNKNOWN) {}
+  explicit PyFuncOp(const py::function &func);
 
-  explicit PyFuncOp(py::function func, DataType::Type output_type)
-      : py_func_ptr_(std::move(func)), output_type_(output_type) {}
+  explicit PyFuncOp(const py::function &func, DataType::Type output_type);
 
-  ~PyFuncOp() override = default;
+  ~PyFuncOp() override;
 
   uint32_t NumInput() override { return 0; }
 
@@ -61,7 +60,7 @@ class PyFuncOp : public TensorOp {
   /// \return True if this pyfunc op is random
   bool IsRandom();
 
-  Status ReleaseResource() {
+  Status ReleaseResource() override {
     {
       py::gil_scoped_acquire gil_acquire;
       if (py::hasattr(py_func_ptr_, "release_resource")) {

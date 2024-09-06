@@ -160,8 +160,8 @@ class BatchOp : public ParallelOp<std::pair<std::unique_ptr<TensorQTable>, CBatc
   }
 
   /// Set the instance of Python multiprocessing which will passed from Python
-  /// \param python_mp PythonMultiprocessingRuntime
-  void SetPythonMp(std::shared_ptr<PythonMultiprocessingRuntime> python_mp);
+  /// \param python_multiprocessing_runtime PythonMultiprocessingRuntime
+  void SetPythonMp(std::shared_ptr<PythonMultiprocessingRuntime> python_multiprocessing_runtime);
 
   /// Return the list of PIDs of worker processes
   /// \return vector of int
@@ -235,7 +235,7 @@ class BatchOp : public ParallelOp<std::pair<std::unique_ptr<TensorQTable>, CBatc
   py::function batch_size_func_;  // Function pointer of batch size function
   py::function batch_map_func_;   // Function pointer of per batch map function
 #endif
-  std::shared_ptr<PythonMultiprocessingRuntime> python_mp_;  // python multiprocessing instance
+  std::shared_ptr<PythonMultiprocessingRuntime> python_multiprocessing_runtime_;  // python multiprocessing instance
 
  protected:
   Status Launch() override;

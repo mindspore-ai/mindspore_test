@@ -48,6 +48,21 @@ Status ConvertPythonToTensor(const py::object &py_obj, TensorRow *output) {
   return Status::OK();
 }
 
+PyFuncOp::PyFuncOp(const py::function &func) : output_type_(DataType::DE_UNKNOWN) {
+  py::gil_scoped_acquire gil_acquire;
+  py_func_ptr_ = func;
+}
+
+PyFuncOp::PyFuncOp(const py::function &func, DataType::Type output_type) : output_type_(output_type) {
+  py::gil_scoped_acquire gil_acquire;
+  py_func_ptr_ = func;
+}
+
+PyFuncOp::~PyFuncOp() {
+  py::gil_scoped_acquire gil_acquire;
+  py_func_ptr_ = py::none();
+}
+
 Status PyFuncOp::Compute(const TensorRow &input, TensorRow *output) {
   IO_CHECK_VECTOR(input, output);
   {

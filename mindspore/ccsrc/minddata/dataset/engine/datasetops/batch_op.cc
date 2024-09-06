@@ -48,7 +48,7 @@ BatchOp::BatchOp(int32_t batch_size, bool drop, bool pad, int32_t op_queue_size,
       pad_info_(std::move(pad_map)),
       batch_num_(0),
       batch_cnt_(0),
-      python_mp_(nullptr) {
+      python_multiprocessing_runtime_(nullptr) {
   // Adjust connector queue size.  After batch each row is batch_size times larger
   worker_connector_size_ = std::max(1, worker_connector_size_ / start_batch_size_);
   if (num_workers == 1) {
@@ -296,8 +296,8 @@ Status BatchOp::ConvertRowsToTensor(const std::unique_ptr<TensorQTable> *tensor_
 Status BatchOp::WorkerEntry(int32_t workerId) {
   TaskManager::FindMe()->Post();
   // let Python layer know the worker id of this thread
-  if (python_mp_ != nullptr) {
-    python_mp_->set_thread_to_worker(workerId);
+  if (python_multiprocessing_runtime_ != nullptr) {
+    python_multiprocessing_runtime_->set_thread_to_worker(workerId);
   }
   std::pair<std::unique_ptr<TensorQTable>, CBatchInfo> table_pair;
 
@@ -341,7 +341,7 @@ Status BatchOp::WorkerEntry(int32_t workerId) {
 #ifdef ENABLE_PYTHON
   // batch operation with per_batch_map use global executor in Python Layer to run transform in eager mode
   // release the executor in the current thread when the thread is done
-  if (python_mp_ == nullptr) {
+  if (python_multiprocessing_runtime_ == nullptr) {
     if (batch_map_func_) {
       py::gil_scoped_acquire gil_acquire;
       (void)batch_map_func_.attr("release_resource")();
@@ -862,38 +862,38 @@ Status BatchOp::SendQuitFlagToWorker(int32_t worker_id) {
 
 Status BatchOp::AddNewWorkers(int32_t num_new_workers) {
   RETURN_IF_NOT_OK(ParallelOp::AddNewWorkers(num_new_workers));
-  if (python_mp_ != nullptr) {
+  if (python_multiprocessing_runtime_ != nullptr) {
     CHECK_FAIL_RETURN_UNEXPECTED(num_new_workers > 0, "Number of workers added should be greater than 0.");
-    python_mp_->add_new_workers(num_new_workers);
+    python_multiprocessing_runtime_->add_new_workers(num_new_workers);
   }
   return Status::OK();
 }
 
 Status BatchOp::RemoveWorkers(int32_t num_workers) {
   RETURN_IF_NOT_OK(ParallelOp::RemoveWorkers(num_workers));
-  if (python_mp_ != nullptr) {
+  if (python_multiprocessing_runtime_ != nullptr) {
     CHECK_FAIL_RETURN_UNEXPECTED(num_workers > 0, "Number of workers removed should be greater than 0.");
-    python_mp_->remove_workers(num_workers);
+    python_multiprocessing_runtime_->remove_workers(num_workers);
   }
   return Status::OK();
 }
 
-void BatchOp::SetPythonMp(std::shared_ptr<PythonMultiprocessingRuntime> python_mp) {
-  python_mp_ = std::move(python_mp);
+void BatchOp::SetPythonMp(std::shared_ptr<PythonMultiprocessingRuntime> python_multiprocessing_runtime) {
+  python_multiprocessing_runtime_ = std::move(python_multiprocessing_runtime);
 }
 
 Status BatchOp::Launch() {
   // Launch Python multiprocessing. This will create the MP pool and shared memory if needed.
-  if (python_mp_) {
+  if (python_multiprocessing_runtime_) {
     MS_LOG(DEBUG) << "Launch Python Multiprocessing for BatchOp:" << id();
-    python_mp_->launch(id());
+    python_multiprocessing_runtime_->launch(id());
   }
   return DatasetOp::Launch();
 }
 
 std::vector<int32_t> BatchOp::GetMPWorkerPIDs() const {
-  if (python_mp_ != nullptr) {
-    return python_mp_->get_pids();
+  if (python_multiprocessing_runtime_ != nullptr) {
+    return python_multiprocessing_runtime_->get_pids();
   }
   return DatasetOp::GetMPWorkerPIDs();
 }
