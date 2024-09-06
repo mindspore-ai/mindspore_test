@@ -126,7 +126,7 @@ def test_qbmm_False_True(input_shape):
     qbmm(m, k, n, trans_a=False, trans_b=True)
 
 
-@pytest.mark.level0
+@pytest.mark.level1
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.env_onecard
 @pytest.mark.parametrize('input_shape', [(128, 512, 1024),
