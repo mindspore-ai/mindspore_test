@@ -923,6 +923,7 @@ def set_auto_parallel_context(**kwargs):
                \                 strategy_ckpt_config
                \                 group_ckpt_save_file
                \                 auto_pipeline
+               \                 dump_local_norm
     ===========================  ===========================
 
     Args:
@@ -1074,6 +1075,9 @@ def set_auto_parallel_context(**kwargs):
         auto_pipeline (bool): Set the pipeline stage number to automatic. Its value will be selected between 1 and the
                         parameter `pipeline_stages`. This option requires the `parallel_mode` to be ``auto_parallel``
                         and the `search_mode` to be ``recursive_programming``. Default: ``False`` .
+        dump_local_norm (bool): Whether to dump local_norm value, when the `parallel_mode` is set to
+                        ``semi_auto_parallel`` or ``auto_parallel``.
+                        Default: ``False`` .
 
     Raises:
         ValueError: If input key is not attribute in auto parallel context.
@@ -1144,11 +1148,12 @@ def reset_auto_parallel_context():
     - strategy_ckpt_save_file: ''.
     - full_batch: False.
     - enable_parallel_optimizer: False.
-    - force_fp32_communication: False
+    - force_fp32_communication: False.
     - enable_alltoall: False.
     - pipeline_stages: 1.
     - pipeline_result_broadcast: False.
     - fusion_threshold: 64.
+    - dump_local_norm: False.
     - auto_pipeline: False.
 
     Examples:
