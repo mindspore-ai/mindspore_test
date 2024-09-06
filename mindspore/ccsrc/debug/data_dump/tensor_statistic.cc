@@ -101,7 +101,7 @@ void DumpKernelTensorStats(const DeviceContext *device_context, vector<device::D
   CsvWriter csv;
   std::lock_guard<std::mutex> lock(CsvFileMutexManager::GetInstance().GetCsvMutex(filename));
 
-  auto valid_index = GetValidDumpIndex(node, tensors.size(), is_input);
+  auto valid_index = GetValidDumpIndex(node, tensors.size(), is_input, device_context);
   if (!valid_index.empty()) {
     if (!csv.OpenFile(filename, csv_header)) {
       MS_LOG(WARNING) << "filename is " << filename;

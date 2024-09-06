@@ -72,6 +72,8 @@ bool KernelPacketInitializer::InitKernel(const CNodePtr &real_node, const Kernel
     (void)packet_kernel_mod->inputs_cache_.emplace_back(std::move(kernel_tensor));
   }
   packet_kernel_mod->real_kernel_mod_ = real_kernel_mod;
+  packet_kernel_mod->ignored_input_idx_ = AnfAlgo::GetLaunchIgnoredInputAddressIdx(real_node);
+
   return true;
 }
 
@@ -134,12 +136,12 @@ int KernelPacketKernelMod::Resize(const std::vector<KernelTensor *> &inputs,
   // call this interface in Resize can reduce the launch time
   host_data_cache_.clear();
   host_data_cache_.resize(inner_input_num, nullptr);
-  std::vector<size_t> ignore_idx = real_kernel_mod_->GetLaunchIgnoredInputAddressIdx();
   for (size_t i = 0; i < inner_input_num; i++) {
     if (input_map_.count(i) != 0) {
       continue;
     }
-    if (inner_inputs[i]->size() > 0 && std::find(ignore_idx.begin(), ignore_idx.end(), i) == ignore_idx.end()) {
+    if (inner_inputs[i]->size() > 0 &&
+        std::find(ignored_input_idx_.begin(), ignored_input_idx_.end(), i) == ignored_input_idx_.end()) {
       host_data_cache_[i] = inner_inputs[i]->GetValuePtr();
     }
   }

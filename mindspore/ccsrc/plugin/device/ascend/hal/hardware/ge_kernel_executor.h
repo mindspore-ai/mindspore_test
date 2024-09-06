@@ -76,6 +76,11 @@ class GeKernelExecutor : public KernelExecutor {
   bool ExecuteKernelTask(const runtime::KernelTaskType &task_type, const device::DeviceAddressPtrList &input_addr_list,
                          const device::DeviceAddressPtrList &output_addr_list, const size_t &stream_id) const override;
 
+  std::vector<size_t> GetLaunchIgnoredInputAddressIdx(const AnfNodePtr &node) const {
+    MS_EXCEPTION_IF_NULL(node);
+    return AnfAlgo::GetLaunchIgnoredInputAddressIdx(node);
+  }
+
  private:
   static void DoSomas(const FuncGraphPtr &graph);
   static void DoStreamAssign(const KernelGraphPtr &kernel_graph,

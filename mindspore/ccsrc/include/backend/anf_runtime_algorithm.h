@@ -306,6 +306,9 @@ class BACKEND_EXPORT AnfRuntimeAlgorithm {
   static ValueNodePtr CreateTypeIdValueNodeToKernelGraph(const FuncGraphPtr &func_graph, TypeId data_type);
   static ValueNodePtr CreateTypeIdValueNodeToFuncGraph(const FuncGraphPtr &func_graph, TypeId data_type);
   static bool IsNoRealKernelGraph(const KernelGraphPtr &kernel_graph);
+
+  // Only used for ascend ops.
+  static std::vector<size_t> GetLaunchIgnoredInputAddressIdx(const AnfNodePtr &node);
 };
 }  // namespace session
 

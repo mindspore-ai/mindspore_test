@@ -39,6 +39,7 @@
 #include "include/backend/optimizer/helper.h"
 #include "kernel/kernel.h"
 #include "kernel/kernel_build_info.h"
+#include "kernel/common_utils.h"
 #include "runtime/device/ms_device_shape_transfer.h"
 #include "pipeline/jit/ps/static_analysis/static_analysis.h"
 #include "abstract/ops/primitive_infer_map.h"
@@ -2448,5 +2449,58 @@ bool AnfRuntimeAlgorithm::IsNoRealKernelGraph(const KernelGraphPtr &kernel_graph
     }
   }
   return true;
+}
+
+std::vector<size_t> AnfRuntimeAlgorithm::GetLaunchIgnoredInputAddressIdx(const AnfNodePtr &node) {
+  MS_EXCEPTION_IF_NULL(node);
+  auto kernel_mod = GetKernelMod(node);
+  MS_EXCEPTION_IF_NULL(kernel_mod);
+  const auto &launch_ignored_input_idx = kernel_mod->GetLaunchIgnoredInputAddressIdx();
+  std::vector<size_t> ignored_input_addresses;
+  auto input_num = common::AnfAlgo::GetInputTensorNum(node);
+  for (size_t input_idx = 0; input_idx < input_num; ++input_idx) {
+    if (std::find(launch_ignored_input_idx.begin(), launch_ignored_input_idx.end(), input_idx) !=
+        launch_ignored_input_idx.end()) {
+      ignored_input_addresses.emplace_back(input_idx);
+      continue;
+    }
+
+    auto kernel_with_index = common::AnfAlgo::GetPrevNodeOutput(node, input_idx);
+    auto node = kernel_with_index.first;
+    MS_EXCEPTION_IF_NULL(node);
+    MS_EXCEPTION_IF_NULL(node->abstract());
+    const auto &input_type = node->abstract()->BuildType();
+    // Tensor or tuple of tensor should not be ignored.
+    if (input_type->type_id() == kObjectTypeTensorType) {
+      continue;
+    }
+
+    if (input_type->type_id() == kObjectTypeTuple) {
+      auto type = input_type->cast<TuplePtr>();
+      MS_EXCEPTION_IF_NULL(type);
+      if (type->dynamic_len()) {
+        continue;
+      }
+      const auto &elements = type->elements();
+      if (!elements.empty() && elements[0]->type_id() == kObjectTypeTensorType) {
+        continue;
+      }
+    }
+
+    if (input_type->type_id() == kObjectTypeList) {
+      auto type = input_type->cast<ListPtr>();
+      MS_EXCEPTION_IF_NULL(type);
+      if (type->dynamic_len()) {
+        continue;
+      }
+      const auto &elements = type->elements();
+      if (!elements.empty() && elements[0]->type_id() == kObjectTypeTensorType) {
+        continue;
+      }
+    }
+    ignored_input_addresses.emplace_back(input_idx);
+  }
+
+  return ignored_input_addresses;
 }
 }  // namespace mindspore::session

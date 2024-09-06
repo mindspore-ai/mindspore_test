@@ -86,7 +86,10 @@ void KernelActor::Init() {
   }
 
   // Check whether the kernel has input node which is a computed depend kernel.
-  launch_ignored_inputs_ = kernel_mod_->GetLaunchIgnoredInputAddressIdx();
+  MS_EXCEPTION_IF_NULL(device_contexts_[0]);
+  auto kernel_executor = device_contexts_[0]->GetKernelExecutor(false);
+  MS_EXCEPTION_IF_NULL(kernel_executor);
+  launch_ignored_inputs_ = kernel_executor->GetLaunchIgnoredInputAddressIdx(kernel_);
 
   stream_ = device_contexts_[0]->device_res_manager_->GetStream(kernel_info_->stream_id());
   // Init the device tensors and kernel launch info.
