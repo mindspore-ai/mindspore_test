@@ -21,15 +21,12 @@
 
 namespace mindspore {
 namespace ops {
+constexpr size_t squeezedNum = 1;
 BaseShapePtr SplitFuncImpl::InferShape(const PrimitivePtr &primitive,
                                        const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
-  MS_EXCEPTION_IF_NULL(input_args[0]);
   auto prim_name = primitive->name();
-  auto x_shape_ptr = input_args[0]->GetShape();
-  MS_EXCEPTION_IF_NULL(x_shape_ptr);
+  auto x_shape_ptr = input_args[kIndex0]->GetShape();
   auto x_shape = x_shape_ptr->GetShapeVector();
-  MS_EXCEPTION_IF_NULL(input_args[kInputIndex2]);
   auto output_num_ptr = input_args[kInputIndex2]->GetValue();
   auto output_num_opt = GetScalarValue<int64_t>(output_num_ptr);
 
@@ -47,8 +44,7 @@ BaseShapePtr SplitFuncImpl::InferShape(const PrimitivePtr &primitive,
   }
 
   auto rank = SizeToLong(x_shape.size());
-  MS_EXCEPTION_IF_NULL(input_args[1]);
-  auto axis_ptr = input_args[1]->GetValue();
+  auto axis_ptr = input_args[kIndex1]->GetValue();
   auto axis_opt = GetScalarValue<int64_t>(axis_ptr);
   if (MS_UNLIKELY(!axis_opt.has_value())) {
     for (int64_t i = 0; i < output_num; ++i) {
@@ -80,18 +76,14 @@ BaseShapePtr SplitFuncImpl::InferShape(const PrimitivePtr &primitive,
 }
 
 TypePtr SplitFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
-  MS_EXCEPTION_IF_NULL(input_args[kInputIndex0]);
-  MS_EXCEPTION_IF_NULL(input_args[kInputIndex2]);
   const auto &prim_name = primitive->name();
-  const auto &infer_type = input_args[0]->GetType();
-  MS_EXCEPTION_IF_NULL(infer_type);
+  const auto &infer_type = input_args[kIndex0]->GetType();
   const std::set<TypePtr> valid_types = {kInt8,    kInt16,     kInt32,      kInt64,   kUInt8,
                                          kUInt16,  kUInt32,    kUInt64,     kFloat16, kFloat32,
                                          kFloat64, kComplex64, kComplex128, kBool,    kBFloat16};
   (void)CheckAndConvertUtils::CheckTensorTypeValid("x", infer_type, valid_types, prim_name);
 
-  auto output_num_ptr = input_args[2]->GetValue();
+  auto output_num_ptr = input_args[kIndex2]->GetValue();
   auto output_num_opt = GetScalarValue<int64_t>(output_num_ptr);
   if (MS_UNLIKELY(!output_num_opt.has_value())) {
     MS_LOG(EXCEPTION) << "For " << prim_name << ", the output_num is ValueAny, which is not supported now.";
@@ -108,13 +100,10 @@ TypePtr SplitFuncImpl::InferType(const PrimitivePtr &primitive, const std::vecto
 
 int32_t SplitFuncImpl::CheckValidation(const PrimitivePtr &primitive,
                                        const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
-  MS_EXCEPTION_IF_NULL(input_args[kInputIndex0]);
-  MS_EXCEPTION_IF_NULL(input_args[kInputIndex2]);
   auto op_name = primitive->name();
   int32_t check_status = OP_CHECK_SUCCESS;
   // Check output_num valid.
-  auto output_num_ptr = input_args[2]->GetValue();
+  auto output_num_ptr = input_args[kIndex2]->GetValue();
   auto output_num_opt = GetScalarValue<int64_t>(output_num_ptr);
 
   if (MS_UNLIKELY(!output_num_opt.has_value())) {
@@ -134,8 +123,8 @@ int32_t SplitFuncImpl::CheckValidation(const PrimitivePtr &primitive,
     return check_status;
   }
   auto rank = SizeToLong(x_shape.size());
-  MS_CHECK_VALUE(rank > 0, CheckAndConvertUtils::FormatCheckIntegerMsg("rank", rank, kGreaterEqual, 1, primitive));
-  MS_EXCEPTION_IF_NULL(input_args[1]);
+  MS_CHECK_VALUE(rank > 0,
+                 CheckAndConvertUtils::FormatCheckIntegerMsg("rank", rank, kGreaterEqual, squeezedNum, primitive));
   auto axis_ptr = input_args[1]->GetValue();
   auto axis_opt = GetScalarValue<int64_t>(axis_ptr);
 

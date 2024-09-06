@@ -28,13 +28,12 @@ namespace ops {
 class SplitWithSizeFrontendFuncImpl : public OpFrontendFuncImpl {
  public:
   AbstractBasePtr InferAbstract(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
-    MS_EXCEPTION_IF_NULL(primitive);
     auto input_abs = input_args[kIndex0];
     auto input_shape_ptr = input_abs->GetShape();
     auto input_shape = input_shape_ptr->GetShapeVector();
     auto axis_opt = GetScalarValue<int64_t>(input_args[kIndex2]->GetValue());
     auto split_size_opt = GetArrayValue<int64_t>(input_args[kIndex1]);
-    AbstractBasePtrList output_list;
+    AbstractBasePtrList output_list{};
     if (!split_size_opt.has_value()) {
       auto dynamic_shape = std::make_shared<abstract::Shape>(std::vector<int64_t>{abstract::Shape::kShapeRankAny});
       (void)output_list.push_back(abstract::MakeAbstractTensor(dynamic_shape, input_abs->GetType()));

@@ -28,13 +28,12 @@ namespace ops {
 class SplitTensorFrontendFuncImpl : public OpFrontendFuncImpl {
  public:
   AbstractBasePtr InferAbstract(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
-    MS_EXCEPTION_IF_NULL(primitive);
     auto input_abs = input_args[kIndex0];
     auto input_shape_ptr = input_abs->GetShape();
     auto input_shape = input_shape_ptr->GetShapeVector();
     auto axis_value = input_args[kIndex2]->GetValue();
     auto split_size_value = input_args[kIndex1]->GetValue();
-    AbstractBasePtrList output_list;
+    AbstractBasePtrList output_list{};
     auto axis_opt = GetScalarValue<int64_t>(axis_value);
     auto split_sections_opt = GetScalarValue<int64_t>(split_size_value);
     if (!axis_opt.has_value() || !split_sections_opt.has_value() || IsDynamicRank(input_shape) ||

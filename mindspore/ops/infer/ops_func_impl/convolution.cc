@@ -59,7 +59,6 @@ int64_t GetOutputHW(const ShapeVector &input_shape, const ShapeVector &weight_sh
 
 BaseShapePtr ConvolutionFuncImpl::InferShape(const PrimitivePtr &primitive,
                                              const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
   if (input_args.size() != kConvolutionInputArgsSize) {
     MS_LOG(EXCEPTION) << "input args size should be  " << kConvolutionInputArgsSize << ", but got "
                       << input_args.size();
@@ -67,8 +66,6 @@ BaseShapePtr ConvolutionFuncImpl::InferShape(const PrimitivePtr &primitive,
 
   auto input_shape_ptr = input_args[kInputIdx]->GetShape();
   auto weight_shape_ptr = input_args[kWightIdx]->GetShape();
-  MS_EXCEPTION_IF_NULL(input_shape_ptr);
-  MS_EXCEPTION_IF_NULL(weight_shape_ptr);
   const auto &input_shape = input_shape_ptr->GetShapeVector();
   const auto &weight_shape = weight_shape_ptr->GetShapeVector();
 
