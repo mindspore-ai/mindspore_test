@@ -166,6 +166,7 @@ constexpr char NN_OPS_PATH[] = "mindspore.ops.operations.nn_ops";
 constexpr char GET_OP_FUNCTION_PATH[] = "mindspore.parallel._utils";
 constexpr char GET_OP_FUNCTION[] = "_get_python_op";
 constexpr char KEEP_DIMS[] = "keep_dims";
+constexpr char OP_INFO_CREATED[] = "op_info_created";
 constexpr char OUTPUT_TYPE[] = "output_type";
 constexpr char CROSS_BATCH[] = "cross_batch";
 constexpr char STEP_PARALLEL_BEGIN[] = "step_parallel_begin";
@@ -184,6 +185,7 @@ constexpr char IN_LAYOUT[] = "in_layout";
 constexpr char OUT_LAYOUT[] = "out_layout";
 constexpr char DEVICE_MATRIX[] = "device_matrix";
 constexpr char INTERLEAVED_PARALLEL[] = "interleaved_parallel";
+constexpr char ALIAS_NAME[] = "alias_name";
 
 constexpr char RELU_TYPE[] = "relu";
 constexpr char RELU6_TYPE[] = "relu6";

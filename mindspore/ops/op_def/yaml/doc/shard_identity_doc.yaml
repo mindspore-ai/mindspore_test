@@ -1,0 +1,4 @@
+shard_identity:
+    description: |
+        A intermediate operator only be created when using mindspore.shard or
+        cell.shard during parallel procedure. Will not be exposed to the users.

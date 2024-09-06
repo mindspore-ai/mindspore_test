@@ -39,6 +39,8 @@ namespace parallel {
 namespace {
 using ExpectFunc = std::function<bool(const CNodePtr &)>;
 }
+static std::vector<std::string> layout_keys = {DEVICE_MATRIX, TENSOR_MAP, INTERLEAVED_PARALLEL, ALIAS_NAME};
+
 static void GenerateDefaultStrategy(const ValueNodePtr &axes, const std::vector<AnfNodePtr> &nodes,
                                     const size_t device_num, std::vector<std::vector<int64_t>> *default_strategy) {
   auto strategies = axes->value()->cast<ValueTuplePtr>()->value();
@@ -60,16 +62,7 @@ static void GenerateDefaultStrategy(const ValueNodePtr &axes, const std::vector<
   }
 }
 
-static bool CheckOneDimensionalIntTuple(const ValuePtr &value_ptr) {
-  if (!value_ptr->isa<ValueTuple>()) {
-    return false;
-  }
-  auto elements = value_ptr->cast<ValueTuplePtr>()->value();
-  return std::all_of(elements.begin(), elements.end(),
-                     [](const ValuePtr &element) { return element->isa<Int64Imm>(); });
-}
-
-static bool CheckLayout(const ValueNodePtr &axes, bool *need_default_strategy, size_t *axes_size) {
+static void PreCheckStrategy(const ValueNodePtr &axes, bool *need_default_strategy, size_t *axes_size) {
   auto strategies = axes->value()->cast<ValueTuplePtr>()->value();
   for (auto &strategy : strategies) {
     *axes_size += 1;
@@ -77,11 +70,7 @@ static bool CheckLayout(const ValueNodePtr &axes, bool *need_default_strategy, s
       *need_default_strategy = true;
       continue;
     }
-    if (!CheckOneDimensionalIntTuple(strategy)) {
-      return false;
-    }
   }
-  return true;
 }
 
 static void GetInputNodes(const FuncGraphPtr &func_graph, std::vector<AnfNodePtr> *input_nodes) {
@@ -189,23 +178,17 @@ static bool IsSettingStrategyByInsertIdentity(const FuncGraphPtr &func_graph, co
   return false;
 }
 
-// New a primitive for cnode and set in_strategy to it.
-static void SetStrategyToCNode(const CNodePtr &cnode, const Shapes &strategies) {
-  auto strategy = ShapesToValueTuplePtr(strategies);
-  PrimitivePtr prim = GetCNodePrimitive(cnode);
-  MS_EXCEPTION_IF_NULL(prim);
-  PrimitivePtr new_prim;
+static PrimitivePtr CreateNewPrimitive(const PrimitivePtr &prim) {
   if (prim->isa<PrimitivePy>()) {
     auto prim_py = prim->cast<PrimitivePyPtr>();
     MS_EXCEPTION_IF_NULL(prim_py);
-    new_prim = std::make_shared<PrimitivePy>(*prim_py);
+    return std::make_shared<PrimitivePy>(*prim_py);
   } else {
-    new_prim = std::make_shared<Primitive>(*prim);
+    return std::make_shared<Primitive>(*prim);
   }
-  auto attrs_temp = prim->attrs();
-  attrs_temp[parallel::IN_STRATEGY] = strategy;
-  (void)new_prim->SetAttrs(attrs_temp);
+}
 
+static void UpdateCNodeInput(const CNodePtr &cnode, const PrimitivePtr &new_prim) {
   ValuePtr new_prim_value = MakeValue(new_prim);
   ValueNodePtr new_prim_value_node = NewValueNode(new_prim_value);
   auto new_prim_anf_node = new_prim_value_node->cast<AnfNodePtr>();
@@ -213,30 +196,142 @@ static void SetStrategyToCNode(const CNodePtr &cnode, const Shapes &strategies) 
   cnode->set_input(0, new_prim_anf_node);
 }
 
+static void SetStrategyToCNode(const CNodePtr &cnode, const Shapes &strategies) {
+  PrimitivePtr prim = GetCNodePrimitive(cnode);
+  MS_EXCEPTION_IF_NULL(prim);
+  PrimitivePtr new_prim = CreateNewPrimitive(prim);
+  auto attrs_temp = prim->attrs();
+  attrs_temp[parallel::IN_STRATEGY] = ShapesToValueTuplePtr(strategies);
+  (void)new_prim->SetAttrs(attrs_temp);
+  UpdateCNodeInput(cnode, new_prim);
+}
+
+static void SetLayoutToCNode(const CNodePtr &cnode, const ValueTuplePtr &current_layout) {
+  PrimitivePtr prim = GetCNodePrimitive(cnode);
+  MS_EXCEPTION_IF_NULL(prim);
+  PrimitivePtr new_prim = CreateNewPrimitive(prim);
+  auto attrs_temp = prim->attrs();
+  attrs_temp[parallel::IN_LAYOUT] = current_layout;
+  (void)new_prim->SetAttrs(attrs_temp);
+  UpdateCNodeInput(cnode, new_prim);
+}
+
+static bool IsItemTypeBool(const ValuePtr &item) { return item->type()->isa<Bool>(); }
+
+static void updateStrategyType(const std::vector<ValuePtr> &layout_value_vector, std::string *strategy_type) {
+  bool has_bool = std::any_of(layout_value_vector.begin(), layout_value_vector.end(), [](const ValuePtr &layout_item) {
+    auto layout_item_tuple = layout_item->cast<ValueTuplePtr>()->value();
+    return std::any_of(layout_item_tuple.begin(), layout_item_tuple.end(),
+                       [](const auto &item) { return IsItemTypeBool(item); });
+  });
+  if (has_bool) {
+    *strategy_type = "layout";
+  }
+}
+
+static CNodePtr InsertIdentityCNode(const AnfNodePtr parameter, const FuncGraphPtr func_graph,
+                                    const CNodePtr to_insert_cnode, const int execution_mode) {
+  CNodePtr identity_cnode = nullptr;
+  FuncGraphManagerPtr manager = func_graph->manager();
+  if (execution_mode == kGraphMode) {
+    // Setting strategy by insert identity CNode directly using inputs in GraphMode.
+    // e.g TupleGetItem(parameter, index) -> func{identity{input_strategy[i], input_i}}.
+    identity_cnode = func_graph->NewCNode({NewValueNode(prim::kPrimAShardIdentity), parameter});
+    AnfNodePtrList node_inputs_list(to_insert_cnode->inputs().begin(), to_insert_cnode->inputs().end());
+    auto input_index =
+      std::distance(node_inputs_list.begin(),
+                    std::find(node_inputs_list.begin(), node_inputs_list.end(), parameter->cast<AnfNodePtr>()));
+    identity_cnode->set_abstract(parameter->abstract());
+    manager->SetEdge(to_insert_cnode, input_index, identity_cnode);
+  }
+  if (execution_mode == kPynativeMode) {
+    // Setting strategy by insert identity after TupleGetItem in PynativeMode.
+    // e.g TupleGetItem(parameter, index) -> identity{in_strategy=[input_strategy[index], TupleGetItem_i}
+    identity_cnode = func_graph->NewCNode({NewValueNode(prim::kPrimAShardIdentity), to_insert_cnode});
+    auto to_insert_cnode_abstract = to_insert_cnode->abstract();
+    MS_EXCEPTION_IF_NULL(to_insert_cnode_abstract);
+    identity_cnode->set_abstract(to_insert_cnode_abstract->Clone());
+    (void)manager->Replace(to_insert_cnode, identity_cnode);
+  }
+  return identity_cnode;
+}
+
+static void GetInputLayout(std::vector<ValuePtr> *input_layout, const std::vector<ValuePtr> &layout_value_vector) {
+  for (size_t i = 0; i < layout_value_vector.size(); ++i) {
+    std::vector<std::pair<ValuePtr, ValuePtr>> dim_layout;
+    auto layout_item = layout_value_vector[i];
+    auto layout_item_tuple = layout_item->cast<ValueTuplePtr>()->value();
+    for (size_t j = 0; j < layout_item_tuple.size(); ++j) {
+      auto item = layout_item_tuple[j];
+      dim_layout.emplace_back(std::make_pair(MakeValue(layout_keys[j]), item));
+    }
+    input_layout->emplace_back(std::make_shared<ValueDictionary>(dim_layout));
+  }
+}
+
+static void CheckInputStrategy(const std::vector<std::vector<int64_t>> &input_strategy, const AnfNodePtr parameter,
+                               const size_t i) {
+  if (!input_strategy.empty()) {
+    // Verify that the user has set the valid layout, if the layout is generated by 'GenareteDefaultStrategy', ignored
+    // its check.
+    auto param_shape = common::AnfAlgo::GetOutputInferShape(parameter, 0);
+    if (!input_strategy[i].empty() && param_shape.size() != input_strategy[i].size()) {
+      MS_LOG(EXCEPTION) << "Input dimension: " << param_shape.size()
+                        << " is not equal to in_strategy dimension: " << input_strategy[i].size() << " at index " << i;
+    }
+    if (!CheckShapeStrategy(input_strategy[i], param_shape)) {
+      MS_LOG(EXCEPTION) << "Check conformance between input strategy " << input_strategy[i] << "and tensor shape "
+                        << param_shape << "failed";
+    }
+  }
+}
+
 static void SetInputLayout(const FuncGraphPtr &func_graph, const AnfNodePtr &in_strategy, const int64_t device_num) {
   auto in_strategy_tuple = in_strategy->cast<ValueNodePtr>();
   bool need_default_strategy = false;
   size_t in_strategy_size = 0;
-  if (!IsValueNode<ValueTuple>(in_strategy_tuple) ||
-      !CheckLayout(in_strategy_tuple, &need_default_strategy, &in_strategy_size)) {
-    MS_LOG_WITH_NODE(EXCEPTION, in_strategy) << "in_strategy should be a two-dimension tuple";
-  }
+  PreCheckStrategy(in_strategy_tuple, &need_default_strategy, &in_strategy_size);
+
+  // Get input nodes.
   std::vector<AnfNodePtr> input_nodes;
   GetInputNodes(func_graph, &input_nodes);
   if (input_nodes.size() != in_strategy_size) {
-    MS_LOG_WITH_NODE(EXCEPTION, in_strategy)
-      << "Input numbers: " << input_nodes.size() << " is not equal to in_strategy numbers: " << in_strategy_size;
-  }
-  std::vector<std::vector<int64_t>> input_strategy;
-  if (need_default_strategy) {
-    GenerateDefaultStrategy(in_strategy_tuple, input_nodes, device_num, &input_strategy);
-  } else {
-    input_strategy = GetValue<std::vector<std::vector<int64_t>>>(in_strategy_tuple->value());
-  }
-  if (!CheckDeviceNum(input_strategy, device_num)) {
-    MS_LOG_WITH_NODE(EXCEPTION, in_strategy) << "check device number failed";
+    MS_LOG(ERROR) << "Input numbers: " << input_nodes.size()
+                  << " is not equal to in_strategy numbers: " << in_strategy_size;
   }
 
+  // Get strategy in ValueTuple.
+  std::vector<ValuePtr> layout_value_vector;
+  auto &in_strategy_value = in_strategy_tuple->value();
+  if (!in_strategy_value->isa<ValueTuple>()) {
+    MS_LOG(EXCEPTION) << "Parse in_strategy to ValueType failed. Please check in_strategy format.";
+  }
+  layout_value_vector = in_strategy_value->cast<ValueTuplePtr>()->value();
+
+  // Check strategy type, it can only be "tuple" or "layout".
+  std::string strategy_type = "tuple";
+  if (!need_default_strategy) {
+    updateStrategyType(layout_value_vector, &strategy_type);
+  }
+
+  // Get strategy either in input_strategy (given tuple) or input_layout (given layout).
+  std::vector<std::vector<int64_t>> input_strategy;
+  std::vector<ValuePtr> input_layout;
+  if (strategy_type == "tuple") {
+    if (need_default_strategy) {
+      GenerateDefaultStrategy(in_strategy_tuple, input_nodes, device_num, &input_strategy);
+    } else {
+      input_strategy = GetValue<std::vector<std::vector<int64_t>>>(in_strategy_tuple->value());
+    }
+    if (!CheckDeviceNum(input_strategy, device_num)) {
+      MS_LOG(EXCEPTION) << "check device number failed";
+    }
+  }
+  if (strategy_type == "layout") {
+    GetInputLayout(&input_layout, layout_value_vector);
+  }
+
+  // Insert strategy into function graph.
   FuncGraphManagerPtr manager = func_graph->manager();
   auto parameters = func_graph->parameters();
 
@@ -245,21 +340,7 @@ static void SetInputLayout(const FuncGraphPtr &func_graph, const AnfNodePtr &in_
     if (parameter->abstract()->isa<abstract::AbstractMonad>()) {
       continue;
     }
-    // Verify that the user has set the valid layout, if the layout is generated by 'GenareteDefaultStrategy', ignored
-    // its check.
-    auto param_shape = common::AnfAlgo::GetOutputInferShape(parameter, 0);
-    if (!CheckDeviceNum(input_strategy, device_num)) {
-      MS_LOG_WITH_NODE(EXCEPTION, parameter) << "check device number failed";
-    }
-    if (!input_strategy[i].empty() && param_shape.size() != input_strategy[i].size()) {
-      MS_LOG_WITH_NODE(EXCEPTION, parameter)
-        << "Input dimension: " << param_shape.size()
-        << " is not equal to in_strategy dimension: " << input_strategy[i].size() << " at index " << i;
-    }
-    if (!CheckShapeStrategy(input_strategy[i], param_shape)) {
-      MS_LOG_WITH_NODE(EXCEPTION, parameter) << "Check conformance between input strategy " << input_strategy[i]
-                                             << "and tensor shape " << param_shape << "failed";
-    }
+    CheckInputStrategy(input_strategy, parameter, i);
 
     auto to_insert_nodes_set = manager->node_users()[parameter];
 
@@ -280,40 +361,27 @@ static void SetInputLayout(const FuncGraphPtr &func_graph, const AnfNodePtr &in_
       if (IsSettingStrategyByInsertIdentity(func_graph, to_insert_cnode, parameter->fullname_with_scope())) {
         continue;
       }
+      CNodePtr identity_cnode = InsertIdentityCNode(parameter, func_graph, to_insert_cnode, execution_mode);
       int64_t layout_index = static_cast<int64_t>(i);
-      CNodePtr identity_cnode = nullptr;
-      if (execution_mode == kGraphMode) {
-        // Setting strategy by insert identity CNode directly using inputs in GraphMode.
-        // e.g TupleGetItem(parameter, index) -> func{identity{input_strategy[i], input_i}}.
-        identity_cnode = func_graph->NewCNode({NewValueNode(prim::kPrimAShardIdentity), parameter});
-        AnfNodePtrList node_inputs_list(to_insert_cnode->inputs().begin(), to_insert_cnode->inputs().end());
-        auto input_index =
-          std::distance(node_inputs_list.begin(),
-                        std::find(node_inputs_list.begin(), node_inputs_list.end(), parameter->cast<AnfNodePtr>()));
-        identity_cnode->set_abstract(parameter->abstract());
-        FuncGraphManagerPtr local_mng = func_graph->manager();
-        local_mng->SetEdge(to_insert_cnode, input_index, identity_cnode);
-      }
-
       if (execution_mode == kPynativeMode) {
-        // Setting strategy by insert identity after TupleGetItem in PynativeMode.
-        // e.g TupleGetItem(parameter, index) -> identity{in_strategy=[input_strategy[index], TupleGetItem_i}
-        identity_cnode = func_graph->NewCNode({NewValueNode(prim::kPrimAShardIdentity), to_insert_cnode});
-        auto to_insert_cnode_abstract = to_insert_cnode->abstract();
-        MS_EXCEPTION_IF_NULL(to_insert_cnode_abstract);
-        identity_cnode->set_abstract(to_insert_cnode_abstract->Clone());
-        (void)manager->Replace(to_insert_cnode, identity_cnode);
-
         // Get corresponding param_layout index in PynativeMode.
         auto tuple_index = to_insert_cnode->input(2);
         auto value_node = tuple_index->cast<ValueNodePtr>();
         MS_EXCEPTION_IF_NULL(value_node);
         layout_index = GetValue<int64_t>(value_node->value());
       }
-      Shapes current_layout = {input_strategy[layout_index]};
-      SetStrategyToCNode(identity_cnode, current_layout);
-      MS_LOG(INFO) << "Succeed to set layout " << current_layout << "to node "
-                   << to_insert_cnode->fullname_with_scope();
+      if (!input_strategy.empty()) {
+        Shapes current_layout = {input_strategy[layout_index]};
+        SetStrategyToCNode(identity_cnode, current_layout);
+        MS_LOG(INFO) << "Succeed to set layout " << current_layout << "to node "
+                     << to_insert_cnode->fullname_with_scope();
+      }
+      if (!input_layout.empty()) {
+        auto current_layout = std::make_shared<ValueTuple>(std::vector<ValuePtr>({input_layout[layout_index]}));
+        SetLayoutToCNode(identity_cnode, current_layout);
+        MS_LOG(INFO) << "Succeed to set layout " << current_layout->ToString() << "to node "
+                     << to_insert_cnode->fullname_with_scope();
+      }
     }
   }
 }
@@ -324,12 +392,24 @@ static void SetParameterLayout(const FuncGraphPtr &root) {
   for (const auto &param : root_parameters) {
     auto parameter = param->cast<ParameterPtr>();
     auto param_info = parameter->param_info();
-    if (param_info == nullptr || param_info->param_strategy().empty()) {
+    if (param_info == nullptr) {
       // Do not set param_strategy, skip it.
       continue;
     }
-    auto param_strategy = param_info->param_strategy();
+    std::vector<int64_t> param_strategy = param_info->param_strategy();
+    std::vector<int64_t> device_matrix = param_info->device_matrix();
+    std::vector<int64_t> tensor_map = param_info->tensor_map();
+    bool interleaved_parallel = param_info->interleaved_parallel();
+    std::vector<std::string> alias_name = param_info->alias_name();
     auto param_name = param_info->name();
+    std::string param_type;
+    if (!param_strategy.empty()) {
+      param_type = "tuple";
+    } else if (!device_matrix.empty()) {
+      param_type = "layout";
+    } else {
+      continue;
+    }
     AnfNodeIndexSet users = manager->node_users()[parameter];
     auto to_insert_nodes_set = FindAnfNodeIndexSetToInsertStrategy(
       root, parameter, [](const CNodePtr &cnode) { return IsPrimitiveCNode(cnode, prim::kPrimLoad); });
@@ -349,10 +429,24 @@ static void SetParameterLayout(const FuncGraphPtr &root) {
       MS_EXCEPTION_IF_NULL(load_cnode_abstract);
       identity_cnode->set_abstract(load_cnode_abstract->Clone());
       (void)local_manager->Replace(load_cnode, identity_cnode);
-      Shapes current_layout = {param_strategy};
-      SetStrategyToCNode(identity_cnode, current_layout);
-      MS_LOG(INFO) << "The layout of \"" << param_name << "\" has been set to " << load_cnode->fullname_with_scope()
-                   << ". Current strategies is " << current_layout;
+      if (param_type == "tuple") {
+        Shapes current_layout = {param_strategy};
+        SetStrategyToCNode(identity_cnode, current_layout);
+        MS_LOG(INFO) << "The layout of \"" << param_name << "\" has been set to " << load_cnode->fullname_with_scope()
+                     << ". Current strategies is " << current_layout;
+      }
+      if (param_type == "layout") {
+        std::vector<std::pair<ValuePtr, ValuePtr>> layout_map;
+        layout_map.emplace_back(std::make_pair(MakeValue(DEVICE_MATRIX), MakeValue(device_matrix)));
+        layout_map.emplace_back(std::make_pair(MakeValue(TENSOR_MAP), MakeValue(tensor_map)));
+        layout_map.emplace_back(std::make_pair(MakeValue(INTERLEAVED_PARALLEL), MakeValue(interleaved_parallel)));
+        layout_map.emplace_back(std::make_pair(MakeValue(ALIAS_NAME), MakeValue(alias_name)));
+        ValuePtr layout_dict = std::make_shared<ValueDictionary>(layout_map);
+        auto current_layout = std::make_shared<ValueTuple>(std::vector<ValuePtr>({layout_dict}));
+        SetLayoutToCNode(identity_cnode, current_layout);
+        MS_LOG(INFO) << "The layout of \"" << param_name << "\" has been set to " << load_cnode->fullname_with_scope()
+                     << ". Current strategies is " << current_layout->ToString();
+      }
     }
   }
 }

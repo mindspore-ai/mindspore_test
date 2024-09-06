@@ -297,6 +297,33 @@ void InitCostGraph() {
   ignore_candidate_.clear();
 }
 
+void SetLayoutToOperater(const OperatorInfoPtr &operator_info, const mindspore::HashMap<std::string, ValuePtr> attrs) {
+  StrategyPtr strategyPtr;
+  std::vector<std::shared_ptr<TensorLayout>> in_tensor_layouts;
+  std::vector<std::shared_ptr<TensorLayout>> out_tensor_layouts;
+  if (ExtractUserConfigLayout(attrs, operator_info->inputs_shape(), operator_info->outputs_shape(), &in_tensor_layouts,
+                              &out_tensor_layouts) != SUCCESS) {
+    MS_LOG(EXCEPTION) << "Failure:operator " << operator_info->name() << " extract configured layout failed";
+  }
+  Strategies in_strategy;
+  (void)std::transform(in_tensor_layouts.begin(), in_tensor_layouts.end(), std::back_inserter(in_strategy),
+                       [](const auto &layout) { return layout->get_in_layout_strategy(); });
+  MS_LOG(INFO) << "Converted strategies from in_tensor_layouts: " << in_strategy;
+  StrategyPtr in_strategy_ptr = NewStrategy(0, in_strategy);
+  operator_info->set_strategy(in_strategy_ptr);
+  operator_info->SetCostUnderStrategy(in_strategy_ptr);
+  operator_info->set_config_by_layout(true);
+  (void)configured_stra_ops_.emplace(operator_info, in_strategy_ptr);
+  if (OutLayoutFound(attrs)) {
+    Strategies out_strategy;
+    (void)std::transform(out_tensor_layouts.begin(), out_tensor_layouts.end(), std::back_inserter(out_strategy),
+                         [](const auto &layout) { return layout->get_out_layout_strategy(); });
+    MS_LOG(INFO) << "Converted strategies from out_tensor_layouts: " << out_strategy;
+    StrategyPtr out_strategy_ptr = NewStrategy(0, out_strategy);
+    operator_info->set_out_strategy(out_strategy_ptr);
+  }
+}
+
 void SetOutStrategyToOperator(const OperatorInfoPtr &operator_info, const PrimitivePtr &prim,
                               mindspore::HashMap<std::string, ValuePtr> attrs) {
   // In this case, when attrs has out_strategy, the out_strategy will be set to operator
@@ -443,6 +470,12 @@ OperatorInfoPtr CreateTheOperatorInfo(const PrimitivePtr &prim, const CNodePtr &
   // if strategy is set to load from checkpoint, it is prefer to load strategy from checkpoint .
   auto attrs = prim->attrs();
   if (ParallelContext::GetInstance()->strategy_search_mode() != kRecursiveProgramming) {
+    // If the user input layout (mindspore.Layout instance), convert layout to strategy, then set to the operator_info.
+    if (LayoutFound(attrs)) {
+      SetLayoutToOperater(operator_info, attrs);
+      return operator_info;
+    }
+    // If the user input strategy (tuple-like), set the strategy to the operator_info.
     if (OutStrategyFound(attrs)) {
       SetOutStrategyToOperator(operator_info, prim, attrs);
     }
@@ -1230,11 +1263,20 @@ Status ParallelStrategySearch(const std::vector<AnfNodePtr> &all_nodes, const Fu
     MS_LOG(EXCEPTION) << "Init selected strategy failed.";
   }
 
-  // print the selected strategy
   for (auto &op : entire_costgraph->GetOperators()) {
+    // print the selected strategy
     StrategyPtr s_strategy = op->selected_strategy();
     if (s_strategy != nullptr) {
       MS_LOG(INFO) << op->name() << ": The strategy is: " << s_strategy->ToString();
+    }
+    // Label the cnodes of the op if they were already created
+    for (const auto cnode : op->cnodes()) {
+      cnode->AddAttr(OP_INFO_CREATED, MakeValue(true));
+    }
+    // Clear strategy if set strategy using layout
+    if (op->is_config_by_layout()) {
+      op->clear_strategy();
+      op->clear_out_strategy();
     }
   }
   // Remove some operatorInfo from the CNODEs

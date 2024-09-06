@@ -115,6 +115,18 @@ class ParamInfo {
   const std::vector<int64_t> &param_strategy() const { return param_strategy_; }
   void set_param_strategy(const std::vector<int64_t> &param_strategy) { param_strategy_ = param_strategy; }
 
+  const std::vector<std::string> &alias_name() const { return alias_name_; }
+  void set_alias_name(const std::vector<std::string> &alias_name) { alias_name_ = alias_name; }
+
+  const std::vector<int64_t> &tensor_map() const { return tensor_map_; }
+  void set_tensor_map(const std::vector<int64_t> &tensor_map) { tensor_map_ = tensor_map; }
+
+  const std::vector<int64_t> &device_matrix() const { return device_matrix_; }
+  void set_device_matrix(const std::vector<int64_t> &device_matrix) { device_matrix_ = device_matrix; }
+
+  const bool &interleaved_parallel() const { return interleaved_parallel_; }
+  void set_interleaved_parallel(const bool &interleaved_parallel) { interleaved_parallel_ = interleaved_parallel; }
+
   std::vector<int64_t> cache_shape() const { return cache_shape_; }
   void set_cache_shape(const std::vector<int64_t> &cache_shape) { cache_shape_ = cache_shape; }
   ParameterPtr parameter() const { return parameter_.lock(); }
@@ -166,6 +178,11 @@ class ParamInfo {
   int32_t key_{-1};
   // Used to indicate parameter strategy, only take effect in cell shard
   std::vector<int64_t> param_strategy_;
+  // Used to indicate parameter layout, only take effect in cell shard
+  std::vector<std::string> alias_name_;
+  std::vector<int64_t> tensor_map_;
+  std::vector<int64_t> device_matrix_;
+  bool interleaved_parallel_;
 
   // Used to identify parameters of quant int4 type
   bool is_quant_int4_{false};
