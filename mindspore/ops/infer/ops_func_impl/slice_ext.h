@@ -27,6 +27,7 @@ class OPS_API SliceExtFuncImpl : public OpFuncImpl {
   BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
   TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
 };
+class OPS_API SliceExtViewFuncImpl : public SliceExtFuncImpl {};
 }  // namespace mindspore::ops
 
 #endif  // MINDSPORE_CORE_OPS_SLICE_EXT_H_

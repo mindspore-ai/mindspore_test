@@ -23,6 +23,7 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <map>
 #include <unordered_map>
 #include "include/api/visible.h"
 #include "abstract/ops/primitive_infer_map.h"
@@ -34,6 +35,9 @@
 #include "mindspore/ops/op_def/op_name.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
 #include "mindapi/base/types.h"
+#include "mindspore/ops/op_def/other_op_name.h"
+#include "mindspore/ops/op_def/array_op_name.h"
+#include "mindspore/ops/op_def/math_op_name.h"
 
 #ifndef MS_UNLIKELY
 #ifdef _MSC_VER
@@ -267,6 +271,13 @@ static inline TypePtr PromoteType(TypePtr a, TypePtr b, const std::string &op_na
 
   return typeid_typeptr[return_type_id];
 }
+
+// map used for pass to identify and replace the op by aclnnview
+static const std::map<std::string, std::string> op_enabled_aclnn = {
+  {kTransposeOpName, kTransposeViewOpName}, {kSplitOpName, kSplitViewOpName}, {kConcatOpName, kConcatViewOpName}};
+// map used for aclnn kernel select, because aclnnview op is not register by yaml.
+static const std::map<std::string, std::string> aclnn_view_to_op = {
+  {kTransposeViewOpName, kTransposeOpName}, {kSplitViewOpName, kSplitOpName}, {kConcatViewOpName, kConcatOpName}};
 
 void CheckTensorScalarRank(const PrimitivePtr &primitive, const AbstractBasePtr input_arg, const std::string &arg_name);
 bool IsFloatType(TypePtr type);

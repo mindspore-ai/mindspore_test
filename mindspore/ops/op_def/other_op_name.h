@@ -58,6 +58,12 @@ constexpr auto kBarrierOpName = "Barrier";
 constexpr auto kMatMulAllReduceOpName = "MatMulAllReduce";
 constexpr auto kBatchISendIRecvOpName = "BatchISendIRecv";
 constexpr auto kCustomOpName = "Custom";
+// View op
+constexpr auto kBroadcastToViewOpName = "BroadcastToView";
+constexpr auto kTransposeViewOpName = "TransposeView";
+constexpr auto kReshapeViewOpName = "ReshapeView";
+constexpr auto kSplitViewOpName = "SplitView";
+constexpr auto kConcatViewOpName = "ConcatView";
 }  // namespace mindspore
 
 #endif  // MINDSPORE_CORE_BASE_OTHER_OP_NAME_H_

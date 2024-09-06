@@ -27,6 +27,7 @@
 #include "ops/op_def.h"
 #include "utils/trace_base.h"
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace kernel {
@@ -86,6 +87,13 @@ bool IsViewOp(const std::string &op_name) {
     return false;
   }
   return op_def->is_view_;
+}
+
+bool IsAclnnViewOp(const std::string &op_name) {
+  if (mindspore::ops::aclnn_view_to_op.find(op_name) != mindspore::ops::aclnn_view_to_op.end()) {
+    return true;
+  }
+  return false;
 }
 }  // namespace kernel
 }  // namespace mindspore

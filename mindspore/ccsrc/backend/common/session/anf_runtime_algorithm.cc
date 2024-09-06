@@ -1014,6 +1014,7 @@ KernelTensorPtr AnfRuntimeAlgorithm::CreateOutputKernelTensorWithDeviceInfo(
   abstract::BaseShapePtr shape;
   TypePtr type;
   ValuePtr value;
+  TensorStorageInfoPtr info = nullptr;
   if (ExistOutputKernelTensor(node_with_index.first, node_with_index.second)) {
     const auto &kernel_tensor = GetOutputKernelTensor(node_with_index.first, node_with_index.second);
     MS_EXCEPTION_IF_NULL(kernel_tensor);
@@ -1022,8 +1023,8 @@ KernelTensorPtr AnfRuntimeAlgorithm::CreateOutputKernelTensorWithDeviceInfo(
     shape = kernel_tensor->GetShape()->Clone();
     type = kernel_tensor->GetType()->Clone();
     value = kernel_tensor->GetValueTrack();
+    info = kernel_tensor->tensor_storage_info();
   }
-
   if (value == nullptr) {
     std::tie(shape, type, value) = GetAbstractInfo(node_with_index.first, node_with_index.second);
   }
@@ -1035,8 +1036,12 @@ KernelTensorPtr AnfRuntimeAlgorithm::CreateOutputKernelTensorWithDeviceInfo(
                 << ", Type: " << type->ToString() << ", Value: " << (value ? value->ToString() : "nullptr")
                 << ", host shape: " << host_shape;
 
-  return std::make_shared<kernel::KernelTensor>(shape, type, value, device_ptr, size, format, dtype_id, host_shape,
-                                                device_name, device_id, user_data);
+  auto out_tensor = std::make_shared<kernel::KernelTensor>(shape, type, value, device_ptr, size, format, dtype_id,
+                                                           host_shape, device_name, device_id, user_data);
+  if (info) {
+    out_tensor->set_tensor_storage_info(info);
+  }
+  return out_tensor;
 }
 
 std::vector<size_t> AnfRuntimeAlgorithm::GetNodeInputSizeList(const AnfNodePtr &node) {

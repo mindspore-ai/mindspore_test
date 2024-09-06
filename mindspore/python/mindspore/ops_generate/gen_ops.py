@@ -766,10 +766,10 @@ namespace mindspore::ops {{"""
 
         is_view = operator_data.get('view')
         if is_view:
-            is_view = "true"
+            is_view_s = "true"
         else:
-            is_view = "false"
-        is_view_str = f"""{is_view}"""
+            is_view_s = "false"
+        is_view_str = f"""{is_view_s}"""
 
         gen_include += f"""\n#include "{K.MS_OPS_FUNC_IMPL_PATH}/{operator_name}.h\""""
         cc_index_str = ''
@@ -814,6 +814,9 @@ namespace mindspore::ops {{"""
                                                        indexes=cc_index_str, enable_dispatch=enable_dispatch_str,
                                                        is_view=is_view_str)
         gen_cc_code += op_def_cc
+        if is_view:
+            view_op_def = op_def_cc.replace(class_name, class_name+"View")
+            gen_cc_code += view_op_def
 
     cc_opdef_end = f"""\n}}  // namespace mindspore::ops\n"""
     return gen_include + gen_cc_code + cc_opdef_end
@@ -1036,6 +1039,19 @@ def generate_arg_handler_files(work_path):
     check_change_and_replace_file(dst_arg_dtype_cast_path, tmp_arg_dtype_cast_path)
 
 
+def get_view_ops(yaml_data):
+    """
+    Get ops with view: True
+    """
+    view_ops = []
+    for operator_name, operator_data in yaml_data.items():
+        class_name = _get_op_name(operator_name, operator_data)
+        view = operator_data.get("view")
+        if view:
+            view_ops.append(class_name + "View")
+    return view_ops
+
+
 def main():
     current_path = os.path.dirname(os.path.realpath(__file__))
     work_path = os.path.join(current_path, '../../../../')
@@ -1069,8 +1085,10 @@ def main():
     generate_ops_cc_files(work_path, ops_yaml_str)
     # generate create prim instance helper file
     generate_create_instance_helper_file(work_path, ops_yaml_str)
+    # get view extra ops
+    extra_ops = get_view_ops(ops_yaml_str)
     # generate pyboost code
-    gen_pyboost_code(work_path, ops_yaml_str, doc_yaml_str)
+    gen_pyboost_code(work_path, ops_yaml_str, doc_yaml_str, extra_ops)
     # generate aclnn kernelmod register
     generate_aclnn_reg_file(work_path, ops_yaml_str)
 

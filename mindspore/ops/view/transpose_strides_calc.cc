@@ -23,17 +23,8 @@
 namespace mindspore::ops {
 constexpr size_t kTransposeCalcInputsNum = 2;
 
-TensorStorageInfoPtrList StridesCalc(const PrimitivePtr &prim, const tensor::BaseTensorPtr &tensor,
-                                     const std::vector<int64_t> &input_perm) {
-  MS_EXCEPTION_IF_NULL(tensor);
-  const auto &x_shape = tensor->shape();
-  auto x_rank = x_shape.size();
-  MS_CHECK_VALUE(
-    input_perm.size() == x_rank,
-    CheckAndConvertUtils::FormatCommMsg("For '", prim->name(), "', size of perm should equal to rank of x, but got ",
-                                        input_perm.size(), " and ", x_rank, "!"));
-
-  auto old_tensor_info = GetOldTensorInfo(tensor);
+TensorStorageInfoPtrList TransposeStridesCalc(const OldTensorInfoPtr old_tensor_info,
+                                              const std::vector<int64_t> &input_perm) {
   const auto &old_shape = old_tensor_info->old_shape;
   const auto &old_strides = old_tensor_info->old_strides;
   const auto &old_storage_offset = old_tensor_info->old_offset;
@@ -49,7 +40,7 @@ TensorStorageInfoPtrList StridesCalc(const PrimitivePtr &prim, const tensor::Bas
     const auto wrap_dim = DynamicDimWrap(dims[i], ndim);
     if (seen_dims[wrap_dim]) {
       MS_EXCEPTION(ValueError) << CheckAndConvertUtils::FormatCommMsg(
-        "For '", prim->name(), "', perms should all be unique dim, but", wrap_dim, " is not unique!");
+        "For 'Transpose' perms should all be unique dim, but", wrap_dim, " is not unique!");
     }
     seen_dims[wrap_dim] = true;
     new_shape[i] = old_shape[wrap_dim];
@@ -69,8 +60,14 @@ TensorStorageInfoPtrList TransposeCalc(const PrimitivePtr &prim, const std::vect
     return {};
   }
   auto tensor = inputs[0]->cast<tensor::BaseTensorPtr>();
+  const auto &x_shape = tensor->shape();
+  auto x_rank = x_shape.size();
   const auto &dims = GetValue<std::vector<int64_t>>(inputs[1]);
-  return StridesCalc(prim, tensor, dims);
+  MS_CHECK_VALUE(dims.size() == x_rank, CheckAndConvertUtils::FormatCommMsg(
+                                          "For '", prim->name(), "', size of perm should equal to rank of x, but got ",
+                                          dims.size(), " and ", x_rank, "!"));
+  auto old_tensor_info = GetOldTensorInfo(tensor);
+  return TransposeStridesCalc(old_tensor_info, dims);
 }
 
 REG_VIEW_STRIDES_CALC_FUN(Transpose, TransposeCalc);

@@ -136,5 +136,27 @@ bool IsDisableAllocConfig(const std::string &alloc_config) {
   const auto &value = GetAllocConfigValue(alloc_config);
   return ((value == "False") || (value == "false"));
 }
+static std::set<std::string> view_ops_set;
+bool IsEnableAclnnViewOp(const std::string &op) {
+  std::string env_value = GetEnv(kAclnnViewOp);
+  // Temporarily only support Tranpose on default.
+  if (env_value.empty() && op == "Transpose") {
+    return true;
+  }
+  auto existed = view_ops_set.count(op);
+  if (existed) {
+    return true;
+  }
+  std::stringstream ss(env_value);
+  std::string item;
+  while (std::getline(ss, item, ',')) {
+    view_ops_set.insert(item);
+  }
+  existed = view_ops_set.count(op);
+  if (existed) {
+    return true;
+  }
+  return false;
+}
 }  // namespace common
 }  // namespace mindspore

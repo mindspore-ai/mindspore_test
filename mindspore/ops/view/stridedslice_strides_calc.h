@@ -23,7 +23,9 @@ namespace mindspore {
 namespace ops {
 
 TensorStorageInfoPtrList StridedSliceCalc(const PrimitivePtr &prim, const std::vector<ValuePtr> &inputs);
-
+MS_EXPORT TensorStorageInfoPtrList StridedSliceStridesCalc(const OldTensorInfoPtr old_tensor_info, size_t size,
+                                                           std::vector<int64_t> *shape, std::vector<int64_t> *begin,
+                                                           std::vector<int64_t> *end, std::vector<int64_t> *step);
 }  // namespace ops
 }  // namespace mindspore
 

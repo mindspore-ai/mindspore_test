@@ -739,6 +739,10 @@ bool IsEnableAclnn(const KernelGraphPtr &kernel_graph, const AnfNodePtr &node) {
     kIsEnableAclnnMap.insert({op_name, true});
     return true;
   }
+  if (kernel::IsAclnnViewOp(op_name)) {
+    kIsEnableAclnnMap.insert({op_name, true});
+    return true;
+  }
 
   bool ret = ReadAclnnEnableEnv(op_name);
   kIsEnableAclnnMap.insert({op_name, ret});
