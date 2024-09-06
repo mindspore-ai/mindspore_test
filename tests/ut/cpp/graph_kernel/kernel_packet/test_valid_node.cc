@@ -43,6 +43,6 @@ TEST_F(TestKernelPacket, no_virtual_node) {
   EXPECT_EQ(depend_node_count, 2);
   auto packet_node = std::count_if(nodes.begin(), nodes.end(),
                                    [](const AnfNodePtr &node) { return GetCNodeFuncGraph(node) != nullptr; });
-  EXPECT_EQ(packet_node, 1);
+  EXPECT_EQ(packet_node, 0);
 }
 }  // namespace mindspore::graphkernel::test

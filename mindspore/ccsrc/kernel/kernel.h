@@ -492,18 +492,11 @@ class BACKEND_EXPORT KernelTensor : public AbstractBase {
     if (address_common_->dtype_id_ == kMetaTypeNone) {
       MS_LOG(DEBUG) << "None type has no valid scalar value.";
       return std::nullopt;
-    } else if (value_ && !value_->isa<ValueAny>()) {
-      if (host_info_->kernel_tensor_value_ == nullptr) {
-        host_info_->kernel_tensor_value_ = ConvertValueToKernelTensorValue(value_);
-      }
-    } else {
-      // Sync value data from device.
-      if (!SyncDataFromDeviceToHost()) {
-        MS_LOG(ERROR) << "Sync data from device to host side failed";
-        return std::nullopt;
-      }
     }
 
+    if (!SetKernelTensorValue()) {
+      return std::nullopt;
+    }
     MS_EXCEPTION_IF_NULL(host_info_->kernel_tensor_value_);
     MS_EXCEPTION_IF_CHECK_FAIL((host_info_->kernel_tensor_value_->GetDataSize() == sizeof(T)),
                                "The data size in kernel tensor value which contains a scalar [" +
@@ -529,18 +522,11 @@ class BACKEND_EXPORT KernelTensor : public AbstractBase {
     if (address_common_->dtype_id_ == kMetaTypeNone) {
       MS_LOG(DEBUG) << "None type has no valid value for vector or string.";
       return std::nullopt;
-    } else if (value_ && !value_->isa<ValueAny>()) {
-      if (host_info_->kernel_tensor_value_ == nullptr) {
-        host_info_->kernel_tensor_value_ = ConvertValueToKernelTensorValue(value_);
-      }
-    } else {
-      // Sync value data from device.
-      if (!SyncDataFromDeviceToHost()) {
-        MS_LOG(ERROR) << "Sync data from device to host side failed";
-        return std::nullopt;
-      }
     }
 
+    if (!SetKernelTensorValue()) {
+      return std::nullopt;
+    }
     MS_EXCEPTION_IF_NULL(host_info_->kernel_tensor_value_);
     size_t element_num = host_info_->kernel_tensor_value_->GetDataSize() / sizeof(typename T::value_type);
     if (element_num == 0) {
@@ -709,6 +695,9 @@ class BACKEND_EXPORT KernelTensor : public AbstractBase {
 
   // Synchronize value data from device to host side.
   bool SyncDataFromDeviceToHost() const;
+
+  // Update the kernel_tensor_value from host or device data.
+  bool SetKernelTensorValue() const;
 
   // Calculate memory size need by the KernelTensor.
   void CalculateMemSize();
