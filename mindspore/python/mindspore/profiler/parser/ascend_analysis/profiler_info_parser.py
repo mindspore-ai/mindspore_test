@@ -18,25 +18,28 @@ import json
 from decimal import Decimal
 from subprocess import CalledProcessError, TimeoutExpired
 from subprocess import Popen, PIPE
+from configparser import ConfigParser
 
 from mindspore import log as logger
 from mindspore.profiler.common.validator.validate_path import validate_and_normalize_path
 from mindspore.profiler.parser.ascend_analysis.constant import Constant
-from mindspore.profiler.parser.profiler_info import ProfilerInfo
 
 
 class ProfilerInfoParser:
     """Parse files that record information, such as profiler_info.json"""
 
     _freq = 100.0
-    _time_offset = 0
-    _start_cnt = 0
     _msprof_cmd = "msprof"
     _time_out = 1
     # profiler information related files
     _source_prof_path = None
     _loaded_frequency = False
     _rank_id = 0
+    _clock_monotonic_raw = 0
+    _cntvct = 0
+    _collectionTimeBegin = 0
+    _clockMonotonicRaw = 0
+    _get_localtime_diff = 0
 
     @classmethod
     def init_source_path(cls, source_path: str):
@@ -73,20 +76,26 @@ class ProfilerInfoParser:
                 cls._freq = float(cpu_info.get("Frequency", cls._freq))
             except ValueError:
                 pass
-            profiler_info_path = os.path.join(cls._source_prof_path, os.path.pardir,
-                                              f"profiler_info_{cls._rank_id}.json")
-            if not os.path.isfile(profiler_info_path):
-                raise RuntimeError(f"Can`t find the file {profiler_info_path}, please check !")
-            with os.fdopen(os.open(profiler_info_path, os.O_RDONLY, 0o600),
-                           'r') as fr:
-                profiler_info_data = json.load(fr)
-            cls._start_cnt = profiler_info_data.get('system_cnt')
-            cls._time_offset = profiler_info_data.get('system_time')
-            ProfilerInfo.set_system_time(cls._time_offset)
-            ProfilerInfo.set_system_cnt(cls._start_cnt)
+            cls._get_msprof_timestamp(cls._source_prof_path)
             cls._loaded_frequency = True
         start_ns = cls.__get_timestamp(syscnt)
         return Decimal(start_ns).quantize(Decimal('0.000')) * Decimal(Constant.NS_TO_US).quantize(Decimal('0.000'))
+
+    @classmethod
+    def _get_msprof_timestamp(cls, source_path):
+        """get msprof timestamp info"""
+        start_log = ConfigParser()
+        start_log.read(os.path.join(source_path, "host", "host_start.log"))
+        cls._clock_monotonic_raw = int(start_log.get("Host", "clock_monotonic_raw"))
+        cls._cntvct = int(start_log.get("Host", "cntvct"))
+
+        with open(os.path.join(source_path, "host", "start_info"), "r") as f:
+            info_dict = json.load(f)
+            cls._collectionTimeBegin = int(info_dict.get("collectionTimeBegin", 0)) #us
+            cls._clockMonotonicRaw = int(info_dict.get("clockMonotonicRaw", 0))
+            us_to_ns = 1000
+            cls._get_localtime_diff = cls._clock_monotonic_raw + (cls._collectionTimeBegin * us_to_ns -
+                                                                  cls._clockMonotonicRaw)
 
     @classmethod
     def __run_cmd(cls, cmd):
@@ -111,5 +120,5 @@ class ProfilerInfoParser:
         """Convert syscnt to time stamp."""
         ratio = time_fmt / cls._freq
         # The unit of timestamp is ns
-        timestamp = round((syscnt - cls._start_cnt) * ratio) + cls._time_offset
+        timestamp = round((syscnt - cls._cntvct) * ratio) + cls._get_localtime_diff
         return timestamp
