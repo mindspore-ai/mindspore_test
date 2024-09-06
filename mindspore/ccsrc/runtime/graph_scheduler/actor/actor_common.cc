@@ -259,11 +259,13 @@ bool EnableTraceMemory() {
   }
 
   static const char kEnableTraceMemoryEnv[] = "MS_ENABLE_TRACE_MEMORY";
-  static bool ret = common::GetEnv(kEnableTraceMemoryEnv, "on") == "on";
-  if (ret) {
-    MS_LOG(INFO) << "Enable trace memory to optimize dynamic memory manage performance.";
+  static bool disable_trace_memory = common::GetEnv(kEnableTraceMemoryEnv) == "off";
+  if (disable_trace_memory) {
+    return false;
   }
-  return ret;
+
+  MS_LOG(INFO) << "Enable trace memory to optimize dynamic memory manage performance.";
+  return true;
 }
 
 void ResetTraceMemoryStatus() {
