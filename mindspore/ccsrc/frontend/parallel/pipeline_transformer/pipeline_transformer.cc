@@ -249,7 +249,7 @@ bool PipelineTransformer::MainGraph() {
 
 ValuePtr PipelineTransformer::SetMicroBatch(const AnfNodePtr &node, int64_t micro_size, size_t batch_axis) const {
   if (!IsPrimitiveCNode(node, prim::kPrimStridedSlice)) {
-    MS_LOG(EXCEPTION) << "Can't find MicroBatch information.";
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "Can't find MicroBatch information.";
   }
   auto cnode = node->cast<CNodePtr>();
 
@@ -261,7 +261,8 @@ ValuePtr PipelineTransformer::SetMicroBatch(const AnfNodePtr &node, int64_t micr
     auto input_shape = input_tmp.at(0);
     auto slice_batch_size = input_shape.at(batch_axis);  // betch shape
     if (slice_batch_size == 0) {
-      MS_LOG(EXCEPTION) << "slice_batch_size should be a positive integer, but got " << slice_batch_size;
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << "slice_batch_size should be a positive integer, but got "
+                                         << slice_batch_size;
     }
     micro = tuple.at(batch_axis) * micro_size / slice_batch_size;  // micro-index
   } else {
@@ -269,7 +270,7 @@ ValuePtr PipelineTransformer::SetMicroBatch(const AnfNodePtr &node, int64_t micr
     // if micro is not 1: stridedslice --> maketuple --> scalarmul --> micro
     // if micro is 1: stridedslice --> maketuple --> scalarfloordiv
     if (!IsPrimitiveCNode(cnode->input(2), prim::kPrimMakeTuple)) {
-      MS_LOG(EXCEPTION) << "the begin of stridedslice is not constant value, and not make tuple";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << "the begin of stridedslice is not constant value, and not make tuple";
     }
     auto make_tuple_cnode = cnode->input(2)->cast<CNodePtr>();
 
@@ -280,8 +281,8 @@ ValuePtr PipelineTransformer::SetMicroBatch(const AnfNodePtr &node, int64_t micr
     } else if (IsPrimitiveCNode(make_tuple_cnode->input(1), prim::kPrimScalarFloorDiv)) {
       micro = 1;
     } else {
-      MS_LOG(EXCEPTION) << "can not find the micro info, the input op of make tuple is "
-                        << GetCNodePrimitive(make_tuple_cnode->input(1))->name();
+      MS_LOG_WITH_NODE(EXCEPTION, make_tuple_cnode) << "can not find the micro info, the input op of make tuple is "
+                                                    << GetCNodePrimitive(make_tuple_cnode->input(1))->name();
     }
   }
 
@@ -440,8 +441,9 @@ void PipelineTransformer::LabelMicroBatch() {
       }
       auto micro_size = int64_t(MicroSize(data_users));
       if (is_train_ && micro_size < stage_num) {
-        MS_LOG(EXCEPTION) << "The size of micro_batch must be greater than or equal to stage_num. But got the size of "
-                          << "micro_batch is " << micro_size << " and the stage_num is " << stage_num;
+        MS_LOG_WITH_NODE(EXCEPTION, node_first)
+          << "The size of micro_batch must be greater than or equal to stage_num. But got the size of "
+          << "micro_batch is " << micro_size << " and the stage_num is " << stage_num;
       }
       micro_size_ = micro_size;
       auto batch_axis = GetBatchAxisForInput(data_users);
@@ -554,8 +556,8 @@ void PipelineTransformer::BroadCastColoring() {
         auto user_node_stage = user_stage_info->stage();
         if (stage > user_node_stage) {
           if (IsValueNode<FuncGraph>(user_node->input(0))) {
-            MS_LOG(EXCEPTION) << "The stage setting is incorrect. PreNode's stage:" << stage
-                              << " is larger than NextNode's stage:" << user_node_stage;
+            MS_LOG_WITH_NODE(EXCEPTION, user_node) << "The stage setting is incorrect. PreNode's stage:" << stage
+                                                   << " is larger than NextNode's stage:" << user_node_stage;
           }
           user_node->set_user_data<NodeStageInfo>(std::make_shared<NodeStageInfo>(stage));
           need_coloring = true;
@@ -635,7 +637,7 @@ OperatorInfoPtr PipelineTransformer::CreateOpInfo(const CNodePtr &cnode, int tup
     temp_node = GraphOutNode(output, tuple_index);
   }
   if (!IsPipelineCareNode(temp_node)) {
-    MS_LOG(EXCEPTION) << "Node: " << temp_node->DebugString() << " is not a Pipeline Care Node.";
+    MS_LOG_WITH_NODE(EXCEPTION, temp_node) << "Node: " << temp_node->DebugString() << " is not a Pipeline Care Node.";
   }
   if (IsPrimitiveCNode(temp_node, prim::kPrimVirtualDataset)) {
     SetVirtualDatasetStrategy(temp_node);
@@ -644,7 +646,7 @@ OperatorInfoPtr PipelineTransformer::CreateOpInfo(const CNodePtr &cnode, int tup
   auto prim = GetValueNode<PrimitivePtr>(temp_node->input(0));
   MS_EXCEPTION_IF_NULL(prim);
   if (prim->name() == RESHAPE) {
-    MS_LOG(EXCEPTION) << "Reshape op can't be a border. node:" << temp_node->DebugString();
+    MS_LOG_WITH_NODE(EXCEPTION, temp_node) << "Reshape op can't be a border. node:" << temp_node->DebugString();
   }
   auto attrs = prim->attrs();
   auto op_info = CreateOperatorInfo(temp_node);
@@ -654,8 +656,8 @@ OperatorInfoPtr PipelineTransformer::CreateOpInfo(const CNodePtr &cnode, int tup
   std::vector<std::shared_ptr<TensorLayout>> out_tensor_layouts;
   if (ExtractUserConfigLayout(attrs, op_info->inputs_shape(), op_info->outputs_shape(), &in_tensor_layouts,
                               &out_tensor_layouts) != SUCCESS) {
-    MS_LOG(EXCEPTION) << "Failure:operator " << prim->name() << " extract configured layout failed"
-                      << trace::DumpSourceLines(cnode);
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Failure:operator " << prim->name() << " extract configured layout failed"
+                                       << trace::DumpSourceLines(cnode);
   }
 
   if (in_tensor_layouts.empty() && out_tensor_layouts.empty()) {
@@ -669,7 +671,7 @@ OperatorInfoPtr PipelineTransformer::CreateOpInfo(const CNodePtr &cnode, int tup
   }
 
   if (op_info->Init(in_strategy, out_strategy, in_tensor_layouts, out_tensor_layouts) == FAILED) {
-    MS_LOG(EXCEPTION) << "operator: " << prim->name() << " init failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "operator: " << prim->name() << " init failed.";
   }
   return op_info;
 }
@@ -717,8 +719,8 @@ AnfNodeIndexSet GetActualOpUsers(const AnfNodePtr &node, NodeUsersMap *node_user
       auto temp_params = graph->parameters();
       auto index = user_pair.second;
       if (temp_params.size() < IntToSize(index)) {
-        MS_LOG(EXCEPTION) << "parameter: " << temp_node->DebugString() << " out of graph: " << graph->ToString()
-                          << "'s range.";
+        MS_LOG_WITH_NODE(EXCEPTION, temp_node)
+          << "parameter: " << temp_node->DebugString() << " out of graph: " << graph->ToString() << "'s range.";
       }
       temp_node = temp_params[IntToSize(index - 1)];
     } else if (IsPrimitiveCNode(cuser, prim::kPrimLoad) || IsPrimitiveCNode(cuser, prim::kPrimCast)) {
@@ -1015,8 +1017,8 @@ AnfNodePtr PipelineTransformer::FindPipelineCareNode(const AnfNodePtr &node) con
     return cnode->cast<AnfNodePtr>();
   }
   if (!IsPipelineCareNode(cnode)) {
-    MS_LOG(EXCEPTION) << "Only PipelineSplit cared node can be a border."
-                      << " border node: " << cnode->DebugString();
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Only PipelineSplit cared node can be a border."
+                                       << " border node: " << cnode->DebugString();
   }
   return cnode->cast<AnfNodePtr>();
 }
@@ -1102,7 +1104,7 @@ AnfNodePtr PipelineTransformer::InsertReceive(const FuncGraphPtr &graph, const A
       recv_input = {NewValueNode(recv_tensor)};
     } else {
       if (virtual_param_ == nullptr) {
-        MS_LOG(EXCEPTION)
+        MS_LOG_WITH_NODE(EXCEPTION, node)
           << "For Pipeline Parallel, each stage must have at least one parameter that needs to be trained, but stage: "
           << stage_ << " has none.";
       }
@@ -1210,7 +1212,8 @@ AnfNodePtr PipelineTransformer::HandleParameterGraph(const AnfNodePtr &node, con
   auto use_cnode = use_node->cast<CNodePtr>();
   MS_EXCEPTION_IF_NULL(use_cnode);
   if (!IsValueNode<FuncGraph>(use_cnode->input(0))) {
-    MS_LOG(EXCEPTION) << "Parameter must be used by a graph, but got: " << use_cnode->DebugString();
+    MS_LOG_WITH_NODE(EXCEPTION, use_cnode)
+      << "Parameter must be used by a graph, but got: " << use_cnode->DebugString();
   }
   auto use_graph = GetValueNode<FuncGraphPtr>(use_cnode->input(0));
   auto use_parameter_list = use_graph->parameters();
@@ -1309,7 +1312,8 @@ void PipelineTransformer::CutBorderForNode(const FuncGraphPtr &graph, const AnfN
       continue;
     }
     if (node_stage > user_node_stage) {
-      MS_LOG(EXCEPTION) << "node_stage: " << node_stage << " must be smaller than user_node_stage: " << user_node_stage;
+      MS_LOG_WITH_NODE(EXCEPTION, user_node)
+        << "node_stage: " << node_stage << " must be smaller than user_node_stage: " << user_node_stage;
     }
   }
 }
@@ -1337,21 +1341,22 @@ std::pair<std::vector<AnfNodePtr>, std::vector<AnfNodePtr>> PipelineTransformer:
 AnfNodePtr PipelineTransformer::CreateZeroseOutput(const AnfNodePtr &node, size_t index) {
   auto out_shapes = GetNodeShape(node);
   if (out_shapes.size() <= index) {
-    MS_LOG(EXCEPTION) << "the index is out of range, the size of output_shapes is " << out_shapes.size()
-                      << ", but the index is " << index;
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "the index is out of range, the size of output_shapes is " << out_shapes.size()
+                                      << ", but the index is " << index;
   }
   auto out_shape = out_shapes.at(index);
   if (std::count(out_shape.cbegin(), out_shape.cend(), DYNAMIC_DIM_VAL) > 0) {
-    MS_LOG(EXCEPTION) << "it is not supported that loss is not a scalar in dynamic shape and pipeline parallel "
-                         "scenarios, the output shape is "
-                      << out_shape;
+    MS_LOG_WITH_NODE(EXCEPTION, node)
+      << "it is not supported that loss is not a scalar in dynamic shape and pipeline parallel "
+         "scenarios, the output shape is "
+      << out_shape;
   }
 
   // Modify output dimension when enable data parallel since only the last stage enable VirtualOutput redistribution.
   bool full_batch = ParallelContext::GetInstance()->full_batch();
   int64_t dev_num = full_batch ? 1 : g_device_manager->stage_device_num();
   if (dev_num == 0) {
-    MS_LOG(EXCEPTION) << "Device num must be larger than 0, but get 0.";
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "Device num must be larger than 0, but get 0.";
   }
 
   if (!is_train_ && !out_shape.empty() && out_shape[0] % dev_num == 0) {
@@ -1483,12 +1488,12 @@ AnfNodePtr PipelineTransformer::GenNewSendFromOld(const AnfNodePtr &node, const 
   prim->set_attr(DTYPE, shape_type_pair.second);
   if (!is_param) {
     if (old_is_pipeline_param) {
-      MS_LOG(EXCEPTION) << "The old send is pipeline_param, but new send is not pipeline_param.";
+      MS_LOG_WITH_NODE(EXCEPTION, send) << "The old send is pipeline_param, but new send is not pipeline_param.";
     }
     send->AddPrimalAttr(PIPELINE_END, value);
   } else {
     if (!old_is_pipeline_param) {
-      MS_LOG(EXCEPTION) << "The old send is not pipeline_param, but new send is pipeline_param.";
+      MS_LOG_WITH_NODE(EXCEPTION, send) << "The old send is not pipeline_param, but new send is pipeline_param.";
     }
     send->AddPrimalAttr(PARAM_INDEX, MakeValue(index));
     send->AddPrimalAttr(PIPELINE_PARAM, value);

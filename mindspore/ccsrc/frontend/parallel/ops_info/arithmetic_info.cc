@@ -186,7 +186,7 @@ ReplaceGraphPtr ArithmeticBase::replace_graph(const CNodePtr &cnode) {
   if (inputs_tensor_info_[kIndex0].tensor_layout().IsInterleavedParallel() ||
       inputs_tensor_info_[kIndex1].tensor_layout().IsInterleavedParallel()) {
     if (ComputeReplaceGraphForInterleaved(cnode) != SUCCESS) {
-      MS_LOG(EXCEPTION) << name_ << " splitting micro interleaved failed.";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << " splitting micro interleaved failed.";
     }
     return replace_graph_;
   }
@@ -221,7 +221,7 @@ void ArithmeticBase::ReComputeBatchSplitFlagList() {
   Shape expand_a_shape = expand_shapes.at(0);
   Shape expand_b_shape = expand_shapes.at(1);
   if (expand_a_shape.size() != expand_b_shape.size()) {
-    MS_LOG(EXCEPTION) << name_ << " : Recompute batch split flag list is wrong.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << " : Recompute batch split flag list is wrong.";
   }
   if (expand_a_shape.empty()) {
     split_flag_list_[0] = false;
@@ -444,14 +444,14 @@ std::vector<StrategyPtr> ArithmeticBase::GenerateOpStrategies(int64_t stage_id) 
   Shape input1_split(inputs_shape_[1].size(), 1);
   Shapes splittable_inputs = {input0_split, input1_split};
   if (inputs_shape_.size() < 2) {
-    MS_LOG(EXCEPTION) << name_ << ": Size of inputs must be greater than or equal to 2, but got size "
-                      << inputs_shape_.size();
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Size of inputs must be greater than or equal to 2, but got size "
+                                        << inputs_shape_.size();
   }
   Shapes inputs_shape(inputs_shape_.cbegin(), inputs_shape_.cbegin() + 2);
 
   std::vector<StrategyPtr> sp_vector;
   if (GenerateStrategiesWithBroadcast(stage_id, inputs_shape, splittable_inputs, &sp_vector) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << " : Generate strategies with broadcast failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << " : Generate strategies with broadcast failed.";
   }
   MS_LOG(INFO) << name_ << " : Generate strategies with broadcast success.";
 

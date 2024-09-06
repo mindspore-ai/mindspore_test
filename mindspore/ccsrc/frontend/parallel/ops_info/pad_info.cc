@@ -170,10 +170,10 @@ std::vector<StrategyPtr> PadV3Info::GenerateOpStrategies(int64_t stage_id) {
 
   std::vector<StrategyPtr> sp_vector;
   if (GenerateStrategiesForIndependentInputs(stage_id, tmp_inputs_shape, splittable_input, &sp_vector) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Generate strategies failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Generate strategies failed";
   }
   if (sp_vector.empty()) {
-    MS_LOG(EXCEPTION) << name_ << ": No available strategy";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": No available strategy";
   }
 
   return sp_vector;

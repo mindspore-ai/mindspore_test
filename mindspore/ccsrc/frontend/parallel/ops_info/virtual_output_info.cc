@@ -58,7 +58,7 @@ std::vector<StrategyPtr> VirtualOutputInfo::GenerateOpStrategies(int64_t stage_i
   }
 
   if (total_dev_num == 0) {
-    MS_LOG(EXCEPTION) << name_ << ": The total devices num is 0";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": The total devices num is 0";
   }
 
   for (auto &shape : inputs_shape_) {

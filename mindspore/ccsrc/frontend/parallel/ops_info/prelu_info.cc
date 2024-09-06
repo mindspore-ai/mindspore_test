@@ -101,7 +101,7 @@ std::vector<StrategyPtr> PReLUInfo::GenerateOpStrategies(int64_t stage_id) {
   Shapes splittable_inputs = {input0_split, input1_split};
   std::vector<StrategyPtr> sp_vector;
   if (GenerateStrategiesForIndependentInputs(stage_id, inputs_shape_, splittable_inputs, &sp_vector) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": GenerateStrategies For Independent Inputs failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": GenerateStrategies For Independent Inputs failed";
   }
   return sp_vector;
 }

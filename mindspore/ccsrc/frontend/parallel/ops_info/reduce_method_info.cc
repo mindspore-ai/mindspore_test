@@ -45,10 +45,10 @@ Status ReduceMethod::InferDevMatrixShape() {
 std::vector<int64_t> ReduceMethod::reduce_dim() {
   std::vector<int64_t> dim_list;
   if (input_value_.size() < 2) {
-    MS_LOG(EXCEPTION) << name_ << ": Input value size is smaller than 2.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Input value size is smaller than 2.";
   }
   if (input_value_.back() == nullptr) {
-    MS_LOG(EXCEPTION) << name_ << ": Input value is nullptr.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Input value is nullptr.";
   }
   MS_ASSERT(inputs_shape_.size() == 1);
   auto input_dim = inputs_shape_.at(0).size();
@@ -68,7 +68,7 @@ std::vector<int64_t> ReduceMethod::reduce_dim() {
     int64_t axis = GetValue<int64_t>(input_value_.back());
     axis < 0 ? dim_list.push_back(axis + SizeToLong(input_dim)) : dim_list.push_back(axis);
   } else {
-    MS_LOG(EXCEPTION) << "Axis type is invalid.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << "Axis type is invalid.";
   }
 
   return dim_list;
@@ -233,7 +233,7 @@ Status ArgMaxWithValueInfo::GetAttrs() {
   constexpr auto kNameKeepDims = "keep_dims";
   auto keep_dims_opt = GetScalarValueFromInputs<bool>(input_value_, name_, kNameKeepDims);
   if (!keep_dims_opt.has_value()) {
-    MS_LOG(EXCEPTION) << "For " << name_ << ", failed to get value for " << kNameKeepDims << ".";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << "For " << name_ << ", failed to get value for " << kNameKeepDims << ".";
   }
   keepdims_ = keep_dims_opt.value();
 
@@ -312,7 +312,7 @@ std::vector<StrategyPtr> ReduceMethod::GenerateOpStrategies(int64_t stage_id) {
   Shapes splittable_inputs = {input0_split};
   std::vector<StrategyPtr> sp_vector;
   if (GenerateStrategiesForIndependentInputs(stage_id, inputs_shape_, splittable_inputs, &sp_vector) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": GenerateStrategiesForIndependentInputs failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": GenerateStrategiesForIndependentInputs failed.";
   }
   return sp_vector;
 }
@@ -321,7 +321,7 @@ std::vector<int64_t> ArgMaxWithValueInfo::reduce_dim() {
   std::vector<int64_t> dim_list;
   auto axis_opt = GetScalarValueFromInputsWithCheck<int64_t>(input_value_, name_, AXIS);
   if (!axis_opt.has_value()) {
-    MS_LOG(EXCEPTION) << "For " << name_ << ", does not have axis attr";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << "For " << name_ << ", does not have axis attr";
   }
 
   MS_ASSERT(inputs_shape_.size() == 1);
@@ -410,7 +410,7 @@ Status ArgMaxWithValueInfo::InferAsLossDivisor() {
 
 std::shared_ptr<Strategies> ArgmaxInfo::GenerateBatchStrategies() {
   if (GetAttrs() != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Get attr failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Get attr failed";
   }
   Dimensions input_strategy(inputs_shape_[0].size(), 1);
   // axis can't split
@@ -426,7 +426,7 @@ const size_t ValidInputNum = 3;
 std::vector<int64_t> ArgmaxInfo::reduce_dim() {
   auto axis_opt = GetScalarValueFromInputsWithCheck<int64_t>(input_value_, name_, AXIS);
   if (!axis_opt.has_value()) {
-    MS_LOG(EXCEPTION) << "For " << name_ << ", does not have axis attr";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << "For " << name_ << ", does not have axis attr";
   }
   std::vector<int64_t> dim_list;
   auto prim_name = GetPrimNameFromInfoName(name_);
@@ -679,7 +679,7 @@ Status SquareSumAllInfo::ComputeReplaceGraph(const CNodePtr &cnode) {
 
 ReplaceGraphPtr SquareSumAllInfo::replace_graph(const CNodePtr &cnode) {
   if (ComputeReplaceGraph(cnode) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": ComputeReplaceGraph failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << ": ComputeReplaceGraph failed.";
   }
   return replace_graph_;
 }

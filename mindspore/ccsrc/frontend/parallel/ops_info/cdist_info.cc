@@ -93,7 +93,7 @@ std::vector<StrategyPtr> CdistInfo::GenerateOpStrategies(int64_t stage_id) {
     inputs_splittable = {{1, 2, 0}, {1, 3, 0}};
   }
   if (GenerateStrategiesForDependentInputs(stage_id, inputs_shape_, inputs_splittable, &sp) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Generate strategies for dependent inputs() failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Generate strategies for dependent inputs() failed.";
   }
   return sp;
 }

@@ -236,7 +236,7 @@ ReplaceGraphPtr ROIAlignInfo::replace_graph(const CNodePtr &cnode) {
   auto strategies = strategy_->GetInputDim();
   auto features_strategy = strategies.at(0);
   if (features_strategy[0] != 1 && ComputeReplaceGraph(cnode) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": ComputeReplaceGraph failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << ": ComputeReplaceGraph failed.";
   }
   return replace_graph_;
 }
@@ -256,7 +256,7 @@ std::vector<StrategyPtr> ROIAlignInfo::GenerateOpStrategies(int64_t stage_id) {
 
   std::vector<StrategyPtr> sp_vector;
   if (GenerateStrategiesForIndependentInputs(stage_id, inputs_shape_, splittable_inputs, &sp_vector) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Generate strategies for independent inputs() failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Generate strategies for independent inputs() failed.";
   }
   return sp_vector;
 }

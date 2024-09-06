@@ -192,11 +192,11 @@ Status RmsNormInfo::GenerateGammaStrategies(const std::vector<StrategyPtr> &sp_v
 
 std::vector<StrategyPtr> RmsNormInfo::GenerateOpStrategies(int64_t stage_id) {
   if (InitShapes() != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Init shapes failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Init shapes failed";
   }
   Shape input_split(input_shape_.size(), SPLIT_FLAG);
   if (begin_norm_axis_ >= input_split.size()) {
-    MS_LOG(EXCEPTION) << name_ << ": Invalid begin norm axis " << begin_norm_axis_;
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Invalid begin norm axis " << begin_norm_axis_;
   }
 
   // Can not split the dimensions from begin norm axis
@@ -209,12 +209,12 @@ std::vector<StrategyPtr> RmsNormInfo::GenerateOpStrategies(int64_t stage_id) {
   Shapes tmp_inputs_shape = {input_shape_};
   std::vector<StrategyPtr> sp_vector;
   if (GenerateStrategiesForIndependentInputs(stage_id, tmp_inputs_shape, splittable_inputs, &sp_vector) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Generate input strategy failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Generate input strategy failed";
   }
 
   // Generate the strategies for gamma and beta
   if (GenerateGammaStrategies(sp_vector) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Generate gamma and beta strategies failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Generate gamma and beta strategies failed";
   }
 
   return sp_vector;
@@ -458,7 +458,7 @@ Status RmsNormInfo::ComputeReplaceGraphForSplitNormAxis(const CNodePtr &cnode) {
 ReplaceGraphPtr RmsNormInfo::replace_graph(const CNodePtr &cnode) {
   if (inputs_tensor_info_[kIndex0].tensor_layout().IsInterleavedParallel()) {
     if (ComputeReplaceGraphForInterleaved(cnode) != SUCCESS) {
-      MS_LOG(EXCEPTION) << name_ << " splitting micro interleaved failed.";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << " splitting micro interleaved failed.";
     }
     return replace_graph_;
   }

@@ -96,7 +96,7 @@ std::vector<StrategyPtr> UniqueInfo::GenerateOpStrategies(int64_t stage_id) {
   Shapes splittable_inputs = {input0_split};
   std::vector<StrategyPtr> sp_vector;
   if (GenerateStrategiesForIndependentInputs(stage_id, inputs_shape_, splittable_inputs, &sp_vector) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": GenerateStrategiesForIndependentInputs failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": GenerateStrategiesForIndependentInputs failed";
   }
 
   return sp_vector;
@@ -147,7 +147,7 @@ ReplaceGraphPtr UniqueInfo::replace_graph(const CNodePtr &cnode) {
   if (ps::PsDataPrefetch::GetInstance().cache_enable()) {
     auto inputs = cnode->inputs();
     if (inputs.empty()) {
-      MS_LOG(EXCEPTION) << "Invalid inputs";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Invalid inputs";
     }
     const auto &primitive = GetValueNode<PrimitivePtr>(inputs[0]);
     const auto &attr = primitive->GetAttr("cache_enable");
@@ -159,7 +159,7 @@ ReplaceGraphPtr UniqueInfo::replace_graph(const CNodePtr &cnode) {
       return nullptr;
     }
     if (ComputeReplaceGraph(cnode) != SUCCESS) {
-      MS_LOG(EXCEPTION) << name_ << ": ComputeReplaceGraph failed.";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << ": ComputeReplaceGraph failed.";
     }
     return replace_graph_;
   }

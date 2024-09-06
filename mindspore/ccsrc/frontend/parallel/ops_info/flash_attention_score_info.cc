@@ -149,10 +149,11 @@ void FlashAttentionScoreInfo::UpdateDropoutGenMaskSliceShapeAndSeed(const CNodeP
   input_slice_shape[input_slice_shape.size() - 1] *= BITS_NUM_PER_BYTE;  // Restores the shape of DropoutGenMask input
   size_t cnode_non_monad_size = GetNonMonadInputSize(dropout_gen_mask_cnode);
   if (cnode_non_monad_size != DROPOUT_GEN_MASK_CNODE_INPUT_SIZE) {
-    MS_LOG(EXCEPTION) << "The size of dropout gen mask cnode's inputs must be " << DROPOUT_GEN_MASK_CNODE_INPUT_SIZE;
+    MS_LOG_WITH_NODE(EXCEPTION, dropout_gen_mask_cnode)
+      << "The size of dropout gen mask cnode's inputs must be " << DROPOUT_GEN_MASK_CNODE_INPUT_SIZE;
   }
   if (!IsValueNode<ValueTuple>(dropout_gen_mask_cnode->input(kIndex1))) {
-    MS_LOG(EXCEPTION) << "The input[1] of dropout gen mask cnode is not ValueTuple.";
+    MS_LOG_WITH_NODE(EXCEPTION, dropout_gen_mask_cnode) << "The input[1] of dropout gen mask cnode is not ValueTuple.";
   }
   ValuePtr new_shape = MakeValue(input_slice_shape);
   AnfNodePtr val = NewValueNode(new_shape);
@@ -169,7 +170,7 @@ void FlashAttentionScoreInfo::InitIsInputPassed() {
 
 size_t FlashAttentionScoreInfo::GetStrategyRealIndex(size_t index) {
   if (index >= is_input_passed_.size() || !is_input_passed_[index]) {
-    MS_LOG(INTERNAL_EXCEPTION) << name_ << ": GetStrategyRealIndex failed, index is " << index;
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, cnode_) << name_ << ": GetStrategyRealIndex failed, index is " << index;
   }
   auto real_index = -1;
   for (size_t i = 0; i <= index; ++i) {
@@ -213,7 +214,7 @@ int64_t FlashAttentionScoreInfo::GetActualSeqLengthSize() {
   if (is_input_passed_[ops::kFlashAttentionScoreInputActualSeqQlenIndex]) {
     auto actual_size = inputs_shape_.at(GetStrategyRealIndex(ops::kFlashAttentionScoreInputActualSeqQlenIndex));
     if (actual_size.size() != 1) {
-      MS_LOG(EXCEPTION) << name_ << "Shape of actual seq length should be 1.";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << "Shape of actual seq length should be 1.";
     }
     return actual_size[0] / batch_split_num_;
   }
@@ -703,7 +704,7 @@ Status FlashAttentionScoreInfo::CheckInputInRingAttention() {
     MS_LOG(ERROR) << "Ring attention currently only supports keep prob 1.0";
   }
   if (is_input_passed_[ops::kFlashAttentionScoreInputAttnMaskIndex] && (enable_flash_sp_ || enable_load_balance_)) {
-    MS_LOG(EXCEPTION) << "ring attention load balance don't supports user defined mask";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << "ring attention load balance don't supports user defined mask";
   }
   return SUCCESS;
 }
@@ -751,7 +752,7 @@ Status FlashAttentionScoreInfo::GetAttrs() {
     }
   }
   if (!enable_ring_attention_ && enable_ra_send_recv_) {
-    MS_LOG(EXCEPTION) << "only in ring attention can set send/recv";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << "only in ring attention can set send/recv";
   }
   auto enable_flash_sp_iter = attrs_.find("enable_flash_sp");
   if (enable_flash_sp_iter != attrs_.end()) {
@@ -976,10 +977,11 @@ Status FlashAttentionScoreInfo::InferSplitNumAndDevMatrixShapeByLayout() {
     s1_split_num_ = GetSplitNumByMapId(dev_matrix_shape, dev_matrix_s1_dim_);
     if (s1_split_num_ > 1 && GetSplitNumByTensorMap(dev_matrix_shape, query_seq_map) !=
                                GetSplitNumByTensorMap(dev_matrix_shape, key_seq_map) * s1_split_num_) {
-      MS_LOG(EXCEPTION) << name_ << ": Cannot split the seq-dimension of key. query_seq_slice: "
-                        << GetSplitNumByTensorMap(dev_matrix_shape, query_seq_map)
-                        << ", key_seq_slice: " << GetSplitNumByTensorMap(dev_matrix_shape, key_seq_map)
-                        << ", s1_split_num: " << s1_split_num_ << " when layout is TND";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode_)
+        << name_ << ": Cannot split the seq-dimension of key. query_seq_slice: "
+        << GetSplitNumByTensorMap(dev_matrix_shape, query_seq_map)
+        << ", key_seq_slice: " << GetSplitNumByTensorMap(dev_matrix_shape, key_seq_map)
+        << ", s1_split_num: " << s1_split_num_ << " when layout is TND";
     }
   } else {
     if (query_batch_map.size() != 1 || query_seq_map.size() != 1) {
@@ -1032,8 +1034,8 @@ std::vector<int64_t> FlashAttentionScoreInfo::GetSplitIdAndRank() {
   }
   auto iter = std::find(group_devices.begin(), group_devices.end(), rank);
   if (iter == group_devices.end()) {
-    MS_LOG(EXCEPTION) << "FlashAttentionScore S1 sequence parallel get split id failed. "
-                      << "rank " << rank << " not in group " << group_devices;
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << "FlashAttentionScore S1 sequence parallel get split id failed. "
+                                        << "rank " << rank << " not in group " << group_devices;
   }
   int64_t split_id = iter - group_devices.begin();
   int64_t target_split_id = s1_split_num_ - split_id - 1;
@@ -1062,7 +1064,8 @@ std::tuple<int64_t, int64_t> FlashAttentionScoreInfo::GetAttentionMaskAttrs(cons
       new_next_tokens = LongAdd(new_next_tokens, -(split_num - split_id - 1) * (q_seq_len_ / split_num));
       break;
     default:
-      MS_LOG(EXCEPTION) << "Invalid sparse mode " << sparse_mode_ << ", sparse mode should be one of [0, 2, 3, 4].";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode_)
+        << "Invalid sparse mode " << sparse_mode_ << ", sparse mode should be one of [0, 2, 3, 4].";
   }
   return std::make_tuple(new_pre_tokens, new_next_tokens);
 }
@@ -1261,7 +1264,7 @@ void FlashAttentionScoreInfo::ReplaceNodeInputOrAttrs() {
     if (s1_split_num_ > 1 && !enable_load_balance_ && need_update_op_attrs_mode_) {
       if (input_layout_ == FASInputLayoutMode::TND) {
         if (ReplaceActualSeqLenForSplitSeqInTnd(cnode) != SUCCESS) {
-          MS_LOG(EXCEPTION) << name_ << ": Replace actual_seq_qlen and actual_seq_kvlen failed.";
+          MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << ": Replace actual_seq_qlen and actual_seq_kvlen failed.";
         }
       } else {
         std::vector<int64_t> split_info = GetSplitIdAndRank();
@@ -1367,8 +1370,9 @@ void FlashAttentionScoreInfo::LoadBalanceSplitAlongSeqDim(size_t input_index, Ge
       }
       break;
     default:
-      MS_LOG(EXCEPTION) << "Invalid input index. Only 0(query), 3(real_shift), 4(drop_mask) and 6(attn_mask)"
-                        << "support sequence dim parallel, but got " << input_index;
+      MS_LOG_WITH_NODE(EXCEPTION, cnode_)
+        << "Invalid input index. Only 0(query), 3(real_shift), 4(drop_mask) and 6(attn_mask)"
+        << "support sequence dim parallel, but got " << input_index;
   }
 }
 
@@ -1588,8 +1592,8 @@ Status FlashAttentionScoreInfo::ComputeReplaceGraphForLoadBalance(const CNodePtr
 ReplaceGraphPtr FlashAttentionScoreInfo::replace_graph(const CNodePtr &cnode) {
   if (s1_split_num_ > 1 && enable_load_balance_) {
     if (ComputeReplaceGraphForLoadBalance(cnode) != SUCCESS) {
-      MS_LOG(EXCEPTION) << name_
-                        << ": FlashAttentionScore S1 sequence parallel with load balance get replace graph failed";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode)
+        << name_ << ": FlashAttentionScore S1 sequence parallel with load balance get replace graph failed";
     }
   }
   return replace_graph_;
@@ -1611,10 +1615,10 @@ std::vector<StrategyPtr> FlashAttentionScoreInfo::GenerateOpStrategies(int64_t s
   InitSplittableInputs();
   std::vector<StrategyPtr> sp_vector;
   if (GenerateStrategiesForDependentInputs(stage_id, inputs_shape_, splittable_inputs_, &sp_vector) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Generate strategies for dependent inputs() failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Generate strategies for dependent inputs() failed.";
   }
   if (sp_vector.empty()) {
-    MS_LOG(EXCEPTION) << name_ << ": No valid strategy.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": No valid strategy.";
   }
   return sp_vector;
 }

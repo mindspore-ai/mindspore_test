@@ -305,7 +305,7 @@ Status OperatorInfo::GetLayoutConfig() {
     MS_EXCEPTION_IF_NULL(key_ptr);
     MS_EXCEPTION_IF_NULL(value_ptr);
     if (!key_ptr->isa<StringImm>()) {
-      MS_LOG(EXCEPTION) << name_ << ": the value of key is not string";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": the value of key is not string";
     }
 
     std::string key = key_ptr->cast<StringImmPtr>()->value();
@@ -1199,13 +1199,13 @@ static void InsertDivOpToNodeInput(const CNodePtr &node, int64_t div_num, size_t
 
 void OperatorInfo::ChangeMakeTupleConstant(const CNodePtr &cnode, size_t make_tuple_index) {
   if (!IsPrimitiveCNode(cnode->input(make_tuple_index), prim::kPrimMakeTuple)) {
-    MS_LOG(EXCEPTION) << name_ << ": the dst shape is not make tuple";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << ": the dst shape is not make tuple";
   }
   size_t input_dim = inputs_shape_[0].size();
   auto shard_size = strategy_->GetInputDim()[0];
   if (input_dim != shard_size.size()) {
-    MS_LOG(EXCEPTION) << name_ << ": the input dim is " << input_dim << ", but the size of strategy is "
-                      << shard_size.size();
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << ": the input dim is " << input_dim
+                                       << ", but the size of strategy is " << shard_size.size();
   }
 
   auto make_tuple = cnode->input(make_tuple_index);
@@ -1226,9 +1226,10 @@ void OperatorInfo::ChangeMakeTupleConstant(const CNodePtr &cnode, size_t make_tu
         continue;
       }
       if (origin_value % shard_size[i] != 0) {
-        MS_LOG(EXCEPTION) << name_ << ": the origin value is " << origin_value << ", can not be div by shard size "
-                          << shard_size[i] << ", the make tuple index of this op is " << make_tuple_index
-                          << ", the input index of make_tuple is " << i + diff_len + 1;
+        MS_LOG_WITH_NODE(EXCEPTION, make_tuple_cnode)
+          << name_ << ": the origin value is " << origin_value << ", can not be div by shard size " << shard_size[i]
+          << ", the make tuple index of this op is " << make_tuple_index << ", the input index of make_tuple is "
+          << i + diff_len + 1;
       }
       int64_t replace_value = GetValue<int64_t>(value_node) / shard_size[i];
       auto replace_value_ptr = MakeValue(replace_value);
@@ -1236,7 +1237,8 @@ void OperatorInfo::ChangeMakeTupleConstant(const CNodePtr &cnode, size_t make_tu
       auto manager = make_tuple->func_graph()->manager();
       manager->SetEdge(make_tuple, i + diff_len + 1, replace_value_node);
     } else {
-      MS_LOG(EXCEPTION) << name_ << ": the input of make_tuple is value node but not int64, the index is " << (i + 1);
+      MS_LOG_WITH_NODE(EXCEPTION, make_tuple_cnode)
+        << name_ << ": the input of make_tuple is value node but not int64, the index is " << (i + 1);
     }
   }
 }
@@ -1340,7 +1342,7 @@ Status OperatorInfo::InitForCostModel(const StrategyPtr &in_strategy, const Stra
   Status status =
     ExtractUserConfigLayout(attrs_, inputs_shape_, outputs_shape_, &in_tensor_layouts, &out_tensor_layouts);
   if (status != SUCCESS) {
-    MS_LOG(EXCEPTION) << "Failure:operator " << name_ << " extract configured layout failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << "Failure:operator " << name_ << " extract configured layout failed.";
   }
   if (!in_tensor_layouts.empty()) {
     out_tensor_layouts = {};
@@ -1699,7 +1701,7 @@ void OperatorInfo::ReplacePreEdge(const std::shared_ptr<OperatorInfo> &op, const
       return;
     }
   }
-  MS_LOG(EXCEPTION) << name_ << ": Replace edge failed: no edge has been replaced";
+  MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Replace edge failed: no edge has been replaced";
 }
 
 void OperatorInfo::ReplaceSuccEdge(const std::shared_ptr<OperatorInfo> &op, const std::shared_ptr<Edge> &new_edge) {
@@ -1713,7 +1715,7 @@ void OperatorInfo::ReplaceSuccEdge(const std::shared_ptr<OperatorInfo> &op, cons
       return;
     }
   }
-  MS_LOG(EXCEPTION) << name_ << ": Replace edge failed: no edge has been replaced";
+  MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Replace edge failed: no edge has been replaced";
 }
 
 void OperatorInfo::ReplacePreEdges(const std::shared_ptr<OperatorInfo> &op, const std::shared_ptr<Edge> &new_edge) {
@@ -1748,7 +1750,7 @@ void OperatorInfo::ReplaceSuccEdges(const std::shared_ptr<OperatorInfo> &op, con
 
 std::shared_ptr<Strategies> OperatorInfo::GenerateBatchStrategiesWithCheck() {
   if (InferAttrs() != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Infer attrs failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Infer attrs failed";
   }
   DivisorsReplaceShapes();  // in dynamic shape, using divisors replace to shapes before GenerateBatchStrategies
 
@@ -1856,7 +1858,7 @@ Status PrepareStrategyBase(int64_t stage_id, size_t dev_num, const Shapes &input
 
 std::shared_ptr<Strategies> OperatorInfo::GenerateBatchStrategies() {
   if (InferAttrs() != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Infer attrs failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Infer attrs failed";
   }
   ComputeBatchSplitFlagList();
   return GenerateBatchStrategiesBySplitFlag(inputs_shape_, split_flag_list_);
@@ -2317,7 +2319,7 @@ CostPtrList OperatorInfo::GetCostByStrategyPtr(const StrategyPtr &strategy) {
     strategy_cost_.begin(), strategy_cost_.end(),
     [&](const std::shared_ptr<StrategyWithCost> &stra_cost) { return stra_cost->strategy_ptr == strategy; });
   if (target == strategy_cost_.end()) {
-    MS_LOG(EXCEPTION) << "There is no StrategyWithCost with a strategy";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << "There is no StrategyWithCost with a strategy";
   }
   return (*target)->cost_list;
 }
@@ -2439,19 +2441,19 @@ void OperatorInfo::ExactStrategiesAndRelatedEdges() {
   }
   ClearStrategyCost();
   if (GenerateStrategies(0) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Strategy search failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Strategy search failed.";
   }
   SetIsStrategyCostExactTrue();
   // re-init the previous edges
   for (auto &prev_edge : prev_edges()) {
     if (prev_edge->InitEdgeCost() != SUCCESS) {
-      MS_LOG(EXCEPTION) << name_ << ": Edge: " << prev_edge->edge_name() << " cost init failed.";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Edge: " << prev_edge->edge_name() << " cost init failed.";
     }
   }
   // re-init the successive edges
   for (auto &next_edge : succ_edges()) {
     if (next_edge->InitEdgeCost() != SUCCESS) {
-      MS_LOG(EXCEPTION) << name_ << ": Edge: " << next_edge->edge_name() << " cost init failed.";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Edge: " << next_edge->edge_name() << " cost init failed.";
     }
   }
 }
@@ -2466,15 +2468,16 @@ int64_t OperatorInfo::ComputeOpAndPrevEdgeParameterInvolved() {
     auto input_index = p_edge->next_op_input_index();
     auto prev_op_para = p_edge->prev_operator()->ComputeOpAndPrevEdgeParameterInvolved();
     if (input_index >= is_parameter_involve_.size()) {
-      MS_LOG(EXCEPTION) << name_ << " has input length: " << is_parameter_involve_.size()
-                        << ", but got wrong input_index: " << input_index;
+      MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << " has input length: " << is_parameter_involve_.size()
+                                          << ", but got wrong input_index: " << input_index;
     }
     if (prev_op_para == 0) {
       is_parameter_involve_[input_index] = false;
     } else if (prev_op_para == 1) {
       is_parameter_involve_[input_index] = true;
     } else {
-      MS_LOG(EXCEPTION) << name_ << " got wrong value: " << prev_op_para << ", input_index: " << input_index;
+      MS_LOG_WITH_NODE(EXCEPTION, cnode_)
+        << name_ << " got wrong value: " << prev_op_para << ", input_index: " << input_index;
     }
     p_edge->set_parameter_involve(prev_op_para);
   }
@@ -2531,7 +2534,7 @@ Status OperatorInfo::CalculateMemoryCost() {
 Status OperatorInfo::CalculateMemoryCostForInference() {
   // First, set the 'is_outputs_critical_' flag into OperatorCost.
   if (is_output_critical_ == -1) {
-    MS_LOG(EXCEPTION) << name_ << ": The critical flag is not set.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": The critical flag is not set.";
   }
   operator_cost()->set_output_critical(is_output_critical_);
   // Set the memory cost in the 'strategy_cost_'
@@ -2725,8 +2728,8 @@ double OperatorInfo::GetOutputsTotalSize() {
     return outputs_total_size_;
   }
   if (outputs_type_lengths_.size() != outputs_shape_.size()) {
-    MS_LOG(EXCEPTION) << name_ << ": Output_lengths: " << outputs_type_lengths_.size()
-                      << " do not have the same number of outputs shape: " << outputs_shape_.size();
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Output_lengths: " << outputs_type_lengths_.size()
+                                        << " do not have the same number of outputs shape: " << outputs_shape_.size();
   }
   double sum = 0.0;
   for (size_t i = 0; i < outputs_type_lengths_.size(); ++i) {
@@ -2830,12 +2833,12 @@ Status OperatorInfo::GenerateStrategies(int64_t stage_id) {
 int64_t OperatorInfo::GetIntAttr(const std::string &attr_name) {
   auto attr_iter = attrs_.find(attr_name);
   if (attr_iter == attrs_.end()) {
-    MS_LOG(EXCEPTION) << name_ << ": Can not find the attribution of " << attr_name;
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Can not find the attribution of " << attr_name;
   }
 
   MS_EXCEPTION_IF_NULL(attr_iter->second);
   if (!attr_iter->second->isa<Int64Imm>()) {
-    MS_LOG(EXCEPTION) << name_ << ": The value of " << attr_name << " is not int";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": The value of " << attr_name << " is not int";
   }
 
   return attr_iter->second->cast<Int64ImmPtr>()->value();
@@ -2844,12 +2847,12 @@ int64_t OperatorInfo::GetIntAttr(const std::string &attr_name) {
 bool OperatorInfo::GetBoolAttr(const std::string &attr_name) {
   auto attr_iter = attrs_.find(attr_name);
   if (attr_iter == attrs_.end()) {
-    MS_LOG(EXCEPTION) << name_ << ": Can not find the attribution of " << attr_name;
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Can not find the attribution of " << attr_name;
   }
 
   MS_EXCEPTION_IF_NULL(attr_iter->second);
   if (!attr_iter->second->isa<BoolImm>()) {
-    MS_LOG(EXCEPTION) << name_ << ": The value of " << attr_name << " is not int";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": The value of " << attr_name << " is not int";
   }
 
   return attr_iter->second->cast<BoolImmPtr>()->value();
@@ -2859,12 +2862,12 @@ std::string OperatorInfo::GetStringAttr(const std::string &attr_name) {
   std::string string_attr;
   auto attr_iter = attrs_.find(attr_name);
   if (attr_iter == attrs_.end()) {
-    MS_LOG(EXCEPTION) << name_ << ": Can not find the attribution of " << attr_name;
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Can not find the attribution of " << attr_name;
   }
 
   MS_EXCEPTION_IF_NULL(attr_iter->second);
   if (!attr_iter->second->isa<StringImm>()) {
-    MS_LOG(EXCEPTION) << name_ << ": The value of " << attr_name << " is not string";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": The value of " << attr_name << " is not string";
   }
 
   string_attr = attr_iter->second->cast<StringImmPtr>()->value();
@@ -2875,7 +2878,7 @@ std::vector<int64_t> OperatorInfo::GetTupleIntAttr(const std::string &attr_name)
   std::vector<int64_t> tuple_attr;
   auto tuple_attr_iter = attrs_.find(attr_name);
   if (tuple_attr_iter == attrs_.end()) {
-    MS_LOG(EXCEPTION) << name_ << ": Can not find the attribution of " << attr_name;
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Can not find the attribution of " << attr_name;
   }
 
   MS_EXCEPTION_IF_NULL(tuple_attr_iter->second);
@@ -2887,12 +2890,12 @@ std::vector<int64_t> OperatorInfo::GetTupleIntAttr(const std::string &attr_name)
 float OperatorInfo::GetFloatAttr(const std::string &attr_name) {
   auto attr_iter = attrs_.find(attr_name);
   if (attr_iter == attrs_.end()) {
-    MS_LOG(EXCEPTION) << name_ << ": Can not find the attribution of " << attr_name;
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Can not find the attribution of " << attr_name;
   }
 
   MS_EXCEPTION_IF_NULL(attr_iter->second);
   if (!attr_iter->second->isa<FP32Imm>()) {
-    MS_LOG(EXCEPTION) << name_ << ": The value of " << attr_name << " is not float";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": The value of " << attr_name << " is not float";
   }
 
   return attr_iter->second->cast<FP32ImmPtr>()->value();

@@ -101,7 +101,7 @@ void SplitWithSizeInfo::ReplaceNodeInputOrAttrs() {
     return;
   }
   if (!IsValueNode<ValueTuple>(cnode_->input(kIndex2))) {
-    MS_LOG(EXCEPTION) << name_ << ": The input[2] of SplitWithSize cnode is not ValueTuple.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": The input[2] of SplitWithSize cnode is not ValueTuple.";
   }
   auto tuple = GetValueNode<ValuePtr>(cnode_->input(kIndex2));
   MS_EXCEPTION_IF_NULL(tuple);
@@ -301,7 +301,7 @@ Status SplitInfo::ComputeReplaceGraphForInterleaved(const CNodePtr &cnode) {
 ReplaceGraphPtr SplitInfo::replace_graph(const CNodePtr &cnode) {
   if (inputs_tensor_info_[kIndex0].tensor_layout().IsInterleavedParallel()) {
     if (ComputeReplaceGraphForInterleaved(cnode) != SUCCESS) {
-      MS_LOG(EXCEPTION) << name_ << " splitting micro interleaved failed.";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << " splitting micro interleaved failed.";
     }
     return replace_graph_;
   }
@@ -325,10 +325,10 @@ std::vector<StrategyPtr> SplitInfo::GenerateOpStrategies(int64_t stage_id) {
 
   std::vector<StrategyPtr> sp_vector;
   if (GenerateStrategiesForIndependentInputs(stage_id, tmp_inputs_shape, splittable_input, &sp_vector) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Generate strategies failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Generate strategies failed";
   }
   if (sp_vector.empty()) {
-    MS_LOG(EXCEPTION) << name_ << ": No available strategy";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": No available strategy";
   }
 
   return sp_vector;
@@ -336,7 +336,7 @@ std::vector<StrategyPtr> SplitInfo::GenerateOpStrategies(int64_t stage_id) {
 
 std::shared_ptr<Strategies> SplitInfo::GenerateBatchStrategies() {
   if (GetAttrs() != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Get attr failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Get attr failed";
   }
   Dimensions input_strategy(inputs_shape_[0].size(), 1);
   // axis can't split

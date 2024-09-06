@@ -145,7 +145,7 @@ Status ScatterMathOpsInfo::InferBias() {
 
 ReplaceGraphPtr ScatterMathOpsInfo::replace_graph(const CNodePtr &cnode) {
   if (ComputeReplaceGraph(cnode) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << " replace graph failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << " replace graph failed";
   }
   return replace_graph_;
 }
@@ -181,7 +181,7 @@ Status ScatterMathOpsInfo::ComputeReplaceGraph(const CNodePtr &cnode) {
   auto add_mask = gen_g.PushBack({gen_g.NewOpInst(ADD), mul, sub_mask});
   auto info_position = name_.find("Info");
   if (info_position == std::string::npos) {
-    MS_LOG(EXCEPTION) << "The name " << name_ << " dose not contain 'Info'";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "The name " << name_ << " dose not contain 'Info'";
   }
   auto node_name = name_.substr(0, info_position);
   auto scatter_ops = gen_g.PushBack({gen_g.NewOpInst(node_name), gen_g.virtual_input_node(), minimum, add_mask});
@@ -222,7 +222,7 @@ Status ScatterAddInfo::ComputeReplaceGraph(const CNodePtr &cnode) {
   auto mul = gen_g.PushBack({gen_g.NewOpInst(MUL), gen_g.virtual_input_node(), reshape});
   auto info_position = name_.find("Info");
   if (info_position == std::string::npos) {
-    MS_LOG(EXCEPTION) << "The name " << name_ << " dose not contain 'Info'";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "The name " << name_ << " dose not contain 'Info'";
   }
   auto node_name = name_.substr(0, info_position);
   auto scatter_ops = gen_g.PushBack({gen_g.NewOpInst(node_name), gen_g.virtual_input_node(), minimum, mul});
@@ -243,13 +243,13 @@ std::vector<StrategyPtr> ScatterMathOpsInfo::GenerateOpStrategies(int64_t stage_
 
   std::vector<StrategyPtr> sp_vector;
   if (GenerateStrategiesForIndependentInputs(stage_id, tmp_inputs_shape, splittable_input, &sp_vector) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Generate strategies failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Generate strategies failed";
   }
 
   // the others strategies are equal to the first input's strategy
   for (auto &sp : sp_vector) {
     if ((sp == nullptr) || sp->GetInputDim().empty()) {
-      MS_LOG(EXCEPTION) << name_ << ": The strategy is null or empty";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": The strategy is null or empty";
     }
     Strategies tmp_strategy;
     Dimensions first_input_strategy = sp->GetInputDim()[0];

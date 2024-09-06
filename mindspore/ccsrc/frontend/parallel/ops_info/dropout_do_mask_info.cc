@@ -104,7 +104,7 @@ Status DropoutDoMaskInfo::SetCostUnderStrategy(const StrategyPtr &strategy) {
 
 std::vector<StrategyPtr> DropoutDoMaskInfo::GenerateOpStrategies(int64_t stage_id) {
   if (inputs_shape_.empty()) {
-    MS_LOG(EXCEPTION) << name_ << ": The inputs shape is empty";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": The inputs shape is empty";
   }
 
   Shape input0_split(inputs_shape_[0].size(), 1);
@@ -113,7 +113,7 @@ std::vector<StrategyPtr> DropoutDoMaskInfo::GenerateOpStrategies(int64_t stage_i
 
   std::vector<StrategyPtr> sp_vector;
   if (GenerateStrategiesForIndependentInputs(stage_id, used_inputs_shape, splittable_inputs, &sp_vector) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Generate strategies failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Generate strategies failed";
   }
   return sp_vector;
 }
@@ -138,22 +138,25 @@ size_t GetNonMonadInputSize(const CNodePtr &cnode) {
 PrimitivePtr GetDropoutGenMaskPrim(const CNodePtr &cnode) {
   MS_EXCEPTION_IF_NULL(cnode);
   if (cnode->size() != DROPOUT_DO_MASK_CNODE_INPUT_SIZE) {
-    MS_LOG(EXCEPTION) << "The size of dropout do mask cnode's inputs must be " << DROPOUT_DO_MASK_CNODE_INPUT_SIZE;
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "The size of dropout do mask cnode's inputs must be "
+                                       << DROPOUT_DO_MASK_CNODE_INPUT_SIZE;
   }
 
   AnfNodePtr dropout_gen_mask = cnode->input(DROPOUT_GEN_MASK_INDEX);
   MS_EXCEPTION_IF_NULL(dropout_gen_mask);
   if (!dropout_gen_mask->isa<CNode>()) {
-    MS_LOG(EXCEPTION) << "The dropout do mask cnode's input[" << DROPOUT_GEN_MASK_INDEX << "] must be a cnode";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "The dropout do mask cnode's input[" << DROPOUT_GEN_MASK_INDEX
+                                       << "] must be a cnode";
   }
 
   auto dropout_gen_mask_cnode = dropout_gen_mask->cast<CNodePtr>();
   size_t cnode_non_monad_size = GetNonMonadInputSize(dropout_gen_mask_cnode);
   if (cnode_non_monad_size != DROPOUT_GEN_MASK_CNODE_INPUT_SIZE) {
-    MS_LOG(EXCEPTION) << "The size of dropout gen mask cnode's inputs must be " << DROPOUT_GEN_MASK_CNODE_INPUT_SIZE;
+    MS_LOG_WITH_NODE(EXCEPTION, dropout_gen_mask_cnode)
+      << "The size of dropout gen mask cnode's inputs must be " << DROPOUT_GEN_MASK_CNODE_INPUT_SIZE;
   }
   if (!IsValueNode<Primitive>(dropout_gen_mask_cnode->input(0))) {
-    MS_LOG(EXCEPTION) << "The input[0] of dropout gen mask cnode is not primitive";
+    MS_LOG_WITH_NODE(EXCEPTION, dropout_gen_mask_cnode) << "The input[0] of dropout gen mask cnode is not primitive";
   }
 
   ValueNodePtr value_node = dropout_gen_mask_cnode->input(0)->cast<ValueNodePtr>();
@@ -161,7 +164,7 @@ PrimitivePtr GetDropoutGenMaskPrim(const CNodePtr &cnode) {
   PrimitivePtr prim = value_node->value()->cast<PrimitivePtr>();
   MS_EXCEPTION_IF_NULL(prim);
   if (prim->name() != DROPOUT_GEN_MASK) {
-    MS_LOG(EXCEPTION) << "The primitive name is not DropoutGenMask";
+    MS_LOG_WITH_NODE(EXCEPTION, dropout_gen_mask_cnode) << "The primitive name is not DropoutGenMask";
   }
   return prim;
 }
@@ -169,30 +172,33 @@ PrimitivePtr GetDropoutGenMaskPrim(const CNodePtr &cnode) {
 void SetGenMaskShape(const CNodePtr &cnode, const Shape &input_slice_shape) {
   MS_EXCEPTION_IF_NULL(cnode);
   if (cnode->size() != DROPOUT_DO_MASK_CNODE_INPUT_SIZE) {
-    MS_LOG(EXCEPTION) << "The size of dropout do mask cnode's inputs must be " << DROPOUT_DO_MASK_CNODE_INPUT_SIZE;
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "The size of dropout do mask cnode's inputs must be "
+                                       << DROPOUT_DO_MASK_CNODE_INPUT_SIZE;
   }
 
   AnfNodePtr dropout_gen_mask = cnode->input(DROPOUT_GEN_MASK_INDEX);
   MS_EXCEPTION_IF_NULL(dropout_gen_mask);
   if (!dropout_gen_mask->isa<CNode>()) {
-    MS_LOG(EXCEPTION) << "The dropout do mask cnode's input[" << DROPOUT_GEN_MASK_INDEX << "] must be a cnode.";
+    MS_LOG_WITH_NODE(EXCEPTION, dropout_gen_mask)
+      << "The dropout do mask cnode's input[" << DROPOUT_GEN_MASK_INDEX << "] must be a cnode.";
   }
 
   auto dropout_gen_mask_cnode = dropout_gen_mask->cast<CNodePtr>();
   size_t cnode_non_monad_size = GetNonMonadInputSize(dropout_gen_mask_cnode);
   if (cnode_non_monad_size != DROPOUT_GEN_MASK_CNODE_INPUT_SIZE) {
-    MS_LOG(EXCEPTION) << "The size of dropout gen mask cnode's inputs must be " << DROPOUT_GEN_MASK_CNODE_INPUT_SIZE;
+    MS_LOG_WITH_NODE(EXCEPTION, dropout_gen_mask_cnode)
+      << "The size of dropout gen mask cnode's inputs must be " << DROPOUT_GEN_MASK_CNODE_INPUT_SIZE;
   }
 
   if (!IsValueNode<ValueTuple>(dropout_gen_mask_cnode->input(1))) {
-    MS_LOG(EXCEPTION) << "The input[1] of dropout gen mask cnode is not ValueTuple.";
+    MS_LOG_WITH_NODE(EXCEPTION, dropout_gen_mask_cnode) << "The input[1] of dropout gen mask cnode is not ValueTuple.";
   }
 
   FuncGraphPtr func_graph = cnode->func_graph();
   MS_EXCEPTION_IF_NULL(func_graph);
   FuncGraphManagerPtr manager = func_graph->manager();
   if (manager == nullptr) {
-    MS_LOG(EXCEPTION) << "Failure: AddNode error since manager is nullptr.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Failure: AddNode error since manager is nullptr.";
   }
   ValuePtr new_shape = MakeValue(input_slice_shape);
   AnfNodePtr val = NewValueNode(new_shape);
@@ -209,22 +215,23 @@ std::vector<Operator> DropoutDoMaskInfo::GetDropoutGenMaskReplaceOp(const CNodeP
   MS_EXCEPTION_IF_NULL(prim);
 
   if (inputs_tensor_info_.empty()) {
-    MS_LOG(EXCEPTION) << "The tensor info of dropout do mask is empty";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "The tensor info of dropout do mask is empty";
   }
 
   if (cnode->size() != DROPOUT_DO_MASK_CNODE_INPUT_SIZE) {
-    MS_LOG(EXCEPTION) << "The size of dropout do mask cnode's inputs must be " << DROPOUT_DO_MASK_CNODE_INPUT_SIZE;
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "The size of dropout do mask cnode's inputs must be "
+                                       << DROPOUT_DO_MASK_CNODE_INPUT_SIZE;
   }
 
   if (!cnode->input(DROPOUT_DO_MASK_KEEP_PROB_INDEX)->isa<ValueNode>()) {
-    MS_LOG(EXCEPTION) << "The keep prob of dropout do mask is not value node";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "The keep prob of dropout do mask is not value node";
   }
 
   ValuePtr keep_prob = GetValueNode(cnode->input(DROPOUT_DO_MASK_KEEP_PROB_INDEX));
   MS_EXCEPTION_IF_NULL(keep_prob);
   auto attr = prim->attrs();
   if ((attr.find(SEED0) == attr.end()) || (attr.find(SEED1) == attr.end())) {
-    MS_LOG(EXCEPTION) << "The attrs of dropout gen mask must be have seed0 and seed1";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "The attrs of dropout gen mask must be have seed0 and seed1";
   }
 
   std::vector<Operator> replace_ops;
@@ -258,7 +265,7 @@ static void ReplaceOneOp(const Operator &replace_op, const CNodePtr &node) {
   MS_EXCEPTION_IF_NULL(func_graph);
   FuncGraphManagerPtr manager = func_graph->manager();
   if (manager == nullptr) {
-    MS_LOG(EXCEPTION) << "Failure:AddNode error since manager is nullptr";
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "Failure:AddNode error since manager is nullptr";
   }
   std::string instance_name = CreateInstanceName(node, 0);
   std::vector<AnfNodePtr> replace_input;
@@ -288,8 +295,8 @@ void DropoutDoMaskInfo::ReplaceNodeInputOrAttrs() {
       return;
     }
     if (cnode->size() != DROPOUT_DO_MASK_CNODE_INPUT_SIZE) {
-      MS_LOG(EXCEPTION) << name_ << ": The size of drop out do mask cnode's input is not "
-                        << DROPOUT_DO_MASK_CNODE_INPUT_SIZE;
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << ": The size of drop out do mask cnode's input is not "
+                                         << DROPOUT_DO_MASK_CNODE_INPUT_SIZE;
     }
     ReplaceOneOp(replace_op[0], cnode->input(DROPOUT_GEN_MASK_INDEX)->cast<CNodePtr>());
   }

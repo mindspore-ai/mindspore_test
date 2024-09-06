@@ -342,8 +342,8 @@ void ClusterNodes(const std::vector<AnfNodePtr> &nodes, const std::vector<AnfNod
     auto tuple = cdepend->inputs().back()->cast<CNodePtr>();
     MS_EXCEPTION_IF_NULL(tuple);
     if (!IsPrimitiveCNode(tuple, prim::kPrimMakeTuple)) {
-      MS_LOG(EXCEPTION) << "The recompute inserted depend: " << depend->DebugString()
-                        << "'s last input is not make_tuple.";
+      MS_LOG_WITH_NODE(EXCEPTION, tuple) << "The recompute inserted depend: " << depend->DebugString()
+                                         << "'s last input is not make_tuple.";
     }
     depend_cluster[tuple->inputs().back()].push_back(cdepend);
   }

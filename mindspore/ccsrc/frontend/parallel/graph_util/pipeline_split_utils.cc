@@ -327,12 +327,12 @@ void SetStridedSliceStrategy(const AnfNodePtr &node) {
   }
 
   if (shape_list.empty()) {
-    MS_LOG(EXCEPTION) << "Failure:node " << cnode->ToString() << " failed to extract shape";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Failure:node " << cnode->ToString() << " failed to extract shape";
   }
   std::vector<ValuePtr> elements;
   for (size_t i = 0; i < shape_list[0].size(); i++) {
     if (shape_list[0][i].empty()) {
-      MS_LOG(EXCEPTION) << "shape_list[ " << i << " ].size() is zero";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << "shape_list[ " << i << " ].size() is zero";
     }
     Dimensions input_strategy;
     for (size_t j = 0; j < shape_list[0][i].size(); j++) {
@@ -881,7 +881,7 @@ int64_t GetSegment(const AnfNodePtr &node) {
 void BroadCastMicroBatch(const CNodePtr &node, NodeUsersMap *node_users_map, const ValuePtr &value, size_t max_depth) {
   auto node_users = (*node_users_map)[node];
   if (max_depth > MAX_RECURSIVE_DEPTH) {
-    MS_LOG(EXCEPTION) << "Recursive call is larger than 100000.";
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "Recursive call is larger than 100000.";
   }
   for (auto &node_pair : node_users) {
     auto user_node = node_pair.first->cast<CNodePtr>();
@@ -960,7 +960,7 @@ void LastStageEndNode(const std::vector<AnfNodePtr> &all_nodes, const FuncGraphM
 
 ValuePtr Micro(const CNodePtr &cnode, NodeUsersMap *node_users_map, size_t max_depth) {
   if (max_depth > MAX_RECURSIVE_DEPTH) {
-    MS_LOG(EXCEPTION) << "Recursive call is larger than 100000.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Recursive call is larger than 100000.";
   }
   if (cnode->HasPrimalAttr(MICRO)) {
     return cnode->GetPrimalAttr(MICRO);

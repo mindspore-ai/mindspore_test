@@ -65,9 +65,9 @@ std::vector<int64_t> MaxPool3DInfo::CalculatePadListInSameMode() {
     return pad_list;
   }
 
-  MS_LOG(EXCEPTION) << "For '" << name_
-                    << "', stride_d or stride_h or stride_w must be non-zero, but got stride_d: " << stride_d
-                    << ", stride_h: " << stride_h << ", stride_w: " << stride_w << ".";
+  MS_LOG_WITH_NODE(EXCEPTION, cnode_) << "For '" << name_
+                                      << "', stride_d or stride_h or stride_w must be non-zero, but got stride_d: "
+                                      << stride_d << ", stride_h: " << stride_h << ", stride_w: " << stride_w << ".";
 }
 
 Status MaxPool3DInfo::GetAttrs() {
@@ -284,12 +284,12 @@ void MaxPool3DInfo::AdjustPadList() {
   }
 
   if (useless_len_2th_dim > pad_list_[1]) {
-    MS_LOG(EXCEPTION) << name_ << ": The useless len for 2th dim (" << useless_len_2th_dim
-                      << ") can not larger than pad_list[1] (" << pad_list_[1] << ")";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": The useless len for 2th dim (" << useless_len_2th_dim
+                                        << ") can not larger than pad_list[1] (" << pad_list_[1] << ")";
   }
   if (useless_len_3th_dim > pad_list_[3]) {
-    MS_LOG(EXCEPTION) << name_ << ": The useless len for 3th dim (" << useless_len_3th_dim
-                      << ") can not larger than pad_list[3] (" << pad_list_[3] << ")";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": The useless len for 3th dim (" << useless_len_3th_dim
+                                        << ") can not larger than pad_list[3] (" << pad_list_[3] << ")";
   }
   pad_list_[1] -= useless_len_2th_dim;
   pad_list_[3] -= useless_len_3th_dim;
@@ -409,7 +409,7 @@ std::vector<int64_t> MaxPool3DInfo::GetAdjacentRankIdsAndBiases(int64_t rank_id,
   DeviceMatrix dev_matrix(rank_id, stage_device_list_, dev_matrix_shape_);
   RankList group_devices;
   if (dev_matrix.GetDevicesAlongDim(index_in_dev_matrix, &group_devices) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Get device along dim failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Get device along dim failed";
   }
 
   if (group_devices.size() <= 1) {
@@ -420,14 +420,16 @@ std::vector<int64_t> MaxPool3DInfo::GetAdjacentRankIdsAndBiases(int64_t rank_id,
   }
 
   if (group_devices.size() != LongToSize(dimension_shard_num)) {
-    MS_LOG(EXCEPTION) << name_ << ": The devices' size of " << dimension << "th dimension is " << group_devices.size()
-                      << ", but the shard num of this dimension is " << dimension_shard_num;
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": The devices' size of " << dimension << "th dimension is "
+                                        << group_devices.size() << ", but the shard num of this dimension is "
+                                        << dimension_shard_num;
   }
 
   std::vector<int64_t>::iterator it = std::find(group_devices.begin(), group_devices.end(), rank_id);
   if (it == group_devices.end()) {
-    MS_LOG(EXCEPTION) << name_ << ": Can not find the current rank in device list of " << dimension
-                      << "th dimension, the current rank is " << rank_id << ", the device list is " << group_devices;
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Can not find the current rank in device list of " << dimension
+                                        << "th dimension, the current rank is " << rank_id << ", the device list is "
+                                        << group_devices;
   }
 
   int64_t left_or_top_rank_id = -1;
@@ -608,24 +610,26 @@ void MaxPool3DInfo::CheckHDimensionOverlapSizeNonNegative() {
 
   int64_t h_first_rank_bottom_size = ComputeOverlapBottomSizeByRankBias(0);
   if (h_first_rank_bottom_size < 0) {
-    MS_LOG(EXCEPTION) << name_ << ": The bottom overlap size of 2th dimension rank bias 0 must be positive, but it is "
-                      << h_first_rank_bottom_size;
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_)
+      << name_ << ": The bottom overlap size of 2th dimension rank bias 0 must be positive, but it is "
+      << h_first_rank_bottom_size;
   }
 
   for (int64_t h_rank_bias = 1; h_rank_bias < h_dimension_shard_num_ - 1; ++h_rank_bias) {
     auto top_size = ComputeOverlapTopSizeByRankBias(h_rank_bias);
     auto bottom_size = ComputeOverlapBottomSizeByRankBias(h_rank_bias);
     if (top_size < 0 || bottom_size < 0) {
-      MS_LOG(EXCEPTION) << name_ << ": The overlap size of 2th dimension rank bias " << h_rank_bias
-                        << " must be positive, but top overlap size is " << top_size << ", bottom overlap size is "
-                        << bottom_size;
+      MS_LOG_WITH_NODE(EXCEPTION, cnode_)
+        << name_ << ": The overlap size of 2th dimension rank bias " << h_rank_bias
+        << " must be positive, but top overlap size is " << top_size << ", bottom overlap size is " << bottom_size;
     }
   }
 
   int64_t h_last_rank_top_size = ComputeOverlapTopSizeByRankBias(h_dimension_shard_num_ - 1);
   if (h_last_rank_top_size < 0) {
-    MS_LOG(EXCEPTION) << name_ << ": The top overlap size of 2th dimension last rank bias must be positive, but it is "
-                      << h_last_rank_top_size;
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_)
+      << name_ << ": The top overlap size of 2th dimension last rank bias must be positive, but it is "
+      << h_last_rank_top_size;
   }
 }
 
@@ -636,24 +640,26 @@ void MaxPool3DInfo::CheckWDimensionOverlapSizeNonNegative() {
   }
   int64_t w_first_rank_right_size = ComputeOverlapRightSizeByRankBias(0);
   if (w_first_rank_right_size < 0) {
-    MS_LOG(EXCEPTION) << name_ << ": The right overlap size of 3th dimension rank bias 0 must be positive, but it is "
-                      << w_first_rank_right_size;
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_)
+      << name_ << ": The right overlap size of 3th dimension rank bias 0 must be positive, but it is "
+      << w_first_rank_right_size;
   }
 
   for (int64_t w_rank_bias = 1; w_rank_bias < w_dimension_shard_num_ - 1; ++w_rank_bias) {
     auto left_size = ComputeOverlapLeftSizeByRankBias(w_rank_bias);
     auto right_size = ComputeOverlapRightSizeByRankBias(w_rank_bias);
     if (left_size < 0 || right_size < 0) {
-      MS_LOG(EXCEPTION) << name_ << ": The overlap size of 3th dimension rank bias " << w_rank_bias
-                        << " must be positive, but left overlap size is " << left_size << ", right overlap size is "
-                        << right_size;
+      MS_LOG_WITH_NODE(EXCEPTION, cnode_)
+        << name_ << ": The overlap size of 3th dimension rank bias " << w_rank_bias
+        << " must be positive, but left overlap size is " << left_size << ", right overlap size is " << right_size;
     }
   }
 
   int64_t w_last_rank_left_size = ComputeOverlapLeftSizeByRankBias(w_dimension_shard_num_ - 1);
   if (w_last_rank_left_size < 0) {
-    MS_LOG(EXCEPTION) << name_ << ": The left overlap size of 3th dimension last rank bias must be positive, but it is "
-                      << w_last_rank_left_size;
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_)
+      << name_ << ": The left overlap size of 3th dimension last rank bias must be positive, but it is "
+      << w_last_rank_left_size;
   }
 }
 
@@ -780,26 +786,28 @@ void MaxPool3DInfo::InferCommunicationAttrs() {
 
   for (auto &send_len : send_lens_) {
     if (send_len < 0) {
-      MS_LOG(EXCEPTION) << name_ << ": Send len less than 0 is not supported, but it is " << send_len;
+      MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Send len less than 0 is not supported, but it is " << send_len;
     }
   }
 
   for (auto &recv_len : recv_lens_) {
     if (recv_len < 0) {
-      MS_LOG(EXCEPTION) << name_ << ": Recv len less than 0 is not supported, but it is " << recv_len;
+      MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Recv len less than 0 is not supported, but it is " << recv_len;
     }
   }
 
   int64_t h_slice_shape = input_slice_shape_[2];
   if (send_top_len > h_slice_shape || send_bottom_len > h_slice_shape || recv_top_len > h_slice_shape ||
       recv_bottom_len > h_slice_shape) {
-    MS_LOG(EXCEPTION) << name_ << ": The send or recv len larger than slice shape of 2th dimension " << h_slice_shape;
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": The send or recv len larger than slice shape of 2th dimension "
+                                        << h_slice_shape;
   }
 
   int64_t w_slice_shape = input_slice_shape_[3];
   if (send_left_len > w_slice_shape || send_right_len > w_slice_shape || recv_left_len > w_slice_shape ||
       recv_right_len > w_slice_shape) {
-    MS_LOG(EXCEPTION) << name_ << ": The send or recv len larger than slice shape of 3th dimension " << w_slice_shape;
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": The send or recv len larger than slice shape of 3th dimension "
+                                        << w_slice_shape;
   }
 }
 
@@ -877,7 +885,7 @@ void MaxPool3DInfo::ComputeReplaceGraph(const CNodePtr &cnode) {
   MS_EXCEPTION_IF_NULL(graph);
 
   if (gen_g_.Init(cnode) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": GenerateGraph Init failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << ": GenerateGraph Init failed";
   }
 
   // transpose-1
@@ -887,7 +895,7 @@ void MaxPool3DInfo::ComputeReplaceGraph(const CNodePtr &cnode) {
   // reshape-1
   auto s = input_slice_shape_;
   if (s.size() != 5) {
-    MS_LOG(EXCEPTION) << name_ << ": The size of input slice shape must be 5, but got " << s.size();
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << ": The size of input slice shape must be 5, but got " << s.size();
   }
   Shape s1 = {s[4] * s[0], s[1], s[2], s[3]};
   auto reshape_1 = gen_g_.PushBack({gen_g_.NewOpInst(RESHAPE), transpose_1, CreateTuple(s1)});
@@ -965,7 +973,7 @@ std::vector<StrategyPtr> MaxPool3DInfo::GenerateOpStrategies(int64_t stage_id) {
   Shapes splittable_input = {{1, 1, 1, 1, 0}};
   Shapes tmp_inputs_shape = inputs_shape_;
   if (GenerateStrategiesForIndependentInputs(stage_id, tmp_inputs_shape, splittable_input, &sp_vector) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Generate strategies failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Generate strategies failed";
   }
 
   return sp_vector;

@@ -347,7 +347,7 @@ Status TransposeInfo::ComputeReplaceGraphForInterleaved(const CNodePtr &cnode) {
 ReplaceGraphPtr TransposeInfo::replace_graph(const CNodePtr &cnode) {
   if (inputs_tensor_info_[kIndex0].tensor_layout().IsInterleavedParallel()) {
     if (ComputeReplaceGraphForInterleaved(cnode) != SUCCESS) {
-      MS_LOG(EXCEPTION) << name_ << " splitting micro interleaved failed.";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << " splitting micro interleaved failed.";
     }
     return replace_graph_;
   }
@@ -359,7 +359,7 @@ std::vector<StrategyPtr> TransposeInfo::GenerateOpStrategies(int64_t stage_id) {
   Shapes splittable_inputs = {input0_split};
   std::vector<StrategyPtr> sp_vector;
   if (GenerateStrategiesForIndependentInputs(stage_id, inputs_shape_, splittable_inputs, &sp_vector) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": GenerateStrategiesForIndependentInputs failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": GenerateStrategiesForIndependentInputs failed";
   }
 
   return sp_vector;

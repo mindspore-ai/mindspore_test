@@ -248,7 +248,8 @@ std::tuple<int64_t, int64_t> PromptFlashAttentionInfo::GetAttenionMaskAttrs(cons
       new_next_tokens = LongAdd(new_next_tokens, -(split_num - split_id - 1) * (q_seq_length / split_num));
       break;
     default:
-      MS_LOG(EXCEPTION) << "Invalid sparse mode " << sparse_mode_ << ", sparse mode should be one of [0, 2, 3, 4].";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode_)
+        << "Invalid sparse mode " << sparse_mode_ << ", sparse mode should be one of [0, 2, 3, 4].";
   }
   return std::make_tuple(new_pre_tokens, new_next_tokens);
 }
@@ -399,10 +400,10 @@ std::vector<StrategyPtr> PromptFlashAttentionInfo::GenerateOpStrategies(int64_t 
 
   std::vector<StrategyPtr> strategy_vector;
   if (GenerateStrategiesForDependentInputs(stage_id, inputs_shape_, splitable_inputs, &strategy_vector) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Generate strategies for dependent inputs() failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Generate strategies for dependent inputs() failed.";
   }
   if (strategy_vector.empty()) {
-    MS_LOG(EXCEPTION) << name_ << ": No valid strategy.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": No valid strategy.";
   }
   return strategy_vector;
 }

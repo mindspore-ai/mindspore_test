@@ -161,11 +161,11 @@ void BatchParallelInfo::ReplaceNodeInputOrAttrs() {
   for (auto &cnode : cnodes_) {
     MS_EXCEPTION_IF_NULL(cnode);
     if (cnode->size() != 2) {
-      MS_LOG(EXCEPTION) << name_ << ": The size of tile cnode's inputs must be 2";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << ": The size of tile cnode's inputs must be 2";
     }
 
     if (!IsValueNode<ValueTuple>(cnode->input(1))) {
-      MS_LOG(EXCEPTION) << name_ << ": The input[1] of tile cnode is not ValueTuple.";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << ": The input[1] of tile cnode is not ValueTuple.";
     }
 
     auto func_graph = cnode->func_graph();

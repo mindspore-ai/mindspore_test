@@ -729,12 +729,13 @@ T GetInputValueFromCNode(const CNodePtr &cnode, size_t index) {
   MS_EXCEPTION_IF_NULL(cnode);
   auto inputs = cnode->inputs();
   if (index >= inputs.size()) {
-    MS_LOG(EXCEPTION) << "The input index (" << index << ") is exceed of inputs size (" << inputs.size() << ").";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "The input index (" << index << ") is exceed of inputs size ("
+                                       << inputs.size() << ").";
   }
   auto input_node = inputs[index];
   MS_EXCEPTION_IF_NULL(input_node);
   if (!input_node->isa<ValueNode>()) {
-    MS_LOG(EXCEPTION) << "The input index (" << index << ") is not a value node.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "The input index (" << index << ") is not a value node.";
   }
   auto value = input_node->cast<ValueNodePtr>()->value();
   MS_EXCEPTION_IF_NULL(value);
@@ -746,7 +747,8 @@ void SetValueInputToCNode(const CNodePtr &cnode, size_t index, T value) {
   MS_EXCEPTION_IF_NULL(cnode);
   auto inputs = cnode->inputs();
   if (index >= inputs.size()) {
-    MS_LOG(EXCEPTION) << "The input index (" << index << ") is exceed of inputs size (" << inputs.size() << ").";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "The input index (" << index << ") is exceed of inputs size ("
+                                       << inputs.size() << ").";
   }
   auto func_graph = cnode->func_graph();
   MS_EXCEPTION_IF_NULL(func_graph);

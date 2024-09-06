@@ -234,8 +234,8 @@ CNodePtr CreateNewCNodeForReplace(const CNodePtr &origin_node, const PrimitivePt
         continue;
       }
       if (!inputs[node_input_idx]->isa<ValueNode>()) {
-        MS_LOG(INTERNAL_EXCEPTION) << "For auto parallel, the " << (node_input_idx - 1) << " input of " << op_name
-                                   << " must be a value node!";
+        MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, origin_node)
+          << "For auto parallel, the " << (node_input_idx - 1) << " input of " << op_name << " must be a value node!";
       }
 
       inputs[node_input_idx] = NewValueNode(value);
@@ -318,7 +318,7 @@ AnfNodePtr CreateTuple(const std::vector<int64_t> &tuple) {
 std::string GetInstanceNameByCNode(const CNodePtr &cnode) {
   PrimitivePtr prim = GetValueNode<PrimitivePtr>(cnode->input(0));
   if (!prim) {
-    MS_LOG(EXCEPTION) << "The first input of the cnode is not a PrimitivePtr.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "The first input of the cnode is not a PrimitivePtr.";
   }
   std::string instance_name = prim->instance_name();
   return HashInstanceName(instance_name);

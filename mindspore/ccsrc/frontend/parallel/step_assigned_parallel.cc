@@ -56,8 +56,9 @@ static std::shared_ptr<TensorLayout> GetOutputLayoutFromCNode(const CNodePtr &cn
   OperatorInfoPtr distribute_operator = GetDistributeOperator(cnode);
   MS_EXCEPTION_IF_NULL(distribute_operator);
   if (distribute_operator->outputs_tensor_info().size() <= output_index) {
-    MS_LOG(EXCEPTION) << "outputs_tensor_info size is  " << distribute_operator->inputs_tensor_info().size()
-                      << ", must be greater than output_index  " << output_index;
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "outputs_tensor_info size is  "
+                                       << distribute_operator->inputs_tensor_info().size()
+                                       << ", must be greater than output_index  " << output_index;
   }
   TensorInfo tensorinfo_out = distribute_operator->outputs_tensor_info()[output_index];
   TensorLayout tensorlayout_out = tensorinfo_out.tensor_layout();
@@ -75,7 +76,7 @@ static std::shared_ptr<TensorLayout> FindPrevParallelCareNodeLayout(const AnfNod
   if (IsParallelCareNode(cnode) && cnode->has_user_data<OperatorInfo>()) {
     auto layout_ptr = GetOutputLayoutFromCNode(cnode, output_index);
     if (!layout_ptr) {
-      MS_LOG(EXCEPTION) << "Failure:GetLayoutFromCNode failed";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Failure:GetLayoutFromCNode failed";
     }
     return layout_ptr;
   }
@@ -100,7 +101,7 @@ static std::shared_ptr<TensorLayout> FindPrevLayout(const AnfNodePtr &node) {
       !IsPrimitiveCNode(node, prim::kPrimReshape)) {
     auto layout_ptr = GetOutputLayoutFromCNode(cnode, 0);
     if (!layout_ptr) {
-      MS_LOG(EXCEPTION) << "Failure:GetLayoutFromCNode failed";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Failure:GetLayoutFromCNode failed";
     }
     return layout_ptr;
   }
@@ -110,9 +111,10 @@ static std::shared_ptr<TensorLayout> FindPrevLayout(const AnfNodePtr &node) {
     auto tuple_index = GetTupleGetItemIndex(cnode);
     auto layout_ptr = FindPrevParallelCareNodeLayout(cnode->input(1), LongToSize(tuple_index));
     if (!layout_ptr) {
-      MS_LOG(EXCEPTION) << " Failure:FindPrevLayout failed, tuple_getitem before reshape, but there does not exit a "
-                           "parallel care node "
-                           "before tuple_getitem!";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode)
+        << " Failure:FindPrevLayout failed, tuple_getitem before reshape, but there does not exit a "
+           "parallel care node "
+           "before tuple_getitem!";
     }
     return layout_ptr;
   }
@@ -603,11 +605,12 @@ static void SetParallelShape(const AnfNodePtr &parameter, const std::pair<AnfNod
   MS_EXCEPTION_IF_NULL(cnode);
   OperatorInfoPtr distribute_operator = cnode->user_data<OperatorInfo>();
   if (distribute_operator == nullptr) {
-    MS_LOG(EXCEPTION) << "node " << cnode->DebugString() << " 's distribute_operator is nullptr";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "node " << cnode->DebugString() << " 's distribute_operator is nullptr";
   }
   if (LongToSize(res.second - 1) >= distribute_operator->inputs_tensor_info().size()) {
-    MS_LOG(EXCEPTION) << "The parameter index is not in inputs_tensor_info. index = " << (res.second - 1)
-                      << ", inputs_tensor_info size = " << distribute_operator->inputs_tensor_info().size();
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "The parameter index is not in inputs_tensor_info. index = "
+                                       << (res.second - 1) << ", inputs_tensor_info size = "
+                                       << distribute_operator->inputs_tensor_info().size();
   }
   TensorInfo tensorinfo_in = distribute_operator->inputs_tensor_info()[LongToSize(res.second - 1)];
   TensorLayout tensor_layout = tensorinfo_in.tensor_layout();
@@ -615,12 +618,12 @@ static void SetParallelShape(const AnfNodePtr &parameter, const std::pair<AnfNod
 
   AbstractBasePtr abstract = parameter->abstract();
   if (abstract == nullptr) {
-    MS_LOG(EXCEPTION) << "parameter " << parameter->ToString() << ": abstract is nullptr";
+    MS_LOG_WITH_NODE(EXCEPTION, parameter) << "parameter " << parameter->ToString() << ": abstract is nullptr";
   }
 
   AbstractBasePtr cloned_abstract = abstract->Clone();
   if (cloned_abstract == nullptr) {
-    MS_LOG(EXCEPTION) << "parameter " << parameter->ToString() << ": abstract clone failed";
+    MS_LOG_WITH_NODE(EXCEPTION, parameter) << "parameter " << parameter->ToString() << ": abstract clone failed";
   }
 
   cloned_abstract->set_shape(std::make_shared<abstract::Shape>(slice_shape));
@@ -732,7 +735,8 @@ static void ExtractStrategyAndInit(const CNodePtr &cnode, const PrimitivePtr &pr
 
   MS_EXCEPTION_IF_NULL(in_strategy);
   if (op_info->Init(in_strategy, out_strategy) == FAILED) {
-    MS_LOG(EXCEPTION) << "Failure:operator " << prim->name() << " init failed" << trace::DumpSourceLines(cnode);
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Failure:operator " << prim->name() << " init failed"
+                                       << trace::DumpSourceLines(cnode);
   }
 }
 
@@ -776,7 +780,7 @@ static void StepReplaceGraph(const ReplaceGraphPtr &replace_graph, const CNodePt
   MS_EXCEPTION_IF_NULL(func_graph);
   FuncGraphManagerPtr manager = func_graph->manager();
   if (manager == nullptr) {
-    MS_LOG(EXCEPTION) << "Failure:AddNode error since manager is nullptr";
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "Failure:AddNode error since manager is nullptr";
   }
   mindspore::HashMap<AnfNodePtr, int> input_map = {};
   static int appear_count = 0;
@@ -795,7 +799,7 @@ static void StepReplaceGraph(const ReplaceGraphPtr &replace_graph, const CNodePt
       ++appear_count;
     }
     if (IntToSize(appear_count) >= inputs_size) {
-      MS_LOG(EXCEPTION) << "No replaceable virtual_input_node";
+      MS_LOG_WITH_NODE(EXCEPTION, replace_input_cnode) << "No replaceable virtual_input_node";
     }
     input_map[replace_input.first] = appear_count;
     replace_input_cnode->set_in_forward_flag(true);
@@ -823,7 +827,7 @@ static void ReplaceGatherOps(const std::vector<AnfNodePtr> &all_nodes, const siz
       // StepReplaceGraph: after calling StepReplaceGraph, cnode can not be used anymore.
       auto replace_graph = distribute_operator->replace_graph(cnode);
       if (!replace_op.empty() && replace_graph) {
-        MS_LOG(EXCEPTION) << "Only one of replace_op or replace_op can be used";
+        MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Only one of replace_op or replace_op can be used";
       }
       if (replace_graph) {
         MS_LOG(INFO) << "StepReplaceGraph " << cnode->DebugString();
@@ -948,7 +952,7 @@ bool StepAssignedParallel(const FuncGraphPtr &root, const FuncGraphManagerPtr &m
   if (sapp) {
     CostModelContext::GetInstance()->set_rp_matmul_mem_coef(1);
     if (ParallelStrategyRecSearch(all_nodes, root, rank_id, device_num) != SUCCESS) {
-      MS_LOG(EXCEPTION) << "Auto-parallel strategy search failed when using RP searching mode";
+      MS_LOG_WITH_NODE(EXCEPTION, ret) << "Auto-parallel strategy search failed when using RP searching mode";
     }
     root->set_flag(AUTO_PARALLEL_RUN_ONCE_ONLY, true);
   }
@@ -960,19 +964,19 @@ bool StepAssignedParallel(const FuncGraphPtr &root, const FuncGraphManagerPtr &m
   MS_LOG(INFO) << "Now Assigned insert AllReduce opsl";
 
   if (!InsertAllReduceOps(all_nodes, root, device_num)) {
-    MS_LOG(EXCEPTION) << "Assigned insert AllReduce ops failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, ret) << "Assigned insert AllReduce ops failed.";
   }
   if (!InsertAllReduceOpsForFFN(all_nodes, root, device_num)) {
-    MS_LOG(EXCEPTION) << "Assigned insert AllReduce ops failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, ret) << "Assigned insert AllReduce ops failed.";
   }
   if (!ModifyReshapeOps(all_nodes, root, device_num)) {
-    MS_LOG(EXCEPTION) << "Modify Reshape Ops failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, ret) << "Modify Reshape Ops failed.";
   }
   if (!ModifyMakeTupleOps(all_nodes, root, device_num)) {
-    MS_LOG(EXCEPTION) << "Modify Reshape Ops failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, ret) << "Modify Reshape Ops failed.";
   }
   if (!ModifySoftmaxReshapeOps(all_nodes, root, device_num)) {
-    MS_LOG(EXCEPTION) << "Modify Reshape Ops failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, ret) << "Modify Reshape Ops failed.";
   }
 
   ReplaceGatherOps(all_nodes, device_num);

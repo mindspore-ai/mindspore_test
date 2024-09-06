@@ -82,7 +82,7 @@ class OptParamMgrImpl : public OptParamMgr {
     size_t shape_size = ComputeShapeSize(parameter);
     TypeId type_id = parameter->Type()->cast<mindspore::TensorTypePtr>()->element()->type_id();
     if (dtype_size_map.find(type_id) == dtype_size_map.end()) {
-      MS_LOG(EXCEPTION) << "unsupported type of parameter: " << parameter->DebugString();
+      MS_LOG_WITH_NODE(EXCEPTION, parameter) << "unsupported type of parameter: " << parameter->DebugString();
     }
     size_t type_size = dtype_size_map.find(type_id)->second;
     return shape_size * type_size;

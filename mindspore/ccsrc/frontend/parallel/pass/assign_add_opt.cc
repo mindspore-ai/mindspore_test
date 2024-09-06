@@ -443,8 +443,8 @@ void EraseTmpMakeTuple(const FuncGraphManagerPtr &manager) {
       bool is_all_equal =
         std::all_of(node_inputs.begin() + 1, node_inputs.end(), [&](auto cnode) { return cnode == first_input; });
       if (!is_all_equal) {
-        MS_LOG(INTERNAL_EXCEPTION) << "Merge assignAdd cannot erase make_tuple fail, make_tuple:"
-                                   << node->DebugString();
+        MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, node)
+          << "Merge assignAdd cannot erase make_tuple fail, make_tuple:" << node->DebugString();
       }
       manager->Replace(node, first_input);
     }

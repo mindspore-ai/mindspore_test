@@ -208,7 +208,7 @@ Status GatherDInfo::InferMirrorOps() {
 
 void GatherDInfo::ReComputeBatchSplitFlagList() {
   if (InferAttrs() != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Infer attrs failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Infer attrs failed";
   }
 
   if (dim_ == 0) {
@@ -234,12 +234,12 @@ std::vector<StrategyPtr> GatherDInfo::GenerateOpStrategies(int64_t stage_id) {
 
   std::vector<StrategyPtr> sp_vector;
   if (GenerateStrategiesForIndependentInputs(stage_id, tmp_inputs_shape, splittable_inputs, &sp_vector) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << " : Generate strategies for independent inputs() failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << " : Generate strategies for independent inputs() failed.";
   }
 
   for (auto &sp : sp_vector) {
     if ((sp == nullptr) || sp->GetInputDim().empty()) {
-      MS_LOG(EXCEPTION) << name_ << ": The strategy is null or empty";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": The strategy is null or empty";
     }
     Strategies tmp_strategy;
     Dimensions first_input_strategy = sp->GetInputDim()[0];
@@ -286,11 +286,11 @@ ReplaceGraphPtr GatherDInfo::replace_graph(const CNodePtr &cnode) {
 
   GenerateGraph gen_g = GenerateGraph(attrs_);
   if (gen_g.Init(cnode) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << "GenerateGraph Init failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << "GenerateGraph Init failed";
   }
 
   if (InferBias() != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Infer Bias failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << ": Infer Bias failed.";
   }
 
   // Split along `dim` logic of gatherd(x, dim, index):
@@ -309,7 +309,7 @@ ReplaceGraphPtr GatherDInfo::replace_graph(const CNodePtr &cnode) {
   auto mul = gen_g.PushBack({gen_g.NewOpInst(MUL), gatherd, cast});
 
   if (InferGroup() != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Infer Group failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << ": Infer Group failed.";
   }
   Attr attr_op = std::make_pair(OP, MakeValue(REDUCE_OP_SUM));
   Attr attr_group = std::make_pair(GROUP, MakeValue(group_.name()));

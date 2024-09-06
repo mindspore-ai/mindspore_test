@@ -101,7 +101,7 @@ std::vector<StrategyPtr> BiasAddInfo::GenerateOpStrategies(int64_t stage_id) {
   Shapes tmp_splittable_inputs = {splittable_inputs[0], splittable_inputs[0]};
   if (GenerateStrategiesForIndependentInputs(stage_id, tmp_inputs_shape, tmp_splittable_inputs, &sp_vector) !=
       SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << " : Generate strategies failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << " : Generate strategies failed.";
   }
   MS_LOG(INFO) << name_ << " : Generate strategies success.";
 

@@ -130,7 +130,7 @@ void GatherInfo::GetBatchDims() noexcept {
   if (batch_dims_opt.has_value()) {
     batch_dims_ = batch_dims_opt.value();
   } else {
-    MS_LOG(EXCEPTION) << name_ << ": Failed to fetch the value of batch dims.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Failed to fetch the value of batch dims.";
   }
 }
 
@@ -1378,7 +1378,7 @@ ReplaceGraphPtr GatherInfo::replace_graph(const CNodePtr &cnode) {
     return nullptr;
   }
   if (gather_util_->InferReplaceGraph(cnode) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": infer replace graph failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode) << name_ << ": infer replace graph failed.";
   }
   replace_graph_ = gather_util_->replace_graph();
   return replace_graph_;
@@ -1426,7 +1426,7 @@ Status GatherInfo::SetCostUnderStrategy(const StrategyPtr &strategy) { return Se
 
 std::vector<StrategyPtr> GatherInfo::GenerateOpStrategies(int64_t stage_id) {
   if (manual_split_) {
-    MS_LOG(EXCEPTION) << name_ << ": Manual split does not support to search strategy";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Manual split does not support to search strategy";
   }
   Shape input0_split(inputs_shape_[0].size(), 1);
   Shape input1_split(inputs_shape_[1].size(), 1);
@@ -1434,17 +1434,17 @@ std::vector<StrategyPtr> GatherInfo::GenerateOpStrategies(int64_t stage_id) {
 
   std::vector<StrategyPtr> sp_vector;
   if (GenerateStrategiesForIndependentInputs(stage_id, inputs_shape_, splittable_inputs, &sp_vector) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Generate strategies for independent inputs() failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Generate strategies for independent inputs() failed.";
   }
   return sp_vector;
 }
 
 std::shared_ptr<Strategies> GatherInfo::GenerateBatchStrategies() {
   if (GetAttrs() != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Get attr failed";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Get attr failed";
   }
   if (manual_split_) {
-    MS_LOG(EXCEPTION) << name_ << ": Manual split does not support to generate batch strategy";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Manual split does not support to generate batch strategy";
   }
 
   Dimensions param_strategy(inputs_shape_[0].size(), 1);

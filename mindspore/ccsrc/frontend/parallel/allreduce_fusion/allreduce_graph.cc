@@ -31,7 +31,7 @@ Status AllreduceGraph::AddNode(const CNodePtr &node, const AnfNodePtr &para) {
     MS_LOG(INFO) << "node: " << node->DebugString() << " has already been added!";
     auto cnode_arnode_pair = cnode_arnode_map_.find(node);
     if (cnode_arnode_pair == cnode_arnode_map_.end()) {
-      MS_LOG(EXCEPTION) << "node is not in cnode_arnode_map_!";
+      MS_LOG_WITH_NODE(EXCEPTION, node) << "node is not in cnode_arnode_map_!";
     }
     arnode = cnode_arnode_pair->second;
   } else {

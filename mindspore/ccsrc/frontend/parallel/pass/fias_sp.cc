@@ -126,7 +126,7 @@ CNodePtr NewMakeTupleNode(const std::vector<AnfNodePtr> &input_nodes) {
 
 CNodePtr NewSplitNode(const AnfNodePtr &input_node, size_t split_dim, size_t split_num) {
   if (split_num == 0) {
-    MS_LOG(INTERNAL_EXCEPTION) << "split_num should not be zero.";
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, input_node) << "split_num should not be zero.";
   }
   MS_EXCEPTION_IF_NULL(input_node);
   std::vector<AnfNodePtr> split_inputs = {NewValueNode(std::make_shared<Primitive>(prim::kPrimSplit->name())),

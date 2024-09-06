@@ -93,10 +93,10 @@ std::vector<StrategyPtr> GammaInfo::GenerateOpStrategies(int64_t stage_id) {
 
   std::vector<StrategyPtr> sp_vector;
   if (GenerateStrategiesForIndependentInputs(stage_id, inputs_shape_, splittable_inputs, &sp_vector) != SUCCESS) {
-    MS_LOG(EXCEPTION) << name_ << ": Generate strategies for independent inputs() failed.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": Generate strategies for independent inputs() failed.";
   }
   if (sp_vector.empty()) {
-    MS_LOG(EXCEPTION) << name_ << ": No available strategy.";
+    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << ": No available strategy.";
   }
   return sp_vector;
 }
@@ -178,15 +178,16 @@ int64_t GammaInfo::ComputeOpAndPrevEdgeParameterInvolved() {
     auto input_index = p_edge->next_op_input_index();
     auto prev_op_para = p_edge->prev_operator()->ComputeOpAndPrevEdgeParameterInvolved();
     if (input_index - 1 >= is_parameter_involve_.size()) {
-      MS_LOG(EXCEPTION) << name_ << " has input length: " << is_parameter_involve_.size()
-                        << ", but got wrong input_index: " << input_index;
+      MS_LOG_WITH_NODE(EXCEPTION, cnode_) << name_ << " has input length: " << is_parameter_involve_.size()
+                                          << ", but got wrong input_index: " << input_index;
     }
     if (prev_op_para == 0) {
       is_parameter_involve_[input_index - 1] = false;
     } else if (prev_op_para == 1) {
       is_parameter_involve_[input_index - 1] = true;
     } else {
-      MS_LOG(EXCEPTION) << name_ << " got wrong value: " << prev_op_para << ", input_index: " << input_index;
+      MS_LOG_WITH_NODE(EXCEPTION, cnode_)
+        << name_ << " got wrong value: " << prev_op_para << ", input_index: " << input_index;
     }
     p_edge->set_parameter_involve(prev_op_para);
   }

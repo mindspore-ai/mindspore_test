@@ -66,7 +66,7 @@ FlashSPInfo::FlashSPInfo(CNodePtr fa_score_node) {
   auto flash_score_info_ptr = std::dynamic_pointer_cast<FlashAttentionScoreInfo>(operator_info);
   auto input_layout = flash_score_info_ptr->input_layout();
   if (input_layout != FASInputLayoutMode::BSH && input_layout != FASInputLayoutMode::BNSD) {
-    MS_LOG(EXCEPTION) << "ring attention only supports BSH and BNSD layout";
+    MS_LOG_WITH_NODE(EXCEPTION, fa_score_node) << "ring attention only supports BSH and BNSD layout";
   }
   MS_EXCEPTION_IF_NULL(flash_score_info_ptr);
 
@@ -140,7 +140,7 @@ CNodePtr NewMakeTupleNode(const std::vector<AnfNodePtr> &input_nodes) {
 
 CNodePtr NewSplitNode(const AnfNodePtr &split_node, size_t split_dim, size_t split_num) {
   if (split_num == 0) {
-    MS_LOG(INTERNAL_EXCEPTION) << "split_num should not be zero.";
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, split_node) << "split_num should not be zero.";
   }
   MS_EXCEPTION_IF_NULL(split_node);
   std::vector<AnfNodePtr> split_inputs = {NewValueNode(std::make_shared<Primitive>(prim::kPrimSplit->name())),
