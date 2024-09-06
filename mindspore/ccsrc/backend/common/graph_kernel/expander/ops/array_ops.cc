@@ -36,6 +36,10 @@ REG_EXPANDER_FUNC("ZerosLike").SetBody(BODYFUNC(ib) {
     MS_LOG(DEBUG) << "Skip dynamic shape case";
     return {};
   }
+  if (IsShapeEmpty(x_shape)) {
+    MS_LOG(DEBUG) << "Skip empty shape case";
+    return {};
+  }
   auto shape = ib->Value(x_shape);
   auto const_zero = ib->Tensor(0, input_x->GetDtype());
   auto result = ib->BroadcastTo(const_zero, shape);
