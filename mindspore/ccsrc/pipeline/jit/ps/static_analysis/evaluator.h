@@ -52,7 +52,6 @@ class Evaluator : public Base {
   // Run() will modify cache_ member, so it cannot marked as const;
   virtual EvalResultPtr Run(AnalysisEnginePtr engine, const ConfigPtrList &args_conf_list,
                             const AnfNodeConfigPtr &out_conf);
-
   virtual EvalResultPtr Eval(AnalysisEnginePtr engine, const AbstractBasePtrList &args_abs_list,
                              const AnfNodeConfigPtr &out_conf) = 0;
 
@@ -311,6 +310,8 @@ class PartialAppEvaluator : public Evaluator {
     }
     bound_node_ = AnfNodeWeakPtr(node);
   }
+
+  const EvaluatorPtr evaluator() const { return evaluator_; }
 
   EvalResultPtr Eval(AnalysisEnginePtr, const AbstractBasePtrList &, const AnfNodeConfigPtr &) override {
     MS_LOG(INTERNAL_EXCEPTION) << "Should not be called, Run() method should be called";

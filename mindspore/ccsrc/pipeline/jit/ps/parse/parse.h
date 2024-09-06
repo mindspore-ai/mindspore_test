@@ -24,10 +24,11 @@
 #include <tuple>
 #include <vector>
 #include <string>
-#include <map>
 #include <set>
 #include <stack>
 #include <memory>
+
+#include "utils/hash_map.h"
 #include "utils/misc.h"
 #include "ir/anf.h"
 #include "pipeline/jit/ps/parse/parse_base.h"
@@ -280,7 +281,8 @@ class Parser {
 
   // Check if script_text is in global/local params.
   bool IsScriptInParams(const std::string &script_text, const py::dict &global_dict,
-                        const std::map<std::string, AnfNodePtr> &local_keys, const FuncGraphPtr &func_graph) const;
+                        const mindspore::HashMap<std::string, AnfNodePtr> &local_keys,
+                        const FuncGraphPtr &func_graph) const;
   // Make interpret node.
   AnfNodePtr MakeInterpretNode(const FunctionBlockPtr &block, const AnfNodePtr &value_node, const string &script_text);
   // Check if the node need interpreting.
@@ -307,16 +309,10 @@ class Parser {
 
   void MakeConditionBlocks(const FunctionBlockPtr &pre_block, const FunctionBlockPtr &true_block,
                            const FunctionBlockPtr &false_block) const;
-  std::shared_ptr<std::map<ParameterPtr, AnfNodePtr>> CalRemovablePhis();
-  void CreatePhiArgMaps(std::map<ParameterPtr, std::set<AnfNodePtr>> *phi_to_args,
-                        std::map<AnfNodePtr, std::set<ParameterPtr>> *arg_to_phis);
-  static void PrintPhiArgMaps(const std::map<ParameterPtr, std::set<AnfNodePtr>> &phi_to_args,
-                              const std::map<AnfNodePtr, std::set<ParameterPtr>> &arg_to_phis);
-  static void UpdatePhiArgMapsRepeatedly(std::map<ParameterPtr, std::set<AnfNodePtr>> *phi_to_args,
-                                         std::map<AnfNodePtr, std::set<ParameterPtr>> *arg_to_phis);
-  static std::shared_ptr<std::map<ParameterPtr, AnfNodePtr>> CollectRemovablePhiArgs(
-    const std::map<ParameterPtr, std::set<AnfNodePtr>> &phi_to_args);
-  void RemoveUnnecessaryPhis(const FuncGraphManagerPtr &manager);
+  const mindspore::HashMap<ParameterPtr, AnfNodePtr> CalRemovablePhis();
+  void CreatePhiArgMaps(mindspore::HashMap<ParameterPtr, std::set<AnfNodePtr>> *phi_to_args,
+                        mindspore::HashMap<AnfNodePtr, std::set<ParameterPtr>> *arg_to_phis);
+  void RemoveUnnecessaryPhis(const FunctionBlockPtr &block);
   void ConvertGetattrNodes();
   // Write a new var.
   void WriteAssignVars(const FunctionBlockPtr &block, const py::object &target_object, const AnfNodePtr &value_node);
@@ -379,7 +375,7 @@ class Parser {
   void CheckReturnInLoop(const FunctionBlockPtr &block, const FunctionBlockPtr &body_block) const;
 
   // Check whether the functions referred by this function and itself are missing 'return' statement.
-  void CheckFuncReturn(const FuncGraphManagerPtr &manager, const FuncGraphPtr &fn);
+  void CheckFuncReturn();
 
   // If the node is Parameter member of class.
   bool IsClassParameterMember(const py::object &target_obj, const AnfNodePtr &target_node) const;
@@ -439,13 +435,13 @@ class Parser {
   using ConditionFunc = bool (Parser::*)(const FunctionBlockPtr &block, const py::object &test_node,
                                          bool *is_true_cond) const;
   // Define the function map to parse ast Statement.
-  std::map<std::string, StmtFunc> stmt_method_map_;
+  mindspore::HashMap<std::string, StmtFunc> stmt_method_map_;
   // Define the function map to parse ast expression.
-  std::map<std::string, ExprFunc> expr_method_map_;
+  mindspore::HashMap<std::string, ExprFunc> expr_method_map_;
   // Define the function map to parse compare expression.
-  std::map<std::string, CompareFunc> compare_method_map_;
+  mindspore::HashMap<std::string, CompareFunc> compare_method_map_;
   // Define the function map to parse constant condition expression.
-  std::map<std::string, ConditionFunc> condition_method_map_;
+  mindspore::HashMap<std::string, ConditionFunc> condition_method_map_;
   // Save current loops to support 'continue', 'break' statement.
   std::stack<Loop> loops_;
 
@@ -458,9 +454,9 @@ class Parser {
   std::vector<std::pair<CNodePtr, FunctionBlockPtr>> rolled_body_calls_;
 
   // Record all setattr nodes and their targets and values.
-  std::map<std::string, std::map<std::string, AnfNodePtr>> setattr_nodes_map_;
+  mindspore::HashMap<std::string, mindspore::HashMap<std::string, AnfNodePtr>> setattr_nodes_map_;
   // Record all getattr node for specific object and attribute name.
-  std::map<std::string, std::map<std::string, std::vector<AnfNodePtr>>> getattr_nodes_map_;
+  mindspore::HashMap<std::string, mindspore::HashMap<std::string, std::vector<AnfNodePtr>>> getattr_nodes_map_;
   // Store the values for input args of top graph.
   ValuePtrList args_value_list_;
 };

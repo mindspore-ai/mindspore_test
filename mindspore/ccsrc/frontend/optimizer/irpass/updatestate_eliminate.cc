@@ -983,7 +983,7 @@ AnfNodePtr SwitchCallMonadParameterEliminater::operator()(const OptimizerPtr &, 
   auto cond = switch_cnode->input(condition_index);
   auto new_switch_cnode = fg->NewCNode({NewValueNode(prim::kPrimSwitch), cond, fg1_node, fg2_node});
   auto new_switch_call = fg->NewCNode({new_switch_cnode});
-  new_switch_cnode->set_abstract(switch_node->abstract());
+  new_switch_cnode->CloneCNodeInfo(switch_cnode);
   new_switch_call->set_abstract(switch_call->abstract());
   return new_switch_call;
 }

@@ -667,6 +667,7 @@ Frame Operators
     :template: classtemplate.rst
 
     mindspore.ops.Depend
+    mindspore.ops.ForiLoop
     mindspore.ops.GradOperation
     mindspore.ops.HookBackward
     mindspore.ops.HyperMap
@@ -674,6 +675,8 @@ Frame Operators
     mindspore.ops.Map
     mindspore.ops.MultitypeFuncGraph
     mindspore.ops.Partial
+    mindspore.ops.Scan
+    mindspore.ops.WhileLoop
 
 Operator Information Registration
 ---------------------------------

@@ -34,6 +34,7 @@
 #include "include/common/debug/draw.h"
 #include "frontend/operator/ops.h"
 #include "frontend/optimizer/optimizer.h"
+#include "frontend/optimizer/irpass.h"
 #include "utils/ms_context.h"
 
 namespace mindspore {
@@ -58,6 +59,22 @@ class TestAD : public UT::Common {
   }
 
   void AssertExpect(const std::string &testCase, const FuncGraphPtr &dg) { ASSERT_TRUE(dg != nullptr); }
+
+  bool CheckEqual(const FuncGraphPtr &before, const FuncGraphPtr &after) {
+    FuncGraphPairMapEquiv equiv_graph;
+    NodeMapEquiv equiv_node;
+    equiv_node.clear();
+    equiv_graph.clear();
+    return Isomorphic(before, after, &equiv_graph, &equiv_node);
+  }
+
+  void DoInline(const FuncGraphPtr &fg) {
+    opt::irpass::OptimizeIRPassLib irpass;
+    auto patterns = std::vector<opt::SubstitutionPtr>({irpass.inline_, irpass.tuple_list_get_item_eliminator_});
+    opt::SubstitutionList transform(patterns);
+    opt::OptimizerPtr optimizer = std::make_shared<opt::Optimizer>("ut_test", std::make_shared<pipeline::Resource>());
+    transform(fg, optimizer);
+  }
 };
 
 TEST_F(TestAD, test_null) { AssertExpect("test_null"); }
@@ -202,5 +219,140 @@ TEST_F(TestAD, test_grad_cache) {
 
 TEST_F(TestAD, test_constant_output) { AssertExpect("test_constant_output"); }
 
+// Feature: Support automatic differentiation for complex number.
+// Description: Test the imag bprop with complex inputs and complex outputs.
+// Expectation: The final func_graph construct is correct.
+TEST_F(TestAD, TestImagBpropComplexInputComplexOutput) {
+  auto ms_context = MsContext::GetInstance();
+  ms_context->set_param<int>(MS_CTX_EXECUTION_MODE, kGraphMode);
+  // Parse the forward fg and do renormalize.
+  auto g = getPyFun.CallAndParseRet("get_test_ad_fn", "imag_forward");
+  AbstractBasePtrList args_spec_list;
+  tensor::TensorPtr x_tensor = std::make_shared<tensor::Tensor>(kNumberTypeComplex64, std::vector<int64_t>{2, 3, 4, 5});
+  AbstractBasePtr abstract_v1 = abstract::FromValue(x_tensor, true);
+  args_spec_list.push_back(abstract_v1);
+  FuncGraphPtr new_g = pipeline::Renormalize(resourcePtr, g, args_spec_list);
+  // Get the fprop.
+  FuncGraphPtr dg = Grad(new_g, opt::Optimizer::MakeEmptyOptimizer(resourcePtr));
+  // Make the top cell.
+  auto top_fg = std::make_shared<FuncGraph>();
+  auto input = top_fg->add_parameter();
+  auto dout = top_fg->add_parameter();
+  auto fprop_caller = top_fg->NewCNode({NewValueNode(dg), input});
+  auto bprop = top_fg->NewCNode({NewValueNode(prim::kPrimTupleGetItem), fprop_caller, NewValueNode<int64_t>(1)});
+  auto grads = top_fg->NewCNode({bprop, dout});
+  top_fg->set_output(top_fg->NewCNode({NewValueNode(prim::kPrimTupleGetItem), grads, NewValueNode<int64_t>(1)}));
+  // Do renormalize for the top cell.
+  tensor::TensorPtr y_tensor = std::make_shared<tensor::Tensor>(kNumberTypeFloat32, std::vector<int64_t>{2, 3, 4, 5});
+  AbstractBasePtr abstract_v2 = abstract::FromValue(y_tensor, true);
+  args_spec_list.push_back(abstract_v2);
+  FuncGraphPtr new_top_fg = pipeline::Renormalize(resourcePtr, top_fg, args_spec_list);
+  DoInline(new_top_fg);
+  // Check the graph construct.
+  auto after_g = getPyFun.CallAndParseRet("get_test_ad_fn", "imag_bprop_complex_input_complex_output");
+  ASSERT_TRUE(CheckEqual(new_top_fg, after_g));
+}
+
+// Feature: Support automatic differentiation for complex number.
+// Description: Test the imag bprop with real inputs and complex outputs.
+// Expectation: The final func_graph construct is correct.
+TEST_F(TestAD, TestImagBpropRealInputComplexOutput) {
+  auto ms_context = MsContext::GetInstance();
+  ms_context->set_param<int>(MS_CTX_EXECUTION_MODE, kGraphMode);
+  // Parse the forward fg and do renormalize.
+  auto g = getPyFun.CallAndParseRet("get_test_ad_fn", "imag_forward");
+  AbstractBasePtrList args_spec_list;
+  tensor::TensorPtr x_tensor = std::make_shared<tensor::Tensor>(kNumberTypeFloat32, std::vector<int64_t>{2, 3, 4, 5});
+  AbstractBasePtr abstract_v1 = abstract::FromValue(x_tensor, true);
+  args_spec_list.push_back(abstract_v1);
+  FuncGraphPtr new_g = pipeline::Renormalize(resourcePtr, g, args_spec_list);
+  // Get the fprop.
+  FuncGraphPtr dg = Grad(new_g, opt::Optimizer::MakeEmptyOptimizer(resourcePtr));
+  // Make the top cell.
+  auto top_fg = std::make_shared<FuncGraph>();
+  auto input = top_fg->add_parameter();
+  auto dout = top_fg->add_parameter();
+  auto fprop_caller = top_fg->NewCNode({NewValueNode(dg), input});
+  auto bprop = top_fg->NewCNode({NewValueNode(prim::kPrimTupleGetItem), fprop_caller, NewValueNode<int64_t>(1)});
+  auto grads = top_fg->NewCNode({bprop, dout});
+  top_fg->set_output(top_fg->NewCNode({NewValueNode(prim::kPrimTupleGetItem), grads, NewValueNode<int64_t>(1)}));
+  // Do renormalize for the top cell.
+  args_spec_list.push_back(abstract_v1);
+  FuncGraphPtr new_top_fg = pipeline::Renormalize(resourcePtr, top_fg, args_spec_list);
+  DoInline(new_top_fg);
+  // Check the graph construct.
+  auto after_g = getPyFun.CallAndParseRet("get_test_ad_fn", "imag_bprop_real_input_complex_output");
+  ASSERT_TRUE(CheckEqual(new_top_fg, after_g));
+}
+
+// Feature: Support automatic differentiation for complex number.
+// Description: Test the add bprop with real inputs and real outputs.
+// Expectation: The final func_graph construct is correct.
+TEST_F(TestAD, TestImagBpropRealInputRealOutput) {
+  auto ms_context = MsContext::GetInstance();
+  ms_context->set_param<int>(MS_CTX_EXECUTION_MODE, kGraphMode);
+  // Parse the forward fg and do renormalize.
+  auto g = getPyFun.CallAndParseRet("get_test_ad_fn", "add_forward");
+  AbstractBasePtrList args_spec_list;
+  tensor::TensorPtr x_tensor = std::make_shared<tensor::Tensor>(kNumberTypeFloat32, std::vector<int64_t>{2, 3, 4, 5});
+  AbstractBasePtr abstract_v1 = abstract::FromValue(x_tensor, true);
+  args_spec_list.push_back(abstract_v1);
+  args_spec_list.push_back(abstract_v1);
+  FuncGraphPtr new_g = pipeline::Renormalize(resourcePtr, g, args_spec_list);
+  // Get the fprop.
+  FuncGraphPtr dg = Grad(new_g, opt::Optimizer::MakeEmptyOptimizer(resourcePtr));
+  // Make the top cell.
+  auto top_fg = std::make_shared<FuncGraph>();
+  auto input_x = top_fg->add_parameter();
+  auto input_y = top_fg->add_parameter();
+  auto dout = top_fg->add_parameter();
+  auto fprop_caller = top_fg->NewCNode({NewValueNode(dg), input_x, input_y});
+  auto bprop = top_fg->NewCNode({NewValueNode(prim::kPrimTupleGetItem), fprop_caller, NewValueNode<int64_t>(1)});
+  auto grads = top_fg->NewCNode({bprop, dout});
+  top_fg->set_output(top_fg->NewCNode({NewValueNode(prim::kPrimTupleGetItem), grads, NewValueNode<int64_t>(1)}));
+  // Do renormalize for the top cell.
+  args_spec_list.push_back(abstract_v1);
+  FuncGraphPtr new_top_fg = pipeline::Renormalize(resourcePtr, top_fg, args_spec_list);
+  DoInline(new_top_fg);
+  // Check the graph construct.
+  auto after_g = getPyFun.CallAndParseRet("get_test_ad_fn", "add_bprop");
+  ASSERT_TRUE(CheckEqual(new_top_fg, after_g));
+}
+
+// Feature: Support automatic differentiation for complex number.
+// Description: Test the add bprop with complex inputs and real outputs.
+// Expectation: The final func_graph construct is correct.
+TEST_F(TestAD, TestImagBpropComplexInputRealOutput) {
+  auto ms_context = MsContext::GetInstance();
+  ms_context->set_param<int>(MS_CTX_EXECUTION_MODE, kGraphMode);
+  // Parse the forward fg and do renormalize.
+  auto g = getPyFun.CallAndParseRet("get_test_ad_fn", "add_forward");
+  AbstractBasePtrList args_spec_list;
+  tensor::TensorPtr x_tensor = std::make_shared<tensor::Tensor>(kNumberTypeComplex64, std::vector<int64_t>{2, 3, 4, 5});
+  AbstractBasePtr abstract_v1 = abstract::FromValue(x_tensor, true);
+  args_spec_list.push_back(abstract_v1);
+  args_spec_list.push_back(abstract_v1);
+  FuncGraphPtr new_g = pipeline::Renormalize(resourcePtr, g, args_spec_list);
+  // Get the fprop.
+  FuncGraphPtr dg = Grad(new_g, opt::Optimizer::MakeEmptyOptimizer(resourcePtr));
+  // Make the top cell.
+  auto top_fg = std::make_shared<FuncGraph>();
+  auto input_x = top_fg->add_parameter();
+  auto input_y = top_fg->add_parameter();
+  auto dout = top_fg->add_parameter();
+  auto fprop_caller = top_fg->NewCNode({NewValueNode(dg), input_x, input_y});
+  auto bprop = top_fg->NewCNode({NewValueNode(prim::kPrimTupleGetItem), fprop_caller, NewValueNode<int64_t>(1)});
+  auto grads = top_fg->NewCNode({bprop, dout});
+  top_fg->set_output(top_fg->NewCNode({NewValueNode(prim::kPrimTupleGetItem), grads, NewValueNode<int64_t>(1)}));
+  // Do renormalize for the top cell.
+  tensor::TensorPtr y_tensor = std::make_shared<tensor::Tensor>(kNumberTypeFloat32, std::vector<int64_t>{2, 3, 4, 5});
+  AbstractBasePtr abstract_v2 = abstract::FromValue(y_tensor, true);
+  args_spec_list.push_back(abstract_v2);
+  FuncGraphPtr new_top_fg = pipeline::Renormalize(resourcePtr, top_fg, args_spec_list);
+  DoInline(new_top_fg);
+  // Check the graph construct.
+  auto after_g = getPyFun.CallAndParseRet("get_test_ad_fn", "add_bprop");
+  ASSERT_TRUE(CheckEqual(new_top_fg, after_g));
+}
 }  // namespace ad
 }  // namespace mindspore

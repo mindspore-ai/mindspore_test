@@ -99,7 +99,7 @@ inline bool Skip(const MetaFuncGraphPtr &meta_func_graph) {
          meta_func_graph->isa<prim::ListAdd>() || meta_func_graph->isa<prim::StarredGetItem>() ||
          meta_func_graph->isa<prim::StarredUnpack>() || meta_func_graph->isa<prim::StarredUnpackMerge>() ||
          meta_func_graph->isa<prim::IterConverter>() || meta_func_graph->isa<prim::HasNext>() ||
-         meta_func_graph->isa<prim::Next>();
+         meta_func_graph->isa<prim::Next>() || meta_func_graph->isa<prim::ForHalfUnrollLess>();
 }
 
 std::string GetMetaFuncGraphText(const MetaFuncGraphPtr &meta_func_graph) {
@@ -174,6 +174,8 @@ std::string GetPrimitiveText(const PrimitivePtr &prim) {
     if (func->isa<Primitive>()) {
       auto sig_prim = dyn_cast<Primitive>(func);
       oss << sig_prim->GetAttrsText();
+    } else {
+      oss << func->ToString();
     }
   }
 

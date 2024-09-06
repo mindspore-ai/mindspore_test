@@ -38,6 +38,9 @@
 
 namespace mindspore {
 namespace opt {
+bool FilterPass(const std::string &pass_key);
+void UpdateRunningPasses(const std::string &pass_key);
+
 using OptimizeGraphFunc = std::function<bool(const FuncGraphPtr &func_graph, const OptimizerPtr &optimizer)>;
 
 class OptPassConfig {
@@ -92,7 +95,6 @@ class OptPass {
   bool is_renormalize_{false};
 };
 using OptPassGroupMap = std::vector<std::pair<std::string, OptPassConfig>>;
-
 class Optimizer : public std::enable_shared_from_this<Optimizer> {
  public:
   Optimizer(const std::string &name, const pipeline::ResourceBasePtr &resource, bool traverse_nodes_first = true)
@@ -105,6 +107,21 @@ class Optimizer : public std::enable_shared_from_this<Optimizer> {
         traverse_nodes_first_(traverse_nodes_first),
         is_first_order_j_(true) {}
   virtual ~Optimizer() = default;
+
+  bool operator()(const pipeline::ResourcePtr &resource) {
+    MS_EXCEPTION_IF_NULL(resource);
+    if (resource->func_graph() == nullptr) {
+      MS_LOG(ERROR) << "Opt passes error";
+      return false;
+    }
+
+    auto func_graph = resource->func_graph();
+    MS_LOG(DEBUG) << "Start " << name_ << " func graph:" << func_graph->ToString() << ", "
+                  << func_graph->get_return()->DebugString(true);
+    auto new_func_graph = step(func_graph, true, resource);
+    resource->set_func_graph(new_func_graph);
+    return true;
+  }
 
   void Init(const OptPassGroupMap &passes, bool run_only_once) {
     run_only_once_ = run_only_once;
@@ -180,67 +197,49 @@ class Optimizer : public std::enable_shared_from_this<Optimizer> {
     }
   }
 
-  FuncGraphPtr step(FuncGraphPtr func_graph, bool use_profile = true) {
+  FuncGraphPtr step(FuncGraphPtr func_graph, bool use_profile = true, pipeline::ResourceBasePtr res = nullptr) {
     if (!is_enable_) {
       return func_graph;
     }
+    func_graph_ = func_graph;
+    if (res) {
+      MS_LOG(INFO) << "Run at the custom passes.";
+      resource_ = res;
+    }
     // Optimizer step counter;
     int counter = 1;
-    bool changes = true;
+    changes_ = true;
     // If no changes since last renormalization, then no need to do the renormalization again.
     // Set the initial value to true, so the renormalization can be executed once if it's the
     // only pass.
-    bool changes_since_last_renorm = true;
+    changes_since_last_renorm_ = true;
 
-    while (changes) {
-      changes = false;
-      auto run_runc = [&counter, &func_graph, &changes, &changes_since_last_renorm, use_profile, this]() {
+    while (changes_) {
+      changes_ = false;
+      auto run_runc = [&counter, use_profile, this]() {
         for (size_t i = 0; i < passes_.size(); ++i) {
           const OptPass &opt = passes_[i];
           current_pass_ = {counter, pass_names_[i]};
-          auto opt_func = [&func_graph, &changes, &opt, &changes_since_last_renorm, this]() {
-            if (opt.is_renormalize()) {
-              if (!changes_since_last_renorm) {
-                return;
-              }
-              auto resource = std::dynamic_pointer_cast<pipeline::Resource>(resource_);
-              if (resource != nullptr) {
-                // StepParallel may replace the AbstractValue of the parameters of func_graph,
-                // So generate the args_abs from parameters.
-                abstract::AbstractBasePtrList maybe_new_args;
-                if (is_watch_renormalize_) {
-                  if (is_untyped_generated_) {
-                    std::transform(func_graph->parameters().begin(), func_graph->parameters().end(),
-                                   std::back_inserter(maybe_new_args),
-                                   [](const AnfNodePtr &param) -> AbstractBasePtr { return param->abstract(); });
-                    func_graph = pipeline::Renormalize(resource, func_graph, maybe_new_args);
-                    clear_is_untyped_generated();
-                  } else {
-                    MS_LOG(DEBUG) << "Optimizer::step: Skipping Renormalize because is_untyped_generated_ is False.";
-                  }
-                } else {
-                  std::transform(func_graph->parameters().begin(), func_graph->parameters().end(),
-                                 std::back_inserter(maybe_new_args),
-                                 [](const AnfNodePtr &param) -> AbstractBasePtr { return param->abstract(); });
-                  func_graph = pipeline::Renormalize(resource, func_graph, maybe_new_args);
-                }
-              }
-              changes_since_last_renorm = false;
-            } else if (opt(func_graph, shared_from_this())) {
-              changes = true;
-              changes_since_last_renorm = true;
-            }
-          };
+          auto opt_func = std::bind(&Optimizer::OptProcess, this, opt);
           auto profiler_pass_name = name_ + ".r" + std::to_string(counter) + "." + pass_names_[i];
+          if (FilterPass(profiler_pass_name)) {
+            continue;
+          }
+
           uint64_t start_time = profiler::GetClockSyscnt();
           MS_LOG(INFO) << "Start " << name_ << ".r" << std::to_string(counter) << "." << pass_names_[i];
+          auto last_version = FuncGraphManager::version();
           use_profile ? ProfileExecute(MsProfile::GetProfile()->Step(pass_names_[i]), opt_func) : opt_func();
-          MS_LOG(INFO) << "End " << name_ << ".r" << std::to_string(counter) << "." << pass_names_[i];
+          auto current_changed = (FuncGraphManager::version() != last_version);
+          MS_LOG(INFO) << "End " << name_ << ".r" << std::to_string(counter) << "." << pass_names_[i]
+                       << (current_changed ? ".changed" : ".unchanged");
           (void)profiler::CollectHostInfo(pipeline::kCompiler, pipeline::kOptimize, profiler_pass_name, start_time,
                                           profiler::GetClockSyscnt(), 0);
-
+          if (current_changed) {
+            UpdateRunningPasses(profiler_pass_name);
+          }
 #ifdef ENABLE_DUMP_IR
-          DumpStep(func_graph, counter, i);
+          DumpStep(func_graph_, counter, i);
 #endif
         }
       };
@@ -251,7 +250,7 @@ class Optimizer : public std::enable_shared_from_this<Optimizer> {
         break;
       }
     }
-    return func_graph;
+    return func_graph_;
   }
 
   pipeline::ResourceBasePtr resource() const { return resource_; }
@@ -285,6 +284,40 @@ class Optimizer : public std::enable_shared_from_this<Optimizer> {
   bool is_on_debug_{false};
 
  private:
+  void OptProcess(const OptPass &opt) {
+    if (opt.is_renormalize()) {
+      if (!changes_since_last_renorm_) {
+        return;
+      }
+      auto resource = std::dynamic_pointer_cast<pipeline::Resource>(resource_);
+      if (resource != nullptr) {
+        // StepParallel may replace the AbstractValue of the parameters of func_graph,
+        // So generate the args_abs from parameters.
+        abstract::AbstractBasePtrList maybe_new_args;
+        if (is_watch_renormalize_) {
+          if (is_untyped_generated_) {
+            std::transform(func_graph_->parameters().begin(), func_graph_->parameters().end(),
+                           std::back_inserter(maybe_new_args),
+                           [](const AnfNodePtr &param) -> AbstractBasePtr { return param->abstract(); });
+            func_graph_ = pipeline::Renormalize(resource, func_graph_, maybe_new_args);
+            clear_is_untyped_generated();
+          } else {
+            MS_LOG(DEBUG) << "Optimizer::step: Skipping Renormalize because is_untyped_generated_ is False.";
+          }
+        } else {
+          std::transform(func_graph_->parameters().begin(), func_graph_->parameters().end(),
+                         std::back_inserter(maybe_new_args),
+                         [](const AnfNodePtr &param) -> AbstractBasePtr { return param->abstract(); });
+          func_graph_ = pipeline::Renormalize(resource, func_graph_, maybe_new_args);
+        }
+      }
+      changes_since_last_renorm_ = false;
+    } else if (opt(func_graph_, shared_from_this())) {
+      changes_ = true;
+      changes_since_last_renorm_ = true;
+    }
+    return;
+  }
   const std::string name_;
   pipeline::ResourceBasePtr resource_;
   std::vector<OptPass> passes_;
@@ -296,6 +329,9 @@ class Optimizer : public std::enable_shared_from_this<Optimizer> {
   bool traverse_nodes_first_;
   // A flag to indicate if it's the first order J or innermost J in GraphMode.
   bool is_first_order_j_;
+  bool changes_;
+  bool changes_since_last_renorm_;
+  FuncGraphPtr func_graph_;
 };
 }  // namespace opt
 }  // namespace mindspore

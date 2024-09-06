@@ -71,7 +71,6 @@ class OptimizeIRPassLib {
   SubstitutionPtr all_reduce_const_elim_;
   SubstitutionPtr mini_step_allgather_replace_;
   SubstitutionPtr micro_step_allgather_replace_;
-  SubstitutionPtr real_op_eliminate_;
   SubstitutionPtr convert_tensor_eliminate_;
   SubstitutionPtr convert_tensor_all_eliminate_;
   SubstitutionPtr get_grad_eliminate_;
@@ -96,6 +95,8 @@ class OptimizeIRPassLib {
 
   SubstitutionPtr switch_partial_eliminater_;
   SubstitutionPtr switch_layer_partial_eliminater_;
+  SubstitutionPtr loop_unroll_before_grad_;
+  SubstitutionPtr loop_unroll_after_grad_;
 
   // AddN
   SubstitutionPtr merge_addn_;

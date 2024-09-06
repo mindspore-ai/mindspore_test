@@ -327,17 +327,15 @@ FuncGraphPtr FuncGraph::GenerateFuncGraph(const AbstractBasePtrList &args_abs_li
                                                    specialized_parameter_list[i]);
   }
 
-  std::shared_ptr<mindspore::FuncGraphManager> manager = mindspore::Manage(specialized_graph, false);
-  auto tr = manager->Transact();
+  ud_chain::Preprocess(specialized_graph);
   for (auto &node_pair : repl_nodes) {
     MS_EXCEPTION_IF_NULL(node_pair.first);
     MS_EXCEPTION_IF_NULL(node_pair.second);
-    MS_LOG(DEBUG) << "GenerateFuncGraph replace:" << node_pair.first->DebugString() << "-"
+    MS_LOG(DEBUG) << "GenerateFuncGraph replace: " << node_pair.first->DebugString() << ", "
                   << node_pair.second->DebugString();
-    (void)tr.Replace(node_pair.first, node_pair.second);
+    ud_chain::Replace(node_pair.first, node_pair.second);
   }
-  tr.SetParameters(specialized_graph, specialized_parameter_list_update);
-  tr.Commit();
+  specialized_graph->set_parameters(specialized_parameter_list_update);
   specialized_graph->set_has_kwarg(false);
   specialized_graph->set_has_vararg(false);
   specialized_graph->set_kwonlyargs_count(0);

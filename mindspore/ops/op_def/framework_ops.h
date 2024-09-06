@@ -62,6 +62,9 @@ GVAR_DEF(PrimitivePtr, kPrimReshard, std::make_shared<Primitive>("Reshard"));
 GVAR_DEF(PrimitivePtr, kPrimReusing, std::make_shared<Primitive>("Reusing"));
 // Control ops
 GVAR_DEF(PrimitivePtr, kPrimMerge, std::make_shared<Primitive>("Merge"));
+GVAR_DEF(PrimitivePtr, kPrimWhileLoop, std::make_shared<Primitive>("WhileLoop"));
+GVAR_DEF(PrimitivePtr, kPrimScan, std::make_shared<Primitive>("Scan"));
+GVAR_DEF(PrimitivePtr, kPrimForiLoop, std::make_shared<Primitive>("ForiLoop"));
 
 // Other miscellaneous
 GVAR_DEF(PrimitivePtr, kPrimEnvironSet, std::make_shared<Primitive>(kEnvironSetOpName));

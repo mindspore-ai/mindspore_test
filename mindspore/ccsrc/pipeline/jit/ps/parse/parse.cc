@@ -21,10 +21,12 @@
 #include <utility>
 #include <string>
 #include <memory>
+#include <map>
 #include <sstream>
 #include <algorithm>
 #include <stack>
 #include <regex>
+
 #include "mindspore/ops/op_def/structure_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 #include "mindspore/ops/op_def/framework_ops.h"
@@ -38,6 +40,7 @@
 #include "utils/log_adapter.h"
 #include "utils/compile_config.h"
 #include "utils/interpret_node_recorder.h"
+#include "utils/profile.h"
 #include "pipeline/jit/ps/debug/trace.h"
 #include "ir/cell.h"
 #include "include/common/amp/amp.h"
@@ -186,11 +189,15 @@ void Parser::CleanParserResource() {
   parse::CleanParameterNameCache();
 }
 
-void Parser::CheckFuncReturn(const FuncGraphManagerPtr &manager, const FuncGraphPtr &fn) {
+void Parser::CheckFuncReturn() {
   // Check whether the functions referred by this function and itself are missing 'return' statement
-  MS_EXCEPTION_IF_NULL(manager);
   MS_EXCEPTION_IF_NULL(ast_);
-  for (const auto &func_graph : manager->func_graphs()) {
+  for (const auto &block : func_block_list_) {
+    MS_EXCEPTION_IF_NULL(block);
+    if (block->is_dead_block()) {
+      continue;
+    }
+    const auto &func_graph = block->func_graph();
     MS_EXCEPTION_IF_NULL(func_graph);
     if (func_graph->get_return() != nullptr) {
       continue;
@@ -198,11 +205,13 @@ void Parser::CheckFuncReturn(const FuncGraphManagerPtr &manager, const FuncGraph
     py::object node = ast_->GetAstNode();
     const auto &location = GetLocation(node);
     MS_EXCEPTION_IF_NULL(location);
-    py::str desc = python_adapter::CallPyModFn(ast_->module(), PYTHON_MOD_GET_OBJECT_DESCRIPTION, ast_->function(),
-                                               location->file_name(), location->line());
-    MS_LOG(INFO) << "Function must has 'return' statement, but missing in " << desc.cast<std::string>()
-                 << ". FuncGraph: " << func_graph->ToString() << ", location: " << location->ToString()
-                 << "\nWe will add a 'return None' statement automatically.";
+    if (IS_OUTPUT_ON(mindspore::kInfo)) {
+      py::str desc = python_adapter::CallPyModFn(ast_->module(), PYTHON_MOD_GET_OBJECT_DESCRIPTION, ast_->function(),
+                                                 location->file_name(), location->line());
+      MS_LOG(INFO) << "Function must has 'return' statement, but missing in " << desc.cast<std::string>()
+                   << ". FuncGraph: " << func_graph->ToString() << ", location: " << location->ToString()
+                   << "\nWe will add a 'return None' statement automatically.";
+    }
     // If the def function has no return statement, mean that return none.
     TraceGuard trace_guard_none(location);
     auto none_node = NewValueNode(kNone);
@@ -580,9 +589,8 @@ FuncGraphPtr Parser::ParseFuncGraph() {
     }
   }
   MS_EXCEPTION_IF_NULL(fn_block);
-  auto manager = Manage(fn_block->func_graph(), false);
-  RemoveUnnecessaryPhis(manager);
-  CheckFuncReturn(manager, fn_block->func_graph());
+  RemoveUnnecessaryPhis(fn_block);
+  CheckFuncReturn();
   TransformParallelCall();
   return fn_block->func_graph();
 }
@@ -3243,9 +3251,9 @@ FunctionBlockPtr Parser::ParseForRepeat(const FunctionBlockPtr &block, const py:
   // Create loop variable 'i'
   ParameterPtr loop_var = header_block->func_graph()->add_parameter();
   // Create loop condition 'i < len(xs)'
-  std::string less_module_name = "mindspore.ops.composite.multitype_ops.less_impl";
-  ValuePtr less_op = prim::GetPythonOps("less", less_module_name);
-  CNodePtr cond_node = header_block->func_graph()->NewCNodeInOrder({NewValueNode(less_op), loop_var, scalar_len});
+  CNodePtr cond_node = header_block->func_graph()->NewCNodeInOrder(
+    {NewValueNode(std::make_shared<prim::ForHalfUnrollLess>()), loop_var, scalar_len});
+  header_block->func_graph()->set_flag(FUNC_GRAPH_FLAG_ROLLED_HEADER, true);
 
   // Generate the body of the for statement
   FunctionBlockPtr body_block = MakeFunctionBlock(std::make_shared<TraceForBody>(block->func_graph()->debug_info()));
@@ -3324,9 +3332,6 @@ FunctionBlockPtr Parser::ParseForRepeat(const FunctionBlockPtr &block, const py:
       MS_LOG(DEBUG) << "Record rolled body call: {CNode: " << rolled_body_call->DebugString(recursive_level)
                     << ", rolled_graph: " << rolled_body_block->ToString() << "}";
     }
-    auto rolled_body_func_graph = rolled_body_block->func_graph();
-    rolled_body_func_graph->set_flag(FUNC_GRAPH_FLAG_NO_INLINE, true);
-    rolled_body_func_graph->set_flag(FUNC_GRAPH_FLAG_IGNORE_VALUE, true);
   }
 
   header_block->Mature();
@@ -3976,7 +3981,7 @@ void Parser::MakeSetAttrNode(const FunctionBlockPtr &block, const AnfNodePtr &ta
   // Update setattr_nodes_map.
   auto iter = setattr_nodes_map_.find(target_id_str);
   if (iter == setattr_nodes_map_.end()) {
-    auto attr_map = std::map<std::string, AnfNodePtr>();
+    auto attr_map = mindspore::HashMap<std::string, AnfNodePtr>();
     (void)attr_map.emplace(std::make_pair(attr_str, setattr_node));
     (void)setattr_nodes_map_.emplace(std::make_pair(target_id_str, attr_map));
   } else {
@@ -4154,7 +4159,7 @@ void Parser::WriteAssignVars(const FunctionBlockPtr &block, const py::object &ta
 }
 
 bool Parser::IsScriptInParams(const std::string &script_text, const py::dict &global_dict,
-                              const std::map<std::string, AnfNodePtr> &local_keys,
+                              const mindspore::HashMap<std::string, AnfNodePtr> &local_keys,
                               const FuncGraphPtr &func_graph) const {
   MS_EXCEPTION_IF_NULL(func_graph);
   // Check global parameters.
@@ -4581,8 +4586,9 @@ FunctionBlockPtr Parser::ParseWith(const FunctionBlockPtr &block, const py::obje
   return after_block;
 }
 
-void Parser::PrintPhiArgMaps(const std::map<ParameterPtr, std::set<AnfNodePtr>> &phi_to_args,
-                             const std::map<AnfNodePtr, std::set<ParameterPtr>> &arg_to_phis) {
+namespace {
+void PrintPhiArgMaps(const mindspore::HashMap<ParameterPtr, std::set<AnfNodePtr>> &phi_to_args,
+                     const mindspore::HashMap<AnfNodePtr, std::set<ParameterPtr>> &arg_to_phis) {
   if (!IS_OUTPUT_ON(mindspore::kDebug)) {
     return;
   }
@@ -4615,9 +4621,8 @@ void Parser::PrintPhiArgMaps(const std::map<ParameterPtr, std::set<AnfNodePtr>> 
   MS_LOG(DEBUG) << "\n" << oss.str();
 }
 
-namespace {
-bool UpdatePhiArgMaps(std::map<ParameterPtr, std::set<AnfNodePtr>> *phi_to_args,
-                      std::map<AnfNodePtr, std::set<ParameterPtr>> *arg_to_phis) {
+bool UpdatePhiArgMaps(mindspore::HashMap<ParameterPtr, std::set<AnfNodePtr>> *phi_to_args,
+                      mindspore::HashMap<AnfNodePtr, std::set<ParameterPtr>> *arg_to_phis) {
   MS_EXCEPTION_IF_NULL(phi_to_args);
   MS_EXCEPTION_IF_NULL(arg_to_phis);
   bool phi_arg_updated = false;
@@ -4663,10 +4668,9 @@ bool UpdatePhiArgMaps(std::map<ParameterPtr, std::set<AnfNodePtr>> *phi_to_args,
   }
   return phi_arg_updated;
 }
-}  // namespace
 
-void Parser::UpdatePhiArgMapsRepeatedly(std::map<ParameterPtr, std::set<AnfNodePtr>> *phi_to_args,
-                                        std::map<AnfNodePtr, std::set<ParameterPtr>> *arg_to_phis) {
+void UpdatePhiArgMapsRepeatedly(mindspore::HashMap<ParameterPtr, std::set<AnfNodePtr>> *phi_to_args,
+                                mindspore::HashMap<AnfNodePtr, std::set<ParameterPtr>> *arg_to_phis) {
   bool phi_arg_updated = true;
   size_t loop_count = 0;
   while (phi_arg_updated) {
@@ -4675,9 +4679,10 @@ void Parser::UpdatePhiArgMapsRepeatedly(std::map<ParameterPtr, std::set<AnfNodeP
     phi_arg_updated = UpdatePhiArgMaps(phi_to_args, arg_to_phis);
   }
 }
+}  // namespace
 
-void Parser::CreatePhiArgMaps(std::map<ParameterPtr, std::set<AnfNodePtr>> *phi_to_args,
-                              std::map<AnfNodePtr, std::set<ParameterPtr>> *arg_to_phis) {
+void Parser::CreatePhiArgMaps(mindspore::HashMap<ParameterPtr, std::set<AnfNodePtr>> *phi_to_args,
+                              mindspore::HashMap<AnfNodePtr, std::set<ParameterPtr>> *arg_to_phis) {
   MS_EXCEPTION_IF_NULL(phi_to_args);
   MS_EXCEPTION_IF_NULL(arg_to_phis);
   for (FunctionBlockPtr &block : func_block_list_) {
@@ -4695,17 +4700,18 @@ void Parser::CreatePhiArgMaps(std::map<ParameterPtr, std::set<AnfNodePtr>> *phi_
   }
 }
 
-std::shared_ptr<std::map<ParameterPtr, AnfNodePtr>> Parser::CollectRemovablePhiArgs(
-  const std::map<ParameterPtr, std::set<AnfNodePtr>> &phi_to_args) {
-  auto need_remove_phi_args = std::make_shared<std::map<ParameterPtr, AnfNodePtr>>();
+namespace {
+mindspore::HashMap<ParameterPtr, AnfNodePtr> CollectRemovablePhiArgs(
+  const mindspore::HashMap<ParameterPtr, std::set<AnfNodePtr>> &phi_to_args) {
+  mindspore::HashMap<ParameterPtr, AnfNodePtr> need_remove_phi_args;
   for (const auto &[phi, args] : phi_to_args) {
     if (args.empty()) {
       // phi's arg is phi self.
-      (*need_remove_phi_args)[phi] = nullptr;
+      need_remove_phi_args[phi] = nullptr;
       continue;
     }
     if (args.size() == 1) {
-      (*need_remove_phi_args)[phi] = *(args.begin());
+      need_remove_phi_args[phi] = *(args.begin());
     }
   }
   if (IS_OUTPUT_ON(mindspore::kDebug)) {
@@ -4713,7 +4719,7 @@ std::shared_ptr<std::map<ParameterPtr, AnfNodePtr>> Parser::CollectRemovablePhiA
     std::ostringstream oss;
     oss << "=====================Need removed phis and args====================="
         << "\n";
-    for (const auto &[phi, arg] : *need_remove_phi_args) {
+    for (const auto &[phi, arg] : need_remove_phi_args) {
       MS_EXCEPTION_IF_NULL(phi);
       oss << "phi[" << m << "]: " << phi->DebugString() << "\n";
       oss << "arg[" << m++ << "]: " << arg->DebugString() << "\n";
@@ -4723,30 +4729,21 @@ std::shared_ptr<std::map<ParameterPtr, AnfNodePtr>> Parser::CollectRemovablePhiA
   return need_remove_phi_args;
 }
 
-std::shared_ptr<std::map<ParameterPtr, AnfNodePtr>> Parser::CalRemovablePhis() {
-  std::map<ParameterPtr, std::set<AnfNodePtr>> phi_to_args;
-  std::map<AnfNodePtr, std::set<ParameterPtr>> arg_to_phis;
-  CreatePhiArgMaps(&phi_to_args, &arg_to_phis);
-  // Update phi arg maps by phi arg map relations, some phi can be replaced as arg.
-  UpdatePhiArgMapsRepeatedly(&phi_to_args, &arg_to_phis);
-  // Collect all one arg phis.
-  return CollectRemovablePhiArgs(phi_to_args);
-}
-
-void ReplacePhiAsArg(const std::map<ParameterPtr, AnfNodePtr> &removable_phis, const FuncGraphManagerPtr &manager) {
+void ReplacePhiAsArg(const FunctionBlockPtr &block,
+                     const mindspore::HashMap<ParameterPtr, AnfNodePtr> &removable_phis) {
   MS_LOG(DEBUG) << "Removable phi size: " << removable_phis.size();
   for (const auto &[phi, arg] : removable_phis) {
     MS_LOG(DEBUG) << "Removable phi: " << phi->DebugString()
                   << ", arg: " << (arg == nullptr ? "null" : arg->DebugString());
     if (arg != nullptr) {
-      (void)manager->Replace(phi, arg);
+      ud_chain::Replace(phi, arg);
     }
   }
 }
 
 // Remove the removable phi parameter and get the corresponding index.
-HashSet<size_t> RemovePhiParametersAndGetRemoveIndex(const FunctionBlockPtr &block,
-                                                     const std::map<ParameterPtr, AnfNodePtr> &removable_phis) {
+HashSet<size_t> RemovePhiParametersAndGetRemoveIndex(
+  const FunctionBlockPtr &block, const mindspore::HashMap<ParameterPtr, AnfNodePtr> &removable_phis) {
   MS_EXCEPTION_IF_NULL(block);
   auto func_graph = block->func_graph();
   MS_EXCEPTION_IF_NULL(func_graph);
@@ -4775,8 +4772,7 @@ HashSet<size_t> RemovePhiParametersAndGetRemoveIndex(const FunctionBlockPtr &blo
 }
 
 // If phi parameter is removable, then the corresponding arg should be removed.
-void RemoveJumpNodeArgs(const FunctionBlockPtr &block, const HashSet<size_t> &need_removed_indexes,
-                        const FuncGraphManagerPtr &manager) {
+void RemoveJumpNodeArgs(const FunctionBlockPtr &block, const HashSet<size_t> &need_removed_indexes) {
   MS_EXCEPTION_IF_NULL(block);
   if (need_removed_indexes.empty()) {
     return;
@@ -4799,27 +4795,39 @@ void RemoveJumpNodeArgs(const FunctionBlockPtr &block, const HashSet<size_t> &ne
     MS_LOG(DEBUG) << "Replace old jump node: " << jump_node->DebugString()
                   << " as new jump node: " << new_jump_node->DebugString()
                   << ", jump node block: " << prev_block->ToString();
-    (void)manager->Replace(jump_node, new_jump_node);
+    ud_chain::Replace(jump_node, new_jump_node);
   }
 }
+}  // namespace
 
-void Parser::RemoveUnnecessaryPhis(const FuncGraphManagerPtr &manager) {
+const mindspore::HashMap<ParameterPtr, AnfNodePtr> Parser::CalRemovablePhis() {
+  mindspore::HashMap<ParameterPtr, std::set<AnfNodePtr>> phi_to_args;
+  mindspore::HashMap<AnfNodePtr, std::set<ParameterPtr>> arg_to_phis;
+  CreatePhiArgMaps(&phi_to_args, &arg_to_phis);
+  // Update phi arg maps by phi arg map relations, some phi can be replaced as arg.
+  UpdatePhiArgMapsRepeatedly(&phi_to_args, &arg_to_phis);
+  // Collect all one arg phis.
+  return CollectRemovablePhiArgs(phi_to_args);
+}
+
+void Parser::RemoveUnnecessaryPhis(const FunctionBlockPtr &fn_block) {
   // Merge all removable phis to one map;
   const auto &removable_phis = CalRemovablePhis();
-  if (removable_phis->empty()) {
+  if (removable_phis.empty()) {
     return;
   }
-  MS_EXCEPTION_IF_NULL(manager);
+  // Build node users info.
+  ud_chain::Preprocess(fn_block->func_graph());
   // Replace all phi node as arg.
-  ReplacePhiAsArg(*removable_phis, manager);
+  ReplacePhiAsArg(fn_block, removable_phis);
   // Remove the unnecessary phi parameters.
   for (const auto &block : func_block_list_) {
     MS_EXCEPTION_IF_NULL(block);
     MS_LOG(DEBUG) << "Start remove phi of block: " << block->ToString();
     // Remove the unnecessary phi parameters.
-    const auto &need_removed_indexes = RemovePhiParametersAndGetRemoveIndex(block, *removable_phis);
+    const auto &need_removed_indexes = RemovePhiParametersAndGetRemoveIndex(block, removable_phis);
     // Remove all block->prev_blocks()'s jump node corresponding args.
-    RemoveJumpNodeArgs(block, need_removed_indexes, manager);
+    RemoveJumpNodeArgs(block, need_removed_indexes);
   }
 }
 

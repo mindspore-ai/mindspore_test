@@ -26,16 +26,25 @@
 #include "ir/anf.h"
 #include "ir/manager.h"
 #include "frontend/optimizer/optimizer.h"
+#include "pipeline/jit/ps/pass_config.h"
 #include "utils/log_adapter.h"
 #include "utils/compile_config.h"
 
 namespace mindspore {
 /* namespace to support opt */
 namespace opt {
+
+namespace {
+SubstitutionPtr RegisterSubstitution(const SubstitutionPtr &sub) {
+  PassConfigure::Instance().RegisterSubstitution(sub);
+  return sub;
+}
+}  // namespace
+
 SubstitutionPtr MakeSubstitution(const OptimizerCallerPtr &transform, const std::string &name, const PrimitivePtr &prim,
                                  const RenormAction &renorm_action, bool has_priority_pattern) {
   auto fn = [prim](const AnfNodePtr &node) -> bool { return IsPrimitiveCNode(node, prim); };
-  return std::make_shared<Substitution>(transform, name, fn, renorm_action, has_priority_pattern);
+  return RegisterSubstitution(std::make_shared<Substitution>(transform, name, fn, renorm_action, has_priority_pattern));
 }
 
 SubstitutionPtr MakeSubstitution(const OptimizerCallerPtr &transform, const std::string &name,
@@ -56,13 +65,14 @@ SubstitutionPtr MakeSubstitution(const OptimizerCallerPtr &transform, const std:
       return (prim->Hash() == hash) && (prim->name() == name);
     });
   };
-  return std::make_shared<Substitution>(transform, name, fn, renorm_action, has_priority_pattern);
+  return RegisterSubstitution(std::make_shared<Substitution>(transform, name, fn, renorm_action, has_priority_pattern));
 }
 
 SubstitutionPtr MakeSubstitution(const OptimizerCallerPtr &transform, const std::string &name,
                                  const PredicateFuncType &predicate, const RenormAction &renorm_action,
                                  bool has_priority_pattern) {
-  return std::make_shared<Substitution>(transform, name, predicate, renorm_action, has_priority_pattern);
+  return RegisterSubstitution(
+    std::make_shared<Substitution>(transform, name, predicate, renorm_action, has_priority_pattern));
 }
 
 AnfNodePtr Substitution::operator()(const OptimizerPtr &optimizer, const AnfNodePtr &node) {
@@ -194,6 +204,10 @@ bool SubstitutionList::ApplyIRToSubstitutions(const OptimizerPtr &optimizer, con
   (void)todo.emplace_back(func_graph->return_node());
   bool changes = false;
   auto &all_nodes = manager->all_nodes();
+
+  auto pass_key = optimizer->name() + ".r" + std::to_string(optimizer->current_pass_.counter) + "." +
+                  optimizer->current_pass_.name + ".";
+
   while (!todo.empty()) {
     AnfNodePtr node = std::move(todo.front());
     todo.pop_front();
@@ -205,9 +219,20 @@ bool SubstitutionList::ApplyIRToSubstitutions(const OptimizerPtr &optimizer, con
 
     bool change = false;
     for (auto &substitution : list_) {
+      auto sub_key = pass_key + substitution->name_;
+      if (FilterPass(sub_key)) {
+        continue;
+      }
+      auto last_version = FuncGraphManager::version();
       auto res = DoTransform(optimizer, node, substitution);
-      if (res != nullptr && res != node) {
-        change = true;
+      change = (res != nullptr && res != node);
+      if (FuncGraphManager::version() != last_version || change) {
+        UpdateRunningPasses(sub_key);
+        if (!change) {
+          MS_LOG(INFO) << "There may be a problem. Substitution: " << sub_key;
+        }
+      }
+      if (change) {
         changes = true;
         node = res;
         break;
@@ -274,6 +299,26 @@ void SubstitutionList::DisplayStatusOfSubstitution(const mindspore::HashMap<std:
   MS_LOG(DEBUG) << ss.str();
 }
 
+namespace {
+void DumpIR_(const std::string &fg_name, const FuncGraphPtr &func_graph) {
+  static const auto enable_dump_pass = GetDumpConfig().enable_dump_pass_ir;
+  static const auto input_name = common::GetEnv("MS_DEV_DUMP_IR_PASSES");
+  auto enable_dump_pass_ir = (input_name.size() != 0) || enable_dump_pass;
+  auto context = MsContext::GetInstance();
+  if ((enable_dump_pass_ir && context->CanDump(kIntroductory)) || context->CanDump(kFully)) {
+    static const auto switch_order = (common::GetEnv("MS_DEV_SAVE_GRAPHS_SORT_MODE") == "1");
+    if (switch_order) {
+      ExportIR(fg_name + ".ir", func_graph);
+    } else {
+      DumpIR(fg_name + ".ir", func_graph);
+    }
+    if (context->CanDump(kFully)) {
+      draw::Draw(fg_name + ".dot", func_graph);
+    }
+  }
+}
+}  // namespace
+
 bool SubstitutionList::ApplySubstitutionsToIR(const OptimizerPtr &optimizer, const FuncGraphPtr &func_graph) const {
   // Add for substitution status counting
   size_t space = 0;
@@ -284,6 +329,8 @@ bool SubstitutionList::ApplySubstitutionsToIR(const OptimizerPtr &optimizer, con
     }
   }
 
+  auto pass_key = optimizer->name() + ".r" + std::to_string(optimizer->current_pass_.counter) + "." +
+                  optimizer->current_pass_.name + ".";
   bool changes = false;
   bool loop = true;
   while (loop) {
@@ -291,28 +338,23 @@ bool SubstitutionList::ApplySubstitutionsToIR(const OptimizerPtr &optimizer, con
     for (size_t i = 0; i < list_.size(); i++) {
       const auto &substitution = list_[i];
       MS_LOG(INFO) << "Start substitution: " << substitution->name_;
+      auto sub_key = pass_key + substitution->name_;
+      if (FilterPass(sub_key)) {
+        continue;
+      }
+      auto last_version = FuncGraphManager::version();
       bool change = ApplySubstitutionToIR(optimizer, func_graph, substitution);
       MS_LOG(INFO) << "End substitution: " << substitution->name_ << ", change: " << change;
+      if (change || FuncGraphManager::version() != last_version) {
+        UpdateRunningPasses(sub_key);
+        if (!change) {
+          MS_LOG(INFO) << "There may be a problem. Substitution: " << sub_key;
+        }
+      }
       changes = changes || change;
       loop = loop || change;
 #ifdef ENABLE_DUMP_IR
-      static const auto enable_dump_pass = GetDumpConfig().enable_dump_pass_ir;
-      static const auto input_name = common::GetEnv("MS_DEV_DUMP_IR_PASSES");
-      auto enable_dump_pass_ir = (input_name.size() != 0) || enable_dump_pass;
-      auto context = MsContext::GetInstance();
-      if ((enable_dump_pass_ir && context->CanDump(kIntroductory)) || context->CanDump(kFully)) {
-        auto fg_name = optimizer->name() + "_r" + std::to_string(optimizer->current_pass_.counter) + "_" +
-                       optimizer->current_pass_.name + "_" + substitution->name_;
-        static const auto switch_order = (common::GetEnv("MS_DEV_SAVE_GRAPHS_SORT_MODE") == "1");
-        if (switch_order) {
-          ExportIR(fg_name + ".ir", func_graph);
-        } else {
-          DumpIR(fg_name + ".ir", func_graph);
-        }
-        if (context->CanDump(kFully)) {
-          draw::Draw(fg_name + ".dot", func_graph);
-        }
-      }
+      DumpIR_(sub_key, func_graph);
 #endif
 
       // Record the status of each substitution

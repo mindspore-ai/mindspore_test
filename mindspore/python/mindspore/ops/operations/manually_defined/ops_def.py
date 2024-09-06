@@ -18,6 +18,7 @@ from __future__ import division
 
 import numbers
 import math
+import types
 import numpy as np
 from mindspore.ops import signature as sig
 from mindspore.ops.primitive import Primitive, prim_attr_register, prim_arg_register, PrimitiveWithInfer
@@ -2014,3 +2015,249 @@ def flash_attention_score(query, key, value, head_num, real_shift=None, drop_mas
                                                    inner_precise, input_layout, sparse_mode)
     return rank_op(query, key, value, real_shift, drop_mask, padding_mask, attn_mask, prefix, actual_seq_qlen,
                    actual_seq_kvlen)[3]
+
+
+class WhileLoop(Primitive):
+    """
+    Provide a useful op for reducing compilation times of while loop.
+    The execution logic of the WhileLoop operator can be roughly represented by the following code:
+
+    .. code-block:: python
+
+        def WhileLoop(cond_func, loop_func, init_val):
+            while(cond_func(init_val)):
+                init_val = loop_func(init_val)
+            return init_val
+
+    The current WhileLoop operator has the following syntactic limitations:
+
+    - Using a side-effect function as `loop_func` is currently not support,
+      such as operations that modify parameters, global variables, etc.
+    - The return value of `loop_func` being of a different type or shape
+      from the `init_val` is currently not support.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Inputs:
+        - **cond_func** (Function) - The condition function.
+        - **loop_func** (Function) - The loop function, take one argument and
+          return value has the same type with input argument.
+        - **init_val** (Union[Tensor, number, str, bool, list, tuple, dict]) - The initial value.
+
+    Outputs:
+        Union[Tensor, number, str, bool, list, tuple, dict], the final result of the while loop,
+        has same type and shape with input `init_val` .
+
+    Raises:
+        TypeError: If `cond_func` is not a function.
+        TypeError: If `loop_func` is not a function.
+        ValueError: If `loop_func` cannot take `init_val` as input or has different
+                    output type or shape with `init_val` .
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> from mindspore import ops
+        >>> def loop_while_fun(init_val):
+        ...     val = init_val
+        ...     val = val + 1
+        ...     return val
+        ...
+        >>> init_state = 10
+        >>> while_loop = ops.WhileLoop()
+        >>> result = while_loop(lambda x : x < 100, loop_while_fun, init_state)
+        >>> print(result)
+        100
+    """
+
+    @prim_attr_register
+    def __init__(self):
+        """Initialize WhileLoop."""
+
+    def __call__(self, cond_func, loop_func, init_val):
+        validator.check_value_type("cond_func", cond_func,
+                                   [types.FunctionType, types.MethodType], "WhileLoop")
+        validator.check_value_type("loop_func", loop_func,
+                                   [types.FunctionType, types.MethodType], "WhileLoop")
+        val = init_val
+        try:
+            while cond_func(val):
+                val = loop_func(val)
+        except Exception as e:
+            raise ValueError("Invalid loop_func, please check input arguments and \
+                             return value, error info: {}".format(e))
+        return val
+
+
+class Scan(Primitive):
+    """
+    Scan a function over an array while the processing of the current element
+    depends on the execution result of the previous element.
+    The execution logic of the Scan operator can be roughly represented by the following code:
+
+    .. code-block:: python
+
+        def Scan(loop_func, init, xs, length=None):
+            if xs is None:
+                xs = [None] * length
+            carry = init
+            ys = []
+            for x in xs:
+                carry, y = loop_func(carry, x)
+                ys.append(y)
+            return carry, ys
+
+    The current Scan operator has the following syntactic limitations:
+
+    - Using a side-effect function as `loop_func` is currently not support,
+      such as operations that modify parameters, global variables, etc.
+    - The first element of the return value of `loop_func` being of a different
+      type or shape from the `init_val` is currently not support.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Inputs:
+        - **loop_func** (Function) - The loop function.
+        - **init** (Union[Tensor, number, str, bool, list, tuple, dict]) - An initial loop carry value.
+        - **xs** (Union[tuple, list, None]) - The value over which to scan.
+        - **length** (Union[int, None], optional) - The size of xs. Default: ``None`` .
+        - **unroll** (bool, optional) - The flag for whether to perform loop unrolling in compile process.
+          Default: ``True`` .
+
+    Outputs:
+        Tuple(Union[Tensor, number, str, bool, list, tuple, dict], list). Output of scan loop,
+        a tuple with two elements, the first element has same type and shape with init argument,
+        and the second is a list containing the results of each loop.
+
+    Raises:
+        TypeError: If `loop_func` is not a function.
+        TypeError: If `xs` is not a tuple, a list or None.
+        TypeError: If `length` is not an int or None.
+        TypeError: If `unroll` is not a bool.
+        ValueError: If `loop_func` cannot take `init` and element of `xs` as inputs.
+        ValueError: If the return value of `loop_func` is not a tuple with two elements,
+                    or the first element of the tuple has different type or shape from `init` .
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> from mindspore import ops
+        >>> def cumsum(res, el):
+        ...     res = res + el
+        ...     return res, res
+        ...
+        >>> a = [1, 2, 3, 4]
+        >>> result_init = 0
+        >>> scan_op = ops.Scan()
+        >>> result = scan_op(cumsum, result_init, a)
+        >>> print(result == (10, [1, 3, 6, 10]))
+        True
+    """
+
+    @prim_attr_register
+    def __init__(self):
+        """Initialize Scan."""
+
+    def __call__(self, loop_func, init, xs, length=None, unroll=True):
+        validator.check_value_type("loop_func", loop_func,
+                                   [types.FunctionType, types.MethodType], "Scan")
+        validator.check_value_type("xs", xs, [list, tuple, None], "Scan")
+        if xs is None:
+            validator.check_value_type("length", length, [int], "Scan")
+            xs = [None] * length
+        carry = init
+        length = len(xs)
+        if not length:
+            return init, []
+        try:
+            carry, y = loop_func(carry, xs[0])
+            ys = [y]
+            i = 1
+            while i < length:
+                carry, y = loop_func(carry, xs[i])
+                ys.append(y)
+                i = i + 1
+        except Exception as e:
+            raise ValueError("Invalid loop_func, please check input arguments and \
+                             return value, error info: {}".format(e))
+        return carry, ys
+
+
+class ForiLoop(Primitive):
+    """
+    Provide a useful op for loop from lower to upper.
+    The execution logic of the ForiLoop operator can be roughly represented by the following code:
+
+    .. code-block:: python
+
+        def ForiLoop(lower, upper, loop_func, init_val):
+            for i in range(lower, upper):
+                init_val = loop_func(i, init_val)
+            return init_val
+
+    The current ForiLoop operator has the following syntactic limitations:
+
+    - Using a side-effect function as `loop_func` is currently not support,
+      such as operations that modify parameters, global variables, etc.
+    - The return value of `loop_func` being of a different type or shape
+      from the `init_val` is currently not support.
+    - Negative numbers or custom increments is currently not support.
+
+    .. warning::
+        This is an experimental API that is subject to change or deletion.
+
+    Inputs:
+        - **lower** (Union[int, Tensor]) - The start index of loop.
+        - **upper** (Union[int, Tensor]) - The end index of loop.
+        - **loop_func** (Function) - The loop function, takes two arguments.
+        - **init_val** (Union[Tensor, number, str, bool, list, tuple, dict]) - The init value.
+        - **unroll** (bool, optional) - The flag for whether unroll in compile process,
+          only valid when the number of loop iterations is determined. Default: ``True`` .
+
+    Outputs:
+        Union[Tensor, number, str, bool, list, tuple, dict], the final result of the loop,
+        has same type and shape with input `init_val` .
+
+    Raises:
+        TypeError: If `lower` is not an int or a Tensor.
+        TypeError: If `upper` is not an int or a Tensor.
+        TypeError: If `loop_func` is not a function.
+        ValueError: If `loop_func` cannot take index and `init_val` as arguments or if the type
+                    of output it produces is different from the type or shape of `init_val` .
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> from mindspore import ops
+        >>> def cumsum(index, res):
+        ...     return index + res
+        ...
+        >>> result_init = 0
+        >>> fori_loop = ops.ForiLoop()
+        >>> result = fori_loop(0, 4, cumsum, result_init)
+        >>> print(result)
+        6
+    """
+
+    @prim_attr_register
+    def __init__(self):
+        """Initialize ForiLoop."""
+
+    def __call__(self, lower, upper, loop_func, init_val, unroll=True):
+        validator.check_value_type("lower", lower, [int, Tensor], "ForiLoop")
+        validator.check_value_type("upper", upper, [int, Tensor], "ForiLoop")
+        validator.check_value_type("loop_func", loop_func,
+                                   [types.FunctionType, types.MethodType], "ForiLoop")
+        val = init_val
+        try:
+            for i in range(lower, upper):
+                val = loop_func(i, val)
+        except Exception as e:
+            raise ValueError("Invalid loop_func, please check input arguments and \
+                             return value, error info: {}".format(e))
+        return val

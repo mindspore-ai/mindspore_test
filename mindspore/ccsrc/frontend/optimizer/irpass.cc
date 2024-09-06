@@ -63,7 +63,6 @@
 #include "frontend/optimizer/irpass/switch_or_switch_layer_defer_inline.h"
 #include "frontend/optimizer/irpass/call_graph_tuple_transform.h"
 #include "frontend/optimizer/irpass/recompute_prepare.h"
-#include "frontend/optimizer/irpass/real_op_eliminate.h"
 #include "frontend/optimizer/irpass/convert_tensor_eliminate.h"
 #include "frontend/optimizer/irpass/recompute.h"
 #include "frontend/optimizer/irpass/grad_partial_transform.h"
@@ -71,6 +70,7 @@
 #include "frontend/optimizer/irpass/const_output_eliminate.h"
 #include "frontend/optimizer/irpass/slice_to_tuple.h"
 #include "frontend/optimizer/irpass/j_node_and_user_rematch.h"
+#include "frontend/optimizer/irpass/loop_unroll.h"
 
 namespace mindspore {
 namespace opt {
@@ -156,7 +156,6 @@ OptimizeIRPassLib::OptimizeIRPassLib() {
   depend_value_elim_ = MakeSubstitution(std::make_shared<DependValueElim>(), "depend_value_elim", prim::kPrimDepend);
   all_reduce_const_elim_ =
     MakeSubstitution(std::make_shared<AllReduceConstElim>(), "reduce_all_const_elim", prim::kPrimAllReduce);
-  real_op_eliminate_ = MakeSubstitution(std::make_shared<RealOpEliminate>(), "real_op_eliminate", prim::kPrimRealInner);
   convert_tensor_eliminate_ = MakeSubstitution(std::make_shared<ConvertTensorEliminate>(), "convert_tensor_eliminate",
                                                {prim::kPrimConvertToAdapterTensor, prim::kPrimConvertToMsTensor});
   convert_tensor_all_eliminate_ =
@@ -173,7 +172,7 @@ OptimizeIRPassLib::OptimizeIRPassLib() {
   environ_get_depend_swap_ =
     MakeSubstitution(std::make_shared<EnvironGetDependSwap>(), "environ_get_depend_swap", prim::kPrimEnvironGet);
   environ_add_const_eliminate_ = MakeSubstitution(std::make_shared<EnvironAddConstEliminater>(),
-                                                  "environ_add_const_eliminate_", prim::kPrimEnvironAdd);
+                                                  "environ_add_const_eliminate", prim::kPrimEnvironAdd);
   split_environ_get_set_with_tuple_value_ =
     MakeSubstitution(std::make_shared<SplitEnvironGetSetWithTupleValue>(), "split_environ_get_set_with_tuple_value",
                      {prim::kPrimEnvironGet, prim::kPrimEnvironSet});
@@ -202,6 +201,12 @@ OptimizeIRPassLib::OptimizeIRPassLib() {
   switch_layer_partial_eliminater_ =
     MakeSubstitution(std::make_shared<SwitchLayerPartialEliminater>(), "eliminate_switch_layer_partial_", IsCNodeDup);
 
+  // Loop unroll
+  loop_unroll_before_grad_ =
+    MakeSubstitution(std::make_shared<LoopUnrollBeforeGrad>(), "loop_unroll_before_grad", prim::kPrimScan);
+  loop_unroll_after_grad_ =
+    MakeSubstitution(std::make_shared<LoopUnrollAfterGrad>(), "loop_unroll_after_grad", prim::kPrimScan);
+
   // Addn
   merge_addn_ = MakeSubstitution(std::make_shared<MergeAddN>(), "merge_addn", prim::kPrimAddN);
   addn_zero_filter_ = MakeSubstitution(std::make_shared<AddNZeroFilter>(), "addn_zero_filter", prim::kPrimAddN);
@@ -218,7 +223,7 @@ OptimizeIRPassLib::OptimizeIRPassLib() {
 
   // inline
   inline_ = MakeSubstitution(std::make_shared<Inliner>(), "inline", IsCNodeGraph);
-  inline_without_move_ = MakeSubstitution(std::make_shared<DirectInliner>(false), "inline", IsCNodeGraph);
+  inline_without_move_ = MakeSubstitution(std::make_shared<DirectInliner>(false), "inline_without_move", IsCNodeGraph);
   replace_applicator_ =
     MakeSubstitution(std::make_shared<ReplaceApplicator>(), "replace_applicator", IsValueNode<FuncGraph>);
   specialize_transform_ =

@@ -123,6 +123,9 @@ bool IrExportBuilder::SetAbstractFuncToAttributeProto(const abstract::AbstractBa
     auto node_ptr = abstract->cast<abstract::PartialAbstractClosurePtr>()->node();
     MS_EXCEPTION_IF_NULL(node_ptr);
     attr_proto->set_s(GetUniqueNodeName(node_ptr));
+  } else if (abstract->isa<abstract::AbstractFutureFuncAtom>()) {
+    auto real_abstract = abstract->cast<abstract::AbstractFunctionPtr>()->GetUnique();
+    return SetAbstractFuncToAttributeProto(real_abstract, attr_proto);
   } else if (abstract->isa<abstract::AbstractFuncUnion>()) {
     attr_proto->set_type(mind_ir::AttributeProto_AttributeType_UNIONFUNCCLOSURE);
     auto visit_func = [this, &attr_proto](const abstract::AbstractFuncAtomPtr &poss) {

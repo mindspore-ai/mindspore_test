@@ -488,6 +488,28 @@ void BroadenArgs(const AbstractBasePtrList &args_abs_list, AbstractBasePtrList *
 
 AbstractBasePtrList FuncGraphEvaluator::NormalizeArgs(const AbstractBasePtrList &args_abs_list) const {
   MS_EXCEPTION_IF_NULL(func_graph_);
+  if (func_graph_->has_flag(FUNC_GRAPH_FLAG_ROLLED_HEADER)) {
+    AbstractBasePtrList new_args_abs_list;
+    bool contain_constant = false;
+    for (size_t i = 0; i < args_abs_list.size(); ++i) {
+      if (i == 1) {
+        new_args_abs_list.emplace_back(AbstractBroaden(args_abs_list[i]));
+      } else {
+        // Do not do broaden for the value may be used.
+        if (i != 0 &&
+            (!args_abs_list[i]->BuildValue()->ContainsValueAny() || args_abs_list[i]->isa<AbstractSequence>())) {
+          contain_constant = true;
+          break;
+        }
+        new_args_abs_list.emplace_back(args_abs_list[i]);
+      }
+    }
+    if (contain_constant) {
+      return args_abs_list;
+    }
+    MS_LOG(DEBUG) << "new_args_abs_list: " << mindspore::ToString(new_args_abs_list);
+    return new_args_abs_list;
+  }
   if (func_graph_->has_flag(FUNC_GRAPH_FLAG_IGNORE_VALUE)) {
     AbstractBasePtrList broadened_list;
     auto broaden_scalar = !func_graph_->has_flag(FUNC_GRAPH_FLAG_VMAP_TRANSFORMED);

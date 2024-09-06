@@ -106,6 +106,7 @@ const char FUNC_GRAPH_FLAG_ARGS_NO_EXPAND[] = "args_no_expand";
 const char FUNC_GRAPH_FLAG_PROXY_GRAPH[] = "proxy_graph";
 const char FUNC_GRAPH_FLAG_NO_CHILD_GRAPH[] = "no_child_graph";
 const char FUNC_GRAPH_FLAG_AMP_STRATEGY[] = "amp_strategy";
+const char FUNC_GRAPH_FLAG_ROLLED_HEADER[] = "rolled_header";
 
 const char kFuncGraphFlagUndetermined[] = "undeterminate";
 const char kFuncGraphFlagBackPropEntry[] = "back_prop_entry";
@@ -212,14 +213,24 @@ class MS_CORE_API FuncGraph : public FuncGraphBase, public EffectInfoHolder {
     for (auto &attr : attrs) {
       attrs_[attr.first] = attr.second;
     }
+    FuncGraphManager::ChangeVersion();
   }
   bool has_flag(const std::string &key) const;
-  void set_flag(const std::string &key, bool flag) { attrs_[key] = MakeValue(flag); }
-  void erase_flag(const std::string &key) { (void)attrs_.erase(key); }
+  void set_flag(const std::string &key, bool flag) {
+    attrs_[key] = MakeValue(flag);
+    FuncGraphManager::ChangeVersion();
+  }
+  void erase_flag(const std::string &key) {
+    (void)attrs_.erase(key);
+    FuncGraphManager::ChangeVersion();
+  }
 
   bool has_attr(const std::string &key) const;
   ValuePtr get_attr(const std::string &key) const;
-  void set_attr(const std::string &key, const ValuePtr &value) { attrs_[key] = value; }
+  void set_attr(const std::string &key, const ValuePtr &value) {
+    attrs_[key] = value;
+    FuncGraphManager::ChangeVersion();
+  }
 
   void set_amp_strategy(const amp::AmpStrategyPtr &amp_strategy) { amp_strategy_ = amp_strategy; }
   amp::AmpStrategyPtr amp_strategy() const { return amp_strategy_; }
