@@ -32,7 +32,7 @@
 
 namespace mindspore {
 namespace plugin_loader {
-class PluginLoader {
+class BACKEND_EXPORT PluginLoader {
  public:
   static bool LoadDynamicLib(const std::string &plugin_file, std::map<std::string, void *> *all_handles,
                              std::stringstream *err_msg, const bool gpu_env = false);

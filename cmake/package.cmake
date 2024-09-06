@@ -219,6 +219,12 @@ if(ENABLE_D)
         )
         if(DEFINED ENV{MS_INTERNAL_KERNEL_HOME})
             install(
+                    TARGETS mindspore_internal_kernels LIBRARY
+                    DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
+                    COMPONENT mindspore
+                    NAMELINK_SKIP
+            )
+            install(
                     TARGETS lowlatency_collective
                     DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
                     COMPONENT mindspore
@@ -243,6 +249,11 @@ if(ENABLE_D OR ENABLE_ACL)
     endif()
     set(ASCEND_DRIVER_PATH ${ASCEND_PATH}/driver/lib64/common)
 
+    install(
+        TARGETS ms_atb_boost
+        DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
+        COMPONENT mindspore
+    )
     if(ENABLE_D)
         install(
           TARGETS hccl_plugin

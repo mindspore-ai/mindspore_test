@@ -36,6 +36,8 @@
 namespace mindspore {
 namespace device {
 namespace ascend {
+std::string GetCurrentDir();
+
 class GeHostAddress : public cpu::CPUDeviceAddress {
  public:
   GeHostAddress(void *ptr, size_t size, const std::string &format, TypeId type_id, const std::string &device_name,

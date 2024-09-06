@@ -61,12 +61,23 @@ if(ENABLE_D)
         )
         if(DEFINED ENV{MS_INTERNAL_KERNEL_HOME})
             install(
+                    TARGETS mindspore_internal_kernels LIBRARY
+                    DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
+                    COMPONENT mindspore
+                    NAMELINK_SKIP
+            )
+            install(
                     TARGETS lowlatency_collective
                     DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
                     COMPONENT mindspore
             )
         endif()
     endif()
+    install(
+        TARGETS ms_atb_boost
+        DESTINATION ${INSTALL_PLUGIN_DIR}/ascend
+        COMPONENT mindspore
+    )
     install(
             TARGETS hccl_plugin
             DESTINATION ${INSTALL_PLUGIN_DIR}/ascend

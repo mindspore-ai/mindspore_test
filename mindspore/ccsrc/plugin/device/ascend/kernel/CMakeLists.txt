@@ -53,14 +53,14 @@ file(GLOB_RECURSE INTERNAL_SRC_LIST RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 if(DEFINED ENV{MS_INTERNAL_KERNEL_HOME})
-    include_directories($ENV{MS_INTERNAL_KERNEL_HOME})
-    include_directories($ENV{MS_INTERNAL_KERNEL_HOME}/internal_kernel/include)
-    include_directories($ENV{MS_INTERNAL_KERNEL_HOME}/asdops/include)
-
-    set(SRC_IN_910B ${SRC_IN_910B} ${INTERNAL_SRC_LIST})
+    set(SRC_IN_910B ${SRC_IN_910B}
+        "internal/internal_kernel_build.cc"
+        "internal/internal_ascend_adapter.cc"
+    )
 else()
     set(SRC_IN_910B ${SRC_IN_910B}
         "internal/internal_kernel_build.cc"
+        "internal/internal_ascend_adapter.cc"
     )
     list(REMOVE_ITEM SRC_IN_910B "hccl/hcom_matmul_all_reduce.cc")
 endif()
@@ -83,3 +83,4 @@ add_subdirectory(aicore)
 add_subdirectory(${MS_OPS_KERNEL_DIR}/ascend/ascendc "ascendc")
 include_directories(${MS_OPS_KERNEL_DIR}/ascend/aicpu/aicpu_ops)
 add_subdirectory(${MS_OPS_KERNEL_DIR}/ascend/aicpu/aicpu_ops aicpu/aicpu_ops)
+add_subdirectory(internal)

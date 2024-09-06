@@ -367,6 +367,7 @@ set(SUB_COMP
         pipeline/jit/ps
         pipeline/jit/pi
         pipeline/pynative
+        pipeline/llm_boost
         pybind_api
 )
 

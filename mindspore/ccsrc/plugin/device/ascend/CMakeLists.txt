@@ -61,17 +61,7 @@ endif()
 
 if(DEFINED ENV{MS_INTERNAL_KERNEL_HOME})
     add_compile_definitions(ENABLE_INTERNAL_KERNELS)
-endif()
-
-if(DEFINED ENV{MS_INTERNAL_KERNEL_HOME})
-    MESSAGE(STATUS "MS_INTERNAL_KERNEL_HOME=$ENV{MS_INTERNAL_KERNEL_HOME} found.")
-    include_directories($ENV{MS_INTERNAL_KERNEL_HOME})
-    include_directories($ENV{MS_INTERNAL_KERNEL_HOME}/internal_kernel/include)
-    include_directories($ENV{MS_INTERNAL_KERNEL_HOME}/asdops/include)
     include_directories($ENV{MS_INTERNAL_KERNEL_HOME}/lccl/include)
-
-    link_directories($ENV{MS_INTERNAL_KERNEL_HOME}/internal_kernel/lib)
-    link_directories($ENV{MS_INTERNAL_KERNEL_HOME}/lccl/lib)
 endif()
 
 
@@ -81,6 +71,7 @@ set(ASCEND_SUB_COMP
         hal/hardware
         kernel
         optimizer
+        llm_boost
         )
 
 foreach(a_comp ${ASCEND_SUB_COMP})
@@ -134,12 +125,6 @@ set_target_properties(mindspore_ascend PROPERTIES INSTALL_RPATH
 
 if(DVM_LIB)
     target_link_libraries(mindspore_ascend PRIVATE ${DVM_LIB})
-endif()
-
-if(DEFINED ENV{MS_INTERNAL_KERNEL_HOME})
-    target_link_libraries(mindspore_ascend PRIVATE ms_kernels_internal)
-    set_target_properties(lowlatency_collective PROPERTIES INSTALL_RPATH
-                    ${ORIGIN_PATH}/ms_kernels_internal/lccl/lib)
 endif()
 
 if(ENABLE_DEBUGGER)

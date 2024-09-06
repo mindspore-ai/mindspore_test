@@ -18,7 +18,7 @@
 #include <set>
 
 #include "transform/acl_ir/op_api_cache.h"
-#include "transform/symbol/acl_rt_symbol.h"
+#include "plugin/device/ascend/kernel/internal/internal_ascend_adapter.h"
 #include "utils/misc.h"
 
 namespace mindspore::kernel {
@@ -77,8 +77,9 @@ TilingInfo TilingCacheMgr::GetOrCreateTilingInfo(
     auto default_stream_id = device_context_->device_res_manager_->DefaultStream();
     default_stream_ = device_context_->device_res_manager_->GetStream(default_stream_id);
   }
-  ret = CALL_ASCEND_API(aclrtMemcpyAsync, tiling_cache_elem.device_buf_.addr_, tiling_cache_elem.device_buf_.size_,
-                        host_tiling_buf_.addr_, host_tiling_buf_.size_, ACL_MEMCPY_HOST_TO_DEVICE, default_stream_);
+  ret = InternalAscendAdapter::AcendMemcpyAsync(tiling_cache_elem.device_buf_.addr_,
+                                                tiling_cache_elem.device_buf_.size_, host_tiling_buf_.addr_,
+                                                host_tiling_buf_.size_, ACL_MEMCPY_HOST_TO_DEVICE, default_stream_);
   if (ret != 0) {
     MS_LOG(EXCEPTION) << "ACL_MEMCPY_HOST_TO_DEVICE failed!";
   }
