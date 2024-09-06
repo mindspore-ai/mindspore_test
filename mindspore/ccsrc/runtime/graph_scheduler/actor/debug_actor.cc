@@ -300,13 +300,18 @@ void DebugActor::DebugOnStepBegin(const std::vector<KernelGraphPtr> &graphs,
  * Description: Dump parameters and constants and update dump iter for CPU. Call PostExecuteGraph Debugger for GPU and
  * Ascend and update step number of online debugger GPU.
  */
-void DebugActor::DebugOnStepEnd(OpContext<DeviceTensor> *const, const AID *, int total_running_count_) {
+void DebugActor::DebugOnStepEnd(OpContext<DeviceTensor> *const, const AID *, int total_running_count_, int sink_size_) {
   MS_LOG(INFO) << "Debug on step end. total_running_count is: " << total_running_count_;
   auto context = MsContext::GetInstance();
+  auto is_kbyk = context->IsKByKExecutorMode();
   MS_EXCEPTION_IF_NULL(context);
   std::string backend = context->backend_policy();
   step_count_ = total_running_count_;
   if (dump_flag_ == true) {
+    if (sink_size_ != 1 && !is_kbyk) {
+      MS_EXCEPTION(ValueError) << "When using acl dump in data sink mode, sink size must be 1, but got " << sink_size_
+                               << ".";
+    }
     auto registered_dumper = datadump::DataDumperRegister::Instance().GetDumperForBackend(device::DeviceType::kAscend);
     if (registered_dumper != nullptr) {
       device_ctx_->device_res_manager_->SyncAllStreams();

@@ -70,7 +70,8 @@ class DebugActor : public ActorBase {
                         const AID *from_aid);
 
   // The debug on step end.
-  void DebugOnStepEnd(OpContext<DeviceTensor> *const op_context, const AID *from_aid, int total_running_count_);
+  void DebugOnStepEnd(OpContext<DeviceTensor> *const op_context, const AID *from_aid, int total_running_count_,
+                      int sink_size_);
   static inline uint64_t current_step{1};
 
  private:

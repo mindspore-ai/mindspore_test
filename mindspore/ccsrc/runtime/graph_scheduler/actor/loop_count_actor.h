@@ -35,7 +35,7 @@ namespace runtime {
 // and decide whether to loop execution by loop count.
 class LoopCountActor : public DebugAwareActor {
  public:
-  LoopCountActor(const std::string &name, const std::string &graph_name, size_t loop_count,
+  LoopCountActor(const std::string &name, const std::string &graph_name, size_t loop_count, size_t sink_size,
                  const AID &memory_manager_aid, const AID *debug_aid, const AID *recorder_aid, const AID *profiler_aid,
                  GraphExecutionStrategy strategy, const std::vector<DeviceContext *> &device_contexts,
                  const bool is_need_sync_stream)
@@ -43,6 +43,7 @@ class LoopCountActor : public DebugAwareActor {
                         profiler_aid),
         graph_name_(graph_name),
         loop_count_(loop_count),
+        sink_size_(sink_size),
         current_count_(0),
         total_running_count_(0),
         strategy_(strategy),
@@ -63,6 +64,7 @@ class LoopCountActor : public DebugAwareActor {
 
   // Get the member.
   size_t loop_count() const { return loop_count_; }
+  size_t sink_size() const { return sink_size_; }
   const AID &data_prepare_aid() const { return data_prepare_aid_; }
   const std::vector<AID> &entrance_aids() const { return entrance_aids_; }
 
@@ -81,6 +83,7 @@ class LoopCountActor : public DebugAwareActor {
 
   // The loop count is constant, the current count is increased after each step running finished.
   size_t loop_count_;
+  size_t sink_size_;
   size_t current_count_;
   // The total running count represents the toal step running count.
   size_t total_running_count_;
