@@ -1068,9 +1068,9 @@ def ones_like(a, dtype=None, shape=None):
         a (Union[Tensor, list, tuple]): The shape and data-type of a define these same
             attributes of the returned array.
         dtype (:class:`mindspore.dtype`, optional): Overrides the data type of the
-            result.
+            result. Default: ``None``.
         shape (int or sequence of ints, optional): Overrides the shape
-            of the result.
+            of the result. Default: ``None``.
 
     Returns:
         Tensor, array of ones with the same shape and type as `a`.
@@ -1178,7 +1178,7 @@ def tri(N, M=None, k=0, dtype=mstype.float32):
     Args:
         N(int): Number of rows in the array.
         M(int, optional): Number of columns in the array. By default, `M` is taken
-            equal to N.
+            equal to N. Default: ``None`` .
         k(int, optional): The sub-diagonal at and below which the array is filled.
             :math:`k = 0` is the main diagonal, while :math:`k < 0` is below it, and :math:`k > 0` is above.
             Default: ``0`` .
@@ -1956,7 +1956,7 @@ def indices(dimensions, dtype=mstype.int32, sparse=False):
 
     Args:
         dimensions (tuple or list of ints): The shape of the grid.
-        dtype (:class:`mindspore.dtype`, optional): Data type of the result.
+        dtype (:class:`mindspore.dtype`, optional): Data type of the result. Default: ``mstype.int32``.
         sparse (boolean, optional): Default: ``False`` . Return a sparse
             representation of the grid instead of a dense representation.
 
@@ -2165,7 +2165,7 @@ def triu_indices(n, k=0, m=None):
         n (int): The size of the arrays for which the returned indices will be valid.
         k (int, optional): Diagonal offset, default: ``0`` .
         m (int, optional): The column dimension of the arrays for which the returned
-            arrays will be valid. By default `m` is taken equal to `n`.
+            arrays will be valid. By default `m` is taken equal to `n`. Default: ``None`` .
 
     Returns:
         The indices for the triangle. The returned tuple contains two tensors, each
@@ -2194,7 +2194,7 @@ def tril_indices(n, k=0, m=None):
         n (int): The size of the arrays for which the returned indices will be valid.
         k (int, optional): Diagonal offset, default: ``0`` .
         m (int, optional): The column dimension of the arrays for which the returned
-            arrays will be valid. By default `m` is taken equal to `n`.
+            arrays will be valid. By default `m` is taken equal to `n`. Default: ``None`` .
 
     Returns:
         The indices for the triangle. The returned tuple contains two tensors, each
@@ -2289,15 +2289,15 @@ def histogram_bin_edges(a, bins=10, range=None, weights=None):  # pylint: disabl
     Args:
         a (Union[int, float, bool, list, tuple, Tensor]): Input data. The histogram
             is computed over the flattened array.
-        bins ((Union[int, tuple, list, Tensor])): If `bins` is an int, it defines the number
+        bins (Union[int, tuple, list, Tensor], optional): If `bins` is an int, it defines the number
             of equal-width bins in the given range (10, by default). If `bins` is a
             sequence, it defines the bin edges, including the rightmost edge,
             allowing for non-uniform bin widths.
-        range((float, float), optional): The lower and upper range of the bins. If
+        range ((float, float), optional): The lower and upper range of the bins. If
             not provided, `range` is simply ``(a.min(), a.max())``. Values outside
             the range are ignored. The first element of the range must be less than
             or equal to the second. Default: ``None`` .
-        weights(Union[int, float, bool, list, tuple, Tensor], optional):  An array of weights,
+        weights (Union[int, float, bool, list, tuple, Tensor], optional):  An array of weights,
             of the same shape as `a`. Each value in `a` only contributes its associated weight
             towards the bin count (instead of 1). This is currently not used by any of the bin
             estimators, but may be in the future. Default: ``None`` .
