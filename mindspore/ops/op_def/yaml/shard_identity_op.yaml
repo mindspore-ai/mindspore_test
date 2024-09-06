@@ -1,0 +1,10 @@
+#operator shard_identity
+shard_identity:
+  args:
+    input:
+      dtype: tensor
+  returns:
+    output:
+      dtype: tensor
+  class:
+    name: AShardIdentity

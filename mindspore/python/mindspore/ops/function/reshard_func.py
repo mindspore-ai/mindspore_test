@@ -35,6 +35,8 @@ def reshard(tensor, layout):
           "sharding_propagation".
         - In the semi-auto parallel mode, the parallel mode will automatically switch to auto
           parallel mode with the search mode be set to "sharding_propagation".
+        - Currently, configuring multi-dimension and multi-copy reshard strategy in
+          mindspore.Layout is not supported.
 
     Args:
         tensor (Tensor): The tensor to be set the sharding strategy.
@@ -63,7 +65,7 @@ def reshard(tensor, layout):
         ...         self.relu = ops.ReLU()
         ...     def construct(self, x, layout):
         ...         x = self.relu(x)
-        ...         x_reshard = ops.reshard(x, self.layout)
+        ...         x_reshard = ops.reshard(x, layout)
         ...         y = Tensor(np.ones(shape=(128, 128)), dtype=ms.float32)
         ...         x = self.matmul(x_reshard, y)
         ...         return x

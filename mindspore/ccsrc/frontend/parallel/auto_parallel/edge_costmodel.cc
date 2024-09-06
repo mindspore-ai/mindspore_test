@@ -109,7 +109,7 @@ Status Edge::InitEdgeCost() {
                       << " failed, it may be caused by setting different strategies for operators following Reshape.";
       return Status::SUCCESS;
     }
-    MS_LOG(INFO) << "Generating cost for edge: " << edge_name_ << " failed.";
+    MS_LOG(ERROR) << "Generating cost for edge: " << edge_name_ << " failed.";
     return Status::FAILED;
   }
   return Status::SUCCESS;

@@ -165,6 +165,14 @@ class TensorLayout {
     device_arrangement_interleaved_ = device_arrangement_interleaved;
   }
 
+  void set_in_layout_strategy(const Dimensions &dim_strategy) { in_layout_strategy_ = dim_strategy; }
+
+  Dimensions get_in_layout_strategy() { return in_layout_strategy_; }
+
+  void set_out_layout_strategy(const Dimensions &dim_strategy) { out_layout_strategy_ = dim_strategy; }
+
+  Dimensions get_out_layout_strategy() { return out_layout_strategy_; }
+
   void set_fine_grain_block_index(int64_t fine_grain_block_index) { fine_grain_block_index_ = fine_grain_block_index; }
 
   int64_t fine_grain_block_index() { return fine_grain_block_index_; }
@@ -190,6 +198,8 @@ class TensorLayout {
   Map tensor_map_;
   Map tensor_map_origin_;
   std::vector<Shape> tensor_map_before_;
+  Dimensions in_layout_strategy_;
+  Dimensions out_layout_strategy_;
   bool skip_redistribution_ = false;
   bool uniform_split_ = true;
   bool layout_transfer_ = false;

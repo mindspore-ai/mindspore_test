@@ -2446,6 +2446,16 @@ bool StrategyFound(const mindspore::HashMap<std::string, ValuePtr> &attrs) {
   return !((iter == attrs.end()) || (iter->second->type_name() == NONE));
 }
 
+bool LayoutFound(const mindspore::HashMap<std::string, ValuePtr> &attrs) {
+  auto iter = attrs.find(IN_LAYOUT);
+  return !((iter == attrs.end()) || (iter->second->type_name() == NONE));
+}
+
+bool OutLayoutFound(const mindspore::HashMap<std::string, ValuePtr> &attrs) {
+  auto iter = attrs.find(OUT_LAYOUT);
+  return !((iter == attrs.end()) || (iter->second->type_name() == NONE));
+}
+
 bool OutStrategyFound(const mindspore::HashMap<std::string, ValuePtr> &attrs) {
   auto iter = attrs.find(OUT_STRATEGY);
   return !((iter == attrs.end()) || (iter->second->type_name() == NONE));
@@ -2592,7 +2602,8 @@ StrategyPtr ExtractStrategy(const ValuePtr &stra, const bool use_shape_base) {
   return strategyPtr;
 }
 
-Status GetLayoutFromAttrValue(const ValuePtr &layout_item, std::vector<int64_t> *device_matrix_vector,
+Status GetLayoutFromAttrValue(const ValuePtr &layout_item, std::vector<std::string> *alias_name,
+                              std::vector<int64_t> *device_matrix_vector,
                               std::vector<std::vector<int64_t>> *tensor_map_vector, bool *interleaved_parallel) {
   auto layout_dict_value = layout_item->cast<ValueDictionaryPtr>();
   if (!layout_dict_value) {
@@ -2600,10 +2611,14 @@ Status GetLayoutFromAttrValue(const ValuePtr &layout_item, std::vector<int64_t> 
     return FAILED;
   }
   auto layout_dict = layout_dict_value->value();
+  ValuePtr alias_name_value = nullptr;
   ValuePtr device_matrix_value = nullptr;
   ValuePtr tensor_map_value = nullptr;
   ValuePtr interleaved_parallel_value = nullptr;
   for (const auto &value_pair : layout_dict) {
+    if ((*value_pair.first) == (*MakeValue<std::string>(ALIAS_NAME))) {
+      alias_name_value = value_pair.second;
+    }
     if ((*value_pair.first) == (*MakeValue<std::string>(DEVICE_MATRIX))) {
       device_matrix_value = value_pair.second;
     }
@@ -2618,9 +2633,13 @@ Status GetLayoutFromAttrValue(const ValuePtr &layout_item, std::vector<int64_t> 
     MS_LOG(ERROR) << "The layout item configured for node is unreasonable";
     return FAILED;
   }
+
+  if (alias_name_value != nullptr) {
+    *alias_name = GetValue<std::vector<std::string>>(alias_name_value);
+  }
   *device_matrix_vector = GetValue<std::vector<int64_t>>(device_matrix_value);
-  *interleaved_parallel = GetValue<bool>(interleaved_parallel_value);
   auto tensor_map_value_tuple = tensor_map_value->cast<ValueTuplePtr>();
+  *interleaved_parallel = GetValue<bool>(interleaved_parallel_value);
   std::vector<ValuePtr> tensor_map_value_tuple_vector = tensor_map_value_tuple->value();
   for (const auto &tensor_map_item : tensor_map_value_tuple_vector) {
     if (tensor_map_item->isa<ValueSequence>()) {
@@ -2634,10 +2653,37 @@ Status GetLayoutFromAttrValue(const ValuePtr &layout_item, std::vector<int64_t> 
   return SUCCESS;
 }
 
+void ConvertLayoutToStrategy(Dimensions *sub_strategy_vec, const std::vector<std::string> &alias_name,
+                             const std::vector<int64_t> &device_matrix,
+                             const std::vector<std::vector<int64_t>> &tensor_map) {
+  const int64_t alias_len = (int64_t)alias_name.size() - 1;
+  for (const auto sub_tensor_map : tensor_map) {
+    auto dim_strategy = 1;
+    for (const int64_t tensor_ind : sub_tensor_map) {
+      if (tensor_ind == -1) {
+        continue;
+      }
+      int64_t actual_ind = std::abs(tensor_ind - alias_len);
+      if (alias_name[actual_ind] != "interleaved_parallel") {
+        dim_strategy *= device_matrix[actual_ind];
+      }
+    }
+    sub_strategy_vec->emplace_back(dim_strategy);
+  }
+}
+
+bool CheckShardingPropagation() {
+  bool is_auto_parallel = ParallelContext::GetInstance()->parallel_mode() == kAutoParallel;
+  bool is_sharding_propagation = (ParallelContext::GetInstance()->strategy_search_mode() == kShardingPropagation) ||
+                                 (ParallelContext::GetInstance()->sharding_propagation());
+  return is_auto_parallel && is_sharding_propagation;
+}
+
 Status ExtractUserConfigLayout(const mindspore::HashMap<std::string, ValuePtr> &prim_attrs, const Shapes &inputs_shape,
                                const Shapes &outputs_shape,
                                std::vector<std::shared_ptr<TensorLayout>> *in_tensor_layouts,
                                std::vector<std::shared_ptr<TensorLayout>> *out_tensor_layouts) {
+  bool use_sp = CheckShardingPropagation();
   if (prim_attrs.count(IN_LAYOUT) > 0) {
     auto layout_value = prim_attrs.at(IN_LAYOUT);
     if (!layout_value->isa<ValueSequence>()) {
@@ -2653,14 +2699,21 @@ Status ExtractUserConfigLayout(const mindspore::HashMap<std::string, ValuePtr> &
 
     for (size_t i = 0; i < layout_value_vector.size(); ++i) {
       auto layout_item = layout_value_vector[i];
+      std::vector<std::string> alias_name;
       std::vector<int64_t> device_matrix_vector;
       std::vector<std::vector<int64_t>> tensor_map_vector;
       bool interleaved_parallel;
-      if (GetLayoutFromAttrValue(layout_item, &device_matrix_vector, &tensor_map_vector, &interleaved_parallel) !=
-          SUCCESS) {
+      if (GetLayoutFromAttrValue(layout_item, &alias_name, &device_matrix_vector, &tensor_map_vector,
+                                 &interleaved_parallel) != SUCCESS) {
         return FAILED;
       }
       auto in_layout = std::make_shared<TensorLayout>();
+      if (use_sp && !alias_name.empty()) {
+        // Convert tensor layout input to tuple-like strategy.
+        Dimensions sub_strategy_vec;
+        ConvertLayoutToStrategy(&sub_strategy_vec, alias_name, device_matrix_vector, tensor_map_vector);
+        in_layout->set_in_layout_strategy(sub_strategy_vec);
+      }
       if (in_layout->InitFromExtendVector(device_matrix_vector, tensor_map_vector, inputs_shape[i],
                                           interleaved_parallel) != SUCCESS) {
         MS_LOG(ERROR) << "The in_layout configured incorrect, device_matrix:" << device_matrix_vector
@@ -2682,14 +2735,21 @@ Status ExtractUserConfigLayout(const mindspore::HashMap<std::string, ValuePtr> &
     }
     for (size_t i = 0; i < layout_value_vector.size(); ++i) {
       auto layout_item = layout_value_vector[i];
+      std::vector<std::string> alias_name;
       std::vector<int64_t> device_matrix_vector;
       std::vector<std::vector<int64_t>> tensor_map_vector;
       bool interleaved_parallel;
-      if (GetLayoutFromAttrValue(layout_item, &device_matrix_vector, &tensor_map_vector, &interleaved_parallel) !=
-          SUCCESS) {
+      if (GetLayoutFromAttrValue(layout_item, &alias_name, &device_matrix_vector, &tensor_map_vector,
+                                 &interleaved_parallel) != SUCCESS) {
         return FAILED;
       }
       auto out_layout = std::make_shared<TensorLayout>();
+      if (use_sp && !alias_name.empty()) {
+        // Convert tensor layout input to tuple-like strategy.
+        Dimensions sub_strategy_vec;
+        ConvertLayoutToStrategy(&sub_strategy_vec, alias_name, device_matrix_vector, tensor_map_vector);
+        out_layout->set_out_layout_strategy(sub_strategy_vec);
+      }
       if (out_layout->InitFromExtendVector(device_matrix_vector, tensor_map_vector, outputs_shape[i],
                                            interleaved_parallel) != SUCCESS) {
         MS_LOG(ERROR) << "The out_layout configured incorrect, device_matrix:" << device_matrix_vector
@@ -2727,9 +2787,10 @@ Status ConvertValueToTensorLayout(const ValuePtr &layout_value, const ShapeBaseP
     }
     std::vector<int64_t> device_matrix_vector;
     std::vector<std::vector<int64_t>> tensor_map_vector;
+    std::vector<std::string> alias_name;
     bool interleaved_parallel;
-    if (GetLayoutFromAttrValue(layout_value, &device_matrix_vector, &tensor_map_vector, &interleaved_parallel) !=
-        SUCCESS) {
+    if (GetLayoutFromAttrValue(layout_value, &alias_name, &device_matrix_vector, &tensor_map_vector,
+                               &interleaved_parallel) != SUCCESS) {
       return FAILED;
     }
     auto in_layout = std::make_shared<TensorLayout>();

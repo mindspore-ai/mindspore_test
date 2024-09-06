@@ -119,7 +119,7 @@ std::string StrategyToString(const Strategies &strategy) {
 }
 
 Status OperatorInfo::CheckOutputStrategy(const StrategyPtr &out_strategy) {
-  if (out_strategy) {
+  if (out_strategy && name_.find("ShardIdentity") == std::string::npos) {
     MS_LOG(ERROR) << name_ << ": It does not support to set output strategy now, please modify the shard set";
     return FAILED;
   }
@@ -1337,17 +1337,6 @@ Status OperatorInfo::Init(const StrategyPtr &in_strategy, const StrategyPtr &out
 }
 
 Status OperatorInfo::InitForCostModel(const StrategyPtr &in_strategy, const StrategyPtr &out_strategy) {
-  std::vector<std::shared_ptr<TensorLayout>> in_tensor_layouts;
-  std::vector<std::shared_ptr<TensorLayout>> out_tensor_layouts;
-  Status status =
-    ExtractUserConfigLayout(attrs_, inputs_shape_, outputs_shape_, &in_tensor_layouts, &out_tensor_layouts);
-  if (status != SUCCESS) {
-    MS_LOG_WITH_NODE(EXCEPTION, cnode_) << "Failure:operator " << name_ << " extract configured layout failed.";
-  }
-  if (!in_tensor_layouts.empty()) {
-    out_tensor_layouts = {};
-    return InitWithTensorLayout(in_tensor_layouts, out_tensor_layouts);
-  }
   if (InitForCostModelWithAutoRepeatCalc(in_strategy, out_strategy) != SUCCESS) {
     ReportError(name_ + " : Init for cost model failed.");
     return FAILED;

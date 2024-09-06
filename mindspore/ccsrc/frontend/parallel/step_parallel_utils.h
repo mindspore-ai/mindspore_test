@@ -77,6 +77,7 @@ bool IsParallelCareNode(const CNodePtr &cnode);
 bool IsAutoParallelCareNode(const CNodePtr &cnode);
 Shapes GetNodeShape(const AnfNodePtr &node);
 bool IsSupportNewShapeBaseNode(const CNodePtr &node);
+bool CheckShardingPropagation();
 // Extract shape from anfnode
 std::vector<Shapes> ExtractShape(const CNodePtr &node);
 std::vector<NewShapes> ExtractNewShape(const CNodePtr &node);
@@ -132,6 +133,8 @@ AnfNodePtr FindRealInputByFormalParameter(const CNodePtr &node, const AnfNodePtr
                                           const std::vector<AnfNodePtr> &all_nodes);
 std::vector<std::string> ExtractInputsTensorName(const CNodePtr &node, const std::vector<AnfNodePtr> &all_nodes);
 OperatorInfoPtr GetDistributeOperator(const CNodePtr &node);
+bool LayoutFound(const mindspore::HashMap<std::string, ValuePtr> &attrs);
+bool OutLayoutFound(const mindspore::HashMap<std::string, ValuePtr> &attrs);
 bool StrategyFound(const mindspore::HashMap<std::string, ValuePtr> &attrs);
 bool OutStrategyFound(const mindspore::HashMap<std::string, ValuePtr> &attrs);
 bool AttrFound(const mindspore::HashMap<std::string, ValuePtr> &attrs, const std::string &target);

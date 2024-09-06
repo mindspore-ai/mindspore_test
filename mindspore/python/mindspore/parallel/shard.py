@@ -122,7 +122,7 @@ class Layout:
             raise ValueError("The tensor_map of layout is None")
         interleaved_parallel = "interleaved_parallel" in self._alias_name
         return {"device_matrix": self._device_shape, "tensor_map": self._tensor_map,
-                "interleaved_parallel": interleaved_parallel}
+                "interleaved_parallel": interleaved_parallel, "alias_name": self._alias_name}
 
 
 
@@ -152,12 +152,21 @@ class Shard(Shard_):
             ms.context.get_auto_parallel_context("search_mode") != "sharding_propagation":
             raise AssertionError(f"'search_mode' must be 'sharding_propagation' for 'Shard' when the "
                                  f"'parallel_mode' is 'auto_parallel.'")
+
         if not isinstance(in_strategy, tuple):
             raise TypeError(
-                f"For 'Shard', the 'in_strategy' should be a tuple, but got {type(in_strategy).__name__}")
+                f"For 'Shard', the 'in_strategy' should be a tuple, but got {type(in_strategy).__name__}.")
+        inner_type = self._check_layout_inner_type(in_strategy, "in_strategy")
+        if inner_type == "layout":
+            in_strategy = self._extract_layout_value(in_strategy, "in_strategy")
+
         if not isinstance(out_strategy, (type(None), tuple)):
             raise TypeError(f"For 'Shard', the 'out_strategy' should be None or tuple, "
-                            f"but got {type(out_strategy).__name__}")
+                            f"but got {type(out_strategy).__name__}.")
+        if not isinstance(out_strategy, type(None)):
+            inner_type = self._check_layout_inner_type(out_strategy, "out_strategy")
+            if inner_type == "layout":
+                out_strategy = self._extract_layout_value(out_strategy, "out_strategy")
 
         if not isinstance(device, str):
             raise TypeError(f"For 'Shard', the 'device' should be a string, "
@@ -233,9 +242,9 @@ class Shard(Shard_):
                     f"If parameter_plan is set, type of fn must be mindspore.nn.Cell, but got {type(fn)}")
             for k in parameter_plan.keys():
                 v = parameter_plan[k]
-                if not isinstance(k, str) or not isinstance(v, tuple):
+                if not isinstance(k, str) or not isinstance(v, (tuple, Layout)):
                     raise TypeError(f"For 'Shard', the type of each key and value in 'parameter_plan' must be str and "
-                                    f"tuple, but got {type(k).__name__} and {type(v).__name__}")
+                                    f"tuple/Layout, but got {type(k).__name__} and {type(v).__name__}")
         else:
             raise TypeError(f"For 'Shard', the 'parameter_plan' should be a dict or None, "
                             f"but got {type(parameter_plan).__name__}")
@@ -248,17 +257,67 @@ class Shard(Shard_):
                     f"{param_name} is not exist, ignored its setting.")
                 continue
 
-            self._check_layout_is_valid(
-                param_name, param.shape, param_strategy)
+            has_set = None
             if param.param_info.param_strategy:
-                logger.warning(f"The layout of parameter '{param_name}' "
-                               f"has been set to {param.param_info.param_strategy}, "
-                               f"current setting {param_strategy} will be ignored.")
-            param.param_info.param_strategy = param_strategy
+                has_set = "strategy"
+            if param.param_info.device_matrix:
+                has_set = "layout"
+            if has_set == "strategy":
+                logger.warning(f"The layout of parameter '{param_name}' has been set to "
+                               f"{param.param_info.param_strategy}, current setting will be ignored.")
+            elif has_set == "layout":
+                logger.warning(f"The layout of parameter '{param_name}' has been set, "
+                               f"current setting will be ignored.")
+            else:
+                if isinstance(param_strategy, tuple):
+                    self._check_layout_is_valid(param_name, param.shape, param_strategy)
+                    param.param_info.param_strategy = param_strategy
+                if isinstance(param_strategy, Layout):
+                    param_layout = self._extract_layout_value((param_strategy,), "in_strategy")[0]
+                    param.param_info.device_matrix = param_layout["device_matrix"]
+                    param.param_info.tensor_map = param_layout["tensor_map"]
+                    param.param_info.interleaved_parallel = param_layout["interleaved_parallel"]
+                    param.param_info.alias_name = param_layout["alias_name"]
 
     def _is_attrs_has_been_set(self, fn, in_strategy, out_strategy, device, level):
         return self.shard_fn is not None and self.fn == fn and self.in_strategy == in_strategy and \
             self.out_strategy == out_strategy and self.device == device and self.level == level
+
+    def _check_layout_inner_type(self, strategy, log_info):
+        """Check inner item type of layout, should be int or ms.Layout."""
+        strategy_set = set()
+        for stra in strategy:
+            if not isinstance(stra, (tuple, Layout)):
+                raise TypeError(
+                    f"The '{log_info}' should be a tuple(tuple(int)) or tuple(mindspore.Layout), "
+                    f"but got {type(stra).__name__}")
+            if isinstance(stra, Layout):
+                strategy_set.add("layout")
+            elif isinstance(stra, tuple):
+                strategy_set.add("tuple")
+                self._check_tuple_strategy(stra)
+        if len(strategy_set) != 1:
+            raise TypeError(
+                f"For 'Shard', the strategy can only pass in consistent type for all dimensions.")
+        return strategy_set.pop()
+
+    def _extract_layout_value(self, layout, log_info):
+        """Extract parallel layout value"""
+        layout_value = None
+        if layout is not None:
+            if not isinstance(layout, tuple):
+                raise TypeError(f'{log_info} must be tuple type, but got:{type(layout)}')
+            layout_value = ()
+            for in_ele in layout:
+                if not isinstance(in_ele, Layout):
+                    raise TypeError(f"The {log_info} item should be a object of class Layout.")
+                layout_value += (in_ele.to_dict(),)
+        return layout_value
+
+    def _check_tuple_strategy(self, dim_strategy):
+        if not all(isinstance(x, int) for x in dim_strategy):
+            raise TypeError(
+                f"The tuple strategy for each dimension should be tuple(int).")
 
 
 def shard(fn, in_strategy, out_strategy=None, parameter_plan=None, device="Ascend", level=0):

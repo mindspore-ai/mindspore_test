@@ -63,6 +63,7 @@
 #include "mindspore/ops/op_def/conv_pool_ops.h"
 #include "mindspore/ops/op_def/nn_ops.h"
 #include "mindspore/ops/infer/ops_func_impl/flash_attention_score.h"
+#include "mindspore/ccsrc/frontend/parallel/step_parallel_utils.h"
 
 #if defined(__linux__) && defined(WITH_BACKEND)
 #include "include/backend/distributed/ps/util.h"
@@ -2210,6 +2211,13 @@ void ExtractInformation(const std::vector<AnfNodePtr> &all_nodes) {
       continue;
     }
 
+    if (CheckShardingPropagation()) {
+      auto find_iter = cnode->attrs().find(OP_INFO_CREATED);
+      if (find_iter != cnode->attrs().end()) {
+        continue;
+      }
+    }
+
     SetVirtualDatasetStrategy(cnode);
     ValueNodePtr prim_anf_node = cnode->input(0)->cast<ValueNodePtr>();
     PrimitivePtr prim = GetValueNode<PrimitivePtr>(prim_anf_node);
@@ -4094,8 +4102,12 @@ bool StepParallel(const FuncGraphPtr &root, const opt::OptimizerPtr &optimizer) 
       MS_EXCEPTION_IF_NULL(ret_after);
       all_nodes = TopoSort(ret_after, SuccDeeperSimple);
     }
-
     // extract shape and strategy, set operator_info
+    ExtractInformation(all_nodes);
+  }
+
+  if (CheckShardingPropagation() && !StrategyCheckpoint::GetInstance().LoadAutoOpStrategyOn()) {
+    // To create opInfo for step parallel generated op
     ExtractInformation(all_nodes);
   }
 

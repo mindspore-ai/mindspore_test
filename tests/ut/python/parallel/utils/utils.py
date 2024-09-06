@@ -15,6 +15,7 @@
 import os
 import shutil
 import glob
+import subprocess
 
 from mindspore import context
 from mindspore.nn import Cell
@@ -58,6 +59,7 @@ class ParallelValidator:
     def __init__(self, net, phase):
         self._parameter_layout_dict = net.parameter_layout_dict
         self._graph_info_dict = _cell_graph_executor._graph_executor.get_parallel_graph_info(phase)
+        self._graph_strategies = _cell_graph_executor._graph_executor.get_strategy(phase)
 
     @property
     def parameter_layout_dict(self):
@@ -66,6 +68,10 @@ class ParallelValidator:
     @property
     def graph_info_dict(self):
         return self._graph_info_dict
+
+    @property
+    def graph_strategies(self):
+        return self._graph_strategies
 
     def check_parameter_layout(self, param_name: str, layout: [tuple, list]) -> bool:
         """Verify parameter layout."""
@@ -187,12 +193,32 @@ class ParallelValidator:
             raise ValueError("{} is not exist".format(graph_name))
         return self._graph_info_dict[graph_name]
 
+    def check_node_strategy(self, node, strategy):
+        node_name = "Default/" + node
+        if not isinstance(strategy, list):
+            raise TypeError("Type of strategy must be array, but got {}".format(type(strategy)))
+
+        node_strategy_dict = self.graph_strategies
+        if node_name not in node_strategy_dict.keys():
+            return False
+        stgy = node_strategy_dict[node_name]
+        if stgy == strategy:
+            return True
+        return False
+
 
 def compile_net(net: Cell, *inputs):
     net.set_train()
     phase, _ = _cell_graph_executor.compile(net, *inputs)
     context.reset_auto_parallel_context()
     return phase
+
+
+def check_layout_config(param, file, *configs):
+    output = subprocess.check_output(["grep -r '%s' %s" % (param, file)], shell=True)
+    out = str(output, 'utf-8').strip()
+    for config in configs:
+        assert config in out
 
 
 class BasicValidator:
