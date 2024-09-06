@@ -244,3 +244,39 @@ def test_dvm_bool():
         output = output.asnumpy()
     expect = x1 * x3
     assert np.allclose(expect, output, 1e-3, 1e-3)
+
+
+class NetPow(nn.Cell):
+    def __init__(self):
+        super(NetPow, self).__init__()
+        self.const0 = Tensor(2, dtype=ms.float32)
+        self.const1 = Tensor(10000, dtype=ms.float32)
+        self.const2 = Tensor(1, dtype=ms.float32)
+
+    def construct(self, x0, x1):
+        y0 = ops.Mul()(x1, self.const0)
+        y1 = ops.RealDiv()(y0, x0)
+        y2 = ops.Pow()(self.const1, y1)
+        y3 = ops.RealDiv()(self.const2, y2)
+        return y3
+
+
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
+def test_fuse_pow():
+    """
+    Feature: Pow fuse net
+    Description: Pow op first input is large const value
+    Expectation: the result match with expect
+    """
+    np.random.seed(1)
+    context.set_context(mode=context.GRAPH_MODE)
+    context.set_context(jit_config={"jit_level": "O1"})
+    x0 = np.array(1.6243454).astype(np.float32)
+    x1 = np.random.normal(0, 1, (288,)).astype(np.float32)
+    x0_ms = Tensor(x0)
+    x1_ms = Tensor(x1)
+    expect = get_output(NetPow, [x0_ms, x1_ms], enable_graph_kernel=False)
+    expect = expect.asnumpy()
+    output = get_output(NetPow, [x0_ms, x1_ms], enable_graph_kernel=True)
+    output = output.asnumpy()
+    assert np.allclose(expect, output, 1e-4, 1e-4, equal_nan=True)

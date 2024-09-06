@@ -1,3 +1,3 @@
 [lib information]
-git branch: master
-commit  id: e5c770e1ed558c4ab87b9bf12466445745f4f39e
+git branch: r2.4
+commit  id: afa2c5d1f9cdef7f41d7edd71bf1c2f6998dcf14
