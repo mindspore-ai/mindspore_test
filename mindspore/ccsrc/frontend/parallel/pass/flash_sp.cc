@@ -1087,12 +1087,14 @@ void DynUpdateAttentionOutput(CNodePtr *history_max, CNodePtr *history_sum, CNod
   }
   (*history_max) = temp_max;
   (*history_sum) = l;
+  (*acc_attention) = NewCastNode(*acc_attention, TypeId::kNumberTypeFloat16);
 }
 
 CNodePtr ConstructSendOMLTensor(const AnfNodePtr &send_softmax_max, const AnfNodePtr &send_softmax_sum,
                                 const AnfNodePtr &send_attn_out) {
-  auto send_attn_out_fp32 = NewCastNode(send_attn_out, TypeId::kNumberTypeFloat32);
-  std::vector<AnfNodePtr> oml_nodes = {send_attn_out_fp32, send_softmax_max, send_softmax_sum};
+  auto send_softmax_max_fp16 = NewCastNode(send_softmax_max, TypeId::kNumberTypeFloat16);
+  auto send_softmax_sum_fp16 = NewCastNode(send_softmax_sum, TypeId::kNumberTypeFloat16);
+  std::vector<AnfNodePtr> oml_nodes = {send_attn_out, send_softmax_max_fp16, send_softmax_sum_fp16};
   auto oml_tuple = NewMakeTupleNode(oml_nodes);
   return NewConcatNode(oml_tuple, kIndex3);
 }
@@ -1101,10 +1103,14 @@ void DismantleRecvOMLTensor(const AnfNodePtr &recv_oml_tensor, CNodePtr *cur_att
                             CNodePtr *cur_softmax_sum, Shape q_shape) {
   (*cur_attn_out) =
     NewStridedSliceNode(recv_oml_tensor, {0, 0, 0, 0}, {q_shape[0], q_shape[1], q_shape[2], q_shape[3]}, {1, 1, 1, 1});
-  (*cur_softmax_max) = NewStridedSliceNode(recv_oml_tensor, {0, 0, 0, q_shape[3]},
-                                           {q_shape[0], q_shape[1], q_shape[2], q_shape[3] + 8}, {1, 1, 1, 1});
-  (*cur_softmax_sum) = NewStridedSliceNode(recv_oml_tensor, {0, 0, 0, q_shape[3] + 8},
-                                           {q_shape[0], q_shape[1], q_shape[2], q_shape[3] + 16}, {1, 1, 1, 1});
+  (*cur_softmax_max) =
+    NewCastNode(NewStridedSliceNode(recv_oml_tensor, {0, 0, 0, q_shape[3]},
+                                    {q_shape[0], q_shape[1], q_shape[2], q_shape[3] + 8}, {1, 1, 1, 1}),
+                TypeId::kNumberTypeFloat32);
+  (*cur_softmax_sum) =
+    NewCastNode(NewStridedSliceNode(recv_oml_tensor, {0, 0, 0, q_shape[3] + 8},
+                                    {q_shape[0], q_shape[1], q_shape[2], q_shape[3] + 16}, {1, 1, 1, 1}),
+                TypeId::kNumberTypeFloat32);
 }
 
 void DynDismantleRecvOMLTensor(const AnfNodePtr &recv_oml_tensor, CNodePtr *cur_attn_out, CNodePtr *cur_softmax_max,
@@ -1219,14 +1225,14 @@ CNodePtr GetCurrentSendOMLNode(size_t pos, size_t step, size_t inner_step, size_
             return NewSendNode(
               CreateDepend(ConstructSendOMLTensor(send_softmax_max, send_softmax_sum, send_attn_out), pre_node),
               GetSendRecvTag(pos, send_oml_dst_rank, TagType::oml), spRankList[send_oml_dst_rank], recv_oml_shape,
-              TypeId::kNumberTypeFloat32, send_group);
+              TypeId::kNumberTypeFloat16, send_group);
           }
         } else {
           if (inner_step == kIndex0) {
             return NewSendNode(
               CreateDepend(ConstructSendOMLTensor(send_softmax_max, send_softmax_sum, send_attn_out), pre_node),
               GetSendRecvTag(pos, send_oml_dst_rank, TagType::oml), spRankList[send_oml_dst_rank], recv_oml_shape,
-              TypeId::kNumberTypeFloat32, send_group);
+              TypeId::kNumberTypeFloat16, send_group);
           }
         }
       }
@@ -1248,14 +1254,14 @@ CNodePtr GetCurrentRecvOMLNode(size_t pos, size_t step, size_t inner_step, size_
           auto recv_oml_shape = q_shape;
           recv_oml_shape[kIndex3] = recv_oml_shape[kIndex3] + kIndex16;
           return NewReceiveNode(pre_node, GetSendRecvTag(recv_oml_src_rank, pos, TagType::oml),
-                                spRankList[recv_oml_src_rank], recv_oml_shape, TypeId::kNumberTypeFloat32, recv_group);
+                                spRankList[recv_oml_src_rank], recv_oml_shape, TypeId::kNumberTypeFloat16, recv_group);
         }
       } else {
         if (inner_step == 0) {
           auto recv_oml_q_shape = q_shape;
           recv_oml_q_shape[kIndex3] = recv_oml_q_shape[kIndex3] + kIndex16;
           return NewReceiveNode(pre_node, GetSendRecvTag(recv_oml_src_rank, pos, TagType::oml),
-                                spRankList[recv_oml_src_rank], recv_oml_q_shape, TypeId::kNumberTypeFloat32,
+                                spRankList[recv_oml_src_rank], recv_oml_q_shape, TypeId::kNumberTypeFloat16,
                                 recv_group);
         }
       }
