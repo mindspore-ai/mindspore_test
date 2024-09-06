@@ -218,7 +218,8 @@ class Profiler:
             a multi devices training,collect when True. Setting this parameter has no effect during single card
             training. When using this parameter, `op_time` must be set to ``True`` . Default: ``False`` .
         profile_memory (bool, optional): (Ascend only) Whether to collect tensor memory data, collect when ``True`` .
-            When using this parameter, `op_time` must be set to True. Default: ``False`` .
+            When using this parameter, `op_time` must be set to True. Collecting operator memory data when the graph
+            compilation level is O2 requires collecting from the first step. Default: ``False`` .
         parallel_strategy (bool, optional): (Ascend only) Whether to collect parallel policy performance data.
             Default value: ``False`` .
         start_profile (bool, optional): The start_profile parameter controls whether to enable or disable performance
@@ -283,6 +284,7 @@ class Profiler:
         >>> from mindspore import nn
         >>> import mindspore.dataset as ds
         >>> from mindspore import Profiler
+        >>> from mindspore.profiler import ProfilerLevel
         >>>
         >>> class Net(nn.Cell):
         ...     def __init__(self):
@@ -308,7 +310,7 @@ class Profiler:
         ...
         ...     # Init Profiler
         ...     # Note that the Profiler should be initialized before model.train
-        ...     profiler = Profiler()
+        ...     profiler = Profiler(profiler_level=ProfilerLevel.Level0)
         ...
         ...     # Train Model
         ...     net = Net()
