@@ -1875,7 +1875,7 @@ def export(net, *inputs, file_name, file_format, **kwargs):
             - AIR: Ascend Intermediate Representation. An intermediate representation format of Ascend model.
             - ONNX: Open Neural Network eXchange. An open format built to represent machine learning models.
             - MINDIR: MindSpore Native Intermediate Representation for Anf. An intermediate representation format
-              for MindSpore models.
+              for MindSpore models. MINDIR does not support operators which have dictionary attribute.
 
         kwargs (dict): Configuration options dictionary.
 
