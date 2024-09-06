@@ -997,10 +997,14 @@ int ConverterImpl::UnifyInputShape(const std::shared_ptr<ConverterPara> &param) 
   auto input_shape_param = param->input_shape;
   std::string input_shape_config_str = "";
   auto config_infos = param->config_infos;
+  bool has_dynamic_dims = false;
   if (config_infos.find(kAclBuildOptionParam) != config_infos.end()) {
     auto acl_build_options_section = config_infos.at(kAclBuildOptionParam);
     if (acl_build_options_section.find(kInputShapeKey) != acl_build_options_section.end()) {
       input_shape_config_str = acl_build_options_section.at(kInputShapeKey);
+    }
+    if (acl_build_options_section.find(kDynamicDimsSearchKey) != acl_build_options_section.end()) {
+      has_dynamic_dims = true;
     }
   }
   std::map<std::string, std::vector<int64_t>> input_shape_config;
@@ -1009,7 +1013,7 @@ int ConverterImpl::UnifyInputShape(const std::shared_ptr<ConverterPara> &param) 
     MS_LOG(ERROR) << "ParseStringInputShape failed! ret:" << ret << "!";
     return ret;
   }
-  if (ShapeMapIsDynamicShape(input_shape_config)) {
+  if (ShapeMapIsDynamicShape(input_shape_config) && has_dynamic_dims) {
     size_t dim_num = 0;
     for (auto &shape : input_shape_config) {
       dim_num += shape.second.size();
