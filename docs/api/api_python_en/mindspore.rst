@@ -242,3 +242,14 @@ Installation Verification
     :template: classtemplate.rst
 
     mindspore.run_check
+
+Security
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. autosummary::
+    :toctree: mindspore
+    :nosignatures:
+    :template: classtemplate.rst
+
+    mindspore.obfuscate_ckpt
+    mindspore.load_obf_params_into_net
