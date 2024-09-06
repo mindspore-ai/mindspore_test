@@ -2532,6 +2532,8 @@ class _VirtualConverterBegin(PrimitiveWithInfer):
         self.output_nums = output_nums
 
     def infer_shape(self, arg):
+        if self.output_nums == 0:
+            return ValueError("output_nums can\'t be zero.")
         new_arg = (arg[0] / self.output_nums,) + tuple(arg[1:])
         return (new_arg,) * self.output_nums
 
