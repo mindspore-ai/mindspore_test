@@ -1031,7 +1031,9 @@ void ControlNodeParser::Parse(const std::vector<AnfNodePtr> &control_nodes, cons
   root_func_graph_ = root_graph;
 
   root_graph_parameters_ = root_graph->parameters();
-
+  for (const auto &parameter : root_graph_parameters_) {
+    MS_LOG(DEBUG) << "Root graph parameter:" << (parameter == nullptr ? "null" : parameter->DebugString());
+  }
   func_graph_to_kernel_graph_groups_ = func_graph_to_kernel_graphs;
   for (const auto &func_graph_to_kernel_graph_groups : func_graph_to_kernel_graph_groups_) {
     for (const auto &kernel_graph_group : func_graph_to_kernel_graph_groups.second) {

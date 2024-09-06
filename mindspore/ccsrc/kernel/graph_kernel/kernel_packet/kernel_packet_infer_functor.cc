@@ -23,6 +23,7 @@
 
 namespace mindspore::kernel {
 BaseShapePtr KernelPacketInfer::InferShape(const AbstractBasePtrList &args) {
+  MS_EXCEPTION_IF_NULL(engine_);
   auto engine = engine_->cast_ptr<symshape::SymbolEngineImpl>();
   MS_EXCEPTION_IF_NULL(engine);
   std::lock_guard<std::mutex> infer_lock_guard(*(engine->GetInferMutex()));

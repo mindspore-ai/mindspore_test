@@ -73,6 +73,7 @@ bool IsValidInlinePartial(const AnfNodePtr &node, std::set<FuncGraphPtr> *checke
         sub_graph->NewCNode({NewValueNode(std::make_shared<Primitive>(prim::kPrimTensorMove->name())), output_node});
       MS_EXCEPTION_IF_NULL(tensor_move);
       tensor_move->set_abstract(abstract->Clone());
+      tensor_move->AddPrimalAttr(kBackendAddTensorMove, MakeValue(true));
       const auto &mng = sub_graph->manager();
       if (mng == nullptr) {
         MS_LOG(WARNING) << "Manager is null in funcgraph:" << sub_graph->ToString();
@@ -240,13 +241,16 @@ bool SwitchNotCut::Run(const FuncGraphPtr &func_graph) {
   std::set<CNodePtr> inline_call_nodes;
   if (IsValidFuncGraph(func_graph, &checked_graphs, &inline_call_nodes)) {
     for (const auto &cnode : inline_call_nodes) {
+      MS_LOG(DEBUG) << "Add kAttrNotCut for node:" << cnode->DebugString();
       cnode->AddPrimalAttr(kAttrNotCut, MakeValue(true));
       const auto &switch_node = cnode->input(0)->cast<CNodePtr>();
       MS_EXCEPTION_IF_NULL(switch_node);
       switch_node->AddPrimalAttr(kAttrNotCut, MakeValue(true));
+      MS_LOG(DEBUG) << "Add kAttrNotCut for node:" << switch_node->DebugString();
       const auto &true_partial_node = switch_node->input(kSwitchTrueBranchIndex)->cast<CNodePtr>();
       MS_EXCEPTION_IF_NULL(true_partial_node);
       true_partial_node->AddPrimalAttr(kAttrNotCut, MakeValue(true));
+      MS_LOG(DEBUG) << "Add kAttrNotCut for node:" << true_partial_node->DebugString();
       auto true_partial_graph = true_partial_node->input(kIndex1);
       auto true_sub_graph = common::AnfAlgo::GetValueNodeFuncGraph(true_partial_graph);
       MS_EXCEPTION_IF_NULL(true_sub_graph);
@@ -254,6 +258,7 @@ bool SwitchNotCut::Run(const FuncGraphPtr &func_graph) {
       const auto &false_partial_node = switch_node->input(kSwitchFalseBranchIndex)->cast<CNodePtr>();
       MS_EXCEPTION_IF_NULL(false_partial_node);
       false_partial_node->AddPrimalAttr(kAttrNotCut, MakeValue(true));
+      MS_LOG(DEBUG) << "Add kAttrNotCut for node:" << false_partial_node->DebugString();
       auto false_partial_graph = false_partial_node->input(kIndex1);
       auto false_sub_graph = common::AnfAlgo::GetValueNodeFuncGraph(false_partial_graph);
       MS_EXCEPTION_IF_NULL(false_sub_graph);

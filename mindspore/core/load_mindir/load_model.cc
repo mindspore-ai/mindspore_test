@@ -373,6 +373,7 @@ class MSANFModelParser {
  private:
   void TrytoBuildCNodeAbstract();
   bool BuildPrimitiveNode(const mind_ir::PrimitiveProto &primitive_proto);
+  bool BuildPrimitiveNodeFromProto(const mind_ir::ModelProto &model_proto);
   abstract::AbstractBasePtr BuildAbstractFunction(const mind_ir::AttributeProto &attr_proto);
   void CorrectFuncGraph(const FuncGraphPtr &root);
   bool BuildFuncGraph(const FuncGraphPtr &outputFuncGraph, const mind_ir::GraphProto &importProto);
@@ -424,6 +425,7 @@ class MSANFModelParser {
   std::vector<std::shared_ptr<mindspore::QuantizationParam>> GenerateQuantizationParam(
     const mind_ir::TensorProto &attr_tensor);
   FunctorPtr GenerateFunctorValue(const mind_ir::FunctorProto &functor_proto);
+  FuncGraphPtr GenerateFuncGraphValue(const mind_ir::GraphProto &graph_proto);
   bool little_endian() const { return little_endian_; }
   mindspore::HashMap<std::string, abstract::AbstractBasePtr> GetAbstractForNode(
     const mind_ir::AttributeProto &attr_proto);
@@ -507,6 +509,14 @@ ValuePtr MSANFModelParser::GetValueFromAttributeProto(const mind_ir::AttributePr
       }
       return functor_value;
     }
+    case mind_ir::AttributeProto_AttributeType_GRAPH: {
+      auto graph_value = GenerateFuncGraphValue(attr_proto.g());
+      if (graph_value == nullptr) {
+        MS_LOG(ERROR) << "Failed to get graph value for " << attr_name;
+        return nullptr;
+      }
+      return graph_value;
+    }
     default: {
       ValuePtr value = ObtainCNodeAttrInSingleScalarForm(attr_proto);
       if (value == nullptr) {
@@ -516,6 +526,14 @@ ValuePtr MSANFModelParser::GetValueFromAttributeProto(const mind_ir::AttributePr
       return value;
     }
   }
+}
+
+FuncGraphPtr MSANFModelParser::GenerateFuncGraphValue(const mind_ir::GraphProto &graph_proto) {
+  auto graph = std::make_shared<FuncGraph>();
+  if (!BuildFuncGraph(graph, graph_proto)) {
+    MS_LOG(ERROR) << "Failed to build funcgraph for " << graph_proto.name();
+  }
+  return graph;
 }
 
 FunctorPtr MSANFModelParser::GenerateFunctorValue(const mind_ir::FunctorProto &functor_proto) {
@@ -2224,6 +2242,30 @@ FuncGraphPtr MSANFModelParser::Parse(const mind_ir::ModelProto &model_proto,
   return dstGraph;
 }
 
+bool MSANFModelParser::BuildPrimitiveNodeFromProto(const mind_ir::ModelProto &model_proto) {
+  // GraphKernel contains attribute with graph, so build other primitives first, than deal with the GraphKernels.
+  std::vector<mind_ir::PrimitiveProto> graph_kernel_prim_proto;
+  for (int i = 0; i < model_proto.primitives_size(); ++i) {
+    auto prim_name = model_proto.primitives(i).name();
+    if (prim_name.find("GraphKernel") == 0) {
+      graph_kernel_prim_proto.emplace_back(model_proto.primitives(i));
+    } else {
+      if (!BuildPrimitiveNode(model_proto.primitives(i))) {
+        MS_LOG(ERROR) << "Parse primitives info for pb file failed! " << graph_kernel_prim_proto[i].DebugString();
+        return false;
+      }
+    }
+  }
+
+  for (size_t i = 0; i < graph_kernel_prim_proto.size(); ++i) {
+    if (!BuildPrimitiveNode(graph_kernel_prim_proto[i])) {
+      MS_LOG(ERROR) << "Parse primitives info for pb file failed! " << graph_kernel_prim_proto[i].DebugString();
+      return false;
+    }
+  }
+  return true;
+}
+
 bool MSANFModelParser::Parse(const mind_ir::ModelProto &model_proto, const std::vector<FuncGraphPtr> &graphs,
                              mindspore::HashMap<std::string, AnfNodePtr> *name_to_node) {
   is_kernel_graph_ = graphs.front()->type_name() == kKernelGraphTypeName;
@@ -2252,12 +2294,22 @@ bool MSANFModelParser::Parse(const mind_ir::ModelProto &model_proto, const std::
     }
     return true;
   };
-  for (int i = 0; i < model_proto.primitives_size(); ++i) {
-    if (!BuildPrimitiveNode(model_proto.primitives(i))) {
-      MS_LOG(ERROR) << "Parse primitives info for pb file failed! " << model_proto.primitives(i).DebugString();
-      return false;
+
+  // Build value node first
+  const mind_ir::GraphProto &proto = model_proto.graph();
+  for (int i = 0; i < proto.node_size(); ++i) {
+    const mind_ir::NodeProto &node_proto = proto.node(i);
+    if (node_proto.op_type() == kConstantValueNode) {
+      if (!BuildValueNodeForFuncGraph(node_proto)) {
+        MS_LOG(ERROR) << "Build value node failed for " << node_proto.output(0);
+        return false;
+      }
     }
   }
+  if (!BuildPrimitiveNodeFromProto(model_proto)) {
+    return false;
+  }
+
   const mind_ir::GraphProto &graph_build = model_proto.graph();
   const auto &root = FindGraphByName(graphs, graph_build.name());
   MS_EXCEPTION_IF_NULL(root);

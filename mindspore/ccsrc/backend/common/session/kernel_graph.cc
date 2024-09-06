@@ -790,6 +790,24 @@ void KernelGraph::AddRefCorrespondPairs(const AnfWithOutIndex &final_pair, const
   (void)ref_out_in_map_.emplace(final_pair, origin_pair);
 }
 
+void KernelGraph::AddOutFrontPairs(const AnfWithOutIndex &out_pair, const AnfWithOutIndex &front_pair) {
+  if (graph_output_to_front_node_map_.count(out_pair) == 0) {
+    (void)graph_output_to_front_node_map_.emplace(out_pair, front_pair);
+  }
+  if (front_node_to_graph_output_map_.count(front_pair) == 0) {
+    (void)front_node_to_graph_output_map_.emplace(front_pair, out_pair);
+  }
+}
+
+void KernelGraph::AddFrontOutPairs(const AnfWithOutIndex &front_pair, const AnfWithOutIndex &out_pair) {
+  if (front_node_to_graph_output_map_.count(front_pair) == 0) {
+    (void)front_node_to_graph_output_map_.emplace(front_pair, out_pair);
+  }
+  if (graph_output_to_front_node_map_.count(out_pair) == 0) {
+    (void)graph_output_to_front_node_map_.emplace(out_pair, front_pair);
+  }
+}
+
 void KernelGraph::ReplaceRefPair(const AnfWithOutIndex &old_pair, const AnfWithOutIndex &new_pair) {
   // replace key
   if (IsInRefOutputMap(old_pair)) {

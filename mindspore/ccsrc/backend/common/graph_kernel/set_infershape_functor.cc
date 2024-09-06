@@ -30,6 +30,8 @@
 
 namespace mindspore::graphkernel {
 BaseShapePtr SymbolEngineInfer::InferShape(const AbstractBasePtrList &args) {
+  MS_EXCEPTION_IF_NULL(engine_);
+  MS_EXCEPTION_IF_NULL(out_abstract_);
   if (!engine_->Infer(args)) {
     MS_LOG(WARNING) << "Infer failed. symbol_engine:" << engine_->ToString();
     return nullptr;

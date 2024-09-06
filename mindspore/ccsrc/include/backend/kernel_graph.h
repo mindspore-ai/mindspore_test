@@ -205,6 +205,13 @@ class BACKEND_EXPORT KernelGraph : public FuncGraph {
   // get front anf by backend anf
   AnfNodePtr GetFrontAnfByBackendAnf(const AnfNodePtr &backend_anf) const;
   const mindspore::HashMap<AnfNodePtr, AnfNodePtr> &backend_front_anf_map() const { return backend_front_anf_map_; }
+  const mindspore::HashMap<AnfNodePtr, AnfWithOutIndex> tuple_backend_front_anf_index_map() const {
+    return tuple_backend_front_anf_index_map_;
+  }
+  void set_tuple_backend_front_anf_index_map(
+    const mindspore::HashMap<AnfNodePtr, AnfWithOutIndex> &tuple_backend_front_anf_index_map) {
+    tuple_backend_front_anf_index_map_ = tuple_backend_front_anf_index_map;
+  }
   // check backend node whether exist in map
   bool BackendNodeExistInFrontBackendMap(const AnfNodePtr &backend_anf);
   // get value node by tensor
@@ -483,6 +490,10 @@ class BACKEND_EXPORT KernelGraph : public FuncGraph {
   const std::map<AnfWithOutIndex, AnfWithOutIndex> &front_node_to_graph_output_map() const {
     return front_node_to_graph_output_map_;
   }
+  // add out front node pairs to graph_output_to_front_node_map_
+  void AddOutFrontPairs(const AnfWithOutIndex &out_pair, const AnfWithOutIndex &front_pair);
+  // add front out node pairs to front_node_to_graph_output_map_
+  void AddFrontOutPairs(const AnfWithOutIndex &front_pair, const AnfWithOutIndex &out_pair);
 
   // The interface to set/get the graph GIL flag.
   void set_is_need_gil(bool flag) { is_need_gil_ = flag; }
@@ -569,7 +580,8 @@ class BACKEND_EXPORT KernelGraph : public FuncGraph {
   void set_enable_kbk_sub_graph_execute(bool enable_kbk_sub_graph_execute) {
     enable_kbk_sub_graph_execute_ = enable_kbk_sub_graph_execute;
   }
-
+  void set_is_from_cache(bool is_from_cache) { is_from_cache_ = is_from_cache; }
+  bool is_from_cache() { return is_from_cache_; }
   void CacheRootWeight(const std::vector<AnfNodePtr> &weights);
   const std::vector<AnfNodePtr> &GetRootWeights() const { return root_weights_; }
 
@@ -705,6 +717,7 @@ class BACKEND_EXPORT KernelGraph : public FuncGraph {
   // Whether this graph could be executed as kbk graph mode which disable kernel actor message mechanism.
   // Note: Will be deleted in the future, after runtime refactor for kbk finish.
   bool enable_kbk_sub_graph_execute_{true};
+  bool is_from_cache_{false};
   std::vector<AnfNodePtr> root_weights_;
 };
 }  // namespace session

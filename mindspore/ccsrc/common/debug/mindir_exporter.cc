@@ -157,9 +157,13 @@ std::string IrExportBuilder::GetPrimitiveUniqueName(const PrimitivePtr &primitiv
   return answer;
 }
 
-bool IrExportBuilder::BuildPrimitives() {
+bool IrExportBuilder::BuildPrimitivesByMap(std::map<PrimitivePtr, std::string> *primitives) {
   for (auto it = primitive_name_map_.begin(); it != primitive_name_map_.end(); ++it) {
     auto prim = it->first;
+    if (primitives->count(prim)) {
+      continue;
+    }
+    primitives->insert(*it);
     if (prim->name() == prim::kPrimPyExecute->name()) {
       MS_LOG(EXCEPTION) << "Cannot export a PyExecute CNode in MindIR.";
     }
@@ -191,7 +195,7 @@ bool IrExportBuilder::BuildPrimitives() {
         continue;
       }
       if (attr.second == nullptr) {
-        MS_LOG(ERROR) << "attr: " << attr.first << " has no value.";
+        MS_LOG(INFO) << "attr: " << attr.first << " has no value.";
         continue;
       }
       MS_LOG(DEBUG) << "attr: " << attr.first << " " << attr.second->DumpText() << " " << attr.second->type_name();
@@ -207,6 +211,18 @@ bool IrExportBuilder::BuildPrimitives() {
       }
     }  // Loop of attrs
   }    // Loop of primitives
+  return true;
+}
+
+bool IrExportBuilder::BuildPrimitives() {
+  // The map primitive_name_map_ may increase by SetValueToAttributeProto, so use the temp_prims to ensure every
+  // prims can be built.
+  std::map<PrimitivePtr, std::string> temp_prims;
+  while (temp_prims.size() != primitive_name_map_.size()) {
+    if (!BuildPrimitivesByMap(&temp_prims)) {
+      return false;
+    }
+  }
   return true;
 }
 
@@ -528,14 +544,21 @@ bool IrExportBuilder::SetQuantizationParamToAttrProto(const std::shared_ptr<Quan
   return true;
 }
 
+bool IrExportBuilder::SetFuncGraphToAttrProto(const FuncGraphPtr &g, mind_ir::AttributeProto *const attr_proto) {
+  auto *g_proto = attr_proto->mutable_g();
+  attr_proto->set_type(mind_ir::AttributeProto_AttributeType_GRAPH);
+  g_proto->set_name(g->ToString());
+  return BuildFuncGraph(g, g_proto);
+}
+
 bool IrExportBuilder::SetFunctorToAttrProto(const FunctorPtr &func, mind_ir::AttributeProto *const attr_proto) {
   auto *functor_proto = attr_proto->mutable_functor();
   attr_proto->set_type(mind_ir::AttributeProto_AttributeType_FUNCTOR);
   if (func->isa<ShapeCalcBaseFunctor>()) {
     functor_proto->set_type(mind_ir::FunctorProto_FunctorType_SHAPE_CALC_FUNCTOR);
   } else {
-    MS_LOG(ERROR) << "Unknown functor: " << func->ToString();
-    return false;
+    MS_LOG(DEBUG) << "Skip functor: " << func->ToString();
+    return true;
   }
   functor_proto->set_name(func->name());
   auto values = func->ToValue();
@@ -1190,6 +1213,10 @@ bool IrExportBuilder::BuildCNode(const CNodePtr &node, mind_ir::GraphProto *cons
   node_proto->set_domain(node->fullname_with_scope());
   AnfNodePtr op = node->input(0);
   std::string type_name = GetOpTypeName(op);
+  if (IsValueNode<FuncGraph>(node->input(0))) {
+    node->input(0)->set_user_data<std::string>(kUniqueCacheName,
+                                               std::make_shared<std::string>(GetUniqueNodeName(node->input(0))));
+  }
   if (type_name.empty()) {
     MS_LOG(ERROR) << "Get op type name for " << op->DebugString() << " failed.";
     return false;
@@ -1452,13 +1479,11 @@ bool IrExportBuilder::SetValueToAttributeProto(const ValuePtr &value, mind_ir::A
     auto tensor_proto = attr_proto->add_tensors();
     tensor_proto->set_name(attr_proto->name());
     auto quant_param_proto = tensor_proto->add_quant_params();
-    auto ret = SetQuantizationParamToAttrProto(quantization_param, quant_param_proto);
-    if (ret != true) {
-      MS_LOG(ERROR) << "QuantizationParam Set Value to AttributeProto Error";
-      return false;
-    }
+    return SetQuantizationParamToAttrProto(quantization_param, quant_param_proto);
   } else if (value->isa<Functor>()) {
     return SetFunctorToAttrProto(value->cast<FunctorPtr>(), attr_proto);
+  } else if (value->isa<FuncGraph>()) {
+    return SetFuncGraphToAttrProto(value->cast<FuncGraphPtr>(), attr_proto);
   } else {
     MS_LOG(ERROR) << "Unsupported type: " << value->type_name();
     return false;

@@ -942,8 +942,13 @@ void GeKernelExecutor::CreateKernel(const std::vector<CNodePtr> &nodes) const {
   if (!ret) {
     MS_LOG(EXCEPTION) << "Kernel build error.";
   }
-  GEGraphOptimization::GetInstance().OptimizeACLGraphAfterCreateKernel(kernel_graph);
-  OptimizeExecutionOrder(NOT_NULL(func_graph));
+
+  if (!kernel_graph->is_from_cache()) {
+    GEGraphOptimization::GetInstance().OptimizeACLGraphAfterCreateKernel(kernel_graph);
+    OptimizeExecutionOrder(NOT_NULL(func_graph));
+  } else {
+    MS_LOG(INFO) << "Skip optimize after create kernel for:" << kernel_graph->ToString();
+  }
   PROF_END(create_kernel);
   (void)profiler::CollectHostInfo("Ascend", "CreateKernel", "CreateGeKernel", start_time, profiler::GetClockSyscnt(),
                                   1);
@@ -1116,6 +1121,10 @@ void GeKernelExecutor::PreprocessBeforeRun(const FuncGraphPtr &graph) const {
   DoSomas(NOT_NULL(graph));
   (void)profiler::CollectHostInfo("Ascend", "PreprocessBeforeRun", "GePreprocess", start_time,
                                   profiler::GetClockSyscnt(), 1);
+}
+
+void GeKernelExecutor::CreateEventForCache(const KernelGraphPtr &kernel_graph) const {
+  AclStreamAssign::GetInstance().CreateEvent(NOT_NULL(kernel_graph));
 }
 
 bool GeKernelExecutor::PySyncRuning(void *stream) const {

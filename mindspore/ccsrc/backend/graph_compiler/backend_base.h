@@ -146,6 +146,10 @@ class BACKEND_EXPORT MindRTBackendBase : public Backend {
   // Wait multi stream finish.
   void WaitMultiStream(const GraphCompilerInfo &graph_compiler_info);
 
+  // Backend compile cache interface, handle the control node and graph id in this class.
+  bool DumpBackendInfo();
+  bool LoadBackendInfo();
+
   // When compiling FuncGraph, it is divided according to the control nodes, and obtain the control nodes and several
   // node segments. Node segments will be compiled into kernelGraphs which are expressed as GraphId and bound to
   // the corresponding device_context.
@@ -169,6 +173,8 @@ class BACKEND_EXPORT MindRTBackendBase : public Backend {
   void CompileSubGraph(const FuncGraphPtr &func_graph, device::RunMode run_mode = device::RunMode::kUnknown);
   void ProcessNotSupportCnode(const FuncGraphPtr &func_graph, const device::DeviceType &old_target,
                               const device::DeviceType &new_target) const;
+  bool CompileGraphsByKbkCache(const FuncGraphPtr &func_graph, DeviceContext *device_context);
+  bool CacheCompileGraphs();
 };
 }  // namespace compile
 }  // namespace mindspore

@@ -178,6 +178,7 @@ class IrExportBuilder {
                                        mind_ir::TensorProto_QuantParamProto *const quant_param_proto);
   bool SetFunctorToAttrProto(const FunctorPtr &value, mind_ir::AttributeProto *const attr_proto);
   bool SetTensorTypeToAttributeProto(const ValuePtr &value, mind_ir::TensorProto *tensor_proto);
+  bool SetFuncGraphToAttrProto(const FuncGraphPtr &value, mind_ir::AttributeProto *const attr_proto);
 
   mind_ir::TensorProto_DataType GetMindirDataType(TypeId type_id) const;
   mind_ir::TensorProto_DataType GetMindirDataBitsIntType(int bits) const;
@@ -196,6 +197,7 @@ class IrExportBuilder {
   bool ExportWeight(const ParameterPtr &param, const std::string &param_name, mind_ir::GraphProto *const graph_proto);
   std::string GetPrimitiveUniqueName(const PrimitivePtr &primitive_ptr);
   bool BuildPrimitives();
+  bool BuildPrimitivesByMap(std::map<PrimitivePtr, std::string> *primitives);
 
   ModelProtoPtr model_;
   mind_ir::NodeProto *last_node_{nullptr};
