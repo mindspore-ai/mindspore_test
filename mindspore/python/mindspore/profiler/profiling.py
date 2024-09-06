@@ -452,8 +452,8 @@ class Profiler:
             path (str): The profiling data path which need to be analyzed offline.
                 There needs to be a profiler directory in this path.
             pretty (bool, optional): Whether to pretty json files. Default: ``False``.
-            step_list (list, optional): A list of steps that need to be analyzed. Default: ``None``.
-                By default, all steps will be analyzed.
+            step_list (list, optional): A list of steps that need to be analyzed, the steps must be
+                consecutive integers. Default: ``None``. By default, all steps will be analyzed.
             data_simplification (bool, optional): Whether to enable data simplification. Default: ``True``.
 
         Examples:
@@ -571,14 +571,38 @@ class Profiler:
                 Offline mode isused in abnormal exit scenario. This parameter should be set to ``None``
                 for online mode. Default: ``None``.
             pretty (bool, optional): Whether to pretty json files. Default: ``False``.
-            step_list (list, optional): A list of steps that need to be analyzed. Default: ``None``.
-                By default, all steps will be analyzed.
+            step_list (list, optional): A list of steps that need to be analyzed, the steps must be
+                consecutive integers. Default: ``None``. By default, all steps will be analyzed.
             mode (str, optional): Analysis mode, it must be one of ["sync", "async"]. Default: ``sync``.
 
                 - sync: analyse data in current process, it will block the current process.
-                - async: analyse data in subprocess, it will not the current process.Since the parsing process
+                - async: analyse data in subprocess, it will not block the current process. Since the parsing process
                   will take up extra CPU resources, please enable this mode according to the actual resource situation.
 
+        Examples:
+            >>> from mindspore.train import Callback
+            >>> from mindspore import Profiler
+            >>> class StopAtStep(Callback):
+            ...     def __init__(self, start_step=1, stop_step=5):
+            ...         super(StopAtStep, self).__init__()
+            ...         self.start_step = start_step
+            ...         self.stop_step = stop_step
+            ...         self.profiler = Profiler(start_profile=False)
+            ...
+            ...     def step_begin(self, run_context):
+            ...         cb_params = run_context.original_args()
+            ...         step_num = cb_params.cur_step_num
+            ...         if step_num == self.start_step:
+            ...             self.profiler.start()
+            ...
+            ...     def step_end(self, run_context):
+            ...         cb_params = run_context.original_args()
+            ...         step_num = cb_params.cur_step_num
+            ...         if step_num == self.stop_step:
+            ...             self.profiler.stop()
+            ...
+            ...     def end(self, run_context):
+            ...         self.profiler.analyse(step_list=[2,3,4], mode="sync")
         """
         try:
             if isinstance(pretty, bool):
