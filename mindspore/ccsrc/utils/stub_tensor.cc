@@ -46,10 +46,8 @@ StubNodePtr MakeStubNode(const TypePtr &type) {
     return std::make_shared<AnyTypeNode>();
   } else if (type == kTypeNone) {
     return std::make_shared<NoneTypeNode>();
-  } else {
-    MS_LOG(WARNING) << "stub tensor is create for type: " << type->ToString();
   }
-  return nullptr;
+  MS_EXCEPTION(NotSupportError) << "Unsupported stub tensor for type: " << type->ToString();
 }
 
 py::object MakeOutput(const StubNodePtr &node) {

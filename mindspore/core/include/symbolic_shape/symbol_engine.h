@@ -20,10 +20,12 @@
 #include <unordered_map>
 #include "base/base.h"
 #include "ir/anf.h"
-#include "ir/func_graph.h"
 #include "abstract/abstract_value.h"
 
 namespace mindspore {
+class FuncGraph;
+using FuncGraphPtr = std::shared_ptr<FuncGraph>;
+using FuncGraphWeakPtr = std::weak_ptr<FuncGraph>;
 namespace symshape {
 class MS_CORE_API SymbolEngine : public Base {
  public:

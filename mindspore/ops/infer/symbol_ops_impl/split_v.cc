@@ -45,15 +45,14 @@ SymbolPtr SplitV::Eval() {
   auto axis = LongToSize(NormAxis(input_as<IntSymbol>(kIndex1)->value(), x->size()));
   DoNotEvalOnRun();
   MS_EXCEPTION_IF_CHECK_FAIL(size_splits.size() == out_num, "The size_splits.size() does not equals to num_split.");
-  int neg_idx = -1;
-  if (std::any_of(size_splits.begin(), size_splits.end(), [&neg_idx](const SymbolPtr &s) {
-        ++neg_idx;
-        return s->as<IntSymbol>()->is_negative();
-      })) {
+  auto iter = std::find_if(size_splits.begin(), size_splits.end(),
+                           [](const SymbolPtr &s) { return s->as<IntSymbol>()->is_negative(); });
+  auto unknown_idx = iter - size_splits.begin();
+  if (iter != size_splits.end()) {
     // put a "1" into size_splits to accumulate with the inner "-1".
     size_splits.push_back(kSym1);
     auto sizes = Accumulate<ScalarAdd>(size_splits, emitter());
-    size_splits[neg_idx] = Emit(std::make_shared<ScalarSub>(x->item(axis), sizes));
+    size_splits[unknown_idx] = Emit(std::make_shared<ScalarSub>(x->item(axis), sizes));
   }
   SymbolPtrList result(out_num);
   for (size_t i = 0; i < out_num; i++) {

@@ -39,7 +39,10 @@ SymbolPtr Chunk::Eval() {
   // chunk does not support dynamic dim.
   auto dim_size = input_shape->item_as<IntSymbol>(LongToSize(dim))->value();
   int64_t each_size = (dim_size + chunks - 1) / chunks;
-  if (each_size == 0 && dim_size == 0) {
+  // the check in "ops_func_impl/chunk.cc" is "each_size == 0 && dim_size == 0", but it will lead to a static-check
+  // warning in following code of "DivisionByZero"  when each_size=0.
+  // In this op, chunks is always greater than 0, so when each_size is 0, the dim_size is also 0.
+  if (each_size == 0) {
     return GenList(SymbolPtrList(LongToSize(chunks), kSym0));
   }
   auto actual_chunks = std::max<int64_t>((dim_size + each_size - 1) / each_size, 1);

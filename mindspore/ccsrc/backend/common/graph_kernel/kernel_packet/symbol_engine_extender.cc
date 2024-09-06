@@ -252,7 +252,7 @@ void SymbolEngineExtender::ProcessNopNode(const FuncGraphPtr &fg, AnfNodePtrList
     if (iter == fg->parameters().end()) {
       return;
     }
-    idx = iter - fg->parameters().begin();
+    idx = static_cast<size_t>(iter - fg->parameters().begin());
   }
   if (idx < inputs->size()) {
     fg->set_attr(kAttrNopOp, MakeValue(true));
