@@ -28,7 +28,6 @@ from mindspore import Tensor
 from mindspore import context
 from mindspore.train.loss_scale_manager import FixedLossScaleManager
 from mindspore.train import Model
-from mindspore._extends.parse import compile_config
 from utils import FakeData
 from utils import allclose_nparray
 from utils import FakeDataInitMode
@@ -313,10 +312,7 @@ class TestNet(ms.nn.Cell):
         return out
 
 
-@arg_mark(plat_marks=['platform_gpu', 'platform_ascend'],
-          level_mark='level2',
-          card_mark='onecard',
-          essential_mark='unessential')
+@arg_mark(plat_marks=['platform_gpu'], level_mark='level0', card_mark='onecard', essential_mark='unessential')
 @security_off_wrap
 def test_all_subgraph_mix_precision():
     """
@@ -325,14 +321,12 @@ def test_all_subgraph_mix_precision():
     Expectation: success.
     """
     test_net = TestNet()
-    mix_net = auto_mixed_precision(test_net, 'O2')
+    mix_net = auto_mixed_precision(test_net, 'auto', dtype=ms.float16)
     x = ms.Tensor(np.ones([10, 32, 32, 32]), ms.float32)
 
     # graph mode
     context.set_context(mode=context.GRAPH_MODE)
-    compile_config.AMP_ENABLE_ALL_FG = 1
     out_graph = mix_net(x)
-    compile_config.AMP_ENABLE_ALL_FG = ''
 
     # pynative mode
     context.set_context(mode=context.PYNATIVE_MODE)
