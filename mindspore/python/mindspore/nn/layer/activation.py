@@ -33,6 +33,7 @@ __all__ = ['Softmin',
            'Softmax',
            'Softmax2d',
            'LogSoftmax',
+           'LogSoftmaxExt',
            'ReLU',
            'ReLU6',
            'RReLU',
@@ -327,6 +328,51 @@ class LogSoftmax(Cell):
 
     def construct(self, x):
         return self.log_softmax(x)
+
+
+class LogSoftmaxExt(Cell):
+    r"""
+    Applies the Log Softmax function to the input tensor on the specified axis.
+    Supposes a slice in the given axis, :math:`x` for each element :math:`x_i`,
+    the Log Softmax function is shown as follows:
+
+    .. math::
+        \text{output}(x_i) = \log \left(\frac{\exp(x_i)} {\sum_{j = 0}^{N-1}\exp(x_j)}\right),
+
+    where :math:`N` is the length of the Tensor.
+
+    Args:
+        dim (int, optional): The axis to perform the Log softmax operation. Default: ``None`` .
+
+    Returns:
+        Tensor, with the same shape as the input.
+
+    Raises:
+        ValueError: If `dim` is not in range [-len(input.shape), len(input.shape)).
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import Tensor, nn
+        >>> import numpy as np
+        >>> x = Tensor(np.array([[-1.0, 4.0, -8.0], [2.0, -5.0, 9.0]]), mindspore.float32)
+        >>> log_softmax = nn.LogSoftmaxExt(dim=-1)
+        >>> output = log_softmax(x)
+        >>> print(output)
+        [[-5.00672150e+00 -6.72150636e-03 -1.20067215e+01]
+         [-7.00091219e+00 -1.40009127e+01 -9.12250078e-04]]
+    """
+
+    def __init__(self, dim=None):
+        """Initialize LogSoftmaxExt."""
+        super(LogSoftmaxExt, self).__init__()
+        self.log_softmax = P.LogSoftmaxExt()
+        self.dim = dim
+
+    def construct(self, x):
+        return self.log_softmax(x, dim=self.dim)
 
 
 class ELU(Cell):
@@ -1618,6 +1664,7 @@ _activation = {
     'softmax': Softmax,
     'softmax2d': Softmax2d,
     'logsoftmax': LogSoftmax,
+    'logsoftmaxExt': LogSoftmaxExt,
     'relu': ReLU,
     'relu6': ReLU6,
     'rrelu': RReLU,

@@ -3,6 +3,15 @@ round:
   args:
     input:
       dtype: tensor
+    decimals:
+      dtype: int
+      type_cast: tensor
+      default: None
   returns:
     output:
       dtype: tensor
+  function:
+    disable: True
+  dispatch:
+    enable: True
+    Ascend: RoundAscend

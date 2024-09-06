@@ -39,6 +39,7 @@ struct CastInfo {
 const std::unordered_set<TypeId> int_type_with_bool = {kNumberTypeUInt8,  kNumberTypeUInt16, kNumberTypeUInt32,
                                                        kNumberTypeUInt64, kNumberTypeInt8,   kNumberTypeInt16,
                                                        kNumberTypeInt32,  kNumberTypeInt64,  kNumberTypeBool};
+const std::unordered_set<TypeId> int32_type = {kNumberTypeInt32};
 
 // prim_name | (input_vector, output_vector) vector: {{input_index/output_index, src_dtypes, dst_dtype}}
 const std::unordered_map<std::string, std::pair<std::vector<CastInfo>, std::vector<CastInfo>>> kNeedAddCastMap = {
@@ -51,15 +52,22 @@ const std::unordered_map<std::string, std::pair<std::vector<CastInfo>, std::vect
   {ops::kNameErfinv, {{{0, int_type_with_bool, kNumberTypeFloat32}}, {}}},
   {ops::kNameErf, {{{0, {kNumberTypeInt64, kNumberTypeBool}, kNumberTypeFloat32}}, {}}},
   {ops::kNameErfc, {{{0, {kNumberTypeInt64, kNumberTypeBool}, kNumberTypeFloat32}}, {}}},
+  {ops::kNameExpm1, {{{0, {kNumberTypeInt64, kNumberTypeBool}, kNumberTypeFloat32}}, {}}},
   {ops::kNameReduceAny, {{{0, {}, kNumberTypeBool}}, {}}},
   {ops::kNameReduceAll, {{{0, {}, kNumberTypeBool}}, {}}},
   {ops::kNameLogicalAnd, {{{0, {}, kNumberTypeBool}, {1, {}, kNumberTypeBool}}, {}}},
   {ops::kNameLogicalOr, {{{0, {}, kNumberTypeBool}, {1, {}, kNumberTypeBool}}, {}}},
   {ops::kNameLogicalXor, {{{0, {}, kNumberTypeBool}, {1, {}, kNumberTypeBool}}, {}}},
   {ops::kNameLogicalNot, {{{0, {}, kNumberTypeBool}}, {}}},
+  {ops::kNameLog1p,
+   {{{0,
+      {kNumberTypeUInt8, kNumberTypeInt8, kNumberTypeInt16, kNumberTypeInt32, kNumberTypeInt64, kNumberTypeBool},
+      kNumberTypeFloat32}},
+    {}}},
   {ops::kNameDiv, {{{0, int_type_with_bool, kNumberTypeFloat32}, {1, int_type_with_bool, kNumberTypeFloat32}}, {}}},
   {ops::kNameArgMaxWithValue, {{}, {{0, {}, kNumberTypeInt32}}}},
-  {ops::kNameArgMinWithValue, {{}, {{0, {}, kNumberTypeInt32}}}}};
+  {ops::kNameArgMinWithValue, {{}, {{0, {}, kNumberTypeInt32}}}},
+  {ops::kNameIncreFlashAttention, {{{4, int32_type, kNumberTypeInt64}}, {}}}};
 
 bool NeedAddCast(const BaseRef &ref) {
   if (utils::isa<AnfNodePtr>(ref)) {

@@ -73,6 +73,8 @@ SoftplusGradExt: 'aclnnSoftplusBackward'
 StackExt: 'aclnnStack'
 TopkExt: 'aclnnTopk'
 WeightQuantBatchMatmul: 'aclnnWeightQuantBatchMatmulV2'
+TraceExt: 'aclnnTrace'
+IncreFlashAttention: 'aclnnIncreFlashAttentionV4'
 # 1
 Xlogy: 'aclnnXLogYTensor'
 # 2
@@ -88,7 +90,8 @@ CumsumExt: 'aclnnCumsum'
 # 7
 Col2ImGrad: 'aclnnIm2col'
 # 8
-
+LogSoftmaxExt: 'aclnnLogSoftmax'
+LogSoftmaxGrad: 'aclnnLogSoftmaxBackward'
 # 9
 
 # 10
@@ -274,7 +277,8 @@ LeakyReLUGradExt: 'aclnnLeakyReluBackward'
 # 99
 
 # 100
-
+SeLUExt: 'aclnnSelu'
+SeluGrad: 'aclnnSeluBackward'
 # 109
 ArgMinExt: 'aclnnArgMin'
 
@@ -304,8 +308,13 @@ HSwish: 'aclnnHardswish'
 HSwishGrad: 'aclnnHardswishBackward'
 # 231
 MatrixInverseExt: 'aclnnInverse'
+# 238
+L1LossExt: 'aclnnL1Loss'
 
 # 256
 MedianExt: 'aclnnMedian'
+# 267
+MishExt: 'aclnnMish'
+MishGradExt: 'aclnnMishBackward'
 
 # 301

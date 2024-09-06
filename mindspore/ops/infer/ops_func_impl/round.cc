@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 #include "infer/ops_func_impl/round.h"
-
 #include "mindspore/ops/ops_utils/op_utils.h"
+#include "ops/ops_func_impl/simple_infer.h"
 
 namespace mindspore {
 namespace ops {
@@ -27,5 +27,18 @@ BaseShapePtr RoundFuncImpl::InferShape(const PrimitivePtr &primitive,
 TypePtr RoundFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
   return input_args[kIndex0]->GetType();
 }
+
+TypePtrList RoundFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
+  const auto &x_tensor = input_values[0]->cast<tensor::BaseTensorPtr>();
+  MS_EXCEPTION_IF_NULL(x_tensor);
+  return {x_tensor->Dtype()};
+}
+
+ShapeArray RoundFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
+  const auto &x_tensor = input_values[0]->cast<tensor::BaseTensorPtr>();
+  MS_EXCEPTION_IF_NULL(x_tensor);
+  return {x_tensor->shape()};
+}
+REGISTER_SIMPLE_INFER(kNameRound, RoundFuncImpl)
 }  // namespace ops
 }  // namespace mindspore

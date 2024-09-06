@@ -24,7 +24,7 @@
 #include "mindspore/ops/op_def/other_ops.h"
 #include "mindspore/lite/tools/optimizer/common/gllo_utils.h"
 #include "mindspore/lite/tools/converter/quantizer/quantize_util.h"
-#include "infer/incre_flash_attention.h"
+#include "infer/ops_func_impl/incre_flash_attention.h"
 #include "mindspore/ccsrc/include/common/utils/utils.h"
 
 namespace mindspore {

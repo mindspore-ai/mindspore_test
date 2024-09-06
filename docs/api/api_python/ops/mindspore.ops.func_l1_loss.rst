@@ -33,7 +33,7 @@ mindspore.ops.l1_loss
           - ``'sum'``：计算输出元素的总和。
 
     返回：
-        Tensor或Scalar，如果 `reduction` 为 ``''none'`` ，则返回与 `input` 具有相同shape和dtype的Tensor。否则，将返回Scalar。
+        Tensor或Scalar，如果 `reduction` 为 ``'none'`` ，则返回与 `input` 具有相同shape和dtype的Tensor。否则，将返回Scalar。
 
     异常：
         - **TypeError** - `input` 不是Tensor。

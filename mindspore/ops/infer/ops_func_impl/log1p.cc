@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 #include "infer/ops_func_impl/log1p.h"
-#include "mindspore/ccsrc/include/common/utils/utils.h"
+#include <vector>
+#include <memory>
+#include "ops/ops_func_impl/simple_infer.h"
+#include "ops_utils/op_utils.h"
 
 namespace mindspore {
 namespace ops {
@@ -24,7 +27,36 @@ BaseShapePtr Log1pFuncImpl::InferShape(const PrimitivePtr &primitive,
 }
 
 TypePtr Log1pFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
-  return input_args[kIndex0]->GetType();
+  auto input_type = input_args[kIndex0]->GetType();
+  auto input_type_id = input_type->cast<TensorTypePtr>()->element()->type_id();
+  static const std::vector<TypeId> int_or_bool = {kNumberTypeUInt8, kNumberTypeInt8,  kNumberTypeInt16,
+                                                  kNumberTypeInt32, kNumberTypeInt64, kNumberTypeBool};
+  bool is_int_or_bool = std::any_of(int_or_bool.begin(), int_or_bool.end(),
+                                    [&input_type_id](const TypeId &type_id) { return input_type_id == type_id; });
+  if (is_int_or_bool) {
+    return std::make_shared<TensorType>(kFloat32);
+  }
+  return input_type;
 }
+TypePtrList Log1pFuncImpl::InferType(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
+  const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  MS_EXCEPTION_IF_NULL(x_tensor);
+  const auto &input_type = x_tensor->Dtype();
+  const auto &input_type_id = x_tensor->Dtype()->type_id();
+  static const std::vector<TypeId> int_or_bool = {kNumberTypeUInt8, kNumberTypeInt8,  kNumberTypeInt16,
+                                                  kNumberTypeInt32, kNumberTypeInt64, kNumberTypeBool};
+  bool is_int_or_bool = std::any_of(int_or_bool.begin(), int_or_bool.end(),
+                                    [&input_type_id](const TypeId &type_id) { return input_type_id == type_id; });
+  if (is_int_or_bool) {
+    return {kFloat32};
+  }
+  return {input_type};
+}
+ShapeArray Log1pFuncImpl::InferShape(const PrimitivePtr &primitive, const ValuePtrList &input_values) const {
+  const auto &x_tensor = input_values[kIndex0]->cast<tensor::BaseTensorPtr>();
+  MS_EXCEPTION_IF_NULL(x_tensor);
+  return {x_tensor->shape()};
+}
+REGISTER_SIMPLE_INFER(kNameLog1p, Log1pFuncImpl)
 }  // namespace ops
 }  // namespace mindspore

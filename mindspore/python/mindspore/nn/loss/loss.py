@@ -33,6 +33,7 @@ from mindspore.nn.cell import Cell
 from mindspore.nn.layer.activation import get_activation
 from mindspore import _checkparam as validator
 from mindspore import context
+from mindspore.ops.auto_generate import l1_loss_ext_op
 
 
 class LossBase(Cell):
@@ -245,6 +246,80 @@ class L1Loss(LossBase):
 
     def construct(self, logits, labels):
         return F.l1_loss(logits, labels, self.reduction)
+
+
+class L1LossExt(LossBase):
+    r"""
+    L1LossExt is used to calculate the mean absolute error between the predicted value and the target value.
+
+    Assuming that the :math:`x` and :math:`y` are 1-D Tensor, length :math:`N`, then calculate the loss of :math:`x` and
+    :math:`y` without dimensionality reduction (the reduction parameter is set to ``'none'`` ). The formula is as
+    follows:
+
+    .. math::
+        \ell(x, y) = L = \{l_1,\dots,l_N\}^\top, \quad \text{with } l_n = \left| x_n - y_n \right|,
+
+    where :math:`N` is the batch size. If `reduction` is not ``'none'`` , then:
+
+    .. math::
+        \ell(x, y) =
+        \begin{cases}
+            \operatorname{mean}(L), & \text{if reduction} = \text{'mean';}\\
+            \operatorname{sum}(L),  & \text{if reduction} = \text{'sum'.}
+        \end{cases}
+
+    Args:
+        reduction (str, optional): Apply specific reduction method to the output: ``'none'`` , ``'mean'`` ,
+            ``'sum'`` . Default: ``'mean'`` .
+
+            - ``'none'``: no reduction will be applied.
+            - ``'mean'``: compute and return the mean of elements in the output.
+            - ``'sum'``: the output elements will be summed.
+
+    Inputs:
+        - **logits** (Tensor) - Predicted value, Tensor of any dimension.
+        - **labels** (Tensor) - Target value, same shape as the `logits` in common cases.
+          However, it supports the shape of `logits` is different from the shape of `labels`
+          and they should be broadcasted to each other.
+
+    Outputs:
+        Tensor, data type is float.
+
+    Raises:
+        ValueError: If `reduction` is not one of ``'none'`` , ``'mean'`` or ``'sum'`` .
+        ValueError: If `logits` and `labels` have different shapes and cannot be broadcasted to each other.
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import Tensor, nn
+        >>> import numpy as np
+        >>> # Case 1: logits.shape = labels.shape = (3,)
+        >>> loss = nn.L1LossExt()
+        >>> logits = Tensor(np.array([1, 2, 3]), mindspore.float32)
+        >>> labels = Tensor(np.array([1, 2, 2]), mindspore.float32)
+        >>> output = loss(logits, labels)
+        >>> print(output)
+        0.33333334
+        >>> # Case 2: logits.shape = (3,), labels.shape = (2, 3)
+        >>> loss = nn.L1LossExt(reduction='none')
+        >>> logits = Tensor(np.array([1, 2, 3]), mindspore.float32)
+        >>> labels = Tensor(np.array([[1, 1, 1], [1, 2, 2]]), mindspore.float32)
+        >>> output = loss(logits, labels)
+        >>> print(output)
+        [[0. 1. 2.]
+         [0. 0. 1.]]
+    """
+
+    def __init__(self, reduction='mean'):
+        """Initialize L1LossExt."""
+        super(L1LossExt, self).__init__(reduction)
+        self.reduction = reduction
+
+    def construct(self, logits, labels):
+        return l1_loss_ext_op(logits, labels, self.reduction)
 
 
 class MSELoss(LossBase):

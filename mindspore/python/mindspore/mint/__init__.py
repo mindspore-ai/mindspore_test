@@ -265,8 +265,13 @@ from mindspore.ops.function.math_func import arctanh
 from mindspore.ops.function.math_func import atan2_ext as atan2
 from mindspore.ops.function.math_func import arctan2_ext as arctan2
 
+# 177
+from mindspore.ops.function.math_func import round
+
 # 204
 from mindspore.ops.auto_generate import erfc
+# 207
+from mindspore.ops.auto_generate import expm1
 # 208
 from mindspore.ops.function.array_func import eye
 from mindspore.ops.function.random_func import rand_ext as rand
@@ -275,6 +280,8 @@ from mindspore.ops.function.random_func import rand_like_ext as rand_like
 from mindspore.ops.auto_generate import floor
 # 231
 from mindspore.ops.function.math_func import inverse_ext as inverse
+# 244
+from mindspore.ops.auto_generate import log1p
 # 275
 from mindspore.ops.function.math_func import remainder_ext as remainder
 # 285
@@ -283,6 +290,8 @@ from mindspore.ops.function.array_func import scatter_add_ext as scatter_add
 
 # 301
 from mindspore.ops.function.math_func import tan
+
+from mindspore.ops.auto_generate import trace_ext as trace
 
 
 def add(input, other, *, alpha=1):
@@ -1223,6 +1232,12 @@ __all__ = [
     # 176
     'atan2',
     'arctan2',
+
+    # 177
+    'round',
+
+    # 207
+    'expm1',
     # 204
     'erfc',
     # 208
@@ -1236,12 +1251,15 @@ __all__ = [
     'floor',
     # 231
     'inverse',
+    # 244
+    'log1p',
     # 275
     'remainder',
     # 285
     'scatter_add',
     # 301
     'tan',
+    'trace',
     # 304
 
     # 305

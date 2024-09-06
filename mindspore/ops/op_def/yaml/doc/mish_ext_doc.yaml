@@ -1,0 +1,42 @@
+mish_ext:
+  description: |
+      Computes MISH (A Self Regularized Non-Monotonic Neural Activation Function)
+      of input tensors element-wise.
+
+      The formula is defined as follows:
+
+      .. math::
+          \text{mish}(input) = input * \tanh(softplus(\text{input}))
+
+      See more details in `A Self Regularized Non-Monotonic Neural Activation Function 
+      <https://arxiv.org/abs/1908.08681>`_.
+
+      Mish Activation Function Graph:
+
+      .. image:: ../images/Mish.png
+          :align: center
+      
+      Args:
+          input (Tensor): The input of MISH. Supported dtypes: 
+
+              - Ascend: float16, float32.
+
+      Returns:
+          Tensor, has the same type and shape as the `input`.
+
+      Raises:
+          TypeError: If `input` is not a Tensor.
+          TypeError: If dtype of `input` is not float16 or float32.
+
+      Supported Platforms:
+          ``Ascend``
+
+      Examples:
+          >>> import mindspore
+          >>> from mindspore import Tensor, ops
+          >>> import numpy as np
+          >>> x = Tensor(np.array([[-1.1, 4.0, -8.0], [2.0, -5.0, 9.0]]), mindspore.float32)
+          >>> output = ops.mish(x)
+          >>> print(output)
+          [[-3.0764845e-01 3.9974124e+00 -2.6832507e-03]
+           [ 1.9439589e+00 -3.3576239e-02 8.9999990e+00]]

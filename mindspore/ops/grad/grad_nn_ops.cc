@@ -1314,6 +1314,20 @@ REG_BPROP_BUILDER("SmoothL1Loss").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
   return {dx, dy};
 });
 
+REG_BPROP_BUILDER("L1LossExt").SetUnusedInputs({i3}).SetBody((BODYFUNC(ib) {
+  // input, target, reduction, out, dout
+  auto grad_output = ib->GetInput(kIndex4);
+  auto input = ib->GetInput(kIndex0);
+  auto target = ib->GetInput(kIndex1);
+  auto reduction = ib->GetInput(kIndex2);
+
+  auto dx = ib->Emit("L1LossBackwardExt", {grad_output, input, target, reduction});
+  auto dy = ib->Emit("L1LossBackwardExt", {grad_output, target, input, reduction});
+  std::vector<NodePtr> ret = BinopGradCommon(ib, input, target, dx, dy);
+  ret.emplace_back(ib->OutZeros(reduction));
+  return ret;
+}));
+
 REG_BPROP_BUILDER("L2Loss").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto dout = ib->GetInput(kIndex2);
@@ -1679,12 +1693,26 @@ REG_BPROP_BUILDER("Mish").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   return {dx};
 });
 
+REG_BPROP_BUILDER("MishExt").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto dout = ib->GetInput(kIndex2);
+  auto dx = ib->Emit("MishGradExt", {dout, x});
+  return {dx};
+});
+
 REG_BPROP_BUILDER("SeLU").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
   auto scale = 1.0507009873554805;
   auto out = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex2);
   auto tmp_grad = ib->Emit("EluGrad", {dout, out});
   auto dx = ib->Mul(tmp_grad, ib->Tensor(scale, ib->GetDtype(tmp_grad)));
+  return {dx};
+});
+
+REG_BPROP_BUILDER("SeLUExt").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
+  auto out = ib->GetInput(kIndex1);
+  auto dout = ib->GetInput(kIndex2);
+  auto dx = ib->Emit("SeluGrad", {dout, out});
   return {dx};
 });
 
@@ -1842,6 +1870,44 @@ REG_BPROP_BUILDER("LogSoftmax").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
   auto dout = ib->GetInput(kIndex3);
   auto dx = ib->Emit("LogSoftmaxGrad", {out, dout, axis});
   return {dx, ib->OutZeros(axis)};
+});
+
+DEF_PURE_SHAPE_CALC(g_log_softmax_ext_shape)
+  .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
+    auto x_shape = inputs.at(kIndex0);
+    size_t ndim = x_shape.size();
+    int64_t ret;
+    if (ndim == 0 || ndim == 1 || ndim == 3) {
+      ret = 0;
+    } else {
+      ret = 1;
+    }
+    return {{ret}};
+  })
+  .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &) -> std::vector<int64_t> {
+    auto shape_out = inputs.at(kIndex0);
+    if (IsDynamicRank(shape_out)) {
+      return {-1};
+    }
+    return {1};
+  });
+
+REG_BPROP_BUILDER("LogSoftmaxExt").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto dim = ib->GetInput(kIndex1);
+  auto dtype = ib->GetInput(kIndex2);
+  auto out = ib->GetInput(kIndex3);
+  auto dout = ib->GetInput(kIndex4);
+  auto new_dim = dim;
+  if (ib->GetDtype(dim)->isa<TypeNone>()) {
+    new_dim = ib->ShapeCalc(g_log_softmax_ext_shape, {input})[0];
+    new_dim = ib->TupleGetItem(new_dim, 0);
+  }
+  auto dx = ib->Emit("LogSoftmaxGrad", {out, dout, new_dim});
+  if (ib->GetDtype(input) != ib->GetDtype(dx)) {
+    dx = ib->Cast(dx, ib->GetDtype(input));
+  }
+  return {dx, ib->OutZeros(new_dim), ib->OutZeros(dtype)};
 });
 
 REG_BPROP_BUILDER("Softplus").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {

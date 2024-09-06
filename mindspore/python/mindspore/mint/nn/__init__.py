@@ -19,6 +19,7 @@ Predefined building blocks or computing units to construct neural networks.
 """
 from __future__ import absolute_import
 import mindspore.ops as ops
+from mindspore.mint.nn import functional as F
 from mindspore.nn.cell import Cell
 from mindspore.nn import EmbeddingExt as Embedding, MaxPool2dExt as MaxPool2d, LayerNormExt as LayerNorm, Linear
 
@@ -54,7 +55,7 @@ from mindspore.nn.layer.basic import DropoutExt as Dropout
 # 15
 
 # 16
-
+from mindspore.nn.layer import LogSoftmaxExt as LogSoftmax
 # 17
 
 # 18
@@ -230,6 +231,9 @@ from mindspore.nn.layer import HShrink as Hardshrink
 from mindspore.nn.layer import HSigmoid as Hardsigmoid
 # 222
 from mindspore.nn.layer import HSwish as Hardswish
+# 238
+from mindspore.nn.loss import L1LossExt as L1Loss
+
 
 class BCEWithLogitsLoss(Cell):
     r"""
@@ -300,6 +304,7 @@ class BCEWithLogitsLoss(Cell):
         >>> print(output)
         0.3463612
     """
+
     def __init__(self, weight=None, reduction='mean', pos_weight=None):
         super(BCEWithLogitsLoss, self).__init__()
         self.bce_with_logits = ops.auto_generate.BCEWithLogitsLoss(reduction)
@@ -309,6 +314,75 @@ class BCEWithLogitsLoss(Cell):
     def construct(self, input, target):
         out = self.bce_with_logits(input, target, self.weight, self.pos_weight)
         return out
+
+
+class SELU(Cell):
+    r"""
+    Activation function SELU (Scaled exponential Linear Unit).
+
+    Refer to :func:`mindspore.mint.nn.functional.selu` for more details.
+
+    SELU Activation Function Graph:
+
+    .. image:: ../images/SeLU.png
+        :align: center
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import Tensor, mint
+        >>> import numpy as np
+        >>> input = Tensor(np.array([[-1.0, 4.0, -8.0], [2.0, -5.0, 9.0]]), mindspore.float32)
+        >>> selu = mint.nn.SELU()
+        >>> output = selu(input)
+        >>> print(output)
+        [[-1.1113307 4.202804 -1.7575096]
+        [ 2.101402 -1.7462534 9.456309 ]]
+    """
+
+    def __init__(self):
+        """Initialize SELU"""
+        super(SELU, self).__init__()
+
+    def construct(self, input):
+        return F.selu(input)
+
+
+class Mish(Cell):
+    r"""
+    Computes MISH (A Self Regularized Non-Monotonic Neural Activation Function)
+    of input tensors element-wise.
+
+    Refer to :func:`mindspore.mint.nn.functional.mish` for more details.
+
+    Mish Activation Function Graph:
+
+    .. image:: ../images/Mish.png
+        :align: center
+
+    Supported Platforms:
+        ``Ascend``
+
+    Examples:
+        >>> import mindspore
+        >>> from mindspore import Tensor, mint
+        >>> import numpy as np
+        >>> x = Tensor(np.array([[-1.1, 4.0, -8.0], [2.0, -5.0, 9.0]]), mindspore.float32)
+        >>> mish = mint.nn.Mish()
+        >>> output = mish(x)
+        >>> print(output)
+        [[-3.0764845e-01 3.9974124e+00 -2.6832507e-03]
+         [ 1.9439589e+00 -3.3576239e-02 8.9999990e+00]]
+    """
+
+    def __init__(self):
+        """Initialize Mish."""
+        super(Mish, self).__init__()
+
+    def construct(self, input):
+        return F.mish(input)
 
 
 __all__ = [
@@ -344,7 +418,7 @@ __all__ = [
     # 15
 
     # 16
-
+    'LogSoftmax',
     # 17
 
     # 18
@@ -513,12 +587,15 @@ __all__ = [
     # 99
     'AvgPool2d',
     # 100
-
+    'SELU',
     # 220
     'Hardshrink',
-
     # 221
     'Hardsigmoid',
     # 222
     'Hardswish',
+    # 238
+    'L1Loss',
+    # 267
+    'Mish',
 ]

@@ -1,0 +1,19 @@
+#operator log_softmax_ext
+log_softmax_ext:
+    args:
+        input:
+            dtype: tensor
+        dim:
+            dtype: int
+            type_cast: tensor
+            default: None
+        dtype:
+            dtype: TypeId
+            arg_handler: dtype_to_type_id
+            default: None
+    returns:
+        output:
+            dtype: tensor
+    dispatch:
+        enable: True
+        Ascend: LogSoftmaxExtAscend

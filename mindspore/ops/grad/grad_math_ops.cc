@@ -1247,8 +1247,11 @@ REG_BPROP_BUILDER("Log1p").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto dout = ib->GetInput(kIndex2);
   auto x_1p = ib->Add(x, ib->Tensor(1, ib->GetDtype(x)));
-  auto g = ib->Reciprocal(x_1p);
-  auto dx = ib->Mul(g, dout);
+  TypeId exp_type = ib->GetDtypeId(x);
+  if (exp_type == kNumberTypeComplex64 || exp_type == kNumberTypeComplex128) {
+    x_1p = ib->Conj(x_1p);
+  }
+  auto dx = ib->Div(dout, x_1p);
   return {dx};
 });
 
@@ -1304,11 +1307,16 @@ REG_BPROP_BUILDER("Exp").SetBody(BODYFUNC(ib) {
   return {dx};
 });
 
-REG_BPROP_BUILDER("Expm1").SetUnusedInputs({i1}).SetBody(BODYFUNC(ib) {
+REG_BPROP_BUILDER("Expm1").SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
+  auto out = ib->GetInput(kIndex1);
   auto dout = ib->GetInput(kIndex2);
-  auto g = ib->Exp(x);
-  auto dx = ib->Mul(g, dout);
+  TypeId exp_type = ib->GetDtypeId(out);
+  if (exp_type == kNumberTypeComplex64 || exp_type == kNumberTypeComplex128) {
+    out = ib->Conj(out);
+  }
+  auto out_1p = ib->Add(out, ib->Tensor(1, ib->GetDtype(out)));
+  auto dx = ib->Mul(dout, out_1p);
   return {dx};
 });
 
@@ -2080,6 +2088,46 @@ REG_BPROP_BUILDER("TraceV2").SetUnusedInputs({i5}).SetBody(BODYFUNC(ib) {
   auto shape = ib->Shape(input, true);
   auto dx = ib->Emit("TraceV2Grad", {dout, shape, offset, axis1, axis2});
   return {dx, ib->OutZeros(offset), ib->OutZeros(axis1), ib->OutZeros(axis2), ib->OutZeros(dtype)};
+});
+
+DEF_PURE_SHAPE_CALC(g_trace_ext_shapecalc)
+  .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
+    auto input_shape = inputs.at(kIndex0);
+    return {input_shape};
+  })
+  .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &unknown_inputs) -> std::vector<int64_t> {
+    if (IsDynamicRank(inputs.at(kIndex0))) {
+      return {-1};
+    }
+    return {SizeToLong(inputs.at(kIndex0).size())};
+  });
+
+REG_BPROP_BUILDER("TraceExt").SetUnusedInputs({i0, i1}).SetBody(BODYFUNC(ib) {
+  auto x = ib->GetInput(kIndex0);
+  auto out = ib->GetInput(kIndex1);
+  auto dout = ib->GetInput(kIndex2);
+  auto shape = ib->GetShape(x);
+  auto dtype_id = ib->GetDtypeId(out);
+  NodePtr eye = nullptr;
+  TypeId eye_dtype_id = kTypeUnknown;
+  if (dtype_id == kNumberTypeBFloat16) {
+    eye_dtype_id = kNumberTypeFloat32;
+  } else {
+    eye_dtype_id = dtype_id;
+  }
+  if (IsDynamicShape(shape) || IsDynamicRank(shape)) {
+    auto shapes = ib->ShapeCalc(g_trace_ext_shapecalc, {x});
+    eye = ib->Emit(
+      "Eye", {ib->TupleGetItem(shapes[0], 0), ib->TupleGetItem(shapes[0], 1), ib->Value<int64_t>(eye_dtype_id)});
+  } else {
+    eye = ib->Emit("Eye", {ib->Value(shape[0]), ib->Value(shape[1]), ib->Value<int64_t>(eye_dtype_id)});
+  }
+  auto dx = ib->Mul(eye, dout);
+  if (dtype_id == kNumberTypeBFloat16) {
+    dx = ib->Cast(dx, kBFloat16);
+    return {dx};
+  }
+  return {dx};
 });
 
 REG_BPROP_BUILDER("Erfinv").SetUnusedInputs({i0}).SetBody(BODYFUNC(ib) {

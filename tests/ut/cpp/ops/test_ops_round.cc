@@ -13,39 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <vector>
 #include <memory>
 #include "common/common_test.h"
 #include "infer/ops_func_impl/round.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
-#include "abstract/abstract_value.h"
 #include "ops/test_ops.h"
-#include "ops/test_ops_dyn_cases.h"
 #include "ops/test_ops_cmp_utils.h"
 
 namespace mindspore {
 namespace ops {
-class TestRound : public TestOps,
-                  public testing::WithParamInterface<std::tuple<EltwiseOpShapeParams, EltwiseOpTypeParams>> {};
+OP_FUNC_IMPL_INFER_TEST_DECLARE(Round, EltwiseOpParams);
 
-TEST_P(TestRound, dyn_shape) {
-  const auto &shape_param = std::get<0>(GetParam());
-  const auto &dtype_param = std::get<1>(GetParam());
-  auto x = std::make_shared<abstract::AbstractTensor>(dtype_param.x_type, shape_param.x_shape);
-  ASSERT_NE(x, nullptr);
-  auto expect_shape = std::make_shared<abstract::Shape>(shape_param.out_shape);
-  auto expect_type = std::make_shared<TensorType>(dtype_param.out_type);
-  DoFuncImplInferAndCompare<RoundFuncImpl>(kNameRound, {x}, expect_shape, expect_type);
-}
-
-namespace {
-auto RoundOpTypeCases = testing::ValuesIn({
-  EltwiseOpTypeParams{kFloat16, kFloat16},
-  EltwiseOpTypeParams{kFloat32, kFloat32},
-  EltwiseOpTypeParams{kFloat64, kFloat64},
-});
-}
-
-INSTANTIATE_TEST_CASE_P(TestRoundGroup, TestRound, testing::Combine(EltwiseDynShapeTestCases, RoundOpTypeCases));
+OP_FUNC_IMPL_INFER_TEST_CASES(Round, testing::Values(EltwiseOpParams{{2, 3}, kFloat16, {2, 3}, kFloat16},
+                                                     EltwiseOpParams{{2, 3}, kFloat32, {2, 3}, kFloat32},
+                                                     EltwiseOpParams{{2, 3}, kFloat64, {2, 3}, kFloat64},
+                                                     EltwiseOpParams{{2, 3}, kBFloat16, {2, 3}, kBFloat16},
+                                                     EltwiseOpParams{{2, 3}, kInt32, {2, 3}, kInt32},
+                                                     EltwiseOpParams{{2, 3}, kInt64, {2, 3}, kInt64},
+                                                     EltwiseOpParams{{2, -1}, kFloat32, {2, -1}, kFloat32},
+                                                     EltwiseOpParams{{-1, -1}, kFloat32, {-1, -1}, kFloat32},
+                                                     EltwiseOpParams{{-2}, kFloat32, {-2}, kFloat32}));
 }  // namespace ops
 }  // namespace mindspore

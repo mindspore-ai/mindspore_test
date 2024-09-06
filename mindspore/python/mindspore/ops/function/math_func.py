@@ -46,7 +46,7 @@ from mindspore.ops.auto_generate import (minimum, maximum, mul, sin, sinc, sinh,
                                          matrix_exp, sqrt, rsqrt, square, trace, nextafter, abs, acos, acosh, angle,
                                          asin, asinh, atan, atan2, atanh, ceil, equal, erf, erfc, erfinv, exp, expm1,
                                          floor, floor_divide, floor_mod, gcd, greater, greater_equal, less, less_equal,
-                                         log, log1p, neg, not_equal, pow, round, isfinite, argmax_ext, mean_ext_op,
+                                         log, log1p, neg, not_equal, pow, round_op, isfinite, argmax_ext, mean_ext_op,
                                          sum_ext_op, prod_ext_op, all, matrix_inverse_ext, atan2_ext, sign, acos_ext,
                                          acosh_ext, asin_ext, asinh_ext, atan_ext, tan, median_ext_op, median_dim_op,
                                          xlogy_op, xlogy_scalar_other_op, xlogy_scalar_self_op)
@@ -11935,6 +11935,49 @@ def batch_dot(x1, x2, axes=None):
         final_result = squeeze_minus_one_op(final_result)
 
     return final_result
+
+def round(input, *, decimals=None):
+    r"""
+    Returns half to even of a tensor element-wise.
+
+    .. math::
+        out_i \approx input_i
+
+    .. note::
+        The input data types supported by the Ascend platform include
+        bfloat16 (Atlas training series products are not supported), float16, float32, float64, int32, and int64.
+
+    Args:
+        input (Tensor): The input tensor.
+
+    Keyword Args:
+        decimals (int, optional): Number of decimal places to round to (default: None). If decimals is negative,
+            it specifies the number of positions to the left of the decimal point. It supports converting the
+            single-element tensor to an int.
+
+    Returns:
+        Tensor, has the same shape and type as the `input`.
+
+    Raises:
+        TypeError: If `input` is not a Tensor.
+
+    Supported Platforms:
+        ``Ascend`` ``GPU`` ``CPU``
+
+    Examples:
+        >>> import mindspore
+        >>> import numpy as np
+        >>> from mindspore import Tensor, ops
+        >>> input = Tensor(np.array([0.8, 1.5, 2.3, 2.5, -4.5]), mindspore.float32)
+        >>> output = ops.round(input)
+        >>> print(output)
+        [ 1.  2.  2.  2. -4.]
+        >>> input = Tensor(np.array([0.81, 1.52, 2.35, 2.53, -4.57]), mindspore.float32)
+        >>> output = ops.round(input, 1)
+        >>> print(output)
+        [ 0.8  1.5  2.4  2.5 -4.6]
+    """
+    return round_op(input, decimals)
 
 
 __all__ = [

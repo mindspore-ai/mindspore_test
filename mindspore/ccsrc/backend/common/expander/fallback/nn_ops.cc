@@ -253,6 +253,43 @@ REG_FALLBACK_BUILDER("SoftmaxBackward").SetBody(BODYFUNC(ib) {
   return {dx};
 });
 
+DEF_PURE_SHAPE_CALC(g_log_softmax_ext_shapecalc)
+  .SetCalc([](const ShapeArray &inputs) -> ShapeArray {
+    auto x_shape = inputs.at(kIndex0);
+    size_t ndim = x_shape.size();
+    int64_t ret;
+    if (ndim == 0 || ndim == 1 || ndim == 3) {
+      ret = 0;
+    } else {
+      ret = 1;
+    }
+    return {{ret}};
+  })
+  .SetInfer([](const ShapeArray &inputs, const HashSet<size_t> &) -> std::vector<int64_t> {
+    auto shape_out = inputs.at(kIndex0);
+    if (IsDynamicRank(shape_out)) {
+      return {-1};
+    }
+    return {1};
+  });
+
+REG_FALLBACK_BUILDER("LogSoftmaxExt").SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto dim = ib->GetInput(kIndex1);
+  auto dtype = ib->GetInput(kIndex2);
+  if (!ib->GetDtype(dtype)->isa<TypeNone>()) {
+    auto dtype_opt = GetScalarValue<int64_t>(dtype->BuildValue());
+    MS_CHECK_VALUE(dtype_opt.has_value(), "For 'MeanExt', dtype must have valid value.");
+    input = ib->Cast(input, TypeIdToType(static_cast<TypeId>(dtype_opt.value())));
+  }
+  if (ib->GetDtype(dim)->isa<TypeNone>()) {
+    dim = ib->ShapeCalc(g_log_softmax_ext_shapecalc, {input})[0];
+    dim = ib->TupleGetItem(dim, 0);
+  }
+  auto out = ib->Emit("LogSoftmax", {input, dim});
+  return {out};
+});
+
 REG_FALLBACK_BUILDER("LayerNormGradExt").SetBody(BODYFUNC(ib) {
   auto dy = ib->GetInput(kIndex0);
   auto x = ib->GetInput(kIndex1);

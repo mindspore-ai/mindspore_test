@@ -1,0 +1,12 @@
+#operator selu_ext
+selu_ext:
+    args:
+        input:
+            dtype: tensor
+    returns:
+        output:
+            dtype: tensor
+    class:
+        name: SeLUExt
+    dispatch:
+        enable: True

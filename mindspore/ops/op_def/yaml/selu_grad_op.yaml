@@ -1,0 +1,12 @@
+#operator selu_grad
+selu_grad:
+    args:
+        gradient:
+            dtype: tensor
+        result:
+            dtype: tensor
+    returns:
+        output: 
+            dtype: tensor
+    dispatch:
+        enable: True

@@ -953,5 +953,58 @@ bool IsIntegralType(TypePtr type, bool include_bool) {
   }
   return false;
 }
+
+// CalBroadCastShape for pyboost and kernel mod
+std::vector<int64_t> CalBroadCastShapeV3(const std::vector<int64_t> &x_shape, const std::vector<int64_t> &y_shape) {
+  if (x_shape == y_shape) {
+    return x_shape;
+  }
+
+  std::vector<int64_t> broadcast_shape;
+  auto x_length = x_shape.size();
+  auto y_length = y_shape.size();
+  auto res = x_length > y_length;
+  size_t max_len = res ? x_length : y_length;
+  size_t min_len = res ? y_length : x_length;
+  const std::vector<int64_t> &max_shape = res ? x_shape : y_shape;
+  const std::vector<int64_t> &min_shape = res ? y_shape : x_shape;
+
+  broadcast_shape = max_shape;
+  auto miss = max_len - min_len;
+  for (size_t i = 0; i < min_len; i++) {
+    auto dst_i = miss + i;
+    if (max_shape[dst_i] == 1) {
+      broadcast_shape[dst_i] = min_shape[i];
+    }
+  }
+  return broadcast_shape;
+}
+
+int ConvertReductionForAclnn(Reduction reduction) {
+  std::unordered_map<Reduction, int64_t> reduction_map = {
+    {Reduction::REDUCTION_SUM, 2}, {Reduction::MEAN, 1}, {Reduction::NONE, 0}};
+  auto iter = reduction_map.find(reduction);
+  if (iter == reduction_map.end()) {
+    MS_LOG(EXCEPTION) << "For ConvertReductionForAclnn, the value of reduction is invalid.";
+  }
+  return iter->second;
+}
+
+size_t CalOutputSize(const std::vector<int64_t> &output_shape, const size_t &type_size) {
+  size_t output_size = 1;
+  for (const int64_t &size_value : output_shape) {
+    // Casting each int64_t value to size_t during multiplication
+    output_size *= static_cast<size_t>(size_value);
+  }
+  output_size *= type_size;
+  return output_size;
+}
+
+ValueTuplePtr ConvertShapeVectorToValueTuple(const ShapeVector &shape_vector) {
+  std::vector<ValuePtr> shape_out_vector;
+  std::transform(shape_vector.begin(), shape_vector.end(), std::back_inserter(shape_out_vector),
+                 [](int64_t x) { return MakeValue(x); });
+  return std::make_shared<ValueTuple>(std::move(shape_out_vector));
+}
 }  // namespace ops
 }  // namespace mindspore

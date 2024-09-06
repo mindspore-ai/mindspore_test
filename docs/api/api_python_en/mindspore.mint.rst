@@ -104,8 +104,10 @@ Pointwise Operations
     mindspore.mint.erfc
     mindspore.mint.erfinv
     mindspore.mint.exp
+    mindspore.mint.expm1
     mindspore.mint.floor
     mindspore.mint.log
+    mindspore.mint.log1p
     mindspore.mint.logical_and
     mindspore.mint.logical_not
     mindspore.mint.logical_or
@@ -117,6 +119,7 @@ Pointwise Operations
     mindspore.mint.reciprocal
     mindspore.mint.remainder
     mindspore.mint.roll
+    mindspore.mint.round
     mindspore.mint.rsqrt
     mindspore.mint.sigmoid
     mindspore.mint.sin
@@ -184,6 +187,7 @@ BLAS and LAPACK Operations
     mindspore.mint.bmm
     mindspore.mint.inverse
     mindspore.mint.matmul
+    mindspore.mint.trace
 
 Other Operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -204,6 +208,16 @@ Other Operations
 
 mindspore.mint.nn
 ------------------
+
+Loss Functions
+^^^^^^^^^^^^^^^^^^^
+
+.. msplatwarnautosummary::
+    :toctree: mint
+    :nosignatures:
+    :template: classtemplate.rst
+
+    mindspore.mint.nn.L1Loss
 
 Convolution Layers
 ^^^^^^^^^^^^^^^^^^
@@ -237,7 +251,10 @@ Non-linear Activations (weighted sum, nonlinearity)
     mindspore.mint.nn.Hardshrink
     mindspore.mint.nn.Hardsigmoid
     mindspore.mint.nn.Hardswish
+    mindspore.mint.nn.LogSoftmax
+    mindspore.mint.nn.Mish
     mindspore.mint.nn.ReLU
+    mindspore.mint.nn.SELU
     mindspore.mint.nn.Softshrink
 
 Linear Layers
@@ -322,7 +339,10 @@ Non-linear activation functions
     mindspore.mint.nn.functional.hardswish
     mindspore.mint.nn.functional.layer_norm
     mindspore.mint.nn.functional.leaky_relu
+    mindspore.mint.nn.functional.log_softmax
+    mindspore.mint.nn.functional.mish
     mindspore.mint.nn.functional.relu
+    mindspore.mint.nn.functional.selu
     mindspore.mint.nn.functional.sigmoid
     mindspore.mint.nn.functional.silu
     mindspore.mint.nn.functional.softmax
@@ -371,6 +391,7 @@ Loss Functions
 
     mindspore.mint.nn.functional.binary_cross_entropy
     mindspore.mint.nn.functional.binary_cross_entropy_with_logits
+    mindspore.mint.nn.functional.l1_loss
 
 Vision functions
 ^^^^^^^^^^^^^^^^^^
@@ -418,4 +439,8 @@ Pointwise Operations
     :template: classtemplate.rst
 
     mindspore.mint.special.erfc
+    mindspore.mint.special.expm1
+    mindspore.mint.special.log1p
+    mindspore.mint.special.log_softmax
+    mindspore.mint.special.round
     mindspore.mint.special.sinc

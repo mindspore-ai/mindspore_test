@@ -51,7 +51,7 @@ from mindspore.ops.function.nn_func import dropout_ext as dropout
 # 15
 
 # 16
-
+from mindspore.ops.function.nn_func import log_softmax_ext as log_softmax
 # 17
 from mindspore.ops.function.nn_func import binary_cross_entropy
 # 18
@@ -218,7 +218,7 @@ from mindspore.ops.function.math_func import tanh
 # 98
 
 # 99
-
+from mindspore.ops.auto_generate import selu_ext as selu  # pylint: disable=W0611
 # 100
 from mindspore.ops.auto_generate import softshrink  # pylint: disable=W0611
 # 220
@@ -227,6 +227,10 @@ from mindspore.ops.function.nn_func import hardshrink  # pylint: disable=W0611
 from mindspore.ops.function.nn_func import hardsigmoid  # pylint: disable=W0611
 # 222
 from mindspore.ops.function.nn_func import hardswish  # pylint: disable=W0611
+# 267
+from mindspore.ops.auto_generate import mish_ext as mish  # pylint: disable=W0611
+# 238
+from mindspore.ops.auto_generate import l1_loss_ext as l1_loss  # pylint: disable=W0611
 # 323
 
 # 324
@@ -404,7 +408,7 @@ __all__ = [
     # 15
 
     # 16
-
+    'log_softmax',
     # 17
 
     # 18
