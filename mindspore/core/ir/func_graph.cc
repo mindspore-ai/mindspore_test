@@ -27,6 +27,7 @@
 #include "ir/func_graph_cloner.h"
 #include "utils/phase.h"
 #include "mindspore/ccsrc/frontend/operator/composite/unpack_call.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "mindspore/ops/op_def/sequence_ops.h"
 
 namespace mindspore {
@@ -937,7 +938,7 @@ bool FuncGraph::CheckSideEffect(const AnfNodePtr &input) {
   // Process {Depend -> StopGradient -> MakeTuple(call function, ...)}.
   if (input->isa<CNode>()) {
     auto fn_input = input->cast<CNodePtr>()->input(0);
-    if (IsValueNode<prim::UnpackCall>(fn_input)) {
+    if (IsValueNode<prim::UnpackCall>(fn_input) || IsPrimitive(fn_input, prim::kPrimDoUnpackCall)) {
       fn_input = input->cast<CNodePtr>()->input(1);
     }
     if (IsValueNode<FuncGraph>(fn_input)) {

@@ -480,7 +480,7 @@ def test_auto_mix_precision_with_to_float(mode):
 
 @arg_mark(plat_marks=['platform_ascend', 'platform_gpu'], level_mark='level0', card_mark='onecard',
           essential_mark='essential')
-@pytest.mark.parametrize("mode", (context.PYNATIVE_MODE,))
+@pytest.mark.parametrize("mode", (context.GRAPH_MODE, context.PYNATIVE_MODE))
 def test_auto_mix_precision_with_keyword_arguments(mode):
     """
     Feature: auto mixed precision auto mode.
