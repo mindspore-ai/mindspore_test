@@ -26,8 +26,8 @@ acme::AcmeOpPtr AcmeQuantBatchMatmul::CreateKernel(const acme::InputsImmutableIn
                                                    const std::vector<KernelTensor *> &ms_inputs,
                                                    const std::vector<KernelTensor *> &ms_outputs) {
   acme::MatmulParam param;
-  param.transpose_a = ms_inputs[kIndex5]->GetValueWithCheck<bool>();
-  param.transpose_b = ms_inputs[kIndex6]->GetValueWithCheck<bool>();
+  param.transpose_a = ms_inputs[kIndex6]->GetValueWithCheck<bool>();
+  param.transpose_b = ms_inputs[kIndex7]->GetValueWithCheck<bool>();
   param.with_bias = !(ms_inputs[kIndex4]->GetType()->isa<TypeNone>());
   param.enable_shuffle = false;  // the real definition is in acme
   param.enable_dequant = true;

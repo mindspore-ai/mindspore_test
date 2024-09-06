@@ -49,7 +49,7 @@ class OPS_API PagedAttentionFuncImpl : public OpFuncImpl {
   BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
   TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
   std::set<int64_t> GetValueDependArgIndices() const override {
-    return {kPagedAttentionInputAttnMaskIndex, kPagedAttentionInputQueryLensIndex};
+    return {kPagedAttentionInputContextLensIndex, kPagedAttentionInputQueryLensIndex};
   };
 };
 }  // namespace ops

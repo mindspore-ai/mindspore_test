@@ -111,7 +111,7 @@ def qbmm(m, k, n, trans_a=False, trans_b=False, with_outer_add=False, is_dyn=Fal
     np.testing.assert_allclose(output_np, expect_np, rtol=0.002, atol=0.002)
 
 
-@pytest.mark.level1
+@pytest.mark.level0
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.env_onecard
 @pytest.mark.parametrize('input_shape', [(128, 2560, 5120),
@@ -143,7 +143,7 @@ def test_qbmm_add(input_shape, tb, is_dyn):
     qbmm(m, k, n, trans_a=False, trans_b=tb, with_outer_add=True, is_dyn=is_dyn)
 
 
-@pytest.mark.level1
+@pytest.mark.level0
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.env_onecard
 def test_qbmm_add_continuous():
