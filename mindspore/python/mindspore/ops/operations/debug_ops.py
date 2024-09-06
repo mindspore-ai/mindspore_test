@@ -288,7 +288,7 @@ class TensorDump(Primitive):
          [6. 7. 8. 9.]]
     """
     @prim_attr_register
-    def __init__(self):
+    def __init__(self, input_output='out'):
         """Initialize TensorDump."""
         if security.enable_security():
             raise ValueError('The TensorDump is not supported, please without `-s on` and recompile source.')

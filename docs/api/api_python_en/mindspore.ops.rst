@@ -693,6 +693,7 @@ Debugging Functions
     :template: classtemplate.rst
 
     mindspore.ops.print_
+    mindspore.ops.tensordump
 
 Sparse Functions
 ----------------

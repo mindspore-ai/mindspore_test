@@ -631,6 +631,7 @@ from .grad import (
 )
 from .debug_func import (
     print_,
+    tensordump
 )
 from .image_func import (
     bounding_box_decode,
