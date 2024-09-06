@@ -123,7 +123,6 @@ transpose_ = P.Transpose()
 tuple_to_array_ = P.TupleToArray()
 tuple_to_tensor_ = TupleToTensor()
 unique_ = P.Unique()
-unique_with_pad_ = P.UniqueWithPad()
 unsorted_segment_max_ = P.UnsortedSegmentMax()
 unsorted_segment_min_ = P.UnsortedSegmentMin()
 unsorted_segment_prod_ = P.UnsortedSegmentProd()
@@ -1325,7 +1324,7 @@ def unique_with_pad(x, pad_num):
         >>> print(idx)
         [0 1 1 2 3 3]
     """
-    return unique_with_pad_(x, pad_num)
+    return _get_cache_prim(P.UniqueWithPad)()(x, pad_num)
 
 
 def unique_consecutive(input, return_idx=False, return_counts=False, axis=None):
