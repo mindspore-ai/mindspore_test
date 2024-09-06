@@ -224,7 +224,7 @@ uint32_t SmoothL1LossGradV2CpuKernel::ComputeSum(CpuKernelContext &ctx) {
       CUST_KERNEL_LOG_ERROR(ctx, "max_core_num cannot be 0.");
     }
     if (max_core_num > data_num) {
-      max_core_num = data_num;
+      max_core_num = IntegerCast<uint32_t>(ctx, data_num);
     }
     auto shared_smoothl1lossgradv2 = [&](size_t start, size_t end) {
       for (size_t i = start; i < end; i++) {
@@ -295,7 +295,7 @@ uint32_t SmoothL1LossGradV2CpuKernel::ComputeMean(CpuKernelContext &ctx) {
       CUST_KERNEL_LOG_ERROR(ctx, "max_core_num cannot be 0.");
     }
     if (max_core_num > data_num) {
-      max_core_num = data_num;
+      max_core_num = IntegerCast<uint32_t>(ctx, data_num);
     }
     auto shared_smoothl1lossgradv2 = [&](size_t start, size_t end) {
       for (size_t i = start; i < end; i++) {
@@ -364,7 +364,7 @@ uint32_t SmoothL1LossGradV2CpuKernel::ComputeNone(CpuKernelContext &ctx) {
       CUST_KERNEL_LOG_ERROR(ctx, "max_core_num cannot be 0.");
     }
     if (max_core_num > data_num) {
-      max_core_num = data_num;
+      max_core_num = IntegerCast<uint32_t>(ctx, data_num);
     }
     auto shared_smoothl1lossgradv2 = [&](size_t start, size_t end) {
       for (size_t i = start; i < end; i++) {

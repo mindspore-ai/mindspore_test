@@ -234,7 +234,7 @@ uint32_t ReduceMeanCpuKernel::ReduceMeanCompute(CpuKernelContext &ctx) {
       auto shard_compute = [&](size_t start, size_t end) {
         for (size_t i = start; i < end; i++) {
           int64_t output_i_addr = 0;
-          int64_t seq_tmp = i;
+          int64_t seq_tmp = IntegerCast<int64_t>(ctx, i);
           for (int32_t j = dims_base_num - 1; j > -1; j--) {
             int64_t next = seq_tmp / input_data_dimsize[dims_base[j]];
             int64_t loc = seq_tmp % input_data_dimsize[dims_base[j]];
@@ -413,7 +413,7 @@ uint32_t ReduceMeanCpuKernel::ReduceMeanCompute_Complex(CpuKernelContext &ctx) {
       auto shard_compute = [&](size_t start, size_t end) {
         for (size_t i = start; i < end; i++) {
           int64_t output_i_addr = 0;
-          int64_t seq_tmp = i;
+          int64_t seq_tmp = IntegerCast<int64_t>(ctx, i);
           for (int32_t j = dims_base_num - 1; j > -1; j--) {
             int64_t next = seq_tmp / input_data_dimsize[dims_base[j]];
             int64_t loc = seq_tmp % input_data_dimsize[dims_base[j]];

@@ -139,7 +139,7 @@ uint32_t BiasAddCpuKernel::BiasAddCompute(CpuKernelContext &ctx) {
       }
 
       if (max_core_num > size) {
-        max_core_num = size;
+        max_core_num = IntegerCast<uint32_t>(ctx, size);
       }
 
       auto sharder_biadadd = [&](int64_t start, int64_t end) {
@@ -165,7 +165,7 @@ uint32_t BiasAddCpuKernel::BiasAddCompute(CpuKernelContext &ctx) {
         max_core_num = std::min(max_core_num, 4U);  // up to 4 cpu cores
       }
       if (max_core_num > size) {
-        max_core_num = size;
+        max_core_num = IntegerCast<uint32_t>(ctx, size);
       }
       auto sharder_biadadd = [&](int64_t start, int64_t end) {
         for (int64_t i = start; i < end; i++) {

@@ -22,6 +22,7 @@
 "mindspore/mindspore/ops/kernel/cpu/arithmetic_self_cpu_kernel.cc"                  "readability/braces"
 "mindspore/mindspore/ops/infer/ops_func_impl/generator.cc"                  "build/namespace"
 "mindspore/mindspore/ops/kernel/cpu/generator_cpu_kernel.cc"                  "build/namespace"
+"mindspore/mindspore/ops/infer/ops_frontend_func_impl/range.cc"             "whitespace/braces"
 "mindspore/mindspore/ccsrc/transform/graph_ir/convert.h"                                            "runtime/references"
 "mindspore/mindspore/ccsrc/transform/graph_ir/convert.cc"                                           "build/include_what_you_use"
 "mindspore/mindspore/ccsrc/transform/graph_ir/op_adapter.cc"                                        "runtime/references"

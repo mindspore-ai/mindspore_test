@@ -155,7 +155,7 @@ uint32_t MulNoNanCpuKernel::NoBcastCompute(CpuKernelContext &ctx) {
     }
 
     if (max_core_num > data_num) {
-      max_core_num = data_num;
+      max_core_num = IntegerCast<uint32_t>(ctx, data_num);
     }
 
     auto sharder_mul_no_nan = [&](int64_t start, int64_t end) {
@@ -192,7 +192,7 @@ uint32_t MulNoNanCpuKernel::BcastCompute(CpuKernelContext &ctx, Bcast &bcast) {
     }
 
     if (max_core_num > data_num) {
-      max_core_num = data_num;
+      max_core_num = IntegerCast<uint32_t>(ctx, data_num);
     }
 
     auto sharder_mul_no_nan = [&](int64_t start, int64_t end) {

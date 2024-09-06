@@ -96,7 +96,7 @@ uint32_t GcdElewiseCompute(CpuKernelContext &ctx, const T1 *x1_ptr, const T2 *x2
       max_core_num = std::min(max_core_num, 4U);  // up to 4 cpu cores
     }
     if (max_core_num > data_num) {
-      max_core_num = data_num;
+      max_core_num = IntegerCast<uint32_t>(ctx, data_num);
     }
     if (max_core_num == 0) {
       CUST_KERNEL_LOG_ERROR(ctx, "[Gcd] max_core_num is 0, please check the cpu num.");

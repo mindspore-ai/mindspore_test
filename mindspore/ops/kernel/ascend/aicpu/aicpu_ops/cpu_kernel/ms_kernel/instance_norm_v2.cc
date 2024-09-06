@@ -58,7 +58,7 @@ template <typename T>
 struct InvStd {
   T operator()(T var, double epsilon) const {
     T invstd = 0;
-    if (var != static_cast<T>(0) || epsilon != static_cast<T>(0)) {
+    if (!aicpu::FloatEqual(var, static_cast<T>(0)) || !aicpu::FloatEqual(epsilon, static_cast<T>(0))) {
       invstd = static_cast<T>(int32_init_one) / std::sqrt(var + epsilon);
     }
     return invstd;
@@ -291,7 +291,7 @@ uint32_t InstanceNormV2CpuKernel::CollectLinearAndConstant(
       } else {
         mean = running_mean(idx);
         float _std_ = std::sqrt(running_var(idx) + static_cast<float>(epsilon_));
-        CUST_KERNEL_CHECK_FALSE(ctx, (_std_ != 0), KERNEL_STATUS_PARAM_INVALID, "_std_ can not be zero!");
+        CUST_KERNEL_CHECK_FALSE(ctx, !FloatEqual(_std_, 0.f), KERNEL_STATUS_PARAM_INVALID, "_std_ can not be zero!");
         invstd = float_init_one / _std_;
       }
       _alpha_[idx] = invstd * gamma(idx);

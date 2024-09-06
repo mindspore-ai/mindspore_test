@@ -268,7 +268,7 @@ uint32_t MinimumCpuKernel::NoBcastCompute(CpuKernelContext &ctx) {
     }
 
     if (max_core_num > data_num) {
-      max_core_num = data_num;
+      max_core_num = IntegerCast<uint32_t>(ctx, data_num);
     }
 
     auto sharder_minimum = [&](int64_t start, int64_t end) { SpecialCompute<T>(type, start, end, ctx); };
@@ -415,7 +415,7 @@ uint32_t MinimumCpuKernel::BcastCompute(CpuKernelContext &ctx, Bcast &bcast) {
     }
 
     if (max_core_num > data_num) {
-      max_core_num = data_num;
+      max_core_num = IntegerCast<uint32_t>(ctx, data_num);
     }
 
     auto sharder_minimum = [&](int64_t start, int64_t end) {

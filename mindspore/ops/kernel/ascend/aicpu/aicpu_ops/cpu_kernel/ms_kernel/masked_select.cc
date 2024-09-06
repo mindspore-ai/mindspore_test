@@ -42,7 +42,7 @@ struct OutputInfo {
   OutputInfo() : startIdx(0), len(0) {}
 };
 
-bool CompareFunc(const OutputInfo &a, const OutputInfo &b) { return a.startIdx <= b.startIdx; }
+bool CompareFunc(const OutputInfo &a, const OutputInfo &b) { return a.startIdx < b.startIdx; }
 
 // calculate the index stride of dataShape.
 // dataShape:[m, 1, k] and broadcastShape:[j, m, n, k] --> index_stride:[0, k, 0, 1]

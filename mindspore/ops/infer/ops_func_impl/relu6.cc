@@ -22,16 +22,11 @@ namespace mindspore {
 namespace ops {
 BaseShapePtr ReLU6FuncImpl::InferShape(const PrimitivePtr &primitive,
                                        const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(input_args[0]);
-  MS_EXCEPTION_IF_NULL(input_args[0]->GetShape());
   return input_args[0]->GetShape()->Clone();
 }
 
 TypePtr ReLU6FuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(primitive);
-  MS_EXCEPTION_IF_NULL(input_args[0]);
   auto x_type = input_args[0]->BuildType();
-  MS_EXCEPTION_IF_NULL(x_type);
   const std::set<TypePtr> valid_types = {kFloat16, kFloat32};
   (void)CheckAndConvertUtils::CheckTensorTypeValid("input_x", x_type, valid_types, primitive->name());
   return x_type->Clone();

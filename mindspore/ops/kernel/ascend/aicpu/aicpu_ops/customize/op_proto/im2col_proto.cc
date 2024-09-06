@@ -20,7 +20,6 @@
 #include "utils/common_shape_fns.h"
 namespace ge {
 namespace {
-const std::string ATTR_NAME_DATA_SLICE = "_data_slice";
 static bool CheckListEmptyAndValue(const std::string &op_name, const std::vector<int64_t> &list,
                                    const std::string &attr_name) {
   if (list.size() < 1) {
@@ -146,14 +145,17 @@ IMPLEMT_COMMON_INFERFUNC(CustIm2colInferShape) {
     return GRAPH_FAILED;
   }
 
-  int64_t dilation_h = dilation[0];
-  int64_t dilation_w = dilation[0];
+  int64_t dilation_h;
+  int64_t dilation_w;
   if (dilation.size() == 2) {
     dilation_h = dilation[0];
     dilation_w = dilation[1];
   } else if (dilation.size() != 1) {
     OP_LOGE(TbeGetName(op).c_str(), "The size of dilations must be 1 or 2 when x_format only support NHWC, NCHW.");
     return GRAPH_FAILED;
+  } else {
+    dilation_h = dilation[0];
+    dilation_w = dilation[0];
   }
 
   int64_t effective_filter_h = (filter_h - 1) * dilation_h + 1;

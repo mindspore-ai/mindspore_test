@@ -83,7 +83,7 @@ uint32_t ExpCpuKernel::ExpCheck(CpuKernelContext &ctx) {
   AttrValue *base_ptr = ctx.GetAttr("base");
   CUST_KERNEL_CHECK_NULLPTR(ctx, base_ptr, KERNEL_STATUS_PARAM_INVALID, "Get attr base failed.");
   float base_ = base_ptr->GetFloat();
-  CUST_KERNEL_CHECK_FALSE(ctx, ((base_ > 0) || base_ == -1.0), KERNEL_STATUS_PARAM_INVALID,
+  CUST_KERNEL_CHECK_FALSE(ctx, ((base_ > 0) || FloatEqual(base_, -1.0)), KERNEL_STATUS_PARAM_INVALID,
                           "Attr base must be -1.0  or base > 0, but got attr base[%lld]", base_);
   AttrValue *scale_ptr = ctx.GetAttr("scale");
   CUST_KERNEL_CHECK_NULLPTR(ctx, scale_ptr, KERNEL_STATUS_PARAM_INVALID, "Get attr scale failed.");

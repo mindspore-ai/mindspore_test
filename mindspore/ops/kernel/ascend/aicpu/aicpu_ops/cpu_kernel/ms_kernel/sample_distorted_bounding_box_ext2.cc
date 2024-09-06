@@ -109,7 +109,7 @@ bool SDBBExt2CpuKernel::SatisfiesOverlapConstraints(const Rectangle &crop, float
       continue;
     }
 
-    if (object_area == 0) {
+    if (FloatEqual(object_area, 0.f)) {
       continue;
     }
     const float object_covered = crop.Intersect(bbox).Area() / object_area;

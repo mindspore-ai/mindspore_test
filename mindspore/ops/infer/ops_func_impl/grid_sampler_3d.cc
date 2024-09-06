@@ -32,11 +32,9 @@ BaseShapePtr GridSampler3DFuncImpl::InferShape(const PrimitivePtr &primitive,
                                                const std::vector<AbstractBasePtr> &input_args) const {
   // Get input tensor shape.
   auto input_x_base_shape = input_args[kInputIndex0]->GetShape();
-  MS_EXCEPTION_IF_NULL(input_x_base_shape);
   auto input_x_shape = input_x_base_shape->GetShapeVector();
 
   auto grid_base_shape = input_args[kInputIndex1]->GetShape();
-  MS_EXCEPTION_IF_NULL(grid_base_shape);
   auto grid_shape = grid_base_shape->GetShapeVector();
 
   // dynamic rank
@@ -83,12 +81,8 @@ BaseShapePtr GridSampler3DFuncImpl::InferShape(const PrimitivePtr &primitive,
 
 TypePtr GridSampler3DFuncImpl::InferType(const PrimitivePtr &prim,
                                          const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(input_args[kInputIndex0]);
-  MS_EXCEPTION_IF_NULL(input_args[kInputIndex1]);
   auto input_x_type = input_args[kInputIndex0]->GetType();
-  MS_EXCEPTION_IF_NULL(input_x_type);
   auto grid_type = input_args[kInputIndex1]->GetType();
-  MS_EXCEPTION_IF_NULL(input_x_type);
   std::map<std::string, TypePtr> types;
   (void)types.emplace("input_x", input_x_type);
   (void)types.emplace("grid", grid_type);

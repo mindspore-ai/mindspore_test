@@ -145,7 +145,7 @@ uint32_t DivNoNanCpuKernel::NoBcastCompute(CpuKernelContext &ctx) {
       max_core_num = std::min(max_core_num, 4U);  // up to 4 cpu cores
     }
     if (max_core_num > data_num) {
-      max_core_num = data_num;
+      max_core_num = IntegerCast<uint32_t>(ctx, data_num);
     }
     auto sharder_divnonan = [&](int64_t start, int64_t end) {
       SpecialCompute<T>(ctx, type, start, end, in0, in1, out);
@@ -171,7 +171,7 @@ uint32_t DivNoNanCpuKernel::BcastCompute(CpuKernelContext &ctx, Bcast &bcast) {
       max_core_num = std::min(max_core_num, 4U);  // up to 4 cpu cores
     }
     if (max_core_num > data_num) {
-      max_core_num = data_num;
+      max_core_num = IntegerCast<uint32_t>(ctx, data_num);
     }
     auto sharder_divnonan = [&](int64_t start, int64_t end) {
       for (int64_t i = start; i < end; ++i) {

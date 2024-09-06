@@ -61,11 +61,11 @@ static inline double calc_digamma(double x) {
   static int64_t TEN = 10;
   static double HALF = 0.5;
   static int64_t SIX = 6;
-  if (x == 0) {
+  if (FloatEqual(x, 0.f)) {
     return std::copysign(INFINITY, -x);
   }
 
-  bool x_is_integer = x == trunc(x);
+  bool x_is_integer = FloatEqual(x, trunc(x));
   if (x < 0) {
     if (x_is_integer) {
       return std::numeric_limits<double>::quiet_NaN();
@@ -80,7 +80,7 @@ static inline double calc_digamma(double x) {
     result -= 1 / x;
     x += 1;
   }
-  if (x == TEN) {
+  if (FloatEqual(x, static_cast<double>(TEN))) {
     return result + PSI_10;
   }
 

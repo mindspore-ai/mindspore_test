@@ -219,7 +219,7 @@ uint32_t SmoothL1LossV2CpuKernel::ComputeSum(CpuKernelContext &ctx) {
     uint32_t min_core_num = 1;
     uint32_t max_core_num = std::max(min_core_num, aicpu::CpuKernelUtils::GetCPUNum(ctx));
     if (max_core_num > data_num) {
-      max_core_num = data_num;
+      max_core_num = IntegerCast<uint32_t>(ctx, data_num);
     }
     if (max_core_num == 0) {
       CUST_KERNEL_LOG_ERROR(ctx, "max_core_num could not be 0.");
@@ -270,7 +270,7 @@ uint32_t SmoothL1LossV2CpuKernel::ComputeNone(CpuKernelContext &ctx) {
     uint32_t min_core_num = 1;
     uint32_t max_core_num = std::max(min_core_num, aicpu::CpuKernelUtils::GetCPUNum(ctx));
     if (max_core_num > data_num) {
-      max_core_num = data_num;
+      max_core_num = IntegerCast<uint32_t>(ctx, data_num);
     }
     if (max_core_num == 0) {
       CUST_KERNEL_LOG_ERROR(ctx, "max_core_num could not be 0.");

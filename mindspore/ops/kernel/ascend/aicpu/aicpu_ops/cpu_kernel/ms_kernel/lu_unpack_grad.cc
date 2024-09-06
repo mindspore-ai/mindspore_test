@@ -165,7 +165,7 @@ uint32_t LuUnpackGradCpuKernel::LuUnpackGradCompute(CpuKernelContext &ctx) {
     uint32_t min_core_num = 1;
     uint32_t max_core_num = std::max(min_core_num, aicpu::CpuKernelUtils::GetCPUNum(ctx));
     if (max_core_num > matrix_num) {
-      max_core_num = matrix_num;
+      max_core_num = IntegerCast<uint32_t>(ctx, matrix_num);
     }
     auto sharder = [&](int64_t start, int64_t end) {
       for (int64_t i = start; i < end; i++) {

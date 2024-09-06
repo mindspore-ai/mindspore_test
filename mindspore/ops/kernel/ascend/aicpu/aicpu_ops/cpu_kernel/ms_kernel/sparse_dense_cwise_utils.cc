@@ -124,7 +124,7 @@ uint32_t SparseDenseCwiseOpKernel<Op>::SparseDenseCwiseOpSpecialCompute(BcastSha
       CUST_KERNEL_LOG_ERROR(ctx, "max_core_num could not be 0");
     }
     if (max_core_num > value_nums) {
-      max_core_num = value_nums;
+      max_core_num = IntegerCast<uint32_t>(ctx, value_nums);
     }
 
     auto sharder_Op = [&](int64_t start, int64_t end) {
@@ -297,7 +297,7 @@ uint32_t SparseDenseCwiseOpKernel<Op>::SparseDenseCwiseOpBcastCompute(CpuKernelC
       CUST_KERNEL_LOG_ERROR(ctx, "max_core_num could not be 0");
     }
     if (max_core_num > value_nums) {
-      max_core_num = value_nums;
+      max_core_num = IntegerCast<uint32_t>(ctx, value_nums);
     }
     auto sharder_Op = [&](int64_t start, int64_t end) {
       for (int64_t i = start; i < end; i++) {
@@ -492,7 +492,7 @@ uint32_t SparseDenseCwiseOpKernel<Op>::SparseDenseCwiseOpSpecialComputeComplex(B
       CUST_KERNEL_LOG_ERROR(ctx, "max_core_num could not be 0");
     }
     if (max_core_num > value_nums) {
-      max_core_num = value_nums;
+      max_core_num = IntegerCast<uint32_t>(ctx, value_nums);
     }
 
     auto sharder_Op = [&](int64_t start, int64_t end) {
@@ -667,7 +667,7 @@ uint32_t SparseDenseCwiseOpKernel<Op>::SparseDenseCwiseOpBcastComputeComplex(Cpu
       CUST_KERNEL_LOG_ERROR(ctx, "max_core_num could not be 0");
     }
     if (max_core_num > value_nums) {
-      max_core_num = value_nums;
+      max_core_num = IntegerCast<uint32_t>(ctx, value_nums);
     }
 
     auto sharder_Op = [&](int64_t start, int64_t end) {

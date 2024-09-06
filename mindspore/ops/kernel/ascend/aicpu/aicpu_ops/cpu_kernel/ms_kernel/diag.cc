@@ -105,7 +105,7 @@ uint32_t DiagCpuKernel::DiagCompute(CpuKernelContext &ctx) {
       max_core_num = std::min(max_core_num, 4U);  // up to 4 cpu cores
     }
     if (max_core_num > size) {
-      max_core_num = size;
+      max_core_num = IntegerCast<uint32_t>(ctx, size);
     }
     auto shard_diag = [&](int64_t start, int64_t end) {
       std::fill(output + size * start, output + size * end, T());

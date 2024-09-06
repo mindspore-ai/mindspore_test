@@ -220,7 +220,7 @@ Eigen::MatrixXf AffineGridGradCpuKernel::make_base_grid_5D(CpuKernelContext &ctx
       max_core_num = std::min(max_core_num, 4U);
     }
     if (max_core_num > datanums) {
-      max_core_num = datanums;
+      max_core_num = IntegerCast<uint32_t>(ctx, datanums);
     }
     auto sharder_affine_grid_grad_5D = [&](int64_t start, int64_t end) {
       for (int64_t t = start; t < end; t++) {
@@ -340,7 +340,7 @@ Eigen::MatrixXf AffineGridGradCpuKernel::make_base_grid_4D(CpuKernelContext &ctx
       max_core_num = std::min(max_core_num, 4U);
     }
     if (max_core_num > datanums) {
-      max_core_num = datanums;
+      max_core_num = IntegerCast<uint32_t>(ctx, datanums);
     }
     auto sharder_affine_grid_grad_4D = [&](int64_t start, int64_t end) {
       for (int64_t t = start; t < end; t++) {

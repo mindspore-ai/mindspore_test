@@ -1,10 +1,20 @@
-/*
+/**
+ * Copyright (c) 2022-2022 Huawei Technologies Co., Ltd.  All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "custom_op_proto/cust_math_ops.h"
 #include <unordered_map>
+#include "custom_op_proto/cust_math_ops.h"
 #include "op_proto/inc/math_ops.h"
 #include "op_proto/inc/ragged_math_ops.h"
 #include "register/op_impl_registry.h"
@@ -469,15 +479,15 @@ CUST_INFER_FUNC_REG(Correlate, CorrelateInfer);
 // ----------------Correlate END-------------------
 
 // ----------------FFTWithSize-------------------
-graphStatus FFTWithSizeInferType(const Operator &op, TensorDesc &y_desc, DataType input_type, bool real, bool inverse) {
+graphStatus FFTWithSizeInferType(const Operator &op, TensorDesc *y_desc, DataType input_type, bool real, bool inverse) {
   enum class FFTType { RFFT, FFT, IRFFT };
-  const static std::unordered_map<DataType, DataType> kRfftTypes{
+  static const std::unordered_map<DataType, DataType> kRfftTypes{
     {DT_FLOAT, DT_COMPLEX64}, {DT_DOUBLE, DT_COMPLEX128}, {DT_UINT8, DT_COMPLEX64}, {DT_INT8, DT_COMPLEX64},
     {DT_INT16, DT_COMPLEX64}, {DT_INT32, DT_COMPLEX64},   {DT_INT64, DT_COMPLEX64}, {DT_BOOL, DT_COMPLEX64}};
-  const static std::unordered_map<DataType, DataType> kFftTypes{{DT_COMPLEX64, DT_COMPLEX64},
+  static const std::unordered_map<DataType, DataType> kFftTypes{{DT_COMPLEX64, DT_COMPLEX64},
                                                                 {DT_COMPLEX128, DT_COMPLEX128}};
-  const static std::unordered_map<DataType, DataType> kIrfftTypes{{DT_COMPLEX64, DT_FLOAT}, {DT_COMPLEX128, DT_DOUBLE}};
-  const static std::unordered_map<FFTType, std::unordered_map<DataType, DataType>> kTypeMap{
+  static const std::unordered_map<DataType, DataType> kIrfftTypes{{DT_COMPLEX64, DT_FLOAT}, {DT_COMPLEX128, DT_DOUBLE}};
+  static const std::unordered_map<FFTType, std::unordered_map<DataType, DataType>> kTypeMap{
     {FFTType::RFFT, kRfftTypes}, {FFTType::FFT, kFftTypes}, {FFTType::IRFFT, kIrfftTypes}};
   FFTType fft_type;
   if (real) {
@@ -495,7 +505,7 @@ graphStatus FFTWithSizeInferType(const Operator &op, TensorDesc &y_desc, DataTyp
     return GRAPH_FAILED;
   }
   auto out_type = type_map.at(input_type);
-  y_desc.SetDataType(out_type);
+  y_desc->SetDataType(out_type);
   return GRAPH_SUCCESS;
 }
 
@@ -519,6 +529,11 @@ CUST_IMPLEMT_INFERFUNC(FFTWithSize, FFTWithSizeInfer) {
     signal_sizes = {};
   }
 
+  if (x_shape.empty()) {
+    OP_LOGE(TbeGetName(op).c_str(), "x has an empty shape.");
+    return GRAPH_FAILED;
+  }
+
   constexpr int64_t kDimNum = 2;
   if (real && onesided) {
     if (!inverse) {
@@ -534,7 +549,7 @@ CUST_IMPLEMT_INFERFUNC(FFTWithSize, FFTWithSizeInfer) {
 
   auto y_desc = op.GetOutputDescByName("y");
   y_desc.SetShape(Shape(y_shape));
-  FFTWithSizeInferType(op, y_desc, x_type, real, inverse);
+  FFTWithSizeInferType(op, &y_desc, x_type, real, inverse);
   return op.UpdateOutputDesc("y", y_desc);
 }
 

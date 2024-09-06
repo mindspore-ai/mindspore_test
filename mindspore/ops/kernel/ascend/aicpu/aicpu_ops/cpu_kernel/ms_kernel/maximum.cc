@@ -271,7 +271,7 @@ uint32_t MaximumCpuKernel::NoBcastCompute(CpuKernelContext &ctx) {
     }
 
     if (max_core_num > data_num) {
-      max_core_num = data_num;
+      max_core_num = IntegerCast<uint32_t>(ctx, data_num);
     }
 
     auto sharder_fmax = [&](int64_t start, int64_t end) { SpecialCompute<T>(type, start, end, ctx); };
@@ -418,7 +418,7 @@ uint32_t MaximumCpuKernel::BcastCompute(CpuKernelContext &ctx, const Bcast &bcas
     }
 
     if (max_core_num > data_num) {
-      max_core_num = data_num;
+      max_core_num = IntegerCast<uint32_t>(ctx, data_num);
     }
 
     auto sharder_fmax = [&](int64_t start, int64_t end) {

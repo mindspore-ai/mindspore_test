@@ -157,7 +157,7 @@ uint32_t MedianGradCpuKernel::GlobalMedianGradCompute(CpuKernelContext &ctx) {
     }
 
     if (max_core_num > output_data_num) {
-      max_core_num = output_data_num;
+      max_core_num = IntegerCast<uint32_t>(ctx, output_data_num);
     }
 
     auto sharder_mediangrad = [&](int64_t start, int64_t end) {
@@ -225,7 +225,7 @@ uint32_t MedianGradCpuKernel::MedianGradCompute(CpuKernelContext &ctx) {
     }
 
     if (max_core_num > need_calculate_num) {
-      max_core_num = need_calculate_num;
+      max_core_num = IntegerCast<uint32_t>(ctx, need_calculate_num);
     }
 
     auto sharder_mediangrad = [&](int64_t start, int64_t end) {

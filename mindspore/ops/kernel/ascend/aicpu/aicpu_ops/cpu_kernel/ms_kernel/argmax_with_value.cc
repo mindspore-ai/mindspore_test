@@ -100,7 +100,7 @@ uint32_t ExecArgMaxWithValue(CpuKernelContext &ctx) {
     uint32_t min_core_num = 1;
     uint32_t max_core_num = std::max(min_core_num, aicpu::CpuKernelUtils::GetCPUNum(ctx) - kResvCpuNum);
     if (max_core_num > num_outer) {
-      max_core_num = num_outer;
+      max_core_num = IntegerCast<uint32_t>(ctx, num_outer);
     }
     // log error if max_core_num is 0
     if (max_core_num == 0) {

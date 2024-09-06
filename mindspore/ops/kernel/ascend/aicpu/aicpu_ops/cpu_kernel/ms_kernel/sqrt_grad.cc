@@ -163,7 +163,7 @@ uint32_t SqrtGradCpuKernel::NoBcastCompute(CpuKernelContext &ctx) {
     }
 
     if (max_core_num > data_num) {
-      max_core_num = data_num;
+      max_core_num = IntegerCast<uint32_t>(ctx, data_num);
     }
 
     auto sharder_sqrtgrad = [&](size_t start, size_t end) { SpecialCompute<T>(ctx, 0, data_num, in0, in1, out); };
@@ -193,7 +193,7 @@ uint32_t SqrtGradCpuKernel::NoBcastComputeComplex(CpuKernelContext &ctx) {
     }
 
     if (max_core_num > data_num) {
-      max_core_num = data_num;
+      max_core_num = IntegerCast<uint32_t>(ctx, data_num);
     }
 
     auto sharder_sqrtgrad = [&](size_t start, size_t end) {

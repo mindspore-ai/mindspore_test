@@ -167,7 +167,7 @@ uint32_t AffineGridCpuKernel::CommonCompute(CpuKernelContext &ctx, int64_t data_
     }
 
     if (max_core_num > data_num) {
-      max_core_num = data_num;
+      max_core_num = IntegerCast<uint32_t>(ctx, data_num);
     }
 
     auto sharder_affiregrid = [&](int64_t start, int64_t end) {

@@ -132,8 +132,8 @@ void AcosGradCpuKernel::SpecialComputeFP16(int64_t start, int64_t end, const T *
     float dividend = -static_cast<float>(input2[i]);
     float divisor =
       static_cast<float>(sqrt(static_cast<float>(1) - static_cast<float>(input1[i]) * static_cast<float>(input1[i])));
-    if (divisor == 0) {
-      if (dividend == 0) {
+    if (FloatEqual(divisor, 0.f)) {
+      if (FloatEqual(dividend, 0.f)) {
         output[i] = std::numeric_limits<T>::quiet_NaN();
         continue;
       }

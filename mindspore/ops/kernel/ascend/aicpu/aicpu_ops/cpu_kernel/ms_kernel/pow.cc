@@ -129,7 +129,7 @@ uint32_t PowCpuKernel::NoBcastCompute(CpuKernelContext &ctx) {
     }
 
     if (max_core_num > data_num) {
-      max_core_num = data_num;
+      max_core_num = IntegerCast<uint32_t>(ctx, data_num);
     }
 
     auto sharder_pow = [&](size_t start, size_t end) { SpecialCompute<T>(type, start, end, in0, in1, out); };
@@ -159,7 +159,7 @@ uint32_t PowCpuKernel::BcastCompute(CpuKernelContext &ctx, Bcast &bcast) {
     }
 
     if (max_core_num > data_num) {
-      max_core_num = data_num;
+      max_core_num = IntegerCast<uint32_t>(ctx, data_num);
     }
 
     auto sharder_pow = [&](int64_t start, int64_t end) {

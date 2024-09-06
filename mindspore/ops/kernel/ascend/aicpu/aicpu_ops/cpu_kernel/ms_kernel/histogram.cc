@@ -110,13 +110,13 @@ uint32_t HistogramCpuKernel::DoCompute(CpuKernelContext &ctx) {
   auto x_min = *min_max.first;
   auto x_max = *min_max.second;
 
-  if (leftmost_edge == rightmost_edge && x_num > 0) {
+  if (FloatEqual(leftmost_edge, rightmost_edge) && x_num > 0) {
     leftmost_edge = static_cast<double>(x_min);
     rightmost_edge = static_cast<double>(x_max);
   } else if (static_cast<double>(x_min) > rightmost_edge || static_cast<double>(x_max) < leftmost_edge) {
     return KERNEL_STATUS_OK;
   }
-  if (leftmost_edge == rightmost_edge) {
+  if (FloatEqual(leftmost_edge, rightmost_edge)) {
     leftmost_edge -= 1;
     rightmost_edge += 1;
   }

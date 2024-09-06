@@ -168,7 +168,7 @@ uint32_t LuUnpackCpuKernel::LuUnpackCompute(CpuKernelContext &ctx) {
     uint32_t min_core_num = 1;
     uint32_t max_core_num = std::max(min_core_num, aicpu::CpuKernelUtils::GetCPUNum(ctx));
     if (max_core_num > batch_num) {
-      max_core_num = batch_num;
+      max_core_num = IntegerCast<uint32_t>(ctx, batch_num);
     }
     uint32_t parallel_status = 0;
     auto sharder = [&](int64_t start, int64_t end) {

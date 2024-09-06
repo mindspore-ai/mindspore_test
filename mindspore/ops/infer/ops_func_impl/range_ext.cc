@@ -70,16 +70,12 @@ BaseShapePtr RangeExtFuncImpl::InferShape(const PrimitivePtr &primitive,
   auto start_value = input_args[kInputIndex0]->GetValue();
   auto end_value = input_args[kInputIndex1]->GetValue();
   auto step_value = input_args[kInputIndex2]->GetValue();
-  MS_EXCEPTION_IF_NULL(start_value);
-  MS_EXCEPTION_IF_NULL(end_value);
-  MS_EXCEPTION_IF_NULL(step_value);
   return CalculateRangeShapeSize<float>(start_value, end_value, step_value);
 }
 
 TypePtr RangeExtFuncImpl::InferType(const PrimitivePtr &primitive,
                                     const std::vector<AbstractBasePtr> &input_args) const {
   auto start_type = input_args[kInputIndex0]->GetType();
-  MS_EXCEPTION_IF_NULL(start_type);
   return start_type->Clone();
 }
 }  // namespace mindspore::ops

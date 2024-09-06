@@ -184,8 +184,14 @@ uint32_t LinearSumAssignmentCpuKernel::Solve(CpuKernelContext &ctx, const T *cos
 
   uint64_t element_num = std::min(nr, raw_nc);
   auto bytes_num = sizeof(int64_t) * element_num;
-  (void)memset_s(a, bytes_num, 0, bytes_num);
-  (void)memset_s(b, bytes_num, 0, bytes_num);
+  if (EOK != memset_s(a, bytes_num, 0, bytes_num)) {
+    CUST_KERNEL_LOG_ERROR(ctx, "memset_s failed.");
+    return KERNEL_STATUS_INNER_ERROR;
+  }
+  if (EOK != memset_s(b, bytes_num, 0, bytes_num)) {
+    CUST_KERNEL_LOG_ERROR(ctx, "memset_s failed.");
+    return KERNEL_STATUS_INNER_ERROR;
+  }
 
   std::vector<T> temp;
   bool transpose = nc < nr;

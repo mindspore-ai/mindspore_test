@@ -167,7 +167,7 @@ uint32_t MatrixSetDiagV3CpuKernel::DoCompute(CpuKernelContext &ctx) {
     // 使用CpuKernelUtils::GetCPUNum接口获取AI CPU的核数
     uint32_t max_core_num = std::max(min_core_num, aicpu::CpuKernelUtils::GetCPUNum(ctx));
     if (max_core_num > input_numelements) {
-      max_core_num = input_numelements;
+      max_core_num = IntegerCast<uint32_t>(ctx, input_numelements);
     }
     auto sharder_matrix_set_diag_v3 = [&](int64_t start, int64_t end) {
       if (k_len == 1 || (k_len == 2 && k_lower == k_upper)) {

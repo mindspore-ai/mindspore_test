@@ -32,16 +32,14 @@ BaseShapePtr GridSampler2DGradFuncImpl::InferShape(const PrimitivePtr &primitive
                                                    const std::vector<AbstractBasePtr> &input_args) const {
   // Get input tensor shape.
   auto grad_base_shape = input_args[kInputIndex0]->GetShape();
-  MS_EXCEPTION_IF_NULL(grad_base_shape);
   auto grad_shape = grad_base_shape->GetShapeVector();
 
   auto input_x_base_shape = input_args[kInputIndex1]->GetShape();
-  MS_EXCEPTION_IF_NULL(input_x_base_shape);
   auto input_x_shape = input_x_base_shape->GetShapeVector();
 
   auto grid_base_shape = input_args[kInputIndex2]->GetShape();
-  MS_EXCEPTION_IF_NULL(grid_base_shape);
   auto grid_shape = grid_base_shape->GetShapeVector();
+  constexpr int64_t kGridSize = 2;
   if (IsDynamicRank(input_x_shape) || IsDynamicRank(grid_shape)) {
     return std::make_shared<abstract::TupleShape>(abstract::BaseShapePtrList{
       std::make_shared<abstract::TensorShape>(
@@ -49,14 +47,14 @@ BaseShapePtr GridSampler2DGradFuncImpl::InferShape(const PrimitivePtr &primitive
                     abstract::TensorShape::kShapeDimAny, abstract::TensorShape::kShapeDimAny}),
       std::make_shared<abstract::TensorShape>(ShapeVector{abstract::TensorShape::kShapeDimAny,
                                                           abstract::TensorShape::kShapeDimAny,
-                                                          abstract::TensorShape::kShapeDimAny, 2})});
+                                                          abstract::TensorShape::kShapeDimAny, kGridSize})});
   }
   // dynamic shape
   if (IsDynamicRank(input_x_shape)) {
     input_x_shape = {grid_shape[0], -1, -1, -1};
   }
   if (IsDynamicRank(grid_shape)) {
-    grid_shape = {input_x_shape[0], -1, -1, 2};
+    grid_shape = {input_x_shape[0], -1, -1, kGridSize};
   }
   if (grad_shape.size() != kInputIndex4) {
     MS_EXCEPTION(ValueError) << "Grad must be a 4-dimensional tensor, but got " << std::to_string(grad_shape.size())
@@ -107,13 +105,9 @@ BaseShapePtr GridSampler2DGradFuncImpl::InferShape(const PrimitivePtr &primitive
 
 TypePtr GridSampler2DGradFuncImpl::InferType(const PrimitivePtr &prim,
                                              const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(input_args[kIndex1]);
   auto input_x_type = input_args[kIndex1]->GetType();
-  MS_EXCEPTION_IF_NULL(input_x_type);
 
-  MS_EXCEPTION_IF_NULL(input_args[kIndex2]);
   auto grid_type = input_args[kIndex2]->GetType();
-  MS_EXCEPTION_IF_NULL(grid_type);
   return std::make_shared<Tuple>(std::vector<TypePtr>{input_x_type->Clone(), grid_type->Clone()});
 }
 

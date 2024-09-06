@@ -33,10 +33,12 @@ const uint32_t kStatesIndex = 2;
 uint32_t StandardNormalKernel::DoCompute() {
   float *tmp_out;
   if (out_count_ > 0) {
-    tmp_out = reinterpret_cast<float *>(malloc(out_count_ * sizeof(float)));
-    if (tmp_out == NULL) {
+    void *buf = malloc(out_count_ * sizeof(float));
+    if (buf == nullptr) {
+      KERNEL_LOG_ERROR("StandardNormal: Malloc failed.");
       return kAicpuKernelStateInvalid;
     }
+    tmp_out = reinterpret_cast<float *>(buf);
   } else {
     return kAicpuKernelStateInvalid;
   }

@@ -135,14 +135,15 @@ uint32_t SolveTriangularGradCpuKernel::SolveTriangularGradCompute(CpuKernelConte
   size_t db_mat_size = x_mat_size;
 
   T_grad *casted_a_addr = static_cast<T_grad *>(malloc(sizeof(T_grad) * a_mat_size));
-  CUST_KERNEL_CHECK_NULLPTR(ctx, casted_a_addr, KERNEL_STATUS_PARAM_INVALID,
-                            "[Solve_triangular] Malloc memory [casted_a_array] failed!")
   T_grad *casted_x_addr = static_cast<T_grad *>(malloc(sizeof(T_grad) * x_mat_size));
-  CUST_KERNEL_CHECK_NULLPTR(ctx, casted_x_addr, KERNEL_STATUS_PARAM_INVALID,
-                            "[Solve_triangular] Malloc memory [casted_x_array] failed!")
   T_grad *casted_dx_addr = static_cast<T_grad *>(malloc(sizeof(T_grad) * dx_mat_size));
-  CUST_KERNEL_CHECK_NULLPTR(ctx, casted_dx_addr, KERNEL_STATUS_PARAM_INVALID,
-                            "[Solve_triangular] Malloc memory [casted_dx_array] failed!")
+  if (casted_a_addr == nullptr || casted_x_addr == nullptr || casted_dx_addr == nullptr) {
+    free(casted_a_addr);
+    free(casted_x_addr);
+    free(casted_dx_addr);
+    CUST_KERNEL_LOG_ERROR(ctx, "[Solve_triangular] Malloc memory failed!");
+    return KERNEL_STATUS_INNER_ERROR;
+  }
 
   for (size_t i = 0; i < batch; ++i) {
     T_in *a_batch_addr = input_a_addr + i * a_mat_size;
@@ -151,14 +152,14 @@ uint32_t SolveTriangularGradCpuKernel::SolveTriangularGradCompute(CpuKernelConte
     T_grad *da_batch_addr = output_da_addr + i * da_mat_size;
     T_grad *db_batch_addr = output_db_addr + i * db_mat_size;
 
-    for (size_t i = 0; i < a_mat_size; i++) {
-      casted_a_addr[i] = static_cast<T_grad>(a_batch_addr[i]);
+    for (size_t j = 0; j < a_mat_size; j++) {
+      casted_a_addr[j] = static_cast<T_grad>(a_batch_addr[j]);
     }
-    for (size_t i = 0; i < x_mat_size; i++) {
-      casted_x_addr[i] = static_cast<T_grad>(x_batch_addr[i]);
+    for (size_t j = 0; j < x_mat_size; j++) {
+      casted_x_addr[j] = static_cast<T_grad>(x_batch_addr[j]);
     }
-    for (size_t i = 0; i < dx_mat_size; i++) {
-      casted_dx_addr[i] = static_cast<T_grad>(dx_batch_addr[i]);
+    for (size_t j = 0; j < dx_mat_size; j++) {
+      casted_dx_addr[j] = static_cast<T_grad>(dx_batch_addr[j]);
     }
 
     Eigen::Map<Eigen::Matrix<T_grad, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> dx(casted_dx_addr, m, n);

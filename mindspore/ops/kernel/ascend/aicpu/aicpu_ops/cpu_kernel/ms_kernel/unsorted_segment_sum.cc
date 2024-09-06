@@ -98,7 +98,7 @@ uint32_t UnsortedSegmentSumCpuKernel::UnsortedSegmentSumComputeTemplate(CpuKerne
     uint32_t min_core_num = 1;
     uint32_t max_core_num = std::max(min_core_num, aicpu::CpuKernelUtils::GetCPUNum(ctx) - 2);
     if (max_core_num > reshapesize && reshapesize != 0) {
-      max_core_num = reshapesize;
+      max_core_num = IntegerCast<uint32_t>(ctx, reshapesize);
     }
     CpuKernelUtils::ParallelFor(ctx, reshapesize, reshapesize / max_core_num, shard_unsorted_segment_sum);
     if (!multi_task_success.load()) {

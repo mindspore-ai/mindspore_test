@@ -92,7 +92,7 @@ uint32_t CauchyCpuKernel::CauchyCompute(CpuKernelContext &ctx) {
   if (y_num >= kParallelDataNums) {
     max_core_num = std::max(max_core_num, aicpu::CpuKernelUtils::GetCPUNum(ctx) - knum);
     if (max_core_num > y_num) {
-      max_core_num = y_num;
+      max_core_num = IntegerCast<uint32_t>(ctx, y_num);
     }
   }
 

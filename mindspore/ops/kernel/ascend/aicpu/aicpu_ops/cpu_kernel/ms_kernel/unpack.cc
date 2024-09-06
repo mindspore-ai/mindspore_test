@@ -40,7 +40,7 @@ uint32_t UnpackCpuKernel::CheckAndInitParams(CpuKernelContext &ctx) {
                           "The axis value range should be [-value_dim, value_dim), "
                           "value dim is [%d], axis is [%d].",
                           value_dim, unpack_axis);
-  unpack_axis = real_unpack_axis;
+  unpack_axis = IntegerCast<uint64_t>(ctx, real_unpack_axis);
 
   AttrValue *unpack_num_ptr = ctx.GetAttr("num");
   CUST_KERNEL_CHECK_FALSE(ctx, unpack_num_ptr, KERNEL_STATUS_PARAM_INVALID, "get num failed!");

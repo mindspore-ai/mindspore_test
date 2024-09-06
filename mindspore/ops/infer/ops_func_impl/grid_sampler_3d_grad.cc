@@ -33,15 +33,12 @@ BaseShapePtr GridSampler3DGradFuncImpl::InferShape(const PrimitivePtr &primitive
                                                    const std::vector<AbstractBasePtr> &input_args) const {
   // Get input tensor shape.
   auto grad_base_shape = input_args[kInputIndex0]->GetShape();
-  MS_EXCEPTION_IF_NULL(grad_base_shape);
   const auto &grad_shape = grad_base_shape->GetShapeVector();
 
   auto input_x_base_shape = input_args[kInputIndex1]->GetShape();
-  MS_EXCEPTION_IF_NULL(input_x_base_shape);
   auto input_x_shape = input_x_base_shape->GetShapeVector();
 
   auto grid_base_shape = input_args[kInputIndex2]->GetShape();
-  MS_EXCEPTION_IF_NULL(grid_base_shape);
   auto grid_shape = grid_base_shape->GetShapeVector();
   if (IsDynamicRank(input_x_shape) || IsDynamicRank(grid_shape)) {
     return std::make_shared<abstract::TupleShape>(abstract::BaseShapePtrList{
@@ -113,13 +110,8 @@ BaseShapePtr GridSampler3DGradFuncImpl::InferShape(const PrimitivePtr &primitive
 }
 TypePtr GridSampler3DGradFuncImpl::InferType(const PrimitivePtr &prim,
                                              const std::vector<AbstractBasePtr> &input_args) const {
-  MS_EXCEPTION_IF_NULL(input_args[kInputIndex1]);
   auto input_x_type = input_args[kInputIndex1]->GetType();
-  MS_EXCEPTION_IF_NULL(input_x_type);
-
-  MS_EXCEPTION_IF_NULL(input_args[kInputIndex2]);
   auto grid_type = input_args[kInputIndex2]->GetType();
-  MS_EXCEPTION_IF_NULL(grid_type);
   return std::make_shared<Tuple>(std::vector<TypePtr>{input_x_type->Clone(), grid_type->Clone()});
 }
 }  // namespace ops

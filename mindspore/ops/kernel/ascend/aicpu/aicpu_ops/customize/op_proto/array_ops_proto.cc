@@ -27,8 +27,8 @@ ONE_IN_ONE_OUT_INFER(MatrixBandPart, x, output);
 
 // ----------------Expand Begin-------------------
 template <typename T>
-static bool ExpandCalDim(const Tensor &data, std::vector<int64_t> &vec_dim, std::vector<int64_t> &x_dims,
-                         std::vector<std::pair<int64_t, int64_t>> &range_vector) {
+static bool ExpandCalDim(const Tensor &data, std::vector<int64_t> *vec_dim, const std::vector<int64_t> &x_dims,
+                         std::vector<std::pair<int64_t, int64_t>> *range_vector) {
   int64_t len_x = static_cast<int64_t>(x_dims.size());
   int64_t len_shape = data.GetSize() / static_cast<int64_t>(sizeof(T));
   int64_t diff = abs(len_x - len_shape);
@@ -56,11 +56,11 @@ static bool ExpandCalDim(const Tensor &data, std::vector<int64_t> &vec_dim, std:
       dim = pdata[i];
     }
     if (dim == -1) {
-      range_vector.push_back(std::make_pair(1, -1));
+      range_vector->push_back(std::make_pair(1, -1));
     } else {
-      range_vector.push_back(std::make_pair(dim, dim));
+      range_vector->push_back(std::make_pair(dim, dim));
     }
-    vec_dim.push_back(dim);
+    vec_dim->push_back(dim);
   }
 
   int64_t upb = len_shape;
@@ -77,24 +77,24 @@ static bool ExpandCalDim(const Tensor &data, std::vector<int64_t> &vec_dim, std:
       dim = pdata[i];
     }
     if (dim == -1 || x_dims[idx] == -1) {
-      vec_dim.push_back(-1);
-      range_vector.push_back(std::make_pair(1, -1));
+      vec_dim->push_back(-1);
+      range_vector->push_back(std::make_pair(1, -1));
       continue;
     }
     if (dim == 0) {
-      vec_dim.push_back(0);
-      range_vector.push_back(std::make_pair(0, 0));
+      vec_dim->push_back(0);
+      range_vector->push_back(std::make_pair(0, 0));
       continue;
     }
     if ((x_dims[idx] != dim) && (x_dims[idx] != 1) && (dim != 1)) {
       return false;
     }
     if (x_dims[idx] > dim) {
-      vec_dim.push_back(x_dims[idx]);
-      range_vector.push_back(std::make_pair(x_dims[idx], x_dims[idx]));
+      vec_dim->push_back(x_dims[idx]);
+      range_vector->push_back(std::make_pair(x_dims[idx], x_dims[idx]));
     } else {
-      vec_dim.push_back(dim);
-      range_vector.push_back(std::make_pair(dim, dim));
+      vec_dim->push_back(dim);
+      range_vector->push_back(std::make_pair(dim, dim));
     }
   }
 
@@ -155,17 +155,17 @@ IMPLEMT_INFERFUNC(Expand, ExpandInferShape) {
     }
     DataType data_type = tensordesc_shape.GetDataType();
     if (data_type == DT_INT32) {
-      if (!ExpandCalDim<int32_t>(data, vec_dim, x_dims, range_vector)) {
+      if (!ExpandCalDim<int32_t>(data, &vec_dim, x_dims, &range_vector)) {
         OP_LOGE(op_name, "Data shape are not compatible!");
         return GRAPH_FAILED;
       }
     } else if (data_type == DT_INT64) {
-      if (!ExpandCalDim<int64_t>(data, vec_dim, x_dims, range_vector)) {
+      if (!ExpandCalDim<int64_t>(data, &vec_dim, x_dims, &range_vector)) {
         OP_LOGE(op_name, "Data shape are not compatible!");
         return GRAPH_FAILED;
       }
     } else if (data_type == DT_INT16) {
-      if (!ExpandCalDim<int16_t>(data, vec_dim, x_dims, range_vector)) {
+      if (!ExpandCalDim<int16_t>(data, &vec_dim, x_dims, &range_vector)) {
         OP_LOGE(op_name, "Data shape are not compatible!");
         return GRAPH_FAILED;
       }
@@ -240,13 +240,14 @@ IMPLEMT_INFERFUNC(LowerBound, LowerBoundInfer) {
   TensorDesc sorted_x_desc = op.GetInputDescByName("sorted_x");
   TensorDesc values_desc = op.GetInputDescByName("values");
   Shape unused_shape;
-  if (WithRank(sorted_x_desc, 2, unused_shape, op) != GRAPH_SUCCESS) {
+  constexpr int64_t kInputRank = 2;
+  if (WithRank(sorted_x_desc, kInputRank, unused_shape, op) != GRAPH_SUCCESS) {
     AICPU_INFER_SHAPE_CALL_ERR_REPORT(
       TbeGetName(op),
       ConcatString("call WithRank failed, ", GetShapeErrMsg(0, DebugString(sorted_x_desc.GetShape().GetDims()), "2D")));
     return GRAPH_FAILED;
   }
-  if (WithRank(values_desc, 2, unused_shape, op) != GRAPH_SUCCESS) {
+  if (WithRank(values_desc, kInputRank, unused_shape, op) != GRAPH_SUCCESS) {
     AICPU_INFER_SHAPE_CALL_ERR_REPORT(
       TbeGetName(op),
       ConcatString("call WithRank failed, ", GetShapeErrMsg(1, DebugString(values_desc.GetShape().GetDims()), "2D")));
@@ -379,7 +380,7 @@ CUST_INFER_FUNC_REG(Padding, PaddingInferShape);
 
 // ----------------Mvlgamma Begin-------------------
 CUST_IMPLEMT_INFERFUNC(Mvlgamma, MvlgammaInferShape) {
-  const char *op_name = "Mvlgamma";
+  const std::string op_name = "Mvlgamma";
   OP_LOGD(op_name, "MvlgammaInferShape begin.");
   TensorDesc tensordesc_input = op.GetInputDescByName("x");
   Shape input_shape = tensordesc_input.GetShape();
@@ -457,7 +458,7 @@ CUST_INFER_FUNC_REG(TopKRouter, TopKRouterInfer);
 
 // ----------------MvlgammaGrad Begin-------------------
 CUST_IMPLEMT_INFERFUNC(MvlgammaGrad, MvlgammaGradInferShape) {
-  const char *op_name = "MvlgammaGrad";
+  const std::string op_name = "MvlgammaGrad";
   OP_LOGD(op_name, "MvlgammaGradInferShape begin.");
   TensorDesc tensordesc_input = op.GetInputDescByName("y_grad");
   Shape input_shape = tensordesc_input.GetShape();
@@ -549,13 +550,14 @@ CUST_VERIFY_FUNC_REG(LogSpace, LogSpaceVerify);
 // ----------------UpperBound-----------------------
 IMPLEMT_INFERFUNC(UpperBound, UpperBoundInfer) {
   Shape unused_shape;
-  if (WithRank(op.GetInputDesc(0), 2, unused_shape, op) != GRAPH_SUCCESS) {
+  constexpr int64_t kInputRank = 2;
+  if (WithRank(op.GetInputDesc(0), kInputRank, unused_shape, op) != GRAPH_SUCCESS) {
     string err_msg = ConcatString("failed to call WithRank function, input[sorted_x] rank must be 2D, got rank[",
                                   op.GetInputDesc(0).GetShape().GetDimNum(), "]");
     AICPU_INFER_SHAPE_CALL_ERR_REPORT(TbeGetName(op), err_msg);
     return GRAPH_FAILED;
   }
-  if (WithRank(op.GetInputDesc(1), 2, unused_shape, op) != GRAPH_SUCCESS) {
+  if (WithRank(op.GetInputDesc(1), kInputRank, unused_shape, op) != GRAPH_SUCCESS) {
     string err_msg = ConcatString("failed to call WithRank function, input[values] rank must be 2D, got rank[",
                                   op.GetInputDesc(1).GetShape().GetDimNum(), "]");
     AICPU_INFER_SHAPE_CALL_ERR_REPORT(TbeGetName(op), err_msg);
@@ -619,12 +621,12 @@ INFER_FUNC_REG(UnravelIndex, UnravelIndexInfer);
 
 // ----------------AffineGrid-----------------------
 template <typename T>
-void CalcOutputShape(const Tensor &output_size_tensor, int64_t theta_second_dim, vector<int64_t> &output_shape) {
+void CalcOutputShape(const Tensor &output_size_tensor, int64_t theta_second_dim, vector<int64_t> *output_shape) {
   auto size_data = reinterpret_cast<const T *>(output_size_tensor.GetData());
   int64_t temp = 1;
   for (int i = 0; i < theta_second_dim; i++) {
     temp = static_cast<int64_t>(size_data[i + 2]);
-    output_shape.push_back(temp);
+    output_shape->push_back(temp);
   }
 }
 
@@ -641,9 +643,9 @@ CUST_IMPLEMT_INFERFUNC(AffineGrid, AffineGridInfer) {
   if (op.GetInputConstData("output_size", output_size_tensor) == GRAPH_SUCCESS) {
     auto size_type = op.GetInputDesc(1).GetDataType();
     if (size_type == DT_INT32) {
-      CalcOutputShape<int32_t>(output_size_tensor, theta_second_dim, output_shape);
+      CalcOutputShape<int32_t>(output_size_tensor, theta_second_dim, &output_shape);
     } else {
-      CalcOutputShape<int64_t>(output_size_tensor, theta_second_dim, output_shape);
+      CalcOutputShape<int64_t>(output_size_tensor, theta_second_dim, &output_shape);
     }
   } else {
     int64_t temp = -1;

@@ -117,7 +117,7 @@ uint32_t MatrixLogarithmCpuKernel::MatrixLogarithmCompute(CpuKernelContext &ctx)
         max_core_num = std::min(max_core_num, 4U);
       }
       if (max_core_num > matrix_num) {
-        max_core_num = matrix_num;
+        max_core_num = IntegerCast<uint32_t>(ctx, matrix_num);
       }
       auto shard_work = [&](size_t start, size_t end) {
         for (size_t l = start; l < end; l++) {

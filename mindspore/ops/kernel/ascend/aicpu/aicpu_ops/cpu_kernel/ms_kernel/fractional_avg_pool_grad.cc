@@ -137,7 +137,7 @@ uint32_t FractionalAvgPoolGradCpuKernel::DoCompute(CpuKernelContext &ctx) {
       }
     }
   } else {
-    uint64_t row_len = out_rows;
+    uint64_t row_len = IntegerCast<uint64_t>(ctx, out_rows);
     uint32_t min_core_num = 1;
     uint32_t max_core_num = std::max(min_core_num, aicpu::CpuKernelUtils::GetCPUNum(ctx));
     if (max_core_num > row_len) {
