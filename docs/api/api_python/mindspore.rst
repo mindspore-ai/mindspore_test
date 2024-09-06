@@ -213,3 +213,13 @@ mindspore
     :toctree: mindspore
 
     mindspore.run_check
+
+
+安全
+^^^^^^^^^
+
+.. mscnautosummary::
+    :toctree: mindspore
+
+    mindspore.obfuscate_ckpt
+    mindspore.load_obf_params_into_net
