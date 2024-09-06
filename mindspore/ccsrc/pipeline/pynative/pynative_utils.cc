@@ -2449,6 +2449,9 @@ PrimitivePyPtr AutoGrad::BuildBpropCutPrim(const PrimitivePtr &prim, bool is_nee
   if (is_need_recompute) {
     (void)bprop_cut->AddAttr("is_recompute", MakeValue(true));
   }
+  if (prim->HasAttr(kAttrFuncType)) {
+    (void)bprop_cut->AddAttr(kAttrFuncType, prim->GetAttr(kAttrFuncType));
+  }
   return bprop_cut;
 }
 
