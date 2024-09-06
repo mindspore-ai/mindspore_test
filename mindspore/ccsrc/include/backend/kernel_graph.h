@@ -514,6 +514,9 @@ class BACKEND_EXPORT KernelGraph : public FuncGraph {
     }
     return iter->second;
   }
+  void AddToTupleBackendFrontAnfIndexMap(const AnfNodePtr &back_node, const AnfWithOutIndex &front_node) {
+    tuple_backend_front_anf_index_map_[back_node] = front_node;
+  }
   const HashMap<AnfNodePtr, AnfWithOutIndex> &InternalParameterToFrontNodeMap() const {
     return internal_parameter_to_front_node_map_;
   }

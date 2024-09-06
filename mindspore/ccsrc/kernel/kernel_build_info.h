@@ -151,6 +151,8 @@ class BACKEND_EXPORT KernelBuildInfo {
 
   size_t GetOutputNumWithoutMonad() const;
 
+  size_t GetInputNumWithoutMonad() const;
+
   std::string ToString() const;
 
   bool IsSimilarityKernelBuildInfo(const KernelBuildInfo &other) const;

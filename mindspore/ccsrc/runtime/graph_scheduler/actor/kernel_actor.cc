@@ -784,7 +784,7 @@ void KernelActor::FetchOutputDeviceTensor(OpContext<DeviceTensor> *const context
 
 void KernelActor::PreLaunchKernel(OpContext<DeviceTensor> *) {
   for (size_t i = 0; i < input_device_tensors_.size(); ++i) {
-    if (!input_device_tensors_[i]->GetValidPtr(kernel_info_->stream_id())) {
+    if (input_device_tensors_[i] == nullptr || !input_device_tensors_[i]->GetValidPtr(kernel_info_->stream_id())) {
       MS_LOG(DEBUG) << "For kernel: " << kernel_->fullname_with_scope() << ", input device tensor "
                     << input_device_tensors_[i] << " has no device ptr.";
     }

@@ -127,9 +127,10 @@ void GEGraphOptimization::OptimizeACLGraph(const KernelGraphPtr &graph, std::set
   opt::GEBackendOptimizeACL(graph);
   for (auto &child_graph : graph->child_graph_order()) {
     if (child_graph.lock()->has_flag(kFlagGeKernel)) {
-      continue;
+      OptimizeGEGraph(child_graph.lock(), memo);
+    } else {
+      OptimizeACLGraph(child_graph.lock(), memo);
     }
-    OptimizeACLGraph(child_graph.lock(), memo);
   }
   MS_LOG(DEBUG) << "Status record: end optimize acl graph. graph id: " << graph->graph_id();
 }

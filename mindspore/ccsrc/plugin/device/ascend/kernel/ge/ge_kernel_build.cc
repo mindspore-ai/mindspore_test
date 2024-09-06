@@ -16,6 +16,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <map>
 #include "plugin/device/ascend/kernel/ge/ge_kernel_build.h"
 #include "plugin/device/ascend/kernel/ge/ge_kernel_mod.h"
 #include "plugin/device/ascend/hal/hardware/ge_utils.h"
@@ -26,21 +27,12 @@
 #include "kernel/framework_utils.h"
 #include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/trace_base.h"
+#include "op_def/framework_ops.h"
 
 namespace mindspore {
 namespace kernel {
 namespace {
-const char kAlreadyCompile[] = "AlreadyCompile";
-
-bool GraphWithNoRealKernel(const KernelGraphPtr &kernel_graph) {
-  const auto &nodes = kernel_graph->execution_order();
-  for (auto &node : nodes) {
-    if (AnfUtils::IsRealKernel(node)) {
-      return false;
-    }
-  }
-  return true;
-}
+static const char kAlreadyCompile[] = "AlreadyCompile";
 }  // namespace
 
 KernelModPtr GeOpBuild(const AnfNodePtr &anf_node, device::ascend::GeGraphExecutor *graph_executor) {
@@ -66,18 +58,26 @@ KernelModPtr GeOpBuild(const AnfNodePtr &anf_node, device::ascend::GeGraphExecut
       << trace::DumpSourceLines(anf_node);
   }
 
+  if (kernel_mod_ptr->Resize(input_kernel_tensors, output_kernel_tensors) == KRET_RESIZE_FAILED) {
+    MS_LOG_WITH_NODE(EXCEPTION, anf_node)
+      << "#dmsg#Kernel build failed:#dmsg#hostapi kernel op[" << anf_node->fullname_with_scope() << "] Resize failed.";
+  }
+
   auto inline_subgraph = common::AnfAlgo::GetNodeAttr<KernelGraphPtr>(anf_node, kAttrKernelGraph);
   MS_LOG(INFO) << "GeOpBuild, node name: " << anf_node->fullname_with_scope() << ", " << inline_subgraph->ToString();
   MS_EXCEPTION_IF_NULL(inline_subgraph);
-  if (GraphWithNoRealKernel(inline_subgraph)) {
+  if (AnfAlgo::IsNoRealKernelGraph(inline_subgraph)) {
     kernel_mod_ptr->set_skip_run(true);
     return kernel_mod_ptr;
   }
   kernel_mod_ptr->set_executor(graph_executor);
   kernel_mod_ptr->set_graph(inline_subgraph);
+  kernel_mod_ptr->set_kernel(anf_node);
 
   if (!inline_subgraph->has_flag(kAlreadyCompile)) {
     graph_executor->CompileGraphForKernel(inline_subgraph);
+    // Initialize GeTensor here for save time in RunGraph
+    graph_executor->InitGraphInfo(inline_subgraph);
     inline_subgraph->set_flag(kAlreadyCompile, true);
   }
 

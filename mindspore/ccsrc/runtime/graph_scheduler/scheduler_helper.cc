@@ -1153,7 +1153,12 @@ void SchedulerHelper::CheckActorValid(const ActorSet *actor_set) {
         MS_EXCEPTION_IF_NULL(kernel_actor);
         auto &kernel = kernel_actor->kernel();
         MS_EXCEPTION_IF_NULL(kernel);
-        expect_input_num = common::AnfAlgo::GetInputTensorNum(kernel);
+        // expect_input_num = common::AnfAlgo::GetInputTensorNum(kernel);
+        auto kernel_info = dynamic_cast<device::KernelInfo *>(kernel->kernel_info());
+        MS_EXCEPTION_IF_NULL(kernel_info);
+        auto build_info = kernel_info->select_kernel_build_info();
+        MS_EXCEPTION_IF_NULL(build_info);
+        expect_input_num = build_info->GetInputNumWithoutMonad();
       }
       auto input_data_num = actor->input_datas_num_;
       auto device_tensor_store_num = actor->device_tensor_store_keys_.size();

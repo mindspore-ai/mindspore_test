@@ -333,13 +333,13 @@ size_t AnfUtils::GetOutputTensorNum(const AnfNodePtr &node) {
     MS_EXCEPTION_IF_NULL(last_type);
     // Some nodes could have monad outputs like RpcRecv. We need to jump these outputs.
     if (NeedJumpMonadOutput(node) && last_type->isa<MonadType>()) {
-      for (size_t i = 0; i < tuple_type->elements().size(); i++) {
-        auto tuple_type_elem = tuple_type->elements()[i];
-        MS_EXCEPTION_IF_NULL(tuple_type_elem);
-        if (tuple_type_elem->isa<MonadType>()) {
-          res = i;
+      auto elements = tuple_type->elements();
+      for (auto iter = elements.rbegin(); iter != elements.rend(); ++iter) {
+        MS_EXCEPTION_IF_NULL(*iter);
+        if (!(*iter)->isa<MonadType>()) {
           break;
         }
+        --res;
       }
     }
   } else if (type->isa<List>()) {

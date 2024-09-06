@@ -209,6 +209,9 @@ void AllocParameterMemory(const KernelGraphPtr &kernel_graph, DeviceContext *dev
     SetKernelInfo(parameter);
   }
   runtime::DeviceAddressUtils::CreateParameterDeviceAddress(device_context, kernel_graph);
+  if (kernel_graph->has_flag(kFlagGeKernel)) {
+    return;
+  }
   // call AssignStaticMemoryInput recursively
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
@@ -228,6 +231,8 @@ void AllocOutputMemory(const KernelGraphPtr &kernel_graph, GeDeviceResManager *r
   for (const auto &output : outputs) {
     const auto &output_with_index = common::AnfAlgo::FetchRealNodeSkipMonadControl(output);
     auto &output_node = output_with_index.first;
+    MS_EXCEPTION_IF_NULL(output_node);
+    SetKernelInfo(output_node);
     if (output_node->isa<Parameter>() || output_node->isa<ValueNode>()) {
       continue;
     }
@@ -236,17 +241,23 @@ void AllocOutputMemory(const KernelGraphPtr &kernel_graph, GeDeviceResManager *r
     }
     need_alloc_output_cnt++;
   }
+  if (kernel_graph->has_flag(kFlagGeKernel)) {
+    return;
+  }
 
   for (const auto &output : outputs) {
     const auto &output_with_index = common::AnfAlgo::FetchRealNodeSkipMonadControl(output);
     auto &output_node = output_with_index.first;
     MS_EXCEPTION_IF_NULL(output_node);
-    SetKernelInfo(output_node);
 
     // Parameter's memory is allocated earlier, and there is no need to reallocate memory if Parameter is output.
     if (AnfAlgo::OutputAddrExist(output_node, output_with_index.second, false) || output_node->isa<Parameter>()) {
       MS_LOG(INFO) << "The device_address of output node " << output_node->fullname_with_scope()
                    << " is already exist, skip.";
+      continue;
+    }
+
+    if (HasAbstractMonad(output_node)) {
       continue;
     }
 
@@ -449,6 +460,20 @@ void GEMemoryAllocator::AllocUnuseInput(const KernelGraphPtr &kernel_graph, cons
                     << ", device address addr: " << memory;
   }
   UpdateTracker("UnusedInput", input_node->fullname_with_scope(), kernel_graph->ToString(), memory_size, memory,
+                device::tracker::MemType::kOther);
+}
+
+void GEMemoryAllocator::AllocUnuseInput(const KernelGraphPtr &kernel_graph, KernelTensor *tensor,
+                                        GeDeviceResManager *res_manager) {
+  MS_EXCEPTION_IF_NULL(res_manager);
+  MS_EXCEPTION_IF_NULL(tensor);
+  auto memory = res_manager->AllocateMemory(tensor->size());
+  tensor->set_device_ptr(memory);
+  if (common::IsNeedProfileMemory()) {
+    MS_LOG(WARNING) << "Need Profile Memory, alloc type: UnusedInput, size:" << tensor->size()
+                    << ", graph: " << kernel_graph->ToString() << ", device address addr: " << memory;
+  }
+  UpdateTracker("UnusedInput", kernel_graph->ToString(), kernel_graph->ToString(), tensor->size(), memory,
                 device::tracker::MemType::kOther);
 }
 
