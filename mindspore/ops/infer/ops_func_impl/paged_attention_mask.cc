@@ -70,13 +70,24 @@ TypePtr PagedAttentionMaskFuncImpl::InferType(const PrimitivePtr &primitive,
   //  check antiquant scale and offset's dtype when they are NOT None
   if (enable_infer_boost && !IsOptionalInputNone(input_args[kPagedAttentionMaskInputAntiquantScaleIndex]) &&
       !IsOptionalInputNone(input_args[kPagedAttentionMaskInputAntiquantOffsetIndex])) {
-    std::map<std::string, TypePtr> antiquant_types;
-    const std::set<TypePtr> antiquant_valid_types = {kFloat16};
-    (void)antiquant_types.emplace("antiquant_scale",
-                                  input_args[kPagedAttentionMaskInputAntiquantScaleIndex]->GetType());
-    (void)antiquant_types.emplace("antiquant_offset",
-                                  input_args[kPagedAttentionMaskInputAntiquantOffsetIndex]->GetType());
-    (void)CheckAndConvertUtils::CheckTensorTypeSame(antiquant_types, antiquant_valid_types, op_name);
+    bool valid_flag = false;
+    auto scale_type = input_args[kPagedAttentionMaskInputAntiquantScaleIndex]->GetType()->cast<TensorTypePtr>();
+    MS_EXCEPTION_IF_NULL(scale_type);
+    auto scale_type_id = scale_type->element()->type_id();
+
+    auto offset_type = input_args[kPagedAttentionMaskInputAntiquantOffsetIndex]->GetType()->cast<TensorTypePtr>();
+    MS_EXCEPTION_IF_NULL(offset_type);
+    auto offset_type_id = offset_type->element()->type_id();
+
+    if ((scale_type_id == TypeId::kNumberTypeFloat16 && offset_type_id == TypeId::kNumberTypeFloat16) ||
+        (scale_type_id == TypeId::kNumberTypeInt64 && offset_type_id == TypeId::kNumberTypeInt32)) {
+      valid_flag = true;
+    }
+    if (!valid_flag) {
+      MS_LOG(EXCEPTION) << "types of antiquant_scale & antiquant_offset are not supported: "
+                        << input_args[kPagedAttentionMaskInputAntiquantScaleIndex]->GetType() << " & "
+                        << input_args[kPagedAttentionMaskInputAntiquantOffsetIndex]->GetType();
+    }
   }
 
   auto block_tables_type = input_args[kPagedAttentionMaskInputBlockTablesIndex]->GetType();
