@@ -220,7 +220,7 @@ from mindspore.ops.auto_generate import trunc
 # 88
 
 # 89
-
+from mindspore.ops.auto_generate import argsort_ext as argsort
 # 90
 
 # 91
@@ -1871,7 +1871,7 @@ __all__ = [
     # 88
     'chunk',
     # 89
-
+    'argsort',
     # 90
 
     # 91

@@ -99,7 +99,7 @@ LogSoftmaxGrad: 'aclnnLogSoftmaxBackward'
 PReLU: 'aclnnPrelu'
 PReLUGrad: 'aclnnPreluBackward'
 # 10
-
+ArgSort: 'aclnnArgsort'
 # 11
 
 # 12
