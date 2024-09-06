@@ -80,8 +80,10 @@ MessageQueue::State MessageQueue::MessageQueueState() { return state_; }
 Status MessageQueue::MsgSnd(int64_t mtype, int shm_id, uint64_t shm_size) {
   RETURN_IF_NOT_OK(GetOrCreateMessageQueueID());
   mtype_ = mtype;
-  shm_id_ = shm_id;
-  shm_size_ = shm_size;
+  if (shm_id != -1) {
+    shm_id_ = shm_id;
+    shm_size_ = shm_size;
+  }
   if (msg_queue_id_ >= 0 && msgsnd(msg_queue_id_, this, sizeof(MessageQueue), 0) != 0) {
     if (msgget(key_, kMsgQueuePermission) < 0) {
       MS_LOG(INFO) << "Main process is exit, msg_queue_id: " << std::to_string(msg_queue_id_) << " had been released.";

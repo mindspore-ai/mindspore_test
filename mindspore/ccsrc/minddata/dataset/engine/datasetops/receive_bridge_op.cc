@@ -186,7 +186,7 @@ Status ReceiveBridgeOp::operator()() {
 
       // Send msg to the independent dataset process by msg_queue_
       receive_info_.normal_row_.row_step_ = ReceiveBridgeOp::RowStep::kBeginSendMsg;
-      RETURN_IF_NOT_OK(msg_queue_.MsgSnd(kMasterSendDataMsg));
+      RETURN_IF_NOT_OK(msg_queue_.MsgSnd(kMasterSendDataMsg, msg_queue_.shm_id_, msg_queue_.shm_size_));
       receive_info_.normal_row_.row_step_ = ReceiveBridgeOp::RowStep::kAfterSendMsg;
 
       receive_info_.normal_row_.row_step_ = ReceiveBridgeOp::RowStep::kBeginReceiveMsg;
@@ -215,7 +215,7 @@ Status ReceiveBridgeOp::operator()() {
 
     // Send msg to the independent dataset process by msg_queue_
     receive_info_.eoe_row_.row_step_ = ReceiveBridgeOp::RowStep::kBeginSendMsg;
-    RETURN_IF_NOT_OK(msg_queue_.MsgSnd(kMasterSendDataMsg));
+    RETURN_IF_NOT_OK(msg_queue_.MsgSnd(kMasterSendDataMsg, msg_queue_.shm_id_, msg_queue_.shm_size_));
     receive_info_.eoe_row_.row_step_ = ReceiveBridgeOp::RowStep::kAfterSendMsg;
 
     // Get msg from the independent dataset process by msg_queue_
