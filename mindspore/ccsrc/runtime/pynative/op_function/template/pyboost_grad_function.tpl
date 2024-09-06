@@ -1,4 +1,4 @@
-void ${func_name}(OpRunnerInfo* op_runner_info, VectorRef *op_outputs) {
+void BACKEND_EXPORT ${func_name}(OpRunnerInfo* op_runner_info, VectorRef *op_outputs) {
   MS_EXCEPTION_IF_NULL(op_runner_info);
   // Create op
   auto op = CREATE_PYBOOST_OP(${op_name}, op_runner_info->device_target);
