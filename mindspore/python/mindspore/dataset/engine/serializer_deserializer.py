@@ -107,9 +107,9 @@ def deserialize(input_dict=None, json_filepath=None):
 def expand_path(node_repr, key, val):
     """Convert relative to absolute path."""
     if isinstance(val, list):
-        node_repr[key] = [os.path.abspath(file) for file in val]
+        node_repr[key] = [os.path.realpath(file) for file in val]
     else:
-        node_repr[key] = os.path.abspath(val)
+        node_repr[key] = os.path.realpath(val)
 
 
 def show(dataset, indentation=2):

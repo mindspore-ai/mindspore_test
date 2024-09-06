@@ -3319,7 +3319,7 @@ class Places365Dataset(MappableDataset, VisionBaseDataset):
         super().__init__(num_parallel_workers=num_parallel_workers, sampler=sampler, num_samples=num_samples,
                          shuffle=shuffle, num_shards=num_shards, shard_id=shard_id, cache=cache)
 
-        self.dataset_dir = os.path.abspath(dataset_dir)
+        self.dataset_dir = os.path.realpath(dataset_dir)
         self.usage = replace_none(usage, "train-standard")
         self.small = small
         self.decode = decode

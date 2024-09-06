@@ -2298,7 +2298,7 @@ float Round(float value) {
   float rnd = round(value);
   float rnd_l = floor(value);
   float rnd_h = ceil(value);
-  if (value - rnd_l == kHalf) {
+  if (std::fabs((value - rnd_l) - kHalf) <= std::numeric_limits<float>::epsilon()) {
     if (common::IsDoubleEqual(fmod(rnd, kEven), 0.0)) {
       return rnd;
     } else if (value > 0) {

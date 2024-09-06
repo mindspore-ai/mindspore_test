@@ -124,7 +124,8 @@ Status MixUpBatchOp::Compute(const TensorRow &input, TensorRow *output) {
                                "multiplication out of bounds, with multipliers: " + std::to_string(x1) + " and " +
                                  std::to_string(x2) +
                                  ", which result in the out of bounds product:" + std::to_string(x1 * x2));
-  CHECK_FAIL_RETURN_UNEXPECTED(x1 + x2 != 0.0, "addition of variable(x1 and x2) of Gamma should not be 0.");
+  CHECK_FAIL_RETURN_UNEXPECTED(std::fabs(x1 + x2) > std::numeric_limits<float>::epsilon(),
+                               "addition of variable(x1 and x2) of Gamma should not be 0.");
   float lam = x1 / (x1 + x2);
 
   // Calculate random labels
