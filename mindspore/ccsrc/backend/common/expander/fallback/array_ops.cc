@@ -141,13 +141,18 @@ REG_FALLBACK_BUILDER("FillScalar").SetBody(BODYFUNC(ib) {
   auto size = ib->GetInput(kIndex0);
   auto fill_value = ib->GetInput(kIndex1);
   auto dtype = ib->GetInput(kIndex2);
-  auto value = ib->ScalarToTensor(fill_value);
-  auto org_out = ib->Emit("FillV2", {size, value});
+  NodePtr value = nullptr;
   if (ib->GetDtype(dtype)->isa<TypeNone>()) {
-    auto input_type = ib->GetDtype(fill_value)->type_id();
-    dtype = ib->Value(static_cast<int64_t>(input_type));
+    value = ib->ScalarToTensor(fill_value, ib->GetDtype(fill_value));
+  } else {
+    auto dtype_value_ptr = dtype->BuildValue();
+    MS_EXCEPTION_IF_NULL(dtype_value_ptr);
+    auto dtype_val = GetValueWithCheck<int64_t>(dtype_value_ptr);
+    auto dtype_ptr = TypeIdToType(static_cast<TypeId>(dtype_val));
+    MS_EXCEPTION_IF_NULL(dtype_ptr);
+    value = ib->ScalarToTensor(fill_value, dtype_ptr);
   }
-  auto out = ib->Emit("Cast", {org_out, dtype});
+  auto out = ib->Emit("FillV2", {size, value});
   return {out};
 });
 

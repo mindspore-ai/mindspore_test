@@ -85,11 +85,15 @@ def test_full_forward_backward(mode):
     expect_value_grad = 0
     if mode == 'pynative':
         ms.context.set_context(mode=ms.PYNATIVE_MODE)
+        y = full_forward_func(size, value, dtype)
         value_grad = full_backward_func(size, value, dtype)
     elif mode == 'KBK':
+        y = (jit(full_forward_func, jit_config=JitConfig(jit_level="O0")))(size, value, dtype)
         value_grad = (jit(full_backward_func, jit_config=JitConfig(jit_level="O0")))(size, value, dtype)
     else:
+        y = (jit(full_forward_func, jit_config=JitConfig(jit_level="O2")))(size, value, dtype)
         value_grad = (jit(full_backward_func, jit_config=JitConfig(jit_level="O2")))(size, value, dtype)
+    np.testing.assert_allclose(y.asnumpy(), expect_y, rtol=1e-5)
     np.testing.assert_allclose(value_grad.asnumpy(), expect_value_grad, rtol=1e-5)
     assert value_grad.shape == ()
 
