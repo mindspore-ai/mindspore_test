@@ -15,7 +15,7 @@ mindspore.Profiler
 
         - **op_time** (bool, 可选) -（Ascend/GPU）表示是否收集算子性能数据，默认值： ``True`` 。
         - **profile_communication** (bool, 可选) -（仅限Ascend）表示是否在多设备训练中收集通信性能数据。当值为 ``True`` 时，收集这些数据。在单卡训练中，该参数的设置无效。使用此参数时， `op_time` 必须设置成 ``True`` 。默认值： ``False`` 。
-        - **profile_memory** (bool, 可选) -（仅限Ascend）表示是否收集Tensor内存数据。当值为 ``True`` 时，收集这些数据。使用此参数时， `op_time` 必须设置成 ``True`` 。默认值： ``False`` 。
+        - **profile_memory** (bool, 可选) -（仅限Ascend）表示是否收集Tensor内存数据。当值为 ``True`` 时，收集这些数据。使用此参数时， `op_time` 必须设置成 ``True``。在图编译等级为O2时收集算子内存数据，需要从第一个step开始采集。默认值： ``False`` 。
         - **parallel_strategy** (bool, 可选) -（仅限Ascend）表示是否收集并行策略性能数据， 默认值： ``False`` 。
         - **start_profile** (bool, 可选) - 该参数控制是否在Profiler初始化的时候开启数据采集。默认值： ``True`` 。
         - **aicore_metrics** (int, 可选) -（仅限Ascend）收集的AICORE性能数据类型，使用此参数时， `op_time` 必须设置成 ``True`` ，且值必须包含在[-1, 0, 1, 2, 3, 4, 5, 6]，默认值： ``0`` ，每种类型包含的数据项如下：
