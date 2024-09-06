@@ -34,7 +34,7 @@
 namespace mindspore {
 namespace device {
 namespace ascend {
-class DefaultAscendMemoryPool : public AbstractAscendMemoryPoolSupport, public AbstractDynamicMemPool {
+class BACKEND_EXPORT DefaultAscendMemoryPool : public AbstractAscendMemoryPoolSupport, public AbstractDynamicMemPool {
  public:
   DefaultAscendMemoryPool();
   DefaultAscendMemoryPool(const DefaultAscendMemoryPool &) = delete;
@@ -54,7 +54,8 @@ class DefaultAscendMemoryPool : public AbstractAscendMemoryPoolSupport, public A
   const bool IsEnableEagerFree() const override { return AbstractAscendMemoryPoolSupport::IsEnableEagerFree(); }
 };
 
-class DefaultEnhancedAscendMemoryPool : public AbstractAscendMemoryPoolSupport, public EnhancedDynamicMemPool {
+class BACKEND_EXPORT DefaultEnhancedAscendMemoryPool : public AbstractAscendMemoryPoolSupport,
+                                                       public EnhancedDynamicMemPool {
  public:
   DefaultEnhancedAscendMemoryPool();
   DefaultEnhancedAscendMemoryPool(const DefaultEnhancedAscendMemoryPool &) = delete;
@@ -74,7 +75,7 @@ class DefaultEnhancedAscendMemoryPool : public AbstractAscendMemoryPoolSupport, 
   const bool IsEnableEagerFree() const override { return AbstractAscendMemoryPoolSupport::IsEnableEagerFree(); }
 };
 
-class BestFitAscendMemoryPool : public AbstractAscendMemoryPoolSupport, public DynamicMemPoolBestFit {
+class BACKEND_EXPORT BestFitAscendMemoryPool : public AbstractAscendMemoryPoolSupport, public DynamicMemPoolBestFit {
  public:
   BestFitAscendMemoryPool();
   BestFitAscendMemoryPool(const BestFitAscendMemoryPool &) = delete;
