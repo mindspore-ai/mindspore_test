@@ -26,13 +26,11 @@
 
 namespace mindspore::graphkernel {
 using opt::PassManager;
+
 class BACKEND_EXPORT GraphKernelPassManager : public PassManager {
  public:
   GraphKernelPassManager(size_t stage, const std::string &name)
-      : PassManager(name, true), stage_(stage), flags_(GraphKernelFlags::GetInstance()) {
-    enable_pass_active_ = std::vector<bool>(flags_.enable_pass.size(), false);
-    disable_pass_active_ = std::vector<bool>(flags_.disable_pass.size(), false);
-  }
+      : PassManager(name, true), stage_(stage), flags_(GraphKernelFlags::GetInstance()) {}
   ~GraphKernelPassManager() = default;
 
   // Add graph pass, the pass object will be freed when pass manager freed.
@@ -46,11 +44,33 @@ class BACKEND_EXPORT GraphKernelPassManager : public PassManager {
   std::string GetPassFullname(size_t pass_id, const opt::PassPtr &pass) const override;
 
  private:
-  void PassFlagsValidation() const;
-
   size_t stage_;
   std::vector<bool> enabled_;
   const GraphKernelFlags &flags_;
+};
+
+class BACKEND_EXPORT GraphKernelPassChecker {
+ public:
+  static GraphKernelPassChecker &GetInstance() {
+    static GraphKernelPassChecker instance;
+    return instance;
+  }
+  GraphKernelPassChecker(const GraphKernelPassChecker &flags) = delete;
+  GraphKernelPassChecker(GraphKernelPassChecker &&flags) = delete;
+  GraphKernelPassChecker &operator=(const GraphKernelPassChecker &flags) = delete;
+  GraphKernelPassChecker &operator=(GraphKernelPassChecker &&flags) = delete;
+  ~GraphKernelPassChecker() { PassFlagsValidation(); }
+
+  void SetEnablePassActive(size_t index, bool value);
+  void SetDisablePassActive(size_t index, bool value);
+
+ private:
+  GraphKernelPassChecker() {
+    enable_pass_active_ = std::vector<bool>(GraphKernelFlags::GetInstance().enable_pass.size(), false);
+    disable_pass_active_ = std::vector<bool>(GraphKernelFlags::GetInstance().disable_pass.size(), false);
+  }
+  void PassFlagsValidation();
+
   std::vector<bool> enable_pass_active_;
   std::vector<bool> disable_pass_active_;
 };

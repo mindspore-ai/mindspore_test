@@ -56,24 +56,12 @@ void GraphKernelPassManager::Add(const opt::PassPtr &pass, unsigned int pass_lev
     // if it meets the condition to enable, check whether it's in the disabled list.
     auto [match, idx] = pass_in_list(flags_.disable_pass);
     enable = !match;
-    if (idx < flags_.disable_pass.size()) {
-      if (disable_pass_active_[idx]) {
-        MS_LOG(WARNING) << "More than one graph kernel pass disable by " << flags_.disable_pass[idx] << "!";
-      } else {
-        disable_pass_active_[idx] = true;
-      }
-    }
+    GraphKernelPassChecker::GetInstance().SetDisablePassActive(idx, true);
   } else {
     // if it doesn't meet the condition to enable, check whether it's in the enabled list.
     auto [match, idx] = pass_in_list(flags_.enable_pass);
     enable = match;
-    if (idx < flags_.enable_pass.size()) {
-      if (enable_pass_active_[idx]) {
-        MS_LOG(WARNING) << "More than one graph kernel pass enable by " << flags_.enable_pass[idx] << "!";
-      } else {
-        enable_pass_active_[idx] = true;
-      }
-    }
+    GraphKernelPassChecker::GetInstance().SetEnablePassActive(idx, true);
   }
 
   passes_.push_back(pass);
@@ -90,27 +78,7 @@ std::string GraphKernelPassManager::GetPassFullname(size_t pass_id, const opt::P
   return full_name;
 }
 
-void GraphKernelPassManager::PassFlagsValidation() const {
-  for (size_t i = 0; i < enable_pass_active_.size(); ++i) {
-    if (enable_pass_active_[i]) {
-      continue;
-    }
-
-    MS_LOG(WARNING) << "graph kernel pass enable flag \"" << flags_.enable_pass[i] << "\" is not valid!";
-  }
-
-  for (size_t i = 0; i < disable_pass_active_.size(); ++i) {
-    if (disable_pass_active_[i]) {
-      continue;
-    }
-
-    MS_LOG(WARNING) << "graph kernel pass disable flag \"" << flags_.disable_pass[i] << "\" is not valid!";
-  }
-}
-
 bool GraphKernelPassManager::Run(const FuncGraphPtr &func_graph) const {
-  PassFlagsValidation();
-
   bool changed = false;
   for (size_t i = 0; i < passes_.size(); i++) {
     auto pass_name = GetPassFullname(i, passes_[i]);
@@ -143,5 +111,44 @@ bool GraphKernelPassManager::RunPass(const FuncGraphPtr &func_graph, size_t pass
   std::chrono::duration<double, std::micro> cost = stop_time - start_time;
   MS_LOG(INFO) << "Run graph kernel pass " + GetPassFullname(pass_id, pass) + " in " << cost.count() << " us";
   return changed;
+}
+
+void GraphKernelPassChecker::SetEnablePassActive(size_t index, bool value) {
+  if (index < GraphKernelFlags::GetInstance().enable_pass.size()) {
+    if (enable_pass_active_[index]) {
+      MS_LOG(WARNING) << "More than one graph kernel pass enable by "
+                      << GraphKernelFlags::GetInstance().enable_pass[index] << "!";
+    } else {
+      enable_pass_active_[index] = value;
+    }
+  }
+}
+void GraphKernelPassChecker::SetDisablePassActive(size_t index, bool value) {
+  if (index < GraphKernelFlags::GetInstance().disable_pass.size()) {
+    if (disable_pass_active_[index]) {
+      MS_LOG(WARNING) << "More than one graph kernel pass disable by "
+                      << GraphKernelFlags::GetInstance().disable_pass[index] << "!";
+    } else {
+      disable_pass_active_[index] = value;
+    }
+  }
+}
+
+void GraphKernelPassChecker::PassFlagsValidation() {
+  for (size_t i = 0; i < enable_pass_active_.size(); ++i) {
+    if (enable_pass_active_[i]) {
+      continue;
+    }
+    MS_LOG(WARNING) << "graph kernel pass enable flag \"" << GraphKernelFlags::GetInstance().enable_pass[i]
+                    << "\" is not valid!";
+  }
+
+  for (size_t i = 0; i < disable_pass_active_.size(); ++i) {
+    if (disable_pass_active_[i]) {
+      continue;
+    }
+    MS_LOG(WARNING) << "graph kernel pass disable flag \"" << GraphKernelFlags::GetInstance().disable_pass[i]
+                    << "\" is not valid!";
+  }
 }
 }  // namespace mindspore::graphkernel
