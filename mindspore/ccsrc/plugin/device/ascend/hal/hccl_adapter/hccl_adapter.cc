@@ -17,6 +17,7 @@
 #include <dlfcn.h>
 #include <map>
 #include <algorithm>
+#include <sstream>
 #define google ascend_private
 #include "common/opskernel/ops_kernel_info_store.h"
 #include "common/opskernel/ops_kernel_builder.h"
@@ -99,6 +100,8 @@ void HcclAdapter::InitPlugin() {
   finalize_hccl_comm_ = DlsymFuncObj(HcclCommDestroy, plugin_handle_);
   single_op_hccl_get_rank_id_ = DlsymFuncObj(HcclGetRankId, plugin_handle_);
   single_op_hccl_get_rank_size_ = DlsymFuncObj(HcclGetRankSize, plugin_handle_);
+  hccl_get_comm_async_error_ = DlsymFuncObj(HcclGetCommAsyncError, plugin_handle_);
+  hccl_get_error_string_ = DlsymFuncObj(HcclGetErrorString, plugin_handle_);
   launch_hccl_broadcast_ = DlsymFuncObj(HcclBroadcast, plugin_handle_);
   launch_hccl_all_reduce_ = DlsymFuncObj(HcclAllReduce, plugin_handle_);
   launch_hccl_reduce_ = DlsymFuncObj(HcclReduce, plugin_handle_);
@@ -251,6 +254,33 @@ bool HcclAdapter::InitHccl(uint32_t device_id, std::string_view rank_id, std::st
 
   init_flag_ = true;
   MS_LOG(INFO) << "Init hccl adapter success.";
+  return true;
+}
+
+bool HcclAdapter::HcclWatchdogThread(HcclComm comm, std::string *error_info) {
+  if (!init_flag_) {
+    MS_LOG(INFO) << "Hccl has never been inited, skip.";
+    return true;
+  }
+  CheckExcutionMode();
+  if (hccl_get_comm_async_error_ == nullptr) {
+    MS_LOG(INFO) << "Hccl has never been inited, skip.";
+    return true;
+  }
+  if (hccl_get_error_string_ == nullptr) {
+    MS_LOG(INFO) << "Hccl has never been inited, skip.";
+    return true;
+  }
+  HcclResult hccl_async_error;
+  (void)hccl_get_comm_async_error_(comm, &hccl_async_error);
+  MS_LOG(DEBUG) << "hccl_get_comm_async_error_ res: " << hccl_async_error;
+  if (hccl_async_error != HCCL_SUCCESS) {
+    std::ostringstream oss;
+    oss << "Hccl get comm async error failed, error code is: " << hccl_async_error
+        << ", detail info: " << hccl_get_error_string_(hccl_async_error);
+    *error_info = oss.str();
+    return false;
+  }
   return true;
 }
 

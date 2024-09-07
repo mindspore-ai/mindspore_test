@@ -62,6 +62,8 @@ ORIGIN_METHOD(HcclBarrier, HcclResult, HcclComm, aclrtStream);
 ORIGIN_METHOD(HcclBatchSendRecv, HcclResult, HcclSendRecvItem *, uint32_t, HcclComm, aclrtStream);
 ORIGIN_METHOD(HcclCommResume, HcclResult, HcclComm)
 
+ORIGIN_METHOD(HcclGetCommAsyncError, HcclResult, HcclComm, HcclResult *);
+ORIGIN_METHOD(HcclGetErrorString, const char *, HcclResult);
 ORIGIN_METHOD(HcclCommInitClusterInfo, HcclResult, const char *, uint32_t, HcclComm *);
 ORIGIN_METHOD(HcclCommDestroy, HcclResult, HcclComm);
 ORIGIN_METHOD(HcclGetRankId, HcclResult, void *, uint32_t *);

@@ -1140,6 +1140,11 @@ bool GeGraphExecutor::RunGraph(const FuncGraphPtr &graph, const std::vector<tens
   MS_EXCEPTION_IF_NULL(graph);
   auto graph_name = GetGraphName(graph);
   uint64_t start_time = profiler::GetClockSyscnt();
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
+  if (ms_context->get_param<bool>(MS_CTX_ENABLE_HCCL_WATCHDOG)) {
+    MsException::Instance().CheckException();
+  }
   DoAsyncCkpt(graph);
   if (IsEnableRefMode()) {
     if (!RunGraphRefMode(graph, inputs)) {

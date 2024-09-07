@@ -25,6 +25,7 @@ HcclAdapter &HcclAdapter::GetInstance() {
 bool HcclAdapter::InitHccl(uint32_t, std::string_view) { return true; }
 bool HcclAdapter::InitHccl(uint32_t, std::string_view, std::string_view, HcclMode) { return true; }
 bool HcclAdapter::FinalizeHccl() { return true; }
+bool HcclAdapter::HcclWatchdogThread(HcclComm comm, std::string *error_info) { return true; }
 HcclResult HcclAdapter::HcclCreateGroup(const std::string &, uint32_t, uint32_t *) const { return HCCL_SUCCESS; }
 HcclResult HcclAdapter::HcclDestroyGroup(const std::string &) const { return HCCL_SUCCESS; }
 HcclResult HcclAdapter::HcclGetRankId(const std::string &, uint32_t *) const { return HCCL_SUCCESS; }

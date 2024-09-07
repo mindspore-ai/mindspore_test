@@ -41,24 +41,24 @@ HcclResult hcom_unbind_model(rtModel_t model) { return HCCL_SUCCESS; }
 
 /* allgather功能实现 */
 HcclResult hcom_all_gather(const char *tag, void *inputPtr, void *outputPtr, u64 inputCount, HcclDataType dataType,
-                             const char *group, rtStream_t stream) {
+                           const char *group, rtStream_t stream) {
   return HCCL_SUCCESS;
 }
 
 /* allreduce功能实现 */
 HcclResult hcom_all_reduce(const char *tag, void *inputPtr, void *outputPtr, u64 count, HcclDataType dataType,
-                             HcclReduceOp op, const char *group, rtStream_t stream) {
+                           HcclReduceOp op, const char *group, rtStream_t stream) {
   return HCCL_SUCCESS;
 }
 
 /* broadcas功能实现 */
 HcclResult hcom_broadcast(const char *tag, void *ptr, u64 count, HcclDataType dataType, u32 root, const char *group,
-                            rtStream_t stream) {
+                          rtStream_t stream) {
   return HCCL_SUCCESS;
 }
 /* reduce_scatter功能实现 */
 HcclResult hcom_reduce_scatter(const char *tag, void *inputPtr, void *outputPtr, u64 count, HcclDataType dataType,
-                                 HcclReduceOp op, const char *group, rtStream_t stream) {
+                               HcclReduceOp op, const char *group, rtStream_t stream) {
   return HCCL_SUCCESS;
 }
 
@@ -75,14 +75,10 @@ HcclResult HcomGetRankId(const char *group, u32 *rankId) { return HCCL_SUCCESS; 
 HcclResult hcom_python_get_rank_id(u32 *rankId) { return HCCL_SUCCESS; }
 
 /* 获取本rank的id */
-HcclResult HcomGetWorldRankFromGroupRank(const char *group, u32 groupRank, u32 *worldRank) {
-  return HCCL_SUCCESS;
-}
+HcclResult HcomGetWorldRankFromGroupRank(const char *group, u32 groupRank, u32 *worldRank) { return HCCL_SUCCESS; }
 
 /* 获取通信域的rank个数 */
-HcclResult HcomGetGroupRankFromWorldRank(u32 worldRank, const char *group, u32 *groupRank) {
-  return HCCL_SUCCESS;
-}
+HcclResult HcomGetGroupRankFromWorldRank(u32 worldRank, const char *group, u32 *groupRank) { return HCCL_SUCCESS; }
 
 /* 创建group */
 HcclResult HcomCreateGroup(const char *group, u32 rankNum, u32 *rankIds) { return HCCL_SUCCESS; }
@@ -92,20 +88,20 @@ HcclResult HcomDestroyGroup(const char *group) { return HCCL_SUCCESS; }
 
 /* 发送消息 */
 HcclResult hcom_send(const char *tag, void *inputPtr, u64 count, HcclDataType dataType, u32 destRank, u32 srTag,
-                       const char *group, rtStream_t stream) {
+                     const char *group, rtStream_t stream) {
   return HCCL_SUCCESS;
 }
 
 /* 接收消息 */
 HcclResult hcom_receive(const char *tag, void *outputPtr, u64 count, HcclDataType dataType, u32 srcRank, u32 srTag,
-                          const char *group, rtStream_t stream) {
+                        const char *group, rtStream_t stream) {
   return HCCL_SUCCESS;
 }
 
 /* 获取梯度参数切分方案 */
 HcclResult hcom_get_split_strategy(const char *group, const struct model_feature *feature, u32 maxSegmentNum,
-                                     u32 *segmentNum, u32 *segmentIdx, GradSplitForceMode force,
-                                     OriginalGraphShapeType shapeType) {
+                                   u32 *segmentNum, u32 *segmentIdx, GradSplitForceMode force,
+                                   OriginalGraphShapeType shapeType) {
   return HCCL_SUCCESS;
 }
 
@@ -119,13 +115,9 @@ HcclResult hcom_set_split_strategy_by_size(const char *group, u32 segmentNum, co
   return HCCL_SUCCESS;
 }
 
-HcclResult HcclCommInitClusterInfo(const char *clusterInfo, uint32_t rank, HcclComm *comm) {
-  return HCCL_SUCCESS;
-}
+HcclResult HcclCommInitClusterInfo(const char *clusterInfo, uint32_t rank, HcclComm *comm) { return HCCL_SUCCESS; }
 
-HcclResult HcclGetRootInfo(HcclRootInfo *rootInfo) {
-  return HCCL_SUCCESS;
-}
+HcclResult HcclGetRootInfo(HcclRootInfo *rootInfo) { return HCCL_SUCCESS; }
 
 HcclResult HcclCommInitRootInfo(uint32_t nRanks, const HcclRootInfo *rootInfo, uint32_t rank, HcclComm *comm) {
   return HCCL_SUCCESS;
@@ -150,28 +142,28 @@ HcclResult HcclGetRankSize(HcclComm comm, uint32_t *rankSize) { return HCCL_SUCC
 HcclResult HcclGetRankId(HcclComm comm, uint32_t *rank) { return HCCL_SUCCESS; }
 
 HcclResult HcclAllReduce(void *sendBuf, void *recvBuf, uint64_t count, HcclDataType dataType, HcclReduceOp op,
-                                HcclComm comm, aclrtStream stream) {
+                         HcclComm comm, aclrtStream stream) {
   return HCCL_SUCCESS;
 }
 
 HcclResult HcclBroadcast(void *buf, uint64_t count, HcclDataType dataType, uint32_t root, HcclComm comm,
-                                aclrtStream stream) {
+                         aclrtStream stream) {
   return HCCL_SUCCESS;
 }
 
-HcclResult HcclReduceScatter(void *sendBuf, void *recvBuf, uint64_t recvCount, HcclDataType dataType,
-                                    HcclReduceOp op, HcclComm comm, aclrtStream stream) {
+HcclResult HcclReduceScatter(void *sendBuf, void *recvBuf, uint64_t recvCount, HcclDataType dataType, HcclReduceOp op,
+                             HcclComm comm, aclrtStream stream) {
   return HCCL_SUCCESS;
 }
 
 HcclResult HcclAllGather(void *sendBuf, void *recvBuf, uint64_t sendCount, HcclDataType dataType, HcclComm comm,
-                                aclrtStream stream) {
+                         aclrtStream stream) {
   return HCCL_SUCCESS;
 }
 
-HcclResult HcclCommDestroy(HcclComm comm) {
-  return HCCL_SUCCESS;
-}
+HcclResult HcclCommDestroy(HcclComm comm) { return HCCL_SUCCESS; }
+
+HcclResult HcclGetCommName(HcclComm comm, char *commName) { return HCCL_SUCCESS; }
 
 #ifdef __cplusplus
 }

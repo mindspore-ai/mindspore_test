@@ -42,6 +42,8 @@ class EXPORT_WRAPPER AscendCollectiveCommLib : public CollectiveCommunicationLib
 
   bool Initialize(uint32_t global_rank, uint32_t global_rank_size, uint32_t local_rank_id) override;
 
+  bool InitializeWatchDog(uint32_t global_rank_id, uint32_t global_rank_size, uint32_t local_rank_id) override;
+
   bool InitializeHccl();
 
   bool CreateCommunicationGroup(const std::string &group_name, const std::vector<uint32_t> &group_ranks,
@@ -70,6 +72,7 @@ class EXPORT_WRAPPER AscendCollectiveCommLib : public CollectiveCommunicationLib
   std::string HcclInnerCommName(const std::string &group_name);
 
   bool DestroyHcclComm();
+  std::map<std::string, HcclComm> GetAllCommunicationGroup();
 
   bool ResumeHcclComm() override;
 

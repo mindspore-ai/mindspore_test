@@ -56,6 +56,10 @@ class CollectiveCommunicationLib {
   // method. But collective communication libraries on device side needs these inputs passed by the caller.
   virtual bool Initialize(uint32_t global_rank = UINT32_MAX, uint32_t global_rank_size = UINT32_MAX,
                           uint32_t local_rank_id = UINT32_MAX) = 0;
+  virtual bool InitializeWatchDog(uint32_t global_rank_id = UINT32_MAX, uint32_t global_rank_size = UINT32_MAX,
+                                  uint32_t local_rank_id = UINT32_MAX) {
+    return true;
+  }
 
   // Finalize collecitve communication library.
   virtual bool Finalize();
