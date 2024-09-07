@@ -130,6 +130,30 @@ bool IsConstant(const ValuePtr &value) {
   }
   return true;
 }
+
+GradParamPtr ConstructCustomBpropInputs(const CustomContext &context) {
+  MS_LOG(DEBUG) << "Begin ConstructCustomBpropInputs";
+  py::gil_scoped_acquire gil_acquire;
+  auto fake_prim = std::make_shared<PrimitivePy>(prim::kPrimHookBackward->name());
+  fake_prim->set_bprop_cls_name(context.cell_name);
+  fake_prim->SetHookFn(context.bprop_fn, HookType::kCellCustomBprop);
+  (void)fake_prim->AddAttr("cell_name", MakeValue(context.cell_name));
+  (void)fake_prim->AddAttr(parse::CUSTOM_BPROP_NAME, MakeValue(true));
+  auto op_grad_info = std::make_shared<OpGradInfo>();
+  op_grad_info->op_prim = fake_prim;
+  op_grad_info->is_need_recompute = context.is_recompute;
+  op_grad_info->input_value = context.inputs;
+  std::transform(
+    context.inputs.begin(), context.inputs.end(), std::back_inserter(op_grad_info->input_abs),
+    [](const auto &value) { return PyNativeAlgo::Common::SetAbstractValueToAnyValue(value->ToAbstract()); });
+  op_grad_info->out_value = context.output;
+  op_grad_info->out_abs = PyNativeAlgo::Common::SetAbstractValueToAnyValue(context.output->ToAbstract());
+  op_grad_info->input_value_grad_type = context.input_value_grad_type;
+  op_grad_info->weight_size = context.weight_size;
+  auto grad_param = std::make_shared<GradParam>(op_grad_info, true);
+  MS_LOG(DEBUG) << "End ConstructCustomBpropInputs";
+  return grad_param;
+}
 }  // namespace
 
 AnfNodePtr IrFunctionNode::HyperAdd(const AnfNodePtr &left_node, const AnfNodePtr &right_node) {
@@ -402,6 +426,11 @@ void IrGrad::UpdateOutputNodeOfTopCell(const ValuePtr &sens_out) {
   MS_LOG(DEBUG) << "Real output of top cell is " << PyNativeAlgo::Common::GetIdByValue(sens_out);
   ad_param()->sens_value_ = sens_out;
   UpdateSensParameter(ad_param()->sens_value_);
+}
+
+void IrGrad::CallCustomBprop(const CustomContext &context) {
+  auto grad_param = ConstructCustomBpropInputs(context);
+  (void)KPynativeOp(grad_param);
 }
 
 FuncGraphPtr IrGrad::Finish(const tensor::BaseTensorPtrList &weights, const std::vector<size_t> &grad_position,

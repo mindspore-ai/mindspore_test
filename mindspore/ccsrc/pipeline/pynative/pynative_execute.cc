@@ -225,6 +225,8 @@ bool PyNativeExecutor::enable_grad() const { return grad_executor()->enable_grad
 
 void PyNativeExecutor::set_enable_grad(bool enable_grad) const { grad_executor()->set_enable_grad(enable_grad); }
 
+bool PyNativeExecutor::RequiresGrad() const { return grad_executor()->RequiresGrad(); }
+
 py::object PyNativeExecutor::CheckAlreadyRun(const prim::GradOperationPtr &grad, const py::object &obj,
                                              const py::object &weights, const py::object &grad_hash_id,
                                              const py::args &args) const {
@@ -253,6 +255,11 @@ py::object PyNativeExecutor::RunGrad(const prim::GradOperationPtr &grad, const p
 py::object PyNativeExecutor::GradJit(const py::object &out, const py::args &args) const {
   const auto &ret = grad_executor()->jit()->GradJit(out, args);
   return ret;
+}
+
+void PyNativeExecutor::CallCustomBprop(const py::object &cell_obj, const py::object &out, const py::args &args) const {
+  MS_EXCEPTION_IF_NULL(grad_executor()->top_cell());
+  grad_executor()->CallCustomBprop(cell_obj, out, args);
 }
 
 void PyNativeExecutor::SetMixedPrecisionType(const MixedPrecisionType mix_type, bool is_push) const {
@@ -350,11 +357,13 @@ void RegPyNativeExecutor(const py::module *m) {
     .def("end_graph", &PyNativeExecutor::EndGraph, "pynative end a graph.")
     .def("check_run", &PyNativeExecutor::CheckAlreadyRun, "pynative check graph run before.")
     .def("grad_jit", &PyNativeExecutor::GradJit, "pynative grad for jit.")
+    .def("call_custom_bprop", &PyNativeExecutor::CallCustomBprop, "pynative custom bprop")
     .def("clear_res", &PyNativeExecutor::ClearRes, "pynative clear exception res.")
     .def("sync", &PyNativeExecutor::Sync, "pynative sync stream.")
     .def("grad", &PyNativeExecutor::RunGrad, "pynative executor run grad.")
     .def("grad_flag", &PyNativeExecutor::grad_flag, "pynative grad flag")
     .def("enable_grad", &PyNativeExecutor::enable_grad, "pynative enable grad, used for with no_grad")
+    .def("requires_grad", &PyNativeExecutor::RequiresGrad, "Is current need grad")
     .def("set_grad_flag", &PyNativeExecutor::set_grad_flag, py::arg("flag") = py::bool_(false),
          "Executor set grad flag.")
     .def("set_enable_grad", &PyNativeExecutor::set_enable_grad, py::arg("enable_grad") = py::bool_(true),

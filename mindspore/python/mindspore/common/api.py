@@ -1509,9 +1509,23 @@ class _PyNativeExecutor:
         """
         return self._executor.grad_jit(output, *args)
 
+    def call_custom_bprop(self, obj, output, *args, **kwargs):
+        """
+        Call custom bprop to build variable for cell bprop.
+        Args:
+            obj (Cell): The function or cell instance.
+            output (Tensor/tuple/list): Function or cell output object.
+            args (tuple): Function or cell input arguments.
+            kwargs (dict): keyword arguments.
+
+        Return:
+            None.
+        """
+        return self._executor.call_custom_bprop(obj, output, *args, *(kwargs.values()))
+
     def grad_flag(self):
         """
-        The flag of building grad graph.
+        The flag of whether the net building grad graph.
 
         Return:
             bool, whether building grad graph.
@@ -1544,7 +1558,7 @@ class _PyNativeExecutor:
 
     def enable_grad(self):
         """
-        The global flag whether needing to calculate gradient.
+        The global flag that whether need to calculate gradient use in no_grad.
 
         Return:
             bool, whether needing to calculate gradient.
@@ -1562,6 +1576,18 @@ class _PyNativeExecutor:
             None.
         """
         self._executor.set_enable_grad(flag)
+
+    def requires_grad(self):
+        """
+        When both enable_grad is true and grad_flag is true, that the flag requires_grad will be true.
+
+        Args:
+            flag (bool): Specifying whether calculating gradient.
+
+        Return:
+            None.
+        """
+        return self._executor.requires_grad()
 
     def set_jit_compile_status(self, status, phase):
         """

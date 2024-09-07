@@ -64,6 +64,7 @@ class PyNativeExecutor : public std::enable_shared_from_this<PyNativeExecutor> {
   void set_grad_flag(bool flag) const;
   bool enable_grad() const;
   void set_enable_grad(bool enable_grad) const;
+  bool RequiresGrad() const;
   void set_py_exe_path(const py::object &py_exe_path) const;
   void set_kernel_build_server_dir(const py::object &kernel_build_server_dir) const;
   void SetHookCellId(const py::object &cell) const;
@@ -72,6 +73,7 @@ class PyNativeExecutor : public std::enable_shared_from_this<PyNativeExecutor> {
   py::object RunGrad(const prim::GradOperationPtr &grad, const py::object &cell, const py::object &weights,
                      const py::object &grad_position, const py::args &args) const;
   py::object GradJit(const py::object &out, const py::args &args) const;
+  void CallCustomBprop(const py::object &cell_obj, const py::object &out, const py::args &args) const;
   void set_forward_use_dynamic_shape_process(bool flag) const;
   void SetDynamicInput(const py::object &obj, const py::args &args) const;
   py::object GetDynamicInput(const py::object &actual_input) const;

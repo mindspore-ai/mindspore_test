@@ -100,6 +100,7 @@ class GradExecutor {
   py::object RunGradGraph();
   CNodePtr ConstructForwardGraph(const FrontendOpRunInfoPtr &op_run_info) const;
   void RecordForwardGraph(const FrontendOpRunInfoPtr &op_run_info) const;
+  void RecordCustomBprop(const autograd::CustomContext &context) const;
   void RecordForwardGraphForInput(const ValuePtr &value, const string &input_id,
                                   const abstract::AbstractBasePtr &param_abs);
   void RecordNestedGraph(const FuncGraphPtr &first_grad_fg, const GraphInfoPtr &inner_graph_info,
@@ -116,6 +117,7 @@ class GradExecutor {
                                         const py::args &args);
   bool ReplacePipelineTopCellForwardOutput();
   void ProcessOpGradInfo(const FrontendOpRunInfoPtr &op_run_info) const;
+  void CallCustomBprop(const py::object &obj, const py::object out, const py::args &args);
   AnfNodePtr GetInput(const ValuePtr &v, const string &obj_id) const;
   AnfNodePtr GetParamInput(const ValuePtr &v, const std::string &id) const;
   void ClearRes();

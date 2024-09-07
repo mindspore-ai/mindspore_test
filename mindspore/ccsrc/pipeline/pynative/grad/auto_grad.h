@@ -25,6 +25,7 @@
 #include "ir/anf.h"
 #include "pipeline/pynative/base.h"
 #include "pipeline/pynative/grad/ir/ir_bprop.h"
+#include "pipeline/pynative/grad/custom_function.h"
 
 namespace mindspore::pynative::autograd {
 using MetaGradInfoList = OrderedMap<tensor::BaseTensorPtr, AutoGradMetaDataPtr>;
@@ -46,6 +47,9 @@ class AutoGrad {
 
   // Update top cell output, record last_node
   virtual void UpdateOutputNodeOfTopCell(const ValuePtr &sens_out) {}
+
+  // Call custom bprop procedure
+  virtual void CallCustomBprop(const CustomContext &context) {}
 
   // Store grad meta grad info
   MetaGradInfoList &param_meta_grad_info() { return param_meta_grad_info_; }

@@ -1572,6 +1572,16 @@ void DataConvert::TransformValueNodeBaseTensorToTensor(const ValueNodePtr &value
   value_node->set_value(std::make_shared<tensor::Tensor>(*tensor));
 }
 
+ValuePtr DataConvert::ValueListToValue(const ValuePtrList &values, const abstract::AbstractBasePtr &abs) {
+  if (values.size() == kSizeZero) {
+    MS_LOG(EXCEPTION) << "tensors size should not be empty!";
+  }
+  if (values.size() == kSizeOne && !abs->isa<abstract::AbstractSequence>()) {
+    return values[kIndex0];
+  }
+  return std::make_shared<ValueTuple>(values);
+}
+
 FrontendOpRunInfoPtr PyBoost::Init(const PrimitivePtr &prim, const py::list &args) {
   const auto &pynative_executor = Common::GetPyNativeExecutor();
   const auto &forward_executor = pynative_executor->forward_executor();

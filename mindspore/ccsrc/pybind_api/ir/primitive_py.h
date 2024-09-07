@@ -122,7 +122,11 @@ class PrimitivePyAdapter {
   explicit PrimitivePyAdapter(const py::str &name);
   PrimitivePyAdapter(const PrimitivePyAdapter &adapter);
   PrimitivePyAdapter &operator=(const PrimitivePyAdapter &other);
-  ~PrimitivePyAdapter() = default;
+  ~PrimitivePyAdapter() {
+    // cppcheck-suppress unreadVariable
+    py::gil_scoped_acquire acquire_gil;
+    hook_fn_ = py::none();
+  }
   const mindspore::HashMap<std::string, ValuePtr> &attrs() const { return attrs_; }
   void AddPyAttr(const py::str &name, const py::object &obj);
   void DelPyAttr(const py::str &name);
