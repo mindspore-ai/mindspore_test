@@ -50,7 +50,7 @@ lite::STATUS CheckSubdims(const std::string &first_subdims, const std::string &s
         second_subdims.substr(second_subdims.length() - min_dim) ||
       first_subdims.substr(first_subdims.length() - min_dim) !=
         output_subdims.substr(output_subdims.length() - min_dim) ||
-      max_subdims.at(0) != output_subdims.at(0)) {
+      max_subdims.substr(0, 1) != output_subdims.substr(0, 1)) {
     return RET_ERROR;
   }
   return RET_OK;
