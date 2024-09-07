@@ -202,7 +202,7 @@ IrGrad::IrGrad(const std::vector<ValuePtr> &input_param_values, const AbstractBa
     auto input_parameter = ad_param()->fg_->add_parameter();
     input_parameter->set_abstract(abs_list[i]);
     input_parameter->set_name(input_parameter->UniqueName());
-    TraceGuard trace_guard(std::make_shared<TraceCopy>(input_parameter->debug_info()));
+    TraceGuard trace_guard(MakeTraceInfo<TraceCopy>(input_parameter->debug_info()));
     auto tape_parameter = ad_param()->tape_->add_parameter();
     tape_parameter->set_abstract(abs_list[i]);
 
@@ -622,7 +622,9 @@ void IrGrad::SetSensAndWeights(const tensor::BaseTensorPtrList &weights, bool ha
   if (has_sens_arg) {
     sens_param = ad_param()->tape_->add_parameter();
     sens_param->set_name(sens_param->UniqueName());
-    sens_param->debug_info()->set_name("sens");
+    if (sens_param->debug_info() != nullptr) {
+      sens_param->debug_info()->set_name("sens");
+    }
     sens_param->set_abstract(sens_abstract);
   }
   // Update dout for dout
@@ -874,9 +876,11 @@ void IrGrad::UpdateTapeParameter(const tensor::BaseTensorPtr &tensor) const {
   if (param_info != nullptr) {
     const auto &param_name = param_info->name();
     p->set_name(param_name);
-    p->debug_info()->set_name(param_name);
+    if (p->debug_info() != nullptr) {
+      p->debug_info()->set_name(param_name);
+    }
   }
-  TraceGuard trace_guard(std::make_shared<TraceCopy>(p->debug_info()));
+  TraceGuard trace_guard(MakeTraceInfo<TraceCopy>(p->debug_info()));
   p->set_default_param(tensor);
   p->set_abstract(PyNativeAlgo::Common::SetAbstractValueToAnyValue(tensor->ToAbstract()));
 }

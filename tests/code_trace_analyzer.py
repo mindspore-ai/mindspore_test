@@ -67,7 +67,15 @@ class CodeTraceAnalyzer:
                 raise ValueError(f"{fn} must be a Function")
             self.extra_fns.append(fn)
 
-    def analyze(self):
+    def check_fullname(self, op_name, number):
+        self._read_ir_content()
+        for i in range(number):
+            if re.search(op_name + str(i), self.ir_content):
+                continue
+            return False
+        return True
+
+    def analyze(self, lines_not_in_count=0):
         """Start to analyze the code trace accuracy and return the accuracy."""
         if self.analyzed:
             raise ValueError(f"analyze() can only call once.")
@@ -85,7 +93,8 @@ class CodeTraceAnalyzer:
             self._check_function(fn)
 
         self.analyzed = True
-        self.accuracy = self.traced_code_lines / (self.code_lines - self.ignore_code_lines)
+        self.accuracy = self.traced_code_lines / \
+            (self.code_lines - self.ignore_code_lines - lines_not_in_count)
         self.cost_time = time.time() - start_time
         return self.accuracy
 

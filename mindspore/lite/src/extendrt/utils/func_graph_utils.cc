@@ -363,7 +363,7 @@ std::tuple<FuncGraphPtr, AnfNodePtrList, AnfNodePtrList> FuncGraphUtils::Transfo
     MS_EXCEPTION_IF_NULL(lst[0]);
     MS_EXCEPTION_IF_NULL(lst[0]->cast<CNodePtr>());
     MS_EXCEPTION_IF_NULL(lst[0]->cast<CNodePtr>()->func_graph());
-    TraceGuard guard(std::make_shared<TraceSegmentTransform>(lst[0]->cast<CNodePtr>()->func_graph()->debug_info()));
+    TraceGuard guard(MakeTraceInfo<TraceSegmentTransform>(lst[0]->cast<CNodePtr>()->func_graph()->debug_info()));
     fg = std::make_shared<FuncGraph>();
   }
   AnfNodePtrList inputs;
@@ -396,7 +396,7 @@ std::tuple<FuncGraphPtr, AnfNodePtrList, AnfNodePtrList> FuncGraphUtils::Transfo
       (void)std::transform(std::begin(inps) + 1, std::end(inps), std::back_inserter(args),
                            [&fg, &inputs, &eqv](const AnfNodePtr &a) { return RefSubGraphNode(fg, a, &inputs, &eqv); });
     }
-    TraceGuard tg(std::make_shared<TraceSegmentTransform>(n->debug_info()));
+    TraceGuard tg(MakeTraceInfo<TraceSegmentTransform>(n->debug_info()));
     MS_EXCEPTION_IF_NULL(fg);
     eqv[n] = fg->NewCNode(args);
     eqv[n]->set_abstract(n->abstract());

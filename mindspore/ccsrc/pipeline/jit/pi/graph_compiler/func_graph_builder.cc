@@ -108,8 +108,9 @@ ir::NodePtr FuncGraphBuilder::Mutate_(const ir::ParameterPtr &node) {
   auto param = std::make_shared<Parameter>(func_graph_);
   MS_EXCEPTION_IF_NULL(param);
   param->set_name(name);
-  MS_EXCEPTION_IF_NULL(param->debug_info());
-  param->debug_info()->set_name(name);
+  if (param->debug_info() != nullptr) {
+    param->debug_info()->set_name(name);
+  }
   UpdateLocation(param, node);
   auto category = node->GetCategory();
   // kwargs
@@ -123,7 +124,9 @@ ir::NodePtr FuncGraphBuilder::Mutate_(const ir::ParameterPtr &node) {
     auto abs_ref = param->abstract()->cast<abstract::AbstractRefPtr>();
     auto new_name = name + "_" + abs_ref->ref_key_value()->ToString();
     param->set_name(new_name);
-    param->debug_info()->set_name(new_name);
+    if (param->debug_info() != nullptr) {
+      param->debug_info()->set_name(new_name);
+    }
   }
   auto defalut_value = node->GetDefaultValue();
   if (defalut_value != nullptr) {

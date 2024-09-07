@@ -28,7 +28,7 @@ using FuncGraphImpl = mindspore::FuncGraph;
 MIND_API FuncGraphPtr CloneGraph(const FuncGraphPtr &func_graph) {
   MS_EXCEPTION_IF_NULL(func_graph);
   auto fg_impl = ToImpl<FuncGraphImpl>(func_graph);
-  Cloner cloner({fg_impl}, false, true, true, std::make_shared<TraceCopy>(), nullptr);
+  Cloner cloner({fg_impl}, false, true, true, MakeTraceInfo<TraceCopy>(), nullptr);
   auto cloned_fg = cloner[fg_impl];
   return ToWrapper<api::FuncGraph>(cloned_fg);
 }

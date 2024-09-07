@@ -39,6 +39,16 @@ Value Range:
 COMPILE_PROFILE_FINISH_ACTION = ''
 
 """
+Name: DEBUG_MODE
+Function: Whether to compile in debug mode.
+Value Range:
+    "debug": Debug mode
+    "release": Release mode
+    Default: "debug"
+"""
+COMPILE_DEBUG_MODE = ''
+
+"""
 Name: FALLBACK_SUPPORT_LIST_DICT_INPLACE
 Function: Whether to support the inplace operation of list and dict.
 Value Range:
@@ -260,6 +270,7 @@ STRICT_CHECK_PARENT_CONTEXT = ''
 __all__ = [
     "COMPILE_PROFILE",
     "COMPILE_PROFILE_FINISH_ACTION",
+    "COMPILE_DEBUG_MODE",
     "FALLBACK_SUPPORT_LIST_DICT_INPLACE",
     "FALLBACK_FORCE_ANY",
     "IF_PARALLEL_CALL",

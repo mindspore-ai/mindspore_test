@@ -88,7 +88,8 @@ static constexpr size_t kMaxSeqRecursiveDepth = 6;
 void CheckInputsSize(const CNodePtr &cnode, size_t expect_size) {
   if (cnode->size() != expect_size) {
     std::string op_name = GetCNodeFuncName(cnode);
-    MS_LOG(INTERNAL_EXCEPTION) << op_name << " should have " << expect_size << " inputs, but got " << cnode->size();
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, cnode)
+      << op_name << " should have " << expect_size << " inputs, but got " << cnode->size();
   }
 }
 
@@ -147,7 +148,7 @@ class BaseRewriter : protected SimpleRewriter {
  protected:
   virtual AnfNodePtr ConvertPrimitiveCNode(const CNodePtr &cnode) = 0;
   virtual AnfNodePtr ConvertValueNode(const ValueNodePtr &value_node, const ValuePtr &value) = 0;
-  virtual AbstractBasePtr ConvertAbstract(const AbstractBasePtr &abs) = 0;
+  virtual AbstractBasePtr ConvertAbstract(const AbstractBasePtr &abs, const AnfNodePtr &node) = 0;
 
   AnfNodePtr NodeRewrite(const AnfNodePtr &node) override {
     auto new_node = ConvertNode(node);
@@ -209,7 +210,7 @@ class BaseRewriter : protected SimpleRewriter {
         continue;
       }
       // Call abstract converter.
-      auto new_abs = ConvertAbstract(abs);
+      auto new_abs = ConvertAbstract(abs, node);
       if (new_abs != nullptr) {
         node->set_abstract(new_abs);
       }
@@ -596,7 +597,8 @@ class BeforeOptARewriter : public BaseRewriter {
     // Inputs should be [extract_keyword_arg, arg, key, monad]
     const size_t expect_inputs_has_side_effect_size = 4;
     if (node->size() != expect_inputs_size && node->size() != expect_inputs_has_side_effect_size) {
-      MS_LOG(INTERNAL_EXCEPTION) << "The extract_keyword_arg should have 3 or 4 inputs, but got " << node->size();
+      MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, node)
+        << "The extract_keyword_arg should have 3 or 4 inputs, but got " << node->size();
     }
     constexpr size_t key_index = 2;
     return node->input(key_index);
@@ -629,12 +631,13 @@ class BeforeOptARewriter : public BaseRewriter {
     return (this->*(iter->second))(cnode);
   }
 
-  ValuePtr ConvertDictValue(const ValuePtr &value, size_t depth, bool convert_dict, bool *need_convert) const {
+  ValuePtr ConvertDictValue(const ValuePtr &value, const AnfNodePtr &node, size_t depth, bool convert_dict,
+                            bool *need_convert) const {
     MS_EXCEPTION_IF_NULL(value);
     if (depth > kMaxSeqRecursiveDepth) {
       MS_LOG(ERROR) << "value:" << value->ToString();
-      MS_LOG(INTERNAL_EXCEPTION) << "List, tuple and dict nesting is not allowed more than " << kMaxSeqRecursiveDepth
-                                 << " levels.";
+      MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, node)
+        << "List, tuple and dict nesting is not allowed more than " << kMaxSeqRecursiveDepth << " levels.";
     }
     if (value->isa<ValueSequence>()) {
       auto value_seq = value->cast<ValueSequencePtr>();
@@ -642,7 +645,7 @@ class BeforeOptARewriter : public BaseRewriter {
       value_vec.reserve(value_seq->size());
       bool new_need_convert = false;
       for (const auto &element : value_seq->value()) {
-        (void)value_vec.emplace_back(ConvertDictValue(element, depth + 1, convert_dict, &new_need_convert));
+        (void)value_vec.emplace_back(ConvertDictValue(element, node, depth + 1, convert_dict, &new_need_convert));
       }
       if (!new_need_convert) {
         return value;
@@ -660,7 +663,7 @@ class BeforeOptARewriter : public BaseRewriter {
       std::vector<ValuePtr> value_vec;
       value_vec.reserve(keys_values.size());
       for (const auto &element : keys_values) {
-        (void)value_vec.emplace_back(ConvertDictValue(element.second, depth + 1, convert_dict, need_convert));
+        (void)value_vec.emplace_back(ConvertDictValue(element.second, node, depth + 1, convert_dict, need_convert));
       }
       return std::make_shared<ValueTuple>(value_vec);
     }
@@ -672,7 +675,7 @@ class BeforeOptARewriter : public BaseRewriter {
     const auto allow_fallback_runtime = (fallback::GetJitSyntaxLevel() >= kCompatible);
     bool convert_dict = !allow_fallback_runtime || ConvertDictToTuple(value_node, root_graph_);
     bool need_convert = false;
-    auto new_value = ConvertDictValue(value, 0, convert_dict, &need_convert);
+    auto new_value = ConvertDictValue(value, value_node, 0, convert_dict, &need_convert);
     if (need_convert) {
       auto new_node = NewValueNode(new_value);
       new_node->set_debug_info(value_node->debug_info());
@@ -690,11 +693,11 @@ class BeforeOptARewriter : public BaseRewriter {
   }
 
   // AbstractDictionary --> AbstractSequence.
-  AbstractSequencePtr ConvertToAbstractSequence(const AbstractBasePtr &abs, size_t depth) {
+  AbstractSequencePtr ConvertToAbstractSequence(const AbstractBasePtr &abs, const AnfNodePtr &node, size_t depth) {
     if (depth > kMaxSeqRecursiveDepth) {
       MS_LOG(ERROR) << "abs:" << abs->ToString();
-      MS_LOG(INTERNAL_EXCEPTION) << "List, tuple and dict nesting is not allowed more than " << kMaxSeqRecursiveDepth
-                                 << " levels.";
+      MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, node)
+        << "List, tuple and dict nesting is not allowed more than " << kMaxSeqRecursiveDepth << " levels.";
     }
     auto abs_seq = abs->cast<AbstractSequencePtr>();
     if (abs_seq != nullptr) {
@@ -703,7 +706,7 @@ class BeforeOptARewriter : public BaseRewriter {
       // changed_elements maps old element to new element.
       mindspore::HashMap<AbstractBasePtr, AbstractBasePtr> changed_elements;
       for (const auto &element : seq_elements) {
-        auto new_sequence_element = ConvertToAbstractSequence(element, depth + 1);
+        auto new_sequence_element = ConvertToAbstractSequence(element, node, depth + 1);
         if (new_sequence_element != nullptr) {
           (void)changed_elements.emplace(element, new_sequence_element);
         }
@@ -739,7 +742,7 @@ class BeforeOptARewriter : public BaseRewriter {
       std::vector<AbstractBasePtr> elements;
       elements.reserve(dict_elements.size());
       for (const auto &element : dict_elements) {
-        auto new_element = ConvertToAbstractSequence(element.second, depth + 1);
+        auto new_element = ConvertToAbstractSequence(element.second, node, depth + 1);
         if (new_element != nullptr) {
           (void)elements.emplace_back(new_element);
         } else {
@@ -751,9 +754,9 @@ class BeforeOptARewriter : public BaseRewriter {
     return nullptr;
   }
 
-  AbstractBasePtr ConvertAbstract(const AbstractBasePtr &abs) override {
+  AbstractBasePtr ConvertAbstract(const AbstractBasePtr &abs, const AnfNodePtr &node) override {
     // AbstractDictionary --> AbstractSequence.
-    return ConvertToAbstractSequence(abs, 0);
+    return ConvertToAbstractSequence(abs, node, 0);
   }
 
   bool ConvertDictToTuple(const AnfNodePtr &node, const FuncGraphPtr &fg) const {
@@ -781,8 +784,9 @@ std::pair<AnfNodePtr, AnfNodePtr> ExtractKwargsNode(const AnfNodePtr &node) {
     constexpr auto kMakeKwargsArgIndex = 2;
     return std::make_pair(kwarg_node->input(kMakeKwargsKeyIndex), kwarg_node->input(kMakeKwargsArgIndex));
   }
-  MS_LOG(EXCEPTION) << "Extract kwargs only can be used to CNode[make_keyword_arg] or ValueNode(KeywordArg), but got "
-                    << node->DebugString();
+  MS_LOG_WITH_NODE(EXCEPTION, node)
+    << "Extract kwargs only can be used to CNode[make_keyword_arg] or ValueNode(KeywordArg), but got "
+    << node->DebugString();
 }
 
 // TupleGetItem/ListGetItem(sequence, index) -> PyExecute(sequence[index], ...)
@@ -801,8 +805,8 @@ AnfNodePtr ConvertSequenceGetItemInner(const CNodePtr &node) {
   MS_EXCEPTION_IF_NULL(prim);
   const auto &prim_name = prim->name();
   if (node_inputs.size() != node_inputs_size) {
-    MS_LOG(EXCEPTION) << "The size of input to " << prim_name << " should be " << node_inputs_size << " but got "
-                      << node_inputs.size();
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "The size of input to " << prim_name << " should be " << node_inputs_size
+                                      << " but got " << node_inputs.size();
   }
 
   std::vector<AbstractBasePtr> inputs_abs;
@@ -1179,7 +1183,8 @@ class AfterOptARewriter : public BaseRewriter {
     auto list_node_input = GenerateTupleInput(node);
 
     if (!fallback::HasObjInExtraInfoHolder(node->abstract())) {
-      MS_LOG(EXCEPTION) << "MakeList node: " << node->DebugString() << " do not have python list object.";
+      MS_LOG_WITH_NODE(EXCEPTION, node) << "MakeList node: " << node->DebugString()
+                                        << " do not have python list object.";
     }
     auto object = fallback::GetObjFromExtraInfoHolder(node->abstract());
     if (!py::isinstance<py::list>(object)) {
@@ -1247,14 +1252,14 @@ class AfterOptARewriter : public BaseRewriter {
     constexpr size_t max_node_inputs_size = 4;
     size_t inputs_size = node_inputs.size();
     if (inputs_size != min_node_inputs_size && inputs_size != max_node_inputs_size) {
-      MS_LOG(EXCEPTION) << "The size of input to ListInplaceExtend should be " << min_node_inputs_size << " or "
-                        << max_node_inputs_size << " but got " << inputs_size;
+      MS_LOG_WITH_NODE(EXCEPTION, node) << "The size of input to ListInplaceExtend should be " << min_node_inputs_size
+                                        << " or " << max_node_inputs_size << " but got " << inputs_size;
     }
     constexpr size_t node_list_index = 1;
     constexpr size_t node_target_index = 2;
     auto list_input_node = node_inputs[node_list_index];
     if (IsPrimitiveCNode(list_input_node, prim::kPrimMakeList)) {
-      TraceGuard trace_guard(std::make_shared<TraceCopy>(list_input_node->debug_info()));
+      TraceGuard trace_guard(MakeTraceInfo<TraceCopy>(list_input_node->debug_info()));
       auto new_node = ConvertMakeList(list_input_node->cast<CNodePtr>());
       (void)manager_->Replace(list_input_node, new_node);
       list_input_node = new_node;
@@ -1302,8 +1307,8 @@ class AfterOptARewriter : public BaseRewriter {
     constexpr size_t max_node_inputs_size = 5;
     size_t inputs_size = node_inputs.size();
     if (inputs_size != min_node_inputs_size && inputs_size != max_node_inputs_size) {
-      MS_LOG(EXCEPTION) << "The size of input to DictInplaceSetItem should be " << min_node_inputs_size << " or "
-                        << max_node_inputs_size << " but got " << inputs_size;
+      MS_LOG_WITH_NODE(EXCEPTION, node) << "The size of input to DictInplaceSetItem should be " << min_node_inputs_size
+                                        << " or " << max_node_inputs_size << " but got " << inputs_size;
     }
     constexpr size_t node_list_index = 1;
     constexpr size_t node_index_index = 2;
@@ -1351,14 +1356,14 @@ class AfterOptARewriter : public BaseRewriter {
     constexpr size_t max_node_inputs_size = 4;
     size_t inputs_size = node_inputs.size();
     if (inputs_size != min_node_inputs_size && inputs_size != max_node_inputs_size) {
-      MS_LOG(EXCEPTION) << "The size of input to ListInplacePop should be " << min_node_inputs_size << " or "
-                        << max_node_inputs_size << " but got " << inputs_size;
+      MS_LOG_WITH_NODE(EXCEPTION, node) << "The size of input to ListInplacePop should be " << min_node_inputs_size
+                                        << " or " << max_node_inputs_size << " but got " << inputs_size;
     }
     constexpr size_t node_list_index = 1;
     constexpr size_t node_index_index = 2;
     auto list_input_node = node_inputs[node_list_index];
     if (IsPrimitiveCNode(list_input_node, prim::kPrimMakeList)) {
-      TraceGuard trace_guard(std::make_shared<TraceCopy>(list_input_node->debug_info()));
+      TraceGuard trace_guard(MakeTraceInfo<TraceCopy>(list_input_node->debug_info()));
       auto new_pop_list_node = ConvertMakeList(list_input_node->cast<CNodePtr>());
       (void)manager_->Replace(list_input_node, new_pop_list_node);
       list_input_node = new_pop_list_node;
@@ -1402,13 +1407,13 @@ class AfterOptARewriter : public BaseRewriter {
     constexpr size_t max_node_inputs_size = 3;
     size_t inputs_size = node_inputs.size();
     if (inputs_size != min_node_inputs_size && inputs_size != max_node_inputs_size) {
-      MS_LOG(EXCEPTION) << "The size of input to ListInplaceAppend should be " << min_node_inputs_size << " or "
-                        << max_node_inputs_size << " but got " << inputs_size;
+      MS_LOG_WITH_NODE(EXCEPTION, node) << "The size of input to ListInplaceAppend should be " << min_node_inputs_size
+                                        << " or " << max_node_inputs_size << " but got " << inputs_size;
     }
     constexpr size_t node_list_index = 1;
     auto list_input_node = node_inputs[node_list_index];
     if (IsPrimitiveCNode(list_input_node, prim::kPrimMakeList)) {
-      TraceGuard trace_guard(std::make_shared<TraceCopy>(list_input_node->debug_info()));
+      TraceGuard trace_guard(MakeTraceInfo<TraceCopy>(list_input_node->debug_info()));
       auto new_node = ConvertMakeList(list_input_node->cast<CNodePtr>());
       (void)manager_->Replace(list_input_node, new_node);
       list_input_node = new_node;
@@ -1453,8 +1458,8 @@ class AfterOptARewriter : public BaseRewriter {
     const auto &node_inputs = node->inputs();
     constexpr size_t node_inputs_size = 2;
     if (node_inputs.size() != node_inputs_size) {
-      MS_LOG(EXCEPTION) << "The size of input to ListInplaceClear should be " << node_inputs_size << " but got "
-                        << node_inputs.size();
+      MS_LOG_WITH_NODE(EXCEPTION, node) << "The size of input to ListInplaceClear should be " << node_inputs_size
+                                        << " but got " << node_inputs.size();
     }
     constexpr size_t node_list_index = 1;
     std::vector<AnfNodePtr> key_value_list{NewValueNode(prim::kPrimMakeTuple)};
@@ -1496,15 +1501,15 @@ class AfterOptARewriter : public BaseRewriter {
     constexpr size_t max_node_inputs_size = 5;
     size_t inputs_size = node_inputs.size();
     if (inputs_size != min_node_inputs_size && inputs_size != max_node_inputs_size) {
-      MS_LOG(EXCEPTION) << "The size of input to ListInplaceInsert should be " << min_node_inputs_size << " or "
-                        << max_node_inputs_size << " but got " << inputs_size;
+      MS_LOG_WITH_NODE(EXCEPTION, node) << "The size of input to ListInplaceInsert should be " << min_node_inputs_size
+                                        << " or " << max_node_inputs_size << " but got " << inputs_size;
     }
     constexpr size_t node_list_index = 1;
     constexpr size_t node_index_index = 2;
     constexpr size_t node_target_index = 3;
     auto list_input_node = node_inputs[node_list_index];
     if (IsPrimitiveCNode(list_input_node, prim::kPrimMakeList)) {
-      TraceGuard trace_guard(std::make_shared<TraceCopy>(list_input_node->debug_info()));
+      TraceGuard trace_guard(MakeTraceInfo<TraceCopy>(list_input_node->debug_info()));
       auto new_insert_list_node = ConvertMakeList(list_input_node->cast<CNodePtr>());
       (void)manager_->Replace(list_input_node, new_insert_list_node);
       list_input_node = new_insert_list_node;
@@ -1630,7 +1635,7 @@ class AfterOptARewriter : public BaseRewriter {
     MS_EXCEPTION_IF_NULL(dtype_val);
     auto type_id_opt = GetScalarValue<int64_t>(dtype_val);
     if (!type_id_opt.has_value()) {
-      MS_LOG(EXCEPTION) << "the dtype input is invalid!";
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << "the dtype input is invalid!";
     }
     std::string target_type_str;
     auto type_id = type_id_opt.value();
@@ -1641,7 +1646,7 @@ class AfterOptARewriter : public BaseRewriter {
     } else if (type_id == kNumberTypeBool) {
       target_type_str = "bool";
     } else {
-      MS_LOG(EXCEPTION) << "Unsupported type: " << type_id;
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << "Unsupported type: " << type_id;
     }
 
     const auto &fg = cnode->func_graph();
@@ -1673,8 +1678,8 @@ class AfterOptARewriter : public BaseRewriter {
     MS_LOG(DEBUG) << " make_slice node: " << cnode->DebugString();
     constexpr size_t slice_size = 4;
     if (cnode->size() != slice_size) {
-      MS_LOG(INTERNAL_EXCEPTION) << "The size of input to make_slice should be " << slice_size << ", but got "
-                                 << cnode->size();
+      MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, cnode)
+        << "The size of input to make_slice should be " << slice_size << ", but got " << cnode->size();
     }
     constexpr size_t start_index = 1;
     constexpr size_t stop_index = 2;
@@ -1820,7 +1825,7 @@ class AfterOptARewriter : public BaseRewriter {
     // Skip the io_monad input
     auto inputs = cnode->inputs();
     if (!HasAbstractMonad(inputs.back())) {
-      MS_LOG(EXCEPTION) << "The print node has no monad input:" << cnode->DebugString();
+      MS_LOG_WITH_NODE(EXCEPTION, cnode) << "The print node has no monad input:" << cnode->DebugString();
     }
     inputs.pop_back();
     auto no_io_print = fg->NewCNode(inputs);
@@ -1947,8 +1952,8 @@ class AfterOptARewriter : public BaseRewriter {
     const auto &node_inputs = cnode->inputs();
     constexpr size_t inputs_size = 3;
     if (node_inputs.size() != inputs_size) {
-      MS_LOG(INTERNAL_EXCEPTION) << "The size of input to kPrimIs should be " << inputs_size << "but got "
-                                 << node_inputs.size();
+      MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, cnode)
+        << "The size of input to kPrimIs should be " << inputs_size << "but got " << node_inputs.size();
     }
     constexpr size_t data_index = 1;
     constexpr size_t target_index = 2;
@@ -2064,7 +2069,8 @@ class AfterOptARewriter : public BaseRewriter {
       const auto &abs_seq_elements = abs_seq->elements();
       const auto &value_sequence_values = value_sequence->value();
       if (abs_seq_elements.size() != value_sequence_values.size()) {
-        MS_LOG(EXCEPTION) << "The size of value sequence should be same as the size of abstract sequence.";
+        MS_LOG_WITH_NODE(EXCEPTION, value_node)
+          << "The size of value sequence should be same as the size of abstract sequence.";
       }
       for (size_t i = 0; i < value_sequence_values.size(); ++i) {
         auto v = value_sequence_values[i];
@@ -2383,7 +2389,8 @@ class AfterOptARewriter : public BaseRewriter {
     auto abs_dict = dyn_cast<abstract::AbstractDictionary>(value_node->abstract());
     const auto &abs_keys_values = abs_dict->elements();
     if (keys_values.size() != abs_keys_values.size()) {
-      MS_LOG(INTERNAL_EXCEPTION) << "The size of value dict should be same as the size of abstract dict.";
+      MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, value_node)
+        << "The size of value dict should be same as the size of abstract dict.";
     }
     std::vector<AnfNodePtr> value_list{NewValueNode(prim::kPrimMakeTuple)};
     for (size_t i = 0; i < keys_values.size(); ++i) {
@@ -2525,11 +2532,11 @@ class AfterOptARewriter : public BaseRewriter {
   }
 
   // AbstractRowTensor --> AbstractTuple.
-  static AbstractBasePtr ConvertToAbstractTuple(const AbstractBasePtr &abs, size_t depth) {
+  static AbstractBasePtr ConvertToAbstractTuple(const AbstractBasePtr &abs, const AnfNodePtr &node, size_t depth) {
     if (depth > kMaxSeqRecursiveDepth) {
       MS_LOG(ERROR) << "abs:" << abs->ToString();
-      MS_LOG(INTERNAL_EXCEPTION) << "List, tuple and dict nesting is not allowed more than " << kMaxSeqRecursiveDepth
-                                 << " levels.";
+      MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, node)
+        << "List, tuple and dict nesting is not allowed more than " << kMaxSeqRecursiveDepth << " levels.";
     }
     // Convert RowTensor in AbstractSequence to AbstractTuple.
     auto abs_seq = abs->cast<AbstractSequencePtr>();
@@ -2543,7 +2550,7 @@ class AfterOptARewriter : public BaseRewriter {
       // changed_elements maps old element to new element.
       mindspore::HashMap<AbstractBasePtr, AbstractBasePtr> changed_elements;
       for (const auto &element : seq_elements) {
-        auto new_tuple_element = ConvertToAbstractTuple(element, depth + 1);
+        auto new_tuple_element = ConvertToAbstractTuple(element, node, depth + 1);
         if (new_tuple_element != nullptr) {
           (void)changed_elements.emplace(element, new_tuple_element);
         }
@@ -2578,9 +2585,9 @@ class AfterOptARewriter : public BaseRewriter {
     return nullptr;
   }
 
-  AbstractBasePtr ConvertAbstract(const AbstractBasePtr &abs) override {
+  AbstractBasePtr ConvertAbstract(const AbstractBasePtr &abs, const AnfNodePtr &node) override {
     // AbstractSequence, AbstractDict, AbstractRowTensor --> AbstractTuple.
-    return ConvertToAbstractTuple(abs, 0);
+    return ConvertToAbstractTuple(abs, node, 0);
   }
 
  private:
@@ -2720,8 +2727,8 @@ AnfNodePtr ConvertToPyExecuteList(const AnfNodePtr &node) {
   constexpr size_t pyexecute_min_len = 4;
   auto cnode = node->cast<CNodePtr>();
   if (cnode->size() < pyexecute_min_len) {
-    MS_LOG(INTERNAL_EXCEPTION) << "The minimum len of input to PyExecute should " << pyexecute_min_len << " but got "
-                               << cnode->size() << " for node: " << cnode->DebugString();
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, node) << "The minimum len of input to PyExecute should " << pyexecute_min_len
+                                               << " but got " << cnode->size() << " for node: " << cnode->DebugString();
   }
   constexpr size_t pyexecute_value_index = 3;
   const auto &fg = cnode->func_graph();

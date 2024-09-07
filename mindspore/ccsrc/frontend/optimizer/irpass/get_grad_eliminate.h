@@ -39,7 +39,7 @@ class GetGradEliminater : public AnfVisitor {
     AnfVisitor::Match(prim::kPrimGetGrad, {IsCNode, IsCNode})(node);
     FindGradByNameOrId(grad_tuple_);
     if (result_ == nullptr) {
-      MS_LOG(INTERNAL_EXCEPTION) << "Can not find the gradient for position or Parameter provided";
+      MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, node) << "Can not find the gradient for position or Parameter provided";
     }
     return result_;
   }
@@ -120,7 +120,7 @@ class GetGradEliminater : public AnfVisitor {
         MS_EXCEPTION_IF_NULL(param_inf);
         name_ = param_inf->name();
       } else {
-        MS_LOG(EXCEPTION) << "Suppose to get tensor or parameter, but got: " << input[1]->DebugString();
+        MS_LOG_WITH_NODE(EXCEPTION, node) << "Suppose to get tensor or parameter, but got: " << input[1]->DebugString();
       }
     }
   }

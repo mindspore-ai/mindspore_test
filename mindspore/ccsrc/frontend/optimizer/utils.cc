@@ -43,12 +43,14 @@ AnfNodePtr GetBpropCaller(const FuncGraphManagerPtr &manager, const AnfNodePtr &
     return nullptr;
   }
   if (iter->second.size() != 1) {
-    MS_LOG(EXCEPTION) << "The number of bprop caller should be 1, but got " << iter->second.size()
-                      << ", bprop_getter: " << bprop_getter->DebugString();
+    MS_LOG_WITH_NODE(EXCEPTION, bprop_getter)
+      << "The number of bprop caller should be 1, but got " << iter->second.size()
+      << ", bprop_getter: " << bprop_getter->DebugString();
   }
   auto user_node_idx = iter->second.begin();
   if (user_node_idx->second != 0) {
-    MS_LOG(EXCEPTION) << "The bprop_getter should be used in input 0, but got " << user_node_idx->second;
+    MS_LOG_WITH_NODE(EXCEPTION, bprop_getter)
+      << "The bprop_getter should be used in input 0, but got " << user_node_idx->second;
   }
   return user_node_idx->first;
 }

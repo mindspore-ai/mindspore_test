@@ -50,7 +50,7 @@ class SpecializeTransform {
     if (cache.count(key) == 0) {
       auto mng = func_graph->manager();
       MS_EXCEPTION_IF_NULL(mng);
-      FuncGraphPtr new_fg = TransformableClone(func_graph, std::make_shared<TraceTransform>("sp"));
+      FuncGraphPtr new_fg = TransformableClone(func_graph, MakeTraceInfo<TraceTransform>("sp"));
       mng->AddFuncGraph(new_fg);
       std::vector<AnfNodePtr> params = new_fg->parameters();
       std::vector<AnfNodePtr> new_params;
@@ -61,7 +61,7 @@ class SpecializeTransform {
           continue;
         }
         // replace the parameter with arg in new_fg without changing origin func_graph.
-        (void)mng->Replace(params[i], NewReplaceValueNode(need_eliminate_args[i]));
+        (void)mng->Replace(params[i], NewReplaceValueNode(need_eliminate_args[i], func_graph->return_node()));
       }
       mng->SetParameters(new_fg, new_params);
       cache[key] = new_fg;
@@ -71,7 +71,7 @@ class SpecializeTransform {
 
  private:
   mindspore::HashMap<FuncGraphPtr, std::map<std::vector<ValuePtr>, FuncGraphPtr>> cache_;
-  static ValueNodePtr NewReplaceValueNode(const ValuePtr &value) {
+  static ValueNodePtr NewReplaceValueNode(const ValuePtr &value, const AnfNodePtr &node) {
     MS_EXCEPTION_IF_NULL(value);
     if (value->isa<FuncGraph>() || value->isa<Primitive>() || value->isa<parse::NameSpace>()) {
       return NewValueNode(value);
@@ -81,7 +81,7 @@ class SpecializeTransform {
       auto const_tensor_ptr = std::make_shared<tensor::Tensor>(const_tensor);
       return NewValueNode(const_tensor_ptr);
     }
-    MS_LOG(INTERNAL_EXCEPTION) << "Unexpected value:" << value->ToString();
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, node) << "Unexpected value:" << value->ToString();
   }
 };
 }  // namespace internal

@@ -68,7 +68,7 @@ COMMON_EXPORT void GatherInputAndOutputInferType(std::ostringstream &buffer, con
 COMMON_EXPORT void DumpIRForRDR(const std::string &filename, const FuncGraphPtr &graph, bool dump_full_name = false,
                                 LocDumpMode dump_location = kOff);
 COMMON_EXPORT DumpConfig GetDumpConfig();
-std::string GetValueText(const ValuePtr &value, const std::shared_ptr<SubGraphIRInfo> &gsub);
+void GetValueText(const ValuePtr &value, const std::shared_ptr<SubGraphIRInfo> &gsub);
 
 COMMON_EXPORT void DumpOperator(const AnfNodePtr &node, const std::shared_ptr<SubGraphIRInfo> &gsub);
 

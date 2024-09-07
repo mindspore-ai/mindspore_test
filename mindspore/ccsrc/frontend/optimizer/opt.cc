@@ -121,7 +121,7 @@ static AnfNodePtr DoTransform(const OptimizerPtr &optimizer, const AnfNodePtr &n
     is_match = substitution->predicate_(node);
   }
   if (is_match) {
-    TraceGuard trace_guard(std::make_shared<TraceOpt>(node->debug_info()));
+    TraceGuard trace_guard(MakeTraceInfo<TraceOpt>(node->debug_info()));
     ScopeGuard scope_guard(node->scope());
     auto res = (*substitution)(optimizer, node);
     if (res != nullptr && res != node) {
@@ -428,7 +428,7 @@ bool SimpleRewriter::Run() {
         add_todo(fg->return_node());
       }
     }
-    TraceGuard trace_guard(std::make_shared<TraceOpt>(node->debug_info()));
+    TraceGuard trace_guard(MakeTraceInfo<TraceOpt>(node->debug_info()));
     ScopeGuard scope_guard(node->scope());
     auto new_node = NodeRewrite(node);
     if (new_node != nullptr) {

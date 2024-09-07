@@ -18,6 +18,7 @@ import sys
 import tempfile
 import glob
 import shutil
+import re
 import numpy as np
 import mindspore.nn as nn
 from mindspore import context, _data_dump, Callback, dataset, Model
@@ -130,7 +131,39 @@ def run_trans_flag(test_name):
         del os.environ['MINDSPORE_DUMP_CONFIG']
 
 
-@arg_mark(plat_marks=['platform_ascend'], level_mark='level1', card_mark='onecard', essential_mark='essential')
+def check_fullname(op_name, number, content):
+    for i in range(number):
+        if re.search(op_name + str(i), content):
+            continue
+        return False
+    return True
+
+
+def run_trans_flag_execution_order(test_name):
+    if sys.platform != 'linux':
+        return
+    with tempfile.TemporaryDirectory(dir='/tmp') as tmp_dir:
+        dump_path = os.path.join(tmp_dir, test_name)
+        dump_config_path = os.path.join(tmp_dir, '{}.json'.format(test_name))
+        generate_dump_json(dump_path, dump_config_path, test_name)
+        os.environ['MINDSPORE_DUMP_CONFIG'] = dump_config_path
+        if os.path.isdir(dump_path):
+            shutil.rmtree(dump_path)
+        net = LeNet5()
+        predict = Tensor(np.ones([32, 1, 32, 32]).astype(np.float32) * 0.01)
+        _ = net(predict)
+        check_dump_structure(dump_path, dump_config_path, 1, 0, 1)
+        dump_execution_order_path = os.path.join(dump_path, 'rank_0', 'execution_order',
+                                                 'ms_execution_order_graph_0.csv')
+        assert os.path.exists(dump_execution_order_path)
+        with open(dump_execution_order_path, 'r') as f:
+            execution_order_content = f.read()
+        check_fullname("ReLU-op", 4, execution_order_content)
+        check_fullname("MaxPool-op", 2, execution_order_content)
+        del os.environ['MINDSPORE_DUMP_CONFIG']
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @security_off_wrap
 def test_ascend_kernel_by_kernel_lenet():
     """
@@ -180,9 +213,11 @@ class StopAtStep(Callback):
             # pylint: disable=W0212
             _data_dump._dump_stop()
 
+
 def generator():
     for _ in range(3):
         yield (np.ones([2, 2]).astype(np.float32), np.ones([2]).astype(np.int32))
+
 
 def run_kbk_data_dump_dynamic(test_name):
     context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
@@ -207,6 +242,7 @@ def run_kbk_data_dump_dynamic(test_name):
         assert os.path.exists(dump_data_path)
         del os.environ['MINDSPORE_DUMP_CONFIG']
 
+
 @arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
 @security_off_wrap
 def test_kbk_dynamic_data_dump():
@@ -216,3 +252,19 @@ def test_kbk_dynamic_data_dump():
     Expectation: Dump files has tensor data in host format (4 dimensions).
     """
     run_kbk_data_dump_dynamic("test_e2e_dump_lenet")
+
+
+@arg_mark(plat_marks=['platform_ascend'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@security_off_wrap
+def test_ascend_kbk_lenet_op_fullname():
+    """
+    Feature: IR op fullname determinacy.
+    Description: Run kernel by kernel dump with info log and save_graphs.
+    Expectation: Op fullname in dump execution order file should be changeless.
+    """
+    context.set_context(jit_level='O0')
+    context.set_context(mode=context.GRAPH_MODE, device_target="Ascend", save_graphs=True, save_graphs_path="./irs")
+    os.environ['GLOG_v'] = '1'
+    run_trans_flag_execution_order("test_e2e_dump_lenet")
+    del os.environ['GLOG_v']
+    shutil.rmtree("./irs")

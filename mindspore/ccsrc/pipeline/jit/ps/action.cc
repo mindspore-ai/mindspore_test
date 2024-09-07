@@ -671,7 +671,8 @@ bool ParseAction(const ResourcePtr &resource) {
 
   auto top_graph = converted_ret->cast<FuncGraphPtr>();
   if (top_graph == nullptr) {
-    MS_LOG(INTERNAL_EXCEPTION) << "Object to parse " << std::string(py::str(input)) << " is not function or cell.";
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, top_graph->return_node())
+      << "Object to parse " << std::string(py::str(input)) << " is not function or cell.";
   }
   if (py::hasattr(input, parse::PYTHON_PARSE_METHOD) || py::hasattr(input, "__jit_function__")) {
     (void)std::for_each(top_graph->parameters().begin(), top_graph->parameters().end(),
@@ -702,12 +703,11 @@ bool CombineLikeGraphs(const ResourcePtr &resource) {
     MS_LOG(DEBUG) << "Start combine like graph:" << it->first << ", size:" << graphs.size();
     auto fg = graphs[0];
     FuncGraphVector func_graphs = {fg};
-    Cloner cloner(func_graphs, false, false, true, std::make_shared<TraceCopy>(),
-                  std::make_shared<TraceCombileLikeGraphs>());
+    Cloner cloner(func_graphs, false, false, true, MakeTraceInfo<TraceCopy>(), MakeTraceInfo<TraceCombileLikeGraphs>());
     cloner.Run();
     auto cloned_fg_iter = cloner.cloned_func_graphs().find(fg);
     if (cloned_fg_iter == cloner.cloned_func_graphs().end()) {
-      MS_LOG(INTERNAL_EXCEPTION) << "Clone func graph failed! " << fg->ToString();
+      MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, fg->return_node()) << "Clone func graph failed! " << fg->ToString();
     }
     auto base_graph = cloned_fg_iter->second;
     MS_LOG(DEBUG) << "Basegraph:" << base_graph->ToString();
@@ -718,7 +718,7 @@ bool CombineLikeGraphs(const ResourcePtr &resource) {
     }
     auto &cloned_nodes = cloner.cloned_nodes();
     for (auto &fv : fg->parameter_obj_nodes()) {
-      TraceGuard guard(std::make_shared<TraceCombileLikeGraphs>(fg->output()->debug_info()));
+      TraceGuard guard(MakeTraceInfo<TraceCombileLikeGraphs>(fg->output()->debug_info()));
       auto param = base_graph->add_parameter();
       MS_EXCEPTION_IF_NULL(resource->manager());
       auto &node_users = resource->manager()->node_users()[fv];
@@ -736,7 +736,7 @@ bool CombineLikeGraphs(const ResourcePtr &resource) {
     MS_LOG(DEBUG) << "Fg0 parameter_obj_nodes size :" << fg->parameter_obj_nodes().size();
 
     for (auto &g : graphs) {
-      TraceGuard guard(std::make_shared<TraceCopy>(fg->output()->debug_info()));
+      TraceGuard guard(MakeTraceInfo<TraceCopy>(fg->output()->debug_info()));
       auto &fvs = g->parameter_obj_nodes();
       std::vector<AnfNodePtr> new_node_inputs;
       new_node_inputs.push_back(NewValueNode(base_graph));
@@ -808,11 +808,11 @@ void UpdateCellFuncGraph(const FuncGraphPtr &func_graph, const FuncGraphPtr &reu
 void GeneralizeReusingGraph(const FuncGraphPtr &func_graph, const FuncGraphPtr &top_func_graph) {
   FuncGraphPtr fg = func_graph;
   FuncGraphVector func_graphs = {fg};
-  Cloner cloner(func_graphs, false, false, true, std::make_shared<TraceCopy>(), std::make_shared<TraceGraphReusing>());
+  Cloner cloner(func_graphs, false, false, true, MakeTraceInfo<TraceCopy>(), MakeTraceInfo<TraceGraphReusing>());
   cloner.Run();
   auto cloned_fg_iter = cloner.cloned_func_graphs().find(fg);
   if (cloned_fg_iter == cloner.cloned_func_graphs().end()) {
-    MS_LOG(INTERNAL_EXCEPTION) << "Clone func graph failed! " << fg->ToString();
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, fg->return_node()) << "Clone func graph failed! " << fg->ToString();
   }
   auto reusing_graph = cloned_fg_iter->second;
   auto &cloned_nodes = cloner.cloned_nodes();
@@ -823,7 +823,9 @@ void GeneralizeReusingGraph(const FuncGraphPtr &func_graph, const FuncGraphPtr &
     auto param = reusing_graph->InsertFrontParameter();
     const auto &top_param = fv->cast<ParameterPtr>();
     std::string name = "CR_" + top_param->name();
-    param->debug_info()->set_name(name);
+    if (param->debug_info() != nullptr) {
+      param->debug_info()->set_name(name);
+    }
     param->set_name(name);
     param->set_abstract(top_param->abstract());
     auto &node_users = manager->node_users()[fv];
@@ -1322,7 +1324,8 @@ bool HasIncorporateCall(const std::vector<AnfNodePtr> &all_nodes) {
     if (IsPrimitiveCNode(cnode, prim::kPrimSwitchLayer)) {
       auto make_tuple = cnode->input(kSwitchLayerBranchesIndex);
       if (!IsPrimitiveCNode(make_tuple, prim::kPrimMakeTuple)) {
-        MS_LOG(INTERNAL_EXCEPTION) << "SwitchLayer input2 should be make_tuple, but got: " << make_tuple->DebugString();
+        MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, cnode)
+          << "SwitchLayer input2 should be make_tuple, but got: " << make_tuple->DebugString();
       }
       const auto &make_tuple_inputs = make_tuple->cast<CNodePtr>()->inputs();
       if (std::any_of(make_tuple_inputs.begin() + 1, make_tuple_inputs.end(), [](const AnfNodePtr &input) {

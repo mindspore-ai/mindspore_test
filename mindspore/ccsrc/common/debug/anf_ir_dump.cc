@@ -56,14 +56,12 @@ enum FormatLevel : int {
   kFullyLevel,
 };
 
-std::string GetMultitypeFuncGraphText(const prim::MultitypeFuncGraphPtr &mt_func_graph) {
+void GetMultitypeFuncGraphText(const prim::MultitypeFuncGraphPtr &mt_func_graph, std::ostringstream &oss) {
   auto py_funcs = mt_func_graph->GetPyFunctions();
   if (py_funcs.empty()) {
-    return "";
+    oss << "";
+    return;
   }
-
-  std::ostringstream oss;
-
   oss << "{";
   bool is_first = true;
   for (const auto &py_func : py_funcs) {
@@ -82,8 +80,6 @@ std::string GetMultitypeFuncGraphText(const prim::MultitypeFuncGraphPtr &mt_func
     oss << ")";
   }
   oss << "}";
-
-  return oss.str();
 }
 
 inline bool Skip(const MetaFuncGraphPtr &meta_func_graph) {
@@ -102,37 +98,45 @@ inline bool Skip(const MetaFuncGraphPtr &meta_func_graph) {
          meta_func_graph->isa<prim::Next>() || meta_func_graph->isa<prim::ForHalfUnrollLess>();
 }
 
-std::string GetMetaFuncGraphText(const MetaFuncGraphPtr &meta_func_graph) {
+void GetMetaFuncGraphText(const MetaFuncGraphPtr &meta_func_graph, std::ostringstream &oss) {
   if (meta_func_graph == nullptr) {
-    return "";
+    oss << "";
+    return;
   }
 
-  std::ostringstream oss;
   oss << meta_func_graph->type_name() << "_" << meta_func_graph->name();
 
   if (meta_func_graph->isa<prim::MultitypeFuncGraph>()) {
     prim::MultitypeFuncGraphPtr mt_func_graph = meta_func_graph->cast<prim::MultitypeFuncGraphPtr>();
-    oss << GetMultitypeFuncGraphText(mt_func_graph);
+    GetMultitypeFuncGraphText(mt_func_graph, oss);
   } else if (meta_func_graph
                ->isa<prim::HyperMapPy>()) {  // This statement must before 'meta_graph->isa<prim::HyperMap>()'
     auto hyper_map = meta_func_graph->cast<prim::HyperMapPyPtr>();
     if (hyper_map->GetFnLeaf() != nullptr) {
-      oss << "{fn_leaf: " << GetMetaFuncGraphText(hyper_map->GetFnLeaf()) << "}";
+      oss << "{fn_leaf: ";
+      GetMetaFuncGraphText(hyper_map->GetFnLeaf(), oss);
+      oss << "}";
     }
   } else if (meta_func_graph->isa<prim::HyperMap>()) {
     auto hyper_map = meta_func_graph->cast<prim::HyperMapPtr>();
     if (hyper_map->GetFnLeaf() != nullptr) {
-      oss << "{fn_leaf: " << GetMetaFuncGraphText(hyper_map->GetFnLeaf()) << "}";
+      oss << "{fn_leaf: ";
+      GetMetaFuncGraphText(hyper_map->GetFnLeaf(), oss);
+      oss << "}";
     }
   } else if (meta_func_graph->isa<prim::MapPy>()) {  // This statement must before 'meta_graph->isa<prim::Map>()'
     auto map = meta_func_graph->cast<prim::MapPyPtr>();
     if (map->GetFnLeaf() != nullptr) {
-      oss << "{fn_leaf: " << GetMetaFuncGraphText(map->GetFnLeaf()) << "}";
+      oss << "{fn_leaf: ";
+      GetMetaFuncGraphText(map->GetFnLeaf(), oss);
+      oss << "}";
     }
   } else if (meta_func_graph->isa<prim::Map>()) {
     auto map = meta_func_graph->cast<prim::MapPtr>();
     if (map->GetFnLeaf() != nullptr) {
-      oss << "{fn_leaf: " << GetMetaFuncGraphText(map->GetFnLeaf()) << "}";
+      oss << "{fn_leaf: ";
+      GetMetaFuncGraphText(map->GetFnLeaf(), oss);
+      oss << "}";
     }
   } else if (meta_func_graph->isa<prim::GradOperation>()) {
     prim::GradOperationPtr grad_op = meta_func_graph->cast<prim::GradOperationPtr>();
@@ -148,12 +152,9 @@ std::string GetMetaFuncGraphText(const MetaFuncGraphPtr &meta_func_graph) {
   } else {
     MS_LOG(INTERNAL_EXCEPTION) << "Unknown MetaFuncGraph type " << meta_func_graph->type_name();
   }
-
-  return oss.str();
 }
 
-std::string GetPrimitiveText(const PrimitivePtr &prim) {
-  std::ostringstream oss;
+void GetPrimitiveText(const PrimitivePtr &prim, std::ostringstream &oss) {
   if (!prim->instance_name().empty()) {
     oss << " {";
     oss << "instance name"
@@ -178,53 +179,46 @@ std::string GetPrimitiveText(const PrimitivePtr &prim) {
       oss << func->ToString();
     }
   }
-
-  return oss.str();
 }
 
-std::string GetSequenceText(const ValuePtr &value, const std::shared_ptr<SubGraphIRInfo> &gsub) {
-  std::ostringstream oss;
+void GetSequenceText(const ValuePtr &value, const std::shared_ptr<SubGraphIRInfo> &gsub) {
   // Output ValueList, ValueTuple
   ValueSequencePtr seq = dyn_cast<ValueSequence>(value);
   MS_EXCEPTION_IF_NULL(seq);
   MS_EXCEPTION_IF_NULL(value);
   bool is_tuple = value->isa<ValueTuple>();
-  oss << (is_tuple ? "(" : "[");
+  gsub->buffer << (is_tuple ? "(" : "[");
   bool first_flag = true;
   for (auto elem : seq->value()) {
     if (first_flag) {
       first_flag = false;
     } else {
-      oss << ", ";
+      gsub->buffer << ", ";
     }
-    oss << GetValueText(elem, gsub);
+    GetValueText(elem, gsub);
   }
-  oss << (is_tuple ? ")" : "]");
-  return oss.str();
+  gsub->buffer << (is_tuple ? ")" : "]");
 }
 
-std::string GetDictText(const ValuePtr &value, const std::shared_ptr<SubGraphIRInfo> &gsub) {
-  std::ostringstream oss;
+void GetDictText(const ValuePtr &value, const std::shared_ptr<SubGraphIRInfo> &gsub) {
   MS_EXCEPTION_IF_NULL(value);
   ValueDictionaryPtr dict = value->cast<ValueDictionaryPtr>();
-  oss << "{";
+  gsub->buffer << "{";
   bool first_flag = true;
   for (const auto &elem : dict->value()) {
     if (first_flag) {
       first_flag = false;
     } else {
-      oss << ", ";
+      gsub->buffer << ", ";
     }
-    oss << "\"" << elem.first->ToString() << "\": " << GetValueText(elem.second, gsub);
+    gsub->buffer << "\"" << elem.first->ToString() << "\": ";
+    GetValueText(elem.second, gsub);
   }
-  oss << "}";
-  return oss.str();
+  gsub->buffer << "}";
 }
 
-std::string GetOtherValueText(const ValuePtr &value) {
-  std::ostringstream oss;
+void GetOtherValueText(const ValuePtr &value, std::ostringstream &oss) {
   oss << value->type_name() << "[" << value->ToString() << "]";
-  return oss.str();
 }
 
 static bool CanUseDumpText(const ValuePtr &value) {
@@ -233,25 +227,31 @@ static bool CanUseDumpText(const ValuePtr &value) {
           value->isa<Type>() || value->isa<KeywordArg>() || value->isa<SymbolicKeyInstance>());
 }
 
-std::string GetValueText(const ValuePtr &value, const std::shared_ptr<SubGraphIRInfo> &gsub) {
+void GetValueText(const ValuePtr &value, const std::shared_ptr<SubGraphIRInfo> &gsub) {
   MS_EXCEPTION_IF_NULL(value);
   if (value->isa<Primitive>()) {
-    return GetPrimitiveText(value->cast<PrimitivePtr>());
+    GetPrimitiveText(value->cast<PrimitivePtr>(), gsub->buffer);
+    return;
   }
   if (value->isa<MetaFuncGraph>()) {
     MetaFuncGraphPtr meta_func_graph = value->cast<MetaFuncGraphPtr>();
-    return GetMetaFuncGraphText(meta_func_graph);
+    GetMetaFuncGraphText(meta_func_graph, gsub->buffer);
+    return;
   }
   if (value->isa<ValueSequence>()) {
-    return GetSequenceText(value, gsub);
+    GetSequenceText(value, gsub);
+    return;
   }
   if (value->isa<ValueDictionary>()) {
-    return GetDictText(value, gsub);
+    GetDictText(value, gsub);
+    return;
   }
   if (CanUseDumpText(value)) {
-    return value->DumpText();
+    gsub->buffer << value->DumpText();
+    return;
   } else {
-    return GetOtherValueText(value);
+    GetOtherValueText(value, gsub->buffer);
+    return;
   }
 }
 
@@ -321,7 +321,8 @@ void PrintNodeOutputType(std::ostringstream &buffer, const AnfNodePtr &node) {
   abstract::BaseShapePtr shape = dyn_cast<abstract::BaseShape>(node->Shape());
   TypePtr type = dyn_cast<Type>(node->Type());
   if ((shape != nullptr) && (type != nullptr)) {
-    buffer << "<" << type << ", " << shape->ToString();
+    buffer << "<" << type << ", ";
+    shape->ToStringWithBuffer(buffer);
     if (tensor_value != nullptr && tensor_value != kValueAny) {
       buffer << ", value=...";
     }
@@ -597,7 +598,7 @@ void DumpOperator(const AnfNodePtr &node, const std::shared_ptr<SubGraphIRInfo> 
       if (value->isa<Primitive>()) {
         gsub->buffer << value->ToString();
       } else {
-        gsub->buffer << GetValueText(value, gsub);
+        GetValueText(value, gsub);
       }
     }
   } else {
@@ -665,7 +666,7 @@ void DumpOperands(const AnfNodePtr &node, const OrderedMap<AnfNodePtr, int32_t> 
         }
       } else if (in->isa<ValueNode>() && !IsValueNode<FuncGraph>(in)) {
         // ValueNode except FuncGraph.
-        gsub->buffer << GetValueText(GetValueNode(in), gsub);
+        GetValueText(GetValueNode(in), gsub);
       } else if (IsValueNode<FuncGraph>(in)) {
         FuncGraphPtr fg = GetValueNode<FuncGraphPtr>(in);
         if (fg == nullptr) {
@@ -802,40 +803,48 @@ void DumpLocationInCurrentScope(const DebugInfoPtr &debug_info, const std::share
   std::list<DebugInfoPtr> need_dump_debug_infos;
   const auto &shadow_debug_infos_map = debug_info->shadow_debug_infos_map();
   HashSet<DebugInfoPtr> all_shadowed_debug_infos;
-  while (dump_debug_info != nullptr) {
-    need_dump_debug_infos.push_front(dump_debug_info);
-    auto iter = shadow_debug_infos_map.find(dump_debug_info);
-    if (iter != shadow_debug_infos_map.end()) {
-      DebugInfoPtr shadowed_debug_info = iter->first;
-      DebugInfoPtr shadow_debug_info = iter->second;
-      MS_LOG(DEBUG) << "Insert debug info, shadow_debug_info: " << shadow_debug_info << "/" << shadow_debug_info->name()
-                    << "/" << shadow_debug_info->debug_name() << "/"
-                    << trace::GetDebugInfoStr(shadow_debug_info, "", kSourceLineTipNextLine, true) << ", shadow_trace: "
-                    << (shadow_debug_info->trace_info() != nullptr ? shadow_debug_info->trace_info()->name() : "none")
-                    << ", shadowed_debug_info: " << shadowed_debug_info << "/" << shadowed_debug_info->name() << "/"
-                    << shadowed_debug_info->debug_name() << "/"
-                    << trace::GetDebugInfoStr(shadowed_debug_info, "", kSourceLineTipNextLine, true)
-                    << ", shadowed_trace: "
-                    << (shadowed_debug_info->trace_info() != nullptr ? shadowed_debug_info->trace_info()->name()
-                                                                     : "none");
-      need_dump_debug_infos.push_front(shadow_debug_info);
-      all_shadowed_debug_infos.emplace(shadowed_debug_info);
+  // If contain real location, print real location.
+  if (!debug_info->real_loc().empty()) {
+    need_dump_debug_infos.insert(need_dump_debug_infos.cend(), debug_info->real_loc().cbegin(),
+                                 debug_info->real_loc().cend());
+  } else {
+    while (dump_debug_info != nullptr) {
+      need_dump_debug_infos.push_front(dump_debug_info);
+      auto iter = shadow_debug_infos_map.find(dump_debug_info);
+      if (iter != shadow_debug_infos_map.end()) {
+        DebugInfoPtr shadowed_debug_info = iter->first;
+        DebugInfoPtr shadow_debug_info = iter->second;
+        MS_EXCEPTION_IF_NULL(shadowed_debug_info);
+        MS_EXCEPTION_IF_NULL(shadow_debug_info);
+        MS_LOG(DEBUG) << "Insert debug info, shadow_debug_info: " << shadow_debug_info << "/"
+                      << shadow_debug_info->name() << "/" << shadow_debug_info->debug_name() << "/"
+                      << trace::GetDebugInfoStr(shadow_debug_info, "", kSourceLineTipNextLine, true)
+                      << ", shadow_trace: "
+                      << (shadow_debug_info->trace_info() != nullptr ? shadow_debug_info->trace_info()->name() : "none")
+                      << ", shadowed_debug_info: " << shadowed_debug_info << "/" << shadowed_debug_info->name() << "/"
+                      << shadowed_debug_info->debug_name() << "/"
+                      << trace::GetDebugInfoStr(shadowed_debug_info, "", kSourceLineTipNextLine, true)
+                      << ", shadowed_trace: "
+                      << (shadowed_debug_info->trace_info() != nullptr ? shadowed_debug_info->trace_info()->name()
+                                                                       : "none");
+        need_dump_debug_infos.push_front(shadow_debug_info);
+        all_shadowed_debug_infos.emplace(shadowed_debug_info);
+      }
+      if (dump_debug_info->trace_info() == nullptr) {
+        break;
+      }
+      dump_debug_info = dump_debug_info->trace_info()->debug_info();
     }
-    if (dump_debug_info->trace_info() == nullptr) {
-      break;
-    }
-    dump_debug_info = dump_debug_info->trace_info()->debug_info();
   }
   HashSet<std::string> visited_locations;
   for (const auto &cur_debug_info : need_dump_debug_infos) {
-    if (cur_debug_info->location() != nullptr) {
+    if (cur_debug_info != nullptr && cur_debug_info->location() != nullptr) {
       auto debug_info_str = trace::GetDebugInfoStr(cur_debug_info, "", kSourceLineTipDiscard);
       if (visited_locations.find(debug_info_str) == visited_locations.cend()) {
         constexpr auto prefix = "      # ";
         gsub->buffer << prefix << debug_info_str;
         if (all_shadowed_debug_infos.count(cur_debug_info) != 0) {
-          constexpr auto shared_code_line_hint =
-            "<~~This line of code can be shared by multiple nodes, and may be duplicated./";
+          auto shared_code_line_hint = "<~~This line of code can be shared by multiple nodes, and may be duplicated./";
           gsub->buffer << shared_code_line_hint;
         }
         gsub->buffer << "\n";
@@ -850,6 +859,7 @@ void DumpPrimalDebugInfos(const CNodePtr &node, const std::shared_ptr<SubGraphIR
   auto primal_debug_infos = node->primal_debug_infos();
   if (!primal_debug_infos.empty()) {
     for (const auto &primal_debug_info : primal_debug_infos) {
+      MS_EXCEPTION_IF_NULL(primal_debug_info);
       std::string lines;
       auto debug_info_str = trace::GetDebugInfoStr(primal_debug_info, "      # ", kSourceLineTipDiscard);
       if (!debug_info_str.empty()) {
@@ -885,6 +895,7 @@ void DumpDebugInfo(const CNodePtr &node, const std::shared_ptr<SubGraphIRInfo> &
     auto fused_debug_infos = node->fused_debug_infos();
     if (!fused_debug_infos.empty()) {
       for (const auto &debug_info : fused_debug_infos) {
+        MS_EXCEPTION_IF_NULL(debug_info);
         std::string lines;
         gsub->buffer << "      # Corresponding code candidate:\n";
         auto debug_info_str = trace::GetDebugInfoStr(debug_info, "      # ", kSourceLineTipDiscard);
@@ -896,6 +907,7 @@ void DumpDebugInfo(const CNodePtr &node, const std::shared_ptr<SubGraphIRInfo> &
         }
       }
     } else {
+      MS_EXCEPTION_IF_NULL(node->debug_info());
       auto debug_info_str = trace::GetDebugInfoStr(node->debug_info(), "      # ", kSourceLineTipDiscard);
       if (!debug_info_str.empty()) {
         gsub->buffer << debug_info_str << "\n";
@@ -906,16 +918,19 @@ void DumpDebugInfo(const CNodePtr &node, const std::shared_ptr<SubGraphIRInfo> &
     auto fused_debug_infos = node->fused_debug_infos();
     if (!fused_debug_infos.empty()) {
       for (const auto &debug_info : fused_debug_infos) {
+        MS_EXCEPTION_IF_NULL(debug_info);
         gsub->buffer << "      # Corresponding code candidate:\n";
         DumpLocationInCurrentScope(debug_info, gsub);
       }
     } else {
+      MS_EXCEPTION_IF_NULL(node->debug_info());
       DumpLocationInCurrentScope(node->debug_info(), gsub);
     }
     // Print whole stack primal infos
     auto primal_debug_infos = node->primal_debug_infos();
     if (!primal_debug_infos.empty()) {
       for (const auto &primal_debug_info : primal_debug_infos) {
+        MS_EXCEPTION_IF_NULL(primal_debug_info);
         gsub->buffer << "      # Corresponding forward node candidate:\n";
         DumpLocationInCurrentScope(primal_debug_info, gsub);
       }
@@ -1015,7 +1030,9 @@ void DumpCNode(const CNodePtr &node, const FuncGraphPtr &sub_graph, const Ordere
       gsub->buffer << "      # Scope: (" << node->scope()->name() << ")" << std::endl;
     }
     // Print debug info
-    DumpDebugInfo(node, gsub, dump_location);
+    if (DebugMode::IsDebug()) {
+      DumpDebugInfo(node, gsub, dump_location);
+    }
   }
 }
 
@@ -1081,19 +1098,23 @@ void DumpIRInSubgraph(const std::vector<AnfNodePtr> &nodes, OrderedMap<AnfNodePt
       MS_LOG(DEBUG) << "Node[" << node->ToString() << "] belongs to no graph!";
       continue;
     }
-    std::shared_ptr<SubGraphIRInfo> gsub = (*sub_graphs)[sub_graph];
-    if (gsub == nullptr) {
+    std::shared_ptr<SubGraphIRInfo> gsub;
+    auto iter = sub_graphs->find(sub_graph);
+    if (iter == sub_graphs->end()) {
       gsub = std::make_shared<SubGraphIRInfo>();
       gsub->local_var = 0;
       gsub->format_level = GetDumpFormatLevel();
-      (*sub_graphs)[sub_graph] = gsub;
-    }
-    std::vector<AnfNodePtr> parameters = sub_graph->parameters();
-    for (size_t idx = 0; idx < parameters.size(); idx++) {
-      MS_EXCEPTION_IF_NULL(parameters[idx]);
-      if ((*para_map).count(parameters[idx]) == 0) {
-        (*para_map)[parameters[idx]] = total_para++;
+      (void)sub_graphs->emplace(sub_graph, gsub);
+      const std::vector<AnfNodePtr> &parameters = sub_graph->parameters();
+      for (size_t idx = 0; idx < parameters.size(); ++idx) {
+        MS_EXCEPTION_IF_NULL(parameters[idx]);
+        if ((*para_map).find(parameters[idx]) == para_map->end()) {
+          (void)(*para_map).emplace(parameters[idx], total_para);
+          ++total_para;
+        }
       }
+    } else {
+      gsub = iter->second;
     }
     if (!node->isa<Parameter>()) {
       if (node->isa<CNode>()) {
@@ -1155,6 +1176,7 @@ void DumpSubgraph(const OrderedMap<FuncGraphPtr, std::shared_ptr<SubGraphIRInfo>
         DumpParameters(sg.first, oss);
       }
     }
+    MS_EXCEPTION_IF_NULL(sg.first->debug_info());
     if (trace::GetGlobalTraceLabelType() == trace::TraceLabelType::kWithUniqueId) {
       oss << trace::GetDebugInfoStr(sg.first->debug_info(), "# ", kSourceLineTipDiscard) << "#"
           << trace::Label(sg.first->debug_info()) << "\n";
@@ -1623,6 +1645,7 @@ void AnfExporter::OuputIrStyleCNodes(const FuncGraphPtr &func_graph, const std::
       }
     }
     DumpCNode(cnode, func_graph, *para_map, gsub);
+    MS_EXCEPTION_IF_NULL(cnode->debug_info());
     if (trace::GetGlobalTraceLabelType() == trace::TraceLabelType::kWithUniqueId) {
       gsub->buffer << trace::GetDebugInfoStr(cnode->debug_info(), "      # ", kSourceLineTipDiscard) << "#"
                    << trace::Label(cnode->debug_info()) << "\n";
@@ -1676,6 +1699,7 @@ void AnfExporter::ExportOneFuncGraph(const FuncGraphPtr &func_graph, const Tagge
   }
   // Dump parameters info.
   DumpParameters(func_graph, oss);
+  MS_EXCEPTION_IF_NULL(func_graph->debug_info());
   if (trace::GetGlobalTraceLabelType() == trace::TraceLabelType::kWithUniqueId) {
     oss << trace::GetDebugInfoStr(func_graph->debug_info(), "# ", kSourceLineTipDiscard) << "#"
         << trace::Label(func_graph->debug_info()) << "\n";

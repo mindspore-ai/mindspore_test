@@ -39,7 +39,8 @@ const mindspore::HashSet<std::string> taylor_exception_ops{prim::kPrimReturn->na
 // Cache list of primitive ops which have been replaced by taylor rule.
 mindspore::HashMap<PrimitivePtr, FuncGraphPtr> taylor_ops_cache_;
 
-FuncGraphPtr GetTaylorRule(const PrimitivePtr &prim, const pipeline::ResourceBasePtr &resources) {
+FuncGraphPtr GetTaylorRule(const PrimitivePtr &prim, const pipeline::ResourceBasePtr &resources,
+                           const AnfNodePtr &node) {
   // Set a child scope named "grad'PrimitiveName'" for the taylor rule function,
   // and add "Gradients" to the front.
   static const std::string gradients_scope = "Gradients/";
@@ -60,7 +61,7 @@ FuncGraphPtr GetTaylorRule(const PrimitivePtr &prim, const pipeline::ResourceBas
       taylor_fn = GetTaylorRuleFunction(prim->name());
     }
   } else {
-    MS_LOG(EXCEPTION) << "Unknown Primitive SubClass: " << prim->ToString();
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "Unknown Primitive SubClass: " << prim->ToString();
   }
   if (!taylor_fn || py::isinstance<py::none>(taylor_fn)) {
     MS_LOG(INFO) << "Fail to find taylor rule function for " << prim->name() << ". taylor_fn: " << py::str(taylor_fn);
@@ -80,8 +81,9 @@ FuncGraphPtr GetTaylorRule(const PrimitivePtr &prim, const pipeline::ResourceBas
   return func_graph;
 }
 
-FuncGraphPtr GetTaylorPyObj(const PrimitivePtr &prim, const pipeline::ResourceBasePtr &resources) {
-  auto fg = GetTaylorRule(prim, resources);
+FuncGraphPtr GetTaylorPyObj(const PrimitivePtr &prim, const pipeline::ResourceBasePtr &resources,
+                            const AnfNodePtr &node) {
+  auto fg = GetTaylorRule(prim, resources, node);
   return fg;
 }
 
@@ -92,7 +94,7 @@ FuncGraphPtr GetTaylorPrimitive(const AnfNodePtr &node, const pipeline::Resource
   if (iter != taylor_ops_cache_.end()) {
     return iter->second;
   }
-  FuncGraphPtr primitive_taylor = GetTaylorPyObj(prim_node, resources);
+  FuncGraphPtr primitive_taylor = GetTaylorPyObj(prim_node, resources, node);
   MS_EXCEPTION_IF_NULL(primitive_taylor);
   taylor_ops_cache_[prim_node] = primitive_taylor;
   return primitive_taylor;
@@ -112,8 +114,8 @@ FuncGraphPtr TaylorFunctor(const FuncGraphPtr &func_graph, const pipeline::Resou
       if (taylor_ops.count(prim_node->name()) > 0) {
         taylor_node_list.push_back(node);
       } else if (taylor_exception_ops.count(prim_node->name()) == 0) {
-        MS_LOG(EXCEPTION) << "The operation " << prim_node->name()
-                          << " is not supported in taylor higher order differentiation currently.";
+        MS_LOG_WITH_NODE(EXCEPTION, node) << "The operation " << prim_node->name()
+                                          << " is not supported in taylor higher order differentiation currently.";
       }
     }
   }
@@ -151,8 +153,8 @@ bool ExpandTaylorPrim::operator()(const FuncGraphPtr &, const OptimizerPtr &opti
     MS_EXCEPTION_IF_NULL(taylor_fg_node);
     auto taylor_fg = GetValueNode<FuncGraphPtr>(taylor_fg_node);
     if (taylor_fg == nullptr) {
-      MS_LOG(INTERNAL_EXCEPTION) << "Unexpected Taylor node, input func graph should not be null, node: "
-                                 << taylor_fg_node->ToString();
+      MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, taylor_fg_node)
+        << "Unexpected Taylor node, input func graph should not be null, node: " << taylor_fg_node->ToString();
     }
     // Copy original forward graph in case of the influence of usage in other place.
     auto taylor_fg_copy = BasicClone(taylor_fg, true);

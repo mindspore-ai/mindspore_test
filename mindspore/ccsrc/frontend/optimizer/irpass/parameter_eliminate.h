@@ -37,8 +37,9 @@ static inline void CheckSwitchCallValid(const CNodePtr &switch_call) {
   if (switch_call->size() > 1) {
     // Means call switch(arg1, ...) has args.
     constexpr auto recursive_count = 2;
-    MS_LOG(INTERNAL_EXCEPTION) << "After switch_call_monad_eliminater pass, the call switch node should not has args."
-                               << " The call_switch_cnode is: " << switch_call->DebugString(recursive_count);
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, switch_call)
+      << "After switch_call_monad_eliminater pass, the call switch node should not has args."
+      << " The call_switch_cnode is: " << switch_call->DebugString(recursive_count);
   }
 }
 
@@ -184,7 +185,8 @@ static inline std::pair<mindspore::HashSet<size_t>, mindspore::HashMap<size_t, s
                                           [param_i](const auto &kw_only_arg) { return kw_only_arg == param_i; });
         if (is_kw_only_arg) {
           if (fg->kwonlyargs_count() <= 0) {
-            MS_LOG(INTERNAL_EXCEPTION) << "The kw_only_args_count is 0 when a kw_only_arg should be removed";
+            MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, fg->return_node())
+              << "The kw_only_args_count is 0 when a kw_only_arg should be removed";
           }
           fg->set_kwonlyargs_count(fg->kwonlyargs_count() - 1);
           (void)unused_parameter_indexes.erase(i);
@@ -229,13 +231,14 @@ static inline void AdjustCallerArgs(const FuncGraphPtr &called, const CNodePtr &
     size_t start_offset = IntToSize(called->GetPositionalArgsCount()) + arg_start_index;
     size_t end_offset = called->fv_param_count();
     if (start_offset > new_args.size()) {
-      MS_LOG(INTERNAL_EXCEPTION) << "The start_offset is " << start_offset << ", which exceeds the number of new args "
-                                 << new_args.size() << ".";
+      MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, caller)
+        << "The start_offset is " << start_offset << ", which exceeds the number of new args " << new_args.size()
+        << ".";
     }
     (void)new_args.erase(new_args.cbegin() + SizeToLong(start_offset), new_args.cend() - SizeToLong(end_offset));
   }
 
-  TraceGuard trace_guard(std::make_shared<TraceCopy>(caller->debug_info()));
+  TraceGuard trace_guard(MakeTraceInfo<TraceCopy>(caller->debug_info()));
   auto new_caller = caller->func_graph()->NewCNode(new_args);
   new_caller->set_abstract(caller->abstract());
   // Should be done before manager. Replace as caller CNode will be dropped after Replace, the ReplaceInOrder will be
@@ -276,7 +279,7 @@ static inline void AdjustGetItemCall(const CNodePtr &caller,
     auto &index_node = getitem_cnode->input(getitem_index_pos);
     auto index_value = GetValueNode<Int64ImmPtr>(index_node);
     if (index_value == nullptr || index_value->value() < 0) {
-      MS_LOG(INTERNAL_EXCEPTION) << "The index_value is incorrect, " << index_node->DebugString();
+      MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, index_node) << "The index_value is incorrect, " << index_node->DebugString();
     }
     size_t index_value_imm = LongToSize(index_value->value());
     const auto &index_pos = only_return_parameter_indexes.find(index_value_imm + 1);

@@ -305,7 +305,7 @@ class AreaGraph {
   CNodePtr CreateMainCNode(const FuncGraphPtr &main_func_graph, const FuncGraphPtr &sub_func_graph,
                            const std::vector<CNodePtr> &main_cnodes,
                            const mindspore::HashMap<ParameterPtr, AnfNodePtr> &param_node_map) {
-    TraceGuard guard(std::make_shared<TraceOpt>(sub_func_graph->debug_info()));
+    TraceGuard guard(MakeTraceInfo<TraceOpt>(sub_func_graph->debug_info()));
     AnfNodePtrList main_cnode_inputs = {NewValueNode(sub_func_graph)};
     for (const auto &param : sub_func_graph->parameters()) {
       // assert the param exists.
@@ -322,7 +322,7 @@ class AreaGraph {
         auto idx = NewValueNode(idx_val);
         idx->set_abstract(std::make_shared<abstract::AbstractScalar>(idx_val));
         AnfNodePtrList getitem_inputs = {NewValueNode(prim::kPrimTupleGetItem), main_cnodes[input_area], idx};
-        TraceGuard g_sub(std::make_shared<TraceOpt>(main_cnodes[input_area]->debug_info()));
+        TraceGuard g_sub(MakeTraceInfo<TraceOpt>(main_cnodes[input_area]->debug_info()));
         auto getitem_node = main_func_graph->NewCNode(getitem_inputs);
         auto abs_tuple = dyn_cast<abstract::AbstractTuple>(main_cnodes[input_area]->abstract());
         if (idx_val < SizeToLong(abs_tuple->size())) {

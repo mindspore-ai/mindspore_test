@@ -44,7 +44,7 @@ constexpr int64_t kUMonadOffsetIndex = 1;
 constexpr int64_t kIOMonadOffsetIndex = 2;
 constexpr char kVmapFunctionModelName[] = "mindspore.ops._vmap";
 
-int GetAxisSizeByAbs(const AbstractBasePtr &abs, ValuePtr *const in_axes);
+int GetAxisSizeByAbs(const AbstractBasePtr &abs, ValuePtr *const in_axes, const AnfNodePtr &node);
 
 // White list of primitives consistent before and after transformation.
 const mindspore::HashSet<std::string> throughtout_op{prim::kPrimMakeTuple->name(),   prim::kPrimMakeList->name(),
@@ -59,9 +59,9 @@ CNodePtr BuildBindInAxisSeqInput(const AnfNodePtr &input, const ValuePtr &in_axi
   if (in_axis->isa<ValueSequence>()) {
     in_axis_value_sequence = dyn_cast<ValueSequence>(in_axis);
     if (input_abs_elements->size() != in_axis_value_sequence->size()) {
-      MS_EXCEPTION(ValueError) << "The length of input and in_axis should be the same but got input length: "
-                               << input_abs_elements->size() << ", in_axis length: " << in_axis_value_sequence->size()
-                               << ".";
+      MS_EXCEPTION_WITH_NODE(ValueError, input)
+        << "The length of input and in_axis should be the same but got input length: " << input_abs_elements->size()
+        << ", in_axis length: " << in_axis_value_sequence->size() << ".";
     }
   }
   AnfNodePtrList ret_inputs;
@@ -186,8 +186,8 @@ ValueSequencePtr GetInAxesSeq(const ValuePtr &in_axes, size_t parameters_size) {
 }
 
 void GetSubAxisSize(const AbstractBasePtr &sub_abs, ValuePtr *const sub_in_axes, int *axis_size,
-                    std::vector<ValuePtr> *corrected_in_axes) {
-  int sub_axis_size = GetAxisSizeByAbs(sub_abs, sub_in_axes);
+                    std::vector<ValuePtr> *corrected_in_axes, const AnfNodePtr &node) {
+  int sub_axis_size = GetAxisSizeByAbs(sub_abs, sub_in_axes, node);
   corrected_in_axes->push_back(*sub_in_axes);
   if (sub_axis_size == kInvalidAxisSize) {
     return;
@@ -195,12 +195,13 @@ void GetSubAxisSize(const AbstractBasePtr &sub_abs, ValuePtr *const sub_in_axes,
   if (*axis_size == kInvalidAxisSize) {
     *axis_size = sub_axis_size;
   } else if (*axis_size != sub_axis_size) {
-    MS_EXCEPTION(ValueError) << "The 'axis_size' of each argument in the scope of 'vmap' should be equal, but got "
-                             << *axis_size << " and " << sub_axis_size << ".";
+    MS_EXCEPTION_WITH_NODE(ValueError, node)
+      << "The 'axis_size' of each argument in the scope of 'vmap' should be equal, but got " << *axis_size << " and "
+      << sub_axis_size << ".";
   }
 }
 
-int GetAxisSizeByAbs(const AbstractBasePtr &abs, ValuePtr *const in_axes) {
+int GetAxisSizeByAbs(const AbstractBasePtr &abs, ValuePtr *const in_axes, const AnfNodePtr &node) {
   MS_EXCEPTION_IF_NULL(abs);
   MS_EXCEPTION_IF_NULL(*in_axes);
   int axis_size = kInvalidAxisSize;
@@ -216,7 +217,7 @@ int GetAxisSizeByAbs(const AbstractBasePtr &abs, ValuePtr *const in_axes) {
         break;
       }
       ValuePtr sub_in_axes = in_axes_seq != nullptr ? (*in_axes_seq)[index] : *in_axes;
-      GetSubAxisSize(sub_abs, &sub_in_axes, &axis_size, &corrected_in_axes);
+      GetSubAxisSize(sub_abs, &sub_in_axes, &axis_size, &corrected_in_axes, node);
       index++;
     }
     *in_axes = std::make_shared<ValueSequence>(corrected_in_axes);
@@ -237,8 +238,8 @@ int GetAxisSizeByAbs(const AbstractBasePtr &abs, ValuePtr *const in_axes) {
                         << " meet expectations.";
         return axis_size;
       }
-      MS_EXCEPTION(ValueError) << "The abs should be AbstractTensor when axis is " << axis << ", but got a "
-                               << abs->ToString() << ".";
+      MS_EXCEPTION_WITH_NODE(ValueError, node)
+        << "The abs should be AbstractTensor when axis is " << axis << ", but got a " << abs->ToString() << ".";
     }
     auto shape = abs->BuildShape();
     MS_EXCEPTION_IF_NULL(shape);
@@ -247,8 +248,9 @@ int GetAxisSizeByAbs(const AbstractBasePtr &abs, ValuePtr *const in_axes) {
     ShapeVector orig_shape = shape_ptr->shape();
     int64_t shape_len = SizeToLong(orig_shape.size());
     if (axis < -shape_len || axis >= shape_len) {
-      MS_EXCEPTION(ValueError) << "ValueError: axis " << axis << " is out of bounds for array of dimension ["
-                               << -shape_len << "," << shape_len << ").";
+      MS_EXCEPTION_WITH_NODE(ValueError, node)
+        << "ValueError: axis " << axis << " is out of bounds for array of dimension [" << -shape_len << "," << shape_len
+        << ").";
     }
     axis = axis < 0 ? shape_len + axis : axis;
     *in_axes = std::make_shared<Int64Imm>(axis);
@@ -273,7 +275,7 @@ int GetAxisSize(const CNodePtr &cnode, size_t cell_size, size_t parameters_size,
       break;
     }
     ValuePtr sub_in_axes = in_axes_seq != nullptr ? (*in_axes_seq)[i] : *in_axes;
-    GetSubAxisSize(sub_abs, &sub_in_axes, &axis_size, &corrected_in_axes);
+    GetSubAxisSize(sub_abs, &sub_in_axes, &axis_size, &corrected_in_axes, cnode);
   }
   *in_axes = std::make_shared<ValueSequence>(corrected_in_axes);
 
@@ -281,19 +283,20 @@ int GetAxisSize(const CNodePtr &cnode, size_t cell_size, size_t parameters_size,
     if (axis_size == kInvalidAxisSize) {
       axis_size = SizeToLong(cell_size);
     } else if (SizeToLong(cell_size) != axis_size) {
-      MS_EXCEPTION(ValueError) << "If you want to execute the model ensembling parallel training, please make sure "
-                               << "the 'axis_size' in the scope of vmap consistent with the cell size of the input "
-                               << "'CellList', otherwise, please do not enter 'CellList' as the first argument, "
-                               << "but we get axis_size: " << axis_size << " and the cell size: " << cell_size << ".";
+      MS_EXCEPTION_WITH_NODE(ValueError, cnode)
+        << "If you want to execute the model ensembling parallel training, please make sure "
+        << "the 'axis_size' in the scope of vmap consistent with the cell size of the input "
+        << "'CellList', otherwise, please do not enter 'CellList' as the first argument, "
+        << "but we get axis_size: " << axis_size << " and the cell size: " << cell_size << ".";
     }
   } else if (axis_size == kInvalidAxisSize) {
-    MS_LOG(INTERNAL_EXCEPTION) << "Failed to get 'axis_size' within the scope of vmap.";
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, cnode) << "Failed to get 'axis_size' within the scope of vmap.";
   }
   return axis_size;
 }
 
 CNodePtr AttachToOutput(const FuncGraphPtr &func_graph, const CNodePtr &output, const AnfNodePtr &node) {
-  TraceGuard guard(std::make_shared<TraceCopy>(output->debug_info()));
+  TraceGuard guard(MakeTraceInfo<TraceCopy>(output->debug_info()));
   auto depend = NewValueNode(prim::kPrimDepend);
   auto depend_cnode = func_graph->NewCNode({depend, output, node});
   MS_EXCEPTION_IF_NULL(depend_cnode);
@@ -341,7 +344,8 @@ py::object CreatePrimitiveFunctionAdapterPyObj(const PrimitivePtr &prim_func) {
   return prim_func_adapter_obj;
 }
 
-AnfNodePtr GetVmapRule(const PrimitivePtr &prim, const pipeline::ResourceBasePtr &resource, int axis_size) {
+AnfNodePtr GetVmapRule(const PrimitivePtr &prim, const pipeline::ResourceBasePtr &resource, const AnfNodePtr &node,
+                       int axis_size) {
   // Set a child scope named "vmap_'PrimitiveName'" for the vmap rule function,
   // and add "VmapRule" to the front.
   constexpr char vmap_rule_scope[] = "VmapRule/";
@@ -360,7 +364,8 @@ AnfNodePtr GetVmapRule(const PrimitivePtr &prim, const pipeline::ResourceBasePtr
   if (GetPrimitiveFlag(prim, GRAPH_FLAG_SIDE_EFFECT_MEM)) {
     is_side_effect = true;
   } else if (GetPrimitiveFlag(prim, GRAPH_FLAG_SIDE_EFFECT_IO) && prim->name() != prim::kPrimPrint->name()) {
-    MS_LOG(EXCEPTION) << prim->name() << " is a GRAPH_FLAG_SIDE_EFFECT_IO prim, vmap dont support currently.";
+    MS_LOG_WITH_NODE(EXCEPTION, node) << prim->name()
+                                      << " is a GRAPH_FLAG_SIDE_EFFECT_IO prim, vmap dont support currently.";
   }
 
   // Get vmap rule for specific primitive.
@@ -380,7 +385,7 @@ AnfNodePtr GetVmapRule(const PrimitivePtr &prim, const pipeline::ResourceBasePtr
       vmap_rule_fn = GetVmapRuleFunction(prim->name(), axis_size);
     }
   } else {
-    MS_LOG(INTERNAL_EXCEPTION) << "Unexpected prim:" << prim->ToString();
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, node) << "Unexpected prim:" << prim->ToString();
   }
 
   // If vmap rule for specific primitive not found, get vmap general rule.
@@ -397,7 +402,7 @@ AnfNodePtr GetVmapRule(const PrimitivePtr &prim, const pipeline::ResourceBasePtr
   if (vmap_rule_node == nullptr) {
     vmap_rule_fg = parse::ParsePythonCode(vmap_rule_fn);
     if (vmap_rule_fg == nullptr) {
-      MS_LOG(INTERNAL_EXCEPTION) << "Fail to parse vmap rule function for " << prim->name() << ".";
+      MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, node) << "Fail to parse vmap rule function for " << prim->name() << ".";
     }
     auto vmap_rule_flag = GetPrimitiveFlag(prim, GRAPH_FLAG_SIDE_EFFECT_PROPAGATE);
     if (vmap_rule_flag) {
@@ -414,16 +419,16 @@ AnfNodePtr GetVmapRule(const PrimitivePtr &prim, const pipeline::ResourceBasePtr
 AnfNodePtr ExpandVmapPrimitive(const AnfNodePtr &vnode, const pipeline::ResourceBasePtr &resource, int axis_size) {
   MS_EXCEPTION_IF_NULL(vnode);
   if (!IsValueNode<Primitive>(vnode)) {
-    MS_LOG(INTERNAL_EXCEPTION) << "Primitive node is not valid.";
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, vnode) << "Primitive node is not valid.";
   }
   auto prim = GetValueNode<PrimitivePtr>(vnode);
   MS_LOG(DEBUG) << "Overloading Primitive node " << vnode->DebugString() << ".";
   if (throughtout_op.count(prim->name()) > 0) {
     return vnode;
   }
-  AnfNodePtr prim_vmap_rule = GetVmapRule(prim, resource, axis_size);
+  AnfNodePtr prim_vmap_rule = GetVmapRule(prim, resource, vnode, axis_size);
   if (prim_vmap_rule == nullptr) {
-    MS_LOG(INTERNAL_EXCEPTION) << "Primitive " << prim->name() << " transform to VmapRule failed.";
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, vnode) << "Primitive " << prim->name() << " transform to VmapRule failed.";
   }
   return prim_vmap_rule;
 }
@@ -560,19 +565,21 @@ void GenerateStackedParams(const FuncGraphPtr &top_fg, size_t cell_size, const s
         param_name = std::regex_replace(orig_param_name, match_prefix, "vmap.$1");
       } else {
         if (tensor_type != param_tensor->data_type()) {
-          MS_LOG(EXCEPTION) << "The corresponding parameter's type in each cell should be consistent, but get "
-                            << TypeIdToType(tensor_type)->ToString() << " and "
-                            << TypeIdToType(param_tensor->data_type())->ToString() << " for the parameter "
-                            << param_name << ".";
+          MS_LOG_WITH_NODE(EXCEPTION, param_node)
+            << "The corresponding parameter's type in each cell should be consistent, but get "
+            << TypeIdToType(tensor_type)->ToString() << " and " << TypeIdToType(param_tensor->data_type())->ToString()
+            << " for the parameter " << param_name << ".";
         }
         if (tensor_shape != param_tensor->shape()) {
-          MS_LOG(EXCEPTION) << "The corresponding parameter's shape in each cell should be consistent, but get "
-                            << GetShapeString(tensor_shape) << " and " << GetShapeString(param_tensor->shape())
-                            << " for the parameter " << param_name << ".";
+          MS_LOG_WITH_NODE(EXCEPTION, param_node)
+            << "The corresponding parameter's shape in each cell should be consistent, but get "
+            << GetShapeString(tensor_shape) << " and " << GetShapeString(param_tensor->shape()) << " for the parameter "
+            << param_name << ".";
         }
         if (param_name != std::regex_replace(param_node->name(), match_prefix, "vmap.$1")) {
-          MS_LOG(EXCEPTION) << "The corresponding parameter's postfix name in each cell should be consistent, but get "
-                            << orig_param_name << " and " << param_node->name() << ".";
+          MS_LOG_WITH_NODE(EXCEPTION, param_node)
+            << "The corresponding parameter's postfix name in each cell should be consistent, but get "
+            << orig_param_name << " and " << param_node->name() << ".";
         }
       }
     }
@@ -620,8 +627,8 @@ AnfNodePtr HandleVmapCellList(const FuncGraphPtr &top_func_graph, const CNodePtr
   CNodePtr cnode = cell_list_node->cast<CNodePtr>();
   auto inputs_size = cnode->size();
   if (inputs_size != (cell_size + 1)) {
-    MS_EXCEPTION(ValueError) << "The size of CellList Node should be equal to" << (cell_size + 1) << ", but get"
-                             << inputs_size << ".";
+    MS_EXCEPTION_WITH_NODE(ValueError, vmap_node)
+      << "The size of CellList Node should be equal to" << (cell_size + 1) << ", but get" << inputs_size << ".";
   }
   std::vector<AnfNodePtrList> param_table(cell_size, AnfNodePtrList());
   FuncGraphPtr vmap_fg = nullptr;
@@ -635,8 +642,8 @@ AnfNodePtr HandleVmapCellList(const FuncGraphPtr &top_func_graph, const CNodePtr
       vmap_fg = GetValueNode<FuncGraphPtr>(vmap_fn_node);
     }
     if (vmap_fg == nullptr) {
-      MS_LOG(INTERNAL_EXCEPTION) << "The " << i << "th input is not func graph, but " << vmap_fn_node->DebugString()
-                                 << ", cnode: " << cnode->DebugString();
+      MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, cnode) << "The " << i << "th input is not func graph, but "
+                                                  << vmap_fn_node->DebugString() << ", cnode: " << cnode->DebugString();
     }
     if (IsPrimitiveCNode(vmap_fn_node, prim::kPrimPartial)) {
       const auto partial_cnode = dyn_cast_ptr<CNode>(vmap_fn_node);
@@ -650,8 +657,8 @@ AnfNodePtr HandleVmapCellList(const FuncGraphPtr &top_func_graph, const CNodePtr
     if (param_size == 0) {
       param_size = param_table[i - 1].size();
     } else if (param_size != param_table[i - 1].size()) {
-      MS_EXCEPTION(ValueError) << "Parameter size of each cell should be consistent, but get " << param_size << " and "
-                               << param_table[i - 1].size() << ".";
+      MS_EXCEPTION_WITH_NODE(ValueError, cnode) << "Parameter size of each cell should be consistent, but get "
+                                                << param_size << " and " << param_table[i - 1].size() << ".";
     }
   }
 
@@ -712,7 +719,7 @@ void ExpandVmapPrim::ExpandVmapValueNode(const FuncGraphPtr &vmap_fg, const pipe
     } else if (IsValueNode<Monad>(node)) {
       continue;
     } else {
-      MS_LOG(EXCEPTION) << "vmap do not support transform " << node->DebugString() << " right now.";
+      MS_LOG_WITH_NODE(EXCEPTION, node) << "vmap do not support transform " << node->DebugString() << " right now.";
     }
   }
 }
@@ -729,7 +736,7 @@ void ExpandVmapPrim::ExpandVmapInput(const FuncGraphPtr &vmap_fg, const FuncGrap
   } else if (node->isa<Parameter>()) {
     BindParamAxis(node, vmap_fg, top_func_graph_, manager, &stacked_params_);
   } else {
-    MS_LOG(EXCEPTION) << "vmap do not support transform " << node->DebugString() << " right now.";
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "vmap do not support transform " << node->DebugString() << " right now.";
   }
 }
 
@@ -794,8 +801,8 @@ AnfNodePtr ExpandVmapPrim::ExpandVmap(const ValueNodePtr &vnode, const pipeline:
     visited_node.clear();
     return NewValueNode(tf_fg);
   }
-  MS_LOG(EXCEPTION) << "Currently, the first argument in F.vmap only supports Cell, Python defined "
-                       "function or @jit decorated function.";
+  MS_LOG_WITH_NODE(EXCEPTION, vnode) << "Currently, the first argument in F.vmap only supports Cell, Python defined "
+                                        "function or @jit decorated function.";
 }
 
 AnfNodePtr ExpandVmapPrim::BindInAxis(const CNodePtr &vmap_app, const AnfNodePtrList &partial_inputs,
@@ -807,17 +814,17 @@ AnfNodePtr ExpandVmapPrim::BindInAxis(const CNodePtr &vmap_app, const AnfNodePtr
   auto inputs = vmap_app->inputs();
   auto inputs_size = inputs.size();
   if (inputs_size == 0) {
-    MS_EXCEPTION(ValueError) << "The inputs number of CNode: " << vmap_app->DebugString()
-                             << " should be positive but got : " << inputs_size << ".";
+    MS_EXCEPTION_WITH_NODE(ValueError, vmap_app) << "The inputs number of CNode: " << vmap_app->DebugString()
+                                                 << " should be positive but got : " << inputs_size << ".";
   }
   GetMonadOffset(inputs, u_monad_offset, io_monad_offset);
   size_t abstract_monad_count = *u_monad_offset > *io_monad_offset ? *u_monad_offset : *io_monad_offset;
   size_t real_params_size = inputs_size > abstract_monad_count ? inputs_size - abstract_monad_count : 0;
   if (is_in_axes_value_sequence && real_params_size - 1 != in_axes_to_value_sequence->size()) {
-    MS_EXCEPTION(ValueError) << "The length of vmap_app inputs (except primitive input and monad input) is: "
-                             << (real_params_size - 1)
-                             << " and the length of in_axis is: " << in_axes_to_value_sequence->size()
-                             << ". These two numbers should be equal.";
+    MS_EXCEPTION_WITH_NODE(ValueError, vmap_app)
+      << "The length of vmap_app inputs (except primitive input and monad input) is: " << (real_params_size - 1)
+      << " and the length of in_axis is: " << in_axes_to_value_sequence->size()
+      << ". These two numbers should be equal.";
   }
 
   AnfNodePtrList outputs;
@@ -933,7 +940,7 @@ bool ExpandVmapPrim::CheckIfEmbedMetaFgPrim(const CNodePtr &node) const {
   }
   auto func_graph = GetValueNode<FuncGraphPtr>(value_node);
   if (func_graph == nullptr) {
-    MS_LOG(INTERNAL_EXCEPTION) << "Unexpected meta function graph node:" << node->DebugString();
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, node) << "Unexpected meta function graph node:" << node->DebugString();
   }
   auto func_graph_manager = func_graph->manager();
   MS_EXCEPTION_IF_NULL(func_graph_manager);
@@ -987,8 +994,8 @@ bool ExpandVmapPrim::operator()(const FuncGraphPtr &, const OptimizerPtr &optimi
     MS_EXCEPTION_IF_NULL(vmap_fg);
     auto users = manager->node_users()[vmap_node];
     if (users.size() < 1) {
-      MS_EXCEPTION(ValueError) << "vmap_node could used by at least one CNode, but got users.size() = " << users.size()
-                               << ".";
+      MS_EXCEPTION_WITH_NODE(ValueError, vmap_node)
+        << "vmap_node could used by at least one CNode, but got users.size() = " << users.size() << ".";
     }
 
     for (const auto &user : users) {
@@ -1008,8 +1015,8 @@ bool ExpandVmapPrim::operator()(const FuncGraphPtr &, const OptimizerPtr &optimi
       auto vmap_app = user.first->cast<CNodePtr>();
       int user_index = user.second;
       if (vmap_app->size() < 1) {
-        MS_LOG(INTERNAL_EXCEPTION) << "Something went wrong, CNode vmap_app's arguments is less than 1, CNode: "
-                                   << vmap_app->DebugString();
+        MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, vmap_app)
+          << "Something went wrong, CNode vmap_app's arguments is less than 1, CNode: " << vmap_app->DebugString();
       }
       MS_LOG(DEBUG) << "vmap_app: " << vmap_app->DebugString() << ", user_index: " << user_index;
       size_t parameters_size = vmap_app->size() - 1;

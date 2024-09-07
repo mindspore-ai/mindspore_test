@@ -402,7 +402,9 @@ void CloneParameter(const AnfNodePtr &node, const KernelGraphPtr &new_graph) {
     if (param_info != nullptr) {
       const auto &param_name = param_info->name();
       new_param->set_name(param_name);
-      new_param->debug_info()->set_name(param_name);
+      if (new_param->debug_info() != nullptr) {
+        new_param->debug_info()->set_name(param_name);
+      }
     }
     new_param->set_default_param(t);
   }
@@ -2062,7 +2064,9 @@ AnfNodePtr GradExecutor::GetParamInput(const ValuePtr &v, const std::string &id)
     // Add new weight param to graph info
     auto weight_param = curr_g()->add_parameter();
     weight_param->set_name(param_name);
-    weight_param->debug_info()->set_name(param_name);
+    if (weight_param->debug_info() != nullptr) {
+      weight_param->debug_info()->set_name(param_name);
+    }
     weight_param->set_default_param(tensor);
     weight_param->set_abstract(PyNativeAlgo::Common::SetAbstractValueToAnyValue(tensor->ToAbstract()));
     top_cell()->SetParamNodeMapInGraphInfoMap(id, weight_param, true);

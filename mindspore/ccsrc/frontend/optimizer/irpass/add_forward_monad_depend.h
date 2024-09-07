@@ -56,7 +56,9 @@ void AddUMonadInput(const FuncGraphManagerPtr &manager, const FuncGraphPtr &bpro
 void PropagateUMonadInput(const FuncGraphManagerPtr &manager, const FuncGraphPtr &bprop_graph,
                           const AbstractBasePtr &u_abs, bool add_u_input) {
   auto new_u_para = bprop_graph->add_parameter();
-  new_u_para->debug_info()->set_name("forward_u");
+  if (new_u_para->debug_info() != nullptr) {
+    new_u_para->debug_info()->set_name("forward_u");
+  }
   new_u_para->set_abstract(u_abs);
   bprop_graph->set_flag(kFuncGraphFlagAddedForwardU, true);
   if (add_u_input) {
@@ -80,8 +82,8 @@ void PropagateUMonadInput(const FuncGraphManagerPtr &manager, const FuncGraphPtr
     manager->AddEdge(propagate_node, new_u_para);
     auto bprop_getter_abs = dyn_cast<abstract::FuncGraphAbstractClosure>(propagate_node->input(0)->abstract());
     if (bprop_getter_abs == nullptr) {
-      MS_LOG(INTERNAL_EXCEPTION) << "The node " << propagate_node->input(0)->DebugString()
-                                 << " should have a FuncGraphAbstractClosure abstract.";
+      MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, propagate_node) << "The node " << propagate_node->input(0)->DebugString()
+                                                           << " should have a FuncGraphAbstractClosure abstract.";
     }
     auto bprop_fg = bprop_getter_abs->func_graph();
     MS_EXCEPTION_IF_NULL(bprop_fg);
@@ -171,13 +173,14 @@ bool AddForwardMonadDepend(const FuncGraphPtr &root, const opt::OptimizerPtr &op
       }
       auto bprop_getter_abs = dyn_cast<abstract::FuncGraphAbstractClosure>(bprop_getter->abstract());
       if (bprop_getter_abs == nullptr) {
-        MS_LOG(INTERNAL_EXCEPTION) << "The node " << bprop_getter->DebugString()
-                                   << " should have a FuncGraphAbstractClosure abstract.";
+        MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, bprop_getter)
+          << "The node " << bprop_getter->DebugString() << " should have a FuncGraphAbstractClosure abstract.";
       }
       if (bprop_graph == nullptr) {
         bprop_graph = bprop_getter_abs->func_graph();
       } else if (bprop_getter_abs->func_graph() != bprop_graph) {
-        MS_LOG(INTERNAL_EXCEPTION) << "The bprop graphs are not same for the k graph: " << top_k_graph->ToString();
+        MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, bprop_getter)
+          << "The bprop graphs are not same for the k graph: " << top_k_graph->ToString();
       }
       auto bprop_user = GetBpropCaller(manager, bprop_getter);
       if (bprop_user == nullptr) {

@@ -91,6 +91,7 @@ std::string Location::DebugString() const {
 std::string Location::ToString(SourceLineTip tip, int start_line) {
   std::stringstream debug_info_ss;
   std::stringstream section_debug_info_ss;
+  char *file_out;
   if (tip != kSourceSectionTipNextLineHere) {
     // For example,
     // the location is from {line 9, column 4}, to {line 15, column 20}:
@@ -120,26 +121,25 @@ std::string Location::ToString(SourceLineTip tip, int start_line) {
     MS_LOG(WARNING) << "The file '" << file_name_ << "' may not exists.";
     return debug_info_ss.str();
   }
-  std::ifstream file(path.value());
-  if (!file.is_open()) {
+  FILE *file = fopen(path.value().c_str(), "r");
+  if (file == NULL) {
     MS_LOG(WARNING) << "Failed to open file '" << file_name_ << "'.";
     return debug_info_ss.str();
   }
   // Read the lines one by one.
+  char line[200];
   int line_num = 0;
-  std::string line;
-  (void)getline(file, line);
-  while (line_num != line_ - 1) {
+  file_out = fgets(line, 200, file);
+  while (line_num != line_ - 1 && file_out != NULL) {
     if (tip == kSourceSectionTipNextLineHere && line_num >= start_line - 1) {
       section_debug_info_ss << line << "\n";
     }
-    (void)getline(file, line);
-    line_num++;
+    file_out = fgets(line, 200, file);
+    ++line_num;
   }
-  file.close();
+  fclose(file);
   // Store the line string as cache.
   line_str_ = line;
-
   if (tip == kSourceSectionTipNextLineHere) {
     section_debug_info_ss << HighlightLine(line, column_, column_end_, line_end_ == line_, tip) << std::endl;
     return section_debug_info_ss.str();
@@ -245,7 +245,9 @@ TraceContextPtr TraceManager::CurrentContextInfo() {
 }
 
 bool TraceManager::DebugTrace(const LocationPtr &location) {
-  MS_EXCEPTION_IF_NULL(location);
+  if (location == nullptr) {
+    return false;
+  }
   if (location->invalid()) {
     MS_LOG(DEBUG) << "Trace failed";
     return false;
@@ -259,9 +261,13 @@ bool TraceManager::DebugTrace(const LocationPtr &location) {
 }
 
 bool TraceManager::DebugTrace(const TraceInfoPtr &trace_info) {
-  MS_EXCEPTION_IF_NULL(trace_info);
+  if (trace_info == nullptr) {
+    return false;
+  }
   auto &debug_info = trace_info->debug_info();
-  MS_EXCEPTION_IF_NULL(debug_info);
+  if (debug_info == nullptr) {
+    return false;
+  }
   (void)trace_context_stack_.emplace_back(trace_info);
   if (parser_debug_info_flag_) {
     parser_debug_info_ = debug_info;
@@ -285,13 +291,13 @@ void TraceManager::OpenParserDebugInfoFlag() { parser_debug_info_flag_ = true; }
 bool TraceManager::parser_debug_info_flag() { return parser_debug_info_flag_; }
 
 LocationPtr GetFirstLocation(const DebugInfoPtr &debug_info) {
-  auto tmp = debug_info;
-  while (tmp != nullptr) {
-    if (tmp->location() != nullptr) {
-      return tmp->location();
+  auto first = debug_info;
+  while (first != nullptr) {
+    if (first->location() != nullptr) {
+      return first->location();
     }
-    if (tmp->trace_info() != nullptr) {
-      tmp = tmp->trace_info()->debug_info();
+    if (first->trace_info() != nullptr) {
+      first = first->trace_info()->debug_info();
     } else {
       break;
     }
@@ -300,8 +306,12 @@ LocationPtr GetFirstLocation(const DebugInfoPtr &debug_info) {
 }
 
 bool DebugInfoCompare::operator()(const DebugInfoPtr &left, const DebugInfoPtr &right) const {
-  MS_EXCEPTION_IF_NULL(left);
-  MS_EXCEPTION_IF_NULL(right);
+  if (left == nullptr) {
+    return false;
+  }
+  if (right == nullptr) {
+    return false;
+  }
   if (left == right) {
     return false;
   }
@@ -314,21 +324,6 @@ bool DebugInfoCompare::operator()(const DebugInfoPtr &left, const DebugInfoPtr &
     return false;
   }
   return *left_loc < *right_loc;
-}
-
-void UpdateDebugInfo(const FuncGraphPtr &func_graph, const ScopePtr &scope, const DebugInfoPtr &debug_info) {
-  if (func_graph == nullptr || scope == nullptr || debug_info == nullptr) {
-    return;
-  }
-  auto nodes = TopoSort(func_graph->get_return(), SuccDeeperSimple);
-  TraceGuard guard(std::make_shared<TraceGenMetaFuncGraph>(debug_info));
-  for (const auto &node : nodes) {
-    if (!node->isa<CNode>()) {
-      continue;
-    }
-    node->set_scope(std::make_shared<Scope>(scope->name()));
-    node->set_debug_info(std::make_shared<NodeDebugInfo>());
-  }
 }
 
 namespace {
@@ -357,17 +352,64 @@ void DumpNodesDebugInfos(const AnfNodePtr &caller, const AnfNodePtr &callee) {
   }
 }
 
+bool generate_real_location(const DebugInfoPtr &callee_debug_info, const DebugInfoPtr &caller_debug_info,
+                            const std::vector<mindspore::DebugInfoPtr> &callee_debug_infos,
+                            const std::vector<mindspore::DebugInfoPtr> &caller_debug_infos) {
+  // Generated debug info: caller debug info + used graph's debug info
+  DebugInfoPtr cur_callee_debug_info;
+  std::vector<DebugInfoPtr> checked_debug_info;
+  for (size_t i = 0; i < callee_debug_infos.size(); ++i) {
+    cur_callee_debug_info = callee_debug_infos[i];
+    checked_debug_info.emplace_back(cur_callee_debug_info);
+    // If found stored real location, inherit it and extend the rest of location.
+    if (!cur_callee_debug_info->real_loc().empty()) {
+      callee_debug_info->set_real_loc(cur_callee_debug_info->real_loc());
+      std::reverse(std::begin(checked_debug_info), std::end(checked_debug_info));
+      callee_debug_info->set_real_loc(checked_debug_info);
+      return true;
+    }
+    // If found reused graph, store real location.
+    if (cur_callee_debug_info->is_reusing()) {
+      const auto &parent_real_loc = caller_debug_info->real_loc();
+      if (!parent_real_loc.empty()) {
+        callee_debug_info->set_real_loc(parent_real_loc);
+      } else {
+        for (size_t j = 0; j < caller_debug_infos.size(); ++j) {
+          const auto &cur_caller_debug_info = caller_debug_infos[caller_debug_infos.size() - j - 1];
+          if (cur_caller_debug_info->location() != nullptr) {
+            callee_debug_info->AddLocation(cur_caller_debug_info);
+          }
+        }
+      }
+      std::reverse(std::begin(checked_debug_info), std::end(checked_debug_info));
+      callee_debug_info->set_real_loc(checked_debug_info);
+      return true;
+    }
+  }
+  return false;
+}
+
 void SyncShadowDebugInfo(const DebugInfoPtr &caller_debug_info, const DebugInfoPtr &callee_debug_info) {
+  MS_EXCEPTION_IF_NULL(caller_debug_info);
+  MS_EXCEPTION_IF_NULL(callee_debug_info);
   // Synchronize callers' shadow debug infos.
   const auto &caller_shadow_debug_infos = caller_debug_info->shadow_debug_infos_map();
   callee_debug_info->shadow_debug_infos_map().insert(caller_shadow_debug_infos.cbegin(),
                                                      caller_shadow_debug_infos.cend());
+  const auto &caller_real_loc = caller_debug_info->real_loc();
+  // Synchronize callers' real location.
+  if (!caller_real_loc.empty()) {
+    callee_debug_info->set_real_loc(caller_real_loc);
+  }
 }
 }  // namespace
 
 void UpdateInlineCNodeDebugInfo(const AnfNodePtr &caller, const AnfNodePtr &callee) {
   const DebugInfoPtr &caller_debug_info = caller->debug_info();
   const DebugInfoPtr &callee_debug_info = callee->debug_info();
+  if (caller_debug_info == nullptr || callee_debug_info == nullptr) {
+    return;
+  }
   const auto caller_debug_infos = GetDebugInfoList(caller_debug_info);
   const auto callee_debug_infos = GetDebugInfoList(callee_debug_info);
   if (callee_debug_infos.size() == 1) {  // New inserted node, not by parser.
@@ -385,6 +427,16 @@ void UpdateInlineCNodeDebugInfo(const AnfNodePtr &caller, const AnfNodePtr &call
     const auto &callee_locaton = cur_callee_debug_info->location();
     if (caller_locaton == nullptr || callee_locaton == nullptr) {
       SyncShadowDebugInfo(caller_debug_info, callee_debug_info);
+      // Store rest of location of callee.
+      if (callee_locaton != nullptr) {
+        for (size_t j = i; j < callee_debug_infos.size(); ++j) {
+          const auto &rest_callee_debug_info = callee_debug_infos[callee_debug_infos.size() - j - 1];
+          const auto &rest_locaton = rest_callee_debug_info->location();
+          if (rest_locaton != nullptr && !callee_debug_info->real_loc().empty()) {
+            callee_debug_info->AddLocation(rest_callee_debug_info);
+          }
+        }
+      }
       return;
     }
     if (caller_locaton != callee_locaton) {
@@ -412,6 +464,12 @@ void UpdateInlineCNodeDebugInfo(const AnfNodePtr &caller, const AnfNodePtr &call
   if (caller_reverse_pos < 0) {
     DumpNodesDebugInfos(caller, callee);
     MS_LOG(INTERNAL_EXCEPTION) << "Wrong index for caller.";
+  }
+
+  bool got_real_location =
+    generate_real_location(callee_debug_info, caller_debug_info, callee_debug_infos, caller_debug_infos);
+  if (got_real_location) {
+    return;
   }
   auto first_diff_caller_debug_info = caller_debug_infos[caller_reverse_pos];
   MS_LOG(DEBUG) << "reverse_pos: " << callee_reverse_pos << "/" << caller_reverse_pos

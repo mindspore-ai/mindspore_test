@@ -84,8 +84,8 @@ class RemoveNotRecomputeNode : public AnfVisitor {
       auto para = k_fg_->add_parameter();
       auto cnode_k_fg_output = cnode_k_fg->output();
       if (!IsPrimitiveCNode(cnode_k_fg_output, prim::kPrimMakeTuple)) {
-        MS_LOG(INTERNAL_EXCEPTION) << "The output of k graph should be make_tuple, but got "
-                                   << cnode_k_fg_output->DebugString();
+        MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, cnode_k_fg_output)
+          << "The output of k graph should be make_tuple, but got " << cnode_k_fg_output->DebugString();
       }
       (void)manager->Replace(cnode_k_fg_output->cast<CNodePtr>()->input(1), para);
     }

@@ -75,8 +75,9 @@ AnfNodePtr AddMonadParameter(const FuncGraphPtr &func_graph, const std::string &
   // Create a new parameter if not existed.
   auto para = std::make_shared<Parameter>(func_graph);
   para->set_name(name);
-  MS_EXCEPTION_IF_NULL(para->debug_info());
-  para->debug_info()->set_name(name);
+  if (para->debug_info() != nullptr) {
+    para->debug_info()->set_name(name);
+  }
   para->set_abstract(abs);
   // If io monad parameter added before u monad parameter, should insert u monad before io monad in parameters
   if (io_monad_location != params_size && abs->isa<abstract::AbstractUMonad>()) {
@@ -348,7 +349,7 @@ class SccFinder {
       }
       // SCC should not be empty.
       if (scc->empty()) {
-        MS_LOG(INTERNAL_EXCEPTION) << "Invalid SCC for: " << graph->ToString();
+        MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, graph->return_node()) << "Invalid SCC for: " << graph->ToString();
       }
       visit_stack.pop();
     }
@@ -625,7 +626,7 @@ class SideEffectFinder {
       size_t extra_input_size = 0;
       const auto &switch_node = caller->input(0);
       if (!IsPrimitiveCNode(switch_node, prim::kPrimSwitch)) {
-        MS_LOG(INTERNAL_EXCEPTION) << "Not switch CNode, " << switch_node->DebugString();
+        MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, switch_node) << "Not switch CNode, " << switch_node->DebugString();
       }
       const auto &switch_cnode = dyn_cast<CNode>(switch_node);
       constexpr auto ignore_switch_and_cond_count = 2;
@@ -643,11 +644,11 @@ class SideEffectFinder {
         // The number of parameter should matched after fix.
         if (caller_input_size + extra_input_size != branch->parameters().size()) {
           constexpr auto recursive_count = 2;
-          MS_LOG(INTERNAL_EXCEPTION) << "Fix switch branch parameters failed! " << caller->DebugString(recursive_count)
-                                     << ", branch: " << branch->ToString()
-                                     << ", branch node: " << branch_node->DebugString(recursive_count)
-                                     << ", size: " << caller_input_size << " + " << extra_input_size << " not equal to "
-                                     << branch->parameters().size();
+          MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, caller)
+            << "Fix switch branch parameters failed! " << caller->DebugString(recursive_count)
+            << ", branch: " << branch->ToString() << ", branch node: " << branch_node->DebugString(recursive_count)
+            << ", size: " << caller_input_size << " + " << extra_input_size << " not equal to "
+            << branch->parameters().size();
         }
       }
     }
@@ -701,15 +702,17 @@ class SideEffectFinder {
   size_t GetInputIndex(const ValuePtr &top_index_value, const CNodePtr &origin_cnode, size_t inputs_size) {
     auto int64_imm = dyn_cast<Int64Imm>(top_index_value);
     if (int64_imm == nullptr) {
-      MS_LOG(INTERNAL_EXCEPTION) << "Invalid make_tuple: " << origin_cnode->DebugString()
-                                 << ", index: " << (top_index_value == nullptr ? "null" : top_index_value->ToString());
+      MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, origin_cnode)
+        << "Invalid make_tuple: " << origin_cnode->DebugString()
+        << ", index: " << (top_index_value == nullptr ? "null" : top_index_value->ToString());
     }
     auto top_index = int64_imm->value();
     size_t input_index = 0;
     // Support tuple index is negative
     if (top_index < 0) {
       if (SizeToLong(inputs_size) + top_index < 0) {
-        MS_LOG(INTERNAL_EXCEPTION) << "Invalid make_tuple: " << origin_cnode->DebugString() << " index=" << top_index;
+        MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, origin_cnode)
+          << "Invalid make_tuple: " << origin_cnode->DebugString() << " index=" << top_index;
       }
       input_index = static_cast<size_t>(inputs_size + top_index);
     } else {
@@ -717,7 +720,8 @@ class SideEffectFinder {
       input_index = static_cast<size_t>(top_index) + 1;
     }
     if (input_index >= inputs_size) {
-      MS_LOG(INTERNAL_EXCEPTION) << "Invalid make_tuple: " << origin_cnode->DebugString() << " index=" << top_index;
+      MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, origin_cnode)
+        << "Invalid make_tuple: " << origin_cnode->DebugString() << " index=" << top_index;
     }
     return input_index;
   }
@@ -942,7 +946,8 @@ class SideEffectFinder {
       }
       ++parameter_index;
     }
-    MS_LOG(INTERNAL_EXCEPTION) << "Parameter not found: " << (para ? para->DebugString() : "<null>");
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, func_graph->return_node())
+      << "Parameter not found: " << (para ? para->DebugString() : "<null>");
   }
 
   // Trace effect info from function parameter.
@@ -995,11 +1000,11 @@ class SideEffectFinder {
     MS_EXCEPTION_IF_NULL(cnode);
     constexpr size_t min_call_node_size = 2;
     if (cnode->size() < min_call_node_size) {
-      MS_LOG(INTERNAL_EXCEPTION) << "Invalid call node: " << cnode->DebugString();
+      MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, cnode) << "Invalid call node: " << cnode->DebugString();
     }
     auto func_graph = GetValueNode<FuncGraphPtr>(cnode->input(1));
     if (func_graph == nullptr) {
-      MS_LOG(INTERNAL_EXCEPTION) << "Invalid call node: " << cnode->DebugString();
+      MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, cnode) << "Invalid call node: " << cnode->DebugString();
     }
     return ObtainEffectInfoForFuncGraph(func_graph);
   }
@@ -1134,7 +1139,8 @@ class SideEffectFinder {
     // Get SCC that this graph belongs to.
     auto scc = GetScc(func_graph);
     if (scc == nullptr) {
-      MS_LOG(INTERNAL_EXCEPTION) << "Scc should not be null, func_graph: " << func_graph->ToString();
+      MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, func_graph->return_node())
+        << "Scc should not be null, func_graph: " << func_graph->ToString();
     }
     // To prevent SCC members be visited again, we set effect info
     // to 'kDetecting' state before start to check cnodes.
@@ -1175,7 +1181,7 @@ class SideEffectFinder {
       auto cnode_effect = ObtainEffectInfoForCNode(cnode);
       // Side effect should be detected now, except free variable nodes that not belong to current SCC.
       if (cnode_effect.state != EffectInfo::kDetected && scc->find(cnode->func_graph()) != scc->end()) {
-        MS_LOG(INTERNAL_EXCEPTION) << "Side effect is undetectable: " << cnode->DebugString();
+        MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, cnode) << "Side effect is undetectable: " << cnode->DebugString();
       }
     }
     return info;
@@ -1722,7 +1728,7 @@ class AutoMonadConverter {
 
   void AttachToOutput(const AnfNodePtr &node) const {
     auto output = GetGraphOutput();
-    TraceGuard guard(std::make_shared<TraceCopy>(output->debug_info()));
+    TraceGuard guard(MakeTraceInfo<TraceCopy>(output->debug_info()));
     auto depend = NewValueNode(prim::kPrimDepend);
     // If isolated nodes dependencies exist.
     if (IsPrimitiveCNode(output, prim::kPrimDepend) &&

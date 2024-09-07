@@ -50,8 +50,9 @@ AnfNodePtr GetIndexedEnvironValueNode(const FuncGraphPtr &fg, const AnfNodePtr &
   if (IsValueNode<ValueTuple>(origin_value_node)) {
     auto origin_value_tuple = GetValueNode<ValueTuplePtr>(origin_value_node);
     if (index >= origin_value_tuple->size()) {
-      MS_LOG(EXCEPTION) << "Index: " << index << " is greater than Value size: " << origin_value_tuple->size()
-                        << ", Default Value: " << origin_value_node->ToString();
+      MS_LOG_WITH_NODE(EXCEPTION, origin_value_node)
+        << "Index: " << index << " is greater than Value size: " << origin_value_tuple->size()
+        << ", Default Value: " << origin_value_node->ToString();
     }
     new_value_node = NewValueNode((*origin_value_tuple)[index]);
   } else {

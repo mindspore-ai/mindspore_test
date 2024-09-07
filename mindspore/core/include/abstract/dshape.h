@@ -90,6 +90,8 @@ class MS_CORE_API BaseShape : public Base {
   /// \brief Broaden the shape.
   virtual void Broaden() {}
 
+  virtual void ToStringWithBuffer(std::ostringstream &buffer) const { buffer << type_name(); }
+
   /// \brief Get shape dimensions of BaseShape object.
   ///
   /// \return Shape dimensions.
@@ -124,6 +126,8 @@ class MS_CORE_API NoShape final : public BaseShape {
   ///
   /// \return The description string about the NoShape object.
   std::string ToString() const override { return type_name(); }
+
+  void ToStringWithBuffer(std::ostringstream &buffer) const override { buffer << type_name(); }
 
   bool IsDynamic() const override { return false; }
 
@@ -187,6 +191,11 @@ class MS_CORE_API TensorShape final : public BaseShape {
   ///
   /// \return The description string about the TensorShape object.
   std::string ToString() const override;
+
+  /// \brief Get the description string about the TensorShape object and output to the buffer.
+  ///
+  /// \param[in] buffer Buffer to get output string.
+  void ToStringWithBuffer(std::ostringstream &buffer) const override;
 
   /// \brief Get the debug information about the TensorShape object.
   ///
@@ -263,6 +272,11 @@ class MS_CORE_API DynamicSequenceShape : public BaseShape {
   /// \return The description string about the DynamicSequenceShape object.
   std::string ToString() const override { return type_name(); }
 
+  /// \brief Get the description string about the TensorShape object and output to the buffer.
+  ///
+  /// \param[in] buffer Buffer to get output string.
+  void ToStringWithBuffer(std::ostringstream &buffer) const override { buffer << type_name(); };
+
   /// \brief Check whether any element shape of DynamicSequenceShape is dynamic shape or dynamic rank.
   ///
   /// \return True if any element shape of DynamicSequenceShape is dynamic shape or dynamic rank, otherwise false.
@@ -327,6 +341,11 @@ class MS_CORE_API SequenceShape : public BaseShape {
   ///
   /// \return The description string about the SequenceShape object.
   std::string ToString() const override;
+
+  /// \brief Get the description string about the TensorShape object and output to the buffer.
+  ///
+  /// \param[in] buffer Buffer to get output string.
+  void ToStringWithBuffer(std::ostringstream &buffer) const override;
 
   /// \brief Clone all element-shapes.
   ///
@@ -422,6 +441,12 @@ class MS_CORE_API TupleShape final : public SequenceShape {
 
   std::string ToString() const override { return type_name() + "(" + SequenceShape::ToString() + ")"; }
 
+  void ToStringWithBuffer(std::ostringstream &buffer) const override {
+    buffer << type_name() << "(";
+    SequenceShape::ToStringWithBuffer(buffer);
+    buffer << ")";
+  }
+
   BaseShapePtr Clone() const override { return std::make_shared<TupleShape>(ElementsClone()); }
 
   bool operator==(const BaseShape &other) const override { return SequenceEqual<TupleShape>(other); }
@@ -448,6 +473,12 @@ class MS_CORE_API ListShape final : public SequenceShape {
   MS_DECLARE_PARENT(ListShape, SequenceShape)
 
   std::string ToString() const override { return type_name() + "[" + SequenceShape::ToString() + "]"; }
+
+  void ToStringWithBuffer(std::ostringstream &buffer) const override {
+    buffer << type_name() << "(";
+    SequenceShape::ToStringWithBuffer(buffer);
+    buffer << ")";
+  }
 
   BaseShapePtr Clone() const override { return std::make_shared<ListShape>(SequenceShape::ElementsClone()); }
 

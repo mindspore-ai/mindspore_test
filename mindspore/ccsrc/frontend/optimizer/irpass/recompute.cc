@@ -29,7 +29,7 @@ bool HasBpropGetter(const OptimizerPtr &opt, const AnfNodePtr &k_fg_caller) {
   const auto &node_users = manager->node_users();
   auto iter = node_users.find(k_fg_caller);
   if (iter == node_users.end()) {
-    MS_LOG(EXCEPTION) << "The node " << k_fg_caller->DebugString() << " should have users.";
+    MS_LOG_WITH_NODE(EXCEPTION, k_fg_caller) << "The node " << k_fg_caller->DebugString() << " should have users.";
   }
 
   return std::any_of(iter->second.begin(), iter->second.end(), [](const std::pair<AnfNodePtr, int> &node_and_idx) {
@@ -192,7 +192,7 @@ bool AddNewPrimalNode(const FuncGraphManagerPtr &manager, const FuncGraphPtr &fg
 bool IsRecomputeCell(const FuncGraphPtr &k_fg) {
   auto primal_iter = k_fg->transforms().find("primal");
   if (primal_iter == k_fg->transforms().end()) {
-    MS_LOG(EXCEPTION) << "The k_fg: " << k_fg << " should have primal part.";
+    MS_LOG_WITH_NODE(EXCEPTION, k_fg->return_node()) << "The k_fg: " << k_fg << " should have primal part.";
   }
   return primal_iter->second.func_graph() != nullptr;
 }

@@ -58,9 +58,9 @@ void ValidateOperation(const AnfNodePtr &node) {
   auto prim = GetValueNode<PrimitivePtr>(node);
   MS_EXCEPTION_IF_NULL(prim);
   if (prim->isa<prim::DoSignaturePrimitive>()) {
-    MS_LOG(INTERNAL_EXCEPTION) << "Illegal DoSignaturePrimitive '" << prim->name() << "' in the graph."
-                               << "node:" << node->DebugString()
-                               << ", location:" << trace::GetDebugInfoStr(node->debug_info());
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, node)
+      << "Illegal DoSignaturePrimitive '" << prim->name() << "' in the graph."
+      << "node:" << node->DebugString() << ", location:" << trace::GetDebugInfoStr(node->debug_info());
   }
   if (abstract::IsInWhiteList(prim)) {
     return;
@@ -80,14 +80,14 @@ void ValidateOperation(const AnfNodePtr &node) {
     return;
   }
   if (prim->name() == "fake_bprop") {
-    MS_LOG(INTERNAL_EXCEPTION) << "Illegal primitive: " << GetValue<std::string>(prim->GetAttr("info"))
-                               << "node:" << node->DebugString()
-                               << ", location:" << trace::GetDebugInfoStr(node->debug_info());
+    MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, node)
+      << "Illegal primitive: " << GetValue<std::string>(prim->GetAttr("info")) << "node:" << node->DebugString()
+      << ", location:" << trace::GetDebugInfoStr(node->debug_info());
   }
 
-  MS_LOG(EXCEPTION) << "Illegal primitive: " << prim->name()
-                    << ". Please check whether to use unsupported primitive:" << node->DebugString()
-                    << ", location:" << trace::GetDebugInfoStr(node->debug_info());
+  MS_LOG_WITH_NODE(EXCEPTION, node) << "Illegal primitive: " << prim->name()
+                                    << ". Please check whether to use unsupported primitive:" << node->DebugString()
+                                    << ", location:" << trace::GetDebugInfoStr(node->debug_info());
 }
 
 bool CheckAbstractScalar(const AnfNodePtr &node) {
@@ -97,8 +97,9 @@ bool CheckAbstractScalar(const AnfNodePtr &node) {
     TypePtr type = abstract->GetTypeTrack();
     MS_EXCEPTION_IF_NULL(type);
     if (type->isa<EnvType>() || type->isa<MsClassType>()) {
-      MS_LOG(EXCEPTION) << "Illegal type in the graph: " << abstract->ToString() << ", node: " << node->DebugString()
-                        << ", location:" << trace::GetDebugInfoStr(node->debug_info());
+      MS_LOG_WITH_NODE(EXCEPTION, node) << "Illegal type in the graph: " << abstract->ToString()
+                                        << ", node: " << node->DebugString()
+                                        << ", location:" << trace::GetDebugInfoStr(node->debug_info());
     }
     auto real_node = node;
     if (IsPrimitiveCNode(node, prim::kPrimReturn) || IsPrimitiveCNode(node, prim::kPrimDepend)) {
@@ -107,9 +108,9 @@ bool CheckAbstractScalar(const AnfNodePtr &node) {
     // Only allow string/number type from external.
     if (type->isa<External>() && !IsValueNode<StringImm>(real_node) && !IsValueNode<FP32Imm>(real_node) &&
         !IsValueNode<FP64Imm>(real_node)) {
-      MS_LOG(EXCEPTION) << "Illegal type in the graph: " << abstract->ToString()
-                        << ", node: " << real_node->DebugString()
-                        << "\nPlease check your code:" << trace::GetDebugInfoStr(node->debug_info());
+      MS_LOG_WITH_NODE(EXCEPTION, node) << "Illegal type in the graph: " << abstract->ToString()
+                                        << ", node: " << real_node->DebugString()
+                                        << "\nPlease check your code:" << trace::GetDebugInfoStr(node->debug_info());
     }
     // When a DeadNode is renormalized before, its abstract may be changed to
     // AbstractScalar(std:: make_shared<Int32Imm>(0), std:: make_shared<Problem>()).
@@ -152,9 +153,9 @@ void ValidateAbstract(const AnfNodePtr &node) {
   }
 
   // Other types show exception
-  MS_LOG(INTERNAL_EXCEPTION) << "Illegal type in the graph: " << abstract->ToString()
-                             << ", node: " << node->DebugString()
-                             << "\nPlease check your code:" << trace::GetDebugInfoStr(node->debug_info());
+  MS_LOG_WITH_NODE(INTERNAL_EXCEPTION, node)
+    << "Illegal type in the graph: " << abstract->ToString() << ", node: " << node->DebugString()
+    << "\nPlease check your code:" << trace::GetDebugInfoStr(node->debug_info());
 }
 
 void CheckValueTuple(const AnfNodePtr &node) {
@@ -218,8 +219,8 @@ void CheckDeadNodeInOutputRecursively(const AnfNodePtr &node, const AbstractBase
   TypePtr type = abstract->BuildType();
   MS_EXCEPTION_IF_NULL(type);
   if (type->isa<Problem>() || type->isa<Function>()) {
-    MS_LOG(EXCEPTION) << "Function in output is not supported. Please check your code. "
-                      << trace::GetDebugInfoStr(node->debug_info());
+    MS_LOG_WITH_NODE(EXCEPTION, node) << "Function in output is not supported. Please check your code. "
+                                      << trace::GetDebugInfoStr(node->debug_info());
   }
   if (abstract->isa<AbstractSequence>()) {
     auto abs_seq = abstract->cast_ptr<AbstractSequence>();
@@ -239,7 +240,7 @@ void Validate(const FuncGraphPtr &func_graph) {
   ValidateTopGraphOutput(func_graph->output());
   const auto &all_nodes = TopoSort(func_graph->return_node(), SuccDeeperSimple);
   for (auto node : all_nodes) {
-    TraceGuard guard(std::make_shared<TraceCopy>(node->debug_info()));
+    TraceGuard guard(MakeTraceInfo<TraceCopy>(node->debug_info()));
     CheckAssignReturnValue(node);
     while (IsPrimitiveCNode(node, prim::kPrimReturn) || IsPrimitiveCNode(node, prim::kPrimDepend)) {
       node = node->cast_ptr<CNode>()->input(1);

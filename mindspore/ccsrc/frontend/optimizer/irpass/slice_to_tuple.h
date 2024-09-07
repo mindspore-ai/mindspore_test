@@ -61,7 +61,7 @@ class SliceToTuple : public AnfVisitor {
         {kSliceStart, 0}, {kSliceStop, 1}, {kSliceStep, 2}};
       auto iter = kSliceAttrToStaticIndex.find(slice_attr);
       if (iter == kSliceAttrToStaticIndex.end()) {
-        MS_EXCEPTION(ValueError) << "The slice must be [start, stop, step], but got " << slice_attr;
+        MS_EXCEPTION_WITH_NODE(ValueError, node) << "The slice must be [start, stop, step], but got " << slice_attr;
       }
       auto getitem_tuple_inputs =
         std::vector<AnfNodePtr>{NewValueNode(prim::kPrimTupleGetItem), slice_getitem_slice_input,
