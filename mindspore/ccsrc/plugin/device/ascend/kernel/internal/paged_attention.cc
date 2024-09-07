@@ -26,12 +26,30 @@
 
 namespace mindspore {
 namespace kernel {
+
+namespace {
+const int eye_num_32 = 32;
+std::vector<int8_t> CreateEyeMatrix32x32() {
+  std::vector<int8_t> eye_matrix(eye_num_32 * eye_num_32, 0);
+  for (size_t i = 0; i < eye_num_32; ++i) {
+    eye_matrix[i * eye_num_32 + i] = 1;
+  }
+  return eye_matrix;
+}
+}  // namespace
 bool InternalPagedAttention::Init(const std::vector<KernelTensor *> &inputs,
                                   const std::vector<KernelTensor *> &outputs) {
   auto ms_context = MsContext::GetInstance();
   MS_EXCEPTION_IF_NULL(ms_context);
   auto &enable_op_list = ms_context->ms_internal_enable_custom_kernel_list();
   enable_custom_pa_ = (std::find(enable_op_list.begin(), enable_op_list.end(), kernel_name_) != enable_op_list.end());
+  auto antiquant_scale_dtype = inputs[kIndex5]->dtype_id();
+  auto antiquant_offset_dtype = inputs[kIndex6]->dtype_id();
+  if (enable_custom_pa_ && antiquant_scale_dtype == kNumberTypeInt64 && antiquant_offset_dtype == kNumberTypeInt32) {
+    MS_LOG(INFO) << "When antiquant_scale dtype is int64, antiquant_offset dtype is int32, custom PagedAttention "
+                    "is not supported. Switch to other impl.";
+    enable_custom_pa_ = false;
+  }
   auto &llm_manager = LLMManager::GetInstance();
   llm_manager.add_force_resize_kernel(kernel_name_);
   MS_LOG(INFO) << "Force op '" << kernel_name_ << "' to be resized to update op param 'seq_len'";
@@ -59,6 +77,9 @@ internal::OpParamPtr InternalPagedAttention::CreateOpParam(const std::vector<Ker
     GetSeqLenFromGraphInputOrEnv(kernel_name_, "batch_valid_length", "MS_INTERNAL_KV_SEQ_LEN", &kv_seq_len_);
     for (const auto &item : kv_seq_len_) {
       (void)op_param.kvSeqLen.emplace_back(item);
+    }
+    if (soc_ == "ascend910b" && !(inputs[kIndex5]->GetType()->isa<TypeNone>())) {
+      op_param.identityM = CreateEyeMatrix32x32();
     }
   }
 

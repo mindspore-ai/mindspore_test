@@ -132,6 +132,17 @@ def skv2multi(data: np.ndarray, axis: int, skv: np.ndarray):
     return res
 
 
+def process_deq_scale(deq_scale) -> np.ndarray:
+    new_deq_scale = np.frombuffer(deq_scale.tobytes(), dtype=np.uint32)
+    return new_deq_scale.astype(np.int64)
+
+
+def reverse_process_deq_scale(int64_array) -> np.ndarray:
+    uint32_array = int64_array.astype(np.uint32)  # 取每个 int64 中的低32位
+    float32_array = np.frombuffer(uint32_array.tobytes(), dtype=np.float32)  # 将其转换回 float32
+    return float32_array
+
+
 class PagedAttentionMaskNet(Cell):
     def __init__(self, *args, **kwargs):
         super().__init__()
@@ -140,10 +151,12 @@ class PagedAttentionMaskNet(Cell):
     def construct(self, *args, **kwargs):
         return self.net(*args, **kwargs)
 
+
 class PagedAttentionBase:
     def __init__(self, i_test: dict, mode="gen"):
         self.mode = mode
         self.i_test = i_test
+        self.i_test["use_asdop"] = self.i_test.get("use_asdop", False)
         self.gen = dict()
         self.load = dict()
         self.i_construct = dict()
@@ -278,14 +291,29 @@ class PagedAttentionBase:
                     sz_q = [n, g, np.sum(sq), d]
                 else:
                     sz_q = [b, n, g, sq, d]
+            # generate qkv data
             q = np.random.uniform(-1.0, 1.0, size=sz_q)
-            # BSH of k and v in pa
-            k = np.random.uniform(-1.0, 1.0, size=[b, max_skv, n, 1, d])
-            v = np.random.uniform(-1.0, 1.0, size=[b, max_skv, n, 1, d])
-            q = q.astype(np.float16).astype(input_type)
-            k = k.astype(np.float16).astype(input_type)
-            v = v.astype(np.float16).astype(input_type)
-            if self.i_test["is_quant"]:
+
+            if self.i_test["is_quant"] and self.i_test["use_asdop"]:
+                kv_range = 4.0
+                de_scale1_fp32 = np.random.randint(-4, 5, size=(1, 1, n, 1, d)).astype(np.float32)
+                k_anti_scale = process_deq_scale(de_scale1_fp32)
+                de_scale2_fp32 = np.random.randint(-4, 5, size=(1, 1, n, 1, d)).astype(np.float32)
+                v_anti_scale = process_deq_scale(de_scale2_fp32)
+                k_anti_offset = np.random.randint(-20, 20, size=(1, 1, n, 1, d)).astype(np.int32)
+                v_anti_offset = np.random.randint(-20, 20, size=(1, 1, n, 1, d)).astype(np.int32)
+                k = np.random.uniform(-kv_range, kv_range, size=[b, max_skv, n, 1, d]).astype(np.int8)
+                v = np.random.uniform(-kv_range, kv_range, size=[b, max_skv, n, 1, d]).astype(np.int8)
+                antiquant_scale = np.stack([k_anti_scale, v_anti_scale], axis=0)
+                antiquant_offset = np.stack([k_anti_offset, v_anti_offset], axis=0)
+            else:
+                # BSH of k and v in pa
+                k = np.random.uniform(-1.0, 1.0, size=[b, max_skv, n, 1, d])
+                v = np.random.uniform(-1.0, 1.0, size=[b, max_skv, n, 1, d])
+                k = k.astype(np.float16).astype(input_type)
+                v = v.astype(np.float16).astype(input_type)
+
+            if self.i_test["is_quant"] and not self.i_test["use_asdop"]:  # bisheng
                 k, k_anti_scale, k_anti_offset = quant(k, np.float16)
                 v, v_anti_scale, v_anti_offset = quant(v, np.float16)
                 antiquant_scale = np.stack([k_anti_scale, v_anti_scale], axis=0)
@@ -380,14 +408,18 @@ class PagedAttentionBase:
 
         if self.i_test["is_quant"]:  # antiquant
             anti_shape = [2, 1, 1] + list(k.shape)[2:]
-            antiquant_scale = np.reshape(antiquant_scale, anti_shape)
-            antiquant_offset = np.reshape(antiquant_offset, anti_shape)
-            k_anti_scale = antiquant_scale[0]
-            v_anti_scale = antiquant_scale[1]
-            k_anti_offset = antiquant_offset[0]
-            v_anti_offset = antiquant_offset[1]
-            k = antiquant(k, k_anti_scale, k_anti_offset, np.float16)
-            v = antiquant(v, v_anti_scale, v_anti_offset, np.float16)
+            if self.i_test["use_asdop"]:
+                antiquant_scale = np.reshape(
+                    reverse_process_deq_scale(antiquant_scale),
+                    anti_shape)  # int64 to float32
+                antiquant_offset = np.reshape(antiquant_offset, anti_shape)  # int32
+                k = antiquant(k, antiquant_scale[0], antiquant_offset[0], np.float16)
+                v = antiquant(v, antiquant_scale[1], antiquant_offset[1], np.float16)
+            else:
+                antiquant_scale = np.reshape(antiquant_scale, anti_shape)
+                antiquant_offset = np.reshape(antiquant_offset, anti_shape)
+                k = antiquant(k, antiquant_scale[0], antiquant_offset[0], np.float16)
+                v = antiquant(v, antiquant_scale[1], antiquant_offset[1], np.float16)
 
         if multi_seq:
             if layout in ["BSH", "TH"]:
@@ -568,6 +600,8 @@ class PagedAttentionMaskTest(PagedAttentionBase):
         self.compare()
 
     def calc_actual_func(self):
+        if self.i_test["use_asdop"]:
+            raise Exception("[Error] asdop is not support mask currently.")
         if self.i_test["type"] == "float32":
             q_type = ms.bfloat16
         else:  # float16
@@ -686,6 +720,7 @@ def test_paged_attention_bnsd():
     }
     PagedAttentionMaskTest(i_test)
 
+
 @pytest.mark.level0
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.env_onecard
@@ -714,6 +749,7 @@ def test_paged_attention_bsh_256():
         "msprof": 0
     }
     PagedAttentionMaskTest(i_test)
+
 
 @pytest.mark.skip
 @pytest.mark.platform_arm_ascend910b_training
@@ -744,6 +780,7 @@ def test_paged_attention_rand0():
     }
     PagedAttentionMaskTest(i_test)
 
+
 @pytest.mark.level0
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.env_onecard
@@ -772,6 +809,7 @@ def test_paged_attention_rand1():
         "msprof": 0
     }
     PagedAttentionMaskTest(i_test)
+
 
 @pytest.mark.level0
 @pytest.mark.platform_arm_ascend910b_training
@@ -802,6 +840,7 @@ def test_paged_attention_fd_long():
     }
     PagedAttentionMaskTest(i_test)
 
+
 @pytest.mark.level0
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.env_onecard
@@ -830,6 +869,7 @@ def test_paged_attention_fd_bsh_alibi_64():
         "msprof": 0
     }
     PagedAttentionMaskTest(i_test)
+
 
 @pytest.mark.skip
 @pytest.mark.platform_arm_ascend910b_training
@@ -860,6 +900,7 @@ def test_paged_attention_mask():
     }
     PagedAttentionMaskTest(i_test)
 
+
 @pytest.mark.skip
 @pytest.mark.platform_arm_ascend910b_training
 @pytest.mark.env_onecard
@@ -888,6 +929,7 @@ def test_paged_attention_mask_quant():
         "msprof": 0
     }
     PagedAttentionMaskTest(i_test)
+
 
 @pytest.mark.level0
 @pytest.mark.platform_arm_ascend910b_training

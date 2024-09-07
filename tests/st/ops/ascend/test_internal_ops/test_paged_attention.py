@@ -29,6 +29,7 @@ class PagedAttentionNet(Cell):
     """
     PagedAttention must use correct input name so that framework can save the input tensor on host
     """
+
     def __init__(self, num_head=0, scale_value=0, kv_head=0):
         super().__init__()
         self.net = PagedAttention(num_head, scale_value, kv_head)
@@ -42,6 +43,7 @@ class PagedAttentionNet(Cell):
 class PagedAttentionTest(PagedAttentionBase):
     def __init__(self, i_test: dict, mode="gen"):
         super().__init__(i_test, mode)
+        i_test["use_asdop"] = i_test.get("use_asdop", False)
         if i_test["is_alibi"]:
             raise Exception("[Error] alibi_mask can only be in PagedAttentionMaskTest")
         if i_test["layout"] == "TH":
@@ -150,8 +152,8 @@ class PagedAttentionTest(PagedAttentionBase):
 @pytest.mark.env_onecard
 def test_paged_attention_bnsd():
     """
-    Feature: test FlashAttentionScore op in kbk enabling infer_boost
-    Description: test FlashAttentionScore op in BNSD.
+    Feature: test PagedAttention op in kbk enabling infer_boost
+    Description: test PagedAttention op in BNSD.
     Expectation: the result is correct
     """
     i_test = {
@@ -180,8 +182,8 @@ def test_paged_attention_bnsd():
 @pytest.mark.env_onecard
 def test_paged_attention_fd_long():
     """
-    Feature: test FlashAttentionScore op in kbk enabling infer_boost
-    Description: test FlashAttentionScore op with long sequence.
+    Feature: test PagedAttention op in kbk enabling infer_boost
+    Description: test PagedAttention op with long sequence.
     Expectation: the result is correct
     """
     i_test = {
@@ -210,8 +212,8 @@ def test_paged_attention_fd_long():
 @pytest.mark.env_onecard
 def test_paged_attention_quant0():
     """
-    Feature: test FlashAttentionScore op in kbk enabling infer_boost
-    Description: test FlashAttentionScore op with quant.
+    Feature: test PagedAttention op in kbk enabling infer_boost
+    Description: test PagedAttention op with quant.
     Expectation: the result is correct
     """
     i_test = {
@@ -240,8 +242,8 @@ def test_paged_attention_quant0():
 @pytest.mark.env_onecard
 def test_paged_attention_quant1():
     """
-    Feature: test FlashAttentionScore op in kbk enabling infer_boost
-    Description: test FlashAttentionScore op with quant.
+    Feature: test PagedAttention op in kbk enabling infer_boost
+    Description: test PagedAttention op with quant.
     Expectation: the result is correct
     """
     i_test = {
@@ -270,8 +272,8 @@ def test_paged_attention_quant1():
 @pytest.mark.env_onecard
 def test_paged_attention_lookahead0():
     """
-    Feature: test FlashAttentionScore op in kbk enabling infer_boost
-    Description: test FlashAttentionScore op with lookahead.
+    Feature: test PagedAttention op in kbk enabling infer_boost
+    Description: test PagedAttention op with lookahead.
     Expectation: the result is correct
     """
     i_test = {
@@ -300,8 +302,8 @@ def test_paged_attention_lookahead0():
 @pytest.mark.env_onecard
 def test_paged_attention_lookahead1():
     """
-    Feature: test FlashAttentionScore op in kbk enabling infer_boost
-    Description: test FlashAttentionScore op with lookahead.
+    Feature: test PagedAttention op in kbk enabling infer_boost
+    Description: test PagedAttention op with lookahead.
     Expectation: the result is correct
     """
     i_test = {
@@ -330,8 +332,8 @@ def test_paged_attention_lookahead1():
 @pytest.mark.env_onecard
 def test_paged_attention_fake_lookahead():
     """
-    Feature: test FlashAttentionScore op in kbk enabling infer_boost
-    Description: test FlashAttentionScore op with fake_lookahead.
+    Feature: test PagedAttention op in kbk enabling infer_boost
+    Description: test PagedAttention op with fake_lookahead.
     Expectation: the result is correct
     """
     i_test = {
@@ -350,6 +352,37 @@ def test_paged_attention_fake_lookahead():
         "is_alibi": False,
         "is_amask": True,
         "blk_sparse": 0,
+        "msprof": 0
+    }
+    PagedAttentionTest(i_test)
+
+
+@pytest.mark.level0
+@pytest.mark.platform_arm_ascend910b_training
+@pytest.mark.env_onecard
+def test_paged_attention_asd_quant():
+    """
+    Feature: test PagedAttention op in kbk enabling infer_boost
+    Description: test PagedAttention op with asdop quant mode.
+    Expectation: the result is correct
+    """
+    i_test = {
+        "type": "float16",
+        "layout": "BSH",
+        "b": 8,
+        "sq": 1,
+        "skv": 1024,
+        "max_skv": 4096,
+        "nq": 8,
+        "nkv": 8,
+        "d": 128,
+        "blk_sz": 16,
+        "drop_prop": 0.0,
+        "is_quant": True,
+        "is_alibi": False,
+        "is_amask": False,
+        "blk_sparse": 0,
+        "use_asdop": True,
         "msprof": 0
     }
     PagedAttentionTest(i_test)
