@@ -228,7 +228,8 @@ def test_init_step_with_mappable_generator(fast_recovery_mode, shuffle):
         def __len__(self):
             return self.length
 
-    dataset = ds.GeneratorDataset(MyDataset(6), column_names=["image"], num_parallel_workers=2)
+    dataset = ds.GeneratorDataset(MyDataset(20), column_names=["image"], num_parallel_workers=2,
+                                  num_shards=3, shard_id=2)
 
     if shuffle:
         dataset = dataset.shuffle(6)

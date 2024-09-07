@@ -1782,9 +1782,9 @@ void PipelineTransformer::HandleGraphInputs(const std::vector<AnfNodePtr> &recv_
       pipeline_begins_fetched[j].push_back(begins.at(j));
     }
   }
-  auto &node_users_map = manager_->node_users();
   // relink pipeline_param_with_param_input's users to its input
   for (const auto &param : pipeline_params_with_param_input) {
+    auto node_users_map = manager_->node_users();
     const auto &users = node_users_map[param];
     auto input = param->user_data<AnfNode>(INPUT_PARAM);
     MS_EXCEPTION_IF_NULL(input);
@@ -1799,6 +1799,7 @@ void PipelineTransformer::HandleGraphInputs(const std::vector<AnfNodePtr> &recv_
     auto param = std::make_shared<Parameter>(shared_cell_);
     param->set_abstract(node->abstract()->Clone());
     newly_added_params.push_back(param);
+    auto node_users_map = manager_->node_users();
     const auto &users = node_users_map[node];
     for (const auto &user : users) {
       manager_->SetEdge(user.first, user.second, param);

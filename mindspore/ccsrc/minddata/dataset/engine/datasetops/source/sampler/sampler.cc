@@ -142,6 +142,8 @@ Status SamplerRT::SetNumSamples(int64_t num_samples) {
 
 int64_t SamplerRT::GetNumSamples() const { return num_samples_; }
 
+int64_t SamplerRT::GetSamplesPerTensor() const { return samples_per_tensor_; }
+
 int64_t SamplerRT::CalculateNumSamples(int64_t num_rows) {
   int64_t child_num_rows = num_rows;
   if (!child_.empty()) {

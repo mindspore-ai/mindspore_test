@@ -20,6 +20,8 @@
 #include <memory>
 #include <string>
 
+#include "minddata/dataset/engine/datasetops/source/sampler/distributed_sampler.h"
+
 namespace mindspore {
 namespace dataset {
 Status SkipFirstEpochSamplerRT::GetNextSample(TensorRow *out) {
@@ -120,6 +122,46 @@ Status SkipFirstEpochSamplerRT::ResetSampler(const bool failover_reset) {
 }
 
 int64_t SkipFirstEpochSamplerRT::CalculateNumSamples(const int64_t num_rows) { return -1; }
+
+Status SkipFirstEpochSamplerRT::HandshakeRandomAccessOp(const RandomAccessOp *op, const int32_t reset_count) {
+  RETURN_UNEXPECTED_IF_NULL(op);
+  std::shared_ptr<SamplerRT> child_sampler;
+  if (HasChildSampler()) {
+    child_sampler = std::dynamic_pointer_cast<SamplerRT>(child_[0]);
+    if (!child_sampler) {
+      std::string err_msg("[Internal ERROR] Cannot handshake, child is not a sampler object.");
+      RETURN_STATUS_UNEXPECTED(err_msg);
+    }
+
+    // Handshake and init child first.
+    RETURN_IF_NOT_OK(child_sampler->HandshakeRandomAccessOp(op));
+  }
+
+  CHECK_FAIL_RETURN_UNEXPECTED(op != nullptr, "[Internal ERROR] RandomAccessOp init failed, as it is nullptr.");
+
+  // If there's a child sampler, set the row count to be it's sample count
+  if (HasChildSampler()) {
+    auto distributed_sampler = std::dynamic_pointer_cast<DistributedSamplerRT>(child_sampler);
+    if (distributed_sampler) {
+      num_rows_ = child_sampler->GetSamplesPerTensor();
+    } else {
+      num_rows_ = child_sampler->GetNumSamples();
+    }
+  } else {
+    RETURN_IF_NOT_OK(op->GetNumRowsInDataset(&num_rows_));
+  }
+
+  // It's up to the derived class to check the validity of the two args
+  // Because some sampler only needs one of the arg (weighted_random_sampler)
+  RETURN_IF_NOT_OK(InitSampler());  // init sampler after callback
+  // Move forward sampler's random generator if resetting the pipeline in fast_recovery mode
+  if (GlobalContext::config_manager()->fast_recovery()) {
+    for (auto i = 0; i < reset_count; i++) {
+      RETURN_IF_NOT_OK(ResetSampler(true));  // failover_reset = true
+    }
+  }
+  return Status::OK();
+}
 
 void SkipFirstEpochSamplerRT::SamplerPrint(std::ostream &out, bool show_all) const {
   out << "\nSampler: SkipFirstEpochSampler";
