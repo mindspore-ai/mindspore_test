@@ -24,6 +24,7 @@
 
 namespace mindspore {
 namespace transform {
+constexpr const char kNameApplyRotaryPosEmb[] = "ApplyRotaryPosEmb";
 constexpr const char kNameCustomOp[] = "Custom";
 constexpr const char kNameConst[] = "Const";
 constexpr const char kNameParam[] = "parameter";

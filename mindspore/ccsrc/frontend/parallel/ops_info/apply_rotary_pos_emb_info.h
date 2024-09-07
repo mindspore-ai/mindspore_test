@@ -40,11 +40,18 @@ class ApplyRotaryPosEmbInfo : public OperatorInfo {
   Status SetCostUnderStrategy(const StrategyPtr &strategy) override { return SetCostUnderStrategyBase(strategy); }
 
  protected:
+  Status SetDims(const StrategyPtr &strategy);
+  Status CheckStrategy3Dims(const Dimensions &strategy_query, const Dimensions &strategy_key,
+                            const Dimensions &strategy_position_ids);
+  Status CheckStrategy4Dims(const Dimensions &strategy_query, const Dimensions &strategy_key);
   Status GetAttrs() override { return SUCCESS; }
   Status InferForwardCommunication() { return SUCCESS; }
   Status InferTensorMap() override;
   Status InferDevMatrixShape() override;
   Status InferAsLossDivisor() override;
+
+ private:
+  bool is_input_dims_4_ = true;
 };
 using ApplyRotaryPosEmbInfoPtr = std::shared_ptr<ApplyRotaryPosEmbInfo>;
 }  // namespace parallel

@@ -53,6 +53,10 @@ static const std::map<std::string, std::vector<string>> kAttrMapNeedAdjust = {
      "pad_mode",
      "data_format",
    }},
+  {"ApplyRotaryPosEmb",
+   {
+     "layout",
+   }},
   {"StridedSlice",
    {
      "begin_mask",
