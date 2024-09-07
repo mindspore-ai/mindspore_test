@@ -51,10 +51,18 @@ constexpr float kInitZero = 0.0;
 constexpr float kInitOne = 1.0;
 constexpr size_t kInitBatchSize = 1;
 constexpr size_t kMaxConfigLen = 1e6;
+constexpr uint16_t kFloatOne = 15360;
 }  // namespace
-ParameterPtr InsertVariableNodePass::BuildFloatZeroVecNDParameterNode(const FuncGraphPtr &anf_graph,
-                                                                      ShapeVector weight_shape,
-                                                                      const std::string &node_name, float value) {
+
+template <typename T>
+ParameterPtr InsertVariableNodePass::BuildFloat16ZeroVecNDParameterNode(const FuncGraphPtr &anf_graph,
+                                                                        ShapeVector weight_shape,
+                                                                        const std::string &node_name, T value,
+                                                                        TypeId dtype) {
+  if (dtype != kNumberTypeFloat16 && dtype != kNumberTypeFloat32) {
+    MS_LOG(ERROR) << "Only Support kNumberTypeFloat16 and kNumberTypeFloat32! Current dtype:" << dtype << "!";
+    return nullptr;
+  }
   if (std::find_if(weight_shape.begin(), weight_shape.end(), [](int64_t num) { return num <= 0; }) !=
       weight_shape.end()) {
     MS_LOG(ERROR) << "Weight shape has zero or negative value!"
@@ -71,11 +79,11 @@ ParameterPtr InsertVariableNodePass::BuildFloatZeroVecNDParameterNode(const Func
     weight_length *= dim;
   }
 
-  std::vector<float> data_1d(weight_length, value);
-  auto size = data_1d.size() * sizeof(float);
-  auto tensor_info = lite::CreateTensorInfo(data_1d.data(), size, weight_shape, kNumberTypeFloat32);
+  std::vector<T> data_1d(weight_length, value);
+  auto size = data_1d.size() * sizeof(T);
+  auto tensor_info = lite::CreateTensorInfo(data_1d.data(), size, weight_shape, dtype);
   if (tensor_info == nullptr) {
-    MS_LOG(ERROR) << "Create tensor info failed!";
+    MS_LOG(ERROR) << "Create tensor info failed! weight_shape:" << weight_shape << "!";
     return nullptr;
   }
   auto status = lite::InitParameterFromTensorInfo(param_node, tensor_info);
@@ -209,15 +217,11 @@ lite::STATUS CreateAddNode(AnfNodePtrList &&add_inputs, const FuncGraphPtr &func
 }
 
 lite::STATUS FetchNodeNameMap(const CNodePtr &cnode, std::unordered_map<std::string, std::string> *node_name_map,
-                              const bool &has_alpha, const bool &is_add) {
+                              const bool &has_alpha) {
   auto node_name = cnode->fullname_with_scope();
   size_t last_slash_pos = node_name.find_last_of('/');
   MS_CHECK_TRUE_RET(last_slash_pos != std::string::npos, RET_ERROR);
   auto search_key = node_name.substr(0, last_slash_pos);
-  if (is_add) {
-    (*node_name_map)[search_key + "variable_up"] = cnode->fullname_with_scope() + "_lora_up_const";
-    return RET_OK;
-  }
   (*node_name_map)[search_key + "variable_up"] = cnode->fullname_with_scope() + "_lora_up_const";
   (*node_name_map)[search_key + "variable_down"] = cnode->fullname_with_scope() + "_lora_down_const";
   if (has_alpha) {
@@ -253,28 +257,24 @@ lite::STATUS InsertVariableNodePass::InsertVariableNodeForMatmul(
     down_high_rank = weight_shape[kIndex1];
     is_gemm = true;
   }
-  std::vector<std::vector<std::vector<float>>> lora_up_data(
-    max_weight_batch, std::vector<std::vector<float>>(up_high_rank, std::vector<float>(low_rank, kInitZero)));
-  std::vector<std::vector<std::vector<float>>> lora_down_data(
-    max_weight_batch, std::vector<std::vector<float>>(low_rank, std::vector<float>(down_high_rank, kInitZero)));
-  std::vector<std::vector<std::vector<float>>> lora_add_weights(
-    max_weight_batch, std::vector<std::vector<float>>(kInitBatchSize, std::vector<float>(kInitBatchSize, kInitOne)));
-  std::vector<std::vector<std::vector<float>>> lora_alpha_weights(
-    max_weight_batch, std::vector<std::vector<float>>(kInitBatchSize, std::vector<float>(kInitBatchSize, kInitOne)));
-  AnfNodePtr lora_up_param_node =
-    opt::BuildFloatVec3DParameterNode(func_graph, lora_up_data, cnode->fullname_with_scope() + "_lora_up");
-  AnfNodePtr lora_down_param_node =
-    opt::BuildFloatVec3DParameterNode(func_graph, lora_down_data, cnode->fullname_with_scope() + "_lora_down");
-  AnfNodePtr add_weights_param_node =
-    opt::BuildFloatVec3DParameterNode(func_graph, lora_add_weights, cnode->fullname_with_scope() + "_lora_add_weights");
-  AnfNodePtr alpha_param_node =
-    opt::BuildFloatVec3DParameterNode(func_graph, lora_alpha_weights, cnode->fullname_with_scope() + "_lora_alpha");
+  ShapeVector lora_up_shape = {max_weight_batch, up_high_rank, low_rank};
+  ShapeVector lora_down_shape = {max_weight_batch, low_rank, down_high_rank};
+  ShapeVector lora_add_shape = {max_weight_batch, kInitBatchSize, kInitBatchSize};
+  ShapeVector lora_alpha_shape = {max_weight_batch, kInitBatchSize, kInitBatchSize};
+  AnfNodePtr lora_up_param_node = BuildFloat16ZeroVecNDParameterNode<uint16_t>(
+    func_graph, lora_up_shape, cnode->fullname_with_scope() + "_lora_up", 0.0, kNumberTypeFloat16);
+  AnfNodePtr lora_down_param_node = BuildFloat16ZeroVecNDParameterNode<uint16_t>(
+    func_graph, lora_down_shape, cnode->fullname_with_scope() + "_lora_down", 0.0, kNumberTypeFloat16);
+  AnfNodePtr add_weights_param_node = BuildFloat16ZeroVecNDParameterNode<float>(
+    func_graph, lora_add_shape, cnode->fullname_with_scope() + "_lora_add_weights", kInitOne, kNumberTypeFloat32);
+  AnfNodePtr alpha_param_node = BuildFloat16ZeroVecNDParameterNode<uint16_t>(
+    func_graph, lora_alpha_shape, cnode->fullname_with_scope() + "_lora_alpha", kFloatOne, kNumberTypeFloat16);
   AnfNodePtr axes_param_node =
     opt::BuildIntValueParameterNode(func_graph, kInitZero, cnode->fullname_with_scope() + "_reduce_sum_axes", true);
   MS_CHECK_TRUE_RET(lora_up_param_node != nullptr && lora_down_param_node != nullptr &&
                       add_weights_param_node != nullptr && alpha_param_node != nullptr && axes_param_node != nullptr,
                     RET_ERROR);
-  if (FetchNodeNameMap(cnode, node_name_map, has_alpha, false) != RET_OK) {
+  if (FetchNodeNameMap(cnode, node_name_map, has_alpha) != RET_OK) {
     MS_LOG(ERROR) << "FetchNodeNameMap failed! ret:" << ret << "!";
     return RET_ERROR;
   }
@@ -326,46 +326,6 @@ lite::STATUS InsertVariableNodePass::InsertVariableNodeForMatmul(
   return RET_OK;
 }
 
-lite::STATUS InsertVariableNodePass::InsertVariableAddNode(
-  const CNodePtr &cnode, const FuncGraphPtr &func_graph, const bool &is_matmul,
-  std::unordered_map<std::string, std::string> *node_name_map) {
-  MS_CHECK_TRUE_RET(cnode != nullptr, RET_ERROR);
-  MS_CHECK_TRUE_RET(func_graph != nullptr, RET_ERROR);
-  MS_CHECK_TRUE_RET(node_name_map != nullptr, RET_ERROR);
-  auto weight = cnode->input(kInputIndex2);
-  MS_CHECK_TRUE_RET(weight != nullptr, RET_ERROR);
-  ShapeVector weight_shape;
-  auto ret = FetchWeightShape(weight, &weight_shape, cnode, is_matmul);
-  if (ret != lite::RET_OK) {
-    MS_LOG(ERROR) << "fetch wieght shape failed! ret:" << ret << "!";
-    return ret;
-  }
-  AnfNodePtr add_weights_param_node =
-    BuildFloatZeroVecNDParameterNode(func_graph, weight_shape, cnode->fullname_with_scope() + "_lora_up");
-  MS_CHECK_TRUE_RET(add_weights_param_node != nullptr, RET_ERROR);
-  auto add_input = {weight, add_weights_param_node};
-  auto add = std::make_shared<ops::Add>();
-  auto add_prim_c = add->GetPrim();
-  auto add_cnode = func_graph->NewCNode(add_prim_c, add_input);
-  if (add_cnode == nullptr) {
-    MS_LOG(ERROR) << "new add node failed!";
-    return RET_ERROR;
-  }
-  if (cnode->abstract() != nullptr) {
-    add_cnode->set_abstract(cnode->abstract()->Clone());
-  }
-  add_cnode->set_fullname_with_scope(cnode->fullname_with_scope() + "_add");
-  auto manager = Manage(func_graph);
-  MS_CHECK_TRUE_RET(manager != nullptr, RET_ERROR);
-  (void)manager->Replace(weight, add_cnode);
-  ret = FetchNodeNameMap(cnode, node_name_map, false, true);
-  if (ret != RET_OK) {
-    MS_LOG(ERROR) << "Fetch node name map failed!";
-    return ret;
-  }
-  return RET_OK;
-}
-
 lite::STATUS InsertVariableNodePass::InsertVariableNodeForConv(
   const AnfNodePtr &node, const CNodePtr &cnode, const FuncGraphPtr &func_graph, const std::vector<int> &up_shape,
   std::unordered_map<std::string, std::string> *node_name_map, bool has_alpha, int max_weight_batch) {
@@ -386,15 +346,15 @@ lite::STATUS InsertVariableNodePass::InsertVariableNodeForConv(
                                  kernel_size_down};
   ShapeVector add_weights_shape = {max_weight_batch, kIndex1, kIndex1, kIndex1, kIndex1};
   ShapeVector alpha_weights_shape = {max_weight_batch, kIndex1, kIndex1, kIndex1, kIndex1};
-  AnfNodePtr lora_up_param_node =
-    BuildFloatZeroVecNDParameterNode(func_graph, lora_up_shape, cnode->fullname_with_scope() + "_lora_up");
-  AnfNodePtr lora_down_param_node =
-    BuildFloatZeroVecNDParameterNode(func_graph, lora_down_shape, cnode->fullname_with_scope() + "_lora_down");
-  AnfNodePtr add_weights_param_node = BuildFloatZeroVecNDParameterNode(
-    func_graph, add_weights_shape, cnode->fullname_with_scope() + "_lora_add_weights", kInitOne);
-  AnfNodePtr alpha_param_node = BuildFloatZeroVecNDParameterNode(
-    func_graph, alpha_weights_shape, cnode->fullname_with_scope() + "_lora_alpha", kInitOne);
-  ret = FetchNodeNameMap(cnode, node_name_map, has_alpha, false);
+  AnfNodePtr lora_up_param_node = BuildFloat16ZeroVecNDParameterNode<uint16_t>(
+    func_graph, lora_up_shape, cnode->fullname_with_scope() + "_lora_up", 0.0, kNumberTypeFloat16);
+  AnfNodePtr lora_down_param_node = BuildFloat16ZeroVecNDParameterNode<uint16_t>(
+    func_graph, lora_down_shape, cnode->fullname_with_scope() + "_lora_down", 0.0, kNumberTypeFloat16);
+  AnfNodePtr add_weights_param_node = BuildFloat16ZeroVecNDParameterNode<float>(
+    func_graph, add_weights_shape, cnode->fullname_with_scope() + "_lora_add", kInitOne, kNumberTypeFloat32);
+  AnfNodePtr alpha_param_node = BuildFloat16ZeroVecNDParameterNode<uint16_t>(
+    func_graph, alpha_weights_shape, cnode->fullname_with_scope() + "_lora_alpha", kFloatOne, kNumberTypeFloat16);
+  ret = FetchNodeNameMap(cnode, node_name_map, has_alpha);
   if (ret != RET_OK) {
     MS_LOG(ERROR) << "FetchNodeNameMap failed! ret:" << ret << "!";
     return ret;
@@ -565,8 +525,8 @@ lite::STATUS InsertVariableNodePass::ParseInsertNode(std::string file_path,
   return RET_OK;
 }
 
-lite::STATUS InsertVariableNodePass::CheckOnlyInsertAdd(CNodePtr cnode, const std::vector<int> &para_shape,
-                                                        const bool &is_matmul, bool *compare_res) {
+lite::STATUS InsertVariableNodePass::CheckOnlyReplace(CNodePtr cnode, const std::vector<int> &para_shape,
+                                                      const bool &is_matmul, bool *compare_res) {
   MS_CHECK_TRUE_MSG(cnode != nullptr, RET_ERROR, "cnode is nullptr!");
   MS_CHECK_TRUE_MSG(compare_res != nullptr, RET_ERROR, "compare_res is nullptr!");
   auto weight = cnode->input(kInputIndex2);
@@ -582,6 +542,33 @@ lite::STATUS InsertVariableNodePass::CheckOnlyInsertAdd(CNodePtr cnode, const st
     return RET_OK;
   }
   *compare_res = std::equal(weight_shape.begin(), weight_shape.end(), para_shape.begin());
+  return RET_OK;
+}
+
+lite::STATUS InsertVariableNodePass::RecordVariableName(const FuncGraphPtr &func_graph, const CNodePtr &cnode,
+                                                        const string &search_key, bool is_matmul,
+                                                        std::unordered_map<std::string, std::string> *node_name_map) {
+  MS_CHECK_TRUE_RET(node_name_map != nullptr, RET_ERROR);
+  MS_CHECK_TRUE_RET(cnode != nullptr, RET_ERROR);
+  if (cnode->inputs().size() < kInputSize3) {
+    MS_LOG(ERROR) << "Weight size must greater than 3, current size:" << cnode->inputs().size() << "!";
+    return RET_ERROR;
+  }
+  auto weight = cnode->input(kInputIndex2);
+  MS_CHECK_TRUE_RET(weight != nullptr, RET_ERROR);
+  ShapeVector weight_shape;
+  auto ret = FetchWeightShape(weight, &weight_shape, cnode, is_matmul);
+  if (ret != lite::RET_OK) {
+    MS_LOG(ERROR) << "fetch wieght shape failed! ret:" << ret << "!";
+    return ret;
+  }
+  AnfNodePtr fp16_weight = BuildFloat16ZeroVecNDParameterNode<uint16_t>(
+    func_graph, weight_shape, weight->fullname_with_scope(), 0.0, kNumberTypeFloat16);
+  MS_CHECK_TRUE_MSG(fp16_weight != nullptr, RET_ERROR, "fp16_weight is nullptr!");
+  (*node_name_map)[search_key + "variable_up"] = weight->fullname_with_scope() + "_const";
+  auto manager = Manage(func_graph);
+  MS_CHECK_TRUE_RET(manager != nullptr, RET_ERROR);
+  (void)manager->Replace(weight, fp16_weight);
   return RET_OK;
 }
 
@@ -627,28 +614,26 @@ lite::STATUS InsertVariableNodePass::BuildVariableNode(const std::shared_ptr<Con
     if (mindspore::opt::CheckPrimitiveType(node, mindspore::prim::kPrimMatMulV2) ||
         mindspore::opt::CheckPrimitiveType(node, mindspore::prim::kPrimMatMulFusion) ||
         mindspore::opt::CheckPrimitiveType(node, mindspore::prim::kPrimBatchMatMul)) {
-      bool insert_add = false;
-      ret = CheckOnlyInsertAdd(cnode, variable_nodes.at(search_key), true, &insert_add);
-      MS_CHECK_TRUE_MSG(ret == RET_OK, ret, "CheckOnlyInsertAdd failed!");
-      if (insert_add) {
-        ret = InsertVariableAddNode(cnode, func_graph, true, &node_name_map);
+      bool replace_origin = false;
+      ret = CheckOnlyReplace(cnode, variable_nodes.at(search_key), true, &replace_origin);
+      MS_CHECK_TRUE_MSG(ret == RET_OK, ret, "CheckOnlyReplace failed!");
+      if (replace_origin) {
+        ret = RecordVariableName(func_graph, cnode, search_key, true, &node_name_map);
       } else {
         ret = InsertVariableNodeForMatmul(node, cnode, func_graph, variable_nodes.at(search_key), &node_name_map,
                                           has_alpha, max_weight_batch);
       }
-      MS_CHECK_TRUE_MSG(ret == RET_OK, ret, "InsertVariable node for matmul failed!");
     } else if (mindspore::opt::CheckPrimitiveType(node, mindspore::prim::kPrimConv2D) ||
                mindspore::opt::CheckPrimitiveType(node, mindspore::prim::kPrimConv2DFusion)) {
-      bool insert_add = false;
-      ret = CheckOnlyInsertAdd(cnode, variable_nodes.at(search_key), false, &insert_add);
-      MS_CHECK_TRUE_MSG(ret == RET_OK, ret, "CheckOnlyInsertAdd failed!");
-      if (insert_add) {
-        ret = InsertVariableAddNode(cnode, func_graph, false, &node_name_map);
+      bool replace_origin = false;
+      ret = CheckOnlyReplace(cnode, variable_nodes.at(search_key), false, &replace_origin);
+      MS_CHECK_TRUE_MSG(ret == RET_OK, ret, "CheckOnlyReplace failed!");
+      if (replace_origin) {
+        ret = RecordVariableName(func_graph, cnode, search_key, false, &node_name_map);
       } else {
         ret = InsertVariableNodeForConv(node, cnode, func_graph, variable_nodes.at(search_key), &node_name_map,
                                         has_alpha, max_weight_batch);
       }
-      MS_CHECK_TRUE_MSG(ret == RET_OK, ret, "Insert variable node for conv failed!");
     } else {
       continue;
     }

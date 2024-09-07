@@ -46,16 +46,19 @@ class InsertVariableNodePass : public Pass {
                                          const std::vector<int> &up_shape,
                                          std::unordered_map<std::string, std::string> *node_name_map, bool has_alpha,
                                          int max_weight_batch);
-  ParameterPtr BuildFloatZeroVecNDParameterNode(const FuncGraphPtr &anf_graph, ShapeVector weight_shape,
-                                                const std::string &node_name, float value = 0);
   lite::STATUS ParseInsertNode(std::string file_path, std::map<std::string, std::vector<int>> *variable_nodes,
                                std::unordered_map<std::string, std::string> *node_name_map,
                                std::vector<std::string> *node_name_list, bool *has_alpha);
   lite::STATUS ParseShapeStr(std::string shape_str, std::vector<int> *shape);
   lite::STATUS InsertVariableAddNode(const CNodePtr &cnode, const FuncGraphPtr &func_graph, const bool &is_matmul,
                                      std::unordered_map<std::string, std::string> *node_name_map);
-  lite::STATUS CheckOnlyInsertAdd(CNodePtr cnode, const std::vector<int> &para_shape, const bool &is_matmul,
-                                  bool *compare_res);
+  lite::STATUS CheckOnlyReplace(CNodePtr cnode, const std::vector<int> &para_shape, const bool &is_matmul,
+                                bool *compare_res);
+  lite::STATUS RecordVariableName(const FuncGraphPtr &func_graph, const CNodePtr &cnode, const string &search_key,
+                                  bool is_matmul, std::unordered_map<std::string, std::string> *node_name_map);
+  template <typename T>
+  ParameterPtr BuildFloat16ZeroVecNDParameterNode(const FuncGraphPtr &anf_graph, ShapeVector weight_shape,
+                                                  const std::string &node_name, T value, TypeId dtype);
 
   std::shared_ptr<ConverterPara> param_;
 };
