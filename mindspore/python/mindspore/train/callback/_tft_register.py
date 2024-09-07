@@ -20,7 +20,7 @@ from mindspore.parallel._utils import _get_device_num
 from mindspore import _checkparam as Validator
 from mindspore.train.callback._callback import Callback
 from mindspore import context
-from mindspore.communication import get_rank
+from mindspore.communication import get_rank, get_group_size
 from mindspore import log as logger
 from mindspore.train.serialization import _get_cur_rank_dp
 
@@ -214,12 +214,15 @@ class TFTRegister(Callback):
         """ set Mindio TFT optimizer replica info, used internal. """
         cur_rank = get_rank()
         cb_params = run_context.original_args()
-        param_layout_dict = cb_params.train_network.parameter_layout_dict
-        if param_layout_dict:
-            dp = _get_cur_rank_dp(param_layout_dict)
+        train_network = cb_params.train_network
+        # in data_parallel mode, every ranks has same train parameters
+        if context.get_auto_parallel_context("parallel_mode") == "data_parallel":
+            group_size = get_group_size()
+            dp = tuple(range(group_size))
         else:
-            dp = _get_cur_rank_dp(cb_params.train_network)
-        logger.info(f"Set TFT replica with dp: {dp}.")
+            param_layout_dict = train_network.parameter_layout_dict
+            dp = _get_cur_rank_dp(param_layout_dict) if param_layout_dict else _get_cur_rank_dp(train_network)
+        logger.warning(f"Set TFT replica with dp: {dp}.")
         replica_info = [
             {
                 "type": 1,
