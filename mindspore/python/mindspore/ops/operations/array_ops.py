@@ -775,7 +775,7 @@ class UniqueWithPad(Primitive):
         Deprecated
     """
 
-    @deprecated("2.4", "UniqueWithPad", False)
+    @deprecated("2.4", "ops.Unique and ops.PadV3", False)
     @prim_attr_register
     def __init__(self):
         """init UniqueWithPad"""
