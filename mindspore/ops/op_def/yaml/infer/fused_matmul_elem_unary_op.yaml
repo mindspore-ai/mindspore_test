@@ -1,0 +1,14 @@
+#operator FusedMatmulElemUnary
+fused_matmul_elem_unary:
+  args:
+    input:
+      dtype: tensor
+    weight:
+      dtype: tensor
+  class:
+    disable: True
+  function:
+    disable: True
+  returns:
+    output0:
+      dtype: tensor

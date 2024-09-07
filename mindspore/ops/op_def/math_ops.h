@@ -154,10 +154,7 @@ GVAR_DEF(PrimitivePtr, kPrimOrmqr, std::make_shared<Primitive>("Ormqr"));
 GVAR_DEF(PrimitivePtr, kPrimEps, std::make_shared<Primitive>(kEpsOpName));
 GVAR_DEF(PrimitivePtr, kPrimMatmulReduceScatter, std::make_shared<Primitive>(kMatmulReduceScatterOpName));
 GVAR_DEF(PrimitivePtr, kPrimAllGatherMatmul, std::make_shared<Primitive>(kAllGatherMatmulOpName));
-GVAR_DEF(PrimitivePtr, kPrimFusedMatMulElemUnary, std::make_shared<Primitive>("FusedMatMulElemUnary"));
-GVAR_DEF(PrimitivePtr, kPrimFusedMatMulElemBinary, std::make_shared<Primitive>("FusedMatMulElemBinary"));
 GVAR_DEF(PrimitivePtr, kPrimQuantBatchMatmulAllReduce, std::make_shared<Primitive>(kQuantBatchMatmulAllReduceOpName));
-
 }  // namespace prim
 }  // namespace mindspore
 

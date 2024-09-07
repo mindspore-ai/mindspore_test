@@ -1,0 +1,16 @@
+#operator FusedMatmulElemBinary
+fused_matmul_elem_binary:
+  args:
+    input:
+      dtype: tensor
+    weight:
+      dtype: tensor
+    bias:
+      dtype: tensor
+  class:
+    disable: True
+  function:
+    disable: True
+  returns:
+    output0:
+      dtype: tensor
