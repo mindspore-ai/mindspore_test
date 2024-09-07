@@ -22,6 +22,7 @@ namespace mindspore {
 namespace transform {
 
 acltdtAddDataItemFunObj acltdtAddDataItem_ = nullptr;
+acltdtCleanChannelFunObj acltdtCleanChannel_ = nullptr;
 acltdtCreateChannelFunObj acltdtCreateChannel_ = nullptr;
 acltdtCreateChannelWithCapacityFunObj acltdtCreateChannelWithCapacity_ = nullptr;
 acltdtCreateDataItemFunObj acltdtCreateDataItem_ = nullptr;
@@ -57,6 +58,7 @@ void LoadAcltdtApiSymbol(const std::string &ascend_path) {
     return;
   }
   acltdtAddDataItem_ = DlsymAscendFuncObj(acltdtAddDataItem, handler);
+  acltdtCleanChannel_ = DlsymAscendFuncObj(acltdtCleanChannel, handler);
   acltdtCreateChannel_ = DlsymAscendFuncObj(acltdtCreateChannel, handler);
   acltdtCreateChannelWithCapacity_ = DlsymAscendFuncObj(acltdtCreateChannelWithCapacity, handler);
   acltdtCreateDataItem_ = DlsymAscendFuncObj(acltdtCreateDataItem, handler);

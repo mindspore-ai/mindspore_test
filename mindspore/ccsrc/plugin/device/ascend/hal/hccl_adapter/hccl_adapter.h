@@ -101,6 +101,8 @@ class HcclAdapter {
   HcclResult HcclExecEnqueueOp(const ::HcomOperation &op_info, const HExecCallBack &callback) const;
   HcclResult HcclExecAlltoAllV(const ::HcomAllToAllVParams &params, const HExecCallBack &callback) const;
 
+  HcclResult HcclCommResume(HcclComm comm) const;
+
   // Return whether using CM to initialize HCCL.
   bool UseHcclCM() const;
   static void AddCMEnvToHcclOption(std::map<std::string, std::string> *hccl_opt_map);
@@ -152,6 +154,7 @@ class HcclAdapter {
   HcclAlltoAllVFunObj launch_hccl_all_to_allv_ = nullptr;
   HcclAlltoAllFunObj launch_hccl_all_to_all_ = nullptr;
   HcclBatchSendRecvFunObj launch_hccl_batch_isend_irecv_ = nullptr;
+  HcclCommResumeFunObj launch_hccl_comm_resume_ = nullptr;
 
   HcomCreateGroupFunObj hccl_create_group_ = nullptr;
   HcomDestroyGroupFunObj hccl_destroy_group_ = nullptr;

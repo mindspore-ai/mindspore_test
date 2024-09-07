@@ -23,6 +23,11 @@ from mindspore import context
 from mindspore.communication import get_rank
 from mindspore import log as logger
 from mindspore.train.serialization import _get_cur_rank_dp
+from mindspore._c_expression import _repair_device, _stop_device
+from mindspore._c_expression import clean_tdt_channel
+from mindspore._c_expression import send_recv
+from mindspore._c_expression import CollectiveManager
+
 
 def _get_ckpt_dir(step, ckpt_save_path, is_tmp_file):
     """ Common func to generate ckpt dir name."""
@@ -78,6 +83,39 @@ def _tft_exit_cb(ctx):
     logger.error("Enter mindio ttp exit process, which means other ranks occur exception, check other ranks' logs!")
     os._exit(1)   # pylint: disable=W0212
 
+
+
+def _tft_repair_callback(step, need_rebuild, error_ranks, repair_info, args, cb_ctx):
+    """ Callback used for TFT repair function."""
+    logger.info("Enter _tft_repair_callback repair type: {}".format(repair_info["repair_type"]))
+    if(repair_info["repair_type"] == cb_ctx.tft.RepairType.RT_UCE_HIGHLEVEL.value\
+or repair_info["repair_type"] == cb_ctx.tft.RepairType.RT_UCE_LOWLEVEL.value):
+        logger.info("Enter _tft_repair_callback uce REPARI_DEVICE device_id : {}".format(cb_ctx.device_id))
+        _repair_device(cb_ctx.device_id)
+
+    if(repair_info["repair_type"] == cb_ctx.tft.RepairType.RT_UCE_HIGHLEVEL.value\
+       or repair_info["repair_type"] == cb_ctx.tft.RepairType.RT_SEND.value):
+        logger.info("Enter _tft_repair_callback SEND_RECV repair type: \
+{}, src_rank:{}, dst_rank: {}".format(repair_info["repair_type"], repair_info["src"], repair_info["dst"]))
+        cb_params = args
+        src_rank = repair_info["src"][0]
+        dst_rank = repair_info["dst"][0]
+        send_recv(cb_params.network.trainable_params(), src_rank, dst_rank)
+    logger.info("Finish _tft_repair_callback")
+
+def _tft_clean_callback(cb_ctx):
+    """ Callback used for TFT clean function."""
+    logger.info("Enter _tft_clean_callback")
+    clean_tdt_channel()
+    logger.info("Enter _tft_clean_callback resume_hccl_comm")
+    CollectiveManager.get_instance().resume_hccl_comm()
+    logger.info("Finish _tft_clean_callback")
+
+def _tft_stop_callback(cb_ctx):
+    """ Callback used for TFT stop function."""
+    logger.info("Enter _tft_stop_callback device_id: {}".format(cb_ctx.device_id))
+    _stop_device(cb_ctx.device_id)
+    logger.info("Finish _tft_stop_callback")
 
 
 class TFTRegister(Callback):
@@ -207,6 +245,7 @@ class TFTRegister(Callback):
         self._controller_ip = ctrl_ip
         self._controller_rank_id = ctrl_rank_id
         self._controller_port = ctrl_port
+        self.device_id = context.get_context("device_id")
         self._init_tft()
         self.ckpt_save_path = ckpt_save_path
 
@@ -236,6 +275,9 @@ class TFTRegister(Callback):
         self.tft.tft_register_save_ckpt_handler(_save_checkpoint_on_failure, self)
         self.tft.tft_register_rename_handler(_rename_save_result, self)
         self.tft.tft_register_exit_handler(_tft_exit_cb, self)
+        self.tft.tft_register_stop_handler(_tft_stop_callback, self)
+        self.tft.tft_register_clean_handler(_tft_clean_callback, self)
+        self.tft.tft_register_repair_handler(_tft_repair_callback, self)
 
         world_size = _get_device_num()
         cur_rank = get_rank()
@@ -267,9 +309,11 @@ class TFTRegister(Callback):
         if self.has_init_replica is False:
             self.has_init_replica = True
             self._set_tft_optimizer_replica(run_context)
-        logger.info("Set optimizer finish step status to TFT.")
         cb_params = run_context.original_args()
+        logger.info("START Set optimizer finish step status to TFT. step: {}".format(cb_params.cur_step_num))
         self.tft.tft_end_updating_os(cb_params.cur_step_num)
+        logger.info("END Set optimizer finish step status to TFT.")
+
 
     def on_train_begin(self, run_context):
         cb_params = run_context.original_args()

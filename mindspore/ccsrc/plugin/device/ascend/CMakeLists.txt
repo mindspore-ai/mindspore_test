@@ -91,6 +91,7 @@ set(ASCEND_COMMON_SUB
         hal/common
         hal/hccl_adapter
         hal/profiler
+        hal/special
         )
 
 foreach(a_comp ${ASCEND_COMMON_SUB})

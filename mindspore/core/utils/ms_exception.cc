@@ -26,4 +26,9 @@ StaticAnalysisException &StaticAnalysisException::Instance() {
   static StaticAnalysisException instance{};
   return instance;
 }
+
+UCEException &UCEException::GetInstance() {
+  static UCEException instance{};
+  return instance;
+}
 }  // namespace mindspore

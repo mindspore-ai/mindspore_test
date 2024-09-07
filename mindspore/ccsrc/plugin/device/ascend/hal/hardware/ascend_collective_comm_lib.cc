@@ -303,6 +303,15 @@ uint32_t AscendCollectiveCommLib::GetGroupRankFromWorldRank(uint32_t world_rank,
     hccl::HcclAdapter::GetInstance().HcclGetGroupRankFromWorldRank(world_rank, group_name, &local_rank_id));
   return local_rank_id;
 }
+
+bool AscendCollectiveCommLib::ResumeHcclComm() {
+  for (auto &group : groups_) {
+    auto hccl_comm = HcclCommunicator(group.first);
+    HCCL_RUN_CHECK(std::string("resume communicate group"), group.first,
+                   hccl::HcclAdapter::GetInstance().HcclCommResume(hccl_comm));
+  }
+  return true;
+}
 }  // namespace ascend
 
 using AscendCollectiveCommLib = mindspore::device::ascend::AscendCollectiveCommLib;

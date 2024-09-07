@@ -871,17 +871,25 @@ void GraphScheduler::Run(ActorSet *const actor_set, const std::vector<std::vecto
                          const VectorRef &args, GraphExecutionStrategy strategy) {
   MS_EXCEPTION_IF_NULL(actor_set);
   MS_EXCEPTION_IF_NULL(actor_set->data_prepare_actor_);
+  MS_EXCEPTION_IF_NULL(actor_set->loop_count_actor_);
+  actor_set->loop_count_actor_->IncreaseTotalRunningCount();
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
   SignalGuard sg(IntHandler);
 #endif
-  // Some exception could happen after one step is completed, need to check exception at the beginning to avoid thread
-  // hanging.
-  MsException::Instance().CheckException();
 
-  // Check the actor set state.
-  if (actor_set->is_execution_failed_) {
-    MS_LOG(EXCEPTION) << "#umsg#Model execution error:#umsg#An error occurred in the previous step of this model "
-                         "execution, and the current step cannot be executed.";
+  if (UCEException::GetInstance().get_uce_flag()) {
+    MS_LOG(INFO) << "Restart from step after a uce error occurs.";
+  } else if (UCEException::GetInstance().get_force_stop_flag()) {
+    MS_EXCEPTION(ForceStopError) << "ForceStopError occurs when execute.";
+  } else {
+    // Some exception could happen after one step is completed, need to check exception at the beginning to avoid thread
+    // hanging.
+    MsException::Instance().CheckException();
+    // Check the actor set state.
+    if (actor_set->is_execution_failed_) {
+      MS_LOG(EXCEPTION) << "#umsg#Model execution error:#umsg#An error occurred in the previous step of this model "
+                           "execution, and the current step cannot be executed.";
+    }
   }
 
   // Create recorder actor in the running to support the profiler in callback scene.
@@ -945,11 +953,33 @@ void GraphScheduler::Run(ActorSet *const actor_set, const std::vector<std::vecto
     std::mutex mutex;
     std::unique_lock<std::mutex> locker(mutex);
     std::condition_variable thread_blocker;
-    const int64_t kTimeToWait = 60;
+    const int64_t kTimeToWait = 3;
     (void)thread_blocker.wait_for(locker, std::chrono::seconds(kTimeToWait));
     ActorDispatcher::set_enable_async_launch_kernel(false);
     ActorDispatcher::set_enable_runtime_multi_pipeline(false);
     ResetTraceMemoryStatus();
+
+    // Reset actor state and throw uce exception.
+    if (UCEException::GetInstance().get_has_throw_error()) {
+      MS_LOG(WARNING) << "There is a UCE error or ForceStop error, reset the actor state.";
+      for (auto kernel_actor : actor_set->kernel_actors_) {
+        for (auto output_device_tensor : kernel_actor->GetOutputDeviceTensors()) {
+          output_device_tensor->ResetRefCount();
+        }
+      }
+      actor_set->loop_count_actor_->ResetState();
+      actor_set->output_actor_->ResetState();
+      actor_set->is_execution_failed_ = false;
+      MsException::Instance().ResetException();
+    }
+
+    if (UCEException::GetInstance().get_uce_flag()) {
+      MS_EXCEPTION(UCEError) << "UCEError occurs when execute.";
+    } else if (UCEException::GetInstance().get_force_stop_flag()) {
+      actor_set->is_execution_failed_ = false;
+      MS_EXCEPTION(ForceStopError) << "ForceStopError occurs when execute.";
+    }
+
     // May set exception in the wait time, need throw the exception to avoid affecting the next execution.
     MsException::Instance().CheckException();
     MS_LOG(EXCEPTION) << op_context.error_info_;

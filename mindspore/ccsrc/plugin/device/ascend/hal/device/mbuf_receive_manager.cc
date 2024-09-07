@@ -354,6 +354,18 @@ bool MbufDataHandler::QueryChannelSize(size_t *size) {
   return true;
 }
 
+void MbufDataHandler::CleanChannel() {
+  if (acl_handle_ == nullptr) {
+    return;
+  }
+
+  aclError status = CALL_ASCEND_API(acltdtCleanChannel, acl_handle_);
+  if (status != ACL_SUCCESS) {
+    MS_LOG(ERROR) << "Clean channel " << channel_name_ << " failed with error code: " << status;
+  }
+  MS_LOG(INFO) << "Clean channel " << channel_name_ << " successfully.";
+}
+
 AclDatasetInfoPtr MbufDataHandler::CreateAclDatasetInfo(bool first_slice) {
   auto acl_dataset = CALL_ASCEND_API(acltdtCreateDataset);
   if (acl_dataset == nullptr) {

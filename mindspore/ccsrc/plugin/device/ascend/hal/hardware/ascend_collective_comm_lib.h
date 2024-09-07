@@ -71,6 +71,8 @@ class EXPORT_WRAPPER AscendCollectiveCommLib : public CollectiveCommunicationLib
 
   bool DestroyHcclComm();
 
+  bool ResumeHcclComm() override;
+
  private:
   AscendCollectiveCommLib();
   ~AscendCollectiveCommLib() override = default;

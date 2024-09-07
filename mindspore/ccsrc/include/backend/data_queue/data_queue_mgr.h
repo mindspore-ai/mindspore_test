@@ -140,6 +140,7 @@ class BACKEND_EXPORT DataQueueMgr {
   // key: device name, value: DataQueueCreator
   std::map<std::string, DataQueueCreator> data_queue_creator_map_ = {};
 
+  HANDLER_DEFINE(bool, CleanTdtHandle);
   HANDLER_DEFINE(bool, DestoryTdtHandle);
 };
 #ifndef BUILD_LITE

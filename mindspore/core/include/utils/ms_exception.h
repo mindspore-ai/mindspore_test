@@ -54,6 +54,8 @@ class MS_CORE_API MsException {
 
   void SetExceptionListener(ExceptionListener *listener) { listener_ = listener; }
 
+  void ResetException() { exception_ptr_ = nullptr; }
+
  private:
   MsException() = default;
   ~MsException() { listener_ = nullptr; }
@@ -115,6 +117,26 @@ class MS_CORE_API StaticAnalysisException {
   std::exception_ptr exception_ptr_{nullptr};
   std::string msg_;
   std::mutex lock_;
+};
+
+class MS_CORE_API UCEException {
+ public:
+  static UCEException &GetInstance();
+  bool get_has_throw_error() const { return force_stop_flag_ || uce_flag_; }
+
+  void set_force_stop_flag(bool flag) { force_stop_flag_ = flag; }
+  bool get_force_stop_flag() const { return force_stop_flag_; }
+
+  void set_uce_flag(bool flag) { uce_flag_ = flag; }
+  bool get_uce_flag() const { return uce_flag_; }
+
+ private:
+  UCEException() = default;
+  ~UCEException() = default;
+  DISABLE_COPY_AND_ASSIGN(UCEException)
+  bool has_throw_error_{false};
+  bool force_stop_flag_{false};
+  bool uce_flag_{false};
 };
 }  // namespace mindspore
 

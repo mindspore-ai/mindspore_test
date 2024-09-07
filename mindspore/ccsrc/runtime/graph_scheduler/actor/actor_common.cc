@@ -47,7 +47,13 @@ bool ActorDispatcher::enable_static_shape_ = false;
 bool ActorDispatcher::enable_trace_dynamic_memory_ = false;
 bool ActorDispatcher::enable_use_trace_memory_ = false;
 
-bool IsRunningFailed(const OpContext<DeviceTensor> *context) { return (context->error_info_ != ""); }
+bool IsRunningFailed(const OpContext<DeviceTensor> *context) {
+  if (UCEException::GetInstance().get_force_stop_flag()) {
+    const_cast<OpContext<DeviceTensor> *>(context)->error_info_ =
+      std::string("ForceStopError error occurs when execute.");
+  }
+  return (context->error_info_ != "");
+}
 
 void ComputeThreadNums(size_t *actor_thread_num, size_t *actor_and_kernel_thread_num) {
   MS_EXCEPTION_IF_NULL(actor_thread_num);

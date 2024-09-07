@@ -24,6 +24,7 @@ namespace mindspore {
 namespace transform {
 
 ORIGIN_METHOD_WITH_SIMU(acltdtAddDataItem, aclError, acltdtDataset *, acltdtDataItem *)
+ORIGIN_METHOD_WITH_SIMU(acltdtCleanChannel, aclError, acltdtChannelHandle *)
 ORIGIN_METHOD_WITH_SIMU(acltdtCreateChannel, acltdtChannelHandle *, uint32_t, const char *)
 ORIGIN_METHOD_WITH_SIMU(acltdtCreateChannelWithCapacity, acltdtChannelHandle *, uint32_t, const char *, size_t)
 ORIGIN_METHOD_WITH_SIMU(acltdtCreateDataItem, acltdtDataItem *, acltdtTensorType, const int64_t *, size_t, aclDataType,
