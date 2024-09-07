@@ -3856,7 +3856,7 @@ bool StepParallel(const FuncGraphPtr &root, const opt::OptimizerPtr &optimizer) 
     ExtractInformation(all_nodes);
   }
 
-  if (CheckShardingPropagation()) {
+  if (CheckShardingPropagation() && !StrategyCheckpoint::GetInstance().LoadAutoOpStrategyOn()) {
     // To create opInfo for step parallel generated op
     ExtractInformation(all_nodes);
   }
