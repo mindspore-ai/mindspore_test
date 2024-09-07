@@ -49,7 +49,7 @@ def aoe_online():
 
 
 @arg_mark(
-    plat_marks=["platform_ascend", "platform_ascend910b"],
+    plat_marks=["platform_ascend"],
     level_mark="level0",
     card_mark="onecard",
     essential_mark="essential",

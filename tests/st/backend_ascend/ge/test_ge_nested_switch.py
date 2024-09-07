@@ -18,7 +18,7 @@ from tests.mark_utils import arg_mark
 
 
 @arg_mark(
-    plat_marks=["platform_ascend", "platform_ascend910b"],
+    plat_marks=["platform_ascend"],
     level_mark="level0",
     card_mark="onecard",
     essential_mark="essential",
