@@ -6,6 +6,10 @@ dropout:
 
     Refer to :func:`mindspore.ops.dropout` for more details.
 
+    .. warning::
+        The Ascend backend does not support the reproducibility of random numbers, so
+        the `Seed0` and `Seed1` parameter have no effect.
+
     Args:
         keep_prob (float, optional): The keep rate, between 0 and 1, e.g. keep_prob = 0.9,
             means dropping out 10% of input units. Default: ``0.5`` .

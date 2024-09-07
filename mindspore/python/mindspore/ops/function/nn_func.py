@@ -1341,6 +1341,10 @@ def dropout(input, p=0.5, training=True, seed=None):
     avoid overfitting. And the return will be multiplied by :math:`\frac{1}{1-p}` during training.
     During the reasoning, this operation returns the same Tensor as the `x`.
 
+    .. warning::
+        The Ascend backend does not support the reproducibility of random numbers, so
+        the `seed` parameter has no effect.
+
     Args:
         input (Tensor): The input Tensor of shape :math:`(*, N)`, with data type of float16, float32 or float64.
         p (float, optional): The dropping rate, between 0 and 1, e.g. p = 0.1,

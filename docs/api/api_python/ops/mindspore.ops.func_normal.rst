@@ -5,6 +5,9 @@
 
     根据正态（高斯）随机数分布生成随机数。
 
+    .. warning::
+        Ascend后端不支持随机数重现功能， `seed` 参数不起作用。
+
     参数：
         - **shape** (tuple) - Tuple: :math:`(N,*)` ，其中 :math:`*` 表示任何数量的附加维度。
         - **mean** (Union[Tensor, int, float]) - 均值μ，指定分布的峰值。

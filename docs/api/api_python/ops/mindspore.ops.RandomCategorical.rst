@@ -5,6 +5,9 @@ mindspore.ops.RandomCategorical
 
     从分类分布中抽取样本。
 
+    .. warning::
+        Ascend后端不支持随机数重现功能， `seed` 参数不起作用。
+
     参数：
         - **dtype** (mindspore.dtype) - 输出的类型。它的值必须是 mstype.int16、mstype.int32 和 mstype.int64 之一。默认值： ``mstype.int64`` 。
 

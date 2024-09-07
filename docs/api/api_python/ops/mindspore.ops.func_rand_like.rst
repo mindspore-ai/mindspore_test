@@ -5,6 +5,9 @@ mindspore.ops.rand_like
 
     返回一个Tensor，shape和dtype由输入决定，其元素为服从均匀分布的 :math:`[0, 1)` 区间的数字。
 
+    .. warning::
+        Ascend后端不支持随机数重现功能， `seed` 参数不起作用。
+
     参数：
         - **input** (Tensor) - 输入的Tensor，用来决定输出Tensor的shape和默认的dtype。
         - **seed** (int，可选) - 随机种子，必须大于或等于0。默认值： ``None`` ，值将取 ``0`` 。

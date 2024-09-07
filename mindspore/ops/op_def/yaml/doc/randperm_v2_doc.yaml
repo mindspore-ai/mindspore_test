@@ -6,7 +6,10 @@ randperm_v2:
         that a given type can represent.
 
         .. warning::
-            This is an experimental API that is subject to change or deletion.
+            - This is an experimental API that is subject to change or deletion.
+            - The Ascend backend does not support the reproducibility of random numbers, so
+              the `seed` parameter has no effect.
+
 
         Args:
             n (Union[Tensor, int]): The input n Tensor with shape: () or (1,) and with data type of int64.

@@ -89,6 +89,10 @@ class TruncatedNormal(Primitive):
         - Using the Philox algorithm to scramble seed and seed2 to obtain random seed so that the user doesn't need
           to worry about which seed is more important.
 
+    .. warning::
+        The Ascend backend does not support the reproducibility of random numbers, so
+        the `seed` and `seed2` parameter have no effect.
+
     Args:
         seed (int, optional): The operator-level random seed, used to generate random numbers,
             must be non-negative. Default: ``0`` .
@@ -153,6 +157,10 @@ class StandardNormal(Primitive):
         - Using the Philox algorithm to scramble seed and seed2 to obtain random seed so that the user doesn't need
           to worry about which seed is more important.
 
+    .. warning::
+        The Ascend backend does not support the reproducibility of random numbers, so
+        the `seed` and `seed2` parameter have no effect.
+
     Args:
         seed (int, optional): The operator-level random seed, used to generate random numbers,
             must be non-negative. Default: ``0`` .
@@ -203,6 +211,10 @@ class StandardLaplace(Primitive):
           separate calls, the random number generated will not change.
         - Using the Philox algorithm to scramble seed and seed2 to obtain random seed so that the user doesn't need
           to worry about which seed is more important.
+
+    .. warning::
+        The Ascend backend does not support the reproducibility of random numbers, so
+        the `seed` and `seed2` parameter have no effect.
 
     Args:
         seed (int, optional): The operator-level random seed, used to generate random numbers,
@@ -367,6 +379,10 @@ class Gamma(PrimitiveWithInfer):
         - Using the Philox algorithm to scramble seed and seed2 to obtain random seed so that the user doesn't need
           to worry about which seed is more important.
 
+    .. warning::
+        The Ascend backend does not support the reproducibility of random numbers, so
+        the `seed` and `seed2` parameter have no effect.
+
     Args:
         seed (int, optional): The operator-level random seed, used to generate random numbers,
             must be non-negative. Default: ``0`` .
@@ -449,6 +465,10 @@ class ParameterizedTruncatedNormal(Primitive):
           separate calls, the random number generated will not change.
         - Using the Philox algorithm to scramble seed and seed2 to obtain random seed so that the user doesn't need
           to worry about which seed is more important.
+
+    .. warning::
+        The Ascend backend does not support the reproducibility of random numbers, so
+        the `seed` and `seed2` parameter have no effect.
 
     Args:
         seed (int, optional): The operator-level random seed, used to generate random numbers,
@@ -672,6 +692,10 @@ class UniformInt(Primitive):
         - Using the Philox algorithm to scramble seed and seed2 to obtain random seed so that the user doesn't need
           to worry about which seed is more important.
 
+    .. warning::
+        The Ascend backend does not support the reproducibility of random numbers, so
+        the `seed` and `seed2` parameter have no effect.
+
     Args:
         seed (int, optional): The operator-level random seed, used to generate random numbers,
             must be non-negative. Default: ``0`` .
@@ -736,6 +760,10 @@ class UniformReal(Primitive):
 
           - GPU: int32, int64.
           - CPU: int16, int32, int64.
+
+    .. warning::
+        The Ascend backend does not support the reproducibility of random numbers, so
+        the `seed` and `seed2` parameter have no effect.
 
     Args:
         seed (int, optional): The operator-level random seed, used to generate random numbers,
@@ -837,6 +865,10 @@ class RandomCategorical(PrimitiveWithInfer):
     r"""
     Generates random samples from a given categorical distribution tensor.
 
+    .. warning::
+        The Ascend backend does not support the reproducibility of random numbers, so
+        the `seed` parameter has no effect.
+
     Args:
         dtype (mindspore.dtype): The type of output. Its value must be one of mstype.int16,
             mstype.int32 and mstype.int64. Default: ``mstype.int64`` .
@@ -902,6 +934,10 @@ class Multinomial(Primitive):
           separate calls, the random number generated will not change.
         - Using the Philox algorithm to scramble seed and seed2 to obtain random seed so that the user doesn't need
           to worry about which seed is more important.
+
+    .. warning::
+        The Ascend backend does not support the reproducibility of random numbers, so
+        the `seed` and `seed2` parameter have no effect.
 
     Args:
         seed (int, optional): The operator-level random seed, used to generate random numbers,
@@ -1012,6 +1048,10 @@ class UniformCandidateSampler(Primitive):
 
     Refer to :func:`mindspore.ops.uniform_candidate_sampler` for more details.
 
+    .. warning::
+        The Ascend backend does not support the reproducibility of random numbers, so
+        the `seed` parameter has no effect.
+
     Args:
         num_true (int): The number of target classes in each training example.
         num_sampled (int): The number of classes to randomly sample. The sampled_candidates will have a shape
@@ -1085,6 +1125,10 @@ class LogUniformCandidateSampler(Primitive):
     Randomly samples a tensor of sampled classes from the range of integers [0, range_max).
 
     Refer to :func:`mindspore.ops.log_uniform_candidate_sampler` for more details.
+
+    .. warning::
+        The Ascend backend does not support the reproducibility of random numbers, so
+        the `seed` parameter has no effect.
 
     Args:
         num_true (int, optional): The number of target classes per training example. Default: ``1`` .

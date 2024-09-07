@@ -7,6 +7,9 @@ mindspore.ops.log_uniform_candidate_sampler
 
     该操作从整数范围[0, `range_max` )中随机采样一个采样类( `sampled_candidates` )的Tensor。
 
+    .. warning::
+        Ascend后端不支持随机数重现功能， `seed` 参数不起作用。
+
     参数：
         - **true_classes** (Tensor) - 目标类，其数据类型为int64，shape为 :math:`(batch\_size, num\_true)` 。
         - **num_true** (int) - 每个训练样本的目标类数。默认值： ``1`` 。

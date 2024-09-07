@@ -16,6 +16,9 @@ mindspore.ops.UniformReal
           - GPU：int32、int64。
           - CPU：int16、int32、int64。
 
+    .. warning::
+        Ascend后端不支持随机数重现功能， `seed` 和 `seed2` 参数不起作用。
+
     参数：
         - **seed** (int，可选) - 算子层的随机种子，用于生成随机数。必须是非负的。默认值： ``0`` 。
         - **seed2** (int，可选) - 全局的随机种子，和算子层的随机种子共同决定最终生成的随机数。必须是非负的。默认值： ``0`` 。

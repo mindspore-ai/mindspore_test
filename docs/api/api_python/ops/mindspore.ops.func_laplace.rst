@@ -10,6 +10,9 @@ mindspore.ops.laplace
     .. math::
         \text{f}(x;μ,λ) = \frac{1}{2λ}\exp(-\frac{|x-μ|}{λ}),
 
+    .. warning::
+        Ascend后端不支持随机数重现功能， `seed` 参数不起作用。
+
     参数：
         - **shape** (tuple) - 指定生成随机Tensor的shape。格式为 :math:`(N,*)` ，其中 :math:`*` 表示任意数量的附加维度。
         - **mean** (Tensor) - 均值μ分布参数，指定峰值的位置。数据类型为float32。
