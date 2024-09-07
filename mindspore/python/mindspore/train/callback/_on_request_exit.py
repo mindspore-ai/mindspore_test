@@ -93,6 +93,9 @@ class OnRequestExit(Callback):
         self.remote_config_file = config_file  # used config file to save checkpoint and exit training process
         self.use_graceful = os.environ.get("MS_ENABLE_GRACEFUL_EXIT") == "1"
         self.is_distributed = _get_parallel_mode() != ParallelMode.STAND_ALONE
+        self.integrated_save = True
+        if self.is_distributed:
+            self.integrated_save = _get_parallel_mode() == ParallelMode.AUTO_PARALLEL
         self.stop_train = False
         self.need_do_step_end = False
         if self.save_ckpt or self.save_mindir:
@@ -237,7 +240,7 @@ class OnRequestExit(Callback):
                 if param.name == "graceful_exit" and param.asnumpy() == True:  # pylint: disable=C0121
                     logger.warning("Graceful exit is triggered, stop training.")
                     if self.save_ckpt:
-                        save_checkpoint(net, self.train_name)
+                        save_checkpoint(net, self.train_name, integrated_save=self.integrated_save)
                     if self.save_mindir:
                         inputs = call_params.train_dataset_element
                         export(net, *inputs, file_name=self.train_name, file_format='MINDIR')
