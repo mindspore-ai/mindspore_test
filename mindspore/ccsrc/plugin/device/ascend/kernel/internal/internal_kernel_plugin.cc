@@ -252,6 +252,14 @@ void InternalKernelPlugin::GetValidKernelBuildInfoWithInternalFormat(const AnfNo
   std::vector<int64_t> special_format_inputs;
   for (size_t i = 0; i < input_num; ++i) {
     auto kernel_with_index = common::AnfAlgo::GetPrevNodeOutput(node, i);
+    auto first_node = kernel_with_index.first;
+    if (first_node->isa<ValueNode>()) {
+      auto value_node = first_node->cast<ValueNodePtr>();
+      auto value = value_node->value();
+      if (value->isa<None>()) {
+        continue;
+      }
+    }
     std::string input_format = AnfAlgo::GetOutputFormat(kernel_with_index.first, kernel_with_index.second);
     input_format = NeedSetParameterFormat(kernel_with_index.first, input_formats->at(i), input_format)
                      ? input_formats->at(i)
