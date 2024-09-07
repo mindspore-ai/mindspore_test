@@ -86,6 +86,11 @@ void DvmKernelMod::CodeGen(const std::vector<ShapeVector> &inputs_shape,
       output_size_list_[i] *= LongToSize(sh);
     }
   }
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  if (context_ptr->UseSimulationApi()) {
+    return;
+  }
   size_t workspace_size = kernel_.CodeGen();
   if (workspace_size) {
     workspace_size_list_ = {workspace_size};

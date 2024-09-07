@@ -270,7 +270,6 @@ def test_fuse_pow():
     """
     np.random.seed(1)
     context.set_context(mode=context.GRAPH_MODE)
-    context.set_context(jit_config={"jit_level": "O1"})
     x0 = np.array(1.6243454).astype(np.float32)
     x1 = np.random.normal(0, 1, (288,)).astype(np.float32)
     x0_ms = Tensor(x0)
