@@ -280,7 +280,7 @@ void DebugActor::DebugOnStepBegin(const std::vector<KernelGraphPtr> &graphs,
 void DebugActor::HandleHookDebugger(uint32_t device_id, const std::vector<KernelGraphPtr> &graphs, bool is_kbyk) {
 #ifdef ENABLE_DEBUGGER
   auto &hookDebugger = hooker::HookDebugger::GetInstance();
-  hookDebugger.HookOnStepBegin(device_id, graphs, step_count_, is_dataset_sink_, is_kbyk);
+  hookDebugger.HookOnStepBegin(device_id, graphs, step_count_, is_kbyk);
 #endif
 }
 

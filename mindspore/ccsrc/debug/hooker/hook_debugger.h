@@ -39,13 +39,13 @@ class HookDebugger {
 
   bool IsHookerEnabled();
 
-  void HookOnStepBegin(uint32_t device_id, const std::vector<KernelGraphPtr> &graphs, int step_count,
-                       bool is_dataset_sink, bool is_kbyk);
+  void HookOnStepBegin(uint32_t device_id, const std::vector<KernelGraphPtr> &graphs, int step_count, bool is_kbyk);
 
   void HookOnStepEnd();
 
  private:
   bool is_enabled_ = false;
+  int dataset_sink_ = 0;
 };
 }  // namespace hooker
 }  // namespace mindspore

@@ -28,7 +28,7 @@ HookDebugger &HookDebugger::GetInstance() {
 bool HookDebugger::IsHookerEnabled() { return common::GetEnv(kMSHookEnable) == kEnable; }
 
 void HookDebugger::HookOnStepBegin(uint32_t device_id, const std::vector<KernelGraphPtr> &graphs, int step_count,
-                                   bool is_dataset_sink, bool is_kbyk) {
+                                   bool is_kbyk) {
   if (!is_enabled_) {
     return;
   }
@@ -42,12 +42,12 @@ void HookDebugger::HookOnStepBegin(uint32_t device_id, const std::vector<KernelG
 
   auto step_count_num = 0;
   step_count_num = step_count;
-  if (step_count == 1 && is_dataset_sink == 1) {
+  if (step_count == 1 && dataset_sink_ == 1) {
     step_count_num = 0;
   }
   if (!graphs.empty()) {
     auto graph = graphs[0];
-    is_dataset_sink = graph->IsDatasetGraph();
+    dataset_sink_ = graph->IsDatasetGraph();
   }
   auto registered_adapter = hooker::AdapterManager::Instance().GetAdapterForBackend(device::DeviceType::kAscend);
   if (registered_adapter != nullptr) {
