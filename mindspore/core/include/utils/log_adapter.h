@@ -41,7 +41,7 @@
 
 // NOTICE: when relative path of 'log_adapter.h' changed, macro 'LOG_HDR_FILE_REL_PATH' must be changed
 #ifndef LOG_HDR_FILE_REL_PATH
-#define LOG_HDR_FILE_REL_PATH "mindspore/core/utils/log_adapter.h"
+#define LOG_HDR_FILE_REL_PATH "mindspore/core/include/utils/log_adapter.h"
 #endif
 // Get start index of file relative path in __FILE__
 static constexpr size_t GetRelPathPos() noexcept {
@@ -208,7 +208,9 @@ enum SubModuleId : int {
 
 constexpr int COMPONENT_START = 10000;  // vlog start level for component
 constexpr int COMPONENT_RANGE = 100;    // number for levels allocated for each component
-#define NUM_ALIGN(val, base) (((val) + (base)-1) / (base) * (base))
+// clang-format off
+#define NUM_ALIGN(val, base) (((val) + (base) - 1) / (base) * (base))
+// clang-format on
 
 // VLOG level definition and group
 enum VLogLevel : int {

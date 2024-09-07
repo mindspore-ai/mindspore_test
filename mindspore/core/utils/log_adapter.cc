@@ -16,6 +16,7 @@
 
 #include "utils/log_adapter.h"
 #include <cstddef>
+#include <cstdint>
 #include <sstream>
 #include <string>
 
@@ -683,8 +684,9 @@ bool ParsePositiveInt(const std::string &str, const size_t beg, const size_t end
   int64_t val = 0;
   size_t idx = beg;
   constexpr int64_t number_10 = 10;
+  constexpr int64_t ascii_char_0 = static_cast<int64_t>('0');
   while (idx < end && IsDigit(str[idx])) {
-    val = val * number_10 + (str[idx] - '0');
+    val = val * number_10 + (static_cast<int64_t>(str[idx]) - ascii_char_0);
     if (val > std::numeric_limits<int>::max()) {
       return false;
     }
