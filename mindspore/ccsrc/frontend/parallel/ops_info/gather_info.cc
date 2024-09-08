@@ -208,6 +208,33 @@ Status GatherInfo::GetAttrs() {
   return SUCCESS;
 }
 
+// return true: axis is 0, and split the first dimension of parameter and the first and second dimension of indices
+// otherwise return false
+bool GatherInfo::ShardBatchAxisAndSp(const Shape &param_strategy, const Shape &indices_strategy) const {
+  if (axis_ != 0) {
+    return false;
+  }
+
+  if ((param_strategy.size() != 2) || (indices_strategy.size() != 2)) {
+    return false;
+  }
+
+  if ((param_strategy[1] != 1)) {
+    return false;
+  }
+
+  if ((param_strategy[0] == stage_device_size_) || (indices_strategy[0] == stage_device_size_)) {
+    return false;
+  }
+
+  if ((param_strategy[0] == NO_SPLIT_STRATEGY) || (indices_strategy[0] == NO_SPLIT_STRATEGY) ||
+      (indices_strategy[1] == NO_SPLIT_STRATEGY)) {
+    return false;
+  }
+
+  return true;
+}
+
 // return true: axis is 0, and split the first dimension of parameter and the first dimension of indices
 // otherwise return false
 bool GatherInfo::ShardBatchAndAxis(const Shape &param_strategy, const Shape &indices_strategy) const {
@@ -245,6 +272,10 @@ GatherMode GatherInfo::GetGatherMode(const Shape &param_strategy, const Shape &i
 
   if (manual_split_) {
     return MANUAL;
+  }
+
+  if (ShardBatchAxisAndSp(param_strategy, indices_strategy)) {
+    return SHARD_BATCH_AXIS_AND_SP;
   }
 
   if (ShardBatchAndAxis(param_strategy, indices_strategy)) {
@@ -688,6 +719,42 @@ Status ShardBatchAndAxisImpl::InferBias() {
   return SUCCESS;
 }
 
+Status ShardBatchAxisAndSpImpl::InferDevMatrixShape() {
+  dev_matrix_shape_ = {indices_strategy_[0], indices_strategy_[1], param_strategy_[0]};
+  MS_LOG(INFO) << name_ << ": Sharding batch, axis and sp, the dev matrix is " << dev_matrix_shape_;
+  // axis_split_forward_allreduce_ is always true
+  if (axis_split_forward_allreduce_) {
+    out_dev_matrix_shape_ = dev_matrix_shape_;
+  } else {
+    out_dev_matrix_shape_ = {indices_strategy_[0] * param_strategy_[0], indices_strategy_[1]};
+  }
+  auto shard_product =
+    std::accumulate(dev_matrix_shape_.begin(), dev_matrix_shape_.end(), 1, std::multiplies<int64_t>());
+  auto stage_device_size = SizeToLong(g_device_manager->GetDeviceListInThisStage().size());
+  if (shard_product < stage_device_size) {
+    MS_EXCEPTION_IF_ZERO("shard_product", shard_product);
+    repeated_calculation_num_ = stage_device_size / shard_product;  // set repeated calculation num
+  }
+  return SUCCESS;
+}
+
+Status ShardBatchAxisAndSpImpl::InferTensorMap() {
+  Shape param_tensor_map = {0, MAP_NONE};
+  Shape indices_tensor_map = {2, 1};
+  Shape out_tensor_map;
+  // axis_split_forward_allreduce_ is always true
+  if (axis_split_forward_allreduce_) {
+    out_tensor_map = {2, 1, MAP_NONE};  // the dev matrix is (index_strategy[0], param_strategy[0])
+  } else {
+    out_tensor_map = {1, 0, MAP_NONE};  // the dev matrix is (index_strategy[0] * param_strategy[0])
+  }
+
+  (void)inputs_tensor_map_.emplace_back(std::move(param_tensor_map));    // param
+  (void)inputs_tensor_map_.emplace_back(std::move(indices_tensor_map));  // indices
+  (void)outputs_tensor_map_.emplace_back(std::move(out_tensor_map));     // output
+  return SUCCESS;
+}
+
 void ShardAxisImpl::SetAttribute(const Shape &param_strategy) {
   // axis=0, index_shape(0)%param_strategy(0) must be 0
   Shape index_shape = inputs_shape_.at(1);
@@ -893,6 +960,11 @@ Status ShardAxisImpl::InferGroup() {
   if (gather_mode_ == SHARD_BATCH_AND_AXIS) {
     dim = 1;
     MS_LOG(INFO) << name_ << ": Sharding batch and axis, the group dim is " << dim;
+  }
+
+  if (gather_mode_ == SHARD_BATCH_AXIS_AND_SP) {
+    dim = 2;
+    MS_LOG(INFO) << name_ << ": Sharding batch, axis and sp, the group dim is " << dim;
   }
 
   if (dev_matrix.GetDevicesAlongDim(SizeToUlong(dim), &group_devices) != SUCCESS) {
@@ -1131,6 +1203,17 @@ Status GatherInfo::CheckStrategy(const StrategyPtr &strategy) {
       manual_util->set_replace_op_name(replace_op_name_);
       break;
     }
+    case SHARD_BATCH_AXIS_AND_SP: {
+      gather_util_ = std::make_shared<ShardBatchAxisAndSpImpl>(name_, inputs_shape_clone_, outputs_shape_clone_, axis_);
+      auto shard_batch_axis_and_sp_util = std::dynamic_pointer_cast<ShardBatchAxisAndSpImpl>(gather_util_);
+      shard_batch_axis_and_sp_util->set_target(target_);
+      shard_batch_axis_and_sp_util->set_dynamic_shape_indices(dynamic_shape_indices_);
+      shard_batch_axis_and_sp_util->set_attrs(attrs_);
+      shard_batch_axis_and_sp_util->set_replace_op_name(replace_op_name_);
+      shard_batch_axis_and_sp_util->set_axis_split_forward_allreduce(
+        true);  // Sharding batch axis and sp, and the forward use allreduce
+      break;
+    }
     case SHARD_BATCH_AND_AXIS: {
       gather_util_ = std::make_shared<ShardBatchAndAxisImpl>(name_, inputs_shape_clone_, outputs_shape_clone_, axis_);
       auto shard_batch_and_axis_util = std::dynamic_pointer_cast<ShardBatchAndAxisImpl>(gather_util_);
@@ -1230,7 +1313,8 @@ Status GatherInfo::CheckOutputStrategy(const StrategyPtr &out_strategy) {
     MS_LOG(INFO) << name_ << ": The output strategy is " << out_stra << ", forward use allreduce";
     return SUCCESS;
   } else if (out_stra == reduce_scatter_strategy) {
-    if (gather_util_->gather_mode() != SHARD_AXIS_0_STATIC && gather_util_->gather_mode() != SHARD_BATCH_AND_AXIS) {
+    if (gather_util_->gather_mode() != SHARD_AXIS_0_STATIC && gather_util_->gather_mode() != SHARD_BATCH_AND_AXIS &&
+        gather_util_->gather_mode() != SHARD_BATCH_AXIS_AND_SP) {
       MS_LOG(ERROR) << name_ << ": The output strategy " << out_stra << " for gather mode "
                     << gather_util_->GatherModeToString() << " is invalid, it must be " << allreduce_strategy;
       return FAILED;
