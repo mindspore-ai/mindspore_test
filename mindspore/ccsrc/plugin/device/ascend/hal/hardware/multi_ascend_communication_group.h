@@ -22,7 +22,9 @@
 #include <memory>
 #include "runtime/collective/communication_group.h"
 #include "plugin/device/ascend/hal/hardware/ascend_communication_group.h"
+#ifdef ENABLE_INTERNAL_KERNELS
 #include "plugin/device/ascend/hal/hardware/lowlatency_communication_group.h"
+#endif
 #include "plugin/device/ascend/hal/common/ascend_utils.h"
 #include "utils/dlopen_macro.h"
 
