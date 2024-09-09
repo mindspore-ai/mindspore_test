@@ -40,7 +40,7 @@ def sigmoid_forward_func(x):
 
 @test_utils.run_with_cell
 def sigmoid_backward_func(x):
-    return ops.grad(sigmoid_forward_func, (0,))(x)
+    return ms.grad(sigmoid_forward_func, (0,))(x)
 
 
 @test_utils.run_with_cell
@@ -183,4 +183,25 @@ def test_ops_sigmoid_backward_dynamic_rank(mode):
     x2 = generate_random_input((3, 4, 5, 6), np.float32)
     output = test_cell(ms.Tensor(x2))
     expect = generate_expect_backward_output(x2)
+    np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
+
+
+@arg_mark(plat_marks=['cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1', card_mark='onecard',
+          essential_mark='essential')
+@pytest.mark.parametrize('mode', [ms.GRAPH_MODE, ms.context.PYNATIVE_MODE])
+@pytest.mark.parametrize('dtype', [np.float16, np.float32])
+def test_ops_sigmoid_nan(mode, dtype):
+    """
+    Feature: Pyboost function.
+    Description: Test function sigmoid forward and backward with nan.
+    Expectation: Correct result.
+    """
+    ms.context.set_context(mode=mode)
+    x = np.full((2, 3, 4, 5), np.nan, dtype=dtype)
+    output = sigmoid_forward_func(ms.Tensor(x))
+    expect = generate_expect_forward_output(x)
+    np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)
+
+    output = sigmoid_backward_func(ms.Tensor(x))
+    expect = generate_expect_backward_output(x)
     np.testing.assert_allclose(output.asnumpy(), expect, rtol=1e-3)

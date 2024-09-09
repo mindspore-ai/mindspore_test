@@ -116,15 +116,13 @@ def test_ops_nn_L1Loss(mode, reduction):
 @pytest.mark.level1
 @pytest.mark.env_onecard
 @pytest.mark.platform_arm_ascend_training
-@pytest.mark.parametrize("context_mode", [ms.PYNATIVE_MODE])
 @pytest.mark.parametrize("reduction", ["mean", "sum", "none"])
-def test_ops_l1_loss_dynamic_shape(context_mode, reduction):
+def test_ops_l1_loss_dynamic_shape(reduction):
     """
     Feature: pyboost function.
     Description: test function l1_loss forward with dynamic shape.
     Expectation: expect correct result.
     """
-    ms.context.set_context(mode=context_mode)
     x1 = ms.Tensor(generate_random_input((7, 8, 9), np.float32))
     target1 = ms.Tensor(generate_random_input((7, 8, 9), np.float32))
 
@@ -133,4 +131,4 @@ def test_ops_l1_loss_dynamic_shape(context_mode, reduction):
 
     test_cell = test_utils.to_cell_obj(l1_loss_forward_func)
     TEST_OP(test_cell, [[x1, target1, reduction], [x2, target2, reduction]], "l1_loss_ext", disable_grad=False,
-            disable_input_check=True)
+            disable_input_check=True, disable_mode=['GRAPH_MODE'])
