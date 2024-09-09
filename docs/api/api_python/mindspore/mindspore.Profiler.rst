@@ -73,7 +73,7 @@ mindspore.Profiler
         参数：
             - **offline_path** (Union[str, None], 可选) - 需要使用离线模式进行分析的数据路径。离线模式用于非正常退出场景。对于在线模式，此参数应设置为 ``None`` 。默认值： ``None`` 。
             - **pretty** (bool, 可选) - 对json文件进行格式化处理。此参数默认值为 ``False``，即不进行格式化。
-            - **step_list** (list, 可选) - 只分析指定step的性能数据。此参数默认值为 ``None``，即进行全解析。
+            - **step_list** (list, 可选) - 只解析指定step的性能数据，指定的step必须是连续的整数。此参数默认值为 ``None``，即进行全解析。
             - **mode** (str, 可选) - 解析模式，同步解析或异步解析，可选参数为["sync", "async"], 默认值为 ``"sync"``。
 
               - "sync": 同步模式解析性能数据，会阻塞当前进程。
@@ -87,7 +87,7 @@ mindspore.Profiler
         参数：
             - **path** (str) - 需要进行离线分析的profiling数据路径，指定到profiler上层目录。
             - **pretty** (bool, 可选) - 对json文件进行格式化处理。此参数默认值为 ``False``，即不进行格式化。
-            - **step_list** (list, 可选) - 只分析指定step的性能数据。此参数默认值为 ``None``，即进行全解析。
+            - **step_list** (list, 可选) - 只解析指定step的性能数据，指定的step必须是连续的整数。此参数默认值为 ``None``，即进行全解析。
             - **data_simplification** (bool, 可选) - 数据精简开关功能。默认值为 ``True``，即开启数据精简。
 
     .. py:method:: op_analyse(op_name, device_id=None)
