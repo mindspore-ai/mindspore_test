@@ -1,7 +1,7 @@
 mindspore.train.OnRequestExit
 =============================
 
-.. py:class:: mindspore.train.OnRequestExit(save_ckpt=True, save_mindir=True, file_name='Net', directory='./', sig=signal.SIGTERM)
+.. py:class:: mindspore.train.OnRequestExit(save_ckpt=True, save_mindir=True, file_name='Net', directory='./', sig=signal.SIGTERM, config_file=None)
 
     响应用户关闭请求，退出训练或推理进程，保存checkpoint和mindir。
 

@@ -23,8 +23,8 @@ selu_ext:
           :align: center
 
       Args:
-          - **input** (Tensor) - Tensor of any dimension.
-            The data type is float16, float32, bfloat16.
+          input (Tensor): Tensor of any dimension.
+              The data type is float16, float32, bfloat16.
 
       Returns:
           Tensor, with the same type and shape as the `input`.

@@ -112,15 +112,15 @@ def tensordump(file_name, tensor, mode='out'):
         - This function is used for debugging.
 
     Args:
-        - file_name (str): The path of the npy file saves.
-        - tensor (Tensor): The tensor that user want to dump.
-        - mode (str): Used to control tensordump behavior, available value is one of ['in', 'out', 'all'].
+        file_name (str): The path of the npy file saves.
+        tensor (Tensor): The tensor that user want to dump.
+        mode (str): Used to control tensordump behavior, available value is one of ['in', 'out', 'all'].
 
     Raises:
-        - TypeError: If `file_name` is not str.
-        - TypeError: If `tensor` is not Tensor.
-        - TypeError: If `mode` is not str.
-        - ValueError: If `mode` is not in one of ['in', 'out', 'all'].
+        TypeError: If `file_name` is not str.
+        TypeError: If `tensor` is not Tensor.
+        TypeError: If `mode` is not str.
+        ValueError: If `mode` is not in one of ['in', 'out', 'all'].
 
     Supported Platforms:
         ``Ascend``

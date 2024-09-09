@@ -11,7 +11,7 @@ mindspore.numpy.cumsum
     参数：
         - **a** (Tensor) - 输入Tensor。
         - **axis** (int, 可选) - 计算累计和所沿的轴。 默认为 `None` ，计算被展开的数组的累计和。
-        - **dtype** (mindspore, 可选) - 如果未指定，保持与输入Tensor `a` 相同，除非 `a` 的整数精度低于默认平台整数的精度。 在这种情况下，使用默认平台整数类型。 默认值： `None` 。
+        - **dtype** (:class:`mindspore.dtype`, 可选) - 如果未指定，保持与输入Tensor `a` 相同，除非 `a` 的整数精度低于默认平台整数的精度。 在这种情况下，使用默认平台整数类型。 默认值： `None` 。
 
     返回：
         Tensor。

@@ -87,6 +87,6 @@ mindspore.set_auto_parallel_context
           - save_file(str)：保存并行切分策略的路径。如果文件扩展名为 `.json`，文件以json格式保存。否则，文件以ProtoBuf格式保存。默认值： ``""``。
           - only_trainable_params(bool)：仅保存/加载可训练参数的策略信息。默认值： ``True`` 。
         - **group_ckpt_save_file** (str) - 在自动/半自动并行场景下，指定图编译过程中所创建group的保存路径。
-        - **dump_local_nrom** (bool) - 在自动/半自动并行场景下，指定是否打印local norm值。
+        - **dump_local_norm** (bool) - 在自动/半自动并行场景下，指定是否打印local norm值。
     异常：
         - **ValueError** - 输入key不是自动并行上下文中的属性。

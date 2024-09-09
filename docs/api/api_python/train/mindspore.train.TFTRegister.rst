@@ -9,7 +9,7 @@ mindspore.train.TFTRegister
         该特性仅支持Ascend后端的静态图模式，并且只支持sink_size值小于等于1的场景。
 
     参数：
-        - **ctrl_rank_id** (str) - TTP controller 运行的rank_id, 该参数用于启动TTP的controller。
+        - **ctrl_rank_id** (int) - TTP controller 运行的rank_id, 该参数用于启动TTP的controller。
         - **ctrl_ip** (str) - TTP controller 的IP地址, 该参数用于启动TTP的controller。
         - **ctrl_port** (int) - TTP controller 的IP端口, 该参数用于启动TTP的controller和processor。
         - **ckpt_save_path** (str) -  异常发生时ckpt保存的路径，该路径是一个目录，ckpt的异常保存时会在该录下创建新的名为‘ttp_saved_checkpoints-step_{cur_step_num}’目录。

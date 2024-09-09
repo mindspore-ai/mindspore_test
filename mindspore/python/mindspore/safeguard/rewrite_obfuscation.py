@@ -142,6 +142,9 @@ def obfuscate_ckpt(network, ckpt_files, target_modules=None, obf_config=None, sa
         obfuscate_scale (Union[float, int]): Obfuscate scale of weights. The generated random obf_ratios will be in
             range of (1 / obfuscate_scale, obfuscate_scale). Default: 100.
 
+    Returns:
+        dict[str], obf_metadata, which is the necessary data that needs to be load when running obfuscated network.
+
     Raises:
         TypeError: If `network` is not nn.Cell.
         TypeError: If `ckpt_files` is not string or `saved_path` is not string.
@@ -156,9 +159,6 @@ def obfuscate_ckpt(network, ckpt_files, target_modules=None, obf_config=None, sa
             lowercase letters, numbers, ``'_'`` and ``'|'``.
         ValueError: If the third string of `target_modules` is not in the format of 'obfuscate_layers:all' or
             'obfuscate_layers:int'.
-
-    Returns:
-        dict[str], obf_metadata, which is the necessary data that needs to be load when running obfuscated network.
 
     Examples:
         >>> from mindspore import obfuscate_ckpt, save_checkpoint
