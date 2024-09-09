@@ -274,4 +274,95 @@ TEST_F(TestConcatSplitTransposeView, test_transpose_with_output_boundry) {
   EXPECT_FALSE(checker.build_pattern_map(g->output()));
 }
 
+/// Feature: test graph view replace pass
+/// Description: test correct situation
+/// Expectation: split ops will be replace by SplitView
+TEST_F(TestConcatSplitTransposeView, test_split_with_correct_output) {
+  common::SetEnv("MS_DEV_VIEW_OP", "Split");
+  test::ConstructGraph c;
+  auto x1 = c.NewTensorInput("x1", kFloat32, {256, 128});
+  auto axis = c.NewValueNode(MakeValue<int64_t>(0));
+  auto num = c.NewValueNode(MakeValue<int64_t>(2));
+  auto index0 = c.NewValueNode(MakeValue<int64_t>(0));
+  auto index1 = c.NewValueNode(MakeValue<int64_t>(1));
+  auto trans_a = c.NewValueNode(MakeValue<bool>(false));
+  auto trans_b = c.NewValueNode(MakeValue<bool>(false));
+  auto split1 = c.NewCNode("Split", {x1, axis, num});
+  auto get0 = c.NewCNode("TupleGetItem", {split1, index0});
+  auto get1 = c.NewCNode("TupleGetItem", {split1, index1});
+  auto matmul1 = c.NewCNode("MatMul", {get0, get1, trans_a, trans_b}, {});
+  c.SetOutput(matmul1);
+  auto g = c.GetGraph();
+  UT_CHECK_NULL(g);
+  test::RunPass(g, {std::make_shared<opt::GraphViewReplacePass>()});
+  opt::CheckPattern checker;
+  checker.src_pattern_.AddVar("x1")
+    .AddVar("axis")
+    .AddVar("num")
+    .AddVar("index0")
+    .AddVar("index1")
+    .AddVar("trans_a")
+    .AddVar("trans_b")
+    .AddCNode("splitview", {std::make_shared<Primitive>("SplitView"), "x1", "axis", "num"})
+    .AddCNode("getItem0", {std::make_shared<Primitive>("TupleGetItem"), "splitview", "index0"})
+    .AddCNode("getItem1", {std::make_shared<Primitive>("TupleGetItem"), "splitview", "index1"})
+    .AddCNode("matmul1", {std::make_shared<Primitive>("MatMul"), "getItem0", "getItem1", "trans_a", "trans_b"});
+  EXPECT_TRUE(checker.build_pattern_map(g->output()));
+  common::SetEnv("MS_DEV_VIEW_OP", "");
+}
+
+/// Feature: test graph view replace pass
+/// Description: test wrong situation
+/// Expectation: split ops will not be replace by SplitView because of no next op.
+TEST_F(TestConcatSplitTransposeView, test_split_with_no_output) {
+  common::SetEnv("MS_DEV_VIEW_OP", "Split");
+  test::ConstructGraph c;
+  auto x1 = c.NewTensorInput("x1", kFloat32, {256, 128});common::SetEnv("MS_DEV_VIEW_OP", "");
+  auto axis = c.NewValueNode(MakeValue<int64_t>(0));
+  auto num = c.NewValueNode(MakeValue<int64_t>(2));
+  auto split1 = c.NewCNode("Split", {x1, axis, num});
+  c.SetOutput(split1);
+  auto g = c.GetGraph();
+  UT_CHECK_NULL(g);
+  test::RunPass(g, {std::make_shared<opt::GraphViewReplacePass>()});
+  opt::CheckPattern checker;
+  checker.src_pattern_.AddVar("x1").AddVar("axis").AddVar("num").AddCNode(
+    "splitview", {std::make_shared<Primitive>("SplitView"), "x1", "axis", "num"});
+  EXPECT_FALSE(checker.build_pattern_map(g->output()));
+  common::SetEnv("MS_DEV_VIEW_OP", "");
+}
+
+/// Feature: test graph view replace pass
+/// Description: test wrong situation
+/// Expectation: split ops will not be replace by SplitView because of output op not aclnn.
+TEST_F(TestConcatSplitTransposeView, test_split_with_wrong_output) {
+  common::SetEnv("MS_DEV_VIEW_OP", "Split");
+  test::ConstructGraph c;
+  auto x1 = c.NewTensorInput("x1", kFloat32, {256, 128});
+  auto axis = c.NewValueNode(MakeValue<int64_t>(0));
+  auto num = c.NewValueNode(MakeValue<int64_t>(2));
+  auto index0 = c.NewValueNode(MakeValue<int64_t>(0));
+  auto index1 = c.NewValueNode(MakeValue<int64_t>(1));
+  auto split1 = c.NewCNode("Split", {x1, axis, num});
+  auto get0 = c.NewCNode("TupleGetItem", {split1, index0});
+  auto get1 = c.NewCNode("TupleGetItem", {split1, index1});
+  auto add1 = c.NewCNode("Add", {get0, get1});
+  c.SetOutput(add1);
+  auto g = c.GetGraph();
+  UT_CHECK_NULL(g);
+  test::RunPass(g, {std::make_shared<opt::GraphViewReplacePass>()});
+  opt::CheckPattern checker;
+  checker.src_pattern_.AddVar("x1")
+    .AddVar("axis")
+    .AddVar("num")
+    .AddVar("index0")
+    .AddVar("index1")
+    .AddCNode("splitview", {std::make_shared<Primitive>("SplitView"), "x1", "axis", "num"})
+    .AddCNode("getItem0", {std::make_shared<Primitive>("TupleGetItem"), "splitview", "index0"})
+    .AddCNode("getItem1", {std::make_shared<Primitive>("TupleGetItem"), "splitview", "index1"})
+    .AddCNode("add1", {std::make_shared<Primitive>("Add"), "getItem0", "getItem1"});
+  EXPECT_FALSE(checker.build_pattern_map(g->output()));
+  common::SetEnv("MS_DEV_VIEW_OP", "");
+}
+
 }  // namespace mindspore
