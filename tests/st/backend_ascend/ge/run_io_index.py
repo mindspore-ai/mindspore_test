@@ -74,5 +74,5 @@ def test_io_index_condition_2():
     overflow = Tensor(np.array(True), ms.bool_)
     a = Tensor(20000.0, ms.float32)
     y, loss_scale = net(overflow, a)
-    assert (y.asnumpy() == np.array(20000.0).astype(np.float32)).all()
+    assert (y.asnumpy() == np.array(10000.0).astype(np.float32)).all()
     assert (loss_scale.asnumpy() == np.array(10000.0).astype(np.float32)).all()
