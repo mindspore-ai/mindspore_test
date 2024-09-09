@@ -14,6 +14,7 @@ mindspore.mint.nn.BatchNorm3d
 
     .. warning::
         该接口不支持动态Rank。
+        这是一个实验性API，后续可能修改或删除。
 
     参数：
         - **num_features** (int) - 输入的shape :math:`(N, C, D, H, W)` 中的 `C` 值。

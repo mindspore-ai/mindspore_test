@@ -18,6 +18,9 @@ prelu:
         .. note::
             Channel dim is the 2nd dim of input. When input has dims < 2, then there is
             no channel dim and the number of channels = 1.
+
+        .. warning::
+                This is an experimental API that is subject to change or deletion.
         
         Args:
             input (Tensor): The input Tensor of the activation function.

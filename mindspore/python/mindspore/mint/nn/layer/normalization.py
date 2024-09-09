@@ -180,6 +180,7 @@ class BatchNorm1d(_BatchNorm):
 
     .. warning::
         This API dose not support Dynamic Rank.
+        This is an experimental API that is subject to change or deletion.
 
     Args:
         num_features (int): `C` from an expected input of shape :math:`(N, C, L)`.
@@ -248,6 +249,7 @@ class BatchNorm2d(_BatchNorm):
 
     .. warning::
         This API does not support Dynamic Rank.
+        This is an experimental API that is subject to change or deletion.
 
     Args:
         num_features (int): `C` from an expected input of shape :math:`(N, C, H, W)`.
@@ -317,6 +319,7 @@ class BatchNorm3d(_BatchNorm):
 
     .. warning::
         This API does not support Dynamic Rank.
+        This is an experimental API that is subject to change or deletion.
 
     Args:
         num_features (int): `C` from an expected input of shape :math:`(N, C, D, H, W)`.

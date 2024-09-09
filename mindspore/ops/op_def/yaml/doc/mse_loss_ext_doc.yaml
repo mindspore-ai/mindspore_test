@@ -4,6 +4,9 @@ mse_loss_ext:
 
     For detailed information, please refer to :class:`mindspore.nn.MSELoss`.
 
+    .. warning::
+            This is an experimental API that is subject to change or deletion.
+
     Args:
         input (Tensor): Tensor of any dimension. The data type needs to be consistent with the `target`.
         It should also be broadcastable with the `target`.

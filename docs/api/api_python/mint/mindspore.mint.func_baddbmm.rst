@@ -9,6 +9,9 @@ mindspore.mint.baddbmm
     .. math::
         \text{out}_{i} = \beta \text{input}_{i} + \alpha (\text{batch1}_{i} \mathbin{@} \text{batch2}_{i})
 
+    .. warning::
+        这是一个实验性API，后续可能修改或删除。
+
     参数：
         - **input** (Tensor) - 输入Tensor，当batch1是 :math:`(C, W, T)` 的Tensor而且batch2是一个 :math:`(C, T, H)` 的Tensor时，输入必须为可以被广播为 :math:`(C, W, H)` 形状的Tensor。
         - **batch1** (Tensor) - 公式中的 :math:`batch1` 。必须为3-D的Tensor，类型与 `input` 一致。

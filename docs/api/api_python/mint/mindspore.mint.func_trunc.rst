@@ -5,6 +5,9 @@ mindspore.mint.trunc
 
     返回一个新的Tensor，该Tensor具有输入元素的截断整数值。
 
+    .. warning::
+        这是一个实验性API，后续可能修改或删除。
+
     参数：
         - **input** (Tensor) - 输入任意维度的Tensor。
 

@@ -43,7 +43,6 @@ Indexing, Slicing, Joining, Mutating Operations
     mindspore.mint.index_select
     mindspore.mint.masked_select
     mindspore.mint.permute
-    mindspore.mint.scatter
     mindspore.mint.scatter_add
     mindspore.mint.split
     mindspore.mint.narrow
@@ -106,7 +105,6 @@ Pointwise Operations
     mindspore.mint.erfinv
     mindspore.mint.exp
     mindspore.mint.expm1
-    mindspore.mint.fix
     mindspore.mint.floor
     mindspore.mint.log
     mindspore.mint.log1p
@@ -124,7 +122,6 @@ Pointwise Operations
     mindspore.mint.round
     mindspore.mint.rsqrt
     mindspore.mint.sigmoid
-    mindspore.mint.sign
     mindspore.mint.sin
     mindspore.mint.sinc
     mindspore.mint.sinh
@@ -134,7 +131,6 @@ Pointwise Operations
     mindspore.mint.tan
     mindspore.mint.tanh
     mindspore.mint.xlogy
-    mindspore.mint.trunc
 
 Reduction Operations
 ^^^^^^^^^^^^^^^^^^^^^
@@ -188,7 +184,6 @@ BLAS and LAPACK Operations
     :nosignatures:
     :template: classtemplate.rst
 
-    mindspore.mint.baddbmm
     mindspore.mint.bmm
     mindspore.mint.inverse
     mindspore.mint.matmul
@@ -243,9 +238,6 @@ Normalization Layers
     :nosignatures:
     :template: classtemplate.rst
 
-    mindspore.mint.nn.BatchNorm1d
-    mindspore.mint.nn.BatchNorm2d
-    mindspore.mint.nn.BatchNorm3d
     mindspore.mint.nn.GroupNorm
 
 Non-linear Activations (weighted sum, nonlinearity)
@@ -261,7 +253,6 @@ Non-linear Activations (weighted sum, nonlinearity)
     mindspore.mint.nn.Hardswish
     mindspore.mint.nn.LogSoftmax
     mindspore.mint.nn.Mish
-    mindspore.mint.nn.PReLU
     mindspore.mint.nn.ReLU
     mindspore.mint.nn.SELU
     mindspore.mint.nn.Softshrink
@@ -305,7 +296,6 @@ Loss Functions
     :template: classtemplate.rst
 
     mindspore.mint.nn.BCEWithLogitsLoss
-    mindspore.mint.nn.MSELoss
 
 mindspore.mint.nn.functional
 -----------------------------
@@ -351,7 +341,6 @@ Non-linear activation functions
     mindspore.mint.nn.functional.leaky_relu
     mindspore.mint.nn.functional.log_softmax
     mindspore.mint.nn.functional.mish
-    mindspore.mint.nn.functional.prelu
     mindspore.mint.nn.functional.relu
     mindspore.mint.nn.functional.selu
     mindspore.mint.nn.functional.sigmoid
@@ -403,7 +392,6 @@ Loss Functions
     mindspore.mint.nn.functional.binary_cross_entropy
     mindspore.mint.nn.functional.binary_cross_entropy_with_logits
     mindspore.mint.nn.functional.l1_loss
-    mindspore.mint.nn.functional.mse_loss
 
 Vision functions
 ^^^^^^^^^^^^^^^^^^

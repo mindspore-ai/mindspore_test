@@ -7,6 +7,9 @@ mindspore.mint.nn.functional.mse_loss
 
     更多参考详见 :class:`mindspore.mint.nn.MSELoss`。
 
+    .. warning::
+        这是一个实验性API，后续可能修改或删除。
+
     参数：
         - **input** (Tensor) - 任意维度的Tensor。数据类型和 `target` 需要一致。
         - **target** (Tensor) - 输入标签，任意维度的Tensor。数据类型和 `input` 需要一致。支持在 `input` 和 `target` shape不相同的情况下，通过广播保持一致。
