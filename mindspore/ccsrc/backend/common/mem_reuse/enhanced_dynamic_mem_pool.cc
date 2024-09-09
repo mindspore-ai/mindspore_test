@@ -13,8 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include "include/backend/mem_reuse/enhanced_dynamic_mem_pool.h"
+
+#include <iostream>
 
 #include "include/backend/mem_reuse/mem_tracker.h"
 #include "utils/log_adapter.h"
@@ -129,6 +130,40 @@ void EnhancedDynamicMemPool::FreePartTensorMems(const std::vector<DeviceMemPtr> 
                                    mem_buf->stream_id_);
     }
   }
+}
+
+void EnhancedDynamicMemPool::DefragMemory() {
+  if (last_vmm_used_size_ == 0) {
+    last_vmm_used_size_ = GetVmmUsedMemSize();
+  } else {
+    size_t vmm_used_size = GetVmmUsedMemSize();
+    if (vmm_used_size > last_vmm_used_size_) {
+      MS_LOG(WARNING) << "Current vmm used size : " << vmm_used_size
+                      << " is bigger than last vmm used size : " << last_vmm_used_size_ << ".";
+      last_vmm_used_size_ = vmm_used_size;
+    }
+  }
+
+  AbstractDynamicMemPool::DefragMemory();
+}
+
+void EnhancedDynamicMemPool::DumpDynamicMemPoolStateInfo() {
+  const auto &state_info = DynamicMemPoolStateInfo();
+  static bool is_enable_memory_statistics = common::IsEnableRuntimeConfig(common::kRuntimeMemoryStat);
+  if (is_enable_memory_statistics) {
+    std::cout << "[MS_RUNTIME_PROF]" << state_info << std::endl;
+  }
+  MS_LOG(INFO) << state_info;
+}
+
+const std::pair<size_t, size_t> EnhancedDynamicMemPool::FreeIdleMemsByEagerFree() {
+  const auto [eager_free_size, real_free_size] = AbstractDynamicMemPool::FreeIdleMemsByEagerFree();
+  static bool is_enable_memory_statistics = common::IsEnableRuntimeConfig(common::kRuntimeMemoryStat);
+  if (is_enable_memory_statistics) {
+    std::cout << "Total eager free memory : " << eager_free_size << ", real free : " << real_free_size << "."
+              << std::endl;
+  }
+  return {eager_free_size, real_free_size};
 }
 }  // namespace device
 }  // namespace mindspore

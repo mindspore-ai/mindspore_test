@@ -17,6 +17,7 @@
 #ifndef MINDSPORE_CCSRC_BACKEND_OPTIMIZER_MEM_REUSE_ENHANCED_DYNAMIC_MEM_POOL_H_
 #define MINDSPORE_CCSRC_BACKEND_OPTIMIZER_MEM_REUSE_ENHANCED_DYNAMIC_MEM_POOL_H_
 
+#include <utility>
 #include <vector>
 
 #include "include/backend/mem_reuse/abstract_dynamic_mem_pool.h"
@@ -45,6 +46,15 @@ class BACKEND_EXPORT EnhancedDynamicMemPool : public AbstractDynamicMemPool {
 
   void FreePartTensorMems(const std::vector<DeviceMemPtr> &free_addrs, const std::vector<DeviceMemPtr> &keep_addrs,
                           const std::vector<size_t> &keep_addr_sizes) override;
+
+  void DefragMemory() override;
+
+  void DumpDynamicMemPoolStateInfo() override;
+
+ protected:
+  const std::pair<size_t, size_t> FreeIdleMemsByEagerFree() override;
+
+  size_t last_vmm_used_size_{0};
 };
 }  // namespace device
 }  // namespace mindspore

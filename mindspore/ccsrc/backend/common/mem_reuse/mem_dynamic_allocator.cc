@@ -348,7 +348,7 @@ DeviceMemPtr DynamicMemPoolBestFit::AddMemBlockAndMemBufByEagerFree(size_t size,
   if (!SyncAllStreams()) {
     MS_LOG(INTERNAL_EXCEPTION) << "Sync all streams failed.";
   }
-  FreeIdleMemsByEagerFree();
+  (void)FreeIdleMemsByEagerFree();
   auto mem_addr = FindMemBufByStatus(size, from_persistent_mem, DynamicMemBufStatus::kMemBufEagerFree, stream_id);
   if (mem_addr != nullptr) {
     MS_LOG(DEBUG) << "Find eager free memory success, mem_addr : " << mem_addr << ".";
@@ -437,7 +437,7 @@ size_t DynamicMemPoolBestFit::CalMemBlockAllocSize(size_t size, bool from_persis
   return alloc_mem_size;
 }
 
-const size_t DynamicMemPoolBestFit::FreeIdleMemsByEagerFree() {
+const std::pair<size_t, size_t> DynamicMemPoolBestFit::FreeIdleMemsByEagerFree() {
   eager_free_count_++;
 
   auto eager_free_mem_func = [&](MemStatusManagerPtr &mem_mng) {
@@ -495,7 +495,7 @@ const size_t DynamicMemPoolBestFit::FreeIdleMemsByEagerFree() {
   }
   MS_LOG(INFO) << "Eager free count : " << eager_free_count_ << ", free memory : " << free_size
                << ", real free : " << real_free_size << ", not free size: " << (free_size - real_free_size) << ".";
-  return real_free_size;
+  return {free_size, real_free_size};
 }
 
 void DynamicMemPoolBestFit::DefragMemory() {
@@ -521,7 +521,7 @@ void DynamicMemPoolBestFit::DefragMemory() {
   if (!SyncAllStreams()) {
     MS_LOG(INTERNAL_EXCEPTION) << "Sync all streams failed.";
   }
-  FreeIdleMemsByEagerFree();
+  (void)FreeIdleMemsByEagerFree();
   last_eager_free_count_ = eager_free_count_;
 }
 

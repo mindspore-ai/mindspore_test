@@ -268,7 +268,7 @@ MemBuf *MemBufAllocator::MapAndSplitMemBuf(MemBuf *candidate, size_t size) {
     auto mapped_size = mem_mapper_(map_size, candidate->addr_);
     if (mapped_size != map_size) {
       MS_LOG(WARNING) << "Mapped_size : " << mapped_size << " is not equal to required size : " << map_size
-                      << ", mem buf size : " << candidate->size_ << ".";
+                      << ", mem buf info : " << candidate->ToJson() << ".";
       (void)eager_free_mem_bufs_.emplace(candidate);
       return nullptr;
     }
@@ -747,18 +747,6 @@ void AbstractDynamicMemPool::DefragMemory() {
     return;
   }
 
-  // Check vmm used size.
-  if (last_vmm_used_size_ == 0) {
-    last_vmm_used_size_ = GetVmmUsedMemSize();
-  } else {
-    size_t vmm_used_size = GetVmmUsedMemSize();
-    if (vmm_used_size > last_vmm_used_size_) {
-      MS_LOG(WARNING) << "Current vmm used size : " << vmm_used_size
-                      << " is bigger than last vmm used size : " << last_vmm_used_size_ << ".";
-      last_vmm_used_size_ = vmm_used_size;
-    }
-  }
-
   if (eager_free_count_ == 0) {
     MS_LOG(DEBUG) << "Exit defrag memory since eager free count is 0.";
     return;
@@ -774,8 +762,9 @@ void AbstractDynamicMemPool::DefragMemory() {
     MS_LOG(INTERNAL_EXCEPTION) << "Sync all streams failed.";
     return;
   }
-  size_t defrag_size = FreeIdleMemsByEagerFree();
-  MS_LOG(INFO) << "Defrag memory size : " << defrag_size << ".";
+  const auto [eager_free_size, real_free_size] = FreeIdleMemsByEagerFree();
+  MS_LOG(INFO) << "Defrag memory, eager_free_size : " << eager_free_size << ", real_free_size : " << real_free_size
+               << ".";
   last_eager_free_count_ = eager_free_count_;
 }
 
@@ -812,7 +801,9 @@ std::string GetPath() {
 }
 };  // namespace
 
-void AbstractDynamicMemPool::DumpDynamicMemPoolStateInfo() {
+void AbstractDynamicMemPool::DumpDynamicMemPoolStateInfo() { MS_LOG(INFO) << DynamicMemPoolStateInfo(); }
+
+std::string AbstractDynamicMemPool::DynamicMemPoolStateInfo() const {
   std::stringstream ss;
   ss << "The dynamic memory pool stat : " << mem_stat_.ToReadableString() << "\n";
   struct AddrComparator {
@@ -835,7 +826,7 @@ void AbstractDynamicMemPool::DumpDynamicMemPoolStateInfo() {
        << "\n";
     ss << stream_id_allocator.second->DumpStateInfo();
   }
-  MS_LOG(WARNING) << ss.str();
+  return ss.str();
 }
 
 void AbstractDynamicMemPool::DumpDynamicMemPoolDebugInfo() {
@@ -876,8 +867,10 @@ void AbstractDynamicMemPool::DumpDynamicMemPoolDebugInfo() {
   debug_info_file.close();
 }
 
-const size_t AbstractDynamicMemPool::FreeIdleMemsByEagerFree() {
+const std::pair<size_t, size_t> AbstractDynamicMemPool::FreeIdleMemsByEagerFree() {
   MS_LOG(INFO) << "Free idle mems by eager free start, allocator size : " << stream_id_allocators_.size() << ".";
+  eager_free_count_++;
+
   size_t total_eager_free_size = 0;
   size_t total_real_free_size = 0;
   for (auto &stream_id_allocator : stream_id_allocators_) {
@@ -886,14 +879,15 @@ const size_t AbstractDynamicMemPool::FreeIdleMemsByEagerFree() {
     total_real_free_size += real_free_size;
   }
 
-  if (total_real_free_size > kGBToByte) {
+  if (total_real_free_size >= kGBToByte) {
+    size_t not_free_size =
+      total_eager_free_size > total_real_free_size ? (total_eager_free_size - total_real_free_size) : 0;
     MS_LOG(WARNING) << "Eager free count : " << eager_free_count_ << ", free memory : " << total_eager_free_size
-                    << ", real free : " << total_real_free_size
-                    << ", not free : " << (total_eager_free_size - total_real_free_size) << ".";
+                    << ", real free : " << total_real_free_size << ", not free : " << not_free_size << ".";
   }
 
   mem_stat_.eager_free_size_ += total_eager_free_size;
-  return total_real_free_size;
+  return {total_eager_free_size, total_real_free_size};
 }
 
 // The statistics information.
