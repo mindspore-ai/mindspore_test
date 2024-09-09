@@ -597,7 +597,6 @@ void ClonePackedExpertScaledCompGraph(const std::vector<CNodePtr> &old_cnodes,
       last_batchmatmul_node = new_cnode;
     }
     graph_input_shape = common::AnfAlgo::GetOutputInferShape(new_cnode, 0);
-    MS_LOG(WARNING) << "graph_input_shape: " << graph_input_shape;
     cnode_map[cnode] = new_cnode;
     new_nodes->push_back(new_cnode);
   }
@@ -694,22 +693,22 @@ void CreateAndReplaceGraph(const FuncGraphManagerPtr &manager, const std::vector
 
 bool CheckUserSettings(const FuncGraphPtr &fg, OpeInfo *ope_info) {
   if (parallel::ParallelContext::GetInstance()->parallel_mode() != parallel::kSemiAutoParallel) {
-    MS_LOG(WARNING) << "To activate the pass, set_auto_parallel_context 'parallel_mode' should be 'semi_auto_parallel'";
+    MS_LOG(INFO) << "To activate the pass, set_auto_parallel_context 'parallel_mode' should be 'semi_auto_parallel'";
     return false;
   }
 
   if (!parallel::ParallelContext::GetInstance()->enable_all2all()) {
-    MS_LOG(WARNING) << "To activate the pass, set_auto_parallel_context 'enable_alltoall' should be true";
+    MS_LOG(INFO) << "To activate the pass, set_auto_parallel_context 'enable_alltoall' should be true";
     return false;
   }
 
   if (!MsContext::GetInstance()->IsKByKExecutorMode()) {
-    MS_LOG(WARNING) << "To activate the pass, KByKExecutorMode should be activated";
+    MS_LOG(INFO) << "To activate the pass, KByKExecutorMode should be activated";
     return false;
   }
 
   if (!MsContext::GetInstance()->get_param<bool>(MS_CTX_ENABLE_OFFLOADING_PACKED_EXPERTS)) {
-    MS_LOG(WARNING) << "To activate the pass, enable_offloading_packed_experts should be activated";
+    MS_LOG(INFO) << "To activate the pass, enable_offloading_packed_experts should be activated";
     return false;
   }
 
@@ -735,20 +734,20 @@ bool SetOffloadingPackedExpertsForEachGraph(const FuncGraphPtr &func_graph, OpeI
 
 bool SetOffloadingPackedExpert(const FuncGraphPtr &func_graph) {
   if (parallel::g_device_manager == nullptr) {
-    MS_LOG(WARNING) << "parallel::g_device_manager is not initialized.";
+    MS_LOG(INFO) << "parallel::g_device_manager is not initialized.";
     return false;
   }
-  MS_LOG(WARNING) << " pass if (parallel::g_device_manager == nullptr)";
+  MS_LOG(INFO) << " pass if (parallel::g_device_manager == nullptr)";
   // MS_EXCEPTION_IF_NULL(resource);
   // FuncGraphPtr func_graph = resource->func_graph();
   MS_EXCEPTION_IF_NULL(func_graph);
 
   auto ope_info = OpeInfo();
   if (!CheckUserSettings(func_graph, &ope_info)) {
-    MS_LOG(WARNING) << " CheckUserSettings_not_pass";
+    MS_LOG(INFO) << " CheckUserSettings_not_pass";
     return false;
   }
-  MS_LOG(WARNING) << " pass CheckUserSettings(func_graph, &ope_info)";
+  MS_LOG(INFO) << " pass CheckUserSettings(func_graph, &ope_info)";
 
   auto manager = func_graph->manager();
   auto graphs = manager->func_graphs();
@@ -763,7 +762,6 @@ bool SetOffloadingPackedExpert(const FuncGraphPtr &func_graph) {
     res = true;
   }
 
-  MS_LOG(WARNING) << "Renormalize done";
   return res;
 }
 }  // namespace parallel
