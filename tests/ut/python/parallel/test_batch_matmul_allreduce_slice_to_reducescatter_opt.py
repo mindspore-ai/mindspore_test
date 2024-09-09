@@ -93,19 +93,23 @@ class Linear(Cell):
 
 
 class MoEFFNet(Cell):
-    def __init__(self, hidden_size, ffn_hidden_size, expert_num, dp, ep, mp, has_bias=True, transpose_b=False):
+    def __init__(self, hidden_size, ffn_hidden_size, expert_num, dp, ep, mp, sp, has_bias=True, transpose_b=False):
         super(MoEFFNet, self).__init__()
         input_size = hidden_size
         output_size = ffn_hidden_size
         param_init_type = mstype.float16
         compute_dtype = mstype.float16
         self.dp = dp
+        self.use_sp = sp
+        outer_bs = dp
+        if sp:
+            outer_bs = dp * ep
         self.mapping = Linear(in_channels=input_size,
                               out_channels=output_size,
                               has_bias=has_bias,
                               transpose_b=transpose_b,
                               expert_num=expert_num,
-                              outer_batch=dp,
+                              outer_batch=outer_bs,
                               param_init_type=param_init_type,
                               compute_dtype=compute_dtype)
 
@@ -114,7 +118,7 @@ class MoEFFNet(Cell):
                                  has_bias=has_bias,
                                  transpose_b=transpose_b,
                                  expert_num=expert_num,
-                                 outer_batch=dp,
+                                 outer_batch=outer_bs,
                                  param_init_type=param_init_type,
                                  compute_dtype=compute_dtype)
 
@@ -134,7 +138,17 @@ class MoEFFNet(Cell):
         self.stride_slice_ep_mp = ops.StridedSlice().shard(((ep, 1, mp, 1),))
         self.stride_slice_dp_ep = ops.StridedSlice().shard(((dp, ep, 1, 1, 1),))
         self.stride_slice_dp_ep_mp = ops.StridedSlice().shard(((dp, ep, 1, mp, 1),))
+        self.stride_slice_sp_ep = ops.StridedSlice().shard(((dp, 1, ep, 1, 1),))
+        self.stride_slice_sp_ep_mp = ops.StridedSlice().shard(((dp, 1, ep, mp, 1),))
 
+    def construct_with_sp(self, x):
+        x_shape = self.shape(x)
+        x = self.stride_slice_sp_ep(x, (0, 0, 0, 0, 0), x_shape, (1, 1, 1, 1, 1))
+        hidden = self.mapping(x)
+        output = self.projection(hidden)
+        output1 = self.reshape(output, x_shape)
+        output2 = self.stride_slice_sp_ep_mp(output1, (0, 0, 0, 0, 0), x_shape, (1, 1, 1, 1, 1))
+        return output2
 
     def construct_with_dp(self, x):
         x_shape = self.shape(x)
@@ -146,6 +160,8 @@ class MoEFFNet(Cell):
         return output2
 
     def construct(self, x):
+        if self.use_sp:
+            return self.construct_with_sp(x)
         if self.dp > 1:
             return self.construct_with_dp(x)
         x_shape = self.shape(x)
@@ -201,8 +217,9 @@ def test_batch_matmul_opt(has_bias):
     dp = 1
     ep = 16
     mp = 8
+    sp = False
     transpose_b = True
-    net = MoEFFNet(hidden_size, ffn_hidden_size, expert_num, dp, ep, mp, has_bias, transpose_b)
+    net = MoEFFNet(hidden_size, ffn_hidden_size, expert_num, dp, ep, mp, sp, has_bias, transpose_b)
     x = Tensor(np.ones([expert_num, expert_num, channel, hidden_size]), dtype=ms.float16)
 
     if os.path.exists("./batchmatmul_allreduce_opt/rank_0"):
@@ -243,7 +260,8 @@ def test_batch_matmul_opt_with_mp_larger_than_ep(has_bias):
     dp = 1
     ep = 8
     mp = 16
-    net = MoEFFNet(hidden_size, ffn_hidden_size, expert_num, dp, ep, mp, has_bias)
+    sp = False
+    net = MoEFFNet(hidden_size, ffn_hidden_size, expert_num, dp, ep, mp, sp, has_bias)
     x = Tensor(np.ones([expert_num, expert_num, channel, hidden_size]), dtype=ms.float16)
 
     if os.path.exists("./batchmatmul_allreduce_opt/rank_0"):
@@ -284,7 +302,49 @@ def test_batch_matmul_opt_with_outer_dp(has_bias):
     dp = 2
     ep = 8
     mp = 8
-    net = MoEFFNet(hidden_size, ffn_hidden_size, expert_num, dp, ep, mp, has_bias)
+    sp = False
+    net = MoEFFNet(hidden_size, ffn_hidden_size, expert_num, dp, ep, mp, sp, has_bias)
+    x = Tensor(np.ones([dp, ep, expert_num, channel, hidden_size]), dtype=ms.float16)
+
+    if os.path.exists("./batchmatmul_allreduce_opt/rank_0"):
+        shutil.rmtree("./batchmatmul_allreduce_opt/rank_0")
+
+    compile_net(net, x)
+    check_output()
+
+    context.set_context(save_graphs=False)
+    config = {"enable_allreduce_slice_to_reducescatter": False,}
+    with open("./parallel_speed_up_test.json", "w") as file:
+        json.dump(config, file, indent=4, separators=(',', ': '))
+    context.set_context(
+        ascend_config={"parallel_speed_up_json_path": "./parallel_speed_up_test.json"})
+
+@pytest.mark.parametrize('has_bias', [False, True])
+def test_batch_matmul_opt_with_sp(has_bias):
+    """
+    Feature: BatchMatMul+allreduce+split to BatchMatMul+reducescatter.
+    Description: BatchMatMul+allreduce+split to BatchMatMul+reducescatter with sp = true.
+    Expectation: compile done without error.
+    """
+    config = {"enable_allreduce_slice_to_reducescatter": True,}
+    with open("./parallel_speed_up_test.json", "w") as file:
+        json.dump(config, file, indent=4, separators=(',', ': '))
+    context.set_context(
+        ascend_config={"parallel_speed_up_json_path": "./parallel_speed_up_test.json"})
+
+    context.set_auto_parallel_context(parallel_mode="semi_auto_parallel",
+                                      device_num=128,
+                                      global_rank=0,
+                                      enable_alltoall=True)
+    hidden_size = 4096
+    ffn_hidden_size = 4 * hidden_size
+    channel = 2256
+    expert_num = 16
+    dp = 2
+    ep = 8
+    mp = 8
+    sp = True
+    net = MoEFFNet(hidden_size, ffn_hidden_size, expert_num, dp, ep, mp, sp, has_bias)
     x = Tensor(np.ones([dp, ep, expert_num, channel, hidden_size]), dtype=ms.float16)
 
     if os.path.exists("./batchmatmul_allreduce_opt/rank_0"):
