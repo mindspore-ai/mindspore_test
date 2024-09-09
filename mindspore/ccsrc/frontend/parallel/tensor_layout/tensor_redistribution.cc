@@ -555,9 +555,7 @@ void TensorRedistribution::CreateAssembledDynamicMapping(const CNodePtr &cur_cno
     } else {
       shape_root = shape_input;
     }
-  }
-  const std::set<std::string> multi_output_op = {ARGMAXWITHVALUE, LAYER_NORM, FLASH_ATTENTION_SCORE};
-  if (pre_cnode->isa<CNode>() && IsSomePrimitiveList(pre_cnode->cast<CNodePtr>(), multi_output_op)) {
+  } else {
     shape_root = cur_cnode->input(redistribution_index);
     MS_LOG(INFO) << "Change shape_root to " << shape_root->fullname_with_scope();
   }
