@@ -88,19 +88,17 @@ bool FusedInferAttentionScoreInfo::CheckStrategyOnIndex(int64_t strategy, int64_
 
 void FusedInferAttentionScoreInfo::SetOptionalInputs() {
   optional_inputs_.resize(ops::kFusedInferAttentionScoreInputKvPaddingSizeIndex + 1, true);
-  size_t valid_input_index = 3;  // after qkv index
   for (size_t index = ops::kFusedInferAttentionScoreInputPseShiftIndex; index < input_value_.size(); index++) {
     auto optional_input_ptr = input_value_[index];
     if (optional_input_ptr == nullptr || optional_input_ptr->isa<tensor::Tensor>()) {
-      if (index == ops::kFusedInferAttentionScoreInputPseShiftIndex && valid_input_index < inputs_shape_new_.size()) {
-        auto pse_shift_shape = inputs_shape_new_[valid_input_index]->GetAllElements();
+      if (index == ops::kFusedInferAttentionScoreInputPseShiftIndex && index < inputs_shape_new_.size()) {
+        auto pse_shift_shape = inputs_shape_new_[index]->GetAllElements();
         pse_shift_rank_ = pse_shift_shape[0].size();
       }
-      if (index == ops::kFusedInferAttentionScoreInputAttnMaskIndex && valid_input_index < inputs_shape_new_.size()) {
-        attn_mask_shape_ = inputs_shape_new_[valid_input_index]->GetAllElements()[0];
+      if (index == ops::kFusedInferAttentionScoreInputAttnMaskIndex && index < inputs_shape_new_.size()) {
+        attn_mask_shape_ = inputs_shape_new_[index]->GetAllElements()[0];
         atten_mask_rank_ = attn_mask_shape_.size();
       }
-      valid_input_index++;
     } else if (optional_input_ptr->isa<None>()) {
       optional_inputs_[index] = False;
     }
@@ -360,6 +358,8 @@ void FusedInferAttentionScoreInfo::InferOptionalTensorMap() {
         continue;
       }
       (void)inputs_tensor_map_new_.emplace_back(std::make_shared<ShapeValue>(optional_tensor_map_[index]));
+    } else {
+      (void)inputs_tensor_map_new_.emplace_back(std::make_shared<ShapeValue>(Shape{-1}));
     }
   }
 }
