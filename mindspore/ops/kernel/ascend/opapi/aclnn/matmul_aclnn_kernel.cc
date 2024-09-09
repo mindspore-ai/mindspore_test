@@ -21,8 +21,8 @@
 
 namespace mindspore {
 namespace kernel {
-void MMAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
-                                        const std::vector<KernelTensor *> &outputs) {
+void MatMulAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
+                                            const std::vector<KernelTensor *> &outputs) {
   bool trans_a = inputs[kIndex2]->GetValueWithCheck<bool>();
   bool trans_b = inputs[kIndex3]->GetValueWithCheck<bool>();
 
@@ -37,8 +37,9 @@ void MMAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &input
   GetWorkspaceForResize(input_a_, input_b_, outputs[kIndex0], cube_math_type_);
 }
 
-bool MMAclnnKernelMod::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
-                              const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
+bool MatMulAclnnKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
+                                  const std::vector<KernelTensor *> &workspace,
+                                  const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
   MS_EXCEPTION_IF_NULL(stream_ptr);
   input_a_.first = inputs[kIndex0];
   input_b_.first = inputs[kIndex1];
@@ -58,8 +59,22 @@ bool MMExtAclnnKernelMod::Launch(const std::vector<KernelTensor *> &inputs,
   RunOp(stream_ptr, workspace, inputs[kIndex0], inputs[kIndex1], outputs[kIndex0], cube_math_type_);
   return true;
 }
-MS_ACLNN_KERNEL_FACTORY_REG(MatMul, MMAclnnKernelMod);
-MS_ACLNN_KERNEL_FACTORY_REG(MatMulV2, MMAclnnKernelMod);
+
+void MmAclnnKernelMod::GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs,
+                                        const std::vector<KernelTensor *> &outputs) {
+  GetWorkspaceForResize(inputs[kIndex0], inputs[kIndex1], outputs[kIndex0], OpApiUtil::GetCubeMathType());
+}
+
+bool MmAclnnKernelMod::Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
+                              const std::vector<KernelTensor *> &outputs, void *stream_ptr) {
+  MS_EXCEPTION_IF_NULL(stream_ptr);
+  RunOp(stream_ptr, workspace, inputs[kIndex0], inputs[kIndex1], outputs[kIndex0], OpApiUtil::GetCubeMathType());
+  return true;
+}
+
+MS_ACLNN_KERNEL_FACTORY_REG(MatMul, MatMulAclnnKernelMod);
+MS_ACLNN_KERNEL_FACTORY_REG(MatMulV2, MatMulAclnnKernelMod);
 MS_ACLNN_KERNEL_FACTORY_REG(MatMulExt, MMExtAclnnKernelMod);
+MS_ACLNN_KERNEL_FACTORY_REG(Mm, MmAclnnKernelMod);
 }  // namespace kernel
 }  // namespace mindspore

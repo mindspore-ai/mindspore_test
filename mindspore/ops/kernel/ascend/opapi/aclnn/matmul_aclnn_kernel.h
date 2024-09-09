@@ -25,10 +25,10 @@ namespace mindspore {
 namespace kernel {
 using TensorParams = transform::TensorParams;
 
-class MMAclnnKernelMod : public AclnnKernelMod {
+class MatMulAclnnKernelMod : public AclnnKernelMod {
  public:
-  MMAclnnKernelMod() : AclnnKernelMod("aclnnMatmul") {}
-  ~MMAclnnKernelMod() = default;
+  MatMulAclnnKernelMod() : AclnnKernelMod("aclnnMatmul") {}
+  ~MatMulAclnnKernelMod() = default;
 
   void GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
   bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
@@ -55,6 +55,19 @@ class MMExtAclnnKernelMod : public AclnnKernelMod {
   DEFINE_GET_WORKSPACE_FOR_RESIZE()
 
   int8_t cube_math_type_;
+};
+
+class MmAclnnKernelMod : public AclnnKernelMod {
+ public:
+  MmAclnnKernelMod() : AclnnKernelMod("aclnnMm") {}
+  ~MmAclnnKernelMod() = default;
+
+  void GetWorkSpaceInfo(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &outputs) override;
+  bool Launch(const std::vector<KernelTensor *> &inputs, const std::vector<KernelTensor *> &workspace,
+              const std::vector<KernelTensor *> &outputs, void *stream_ptr) override;
+
+ private:
+  DEFINE_GET_WORKSPACE_FOR_RESIZE()
 };
 }  // namespace kernel
 }  // namespace mindspore

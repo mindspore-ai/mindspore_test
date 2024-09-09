@@ -1,0 +1,17 @@
+#operator mm_ext
+mm_ext:
+    args:
+        input:
+            dtype: tensor
+        mat2:
+            dtype: tensor
+    returns:
+        output:
+            dtype: tensor
+    class:
+        name: Mm
+    dispatch:
+        enable: True
+        Ascend: MmAscend
+
+

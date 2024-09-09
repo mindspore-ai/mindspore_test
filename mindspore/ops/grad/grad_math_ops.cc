@@ -793,6 +793,27 @@ REG_BPROP_BUILDER("MatMulExt").SetUnusedInputs({}).SetBody(BODYFUNC(ib) {
   return MatMulExtBroadCastGrad(ib, x_origin, w_origin, dx, dw, 2);
 });
 
+REG_BPROP_BUILDER("Mm").SetUnusedInputs({i2}).SetBody(BODYFUNC(ib) {
+  auto input = ib->GetInput(kIndex0);
+  auto mat2 = ib->GetInput(kIndex1);
+  auto dout = ib->GetInput(kIndex3);
+  NodePtr dx;
+  NodePtr dw;
+  if (input->need_compute_grad_out()) {
+    auto mat2_t = MatrixTransposeExt(ib, mat2);
+    dx = ib->Emit("Mm", {dout, mat2_t});
+  } else {
+    dx = ib->OutZeros(input);
+  }
+  if (mat2->need_compute_grad_out()) {
+    auto input_t = MatrixTransposeExt(ib, input);
+    dw = ib->Emit("Mm", {input_t, dout});
+  } else {
+    dw = ib->OutZeros(mat2);
+  }
+  return {dx, dw};
+});
+
 REG_BPROP_BUILDER("Add").SetUnusedInputs({i0, i1, i2}).SetBody(BODYFUNC(ib) {
   auto x = ib->GetInput(kIndex0);
   auto y = ib->GetInput(kIndex1);
