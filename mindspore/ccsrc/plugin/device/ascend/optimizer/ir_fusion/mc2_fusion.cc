@@ -75,25 +75,6 @@ ShapeVector GetShape(const AnfNodePtr &node) {
   return {};
 }
 
-// Return true if rank_ids is a continuous 8p group.
-bool IsSingleNodeCommGroup(const std::vector<uint32_t> &rank_ids) {
-  auto group_size = rank_ids.size();
-  if (group_size != kSizeEight) {
-    return false;
-  }
-  auto rank_ids_cpy = rank_ids;
-  std::sort(rank_ids_cpy.begin(), rank_ids_cpy.end());
-  if (rank_ids_cpy[0] % group_size != 0) {
-    return false;
-  }
-  for (size_t i = 1; i < group_size; ++i) {
-    if (rank_ids_cpy[i - 1] + 1 != rank_ids_cpy[i]) {
-      return false;
-    }
-  }
-  return true;
-}
-
 bool IsNodesDTypeSameAndValid(const std::vector<AnfNodePtr> &nodes, const std::vector<TypeId> &valid_types) {
   if (nodes.empty()) {
     return true;
@@ -227,37 +208,31 @@ CNodePtr MatmulReduceScatterFusion::CreateFusionCNode(const FuncGraphPtr &func_g
 
   auto is_trans_a = GetInputValueFromCNode<bool>(matmul_cnode, kIndex3);
   auto is_trans_b = GetInputValueFromCNode<bool>(matmul_cnode, kIndex4);
+
+  // X1, X2 only support two dimensions
+  auto input_x_shape = GetShape(input_x);
+
+  // Check if both inputs are 2-dimensional
+  MS_CHECK_TRUE_RET(input_x_shape.size() == kSizeTwo, {});
+  MS_CHECK_TRUE_RET(GetShape(input_w).size() == kSizeTwo, {});
+
+  // Define valid range for the second dimension [256, 65535)
+  constexpr int64_t kMaxValue = 65535;
+  constexpr int64_t kMinValue = 256;
+  int64_t input_x_dim1 = input_x_shape[kIndex1];
+  if (input_x_dim1 >= kMaxValue || input_x_dim1 < kMinValue) {
+    MS_LOG(WARNING) << "The second dimension of input_x is " << input_x_dim1
+                    << ", but aclnnMatmulReduceScatter required should be between " << kMinValue << " (inclusive) and "
+                    << kMaxValue << " (exclusive).";
+    return nullptr;
+  }
+
+  // Ensure is_trans_a is false
+  MS_CHECK_TRUE_RET(!is_trans_a, {});
+
   // add attr
   auto reduce_scatter_prim = GetCNodePrimitive(reduce_scatter_cnode);
   auto rank_list_attr = reduce_scatter_prim->GetAttr(kAttrRankList);
-  if (!IsKbkMode(func_graph)) {
-    MS_CHECK_TRUE_RET(rank_list_attr != nullptr, {});
-    auto rank_list = GetValue<std::vector<uint32_t>>(rank_list_attr);
-    // Only support 8p comm group currently.
-    MS_CHECK_TRUE_RET(IsSingleNodeCommGroup(rank_list), {});
-  } else {
-    // X1, X2 only support two dimensions
-    auto input_x_shape = GetShape(input_x);
-
-    // Check if both inputs are 2-dimensional
-    MS_CHECK_TRUE_RET(input_x_shape.size() == kSizeTwo, {});
-    MS_CHECK_TRUE_RET(GetShape(input_w).size() == kSizeTwo, {});
-
-    // Define valid range for the second dimension [256, 65535)
-    constexpr int64_t kMaxValue = 65535;
-    constexpr int64_t kMinValue = 256;
-    int64_t input_x_dim1 = input_x_shape[kIndex1];
-    if (input_x_dim1 >= kMaxValue || input_x_dim1 < kMinValue) {
-      MS_LOG(WARNING) << "The second dimension of input_x is " << input_x_dim1
-                      << ", but aclnnMatmulReduceScatter required should be between " << kMinValue
-                      << " (inclusive) and " << kMaxValue << " (exclusive).";
-      return nullptr;
-    }
-
-    // Ensure is_trans_a is false
-    MS_CHECK_TRUE_RET(!is_trans_a, {});
-  }
-
   matmul_reduce_scatter_prim->AddAttr(kAttrGroup, reduce_scatter_prim->GetAttr(kAttrGroup));
   matmul_reduce_scatter_prim->AddAttr(kAttrRankSize, reduce_scatter_prim->GetAttr(kAttrRankSize));
   matmul_reduce_scatter_prim->AddAttr(kAttrReduceOp, reduce_scatter_prim->GetAttr(kAttrOp));
@@ -317,42 +292,34 @@ CNodePtr AllGatherMatmulFusion::CreateFusionCNode(const FuncGraphPtr &func_graph
   std::vector<TypeId> valid_type_list = {kFloat16->type_id(), kBFloat16->type_id()};
   MS_CHECK_TRUE_RET(IsNodesDTypeSameAndValid({input_x, input_w}, valid_type_list), {});
 
-  // create op
-  auto all_gather_matmul_prim = prim::kPrimAllGatherMatmul->Clone();
-  MS_CHECK_TRUE_RET(all_gather_matmul_prim, {});
+  // X1, X2 only support two dimensions
+  auto input_x_shape = GetShape(input_x);
 
-  // add attr
-  auto all_gather_prim = GetCNodePrimitive(all_gather_cnode);
-  auto rank_list_attr = all_gather_prim->GetAttr(kAttrRankList);
-  if (!IsKbkMode(func_graph)) {
-    MS_CHECK_TRUE_RET(rank_list_attr != nullptr, {});
-    auto rank_list = GetValue<std::vector<uint32_t>>(rank_list_attr);
-    // Only support 8p comm group currently.
-    MS_CHECK_TRUE_RET(IsSingleNodeCommGroup(rank_list), {});
-  } else {
-    // X1, X2 only support two dimensions
-    auto input_x_shape = GetShape(input_x);
+  // Check if both inputs are 2-dimensional
+  MS_CHECK_TRUE_RET(input_x_shape.size() == kSizeTwo, {});
+  MS_CHECK_TRUE_RET(GetShape(input_w).size() == kSizeTwo, {});
 
-    // Check if both inputs are 2-dimensional
-    MS_CHECK_TRUE_RET(input_x_shape.size() == kSizeTwo, {});
-    MS_CHECK_TRUE_RET(GetShape(input_w).size() == kSizeTwo, {});
-
-    // Define valid range for the second dimension [256, 65535)
-    constexpr int64_t kMaxValue = 65535;
-    constexpr int64_t kMinValue = 256;
-    int64_t input_x_dim1 = input_x_shape[kIndex1];
-    if (input_x_dim1 >= kMaxValue || input_x_dim1 < kMinValue) {
-      MS_LOG(WARNING) << "The second dimension of input_x is " << input_x_dim1
-                      << ", but aclnnAllGatherMatmul required should be between " << kMinValue << " (inclusive) and "
-                      << kMaxValue << " (exclusive).";
-      return nullptr;
-    }
+  // Define valid range for the second dimension [256, 65535)
+  constexpr int64_t kMaxValue = 65535;
+  constexpr int64_t kMinValue = 256;
+  int64_t input_x_dim1 = input_x_shape[kIndex1];
+  if (input_x_dim1 >= kMaxValue || input_x_dim1 < kMinValue) {
+    MS_LOG(WARNING) << "The second dimension of input_x is " << input_x_dim1
+                    << ", but aclnnAllGatherMatmul required should be between " << kMinValue << " (inclusive) and "
+                    << kMaxValue << " (exclusive).";
+    return nullptr;
   }
 
   auto is_trans_a = GetInputValueFromCNode<bool>(matmul_cnode, kIndex3);
   auto is_trans_b = GetInputValueFromCNode<bool>(matmul_cnode, kIndex4);
   MS_CHECK_TRUE_RET(!is_trans_a, {});  // Only support is_trans_a = false.
 
+  // create op
+  auto all_gather_matmul_prim = prim::kPrimAllGatherMatmul->Clone();
+  MS_CHECK_TRUE_RET(all_gather_matmul_prim, {});
+  // add attr
+  auto all_gather_prim = GetCNodePrimitive(all_gather_cnode);
+  auto rank_list_attr = all_gather_prim->GetAttr(kAttrRankList);
   all_gather_matmul_prim->AddAttr(kAttrGroup, all_gather_prim->GetAttr(kAttrGroup));
   all_gather_matmul_prim->AddAttr(kAttrRankSize, all_gather_prim->GetAttr(kAttrRankSize));
   all_gather_matmul_prim->AddAttr(kAttrRankList, rank_list_attr);
@@ -376,7 +343,7 @@ CNodePtr AllGatherMatmulFusion::CreateFusionCNode(const FuncGraphPtr &func_graph
     {matmul_cnode_dtype, all_gather_cnode_dtype},
     {std::make_shared<abstract::Shape>(matmul_cnode_shape), std::make_shared<abstract::Shape>(all_gather_cnode_shape)},
     all_gather_matmul_cnode.get());
-  all_gather_matmul_cnode->set_fullname_with_scope(matmul_cnode->fullname_with_scope() + "_all_gather_matmul_scatter");
+  all_gather_matmul_cnode->set_fullname_with_scope(matmul_cnode->fullname_with_scope() + "_all_gather_matmul");
 
   // Extract process for node
   auto manager = all_gather_cnode->func_graph()->manager();
