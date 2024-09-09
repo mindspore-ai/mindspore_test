@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <map>
 #include <vector>
 
 #include "common/common_test.h"
@@ -157,11 +158,19 @@ class LinearDynamicMemPool : public AbstractDynamicMemPool {
   size_t AllocDeviceMem(size_t size, DeviceMemPtr *addr) override {
     static size_t base_addr = 0;
     *addr = (void *)base_addr;
+    alloc_infos_[*addr] = size;
     base_addr += size;
     return size;
   }
 
-  bool FreeDeviceMem(const DeviceMemPtr &addr) override { return true; }
+  bool FreeDeviceMem(const DeviceMemPtr &addr) override {
+    auto &&iter = alloc_infos_.find(addr);
+    if (iter == alloc_infos_.end()) {
+      return false;
+    }
+    alloc_infos_.erase(iter);
+    return true;
+  }
 
   size_t MmapDeviceMem(const size_t size, const DeviceMemPtr addr) override {
     vmm_mmap_size_ += size;
@@ -179,6 +188,14 @@ class LinearDynamicMemPool : public AbstractDynamicMemPool {
     return 1 << 30;
   }
 
+  size_t ReservedMemorySize() {
+    size_t reserved_memory_size = 0;
+    for (auto &alloc_info : alloc_infos_) {
+      reserved_memory_size += alloc_info.second;
+    }
+    return reserved_memory_size;
+  }
+
  protected:
   // The related interface of device memory eager free.
   const bool IsEnableEagerFree() const override { return false; }
@@ -190,6 +207,7 @@ class LinearDynamicMemPool : public AbstractDynamicMemPool {
 
  private:
   size_t vmm_mmap_size_{0};
+  std::map<void *, size_t> alloc_infos_;
 };
 
 class TestAbstractDynamicMemPool : public UT::Common {
@@ -444,6 +462,20 @@ TEST_F(TestAbstractDynamicMemPool, test_memory_stats) {
   // assert block count.
   EXPECT_EQ(mem_pool->CommonMemBlocksInfoStatistics().size(), 1);
   EXPECT_EQ(mem_pool->PersistentMemBlocksInfoStatistics().size(), 0);
+}
+
+/// Feature: test memory reserved size for abstract dynamic mem pool.
+/// Description: test memory reserved size.
+/// Expectation: all interface work normally and can not throw exception.
+TEST_F(TestAbstractDynamicMemPool, test_memory_reserved_dize) {
+  auto mem_pool = std::make_shared<LinearDynamicMemPool>();
+  std::vector<void *> addrs;
+  for (size_t i = 0; i < 100; i++) {
+    (void)addrs.emplace_back(mem_pool->AllocTensorMem(i));
+  }
+  EXPECT_EQ(mem_pool->ReservedMemorySize(), kGBToByte);
+  mem_pool->ReleaseDeviceRes();
+  EXPECT_EQ(mem_pool->ReservedMemorySize(), 0);
 }
 }  // namespace device
 }  // namespace mindspore
