@@ -129,6 +129,11 @@ Status Task::GetTaskErrorIfAny() const {
 Task::Task(const std::string &myName, const std::function<Status()> &f, int32_t operator_id)
     : my_name_(myName),
       operator_id_(operator_id),
+#if defined(_WIN32) || defined(_WIN64)
+      process_id_(GetCurrentProcessId()),
+#else
+      process_id_(getpid()),
+#endif
       thread_id_(-1),
       rc_(Status::OK()),
       fnc_obj_(f),
@@ -137,11 +142,6 @@ Task::Task(const std::string &myName, const std::function<Status()> &f, int32_t 
       running_(false),
       caught_severe_exception_(false),
       native_handle_(0) {
-#if defined(_WIN32) || defined(_WIN64)
-  process_id_ = GetCurrentProcessId();
-#else
-  process_id_ = getpid();
-#endif
   IntrpResource::ResetIntrpState();
   wp_.ResetIntrpState();
   wp_.Clear();
@@ -199,8 +199,8 @@ Status Task::Join(WaitFlag blocking) {
           if (device_target == kAscendDevice) {
             // Because hostPush hung in DataQueueOp, wait 5 seconds and destroy the tdt
             if (wait_times > kMaxWaitTimes && my_name_.find("DataQueueOp") != std::string::npos) {
-              MS_LOG(WARNING) << "Wait " << wait_times << " seconds, "
-                              << "the task: " << my_name_ << " will be destroyed by TdtHostDestory.";
+              MS_LOG(WARNING) << "Wait " << wait_times << " seconds, the task: " << my_name_
+                              << " will be destroyed by TdtHostDestory.";
               if (device::DataQueueMgr::DestoryTdtHandle()) {
                 MS_LOG(INFO) << "Destroy tdt channel success.";
               } else {
@@ -219,8 +219,7 @@ Status Task::Join(WaitFlag blocking) {
 
           // Because ReceiveBridgeOp maybe hung by MsgRcv from SendBridgeOp
           if (wait_times > kMaxWaitTimes && my_name_.find("ReceiveBridgeOp") != std::string::npos) {
-            MS_LOG(WARNING) << "Wait " << wait_times << " seconds, "
-                            << "the task: " << my_name_ << ".";
+            MS_LOG(WARNING) << "Wait " << wait_times << " seconds, the task: " << my_name_ << ".";
 
             // just wait 30 seconds
             if (wait_times > kWaitInterruptTaskTime) {

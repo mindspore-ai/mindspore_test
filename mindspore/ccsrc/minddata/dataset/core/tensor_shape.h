@@ -61,7 +61,7 @@ class DATASET_API TensorShape {
   /// \brief Create a Shape from an initialization list (e.g., TensorShape s = {2,2}).
   ///     If one of the dims is set to DIM_UNKNOWN, the shape will flagged as unKnown
   /// \param[in] list Length list of each axis.
-  TensorShape(const std::initializer_list<dsize_t> &list);
+  explicit TensorShape(const std::initializer_list<dsize_t> &list);
 
   /// \brief Create a Shape from a vector (e.g., TensorShape s = std::vector<dsize_t>({2,2}) ).
   ///     If one of the dims is set to DIM_UNKNOWN, the shape will flagged as unKnown

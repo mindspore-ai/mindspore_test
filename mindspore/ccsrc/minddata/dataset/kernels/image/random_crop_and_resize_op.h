@@ -34,10 +34,6 @@ class RandomCropAndResizeOp : public RandomTensorOp {
 
   RandomCropAndResizeOp() = default;
 
-  RandomCropAndResizeOp(const RandomCropAndResizeOp &rhs) = default;
-
-  RandomCropAndResizeOp(RandomCropAndResizeOp &&rhs) = default;
-
   ~RandomCropAndResizeOp() override = default;
 
   void Print(std::ostream &out) const override {

@@ -34,10 +34,6 @@ class RandomCropOp : public RandomTensorOp {
                int32_t pad_right, bool pad_if_needed, BorderType padding_mode, uint8_t fill_r, uint8_t fill_g,
                uint8_t fill_b);
 
-  RandomCropOp(const RandomCropOp &rhs) = default;
-
-  RandomCropOp(RandomCropOp &&rhs) = default;
-
   ~RandomCropOp() override = default;
 
   void Print(std::ostream &out) const override { out << Name() << ": " << crop_height_ << " " << crop_width_; }

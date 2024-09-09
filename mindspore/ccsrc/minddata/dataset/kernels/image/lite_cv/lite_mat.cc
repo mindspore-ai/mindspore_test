@@ -565,7 +565,7 @@ inline void DivideImpl(const uint8_t *src0, const uint8_t *src1, uint8_t *dst, i
   }
 #endif
   for (; x < total_size; x++) {
-    int32_t val = src1[x] ? static_cast<int32_t>(std::round(src0[x] / src1[x])) : 0;
+    int32_t val = src1[x] != 0 ? static_cast<int32_t>(std::round(src0[x] / src1[x])) : 0;
     dst[x] = std::max<int32_t>(std::numeric_limits<uint8_t>::min(),
                                std::min<int32_t>(std::numeric_limits<uint8_t>::max(), val));
   }
@@ -574,7 +574,7 @@ inline void DivideImpl(const uint8_t *src0, const uint8_t *src1, uint8_t *dst, i
 template <>
 inline void DivideImpl(const uint16_t *src0, const uint16_t *src1, uint16_t *dst, int64_t total_size) {
   for (size_t i = 0; i < total_size; i++) {
-    int32_t val = src1[i] ? static_cast<int32_t>(std::round(src0[i] / src1[i])) : 0;
+    int32_t val = src1[i] != 0 ? static_cast<int32_t>(std::round(src0[i] / src1[i])) : 0;
     dst[i] = std::max<int32_t>(std::numeric_limits<uint16_t>::min(),
                                std::min<int32_t>(std::numeric_limits<uint16_t>::max(), val));
   }
@@ -583,7 +583,7 @@ inline void DivideImpl(const uint16_t *src0, const uint16_t *src1, uint16_t *dst
 template <>
 inline void DivideImpl(const uint32_t *src0, const uint32_t *src1, uint32_t *dst, int64_t total_size) {
   for (size_t i = 0; i < total_size; i++) {
-    int64_t val = src1[i] ? static_cast<int64_t>(std::round(src0[i] / src1[i])) : 0;
+    int64_t val = src1[i] != 0 ? static_cast<int64_t>(std::round(src0[i] / src1[i])) : 0;
     dst[i] = std::max<int64_t>(std::numeric_limits<uint32_t>::min(),
                                std::min<int64_t>(std::numeric_limits<uint32_t>::max(), val));
   }
