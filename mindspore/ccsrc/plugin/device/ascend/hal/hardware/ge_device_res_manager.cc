@@ -52,19 +52,6 @@ namespace device {
 namespace ascend {
 using DeviceTensorStore = mindspore::runtime::DeviceTensorStore;
 using DeviceMemInfo = std::unordered_map<device::DeviceMemPtr, std::unordered_map<std::string, size_t>>;
-std::string GetCurrentDir() {
-#ifndef _WIN32
-  Dl_info dl_info;
-  if (dladdr(reinterpret_cast<void *>(GetCurrentDir), &dl_info) == 0) {
-    MS_LOG(WARNING) << "Get dladdr error";
-    return "";
-  }
-  std::string cur_so_path = dl_info.dli_fname;
-  return dirname(cur_so_path.data());
-#else
-  return "";
-#endif
-}
 
 ::ge::MemBlock *GeAllocator::Malloc(size_t size) {
   auto addr = res_manager_->AllocateMemory(size);
@@ -423,27 +410,10 @@ bool GeDeviceResManager::LoadCollectiveCommLib() {
     collective_comm_lib_ = &DummyAscendCollectiveCommLib::GetInstance();
     return true;
   }
-  // Ascend backend supports HCCL and LCCL collective communication libraries.
-  bool enable_lccl = EnableLccl();
-  if (enable_lccl) {
-    std::string lowlatency_comm_lib_name = GetCurrentDir() + "/ascend/liblowlatency_collective.so";
-    auto loader = std::make_shared<CollectiveCommLibLoader>(lowlatency_comm_lib_name);
-    MS_EXCEPTION_IF_NULL(loader);
-    if (!loader->Initialize()) {
-      MS_LOG(EXCEPTION) << "Loading LCCL collective library failed.";
-      return false;
-    }
-    void *collective_comm_lib_handle = loader->collective_comm_lib_ptr();
-    MS_EXCEPTION_IF_NULL(collective_comm_lib_handle);
-
-    auto instance_func = DlsymFuncObj(communication_lib_instance, collective_comm_lib_handle);
-    collective_comm_lib_ = instance_func();
-    MS_EXCEPTION_IF_NULL(collective_comm_lib_);
-    MS_LOG(WARNING) << "Loading LCCL because env MS_ENABLE_LCCL is set to on. Pay attention that LCCL only supports "
-                       "single-node-multi-card mode in KernelByKernel for now.";
-  } else {
-    collective_comm_lib_ = &AscendCollectiveCommLib::GetInstance();
-  }
+  // Load Multi ascend collective communication lib using dynamic library.
+  collective_comm_lib_ = &MultiAscendCollectiveCommLib::GetInstance();
+  MS_EXCEPTION_IF_NULL(collective_comm_lib_);
+  MS_LOG(INFO) << "Loading MACCL collective library successfully.";
   return true;
 }
 

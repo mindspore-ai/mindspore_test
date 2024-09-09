@@ -31,11 +31,9 @@ bool HcomAllBroadCastKernel::Init(const std::vector<KernelTensor *> &inputs,
     MS_LOG(EXCEPTION) << "Failed to init HcomAllBroadCastKernel";
   }
 #ifdef ENABLE_INTERNAL_KERNELS
-  bool enable_lccl = device::ascend::EnableLccl();
-  if (enable_lccl) {
+  if (use_lccl_) {
     lccl_broadcast_func_ = DlsymFuncObj(Broadcast, lowlatency_comm_lib_handle_);
     MS_EXCEPTION_IF_NULL(lccl_broadcast_func_);
-    use_lccl_ = true;
   }
 #endif
   return true;
@@ -53,12 +51,14 @@ bool HcomAllBroadCastKernel::Launch(const std::vector<KernelTensor *> &inputs, c
 
 #ifdef ENABLE_INTERNAL_KERNELS
   if (use_lccl_) {
+    MS_LOG(DEBUG) << "Using LCCL Broadcast.";
     auto lccl_result = lccl_broadcast_func_(lccl_ptr_, inputs[0]->device_ptr(), hccl_count_, hccl_data_type_list_[0],
                                             root_id_, stream_ptr);
     if (lccl_result != Lcal::LCAL_SUCCESS) {
       MS_LOG(EXCEPTION) << "LCCL Broadcast failed.";
     }
   } else {
+    MS_LOG(DEBUG) << "Using HCCL Broadcast.";
     auto hccl_result = hccl::HcclAdapter::GetInstance().HcclBroadcast(
       inputs[0]->device_ptr(), hccl_count_, hccl_data_type_list_[0], root_id_, stream_ptr, comm_);
     if (hccl_result != HCCL_SUCCESS) {
@@ -67,6 +67,7 @@ bool HcomAllBroadCastKernel::Launch(const std::vector<KernelTensor *> &inputs, c
     }
   }
 #else
+  MS_LOG(DEBUG) << "Using HCCL Broadcast.";
   auto hccl_result = hccl::HcclAdapter::GetInstance().HcclBroadcast(
     inputs[0]->device_ptr(), hccl_count_, hccl_data_type_list_[0], root_id_, stream_ptr, comm_);
   if (hccl_result != HCCL_SUCCESS) {

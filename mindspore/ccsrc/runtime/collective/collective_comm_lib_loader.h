@@ -54,4 +54,7 @@ using CollectiveCommLibLoaderPtr = std::shared_ptr<CollectiveCommLibLoader>;
 
 // The exported symbols of collective communication shared library is registered here.
 ORIGIN_METHOD(communication_lib_instance, mindspore::device::CollectiveCommunicationLib *)
+ORIGIN_METHOD(ascend_communication_lib_instance, mindspore::device::CollectiveCommunicationLib *)
+ORIGIN_METHOD(lowlatency_communication_lib_instance, mindspore::device::CollectiveCommunicationLib *)
+ORIGIN_METHOD(multi_ascend_communication_lib_instance, mindspore::device::CollectiveCommunicationLib *)
 #endif  // MINDSPORE_CCSRC_RUNTIME_HARDWARE_COLLECTIVE_COLLECTIVE_LIB_LOADER_H_
