@@ -18,8 +18,10 @@
 #define MINDSPORE_CCSRC_TRANSFORM_SYMBOL_SYMBOL_UTILS_H_
 #include <string>
 #include "utils/log_adapter.h"
-#include "utils/ms_exception.h"
 #include "acl/acl.h"
+#ifndef BUILD_LITE
+#include "utils/ms_exception.h"
+#endif
 
 template <typename Function, typename... Args>
 auto RunAscendApi(Function f, const char *file, int line, const char *call_f, const char *func_name, Args... args) {
@@ -27,6 +29,7 @@ auto RunAscendApi(Function f, const char *file, int line, const char *call_f, co
   if (f == nullptr) {
     MS_LOG(EXCEPTION) << func_name << " is null.";
   }
+#ifndef BUILD_LITE
   if constexpr (std::is_same_v<std::invoke_result_t<decltype(f), Args...>, int>) {
     auto ret = f(args...);
     if (ret == ACL_ERROR_RT_DEVICE_MTE_ERROR && !mindspore::UCEException::GetInstance().get_has_throw_error()) {
@@ -41,6 +44,9 @@ auto RunAscendApi(Function f, const char *file, int line, const char *call_f, co
   } else {
     return f(args...);
   }
+#else
+  return f(args...);
+#endif
 }
 
 template <typename Function>
@@ -49,6 +55,7 @@ auto RunAscendApi(Function f, const char *file, int line, const char *call_f, co
   if (f == nullptr) {
     MS_LOG(EXCEPTION) << func_name << " is null.";
   }
+#ifndef BUILD_LITE
   if constexpr (std::is_same_v<std::invoke_result_t<decltype(f)>, int>) {
     auto ret = f();
     if (ret == ACL_ERROR_RT_DEVICE_MTE_ERROR && !mindspore::UCEException::GetInstance().get_has_throw_error()) {
@@ -63,6 +70,9 @@ auto RunAscendApi(Function f, const char *file, int line, const char *call_f, co
   } else {
     return f();
   }
+#else
+  return f();
+#endif
 }
 
 template <typename Function>
