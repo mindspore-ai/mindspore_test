@@ -30,18 +30,18 @@ MultiAscendCommunicationGroup::MultiAscendCommunicationGroup(const std::string &
 bool MultiAscendCommunicationGroup::Initialize(void *root_info) {
 #ifdef ENABLE_INTERNAL_KERNELS
   if (device::ascend::EnableLccl() && lccl_group_ != nullptr) {
-    MS_LOG(DEBUG) << "Try to initialize LCCL group.";
     if (!lccl_group_->Initialize(root_info)) {
-      MS_LOG(ERROR) << "Failed to initialize LCCL group";
+      MS_LOG(ERROR) << "Failed to initialize LCCL group " << name_;
       return false;
     }
+    MS_LOG(INFO) << "Successfully initialize LCCL group " << name_;
   }
 #endif
-  MS_LOG(DEBUG) << "Try to initialize HCCL group";
   if (!hccl_group_->Initialize(root_info)) {
-    MS_LOG(ERROR) << "Failed to initialize HCCL group";
+    MS_LOG(ERROR) << "Failed to initialize HCCL group " << name_;
     return false;
   }
+  MS_LOG(INFO) << "Successfully initialize HCCL group " << name_;
   return true;
 }
 
@@ -49,15 +49,17 @@ bool MultiAscendCommunicationGroup::Finalize() {
 #ifdef ENABLE_INTERNAL_KERNELS
   if (device::ascend::EnableLccl() && lccl_group_ != nullptr) {
     if (!lccl_group_->Finalize()) {
-      MS_LOG(ERROR) << "Failed to finalize LCCL group";
+      MS_LOG(ERROR) << "Failed to finalize LCCL group" << name_;
       return false;
     }
+    MS_LOG(INFO) << "Successfully finalize LCCL group " << name_;
   }
 #endif
   if (!hccl_group_->Finalize()) {
-    MS_LOG(ERROR) << "Failed to finalize HCCL group";
+    MS_LOG(ERROR) << "Failed to finalize HCCL group" << name_;
     return false;
   }
+  MS_LOG(INFO) << "Successfully finalize HCCL group " << name_;
   return true;
 }
 
