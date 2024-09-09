@@ -84,8 +84,7 @@ class GraphExecutorPy : public std::enable_shared_from_this<GraphExecutorPy> {
   const std::string &phase() const { return phase_; }
   void SaveCompiledGraph(const std::string &phase);
   void ConvertArgs(const py::tuple &args, const py::dict &kwargs, bool is_auto_parallel,
-                   abstract::AbstractBasePtrList *args_abs, std::vector<ValuePtr> *arguments,
-                   bool interpret_self = false);
+                   abstract::AbstractBasePtrList *args_abs, std::vector<ValuePtr> *arguments);
   void ConvertSymbolicShape(const py::tuple &args, AbstractBasePtrList *args_abs);
   void ProcessVmArg(const py::tuple &args, const std::string &phase, VectorRef *const arg_list);
   ResourcePtr GetResource(const std::string &phase);

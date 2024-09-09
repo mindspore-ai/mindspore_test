@@ -3997,6 +3997,10 @@ bool MindGraphBuilder::FGAddTopInputs(int args_count, bool has_vargs, bool has_k
   for (cur_index = 0; cur_index < args_count; ++cur_index) {
     auto cur = locals[cur_index];
     auto cur_object = cur->GetVobj()->GetPyObject();
+    if (cur_index == 0 && cur->GetName() == "self" && py::isinstance<Cell>(cur_object)) {
+      MS_LOG(INFO) << "Eliminate self node as input, node is " << cur->ToString();
+      continue;
+    }
     if (fg_builder_->IsParameterSequence(cur_object)) {
       continue;
     }

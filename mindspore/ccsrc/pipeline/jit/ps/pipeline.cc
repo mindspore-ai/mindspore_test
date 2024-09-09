@@ -1190,7 +1190,7 @@ bool GraphExecutorPy::CompileInner(const FuncGraphPtr &graph, const py::tuple &a
   MS_EXCEPTION_IF_NULL(parallel::ParallelContext::GetInstance());
   bool is_auto_parallel = (parallel::ParallelContext::GetInstance()->parallel_mode() == parallel::kSemiAutoParallel ||
                            parallel::ParallelContext::GetInstance()->parallel_mode() == parallel::kAutoParallel);
-  ConvertArgs(args, kwargs, is_auto_parallel, &args_abs, &arguments, true);
+  ConvertArgs(args, kwargs, is_auto_parallel, &args_abs, &arguments);
   ConvertSymbolicShape(args, &args_abs);
   AddManagerForFuncGraphArgs(resource, arguments);
   resource->set_arguments(arguments);
@@ -1310,29 +1310,10 @@ bool GraphExecutorPy::CompileInner(const py::object &source, const py::tuple &ar
 }
 
 void GraphExecutorPy::ConvertArgs(const py::tuple &args, const py::dict &kwargs, bool is_auto_parallel,
-                                  abstract::AbstractBasePtrList *args_abs, std::vector<ValuePtr> *arguments,
-                                  bool interpret_self) {
+                                  abstract::AbstractBasePtrList *args_abs, std::vector<ValuePtr> *arguments) {
   MS_EXCEPTION_IF_NULL(args_abs);
   MS_EXCEPTION_IF_NULL(arguments);
   for (std::size_t i = 0; i < args.size(); i++) {
-    if (i == 0 && interpret_self && py::isinstance<Cell>(args[i])) {
-      ValuePtr converted = nullptr;
-      bool success = true;
-      MS_LOG_TRY_CATCH_SCOPE;
-      try {
-        success = parse::ConvertData(args[i], &converted);
-      } catch (const std::exception &e) {
-        success = false;
-        MS_LOG(INFO) << "Failed to parse self: " << py::str(args[i]) << ". The exception:\n" << e.what();
-      }
-      converted = success ? converted : std::make_shared<parse::InterpretedObject>(args[i]);
-      auto args_abstract_item =
-        success ? ArgsToAbstract(args[i], converted, enable_tuple_broaden_) : std::make_shared<abstract::AbstractAny>();
-      (void)arguments->emplace_back(converted);
-      (void)args_abs->emplace_back(args_abstract_item);
-      continue;
-    }
-
     // In some parallel mode need full_tensor which cause the args of GenerateArgumentsKey not same to compile,
     // So can't use cur_convert_input_ directly.
     auto iter = cur_convert_input_.find(args[i].ptr());
