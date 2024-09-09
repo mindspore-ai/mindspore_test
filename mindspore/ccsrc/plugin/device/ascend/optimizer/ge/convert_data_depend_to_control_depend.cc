@@ -46,8 +46,17 @@ const AnfNodePtr ConvertDataDependToControlDepend::Process(const FuncGraphPtr &f
   auto manager = func_graph->manager();
   MS_EXCEPTION_IF_NULL(manager);
   auto node_users = manager->node_users()[cnode];
-  auto res = std::find_if(node_users.begin(), node_users.end(), [](const auto user) {
-    return !IsPrimitiveCNode(user.first, prim::kPrimDepend) && !IsPrimitiveCNode(user.first, prim::kPrimUpdateState);
+
+  // Check if there exists a node that uses a node with no output as a data input.
+  auto res = std::find_if(node_users.begin(), node_users.end(), [&cnode](const std::pair<AnfNodePtr, int> &user) {
+    if (IsPrimitiveCNode(user.first, prim::kPrimUpdateState)) {
+      return false;
+    }
+    auto user_cnode = user.first->cast<CNodePtr>();
+    if (IsPrimitiveCNode(user.first, prim::kPrimDepend) && user_cnode->input(1) != cnode) {
+      return false;
+    }
+    return true;
   });
   if (res == node_users.end()) {
     return nullptr;
