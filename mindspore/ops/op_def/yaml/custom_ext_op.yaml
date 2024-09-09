@@ -1,5 +1,5 @@
 #operator custom
-custom:
+custom_ext:
   args:
     tensors:
       dtype: tuple[tensor]
@@ -13,4 +13,4 @@ custom:
     disable: True
   dispatch:
     enable: True
-    Ascend: CustomAscend
+    Ascend: CustomExtAscend

@@ -1684,7 +1684,7 @@ PrimitivePtr PyBoost::ConvertPrimitive(const py::object &obj) {
   if (prim == nullptr) {
 #ifndef ENABLE_TEST
     // Custom operator's infer type and backpropagation are defined on the Python side.
-    if (adapter->name() != kCustomOpName) {
+    if (adapter->name() != kCustomExtOpName) {
       return std::make_shared<Primitive>(adapter->name(), adapter->attrs());
     }
     prim = std::make_shared<PrimitivePy>(obj);

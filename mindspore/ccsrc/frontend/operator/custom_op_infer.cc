@@ -18,7 +18,7 @@
 #endif
 
 #include "include/common/utils/utils.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "pybind_api/ir/primitive_py.h"
 #include "pipeline/jit/ps/static_analysis/prim.h"
 #include "abstract/ops/primitive_infer_map.h"
@@ -26,7 +26,7 @@
 #include "utils/file_utils.h"
 #include "utils/custom_aot_extra.h"
 #include "mindspore/ops/infer/custom.h"
-#include "infer/ops_func_impl/custom.h"
+#include "infer/ops_func_impl/custom_ext.h"
 
 namespace mindspore {
 namespace ops {
@@ -231,8 +231,8 @@ TypePtr CustomFuncImplInferType(const PrimitivePtr &primitive, const std::vector
 
 struct CustomRegFunc {
   CustomRegFunc() {
-    CustomFuncImpl::set_infer_shape_call_func(CustomFuncImplInferShape);
-    CustomFuncImpl::set_infer_type_call_func(CustomFuncImplInferType);
+    CustomExtFuncImpl::set_infer_shape_call_func(CustomFuncImplInferShape);
+    CustomExtFuncImpl::set_infer_type_call_func(CustomFuncImplInferType);
   }
 } g_reg_func;
 

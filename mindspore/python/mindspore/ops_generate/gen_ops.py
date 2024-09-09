@@ -696,8 +696,6 @@ namespace mindspore::ops {{
     lite_ops_cc_gen += lite_ops_cc_head
     for operator_name, operator_data in yaml_data.items():
         op_name = _get_op_name(operator_name, operator_data)
-        if op_name == "Custom":
-            continue
         lite_ops_h_gen += f"""class OPS_API {op_name} : public BaseOperator {{
  public:
   MIND_API_BASE_MEMBER({op_name});

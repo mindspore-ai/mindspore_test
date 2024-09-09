@@ -19,7 +19,6 @@
 #include <memory>
 #include <algorithm>
 #include "mindspore/ops/op_def/framework_ops.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
 #include "kernel/common_utils.h"
 #include "plugin/factory/ms_factory.h"
 #include "kernel/kernel_build_info.h"

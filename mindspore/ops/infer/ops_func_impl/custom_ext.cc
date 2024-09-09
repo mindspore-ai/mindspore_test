@@ -14,36 +14,22 @@
  * limitations under the License.
  */
 
-#include "infer/ops_func_impl/custom.h"
-#include <algorithm>
-#include <string>
-
-#if !defined(_WIN32) && !defined(_WIN64) && !defined(BUILD_LITE) && !defined(__APPLE__)
-#include <dlfcn.h>
-#include "pipeline/jit/ps/static_analysis/prim.h"
-#include "pybind_api/ir/primitive_py.h"
-#endif
-
-#include "include/common/utils/utils.h"
-#include "utils/check_convert_utils.h"
-#include "utils/file_utils.h"
-#include "utils/custom_aot_extra.h"
-#include "mindspore/core/include/abstract/abstract_value.h"
+#include "infer/ops_func_impl/custom_ext.h"
 
 namespace mindspore::ops {
+InferShapeCallback CustomExtFuncImpl::infer_shape_func_ = nullptr;
+InferTypeCallback CustomExtFuncImpl::infer_type_func_ = nullptr;
 
-InferShapeCallback CustomFuncImpl::infer_shape_func_ = nullptr;
-InferTypeCallback CustomFuncImpl::infer_type_func_ = nullptr;
-
-BaseShapePtr CustomFuncImpl::InferShape(const PrimitivePtr &primitive,
-                                        const std::vector<AbstractBasePtr> &input_args) const {
+BaseShapePtr CustomExtFuncImpl::InferShape(const PrimitivePtr &primitive,
+                                           const std::vector<AbstractBasePtr> &input_args) const {
   if (infer_shape_func_) {
     return infer_shape_func_(primitive, input_args);
   }
   MS_LOG(EXCEPTION) << "Infer shape func is nullptr";
 }
 
-TypePtr CustomFuncImpl::InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const {
+TypePtr CustomExtFuncImpl::InferType(const PrimitivePtr &primitive,
+                                     const std::vector<AbstractBasePtr> &input_args) const {
   if (infer_type_func_) {
     return infer_type_func_(primitive, input_args);
   }

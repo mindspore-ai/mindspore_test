@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_MINDSPORE_OPS_KERNEL_ASCEND_PYBOOST_CUSTOMIZE_CUSTOM_H_
-#define MINDSPORE_MINDSPORE_OPS_KERNEL_ASCEND_PYBOOST_CUSTOMIZE_CUSTOM_H_
+#ifndef MINDSPORE_MINDSPORE_OPS_KERNEL_ASCEND_PYBOOST_CUSTOMIZE_CUSTOM_EXT_H_
+#define MINDSPORE_MINDSPORE_OPS_KERNEL_ASCEND_PYBOOST_CUSTOMIZE_CUSTOM_EXT_H_
 
 #include <vector>
 #include <memory>
@@ -28,9 +28,9 @@
 namespace mindspore {
 namespace kernel {
 namespace pyboost {
-tensor::BaseTensorPtr CustomAscendCustomize(const std::shared_ptr<OpRunner> &op,
-                                            const ValueTuplePtr &tensors_tensor_list);
+tensor::BaseTensorPtr CustomExtAscendCustomize(const std::shared_ptr<OpRunner> &op,
+                                               const ValueTuplePtr &tensors_tensor_list);
 }  // namespace pyboost
 }  // namespace kernel
 }  // namespace mindspore
-#endif  // MINDSPORE_MINDSPORE_OPS_KERNEL_ASCEND_PYBOOST_CUSTOMIZE_CUSTOM_H_
+#endif  // MINDSPORE_MINDSPORE_OPS_KERNEL_ASCEND_PYBOOST_CUSTOMIZE_CUSTOM_EXT_H_

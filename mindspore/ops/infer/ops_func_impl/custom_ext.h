@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef MINDSPORE_OPS_INFER_FUNC_IMPL_CUSTOM_H_
-#define MINDSPORE_OPS_INFER_FUNC_IMPL_CUSTOM_H_
+#ifndef MINDSPORE_OPS_INFER_FUNC_IMPL_CUSTOM_EXT_H_
+#define MINDSPORE_OPS_INFER_FUNC_IMPL_CUSTOM_EXT_H_
 
 #include <memory>
 #include <vector>
@@ -30,12 +30,12 @@ using InferShapeCallback =
 using InferTypeCallback =
   std::function<TypePtr(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args)>;
 
-class OPS_API CustomFuncImpl : public OpFuncImpl {
+class OPS_API CustomExtFuncImpl : public OpFuncImpl {
  public:
   static void set_infer_shape_call_func(const InferShapeCallback &call) { infer_shape_func_ = call; }
   static void set_infer_type_call_func(const InferTypeCallback &call) { infer_type_func_ = call; }
-  CustomFuncImpl() = default;
-  ~CustomFuncImpl() = default;
+  CustomExtFuncImpl() = default;
+  ~CustomExtFuncImpl() = default;
 
   BaseShapePtr InferShape(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
   TypePtr InferType(const PrimitivePtr &primitive, const std::vector<AbstractBasePtr> &input_args) const override;
@@ -45,6 +45,6 @@ class OPS_API CustomFuncImpl : public OpFuncImpl {
   static InferTypeCallback infer_type_func_;
 };
 
-using CustomFuncImplPtr = std::shared_ptr<CustomFuncImpl>;
+using CustomFuncImplPtr = std::shared_ptr<CustomExtFuncImpl>;
 }  // namespace mindspore::ops
-#endif  // MINDSPORE_OPS_INFER_FUNC_IMPL_CUSTOM_H_
+#endif  // MINDSPORE_OPS_INFER_FUNC_IMPL_CUSTOM_EXT_H_

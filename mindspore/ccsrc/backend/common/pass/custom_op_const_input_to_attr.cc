@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include "backend/common/pass/custom_op_const_input_to_attr.h"
-#include "mindspore/ops/op_def/auto_generate/gen_ops_primitive.h"
+#include "mindspore/ops/op_def/framework_ops.h"
 #include "utils/hash_set.h"
 #include "backend/common/pass/const_input_to_attr.h"
 #include "include/common/utils/anfalgo.h"

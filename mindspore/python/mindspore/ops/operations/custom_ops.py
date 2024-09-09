@@ -28,7 +28,7 @@ import subprocess
 import numpy as np
 import mindspore as ms
 from mindspore._c_expression import Oplib, typing
-from mindspore._c_expression import pyboost_custom
+from mindspore._c_expression import pyboost_custom_ext
 from mindspore.common._stub_tensor import _convert_stub
 from mindspore import context
 from mindspore.common import Tensor
@@ -156,6 +156,55 @@ def _compile_aot(file):
             raise RuntimeError(msg)
 
     return func_path
+
+
+class _CustomExt(ops.PrimitiveWithInfer):
+    """
+    `Custom` primitive is used for PyBoost.
+    """
+
+    def __init__(self, func, out_shape=None, out_dtype=None, bprop=None):
+        super().__init__("CustomExt")
+        self.func = func
+        self.out_shape = out_shape
+        self.out_dtype = out_dtype
+        self.bprop = bprop
+
+    def __infer__(self, *args):
+        if callable(self.out_shape):
+            infer_shape = self.out_shape(*(x["shape"] for x in args))
+        else:
+            infer_shape = self.out_shape
+
+        if callable(self.out_dtype):
+            infer_dtype = self.out_dtype(*(x["dtype"] for x in args))
+        else:
+            infer_dtype = self.out_dtype
+
+        infer_value = None
+        if infer_shape is None:
+            logger.warning("'out_shape' is None. Add a placeholder instead. "
+                           "A CPP version of infer shape function is required "
+                           "in this case.")
+            infer_shape = (1,)
+        # after all automatic infer information fulfillment, throw error if infer_shape/infer_dtype is still None
+        if not isinstance(infer_shape, (tuple, list)):
+            raise TypeError("'out_shape' must be one of [tuple, list, function], but got {}".format(type(infer_shape)))
+
+        if not isinstance(infer_dtype, (typing.Type, tuple, list)):
+            raise TypeError("'out_dtype' must be one of [mindspore.dtype, tuple, list, function], but got {}"
+                            .format(type(infer_dtype)))
+
+        out = {
+            "shape": infer_shape,
+            "dtype": infer_dtype,
+            "value": infer_value,
+        }
+        return out
+
+    def get_bprop(self):
+        """return back propagation function"""
+        return self.bprop
 
 
 class Custom(ops.PrimitiveWithInfer):
@@ -459,6 +508,12 @@ class Custom(ops.PrimitiveWithInfer):
 
         self.add_prim_attr("func_type", self.func_type)
         self._update_attr()
+        self.enable_pyboost = False
+        self.custom_pyboost = _CustomExt(self.func, self.out_shape, self.out_dtype, self.bprop)
+        if context.get_context("device_target") == "Ascend" and self.func_type == "aot":
+            self.enable_pyboost = True
+            for key, value in super().get_attr_dict().items():
+                self.custom_pyboost.add_prim_attr(key, value)
 
     def __infer__(self, *args):
         if callable(self.out_shape):
@@ -1067,8 +1122,8 @@ class Custom(ops.PrimitiveWithInfer):
         return infer_shape, infer_dtype, infer_value
 
     def __call__(self, *args):
-        if context.get_context("device_target") == "Ascend":
-            return _convert_stub(pyboost_custom(self, [args]))
+        if self.enable_pyboost:
+            return _convert_stub(pyboost_custom_ext(self.custom_pyboost, [args]))
         should_elim, output = self.check_elim(*args)
         if should_elim:
             return output
