@@ -81,6 +81,9 @@ class FwkCANNParser:
 
             for ts, device_data_list in sorted(acl_to_npu_by_tid.get(device_tid).items(), key=lambda x: x[0]):
                 op_idx, status = FwkCANNParser.__find_launch_op(ts, host_data_sorted, op_idx)
+                if not status:
+                    logger.warning("There are %s device ops have no flows were found. The CANN ts is %s.",
+                                   len(device_data_list), ts)
 
                 for device_data in device_data_list:
                     if status:
