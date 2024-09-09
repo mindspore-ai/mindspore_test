@@ -622,10 +622,8 @@ MemBufAllocatorPtr AbstractDynamicMemPool::GenerateAllocator(bool is_persistent,
   };
 
   std::function<bool(MemBlock *)> mem_block_cleaner = [&](MemBlock *mem_block) {
-    if (IsEnableEagerFree() || IsEnableVmm()) {
-      return false;
-    }
     mem_stat_.alloc_size_ -= mem_block->size_;
+    // Call free device mem as ascend memory pool would do stat in free operation.
     return FreeDeviceMem(mem_block->addr_);
   };
   std::function<size_t(size_t size, void *addr)> mem_mapper = [&](size_t size, void *addr) {
