@@ -77,9 +77,9 @@ TilingInfo TilingCacheMgr::GetOrCreateTilingInfo(
     auto default_stream_id = device_context_->device_res_manager_->DefaultStream();
     default_stream_ = device_context_->device_res_manager_->GetStream(default_stream_id);
   }
-  ret = InternalAscendAdapter::AcendMemcpyAsync(tiling_cache_elem.device_buf_.addr_,
-                                                tiling_cache_elem.device_buf_.size_, host_tiling_buf_.addr_,
-                                                host_tiling_buf_.size_, ACL_MEMCPY_HOST_TO_DEVICE, default_stream_);
+  ret = InternalAscendAdapter::AscendMemcpyAsync(tiling_cache_elem.device_buf_.addr_,
+                                                 tiling_cache_elem.device_buf_.size_, host_tiling_buf_.addr_,
+                                                 host_tiling_buf_.size_, ACL_MEMCPY_HOST_TO_DEVICE, default_stream_);
   if (ret != 0) {
     MS_LOG(EXCEPTION) << "ACL_MEMCPY_HOST_TO_DEVICE failed!";
   }

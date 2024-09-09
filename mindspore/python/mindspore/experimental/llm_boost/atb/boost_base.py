@@ -13,7 +13,6 @@
 # limitations under the License.
 # ============================================================================
 """boost base class"""
-import json
 import numpy as np
 import mindspore as ms
 from mindspore import ops, Tensor
@@ -28,11 +27,6 @@ from mindspore.common.initializer import Zero
 class AttentionMask:
     """attention mask"""
 
-    def __init__(self, atten_mask):
-        super().__init__()
-        self._seq_len_cached = 0
-        self.atten_mask_cache = atten_mask
-
     @classmethod
     def static(cls, max_seq_len, dtype=mstype.float16):
         """cache mask"""
@@ -45,30 +39,7 @@ class AttentionMask:
             mask_value = Tensor(1)
         attn_mask = ops.masked_fill(Tensor(np.zeros(
             (max_seq_len, max_seq_len)), dtype=mstype.float16), bias_cache, mask_value)
-        return cls(attn_mask)
-
-    def update_attn_cache(self, dtype, seqlen):
-        """
-        Reset the tables if the sequence length has changed,
-        or if we're on a new device (possibly due to tracing for instance)
-        """
-        if seqlen > self._seq_len_cached:
-            self._seq_len_cached = seqlen
-            bias_cache = Tensor(
-                np.tril(np.ones((seqlen, seqlen), dtype=np.bool_))).reshape(seqlen, seqlen)
-            bias_cache = ~bias_cache
-            if dtype == mstype.float16:
-                mask_value = Tensor(np.finfo(np.float32).min, mstype.float16)
-            else:
-                mask_value = 1
-            mask_atten_cache = ops.masked_fill(Tensor(
-                np.zeros((seqlen, seqlen)), dtype=mstype.float16), bias_cache, mask_value)
-            self.atten_mask_cache = mask_atten_cache
-
-    def get_attn_mask(self, max_s: int, dtype: mstype):
-        """get attention mask"""
-        self.update_attn_cache(dtype, max_s)
-        return self.atten_mask_cache[:max_s, :max_s]
+        return attn_mask
 
 
 class AtbBoostBase():
@@ -96,8 +67,9 @@ class AtbBoostBase():
         self.position_embedding_type = "ROPE"
         self.add_norm_enable = True
         self.max_decode_length = self.config.max_decode_length
+        self.max_base_len = 128
         self.attn_mask = AttentionMask.static(
-            self.max_decode_length, dtype=self.dtype)
+            self.max_base_len, dtype=self.dtype)
 
         self.cast = P.Cast()
 
@@ -121,7 +93,8 @@ class AtbBoostBase():
         placeholder = Parameter(Tensor(np.zeros(1), dtype=dtype))
 
         ascend_weight = []
-        ascend_weight.append(self.cast(parm_dict[embedding_weight_name], dtype))
+        ascend_weight.append(
+            self.cast(parm_dict[embedding_weight_name], dtype))
         for i in range(self.num_layers):
             ascend_weight.append(
                 self.cast(parm_dict[f"model.layers.{i}.{attention_norm_name}.weight"], dtype))
@@ -155,52 +128,12 @@ class AtbBoostBase():
                 f"model.layers.{i}.{mlp_down_name}.bias", placeholder), dtype))
             ascend_weight.extend([placeholder] * 4)
 
-        ascend_weight.append(self.cast(parm_dict[f"{norm_out_name}.weight"], dtype))
-        ascend_weight.append(self.cast(parm_dict[f"{lm_head_name}.weight"], dtype))
+        ascend_weight.append(
+            self.cast(parm_dict[f"{norm_out_name}.weight"], dtype))
+        ascend_weight.append(
+            self.cast(parm_dict[f"{lm_head_name}.weight"], dtype))
         self.atb_encoder_operation.set_weights(ascend_weight)
         self.atb_decoder_operation.set_weights(ascend_weight)
-
-    def init(self):
-        """set param"""
-        coder_param = {
-            "rmsNormEps": self.config.rms_norm_eps,
-            "numAttentionHeadsPerRank": self.config.num_heads // self.device_num,
-            "hiddenSizePerAttentionHead": self.head_dim,
-            "numHiddenLayers": self.num_layers,
-            "numKeyValueHeadsPerRank": self.n_kv_heads // self.device_num,
-            "skipWordEmbedding": False,
-            "isFA": False,
-            "isBF16": self.dtype == mstype.bfloat16,
-            "packQuantType": [[1, 1] for _ in range(self.num_layers)],
-            "linearQuantType": [[0, -1, -1, 0, 0, -1, 0] for _ in range(self.num_layers)],
-            "linearTransposeType": [[1, -1, -1, 1, 1, -1, 1] for i in range(self.num_layers)],
-            "isEmbeddingParallel": False,
-            "isLmHeadParallel": not self.config.parallel_config.vocab_emb_dp,
-            "lmHeadTransposeType": 1,
-            "supportSwiGLU": True,
-            "kvQuant": self.kv_quant is not None,
-            "rank": self.rank_id,
-            "worldSize": self.device_num,
-            "backend": "lccl",
-            "rankTableFile": "",
-            "positionEmbeddingType": self.position_embedding_type,
-            "hiddenSize": self.config.hidden_size,
-            "gemma": False,
-            "enableAddNorm": True,
-            "supportCompressHead": False,
-        }
-        encoder_param = {
-            **coder_param, "isPrefill": True,
-            "supportLcoc": True,
-            "supportSpeculate": False,
-            "skipWordEmbedding": False
-        }
-        decoder_param = {
-            **coder_param, "isPrefill": False, "supportLcoc": False,
-            "supportSpeculate": False
-        }
-        self.atb_encoder_operation.init(json.dumps({**encoder_param}))
-        self.atb_decoder_operation.init(json.dumps({**decoder_param}))
 
     def set_kvcache(self, k_caches=None, v_caches=None):
         """set kv_cache for llm boost"""
@@ -244,8 +177,7 @@ class AtbBoostBase():
         lm_head_indices = boost_inputs["lm_head_indices"]
         seqLen = boost_inputs["seq_lens"]
         if self.is_first_iteration:
-            attention_mask = self.attn_mask.get_attn_mask(
-                self.max_decode_length, self.dtype)
+            attention_mask = self.attn_mask
         else:
             position_ids = batch_valid_length - 1
             attention_mask = self.placeholder

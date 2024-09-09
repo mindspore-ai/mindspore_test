@@ -20,7 +20,7 @@ from mindspore._c_expression import LlmBoostBinder
 from mindspore.experimental.llm_boost.register import LlmBoostRegister, LlmBoostType
 
 
-@LlmBoostRegister.register(LlmBoostType.DEFAULT, "Llama")
+@LlmBoostRegister.register(LlmBoostType.BUILDIN, "Llama")
 class LlamaBoost(AtbBoostBase):
     """LlamaBoost class"""
 
@@ -33,6 +33,48 @@ class LlamaBoost(AtbBoostBase):
             "ATB", "llama_parallel_DecoderModel")
         self.atb_decoder_operation = LlmBoostBinder(
             "ATB", "llama_parallel_DecoderModel")
+
+    def init(self):
+        """set param"""
+        coder_param = {
+            "rmsNormEps": self.config.rms_norm_eps,
+            "numAttentionHeadsPerRank": self.config.num_heads // self.device_num,
+            "hiddenSizePerAttentionHead": self.head_dim,
+            "numHiddenLayers": self.num_layers,
+            "numKeyValueHeadsPerRank": self.n_kv_heads // self.device_num,
+            "skipWordEmbedding": False,
+            "isFA": False,
+            "isBF16": self.dtype == mstype.bfloat16,
+            "packQuantType": [[1, 1] for _ in range(self.num_layers)],
+            "linearQuantType": [[0, -1, -1, 0, 0, -1, 0] for _ in range(self.num_layers)],
+            "linearTransposeType": [[1, -1, -1, 1, 1, -1, 1] for i in range(self.num_layers)],
+            "isEmbeddingParallel": False,
+            "isLmHeadParallel": not self.config.parallel_config.vocab_emb_dp,
+            "lmHeadTransposeType": 1,
+            "supportSwiGLU": True,
+            "kvQuant": self.kv_quant is not None,
+            "rank": self.rank_id,
+            "worldSize": self.device_num,
+            "backend": "lccl",
+            "rankTableFile": "",
+            "positionEmbeddingType": self.position_embedding_type,
+            "hiddenSize": self.config.hidden_size,
+            "gemma": False,
+            "enableAddNorm": True,
+            "supportCompressHead": False,
+        }
+        encoder_param = {
+            **coder_param, "isPrefill": True,
+            "supportLcoc": True,
+            "supportSpeculate": False,
+            "skipWordEmbedding": False
+        }
+        decoder_param = {
+            **coder_param, "isPrefill": False, "supportLcoc": False,
+            "supportSpeculate": False
+        }
+        self.atb_encoder_operation.init(json.dumps({**encoder_param}))
+        self.atb_decoder_operation.init(json.dumps({**decoder_param}))
 
     def _prepare_inputs(
             self,

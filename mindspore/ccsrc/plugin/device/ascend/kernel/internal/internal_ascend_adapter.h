@@ -31,8 +31,8 @@ namespace kernel {
  */
 class BACKEND_EXPORT InternalAscendAdapter {
  public:
-  static aclError AcendMemcpyAsync(void *dst, size_t destMax, const void *src, size_t count, aclrtMemcpyKind kind,
-                                   aclrtStream stream);
+  static aclError AscendMemcpyAsync(void *dst, size_t destMax, const void *src, size_t count, aclrtMemcpyKind kind,
+                                    aclrtStream stream);
 };
 
 }  // namespace kernel

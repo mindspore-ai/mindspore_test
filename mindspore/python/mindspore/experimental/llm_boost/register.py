@@ -22,7 +22,7 @@ class LlmBoostType:
     def __init__(self):
         pass
 
-    DEFAULT = 'DEFAULT'
+    BUILDIN = 'BuildIn'
 
 
 class LlmBoostRegister:
@@ -36,11 +36,11 @@ class LlmBoostRegister:
     registry = {}
 
     @classmethod
-    def register(cls, boost_type=LlmBoostType.DEFAULT, alias=None):
+    def register(cls, boost_type=LlmBoostType.BUILDIN, alias=None):
         """Register class into registry
         Args:
             boost_type:
-                boost type name, default LlmBoostType.DEFAULT
+                boost type name, default LlmBoostType.BUILDIN
             alias (str) : model_name
 
         Returns:
@@ -104,7 +104,7 @@ class LlmBoostRegister:
         return register_class
 
     @classmethod
-    def get_instance(cls, boost_type=LlmBoostType.DEFAULT, model_name=None, **kwargs):
+    def get_instance(cls, boost_type=LlmBoostType.BUILDIN, model_name=None, **kwargs):
         """Get instance.
         Args:
             boost_type : module type
