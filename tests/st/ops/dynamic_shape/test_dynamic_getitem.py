@@ -403,8 +403,7 @@ def test_dynamic_rank_getitem_with_single_basic_index():
     fact.grad_impl()
 
 
-@pytest.mark.skip(reason="Need to be fixed.")
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
+@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level0',
           card_mark='onecard', essential_mark='unessential')
 def test_dynamic_rank_getitem_tuple_with_basic_index():
     """
@@ -489,7 +488,7 @@ def test_dynamic_rank_getitem_tuple_with_multi_tensor_index():
         def construct(self, x, axis):
             x = ops.reduce_min(x, axis)
             x0 = x[Tensor(np.ones((25), int)), :,
-                 Tensor(np.ones((5, 5), bool))]
+                   Tensor(np.ones((5, 5), bool))]
             x0 = x0[x0.min(), 0:1]
             return x0
 
@@ -545,7 +544,7 @@ def test_dynamic_rank_getitem_with_list_index():
     fact.forward_cmp()
 
 
-@arg_mark(plat_marks=['platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
+@arg_mark(plat_marks=['platform_ascend', 'platform_gpu', 'cpu_linux', 'cpu_windows', 'cpu_macos'], level_mark='level1',
           card_mark='onecard', essential_mark='unessential')
 def test_dynamic_rank_getitem_tuple_with_mix_index():
     """

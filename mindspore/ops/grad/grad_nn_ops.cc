@@ -353,7 +353,7 @@ class BiasAddGradShapeCalc : public ShapeCalcFunctor {
     if (format_ == Format::NCHW) {
       // expanded_shape = np.concatenate([np.ones_like(shape[:1]), bias_shape, np.ones_like(shape[2:])], axis=0)
       expanded_shape = one_vec + dout_shape;
-      expanded_shape = dy_shape.size() > i2 ? expanded_shape + ShapeVector(1, dy_shape.size() - i2) : expanded_shape;
+      expanded_shape = dy_shape.size() > i2 ? expanded_shape + ShapeVector(dy_shape.size() - i2, 1) : expanded_shape;
       // tile_mults = np.concatenate([shape[:1], [1], shape[2:]], axis=0)
       ShapeVector tmp{dy_shape[0], 1};
       tile_mults = tmp;
