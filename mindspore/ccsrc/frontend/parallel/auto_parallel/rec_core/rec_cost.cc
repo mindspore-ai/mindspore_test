@@ -579,31 +579,32 @@ StrategyRec CostBatchMatMul::GetOptimalStr(
     MS_LOG(EXCEPTION) << "str_n cannot be 0!";
   }
 
-  std::vector<double> cost_op(6, DOUBLE_MAX);
+  std::vector<double> cost_op(INDEX_SIX, DOUBLE_MAX);
   if (IsEdgeSplittable(edge_b) && isMicroBatchSizeLargeEnough) {
-    ComputeAndLogCost(&cost_op[0], {{0.5, 1, 1, 1}, {0.5, 1, 1, 1}, {0.5, 1, 1, 1}}, node, node_name_to_strategy, graph,
-                      B);
+    ComputeAndLogCost(&cost_op[INDEX_ZERO], {{0.5, 1, 1, 1}, {0.5, 1, 1, 1}, {0.5, 1, 1, 1}}, node,
+                      node_name_to_strategy, graph, B);
   }
   if (IsEdgeSplittable(edge_x)) {
-    ComputeAndLogCost(&cost_op[1], {{1, 0.5, 1, 1}, {1, 0.5, 1, 1}, {1, 0.5, 1, 1}}, node, node_name_to_strategy, graph,
-                      X);
+    ComputeAndLogCost(&cost_op[INDEX_ONE], {{1, 0.5, 1, 1}, {1, 0.5, 1, 1}, {1, 0.5, 1, 1}}, node,
+                      node_name_to_strategy, graph, X);
   }
   if (IsEdgeSplittable(edge_i) && !SplitOnlyOneDimension(graph, node.apply.arguments[0].tensor_str.str_c)) {
-    ComputeAndLogCost(&cost_op[2], {{1, 1, 0.5, 1}, {1, 1, 1, 1}, {1, 1, 0.5, 1}}, node, node_name_to_strategy, graph,
-                      I);
+    ComputeAndLogCost(&cost_op[INDEX_TWO], {{1, 1, 0.5, 1}, {1, 1, 1, 1}, {1, 1, 0.5, 1}}, node, node_name_to_strategy,
+                      graph, I);
   }
   if (IsEdgeSplittable(edge_j) && node.apply.arguments[0].tensor_str.str_w >= 1 &&
       !SplitOnlyOneDimension(graph, node.apply.arguments[0].tensor_str.str_c)) {
-    ComputeAndLogCost(&cost_op[3], {{1, 1, 1, 1}, {1, 1, 1, 0.5}, {1, 1, 1, 0.5}}, node, node_name_to_strategy, graph,
-                      J, BMM_COEF);
+    ComputeAndLogCost(&cost_op[INDEX_THREE], {{1, 1, 1, 1}, {1, 1, 1, 0.5}, {1, 1, 1, 0.5}}, node,
+                      node_name_to_strategy, graph, J, BMM_COEF);
   }
   if (IsEdgeSplittable(edge_k) && node.apply.arguments[1].tensor_str.str_w >= 1 &&
       !SplitOnlyOneDimension(graph, node.apply.arguments[0].tensor_str.str_c)) {
-    ComputeAndLogCost(&cost_op[4], {{1, 1, 1, 0.5}, {1, 1, 0.5, 1}, {1, 1, 1, 1}}, node, node_name_to_strategy, graph,
-                      K, BMM_COEF);
+    ComputeAndLogCost(&cost_op[INDEX_FOUR], {{1, 1, 1, 0.5}, {1, 1, 0.5, 1}, {1, 1, 1, 1}}, node, node_name_to_strategy,
+                      graph, K, BMM_COEF);
   }
   if (!hasBeenSplitted(node, graph.dyn_shape_tmp_fix)) {
-    ComputeAndLogCost(&cost_op[5], {{1, 1, 1, 1}, {1, 1, 1, 1}, {1, 1, 1, 1}}, node, node_name_to_strategy, graph, R);
+    ComputeAndLogCost(&cost_op[INDEX_FIVE], {{1, 1, 1, 1}, {1, 1, 1, 1}, {1, 1, 1, 1}}, node, node_name_to_strategy,
+                      graph, R);
   }
 
   return ChoseStr(cost_op, node.apply.str);
