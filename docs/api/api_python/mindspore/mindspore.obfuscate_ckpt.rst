@@ -1,14 +1,14 @@
 mindspore.obfuscate_ckpt
 ========================
 
-.. py:function:: mindspore.obfuscate_ckpt(network, ckpt_files, target_modules, obf_config=None, saved_path='./', obfuscate_scale=100)
+.. py:function:: mindspore.obfuscate_ckpt(network, ckpt_files, target_modules=None, obf_config=None, saved_path='./', obfuscate_scale=100)
 
     根据用户配置的混淆策略，对模型的Checkpoint进行混淆保护，防止攻击者窃取模型资产。
 
     参数：
         - **network** (nn.Cell) - 待混淆的原始网络。
         - **ckpt_files** (str) - 待混淆的原始权重文件的存储路径。
-        - **target_modules** (list[str]) - 需要混淆的目标算子。第一个字符串表示目标算子在原网络中的路径，应该是 ``"A/B/C"`` 的形式。第二个字符串表示同一个路径下的多个目标算子名，它应该是 ``"D|E|F"`` 的形式。例如，GPT2的 `target_modules` 可以是 ``['backbone/blocks/attention', 'dense1|dense2|dense3']`` 。如果 `target_modules` 有第三个值，它的格式应该是 ``"obfuscate_layers:all"`` 或 ``"obfuscate_layers:int"`` ，这表示需要混淆重复层（如transformer层或resnet块）的层数。
+        - **target_modules** (list[str]) - 需要混淆的目标算子。第一个字符串表示目标算子在原网络中的路径，应该是 ``"A/B/C"`` 的形式。第二个字符串表示同一个路径下的多个目标算子名，它应该是 ``"D|E|F"`` 的形式。例如，GPT2的 `target_modules` 可以是 ``['backbone/blocks/attention', 'dense1|dense2|dense3']`` 。如果 `target_modules` 有第三个值，它的格式应该是 ``"obfuscate_layers:all"`` 或 ``"obfuscate_layers:int"`` ，这表示需要混淆重复层（如transformer层或resnet块）的层数。默认值：``None`` 。
         - **obf_config** (dict) - 模型混淆策略的配置。默认值：``None`` 。
         - **saved_path** (str) - 混淆后权重文件的保存路径。默认值： ``'./'`` 。
         - **obfuscate_scale** (str) - 权重混淆尺度，控制混淆系数的取值范围(>1的int/float)。

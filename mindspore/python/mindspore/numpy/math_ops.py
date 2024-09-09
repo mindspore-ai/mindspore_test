@@ -3118,8 +3118,8 @@ def cumsum(a, axis=None, dtype=None):
     Returns the cumulative sum of the elements along a given axis.
 
     Note:
-        If ``a.dtype`` is :class:`int8`, :class:`int16` or :class:`bool`, the result
-        `dtype` will be elevated to :class:`int32`.
+        If ``a.dtype`` is `int8`, `int16` or `bool`, the result
+        `dtype` will be elevated to `int32`.
 
     Args:
         a (Tensor): Input tensor.
@@ -5163,7 +5163,7 @@ def polyder(p, m=1):
         Numpy object poly1d is currently not supported.
 
     Args:
-        p (Union[int, float, bool, list, tuple, Tensor): Polynomial to differentiate.
+        p (Union[int, float, bool, list, tuple, Tensor]): Polynomial to differentiate.
             A sequence is interpreted as polynomial coefficients.
         m (int, optional): Default: ``1`` , order of differentiation.
 
