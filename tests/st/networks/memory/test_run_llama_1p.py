@@ -100,7 +100,7 @@ def test_somas():
                 f"{sh_path}/somas/", 10, True)
 
 
-@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level0', card_mark='onecard', essential_mark='essential')
+@arg_mark(plat_marks=['platform_ascend910b'], level_mark='level1', card_mark='onecard', essential_mark='essential')
 def test_no_somas():
     """
     Feature: Trainer.train()
