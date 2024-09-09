@@ -133,6 +133,7 @@ Status MappableLeafOp::WorkerEntry(int32_t worker_id) {
 
   uint64_t start_time = GetSyscnt();
   RETURN_IF_NOT_OK(worker_in_queues_[worker_id]->PopFront(&io_block));
+  RETURN_UNEXPECTED_IF_NULL(io_block);
   RETURN_IF_NOT_OK(
     CollectOpInfo(this->NameWithID(), "WorkerGet", start_time, {{"TensorRowFlags", io_block->FlagName()}}));
   start_time = GetSyscnt();

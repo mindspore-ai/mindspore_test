@@ -49,7 +49,7 @@ SharedMem::SharedMem(const std::string &name, bool create, int fd, size_t size)
     MS_EXCEPTION(RuntimeError) << "SharedMemory: fd must be non-negative when create is false, but got: " << fd_;
   }
 
-  if (size_ <= 0) {
+  if (size_ == 0) {
     MS_EXCEPTION(RuntimeError) << "SharedMemory: size must be a positive integer, but got: " << size_;
   }
 

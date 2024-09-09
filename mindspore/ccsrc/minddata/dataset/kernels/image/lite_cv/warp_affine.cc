@@ -556,7 +556,7 @@ bool WarpPerspectiveBilinear(const LiteMat &src, LiteMat &dst, const LiteMat &M,
         int16_t *t_a = TA + y1 * tw;
         for (int x1 = 0; x1 < tw; x1++) {
           double W = WV + IM[6] * x1;
-          W = (W != 0) ? kTabSz / W : 0;
+          W = (std::fabs(W) > std::numeric_limits<float>::epsilon()) ? kTabSz / W : 0;
           double fX = std::max((double)INT_MIN, std::min((double)INT_MAX, (XV + IM[0] * x1) * W));  // NOLINT
           double fY = std::max((double)INT_MIN, std::min((double)INT_MAX, (YV + IM[3] * x1) * W));  // NOLINT
           int X = static_cast<int>(round(fX));

@@ -509,7 +509,7 @@ Status ShardWriter::LockWriter(bool parallel_writer, std::unique_ptr<int> *fd_pt
   MS_LOG(DEBUG) << "Lock file done by Python.";
 
 #else
-  const int fd = open(lock_file_.c_str(), O_WRONLY | O_CREAT, 0666);
+  const int fd = open(lock_file_.c_str(), O_WRONLY | O_CREAT, 0600);
   if (fd >= 0) {
     flock(fd, LOCK_EX);
   } else {
