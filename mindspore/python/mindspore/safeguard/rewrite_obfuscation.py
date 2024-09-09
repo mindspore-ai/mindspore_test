@@ -121,22 +121,19 @@ def _get_op(op_name):
 
 def obfuscate_ckpt(network, ckpt_files, target_modules=None, obf_config=None, saved_path='./', obfuscate_scale=100):
     """
-    Obfuscate the plaintext checkpoint files according to the obfuscation config. Usually used in conjunction with
-    :func:`mindspore.load_obf_params_into_net`.
-    interface.
+    Obfuscate the plaintext checkpoint files according to the obfuscation config.
 
     Args:
         network (nn.Cell): The original network that need to be obfuscated.
         ckpt_files (str): The directory path of original ckpt files.
-        target_modules (list[str]): The target module of network that need to be obfuscated. The first string
-            represents the network path of target module in original network, which should be in form of ``'A/B/C'``.
-            The second string represents the obfuscation target module, which should be in form of ``'D|E|F'``. For
-            example, thr target_modules of GPT2 can be ``['backbone/blocks/attention', 'dense1|dense2|dense3']``.
-            If target_modules has the third value, it should be in the format of 'obfuscate_layers:all' or
-            'obfuscate_layers:int', which represents the number of layers need to be obfuscated of duplicate layers
-            (such as transformer layers or resnet blocks). If target_modules is ``None``, the function would search
-            target modules by itself. If found, the searched target module would be used, otherwise suggested target
-            modules would be given with warning log. Default: ``None``.
+        target_modules (list[str]): The target ops that need to be obfuscated in the network. The first string
+            represents the network path of the target ops in the original network, which should be in form of
+            ``"A/B/C"``. The second string represents the names of multiple target ops in the same path, which
+            should be in form of ``"D|E|F"``. For example, the target_modules of GPT2 can be ``['backbone/blocks
+            /attention', 'dense1|dense2|dense3']``. If target_modules has the third value, it should be in the
+            format of 'obfuscate_layers:all' or 'obfuscate_layers:int', which represents the number of layers
+            need to be obfuscated of duplicate layers (such as transformer layers or resnet blocks).
+            Default: ``None``.
         obf_config (dict): The configuration of model obfuscation polices. Default: ``None``.
         saved_path (str): The directory path for saving obfuscated ckpt files. Default: ``'./'``.
         obfuscate_scale (Union[float, int]): Obfuscate scale of weights. The generated random obf_ratios will be in
@@ -362,24 +359,27 @@ def load_obf_params_into_net(network, target_modules=None, obf_ratios=None, obf_
                              data_parallel_num=1, **kwargs):
     """
     Modify model structure according to obfuscation config and load obfuscated checkpoint into obfuscated network.
-    Usually used in conjunction with :func:`mindspore.obfuscate_ckpt` interface.
 
     Args:
         network (nn.Cell): The original network that need to be obfuscated.
-        target_modules (list[str]): The target module of network that need to be obfuscated. The first string
-            represents the network path of target module in original network, which should be in form of ``'A/B/C'``.
-            The second string represents the obfuscation target module, which should be in form of ``'D|E|F'``. For
-            example, thr target_modules of GPT2 can be ``['backbone/blocks/attention', 'dense1|dense2|dense3']``.
-            If target_modules has the third value, it should be in the format of 'obfuscate_layers:all' or
-            'obfuscate_layers:int', which represents the number of layers need to be obfuscated of duplicate layers
-            (such as transformer layers or resnet blocks).
-        data_parallel_num (int): The data parallel number of parallel training. Default: 1.
-        obf_ratios (Tensor): The obf ratios generated when execute :func:`mindspore.obfuscate_ckpt`.
+        target_modules (list[str]): The target ops that need to be obfuscated in the network. The first string
+            represents the network path of the target ops in the original network, which should be in form of
+            ``"A/B/C"``. The second string represents the names of multiple target ops in the same path, which
+            should be in form of ``"D|E|F"``. For example, thr target_modules of GPT2 can be ``['backbone
+            /blocks/attention', 'dense1|dense2|dense3']``. If target_modules has the third value, it should be
+            in the format of 'obfuscate_layers:all' or 'obfuscate_layers:int', which represents the number of
+            layers need to be obfuscated of duplicate layers (such as transformer layers or resnet blocks).
+            Default: ``None``.
+        obf_ratios (Tensor): The obf ratios generated when execute :func:`mindspore.obfuscate_ckpt`. Default: ``None``.
         obf_config (dict): The configuration of model obfuscation polices. Default: ``None``.
+        data_parallel_num (int): The data parallel number of parallel training. Default: 1.
         kwargs (dict): Configuration options dictionary.
 
             - ignored_func_decorators (list[str]): The name list of function decorators in network's python code.
             - ignored_class_decorators (list[str]): The name list of class decorators in network's python code.
+
+    Returns:
+        nn.Cell, new_net, which is the obfuscated network.
 
     Raises:
         TypeError: If `network` is not nn.Cell.
@@ -432,8 +432,8 @@ def load_obf_params_into_net(network, target_modules=None, obf_ratios=None, obf_
         raise ValueError("data_parallel_num must be positive number, but got {}.".format(data_parallel_num))
 
     network_obf_config = obf_config.get('network_obf_config', [])
-    rewrite_network = _obfuscate_network(network, network_obf_config, data_parallel_num=data_parallel_num, **kwargs)
-    return rewrite_network
+    new_net = _obfuscate_network(network, network_obf_config, data_parallel_num=data_parallel_num, **kwargs)
+    return new_net
 
 
 def _check_dir_path(name, dir_path):
