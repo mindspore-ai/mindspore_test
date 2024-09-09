@@ -23,6 +23,7 @@
 #include "mindspore/ops/ops_utils/op_utils.h"
 #include "mindspore/ops/op_def/auto_generate/gen_ops_name.h"
 #include "include/backend/anf_runtime_algorithm.h"
+#include "mindspore/ops/infer/max_pool.h"
 
 namespace mindspore {
 namespace opt {
@@ -67,7 +68,9 @@ const std::unordered_map<std::string, std::pair<std::vector<CastInfo>, std::vect
   {ops::kNameDiv, {{{0, int_type_with_bool, kNumberTypeFloat32}, {1, int_type_with_bool, kNumberTypeFloat32}}, {}}},
   {ops::kNameArgMaxWithValue, {{}, {{0, {}, kNumberTypeInt32}}}},
   {ops::kNameArgMinWithValue, {{}, {{0, {}, kNumberTypeInt32}}}},
-  {ops::kNameIncreFlashAttention, {{{4, int32_type, kNumberTypeInt64}}, {}}}};
+  {ops::kNameIncreFlashAttention, {{{4, int32_type, kNumberTypeInt64}}, {}}},
+  {ops::kNameMaxPool,
+   {{{0, {kNumberTypeFloat32}, kNumberTypeFloat16}}, {{0, {kNumberTypeFloat32}, kNumberTypeFloat16}}}}};
 
 bool NeedAddCast(const BaseRef &ref) {
   if (utils::isa<AnfNodePtr>(ref)) {
