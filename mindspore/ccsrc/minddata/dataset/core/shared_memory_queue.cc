@@ -21,7 +21,6 @@
 
 #include "minddata/dataset/core/global_context.h"
 #include "minddata/dataset/core/type_id.h"
-#include "minddata/dataset/util/ftok_key.h"
 #include "minddata/dataset/util/status.h"
 #include "pybind11/pytypes.h"
 
@@ -113,6 +112,11 @@ Status SharedMemoryQueue::ReleaseCurrentShm() {
     shm_addr_ = nullptr;
   }
 
+  // update the current shm_id, because the shm_id_ may be set to -1
+  if (shm_id_ == -1) {
+    shm_id_ = shmget(key_, 0, IPC_CREAT | kShmPermission);
+  }
+
   // del the shm
   if (shm_id_ != -1) {
     if (shmctl(shm_id_, IPC_RMID, NULL) == -1 && errno != EINVAL) {
@@ -127,14 +131,9 @@ Status SharedMemoryQueue::ReleaseCurrentShm() {
 }
 
 Status SharedMemoryQueue::CreateShmBySize(const uint64_t &size) {
-  if (shm_addr_ != nullptr || shm_id_ != -1) {
-    RETURN_IF_NOT_OK(ReleaseCurrentShm());
-  }
+  RETURN_IF_NOT_OK(ReleaseCurrentShm());
 
-  // update the key_ by new shared memory
-  RETURN_IF_NOT_OK(mindspore::dataset::GetKey(&key_));
-
-  shm_id_ = shmget(key_, size, IPC_CREAT | kShmPermission);
+  shm_id_ = shmget(key_, size, IPC_CREAT | IPC_EXCL | kShmPermission);
   if (shm_id_ == -1) {
     RETURN_STATUS_UNEXPECTED("shmget key: " + std::to_string(key_) + " error. Errno: " + std::to_string(errno));
   }

@@ -76,7 +76,7 @@ class DATASET_API MessageQueue {
 
   State MessageQueueState();
 
-  Status MsgSnd(int64_t mtype, int shm_id = 0, uint64_t shm_size = 0);
+  Status MsgSnd(int64_t mtype, int shm_id = -1, uint64_t shm_size = 0);
 
   Status MsgRcv(int64_t mtype);
 

@@ -50,7 +50,7 @@ namespace mindspore {
 namespace dataset {
 #if !defined(__APPLE__) && !defined(BUILD_LITE) && !defined(_WIN32) && !defined(_WIN64) && !defined(__ANDROID__) && \
   !defined(ANDROID)
-std::atomic<uint32_t> inc_id = 0;
+std::atomic<uint32_t> inc_id(0);
 
 Status GetKey(key_t *key) {
   RETURN_UNEXPECTED_IF_NULL(key);
