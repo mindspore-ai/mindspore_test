@@ -7,6 +7,9 @@ mindspore.ops.msort
 
     ops.msort(t)相当于ops.Sort(axis=0)(t)[0]。另外可以参考 :class:`mindspore.ops.Sort()`。
 
+    .. Note::
+        当前Ascend后端只支持对一维输入进行排序。
+
     参数：
         - **input** (Tensor) - 需要排序的输入，类型必须是float16或者float32。
 

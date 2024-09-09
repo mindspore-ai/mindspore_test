@@ -7468,6 +7468,9 @@ def msort(input):
 
     ops.msort(t) is equivalent to ops.Sort(axis=0)(t)[0]. See also :class:`mindspore.ops.Sort()`.
 
+    .. Note::
+        The Ascend backend only supports sorting the 1D input.
+
     Args:
         input (Tensor): The input to sort, with float16 or float32 data type.
 
