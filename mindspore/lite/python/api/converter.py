@@ -76,7 +76,7 @@ class Converter:
 
     Convert to MindSpore model is recommended. Currently, Convert to MindSpore Lite model is supported,
     but it will be deprecated in the future. If you want to convert to MindSpore Lite model, please use
-    `converter_tool <https://www.mindspore.cn/lite/docs/en/master/use/cloud_infer/converter_tool.html>`_  instead of
+    `converter_tool <https://www.mindspore.cn/lite/docs/en/master/mindir/converter_tool.html>`_  instead of
     The Python interface. The Model api and ModelParallelRunner api only support MindSpore model.
 
     Note:
@@ -728,9 +728,9 @@ class Converter:
                 post-training, offline split op to parallel, disable op fusion ability and set plugin so path.
                 `config_file` uses the `key = value` method to define the related parameters.
                 For the configuration parameters related to post training quantization, please refer to
-                `quantization <https://www.mindspore.cn/lite/docs/en/master/use/post_training_quantization.html>`_ .
+                `quantization <https://www.mindspore.cn/lite/docs/en/master/advanced/quantization.html>`_ .
                 For the configuration parameters related to extension, please refer to
-                `extension  <https://www.mindspore.cn/lite/docs/en/master/use/converter_register.
+                `extension  <https://www.mindspore.cn/lite/docs/en/master/advanced/third_party/converter_register.
                 html#extension-configuration>`_ .
                 For example, "/home/user/model.cfg". Default: ``""``, indicating that no configuration file.
 
@@ -812,10 +812,10 @@ class Converter:
                 Default: ``""`` .
 
                 For the configuration parameters related to post training quantization, please refer to
-                `quantization <https://www.mindspore.cn/lite/docs/en/master/use/post_training_quantization.html>`_ .
+                `quantization <https://www.mindspore.cn/lite/docs/en/master/advanced/quantization.html>`_ .
 
                 For the configuration parameters related to extension, please refer to
-                `extension  <https://www.mindspore.cn/lite/docs/en/master/use/converter_register.
+                `extension  <https://www.mindspore.cn/lite/docs/en/master/advanced/third_party/converter_register.
                 html#extension-configuration>`_ .
 
                 - ``"common_quant_param"``: Common quantization parameter.
@@ -830,10 +830,10 @@ class Converter:
                 Default: ``None``, ``None`` is equivalent to {}.
 
                 For the configuration parameters related to post training quantization, please refer to
-                `quantization <https://www.mindspore.cn/lite/docs/en/master/use/post_training_quantization.html>`_ .
+                `quantization <https://www.mindspore.cn/lite/docs/en/master/advanced/quantization.html>`_ .
 
                 For the configuration parameters related to extension, please refer to
-                `extension  <https://www.mindspore.cn/lite/docs/en/master/use/converter_register.
+                `extension  <https://www.mindspore.cn/lite/docs/en/master/advanced/third_party/converter_register.
                 html#extension-configuration>`_ .
 
         Raises:

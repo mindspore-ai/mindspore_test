@@ -49,7 +49,7 @@ places
     - [MindSpore Framework](https://www.mindspore.cn/install/en) - it is recommended to install a docker image
     - MindSpore ToD Framework
         - [Downloads](https://www.mindspore.cn/lite/docs/en/master/use/downloads.html)
-        - [Build](https://www.mindspore.cn/lite/docs/en/master/use/build.html)
+        - [Build](https://www.mindspore.cn/lite/docs/en/master/build/build.html)
     - [Android NDK r20b](https://dl.google.com/android/repository/android-ndk-r20b-linux-x86_64.zip)
     - [Android SDK](https://developer.android.com/studio?hl=zh-cn#cmdline-tools)
     - [ImageMagick convert tool](https://imagemagick.org/)
