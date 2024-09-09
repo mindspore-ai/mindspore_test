@@ -10,7 +10,8 @@
     更多参考详见 :func:`mindspore.ops.uniform_candidate_sampler`。
 
     .. warning::
-        Ascend后端不支持随机数重现功能， `seed` 参数不起作用。
+        - Ascend后端不支持随机数重现功能， `seed` 参数不起作用。
+        - Atlas训练系列产品暂不支持动态shape场景。
 
     参数：
         - **num_true** (int) - 每个训练样本的目标类数。

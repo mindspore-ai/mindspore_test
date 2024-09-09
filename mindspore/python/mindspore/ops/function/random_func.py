@@ -432,8 +432,9 @@ def uniform_candidate_sampler(true_classes,
     If unique=True, candidates are drawn without replacement, else unique=False with replacement.
 
     .. warning::
-        The Ascend backend does not support the reproducibility of random numbers, so
-        the `seed` parameter has no effect.
+        - The Ascend backend does not support the reproducibility of random numbers, so
+          the `seed` parameter has no effect.
+        - Atlas training series does not support dynamic shape scenarios currently.
 
     Args:
         true_classes (Tensor): A Tensor. The target classes with a Tensor shape of :math:`(batch\_size, num\_true)` .
