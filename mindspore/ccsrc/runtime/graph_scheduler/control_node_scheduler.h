@@ -110,6 +110,14 @@ class ControlNodeScheduler {
   void OptimizeBranchIdArrow(const ActorSetPtr &actor_set, const GraphCompilerInfo &graph_compiler_info) const;
   void OptimizeDynamicRefCountForEntranceActor(const ActorSetPtr &actor_set) const;
   void OptimizeDynamicRefCountForStackActor(const ActorSetPtr &actor_set) const;
+  void OptimizeDynamicRefCountForGatherActor(const ActorSetPtr &actor_set,
+                                             const GraphCompilerInfo &graph_compiler_info) const;
+
+  void CollectIgnoreIndexForEntranceActor(std::set<int> *ignore_index, const EntranceActorPtr &entrance_actor) const;
+
+  bool CheckIsValidArgIndex(size_t index, const EntranceActorPtr &entrance_actor, const ControlActor *gather_actor,
+                            const FuncGraphPtr &func_graph, const CNodePtr &partial_cnode, size_t *to_index) const;
+
   // The id of memory manager actor.
   AID memory_manager_aid_;
 };

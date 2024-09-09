@@ -26,6 +26,7 @@
 #include <stack>
 #include <utility>
 #include <algorithm>
+#include <unordered_map>
 #include "utils/hash_map.h"
 #include "runtime/hardware/device_context.h"
 #include "include/backend/kernel_graph.h"
@@ -166,7 +167,9 @@ class ControlNodeParser {
   const std::vector<KernelWithIndex> &control_node_parameters() const { return control_node_parameters_; }
   const FrontToBackendNodeWithContext &front_to_backend_parameters() const { return front_to_backend_parameters_; }
   const NodeWithDeviceContext &front_value_nodes() const { return front_value_nodes_; }
-
+  const std::unordered_map<FuncGraphPtr, AnfNodePtr> &func_graph_to_partial_node() {
+    return func_graph_to_partial_node_;
+  }
   // Fetch all funcgraphs that the call node may call.
   const std::set<FuncGraphPtr> &FetchFuncGraphbyCallNode(const AnfNodePtr &control_node);
   // Fetch the branch id corresponding to funcgraph.
@@ -270,6 +273,7 @@ class ControlNodeParser {
   void ParseDynamicLenFormalParameter(const std::vector<AnfNodePtr> &control_nodes);
   void ParseDynamicLenFormalParameterByCallNode(const AnfNodePtr &node);
   void ParseDynamicLenFormalParameterByPartial(const AnfNodePtr &node);
+  void ParserSinglePartialFuncgraph(const std::vector<AnfNodePtr> &control_nodes);
   // In control flow, funcgraph will be cut into multiple kernel graphs for execution, and this relationship is recorded
   // in this map.
   FuncGraphToKernelGraphGroup func_graph_to_kernel_graph_groups_;
@@ -341,6 +345,8 @@ class ControlNodeParser {
   // The index of the argument that needs to be converted into a dynamic len sequence.
   ReturnDynamicLenArgIndex return_to_call_with_dynamic_sequence_index_;
   ControlNodeDynamicLenArgIndex control_node_to_funcgraph_with_dynamic_sequence_index_;
+  // The partial and funcgraph one to one.
+  std::unordered_map<FuncGraphPtr, AnfNodePtr> func_graph_to_partial_node_;
   // Is control flow enable.
   bool is_inited_;
 

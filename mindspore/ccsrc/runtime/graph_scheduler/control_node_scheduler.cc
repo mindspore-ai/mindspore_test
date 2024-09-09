@@ -943,6 +943,177 @@ void ControlNodeScheduler::OptimizeBranchIdArrow(const ActorSetPtr &actor_set,
   }
 }
 
+void ControlNodeScheduler::CollectIgnoreIndexForEntranceActor(std::set<int> *ignore_index,
+                                                              const EntranceActorPtr &entrance_actor) const {
+  MS_EXCEPTION_IF_NULL(ignore_index);
+  MS_EXCEPTION_IF_NULL(entrance_actor);
+  mindspore::HashMap<int, bool> from_index_to_ignore;
+  for (size_t i = 0; i < entrance_actor->output_data_arrows().size(); ++i) {
+    const auto &data_arrow = entrance_actor->output_data_arrows()[i];
+    int from_index = data_arrow->from_output_index_;
+    if (from_index_to_ignore.find(from_index) == from_index_to_ignore.end()) {
+      from_index_to_ignore[from_index] = entrance_actor->output_need_disable_dynamic_ref_counts_[i];
+    } else {
+      from_index_to_ignore[from_index] =
+        (from_index_to_ignore[from_index] && entrance_actor->output_need_disable_dynamic_ref_counts_[i]);
+    }
+    MS_LOG(DEBUG) << "from index:" << from_index << " bool:" << from_index_to_ignore[from_index];
+  }
+  for (const auto &pair : from_index_to_ignore) {
+    MS_LOG(DEBUG) << "Actor:" << entrance_actor->GetAID() << " from index:" << pair.first
+                  << " is ignore:" << pair.second;
+    if ((!pair.second) || pair.first < 0 || (IntToSize(pair.first) >= entrance_actor->formal_parameters_.size())) {
+      continue;
+    }
+    ignore_index->emplace(pair.first);
+    MS_LOG(INFO) << "Add ignore index:" << pair.first
+                 << " by paraemter for entrance actor:" << entrance_actor->GetAID();
+  }
+}
+
+bool ControlNodeScheduler::CheckIsValidArgIndex(size_t index, const EntranceActorPtr &entrance_actor,
+                                                const ControlActor *gather_actor, const FuncGraphPtr &func_graph,
+                                                const CNodePtr &partial_cnode, size_t *to_index) const {
+  MS_EXCEPTION_IF_NULL(entrance_actor);
+  MS_EXCEPTION_IF_NULL(gather_actor);
+  MS_EXCEPTION_IF_NULL(func_graph);
+  MS_EXCEPTION_IF_NULL(partial_cnode);
+  MS_EXCEPTION_IF_NULL(to_index);
+  if (index >= entrance_actor->formal_parameters_.size() ||
+      entrance_actor->formal_parameters_[index].first == nullptr) {
+    MS_LOG(WARNING) << "Invalid ignore index:" << index
+                    << " total parameter num:" << entrance_actor->formal_parameters_.size()
+                    << " for actor:" << entrance_actor->GetAID();
+    return false;
+  }
+  if (entrance_actor->formal_parameters_[index].first->abstract() == nullptr ||
+      entrance_actor->formal_parameters_[index].first->abstract()->isa<abstract::AbstractSequence>()) {
+    MS_LOG(INFO) << "Invalid abstract for parameter:" << entrance_actor->formal_parameters_[index].first->DebugString()
+                 << " in actor:" << entrance_actor->GetAID();
+    return false;
+  }
+  auto iter = std::find(func_graph->parameters().begin(), func_graph->parameters().end(),
+                        entrance_actor->formal_parameters_[index].first);
+  if (iter == func_graph->parameters().end()) {
+    MS_LOG(WARNING) << "Failed to get index for parameter:"
+                    << entrance_actor->formal_parameters_[index].first->DebugString()
+                    << " in actor:" << entrance_actor->GetAID();
+    return false;
+  }
+  size_t relative_index = iter - func_graph->parameters().begin();
+  if (relative_index >= partial_cnode->size() - kPartialInputStartPos) {
+    MS_LOG(WARNING) << "Relative index:" << relative_index
+                    << " is exceed the input size of partial:" << partial_cnode->DebugString();
+    return false;
+  }
+  const auto &arg_node = partial_cnode->input(relative_index + kPartialInputStartPos);
+  if (arg_node == nullptr) {
+    MS_LOG(WARNING) << "Invalid arg node of index:" << relative_index
+                    << " in partial node:" << partial_cnode->DebugString();
+    return false;
+  }
+  if (arg_node->abstract() == nullptr || arg_node->abstract()->isa<abstract::AbstractSequence>()) {
+    MS_LOG(INFO) << "Invalid abstract for arg node:" << arg_node->DebugString()
+                 << " in partial node:" << partial_cnode->DebugString();
+    return false;
+  }
+  const auto &arg_iter = std::find_if(gather_actor->formal_parameters_.begin(), gather_actor->formal_parameters_.end(),
+                                      [arg_node](const auto &pair) { return pair.first == arg_node; });
+  if (arg_iter == gather_actor->formal_parameters_.end()) {
+    MS_LOG(INFO) << "Failed to get arg node:" << arg_node->DebugString()
+                 << " in gather actor:" << gather_actor->GetAID();
+    return false;
+  }
+  *to_index = arg_iter - gather_actor->formal_parameters_.begin();
+  return true;
+}
+
+void ControlNodeScheduler::OptimizeDynamicRefCountForGatherActor(const ActorSetPtr &actor_set,
+                                                                 const GraphCompilerInfo &graph_compiler_info) const {
+  const auto &parser = graph_compiler_info.control_node_parser_;
+  MS_EXCEPTION_IF_NULL(parser);
+  for (const auto &entrance_actor : actor_set->control_actors_->entrance_actors_) {
+    MS_EXCEPTION_IF_NULL(entrance_actor);
+    std::set<int> ignore_index;
+    CollectIgnoreIndexForEntranceActor(&ignore_index, entrance_actor);
+    if (ignore_index.empty()) {
+      continue;
+    }
+
+    if (entrance_actor->formal_parameters_.empty() || entrance_actor->formal_parameters_[0].first == nullptr ||
+        entrance_actor->formal_parameters_[0].first->func_graph() == nullptr) {
+      continue;
+    }
+    const auto &func_graph = entrance_actor->formal_parameters_[0].first->func_graph();
+    const auto &iter = parser->func_graph_to_partial_node().find(func_graph);
+    if (iter == parser->func_graph_to_partial_node().end()) {
+      continue;
+    }
+    const auto &partial_node = iter->second;
+    MS_EXCEPTION_IF_NULL(partial_node);
+    const auto &partial_cnode = partial_node->cast<CNodePtr>();
+    MS_EXCEPTION_IF_NULL(partial_cnode);
+    const auto &actor = FetchActor(GetActorName(partial_node));
+    MS_EXCEPTION_IF_NULL(actor);
+    const auto &gather_actor = dynamic_cast<ControlActor *>(actor);
+    MS_EXCEPTION_IF_NULL(gather_actor);
+
+    for (size_t index : ignore_index) {
+      size_t to_index = 0;
+      if (!CheckIsValidArgIndex(index, entrance_actor, gather_actor, func_graph, partial_cnode, &to_index)) {
+        continue;
+      }
+      const auto &aid_arrow_pair_iter =
+        std::find_if(gather_actor->input_data_arrow_aids().begin(), gather_actor->input_data_arrow_aids().end(),
+                     [to_index](const auto &pair) {
+                       return pair.second != nullptr && IntToSize(pair.second->to_input_index_) == to_index;
+                     });
+      if (aid_arrow_pair_iter == gather_actor->input_data_arrow_aids().end()) {
+        MS_LOG(WARNING) << "Failed to get data arrow for input index:" << to_index
+                        << " in partial node:" << partial_cnode->DebugString()
+                        << " for actor:" << gather_actor->GetAID();
+        for (const auto &pair : gather_actor->input_data_arrow_aids()) {
+          MS_LOG(WARNING) << "from actor:" << pair.first << " to actor:" << pair.second->to_op_id_
+                          << " from index:" << pair.second->from_output_index_
+                          << " to index:" << pair.second->to_input_index_;
+        }
+        for (const auto &pair : gather_actor->formal_parameters_) {
+          MS_LOG(WARNING) << "gather actor:" << gather_actor->GetAID() << " parameter:" << pair.first->DebugString();
+        }
+        continue;
+      }
+
+      const auto &from_actor_name = aid_arrow_pair_iter->first.Name();
+      const auto &data_arrow = aid_arrow_pair_iter->second;
+      MS_LOG(DEBUG) << "from actor name:" << from_actor_name;
+      int from_index = data_arrow->from_output_index_;
+      if (from_actor_name.find("kernel_graph") == std::string::npos ||
+          from_actor_name.find(kExitActorNameSuffix) == std::string::npos) {
+        continue;
+      }
+      const auto &from_actor = FetchActor(from_actor_name);
+      if (from_actor == nullptr) {
+        MS_LOG(WARNING) << "Failed to fetch actor:" << from_actor_name;
+        continue;
+      }
+      const auto &exit_actor = dynamic_cast<ControlActor *>(from_actor);
+      MS_EXCEPTION_IF_NULL(exit_actor);
+      if (exit_actor->output_need_disable_dynamic_ref_counts_.empty()) {
+        exit_actor->output_need_disable_dynamic_ref_counts_.resize(exit_actor->output_data_arrows_.size());
+      }
+      for (size_t i = 0; i < exit_actor->output_data_arrows().size(); ++i) {
+        const auto &arrow = exit_actor->output_data_arrows()[i];
+        if (arrow.get() == data_arrow) {
+          exit_actor->output_need_disable_dynamic_ref_counts_[i] = true;
+          gather_actor->input_need_disable_dynamic_ref_counts_.emplace(data_arrow->to_input_index_);
+          MS_LOG(INFO) << "Disable dynamic ref count for exit actor:" << from_actor_name << " from index:" << from_index
+                       << " to gatheractor:" << gather_actor->GetAID() << " to index:" << data_arrow->to_input_index_;
+        }
+      }
+    }
+  }
+}
+
 void ControlNodeScheduler::OptimizeDynamicRefCountForStackActor(const ActorSetPtr &actor_set) const {
   for (const auto &stack_actor : actor_set->control_actors_->stack_actors_) {
     MS_EXCEPTION_IF_NULL(stack_actor);
@@ -1026,7 +1197,27 @@ void ControlNodeScheduler::OptimizeDynamicRefCountForEntranceActor(const ActorSe
       size_t from_index = data_arrow->from_output_index_;
       size_t to_index = data_arrow->to_input_index_;
       const auto &actor = FetchActor(to_aid.Name());
-      if (actor == nullptr || actor->type() != KernelTransformType::kKernelActor) {
+      if (actor == nullptr || (actor->type() != KernelTransformType::kKernelActor &&
+                               actor->type() != KernelTransformType::kSuperKernelActor)) {
+        continue;
+      }
+      if (actor->type() == KernelTransformType::kSuperKernelActor) {
+        const auto &super_kernel_actor = dynamic_cast<SuperKernelActor *>(actor);
+        MS_EXCEPTION_IF_NULL(super_kernel_actor);
+        if (!super_kernel_actor->enable_kbk_sub_graph_execute()) {
+          continue;
+        }
+        const auto &shape_depend = super_kernel_actor->input_param_static_use_cnt();
+        if (to_index >= shape_depend.size()) {
+          MS_LOG(WARNING) << "Invalid shape depend vector:" << shape_depend << " to index:" << to_index
+                          << " from actor:" << control_actor->GetAID() << " to actor:" << to_aid;
+          continue;
+        }
+        if (shape_depend[to_index] == 0) {
+          control_actor->output_need_disable_dynamic_ref_counts_[i] = true;
+          MS_LOG(INFO) << "Set invalid dynamic ref count for actor:" << control_actor->GetAID()
+                       << " from index:" << from_index << " to actor:" << to_aid << " to index:" << to_index;
+        }
         continue;
       }
       const auto &kernel_actor = dynamic_cast<KernelActor *>(actor);
@@ -1066,6 +1257,7 @@ void ControlNodeScheduler::Optimize(const ActorSetPtr &actor_set, const GraphCom
   if (!common::IsDisableRuntimeConfig(common::kRuntimeControlFlowOptimize)) {
     OptimizeDynamicRefCountForEntranceActor(actor_set);
     OptimizeDynamicRefCountForStackActor(actor_set);
+    OptimizeDynamicRefCountForGatherActor(actor_set, graph_compiler_info);
   }
 }
 
