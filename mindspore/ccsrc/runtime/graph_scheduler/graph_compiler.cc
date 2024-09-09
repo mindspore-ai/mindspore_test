@@ -471,7 +471,7 @@ void ResetNodeId(const std::vector<KernelGraphPtr> &graphs) {
     MS_EXCEPTION_IF_NULL(context);
     bool save_graphs = context->CanDump(kIntroductory);
     if (save_graphs) {
-      std::string file_name = "graph_build_before_reset_id_" + std::to_string(graph->graph_id()) + ".ir";
+      std::string file_name = "graph_before_reset_id_" + std::to_string(graph->graph_id()) + ".ir";
       DumpIR(file_name, graph, true, kWholeStack);
     }
 #endif
