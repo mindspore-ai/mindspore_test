@@ -2071,12 +2071,12 @@ py::list GraphExecutorPy::GetRunningPasses() { return opt::PassConfigure::Instan
 bool InitExecDataset(const std::string &queue_name, int64_t iter_num, int64_t batch_size,
                      const std::vector<TypePtr> &types, const std::vector<std::vector<int64_t>> &shapes,
                      const std::vector<int64_t> &input_indexes, const std::string &, bool need_run) {
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-  if (ms_context->UseSimulationApi()) {
+  if (UseSimulationApi()) {
     return true;
   }
 
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
   std::string name = ms_context->backend_policy();
 #ifdef WITH_BACKEND
   if (ms_context->get_param<std::string>(MS_CTX_DEVICE_TARGET) == kAscendDevice) {

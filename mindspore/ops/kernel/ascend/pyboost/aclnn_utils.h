@@ -90,7 +90,7 @@ using CacheTuple = std::tuple<uint64_t, mindspore::transform::aclOpExecutor *, P
 
 #define LAUNCH_ACLNN(aclnn_api, device_context, stream_id, ...)                                                     \
   do {                                                                                                              \
-    static auto simu = MsContext::GetInstance()->UseSimulationApi();                                                \
+    static auto simu = !common::GetEnv(kSimulationLevel).empty();                                                   \
     if (simu) {                                                                                                     \
       break;                                                                                                        \
     }                                                                                                               \

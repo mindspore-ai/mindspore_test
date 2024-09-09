@@ -50,9 +50,7 @@ bool AscendDynamicMemAdapter::Initialize() {
     return true;
   }
   (void)AscendMemAdapter::Initialize();
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
-  if (context_ptr->UseSimulationApi()) {
+  if (UseSimulationApi()) {
     return true;
   }
   initialized_ = true;

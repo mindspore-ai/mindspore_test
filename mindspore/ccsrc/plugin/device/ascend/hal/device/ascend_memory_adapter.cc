@@ -96,13 +96,13 @@ bool AscendMemAdapter::Initialize() {
     return true;
   }
 
-  auto context_ptr = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(context_ptr);
-  if (context_ptr->UseSimulationApi()) {
+  if (UseSimulationApi()) {
     SimulationInitialize();
     return true;
   }
 
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
   auto ret = CALL_ASCEND_API(aclrtGetMemInfo, ACL_HBM_MEM, &device_hbm_free_size_, &device_hbm_total_size_);
   if (ret != ACL_ERROR_NONE || device_hbm_total_size_ == 0) {
     MS_LOG(EXCEPTION) << "Internal Error: Get Device HBM memory size failed, ret = " << ret

@@ -229,14 +229,13 @@ void GeDeviceContext::Initialize() {
   }
 
   MS_LOG(DEBUG) << "Start initialize...";
-
-  auto ms_context = MsContext::GetInstance();
-  MS_EXCEPTION_IF_NULL(ms_context);
-
-  if (ms_context->UseSimulationApi()) {
+  if (UseSimulationApi()) {
     transform::LoadSimulationApiSymbols();
   }
+
   // set overflow mode
+  auto ms_context = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(ms_context);
   const auto &soc_version = ms_context->ascend_soc_version();
   if (soc_version == "ascend910b" || soc_version == "ascend910c") {
     bool is_sat = (common::GetEnv("MS_ASCEND_CHECK_OVERFLOW_MODE") == "SATURATION_MODE");
@@ -255,7 +254,7 @@ void GeDeviceContext::Initialize() {
 
   // set MS_CTX_ENABLE_GE_HETEROGENOUS true according to  heterogeneous mode
   ms_context->set_param<bool>(MS_CTX_ENABLE_GE_HETEROGENOUS, false);
-  if (!ms_context->UseSimulationApi()) {
+  if (!UseSimulationApi()) {
     InitGe(ms_context);
   }
 
