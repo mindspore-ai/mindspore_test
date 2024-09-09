@@ -42,10 +42,10 @@ class OffloadingPackedExpertInfo {
   std::vector<int64_t> GetBackReorderExpertsIdx() { return back_reorder_experts_idx_; }
 
   void DisplayInfo() {
-    MS_LOG(WARNING) << "expert_num_ " << GetExpertNum();
-    MS_LOG(WARNING) << "pe_num_ " << GetPackedExpertNum();
-    MS_LOG(WARNING) << "front_reorder_experts_idx_ " << GetFrontReorderExpertsIdx();
-    MS_LOG(WARNING) << "back_reorder_experts_idx_ " << GetBackReorderExpertsIdx();
+    MS_LOG(INFO) << "expert_num_ " << GetExpertNum();
+    MS_LOG(INFO) << "pe_num_ " << GetPackedExpertNum();
+    MS_LOG(INFO) << "front_reorder_experts_idx_ " << GetFrontReorderExpertsIdx();
+    MS_LOG(INFO) << "back_reorder_experts_idx_ " << GetBackReorderExpertsIdx();
   }
 
   void SetExpertNumAndPeNum(int64_t expert_num, int64_t pe_num) {
