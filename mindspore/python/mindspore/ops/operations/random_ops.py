@@ -1049,8 +1049,9 @@ class UniformCandidateSampler(Primitive):
     Refer to :func:`mindspore.ops.uniform_candidate_sampler` for more details.
 
     .. warning::
-        The Ascend backend does not support the reproducibility of random numbers, so
-        the `seed` parameter has no effect.
+        - The Ascend backend does not support the reproducibility of random numbers, so
+          the `seed` parameter has no effect.
+        - Atlas training series does not support dynamic shape scenarios currently.
 
     Args:
         num_true (int): The number of target classes in each training example.

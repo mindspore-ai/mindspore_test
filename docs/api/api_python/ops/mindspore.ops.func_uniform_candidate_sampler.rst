@@ -8,7 +8,8 @@
     此函数使用均匀分布从[0, range_max-1]中采样一组类（sampled_candidates）。如果 `unique` 为True，则候选采样没有重复；如果 `unique` 为False，则有重复。
 
     .. warning::
-        Ascend后端不支持随机数重现功能， `seed` 参数不起作用。
+        - Ascend后端不支持随机数重现功能， `seed` 参数不起作用。
+        - Atlas训练系列产品暂不支持动态shape场景。
 
     参数：
         - **true_classes** (Tensor) - 输入Tensor，目标类，其shape为 :math:`(batch\_size, num\_true)` 。
