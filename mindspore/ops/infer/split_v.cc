@@ -117,8 +117,8 @@ TuplePtr SplitVInferType(const PrimitivePtr &prim, const std::vector<AbstractBas
   auto num_split = LongToInt(GetValue<int64_t>(prim->GetAttr("num_split")));
   auto infer_type = input_args[0]->GetType();
   MS_EXCEPTION_IF_NULL(infer_type);
-  const std::set<TypePtr> valid_types = {kInt8,   kInt16,  kInt32,  kInt64,   kUInt8,
-                                         kUInt16, kUInt32, kUInt64, kFloat16, kFloat32};
+  const std::set<TypePtr> valid_types = {kInt8,   kInt16,  kInt32,   kInt64,    kUInt8,  kUInt16,
+                                         kUInt32, kUInt64, kFloat16, kBFloat16, kFloat32};
   auto type = CheckAndConvertUtils::CheckTensorTypeValid("input_x", infer_type, valid_types, prim->name());
   std::vector<TypePtr> type_tuple;
   for (int32_t i = 0; i < num_split; i++) {
