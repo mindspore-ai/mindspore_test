@@ -356,8 +356,8 @@ def _check_pynative_timeline_host_data(profiler_path, rank_id):
     with open(timeline_display_file, 'r') as fr:
         data = json.load(fr)
     async_ms_dict, async_npu_dict, host_to_device_dict = defaultdict(int), defaultdict(int), defaultdict(int)
-    RunOp_set, FrontendTask_set, DeviceTask_set, LaunchTask_set, KernelLaunch_set \
-        = set(), set(), set(), set(), set()
+    RunOp_set, FrontendTask_set, DeviceTask_set, LaunchTask_set, KernelLaunch_set, python_stack_set \
+        = set(), set(), set(), set(), set(), set()
 
     for d in data:
         ph = d.get('ph')
@@ -372,7 +372,6 @@ def _check_pynative_timeline_host_data(profiler_path, rank_id):
                 host_to_device_dict[d.get('id')] += 1
         elif ph == 'X':
             if 'RunOp' in name:
-                assert d.get('args', {}).get('Call stack')
                 RunOp_set.add(name)
             elif 'FrontendTask' in name:
                 FrontendTask_set.add(name)
@@ -382,12 +381,15 @@ def _check_pynative_timeline_host_data(profiler_path, rank_id):
                 LaunchTask_set.add(name)
             elif 'KernelLaunch' in name:
                 KernelLaunch_set.add(name)
+            elif 'nn.Cell.LeNet5.__call__' in name:
+                python_stack_set.add(name)
 
     assert RunOp_set
     assert FrontendTask_set
     assert DeviceTask_set
     assert LaunchTask_set
     assert KernelLaunch_set
+    assert python_stack_set
     for v in async_ms_dict.values():
         assert v == 2
     for v in async_npu_dict.values():
