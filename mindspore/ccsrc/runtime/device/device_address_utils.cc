@@ -1306,6 +1306,7 @@ device::DeviceAddressPtr DeviceAddressUtils::CreateWorkspaceAddressWithoutKernel
     nullptr, workspace_size, ShapeVector(), Format::DEFAULT_FORMAT, kTypeUnknown,
     device_context->device_context_key().device_name_, device_context->device_context_key().device_id_, stream_id);
   MS_EXCEPTION_IF_NULL(device_address);
+  device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddTask, "PyNative", "WorkspaceAddress", "");
   device::tracker::CALL_MEMORY_TRACKER_WITH_FILE(AddMemInfo, "PyNative", device::tracker::MemType::kWorkSpace,
                                                  device_address->GetSize(), device_address.get());
   if (device_address->GetPtr() == nullptr &&
