@@ -305,6 +305,12 @@ const VectorRef AllGatherMatmulFusion::DefineFusionPattern() const {
 CNodePtr AllGatherMatmulFusion::CreateFusionCNode(const FuncGraphPtr &func_graph, const AnfNodePtr &node,
                                                   const EquivPtr &equiv) const {
   MS_LOG(DEBUG) << "Create AllGatherMatmul CNode";
+  auto context_ptr = MsContext::GetInstance();
+  MS_EXCEPTION_IF_NULL(context_ptr);
+  if (context_ptr->ascend_soc_version() == "ascend310p") {
+    // MC2 on 310p is demo feature, AllGatherMatmul is not support, other is ok.
+    return nullptr;
+  }
   auto matmul_cnode = node->cast<CNodePtr>();
   MS_CHECK_TRUE_RET(matmul_cnode != nullptr, {});
 
