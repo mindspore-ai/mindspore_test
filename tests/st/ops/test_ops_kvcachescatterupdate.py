@@ -109,8 +109,8 @@ def test_ops_dynamic():
     var_shape = [1, 5, 128, 4096]
     indices_shape = [1]
     updates_shape = [1, 5, 128, 1]
-    var_1 = Tensor(np.random.uniform(low=1, high=10, size=var_shape).astype(np.float32))
-    var_2 = Tensor(np.random.uniform(low=1, high=10, size=var_shape).astype(np.float32))
+    var_1 = Parameter(Tensor(np.random.uniform(low=1, high=10, size=var_shape).astype(np.float32)), "var")
+    var_2 = Parameter(Tensor(np.random.uniform(low=1, high=10, size=var_shape).astype(np.float32)), "var")
     indices_1 = Tensor(np.random.randint(low=1, high=10, size=indices_shape).astype(np.int64))
     indices_2 = Tensor(np.random.randint(low=1, high=10, size=indices_shape).astype(np.int64))
     updates_1 = Tensor(np.random.uniform(low=1, high=10, size=updates_shape).astype(np.float32))

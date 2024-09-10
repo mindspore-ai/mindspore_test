@@ -46,11 +46,12 @@ class KVCacheScatterUpdateInfo : public OperatorInfo {
   Status InferTensorMap() override;
   Status InferDevMatrixShape() override;
   Status SetDims(const StrategyPtr &strategy);
+  Status CheckStrategy2Dims(const Dimensions &strategy_cache, const Dimensions &strategy_update);
   Status CheckStrategy3Dims(const Dimensions &strategy_cache, const Dimensions &strategy_update);
   Status CheckStrategy4Dims(const Dimensions &strategy_cache, const Dimensions &strategy_update);
 
  private:
-  bool is_input_dims_4_ = true;
+  int strategy_dims_ = 4;
 };
 using KVCacheScatterUpdateInfoInfoPtr = std::shared_ptr<KVCacheScatterUpdateInfo>;
 

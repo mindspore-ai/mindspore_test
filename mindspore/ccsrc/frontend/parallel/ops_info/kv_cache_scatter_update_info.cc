@@ -30,6 +30,17 @@
 
 namespace mindspore {
 namespace parallel {
+
+Status KVCacheScatterUpdateInfo::CheckStrategy2Dims(const Dimensions &strategy_var, const Dimensions &strategy_update) {
+  if (strategy_var.at(1) != 1 || strategy_update.at(1) != 1) {
+    MS_LOG(ERROR) << name_ << ": Invalid strategy: The seq_len can't be shard, but got"
+                  << " strategy_var's seq_len strategy: " << strategy_var.at(1)
+                  << "; strategy_update's seq_len strategy: " << strategy_update.at(1);
+    return FAILED;
+  }
+  return SUCCESS;
+}
+
 Status KVCacheScatterUpdateInfo::CheckStrategy3Dims(const Dimensions &strategy_var, const Dimensions &strategy_update) {
   if (strategy_var.at(1) != 1 || strategy_update.at(1) != 1) {
     MS_LOG(ERROR) << name_ << ": Invalid strategy: The seq_len can't be shard, but got"
@@ -76,10 +87,13 @@ Status KVCacheScatterUpdateInfo::SetDims(const StrategyPtr &strategy) {
 
   const size_t input_dims4 = 4;
   const size_t input_dims3 = 3;
+  const size_t input_dims2 = 2;
   if (strategy_var.size() == input_dims4) {
-    is_input_dims_4_ = true;
+    strategy_dims_ = 4;
   } else if (strategy_var.size() == input_dims3) {
-    is_input_dims_4_ = false;
+    strategy_dims_ = 3;
+  } else if (strategy_var.size() == input_dims2) {
+    strategy_dims_ = 2;
   } else {
     return FAILED;
   }
@@ -96,9 +110,9 @@ Status KVCacheScatterUpdateInfo::CheckStrategy(const StrategyPtr &strategy) {
   }
 
   auto input_strategys = strategy->GetInputDim();
-  auto strategy_var = input_strategys.at(0);      // (1, 8, 1, 1) or (1, 1, 8)
+  auto strategy_var = input_strategys.at(0);      // (1, 8, 1, 1) or (1, 1, 8) or (1, 8)
   auto strategy_indices = input_strategys.at(1);  // (1)
-  auto strategy_update = input_strategys.at(2);   // (1, 8, 1, 1) or (1, 1, 8)
+  auto strategy_update = input_strategys.at(2);   // (1, 8, 1, 1) or (1, 1, 8) or (1, 8)
 
   if (strategy_indices.at(0) != 1) {
     MS_LOG(ERROR) << name_ << ": Invalid strategy: The indices can't be shard, but got"
@@ -114,10 +128,12 @@ Status KVCacheScatterUpdateInfo::CheckStrategy(const StrategyPtr &strategy) {
     return FAILED;
   }
 
-  if (is_input_dims_4_) {
+  if (strategy_dims_ == 4) {
     return CheckStrategy4Dims(strategy_var, strategy_update);
+  } else if (strategy_dims_ == 3) {
+    return CheckStrategy3Dims(strategy_var, strategy_update);
   }
-  return CheckStrategy3Dims(strategy_var, strategy_update);
+  return CheckStrategy2Dims(strategy_var, strategy_update);
 }
 
 Status KVCacheScatterUpdateInfo::InferDevMatrixShape() {
@@ -133,27 +149,37 @@ Status KVCacheScatterUpdateInfo::InferDevMatrixShape() {
 }
 
 Status KVCacheScatterUpdateInfo::InferTensorMap() {
-  if (is_input_dims_4_) {
+  if (strategy_dims_ == 4) {
     Shape var_tensor_map{3, 2, 1, 0};
     Shape indices_tensor_map{-1};
     Shape update_tensor_map{3, 2, 1, 0};
     inputs_tensor_map_.emplace_back(var_tensor_map);
     inputs_tensor_map_.emplace_back(indices_tensor_map);
     inputs_tensor_map_.emplace_back(update_tensor_map);
-  } else {
+  } else if (strategy_dims_ == 3) {
     Shape cache_tensor_map{2, 1, 0};
     Shape indices_tensor_map{-1};
     Shape update_tensor_map{2, 1, 0};
     inputs_tensor_map_.emplace_back(cache_tensor_map);
     inputs_tensor_map_.emplace_back(indices_tensor_map);
     inputs_tensor_map_.emplace_back(update_tensor_map);
+  } else {
+    Shape cache_tensor_map{1, 0};
+    Shape indices_tensor_map{-1};
+    Shape update_tensor_map{1, 0};
+    inputs_tensor_map_.emplace_back(cache_tensor_map);
+    inputs_tensor_map_.emplace_back(indices_tensor_map);
+    inputs_tensor_map_.emplace_back(update_tensor_map);
   }
 
-  if (is_input_dims_4_) {
+  if (strategy_dims_ == 4) {
     Shape out_tensor_map{3, 2, 1, 0};
     outputs_tensor_map_.emplace_back(out_tensor_map);
-  } else {
+  } else if (strategy_dims_ == 3) {
     Shape out_tensor_map{2, 1, 0};
+    outputs_tensor_map_.emplace_back(out_tensor_map);
+  } else {
+    Shape out_tensor_map{1, 0};
     outputs_tensor_map_.emplace_back(out_tensor_map);
   }
   return SUCCESS;
