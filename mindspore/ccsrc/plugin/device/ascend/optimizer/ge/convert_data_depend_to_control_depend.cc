@@ -18,9 +18,12 @@
 #include <vector>
 #include <memory>
 #include "mindspore/ops/op_def/framework_ops.h"
+#include "mindspore/ops/op_def/nn_ops.h"
 #include "include/backend/anf_runtime_algorithm.h"
 #include "include/common/utils/anfalgo.h"
 #include "include/transform/graph_ir/utils.h"
+#include "mindspore/ccsrc/transform/graph_ir/op_adapter_map.h"
+#include "mindspore/ccsrc/transform/graph_ir/op_adapter_desc.h"
 
 namespace mindspore {
 namespace opt {
@@ -32,13 +35,29 @@ const AnfNodePtr ConvertDataDependToControlDepend::Process(const FuncGraphPtr &f
                                                            const EquivPtr &) const {
   MS_EXCEPTION_IF_NULL(func_graph);
   MS_EXCEPTION_IF_NULL(node);
+  const PrimitiveSet no_convert_set = {prim::kPrimInitDataSetQueue,
+                                       prim::kPrimCustom,
+                                       prim::kPrimInitPartitionMap,
+                                       prim::kPrimInitEmbeddingHashmap,
+                                       prim::kPrimEmbeddingTableImport,
+                                       prim::kPrimEmbeddingComputeVarExport,
+                                       prim::kPrimEmbeddingComputeVarImport,
+                                       prim::kPrimEmbeddingTableExport,
+                                       prim::kPrimEmbeddingTableEvict,
+                                       prim::kPrimEmbeddingFeatureMappingExport,
+                                       prim::kPrimEmbeddingFeatureMappingInsert};
   auto cnode = node->cast<CNodePtr>();
-  MS_EXCEPTION_IF_NULL(cnode);
-  if (common::AnfAlgo::HasNodeAttr(kDataToControl, cnode) || !AnfUtils::IsRealKernel(node) ||
-      IsPrimitiveCNode(node, prim::kPrimInitDataSetQueue)) {
+  if (cnode == nullptr || common::AnfAlgo::HasNodeAttr(kDataToControl, cnode) || !AnfUtils::IsRealKernel(node) ||
+      IsOneOfPrimitiveCNode(node, no_convert_set)) {
     return nullptr;
   }
-  auto adapter = transform::FindAdapter(node, True);
+
+  auto it = transform::OpAdapterMap::get().find(transform::GetCNodeTargetFuncName(cnode));
+  if (it == transform::OpAdapterMap::get().end()) {
+    return nullptr;
+  }
+
+  auto adapter = it->second->Get(True);
   if (adapter == nullptr || !adapter->getOutputMap().empty() || !adapter->getDynOutputMap().empty()) {
     return nullptr;
   }
