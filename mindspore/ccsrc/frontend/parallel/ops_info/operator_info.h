@@ -65,7 +65,7 @@ enum InferStrategyMode {
 
 class TensorLayoutBase {
  public:
-  explicit TensorLayoutBase(bool is_list) { is_list_ = is_list; }
+  explicit TensorLayoutBase(bool is_list) : is_list_(is_list) {}
   virtual ~TensorLayoutBase() = default;
   bool is_list() const { return is_list_; }
   bool no_shape_layout() const { return no_shape_layout_; }
