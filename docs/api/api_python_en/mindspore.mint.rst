@@ -427,6 +427,7 @@ mindspore.mint.optim
     :nosignatures:
     :template: classtemplate.rst
 
+    mindspore.mint.optim.Adam
     mindspore.mint.optim.AdamW
 
 mindspore.mint.linalg

@@ -20,5 +20,6 @@ The optimizer is used to calculate and update the gradients.
 """
 from __future__ import absolute_import
 from mindspore.mint.optim.adamw import AdamW
+from mindspore.mint.optim.adam import Adam
 
-__all__ = ['AdamW']
+__all__ = ['AdamW', 'Adam']
