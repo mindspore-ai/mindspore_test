@@ -85,9 +85,9 @@ int HcomReceiveKernel::ReceiveShapeForDynamic() {
         inter_process_edge_name + "_" + GetValue<std::string>(primitive_->GetAttr("RING_ATTENTION_INDEX"));
     }
 
-    MS_LOG(ERROR) << "Start server for recv actor. Server address: " << server_url
-                  << ", remote function id: " << kRemoteFuncId
-                  << ", inter-process edge name: " << inter_process_edge_name;
+    MS_LOG(INFO) << "Start server for recv actor. Server address: " << server_url
+                 << ", remote function id: " << kRemoteFuncId
+                 << ", inter-process edge name: " << inter_process_edge_name;
     distributed::cluster::topology::ActorAddress recv_actor_addresss;
     recv_actor_addresss.set_actor_id(inter_process_edge_name);
     recv_actor_addresss.set_ip(ip);
