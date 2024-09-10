@@ -292,8 +292,23 @@ void InferParameterAbstractForModelGraph(const KernelGraphPtr &graph, const std:
       py::gil_scoped_acquire gil_acquire;
       abstract = pyexecute::GenerateAbstractFromPyObject(obj);
     } else {
-      abstract =
-        abstract::MakeAbstract(device_tensor->kernel_tensor()->GetShape(), device_tensor->kernel_tensor()->GetType());
+      TypePtr type = device_tensor->kernel_tensor()->GetType();
+      BaseShapePtr shape = device_tensor->kernel_tensor()->GetShape();
+      MS_EXCEPTION_IF_NULL(type);
+      MS_EXCEPTION_IF_NULL(shape);
+      if (type->isa<Tuple>() && shape->isa<abstract::TupleShape>()) {
+        const auto &tuple_type = type->cast<TuplePtr>();
+        const auto &tuple_shape = shape->cast<abstract::TupleShapePtr>();
+        MS_EXCEPTION_IF_NULL(tuple_shape);
+        MS_EXCEPTION_IF_NULL(tuple_type);
+        if (tuple_type->dynamic_len() && tuple_type->dynamic_element_type() != nullptr && tuple_shape->size() > 0) {
+          TypePtrList typle_list(tuple_shape->size(), tuple_type->dynamic_element_type());
+          type = std::make_shared<Tuple>(typle_list);
+          MS_LOG(DEBUG) << "Replace type from:" << device_tensor->kernel_tensor()->GetType()
+                        << " to:" << type->ToString();
+        }
+      }
+      abstract = abstract::MakeAbstract(shape, type);
     }
     MS_EXCEPTION_IF_NULL(abstract);
     MS_LOG(DEBUG) << "Infer parameter by abstract:" << abstract->ToString();
