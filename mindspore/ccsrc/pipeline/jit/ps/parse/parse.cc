@@ -4898,11 +4898,11 @@ bool ParseFunctionAst::InitParseAstInfo(const std::string &python_mod_get_parse_
     // Check the fn is method
     auto obj_type = data_converter::GetObjType(function_);
     if (obj_type != RESOLVE_TYPE_METHOD) {
-      MS_LOG(WARNING) << "Parse method function is invalid.";
+      MS_LOG(ERROR) << "Parse method function is invalid.";
       return false;
     }
   } else {
-    MS_LOG(WARNING) << "Parse obj is invalid, only can parse function and obj, type: " << type;
+    MS_LOG(ERROR) << "Parse obj is invalid, only can parse function and obj, type: " << type;
     return false;
   }
 

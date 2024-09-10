@@ -84,7 +84,10 @@ FuncGraphPtr GetBprop(const PrimitivePtr &prim, const pipeline::ResourceBasePtr 
     MS_LOG(DEBUG) << "Fail to find bprop function for " << prim_name << ". fn: " << py::str(fn);
     return nullptr;
   }
-  func_graph = parse::ParsePythonCode(fn);
+  {
+    MS_LOG_TRY_CATCH_SCOPE;
+    func_graph = parse::ParsePythonCode(fn);
+  }
   if (func_graph == nullptr) {
     MS_LOG(ERROR) << "Fail to parse bprop function for " << prim_name << ".";
     return nullptr;
