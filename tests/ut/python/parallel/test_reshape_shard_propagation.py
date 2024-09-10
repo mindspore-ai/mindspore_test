@@ -25,7 +25,7 @@ from mindspore.ops import composite as C
 from mindspore.ops import operations as P
 from mindspore.ops import functional as F
 from tests.ut.python.ops.test_math_ops import VirtualLoss
-
+import re
 
 def setup_function():
     context.set_auto_parallel_context(dataset_strategy="full_batch")
@@ -308,7 +308,7 @@ def test_reshape_depend_reshape():
     """
     Feature: Sharding propagation for Reshape.
     Description: Mul->ReLU->Reshape->Reshape->Add
-    Expectation: compile with error.
+    Expectation: compile done without error.
     """
     device_num = 8
 
@@ -329,7 +329,7 @@ def test_reshape_depend_reshape():
             out2 = self.reshape1(y, (96, 32, 4))
             out3 = self.depend(out2, out1)
             out3 = self.reshape2(out3, (128, 96))
-            out = out1 + out3
+            out = self.add(out1, out3)
             return out
 
     class NetWithLoss1(nn.Cell):
@@ -345,9 +345,160 @@ def test_reshape_depend_reshape():
     x = Tensor(np.ones([128, 96]), dtype=ms.float32)
     y = Tensor(np.ones([256, 48]), dtype=ms.float32)
     net = GradWrapTwoInput(NetWithLoss1(Net()))
-    with pytest.raises(RuntimeError):
-        compile_graph_two_input(net, device_num, x, y)
+    context.set_auto_parallel_context(device_num=device_num, global_rank=0, parallel_mode="auto_parallel",
+                                      search_mode="sharding_propagation")
+    net.set_train()
+    _cell_graph_executor.compile(net, x, y, phase='train')
+    strategies = _cell_graph_executor._get_shard_strategy(net)
+    context._reset_auto_parallel_context()
+    for (k, v) in strategies.items():
+        if re.search('ReLU', k) is not None:
+            assert v == [[1, 1]]  # strategy from virtualdataset
 
+def test_reshape_depend_reshape1():
+    """
+    Feature: Sharding propagation for Reshape.
+    Description: Add->ReLU->Reshape->Reshape->Add
+    Expectation: relu gets strategy from add1.
+    """
+    device_num = 8
+
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.reshape1 = P.Reshape()
+            self.reshape2 = P.Reshape()
+            self.relu = P.ReLU()
+            self.depend = P.Depend()
+            self.mul = P.Mul().shard(((2, 4), (2, 4)))
+            self.mul_weight = Parameter(Tensor(np.ones([128, 96]), dtype=ms.float32), name="weight")
+            self.add1 = P.Add().shard(((2, 4), (2, 4)))
+            self.add2 = P.Add().shard(((4, 2), (4, 2)))
+
+        def construct(self, x, y):
+            out1 = self.mul(x, self.mul_weight)
+            y = self.add1(y, y)
+            y = self.relu(y)
+            out2 = self.reshape1(y, (96, 32, 4))
+            out3 = self.depend(out2, out1)
+            out3 = self.reshape2(out3, (128, 96))
+            out = self.add2(out1, out3)
+            return out
+
+    class NetWithLoss1(nn.Cell):
+        def __init__(self, network):
+            super(NetWithLoss1, self).__init__()
+            self.mean = P.ReduceMean(keep_dims=False)
+            self.network = network
+
+        def construct(self, x, y):
+            predict = self.network(x, y)
+            return self.mean(predict, ())
+
+    x = Tensor(np.ones([128, 96]), dtype=ms.float32)
+    y = Tensor(np.ones([256, 48]), dtype=ms.float32)
+    net = GradWrapTwoInput(NetWithLoss1(Net()))
+    context.set_auto_parallel_context(device_num=device_num, global_rank=0, parallel_mode="auto_parallel",
+                                      search_mode="sharding_propagation")
+    net.set_train()
+    _cell_graph_executor.compile(net, x, y, phase='train')
+    strategies = _cell_graph_executor._get_shard_strategy(net)
+    context._reset_auto_parallel_context()
+    for (k, v) in strategies.items():
+        if re.search('ReLU', k) is not None:
+            assert v == [[2, 4]]  # strategy from add1
+
+def test_reshape_depend_reshape2():
+    """
+    Feature: Sharding propagation for Reshape.
+    Description: Mul->Reshape->Reshape->ReLU
+    Expectation: No strategy for relu.
+    """
+    device_num = 8
+
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.reshape1 = P.Reshape()
+            self.reshape2 = P.Reshape()
+            self.relu = P.ReLU()
+            self.depend = P.Depend()
+            self.mul = P.Mul().shard(((2, 4), (2, 4)))
+            self.mul_weight = Parameter(Tensor(np.ones([128, 96]), dtype=ms.float32), name="weight")
+
+        def construct(self, x, y):
+            out1 = self.mul(x, self.mul_weight)
+            out2 = self.reshape1(y, (96, 32, 4))
+            out3 = self.depend(out2, out1)
+            out3 = self.reshape2(out3, (128, 96))
+            out = self.relu(out3)
+            return out
+
+    x = Tensor(np.ones([128, 96]), dtype=ms.float32)
+    y = Tensor(np.ones([256, 48]), dtype=ms.float32)
+    net = GradWrapTwoInput(Net())
+    context.set_auto_parallel_context(device_num=device_num, global_rank=0, parallel_mode="auto_parallel",
+                                      search_mode="sharding_propagation")
+    net.set_train()
+    _cell_graph_executor.compile(net, x, y, phase='train')
+    strategies = _cell_graph_executor._get_shard_strategy(net)
+    context._reset_auto_parallel_context()
+    for (k, v) in strategies.items():
+        if re.search('ReLU', k) is not None:
+            assert v == [[1, 1]]  # can't propagate, set default strategy
+
+def test_reshape_depend_reshape3():
+    """
+    Feature: Sharding propagation for Reshape.
+    Description: Mul->Reshape->Reshape->ReLU->Add
+    Expectation: No strategy for mul, relu gets strategu from add.
+    """
+    device_num = 8
+
+    class Net(nn.Cell):
+        def __init__(self):
+            super().__init__()
+            self.reshape1 = P.Reshape()
+            self.reshape2 = P.Reshape()
+            self.relu = P.ReLU()
+            self.depend = P.Depend()
+            self.mul = P.Mul()
+            self.mul_weight = Parameter(Tensor(np.ones([128, 96]), dtype=ms.float32), name="weight")
+            self.add = P.Add().shard(((4, 2), (4, 2)))
+
+        def construct(self, x, y):
+            out1 = self.mul(x, self.mul_weight)
+            out2 = self.reshape1(y, (96, 32, 4))
+            out3 = self.depend(out2, out1)
+            out3 = self.reshape2(out3, (128, 96))
+            out3 = self.relu(out3)
+            out = self.add(out3, out3)
+            return out
+
+    class NetWithLoss1(nn.Cell):
+        def __init__(self, network):
+            super(NetWithLoss1, self).__init__()
+            self.mean = P.ReduceMean(keep_dims=False)
+            self.network = network
+
+        def construct(self, x, y):
+            predict = self.network(x, y)
+            return self.mean(predict, ())
+
+    x = Tensor(np.ones([128, 96]), dtype=ms.float32)
+    y = Tensor(np.ones([256, 48]), dtype=ms.float32)
+    net = GradWrapTwoInput(NetWithLoss1(Net()))
+    context.set_auto_parallel_context(device_num=device_num, global_rank=0, parallel_mode="auto_parallel",
+                                      search_mode="sharding_propagation")
+    net.set_train()
+    _cell_graph_executor.compile(net, x, y, phase='train')
+    strategies = _cell_graph_executor._get_shard_strategy(net)
+    context._reset_auto_parallel_context()
+    for (k, v) in strategies.items():
+        if re.search('ReLU', k) is not None:
+            assert v == [[4, 2]]  # strategy from add
+        if re.search('Mul', k) is not None:
+            assert v == [[1, 1], [1, 1]]  # No strategy for mul, set default
 
 def test_reshape_auto_8():
     """
