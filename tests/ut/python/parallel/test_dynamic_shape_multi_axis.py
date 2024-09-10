@@ -20,6 +20,7 @@ from mindspore import Symbol
 from mindspore.ops import operations as P
 from mindspore.nn.wrap.cell_wrapper import _VirtualDatasetCell
 from mindspore import context, Tensor, Parameter
+from mindspore.parallel.shard import Layout
 from mindspore.context import ParallelMode
 from parallel.utils.utils import compile_net, ParallelValidator
 
@@ -640,3 +641,79 @@ def test_parallel_dynamic_shape_with_prime_dim_in_input_in_videochat():
     assert validator.check_node_inputs('Reshape-0', ['ReLU-0', (20, -1, 12, 64)])
     assert validator.check_node_inputs('AllGather-0', ['Reshape-0'])
     assert validator.check_node_inputs('ReLU-1', ['AllGather-0'])
+
+
+def test_parallel_dynamic_shape_with_rmsnorm_001():
+    """
+    Feature: Test tensor redistribution in dynamic shape.
+    Description: Test with from [-1, 16, -1]/[2,4,1] -> [-1, 16, 1, -1]/[8,1,1,1].
+    Expectation: Compile success and assertion passed.
+    """
+
+    class RmsNormNet(nn.Cell):
+        def __init__(self):
+            super(RmsNormNet, self).__init__()
+            mul_np = np.full((128, 96), 0.5, dtype=np.float32)
+            self.mul_weight = Parameter(Tensor(mul_np), name="mul_weight")
+            rms_np = np.full((96,), 0.5, dtype=np.float32)
+            self.rms_weight = Parameter(Tensor(rms_np), name="rms_weight")
+            self.mul = P.Mul()
+            self.rmsnorm = P.RmsNorm(epsilon=1e-6)
+            self.rmsnorm.shard(((4, 1), (1,)))
+
+        def construct(self, inputs):
+            x, _ = self.rmsnorm(inputs, self.rms_weight)
+            x = self.mul(x, self.mul_weight)
+            return x
+
+    context.set_context(save_graphs=True, save_graphs_path="test_parallel_dynamic_shape_with_rmsnorm_001")
+    context.set_auto_parallel_context(parallel_mode=ParallelMode.SEMI_AUTO_PARALLEL,
+                                      global_rank=0, device_num=8)
+    net = RmsNormNet()
+    model = _VirtualDatasetCell(net)
+    model._virtual_dataset.add_prim_attr("repeat_dim_direct", "right")
+    input_x = Tensor(shape=[None, None], dtype=mstype.float32)
+    model.set_inputs(input_x)
+    phase = compile_net(model, input_x)
+    validator = ParallelValidator(model, phase)
+    assert validator.check_node_inputs('TupleGetItem-3', ['RmsNorm-0', 0])
+    assert validator.check_node_inputs('Shape-1', ['TupleGetItem-3'])
+
+
+def test_parallel_dynamic_shape_with_split():
+    """
+    Feature: Test tensor redistribution in dynamic shape.
+    Description: Test with from [-1, 16, -1]/[2,4,1] -> [-1, 16, 1, -1]/[8,1,1,1].
+    Expectation: Compile success and assertion passed.
+    """
+
+    class ParallelSplitNet(nn.Cell):
+        def __init__(self):
+            super(ParallelSplitNet, self).__init__()
+            self.split = P.Split(0, 1)
+            self.add_input = Parameter(Tensor(np.ones((128, 128, 64)).astype(np.float32)), name="add")
+            self.add = P.Add()
+            layout = Layout((2, 4), ("dp", "mp"))
+            in_strategy = (layout("None", "dp", "mp"),)
+            self.split.shard(in_strategy=in_strategy)
+
+        def construct(self, x):
+            x = self.split(x)
+            x = self.add(x[0], self.add_input)
+            return x
+
+    context.set_context(save_graphs=True, save_graphs_path="test_parallel_dynamic_shape_with_split")
+    context.set_auto_parallel_context(parallel_mode=ParallelMode.SEMI_AUTO_PARALLEL,
+                                      global_rank=0, device_num=8)
+    net = ParallelSplitNet()
+    model = _VirtualDatasetCell(net)
+    model._virtual_dataset.add_prim_attr("repeat_dim_direct", "right")
+    s1 = Symbol(divisor=2)
+    s2 = Symbol(divisor=4)
+    input_x = Tensor(shape=[None, s1, s2], dtype=mstype.float32)
+    model.set_inputs(input_x)
+    phase = compile_net(model, input_x)
+    validator = ParallelValidator(model, phase)
+    assert validator.check_node_inputs('Split-3', ['Reshape-1', 0, 1])
+    assert validator.check_node_inputs('TupleGetItem-7', ['Split-3', 0])
+    assert validator.check_node_inputs('Shape-1', ['TupleGetItem-7'])
