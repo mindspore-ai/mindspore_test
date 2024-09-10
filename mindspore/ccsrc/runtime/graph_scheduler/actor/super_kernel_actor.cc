@@ -49,12 +49,12 @@ inline void UpdateShape(const AnfNodePtr &input_node, const DeviceTensorPtr &nod
 
 inline bool InputDataNoNeedCopy(const AnfNodePtr &input_node, DeviceTensor *input_device_tensor,
                                 const DeviceTensorPtr &node_device_tensor, const KernelTransformType &type) {
-  if (input_device_tensor == node_device_tensor.get()) {
-    (void)input_device_tensor->TouchSyncHandler();
+  if (input_device_tensor == nullptr) {
     return true;
   }
 
-  if (input_device_tensor == nullptr) {
+  if (input_device_tensor == node_device_tensor.get()) {
+    (void)input_device_tensor->TouchSyncHandler();
     return true;
   }
 
