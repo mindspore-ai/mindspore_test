@@ -102,4 +102,8 @@ Status Model::Evaluate(std::shared_ptr<dataset::Dataset> ds, std::vector<TrainCa
 
   return (ret == mindspore::lite::RET_OK) ? kSuccess : kLiteError;
 }
+Status Model::Finalize() {
+  MS_LOG(INFO) << "Finalize is only support for mindspore_lite's ascend inference backend.";
+  return kSuccess;
+}
 }  // namespace mindspore

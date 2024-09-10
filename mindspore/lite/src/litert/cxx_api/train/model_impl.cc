@@ -100,4 +100,8 @@ Status ModelImpl::ConvertCallbacks(Model *model, std::vector<TrainCallBack *> *i
   }
   return kSuccess;
 }
+Status ModelImpl::Finalize() {
+  MS_LOG(INFO) << "Finalize is only support for mindspore_lite's ascend inference backend.";
+  return kSuccess;
+}
 }  // namespace mindspore

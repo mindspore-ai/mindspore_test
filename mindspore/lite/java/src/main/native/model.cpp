@@ -815,6 +815,7 @@ extern "C" JNIEXPORT void JNICALL Java_com_mindspore_Model_free(JNIEnv *env, job
       return;
     }
     auto *lite_model_ptr = static_cast<mindspore::Model *>(pointer);
+    lite_model_ptr->Finalize();
     delete (lite_model_ptr);
   } else {
     std::shared_ptr<mindspore::Model> *model_shared_ptr =
