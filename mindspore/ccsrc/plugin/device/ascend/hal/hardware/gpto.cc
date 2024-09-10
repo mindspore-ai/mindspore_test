@@ -593,16 +593,7 @@ SchedulingOutput Process(const SchedulingInput &input) {
       MS_LOG(INFO) << TASK_SORT_NAMES[task_sort] << " and " << PE_NAME_SORT[pes_sort];
       SchedulingOutput solution = ProcessCore(*tasks, type_to_num_cores_map, TASK_SORT[task_sort],
                                               (pes_sort == static_cast<size_t>(PEsSort::kSortByLoad)));
-      if ((solution.makespan < output.makespan ||
-           (solution.makespan == output.makespan && solution.memory_peak < output.memory_peak)) &&
-          solution.memory_peak + PARAMETER_SIZE <= HARD_MEMORY_LIMIT) {
-        output = solution;
-        best_solution = TASK_SORT_NAMES[task_sort];
-        for (const auto &task : *tasks) {
-          best_start[task] = task->start();
-          best_end[task] = task->end();
-        }
-      }
+      UpdateBestSolution(&output, solution, *tasks, &best_solution, &best_start, &best_end, task_sort);
       for (const auto &task : *tasks) {
         task->ResetStartEnd();
       }
@@ -616,17 +607,45 @@ SchedulingOutput Process(const SchedulingInput &input) {
   }
 
   // Print stats about best solution
+  PrintBestSolutionStats(output, *tasks, type_to_num_cores_map, best_solution);
+  // Save best solution start/end values
+  for (const auto &task : *tasks) {
+    task->set_start(best_start[task]);
+    task->set_end(best_end[task]);
+  }
+  return output;
+}
+// update best Solution
+void UpdateBestSolution(SchedulingOutput *output, const SchedulingOutput &solution,
+                        const std::vector<GptoTaskPtr> &tasks, std::string *best_solution,
+                        std::unordered_map<GptoTaskPtr, Time> *best_start,
+                        std::unordered_map<GptoTaskPtr, Time> *best_end, size_t task_sort) {
+  if ((solution.makespan < output->makespan ||
+       (solution.makespan == output->makespan && solution.memory_peak < output->memory_peak)) &&
+      solution.memory_peak + PARAMETER_SIZE <= HARD_MEMORY_LIMIT) {
+    *output = solution;
+    *best_solution = TASK_SORT_NAMES[task_sort];
+    for (const auto &task : tasks) {
+      (*best_start)[task] = task->start();
+      (*best_end)[task] = task->end();
+    }
+  }
+}
+// Print Best SolutionStats
+void PrintBestSolutionStats(const SchedulingOutput &output, const std::vector<GptoTaskPtr> &tasks,
+                            const std::unordered_map<GptoTaskType, int32_t> &type_to_num_cores_map,
+                            const std::string &best_solution) {
   MS_LOG(INFO) << "Memory-aware heuristics with soft memory limit " << SOFT_MEMORY_LIMIT << " and hard memory limit "
                << HARD_MEMORY_LIMIT;
   MS_LOG(INFO) << "Best solution is: " << best_solution;
   MS_LOG(INFO) << "Makespan of best solution is " << output.makespan;
-  MS_LOG(INFO) << "Bottom level lower bound is " << LowerBoundBottomLevel(*tasks);
-  MS_LOG(INFO) << "Max type lower bound is " << LowerBoundPEs(*tasks, type_to_num_cores_map);
+  MS_LOG(INFO) << "Bottom level lower bound is " << LowerBoundBottomLevel(tasks);
+  MS_LOG(INFO) << "Max type lower bound is " << LowerBoundPEs(tasks, type_to_num_cores_map);
   const size_t kPrecision = 5;
   const size_t kHundred = 100;
   MS_LOG(INFO) << "Solution relative error is " << std::setprecision(kPrecision)
                << ((output.makespan /
-                      (1.0 * std::max(LowerBoundBottomLevel(*tasks), LowerBoundPEs(*tasks, type_to_num_cores_map))) -
+                      (1.0 * std::max(LowerBoundBottomLevel(tasks), LowerBoundPEs(tasks, type_to_num_cores_map))) -
                     1) *
                    kHundred)
                << "%";
@@ -635,15 +654,7 @@ SchedulingOutput Process(const SchedulingInput &input) {
   MS_LOG(INFO) << "Parameter memory estimate " << PARAMETER_SIZE << " (" << PARAMETER_SIZE / kMBToByte << " MB)";
   MS_LOG(INFO) << "Total memory estimate " << output.memory_peak + PARAMETER_SIZE << " ("
                << (output.memory_peak + PARAMETER_SIZE) / kMBToByte << " MB)";
-  // Save best solution start/end values
-  for (const auto &task : *tasks) {
-    task->set_start(best_start[task]);
-    task->set_end(best_end[task]);
-  }
-
-  return output;
 }
-
 void InitializeTasks(const std::vector<GptoTaskPtr> &tasks, std::unordered_map<GptoTaskId, Time> *can_start,
                      std::unordered_map<GptoTaskId, size_t> *unprocessed_parents,
                      std::set<GptoTaskPtr, TaskSortFunction> *candidate_tasks,
@@ -1550,6 +1561,21 @@ void InitializeTaskInlineCondition(const CNodePtr &cnode, GptoTaskPtr *task,
   }
 }
 
+void PushTasksToVisit(std::queue<GptoTaskPtr> *tasks_to_visit, std::unordered_map<size_t, size_t> *unprocessed_parents,
+                      const GptoTaskPtr &child, GptoTaskPtr gather_task, size_t count_condition) {
+  (*unprocessed_parents)[child->id()] -= 1;
+  if ((*unprocessed_parents)[child->id()] == 0) {
+    if (child != gather_task) {
+      tasks_to_visit->push(child);
+    } else {
+      if (gather_task->subgraph_id() != count_condition) {
+        gather_task->set_subgraph_id(count_condition);
+        MS_LOG(DEBUG) << "Assign subgraph id " << count_condition << " to task " << gather_task->id() << " name "
+                      << gather_task->name();
+      }
+    }
+  }
+}
 void UpdateTasksInlineCondition(std::unordered_map<CNodePtr, GptoTaskPtr> *cnode_to_task_map_ptr,
                                 std::map<GptoTaskPtr, GptoTaskPtr, TaskDepthSort> *switch_gather) {
   MS_EXCEPTION_IF_NULL(cnode_to_task_map_ptr);
@@ -1588,34 +1614,12 @@ void UpdateTasksInlineCondition(std::unordered_map<CNodePtr, GptoTaskPtr> *cnode
       MS_LOG(DEBUG) << "Assign subgraph id " << count_condition << " to task " << selected_task->id() << " name "
                     << selected_task->name();
       if (selected_task->name().find("ConditionSwitch") != std::string::npos) {
-        for (auto gather_child : (*switch_gather)[selected_task]->children()) {
-          unprocessed_parents[gather_child->id()] -= 1;
-          if (unprocessed_parents[gather_child->id()] == 0) {
-            if (gather_child != gather_task) {
-              tasks_to_visit.push(gather_child);
-            } else {
-              if (gather_task->subgraph_id() != count_condition) {
-                gather_task->set_subgraph_id(count_condition);
-                MS_LOG(DEBUG) << "Assign subgraph id " << count_condition << " to task " << gather_task->id()
-                              << " name " << gather_task->name();
-              }
-            }
-          }
+        for (const auto gather_child : (*switch_gather)[selected_task]->children()) {
+          PushTasksToVisit(&tasks_to_visit, &unprocessed_parents, gather_child, gather_task, count_condition);
         }
       } else {
-        for (auto &child : selected_task->children()) {
-          unprocessed_parents[child->id()] -= 1;
-          if (unprocessed_parents[child->id()] == 0) {
-            if (child != gather_task) {
-              tasks_to_visit.push(child);
-            } else {
-              if (gather_task->subgraph_id() != count_condition) {
-                gather_task->set_subgraph_id(count_condition);
-                MS_LOG(DEBUG) << "Assign subgraph id " << count_condition << " to task " << gather_task->id()
-                              << " name " << gather_task->name();
-              }
-            }
-          }
+        for (const auto &child : selected_task->children()) {
+          PushTasksToVisit(&tasks_to_visit, &unprocessed_parents, child, gather_task, count_condition);
         }
       }
       tasks_to_visit.pop();
@@ -1716,36 +1720,43 @@ SchedulingInput ExtractSchedulingInput(const KernelGraphPtr &kernel_graph,
   return scheduling_input;
 }
 
-Memory MemoryLowerBound(const std::vector<GptoTaskPtr> &tasks,
-                        const std::vector<mindspore::somas::DynamicBitSet> &nodes_dependency,
-                        const std::set<GptoTensorPtr, GptoTensorIdSort> &tensors) {
-  Memory max_lb = 0;
+// Calculate the lower bound for a single task
+Memory CalculateTaskLowerBound(const GptoTaskPtr &task, const std::set<GptoTensorPtr, GptoTensorIdSort> &tensors,
+                               const std::vector<mindspore::somas::DynamicBitSet> &nodes_dependency) {
+  Memory task_lb = 0;
+  for (const auto &tensor : tensors) {
+    if (tensor->weight() == 0) {
+      continue;
+    }
+    const auto &source = tensor->source().lock();
+    const auto &consumers = tensor->consumers();
 
-  for (const auto &task : tasks) {
-    Memory task_lb = 0;
-    for (const auto &tensor : tensors) {
-      if (tensor->weight() == 0) {
-        continue;
-      }
-      const auto &source = tensor->source().lock();
-      const auto &consumers = tensor->consumers();
-
-      if (task == source || consumers.count(task) > 0) {  // tensor is source or consumer of task
-        task_lb += tensor->weight();
-      } else {
-        if (nodes_dependency[task->id()].IsBitTrue(source->id())) {
-          if (tensor->type() == kGraphOutput) {  // semilifelong end logic
+    if (task == source || consumers.count(task) > 0) {
+      task_lb += tensor->weight();
+    } else {
+      if (nodes_dependency[task->id()].IsBitTrue(source->id())) {
+        if (tensor->type() == kGraphOutput) {
+          task_lb += tensor->weight();
+        } else {
+          if (std::any_of(consumers.cbegin(), consumers.cend(), [&](auto &consumer) {
+                return nodes_dependency[consumer.lock()->id()].IsBitTrue(task->id());
+              })) {
             task_lb += tensor->weight();
-          } else {
-            if (std::any_of(consumers.cbegin(), consumers.cend(), [&](auto &consumer) {
-                  return nodes_dependency[consumer.lock()->id()].IsBitTrue(task->id());
-                })) {
-              task_lb += tensor->weight();
-            }
           }
         }
       }
     }
+  }
+  return task_lb;
+}
+
+// Calculate the maximum lower bound across all tasks
+Memory MemoryLowerBound(const std::vector<GptoTaskPtr> &tasks,
+                        const std::vector<mindspore::somas::DynamicBitSet> &nodes_dependency,
+                        const std::set<GptoTensorPtr, GptoTensorIdSort> &tensors) {
+  Memory max_lb = 0;
+  for (const auto &task : tasks) {
+    Memory task_lb = CalculateTaskLowerBound(task, tensors, nodes_dependency);
     task->set_lower_bound(task_lb);
     max_lb = std::max(max_lb, task_lb);
   }
