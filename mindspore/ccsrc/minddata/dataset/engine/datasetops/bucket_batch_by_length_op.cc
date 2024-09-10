@@ -76,14 +76,19 @@ Status BucketBatchByLengthOp::operator()() {
       RETURN_IF_NOT_OK(child_iterator_->FetchNextTensorRow(&current_row));
     }
 
-    // got EOE, do what we need to do with remainders in each bucket
     if (!drop_remainder_) {
+      // output the incomplete batches
       for (int i = 0; i < bucket_boundaries_.size(); i++) {
         if (!buckets_[i]->empty()) {
           TensorRow batched_bucket;
           RETURN_IF_NOT_OK(PadAndBatchBucket(i, &batched_bucket));
           RETURN_IF_NOT_OK(out_connector_->Add(std::move(batched_bucket)));
         }
+      }
+    } else {
+      // drop the incomplete batches
+      for (const auto &bucket : buckets_) {
+        bucket->clear();
       }
     }
 
